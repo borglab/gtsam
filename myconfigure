@@ -1,0 +1,1 @@
+./configure --prefix=$HOME --with-toolbox=$HOME/toolbox/ --with-boost=/opt/local/include/

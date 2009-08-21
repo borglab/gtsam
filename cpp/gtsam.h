@@ -1,0 +1,147 @@
+class FGConfig {
+  FGConfig();
+  Vector get(string name) const;
+  bool contains(string name) const;
+  size_t size() const;
+  void insert(string name, Vector val);
+  void print() const;
+  bool equals(const FGConfig& expected, double tol) const;
+  void clear();
+};
+
+class LinearFactorSet {
+  LinearFactorSet();
+  void insert(LinearFactor* factor);
+};
+
+class LinearFactor {
+  LinearFactor(string key1,
+	       Matrix A1,
+	       Vector b_in);
+  LinearFactor(string key1,
+	       Matrix A1,
+	       string key2,
+	       Matrix A2,
+	       Vector b_in);
+  LinearFactor(string key1,
+	       Matrix A1,
+	       string key2,
+	       Matrix A2,
+	       string key3,
+	       Matrix A3,
+	       Vector b_in);
+  bool empty() const;
+  Vector get_b() const;
+  Matrix get_A(string key) const;
+  double error(const FGConfig& c) const;
+  bool involves(string key) const;
+  void print() const;
+  bool equals(const LinearFactor& lf, double tol) const;
+  pair<Matrix,Vector> matrix(const Ordering& ordering) const;
+};
+
+class ConditionalGaussian {
+  ConditionalGaussian();
+  ConditionalGaussian(Vector d,
+		      Matrix R);
+  ConditionalGaussian(Vector d,
+		      Matrix R,
+		      string name1,
+		      Matrix S);
+  ConditionalGaussian(Vector d,
+		      Matrix R,
+		      string name1,
+		      Matrix S,
+		      string name2,
+		      Matrix T);
+  void print() const;
+  Vector solve(const FGConfig& x);
+  void add(string key, Matrix S);
+  bool equals(const ConditionalGaussian &cg) const;
+};
+
+class Ordering {
+  Ordering();
+  void push_back(string s);
+  void print() const;
+};
+
+class ChordalBayesNet {
+  ChordalBayesNet();
+  void insert(string name, ConditionalGaussian* node);
+  ConditionalGaussian* get(string name);
+  FGConfig* optimize();
+  void print() const;
+  bool equals(const ChordalBayesNet& cbn) const;
+  pair<Matrix,Vector> matrix() const;
+};
+
+class LinearFactorGraph {
+  LinearFactorGraph();
+
+  size_t size() const;
+  void push_back(LinearFactor* ptr_f);
+  double error(const FGConfig& c) const;
+  double probPrime(const FGConfig& c) const;
+  void print() const;
+  bool equals(const LinearFactorGraph& lfgraph) const;
+
+  FGConfig optimize(const Ordering& ordering);
+  LinearFactor* combine_factors(string key);
+  ConditionalGaussian* eliminate_one(string key);
+  ChordalBayesNet* eliminate(const Ordering& ordering);
+  pair<Matrix,Vector> matrix(const Ordering& ordering) const;
+};
+
+class Point2 {
+  Point2();
+  Point2(double x, double y);
+  double x();
+  double y();
+  size_t dim() const;
+  void print() const;
+};
+
+class Point3 {
+  Point3();
+  Point3(double x, double y, double z);
+  Point3(Vector v);
+  size_t dim() const;
+  Point3 exmap(Vector d) const;
+  Vector vector() const;
+  double x();
+  double y();
+  double z();
+  void print() const;
+}; 
+
+class Point2Prior {
+  Point2Prior(Vector mu, double sigma, string key);
+  Vector error_vector(const FGConfig& c) const;
+  LinearFactor* linearize(const FGConfig& c) const;
+  double get_sigma();
+  Vector get_measurement();
+  double error(const FGConfig& c) const;
+  void print() const;
+};
+
+class Simulated2DOdometry {
+  Simulated2DOdometry(Vector odo, double sigma, string key, string key2);
+  Vector error_vector(const FGConfig& c) const;
+  LinearFactor* linearize(const FGConfig& c) const;
+  double get_sigma();
+  Vector get_measurement();
+  double error(const FGConfig& c) const;
+  void print() const;
+};
+
+class Simulated2DMeasurement {
+  Simulated2DMeasurement(Vector odo, double sigma, string key, string key2);
+  Vector error_vector(const FGConfig& c) const;
+  LinearFactor* linearize(const FGConfig& c) const;
+  double get_sigma();
+  Vector get_measurement();
+  double error(const FGConfig& c) const;
+  void print() const;
+};
+

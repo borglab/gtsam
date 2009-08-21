@@ -1,0 +1,77 @@
+/*
+ * SimpleCamera.h
+ *
+ *  Created on: Aug 16, 2009
+ *      Author: dellaert
+ */
+
+#ifndef SIMPLECAMERA_H_
+#define SIMPLECAMERA_H_
+
+#include "CalibratedCamera.h"
+#include "Cal3_S2.h"
+
+namespace gtsam {
+
+	/**
+	 * A simple camera class with a Cal3_S2 calibration
+	 * Basically takes a Calibrated camera and adds calibration information
+	 * to produce measurements in pixels.
+	 * Not a sublass as a SimpleCamera *is not* a CalibratedCamera.
+	 */
+	class SimpleCamera {
+	private:
+		CalibratedCamera calibrated_; // Calibrated camera
+		Cal3_S2 K_; // Calibration
+
+	public:
+		SimpleCamera(const Cal3_S2& K, const Pose3& pose);
+		virtual ~SimpleCamera();
+
+		const Pose3& pose() const {
+			return calibrated_.pose();
+		}
+
+		const Cal3_S2& calibration() const {
+			return K_;
+		}
+
+		Point2 project(const Point3& P) const;
+
+		// Friends
+		friend Matrix Dproject_pose(const SimpleCamera& camera,  const Point3& point);
+		friend Matrix Dproject_point(const SimpleCamera& camera, const Point3& point);
+		friend void	Dproject_pose_point(const SimpleCamera& camera, const Point3& point,
+					Point2& projection, Matrix& D_projection_pose,
+					Matrix& D_projection_point);
+
+	};
+
+	/* ************************************************************************* */
+	// measurement functions and derivatives
+	/* ************************************************************************* */
+
+	/**
+	 * This function receives the camera pose and the landmark location and
+	 returns the location the point is supposed to appear in the image
+	 */
+	Point2 project(const SimpleCamera& camera, const Point3& point);
+
+	/**
+	 * Derivatives of project.
+	 */
+	Matrix Dproject_pose(const SimpleCamera& camera, const Point3& point);
+	Matrix Dproject_point(const SimpleCamera& camera, const Point3& point);
+
+	/**
+	 * super-duper combined evaluation + derivatives
+	 * saves a lot of time because a lot of computation is shared
+	 */
+	void
+			Dproject_pose_point(const SimpleCamera& camera, const Point3& point,
+					Point2& projection, Matrix& D_projection_pose,
+					Matrix& D_projection_point);
+
+}
+
+#endif /* SIMPLECAMERA_H_ */
