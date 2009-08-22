@@ -57,8 +57,8 @@ public:
 
 	/** return begin and end of the nodes. FD: breaks encapsulation? */
 	typedef std::map<std::string, ConditionalGaussian::shared_ptr>::const_iterator const_iterator;
-	const_iterator const begin() {return nodes.begin();}
-	const_iterator const end()   {return nodes.end();}
+	const_iterator const begin() const {return nodes.begin();}
+	const_iterator const end()   const {return nodes.end();}
 
 	/** optimize */
 	boost::shared_ptr<FGConfig> optimize();

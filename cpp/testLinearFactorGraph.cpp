@@ -457,7 +457,7 @@ TEST( LinearFactorGraph, CONSTRUCTOR_ChordalBayesNet )
   ord.push_back("x1");
   
   ChordalBayesNet::shared_ptr CBN = fg.eliminate(ord);
-  LinearFactorGraph fg2(CBN);
+  LinearFactorGraph fg2(*CBN);
   ChordalBayesNet::shared_ptr CBN2 = fg2.eliminate(ord);
   
   CHECK(CBN->equals(*CBN2));

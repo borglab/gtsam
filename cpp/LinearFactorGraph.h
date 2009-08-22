@@ -32,13 +32,13 @@ namespace gtsam {
     /**
      * Constructor that receives a Chordal Bayes Net and returns a LinearFactorGraph
      */
-    LinearFactorGraph(ChordalBayesNet::shared_ptr CBN);
+    LinearFactorGraph(const ChordalBayesNet& CBN);
 
     /**
      * given a chordal bayes net, sets the linear factor graph identical to that CBN
      * FD: imperative !!
      */
-    void setCBN(ChordalBayesNet::shared_ptr CBN);
+    void setCBN(const ChordalBayesNet& CBN);
 
     /**
      * This function returns the best ordering for this linear factor

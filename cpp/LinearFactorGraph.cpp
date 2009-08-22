@@ -18,17 +18,17 @@ using namespace std;
 using namespace gtsam;
 
 /* ************************************************************************* */
-LinearFactorGraph::LinearFactorGraph(ChordalBayesNet::shared_ptr CBN)
+LinearFactorGraph::LinearFactorGraph(const ChordalBayesNet& CBN)
 {
 	setCBN(CBN);
 }
 
 /* ************************************************************************* */
-void LinearFactorGraph::setCBN(ChordalBayesNet::shared_ptr CBN)
+void LinearFactorGraph::setCBN(const ChordalBayesNet& CBN)
 {
 	clear();
-	ChordalBayesNet::const_iterator it = CBN->begin();
-	for(; it != CBN->end(); it++) {
+	ChordalBayesNet::const_iterator it = CBN.begin();
+	for(; it != CBN.end(); it++) {
 		LinearFactor::shared_ptr lf(new LinearFactor(it->first, it->second));
 		push_back(lf);
 	}
