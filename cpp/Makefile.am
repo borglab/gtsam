@@ -39,6 +39,8 @@ external_libs:
 	@echo Compiling CppUnitLite...; cd ../CppUnitLite; make all
 	@echo Compiling Colamd...;      cd ../colamd; make all
 
+install: external_libs
+
 clean : clean_external_libs
 	@echo Cleaning Cpp...;  rm -f *.o *.lo *.*~ libgtsam.la $(check_PROGRAMS)
 
