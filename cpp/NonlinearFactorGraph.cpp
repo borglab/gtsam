@@ -88,8 +88,9 @@ double NonlinearFactorGraph::iterate
 }
 
 /* ************************************************************************* */
-Ordering NonlinearFactorGraph::getOrdering(FGConfig& config)
+Ordering NonlinearFactorGraph::getOrdering(FGConfig& config) const
 {
+	// TODO: FD: Whoa! This is crazy !!!!! re-linearizing just to get ordering ?
 	LinearFactorGraph lfg = linearize(config);
 	return lfg.getOrdering();
 }

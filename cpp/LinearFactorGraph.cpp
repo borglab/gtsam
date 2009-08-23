@@ -230,6 +230,9 @@ pair<Matrix,Vector> LinearFactorGraph::matrix(const Ordering& ordering) const {
 
 /* ************************************************************************* */  
 Ordering LinearFactorGraph::getOrdering() const {
+
+	// FD: no comments whatsoever, must be totally obvious !
+
 	int * _symbolicMatrix;
 	int * _symbolicColumns;
 	int _symbolicLength;

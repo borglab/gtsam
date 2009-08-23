@@ -35,7 +35,7 @@ public: // internal, exposed for testing only, doc in .cpp file
 			double& lambda, double lambdaFactor,
 			const Ordering& ordering, int verbosity) const;
 
-	Ordering getOrdering(FGConfig& config);
+	Ordering getOrdering(FGConfig& config) const;
 
 public: // these you will probably want to use
 	/**
