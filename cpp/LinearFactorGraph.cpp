@@ -155,7 +155,7 @@ FGConfig LinearFactorGraph::optimize(const Ordering& ordering)
 /* ************************************************************************* */
 /** combine two factor graphs                                                 */ 
 /* ************************************************************************* */
-void LinearFactorGraph::combine(LinearFactorGraph &lfg){
+void LinearFactorGraph::combine(const LinearFactorGraph &lfg){
 	for(const_iterator factor=lfg.factors.begin(); factor!=lfg.factors.end(); factor++){
 		push_back(*factor);
 	}

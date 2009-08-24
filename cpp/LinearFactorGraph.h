@@ -105,7 +105,7 @@ namespace gtsam {
      * combine two factor graphs
      * @param *lfg Linear factor graph
      */
-    void combine(LinearFactorGraph &lfg);
+    void combine(const LinearFactorGraph &lfg);
 
     /**
      * Find all variables and their dimensions
