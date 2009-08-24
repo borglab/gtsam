@@ -33,11 +33,10 @@ current.
 #   then set age to 0.
 version = $(current):$(revision):$(age)
 
-all: external_libs
-
 external_libs:
 	@echo Compiling CppUnitLite...; cd ../CppUnitLite; make all
 	@echo Compiling Colamd...;      cd ../colamd; make all
+
 
 clean : clean_external_libs
 	@echo Cleaning Cpp...;  rm -f *.o *.lo *.*~ libgtsam.la $(check_PROGRAMS)
@@ -160,4 +159,10 @@ TESTS = $(check_PROGRAMS)
 %.run: % libgtsam.la
 	./$^
 
-install-am: external_libs
+# to compile colamd and cppunitlite first when make all and make install. 
+# The part after external_libs is copied from automatically generated Makefile when without the following line
+libgtsam.la: external_libs $(libgtsam_la_OBJECTS) $(libgtsam_la_DEPENDENCIES) 
+	$(libgtsam_la_LINK) -rpath $(libdir) $(libgtsam_la_OBJECTS) $(libgtsam_la_LIBADD) $(LIBS)
+
+
+
