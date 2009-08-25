@@ -165,15 +165,14 @@ void LinearFactorGraph::combine(const LinearFactorGraph &lfg){
 /** combine two factor graphs                                                */ 
 /* ************************************************************************* */
 
-const LinearFactorGraph LinearFactorGraph::combine2(const LinearFactorGraph& lfg1,
-		const LinearFactorGraph& lfg2)  {
-	// create new linear factor graph
-	LinearFactorGraph fg;
-	// set the first linear factor graph
-	fg = lfg1;
+LinearFactorGraph LinearFactorGraph::combine2(const LinearFactorGraph& lfg1,
+		const LinearFactorGraph& lfg2) {
+	// create new linear factor graph equal to the first one
+	LinearFactorGraph fg = lfg1;
 
 	// add the second factors in the graph
-	for(const_iterator factor=lfg2.factors.begin(); factor!=lfg2.factors.end(); factor++){
+	for (const_iterator factor = lfg2.factors.begin(); factor
+			!= lfg2.factors.end(); factor++) {
 		fg.push_back(*factor);
 	}
 

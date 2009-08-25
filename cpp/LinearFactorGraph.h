@@ -93,13 +93,13 @@ namespace gtsam {
     FGConfig optimize(const Ordering& ordering);
 
     /**
-     * combine two factor graphs
+     * static function that combines two factor graphs
      * @param const &lfg1 Linear factor graph
      * @param const &lfg2 Linear factor graph
      * @return a new combined factor graph
      */
-    static const LinearFactorGraph combine2(const LinearFactorGraph& lfg1,
-				     const LinearFactorGraph& lfg2 ) ;
+    static LinearFactorGraph combine2(const LinearFactorGraph& lfg1,
+				const LinearFactorGraph& lfg2);
 		
     /**
      * combine two factor graphs
