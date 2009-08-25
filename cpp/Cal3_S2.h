@@ -93,6 +93,19 @@ namespace gtsam {
 
 		/** friends */
 		friend Matrix Duncalibrate2(const Cal3_S2& K, const Point2& p);
+
+	private:
+		/** Serialization function */
+		friend class boost::serialization::access;
+		template<class Archive>
+		void serialize(Archive & ar, const unsigned int version)
+		{
+			ar & BOOST_SERIALIZATION_NVP(fx_);
+			ar & BOOST_SERIALIZATION_NVP(fy_);
+			ar & BOOST_SERIALIZATION_NVP(s_);
+			ar & BOOST_SERIALIZATION_NVP(u0_);
+			ar & BOOST_SERIALIZATION_NVP(v0_);
+		}
 	};
 
 	/**
