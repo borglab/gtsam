@@ -118,7 +118,7 @@ bool NonlinearFactorGraph::check_convergence(const FGConfig& config1,
 		const FGConfig& config2,
 		double relativeErrorTreshold,
 		double absoluteErrorTreshold,
-		int verbosity)
+		int verbosity) const
 {
 	double currentError = calculate_error(*this, config1, verbosity);
 	double newError     = calculate_error(*this, config2, verbosity);
@@ -211,7 +211,7 @@ pair<LinearFactorGraph, FGConfig> NonlinearFactorGraph::OneIterationLM( FGConfig
 		double absoluteErrorTreshold,
 		int verbosity,
 		double lambda0,
-		double lambdaFactor) {
+		double lambdaFactor) const {
 
 	double lambda = lambda0;
 	bool converged = false;

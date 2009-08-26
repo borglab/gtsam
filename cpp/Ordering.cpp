@@ -23,7 +23,7 @@ void Ordering::print() const {
 }
 
 /* ************************************************************************* */
-bool Ordering::equals(Ordering &ord){	
+bool Ordering::equals(Ordering &ord){
 	if(this->size() != ord.size())
 		return false;
 	

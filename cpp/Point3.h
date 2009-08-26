@@ -67,7 +67,7 @@ namespace gtsam {
     bool equals(const Point3& p, double tol = 1e-9) const;
 
     /** friends */
-    friend Point3 cross(const Point3 &p1, const Point3 &p2); 
+    friend Point3 cross(const Point3 &p1, const Point3 &p2);
 
   private:
     /** Serialization function */

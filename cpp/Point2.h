@@ -45,7 +45,7 @@ namespace gtsam {
     }
 
     /** operators */
-    inline bool   operator ==(const Point2& q) {return x_==q.x_ && q.y_==q.y_;}
+    inline bool   operator ==(const Point2& q) const {return x_==q.x_ && q.y_==q.y_;}
     inline Point2 operator + (const Point2& q) const {return Point2(x_+q.x_,y_+q.y_);}
     inline Point2 operator - (const Point2& q) const {return Point2(x_-q.x_,y_-q.y_);}
 

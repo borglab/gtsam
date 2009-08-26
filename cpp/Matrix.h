@@ -76,7 +76,7 @@ bool assert_equal(const Matrix& A, const Matrix& B, double tol = 1e-9);
 /**
  * overload * for matrix-vector multiplication (as BOOST does not)
  */
-inline Vector operator*(const Matrix& A, const Vector & v)  { 
+inline Vector operator*(const Matrix& A, const Vector & v) {
   if (A.size2()!=v.size()) throw(std::invalid_argument("Matrix operator* : A.n!=v.size"));
   return Vector(prod(A,v));
 }

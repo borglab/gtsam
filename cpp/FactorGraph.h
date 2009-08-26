@@ -37,7 +37,7 @@ namespace gtsam {
   public:
 
     /** get the factors to a specific node */
-      const std::list<int>& get_factors_to_node(const std::string& key) {
+      const std::list<int>& get_factors_to_node(const std::string& key) const {
       return node_to_factors_[key];
     }
 

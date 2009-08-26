@@ -105,10 +105,10 @@ public:
 	std::size_t size() const { return As.size();}
 
 	/** STL like, return the iterator pointing to the first node */
-	const_iterator const begin() { return As.begin();}
+	const_iterator const begin() const { return As.begin();}
 
 	/** STL like, return the iterator pointing to the last node */
-	const_iterator const end() { return As.end();	}
+	const_iterator const end() const { return As.end();	}
 
 	/** check if empty */
 	bool empty() const { return b.size() == 0;}
@@ -142,7 +142,7 @@ public:
 	 * return the number of rows from the b vector
 	 * @return a integer with the number of rows from the b vector
 	 */
-	int numberOfRows() { return b.size();}
+	int numberOfRows() const { return b.size();}
 
 	/**
 	 * Find all variables and their dimensions

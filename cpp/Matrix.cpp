@@ -86,7 +86,7 @@ Matrix diag(const Vector& v) {
 /* ************************************************************************* */
 /** Check if two matrizes are the same                                       */
 /* ************************************************************************* */
-bool equal_with_abs_tol(const Matrix& A, const Matrix& B, double tol){
+bool equal_with_abs_tol(const Matrix& A, const Matrix& B, double tol) {
 
   size_t n1 = A.size2(), m1 = A.size1();
   size_t n2 = B.size2(), m2 = B.size1();

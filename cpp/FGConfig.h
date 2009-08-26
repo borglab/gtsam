@@ -33,7 +33,7 @@ namespace gtsam {
     virtual ~FGConfig() {};
 
     /** return all the nodes in the graph **/
-    std::vector<std::string> get_names(){
+    std::vector<std::string> get_names() {
       std::vector<std::string> names;
       for(iterator it=values.begin(); it!=values.end(); it++)
         names.push_back(it->first);

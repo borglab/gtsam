@@ -91,10 +91,10 @@ namespace gtsam {
     const Matrix& get_R() const {return R_;}
 
     /** STL like, return the iterator pointing to the first node */
-    const_iterator const parentsBegin(){ return parents_.begin(); }
+    const_iterator const parentsBegin() const { return parents_.begin(); }
 
     /** STL like, return the iterator pointing to the last node */
-    const_iterator const parentsEnd(){ return parents_.end(); }
+    const_iterator const parentsEnd() const { return parents_.end(); }
 
     /** find the number of parents */
     size_t size() const {return parents_.size();}

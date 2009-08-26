@@ -71,7 +71,7 @@ public: // these you will probably want to use
 	bool check_convergence(const FGConfig& config1,
 			const FGConfig& config2,
 			double relativeErrorTreshold, double absoluteErrorTreshold,
-			int verbosity = 0);
+			int verbosity = 0) const;
 
 	/**
 	 * Optimize using Levenberg-Marquardt. Really Levenberg's
@@ -105,7 +105,7 @@ public: // these you will probably want to use
 			double absoluteErrorTreshold,
 			int verbosity,
 			double lambda0,
-			double lambdaFactor) ;
+			double lambdaFactor) const ;
 
 };
 }

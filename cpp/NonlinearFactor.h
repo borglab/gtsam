@@ -111,7 +111,7 @@ namespace gtsam {
     /** Check if two factors are equal */
     bool equals(const Factor& f, double tol=1e-9) const;
 
-    std::string dump() {return "";}
+    std::string dump() const {return "";}
   };
 
   /* ************************************************************************* */
