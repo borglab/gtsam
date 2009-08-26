@@ -101,7 +101,7 @@ bool assert_equal(const Pose3& A, const Pose3& B, double tol)
 }
 
 /* ************************************************************************* */
-Pose3 Pose3::transformPose_to(const Pose3& transform)
+Pose3 Pose3::transformPose_to(const Pose3& transform) const
 {
 		Rot3 cRv = rotation() * Rot3(transform.rotation().inverse());
 		Point3 t = transform_to(transform, translation());
