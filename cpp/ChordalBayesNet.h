@@ -30,9 +30,10 @@ protected:
 	std::list<std::string> keys;
 
 	/** nodes stored on key */
-	std::map<std::string,ConditionalGaussian::shared_ptr> nodes;
+	typedef std::map<std::string,ConditionalGaussian::shared_ptr> Nodes;
+	Nodes nodes;
 
-	typedef std::map<std::string, ConditionalGaussian::shared_ptr>::iterator iterator;
+	typedef Nodes::iterator iterator;
 
 public:
 
@@ -56,13 +57,13 @@ public:
 	inline ConditionalGaussian::shared_ptr operator[](const std::string& key) { return nodes[key];}
 
 	/** return begin and end of the nodes. FD: breaks encapsulation? */
-	typedef std::map<std::string, ConditionalGaussian::shared_ptr>::const_iterator const_iterator;
+	typedef Nodes::const_iterator const_iterator;
 	const_iterator const begin() const {return nodes.begin();}
 	const_iterator const end()   const {return nodes.end();}
 
 	/** optimize */
-	boost::shared_ptr<FGConfig> optimize();
-	boost::shared_ptr<FGConfig> optimize(const boost::shared_ptr<FGConfig> &c);
+	boost::shared_ptr<FGConfig> optimize() const;
+	boost::shared_ptr<FGConfig> optimize(const boost::shared_ptr<FGConfig> &c) const;
 
 	/** print */
 	void print() const;
