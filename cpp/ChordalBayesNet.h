@@ -53,8 +53,16 @@ public:
 	void erase(const std::string& key);
 
 	/** return node with given key */
-	inline ConditionalGaussian::shared_ptr get       (const std::string& key) { return nodes[key];}
-	inline ConditionalGaussian::shared_ptr operator[](const std::string& key) { return nodes[key];}
+	inline ConditionalGaussian::shared_ptr get (const std::string& key) const
+	{
+		const_iterator cg = nodes.find(key); // get node
+		return cg->second;
+	}
+	inline ConditionalGaussian::shared_ptr operator[](const std::string& key) const
+	{
+		const_iterator cg = nodes.find(key); // get node
+		return cg->second;
+	}
 
 	/** return begin and end of the nodes. FD: breaks encapsulation? */
 	typedef Nodes::const_iterator const_iterator;
