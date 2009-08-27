@@ -54,18 +54,16 @@ void ConditionalGaussian::print(const string &s) const
 }    
 
 /* ************************************************************************* */
-Vector ConditionalGaussian::solve(const FGConfig& x)
-{
-  Vector rhs = d_;
-  for(map<string, Matrix>::const_iterator it = parents_.begin() ; it != parents_.end() ; it++ ) {
-    const string&   j = it->first;
-    const Matrix& Aj = it->second;
-    rhs -= Aj*x[j];
-    
-  }
-  Vector result = backsubstitution(R_, rhs);
-  return result;
-  
+Vector ConditionalGaussian::solve(const FGConfig& x) const {
+	Vector rhs = d_;
+	for (map<string, Matrix>::const_iterator it = parents_.begin(); it
+			!= parents_.end(); it++) {
+		const string& j = it->first;
+		const Matrix& Aj = it->second;
+		rhs -= Aj * x[j];
+	}
+	Vector result = backsubstitution(R_, rhs);
+	return result;
 }    
 
 /* ************************************************************************* */
