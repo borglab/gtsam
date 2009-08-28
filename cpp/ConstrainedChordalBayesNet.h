@@ -51,7 +51,12 @@ public:
 	ChordalBayesNet convert() const;
 
 	/** get delta functions by key */
-	DeltaFunction::shared_ptr get_delta(const std::string& key) {return delta_nodes[key];}
+	DeltaFunction::shared_ptr get_delta(const std::string& key) const
+	{
+		const_delta_iterator cg = delta_nodes.find(key);
+		assert( cg != delta_nodes.end() );
+		return cg->second;
+	}
 
 	/** check equality */
 	bool equals(const ConstrainedChordalBayesNet& cbn) const;
