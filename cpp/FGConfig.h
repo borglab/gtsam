@@ -28,14 +28,14 @@ namespace gtsam {
     typedef std::map<std::string, Vector>::const_iterator const_iterator;
 
     FGConfig() {};
-  FGConfig(const FGConfig& cfg_in) : values(cfg_in.values){};
+    FGConfig(const FGConfig& cfg_in) : values(cfg_in.values){};
     
     virtual ~FGConfig() {};
 
     /** return all the nodes in the graph **/
-    std::vector<std::string> get_names() {
+    std::vector<std::string> get_names() const {
       std::vector<std::string> names;
-      for(iterator it=values.begin(); it!=values.end(); it++)
+      for(const_iterator it=values.begin(); it!=values.end(); it++)
         names.push_back(it->first);
       return names;
     }
@@ -52,8 +52,8 @@ namespace gtsam {
     virtual void operator+=(const FGConfig & delta);
     virtual FGConfig operator+(const FGConfig & delta) const;
  
-    iterator begin() {return values.begin();}
-    iterator end()   {return values.end();}
+    const_iterator begin() {return values.begin();}
+    const_iterator end()   {return values.end();}
 
     /** get a vector in the configuration by name */
     Vector get(const std::string& name) const;
