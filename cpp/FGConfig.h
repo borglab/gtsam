@@ -52,8 +52,8 @@ namespace gtsam {
     virtual void operator+=(const FGConfig & delta);
     virtual FGConfig operator+(const FGConfig & delta) const;
  
-    const_iterator begin() {return values.begin();}
-    const_iterator end()   {return values.end();}
+    const_iterator begin() const {return values.begin();}
+    const_iterator end()   const {return values.end();}
 
     /** get a vector in the configuration by name */
     Vector get(const std::string& name) const;
