@@ -157,7 +157,7 @@ void ConstrainedLinearFactorGraph::print(const std::string& s) const
 }
 
 void ConstrainedLinearFactorGraph::eq_combine_and_eliminate(
-		const EqualityFactor& eqf, MutableLinearFactor& joint_factor) // joint factor should be const
+		const EqualityFactor& eqf, const MutableLinearFactor& joint_factor)
 {
 	// start empty remaining factor to be returned
 	boost::shared_ptr<MutableLinearFactor> lf(new MutableLinearFactor);

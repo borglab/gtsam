@@ -110,7 +110,7 @@ public:
      * Combines an equality factor with a joined linear factor
      * Executes in place, and will add new factors back to the graph
      */
-    void eq_combine_and_eliminate(const EqualityFactor& eqf, MutableLinearFactor& joint_factor);
+    void eq_combine_and_eliminate(const EqualityFactor& eqf, const MutableLinearFactor& joint_factor);
 
     /**
      * This function returns the best ordering for this linear factor
