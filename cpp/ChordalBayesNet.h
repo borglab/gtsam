@@ -56,11 +56,13 @@ public:
 	inline ConditionalGaussian::shared_ptr get (const std::string& key) const
 	{
 		const_iterator cg = nodes.find(key); // get node
+		assert( cg != nodes.end() );
 		return cg->second;
 	}
 	inline ConditionalGaussian::shared_ptr operator[](const std::string& key) const
 	{
 		const_iterator cg = nodes.find(key); // get node
+		assert( cg != nodes.end() );
 		return cg->second;
 	}
 
