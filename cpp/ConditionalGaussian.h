@@ -112,7 +112,7 @@ namespace gtsam {
     /**
      * adds a parent
      */    
-    void add(std::string key, Matrix S){ parents_.insert(make_pair(key, S)); }
+    void add(const std::string key, Matrix S){ parents_.insert(make_pair(key, S)); }
 			
     /** equals function */
     bool equals(const ConditionalGaussian &cg) const;

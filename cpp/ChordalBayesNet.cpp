@@ -53,6 +53,7 @@ boost::shared_ptr<FGConfig> ChordalBayesNet::optimize(const boost::shared_ptr<FG
   /** solve each node in turn in topological sort order (parents first)*/
   BOOST_FOREACH(string key, keys) {
     const_iterator cg = nodes.find(key); // get node
+    assert( cg != nodes.end() );
     Vector x = cg->second->solve(*result);                   // Solve it
     result->insert(key,x);   // store result in partial solution
   }
