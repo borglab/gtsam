@@ -100,15 +100,17 @@ testConstrainedLinearFactorGraph_LDADD    = libgtsam.la
 testConstrainedChordalBayesNet_LDADD      = libgtsam.la
 
 # geometry
-sources += Point2.cpp Point3.cpp Rot3.cpp Pose3.cpp Cal3_S2.cpp
-check_PROGRAMS += testPoint2 testPoint3 testRot3 testPose3 testCal3_S2
+sources += Point2.cpp Pose2.cpp Point3.cpp Rot3.cpp Pose3.cpp Cal3_S2.cpp
+check_PROGRAMS += testPoint2 testPose2 testPoint3 testRot3 testPose3 testCal3_S2
 testPoint2_SOURCES  = testPoint2.cpp
+testPose2_SOURCES   = testPose2.cpp
 testPoint3_SOURCES  = testPoint3.cpp
 testRot3_SOURCES    = testRot3.cpp
 testPose3_SOURCES   = testPose3.cpp
 testCal3_S2_SOURCES = testCal3_S2.cpp               
 
 testPoint2_LDADD    = libgtsam.la
+testPose2_LDADD     = libgtsam.la
 testPoint3_LDADD    = libgtsam.la
 testRot3_LDADD      = libgtsam.la
 testPose3_LDADD     = libgtsam.la
