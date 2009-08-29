@@ -42,6 +42,11 @@ namespace gtsam {
 			x_(t.x()), y_(t.y()), theta_(theta) {
 		}
 
+    /** get functions for x, y, theta */
+		double x()     const { return x_;}
+		double y()     const { return y_;}
+		double theta() const { return theta_;}
+
 		/** print with optional string */
 		void print(const std::string& s = "") const;
 

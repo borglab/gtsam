@@ -9,6 +9,7 @@
 #define CalibratedCAMERA_H_
 
 #include "Point2.h"
+#include "Pose2.h"
 #include "Pose3.h"
 
 namespace gtsam {
@@ -40,6 +41,11 @@ namespace gtsam {
 		const Pose3& pose() const {
 			return pose_;
 		}
+
+		/**
+		 * Create a level camera at the given 2D pose and height
+		 */
+		static CalibratedCamera level(const Pose2& pose2, double height);
 
 		Point2 project(const Point3& P) const;
 	};

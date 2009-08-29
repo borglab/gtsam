@@ -23,12 +23,23 @@ namespace gtsam {
 	}
 
 	/* ************************************************************************* */
+	// Methods
+	/* ************************************************************************* */
 
 	CalibratedCamera::CalibratedCamera(const Pose3& pose) :
 		pose_(pose) {
 	}
 
 	CalibratedCamera::~CalibratedCamera() {
+	}
+
+	CalibratedCamera CalibratedCamera::level(const Pose2& pose2, double height) {
+		double st = sin(pose2.theta()), ct = cos(pose2.theta());
+		Point3 x(st, -ct, 0), y(0, 0, -1), z(ct, st, 0);
+		Rot3 wRc(x, y, z);
+		Point3 t(pose2.x(), pose2.y(), height);
+		Pose3 pose3(wRc, t);
+		return CalibratedCamera(pose3);
 	}
 
 	Point2 CalibratedCamera::project(const Point3 & P) const {
@@ -38,6 +49,9 @@ namespace gtsam {
 	}
 
 	/* ************************************************************************* */
+	// measurement functions and derivatives
+	/* ************************************************************************* */
+
 	Point2 project(const CalibratedCamera& camera, const Point3& point) {
 		return camera.project(point);
 	}

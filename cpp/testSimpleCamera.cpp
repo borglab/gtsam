@@ -4,6 +4,7 @@
  * based on testVSLAMFactor.cpp
  */
 
+#include <math.h>
 #include <iostream>
 
 #include <CppUnitLite/TestHarness.h>

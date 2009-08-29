@@ -12,6 +12,11 @@ namespace gtsam {
 
 	/* ************************************************************************* */
 
+	SimpleCamera::SimpleCamera(const Cal3_S2& K,
+			const CalibratedCamera& calibrated) :
+		calibrated_(calibrated), K_(K) {
+	}
+
 	SimpleCamera::SimpleCamera(const Cal3_S2& K, const Pose3& pose) :
 		calibrated_(pose), K_(K) {
 	}
@@ -25,7 +30,14 @@ namespace gtsam {
 		return projection;
 	}
 
+	SimpleCamera::SimpleCamera level(const Cal3_S2& K, const Pose2& pose2, double height) {
+		return SimpleCamera(K, CalibratedCamera::level(pose2, height));
+	}
+
 	/* ************************************************************************* */
+	// measurement functions and derivatives
+	/* ************************************************************************* */
+
 	Point2 project(const SimpleCamera& camera, const Point3& point) {
 		return camera.project(point);
 	}

@@ -34,6 +34,34 @@ TEST( CalibratedCamera, constructor)
 }
 
 /* ************************************************************************* */
+TEST( CalibratedCamera, level1)
+{
+	// Create a level camera, looking in X-direction
+	Pose2 pose2(100,200,0);
+	CalibratedCamera camera = CalibratedCamera::level(pose2, 300);
+
+	// expected
+	Point3 x(0,-1,0),y(0,0,-1),z(1,0,0);
+	Rot3 wRc(x,y,z);
+	Pose3 expected(wRc,Point3(100,200,300));
+  CHECK(assert_equal( camera.pose(), expected));
+}
+
+/* ************************************************************************* */
+TEST( CalibratedCamera, level2)
+{
+	// Create a level camera, looking in Y-direction
+	Pose2 pose2(400,300,M_PI_2);
+	CalibratedCamera camera = CalibratedCamera::level(pose2, 100);
+
+	// expected
+	Point3 x(1,0,0),y(0,0,-1),z(0,1,0);
+	Rot3 wRc(x,y,z);
+	Pose3 expected(wRc,Point3(400,300,100));
+  CHECK(assert_equal( camera.pose(), expected));
+}
+
+/* ************************************************************************* */
 TEST( CalibratedCamera, project)
 {
   CHECK(assert_equal( camera.project(point1), Point2(-.16,  .16) ));
