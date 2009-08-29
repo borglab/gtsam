@@ -50,9 +50,7 @@ namespace gtsam {
     inline Point2 operator - (const Point2& q) const {return Point2(x_-q.x_,y_-q.y_);}
 
     /** print with optional string */
-    void print(const std::string& s = "") const {
-      std::cout << s << "(" << x_ << ", " << y_ << ")" << std::endl;
-    }
+    void print(const std::string& s = "") const;
     
     /** distance between two points */
     double dist(const Point2& p2) const {
