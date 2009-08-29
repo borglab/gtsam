@@ -33,8 +33,8 @@ Matrix Dtransform_from2(const Pose3& pose) {
 
 /* ************************************************************************* */
 Point3 transform_to(const Pose3& pose, const Point3& p) {
-		Point3 sub = p - pose.translation();
-		Point3 r = rotate(pose.rotation().inverse(), sub);
+		Point3 sub = p - pose.t_;
+		Point3 r = unrotate(pose.R_, sub);
 		return r; 
 }
 /* ************************************************************************* */
