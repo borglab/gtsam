@@ -30,7 +30,7 @@ namespace gtsam {
 		return projection;
 	}
 
-	SimpleCamera::SimpleCamera level(const Cal3_S2& K, const Pose2& pose2, double height) {
+	SimpleCamera SimpleCamera::level(const Cal3_S2& K, const Pose2& pose2, double height) {
 		return SimpleCamera(K, CalibratedCamera::level(pose2, height));
 	}
 

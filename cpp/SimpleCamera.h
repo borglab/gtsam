@@ -42,7 +42,7 @@ namespace gtsam {
 		/**
 		 * Create a level camera at the given 2D pose and height
 		 */
-		static CalibratedCamera level(const Cal3_S2& K, const Pose2& pose2, double height);
+		static SimpleCamera level(const Cal3_S2& K, const Pose2& pose2, double height);
 
 		// Friends
 		friend Matrix Dproject_pose(const SimpleCamera& camera,  const Point3& point);
