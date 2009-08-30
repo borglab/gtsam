@@ -5,11 +5,32 @@
 
 #include "Pose3.h"
 
+using namespace std;
+
 namespace gtsam {
 
 /* ************************************************************************* */
 Pose3 Pose3::exmap(const Vector& v) const { 
   return Pose3(R_.exmap(sub(v,0,3)), t_.exmap(sub(v,3,6)));
+}
+
+/* ************************************************************************* */
+Vector Pose3::vector() const {
+	Vector r = R_.vector(), t = t_.vector();
+	return concatVectors(2, &r, &t);
+}
+
+/* ************************************************************************* */
+Matrix Pose3::matrix() const {
+	const double row4[] = { 0, 0, 0, 1 };
+	Matrix A34 = Matrix_(3, 4, vector()), A14 = Matrix_(1, 4, row4);
+	return stack(2, &A34, &A14);
+}
+
+/* ************************************************************************* */
+void Pose3::print(const string& s) const {
+	R_.print(s + ".R");
+	t_.print(s + ".t");
 }
 
 /* ************************************************************************* */

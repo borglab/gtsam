@@ -65,23 +65,13 @@ namespace gtsam {
 		}
 
 		/** return 12D vectorized form (column-wise) */
-		Vector vector() const {
-			Vector r = R_.vector(), t = t_.vector();
-			return concatVectors(2, &r, &t);
-		}
+		Vector vector() const;
 
 		/** convert to 4*4 matrix */
-		Matrix matrix() const {
-			const double row4[] = { 0, 0, 0, 1 };
-			Matrix A34 = Matrix_(3, 4, vector()), A14 = Matrix_(1, 4, row4);
-			return stack(2, &A34, &A14);
-		}
+		Matrix matrix() const;
 
 		/** print with optional string */
-		void print(const std::string& s = "") const {
-			R_.print(s + ".R");
-			t_.print(s + ".t");
-		}
+		void print(const std::string& s = "") const;
 
 		/** transforms */
 		Pose3 transformPose_to(const Pose3& transform) const;
