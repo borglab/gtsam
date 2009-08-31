@@ -32,13 +32,6 @@ namespace gtsam {
 		/** Collection of factors */
 		std::vector<shared_factor> factors_;
 
-		/** Serialization function */
-		friend class boost::serialization::access;
-		template<class Archive>
-		void serialize(Archive & ar, const unsigned int version) {
-			ar & BOOST_SERIALIZATION_NVP(factors_);
-		}
-
 	public:
 
 		/** STL like, return the iterator pointing to the first factor */
@@ -109,6 +102,14 @@ namespace gtsam {
 			fg.print();
 			return false;
 		}
-	};
 
+	private:
+
+		/** Serialization function */
+		friend class boost::serialization::access;
+		template<class Archive>
+		void serialize(Archive & ar, const unsigned int version) {
+			ar & BOOST_SERIALIZATION_NVP(factors_);
+		}
+	}; // FactorGraph
 } // namespace gtsam

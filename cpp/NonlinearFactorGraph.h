@@ -19,18 +19,11 @@
 
 namespace gtsam {
 
+typedef FactorGraph<NonlinearFactor> BaseFactorGraph;
+
 /** Factor Graph Constsiting of non-linear factors */
-class NonlinearFactorGraph : public FactorGraph<NonlinearFactor>
+class NonlinearFactorGraph : public BaseFactorGraph
 {
-private:
-
-	/** Serialization function */
-	friend class boost::serialization::access;
-	template<class Archive>
-	void serialize(Archive & ar, const unsigned int version) {
-		ar & boost::serialization::base_object< FactorGraph<NonlinearFactor> >(*this);
-	}
-
 public: // internal, exposed for testing only, doc in .cpp file
 
 	FGConfig iterate(const FGConfig& config, const Ordering& ordering) const;
@@ -116,6 +109,17 @@ public: // these you will probably want to use
 			int verbosity,
 			double lambda0,
 			double lambdaFactor) const ;
+
+private:
+
+	/** Serialization function */
+	friend class boost::serialization::access;
+	template<class Archive>
+	void serialize(Archive & ar, const unsigned int version) {
+		// do not use BOOST_SERIALIZATION_NVP for this name-value-pair ! It will crash.
+		ar & boost::serialization::make_nvp("BaseFactorGraph",
+				boost::serialization::base_object<BaseFactorGraph>(*this));
+	}
 
 };
 }

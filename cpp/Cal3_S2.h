@@ -89,7 +89,7 @@ namespace gtsam {
 		/**
 		 * Check if equal up to specified tolerance
 		 */
-		bool equals(const Cal3_S2& K, double tol) const;
+		bool equals(const Cal3_S2& K, double tol = 10e-9) const;
 
 		/** friends */
 		friend Matrix Duncalibrate2(const Cal3_S2& K, const Point2& p);

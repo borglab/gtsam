@@ -33,23 +33,11 @@ namespace gtsam {
 	//typedef boost::shared_ptr<LinearFactor> shared_ptr;
 
   /**
-   * Nonlinear factor which assume Gaussian noise on a measurement
-   * predicted by a non-linear function h
+   * Nonlinear factor which assumes Gaussian noise on a measurement
+   * predicted by a non-linear function h.
    */
   class NonlinearFactor : public Factor
   {
-  private:
-
-  	/** Serialization function */
-  	friend class boost::serialization::access;
-  	template<class Archive>
-  	void serialize(Archive & ar, const unsigned int version) {
-//  		ar & boost::serialization::base_object<Factor>(*this); // TODO: needed ?
-  		ar & BOOST_SERIALIZATION_NVP(z_);
-  		ar & BOOST_SERIALIZATION_NVP(sigma_);
-  		ar & BOOST_SERIALIZATION_NVP(keys_);
-  	}
-
   protected:
 
     Vector z_;     // measurement
@@ -93,13 +81,27 @@ namespace gtsam {
 
     /** dump the information of the factor into a string **/
     std::string dump() const{return "";}
-  };
+
+  private:
+
+		/** Serialization function */
+		friend class boost::serialization::access;
+		template<class Archive>
+		void serialize(Archive & ar, const unsigned int version) {
+			//  		ar & boost::serialization::base_object<Factor>(*this); // TODO: needed ?
+			ar & BOOST_SERIALIZATION_NVP(z_);
+			ar & BOOST_SERIALIZATION_NVP(sigma_);
+			ar & BOOST_SERIALIZATION_NVP(keys_);
+		}
+
+  }; // NonlinearFactor
 
 
-  /* ************************************************************************* */
-  /* a Gaussian nonlinear factor that takes 1 parameter                        */
-  /* ************************************************************************* */
-
+  /**
+   * a Gaussian nonlinear factor that takes 1 parameter
+   * Note: cannot be serialized as contains function pointers
+   * Specialized derived classes could do this
+  */
   class NonlinearFactor1 : public NonlinearFactor {
   public:
 
@@ -130,10 +132,11 @@ namespace gtsam {
     std::string dump() const {return "";}
   };
 
-  /* ************************************************************************* */
-  /* A Gaussian nonlinear factor that takes 2 parameters                       */
-  /* ************************************************************************* */
-
+	/**
+	 * a Gaussian nonlinear factor that takes 2 parameters
+	 * Note: cannot be serialized as contains function pointers
+	 * Specialized derived classes could do this
+	*/
   class NonlinearFactor2 : public NonlinearFactor {
   public:
 
