@@ -27,7 +27,7 @@ LinearFactorGraph NonlinearFactorGraph::linearize(const FGConfig& config) const
 	LinearFactorGraph linearFG;
 
 	// linearize all factors
-	for(const_iterator factor=factors.begin(); factor<factors.end(); factor++){
+	for(const_iterator factor=factors_.begin(); factor<factors_.end(); factor++){
 		LinearFactor::shared_ptr lf = (*factor)->linearize(config);
 		linearFG.push_back(lf);
 	}
@@ -70,7 +70,7 @@ bool check_convergence (double relativeErrorTreshold,
 FGConfig NonlinearFactorGraph::iterate
 (const FGConfig& config, const Ordering& ordering) const
 {
-	LinearFactorGraph linear = linearize(config);   // linearize all factors
+	LinearFactorGraph linear = linearize(config);   // linearize all factors_
 	return linear.optimize(ordering);
 }
 

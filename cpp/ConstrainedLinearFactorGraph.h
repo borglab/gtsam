@@ -56,15 +56,14 @@ public:
       return eq_factors.end();
     }
 
-    /** clear the factor graph - reimplemented to include equality factors */
+    /** clear the factor graph - re-implemented to include equality factors */
     void clear(){
-      factors.clear();
-      node_to_factors_.clear();
+      factors_.clear();
       eq_factors.clear();
     }
 
-    /** size - reimplemented to include the equality factors */
-    inline size_t size() const { return factors.size() + eq_factors.size(); }
+    /** size - reimplemented to include the equality factors_ */
+    inline size_t size() const { return factors_.size() + eq_factors.size(); }
 
     /** Check equality - checks equality constraints as well*/
     bool equals(const LinearFactorGraph& fg, double tol=1e-9) const;

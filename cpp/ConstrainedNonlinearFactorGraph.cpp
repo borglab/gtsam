@@ -28,7 +28,7 @@ ConstrainedLinearFactorGraph ConstrainedNonlinearFactorGraph::linearize(const FG
 	ConstrainedLinearFactorGraph ret;
 
 	// linearize all nonlinear factors
-	for(const_iterator factor=factors.begin(); factor<factors.end(); factor++){
+	for(const_iterator factor=factors_.begin(); factor<factors_.end(); factor++){
 		LinearFactor::shared_ptr lf = (*factor)->linearize(config);
 		ret.push_back(lf);
 	}
@@ -45,10 +45,9 @@ ConstrainedLinearFactorGraph ConstrainedNonlinearFactorGraph::linearize(const FG
 NonlinearFactorGraph ConstrainedNonlinearFactorGraph::convert() const
 {
 	NonlinearFactorGraph ret;
-	BOOST_FOREACH(boost::shared_ptr<NonlinearFactor> f, factors)
-	{
+	BOOST_FOREACH(boost::shared_ptr<NonlinearFactor> f, factors_)
 		ret.push_back(f);
-	}
+
 	return ret;
 }
 

@@ -10,17 +10,27 @@
 
 #pragma once
 
-#include "LinearFactorGraph.h"
+#include <boost/serialization/base_object.hpp>
+#include <colamd/colamd.h>
 #include "FactorGraph.h"
 #include "NonlinearFactor.h"
+#include "LinearFactorGraph.h"
 #include "ChordalBayesNet.h"
-#include <colamd/colamd.h>
 
 namespace gtsam {
 
 /** Factor Graph Constsiting of non-linear factors */
 class NonlinearFactorGraph : public FactorGraph<NonlinearFactor>
 {
+private:
+
+	/** Serialization function */
+	friend class boost::serialization::access;
+	template<class Archive>
+	void serialize(Archive & ar, const unsigned int version) {
+		ar & boost::serialization::base_object< FactorGraph<NonlinearFactor> >(*this);
+	}
+
 public: // internal, exposed for testing only, doc in .cpp file
 
 	FGConfig iterate(const FGConfig& config, const Ordering& ordering) const;

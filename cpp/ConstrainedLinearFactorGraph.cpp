@@ -91,14 +91,14 @@ DeltaFunction::shared_ptr ConstrainedLinearFactorGraph::eliminate_one_eq(const s
 
 	// remove all unary linear factors on this node
 	vector<LinearFactor::shared_ptr> newfactors;
-	BOOST_FOREACH(LinearFactor::shared_ptr f, factors)
+	BOOST_FOREACH(LinearFactor::shared_ptr f, factors_)
 	{
 		if (f->size() != 1 || !f->involves(key))
 		{
 			newfactors.push_back(f);
 		}
 	}
-	factors = newfactors;
+	factors_ = newfactors;
 
 	// combine the linear factors connected to equality node
 	boost::shared_ptr<MutableLinearFactor> joint_factor = combine_factors(key);
@@ -146,7 +146,7 @@ FGConfig ConstrainedLinearFactorGraph::optimize(const Ordering& ordering){
 void ConstrainedLinearFactorGraph::print(const std::string& s) const
 {
 	cout << "ConstrainedFactorGraph: " << s << endl;
-	BOOST_FOREACH(LinearFactor::shared_ptr f, factors)
+	BOOST_FOREACH(LinearFactor::shared_ptr f, factors_)
 	{
 		f->print();
 	}
@@ -208,7 +208,7 @@ Ordering ConstrainedLinearFactorGraph::getOrdering() const
 LinearFactorGraph ConstrainedLinearFactorGraph::convert() const
 {
 	LinearFactorGraph ret;
-	BOOST_FOREACH(LinearFactor::shared_ptr f, factors)
+	BOOST_FOREACH(LinearFactor::shared_ptr f, factors_)
 	{
 		ret.push_back(f);
 	}

@@ -15,6 +15,7 @@
 #include <list>
 
 #include <boost/shared_ptr.hpp>
+#include <boost/serialization/list.hpp>
 
 #include "Factor.h"
 #include "Matrix.h"
@@ -37,6 +38,18 @@ namespace gtsam {
    */
   class NonlinearFactor : public Factor
   {
+  private:
+
+  	/** Serialization function */
+  	friend class boost::serialization::access;
+  	template<class Archive>
+  	void serialize(Archive & ar, const unsigned int version) {
+//  		ar & boost::serialization::base_object<Factor>(*this); // TODO: needed ?
+  		ar & BOOST_SERIALIZATION_NVP(z_);
+  		ar & BOOST_SERIALIZATION_NVP(sigma_);
+  		ar & BOOST_SERIALIZATION_NVP(keys_);
+  	}
+
   protected:
 
     Vector z_;     // measurement
@@ -45,9 +58,12 @@ namespace gtsam {
 		
   public:
 
+    /** Default constructor, with easily identifiable bogus values */
+    NonlinearFactor():z_(Vector_(2,888.0,999.0)),sigma_(0.1234567) {}
+
     /** Constructor */
-    NonlinearFactor(const Vector& z,	     // the measurement
-		    const double sigma);     // the variance
+    NonlinearFactor(const Vector& z, // the measurement
+		    const double sigma);         // the variance
 
     /** Vector of errors */
     virtual Vector error_vector(const FGConfig& c) const = 0;

@@ -40,8 +40,8 @@ void LinearFactorGraph::setCBN(const ChordalBayesNet& CBN)
 set<string> LinearFactorGraph::find_separator(const string& key) const
 {
 	set<string> separator;
-	BOOST_FOREACH(shared_factor factor,factors)
-	factor->tally_separator(key,separator);
+	BOOST_FOREACH(shared_factor factor,factors_)
+		factor->tally_separator(key,separator);
 
 	return separator;
 }
@@ -54,10 +54,10 @@ LinearFactorGraph::find_factors_and_remove(const string& key)
 {
 	LinearFactorSet found;
 
-	for(iterator factor=factors.begin(); factor!=factors.end(); )
+	for(iterator factor=factors_.begin(); factor!=factors_.end(); )
 		if ((*factor)->involves(key)) {
 			found.insert(*factor);
-			factor = factors.erase(factor);
+			factor = factors_.erase(factor);
 		} else {
 			factor++; // important, erase will have effect of ++
 		}
@@ -130,7 +130,7 @@ LinearFactorGraph::eliminate(const Ordering& ordering)
 	// after eliminate, only one zero indegree factor should remain
 	// TODO: this check needs to exist - verify that unit tests work when this check is in place
 	/*
-  if (factors.size() != 1) {
+  if (factors_.size() != 1) {
     print();
     throw(invalid_argument("LinearFactorGraph::eliminate: graph not empty after eliminate, ordering incomplete?"));
   }
@@ -156,7 +156,7 @@ FGConfig LinearFactorGraph::optimize(const Ordering& ordering)
 /** combine two factor graphs                                                 */ 
 /* ************************************************************************* */
 void LinearFactorGraph::combine(const LinearFactorGraph &lfg){
-	for(const_iterator factor=lfg.factors.begin(); factor!=lfg.factors.end(); factor++){
+	for(const_iterator factor=lfg.factors_.begin(); factor!=lfg.factors_.end(); factor++){
 		push_back(*factor);
 	}
 }
@@ -170,9 +170,9 @@ LinearFactorGraph LinearFactorGraph::combine2(const LinearFactorGraph& lfg1,
 	// create new linear factor graph equal to the first one
 	LinearFactorGraph fg = lfg1;
 
-	// add the second factors in the graph
-	for (const_iterator factor = lfg2.factors.begin(); factor
-			!= lfg2.factors.end(); factor++) {
+	// add the second factors_ in the graph
+	for (const_iterator factor = lfg2.factors_.begin(); factor
+			!= lfg2.factors_.end(); factor++) {
 		fg.push_back(*factor);
 	}
 
@@ -184,7 +184,7 @@ LinearFactorGraph LinearFactorGraph::combine2(const LinearFactorGraph& lfg1,
 // find all variables and their dimensions
 VariableSet LinearFactorGraph::variables() const {
 	VariableSet result;
-	BOOST_FOREACH(shared_factor factor,factors) {
+	BOOST_FOREACH(shared_factor factor,factors_) {
 		VariableSet vs = factor->variables();
 		BOOST_FOREACH(Variable v,vs) result.insert(v);
 	}
@@ -217,7 +217,7 @@ pair<Matrix,Vector> LinearFactorGraph::matrix(const Ordering& ordering) const {
 
 	// get all factors
 	LinearFactorSet found;
-	BOOST_FOREACH(shared_factor factor,factors)
+	BOOST_FOREACH(shared_factor factor,factors_)
 	found.insert(factor);
 
 	// combine them
