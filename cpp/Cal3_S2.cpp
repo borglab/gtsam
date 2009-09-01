@@ -13,7 +13,7 @@ namespace gtsam {
 using namespace std;
 
 /* ************************************************************************* */
-void Cal3_S2::load(const std::string &path) {
+Cal3_S2::Cal3_S2(const std::string &path) {
 	char buffer[200];
 	buffer[0] = 0;
 	sprintf(buffer, "%s/calibration_info.txt", path.c_str());

@@ -41,7 +41,7 @@ namespace gtsam {
 		/**
 		 * load calibration from location (default name is calibration_info.txt)
 		 */
-		void load(const std::string &path);
+		Cal3_S2(const std::string &path);
 
 		/**
 		 * Given 5-dim tangent vector, create new calibration
