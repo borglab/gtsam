@@ -159,7 +159,7 @@ AM_LDFLAGS = -L../CppUnitLite -lCppUnitLite $(BOOST_LDFLAGS) $(boost_serializati
 TESTS = $(check_PROGRAMS)
 CXXLINK = $(LIBTOOL) $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=link \
 	$(CXXLD) -g $(AM_CXXFLAGS) $(CXXFLAGS) $(AM_LDFLAGS) $(LDFLAGS) \
-	-o $@
+	-o $@ # CXXLINK is only used for unit tests
 
 # rule to run an executable
 %.run: % libgtsam.la
