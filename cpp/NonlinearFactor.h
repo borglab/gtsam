@@ -59,6 +59,9 @@ namespace gtsam {
     /** linearize to a LinearFactor */
     virtual boost::shared_ptr<LinearFactor> linearize(const FGConfig& c) const = 0;
 
+    /** print to cout */
+    virtual void print(const std::string& s = "") const = 0;
+
     /** get functions */
     double get_sigma() const {return sigma_;}
     Vector get_measurement() const {return z_;}
