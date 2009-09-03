@@ -142,13 +142,17 @@ testVSLAMFactor_LDADD = libgtsam.la
 # The header files will be installed in ~/include/gtsam
 headers = gtsam.h Value.h Factor.h LinearFactorSet.h Point2Prior.h Simulated2DOdometry.h Simulated2DMeasurement.h smallExample.h $(sources:.cpp=.h)
 
-
 # create both dynamic and static libraries
 AM_CXXFLAGS = -I$(boost) -fPIC
 lib_LTLIBRARIES = libgtsam.la
 libgtsam_la_SOURCES = $(sources)
 libgtsam_la_CPPFLAGS = $(AM_CXXFLAGS)
 libgtsam_la_LDFLAGS = -version-info $(version) -L../colamd -lcolamd #-lboost_serialization-mt
+
+# enable debug if --enable-debug is set in configure
+if DEBUG
+     AM_CXXFLAGS += -g
+endif
 
 # install the header files
 include_HEADERS = $(headers)

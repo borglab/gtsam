@@ -13,6 +13,16 @@ AC_CONFIG_SRCDIR([wrap/wrap.cpp])
 AC_CANONICAL_HOST    # needs to be called at some point earlier
 AM_CONDITIONAL([DARWIN], [case $host_os in darwin*) true;; *) false;; esac]) 
 
+# enable debug variable
+AC_ARG_ENABLE([debug],
+     [  --enable-debug    Turn on debugging],
+     [case "${enableval}" in
+       yes) debug=true ;;
+       no)  debug=false ;;
+       *) AC_MSG_ERROR([bad value ${enableval} for --enable-debug]) ;;
+     esac],[debug=false])
+     AM_CONDITIONAL([DEBUG], [test x$debug = xtrue])
+
 # Checks for programs.
 AC_PROG_CXX
 AC_PROG_CC
