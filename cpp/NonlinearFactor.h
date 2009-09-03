@@ -65,7 +65,7 @@ namespace gtsam {
     /** get functions */
     double get_sigma() const {return sigma_;}
     Vector get_measurement() const {return z_;}
-    std::list<std::string> get_keys() const {return keys_;}
+    const std::list<std::string>& get_keys() const {return keys_;}
     void set_keys(std::list<std::string> keys) {keys_ = keys;}
 
     /** calculate the error of the factor */
