@@ -23,12 +23,9 @@ namespace gtsam {
 
 		double ct = cos(t), st = sin(t);
 
-		Point3 r1 = Point3(ct + w(0) * w(0) * (1 - ct), w(1) * w(0) * (1 - ct) - w(
-				2) * st, w(1) * st + w(2) * w(0) * (1 - ct));
-		Point3 r2 = Point3(w(2) * st + w(0) * w(1) * (1 - ct), w(1) * w(1) * (1
-				- ct) + ct, -w(0) * st + w(2) * w(1) * (1 - ct));
-		Point3 r3 = Point3(-w(1) * st + w(0) * w(2) * (1 - ct), w(1) * w(2) * (1
-				- ct) + w(0) * st, ct + w(2) * w(2) * (1 - ct));
+		Point3 r1 = Point3(ct + w(0) * w(0) * (1 - ct), w(2) * st + w(0) * w(1) * (1 - ct), -w(1) * st + w(0) * w(2) * (1 - ct));
+		Point3 r2 = Point3(w(1) * w(0) * (1 - ct) - w(2) * st, w(1) * w(1) * (1 - ct) + ct, w(1) * w(2) * (1 - ct) + w(0) * st);
+		Point3 r3 = Point3(w(1) * st + w(2) * w(0) * (1 - ct), -w(0) * st + w(2) * w(1) * (1 - ct), ct + w(2) * w(2) * (1 - ct));
 
 		return Rot3(r1, r2, r2);
 	}
