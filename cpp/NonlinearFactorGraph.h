@@ -122,4 +122,17 @@ private:
 	}
 
 };
+
+/**
+ * Check convergence
+ */
+bool check_convergence (double relativeErrorTreshold,
+		double absoluteErrorTreshold,
+		double currentError, double newError,
+		int verbosity);
+
+/**
+ * calculate error for current configuration
+ */
+double calculate_error (const NonlinearFactorGraph& fg, const FGConfig& config, int verbosity);
 }
