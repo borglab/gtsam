@@ -21,14 +21,14 @@ const Pose3 pose1(Matrix_(3,3,
 				      0.,-1., 0.,
 				      0., 0.,-1.
 				      ),
-			      Point3(0,0,500));
+			      Point3(0,0,0.5));
  
 const SimpleCamera camera(K, pose1);
 
-const Point3 point1(-80.0,-80.0, 0.0);
-const Point3 point2(-80.0, 80.0, 0.0);
-const Point3 point3( 80.0, 80.0, 0.0);
-const Point3 point4( 80.0,-80.0, 0.0);
+const Point3 point1(-0.08,-0.08, 0.0);
+const Point3 point2(-0.08, 0.08, 0.0);
+const Point3 point3( 0.08, 0.08, 0.0);
+const Point3 point4( 0.08,-0.08, 0.0);
 
 /* ************************************************************************* */
 TEST( SimpleCamera, constructor)
@@ -41,13 +41,13 @@ TEST( SimpleCamera, constructor)
 TEST( SimpleCamera, level2)
 {
 	// Create a level camera, looking in Y-direction
-	Pose2 pose2(400,300,M_PI_2);
-	SimpleCamera camera = SimpleCamera::level(K, pose2, 100);
+	Pose2 pose2(0.4,0.3,M_PI_2);
+	SimpleCamera camera = SimpleCamera::level(K, pose2, 0.1);
 
 	// expected
 	Point3 x(1,0,0),y(0,0,-1),z(0,1,0);
 	Rot3 wRc(x,y,z);
-	Pose3 expected(wRc,Point3(400,300,100));
+	Pose3 expected(wRc,Point3(0.4,0.3,0.1));
   CHECK(assert_equal( camera.pose(), expected));
 }
 
