@@ -6,6 +6,7 @@
 
 #pragma once
 
+#include <boost/serialization/nvp.hpp>
 #include "Vector.h"
 
 namespace gtsam {
@@ -57,6 +58,16 @@ namespace gtsam {
 
 		/** equals with an tolerance, prints out message if unequal*/
 		bool equals(const Point2& q, double tol = 1e-9) const;
+
+  private:
+    /** Serialization function */
+    friend class boost::serialization::access;
+    template<class Archive>
+      void serialize(Archive & ar, const unsigned int version)
+    {
+      ar & BOOST_SERIALIZATION_NVP(x_);
+      ar & BOOST_SERIALIZATION_NVP(y_);
+    }
   };
 
   /** equals with an tolerance, prints out message if unequal*/
