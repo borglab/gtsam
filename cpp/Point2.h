@@ -6,7 +6,7 @@
 
 #pragma once
 
-#include "Matrix.h"
+#include "Vector.h"
 
 namespace gtsam {
 
@@ -53,9 +53,10 @@ namespace gtsam {
     void print(const std::string& s = "") const;
     
     /** distance between two points */
-    double dist(const Point2& p2) const {
-      return sqrt(pow(x()-p2.x(),2.0) + pow(y()-p2.y(),2.0));
-    }
+    double dist(const Point2& p2) const;
+
+		/** equals with an tolerance, prints out message if unequal*/
+		bool equals(const Point2& q, double tol = 1e-9) const;
   };
 
   /** equals with an tolerance, prints out message if unequal*/

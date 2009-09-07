@@ -16,8 +16,19 @@ namespace gtsam {
 	}
 
 	/* ************************************************************************* */
+	double Point2::dist(const Point2& p2) const {
+		return sqrt(pow(x() - p2.x(), 2.0) + pow(y() - p2.y(), 2.0));
+	}
+
+	/* ************************************************************************* */
+	bool Point2::equals(const Point2& q, double tol) const {
+		return (fabs(x_ - q.x()) < tol && fabs(y_ - q.y()) < tol);
+	}
+
+	/* ************************************************************************* */
 	bool assert_equal(const Point2& p, const Point2& q, double tol) {
-		if (fabs(p.x() - q.x()) < tol && fabs(p.y() - q.y()) < tol) return true;
+		if (p.equals(q, tol))
+			return true;
 		printf("not equal:\n");
 		p.print("p = ");
 		q.print("q = ");
