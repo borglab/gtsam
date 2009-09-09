@@ -9,13 +9,11 @@
 #include <boost/foreach.hpp>
 #include <boost/tuple/tuple.hpp>
 #include "FGConfig.h"
-#include "Value.h"
-
-using namespace std;
 
 // trick from some reading group
 #define FOREACH_PAIR( KEY, VAL, COL) BOOST_FOREACH (boost::tie(KEY,VAL),COL) 
 
+using namespace std;
 using namespace gtsam;
 
 /* ************************************************************************* */
@@ -29,23 +27,17 @@ void check_size(const string& key, const Vector & vj, const Vector & dj) {
 }
 
 /* ************************************************************************* */
-void FGConfig::operator+=(const FGConfig & delta)
+FGConfig FGConfig::exmap(const FGConfig & delta) const
 {
-  for (iterator it = values.begin(); it!=values.end(); it++) {
+	FGConfig newConfig;
+  for (const_iterator it = values.begin(); it!=values.end(); it++) {
     string j = it->first;
-    Vector &vj = it->second;
+    const Vector &vj = it->second;
     const Vector& dj = delta[j];
     check_size(j,vj,dj);
-    vj += dj;
+    newConfig.insert(j, vj + dj);
   }
-}
-
-/* ************************************************************************* */
-FGConfig FGConfig::operator+(const FGConfig & delta) const
-{
-  FGConfig result = *this;
-  result += delta;
-  return result;
+  return newConfig;
 }
 
 /* ************************************************************************* */

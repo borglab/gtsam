@@ -9,15 +9,16 @@
 #pragma once
 
 #include "Vector.h"
+#include "Testable.h"
 
 namespace gtsam {
 
   /**
    * The value class should be templated with the derived class, e.g.
-   * class Rot3 : public Value<rot3>. This allows us to define the
+   * class Rot3 : public Value<Rot3>. This allows us to define the
    * return type of exmap as a Rot3 as well.
    */
-  template <class Derived> class Value {
+  template <class Derived> class Value : public Testable<Derived> {
 
   private:
 
@@ -31,12 +32,6 @@ namespace gtsam {
      * dimensionality of tangent space, e.g. 3 for Rot3
      */
     size_t dim() { return dim_;} 
-
-    /**
-     * print
-     * @param s optional string naming the factor
-     */
-    virtual void print(const std::string& s="") const = 0;
 
     /**
      * Exponential map: add a delta vector, addition for most simple

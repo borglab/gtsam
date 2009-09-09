@@ -12,12 +12,13 @@
 #include <map>
 #include <boost/serialization/map.hpp>
 
-#include "Value.h"
+#include "Testable.h"
+#include "Vector.h"
 
 namespace gtsam {
 	
   /** Factor Graph Configuration */
-  class FGConfig {
+  class FGConfig : public Testable<FGConfig> {
 
   protected:
     /** Map from string indices to values */
@@ -27,10 +28,10 @@ namespace gtsam {
     typedef std::map<std::string, Vector>::iterator iterator;
     typedef std::map<std::string, Vector>::const_iterator const_iterator;
 
-    FGConfig() {};
-    FGConfig(const FGConfig& cfg_in) : values(cfg_in.values){};
+    FGConfig():Testable<FGConfig>() {}
+    FGConfig(const FGConfig& cfg_in) : Testable<FGConfig>(), values(cfg_in.values) {}
     
-    virtual ~FGConfig() {};
+    virtual ~FGConfig() {}
 
     /** return all the nodes in the graph **/
     std::vector<std::string> get_names() const {
@@ -47,10 +48,10 @@ namespace gtsam {
     }
 
     /**
-     * add a delta config, should apply exponential map more generally
+     * Add a delta config, needed for use in NonlinearOptimizer
+     * For FGConfig, this is just addition.
      */
-    virtual void operator+=(const FGConfig & delta);
-    virtual FGConfig operator+(const FGConfig & delta) const;
+    FGConfig exmap(const FGConfig & delta) const;
  
     const_iterator begin() const {return values.begin();}
     const_iterator end()   const {return values.end();}
@@ -77,7 +78,7 @@ namespace gtsam {
     void print(const std::string& name = "") const;
 
     /** equals, for unit testing */
-    bool equals(const FGConfig& expected, double tol=1e-6) const;
+    bool equals(const FGConfig& expected, double tol=1e-9) const;
 
     void clear() {values.clear();}
     

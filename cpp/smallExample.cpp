@@ -26,39 +26,42 @@ using namespace std;
 
 namespace gtsam {
 
-  typedef boost::shared_ptr<NonlinearFactor> shared;
+typedef boost::shared_ptr<NonlinearFactor> shared;
 
 /* ************************************************************************* */
-NonlinearFactorGraph createNonlinearFactorGraph()
-{
-    // Create
-    NonlinearFactorGraph nlfg;
+boost::shared_ptr<const NonlinearFactorGraph> sharedNonlinearFactorGraph() {
+	// Create
+	boost::shared_ptr<NonlinearFactorGraph> nlfg(new NonlinearFactorGraph);
 
-    // prior on x1
-    double sigma1=0.1;
-    Vector mu(2); mu(0) = 0 ; mu(1) = 0;
-    shared f1(new Point2Prior(mu, sigma1, "x1"));
-    nlfg.push_back(f1);
+	// prior on x1
+	double sigma1=0.1;
+	Vector mu(2); mu(0) = 0 ; mu(1) = 0;
+	shared f1(new Point2Prior(mu, sigma1, "x1"));
+	nlfg->push_back(f1);
 
-    // odometry between x1 and x2
-    double sigma2=0.1;
-    Vector z2(2); z2(0) = 1.5 ; z2(1) = 0;
-    shared f2(new Simulated2DOdometry(z2, sigma2, "x1", "x2"));
-    nlfg.push_back(f2);
+	// odometry between x1 and x2
+	double sigma2=0.1;
+	Vector z2(2); z2(0) = 1.5 ; z2(1) = 0;
+	shared f2(new Simulated2DOdometry(z2, sigma2, "x1", "x2"));
+	nlfg->push_back(f2);
 
-    // measurement between x1 and l1
-    double sigma3=0.2;
-    Vector z3(2); z3(0) = 0. ; z3(1) = -1.;
-    shared f3(new Simulated2DMeasurement(z3, sigma3, "x1", "l1"));
-    nlfg.push_back(f3);
+	// measurement between x1 and l1
+	double sigma3=0.2;
+	Vector z3(2); z3(0) = 0. ; z3(1) = -1.;
+	shared f3(new Simulated2DMeasurement(z3, sigma3, "x1", "l1"));
+	nlfg->push_back(f3);
 
-    // measurement between x2 and l1
-    double sigma4=0.2;
-    Vector z4(2); z4(0)= -1.5 ; z4(1) = -1.;
-    shared f4(new Simulated2DMeasurement(z4, sigma4, "x2", "l1"));
-    nlfg.push_back(f4);
+	// measurement between x2 and l1
+	double sigma4=0.2;
+	Vector z4(2); z4(0)= -1.5 ; z4(1) = -1.;
+	shared f4(new Simulated2DMeasurement(z4, sigma4, "x2", "l1"));
+	nlfg->push_back(f4);
 
-    return nlfg;
+	return nlfg;
+}
+
+NonlinearFactorGraph createNonlinearFactorGraph() {
+	return *sharedNonlinearFactorGraph();
 }
 
 /* ************************************************************************* */
@@ -119,16 +122,20 @@ FGConfig createConfig()
 }
 
 /* ************************************************************************* */
-FGConfig createNoisyConfig()
+boost::shared_ptr<const FGConfig> sharedNoisyConfig()
 {
     Vector v_x1(2); v_x1(0) = 0.1;  v_x1(1) = 0.1;
     Vector v_x2(2); v_x2(0) = 1.4;  v_x2(1) = 0.2;
     Vector v_l1(2); v_l1(0) = 0.1;  v_l1(1) = -1.1;
-    FGConfig c;
-    c.insert("x1", v_x1);
-    c.insert("x2", v_x2);
-    c.insert("l1", v_l1);
+    boost::shared_ptr<FGConfig> c(new FGConfig);
+    c->insert("x1", v_x1);
+    c->insert("x2", v_x2);
+    c->insert("l1", v_l1);
     return c;
+}
+
+FGConfig createNoisyConfig() {
+	return *sharedNoisyConfig();
 }
 
 /* ************************************************************************* */
@@ -320,15 +327,19 @@ namespace optimize {
 }
 
 /* ************************************************************************* */
-NonlinearFactorGraph createReallyNonlinearFactorGraph()
+boost::shared_ptr<const NonlinearFactorGraph> sharedReallyNonlinearFactorGraph()
 {
-  NonlinearFactorGraph fg;
+	boost::shared_ptr<NonlinearFactorGraph> fg(new NonlinearFactorGraph);
   Vector z = Vector_(2,1.0,0.0);
   double sigma = 0.1;
   boost::shared_ptr<NonlinearFactor1> 
     factor(new NonlinearFactor1(z,sigma,&optimize::h,"x",&optimize::H));
-  fg.push_back(factor);
+  fg->push_back(factor);
   return fg;
+}
+
+NonlinearFactorGraph createReallyNonlinearFactorGraph() {
+	return *sharedReallyNonlinearFactorGraph();
 }
 
 /* ************************************************************************* */

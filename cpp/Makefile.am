@@ -80,14 +80,18 @@ timeLinearFactor: CXXFLAGS += -I /opt/local/include
 timeLinearFactor: LDFLAGS += -L.libs -lgtsam
 
 # graphs 
-sources += ConstrainedChordalBayesNet.cpp ChordalBayesNet.cpp FactorGraph.cpp LinearFactorGraph.cpp NonlinearFactorGraph.cpp 
+sources += ConstrainedChordalBayesNet.cpp ChordalBayesNet.cpp FactorGraph.cpp 
+sources += LinearFactorGraph.cpp NonlinearFactorGraph.cpp
 sources += ConstrainedNonlinearFactorGraph.cpp ConstrainedLinearFactorGraph.cpp 
-check_PROGRAMS += testChordalBayesNet testConstrainedChordalBayesNet testFactorgraph testLinearFactorGraph testNonlinearFactorGraph testConstrainedNonlinearFactorGraph testConstrainedLinearFactorGraph
+check_PROGRAMS += testChordalBayesNet testConstrainedChordalBayesNet testFactorgraph 
+check_PROGRAMS += testLinearFactorGraph testNonlinearFactorGraph testNonlinearOptimizer
+check_PROGRAMS += testConstrainedNonlinearFactorGraph testConstrainedLinearFactorGraph
 testChordalBayesNet_SOURCES      = $(example) testChordalBayesNet.cpp
 testConstrainedChordalBayesNet_SOURCES      = $(example) testConstrainedChordalBayesNet.cpp
 testFactorgraph_SOURCES          = testFactorgraph.cpp
 testLinearFactorGraph_SOURCES    = $(example) testLinearFactorGraph.cpp
 testNonlinearFactorGraph_SOURCES = $(example) testNonlinearFactorGraph.cpp
+testNonlinearOptimizer_SOURCES = $(example) testNonlinearOptimizer.cpp
 testConstrainedNonlinearFactorGraph_SOURCES = $(example) testConstrainedNonlinearFactorGraph.cpp 
 testConstrainedLinearFactorGraph_SOURCES    = $(example) testConstrainedLinearFactorGraph.cpp
 
@@ -95,6 +99,7 @@ testChordalBayesNet_LDADD      = libgtsam.la
 testFactorgraph_LDADD          = libgtsam.la
 testLinearFactorGraph_LDADD    = libgtsam.la
 testNonlinearFactorGraph_LDADD = libgtsam.la
+testNonlinearOptimizer_LDADD   = libgtsam.la
 testConstrainedNonlinearFactorGraph_LDADD = libgtsam.la 
 testConstrainedLinearFactorGraph_LDADD    = libgtsam.la
 testConstrainedChordalBayesNet_LDADD      = libgtsam.la
@@ -140,7 +145,10 @@ testVSLAMFactor_LDADD = libgtsam.la
 
 
 # The header files will be installed in ~/include/gtsam
-headers = gtsam.h Value.h Factor.h LinearFactorSet.h Point2Prior.h Simulated2DOdometry.h Simulated2DMeasurement.h smallExample.h $(sources:.cpp=.h)
+headers = gtsam.h Value.h Testable.h Factor.h LinearFactorSet.h Point2Prior.h 
+headers += Simulated2DOdometry.h Simulated2DMeasurement.h smallExample.h 
+headers += NonlinearOptimizer.h NonlinearOptimizer.cpp # template ! 
+headers += $(sources:.cpp=.h)
 
 # create both dynamic and static libraries
 AM_CXXFLAGS = -I$(boost) -fPIC

@@ -60,12 +60,8 @@ TEST( FGConfig, plus)
   expected.insert("x", wx).insert("y",wy);
 
   // functional
-  FGConfig actual = fg + delta;
+  FGConfig actual = fg.exmap(delta);
   CHECK(actual.equals(expected));
-
-  // inplace
-  fg += delta;
-  CHECK(fg.equals(expected));
 }
 
 /* ************************************************************************* */
