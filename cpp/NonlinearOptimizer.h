@@ -74,13 +74,6 @@ namespace gtsam {
 				shared_config config, double lambda = 1e-5);
 
 		/**
-		 * Return current config
-		 */
-		const Config& config() const {
-			return *config_;
-		}
-
-		/**
 		 * Return current error
 		 */
 		double error() const {
