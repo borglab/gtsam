@@ -91,7 +91,7 @@ TEST( NonlinearFactorGraph, iterateLM )
 	// LM iterate with lambda 0 should be the same
 	Optimizer iterated2 = optimizer.iterateLM();
 
-	CHECK(assert_equal(iterated1.config(), iterated2.config(), 1e-9));
+	CHECK(assert_equal(*(iterated1.config()), *(iterated2.config()), 1e-9));
 }
 
 /* ************************************************************************* */
@@ -123,12 +123,12 @@ TEST( NonlinearFactorGraph, optimize )
 	// Gauss-Newton
 	Optimizer actual1 = optimizer.gaussNewton(relativeThreshold,
 			absoluteThreshold);
-	CHECK(assert_equal(actual1.config(),cstar));
+	CHECK(assert_equal(*(actual1.config()),cstar));
 
 	// Levenberg-Marquardt
 	Optimizer actual2 = optimizer.levenbergMarquardt(relativeThreshold,
 			absoluteThreshold, Optimizer::SILENT);
-	CHECK(assert_equal(actual2.config(),cstar));
+	CHECK(assert_equal(*(actual2.config()),cstar));
 }
 
 /* ************************************************************************* */

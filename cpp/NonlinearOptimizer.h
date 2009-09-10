@@ -88,6 +88,13 @@ namespace gtsam {
 		}
 
 		/**
+		 * Return the config
+		 */
+		NonlinearOptimizer::shared_config config() const {
+			return config_;
+		}
+
+		/**
 		 *  linearize and optimize
 		 *  Thi returns an FGConfig, i.e., vectors in tangent space of Config
 		 */
