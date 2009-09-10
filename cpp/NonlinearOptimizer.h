@@ -90,7 +90,7 @@ namespace gtsam {
 		/**
 		 * Return the config
 		 */
-		NonlinearOptimizer::shared_config config() const {
+		shared_config config() {
 			return config_;
 		}
 
