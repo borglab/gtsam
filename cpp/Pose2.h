@@ -32,7 +32,12 @@ namespace gtsam {
 			x_(pose.x_), y_(pose.y_), theta_(pose.theta_) {
 		}
 
-		/** construct from (x,y,theta) */
+		/**
+		 * construct from (x,y,theta)
+		 * @param x x oordinate
+		 * @param y y coordinate
+		 * @param theta angle with positive X-axis
+		 */
 		Pose2(double x, double y, double theta) :
 			x_(x), y_(y), theta_(theta) {
 		}

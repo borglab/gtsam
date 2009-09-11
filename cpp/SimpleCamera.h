@@ -41,6 +41,8 @@ namespace gtsam {
 
 		/**
 		 * Create a level camera at the given 2D pose and height
+		 * @param pose2 specifies the location and viewing direction
+		 * (theta 0 = looking in direction of positive X axis)
 		 */
 		static SimpleCamera level(const Cal3_S2& K, const Pose2& pose2, double height);
 
