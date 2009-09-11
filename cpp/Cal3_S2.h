@@ -51,6 +51,13 @@ namespace gtsam {
 		}
 
 		/**
+		 * return the principal point
+		 */
+		Point2 principalPoint() const {
+			return Point2(u0_,v0_);
+		}
+
+		/**
 		 * return vectorized form (column-wise)
 		 */
 		Vector vector() const {
