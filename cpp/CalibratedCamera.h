@@ -8,11 +8,12 @@
 #ifndef CalibratedCAMERA_H_
 #define CalibratedCAMERA_H_
 
-#include "Point2.h"
 #include "Pose2.h"
 #include "Pose3.h"
 
 namespace gtsam {
+
+	class Point2;
 
 	/**
 	 * projects a 3-dimensional point in camera coordinates into the
@@ -44,6 +45,8 @@ namespace gtsam {
 
 		/**
 		 * Create a level camera at the given 2D pose and height
+		 * @param pose2 specifies the location and viewing direction
+		 * (theta 0 = looking in direction of positive X axis)
 		 */
 		static CalibratedCamera level(const Pose2& pose2, double height);
 

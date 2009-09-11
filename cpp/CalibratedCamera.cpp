@@ -5,6 +5,7 @@
  *      Author: dellaert
  */
 
+#include "Point2.h"
 #include "CalibratedCamera.h"
 
 namespace gtsam {
