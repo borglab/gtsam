@@ -90,7 +90,7 @@ namespace gtsam {
 		/**
 		 * Return the config
 		 */
-		shared_config config() {
+		shared_config config() const{
 			return config_;
 		}
 
