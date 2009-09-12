@@ -43,6 +43,18 @@ TEST( LinearFactor, linearFactor )
 }
 
 /* ************************************************************************* */
+TEST( LinearFactor, keys )
+{
+  // get the factor "f2" from the small linear factor graph
+  LinearFactorGraph fg = createLinearFactorGraph();
+  LinearFactor::shared_ptr lf = fg[1];
+  set<string> expected;
+  expected.insert("x1");
+  expected.insert("x2");
+  CHECK(lf->keys() == expected);
+}
+
+/* ************************************************************************* */
 TEST( LinearFactor, variables )
 {	
   // get the factor "f2" from the small linear factor graph

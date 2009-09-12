@@ -15,6 +15,7 @@ namespace ublas = boost::numeric::ublas;
 // trick from some reading group
 #define FOREACH_PAIR( KEY, VAL, COL) BOOST_FOREACH (boost::tie(KEY,VAL),COL) 
 
+using namespace std;
 using namespace gtsam;
 
 typedef pair<const string, Matrix>& mypair;
@@ -73,6 +74,15 @@ bool LinearFactor::equals(const Factor& f, double tol) const {
   print();
   lf->print();
   return false;
+}
+
+/* ************************************************************************* */
+set<string> LinearFactor::keys() const {
+	set<string> result;
+  string j; Matrix A;
+  FOREACH_PAIR(j,A,As)
+    result.insert(j);
+  return result;
 }
 
 /* ************************************************************************* */

@@ -145,6 +145,12 @@ public:
 	int numberOfRows() const { return b.size();}
 
 	/**
+	 * Find all variables
+	 * @return The set of all variable keys
+	 */
+	std::set<std::string> keys() const;
+
+	/**
 	 * Find all variables and their dimensions
 	 * @return The set of all variable/dimension pairs
 	 */
