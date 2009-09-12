@@ -245,21 +245,20 @@ Ordering colamd(int n_col, int n_row, int nrNonZeros, const map<Key, vector<int>
 	int Alen = nrNonZeros*30;     /* colamd arg 3: size of the array A TODO: use Tim's function ! */
 	int * A = new int[Alen];      /* colamd arg 4: row indices of A, of size Alen */
 	int * p = new int[n_col + 1]; /* colamd arg 5: column pointers of A, of size n_col+1 */
-	{
-		p[0] = 0;
-		int j = 1;
-		int count = 0;
-		typedef typename map<Key, vector<int> >::const_iterator iterator;
-		for(iterator it = columns.begin(); it != columns.end(); it++)
-		{
-			const Key& key = it->first;
-			const vector<int>& column = it->second;
-			initialOrder.push_back(key);
-			BOOST_FOREACH(int i, column) A[count++] = i; // copy sparse column
-			p[j] = count; // column j (base 1) goes from A[j-1] to A[j]-1
-			j+=1;
-		}
+
+	p[0] = 0;
+	int j = 1;
+	int count = 0;
+	typedef typename map<Key, vector<int> >::const_iterator iterator;
+	for(iterator it = columns.begin(); it != columns.end(); it++) {
+		const Key& key = it->first;
+		const vector<int>& column = it->second;
+		initialOrder.push_back(key);
+		BOOST_FOREACH(int i, column) A[count++] = i; // copy sparse column
+		p[j] = count; // column j (base 1) goes from A[j-1] to A[j]-1
+		j+=1;
 	}
+
 	double* knobs = NULL;    /* colamd arg 6: parameters (uses defaults if NULL) */
 	int stats[COLAMD_STATS]; /* colamd arg 7: colamd output statistics and error codes */
 
@@ -290,12 +289,9 @@ Ordering LinearFactorGraph::getOrdering() const {
 
 	// loop over all factors = rows
 	for (int i = 0; i < n_row; i++) {
-		shared_factor factor = factors_[i];
-		for (map<Key, Matrix>::const_iterator lit = factor->begin(); lit	!= factor->end(); lit++) {
-			const Key& key = lit->first;
-			columns[key].push_back(i);
-			nrNonZeros++;
-		}
+		set<Key> keys = factors_[i]->keys();
+		BOOST_FOREACH(Key key, keys) columns[key].push_back(i);
+		nrNonZeros+= keys.size();
 	}
 	int n_col = (int)(columns.size()); /* colamd arg 2: number of columns in A */
 
