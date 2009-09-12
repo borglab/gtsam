@@ -230,38 +230,27 @@ pair<Matrix,Vector> LinearFactorGraph::matrix(const Ordering& ordering) const {
 
 /* ************************************************************************* */  
 
-Ordering LinearFactorGraph::getOrdering() const {
+/**
+ * Call colamd given a column-major symbolic matrix A
+ * @param n_col colamd arg 1: number of rows in A
+ * @param n_row colamd arg 2: number of columns in A
+ * @param nrNonZeros number of non-zero entries in A
+ * @param columns map from keys to a sparse column of non-zero row indices
+ */
+template <class Key>
+Ordering colamd(int n_col, int n_row, int nrNonZeros, const map<Key, vector<int> >& columns) {
 
-	// A factor graph is really laid out in row-major format, each factor a row
-	// Below, we compute a symbolic matrix stored in sparse columns.
-	typedef string Key;             // default case  with string keys
-	map<Key, vector<int> > columns; // map from keys to a sparse column of non-zero row indices
-	int nrNonZeros = 0;             // number of non-zero entries
-	int n_row = factors_.size();    /* colamd arg 1: number of rows in A */
-
-	// loop over all factors = rows
-	for (int i = 0; i < n_row; i++) {
-		shared_factor factor = factors_[i];
-		for (map<Key, Matrix>::const_iterator lit = factor->begin(); lit	!= factor->end(); lit++) {
-			const Key& key = lit->first;
-			columns[key].push_back(i);
-			nrNonZeros++;
-		}
-	}
-	int n_col = (int)(columns.size()); /* colamd arg 2: number of columns in A */
-
-	if(n_col == 0) return Ordering(); // empty ordering
-
-	// Now convert to compressed column major format colamd wants it in (== MATLAB format!)
+	// Convert to compressed column major format colamd wants it in (== MATLAB format!)
 	vector<Key> initialOrder;
-	int Alen = nrNonZeros*30;     /* colamd arg 3: size of the array A */
+	int Alen = nrNonZeros*30;     /* colamd arg 3: size of the array A TODO: use Tim's function ! */
 	int * A = new int[Alen];      /* colamd arg 4: row indices of A, of size Alen */
 	int * p = new int[n_col + 1]; /* colamd arg 5: column pointers of A, of size n_col+1 */
 	{
 		p[0] = 0;
 		int j = 1;
 		int count = 0;
-		for(map<Key, vector<int> >::const_iterator it = columns.begin(); it != columns.end(); it++)
+		typedef typename map<Key, vector<int> >::const_iterator iterator;
+		for(iterator it = columns.begin(); it != columns.end(); it++)
 		{
 			const Key& key = it->first;
 			const vector<int>& column = it->second;
@@ -287,6 +276,33 @@ Ordering LinearFactorGraph::getOrdering() const {
 	delete [] p; // delete colamd result vector
 
 	return result;
+}
+
+/* ************************************************************************* */
+Ordering LinearFactorGraph::getOrdering() const {
+
+	// A factor graph is really laid out in row-major format, each factor a row
+	// Below, we compute a symbolic matrix stored in sparse columns.
+	typedef string Key;             // default case  with string keys
+	map<Key, vector<int> > columns; // map from keys to a sparse column of non-zero row indices
+	int nrNonZeros = 0;             // number of non-zero entries
+	int n_row = factors_.size();    /* colamd arg 1: number of rows in A */
+
+	// loop over all factors = rows
+	for (int i = 0; i < n_row; i++) {
+		shared_factor factor = factors_[i];
+		for (map<Key, Matrix>::const_iterator lit = factor->begin(); lit	!= factor->end(); lit++) {
+			const Key& key = lit->first;
+			columns[key].push_back(i);
+			nrNonZeros++;
+		}
+	}
+	int n_col = (int)(columns.size()); /* colamd arg 2: number of columns in A */
+
+	if(n_col == 0)
+		return Ordering(); // empty ordering
+	else
+		return colamd(n_col, n_row, nrNonZeros, columns);
 }
 
 /* ************************************************************************* */
