@@ -12,6 +12,7 @@
 
 #include <colamd/colamd.h>
 
+#include "ChordalBayesNet.h"
 #include "LinearFactorGraph.h"
 
 using namespace std;
@@ -218,7 +219,7 @@ pair<Matrix,Vector> LinearFactorGraph::matrix(const Ordering& ordering) const {
 	// get all factors
 	LinearFactorSet found;
 	BOOST_FOREACH(shared_factor factor,factors_)
-	found.insert(factor);
+		found.insert(factor);
 
 	// combine them
 	MutableLinearFactor lf(found);
@@ -228,83 +229,64 @@ pair<Matrix,Vector> LinearFactorGraph::matrix(const Ordering& ordering) const {
 }
 
 /* ************************************************************************* */  
+
 Ordering LinearFactorGraph::getOrdering() const {
 
-	// FD: no comments whatsoever, must be totally obvious !
+	// A factor graph is really laid out in row-major format, each factor a row
+	// Below, we compute a symbolic matrix stored in sparse columns.
+	typedef string Key;             // default case  with string keys
+	map<Key, vector<int> > columns; // map from keys to a sparse column of non-zero row indices
+	int nrNonZeros = 0;             // number of non-zero entries
+	int n_row = factors_.size();    /* colamd arg 1: number of rows in A */
 
-	int * _symbolicMatrix;
-	int * _symbolicColumns;
-	int _symbolicLength;
-	int _symbolicColLength;
-	std::vector<int> _symbolicElimintationOrder;
-
-	Ordering result;
-
-	map<string, vector<int> > symbolToMatrixElement;
-	_symbolicLength = 0;
-	_symbolicColLength = 0;
-	int matrixRow = 0;
-	int symNRows = 0;
-	int symNCols = 0;
-	for(vector<LinearFactor::shared_ptr>::const_iterator it = begin(); it != end(); it++)
-	{
-		symNRows++;
-		for(map<string, Matrix>::const_iterator lit = (*it)->begin(); lit != (*it)->end(); lit++)
-		{
-			_symbolicLength++;
-			symbolToMatrixElement[lit->first].push_back(matrixRow);
+	// loop over all factors = rows
+	for (int i = 0; i < n_row; i++) {
+		shared_factor factor = factors_[i];
+		for (map<Key, Matrix>::const_iterator lit = factor->begin(); lit	!= factor->end(); lit++) {
+			const Key& key = lit->first;
+			columns[key].push_back(i);
+			nrNonZeros++;
 		}
-		matrixRow++;
 	}
+	int n_col = (int)(columns.size()); /* colamd arg 2: number of columns in A */
 
+	if(n_col == 0) return Ordering(); // empty ordering
 
-	symNCols =  (int)(symbolToMatrixElement.size());
-	_symbolicColLength = symNCols + 1;
-
-	if(symNCols == 0) {result.clear(); return result;}
-	//printf("%d %d\n", _symbolicLength, _symbolicColLength);
-
-	_symbolicMatrix = new int[_symbolicLength];
-	_symbolicColumns = new int[_symbolicColLength];
-
-	int count = 0;
-	_symbolicColumns[0] = 0;
-	int colCount = 1;
-	for(map<string, vector<int> >::iterator it = symbolToMatrixElement.begin(); it != symbolToMatrixElement.end(); it++)
+	// Now convert to compressed column major format colamd wants it in (== MATLAB format!)
+	vector<Key> initialOrder;
+	int Alen = nrNonZeros*30;     /* colamd arg 3: size of the array A */
+	int * A = new int[Alen];      /* colamd arg 4: row indices of A, of size Alen */
+	int * p = new int[n_col + 1]; /* colamd arg 5: column pointers of A, of size n_col+1 */
 	{
-		for(vector<int>::iterator rit = it->second.begin(); rit != it->second.end(); rit++)
-			_symbolicMatrix[count++] = (*rit);
-		_symbolicColumns[colCount++] = count;
+		p[0] = 0;
+		int j = 1;
+		int count = 0;
+		for(map<Key, vector<int> >::const_iterator it = columns.begin(); it != columns.end(); it++)
+		{
+			const Key& key = it->first;
+			const vector<int>& column = it->second;
+			initialOrder.push_back(key);
+			BOOST_FOREACH(int i, column) A[count++] = i; // copy sparse column
+			p[j] = count; // column j (base 1) goes from A[j-1] to A[j]-1
+			j+=1;
+		}
 	}
+	double* knobs = NULL;    /* colamd arg 6: parameters (uses defaults if NULL) */
+	int stats[COLAMD_STATS]; /* colamd arg 7: colamd output statistics and error codes */
 
-	vector<string> initialOrder;
-	for(map<string, vector<int> >::iterator it = symbolToMatrixElement.begin(); it != symbolToMatrixElement.end(); it++)
-		initialOrder.push_back(it->first);
+	// call colamd, result will be in p *************************************************
+	/* TODO: returns (1) if successful, (0) otherwise*/
+	colamd(n_row, n_col, Alen, A, p, knobs, stats);
+	// **********************************************************************************
+	delete [] A; // delete symbolic A
 
-	int * tempColumnOrdering = new int[_symbolicColLength];
-	for(int i = 0; i < _symbolicColLength; i++) tempColumnOrdering[i] = _symbolicColumns[i];
-	int * tempSymbolicMatrix = new int[_symbolicLength*30];
-	for(int i = 0; i < _symbolicLength; i++) tempSymbolicMatrix[i] = _symbolicMatrix[i];
-	int stats [COLAMD_STATS] ;
-	//for(int i = 0; i < _symbolicColLength; i++) printf("!%d\n", tempColumnOrdering[i]);
-	colamd(symNRows, symNCols, _symbolicLength*30, tempSymbolicMatrix, tempColumnOrdering, (double *) NULL, stats) ;
-	_symbolicElimintationOrder.clear();
-	for(int i = 0; i < _symbolicColLength; i++)
-		_symbolicElimintationOrder.push_back(tempColumnOrdering[i]);
-	//for(int i = 0; i < _symbolicColLength; i++) printf("!%d\n", tempColumnOrdering[i]);
-	delete [] tempColumnOrdering;
-	delete [] tempSymbolicMatrix;
-
-	result.clear();
-	for(vector<int>::const_iterator it = _symbolicElimintationOrder.begin(); it != _symbolicElimintationOrder.end(); it++)
-	{
-		//printf("%d\n", (*it));
-		if((*it) == -1) continue;
-		result.push_back(initialOrder[(*it)]);
-	}
-	delete [] _symbolicMatrix;
-	delete [] _symbolicColumns;
+	// Convert elimination ordering in p to an ordering
+	Ordering result;
+	for(int j = 0; j < n_col; j++)
+		result.push_back(initialOrder[j]);
+	delete [] p; // delete colamd result vector
 
 	return result;
 }
 
+/* ************************************************************************* */
