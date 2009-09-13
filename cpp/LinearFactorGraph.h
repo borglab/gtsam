@@ -41,12 +41,6 @@ namespace gtsam {
     void setCBN(const ChordalBayesNet& CBN);
 
     /**
-     * This function returns the best ordering for this linear factor
-     * graph, computed using colamd
-     */
-    Ordering getOrdering() const;
-
-    /**
      * find the separator, i.e. all the nodes that have at least one
      * common factor with the given node. FD: not used AFAIK.
      */

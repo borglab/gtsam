@@ -7,6 +7,7 @@
 
 #include <iostream>
 #include "ConstrainedLinearFactorGraph.h"
+#include "FactorGraph-inl.h" // for getOrdering
 
 using namespace std;
 
@@ -181,14 +182,10 @@ void ConstrainedLinearFactorGraph::eq_combine_and_eliminate(
 	lf->set_b(b);
 	string j; Matrix A;
 	LinearFactor::const_iterator it = joint_factor.begin();
-	for (; it != joint_factor.end(); it++)
-	{
+	for (; it != joint_factor.end(); it++) {
 		j = it->first;
 		A = it->second;
-		if (j != key)
-		{
-			lf->insert(j, A);
-		}
+		if (j != key)	lf->insert(j, A);
 	}
 
 	// insert factor
@@ -199,9 +196,7 @@ Ordering ConstrainedLinearFactorGraph::getOrdering() const
 {
 	Ordering ord = LinearFactorGraph::getOrdering();
 	BOOST_FOREACH(EqualityFactor::shared_ptr e, eq_factors)
-	{
 		ord.push_back(e->get_key());
-	}
 	return ord;
 }
 
@@ -209,9 +204,7 @@ LinearFactorGraph ConstrainedLinearFactorGraph::convert() const
 {
 	LinearFactorGraph ret;
 	BOOST_FOREACH(LinearFactor::shared_ptr f, factors_)
-	{
 		ret.push_back(f);
-	}
 	return ret;
 }
 

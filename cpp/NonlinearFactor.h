@@ -15,7 +15,7 @@
 #include <list>
 
 #include <boost/shared_ptr.hpp>
-#include <boost/serialization/list.hpp>
+#include <boost/serialization/set.hpp>
 
 #include "Factor.h"
 #include "Matrix.h"
@@ -63,10 +63,9 @@ namespace gtsam {
     virtual void print(const std::string& s = "") const = 0;
 
     /** get functions */
-    double get_sigma() const {return sigma_;}
-    Vector get_measurement() const {return z_;}
-    const std::list<std::string>& get_keys() const {return keys_;}
-    void set_keys(std::list<std::string> keys) {keys_ = keys;}
+    double sigma() const {return sigma_;}
+    Vector measurement() const {return z_;}
+    std::list<std::string> keys() const {return keys_;}
 
     /** calculate the error of the factor */
     double error(const FGConfig& c) const {
@@ -106,7 +105,14 @@ namespace gtsam {
    * Specialized derived classes could do this
   */
   class NonlinearFactor1 : public NonlinearFactor {
+  private:
+
+		std::string key1_;
+
   public:
+
+		Vector (*h_)(const Vector&);
+		Matrix (*H_)(const Vector&);
 
     /** Constructor */
     NonlinearFactor1(const Vector& z,		  // measurement
@@ -116,10 +122,6 @@ namespace gtsam {
 		     Matrix (*H)(const Vector&)); // derivative of the measurement function
 
     void print(const std::string& s = "") const;
-
-    Vector (*h_)(const Vector&);
-    std::string key1_;
-    Matrix (*H_)(const Vector&);
 
     /** error function */
     inline Vector error_vector(const FGConfig& c) const { 
@@ -141,7 +143,17 @@ namespace gtsam {
 	 * Specialized derived classes could do this
 	*/
   class NonlinearFactor2 : public NonlinearFactor {
+
+  private:
+
+    std::string key1_;
+    std::string key2_;
+
   public:
+
+  	Vector (*h_)(const Vector&, const Vector&);
+    Matrix (*H1_)(const Vector&, const Vector&);
+    Matrix (*H2_)(const Vector&, const Vector&);
 
     /** Constructor */
     NonlinearFactor2(const Vector& z,	                         // the measurement
@@ -154,12 +166,6 @@ namespace gtsam {
 			
     void print(const std::string& s = "") const;
 
-    Vector (*h_)(const Vector&, const Vector&);
-    std::string key1_;
-    Matrix (*H1_)(const Vector&, const Vector&);
-    std::string key2_;
-    Matrix (*H2_)(const Vector&, const Vector&);
-		
     /** error function */
     inline Vector error_vector(const FGConfig& c) const { 
       return z_ - h_(c[key1_], c[key2_]); 

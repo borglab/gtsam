@@ -19,8 +19,8 @@ public:
 
 
 protected:
-	Vector value; /// forces a variable be equal to this value
-	std::string key; /// name of variable factor is attached to
+	Vector value_; /// forces a variable be equal to this value
+	std::string key_; /// name of variable factor is attached to
 
 public:
 	/**
@@ -68,8 +68,13 @@ public:
     std::string dump() const;
 
     // get functions
-    std::string get_key() const {return key;}
-    Vector get_value() const {return value;}
+    std::string get_key() const {return key_;}
+    Vector get_value() const {return value_;}
+
+    /**
+     * return keys in preferred order
+     */
+    std::list<std::string> keys() const;
 
     /**
      * @return the number of nodes the factor connects

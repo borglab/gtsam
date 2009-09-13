@@ -1,9 +1,13 @@
 /**
- * NonlinearOptimizer.cpp
+ * NonlinearOptimizer-inl.h
+ * This is a template definition file, include it where needed (only!)
+ * so that the appropriate code is generated and link errors avoided.
  * @brief: Encapsulates nonlinear optimization state
  * @Author: Frank Dellaert
  * Created on: Sep 7, 2009
  */
+
+#pragma once
 
 #include <iostream>
 #include <boost/tuple/tuple.hpp>

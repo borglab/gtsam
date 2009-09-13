@@ -12,13 +12,19 @@ namespace gtsam {
 using namespace std;
 
 EqualityFactor::EqualityFactor()
-: key(""), value(Vector(0))
+: key_(""), value_(Vector(0))
 {
 }
 
 EqualityFactor::EqualityFactor(const Vector& constraint, const std::string& id)
-: key(id), value(constraint)
+: key_(id), value_(constraint)
 {
+}
+
+list<string> EqualityFactor::keys() const {
+	list<string> keys;
+	keys.push_back(key_);
+	return keys;
 }
 
 double EqualityFactor::error(const FGConfig& c) const
@@ -33,7 +39,7 @@ void EqualityFactor::print(const string& s) const
 
 bool EqualityFactor::equals(const EqualityFactor& f, double tol) const
 {
-	return equal_with_abs_tol(value, f.get_value(), tol) && key == f.get_key();
+	return equal_with_abs_tol(value_, f.get_value(), tol) && key_ == f.get_key();
 }
 
 bool EqualityFactor::equals(const Factor& f, double tol) const
@@ -45,19 +51,19 @@ bool EqualityFactor::equals(const Factor& f, double tol) const
 
 string EqualityFactor::dump() const
 {
-	string ret = "[" + key + "] " + gtsam::dump(value);
+	string ret = "[" + key_ + "] " + gtsam::dump(value_);
 	return ret;
 }
 
 DeltaFunction::shared_ptr EqualityFactor::getDeltaFunction() const
 {
-	DeltaFunction::shared_ptr ret(new DeltaFunction(value, key));
+	DeltaFunction::shared_ptr ret(new DeltaFunction(value_, key_));
 	return ret;
 }
 
 EqualityFactor::shared_ptr EqualityFactor::linearize() const
 {
-	EqualityFactor::shared_ptr ret(new EqualityFactor(zero(value.size()), key));
+	EqualityFactor::shared_ptr ret(new EqualityFactor(zero(value_.size()), key_));
 	return ret;
 }
 

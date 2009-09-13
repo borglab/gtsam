@@ -148,7 +148,7 @@ public:
 	 * Find all variables
 	 * @return The set of all variable keys
 	 */
-	std::set<std::string> keys() const;
+	 std::list<std::string> keys() const;
 
 	/**
 	 * Find all variables and their dimensions

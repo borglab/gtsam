@@ -10,6 +10,7 @@
 #pragma once
 
 #include <set>
+#include <list>
 #include "FGConfig.h"
 
 namespace gtsam {
@@ -61,6 +62,11 @@ namespace gtsam {
     virtual bool equals(const Factor& f, double tol=1e-9) const = 0;
 
     virtual std::string dump() const = 0;
+
+    /**
+     * return keys in preferred order
+     */
+    virtual std::list<std::string> keys() const = 0;
 		
     /** 
      * @return the number of nodes the factor connects

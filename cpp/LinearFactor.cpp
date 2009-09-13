@@ -77,11 +77,11 @@ bool LinearFactor::equals(const Factor& f, double tol) const {
 }
 
 /* ************************************************************************* */
-set<string> LinearFactor::keys() const {
-	set<string> result;
+list<string> LinearFactor::keys() const {
+	list<string> result;
   string j; Matrix A;
   FOREACH_PAIR(j,A,As)
-    result.insert(j);
+    result.push_back(j);
   return result;
 }
 

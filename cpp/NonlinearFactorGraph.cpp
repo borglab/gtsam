@@ -67,13 +67,6 @@ namespace gtsam {
 	}
 
 	/* ************************************************************************* */
-	Ordering NonlinearFactorGraph::getOrdering(const FGConfig& config) const {
-		// TODO: FD: Whoa! This is crazy !!!!! re-linearizing just to get ordering ?
-		LinearFactorGraph lfg = linearize(config);
-		return lfg.getOrdering();
-	}
-
-	/* ************************************************************************* */
 	bool NonlinearFactorGraph::check_convergence(const FGConfig& config1,
 			const FGConfig& config2, double relativeErrorTreshold,
 			double absoluteErrorTreshold, int verbosity) const {

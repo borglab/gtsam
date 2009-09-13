@@ -17,8 +17,8 @@ namespace gtsam {
 
 class DeltaFunction : boost::noncopyable {
 protected:
-	Vector value; /// location of the delta function
-	std::string key; /// id of node with delta function
+	Vector value_; /// location of the delta function
+	std::string key_; /// id of node with delta function
 
 public:
 	typedef boost::shared_ptr<DeltaFunction> shared_ptr;
@@ -43,8 +43,8 @@ public:
 	/**
 	 * basic get functions
 	 */
-	Vector get_value() const {return value;}
-	std::string get_key() const {return key;}
+	Vector get_value() const {return value_;}
+	std::string get_key() const {return key_;}
 
 
 	/** equals function */

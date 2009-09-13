@@ -14,11 +14,8 @@ using namespace std;
 using namespace gtsam;
 
 /* ************************************************************************* */
-NonlinearFactor::NonlinearFactor(const Vector& z,	                
-                                 const double sigma) 
-{ 
-  z_ =  z; 
-  sigma_ = sigma;
+NonlinearFactor::NonlinearFactor(const Vector& z, const double sigma) :
+	z_(z), sigma_(sigma) {
 }
 
 /* ************************************************************************* */

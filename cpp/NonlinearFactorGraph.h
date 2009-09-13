@@ -24,11 +24,6 @@ typedef FactorGraph<NonlinearFactor> BaseFactorGraph;
 /** Factor Graph consisting of non-linear factors */
 class NonlinearFactorGraph : public BaseFactorGraph
 {
-public:
-	// internal, exposed for testing only, doc in .cpp file
-
-	Ordering getOrdering(const FGConfig& config) const;
-
 public: // these you will probably want to use
 	/**
 	 * linearize a non linear factor

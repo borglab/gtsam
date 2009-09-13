@@ -11,7 +11,8 @@ using namespace std;
 
 #include "Matrix.h"
 #include "smallExample.h"
-#include "NonlinearOptimizer.cpp"
+// template definitions
+#include "NonlinearOptimizer-inl.h"
 
 using namespace gtsam;
 

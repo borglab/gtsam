@@ -18,12 +18,12 @@ DeltaFunction::DeltaFunction() {
 }
 
 DeltaFunction::DeltaFunction(const Vector& v, const std::string& id)
-: value(v), key(id)
+: value_(v), key_(id)
 {
 }
 
 DeltaFunction::DeltaFunction(const DeltaFunction& df)
-: boost::noncopyable(), value(df.value), key(df.key)
+: boost::noncopyable(), value_(df.value_), key_(df.key_)
 {
 }
 
@@ -33,13 +33,13 @@ DeltaFunction::~DeltaFunction() {
 
 bool DeltaFunction::equals(const DeltaFunction &df) const
 {
-	return equal_with_abs_tol(value, df.value) && key == df.key;
+	return equal_with_abs_tol(value_, df.value_) && key_ == df.key_;
 }
 
 void DeltaFunction::print() const
 {
-	cout << "DeltaFunction: [" << key << "]";
-	gtsam::print(value);
+	cout << "DeltaFunction: [" << key_ << "]";
+	gtsam::print(value_);
 	cout << endl;
 }
 

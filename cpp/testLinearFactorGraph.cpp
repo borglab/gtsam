@@ -13,6 +13,7 @@ using namespace std;
 #include <boost/tuple/tuple.hpp>
 #include "Matrix.h"
 #include "smallExample.h"
+#include "FactorGraph-inl.h" // template definitions
 
 using namespace gtsam;
 

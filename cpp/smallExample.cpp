@@ -14,6 +14,7 @@
 
 using namespace std;
 
+#include "Ordering.h"
 #include "Matrix.h"
 #include "NonlinearFactor.h"
 #include "EqualityFactor.h"

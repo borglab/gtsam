@@ -18,13 +18,15 @@
 
 namespace gtsam {
 
+	class Ordering;
+
 	/**
 	 * A factor graph is a bipartite graph with factor nodes connected to variable nodes.
 	 * In this class, however, only factor nodes are kept around.
 	 */
-	template<class T> class FactorGraph {
+	template<class Factor> class FactorGraph {
 	public:
-		typedef typename boost::shared_ptr<T> shared_factor;
+		typedef typename boost::shared_ptr<Factor> shared_factor;
 		typedef typename std::vector<shared_factor>::iterator iterator;
 		typedef typename std::vector<shared_factor>::const_iterator const_iterator;
 
@@ -102,6 +104,11 @@ namespace gtsam {
 			fg.print();
 			return false;
 		}
+
+		/**
+		 * Compute colamd ordering
+		 */
+		Ordering getOrdering() const;
 
 	private:
 

@@ -85,11 +85,10 @@ string VSLAMFactor::dump() const
 {
   int i = getCameraFrameNumber();
   int j = getLandmarkNumber();
-  double sigma = get_sigma();
-  Vector z = get_measurement();
+  Vector z = measurement();
   char buffer[200];
   buffer[0] = 0;
-  sprintf(buffer, "1 %d %d %f %d", i, j , sigma, z.size());
+  sprintf(buffer, "1 %d %d %f %d", i, j , sigma(), z.size());
   for(size_t i = 0; i < z.size(); i++)
     sprintf(buffer, "%s %f", buffer, z(i));
   sprintf(buffer, "%s %s", buffer, K_.dump().c_str());
