@@ -23,11 +23,6 @@ TEST( Point2, add) {
 }
 
 /* ************************************************************************* */
-TEST( Point2, addScalar) {
-  CHECK(assert_equal( Point2(4,5)+1, Point2(5,6) ));
-}
-
-/* ************************************************************************* */
 TEST( Point2, subtract) {
   CHECK(assert_equal( Point2(4,5)-Point2(1,1), Point2(3,4) ));
 }
