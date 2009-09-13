@@ -37,6 +37,15 @@ namespace gtsam {
 			return K_;
 		}
 
+
+		/**
+		 * project a 3d point to the camera and also check the depth
+		 */
+		std::pair<Point2,bool> projectSafe(const Point3& P) const;
+
+		/**
+		 * project a 3d point to the camera
+		 */
 		Point2 project(const Point3& P) const;
 
 		/**
@@ -58,6 +67,12 @@ namespace gtsam {
 	/* ************************************************************************* */
 	// measurement functions and derivatives
 	/* ************************************************************************* */
+
+	/**
+	 * This function receives the camera pose and the landmark location and
+	 returns the location the point is supposed to appear in the image as well as the sign of the depth
+	 */
+	std::pair<Point2, bool> projectSafe(const SimpleCamera& camera, const Point3& point);
 
 	/**
 	 * This function receives the camera pose and the landmark location and

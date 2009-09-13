@@ -8,6 +8,8 @@
 #include "SimpleCamera.h"
 #include "CalibratedCamera.h"
 
+using namespace std;
+
 namespace gtsam {
 
 	/* ************************************************************************* */
@@ -24,10 +26,16 @@ namespace gtsam {
 	SimpleCamera::~SimpleCamera() {
 	}
 
-	Point2 SimpleCamera::project(const Point3 & P) const {
-		Point2 intrinsic = calibrated_.project(P);
+	pair<Point2, bool> SimpleCamera::projectSafe(const Point3& P) const {
+		Point3 cameraPoint = transform_to(calibrated_.pose(), P);
+		Point2 intrinsic = project_to_camera(cameraPoint);
 		Point2 projection = uncalibrate(K_, intrinsic);
-		return projection;
+		return pair<Point2, bool>(projection, cameraPoint.z() > 0);
+	}
+
+	Point2 SimpleCamera::project(const Point3 & P) const {
+		pair<Point2, bool> projected = projectSafe(P);
+		return projected.first;
 	}
 
 	SimpleCamera SimpleCamera::level(const Cal3_S2& K, const Pose2& pose2, double height) {
@@ -37,6 +45,10 @@ namespace gtsam {
 	/* ************************************************************************* */
 	// measurement functions and derivatives
 	/* ************************************************************************* */
+
+	pair<Point2, bool> projectSafe(const SimpleCamera& camera, const Point3& point) {
+		return camera.projectSafe(point);
+	}
 
 	Point2 project(const SimpleCamera& camera, const Point3& point) {
 		return camera.project(point);
