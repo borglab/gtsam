@@ -86,6 +86,16 @@ namespace gtsam {
       return Matrix_(3,3, r);  
     }
 
+    /** returns column vector specified by index */
+    Point3 column(int index) const{
+    	if(index == 3)
+    		return r3_;
+    	else if (index == 2)
+    		return r2_;
+    	else
+    		return r1_; // default returns r1
+    }
+
     /** inverse transformation  */
     Rot3 inverse() const { return transpose();}
 		

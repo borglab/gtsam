@@ -68,6 +68,8 @@ namespace gtsam {
 
     /** friends */
     friend Point3 cross(const Point3 &p1, const Point3 &p2);
+    friend double dot(const Point3 &p1, const Point3 &p2);
+    friend double norm(const Point3 &p1);
 
   private:
     /** Serialization function */
@@ -95,6 +97,12 @@ namespace gtsam {
 
   /** cross product */
   Point3 cross(const Point3 &p, const Point3 &q); 
+
+  /** dot product */
+  double dot(const Point3 &p, const Point3 &q);
+
+  /** dot product */
+  double norm(const Point3 &p);
 
   /** equals with an tolerance, prints out message if unequal */
   bool assert_equal(const Point3& p, const Point3& q, double tol = 1e-9);

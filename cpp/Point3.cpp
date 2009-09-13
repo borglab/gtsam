@@ -71,6 +71,16 @@ Point3 cross(const Point3 &p, const Point3 &q)
 		 p.x_*q.y_ - p.y_*q.x_ );
 }
 /* ************************************************************************* */
+double dot(const Point3 &p, const Point3 &q)
+{
+  return ( p.x_*q.x_ + p.y_*q.y_ + p.z_*q.z_ );
+}
+/* ************************************************************************* */
+double norm(const Point3 &p)
+{
+  return sqrt( p.x_*p.x_ + p.y_*p.y_ + p.z_*p.z_ );
+}
+/* ************************************************************************* */
 bool assert_equal(const Point3& p, const Point3& q, double tol) {
   if(p.equals(q,tol)) return true;
   printf("not equal:\n");
