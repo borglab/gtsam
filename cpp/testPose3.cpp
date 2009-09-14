@@ -43,7 +43,7 @@ TEST( Pose3, exmap)
 }
 
 /* ************************************************************************* */
-TEST( Pose3, compose)
+TEST( Pose3, compose )
 {
   Matrix actual = (T*T).matrix();
   Matrix expected = T.matrix()*T.matrix();
@@ -180,7 +180,7 @@ TEST( Pose3, transformPose_to)
 }
 
 /* ************************************************************************* */
-TEST( Pose3, composeTransform)
+TEST( Pose3, composeTransform )
 {
 		// known transform
 		Rot3 r = rodriguez(0,0,-1.570796);

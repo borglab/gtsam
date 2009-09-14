@@ -108,7 +108,7 @@ Pose3 Pose3::inverse() const
 /* ************************************************************************* */
 bool Pose3::equals(const Pose3& pose, double tol) const
 {
-  return R_.equals(pose.rotation(),tol) && t_.equals(pose.translation(),tol);
+  return R_.equals(pose.R_,tol) && t_.equals(pose.t_,tol);
 }
 
 /* ************************************************************************* */
@@ -122,27 +122,13 @@ bool assert_equal(const Pose3& A, const Pose3& B, double tol)
 }
 
 /* ************************************************************************* */
-Pose3 Pose3::transformPose_to(const Pose3& transform) const
+Pose3 Pose3::transformPose_to(const Pose3& pose) const
 {
-		Rot3 cRv = rotation() * Rot3(transform.rotation().inverse());
-		Point3 t = transform_to(transform, translation());
+		Rot3 cRv = R_ * Rot3(pose.R_.inverse());
+		Point3 t = transform_to(pose, t_);
 		
 		return Pose3(cRv, t);
 }
-
 /* ************************************************************************* */
-Pose3 composeTransform(const Pose3& current, const Pose3& target)
-{
-		// reverse operation
-		Rot3 trans_rot = Rot3(target.rotation() * current.rotation().inverse()).inverse();
-
-		// get sub
-		Point3 sub = rotate(trans_rot, target.translation());
-		
-		// get final transform translation
-		Point3 trans_pt = current.translation() - sub;
-		
-		return Pose3(trans_rot, trans_pt);
-}
 
 } // namespace gtsam

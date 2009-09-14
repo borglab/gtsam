@@ -19,25 +19,36 @@ namespace gtsam {
 		Point3 t_;
 
 	public:
-		Pose3() {
-		} // default is origin
+
+		/**
+		 * Default constructor is origin
+		 */
+		Pose3() {}
+
+		/**
+		 * Copy constructor
+		 */
 		Pose3(const Pose3& pose) :
 			R_(pose.R_), t_(pose.t_) {
 		}
+
+		/**
+		 * Construct from R,t
+		 */
 		Pose3(const Rot3& R, const Point3& t) :
 			R_(R), t_(t) {
 		}
 
-		/** constructor from 4*4 matrix */
+		/** Constructor from 4*4 matrix */
 		Pose3(const Matrix &T) :
 			R_(T(0, 0), T(0, 1), T(0, 2), T(1, 0), T(1, 1), T(1, 2), T(2, 0),
 					T(2, 1), T(2, 2)), t_(T(0, 3), T(1, 3), T(2, 3)) {
 		}
 
-		/** constructor from 12D vector */
+		/** Constructor from 12D vector */
 		Pose3(const Vector &V) :
-			R_(V(0), V(3), V(6), V(1), V(4), V(7), V(2), V(5), V(8)), t_(V(9), V(10),
-					V(11)) {
+			R_(V(0), V(3), V(6), V(1), V(4), V(7), V(2), V(5), V(8)),
+			t_(V(9), V(10),V(11)) {
 		}
 
 		const Rot3& rotation() const {
@@ -61,7 +72,7 @@ namespace gtsam {
 
 		/** composition */
 		inline Pose3 operator*(const Pose3& B) const {
-			return Pose3(matrix() * B.matrix());
+			return Pose3(R_*B.R_, t_ + R_*B.t_);
 		}
 
 		/** return 12D vectorized form (column-wise) */
@@ -94,8 +105,12 @@ namespace gtsam {
 		}
 	}; // Pose3 class
 
-	/** finds a transform from the current frame to the target frame given two coordinates of the same point */
-	Pose3 composeTransform(const Pose3& current, const Pose3& target);
+	/**
+	 * Finds a transform from the current frame dTx to the target frame sTx
+	 */
+	inline Pose3 composeTransform(const Pose3& dTx, const Pose3& sTx) {
+		return dTx * sTx.inverse();
+	}
 
 	/** receives the point in Pose coordinates and transforms it to world coordinates */
 	Point3 transform_from(const Pose3& pose, const Point3& p);
