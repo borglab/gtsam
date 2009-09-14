@@ -21,7 +21,6 @@ namespace gtsam {
     Point3 r1_, r2_, r3_;  
 		
   public:
-    // Matrix R;
 	 
   /** default coonstructor, unit rotation */
   Rot3() : r1_(Point3(1.0,0.0,0.0)), 
@@ -30,8 +29,9 @@ namespace gtsam {
     }
 
   /** constructor from columns */
-  Rot3(const Point3& r1, const Point3& r2, const Point3& r3) : r1_(r1), r2_(r2), r3_(r3) {
-    }
+  Rot3(const Point3& r1, const Point3& r2, const Point3& r3) :
+			r1_(r1), r2_(r2), r3_(r3) {
+		}
 		
   /**  constructor from vector */
   Rot3(const Vector &v) : 
@@ -44,9 +44,9 @@ namespace gtsam {
   Rot3(double R11, double R12, double R13,
        double R21, double R22, double R23,
        double R31, double R32, double R33) :
-    r1_(Point3(R11, R21, R31)),
-      r2_(Point3(R12, R22, R32)),
-      r3_(Point3(R13, R23, R33)) {}
+      	 r1_(Point3(R11, R21, R31)),
+      	 r2_(Point3(R12, R22, R32)),
+      	 r3_(Point3(R13, R23, R33)) {}
 
   /** constructor from matrix */
   Rot3(const Matrix& R):
@@ -80,10 +80,10 @@ namespace gtsam {
 
     /** return 3*3 transpose (inverse) rotation matrix   */
     Matrix transpose() const {
-      double r[] = { r1_.x(), r1_.y(), r1_.z(), 
-		     r2_.x(), r2_.y(), r2_.z(), 
+      double r[] = { r1_.x(), r1_.y(), r1_.z(),
+		     r2_.x(), r2_.y(), r2_.z(),
 		     r3_.x(), r3_.y(), r3_.z()};
-      return Matrix_(3,3, r);  
+      return Matrix_(3,3, r);
     }
 
     /** returns column vector specified by index */
@@ -97,22 +97,29 @@ namespace gtsam {
     }
 
     /** inverse transformation  */
-    Rot3 inverse() const { return transpose();}
+    Rot3 inverse() const {
+    	return Rot3(
+    			r1_.x(), r1_.y(), r1_.z(),
+    			r2_.x(), r2_.y(), r2_.z(),
+    			r3_.x(), r3_.y(), r3_.z());
+    	}
 		
     /** composition */
     inline Rot3 operator*(const Rot3& B) const { return Rot3(matrix()*B.matrix());}
 
     /**  rotate from rotated to world, syntactic sugar = R*p  */
-    inline Point3 operator*(const Point3& p) const { return r1_ * p.x() + r2_ * p.y() + r3_ * p.z(); }
+    inline Point3 operator*(const Point3& p) const {
+    	return r1_ * p.x() + r2_ * p.y() + r3_ * p.z();
+    }
 
     /** rotate from world to rotated = R'*p */
     Point3 unrotate(const Point3& p) const {
-      return Point3(
-	r1_.x()*p.x() + r1_.y()*p.y() + r1_.z()*p.z(), 
-	r2_.x()*p.x() + r2_.y()*p.y() + r2_.z()*p.z(), 
-	r3_.x()*p.x() + r3_.y()*p.y() + r3_.z()*p.z()
-	);
-    }
+			return Point3(
+					r1_.x() * p.x() + r1_.y() * p.y() + r1_.z() * p.z(),
+					r2_.x() * p.x() + r2_.y() * p.y() + r2_.z() * p.z(),
+					r3_.x() * p.x() + r3_.y() * p.y() + r3_.z() * p.z()
+					);
+		}
 
     /** print */
     void print(const std::string& s="R") const { gtsam::print(matrix(), s);}

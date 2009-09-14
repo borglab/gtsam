@@ -6,6 +6,7 @@
 
 #include <CppUnitLite/TestHarness.h>
 #include "numericalDerivative.h"
+#include "Point3.h"
 #include "Rot3.h"
 
 using namespace gtsam;
@@ -36,6 +37,20 @@ TEST( Rot3, constructor2) {
 		21,22,23,
 		31,32,33);
   CHECK(assert_equal(actual,expected));
+}
+
+/* ************************************************************************* */
+TEST( Rot3, constructor3) {
+  Rot3 expected(1,2,3,4,5,6,7,8,9);
+  Point3 r1(1,4,7), r2(2,5,8), r3(3,6,9);
+  CHECK(assert_equal(Rot3(r1,r2,r3),expected));
+}
+
+/* ************************************************************************* */
+TEST( Rot3, transpose) {
+  Rot3 R(1,2,3,4,5,6,7,8,9);
+  Point3 r1(1,2,3), r2(4,5,6), r3(7,8,9);
+  CHECK(assert_equal(R.inverse(),Rot3(r1,r2,r3)));
 }
 
 /* ************************************************************************* */
