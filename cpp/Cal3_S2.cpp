@@ -14,10 +14,12 @@ using namespace std;
 
 /* ************************************************************************* */
 Cal3_S2::Cal3_S2(const std::string &path) {
+
 	char buffer[200];
 	buffer[0] = 0;
 	sprintf(buffer, "%s/calibration_info.txt", path.c_str());
 	std::ifstream infile(buffer, std::ios::in);
+
 	if (infile)
 		infile >> fx_ >> fy_ >> s_ >> u0_ >> v0_;
 	else {
