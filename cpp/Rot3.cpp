@@ -32,9 +32,9 @@ namespace gtsam {
 
 	/* ************************************************************************* */
 	Rot3 rodriguez(double wx, double wy, double wz) {
-		if (wx == 0.0 && wy == 0.0 && wz == 0.0) return Rot3();
 		Matrix J = skewSymmetric(wx, wy, wz);
 		double t2 = wx * wx + wy * wy + wz * wz;
+		if (t2 < 1e-10) return Rot3();
 		double t = sqrt(t2);
 		Matrix R = eye(3, 3) + sin(t) / t * J + (1.0 - cos(t)) / t2 * (J * J);
 		return R; // matrix constructor will be tripped
