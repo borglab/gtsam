@@ -21,11 +21,13 @@
 
 namespace gtsam {
 
+	typedef NonlinearFactorGraph<FGConfig> ExampleNonlinearFactorGraph;
+
 	/**
 	 * Create small example for non-linear factor graph
 	 */
-	boost::shared_ptr<const NonlinearFactorGraph> sharedNonlinearFactorGraph();
-	NonlinearFactorGraph createNonlinearFactorGraph();
+	boost::shared_ptr<const ExampleNonlinearFactorGraph > sharedNonlinearFactorGraph();
+	ExampleNonlinearFactorGraph createNonlinearFactorGraph();
 
 	/**
 	 * Create small example constrained factor graph
@@ -35,7 +37,8 @@ namespace gtsam {
 	/**
 	 * Create small example constrained nonlinear factor graph
 	 */
-	ConstrainedNonlinearFactorGraph createConstrainedNonlinearFactorGraph();
+	ConstrainedNonlinearFactorGraph<NonlinearFactor<FGConfig>,FGConfig>
+		createConstrainedNonlinearFactorGraph();
 
 	/**
 	 * Create configuration to go with it
@@ -84,8 +87,8 @@ namespace gtsam {
 	/**
 	 * Create really non-linear factor graph (cos/sin)
 	 */
-	boost::shared_ptr<const NonlinearFactorGraph> sharedReallyNonlinearFactorGraph();
-	NonlinearFactorGraph createReallyNonlinearFactorGraph();
+	boost::shared_ptr<const ExampleNonlinearFactorGraph> sharedReallyNonlinearFactorGraph();
+	ExampleNonlinearFactorGraph createReallyNonlinearFactorGraph();
 
 	/**
 	 * Create a noisy configuration for linearization

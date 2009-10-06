@@ -57,7 +57,8 @@ testVector_LDADD = libgtsam.la
 testMatrix_LDADD = libgtsam.la
 
 # nodes
-sources += FGConfig.cpp Ordering.cpp LinearFactor.cpp NonlinearFactor.cpp ConditionalGaussian.cpp EqualityFactor.cpp DeltaFunction.cpp  
+sources += FGConfig.cpp Ordering.cpp LinearFactor.cpp NonlinearFactor.cpp 
+sources += ConditionalGaussian.cpp EqualityFactor.cpp DeltaFunction.cpp  
 check_PROGRAMS += testFGConfig testLinearFactor testConditionalGaussian testNonlinearFactor testEqualityFactor testDeltaFunction
 example = smallExample.cpp 
 testFGConfig_SOURCES            = testFGConfig.cpp
@@ -80,8 +81,8 @@ timeLinearFactor: CXXFLAGS += -I /opt/local/include
 timeLinearFactor: LDFLAGS += -L.libs -lgtsam
 
 # graphs 
-sources += ConstrainedChordalBayesNet.cpp ChordalBayesNet.cpp
-sources += LinearFactorGraph.cpp NonlinearFactorGraph.cpp
+sources += ConstrainedChordalBayesNet.cpp ChordalBayesNet.cpp 
+sources += LinearFactorGraph.cpp 
 sources += ConstrainedNonlinearFactorGraph.cpp ConstrainedLinearFactorGraph.cpp 
 check_PROGRAMS += testChordalBayesNet testConstrainedChordalBayesNet testFactorgraph 
 check_PROGRAMS += testLinearFactorGraph testNonlinearFactorGraph testNonlinearOptimizer
@@ -146,10 +147,11 @@ testVSLAMFactor_LDADD = libgtsam.la
 
 # The header files will be installed in ~/include/gtsam
 headers = gtsam.h Value.h Testable.h Factor.h LinearFactorSet.h Point2Prior.h 
-headers += Simulated2DOdometry.h Simulated2DMeasurement.h smallExample.h
+headers += Simulated2DOdometry.h Simulated2DMeasurement.h smallExample.h 
 headers += $(sources:.cpp=.h)
 # templates: 
 headers += FactorGraph.h FactorGraph-inl.h
+headers += NonlinearFactorGraph.h NonlinearFactorGraph-inl.h
 headers += NonlinearOptimizer.h NonlinearOptimizer-inl.h 
 
 # create both dynamic and static libraries

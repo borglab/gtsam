@@ -11,10 +11,11 @@
 
 #include <set>
 #include <list>
-#include "FGConfig.h"
+#include <boost/utility.hpp> // for noncopyable
 
 namespace gtsam {
 
+	/** A combination of a key with a dimension - TODO FD: move, vector specific */
   struct Variable {
   private:
     std::string key_;
@@ -26,6 +27,7 @@ namespace gtsam {
     std::size_t        dim() const { return dim_;}
   };
 
+	/** A set of variables, used to eliminate linear factor factor graphs. TODO FD: move */
   class VariableSet : public std::set<Variable> {
   };
 	
@@ -37,7 +39,13 @@ namespace gtsam {
    * immutable, i.e., practicing functional programming. However, this
    * conflicts with efficiency as well, esp. in the case of incomplete
    * QR factorization. A solution is still being sought.
+   * 
+   * A Factor is templated on a Config, for example FGConfig is a configuration of
+   * labeled vectors. This way, we can have factors that might be defined on discrete
+   * variables, continuous ones, or a combination of both. It is up to the config to 
+   * provide the appropriate values at the appropriate time.
    */ 
+  template <class Config>
   class Factor : boost::noncopyable
   {
   public:
@@ -47,7 +55,7 @@ namespace gtsam {
     /**
      * negative log probability 
      */
-    virtual double error(const FGConfig& c) const = 0;
+    virtual double error(const Config& c) const = 0;
 
     /**
      * print
@@ -58,8 +66,8 @@ namespace gtsam {
     /**
      * equality up to tolerance
      * tricky to implement, see NonLinearFactor1 for an example
-     */
     virtual bool equals(const Factor& f, double tol=1e-9) const = 0;
+     */
 
     virtual std::string dump() const = 0;
 

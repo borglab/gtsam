@@ -27,12 +27,12 @@ using namespace std;
 
 namespace gtsam {
 
-typedef boost::shared_ptr<NonlinearFactor> shared;
+typedef boost::shared_ptr<NonlinearFactor<FGConfig> > shared;
 
 /* ************************************************************************* */
-boost::shared_ptr<const NonlinearFactorGraph> sharedNonlinearFactorGraph() {
+boost::shared_ptr<const ExampleNonlinearFactorGraph> sharedNonlinearFactorGraph() {
 	// Create
-	boost::shared_ptr<NonlinearFactorGraph> nlfg(new NonlinearFactorGraph);
+	boost::shared_ptr<ExampleNonlinearFactorGraph> nlfg(new ExampleNonlinearFactorGraph);
 
 	// prior on x1
 	double sigma1=0.1;
@@ -61,7 +61,7 @@ boost::shared_ptr<const NonlinearFactorGraph> sharedNonlinearFactorGraph() {
 	return nlfg;
 }
 
-NonlinearFactorGraph createNonlinearFactorGraph() {
+ExampleNonlinearFactorGraph createNonlinearFactorGraph() {
 	return *sharedNonlinearFactorGraph();
 }
 
@@ -92,24 +92,23 @@ ConstrainedLinearFactorGraph createConstrainedLinearFactorGraph()
 }
 
 /* ************************************************************************* */
-ConstrainedNonlinearFactorGraph createConstrainedNonlinearFactorGraph()
-{
-	ConstrainedNonlinearFactorGraph graph;
-	FGConfig c = createConstrainedConfig();
+	ConstrainedNonlinearFactorGraph<NonlinearFactor<FGConfig> , FGConfig> createConstrainedNonlinearFactorGraph() {
+		ConstrainedNonlinearFactorGraph<NonlinearFactor<FGConfig> , FGConfig> graph;
+		FGConfig c = createConstrainedConfig();
 
-	// equality constraint for initial pose
-	EqualityFactor::shared_ptr f1(new EqualityFactor(c["x0"], "x0"));
-	graph.push_back_eq(f1);
+		// equality constraint for initial pose
+		EqualityFactor::shared_ptr f1(new EqualityFactor(c["x0"], "x0"));
+		graph.push_back_eq(f1);
 
-    // odometry between x0 and x1
-    double sigma=0.1;
-    shared f2(new Simulated2DOdometry(c["x1"]-c["x0"], sigma, "x0", "x1"));
-    graph.push_back(f2);
+		// odometry between x0 and x1
+		double sigma = 0.1;
+		shared f2(new Simulated2DOdometry(c["x1"] - c["x0"], sigma, "x0", "x1"));
+		graph.push_back(f2); // TODO
 
-	return graph;
-}
+		return graph;
+	}
 
-/* ************************************************************************* */
+	/* ************************************************************************* */
 FGConfig createConfig()
 {
     Vector v_x1(2); v_x1(0) = 0.;  v_x1(1) = 0.;
@@ -328,9 +327,9 @@ namespace optimize {
 }
 
 /* ************************************************************************* */
-boost::shared_ptr<const NonlinearFactorGraph> sharedReallyNonlinearFactorGraph()
+boost::shared_ptr<const ExampleNonlinearFactorGraph> sharedReallyNonlinearFactorGraph()
 {
-	boost::shared_ptr<NonlinearFactorGraph> fg(new NonlinearFactorGraph);
+	boost::shared_ptr<ExampleNonlinearFactorGraph> fg(new ExampleNonlinearFactorGraph);
   Vector z = Vector_(2,1.0,0.0);
   double sigma = 0.1;
   boost::shared_ptr<NonlinearFactor1> 
@@ -339,7 +338,7 @@ boost::shared_ptr<const NonlinearFactorGraph> sharedReallyNonlinearFactorGraph()
   return fg;
 }
 
-NonlinearFactorGraph createReallyNonlinearFactorGraph() {
+ExampleNonlinearFactorGraph createReallyNonlinearFactorGraph() {
 	return *sharedReallyNonlinearFactorGraph();
 }
 

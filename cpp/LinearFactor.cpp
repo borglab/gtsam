@@ -44,15 +44,15 @@ void LinearFactor::print(const string& s) const {
 
 /* ************************************************************************* */
 // Check if two linear factors are equal
-bool LinearFactor::equals(const Factor& f, double tol) const {
+bool LinearFactor::equals(const LinearFactor& lf, double tol) const {
     
-  const LinearFactor* lf = dynamic_cast<const LinearFactor*>(&f);
-  if (lf == NULL) return false;
+  //const LinearFactor* lf = dynamic_cast<const LinearFactor*>(&f);
+  //if (lf == NULL) return false;
 
-  if (empty()) return (lf->empty());
+  if (empty()) return (lf.empty());
 
-  const_iterator it1 = As.begin(), it2 = lf->As.begin();
-  if(As.size() != lf->As.size()) goto fail;
+  const_iterator it1 = As.begin(), it2 = lf.As.begin();
+  if(As.size() != lf.As.size()) goto fail;
 
   for(; it1 != As.end(); it1++, it2++){
     const string& j1 = it1->first, j2 = it2->first;
@@ -63,7 +63,7 @@ bool LinearFactor::equals(const Factor& f, double tol) const {
       goto fail;
     }
   }
-  if( !(::equal_with_abs_tol(b, (lf->b),tol)) ) {
+  if( !(::equal_with_abs_tol(b, (lf.b),tol)) ) {
     cout << "RHS disagree" << endl;
     goto fail;
   }
@@ -72,7 +72,7 @@ bool LinearFactor::equals(const Factor& f, double tol) const {
  fail:
   // they don't match, print out and fail
   print();
-  lf->print();
+  lf.print();
   return false;
 }
 

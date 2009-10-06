@@ -142,6 +142,14 @@ namespace gtsam {
 
 	};
 
-}
+	/**
+	 * Check convergence
+	 */
+	bool check_convergence (double relativeErrorTreshold,
+			double absoluteErrorTreshold,
+			double currentError, double newError,
+			int verbosity);
+
+} // gtsam
 
 #endif /* NONLINEAROPTIMIZER_H_ */

@@ -15,13 +15,21 @@
 #include <boost/shared_ptr.hpp>
 
 #include "LinearFactor.h"
+//#include "Ordering.h"
+#include "FGConfig.h"
 #include "FactorGraph.h"
-#include "ChordalBayesNet.h"
 
 namespace gtsam {
 
-  /** Linear Factor Graph where all factors are Gaussians */
-  class LinearFactorGraph : public FactorGraph<LinearFactor> {
+	class ChordalBayesNet;
+
+  /**
+   * A Linear Factor Graph is a factor graph where all factors are Gaussian, i.e.
+   *   Factor == LinearFactor
+   *   FGConfig = A configuration of vectors
+   * Most of the time, linear factor graphs arise by linearizing a non-linear factor graph.
+   */
+  class LinearFactorGraph : public FactorGraph<LinearFactor, FGConfig> {
   public:
 
     /**
@@ -72,13 +80,13 @@ namespace gtsam {
      * eliminate factor graph in place(!) in the given order, yielding
      * a chordal Bayes net
      */
-    ChordalBayesNet::shared_ptr eliminate(const Ordering& ordering);
+    boost::shared_ptr<ChordalBayesNet> eliminate(const Ordering& ordering);
 		
     /**
      * Same as eliminate but allows for passing an incomplete ordering
      * that does not completely eliminate the graph
      */
-    ChordalBayesNet::shared_ptr eliminate_partially(const Ordering& ordering);
+    boost::shared_ptr<ChordalBayesNet> eliminate_partially(const Ordering& ordering);
 		
     /**
      * optimize a linear factor graph

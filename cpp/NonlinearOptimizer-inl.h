@@ -18,6 +18,29 @@ using namespace std;
 namespace gtsam {
 
 	/* ************************************************************************* */
+	bool check_convergence(double relativeErrorTreshold,
+			double absoluteErrorTreshold, double currentError, double newError,
+			int verbosity) {
+		// check if diverges
+		double absoluteDecrease = currentError - newError;
+		if (verbosity >= 2)
+			cout << "absoluteDecrease: " << absoluteDecrease << endl;
+		if (absoluteDecrease < 0)
+			throw overflow_error(
+					"NonlinearFactorGraph::optimize: error increased, diverges.");
+
+		// calculate relative error decrease and update currentError
+		double relativeDecrease = absoluteDecrease / currentError;
+		if (verbosity >= 2)
+			cout << "relativeDecrease: " << relativeDecrease << endl;
+		bool converged = (relativeDecrease < relativeErrorTreshold)
+				|| (absoluteDecrease < absoluteErrorTreshold);
+		if (verbosity >= 1 && converged)
+			cout << "converged" << endl;
+		return converged;
+	}
+
+	/* ************************************************************************* */
 	// Constructors
 	/* ************************************************************************* */
 	template<class G, class C>

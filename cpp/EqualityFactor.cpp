@@ -42,13 +42,6 @@ bool EqualityFactor::equals(const EqualityFactor& f, double tol) const
 	return equal_with_abs_tol(value_, f.get_value(), tol) && key_ == f.get_key();
 }
 
-bool EqualityFactor::equals(const Factor& f, double tol) const
-{
-	const EqualityFactor* p = dynamic_cast<const EqualityFactor*>(&f);
-	  if (p == NULL) return false;
-	  return equals(f, tol);
-}
-
 string EqualityFactor::dump() const
 {
 	string ret = "[" + key_ + "] " + gtsam::dump(value_);

@@ -14,22 +14,24 @@ using namespace std;
 
 #include "Matrix.h"
 #include "smallExample.h"
+#include "FactorGraph-inl.h"
+#include "NonlinearFactorGraph-inl.h"
 
 using namespace gtsam;
 
 /* ************************************************************************* */
-TEST( NonlinearFactorGraph, equals )
+TEST( ExampleNonlinearFactorGraph, equals )
 {
 
-	NonlinearFactorGraph fg = createNonlinearFactorGraph();
-	NonlinearFactorGraph fg2 = createNonlinearFactorGraph();
+	ExampleNonlinearFactorGraph fg = createNonlinearFactorGraph();
+	ExampleNonlinearFactorGraph fg2 = createNonlinearFactorGraph();
 	CHECK( fg.equals(fg2) );
 }
 
 /* ************************************************************************* */
-TEST( NonlinearFactorGraph, error )
+TEST( ExampleNonlinearFactorGraph, error )
 {
-	NonlinearFactorGraph fg = createNonlinearFactorGraph();
+	ExampleNonlinearFactorGraph fg = createNonlinearFactorGraph();
 
 	FGConfig c1 = createConfig();
 	double actual1 = fg.error(c1);
@@ -41,9 +43,9 @@ TEST( NonlinearFactorGraph, error )
 }
 
 /* ************************************************************************* */
-TEST( NonlinearFactorGraph, probPrime )
+TEST( ExampleNonlinearFactorGraph, probPrime )
 {
-	NonlinearFactorGraph fg = createNonlinearFactorGraph();
+	ExampleNonlinearFactorGraph fg = createNonlinearFactorGraph();
 	FGConfig cfg = createConfig();
 
 	// evaluate the probability of the factor graph
@@ -53,9 +55,9 @@ TEST( NonlinearFactorGraph, probPrime )
 }
 
 /* ************************************************************************* */
-TEST( NonlinearFactorGraph, linearize )
+TEST( ExampleNonlinearFactorGraph, linearize )
 {
-	NonlinearFactorGraph fg = createNonlinearFactorGraph();
+	ExampleNonlinearFactorGraph fg = createNonlinearFactorGraph();
 	FGConfig initial = createNoisyConfig();
 	LinearFactorGraph linearized = fg.linearize(initial);
 	LinearFactorGraph expected = createLinearFactorGraph();

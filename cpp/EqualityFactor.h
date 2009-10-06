@@ -9,11 +9,12 @@
 #define EQUALITYFACTOR_H_
 
 #include "Factor.h"
+#include "FGConfig.h"
 #include "DeltaFunction.h"
 
 namespace gtsam {
 
-class EqualityFactor: public Factor {
+class EqualityFactor: public Factor<FGConfig> {
 public:
 	typedef boost::shared_ptr<EqualityFactor> shared_ptr;
 
@@ -54,7 +55,6 @@ public:
     /**
      * equality up to tolerance
      */
-    bool equals(const Factor& f, double tol=1e-9) const;
     bool equals(const EqualityFactor& f, double tol=1e-9) const;
 
     /**

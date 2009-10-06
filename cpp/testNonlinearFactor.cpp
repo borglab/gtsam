@@ -17,17 +17,19 @@
 using namespace std;
 using namespace gtsam;
 
+typedef boost::shared_ptr<NonlinearFactor<FGConfig> > shared_nlf;
+
 /* ************************************************************************* */
 TEST( NonLinearFactor, NonlinearFactor )
 {
   // create a non linear factor graph
-  NonlinearFactorGraph fg = createNonlinearFactorGraph();
+  ExampleNonlinearFactorGraph fg = createNonlinearFactorGraph();
 
   // create a configuration for the non linear factor graph
   FGConfig cfg = createNoisyConfig();
 
   // get the factor "f1" from the factor graph
-  boost::shared_ptr<NonlinearFactor> factor = fg[0];
+  shared_nlf factor = fg[0];
 
   // calculate the error_vector from the factor "f1"
   Vector actual_e = factor->error_vector(cfg);
@@ -48,7 +50,7 @@ TEST( NonLinearFactor, NonlinearFactor )
 TEST( NonLinearFactor, linearize_f1 )
 {
   // Grab a non-linear factor
-  NonlinearFactorGraph nfg = createNonlinearFactorGraph();
+  ExampleNonlinearFactorGraph nfg = createNonlinearFactorGraph();
   boost::shared_ptr<NonlinearFactor1> nlf = 
     boost::static_pointer_cast<NonlinearFactor1>(nfg[0]);
 
@@ -66,7 +68,7 @@ TEST( NonLinearFactor, linearize_f1 )
 TEST( NonLinearFactor, linearize_f2 )
 {
   // Grab a non-linear factor
-  NonlinearFactorGraph nfg = createNonlinearFactorGraph();
+  ExampleNonlinearFactorGraph nfg = createNonlinearFactorGraph();
   boost::shared_ptr<NonlinearFactor1> nlf = 
     boost::static_pointer_cast<NonlinearFactor1>(nfg[1]);
 
@@ -84,7 +86,7 @@ TEST( NonLinearFactor, linearize_f2 )
 TEST( NonLinearFactor, linearize_f3 )
 {
   // Grab a non-linear factor
-  NonlinearFactorGraph nfg = createNonlinearFactorGraph();
+  ExampleNonlinearFactorGraph nfg = createNonlinearFactorGraph();
   boost::shared_ptr<NonlinearFactor1> nlf = 
     boost::static_pointer_cast<NonlinearFactor1>(nfg[2]);
 
@@ -102,7 +104,7 @@ TEST( NonLinearFactor, linearize_f3 )
 TEST( NonLinearFactor, linearize_f4 )
 {
   // Grab a non-linear factor
-  NonlinearFactorGraph nfg = createNonlinearFactorGraph();
+  ExampleNonlinearFactorGraph nfg = createNonlinearFactorGraph();
   boost::shared_ptr<NonlinearFactor1> nlf = 
     boost::static_pointer_cast<NonlinearFactor1>(nfg[3]);
 
@@ -120,15 +122,15 @@ TEST( NonLinearFactor, linearize_f4 )
 TEST( NonLinearFactor, size )
 {
 	// create a non linear factor graph
-	NonlinearFactorGraph fg = createNonlinearFactorGraph();
+	ExampleNonlinearFactorGraph fg = createNonlinearFactorGraph();
 	
 	// create a configuration for the non linear factor graph
 	FGConfig cfg = createNoisyConfig();
 	
 	// get some factors from the graph
-	boost::shared_ptr<NonlinearFactor> factor1 = fg[0];
-	boost::shared_ptr<NonlinearFactor> factor2 = fg[1];
-	boost::shared_ptr<NonlinearFactor> factor3 = fg[2];
+	shared_nlf factor1 = fg[0];
+	shared_nlf factor2 = fg[1];
+	shared_nlf factor3 = fg[2];
 	
 	CHECK(factor1->size() == 1);
 	CHECK(factor2->size() == 2);

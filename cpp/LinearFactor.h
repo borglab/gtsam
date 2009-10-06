@@ -32,7 +32,7 @@ class MutableLinearFactor;
  * LinearFactor is non-mutable (all methods const!).
  * The factor value is exp(-0.5*||Ax-b||^2)
  */
-class LinearFactor: public Factor {
+class LinearFactor: public Factor<FGConfig> {
 public:
 
 	typedef boost::shared_ptr<LinearFactor> shared_ptr;
@@ -100,7 +100,7 @@ public:
 
 	double error(const FGConfig& c) const; /**  0.5*(A*x-b)'*(A*x-b) */
 	void print(const std::string& s = "") const;
-	bool equals(const Factor& lf, double tol = 1e-9) const;
+	bool equals(const LinearFactor& lf, double tol = 1e-9) const;
 	std::string dump() const { return "";}
 	std::size_t size() const { return As.size();}
 
@@ -234,8 +234,7 @@ public:
 	 * @param key the key of the node to be eliminated
 	 * @return a new factor and a conditional gaussian on the eliminated variable
 	 */
-	std::pair<ConditionalGaussian::shared_ptr, shared_ptr> eliminate(
-			const std::string& key);
+	std::pair<ConditionalGaussian::shared_ptr, shared_ptr> eliminate(const std::string& key);
 
 	/**
 	 * Take the factor f, and append to current matrices. Not very general.

@@ -35,8 +35,12 @@ namespace gtsam {
   /**
    * Nonlinear factor which assumes Gaussian noise on a measurement
    * predicted by a non-linear function h.
+   * 
+   * Templated on a configuration type. The configurations are typically more general
+	 * than just vectors, e.g., Rot3 or Pose3, which are objects in non-linear manifolds.
    */
-  class NonlinearFactor : public Factor
+	template <class Config>
+  class NonlinearFactor : public Factor<Config>
   {
   protected:
 
@@ -49,15 +53,21 @@ namespace gtsam {
     /** Default constructor, with easily identifiable bogus values */
     NonlinearFactor():z_(Vector_(2,888.0,999.0)),sigma_(0.1234567) {}
 
-    /** Constructor */
-    NonlinearFactor(const Vector& z, // the measurement
-		    const double sigma);         // the variance
+    /**
+     *  Constructor
+     *  @param z the measurement
+     *  @param sigma the standard deviation
+     */
+    NonlinearFactor(const Vector& z, const double sigma) {
+    	z_ = z;
+    	sigma_ = sigma;
+    }
 
     /** Vector of errors */
-    virtual Vector error_vector(const FGConfig& c) const = 0;
+    virtual Vector error_vector(const Config& c) const = 0;
 
     /** linearize to a LinearFactor */
-    virtual boost::shared_ptr<LinearFactor> linearize(const FGConfig& c) const = 0;
+    virtual boost::shared_ptr<LinearFactor> linearize(const Config& c) const = 0;
 
     /** print to cout */
     virtual void print(const std::string& s = "") const = 0;
@@ -68,7 +78,7 @@ namespace gtsam {
     std::list<std::string> keys() const {return keys_;}
 
     /** calculate the error of the factor */
-    double error(const FGConfig& c) const {
+    double error(const Config& c) const {
       Vector e = error_vector(c) / sigma_;
       return 0.5 * inner_prod(trans(e),e);
     };
@@ -90,7 +100,6 @@ namespace gtsam {
 		friend class boost::serialization::access;
 		template<class Archive>
 		void serialize(Archive & ar, const unsigned int version) {
-			//  		ar & boost::serialization::base_object<Factor>(*this); // TODO: needed ?
 			ar & BOOST_SERIALIZATION_NVP(z_);
 			ar & BOOST_SERIALIZATION_NVP(sigma_);
 			ar & BOOST_SERIALIZATION_NVP(keys_);
@@ -104,7 +113,7 @@ namespace gtsam {
    * Note: cannot be serialized as contains function pointers
    * Specialized derived classes could do this
   */
-  class NonlinearFactor1 : public NonlinearFactor {
+  class NonlinearFactor1 : public NonlinearFactor<FGConfig> {
   private:
 
 		std::string key1_;
@@ -124,7 +133,7 @@ namespace gtsam {
     void print(const std::string& s = "") const;
 
     /** error function */
-    inline Vector error_vector(const FGConfig& c) const { 
+    inline Vector error_vector(const FGConfig& c) const {
       return z_ - h_(c[key1_]);
     }
 
@@ -132,7 +141,7 @@ namespace gtsam {
     boost::shared_ptr<LinearFactor> linearize(const FGConfig& c) const;
 
     /** Check if two factors are equal */
-    bool equals(const Factor& f, double tol=1e-9) const;
+    bool equals(const NonlinearFactor<FGConfig>& f, double tol=1e-9) const;
 
     std::string dump() const {return "";}
   };
@@ -142,7 +151,7 @@ namespace gtsam {
 	 * Note: cannot be serialized as contains function pointers
 	 * Specialized derived classes could do this
 	*/
-  class NonlinearFactor2 : public NonlinearFactor {
+  class NonlinearFactor2 : public NonlinearFactor<FGConfig> {
 
   private:
 
@@ -167,7 +176,7 @@ namespace gtsam {
     void print(const std::string& s = "") const;
 
     /** error function */
-    inline Vector error_vector(const FGConfig& c) const { 
+    inline Vector error_vector(const FGConfig& c) const {
       return z_ - h_(c[key1_], c[key2_]); 
     }
 
@@ -175,7 +184,7 @@ namespace gtsam {
     boost::shared_ptr<LinearFactor> linearize(const FGConfig& c) const;
 
     /** Check if two factors are equal */
-    bool equals(const Factor& f, double tol=1e-9) const;
+    bool equals(const NonlinearFactor<FGConfig>& f, double tol=1e-9) const;
 
     std::string dump() const{return "";};
   };

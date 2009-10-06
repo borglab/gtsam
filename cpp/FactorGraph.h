@@ -13,18 +13,21 @@
 #include <boost/serialization/vector.hpp>
 #include <boost/serialization/shared_ptr.hpp>
 
-#include "Factor.h"
-#include "FGConfig.h"
-
 namespace gtsam {
 
+	class Ordering;
+	class FGConfig;
+	class LinearFactor;
+	class LinearFactorGraph;
 	class Ordering;
 
 	/**
 	 * A factor graph is a bipartite graph with factor nodes connected to variable nodes.
 	 * In this class, however, only factor nodes are kept around.
+	 * 
+	 * Templated on the type of factors and configuration.
 	 */
-	template<class Factor> class FactorGraph {
+	template<class Factor, class Config> class FactorGraph {
 	public:
 		typedef typename boost::shared_ptr<Factor> shared_factor;
 		typedef typename std::vector<shared_factor>::iterator iterator;
@@ -67,7 +70,7 @@ namespace gtsam {
 		}
 
 		/** unnormalized error */
-		double error(const FGConfig& c) const {
+		double error(const Config& c) const {
 			double total_error = 0.;
 			/** iterate over all the factors_ to accumulate the log probabilities */
 			for (const_iterator factor = factors_.begin(); factor != factors_.end(); factor++)
@@ -77,7 +80,7 @@ namespace gtsam {
 		}
 
 		/** Unnormalized probability. O(n) */
-		double probPrime(const FGConfig& c) const {
+		double probPrime(const Config& c) const {
 			return exp(-0.5 * error(c));
 		}
 
@@ -120,3 +123,4 @@ namespace gtsam {
 		}
 	}; // FactorGraph
 } // namespace gtsam
+

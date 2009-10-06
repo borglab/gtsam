@@ -12,16 +12,17 @@ using namespace std;
 #include "Matrix.h"
 #include "smallExample.h"
 // template definitions
+#include "NonlinearFactorGraph-inl.h"
 #include "NonlinearOptimizer-inl.h"
 
 using namespace gtsam;
 
-typedef NonlinearOptimizer<NonlinearFactorGraph,FGConfig> Optimizer;
+typedef NonlinearOptimizer<ExampleNonlinearFactorGraph,FGConfig> Optimizer;
 
 /* ************************************************************************* */
-TEST( NonlinearFactorGraph, delta )
+TEST( NonlinearOptimizer, delta )
 {
-	NonlinearFactorGraph fg = createNonlinearFactorGraph();
+	ExampleNonlinearFactorGraph fg = createNonlinearFactorGraph();
 	Optimizer::shared_config initial = sharedNoisyConfig();
 
 	// Expected configuration is the difference between the noisy config
@@ -69,10 +70,10 @@ TEST( NonlinearFactorGraph, delta )
 }
 
 /* ************************************************************************* */
-TEST( NonlinearFactorGraph, iterateLM )
+TEST( NonlinearOptimizer, iterateLM )
 {
 	// really non-linear factor graph
-	NonlinearFactorGraph fg = createReallyNonlinearFactorGraph();
+	ExampleNonlinearFactorGraph fg = createReallyNonlinearFactorGraph();
 
 	// config far from minimum
 	Vector x0 = Vector_(1, 3.0);
@@ -92,13 +93,13 @@ TEST( NonlinearFactorGraph, iterateLM )
 	// LM iterate with lambda 0 should be the same
 	Optimizer iterated2 = optimizer.iterateLM();
 
-	CHECK(assert_equal(*(iterated1.config()), *(iterated2.config()), 1e-9));
+	CHECK(assert_equal(*iterated1.config(), *iterated2.config(), 1e-9));
 }
 
 /* ************************************************************************* */
-TEST( NonlinearFactorGraph, optimize )
+TEST( NonlinearOptimizer, optimize )
 {
-	NonlinearFactorGraph fg = createReallyNonlinearFactorGraph();
+	ExampleNonlinearFactorGraph fg = createReallyNonlinearFactorGraph();
 
 	// test error at minimum
 	Vector xstar = Vector_(1, 0.0);

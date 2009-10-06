@@ -12,7 +12,7 @@ using namespace gtsam;
 
 /* ************************************************************************* */
 VSLAMFactor::VSLAMFactor(const Vector& z, double sigma, int cn, int ln, const Cal3_S2 &K)
-  : NonlinearFactor(z, sigma)
+  : NonlinearFactor<FGConfig>(z, sigma)
 {
   cameraFrameNumber_ = cn;
   landmarkNumber_ = ln;
@@ -67,7 +67,7 @@ LinearFactor::shared_ptr VSLAMFactor::linearize(const FGConfig& c) const
 }
 
 /* ************************************************************************* */
-bool VSLAMFactor::equals(const Factor& f, double tol) const {
+bool VSLAMFactor::equals(const NonlinearFactor<FGConfig>& f, double tol) const {
   const VSLAMFactor* p = dynamic_cast<const VSLAMFactor*>(&f);
   if (p == NULL) goto fail;
   if (cameraFrameNumber_ != p->cameraFrameNumber_ || landmarkNumber_ != p->landmarkNumber_) goto fail;
@@ -88,7 +88,7 @@ string VSLAMFactor::dump() const
   Vector z = measurement();
   char buffer[200];
   buffer[0] = 0;
-  sprintf(buffer, "1 %d %d %f %d", i, j , sigma(), z.size());
+  sprintf(buffer, "1 %d %d %f %d", i, j , sigma(), (int)z.size());
   for(size_t i = 0; i < z.size(); i++)
     sprintf(buffer, "%s %f", buffer, z(i));
   sprintf(buffer, "%s %s", buffer, K_.dump().c_str());

@@ -8,20 +8,23 @@
 
 #include "NonlinearFactor.h"
 #include "LinearFactor.h"
+#include "FGConfig.h"
 #include "Cal3_S2.h"
 #include "Pose3.h"
+
+namespace gtsam {
 
 /**
  * Non-linear factor for a constraint derived from a 2D measurement,
  * i.e. the main building block for visual SLAM.
  */
-class VSLAMFactor : public gtsam::NonlinearFactor
+class VSLAMFactor : public NonlinearFactor<FGConfig>
 {
 
  private:
   int cameraFrameNumber_, landmarkNumber_;
   std::string cameraFrameName_, landmarkName_;
-  gtsam::Cal3_S2 K_; // Calibration stored in each factor. FD: need to think about this.
+  Cal3_S2 K_; // Calibration stored in each factor. FD: need to think about this.
 
  public:
 
@@ -35,7 +38,7 @@ class VSLAMFactor : public gtsam::NonlinearFactor
    * @param landmarkNumber is the index of the landmark
    * @param K the constant calibration
    */
-  VSLAMFactor(const Vector& z, double sigma, int cameraFrameNumber, int landmarkNumber, const gtsam::Cal3_S2& K);
+  VSLAMFactor(const Vector& z, double sigma, int cameraFrameNumber, int landmarkNumber, const Cal3_S2& K);
 
 
   /**
@@ -47,17 +50,17 @@ class VSLAMFactor : public gtsam::NonlinearFactor
   /**
    * calculate the error of the factor
    */
-  Vector error_vector(const gtsam::FGConfig&) const;
+  Vector error_vector(const FGConfig&) const;
 
   /**
    * linerarization 
    */
-  gtsam::LinearFactor::shared_ptr linearize(const gtsam::FGConfig&) const;
+  LinearFactor::shared_ptr linearize(const FGConfig&) const;
 
   /**
    * equals 
    */
-  bool equals(const gtsam::Factor&, double tol=1e-9) const;
+  bool equals(const NonlinearFactor<FGConfig>&, double tol=1e-9) const;
 
   int getCameraFrameNumber() const { return cameraFrameNumber_; }
   int getLandmarkNumber()    const { return landmarkNumber_;    }
@@ -68,3 +71,4 @@ class VSLAMFactor : public gtsam::NonlinearFactor
   std::string dump() const;
 };
 
+}

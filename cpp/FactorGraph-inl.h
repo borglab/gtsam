@@ -10,6 +10,7 @@
 
 #pragma once
 
+#include <list>
 #include <boost/foreach.hpp>
 #include <boost/tuple/tuple.hpp>
 #include "Ordering.h"
@@ -69,8 +70,8 @@ Ordering colamd(int n_col, int n_row, int nrNonZeros, const std::map<Key, std::v
 }
 
 /* ************************************************************************* */
-template<class Factor>
-Ordering FactorGraph<Factor>::getOrdering() const {
+template<class Factor, class Config>
+Ordering FactorGraph<Factor,Config>::getOrdering() const {
 
 	// A factor graph is really laid out in row-major format, each factor a row
 	// Below, we compute a symbolic matrix stored in sparse columns.
