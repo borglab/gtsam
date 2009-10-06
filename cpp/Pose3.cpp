@@ -10,6 +10,7 @@ using namespace std;
 namespace gtsam {
 
 /* ************************************************************************* */
+// Agrawal06iros, formula (6), seems to suggest this could be wrong:
 Pose3 Pose3::exmap(const Vector& v) const { 
   return Pose3(R_.exmap(sub(v,0,3)), t_.exmap(sub(v,3,6)));
 }
