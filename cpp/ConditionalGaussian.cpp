@@ -41,6 +41,14 @@ ConditionalGaussian::ConditionalGaussian(Vector d,
 }
 
 /* ************************************************************************* */
+ConditionalGaussian::ConditionalGaussian(const Vector& d,
+    		const Matrix& R,
+    		const map<std::string, Matrix>& parents)
+ : R_(R), d_(d), parents_(parents)
+ {
+ }
+
+/* ************************************************************************* */
 void ConditionalGaussian::print(const string &s) const
 {
   cout << s << ":" << endl;

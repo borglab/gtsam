@@ -81,6 +81,9 @@ public:
 	/** check equality */
 	bool equals(const ChordalBayesNet& cbn) const;
 
+	/** size is the number of nodes */
+	size_t size() const {return nodes.size();}
+
 	/**
 	 * Return (dense) upper-triangular matrix representation
 	 */

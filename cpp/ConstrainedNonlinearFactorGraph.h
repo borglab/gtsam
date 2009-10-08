@@ -10,7 +10,7 @@
 
 #include <boost/shared_ptr.hpp>
 #include "NonlinearFactorGraph.h"
-#include "EqualityFactor.h"
+#include "LinearConstraint.h"
 #include "ConstrainedLinearFactorGraph.h"
 
 namespace gtsam {
@@ -20,19 +20,19 @@ namespace gtsam {
  * 
  * Templated on factor and configuration type.
  * TODO FD: this is totally wrong: it can only work if Config==FGConfig
- * as EqualityFactor is only defined for FGConfig
+ * as LinearConstraint is only defined for FGConfig
  * To fix it, we need to think more deeply about this.
  */
 template<class Factor, class Config>
 class ConstrainedNonlinearFactorGraph: public FactorGraph<Factor, Config> {
 protected:
 	/** collection of equality factors */
-	std::vector<EqualityFactor::shared_ptr> eq_factors;
+	std::vector<LinearConstraint::shared_ptr> eq_factors;
 
 public:
 	// iterators over equality factors
-	typedef std::vector<EqualityFactor::shared_ptr>::const_iterator	eq_const_iterator;
-	typedef std::vector<EqualityFactor::shared_ptr>::iterator eq_iterator;
+	typedef std::vector<LinearConstraint::shared_ptr>::const_iterator	eq_const_iterator;
+	typedef std::vector<LinearConstraint::shared_ptr>::iterator eq_iterator;
 
 	/**
 	 * Default constructor
@@ -67,8 +67,8 @@ public:
 		// linearize the equality factors (set to zero because they are now in delta space)
 		for (eq_const_iterator e_factor = eq_factors.begin(); e_factor
 				< eq_factors.end(); e_factor++) {
-			EqualityFactor::shared_ptr eq = (*e_factor)->linearize();
-			ret.push_back_eq(eq);
+//			LinearConstraint::shared_ptr eq = (*e_factor)->linearize();
+//			ret.push_back_eq(eq);
 		}
 
 		return ret;
@@ -84,7 +84,7 @@ public:
 	/**
 	 * Insert a equality factor into the graph
 	 */
-	void push_back_eq(const EqualityFactor::shared_ptr& eq) {
+	void push_back_eq(const LinearConstraint::shared_ptr& eq) {
 		eq_factors.push_back(eq);
 	}
 

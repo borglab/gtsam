@@ -77,6 +77,14 @@ namespace gtsam {
 			Matrix T
       );
 
+    /**
+     * constructor with number of arbitrary parents
+     * |Rx+sum(Ai*xi)-d|
+     */
+    ConditionalGaussian(const Vector& d,
+    		const Matrix& R,
+    		const std::map<std::string, Matrix>& parents);
+
     /** deconstructor */
     virtual ~ConditionalGaussian() {};
 

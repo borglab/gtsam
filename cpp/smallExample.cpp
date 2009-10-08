@@ -17,8 +17,8 @@ using namespace std;
 #include "Ordering.h"
 #include "Matrix.h"
 #include "NonlinearFactor.h"
-#include "EqualityFactor.h"
-#include "DeltaFunction.h"
+#include "LinearConstraint.h"
+#include "ConstrainedConditionalGaussian.h"
 #include "smallExample.h"
 #include "Point2Prior.h"
 #include "Simulated2DOdometry.h"
@@ -66,47 +66,44 @@ ExampleNonlinearFactorGraph createNonlinearFactorGraph() {
 }
 
 /* ************************************************************************* */
-ConstrainedLinearFactorGraph createConstrainedLinearFactorGraph()
-{
-	ConstrainedLinearFactorGraph graph;
-
-	// add an equality factor
-	Vector v1(2); v1(0)=1.;v1(1)=2.;
-	EqualityFactor::shared_ptr f1(new EqualityFactor(v1, "x0"));
-	graph.push_back_eq(f1);
-
-	// add a normal linear factor
-	Matrix A21 = -1 * eye(2);
-
-	Matrix A22 = eye(2);
-
-	Vector b(2);
-	b(0) = 2 ; b(1) = 3;
-
-	double sigma = 0.1;
-	LinearFactor::shared_ptr f2(new LinearFactor("x0", A21/sigma,  "x1", A22/sigma, b/sigma));
-	graph.push_back(f2);
-
-
-	return graph;
-}
+//ConstrainedLinearFactorGraph createConstrainedLinearFactorGraph()
+//{
+//	ConstrainedLinearFactorGraph graph;
+//
+//	// add an equality factor
+//	Vector v1(2); v1(0)=1.;v1(1)=2.;
+//	LinearConstraint::shared_ptr f1(new LinearConstraint(v1, "x0"));
+//	graph.push_back_eq(f1);
+//
+//	// add a normal linear factor
+//	Matrix A21 = -1 * eye(2);
+//
+//	Matrix A22 = eye(2);
+//
+//	Vector b(2);
+//	b(0) = 2 ; b(1) = 3;
+//
+//	double sigma = 0.1;
+//	LinearFactor::shared_ptr f2(new LinearFactor("x0", A21/sigma,  "x1", A22/sigma, b/sigma));
+//	graph.push_back(f2);
+//	return graph;
+//}
 
 /* ************************************************************************* */
-	ConstrainedNonlinearFactorGraph<NonlinearFactor<FGConfig> , FGConfig> createConstrainedNonlinearFactorGraph() {
-		ConstrainedNonlinearFactorGraph<NonlinearFactor<FGConfig> , FGConfig> graph;
-		FGConfig c = createConstrainedConfig();
-
-		// equality constraint for initial pose
-		EqualityFactor::shared_ptr f1(new EqualityFactor(c["x0"], "x0"));
-		graph.push_back_eq(f1);
-
-		// odometry between x0 and x1
-		double sigma = 0.1;
-		shared f2(new Simulated2DOdometry(c["x1"] - c["x0"], sigma, "x0", "x1"));
-		graph.push_back(f2); // TODO
-
-		return graph;
-	}
+//	ConstrainedNonlinearFactorGraph<NonlinearFactor<FGConfig> , FGConfig> createConstrainedNonlinearFactorGraph() {
+//		ConstrainedNonlinearFactorGraph<NonlinearFactor<FGConfig> , FGConfig> graph;
+//		FGConfig c = createConstrainedConfig();
+//
+//		// equality constraint for initial pose
+//		LinearConstraint::shared_ptr f1(new LinearConstraint(c["x0"], "x0"));
+//		graph.push_back_eq(f1);
+//
+//		// odometry between x0 and x1
+//		double sigma = 0.1;
+//		shared f2(new Simulated2DOdometry(c["x1"] - c["x0"], sigma, "x0", "x1"));
+//		graph.push_back(f2); // TODO
+//		return graph;
+//	}
 
 	/* ************************************************************************* */
 FGConfig createConfig()
@@ -139,46 +136,46 @@ FGConfig createNoisyConfig() {
 }
 
 /* ************************************************************************* */
-FGConfig createConstrainedConfig()
-{
-	FGConfig config;
-
-	Vector x0(2); x0(0)=1.0; x0(1)=2.0;
-	config.insert("x0", x0);
-
-	Vector x1(2); x1(0)=3.0; x1(1)=5.0;
-	config.insert("x1", x1);
-
-	return config;
-}
-
-/* ************************************************************************* */
-FGConfig createConstrainedLinConfig()
-{
-	FGConfig config;
-
-	Vector x0(2); x0(0)=1.0; x0(1)=2.0; // value doesn't actually matter
-	config.insert("x0", x0);
-
-	Vector x1(2); x1(0)=2.3; x1(1)=5.3;
-	config.insert("x1", x1);
-
-	return config;
-}
+//FGConfig createConstrainedConfig()
+//{
+//	FGConfig config;
+//
+//	Vector x0(2); x0(0)=1.0; x0(1)=2.0;
+//	config.insert("x0", x0);
+//
+//	Vector x1(2); x1(0)=3.0; x1(1)=5.0;
+//	config.insert("x1", x1);
+//
+//	return config;
+//}
 
 /* ************************************************************************* */
-FGConfig createConstrainedCorrectDelta()
-{
-	FGConfig config;
+//FGConfig createConstrainedLinConfig()
+//{
+//	FGConfig config;
+//
+//	Vector x0(2); x0(0)=1.0; x0(1)=2.0; // value doesn't actually matter
+//	config.insert("x0", x0);
+//
+//	Vector x1(2); x1(0)=2.3; x1(1)=5.3;
+//	config.insert("x1", x1);
+//
+//	return config;
+//}
 
-	Vector x0(2); x0(0)=0.; x0(1)=0.;
-	config.insert("x0", x0);
-
-	Vector x1(2); x1(0)= 0.7; x1(1)= -0.3;
-	config.insert("x1", x1);
-
-	return config;
-}
+/* ************************************************************************* */
+//FGConfig createConstrainedCorrectDelta()
+//{
+//	FGConfig config;
+//
+//	Vector x0(2); x0(0)=0.; x0(1)=0.;
+//	config.insert("x0", x0);
+//
+//	Vector x1(2); x1(0)= 0.7; x1(1)= -0.3;
+//	config.insert("x1", x1);
+//
+//	return config;
+//}
 
 /* ************************************************************************* */
 FGConfig createCorrectDelta() {
@@ -293,24 +290,24 @@ ChordalBayesNet createSmallChordalBayesNet()
 }
 
 /* ************************************************************************* */
-ConstrainedChordalBayesNet createConstrainedChordalBayesNet()
-{
-	ConstrainedChordalBayesNet cbn;
-	FGConfig c = createConstrainedConfig();
-
-	// add regular conditional gaussian - no parent
-	Matrix R = eye(2);
-	Vector d = c["x1"];
-	double sigma = 0.1;
-	ConditionalGaussian::shared_ptr f1(new ConditionalGaussian(d/sigma, R/sigma));
-	cbn.insert("x1", f1);
-
-	// add a delta function to the cbn
-	DeltaFunction::shared_ptr f2(new DeltaFunction(c["x0"], "x0"));
-	cbn.insert_df("x0", f2);
-
-	return cbn;
-}
+//ConstrainedChordalBayesNet createConstrainedChordalBayesNet()
+//{
+//	ConstrainedChordalBayesNet cbn;
+//	FGConfig c = createConstrainedConfig();
+//
+//	// add regular conditional gaussian - no parent
+//	Matrix R = eye(2);
+//	Vector d = c["x1"];
+//	double sigma = 0.1;
+//	ConditionalGaussian::shared_ptr f1(new ConditionalGaussian(d/sigma, R/sigma));
+//	cbn.insert("x1", f1);
+//
+//	// add a delta function to the cbn
+//	ConstrainedConditionalGaussian::shared_ptr f2(new ConstrainedConditionalGaussian); //(c["x0"], "x0"));
+//	cbn.insert_df("x0", f2);
+//
+//	return cbn;
+//}
 
 /* ************************************************************************* */
 // Some nonlinear functions to optimize

@@ -11,10 +11,11 @@
 #pragma once
 
 #include <boost/shared_ptr.hpp>
-#include "ConstrainedNonlinearFactorGraph.h"
-#include "ConstrainedChordalBayesNet.h"
-#include "ConstrainedLinearFactorGraph.h"
+//#include "ConstrainedNonlinearFactorGraph.h" // will be added back once design is solidified
+//#include "ConstrainedLinearFactorGraph.h"
 #include "NonlinearFactorGraph.h"
+#include "ChordalBayesNet.h"
+#include "LinearFactorGraph.h"
 #include "FGConfig.h"
 
 // \namespace
@@ -32,13 +33,13 @@ namespace gtsam {
 	/**
 	 * Create small example constrained factor graph
 	 */
-	ConstrainedLinearFactorGraph createConstrainedLinearFactorGraph();
+	//ConstrainedLinearFactorGraph createConstrainedLinearFactorGraph();
 
 	/**
 	 * Create small example constrained nonlinear factor graph
 	 */
-	ConstrainedNonlinearFactorGraph<NonlinearFactor<FGConfig>,FGConfig>
-		createConstrainedNonlinearFactorGraph();
+//	ConstrainedNonlinearFactorGraph<NonlinearFactor<FGConfig>,FGConfig>
+//		createConstrainedNonlinearFactorGraph();
 
 	/**
 	 * Create configuration to go with it
@@ -50,7 +51,7 @@ namespace gtsam {
 	 * Create configuration for constrained example
 	 * This is the ground truth version
 	 */
-	FGConfig createConstrainedConfig();
+	//FGConfig createConstrainedConfig();
 
 	/**
 	 * create a noisy configuration for a nonlinear factor graph
@@ -80,11 +81,6 @@ namespace gtsam {
 	ChordalBayesNet createSmallChordalBayesNet();
 
 	/**
-	 * create small Constrained Chordal Bayes Net (from other constrained example)
-	 */
-	ConstrainedChordalBayesNet createConstrainedChordalBayesNet();
-
-	/**
 	 * Create really non-linear factor graph (cos/sin)
 	 */
 	boost::shared_ptr<const ExampleNonlinearFactorGraph> sharedReallyNonlinearFactorGraph();
@@ -93,10 +89,10 @@ namespace gtsam {
 	/**
 	 * Create a noisy configuration for linearization
 	 */
-	FGConfig createConstrainedLinConfig();
+	//FGConfig createConstrainedLinConfig();
 
 	/**
 	 * Create the correct delta configuration
 	 */
-	FGConfig createConstrainedCorrectDelta();
+	//FGConfig createConstrainedCorrectDelta();
 }

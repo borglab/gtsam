@@ -1,14 +1,11 @@
-/*
- * ConstrainedLinearFactorGraph.cpp
- *
- *  Created on: Aug 10, 2009
- *      Author: alexgc
+/**
+ * @file ConstrainedLinearFactorGraph.cpp
+ * @author Alex Cunningham
  */
 
 #include <iostream>
 #include "ConstrainedLinearFactorGraph.h"
 #include "FactorGraph-inl.h" // for getOrdering
-
 using namespace std;
 
 // trick from some reading group
@@ -20,27 +17,26 @@ ConstrainedLinearFactorGraph::ConstrainedLinearFactorGraph() {
 
 }
 
-ConstrainedLinearFactorGraph::ConstrainedLinearFactorGraph(const LinearFactorGraph& lfg)
-{
+ConstrainedLinearFactorGraph::ConstrainedLinearFactorGraph(
+		const LinearFactorGraph& lfg) {
 	BOOST_FOREACH(LinearFactor::shared_ptr s, lfg)
-	{
-		push_back(s);
+	{	push_back(s);
 	}
 }
 
 ConstrainedLinearFactorGraph::~ConstrainedLinearFactorGraph() {
 }
 
-void ConstrainedLinearFactorGraph::push_back_eq(EqualityFactor::shared_ptr factor)
+void ConstrainedLinearFactorGraph::push_back_constraint(LinearConstraint::shared_ptr factor)
 {
-	eq_factors.push_back(factor);
+	constraints_.push_back(factor);
 }
 
-bool ConstrainedLinearFactorGraph::involves_equality(const std::string& key) const
+bool ConstrainedLinearFactorGraph::is_constrained(const std::string& key) const
 {
-	BOOST_FOREACH(EqualityFactor::shared_ptr e, eq_factors)
+	BOOST_FOREACH(LinearConstraint::shared_ptr e, constraints_)
 	{
-		if (e->get_key() == key) return true;
+		if (e->involves(key)) return true;
 	}
 	return false;
 }
@@ -51,11 +47,11 @@ bool ConstrainedLinearFactorGraph::equals(const LinearFactorGraph& fg, double to
 	if (p == NULL) return false;
 
 	/** check equality factors */
-	if (eq_factors.size() != p->eq_factors.size()) return false;
-	BOOST_FOREACH(EqualityFactor::shared_ptr ef1, eq_factors)
+	if (constraints_.size() != p->constraints_.size()) return false;
+	BOOST_FOREACH(LinearConstraint::shared_ptr ef1, constraints_)
 	{
 		bool contains = false;
-		BOOST_FOREACH(EqualityFactor::shared_ptr ef2, p->eq_factors)
+		BOOST_FOREACH(LinearConstraint::shared_ptr ef2, p->constraints_)
 		if (ef1->equals(*ef2))
 			contains = true;
 		if (!contains) return false;
@@ -65,15 +61,16 @@ bool ConstrainedLinearFactorGraph::equals(const LinearFactorGraph& fg, double to
 	return LinearFactorGraph::equals(fg, tol);
 }
 
-ConstrainedChordalBayesNet::shared_ptr ConstrainedLinearFactorGraph::eliminate(const Ordering& ordering){
-	ConstrainedChordalBayesNet::shared_ptr cbn (new ConstrainedChordalBayesNet());
+ChordalBayesNet::shared_ptr ConstrainedLinearFactorGraph::eliminate(const Ordering& ordering) {
+	ChordalBayesNet::shared_ptr cbn (new ChordalBayesNet());
 
 	BOOST_FOREACH(string key, ordering) {
-		if (involves_equality(key)) // check whether this is an existing equality factor
+		// constraints take higher priority in elimination, so check if
+		// there are constraints first
+		if (is_constrained(key))
 		{
-			// check if eliminating an equality factor
-			DeltaFunction::shared_ptr d = eliminate_one_eq(key);
-			cbn->insert_df(key,d);
+			ConditionalGaussian::shared_ptr ccg = eliminate_constraint(key);
+			cbn->insert(key,ccg);
 		}
 		else
 		{
@@ -85,61 +82,71 @@ ConstrainedChordalBayesNet::shared_ptr ConstrainedLinearFactorGraph::eliminate(c
 	return cbn;
 }
 
-DeltaFunction::shared_ptr ConstrainedLinearFactorGraph::eliminate_one_eq(const string& key)
+ConstrainedConditionalGaussian::shared_ptr ConstrainedLinearFactorGraph::eliminate_constraint(const string& key)
 {
-	// extract the equality factor - also removes from graph
-	EqualityFactor::shared_ptr eqf = extract_eq(key);
+	// extract the constraint - in-place remove from graph
+	LinearConstraint::shared_ptr constraint = extract_constraint(key);
 
-	// remove all unary linear factors on this node
-	vector<LinearFactor::shared_ptr> newfactors;
-	BOOST_FOREACH(LinearFactor::shared_ptr f, factors_)
-	{
-		if (f->size() != 1 || !f->involves(key))
-		{
-			newfactors.push_back(f);
+	// perform elimination on the constraint itself to get the constrained conditional gaussian
+	ConstrainedConditionalGaussian::shared_ptr ccg = constraint->eliminate(key);
+
+	// perform a change of variables on the linear factors in the separator
+	LinearFactorSet separator = find_factors_and_remove(key);
+	BOOST_FOREACH(LinearFactor::shared_ptr factor, separator) {
+		// reconstruct with a mutable factor
+		boost::shared_ptr<MutableLinearFactor> new_factor(new MutableLinearFactor);
+
+		// get T = A1*inv(C1) term
+		Matrix A1 = factor->get_A(key);
+		Matrix invC1 = inverse(constraint->get_A(key));
+		Matrix T = A1*invC1;
+
+		// loop over all nodes in separator of constraint
+		list<string> constraint_keys = constraint->keys(key);
+		BOOST_FOREACH(string cur_key, constraint_keys) {
+			Matrix Ci = constraint->get_A(cur_key);
+			if (cur_key != key && !factor->involves(cur_key)) {
+				Matrix Ai = T*Ci;
+				new_factor->insert(cur_key, -1 *Ai);
+			} else if (cur_key != key) {
+				Matrix Ai = factor->get_A(cur_key) - T*Ci;
+				new_factor->insert(cur_key, Ai);
+			}
 		}
+
+		// update RHS of updated factor
+		Vector new_b = factor->get_b() - T*constraint->get_b();
+		new_factor->set_b(new_b);
+
+		// insert the new factor into the graph
+		push_back(new_factor);
 	}
-	factors_ = newfactors;
 
-	// combine the linear factors connected to equality node
-	boost::shared_ptr<MutableLinearFactor> joint_factor = combine_factors(key);
-
-	// combine the joint factor with the equality factor and add factors to graph
-	if (joint_factor->size() > 0)
-		eq_combine_and_eliminate(*eqf, *joint_factor);
-
-	// create the delta function - all delta function information contained in the equality factor
-	DeltaFunction::shared_ptr d = eqf->getDeltaFunction();
-
-	return d;
+	return ccg;
 }
 
-EqualityFactor::shared_ptr ConstrainedLinearFactorGraph::extract_eq(const string& key)
+LinearConstraint::shared_ptr ConstrainedLinearFactorGraph::extract_constraint(const string& key)
 {
-	EqualityFactor::shared_ptr ret;
-	vector<EqualityFactor::shared_ptr> new_vec;
-	BOOST_FOREACH(EqualityFactor::shared_ptr eq, eq_factors)
+	LinearConstraint::shared_ptr ret;
+	bool found_key = false;
+	vector<LinearConstraint::shared_ptr> new_vec;
+	BOOST_FOREACH(LinearConstraint::shared_ptr constraint, constraints_)
 	{
-		if (eq->get_key() == key)
-			ret = eq;
+		if (constraint->involves(key)) {
+			ret = constraint;
+			found_key = true;
+		}
 		else
-			new_vec.push_back(eq);
+			new_vec.push_back(constraint);
 	}
-	eq_factors = new_vec;
+	constraints_ = new_vec;
+	if (!found_key)
+		throw invalid_argument("No constraint connected to node: " + key);
 	return ret;
 }
 
-FGConfig ConstrainedLinearFactorGraph::optimize(const Ordering& ordering){
-	if (eq_factors.size() == 0)
-	{
-		// use default optimization
-		return LinearFactorGraph::optimize(ordering);
-	}
-
-	// eliminate all nodes in the given ordering -> chordal Bayes net
-	ConstrainedChordalBayesNet::shared_ptr cbn = eliminate(ordering);
-
-	// calculate new configuration (using backsubstitution)
+FGConfig ConstrainedLinearFactorGraph::optimize(const Ordering& ordering) {
+	ChordalBayesNet::shared_ptr cbn = eliminate(ordering);
 	boost::shared_ptr<FGConfig> newConfig = cbn->optimize();
 	return *newConfig;
 }
@@ -151,63 +158,18 @@ void ConstrainedLinearFactorGraph::print(const std::string& s) const
 	{
 		f->print();
 	}
-	BOOST_FOREACH(EqualityFactor::shared_ptr f, eq_factors)
+	BOOST_FOREACH(LinearConstraint::shared_ptr f, constraints_)
 	{
 		f->print();
 	}
 }
 
-void ConstrainedLinearFactorGraph::eq_combine_and_eliminate(
-		const EqualityFactor& eqf, const MutableLinearFactor& joint_factor)
-{
-	// start empty remaining factor to be returned
-	boost::shared_ptr<MutableLinearFactor> lf(new MutableLinearFactor);
-
-	// get the value of the target variable (x)
-	Vector x = eqf.get_value();
-
-	// get the RHS vector
-	Vector b = joint_factor.get_b();
-
-	// get key
-	string key = eqf.get_key();
-
-	// get the Ax matrix
-	Matrix Ax = joint_factor.get_A(key);
-
-	// calculate new b
-	b -= Ax * x;
-
-	// reassemble new factor
-	lf->set_b(b);
-	string j; Matrix A;
-	LinearFactor::const_iterator it = joint_factor.begin();
-	for (; it != joint_factor.end(); it++) {
-		j = it->first;
-		A = it->second;
-		if (j != key)	lf->insert(j, A);
-	}
-
-	// insert factor
-	push_back(lf);
-}
-
 Ordering ConstrainedLinearFactorGraph::getOrdering() const
 {
 	Ordering ord = LinearFactorGraph::getOrdering();
-	BOOST_FOREACH(EqualityFactor::shared_ptr e, eq_factors)
-		ord.push_back(e->get_key());
+	//	BOOST_FOREACH(LinearConstraint::shared_ptr e, constraints_)
+	//		ord.push_back(e->get_key());
 	return ord;
 }
-
-LinearFactorGraph ConstrainedLinearFactorGraph::convert() const
-{
-	LinearFactorGraph ret;
-	BOOST_FOREACH(LinearFactor::shared_ptr f, factors_)
-		ret.push_back(f);
-	return ret;
-}
-
-
 
 }
