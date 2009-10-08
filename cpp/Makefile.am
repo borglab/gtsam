@@ -58,22 +58,22 @@ testMatrix_LDADD = libgtsam.la
 
 # nodes
 sources += FGConfig.cpp Ordering.cpp LinearFactor.cpp NonlinearFactor.cpp 
-sources += ConditionalGaussian.cpp EqualityFactor.cpp DeltaFunction.cpp  
-check_PROGRAMS += testFGConfig testLinearFactor testConditionalGaussian testNonlinearFactor testEqualityFactor testDeltaFunction
+sources += ConditionalGaussian.cpp LinearConstraint.cpp ConstrainedConditionalGaussian.cpp  
+check_PROGRAMS += testFGConfig testLinearFactor testConditionalGaussian testNonlinearFactor testLinearConstraint testConstrainedConditionalGaussian
 example = smallExample.cpp 
 testFGConfig_SOURCES            = testFGConfig.cpp
 testLinearFactor_SOURCES        = $(example) testLinearFactor.cpp
 testConditionalGaussian_SOURCES = $(example) testConditionalGaussian.cpp
 testNonlinearFactor_SOURCES     = $(example) testNonlinearFactor.cpp
-testEqualityFactor_SOURCES      = $(example) testEqualityFactor.cpp
-testDeltaFunction_SOURCES       = testDeltaFunction.cpp
+testLinearConstraint_SOURCES      = $(example) testLinearConstraint.cpp
+testConstrainedConditionalGaussian_SOURCES       = testConstrainedConditionalGaussian.cpp
 
 testFGConfig_LDADD            = libgtsam.la
 testLinearFactor_LDADD        = libgtsam.la
 testConditionalGaussian_LDADD = libgtsam.la
 testNonlinearFactor_LDADD     = libgtsam.la
-testEqualityFactor_LDADD	  = libgtsam.la
-testDeltaFunction_LDADD       = libgtsam.la
+testLinearConstraint_LDADD	  = libgtsam.la
+testConstrainedConditionalGaussian_LDADD       = libgtsam.la
 
 # not the correct way, I'm sure: Kai ?
 timeLinearFactor: timeLinearFactor.cpp  
@@ -81,14 +81,13 @@ timeLinearFactor: CXXFLAGS += -I /opt/local/include
 timeLinearFactor: LDFLAGS += -L.libs -lgtsam
 
 # graphs 
-sources += ConstrainedChordalBayesNet.cpp ChordalBayesNet.cpp 
+sources += ChordalBayesNet.cpp 
 sources += LinearFactorGraph.cpp 
 sources += ConstrainedNonlinearFactorGraph.cpp ConstrainedLinearFactorGraph.cpp 
-check_PROGRAMS += testChordalBayesNet testConstrainedChordalBayesNet testFactorgraph 
+check_PROGRAMS += testChordalBayesNet testFactorgraph 
 check_PROGRAMS += testLinearFactorGraph testNonlinearFactorGraph testNonlinearOptimizer
 check_PROGRAMS += testConstrainedNonlinearFactorGraph testConstrainedLinearFactorGraph
 testChordalBayesNet_SOURCES      = $(example) testChordalBayesNet.cpp
-testConstrainedChordalBayesNet_SOURCES      = $(example) testConstrainedChordalBayesNet.cpp
 testFactorgraph_SOURCES          = testFactorgraph.cpp
 testLinearFactorGraph_SOURCES    = $(example) testLinearFactorGraph.cpp
 testNonlinearFactorGraph_SOURCES = $(example) testNonlinearFactorGraph.cpp
@@ -103,7 +102,6 @@ testNonlinearFactorGraph_LDADD = libgtsam.la
 testNonlinearOptimizer_LDADD   = libgtsam.la
 testConstrainedNonlinearFactorGraph_LDADD = libgtsam.la 
 testConstrainedLinearFactorGraph_LDADD    = libgtsam.la
-testConstrainedChordalBayesNet_LDADD      = libgtsam.la
 
 # geometry
 sources += Point2.cpp Pose2.cpp Point3.cpp Rot3.cpp Pose3.cpp Cal3_S2.cpp
