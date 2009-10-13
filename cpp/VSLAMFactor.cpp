@@ -11,8 +11,9 @@ using namespace std;
 using namespace gtsam;
 
 /* ************************************************************************* */
-VSLAMFactor::VSLAMFactor(const Vector& z, double sigma, int cn, int ln, const Cal3_S2 &K)
-  : NonlinearFactor<FGConfig>(z, sigma)
+template <class Config>
+VSLAMFactor<Config>::VSLAMFactor(const Vector& z, double sigma, int cn, int ln, const Cal3_S2 &K)
+  : NonlinearFactor<Config>(z, sigma)
 {
   cameraFrameNumber_ = cn;
   landmarkNumber_ = ln;
@@ -27,24 +28,27 @@ VSLAMFactor::VSLAMFactor(const Vector& z, double sigma, int cn, int ln, const Ca
 }
 
 /* ************************************************************************* */
-void VSLAMFactor::print(const std::string& s) const {
+template <class Config>
+void VSLAMFactor<Config>::print(const std::string& s) const {
   printf("%s %s %s\n", s.c_str(), cameraFrameName_.c_str(), landmarkName_.c_str());
-  ::print(z_, s+".z");
+  ::print(ConvenientFactor::z_, s+".z");
 }
 
 /* ************************************************************************* */
-Vector VSLAMFactor::error_vector(const FGConfig& c) const {
+template <class Config>
+Vector VSLAMFactor<Config>::error_vector(const Config& c) const {
   Pose3  pose     = c[cameraFrameName_];
   Point3 landmark = c[landmarkName_];
 
   // Right-hand-side b = (z - h(x))/sigma
   Vector h = project(SimpleCamera(K_,pose), landmark).vector();
 
-  return (z_ - h);
+  return (ConvenientFactor::z_ - h);
 }
 
 /* ************************************************************************* */
-LinearFactor::shared_ptr VSLAMFactor::linearize(const FGConfig& c) const
+template <class Config>
+LinearFactor::shared_ptr VSLAMFactor<Config>::linearize(const Config& c) const
 {
   // get arguments from config
   Pose3  pose     = c[cameraFrameName_]; // cast from Vector to Pose3 !!!
@@ -58,20 +62,21 @@ LinearFactor::shared_ptr VSLAMFactor::linearize(const FGConfig& c) const
 
   // Right-hand-side b = (z - h(x))
   Vector h = project(camera, landmark).vector();
-  Vector b = z_ - h;
+  Vector b = ConvenientFactor::z_ - h;
 
   // Make new linearfactor, divide by sigma
   LinearFactor::shared_ptr
-    p(new LinearFactor(cameraFrameName_, Dh1/sigma_, landmarkName_, Dh2/sigma_, b/sigma_));
+    p(new LinearFactor(cameraFrameName_, Dh1/ConvenientFactor::sigma_, landmarkName_, Dh2/ConvenientFactor::sigma_, b/ConvenientFactor::sigma_));
   return p;
 }
 
 /* ************************************************************************* */
-bool VSLAMFactor::equals(const NonlinearFactor<FGConfig>& f, double tol) const {
+template <class Config>
+bool VSLAMFactor<Config>::equals(const NonlinearFactor<Config>& f, double tol) const {
   const VSLAMFactor* p = dynamic_cast<const VSLAMFactor*>(&f);
   if (p == NULL) goto fail;
   if (cameraFrameNumber_ != p->cameraFrameNumber_ || landmarkNumber_ != p->landmarkNumber_) goto fail;
-  if (!equal_with_abs_tol(z_,p->z_,tol)) goto fail;
+  if (!equal_with_abs_tol(ConvenientFactor::z_,p->z_,tol)) goto fail;
   return true;
 
  fail:
@@ -81,14 +86,15 @@ bool VSLAMFactor::equals(const NonlinearFactor<FGConfig>& f, double tol) const {
 }
 
 /* ************************************************************************* */
-string VSLAMFactor::dump() const
+template <class Config>
+string VSLAMFactor<Config>::dump() const
 {
   int i = getCameraFrameNumber();
   int j = getLandmarkNumber();
-  Vector z = measurement();
+  Vector z = ConvenientFactor::measurement();
   char buffer[200];
   buffer[0] = 0;
-  sprintf(buffer, "1 %d %d %f %d", i, j , sigma(), (int)z.size());
+  sprintf(buffer, "1 %d %d %f %d", i, j , ConvenientFactor::sigma(), (int)z.size());
   for(size_t i = 0; i < z.size(); i++)
     sprintf(buffer, "%s %f", buffer, z(i));
   sprintf(buffer, "%s %s", buffer, K_.dump().c_str());
