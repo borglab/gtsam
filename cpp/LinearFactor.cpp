@@ -22,7 +22,7 @@ typedef pair<const string, Matrix>& mypair;
 
 /* ************************************************************************* */
 // we might have multiple As, so iterate and subtract from b
-double LinearFactor::error(const FGConfig& c) const {
+double LinearFactor::error(const VectorConfig& c) const {
   if (empty()) return 0;
   Vector e = b;
   string j; Matrix Aj;

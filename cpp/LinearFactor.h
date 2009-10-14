@@ -32,7 +32,7 @@ class MutableLinearFactor;
  * LinearFactor is non-mutable (all methods const!).
  * The factor value is exp(-0.5*||Ax-b||^2)
  */
-class LinearFactor: public Factor<FGConfig> {
+class LinearFactor: public Factor<VectorConfig> {
 public:
 
 	typedef boost::shared_ptr<LinearFactor> shared_ptr;
@@ -98,7 +98,7 @@ public:
 
 	// Implementing Factor virtual functions
 
-	double error(const FGConfig& c) const; /**  0.5*(A*x-b)'*(A*x-b) */
+	double error(const VectorConfig& c) const; /**  0.5*(A*x-b)'*(A*x-b) */
 	void print(const std::string& s = "") const;
 	bool equals(const LinearFactor& lf, double tol = 1e-9) const;
 	std::string dump() const { return "";}

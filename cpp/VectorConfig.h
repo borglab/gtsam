@@ -1,5 +1,5 @@
 /**
- * @file    FGConfig.h
+ * @file    VectorConfig.h
  * @brief   Factor Graph Configuration
  * @author  Carlos Nieto
  * @author  Christian Potthast
@@ -18,7 +18,7 @@
 namespace gtsam {
 	
   /** Factor Graph Configuration */
-  class FGConfig : public Testable<FGConfig> {
+  class VectorConfig : public Testable<VectorConfig> {
 
   protected:
     /** Map from string indices to values */
@@ -28,10 +28,10 @@ namespace gtsam {
     typedef std::map<std::string, Vector>::iterator iterator;
     typedef std::map<std::string, Vector>::const_iterator const_iterator;
 
-    FGConfig():Testable<FGConfig>() {}
-    FGConfig(const FGConfig& cfg_in) : Testable<FGConfig>(), values(cfg_in.values) {}
+    VectorConfig():Testable<VectorConfig>() {}
+    VectorConfig(const VectorConfig& cfg_in) : Testable<VectorConfig>(), values(cfg_in.values) {}
     
-    virtual ~FGConfig() {}
+    virtual ~VectorConfig() {}
 
     /** return all the nodes in the graph **/
     std::vector<std::string> get_names() const {
@@ -42,16 +42,16 @@ namespace gtsam {
     }
 
     /** Insert a value into the configuration with a given index */
-    FGConfig& insert(const std::string& name, const Vector& val) {
+    VectorConfig& insert(const std::string& name, const Vector& val) {
       values.insert(std::make_pair(name,val));
       return *this;
     }
 
     /**
      * Add a delta config, needed for use in NonlinearOptimizer
-     * For FGConfig, this is just addition.
+     * For VectorConfig, this is just addition.
      */
-    FGConfig exmap(const FGConfig & delta) const;
+    VectorConfig exmap(const VectorConfig & delta) const;
  
     const_iterator begin() const {return values.begin();}
     const_iterator end()   const {return values.end();}
@@ -78,7 +78,7 @@ namespace gtsam {
     void print(const std::string& name = "") const;
 
     /** equals, for unit testing */
-    bool equals(const FGConfig& expected, double tol=1e-9) const;
+    bool equals(const VectorConfig& expected, double tol=1e-9) const;
 
     void clear() {values.clear();}
     

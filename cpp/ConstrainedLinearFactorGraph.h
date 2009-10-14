@@ -114,7 +114,7 @@ public:
      * optimize a linear factor graph
      * @param ordering fg in order
      */
-    FGConfig optimize(const Ordering& ordering);
+    VectorConfig optimize(const Ordering& ordering);
 
     /**
      * Determines if a node has any constraints attached to it

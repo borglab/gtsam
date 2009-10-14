@@ -172,7 +172,7 @@ TEST( LinearFactor, error )
     LinearFactor::shared_ptr lf = fg[0];
 
     // check the error of the first factor with nosiy config
-    FGConfig cfg = createZeroDelta();
+    VectorConfig cfg = createZeroDelta();
 
     // calculate the error from the factor "f1"
     // note the error is the same as in testNonlinearFactor
@@ -330,7 +330,7 @@ TEST( LinearFactor, eliminate2 )
 TEST( LinearFactor, default_error )
 {	
   MutableLinearFactor f;
-  FGConfig c;
+  VectorConfig c;
   double actual = f.error(c);
   CHECK(actual==0.0);
 }

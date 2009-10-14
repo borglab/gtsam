@@ -15,7 +15,7 @@
 #include <boost/serialization/map.hpp>
 #include <boost/serialization/shared_ptr.hpp>
 #include "Matrix.h"
-#include "FGConfig.h"
+#include "VectorConfig.h"
 #include "Ordering.h"
 
 namespace gtsam {
@@ -115,7 +115,7 @@ namespace gtsam {
      * @param x configuration in which the parents values (y,z,...) are known
      * @return solution x = R \ (d - Sy - Tz - ...)
      */
-    virtual Vector solve(const FGConfig& x) const;
+    virtual Vector solve(const VectorConfig& x) const;
 
     /**
      * adds a parent

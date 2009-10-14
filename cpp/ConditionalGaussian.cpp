@@ -62,7 +62,7 @@ void ConditionalGaussian::print(const string &s) const
 }    
 
 /* ************************************************************************* */
-Vector ConditionalGaussian::solve(const FGConfig& x) const {
+Vector ConditionalGaussian::solve(const VectorConfig& x) const {
 	Vector rhs = d_;
 	for (map<string, Matrix>::const_iterator it = parents_.begin(); it
 			!= parents_.end(); it++) {

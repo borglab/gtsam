@@ -17,7 +17,7 @@ using namespace std;
 
 using namespace gtsam;
 
-typedef NonlinearOptimizer<ExampleNonlinearFactorGraph,FGConfig> Optimizer;
+typedef NonlinearOptimizer<ExampleNonlinearFactorGraph,VectorConfig> Optimizer;
 
 /* ************************************************************************* */
 TEST( NonlinearOptimizer, delta )
@@ -27,7 +27,7 @@ TEST( NonlinearOptimizer, delta )
 
 	// Expected configuration is the difference between the noisy config
 	// and the ground-truth config. One step only because it's linear !
-	FGConfig expected;
+	VectorConfig expected;
 	Vector dl1(2);
 	dl1(0) = -0.1;
 	dl1(1) = 0.1;
@@ -47,7 +47,7 @@ TEST( NonlinearOptimizer, delta )
 	ord1.push_back("l1");
 	ord1.push_back("x1");
 	Optimizer optimizer1(fg, ord1, initial);
-	FGConfig actual1 = optimizer1.delta();
+	VectorConfig actual1 = optimizer1.delta();
 	CHECK(assert_equal(actual1,expected));
 
 	// Check another
@@ -56,7 +56,7 @@ TEST( NonlinearOptimizer, delta )
 	ord2.push_back("x2");
 	ord2.push_back("l1");
 	Optimizer optimizer2(fg, ord2, initial);
-	FGConfig actual2 = optimizer2.delta();
+	VectorConfig actual2 = optimizer2.delta();
 	CHECK(assert_equal(actual2,expected));
 
 	// And yet another...
@@ -65,7 +65,7 @@ TEST( NonlinearOptimizer, delta )
 	ord3.push_back("x1");
 	ord3.push_back("x2");
 	Optimizer optimizer3(fg, ord3, initial);
-	FGConfig actual3 = optimizer3.delta();
+	VectorConfig actual3 = optimizer3.delta();
 	CHECK(assert_equal(actual3,expected));
 }
 
@@ -77,7 +77,7 @@ TEST( NonlinearOptimizer, iterateLM )
 
 	// config far from minimum
 	Vector x0 = Vector_(1, 3.0);
-	boost::shared_ptr<FGConfig> config(new FGConfig);
+	boost::shared_ptr<VectorConfig> config(new VectorConfig);
 	config->insert("x", x0);
 
 	// ordering
@@ -103,13 +103,13 @@ TEST( NonlinearOptimizer, optimize )
 
 	// test error at minimum
 	Vector xstar = Vector_(1, 0.0);
-	FGConfig cstar;
+	VectorConfig cstar;
 	cstar.insert("x", xstar);
 	DOUBLES_EQUAL(0.0,fg.error(cstar),0.0);
 
 	// test error at initial = [(1-cos(3))^2 + (sin(3))^2]*50 =
 	Vector x0 = Vector_(1, 3.0);
-	boost::shared_ptr<FGConfig> c0(new FGConfig);
+	boost::shared_ptr<VectorConfig> c0(new VectorConfig);
 	c0->insert("x", x0);
 	DOUBLES_EQUAL(199.0,fg.error(*c0),1e-3);
 

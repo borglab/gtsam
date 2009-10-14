@@ -19,8 +19,8 @@ namespace gtsam {
  * A nonlinear factor graph with the addition of equality constraints.
  * 
  * Templated on factor and configuration type.
- * TODO FD: this is totally wrong: it can only work if Config==FGConfig
- * as LinearConstraint is only defined for FGConfig
+ * TODO FD: this is totally wrong: it can only work if Config==VectorConfig
+ * as LinearConstraint is only defined for VectorConfig
  * To fix it, we need to think more deeply about this.
  */
 template<class Factor, class Config>

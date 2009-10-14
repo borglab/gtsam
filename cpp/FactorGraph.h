@@ -16,7 +16,7 @@
 namespace gtsam {
 
 	class Ordering;
-	class FGConfig;
+	class VectorConfig;
 	class LinearFactor;
 	class LinearFactorGraph;
 	class Ordering;

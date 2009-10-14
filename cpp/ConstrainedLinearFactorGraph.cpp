@@ -217,9 +217,9 @@ void ConstrainedLinearFactorGraph::update_constraints(const std::string& key,
 }
 
 /* ************************************************************************* */
-FGConfig ConstrainedLinearFactorGraph::optimize(const Ordering& ordering) {
+VectorConfig ConstrainedLinearFactorGraph::optimize(const Ordering& ordering) {
 	ChordalBayesNet::shared_ptr cbn = eliminate(ordering);
-	boost::shared_ptr<FGConfig> newConfig = cbn->optimize();
+	boost::shared_ptr<VectorConfig> newConfig = cbn->optimize();
 	return *newConfig;
 }
 

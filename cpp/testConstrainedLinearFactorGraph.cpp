@@ -67,9 +67,9 @@ TEST( ConstrainedLinearFactorGraph, optimize )
 	Ordering ord;
 	ord.push_back("y");
 	ord.push_back("x");
-	FGConfig actual = fg.optimize(ord);
+	VectorConfig actual = fg.optimize(ord);
 
-	FGConfig expected;
+	VectorConfig expected;
 	expected.insert("x", Vector_(2, 1.0, -1.0));
 	expected.insert("y", Vector_(2, 0.2,  0.1));
 
@@ -88,9 +88,9 @@ TEST( ConstrainedLinearFactorGraph, optimize2 )
 	Ordering ord;
 	ord.push_back("x");
 	ord.push_back("y");
-	FGConfig actual = fg.optimize(ord);
+	VectorConfig actual = fg.optimize(ord);
 
-	FGConfig expected;
+	VectorConfig expected;
 	expected.insert("x", Vector_(2, 1.0, -1.0));
 	expected.insert("y", Vector_(2, 0.2,  0.1));
 
@@ -239,7 +239,7 @@ TEST( ConstrainedLinearFactorGraph, eliminate_multi_constraint )
 	CHECK(cg3->size() == 0);
 
 	// solve piecewise
-	FGConfig actual;
+	VectorConfig actual;
 	Vector act_z = cg3->solve(actual);
 	actual.insert("z", act_z);
 	CHECK(assert_equal(act_z, Vector_(2, -4.0, 5.0), 1e-4));
@@ -261,10 +261,10 @@ TEST( ConstrainedLinearFactorGraph, optimize_multi_constraint )
 	ord.push_back("y");
 	ord.push_back("z");
 
-	FGConfig actual = fg.optimize(ord);
+	VectorConfig actual = fg.optimize(ord);
 
 	// verify
-	FGConfig expected;
+	VectorConfig expected;
 	expected.insert("x", Vector_(2, -2.0, 2.0));
 	expected.insert("y", Vector_(2, -0.1, 0.4));
 	expected.insert("z", Vector_(2, -4.0, 5.0));
@@ -363,7 +363,7 @@ TEST( ConstrainedLinearFactorGraph, optimize_multi_constraint )
 //	ConstrainedLinearFactorGraph fg1 = createConstrainedLinearFactorGraph();
 //	ConstrainedLinearFactorGraph fg2 = createConstrainedLinearFactorGraph();
 //
-//	FGConfig expected = createConstrainedConfig();
+//	VectorConfig expected = createConstrainedConfig();
 //
 //	Ordering ord1;
 //	ord1.push_back("x0");
@@ -373,8 +373,8 @@ TEST( ConstrainedLinearFactorGraph, optimize_multi_constraint )
 //	ord2.push_back("x1");
 //	ord2.push_back("x0");
 //
-//	FGConfig actual1 = fg1.optimize(ord1);
-//	FGConfig actual2 = fg2.optimize(ord2);
+//	VectorConfig actual1 = fg1.optimize(ord1);
+//	VectorConfig actual2 = fg2.optimize(ord2);
 //
 //	CHECK(actual1.equals(expected));
 //	CHECK(actual1.equals(actual2));
@@ -383,7 +383,7 @@ TEST( ConstrainedLinearFactorGraph, optimize_multi_constraint )
 //TEST (ConstrainedLinearFactorGraph, eliminate )
 //{
 //	ConstrainedLinearFactorGraph fg = createConstrainedLinearFactorGraph();
-//	FGConfig c = createConstrainedConfig();
+//	VectorConfig c = createConstrainedConfig();
 //
 //	Ordering ord1;
 //	ord1.push_back("x0");
@@ -417,9 +417,9 @@ TEST( ConstrainedLinearFactorGraph, optimize_multi_constraint )
 //	ord.push_back("x1");
 //	ord.push_back("x2");
 //
-//	FGConfig actual = clfg.optimize(ord);
+//	VectorConfig actual = clfg.optimize(ord);
 //
-//	FGConfig expected = lfg.optimize(ord); // should be identical to regular lfg optimize
+//	VectorConfig expected = lfg.optimize(ord); // should be identical to regular lfg optimize
 //
 //	CHECK(actual.equals(expected));
 //}
@@ -455,7 +455,7 @@ TEST( ConstrainedLinearFactorGraph, optimize_multi_constraint )
 ////	ConstrainedLinearFactorGraph fg = createConstrainedLinearFactorGraph();
 ////	ConstrainedConditionalGaussian::shared_ptr actual = fg.eliminate_constraint("x0");
 ////
-////	FGConfig c = createConstrainedConfig();
+////	VectorConfig c = createConstrainedConfig();
 ////	ConstrainedConditionalGaussian::shared_ptr expected(new ConstrainedConditionalGaussian);//(c["x0"], "x0"));
 ////
 ////	CHECK(assert_equal(*actual, *expected)); // check output for correct delta function
@@ -496,7 +496,7 @@ TEST( ConstrainedLinearFactorGraph, optimize_multi_constraint )
 //	CHECK(actual->size() == 1); // remaining factor will be unary
 //
 //	// verify values
-//	FGConfig c = createConstrainedConfig();
+//	VectorConfig c = createConstrainedConfig();
 //	Vector exp_v = c["x1"];
 //	Matrix A = actual->get_A("x1");
 //	Vector b = actual->get_b();

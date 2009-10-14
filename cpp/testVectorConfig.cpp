@@ -1,5 +1,5 @@
 /**
- * @file   testFGConfig.cpp
+ * @file   testVectorConfig.cpp
  * @brief  Unit tests for Factor Graph Configuration
  * @author Carlos Nieto
  **/
@@ -17,27 +17,27 @@
 
 #include <CppUnitLite/TestHarness.h>
 #include "Matrix.h"
-#include "FGConfig.h"
+#include "VectorConfig.h"
 #include "smallExample.cpp"
 
 using namespace std;
 using namespace gtsam;
 	
 /* ************************************************************************* */
-TEST( FGConfig, equals )
+TEST( VectorConfig, equals )
  {	 
-   FGConfig expected;
+   VectorConfig expected;
    Vector v = Vector_(3, 5.0, 6.0, 7.0);
    expected.insert("a",v);
-   FGConfig actual;
+   VectorConfig actual;
    actual.insert("a",v);
    CHECK(actual.equals(expected));
  }
 
 /* ************************************************************************* */
-TEST( FGConfig, contains)
+TEST( VectorConfig, contains)
 {
-  FGConfig fg;
+  VectorConfig fg;
   Vector v = Vector_(3, 5.0, 6.0, 7.0);
   fg.insert("ali", v);
   CHECK(fg.contains("ali"));
@@ -45,34 +45,34 @@ TEST( FGConfig, contains)
 }
 
 /* ************************************************************************* */
-TEST( FGConfig, plus)
+TEST( VectorConfig, plus)
 {
-  FGConfig fg;
+  VectorConfig fg;
   Vector vx = Vector_(3, 5.0, 6.0, 7.0), vy = Vector_(2, 8.0, 9.0);
   fg.insert("x", vx).insert("y",vy);
 
-  FGConfig delta;
+  VectorConfig delta;
   Vector dx = Vector_(3, 1.0, 1.0, 1.0), dy = Vector_(2, -1.0, -1.0);
   delta.insert("x", dx).insert("y",dy);
 
-  FGConfig expected;
+  VectorConfig expected;
   Vector wx = Vector_(3, 6.0, 7.0, 8.0), wy = Vector_(2, 7.0, 8.0);
   expected.insert("x", wx).insert("y",wy);
 
   // functional
-  FGConfig actual = fg.exmap(delta);
+  VectorConfig actual = fg.exmap(delta);
   CHECK(actual.equals(expected));
 }
 
 /* ************************************************************************* */
 #ifdef HAVE_BOOST_SERIALIZATION
-TEST( FGConfig, serialize)
+TEST( VectorConfig, serialize)
 {
     //DEBUG:
-    cout << "FGConfig: Running Serialization Test" << endl;
+    cout << "VectorConfig: Running Serialization Test" << endl;
     
-    //create an FGConfig
-    FGConfig fg = createConfig();
+    //create an VectorConfig
+    VectorConfig fg = createConfig();
     
     //serialize the config
     std::ostringstream in_archive_stream;
@@ -83,7 +83,7 @@ TEST( FGConfig, serialize)
     //deserialize the config
     std::istringstream out_archive_stream(serialized_fgc);
     boost::archive::text_iarchive out_archive(out_archive_stream);
-    FGConfig output;
+    VectorConfig output;
     out_archive >> output;
     
     //check for equality

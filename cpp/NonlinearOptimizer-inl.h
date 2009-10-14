@@ -54,7 +54,7 @@ namespace gtsam {
 	// linearize and optimize
 	/* ************************************************************************* */
 	template<class G, class C>
-	FGConfig NonlinearOptimizer<G, C>::delta() const {
+	VectorConfig NonlinearOptimizer<G, C>::delta() const {
 		LinearFactorGraph linear = graph_->linearize(*config_);
 		return linear.optimize(*ordering_);
 	}
@@ -67,7 +67,7 @@ namespace gtsam {
 			verbosityLevel verbosity) const {
 
 		// linearize and optimize
-		FGConfig delta = this->delta();
+		VectorConfig delta = this->delta();
 
 		// maybe show output
 		if (verbosity >= DELTA)
@@ -121,7 +121,7 @@ namespace gtsam {
 			damped.print("damped");
 
 		// solve
-		FGConfig delta = damped.optimize(*ordering_);
+		VectorConfig delta = damped.optimize(*ordering_);
 		if (verbosity >= TRYDELTA)
 			delta.print("delta");
 

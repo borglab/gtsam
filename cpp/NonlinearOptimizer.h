@@ -10,7 +10,7 @@
 
 #include <boost/shared_ptr.hpp>
 #include "NonlinearFactorGraph.h"
-#include "FGConfig.h"
+#include "VectorConfig.h"
 
 namespace gtsam {
 
@@ -96,9 +96,9 @@ namespace gtsam {
 
 		/**
 		 *  linearize and optimize
-		 *  Thi returns an FGConfig, i.e., vectors in tangent space of Config
+		 *  Thi returns an VectorConfig, i.e., vectors in tangent space of Config
 		 */
-		FGConfig delta() const;
+		VectorConfig delta() const;
 
 		/**
 		 * Do one Gauss-Newton iteration and return next state

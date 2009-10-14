@@ -8,7 +8,7 @@
 
 #include "NonlinearFactor.h"
 #include "LinearFactor.h"
-#include "FGConfig.h"
+#include "VectorConfig.h"
 #include "Cal3_S2.h"
 #include "Pose3.h"
 

@@ -80,7 +80,7 @@ TEST( ConditionalGaussian, solve )
   Vector sl1(2);
   sl1(0) = 0.5; sl1(1) = 0.8;
   
-  FGConfig solution;
+  VectorConfig solution;
   solution.insert("x1", sx1);
   solution.insert("l1", sl1);
   

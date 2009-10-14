@@ -57,18 +57,18 @@ testVector_LDADD = libgtsam.la
 testMatrix_LDADD = libgtsam.la
 
 # nodes
-sources += FGConfig.cpp Ordering.cpp LinearFactor.cpp NonlinearFactor.cpp 
+sources += VectorConfig.cpp Ordering.cpp LinearFactor.cpp NonlinearFactor.cpp 
 sources += ConditionalGaussian.cpp LinearConstraint.cpp ConstrainedConditionalGaussian.cpp  
-check_PROGRAMS += testFGConfig testLinearFactor testConditionalGaussian testNonlinearFactor testLinearConstraint testConstrainedConditionalGaussian
+check_PROGRAMS += testVectorConfig testLinearFactor testConditionalGaussian testNonlinearFactor testLinearConstraint testConstrainedConditionalGaussian
 example = smallExample.cpp 
-testFGConfig_SOURCES            = testFGConfig.cpp
+testVectorConfig_SOURCES            = testVectorConfig.cpp
 testLinearFactor_SOURCES        = $(example) testLinearFactor.cpp
 testConditionalGaussian_SOURCES = $(example) testConditionalGaussian.cpp
 testNonlinearFactor_SOURCES     = $(example) testNonlinearFactor.cpp
 testLinearConstraint_SOURCES      = $(example) testLinearConstraint.cpp
 testConstrainedConditionalGaussian_SOURCES       = testConstrainedConditionalGaussian.cpp
 
-testFGConfig_LDADD            = libgtsam.la
+testVectorConfig_LDADD            = libgtsam.la
 testLinearFactor_LDADD        = libgtsam.la
 testConditionalGaussian_LDADD = libgtsam.la
 testNonlinearFactor_LDADD     = libgtsam.la

@@ -26,7 +26,7 @@ using namespace std;
 
 namespace gtsam {
 
-typedef boost::shared_ptr<NonlinearFactor<FGConfig> > shared;
+typedef boost::shared_ptr<NonlinearFactor<VectorConfig> > shared;
 
 /* ************************************************************************* */
 boost::shared_ptr<const ExampleNonlinearFactorGraph> sharedNonlinearFactorGraph() {
@@ -66,12 +66,12 @@ ExampleNonlinearFactorGraph createNonlinearFactorGraph() {
 }
 
 /* ************************************************************************* */
-FGConfig createConfig()
+VectorConfig createConfig()
 {
     Vector v_x1(2); v_x1(0) = 0.;  v_x1(1) = 0.;
     Vector v_x2(2); v_x2(0) = 1.5; v_x2(1) = 0.;
     Vector v_l1(2); v_l1(0) = 0.;  v_l1(1) = -1.;
-    FGConfig c;
+    VectorConfig c;
     c.insert("x1", v_x1);
     c.insert("x2", v_x2);
     c.insert("l1", v_l1);
@@ -79,12 +79,12 @@ FGConfig createConfig()
 }
 
 /* ************************************************************************* */
-boost::shared_ptr<const FGConfig> sharedNoisyConfig()
+boost::shared_ptr<const VectorConfig> sharedNoisyConfig()
 {
     Vector v_x1(2); v_x1(0) = 0.1;  v_x1(1) = 0.1;
     Vector v_x2(2); v_x2(0) = 1.4;  v_x2(1) = 0.2;
     Vector v_l1(2); v_l1(0) = 0.1;  v_l1(1) = -1.1;
-    boost::shared_ptr<FGConfig> c(new FGConfig);
+    boost::shared_ptr<VectorConfig> c(new VectorConfig);
     c->insert("x1", v_x1);
     c->insert("x2", v_x2);
     c->insert("l1", v_l1);
@@ -92,16 +92,16 @@ boost::shared_ptr<const FGConfig> sharedNoisyConfig()
 }
 
 /* ************************************************************************* */
-FGConfig createNoisyConfig() {
+VectorConfig createNoisyConfig() {
 	return *sharedNoisyConfig();
 }
 
 /* ************************************************************************* */
-FGConfig createCorrectDelta() {
+VectorConfig createCorrectDelta() {
   Vector v_x1(2); v_x1(0) = -0.1;  v_x1(1) = -0.1;
   Vector v_x2(2); v_x2(0) =  0.1;  v_x2(1) = -0.2;
   Vector v_l1(2); v_l1(0) = -0.1;  v_l1(1) =  0.1;
-  FGConfig c;
+  VectorConfig c;
   c.insert("x1", v_x1);
   c.insert("x2", v_x2);
   c.insert("l1", v_l1);
@@ -109,11 +109,11 @@ FGConfig createCorrectDelta() {
 }
 
 /* ************************************************************************* */
-FGConfig createZeroDelta() {
+VectorConfig createZeroDelta() {
   Vector v_x1(2); v_x1(0) = 0;  v_x1(1) = 0;
   Vector v_x2(2); v_x2(0) = 0;  v_x2(1) = 0;
   Vector v_l1(2); v_l1(0) = 0;  v_l1(1) = 0;
-  FGConfig c;
+  VectorConfig c;
   c.insert("x1", v_x1);
   c.insert("x2", v_x2);
   c.insert("l1", v_l1);
@@ -123,7 +123,7 @@ FGConfig createZeroDelta() {
 /* ************************************************************************* */
 LinearFactorGraph createLinearFactorGraph()
 {
-  FGConfig c = createNoisyConfig();
+  VectorConfig c = createNoisyConfig();
   
   // Create
   LinearFactorGraph fg;
@@ -333,9 +333,9 @@ ConstrainedLinearFactorGraph createMultiConstraintGraph() {
 //}
 
 /* ************************************************************************* */
-//	ConstrainedNonlinearFactorGraph<NonlinearFactor<FGConfig> , FGConfig> createConstrainedNonlinearFactorGraph() {
-//		ConstrainedNonlinearFactorGraph<NonlinearFactor<FGConfig> , FGConfig> graph;
-//		FGConfig c = createConstrainedConfig();
+//	ConstrainedNonlinearFactorGraph<NonlinearFactor<VectorConfig> , VectorConfig> createConstrainedNonlinearFactorGraph() {
+//		ConstrainedNonlinearFactorGraph<NonlinearFactor<VectorConfig> , VectorConfig> graph;
+//		VectorConfig c = createConstrainedConfig();
 //
 //		// equality constraint for initial pose
 //		LinearConstraint::shared_ptr f1(new LinearConstraint(c["x0"], "x0"));
@@ -349,9 +349,9 @@ ConstrainedLinearFactorGraph createMultiConstraintGraph() {
 //	}
 
 /* ************************************************************************* */
-//FGConfig createConstrainedConfig()
+//VectorConfig createConstrainedConfig()
 //{
-//	FGConfig config;
+//	VectorConfig config;
 //
 //	Vector x0(2); x0(0)=1.0; x0(1)=2.0;
 //	config.insert("x0", x0);
@@ -363,9 +363,9 @@ ConstrainedLinearFactorGraph createMultiConstraintGraph() {
 //}
 
 /* ************************************************************************* */
-//FGConfig createConstrainedLinConfig()
+//VectorConfig createConstrainedLinConfig()
 //{
-//	FGConfig config;
+//	VectorConfig config;
 //
 //	Vector x0(2); x0(0)=1.0; x0(1)=2.0; // value doesn't actually matter
 //	config.insert("x0", x0);
@@ -377,9 +377,9 @@ ConstrainedLinearFactorGraph createMultiConstraintGraph() {
 //}
 
 /* ************************************************************************* */
-//FGConfig createConstrainedCorrectDelta()
+//VectorConfig createConstrainedCorrectDelta()
 //{
-//	FGConfig config;
+//	VectorConfig config;
 //
 //	Vector x0(2); x0(0)=0.; x0(1)=0.;
 //	config.insert("x0", x0);
@@ -394,7 +394,7 @@ ConstrainedLinearFactorGraph createMultiConstraintGraph() {
 //ConstrainedChordalBayesNet createConstrainedChordalBayesNet()
 //{
 //	ConstrainedChordalBayesNet cbn;
-//	FGConfig c = createConstrainedConfig();
+//	VectorConfig c = createConstrainedConfig();
 //
 //	// add regular conditional gaussian - no parent
 //	Matrix R = eye(2);

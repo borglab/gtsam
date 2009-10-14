@@ -16,13 +16,13 @@
 #include "NonlinearFactorGraph.h"
 #include "ChordalBayesNet.h"
 #include "LinearFactorGraph.h"
-#include "FGConfig.h"
+#include "VectorConfig.h"
 
 // \namespace
 
 namespace gtsam {
 
-	typedef NonlinearFactorGraph<FGConfig> ExampleNonlinearFactorGraph;
+	typedef NonlinearFactorGraph<VectorConfig> ExampleNonlinearFactorGraph;
 
 	/**
 	 * Create small example for non-linear factor graph
@@ -34,23 +34,23 @@ namespace gtsam {
 	 * Create configuration to go with it
 	 * The ground truth configuration for the example above
 	 */
-	FGConfig createConfig();
+	VectorConfig createConfig();
 
 	/**
 	 * create a noisy configuration for a nonlinear factor graph
 	 */
-	boost::shared_ptr<const FGConfig> sharedNoisyConfig();
-	FGConfig createNoisyConfig();
+	boost::shared_ptr<const VectorConfig> sharedNoisyConfig();
+	VectorConfig createNoisyConfig();
 
 	/**
 	 * Zero delta config
 	 */
-	FGConfig createZeroDelta();
+	VectorConfig createZeroDelta();
 
 	/**
 	 * Delta config that, when added to noisyConfig, returns the ground truth
 	 */
-	FGConfig createCorrectDelta();
+	VectorConfig createCorrectDelta();
 
 	/**
 	 * create a linear factor graph
@@ -93,17 +93,17 @@ namespace gtsam {
 	 * Create configuration for constrained example
 	 * This is the ground truth version
 	 */
-	//FGConfig createConstrainedConfig();
+	//VectorConfig createConstrainedConfig();
 
 	/**
 	 * Create a noisy configuration for linearization
 	 */
-	//FGConfig createConstrainedLinConfig();
+	//VectorConfig createConstrainedLinConfig();
 
 	/**
 	 * Create the correct delta configuration
 	 */
-	//FGConfig createConstrainedCorrectDelta();
+	//VectorConfig createConstrainedCorrectDelta();
 
 	/**
 	 * Create small example constrained factor graph
@@ -113,6 +113,6 @@ namespace gtsam {
 	/**
 	 * Create small example constrained nonlinear factor graph
 	 */
-//	ConstrainedNonlinearFactorGraph<NonlinearFactor<FGConfig>,FGConfig>
+//	ConstrainedNonlinearFactorGraph<NonlinearFactor<VectorConfig>,VectorConfig>
 //		createConstrainedNonlinearFactorGraph();
 }

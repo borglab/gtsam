@@ -142,13 +142,13 @@ LinearFactorGraph::eliminate(const Ordering& ordering)
 /* ************************************************************************* */
 /** optimize the linear factor graph                                          */ 
 /* ************************************************************************* */
-FGConfig LinearFactorGraph::optimize(const Ordering& ordering)
+VectorConfig LinearFactorGraph::optimize(const Ordering& ordering)
 {
 	// eliminate all nodes in the given ordering -> chordal Bayes net
 	ChordalBayesNet::shared_ptr chordalBayesNet = eliminate(ordering);
 
 	// calculate new configuration (using backsubstitution)
-	boost::shared_ptr<FGConfig> newConfig = chordalBayesNet->optimize();
+	boost::shared_ptr<VectorConfig> newConfig = chordalBayesNet->optimize();
 
 	return *newConfig;
 }

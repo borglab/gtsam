@@ -12,8 +12,8 @@
 
 using namespace gtsam;
 
-typedef boost::shared_ptr<NonlinearFactor<FGConfig> > shared;
-typedef ConstrainedNonlinearFactorGraph<NonlinearFactor<FGConfig>,FGConfig> TestGraph;
+typedef boost::shared_ptr<NonlinearFactor<VectorConfig> > shared;
+typedef ConstrainedNonlinearFactorGraph<NonlinearFactor<VectorConfig>,VectorConfig> TestGraph;
 
 //TEST( TestGraph, equals )
 //{
@@ -47,7 +47,7 @@ typedef ConstrainedNonlinearFactorGraph<NonlinearFactor<FGConfig>,FGConfig> Test
 //	ExampleNonlinearFactorGraph nfg = createNonlinearFactorGraph();
 //	TestGraph cfg(nfg);
 //
-//	FGConfig initial = createNoisyConfig();
+//	VectorConfig initial = createNoisyConfig();
 //	ConstrainedLinearFactorGraph linearized = cfg.linearize(initial);
 //	LinearFactorGraph lfg = createLinearFactorGraph();
 //	ConstrainedLinearFactorGraph expected(lfg);
@@ -68,11 +68,11 @@ typedef ConstrainedNonlinearFactorGraph<NonlinearFactor<FGConfig>,FGConfig> Test
 //TEST( TestGraph, linearize_and_solve )
 //{
 //	TestGraph nfg = createConstrainedNonlinearFactorGraph();
-//	FGConfig lin = createConstrainedLinConfig();
+//	VectorConfig lin = createConstrainedLinConfig();
 //	ConstrainedLinearFactorGraph actual_lfg = nfg.linearize(lin);
-//	FGConfig actual = actual_lfg.optimize(actual_lfg.getOrdering());
+//	VectorConfig actual = actual_lfg.optimize(actual_lfg.getOrdering());
 //
-//	FGConfig expected = createConstrainedCorrectDelta();
+//	VectorConfig expected = createConstrainedCorrectDelta();
 //	CHECK(actual.equals(expected));
 //}
 

@@ -31,7 +31,7 @@ TEST( LinearFactorGraph, equals ){
 TEST( LinearFactorGraph, error )
 {
   LinearFactorGraph fg = createLinearFactorGraph();
-  FGConfig cfg = createZeroDelta();
+  VectorConfig cfg = createZeroDelta();
 
   // note the error is the same as in testNonlinearFactorGraph as a
   // zero delta config in the linear graph is equivalent to noisy in
@@ -484,10 +484,10 @@ TEST( LinearFactorGraph, OPTIMIZE )
 	Ordering ord = fg.getOrdering();
 
 	// optimize the graph
-	FGConfig actual = fg.optimize(ord);
+	VectorConfig actual = fg.optimize(ord);
 
 	// verify
-	FGConfig expected = createCorrectDelta();
+	VectorConfig expected = createCorrectDelta();
 
 	CHECK(actual.equals(expected));
 }

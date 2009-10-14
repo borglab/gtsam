@@ -18,7 +18,7 @@ TEST (ConstrainedConditionalGaussian, basic_unary1 )
 	// check unary constructor that doesn't require an R matrix
 	// assumed identity matrix
 	ConstrainedConditionalGaussian unary(v);
-	FGConfig fg;
+	VectorConfig fg;
 	fg.insert("x1", v);
 
 	CHECK(assert_equal(v, unary.solve(fg)));
@@ -33,7 +33,7 @@ TEST (ConstrainedConditionalGaussian, basic_unary2 )
 	Matrix A = eye(2) * 10;
 
 	ConstrainedConditionalGaussian unary(10*v, A);
-	FGConfig fg;
+	VectorConfig fg;
 	fg.insert("x1", v);
 
 	CHECK(assert_equal(v, unary.solve(fg)));
@@ -52,7 +52,7 @@ TEST (ConstrainedConditionalGaussian, basic_unary3 )
 
 	Vector rhs = A*v;
 	ConstrainedConditionalGaussian unary(rhs, A);
-	FGConfig fg;
+	VectorConfig fg;
 	fg.insert("x1", v);
 
 	CHECK(assert_equal(v, unary.solve(fg)));
@@ -79,7 +79,7 @@ TEST (ConstrainedConditionalGaussian, basic_binary1 )
 
 	Vector y = Vector_(2, 1.0, 2.0);
 
-	FGConfig fg;
+	VectorConfig fg;
 	fg.insert("x1", y);
 
 	Vector expected = Vector_(2, -3.3333, 0.6667);
@@ -113,7 +113,7 @@ TEST (ConstrainedConditionalGaussian, basic_ternary1 )
 	Vector y = Vector_(2, 1.0, 2.0);
 	Vector z = Vector_(2, 1.0, -1.0);
 
-	FGConfig fg;
+	VectorConfig fg;
 	fg.insert("x1", y);
 	fg.insert("x2", z);
 

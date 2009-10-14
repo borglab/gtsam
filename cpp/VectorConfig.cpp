@@ -1,14 +1,14 @@
 /**
- * @file    FGConfig.cpp
+ * @file    VectorConfig.cpp
  * @brief   Factor Graph Configuration
- * @brief   fgConfig
+ * @brief   VectorConfig
  * @author  Carlos Nieto
  * @author  Christian Potthast
  */
 
 #include <boost/foreach.hpp>
 #include <boost/tuple/tuple.hpp>
-#include "FGConfig.h"
+#include "VectorConfig.h"
 
 // trick from some reading group
 #define FOREACH_PAIR( KEY, VAL, COL) BOOST_FOREACH (boost::tie(KEY,VAL),COL) 
@@ -22,14 +22,14 @@ void check_size(const string& key, const Vector & vj, const Vector & dj) {
     cout << "For key \"" << key << "\"" << endl;
     cout << "vj.size = " << vj.size() << endl;
     cout << "dj.size = " << dj.size() << endl;
-    throw(std::invalid_argument("FGConfig::+ mismatched dimensions"));
+    throw(std::invalid_argument("VectorConfig::+ mismatched dimensions"));
   }
 }
 
 /* ************************************************************************* */
-FGConfig FGConfig::exmap(const FGConfig & delta) const
+VectorConfig VectorConfig::exmap(const VectorConfig & delta) const
 {
-	FGConfig newConfig;
+	VectorConfig newConfig;
   for (const_iterator it = values.begin(); it!=values.end(); it++) {
     string j = it->first;
     const Vector &vj = it->second;
@@ -41,19 +41,19 @@ FGConfig FGConfig::exmap(const FGConfig & delta) const
 }
 
 /* ************************************************************************* */
-Vector FGConfig::get(const std::string& name) const {
+Vector VectorConfig::get(const std::string& name) const {
   const_iterator it = values.find(name);
   if (it==values.end()) {
     print();
     cout << "asked for key " << name << endl;
-    throw(std::invalid_argument("FGConfig::[] invalid key"));
+    throw(std::invalid_argument("VectorConfig::[] invalid key"));
   }
   return it->second;
 }
 
 /* ************************************************************************* */
-void FGConfig::print(const std::string& name) const {
-  odprintf("FGConfig %s\n", name.c_str());
+void VectorConfig::print(const std::string& name) const {
+  odprintf("VectorConfig %s\n", name.c_str());
   odprintf("size: %d\n", values.size());
   string j; Vector v;
   FOREACH_PAIR(j, v, values) {
@@ -63,7 +63,7 @@ void FGConfig::print(const std::string& name) const {
 }
 
 /* ************************************************************************* */
-bool FGConfig::equals(const FGConfig& expected, double tol) const {
+bool VectorConfig::equals(const VectorConfig& expected, double tol) const {
   string j; Vector vActual;
   if( values.size() != expected.size() ) goto fail;
 

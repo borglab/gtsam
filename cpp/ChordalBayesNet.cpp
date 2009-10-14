@@ -37,17 +37,17 @@ void ChordalBayesNet::erase(const string& key)
 /* ************************************************************************* */
 // optimize, i.e. return x = inv(R)*d
 /* ************************************************************************* */
-boost::shared_ptr<FGConfig> ChordalBayesNet::optimize() const
+boost::shared_ptr<VectorConfig> ChordalBayesNet::optimize() const
 {
-  boost::shared_ptr<FGConfig> result(new FGConfig);
+  boost::shared_ptr<VectorConfig> result(new VectorConfig);
 	result = optimize(result);
   return result;
 }
 
 /* ************************************************************************* */
-boost::shared_ptr<FGConfig> ChordalBayesNet::optimize(const boost::shared_ptr<FGConfig> &c) const
+boost::shared_ptr<VectorConfig> ChordalBayesNet::optimize(const boost::shared_ptr<VectorConfig> &c) const
 {
-  boost::shared_ptr<FGConfig> result(new FGConfig);
+  boost::shared_ptr<VectorConfig> result(new VectorConfig);
 	result = c;
 	
   /** solve each node in turn in topological sort order (parents first)*/

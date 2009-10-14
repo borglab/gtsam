@@ -21,7 +21,7 @@ namespace gtsam {
 	 * than just vectors, e.g., Rot3 or Pose3, which are objects in non-linear manifolds.
 	 * Linearizing the non-linear factor graph creates a linear factor graph on the 
 	 * tangent vector space at the linearization point. Because the tangent space is a true
-	 * vector space, the config type will be an FGConfig in that linearized
+	 * vector space, the config type will be an VectorConfig in that linearized
  	 */
 	template<class Config>
 	class NonlinearFactorGraph: public FactorGraph<NonlinearFactor<Config> ,Config> {

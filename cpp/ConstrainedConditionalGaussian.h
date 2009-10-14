@@ -100,7 +100,7 @@ public:
 	 * @param config contains the values for all of the parents
 	 * @return the value for this node
 	 */
-	Vector solve(const FGConfig& x) const;
+	Vector solve(const VectorConfig& x) const;
 
 };
 

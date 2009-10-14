@@ -113,7 +113,7 @@ namespace gtsam {
    * Note: cannot be serialized as contains function pointers
    * Specialized derived classes could do this
   */
-  class NonlinearFactor1 : public NonlinearFactor<FGConfig> {
+  class NonlinearFactor1 : public NonlinearFactor<VectorConfig> {
   private:
 
 		std::string key1_;
@@ -133,15 +133,15 @@ namespace gtsam {
     void print(const std::string& s = "") const;
 
     /** error function */
-    inline Vector error_vector(const FGConfig& c) const {
+    inline Vector error_vector(const VectorConfig& c) const {
       return z_ - h_(c[key1_]);
     }
 
     /** linearize a non-linearFactor1 to get a linearFactor1 */
-    boost::shared_ptr<LinearFactor> linearize(const FGConfig& c) const;
+    boost::shared_ptr<LinearFactor> linearize(const VectorConfig& c) const;
 
     /** Check if two factors are equal */
-    bool equals(const NonlinearFactor<FGConfig>& f, double tol=1e-9) const;
+    bool equals(const NonlinearFactor<VectorConfig>& f, double tol=1e-9) const;
 
     std::string dump() const {return "";}
   };
@@ -151,7 +151,7 @@ namespace gtsam {
 	 * Note: cannot be serialized as contains function pointers
 	 * Specialized derived classes could do this
 	*/
-  class NonlinearFactor2 : public NonlinearFactor<FGConfig> {
+  class NonlinearFactor2 : public NonlinearFactor<VectorConfig> {
 
   private:
 
@@ -176,15 +176,15 @@ namespace gtsam {
     void print(const std::string& s = "") const;
 
     /** error function */
-    inline Vector error_vector(const FGConfig& c) const {
+    inline Vector error_vector(const VectorConfig& c) const {
       return z_ - h_(c[key1_], c[key2_]); 
     }
 
     /** Linearize a non-linearFactor2 to get a linearFactor2 */
-    boost::shared_ptr<LinearFactor> linearize(const FGConfig& c) const;
+    boost::shared_ptr<LinearFactor> linearize(const VectorConfig& c) const;
 
     /** Check if two factors are equal */
-    bool equals(const NonlinearFactor<FGConfig>& f, double tol=1e-9) const;
+    bool equals(const NonlinearFactor<VectorConfig>& f, double tol=1e-9) const;
 
     std::string dump() const{return "";};
   };

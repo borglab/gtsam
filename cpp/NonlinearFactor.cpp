@@ -19,7 +19,7 @@ NonlinearFactor1::NonlinearFactor1(const Vector& z,
                                    Vector (*h)(const Vector&),                      
                                    const string& key1,                   
                                    Matrix (*H)(const Vector&)) 
-  : NonlinearFactor<FGConfig>(z, sigma), h_(h), key1_(key1), H_(H)
+  : NonlinearFactor<VectorConfig>(z, sigma), h_(h), key1_(key1), H_(H)
 {
   keys_.push_front(key1);
 }
@@ -30,7 +30,7 @@ void NonlinearFactor1::print(const string& s) const {
 }
 
 /* ************************************************************************* */
-LinearFactor::shared_ptr NonlinearFactor1::linearize(const FGConfig& c) const {
+LinearFactor::shared_ptr NonlinearFactor1::linearize(const VectorConfig& c) const {
 	// get argument 1 from config
 	Vector x1 = c[key1_];
 
@@ -47,10 +47,10 @@ LinearFactor::shared_ptr NonlinearFactor1::linearize(const FGConfig& c) const {
 /* ************************************************************************* */
 /** http://artis.imag.fr/~Xavier.Decoret/resources/C++/operator==.html       */
 /* ************************************************************************* */
-bool NonlinearFactor1::equals(const NonlinearFactor<FGConfig>& f, double tol) const {
+bool NonlinearFactor1::equals(const NonlinearFactor<VectorConfig>& f, double tol) const {
 	const NonlinearFactor1* p = dynamic_cast<const NonlinearFactor1*> (&f);
 	if (p == NULL) return false;
-	return NonlinearFactor<FGConfig>::equals(*p, tol) 
+	return NonlinearFactor<VectorConfig>::equals(*p, tol)
 	&& (h_   == p->h_) 
 	&& (key1_== p->key1_) 
 	&& (H_   == p->H_);
@@ -65,7 +65,7 @@ NonlinearFactor2::NonlinearFactor2(const Vector& z,
 		const string& key2,
 		Matrix (*H2)(const Vector&, const Vector&)
 )
-: NonlinearFactor<FGConfig>(z, sigma), h_(h), key1_(key1), H1_(H1), key2_(key2), H2_(H2)
+: NonlinearFactor<VectorConfig>(z, sigma), h_(h), key1_(key1), H1_(H1), key2_(key2), H2_(H2)
 {
 	keys_.push_front(key1);
 	keys_.push_front(key2);
@@ -77,7 +77,7 @@ void NonlinearFactor2::print(const string& s) const {
 }
 
 /* ************************************************************************* */
-LinearFactor::shared_ptr NonlinearFactor2::linearize(const FGConfig& c) const {
+LinearFactor::shared_ptr NonlinearFactor2::linearize(const VectorConfig& c) const {
 	// get arguments from config
 	Vector x1 = c[key1_];
 	Vector x2 = c[key2_];
@@ -94,10 +94,10 @@ LinearFactor::shared_ptr NonlinearFactor2::linearize(const FGConfig& c) const {
 }
 
 /* ************************************************************************* */
-bool NonlinearFactor2::equals(const NonlinearFactor<FGConfig>& f, double tol) const {
+bool NonlinearFactor2::equals(const NonlinearFactor<VectorConfig>& f, double tol) const {
 	const NonlinearFactor2* p = dynamic_cast<const NonlinearFactor2*> (&f);
 	if (p == NULL) return false;
-	return NonlinearFactor<FGConfig>::equals(*p, tol) 
+	return NonlinearFactor<VectorConfig>::equals(*p, tol)
     && (h_    == p->h_)
     && (key1_ == p->key1_)
     && (H2_   == p->H1_)

@@ -33,11 +33,11 @@ TEST( ExampleNonlinearFactorGraph, error )
 {
 	ExampleNonlinearFactorGraph fg = createNonlinearFactorGraph();
 
-	FGConfig c1 = createConfig();
+	VectorConfig c1 = createConfig();
 	double actual1 = fg.error(c1);
 	DOUBLES_EQUAL( 0.0, actual1, 1e-9 );
 
-	FGConfig c2 = createNoisyConfig();
+	VectorConfig c2 = createNoisyConfig();
 	double actual2 = fg.error(c2);
 	DOUBLES_EQUAL( 5.625, actual2, 1e-9 );
 }
@@ -46,7 +46,7 @@ TEST( ExampleNonlinearFactorGraph, error )
 TEST( ExampleNonlinearFactorGraph, probPrime )
 {
 	ExampleNonlinearFactorGraph fg = createNonlinearFactorGraph();
-	FGConfig cfg = createConfig();
+	VectorConfig cfg = createConfig();
 
 	// evaluate the probability of the factor graph
 	double actual = fg.probPrime(cfg);
@@ -58,7 +58,7 @@ TEST( ExampleNonlinearFactorGraph, probPrime )
 TEST( ExampleNonlinearFactorGraph, linearize )
 {
 	ExampleNonlinearFactorGraph fg = createNonlinearFactorGraph();
-	FGConfig initial = createNoisyConfig();
+	VectorConfig initial = createNoisyConfig();
 	LinearFactorGraph linearized = fg.linearize(initial);
 	LinearFactorGraph expected = createLinearFactorGraph();
 	CHECK(expected.equals(linearized));

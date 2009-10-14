@@ -151,7 +151,7 @@ TEST ( LinearConstraint, eliminate1 )
 	ConstrainedConditionalGaussian::shared_ptr ccg = lc.eliminate(key);
 
 	// solve the ccg to get a value
-	FGConfig fg;
+	VectorConfig fg;
 	CHECK(assert_equal(ccg->solve(fg), v));
 }
 
@@ -176,7 +176,7 @@ TEST ( LinearConstraint, eliminate2 )
 
 	Vector y = Vector_(2, 1.0, 2.0);
 
-	FGConfig fg1;
+	VectorConfig fg1;
 	fg1.insert("y", y);
 
 	Vector expected = Vector_(2, -3.3333, 0.6667);
@@ -186,7 +186,7 @@ TEST ( LinearConstraint, eliminate2 )
 	CHECK(assert_equal(expected, actual->solve(fg1), 1e-4));
 
 	// eliminate y to test thrown error
-	FGConfig fg2;
+	VectorConfig fg2;
 	fg2.insert("x", expected);
 	actual = lc.eliminate("y");
 	try {

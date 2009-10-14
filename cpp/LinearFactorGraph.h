@@ -16,7 +16,7 @@
 
 #include "LinearFactor.h"
 //#include "Ordering.h"
-#include "FGConfig.h"
+#include "VectorConfig.h"
 #include "FactorGraph.h"
 
 namespace gtsam {
@@ -26,10 +26,10 @@ namespace gtsam {
   /**
    * A Linear Factor Graph is a factor graph where all factors are Gaussian, i.e.
    *   Factor == LinearFactor
-   *   FGConfig = A configuration of vectors
+   *   VectorConfig = A configuration of vectors
    * Most of the time, linear factor graphs arise by linearizing a non-linear factor graph.
    */
-  class LinearFactorGraph : public FactorGraph<LinearFactor, FGConfig> {
+  class LinearFactorGraph : public FactorGraph<LinearFactor, VectorConfig> {
   public:
 
     /**
@@ -92,7 +92,7 @@ namespace gtsam {
      * optimize a linear factor graph
      * @param ordering fg in order
      */
-    FGConfig optimize(const Ordering& ordering);
+    VectorConfig optimize(const Ordering& ordering);
 
     /**
      * static function that combines two factor graphs

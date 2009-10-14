@@ -69,9 +69,9 @@ TEST( ChordalBayesNet, optimize )
 {
   // optimize small Bayes Net
   ChordalBayesNet cbn = createSmallChordalBayesNet();
-  boost::shared_ptr<FGConfig> actual = cbn.optimize();
+  boost::shared_ptr<VectorConfig> actual = cbn.optimize();
 
-  FGConfig expected;
+  VectorConfig expected;
   Vector x(1), y(1);
   x(0) = 4; y(0) = 5;
   expected.insert("x",x);

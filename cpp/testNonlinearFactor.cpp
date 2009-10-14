@@ -17,7 +17,7 @@
 using namespace std;
 using namespace gtsam;
 
-typedef boost::shared_ptr<NonlinearFactor<FGConfig> > shared_nlf;
+typedef boost::shared_ptr<NonlinearFactor<VectorConfig> > shared_nlf;
 
 /* ************************************************************************* */
 TEST( NonLinearFactor, NonlinearFactor )
@@ -26,7 +26,7 @@ TEST( NonLinearFactor, NonlinearFactor )
   ExampleNonlinearFactorGraph fg = createNonlinearFactorGraph();
 
   // create a configuration for the non linear factor graph
-  FGConfig cfg = createNoisyConfig();
+  VectorConfig cfg = createNoisyConfig();
 
   // get the factor "f1" from the factor graph
   shared_nlf factor = fg[0];
@@ -55,7 +55,7 @@ TEST( NonLinearFactor, linearize_f1 )
     boost::static_pointer_cast<NonlinearFactor1>(nfg[0]);
 
   // We linearize at noisy config from SmallExample
-  FGConfig c = createNoisyConfig();
+  VectorConfig c = createNoisyConfig();
   LinearFactor::shared_ptr actual = nlf->linearize(c);
 
   LinearFactorGraph lfg = createLinearFactorGraph();
@@ -73,7 +73,7 @@ TEST( NonLinearFactor, linearize_f2 )
     boost::static_pointer_cast<NonlinearFactor1>(nfg[1]);
 
   // We linearize at noisy config from SmallExample
-  FGConfig c = createNoisyConfig();
+  VectorConfig c = createNoisyConfig();
   LinearFactor::shared_ptr actual = nlf->linearize(c);
 
   LinearFactorGraph lfg = createLinearFactorGraph();
@@ -91,7 +91,7 @@ TEST( NonLinearFactor, linearize_f3 )
     boost::static_pointer_cast<NonlinearFactor1>(nfg[2]);
 
   // We linearize at noisy config from SmallExample
-  FGConfig c = createNoisyConfig();
+  VectorConfig c = createNoisyConfig();
   LinearFactor::shared_ptr actual = nlf->linearize(c);
 
   LinearFactorGraph lfg = createLinearFactorGraph();
@@ -109,7 +109,7 @@ TEST( NonLinearFactor, linearize_f4 )
     boost::static_pointer_cast<NonlinearFactor1>(nfg[3]);
 
   // We linearize at noisy config from SmallExample
-  FGConfig c = createNoisyConfig();
+  VectorConfig c = createNoisyConfig();
   LinearFactor::shared_ptr actual = nlf->linearize(c);
 
   LinearFactorGraph lfg = createLinearFactorGraph();
@@ -125,7 +125,7 @@ TEST( NonLinearFactor, size )
 	ExampleNonlinearFactorGraph fg = createNonlinearFactorGraph();
 	
 	// create a configuration for the non linear factor graph
-	FGConfig cfg = createNoisyConfig();
+	VectorConfig cfg = createNoisyConfig();
 	
 	// get some factors from the graph
 	shared_nlf factor1 = fg[0];
