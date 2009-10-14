@@ -65,10 +65,9 @@ TEST( LinearFactor, variables )
 
 /* ************************************************************************* */
 
-// NOTE: This test does not pass when running on Linux (Ubuntu 9.04, GCC 4.3.3)
-//       systems, and appears to be dependent on the ordering of factors in the 
-//       set lfg.  Reversing the order in which the matrices are appended will 
-//       make this test work correctly, while the next test will fail.  
+// NOTE: This test fails due to order dependency in the extraction of factors
+//       To fix it, it will be necessary to construct the expected version
+//       of the combined factor taking into account the ordering in the set
 TEST( LinearFactor, linearFactor2 )
 {
   // create a small linear factor graph

@@ -153,8 +153,10 @@ TEST( LinearFactorGraph, find_separator )
 }
 
 /* ************************************************************************* */
-// Note: This test does not pass when running on Linux(Ubuntu 9.04, GCC 4.3.3) 
-//       systems.  
+// Note: This test fails on different systems due to a dependency on the ordering
+//       of LinearFactor::shared_ptr in STL sets.  Because the ordering is based
+//       on pointer values instead of factor values, the ordering is different
+//       between separate systems.
 TEST( LinearFactorGraph, combine_factors_x1 )
 {	
   // create a small example for a linear factor graph
@@ -162,6 +164,9 @@ TEST( LinearFactorGraph, combine_factors_x1 )
 
   // combine all factors
   LinearFactor::shared_ptr actual = fg.combine_factors("x1");
+
+  //FIXME: this expected value must be constructed in the order that
+  //       the factors are stored in a set - which differs between systems
 
   // the expected linear factor
   Matrix Al1 = Matrix_(6,2,
@@ -214,6 +219,9 @@ TEST( LinearFactorGraph, combine_factors_x2 )
 
   // combine all factors
   LinearFactor::shared_ptr actual = fg.combine_factors("x2");
+
+  // FIXME: change the ordering of the expected to match whatever the real
+  //        ordering is and constructed the expected with the correct order
 
   // the expected linear factor
   Matrix Al1 = Matrix_(4,2,

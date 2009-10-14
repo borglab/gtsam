@@ -57,12 +57,17 @@ namespace gtsam {
     /**
      * find all the factors that involve the given node and remove them
      * from the factor graph
+     * NOTE: the ordering of the LinearFactor::shared_ptrs will change
+     * between systems, so do not rely on this ordering
      * @param key the key for the given node
      */
     LinearFactorSet find_factors_and_remove(const std::string& key);
 
     /**
      * extract and combine all the factors that involve a given node
+     * NOTE: the combined factor will be depends on a system-dependent
+	 * ordering of the input set of factors.  Do not rely on this order
+	 * when using the function.
      * @param key the key for the given node
      * @return the combined linear factor
      */

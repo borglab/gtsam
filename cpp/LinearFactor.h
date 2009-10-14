@@ -187,6 +187,9 @@ public:
 
 	/**
 	 * Constructor that combines a set of factors
+	 * NOTE: the combined factor will be depends on a system-dependent
+	 * ordering of the input set of factors.  Do not rely on this order
+	 * when using the function.
 	 * @param factors Set of factors to combine
 	 */
 	CONSTRUCTOR
