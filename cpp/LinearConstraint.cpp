@@ -1,17 +1,19 @@
-/*
- * LinearConstraint.cpp
- *
- *  Created on: Aug 10, 2009
- *      Author: alexgc
+/**
+ * @file LinearConstraint.cpp
+ * @author Alex Cunningham
  */
 
 #include <iostream>
 #include <boost/foreach.hpp>
+#include <boost/tuple/tuple.hpp>
 #include "LinearConstraint.h"
 #include "Matrix.h"
 
 namespace gtsam {
 using namespace std;
+
+// trick from some reading group
+#define FOREACH_PAIR( KEY, VAL, COL) BOOST_FOREACH (boost::tie(KEY,VAL),COL)
 
 LinearConstraint::LinearConstraint() {
 }
@@ -55,7 +57,12 @@ ConstrainedConditionalGaussian::shared_ptr LinearConstraint::eliminate(const std
 }
 
 void LinearConstraint::print(const string& s) const {
-	cout << s << ": " << dump() << endl;
+	cout << s << ": " << endl;
+	string key; Matrix A;
+	FOREACH_PAIR(key, A, As) {
+		gtsam::print(A, key);
+	}
+	gtsam::print(b, "rhs= ");
 }
 
 bool LinearConstraint::equals(const LinearConstraint& f, double tol) const {
@@ -73,7 +80,7 @@ bool LinearConstraint::equals(const LinearConstraint& f, double tol) const {
 		if (it == f.As.end()) return false;
 		Matrix f_mat = it->second;
 		// check matrix
-		if (!(f_mat == p.second)) return false;
+		if (!equal_with_abs_tol(f_mat,p.second,tol)) return false;
 	}
 	return true;
 }
@@ -106,6 +113,33 @@ bool assert_equal(const LinearConstraint& actual,
 		expected.print("Expected");
 	}
 	return ret;
+}
+
+LinearConstraint::shared_ptr combineConstraints(
+		const set<LinearConstraint::shared_ptr>& constraints) {
+	map<string, Matrix> blocks;
+	Vector rhs;
+	BOOST_FOREACH(LinearConstraint::shared_ptr c, constraints) {
+		string key; Matrix A;
+		FOREACH_PAIR( key, A, c->As) {
+			if (blocks.find(key) == blocks.end())
+				blocks[key] = A;
+			else {
+				Matrix Aold = blocks[key];
+				if (A.size1() != Aold.size1() || A.size2() != Aold.size2())
+					throw invalid_argument("Dimension mismatch");
+				blocks[key] = A + Aold;
+			}
+		}
+
+		// assemble rhs
+		if (rhs.size() == 0)
+			rhs = c->get_b();
+		else
+			rhs = rhs + c->get_b();
+	}
+	LinearConstraint::shared_ptr result(new LinearConstraint(blocks, rhs));
+	return result;
 }
 
 }

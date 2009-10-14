@@ -12,7 +12,7 @@
 
 #include <boost/shared_ptr.hpp>
 //#include "ConstrainedNonlinearFactorGraph.h" // will be added back once design is solidified
-//#include "ConstrainedLinearFactorGraph.h"
+#include "ConstrainedLinearFactorGraph.h"
 #include "NonlinearFactorGraph.h"
 #include "ChordalBayesNet.h"
 #include "LinearFactorGraph.h"
@@ -31,27 +31,10 @@ namespace gtsam {
 	ExampleNonlinearFactorGraph createNonlinearFactorGraph();
 
 	/**
-	 * Create small example constrained factor graph
-	 */
-	//ConstrainedLinearFactorGraph createConstrainedLinearFactorGraph();
-
-	/**
-	 * Create small example constrained nonlinear factor graph
-	 */
-//	ConstrainedNonlinearFactorGraph<NonlinearFactor<FGConfig>,FGConfig>
-//		createConstrainedNonlinearFactorGraph();
-
-	/**
 	 * Create configuration to go with it
 	 * The ground truth configuration for the example above
 	 */
 	FGConfig createConfig();
-
-	/**
-	 * Create configuration for constrained example
-	 * This is the ground truth version
-	 */
-	//FGConfig createConstrainedConfig();
 
 	/**
 	 * create a noisy configuration for a nonlinear factor graph
@@ -86,6 +69,32 @@ namespace gtsam {
 	boost::shared_ptr<const ExampleNonlinearFactorGraph> sharedReallyNonlinearFactorGraph();
 	ExampleNonlinearFactorGraph createReallyNonlinearFactorGraph();
 
+	/* ******************************************************* */
+	// Constrained Examples
+	/* ******************************************************* */
+
+	/**
+	 * Creates a simple constrained graph with one linear factor and
+	 * one binary constraint.
+	 */
+	ConstrainedLinearFactorGraph createSingleConstraintGraph();
+
+	/**
+	 * Creates a constrained graph with a linear factor and two
+	 * binary constraints that share a node
+	 */
+	ConstrainedLinearFactorGraph createMultiConstraintGraph();
+
+	/**
+	 * These are the old examples from the EqualityFactor/DeltaFunction
+	 * They should be updated for use at some point, but are disabled for now
+	 */
+	/**
+	 * Create configuration for constrained example
+	 * This is the ground truth version
+	 */
+	//FGConfig createConstrainedConfig();
+
 	/**
 	 * Create a noisy configuration for linearization
 	 */
@@ -95,4 +104,15 @@ namespace gtsam {
 	 * Create the correct delta configuration
 	 */
 	//FGConfig createConstrainedCorrectDelta();
+
+	/**
+	 * Create small example constrained factor graph
+	 */
+	//ConstrainedLinearFactorGraph createConstrainedLinearFactorGraph();
+
+	/**
+	 * Create small example constrained nonlinear factor graph
+	 */
+//	ConstrainedNonlinearFactorGraph<NonlinearFactor<FGConfig>,FGConfig>
+//		createConstrainedNonlinearFactorGraph();
 }

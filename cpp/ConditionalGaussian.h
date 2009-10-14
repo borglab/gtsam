@@ -115,7 +115,7 @@ namespace gtsam {
      * @param x configuration in which the parents values (y,z,...) are known
      * @return solution x = R \ (d - Sy - Tz - ...)
      */
-    Vector solve(const FGConfig& x) const;
+    virtual Vector solve(const FGConfig& x) const;
 
     /**
      * adds a parent

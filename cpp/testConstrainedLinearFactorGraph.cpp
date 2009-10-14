@@ -15,27 +15,8 @@ using namespace std;
 /* ************************************************************************* */
 TEST( ConstrainedLinearFactorGraph, elimination1 )
 {
-	// create unary factor
-	double sigma = 0.1;
-	Matrix Ax = eye(2) / sigma;
-	Vector b1(2);
-	b1(0) = 1.0;
-	b1(1) = -1.0;
-	LinearFactor::shared_ptr f1(new LinearFactor("x", Ax, b1 / sigma));
-
-	// create binary constraint factor
-	Matrix Ax1(2, 2);
-	Ax1(0, 0) = 1.0; Ax1(0, 1) = 2.0;
-	Ax1(1, 0) = 2.0; Ax1(1, 1) = 1.0;
-	Matrix Ay1 = eye(2) * 10;
-	Vector b2 = Vector_(2, 1.0, 2.0);
-	LinearConstraint::shared_ptr f2(
-			new LinearConstraint("x", Ax1, "y", Ay1, b2));
-
-	// construct the graph
-	ConstrainedLinearFactorGraph fg;
-	fg.push_back(f1);
-	fg.push_back_constraint(f2);
+	// get the graph
+	ConstrainedLinearFactorGraph fg = createSingleConstraintGraph();
 
 	// verify construction of the graph
 	CHECK(fg.size() == 2);
@@ -48,6 +29,11 @@ TEST( ConstrainedLinearFactorGraph, elimination1 )
 	//verify changes and output
 	CHECK(fg.size() == 1);
 	CHECK(cbn->size() == 1);
+	Matrix Ax1(2, 2);
+	Ax1(0, 0) = 1.0; Ax1(0, 1) = 2.0;
+	Ax1(1, 0) = 2.0; Ax1(1, 1) = 1.0;
+	Matrix Ay1 = eye(2) * 10;
+	Vector b2 = Vector_(2, 1.0, 2.0);
 	ConstrainedConditionalGaussian expectedCCG1(b2, Ax1, "y", Ay1);
 	CHECK(expectedCCG1.equals(*(cbn->get("x"))));
 	Matrix Ap(2,2);
@@ -74,27 +60,8 @@ TEST( ConstrainedLinearFactorGraph, elimination1 )
 /* ************************************************************************* */
 TEST( ConstrainedLinearFactorGraph, optimize )
 {
-	// create unary factor
-	double sigma = 0.1;
-	Matrix Ax = eye(2) / sigma;
-	Vector b1(2);
-	b1(0) = 1.0;
-	b1(1) = -1.0;
-	LinearFactor::shared_ptr f1(new LinearFactor("x", Ax, b1 / sigma));
-
-	// create binary constraint factor
-	Matrix Ax1(2, 2);
-	Ax1(0, 0) = 1.0; Ax1(0, 1) = 2.0;
-	Ax1(1, 0) = 2.0; Ax1(1, 1) = 1.0;
-	Matrix Ay1 = eye(2) * 10;
-	Vector b2 = Vector_(2, 1.0, 2.0);
-	LinearConstraint::shared_ptr f2(
-			new LinearConstraint("x", Ax1, "y", Ay1, b2));
-
-	// construct the graph
-	ConstrainedLinearFactorGraph fg;
-	fg.push_back(f1);
-	fg.push_back_constraint(f2);
+	// create graph
+	ConstrainedLinearFactorGraph fg = createSingleConstraintGraph();
 
 	// perform optimization
 	Ordering ord;
@@ -108,6 +75,27 @@ TEST( ConstrainedLinearFactorGraph, optimize )
 
 	CHECK(expected.size() == actual.size());
 	CHECK(assert_equal(expected["x"], actual["x"], 1e-4));
+	CHECK(assert_equal(expected["y"], actual["y"], 1e-4));
+}
+
+/* ************************************************************************* */
+TEST( ConstrainedLinearFactorGraph, optimize2 )
+{
+	// create graph
+	ConstrainedLinearFactorGraph fg = createSingleConstraintGraph();
+
+	// perform optimization
+	Ordering ord;
+	ord.push_back("x");
+	ord.push_back("y");
+	FGConfig actual = fg.optimize(ord);
+
+	FGConfig expected;
+	expected.insert("x", Vector_(2, 1.0, -1.0));
+	expected.insert("y", Vector_(2, 0.2,  0.1));
+
+	CHECK(expected.size() == actual.size());
+	CHECK(assert_equal(expected["x"], actual["x"], 1e-4)); // Fails here: gets x = (-3, 1)
 	CHECK(assert_equal(expected["y"], actual["y"], 1e-4));
 }
 
@@ -132,6 +120,163 @@ TEST( ConstrainedLinearFactorGraph, is_constrained )
 	CHECK(!fg.is_constrained("x"));
 	CHECK(!fg.is_constrained("w"));
 }
+
+/* ************************************************************************* */
+TEST( ConstrainedLinearFactorGraph, get_constraint_separator )
+{
+	ConstrainedLinearFactorGraph fg1 = createMultiConstraintGraph();
+	ConstrainedLinearFactorGraph fg2 = createMultiConstraintGraph();
+	LinearConstraint::shared_ptr lc1 = fg1.constraint_at(0);
+	LinearConstraint::shared_ptr lc2 = fg1.constraint_at(1);
+
+	vector<LinearConstraint::shared_ptr> actual1 = fg1.find_constraints_and_remove("y");
+	CHECK(fg1.size() == 2);
+	CHECK(actual1.size() == 1);
+	CHECK((*actual1.begin())->equals(*lc1));
+
+	vector<LinearConstraint::shared_ptr> actual2 = fg2.find_constraints_and_remove("x");
+	CHECK(fg2.size() == 1);
+	CHECK(actual2.size() == 2);
+	CHECK((*actual1.begin())->equals(*lc1));
+	LinearConstraint::shared_ptr act = *(++actual2.begin());
+	CHECK(act->equals(*lc2));
+}
+
+/* ************************************************************************* */
+TEST( ConstrainedLinearFactorGraph, update_constraints )
+{
+	// create a graph
+	ConstrainedLinearFactorGraph fg1 = createMultiConstraintGraph();
+
+	// process constraints - picking first constraint on x
+	vector<LinearConstraint::shared_ptr> constraints = fg1.find_constraints_and_remove("x");
+	CHECK(constraints.size() == 2);
+	CHECK(fg1.size() == 1); // both constraints removed
+	LinearConstraint::shared_ptr primary = constraints[0];
+	LinearConstraint::shared_ptr updatee = constraints[1];
+	fg1.update_constraints("x", constraints, primary);
+	CHECK(fg1.size() == 2); // induced constraint added back
+
+	// expected induced constraint
+	Matrix Ar(2,2);
+	Ar(0, 0) = -16.6666; Ar(0, 1) = -6.6666;
+	Ar(1, 0) = 10.0;     Ar(1, 1) = 0.0;
+	Matrix A22(2,2);
+	A22(0,0) = 1.0 ; A22(0,1) = 1.0;
+	A22(1,0) = 1.0 ; A22(1,1) = 2.0;
+	Vector br = Vector_(2, 0.0, 5.0);
+	LinearConstraint::shared_ptr exp(new LinearConstraint("y", Ar, "z", A22, br));
+
+	// evaluate
+	CHECK(assert_equal(*(fg1.constraint_at(0)), *exp, 1e-4));
+}
+
+/* ************************************************************************* */
+TEST( ConstrainedLinearFactorGraph, find_constraints_and_remove )
+{
+	// constraint 1
+	Matrix A11(2,2);
+	A11(0,0) = 1.0 ; A11(0,1) = 2.0;
+	A11(1,0) = 2.0 ; A11(1,1) = 1.0;
+
+	Matrix A12(2,2);
+	A12(0,0) = 10.0 ; A12(0,1) = 0.0;
+	A12(1,0) = 0.0 ; A12(1,1) = 10.0;
+
+	Vector b1(2);
+	b1(0) = 1.0; b1(1) = 2.0;
+	LinearConstraint::shared_ptr lc1(new LinearConstraint("x", A11, "y", A12, b1));
+
+	// constraint 2
+	Matrix A21(2,2);
+	A21(0,0) =  3.0 ; A21(0,1) =  4.0;
+	A21(1,0) = -1.0 ; A21(1,1) = -2.0;
+
+	Matrix A22(2,2);
+	A22(0,0) = 1.0 ; A22(0,1) = 1.0;
+	A22(1,0) = 1.0 ; A22(1,1) = 2.0;
+
+	Vector b2(2);
+	b2(0) = 3.0; b2(1) = 4.0;
+	LinearConstraint::shared_ptr lc2(new LinearConstraint("x", A21, "z", A22, b2));
+
+	// construct the graph
+	ConstrainedLinearFactorGraph fg1;
+	fg1.push_back_constraint(lc1);
+	fg1.push_back_constraint(lc2);
+
+	// constraints on x
+	vector<LinearConstraint::shared_ptr> expected1, actual1;
+	expected1.push_back(lc1);
+	expected1.push_back(lc2);
+	actual1 = fg1.find_constraints_and_remove("x");
+	CHECK(fg1.size() == 0);
+	CHECK(expected1.size() == actual1.size());
+	vector<LinearConstraint::shared_ptr>::const_iterator exp1, act1;
+	for(exp1=expected1.begin(), act1=actual1.begin(); act1 != actual1.end(); ++act1, ++exp1) {
+		CHECK((*exp1)->equals(**act1));
+	}
+}
+
+/* ************************************************************************* */
+TEST( ConstrainedLinearFactorGraph, eliminate_multi_constraint )
+{
+	ConstrainedLinearFactorGraph fg = createMultiConstraintGraph();
+
+	// eliminate the constraint
+	ConstrainedConditionalGaussian::shared_ptr cg1 = fg.eliminate_constraint("x");
+	CHECK(cg1->size() == 1);
+	CHECK(fg.size() == 2);
+
+	// eliminate the induced constraint
+	ConstrainedConditionalGaussian::shared_ptr cg2 = fg.eliminate_constraint("y");
+	CHECK(fg.size() == 1);
+	CHECK(cg2->size() == 1);
+
+	// eliminate the linear factor
+	ConditionalGaussian::shared_ptr cg3 = fg.eliminate_one("z");
+	CHECK(fg.size() == 0);
+	CHECK(cg3->size() == 0);
+
+	// solve piecewise
+	FGConfig actual;
+	Vector act_z = cg3->solve(actual);
+	actual.insert("z", act_z);
+	CHECK(assert_equal(act_z, Vector_(2, -4.0, 5.0), 1e-4));
+	Vector act_y = cg2->solve(actual);
+	actual.insert("y", act_y);
+	CHECK(assert_equal(act_y, Vector_(2, -0.1, 0.4), 1e-4));
+	Vector act_x = cg1->solve(actual);
+	CHECK(assert_equal(act_x, Vector_(2, -2.0, 2.0), 1e-4));
+
+}
+
+/* ************************************************************************* */
+TEST( ConstrainedLinearFactorGraph, optimize_multi_constraint )
+{
+	ConstrainedLinearFactorGraph fg = createMultiConstraintGraph();
+	// solve the graph
+	Ordering ord;
+	ord.push_back("x");
+	ord.push_back("y");
+	ord.push_back("z");
+
+	FGConfig actual = fg.optimize(ord);
+
+	// verify
+	FGConfig expected;
+	expected.insert("x", Vector_(2, -2.0, 2.0));
+	expected.insert("y", Vector_(2, -0.1, 0.4));
+	expected.insert("z", Vector_(2, -4.0, 5.0));
+	CHECK(expected.size() == actual.size());
+	CHECK(assert_equal(expected["x"], actual["x"], 1e-4));
+	CHECK(assert_equal(expected["y"], actual["y"], 1e-4));
+	CHECK(assert_equal(expected["z"], actual["z"], 1e-4));
+}
+
+/* ************************************************************************* */
+//  OLD TESTS - should be ported into the new structure when possible
+/* ************************************************************************* */
 
 /* ************************************************************************* */
 //TEST( ConstrainedLinearFactorGraph, basic )

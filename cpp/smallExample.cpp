@@ -17,8 +17,7 @@ using namespace std;
 #include "Ordering.h"
 #include "Matrix.h"
 #include "NonlinearFactor.h"
-#include "LinearConstraint.h"
-#include "ConstrainedConditionalGaussian.h"
+#include "ConstrainedLinearFactorGraph.h"
 #include "smallExample.h"
 #include "Point2Prior.h"
 #include "Simulated2DOdometry.h"
@@ -61,51 +60,12 @@ boost::shared_ptr<const ExampleNonlinearFactorGraph> sharedNonlinearFactorGraph(
 	return nlfg;
 }
 
+/* ************************************************************************* */
 ExampleNonlinearFactorGraph createNonlinearFactorGraph() {
 	return *sharedNonlinearFactorGraph();
 }
 
 /* ************************************************************************* */
-//ConstrainedLinearFactorGraph createConstrainedLinearFactorGraph()
-//{
-//	ConstrainedLinearFactorGraph graph;
-//
-//	// add an equality factor
-//	Vector v1(2); v1(0)=1.;v1(1)=2.;
-//	LinearConstraint::shared_ptr f1(new LinearConstraint(v1, "x0"));
-//	graph.push_back_eq(f1);
-//
-//	// add a normal linear factor
-//	Matrix A21 = -1 * eye(2);
-//
-//	Matrix A22 = eye(2);
-//
-//	Vector b(2);
-//	b(0) = 2 ; b(1) = 3;
-//
-//	double sigma = 0.1;
-//	LinearFactor::shared_ptr f2(new LinearFactor("x0", A21/sigma,  "x1", A22/sigma, b/sigma));
-//	graph.push_back(f2);
-//	return graph;
-//}
-
-/* ************************************************************************* */
-//	ConstrainedNonlinearFactorGraph<NonlinearFactor<FGConfig> , FGConfig> createConstrainedNonlinearFactorGraph() {
-//		ConstrainedNonlinearFactorGraph<NonlinearFactor<FGConfig> , FGConfig> graph;
-//		FGConfig c = createConstrainedConfig();
-//
-//		// equality constraint for initial pose
-//		LinearConstraint::shared_ptr f1(new LinearConstraint(c["x0"], "x0"));
-//		graph.push_back_eq(f1);
-//
-//		// odometry between x0 and x1
-//		double sigma = 0.1;
-//		shared f2(new Simulated2DOdometry(c["x1"] - c["x0"], sigma, "x0", "x1"));
-//		graph.push_back(f2); // TODO
-//		return graph;
-//	}
-
-	/* ************************************************************************* */
 FGConfig createConfig()
 {
     Vector v_x1(2); v_x1(0) = 0.;  v_x1(1) = 0.;
@@ -131,51 +91,10 @@ boost::shared_ptr<const FGConfig> sharedNoisyConfig()
     return c;
 }
 
+/* ************************************************************************* */
 FGConfig createNoisyConfig() {
 	return *sharedNoisyConfig();
 }
-
-/* ************************************************************************* */
-//FGConfig createConstrainedConfig()
-//{
-//	FGConfig config;
-//
-//	Vector x0(2); x0(0)=1.0; x0(1)=2.0;
-//	config.insert("x0", x0);
-//
-//	Vector x1(2); x1(0)=3.0; x1(1)=5.0;
-//	config.insert("x1", x1);
-//
-//	return config;
-//}
-
-/* ************************************************************************* */
-//FGConfig createConstrainedLinConfig()
-//{
-//	FGConfig config;
-//
-//	Vector x0(2); x0(0)=1.0; x0(1)=2.0; // value doesn't actually matter
-//	config.insert("x0", x0);
-//
-//	Vector x1(2); x1(0)=2.3; x1(1)=5.3;
-//	config.insert("x1", x1);
-//
-//	return config;
-//}
-
-/* ************************************************************************* */
-//FGConfig createConstrainedCorrectDelta()
-//{
-//	FGConfig config;
-//
-//	Vector x0(2); x0(0)=0.; x0(1)=0.;
-//	config.insert("x0", x0);
-//
-//	Vector x1(2); x1(0)= 0.7; x1(1)= -0.3;
-//	config.insert("x1", x1);
-//
-//	return config;
-//}
 
 /* ************************************************************************* */
 FGConfig createCorrectDelta() {
@@ -290,26 +209,6 @@ ChordalBayesNet createSmallChordalBayesNet()
 }
 
 /* ************************************************************************* */
-//ConstrainedChordalBayesNet createConstrainedChordalBayesNet()
-//{
-//	ConstrainedChordalBayesNet cbn;
-//	FGConfig c = createConstrainedConfig();
-//
-//	// add regular conditional gaussian - no parent
-//	Matrix R = eye(2);
-//	Vector d = c["x1"];
-//	double sigma = 0.1;
-//	ConditionalGaussian::shared_ptr f1(new ConditionalGaussian(d/sigma, R/sigma));
-//	cbn.insert("x1", f1);
-//
-//	// add a delta function to the cbn
-//	ConstrainedConditionalGaussian::shared_ptr f2(new ConstrainedConditionalGaussian); //(c["x0"], "x0"));
-//	cbn.insert_df("x0", f2);
-//
-//	return cbn;
-//}
-
-/* ************************************************************************* */
 // Some nonlinear functions to optimize
 /* ************************************************************************* */
 namespace optimize {
@@ -340,5 +239,175 @@ ExampleNonlinearFactorGraph createReallyNonlinearFactorGraph() {
 }
 
 /* ************************************************************************* */
+ConstrainedLinearFactorGraph createSingleConstraintGraph() {
+	// create unary factor
+	double sigma = 0.1;
+	Matrix Ax = eye(2) / sigma;
+	Vector b1(2);
+	b1(0) = 1.0;
+	b1(1) = -1.0;
+	LinearFactor::shared_ptr f1(new LinearFactor("x", Ax, b1 / sigma));
+
+	// create binary constraint factor
+	Matrix Ax1(2, 2);
+	Ax1(0, 0) = 1.0; Ax1(0, 1) = 2.0;
+	Ax1(1, 0) = 2.0; Ax1(1, 1) = 1.0;
+	Matrix Ay1 = eye(2) * 10;
+	Vector b2 = Vector_(2, 1.0, 2.0);
+	LinearConstraint::shared_ptr f2(
+			new LinearConstraint("x", Ax1, "y", Ay1, b2));
+
+	// construct the graph
+	ConstrainedLinearFactorGraph fg;
+	fg.push_back(f1);
+	fg.push_back_constraint(f2);
+
+	return fg;
+}
+
+/* ************************************************************************* */
+ConstrainedLinearFactorGraph createMultiConstraintGraph() {
+	// unary factor 1
+	double sigma = 0.1;
+	Matrix A = eye(2) / sigma;
+	Vector b = Vector_(2, -2.0, 2.0)/sigma;
+	LinearFactor::shared_ptr lf1(new LinearFactor("x", A, b));
+
+	// constraint 1
+	Matrix A11(2,2);
+	A11(0,0) = 1.0 ; A11(0,1) = 2.0;
+	A11(1,0) = 2.0 ; A11(1,1) = 1.0;
+
+	Matrix A12(2,2);
+	A12(0,0) = 10.0 ; A12(0,1) = 0.0;
+	A12(1,0) = 0.0 ; A12(1,1) = 10.0;
+
+	Vector b1(2);
+	b1(0) = 1.0; b1(1) = 2.0;
+	LinearConstraint::shared_ptr lc1(new LinearConstraint("x", A11, "y", A12, b1));
+
+	// constraint 2
+	Matrix A21(2,2);
+	A21(0,0) =  3.0 ; A21(0,1) =  4.0;
+	A21(1,0) = -1.0 ; A21(1,1) = -2.0;
+
+	Matrix A22(2,2);
+	A22(0,0) = 1.0 ; A22(0,1) = 1.0;
+	A22(1,0) = 1.0 ; A22(1,1) = 2.0;
+
+	Vector b2(2);
+	b2(0) = 3.0; b2(1) = 4.0;
+	LinearConstraint::shared_ptr lc2(new LinearConstraint("x", A21, "z", A22, b2));
+
+	// construct the graph
+	ConstrainedLinearFactorGraph fg;
+	fg.push_back(lf1);
+	fg.push_back_constraint(lc1);
+	fg.push_back_constraint(lc2);
+
+	return fg;
+}
+
+/* ************************************************************************* */
+//ConstrainedLinearFactorGraph createConstrainedLinearFactorGraph()
+//{
+//	ConstrainedLinearFactorGraph graph;
+//
+//	// add an equality factor
+//	Vector v1(2); v1(0)=1.;v1(1)=2.;
+//	LinearConstraint::shared_ptr f1(new LinearConstraint(v1, "x0"));
+//	graph.push_back_eq(f1);
+//
+//	// add a normal linear factor
+//	Matrix A21 = -1 * eye(2);
+//
+//	Matrix A22 = eye(2);
+//
+//	Vector b(2);
+//	b(0) = 2 ; b(1) = 3;
+//
+//	double sigma = 0.1;
+//	LinearFactor::shared_ptr f2(new LinearFactor("x0", A21/sigma,  "x1", A22/sigma, b/sigma));
+//	graph.push_back(f2);
+//	return graph;
+//}
+
+/* ************************************************************************* */
+//	ConstrainedNonlinearFactorGraph<NonlinearFactor<FGConfig> , FGConfig> createConstrainedNonlinearFactorGraph() {
+//		ConstrainedNonlinearFactorGraph<NonlinearFactor<FGConfig> , FGConfig> graph;
+//		FGConfig c = createConstrainedConfig();
+//
+//		// equality constraint for initial pose
+//		LinearConstraint::shared_ptr f1(new LinearConstraint(c["x0"], "x0"));
+//		graph.push_back_eq(f1);
+//
+//		// odometry between x0 and x1
+//		double sigma = 0.1;
+//		shared f2(new Simulated2DOdometry(c["x1"] - c["x0"], sigma, "x0", "x1"));
+//		graph.push_back(f2); // TODO
+//		return graph;
+//	}
+
+/* ************************************************************************* */
+//FGConfig createConstrainedConfig()
+//{
+//	FGConfig config;
+//
+//	Vector x0(2); x0(0)=1.0; x0(1)=2.0;
+//	config.insert("x0", x0);
+//
+//	Vector x1(2); x1(0)=3.0; x1(1)=5.0;
+//	config.insert("x1", x1);
+//
+//	return config;
+//}
+
+/* ************************************************************************* */
+//FGConfig createConstrainedLinConfig()
+//{
+//	FGConfig config;
+//
+//	Vector x0(2); x0(0)=1.0; x0(1)=2.0; // value doesn't actually matter
+//	config.insert("x0", x0);
+//
+//	Vector x1(2); x1(0)=2.3; x1(1)=5.3;
+//	config.insert("x1", x1);
+//
+//	return config;
+//}
+
+/* ************************************************************************* */
+//FGConfig createConstrainedCorrectDelta()
+//{
+//	FGConfig config;
+//
+//	Vector x0(2); x0(0)=0.; x0(1)=0.;
+//	config.insert("x0", x0);
+//
+//	Vector x1(2); x1(0)= 0.7; x1(1)= -0.3;
+//	config.insert("x1", x1);
+//
+//	return config;
+//}
+
+/* ************************************************************************* */
+//ConstrainedChordalBayesNet createConstrainedChordalBayesNet()
+//{
+//	ConstrainedChordalBayesNet cbn;
+//	FGConfig c = createConstrainedConfig();
+//
+//	// add regular conditional gaussian - no parent
+//	Matrix R = eye(2);
+//	Vector d = c["x1"];
+//	double sigma = 0.1;
+//	ConditionalGaussian::shared_ptr f1(new ConditionalGaussian(d/sigma, R/sigma));
+//	cbn.insert("x1", f1);
+//
+//	// add a delta function to the cbn
+//	ConstrainedConditionalGaussian::shared_ptr f2(new ConstrainedConditionalGaussian); //(c["x0"], "x0"));
+//	cbn.insert_df("x0", f2);
+//
+//	return cbn;
+//}
 
 } // namespace gtsam

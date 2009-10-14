@@ -127,13 +127,16 @@ TEST ( LinearConstraint, equals )
 
 	Vector b(2);
 	b(0) = 2 ; b(1) = -1;
+	Vector b2 = Vector_(2, 0.0, 0.0);
 
 	LinearConstraint lc1("x1", A1,  "x2", A2, b);
 	LinearConstraint lc2("x1", A1,  "x2", A2, b);
+	LinearConstraint lc3("x1", A1,  "x2", A2, b2);
 
 	// check for basic equality
 	CHECK(lc1.equals(lc2));
 	CHECK(lc2.equals(lc1));
+	CHECK(!lc1.equals(lc3));
 }
 
 /* ************************************************************************* */
@@ -238,6 +241,57 @@ TEST ( LinearConstraint, keys )
 	expected.push_back("x2");
 
 	CHECK(actual == expected);
+}
+
+/* ************************************************************************* */
+TEST ( LinearConstraint, combine )
+{
+	// constraint 1
+	Matrix A11(2,2);
+	A11(0,0) = 1.0 ; A11(0,1) = 2.0;
+	A11(1,0) = 2.0 ; A11(1,1) = 1.0;
+
+	Matrix A12(2,2);
+	A12(0,0) = 10.0 ; A12(0,1) = 0.0;
+	A12(1,0) = 0.0 ; A12(1,1) = 10.0;
+
+	Vector b1(2);
+	b1(0) = 1.0; b1(1) = 2.0;
+	LinearConstraint::shared_ptr lc1(new LinearConstraint("x", A11, "y", A12, b1));
+
+	// constraint 2
+	Matrix A21(2,2);
+	A21(0,0) =  3.0 ; A21(0,1) =  4.0;
+	A21(1,0) = -1.0 ; A21(1,1) = -2.0;
+
+	Matrix A22(2,2);
+	A22(0,0) = 1.0 ; A22(0,1) = 1.0;
+	A22(1,0) = 1.0 ; A22(1,1) = 2.0;
+
+	Vector b2(2);
+	b2(0) = 3.0; b2(1) = 4.0;
+	LinearConstraint::shared_ptr lc2(new LinearConstraint("x", A21, "z", A22, b2));
+
+	// combine
+	set<LinearConstraint::shared_ptr> constraints;
+	constraints.insert(lc1);
+	constraints.insert(lc2);
+	LinearConstraint::shared_ptr actual = combineConstraints(constraints);
+
+	// expected
+	Matrix A1 = A11 + A21;
+	Matrix A2 = A12;
+	Matrix A3 = A22;
+	Vector b = b1 + b2;
+	map<string, Matrix> blocks;
+	blocks.insert(make_pair("x", A1));
+	blocks.insert(make_pair("y", A2));
+	blocks.insert(make_pair("z", A3));
+	LinearConstraint expected(blocks, b);
+
+	// verify
+	CHECK(actual->equals(expected));
+
 }
 
 /* ************************************************************************* */

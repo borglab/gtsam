@@ -1,14 +1,14 @@
-/*
- * LinearConstraint.h
- *
- *  Created on: Aug 10, 2009
- *      Author: alexgc
+/**
+ * @file LinearConstraint.h
+ * @brief Class that implements linear equality constraints
+ * @author Alex Cunningham
  */
 
 #ifndef EQUALITYFACTOR_H_
 #define EQUALITYFACTOR_H_
 
 #include <list>
+#include <set>
 #include "Matrix.h"
 #include "ConstrainedConditionalGaussian.h"
 
@@ -60,12 +60,14 @@ public:
 	 * @param matrices is the full map of A matrices
 	 * @param b is the RHS vector
 	 */
-	LinearConstraint(const std::map<std::string, Matrix>& matrices, const Vector& b);
+	LinearConstraint(const std::map<std::string, Matrix>& matrices,
+			const Vector& b);
 
 	/**
 	 * Default Destructor
 	 */
-	~LinearConstraint() {}
+	~LinearConstraint() {
+	}
 
 	/**
 	 * Eliminates the constraint
@@ -75,26 +77,29 @@ public:
 	 * @return a constrained conditional gaussian for the variable that is a
 	 * function of its parents
 	 */
-	ConstrainedConditionalGaussian::shared_ptr eliminate(const std::string& key);
+	ConstrainedConditionalGaussian::shared_ptr
+	eliminate(const std::string& key);
 
-    /**
-     * print
-     * @param s optional string naming the factor
-     */
-    void print(const std::string& s="") const;
+	/**
+	 * print
+	 * @param s optional string naming the factor
+	 */
+	void print(const std::string& s = "") const;
 
-    /**
-     * equality up to tolerance
-     */
-    bool equals(const LinearConstraint& f, double tol=1e-9) const;
+	/**
+	 * equality up to tolerance
+	 */
+	bool equals(const LinearConstraint& f, double tol = 1e-9) const;
 
-    /**
-     * returns a version of the factor as a string
-     */
-    std::string dump() const;
+	/**
+	 * returns a version of the factor as a string
+	 */
+	std::string dump() const;
 
 	/** get a copy of b */
-	const Vector& get_b() const {	return b;	}
+	const Vector& get_b() const {
+		return b;
+	}
 
 	/** check if the constraint is connected to a particular node */
 	bool involves(const std::string& key) const;
@@ -115,16 +120,27 @@ public:
 	 * @param key is a key to leave out of the final set
 	 * @return a list of the keys for nodes connected to the constraint
 	 */
-	std::list<std::string> keys(const std::string& key="") const;
+	std::list<std::string> keys(const std::string& key = "") const;
 
-    /**
-     * @return the number of nodes the constraint connects
-     */
-    std::size_t size() const {return As.size();}
+	/**
+	 * @return the number of nodes the constraint connects
+	 */
+	std::size_t size() const {
+		return As.size();
+	}
+
+	// friends
+	friend LinearConstraint::shared_ptr combineConstraints(const std::set<LinearConstraint::shared_ptr>& constraints);
 };
 
+/**
+ * Combines constraints into one constraint
+ */
+LinearConstraint::shared_ptr combineConstraints(const std::set<LinearConstraint::shared_ptr>& constraints);
+
 /** assert equals for testing - prints when not equal */
-bool assert_equal(const LinearConstraint& actual, const LinearConstraint& expected, double tol=1e-9);
+bool assert_equal(const LinearConstraint& actual,
+		const LinearConstraint& expected, double tol = 1e-9);
 
 }
 

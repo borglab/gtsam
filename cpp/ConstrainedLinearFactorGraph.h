@@ -43,7 +43,11 @@ public:
 	 */
 	void push_back_constraint(LinearConstraint::shared_ptr constraint);
 
-	// Additional STL-like functions for Equality Factors
+	/**
+	 * STL-like indexing into the constraint vector
+	 * @param i index of the target constraint
+	 * @return the constraint to be returned
+	 */
 	LinearConstraint::shared_ptr constraint_at(const size_t i) const {return constraints_.at(i);}
 
     /** return the iterator pointing to the first equality factor */
@@ -79,10 +83,30 @@ public:
     ChordalBayesNet::shared_ptr eliminate(const Ordering& ordering);
 
     /**
+     * Picks one of the contraints in a set of constraints to eliminate
+     * Currently just picks the first one - should probably be optimized
+     * @param constraints is a set of constraints of which one will be eliminated
+     * @return one of the constraints to use
+     */
+	LinearConstraint::shared_ptr pick_constraint(
+			const std::vector<LinearConstraint::shared_ptr>& constraints) const;
+
+	/**
+	 * Eliminates the specified constraint for the selected variable,
+	 * and then performs a change of variables on all the constraints in the separator
+	 * and reinserts them into the graph.
+	 * @param key is the identifier for the node to eliminate
+	 * @param separator is the set of constraints to transform and reinsert
+	 * @param constraint is the primary constraint to eliminate
+	 */
+	void update_constraints(const std::string& key,
+			const std::vector<LinearConstraint::shared_ptr>& separator,
+			const LinearConstraint::shared_ptr& constraint);
+
+    /**
      * Eliminates a node with a constraint on it
      * Other factors have a change of variables performed via Schur complement to remove the
      * eliminated node.
-     * FIXME: currently will not handle multiple constraints on the same node
      */
     ConstrainedConditionalGaussian::shared_ptr eliminate_constraint(const std::string& key);
 
@@ -103,10 +127,12 @@ public:
     void print(const std::string& s="") const;
 
     /**
-     * Finds a matching equality constraint by key - assumed present
-     * Performs in-place removal of the constraint
+     * Pulls out all constraints attached to a particular node
+     * Note: this removes the constraints in place
+     * @param key of the node to pull constraints on
+     * @return a set of constraints
      */
-    LinearConstraint::shared_ptr extract_constraint(const std::string& key);
+    std::vector<LinearConstraint::shared_ptr> find_constraints_and_remove(const std::string& key);
 
     /**
      * This function returns the best ordering for this linear factor
