@@ -16,6 +16,7 @@ using namespace std;
 TEST( ConstrainedLinearFactorGraph, elimination1 )
 {
 	// get the graph
+	// *-X-x-Y
 	ConstrainedLinearFactorGraph fg = createSingleConstraintGraph();
 
 	// verify construction of the graph
@@ -26,9 +27,14 @@ TEST( ConstrainedLinearFactorGraph, elimination1 )
 	ord.push_back("x");
 	ChordalBayesNet::shared_ptr cbn = fg.eliminate(ord);
 
-	//verify changes and output
+	// verify result of elimination
+	// CBN of size 1, as we only eliminated X now
 	CHECK(fg.size() == 1);
 	CHECK(cbn->size() == 1);
+
+	// We will have a "delta function" on X as a function of Y
+	// |1 2||x_1| = |1| - |10 0||y_1|
+	// |2 1||x_2|   |2|   |0 10||y_2|
 	Matrix Ax1(2, 2);
 	Ax1(0, 0) = 1.0; Ax1(0, 1) = 2.0;
 	Ax1(1, 0) = 2.0; Ax1(1, 1) = 1.0;
@@ -36,6 +42,9 @@ TEST( ConstrainedLinearFactorGraph, elimination1 )
 	Vector b2 = Vector_(2, 1.0, 2.0);
 	ConstrainedConditionalGaussian expectedCCG1(b2, Ax1, "y", Ay1);
 	CHECK(expectedCCG1.equals(*(cbn->get("x"))));
+
+	// verify remaining factor on y
+	// Gaussian factor on X becomes different Gaussian factor on Y
 	Matrix Ap(2,2);
 	Ap(0, 0) =  1.0; Ap(0, 1) = -2.0;
 	Ap(1, 0) = -2.0; Ap(1, 1) =  1.0;
@@ -48,12 +57,14 @@ TEST( ConstrainedLinearFactorGraph, elimination1 )
 	Ordering ord2;
 	ord2.push_back("y");
 	cbn = fg.eliminate(ord2);
+
+	// Check result
 	CHECK(fg.size() == 0);
-	Matrix Ar(2,2);
-	Ar(0, 0) = 74.5356; Ar(0, 1) = -59.6285;
-	Ar(1, 0) = 0.0;     Ar(1, 1) = 44.7214;
+	Matrix R(2,2);
+	R(0, 0) = 74.5356; R(0, 1) = -59.6285;
+	R(1, 0) = 0.0;     R(1, 1) = 44.7214;
 	Vector br = Vector_(2, 8.9443, 4.4721);
-	ConditionalGaussian expected2(br, Ar);
+	ConditionalGaussian expected2(br, R);
 	CHECK(expected2.equals(*(cbn->get("y"))));
 }
 

@@ -241,6 +241,7 @@ ExampleNonlinearFactorGraph createReallyNonlinearFactorGraph() {
 /* ************************************************************************* */
 ConstrainedLinearFactorGraph createSingleConstraintGraph() {
 	// create unary factor
+	// prior on "x", mean = [1,-1], sigma=0.1
 	double sigma = 0.1;
 	Matrix Ax = eye(2) / sigma;
 	Vector b1(2);
@@ -249,6 +250,9 @@ ConstrainedLinearFactorGraph createSingleConstraintGraph() {
 	LinearFactor::shared_ptr f1(new LinearFactor("x", Ax, b1 / sigma));
 
 	// create binary constraint factor
+	// between "x" and "y", that is going to be the only factor on "y"
+	// |1 2||x_1| + |10 0||y_1| = |1|
+	// |2 1||x_2|   |0 10||y_2|   |2|
 	Matrix Ax1(2, 2);
 	Ax1(0, 0) = 1.0; Ax1(0, 1) = 2.0;
 	Ax1(1, 0) = 2.0; Ax1(1, 1) = 1.0;

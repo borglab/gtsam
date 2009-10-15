@@ -395,14 +395,6 @@
 <useDefaultCommand>true</useDefaultCommand>
 <runAllBuilders>true</runAllBuilders>
 </target>
-<target name="testLinearConstraint.run" path="cpp" targetID="org.eclipse.cdt.build.MakeTargetBuilder">
-<buildCommand>make</buildCommand>
-<buildArguments/>
-<buildTarget>testLinearConstraint.run</buildTarget>
-<stopOnError>true</stopOnError>
-<useDefaultCommand>true</useDefaultCommand>
-<runAllBuilders>true</runAllBuilders>
-</target>
 <target name="testNonlinearFactorGraph.run" path="cpp" targetID="org.eclipse.cdt.build.MakeTargetBuilder">
 <buildCommand>make</buildCommand>
 <buildArguments/>
@@ -418,14 +410,6 @@
 <useDefaultCommand>true</useDefaultCommand>
 <runAllBuilders>true</runAllBuilders>
 </target>
-<target name="testConstrainedConditionalGaussian.run" path="cpp" targetID="org.eclipse.cdt.build.MakeTargetBuilder">
-<buildCommand>make</buildCommand>
-<buildArguments/>
-<buildTarget>testConstrainedConditionalGaussian.run</buildTarget>
-<stopOnError>true</stopOnError>
-<useDefaultCommand>true</useDefaultCommand>
-<runAllBuilders>true</runAllBuilders>
-</target>
 <target name="testConstrainedLinearFactorGraph.run" path="cpp" targetID="org.eclipse.cdt.build.MakeTargetBuilder">
 <buildCommand>make</buildCommand>
 <buildArguments/>
@@ -436,6 +420,7 @@
 </target>
 <target name="install" path="" targetID="org.eclipse.cdt.build.MakeTargetBuilder">
 <buildCommand>make</buildCommand>
+<buildArguments/>
 <buildTarget>install</buildTarget>
 <stopOnError>true</stopOnError>
 <useDefaultCommand>true</useDefaultCommand>
@@ -443,6 +428,7 @@
 </target>
 <target name="clean" path="" targetID="org.eclipse.cdt.build.MakeTargetBuilder">
 <buildCommand>make</buildCommand>
+<buildArguments/>
 <buildTarget>clean</buildTarget>
 <stopOnError>true</stopOnError>
 <useDefaultCommand>true</useDefaultCommand>
