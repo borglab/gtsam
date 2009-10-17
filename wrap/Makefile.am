@@ -23,3 +23,9 @@ install: all
 clean:
 	@test -z "wrap" || rm -f wrap
 	@test -z "../toolbox" || rm -rf ../toolbox
+
+# rule to run an executable
+%.run: % libgtsam.la
+	./$^
+
+	

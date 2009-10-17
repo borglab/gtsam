@@ -87,12 +87,12 @@ Module::Module(const string& interfacePath,
 
   Rule returnType1_p =
     basisType_p[assign_a(method.returns)] | 
-    ((str_p("Vector") | "Matrix" | className_p)[assign_a(method.returns)] >> 
+    ((className_p | "Vector" | "Matrix")[assign_a(method.returns)] >>
      !ch_p('*')  [assign_a(method.returns_ptr,true)]);
 
   Rule returnType2_p =
     basisType_p[assign_a(method.returns2)] | 
-    ((str_p("Vector") | "Matrix" | className_p)[assign_a(method.returns2)] >> 
+    ((className_p | "Vector" | "Matrix")[assign_a(method.returns2)] >>
      !ch_p('*')  [assign_a(method.returns_ptr2,true)]);
 
   Rule pair_p = 
