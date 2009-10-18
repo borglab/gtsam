@@ -64,19 +64,15 @@ TEST( LinearFactor, variables )
 }
 
 /* ************************************************************************* */
-
-// NOTE: This test fails due to order dependency in the extraction of factors
-//       To fix it, it will be necessary to construct the expected version
-//       of the combined factor taking into account the ordering in the set
 TEST( LinearFactor, linearFactor2 )
 {
   // create a small linear factor graph
   LinearFactorGraph fg = createLinearFactorGraph();
 
   // get two factors from it and insert the factors into a set
-  std::set<LinearFactor::shared_ptr> lfg;
-  lfg.insert(fg[4 - 1]);
-  lfg.insert(fg[2 - 1]);
+  vector<LinearFactor::shared_ptr> lfg;
+  lfg.push_back(fg[4 - 1]);
+  lfg.push_back(fg[2 - 1]);
 
   // combine in a factor
   MutableLinearFactor combined(lfg);
@@ -137,11 +133,11 @@ TEST( NonlinearFactorGraph, linearFactor3){
 	b(0) = 5 ; b(1) = -6;
 	LinearFactor::shared_ptr f4(new LinearFactor("x1", A11, b));
 
-	std::set<LinearFactor::shared_ptr> lfg;
-	lfg.insert(f1);
-	lfg.insert(f2);
-	lfg.insert(f3);
-	lfg.insert(f4);
+	vector<LinearFactor::shared_ptr> lfg;
+	lfg.push_back(f1);
+	lfg.push_back(f2);
+	lfg.push_back(f3);
+	lfg.push_back(f4);
 	MutableLinearFactor combined(lfg);
 
 	Matrix A22(8,2);

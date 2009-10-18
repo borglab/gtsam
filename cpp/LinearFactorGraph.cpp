@@ -57,7 +57,7 @@ LinearFactorGraph::find_factors_and_remove(const string& key)
 
 	for(iterator factor=factors_.begin(); factor!=factors_.end(); )
 		if ((*factor)->involves(key)) {
-			found.insert(*factor);
+			found.push_back(*factor);
 			factor = factors_.erase(factor);
 		} else {
 			factor++; // important, erase will have effect of ++
@@ -219,7 +219,7 @@ pair<Matrix,Vector> LinearFactorGraph::matrix(const Ordering& ordering) const {
 	// get all factors
 	LinearFactorSet found;
 	BOOST_FOREACH(shared_factor factor,factors_)
-		found.insert(factor);
+		found.push_back(factor);
 
 	// combine them
 	MutableLinearFactor lf(found);

@@ -14,7 +14,8 @@ namespace gtsam {
   
   class LinearFactor;
   
-  struct LinearFactorSet : std::set<boost::shared_ptr<LinearFactor> > {
+  // We use a vector not a an STL set, to get predictable ordering across platforms
+  struct LinearFactorSet : std::vector<boost::shared_ptr<LinearFactor> > {
     LinearFactorSet() {}
   };
 }

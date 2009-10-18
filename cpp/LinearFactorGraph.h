@@ -15,7 +15,6 @@
 #include <boost/shared_ptr.hpp>
 
 #include "LinearFactor.h"
-//#include "Ordering.h"
 #include "VectorConfig.h"
 #include "FactorGraph.h"
 

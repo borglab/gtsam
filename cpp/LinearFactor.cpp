@@ -149,7 +149,7 @@ void MutableLinearFactor::append_factor(LinearFactor::shared_ptr f, const size_t
 }
 
 /* ************************************************************************* */
-MutableLinearFactor::MutableLinearFactor(const set<shared_ptr> & factors)
+MutableLinearFactor::MutableLinearFactor(const vector<shared_ptr> & factors)
 {
   // Create RHS vector of the right size by adding together row counts
   size_t m = 0;
