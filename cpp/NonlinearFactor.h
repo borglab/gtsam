@@ -15,7 +15,7 @@
 #include <list>
 
 #include <boost/shared_ptr.hpp>
-#include <boost/serialization/set.hpp>
+#include <boost/serialization/list.hpp>
 
 #include "Factor.h"
 #include "Matrix.h"
