@@ -54,9 +54,17 @@ namespace gtsam {
 	// linearize and optimize
 	/* ************************************************************************* */
 	template<class G, class C>
-	VectorConfig NonlinearOptimizer<G, C>::delta() const {
+	VectorConfig NonlinearOptimizer<G, C>::linearizeAndOptimizeForDelta() const {
+
+		// linearize the non-linear graph around the current config
+		// which gives a linear optimization problem in the tangent space
 		LinearFactorGraph linear = graph_->linearize(*config_);
-		return linear.optimize(*ordering_);
+
+		// solve for the optimal displacement in the tangent space
+		VectorConfig delta = linear.optimize(*ordering_);
+
+		// return
+		return delta;
 	}
 
 	/* ************************************************************************* */
@@ -67,7 +75,7 @@ namespace gtsam {
 			verbosityLevel verbosity) const {
 
 		// linearize and optimize
-		VectorConfig delta = this->delta();
+		VectorConfig delta = linearizeAndOptimizeForDelta();
 
 		// maybe show output
 		if (verbosity >= DELTA)

@@ -47,7 +47,7 @@ TEST( NonlinearOptimizer, delta )
 	ord1.push_back("l1");
 	ord1.push_back("x1");
 	Optimizer optimizer1(fg, ord1, initial);
-	VectorConfig actual1 = optimizer1.delta();
+	VectorConfig actual1 = optimizer1.linearizeAndOptimizeForDelta();
 	CHECK(assert_equal(actual1,expected));
 
 	// Check another
@@ -56,7 +56,7 @@ TEST( NonlinearOptimizer, delta )
 	ord2.push_back("x2");
 	ord2.push_back("l1");
 	Optimizer optimizer2(fg, ord2, initial);
-	VectorConfig actual2 = optimizer2.delta();
+	VectorConfig actual2 = optimizer2.linearizeAndOptimizeForDelta();
 	CHECK(assert_equal(actual2,expected));
 
 	// And yet another...
@@ -65,7 +65,7 @@ TEST( NonlinearOptimizer, delta )
 	ord3.push_back("x1");
 	ord3.push_back("x2");
 	Optimizer optimizer3(fg, ord3, initial);
-	VectorConfig actual3 = optimizer3.delta();
+	VectorConfig actual3 = optimizer3.linearizeAndOptimizeForDelta();
 	CHECK(assert_equal(actual3,expected));
 }
 

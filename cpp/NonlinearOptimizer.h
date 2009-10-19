@@ -20,9 +20,9 @@ namespace gtsam {
 	 * and then one of the optimization routines is called. These recursively iterate
 	 * until convergence. All methods are functional and return a new state.
 	 *
-	 * The class is parameterized by the Config class type, in order to optimize
-	 * over non-vector configurations as well.
-	 * To use in code, include <gtsam/NonlinearOptimizer.cpp> in your cpp file
+	 * The class is parameterized by the Graph type and Config class type, the latter
+	 * in order to be able to optimize over non-vector configurations as well.
+	 * To use in code, include <gtsam/NonlinearOptimizer-inl.h> in your cpp file
 	 * (the trick in http://www.ddj.com/cpp/184403420 did not work).
 	 */
 	template<class FactorGraph, class Config>
@@ -96,9 +96,9 @@ namespace gtsam {
 
 		/**
 		 *  linearize and optimize
-		 *  Thi returns an VectorConfig, i.e., vectors in tangent space of Config
+		 *  This returns an VectorConfig, i.e., vectors in tangent space of Config
 		 */
-		VectorConfig delta() const;
+		VectorConfig linearizeAndOptimizeForDelta() const;
 
 		/**
 		 * Do one Gauss-Newton iteration and return next state
