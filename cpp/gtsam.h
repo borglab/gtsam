@@ -11,7 +11,7 @@ class VectorConfig {
 
 class LinearFactorSet {
   LinearFactorSet();
-  void insert(LinearFactor* factor);
+  void push_back(LinearFactor* factor);
 };
 
 class LinearFactor {
