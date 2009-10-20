@@ -17,10 +17,9 @@
 #include "LinearFactor.h"
 #include "VectorConfig.h"
 #include "FactorGraph.h"
+#include "ChordalBayesNet.h"
 
 namespace gtsam {
-
-	class ChordalBayesNet;
 
   /**
    * A Linear Factor Graph is a factor graph where all factors are Gaussian, i.e.
