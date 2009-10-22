@@ -18,6 +18,7 @@
 #include <boost/serialization/list.hpp>
 
 #include "Factor.h"
+#include "Vector.h"
 #include "Matrix.h"
 #include "LinearFactor.h"
 
@@ -63,14 +64,25 @@ namespace gtsam {
     	sigma_ = sigma;
     }
 
+    /** print */
+    void print(const std::string& s = "") const {
+    	std::cout << "NonLinearFactor " << s << std::endl;
+    	gtsam::print(z_, "  z = ");
+    	std::cout << "  sigma = " << sigma_ << std::endl;
+    }
+
+    /** Check if two NonlinearFactor objects are equal */
+    bool equals(const Factor<Config>& f, double tol) const {
+    	const NonlinearFactor<Config>* p = dynamic_cast<const NonlinearFactor<Config>*> (&f);
+    	if (p == NULL) return false;
+      return equal_with_abs_tol(z_,p->z_,tol) && fabs(sigma_ - p->sigma_)<=tol;
+    }
+
     /** Vector of errors */
     virtual Vector error_vector(const Config& c) const = 0;
 
     /** linearize to a LinearFactor */
     virtual boost::shared_ptr<LinearFactor> linearize(const Config& c) const = 0;
-
-    /** print to cout */
-    virtual void print(const std::string& s = "") const = 0;
 
     /** get functions */
     double sigma() const {return sigma_;}
@@ -85,11 +97,6 @@ namespace gtsam {
 		
     /** get the size of the factor */
     std::size_t size() const{return keys_.size();}
-
-    /** Check if two NonlinearFactor objects are equal */
-    bool equals(const NonlinearFactor& other, double tol=1e-9) const {
-      return equal_with_abs_tol(z_,other.z_,tol) && fabs(sigma_ - other.sigma_)<=tol;
-    }
 
     /** dump the information of the factor into a string **/
     std::string dump() const{return "";}
@@ -132,6 +139,9 @@ namespace gtsam {
 
     void print(const std::string& s = "") const;
 
+    /** Check if two factors are equal */
+    bool equals(const Factor<VectorConfig>& f, double tol=1e-9) const;
+
     /** error function */
     inline Vector error_vector(const VectorConfig& c) const {
       return z_ - h_(c[key1_]);
@@ -139,9 +149,6 @@ namespace gtsam {
 
     /** linearize a non-linearFactor1 to get a linearFactor1 */
     boost::shared_ptr<LinearFactor> linearize(const VectorConfig& c) const;
-
-    /** Check if two factors are equal */
-    bool equals(const NonlinearFactor<VectorConfig>& f, double tol=1e-9) const;
 
     std::string dump() const {return "";}
   };
@@ -173,7 +180,11 @@ namespace gtsam {
 		     const std::string& key2,                    // key of the second variable
 		     Matrix (*H2)(const Vector&, const Vector&));// derivative of h in second variable
 			
+    /** Print */
     void print(const std::string& s = "") const;
+
+    /** Check if two factors are equal */
+    bool equals(const Factor<VectorConfig>& f, double tol=1e-9) const;
 
     /** error function */
     inline Vector error_vector(const VectorConfig& c) const {
@@ -182,9 +193,6 @@ namespace gtsam {
 
     /** Linearize a non-linearFactor2 to get a linearFactor2 */
     boost::shared_ptr<LinearFactor> linearize(const VectorConfig& c) const;
-
-    /** Check if two factors are equal */
-    bool equals(const NonlinearFactor<VectorConfig>& f, double tol=1e-9) const;
 
     std::string dump() const{return "";};
   };

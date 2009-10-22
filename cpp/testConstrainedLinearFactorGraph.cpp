@@ -493,7 +493,7 @@ TEST( ConstrainedLinearFactorGraph, optimize_multi_constraint )
 //	// make a joint linear factor
 //	set<LinearFactor::shared_ptr> f1_set;
 //	f1_set.insert(f1);
-//	boost::shared_ptr<MutableLinearFactor> joined(new MutableLinearFactor(f1_set));
+//	boost::shared_ptr<LinearFactor> joined(new LinearFactor(f1_set));
 //
 //	// create a sample graph
 //	ConstrainedLinearFactorGraph graph;

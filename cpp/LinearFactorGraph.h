@@ -73,7 +73,7 @@ namespace gtsam {
      * @param key the key for the given node
      * @return the combined linear factor
      */
-    boost::shared_ptr<MutableLinearFactor> 
+    boost::shared_ptr<LinearFactor>
       combine_factors(const std::string& key);
 
     /**

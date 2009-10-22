@@ -138,7 +138,7 @@ ConstrainedConditionalGaussian::shared_ptr ConstrainedLinearFactorGraph::elimina
 		}
 
 		// construct the updated factor
-		boost::shared_ptr<MutableLinearFactor> new_factor(new MutableLinearFactor);
+		boost::shared_ptr<LinearFactor> new_factor(new LinearFactor);
 		string cur_key; Matrix M;
 		FOREACH_PAIR(cur_key, M, blocks) {
 			new_factor->insert(cur_key, M);

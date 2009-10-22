@@ -82,11 +82,11 @@ LinearFactorGraph::find_factors_and_remove(const string& key)
 /* ************************************************************************* */
 /* find factors and remove them from the factor graph: O(n)                  */
 /* ************************************************************************* */ 
-boost::shared_ptr<MutableLinearFactor> 
+boost::shared_ptr<LinearFactor>
 LinearFactorGraph::combine_factors(const string& key)
 {
 	LinearFactorSet found = find_factors_and_remove(key);
-	boost::shared_ptr<MutableLinearFactor> lf(new MutableLinearFactor(found));
+	boost::shared_ptr<LinearFactor> lf(new LinearFactor(found));
 	return lf;
 }
 
@@ -97,7 +97,7 @@ ConditionalGaussian::shared_ptr LinearFactorGraph::eliminate_one(const string& k
 {
 	// combine the factors of all nodes connected to the variable to be eliminated
 	// if no factors are connected to key, returns an empty factor
-	boost::shared_ptr<MutableLinearFactor> joint_factor = combine_factors(key);
+	boost::shared_ptr<LinearFactor> joint_factor = combine_factors(key);
 
 	// eliminate that joint factor
 	try {
@@ -235,7 +235,7 @@ pair<Matrix,Vector> LinearFactorGraph::matrix(const Ordering& ordering) const {
 		found.push_back(factor);
 
 	// combine them
-	MutableLinearFactor lf(found);
+	LinearFactor lf(found);
 
 	// Return Matrix and Vector
 	return lf.matrix(ordering);

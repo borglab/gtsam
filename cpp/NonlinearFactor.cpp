@@ -27,6 +27,7 @@ NonlinearFactor1::NonlinearFactor1(const Vector& z,
 /* ************************************************************************* */
 void NonlinearFactor1::print(const string& s) const {
 	cout << "NonLinearFactor1 " << s << endl;
+	NonlinearFactor<VectorConfig>::print(s);
 }
 
 /* ************************************************************************* */
@@ -47,7 +48,7 @@ LinearFactor::shared_ptr NonlinearFactor1::linearize(const VectorConfig& c) cons
 /* ************************************************************************* */
 /** http://artis.imag.fr/~Xavier.Decoret/resources/C++/operator==.html       */
 /* ************************************************************************* */
-bool NonlinearFactor1::equals(const NonlinearFactor<VectorConfig>& f, double tol) const {
+bool NonlinearFactor1::equals(const Factor<VectorConfig>& f, double tol) const {
 	const NonlinearFactor1* p = dynamic_cast<const NonlinearFactor1*> (&f);
 	if (p == NULL) return false;
 	return NonlinearFactor<VectorConfig>::equals(*p, tol)
@@ -74,6 +75,7 @@ NonlinearFactor2::NonlinearFactor2(const Vector& z,
 /* ************************************************************************* */
 void NonlinearFactor2::print(const string& s) const {
 	cout << "NonLinearFactor2 " << s << endl;
+	NonlinearFactor<VectorConfig>::print(s);
 }
 
 /* ************************************************************************* */
@@ -94,7 +96,7 @@ LinearFactor::shared_ptr NonlinearFactor2::linearize(const VectorConfig& c) cons
 }
 
 /* ************************************************************************* */
-bool NonlinearFactor2::equals(const NonlinearFactor<VectorConfig>& f, double tol) const {
+bool NonlinearFactor2::equals(const Factor<VectorConfig>& f, double tol) const {
 	const NonlinearFactor2* p = dynamic_cast<const NonlinearFactor2*> (&f);
 	if (p == NULL) return false;
 	return NonlinearFactor<VectorConfig>::equals(*p, tol)

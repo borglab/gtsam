@@ -3,6 +3,7 @@
  * @brief   A simple factor class to use in a factor graph
  * @brief   factor
  * @author  Kai Ni
+ * @author  Frank Dellaert
  */
 
 // \callgraph
@@ -12,6 +13,7 @@
 #include <set>
 #include <list>
 #include <boost/utility.hpp> // for noncopyable
+#include "Testable.h"
 
 namespace gtsam {
 
@@ -46,7 +48,7 @@ namespace gtsam {
    * provide the appropriate values at the appropriate time.
    */ 
   template <class Config>
-  class Factor : boost::noncopyable
+  class Factor : boost::noncopyable, public Testable< Factor<Config> >
   {
   public:
 
@@ -56,12 +58,6 @@ namespace gtsam {
      * negative log probability 
      */
     virtual double error(const Config& c) const = 0;
-
-    /**
-     * print
-     * @param s optional string naming the factor
-     */
-    virtual void print(const std::string& s="") const = 0;
 
     /**
      * equality up to tolerance

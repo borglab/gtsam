@@ -2,11 +2,10 @@
  *  @file   testLinearFactor.cpp
  *  @brief  Unit tests for Linear Factor
  *  @author Christian Potthast
+ *  @author Frank Dellaert
  **/
 
-/*STL/C++*/
 #include <iostream>
-using namespace std;
 
 #include <boost/tuple/tuple.hpp>
 #include <CppUnitLite/TestHarness.h>
@@ -14,6 +13,7 @@ using namespace std;
 #include "Matrix.h"
 #include "smallExample.h"
 
+using namespace std;
 using namespace gtsam;
 
 /* ************************************************************************* */
@@ -39,7 +39,7 @@ TEST( LinearFactor, linearFactor )
     LinearFactor::shared_ptr lf = fg[1];
 
     // check if the two factors are the same
-    CHECK( lf->equals(expected) );
+    CHECK(assert_equal(expected,*lf));
 }
 
 /* ************************************************************************* */
@@ -75,7 +75,7 @@ TEST( LinearFactor, linearFactor2 )
   lfg.push_back(fg[2 - 1]);
 
   // combine in a factor
-  MutableLinearFactor combined(lfg);
+  LinearFactor combined(lfg);
 
   // the expected combined linear factor
   Matrix Ax2 = Matrix_(4, 2, // x2
@@ -105,7 +105,56 @@ TEST( LinearFactor, linearFactor2 )
   b2(3) = -1;
 
   LinearFactor expected("x2", Ax2,  "l1", Al1, "x1", Ax1, b2);
-  CHECK(combined.equals(expected));
+  CHECK(assert_equal(expected,combined));
+}
+
+/* ************************************************************************* */
+TEST( NonlinearFactorGraph, linearFactor3){
+
+	Matrix A11(2,2);
+	A11(0,0) = 10.4545; A11(0,1) =  0;
+	A11(1,0) = 0;       A11(1,1) = 10.4545;
+	Vector b(2);
+	b(0) = 2 ; b(1) = -1;
+	LinearFactor::shared_ptr f1(new LinearFactor("x1", A11, b));
+
+	A11(0,0) = 2; A11(0,1) =  0;
+	A11(1,0) = 0; A11(1,1) = -2;
+	b(0) = 4 ; b(1) = -5;
+	LinearFactor::shared_ptr f2(new LinearFactor("x1", A11, b));
+
+	A11(0,0) = 4; A11(0,1) =  0;
+	A11(1,0) = 0; A11(1,1) = -4;
+	b(0) = 3 ; b(1) = -88;
+	LinearFactor::shared_ptr f3(new LinearFactor("x1", A11, b));
+
+	A11(0,0) = 6; A11(0,1) =  0;
+	A11(1,0) = 0; A11(1,1) = 7;
+	b(0) = 5 ; b(1) = -6;
+	LinearFactor::shared_ptr f4(new LinearFactor("x1", A11, b));
+
+	vector<LinearFactor::shared_ptr> lfg;
+	lfg.push_back(f1);
+	lfg.push_back(f2);
+	lfg.push_back(f3);
+	lfg.push_back(f4);
+	LinearFactor combined(lfg);
+
+	Matrix A22(8,2);
+	A22(0,0) = 10.4545; A22(0,1) =  0;
+	A22(1,0) = 0;       A22(1,1) = 10.4545;
+	A22(2,0) = 2;       A22(2,1) =  0;
+	A22(3,0) = 0;       A22(3,1) = -2;
+	A22(4,0) = 4;       A22(4,1) =  0;
+	A22(5,0) = 0;       A22(5,1) = -4;
+	A22(6,0) = 6;       A22(6,1) =  0;
+	A22(7,0) = 0;       A22(7,1) =  7;
+	Vector exb(8);
+	exb(0) = 2 ; exb(1) = -1;  exb(2) = 4 ; exb(3) = -5;
+	exb(4) = 3 ; exb(5) = -88; exb(6) = 5 ; exb(7) = -6;
+	LinearFactor expected("x1", A22, exb);
+
+	CHECK(assert_equal(expected,combined));
 }
 
 /* ************************************************************************* */
@@ -141,7 +190,7 @@ TEST( LinearFactor, linearFactorN){
       Vector_(2,
       2.0, -1.0))));
 
-  MutableLinearFactor combined(f);
+  LinearFactor combined(f);
 
   vector<pair<string, Matrix> > meas;
   meas.push_back(make_pair("x1", Matrix_(8,2,
@@ -184,55 +233,7 @@ TEST( LinearFactor, linearFactorN){
       10.0, 5.0, 1.0, -2.0, 1.5, -1.5, 2.0, -1.0);
 
   LinearFactor expected(meas, b);
-  CHECK(combined.equals(expected));
-}
-
-TEST( NonlinearFactorGraph, linearFactor3){
-
-	Matrix A11(2,2);
-	A11(0,0) = 10.4545; A11(0,1) =  0;
-	A11(1,0) = 0;       A11(1,1) = 10.4545;
-	Vector b(2);
-	b(0) = 2 ; b(1) = -1;
-	LinearFactor::shared_ptr f1(new LinearFactor("x1", A11, b));
-
-	A11(0,0) = 2; A11(0,1) =  0;
-	A11(1,0) = 0; A11(1,1) = -2;
-	b(0) = 4 ; b(1) = -5;
-	LinearFactor::shared_ptr f2(new LinearFactor("x1", A11, b));
-
-	A11(0,0) = 4; A11(0,1) =  0;
-	A11(1,0) = 0; A11(1,1) = -4;
-	b(0) = 3 ; b(1) = -88;
-	LinearFactor::shared_ptr f3(new LinearFactor("x1", A11, b));
-
-	A11(0,0) = 6; A11(0,1) =  0;
-	A11(1,0) = 0; A11(1,1) = 7;
-	b(0) = 5 ; b(1) = -6;
-	LinearFactor::shared_ptr f4(new LinearFactor("x1", A11, b));
-
-	vector<LinearFactor::shared_ptr> lfg;
-	lfg.push_back(f1);
-	lfg.push_back(f2);
-	lfg.push_back(f3);
-	lfg.push_back(f4);
-	MutableLinearFactor combined(lfg);
-
-	Matrix A22(8,2);
-	A22(0,0) = 10.4545; A22(0,1) =  0;
-	A22(1,0) = 0;       A22(1,1) = 10.4545;
-	A22(2,0) = 2;       A22(2,1) =  0;
-	A22(3,0) = 0;       A22(3,1) = -2;
-	A22(4,0) = 4;       A22(4,1) =  0;
-	A22(5,0) = 0;       A22(5,1) = -4;
-	A22(6,0) = 6;       A22(6,1) =  0;
-	A22(7,0) = 0;       A22(7,1) =  7;
-	Vector exb(8);
-	exb(0) = 2 ; exb(1) = -1;  exb(2) = 4 ; exb(3) = -5;
-	exb(4) = 3 ; exb(5) = -88; exb(6) = 5 ; exb(7) = -6;
-	LinearFactor::shared_ptr expected(new LinearFactor("x1", A22, exb));
-
-	CHECK( combined.equals(*expected) ); // currently fails on linux, see previous test's note
+	CHECK(assert_equal(expected,combined));
 }
 
 /* ************************************************************************* */
@@ -288,7 +289,7 @@ TEST( LinearFactor, eliminate )
   b2(2) = 2;
   b2(3) = -1;
   
-  MutableLinearFactor combined("x2", Ax2,  "l1", Al1, "x1", Ax1, b2);
+  LinearFactor combined("x2", Ax2,  "l1", Al1, "x1", Ax1, b2);
 
   // eliminate the combined factor
 
@@ -363,7 +364,7 @@ TEST( LinearFactor, eliminate2 )
   b2(2) = 2;
   b2(3) = -1;
   
-  MutableLinearFactor combined("x2", Ax2,  "l1x1", Al1x1, b2);
+  LinearFactor combined("x2", Ax2,  "l1x1", Al1x1, b2);
 
   // eliminate the combined factor
   ConditionalGaussian::shared_ptr actualCG;
@@ -402,7 +403,7 @@ TEST( LinearFactor, eliminate2 )
 //* ************************************************************************* */
 TEST( LinearFactor, default_error )
 {	
-  MutableLinearFactor f;
+  LinearFactor f;
   VectorConfig c;
   double actual = f.error(c);
   CHECK(actual==0.0);
@@ -412,7 +413,7 @@ TEST( LinearFactor, default_error )
 TEST( LinearFactor, eliminate_empty )
 {	
   // create an empty factor
-  MutableLinearFactor f;
+  LinearFactor f;
 
   // eliminate the empty factor
   ConditionalGaussian::shared_ptr actualCG;
@@ -423,7 +424,7 @@ TEST( LinearFactor, eliminate_empty )
   ConditionalGaussian expectedCG;
 
   // expected remaining factor is still empty :-)
-  MutableLinearFactor expectedLF;
+  LinearFactor expectedLF;
 
   // check if the result matches
   CHECK(actualCG->equals(expectedCG));
@@ -434,7 +435,7 @@ TEST( LinearFactor, eliminate_empty )
 TEST( LinearFactor, empty )
 {	
   // create an empty factor
-  MutableLinearFactor f;
+  LinearFactor f;
   CHECK(f.empty()==true);
 }
 
@@ -497,7 +498,7 @@ TEST( LinearFactor, CONSTRUCTOR_ConditionalGaussian )
   //  actualLF.print();
   LinearFactor expectedLF("x2",R11,"l1x1",S12,d);
 			  
-  CHECK(actualLF.equals(expectedLF));
+  CHECK(assert_equal(expectedLF,actualLF));
 }
 /* ************************************************************************* */
 int main() { TestResult tr; return TestRegistry::runAllTests(tr);}

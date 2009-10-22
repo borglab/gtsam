@@ -26,8 +26,6 @@
 
 namespace gtsam {
 
-class MutableLinearFactor;
-
 /**
  * Base Class for a linear factor.
  * LinearFactor is non-mutable (all methods const!).
@@ -45,10 +43,11 @@ protected:
 	std::map<std::string, Matrix> As; // linear matrices
 	Vector b; // right-hand-side
 
+public:
+
+	// TODO: eradicate, as implies non-const
 	LinearFactor()  {
 	}
-
-public:
 
 	/** Construct Null factor */
 	CONSTRUCTOR
@@ -106,11 +105,21 @@ public:
 		}
 	}
 
+	/**
+	 * Constructor that combines a set of factors
+	 * @param factors Set of factors to combine
+	 */
+	CONSTRUCTOR
+	LinearFactor(const std::vector<shared_ptr> & factors);
+
+	// Implementing Testable virtual functions
+
+	void print(const std::string& s = "") const;
+	bool equals(const Factor<VectorConfig>& lf, double tol = 1e-9) const;
+
 	// Implementing Factor virtual functions
 
 	double error(const VectorConfig& c) const; /**  0.5*(A*x-b)'*(A*x-b) */
-	void print(const std::string& s = "") const;
-	bool equals(const LinearFactor& lf, double tol = 1e-9) const;
 	std::string dump() const { return "";}
 	std::size_t size() const { return As.size();}
 
@@ -180,49 +189,9 @@ public:
 	 */
 	std::pair<Matrix, Vector> matrix(const Ordering& ordering) const;
 
-}; // LinearFactor
-
-/* ************************************************************************* */
-
-/**
- * Mutable subclass of LinearFactor
- * To isolate bugs
- */
-class MutableLinearFactor: public LinearFactor {
-public:
-
-	CONSTRUCTOR
-	MutableLinearFactor() {
-	}
-
-	/**
-	 * Constructor that combines a set of factors
-	 * @param factors Set of factors to combine
-	 */
-	CONSTRUCTOR
-	MutableLinearFactor(const std::vector<shared_ptr> & factors);
-
-	/** Construct unary mutable factor */
-	CONSTRUCTOR
-	MutableLinearFactor(const std::string& key1, const Matrix& A1,
-			const Vector& b_in) :
-				LinearFactor(key1, A1, b_in) {
-	}
-
-	/** Construct binary mutable factor */
-	CONSTRUCTOR
-	MutableLinearFactor(const std::string& key1, const Matrix& A1,
-			const std::string& key2, const Matrix& A2, const Vector& b_in) :
-				LinearFactor(key1, A1, key2, A2, b_in) {
-	}
-
-	/** Construct ternary mutable factor */
-	CONSTRUCTOR
-	MutableLinearFactor(const std::string& key1, const Matrix& A1,
-			const std::string& key2, const Matrix& A2, const std::string& key3,
-			const Matrix& A3, const Vector& b_in) :
-				LinearFactor(key1, A1, key2, A2, key3, A3, b_in) {
-	}
+	/* ************************************************************************* */
+	// MUTABLE functions. FD:on the path to being eradicated
+	/* ************************************************************************* */
 
 	/** insert, copies A */
 	void insert(const std::string& key, const Matrix& A) {
@@ -255,6 +224,8 @@ public:
 	void append_factor(LinearFactor::shared_ptr f, const size_t m,
 			const size_t pos);
 
-};
+}; // LinearFactor
+
+/* ************************************************************************* */
 
 } // namespace gtsam

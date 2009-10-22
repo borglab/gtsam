@@ -21,14 +21,29 @@ using namespace gtsam;
 typedef pair<const string, Matrix>& mypair;
 
 /* ************************************************************************* */
-// we might have multiple As, so iterate and subtract from b
-double LinearFactor::error(const VectorConfig& c) const {
-  if (empty()) return 0;
-  Vector e = b;
-  string j; Matrix Aj;
-  FOREACH_PAIR(j, Aj, As)
-    e -= Vector(Aj * c[j]);
-  return 0.5 * inner_prod(trans(e),e);
+LinearFactor::LinearFactor(const vector<shared_ptr> & factors)
+{
+  // Create RHS vector of the right size by adding together row counts
+  size_t m = 0;
+  BOOST_FOREACH(shared_ptr factor, factors) m += factor->numberOfRows();
+  b = Vector(m);
+
+  size_t pos = 0; // save last position inserted into the new rhs vector
+
+  // iterate over all factors
+  BOOST_FOREACH(shared_ptr factor, factors){
+    // number of rows for factor f
+    const size_t mf = factor->numberOfRows();
+
+    // copy the rhs vector from factor to b
+    const Vector bf = factor->get_b();
+    for (size_t i=0; i<mf; i++) b(pos+i) = bf(i);
+
+    // update the matrices
+    append_factor(factor,m,pos);
+
+    pos += mf;
+  }
 }
 
 /* ************************************************************************* */
@@ -44,36 +59,39 @@ void LinearFactor::print(const string& s) const {
 
 /* ************************************************************************* */
 // Check if two linear factors are equal
-bool LinearFactor::equals(const LinearFactor& lf, double tol) const {
+bool LinearFactor::equals(const Factor<VectorConfig>& f, double tol) const {
     
-  //const LinearFactor* lf = dynamic_cast<const LinearFactor*>(&f);
-  //if (lf == NULL) return false;
+  const LinearFactor* lf = dynamic_cast<const LinearFactor*>(&f);
+  if (lf == NULL) return false;
 
-  if (empty()) return (lf.empty());
+  if (empty()) return (lf->empty());
 
-  const_iterator it1 = As.begin(), it2 = lf.As.begin();
-  if(As.size() != lf.As.size()) goto fail;
+  const_iterator it1 = As.begin(), it2 = lf->As.begin();
+  if(As.size() != lf->As.size()) return false;
 
-  for(; it1 != As.end(); it1++, it2++){
+  for(; it1 != As.end(); it1++, it2++) {
     const string& j1 = it1->first, j2 = it2->first;
     const Matrix A1 = it1->second, A2 = it2->second;
-    if (j1 != j2) goto fail;
-    if (!equal_with_abs_tol(A1,A2,tol)) {
-      cout << "A1[" << j1 << "] != A2[" << j2 << "]" << endl;
-      goto fail;
-    }
+    if (j1 != j2) return false;
+    if (!equal_with_abs_tol(A1,A2,tol))
+      return false;
   }
-  if( !(::equal_with_abs_tol(b, (lf.b),tol)) ) {
-    cout << "RHS disagree" << endl;
-    goto fail;
-  }
-  return true;
 
- fail:
-  // they don't match, print out and fail
-  print();
-  lf.print();
-  return false;
+  if( !(::equal_with_abs_tol(b, (lf->b),tol)) )
+    return false;
+
+  return true;
+}
+
+/* ************************************************************************* */
+// we might have multiple As, so iterate and subtract from b
+double LinearFactor::error(const VectorConfig& c) const {
+  if (empty()) return 0;
+  Vector e = b;
+  string j; Matrix Aj;
+  FOREACH_PAIR(j, Aj, As)
+    e -= Vector(Aj * c[j]);
+  return 0.5 * inner_prod(trans(e),e);
 }
 
 /* ************************************************************************* */
@@ -119,7 +137,7 @@ pair<Matrix,Vector> LinearFactor::matrix(const Ordering& ordering) const {
 }
 
 /* ************************************************************************* */
-void MutableLinearFactor::append_factor(LinearFactor::shared_ptr f, const size_t m, const size_t pos)
+void LinearFactor::append_factor(LinearFactor::shared_ptr f, const size_t m, const size_t pos)
 {
   // iterate over all matrices from the factor f
   LinearFactor::const_iterator it = f->begin();
@@ -149,32 +167,6 @@ void MutableLinearFactor::append_factor(LinearFactor::shared_ptr f, const size_t
 }
 
 /* ************************************************************************* */
-MutableLinearFactor::MutableLinearFactor(const vector<shared_ptr> & factors)
-{
-  // Create RHS vector of the right size by adding together row counts
-  size_t m = 0;
-  BOOST_FOREACH(shared_ptr factor, factors) m += factor->numberOfRows();
-  b = Vector(m);
-
-  size_t pos = 0; // save last position inserted into the new rhs vector
-
-  // iterate over all factors
-  BOOST_FOREACH(shared_ptr factor, factors){
-    // number of rows for factor f
-    const size_t mf = factor->numberOfRows();
-
-    // copy the rhs vector from factor to b
-    const Vector bf = factor->get_b();
-    for (size_t i=0; i<mf; i++) b(pos+i) = bf(i);
-
-    // update the matrices
-    append_factor(factor,m,pos);
-
-    pos += mf;
-  }
-}
-
-/* ************************************************************************* */
 /* Note, in place !!!!
  * Do incomplete QR factorization for the first n columns
  * We will do QR on all matrices and on RHS
@@ -183,10 +175,10 @@ MutableLinearFactor::MutableLinearFactor(const vector<shared_ptr> & factors)
  */
 /* ************************************************************************* */
 pair<ConditionalGaussian::shared_ptr, LinearFactor::shared_ptr>
-MutableLinearFactor::eliminate(const string& key)
+LinearFactor::eliminate(const string& key)
 {
   // start empty remaining factor to be returned
-  boost::shared_ptr<MutableLinearFactor> lf(new MutableLinearFactor);
+  boost::shared_ptr<LinearFactor> lf(new LinearFactor);
 
   // find the matrix associated with key
   iterator it = As.find(key);
