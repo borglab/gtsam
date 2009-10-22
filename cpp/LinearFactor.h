@@ -14,6 +14,7 @@
 #include <set>
 #include <ostream>
 #include <boost/shared_ptr.hpp>
+#include <vector>
 
 #include "Matrix.h"
 #include "Factor.h"
@@ -80,6 +81,15 @@ public:
 		As.insert(make_pair(key1, A1));
 		As.insert(make_pair(key2, A2));
 		As.insert(make_pair(key3, A3));
+	}
+
+	/** Construct an n-ary factor */
+	CONSTRUCTOR
+	LinearFactor(const std::vector<std::pair<std::string, Matrix> > &terms,
+	    const Vector &b_in) :
+	    b(b_in) {
+	  for(unsigned int i=0; i<terms.size(); i++)
+	    As.insert(terms[i]);
 	}
 
 	/** Construct from Conditional Gaussian */
