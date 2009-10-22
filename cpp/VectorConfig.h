@@ -28,8 +28,8 @@ namespace gtsam {
     typedef std::map<std::string, Vector>::iterator iterator;
     typedef std::map<std::string, Vector>::const_iterator const_iterator;
 
-    VectorConfig():Testable<VectorConfig>() {}
-    VectorConfig(const VectorConfig& cfg_in) : Testable<VectorConfig>(), values(cfg_in.values) {}
+    VectorConfig() {}
+    VectorConfig(const VectorConfig& cfg_in): values(cfg_in.values) {}
     
     virtual ~VectorConfig() {}
 
