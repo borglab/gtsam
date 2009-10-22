@@ -37,6 +37,10 @@ namespace gtsam {
 		/** Collection of factors */
 		std::vector<shared_factor> factors_;
 
+		/** For each variable a list of factor indices connected to it  */
+		typedef std::map<std::string, std::list<int> > Indices;
+		Indices indices_;
+
 	public:
 
 		/** STL like, return the iterator pointing to the first factor */
@@ -65,9 +69,7 @@ namespace gtsam {
 		}
 
 		/** Add a factor */
-		void push_back(shared_factor ptr_f) {
-			factors_.push_back(ptr_f);
-		}
+		void push_back(shared_factor factor);
 
 		/** unnormalized error */
 		double error(const Config& c) const {

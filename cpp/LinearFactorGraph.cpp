@@ -48,17 +48,13 @@ set<string> LinearFactorGraph::find_separator(const string& key) const
 }
 
 /* ************************************************************************* */
-/** O(n)                                                                     */
-/* ************************************************************************* */ 
-std::vector<int> LinearFactorGraph::factors(const std::string& key) {
-  vector<int> found;
-
-  for(int i=0;i<factors_.size();i++)
-		if (factors_[i]->involves(key))
-			found.push_back(i);
-
-	return found;
+/** O(1)                                                                     */
+/* ************************************************************************* */
+list<int> LinearFactorGraph::factors(const string& key) const {
+	Indices::const_iterator it = indices_.find(key);
+	return it->second;
 }
+
 
 /* ************************************************************************* */
 /** O(n)                                                                     */

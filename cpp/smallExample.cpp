@@ -23,6 +23,7 @@ using namespace std;
 #include "Simulated2DOdometry.h"
 #include "Simulated2DMeasurement.h"
 #include "simulated2D.h"
+#include "FactorGraph-inl.h"
 
 namespace gtsam {
 

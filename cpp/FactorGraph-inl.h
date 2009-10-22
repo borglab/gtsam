@@ -16,12 +16,35 @@
 #include "Ordering.h"
 #include "FactorGraph.h"
 
+
 #include <colamd/colamd.h>
+
+using namespace std;
 
 namespace gtsam {
 
 /* ************************************************************************* */
+template<class Factor, class Config>
+void FactorGraph<Factor,Config>::push_back(shared_factor factor) {
+	factors_.push_back(factor);  // add the actual factor
+	int i = factors_.size() - 1; // index of factor
+	list<string> keys = factor->keys(); // get keys for factor
+	BOOST_FOREACH(string key, keys){    // for each key push i onto list
+		Indices::iterator it = indices_.find(key); // old list for that key (if exists)
+		if (it==indices_.end()){  // there's no list yet, so make one
+			list<int> indices(1, i);
+			indices_.insert(pair<string, list<int> >(key, indices));  // insert new indices into factorMap
+		}
+		else{
+			list<int> *indices_ptr;
+			indices_ptr = &(it->second);
+			indices_ptr->push_back(i);
+		}
+	}
+}
 
+
+/* ************************************************************************* */
 /**
  * Call colamd given a column-major symbolic matrix A
  * @param n_col colamd arg 1: number of rows in A
