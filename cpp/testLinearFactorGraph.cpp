@@ -41,100 +41,6 @@ TEST( LinearFactorGraph, error )
 }
 
 /* ************************************************************************* */
-/* unit test for find factors                                                */ 
-/* ************************************************************************* */
-/*
-TEST( LinearFactorGraph, find_factors )
-{	
-  int checksum = 0;
-  int expected = 16;
-
-  LinearFactorGraph fg = createLinearFactorGraph();
-
-  // create a shared pointer object to prevent memory leaks
-  set<shared_ptr<LinearFactor> > factors = fg.find_factors_and_remove("x2");
-  
-  // CHECK whether find the right two factors
-  
-  // odometry between x1 and x2
-  Matrix A21(2,2);
-  A21(0,0) = -10.0 ; A21(0,1) = 0.0;
-  A21(1,0) = 0.0   ; A21(1,1) = -10.0;
-
-  Matrix A22(2,2);
-  A22(0,0) = 10.0 ; A22(0,1) = 0.0;
-  A22(1,0) = 0.0  ; A22(1,1) = 10.0;   
-  
-  Vector b(2);
-  b(0) = 2 ; b(1) = -1;
-  
-  LinearFactor f2 = LinearFactor("x1", A21,  "x2", A22, b);
-
-  // measurement between x2 and l1
-  Matrix A41(2,2);
-  A41(0,0) = -5  ; A41(0,1) = 0.0;
-  A41(1,0) = 0.0  ; A41(1,1) = -5;
-  
-  Matrix A42(2,2);
-  A42(0,0) = 5 ; A42(0,1) = 0;
-  A42(1,0) = 0 ; A42(1,1) = 5;      
-
-  b(0)= -1 ; b(1) = 1.5;
-
-  LinearFactor f4 = LinearFactor("x2", A41, "l1", A42, b);
-
-  set<shared_ptr<LinearFactor> >::iterator it;
-  for( it = factors.begin() ; it != factors.end() ; it++ ){
-    if( strcmp( it->get()->name_.c_str(), "f2") == 0){
-      if(it->get()->equals(f2)){
-        checksum = checksum + 2;  
-      }
-    }else if( strcmp( it->get()->name_.c_str(), "f4") == 0){
-      if(it->get()->equals(f4)){
-        checksum = checksum + 4;  
-      }else{
-      }
-    }
-  }
- 
-  // CHECK if the factors are deleted from the factor graph
-  
-  // Create
-  LinearFactorGraph fg2;
-  
-  // prior on x1
-  Matrix A11(2,2);
-  A11(0,0) = 10 ; A11(0,1) = 0;
-  A11(1,0) = 0  ; A11(1,1) = 10;
-  
-  b(0) = -1 ; b(1) = -1;
-  
-  LinearFactor *f1 = new LinearFactor("x1", A11, b);
-  fg2.push_back(f1);
-  
-  // measurement between x1 and l1
-  Matrix A31(2,2);
-  A31(0,0) = -5 ; A31(0,1) = 0;
-  A31(1,0) = 0  ; A31(1,1) = -5;
-  
-  Matrix A32(2,2);
-  A32(0,0) = 5 ; A32(0,1) = 0;
-  A32(1,0) = 0 ; A32(1,1) = 5;  
-
-  b(0) = 0 ; b(1) = 1;
-
-  LinearFactor *f3 = new LinearFactor("x1", A31, "l1", A32, b);
-  fg2.push_back(f3);
-
-  if( fg.equals(fg2) ){
-    checksum = checksum + 10; 
-  }
-
-  CHECK( checksum == expected );    
-}
-*/
-
-/* ************************************************************************* */
 /* unit test for find seperator                                              */ 
 /* ************************************************************************* */
 TEST( LinearFactorGraph, find_separator )
@@ -564,6 +470,29 @@ TEST( LinearFactorGraph, factor_lookup)
 	vector<int> x2_expected(x2_indices, x2_indices + 2);
 	CHECK(x2_factors==x2_expected);
 }
+
+/* ************************************************************************* */
+TEST( LinearFactorGraph, find_factors_and_remove )
+{
+	// create the graph
+	LinearFactorGraph fg = createLinearFactorGraph();
+
+  // We expect to remove these three factors: 0, 1, 2
+  LinearFactor::shared_ptr f0 = fg[0];
+  LinearFactor::shared_ptr f1 = fg[1];
+  LinearFactor::shared_ptr f2 = fg[2];
+
+  // call the function
+  LinearFactorSet factors = fg.find_factors_and_remove("x1");
+
+  // Check the factors
+  CHECK(f0==factors[0]);
+  CHECK(f1==factors[1]);
+  CHECK(f2==factors[2]);
+
+  // CHECK if the factors are deleted from the factor graph
+  LONGS_EQUAL(1,fg.size());
+  }
 
 /* ************************************************************************* */
 int main() { TestResult tr; return TestRegistry::runAllTests(tr);}
