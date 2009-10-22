@@ -109,6 +109,84 @@ TEST( LinearFactor, linearFactor2 )
 }
 
 /* ************************************************************************* */
+TEST( LinearFactor, linearFactorN){
+  vector<LinearFactor::shared_ptr> f;
+  f.push_back(LinearFactor::shared_ptr(new LinearFactor("x1", Matrix_(2,2,
+      1.0, 0.0,
+      0.0, 1.0),
+      Vector_(2,
+      10.0, 5.0))));
+  f.push_back(LinearFactor::shared_ptr(new LinearFactor("x1", Matrix_(2,2,
+      -10.0, 0.0,
+      0.0, -10.0),
+      "x2", Matrix_(2,2,
+      10.0, 0.0,
+      0.0, 10.0),
+      Vector_(2,
+      1.0, -2.0))));
+  f.push_back(LinearFactor::shared_ptr(new LinearFactor("x2", Matrix_(2,2,
+      -10.0, 0.0,
+      0.0, -10.0),
+      "x3", Matrix_(2,2,
+      10.0, 0.0,
+      0.0, 10.0),
+      Vector_(2,
+      1.5, -1.5))));
+  f.push_back(LinearFactor::shared_ptr(new LinearFactor("x3", Matrix_(2,2,
+      -10.0, 0.0,
+      0.0, -10.0),
+      "x4", Matrix_(2,2,
+      10.0, 0.0,
+      0.0, 10.0),
+      Vector_(2,
+      2.0, -1.0))));
+
+  MutableLinearFactor combined(f);
+
+  vector<pair<string, Matrix> > meas;
+  meas.push_back(make_pair("x1", Matrix_(8,2,
+      1.0, 0.0,
+      0.0, 1.0,
+      -10.0, 0.0,
+      0.0, -10.0,
+      0.0, 0.0,
+      0.0, 0.0,
+      0.0, 0.0,
+      0.0, 0.0)));
+  meas.push_back(make_pair("x2", Matrix_(8,2,
+      0.0, 0.0,
+      0.0, 0.0,
+      10.0, 0.0,
+      0.0, 10.0,
+      -10.0, 0.0,
+      0.0, -10.0,
+      0.0, 0.0,
+      0.0, 0.0)));
+  meas.push_back(make_pair("x3", Matrix_(8,2,
+      0.0, 0.0,
+      0.0, 0.0,
+      0.0, 0.0,
+      0.0, 0.0,
+      10.0, 0.0,
+      0.0, 10.0,
+      -10.0, 0.0,
+      0.0, -10.0)));
+  meas.push_back(make_pair("x4", Matrix_(8,2,
+      0.0, 0.0,
+      0.0, 0.0,
+      0.0, 0.0,
+      0.0, 0.0,
+      0.0, 0.0,
+      0.0, 0.0,
+      10.0, 0.0,
+      0.0, 10.0)));
+  Vector b = Vector_(8,
+      10.0, 5.0, 1.0, -2.0, 1.5, -1.5, 2.0, -1.0);
+
+  LinearFactor expected(meas, b);
+  CHECK(combined.equals(expected));
+}
+
 TEST( NonlinearFactorGraph, linearFactor3){
 
 	Matrix A11(2,2);
