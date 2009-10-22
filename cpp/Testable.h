@@ -19,6 +19,7 @@ namespace gtsam {
 	class Testable {
 
 	public:
+	    virtual ~Testable() {};
 
 		/**
 		 * print
