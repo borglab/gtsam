@@ -81,9 +81,8 @@ TEST( SimpleCamera, Dproject_point)
 
 TEST( SimpleCamera, Dproject_point_pose)
 {
-  Point2 result;
 	Matrix Dpose, Dpoint;
-	Dproject_pose_point(camera, point1, result, Dpose, Dpoint);
+	Point2 result = Dproject_pose_point(camera, point1, Dpose, Dpoint);
 	Matrix numerical_pose  = numericalDerivative21(project2, pose1, point1);
 	Matrix numerical_point = numericalDerivative22(project2, pose1, point1);
   CHECK(assert_equal(result, Point2(-100,  100) ));

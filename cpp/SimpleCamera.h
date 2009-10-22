@@ -58,9 +58,8 @@ namespace gtsam {
 		// Friends
 		friend Matrix Dproject_pose(const SimpleCamera& camera,  const Point3& point);
 		friend Matrix Dproject_point(const SimpleCamera& camera, const Point3& point);
-		friend void	Dproject_pose_point(const SimpleCamera& camera, const Point3& point,
-					Point2& projection, Matrix& D_projection_pose,
-					Matrix& D_projection_point);
+		friend Point2	Dproject_pose_point(const SimpleCamera& camera, const Point3& point,
+					Matrix& D_projection_pose, Matrix& D_projection_point);
 
 	};
 
@@ -70,13 +69,14 @@ namespace gtsam {
 
 	/**
 	 * This function receives the camera pose and the landmark location and
-	 returns the location the point is supposed to appear in the image as well as the sign of the depth
+	 * returns the location the point is supposed to appear in the image
+	 * as well as the sign of the depth.
 	 */
 	std::pair<Point2, bool> projectSafe(const SimpleCamera& camera, const Point3& point);
 
 	/**
 	 * This function receives the camera pose and the landmark location and
-	 returns the location the point is supposed to appear in the image
+	 * returns the location the point is supposed to appear in the image
 	 */
 	Point2 project(const SimpleCamera& camera, const Point3& point);
 
@@ -90,10 +90,8 @@ namespace gtsam {
 	 * super-duper combined evaluation + derivatives
 	 * saves a lot of time because a lot of computation is shared
 	 */
-	void
-			Dproject_pose_point(const SimpleCamera& camera, const Point3& point,
-					Point2& projection, Matrix& D_projection_pose,
-					Matrix& D_projection_point);
+	Point2 Dproject_pose_point(const SimpleCamera& camera, const Point3& point,
+					Matrix& D_projection_pose, Matrix& D_projection_point);
 
 }
 

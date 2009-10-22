@@ -73,18 +73,20 @@ namespace gtsam {
 	}
 
 	/* ************************************************************************* */
-	void Dproject_pose_point(const SimpleCamera& camera, const Point3& point,
-			Point2& projection, Matrix& D_projection_pose, Matrix& D_projection_point) {
+	Point2 Dproject_pose_point(const SimpleCamera& camera, const Point3& point,
+			Matrix& D_projection_pose, Matrix& D_projection_point) {
 
 		Point2 intrinsic = project(camera.calibrated_, point);
 		Matrix D_intrinsic_pose = Dproject_pose(camera.calibrated_, point);
 		Matrix D_intrinsic_point = Dproject_point(camera.calibrated_, point);
 
-		projection = uncalibrate(camera.K_, intrinsic);
+		Point2 projection = uncalibrate(camera.K_, intrinsic);
 		Matrix D_projection_intrinsic = Duncalibrate2(camera.K_, intrinsic);
 
 		D_projection_pose = D_projection_intrinsic * D_intrinsic_pose;
 		D_projection_point = D_projection_intrinsic * D_intrinsic_point;
+
+		return projection;
 	}
 
 /* ************************************************************************* */

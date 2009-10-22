@@ -59,12 +59,15 @@ namespace gtsam {
 
 	/**
 	 * This function receives the camera pose and the landmark location and
-	 returns the location the point is supposed to appear in the image
+	 * returns the location the point is supposed to appear in the image
+	 * @param camera the CalibratedCamera
+	 * @param point a 3D point to be projected
+	 * @return the intrinsic coordinates of the projected point
 	 */
 	Point2 project(const CalibratedCamera& camera, const Point3& point);
 
 	/**
-	 * Derivatives of project.
+	 * Derivatives of project, same paramaters as project
 	 */
 	Matrix Dproject_pose(const CalibratedCamera& camera, const Point3& point);
 	Matrix Dproject_point(const CalibratedCamera& camera, const Point3& point);
@@ -72,10 +75,10 @@ namespace gtsam {
 	/**
 	 * super-duper combined evaluation + derivatives
 	 * saves a lot of time because a lot of computation is shared
+	 * @return project(camera,point)
 	 */
-	void
-	Dproject_pose_point(const CalibratedCamera& camera, const Point3& point,
-			Point2& intrinsic, Matrix& D_intrinsic_pose, Matrix& D_intrinsic_point);
+	Point2 Dproject_pose_point(const CalibratedCamera& camera,
+			const Point3& point, Matrix& D_intrinsic_pose, Matrix& D_intrinsic_point);
 }
 
 #endif /* CalibratedCAMERA_H_ */
