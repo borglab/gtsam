@@ -3,7 +3,7 @@
 
 function config = create_config(n,m)
 
-config = FGConfig();
+config = VectorConfig();
 
 for j = 1:n
     config.insert(sprintf('m%d',j), [0;0]);
