@@ -537,6 +537,34 @@ TEST( LinearFactorGraph, COMBINE_GRAPHS)
 		
 		CHECK(size1+size2 == fg3.size()); 
 }
+
+/* ************************************************************************* */
+// print a vector of ints if needed for debugging
+void print(vector<int> v) {
+	for (int k = 0; k < v.size(); k++)
+		cout << v[k] << " ";
+	cout << endl;
+}
+
+/* ************************************************************************* */
+TEST( LinearFactorGraph, factor_lookup)
+{
+	// create a test graph
+	LinearFactorGraph fg = createLinearFactorGraph();
+
+	// ask for all factor indices connected to x1
+	vector<int> x1_factors = fg.factors("x1");
+	int x1_indices[] = { 0, 1, 2 };
+	vector<int> x1_expected(x1_indices, x1_indices + 3);
+	CHECK(x1_factors==x1_expected);
+
+	// ask for all factor indices connected to x2
+	vector<int> x2_factors = fg.factors("x2");
+	int x2_indices[] = { 1, 3 };
+	vector<int> x2_expected(x2_indices, x2_indices + 2);
+	CHECK(x2_factors==x2_expected);
+}
+
 /* ************************************************************************* */
 int main() { TestResult tr; return TestRegistry::runAllTests(tr);}
 /* ************************************************************************* */

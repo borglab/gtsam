@@ -53,10 +53,14 @@ namespace gtsam {
     std::set<std::string> find_separator(const std::string& key) const;
 
     /**
+     * Return indices for all factors that involve the given node
+     * @param key the key for the given node
+     */
+    std::vector<int> factors(const std::string& key);
+
+    /**
      * find all the factors that involve the given node and remove them
      * from the factor graph
-     * NOTE: the ordering of the LinearFactor::shared_ptrs will change
-     * between systems, so do not rely on this ordering
      * @param key the key for the given node
      */
     LinearFactorSet find_factors_and_remove(const std::string& key);
