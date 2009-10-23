@@ -495,5 +495,31 @@ TEST( LinearFactorGraph, find_factors_and_remove )
   }
 
 /* ************************************************************************* */
+TEST( LinearFactorGraph, find_factors_and_remove__twice )
+{
+	// create the graph
+	LinearFactorGraph fg = createLinearFactorGraph();
+
+  // We expect to remove these three factors: 0, 1, 2
+  LinearFactor::shared_ptr f0 = fg[0];
+  LinearFactor::shared_ptr f1 = fg[1];
+  LinearFactor::shared_ptr f2 = fg[2];
+
+  // call the function
+  LinearFactorSet factors = fg.find_factors_and_remove("x1");
+
+  // Check the factors
+  CHECK(f0==factors[0]);
+  CHECK(f1==factors[1]);
+  CHECK(f2==factors[2]);
+
+  factors = fg.find_factors_and_remove("x1");
+  CHECK(factors.size() == 0);
+
+  // CHECK if the factors are deleted from the factor graph
+  LONGS_EQUAL(1,fg.size());
+  }
+
+/* ************************************************************************* */
 int main() { TestResult tr; return TestRegistry::runAllTests(tr);}
 /* ************************************************************************* */

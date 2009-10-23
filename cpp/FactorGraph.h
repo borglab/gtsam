@@ -65,7 +65,11 @@ namespace gtsam {
 
 		/** return the numbers of the factors_ in the factor graph */
 		inline size_t size() const {
-			return factors_.size();
+			int size_=0;
+			for (const_iterator factor = factors_.begin(); factor != factors_.end(); factor++)
+			  if(*factor != NULL)
+				  size_++;
+			return size_;
 		}
 
 		/** Add a factor */
@@ -91,7 +95,7 @@ namespace gtsam {
 			std::cout << s << std::endl;
 			printf("size: %d\n", (int) size());
 			for (const_iterator factor = factors_.begin(); factor != factors_.end(); factor++)
-				(*factor)->print();
+				if(*factor != NULL) (*factor)->print();
 		}
 
 		/** Check equality */
