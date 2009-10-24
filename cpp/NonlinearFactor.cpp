@@ -19,7 +19,7 @@ NonlinearFactor1::NonlinearFactor1(const Vector& z,
                                    Vector (*h)(const Vector&),                      
                                    const string& key1,                   
                                    Matrix (*H)(const Vector&)) 
-  : NonlinearFactor<VectorConfig>(z, sigma), h_(h), key1_(key1), H_(H)
+  : NonlinearFactor<VectorConfig>(z, sigma), h_(h), key_(key1), H_(H)
 {
   keys_.push_front(key1);
 }
@@ -27,13 +27,16 @@ NonlinearFactor1::NonlinearFactor1(const Vector& z,
 /* ************************************************************************* */
 void NonlinearFactor1::print(const string& s) const {
 	cout << "NonLinearFactor1 " << s << endl;
-	NonlinearFactor<VectorConfig>::print(s);
+  cout << "h  : " << (void*)h_ << endl;
+  cout << "key: " << key_      << endl;
+  cout << "H  : " << (void*)H_ << endl;
+	NonlinearFactor<VectorConfig>::print("parent");
 }
 
 /* ************************************************************************* */
 LinearFactor::shared_ptr NonlinearFactor1::linearize(const VectorConfig& c) const {
 	// get argument 1 from config
-	Vector x1 = c[key1_];
+	Vector x1 = c[key_];
 
 	// Jacobian A = H(x1)/sigma
 	Matrix A = H_(x1) / sigma_;
@@ -41,7 +44,7 @@ LinearFactor::shared_ptr NonlinearFactor1::linearize(const VectorConfig& c) cons
 	// Right-hand-side b = error(c) = (z - h(x1))/sigma
 	Vector b = (z_ - h_(x1)) / sigma_;
 
-	LinearFactor::shared_ptr p(new LinearFactor(key1_, A, b));
+	LinearFactor::shared_ptr p(new LinearFactor(key_, A, b));
 	return p;
 }
 
@@ -53,7 +56,7 @@ bool NonlinearFactor1::equals(const Factor<VectorConfig>& f, double tol) const {
 	if (p == NULL) return false;
 	return NonlinearFactor<VectorConfig>::equals(*p, tol)
 	&& (h_   == p->h_) 
-	&& (key1_== p->key1_) 
+	&& (key_ == p->key_)
 	&& (H_   == p->H_);
 }
 
@@ -75,7 +78,12 @@ NonlinearFactor2::NonlinearFactor2(const Vector& z,
 /* ************************************************************************* */
 void NonlinearFactor2::print(const string& s) const {
 	cout << "NonLinearFactor2 " << s << endl;
-	NonlinearFactor<VectorConfig>::print(s);
+  cout << "h   : " << (void*)h_  << endl;
+  cout << "key1: " << key1_      << endl;
+  cout << "H2  : " << (void*)H2_ << endl;
+  cout << "key2: " << key2_      << endl;
+  cout << "H1  : " << (void*)H1_ << endl;
+	NonlinearFactor<VectorConfig>::print("parent");
 }
 
 /* ************************************************************************* */
@@ -102,9 +110,9 @@ bool NonlinearFactor2::equals(const Factor<VectorConfig>& f, double tol) const {
 	return NonlinearFactor<VectorConfig>::equals(*p, tol)
     && (h_    == p->h_)
     && (key1_ == p->key1_)
-    && (H2_   == p->H1_)
+    && (H1_   == p->H1_)
     && (key2_ == p->key2_)
-    && (H1_   == p->H2_);
+    && (H2_   == p->H2_);
 }
 
 /* ************************************************************************* */

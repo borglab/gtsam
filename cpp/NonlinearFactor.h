@@ -72,7 +72,7 @@ namespace gtsam {
     }
 
     /** Check if two NonlinearFactor objects are equal */
-    bool equals(const Factor<Config>& f, double tol) const {
+    bool equals(const Factor<Config>& f, double tol=1e-9) const {
     	const NonlinearFactor<Config>* p = dynamic_cast<const NonlinearFactor<Config>*> (&f);
     	if (p == NULL) return false;
       return equal_with_abs_tol(z_,p->z_,tol) && fabs(sigma_ - p->sigma_)<=tol;
@@ -123,7 +123,7 @@ namespace gtsam {
   class NonlinearFactor1 : public NonlinearFactor<VectorConfig> {
   private:
 
-		std::string key1_;
+		std::string key_;
 
   public:
 
@@ -144,7 +144,7 @@ namespace gtsam {
 
     /** error function */
     inline Vector error_vector(const VectorConfig& c) const {
-      return z_ - h_(c[key1_]);
+      return z_ - h_(c[key_]);
     }
 
     /** linearize a non-linearFactor1 to get a linearFactor1 */
@@ -172,8 +172,8 @@ namespace gtsam {
     Matrix (*H2_)(const Vector&, const Vector&);
 
     /** Constructor */
-    NonlinearFactor2(const Vector& z,	                         // the measurement
-		     const double sigma,	                 // the variance
+    NonlinearFactor2(const Vector& z,	               // the measurement
+		     const double sigma,	                       // the variance
 		     Vector (*h)(const Vector&, const Vector&),  // the measurement function
 		     const std::string& key1,                    // key of the first variable
 		     Matrix (*H1)(const Vector&, const Vector&), // derivative of h in first variable

@@ -6,9 +6,6 @@
  * @author  Frank dellaert
  */
 
-
-
-/*STL/C++*/
 #include <iostream>
 #include <string>
 

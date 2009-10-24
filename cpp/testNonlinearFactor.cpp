@@ -13,11 +13,45 @@
 
 #include "Matrix.h"
 #include "smallExample.h"
+#include "Simulated2DMeasurement.h"
 
 using namespace std;
 using namespace gtsam;
 
 typedef boost::shared_ptr<NonlinearFactor<VectorConfig> > shared_nlf;
+
+/* ************************************************************************* */
+TEST( NonLinearFactor, equals )
+{
+	double sigma = 1.0;
+
+	// create two nonlinear2 factors
+	Vector z3(2); z3(0) = 0. ; z3(1) = -1.;
+	Simulated2DMeasurement f0(z3, sigma, "x1", "l1");
+
+	// measurement between x2 and l1
+	Vector z4(2); z4(0)= -1.5 ; z4(1) = -1.;
+	Simulated2DMeasurement f1(z4, sigma, "x2", "l1");
+
+	CHECK(assert_equal(f0,f0));
+	CHECK(f0.equals(f0));
+	CHECK(!f0.equals(f1));
+	CHECK(!f1.equals(f0));
+}
+
+/* ************************************************************************* */
+TEST( NonLinearFactor, equals2 )
+{
+  // create a non linear factor graph
+  ExampleNonlinearFactorGraph fg = createNonlinearFactorGraph();
+
+  // get two factors
+  shared_nlf f0 = fg[0], f1 = fg[1];
+
+  CHECK(f0->equals(*f0));
+  CHECK(!f0->equals(*f1));
+  CHECK(!f1->equals(*f0));
+}
 
 /* ************************************************************************* */
 TEST( NonLinearFactor, NonlinearFactor )
