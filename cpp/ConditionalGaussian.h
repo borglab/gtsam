@@ -17,6 +17,7 @@
 #include "Matrix.h"
 #include "VectorConfig.h"
 #include "Ordering.h"
+#include "Testable.h"
 
 namespace gtsam {
 	
@@ -25,7 +26,7 @@ namespace gtsam {
    * It has a set of parents y,z, etc. and implements a probability density on x.
    * The negative log-probability is given by || Rx - (d - Sy - Tz - ...)||^2
    */
-  class ConditionalGaussian : boost::noncopyable
+  class ConditionalGaussian : boost::noncopyable, public Testable<ConditionalGaussian>
   {
   public:
     typedef std::map<std::string, Matrix>::const_iterator const_iterator;
@@ -91,6 +92,9 @@ namespace gtsam {
     /** print */
     void print(const std::string& = "ConditionalGaussian") const;
 
+    /** equals function */
+    bool equals(const ConditionalGaussian &cg, double tol=1e-9) const;
+
     /** dimension of multivariate variable */
     size_t dim() const {return R_.size2();}
 
@@ -122,9 +126,6 @@ namespace gtsam {
      */    
     void add(const std::string key, Matrix S){ parents_.insert(make_pair(key, S)); }
 			
-    /** equals function */
-    bool equals(const ConditionalGaussian &cg) const;
-
   private:
 		/** Serialization function */
 		friend class boost::serialization::access;

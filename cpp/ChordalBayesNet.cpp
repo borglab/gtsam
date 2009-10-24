@@ -16,6 +16,30 @@ using namespace gtsam;
 #define FOREACH_PAIR( KEY, VAL, COL) BOOST_FOREACH (boost::tie(KEY,VAL),COL) 
 
 /* ************************************************************************* */
+void ChordalBayesNet::print(const string& s) const {
+  BOOST_FOREACH(string key, keys) {
+    const_iterator it = nodes.find(key);
+    it->second->print("\nNode[" + key + "]");
+  }
+}
+
+/* ************************************************************************* */
+bool ChordalBayesNet::equals(const ChordalBayesNet& cbn, double tol) const
+{
+  const_iterator it1 = nodes.begin(), it2 = cbn.nodes.begin();
+
+  if(nodes.size() != cbn.nodes.size()) return false;
+  for(; it1 != nodes.end(); it1++, it2++){
+    const string& j1 = it1->first, j2 = it2->first;
+    ConditionalGaussian::shared_ptr node1 = it1->second, node2 = it2->second;
+    if (j1 != j2) return false;
+    if (!node1->equals(*node2,tol))
+      return false;
+  }
+  return true;
+}
+
+/* ************************************************************************* */
 void ChordalBayesNet::insert(const string& key, ConditionalGaussian::shared_ptr node)
 {
   keys.push_front(key);
@@ -58,38 +82,6 @@ boost::shared_ptr<VectorConfig> ChordalBayesNet::optimize(const boost::shared_pt
     result->insert(key,x);   // store result in partial solution
   }
   return result;
-}
-
-/* ************************************************************************* */
-void ChordalBayesNet::print() const {
-  BOOST_FOREACH(string key, keys) {
-    const_iterator it = nodes.find(key);
-    it->second->print("\nNode[" + key + "]");
-  }
-}
-
-/* ************************************************************************* */
-bool ChordalBayesNet::equals(const ChordalBayesNet& cbn) const
-{
-  const_iterator it1 = nodes.begin(), it2 = cbn.nodes.begin();
- 
-  if(nodes.size() != cbn.nodes.size()) goto fail;
-  for(; it1 != nodes.end(); it1++, it2++){
-    const string& j1 = it1->first, j2 = it2->first;
-    ConditionalGaussian::shared_ptr node1 = it1->second, node2 = it2->second;
-    if (j1 != j2) goto fail;
-    if (!node1->equals(*node2)) {
-      cout << "node1[" << j1 << "] != node2[" << j2 << "]" << endl;
-      goto fail;
-    }
-  }
-  return true;
-
- fail:
-  // they don't match, print out and fail
-  print();
-  cbn.print();
-  return false;
 }
 
 /* ************************************************************************* */  

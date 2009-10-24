@@ -332,8 +332,8 @@ TEST( LinearFactor, eliminate )
   LinearFactor expectedLF("l1", Bl1, "x1", Bx1, b1);
 
   // check if the result matches
-  CHECK(actualCG->equals(expectedCG));
-  CHECK(actualLF->equals(expectedLF,1e-5));
+  CHECK(assert_equal(expectedCG,*actualCG,1e-4));
+  CHECK(assert_equal(expectedLF,*actualLF,1e-5));
 }
 
 
@@ -396,8 +396,8 @@ TEST( LinearFactor, eliminate2 )
   LinearFactor expectedLF("l1x1", Bl1x1, b1);
 
   // check if the result matches
-  CHECK(actualCG->equals(expectedCG));
-  CHECK(actualLF->equals(expectedLF,1e-5));
+  CHECK(assert_equal(expectedCG,*actualCG,1e-4));
+  CHECK(assert_equal(expectedLF,*actualLF,1e-5));
 }
 
 //* ************************************************************************* */

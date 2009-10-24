@@ -15,11 +15,12 @@
 
 #include "ConditionalGaussian.h"
 #include "VectorConfig.h"
+#include "Testable.h"
 
 namespace gtsam {
 
 /** Chordal Bayes Net, the result of eliminating a factor graph */
-class ChordalBayesNet
+class ChordalBayesNet : public Testable<ChordalBayesNet>
 {
 public:
 	typedef boost::shared_ptr<ChordalBayesNet> shared_ptr;
@@ -46,6 +47,12 @@ public:
 	/** Destructor */
 	virtual ~ChordalBayesNet() {}
 
+	/** print */
+	void print(const std::string& s="") const;
+
+	/** check equality */
+	bool equals(const ChordalBayesNet& cbn, double tol=1e-9) const;
+
 	/** insert: use reverse topological sort (i.e. parents last) */
 	void insert(const std::string& key, ConditionalGaussian::shared_ptr node);
 
@@ -53,14 +60,13 @@ public:
 	void erase(const std::string& key);
 
 	/** return node with given key */
-	inline ConditionalGaussian::shared_ptr get (const std::string& key) const
-	{
+	inline ConditionalGaussian::shared_ptr get (const std::string& key) const {
 		const_iterator cg = nodes.find(key); // get node
 		assert( cg != nodes.end() );
 		return cg->second;
 	}
-	inline ConditionalGaussian::shared_ptr operator[](const std::string& key) const
-	{
+
+	inline ConditionalGaussian::shared_ptr operator[](const std::string& key) const {
 		const_iterator cg = nodes.find(key); // get node
 		assert( cg != nodes.end() );
 		return cg->second;
@@ -74,12 +80,6 @@ public:
 	/** optimize */
 	boost::shared_ptr<VectorConfig> optimize() const;
 	boost::shared_ptr<VectorConfig> optimize(const boost::shared_ptr<VectorConfig> &c) const;
-
-	/** print */
-	void print() const;
-
-	/** check equality */
-	bool equals(const ChordalBayesNet& cbn) const;
 
 	/** size is the number of nodes */
 	size_t size() const {return nodes.size();}

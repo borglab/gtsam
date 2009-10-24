@@ -13,6 +13,8 @@
 #include <boost/serialization/vector.hpp>
 #include <boost/serialization/shared_ptr.hpp>
 
+#include "Testable.h"
+
 namespace gtsam {
 
 	class Ordering;
@@ -27,7 +29,9 @@ namespace gtsam {
 	 * 
 	 * Templated on the type of factors and configuration.
 	 */
-	template<class Factor, class Config> class FactorGraph {
+	template<class Factor, class Config> class FactorGraph
+		: public Testable<FactorGraph<Factor,Config> >
+	{
 	public:
 		typedef typename boost::shared_ptr<Factor> shared_factor;
 		typedef typename std::vector<shared_factor>::iterator iterator;
@@ -101,17 +105,13 @@ namespace gtsam {
 		/** Check equality */
 		bool equals(const FactorGraph& fg, double tol = 1e-9) const {
 			/** check whether the two factor graphs have the same number of factors_ */
-			if (factors_.size() != fg.size()) goto fail;
+			if (factors_.size() != fg.size()) return false;
 
 			/** check whether the factors_ are the same */
 			for (size_t i = 0; i < factors_.size(); i++)
 				// TODO: Doesn't this force order of factor insertion?
-				if (!factors_[i]->equals(*fg.factors_[i], tol)) goto fail;
+				if (!factors_[i]->equals(*fg.factors_[i], tol)) return false;
 			return true;
-
-			fail: print();
-			fg.print();
-			return false;
 		}
 
 		/**

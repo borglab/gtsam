@@ -17,6 +17,8 @@ using namespace std;
 
 using namespace gtsam;
 
+double tol=1e-4;
+
 /* ************************************************************************* */
 /* unit test for equals (LinearFactorGraph1 == LinearFactorGraph2)           */ 
 /* ************************************************************************* */
@@ -24,7 +26,7 @@ TEST( LinearFactorGraph, equals ){
 
   LinearFactorGraph fg = createLinearFactorGraph();
   LinearFactorGraph fg2 = createLinearFactorGraph();
-  CHECK( fg.equals(fg2) );
+  CHECK(fg.equals(fg2));
 }
 
 /* ************************************************************************* */
@@ -114,7 +116,7 @@ TEST( LinearFactorGraph, combine_factors_x1 )
   LinearFactor expected("l1", Al1, "x1", Ax1, "x2", Ax2, b);
 
   // check if the two factors are the same
-  CHECK(actual->equals(expected));  //currently fails
+  CHECK(assert_equal(expected,*actual));
 }
 
 /* ************************************************************************* */
@@ -164,7 +166,7 @@ TEST( LinearFactorGraph, combine_factors_x2 )
   LinearFactor expected("l1", Al1, "x1", Ax1, "x2", Ax2, b);
 
   // check if the two factors are the same
-  CHECK(actual->equals(expected)); // currently fails - ordering is different
+  CHECK(assert_equal(expected,*actual));
 }
 
 /* ************************************************************************* */
@@ -190,7 +192,7 @@ TEST( LinearFactorGraph, eliminate_one_x1 )
   Vector d(2); d(0) = -2; d(1) = -1.0/3.0;
   ConditionalGaussian expected(d,R11,"l1",S12,"x2",S13);
 
-  CHECK( actual->equals(expected) );
+  CHECK(assert_equal(expected,*actual,tol));
 }
 
 /* ************************************************************************* */
@@ -216,7 +218,7 @@ TEST( LinearFactorGraph, eliminate_one_x2 )
   Vector d(2); d(0) = 2.23607; d(1) = -1.56525;
   ConditionalGaussian expected(d,R11,"l1",S12,"x1",S13);
 
-  CHECK( actual->equals(expected) );
+  CHECK(assert_equal(expected,*actual,tol));
 }
 
 /* ************************************************************************* */
@@ -241,7 +243,7 @@ TEST( LinearFactorGraph, eliminate_one_l1 )
   Vector d(2); d(0) = -0.707107; d(1) = 1.76777;
   ConditionalGaussian expected(d,R11,"x1",S12,"x2",S13);
 
-  CHECK( actual->equals(expected) );
+  CHECK(assert_equal(expected,*actual,tol));
 }
 
 /* ************************************************************************* */
@@ -287,8 +289,8 @@ TEST( LinearFactorGraph, eliminateAll )
   ord1.push_back("x2");
   ord1.push_back("l1");
   ord1.push_back("x1");
-  ChordalBayesNet::shared_ptr actual1 = fg1.eliminate(ord1);
-  CHECK(actual1->equals(expected));
+  ChordalBayesNet::shared_ptr actual = fg1.eliminate(ord1);
+  CHECK(assert_equal(expected,*actual,tol));
 }
 
 /* ************************************************************************* */
@@ -302,7 +304,7 @@ TEST( LinearFactorGraph, add_priors )
   expected.push_back(LinearFactor::shared_ptr(new LinearFactor("l1",A,b)));
   expected.push_back(LinearFactor::shared_ptr(new LinearFactor("x1",A,b)));
   expected.push_back(LinearFactor::shared_ptr(new LinearFactor("x2",A,b)));
-  CHECK(actual.equals(expected));
+  CHECK(assert_equal(expected,actual));
 }
 
 /* ************************************************************************* */
@@ -325,7 +327,7 @@ TEST( LinearFactorGraph, copying )
   LinearFactorGraph expected = createLinearFactorGraph();
 
   // and check that original is still the same graph
-  CHECK(actual.equals(expected));
+  CHECK(assert_equal(expected,actual));
 }
 
 /* ************************************************************************* */
@@ -403,7 +405,7 @@ TEST( LinearFactorGraph, OPTIMIZE )
 	// verify
 	VectorConfig expected = createCorrectDelta();
 
-	CHECK(actual.equals(expected));
+  CHECK(assert_equal(expected,actual));
 }
 
 /* ************************************************************************* */
