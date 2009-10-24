@@ -137,33 +137,33 @@ pair<Matrix,Vector> LinearFactor::matrix(const Ordering& ordering) const {
 }
 
 /* ************************************************************************* */
-void LinearFactor::append_factor(LinearFactor::shared_ptr f, const size_t m, const size_t pos)
-{
-  // iterate over all matrices from the factor f
-  LinearFactor::const_iterator it = f->begin();
-  for(; it != f->end(); it++) {
-    string j = it->first;
-    Matrix A = it->second;
+void LinearFactor::append_factor(LinearFactor::shared_ptr f, const size_t m,
+		const size_t pos) {
+	// iterate over all matrices from the factor f
+	LinearFactor::const_iterator it = f->begin();
+	for (; it != f->end(); it++) {
+		string j = it->first;
+		Matrix A = it->second;
 
-    // find rows and columns
-    const size_t mrhs = A.size1(), n = A.size2();
+		// find rows and columns
+		const size_t mrhs = A.size1(), n = A.size2();
 
-    // find the corresponding matrix among As
-    const_iterator mine = As.find(j);
-    const bool exists = mine!=As.end();
+		// find the corresponding matrix among As
+		const_iterator mine = As.find(j);
+		const bool exists = mine != As.end();
 
-    // create the matrix or use existing
-    Matrix Anew = exists ? mine->second : zeros(m,n);
+		// create the matrix or use existing
+		Matrix Anew = exists ? mine->second : zeros(m, n);
 
-    // copy the values in the existing matrix
-    for (size_t i=0;i<mrhs;i++)
-      for(size_t j=0;j<n;j++)
-	Anew(pos+i,j)=A(i,j);
+		// copy the values in the existing matrix
+		for (size_t i = 0; i < mrhs; i++)
+			for (size_t j = 0; j < n; j++)
+				Anew(pos + i, j) = A(i, j);
 
-    // insert the matrix into the factor
-    if(exists) As.erase(j);
-    insert(j,Anew);
-  }
+		// insert the matrix into the factor
+		if (exists) As.erase(j);
+		insert(j, Anew);
+	}
 }
 
 /* ************************************************************************* */
@@ -221,9 +221,9 @@ LinearFactor::eliminate(const string& key)
     // update RHS, b -= (beta * inner_prod(v,b)) * v;
     double inner = 0;
     for(size_t r = j ; r < m; r++) 
-      inner += vjm(r-j) * (b)(r);
+      inner += vjm(r-j) * b(r);
     for(size_t r = j ; r < m; r++) 
-      (b)(r) -= beta*inner*vjm(r-j);
+      b(r) -= beta*inner*vjm(r-j);
   } // column j
   
   // create ConditionalGaussian with first n rows
