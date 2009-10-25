@@ -47,23 +47,29 @@ namespace gtsam {
 
 	public:
 
+		/** print out graph */
+		void print(const std::string& s = "FactorGraph") const;
+
+		/** Check equality */
+		bool equals(const FactorGraph& fg, double tol = 1e-9) const;
+
 		/** STL like, return the iterator pointing to the first factor */
-		const_iterator begin() const {
+		inline const_iterator begin() const {
 			return factors_.begin();
 		}
 
 		/** STL like, return the iterator pointing to the last factor */
-		const_iterator end() const {
+		inline const_iterator end() const {
 			return factors_.end();
 		}
 
 		/** clear the factor graph */
-		void clear() {
+		inline void clear() {
 			factors_.clear();
 		}
 
 		/** Get a specific factor by index */
-		shared_factor operator[](size_t i) const {
+		inline shared_factor operator[](size_t i) const {
 			return factors_[i];
 		}
 
@@ -92,30 +98,6 @@ namespace gtsam {
 		/** Unnormalized probability. O(n) */
 		double probPrime(const Config& c) const {
 			return exp(-0.5 * error(c));
-		}
-
-		/** print out graph */
-		void print(const std::string& s = "FactorGraph") const {
-			std::cout << s << std::endl;
-			printf("size: %d\n", (int) size());
-			for (const_iterator factor = factors_.begin(); factor != factors_.end(); factor++)
-				if(*factor != NULL) (*factor)->print();
-		}
-
-		/** Check equality */
-		bool equals(const FactorGraph& fg, double tol = 1e-9) const {
-			/** check whether the two factor graphs have the same number of factors_ */
-			if (factors_.size() != fg.size()) return false;
-
-			/** check whether the factors_ are the same */
-			for (size_t i = 0; i < factors_.size(); i++) {
-				// TODO: Doesn't this force order of factor insertion?
-				shared_factor f1 = factors_[i], f2 = fg.factors_[i];
-				if (f1==NULL && f2==NULL) continue;
-				if (f1==NULL || f2==NULL) return false;
-				if (!f1->equals(*f2, tol)) return false;
-			}
-			return true;
 		}
 
 		/**

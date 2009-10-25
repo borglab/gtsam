@@ -11,17 +11,46 @@
 #pragma once
 
 #include <list>
+#include <sstream>
 #include <boost/foreach.hpp>
 #include <boost/tuple/tuple.hpp>
+#include <colamd/colamd.h>
 #include "Ordering.h"
 #include "FactorGraph.h"
-
-
-#include <colamd/colamd.h>
 
 using namespace std;
 
 namespace gtsam {
+
+/* ************************************************************************* */
+template<class Factor, class Config>
+void FactorGraph<Factor, Config>::print(const string& s) const {
+	cout << s << endl;
+	printf("size: %d\n", (int) size());
+	for (int i = 0; i < factors_.size(); i++) {
+		stringstream ss;
+		ss << "factor " << i << ":";
+		if (factors_[i] != NULL) factors_[i]->print(ss.str());
+	}
+}
+
+/* ************************************************************************* */
+template<class Factor, class Config>
+bool FactorGraph<Factor, Config>::equals
+	(const FactorGraph<Factor, Config>& fg, double tol) const {
+	/** check whether the two factor graphs have the same number of factors_ */
+	if (factors_.size() != fg.size()) return false;
+
+	/** check whether the factors_ are the same */
+	for (size_t i = 0; i < factors_.size(); i++) {
+		// TODO: Doesn't this force order of factor insertion?
+		shared_factor f1 = factors_[i], f2 = fg.factors_[i];
+		if (f1 == NULL && f2 == NULL) continue;
+		if (f1 == NULL || f2 == NULL) return false;
+		if (!f1->equals(*f2, tol)) return false;
+	}
+	return true;
+}
 
 /* ************************************************************************* */
 template<class Factor, class Config>
@@ -53,10 +82,10 @@ void FactorGraph<Factor,Config>::push_back(shared_factor factor) {
  * @param columns map from keys to a sparse column of non-zero row indices
  */
 template <class Key>
-Ordering colamd(int n_col, int n_row, int nrNonZeros, const std::map<Key, std::vector<int> >& columns) {
+Ordering colamd(int n_col, int n_row, int nrNonZeros, const map<Key, vector<int> >& columns) {
 
 	// Convert to compressed column major format colamd wants it in (== MATLAB format!)
-	std::vector<Key> initialOrder;
+	vector<Key> initialOrder;
 	int Alen = nrNonZeros*30;     /* colamd arg 3: size of the array A TODO: use Tim's function ! */
 	int * A = new int[Alen];      /* colamd arg 4: row indices of A, of size Alen */
 	int * p = new int[n_col + 1]; /* colamd arg 5: column pointers of A, of size n_col+1 */
@@ -64,10 +93,10 @@ Ordering colamd(int n_col, int n_row, int nrNonZeros, const std::map<Key, std::v
 	p[0] = 0;
 	int j = 1;
 	int count = 0;
-	typedef typename std::map<Key, std::vector<int> >::const_iterator iterator;
+	typedef typename map<Key, vector<int> >::const_iterator iterator;
 	for(iterator it = columns.begin(); it != columns.end(); it++) {
 		const Key& key = it->first;
-		const std::vector<int>& column = it->second;
+		const vector<int>& column = it->second;
 		initialOrder.push_back(key);
 		BOOST_FOREACH(int i, column) A[count++] = i; // copy sparse column
 		p[j] = count; // column j (base 1) goes from A[j-1] to A[j]-1
@@ -98,14 +127,14 @@ Ordering FactorGraph<Factor,Config>::getOrdering() const {
 
 	// A factor graph is really laid out in row-major format, each factor a row
 	// Below, we compute a symbolic matrix stored in sparse columns.
-	typedef std::string Key;                  // default case  with string keys
-	std::map<Key, std::vector<int> > columns; // map from keys to a sparse column of non-zero row indices
+	typedef string Key;                  // default case  with string keys
+	map<Key, vector<int> > columns; // map from keys to a sparse column of non-zero row indices
 	int nrNonZeros = 0;             // number of non-zero entries
 	int n_row = factors_.size();    /* colamd arg 1: number of rows in A */
 
 	// loop over all factors = rows
 	for (int i = 0; i < n_row; i++) {
-		std::list<Key> keys = factors_[i]->keys();
+		list<Key> keys = factors_[i]->keys();
 		BOOST_FOREACH(Key key, keys) columns[key].push_back(i);
 		nrNonZeros+= keys.size();
 	}
