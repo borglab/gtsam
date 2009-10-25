@@ -40,12 +40,12 @@ namespace gtsam {
 	 * This template works for any type with equals
 	 */
 	template<class V>
-	bool assert_equal(const V& actual, const V& expected, double tol = 1e-9) {
+	bool assert_equal(const V& expected, const V& actual, double tol = 1e-9) {
 		if (actual.equals(expected, tol))
 			return true;
 		printf("Not equal:\n");
-		actual.print("actual");
 		expected.print("expected");
+		actual.print("actual");
 		return false;
 	}
 
