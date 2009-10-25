@@ -108,9 +108,13 @@ namespace gtsam {
 			if (factors_.size() != fg.size()) return false;
 
 			/** check whether the factors_ are the same */
-			for (size_t i = 0; i < factors_.size(); i++)
+			for (size_t i = 0; i < factors_.size(); i++) {
 				// TODO: Doesn't this force order of factor insertion?
-				if (!factors_[i]->equals(*fg.factors_[i], tol)) return false;
+				shared_factor f1 = factors_[i], f2 = fg.factors_[i];
+				if (f1==NULL && f2==NULL) continue;
+				if (f1==NULL || f2==NULL) return false;
+				if (!f1->equals(*f2, tol)) return false;
+			}
 			return true;
 		}
 
