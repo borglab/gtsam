@@ -9,6 +9,11 @@
 namespace gtsam {
 
 /* ************************************************************************* */
+bool Point3::equals(const Point3 & q, double tol) const {
+  return (fabs(x_ - q.x()) < tol && fabs(y_ - q.y()) < tol && fabs(z_ - q.z()) < tol);
+}
+
+/* ************************************************************************* */
 
 bool Point3::operator== (const Point3& q) const {
   return x_ == q.x_ && y_ == q.y_ && z_ == q.z_;
@@ -58,11 +63,6 @@ Matrix Dsub1(const Point3 &p, const Point3 &q) {
 Matrix Dsub2(const Point3 &p, const Point3 &q) {
   return -eye(3,3);
 }
-
-/* ************************************************************************* */
-bool Point3::equals(const Point3 & q, double tol) const {
-  return (fabs(x_ - q.x()) < tol && fabs(y_ - q.y()) < tol && fabs(z_ - q.z()) < tol);
-}
 /* ************************************************************************* */
 Point3 cross(const Point3 &p, const Point3 &q)
 {
@@ -79,15 +79,6 @@ double dot(const Point3 &p, const Point3 &q)
 double norm(const Point3 &p)
 {
   return sqrt( p.x_*p.x_ + p.y_*p.y_ + p.z_*p.z_ );
-}
-/* ************************************************************************* */
-bool assert_equal(const Point3& p, const Point3& q, double tol) {
-  if(p.equals(q,tol)) return true;
-  printf("not equal:\n");
-  p.print("p = ");
-  q.print("q = ");
-  (p-q).print("p-q = ");
-  return false;
 }
 /* ************************************************************************* */
 

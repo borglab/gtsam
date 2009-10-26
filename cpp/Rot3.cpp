@@ -13,6 +13,11 @@ using namespace std;
 namespace gtsam {
 
 	/* ************************************************************************* */
+	bool Rot3::equals(const Rot3 & R, double tol) const {
+		return equal_with_abs_tol(matrix(), R.matrix(), tol);
+	}
+
+	/* ************************************************************************* */
 	/** faster than below ?                                                      */
 	/* ************************************************************************* */
 	Rot3 rodriguez(const Vector& w, double t) {
@@ -78,11 +83,6 @@ namespace gtsam {
 	}
 
 	/* ************************************************************************* */
-	bool Rot3::equals(const Rot3 & R, double tol) const {
-		return equal_with_abs_tol(matrix(), R.matrix(), tol);
-	}
-
-	/* ************************************************************************* */
 	/** see libraries/caml/geometry/math.lyx, derivative of unrotate              */
 	/* ************************************************************************* */
 	Matrix Dunrotate1(const Rot3 & R, const Point3 & p) {
@@ -93,15 +93,6 @@ namespace gtsam {
 	/* ************************************************************************* */
 	Matrix Dunrotate2(const Rot3 & R) {
 		return R.transpose();
-	}
-
-	/* ************************************************************************* */
-	bool assert_equal(const Rot3 & A, const Rot3 & B, double tol) {
-	  if(A.equals(B,tol)) return true;
-	  printf("not equal:\n");
-	  A.print("A");
-	  B.print("B");
-	  return false;
 	}
 
 	/* ************************************************************************* */

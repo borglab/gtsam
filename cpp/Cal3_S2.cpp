@@ -43,18 +43,6 @@ bool Cal3_S2::equals(const Cal3_S2& K, double tol) const {
 
 /* ************************************************************************* */
 
-bool assert_equal(const Cal3_S2& actual, const Cal3_S2& expected, double tol) {
-	bool ret = actual.equals(expected, tol);
-	if (!ret) {
-		cout << "Not Equal:" << endl;
-		actual.print("Actual");
-		expected.print("Expected");
-	}
-	return ret;
-}
-
-/* ************************************************************************* */
-
 Point2 uncalibrate(const Cal3_S2& K, const Point2& p) {
 	return K.uncalibrate(p);
 }

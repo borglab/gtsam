@@ -10,6 +10,18 @@ using namespace std;
 namespace gtsam {
 
 /* ************************************************************************* */
+void Pose3::print(const string& s) const {
+	R_.print(s + ".R");
+	t_.print(s + ".t");
+}
+
+/* ************************************************************************* */
+bool Pose3::equals(const Pose3& pose, double tol) const
+{
+  return R_.equals(pose.R_,tol) && t_.equals(pose.t_,tol);
+}
+
+/* ************************************************************************* */
 // Agrawal06iros, formula (6), seems to suggest this could be wrong:
 Pose3 Pose3::exmap(const Vector& v) const { 
   return Pose3(R_.exmap(sub(v,0,3)), t_.exmap(sub(v,3,6)));
@@ -26,12 +38,6 @@ Matrix Pose3::matrix() const {
 	const double row4[] = { 0, 0, 0, 1 };
 	Matrix A34 = Matrix_(3, 4, vector()), A14 = Matrix_(1, 4, row4);
 	return stack(2, &A34, &A14);
-}
-
-/* ************************************************************************* */
-void Pose3::print(const string& s) const {
-	R_.print(s + ".R");
-	t_.print(s + ".t");
 }
 
 /* ************************************************************************* */
@@ -104,22 +110,6 @@ Pose3 Pose3::inverse() const
 {
   Rot3 Rt = R_.inverse();
   return Pose3(Rt,-(Rt*t_));
-}
-
-/* ************************************************************************* */
-bool Pose3::equals(const Pose3& pose, double tol) const
-{
-  return R_.equals(pose.R_,tol) && t_.equals(pose.t_,tol);
-}
-
-/* ************************************************************************* */
-bool assert_equal(const Pose3& A, const Pose3& B, double tol)
-{
-  if(A.equals(B,tol)) return true;
-  printf("not equal:\n");
-  A.print("A");
-  B.print("B");
-  return false;
 }
 
 /* ************************************************************************* */

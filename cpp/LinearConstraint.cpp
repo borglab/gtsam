@@ -38,24 +38,6 @@ LinearConstraint::LinearConstraint(const std::map<std::string, Matrix>& matrices
 {
 }
 
-ConstrainedConditionalGaussian::shared_ptr LinearConstraint::eliminate(const std::string& key) {
-	// check to ensure key is one of constraint nodes
-	const_iterator it = As.find(key);
-	if (it == As.end())
-		throw invalid_argument("Node " + key + " is not in LinearConstraint");
-
-	// extract the leading matrix
-	Matrix A1 = it->second;
-
-	// assemble parents
-	map<string, Matrix> parents = As;
-	parents.erase(key);
-
-	// construct resulting CCG with parts
-	ConstrainedConditionalGaussian::shared_ptr ccg(new ConstrainedConditionalGaussian(A1, parents, b));
-	return ccg;
-}
-
 void LinearConstraint::print(const string& s) const {
 	cout << s << ": " << endl;
 	string key; Matrix A;
@@ -85,6 +67,24 @@ bool LinearConstraint::equals(const LinearConstraint& f, double tol) const {
 	return true;
 }
 
+ConstrainedConditionalGaussian::shared_ptr LinearConstraint::eliminate(const std::string& key) {
+	// check to ensure key is one of constraint nodes
+	const_iterator it = As.find(key);
+	if (it == As.end())
+		throw invalid_argument("Node " + key + " is not in LinearConstraint");
+
+	// extract the leading matrix
+	Matrix A1 = it->second;
+
+	// assemble parents
+	map<string, Matrix> parents = As;
+	parents.erase(key);
+
+	// construct resulting CCG with parts
+	ConstrainedConditionalGaussian::shared_ptr ccg(new ConstrainedConditionalGaussian(A1, parents, b));
+	return ccg;
+}
+
 bool LinearConstraint::involves(const std::string& key) const {
 	return As.find(key) != As.end();
 }
@@ -101,17 +101,6 @@ list<string> LinearConstraint::keys(const std::string& key) const {
 
 string LinearConstraint::dump() const {
 	string ret;
-	return ret;
-}
-
-bool assert_equal(const LinearConstraint& actual,
-		const LinearConstraint& expected, double tol) {
-	bool ret = actual.equals(expected, tol);
-	if (!ret) {
-		cout << "Not Equal:" << endl;
-		actual.print("Actual");
-		expected.print("Expected");
-	}
 	return ret;
 }
 

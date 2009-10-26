@@ -13,11 +13,12 @@
 #include <boost/serialization/nvp.hpp>
 
 #include "Matrix.h"
+#include "Testable.h"
 
 namespace gtsam {
 
   /** A 3D point */
-  class Point3 {
+  class Point3: Testable<Point3> {
   private:
     double x_, y_, z_;  
 		
@@ -26,6 +27,14 @@ namespace gtsam {
     Point3(const Point3 &p) : x_(p.x_), y_(p.y_), z_(p.z_) {}
     Point3(double x, double y, double z): x_(x), y_(y), z_(z) {}
     Point3(const Vector& v) : x_(v(0)), y_(v(1)), z_(v(2)) {}
+
+    /** print with optional string */
+    void print(const std::string& s = "") const {
+      std::cout << s << "(" << x_ << ", " << y_ <<  ", " << z_ << ")" << std::endl;
+    }
+
+    /** equals with an tolerance */
+    bool equals(const Point3& p, double tol = 1e-9) const;
 
     /** return DOF, dimensionality of tangent space */
     size_t dim() const { return 3;}
@@ -53,18 +62,10 @@ namespace gtsam {
     Point3 operator * (double s) const;
     Point3 operator / (double s) const;
 
-    /** print with optional string */
-    void print(const std::string& s = "") const {
-      std::cout << s << "(" << x_ << ", " << y_ <<  ", " << z_ << ")" << std::endl;
-    }
-
     /** distance between two points */
     double dist(const Point3& p2) const {
       return sqrt(pow(x()-p2.x(),2.0) + pow(y()-p2.y(),2.0) + pow(z()-p2.z(),2.0));
     }
-
-    /** equals with an tolerance */
-    bool equals(const Point3& p, double tol = 1e-9) const;
 
     /** friends */
     friend Point3 cross(const Point3 &p1, const Point3 &p2);
@@ -103,7 +104,4 @@ namespace gtsam {
 
   /** dot product */
   double norm(const Point3 &p);
-
-  /** equals with an tolerance, prints out message if unequal */
-  bool assert_equal(const Point3& p, const Point3& q, double tol = 1e-9);
 }

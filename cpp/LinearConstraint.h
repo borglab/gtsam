@@ -18,7 +18,7 @@ namespace gtsam {
  * Linear constraints are similar to factors in structure, but represent
  * a different problem
  */
-class LinearConstraint {
+class LinearConstraint: Testable<LinearConstraint> {
 public:
 
 	typedef boost::shared_ptr<LinearConstraint> shared_ptr;
@@ -70,17 +70,6 @@ public:
 	}
 
 	/**
-	 * Eliminates the constraint
-	 * Note:  Assumes that the constraint will be completely eliminated
-	 * and that the matrix associated with the key is invertible
-	 * @param key is the variable to eliminate
-	 * @return a constrained conditional gaussian for the variable that is a
-	 * function of its parents
-	 */
-	ConstrainedConditionalGaussian::shared_ptr
-	eliminate(const std::string& key);
-
-	/**
 	 * print
 	 * @param s optional string naming the factor
 	 */
@@ -91,6 +80,16 @@ public:
 	 */
 	bool equals(const LinearConstraint& f, double tol = 1e-9) const;
 
+	/**
+	 * Eliminates the constraint
+	 * Note:  Assumes that the constraint will be completely eliminated
+	 * and that the matrix associated with the key is invertible
+	 * @param key is the variable to eliminate
+	 * @return a constrained conditional gaussian for the variable that is a
+	 * function of its parents
+	 */
+	ConstrainedConditionalGaussian::shared_ptr
+	eliminate(const std::string& key);
 	/**
 	 * returns a version of the factor as a string
 	 */
@@ -137,10 +136,6 @@ public:
  * Combines constraints into one constraint
  */
 LinearConstraint::shared_ptr combineConstraints(const std::set<LinearConstraint::shared_ptr>& constraints);
-
-/** assert equals for testing - prints when not equal */
-bool assert_equal(const LinearConstraint& actual,
-		const LinearConstraint& expected, double tol = 1e-9);
 
 }
 

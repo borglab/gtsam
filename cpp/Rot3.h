@@ -11,11 +11,12 @@
 #pragma once
 
 #include "Point3.h"
+#include "Testable.h"
 
 namespace gtsam {
 
   /* Rotation matrix */
-  class Rot3{
+  class Rot3: Testable<Rot3> {
   private:
     /** we store columns ! */
     Point3 r1_, r2_, r3_;  
@@ -53,6 +54,12 @@ namespace gtsam {
     r1_(Point3(R(0,0), R(1,0), R(2,0))),
       r2_(Point3(R(0,1), R(1,1), R(2,1))),
       r3_(Point3(R(0,2), R(1,2), R(2,2))) {}
+
+  /** print */
+  void print(const std::string& s="R") const { gtsam::print(matrix(), s);}
+
+  /** equals with an tolerance */
+  bool equals(const Rot3& p, double tol = 1e-9) const;
 
     /** return DOF, dimensionality of tangent space */
     size_t dim() const { return 3;}
@@ -121,12 +128,6 @@ namespace gtsam {
 					);
 		}
 
-    /** print */
-    void print(const std::string& s="R") const { gtsam::print(matrix(), s);}
-
-    /** equals with an tolerance */
-    bool equals(const Rot3& p, double tol = 1e-9) const;
-
     /** friends */
     friend Matrix Dunrotate1(const Rot3& R, const Point3& p);
 
@@ -189,8 +190,6 @@ namespace gtsam {
   Point3    unrotate(const Rot3& R, const Point3& p);
   Matrix Dunrotate1(const Rot3& R, const Point3& p);
   Matrix Dunrotate2(const Rot3& R); // does not depend on p !
-
-  bool assert_equal(const Rot3& A, const Rot3& B, double tol=1e-9);
 
   /** receives a rotation 3 by 3 matrix and returns 3 rotation angles.*/
   Vector RQ(Matrix R);

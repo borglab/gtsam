@@ -12,7 +12,7 @@
 namespace gtsam {
 
 	/** The most common 5DOF 3D->2D calibration */
-	class Cal3_S2 {
+	class Cal3_S2: Testable<Cal3_S2> {
 	private:
 		double fx_, fy_, s_, u0_, v0_;
 
@@ -30,6 +30,15 @@ namespace gtsam {
 		Cal3_S2(double fx, double fy, double s, double u0, double v0) :
 			fx_(fx), fy_(fy), s_(s), u0_(u0), v0_(v0) {
 		}
+
+		void print(const std::string& s = "") const {
+			gtsam::print(matrix(), s);
+		}
+
+		/**
+		 * Check if equal up to specified tolerance
+		 */
+		bool equals(const Cal3_S2& K, double tol = 10e-9) const;
 
 		/**
 		 * return DOF, dimensionality of tangent space
@@ -82,21 +91,12 @@ namespace gtsam {
 			return Point2(fx_ * x + s_ * y + u0_, fy_ * y + v0_);
 		}
 
-		void print(const std::string& s = "") const {
-			gtsam::print(matrix(), s);
-		}
-
 		std::string dump() const {
 			char buffer[100];
 			buffer[0] = 0;
 			sprintf(buffer, "%f %f %f %f %f", fx_, fy_, s_, u0_, v0_);
 			return std::string(buffer);
 		}
-
-		/**
-		 * Check if equal up to specified tolerance
-		 */
-		bool equals(const Cal3_S2& K, double tol = 10e-9) const;
 
 		/** friends */
 		friend Matrix Duncalibrate2(const Cal3_S2& K, const Point2& p);
@@ -114,11 +114,6 @@ namespace gtsam {
 			ar & BOOST_SERIALIZATION_NVP(v0_);
 		}
 	};
-
-	/**
-	 * assert for unit tests
-	 */
-	bool assert_equal(const Cal3_S2& actual, const Cal3_S2& expected, double tol = 1e-8);
 
 	/**
 	 * convert intrinsic coordinates xy to image coordinates uv

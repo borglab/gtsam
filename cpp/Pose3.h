@@ -9,11 +9,12 @@
 
 #include "Point3.h"
 #include "Rot3.h"
+#include "Testable.h"
 
 namespace gtsam {
 
 	/** A 3D pose (R,t) : (Rot3,Point3) */
-	class Pose3 {
+	class Pose3 : Testable<Pose3> {
 	private:
 		Rot3 R_;
 		Point3 t_;
@@ -51,6 +52,12 @@ namespace gtsam {
 			t_(V(9), V(10),V(11)) {
 		}
 
+		/** print with optional string */
+		void print(const std::string& s = "") const;
+
+		/** assert equality up to a tolerance */
+		bool equals(const Pose3& pose, double tol = 1e-9) const;
+
 		const Rot3& rotation() const {
 			return R_;
 		}
@@ -81,14 +88,8 @@ namespace gtsam {
 		/** convert to 4*4 matrix */
 		Matrix matrix() const;
 
-		/** print with optional string */
-		void print(const std::string& s = "") const;
-
 		/** transforms */
 		Pose3 transformPose_to(const Pose3& transform) const;
-
-		/** assert equality up to a tolerance */
-		bool equals(const Pose3& pose, double tol = 1e-9) const;
 
 		/** friends */
 		friend Point3 transform_from(const Pose3& pose, const Point3& p);
@@ -130,8 +131,5 @@ namespace gtsam {
 	 * 12*6, entry i,j is how measurement error will change
 	 */
 	Matrix DhPose(const Vector& x);
-
-	/** assert equality up to a tolerance */
-	bool assert_equal(const Pose3& A, const Pose3& B, double tol = 1e-9);
 
 } // namespace gtsam
