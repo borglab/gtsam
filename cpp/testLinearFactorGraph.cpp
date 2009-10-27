@@ -13,7 +13,9 @@ using namespace std;
 #include <boost/tuple/tuple.hpp>
 #include "Matrix.h"
 #include "smallExample.h"
-#include "FactorGraph-inl.h" // template definitions
+
+// template definitions
+#include "FactorGraph-inl.h"
 
 using namespace gtsam;
 
@@ -521,6 +523,15 @@ TEST( LinearFactorGraph, find_factors_and_remove__twice )
   // CHECK if the factors are deleted from the factor graph
   LONGS_EQUAL(1,fg.size());
   }
+
+/* ************************************************************************* */
+TEST(timeLinearFactorGraph, createSmoother)
+{
+	LinearFactorGraph fg1 = createSmoother(1);
+	LONGS_EQUAL(3,fg1.size());
+	LinearFactorGraph fg2 = createSmoother(2);
+	LONGS_EQUAL(5,fg2.size());
+}
 
 /* ************************************************************************* */
 int main() { TestResult tr; return TestRegistry::runAllTests(tr);}

@@ -80,6 +80,11 @@ timeLinearFactor: timeLinearFactor.cpp
 timeLinearFactor: CXXFLAGS += -I /opt/local/include
 timeLinearFactor: LDFLAGS += -L.libs -lgtsam
 
+# not the correct way, I'm sure: Kai ?
+timeLinearFactorGraph: timeLinearFactorGraph.cpp  
+timeLinearFactorGraph: CXXFLAGS += -I /opt/local/include -I ..
+timeLinearFactorGraph: LDFLAGS += SmallExample.o -L.libs -lgtsam -L../CppUnitLite -lCppUnitLite
+
 # graphs 
 sources += ChordalBayesNet.cpp 
 sources += LinearFactorGraph.cpp 

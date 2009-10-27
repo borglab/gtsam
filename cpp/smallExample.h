@@ -69,6 +69,13 @@ namespace gtsam {
 	boost::shared_ptr<const ExampleNonlinearFactorGraph> sharedReallyNonlinearFactorGraph();
 	ExampleNonlinearFactorGraph createReallyNonlinearFactorGraph();
 
+	/**
+	 * Create a Kalman smoother by linearizing a non-linear factor graph
+	 * @param T number of time-steps
+	 */
+	LinearFactorGraph createSmoother(int T);
+
+
 	/* ******************************************************* */
 	// Constrained Examples
 	/* ******************************************************* */

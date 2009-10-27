@@ -20,7 +20,10 @@ using namespace std;
 #include "Simulated2DOdometry.h"
 #include "Simulated2DMeasurement.h"
 #include "simulated2D.h"
+
+// template definitions
 #include "FactorGraph-inl.h"
+#include "NonlinearFactorGraph-inl.h"
 
 namespace gtsam {
 
@@ -234,6 +237,38 @@ boost::shared_ptr<const ExampleNonlinearFactorGraph> sharedReallyNonlinearFactor
 
 ExampleNonlinearFactorGraph createReallyNonlinearFactorGraph() {
 	return *sharedReallyNonlinearFactorGraph();
+}
+
+/* ************************************************************************* */
+LinearFactorGraph createSmoother(int T) {
+	// Create
+	ExampleNonlinearFactorGraph nlfg;
+	VectorConfig poses;
+
+	// prior on x0
+	Vector x0 = zero(2);
+	string key0 = symbol('x', 0);
+	shared prior(new Point2Prior(x0, 1, key0));
+	nlfg.push_back(prior);
+	poses.insert(key0, x0);
+
+	for (int t = 1; t <= T; t++) {
+		// odometry between x_t and x_{t-1}
+		Vector odo = Vector_(2, 1.0, 0.0);
+		string key = symbol('x', t);
+		shared odometry(new Simulated2DOdometry(odo, 1, symbol('x', t - 1), key));
+		nlfg.push_back(odometry);
+
+		// measurement on x_t
+		double sigma3 = 0.2;
+		Vector z = Vector_(2, t, 0.0);
+		shared measurement(new Point2Prior(z, 1, key));
+		nlfg.push_back(measurement);
+		poses.insert(key, z);
+	}
+
+	LinearFactorGraph lfg = nlfg.linearize(poses);
+	return lfg;
 }
 
 /* ************************************************************************* */
