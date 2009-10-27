@@ -86,25 +86,29 @@ timeLinearFactorGraph: CXXFLAGS += -I /opt/local/include -I ..
 timeLinearFactorGraph: LDFLAGS += SmallExample.o -L.libs -lgtsam -L../CppUnitLite -lCppUnitLite
 
 # graphs 
-sources += ChordalBayesNet.cpp 
 sources += LinearFactorGraph.cpp 
+sources += SymbolicBayesChain.cpp ChordalBayesNet.cpp 
 sources += ConstrainedNonlinearFactorGraph.cpp ConstrainedLinearFactorGraph.cpp 
-check_PROGRAMS += testChordalBayesNet testFactorgraph 
-check_PROGRAMS += testLinearFactorGraph testNonlinearFactorGraph testNonlinearOptimizer
+check_PROGRAMS += testFactorgraph testLinearFactorGraph testNonlinearFactorGraph testNonlinearOptimizer
+check_PROGRAMS += testSymbolicBayesChain testChordalBayesNet testBayesTree  
 check_PROGRAMS += testConstrainedNonlinearFactorGraph testConstrainedLinearFactorGraph
-testChordalBayesNet_SOURCES      = $(example) testChordalBayesNet.cpp
 testFactorgraph_SOURCES          = testFactorgraph.cpp
 testLinearFactorGraph_SOURCES    = $(example) testLinearFactorGraph.cpp
 testNonlinearFactorGraph_SOURCES = $(example) testNonlinearFactorGraph.cpp
-testNonlinearOptimizer_SOURCES = $(example) testNonlinearOptimizer.cpp
+testNonlinearOptimizer_SOURCES   = $(example) testNonlinearOptimizer.cpp
+testSymbolicBayesChain_SOURCES   = $(example) testSymbolicBayesChain.cpp
+testChordalBayesNet_SOURCES      = $(example) testChordalBayesNet.cpp
+testBayesTree_SOURCES            = $(example) testBayesTree.cpp
 testConstrainedNonlinearFactorGraph_SOURCES = $(example) testConstrainedNonlinearFactorGraph.cpp 
 testConstrainedLinearFactorGraph_SOURCES    = $(example) testConstrainedLinearFactorGraph.cpp
 
-testChordalBayesNet_LDADD      = libgtsam.la
 testFactorgraph_LDADD          = libgtsam.la
 testLinearFactorGraph_LDADD    = libgtsam.la
 testNonlinearFactorGraph_LDADD = libgtsam.la
 testNonlinearOptimizer_LDADD   = libgtsam.la
+testSymbolicBayesChain_LDADD   = libgtsam.la
+testChordalBayesNet_LDADD      = libgtsam.la
+testBayesTree_LDADD            = libgtsam.la
 testConstrainedNonlinearFactorGraph_LDADD = libgtsam.la 
 testConstrainedLinearFactorGraph_LDADD    = libgtsam.la
 
