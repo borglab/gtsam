@@ -237,11 +237,21 @@ LinearFactor::eliminate(const string& key)
   FOREACH_PAIR(j,A,As) {
     if (j != key) {
       const size_t nj = A.size2();   // get dimension of variable
-      cg->add(j, sub(A,0,n,0,nj));   // add a parent to conditional gaussian
+      cg->add(j, sub(A,0,n,0,nj));   // add a parent to conditional Gaussian
       lf->insert(j,sub(A,n,m,0,nj)); // insert into linear factor
     }
   }
   return make_pair(cg,lf);
 }
 
+/* ************************************************************************* */
+namespace gtsam {
+
+	string symbol(char c, int index) {
+		stringstream ss;
+		ss << c << index;
+		return ss.str();
+	}
+
+}
 /* ************************************************************************* */
