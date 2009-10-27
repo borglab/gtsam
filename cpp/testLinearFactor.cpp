@@ -190,7 +190,7 @@ TEST( LinearFactor, linearFactorN){
       Vector_(2,
       2.0, -1.0))));
 
-  MutableLinearFactor combinedFactor(f);
+  LinearFactor combinedFactor(f);
 
   vector<pair<string, Matrix> > combinedMeasurement;
   combinedMeasurement.push_back(make_pair("x1", Matrix_(8,2,
