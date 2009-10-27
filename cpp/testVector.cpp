@@ -127,5 +127,27 @@ TEST( TestVector, concatVectors)
 }
 
 /* ************************************************************************* */
+TEST( TestVector, whouse_solve )
+{
+	// column from a matrix
+	Vector x(2);
+	x(0) = 1.0; x(1) = 2.0;
+
+	// create precisions - correspond to sigmas = [0.1 0.2]
+	Vector tau(2);
+	tau(0) = 100; tau(1) = 25;
+
+	// perform solve
+	Vector act = whouse_solve(x, tau);
+
+	// construct expected
+	Vector exp(2);
+	exp(0) = 1.0/3.0; exp(1) = 1.0/3.0;
+
+	// verify
+	CHECK(assert_equal(act, exp)); 
+}
+
+/* ************************************************************************* */
 int main() { TestResult tr; return TestRegistry::runAllTests(tr); }
 /* ************************************************************************* */

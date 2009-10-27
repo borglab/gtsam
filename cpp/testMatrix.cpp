@@ -438,7 +438,6 @@ TEST( matrix, row_major_access )
 }
 
 /* ************************************************************************* */
-
 TEST( matrix, svd )
 { 
   double data[] = {2,1,0};
@@ -451,6 +450,38 @@ TEST( matrix, svd )
   EQUALITY(U*S*Matrix(trans(V)),A);
   EQUALITY(S,S1);
 }
+
+/* ************************************************************************* */
+TEST( matrix, whouse_subs )
+{
+	// create the system
+	Matrix A(2,2);
+	A(0,0) = 1; A(0,1) = 3;
+	A(1,0) = 2; A(1,1) = 4;
+
+	// Vector to eliminate
+	Vector x(2);
+	x(0) = 1.0; x(1) = 2.0;
+
+	Vector tau(2); //correspond to sigmas = [0.1 0.2]
+	tau(0) = 100; tau(1) = 25;
+
+	// find the pseudoinverse
+	Vector pseudo = whouse_solve(x, tau);
+
+	// substitute
+	int row = 0; // eliminating the first column
+	whouse_subs(A, row, pseudo, x);
+
+	// create expected value
+	Matrix exp(2,2);
+	exp(0,0) = 1.0; exp(0,1) = 3.0;
+	exp(1,0) = 0.0; exp(1,1) = -2.0/3.0;
+
+	// verify
+	CHECK(assert_equal(A, exp));
+}
+
 
 
 /* ************************************************************************* */

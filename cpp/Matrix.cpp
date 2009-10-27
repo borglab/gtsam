@@ -270,6 +270,32 @@ void householder_update(Matrix &A, int j, double beta, const Vector& vjm) {
 }
 
 /* ************************************************************************* */
+void whouse_subs(Matrix& A, unsigned int row, const Vector& pseudo, const Vector& x) {
+	// get sizes
+	size_t m = A.size1(); size_t n = A.size2();
+
+	// calculate Hw
+	Matrix Hw = eye(m,m);
+	for (int i=0; i<m; ++i)
+		for (int j=0; j<m; ++j)
+			Hw(i,j) -= x(i)*pseudo(j);
+
+	// zero the selected column below the diagonal
+	for (int i=row+1; i<m; ++i)
+		A(i,row) = 0.0;
+
+	// update As
+	//FIXME: this uselessly updates the top rows as well, and should be fixed
+	Matrix As = sub(A,0,m,row+1,n);
+	Matrix As_new = Hw*As;
+
+	// copy in updated As
+	for (int i=1; i<m; ++i) //index through rows of A
+		for (int j=0; j<As_new.size2(); ++j) //index through columns of As_new
+			A(i,j+row+1) = As_new(i,j);
+}
+
+/* ************************************************************************* */
 /** Imperative version of Householder QR factorization, Golub & Van Loan p 224
  * version with Householder vectors below diagonal, as in GVL
  */

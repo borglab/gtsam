@@ -137,6 +137,16 @@ std::pair<Matrix,Matrix> qr(const Matrix& A);
  */
 void householder_update(Matrix &A, int j, double beta, const Vector& vjm);
 
+/*
+ * Imperative version of weighted Householder substitution
+ * @param A is the matrix to reduce
+ * @param row is the row to start on (rows above aren't affected)
+ * @param pseudo is the pseudoinverse of the first column of A
+ * @param x is the first column of A
+ * A is updated into non-normalied R of A that has been updated
+ */
+void whouse_subs(Matrix& A, unsigned int row, const Vector& pseudo, const Vector& x);
+
 /**
  * Householder tranformation, Householder vectors below diagonal
  * @param k number of columns to zero out below diagonal

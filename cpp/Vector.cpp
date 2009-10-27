@@ -92,6 +92,12 @@ namespace gtsam {
   }
   
   /* ************************************************************************* */
+  Vector ones(size_t n) {
+    Vector v(n); fill_n(v.begin(),n,1.0);
+    return v;
+  }
+
+  /* ************************************************************************* */
   void print(const Vector& v, const string& s) {
     size_t n = v.size();
     odprintf("%s[", s.c_str());
@@ -178,6 +184,24 @@ namespace gtsam {
     return make_pair(beta, v);
   }
   
+  /* ************************************************************************* */
+  Vector whouse_solve(const Vector& v, const Vector& precisions) {
+	  if (v.size() != precisions.size())
+		  throw invalid_argument("V and precisions have different sizes!");
+	  // get the square root of the precisions
+	  //FIXME: this probably means that storing precisions is a bad idea
+	  Vector D(precisions.size());
+	  for(int i=0;i<D.size();i++)
+		  D(i)=sqrt(precisions[i]);
+	  double normV = 0;
+	  for(int i = 0; i<v.size(); i++)
+		  normV += v[i]*v[i]*D[i];
+	  Vector sol(v.size());
+	  for(int i = 0; i<v.size(); i++)
+		  sol[i] = D[i]*v[i];
+	  return sol/normV;
+  }
+
   /* ************************************************************************* */
   Vector concatVectors(size_t nrVectors, ...)
   {

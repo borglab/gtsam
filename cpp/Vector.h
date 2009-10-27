@@ -39,6 +39,12 @@ Vector Vector_(size_t m, ...);
  * @ param size
  */
 Vector zero(size_t n);
+
+/**
+ * Create vector initialized to ones
+ * @ param size
+ */
+Vector ones(size_t n);
 	
 /**
  * check if all zero
@@ -96,6 +102,15 @@ Vector sub(const Vector &v, size_t i1, size_t i2);
  *  all but x.(j), j is base 0. Golub & Van Loan p 210.
  */
 std::pair<double,Vector> house(Vector &x);
+
+/**
+ * Weighted Householder solution vector,
+ * a.k.a., the pseudoinverse of the column
+ * @param v is the first column of the matrix to solve
+ * @param precisions is a vector of precisions ( sigma^(-2) )
+ * @return the pseudoinverse of v
+ */
+Vector whouse_solve(const Vector& v, const Vector& precisions);
 
 /**
  * concatenate Vectors
