@@ -14,7 +14,6 @@
 #include <boost/serialization/list.hpp>
 
 #include "ConditionalGaussian.h"
-#include "VectorConfig.h"
 #include "Testable.h"
 
 namespace gtsam {
@@ -77,9 +76,10 @@ public:
 	const_iterator const begin() const {return nodes.begin();}
 	const_iterator const end()   const {return nodes.end();}
 
-	/** optimize */
+	/**
+	 * optimize, i.e. return x = inv(R)*d
+	 */
 	boost::shared_ptr<VectorConfig> optimize() const;
-	boost::shared_ptr<VectorConfig> optimize(const boost::shared_ptr<VectorConfig> &c) const;
 
 	/** size is the number of nodes */
 	size_t size() const {return nodes.size();}

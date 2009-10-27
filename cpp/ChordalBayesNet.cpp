@@ -7,7 +7,9 @@
 #include <stdarg.h>
 #include <boost/foreach.hpp>
 #include <boost/tuple/tuple.hpp>
+
 #include "ChordalBayesNet.h"
+#include "VectorConfig.h"
 
 using namespace std;
 using namespace gtsam;
@@ -59,27 +61,16 @@ void ChordalBayesNet::erase(const string& key)
 }
 
 /* ************************************************************************* */
-// optimize, i.e. return x = inv(R)*d
-/* ************************************************************************* */
 boost::shared_ptr<VectorConfig> ChordalBayesNet::optimize() const
 {
   boost::shared_ptr<VectorConfig> result(new VectorConfig);
-	result = optimize(result);
-  return result;
-}
-
-/* ************************************************************************* */
-boost::shared_ptr<VectorConfig> ChordalBayesNet::optimize(const boost::shared_ptr<VectorConfig> &c) const
-{
-  boost::shared_ptr<VectorConfig> result(new VectorConfig);
-	result = c;
 	
   /** solve each node in turn in topological sort order (parents first)*/
   BOOST_FOREACH(string key, keys) {
-    const_iterator cg = nodes.find(key); // get node
-    assert( cg != nodes.end() );
-    Vector x = cg->second->solve(*result);                   // Solve it
-    result->insert(key,x);   // store result in partial solution
+    const_iterator cg = nodes.find(key);		// get node
+    assert( cg != nodes.end() );						// make sure it exists
+    Vector x = cg->second->solve(*result);  // Solve for that variable
+    result->insert(key,x);                  // store result in partial solution
   }
   return result;
 }
