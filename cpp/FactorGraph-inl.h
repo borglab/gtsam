@@ -134,6 +134,7 @@ Ordering FactorGraph<Factor,Config>::getOrdering() const {
 
 	// loop over all factors = rows
 	for (int i = 0; i < n_row; i++) {
+		if (factors_[i]==NULL) continue;
 		list<Key> keys = factors_[i]->keys();
 		BOOST_FOREACH(Key key, keys) columns[key].push_back(i);
 		nrNonZeros+= keys.size();
