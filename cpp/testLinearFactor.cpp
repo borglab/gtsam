@@ -190,10 +190,10 @@ TEST( LinearFactor, linearFactorN){
       Vector_(2,
       2.0, -1.0))));
 
-  LinearFactor combined(f);
+  MutableLinearFactor combinedFactor(f);
 
-  vector<pair<string, Matrix> > meas;
-  meas.push_back(make_pair("x1", Matrix_(8,2,
+  vector<pair<string, Matrix> > combinedMeasurement;
+  combinedMeasurement.push_back(make_pair("x1", Matrix_(8,2,
       1.0, 0.0,
       0.0, 1.0,
       -10.0, 0.0,
@@ -202,7 +202,7 @@ TEST( LinearFactor, linearFactorN){
       0.0, 0.0,
       0.0, 0.0,
       0.0, 0.0)));
-  meas.push_back(make_pair("x2", Matrix_(8,2,
+  combinedMeasurement.push_back(make_pair("x2", Matrix_(8,2,
       0.0, 0.0,
       0.0, 0.0,
       10.0, 0.0,
@@ -211,7 +211,7 @@ TEST( LinearFactor, linearFactorN){
       0.0, -10.0,
       0.0, 0.0,
       0.0, 0.0)));
-  meas.push_back(make_pair("x3", Matrix_(8,2,
+  combinedMeasurement.push_back(make_pair("x3", Matrix_(8,2,
       0.0, 0.0,
       0.0, 0.0,
       0.0, 0.0,
@@ -220,7 +220,7 @@ TEST( LinearFactor, linearFactorN){
       0.0, 10.0,
       -10.0, 0.0,
       0.0, -10.0)));
-  meas.push_back(make_pair("x4", Matrix_(8,2,
+  combinedMeasurement.push_back(make_pair("x4", Matrix_(8,2,
       0.0, 0.0,
       0.0, 0.0,
       0.0, 0.0,
@@ -232,8 +232,8 @@ TEST( LinearFactor, linearFactorN){
   Vector b = Vector_(8,
       10.0, 5.0, 1.0, -2.0, 1.5, -1.5, 2.0, -1.0);
 
-  LinearFactor expected(meas, b);
-	CHECK(assert_equal(expected,combined));
+  LinearFactor expected(combinedMeasurement, b);
+  CHECK(combinedFactor.equals(expected));
 }
 
 /* ************************************************************************* */
