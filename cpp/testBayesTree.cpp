@@ -6,6 +6,7 @@
 
 #include <CppUnitLite/TestHarness.h>
 
+#include "BayesChain-inl.h"
 #include "SymbolicBayesChain-inl.h"
 #include "smallExample.h"
 #include "BayesTree.h"
@@ -16,7 +17,11 @@ using namespace gtsam;
 TEST( BayesTree, constructor )
 {
 	LinearFactorGraph factorGraph = createLinearFactorGraph();
-	SymbolicBayesChain symbolicBayesChain(factorGraph);
+  Ordering ordering;
+  ordering.push_back("x2");
+  ordering.push_back("l1");
+  ordering.push_back("x1");
+	SymbolicBayesChain symbolicBayesChain(factorGraph,ordering);
 	BayesTree<SymbolicConditional> bayesTree(symbolicBayesChain);
 }
 

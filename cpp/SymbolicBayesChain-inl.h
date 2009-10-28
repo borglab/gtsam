@@ -4,14 +4,21 @@
  * @author Frank Dellaert
  */
 
+#include <boost/foreach.hpp>
+#include <boost/tuple/tuple.hpp>
+
 #include "SymbolicBayesChain.h"
 
 using namespace std;
-using namespace gtsam;
+
+namespace gtsam {
+
+	/* ************************************************************************* */
+	template<class Factor, class Config>
+	SymbolicBayesChain::SymbolicBayesChain(
+			const FactorGraph<Factor, Config>& factorGraph, const Ordering& ordering) {
+	}
 
 /* ************************************************************************* */
-template<class Factor, class Config>
-SymbolicBayesChain::SymbolicBayesChain(const FactorGraph<Factor,Config>& factorGraph) {
-}
 
-/* ************************************************************************* */
+} // namespace gtsam
