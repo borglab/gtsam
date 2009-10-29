@@ -476,56 +476,17 @@ TEST( matrix, whouse_subs )
 	// create expected value
 	Matrix exp(2,2);
 	exp(0,0) = 1.0; exp(0,1) = 3.0;
-	exp(1,0) = 0.0; exp(1,1) = -2.0/3.0;
+	exp(1,0) = 0.0; exp(1,1) = -1.0;
 
 	// verify
 	CHECK(assert_equal(A, exp));
 }
-
-/* ************************************************************************* */
-TEST( matrix, whouse_subs2 )
-{
-	// create the system
-	Matrix A(4,2);
-	A(0,0) = 1.0; A(0,1) = 0.0;
-	A(1,0) = 0.0; A(1,1) = 1.0;
-	A(2,0) = 2.0/3.0; A(2,1) = 0.0;
-	A(3,0) = 0.0; A(3,1) = 0.0;
-
-	// Vector to eliminate
-	Vector a(3);
-	a(0) = -0.333333;
-	a(1) = 0.0;
-	a(2) = 0.666667;
-
-	// find the pseudoinverse
-	Vector pseudo(3);
-	pseudo(0) = -1.;
-	pseudo(1) = 0.;
-	pseudo(2) = 1.;
-
-	// substitute
-	int row = 1;
-	whouse_subs(A, row, a, pseudo);
-
-	// create expected value
-	Matrix exp(4,2);
-	exp(0,0) = 1.0; exp(0,1) = 0.0;
-	exp(1,0) = 0.0; exp(1,1) = 1.0;
-	exp(2,0) = 2.0/3.0; exp(2,1) = 0.0;
-	exp(3,0) = 0.0; exp(3,1) = 2.0/3.0;
-
-	// verify
-	CHECK(assert_equal(A, exp, 1e-5));
-}
-
 /* ************************************************************************* */
 TEST( matrix, whouse_subs_multistep )
 {
 	// update two matrices
 	double sigma1 = 0.2; double tau1 = 1/(sigma1*sigma1);
 	double sigma2 = 0.1; double tau2 = 1/(sigma2*sigma2);
-	Vector sigmas = Vector_(4, sigma1, sigma1, sigma2, sigma2);
 
 	Matrix Ax2 = Matrix_(4,2,
 			// x2
@@ -564,7 +525,7 @@ TEST( matrix, whouse_subs_multistep )
 				// l1
 				1., 0.,
 				0., 1.,
-				0.3333, 0.,
+				0.2, 0.,
 				0., 0.
 	);
 	CHECK(assert_equal(Al1, Al1_exp, 1e-4));
@@ -589,12 +550,10 @@ TEST( matrix, whouse_subs_multistep )
 	Al1_exp = Matrix_(4,2,
 			1., 0.,
 			0., 1.,
-			0.3333, 0.,
-			0., 0.3333
+			0.2, 0.,
+			0., 0.2
 	);
-	CHECK(assert_equal(Al1, Al1_exp, 1e-4));
-
-
+	CHECK(assert_equal(Al1, Al1_exp, 1e-4)); //fails
 }
 /* ************************************************************************* */
 int main() { TestResult tr; return TestRegistry::runAllTests(tr); }

@@ -188,17 +188,12 @@ namespace gtsam {
   Vector whouse_solve(const Vector& v, const Vector& precisions) {
 	  if (v.size() != precisions.size())
 		  throw invalid_argument("V and precisions have different sizes!");
-	  // get the square root of the precisions
-	  //FIXME: this probably means that storing precisions is a bad idea
-	  Vector D(precisions.size());
-	  for(int i=0;i<D.size();i++)
-		  D(i)=sqrt(precisions[i]);
 	  double normV = 0;
 	  for(int i = 0; i<v.size(); i++)
-		  normV += v[i]*v[i]*D[i];
+		  normV += v[i]*v[i]*precisions[i];
 	  Vector sol(v.size());
 	  for(int i = 0; i<v.size(); i++)
-		  sol[i] = D[i]*v[i];
+		  sol[i] = precisions[i]*v[i];
 	  return sol/normV;
   }
 

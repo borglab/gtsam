@@ -142,7 +142,7 @@ TEST( TestVector, whouse_solve )
 
 	// construct expected
 	Vector exp(2);
-	exp(0) = 1.0/3.0; exp(1) = 1.0/3.0;
+	exp(0) = 0.5; exp(1) = 0.25;
 
 	// verify
 	CHECK(assert_equal(act, exp)); 
@@ -171,7 +171,7 @@ TEST( TestVector, whouse_subs_vector )
 
 	// create expected value
 	Vector exp(2);
-	exp(0) = 5; exp(1) = -4.0/3.0;
+	exp(0) = 5; exp(1) = -2.0;
 
 	// verify
 	CHECK(assert_equal(b, exp, 1e-5));
@@ -188,7 +188,7 @@ TEST( TestVector, whouse_subs_vector2 )
 	Vector tau = Vector_(4, tau1, tau1, tau2, tau2);
 	Vector pseudo1 = whouse_solve(a1, tau);
 
-	Vector expected = Vector_(4,-0.3333, 0., 0.6667, 0.);
+	Vector expected = Vector_(4,-0.2, 0., 0.8, 0.);
 	CHECK(assert_equal(pseudo1, expected, 1e-4));
 }
 
