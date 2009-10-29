@@ -93,7 +93,14 @@ namespace gtsam {
      * from the factor graph
      * @param key the key for the given node
      */
-		std::vector<shared_factor> find_factors_and_remove(const std::string& key);
+		std::vector<shared_factor> findAndRemoveFactors(const std::string& key);
+
+    /**
+     * extract and combine all the factors that involve a given node
+     * @param key the key for the given node
+     * @return the combined linear factor
+     */
+    shared_factor removeAndCombineFactors(const std::string& key);
 
 	private:
 

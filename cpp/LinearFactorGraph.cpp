@@ -13,6 +13,7 @@
 #include <colamd/colamd.h>
 
 #include "ChordalBayesNet.h"
+#include "FactorGraph-inl.h"
 #include "LinearFactorGraph.h"
 
 using namespace std;
@@ -48,24 +49,13 @@ set<string> LinearFactorGraph::find_separator(const string& key) const
 }
 
 /* ************************************************************************* */
-/* find factors and remove them from the factor graph: O(n)                  */
-/* ************************************************************************* */ 
-boost::shared_ptr<LinearFactor>
-LinearFactorGraph::combine_factors(const string& key)
-{
-	vector<LinearFactor::shared_ptr> found = find_factors_and_remove(key);
-	boost::shared_ptr<LinearFactor> lf(new LinearFactor(found));
-	return lf;
-}
-
-/* ************************************************************************* */
 /* eliminate one node from the linear factor graph                           */ 
 /* ************************************************************************* */
 ConditionalGaussian::shared_ptr LinearFactorGraph::eliminate_one(const string& key)
 {
 	// combine the factors of all nodes connected to the variable to be eliminated
 	// if no factors are connected to key, returns an empty factor
-	boost::shared_ptr<LinearFactor> joint_factor = combine_factors(key);
+	boost::shared_ptr<LinearFactor> joint_factor = removeAndCombineFactors(key);
 
 	// eliminate that joint factor
 	try {

@@ -63,20 +63,13 @@ TEST( LinearFactorGraph, find_separator )
 }
 
 /* ************************************************************************* */
-// Note: This test fails on different systems due to a dependency on the ordering
-//       of LinearFactor::shared_ptr in STL sets.  Because the ordering is based
-//       on pointer values instead of factor values, the ordering is different
-//       between separate systems.
 TEST( LinearFactorGraph, combine_factors_x1 )
 {	
   // create a small example for a linear factor graph
   LinearFactorGraph fg = createLinearFactorGraph();
 
   // combine all factors
-  LinearFactor::shared_ptr actual = fg.combine_factors("x1");
-
-  //FIXME: this expected value must be constructed in the order that
-  //       the factors are stored in a set - which differs between systems
+  LinearFactor::shared_ptr actual = fg.removeAndCombineFactors("x1");
 
   // the expected linear factor
   Matrix Al1 = Matrix_(6,2,
@@ -128,10 +121,7 @@ TEST( LinearFactorGraph, combine_factors_x2 )
   LinearFactorGraph fg = createLinearFactorGraph();
 
   // combine all factors
-  LinearFactor::shared_ptr actual = fg.combine_factors("x2");
-
-  // FIXME: change the ordering of the expected to match whatever the real
-  //        ordering is and constructed the expected with the correct order
+  LinearFactor::shared_ptr actual = fg.removeAndCombineFactors("x2");
 
   // the expected linear factor
   Matrix Al1 = Matrix_(4,2,
@@ -476,7 +466,7 @@ TEST( LinearFactorGraph, factor_lookup)
 }
 
 /* ************************************************************************* */
-TEST( LinearFactorGraph, find_factors_and_remove )
+TEST( LinearFactorGraph, findAndRemoveFactors )
 {
 	// create the graph
 	LinearFactorGraph fg = createLinearFactorGraph();
@@ -487,7 +477,7 @@ TEST( LinearFactorGraph, find_factors_and_remove )
   LinearFactor::shared_ptr f2 = fg[2];
 
   // call the function
-  vector<LinearFactor::shared_ptr> factors = fg.find_factors_and_remove("x1");
+  vector<LinearFactor::shared_ptr> factors = fg.findAndRemoveFactors("x1");
 
   // Check the factors
   CHECK(f0==factors[0]);
@@ -499,7 +489,7 @@ TEST( LinearFactorGraph, find_factors_and_remove )
   }
 
 /* ************************************************************************* */
-TEST( LinearFactorGraph, find_factors_and_remove__twice )
+TEST( LinearFactorGraph, findAndRemoveFactors_twice )
 {
 	// create the graph
 	LinearFactorGraph fg = createLinearFactorGraph();
@@ -510,14 +500,14 @@ TEST( LinearFactorGraph, find_factors_and_remove__twice )
   LinearFactor::shared_ptr f2 = fg[2];
 
   // call the function
-  vector<LinearFactor::shared_ptr> factors = fg.find_factors_and_remove("x1");
+  vector<LinearFactor::shared_ptr> factors = fg.findAndRemoveFactors("x1");
 
   // Check the factors
   CHECK(f0==factors[0]);
   CHECK(f1==factors[1]);
   CHECK(f2==factors[2]);
 
-  factors = fg.find_factors_and_remove("x1");
+  factors = fg.findAndRemoveFactors("x1");
   CHECK(factors.size() == 0);
 
   // CHECK if the factors are deleted from the factor graph

@@ -171,13 +171,13 @@ list<int> FactorGraph<Factor>::factors(const string& key) const {
 /* ************************************************************************* */
 template<class Factor>
 vector<boost::shared_ptr<Factor> >
-FactorGraph<Factor>::find_factors_and_remove(const string& key) {
+FactorGraph<Factor>::findAndRemoveFactors(const string& key) {
 	vector<boost::shared_ptr<Factor> > found;
 
 	Indices::iterator it = indices_.find(key);
 	if (it == indices_.end())
 		throw(std::invalid_argument
-				("FactorGraph::find_factors_and_remove invalid key: " + key));
+				("FactorGraph::findAndRemoveFactors invalid key: " + key));
 
 	list<int> *indices_ptr; // pointer to indices list in indices_ map
 	indices_ptr = &(it->second);
@@ -188,6 +188,19 @@ FactorGraph<Factor>::find_factors_and_remove(const string& key) {
 		factors_[i].reset();              // set factor to NULL.
 	}
 	return found;
+}
+
+/* ************************************************************************* */
+/* find factors and remove them from the factor graph: O(n)                  */
+/* ************************************************************************* */
+template<class Factor>
+boost::shared_ptr<Factor>
+FactorGraph<Factor>::removeAndCombineFactors(const string& key)
+{
+	typedef typename boost::shared_ptr<Factor> shared_factor;
+	vector<shared_factor> found = findAndRemoveFactors(key);
+	shared_factor new_factor(new Factor(found));
+	return new_factor;
 }
 
 /* ************************************************************************* */

@@ -7,6 +7,7 @@
 
 
 #include <CppUnitLite/TestHarness.h>
+#include "FactorGraph-inl.h"
 #include "ConstrainedNonlinearFactorGraph.h"
 #include "smallExample.h"
 

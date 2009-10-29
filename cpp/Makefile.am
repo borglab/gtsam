@@ -81,15 +81,16 @@ timeLinearFactor: CXXFLAGS += -I /opt/local/include
 timeLinearFactor: LDFLAGS += -L.libs -lgtsam
 
 # graphs 
-sources += LinearFactorGraph.cpp 
-sources += SymbolicBayesChain.cpp 
-sources += ChordalBayesNet.cpp 
+sources += SymbolicFactorGraph.cpp LinearFactorGraph.cpp 
+sources += SymbolicBayesChain.cpp ChordalBayesNet.cpp 
 sources += ConstrainedNonlinearFactorGraph.cpp ConstrainedLinearFactorGraph.cpp 
-check_PROGRAMS += testFactorgraph testLinearFactorGraph testNonlinearFactorGraph 
+check_PROGRAMS += testFactorgraph testSymbolicFactorGraph
+check_PROGRAMS += testLinearFactorGraph testNonlinearFactorGraph 
 check_PROGRAMS += testChordalBayesNet testNonlinearOptimizer
 check_PROGRAMS += testSymbolicBayesChain testBayesTree  
 check_PROGRAMS += testConstrainedNonlinearFactorGraph testConstrainedLinearFactorGraph
 testFactorgraph_SOURCES          = testFactorgraph.cpp
+testSymbolicFactorGraph_SOURCES  = $(example) testSymbolicFactorGraph.cpp
 testLinearFactorGraph_SOURCES    = $(example) testLinearFactorGraph.cpp
 testNonlinearFactorGraph_SOURCES = $(example) testNonlinearFactorGraph.cpp
 testNonlinearOptimizer_SOURCES   = $(example) testNonlinearOptimizer.cpp
@@ -100,6 +101,7 @@ testConstrainedNonlinearFactorGraph_SOURCES = $(example) testConstrainedNonlinea
 testConstrainedLinearFactorGraph_SOURCES    = $(example) testConstrainedLinearFactorGraph.cpp
 
 testFactorgraph_LDADD          = libgtsam.la
+testSymbolicFactorGraph_LDADD  = libgtsam.la
 testLinearFactorGraph_LDADD    = libgtsam.la
 testNonlinearFactorGraph_LDADD = libgtsam.la
 testNonlinearOptimizer_LDADD   = libgtsam.la

@@ -107,7 +107,7 @@ ConstrainedConditionalGaussian::shared_ptr ConstrainedLinearFactorGraph::elimina
 	ConstrainedConditionalGaussian::shared_ptr ccg = constraint->eliminate(key);
 
 	// perform a change of variables on the linear factors in the separator
-	vector<LinearFactor::shared_ptr> separator = find_factors_and_remove(key);
+	vector<LinearFactor::shared_ptr> separator = findAndRemoveFactors(key);
 	BOOST_FOREACH(LinearFactor::shared_ptr factor, separator) {
 		// store the block matrices
 		map<string, Matrix> blocks;

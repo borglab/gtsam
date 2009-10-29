@@ -68,17 +68,6 @@ namespace gtsam {
     std::set<std::string> find_separator(const std::string& key) const;
 
     /**
-     * extract and combine all the factors that involve a given node
-     * NOTE: the combined factor will be depends on a system-dependent
-	 * ordering of the input set of factors.  Do not rely on this order
-	 * when using the function.
-     * @param key the key for the given node
-     * @return the combined linear factor
-     */
-    boost::shared_ptr<LinearFactor>
-      combine_factors(const std::string& key);
-
-    /**
      * eliminate one node yielding a ConditionalGaussian
      * Eliminates the factors from the factor graph through find_factors_and_remove
      * and adds a new factor to the factor graph
