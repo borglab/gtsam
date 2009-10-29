@@ -83,6 +83,12 @@ namespace gtsam {
 		Ordering getOrdering() const;
 
     /**
+     * Return indices for all factors that involve the given node
+     * @param key the key for the given node
+     */
+    std::list<int> factors(const std::string& key) const;
+
+    /**
      * find all the factors that involve the given node and remove them
      * from the factor graph
      * @param key the key for the given node

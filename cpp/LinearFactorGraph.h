@@ -68,12 +68,6 @@ namespace gtsam {
     std::set<std::string> find_separator(const std::string& key) const;
 
     /**
-     * Return indices for all factors that involve the given node
-     * @param key the key for the given node
-     */
-    std::list<int> factors(const std::string& key) const;
-
-    /**
      * extract and combine all the factors that involve a given node
      * NOTE: the combined factor will be depends on a system-dependent
 	 * ordering of the input set of factors.  Do not rely on this order

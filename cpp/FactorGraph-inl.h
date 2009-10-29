@@ -64,8 +64,8 @@ size_t FactorGraph<Factor>::nrFactors() const {
 /* ************************************************************************* */
 template<class Factor>
 void FactorGraph<Factor>::push_back(shared_factor factor) {
-
 	factors_.push_back(factor);                  // add the actual factor
+	if (factor==NULL) return;
 
 	int i = factors_.size() - 1;                 // index of factor
 	list<string> keys = factor->keys();          // get keys for factor
@@ -155,6 +155,15 @@ Ordering FactorGraph<Factor>::getOrdering() const {
 		return Ordering(); // empty ordering
 	else
 		return colamd(n_col, n_row, nrNonZeros, columns);
+}
+
+/* ************************************************************************* */
+/** O(1)                                                                     */
+/* ************************************************************************* */
+template<class Factor>
+list<int> FactorGraph<Factor>::factors(const string& key) const {
+	Indices::const_iterator it = indices_.find(key);
+	return it->second;
 }
 
 /* ************************************************************************* */

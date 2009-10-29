@@ -48,14 +48,6 @@ set<string> LinearFactorGraph::find_separator(const string& key) const
 }
 
 /* ************************************************************************* */
-/** O(1)                                                                     */
-/* ************************************************************************* */
-list<int> LinearFactorGraph::factors(const string& key) const {
-	Indices::const_iterator it = indices_.find(key);
-	return it->second;
-}
-
-/* ************************************************************************* */
 /* find factors and remove them from the factor graph: O(n)                  */
 /* ************************************************************************* */ 
 boost::shared_ptr<LinearFactor>

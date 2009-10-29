@@ -72,7 +72,7 @@ using namespace std;
 using namespace gtsam;
 
 /* ************************************************************************* */
-TEST( SymbolicBayesChain, symbolicFactorGraph )
+TEST( SymbolicFactorGraph, symbolicFactorGraph )
 {
 	// construct expected symbolic graph
 	SymbolicFactorGraph expected;
@@ -98,8 +98,46 @@ TEST( SymbolicBayesChain, symbolicFactorGraph )
 	SymbolicFactorGraph actual(factorGraph);
 
 	CHECK(assert_equal(expected, actual));
+}
 
-	//symbolicGraph.find_factors_and_remove("x");
+/* ************************************************************************* */
+TEST( SymbolicFactorGraph, find_factors_and_remove )
+{
+	// construct it from the factor graph graph
+	LinearFactorGraph factorGraph = createLinearFactorGraph();
+	SymbolicFactorGraph actual(factorGraph);
+  SymbolicFactor::shared_ptr f1 = actual[0];
+  SymbolicFactor::shared_ptr f3 = actual[2];
+	actual.find_factors_and_remove("x2");
+
+	// construct expected graph after find_factors_and_remove
+	SymbolicFactorGraph expected;
+	SymbolicFactor::shared_ptr null;
+	expected.push_back(f1);
+	expected.push_back(null);
+	expected.push_back(f3);
+	expected.push_back(null);
+
+	CHECK(assert_equal(expected, actual));
+}
+/* ************************************************************************* */
+TEST( SymbolicFactorGraph, factor_lookup)
+{
+	// create a test graph
+	LinearFactorGraph factorGraph = createLinearFactorGraph();
+	SymbolicFactorGraph fg(factorGraph);
+
+	// ask for all factor indices connected to x1
+	list<int> x1_factors = fg.factors("x1");
+	int x1_indices[] = { 0, 1, 2 };
+	list<int> x1_expected(x1_indices, x1_indices + 3);
+	CHECK(x1_factors==x1_expected);
+
+	// ask for all factor indices connected to x2
+	list<int> x2_factors = fg.factors("x2");
+	int x2_indices[] = { 1, 3 };
+	list<int> x2_expected(x2_indices, x2_indices + 2);
+	CHECK(x2_factors==x2_expected);
 }
 
 /* ************************************************************************* */
