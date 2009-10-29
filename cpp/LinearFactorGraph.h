@@ -68,13 +68,6 @@ namespace gtsam {
     std::set<std::string> find_separator(const std::string& key) const;
 
     /**
-     * eliminate one node yielding a ConditionalGaussian
-     * Eliminates the factors from the factor graph through find_factors_and_remove
-     * and adds a new factor to the factor graph
-     */
-    ConditionalGaussian::shared_ptr eliminate_one(const std::string& key);
-	 
-    /**
      * eliminate factor graph in place(!) in the given order, yielding
      * a chordal Bayes net
      */

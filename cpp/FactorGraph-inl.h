@@ -204,4 +204,27 @@ FactorGraph<Factor>::removeAndCombineFactors(const string& key)
 }
 
 /* ************************************************************************* */
+/* eliminate one node from the factor graph                           */
+/* ************************************************************************* */
+template<class Factor>
+template<class Conditional>
+boost::shared_ptr<Conditional> FactorGraph<Factor>::eliminateOne(const std::string& key) {
+
+	// combine the factors of all nodes connected to the variable to be eliminated
+	// if no factors are connected to key, returns an empty factor
+	shared_factor joint_factor = removeAndCombineFactors(key);
+
+	// eliminate that joint factor
+	shared_factor factor;
+	boost::shared_ptr<Conditional> conditional;
+	boost::tie(conditional, factor) = joint_factor->eliminate(key);
+
+	// add new factor on separator back into the graph
+	if (!factor->empty()) push_back(factor);
+
+	// return the conditional Gaussian
+	return conditional;
+}
+
+/* ************************************************************************* */
 }

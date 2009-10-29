@@ -11,6 +11,7 @@
 #include <string>
 #include <list>
 #include "FactorGraph.h"
+#include "SymbolicConditional.h"
 
 namespace gtsam {
 
@@ -50,6 +51,23 @@ namespace gtsam {
 		std::list<std::string> keys() const {
 			return keys_;
 		}
+
+		/**
+		 * eliminate one of the variables connected to this factor
+		 * @param key the key of the node to be eliminated
+		 * @return a new factor and a symbolic conditional on the eliminated variable
+		 */
+		std::pair<SymbolicConditional::shared_ptr, SymbolicFactor::shared_ptr>
+		eliminate(const std::string& key) const;
+
+		/**
+		 * Check if empty factor
+		 */
+		inline bool empty() const {
+			return keys_.empty();
+		}
+
+
 	};
 
 	/** Symbolic Factor Graph */

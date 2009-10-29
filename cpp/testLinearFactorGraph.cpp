@@ -163,10 +163,11 @@ TEST( LinearFactorGraph, combine_factors_x2 )
 
 /* ************************************************************************* */
 
-TEST( LinearFactorGraph, eliminate_one_x1 )
+TEST( LinearFactorGraph, eliminateOne_x1 )
 {
   LinearFactorGraph fg = createLinearFactorGraph();
-  ConditionalGaussian::shared_ptr actual = fg.eliminate_one("x1");
+  ConditionalGaussian::shared_ptr actual =
+  		fg.eliminateOne<ConditionalGaussian>("x1");
 
   // create expected Conditional Gaussian
   Matrix R11 = Matrix_(2,2,
@@ -189,10 +190,11 @@ TEST( LinearFactorGraph, eliminate_one_x1 )
 
 /* ************************************************************************* */
  
-TEST( LinearFactorGraph, eliminate_one_x2 )
+TEST( LinearFactorGraph, eliminateOne_x2 )
 {
   LinearFactorGraph fg = createLinearFactorGraph();
-  ConditionalGaussian::shared_ptr actual = fg.eliminate_one("x2");
+  ConditionalGaussian::shared_ptr actual =
+  		fg.eliminateOne<ConditionalGaussian>("x2");
 
   // create expected Conditional Gaussian
   Matrix R11 = Matrix_(2,2,
@@ -214,10 +216,11 @@ TEST( LinearFactorGraph, eliminate_one_x2 )
 }
 
 /* ************************************************************************* */
-TEST( LinearFactorGraph, eliminate_one_l1 )
+TEST( LinearFactorGraph, eliminateOne_l1 )
 {
   LinearFactorGraph fg = createLinearFactorGraph();
-  ConditionalGaussian::shared_ptr actual = fg.eliminate_one("l1");
+  ConditionalGaussian::shared_ptr actual =
+  		fg.eliminateOne<ConditionalGaussian>("l1");
 
   // create expected Conditional Gaussian
   Matrix R11 = Matrix_(2,2,

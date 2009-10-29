@@ -102,6 +102,14 @@ namespace gtsam {
      */
     shared_factor removeAndCombineFactors(const std::string& key);
 
+    /**
+     * Eliminate a single node yielding a Conditional
+     * Eliminates the factors from the factor graph through findAndRemoveFactors
+     * and adds a new factor on the separator to the factor graph
+     */
+		template<class Conditional>
+		boost::shared_ptr<Conditional> eliminateOne(const std::string& key);
+
 	private:
 
 		/** Serialization function */

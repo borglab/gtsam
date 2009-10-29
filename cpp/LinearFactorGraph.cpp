@@ -49,32 +49,6 @@ set<string> LinearFactorGraph::find_separator(const string& key) const
 }
 
 /* ************************************************************************* */
-/* eliminate one node from the linear factor graph                           */ 
-/* ************************************************************************* */
-ConditionalGaussian::shared_ptr LinearFactorGraph::eliminate_one(const string& key)
-{
-	// combine the factors of all nodes connected to the variable to be eliminated
-	// if no factors are connected to key, returns an empty factor
-	boost::shared_ptr<LinearFactor> joint_factor = removeAndCombineFactors(key);
-
-	// eliminate that joint factor
-	try {
-		ConditionalGaussian::shared_ptr conditional;
-		LinearFactor::shared_ptr factor;
-		boost::tie(conditional,factor) = joint_factor->eliminate(key);
-
-		if (!factor->empty())
-			push_back(factor);
-
-		// return the conditional Gaussian
-		return conditional;
-	}
-	catch (domain_error&) {
-		throw(domain_error("LinearFactorGraph::eliminate: singular graph"));
-	}
-}
-
-/* ************************************************************************* */
 // eliminate factor graph using the given (not necessarily complete)
 // ordering, yielding a chordal Bayes net and partially eliminated FG
 /* ************************************************************************* */
@@ -84,7 +58,7 @@ LinearFactorGraph::eliminate_partially(const Ordering& ordering)
 	ChordalBayesNet::shared_ptr chordalBayesNet (new ChordalBayesNet()); // empty
 
 	BOOST_FOREACH(string key, ordering) {
-		ConditionalGaussian::shared_ptr cg = eliminate_one(key);
+		ConditionalGaussian::shared_ptr cg = eliminateOne<ConditionalGaussian>(key);
 		chordalBayesNet->insert(key,cg);
 	}
 
@@ -98,15 +72,6 @@ ChordalBayesNet::shared_ptr
 LinearFactorGraph::eliminate(const Ordering& ordering)
 {
 	ChordalBayesNet::shared_ptr chordalBayesNet = eliminate_partially(ordering);
-
-	// after eliminate, only one zero indegree factor should remain
-	// TODO: this check needs to exist - verify that unit tests work when this check is in place
-	/*
-  if (factors_.size() != 1) {
-    print();
-    throw(invalid_argument("LinearFactorGraph::eliminate: graph not empty after eliminate, ordering incomplete?"));
-  }
-	 */
 	return chordalBayesNet;
 }
 

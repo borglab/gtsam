@@ -34,7 +34,7 @@ namespace gtsam {
 	/* ************************************************************************* */
 	void SymbolicFactor::print(const string& s) const {
 		cout << s << " ";
-		BOOST_FOREACH(string key, keys_) cout << key << " ";
+		BOOST_FOREACH(string key, keys_) cout << " " << key;
 		cout << endl;
 	}
 
@@ -42,6 +42,25 @@ namespace gtsam {
 	bool SymbolicFactor::equals(const SymbolicFactor& other, double tol) const {
 		return keys_ == other.keys_;
 	}
+
+	/* ************************************************************************* */
+	pair<SymbolicConditional::shared_ptr, SymbolicFactor::shared_ptr>
+	SymbolicFactor::eliminate(const string& key) const
+	{
+		// get keys from input factor
+		list<string> separator;
+		BOOST_FOREACH(string j,keys_)
+			if (j!=key) separator.push_back(j);
+
+		// start empty remaining factor to be returned
+	  boost::shared_ptr<SymbolicFactor> lf(new SymbolicFactor(separator));
+
+	  // create SymbolicConditional on separator
+	  SymbolicConditional::shared_ptr cg (new SymbolicConditional(separator));
+
+	  return make_pair(cg,lf);
+	}
+
 	/* ************************************************************************* */
 
 }

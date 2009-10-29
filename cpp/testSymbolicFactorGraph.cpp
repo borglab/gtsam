@@ -100,6 +100,23 @@ TEST( LinearFactorGraph, removeAndCombineFactors )
 }
 
 /* ************************************************************************* */
+TEST( LinearFactorGraph, eliminateOne_x1 )
+{
+	// create a test graph
+	LinearFactorGraph factorGraph = createLinearFactorGraph();
+	SymbolicFactorGraph fg(factorGraph);
+
+	// eliminate
+	SymbolicConditional::shared_ptr actual =
+  		fg.eliminateOne<SymbolicConditional>("x1");
+
+  // create expected symbolic Conditional
+  SymbolicConditional expected("l1","x2");
+
+  CHECK(assert_equal(expected,*actual));
+}
+
+/* ************************************************************************* */
 int main() {
 	TestResult tr;
 	return TestRegistry::runAllTests(tr);

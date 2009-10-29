@@ -81,7 +81,7 @@ ChordalBayesNet::shared_ptr ConstrainedLinearFactorGraph::eliminate(const Orderi
 		}
 		else
 		{
-			ConditionalGaussian::shared_ptr cg = eliminate_one(key);
+			ConditionalGaussian::shared_ptr cg = eliminateOne<ConditionalGaussian>(key);
 			cbn->insert(key,cg);
 		}
 	}
