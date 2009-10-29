@@ -203,6 +203,22 @@ namespace gtsam {
   }
 
   /* ************************************************************************* */
+  void whouse_subs(Vector& b, size_t row, const Vector&  a, const Vector& pseudo) {
+	  // get sizes
+	  size_t m = b.size();
+
+	  // calculate product = pseudo*b
+	  double product = 0;
+	  for (int i=row;i<m;++i) {// only the relevant section of b
+		  product += b(i)*pseudo(i-row);
+	  }
+
+	  // calculate b -= a*product
+	  for (int i=row+1;i<m;++i)
+		  b(i) -= a(i-row)*product;
+  }
+
+  /* ************************************************************************* */
   Vector concatVectors(size_t nrVectors, ...)
   {
     int dimA = 0;

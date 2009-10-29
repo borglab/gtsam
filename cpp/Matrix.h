@@ -142,10 +142,10 @@ void householder_update(Matrix &A, int j, double beta, const Vector& vjm);
  * @param A is the matrix to reduce
  * @param row is the row to start on (rows above aren't affected)
  * @param pseudo is the pseudoinverse of the first column of A
- * @param x is the first column of A
- * A is updated into non-normalied R of A that has been updated
+ * @param a is the first column of A
+ * A is updated into non-normalized R of A that has been updated
  */
-void whouse_subs(Matrix& A, unsigned int row, const Vector& pseudo, const Vector& x);
+void whouse_subs(Matrix& A, unsigned int row, const Vector& a, const Vector& pseudo);
 
 /**
  * Householder tranformation, Householder vectors below diagonal

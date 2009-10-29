@@ -270,29 +270,27 @@ void householder_update(Matrix &A, int j, double beta, const Vector& vjm) {
 }
 
 /* ************************************************************************* */
-void whouse_subs(Matrix& A, unsigned int row, const Vector& pseudo, const Vector& x) {
+void whouse_subs(Matrix& A, unsigned int row, const Vector& a, const Vector& pseudo) {
+//	cout << "In matrix::whouse_subs()" << endl;
 	// get sizes
 	size_t m = A.size1(); size_t n = A.size2();
+//	print(A,"Initial A");
+//	cout << "Row: " << row << endl;
+//	print(a,"a");
+//	print(pseudo,"pseudo");
 
-	// calculate Hw
-	Matrix Hw = eye(m,m);
-	for (int i=0; i<m; ++i)
-		for (int j=0; j<m; ++j)
-			Hw(i,j) -= x(i)*pseudo(j);
+	// calculate product = pseudo*A
+	Vector product = zero(n);
+	for (int j=0; j<n; ++j) // for each column in A
+		for (int i=row;i<m;++i) {// only the relevant section of A
+			product(j) += A(i,j)*pseudo(i-row);
+		}
 
-	// zero the selected column below the diagonal
-	for (int i=row+1; i<m; ++i)
-		A(i,row) = 0.0;
-
-	// update As
-	//FIXME: this uselessly updates the top rows as well, and should be fixed
-	Matrix As = sub(A,0,m,row+1,n);
-	Matrix As_new = Hw*As;
-
-	// copy in updated As
-	for (int i=1; i<m; ++i) //index through rows of A
-		for (int j=0; j<As_new.size2(); ++j) //index through columns of As_new
-			A(i,j+row+1) = As_new(i,j);
+	// calculate A -= a*product
+	for (int i=row+1;i<m;++i) // limit only to rows of A being updated
+		for (int j=0;j<n;++j) { // update all columns
+			A(i,j) -= product(j)*a(i-row);
+		}
 }
 
 /* ************************************************************************* */

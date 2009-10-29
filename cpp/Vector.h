@@ -113,6 +113,15 @@ std::pair<double,Vector> house(Vector &x);
 Vector whouse_solve(const Vector& v, const Vector& precisions);
 
 /**
+ * Weighted Householder solution substitution into a vector
+ * @param b is vector to update IN PLACE
+ * @param row is the row being updated (the specified row is not touched)
+ * @param a is the first column of A
+ * @param pseudo is the pseudoinverse of a
+ */
+void whouse_subs(Vector& b, size_t row, const Vector&  a, const Vector& pseudo);
+
+/**
  * concatenate Vectors
  */
 Vector concatVectors(size_t nrVectors, ...);

@@ -149,5 +149,49 @@ TEST( TestVector, whouse_solve )
 }
 
 /* ************************************************************************* */
+TEST( TestVector, whouse_subs_vector )
+{
+	// vector to update
+	Vector b(2);
+	b(0) = 5; b(1) = 6;
+
+	// Vector to eliminate
+	Vector a(2);
+	a(0) = 1.0; a(1) = 2.0;
+
+	Vector tau(2); //correspond to sigmas = [0.1 0.2]
+	tau(0) = 100; tau(1) = 25;
+
+	// find the pseudoinverse
+	Vector pseudo = whouse_solve(a, tau);
+
+	// substitute
+	int row = 0; // eliminating the first column
+	whouse_subs(b, row, a, pseudo);
+
+	// create expected value
+	Vector exp(2);
+	exp(0) = 5; exp(1) = -4.0/3.0;
+
+	// verify
+	CHECK(assert_equal(b, exp, 1e-5));
+}
+
+/* ************************************************************************* */
+TEST( TestVector, whouse_subs_vector2 )
+{
+	double sigma1 = 0.2; double tau1 = 1/(sigma1*sigma1);
+	double sigma2 = 0.1; double tau2 = 1/(sigma2*sigma2);
+	Vector sigmas = Vector_(4, sigma1, sigma1, sigma2, sigma2);
+
+	Vector a1 = Vector_(4, -1., 0., 1., 0.);
+	Vector tau = Vector_(4, tau1, tau1, tau2, tau2);
+	Vector pseudo1 = whouse_solve(a1, tau);
+
+	Vector expected = Vector_(4,-0.3333, 0., 0.6667, 0.);
+	CHECK(assert_equal(pseudo1, expected, 1e-4));
+}
+
+/* ************************************************************************* */
 int main() { TestResult tr; return TestRegistry::runAllTests(tr); }
 /* ************************************************************************* */
