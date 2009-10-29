@@ -14,9 +14,9 @@ using namespace std;
 namespace gtsam {
 
 	/* ************************************************************************* */
-	template<class Factor, class Config>
+	template<class Factor>
 	SymbolicBayesChain::SymbolicBayesChain(
-			const FactorGraph<Factor, Config>& factorGraph, const Ordering& ordering) {
+			const FactorGraph<Factor>& factorGraph, const Ordering& ordering) {
 	}
 
 /* ************************************************************************* */

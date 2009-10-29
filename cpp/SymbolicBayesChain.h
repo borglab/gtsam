@@ -36,8 +36,8 @@ namespace gtsam {
 		/**
 		 *  Construct from any factor graph
 		 */
-		template<class Factor, class Config>
-		SymbolicBayesChain(const FactorGraph<Factor, Config>& factorGraph,
+		template<class Factor>
+		SymbolicBayesChain(const FactorGraph<Factor>& factorGraph,
 				const Ordering& ordering);
 
 		/** Destructor */

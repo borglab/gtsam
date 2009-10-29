@@ -27,7 +27,7 @@ namespace gtsam {
    *   VectorConfig = A configuration of vectors
    * Most of the time, linear factor graphs arise by linearizing a non-linear factor graph.
    */
-  class LinearFactorGraph : public FactorGraph<LinearFactor, VectorConfig> {
+  class LinearFactorGraph : public FactorGraph<LinearFactor> {
   public:
 
     /**
@@ -39,6 +39,21 @@ namespace gtsam {
      * Constructor that receives a Chordal Bayes Net and returns a LinearFactorGraph
      */
     LinearFactorGraph(const ChordalBayesNet& CBN);
+
+		/** unnormalized error */
+		double error(const VectorConfig& c) const {
+			double total_error = 0.;
+			// iterate over all the factors_ to accumulate the log probabilities
+			for (const_iterator factor = factors_.begin(); factor != factors_.end(); factor++)
+				total_error += (*factor)->error(c);
+
+			return total_error;
+		}
+
+		/** Unnormalized probability. O(n) */
+		double probPrime(const VectorConfig& c) const {
+			return exp(-0.5 * error(c));
+		}
 
     /**
      * given a chordal bayes net, sets the linear factor graph identical to that CBN
@@ -57,13 +72,6 @@ namespace gtsam {
      * @param key the key for the given node
      */
     std::list<int> factors(const std::string& key) const;
-
-    /**
-     * find all the factors that involve the given node and remove them
-     * from the factor graph
-     * @param key the key for the given node
-     */
-    LinearFactorSet find_factors_and_remove(const std::string& key);
 
     /**
      * extract and combine all the factors that involve a given node

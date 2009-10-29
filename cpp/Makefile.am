@@ -82,12 +82,12 @@ timeLinearFactor: LDFLAGS += -L.libs -lgtsam
 
 # graphs 
 sources += LinearFactorGraph.cpp 
-#sources += BayesChain.cpp SymbolicBayesChain.cpp 
+sources += SymbolicBayesChain.cpp 
 sources += ChordalBayesNet.cpp 
 sources += ConstrainedNonlinearFactorGraph.cpp ConstrainedLinearFactorGraph.cpp 
 check_PROGRAMS += testFactorgraph testLinearFactorGraph testNonlinearFactorGraph 
 check_PROGRAMS += testChordalBayesNet testNonlinearOptimizer
-#check_PROGRAMS += testSymbolicBayesChain testBayesTree  
+check_PROGRAMS += testSymbolicBayesChain testBayesTree  
 check_PROGRAMS += testConstrainedNonlinearFactorGraph testConstrainedLinearFactorGraph
 testFactorgraph_SOURCES          = testFactorgraph.cpp
 testLinearFactorGraph_SOURCES    = $(example) testLinearFactorGraph.cpp

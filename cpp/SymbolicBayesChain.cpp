@@ -10,6 +10,7 @@
 // trick from some reading group
 #define FOREACH_PAIR( KEY, VAL, COL) BOOST_FOREACH (boost::tie(KEY,VAL),COL)
 
+#include "BayesChain-inl.h"
 #include "SymbolicBayesChain.h"
 
 using namespace std;

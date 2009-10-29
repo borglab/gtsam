@@ -59,12 +59,6 @@ namespace gtsam {
      */
     virtual double error(const Config& c) const = 0;
 
-    /**
-     * equality up to tolerance
-     * tricky to implement, see NonLinearFactor1 for an example
-    virtual bool equals(const Factor& f, double tol=1e-9) const = 0;
-     */
-
     virtual std::string dump() const = 0;
 
     /**

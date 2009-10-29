@@ -487,7 +487,7 @@ TEST( LinearFactorGraph, find_factors_and_remove )
   LinearFactor::shared_ptr f2 = fg[2];
 
   // call the function
-  LinearFactorSet factors = fg.find_factors_and_remove("x1");
+  vector<LinearFactor::shared_ptr> factors = fg.find_factors_and_remove("x1");
 
   // Check the factors
   CHECK(f0==factors[0]);
@@ -495,7 +495,7 @@ TEST( LinearFactorGraph, find_factors_and_remove )
   CHECK(f2==factors[2]);
 
   // CHECK if the factors are deleted from the factor graph
-  LONGS_EQUAL(1,fg.size());
+  LONGS_EQUAL(1,fg.nrFactors());
   }
 
 /* ************************************************************************* */
@@ -510,7 +510,7 @@ TEST( LinearFactorGraph, find_factors_and_remove__twice )
   LinearFactor::shared_ptr f2 = fg[2];
 
   // call the function
-  LinearFactorSet factors = fg.find_factors_and_remove("x1");
+  vector<LinearFactor::shared_ptr> factors = fg.find_factors_and_remove("x1");
 
   // Check the factors
   CHECK(f0==factors[0]);
@@ -521,7 +521,7 @@ TEST( LinearFactorGraph, find_factors_and_remove__twice )
   CHECK(factors.size() == 0);
 
   // CHECK if the factors are deleted from the factor graph
-  LONGS_EQUAL(1,fg.size());
+  LONGS_EQUAL(1,fg.nrFactors());
   }
 
 /* ************************************************************************* */

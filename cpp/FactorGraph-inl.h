@@ -23,8 +23,8 @@ using namespace std;
 namespace gtsam {
 
 /* ************************************************************************* */
-template<class Factor, class Config>
-void FactorGraph<Factor, Config>::print(const string& s) const {
+template<class Factor>
+void FactorGraph<Factor>::print(const string& s) const {
 	cout << s << endl;
 	printf("size: %d\n", (int) size());
 	for (int i = 0; i < factors_.size(); i++) {
@@ -35,9 +35,9 @@ void FactorGraph<Factor, Config>::print(const string& s) const {
 }
 
 /* ************************************************************************* */
-template<class Factor, class Config>
-bool FactorGraph<Factor, Config>::equals
-	(const FactorGraph<Factor, Config>& fg, double tol) const {
+template<class Factor>
+bool FactorGraph<Factor>::equals
+	(const FactorGraph<Factor>& fg, double tol) const {
 	/** check whether the two factor graphs have the same number of factors_ */
 	if (factors_.size() != fg.size()) return false;
 
@@ -53,25 +53,35 @@ bool FactorGraph<Factor, Config>::equals
 }
 
 /* ************************************************************************* */
-template<class Factor, class Config>
-void FactorGraph<Factor,Config>::push_back(shared_factor factor) {
-	factors_.push_back(factor);  // add the actual factor
-	int i = factors_.size() - 1; // index of factor
-	list<string> keys = factor->keys(); // get keys for factor
-	BOOST_FOREACH(string key, keys){    // for each key push i onto list
+template<class Factor>
+size_t FactorGraph<Factor>::nrFactors() const {
+	int size_ = 0;
+	for (const_iterator factor = factors_.begin(); factor != factors_.end(); factor++)
+		if (*factor != NULL) size_++;
+	return size_;
+}
+
+/* ************************************************************************* */
+template<class Factor>
+void FactorGraph<Factor>::push_back(shared_factor factor) {
+
+	factors_.push_back(factor);                  // add the actual factor
+
+	int i = factors_.size() - 1;                 // index of factor
+	list<string> keys = factor->keys();          // get keys for factor
+
+	BOOST_FOREACH(string key, keys){             // for each key push i onto list
 		Indices::iterator it = indices_.find(key); // old list for that key (if exists)
-		if (it==indices_.end()){  // there's no list yet, so make one
-			list<int> indices(1, i);
-			indices_.insert(pair<string, list<int> >(key, indices));  // insert new indices into factorMap
+		if (it==indices_.end()){                   // there's no list yet
+			list<int> indices(1,i);                  // so make one
+			indices_.insert(make_pair(key,indices)); // insert new indices into factorMap
 		}
-		else{
-			list<int> *indices_ptr;
-			indices_ptr = &(it->second);
-			indices_ptr->push_back(i);
+		else {
+			list<int> *indices_ptr = &(it->second);  // get the list
+			indices_ptr->push_back(i);               // add the index i to it
 		}
 	}
 }
-
 
 /* ************************************************************************* */
 /**
@@ -122,12 +132,12 @@ Ordering colamd(int n_col, int n_row, int nrNonZeros, const map<Key, vector<int>
 }
 
 /* ************************************************************************* */
-template<class Factor, class Config>
-Ordering FactorGraph<Factor,Config>::getOrdering() const {
+template<class Factor>
+Ordering FactorGraph<Factor>::getOrdering() const {
 
 	// A factor graph is really laid out in row-major format, each factor a row
 	// Below, we compute a symbolic matrix stored in sparse columns.
-	typedef string Key;                  // default case  with string keys
+	typedef string Key;             // default case  with string keys
 	map<Key, vector<int> > columns; // map from keys to a sparse column of non-zero row indices
 	int nrNonZeros = 0;             // number of non-zero entries
 	int n_row = factors_.size();    /* colamd arg 1: number of rows in A */
@@ -145,6 +155,30 @@ Ordering FactorGraph<Factor,Config>::getOrdering() const {
 		return Ordering(); // empty ordering
 	else
 		return colamd(n_col, n_row, nrNonZeros, columns);
+}
+
+/* ************************************************************************* */
+/** find all non-NULL factors for a variable, then set factors to NULL       */
+/* ************************************************************************* */
+template<class Factor>
+vector<boost::shared_ptr<Factor> >
+FactorGraph<Factor>::find_factors_and_remove(const string& key) {
+	vector<boost::shared_ptr<Factor> > found;
+
+	Indices::iterator it = indices_.find(key);
+	if (it == indices_.end())
+		throw(std::invalid_argument
+				("FactorGraph::find_factors_and_remove invalid key: " + key));
+
+	list<int> *indices_ptr; // pointer to indices list in indices_ map
+	indices_ptr = &(it->second);
+
+	BOOST_FOREACH(int i, *indices_ptr) {
+		if(factors_[i] == NULL) continue; // skip NULL factors
+		found.push_back(factors_[i]);     // add to found
+		factors_[i].reset();              // set factor to NULL.
+	}
+	return found;
 }
 
 /* ************************************************************************* */

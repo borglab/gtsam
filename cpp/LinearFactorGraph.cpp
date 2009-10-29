@@ -55,34 +55,13 @@ list<int> LinearFactorGraph::factors(const string& key) const {
 	return it->second;
 }
 
-
-/* ************************************************************************* */
-/** find all non-NULL factors for a variable, then set factors to NULL       */
-/* ************************************************************************* */
-LinearFactorSet LinearFactorGraph::find_factors_and_remove(const string& key) {
-	LinearFactorSet found;
-
-	Indices::iterator it = indices_.find(key);
-	list<int> *indices_ptr; // pointer to indices list in indices_ map
-	indices_ptr = &(it->second);
-
-	for (list<int>::iterator it = indices_ptr->begin(); it != indices_ptr->end(); it++) {
-		if(factors_[*it] == NULL){  // skip NULL factors
-			continue;
-		}
-		found.push_back(factors_[*it]);
-		factors_[*it].reset(); // set factor to NULL.
-	}
-	return found;
-}
-
 /* ************************************************************************* */
 /* find factors and remove them from the factor graph: O(n)                  */
 /* ************************************************************************* */ 
 boost::shared_ptr<LinearFactor>
 LinearFactorGraph::combine_factors(const string& key)
 {
-	LinearFactorSet found = find_factors_and_remove(key);
+	vector<LinearFactor::shared_ptr> found = find_factors_and_remove(key);
 	boost::shared_ptr<LinearFactor> lf(new LinearFactor(found));
 	return lf;
 }

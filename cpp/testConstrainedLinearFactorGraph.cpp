@@ -6,6 +6,7 @@
 #include <iostream>
 #include <CppUnitLite/TestHarness.h>
 #include "ConstrainedLinearFactorGraph.h"
+#include "FactorGraph-inl.h"
 #include "LinearFactorGraph.h"
 #include "smallExample.h"
 
@@ -237,12 +238,12 @@ TEST( ConstrainedLinearFactorGraph, eliminate_multi_constraint )
 	// eliminate the constraint
 	ConstrainedConditionalGaussian::shared_ptr cg1 = fg.eliminate_constraint("x");
 	CHECK(cg1->size() == 1);
-	CHECK(fg.size() == 2);
+	CHECK(fg.nrFactors() == 1);
 
 	// eliminate the induced constraint
 	ConstrainedConditionalGaussian::shared_ptr cg2 = fg.eliminate_constraint("y");
-	CHECK(fg.size() == 1);
 	CHECK(cg2->size() == 1);
+	CHECK(fg.nrFactors() == 0);
 
 	// eliminate the linear factor
 	ConditionalGaussian::shared_ptr cg3 = fg.eliminate_one("z");
@@ -259,7 +260,6 @@ TEST( ConstrainedLinearFactorGraph, eliminate_multi_constraint )
 	CHECK(assert_equal(act_y, Vector_(2, -0.1, 0.4), 1e-4));
 	Vector act_x = cg1->solve(actual);
 	CHECK(assert_equal(act_x, Vector_(2, -2.0, 2.0), 1e-4));
-
 }
 
 /* ************************************************************************* */

@@ -332,7 +332,7 @@
 <buildArguments>-f local.mk</buildArguments>
 <buildTarget>testCal3_S2.run</buildTarget>
 <stopOnError>true</stopOnError>
-<useDefaultCommand>false</useDefaultCommand>
+<useDefaultCommand>true</useDefaultCommand>
 <runAllBuilders>true</runAllBuilders>
 </target>
 <target name="testVSLAMFactor.run" path="cpp" targetID="org.eclipse.cdt.build.MakeTargetBuilder">

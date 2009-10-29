@@ -24,7 +24,7 @@ namespace gtsam {
  * To fix it, we need to think more deeply about this.
  */
 template<class Factor, class Config>
-class ConstrainedNonlinearFactorGraph: public FactorGraph<Factor, Config> {
+class ConstrainedNonlinearFactorGraph: public FactorGraph<Factor> {
 protected:
 	/** collection of equality factors */
 	std::vector<LinearConstraint::shared_ptr> eq_factors;
@@ -44,7 +44,7 @@ public:
 	 * Copy constructor from regular NLFGs
 	 */
 	ConstrainedNonlinearFactorGraph(const NonlinearFactorGraph<Config>& nfg) :
-		FactorGraph<Factor, Config> (nfg) {
+		FactorGraph<Factor> (nfg) {
 	}
 
 	typedef typename boost::shared_ptr<Factor> shared_factor;
@@ -78,7 +78,7 @@ public:
 	 * Insert a factor into the graph
 	 */
 	void push_back(const shared_factor& f) {
-		FactorGraph<Factor,Config>::push_back(f);
+		FactorGraph<Factor>::push_back(f);
 	}
 
 	/**

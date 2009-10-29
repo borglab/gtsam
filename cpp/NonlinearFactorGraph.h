@@ -11,7 +11,7 @@
 #pragma once
 
 #include "NonlinearFactor.h"
-#include "FactorGraph.h"
+#include "LinearFactorGraph.h"
 
 namespace gtsam {
 
@@ -22,11 +22,19 @@ namespace gtsam {
 	 * Linearizing the non-linear factor graph creates a linear factor graph on the 
 	 * tangent vector space at the linearization point. Because the tangent space is a true
 	 * vector space, the config type will be an VectorConfig in that linearized
- 	 */
+	 */
 	template<class Config>
-	class NonlinearFactorGraph: public FactorGraph<NonlinearFactor<Config> ,Config> {
+	class NonlinearFactorGraph: public FactorGraph<NonlinearFactor<Config> > {
 
 	public:
+
+		/** unnormalized error */
+		double error(const Config& c) const;
+
+		/** Unnormalized probability. O(n) */
+		double probPrime(const Config& c) const {
+			return exp(-0.5 * error(c));
+		}
 
 		/**
 		 * linearize a nonlinear factor graph
