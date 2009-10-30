@@ -7,9 +7,7 @@
 #include <CppUnitLite/TestHarness.h>
 
 #include "smallExample.h"
-#include "FactorGraph-inl.h"
 #include "SymbolicFactorGraph.h"
-#include "SymbolicConditional.h"
 #include "SymbolicBayesChain.h"
 
 using namespace std;

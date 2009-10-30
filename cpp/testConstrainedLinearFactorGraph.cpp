@@ -6,7 +6,6 @@
 #include <iostream>
 #include <CppUnitLite/TestHarness.h>
 #include "ConstrainedLinearFactorGraph.h"
-#include "FactorGraph-inl.h"
 #include "LinearFactorGraph.h"
 #include "smallExample.h"
 

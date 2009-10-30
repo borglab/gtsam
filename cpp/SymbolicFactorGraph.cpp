@@ -7,12 +7,16 @@
 
 #include <boost/foreach.hpp>
 #include "Ordering.h"
+#include "FactorGraph-inl.h"
 #include "SymbolicFactorGraph.h"
 #include "SymbolicBayesChain.h"
 
 using namespace std;
 
 namespace gtsam {
+
+	// Explicitly instantiate so we don't have to include everywhere
+	template class FactorGraph<SymbolicFactor>;
 
 	/* ************************************************************************* */
 	SymbolicBayesChain::shared_ptr

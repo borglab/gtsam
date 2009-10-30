@@ -14,9 +14,6 @@ using namespace std;
 #include "Matrix.h"
 #include "smallExample.h"
 
-// template definitions
-#include "FactorGraph-inl.h"
-
 using namespace gtsam;
 
 double tol=1e-4;

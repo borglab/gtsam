@@ -4,8 +4,9 @@
  */
 
 #include <iostream>
+#include <boost/tuple/tuple.hpp>
+#include <boost/foreach.hpp>
 #include "ConstrainedLinearFactorGraph.h"
-#include "FactorGraph-inl.h" // for getOrdering
 using namespace std;
 
 // trick from some reading group
