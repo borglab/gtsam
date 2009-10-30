@@ -8,7 +8,7 @@
 
 #include "SymbolicBayesChain.h"
 #include "smallExample.h"
-#include "BayesTree.h"
+#include "BayesTree-inl.h"
 
 using namespace gtsam;
 

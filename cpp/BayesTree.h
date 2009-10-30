@@ -28,16 +28,16 @@ class BayesTree : public Testable<BayesTree<Conditional> >
 public:
 
 	/** Create a Bayes Tree from a SymbolicBayesChain */
-	BayesTree(BayesChain<Conditional>& bayesChain) {}
+	BayesTree(BayesChain<Conditional>& bayesChain);
 
 	/** Destructor */
 	virtual ~BayesTree() {}
 
 	/** print */
-	void print(const std::string& s = "") const {}
+	void print(const std::string& s = "") const;
 
 	/** check equality */
-	bool equals(const BayesTree<Conditional>& other, double tol = 1e-9) const { return false; }
+	bool equals(const BayesTree<Conditional>& other, double tol = 1e-9) const;
 
 }; // BayesTree
 

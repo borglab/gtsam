@@ -86,7 +86,7 @@ timeLinearFactor: LDFLAGS += -L.libs -lgtsam
 
 # graphs 
 sources += SymbolicFactorGraph.cpp LinearFactorGraph.cpp 
-sources += SymbolicBayesChain.cpp ChordalBayesNet.cpp 
+sources += SymbolicBayesChain.cpp ChordalBayesNet.cpp
 sources += ConstrainedNonlinearFactorGraph.cpp ConstrainedLinearFactorGraph.cpp 
 check_PROGRAMS += testFactorgraph testSymbolicFactorGraph
 check_PROGRAMS += testLinearFactorGraph testNonlinearFactorGraph 
@@ -161,13 +161,14 @@ testVSLAMFactor_LDADD = libgtsam.la
 
 
 # The header files will be installed in ~/include/gtsam
-headers = gtsam.h Value.h Testable.h Factor.h LinearFactorSet.h BayesChain.h
+headers = gtsam.h Value.h Testable.h Factor.h LinearFactorSet.h 
 headers += Point2Prior.h Simulated2DOdometry.h Simulated2DMeasurement.h smallExample.h 
 headers += $(sources:.cpp=.h)
 # templates: 
 headers += FactorGraph.h FactorGraph-inl.h
 headers += NonlinearFactorGraph.h NonlinearFactorGraph-inl.h
 headers += NonlinearOptimizer.h NonlinearOptimizer-inl.h 
+headers += BayesChain.h BayesChain-inl.h BayesTree.h BayesTree-inl.h
 
 # create both dynamic and static libraries
 AM_CXXFLAGS = -I$(boost) -fPIC
