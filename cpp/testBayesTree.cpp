@@ -6,8 +6,7 @@
 
 #include <CppUnitLite/TestHarness.h>
 
-#include "BayesChain-inl.h"
-#include "SymbolicBayesChain-inl.h"
+#include "SymbolicBayesChain.h"
 #include "smallExample.h"
 #include "BayesTree.h"
 

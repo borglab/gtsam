@@ -8,8 +8,7 @@
 
 #include "smallExample.h"
 #include "FactorGraph-inl.h"
-#include "BayesChain-inl.h"
-#include "SymbolicBayesChain-inl.h"
+#include "SymbolicBayesChain.h"
 
 using namespace std;
 using namespace gtsam;

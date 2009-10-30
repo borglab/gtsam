@@ -10,12 +10,15 @@
 // trick from some reading group
 #define FOREACH_PAIR( KEY, VAL, COL) BOOST_FOREACH (boost::tie(KEY,VAL),COL)
 
-#include "BayesChain-inl.h"
 #include "SymbolicBayesChain.h"
+#include "BayesChain-inl.h"
 
 using namespace std;
 
 namespace gtsam {
+
+	// Explicitly instantiate so we don't have to include everywhere
+	template class BayesChain<SymbolicConditional>;
 
 	typedef pair<string,SymbolicConditional::shared_ptr> pp;
 

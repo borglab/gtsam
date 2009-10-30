@@ -11,16 +11,11 @@
 #pragma once
 
 #include <boost/shared_ptr.hpp>
-//#include "ConstrainedNonlinearFactorGraph.h" // will be added back once design is solidified
-#include "ConstrainedLinearFactorGraph.h"
 #include "NonlinearFactorGraph.h"
-#include "ChordalBayesNet.h"
-#include "LinearFactorGraph.h"
-#include "VectorConfig.h"
-
-// \namespace
 
 namespace gtsam {
+
+	class ConstrainedLinearFactorGraph;
 
 	typedef NonlinearFactorGraph<VectorConfig> ExampleNonlinearFactorGraph;
 

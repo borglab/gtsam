@@ -14,51 +14,12 @@
 using namespace std;
 using namespace gtsam;
 
+// Explicitly instantiate so we don't have to include everywhere
+#include "BayesChain-inl.h"
+template class BayesChain<ConditionalGaussian>;
+
 // trick from some reading group
 #define FOREACH_PAIR( KEY, VAL, COL) BOOST_FOREACH (boost::tie(KEY,VAL),COL) 
-
-/* ************************************************************************* */
-void ChordalBayesNet::print(const string& s) const {
-  BOOST_FOREACH(string key, keys) {
-    const_iterator it = nodes.find(key);
-    it->second->print("\nNode[" + key + "]");
-  }
-}
-
-/* ************************************************************************* */
-bool ChordalBayesNet::equals(const ChordalBayesNet& cbn, double tol) const
-{
-  const_iterator it1 = nodes.begin(), it2 = cbn.nodes.begin();
-
-  if(nodes.size() != cbn.nodes.size()) return false;
-  for(; it1 != nodes.end(); it1++, it2++){
-    const string& j1 = it1->first, j2 = it2->first;
-    ConditionalGaussian::shared_ptr node1 = it1->second, node2 = it2->second;
-    if (j1 != j2) return false;
-    if (!node1->equals(*node2,tol))
-      return false;
-  }
-  return true;
-}
-
-/* ************************************************************************* */
-void ChordalBayesNet::insert(const string& key, ConditionalGaussian::shared_ptr node)
-{
-  keys.push_front(key);
-  nodes.insert(make_pair(key,node));
-}
-
-/* ************************************************************************* */
-void ChordalBayesNet::erase(const string& key)
-{
-	list<string>::iterator it;
-	for (it=keys.begin(); it != keys.end(); ++it){
-	  if( strcmp(key.c_str(), (*it).c_str()) == 0 )
-			break;
-	}
-	keys.erase(it);	
-	nodes.erase(key);
-}
 
 /* ************************************************************************* */
 boost::shared_ptr<VectorConfig> ChordalBayesNet::optimize() const
@@ -66,9 +27,9 @@ boost::shared_ptr<VectorConfig> ChordalBayesNet::optimize() const
   boost::shared_ptr<VectorConfig> result(new VectorConfig);
 	
   /** solve each node in turn in topological sort order (parents first)*/
-  BOOST_FOREACH(string key, keys) {
-    const_iterator cg = nodes.find(key);		// get node
-    assert( cg != nodes.end() );						// make sure it exists
+  BOOST_FOREACH(string key, keys_) {
+    const_iterator cg = nodes_.find(key);		// get node
+    assert( cg != nodes_.end() );						// make sure it exists
     Vector x = cg->second->solve(*result);  // Solve for that variable
     result->insert(key,x);                  // store result in partial solution
   }
@@ -81,9 +42,9 @@ pair<Matrix,Vector> ChordalBayesNet::matrix() const {
   // add the dimensions of all variables to get matrix dimension
   // and at the same time create a mapping from keys to indices
   size_t N=0; map<string,size_t> indices;
-  BOOST_REVERSE_FOREACH(string key, keys) {
+  BOOST_REVERSE_FOREACH(string key, keys_) {
     // find corresponding node
-    const_iterator it = nodes.find(key);
+    const_iterator it = nodes_.find(key);
     indices.insert(make_pair(key,N));
     N += it->second->dim();
   }
@@ -94,7 +55,7 @@ pair<Matrix,Vector> ChordalBayesNet::matrix() const {
   string key; size_t I;
   FOREACH_PAIR(key,I,indices) {
     // find corresponding node
-    const_iterator it = nodes.find(key);
+    const_iterator it = nodes_.find(key);
     ConditionalGaussian::shared_ptr cg = it->second;
     
     // get RHS and copy to d

@@ -50,6 +50,18 @@ namespace gtsam {
 		nodes_.insert(make_pair(key,node));
 	}
 
+	/* ************************************************************************* */
+	template<class Conditional>
+	void BayesChain<Conditional>::erase(const string& key) {
+		list<string>::iterator it;
+		for (it=keys_.begin(); it != keys_.end(); ++it){
+		  if( strcmp(key.c_str(), (*it).c_str()) == 0 )
+				break;
+		}
+		keys_.erase(it);
+		nodes_.erase(key);
+	}
+
 /* ************************************************************************* */
 
 } // namespace gtsam

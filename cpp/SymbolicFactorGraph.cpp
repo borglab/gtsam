@@ -8,7 +8,6 @@
 #include <boost/foreach.hpp>
 #include "Ordering.h"
 #include "SymbolicFactorGraph.h"
-#include "BayesChain-inl.h"
 #include "SymbolicBayesChain.h"
 
 using namespace std;

@@ -20,8 +20,6 @@
 #include "ChordalBayesNet.h"
 #include "smallExample.h"
 
-
-
 using namespace gtsam;
 
 /* ************************************************************************* */

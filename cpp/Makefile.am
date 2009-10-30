@@ -37,7 +37,6 @@ external_libs:
 	@echo Compiling CppUnitLite...; cd ../CppUnitLite; make all
 	@echo Compiling Colamd...;      cd ../colamd; make all
 
-
 clean : clean_external_libs
 	@echo Cleaning Cpp...;  rm -f *.o *.lo *.*~ libgtsam.la $(check_PROGRAMS)
 
@@ -162,8 +161,8 @@ testVSLAMFactor_LDADD = libgtsam.la
 
 
 # The header files will be installed in ~/include/gtsam
-headers = gtsam.h Value.h Testable.h Factor.h LinearFactorSet.h Point2Prior.h 
-headers += Simulated2DOdometry.h Simulated2DMeasurement.h smallExample.h 
+headers = gtsam.h Value.h Testable.h Factor.h LinearFactorSet.h BayesChain.h
+headers += Point2Prior.h Simulated2DOdometry.h Simulated2DMeasurement.h smallExample.h 
 headers += $(sources:.cpp=.h)
 # templates: 
 headers += FactorGraph.h FactorGraph-inl.h

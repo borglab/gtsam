@@ -42,7 +42,7 @@ TEST( ConstrainedLinearFactorGraph, elimination1 )
 	Matrix Ay1 = eye(2) * 10;
 	Vector b2 = Vector_(2, 1.0, 2.0);
 	ConstrainedConditionalGaussian expectedCCG1(b2, Ax1, "y", Ay1);
-	CHECK(expectedCCG1.equals(*(cbn->get("x"))));
+	CHECK(expectedCCG1.equals(*((*cbn)["x"])));
 
 	// verify remaining factor on y
 	// Gaussian factor on X becomes different Gaussian factor on Y
@@ -66,7 +66,7 @@ TEST( ConstrainedLinearFactorGraph, elimination1 )
 	R(1, 0) = 0.0;     R(1, 1) = 44.7214;
 	Vector br = Vector_(2, 8.9443, 4.4721);
 	ConditionalGaussian expected2(br, R);
-	CHECK(expected2.equals(*(cbn->get("y"))));
+	CHECK(expected2.equals(*((*cbn)["y"])));
 }
 
 /* ************************************************************************* */

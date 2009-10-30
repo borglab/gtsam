@@ -33,8 +33,6 @@ namespace gtsam {
 		typedef typename std::map<std::string, boost::shared_ptr<Conditional> > Nodes;
 		Nodes nodes_;
 
-		typedef typename Nodes::const_iterator const_iterator;
-
 	public:
 
 		/** print */
@@ -43,8 +41,35 @@ namespace gtsam {
 		/** check equality */
 		bool equals(const BayesChain& other, double tol = 1e-9) const;
 
+		/** size is the number of nodes */
+		inline size_t size() const {return nodes_.size();}
+
 		/** insert: use reverse topological sort (i.e. parents last) */
 		void insert(const std::string& key, boost::shared_ptr<Conditional> node);
+
+		/** delete */
+		void erase(const std::string& key);
+
+		inline boost::shared_ptr<Conditional> operator[](const std::string& key) const {
+			const_iterator cg = nodes_.find(key); // get node
+			assert( cg != nodes_.end() );
+			return cg->second;
+		}
+
+		/** return begin and end of the nodes. FD: breaks encapsulation? */
+		typedef typename Nodes::const_iterator const_iterator;
+		const_iterator const begin() const {return nodes_.begin();}
+		const_iterator const end()   const {return nodes_.end();}
+
+	private:
+		/** Serialization function */
+		friend class boost::serialization::access;
+		template<class Archive>
+		void serialize(Archive & ar, const unsigned int version)
+		{
+			ar & BOOST_SERIALIZATION_NVP(keys_);
+			ar & BOOST_SERIALIZATION_NVP(nodes_);
+		}
 	};
 
 } /// namespace gtsam

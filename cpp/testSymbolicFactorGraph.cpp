@@ -9,7 +9,6 @@
 #include "smallExample.h"
 #include "FactorGraph-inl.h"
 #include "SymbolicFactorGraph.h"
-#include "BayesChain-inl.h"
 #include "SymbolicConditional.h"
 #include "SymbolicBayesChain.h"
 
