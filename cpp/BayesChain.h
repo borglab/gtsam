@@ -42,6 +42,9 @@ namespace gtsam {
 
 		/** check equality */
 		bool equals(const BayesChain& other, double tol = 1e-9) const;
+
+		/** insert: use reverse topological sort (i.e. parents last) */
+		void insert(const std::string& key, boost::shared_ptr<Conditional> node);
 	};
 
 } /// namespace gtsam

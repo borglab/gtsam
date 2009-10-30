@@ -20,10 +20,10 @@ namespace gtsam {
 	/* ************************************************************************* */
 	template<class Conditional>
 	void BayesChain<Conditional>::print(const string& s) const {
-		cout << s << ":" << endl;
+		cout << s << ":\n";
 		BOOST_FOREACH(string key, keys_) {
 			const_iterator it = nodes_.find(key);
-			it->second->print("\nNode[" + key + "]");
+			it->second->print("Node[" + key + "]");
 		}
 	}
 
@@ -40,6 +40,14 @@ namespace gtsam {
 			return false;
 		}
 		return true;
+	}
+
+	/* ************************************************************************* */
+	template<class Conditional>
+	void BayesChain<Conditional>::insert
+		(const string& key, boost::shared_ptr<Conditional> node) {
+		keys_.push_front(key);
+		nodes_.insert(make_pair(key,node));
 	}
 
 /* ************************************************************************* */

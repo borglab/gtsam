@@ -8,8 +8,11 @@
 
 #pragma once
 
-#include "Testable.h"
+#include <list>
+#include <string>
+#include <boost/shared_ptr.hpp>
 #include <boost/foreach.hpp> // TODO: make cpp file
+#include "Testable.h"
 
 namespace gtsam {
 
@@ -23,6 +26,7 @@ namespace gtsam {
 
 	public:
 
+		/** convenience typename for a shared pointer to this class */
 		typedef boost::shared_ptr<SymbolicConditional> shared_ptr;
 
 		/**
@@ -54,7 +58,7 @@ namespace gtsam {
 
 		/** print */
 		void print(const std::string& s = "SymbolicConditional") const {
-			std::cout << s << std::endl;
+			std::cout << s;
 			BOOST_FOREACH(std::string parent, parents_) std::cout << " " << parent;
 			std::cout << std::endl;
 		}

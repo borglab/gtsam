@@ -27,6 +27,14 @@ namespace gtsam {
 	class SymbolicBayesChain: public BayesChain<SymbolicConditional> {
 	public:
 
+		/** convenience typename for a shared pointer to this class */
+		typedef boost::shared_ptr<SymbolicBayesChain> shared_ptr;
+
+		/**
+		 * Empty constructor
+		 */
+		SymbolicBayesChain() {}
+
 		/**
 		 *  Construct from a map of nodes
 		 */

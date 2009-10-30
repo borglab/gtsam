@@ -9,6 +9,9 @@
 #include "smallExample.h"
 #include "FactorGraph-inl.h"
 #include "SymbolicFactorGraph.h"
+#include "BayesChain-inl.h"
+#include "SymbolicConditional.h"
+#include "SymbolicBayesChain.h"
 
 using namespace std;
 using namespace gtsam;
@@ -100,7 +103,7 @@ TEST( LinearFactorGraph, removeAndCombineFactors )
 }
 
 /* ************************************************************************* */
-TEST( LinearFactorGraph, eliminateOne_x1 )
+TEST( LinearFactorGraph, eliminateOne )
 {
 	// create a test graph
 	LinearFactorGraph factorGraph = createLinearFactorGraph();
@@ -112,6 +115,33 @@ TEST( LinearFactorGraph, eliminateOne_x1 )
 
   // create expected symbolic Conditional
   SymbolicConditional expected("l1","x2");
+
+  CHECK(assert_equal(expected,*actual));
+}
+
+/* ************************************************************************* */
+TEST( LinearFactorGraph, eliminate )
+{
+  // create expected Chordal bayes Net
+  SymbolicConditional::shared_ptr c1(new SymbolicConditional());
+  SymbolicConditional::shared_ptr c2(new SymbolicConditional("x1"));
+  SymbolicConditional::shared_ptr c3(new SymbolicConditional("l1", "x1"));
+
+  SymbolicBayesChain expected;
+  expected.insert("x1", c1);
+  expected.insert("l1", c2);
+  expected.insert("x2", c3);
+
+  // create a test graph
+	LinearFactorGraph factorGraph = createLinearFactorGraph();
+	SymbolicFactorGraph fg(factorGraph);
+
+	// eliminate it
+	Ordering ordering;
+  ordering.push_back("x2");
+  ordering.push_back("l1");
+  ordering.push_back("x1");
+  SymbolicBayesChain::shared_ptr actual = fg.eliminate(ordering);
 
   CHECK(assert_equal(expected,*actual));
 }
