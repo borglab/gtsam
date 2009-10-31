@@ -16,7 +16,7 @@ using namespace gtsam;
 double timeKalmanSmoother(int T) {
 	LinearFactorGraph smoother = createSmoother(T);
 	Ordering ordering;
-	for (int t = 0; t <= T; t++) ordering.push_back(symbol('x',t));
+	for (int t = 1; t <= T; t++) ordering.push_back(symbol('x',t));
 	clock_t start = clock();
 	smoother.optimize(ordering);
 	clock_t end = clock ();

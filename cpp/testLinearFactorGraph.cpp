@@ -510,9 +510,9 @@ TEST( LinearFactorGraph, findAndRemoveFactors_twice )
 /* ************************************************************************* */
 TEST(timeLinearFactorGraph, createSmoother)
 {
-	LinearFactorGraph fg1 = createSmoother(1);
+	LinearFactorGraph fg1 = createSmoother(2);
 	LONGS_EQUAL(3,fg1.size());
-	LinearFactorGraph fg2 = createSmoother(2);
+	LinearFactorGraph fg2 = createSmoother(3);
 	LONGS_EQUAL(5,fg2.size());
 }
 
