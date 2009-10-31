@@ -1,5 +1,5 @@
 /**
- * @file   BayesChain-inl.h
+ * @file   BayesNet-inl.h
  * @brief  Bayes chain template definitions
  * @author Frank Dellaert
  */
@@ -8,7 +8,7 @@
 #include <boost/foreach.hpp>
 #include <boost/tuple/tuple.hpp>
 
-#include "BayesChain.h"
+#include "BayesNet.h"
 
 using namespace std;
 
@@ -19,7 +19,7 @@ namespace gtsam {
 
 	/* ************************************************************************* */
 	template<class Conditional>
-	void BayesChain<Conditional>::print(const string& s) const {
+	void BayesNet<Conditional>::print(const string& s) const {
 		cout << s << ":\n";
 		BOOST_FOREACH(string key, keys_) {
 			const_iterator it = nodes_.find(key);
@@ -29,7 +29,7 @@ namespace gtsam {
 
 	/* ************************************************************************* */
 	template<class Conditional>
-	bool BayesChain<Conditional>::equals(const BayesChain& cbn, double tol) const {
+	bool BayesNet<Conditional>::equals(const BayesNet& cbn, double tol) const {
 		if(size() != cbn.size()) return false;
 		if(keys_ != cbn.keys_) return false;
 		string key;
@@ -44,7 +44,7 @@ namespace gtsam {
 
 	/* ************************************************************************* */
 	template<class Conditional>
-	void BayesChain<Conditional>::insert
+	void BayesNet<Conditional>::insert
 		(const string& key, boost::shared_ptr<Conditional> node) {
 		keys_.push_front(key);
 		nodes_.insert(make_pair(key,node));
@@ -52,7 +52,7 @@ namespace gtsam {
 
 	/* ************************************************************************* */
 	template<class Conditional>
-	void BayesChain<Conditional>::erase(const string& key) {
+	void BayesNet<Conditional>::erase(const string& key) {
 		list<string>::iterator it;
 		for (it=keys_.begin(); it != keys_.end(); ++it){
 		  if( strcmp(key.c_str(), (*it).c_str()) == 0 )

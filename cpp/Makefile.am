@@ -86,20 +86,20 @@ timeLinearFactor: LDFLAGS += -L.libs -lgtsam
 
 # graphs 
 sources += SymbolicFactorGraph.cpp LinearFactorGraph.cpp 
-sources += SymbolicBayesChain.cpp ChordalBayesNet.cpp
+sources += SymbolicBayesNet.cpp GaussianBayesNet.cpp
 sources += ConstrainedNonlinearFactorGraph.cpp ConstrainedLinearFactorGraph.cpp 
 check_PROGRAMS += testFactorgraph testSymbolicFactorGraph
 check_PROGRAMS += testLinearFactorGraph testNonlinearFactorGraph 
-check_PROGRAMS += testChordalBayesNet testNonlinearOptimizer
-check_PROGRAMS += testSymbolicBayesChain testBayesTree  
+check_PROGRAMS += testGaussianBayesNet testNonlinearOptimizer
+check_PROGRAMS += testSymbolicBayesNet testBayesTree  
 check_PROGRAMS += testConstrainedNonlinearFactorGraph testConstrainedLinearFactorGraph
 testFactorgraph_SOURCES          = testFactorgraph.cpp
 testSymbolicFactorGraph_SOURCES  = $(example) testSymbolicFactorGraph.cpp
 testLinearFactorGraph_SOURCES    = $(example) testLinearFactorGraph.cpp
 testNonlinearFactorGraph_SOURCES = $(example) testNonlinearFactorGraph.cpp
 testNonlinearOptimizer_SOURCES   = $(example) testNonlinearOptimizer.cpp
-testSymbolicBayesChain_SOURCES   = $(example) testSymbolicBayesChain.cpp
-testChordalBayesNet_SOURCES      = $(example) testChordalBayesNet.cpp
+testSymbolicBayesNet_SOURCES   = $(example) testSymbolicBayesNet.cpp
+testGaussianBayesNet_SOURCES      = $(example) testGaussianBayesNet.cpp
 testBayesTree_SOURCES            = $(example) testBayesTree.cpp
 testConstrainedNonlinearFactorGraph_SOURCES = $(example) testConstrainedNonlinearFactorGraph.cpp 
 testConstrainedLinearFactorGraph_SOURCES    = $(example) testConstrainedLinearFactorGraph.cpp
@@ -109,8 +109,8 @@ testSymbolicFactorGraph_LDADD  = libgtsam.la
 testLinearFactorGraph_LDADD    = libgtsam.la
 testNonlinearFactorGraph_LDADD = libgtsam.la
 testNonlinearOptimizer_LDADD   = libgtsam.la
-testSymbolicBayesChain_LDADD   = libgtsam.la
-testChordalBayesNet_LDADD      = libgtsam.la
+testSymbolicBayesNet_LDADD   = libgtsam.la
+testGaussianBayesNet_LDADD      = libgtsam.la
 testBayesTree_LDADD            = libgtsam.la
 testConstrainedNonlinearFactorGraph_LDADD = libgtsam.la 
 testConstrainedLinearFactorGraph_LDADD    = libgtsam.la
@@ -168,7 +168,7 @@ headers += $(sources:.cpp=.h)
 headers += FactorGraph.h FactorGraph-inl.h
 headers += NonlinearFactorGraph.h NonlinearFactorGraph-inl.h
 headers += NonlinearOptimizer.h NonlinearOptimizer-inl.h 
-headers += BayesChain.h BayesChain-inl.h BayesTree.h BayesTree-inl.h
+headers += BayesNet.h BayesNet-inl.h BayesTree.h BayesTree-inl.h
 
 # create both dynamic and static libraries
 AM_CXXFLAGS = -I$(boost) -fPIC

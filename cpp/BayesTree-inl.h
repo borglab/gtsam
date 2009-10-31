@@ -53,7 +53,7 @@ namespace gtsam {
 	/* ************************************************************************* */
 	// TODO: traversal is O(n*log(n)) but could be O(n) with better bayesChain
 	template<class Conditional>
-	BayesTree<Conditional>::BayesTree(BayesChain<Conditional>& bayesChain, bool verbose) {
+	BayesTree<Conditional>::BayesTree(BayesNet<Conditional>& bayesChain, bool verbose) {
 		list<string> reverseOrdering = bayesChain.keys();
 		BOOST_FOREACH(string key, reverseOrdering)
 			insert(key,bayesChain[key],verbose);

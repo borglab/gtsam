@@ -17,7 +17,7 @@
 #include "LinearFactor.h"
 #include "VectorConfig.h"
 #include "FactorGraph.h"
-#include "ChordalBayesNet.h"
+#include "GaussianBayesNet.h"
 
 namespace gtsam {
 
@@ -38,7 +38,7 @@ namespace gtsam {
     /**
      * Constructor that receives a Chordal Bayes Net and returns a LinearFactorGraph
      */
-    LinearFactorGraph(const ChordalBayesNet& CBN);
+    LinearFactorGraph(const GaussianBayesNet& CBN);
 
 		/** unnormalized error */
 		double error(const VectorConfig& c) const {
@@ -59,7 +59,7 @@ namespace gtsam {
      * given a chordal bayes net, sets the linear factor graph identical to that CBN
      * FD: imperative !!
      */
-    void setCBN(const ChordalBayesNet& CBN);
+    void setCBN(const GaussianBayesNet& CBN);
 
     /**
      * find the separator, i.e. all the nodes that have at least one
@@ -71,13 +71,13 @@ namespace gtsam {
      * eliminate factor graph in place(!) in the given order, yielding
      * a chordal Bayes net
      */
-    boost::shared_ptr<ChordalBayesNet> eliminate(const Ordering& ordering);
+    boost::shared_ptr<GaussianBayesNet> eliminate(const Ordering& ordering);
 		
     /**
      * Same as eliminate but allows for passing an incomplete ordering
      * that does not completely eliminate the graph
      */
-    boost::shared_ptr<ChordalBayesNet> eliminate_partially(const Ordering& ordering);
+    boost::shared_ptr<GaussianBayesNet> eliminate_partially(const Ordering& ordering);
 		
     /**
      * optimize a linear factor graph

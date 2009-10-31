@@ -1,6 +1,6 @@
 /**
- * @file    BayesChain
- * @brief   Bayes Chain, the result of eliminating a factor graph
+ * @file    BayesNet
+ * @brief   Bayes network
  * @author  Frank Dellaert
  */
 
@@ -17,13 +17,13 @@
 namespace gtsam {
 
 	/**
-	 * Bayes Chain, the result of eliminating a factor graph
-	 * This is the base class for SymbolicBayesChain, DiscreteBayesChain, and GaussianBayesChain
-	 * Corresponding to what is used for the "Conditional" template argument:
-	 * a ConditionalProbabilityTable, a ConditionalGaussian, or a SymbolicConditional.
+	 * Bayes network
+	 * This is the base class for SymbolicBayesNet, DiscreteBayesNet, and GaussianBayesNet
+	 * corresponding to what is used for the "Conditional" template argument:
+	 * a SymbolicConditional, ConditionalProbabilityTable, or a ConditionalGaussian
 	 */
 	template<class Conditional>
-	class BayesChain: public Testable<BayesChain<Conditional> > {
+	class BayesNet: public Testable<BayesNet<Conditional> > {
 	protected:
 
 		/** nodes keys stored in topological sort order, i.e. from parents to children */
@@ -39,7 +39,7 @@ namespace gtsam {
 		void print(const std::string& s = "") const;
 
 		/** check equality */
-		bool equals(const BayesChain& other, double tol = 1e-9) const;
+		bool equals(const BayesNet& other, double tol = 1e-9) const;
 
 		/** insert: use reverse topological sort (i.e. parents last) */
 		void insert(const std::string& key, boost::shared_ptr<Conditional> node);

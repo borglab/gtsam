@@ -1,6 +1,6 @@
 /**
- * @file    testSymbolicBayesChain.cpp
- * @brief   Unit tests for a symbolic Bayes chain
+ * @file    testSymbolicFactorGraph.cpp
+ * @brief   Unit tests for a symbolic Factor Graph
  * @author  Frank Dellaert
  */
 
@@ -11,7 +11,7 @@ using namespace boost::assign;
 
 #include "smallExample.h"
 #include "SymbolicFactorGraph.h"
-#include "SymbolicBayesChain.h"
+#include "SymbolicBayesNet.h"
 
 using namespace std;
 using namespace gtsam;
@@ -127,7 +127,7 @@ TEST( LinearFactorGraph, eliminate )
   SymbolicConditional::shared_ptr l1(new SymbolicConditional("x1"));
   SymbolicConditional::shared_ptr x1(new SymbolicConditional());
 
-  SymbolicBayesChain expected;
+  SymbolicBayesNet expected;
   expected.insert("x2", x2);
   expected.insert("l1", l1);
   expected.insert("x1", x1);
@@ -139,7 +139,7 @@ TEST( LinearFactorGraph, eliminate )
 	// eliminate it
 	Ordering ordering;
 	ordering += "x2","l1","x1";
-  SymbolicBayesChain::shared_ptr actual = fg.eliminate(ordering);
+  SymbolicBayesNet::shared_ptr actual = fg.eliminate(ordering);
 
   CHECK(assert_equal(expected,*actual));
 }

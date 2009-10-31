@@ -272,7 +272,7 @@ TEST( LinearFactorGraph, eliminateAll )
   Vector d3(2); d3(0) = 2.23607; d3(1) = -1.56525;
   ConditionalGaussian::shared_ptr cg3(new ConditionalGaussian(d3, R3, "l1", A21, "x1", A22));
   
-  ChordalBayesNet expected;
+  GaussianBayesNet expected;
   expected.insert("x2", cg3);
   expected.insert("l1", cg2);
   expected.insert("x1", cg1);
@@ -281,7 +281,7 @@ TEST( LinearFactorGraph, eliminateAll )
   LinearFactorGraph fg1 = createLinearFactorGraph();
   Ordering ord1;
   ord1 += "x2","l1","x1";
-  ChordalBayesNet::shared_ptr actual = fg1.eliminate(ord1);
+  GaussianBayesNet::shared_ptr actual = fg1.eliminate(ord1);
   CHECK(assert_equal(expected,*actual,tol));
 }
 
@@ -311,7 +311,7 @@ TEST( LinearFactorGraph, copying )
   // now eliminate the copy
   Ordering ord1;
   ord1 += "x2","l1","x1";
-  ChordalBayesNet::shared_ptr actual1 = copy.eliminate(ord1);
+  GaussianBayesNet::shared_ptr actual1 = copy.eliminate(ord1);
 
   // Create the same graph, but not by copying
   LinearFactorGraph expected = createLinearFactorGraph();
@@ -350,7 +350,7 @@ TEST( LinearFactorGraph, matrix )
 }
 
 /* ************************************************************************* */
-TEST( LinearFactorGraph, CONSTRUCTOR_ChordalBayesNet )
+TEST( LinearFactorGraph, CONSTRUCTOR_GaussianBayesNet )
 {
 
   LinearFactorGraph fg = createLinearFactorGraph();
@@ -358,9 +358,9 @@ TEST( LinearFactorGraph, CONSTRUCTOR_ChordalBayesNet )
   // render with a given ordering
   Ordering ord;
   ord += "x2","l1","x1";
-  ChordalBayesNet::shared_ptr CBN = fg.eliminate(ord);
+  GaussianBayesNet::shared_ptr CBN = fg.eliminate(ord);
   LinearFactorGraph fg2(*CBN);
-  ChordalBayesNet::shared_ptr CBN2 = fg2.eliminate(ord);
+  GaussianBayesNet::shared_ptr CBN2 = fg2.eliminate(ord);
   
   CHECK(CBN->equals(*CBN2));
 }

@@ -1,5 +1,5 @@
 /**
- * @file    SymbolicBayesChain.h
+ * @file    SymbolicBayesNet.h
  * @brief   Symbolic Chordal Bayes Net, the result of eliminating a factor graph
  * @author  Frank Dellaert
  */
@@ -13,7 +13,7 @@
 #include <boost/serialization/list.hpp>
 
 #include "Testable.h"
-#include "BayesChain.h"
+#include "BayesNet.h"
 #include "FactorGraph.h"
 #include "SymbolicConditional.h"
 
@@ -24,19 +24,19 @@ namespace gtsam {
 	/**
 	 *  Symbolic Bayes Chain, the (symbolic) result of eliminating a factor graph
 	 */
-	class SymbolicBayesChain: public BayesChain<SymbolicConditional> {
+	class SymbolicBayesNet: public BayesNet<SymbolicConditional> {
 	public:
 
 		/** convenience typename for a shared pointer to this class */
-		typedef boost::shared_ptr<SymbolicBayesChain> shared_ptr;
+		typedef boost::shared_ptr<SymbolicBayesNet> shared_ptr;
 
 		/**
 		 * Empty constructor
 		 */
-		SymbolicBayesChain() {}
+		SymbolicBayesNet() {}
 
 		/** Destructor */
-		virtual ~SymbolicBayesChain() {
+		virtual ~SymbolicBayesNet() {
 		}
 	};
 

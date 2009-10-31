@@ -69,8 +69,8 @@ bool ConstrainedLinearFactorGraph::equals(const LinearFactorGraph& fg, double to
 }
 
 /* ************************************************************************* */
-ChordalBayesNet::shared_ptr ConstrainedLinearFactorGraph::eliminate(const Ordering& ordering) {
-	ChordalBayesNet::shared_ptr cbn (new ChordalBayesNet());
+GaussianBayesNet::shared_ptr ConstrainedLinearFactorGraph::eliminate(const Ordering& ordering) {
+	GaussianBayesNet::shared_ptr cbn (new GaussianBayesNet());
 
 	BOOST_FOREACH(string key, ordering) {
 		// constraints take higher priority in elimination, so check if
@@ -219,7 +219,7 @@ void ConstrainedLinearFactorGraph::update_constraints(const std::string& key,
 
 /* ************************************************************************* */
 VectorConfig ConstrainedLinearFactorGraph::optimize(const Ordering& ordering) {
-	ChordalBayesNet::shared_ptr cbn = eliminate(ordering);
+	GaussianBayesNet::shared_ptr cbn = eliminate(ordering);
 	boost::shared_ptr<VectorConfig> newConfig = cbn->optimize();
 	return *newConfig;
 }

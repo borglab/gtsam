@@ -1,6 +1,6 @@
 /**
- * @file    testChordalBayesNet.cpp
- * @brief   Unit tests for ChordalBayesNet
+ * @file    testGaussianBayesNet.cpp
+ * @brief   Unit tests for GaussianBayesNet
  * @author  Frank Dellaert
  */
 
@@ -17,13 +17,13 @@
 #include <boost/archive/text_iarchive.hpp>
 #endif //HAVE_BOOST_SERIALIZATION
 
-#include "ChordalBayesNet.h"
+#include "GaussianBayesNet.h"
 #include "smallExample.h"
 
 using namespace gtsam;
 
 /* ************************************************************************* */
-TEST( ChordalBayesNet, constructor )
+TEST( GaussianBayesNet, constructor )
 {
   // small Bayes Net x <- y
   // x y d
@@ -38,16 +38,16 @@ TEST( ChordalBayesNet, constructor )
   ConditionalGaussian x(d1,R11,"y",S12), y(d2,R22);
 
   // check small example which uses constructor
-  ChordalBayesNet cbn = createSmallChordalBayesNet();
+  GaussianBayesNet cbn = createSmallGaussianBayesNet();
   CHECK( x.equals(*cbn["x"]) );
   CHECK( y.equals(*cbn["y"]) );
 }
 
 /* ************************************************************************* */
-TEST( ChordalBayesNet, matrix )
+TEST( GaussianBayesNet, matrix )
 {
   // Create a test graph
-  ChordalBayesNet cbn = createSmallChordalBayesNet();
+  GaussianBayesNet cbn = createSmallGaussianBayesNet();
 
   Matrix R; Vector d;
   boost::tie(R,d) = cbn.matrix(); // find matrix and RHS
@@ -63,10 +63,10 @@ TEST( ChordalBayesNet, matrix )
 }
 
 /* ************************************************************************* */
-TEST( ChordalBayesNet, optimize )
+TEST( GaussianBayesNet, optimize )
 {
   // optimize small Bayes Net
-  ChordalBayesNet cbn = createSmallChordalBayesNet();
+  GaussianBayesNet cbn = createSmallGaussianBayesNet();
   boost::shared_ptr<VectorConfig> actual = cbn.optimize();
 
   VectorConfig expected;
@@ -80,10 +80,10 @@ TEST( ChordalBayesNet, optimize )
 
 /* ************************************************************************* */
 #ifdef HAVE_BOOST_SERIALIZATION
-TEST( ChordalBayesNet, serialize )
+TEST( GaussianBayesNet, serialize )
 {
 //     //create a starting CBN
-//     ChordalBayesNet cbn = createSmallChordalBayesNet();
+//     GaussianBayesNet cbn = createSmallGaussianBayesNet();
 //     
 //     //serialize the CBN
 //     std::ostringstream in_archive_stream;
@@ -117,7 +117,7 @@ TEST( ChordalBayesNet, serialize )
 //     //deserialize the CBN
 //     std::istringstream out_archive_stream(clean);
 //     boost::archive::text_iarchive out_archive(out_archive_stream);
-//     ChordalBayesNet output;
+//     GaussianBayesNet output;
 //     out_archive >> output;
 //     CHECK(cbn.equals(output));
 }

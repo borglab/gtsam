@@ -9,7 +9,7 @@
 #define CONSTRAINEDLINEARFACTORGRAPH_H_
 
 #include "LinearFactorGraph.h"
-#include "ChordalBayesNet.h"
+#include "GaussianBayesNet.h"
 #include "LinearConstraint.h"
 
 namespace gtsam {
@@ -80,7 +80,7 @@ public:
      * gaussian, with a different solving procedure.
      * @param ordering is the order to eliminate the variables
      */
-    ChordalBayesNet::shared_ptr eliminate(const Ordering& ordering);
+    GaussianBayesNet::shared_ptr eliminate(const Ordering& ordering);
 
     /**
      * Picks one of the contraints in a set of constraints to eliminate

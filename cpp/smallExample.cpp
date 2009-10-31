@@ -191,7 +191,7 @@ LinearFactorGraph createLinearFactorGraph()
  * 1 1 9
  *   1 5
  */
-ChordalBayesNet createSmallChordalBayesNet()
+GaussianBayesNet createSmallGaussianBayesNet()
 {
   Matrix R11 = Matrix_(1,1,1.0), S12 = Matrix_(1,1,1.0);
   Matrix                          R22 = Matrix_(1,1,1.0);
@@ -202,7 +202,7 @@ ChordalBayesNet createSmallChordalBayesNet()
   ConditionalGaussian::shared_ptr
     x(new ConditionalGaussian(d1,R11,"y",S12)),
     y(new ConditionalGaussian(d2,R22));
-  ChordalBayesNet cbn;
+  GaussianBayesNet cbn;
   cbn.insert("x",x);
   cbn.insert("y",y);
 
@@ -428,9 +428,9 @@ ConstrainedLinearFactorGraph createMultiConstraintGraph() {
 //}
 
 /* ************************************************************************* */
-//ConstrainedChordalBayesNet createConstrainedChordalBayesNet()
+//ConstrainedGaussianBayesNet createConstrainedGaussianBayesNet()
 //{
-//	ConstrainedChordalBayesNet cbn;
+//	ConstrainedGaussianBayesNet cbn;
 //	VectorConfig c = createConstrainedConfig();
 //
 //	// add regular conditional gaussian - no parent

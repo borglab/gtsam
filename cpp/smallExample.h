@@ -56,7 +56,7 @@ namespace gtsam {
 	/**
 	 * create small Chordal Bayes Net x <- y
 	 */
-	ChordalBayesNet createSmallChordalBayesNet();
+	GaussianBayesNet createSmallGaussianBayesNet();
 
 	/**
 	 * Create really non-linear factor graph (cos/sin)

@@ -14,7 +14,7 @@
 #include <boost/serialization/map.hpp>
 #include <boost/serialization/list.hpp>
 #include "Testable.h"
-#include "BayesChain.h"
+#include "BayesNet.h"
 
 namespace gtsam {
 
@@ -88,8 +88,8 @@ namespace gtsam {
 		/** Create an empty Bayes Tree */
 		BayesTree();
 
-		/** Create a Bayes Tree from a SymbolicBayesChain */
-		BayesTree(BayesChain<Conditional>& bayesChain, bool verbose=false);
+		/** Create a Bayes Tree from a SymbolicBayesNet */
+		BayesTree(BayesNet<Conditional>& bayesChain, bool verbose=false);
 
 		/** Destructor */
 		virtual ~BayesTree() {}

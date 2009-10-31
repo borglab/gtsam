@@ -1,5 +1,5 @@
 /**
- * @file   SymbolicBayesChain.cpp
+ * @file   SymbolicBayesNet.cpp
  * @brief  Chordal Bayes Net, the result of eliminating a factor graph
  * @author Frank Dellaert
  */
@@ -10,15 +10,15 @@
 // trick from some reading group
 #define FOREACH_PAIR( KEY, VAL, COL) BOOST_FOREACH (boost::tie(KEY,VAL),COL)
 
-#include "SymbolicBayesChain.h"
-#include "BayesChain-inl.h"
+#include "SymbolicBayesNet.h"
+#include "BayesNet-inl.h"
 
 using namespace std;
 
 namespace gtsam {
 
 	// Explicitly instantiate so we don't have to include everywhere
-	template class BayesChain<SymbolicConditional>;
+	template class BayesNet<SymbolicConditional>;
 
 /* ************************************************************************* */
 

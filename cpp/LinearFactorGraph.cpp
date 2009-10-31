@@ -12,7 +12,7 @@
 
 #include <colamd/colamd.h>
 
-#include "ChordalBayesNet.h"
+#include "GaussianBayesNet.h"
 #include "FactorGraph-inl.h"
 #include "LinearFactorGraph.h"
 
@@ -23,16 +23,16 @@ using namespace gtsam;
 template class FactorGraph<LinearFactor>;
 
 /* ************************************************************************* */
-LinearFactorGraph::LinearFactorGraph(const ChordalBayesNet& CBN)
+LinearFactorGraph::LinearFactorGraph(const GaussianBayesNet& CBN)
 {
 	setCBN(CBN);
 }
 
 /* ************************************************************************* */
-void LinearFactorGraph::setCBN(const ChordalBayesNet& CBN)
+void LinearFactorGraph::setCBN(const GaussianBayesNet& CBN)
 {
 	clear();
-	ChordalBayesNet::const_iterator it = CBN.begin();
+	GaussianBayesNet::const_iterator it = CBN.begin();
 	for(; it != CBN.end(); it++) {
 		LinearFactor::shared_ptr lf(new LinearFactor(it->first, it->second));
 		push_back(lf);
@@ -55,10 +55,10 @@ set<string> LinearFactorGraph::find_separator(const string& key) const
 // eliminate factor graph using the given (not necessarily complete)
 // ordering, yielding a chordal Bayes net and partially eliminated FG
 /* ************************************************************************* */
-ChordalBayesNet::shared_ptr
+GaussianBayesNet::shared_ptr
 LinearFactorGraph::eliminate_partially(const Ordering& ordering)
 {
-	ChordalBayesNet::shared_ptr chordalBayesNet (new ChordalBayesNet()); // empty
+	GaussianBayesNet::shared_ptr chordalBayesNet (new GaussianBayesNet()); // empty
 
 	BOOST_FOREACH(string key, ordering) {
 		ConditionalGaussian::shared_ptr cg = eliminateOne<ConditionalGaussian>(key);
@@ -71,10 +71,10 @@ LinearFactorGraph::eliminate_partially(const Ordering& ordering)
 /* ************************************************************************* */
 /** eliminate factor graph in the given order, yielding a chordal Bayes net  */ 
 /* ************************************************************************* */
-ChordalBayesNet::shared_ptr
+GaussianBayesNet::shared_ptr
 LinearFactorGraph::eliminate(const Ordering& ordering)
 {
-	ChordalBayesNet::shared_ptr chordalBayesNet = eliminate_partially(ordering);
+	GaussianBayesNet::shared_ptr chordalBayesNet = eliminate_partially(ordering);
 	return chordalBayesNet;
 }
 
@@ -84,7 +84,7 @@ LinearFactorGraph::eliminate(const Ordering& ordering)
 VectorConfig LinearFactorGraph::optimize(const Ordering& ordering)
 {
 	// eliminate all nodes in the given ordering -> chordal Bayes net
-	ChordalBayesNet::shared_ptr chordalBayesNet = eliminate(ordering);
+	GaussianBayesNet::shared_ptr chordalBayesNet = eliminate(ordering);
 
 	// calculate new configuration (using backsubstitution)
 	boost::shared_ptr<VectorConfig> newConfig = chordalBayesNet->optimize();

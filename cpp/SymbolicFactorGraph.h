@@ -15,7 +15,7 @@
 
 namespace gtsam {
 
-	class SymbolicBayesChain;
+	class SymbolicBayesNet;
 
 	/** Symbolic Factor Graph */
 	class SymbolicFactorGraph: public FactorGraph<SymbolicFactor> {
@@ -44,7 +44,7 @@ namespace gtsam {
 		 * eliminate factor graph in place(!) in the given order, yielding
 		 * a chordal Bayes net
 		 */
-		boost::shared_ptr<SymbolicBayesChain> eliminate(const Ordering& ordering);
+		boost::shared_ptr<SymbolicBayesNet> eliminate(const Ordering& ordering);
 
 	};
 

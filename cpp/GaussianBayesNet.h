@@ -1,7 +1,7 @@
 /**
- * @file    ChordalBayesNet.h
+ * @file    GaussianBayesNet.h
  * @brief   Chordal Bayes Net, the result of eliminating a factor graph
- * @brief   ChordalBayesNet
+ * @brief   GaussianBayesNet
  * @author  Frank Dellaert
  */
 
@@ -12,25 +12,25 @@
 #include <list>
 
 #include "ConditionalGaussian.h"
-#include "BayesChain.h"
+#include "BayesNet.h"
 
 namespace gtsam {
 
 /** Chordal Bayes Net, the result of eliminating a factor graph */
-class ChordalBayesNet : public BayesChain<ConditionalGaussian>
+class GaussianBayesNet : public BayesNet<ConditionalGaussian>
 {
 public:
-	typedef boost::shared_ptr<ChordalBayesNet> shared_ptr;
+	typedef boost::shared_ptr<GaussianBayesNet> shared_ptr;
 
 	/** Construct an empty net */
-	ChordalBayesNet() {}
+	GaussianBayesNet() {}
 
 	/** Copy Constructor */
-//	ChordalBayesNet(const ChordalBayesNet& cbn_in) :
+//	GaussianBayesNet(const GaussianBayesNet& cbn_in) :
 //		keys_(cbn_in.keys_), nodes_(cbn_in.nodes_) {}
 
 	/** Destructor */
-	virtual ~ChordalBayesNet() {}
+	virtual ~GaussianBayesNet() {}
 
 	/**
 	 * optimize, i.e. return x = inv(R)*d

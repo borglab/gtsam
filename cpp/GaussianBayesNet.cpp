@@ -1,5 +1,5 @@
 /**
- * @file   ChordalBayesNet.cpp
+ * @file   GaussianBayesNet.cpp
  * @brief  Chordal Bayes Net, the result of eliminating a factor graph
  * @author Frank Dellaert
  */
@@ -8,21 +8,21 @@
 #include <boost/foreach.hpp>
 #include <boost/tuple/tuple.hpp>
 
-#include "ChordalBayesNet.h"
+#include "GaussianBayesNet.h"
 #include "VectorConfig.h"
 
 using namespace std;
 using namespace gtsam;
 
 // Explicitly instantiate so we don't have to include everywhere
-#include "BayesChain-inl.h"
-template class BayesChain<ConditionalGaussian>;
+#include "BayesNet-inl.h"
+template class BayesNet<ConditionalGaussian>;
 
 // trick from some reading group
 #define FOREACH_PAIR( KEY, VAL, COL) BOOST_FOREACH (boost::tie(KEY,VAL),COL) 
 
 /* ************************************************************************* */
-boost::shared_ptr<VectorConfig> ChordalBayesNet::optimize() const
+boost::shared_ptr<VectorConfig> GaussianBayesNet::optimize() const
 {
   boost::shared_ptr<VectorConfig> result(new VectorConfig);
 	
@@ -37,7 +37,7 @@ boost::shared_ptr<VectorConfig> ChordalBayesNet::optimize() const
 }
 
 /* ************************************************************************* */  
-pair<Matrix,Vector> ChordalBayesNet::matrix() const {
+pair<Matrix,Vector> GaussianBayesNet::matrix() const {
 
   // add the dimensions of all variables to get matrix dimension
   // and at the same time create a mapping from keys to indices

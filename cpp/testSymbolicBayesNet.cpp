@@ -1,5 +1,5 @@
 /**
- * @file    testSymbolicBayesChain.cpp
+ * @file    testSymbolicBayesNet.cpp
  * @brief   Unit tests for a symbolic Bayes chain
  * @author  Frank Dellaert
  */
@@ -11,21 +11,21 @@ using namespace boost::assign;
 #include <CppUnitLite/TestHarness.h>
 
 #include "smallExample.h"
-#include "SymbolicBayesChain.h"
+#include "SymbolicBayesNet.h"
 #include "SymbolicFactorGraph.h"
 
 using namespace std;
 using namespace gtsam;
 
 /* ************************************************************************* */
-TEST( SymbolicBayesChain, constructor )
+TEST( SymbolicBayesNet, constructor )
 {
 	// Create manually
 	SymbolicConditional::shared_ptr
 		x2(new SymbolicConditional("l1", "x1")),
 		l1(new SymbolicConditional("x1")),
 		x1(new SymbolicConditional());
-	SymbolicBayesChain expected;
+	SymbolicBayesNet expected;
 	expected.insert("x2",x2);
 	expected.insert("l1",l1);
 	expected.insert("x1",x1);
@@ -37,7 +37,7 @@ TEST( SymbolicBayesChain, constructor )
 	// eliminate it
 	Ordering ordering;
 	ordering += "x2","l1","x1";
-  SymbolicBayesChain::shared_ptr actual = fg.eliminate(ordering);
+  SymbolicBayesNet::shared_ptr actual = fg.eliminate(ordering);
 
   CHECK(assert_equal(expected, *actual));
 }

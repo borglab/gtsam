@@ -9,7 +9,7 @@
 #include "Ordering.h"
 #include "FactorGraph-inl.h"
 #include "SymbolicFactorGraph.h"
-#include "SymbolicBayesChain.h"
+#include "SymbolicBayesNet.h"
 
 using namespace std;
 
@@ -19,10 +19,10 @@ namespace gtsam {
 	template class FactorGraph<SymbolicFactor>;
 
 	/* ************************************************************************* */
-	SymbolicBayesChain::shared_ptr
+	SymbolicBayesNet::shared_ptr
 	SymbolicFactorGraph::eliminate(const Ordering& ordering)
 	{
-		SymbolicBayesChain::shared_ptr bayesChain (new SymbolicBayesChain());
+		SymbolicBayesNet::shared_ptr bayesChain (new SymbolicBayesNet());
 
 		BOOST_FOREACH(string key, ordering) {
 			SymbolicConditional::shared_ptr conditional = eliminateOne<SymbolicConditional>(key);

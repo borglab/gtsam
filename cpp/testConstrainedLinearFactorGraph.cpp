@@ -25,7 +25,7 @@ TEST( ConstrainedLinearFactorGraph, elimination1 )
 	// eliminate x
 	Ordering ord;
 	ord.push_back("x");
-	ChordalBayesNet::shared_ptr cbn = fg.eliminate(ord);
+	GaussianBayesNet::shared_ptr cbn = fg.eliminate(ord);
 
 	// verify result of elimination
 	// CBN of size 1, as we only eliminated X now
@@ -399,10 +399,10 @@ TEST( ConstrainedLinearFactorGraph, optimize_multi_constraint )
 //	ord1.push_back("x0");
 //	ord1.push_back("x1");
 //
-//	ConstrainedChordalBayesNet::shared_ptr actual = fg.eliminate(ord1);
+//	ConstrainedGaussianBayesNet::shared_ptr actual = fg.eliminate(ord1);
 //
 //	// create an expected bayes net
-//	ConstrainedChordalBayesNet::shared_ptr expected(new ConstrainedChordalBayesNet);
+//	ConstrainedGaussianBayesNet::shared_ptr expected(new ConstrainedGaussianBayesNet);
 //
 //	ConstrainedConditionalGaussian::shared_ptr d(new ConstrainedConditionalGaussian);//(c["x0"], "x0"));
 //	expected->insert_df("x0", d);

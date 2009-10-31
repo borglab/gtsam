@@ -10,7 +10,7 @@ using namespace boost::assign;
 
 #include <CppUnitLite/TestHarness.h>
 
-#include "SymbolicBayesChain.h"
+#include "SymbolicBayesNet.h"
 #include "BayesTree-inl.h"
 #include "SmallExample.h"
 
@@ -56,7 +56,7 @@ TEST( BayesTree, constructor )
 	CHECK(assert_equal(expected_root,actual_root));
 
 	// Create from symbolic Bayes chain in which we want to discover cliques
-	SymbolicBayesChain ASIA;
+	SymbolicBayesNet ASIA;
 	ASIA.insert("X", X);
 	ASIA.insert("T", T);
 	ASIA.insert("S", S);
@@ -87,7 +87,7 @@ TEST( BayesTree, smoother )
 		ordering.push_back(symbol('x', t));
 
 	// eliminate using the "natural" ordering
-	ChordalBayesNet::shared_ptr chordalBayesNet = smoother.eliminate(ordering);
+	GaussianBayesNet::shared_ptr chordalBayesNet = smoother.eliminate(ordering);
 
 	// Create the Bayes tree
 	BayesTree<ConditionalGaussian> bayesTree(*chordalBayesNet,false);
@@ -109,7 +109,7 @@ TEST( BayesTree, balanced_smoother )
 	ordering += "x1","x3","x5","x7","x2","x6","x4";
 
 	// eliminate using a "nested dissection" ordering
-	ChordalBayesNet::shared_ptr chordalBayesNet = smoother.eliminate(ordering);
+	GaussianBayesNet::shared_ptr chordalBayesNet = smoother.eliminate(ordering);
 
 	// Create the Bayes tree
 	BayesTree<ConditionalGaussian> bayesTree(*chordalBayesNet,false);

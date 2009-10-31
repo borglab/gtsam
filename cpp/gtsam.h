@@ -66,13 +66,13 @@ class Ordering {
   void print() const;
 };
 
-class ChordalBayesNet {
-  ChordalBayesNet();
+class GaussianBayesNet {
+  GaussianBayesNet();
   void insert(string name, ConditionalGaussian* node);
   ConditionalGaussian* get(string name);
   VectorConfig* optimize();
   void print() const;
-  bool equals(const ChordalBayesNet& cbn) const;
+  bool equals(const GaussianBayesNet& cbn) const;
   pair<Matrix,Vector> matrix() const;
 };
 
@@ -89,7 +89,7 @@ class LinearFactorGraph {
   VectorConfig optimize(const Ordering& ordering);
   LinearFactor* combine_factors(string key);
   ConditionalGaussian* eliminate_one(string key);
-  ChordalBayesNet* eliminate(const Ordering& ordering);
+  GaussianBayesNet* eliminate(const Ordering& ordering);
   pair<Matrix,Vector> matrix(const Ordering& ordering) const;
 };
 
