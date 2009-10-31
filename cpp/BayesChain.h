@@ -41,14 +41,17 @@ namespace gtsam {
 		/** check equality */
 		bool equals(const BayesChain& other, double tol = 1e-9) const;
 
-		/** size is the number of nodes */
-		inline size_t size() const {return nodes_.size();}
-
 		/** insert: use reverse topological sort (i.e. parents last) */
 		void insert(const std::string& key, boost::shared_ptr<Conditional> node);
 
 		/** delete */
 		void erase(const std::string& key);
+
+		/** size is the number of nodes */
+		inline size_t size() const {return nodes_.size();}
+
+		/** return keys in topological sort order (parents first), i.e., reverse elimination order */
+		inline std::list<std::string> keys() const { return keys_;}
 
 		inline boost::shared_ptr<Conditional> operator[](const std::string& key) const {
 			const_iterator cg = nodes_.find(key); // get node

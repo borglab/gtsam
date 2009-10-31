@@ -13,7 +13,6 @@
 #include <vector>
 #include <boost/serialization/map.hpp>
 #include <boost/serialization/list.hpp>
-#include <boost/foreach.hpp> // TODO: make cpp file
 #include "Testable.h"
 #include "BayesChain.h"
 
@@ -30,35 +29,16 @@ namespace gtsam {
 	public:
 
 		/** constructor */
-		Front(std::string key, cond_ptr conditional) {
-			add(key, conditional);
-			separator_ = conditional->parents();
-		}
+		Front(std::string key, cond_ptr conditional);
 
 		/** print */
-		void print(const std::string& s = "") const {
-			std::cout << s;
-			BOOST_FOREACH(std::string key, keys_)
-				std::cout << " " << key;
-			if (!separator_.empty()) {
-				std::cout << " :";
-				BOOST_FOREACH(std::string key, separator_)
-					std::cout << " " << key;
-			}
-			std::cout << std::endl;
-		}
+		void print(const std::string& s = "") const;
 
-		/** check equality. TODO: only keys */
-		bool equals(const Front<Conditional>& other, double tol = 1e-9) const {
-			return (keys_ == other.keys_) &&
-			equal(conditionals_.begin(),conditionals_.end(),other.conditionals_.begin(),equals_star<Conditional>);
-		}
+		/** check equality */
+		bool equals(const Front<Conditional>& other, double tol = 1e-9) const;
 
 		/** add a frontal node */
-		void add(std::string key, cond_ptr conditional) {
-			keys_.push_front(key);
-			conditionals_.push_front(conditional);
-		}
+		void add(std::string key, cond_ptr conditional);
 
 		/** return size of the clique */
 		inline size_t size() const {return keys_.size() + separator_.size();}
@@ -109,7 +89,7 @@ namespace gtsam {
 		BayesTree();
 
 		/** Create a Bayes Tree from a SymbolicBayesChain */
-		BayesTree(BayesChain<Conditional>& bayesChain);
+		BayesTree(BayesChain<Conditional>& bayesChain, bool verbose=false);
 
 		/** Destructor */
 		virtual ~BayesTree() {}
@@ -121,7 +101,7 @@ namespace gtsam {
 		bool equals(const BayesTree<Conditional>& other, double tol = 1e-9) const;
 
 		/** insert a new conditional */
-		void insert(std::string key, conditional_ptr conditional);
+		void insert(std::string key, conditional_ptr conditional, bool verbose=false);
 
 		/** number of cliques */
 		inline size_t size() const { return nodes_.size();}
