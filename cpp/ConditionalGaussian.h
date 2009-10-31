@@ -101,7 +101,7 @@ namespace gtsam {
     size_t dim() const {return R_.size2();}
 
     /** return all parents */
-    std::list<std::string> parents();
+    std::list<std::string> parents() const;
 
     /** return stuff contained in ConditionalGaussian */
     const Vector& get_d() const {return d_;}

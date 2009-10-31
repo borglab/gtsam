@@ -87,10 +87,11 @@ bool ConditionalGaussian::equals(const ConditionalGaussian &cg, double tol) cons
 }
 
 /* ************************************************************************* */
-list<string> ConditionalGaussian::parents() {
+list<string> ConditionalGaussian::parents() const {
 	list<string> result;
 	for (Parents::const_iterator it = parents_.begin(); it != parents_.end(); it++)
 		result.push_back(it->first);
+	return result;
 }
 
 /* ************************************************************************* */
