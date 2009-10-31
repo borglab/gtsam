@@ -8,6 +8,8 @@
 
 #pragma once
 
+#include <boost/shared_ptr.hpp>
+
 namespace gtsam {
 
   /**
@@ -47,6 +49,23 @@ namespace gtsam {
 		expected.print("expected");
 		actual.print("actual");
 		return false;
+	}
+
+	/**
+	 * Template to create a binary predicate
+	 */
+	template<class V>
+	bool equals(const V& expected, const V& actual, double tol = 1e-9) {
+		return (actual.equals(expected, tol));
+	}
+
+	/**
+	 * Binary predicate on shared pointers
+	 */
+	template<class V>
+	bool equals_star(const boost::shared_ptr<V>& expected,
+			const boost::shared_ptr<V>& actual, double tol = 1e-9) {
+		return (actual->equals(*expected, tol));
 	}
 
 } // gtsam
