@@ -34,9 +34,9 @@ TEST( BayesTree, Front )
 }
 
 /* ************************************************************************* */
-TEST( BayesTree, insert )
+TEST( BayesTree, constructor )
 {
-	// Insert
+	// Create using insert
 	BayesTree<SymbolicConditional> bayesTree;
 	bayesTree.insert("B",B);
 	bayesTree.insert("L",L);
@@ -44,33 +44,25 @@ TEST( BayesTree, insert )
 	bayesTree.insert("S",S);
 	bayesTree.insert("T",T);
 	bayesTree.insert("X",X);
-	//bayesTree.print("bayesTree");
 
-	//LONGS_EQUAL(1,bayesTree.size());
+	// Check Size
+	LONGS_EQUAL(4,bayesTree.size());
 
 	// Check root
 	Front<SymbolicConditional> expected_root("B",B);
-	//CHECK(assert_equal(expected_root,bayesTree.root()));
-}
+	expected_root.add("L",L);
+	expected_root.add("E",E);
+	Front<SymbolicConditional> actual_root = bayesTree.root();
+	CHECK(assert_equal(expected_root,actual_root));
 
-/* ************************************************************************* */
-TEST( BayesTree, constructor )
-{
-	// Create Symbolic Bayes Chain in which we want to discover cliques
+	// Create from symbolic Bayes chain in which we want to discover cliques
 	map<string, SymbolicConditional::shared_ptr> nodes;
 	insert(nodes)("B",B)("L",L)("E",E)("S",S)("T",T)("X",X);
 	SymbolicBayesChain ASIA(nodes);
+	BayesTree<SymbolicConditional> bayesTree2(ASIA);
 
-	// Create Bayes Tree from Symbolic Bayes Chain
-	BayesTree<SymbolicConditional> bayesTree(ASIA);
-	bayesTree.insert("B",B);
-	//bayesTree.print("bayesTree");
-
-	//LONGS_EQUAL(1,bayesTree.size());
-
-	// Check root
-	Front<SymbolicConditional> expected_root("B",B);
-	//CHECK(assert_equal(expected_root,bayesTree.root()));
+	// Check whether the same
+	//CHECK(assert_equal(bayesTree,bayesTree2));
 }
 
 /* ************************************************************************* */

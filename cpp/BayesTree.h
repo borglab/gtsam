@@ -25,7 +25,7 @@ namespace gtsam {
 	private:
 		typedef boost::shared_ptr<Conditional> cond_ptr;
 		std::list<std::string> keys_; /** frontal keys */
-		std::list<cond_ptr> nodes_; /** conditionals */
+		std::list<cond_ptr> conditionals_; /** conditionals */
 		std::list<std::string> separator_; /** separator keys */
 	public:
 
@@ -50,13 +50,14 @@ namespace gtsam {
 
 		/** check equality. TODO: only keys */
 		bool equals(const Front<Conditional>& other, double tol = 1e-9) const {
-			return (keys_ == other.keys_);
+			return (keys_ == other.keys_) &&
+			equal(conditionals_.begin(),conditionals_.end(),other.conditionals_.begin(),equals_star<Conditional>);
 		}
 
 		/** add a frontal node */
 		void add(std::string key, cond_ptr conditional) {
 			keys_.push_front(key);
-			nodes_.push_front(conditional);
+			conditionals_.push_front(conditional);
 		}
 
 		/** return size of the clique */
@@ -121,6 +122,9 @@ namespace gtsam {
 
 		/** insert a new conditional */
 		void insert(std::string key, conditional_ptr conditional);
+
+		/** number of cliques */
+		inline size_t size() const { return nodes_.size();}
 
 		/** return root clique */
 		const Front<Conditional>& root() const {return *(nodes_[0]);}

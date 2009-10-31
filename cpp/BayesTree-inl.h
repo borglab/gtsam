@@ -33,7 +33,9 @@ namespace gtsam {
 	template<class Conditional>
 	bool BayesTree<Conditional>::equals(const BayesTree<Conditional>& other,
 			double tol) const {
-		return false;
+		return size()==other.size() &&
+				equal(nodeMap_.begin(),nodeMap_.end(),other.nodeMap_.begin()) &&
+				equal(nodes_.begin(),nodes_.end(),other.nodes_.begin(),equals_star<Node>);
 	}
 
 	/* ************************************************************************* */
