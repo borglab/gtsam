@@ -70,7 +70,7 @@ namespace gtsam {
 		}
 
 		/** return any parent */
-		std::list<std::string> parents() { return parents_;}
+		std::list<std::string> parents() const { return parents_;}
 
 	};
 
