@@ -20,17 +20,6 @@ namespace gtsam {
 	// Explicitly instantiate so we don't have to include everywhere
 	template class BayesChain<SymbolicConditional>;
 
-	typedef pair<string,SymbolicConditional::shared_ptr> pp;
-
-	/* ************************************************************************* */
-	SymbolicBayesChain::SymbolicBayesChain(const std::map<std::string,
-			SymbolicConditional::shared_ptr>& nodes) {
-		BOOST_FOREACH(pp p, nodes) {
-		  keys_.push_front(p.first);
-			nodes_.insert(p);
-		}
-	}
-
 /* ************************************************************************* */
 
 } // namespace gtsam

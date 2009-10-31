@@ -35,12 +35,6 @@ namespace gtsam {
 		 */
 		SymbolicBayesChain() {}
 
-		/**
-		 *  Construct from a map of nodes
-		 */
-		SymbolicBayesChain(const std::map<std::string,
-				SymbolicConditional::shared_ptr>& nodes);
-
 		/** Destructor */
 		virtual ~SymbolicBayesChain() {
 		}
