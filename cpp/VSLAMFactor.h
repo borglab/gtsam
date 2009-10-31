@@ -66,11 +66,6 @@ class VSLAMFactor : public NonlinearFactor<Config>
 
   int getCameraFrameNumber() const { return cameraFrameNumber_; }
   int getLandmarkNumber()    const { return landmarkNumber_;    }
-
-  /**
-   * dump the information of the factor into a string
-   */
-  std::string dump() const;
 };
 
 }

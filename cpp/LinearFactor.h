@@ -120,7 +120,6 @@ public:
 	// Implementing Factor virtual functions
 
 	double error(const VectorConfig& c) const; /**  0.5*(A*x-b)'*(A*x-b) */
-	std::string dump() const { return "";}
 	std::size_t size() const { return As.size();}
 
 	/** STL like, return the iterator pointing to the first node */

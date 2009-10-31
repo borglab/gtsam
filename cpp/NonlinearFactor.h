@@ -98,9 +98,6 @@ namespace gtsam {
     /** get the size of the factor */
     std::size_t size() const{return keys_.size();}
 
-    /** dump the information of the factor into a string **/
-    std::string dump() const{return "";}
-
   private:
 
 		/** Serialization function */
@@ -149,8 +146,6 @@ namespace gtsam {
 
     /** linearize a non-linearFactor1 to get a linearFactor1 */
     boost::shared_ptr<LinearFactor> linearize(const VectorConfig& c) const;
-
-    std::string dump() const {return "";}
   };
 
 	/**
@@ -193,8 +188,6 @@ namespace gtsam {
 
     /** Linearize a non-linearFactor2 to get a linearFactor2 */
     boost::shared_ptr<LinearFactor> linearize(const VectorConfig& c) const;
-
-    std::string dump() const{return "";};
   };
 
   /* ************************************************************************* */

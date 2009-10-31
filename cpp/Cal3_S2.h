@@ -91,13 +91,6 @@ namespace gtsam {
 			return Point2(fx_ * x + s_ * y + u0_, fy_ * y + v0_);
 		}
 
-		std::string dump() const {
-			char buffer[100];
-			buffer[0] = 0;
-			sprintf(buffer, "%f %f %f %f %f", fx_, fy_, s_, u0_, v0_);
-			return std::string(buffer);
-		}
-
 		/** friends */
 		friend Matrix Duncalibrate2(const Cal3_S2& K, const Point2& p);
 

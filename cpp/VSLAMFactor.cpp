@@ -86,21 +86,3 @@ bool VSLAMFactor<Config>::equals(const NonlinearFactor<Config>& f, double tol) c
 }
 
 /* ************************************************************************* */
-template <class Config>
-string VSLAMFactor<Config>::dump() const
-{
-  int i = getCameraFrameNumber();
-  int j = getLandmarkNumber();
-  Vector z = ConvenientFactor::measurement();
-  char buffer[200];
-  buffer[0] = 0;
-  sprintf(buffer, "1 %d %d %f %d", i, j , ConvenientFactor::sigma(), (int)z.size());
-  for(size_t i = 0; i < z.size(); i++)
-    sprintf(buffer, "%s %f", buffer, z(i));
-  sprintf(buffer, "%s %s", buffer, K_.dump().c_str());
-
-  return string(buffer);
-	string temp;
-	return temp;
-}
-

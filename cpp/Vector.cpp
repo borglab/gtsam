@@ -107,18 +107,6 @@ namespace gtsam {
   }
   
   /* ************************************************************************* */
-  string dump(const Vector& v)
-  {
-	  ostringstream oss;
-	  oss << "[";
-	  size_t n = v.size();
-	  for(size_t i=0; i<n; i++)
-		  oss << v[i] << (i<n-1 ? "; " : "");
-	  oss << "]";
-	  return oss.str();
-  }
-
-  /* ************************************************************************* */
   bool operator==(const Vector& vec1,const Vector& vec2) {
     Vector::const_iterator it1 = vec1.begin();
     Vector::const_iterator it2 = vec2.begin();

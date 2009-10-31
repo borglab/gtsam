@@ -90,10 +90,6 @@ public:
 	 */
 	ConstrainedConditionalGaussian::shared_ptr
 	eliminate(const std::string& key);
-	/**
-	 * returns a version of the factor as a string
-	 */
-	std::string dump() const;
 
 	/** get a copy of b */
 	const Vector& get_b() const {

@@ -99,11 +99,6 @@ list<string> LinearConstraint::keys(const std::string& key) const {
 	return ret;
 }
 
-string LinearConstraint::dump() const {
-	string ret;
-	return ret;
-}
-
 LinearConstraint::shared_ptr combineConstraints(
 		const set<LinearConstraint::shared_ptr>& constraints) {
 	map<string, Matrix> blocks;

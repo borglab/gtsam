@@ -59,8 +59,6 @@ namespace gtsam {
      */
     virtual double error(const Config& c) const = 0;
 
-    virtual std::string dump() const = 0;
-
     /**
      * return keys in preferred order
      */

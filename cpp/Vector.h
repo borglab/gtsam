@@ -57,11 +57,6 @@ bool zero(const Vector& v);
 void print(const Vector& v, const std::string& s = "");
 
 /**
- * returns a string suitable for printing
- */
-std::string dump(const Vector& v);
-
-/**
  * operator==()
  */
 bool operator==(const Vector& vec1,const Vector& vec2);
