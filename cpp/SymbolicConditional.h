@@ -20,6 +20,7 @@ namespace gtsam {
 	 * Conditional node for use in a Bayes net
 	 */
 	class SymbolicConditional: Testable<SymbolicConditional> {
+
 	private:
 
 		std::list<std::string> parents_;
@@ -67,6 +68,9 @@ namespace gtsam {
 		bool equals(const SymbolicConditional& other, double tol = 1e-9) const {
 			return parents_ == other.parents_;
 		}
+
+		/** return any parent */
+		std::list<std::string> parents() { return parents_;}
 
 	};
 

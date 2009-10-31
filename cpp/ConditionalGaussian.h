@@ -10,6 +10,7 @@
 #pragma once
 
 #include <map>
+#include <list>
 #include <boost/utility.hpp>
 #include <boost/shared_ptr.hpp>
 #include <boost/serialization/map.hpp>
@@ -29,7 +30,9 @@ namespace gtsam {
   class ConditionalGaussian : boost::noncopyable, public Testable<ConditionalGaussian>
   {
   public:
-    typedef std::map<std::string, Matrix>::const_iterator const_iterator;
+    typedef std::map<std::string, Matrix> Parents;
+    typedef Parents::const_iterator const_iterator;
+    typedef boost::shared_ptr<ConditionalGaussian> shared_ptr;
 		
   protected:
 
@@ -37,13 +40,12 @@ namespace gtsam {
     Matrix R_; 
 
     /** the names and the matrices connecting to parent nodes */
-    std::map<std::string, Matrix> parents_; 
+    Parents parents_;
 
     /** the RHS vector */
     Vector d_;
 
   public:
-    typedef boost::shared_ptr<ConditionalGaussian> shared_ptr;
 
     /** constructor */
     ConditionalGaussian() {};
@@ -84,7 +86,7 @@ namespace gtsam {
      */
     ConditionalGaussian(const Vector& d,
     		const Matrix& R,
-    		const std::map<std::string, Matrix>& parents);
+    		const Parents& parents);
 
     /** deconstructor */
     virtual ~ConditionalGaussian() {};
@@ -97,6 +99,9 @@ namespace gtsam {
 
     /** dimension of multivariate variable */
     size_t dim() const {return R_.size2();}
+
+    /** return all parents */
+    std::list<std::string> parents();
 
     /** return stuff contained in ConditionalGaussian */
     const Vector& get_d() const {return d_;}

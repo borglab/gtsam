@@ -4,6 +4,10 @@
  * @author  Frank Dellaert
  */
 
+#include <boost/assign/list_inserter.hpp> // for 'insert()'
+#include <boost/assign/std/vector.hpp> // for operator +=
+using namespace boost::assign;
+
 #include <CppUnitLite/TestHarness.h>
 
 #include "smallExample.h"
@@ -16,23 +20,22 @@ using namespace gtsam;
 TEST( SymbolicBayesChain, constructor )
 {
 	// Create manually
-	SymbolicConditional::shared_ptr x2(new SymbolicConditional("x1", "l1"));
-	SymbolicConditional::shared_ptr l1(new SymbolicConditional("x1"));
-	SymbolicConditional::shared_ptr x1(new SymbolicConditional());
+	SymbolicConditional::shared_ptr
+		x2(new SymbolicConditional("x1", "l1")),
+		l1(new SymbolicConditional("x1")),
+		x1(new SymbolicConditional());
 	map<string, SymbolicConditional::shared_ptr> nodes;
-	nodes.insert(make_pair("x2", x2));
-	nodes.insert(make_pair("l1", l1));
-	nodes.insert(make_pair("x1", x1));
+	insert(nodes)("x2", x2)("l1", l1)("x1", x1);
 	SymbolicBayesChain expected(nodes);
 
 	// Create from a factor graph
 	Ordering ordering;
-	ordering.push_back("x2");
-	ordering.push_back("l1");
-	ordering.push_back("x1");
+	ordering += "x2","l1","x1";
 	LinearFactorGraph factorGraph = createLinearFactorGraph();
 	SymbolicBayesChain actual(factorGraph, ordering);
-	//CHECK(assert_equal(expected, actual));
+	CHECK(assert_equal(expected, actual));
+
+	//bayesChain.ordering();
 }
 
 /* ************************************************************************* */

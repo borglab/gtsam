@@ -43,7 +43,7 @@ ConditionalGaussian::ConditionalGaussian(Vector d,
 /* ************************************************************************* */
 ConditionalGaussian::ConditionalGaussian(const Vector& d,
     		const Matrix& R,
-    		const map<std::string, Matrix>& parents)
+    		const map<string, Matrix>& parents)
  : R_(R), d_(d), parents_(parents)
  {
  }
@@ -53,7 +53,7 @@ void ConditionalGaussian::print(const string &s) const
 {
   cout << s << ":" << endl;
   gtsam::print(R_,"R");
-  for(map<string, Matrix>::const_iterator it = parents_.begin() ; it != parents_.end() ; it++ ) {
+  for(Parents::const_iterator it = parents_.begin() ; it != parents_.end() ; it++ ) {
     const string&   j = it->first;
     const Matrix& Aj = it->second;
     gtsam::print(Aj, "A["+j+"]");
@@ -63,7 +63,7 @@ void ConditionalGaussian::print(const string &s) const
 
 /* ************************************************************************* */
 bool ConditionalGaussian::equals(const ConditionalGaussian &cg, double tol) const {
-	map<string, Matrix>::const_iterator it = parents_.begin();
+	Parents::const_iterator it = parents_.begin();
 
 	// check if the size of the parents_ map is the same
 	if (parents_.size() != cg.parents_.size()) return false;
@@ -77,21 +77,26 @@ bool ConditionalGaussian::equals(const ConditionalGaussian &cg, double tol) cons
 	// check if the matrices are the same
 	// iterate over the parents_ map
 	for (it = parents_.begin(); it != parents_.end(); it++) {
-		map<string, Matrix>::const_iterator it2 = cg.parents_.find(
-				it->first.c_str());
+		Parents::const_iterator it2 = cg.parents_.find(it->first.c_str());
 		if (it2 != cg.parents_.end()) {
 			if (!(equal_with_abs_tol(it->second, it2->second, tol))) return false;
-		} else {
+		} else
 			return false;
-		}
 	}
 	return true;
 }
 
 /* ************************************************************************* */
+list<string> ConditionalGaussian::parents() {
+	list<string> result;
+	for (Parents::const_iterator it = parents_.begin(); it != parents_.end(); it++)
+		result.push_back(it->first);
+}
+
+/* ************************************************************************* */
 Vector ConditionalGaussian::solve(const VectorConfig& x) const {
 	Vector rhs = d_;
-	for (map<string, Matrix>::const_iterator it = parents_.begin(); it
+	for (Parents::const_iterator it = parents_.begin(); it
 			!= parents_.end(); it++) {
 		const string& j = it->first;
 		const Matrix& Aj = it->second;
