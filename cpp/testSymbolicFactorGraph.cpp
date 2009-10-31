@@ -4,6 +4,9 @@
  * @author  Frank Dellaert
  */
 
+#include <boost/assign/std/list.hpp> // for operator +=
+using namespace boost::assign;
+
 #include <CppUnitLite/TestHarness.h>
 
 #include "smallExample.h"
@@ -19,7 +22,7 @@ TEST( SymbolicFactorGraph, symbolicFactorGraph )
 	// construct expected symbolic graph
 	SymbolicFactorGraph expected;
 
-	list<string> f1_keys; f1_keys.push_back("x1");
+	list<string> f1_keys; f1_keys += "x1";
 	SymbolicFactor::shared_ptr f1(new SymbolicFactor(f1_keys));
 	expected.push_back(f1);
 
@@ -120,14 +123,14 @@ TEST( LinearFactorGraph, eliminateOne )
 TEST( LinearFactorGraph, eliminate )
 {
   // create expected Chordal bayes Net
-  SymbolicConditional::shared_ptr c1(new SymbolicConditional());
-  SymbolicConditional::shared_ptr c2(new SymbolicConditional("x1"));
-  SymbolicConditional::shared_ptr c3(new SymbolicConditional("l1", "x1"));
+  SymbolicConditional::shared_ptr x2(new SymbolicConditional("l1", "x1"));
+  SymbolicConditional::shared_ptr l1(new SymbolicConditional("x1"));
+  SymbolicConditional::shared_ptr x1(new SymbolicConditional());
 
   SymbolicBayesChain expected;
-  expected.insert("x1", c1);
-  expected.insert("l1", c2);
-  expected.insert("x2", c3);
+  expected.insert("x2", x2);
+  expected.insert("l1", l1);
+  expected.insert("x1", x1);
 
   // create a test graph
 	LinearFactorGraph factorGraph = createLinearFactorGraph();
@@ -135,9 +138,7 @@ TEST( LinearFactorGraph, eliminate )
 
 	// eliminate it
 	Ordering ordering;
-  ordering.push_back("x2");
-  ordering.push_back("l1");
-  ordering.push_back("x1");
+	ordering += "x2","l1","x1";
   SymbolicBayesChain::shared_ptr actual = fg.eliminate(ordering);
 
   CHECK(assert_equal(expected,*actual));

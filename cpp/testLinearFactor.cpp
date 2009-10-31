@@ -8,6 +8,9 @@
 #include <iostream>
 
 #include <boost/tuple/tuple.hpp>
+#include <boost/assign/std/list.hpp> // for operator +=
+using namespace boost::assign;
+
 #include <CppUnitLite/TestHarness.h>
 
 #include "Matrix.h"
@@ -450,8 +453,7 @@ TEST( LinearFactor, matrix )
 
   // render with a given ordering
   Ordering ord;
-  ord.push_back("x1");
-  ord.push_back("x2");
+  ord += "x1","x2";
 
   Matrix A; Vector b;
   boost::tie(A,b) = lf->matrix(ord);

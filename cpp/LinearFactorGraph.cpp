@@ -15,17 +15,12 @@
 #include "ChordalBayesNet.h"
 #include "FactorGraph-inl.h"
 #include "LinearFactorGraph.h"
-#include "SymbolicBayesChain-inl.h"
 
 using namespace std;
 using namespace gtsam;
 
 // Explicitly instantiate so we don't have to include everywhere
 template class FactorGraph<LinearFactor>;
-
-// explicitly instantiate conversion from LinearFG to SymbolicFG
-template SymbolicBayesChain::SymbolicBayesChain
-	(FactorGraph<LinearFactor> const&, Ordering const&);
 
 /* ************************************************************************* */
 LinearFactorGraph::LinearFactorGraph(const ChordalBayesNet& CBN)

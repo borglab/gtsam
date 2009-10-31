@@ -4,13 +4,15 @@
  *  @author Christian Potthast
  **/
 
-/*STL/C++*/
+#include <string.h>
 #include <iostream>
 using namespace std;
 
-#include <CppUnitLite/TestHarness.h>
-#include <string.h>
 #include <boost/tuple/tuple.hpp>
+#include <boost/assign/std/list.hpp> // for operator +=
+using namespace boost::assign;
+
+#include <CppUnitLite/TestHarness.h>
 #include "Matrix.h"
 #include "smallExample.h"
 
@@ -271,16 +273,14 @@ TEST( LinearFactorGraph, eliminateAll )
   ConditionalGaussian::shared_ptr cg3(new ConditionalGaussian(d3, R3, "l1", A21, "x1", A22));
   
   ChordalBayesNet expected;
-  expected.insert("x1", cg1);
-  expected.insert("l1", cg2);
   expected.insert("x2", cg3);
+  expected.insert("l1", cg2);
+  expected.insert("x1", cg1);
   
   // Check one ordering
   LinearFactorGraph fg1 = createLinearFactorGraph();
   Ordering ord1;
-  ord1.push_back("x2");
-  ord1.push_back("l1");
-  ord1.push_back("x1");
+  ord1 += "x2","l1","x1";
   ChordalBayesNet::shared_ptr actual = fg1.eliminate(ord1);
   CHECK(assert_equal(expected,*actual,tol));
 }
@@ -310,9 +310,7 @@ TEST( LinearFactorGraph, copying )
 
   // now eliminate the copy
   Ordering ord1;
-  ord1.push_back("x2");
-  ord1.push_back("l1");
-  ord1.push_back("x1");
+  ord1 += "x2","l1","x1";
   ChordalBayesNet::shared_ptr actual1 = copy.eliminate(ord1);
 
   // Create the same graph, but not by copying
@@ -330,9 +328,7 @@ TEST( LinearFactorGraph, matrix )
 
   // render with a given ordering
   Ordering ord;
-  ord.push_back("x2");
-  ord.push_back("l1");
-  ord.push_back("x1");
+  ord += "x2","l1","x1";
 
   Matrix A; Vector b;
   boost::tie(A,b) = fg.matrix(ord);
@@ -361,10 +357,7 @@ TEST( LinearFactorGraph, CONSTRUCTOR_ChordalBayesNet )
 
   // render with a given ordering
   Ordering ord;
-  ord.push_back("x2");
-  ord.push_back("l1");
-  ord.push_back("x1");
-  
+  ord += "x2","l1","x1";
   ChordalBayesNet::shared_ptr CBN = fg.eliminate(ord);
   LinearFactorGraph fg2(*CBN);
   ChordalBayesNet::shared_ptr CBN2 = fg2.eliminate(ord);
@@ -375,11 +368,11 @@ TEST( LinearFactorGraph, CONSTRUCTOR_ChordalBayesNet )
 /* ************************************************************************* */
 TEST( LinearFactorGraph, GET_ORDERING)
 {
+  Ordering expected;
+  expected += "l1","x1","x2";
   LinearFactorGraph fg = createLinearFactorGraph();
-  Ordering ord = fg.getOrdering();
-  CHECK(ord[0] == string("l1"));
-  CHECK(ord[1] == string("x1"));
-  CHECK(ord[2] == string("x2"));
+  Ordering actual = fg.getOrdering();
+  CHECK(assert_equal(expected,actual));
 }
 
 /* ************************************************************************* */

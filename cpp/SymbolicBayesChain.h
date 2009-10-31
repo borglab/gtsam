@@ -41,13 +41,6 @@ namespace gtsam {
 		SymbolicBayesChain(const std::map<std::string,
 				SymbolicConditional::shared_ptr>& nodes);
 
-		/**
-		 *  Construct from any factor graph
-		 */
-		template<class Factor>
-		SymbolicBayesChain(const FactorGraph<Factor>& factorGraph,
-				const Ordering& ordering);
-
 		/** Destructor */
 		virtual ~SymbolicBayesChain() {
 		}

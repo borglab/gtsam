@@ -6,8 +6,9 @@
 
 #pragma once
 
-#include <vector>
+#include <list>
 #include <string>
+#include "Testable.h"
 
 namespace gtsam {
 
@@ -15,7 +16,7 @@ namespace gtsam {
 	 * @class Ordering
 	 * @brief ordering of indices for eliminating a factor graph
 	 */
-	class Ordering: public std::vector<std::string> {
+	class Ordering: public std::list<std::string>, public Testable<Ordering> {
 	public:
 		/**
 		 * Default constructor creates empty ordering
@@ -25,20 +26,19 @@ namespace gtsam {
 
 		/**
 		 * Copy constructor from string vector
-		 * TODO: should take reference?
 		 */
-		Ordering(std::vector<std::string> strings_in) :
-			std::vector<std::string>(strings_in) {
+		Ordering(const std::list<std::string>& strings_in) :
+			std::list<std::string>(strings_in) {
 		}
 
-		void print() const;
+		void print(const std::string& s = "Ordering") const;
 
 		/**
 		 * check if two orderings are the same
 		 * @param ordering
 		 * @return bool
 		 */
-		bool equals(Ordering &ord);
+		bool equals(const Ordering &ord, double tol=0) const;
 	};
 
 }

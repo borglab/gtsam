@@ -7,10 +7,14 @@
 #include <iostream>
 using namespace std;
 
+#include <boost/assign/std/list.hpp> // for operator +=
+using namespace boost::assign;
+
 #include <CppUnitLite/TestHarness.h>
 
 #include "Matrix.h"
 #include "smallExample.h"
+
 // template definitions
 #include "NonlinearFactorGraph-inl.h"
 #include "NonlinearOptimizer-inl.h"
@@ -43,27 +47,21 @@ TEST( NonlinearOptimizer, delta )
 
 	// Check one ordering
 	Ordering ord1;
-	ord1.push_back("x2");
-	ord1.push_back("l1");
-	ord1.push_back("x1");
+	ord1 += "x2","l1","x1";
 	Optimizer optimizer1(fg, ord1, initial);
 	VectorConfig actual1 = optimizer1.linearizeAndOptimizeForDelta();
 	CHECK(assert_equal(actual1,expected));
 
 	// Check another
 	Ordering ord2;
-	ord2.push_back("x1");
-	ord2.push_back("x2");
-	ord2.push_back("l1");
+	ord2 += "x1","x2","l1";
 	Optimizer optimizer2(fg, ord2, initial);
 	VectorConfig actual2 = optimizer2.linearizeAndOptimizeForDelta();
 	CHECK(assert_equal(actual2,expected));
 
 	// And yet another...
 	Ordering ord3;
-	ord3.push_back("l1");
-	ord3.push_back("x1");
-	ord3.push_back("x2");
+	ord3 += "l1","x1","x2";
 	Optimizer optimizer3(fg, ord3, initial);
 	VectorConfig actual3 = optimizer3.linearizeAndOptimizeForDelta();
 	CHECK(assert_equal(actual3,expected));

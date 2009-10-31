@@ -30,14 +30,14 @@ namespace gtsam {
 	/* ************************************************************************* */
 	template<class Conditional>
 	bool BayesChain<Conditional>::equals(const BayesChain& cbn, double tol) const {
-		const_iterator it1 = nodes_.begin(), it2 = cbn.nodes_.begin();
-		if(nodes_.size() != cbn.nodes_.size()) return false;
-		for(; it1 != nodes_.end(); it1++, it2++) {
-			const string& j1 = it1->first, j2 = it2->first;
-			boost::shared_ptr<Conditional> node1 = it1->second, node2 = it2->second;
-			if (j1 != j2) return false;
-			if (!node1->equals(*node2,tol))
-			return false;
+		if(size() != cbn.size()) return false;
+		if(keys_ != cbn.keys_) return false;
+		string key;
+		boost::shared_ptr<Conditional> node;
+		FOREACH_PAIR( key, node, nodes_) {
+			const_iterator cg = cbn.nodes_.find(key);
+			if (cg == nodes_.end()) return false;
+			if (!equals_star(node,cg->second,tol)) return false;
 		}
 		return true;
 	}

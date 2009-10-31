@@ -5,15 +5,15 @@
  */
 
 #include <boost/assign/list_inserter.hpp> // for 'insert()'
-#include <boost/assign/std/vector.hpp> // for operator +=
+#include <boost/assign/std/list.hpp> // for operator +=
+using namespace boost::assign;
+
 #include <CppUnitLite/TestHarness.h>
 
 #include "SymbolicBayesChain.h"
 #include "BayesTree-inl.h"
 
-//using namespace std;
 using namespace gtsam;
-using namespace boost::assign;
 
 // Conditionals for ASIA example from the tutorial with A and D evidence
 SymbolicConditional::shared_ptr
