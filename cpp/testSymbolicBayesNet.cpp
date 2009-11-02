@@ -27,9 +27,9 @@ TEST( SymbolicBayesNet, constructor )
 		l1(new SymbolicConditional("l1","x1")),
 		x1(new SymbolicConditional("x1"));
 	SymbolicBayesNet expected;
-	expected.insert(x2);
-	expected.insert(l1);
-	expected.insert(x1);
+	expected.push_back(x2);
+	expected.push_back(l1);
+	expected.push_back(x1);
 
 	// Create from a factor graph
 	LinearFactorGraph factorGraph = createLinearFactorGraph();

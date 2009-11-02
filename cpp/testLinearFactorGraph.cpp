@@ -276,9 +276,9 @@ TEST( LinearFactorGraph, eliminateAll )
   ConditionalGaussian::shared_ptr cg3(new ConditionalGaussian("x2",d3, R3, "l1", A21, "x1", A22));
   
   GaussianBayesNet expected;
-  expected.insert(cg3);
-  expected.insert(cg2);
-  expected.insert(cg1);
+  expected.push_back(cg3);
+  expected.push_back(cg2);
+  expected.push_back(cg1);
   
   // Check one ordering
   LinearFactorGraph fg1 = createLinearFactorGraph();

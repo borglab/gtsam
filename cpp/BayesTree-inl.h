@@ -13,36 +13,32 @@ namespace gtsam {
 
 	/* ************************************************************************* */
 	template<class Conditional>
-	Front<Conditional>::Front(const conditional_ptr& conditional) {
-		add(conditional);
-		separator_ = conditional->parents();
-	}
-
-	/* ************************************************************************* */
-	template<class Conditional>
-	void Front<Conditional>::print(const string& s) const {
-		cout << s;
-		BOOST_FOREACH(const conditional_ptr& conditional, conditionals_)
-			cout << " " << conditional->key();
-		if (!separator_.empty()) {
-			cout << " :";
-			BOOST_FOREACH(string key, separator_)
-				cout << " " << key;
+	BayesTree<Conditional>::Node::Node(const boost::shared_ptr<Conditional>& conditional) {
+			separator_ = conditional->parents();
+			this->push_back(conditional);
 		}
-		cout << endl;
-	}
 
 	/* ************************************************************************* */
 	template<class Conditional>
-	bool Front<Conditional>::equals(const Front<Conditional>& other, double tol) const {
-		return equal(conditionals_.begin(),conditionals_.end(),other.conditionals_.begin(),equals_star<Conditional>);
-	}
+	void BayesTree<Conditional>::Node::print(const string& s) const {
+			cout << s;
+			BOOST_REVERSE_FOREACH(const conditional_ptr& conditional, this->conditionals_)
+				cout << " " << conditional->key();
+			if (!separator_.empty()) {
+				cout << " :";
+				BOOST_FOREACH(string key, separator_)
+				cout << " " << key;
+			}
+			cout << endl;
+		}
 
 	/* ************************************************************************* */
 	template<class Conditional>
-	void Front<Conditional>::add(const conditional_ptr& conditional) {
-		conditionals_.push_front(conditional);
-	}
+	void BayesTree<Conditional>::Node::printTree(const string& indent) const {
+			print(indent);
+			BOOST_FOREACH(shared_ptr child, children_)
+				child->printTree(indent+"  ");
+		}
 
 	/* ************************************************************************* */
 	template<class Conditional>
@@ -104,12 +100,13 @@ namespace gtsam {
 						"BayesTree::insert('"+key+"'): parent '" + parent + "' was not yet inserted"));
 		int index = it->second;
 		node_ptr parent_clique = nodes_[index];
+		if (verbose) cout << "Parent clique " << index << " of size " << parent_clique->size() << endl;
 
 		// if the parents and parent clique have the same size, add to parent clique
 		if (parent_clique->size() == parents.size()) {
 			if (verbose) cout << "Adding to clique " << index << endl;
 			nodeMap_.insert(make_pair(key, index));
-			parent_clique->add(conditional);
+			parent_clique->push_back(conditional);
 			return;
 		}
 

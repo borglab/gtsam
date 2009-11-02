@@ -67,8 +67,8 @@ namespace gtsam {
 		/** check equality */
 		bool equals(const BayesNet& other, double tol = 1e-9) const;
 
-		/** insert: use reverse topological sort (i.e. parents last / elimination order) */
-		void insert(const boost::shared_ptr<Conditional>& conditional);
+		/** push_back: use reverse topological sort (i.e. parents last / elimination order) */
+		void push_back(const boost::shared_ptr<Conditional>& conditional);
 
 		/** size is the number of nodes */
 		inline size_t size() const {

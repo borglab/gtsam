@@ -129,9 +129,9 @@ TEST( LinearFactorGraph, eliminate )
   SymbolicConditional::shared_ptr x1(new SymbolicConditional("x1"));
 
   SymbolicBayesNet expected;
-  expected.insert(x2);
-  expected.insert(l1);
-  expected.insert(x1);
+  expected.push_back(x2);
+  expected.push_back(l1);
+  expected.push_back(x1);
 
   // create a test graph
 	LinearFactorGraph factorGraph = createLinearFactorGraph();

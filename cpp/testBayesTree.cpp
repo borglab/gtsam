@@ -27,10 +27,12 @@ SymbolicConditional::shared_ptr B(new SymbolicConditional("B")), L(
 /* ************************************************************************* */
 TEST( BayesTree, Front )
 {
-	Front<SymbolicConditional> f1(B);
-	f1.add(L);
-	Front<SymbolicConditional> f2(L);
-	f2.add(B);
+	BayesNet<SymbolicConditional> f1;
+	f1.push_back(B);
+	f1.push_back(L);
+	BayesNet<SymbolicConditional> f2;
+	f2.push_back(L);
+	f2.push_back(B);
 	CHECK(f1.equals(f1));
 	CHECK(!f1.equals(f2));
 }
@@ -51,21 +53,24 @@ TEST( BayesTree, constructor )
 	LONGS_EQUAL(4,bayesTree.size());
 
 	// Check root
-	Front<SymbolicConditional> expected_root(B);
-	expected_root.add(L);
-	expected_root.add(E);
-	Front<SymbolicConditional> actual_root = bayesTree.root();
+	BayesNet<SymbolicConditional> expected_root;
+	expected_root.push_back(B);
+	expected_root.push_back(L);
+	expected_root.push_back(E);
+	BayesNet<SymbolicConditional> actual_root = bayesTree.root();
 	CHECK(assert_equal(expected_root,actual_root));
 
 	// Create from symbolic Bayes chain in which we want to discover cliques
 	SymbolicBayesNet ASIA;
-	ASIA.insert(X);
-	ASIA.insert(T);
-	ASIA.insert(S);
-	ASIA.insert(E);
-	ASIA.insert(L);
-	ASIA.insert(B);
-	BayesTree<SymbolicConditional> bayesTree2(ASIA);
+	ASIA.push_back(X);
+	ASIA.push_back(T);
+	ASIA.push_back(S);
+	ASIA.push_back(E);
+	ASIA.push_back(L);
+	ASIA.push_back(B);
+	bool verbose = true;
+	BayesTree<SymbolicConditional> bayesTree2(ASIA,verbose);
+	if (verbose) bayesTree2.print("bayesTree2");
 
 	// Check whether the same
 	CHECK(assert_equal(bayesTree,bayesTree2));

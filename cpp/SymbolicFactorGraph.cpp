@@ -26,7 +26,7 @@ namespace gtsam {
 
 		BOOST_FOREACH(string key, ordering) {
 			SymbolicConditional::shared_ptr conditional = eliminateOne<SymbolicConditional>(key);
-			bayesNet->insert(conditional);
+			bayesNet->push_back(conditional);
 		}
 
 		return bayesNet;

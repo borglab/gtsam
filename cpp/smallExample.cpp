@@ -203,8 +203,8 @@ GaussianBayesNet createSmallGaussianBayesNet()
     Px_y(new ConditionalGaussian("x",d1,R11,"y",S12)),
     Py(new ConditionalGaussian("y",d2,R22));
   GaussianBayesNet cbn;
-  cbn.insert(Px_y);
-  cbn.insert(Py);
+  cbn.push_back(Px_y);
+  cbn.push_back(Py);
 
   return cbn;
 }

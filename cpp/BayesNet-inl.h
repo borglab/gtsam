@@ -37,7 +37,7 @@ namespace gtsam {
 
 	/* ************************************************************************* */
 	template<class Conditional>
-	void BayesNet<Conditional>::insert
+	void BayesNet<Conditional>::push_back
 		(const boost::shared_ptr<Conditional>& conditional) {
 		indices_.insert(make_pair(conditional->key(),conditionals_.size()));
 		conditionals_.push_back(conditional);

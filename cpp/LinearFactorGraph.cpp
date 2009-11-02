@@ -63,7 +63,7 @@ LinearFactorGraph::eliminate_partially(const Ordering& ordering)
 
 	BOOST_FOREACH(string key, ordering) {
 		ConditionalGaussian::shared_ptr cg = eliminateOne<ConditionalGaussian>(key);
-		chordalBayesNet->insert(cg);
+		chordalBayesNet->push_back(cg);
 	}
 
 	return chordalBayesNet;
