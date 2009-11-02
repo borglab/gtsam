@@ -13,8 +13,11 @@ using namespace std;
 using namespace boost::assign;
 
 #include <CppUnitLite/TestHarness.h>
+
 #include "Matrix.h"
+#include "Ordering.h"
 #include "smallExample.h"
+#include "GaussianBayesNet.h"
 
 using namespace gtsam;
 
@@ -182,7 +185,7 @@ TEST( LinearFactorGraph, eliminateOne_x1 )
 			 +0.00,-6.66667
 			 );
   Vector d(2); d(0) = -2; d(1) = -1.0/3.0;
-  ConditionalGaussian expected(d,R11,"l1",S12,"x2",S13);
+  ConditionalGaussian expected("x1",d,R11,"l1",S12,"x2",S13);
 
   CHECK(assert_equal(expected,*actual,tol));
 }
@@ -209,7 +212,7 @@ TEST( LinearFactorGraph, eliminateOne_x2 )
 			 +0.00,-8.94427
 			 );
   Vector d(2); d(0) = 2.23607; d(1) = -1.56525;
-  ConditionalGaussian expected(d,R11,"l1",S12,"x1",S13);
+  ConditionalGaussian expected("x2",d,R11,"l1",S12,"x1",S13);
 
   CHECK(assert_equal(expected,*actual,tol));
 }
@@ -235,7 +238,7 @@ TEST( LinearFactorGraph, eliminateOne_l1 )
 			 +0.00,-3.53553
 			 );
   Vector d(2); d(0) = -0.707107; d(1) = 1.76777;
-  ConditionalGaussian expected(d,R11,"x1",S12,"x2",S13);
+  ConditionalGaussian expected("l1",d,R11,"x1",S12,"x2",S13);
 
   CHECK(assert_equal(expected,*actual,tol));
 }
@@ -248,7 +251,7 @@ TEST( LinearFactorGraph, eliminateAll )
                     0.0, 10};
   Matrix R1 = Matrix_(2,2, data1);
   Vector d1(2); d1(0) = -1; d1(1) = -1;
-  ConditionalGaussian::shared_ptr cg1(new ConditionalGaussian(d1, R1));
+  ConditionalGaussian::shared_ptr cg1(new ConditionalGaussian("x1",d1, R1));
   
   double data21[] = { 6.7082, 0.0,
                      0.0, 6.7082};
@@ -257,7 +260,7 @@ TEST( LinearFactorGraph, eliminateAll )
                        0.0, -6.7082};
   Matrix A1 = Matrix_(2,2, data22);
   Vector d2(2); d2(0) = 0.0; d2(1) = 1.34164;
-  ConditionalGaussian::shared_ptr cg2(new ConditionalGaussian(d2, R2, "x1", A1));
+  ConditionalGaussian::shared_ptr cg2(new ConditionalGaussian("l1",d2, R2, "x1", A1));
   
   double data31[] = { 11.1803, 0.0,
                          0.0, 11.1803};
@@ -270,12 +273,12 @@ TEST( LinearFactorGraph, eliminateAll )
   Matrix A22 = Matrix_(2,2, data33);
   
   Vector d3(2); d3(0) = 2.23607; d3(1) = -1.56525;
-  ConditionalGaussian::shared_ptr cg3(new ConditionalGaussian(d3, R3, "l1", A21, "x1", A22));
+  ConditionalGaussian::shared_ptr cg3(new ConditionalGaussian("x2",d3, R3, "l1", A21, "x1", A22));
   
   GaussianBayesNet expected;
-  expected.insert("x2", cg3);
-  expected.insert("l1", cg2);
-  expected.insert("x1", cg1);
+  expected.insert(cg3);
+  expected.insert(cg2);
+  expected.insert(cg1);
   
   // Check one ordering
   LinearFactorGraph fg1 = createLinearFactorGraph();

@@ -9,6 +9,7 @@ using namespace boost::assign;
 
 #include <CppUnitLite/TestHarness.h>
 
+#include "Ordering.h"
 #include "smallExample.h"
 #include "SymbolicFactorGraph.h"
 #include "SymbolicBayesNet.h"
@@ -114,7 +115,7 @@ TEST( LinearFactorGraph, eliminateOne )
   		fg.eliminateOne<SymbolicConditional>("x1");
 
   // create expected symbolic Conditional
-  SymbolicConditional expected("l1","x2");
+  SymbolicConditional expected("x1","l1","x2");
 
   CHECK(assert_equal(expected,*actual));
 }
@@ -123,14 +124,14 @@ TEST( LinearFactorGraph, eliminateOne )
 TEST( LinearFactorGraph, eliminate )
 {
   // create expected Chordal bayes Net
-  SymbolicConditional::shared_ptr x2(new SymbolicConditional("l1", "x1"));
-  SymbolicConditional::shared_ptr l1(new SymbolicConditional("x1"));
-  SymbolicConditional::shared_ptr x1(new SymbolicConditional());
+  SymbolicConditional::shared_ptr x2(new SymbolicConditional("x2", "l1", "x1"));
+  SymbolicConditional::shared_ptr l1(new SymbolicConditional("l1", "x1"));
+  SymbolicConditional::shared_ptr x1(new SymbolicConditional("x1"));
 
   SymbolicBayesNet expected;
-  expected.insert("x2", x2);
-  expected.insert("l1", l1);
-  expected.insert("x1", x1);
+  expected.insert(x2);
+  expected.insert(l1);
+  expected.insert(x1);
 
   // create a test graph
 	LinearFactorGraph factorGraph = createLinearFactorGraph();

@@ -22,14 +22,13 @@ namespace gtsam {
 	template<class Conditional>
 	class Front: Testable<Front<Conditional> > {
 	private:
-		typedef boost::shared_ptr<Conditional> cond_ptr;
-		std::list<std::string> keys_; /** frontal keys */
-		std::list<cond_ptr> conditionals_; /** conditionals */
+		typedef boost::shared_ptr<Conditional> conditional_ptr;
+		std::list<conditional_ptr> conditionals_; /** conditionals */
 		std::list<std::string> separator_; /** separator keys */
 	public:
 
 		/** constructor */
-		Front(std::string key, cond_ptr conditional);
+		Front(const conditional_ptr& conditional);
 
 		/** print */
 		void print(const std::string& s = "") const;
@@ -38,10 +37,10 @@ namespace gtsam {
 		bool equals(const Front<Conditional>& other, double tol = 1e-9) const;
 
 		/** add a frontal node */
-		void add(std::string key, cond_ptr conditional);
+		void add(const conditional_ptr& conditional);
 
 		/** return size of the clique */
-		inline size_t size() const {return keys_.size() + separator_.size();}
+		inline size_t size() const {return conditionals_.size() + separator_.size();}
 	};
 
 	/**
@@ -55,6 +54,7 @@ namespace gtsam {
 	public:
 
 		typedef boost::shared_ptr<Conditional> conditional_ptr;
+		typedef std::pair<std::string,conditional_ptr> NamedConditional;
 
 	private:
 
@@ -64,7 +64,7 @@ namespace gtsam {
 			shared_ptr parent_;
 			std::list<shared_ptr> children_;
 
-			Node(std::string key, conditional_ptr conditional):Front<Conditional>(key,conditional) {}
+			Node(const boost::shared_ptr<Conditional>& conditional):Front<Conditional>(conditional) {}
 
 			/** print this node and entire subtree below it*/
 			void printTree(const std::string& indent) const {
@@ -88,8 +88,8 @@ namespace gtsam {
 		/** Create an empty Bayes Tree */
 		BayesTree();
 
-		/** Create a Bayes Tree from a SymbolicBayesNet */
-		BayesTree(BayesNet<Conditional>& bayesChain, bool verbose=false);
+		/** Create a Bayes Tree from a Bayes Net */
+		BayesTree(const BayesNet<Conditional>& bayesNet, bool verbose=false);
 
 		/** Destructor */
 		virtual ~BayesTree() {}
@@ -101,9 +101,9 @@ namespace gtsam {
 		bool equals(const BayesTree<Conditional>& other, double tol = 1e-9) const;
 
 		/** insert a new conditional */
-		void insert(std::string key, conditional_ptr conditional, bool verbose=false);
+		void insert(const boost::shared_ptr<Conditional>& conditional, bool verbose=false);
 
-		/** number of cliques */
+			/** number of cliques */
 		inline size_t size() const { return nodes_.size();}
 
 		/** return root clique */

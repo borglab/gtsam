@@ -4,49 +4,39 @@
  * @author Christian Potthast
  */
 
-
 #include <string.h>
 #include <boost/numeric/ublas/vector.hpp>
+#include "Ordering.h"
 #include "ConditionalGaussian.h"
 
 using namespace std;
 using namespace gtsam;
 
 /* ************************************************************************* */
-ConditionalGaussian::ConditionalGaussian(Vector d,Matrix R) : R_(R),d_(d)
-{
+ConditionalGaussian::ConditionalGaussian(const string& key, Vector d, Matrix R) :
+	Conditional (key), R_(R), d_(d) {
 }
 
 /* ************************************************************************* */
-ConditionalGaussian::ConditionalGaussian(Vector d,
-					 Matrix R,
-					 const string& name1,
-					 Matrix S)
-  : R_(R),d_(d)
-{
-  parents_.insert(make_pair(name1, S));
+ConditionalGaussian::ConditionalGaussian(const string& key, Vector d, Matrix R,
+		const string& name1, Matrix S) :
+	Conditional (key), R_(R), d_(d) {
+	parents_.insert(make_pair(name1, S));
 }
 
 /* ************************************************************************* */
-ConditionalGaussian::ConditionalGaussian(Vector d,
-					 Matrix R,
-					 const string& name1,
-					 Matrix S,
-					 const string& name2,
-					 Matrix T)
-  : R_(R),d_(d)
-{
-  parents_.insert(make_pair(name1, S));
-  parents_.insert(make_pair(name2, T));
+ConditionalGaussian::ConditionalGaussian(const string& key, Vector d, Matrix R,
+		const string& name1, Matrix S, const string& name2, Matrix T) :
+	Conditional (key), R_(R), d_(d) {
+	parents_.insert(make_pair(name1, S));
+	parents_.insert(make_pair(name2, T));
 }
 
 /* ************************************************************************* */
-ConditionalGaussian::ConditionalGaussian(const Vector& d,
-    		const Matrix& R,
-    		const map<string, Matrix>& parents)
- : R_(R), d_(d), parents_(parents)
- {
- }
+ConditionalGaussian::ConditionalGaussian(const string& key,
+		const Vector& d, const Matrix& R, const map<string, Matrix>& parents) :
+	Conditional (key), R_(R), d_(d), parents_(parents) {
+}
 
 /* ************************************************************************* */
 void ConditionalGaussian::print(const string &s) const
@@ -62,23 +52,26 @@ void ConditionalGaussian::print(const string &s) const
 }    
 
 /* ************************************************************************* */
-bool ConditionalGaussian::equals(const ConditionalGaussian &cg, double tol) const {
+bool ConditionalGaussian::equals(const Conditional &c, double tol) const {
+	if (!Conditional::equals(c)) return false;
+	const ConditionalGaussian* p = dynamic_cast<const ConditionalGaussian*> (&c);
+	if (p == NULL) return false;
 	Parents::const_iterator it = parents_.begin();
 
 	// check if the size of the parents_ map is the same
-	if (parents_.size() != cg.parents_.size()) return false;
+	if (parents_.size() != p->parents_.size()) return false;
 
 	// check if R_ is equal
-	if (!(equal_with_abs_tol(R_, cg.R_, tol))) return false;
+	if (!(equal_with_abs_tol(R_, p->R_, tol))) return false;
 
 	// check if d_ is equal
-	if (!(::equal_with_abs_tol(d_, cg.d_, tol))) return false;
+	if (!(::equal_with_abs_tol(d_, p->d_, tol))) return false;
 
 	// check if the matrices are the same
 	// iterate over the parents_ map
 	for (it = parents_.begin(); it != parents_.end(); it++) {
-		Parents::const_iterator it2 = cg.parents_.find(it->first.c_str());
-		if (it2 != cg.parents_.end()) {
+		Parents::const_iterator it2 = p->parents_.find(it->first.c_str());
+		if (it2 != p->parents_.end()) {
 			if (!(equal_with_abs_tol(it->second, it2->second, tol))) return false;
 		} else
 			return false;

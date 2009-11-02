@@ -15,6 +15,7 @@
 #include "GaussianBayesNet.h"
 #include "FactorGraph-inl.h"
 #include "LinearFactorGraph.h"
+#include "LinearFactorSet.h"
 
 using namespace std;
 using namespace gtsam;
@@ -34,7 +35,7 @@ void LinearFactorGraph::setCBN(const GaussianBayesNet& CBN)
 	clear();
 	GaussianBayesNet::const_iterator it = CBN.begin();
 	for(; it != CBN.end(); it++) {
-		LinearFactor::shared_ptr lf(new LinearFactor(it->first, it->second));
+		LinearFactor::shared_ptr lf(new LinearFactor(*it));
 		push_back(lf);
 	}
 }
@@ -62,7 +63,7 @@ LinearFactorGraph::eliminate_partially(const Ordering& ordering)
 
 	BOOST_FOREACH(string key, ordering) {
 		ConditionalGaussian::shared_ptr cg = eliminateOne<ConditionalGaussian>(key);
-		chordalBayesNet->insert(key,cg);
+		chordalBayesNet->insert(cg);
 	}
 
 	return chordalBayesNet;

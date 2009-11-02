@@ -17,7 +17,7 @@ TEST (ConstrainedConditionalGaussian, basic_unary1 )
 
 	// check unary constructor that doesn't require an R matrix
 	// assumed identity matrix
-	ConstrainedConditionalGaussian unary(v);
+	ConstrainedConditionalGaussian unary("x1",v);
 	VectorConfig fg;
 	fg.insert("x1", v);
 
@@ -32,7 +32,7 @@ TEST (ConstrainedConditionalGaussian, basic_unary2 )
 	// check unary constructor that makes use of a A matrix
 	Matrix A = eye(2) * 10;
 
-	ConstrainedConditionalGaussian unary(10*v, A);
+	ConstrainedConditionalGaussian unary("x1",10*v, A);
 	VectorConfig fg;
 	fg.insert("x1", v);
 
@@ -51,7 +51,7 @@ TEST (ConstrainedConditionalGaussian, basic_unary3 )
 	A(1,0) = 2.0 ; A(1,1) = 1.0;
 
 	Vector rhs = A*v;
-	ConstrainedConditionalGaussian unary(rhs, A);
+	ConstrainedConditionalGaussian unary("x1",rhs, A);
 	VectorConfig fg;
 	fg.insert("x1", v);
 
@@ -84,7 +84,7 @@ TEST (ConstrainedConditionalGaussian, basic_binary1 )
 
 	Vector expected = Vector_(2, -3.3333, 0.6667);
 
-	ConstrainedConditionalGaussian binary(b, A1, "x1", A2);
+	ConstrainedConditionalGaussian binary("x2",b, A1, "x1", A2);
 
 	CHECK(assert_equal(expected, binary.solve(fg), 1e-4));
 }
@@ -119,7 +119,7 @@ TEST (ConstrainedConditionalGaussian, basic_ternary1 )
 
 	Vector expected = Vector_(2, 6.6667, -9.3333);
 
-	ConstrainedConditionalGaussian ternary(b, A1, "x1", A2, "x2", A3);
+	ConstrainedConditionalGaussian ternary("x3",b, A1, "x1", A2, "x2", A3);
 
 	CHECK(assert_equal(expected, ternary.solve(fg), 1e-4));
 }

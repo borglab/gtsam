@@ -200,11 +200,11 @@ GaussianBayesNet createSmallGaussianBayesNet()
   
   // define nodes and specify in reverse topological sort (i.e. parents last)
   ConditionalGaussian::shared_ptr
-    x(new ConditionalGaussian(d1,R11,"y",S12)),
-    y(new ConditionalGaussian(d2,R22));
+    Px_y(new ConditionalGaussian("x",d1,R11,"y",S12)),
+    Py(new ConditionalGaussian("y",d2,R22));
   GaussianBayesNet cbn;
-  cbn.insert("x",x);
-  cbn.insert("y",y);
+  cbn.insert(Px_y);
+  cbn.insert(Py);
 
   return cbn;
 }

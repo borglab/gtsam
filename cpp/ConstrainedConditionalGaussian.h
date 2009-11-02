@@ -33,14 +33,14 @@ public:
 	 * Default Constructor
 	 * Don't use this
 	 */
-	ConstrainedConditionalGaussian();
+	ConstrainedConditionalGaussian(const std::string& key);
 
 	/**
 	 * Used for unary factors that simply associate a name with a particular value
 	 * Can use backsubstitution to solve trivially
 	 * @param value is a fixed value for x in the form x = value
 	 */
-	ConstrainedConditionalGaussian(const Vector& value);
+	ConstrainedConditionalGaussian(const std::string& key, const Vector& value);
 
 	/**
 	 * Used for unary factors of the form Ax=b
@@ -48,7 +48,7 @@ public:
 	 * @param b is the RHS of the equation
 	 * @param A is the A matrix
 	 */
-	ConstrainedConditionalGaussian(const Vector& value, const Matrix& A);
+	ConstrainedConditionalGaussian(const std::string& key, const Vector& value, const Matrix& A);
 
 	/**
 	 * Binary constructor of the form A1*x = b - A2*y
@@ -58,7 +58,7 @@ public:
 	 * @param parent is the string identifier for the parent node
 	 * @param A2 is the A2 matrix
 	 */
-	ConstrainedConditionalGaussian(const Vector& b, const Matrix& A1,
+	ConstrainedConditionalGaussian(const std::string& key, const Vector& b, const Matrix& A1,
 			const std::string& parent, const Matrix& A2);
 
 	/**
@@ -70,7 +70,7 @@ public:
 	 * @param parentZ string id for z
 	 * @param A3 is the A3 matrix
 	 */
-	ConstrainedConditionalGaussian(const Vector& b, const Matrix& A1,
+	ConstrainedConditionalGaussian(const std::string& key, const Vector& b, const Matrix& A1,
 			const std::string& parentY, const Matrix& A2,
 			const std::string& parentZ, const Matrix& A3);
 
@@ -81,13 +81,8 @@ public:
 	 * @param parents is the map of parents (Ai and xi from above)
 	 * @param b is the rhs vector
 	 */
-	ConstrainedConditionalGaussian(const Matrix& A1,
+	ConstrainedConditionalGaussian(const std::string& key, const Matrix& A1,
 			const std::map<std::string, Matrix>& parents, const Vector& b);
-
-	/**
-	 * Copy constructor
-	 */
-	ConstrainedConditionalGaussian(const ConstrainedConditionalGaussian& df);
 
 	virtual ~ConstrainedConditionalGaussian() {
 	}

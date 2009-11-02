@@ -6,6 +6,7 @@
 #include <iostream>
 #include <boost/tuple/tuple.hpp>
 #include <boost/foreach.hpp>
+#include "Ordering.h"
 #include "ConstrainedLinearFactorGraph.h"
 using namespace std;
 
@@ -78,12 +79,12 @@ GaussianBayesNet::shared_ptr ConstrainedLinearFactorGraph::eliminate(const Order
 		if (is_constrained(key))
 		{
 			ConditionalGaussian::shared_ptr ccg = eliminate_constraint(key);
-			cbn->insert(key,ccg);
+			cbn->insert(ccg);
 		}
 		else
 		{
 			ConditionalGaussian::shared_ptr cg = eliminateOne<ConditionalGaussian>(key);
-			cbn->insert(key,cg);
+			cbn->insert(cg);
 		}
 	}
 

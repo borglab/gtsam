@@ -12,40 +12,39 @@
 using namespace gtsam;
 using namespace std;
 
-ConstrainedConditionalGaussian::ConstrainedConditionalGaussian() {
+ConstrainedConditionalGaussian::ConstrainedConditionalGaussian(
+		const string& key) :
+	ConditionalGaussian(key) {
 
 }
-
-ConstrainedConditionalGaussian::ConstrainedConditionalGaussian(const Vector& v) :
-	ConditionalGaussian(v, eye(v.size())) {
-}
-
-ConstrainedConditionalGaussian::ConstrainedConditionalGaussian(const Vector& b,
-		const Matrix& A) :
-	ConditionalGaussian(b, A) {
-}
-
-ConstrainedConditionalGaussian::ConstrainedConditionalGaussian(const Vector& b,
-		const Matrix& A1, const std::string& parent, const Matrix& A2) :
-	ConditionalGaussian(b, A1, parent, A2) {
-}
-
-ConstrainedConditionalGaussian::ConstrainedConditionalGaussian(const Vector& b,
-		const Matrix& A1, const std::string& parentY, const Matrix& A2,
-		const std::string& parentZ, const Matrix& A3)
-: ConditionalGaussian(b, A1, parentY, A2, parentZ, A3)
-{
-}
-
-ConstrainedConditionalGaussian::ConstrainedConditionalGaussian(const Matrix& A1,
-			const std::map<std::string, Matrix>& parents, const Vector& b)
-: ConditionalGaussian(b, A1, parents)
-{
-}
-
 
 ConstrainedConditionalGaussian::ConstrainedConditionalGaussian(
-		const ConstrainedConditionalGaussian& df) {
+		const string& key, const Vector& v) :
+	ConditionalGaussian(key, v, eye(v.size())) {
+}
+
+ConstrainedConditionalGaussian::ConstrainedConditionalGaussian(
+		const string& key, const Vector& b, const Matrix& A) :
+	ConditionalGaussian(key, b, A) {
+}
+
+ConstrainedConditionalGaussian::ConstrainedConditionalGaussian(
+		const string& key, const Vector& b, const Matrix& A1,
+		const std::string& parent, const Matrix& A2) :
+	ConditionalGaussian(key, b, A1, parent, A2) {
+}
+
+ConstrainedConditionalGaussian::ConstrainedConditionalGaussian(
+		const string& key, const Vector& b, const Matrix& A1,
+		const std::string& parentY, const Matrix& A2, const std::string& parentZ,
+		const Matrix& A3) :
+	ConditionalGaussian(key, b, A1, parentY, A2, parentZ, A3) {
+}
+
+ConstrainedConditionalGaussian::ConstrainedConditionalGaussian(
+		const string& key, const Matrix& A1,
+		const std::map<std::string, Matrix>& parents, const Vector& b) :
+	ConditionalGaussian(key, b, A1, parents) {
 }
 
 Vector ConstrainedConditionalGaussian::solve(const VectorConfig& x) const {

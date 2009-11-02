@@ -20,6 +20,7 @@
 #include "GaussianBayesNet.h"
 #include "smallExample.h"
 
+using namespace std;
 using namespace gtsam;
 
 /* ************************************************************************* */
@@ -35,7 +36,7 @@ TEST( GaussianBayesNet, constructor )
   d1(0) = 9; d2(0) = 5;
   
   // define nodes and specify in reverse topological sort (i.e. parents last)
-  ConditionalGaussian x(d1,R11,"y",S12), y(d2,R22);
+  ConditionalGaussian x("x",d1,R11,"y",S12), y("y",d2,R22);
 
   // check small example which uses constructor
   GaussianBayesNet cbn = createSmallGaussianBayesNet();
@@ -82,44 +83,40 @@ TEST( GaussianBayesNet, optimize )
 #ifdef HAVE_BOOST_SERIALIZATION
 TEST( GaussianBayesNet, serialize )
 {
-//     //create a starting CBN
-//     GaussianBayesNet cbn = createSmallGaussianBayesNet();
-//     
-//     //serialize the CBN
-//     std::ostringstream in_archive_stream;
-//     boost::archive::text_oarchive in_archive(in_archive_stream);
-//     in_archive << cbn;
-//     std::string serialized = in_archive_stream.str();
-//     
-//     //DEBUG
-//     std::cout << "CBN Raw string: [" << serialized << "]" << std::endl;
-//     
-//     //remove newlines/carriage returns
-//     std::string clean;
-//     BOOST_FOREACH(char s, serialized)
-//     {
-// 	if (s != '\n') 
-// 	{
-// 	    //copy in character
-// 	    clean.append(std::string(1,s));
-// 	}
-// 	else
-// 	{
-// 	    std::cout << "   Newline character found!" << std::endl;
-// 	    //replace with an identifiable string
-// 	    clean.append(std::string(1,' '));
-// 	}
-//     }
-// 
-//     
-//     std::cout << "Cleaned CBN String: [" << clean << "]" << std::endl;
-//     
-//     //deserialize the CBN
-//     std::istringstream out_archive_stream(clean);
-//     boost::archive::text_iarchive out_archive(out_archive_stream);
-//     GaussianBayesNet output;
-//     out_archive >> output;
-//     CHECK(cbn.equals(output));
+	//create a starting CBN
+	GaussianBayesNet cbn = createSmallGaussianBayesNet();
+
+	//serialize the CBN
+	ostringstream in_archive_stream;
+	boost::archive::text_oarchive in_archive(in_archive_stream);
+	in_archive << cbn;
+	string serialized = in_archive_stream.str();
+
+	//DEBUG
+	cout << "CBN Raw string: [" << serialized << "]" << endl;
+
+	//remove newlines/carriage returns
+	string clean;
+	BOOST_FOREACH(char s, serialized) {
+		if (s != '\n') {
+			//copy in character
+			clean.append(string(1,s));
+			}
+		else {
+			cout << "   Newline character found!" << endl;
+			//replace with an identifiable string
+			clean.append(string(1,' '));
+			}
+		}
+
+	cout << "Cleaned CBN String: [" << clean << "]" << endl;
+
+	//deserialize the CBN
+	istringstream out_archive_stream(clean);
+	boost::archive::text_iarchive out_archive(out_archive_stream);
+	GaussianBayesNet output;
+	out_archive >> output;
+	CHECK(cbn.equals(output));
 }
 #endif //HAVE_BOOST_SERIALIZATION
 

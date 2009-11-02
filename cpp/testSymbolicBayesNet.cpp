@@ -10,6 +10,7 @@ using namespace boost::assign;
 
 #include <CppUnitLite/TestHarness.h>
 
+#include "Ordering.h"
 #include "smallExample.h"
 #include "SymbolicBayesNet.h"
 #include "SymbolicFactorGraph.h"
@@ -22,13 +23,13 @@ TEST( SymbolicBayesNet, constructor )
 {
 	// Create manually
 	SymbolicConditional::shared_ptr
-		x2(new SymbolicConditional("l1", "x1")),
-		l1(new SymbolicConditional("x1")),
-		x1(new SymbolicConditional());
+		x2(new SymbolicConditional("x2","l1", "x1")),
+		l1(new SymbolicConditional("l1","x1")),
+		x1(new SymbolicConditional("x1"));
 	SymbolicBayesNet expected;
-	expected.insert("x2",x2);
-	expected.insert("l1",l1);
-	expected.insert("x1",x1);
+	expected.insert(x2);
+	expected.insert(l1);
+	expected.insert(x1);
 
 	// Create from a factor graph
 	LinearFactorGraph factorGraph = createLinearFactorGraph();

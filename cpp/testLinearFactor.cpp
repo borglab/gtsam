@@ -14,6 +14,8 @@ using namespace boost::assign;
 #include <CppUnitLite/TestHarness.h>
 
 #include "Matrix.h"
+#include "Ordering.h"
+#include "ConditionalGaussian.h"
 #include "smallExample.h"
 
 using namespace std;
@@ -314,7 +316,7 @@ TEST( LinearFactor, eliminate )
 			 +0.00,-8.94427
 			 );
   Vector d(2); d(0) = 2.23607; d(1) = -1.56525;
-  ConditionalGaussian expectedCG(d,R11,"l1",S12,"x1",S13);
+  ConditionalGaussian expectedCG("x2",d,R11,"l1",S12,"x1",S13);
 
   // the expected linear factor
   Matrix Bl1 = Matrix_(2,2,
@@ -384,7 +386,7 @@ TEST( LinearFactor, eliminate2 )
 			 +0.00,-2.23607,+0.00,-8.94427
 			 );
   Vector d(2); d(0) = 2.23607; d(1) = -1.56525;
-  ConditionalGaussian expectedCG(d,R11,"l1x1",S12);
+  ConditionalGaussian expectedCG("x2",d,R11,"l1x1",S12);
 
   // the expected linear factor
   Matrix Bl1x1 = Matrix_(2,4,
@@ -424,7 +426,7 @@ TEST( LinearFactor, eliminate_empty )
   boost::tie(actualCG,actualLF) = f.eliminate("x2");
 
   // expected Conditional Gaussian is just a parent-less node with P(x)=1
-  ConditionalGaussian expectedCG;
+  ConditionalGaussian expectedCG("x2");
 
   // expected remaining factor is still empty :-)
   LinearFactor expectedLF;
@@ -495,8 +497,8 @@ TEST( LinearFactor, CONSTRUCTOR_ConditionalGaussian )
 		       +0.00,-2.23607
 		       );
   Vector d(2); d(0) = 2.23607; d(1) = -1.56525;
-  ConditionalGaussian::shared_ptr CG(new ConditionalGaussian(d,R11,"l1x1",S12) );
-  LinearFactor actualLF("x2",CG);
+  ConditionalGaussian::shared_ptr CG(new ConditionalGaussian("x2",d,R11,"l1x1",S12) );
+  LinearFactor actualLF(CG);
   //  actualLF.print();
   LinearFactor expectedLF("x2",R11,"l1x1",S12,d);
 			  

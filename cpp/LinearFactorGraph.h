@@ -13,13 +13,13 @@
 #pragma once
 
 #include <boost/shared_ptr.hpp>
-
-#include "LinearFactor.h"
-#include "VectorConfig.h"
 #include "FactorGraph.h"
-#include "GaussianBayesNet.h"
+#include "LinearFactor.h"
 
 namespace gtsam {
+
+	class Ordering;
+	class GaussianBayesNet;
 
   /**
    * A Linear Factor Graph is a factor graph where all factors are Gaussian, i.e.

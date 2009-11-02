@@ -9,22 +9,17 @@
 
 #pragma once
 
-#include <list>
-#include <map>
-#include <set>
-#include <ostream>
 #include <boost/shared_ptr.hpp>
-#include <vector>
+#include <boost/serialization/map.hpp>
 
-#include "Matrix.h"
 #include "Factor.h"
-#include "LinearFactorSet.h"
-#include "ConditionalGaussian.h"
-#include "Ordering.h"
-
-#define CONSTRUCTOR 
+#include "Matrix.h"
+#include "VectorConfig.h"
 
 namespace gtsam {
+
+	class ConditionalGaussian;
+	class Ordering;
 
 /**
  * Base Class for a linear factor.
@@ -50,20 +45,17 @@ public:
 	}
 
 	/** Construct Null factor */
-	CONSTRUCTOR
 	LinearFactor(const Vector& b_in) :
 		b(b_in) { //TODO: add a way to initializing base class meaningfully
 	}
 
 	/** Construct unary factor */
-	CONSTRUCTOR
 	LinearFactor(const std::string& key1, const Matrix& A1, const Vector& b_in) :
 		b(b_in) {
 		As.insert(make_pair(key1, A1));
 	}
 
 	/** Construct binary factor */
-	CONSTRUCTOR
 	LinearFactor(const std::string& key1, const Matrix& A1,
 			const std::string& key2, const Matrix& A2, const Vector& b_in) :
 		b(b_in) {
@@ -72,7 +64,6 @@ public:
 	}
 
 	/** Construct ternary factor */
-	CONSTRUCTOR
 	LinearFactor(const std::string& key1, const Matrix& A1,
 			const std::string& key2, const Matrix& A2, const std::string& key3,
 			const Matrix& A3, const Vector& b_in) :
@@ -83,7 +74,6 @@ public:
 	}
 
 	/** Construct an n-ary factor */
-	CONSTRUCTOR
 	LinearFactor(const std::vector<std::pair<std::string, Matrix> > &terms,
 	    const Vector &b_in) :
 	    b(b_in) {
@@ -92,24 +82,12 @@ public:
 	}
 
 	/** Construct from Conditional Gaussian */
-	CONSTRUCTOR
-	LinearFactor(const std::string& key, const boost::shared_ptr<
-			ConditionalGaussian> cg) :
-		b(cg->get_d()) {
-		As.insert(make_pair(key, cg->get_R()));
-		std::map<std::string, Matrix>::const_iterator it = cg->parentsBegin();
-		for (; it != cg->parentsEnd(); it++) {
-			const std::string& j = it->first;
-			const Matrix& Aj = it->second;
-			As.insert(make_pair(j, Aj));
-		}
-	}
+	LinearFactor(const boost::shared_ptr<ConditionalGaussian> cg);
 
 	/**
 	 * Constructor that combines a set of factors
 	 * @param factors Set of factors to combine
 	 */
-	CONSTRUCTOR
 	LinearFactor(const std::vector<shared_ptr> & factors);
 
 	// Implementing Testable virtual functions
@@ -212,7 +190,7 @@ public:
 	 * @param key the key of the node to be eliminated
 	 * @return a new factor and a conditional gaussian on the eliminated variable
 	 */
-	std::pair<ConditionalGaussian::shared_ptr, shared_ptr> eliminate(const std::string& key);
+	std::pair<boost::shared_ptr<ConditionalGaussian>, shared_ptr> eliminate(const std::string& key);
 
 	/**
 	 * Take the factor f, and append to current matrices. Not very general.

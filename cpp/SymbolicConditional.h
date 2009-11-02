@@ -12,14 +12,14 @@
 #include <string>
 #include <boost/shared_ptr.hpp>
 #include <boost/foreach.hpp> // TODO: make cpp file
-#include "Testable.h"
+#include "Conditional.h"
 
 namespace gtsam {
 
 	/**
 	 * Conditional node for use in a Bayes net
 	 */
-	class SymbolicConditional: Testable<SymbolicConditional> {
+	class SymbolicConditional: public Conditional {
 
 	private:
 
@@ -33,20 +33,24 @@ namespace gtsam {
 		/**
 		 * No parents
 		 */
-		SymbolicConditional() {
+		SymbolicConditional(const std::string& key) :
+			Conditional(key) {
 		}
 
 		/**
 		 * Single parent
 		 */
-		SymbolicConditional(const std::string& parent) {
+		SymbolicConditional(const std::string& key, const std::string& parent) :
+			Conditional(key) {
 			parents_.push_back(parent);
 		}
 
 		/**
 		 * Two parents
 		 */
-		SymbolicConditional(const std::string& parent1, const std::string& parent2) {
+		SymbolicConditional(const std::string& key, const std::string& parent1,
+				const std::string& parent2) :
+			Conditional(key) {
 			parents_.push_back(parent1);
 			parents_.push_back(parent2);
 		}
@@ -54,23 +58,33 @@ namespace gtsam {
 		/**
 		 * A list
 		 */
-		SymbolicConditional(const std::list<std::string>& parents):parents_(parents) {
+		SymbolicConditional(const std::string& key,
+				const std::list<std::string>& parents) :
+			Conditional(key), parents_(parents) {
 		}
 
 		/** print */
 		void print(const std::string& s = "SymbolicConditional") const {
-			std::cout << s;
+			std::cout << s << " P(" << key_ << " |";
 			BOOST_FOREACH(std::string parent, parents_) std::cout << " " << parent;
-			std::cout << std::endl;
+			std::cout << ")" << std::endl;
 		}
 
 		/** check equality */
-		bool equals(const SymbolicConditional& other, double tol = 1e-9) const {
-			return parents_ == other.parents_;
+		bool equals(const Conditional& c, double tol = 1e-9) const {
+			if (!Conditional::equals(c)) return false;
+			const SymbolicConditional* p = dynamic_cast<const SymbolicConditional*> (&c);
+			if (p == NULL) return false;
+			return parents_ == p->parents_;
 		}
 
-		/** return any parent */
+		/** return parents */
 		std::list<std::string> parents() const { return parents_;}
+
+		/** find the number of parents */
+		size_t nrParents() const {
+			return parents_.size();
+		}
 
 	};
 

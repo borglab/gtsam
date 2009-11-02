@@ -13,8 +13,8 @@ namespace gtsam {
 
 	/* ************************************************************************* */
 	template<class Conditional>
-	Front<Conditional>::Front(string key, cond_ptr conditional) {
-		add(key, conditional);
+	Front<Conditional>::Front(const conditional_ptr& conditional) {
+		add(conditional);
 		separator_ = conditional->parents();
 	}
 
@@ -22,11 +22,12 @@ namespace gtsam {
 	template<class Conditional>
 	void Front<Conditional>::print(const string& s) const {
 		cout << s;
-		BOOST_FOREACH(string key, keys_) cout << " " << key;
+		BOOST_FOREACH(const conditional_ptr& conditional, conditionals_)
+			cout << " " << conditional->key();
 		if (!separator_.empty()) {
 			cout << " :";
 			BOOST_FOREACH(string key, separator_)
-			cout << " " << key;
+				cout << " " << key;
 		}
 		cout << endl;
 	}
@@ -34,14 +35,12 @@ namespace gtsam {
 	/* ************************************************************************* */
 	template<class Conditional>
 	bool Front<Conditional>::equals(const Front<Conditional>& other, double tol) const {
-		return (keys_ == other.keys_) &&
-		equal(conditionals_.begin(),conditionals_.end(),other.conditionals_.begin(),equals_star<Conditional>);
+		return equal(conditionals_.begin(),conditionals_.end(),other.conditionals_.begin(),equals_star<Conditional>);
 	}
 
 	/* ************************************************************************* */
 	template<class Conditional>
-	void Front<Conditional>::add(string key, cond_ptr conditional) {
-		keys_.push_front(key);
+	void Front<Conditional>::add(const conditional_ptr& conditional) {
 		conditionals_.push_front(conditional);
 	}
 
@@ -51,12 +50,13 @@ namespace gtsam {
 	}
 
 	/* ************************************************************************* */
-	// TODO: traversal is O(n*log(n)) but could be O(n) with better bayesChain
+	// TODO: traversal is O(n*log(n)) but could be O(n) with better bayesNet
 	template<class Conditional>
-	BayesTree<Conditional>::BayesTree(BayesNet<Conditional>& bayesChain, bool verbose) {
-		list<string> reverseOrdering = bayesChain.keys();
-		BOOST_FOREACH(string key, reverseOrdering)
-			insert(key,bayesChain[key],verbose);
+	BayesTree<Conditional>::BayesTree(const BayesNet<Conditional>& bayesNet, bool verbose) {
+		typename BayesNet<Conditional>::const_reverse_iterator rit;
+		for ( rit=bayesNet.rbegin(); rit < bayesNet.rend(); ++rit ) {
+			insert(*rit,verbose);
+		}
 	}
 
 	/* ************************************************************************* */
@@ -78,8 +78,9 @@ namespace gtsam {
 
 	/* ************************************************************************* */
 	template<class Conditional>
-	void BayesTree<Conditional>::insert(string key, conditional_ptr conditional, bool verbose) {
+	void BayesTree<Conditional>::insert(const boost::shared_ptr<Conditional>& conditional, bool verbose) {
 
+		string key =  conditional->key();
 		if (verbose) cout << "Inserting " << key << "| ";
 
 		// get parents
@@ -90,7 +91,7 @@ namespace gtsam {
 		// if no parents, start a new root clique
 		if (parents.empty()) {
 			if (verbose) cout << "Creating root clique" << endl;
-			node_ptr root(new Node(key, conditional));
+			node_ptr root(new Node(conditional));
 			nodes_.push_back(root);
 			nodeMap_.insert(make_pair(key, 0));
 			return;
@@ -108,13 +109,13 @@ namespace gtsam {
 		if (parent_clique->size() == parents.size()) {
 			if (verbose) cout << "Adding to clique " << index << endl;
 			nodeMap_.insert(make_pair(key, index));
-			parent_clique->add(key, conditional);
+			parent_clique->add(conditional);
 			return;
 		}
 
 		// otherwise, start a new clique and add it to the tree
 		if (verbose) cout << "Starting new clique" << endl;
-		node_ptr new_clique(new Node(key, conditional));
+		node_ptr new_clique(new Node(conditional));
 		new_clique->parent_ = parent_clique;
 		parent_clique->children_.push_back(new_clique);
 		nodeMap_.insert(make_pair(key, nodes_.size()));
@@ -123,4 +124,5 @@ namespace gtsam {
 
 	/* ************************************************************************* */
 
-} /// namespace gtsam
+}
+/// namespace gtsam

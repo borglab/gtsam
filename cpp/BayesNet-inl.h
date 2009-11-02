@@ -8,12 +8,13 @@
 #include <boost/foreach.hpp>
 #include <boost/tuple/tuple.hpp>
 
+#include <boost/assign/std/vector.hpp> // for +=
+using namespace boost::assign;
+
+#include "Ordering.h"
 #include "BayesNet.h"
 
 using namespace std;
-
-// trick from some reading group
-#define FOREACH_PAIR( KEY, VAL, COL) BOOST_FOREACH (boost::tie(KEY,VAL),COL)
 
 namespace gtsam {
 
@@ -21,36 +22,28 @@ namespace gtsam {
 	template<class Conditional>
 	void BayesNet<Conditional>::print(const string& s) const {
 		cout << s << ":\n";
-		BOOST_FOREACH(string key, keys_) {
-			const_iterator it = nodes_.find(key);
-			it->second->print("Node[" + key + "]");
-		}
+		std::string key;
+		BOOST_FOREACH(conditional_ptr conditional,conditionals_)
+			conditional->print("Node[" + conditional->key() + "]");
 	}
 
 	/* ************************************************************************* */
 	template<class Conditional>
 	bool BayesNet<Conditional>::equals(const BayesNet& cbn, double tol) const {
+		if(indices_ != cbn.indices_) return false;
 		if(size() != cbn.size()) return false;
-		if(keys_ != cbn.keys_) return false;
-		string key;
-		boost::shared_ptr<Conditional> node;
-		FOREACH_PAIR( key, node, nodes_) {
-			const_iterator cg = cbn.nodes_.find(key);
-			if (cg == nodes_.end()) return false;
-			if (!equals_star(node,cg->second,tol)) return false;
-		}
-		return true;
+		return equal(conditionals_.begin(),conditionals_.begin(),conditionals_.begin(),equals_star<Conditional>);
 	}
 
 	/* ************************************************************************* */
 	template<class Conditional>
 	void BayesNet<Conditional>::insert
-		(const string& key, boost::shared_ptr<Conditional> node) {
-		keys_.push_front(key);
-		nodes_.insert(make_pair(key,node));
+		(const boost::shared_ptr<Conditional>& conditional) {
+		indices_.insert(make_pair(conditional->key(),conditionals_.size()));
+		conditionals_.push_back(conditional);
 	}
 
-	/* ************************************************************************* */
+	/* ************************************************************************* *
 	template<class Conditional>
 	void BayesNet<Conditional>::erase(const string& key) {
 		list<string>::iterator it;
@@ -59,9 +52,18 @@ namespace gtsam {
 				break;
 		}
 		keys_.erase(it);
-		nodes_.erase(key);
+		conditionals_.erase(key);
 	}
 
-/* ************************************************************************* */
+	/* ************************************************************************* */
+	template<class Conditional>
+	Ordering BayesNet<Conditional>::ordering() const {
+		Ordering ord;
+		BOOST_FOREACH(conditional_ptr conditional,conditionals_)
+		   ord.push_back(conditional->key());
+		return ord;
+	}
+
+	/* ************************************************************************* */
 
 } // namespace gtsam

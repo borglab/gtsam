@@ -13,6 +13,7 @@ using namespace boost::assign;
 #include <CppUnitLite/TestHarness.h>
 
 #include "Matrix.h"
+#include "Ordering.h"
 #include "smallExample.h"
 
 // template definitions

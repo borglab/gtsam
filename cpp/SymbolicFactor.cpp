@@ -59,7 +59,7 @@ namespace gtsam {
 	  boost::shared_ptr<SymbolicFactor> lf(new SymbolicFactor(separator));
 
 	  // create SymbolicConditional on separator
-	  SymbolicConditional::shared_ptr cg (new SymbolicConditional(separator));
+	  SymbolicConditional::shared_ptr cg (new SymbolicConditional(key,separator));
 
 	  return make_pair(cg,lf);
 	}

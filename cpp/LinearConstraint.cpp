@@ -81,7 +81,7 @@ ConstrainedConditionalGaussian::shared_ptr LinearConstraint::eliminate(const std
 	parents.erase(key);
 
 	// construct resulting CCG with parts
-	ConstrainedConditionalGaussian::shared_ptr ccg(new ConstrainedConditionalGaussian(A1, parents, b));
+	ConstrainedConditionalGaussian::shared_ptr ccg(new ConstrainedConditionalGaussian(key, A1, parents, b));
 	return ccg;
 }
 

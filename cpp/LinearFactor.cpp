@@ -7,6 +7,10 @@
 
 #include <boost/foreach.hpp>
 #include <boost/tuple/tuple.hpp>
+
+#include "Matrix.h"
+#include "Ordering.h"
+#include "ConditionalGaussian.h"
 #include "LinearFactor.h"
 
 using namespace std;
@@ -19,6 +23,18 @@ using namespace std;
 using namespace gtsam;
 
 typedef pair<const string, Matrix>& mypair;
+
+/* ************************************************************************* */
+LinearFactor::LinearFactor(const boost::shared_ptr<ConditionalGaussian> cg) :
+	b(cg->get_d()) {
+	As.insert(make_pair(cg->key(), cg->get_R()));
+	std::map<std::string, Matrix>::const_iterator it = cg->parentsBegin();
+	for (; it != cg->parentsEnd(); it++) {
+		const std::string& j = it->first;
+		const Matrix& Aj = it->second;
+		As.insert(make_pair(j, Aj));
+	}
+}
 
 /* ************************************************************************* */
 LinearFactor::LinearFactor(const vector<shared_ptr> & factors)
@@ -186,7 +202,7 @@ LinearFactor::eliminate(const string& key)
   // if this factor does not involve key, we exit with empty CG and LF
   if (it==As.end()) {
     // Conditional Gaussian is just a parent-less node with P(x)=1
-    ConditionalGaussian::shared_ptr cg(new ConditionalGaussian);
+    ConditionalGaussian::shared_ptr cg(new ConditionalGaussian(key));
     return make_pair(cg,lf);
   }
 
@@ -227,7 +243,7 @@ LinearFactor::eliminate(const string& key)
   } // column j
   
   // create ConditionalGaussian with first n rows
-  ConditionalGaussian::shared_ptr cg (new ConditionalGaussian(::sub(b,0,n), sub(R,0,n,0,n)) );
+  ConditionalGaussian::shared_ptr cg (new ConditionalGaussian(key,::sub(b,0,n), sub(R,0,n,0,n)) );
   
   // create linear factor with remaining rows
   lf->set_b(::sub(b,n,m));

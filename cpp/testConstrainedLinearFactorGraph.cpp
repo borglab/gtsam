@@ -7,6 +7,7 @@
 #include <CppUnitLite/TestHarness.h>
 #include "ConstrainedLinearFactorGraph.h"
 #include "LinearFactorGraph.h"
+#include "Ordering.h"
 #include "smallExample.h"
 
 using namespace gtsam;
@@ -40,7 +41,7 @@ TEST( ConstrainedLinearFactorGraph, elimination1 )
 	Ax1(1, 0) = 2.0; Ax1(1, 1) = 1.0;
 	Matrix Ay1 = eye(2) * 10;
 	Vector b2 = Vector_(2, 1.0, 2.0);
-	ConstrainedConditionalGaussian expectedCCG1(b2, Ax1, "y", Ay1);
+	ConstrainedConditionalGaussian expectedCCG1("x",b2, Ax1, "y", Ay1);
 	CHECK(expectedCCG1.equals(*((*cbn)["x"])));
 
 	// verify remaining factor on y
@@ -64,7 +65,7 @@ TEST( ConstrainedLinearFactorGraph, elimination1 )
 	R(0, 0) = 74.5356; R(0, 1) = -59.6285;
 	R(1, 0) = 0.0;     R(1, 1) = 44.7214;
 	Vector br = Vector_(2, 8.9443, 4.4721);
-	ConditionalGaussian expected2(br, R);
+	ConditionalGaussian expected2("y",br, R);
 	CHECK(expected2.equals(*((*cbn)["y"])));
 }
 
@@ -236,18 +237,18 @@ TEST( ConstrainedLinearFactorGraph, eliminate_multi_constraint )
 
 	// eliminate the constraint
 	ConstrainedConditionalGaussian::shared_ptr cg1 = fg.eliminate_constraint("x");
-	CHECK(cg1->size() == 1);
+	CHECK(cg1->nrParents() == 1);
 	CHECK(fg.nrFactors() == 1);
 
 	// eliminate the induced constraint
 	ConstrainedConditionalGaussian::shared_ptr cg2 = fg.eliminate_constraint("y");
-	CHECK(cg2->size() == 1);
+	CHECK(cg2->nrParents() == 1);
 	CHECK(fg.nrFactors() == 0);
 
 	// eliminate the linear factor
 	ConditionalGaussian::shared_ptr cg3 = fg.eliminateOne<ConditionalGaussian>("z");
+	CHECK(cg3->nrParents() == 0);
 	CHECK(fg.size() == 0);
-	CHECK(cg3->size() == 0);
 
 	// solve piecewise
 	VectorConfig actual;

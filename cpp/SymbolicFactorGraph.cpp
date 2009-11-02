@@ -22,14 +22,14 @@ namespace gtsam {
 	SymbolicBayesNet::shared_ptr
 	SymbolicFactorGraph::eliminate(const Ordering& ordering)
 	{
-		SymbolicBayesNet::shared_ptr bayesChain (new SymbolicBayesNet());
+		SymbolicBayesNet::shared_ptr bayesNet (new SymbolicBayesNet());
 
 		BOOST_FOREACH(string key, ordering) {
 			SymbolicConditional::shared_ptr conditional = eliminateOne<SymbolicConditional>(key);
-			bayesChain->insert(key,conditional);
+			bayesNet->insert(conditional);
 		}
 
-		return bayesChain;
+		return bayesNet;
 	}
 
 	/* ************************************************************************* */
