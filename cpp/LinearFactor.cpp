@@ -25,7 +25,7 @@ using namespace gtsam;
 typedef pair<const string, Matrix>& mypair;
 
 /* ************************************************************************* */
-LinearFactor::LinearFactor(const boost::shared_ptr<ConditionalGaussian> cg) :
+LinearFactor::LinearFactor(const boost::shared_ptr<ConditionalGaussian>& cg) :
 	b(cg->get_d()) {
 	As.insert(make_pair(cg->key(), cg->get_R()));
 	std::map<std::string, Matrix>::const_iterator it = cg->parentsBegin();

@@ -55,17 +55,24 @@ namespace gtsam {
 	 * Template to create a binary predicate
 	 */
 	template<class V>
-	bool equals(const V& expected, const V& actual, double tol = 1e-9) {
-		return (actual.equals(expected, tol));
-	}
+	struct equals : public std::binary_function<const V&, const V&, bool> {
+		double tol_;
+		equals(double tol = 1e-9) : tol_(tol) {}
+		bool operator()(const V& expected, const V& actual) {
+			return (actual.equals(expected, tol_));
+		}
+	};
 
 	/**
 	 * Binary predicate on shared pointers
 	 */
 	template<class V>
-	bool equals_star(const boost::shared_ptr<V>& expected,
-			const boost::shared_ptr<V>& actual, double tol = 1e-9) {
-		return (actual->equals(*expected, tol));
-	}
+	struct equals_star : public std::binary_function<const boost::shared_ptr<V>&, const boost::shared_ptr<V>&, bool> {
+		double tol_;
+		equals_star(double tol = 1e-9) : tol_(tol) {}
+		bool operator()(const boost::shared_ptr<V>& expected, const boost::shared_ptr<V>& actual) {
+			return (actual->equals(*expected, tol_));
+		}
+	};
 
 } // gtsam

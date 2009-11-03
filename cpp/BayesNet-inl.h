@@ -30,29 +30,8 @@ namespace gtsam {
 	/* ************************************************************************* */
 	template<class Conditional>
 	bool BayesNet<Conditional>::equals(const BayesNet& cbn, double tol) const {
-		if(indices_ != cbn.indices_) return false;
 		if(size() != cbn.size()) return false;
-		return equal(conditionals_.begin(),conditionals_.begin(),conditionals_.begin(),equals_star<Conditional>);
-	}
-
-	/* ************************************************************************* */
-	template<class Conditional>
-	void BayesNet<Conditional>::push_back
-		(const boost::shared_ptr<Conditional>& conditional) {
-		indices_.insert(make_pair(conditional->key(),conditionals_.size()));
-		conditionals_.push_back(conditional);
-	}
-
-	/* ************************************************************************* *
-	template<class Conditional>
-	void BayesNet<Conditional>::erase(const string& key) {
-		list<string>::iterator it;
-		for (it=keys_.begin(); it != keys_.end(); ++it){
-		  if( strcmp(key.c_str(), (*it).c_str()) == 0 )
-				break;
-		}
-		keys_.erase(it);
-		conditionals_.erase(key);
+		return equal(conditionals_.begin(),conditionals_.end(),cbn.conditionals_.begin(),equals_star<Conditional>(tol));
 	}
 
 	/* ************************************************************************* */
@@ -64,6 +43,25 @@ namespace gtsam {
 		return ord;
 	}
 
+	/* ************************************************************************* */
+	// predicate to check whether a conditional has the sought key
+	template<class Conditional>
+	class HasKey {
+		const string& key_;
+	public:
+		HasKey(const std::string& key):key_(key) {}
+		bool operator()(const boost::shared_ptr<Conditional>& conditional) {
+			return (conditional->key()==key_);
+		}
+	};
+
+	template<class Conditional>
+	boost::shared_ptr<Conditional> BayesNet<Conditional>::operator[](const std::string& key) const {
+		const_iterator it = find_if(conditionals_.begin(),conditionals_.end(),HasKey<Conditional>(key));
+		if (it == conditionals_.end()) throw(invalid_argument(
+						"BayesNet::operator['"+key+"']: not found"));
+		return *it;
+	}
 	/* ************************************************************************* */
 
 } // namespace gtsam

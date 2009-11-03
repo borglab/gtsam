@@ -65,7 +65,8 @@ namespace gtsam {
 
 		/** print */
 		void print(const std::string& s = "SymbolicConditional") const {
-			std::cout << s << " P(" << key_ << " |";
+			std::cout << s << " P(" << key_;
+			if (parents_.size()>0) std::cout << " |";
 			BOOST_FOREACH(std::string parent, parents_) std::cout << " " << parent;
 			std::cout << ")" << std::endl;
 		}

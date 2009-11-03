@@ -54,9 +54,9 @@ TEST( BayesTree, constructor )
 
 	// Check root
 	BayesNet<SymbolicConditional> expected_root;
-	expected_root.push_back(B);
-	expected_root.push_back(L);
 	expected_root.push_back(E);
+	expected_root.push_back(L);
+	expected_root.push_back(B);
 	BayesNet<SymbolicConditional> actual_root = bayesTree.root();
 	CHECK(assert_equal(expected_root,actual_root));
 
@@ -68,7 +68,7 @@ TEST( BayesTree, constructor )
 	ASIA.push_back(E);
 	ASIA.push_back(L);
 	ASIA.push_back(B);
-	bool verbose = true;
+	bool verbose = false;
 	BayesTree<SymbolicConditional> bayesTree2(ASIA,verbose);
 	if (verbose) bayesTree2.print("bayesTree2");
 

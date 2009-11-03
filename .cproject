@@ -490,9 +490,10 @@
 <useDefaultCommand>false</useDefaultCommand>
 <runAllBuilders>true</runAllBuilders>
 </target>
-<target name="testSymbolicBayesChain.run" path="cpp" targetID="org.eclipse.cdt.build.MakeTargetBuilder">
+<target name="testSymbolicBayesNet.run" path="cpp" targetID="org.eclipse.cdt.build.MakeTargetBuilder">
 <buildCommand>make</buildCommand>
-<buildTarget>testSymbolicBayesChain.run</buildTarget>
+<buildArguments/>
+<buildTarget>testSymbolicBayesNet.run</buildTarget>
 <stopOnError>true</stopOnError>
 <useDefaultCommand>false</useDefaultCommand>
 <runAllBuilders>true</runAllBuilders>

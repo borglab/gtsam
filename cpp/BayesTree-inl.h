@@ -50,9 +50,8 @@ namespace gtsam {
 	template<class Conditional>
 	BayesTree<Conditional>::BayesTree(const BayesNet<Conditional>& bayesNet, bool verbose) {
 		typename BayesNet<Conditional>::const_reverse_iterator rit;
-		for ( rit=bayesNet.rbegin(); rit < bayesNet.rend(); ++rit ) {
+		for ( rit=bayesNet.rbegin(); rit != bayesNet.rend(); ++rit )
 			insert(*rit,verbose);
-		}
 	}
 
 	/* ************************************************************************* */
@@ -69,7 +68,7 @@ namespace gtsam {
 			double tol) const {
 		return size()==other.size() &&
 		equal(nodeMap_.begin(),nodeMap_.end(),other.nodeMap_.begin()) &&
-		equal(nodes_.begin(),nodes_.end(),other.nodes_.begin(),equals_star<Node>);
+		equal(nodes_.begin(),nodes_.end(),other.nodes_.begin(),equals_star<Node>(tol));
 	}
 
 	/* ************************************************************************* */
@@ -106,7 +105,7 @@ namespace gtsam {
 		if (parent_clique->size() == parents.size()) {
 			if (verbose) cout << "Adding to clique " << index << endl;
 			nodeMap_.insert(make_pair(key, index));
-			parent_clique->push_back(conditional);
+			parent_clique->push_front(conditional);
 			return;
 		}
 

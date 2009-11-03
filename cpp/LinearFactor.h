@@ -82,7 +82,7 @@ public:
 	}
 
 	/** Construct from Conditional Gaussian */
-	LinearFactor(const boost::shared_ptr<ConditionalGaussian> cg);
+	LinearFactor(const boost::shared_ptr<ConditionalGaussian>& cg);
 
 	/**
 	 * Constructor that combines a set of factors

@@ -8,10 +8,9 @@
 
 #pragma once
 
-#include <vector>
+#include <list>
 #include <boost/shared_ptr.hpp>
-#include <boost/serialization/map.hpp>
-#include <boost/serialization/vector.hpp>
+#include <boost/serialization/list.hpp>
 #include <boost/serialization/shared_ptr.hpp>
 
 #include "Testable.h"
@@ -33,7 +32,8 @@ namespace gtsam {
 
 		/** We store shared pointers to Conditional densities */
 		typedef typename boost::shared_ptr<Conditional> conditional_ptr;
-		typedef typename std::vector<conditional_ptr> Conditionals;
+		typedef typename std::list<conditional_ptr> Conditionals;
+
 		typedef typename Conditionals::const_iterator const_iterator;
 		typedef typename Conditionals::const_reverse_iterator const_reverse_iterator;
 
@@ -46,19 +46,6 @@ namespace gtsam {
 		 */
 		Conditionals conditionals_;
 
-		/**
-		 *   O(log n) random access on keys will provided by a map from keys to vector index.
-		 */
-		typedef std::map<std::string, int> Indices;
-		Indices indices_;
-
-		/** O(log n) lookup from key to node index */
-		inline int index(const std::string& key) const {
-			Indices::const_iterator it = indices_.find(key); // get node index
-			assert( it != indices_.end() );
-			return it->second;
-		}
-
 	public:
 
 		/** print */
@@ -68,7 +55,14 @@ namespace gtsam {
 		bool equals(const BayesNet& other, double tol = 1e-9) const;
 
 		/** push_back: use reverse topological sort (i.e. parents last / elimination order) */
-		void push_back(const boost::shared_ptr<Conditional>& conditional);
+		inline void push_back(const boost::shared_ptr<Conditional>& conditional) {
+			conditionals_.push_back(conditional);
+		}
+
+		/** push_front: use topological sort (i.e. parents first / reverse elimination order) */
+		inline void push_front(const boost::shared_ptr<Conditional>& conditional) {
+			conditionals_.push_front(conditional);
+		}
 
 		/** size is the number of nodes */
 		inline size_t size() const {
@@ -78,11 +72,8 @@ namespace gtsam {
 		/** return keys in reverse topological sort order, i.e., elimination order */
 		Ordering ordering() const;
 
-		/** O(log n) random access to Conditional by key */
-		inline conditional_ptr operator[](const std::string& key) const {
-			int i = index(key);
-			return conditionals_[i];
-		}
+		/** SLOW O(n) random access to Conditional by key */
+		conditional_ptr operator[](const std::string& key) const;
 
 		/** return iterators. FD: breaks encapsulation? */
 		const_iterator const begin() const {return conditionals_.begin();}
@@ -96,7 +87,6 @@ namespace gtsam {
 		template<class Archive>
 		void serialize(Archive & ar, const unsigned int version) {
 			ar & BOOST_SERIALIZATION_NVP(conditionals_);
-			ar & BOOST_SERIALIZATION_NVP(indices_);
 		}
 	};
 
