@@ -9,6 +9,7 @@
 #include <iostream>
 #include <sstream>
 #include <iomanip>
+#include <boost/FOREACH.hpp>
 
 #ifdef WIN32
 #include <Windows.h>
@@ -86,14 +87,8 @@ namespace gtsam {
   }
   
   /* ************************************************************************* */
-  Vector zero(size_t n) { 
-    Vector v(n); fill_n(v.begin(),n,0);
-    return v;
-  }
-  
-  /* ************************************************************************* */
-  Vector ones(size_t n) {
-    Vector v(n); fill_n(v.begin(),n,1.0);
+  Vector repeat(size_t n, double value) {
+    Vector v(n); fill_n(v.begin(),n,value);
     return v;
   }
 
@@ -146,6 +141,16 @@ namespace gtsam {
     return v_return;
   }
   
+  /* ************************************************************************* */
+  Vector ediv(const Vector &a, const Vector &b) {
+  	size_t n = a.size();
+		assert (b.size()==n);
+		Vector c(n);
+		for( size_t i = 0; i < n; i++ )
+			c(i) = a(i)/b(i);
+		return c;
+		}
+
   /* ************************************************************************* */
   pair<double, Vector > house(Vector &x)
   {

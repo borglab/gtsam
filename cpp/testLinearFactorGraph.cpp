@@ -70,7 +70,13 @@ TEST( LinearFactorGraph, combine_factors_x1 )
   // create a small example for a linear factor graph
   LinearFactorGraph fg = createLinearFactorGraph();
 
-  // combine all factors
+  // create sigmas
+  double sigma1 = 0.1;
+  double sigma2 = 0.1;
+  double sigma3 = 0.2;
+  Vector sigmas = Vector_(6, sigma1, sigma1, sigma2, sigma2, sigma3, sigma3);
+  
+  // combine all factors	
   LinearFactor::shared_ptr actual = fg.removeAndCombineFactors("x1");
 
   // the expected linear factor
@@ -79,38 +85,43 @@ TEST( LinearFactorGraph, combine_factors_x1 )
 			 0., 0.,
 			 0., 0.,
 			 0., 0.,
-			 5., 0.,
-			 0., 5.
+			 1., 0.,
+			 0., 1.
 			 );
 
   Matrix Ax1 = Matrix_(6,2,
-			 10.,   0.,
-			 0.00, 10.,
-			 -10.,  0.,
-			 0.00,-10.,
-			 -5.,   0.,
-			 00.,  -5.
+			 1.,   0.,
+			 0.00, 1.,
+			 -1.,  0.,
+			 0.00,-1.,
+			 -1.,   0.,
+			 00.,  -1.
 			 );
 
   Matrix Ax2 = Matrix_(6,2,
 			 0., 0.,
 			 0., 0.,
-			 10., 0.,
-			 +0.,10.,
+			 1., 0.,
+			 +0.,1.,
 			 0., 0.,
 			 0., 0.
 			 );
 
   // the expected RHS vector
   Vector b(6);
-  b(0) = -1;
-  b(1) = -1;
-  b(2) =  2;
-  b(3) = -1;
-  b(4) =  0;
-  b(5) =  1;
+  b(0) = -1*sigma1;
+  b(1) = -1*sigma1;
+  b(2) =  2*sigma2;
+  b(3) = -1*sigma2;
+  b(4) =  0*sigma3;
+  b(5) =  1*sigma3;
 
-  LinearFactor expected("l1", Al1, "x1", Ax1, "x2", Ax2, b);
+  vector<pair<string, Matrix> > meas;
+  meas.push_back(make_pair("l1", Al1));
+  meas.push_back(make_pair("x1", Ax1));
+  meas.push_back(make_pair("x2", Ax2));
+  LinearFactor expected(meas, b, sigmas);
+  //LinearFactor expected("l1", Al1, "x1", Ax1, "x2", Ax2, b);
 
   // check if the two factors are the same
   CHECK(assert_equal(expected,*actual));
@@ -122,6 +133,11 @@ TEST( LinearFactorGraph, combine_factors_x2 )
  // create a small example for a linear factor graph
   LinearFactorGraph fg = createLinearFactorGraph();
 
+  // determine sigmas
+  double sigma1 = 0.1;
+  double sigma2 = 0.2;
+  Vector sigmas = Vector_(4, sigma1, sigma1, sigma2, sigma2);
+
   // combine all factors
   LinearFactor::shared_ptr actual = fg.removeAndCombineFactors("x2");
 
@@ -130,34 +146,38 @@ TEST( LinearFactorGraph, combine_factors_x2 )
 			 // l1
 			 0., 0.,
 			 0., 0.,
-			 5., 0.,
-			 0., 5.
+			 1., 0.,
+			 0., 1.
 			 );
 
   Matrix Ax1 = Matrix_(4,2,
                          // x1
-			 -10.,  0.,  // f2
-			 0.00,-10.,  // f2
+			 -1.,  0.,  // f2
+			 0.00,-1.,  // f2
 			 0.00,  0., // f4
 			 0.00,  0.  // f4
 			 );
 
   Matrix Ax2 = Matrix_(4,2,
 			 // x2
-			 10., 0.,
-			 +0.,10.,
-			 -5., 0.,
-			 +0.,-5.
+			 1., 0.,
+			 +0.,1.,
+			 -1., 0.,
+			 +0.,-1.
 			 );
 
   // the expected RHS vector
   Vector b(4);
-  b(0) = 2;
-  b(1) = -1;
-  b(2) = -1;
-  b(3) = 1.5;
+  b(0) = 2*sigma1;
+  b(1) = -1*sigma1;
+  b(2) = -1*sigma2;
+  b(3) = 1.5*sigma2;
 
-  LinearFactor expected("l1", Al1, "x1", Ax1, "x2", Ax2, b);
+  vector<pair<string, Matrix> > meas;
+  meas.push_back(make_pair("l1", Al1));
+  meas.push_back(make_pair("x1", Ax1));
+  meas.push_back(make_pair("x2", Ax2));
+  LinearFactor expected(meas, b, sigmas);
 
   // check if the two factors are the same
   CHECK(assert_equal(expected,*actual));
@@ -173,19 +193,21 @@ TEST( LinearFactorGraph, eliminateOne_x1 )
 
   // create expected Conditional Gaussian
   Matrix R11 = Matrix_(2,2,
-			 15.0, 00.0,
-			 00.0, 15.0
+			 1.0, 0.0,
+			 0.0, 1.0
 			 );
   Matrix S12 = Matrix_(2,2,
-			 -1.66667, 0.00,
-			 +0.00,-1.66667
+			 -0.111111, 0.00,
+			 +0.00,-0.111111
 			 );
   Matrix S13 = Matrix_(2,2,
-			 -6.66667, 0.00,
-			 +0.00,-6.66667
+			 -0.444444, 0.00,
+			 +0.00,-0.444444
 			 );
-  Vector d(2); d(0) = -2; d(1) = -1.0/3.0;
-  ConditionalGaussian expected("x1",d,R11,"l1",S12,"x2",S13);
+  Vector d(2); d(0) = -0.133333; d(1) = -0.0222222;
+  Vector tau(2); tau(0) = 225; tau(1) = 225;
+
+  ConditionalGaussian expected("x1",d,R11,"l1",S12,"x2",S13,tau);
 
   CHECK(assert_equal(expected,*actual,tol));
 }
@@ -200,19 +222,21 @@ TEST( LinearFactorGraph, eliminateOne_x2 )
 
   // create expected Conditional Gaussian
   Matrix R11 = Matrix_(2,2,
-			 11.1803,  0.00,
-			 0.00, 11.1803
+			 1.0, 0.0,
+			 0.0, 1.0
 			 );
   Matrix S12 = Matrix_(2,2,
-			 -2.23607, 0.00,
-			 +0.00,-2.23607
+			 -0.2, 0.0,
+			 +0.0,-0.2
 			 );
   Matrix S13 = Matrix_(2,2,
-			 -8.94427, 0.00,
-			 +0.00,-8.94427
+			 -0.8, 0.0,
+			 +0.0,-0.8
 			 );
-  Vector d(2); d(0) = 2.23607; d(1) = -1.56525;
-  ConditionalGaussian expected("x2",d,R11,"l1",S12,"x1",S13);
+  Vector d(2); d(0) = 0.2; d(1) = -0.14;
+  Vector tau(2); tau(0) = 125; tau(1) = 125;
+
+  ConditionalGaussian expected("x2",d,R11,"l1",S12,"x1",S13,tau);
 
   CHECK(assert_equal(expected,*actual,tol));
 }
@@ -226,19 +250,21 @@ TEST( LinearFactorGraph, eliminateOne_l1 )
 
   // create expected Conditional Gaussian
   Matrix R11 = Matrix_(2,2,
-			 7.07107, 0.00,
-			 0.00, 7.07107
+			 1.0, 0.0,
+			 0.0, 1.0
 			 );
   Matrix S12 = Matrix_(2,2,
-			 -3.53553, 0.00,
-			 +0.00,-3.53553
+			 -0.5, 0.0,
+			 +0.0,-0.5
 			 );
   Matrix S13 = Matrix_(2,2,
-			 -3.53553, 0.00,
-			 +0.00,-3.53553
+			 -0.5, 0.0,
+			 +0.0,-0.5
 			 );
-  Vector d(2); d(0) = -0.707107; d(1) = 1.76777;
-  ConditionalGaussian expected("l1",d,R11,"x1",S12,"x2",S13);
+  Vector d(2); d(0) = -0.1; d(1) = 0.25;
+  Vector tau(2); tau(0) = 50; tau(1) = 50;
+
+  ConditionalGaussian expected("l1",d,R11,"x1",S12,"x2",S13,tau);
 
   CHECK(assert_equal(expected,*actual,tol));
 }
@@ -247,39 +273,45 @@ TEST( LinearFactorGraph, eliminateOne_l1 )
 TEST( LinearFactorGraph, eliminateAll )
 {
   // create expected Chordal bayes Net
-  double data1[] = { 10, 0.0,
-                    0.0, 10};
+  double data1[] = { 1.0, 0.0,
+                     0.0, 1.0};
   Matrix R1 = Matrix_(2,2, data1);
-  Vector d1(2); d1(0) = -1; d1(1) = -1;
-  ConditionalGaussian::shared_ptr cg1(new ConditionalGaussian("x1",d1, R1));
-  
-  double data21[] = { 6.7082, 0.0,
-                     0.0, 6.7082};
+  Vector d1(2); d1(0) = -0.1; d1(1) = -0.1;
+  Vector tau1(2); tau1(0) = 100; tau1(1) = 100;
+
+  ConditionalGaussian::shared_ptr cg1(new ConditionalGaussian("x1",d1, R1, tau1));
+
+  double data21[] = { 1.0, 0.0,
+                      0.0, 1.0};
   Matrix R2 = Matrix_(2,2, data21);
-  double data22[] = { -6.7082, 0.0,
-                       0.0, -6.7082};
+  double data22[] = { -1.0,  0.0,
+                       0.0, -1.0};
   Matrix A1 = Matrix_(2,2, data22);
-  Vector d2(2); d2(0) = 0.0; d2(1) = 1.34164;
-  ConditionalGaussian::shared_ptr cg2(new ConditionalGaussian("l1",d2, R2, "x1", A1));
-  
-  double data31[] = { 11.1803, 0.0,
-                         0.0, 11.1803};
+  Vector d2(2); d2(0) = 0.0; d2(1) = 0.2;
+  Vector tau2(2); tau2(0) = 45; tau2(1) = 45;
+
+  ConditionalGaussian::shared_ptr cg2(new ConditionalGaussian("l1",d2, R2,"x1", A1,tau2));
+
+  double data31[] = { 1.0, 0.0,
+                      0.0, 1.0};
   Matrix R3 = Matrix_(2,2, data31);
-  double data32[] = { -2.23607, 0.0,
-                          0.0, -2.23607};
+  double data32[] = { -0.2,  0.0,
+                       0.0, -0.2};
   Matrix A21 = Matrix_(2,2, data32);
-  double data33[] = { -8.94427, 0.0,
-                          0.0, -8.94427};
+  double data33[] = { -0.8, 0.0,
+                       0.0, -0.8};
   Matrix A22 = Matrix_(2,2, data33);
-  
-  Vector d3(2); d3(0) = 2.23607; d3(1) = -1.56525;
-  ConditionalGaussian::shared_ptr cg3(new ConditionalGaussian("x2",d3, R3, "l1", A21, "x1", A22));
-  
+
+  Vector d3(2); d3(0) = 0.2; d3(1) = -0.14;
+  Vector tau3(2); tau3(0) = 125; tau3(1) = 125;
+
+  ConditionalGaussian::shared_ptr cg3(new ConditionalGaussian("x2",d3, R3,"l1", A21, "x1", A22, tau3));
+
   GaussianBayesNet expected;
   expected.push_back(cg3);
   expected.push_back(cg2);
   expected.push_back(cg1);
-  
+
   // Check one ordering
   LinearFactorGraph fg1 = createLinearFactorGraph();
   Ordering ord1;
@@ -294,12 +326,13 @@ TEST( LinearFactorGraph, add_priors )
   LinearFactorGraph fg = createLinearFactorGraph();
   LinearFactorGraph actual = fg.add_priors(3);
   LinearFactorGraph expected = createLinearFactorGraph();
-  Matrix A = 3*eye(2);
+  Matrix A = eye(2);
   Vector b = zero(2);
-  expected.push_back(LinearFactor::shared_ptr(new LinearFactor("l1",A,b)));
-  expected.push_back(LinearFactor::shared_ptr(new LinearFactor("x1",A,b)));
-  expected.push_back(LinearFactor::shared_ptr(new LinearFactor("x2",A,b)));
-  CHECK(assert_equal(expected,actual));
+  double sigma = 1.0/3.0;
+  expected.push_back(LinearFactor::shared_ptr(new LinearFactor("l1",A,b,sigma)));
+  expected.push_back(LinearFactor::shared_ptr(new LinearFactor("x1",A,b,sigma)));
+  expected.push_back(LinearFactor::shared_ptr(new LinearFactor("x2",A,b,sigma)));
+  CHECK(assert_equal(expected,actual)); // Fails
 }
 
 /* ************************************************************************* */
@@ -355,7 +388,6 @@ TEST( LinearFactorGraph, matrix )
 /* ************************************************************************* */
 TEST( LinearFactorGraph, CONSTRUCTOR_GaussianBayesNet )
 {
-
   LinearFactorGraph fg = createLinearFactorGraph();
 
   // render with a given ordering
@@ -364,7 +396,7 @@ TEST( LinearFactorGraph, CONSTRUCTOR_GaussianBayesNet )
   GaussianBayesNet::shared_ptr CBN = fg.eliminate(ord);
   LinearFactorGraph fg2(*CBN);
   GaussianBayesNet::shared_ptr CBN2 = fg2.eliminate(ord);
-  
+
   CHECK(CBN->equals(*CBN2));
 }
 
@@ -399,39 +431,39 @@ TEST( LinearFactorGraph, OPTIMIZE )
 /* ************************************************************************* */
 TEST( LinearFactorGraph, COMBINE_GRAPHS_INPLACE)
 {
-		// create a test graph 
-		LinearFactorGraph fg1 = createLinearFactorGraph();
-		
-		// create another factor graph
-		LinearFactorGraph fg2 = createLinearFactorGraph();
-		
-		// get sizes
-		int size1 = fg1.size();
-		int size2 = fg2.size();
-		
-		// combine them
-		fg1.combine(fg2);
-		
-		CHECK(size1+size2 == fg1.size());  
+	// create a test graph
+	LinearFactorGraph fg1 = createLinearFactorGraph();
+
+	// create another factor graph
+	LinearFactorGraph fg2 = createLinearFactorGraph();
+
+	// get sizes
+	int size1 = fg1.size();
+	int size2 = fg2.size();
+
+	// combine them
+	fg1.combine(fg2);
+
+	CHECK(size1+size2 == fg1.size());
 }
 
 /* ************************************************************************* */
 TEST( LinearFactorGraph, COMBINE_GRAPHS)
 {
-		// create a test graph 
-		LinearFactorGraph fg1 = createLinearFactorGraph();
-		
-		// create another factor graph
-		LinearFactorGraph fg2 = createLinearFactorGraph();
-		
-		// get sizes
-		int size1 = fg1.size();
-		int size2 = fg2.size();
-		
-		// combine them
-		LinearFactorGraph fg3 = LinearFactorGraph::combine2(fg1, fg2);
-		
-		CHECK(size1+size2 == fg3.size()); 
+	// create a test graph
+	LinearFactorGraph fg1 = createLinearFactorGraph();
+
+	// create another factor graph
+	LinearFactorGraph fg2 = createLinearFactorGraph();
+
+	// get sizes
+	int size1 = fg1.size();
+	int size2 = fg2.size();
+
+	// combine them
+	LinearFactorGraph fg3 = LinearFactorGraph::combine2(fg1, fg2);
+
+	CHECK(size1+size2 == fg3.size());
 }
 
 /* ************************************************************************* */

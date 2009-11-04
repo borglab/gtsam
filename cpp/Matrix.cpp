@@ -221,7 +221,7 @@ pair<Matrix,Matrix> qr(const Matrix& A) {
       v(k) = k<j ? 0.0 : vjm(k-j);
 
     // create Householder reflection matrix Qj = I-beta*v*v'
-    Matrix Qj = eye(m) - beta * Matrix(outer_prod(v,v));
+    Matrix Qj = eye(m) - beta * Matrix(outer_prod(v,v)); //BAD: Fix this
 
     R = Qj * R; // update R
     Q = Q * Qj; // update Q

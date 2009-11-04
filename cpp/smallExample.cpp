@@ -129,57 +129,62 @@ LinearFactorGraph createLinearFactorGraph()
   // Create
   LinearFactorGraph fg;
 
+  double sigma1 = 0.1;
+
   // prior on x1
   Matrix A11(2,2);
-  A11(0,0) = 10; A11(0,1) =  0;
-  A11(1,0) =  0; A11(1,1) = 10;
+  A11(0,0) = 1; A11(0,1) =  0;
+  A11(1,0) =  0; A11(1,1) = 1;
 
-  Vector b = - c["x1"]/0.1;
+  Vector b = - c["x1"];
 
-  LinearFactor::shared_ptr f1(new LinearFactor("x1", A11, b));
+  LinearFactor::shared_ptr f1(new LinearFactor("x1", A11, b, sigma1));
   fg.push_back(f1);
 
   // odometry between x1 and x2
+  double sigma2 = 0.1;
   Matrix A21(2,2);
-  A21(0,0) = -10 ; A21(0,1) =   0;
-  A21(1,0) =   0 ; A21(1,1) = -10;
+  A21(0,0) = -1 ; A21(0,1) =   0;
+  A21(1,0) =   0 ; A21(1,1) = -1;
 
   Matrix A22(2,2);
-  A22(0,0) = 10 ; A22(0,1) =  0;
-  A22(1,0) =  0 ; A22(1,1) = 10;
+  A22(0,0) = 1 ; A22(0,1) =  0;
+  A22(1,0) =  0 ; A22(1,1) = 1;
 
   // Vector b(2);
-  b(0) = 2 ; b(1) = -1;
+  b(0) = 0.2 ; b(1) = -0.1;
 
-  LinearFactor::shared_ptr f2(new LinearFactor("x1", A21,  "x2", A22, b));
+  LinearFactor::shared_ptr f2(new LinearFactor("x1", A21,  "x2", A22, b, sigma2));
   fg.push_back(f2);
 
   // measurement between x1 and l1
+  double sigma3 = 0.2;
   Matrix A31(2,2);
-  A31(0,0) = -5; A31(0,1) =  0;
-  A31(1,0) =  0; A31(1,1) = -5;
+  A31(0,0) = -1; A31(0,1) =  0;
+  A31(1,0) =  0; A31(1,1) = -1;
 
   Matrix A32(2,2);
-  A32(0,0) = 5 ; A32(0,1) = 0;
-  A32(1,0) = 0 ; A32(1,1) = 5;
+  A32(0,0) = 1 ; A32(0,1) = 0;
+  A32(1,0) = 0 ; A32(1,1) = 1;
 
-  b(0) = 0 ; b(1) = 1;
+  b(0) = 0 ; b(1) = 0.2;
 
-  LinearFactor::shared_ptr f3(new LinearFactor("x1", A31, "l1", A32, b));
+  LinearFactor::shared_ptr f3(new LinearFactor("x1", A31, "l1", A32, b, sigma3));
   fg.push_back(f3);
 
   // measurement between x2 and l1
+  double sigma4 = 0.2;
   Matrix A41(2,2);
-  A41(0,0) = -5 ; A41(0,1) =  0;
-  A41(1,0) =  0 ; A41(1,1) = -5;
+  A41(0,0) = -1 ; A41(0,1) =  0;
+  A41(1,0) =  0 ; A41(1,1) = -1;
 
   Matrix A42(2,2);
-  A42(0,0) = 5 ; A42(0,1) = 0;
-  A42(1,0) = 0 ; A42(1,1) = 5;
+  A42(0,0) = 1 ; A42(0,1) = 0;
+  A42(1,0) = 0 ; A42(1,1) = 1;
 
-  b(0)= -1 ; b(1) = 1.5;
+  b(0)= -0.2 ; b(1) = 0.3;
 
-  LinearFactor::shared_ptr f4(new LinearFactor("x2", A41, "l1", A42, b));
+  LinearFactor::shared_ptr f4(new LinearFactor("x2", A41, "l1", A42, b, sigma4));
   fg.push_back(f4);
 
   return fg;
@@ -197,11 +202,12 @@ GaussianBayesNet createSmallGaussianBayesNet()
   Matrix                          R22 = Matrix_(1,1,1.0);
   Vector d1(1), d2(1);
   d1(0) = 9; d2(0) = 5;
+  Vector tau(1); tau(0) = 1.0;
   
   // define nodes and specify in reverse topological sort (i.e. parents last)
   ConditionalGaussian::shared_ptr
-    Px_y(new ConditionalGaussian("x",d1,R11,"y",S12)),
-    Py(new ConditionalGaussian("y",d2,R22));
+    Px_y(new ConditionalGaussian("x",d1,R11,"y",S12,tau)),
+    Py(new ConditionalGaussian("y",d2,R22,tau));
   GaussianBayesNet cbn;
   cbn.push_back(Px_y);
   cbn.push_back(Py);
@@ -276,11 +282,11 @@ ConstrainedLinearFactorGraph createSingleConstraintGraph() {
 	// create unary factor
 	// prior on "x", mean = [1,-1], sigma=0.1
 	double sigma = 0.1;
-	Matrix Ax = eye(2) / sigma;
+	Matrix Ax = eye(2);
 	Vector b1(2);
 	b1(0) = 1.0;
 	b1(1) = -1.0;
-	LinearFactor::shared_ptr f1(new LinearFactor("x", Ax, b1 / sigma));
+	LinearFactor::shared_ptr f1(new LinearFactor("x", Ax, b1, sigma));
 
 	// create binary constraint factor
 	// between "x" and "y", that is going to be the only factor on "y"
@@ -306,9 +312,9 @@ ConstrainedLinearFactorGraph createSingleConstraintGraph() {
 ConstrainedLinearFactorGraph createMultiConstraintGraph() {
 	// unary factor 1
 	double sigma = 0.1;
-	Matrix A = eye(2) / sigma;
-	Vector b = Vector_(2, -2.0, 2.0)/sigma;
-	LinearFactor::shared_ptr lf1(new LinearFactor("x", A, b));
+	Matrix A = eye(2);
+	Vector b = Vector_(2, -2.0, 2.0);
+	LinearFactor::shared_ptr lf1(new LinearFactor("x", A, b, sigma));
 
 	// constraint 1
 	Matrix A11(2,2);

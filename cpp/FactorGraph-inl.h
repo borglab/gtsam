@@ -197,9 +197,12 @@ template<class Factor>
 boost::shared_ptr<Factor>
 FactorGraph<Factor>::removeAndCombineFactors(const string& key)
 {
+	bool verbose = false;
+	if (verbose) cout << "FactorGraph::removeAndCombineFactors" << endl;
 	typedef typename boost::shared_ptr<Factor> shared_factor;
 	vector<shared_factor> found = findAndRemoveFactors(key);
 	shared_factor new_factor(new Factor(found));
+	if (verbose) cout << "FactorGraph::removeAndCombineFactors done" << endl;
 	return new_factor;
 }
 

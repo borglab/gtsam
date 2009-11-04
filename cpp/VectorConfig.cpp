@@ -65,22 +65,15 @@ void VectorConfig::print(const std::string& name) const {
 /* ************************************************************************* */
 bool VectorConfig::equals(const VectorConfig& expected, double tol) const {
   string j; Vector vActual;
-  if( values.size() != expected.size() ) goto fail;
+  if( values.size() != expected.size() ) return false;
 
   // iterate over all nodes
   FOREACH_PAIR(j, vActual, values) {
     Vector vExpected = expected[j];
     if(!equal_with_abs_tol(vExpected,vActual,tol)) 
-      goto fail;
+    	return false;
   }
-
   return true;
-
-fail: 
-  // print and return false
-  print();
-  expected.print();
-  return false;
 }
 
 /* ************************************************************************* */

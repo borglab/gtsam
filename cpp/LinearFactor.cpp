@@ -7,6 +7,8 @@
 
 #include <boost/foreach.hpp>
 #include <boost/tuple/tuple.hpp>
+#include <boost/assign/list_inserter.hpp> // for 'insert()'
+#include <boost/assign/std/list.hpp> // for operator += in Ordering
 
 #include "Matrix.h"
 #include "Ordering.h"
@@ -14,52 +16,65 @@
 #include "LinearFactor.h"
 
 using namespace std;
+using namespace boost::assign;
 namespace ublas = boost::numeric::ublas;
 
 // trick from some reading group
 #define FOREACH_PAIR( KEY, VAL, COL) BOOST_FOREACH (boost::tie(KEY,VAL),COL) 
 
-using namespace std;
 using namespace gtsam;
 
 typedef pair<const string, Matrix>& mypair;
 
 /* ************************************************************************* */
 LinearFactor::LinearFactor(const boost::shared_ptr<ConditionalGaussian>& cg) :
-	b(cg->get_d()) {
-	As.insert(make_pair(cg->key(), cg->get_R()));
+	b_(cg->get_d()) {
+	As_.insert(make_pair(cg->key(), cg->get_R()));
 	std::map<std::string, Matrix>::const_iterator it = cg->parentsBegin();
 	for (; it != cg->parentsEnd(); it++) {
 		const std::string& j = it->first;
 		const Matrix& Aj = it->second;
-		As.insert(make_pair(j, Aj));
+		As_.insert(make_pair(j, Aj));
 	}
+	// set sigmas from precisions
+	size_t n = b_.size();
+	sigmas_ = ediv(ones(n),cg->get_precisions());
+	for(int j=0;j<n;j++) sigmas_(j)=sqrt(sigmas_(j));
 }
 
 /* ************************************************************************* */
 LinearFactor::LinearFactor(const vector<shared_ptr> & factors)
 {
-  // Create RHS vector of the right size by adding together row counts
+	bool verbose = false;
+	if (verbose) cout << "LinearFactor::LinearFactor (factors)" << endl;
+
+	// Create RHS and precision vector of the right size by adding together row counts
   size_t m = 0;
   BOOST_FOREACH(shared_ptr factor, factors) m += factor->numberOfRows();
-  b = Vector(m);
+  b_ = Vector(m);
+  sigmas_ = Vector(m);
 
   size_t pos = 0; // save last position inserted into the new rhs vector
 
   // iterate over all factors
   BOOST_FOREACH(shared_ptr factor, factors){
+  	if (verbose) factor->print();
     // number of rows for factor f
     const size_t mf = factor->numberOfRows();
 
     // copy the rhs vector from factor to b
     const Vector bf = factor->get_b();
-    for (size_t i=0; i<mf; i++) b(pos+i) = bf(i);
+    for (size_t i=0; i<mf; i++) b_(pos+i) = bf(i);
+
+    // copy the precision vector from factor to sigmas_
+    for (size_t i=0; i<mf; i++) sigmas_(pos+i) = factor->sigmas_(i);
 
     // update the matrices
     append_factor(factor,m,pos);
 
     pos += mf;
   }
+	if (verbose) cout << "LinearFactor::LinearFactor done" << endl;
 }
 
 /* ************************************************************************* */
@@ -68,9 +83,19 @@ void LinearFactor::print(const string& s) const {
   if (empty()) cout << " empty" << endl; 
   else {
     string j; Matrix A;
-    FOREACH_PAIR(j,A,As) gtsam::print(A, "A["+j+"]=\n");
-    gtsam::print(b,"b=");
+    FOREACH_PAIR(j,A,As_) gtsam::print(A, "A["+j+"]=\n");
+    gtsam::print(b_,"b=");
+    gtsam::print(sigmas_, "sigmas = ");
   }
+}
+
+/* ************************************************************************* */
+size_t LinearFactor::getDim(const std::string& key) const {
+	const_iterator it = As_.find(key);
+	if (it != As_.end())
+		return it->second.size2();
+	else
+		return 0;
 }
 
 /* ************************************************************************* */
@@ -82,10 +107,10 @@ bool LinearFactor::equals(const Factor<VectorConfig>& f, double tol) const {
 
   if (empty()) return (lf->empty());
 
-  const_iterator it1 = As.begin(), it2 = lf->As.begin();
-  if(As.size() != lf->As.size()) return false;
+  const_iterator it1 = As_.begin(), it2 = lf->As_.begin();
+  if(As_.size() != lf->As_.size()) return false;
 
-  for(; it1 != As.end(); it1++, it2++) {
+  for(; it1 != As_.end(); it1++, it2++) {
     const string& j1 = it1->first, j2 = it2->first;
     const Matrix A1 = it1->second, A2 = it2->second;
     if (j1 != j2) return false;
@@ -93,8 +118,11 @@ bool LinearFactor::equals(const Factor<VectorConfig>& f, double tol) const {
       return false;
   }
 
-  if( !(::equal_with_abs_tol(b, (lf->b),tol)) )
+  if( !(::equal_with_abs_tol(b_, (lf->b_),tol)) )
     return false;
+
+  if( !(::equal_with_abs_tol(sigmas_, (lf->sigmas_),tol)) )
+      return false;
 
   return true;
 }
@@ -103,18 +131,19 @@ bool LinearFactor::equals(const Factor<VectorConfig>& f, double tol) const {
 // we might have multiple As, so iterate and subtract from b
 double LinearFactor::error(const VectorConfig& c) const {
   if (empty()) return 0;
-  Vector e = b;
+  Vector e = b_;
   string j; Matrix Aj;
-  FOREACH_PAIR(j, Aj, As)
+  FOREACH_PAIR(j, Aj, As_)
     e -= Vector(Aj * c[j]);
-  return 0.5 * inner_prod(trans(e),e);
+  Vector weighted = ediv(e,sigmas_);
+  return 0.5 * inner_prod(weighted,weighted);
 }
 
 /* ************************************************************************* */
 list<string> LinearFactor::keys() const {
 	list<string> result;
   string j; Matrix A;
-  FOREACH_PAIR(j,A,As)
+  FOREACH_PAIR(j,A,As_)
     result.push_back(j);
   return result;
 }
@@ -123,7 +152,7 @@ list<string> LinearFactor::keys() const {
 VariableSet LinearFactor::variables() const {
   VariableSet result;
   string j; Matrix A;
-  FOREACH_PAIR(j,A,As) {
+  FOREACH_PAIR(j,A,As_) {
     Variable v(j,A.size2());
     result.insert(v);
   }
@@ -134,7 +163,7 @@ VariableSet LinearFactor::variables() const {
 void LinearFactor::tally_separator(const string& key, set<string>& separator) const {
   if(involves(key)) {
     string j; Matrix A;
-    FOREACH_PAIR(j,A,As)
+    FOREACH_PAIR(j,A,As_)
       if(j != key) separator.insert(j);
   }
 }
@@ -149,12 +178,18 @@ pair<Matrix,Vector> LinearFactor::matrix(const Ordering& ordering) const {
     matrices.push_back(&Aj);
   }
 
-  return make_pair( collect(matrices), b);
+  // divide in sigma so error is indeed 0.5*|Ax-b|
+  Matrix t = diag(ediv(ones(sigmas_.size()),sigmas_));
+  Matrix A = t*collect(matrices);
+  return make_pair(A, t*b_);
 }
 
 /* ************************************************************************* */
 void LinearFactor::append_factor(LinearFactor::shared_ptr f, const size_t m,
 		const size_t pos) {
+	bool verbose = false;
+	if (verbose) cout << "LinearFactor::append_factor" << endl;
+
 	// iterate over all matrices from the factor f
 	LinearFactor::const_iterator it = f->begin();
 	for (; it != f->end(); it++) {
@@ -165,8 +200,8 @@ void LinearFactor::append_factor(LinearFactor::shared_ptr f, const size_t m,
 		const size_t mrhs = A.size1(), n = A.size2();
 
 		// find the corresponding matrix among As
-		const_iterator mine = As.find(j);
-		const bool exists = mine != As.end();
+		const_iterator mine = As_.find(j);
+		const bool exists = mine != As_.end();
 
 		// create the matrix or use existing
 		Matrix Anew = exists ? mine->second : zeros(m, n);
@@ -177,9 +212,11 @@ void LinearFactor::append_factor(LinearFactor::shared_ptr f, const size_t m,
 				Anew(pos + i, j) = A(i, j);
 
 		// insert the matrix into the factor
-		if (exists) As.erase(j);
+		if (exists) As_.erase(j);
 		insert(j, Anew);
 	}
+	if (verbose) cout << "LinearFactor::append_factor done" << endl;
+
 }
 
 /* ************************************************************************* */
@@ -193,71 +230,109 @@ void LinearFactor::append_factor(LinearFactor::shared_ptr f, const size_t m,
 pair<ConditionalGaussian::shared_ptr, LinearFactor::shared_ptr>
 LinearFactor::eliminate(const string& key)
 {
-  // start empty remaining factor to be returned
-  boost::shared_ptr<LinearFactor> lf(new LinearFactor);
+	bool verbose = false;
+	if (verbose) cout << "LinearFactor::eliminate(" << key << ")" << endl;
 
-  // find the matrix associated with key
-  iterator it = As.find(key);
+	// if this factor does not involve key, we exit with empty CG and LF
+	iterator it = As_.find(key);
+	if (it==As_.end()) {
+		// Conditional Gaussian is just a parent-less node with P(x)=1
+		LinearFactor::shared_ptr lf(new LinearFactor);
+		ConditionalGaussian::shared_ptr cg(new ConditionalGaussian(key));
+		return make_pair(cg,lf);
+	}
+	if (verbose) cout <<  "<<<<<<<<<<<< 1" << endl;
 
-  // if this factor does not involve key, we exit with empty CG and LF
-  if (it==As.end()) {
-    // Conditional Gaussian is just a parent-less node with P(x)=1
-    ConditionalGaussian::shared_ptr cg(new ConditionalGaussian(key));
-    return make_pair(cg,lf);
-  }
+	// create an internal ordering that eliminates key first
+	Ordering ordering;
+	ordering += key;
+	BOOST_FOREACH(string k, keys())
+		if (k != key) ordering += k;
+	if (verbose) cout <<  "<<<<<<<<<<<< 2" << endl;
 
-  // get the matrix reference associated with key
-  const Matrix& R = it->second;
-  const size_t m = R.size1(), n = R.size2();
+	// extract A, b from the combined linear factor (ensure that x is leading)
+	Matrix A; Vector b;
+	boost::tie(A, b) = matrix(ordering);
+	size_t m = A.size1(); size_t n = A.size2();
+	if (verbose) cout <<  "<<<<<<<<<<<< 3" << endl;
 
-  // if m<n, this factor cannot be eliminated
-  if (m<n)
-    throw(domain_error("LinearFactor::eliminate: fewer constraints than unknowns"));
-  
-  // we will apply n Householder reflections to zero out R below diagonal
-  for(size_t j=0; j < n; j++){
-    // below, the indices r,c always refer to original A
+	// get dimensions of the eliminated variable
+	size_t n1 = getDim(key);
 
-    // copy column from matrix to xjm, i.e. x(j:m) = R(j:m,j)
-    Vector xjm(m-j);
-    for(size_t r = j ; r < m; r++)
-      xjm(r-j) = R(r,j);
-        
-    // calculate the Householder vector v
-    double beta; Vector vjm;
-    boost::tie(beta,vjm) = house(xjm);
+	// if m<n1, this factor cannot be eliminated
+	size_t maxRank = min(m,n);
+	if (maxRank<n1)
+		throw(domain_error("LinearFactor::eliminate: fewer constraints than unknowns"));
 
-    // update all matrices
-    BOOST_FOREACH(mypair jA,As) {
-      // update A matrix using reflection as in householder_
-      Matrix& A = jA.second;
-      householder_update(A, j, beta, vjm);
-    }
+	// QR performed using an augmented matrix Rd =[A b]
+	// TODO: We should get rid of this copy
+	Matrix Rd(m, n+1);
+	// copy in A
+	for (int i=0; i<m; ++i)
+		for (int j=0; j<n; ++j)
+			Rd(i,j) = A(i,j);
+	// copy in b
+	for (int i=0; i<m; ++i)
+		Rd(i,n) = b(i);
+	if (verbose) cout <<  "<<<<<<<<<<<< 4" << endl;
 
-    // update RHS, b -= (beta * inner_prod(v,b)) * v;
-    double inner = 0;
-    for(size_t r = j ; r < m; r++) 
-      inner += vjm(r-j) * b(r);
-    for(size_t r = j ; r < m; r++) 
-      b(r) -= beta*inner*vjm(r-j);
-  } // column j
-  
-  // create ConditionalGaussian with first n rows
-  ConditionalGaussian::shared_ptr cg (new ConditionalGaussian(key,::sub(b,0,n), sub(R,0,n,0,n)) );
-  
-  // create linear factor with remaining rows
-  lf->set_b(::sub(b,n,m));
+	// Do in-place QR to get R, d of the augmented system
+	if (verbose) ::print(Rd,"Rd before");
+	householder(Rd, maxRank);
+	if (verbose) ::print(Rd,"Rd after");
+	if (verbose) cout <<  "<<<<<<<<<<<< 5" << endl;
 
-  // for every separator variable
-  string j; Matrix A;
-  FOREACH_PAIR(j,A,As) {
-    if (j != key) {
-      const size_t nj = A.size2();   // get dimension of variable
-      cg->add(j, sub(A,0,n,0,nj));   // add a parent to conditional Gaussian
-      lf->insert(j,sub(A,n,m,0,nj)); // insert into linear factor
-    }
-  }
-  return make_pair(cg,lf);
+	// R as calculated by householder has inverse sigma on diagonal
+	// Use them to normalize R to unit-upper-triangular matrix
+	Vector sigmas(m); // standard deviations
+	Vector tau(n1);   // precisions for conditional
+	if (verbose) cout << n1 << " " << n  << " " << m << endl;
+	for (int i=0; i<maxRank; ++i) {
+		double Rii = Rd(i,i);
+		// detect rank < maxRank
+		if (fabs(Rii)<1e-8) { maxRank=i; break;}
+		sigmas(i) = 1.0/Rii;
+		if (i<n1) tau(i) = Rii*Rii;
+		for (int j=0; j<=n; ++j)
+			Rd(i,j) = Rd(i,j)*sigmas(i);
+	}
+	if (verbose) cout <<  "<<<<<<<<<<<< 6" << endl;
+
+	// extract RHS
+	Vector d(m);
+	for (int i=0; i<m; ++i)
+		d(i) = Rd(i,n);
+	if (verbose) cout <<  "<<<<<<<<<<<< 7" << endl;
+
+	// create base conditional Gaussian
+	ConditionalGaussian::shared_ptr cg(new ConditionalGaussian(key,
+			sub(d, 0, n1),         // form d vector
+			sub(Rd, 0, n1, 0, n1), // form R matrix
+			sub(tau, 0, n1)));     // get precisions
+	if (verbose) cout <<  "<<<<<<<<<<<< 8" << endl;
+
+	// extract the block matrices for parents in both CG and LF
+	LinearFactor::shared_ptr lf(new LinearFactor);
+	size_t j = n1;
+	BOOST_FOREACH(string cur_key, ordering)
+		if (cur_key!=key) {
+			size_t dim = getDim(cur_key);
+			cg->add(cur_key, sub(Rd, 0, n1, j, j+dim));
+			lf->insert(cur_key, sub(Rd, n1, maxRank, j, j+dim));
+			j+=dim;
+		}
+	if (verbose) cout <<  "<<<<<<<<<<<< 9" << endl;
+
+	// Set sigmas
+	lf->sigmas_ = sub(sigmas,n1,maxRank);
+	if (verbose) cout <<  "<<<<<<<<<<<< 10" << endl;
+
+	// extract ds vector for the new b
+	lf->set_b(sub(d, n1, maxRank));
+	if (verbose) lf->print("lf");
+	if (verbose) cout <<  "<<<<<<<<<<<< 11" << endl;
+
+	return make_pair(cg, lf);
 }
 
 /* ************************************************************************* */

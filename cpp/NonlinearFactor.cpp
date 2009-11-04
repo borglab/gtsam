@@ -39,12 +39,12 @@ LinearFactor::shared_ptr NonlinearFactor1::linearize(const VectorConfig& c) cons
 	Vector x1 = c[key_];
 
 	// Jacobian A = H(x1)/sigma
-	Matrix A = H_(x1) / sigma_;
+	Matrix A = H_(x1);
 
 	// Right-hand-side b = error(c) = (z - h(x1))/sigma
-	Vector b = (z_ - h_(x1)) / sigma_;
+	Vector b = (z_ - h_(x1));
 
-	LinearFactor::shared_ptr p(new LinearFactor(key_, A, b));
+	LinearFactor::shared_ptr p(new LinearFactor(key_, A, b, sigma_));
 	return p;
 }
 
@@ -93,13 +93,13 @@ LinearFactor::shared_ptr NonlinearFactor2::linearize(const VectorConfig& c) cons
 	Vector x2 = c[key2_];
 
 	// Jacobian A = H(x)/sigma
-	Matrix A1 = H1_(x1, x2) / sigma_;
-	Matrix A2 = H2_(x1, x2) / sigma_;
+	Matrix A1 = H1_(x1, x2);
+	Matrix A2 = H2_(x1, x2);
 
 	// Right-hand-side b = (z - h(x))/sigma
-	Vector b = (z_ - h_(x1, x2)) / sigma_;
+	Vector b = (z_ - h_(x1, x2));
 
-	LinearFactor::shared_ptr p(new LinearFactor(key1_, A1, key2_, A2, b));
+	LinearFactor::shared_ptr p(new LinearFactor(key1_, A1, key2_, A2, b, sigma_));
 	return p;
 }
 

@@ -35,16 +35,23 @@ Vector Vector_( size_t m, const double* const data);
 Vector Vector_(size_t m, ...);
 
 /**
- * Create zero vector
- * @ param size
+ * Create vector initialized to a constant value
+ * @param size
+ * @param constant value
  */
-Vector zero(size_t n);
+Vector repeat(size_t n, double value);
+
+/**
+ * Create zero vector
+ * @param size
+ */
+inline Vector zero(size_t n) { return repeat(n,0.0);}
 
 /**
  * Create vector initialized to ones
- * @ param size
+ * @param size
  */
-Vector ones(size_t n);
+inline Vector ones(size_t n) { return repeat(n,1.0);}
 	
 /**
  * check if all zero
@@ -76,13 +83,6 @@ bool equal_with_abs_tol(const Vector& vec1, const Vector& vec2, double tol=1e-9)
 bool assert_equal(const Vector& vec1, const Vector& vec2, double tol=1e-9);
 
 /**
- * vector multiplication by scalar
-inline Vector operator*(double s, const Vector& vec ) {
-return vec*s;
-}
-*/
-
-/**
  * extract subvector, slice semantics, i.e. range = [i1,i2[ excluding i2
  * @param v Vector
  * @param i1 first row index
@@ -90,6 +90,14 @@ return vec*s;
  * @return subvector v(i1:i2)
  */
 Vector sub(const Vector &v, size_t i1, size_t i2);
+
+/**
+ * elementwise division
+ * @param a first vector
+ * @param b second vector
+ * @return vector [a(i)/b(i)]
+ */
+Vector ediv(const Vector &a, const Vector &b);
 
 /**
  * house(x,j) computes HouseHolder vector v and scaling factor beta

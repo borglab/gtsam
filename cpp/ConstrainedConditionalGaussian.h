@@ -22,7 +22,7 @@ namespace gtsam {
  * If A1 is triangular, then it can be solved using backsubstitution
  * If A1 is invertible, then it can be solved with the Matrix::solve() command
  * If A1 overconstrains the system, then ???
- * If A1 underconstraints the system, then ???
+ * If A1 underconstrains the system, then ???
  */
 class ConstrainedConditionalGaussian: public ConditionalGaussian {
 

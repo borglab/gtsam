@@ -20,31 +20,32 @@ ConstrainedConditionalGaussian::ConstrainedConditionalGaussian(
 
 ConstrainedConditionalGaussian::ConstrainedConditionalGaussian(
 		const string& key, const Vector& v) :
-	ConditionalGaussian(key, v, eye(v.size())) {
+	ConditionalGaussian(key, v, eye(v.size()), ones(v.size())*INFINITY) {
 }
 
 ConstrainedConditionalGaussian::ConstrainedConditionalGaussian(
 		const string& key, const Vector& b, const Matrix& A) :
-	ConditionalGaussian(key, b, A) {
+	ConditionalGaussian(key, b, A, ones(b.size())*INFINITY) {
 }
 
 ConstrainedConditionalGaussian::ConstrainedConditionalGaussian(
 		const string& key, const Vector& b, const Matrix& A1,
 		const std::string& parent, const Matrix& A2) :
-	ConditionalGaussian(key, b, A1, parent, A2) {
+	ConditionalGaussian(key, b, A1, parent, A2, ones(b.size())*INFINITY) {
 }
+
 
 ConstrainedConditionalGaussian::ConstrainedConditionalGaussian(
 		const string& key, const Vector& b, const Matrix& A1,
 		const std::string& parentY, const Matrix& A2, const std::string& parentZ,
 		const Matrix& A3) :
-	ConditionalGaussian(key, b, A1, parentY, A2, parentZ, A3) {
+	ConditionalGaussian(key, b, A1, parentY, A2, parentZ, A3, ones(b.size())*INFINITY) {
 }
 
 ConstrainedConditionalGaussian::ConstrainedConditionalGaussian(
 		const string& key, const Matrix& A1,
 		const std::map<std::string, Matrix>& parents, const Vector& b) :
-	ConditionalGaussian(key, b, A1, parents) {
+	ConditionalGaussian(key, b, A1, parents, ones(b.size())*INFINITY) {
 }
 
 Vector ConstrainedConditionalGaussian::solve(const VectorConfig& x) const {

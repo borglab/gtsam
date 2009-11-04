@@ -35,8 +35,9 @@ public:
 
 protected:
 
-	std::map<std::string, Matrix> As; // linear matrices
-	Vector b; // right-hand-side
+	std::map<std::string, Matrix> As_; // linear matrices
+	Vector b_; // right-hand-side
+	Vector sigmas_; // vector of standard deviations for each row in the factor
 
 public:
 
@@ -46,40 +47,51 @@ public:
 
 	/** Construct Null factor */
 	LinearFactor(const Vector& b_in) :
-		b(b_in) { //TODO: add a way to initializing base class meaningfully
+		b_(b_in), sigmas_(ones(b_in.size())){
 	}
 
 	/** Construct unary factor */
-	LinearFactor(const std::string& key1, const Matrix& A1, const Vector& b_in) :
-		b(b_in) {
-		As.insert(make_pair(key1, A1));
+	LinearFactor(const std::string& key1, const Matrix& A1,
+			const Vector& b_in, double sigma) :
+		b_(b_in), sigmas_(repeat(b_in.size(),sigma)) {
+		As_.insert(make_pair(key1, A1));
 	}
 
 	/** Construct binary factor */
 	LinearFactor(const std::string& key1, const Matrix& A1,
-			const std::string& key2, const Matrix& A2, const Vector& b_in) :
-		b(b_in) {
-		As.insert(make_pair(key1, A1));
-		As.insert(make_pair(key2, A2));
+			const std::string& key2, const Matrix& A2,
+			const Vector& b_in, double sigma) :
+		b_(b_in), sigmas_(repeat(b_in.size(),sigma))  {
+		As_.insert(make_pair(key1, A1));
+		As_.insert(make_pair(key2, A2));
 	}
 
 	/** Construct ternary factor */
 	LinearFactor(const std::string& key1, const Matrix& A1,
-			const std::string& key2, const Matrix& A2, const std::string& key3,
-			const Matrix& A3, const Vector& b_in) :
-		b(b_in) {
-		As.insert(make_pair(key1, A1));
-		As.insert(make_pair(key2, A2));
-		As.insert(make_pair(key3, A3));
+			const std::string& key2, const Matrix& A2,
+			const std::string& key3, const Matrix& A3,
+			const Vector& b_in, double sigma) :
+		b_(b_in), sigmas_(repeat(b_in.size(),sigma))  {
+		As_.insert(make_pair(key1, A1));
+		As_.insert(make_pair(key2, A2));
+		As_.insert(make_pair(key3, A3));
 	}
 
 	/** Construct an n-ary factor */
 	LinearFactor(const std::vector<std::pair<std::string, Matrix> > &terms,
-	    const Vector &b_in) :
-	    b(b_in) {
+	    const Vector &b_in, double sigma) :
+	    b_(b_in), sigmas_(repeat(b_in.size(),sigma))  {
 	  for(unsigned int i=0; i<terms.size(); i++)
-	    As.insert(terms[i]);
+	    As_.insert(terms[i]);
 	}
+
+	/** Construct an n-ary factor with a multiple sigmas*/
+	LinearFactor(const std::vector<std::pair<std::string, Matrix> > &terms,
+				const Vector &b_in, const Vector& sigmas) :
+			b_(b_in), sigmas_(sigmas) {
+			for (unsigned int i = 0; i < terms.size(); i++)
+				As_.insert(terms[i]);
+		}
 
 	/** Construct from Conditional Gaussian */
 	LinearFactor(const boost::shared_ptr<ConditionalGaussian>& cg);
@@ -97,28 +109,31 @@ public:
 
 	// Implementing Factor virtual functions
 
-	double error(const VectorConfig& c) const; /**  0.5*(A*x-b)'*(A*x-b) */
-	std::size_t size() const { return As.size();}
+	double error(const VectorConfig& c) const; /**  0.5*(A*x-b)'*D*(A*x-b) */
+	std::size_t size() const { return As_.size();}
 
 	/** STL like, return the iterator pointing to the first node */
-	const_iterator const begin() const { return As.begin();}
+	const_iterator const begin() const { return As_.begin();}
 
 	/** STL like, return the iterator pointing to the last node */
-	const_iterator const end() const { return As.end();	}
+	const_iterator const end() const { return As_.end();	}
 
 	/** check if empty */
-	bool empty() const { return b.size() == 0;}
+	bool empty() const { return b_.size() == 0;}
 
 	/** get a copy of b */
-	const Vector& get_b() const {	return b;	}
+	const Vector& get_b() const {	return b_;	}
+
+	/** get a copy of precisions */
+	const Vector& get_precisions() const {	return sigmas_;	}
 
 	/**
 	 * get a copy of the A matrix from a specific node
 	 * O(log n)
 	 */
 	const Matrix& get_A(const std::string& key) const {
-		const_iterator it = As.find(key);
-		if (it == As.end())
+		const_iterator it = As_.find(key);
+		if (it == As_.end())
 			throw(std::invalid_argument("LinearFactor::[] invalid key: " + key));
 		return it->second;
 	}
@@ -130,15 +145,15 @@ public:
 
 	/** Check if factor involves variable with key */
 	bool involves(const std::string& key) const {
-		const_iterator it = As.find(key);
-		return (it != As.end());
+		const_iterator it = As_.find(key);
+		return (it != As_.end());
 	}
 
 	/**
 	 * return the number of rows from the b vector
 	 * @return a integer with the number of rows from the b vector
 	 */
-	int numberOfRows() const { return b.size();}
+	int numberOfRows() const { return b_.size();}
 
 	/**
 	 * Find all variables
@@ -153,6 +168,13 @@ public:
 	VariableSet variables() const;
 
 	/**
+	 * Get the dimension of a particular variable
+	 * @param key is the name of the variable
+	 * @return the size of the variable
+	 */
+	size_t getDim(const std::string& key) const;
+
+	/**
 	 * Add to separator set if this factor involves key, but don't add key itself
 	 * @param key
 	 * @param separator set to add to
@@ -162,6 +184,7 @@ public:
 
 	/**
 	 * Return (dense) matrix associated with factor
+	 * NOTE: in this case, the precisions are baked into A and b
 	 * @param ordering of variables needed for matrix column order
 	 */
 	std::pair<Matrix, Vector> matrix(const Ordering& ordering) const;
@@ -172,12 +195,12 @@ public:
 
 	/** insert, copies A */
 	void insert(const std::string& key, const Matrix& A) {
-		As.insert(std::make_pair(key, A));
+		As_.insert(std::make_pair(key, A));
 	}
 
 	/** set RHS, copies b */
 	void set_b(const Vector& b) {
-		this->b = b;
+		this->b_ = b;
 	}
 
 	// set A matrices for the linear factor, same as insert ?
@@ -186,6 +209,7 @@ public:
 	}
 
 	/**
+	 * Current Implementation: Full QR factorization
 	 * eliminate (in place!) one of the variables connected to this factor
 	 * @param key the key of the node to be eliminated
 	 * @return a new factor and a conditional gaussian on the eliminated variable

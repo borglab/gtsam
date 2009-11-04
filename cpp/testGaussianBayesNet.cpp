@@ -34,9 +34,11 @@ TEST( GaussianBayesNet, constructor )
   Matrix                         R22 = Matrix_(1,1,1.0);
   Vector d1(1), d2(1);
   d1(0) = 9; d2(0) = 5;
+  Vector tau(1);
+  tau(0) = 1.;
   
   // define nodes and specify in reverse topological sort (i.e. parents last)
-  ConditionalGaussian x("x",d1,R11,"y",S12), y("y",d2,R22);
+  ConditionalGaussian x("x",d1,R11,"y",S12, tau), y("y",d2,R22, tau);
 
   // check small example which uses constructor
   GaussianBayesNet cbn = createSmallGaussianBayesNet();

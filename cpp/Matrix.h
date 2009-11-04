@@ -106,7 +106,7 @@ void print(const Matrix& A, const std::string& s = "");
  * @param i2 last  row index + 1
  * @param j1 first col index
  * @param j2 last  col index + 1
- * @return submatrix A(i1:i2,j1:j2)
+ * @return submatrix A(i1:i2-1,j1:j2-1)
  */
 Matrix sub(const Matrix& A, size_t i1, size_t i2, size_t j1, size_t j2);
 

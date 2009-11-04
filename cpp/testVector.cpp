@@ -193,5 +193,16 @@ TEST( TestVector, whouse_subs_vector2 )
 }
 
 /* ************************************************************************* */
+TEST( TestVector, ediv )
+{
+  Vector a(3); a(0) = 10; a(1) = 20; a(2) = 30;
+  Vector b(3); b(0) =  2; b(1) = 5;  b(2) =  6;
+  Vector actual(ediv(a,b));
+
+  Vector c(3); c(0) =  5; c(1) = 4;  c(2) =  5;
+  CHECK(assert_equal(c,actual));
+}
+
+/* ************************************************************************* */
 int main() { TestResult tr; return TestRegistry::runAllTests(tr); }
 /* ************************************************************************* */

@@ -51,7 +51,8 @@ TEST( ConstrainedLinearFactorGraph, elimination1 )
 	Ap(1, 0) = -2.0; Ap(1, 1) =  1.0;
 	Ap = 33.3333 * Ap;
 	Vector bp = Vector_(2, 0.0, -10.0);
-	LinearFactor expectedLF("y", Ap, bp);
+	double sigma1 = 1;
+	LinearFactor expectedLF("y", Ap, bp,sigma1);
 	CHECK(expectedLF.equals(*(fg[0]), 1e-4));
 
 	// eliminate y
@@ -65,7 +66,16 @@ TEST( ConstrainedLinearFactorGraph, elimination1 )
 	R(0, 0) = 74.5356; R(0, 1) = -59.6285;
 	R(1, 0) = 0.0;     R(1, 1) = 44.7214;
 	Vector br = Vector_(2, 8.9443, 4.4721);
-	ConditionalGaussian expected2("y",br, R);
+	Vector tau(2);
+	tau(0) = R(0,0);
+	tau(1) = R(1,1);
+
+	// normalize the existing matrices
+	Matrix N = eye(2,2);
+	N(0,0) = 1/tau(0);
+	N(1,1) = 1/tau(1);
+	R = N*R;
+	ConditionalGaussian expected2("y",br, R, tau);
 	CHECK(expected2.equals(*((*cbn)["y"])));
 }
 
@@ -120,8 +130,8 @@ TEST( ConstrainedLinearFactorGraph, is_constrained )
 
 	// create simple graph
 	Vector b = Vector_(2, 0.0, 0.0);
-	LinearFactor::shared_ptr f1(new LinearFactor("x", eye(2), "y", eye(2), b));
-	LinearFactor::shared_ptr f2(new LinearFactor("z", eye(2), "w", eye(2), b));
+	LinearFactor::shared_ptr f1(new LinearFactor("x", eye(2), "y", eye(2), b,1));
+	LinearFactor::shared_ptr f2(new LinearFactor("z", eye(2), "w", eye(2), b,1));
 	LinearConstraint::shared_ptr f3(new LinearConstraint("y", eye(2), "z", eye(2), b));
 	fg.push_back(f1);
 	fg.push_back(f2);

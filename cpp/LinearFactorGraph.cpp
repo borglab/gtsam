@@ -145,9 +145,11 @@ LinearFactorGraph LinearFactorGraph::add_priors(double sigma) const {
 	BOOST_FOREACH(Variable v,vs) {
 		size_t n = v.dim();
 		const string& key = v.key();
-		Matrix A = sigma*eye(n);
+		//NOTE: this was previously A=sigma*eye(n), when it should be A=eye(n)/sigma
+		Matrix A = eye(n);
 		Vector b = zero(n);
-		shared_factor prior(new LinearFactor(key,A,b));
+		//To maintain interface with separate sigma, the inverse of the 'sigma' passed in used
+		shared_factor prior(new LinearFactor(key,A,b, 1/sigma));
 		result.push_back(prior);
 	}
 	return result;
