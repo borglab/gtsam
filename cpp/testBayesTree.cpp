@@ -27,10 +27,10 @@ SymbolicConditional::shared_ptr B(new SymbolicConditional("B")), L(
 /* ************************************************************************* */
 TEST( BayesTree, Front )
 {
-	BayesNet<SymbolicConditional> f1;
+	SymbolicBayesNet f1;
 	f1.push_back(B);
 	f1.push_back(L);
-	BayesNet<SymbolicConditional> f2;
+	SymbolicBayesNet f2;
 	f2.push_back(L);
 	f2.push_back(B);
 	CHECK(f1.equals(f1));
@@ -68,9 +68,8 @@ TEST( BayesTree, constructor )
 	ASIA.push_back(E);
 	ASIA.push_back(L);
 	ASIA.push_back(B);
-	bool verbose = false;
-	BayesTree<SymbolicConditional> bayesTree2(ASIA,verbose);
-	if (verbose) bayesTree2.print("bayesTree2");
+	BayesTree<SymbolicConditional> bayesTree2(ASIA);
+	//bayesTree2.print("bayesTree2");
 
 	// Check whether the same
 	CHECK(assert_equal(bayesTree,bayesTree2));
@@ -97,7 +96,7 @@ TEST( BayesTree, smoother )
 	GaussianBayesNet::shared_ptr chordalBayesNet = smoother.eliminate(ordering);
 
 	// Create the Bayes tree
-	BayesTree<ConditionalGaussian> bayesTree(*chordalBayesNet,false);
+	BayesTree<ConditionalGaussian> bayesTree(*chordalBayesNet);
 	LONGS_EQUAL(6,bayesTree.size());
 }
 
@@ -108,7 +107,7 @@ TEST( BayesTree, smoother )
      x1 : x2
    x7 : x6
 /* ************************************************************************* */
-TEST( BayesTree, balanced_smoother )
+TEST( BayesTree, balanced_smoother_marginals )
 {
 	// Create smoother with 7 nodes
 	LinearFactorGraph smoother = createSmoother(7);
@@ -119,8 +118,21 @@ TEST( BayesTree, balanced_smoother )
 	GaussianBayesNet::shared_ptr chordalBayesNet = smoother.eliminate(ordering);
 
 	// Create the Bayes tree
-	BayesTree<ConditionalGaussian> bayesTree(*chordalBayesNet,false);
+	BayesTree<ConditionalGaussian> bayesTree(*chordalBayesNet);
 	LONGS_EQUAL(4,bayesTree.size());
+
+	// Check root clique
+	//BayesNet<ConditionalGaussian> expected_root;
+	//BayesNet<ConditionalGaussian> actual_root = bayesTree.root();
+	//CHECK(assert_equal(expected_root,actual_root));
+
+	// Check marginal on x1
+	ConditionalGaussian expected;
+	ConditionalGaussian::shared_ptr actual = bayesTree.marginal("x1");
+	CHECK(assert_equal(expected,*actual));
+
+	// JunctionTree is an undirected tree of cliques
+	// JunctionTree<ConditionalGaussian> marginals = bayesTree.marginals();
 }
 
 /* ************************************************************************* */

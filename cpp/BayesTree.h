@@ -30,7 +30,6 @@ namespace gtsam {
 	public:
 
 		typedef boost::shared_ptr<Conditional> conditional_ptr;
-		typedef std::pair<std::string,conditional_ptr> NamedConditional;
 
 	private:
 
@@ -66,13 +65,16 @@ namespace gtsam {
 		typedef std::map<std::string, int> NodeMap;
 		NodeMap nodeMap_;
 
+		/** add a clique */
+		void addClique(const conditional_ptr& conditional, node_ptr parent_clique=node_ptr());
+
 	public:
 
 		/** Create an empty Bayes Tree */
 		BayesTree();
 
 		/** Create a Bayes Tree from a Bayes Net */
-		BayesTree(const BayesNet<Conditional>& bayesNet, bool verbose=false);
+		BayesTree(const BayesNet<Conditional>& bayesNet);
 
 		/** Destructor */
 		virtual ~BayesTree() {}
@@ -84,13 +86,16 @@ namespace gtsam {
 		bool equals(const BayesTree<Conditional>& other, double tol = 1e-9) const;
 
 		/** insert a new conditional */
-		void insert(const boost::shared_ptr<Conditional>& conditional, bool verbose=false);
+		void insert(const boost::shared_ptr<Conditional>& conditional);
 
 			/** number of cliques */
 		inline size_t size() const { return nodes_.size();}
 
 		/** return root clique */
 		const BayesNet<Conditional>& root() const {return *(nodes_[0]);}
+
+		/** return marginal on any variable */
+		boost::shared_ptr<Conditional> marginal(const std::string& key) const;
 
 	}; // BayesTree
 
