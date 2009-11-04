@@ -9,7 +9,7 @@
 #include <iostream>
 #include <sstream>
 #include <iomanip>
-#include <boost/FOREACH.hpp>
+#include <boost/foreach.hpp>
 
 #ifdef WIN32
 #include <Windows.h>
