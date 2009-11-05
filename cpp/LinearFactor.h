@@ -189,6 +189,13 @@ public:
 	 */
 	std::pair<Matrix, Vector> matrix(const Ordering& ordering) const;
 
+	/**
+	 * Return (dense) matrix associated with factor
+	 * The returned system is an augmented matrix: [A b]
+	 * @param ordering of variables needed for matrix column order
+	 */
+	Matrix matrix_augmented(const Ordering& ordering) const;
+
 	/* ************************************************************************* */
 	// MUTABLE functions. FD:on the path to being eradicated
 	/* ************************************************************************* */

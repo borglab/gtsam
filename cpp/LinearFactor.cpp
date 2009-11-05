@@ -184,6 +184,27 @@ pair<Matrix,Vector> LinearFactor::matrix(const Ordering& ordering) const {
 }
 
 /* ************************************************************************* */
+Matrix LinearFactor::matrix_augmented(const Ordering& ordering) const {
+	// get pointers to the matrices
+	vector<const Matrix *> matrices;
+	BOOST_FOREACH(string j, ordering) {
+		const Matrix& Aj = get_A(j);
+		matrices.push_back(&Aj);
+	}
+
+	// load b into a matrix
+	Matrix B_mat(numberOfRows(), 1);
+	for (int i=0; i<b_.size(); ++i)
+		B_mat(i,0) = b_(i);
+	matrices.push_back(&B_mat);
+
+	// divide in sigma so error is indeed 0.5*|Ax-b|
+	Matrix t = diag(ediv(ones(sigmas_.size()),sigmas_));
+	Matrix A = t*collect(matrices);
+	return A;
+}
+
+/* ************************************************************************* */
 void LinearFactor::append_factor(LinearFactor::shared_ptr f, const size_t m,
 		const size_t pos) {
 	bool verbose = false;
@@ -248,9 +269,9 @@ LinearFactor::eliminate(const string& key)
 		if (k != key) ordering += k;
 
 	// extract A, b from the combined linear factor (ensure that x is leading)
-	Matrix A; Vector b;
-	boost::tie(A, b) = matrix(ordering);
-	size_t m = A.size1(); size_t n = A.size2();
+	// use an augmented system [A b] to prevent copying
+	Matrix Rd = matrix_augmented(ordering);
+	size_t m = Rd.size1(); size_t n = Rd.size2()-1;
 
 	// get dimensions of the eliminated variable
 	size_t n1 = getDim(key);
@@ -259,17 +280,6 @@ LinearFactor::eliminate(const string& key)
 	size_t maxRank = min(m,n);
 	if (maxRank<n1)
 		throw(domain_error("LinearFactor::eliminate: fewer constraints than unknowns"));
-
-	// QR performed using an augmented matrix Rd =[A b]
-	// TODO: We should get rid of this copy
-	Matrix Rd(m, n+1);
-	// copy in A
-	for (int i=0; i<m; ++i)
-		for (int j=0; j<n; ++j)
-			Rd(i,j) = A(i,j);
-	// copy in b
-	for (int i=0; i<m; ++i)
-		Rd(i,n) = b(i);
 
 	// Do in-place QR to get R, d of the augmented system
 	if (verbose) ::print(Rd,"Rd before");

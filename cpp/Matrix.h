@@ -172,9 +172,17 @@ void householder(Matrix& A, size_t k);
 Vector backsubstitution(const Matrix& R, const Vector& b);
 
 /**
- * create a matrix by stacking other matrices 
+ * create a matrix by stacking other matrices
+ * Given a set of matrices: A1, A2, A3...
+ * @return combined matrix [A1; A2; A3]
  */
 Matrix stack(size_t nrMatrices, ...);
+
+/**
+ * create a matrix by concatenating
+ * Given a set of matrices: A1, A2, A3...
+ * @return combined matrix [A1 A2 A3]
+ */
 Matrix collect(std::vector<const Matrix *> matrices);
 Matrix collect(size_t nrMatrices, ...);
 

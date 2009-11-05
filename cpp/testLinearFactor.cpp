@@ -497,9 +497,9 @@ TEST( LinearFactor, matrix )
 	// get the factor "f2" from the factor graph
 	LinearFactor::shared_ptr lf = fg[1];
 
-  // render with a given ordering
-  Ordering ord;
-  ord += "x1","x2";
+	// render with a given ordering
+	Ordering ord;
+	ord += "x1","x2";
 
 	Matrix A; Vector b;
 	boost::tie(A,b) = lf->matrix(ord);
@@ -511,6 +511,29 @@ TEST( LinearFactor, matrix )
 
 	EQUALITY(A,A1);
 	EQUALITY(b,b1);
+}
+
+/* ************************************************************************* */
+TEST( LinearFactor, matrix_aug )
+{
+	// create a small linear factor graph
+	LinearFactorGraph fg = createLinearFactorGraph();
+
+	// get the factor "f2" from the factor graph
+	LinearFactor::shared_ptr lf = fg[1];
+
+	// render with a given ordering
+	Ordering ord;
+	ord += "x1","x2";
+
+	Matrix Ab;
+	Ab = lf->matrix_augmented(ord);
+
+	Matrix Ab1 = Matrix_(2,5,
+			-10.0,  0.0, 10.0,  0.0, 2.0,
+			000.0,-10.0,  0.0, 10.0, -1.0 );
+
+	EQUALITY(Ab,Ab1);
 }
 
 /* ************************************************************************* */
