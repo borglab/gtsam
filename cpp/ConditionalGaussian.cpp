@@ -42,7 +42,7 @@ ConditionalGaussian::ConditionalGaussian(const string& key,
 /* ************************************************************************* */
 void ConditionalGaussian::print(const string &s) const
 {
-  cout << s << ":" << endl;
+  cout << s << ": density on " << key_ << endl;
   gtsam::print(R_,"R");
   for(Parents::const_iterator it = parents_.begin() ; it != parents_.end() ; it++ ) {
     const string&   j = it->first;
