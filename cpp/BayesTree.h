@@ -56,17 +56,16 @@ namespace gtsam {
 			void printTree(const std::string& indent) const;
 		};
 
-		/** vector of Nodes */
+		/** Map from keys to Node */
 		typedef boost::shared_ptr<Node> node_ptr;
-		typedef std::vector<node_ptr> Nodes;
+		typedef std::map<std::string, node_ptr> Nodes;
 		Nodes nodes_;
 
-		/** Map from keys to Node index */
-		typedef std::map<std::string, int> NodeMap;
-		NodeMap nodeMap_;
+		/** Roor clique */
+		node_ptr root_;
 
 		/** add a clique */
-		void addClique(const conditional_ptr& conditional, node_ptr parent_clique=node_ptr());
+		node_ptr addClique(const conditional_ptr& conditional, node_ptr parent_clique=node_ptr());
 
 	public:
 
@@ -92,7 +91,7 @@ namespace gtsam {
 		inline size_t size() const { return nodes_.size();}
 
 		/** return root clique */
-		const BayesNet<Conditional>& root() const {return *(nodes_[0]);}
+		boost::shared_ptr<BayesNet<Conditional> > root() const {return root_;}
 
 		/** return marginal on any variable */
 		boost::shared_ptr<Conditional> marginal(const std::string& key) const;

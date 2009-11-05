@@ -50,15 +50,15 @@ TEST( BayesTree, constructor )
 	bayesTree.insert(X);
 
 	// Check Size
-	LONGS_EQUAL(4,bayesTree.size());
+	LONGS_EQUAL(6,bayesTree.size());
 
 	// Check root
 	BayesNet<SymbolicConditional> expected_root;
 	expected_root.push_back(E);
 	expected_root.push_back(L);
 	expected_root.push_back(B);
-	BayesNet<SymbolicConditional> actual_root = bayesTree.root();
-	CHECK(assert_equal(expected_root,actual_root));
+	boost::shared_ptr<BayesNet<SymbolicConditional> > actual_root = bayesTree.root();
+	CHECK(assert_equal(expected_root,*actual_root));
 
 	// Create from symbolic Bayes chain in which we want to discover cliques
 	SymbolicBayesNet ASIA;
@@ -97,7 +97,7 @@ TEST( BayesTree, smoother )
 
 	// Create the Bayes tree
 	BayesTree<ConditionalGaussian> bayesTree(*chordalBayesNet);
-	LONGS_EQUAL(6,bayesTree.size());
+	LONGS_EQUAL(7,bayesTree.size());
 }
 
 /* ************************************************************************* *
@@ -119,7 +119,7 @@ TEST( BayesTree, balanced_smoother_marginals )
 
 	// Create the Bayes tree
 	BayesTree<ConditionalGaussian> bayesTree(*chordalBayesNet);
-	LONGS_EQUAL(4,bayesTree.size());
+	LONGS_EQUAL(7,bayesTree.size());
 
 	// Check root clique
 	//BayesNet<ConditionalGaussian> expected_root;

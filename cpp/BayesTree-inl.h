@@ -60,29 +60,29 @@ namespace gtsam {
 	void BayesTree<Conditional>::print(const string& s) const {
 		cout << s << ": size == " << nodes_.size() << endl;
 		if (nodes_.empty()) return;
-		nodes_[0]->printTree("");
+		root_->printTree("");
 	}
 
 	/* ************************************************************************* */
 	template<class Conditional>
 	bool BayesTree<Conditional>::equals(const BayesTree<Conditional>& other,
 			double tol) const {
-		return size()==other.size() &&
-		equal(nodeMap_.begin(),nodeMap_.end(),other.nodeMap_.begin()) &&
-		equal(nodes_.begin(),nodes_.end(),other.nodes_.begin(),equals_star<Node>(tol));
+		return size()==other.size();
+		//&& equal(nodes_.begin(),nodes_.end(),other.nodes_.begin(),equals_star<Node>(tol));
 	}
 
 	/* ************************************************************************* */
 	template<class Conditional>
-	void BayesTree<Conditional>::addClique
+	boost::shared_ptr<typename BayesTree<Conditional>::Node> BayesTree<Conditional>::addClique
 	(const boost::shared_ptr<Conditional>& conditional, node_ptr parent_clique)
 	{
 		node_ptr new_clique(new Node(conditional));
-		nodeMap_.insert(make_pair(conditional->key(), nodes_.size()));
-		nodes_.push_back(new_clique);
-		if (parent_clique==NULL) return;
-		new_clique->parent_ = parent_clique;
-		parent_clique->children_.push_back(new_clique);
+		nodes_.insert(make_pair(conditional->key(), new_clique));
+	if (parent_clique!=NULL) {
+			new_clique->parent_ = parent_clique;
+			parent_clique->children_.push_back(new_clique);
+		}
+		return new_clique;
 	}
 
 	/* ************************************************************************* */
@@ -96,21 +96,20 @@ namespace gtsam {
 
 		// if no parents, start a new root clique
 		if (parents.empty()) {
-			addClique(conditional);
+			root_ = addClique(conditional);
 			return;
 		}
 
 		// otherwise, find the parent clique
 		string parent = parents.front();
-		NodeMap::const_iterator it = nodeMap_.find(parent);
-		if (it == nodeMap_.end()) throw(invalid_argument(
+		typename Nodes::const_iterator it = nodes_.find(parent);
+		if (it == nodes_.end()) throw(invalid_argument(
 				"BayesTree::insert('"+key+"'): parent '" + parent + "' not yet inserted"));
-		int parent_index = it->second;
-		node_ptr parent_clique = nodes_[parent_index];
+		node_ptr parent_clique = it->second;
 
 		// if the parents and parent clique have the same size, add to parent clique
 		if (parent_clique->size() == parents.size()) {
-			nodeMap_.insert(make_pair(key, parent_index));
+			nodes_.insert(make_pair(key, parent_clique));
 			parent_clique->push_front(conditional);
 			return;
 		}
@@ -124,12 +123,18 @@ namespace gtsam {
 	boost::shared_ptr<Conditional> BayesTree<Conditional>::marginal(const string& key) const {
 
 		// find the clique to which key belongs
-		NodeMap::const_iterator it = nodeMap_.find(key);
-		if (it == nodeMap_.end()) throw(invalid_argument(
+		typename Nodes::const_iterator it = nodes_.find(key);
+		if (it == nodes_.end()) throw(invalid_argument(
 						"BayesTree::marginal('"+key+"'): key not found"));
 
-		// find all cliques on the path to the root
+		// find all cliques on the path to the root and turn into factor graph
 		// FactorGraph
+		node_ptr node = it->second;
+		int i=0;
+		while (node!=NULL) {
+			//node->print("node");
+			node = node->parent_;
+		}
 
 		boost::shared_ptr<Conditional> result(new Conditional);
 		return result;
