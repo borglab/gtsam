@@ -16,6 +16,7 @@
 #include <boost/serialization/shared_ptr.hpp>
 
 #include "Testable.h"
+#include "BayesNet.h"
 
 namespace gtsam {
 
@@ -42,6 +43,13 @@ namespace gtsam {
 		Indices indices_;
 
 	public:
+
+		/** Default constructor */
+		FactorGraph() {}
+
+		/** convert from Bayes net */
+		template<class Conditional>
+		FactorGraph(const BayesNet<Conditional>& bayesNet);
 
 		/** print out graph */
 		void print(const std::string& s = "FactorGraph") const;
@@ -110,6 +118,13 @@ namespace gtsam {
      */
 		template<class Conditional>
 		boost::shared_ptr<Conditional> eliminateOne(const std::string& key);
+
+		/**
+		 * eliminate factor graph using the given (not necessarily complete)
+		 * ordering, yielding a chordal Bayes net and (partially eliminated) FG
+		 */
+		template<class Conditional>
+		boost::shared_ptr<BayesNet<Conditional> > eliminate(const Ordering& ordering);
 
 	private:
 

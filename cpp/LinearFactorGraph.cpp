@@ -23,24 +23,10 @@ using namespace gtsam;
 template class FactorGraph<LinearFactor>;
 
 /* ************************************************************************* */
-LinearFactorGraph::LinearFactorGraph(const GaussianBayesNet& CBN)
-{
-	setCBN(CBN);
+LinearFactorGraph::LinearFactorGraph(const GaussianBayesNet& CBN) :
+	FactorGraph<LinearFactor> (CBN) {
 }
 
-/* ************************************************************************* */
-void LinearFactorGraph::setCBN(const GaussianBayesNet& CBN)
-{
-	clear();
-	GaussianBayesNet::const_iterator it = CBN.begin();
-	for(; it != CBN.end(); it++) {
-		LinearFactor::shared_ptr lf(new LinearFactor(*it));
-		push_back(lf);
-	}
-}
-
-/* ************************************************************************* */
-/* find the separators                                                       */
 /* ************************************************************************* */
 set<string> LinearFactorGraph::find_separator(const string& key) const
 {
@@ -52,34 +38,17 @@ set<string> LinearFactorGraph::find_separator(const string& key) const
 }
 
 /* ************************************************************************* */
-// eliminate factor graph using the given (not necessarily complete)
-// ordering, yielding a chordal Bayes net and partially eliminated FG
-/* ************************************************************************* */
 GaussianBayesNet::shared_ptr
-LinearFactorGraph::eliminate_partially(const Ordering& ordering)
+LinearFactorGraph::eliminate(const Ordering& ordering)
 {
 	GaussianBayesNet::shared_ptr chordalBayesNet (new GaussianBayesNet()); // empty
-
 	BOOST_FOREACH(string key, ordering) {
 		ConditionalGaussian::shared_ptr cg = eliminateOne<ConditionalGaussian>(key);
 		chordalBayesNet->push_back(cg);
 	}
-
 	return chordalBayesNet;
 }
 
-/* ************************************************************************* */
-/** eliminate factor graph in the given order, yielding a chordal Bayes net  */ 
-/* ************************************************************************* */
-GaussianBayesNet::shared_ptr
-LinearFactorGraph::eliminate(const Ordering& ordering)
-{
-	GaussianBayesNet::shared_ptr chordalBayesNet = eliminate_partially(ordering);
-	return chordalBayesNet;
-}
-
-/* ************************************************************************* */
-/** optimize the linear factor graph                                          */ 
 /* ************************************************************************* */
 VectorConfig LinearFactorGraph::optimize(const Ordering& ordering)
 {
@@ -93,8 +62,6 @@ VectorConfig LinearFactorGraph::optimize(const Ordering& ordering)
 }
 
 /* ************************************************************************* */
-/** combine two factor graphs                                                 */ 
-/* ************************************************************************* */
 void LinearFactorGraph::combine(const LinearFactorGraph &lfg){
 	for(const_iterator factor=lfg.factors_.begin(); factor!=lfg.factors_.end(); factor++){
 		push_back(*factor);
@@ -102,11 +69,9 @@ void LinearFactorGraph::combine(const LinearFactorGraph &lfg){
 }
 
 /* ************************************************************************* */
-/** combine two factor graphs                                                */ 
-/* ************************************************************************* */
-
 LinearFactorGraph LinearFactorGraph::combine2(const LinearFactorGraph& lfg1,
 		const LinearFactorGraph& lfg2) {
+
 	// create new linear factor graph equal to the first one
 	LinearFactorGraph fg = lfg1;
 
@@ -115,13 +80,11 @@ LinearFactorGraph LinearFactorGraph::combine2(const LinearFactorGraph& lfg1,
 			!= lfg2.factors_.end(); factor++) {
 		fg.push_back(*factor);
 	}
-
 	return fg;
 }
 
 
 /* ************************************************************************* */  
-// find all variables and their dimensions
 VariableSet LinearFactorGraph::variables() const {
 	VariableSet result;
 	BOOST_FOREACH(shared_factor factor,factors_) {

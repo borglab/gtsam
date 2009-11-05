@@ -18,6 +18,7 @@ using namespace boost::assign;
 #include "Ordering.h"
 #include "smallExample.h"
 #include "GaussianBayesNet.h"
+#include <FactorGraph-inl.h> // needed for FactorGraph::eliminate
 
 using namespace gtsam;
 
@@ -394,10 +395,17 @@ TEST( LinearFactorGraph, CONSTRUCTOR_GaussianBayesNet )
   Ordering ord;
   ord += "x2","l1","x1";
   GaussianBayesNet::shared_ptr CBN = fg.eliminate(ord);
+
+  // True LinearFactorGraph
   LinearFactorGraph fg2(*CBN);
   GaussianBayesNet::shared_ptr CBN2 = fg2.eliminate(ord);
-
   CHECK(CBN->equals(*CBN2));
+
+  // Base FactorGraph only
+  FactorGraph<LinearFactor> fg3(*CBN);
+  boost::shared_ptr<BayesNet<ConditionalGaussian> > CBN3 =
+  		fg3.eliminate<ConditionalGaussian>(ord);
+  CHECK(CBN->equals(*CBN3));
 }
 
 /* ************************************************************************* */

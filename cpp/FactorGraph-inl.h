@@ -24,6 +24,18 @@ namespace gtsam {
 
 /* ************************************************************************* */
 template<class Factor>
+template<class Conditional>
+FactorGraph<Factor>::FactorGraph(const BayesNet<Conditional>& bayesNet)
+{
+	typename BayesNet<Conditional>::const_iterator it = bayesNet.begin();
+	for(; it != bayesNet.end(); it++) {
+		typename boost::shared_ptr<Factor>::shared_ptr factor(new Factor(*it));
+		push_back(factor);
+	}
+}
+
+/* ************************************************************************* */
+template<class Factor>
 void FactorGraph<Factor>::print(const string& s) const {
 	cout << s << endl;
 	printf("size: %d\n", (int) size());
@@ -227,6 +239,26 @@ boost::shared_ptr<Conditional> FactorGraph<Factor>::eliminateOne(const std::stri
 
 	// return the conditional Gaussian
 	return conditional;
+}
+
+/* ************************************************************************* */
+// This doubly templated function is generic. There is a LinearFactorGraph
+// version that returns a more specific GaussianBayesNet.
+// Note, you will need to include this file to instantiate the function.
+/* ************************************************************************* */
+template<class Factor>
+template<class Conditional>
+boost::shared_ptr<BayesNet<Conditional> >
+FactorGraph<Factor>::eliminate(const Ordering& ordering)
+{
+	boost::shared_ptr<BayesNet<Conditional> > bayesNet (new BayesNet<Conditional>()); // empty
+
+	BOOST_FOREACH(string key, ordering) {
+		boost::shared_ptr<Conditional> cg = eliminateOne<Conditional>(key);
+		bayesNet->push_back(cg);
+	}
+
+	return bayesNet;
 }
 
 /* ************************************************************************* */

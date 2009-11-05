@@ -56,12 +56,6 @@ namespace gtsam {
 		}
 
     /**
-     * given a chordal bayes net, sets the linear factor graph identical to that CBN
-     * FD: imperative !!
-     */
-    void setCBN(const GaussianBayesNet& CBN);
-
-    /**
      * find the separator, i.e. all the nodes that have at least one
      * common factor with the given node. FD: not used AFAIK.
      */
@@ -69,15 +63,10 @@ namespace gtsam {
 
     /**
      * eliminate factor graph in place(!) in the given order, yielding
-     * a chordal Bayes net
-     */
-    boost::shared_ptr<GaussianBayesNet> eliminate(const Ordering& ordering);
-		
-    /**
-     * Same as eliminate but allows for passing an incomplete ordering
+     * a chordal Bayes net. Allows for passing an incomplete ordering
      * that does not completely eliminate the graph
      */
-    boost::shared_ptr<GaussianBayesNet> eliminate_partially(const Ordering& ordering);
+    boost::shared_ptr<GaussianBayesNet> eliminate(const Ordering& ordering);
 		
     /**
      * optimize a linear factor graph
