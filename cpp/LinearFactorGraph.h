@@ -15,11 +15,11 @@
 #include <boost/shared_ptr.hpp>
 #include "FactorGraph.h"
 #include "LinearFactor.h"
+#include "GaussianBayesNet.h" // needed for MATLAB toolbox !!
 
 namespace gtsam {
 
 	class Ordering;
-	class GaussianBayesNet;
 
   /**
    * A Linear Factor Graph is a factor graph where all factors are Gaussian, i.e.

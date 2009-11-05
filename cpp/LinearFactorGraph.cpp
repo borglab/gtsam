@@ -12,7 +12,6 @@
 
 #include <colamd/colamd.h>
 
-#include "GaussianBayesNet.h"
 #include "FactorGraph-inl.h"
 #include "LinearFactorGraph.h"
 #include "LinearFactorSet.h"
