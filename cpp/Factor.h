@@ -27,6 +27,7 @@ namespace gtsam {
     bool operator< (const Variable& other) const {return key_<other.key_; }
     const std::string& key() const { return key_;}
     std::size_t        dim() const { return dim_;}
+    bool equals(const Variable& var) const { return key_ == var.key_ && dim_ == var.dim_;}
   };
 
 	/** A set of variables, used to eliminate linear factor factor graphs. TODO FD: move */

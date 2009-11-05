@@ -9,6 +9,7 @@
 
 #include <boost/tuple/tuple.hpp>
 #include <boost/assign/std/list.hpp> // for operator +=
+#include <boost/assign/std/set.hpp>
 using namespace boost::assign;
 
 #include <CppUnitLite/TestHarness.h>
@@ -67,9 +68,19 @@ TEST( LinearFactor, variables )
   // get the factor "f2" from the small linear factor graph
   LinearFactorGraph fg = createLinearFactorGraph();
   LinearFactor::shared_ptr lf = fg[1];
-  VariableSet vs = lf->variables();
+  VariableSet actual = lf->variables();
 
-  //TODO: test this
+  // create expected variable set
+  VariableSet expected;
+  Variable x1("x1", 2);
+  Variable x2("x2", 2);
+  expected += x1, x2;
+
+  // verify
+  CHECK(expected.size() == actual.size());
+  set<Variable>::const_iterator exp, act;
+  for (exp=expected.begin(), act=actual.begin(); exp != expected.end(); act++, exp++)
+	  CHECK((*exp).equals(*act));
 }
 
 /* ************************************************************************* */
@@ -361,133 +372,122 @@ TEST( LinearFactor, eliminate )
 }
 
 
-///* ************************************************************************* */
-//TEST( LinearFactor, eliminate2 )
-//{
-//	cout << "TEST( LinearFactor, eliminate2 )" << endl;
-//	// sigmas
-//	double sigma1 = 0.2;
-//	double sigma2 = 0.1;
-//	Vector sigmas = Vector_(4, sigma1, sigma1, sigma2, sigma2);
-//
-//	// the combined linear factor
-//	Matrix Ax2 = Matrix_(4,2,
-//			// x2
-//			-1., 0.,
-//			+0.,-1.,
-//			1., 0.,
-//			+0.,1.
-//	);
-//
-//	Matrix Al1x1 = Matrix_(4,4,
-//			// l1   x1
-//			1., 0., 0.00,  0., // f4
-//			0., 1., 0.00,  0., // f4
-//			0., 0., -1.,  0., // f2
-//			0., 0., 0.00,-1.  // f2
-//	);
-//
-//	// the RHS
-//	Vector b2(4);
-//	b2(0) = -1*sigma1;
-//	b2(1) = 1.5*sigma1;
-//	b2(2) = 2*sigma2;
-//	b2(3) = -1*sigma2;
-//
-//	vector<pair<string, Matrix> > meas;
-//	meas.push_back(make_pair("x2", Ax2));
-//	meas.push_back(make_pair("l1x1", Al1x1));
-//	LinearFactor combined(meas, b2, sigmas);
-//
-//	// eliminate the combined factor
-//	ConditionalGaussian::shared_ptr actualCG;
-//	LinearFactor::shared_ptr actualLF;
-//	boost::tie(actualCG,actualLF) = combined.eliminate("x2");
-//
-//	// create expected Conditional Gaussian
-//	Matrix R11 = Matrix_(2,2,
-//			11.1803,  0.00,
-//			0.00, 11.1803
-//	);
-//	Matrix S12 = Matrix_(2,4,
-//			-2.23607, 0.00,-8.94427, 0.00,
-//			+0.00,-2.23607,+0.00,-8.94427
-//	);
-//	Vector d(2); d(0) = 2.23607; d(1) = -1.56525;
-//
-//	Vector sigmas(2);
-//	sigmas(0) = R11(0,0);
-//	sigmas(1) = R11(1,1);
-//
-//	// normalize the existing matrices
-//	Matrix N = eye(2,2);
-//	N(0,0) = 1/sigmas(0);
-//	N(1,1) = 1/sigmas(1);
-//	S12 = N*S12;
-//	R11 = N*R11;
-//
-//	ConditionalGaussian expectedCG("x2",d,R11,"l1x1",S12,sigmas);
-//
-//	// the expected linear factor
-//	double sigma = 0.2236;
-//	Matrix Bl1x1 = Matrix_(2,4,
-//			// l1          x1
-//			1.00, 0.00, -1.00,  0.00,
-//			0.00, 1.00, +0.00, -1.00
-//	);
-//
-//	// the RHS
-//	Vector b1(2); b1(0) = 0.0; b1(1) = 0.894427;
-//
-//	LinearFactor expectedLF("l1x1", Bl1x1, b1*sigma, sigma);
-//
-//	// check if the result matches
-//	CHECK(assert_equal(expectedCG,*actualCG,1e-4)); //FAILS
-//	CHECK(assert_equal(expectedLF,*actualLF,1e-5)); //FAILS
-//}
-//
-////* ************************************************************************* */
-//TEST( LinearFactor, default_error )
-//{
-//	cout << "TEST( LinearFactor, default_error )" << endl;
-//	LinearFactor f;
-//	VectorConfig c;
-//	double actual = f.error(c);
-//	CHECK(actual==0.0);
-//}
-//
-////* ************************************************************************* */
-//TEST( LinearFactor, eliminate_empty )
-//{
-//	cout << "TEST( LinearFactor, eliminate_empty )" << endl;
-//	// create an empty factor
-//	LinearFactor f;
-//
-//	// eliminate the empty factor
-//	ConditionalGaussian::shared_ptr actualCG;
-//	LinearFactor::shared_ptr actualLF;
-//	boost::tie(actualCG,actualLF) = f.eliminate("x2");
-//
-//	// expected Conditional Gaussian is just a parent-less node with P(x)=1
-//	ConditionalGaussian expectedCG("x2");
-//
-//	// expected remaining factor is still empty :-)
-//	LinearFactor expectedLF;
-//
-//	// check if the result matches
-//	CHECK(actualCG->equals(expectedCG));
-//	CHECK(actualLF->equals(expectedLF));
-//}
-//
-////* ************************************************************************* */
-//TEST( LinearFactor, empty )
-//{
-//	cout << "TEST( LinearFactor, empty )" << endl;
-//	// create an empty factor
-//	LinearFactor f;
-//	CHECK(f.empty()==true);
-//}
-//
+/* ************************************************************************* */
+TEST( LinearFactor, eliminate2 )
+{
+	// sigmas
+	double sigma1 = 0.2;
+	double sigma2 = 0.1;
+	Vector sigmas = Vector_(4, sigma1, sigma1, sigma2, sigma2);
+
+	// the combined linear factor
+	Matrix Ax2 = Matrix_(4,2,
+			// x2
+			-1., 0.,
+			+0.,-1.,
+			1., 0.,
+			+0.,1.
+	);
+
+	Matrix Al1x1 = Matrix_(4,4,
+			// l1   x1
+			1., 0., 0.00,  0., // f4
+			0., 1., 0.00,  0., // f4
+			0., 0., -1.,  0., // f2
+			0., 0., 0.00,-1.  // f2
+	);
+
+	// the RHS
+	Vector b2(4);
+	b2(0) = -0.2;
+	b2(1) =  0.3;
+	b2(2) =  0.2;
+	b2(3) = -0.1;
+
+	vector<pair<string, Matrix> > meas;
+	meas.push_back(make_pair("x2", Ax2));
+	meas.push_back(make_pair("l1x1", Al1x1));
+	LinearFactor combined(meas, b2, sigmas);
+
+	// eliminate the combined factor
+	ConditionalGaussian::shared_ptr actualCG;
+	LinearFactor::shared_ptr actualLF;
+	boost::tie(actualCG,actualLF) = combined.eliminate("x2");
+
+	// create expected Conditional Gaussian
+	Matrix R11 = Matrix_(2,2,
+			1.00,  0.00,
+			0.00,  1.00
+	);
+	Matrix S12 = Matrix_(2,4,
+			-0.20, 0.00,-0.80, 0.00,
+			+0.00,-0.20,+0.00,-0.80
+	);
+	Vector d(2); d(0) = 0.2; d(1) = -0.14;
+
+	Vector x2Sigmas(2);
+	x2Sigmas(0) = 0.0894427;
+	x2Sigmas(1) = 0.0894427;
+
+	ConditionalGaussian expectedCG("x2",d,R11,"l1x1",S12,x2Sigmas);
+
+	// the expected linear factor
+	double sigma = 0.2236;
+	Matrix Bl1x1 = Matrix_(2,4,
+			// l1          x1
+			1.00, 0.00, -1.00,  0.00,
+			0.00, 1.00, +0.00, -1.00
+	);
+
+	// the RHS
+	Vector b1(2); b1(0) = 0.0; b1(1) = 0.894427;
+
+	LinearFactor expectedLF("l1x1", Bl1x1, b1*sigma, sigma);
+
+	// check if the result matches
+	CHECK(assert_equal(expectedCG,*actualCG,1e-4));
+	CHECK(assert_equal(expectedLF,*actualLF,1e-5));
+}
+
+/* ************************************************************************* */
+TEST( LinearFactor, default_error )
+{
+	LinearFactor f;
+	VectorConfig c;
+	double actual = f.error(c);
+	CHECK(actual==0.0);
+}
+
+//* ************************************************************************* */
+TEST( LinearFactor, eliminate_empty )
+{
+	// create an empty factor
+	LinearFactor f;
+
+	// eliminate the empty factor
+	ConditionalGaussian::shared_ptr actualCG;
+	LinearFactor::shared_ptr actualLF;
+	boost::tie(actualCG,actualLF) = f.eliminate("x2");
+
+	// expected Conditional Gaussian is just a parent-less node with P(x)=1
+	ConditionalGaussian expectedCG("x2");
+
+	// expected remaining factor is still empty :-)
+	LinearFactor expectedLF;
+
+	// check if the result matches
+	CHECK(actualCG->equals(expectedCG));
+	CHECK(actualLF->equals(expectedLF));
+}
+
+//* ************************************************************************* */
+TEST( LinearFactor, empty )
+{
+	// create an empty factor
+	LinearFactor f;
+	CHECK(f.empty()==true);
+}
+
 /* ************************************************************************* */
 TEST( LinearFactor, matrix )
 {
@@ -513,57 +513,46 @@ TEST( LinearFactor, matrix )
 	EQUALITY(b,b1);
 }
 
-///* ************************************************************************* */
-//TEST( LinearFactor, size )
-//{
-//	cout << "TEST( LinearFactor, size )" << endl;
-//	// create a linear factor graph
-//	LinearFactorGraph fg = createLinearFactorGraph();
-//
-//	// get some factors from the graph
-//	boost::shared_ptr<LinearFactor> factor1 = fg[0];
-//	boost::shared_ptr<LinearFactor> factor2 = fg[1];
-//	boost::shared_ptr<LinearFactor> factor3 = fg[2];
-//
-//	CHECK(factor1->size() == 1);
-//	CHECK(factor2->size() == 2);
-//	CHECK(factor3->size() == 2);
-//}
-//
-///* ************************************************************************* */
-//TEST( LinearFactor, CONSTRUCTOR_ConditionalGaussian )
-//{
-//	cout << "TEST( LinearFactor, CONSTRUCTOR_ConditionalGaussian )" << endl;
-//	Matrix R11 = Matrix_(2,2,
-//			11.1803,  0.00,
-//			0.00, 11.1803
-//	);
-//	Matrix S12 = Matrix_(2,2,
-//			-2.23607, 0.00,
-//			+0.00,-2.23607
-//	);
-//	Vector d(2); d(0) = 2.23607; d(1) = -1.56525;
-//
-//	Vector sigmas(2);
-//	sigmas(0) = R11(0,0);
-//	sigmas(1) = R11(1,1);
-//
-//	// normalize the existing matrices
-//	Matrix N = eye(2,2);
-//	N(0,0) = 1/sigmas(0);
-//	N(1,1) = 1/sigmas(1);
-//	S12 = N*S12;
-//	R11 = N*R11;
-//
-//	ConditionalGaussian::shared_ptr CG(new ConditionalGaussian("x2",d,R11,"l1x1",S12,sigmas));
-//	LinearFactor actualLF(CG);
-//	//  actualLF.print();
-//	double precision = 11.1803;
-//	double sigma = 1/sqrt(precision);
-//	LinearFactor expectedLF("x2",R11,"l1x1",S12,d, sigma);
-//
-//	CHECK(assert_equal(expectedLF,actualLF,1e-5)); //FAILS Precisions are incorrect
-//}
+/* ************************************************************************* */
+TEST( LinearFactor, size )
+{
+	// create a linear factor graph
+	LinearFactorGraph fg = createLinearFactorGraph();
+
+	// get some factors from the graph
+	boost::shared_ptr<LinearFactor> factor1 = fg[0];
+	boost::shared_ptr<LinearFactor> factor2 = fg[1];
+	boost::shared_ptr<LinearFactor> factor3 = fg[2];
+
+	CHECK(factor1->size() == 1);
+	CHECK(factor2->size() == 2);
+	CHECK(factor3->size() == 2);
+}
+
+/* ************************************************************************* */
+TEST( LinearFactor, CONSTRUCTOR_ConditionalGaussian )
+{
+	Matrix R11 = Matrix_(2,2,
+			1.00,  0.00,
+			0.00,  1.00
+	);
+	Matrix S12 = Matrix_(2,2,
+			-0.200001, 0.00,
+			+0.00,-0.200001
+	);
+	Vector d(2); d(0) = 2.23607; d(1) = -1.56525;
+
+	Vector sigmas(2);
+	sigmas(0) = 0.29907;
+	sigmas(1) = 0.29907;
+
+	ConditionalGaussian::shared_ptr CG(new ConditionalGaussian("x2",d,R11,"l1x1",S12,sigmas));
+	LinearFactor actualLF(CG);
+	//  actualLF.print();
+	LinearFactor expectedLF("x2",R11,"l1x1",S12,d, sigmas(0));
+
+	CHECK(assert_equal(expectedLF,actualLF,1e-5));
+}
 /* ************************************************************************* */
 int main() { TestResult tr; return TestRegistry::runAllTests(tr);}
 /* ************************************************************************* */
