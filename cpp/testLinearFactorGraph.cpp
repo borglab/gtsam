@@ -403,8 +403,9 @@ TEST( LinearFactorGraph, CONSTRUCTOR_GaussianBayesNet )
 
   // Base FactorGraph only
   FactorGraph<LinearFactor> fg3(*CBN);
+  boost::shared_ptr<BayesNet<ConditionalGaussian> > dummy;
   boost::shared_ptr<BayesNet<ConditionalGaussian> > CBN3 =
-  		fg3.eliminate<ConditionalGaussian>(ord);
+  		fg3.eliminate<ConditionalGaussian>(dummy,ord);
   CHECK(CBN->equals(*CBN3));
 }
 
