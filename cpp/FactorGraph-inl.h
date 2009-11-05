@@ -249,7 +249,7 @@ boost::shared_ptr<Conditional> FactorGraph<Factor>::eliminateOne(const std::stri
 template<class Factor>
 template<class Conditional>
 boost::shared_ptr<BayesNet<Conditional> >
-FactorGraph<Factor>::eliminate(const Ordering& ordering)
+FactorGraph<Factor>::eliminate(boost::shared_ptr<BayesNet<Conditional> > xxx, const Ordering& ordering)
 {
 	boost::shared_ptr<BayesNet<Conditional> > bayesNet (new BayesNet<Conditional>()); // empty
 

@@ -124,7 +124,7 @@ namespace gtsam {
 		 * ordering, yielding a chordal Bayes net and (partially eliminated) FG
 		 */
 		template<class Conditional>
-		boost::shared_ptr<BayesNet<Conditional> > eliminate(const Ordering& ordering);
+		boost::shared_ptr<BayesNet<Conditional> > eliminate(boost::shared_ptr<BayesNet<Conditional> > bayesNet, const Ordering& ordering);
 
 	private:
 
