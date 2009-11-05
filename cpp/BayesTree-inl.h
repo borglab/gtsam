@@ -128,25 +128,29 @@ namespace gtsam {
 		if (it == nodes_.end()) throw(invalid_argument(
 						"BayesTree::marginal('"+key+"'): key not found"));
 
+		// get clique containing key, and remove all factors below key
+		node_ptr clique = it->second;
+		Ordering ordering = clique->ordering();
+		FactorGraph<Factor> graph(*clique);
+		while(ordering.front()!=key) {
+			graph.findAndRemoveFactors(ordering.front());
+			ordering.pop_front();
+		}
+
 		// find all cliques on the path to the root and turn into factor graph
-		node_ptr node = it->second;
-		Ordering ordering;
-		FactorGraph<Factor> graph;
-		while (node!=NULL) {
+		while (clique->parent_!=NULL) {
+			// move up the tree
+			clique = clique->parent_;
 
 			// extend ordering
-			Ordering cliqueOrdering = node->ordering();
+			Ordering cliqueOrdering = clique->ordering();
 			ordering.splice (ordering.end(), cliqueOrdering);
 
 			// extend factor graph
-			boost::shared_ptr<BayesNet<Conditional> > bayesNet = node;
-			FactorGraph<Factor> cliqueGraph(*bayesNet);
+			FactorGraph<Factor> cliqueGraph(*clique);
 			typename FactorGraph<Factor>::const_iterator factor=cliqueGraph.begin();
 			for(; factor!=cliqueGraph.end(); factor++)
 				graph.push_back(*factor);
-
-			// move up the tree
-			node = node->parent_;
 		}
 
 		//graph.print();

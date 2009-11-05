@@ -116,6 +116,18 @@ TEST( BayesTree, balanced_smoother_marginals )
 
 	// eliminate using a "nested dissection" ordering
 	GaussianBayesNet::shared_ptr chordalBayesNet = smoother.eliminate(ordering);
+  boost::shared_ptr<VectorConfig> actualSolution = chordalBayesNet->optimize();
+
+  VectorConfig expectedSolution;
+  Vector delta = zero(2);
+  expectedSolution.insert("x1",delta);
+  expectedSolution.insert("x2",delta);
+  expectedSolution.insert("x3",delta);
+  expectedSolution.insert("x4",delta);
+  expectedSolution.insert("x5",delta);
+  expectedSolution.insert("x6",delta);
+  expectedSolution.insert("x7",delta);
+	CHECK(assert_equal(expectedSolution,*actualSolution,1e-4));
 
 	// Create the Bayes tree
 	BayesTree<ConditionalGaussian> bayesTree(*chordalBayesNet);
@@ -126,15 +138,26 @@ TEST( BayesTree, balanced_smoother_marginals )
 	//BayesNet<ConditionalGaussian> actual_root = bayesTree.root();
 	//CHECK(assert_equal(expected_root,actual_root));
 
+	// Marginal will always be axis-parallel Gaussian on delta=(0,0)
+	Matrix R = eye(2);
+
 	// Check marginal on x1
-  double data1[] = { 1.0, 0.0,
-                     0.0, 1.0};
-  Matrix R1 = Matrix_(2,2, data1);
-  Vector d1(2); d1(0) = -0.615385; d1(1) = 0;
-  Vector sigma1(2); sigma1(0) = 0.786153; sigma1(1) = 0.786153;
-	ConditionalGaussian expected("x1",d1, R1, sigma1);
-	ConditionalGaussian::shared_ptr actual = bayesTree.marginal<LinearFactor>("x1");
-	CHECK(assert_equal(expected,*actual,1e-4));
+  Vector sigma1 = repeat(2, 0.786153);
+	ConditionalGaussian expected1("x1", delta, R, sigma1);
+	ConditionalGaussian::shared_ptr actual1 = bayesTree.marginal<LinearFactor>("x1");
+	CHECK(assert_equal(expected1,*actual1,1e-4));
+
+	// Check marginal on x2
+  Vector sigma2 = repeat(2, 0.687131);
+	ConditionalGaussian expected2("x2", delta, R, sigma2);
+	ConditionalGaussian::shared_ptr actual2 = bayesTree.marginal<LinearFactor>("x2");
+	CHECK(assert_equal(expected2,*actual2,1e-4));
+
+	// Check marginal on x3
+  Vector sigma3 = repeat(2, 0.671512);
+	ConditionalGaussian expected3("x3", delta, R, sigma3);
+	ConditionalGaussian::shared_ptr actual3 = bayesTree.marginal<LinearFactor>("x3");
+	CHECK(assert_equal(expected3,*actual3,1e-4));
 
 	// JunctionTree is an undirected tree of cliques
 	// JunctionTree<ConditionalGaussian> marginals = bayesTree.marginals();
