@@ -247,14 +247,18 @@ ExampleNonlinearFactorGraph createReallyNonlinearFactorGraph() {
 
 /* ************************************************************************* */
 LinearFactorGraph createSmoother(int T) {
+
+	// noise on measurements and odometry, respectively
+	double sigma1 = 1, sigma2 = 1;
+
 	// Create
 	ExampleNonlinearFactorGraph nlfg;
 	VectorConfig poses;
 
 	// prior on x1
-	Vector x1 = zero(2);
+	Vector x1 = Vector_(2,1.0,0.0);
 	string key1 = symbol('x', 1);
-	shared prior(new Point2Prior(x1, 1, key1));
+	shared prior(new Point2Prior(x1, sigma1, key1));
 	nlfg.push_back(prior);
 	poses.insert(key1, x1);
 
@@ -262,15 +266,16 @@ LinearFactorGraph createSmoother(int T) {
 		// odometry between x_t and x_{t-1}
 		Vector odo = Vector_(2, 1.0, 0.0);
 		string key = symbol('x', t);
-		shared odometry(new Simulated2DOdometry(odo, 1, symbol('x', t - 1), key));
+		shared odometry(new Simulated2DOdometry(odo, sigma2, symbol('x', t - 1), key));
 		nlfg.push_back(odometry);
 
-		// measurement on x_t
-		double sigma3 = 0.2;
-		Vector z = Vector_(2, t, 0.0);
-		shared measurement(new Point2Prior(z, 1, key));
+		// measurement on x_t is like perfect GPS
+		Vector xt = Vector_(2, (double)t, 0.0);
+		shared measurement(new Point2Prior(xt, sigma1, key));
 		nlfg.push_back(measurement);
-		poses.insert(key, z);
+
+		// initial estimate
+		poses.insert(key, xt);
 	}
 
 	LinearFactorGraph lfg = nlfg.linearize(poses);
