@@ -17,19 +17,22 @@ class LinearFactorSet {
 class LinearFactor {
   LinearFactor(string key1,
 	       Matrix A1,
-	       Vector b_in);
+	       Vector b_in,
+	       double sigma);
   LinearFactor(string key1,
 	       Matrix A1,
 	       string key2,
 	       Matrix A2,
-	       Vector b_in);
+	       Vector b_in,
+	       double sigma);
   LinearFactor(string key1,
 	       Matrix A1,
 	       string key2,
 	       Matrix A2,
 	       string key3,
 	       Matrix A3,
-	       Vector b_in);
+	       Vector b_in,
+	       double sigma);
   bool empty() const;
   Vector get_b() const;
   Matrix get_A(string key) const;
@@ -42,18 +45,24 @@ class LinearFactor {
 
 class ConditionalGaussian {
   ConditionalGaussian();
-  ConditionalGaussian(Vector d,
-		      Matrix R);
-  ConditionalGaussian(Vector d,
+  ConditionalGaussian(string key,
+  		    Vector d,
+		      Matrix R,
+		      Vector precisions);
+  ConditionalGaussian(string key,
+  		    Vector d,
 		      Matrix R,
 		      string name1,
-		      Matrix S);
-  ConditionalGaussian(Vector d,
+		      Matrix S,
+		      Vector precisions);
+  ConditionalGaussian(string key,
+  		    Vector d,
 		      Matrix R,
 		      string name1,
 		      Matrix S,
 		      string name2,
-		      Matrix T);
+		      Matrix T,
+		      Vector precisions);
   void print() const;
   Vector solve(const VectorConfig& x);
   void add(string key, Matrix S);
@@ -68,8 +77,6 @@ class Ordering {
 
 class GaussianBayesNet {
   GaussianBayesNet();
-  void insert(string name, ConditionalGaussian* node);
-  ConditionalGaussian* get(string name);
   VectorConfig* optimize();
   void print() const;
   bool equals(const GaussianBayesNet& cbn) const;
@@ -87,8 +94,6 @@ class LinearFactorGraph {
   bool equals(const LinearFactorGraph& lfgraph) const;
 
   VectorConfig optimize(const Ordering& ordering);
-  LinearFactor* combine_factors(string key);
-  ConditionalGaussian* eliminate_one(string key);
   GaussianBayesNet* eliminate(const Ordering& ordering);
   pair<Matrix,Vector> matrix(const Ordering& ordering) const;
 };
