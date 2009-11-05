@@ -75,11 +75,13 @@ namespace gtsam {
 		/** SLOW O(n) random access to Conditional by key */
 		conditional_ptr operator[](const std::string& key) const;
 
+		inline conditional_ptr back() { return conditionals_.back(); }
+
 		/** return iterators. FD: breaks encapsulation? */
-		const_iterator const begin() const {return conditionals_.begin();}
-		const_iterator const end()   const {return conditionals_.end();}
-		const_reverse_iterator const rbegin() const {return conditionals_.rbegin();}
-		const_reverse_iterator const rend()   const {return conditionals_.rend();}
+		inline const_iterator const begin() const {return conditionals_.begin();}
+		inline const_iterator const end()   const {return conditionals_.end();}
+		inline const_reverse_iterator const rbegin() const {return conditionals_.rbegin();}
+		inline const_reverse_iterator const rend()   const {return conditionals_.rend();}
 
 	private:
 		/** Serialization function */
