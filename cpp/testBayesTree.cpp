@@ -127,9 +127,14 @@ TEST( BayesTree, balanced_smoother_marginals )
 	//CHECK(assert_equal(expected_root,actual_root));
 
 	// Check marginal on x1
-	ConditionalGaussian expected;
-	ConditionalGaussian::shared_ptr actual = bayesTree.marginal("x1");
-	CHECK(assert_equal(expected,*actual));
+  double data1[] = { 1.0, 0.0,
+                     0.0, 1.0};
+  Matrix R1 = Matrix_(2,2, data1);
+  Vector d1(2); d1(0) = -0.615385; d1(1) = 0;
+  Vector tau1(2); tau1(0) = 1.61803; tau1(1) = 1.61803;
+	ConditionalGaussian expected("x1",d1, R1, tau1);
+	ConditionalGaussian::shared_ptr actual = bayesTree.marginal<LinearFactor>("x1");
+	CHECK(assert_equal(expected,*actual,1e-4));
 
 	// JunctionTree is an undirected tree of cliques
 	// JunctionTree<ConditionalGaussian> marginals = bayesTree.marginals();

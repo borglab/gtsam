@@ -94,6 +94,7 @@ namespace gtsam {
 		boost::shared_ptr<BayesNet<Conditional> > root() const {return root_;}
 
 		/** return marginal on any variable */
+		template<class Factor>
 		boost::shared_ptr<Conditional> marginal(const std::string& key) const;
 
 	}; // BayesTree

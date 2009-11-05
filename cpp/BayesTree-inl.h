@@ -6,7 +6,7 @@
 
 #include <boost/foreach.hpp>
 #include "BayesTree.h"
-#include "FactorGraph.h"
+#include "FactorGraph-inl.h"
 
 namespace gtsam {
 
@@ -120,6 +120,7 @@ namespace gtsam {
 
 	/* ************************************************************************* */
 	template<class Conditional>
+	template<class Factor>
 	boost::shared_ptr<Conditional> BayesTree<Conditional>::marginal(const string& key) const {
 
 		// find the clique to which key belongs
@@ -128,16 +129,39 @@ namespace gtsam {
 						"BayesTree::marginal('"+key+"'): key not found"));
 
 		// find all cliques on the path to the root and turn into factor graph
-		// FactorGraph
 		node_ptr node = it->second;
-		int i=0;
+		Ordering ordering;
+		FactorGraph<Factor> graph;
 		while (node!=NULL) {
-			//node->print("node");
+
+			// extend ordering
+			Ordering cliqueOrdering = node->ordering();
+			ordering.splice (ordering.end(), cliqueOrdering);
+
+			// extend factor graph
+			boost::shared_ptr<BayesNet<Conditional> > bayesNet = node;
+			FactorGraph<Factor> cliqueGraph(*bayesNet);
+			typename FactorGraph<Factor>::const_iterator factor=cliqueGraph.begin();
+			for(; factor!=cliqueGraph.end(); factor++)
+				graph.push_back(*factor);
+
+			// move up the tree
 			node = node->parent_;
 		}
 
-		boost::shared_ptr<Conditional> result(new Conditional);
-		return result;
+		//graph.print();
+		ordering.reverse();
+		//ordering.print();
+
+		// eliminate to get marginal
+		boost::shared_ptr<BayesNet<Conditional> > bayesNet;
+		typename boost::shared_ptr<BayesNet<Conditional> > chordalBayesNet =
+				graph.eliminate(bayesNet,ordering);
+
+		//chordalBayesNet->print("chordalBayesNet");
+
+		boost::shared_ptr<Conditional> marginal = chordalBayesNet->back();
+		return marginal;
 	}
 
 	/* ************************************************************************* */
