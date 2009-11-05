@@ -206,9 +206,9 @@ TEST( LinearFactorGraph, eliminateOne_x1 )
 			 +0.00,-0.444444
 			 );
   Vector d(2); d(0) = -0.133333; d(1) = -0.0222222;
-  Vector tau(2); tau(0) = 225; tau(1) = 225;
+  Vector sigma(2); sigma(0) = 1./15; sigma(1) = 1./15;
 
-  ConditionalGaussian expected("x1",d,R11,"l1",S12,"x2",S13,tau);
+  ConditionalGaussian expected("x1",d,R11,"l1",S12,"x2",S13,sigma);
 
   CHECK(assert_equal(expected,*actual,tol));
 }
@@ -235,9 +235,9 @@ TEST( LinearFactorGraph, eliminateOne_x2 )
 			 +0.0,-0.8
 			 );
   Vector d(2); d(0) = 0.2; d(1) = -0.14;
-  Vector tau(2); tau(0) = 125; tau(1) = 125;
+  Vector sigma(2); sigma(0) = 0.0894427; sigma(1) = 0.0894427;
 
-  ConditionalGaussian expected("x2",d,R11,"l1",S12,"x1",S13,tau);
+  ConditionalGaussian expected("x2",d,R11,"l1",S12,"x1",S13,sigma);
 
   CHECK(assert_equal(expected,*actual,tol));
 }
@@ -263,9 +263,9 @@ TEST( LinearFactorGraph, eliminateOne_l1 )
 			 +0.0,-0.5
 			 );
   Vector d(2); d(0) = -0.1; d(1) = 0.25;
-  Vector tau(2); tau(0) = 50; tau(1) = 50;
+  Vector sigma(2); sigma(0) = 0.141421; sigma(1) = 0.141421;
 
-  ConditionalGaussian expected("l1",d,R11,"x1",S12,"x2",S13,tau);
+  ConditionalGaussian expected("l1",d,R11,"x1",S12,"x2",S13,sigma);
 
   CHECK(assert_equal(expected,*actual,tol));
 }
@@ -278,9 +278,9 @@ TEST( LinearFactorGraph, eliminateAll )
                      0.0, 1.0};
   Matrix R1 = Matrix_(2,2, data1);
   Vector d1(2); d1(0) = -0.1; d1(1) = -0.1;
-  Vector tau1(2); tau1(0) = 100; tau1(1) = 100;
+  Vector sigma1(2); sigma1(0) = 0.1; sigma1(1) = 0.1;
 
-  ConditionalGaussian::shared_ptr cg1(new ConditionalGaussian("x1",d1, R1, tau1));
+  ConditionalGaussian::shared_ptr cg1(new ConditionalGaussian("x1",d1, R1, sigma1));
 
   double data21[] = { 1.0, 0.0,
                       0.0, 1.0};
@@ -289,9 +289,9 @@ TEST( LinearFactorGraph, eliminateAll )
                        0.0, -1.0};
   Matrix A1 = Matrix_(2,2, data22);
   Vector d2(2); d2(0) = 0.0; d2(1) = 0.2;
-  Vector tau2(2); tau2(0) = 45; tau2(1) = 45;
+  Vector sigma2(2); sigma2(0) = 0.149071; sigma2(1) = 0.149071;
 
-  ConditionalGaussian::shared_ptr cg2(new ConditionalGaussian("l1",d2, R2,"x1", A1,tau2));
+  ConditionalGaussian::shared_ptr cg2(new ConditionalGaussian("l1",d2, R2,"x1", A1,sigma2));
 
   double data31[] = { 1.0, 0.0,
                       0.0, 1.0};
@@ -304,9 +304,9 @@ TEST( LinearFactorGraph, eliminateAll )
   Matrix A22 = Matrix_(2,2, data33);
 
   Vector d3(2); d3(0) = 0.2; d3(1) = -0.14;
-  Vector tau3(2); tau3(0) = 125; tau3(1) = 125;
+  Vector sigma3(2); sigma3(0) = 0.0894427; sigma3(1) = 0.0894427;
 
-  ConditionalGaussian::shared_ptr cg3(new ConditionalGaussian("x2",d3, R3,"l1", A21, "x1", A22, tau3));
+  ConditionalGaussian::shared_ptr cg3(new ConditionalGaussian("x2",d3, R3,"l1", A21, "x1", A22, sigma3));
 
   GaussianBayesNet expected;
   expected.push_back(cg3);

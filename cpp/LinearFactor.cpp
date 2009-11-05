@@ -38,8 +38,7 @@ LinearFactor::LinearFactor(const boost::shared_ptr<ConditionalGaussian>& cg) :
 	}
 	// set sigmas from precisions
 	size_t n = b_.size();
-	sigmas_ = ediv(ones(n),cg->get_precisions());
-	for(int j=0;j<n;j++) sigmas_(j)=sqrt(sigmas_(j));
+	sigmas_ = cg->get_sigmas();
 }
 
 /* ************************************************************************* */
@@ -48,7 +47,7 @@ LinearFactor::LinearFactor(const vector<shared_ptr> & factors)
 	bool verbose = false;
 	if (verbose) cout << "LinearFactor::LinearFactor (factors)" << endl;
 
-	// Create RHS and precision vector of the right size by adding together row counts
+	// Create RHS and sigmas of right size by adding together row counts
   size_t m = 0;
   BOOST_FOREACH(shared_ptr factor, factors) m += factor->numberOfRows();
   b_ = Vector(m);
@@ -66,7 +65,7 @@ LinearFactor::LinearFactor(const vector<shared_ptr> & factors)
     const Vector bf = factor->get_b();
     for (size_t i=0; i<mf; i++) b_(pos+i) = bf(i);
 
-    // copy the precision vector from factor to sigmas_
+    // copy the sigmas_
     for (size_t i=0; i<mf; i++) sigmas_(pos+i) = factor->sigmas_(i);
 
     // update the matrices
@@ -241,20 +240,17 @@ LinearFactor::eliminate(const string& key)
 		ConditionalGaussian::shared_ptr cg(new ConditionalGaussian(key));
 		return make_pair(cg,lf);
 	}
-	if (verbose) cout <<  "<<<<<<<<<<<< 1" << endl;
 
 	// create an internal ordering that eliminates key first
 	Ordering ordering;
 	ordering += key;
 	BOOST_FOREACH(string k, keys())
 		if (k != key) ordering += k;
-	if (verbose) cout <<  "<<<<<<<<<<<< 2" << endl;
 
 	// extract A, b from the combined linear factor (ensure that x is leading)
 	Matrix A; Vector b;
 	boost::tie(A, b) = matrix(ordering);
 	size_t m = A.size1(); size_t n = A.size2();
-	if (verbose) cout <<  "<<<<<<<<<<<< 3" << endl;
 
 	// get dimensions of the eliminated variable
 	size_t n1 = getDim(key);
@@ -274,42 +270,34 @@ LinearFactor::eliminate(const string& key)
 	// copy in b
 	for (int i=0; i<m; ++i)
 		Rd(i,n) = b(i);
-	if (verbose) cout <<  "<<<<<<<<<<<< 4" << endl;
 
 	// Do in-place QR to get R, d of the augmented system
 	if (verbose) ::print(Rd,"Rd before");
 	householder(Rd, maxRank);
 	if (verbose) ::print(Rd,"Rd after");
-	if (verbose) cout <<  "<<<<<<<<<<<< 5" << endl;
 
 	// R as calculated by householder has inverse sigma on diagonal
 	// Use them to normalize R to unit-upper-triangular matrix
 	Vector sigmas(m); // standard deviations
-	Vector tau(n1);   // precisions for conditional
 	if (verbose) cout << n1 << " " << n  << " " << m << endl;
 	for (int i=0; i<maxRank; ++i) {
 		double Rii = Rd(i,i);
-		// detect rank < maxRank
-		if (fabs(Rii)<1e-8) { maxRank=i; break;}
-		sigmas(i) = 1.0/Rii;
-		if (i<n1) tau(i) = Rii*Rii;
-		for (int j=0; j<=n; ++j)
-			Rd(i,j) = Rd(i,j)*sigmas(i);
+		if (fabs(Rii)<1e-8) { maxRank=i; break;} // detect if rank < maxRank
+		sigmas(i) = 1.0/Rii;                     // calculate sigma
+		for (int j=0; j<=n; ++j) Rd(i,j) = Rd(i,j)*sigmas(i); // normalize
+		if (sigmas(i)<0) sigmas(i)=-sigmas(i);   // make sure sigma positive
 	}
-	if (verbose) cout <<  "<<<<<<<<<<<< 6" << endl;
 
 	// extract RHS
 	Vector d(m);
 	for (int i=0; i<m; ++i)
 		d(i) = Rd(i,n);
-	if (verbose) cout <<  "<<<<<<<<<<<< 7" << endl;
 
 	// create base conditional Gaussian
 	ConditionalGaussian::shared_ptr cg(new ConditionalGaussian(key,
 			sub(d, 0, n1),         // form d vector
 			sub(Rd, 0, n1, 0, n1), // form R matrix
-			sub(tau, 0, n1)));     // get precisions
-	if (verbose) cout <<  "<<<<<<<<<<<< 8" << endl;
+			sub(sigmas, 0, n1)));  // get standard deviations
 
 	// extract the block matrices for parents in both CG and LF
 	LinearFactor::shared_ptr lf(new LinearFactor);
@@ -321,16 +309,13 @@ LinearFactor::eliminate(const string& key)
 			lf->insert(cur_key, sub(Rd, n1, maxRank, j, j+dim));
 			j+=dim;
 		}
-	if (verbose) cout <<  "<<<<<<<<<<<< 9" << endl;
 
 	// Set sigmas
 	lf->sigmas_ = sub(sigmas,n1,maxRank);
-	if (verbose) cout <<  "<<<<<<<<<<<< 10" << endl;
 
 	// extract ds vector for the new b
 	lf->set_b(sub(d, n1, maxRank));
 	if (verbose) lf->print("lf");
-	if (verbose) cout <<  "<<<<<<<<<<<< 11" << endl;
 
 	return make_pair(cg, lf);
 }

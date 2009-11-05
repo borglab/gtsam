@@ -13,30 +13,30 @@ using namespace std;
 using namespace gtsam;
 
 /* ************************************************************************* */
-ConditionalGaussian::ConditionalGaussian(const string& key,Vector d, Matrix R, Vector precisions) :
-	Conditional (key), R_(R),precisions_(precisions),d_(d)
+ConditionalGaussian::ConditionalGaussian(const string& key,Vector d, Matrix R, Vector sigmas) :
+	Conditional (key), R_(R),sigmas_(sigmas),d_(d)
 {
 }
 
 /* ************************************************************************* */
 ConditionalGaussian::ConditionalGaussian(const string& key, Vector d, Matrix R,
-		const string& name1, Matrix S, Vector precisions) :
-	Conditional (key), R_(R), precisions_(precisions), d_(d) {
+		const string& name1, Matrix S, Vector sigmas) :
+	Conditional (key), R_(R), sigmas_(sigmas), d_(d) {
 	parents_.insert(make_pair(name1, S));
 }
 
 /* ************************************************************************* */
 ConditionalGaussian::ConditionalGaussian(const string& key, Vector d, Matrix R,
-		const string& name1, Matrix S, const string& name2, Matrix T, Vector precisions) :
-	Conditional (key), R_(R),precisions_(precisions), d_(d) {
+		const string& name1, Matrix S, const string& name2, Matrix T, Vector sigmas) :
+	Conditional (key), R_(R),sigmas_(sigmas), d_(d) {
 	parents_.insert(make_pair(name1, S));
 	parents_.insert(make_pair(name2, T));
 }
 
 /* ************************************************************************* */
 ConditionalGaussian::ConditionalGaussian(const string& key,
-		const Vector& d, const Matrix& R, const map<string, Matrix>& parents, Vector precisions) :
-	Conditional (key), R_(R),precisions_(precisions), d_(d), parents_(parents) {
+		const Vector& d, const Matrix& R, const map<string, Matrix>& parents, Vector sigmas) :
+	Conditional (key), R_(R),sigmas_(sigmas), d_(d), parents_(parents) {
 }
 
 /* ************************************************************************* */
@@ -50,7 +50,7 @@ void ConditionalGaussian::print(const string &s) const
     gtsam::print(Aj, "A["+j+"]");
   }
   gtsam::print(d_,"d");
-  gtsam::print(precisions_,"precisions");
+  gtsam::print(sigmas_,"sigmas");
 }    
 
 /* ************************************************************************* */
@@ -69,8 +69,8 @@ bool ConditionalGaussian::equals(const Conditional &c, double tol) const {
 	// check if d_ is equal
 	if (!(::equal_with_abs_tol(d_, p->d_, tol))) return false;
 
-	// check if precisions are equal
-	if (!(::equal_with_abs_tol(precisions_, p->precisions_, tol))) return false;
+	// check if sigmas are equal
+	if (!(::equal_with_abs_tol(sigmas_, p->sigmas_, tol))) return false;
 
 	// check if the matrices are the same
 	// iterate over the parents_ map

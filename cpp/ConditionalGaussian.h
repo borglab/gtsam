@@ -44,8 +44,8 @@ protected:
 	/** the names and the matrices connecting to parent nodes */
 	Parents parents_;
 
-	/** vector of precisions */
-	Vector precisions_;
+	/** vector of standard deviations */
+	Vector sigmas_;
 
 	/** the RHS vector */
 	Vector d_;
@@ -62,26 +62,26 @@ public:
 	/** constructor with no parents
 	 * |Rx-d|
 	 */
-	ConditionalGaussian(const std::string& key, Vector d, Matrix R, Vector precisions);
+	ConditionalGaussian(const std::string& key, Vector d, Matrix R, Vector sigmas);
 
 	/** constructor with only one parent
 	 * |Rx+Sy-d|
 	 */
 	ConditionalGaussian(const std::string& key, Vector d, Matrix R,
-			const std::string& name1, Matrix S, Vector precisions);
+			const std::string& name1, Matrix S, Vector sigmas);
 
 	/** constructor with two parents
 	 * |Rx+Sy+Tz-d|
 	 */
 	ConditionalGaussian(const std::string& key, Vector d, Matrix R,
-			const std::string& name1, Matrix S, const std::string& name2, Matrix T, Vector precisions);
+			const std::string& name1, Matrix S, const std::string& name2, Matrix T, Vector sigmas);
 
 	/**
 	 * constructor with number of arbitrary parents
 	 * |Rx+sum(Ai*xi)-d|
 	 */
 	ConditionalGaussian(const std::string& key, const Vector& d,
-			const Matrix& R, const Parents& parents, Vector precisions);
+			const Matrix& R, const Parents& parents, Vector sigmas);
 
 	/** deconstructor */
 	virtual ~ConditionalGaussian() {}
@@ -101,7 +101,7 @@ public:
 	/** return stuff contained in ConditionalGaussian */
 	const Vector& get_d() const {return d_;}
 	const Matrix& get_R() const {return R_;}
-	const Vector& get_precisions() const {return precisions_;}
+	const Vector& get_sigmas() const {return sigmas_;}
 
 	/** STL like, return the iterator pointing to the first node */
 	const_iterator const parentsBegin() const {
@@ -123,7 +123,7 @@ public:
 		return parents_.count(key);
 	}
 	/**
-	 * solve a conditional Gaussian - currently just multiplies in the precisions
+	 * solve a conditional Gaussian
 	 * @param x configuration in which the parents values (y,z,...) are known
 	 * @return solution x = R \ (d - Sy - Tz - ...)
 	 */
@@ -143,7 +143,7 @@ private:
 	void serialize(Archive & ar, const unsigned int version) {
 		ar & BOOST_SERIALIZATION_NVP(R_);
 		ar & BOOST_SERIALIZATION_NVP(d_);
-		ar & BOOST_SERIALIZATION_NVP(precisions_);
+		ar & BOOST_SERIALIZATION_NVP(sigmas_);
 		ar & BOOST_SERIALIZATION_NVP(parents_);
 	}
 };

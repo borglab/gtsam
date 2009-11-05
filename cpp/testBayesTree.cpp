@@ -131,8 +131,8 @@ TEST( BayesTree, balanced_smoother_marginals )
                      0.0, 1.0};
   Matrix R1 = Matrix_(2,2, data1);
   Vector d1(2); d1(0) = -0.615385; d1(1) = 0;
-  Vector tau1(2); tau1(0) = 1.61803; tau1(1) = 1.61803;
-	ConditionalGaussian expected("x1",d1, R1, tau1);
+  Vector sigma1(2); sigma1(0) = 0.786153; sigma1(1) = 0.786153;
+	ConditionalGaussian expected("x1",d1, R1, sigma1);
 	ConditionalGaussian::shared_ptr actual = bayesTree.marginal<LinearFactor>("x1");
 	CHECK(assert_equal(expected,*actual,1e-4));
 

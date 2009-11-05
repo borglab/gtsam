@@ -329,12 +329,12 @@ TEST( LinearFactor, eliminate )
 	);
 	Vector d(2); d(0) = 0.2; d(1) = -0.14;
 
-	Vector tau(2);
-	tau(0) = 125.0;
-	tau(1) = 125.0;
+	Vector sigmas(2);
+	sigmas(0) = 1/sqrt(125.0);
+	sigmas(1) = 1/sqrt(125.0);
 
 	// Check the conditional Gaussian
-	ConditionalGaussian expectedCG("x2", d,R11,"l1",S12,"x1",S13,tau);
+	ConditionalGaussian expectedCG("x2", d,R11,"l1",S12,"x1",S13,sigmas);
 
 	// the expected linear factor
 	double sigma = 0.2236;
@@ -415,18 +415,18 @@ TEST( LinearFactor, eliminate )
 //	);
 //	Vector d(2); d(0) = 2.23607; d(1) = -1.56525;
 //
-//	Vector tau(2);
-//	tau(0) = R11(0,0);
-//	tau(1) = R11(1,1);
+//	Vector sigmas(2);
+//	sigmas(0) = R11(0,0);
+//	sigmas(1) = R11(1,1);
 //
 //	// normalize the existing matrices
 //	Matrix N = eye(2,2);
-//	N(0,0) = 1/tau(0);
-//	N(1,1) = 1/tau(1);
+//	N(0,0) = 1/sigmas(0);
+//	N(1,1) = 1/sigmas(1);
 //	S12 = N*S12;
 //	R11 = N*R11;
 //
-//	ConditionalGaussian expectedCG("x2",d,R11,"l1x1",S12,tau);
+//	ConditionalGaussian expectedCG("x2",d,R11,"l1x1",S12,sigmas);
 //
 //	// the expected linear factor
 //	double sigma = 0.2236;
@@ -544,18 +544,18 @@ TEST( LinearFactor, matrix )
 //	);
 //	Vector d(2); d(0) = 2.23607; d(1) = -1.56525;
 //
-//	Vector tau(2);
-//	tau(0) = R11(0,0);
-//	tau(1) = R11(1,1);
+//	Vector sigmas(2);
+//	sigmas(0) = R11(0,0);
+//	sigmas(1) = R11(1,1);
 //
 //	// normalize the existing matrices
 //	Matrix N = eye(2,2);
-//	N(0,0) = 1/tau(0);
-//	N(1,1) = 1/tau(1);
+//	N(0,0) = 1/sigmas(0);
+//	N(1,1) = 1/sigmas(1);
 //	S12 = N*S12;
 //	R11 = N*R11;
 //
-//	ConditionalGaussian::shared_ptr CG(new ConditionalGaussian("x2",d,R11,"l1x1",S12,tau));
+//	ConditionalGaussian::shared_ptr CG(new ConditionalGaussian("x2",d,R11,"l1x1",S12,sigmas));
 //	LinearFactor actualLF(CG);
 //	//  actualLF.print();
 //	double precision = 11.1803;
