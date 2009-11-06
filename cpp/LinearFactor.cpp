@@ -167,17 +167,20 @@ void LinearFactor::tally_separator(const string& key, set<string>& separator) co
 /* ************************************************************************* */  
 pair<Matrix,Vector> LinearFactor::matrix(const Ordering& ordering) const {
 
-  // get pointers to the matrices
-  vector<const Matrix *> matrices;
-  BOOST_FOREACH(string j, ordering) {
-    const Matrix& Aj = get_A(j);
-    matrices.push_back(&Aj);
-  }
+	// get pointers to the matrices
+	vector<const Matrix *> matrices;
+	BOOST_FOREACH(string j, ordering) {
+		const Matrix& Aj = get_A(j);
+		matrices.push_back(&Aj);
+	}
 
-  // divide in sigma so error is indeed 0.5*|Ax-b|
-  Matrix t = diag(ediv(ones(sigmas_.size()),sigmas_));
-  Matrix A = t*collect(matrices);
-  return make_pair(A, t*b_);
+	// divide in sigma so error is indeed 0.5*|Ax-b|
+	Vector t = ediv(ones(sigmas_.size()),sigmas_);
+	Matrix A = vector_scale(collect(matrices), t);
+	Vector b(b_);
+	for (int i=0; i<b_.size(); ++i)
+		b(i) *= t(i);
+	return make_pair(A, b);
 }
 
 /* ************************************************************************* */
@@ -196,8 +199,8 @@ Matrix LinearFactor::matrix_augmented(const Ordering& ordering) const {
 	matrices.push_back(&B_mat);
 
 	// divide in sigma so error is indeed 0.5*|Ax-b|
-	Matrix t = diag(ediv(ones(sigmas_.size()),sigmas_));
-	Matrix A = t*collect(matrices);
+	Vector t = ediv(ones(sigmas_.size()),sigmas_);
+	Matrix A = vector_scale(collect(matrices), t);
 	return A;
 }
 

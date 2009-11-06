@@ -115,6 +115,46 @@ TEST( matrix, zeros )
 }
 
 /* ************************************************************************* */
+TEST( matrix, scale_columns )
+{
+	Matrix A(3,4);
+	A(0,0) = 1.; A(0,1) = 1.; A(0,2)= 1.; A(0,3)= 1.;
+	A(1,0) = 1.; A(1,1) = 1.; A(1,2)= 1.; A(1,3)= 1.;
+	A(2,0) = 1.; A(2,1) = 1.; A(2,2)= 1.; A(2,3)= 1.;
+
+	Vector v = Vector_(4, 2., 3., 4., 5.);
+
+	Matrix actual = vector_scale(v,A);
+
+	Matrix expected(3,4);
+	expected(0,0) = 2.; expected(0,1) = 3.; expected(0,2)= 4.; expected(0,3)= 5.;
+	expected(1,0) = 2.; expected(1,1) = 3.; expected(1,2)= 4.; expected(1,3)= 5.;
+	expected(2,0) = 2.; expected(2,1) = 3.; expected(2,2)= 4.; expected(2,3)= 5.;
+
+	CHECK(assert_equal(actual, expected));
+}
+
+/* ************************************************************************* */
+TEST( matrix, scale_rows )
+{
+	Matrix A(3,4);
+	A(0,0) = 1.; A(0,1) = 1.; A(0,2)= 1.; A(0,3)= 1.;
+	A(1,0) = 1.; A(1,1) = 1.; A(1,2)= 1.; A(1,3)= 1.;
+	A(2,0) = 1.; A(2,1) = 1.; A(2,2)= 1.; A(2,3)= 1.;
+
+	Vector v = Vector_(3, 2., 3., 4.);
+
+	Matrix actual = vector_scale(A,v);
+
+	Matrix expected(3,4);
+	expected(0,0) = 2.; expected(0,1) = 2.; expected(0,2)= 2.; expected(0,3)= 2.;
+	expected(1,0) = 3.; expected(1,1) = 3.; expected(1,2)= 3.; expected(1,3)= 3.;
+	expected(2,0) = 4.; expected(2,1) = 4.; expected(2,2)= 4.; expected(2,3)= 4.;
+
+	CHECK(assert_equal(actual, expected));
+}
+
+/* ************************************************************************* */
 TEST( matrix, equal )
 {
   Matrix A(4,4);

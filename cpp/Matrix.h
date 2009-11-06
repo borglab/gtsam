@@ -187,6 +187,14 @@ Matrix collect(std::vector<const Matrix *> matrices);
 Matrix collect(size_t nrMatrices, ...);
 
 /**
+ * scales a matrix row or column by the values in a vector
+ * Arguments (Matrix, Vector) scales the rows,
+ * (Vector, Matrix) scales the columns
+ */
+Matrix vector_scale(const Matrix& A, const Vector& v); // row
+Matrix vector_scale(const Vector& v, const Matrix& A); // column
+
+/**
  * skew symmetric matrix returns this:
  *   0  -wz   wy
  *  wz    0  -wx

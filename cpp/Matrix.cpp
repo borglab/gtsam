@@ -428,6 +428,28 @@ return collect(matrices);
 }
 
 /* ************************************************************************* */
+// row scaling
+Matrix vector_scale(const Matrix& A, const Vector& v) {
+	Matrix M(A);
+	for (int i=0; i<A.size1(); ++i) {
+		for (int j=0; j<A.size2(); ++j) {
+			M(i,j) *= v(i);
+		}
+	}
+	return M;
+}
+
+/* ************************************************************************* */
+// column scaling
+Matrix vector_scale(const Vector& v, const Matrix& A) {
+	Matrix M(A);
+	for (int i=0; i<A.size1(); ++i)
+		for (int j=0; j<A.size2(); ++j)
+			M(i,j) *= v(j);
+	return M;
+}
+
+/* ************************************************************************* */
 Matrix skewSymmetric(double wx, double wy, double wz)
 {
   return Matrix_(3,3,
