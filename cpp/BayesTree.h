@@ -93,6 +93,15 @@ namespace gtsam {
 		/** return root clique */
 		boost::shared_ptr<BayesNet<Conditional> > root() const {return root_;}
 
+		/** find the clique to which key belongs */
+		node_ptr operator[](const std::string& key) const {
+			typename Nodes::const_iterator it = nodes_.find(key);
+			if (it == nodes_.end())
+				throw(std::invalid_argument("BayesTree::operator['"+ key + "'): key not found"));
+			node_ptr clique = it->second;
+			return clique;
+		}
+
 		/** return marginal on any variable */
 		template<class Factor>
 		boost::shared_ptr<Conditional> marginal(const std::string& key) const;
