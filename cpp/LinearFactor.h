@@ -10,6 +10,7 @@
 #pragma once
 
 #include <boost/shared_ptr.hpp>
+#include <boost/tuple/tuple.hpp>
 #include <boost/serialization/map.hpp>
 
 #include "Factor.h"
@@ -165,7 +166,7 @@ public:
 	 * Find all variables and their dimensions
 	 * @return The set of all variable/dimension pairs
 	 */
-	VariableSet variables() const;
+	Dimensions dimensions() const;
 
 	/**
 	 * Get the dimension of a particular variable
@@ -184,7 +185,7 @@ public:
 
 	/**
 	 * Return (dense) matrix associated with factor
-	 * NOTE: in this case, the precisions are baked into A and b
+	 * NOTE: in this case, the standard deviations are baked into A and b
 	 * @param ordering of variables needed for matrix column order
 	 */
 	std::pair<Matrix, Vector> matrix(const Ordering& ordering) const;
@@ -192,9 +193,19 @@ public:
 	/**
 	 * Return (dense) matrix associated with factor
 	 * The returned system is an augmented matrix: [A b]
+	 * As above, the standard deviations are baked into A and b
 	 * @param ordering of variables needed for matrix column order
 	 */
 	Matrix matrix_augmented(const Ordering& ordering) const;
+
+	/**
+	 * Return vectors i, j, and s to generate an m-by-n sparse matrix
+	 * such that S(i(k),j(k)) = s(k), which can be given to MATLAB's sparse.
+	 * As above, the standard deviations are baked into A and b
+	 * @param ordering of variables needed for matrix column order
+	 */
+	boost::tuple<std::list<int>, std::list<int>, std::list<double> >
+		sparse(const Ordering& ordering, const Dimensions& variables) const;
 
 	/* ************************************************************************* */
 	// MUTABLE functions. FD:on the path to being eradicated

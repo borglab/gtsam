@@ -8,6 +8,7 @@
 #include <iostream>
 using namespace std;
 
+#include <boost/foreach.hpp>
 #include <boost/tuple/tuple.hpp>
 #include <boost/assign/std/list.hpp> // for operator +=
 using namespace boost::assign;
@@ -329,7 +330,7 @@ TEST( LinearFactorGraph, add_priors )
   LinearFactorGraph expected = createLinearFactorGraph();
   Matrix A = eye(2);
   Vector b = zero(2);
-  double sigma = 1.0/3.0;
+  double sigma = 3.0;
   expected.push_back(LinearFactor::shared_ptr(new LinearFactor("l1",A,b,sigma)));
   expected.push_back(LinearFactor::shared_ptr(new LinearFactor("x1",A,b,sigma)));
   expected.push_back(LinearFactor::shared_ptr(new LinearFactor("x2",A,b,sigma)));
@@ -371,19 +372,37 @@ TEST( LinearFactorGraph, matrix )
   boost::tie(A,b) = fg.matrix(ord);
 
   Matrix A1 = Matrix_(2*4,3*2,
-		     00.0,  0.0,  0.0,  0.0, 10.0,  0.0,
-		     00.0,  0.0,  0.0,  0.0,  0.0, 10.0,
-		     10.0,  0.0,  0.0,  0.0,-10.0,  0.0,
-		     00.0, 10.0,  0.0,  0.0,  0.0,-10.0,
-		     00.0,  0.0,  5.0,  0.0, -5.0,  0.0,
-		     00.0,  0.0,  0.0,  5.0,  0.0, -5.0,
-		     -5.0,  0.0,  5.0,  0.0,  0.0,  0.0,
-		     00.0, -5.0,  0.0,  5.0,  0.0,  0.0
+		     +0.,  0.,  0.,  0., 10.,  0., // unary factor on x1 (prior)
+		     +0.,  0.,  0.,  0.,  0., 10.,
+		     10.,  0.,  0.,  0.,-10.,  0., // binary factor on x2,x1 (odometry)
+		     +0., 10.,  0.,  0.,  0.,-10.,
+		     +0.,  0.,  5.,  0., -5.,  0., // binary factor on l1,x1 (z1)
+		     +0.,  0.,  0.,  5.,  0., -5.,
+		     -5.,  0.,  5.,  0.,  0.,  0., // binary factor on x2,l1 (z2)
+		     +0., -5.,  0.,  5.,  0.,  0.
     );
-  Vector b1 = Vector_(8,-1.0, -1.0, 2.0, -1.0, 0.0, 1.0, -1.0, 1.5);
+  Vector b1 = Vector_(8,-1., -1., 2., -1., 0., 1., -1., 1.5);
 
   EQUALITY(A,A1); // currently fails
   CHECK(b==b1); // currently fails
+}
+
+/* ************************************************************************* */
+TEST( LinearFactorGraph, sparse )
+{
+	// create a small linear factor graph
+	LinearFactorGraph fg = createLinearFactorGraph();
+
+	// render with a given ordering
+	Ordering ord;
+  ord += "x2","l1","x1";
+
+	Matrix ijs = fg.sparse(ord);
+
+	EQUALITY(ijs, Matrix_(3, 14,
+		+1., 2.,  3., 4.,  3.,  4., 5.,6., 5., 6.,  7., 8.,7.,8.,
+		+5., 6.,  1., 2.,  5.,  6., 3.,4., 5., 6.,  1., 2.,3.,4.,
+		10.,10., 10.,10.,-10.,-10., 5.,5.,-5.,-5., -5.,-5.,5.,5.));
 }
 
 /* ************************************************************************* */
@@ -552,12 +571,22 @@ TEST( LinearFactorGraph, findAndRemoveFactors_twice )
   }
 
 /* ************************************************************************* */
-TEST(timeLinearFactorGraph, createSmoother)
+TEST(LinearFactorGraph, createSmoother)
 {
 	LinearFactorGraph fg1 = createSmoother(2);
 	LONGS_EQUAL(3,fg1.size());
 	LinearFactorGraph fg2 = createSmoother(3);
 	LONGS_EQUAL(5,fg2.size());
+}
+
+/* ************************************************************************* */
+TEST( LinearFactorGraph, variables )
+{
+  LinearFactorGraph fg = createLinearFactorGraph();
+  Dimensions expected;
+  insert(expected)("l1", 2)("x1", 2)("x2", 2);
+  Dimensions actual = fg.dimensions();
+  CHECK(expected==actual);
 }
 
 /* ************************************************************************* */

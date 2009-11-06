@@ -93,7 +93,7 @@ namespace gtsam {
      * Find all variables and their dimensions
      * @return The set of all variable/dimension pairs
      */
-    VariableSet variables() const;
+    Dimensions dimensions() const;
 
     /**
      * Add zero-mean i.i.d. Gaussian prior terms to each variable
@@ -106,6 +106,14 @@ namespace gtsam {
      * @param ordering of variables needed for matrix column order
      */
     std::pair<Matrix,Vector> matrix (const Ordering& ordering) const;
+
+  	/**
+  	 * Return 3*nzmax matrix where the rows correspond to the vectors i, j, and s
+  	 * to generate an m-by-n sparse matrix, which can be given to MATLAB's sparse function.
+  	 * The standard deviations are baked into A and b
+  	 * @param ordering of variables needed for matrix column order
+  	 */
+  	Matrix sparse(const Ordering& ordering) const;
   };
 
 }

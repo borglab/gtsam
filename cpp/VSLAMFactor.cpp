@@ -66,7 +66,7 @@ LinearFactor::shared_ptr VSLAMFactor<Config>::linearize(const Config& c) const
 
   // Make new linearfactor, divide by sigma
   LinearFactor::shared_ptr
-    p(new LinearFactor(cameraFrameName_, Dh1/ConvenientFactor::sigma_, landmarkName_, Dh2/ConvenientFactor::sigma_, b/ConvenientFactor::sigma_));
+    p(new LinearFactor(cameraFrameName_, Dh1, landmarkName_, Dh2, b, ConvenientFactor::sigma_));
   return p;
 }
 

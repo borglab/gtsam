@@ -19,6 +19,9 @@
 using namespace std;
 using namespace gtsam;
 
+// trick from some reading group
+#define FOREACH_PAIR( KEY, VAL, COL) BOOST_FOREACH (boost::tie(KEY,VAL),COL)
+
 // Explicitly instantiate so we don't have to include everywhere
 template class FactorGraph<LinearFactor>;
 
@@ -85,11 +88,12 @@ LinearFactorGraph LinearFactorGraph::combine2(const LinearFactorGraph& lfg1,
 
 
 /* ************************************************************************* */  
-VariableSet LinearFactorGraph::variables() const {
-	VariableSet result;
+Dimensions LinearFactorGraph::dimensions() const {
+	Dimensions result;
 	BOOST_FOREACH(shared_factor factor,factors_) {
-		VariableSet vs = factor->variables();
-		BOOST_FOREACH(Variable v,vs) result.insert(v);
+		Dimensions vs = factor->dimensions();
+		string key; int dim;
+		FOREACH_PAIR(key,dim,vs) result.insert(make_pair(key,dim));
 	}
 	return result;
 }
@@ -101,17 +105,14 @@ LinearFactorGraph LinearFactorGraph::add_priors(double sigma) const {
 	LinearFactorGraph result = *this;
 
 	// find all variables and their dimensions
-	VariableSet vs = variables();
+	Dimensions vs = dimensions();
 
 	// for each of the variables, add a prior
-	BOOST_FOREACH(Variable v,vs) {
-		size_t n = v.dim();
-		const string& key = v.key();
-		//NOTE: this was previously A=sigma*eye(n), when it should be A=eye(n)/sigma
-		Matrix A = eye(n);
-		Vector b = zero(n);
-		//To maintain interface with separate sigma, the inverse of the 'sigma' passed in used
-		shared_factor prior(new LinearFactor(key,A,b, 1/sigma));
+	string key; int dim;
+	FOREACH_PAIR(key,dim,vs) {
+		Matrix A = eye(dim);
+		Vector b = zero(dim);
+		shared_factor prior(new LinearFactor(key,A,b, sigma));
 		result.push_back(prior);
 	}
 	return result;
@@ -130,6 +131,49 @@ pair<Matrix,Vector> LinearFactorGraph::matrix(const Ordering& ordering) const {
 
 	// Return Matrix and Vector
 	return lf.matrix(ordering);
+}
+
+/* ************************************************************************* */
+Matrix LinearFactorGraph::sparse(const Ordering& ordering) const {
+
+	// return values
+	list<int> I,J;
+	list<double> S;
+
+	// get the dimensions for all variables
+	Dimensions variableSet = dimensions();
+
+	// Collect the I,J,S lists for all factors
+	int row_index = 0;
+	BOOST_FOREACH(shared_factor factor,factors_) {
+
+		// get sparse lists for the factor
+		list<int> i1,j1;
+		list<double> s1;
+		boost::tie(i1,j1,s1) = factor->sparse(ordering,variableSet);
+
+		// add row_start to every row index
+		transform(i1.begin(), i1.end(), i1.begin(), bind2nd(plus<int>(), row_index));
+
+		// splice lists from factor to the end of the global lists
+		I.splice(I.end(), i1);
+		J.splice(J.end(), j1);
+		S.splice(S.end(), s1);
+
+		// advance row start
+		row_index += factor->numberOfRows();
+	}
+
+	// Convert them to vectors for MATLAB
+	// TODO: just create a sparse matrix class already
+	size_t nzmax = S.size();
+	Matrix ijs(3,nzmax);
+	copy(I.begin(),I.end(),ijs.begin2());
+	copy(J.begin(),J.end(),ijs.begin2()+nzmax);
+	copy(S.begin(),S.end(),ijs.begin2()+2*nzmax);
+
+	// return the result
+	return ijs;
 }
 
 /* ************************************************************************* */

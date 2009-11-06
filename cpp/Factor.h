@@ -11,28 +11,15 @@
 #pragma once
 
 #include <set>
+#include <map>
 #include <list>
 #include <boost/utility.hpp> // for noncopyable
 #include "Testable.h"
 
 namespace gtsam {
 
-	/** A combination of a key with a dimension - TODO FD: move, vector specific */
-  struct Variable {
-  private:
-    std::string key_;
-    std::size_t dim_;
-  public:
-  Variable(const std::string& key, std::size_t dim) : key_(key), dim_(dim) {}
-    bool operator< (const Variable& other) const {return key_<other.key_; }
-    const std::string& key() const { return key_;}
-    std::size_t        dim() const { return dim_;}
-    bool equals(const Variable& var) const { return key_ == var.key_ && dim_ == var.dim_;}
-  };
-
-	/** A set of variables, used to eliminate linear factor factor graphs. TODO FD: move */
-  class VariableSet : public std::set<Variable> {
-  };
+	/** A map from key to dimension, useful in various contexts */
+  typedef std::map<std::string,int> Dimensions;
 	
   /** 
    * A simple factor class to use in a factor graph.

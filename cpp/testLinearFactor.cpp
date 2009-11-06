@@ -10,6 +10,7 @@
 #include <boost/tuple/tuple.hpp>
 #include <boost/assign/std/list.hpp> // for operator +=
 #include <boost/assign/std/set.hpp>
+#include <boost/assign/std/map.hpp> // for insert
 using namespace boost::assign;
 
 #include <CppUnitLite/TestHarness.h>
@@ -63,24 +64,16 @@ TEST( LinearFactor, keys )
 }
 
 /* ************************************************************************* */
-TEST( LinearFactor, variables )
+TEST( LinearFactor, dimensions )
 {	
   // get the factor "f2" from the small linear factor graph
   LinearFactorGraph fg = createLinearFactorGraph();
-  LinearFactor::shared_ptr lf = fg[1];
-  VariableSet actual = lf->variables();
 
-  // create expected variable set
-  VariableSet expected;
-  Variable x1("x1", 2);
-  Variable x2("x2", 2);
-  expected += x1, x2;
-
-  // verify
-  CHECK(expected.size() == actual.size());
-  set<Variable>::const_iterator exp, act;
-  for (exp=expected.begin(), act=actual.begin(); exp != expected.end(); act++, exp++)
-	  CHECK((*exp).equals(*act));
+  // Check a single factor
+  Dimensions expected;
+  insert(expected)("x1", 2)("x2", 2);
+  Dimensions actual = fg[1]->dimensions();
+  CHECK(expected==actual);
 }
 
 /* ************************************************************************* */
@@ -534,6 +527,72 @@ TEST( LinearFactor, matrix_aug )
 			000.0,-10.0,  0.0, 10.0, -1.0 );
 
 	EQUALITY(Ab,Ab1);
+}
+
+/* ************************************************************************* */
+// small aux. function to print out lists of anything
+template<class T>
+void print(const list<T>& i) {
+	copy(i.begin(), i.end(), ostream_iterator<T> (cout, ","));
+	cout << endl;
+}
+
+/* ************************************************************************* */
+TEST( LinearFactor, sparse )
+{
+	// create a small linear factor graph
+	LinearFactorGraph fg = createLinearFactorGraph();
+
+	// get the factor "f2" from the factor graph
+	LinearFactor::shared_ptr lf = fg[1];
+
+	// render with a given ordering
+	Ordering ord;
+	ord += "x1","x2";
+
+	list<int> i,j;
+	list<double> s;
+	boost::tie(i,j,s) = lf->sparse(ord, fg.dimensions());
+
+	list<int> i1,j1;
+	i1 += 1,2,1,2;
+	j1 += 1,2,3,4;
+
+	list<double> s1;
+	s1 += -10,-10,10,10;
+
+	CHECK(i==i1);
+	CHECK(j==j1);
+	CHECK(s==s1);
+}
+
+/* ************************************************************************* */
+TEST( LinearFactor, sparse2 )
+{
+	// create a small linear factor graph
+	LinearFactorGraph fg = createLinearFactorGraph();
+
+	// get the factor "f2" from the factor graph
+	LinearFactor::shared_ptr lf = fg[1];
+
+	// render with a given ordering
+	Ordering ord;
+	ord += "x2","l1","x1";
+
+	list<int> i,j;
+	list<double> s;
+	boost::tie(i,j,s) = lf->sparse(ord, fg.dimensions());
+
+	list<int> i1,j1;
+	i1 += 1,2,1,2;
+	j1 += 1,2,5,6;
+
+	list<double> s1;
+	s1 += 10,10,-10,-10;
+
+	CHECK(i==i1);
+	CHECK(j==j1);
+	CHECK(s==s1);
 }
 
 /* ************************************************************************* */

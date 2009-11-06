@@ -119,6 +119,13 @@ namespace gtsam {
 	}
 
 	/* ************************************************************************* */
+	// Desired: recursive, memoizing version
+	// Once we know the clique, can we do all with Nodes ?
+	// Sure, as P(x) = \int P(C|root)
+	// The natural cache is P(C|root), memoized, of course, in the clique C
+	// When any marginal is asked for, we calculate P(C|root) = P(C|Pi)P(Pi|root)
+	// Super-naturally recursive !!!!!
+	/* ************************************************************************* */
 	template<class Conditional>
 	template<class Factor>
 	boost::shared_ptr<Conditional> BayesTree<Conditional>::marginal(const string& key) const {
@@ -153,19 +160,15 @@ namespace gtsam {
 				graph.push_back(*factor);
 		}
 
-		//graph.print();
+		// TODO: can we prove reverse ordering is efficient?
 		ordering.reverse();
-		//ordering.print();
 
 		// eliminate to get marginal
 		boost::shared_ptr<BayesNet<Conditional> > bayesNet;
 		typename boost::shared_ptr<BayesNet<Conditional> > chordalBayesNet =
 				graph.eliminate(bayesNet,ordering);
 
-		//chordalBayesNet->print("chordalBayesNet");
-
-		boost::shared_ptr<Conditional> marginal = chordalBayesNet->back();
-		return marginal;
+		return chordalBayesNet->back(); // the root is the marginal
 	}
 
 	/* ************************************************************************* */

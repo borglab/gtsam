@@ -96,6 +96,7 @@ class LinearFactorGraph {
   VectorConfig optimize(const Ordering& ordering);
   GaussianBayesNet* eliminate(const Ordering& ordering);
   pair<Matrix,Vector> matrix(const Ordering& ordering) const;
+  Matrix sparse(const Ordering& ordering) const;
 };
 
 class Point2 {

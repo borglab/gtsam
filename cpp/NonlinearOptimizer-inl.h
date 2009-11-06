@@ -124,7 +124,7 @@ namespace gtsam {
 			cout << "trying lambda = " << lambda_ << endl;
 
 		// add prior-factors
-		LinearFactorGraph damped = linear.add_priors(sqrt(lambda_));
+		LinearFactorGraph damped = linear.add_priors(1.0/sqrt(lambda_));
 		if (verbosity >= DAMPED)
 			damped.print("damped");
 

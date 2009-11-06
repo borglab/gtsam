@@ -6,7 +6,6 @@
  */
 
 #include <boost/foreach.hpp>
-#include <boost/tuple/tuple.hpp>
 #include <boost/assign/list_inserter.hpp> // for 'insert()'
 #include <boost/assign/std/list.hpp> // for operator += in Ordering
 
@@ -148,13 +147,11 @@ list<string> LinearFactor::keys() const {
 }
 
 /* ************************************************************************* */
-VariableSet LinearFactor::variables() const {
-  VariableSet result;
+Dimensions LinearFactor::dimensions() const {
+  Dimensions result;
   string j; Matrix A;
-  FOREACH_PAIR(j,A,As_) {
-    Variable v(j,A.size2());
-    result.insert(v);
-  }
+  FOREACH_PAIR(j,A,As_)
+    result.insert(make_pair(j,A.size2()));
   return result;
 }
 
@@ -202,6 +199,43 @@ Matrix LinearFactor::matrix_augmented(const Ordering& ordering) const {
 	Matrix t = diag(ediv(ones(sigmas_.size()),sigmas_));
 	Matrix A = t*collect(matrices);
 	return A;
+}
+
+/* ************************************************************************* */
+boost::tuple<list<int>, list<int>, list<double> >
+LinearFactor::sparse(const Ordering& ordering, const Dimensions& variables) const {
+
+	// declare return values
+	list<int> I,J;
+	list<double> S;
+
+	// loop over all variables in correct order
+	size_t column_start = 1;
+	BOOST_FOREACH(string key, ordering) {
+		try {
+			const Matrix& Aj = get_A(key);
+			for (size_t i = 0; i < Aj.size1(); i++) {
+				double sigma_i = sigmas_(i);
+				for (size_t j = 0; j < Aj.size2(); j++)
+					if (Aj(i, j) != 0.0) {
+						I.push_back(i + 1);
+						J.push_back(j + column_start);
+						S.push_back(Aj(i, j) / sigma_i);
+					}
+			}
+		} catch (std::invalid_argument& exception) {
+			// it's ok to not have a key in the ordering
+		}
+		// find dimension for this key
+		Dimensions::const_iterator it = variables.find(key);
+		// TODO: check if end() and throw exception if not found
+		int dim = it->second;
+		// advance column index to next block by adding dim(key)
+		column_start += dim;
+	}
+
+	// return the result
+	return boost::tuple<list<int>, list<int>, list<double> >(I,J,S);
 }
 
 /* ************************************************************************* */
