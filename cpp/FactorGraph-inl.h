@@ -221,7 +221,7 @@ FactorGraph<Factor>::removeAndCombineFactors(const string& key)
 /* eliminate one node from the factor graph                           */
 /* ************************************************************************* */
 template<class Factor,class Conditional>
-boost::shared_ptr<Conditional> eliminateOne(FactorGraph<Factor>& graph, const string& key) {
+boost::shared_ptr<Conditional> _eliminateOne(FactorGraph<Factor>& graph, const string& key) {
 
 	// combine the factors of all nodes connected to the variable to be eliminated
 	// if no factors are connected to key, returns an empty factor
@@ -247,12 +247,12 @@ boost::shared_ptr<Conditional> eliminateOne(FactorGraph<Factor>& graph, const st
 /* ************************************************************************* */
 template<class Factor,class Conditional>
 boost::shared_ptr<BayesNet<Conditional> >
-eliminate(FactorGraph<Factor>& factorGraph, const Ordering& ordering)
+_eliminate(FactorGraph<Factor>& factorGraph, const Ordering& ordering)
 {
 	boost::shared_ptr<BayesNet<Conditional> > bayesNet (new BayesNet<Conditional>()); // empty
 
 	BOOST_FOREACH(string key, ordering) {
-		boost::shared_ptr<Conditional> cg = eliminateOne<Factor,Conditional>(factorGraph,key);
+		boost::shared_ptr<Conditional> cg = _eliminateOne<Factor,Conditional>(factorGraph,key);
 		bayesNet->push_back(cg);
 	}
 

@@ -130,7 +130,7 @@ namespace gtsam {
    * and adds a new factor on the separator to the factor graph
    */
 	template<class Factor, class Conditional>
-	boost::shared_ptr<Conditional> eliminateOne(FactorGraph<Factor>& factorGraph, const std::string& key);
+	boost::shared_ptr<Conditional> _eliminateOne(FactorGraph<Factor>& factorGraph, const std::string& key);
 
 	/**
 	 * eliminate factor graph using the given (not necessarily complete)
@@ -138,7 +138,7 @@ namespace gtsam {
 	 */
 	template<class Factor, class Conditional>
 	boost::shared_ptr<BayesNet<Conditional> >
-	eliminate(FactorGraph<Factor>& factorGraph, const Ordering& ordering);
+	_eliminate(FactorGraph<Factor>& factorGraph, const Ordering& ordering);
 
 } // namespace gtsam
 

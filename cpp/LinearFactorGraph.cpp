@@ -46,8 +46,7 @@ LinearFactorGraph::eliminate(const Ordering& ordering)
 {
 	GaussianBayesNet::shared_ptr chordalBayesNet (new GaussianBayesNet()); // empty
 	BOOST_FOREACH(string key, ordering) {
-		ConditionalGaussian::shared_ptr cg =
-				eliminateOne<LinearFactor,ConditionalGaussian>(*this, key);
+		ConditionalGaussian::shared_ptr cg = eliminateOne(key);
 		chordalBayesNet->push_back(cg);
 	}
 	return chordalBayesNet;

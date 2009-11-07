@@ -54,7 +54,7 @@ namespace gtsam {
 		sharedBayesNet p_S_R(new BayesNet<Conditional>);
 		if (parent_==NULL || parent_->parent_==NULL) return p_S_R;
 
-		// If not, calculate the parent shortcut P(S_p|R)
+		// If not the base case, calculate the parent shortcut P(S_p|R)
 		sharedBayesNet p_Sp_R = parent_->shortcut();
 
 		return p_S_R;
@@ -160,7 +160,7 @@ namespace gtsam {
 		ordering.reverse();
 
 		// eliminate to get marginal
-		sharedBayesNet chordalBayesNet = eliminate<Factor,Conditional>(graph,ordering);
+		sharedBayesNet chordalBayesNet = _eliminate<Factor,Conditional>(graph,ordering);
 
 		return chordalBayesNet->back(); // the root is the marginal
 	}
