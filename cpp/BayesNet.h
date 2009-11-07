@@ -31,8 +31,8 @@ namespace gtsam {
 	public:
 
 		/** We store shared pointers to Conditional densities */
-		typedef typename boost::shared_ptr<Conditional> conditional_ptr;
-		typedef typename std::list<conditional_ptr> Conditionals;
+		typedef typename boost::shared_ptr<Conditional> sharedConditional;
+		typedef typename std::list<sharedConditional> Conditionals;
 
 		typedef typename Conditionals::const_iterator const_iterator;
 		typedef typename Conditionals::const_reverse_iterator const_reverse_iterator;
@@ -55,12 +55,12 @@ namespace gtsam {
 		bool equals(const BayesNet& other, double tol = 1e-9) const;
 
 		/** push_back: use reverse topological sort (i.e. parents last / elimination order) */
-		inline void push_back(const boost::shared_ptr<Conditional>& conditional) {
+		inline void push_back(const sharedConditional& conditional) {
 			conditionals_.push_back(conditional);
 		}
 
 		/** push_front: use topological sort (i.e. parents first / reverse elimination order) */
-		inline void push_front(const boost::shared_ptr<Conditional>& conditional) {
+		inline void push_front(const sharedConditional& conditional) {
 			conditionals_.push_front(conditional);
 		}
 
@@ -73,9 +73,9 @@ namespace gtsam {
 		Ordering ordering() const;
 
 		/** SLOW O(n) random access to Conditional by key */
-		conditional_ptr operator[](const std::string& key) const;
+		sharedConditional operator[](const std::string& key) const;
 
-		inline conditional_ptr back() { return conditionals_.back(); }
+		inline sharedConditional back() { return conditionals_.back(); }
 
 		/** return iterators. FD: breaks encapsulation? */
 		inline const_iterator const begin() const {return conditionals_.begin();}

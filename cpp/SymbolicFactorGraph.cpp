@@ -25,7 +25,8 @@ namespace gtsam {
 		SymbolicBayesNet::shared_ptr bayesNet (new SymbolicBayesNet());
 
 		BOOST_FOREACH(string key, ordering) {
-			SymbolicConditional::shared_ptr conditional = eliminateOne<SymbolicConditional>(key);
+			SymbolicConditional::shared_ptr conditional =
+					eliminateOne<SymbolicFactor,SymbolicConditional>(*this,key);
 			bayesNet->push_back(conditional);
 		}
 

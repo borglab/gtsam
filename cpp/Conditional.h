@@ -49,4 +49,17 @@ namespace gtsam {
     /** return the number of parents */
     virtual std::size_t nrParents() const = 0;
   };
+
+	// predicate to check whether a conditional has the sought key
+	template<class Conditional>
+	class onKey {
+		const std::string& key_;
+	public:
+		onKey(const std::string& key):key_(key) {}
+		bool operator()(const typename Conditional::shared_ptr& conditional) {
+			return (conditional->key()==key_);
+		}
+	};
+
+
 }

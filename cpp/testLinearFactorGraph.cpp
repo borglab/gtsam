@@ -191,7 +191,7 @@ TEST( LinearFactorGraph, eliminateOne_x1 )
 {
   LinearFactorGraph fg = createLinearFactorGraph();
   ConditionalGaussian::shared_ptr actual =
-  		fg.eliminateOne<ConditionalGaussian>("x1");
+  		eliminateOne<LinearFactor,ConditionalGaussian>(fg,"x1");
 
   // create expected Conditional Gaussian
   Matrix R11 = Matrix_(2,2,
@@ -220,7 +220,7 @@ TEST( LinearFactorGraph, eliminateOne_x2 )
 {
   LinearFactorGraph fg = createLinearFactorGraph();
   ConditionalGaussian::shared_ptr actual =
-  		fg.eliminateOne<ConditionalGaussian>("x2");
+  		eliminateOne<LinearFactor,ConditionalGaussian>(fg,"x2");
 
   // create expected Conditional Gaussian
   Matrix R11 = Matrix_(2,2,
@@ -248,7 +248,7 @@ TEST( LinearFactorGraph, eliminateOne_l1 )
 {
   LinearFactorGraph fg = createLinearFactorGraph();
   ConditionalGaussian::shared_ptr actual =
-  		fg.eliminateOne<ConditionalGaussian>("l1");
+  		eliminateOne<LinearFactor,ConditionalGaussian>(fg,"l1");
 
   // create expected Conditional Gaussian
   Matrix R11 = Matrix_(2,2,
@@ -383,8 +383,8 @@ TEST( LinearFactorGraph, matrix )
     );
   Vector b1 = Vector_(8,-1., -1., 2., -1., 0., 1., -1., 1.5);
 
-  EQUALITY(A,A1); // currently fails
-  CHECK(b==b1); // currently fails
+  EQUALITY(A,A1);
+  CHECK(b==b1);
 }
 
 /* ************************************************************************* */
@@ -400,9 +400,10 @@ TEST( LinearFactorGraph, sparse )
 	Matrix ijs = fg.sparse(ord);
 
 	EQUALITY(ijs, Matrix_(3, 14,
-		+1., 2.,  3., 4.,  3.,  4., 5.,6., 5., 6.,  7., 8.,7.,8.,
-		+5., 6.,  1., 2.,  5.,  6., 3.,4., 5., 6.,  1., 2.,3.,4.,
-		10.,10., 10.,10.,-10.,-10., 5.,5.,-5.,-5., -5.,-5.,5.,5.));
+		// f(x1)   f(x2,x1)            f(l1,x1)         f(x2,l1)
+		+1., 2.,   3., 4.,  3.,  4.,   5.,6., 5., 6.,   7., 8.,7.,8.,
+		+5., 6.,   1., 2.,  5.,  6.,   3.,4., 5., 6.,   1., 2.,3.,4.,
+		10.,10.,  10.,10.,-10.,-10.,   5.,5.,-5.,-5.,  -5.,-5.,5.,5.));
 }
 
 /* ************************************************************************* */
@@ -422,9 +423,8 @@ TEST( LinearFactorGraph, CONSTRUCTOR_GaussianBayesNet )
 
   // Base FactorGraph only
   FactorGraph<LinearFactor> fg3(*CBN);
-  boost::shared_ptr<BayesNet<ConditionalGaussian> > dummy;
   boost::shared_ptr<BayesNet<ConditionalGaussian> > CBN3 =
-  		fg3.eliminate<ConditionalGaussian>(dummy,ord);
+  		eliminate<LinearFactor,ConditionalGaussian>(fg3,ord);
   CHECK(CBN->equals(*CBN3));
 }
 

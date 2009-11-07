@@ -83,7 +83,8 @@ GaussianBayesNet::shared_ptr ConstrainedLinearFactorGraph::eliminate(const Order
 		}
 		else
 		{
-			ConditionalGaussian::shared_ptr cg = eliminateOne<ConditionalGaussian>(key);
+			ConditionalGaussian::shared_ptr cg =
+					eliminateOne<LinearFactor,ConditionalGaussian>(*this,key);
 			cbn->push_back(cg);
 		}
 	}

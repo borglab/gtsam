@@ -34,7 +34,7 @@ LinearFactorGraph::LinearFactorGraph(const GaussianBayesNet& CBN) :
 set<string> LinearFactorGraph::find_separator(const string& key) const
 {
 	set<string> separator;
-	BOOST_FOREACH(shared_factor factor,factors_)
+	BOOST_FOREACH(sharedFactor factor,factors_)
 		factor->tally_separator(key,separator);
 
 	return separator;
@@ -46,7 +46,8 @@ LinearFactorGraph::eliminate(const Ordering& ordering)
 {
 	GaussianBayesNet::shared_ptr chordalBayesNet (new GaussianBayesNet()); // empty
 	BOOST_FOREACH(string key, ordering) {
-		ConditionalGaussian::shared_ptr cg = eliminateOne<ConditionalGaussian>(key);
+		ConditionalGaussian::shared_ptr cg =
+				eliminateOne<LinearFactor,ConditionalGaussian>(*this, key);
 		chordalBayesNet->push_back(cg);
 	}
 	return chordalBayesNet;
@@ -90,7 +91,7 @@ LinearFactorGraph LinearFactorGraph::combine2(const LinearFactorGraph& lfg1,
 /* ************************************************************************* */  
 Dimensions LinearFactorGraph::dimensions() const {
 	Dimensions result;
-	BOOST_FOREACH(shared_factor factor,factors_) {
+	BOOST_FOREACH(sharedFactor factor,factors_) {
 		Dimensions vs = factor->dimensions();
 		string key; int dim;
 		FOREACH_PAIR(key,dim,vs) result.insert(make_pair(key,dim));
@@ -112,7 +113,7 @@ LinearFactorGraph LinearFactorGraph::add_priors(double sigma) const {
 	FOREACH_PAIR(key,dim,vs) {
 		Matrix A = eye(dim);
 		Vector b = zero(dim);
-		shared_factor prior(new LinearFactor(key,A,b, sigma));
+		sharedFactor prior(new LinearFactor(key,A,b, sigma));
 		result.push_back(prior);
 	}
 	return result;
@@ -123,7 +124,7 @@ pair<Matrix,Vector> LinearFactorGraph::matrix(const Ordering& ordering) const {
 
 	// get all factors
 	LinearFactorSet found;
-	BOOST_FOREACH(shared_factor factor,factors_)
+	BOOST_FOREACH(sharedFactor factor,factors_)
 		found.push_back(factor);
 
 	// combine them
@@ -145,7 +146,7 @@ Matrix LinearFactorGraph::sparse(const Ordering& ordering) const {
 
 	// Collect the I,J,S lists for all factors
 	int row_index = 0;
-	BOOST_FOREACH(shared_factor factor,factors_) {
+	BOOST_FOREACH(sharedFactor factor,factors_) {
 
 		// get sparse lists for the factor
 		list<int> i1,j1;

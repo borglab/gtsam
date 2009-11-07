@@ -256,7 +256,8 @@ TEST( ConstrainedLinearFactorGraph, eliminate_multi_constraint )
 	CHECK(fg.nrFactors() == 0);
 
 	// eliminate the linear factor
-	ConditionalGaussian::shared_ptr cg3 = fg.eliminateOne<ConditionalGaussian>("z");
+	ConditionalGaussian::shared_ptr cg3 =
+			eliminateOne<LinearFactor,ConditionalGaussian>(fg,"z");
 	CHECK(cg3->nrParents() == 0);
 	CHECK(fg.size() == 0);
 

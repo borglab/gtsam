@@ -112,7 +112,7 @@ TEST( LinearFactorGraph, eliminateOne )
 
 	// eliminate
 	SymbolicConditional::shared_ptr actual =
-  		fg.eliminateOne<SymbolicConditional>("x1");
+  		eliminateOne<SymbolicFactor,SymbolicConditional>(fg,"x1");
 
   // create expected symbolic Conditional
   SymbolicConditional expected("x1","l1","x2");

@@ -30,13 +30,13 @@ namespace gtsam {
 	 */
 	template<class Factor> class FactorGraph: public Testable<FactorGraph<Factor> > {
 	public:
-		typedef typename boost::shared_ptr<Factor> shared_factor;
-		typedef typename std::vector<shared_factor>::iterator iterator;
-		typedef typename std::vector<shared_factor>::const_iterator const_iterator;
+		typedef typename boost::shared_ptr<Factor> sharedFactor;
+		typedef typename std::vector<sharedFactor>::iterator iterator;
+		typedef typename std::vector<sharedFactor>::const_iterator const_iterator;
 
 	protected:
 		/** Collection of factors */
-		std::vector<shared_factor> factors_;
+		std::vector<sharedFactor> factors_;
 
 		/** For each variable a list of factor indices connected to it  */
 		typedef std::map<std::string, std::list<int> > Indices;
@@ -73,7 +73,7 @@ namespace gtsam {
 		}
 
 		/** Get a specific factor by index */
-		inline shared_factor operator[](size_t i) const {
+		inline sharedFactor operator[](size_t i) const {
 			return factors_[i];
 		}
 
@@ -84,7 +84,7 @@ namespace gtsam {
 	  size_t nrFactors() const;
 
 		/** Add a factor */
-		void push_back(shared_factor factor);
+		void push_back(sharedFactor factor);
 
 		/**
 		 * Compute colamd ordering
@@ -102,29 +102,14 @@ namespace gtsam {
      * from the factor graph
      * @param key the key for the given node
      */
-		std::vector<shared_factor> findAndRemoveFactors(const std::string& key);
+		std::vector<sharedFactor> findAndRemoveFactors(const std::string& key);
 
     /**
      * extract and combine all the factors that involve a given node
      * @param key the key for the given node
      * @return the combined linear factor
      */
-    shared_factor removeAndCombineFactors(const std::string& key);
-
-    /**
-     * Eliminate a single node yielding a Conditional
-     * Eliminates the factors from the factor graph through findAndRemoveFactors
-     * and adds a new factor on the separator to the factor graph
-     */
-		template<class Conditional>
-		boost::shared_ptr<Conditional> eliminateOne(const std::string& key);
-
-		/**
-		 * eliminate factor graph using the given (not necessarily complete)
-		 * ordering, yielding a chordal Bayes net and (partially eliminated) FG
-		 */
-		template<class Conditional>
-		boost::shared_ptr<BayesNet<Conditional> > eliminate(boost::shared_ptr<BayesNet<Conditional> > bayesNet, const Ordering& ordering);
+    sharedFactor removeAndCombineFactors(const std::string& key);
 
 	private:
 
@@ -136,5 +121,24 @@ namespace gtsam {
 			ar & BOOST_SERIALIZATION_NVP(indices_);
 		}
 	}; // FactorGraph
+
+	/** doubly templated functions */
+
+	/**
+   * Eliminate a single node yielding a Conditional
+   * Eliminates the factors from the factor graph through findAndRemoveFactors
+   * and adds a new factor on the separator to the factor graph
+   */
+	template<class Factor, class Conditional>
+	boost::shared_ptr<Conditional> eliminateOne(FactorGraph<Factor>& factorGraph, const std::string& key);
+
+	/**
+	 * eliminate factor graph using the given (not necessarily complete)
+	 * ordering, yielding a chordal Bayes net and (partially eliminated) FG
+	 */
+	template<class Factor, class Conditional>
+	boost::shared_ptr<BayesNet<Conditional> >
+	eliminate(FactorGraph<Factor>& factorGraph, const Ordering& ordering);
+
 } // namespace gtsam
 

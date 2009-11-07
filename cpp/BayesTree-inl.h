@@ -14,7 +14,7 @@ namespace gtsam {
 
 	/* ************************************************************************* */
 	template<class Conditional>
-	BayesTree<Conditional>::Clique::Clique(const boost::shared_ptr<Conditional>& conditional) {
+	BayesTree<Conditional>::Clique::Clique(const sharedConditional& conditional) {
 			separator_ = conditional->parents();
 			this->push_back(conditional);
 		}
@@ -91,8 +91,7 @@ namespace gtsam {
 
 	/* ************************************************************************* */
 	template<class Conditional>
-	void BayesTree<Conditional>::insert
-	(const boost::shared_ptr<Conditional>& conditional)
+	void BayesTree<Conditional>::insert(const sharedConditional& conditional)
 	{
 		// get key and parents
 		string key = conditional->key();
@@ -129,7 +128,8 @@ namespace gtsam {
 	/* ************************************************************************* */
 	template<class Conditional>
 	template<class Factor>
-	boost::shared_ptr<Conditional> BayesTree<Conditional>::marginal(const string& key) const {
+	typename BayesTree<Conditional>::sharedConditional
+	BayesTree<Conditional>::marginal(const string& key) const {
 
 		// get clique containing key, and remove all factors below key
 		sharedClique clique = (*this)[key];
@@ -160,9 +160,7 @@ namespace gtsam {
 		ordering.reverse();
 
 		// eliminate to get marginal
-		boost::shared_ptr<BayesNet<Conditional> > bayesNet;
-		typename boost::shared_ptr<BayesNet<Conditional> > chordalBayesNet =
-				graph.eliminate(bayesNet,ordering);
+		sharedBayesNet chordalBayesNet = eliminate<Factor,Conditional>(graph,ordering);
 
 		return chordalBayesNet->back(); // the root is the marginal
 	}

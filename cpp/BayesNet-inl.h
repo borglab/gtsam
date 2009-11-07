@@ -23,7 +23,7 @@ namespace gtsam {
 	void BayesNet<Conditional>::print(const string& s) const {
 		cout << s << ":\n";
 		std::string key;
-		BOOST_FOREACH(conditional_ptr conditional,conditionals_)
+		BOOST_FOREACH(sharedConditional conditional,conditionals_)
 			conditional->print("Node[" + conditional->key() + "]");
 	}
 
@@ -38,26 +38,17 @@ namespace gtsam {
 	template<class Conditional>
 	Ordering BayesNet<Conditional>::ordering() const {
 		Ordering ord;
-		BOOST_FOREACH(conditional_ptr conditional,conditionals_)
+		BOOST_FOREACH(sharedConditional conditional,conditionals_)
 		   ord.push_back(conditional->key());
 		return ord;
 	}
 
 	/* ************************************************************************* */
-	// predicate to check whether a conditional has the sought key
-	template<class Conditional>
-	class HasKey {
-		const string& key_;
-	public:
-		HasKey(const std::string& key):key_(key) {}
-		bool operator()(const boost::shared_ptr<Conditional>& conditional) {
-			return (conditional->key()==key_);
-		}
-	};
 
 	template<class Conditional>
-	boost::shared_ptr<Conditional> BayesNet<Conditional>::operator[](const std::string& key) const {
-		const_iterator it = find_if(conditionals_.begin(),conditionals_.end(),HasKey<Conditional>(key));
+	typename BayesNet<Conditional>::sharedConditional
+	BayesNet<Conditional>::operator[](const std::string& key) const {
+		const_iterator it = find_if(conditionals_.begin(),conditionals_.end(),onKey<Conditional>(key));
 		if (it == conditionals_.end()) throw(invalid_argument(
 						"BayesNet::operator['"+key+"']: not found"));
 		return *it;

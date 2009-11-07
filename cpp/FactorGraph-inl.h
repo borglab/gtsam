@@ -29,7 +29,7 @@ FactorGraph<Factor>::FactorGraph(const BayesNet<Conditional>& bayesNet)
 {
 	typename BayesNet<Conditional>::const_iterator it = bayesNet.begin();
 	for(; it != bayesNet.end(); it++) {
-		typename boost::shared_ptr<Factor>::shared_ptr factor(new Factor(*it));
+		sharedFactor factor(new Factor(*it));
 		push_back(factor);
 	}
 }
@@ -56,7 +56,7 @@ bool FactorGraph<Factor>::equals
 	/** check whether the factors_ are the same */
 	for (size_t i = 0; i < factors_.size(); i++) {
 		// TODO: Doesn't this force order of factor insertion?
-		shared_factor f1 = factors_[i], f2 = fg.factors_[i];
+		sharedFactor f1 = factors_[i], f2 = fg.factors_[i];
 		if (f1 == NULL && f2 == NULL) continue;
 		if (f1 == NULL || f2 == NULL) return false;
 		if (!f1->equals(*f2, tol)) return false;
@@ -75,7 +75,7 @@ size_t FactorGraph<Factor>::nrFactors() const {
 
 /* ************************************************************************* */
 template<class Factor>
-void FactorGraph<Factor>::push_back(shared_factor factor) {
+void FactorGraph<Factor>::push_back(sharedFactor factor) {
 	factors_.push_back(factor);                  // add the actual factor
 	if (factor==NULL) return;
 
@@ -184,11 +184,11 @@ list<int> FactorGraph<Factor>::factors(const string& key) const {
 template<class Factor>
 vector<boost::shared_ptr<Factor> >
 FactorGraph<Factor>::findAndRemoveFactors(const string& key) {
-	vector<boost::shared_ptr<Factor> > found;
+	vector<sharedFactor> found;
 
 	Indices::iterator it = indices_.find(key);
 	if (it == indices_.end())
-		throw(std::invalid_argument
+		throw(invalid_argument
 				("FactorGraph::findAndRemoveFactors invalid key: " + key));
 
 	list<int> *indices_ptr; // pointer to indices list in indices_ map
@@ -206,14 +206,13 @@ FactorGraph<Factor>::findAndRemoveFactors(const string& key) {
 /* find factors and remove them from the factor graph: O(n)                  */
 /* ************************************************************************* */
 template<class Factor>
-boost::shared_ptr<Factor>
+typename FactorGraph<Factor>::sharedFactor
 FactorGraph<Factor>::removeAndCombineFactors(const string& key)
 {
 	bool verbose = false;
 	if (verbose) cout << "FactorGraph::removeAndCombineFactors" << endl;
-	typedef typename boost::shared_ptr<Factor> shared_factor;
-	vector<shared_factor> found = findAndRemoveFactors(key);
-	shared_factor new_factor(new Factor(found));
+	vector<sharedFactor> found = findAndRemoveFactors(key);
+	sharedFactor new_factor(new Factor(found));
 	if (verbose) cout << "FactorGraph::removeAndCombineFactors done" << endl;
 	return new_factor;
 }
@@ -221,21 +220,20 @@ FactorGraph<Factor>::removeAndCombineFactors(const string& key)
 /* ************************************************************************* */
 /* eliminate one node from the factor graph                           */
 /* ************************************************************************* */
-template<class Factor>
-template<class Conditional>
-boost::shared_ptr<Conditional> FactorGraph<Factor>::eliminateOne(const std::string& key) {
+template<class Factor,class Conditional>
+boost::shared_ptr<Conditional> eliminateOne(FactorGraph<Factor>& graph, const string& key) {
 
 	// combine the factors of all nodes connected to the variable to be eliminated
 	// if no factors are connected to key, returns an empty factor
-	shared_factor joint_factor = removeAndCombineFactors(key);
+	boost::shared_ptr<Factor> joint_factor = graph.removeAndCombineFactors(key);
 
 	// eliminate that joint factor
-	shared_factor factor;
+	boost::shared_ptr<Factor> factor;
 	boost::shared_ptr<Conditional> conditional;
 	boost::tie(conditional, factor) = joint_factor->eliminate(key);
 
 	// add new factor on separator back into the graph
-	if (!factor->empty()) push_back(factor);
+	if (!factor->empty()) graph.push_back(factor);
 
 	// return the conditional Gaussian
 	return conditional;
@@ -245,16 +243,16 @@ boost::shared_ptr<Conditional> FactorGraph<Factor>::eliminateOne(const std::stri
 // This doubly templated function is generic. There is a LinearFactorGraph
 // version that returns a more specific GaussianBayesNet.
 // Note, you will need to include this file to instantiate the function.
+// TODO: get rid of summy argument
 /* ************************************************************************* */
-template<class Factor>
-template<class Conditional>
+template<class Factor,class Conditional>
 boost::shared_ptr<BayesNet<Conditional> >
-FactorGraph<Factor>::eliminate(boost::shared_ptr<BayesNet<Conditional> > xxx, const Ordering& ordering)
+eliminate(FactorGraph<Factor>& factorGraph, const Ordering& ordering)
 {
 	boost::shared_ptr<BayesNet<Conditional> > bayesNet (new BayesNet<Conditional>()); // empty
 
 	BOOST_FOREACH(string key, ordering) {
-		boost::shared_ptr<Conditional> cg = eliminateOne<Conditional>(key);
+		boost::shared_ptr<Conditional> cg = eliminateOne<Factor,Conditional>(factorGraph,key);
 		bayesNet->push_back(cg);
 	}
 
