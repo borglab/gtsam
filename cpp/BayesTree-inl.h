@@ -14,16 +14,16 @@ namespace gtsam {
 
 	/* ************************************************************************* */
 	template<class Conditional>
-	BayesTree<Conditional>::Node::Node(const boost::shared_ptr<Conditional>& conditional) {
+	BayesTree<Conditional>::Clique::Clique(const boost::shared_ptr<Conditional>& conditional) {
 			separator_ = conditional->parents();
 			this->push_back(conditional);
 		}
 
 	/* ************************************************************************* */
 	template<class Conditional>
-	void BayesTree<Conditional>::Node::print(const string& s) const {
+	void BayesTree<Conditional>::Clique::print(const string& s) const {
 			cout << s;
-			BOOST_REVERSE_FOREACH(const conditional_ptr& conditional, this->conditionals_)
+			BOOST_REVERSE_FOREACH(const sharedConditional& conditional, this->conditionals_)
 				cout << " " << conditional->key();
 			if (!separator_.empty()) {
 				cout << " :";
@@ -35,7 +35,7 @@ namespace gtsam {
 
 	/* ************************************************************************* */
 	template<class Conditional>
-	void BayesTree<Conditional>::Node::printTree(const string& indent) const {
+	void BayesTree<Conditional>::Clique::printTree(const string& indent) const {
 			print(indent);
 			BOOST_FOREACH(shared_ptr child, children_)
 				child->printTree(indent+"  ");
@@ -43,11 +43,29 @@ namespace gtsam {
 
 	/* ************************************************************************* */
 	template<class Conditional>
+	typename BayesTree<Conditional>::sharedBayesNet
+	BayesTree<Conditional>::Clique::shortcut() {
+		// The shortcut density is a conditional P(S|R) of the separator of this
+		// clique on the root. We can compute it recursively from the parent shortcut
+		// P(S_p|R) as \int P(F_p|S_p) P(S_p|R), where F_p are the frontal nodes in p
+
+		// The base case is when we are the root or the parent is the root,
+		// in which case we return an empty Bayes net
+		sharedBayesNet p_S_R(new BayesNet<Conditional>);
+		if (parent_==NULL || parent_->parent_==NULL) return p_S_R;
+
+		// If not, calculate the parent shortcut P(S_p|R)
+		sharedBayesNet p_Sp_R = parent_->shortcut();
+
+		return p_S_R;
+	}
+
+	/* ************************************************************************* */
+	template<class Conditional>
 	BayesTree<Conditional>::BayesTree() {
 	}
 
 	/* ************************************************************************* */
-	// TODO: traversal is O(n*log(n)) but could be O(n) with better bayesNet
 	template<class Conditional>
 	BayesTree<Conditional>::BayesTree(const BayesNet<Conditional>& bayesNet) {
 		typename BayesNet<Conditional>::const_reverse_iterator rit;
@@ -68,21 +86,7 @@ namespace gtsam {
 	bool BayesTree<Conditional>::equals(const BayesTree<Conditional>& other,
 			double tol) const {
 		return size()==other.size();
-		//&& equal(nodes_.begin(),nodes_.end(),other.nodes_.begin(),equals_star<Node>(tol));
-	}
-
-	/* ************************************************************************* */
-	template<class Conditional>
-	boost::shared_ptr<typename BayesTree<Conditional>::Node> BayesTree<Conditional>::addClique
-	(const boost::shared_ptr<Conditional>& conditional, node_ptr parent_clique)
-	{
-		node_ptr new_clique(new Node(conditional));
-		nodes_.insert(make_pair(conditional->key(), new_clique));
-		if (parent_clique!=NULL) {
-			new_clique->parent_ = parent_clique;
-			parent_clique->children_.push_back(new_clique);
-		}
-		return new_clique;
+		//&& equal(nodes_.begin(),nodes_.end(),other.nodes_.begin(),equals_star<Clique>(tol));
 	}
 
 	/* ************************************************************************* */
@@ -102,7 +106,7 @@ namespace gtsam {
 
 		// otherwise, find the parent clique
 		string parent = parents.front();
-		node_ptr parent_clique = (*this)[parent];
+		sharedClique parent_clique = (*this)[parent];
 
 		// if the parents and parent clique have the same size, add to parent clique
 		if (parent_clique->size() == parents.size()) {
@@ -128,7 +132,7 @@ namespace gtsam {
 	boost::shared_ptr<Conditional> BayesTree<Conditional>::marginal(const string& key) const {
 
 		// get clique containing key, and remove all factors below key
-		node_ptr clique = (*this)[key];
+		sharedClique clique = (*this)[key];
 		Ordering ordering = clique->ordering();
 		FactorGraph<Factor> graph(*clique);
 		while(ordering.front()!=key) {

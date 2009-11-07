@@ -29,21 +29,22 @@ namespace gtsam {
 
 	public:
 
-		typedef boost::shared_ptr<Conditional> conditional_ptr;
+		typedef boost::shared_ptr<Conditional> sharedConditional;
+		typedef boost::shared_ptr<BayesNet<Conditional> > sharedBayesNet;
 
-		/** A Node in the tree is an incomplete Bayes net: the variables
+		/** A Clique in the tree is an incomplete Bayes net: the variables
 		 * in the Bayes net are the frontal nodes, and the variables conditioned
 		 * on is the separator. We also have pointers up and down the tree.
 		 */
-		struct Node: public BayesNet<Conditional> {
+		struct Clique: public BayesNet<Conditional> {
 
-			typedef boost::shared_ptr<Node> shared_ptr;
+			typedef boost::shared_ptr<Clique> shared_ptr;
 			shared_ptr parent_;
-			std::list<std::string> separator_; /** separator keys */
 			std::list<shared_ptr> children_;
+			std::list<std::string> separator_; /** separator keys */
 
 			//* Constructor */
-			Node(const conditional_ptr& conditional);
+			Clique(const sharedConditional& conditional);
 
 			/** The size *includes* the separator */
 			size_t size() const {
@@ -53,24 +54,35 @@ namespace gtsam {
 			/** print this node */
 			void print(const std::string& s = "Bayes tree node") const;
 
-			/** print this node and entire subtree below it*/
+			/** print this node and entire subtree below it */
 			void printTree(const std::string& indent) const;
+
+			/** return the conditional P(S|Root) on the separator given the root */
+			sharedBayesNet shortcut();
 		};
 
-		typedef boost::shared_ptr<Node> node_ptr;
+		typedef boost::shared_ptr<Clique> sharedClique;
 
 	private:
 
-		/** Map from keys to Node */
-		typedef std::map<std::string, node_ptr> Nodes;
+		/** Map from keys to Clique */
+		typedef std::map<std::string, sharedClique> Nodes;
 		Nodes nodes_;
 
 		/** Roor clique */
-		node_ptr root_;
+		sharedClique root_;
 
 		/** add a clique */
-		node_ptr addClique(const conditional_ptr& conditional,
-				node_ptr parent_clique = node_ptr());
+		sharedClique addClique(const sharedConditional& conditional,
+				sharedClique parent_clique = sharedClique()) {
+			sharedClique new_clique(new Clique(conditional));
+			nodes_.insert(make_pair(conditional->key(), new_clique));
+			if (parent_clique != NULL) {
+				new_clique->parent_ = parent_clique;
+				parent_clique->children_.push_back(new_clique);
+			}
+			return new_clique;
+		}
 
 	public:
 
@@ -91,7 +103,7 @@ namespace gtsam {
 		bool equals(const BayesTree<Conditional>& other, double tol = 1e-9) const;
 
 		/** insert a new conditional */
-		void insert(const conditional_ptr& conditional);
+		void insert(const sharedConditional& conditional);
 
 		/** number of cliques */
 		inline size_t size() const {
@@ -99,23 +111,22 @@ namespace gtsam {
 		}
 
 		/** return root clique */
-		node_ptr root() const {
+		sharedClique root() const {
 			return root_;
 		}
 
 		/** find the clique to which key belongs */
-		node_ptr operator[](const std::string& key) const {
+		sharedClique operator[](const std::string& key) const {
 			typename Nodes::const_iterator it = nodes_.find(key);
 			if (it == nodes_.end()) throw(std::invalid_argument(
 					"BayesTree::operator['" + key + "'): key not found"));
-			node_ptr clique = it->second;
+			sharedClique clique = it->second;
 			return clique;
 		}
 
 		/** return marginal on any variable */
 		template<class Factor>
-		conditional_ptr marginal(const std::string& key) const;
-
+		sharedConditional marginal(const std::string& key) const;
 	}; // BayesTree
 
 } /// namespace gtsam
