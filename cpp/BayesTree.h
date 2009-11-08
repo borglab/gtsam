@@ -46,6 +46,9 @@ namespace gtsam {
 			//* Constructor */
 			Clique(const sharedConditional& conditional);
 
+			/** return keys in frontal:separator order */
+			Ordering keys() const;
+
 			/** print this node */
 			void print(const std::string& s = "Bayes tree node") const;
 
@@ -62,7 +65,11 @@ namespace gtsam {
 
 			/** return the conditional P(S|Root) on the separator given the root */
 			template<class Factor>
-			sharedBayesNet shortcut(shared_ptr R);
+			sharedBayesNet shortcut(shared_ptr root);
+
+			/** return the marginal P(C) of the clique */
+			template<class Factor>
+			BayesNet<Conditional> marginal(shared_ptr root);
 		};
 
 		typedef boost::shared_ptr<Clique> sharedClique;
@@ -130,7 +137,7 @@ namespace gtsam {
 
 		/** return marginal on any variable */
 		template<class Factor>
-		sharedConditional marginal(const std::string& key) const;
+		BayesNet<Conditional> marginal(const std::string& key) const;
 	}; // BayesTree
 
 } /// namespace gtsam

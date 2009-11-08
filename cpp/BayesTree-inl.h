@@ -7,6 +7,7 @@
 #include <boost/foreach.hpp>
 #include "BayesTree.h"
 #include "FactorGraph-inl.h"
+#include "BayesNet-inl.h"
 
 namespace gtsam {
 
@@ -18,6 +19,14 @@ namespace gtsam {
 			separator_ = conditional->parents();
 			this->push_back(conditional);
 		}
+
+	/* ************************************************************************* */
+	template<class Conditional>
+	Ordering BayesTree<Conditional>::Clique::keys() const {
+		Ordering frontal_keys = this->ordering(), keys = separator_;
+		keys.splice(keys.begin(),frontal_keys);
+		return keys;
+	}
 
 	/* ************************************************************************* */
 	template<class Conditional>
@@ -42,29 +51,26 @@ namespace gtsam {
 		}
 
 	/* ************************************************************************* */
+	// The shortcut density is a conditional P(S|R) of the separator of this
+	// clique on the root. We can compute it recursively from the parent shortcut
+	// P(Sp|R) as \int P(Fp|Sp) P(Sp|R), where Fp are the frontal nodes in p
+	// TODO, why do we actually return a shared pointer, why does eliminate?
+	/* ************************************************************************* */
 	template<class Conditional>
 	template<class Factor>
 	typename BayesTree<Conditional>::sharedBayesNet
 	BayesTree<Conditional>::Clique::shortcut(shared_ptr R) {
-		// The shortcut density is a conditional P(S|R) of the separator of this
-		// clique on the root. We can compute it recursively from the parent shortcut
-		// P(Sp|R) as \int P(Fp|Sp) P(Sp|R), where Fp are the frontal nodes in p
-
 		// A first base case is when this clique or its parent is the root,
 		// in which case we return an empty Bayes net.
-		if (R.get()==this || parent_==R) {
-			sharedBayesNet empty(new BayesNet<Conditional>);
-			return empty;
-		}
+		if (R.get()==this || parent_==R)
+			return sharedBayesNet(new BayesNet<Conditional>);
 
 		// The parent clique has a Conditional for each frontal node in Fp
 		// so we can obtain P(Fp|Sp) in factor graph form
 		FactorGraph<Factor> p_Fp_Sp(*parent_);
-		//p_Fp_Sp.print("p_Fp_Sp");
 
 		// If not the base case, obtain the parent shortcut P(Sp|R) as factors
 		FactorGraph<Factor> p_Sp_R(*parent_->shortcut<Factor>(R));
-		//p_Sp_R.print("p_Sp_R");
 
 		// now combine P(Cp|R) = P(Fp|Sp) * P(Sp|R)
 		FactorGraph<Factor> p_Cp_R = combine(p_Fp_Sp, p_Sp_R);
@@ -76,12 +82,7 @@ namespace gtsam {
 		// Keys corresponding to the root should not be added to the ordering at all.
 
 		// Get the key list Cp=Fp+Sp, which will form the basis for the integrands
-		Ordering integrands;
-		{
-		Ordering Fp = parent_->ordering(), Sp = parent_->separator_;
-		integrands.splice(integrands.end(),Fp);
-		integrands.splice(integrands.end(),Sp);
-		}
+		Ordering integrands = parent_->keys();
 
 		// Start ordering with the separator
 		Ordering ordering = separator_;
@@ -106,6 +107,29 @@ namespace gtsam {
 
 		// return the parent shortcut P(Sp|R)
 		return p_S_R;
+	}
+
+	/* ************************************************************************* */
+	// P(C) = \int_R P(F|S) P(S|R) P(R)
+	// TODO: Maybe we should integrate given parent marginal P(Cp),
+	// \int(Cp\S) P(F|S)P(S|Cp)P(Cp)
+	// Because the root clique could be very big.
+	/* ************************************************************************* */
+	template<class Conditional>
+	template<class Factor>
+	BayesNet<Conditional>
+	BayesTree<Conditional>::Clique::marginal(shared_ptr R) {
+		// If we are the root, just return this root
+		if (R.get()==this) return *R;
+
+		// Combine P(F|S), P(S|R), and P(R)
+		sharedBayesNet p_FSR = this->shortcut<Factor>(R);
+		p_FSR->push_front(*this);
+		p_FSR->push_back(*R);
+
+		// Find marginal on the keys we are interested in
+		BayesNet<Conditional> marginal = marginals<Factor>(*p_FSR,keys());
+		return marginal;
 	}
 
 	/* ************************************************************************* */
@@ -167,50 +191,23 @@ namespace gtsam {
 	}
 
 	/* ************************************************************************* */
-	// Desired: recursive, memoizing version
-	// Once we know the clique, can we do all with Nodes ?
-	// Sure, as P(x) = \int P(C|root)
-	// The natural cache is P(C|root), memoized, of course, in the clique C
-	// When any marginal is asked for, we calculate P(C|root) = P(C|Pi)P(Pi|root)
-	// Super-naturally recursive !!!!!
+	// First finds clique marginal then marginalizes that
 	/* ************************************************************************* */
 	template<class Conditional>
 	template<class Factor>
-	typename BayesTree<Conditional>::sharedConditional
+	BayesNet<Conditional>
 	BayesTree<Conditional>::marginal(const string& key) const {
 
-		// get clique containing key, and remove all factors below key
+		// get clique containing key
 		sharedClique clique = (*this)[key];
-		Ordering ordering = clique->ordering();
-		FactorGraph<Factor> graph(*clique);
-		while(ordering.front()!=key) {
-			graph.findAndRemoveFactors(ordering.front());
-			ordering.pop_front();
-		}
 
-		// find all cliques on the path to the root and turn into factor graph
-		while (clique->parent_!=NULL) {
-			// move up the tree
-			clique = clique->parent_;
+		// calculate or retrieve its marginal
+		BayesNet<Conditional> cliqueMarginal = clique->marginal<Factor>(root_);
 
-			// extend ordering
-			Ordering cliqueOrdering = clique->ordering();
-			ordering.splice (ordering.end(), cliqueOrdering);
+		// Get the marginal on the single key
+		BayesNet<Conditional> marginal = marginals<Factor>(cliqueMarginal,Ordering(key));
 
-			// extend factor graph
-			FactorGraph<Factor> cliqueGraph(*clique);
-			typename FactorGraph<Factor>::const_iterator factor=cliqueGraph.begin();
-			for(; factor!=cliqueGraph.end(); factor++)
-				graph.push_back(*factor);
-		}
-
-		// TODO: can we prove reverse ordering is efficient?
-		ordering.reverse();
-
-		// eliminate to get marginal
-		sharedBayesNet chordalBayesNet = _eliminate<Factor,Conditional>(graph,ordering);
-
-		return chordalBayesNet->back(); // the root is the marginal
+		return marginal;
 	}
 
 	/* ************************************************************************* */
