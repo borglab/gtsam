@@ -30,6 +30,8 @@ namespace gtsam {
 
 	public:
 
+		typedef typename boost::shared_ptr<BayesNet<Conditional> >shared_ptr;
+
 		/** We store shared pointers to Conditional densities */
 		typedef typename boost::shared_ptr<Conditional> sharedConditional;
 		typedef typename std::list<sharedConditional> Conditionals;
@@ -64,6 +66,12 @@ namespace gtsam {
 			conditionals_.push_front(conditional);
 		}
 
+		// push_back an entire Bayes net */
+		void push_back(const BayesNet<Conditional> bn);
+
+		// push_front an entire Bayes net */
+		void push_front(const BayesNet<Conditional> bn);
+
 		/**
 		 * pop_front: remove node at the bottom, used in marginalization
 		 * For example P(ABC)=P(A|BC)P(B|C)P(C) becomes P(BC)=P(B|C)P(C)
@@ -81,6 +89,7 @@ namespace gtsam {
 		/** SLOW O(n) random access to Conditional by key */
 		sharedConditional operator[](const std::string& key) const;
 
+		/** return last node in ordering */
 		inline sharedConditional back() { return conditionals_.back(); }
 
 		/** return iterators. FD: breaks encapsulation? */
@@ -96,6 +105,15 @@ namespace gtsam {
 		void serialize(Archive & ar, const unsigned int version) {
 			ar & BOOST_SERIALIZATION_NVP(conditionals_);
 		}
-	};
+	}; // BayesNet
+
+	/** doubly templated functions */
+
+	/**
+	 * integrate out all except ordering, might be inefficient as the ordering
+	 * will simply be the current ordering with the keys put in the back
+	 */
+	template<class Factor, class Conditional>
+	BayesNet<Conditional> marginals(const BayesNet<Conditional>& bn, const Ordering& keys);
 
 } /// namespace gtsam

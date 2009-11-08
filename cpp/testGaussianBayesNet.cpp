@@ -4,7 +4,6 @@
  * @author  Frank Dellaert
  */
 
-
 // STL/C++
 #include <iostream>
 #include <sstream>
@@ -12,13 +11,18 @@
 #include <boost/tuple/tuple.hpp>
 #include <boost/foreach.hpp>
 
+#include <boost/assign/std/list.hpp> // for operator +=
+using namespace boost::assign;
+
 #ifdef HAVE_BOOST_SERIALIZATION
 #include <boost/archive/text_oarchive.hpp>
 #include <boost/archive/text_iarchive.hpp>
 #endif //HAVE_BOOST_SERIALIZATION
 
 #include "GaussianBayesNet.h"
+#include "BayesNet-inl.h"
 #include "smallExample.h"
+#include "Ordering.h"
 
 using namespace std;
 using namespace gtsam;
@@ -34,11 +38,11 @@ TEST( GaussianBayesNet, constructor )
   Matrix                         R22 = Matrix_(1,1,1.0);
   Vector d1(1), d2(1);
   d1(0) = 9; d2(0) = 5;
-  Vector tau(1);
-  tau(0) = 1.;
+  Vector sigmas(1);
+  sigmas(0) = 1.;
   
   // define nodes and specify in reverse topological sort (i.e. parents last)
-  ConditionalGaussian x("x",d1,R11,"y",S12, tau), y("y",d2,R22, tau);
+  ConditionalGaussian x("x",d1,R11,"y",S12, sigmas), y("y",d2,R22, sigmas);
 
   // check small example which uses constructor
   GaussianBayesNet cbn = createSmallGaussianBayesNet();
@@ -68,7 +72,6 @@ TEST( GaussianBayesNet, matrix )
 /* ************************************************************************* */
 TEST( GaussianBayesNet, optimize )
 {
-  // optimize small Bayes Net
   GaussianBayesNet cbn = createSmallGaussianBayesNet();
   boost::shared_ptr<VectorConfig> actual = cbn.optimize();
 
@@ -79,6 +82,19 @@ TEST( GaussianBayesNet, optimize )
   expected.insert("y",y);
 
   CHECK(actual->equals(expected));
+}
+
+/* ************************************************************************* */
+TEST( GaussianBayesNet, marginals )
+{
+	// create and marginalize a small Bayes net on "x"
+  GaussianBayesNet cbn = createSmallGaussianBayesNet();
+  Ordering keys("x");
+  BayesNet<ConditionalGaussian> actual = marginals<LinearFactor>(cbn,keys);
+
+  // expected is just scalar Gaussian on x
+  GaussianBayesNet expected("x",4,sqrt(2));
+  CHECK(assert_equal((BayesNet<ConditionalGaussian>)expected,actual));
 }
 
 /* ************************************************************************* */

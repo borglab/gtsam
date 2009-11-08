@@ -23,6 +23,21 @@ template class BayesNet<ConditionalGaussian>;
 #define REVERSE_FOREACH_PAIR( KEY, VAL, COL) BOOST_REVERSE_FOREACH (boost::tie(KEY,VAL),COL)
 
 /* ************************************************************************* */
+GaussianBayesNet::GaussianBayesNet(const string& key, double mu, double sigma) {
+	ConditionalGaussian::shared_ptr
+		conditional(new ConditionalGaussian(key, Vector_(1,mu), eye(1), Vector_(1,sigma)));
+	push_back(conditional);
+}
+
+/* ************************************************************************* */
+GaussianBayesNet::GaussianBayesNet(const string& key, const Vector& mu, double sigma) {
+	size_t n = mu.size();
+	ConditionalGaussian::shared_ptr
+		conditional(new ConditionalGaussian(key, mu, eye(n), repeat(n,sigma)));
+	push_back(conditional);
+}
+
+/* ************************************************************************* */
 boost::shared_ptr<VectorConfig> GaussianBayesNet::optimize() const
 {
   boost::shared_ptr<VectorConfig> result(new VectorConfig);

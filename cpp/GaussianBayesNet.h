@@ -25,9 +25,11 @@ public:
 	/** Construct an empty net */
 	GaussianBayesNet() {}
 
-	/** Copy Constructor */
-//	GaussianBayesNet(const GaussianBayesNet& cbn_in) :
-//		keys_(cbn_in.keys_), nodes_(cbn_in.nodes_) {}
+	/** Create a scalar Gaussian */
+	GaussianBayesNet(const std::string& key, double mu=0.0, double sigma=1.0);
+
+	/** Create a simple Gaussian on a single multivariate variable */
+	GaussianBayesNet(const std::string& key, const Vector& mu, double sigma=1.0);
 
 	/** Destructor */
 	virtual ~GaussianBayesNet() {}

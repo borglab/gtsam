@@ -67,6 +67,34 @@ TEST( SymbolicBayesNet, pop_front )
 }
 
 /* ************************************************************************* */
+TEST( SymbolicBayesNet, combine )
+{
+	SymbolicConditional::shared_ptr
+		A(new SymbolicConditional("A","B","C")),
+		B(new SymbolicConditional("B","C")),
+		C(new SymbolicConditional("C"));
+
+	// p(A|BC)
+	SymbolicBayesNet p_ABC;
+	p_ABC.push_back(A);
+
+	// P(BC)=P(B|C)P(C)
+	SymbolicBayesNet p_BC;
+	p_BC.push_back(B);
+	p_BC.push_back(C);
+
+	// P(ABC) = P(A|BC) P(BC)
+	p_ABC.push_back(p_BC);
+
+	SymbolicBayesNet expected;
+	expected.push_back(A);
+	expected.push_back(B);
+	expected.push_back(C);
+
+  CHECK(assert_equal(expected,p_ABC));
+}
+
+/* ************************************************************************* */
 int main() {
 	TestResult tr;
 	return TestRegistry::runAllTests(tr);

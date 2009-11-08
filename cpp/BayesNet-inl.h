@@ -13,6 +13,7 @@ using namespace boost::assign;
 
 #include "Ordering.h"
 #include "BayesNet.h"
+#include "FactorGraph-inl.h"
 
 using namespace std;
 
@@ -36,6 +37,20 @@ namespace gtsam {
 
 	/* ************************************************************************* */
 	template<class Conditional>
+	void BayesNet<Conditional>::push_back(const BayesNet<Conditional> bn) {
+		BOOST_FOREACH(sharedConditional conditional,bn.conditionals_)
+			push_back(conditional);
+	}
+
+	/* ************************************************************************* */
+	template<class Conditional>
+	void BayesNet<Conditional>::push_front(const BayesNet<Conditional> bn) {
+		BOOST_FOREACH(sharedConditional conditional,bn.conditionals_)
+			push_front(conditional);
+	}
+
+	/* ************************************************************************* */
+	template<class Conditional>
 	Ordering BayesNet<Conditional>::ordering() const {
 		Ordering ord;
 		BOOST_FOREACH(sharedConditional conditional,conditionals_)
@@ -53,6 +68,31 @@ namespace gtsam {
 						"BayesNet::operator['"+key+"']: not found"));
 		return *it;
 	}
+
+	/* ************************************************************************* */
+	template<class Factor, class Conditional>
+	BayesNet<Conditional> marginals(const BayesNet<Conditional>& bn, const Ordering& keys) {
+		// Convert to factor graph
+		FactorGraph<Factor> factorGraph(bn);
+
+		// Get the keys of all variables and remove all keys we want the marginal for
+		Ordering ord = bn.ordering();
+		BOOST_FOREACH(string key, keys) ord.remove(key); // TODO: O(n*k), faster possible?
+
+		// add marginal keys at end
+		BOOST_FOREACH(string key, keys) ord.push_back(key);
+
+		// eliminate to get joint
+		typename BayesNet<Conditional>::shared_ptr joint = _eliminate<Factor,Conditional>(factorGraph,ord);
+
+		// remove all integrands, P(K) = \int_I P(I|K) P(K)
+		size_t nrIntegrands = ord.size()-keys.size();
+		for(int i=0;i<nrIntegrands;i++) joint->pop_front();
+
+		// joint is now only on keys, return it
+		return *joint;
+		}
+
 	/* ************************************************************************* */
 
 } // namespace gtsam
