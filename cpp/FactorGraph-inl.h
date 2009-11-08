@@ -259,5 +259,21 @@ _eliminate(FactorGraph<Factor>& factorGraph, const Ordering& ordering)
 	return bayesNet;
 }
 
+template<class Factor>
+FactorGraph<Factor> combine(const FactorGraph<Factor>& fg1, const FactorGraph<Factor>& fg2) {
+
+	typedef FactorGraph<Factor> FG;
+
+	// create new linear factor graph equal to the first one
+	FG fg = fg1;
+
+	// add the second factors_ in the graph
+	typename FG::const_iterator factor = fg2.begin();
+	for (; factor!= fg2.end(); factor++)
+		fg.push_back(*factor);
+
+	return fg;
+}
+
 /* ************************************************************************* */
 }
