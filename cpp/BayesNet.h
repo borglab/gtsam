@@ -64,6 +64,12 @@ namespace gtsam {
 			conditionals_.push_front(conditional);
 		}
 
+		/**
+		 * pop_front: remove node at the bottom, used in marginalization
+		 * For example P(ABC)=P(A|BC)P(B|C)P(C) becomes P(BC)=P(B|C)P(C)
+		 */
+		inline void pop_front() {conditionals_.pop_front();}
+
 		/** size is the number of nodes */
 		inline size_t size() const {
 			return conditionals_.size();

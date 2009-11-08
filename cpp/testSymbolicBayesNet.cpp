@@ -44,6 +44,29 @@ TEST( SymbolicBayesNet, constructor )
 }
 
 /* ************************************************************************* */
+TEST( SymbolicBayesNet, pop_front )
+{
+	SymbolicConditional::shared_ptr
+		A(new SymbolicConditional("A","B","C")),
+		B(new SymbolicConditional("B","C")),
+		C(new SymbolicConditional("C"));
+
+	// Expected after pop_front
+	SymbolicBayesNet expected;
+	expected.push_back(B);
+	expected.push_back(C);
+
+	// Actual
+	SymbolicBayesNet actual;
+	actual.push_back(A);
+	actual.push_back(B);
+	actual.push_back(C);
+	actual.pop_front();
+
+  CHECK(assert_equal(expected,actual));
+}
+
+/* ************************************************************************* */
 int main() {
 	TestResult tr;
 	return TestRegistry::runAllTests(tr);
