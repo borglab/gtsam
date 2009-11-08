@@ -25,6 +25,13 @@ namespace gtsam {
 		}
 
 		/**
+		 * Create from a single string
+		 */
+		Ordering(std::string key) {
+			push_back(key);
+		}
+
+		/**
 		 * Copy constructor from string vector
 		 */
 		Ordering(const std::list<std::string>& strings_in) :
