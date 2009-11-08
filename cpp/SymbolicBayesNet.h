@@ -35,6 +35,21 @@ namespace gtsam {
 		 */
 		SymbolicBayesNet() {}
 
+		/**
+		 * Construct from a Bayes net of any type
+		 */
+		template<class Conditional>
+		SymbolicBayesNet(const BayesNet<Conditional>& bn) {
+			typename BayesNet<Conditional>::const_iterator it = bn.begin();
+			for(;it!=bn.end();it++) {
+				boost::shared_ptr<Conditional> conditional = *it;
+				std::string key = conditional->key();
+				std::list<std::string> parents = conditional->parents();
+				SymbolicConditional::shared_ptr c(new SymbolicConditional(key,parents));
+				push_back(c);
+			}
+		}
+
 		/** Destructor */
 		virtual ~SymbolicBayesNet() {
 		}
