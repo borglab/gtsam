@@ -38,7 +38,7 @@ namespace gtsam {
 		 */
 		struct Clique: public BayesNet<Conditional> {
 
-			typedef boost::shared_ptr<Clique> shared_ptr;
+			typedef typename boost::shared_ptr<Clique> shared_ptr;
 			shared_ptr parent_;
 			std::list<shared_ptr> children_;
 			std::list<std::string> separator_; /** separator keys */
@@ -46,19 +46,23 @@ namespace gtsam {
 			//* Constructor */
 			Clique(const sharedConditional& conditional);
 
+			/** print this node */
+			void print(const std::string& s = "Bayes tree node") const;
+
 			/** The size *includes* the separator */
 			size_t size() const {
 				return this->conditionals_.size() + separator_.size();
 			}
 
-			/** print this node */
-			void print(const std::string& s = "Bayes tree node") const;
+			/** is this the root of a Bayes tree ? */
+			inline bool isRoot() const { return parent_==NULL;}
 
 			/** print this node and entire subtree below it */
 			void printTree(const std::string& indent) const;
 
 			/** return the conditional P(S|Root) on the separator given the root */
-			sharedBayesNet shortcut();
+			template<class Factor>
+			sharedBayesNet shortcut(shared_ptr R);
 		};
 
 		typedef boost::shared_ptr<Clique> sharedClique;
@@ -119,7 +123,7 @@ namespace gtsam {
 		sharedClique operator[](const std::string& key) const {
 			typename Nodes::const_iterator it = nodes_.find(key);
 			if (it == nodes_.end()) throw(std::invalid_argument(
-					"BayesTree::operator['" + key + "'): key not found"));
+					"BayesTree::operator['" + key + "']: key not found"));
 			sharedClique clique = it->second;
 			return clique;
 		}

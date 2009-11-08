@@ -43,20 +43,68 @@ namespace gtsam {
 
 	/* ************************************************************************* */
 	template<class Conditional>
+	template<class Factor>
 	typename BayesTree<Conditional>::sharedBayesNet
-	BayesTree<Conditional>::Clique::shortcut() {
+	BayesTree<Conditional>::Clique::shortcut(shared_ptr R) {
 		// The shortcut density is a conditional P(S|R) of the separator of this
 		// clique on the root. We can compute it recursively from the parent shortcut
-		// P(S_p|R) as \int P(F_p|S_p) P(S_p|R), where F_p are the frontal nodes in p
+		// P(Sp|R) as \int P(Fp|Sp) P(Sp|R), where Fp are the frontal nodes in p
 
-		// The base case is when we are the root or the parent is the root,
-		// in which case we return an empty Bayes net
-		sharedBayesNet p_S_R(new BayesNet<Conditional>);
-		if (parent_==NULL || parent_->parent_==NULL) return p_S_R;
+		// A first base case is when this clique or its parent is the root,
+		// in which case we return an empty Bayes net.
+		if (R.get()==this || parent_==R) {
+			sharedBayesNet empty(new BayesNet<Conditional>);
+			return empty;
+		}
 
-		// If not the base case, calculate the parent shortcut P(S_p|R)
-		sharedBayesNet p_Sp_R = parent_->shortcut();
+		// The parent clique has a Conditional for each frontal node in Fp
+		// so we can obtain P(Fp|Sp) in factor graph form
+		FactorGraph<Factor> p_Fp_Sp(*parent_);
+		//p_Fp_Sp.print("p_Fp_Sp");
 
+		// If not the base case, obtain the parent shortcut P(Sp|R) as factors
+		FactorGraph<Factor> p_Sp_R(*parent_->shortcut<Factor>(R));
+		//p_Sp_R.print("p_Sp_R");
+
+		// now combine P(Cp|R) = P(Fp|Sp) * P(Sp|R)
+		FactorGraph<Factor> p_Cp_R = combine(p_Fp_Sp, p_Sp_R);
+
+		// Eliminate into a Bayes net with ordering designed to integrate out
+		// any variables not in *our* separator. Variables to integrate out must be
+		// eliminated first hence the desired ordering is [Cp\S S].
+		// However, an added wrinkle is that Cp might overlap with the root.
+		// Keys corresponding to the root should not be added to the ordering at all.
+
+		// Get the key list Cp=Fp+Sp, which will form the basis for the integrands
+		Ordering integrands;
+		{
+		Ordering Fp = parent_->ordering(), Sp = parent_->separator_;
+		integrands.splice(integrands.end(),Fp);
+		integrands.splice(integrands.end(),Sp);
+		}
+
+		// Start ordering with the separator
+		Ordering ordering = separator_;
+
+		// remove any variables in the root, after this integrands = Cp\R, ordering = S\R
+		BOOST_FOREACH(string key, R->ordering()) {
+			integrands.remove(key);
+			ordering.remove(key);
+		}
+
+		// remove any variables in the separator, after this integrands = Cp\R\S
+		BOOST_FOREACH(string key, separator_) integrands.remove(key);
+
+		// form the ordering as [Cp\R\S S\R]
+		BOOST_REVERSE_FOREACH(string key, integrands) ordering.push_front(key);
+
+		// eliminate to get marginal
+		sharedBayesNet p_S_R = _eliminate<Factor,Conditional>(p_Cp_R,ordering);
+
+		// remove all integrands
+		BOOST_FOREACH(string key, integrands) p_S_R->pop_front();
+
+		// return the parent shortcut P(Sp|R)
 		return p_S_R;
 	}
 

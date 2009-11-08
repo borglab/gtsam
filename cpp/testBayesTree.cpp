@@ -101,21 +101,54 @@ TEST( BayesTree, smoother )
 	Gaussian bayesTree(*chordalBayesNet);
 	LONGS_EQUAL(7,bayesTree.size());
 
-	// Get the conditional P(S6|Root)
-  Vector sigma1 = repeat(2, 0.786153);
-	ConditionalGaussian::shared_ptr cg(new ConditionalGaussian("x2", zero(2), eye(2), sigma1));
-	BayesNet<ConditionalGaussian> expected; expected.push_back(cg);
-	Gaussian::sharedClique C6 = bayesTree["x1"];
-	Gaussian::sharedBayesNet actual = C6->shortcut();
-	//CHECK(assert_equal(expected,*actual,1e-4));
+	// Check the conditional P(Root|Root)
+	BayesNet<ConditionalGaussian> empty;
+	Gaussian::sharedClique R = bayesTree.root();
+	Gaussian::sharedBayesNet actual1 = R->shortcut<LinearFactor>(R);
+	CHECK(assert_equal(empty,*actual1,1e-4));
+
+	// Check the conditional P(C2|Root)
+	Gaussian::sharedClique C2 = bayesTree["x5"];
+	Gaussian::sharedBayesNet actual2 = C2->shortcut<LinearFactor>(R);
+	CHECK(assert_equal(empty,*actual2,1e-4));
+
+	// Check the conditional P(C3|Root)
+  Vector sigma3 = repeat(2, 0.61808);
+  Matrix A56 = Matrix_(2,2,-0.382022,0.,0.,-0.382022);
+	ConditionalGaussian::shared_ptr cg3(new ConditionalGaussian("x5", zero(2), eye(2), "x6", A56, sigma3));
+	BayesNet<ConditionalGaussian> expected3; expected3.push_back(cg3);
+	Gaussian::sharedClique C3 = bayesTree["x4"];
+	Gaussian::sharedBayesNet actual3 = C3->shortcut<LinearFactor>(R);
+	CHECK(assert_equal(expected3,*actual3,1e-4));
+
+	// Check the conditional P(C4|Root)
+  Vector sigma4 = repeat(2, 0.661968);
+  Matrix A46 = Matrix_(2,2,-0.146067,0.,0.,-0.146067);
+	ConditionalGaussian::shared_ptr cg4(new ConditionalGaussian("x4", zero(2), eye(2), "x6", A46, sigma4));
+	BayesNet<ConditionalGaussian> expected4; expected4.push_back(cg4);
+	Gaussian::sharedClique C4 = bayesTree["x3"];
+	Gaussian::sharedBayesNet actual4 = C4->shortcut<LinearFactor>(R);
+	CHECK(assert_equal(expected4,*actual4,1e-4));
 }
 
 /* ************************************************************************* *
  Bayes tree for smoother with "nested dissection" ordering:
- x5 x6 x4
-   x3 x2 : x4
-     x1 : x2
-   x7 : x6
+
+	 Node[x1] P(x1 | x2)
+	 Node[x3] P(x3 | x2 x4)
+	 Node[x5] P(x5 | x4 x6)
+	 Node[x7] P(x7 | x6)
+	 Node[x2] P(x2 | x4)
+	 Node[x6] P(x6 | x4)
+	 Node[x4] P(x4)
+
+ becomes
+
+	 C1		 x5 x6 x4
+	 C2		  x3 x2 : x4
+	 C3		    x1 : x2
+	 C4		  x7 : x6
+
 /* ************************************************************************* */
 TEST( BayesTree, balanced_smoother_marginals )
 {
@@ -126,27 +159,22 @@ TEST( BayesTree, balanced_smoother_marginals )
 
 	// eliminate using a "nested dissection" ordering
 	GaussianBayesNet::shared_ptr chordalBayesNet = smoother.eliminate(ordering);
-  boost::shared_ptr<VectorConfig> actualSolution = chordalBayesNet->optimize();
+
+//  SymbolicBayesNet symbolic(*chordalBayesNet);
+//  symbolic.print("chordalBayesNet");
 
   VectorConfig expectedSolution;
   Vector delta = zero(2);
-  expectedSolution.insert("x1",delta);
-  expectedSolution.insert("x2",delta);
-  expectedSolution.insert("x3",delta);
-  expectedSolution.insert("x4",delta);
-  expectedSolution.insert("x5",delta);
-  expectedSolution.insert("x6",delta);
-  expectedSolution.insert("x7",delta);
+  BOOST_FOREACH(string key, ordering)
+		expectedSolution.insert(key,delta);
+  boost::shared_ptr<VectorConfig> actualSolution = chordalBayesNet->optimize();
 	CHECK(assert_equal(expectedSolution,*actualSolution,1e-4));
 
 	// Create the Bayes tree
 	Gaussian bayesTree(*chordalBayesNet);
 	LONGS_EQUAL(7,bayesTree.size());
 
-	// Check root clique
-	//BayesNet<ConditionalGaussian> expected_root;
-	//BayesNet<ConditionalGaussian> actual_root = bayesTree.root();
-	//CHECK(assert_equal(expected_root,actual_root));
+	// Marginals
 
 	// Marginal will always be axis-parallel Gaussian on delta=(0,0)
 	Matrix R = eye(2);
@@ -167,6 +195,40 @@ TEST( BayesTree, balanced_smoother_marginals )
   Vector sigma3 = repeat(2, 0.671512);
 	ConditionalGaussian expected3("x3", delta, R, sigma3);
 	ConditionalGaussian::shared_ptr actual3 = bayesTree.marginal<LinearFactor>("x3");
+	CHECK(assert_equal(expected3,*actual3,1e-4));
+}
+
+/* ************************************************************************* */
+TEST( BayesTree, balanced_smoother_shortcuts )
+{
+	// Create smoother with 7 nodes
+	LinearFactorGraph smoother = createSmoother(7);
+	Ordering ordering;
+	ordering += "x1","x3","x5","x7","x2","x6","x4";
+
+	// eliminate using a "nested dissection" ordering
+	GaussianBayesNet::shared_ptr chordalBayesNet = smoother.eliminate(ordering);
+	boost::shared_ptr<VectorConfig> actualSolution = chordalBayesNet->optimize();
+
+	// Create the Bayes tree
+	Gaussian bayesTree(*chordalBayesNet);
+
+	// Check the conditional P(Root|Root)
+	BayesNet<ConditionalGaussian> empty;
+	Gaussian::sharedClique R = bayesTree.root();
+	Gaussian::sharedBayesNet actual1 = R->shortcut<LinearFactor>(R);
+	CHECK(assert_equal(empty,*actual1,1e-4));
+
+	// Check the conditional P(C2|Root)
+	Gaussian::sharedClique C2 = bayesTree["x3"];
+	Gaussian::sharedBayesNet actual2 = C2->shortcut<LinearFactor>(R);
+	CHECK(assert_equal(empty,*actual2,1e-4));
+
+	// Check the conditional P(C3|Root), which should be equal to P(x2|x4)
+	ConditionalGaussian::shared_ptr p_x2_x4 = (*chordalBayesNet)["x2"];
+	BayesNet<ConditionalGaussian> expected3; expected3.push_back(p_x2_x4);
+	Gaussian::sharedClique C3 = bayesTree["x1"];
+	Gaussian::sharedBayesNet actual3 = C3->shortcut<LinearFactor>(R);
 	CHECK(assert_equal(expected3,*actual3,1e-4));
 }
 
