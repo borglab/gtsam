@@ -84,7 +84,7 @@ Matrix diag(const Vector& v) {
 }
 
 /* ************************************************************************* */
-/** Check if two matrizes are the same                                       */
+/** Check if two matrices are the same                                       */
 /* ************************************************************************* */
 bool equal_with_abs_tol(const Matrix& A, const Matrix& B, double tol) {
 
@@ -94,9 +94,12 @@ bool equal_with_abs_tol(const Matrix& A, const Matrix& B, double tol) {
   if(m1!=m2 || n1!=n2) return false;
 
   for(size_t i=0; i<m1; i++)
-    for(size_t j=0; j<n1; j++)
-      if(fabs(A(i,j) - B(i,j)) > tol)
-	return false;
+	  for(size_t j=0; j<n1; j++) {
+		  if(isnan(A(i,j)) xor isnan(B(i,j)))
+			  return false;
+		  if(fabs(A(i,j) - B(i,j)) > tol)
+			  return false;
+	  }
 
   return true;
 }

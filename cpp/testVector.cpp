@@ -209,8 +209,6 @@ TEST( TestVector, equals )
 	Vector v1 = Vector_(1, 0.0/0.0); //testing nan
 	Vector v2 = Vector_(1, 1.0);
 	double tol = 1.;
-	print(v1, "v1");
-	print(v2, "v2");
 	CHECK(!equal_with_abs_tol(v1, v2, tol));
 }
 
