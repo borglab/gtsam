@@ -8,6 +8,7 @@
 
 #include "Matrix.h"
 #include "Point2.h"
+#include <math.h>
 
 namespace gtsam {
 
@@ -29,6 +30,19 @@ namespace gtsam {
 		 */
 		Cal3_S2(double fx, double fy, double s, double u0, double v0) :
 			fx_(fx), fy_(fy), s_(s), u0_(u0), v0_(v0) {
+		}
+
+		/**
+		 * Easy constructor, takes fov in degrees, asssumes zero skew, unit aspect
+		 * @param fov field of view in degrees
+		 * @param w image width
+		 * @param h image height
+		 */
+		Cal3_S2(double fov, int w, int h) :
+			s_(0), u0_((double)w/2.0), v0_((double)h/2.0) {
+			double a = fov*M_PI/360.0; // fov/2 in radians
+			fx_=(double)w*tan(a);
+			fy_=fx_;
 		}
 
 		void print(const std::string& s = "") const {
