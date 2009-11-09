@@ -70,6 +70,10 @@ namespace gtsam {
 			/** return the marginal P(C) of the clique */
 			template<class Factor>
 			BayesNet<Conditional> marginal(shared_ptr root);
+
+			/** return the joint P(C1,C2), where C1==this. TODO: not a method? */
+			template<class Factor>
+			BayesNet<Conditional> joint(shared_ptr C2, shared_ptr root);
 		};
 
 		typedef boost::shared_ptr<Clique> sharedClique;
@@ -80,7 +84,7 @@ namespace gtsam {
 		typedef std::map<std::string, sharedClique> Nodes;
 		Nodes nodes_;
 
-		/** Roor clique */
+		/** Root clique */
 		sharedClique root_;
 
 		/** add a clique */
@@ -138,6 +142,11 @@ namespace gtsam {
 		/** return marginal on any variable */
 		template<class Factor>
 		BayesNet<Conditional> marginal(const std::string& key) const;
+
+		/** return joint on two variables */
+		template<class Factor>
+		BayesNet<Conditional> joint(const std::string& key1, const std::string& key2) const;
+
 	}; // BayesTree
 
 } /// namespace gtsam

@@ -160,9 +160,6 @@ TEST( BayesTree, balanced_smoother_marginals )
 	// eliminate using a "nested dissection" ordering
 	GaussianBayesNet::shared_ptr chordalBayesNet = smoother.eliminate(ordering);
 
-//  SymbolicBayesNet symbolic(*chordalBayesNet);
-//  symbolic.print("chordalBayesNet");
-
   VectorConfig expectedSolution;
   Vector delta = zero(2);
   BOOST_FOREACH(string key, ordering)
@@ -173,8 +170,6 @@ TEST( BayesTree, balanced_smoother_marginals )
 	// Create the Bayes tree
 	Gaussian bayesTree(*chordalBayesNet);
 	LONGS_EQUAL(7,bayesTree.size());
-
-	// Marginals
 
 	// Check marginal on x1
   GaussianBayesNet expected1("x1", delta, 0.786153);
@@ -200,16 +195,13 @@ TEST( BayesTree, balanced_smoother_shortcuts )
 	Ordering ordering;
 	ordering += "x1","x3","x5","x7","x2","x6","x4";
 
-	// eliminate using a "nested dissection" ordering
-	GaussianBayesNet::shared_ptr chordalBayesNet = smoother.eliminate(ordering);
-	boost::shared_ptr<VectorConfig> actualSolution = chordalBayesNet->optimize();
-
 	// Create the Bayes tree
+	GaussianBayesNet::shared_ptr chordalBayesNet = smoother.eliminate(ordering);
 	Gaussian bayesTree(*chordalBayesNet);
-	Gaussian::sharedClique R = bayesTree.root();
 
 	// Check the conditional P(Root|Root)
 	BayesNet<ConditionalGaussian> empty;
+	Gaussian::sharedClique R = bayesTree.root();
 	Gaussian::sharedBayesNet actual1 = R->shortcut<LinearFactor>(R);
 	CHECK(assert_equal(empty,*actual1,1e-4));
 
@@ -234,23 +226,50 @@ TEST( BayesTree, balanced_smoother_clique_marginals )
 	Ordering ordering;
 	ordering += "x1","x3","x5","x7","x2","x6","x4";
 
-	// eliminate using a "nested dissection" ordering
+	// Create the Bayes tree
 	GaussianBayesNet::shared_ptr chordalBayesNet = smoother.eliminate(ordering);
-	boost::shared_ptr<VectorConfig> actualSolution = chordalBayesNet->optimize();
+	Gaussian bayesTree(*chordalBayesNet);
+
+	// Check the clique marginal P(C3)
+	GaussianBayesNet expected("x2",zero(2),0.687131);
+  Vector sigma = repeat(2, 0.707107);
+  Matrix A12 = (-0.5)*eye(2);
+	ConditionalGaussian::shared_ptr cg(new ConditionalGaussian("x1", zero(2), eye(2), "x2", A12, sigma));
+	expected.push_front(cg);
+	Gaussian::sharedClique R = bayesTree.root(), C3 = bayesTree["x1"];
+	BayesNet<ConditionalGaussian> actual = C3->marginal<LinearFactor>(R);
+	CHECK(assert_equal((BayesNet<ConditionalGaussian>)expected,actual,1e-4));
+}
+
+/* ************************************************************************* */
+TEST( BayesTree, balanced_smoother_joint )
+{
+	// Create smoother with 7 nodes
+	LinearFactorGraph smoother = createSmoother(7);
+	Ordering ordering;
+	ordering += "x1","x3","x5","x7","x2","x6","x4";
 
 	// Create the Bayes tree
+	GaussianBayesNet::shared_ptr chordalBayesNet = smoother.eliminate(ordering);
 	Gaussian bayesTree(*chordalBayesNet);
-	Gaussian::sharedClique R = bayesTree.root();
 
-	// Check the conditional P(C3|Root), which should be equal to P(x2|x4)
-	GaussianBayesNet expected3("x2",zero(2),0.687131);
-  Vector sigma3 = repeat(2, 0.707107);
-  Matrix A12 = (-0.5)*eye(2);
-	ConditionalGaussian::shared_ptr cg3(new ConditionalGaussian("x1", zero(2), eye(2), "x2", A12, sigma3));
-	expected3.push_front(cg3);
-	Gaussian::sharedClique C3 = bayesTree["x1"];
-	BayesNet<ConditionalGaussian> actual3 = C3->marginal<LinearFactor>(R);
-	CHECK(assert_equal((BayesNet<ConditionalGaussian>)expected3,actual3,1e-4));
+  // Conditional density elements reused by both tests
+	Vector sigma = repeat(2, 0.786146);
+  Matrix A = (-0.00429185)*eye(2);
+
+  // Check the joint density P(x1,x7) factored as P(x1|x7)P(x7)
+  GaussianBayesNet expected1("x7", zero(2), 0.786153);
+	ConditionalGaussian::shared_ptr cg1(new ConditionalGaussian("x1", zero(2), eye(2), "x7", A, sigma));
+	expected1.push_front(cg1);
+	BayesNet<ConditionalGaussian> actual1 = bayesTree.joint<LinearFactor>("x1","x7");
+	CHECK(assert_equal((BayesNet<ConditionalGaussian>)expected1,actual1,1e-4));
+
+	// Check the joint density P(x7,x1) factored as P(x7|x1)P(x1)
+  GaussianBayesNet expected2("x1", zero(2), 0.786153);
+	ConditionalGaussian::shared_ptr cg2(new ConditionalGaussian("x7", zero(2), eye(2), "x1", A, sigma));
+	expected2.push_front(cg2);
+	BayesNet<ConditionalGaussian> actual2 = bayesTree.joint<LinearFactor>("x7","x1");
+	CHECK(assert_equal((BayesNet<ConditionalGaussian>)expected2,actual2,1e-4));
 }
 
 /* ************************************************************************* */

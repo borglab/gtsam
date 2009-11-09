@@ -5,6 +5,9 @@
  */
 
 #include <boost/foreach.hpp>
+#include <boost/assign/std/list.hpp> // for operator +=
+using namespace boost::assign;
+
 #include "BayesTree.h"
 #include "FactorGraph-inl.h"
 #include "BayesNet-inl.h"
@@ -128,8 +131,32 @@ namespace gtsam {
 		p_FSR->push_back(*R);
 
 		// Find marginal on the keys we are interested in
-		BayesNet<Conditional> marginal = marginals<Factor>(*p_FSR,keys());
-		return marginal;
+		return marginals<Factor>(*p_FSR,keys());
+	}
+
+	/* ************************************************************************* */
+	// P(C1,C2) = \int_R P(F1|S1) P(S1|R) P(F2|S1) P(S2|R) P(R)
+	/* ************************************************************************* */
+	template<class Conditional>
+	template<class Factor>
+	BayesNet<Conditional>
+	BayesTree<Conditional>::Clique::joint(shared_ptr C2, shared_ptr R) {
+		// For now, assume neither is the root
+
+		// Combine P(F1|S1), P(S1|R), P(F2|S2), P(S2|R), and P(R)
+		sharedBayesNet p_FSR = this->shortcut<Factor>(R);
+		p_FSR->push_front(*this);
+		p_FSR->push_front(*C2->shortcut<Factor>(R));
+		p_FSR->push_front(*C2);
+		p_FSR->push_back(*R);
+
+		// Find the keys of both C1 and C2
+		Ordering keys12 = keys();
+		BOOST_FOREACH(string key,C2->keys()) keys12.push_back(key);
+		keys12.unique();
+
+		// Calculate the marginal
+		return marginals<Factor>(*p_FSR,keys12);
 	}
 
 	/* ************************************************************************* */
@@ -205,9 +232,27 @@ namespace gtsam {
 		BayesNet<Conditional> cliqueMarginal = clique->marginal<Factor>(root_);
 
 		// Get the marginal on the single key
-		BayesNet<Conditional> marginal = marginals<Factor>(cliqueMarginal,Ordering(key));
+		return marginals<Factor>(cliqueMarginal,Ordering(key));
+	}
 
-		return marginal;
+	/* ************************************************************************* */
+	// Find two cliques, their joint, then marginalizes
+	/* ************************************************************************* */
+	template<class Conditional>
+	template<class Factor>
+	BayesNet<Conditional>
+	BayesTree<Conditional>::joint(const std::string& key1, const std::string& key2) const {
+
+		// get clique C1 and C2
+		sharedClique C1 = (*this)[key1], C2 = (*this)[key2];
+
+		// calculate joint
+		BayesNet<Conditional> p_C1C2 = C1->joint<Factor>(C2,root_);
+
+		// Get the marginal on the two keys
+		Ordering ordering;
+		ordering += key1, key2;
+		return marginals<Factor>(p_C1C2,ordering);
 	}
 
 	/* ************************************************************************* */
