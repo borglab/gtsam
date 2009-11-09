@@ -139,7 +139,7 @@ namespace gtsam {
 	 * ordering, yielding a chordal Bayes net and (partially eliminated) FG
 	 */
 	template<class Factor, class Conditional>
-	boost::shared_ptr<BayesNet<Conditional> >
+	BayesNet<Conditional>
 	_eliminate(FactorGraph<Factor>& factorGraph, const Ordering& ordering);
 
   /**

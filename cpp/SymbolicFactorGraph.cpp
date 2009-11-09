@@ -19,20 +19,18 @@ namespace gtsam {
 	template class FactorGraph<SymbolicFactor>;
 
 	/* ************************************************************************* */
-	SymbolicBayesNet::shared_ptr
+	SymbolicBayesNet
 	SymbolicFactorGraph::eliminate(const Ordering& ordering)
 	{
-		SymbolicBayesNet::shared_ptr bayesNet (new SymbolicBayesNet());
+		SymbolicBayesNet bayesNet;
 
 		BOOST_FOREACH(string key, ordering) {
 			SymbolicConditional::shared_ptr conditional =
 					_eliminateOne<SymbolicFactor,SymbolicConditional>(*this,key);
-			bayesNet->push_back(conditional);
+			bayesNet.push_back(conditional);
 		}
-
 		return bayesNet;
 	}
 
 	/* ************************************************************************* */
-
 }

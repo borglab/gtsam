@@ -64,8 +64,9 @@ namespace gtsam {
 			void printTree(const std::string& indent) const;
 
 			/** return the conditional P(S|Root) on the separator given the root */
+			// TODO: create a cached version
 			template<class Factor>
-			sharedBayesNet shortcut(shared_ptr root);
+			BayesNet<Conditional> shortcut(shared_ptr root);
 
 			/** return the marginal P(C) of the clique */
 			template<class Factor>

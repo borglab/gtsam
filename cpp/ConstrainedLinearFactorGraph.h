@@ -80,7 +80,7 @@ public:
      * gaussian, with a different solving procedure.
      * @param ordering is the order to eliminate the variables
      */
-    GaussianBayesNet::shared_ptr eliminate(const Ordering& ordering);
+    GaussianBayesNet eliminate(const Ordering& ordering);
 
     /**
      * Picks one of the contraints in a set of constraints to eliminate

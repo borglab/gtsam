@@ -83,14 +83,14 @@ namespace gtsam {
 		BOOST_FOREACH(string key, keys) ord.push_back(key);
 
 		// eliminate to get joint
-		typename BayesNet<Conditional>::shared_ptr joint = _eliminate<Factor,Conditional>(factorGraph,ord);
+		BayesNet<Conditional> joint = _eliminate<Factor,Conditional>(factorGraph,ord);
 
 		// remove all integrands, P(K) = \int_I P(I|K) P(K)
 		size_t nrIntegrands = ord.size()-keys.size();
-		for(int i=0;i<nrIntegrands;i++) joint->pop_front();
+		for(int i=0;i<nrIntegrands;i++) joint.pop_front();
 
 		// joint is now only on keys, return it
-		return *joint;
+		return joint;
 		}
 
 	/* ************************************************************************* */

@@ -14,45 +14,30 @@
 
 #include "Testable.h"
 #include "BayesNet.h"
-#include "FactorGraph.h"
 #include "SymbolicConditional.h"
 
 namespace gtsam {
 
-	class Ordering;
-
 	/**
 	 *  Symbolic Bayes Chain, the (symbolic) result of eliminating a factor graph
 	 */
-	class SymbolicBayesNet: public BayesNet<SymbolicConditional> {
-	public:
+	typedef BayesNet<SymbolicConditional> SymbolicBayesNet;
 
-		/** convenience typename for a shared pointer to this class */
-		typedef boost::shared_ptr<SymbolicBayesNet> shared_ptr;
-
-		/**
-		 * Empty constructor
-		 */
-		SymbolicBayesNet() {}
-
-		/**
-		 * Construct from a Bayes net of any type
-		 */
-		template<class Conditional>
-		SymbolicBayesNet(const BayesNet<Conditional>& bn) {
-			typename BayesNet<Conditional>::const_iterator it = bn.begin();
-			for(;it!=bn.end();it++) {
-				boost::shared_ptr<Conditional> conditional = *it;
-				std::string key = conditional->key();
-				std::list<std::string> parents = conditional->parents();
-				SymbolicConditional::shared_ptr c(new SymbolicConditional(key,parents));
-				push_back(c);
-			}
+	/**
+	 * Construct from a Bayes net of any type
+	 */
+	template<class Conditional>
+	SymbolicBayesNet symbolic(const BayesNet<Conditional>& bn) {
+		SymbolicBayesNet result;
+		typename BayesNet<Conditional>::const_iterator it = bn.begin();
+		for (; it != bn.end(); it++) {
+			boost::shared_ptr<Conditional> conditional = *it;
+			std::string key = conditional->key();
+			std::list<std::string> parents = conditional->parents();
+			SymbolicConditional::shared_ptr c(new SymbolicConditional(key, parents));
+			result.push_back(c);
 		}
-
-		/** Destructor */
-		virtual ~SymbolicBayesNet() {
-		}
-	};
+		return result;
+	}
 
 } /// namespace gtsam

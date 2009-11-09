@@ -246,19 +246,20 @@ boost::shared_ptr<Conditional> _eliminateOne(FactorGraph<Factor>& graph, const s
 // TODO: get rid of summy argument
 /* ************************************************************************* */
 template<class Factor,class Conditional>
-boost::shared_ptr<BayesNet<Conditional> >
+BayesNet<Conditional>
 _eliminate(FactorGraph<Factor>& factorGraph, const Ordering& ordering)
 {
-	boost::shared_ptr<BayesNet<Conditional> > bayesNet (new BayesNet<Conditional>()); // empty
+	BayesNet<Conditional> bayesNet; // empty
 
 	BOOST_FOREACH(string key, ordering) {
 		boost::shared_ptr<Conditional> cg = _eliminateOne<Factor,Conditional>(factorGraph,key);
-		bayesNet->push_back(cg);
+		bayesNet.push_back(cg);
 	}
 
 	return bayesNet;
 }
 
+/* ************************************************************************* */
 template<class Factor>
 FactorGraph<Factor> combine(const FactorGraph<Factor>& fg1, const FactorGraph<Factor>& fg2) {
 

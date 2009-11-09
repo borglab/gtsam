@@ -315,8 +315,8 @@ TEST( LinearFactorGraph, eliminateAll )
   LinearFactorGraph fg1 = createLinearFactorGraph();
   Ordering ord1;
   ord1 += "x2","l1","x1";
-  GaussianBayesNet::shared_ptr actual = fg1.eliminate(ord1);
-  CHECK(assert_equal(expected,*actual,tol));
+  GaussianBayesNet actual = fg1.eliminate(ord1);
+  CHECK(assert_equal(expected,actual,tol));
 }
 
 /* ************************************************************************* */
@@ -346,7 +346,7 @@ TEST( LinearFactorGraph, copying )
   // now eliminate the copy
   Ordering ord1;
   ord1 += "x2","l1","x1";
-  GaussianBayesNet::shared_ptr actual1 = copy.eliminate(ord1);
+  GaussianBayesNet actual1 = copy.eliminate(ord1);
 
   // Create the same graph, but not by copying
   LinearFactorGraph expected = createLinearFactorGraph();
@@ -411,18 +411,17 @@ TEST( LinearFactorGraph, CONSTRUCTOR_GaussianBayesNet )
   // render with a given ordering
   Ordering ord;
   ord += "x2","l1","x1";
-  GaussianBayesNet::shared_ptr CBN = fg.eliminate(ord);
+  GaussianBayesNet CBN = fg.eliminate(ord);
 
   // True LinearFactorGraph
-  LinearFactorGraph fg2(*CBN);
-  GaussianBayesNet::shared_ptr CBN2 = fg2.eliminate(ord);
-  CHECK(CBN->equals(*CBN2));
+  LinearFactorGraph fg2(CBN);
+  GaussianBayesNet CBN2 = fg2.eliminate(ord);
+  CHECK(assert_equal(CBN,CBN2));
 
   // Base FactorGraph only
-  FactorGraph<LinearFactor> fg3(*CBN);
-  boost::shared_ptr<BayesNet<ConditionalGaussian> > CBN3 =
-  		_eliminate<LinearFactor,ConditionalGaussian>(fg3,ord);
-  CHECK(CBN->equals(*CBN3));
+  FactorGraph<LinearFactor> fg3(CBN);
+  GaussianBayesNet CBN3 = _eliminate<LinearFactor,ConditionalGaussian>(fg3,ord);
+  CHECK(assert_equal(CBN,CBN3));
 }
 
 /* ************************************************************************* */

@@ -70,8 +70,8 @@ bool ConstrainedLinearFactorGraph::equals(const LinearFactorGraph& fg, double to
 }
 
 /* ************************************************************************* */
-GaussianBayesNet::shared_ptr ConstrainedLinearFactorGraph::eliminate(const Ordering& ordering) {
-	GaussianBayesNet::shared_ptr cbn (new GaussianBayesNet());
+GaussianBayesNet ConstrainedLinearFactorGraph::eliminate(const Ordering& ordering) {
+	GaussianBayesNet cbn;
 
 	BOOST_FOREACH(string key, ordering) {
 		// constraints take higher priority in elimination, so check if
@@ -79,12 +79,12 @@ GaussianBayesNet::shared_ptr ConstrainedLinearFactorGraph::eliminate(const Order
 		if (is_constrained(key))
 		{
 			ConditionalGaussian::shared_ptr ccg = eliminate_constraint(key);
-			cbn->push_back(ccg);
+			cbn.push_back(ccg);
 		}
 		else
 		{
 			ConditionalGaussian::shared_ptr cg = eliminateOne(key);
-			cbn->push_back(cg);
+			cbn.push_back(cg);
 		}
 	}
 
@@ -220,9 +220,9 @@ void ConstrainedLinearFactorGraph::update_constraints(const std::string& key,
 
 /* ************************************************************************* */
 VectorConfig ConstrainedLinearFactorGraph::optimize(const Ordering& ordering) {
-	GaussianBayesNet::shared_ptr cbn = eliminate(ordering);
-	boost::shared_ptr<VectorConfig> newConfig = cbn->optimize();
-	return *newConfig;
+	GaussianBayesNet cbn = eliminate(ordering);
+	VectorConfig newConfig = gtsam::optimize(cbn);
+	return newConfig;
 }
 
 /* ************************************************************************* */

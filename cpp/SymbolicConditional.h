@@ -10,6 +10,7 @@
 
 #include <list>
 #include <string>
+#include <iostream>
 #include <boost/shared_ptr.hpp>
 #include <boost/foreach.hpp> // TODO: make cpp file
 #include "Conditional.h"

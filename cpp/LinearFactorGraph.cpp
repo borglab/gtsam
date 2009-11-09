@@ -41,13 +41,13 @@ set<string> LinearFactorGraph::find_separator(const string& key) const
 }
 
 /* ************************************************************************* */
-GaussianBayesNet::shared_ptr
+GaussianBayesNet
 LinearFactorGraph::eliminate(const Ordering& ordering)
 {
-	GaussianBayesNet::shared_ptr chordalBayesNet (new GaussianBayesNet()); // empty
+	GaussianBayesNet chordalBayesNet; // empty
 	BOOST_FOREACH(string key, ordering) {
 		ConditionalGaussian::shared_ptr cg = eliminateOne(key);
-		chordalBayesNet->push_back(cg);
+		chordalBayesNet.push_back(cg);
 	}
 	return chordalBayesNet;
 }
@@ -56,12 +56,12 @@ LinearFactorGraph::eliminate(const Ordering& ordering)
 VectorConfig LinearFactorGraph::optimize(const Ordering& ordering)
 {
 	// eliminate all nodes in the given ordering -> chordal Bayes net
-	GaussianBayesNet::shared_ptr chordalBayesNet = eliminate(ordering);
+	GaussianBayesNet chordalBayesNet = eliminate(ordering);
 
 	// calculate new configuration (using backsubstitution)
-	boost::shared_ptr<VectorConfig> newConfig = chordalBayesNet->optimize();
+	VectorConfig newConfig = ::optimize(chordalBayesNet);
 
-	return *newConfig;
+	return newConfig;
 }
 
 /* ************************************************************************* */

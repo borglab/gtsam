@@ -218,7 +218,7 @@ GaussianBayesNet createSmallGaussianBayesNet()
 /* ************************************************************************* */
 // Some nonlinear functions to optimize
 /* ************************************************************************* */
-namespace optimize {
+namespace smallOptimize {
   Vector h(const Vector& v) {
     double x = v(0);
     return Vector_(2,cos(x),sin(x));
@@ -236,7 +236,7 @@ boost::shared_ptr<const ExampleNonlinearFactorGraph> sharedReallyNonlinearFactor
   Vector z = Vector_(2,1.0,0.0);
   double sigma = 0.1;
   boost::shared_ptr<NonlinearFactor1> 
-    factor(new NonlinearFactor1(z,sigma,&optimize::h,"x",&optimize::H));
+    factor(new NonlinearFactor1(z,sigma,&smallOptimize::h,"x",&smallOptimize::H));
   fg->push_back(factor);
   return fg;
 }

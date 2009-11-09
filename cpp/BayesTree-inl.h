@@ -61,19 +61,22 @@ namespace gtsam {
 	/* ************************************************************************* */
 	template<class Conditional>
 	template<class Factor>
-	typename BayesTree<Conditional>::sharedBayesNet
+	BayesNet<Conditional>
 	BayesTree<Conditional>::Clique::shortcut(shared_ptr R) {
 		// A first base case is when this clique or its parent is the root,
 		// in which case we return an empty Bayes net.
-		if (R.get()==this || parent_==R)
-			return sharedBayesNet(new BayesNet<Conditional>);
+
+		if (R.get()==this || parent_==R) {
+			BayesNet<Conditional> empty;
+			return empty;
+		}
 
 		// The parent clique has a Conditional for each frontal node in Fp
 		// so we can obtain P(Fp|Sp) in factor graph form
 		FactorGraph<Factor> p_Fp_Sp(*parent_);
 
 		// If not the base case, obtain the parent shortcut P(Sp|R) as factors
-		FactorGraph<Factor> p_Sp_R(*parent_->shortcut<Factor>(R));
+		FactorGraph<Factor> p_Sp_R(parent_->shortcut<Factor>(R));
 
 		// now combine P(Cp|R) = P(Fp|Sp) * P(Sp|R)
 		FactorGraph<Factor> p_Cp_R = combine(p_Fp_Sp, p_Sp_R);
@@ -103,10 +106,10 @@ namespace gtsam {
 		BOOST_REVERSE_FOREACH(string key, integrands) ordering.push_front(key);
 
 		// eliminate to get marginal
-		sharedBayesNet p_S_R = _eliminate<Factor,Conditional>(p_Cp_R,ordering);
+		BayesNet<Conditional> p_S_R = _eliminate<Factor,Conditional>(p_Cp_R,ordering);
 
 		// remove all integrands
-		BOOST_FOREACH(string key, integrands) p_S_R->pop_front();
+		BOOST_FOREACH(string key, integrands) p_S_R.pop_front();
 
 		// return the parent shortcut P(Sp|R)
 		return p_S_R;
@@ -126,12 +129,12 @@ namespace gtsam {
 		if (R.get()==this) return *R;
 
 		// Combine P(F|S), P(S|R), and P(R)
-		sharedBayesNet p_FSR = this->shortcut<Factor>(R);
-		p_FSR->push_front(*this);
-		p_FSR->push_back(*R);
+		BayesNet<Conditional> p_FSR = this->shortcut<Factor>(R);
+		p_FSR.push_front(*this);
+		p_FSR.push_back(*R);
 
 		// Find marginal on the keys we are interested in
-		return marginals<Factor>(*p_FSR,keys());
+		return marginals<Factor>(p_FSR,keys());
 	}
 
 	/* ************************************************************************* */
@@ -145,11 +148,11 @@ namespace gtsam {
 
 		// Combine P(F1|S1), P(S1|R), P(F2|S2), P(S2|R), and P(R)
 		sharedBayesNet bn(new BayesNet<Conditional>);
-		if (!isRoot())     bn->push_back(*this);                     // P(F1|S1)
-		if (!isRoot())     bn->push_back(*(shortcut<Factor>(R)));    // P(S1|R)
-		if (!C2->isRoot()) bn->push_back(*C2);                       // P(F2|S2)
-		if (!C2->isRoot()) bn->push_back(*C2->shortcut<Factor>(R));  // P(S2|R)
-		bn->push_back(*R);                                           // P(R)
+		if (!isRoot())     bn->push_back(*this);                   // P(F1|S1)
+		if (!isRoot())     bn->push_back(shortcut<Factor>(R));     // P(S1|R)
+		if (!C2->isRoot()) bn->push_back(*C2);                     // P(F2|S2)
+		if (!C2->isRoot()) bn->push_back(C2->shortcut<Factor>(R)); // P(S2|R)
+		bn->push_back(*R);                                         // P(R)
 
 		// Find the keys of both C1 and C2
 		Ordering keys12 = keys();

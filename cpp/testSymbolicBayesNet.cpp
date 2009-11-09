@@ -38,9 +38,9 @@ TEST( SymbolicBayesNet, constructor )
 	// eliminate it
 	Ordering ordering;
 	ordering += "x2","l1","x1";
-  SymbolicBayesNet::shared_ptr actual = fg.eliminate(ordering);
+  SymbolicBayesNet actual = fg.eliminate(ordering);
 
-  CHECK(assert_equal(expected, *actual));
+  CHECK(assert_equal(expected, actual));
 }
 
 /* ************************************************************************* */

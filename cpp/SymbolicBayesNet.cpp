@@ -4,12 +4,6 @@
  * @author Frank Dellaert
  */
 
-#include <boost/foreach.hpp>
-#include <boost/tuple/tuple.hpp>
-
-// trick from some reading group
-#define FOREACH_PAIR( KEY, VAL, COL) BOOST_FOREACH (boost::tie(KEY,VAL),COL)
-
 #include "SymbolicBayesNet.h"
 #include "BayesNet-inl.h"
 

@@ -12,10 +12,10 @@
 #include <list>
 #include "FactorGraph.h"
 #include "SymbolicFactor.h"
+#include "SymbolicBayesNet.h"
 
 namespace gtsam {
 
-	class SymbolicBayesNet;
 	class SymbolicConditional;
 
 	/** Symbolic Factor Graph */
@@ -54,7 +54,7 @@ namespace gtsam {
 		 * eliminate factor graph in place(!) in the given order, yielding
 		 * a chordal Bayes net
 		 */
-		boost::shared_ptr<SymbolicBayesNet> eliminate(const Ordering& ordering);
+		SymbolicBayesNet eliminate(const Ordering& ordering);
 
 	};
 

@@ -30,8 +30,6 @@ namespace gtsam {
 
 	public:
 
-		typedef typename boost::shared_ptr<BayesNet<Conditional> >shared_ptr;
-
 		/** We store shared pointers to Conditional densities */
 		typedef typename boost::shared_ptr<Conditional> sharedConditional;
 		typedef typename std::list<sharedConditional> Conditionals;

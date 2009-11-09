@@ -57,7 +57,7 @@ TEST( GaussianBayesNet, matrix )
   GaussianBayesNet cbn = createSmallGaussianBayesNet();
 
   Matrix R; Vector d;
-  boost::tie(R,d) = cbn.matrix(); // find matrix and RHS
+  boost::tie(R,d) = matrix(cbn); // find matrix and RHS
 
   Matrix R1 = Matrix_(2,2,
 		      1.0, 1.0,
@@ -73,7 +73,7 @@ TEST( GaussianBayesNet, matrix )
 TEST( GaussianBayesNet, optimize )
 {
   GaussianBayesNet cbn = createSmallGaussianBayesNet();
-  boost::shared_ptr<VectorConfig> actual = cbn.optimize();
+  VectorConfig actual = optimize(cbn);
 
   VectorConfig expected;
   Vector x(1), y(1);
@@ -81,7 +81,7 @@ TEST( GaussianBayesNet, optimize )
   expected.insert("x",x);
   expected.insert("y",y);
 
-  CHECK(actual->equals(expected));
+  CHECK(assert_equal(expected,actual));
 }
 
 /* ************************************************************************* */
@@ -90,11 +90,11 @@ TEST( GaussianBayesNet, marginals )
 	// create and marginalize a small Bayes net on "x"
   GaussianBayesNet cbn = createSmallGaussianBayesNet();
   Ordering keys("x");
-  BayesNet<ConditionalGaussian> actual = marginals<LinearFactor>(cbn,keys);
+  GaussianBayesNet actual = marginals<LinearFactor>(cbn,keys);
 
   // expected is just scalar Gaussian on x
-  GaussianBayesNet expected("x",4,sqrt(2));
-  CHECK(assert_equal((BayesNet<ConditionalGaussian>)expected,actual));
+  GaussianBayesNet expected = scalarGaussian("x",4,sqrt(2));
+  CHECK(assert_equal(expected,actual));
 }
 
 /* ************************************************************************* */

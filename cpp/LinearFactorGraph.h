@@ -75,7 +75,7 @@ namespace gtsam {
      * a chordal Bayes net. Allows for passing an incomplete ordering
      * that does not completely eliminate the graph
      */
-    boost::shared_ptr<GaussianBayesNet> eliminate(const Ordering& ordering);
+    GaussianBayesNet eliminate(const Ordering& ordering);
 		
     /**
      * optimize a linear factor graph
