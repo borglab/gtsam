@@ -77,10 +77,8 @@ class Ordering {
 
 class GaussianBayesNet {
   GaussianBayesNet();
-  VectorConfig* optimize();
   void print() const;
   bool equals(const GaussianBayesNet& cbn) const;
-  pair<Matrix,Vector> matrix() const;
 };
 
 class LinearFactorGraph {
@@ -94,7 +92,7 @@ class LinearFactorGraph {
   bool equals(const LinearFactorGraph& lfgraph) const;
 
   VectorConfig optimize(const Ordering& ordering);
-  GaussianBayesNet* eliminate(const Ordering& ordering);
+  GaussianBayesNet eliminate(const Ordering& ordering);
   pair<Matrix,Vector> matrix(const Ordering& ordering) const;
   Matrix sparse(const Ordering& ordering) const;
 };
