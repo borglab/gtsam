@@ -144,11 +144,12 @@ namespace gtsam {
 		// For now, assume neither is the root
 
 		// Combine P(F1|S1), P(S1|R), P(F2|S2), P(S2|R), and P(R)
-		sharedBayesNet p_FSR = this->shortcut<Factor>(R);
-		p_FSR->push_front(*this);
-		p_FSR->push_front(*C2->shortcut<Factor>(R));
-		p_FSR->push_front(*C2);
-		p_FSR->push_back(*R);
+		sharedBayesNet bn(new BayesNet<Conditional>);
+		if (!isRoot())     bn->push_back(*this);                     // P(F1|S1)
+		if (!isRoot())     bn->push_back(*(shortcut<Factor>(R)));    // P(S1|R)
+		if (!C2->isRoot()) bn->push_back(*C2);                       // P(F2|S2)
+		if (!C2->isRoot()) bn->push_back(*C2->shortcut<Factor>(R));  // P(S2|R)
+		bn->push_back(*R);                                           // P(R)
 
 		// Find the keys of both C1 and C2
 		Ordering keys12 = keys();
@@ -156,7 +157,7 @@ namespace gtsam {
 		keys12.unique();
 
 		// Calculate the marginal
-		return marginals<Factor>(*p_FSR,keys12);
+		return marginals<Factor>(*bn,keys12);
 	}
 
 	/* ************************************************************************* */
