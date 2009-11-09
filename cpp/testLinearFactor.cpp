@@ -523,8 +523,8 @@ TEST( LinearFactor, matrix_aug )
 	Ab = lf->matrix_augmented(ord);
 
 	Matrix Ab1 = Matrix_(2,5,
-			-10.0,  0.0, 10.0,  0.0, 2.0,
-			000.0,-10.0,  0.0, 10.0, -1.0 );
+			-1.0,  0.0, 1.0,  0.0,  0.2,
+			00.0,- 1.0, 0.0,  1.0, -0.1 );
 
 	EQUALITY(Ab,Ab1);
 }
@@ -634,6 +634,70 @@ TEST( LinearFactor, CONSTRUCTOR_ConditionalGaussian )
 	LinearFactor expectedLF("x2",R11,"l1x1",S12,d, sigmas(0));
 
 	CHECK(assert_equal(expectedLF,actualLF,1e-5));
+}
+
+/* ************************************************************************* */
+TEST ( LinearFactor, constraint_eliminate1 )
+{
+//	// construct a linear constraint
+//	Vector v(2); v(0)=1.2; v(1)=3.4;
+//	string key = "x0";
+//	LinearFactor lc(key, eye(2), v, 0.0);
+//
+//	// eliminate it
+//	ConditionalGaussian::shared_ptr actualCG;
+//	LinearFactor::shared_ptr actualLF;
+//	boost::tie(actualCG,actualLF) = lc.eliminate("x0");
+//
+//	// verify linear factor
+//	CHECK(actualLF->size() == 0);
+//
+//	// verify conditional Gaussian
+//	Vector sigmas = Vector_(2, 0.0, 0.0);
+//	ConditionalGaussian expCG("x0", v, eye(2), sigmas);
+//	CHECK(assert_equal(expCG, *actualCG)); // FAILS - gets NaN values
+}
+
+/* ************************************************************************* */
+TEST ( LinearFactor, constraint_eliminate2 )
+{
+//	// Construct a linear constraint
+//	// RHS
+//	Vector b(2); b(0)=3.0; b(1)=4.0;
+//
+//	// A1 - invertible
+//	Matrix A1(2,2);
+//	A1(0,0) = 1.0 ; A1(0,1) = 2.0;
+//	A1(1,0) = 2.0 ; A1(1,1) = 1.0;
+//
+//	// A2 - not invertible - solve will throw an exception
+//	Matrix A2(2,2);
+//	A2(0,0) = 1.0 ; A2(0,1) = 2.0;
+//	A2(1,0) = 2.0 ; A2(1,1) = 4.0;
+//
+//	LinearFactor lc("x", A1, "y", A2, b, 0.0);
+//
+//	Vector y = Vector_(2, 1.0, 2.0);
+//
+//	VectorConfig fg1;
+//	fg1.insert("y", y);
+//
+//	Vector expected = Vector_(2, -3.3333, 0.6667);
+//
+//	// eliminate x for basic check
+//	ConditionalGaussian::shared_ptr actual = lc.eliminate("x");
+//	CHECK(assert_equal(expected, actual->solve(fg1), 1e-4));
+//
+//	// eliminate y to test thrown error
+//	VectorConfig fg2;
+//	fg2.insert("x", expected);
+//	actual = lc.eliminate("y");
+//	try {
+//		Vector output = actual->solve(fg2);
+//		CHECK(false);
+//	} catch (...) {
+//		CHECK(true);
+//	}
 }
 /* ************************************************************************* */
 int main() { TestResult tr; return TestRegistry::runAllTests(tr);}

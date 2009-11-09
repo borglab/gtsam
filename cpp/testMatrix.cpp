@@ -103,6 +103,27 @@ TEST( matrix, stack )
 }
 
 /* ************************************************************************* */
+TEST( matrix, column )
+{
+	Matrix A = Matrix_(4, 7,
+	   -1.,  0.,  1.,  0.,  0.,  0., -0.2,
+		0., -1.,  0.,  1.,  0.,  0.,  0.3,
+		1.,  0.,  0.,  0., -1.,  0.,  0.2,
+		0.,  1.,  0.,  0.,  0., -1., -0.1);
+	Vector a1 = column(A, 0);
+	Vector exp1 = Vector_(4, -1., 0., 1., 0.);
+	CHECK(assert_equal(a1, exp1));
+
+	Vector a2 = column(A, 3);
+	Vector exp2 = Vector_(4,  0., 1., 0., 0.);
+	CHECK(assert_equal(a2, exp2));
+
+	Vector a3 = column(A, 6);
+	Vector exp3 = Vector_(4, -0.2, 0.3, 0.2, -0.1);
+	CHECK(assert_equal(a3, exp3));
+}
+
+/* ************************************************************************* */
 TEST( matrix, zeros )
 {
   Matrix A(2,3);
@@ -509,109 +530,29 @@ TEST( matrix, svd )
 }
 
 /* ************************************************************************* */
-TEST( matrix, whouse_subs )
+TEST( matrix, weighted_elimination )
 {
-	// create the system
-	Matrix A(2,2);
-	A(0,0) = 1.0; A(0,1) = 3.0;
-	A(1,0) = 2.0; A(1,1) = 4.0;
+	// create a matrix to eliminate - assume augmented
+	Matrix A = Matrix_(4, 7,
+		   -1.,  0.,  1.,  0.,  0.,  0., -0.2,
+		    0., -1.,  0.,  1.,  0.,  0.,  0.3,
+	        1.,  0.,  0.,  0., -1.,  0.,  0.2,
+	        0.,  1.,  0.,  0.,  0., -1., -0.1);
+	Vector sigmas = Vector_(4, 0.2, 0.2, 0.1, 0.1);
 
-	// Vector to eliminate
-	Vector a(2);
-	a(0) = 1.0; a(1) = 2.0;
-
-	Vector tau(2); //correspond to sigmas = [0.1 0.2]
-	tau(0) = 100.; tau(1) = 25.;
-
-	// find the pseudoinverse
-	Vector pseudo = whouse_solve(a, tau);
-
-	// substitute
-	int row = 0; // eliminating the first column
-	whouse_subs(A, row, a, pseudo);
-
-	// create expected value
-	Matrix exp(2,2);
-	exp(0,0) = 1.0; exp(0,1) = 3.0;
-	exp(1,0) = 0.0; exp(1,1) = -1.0;
+	// perform elimination
+	Matrix actual; Vector newSigmas;
+	boost::tie(actual, newSigmas) = weighted_eliminate(A, sigmas);
 
 	// verify
-	CHECK(assert_equal(A, exp));
+	Matrix expected = Matrix_(4, 7,
+		    1.,  0.,-0.2,  0.,-0.8,  0.,  0.2,
+			0.,  1.,  0.,-0.2,  0.,-0.8,-0.14,
+			0.,  0.,  1.,  0., -1.,  0.,  0.0,
+			0.,  0.,  0.,  1.,  0., -1.,  0.2);
+	CHECK(assert_equal(actual,expected));
 }
-/* ************************************************************************* */
-TEST( matrix, whouse_subs_multistep )
-{
-	// update two matrices
-	double sigma1 = 0.2; double tau1 = 1/(sigma1*sigma1);
-	double sigma2 = 0.1; double tau2 = 1/(sigma2*sigma2);
 
-	Matrix Ax2 = Matrix_(4,2,
-			// x2
-			-1., 0.,
-			+0.,-1.,
-			1., 0.,
-			+0.,1.
-	);
-
-	Matrix Al1 = Matrix_(4,2,
-			// l1
-			1., 0.,
-			0., 1.,
-			0., 0.,
-			0., 0.
-	);
-
-	// Eliminating x2 - step 1
-	Vector a1 = Vector_(4, -1., 0., 1., 0.);
-	Vector tau = Vector_(4, tau1, tau1, tau2, tau2);
-	Vector pseudo1 = whouse_solve(a1, tau);
-
-	size_t row = 0;
-	whouse_subs(Ax2, row, a1, pseudo1);
-	whouse_subs(Al1, row, a1, pseudo1);
-
-	// verify first update
-	Matrix Ax2_exp = Matrix_(4,2,
-			-1., 0.,
-			+0.,-1.,
-			+0., 0.,
-			+0.,1.
-	);
-	CHECK(assert_equal(Ax2, Ax2_exp, 1e-4));
-	Matrix Al1_exp = Matrix_(4,2,
-				// l1
-				1., 0.,
-				0., 1.,
-				0.2, 0.,
-				0., 0.
-	);
-	CHECK(assert_equal(Al1, Al1_exp, 1e-4));
-
-	// Eliminating x2 - step 2
-	Vector a2 = Vector_(3, -1., 0., 1.);
-	Vector tauR2 = sub(tau,1,4);
-	Vector pseudo2 = whouse_solve(a2, tauR2);
-
-	row = 1;
-	whouse_subs(Ax2, row, a2, pseudo2);
-	whouse_subs(Al1, row, a2, pseudo2);
-
-	// verify second update
-	Ax2_exp = Matrix_(4,2,
-			-1., 0.,
-			+0.,-1.,
-			+0., 0.,
-			+0., 0.
-	);
-	CHECK(assert_equal(Ax2, Ax2_exp, 1e-4));
-	Al1_exp = Matrix_(4,2,
-			1., 0.,
-			0., 1.,
-			0.2, 0.,
-			0., 0.2
-	);
-	CHECK(assert_equal(Al1, Al1_exp, 1e-4)); //fails
-}
 /* ************************************************************************* */
 int main() { TestResult tr; return TestRegistry::runAllTests(tr); }
 /* ************************************************************************* */

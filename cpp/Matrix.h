@@ -110,6 +110,14 @@ void print(const Matrix& A, const std::string& s = "");
  */
 Matrix sub(const Matrix& A, size_t i1, size_t i2, size_t j1, size_t j2);
 
+/**
+ * extracts a column from a matrix
+ * @param matrix to extract column from
+ * @param index of the column
+ * @return the column in vector form
+ */
+Vector column(const Matrix& A, size_t j);
+
 // left multiply with scalar
 //inline Matrix operator*(double s, const Matrix& A) { return A*s;}
 
@@ -137,15 +145,14 @@ std::pair<Matrix,Matrix> qr(const Matrix& A);
  */
 void householder_update(Matrix &A, int j, double beta, const Vector& vjm);
 
-/*
- * Imperative version of weighted Householder substitution
- * @param A is the matrix to reduce
- * @param row is the row to start on (rows above aren't affected)
- * @param pseudo is the pseudoinverse of the first column of A
- * @param a is the first column of A
- * A is updated into non-normalized R of A that has been updated
+/**
+ * Imperative algorithm for in-place full elimination with
+ * weights and constraint handling
+ * @param Ab is an augmented system to eliminate
+ * @param sigmas is a vector of the measurement standard deviation
+ * @return a pair of R (normalized) and new sigmas
  */
-void whouse_subs(Matrix& A, unsigned int row, const Vector& a, const Vector& pseudo);
+std::pair<Matrix, Vector> weighted_eliminate(Matrix& Ab, const Vector& sigmas);
 
 /**
  * Householder tranformation, Householder vectors below diagonal

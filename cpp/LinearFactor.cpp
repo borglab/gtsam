@@ -198,10 +198,7 @@ Matrix LinearFactor::matrix_augmented(const Ordering& ordering) const {
 		B_mat(i,0) = b_(i);
 	matrices.push_back(&B_mat);
 
-	// divide in sigma so error is indeed 0.5*|Ax-b|
-	Vector t = ediv(ones(sigmas_.size()),sigmas_);
-	Matrix A = vector_scale(collect(matrices), t);
-	return A;
+	return collect(matrices);
 }
 
 /* ************************************************************************* */
@@ -307,8 +304,8 @@ LinearFactor::eliminate(const string& key)
 
 	// extract A, b from the combined linear factor (ensure that x is leading)
 	// use an augmented system [A b] to prevent copying
-	Matrix Rd = matrix_augmented(ordering);
-	size_t m = Rd.size1(); size_t n = Rd.size2()-1;
+	Matrix Ab = matrix_augmented(ordering);
+	size_t m = Ab.size1(); size_t n = Ab.size2()-1;
 
 	// get dimensions of the eliminated variable
 	size_t n1 = getDim(key);
@@ -319,25 +316,18 @@ LinearFactor::eliminate(const string& key)
 		throw(domain_error("LinearFactor::eliminate: fewer constraints than unknowns"));
 
 	// Do in-place QR to get R, d of the augmented system
-	if (verbose) ::print(Rd,"Rd before");
-	householder(Rd, maxRank);
+	if (verbose) ::print(Ab,"Rd before");
+	Matrix Rd; Vector sigmas;
+	boost::tie(Rd, sigmas) = weighted_eliminate(Ab, sigmas_);
 	if (verbose) ::print(Rd,"Rd after");
 
-	// R as calculated by householder has inverse sigma on diagonal
-	// Use them to normalize R to unit-upper-triangular matrix
-	Vector sigmas(m); // standard deviations
-	if (verbose) cout << n1 << " " << n  << " " << m << endl;
-	for (int i=0; i<maxRank; ++i) {
-		double Rii = Rd(i,i);
-		if (fabs(Rii)<1e-8) { maxRank=i; break;} // detect if rank < maxRank
-		sigmas(i) = 1.0/Rii;                     // calculate sigma
-		for (int j=0; j<=n; ++j) Rd(i,j) = Rd(i,j)*sigmas(i); // normalize
-		if (sigmas(i)<0) sigmas(i)=-sigmas(i);   // make sure sigma positive
-	}
+	//NOTE: this actually normalizes the entire R matrix automatically,
+	//      and produces the precisions
+	//      This could probably be made more efficient, but is accurate
 
 	// extract RHS
-	Vector d(m);
-	for (int i=0; i<m; ++i)
+	Vector d(maxRank);
+	for (int i=0; i<maxRank; ++i)
 		d(i) = Rd(i,n);
 
 	// create base conditional Gaussian

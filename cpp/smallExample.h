@@ -15,8 +15,6 @@
 
 namespace gtsam {
 
-	class ConstrainedLinearFactorGraph;
-
 	typedef NonlinearFactorGraph<VectorConfig> ExampleNonlinearFactorGraph;
 
 	/**
@@ -77,15 +75,24 @@ namespace gtsam {
 
 	/**
 	 * Creates a simple constrained graph with one linear factor and
+	 * one binary equality constraint that sets x = y
+	 */
+	LinearFactorGraph createSimpleConstraintGraph();
+	VectorConfig createSimpleConstraintConfig();
+
+	/**
+	 * Creates a simple constrained graph with one linear factor and
 	 * one binary constraint.
 	 */
-	ConstrainedLinearFactorGraph createSingleConstraintGraph();
+	LinearFactorGraph createSingleConstraintGraph();
+	VectorConfig createSingleConstraintConfig();
 
 	/**
 	 * Creates a constrained graph with a linear factor and two
 	 * binary constraints that share a node
 	 */
-	ConstrainedLinearFactorGraph createMultiConstraintGraph();
+	LinearFactorGraph createMultiConstraintGraph();
+	VectorConfig createMultiConstraintConfig();
 
 	/**
 	 * These are the old examples from the EqualityFactor/DeltaFunction
@@ -110,7 +117,7 @@ namespace gtsam {
 	/**
 	 * Create small example constrained factor graph
 	 */
-	//ConstrainedLinearFactorGraph createConstrainedLinearFactorGraph();
+	//LinearFactorGraph createConstrainedLinearFactorGraph();
 
 	/**
 	 * Create small example constrained nonlinear factor graph

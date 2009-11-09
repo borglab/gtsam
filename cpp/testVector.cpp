@@ -127,69 +127,28 @@ TEST( TestVector, concatVectors)
 }
 
 /* ************************************************************************* */
-TEST( TestVector, whouse_solve )
+TEST( TestVector, weightedPseudoinverse )
 {
 	// column from a matrix
 	Vector x(2);
 	x(0) = 1.0; x(1) = 2.0;
 
-	// create precisions - correspond to sigmas = [0.1 0.2]
-	Vector tau(2);
-	tau(0) = 100; tau(1) = 25;
+	// create sigmas
+	Vector sigmas(2);
+	sigmas(0) = 0.1; sigmas(1) = 0.2;
 
 	// perform solve
-	Vector act = whouse_solve(x, tau);
+	Vector act; double precision;
+	boost::tie(act, precision) = weightedPseudoinverse(x, sigmas);
 
 	// construct expected
 	Vector exp(2);
 	exp(0) = 0.5; exp(1) = 0.25;
+	double expPrecision = 200.0;
 
 	// verify
-	CHECK(assert_equal(act, exp)); 
-}
-
-/* ************************************************************************* */
-TEST( TestVector, whouse_subs_vector )
-{
-	// vector to update
-	Vector b(2);
-	b(0) = 5; b(1) = 6;
-
-	// Vector to eliminate
-	Vector a(2);
-	a(0) = 1.0; a(1) = 2.0;
-
-	Vector tau(2); //correspond to sigmas = [0.1 0.2]
-	tau(0) = 100; tau(1) = 25;
-
-	// find the pseudoinverse
-	Vector pseudo = whouse_solve(a, tau);
-
-	// substitute
-	int row = 0; // eliminating the first column
-	whouse_subs(b, row, a, pseudo);
-
-	// create expected value
-	Vector exp(2);
-	exp(0) = 5; exp(1) = -2.0;
-
-	// verify
-	CHECK(assert_equal(b, exp, 1e-5));
-}
-
-/* ************************************************************************* */
-TEST( TestVector, whouse_subs_vector2 )
-{
-	double sigma1 = 0.2; double tau1 = 1/(sigma1*sigma1);
-	double sigma2 = 0.1; double tau2 = 1/(sigma2*sigma2);
-	Vector sigmas = Vector_(4, sigma1, sigma1, sigma2, sigma2);
-
-	Vector a1 = Vector_(4, -1., 0., 1., 0.);
-	Vector tau = Vector_(4, tau1, tau1, tau2, tau2);
-	Vector pseudo1 = whouse_solve(a1, tau);
-
-	Vector expected = Vector_(4,-0.2, 0., 0.8, 0.);
-	CHECK(assert_equal(pseudo1, expected, 1e-4));
+	CHECK(assert_equal(act, exp));
+	CHECK(fabs(expPrecision-precision) < 1e-5);
 }
 
 /* ************************************************************************* */

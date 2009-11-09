@@ -149,6 +149,18 @@ Vector Vector_(const Matrix& A)
 }
 
 /* ************************************************************************* */
+Vector column(const Matrix& A, size_t j) {
+	if (j>=A.size2())
+		throw invalid_argument("Column index out of bounds!");
+
+	size_t m = A.size1();
+	Vector a(m);
+	for (int i=0; i<m; ++i)
+		a(i) = A(i,j);
+	return a;
+}
+
+/* ************************************************************************* */
 void print(const Matrix& A, const string &s) {
   size_t m = A.size1(), n = A.size2();
 
@@ -273,27 +285,43 @@ void householder_update(Matrix &A, int j, double beta, const Vector& vjm) {
 }
 
 /* ************************************************************************* */
-void whouse_subs(Matrix& A, unsigned int row, const Vector& a, const Vector& pseudo) {
-//	cout << "In matrix::whouse_subs()" << endl;
+std::pair<Matrix, Vector> weighted_eliminate(Matrix& A, const Vector& sigmas) {
 	// get sizes
-	size_t m = A.size1(); size_t n = A.size2();
-//	print(A,"Initial A");
-//	cout << "Row: " << row << endl;
-//	print(a,"a");
-//	print(pseudo,"pseudo");
+	size_t m = A.size1();
+	size_t n = A.size2();
+	size_t maxRank = min(m,n);
 
-	// calculate product = pseudo*A
-	Vector product = zero(n);
-	for (int j=0; j<n; ++j) // for each column in A
-		for (int i=row;i<m;++i) {// only the relevant section of A
-			product(j) += A(i,j)*pseudo(i-row);
+	// create an R matrix to store the solution
+	Matrix R = eye(maxRank, n);
+
+	// create a sigma vector
+	Vector newSigmas(maxRank);
+
+	// loop over the columns
+	for (int j=0; j<maxRank; ++j) {
+		// extract the first column of A
+		Vector a = column(A, j);
+
+		// find weighted pseudoinverse
+		Vector pseudo; double precision;
+		boost::tie(pseudo, precision) = weightedPseudoinverse(a, sigmas);
+
+		// create solution and copy into R
+		for (int j2=j; j2<n; ++j2) {
+			R(j,j2) = inner_prod(pseudo, column(A, j2));
 		}
 
-	// calculate A -= a*product
-	for (int i=row+1;i<m;++i) // limit only to rows of A being updated
-		for (int j=0;j<n;++j) { // update all columns
-			A(i,j) -= product(j)*a(i-row);
-		}
+		// update A
+		for (int i=0;i<m;++i) // update all rows
+			for (int j2=j+1;j2<n;++j2) { // limit to only columns in separator
+				A(i,j2) -= R(j,j2)*a(i);
+			}
+
+		// save precision information
+		newSigmas[j] = sqrt(1./precision);
+	}
+
+	return make_pair(R, newSigmas);
 }
 
 /* ************************************************************************* */

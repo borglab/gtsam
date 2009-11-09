@@ -58,26 +58,21 @@ testMatrix_LDADD = libgtsam.la
 # nodes
 sources += VectorConfig.cpp Ordering.cpp 
 sources += SymbolicFactor.cpp LinearFactor.cpp NonlinearFactor.cpp 
-sources += ConditionalGaussian.cpp LinearConstraint.cpp ConstrainedConditionalGaussian.cpp  
+sources += ConditionalGaussian.cpp   
 check_PROGRAMS += testVectorConfig testSymbolicFactor testLinearFactor 
 check_PROGRAMS += testConditionalGaussian testNonlinearFactor 
-check_PROGRAMS += testLinearConstraint testConstrainedConditionalGaussian
 example = smallExample.cpp 
 testVectorConfig_SOURCES        = testVectorConfig.cpp
 testSymbolicFactor_SOURCES      = $(example) testSymbolicFactor.cpp
 testLinearFactor_SOURCES        = $(example) testLinearFactor.cpp
 testConditionalGaussian_SOURCES = $(example) testConditionalGaussian.cpp
 testNonlinearFactor_SOURCES     = $(example) testNonlinearFactor.cpp
-testLinearConstraint_SOURCES    = $(example) testLinearConstraint.cpp
-testConstrainedConditionalGaussian_SOURCES = testConstrainedConditionalGaussian.cpp
 
 testVectorConfig_LDADD        = libgtsam.la
 testSymbolicFactor_LDADD      = libgtsam.la
 testLinearFactor_LDADD        = libgtsam.la
 testConditionalGaussian_LDADD = libgtsam.la
 testNonlinearFactor_LDADD     = libgtsam.la
-testLinearConstraint_LDADD	  = libgtsam.la
-testConstrainedConditionalGaussian_LDADD = libgtsam.la
 
 # not the correct way, I'm sure: Kai ?
 timeLinearFactor: timeLinearFactor.cpp  
@@ -87,12 +82,10 @@ timeLinearFactor: LDFLAGS += -L.libs -lgtsam
 # graphs 
 sources += SymbolicFactorGraph.cpp LinearFactorGraph.cpp 
 sources += SymbolicBayesNet.cpp GaussianBayesNet.cpp
-sources += ConstrainedNonlinearFactorGraph.cpp ConstrainedLinearFactorGraph.cpp 
 check_PROGRAMS += testFactorgraph testSymbolicFactorGraph
 check_PROGRAMS += testLinearFactorGraph testNonlinearFactorGraph 
 check_PROGRAMS += testGaussianBayesNet testNonlinearOptimizer
 check_PROGRAMS += testSymbolicBayesNet testBayesTree  
-check_PROGRAMS += testConstrainedNonlinearFactorGraph testConstrainedLinearFactorGraph
 testFactorgraph_SOURCES          = testFactorgraph.cpp
 testSymbolicFactorGraph_SOURCES  = $(example) testSymbolicFactorGraph.cpp
 testLinearFactorGraph_SOURCES    = $(example) testLinearFactorGraph.cpp
@@ -101,8 +94,6 @@ testNonlinearOptimizer_SOURCES   = $(example) testNonlinearOptimizer.cpp
 testSymbolicBayesNet_SOURCES   = $(example) testSymbolicBayesNet.cpp
 testGaussianBayesNet_SOURCES      = $(example) testGaussianBayesNet.cpp
 testBayesTree_SOURCES            = $(example) testBayesTree.cpp
-testConstrainedNonlinearFactorGraph_SOURCES = $(example) testConstrainedNonlinearFactorGraph.cpp 
-testConstrainedLinearFactorGraph_SOURCES    = $(example) testConstrainedLinearFactorGraph.cpp
 
 testFactorgraph_LDADD          = libgtsam.la
 testSymbolicFactorGraph_LDADD  = libgtsam.la
@@ -112,8 +103,6 @@ testNonlinearOptimizer_LDADD   = libgtsam.la
 testSymbolicBayesNet_LDADD   = libgtsam.la
 testGaussianBayesNet_LDADD      = libgtsam.la
 testBayesTree_LDADD            = libgtsam.la
-testConstrainedNonlinearFactorGraph_LDADD = libgtsam.la 
-testConstrainedLinearFactorGraph_LDADD    = libgtsam.la
 
 # not the correct way, I'm sure: Kai ?
 timeLinearFactorGraph: timeLinearFactorGraph.cpp  

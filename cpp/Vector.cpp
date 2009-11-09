@@ -182,32 +182,19 @@ namespace gtsam {
   }
   
   /* ************************************************************************* */
-  Vector whouse_solve(const Vector& v, const Vector& precisions) {
-	  if (v.size() != precisions.size())
+  pair<Vector, double> weightedPseudoinverse(const Vector& v, const Vector& sigmas) {
+	  if (v.size() != sigmas.size())
 		  throw invalid_argument("V and precisions have different sizes!");
 	  double normV = 0;
-	  for(int i = 0; i<v.size(); i++)
+	  Vector precisions(sigmas.size());
+	  for(int i = 0; i<v.size(); i++) {
+		  precisions[i] = 1./(sigmas[i]*sigmas[i]);
 		  normV += v[i]*v[i]*precisions[i];
+	  }
 	  Vector sol(v.size());
 	  for(int i = 0; i<v.size(); i++)
 		  sol[i] = precisions[i]*v[i];
-	  return sol/normV;
-  }
-
-  /* ************************************************************************* */
-  void whouse_subs(Vector& b, size_t row, const Vector&  a, const Vector& pseudo) {
-	  // get sizes
-	  size_t m = b.size();
-
-	  // calculate product = pseudo*b
-	  double product = 0;
-	  for (int i=row;i<m;++i) {// only the relevant section of b
-		  product += b(i)*pseudo(i-row);
-	  }
-
-	  // calculate b -= a*product
-	  for (int i=row+1;i<m;++i)
-		  b(i) -= a(i-row)*product;
+	  return make_pair(sol/normV, normV);
   }
 
   /* ************************************************************************* */

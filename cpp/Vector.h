@@ -110,19 +110,10 @@ std::pair<double,Vector> house(Vector &x);
  * Weighted Householder solution vector,
  * a.k.a., the pseudoinverse of the column
  * @param v is the first column of the matrix to solve
- * @param precisions is a vector of precisions ( sigma^(-2) )
- * @return the pseudoinverse of v
+ * @param simgas is a vector of standard deviations
+ * @return a pair of the pseudoinverse of v and the precision
  */
-Vector whouse_solve(const Vector& v, const Vector& precisions);
-
-/**
- * Weighted Householder solution substitution into a vector
- * @param b is vector to update IN PLACE
- * @param row is the row being updated (the specified row is not touched)
- * @param a is the first column of A
- * @param pseudo is the pseudoinverse of a
- */
-void whouse_subs(Vector& b, size_t row, const Vector&  a, const Vector& pseudo);
+std::pair<Vector, double> weightedPseudoinverse(const Vector& v, const Vector& sigmas);
 
 /**
  * concatenate Vectors

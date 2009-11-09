@@ -125,8 +125,8 @@ public:
 	/** get a copy of b */
 	const Vector& get_b() const {	return b_;	}
 
-	/** get a copy of precisions */
-	const Vector& get_precisions() const {	return sigmas_;	}
+	/** get a copy of sigmas */
+	const Vector& get_sigmas() const {	return sigmas_;	}
 
 	/**
 	 * get a copy of the A matrix from a specific node
@@ -193,7 +193,7 @@ public:
 	/**
 	 * Return (dense) matrix associated with factor
 	 * The returned system is an augmented matrix: [A b]
-	 * As above, the standard deviations are baked into A and b
+	 * The standard deviations are NOT baked into A and b
 	 * @param ordering of variables needed for matrix column order
 	 */
 	Matrix matrix_augmented(const Ordering& ordering) const;

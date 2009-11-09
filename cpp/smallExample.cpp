@@ -14,7 +14,6 @@ using namespace std;
 #include "Ordering.h"
 #include "Matrix.h"
 #include "NonlinearFactor.h"
-#include "ConstrainedLinearFactorGraph.h"
 #include "smallExample.h"
 #include "Point2Prior.h"
 #include "Simulated2DOdometry.h"
@@ -283,7 +282,45 @@ LinearFactorGraph createSmoother(int T) {
 }
 
 /* ************************************************************************* */
-ConstrainedLinearFactorGraph createSingleConstraintGraph() {
+LinearFactorGraph createSimpleConstraintGraph() {
+	// create unary factor
+	// prior on "x", mean = [1,-1], sigma=0.1
+	double sigma = 0.1;
+	Matrix Ax = eye(2);
+	Vector b1(2);
+	b1(0) = 1.0;
+	b1(1) = -1.0;
+	LinearFactor::shared_ptr f1(new LinearFactor("x", Ax, b1, sigma));
+
+	// create binary constraint factor
+	// between "x" and "y", that is going to be the only factor on "y"
+	// |1 0||x_1| + |-1  0||y_1| = |0|
+	// |0 1||x_2|   | 0 -1||y_2|   |0|
+	Matrix Ax1 = eye(2);
+	Matrix Ay1 = eye(2) * -1;
+	Vector b2 = Vector_(2, 0.0, 0.0);
+	LinearFactor::shared_ptr f2(
+			new LinearFactor("x", Ax1, "y", Ay1, b2, 0.0));
+
+	// construct the graph
+	LinearFactorGraph fg;
+	fg.push_back(f1);
+	fg.push_back(f2);
+
+	return fg;
+}
+
+/* ************************************************************************* */
+VectorConfig createSimpleConstraintConfig() {
+	VectorConfig config;
+	Vector v = Vector_(2, 1.0, -1.0);
+	config.insert("x", v);
+	config.insert("y", v);
+	return config;
+}
+
+/* ************************************************************************* */
+LinearFactorGraph createSingleConstraintGraph() {
 	// create unary factor
 	// prior on "x", mean = [1,-1], sigma=0.1
 	double sigma = 0.1;
@@ -302,19 +339,27 @@ ConstrainedLinearFactorGraph createSingleConstraintGraph() {
 	Ax1(1, 0) = 2.0; Ax1(1, 1) = 1.0;
 	Matrix Ay1 = eye(2) * 10;
 	Vector b2 = Vector_(2, 1.0, 2.0);
-	LinearConstraint::shared_ptr f2(
-			new LinearConstraint("x", Ax1, "y", Ay1, b2));
+	LinearFactor::shared_ptr f2(
+			new LinearFactor("x", Ax1, "y", Ay1, b2, 0.0));
 
 	// construct the graph
-	ConstrainedLinearFactorGraph fg;
+	LinearFactorGraph fg;
 	fg.push_back(f1);
-	fg.push_back_constraint(f2);
+	fg.push_back(f2);
 
 	return fg;
 }
 
 /* ************************************************************************* */
-ConstrainedLinearFactorGraph createMultiConstraintGraph() {
+VectorConfig createSingleConstraintConfig() {
+	VectorConfig config;
+	config.insert("x", Vector_(2, 1.0, -1.0));
+	config.insert("y", Vector_(2, 0.2,  0.1));
+	return config;
+}
+
+/* ************************************************************************* */
+LinearFactorGraph createMultiConstraintGraph() {
 	// unary factor 1
 	double sigma = 0.1;
 	Matrix A = eye(2);
@@ -332,7 +377,7 @@ ConstrainedLinearFactorGraph createMultiConstraintGraph() {
 
 	Vector b1(2);
 	b1(0) = 1.0; b1(1) = 2.0;
-	LinearConstraint::shared_ptr lc1(new LinearConstraint("x", A11, "y", A12, b1));
+	LinearFactor::shared_ptr lc1(new LinearFactor("x", A11, "y", A12, b1, 0.0));
 
 	// constraint 2
 	Matrix A21(2,2);
@@ -345,25 +390,34 @@ ConstrainedLinearFactorGraph createMultiConstraintGraph() {
 
 	Vector b2(2);
 	b2(0) = 3.0; b2(1) = 4.0;
-	LinearConstraint::shared_ptr lc2(new LinearConstraint("x", A21, "z", A22, b2));
+	LinearFactor::shared_ptr lc2(new LinearFactor("x", A21, "z", A22, b2, 0.0));
 
 	// construct the graph
-	ConstrainedLinearFactorGraph fg;
+	LinearFactorGraph fg;
 	fg.push_back(lf1);
-	fg.push_back_constraint(lc1);
-	fg.push_back_constraint(lc2);
+	fg.push_back(lc1);
+	fg.push_back(lc2);
 
 	return fg;
 }
 
 /* ************************************************************************* */
-//ConstrainedLinearFactorGraph createConstrainedLinearFactorGraph()
+VectorConfig createMultiConstraintConfig() {
+	VectorConfig config;
+	config.insert("x", Vector_(2, -2.0, 2.0));
+	config.insert("y", Vector_(2, -0.1, 0.4));
+	config.insert("z", Vector_(2, -4.0, 5.0));
+	return config;
+}
+
+/* ************************************************************************* */
+//LinearFactorGraph createConstrainedLinearFactorGraph()
 //{
-//	ConstrainedLinearFactorGraph graph;
+//	LinearFactorGraph graph;
 //
 //	// add an equality factor
 //	Vector v1(2); v1(0)=1.;v1(1)=2.;
-//	LinearConstraint::shared_ptr f1(new LinearConstraint(v1, "x0"));
+//	LinearFactor::shared_ptr f1(new LinearFactor(v1, "x0"));
 //	graph.push_back_eq(f1);
 //
 //	// add a normal linear factor
@@ -386,7 +440,7 @@ ConstrainedLinearFactorGraph createMultiConstraintGraph() {
 //		VectorConfig c = createConstrainedConfig();
 //
 //		// equality constraint for initial pose
-//		LinearConstraint::shared_ptr f1(new LinearConstraint(c["x0"], "x0"));
+//		LinearFactor::shared_ptr f1(new LinearFactor(c["x0"], "x0"));
 //		graph.push_back_eq(f1);
 //
 //		// odometry between x0 and x1
