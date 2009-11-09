@@ -24,14 +24,38 @@ using namespace std;
 using namespace gtsam;
 	
 /* ************************************************************************* */
-TEST( VectorConfig, equals )
- {	 
+TEST( VectorConfig, equals1 )
+ {
    VectorConfig expected;
    Vector v = Vector_(3, 5.0, 6.0, 7.0);
    expected.insert("a",v);
    VectorConfig actual;
    actual.insert("a",v);
    CHECK(actual.equals(expected));
+}
+
+/* ************************************************************************* */
+TEST( VectorConfig, equals2 )
+ {	 
+   VectorConfig cfg1, cfg2;
+   Vector v1 = Vector_(3, 5.0, 6.0, 7.0);
+   Vector v2 = Vector_(3, 5.0, 6.0, 8.0);
+   cfg1.insert("x", v1);
+   cfg2.insert("x", v2);
+   CHECK(!cfg1.equals(cfg2));
+   CHECK(!cfg2.equals(cfg1));
+ }
+
+/* ************************************************************************* */
+TEST( VectorConfig, equals_nan )
+ {
+   VectorConfig cfg1, cfg2;
+   Vector v1 = Vector_(3, 5.0, 6.0, 7.0);
+   Vector v2 = Vector_(3, 0.0/0.0, 0.0/0.0, 0.0/0.0);
+   cfg1.insert("x", v1);
+   cfg2.insert("x", v2);
+   CHECK(!cfg1.equals(cfg2));
+   CHECK(!cfg2.equals(cfg1));
  }
 
 /* ************************************************************************* */

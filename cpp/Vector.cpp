@@ -9,6 +9,7 @@
 #include <iostream>
 #include <sstream>
 #include <iomanip>
+#include <cmath>
 #include <boost/foreach.hpp>
 
 #ifdef WIN32
@@ -117,9 +118,12 @@ namespace gtsam {
     Vector::const_iterator it1 = vec1.begin();
     Vector::const_iterator it2 = vec2.begin();
     if (vec1.size()!=vec2.size()) return false;
-    for(size_t i=0; i<vec1.size(); i++)
-      if(fabs(it1[i] - it2[i]) > tol)
-      return false;
+    for(size_t i=0; i<vec1.size(); i++) {
+    	if(isnan(it1[i]) xor isnan(it2[i]))
+    		return false;
+    	if(fabs(it1[i] - it2[i]) > tol)
+    		return false;
+    }
     return true;
   }
   
