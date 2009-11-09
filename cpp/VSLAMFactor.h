@@ -8,26 +8,25 @@
 
 #include "NonlinearFactor.h"
 #include "LinearFactor.h"
-#include "VectorConfig.h"
 #include "Cal3_S2.h"
-#include "Pose3.h"
 
 namespace gtsam {
 
+class VectorConfig;
 
 /**
  * Non-linear factor for a constraint derived from a 2D measurement,
  * i.e. the main building block for visual SLAM.
  */
-template <class Config>
-class VSLAMFactor : public NonlinearFactor<Config>
+class VSLAMFactor : public NonlinearFactor<VectorConfig>
 {
-
  private:
-  int cameraFrameNumber_, landmarkNumber_;
+
+	int cameraFrameNumber_, landmarkNumber_;
   std::string cameraFrameName_, landmarkName_;
   Cal3_S2 K_; // Calibration stored in each factor. FD: need to think about this.
-  typedef gtsam::NonlinearFactor<Config> ConvenientFactor;
+  typedef gtsam::NonlinearFactor<VectorConfig> ConvenientFactor;
+
  public:
 
   typedef boost::shared_ptr<VSLAMFactor> shared_ptr; // shorthand for a smart pointer to a factor
@@ -50,19 +49,24 @@ class VSLAMFactor : public NonlinearFactor<Config>
   void print(const std::string& s="VSLAMFactor") const;
 
   /**
+   * equals
+   */
+  bool equals(const NonlinearFactor<VectorConfig>&, double tol=1e-9) const;
+
+  /**
+   * predict the measurement
+   */
+  Vector predict(const VectorConfig&) const;
+
+  /**
    * calculate the error of the factor
    */
-  Vector error_vector(const Config&) const;
+  Vector error_vector(const VectorConfig&) const;
 
   /**
-   * linerarization 
+   * linerarization
    */
-  LinearFactor::shared_ptr linearize(const Config&) const;
-
-  /**
-   * equals 
-   */
-  bool equals(const NonlinearFactor<Config>&, double tol=1e-9) const;
+  LinearFactor::shared_ptr linearize(const VectorConfig&) const;
 
   int getCameraFrameNumber() const { return cameraFrameNumber_; }
   int getLandmarkNumber()    const { return landmarkNumber_;    }
