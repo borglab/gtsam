@@ -4,17 +4,17 @@
  * @author  Alireza Fathi
  */
 
-#include "VectorConfig.h"
+#include "VSLAMConfig.h"
 #include "VSLAMFactor.h"
 #include "Pose3.h"
 #include "SimpleCamera.h"
 
 using namespace std;
-using namespace gtsam;
+namespace gtsam{
 
 /* ************************************************************************* */
 VSLAMFactor::VSLAMFactor(const Vector& z, double sigma, int cn, int ln, const Cal3_S2 &K)
-  : NonlinearFactor<VectorConfig>(z, sigma)
+  : NonlinearFactor<VSLAMConfig>(z, sigma)
 {
   cameraFrameNumber_ = cn;
   landmarkNumber_ = ln;
@@ -31,11 +31,11 @@ VSLAMFactor::VSLAMFactor(const Vector& z, double sigma, int cn, int ln, const Ca
 /* ************************************************************************* */
 void VSLAMFactor::print(const std::string& s) const {
   printf("%s %s %s\n", s.c_str(), cameraFrameName_.c_str(), landmarkName_.c_str());
-  ::print(this->z_, s+".z");
+  gtsam::print(this->z_, s+".z");
 }
 
 /* ************************************************************************* */
-bool VSLAMFactor::equals(const NonlinearFactor<VectorConfig>& f, double tol) const {
+bool VSLAMFactor::equals(const NonlinearFactor<VSLAMConfig>& f, double tol) const {
   const VSLAMFactor* p = dynamic_cast<const VSLAMFactor*>(&f);
   if (p == NULL) return false;
   if (cameraFrameNumber_ != p->cameraFrameNumber_ || landmarkNumber_ != p->landmarkNumber_) return false;
@@ -44,25 +44,25 @@ bool VSLAMFactor::equals(const NonlinearFactor<VectorConfig>& f, double tol) con
 }
 
 /* ************************************************************************* */
-Vector VSLAMFactor::predict(const VectorConfig& c) const {
-  Pose3  pose     = c[cameraFrameName_];
-  Point3 landmark = c[landmarkName_];
+Vector VSLAMFactor::predict(const VSLAMConfig& c) const {
+  Pose3 pose = c.cameraPose(cameraFrameNumber_);
+  Point3 landmark = c.landmarkPoint(landmarkNumber_);
   return project(SimpleCamera(K_,pose), landmark).vector();
 }
 
 /* ************************************************************************* */
-Vector VSLAMFactor::error_vector(const VectorConfig& c) const {
+Vector VSLAMFactor::error_vector(const VSLAMConfig& c) const {
   // Right-hand-side b = (z - h(x))/sigma
   Vector h = predict(c);
   return (this->z_ - h);
 }
 
 /* ************************************************************************* */
-LinearFactor::shared_ptr VSLAMFactor::linearize(const VectorConfig& c) const
+LinearFactor::shared_ptr VSLAMFactor::linearize(const VSLAMConfig& c) const
 {
   // get arguments from config
-  Pose3  pose     = c[cameraFrameName_]; // cast from Vector to Pose3 !!!
-  Point3 landmark = c[landmarkName_];    // cast from Vector to Point3 !!
+  Pose3 pose = c.cameraPose(cameraFrameNumber_);
+  Point3 landmark = c.landmarkPoint(landmarkNumber_);
 
   SimpleCamera camera(K_,pose);
 
@@ -81,3 +81,4 @@ LinearFactor::shared_ptr VSLAMFactor::linearize(const VectorConfig& c) const
 }
 
 /* ************************************************************************* */
+} // namespace gtsam

@@ -12,20 +12,20 @@
 
 namespace gtsam {
 
-class VectorConfig;
+class VSLAMConfig;
 
 /**
  * Non-linear factor for a constraint derived from a 2D measurement,
  * i.e. the main building block for visual SLAM.
  */
-class VSLAMFactor : public NonlinearFactor<VectorConfig>
+class VSLAMFactor : public NonlinearFactor<VSLAMConfig>
 {
  private:
 
 	int cameraFrameNumber_, landmarkNumber_;
   std::string cameraFrameName_, landmarkName_;
   Cal3_S2 K_; // Calibration stored in each factor. FD: need to think about this.
-  typedef gtsam::NonlinearFactor<VectorConfig> ConvenientFactor;
+  typedef gtsam::NonlinearFactor<VSLAMConfig> ConvenientFactor;
 
  public:
 
@@ -51,22 +51,22 @@ class VSLAMFactor : public NonlinearFactor<VectorConfig>
   /**
    * equals
    */
-  bool equals(const NonlinearFactor<VectorConfig>&, double tol=1e-9) const;
+  bool equals(const NonlinearFactor<VSLAMConfig>&, double tol=1e-9) const;
 
   /**
    * predict the measurement
    */
-  Vector predict(const VectorConfig&) const;
+  Vector predict(const VSLAMConfig&) const;
 
   /**
    * calculate the error of the factor
    */
-  Vector error_vector(const VectorConfig&) const;
+  Vector error_vector(const VSLAMConfig&) const;
 
   /**
    * linerarization
    */
-  LinearFactor::shared_ptr linearize(const VectorConfig&) const;
+  LinearFactor::shared_ptr linearize(const VSLAMConfig&) const;
 
   int getCameraFrameNumber() const { return cameraFrameNumber_; }
   int getLandmarkNumber()    const { return landmarkNumber_;    }

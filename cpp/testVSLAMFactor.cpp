@@ -4,6 +4,7 @@
 
 #include <CppUnitLite/TestHarness.h>
 
+#include "VSLAMConfig.h"
 #include "VSLAMFactor.h"
 #include "Point3.h"
 #include "Pose3.h"
@@ -32,9 +33,9 @@ TEST( VSLAMFactor, error )
   VSLAMFactor factor(z, sigma, cameraFrameNumber, landmarkNumber, K);
 
   // For the following configuration, the factor predicts 320,240
-  VectorConfig config;
-  Rot3 R;Point3 t1(0,0,-6); Pose3 x1(R,t1); config.insert("x1",x1.vector());
-  Point3 l1; config.insert("l1",l1.vector());
+  VSLAMConfig config;
+  Rot3 R;Point3 t1(0,0,-6); Pose3 x1(R,t1); config.addCameraPose(1, x1);
+  Point3 l1;  config.addLandmarkPoint(1, l1);
   CHECK(assert_equal(Vector_(2,320.,240.),factor.predict(config)));
 
   // Which yields an error of 3^2/2 = 4.5
