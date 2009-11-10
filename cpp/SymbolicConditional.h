@@ -13,6 +13,7 @@
 #include <iostream>
 #include <boost/shared_ptr.hpp>
 #include <boost/foreach.hpp> // TODO: make cpp file
+#include <boost/serialization/list.hpp>
 #include "Conditional.h"
 
 namespace gtsam {
@@ -88,6 +89,13 @@ namespace gtsam {
 			return parents_.size();
 		}
 
+	private:
+		/** Serialization function */
+		friend class boost::serialization::access;
+		template<class Archive>
+		void serialize(Archive & ar, const unsigned int version) {
+			ar & boost::serialization::make_nvp("Conditional", boost::serialization::base_object<Conditional>(*this));
+			ar & BOOST_SERIALIZATION_NVP(parents_);
+		}
 	};
-
 } /// namespace gtsam

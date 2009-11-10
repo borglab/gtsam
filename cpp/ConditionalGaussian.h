@@ -13,7 +13,6 @@
 #include <boost/utility.hpp>
 #include <boost/shared_ptr.hpp>
 #include <boost/serialization/map.hpp>
-#include <boost/serialization/string.hpp>
 #include <boost/serialization/shared_ptr.hpp>
 
 #include "Conditional.h"
@@ -44,11 +43,11 @@ protected:
 	/** the names and the matrices connecting to parent nodes */
 	Parents parents_;
 
-	/** vector of standard deviations */
-	Vector sigmas_;
-
 	/** the RHS vector */
 	Vector d_;
+
+	/** vector of standard deviations */
+	Vector sigmas_;
 
 public:
 
@@ -141,10 +140,11 @@ private:
 	friend class boost::serialization::access;
 	template<class Archive>
 	void serialize(Archive & ar, const unsigned int version) {
+		ar & boost::serialization::make_nvp("Conditional", boost::serialization::base_object<Conditional>(*this));
 		ar & BOOST_SERIALIZATION_NVP(R_);
+		ar & BOOST_SERIALIZATION_NVP(parents_);
 		ar & BOOST_SERIALIZATION_NVP(d_);
 		ar & BOOST_SERIALIZATION_NVP(sigmas_);
-		ar & BOOST_SERIALIZATION_NVP(parents_);
 	}
 };
 }
