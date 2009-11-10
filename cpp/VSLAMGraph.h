@@ -5,7 +5,6 @@
  * @author  Carlos Nieto
  */
 
-
 #pragma once
 
 #include <vector>
@@ -13,15 +12,13 @@
 #include <set>
 #include <fstream>
 
-#include <gtsam/NonlinearFactorGraph.h>
-#include <gtsam/FactorGraph-inl.h>
+#include "NonlinearFactorGraph.h"
+#include "FactorGraph-inl.h"
 #include "VSLAMFactor.h"
-#include "VSLAMFactor0.h"
-#include "StereoFactor.h"
 #include "VSLAMConfig.h"
 
-
 using namespace std;
+namespace gtsam{
 
 /**
  * Non-linear factor graph for visual SLAM
@@ -64,3 +61,5 @@ public:
   int Get_nFeat_ids(){return feat_ids.size();};
   feat_ids_type* Get_feat_ids_map(){return &feat_ids;};
 };
+
+} // namespace gtsam

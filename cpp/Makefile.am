@@ -139,7 +139,7 @@ testSimulated3D_LDADD = libgtsam.la
 check_PROGRAMS += testSimulated3D 
 
 # Visual SLAM
-sources += CalibratedCamera.cpp SimpleCamera.cpp VSLAMConfig.cpp VSLAMFactor.cpp
+sources += CalibratedCamera.cpp SimpleCamera.cpp VSLAMConfig.cpp VSLAMGraph.cpp VSLAMFactor.cpp
 check_PROGRAMS += testCalibratedCamera testSimpleCamera testVSLAMFactor
 testCalibratedCamera_SOURCES = testCalibratedCamera.cpp
 testCalibratedCamera_LDADD = libgtsam.la

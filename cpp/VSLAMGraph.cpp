@@ -9,13 +9,14 @@
 #include <fstream>
 #include <boost/foreach.hpp>
 
-//#include "VSLAMFactor.h"
 #include "VSLAMGraph.h"
 
 using namespace std;
-using namespace gtsam;
+namespace gtsam{
 
 /* ************************************************************************* */
+//TODO: CB: This constructor is specific to loading VO data. Should probably
+//      get rid of this.
 VSLAMGraph::VSLAMGraph(const std::string& path)
 {
   ifstream ifs(path.c_str(), ios::in);
@@ -97,4 +98,6 @@ VSLAMGraph::VSLAMGraph(const std::string& path,
 }
 
 /* ************************************************************************* */
+
+} // namespace gtsam
 
