@@ -150,7 +150,7 @@ testVSLAMFactor_LDADD = libgtsam.la
 
 
 # The header files will be installed in ~/include/gtsam
-headers = gtsam.h Value.h Testable.h Factor.h Conditional.h LinearFactorSet.h 
+headers = gtsam.h Value.h Testable.h Factor.h Conditional.h SymbolicConditional.h LinearFactorSet.h 
 headers += Point2Prior.h Simulated2DOdometry.h Simulated2DMeasurement.h smallExample.h 
 headers += $(sources:.cpp=.h)
 # templates: 

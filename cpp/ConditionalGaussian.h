@@ -52,7 +52,7 @@ protected:
 public:
 
 	/** default constructor needed for serialization */
-	ConditionalGaussian(): Conditional("__unitialized__") {}
+	ConditionalGaussian(){}
 
 	/** constructor */
 	ConditionalGaussian(const std::string& key) :

@@ -33,6 +33,11 @@ namespace gtsam {
 		typedef boost::shared_ptr<SymbolicConditional> shared_ptr;
 
 		/**
+		 * Empty Constructor to make serialization possible
+		 */
+		SymbolicConditional(){}
+
+		/**
 		 * No parents
 		 */
 		SymbolicConditional(const std::string& key) :

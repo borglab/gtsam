@@ -29,6 +29,11 @@ protected:
 
 public:
 
+	/** empty constructor for serialization */
+	Conditional() :
+		key_("__unitialized__") {
+	}
+
 	/** constructor */
 	Conditional(const std::string& key) :
 		key_(key) {
@@ -37,7 +42,6 @@ public:
 	/* destructor */
 	virtual ~Conditional() {
 	}
-	;
 
 	/** check equality */
 	bool equals(const Conditional& c, double tol = 1e-9) const {
