@@ -286,6 +286,7 @@ void householder_update(Matrix &A, int j, double beta, const Vector& vjm) {
 
 /* ************************************************************************* */
 std::pair<Matrix, Vector> weighted_eliminate(Matrix& A, const Vector& sigmas) {
+	bool verbose = false;
 	// get sizes
 	size_t m = A.size1();
 	size_t n = A.size2();
@@ -301,21 +302,26 @@ std::pair<Matrix, Vector> weighted_eliminate(Matrix& A, const Vector& sigmas) {
 	for (int j=0; j<maxRank; ++j) {
 		// extract the first column of A
 		Vector a = column(A, j);
+		if (verbose) print(a,"a");
 
 		// find weighted pseudoinverse
 		Vector pseudo; double precision;
+		if (verbose) print(sigmas, "sigmas");
 		boost::tie(pseudo, precision) = weightedPseudoinverse(a, sigmas);
+		if (verbose) print(pseudo, "pseudo");
 
 		// create solution and copy into R
 		for (int j2=j; j2<n; ++j2) {
 			R(j,j2) = inner_prod(pseudo, column(A, j2));
 		}
+		if (verbose) print(R, "updatedR");
 
 		// update A
 		for (int i=0;i<m;++i) // update all rows
 			for (int j2=j+1;j2<n;++j2) { // limit to only columns in separator
 				A(i,j2) -= R(j,j2)*a(i);
 			}
+		if (verbose) print(A, "updatedA");
 
 		// save precision information
 		newSigmas[j] = sqrt(1./precision);

@@ -109,6 +109,9 @@ std::pair<double,Vector> house(Vector &x);
 /**
  * Weighted Householder solution vector,
  * a.k.a., the pseudoinverse of the column
+ * NOTE: if any sigmas are zero (indicating a constraint)
+ * the pseudoinverse will be a selection vector, and the
+ * precision will be infinite
  * @param v is the first column of the matrix to solve
  * @param simgas is a vector of standard deviations
  * @return a pair of the pseudoinverse of v and the precision

@@ -185,16 +185,42 @@ namespace gtsam {
   pair<Vector, double> weightedPseudoinverse(const Vector& v, const Vector& sigmas) {
 	  if (v.size() != sigmas.size())
 		  throw invalid_argument("V and precisions have different sizes!");
-	  double normV = 0;
-	  Vector precisions(sigmas.size());
-	  for(int i = 0; i<v.size(); i++) {
-		  precisions[i] = 1./(sigmas[i]*sigmas[i]);
-		  normV += v[i]*v[i]*precisions[i];
+
+	  // detect constraints and sanity-check
+	  int constraint_index = -1;
+	  for(int i=0; i<sigmas.size(); ++i) {
+		  if (sigmas[i] < 1e-9 && v[i] > 1e-9) {
+			  if (constraint_index != -1)
+				  throw invalid_argument("Multiple constraints on a single node!");
+			  else
+				  constraint_index = i;
+		  }
 	  }
-	  Vector sol(v.size());
-	  for(int i = 0; i<v.size(); i++)
-		  sol[i] = precisions[i]*v[i];
-	  return make_pair(sol/normV, normV);
+
+	  // compute pseudoinverse
+	  if (constraint_index != -1) {
+		  // constrained case
+		  Vector sol = zero(sigmas.size());
+		  sol(constraint_index) = 1.0;
+		  return make_pair(sol, 1.0/0.0);
+	  } else {
+		  // normal case
+		  double normV = 0.;
+		  Vector precisions(sigmas.size());
+		  for(int i = 0; i<v.size(); i++) {
+			  if (sigmas[i] < 1e-5) {
+				  precisions[i] = 1./0.;
+			  } else {
+				  precisions[i] = 1./(sigmas[i]*sigmas[i]);
+				  normV += v[i]*v[i]*precisions[i];
+			  }
+		  }
+		  Vector sol = zero(v.size());
+		  for(int i = 0; i<v.size(); i++)
+			  if (sigmas[i] > 1e-5)
+				  sol[i] = precisions[i]*v[i];
+		  return make_pair(sol/normV, normV);
+	  }
   }
 
   /* ************************************************************************* */

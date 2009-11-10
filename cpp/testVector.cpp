@@ -152,6 +152,44 @@ TEST( TestVector, weightedPseudoinverse )
 }
 
 /* ************************************************************************* */
+TEST( TestVector, weightedPseudoinverse_constraint )
+{
+	// column from a matrix
+	Vector x(2);
+	x(0) = 1.0; x(1) = 2.0;
+
+	// create sigmas
+	Vector sigmas(2);
+	sigmas(0) = 0.0; sigmas(1) = 0.2;
+
+	// perform solve
+	Vector act; double precision;
+	boost::tie(act, precision) = weightedPseudoinverse(x, sigmas);
+
+	// construct expected
+	Vector exp(2);
+	exp(0) = 1.0; exp(1) = 0.0;
+
+	// verify
+	CHECK(assert_equal(act, exp));
+	CHECK(isinf(precision));
+}
+
+/* ************************************************************************* */
+TEST( TestVector, weightedPseudoinverse_nan )
+{
+	Vector a = Vector_(4, 1., 0., 0., 0.);
+	Vector sigmas = Vector_(4, 0.1, 0.1, 0., 0.);
+	Vector pseudo; double precision;
+	boost::tie(pseudo, precision) = weightedPseudoinverse(a, sigmas);
+
+	Vector exp = Vector_(4, 1., 0., 0.,0.);
+	CHECK(assert_equal(pseudo, exp));
+	DOUBLES_EQUAL(100, precision, 1e-5);
+}
+
+
+/* ************************************************************************* */
 TEST( TestVector, ediv )
 {
   Vector a(3); a(0) = 10; a(1) = 20; a(2) = 30;

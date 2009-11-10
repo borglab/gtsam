@@ -26,7 +26,7 @@ using namespace gtsam;
 double tol=1e-4;
 
 /* ************************************************************************* */
-/* unit test for equals (LinearFactorGraph1 == LinearFactorGraph2)           */ 
+/* unit test for equals (LinearFactorGraph1 == LinearFactorGraph2)           */
 /* ************************************************************************* */
 TEST( LinearFactorGraph, equals ){
 
@@ -49,10 +49,10 @@ TEST( LinearFactorGraph, error )
 }
 
 /* ************************************************************************* */
-/* unit test for find seperator                                              */ 
+/* unit test for find seperator                                              */
 /* ************************************************************************* */
 TEST( LinearFactorGraph, find_separator )
-{	
+{
   LinearFactorGraph fg = createLinearFactorGraph();
 
   set<string> separator = fg.find_separator("x2");
@@ -68,7 +68,7 @@ TEST( LinearFactorGraph, find_separator )
 
 /* ************************************************************************* */
 TEST( LinearFactorGraph, combine_factors_x1 )
-{	
+{
   // create a small example for a linear factor graph
   LinearFactorGraph fg = createLinearFactorGraph();
 
@@ -77,8 +77,8 @@ TEST( LinearFactorGraph, combine_factors_x1 )
   double sigma2 = 0.1;
   double sigma3 = 0.2;
   Vector sigmas = Vector_(6, sigma1, sigma1, sigma2, sigma2, sigma3, sigma3);
-  
-  // combine all factors	
+
+  // combine all factors
   LinearFactor::shared_ptr actual = fg.removeAndCombineFactors("x1");
 
   // the expected linear factor
@@ -131,7 +131,7 @@ TEST( LinearFactorGraph, combine_factors_x1 )
 
 /* ************************************************************************* */
 TEST( LinearFactorGraph, combine_factors_x2 )
-{	
+{
  // create a small example for a linear factor graph
   LinearFactorGraph fg = createLinearFactorGraph();
 
@@ -214,7 +214,7 @@ TEST( LinearFactorGraph, eliminateOne_x1 )
 }
 
 /* ************************************************************************* */
- 
+
 TEST( LinearFactorGraph, eliminateOne_x2 )
 {
   LinearFactorGraph fg = createLinearFactorGraph();
@@ -587,23 +587,25 @@ TEST( LinearFactorGraph, variables )
 
 /* ************************************************************************* */
 // Tests ported from ConstrainedLinearFactorGraph
+/* ************************************************************************* */
 
-///* ************************************************************************* */
-//TEST( LinearFactorGraph, constrained_simple )
-//{
-//	// get a graph with a constraint in it
-//	LinearFactorGraph fg = createSimpleConstraintGraph();
-//
-//	// eliminate and solve
-//	Ordering ord;
-//	ord += "x", "y";
-//	VectorConfig actual = fg.optimize(ord);
-//
-//	// verify
-//	VectorConfig expected = createSimpleConstraintConfig();
-//	CHECK(assert_equal(actual, expected));
-//}
-//
+/* ************************************************************************* */
+TEST( LinearFactorGraph, constrained_simple )
+{
+	// get a graph with a constraint in it
+	LinearFactorGraph fg = createSimpleConstraintGraph();
+
+	// eliminate and solve
+	Ordering ord;
+	ord += "x", "y";
+	VectorConfig actual = fg.optimize(ord);
+
+	// verify
+	VectorConfig expected = createSimpleConstraintConfig();
+	CHECK(assert_equal(actual, expected));
+}
+
+// These tests require multiple constraints on a single node and will fail
 ///* ************************************************************************* */
 //TEST( LinearFactorGraph, constrained_single )
 //{
