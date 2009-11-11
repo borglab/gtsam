@@ -605,7 +605,6 @@ TEST( LinearFactorGraph, constrained_simple )
 	CHECK(assert_equal(actual, expected));
 }
 
-// These tests require multiple constraints on a single node and will fail
 /* ************************************************************************* */
 TEST( LinearFactorGraph, constrained_single )
 {
@@ -639,7 +638,7 @@ TEST( LinearFactorGraph, constrained_single2 )
 }
 
 /* ************************************************************************* */
-TEST( LinearFactorGraph, constrained_multi )
+TEST( LinearFactorGraph, constrained_multi1 )
 {
 	// get a graph with a constraint in it
 	LinearFactorGraph fg = createMultiConstraintGraph();
@@ -647,6 +646,22 @@ TEST( LinearFactorGraph, constrained_multi )
 	// eliminate and solve
 	Ordering ord;
 	ord += "x", "y", "z";
+	VectorConfig actual = fg.optimize(ord);
+
+	// verify
+	VectorConfig expected = createMultiConstraintConfig();
+	CHECK(assert_equal(actual, expected));
+}
+
+/* ************************************************************************* */
+TEST( LinearFactorGraph, constrained_multi2 )
+{
+	// get a graph with a constraint in it
+	LinearFactorGraph fg = createMultiConstraintGraph();
+
+	// eliminate and solve
+	Ordering ord;
+	ord += "z", "x", "y";
 	VectorConfig actual = fg.optimize(ord);
 
 	// verify

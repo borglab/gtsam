@@ -65,7 +65,7 @@ TEST( LinearFactor, keys )
 
 /* ************************************************************************* */
 TEST( LinearFactor, dimensions )
-{	
+{
   // get the factor "f2" from the small linear factor graph
   LinearFactorGraph fg = createLinearFactorGraph();
 
@@ -658,51 +658,81 @@ TEST ( LinearFactor, constraint_eliminate1 )
 	CHECK(assert_equal(expCG, *actualCG));
 }
 
-// This test fails due to multiple constraints on a node
 /* ************************************************************************* */
-//TEST ( LinearFactor, constraint_eliminate2 )
-//{
-//	// Construct a linear constraint
-//	// RHS
-//	Vector b(2); b(0)=3.0; b(1)=4.0;
-//
-//	// A1 - invertible
-//	Matrix A1(2,2);
-//	A1(0,0) = 1.0 ; A1(0,1) = 2.0;
-//	A1(1,0) = 2.0 ; A1(1,1) = 1.0;
-//
-//	// A2 - not invertible - solve will throw an exception
-//	Matrix A2(2,2);
-//	A2(0,0) = 1.0 ; A2(0,1) = 2.0;
-//	A2(1,0) = 2.0 ; A2(1,1) = 4.0;
-//
-//	LinearFactor lc("x", A1, "y", A2, b, 0.0);
-//
-//	Vector y = Vector_(2, 1.0, 2.0);
-//
-//	VectorConfig fg1;
-//	fg1.insert("y", y);
-//
-//	Vector expected = Vector_(2, -3.3333, 0.6667);
-//
-//	// eliminate x for basic check
-//
-//	ConditionalGaussian::shared_ptr actualCG;
-//	LinearFactor::shared_ptr actualLF;
-//	boost::tie(actualCG, actualLF) = lc.eliminate("x");
-//	CHECK(assert_equal(expected, actualCG->solve(fg1), 1e-4));
+TEST ( LinearFactor, constraint_eliminate2 )
+{
+	// Construct a linear constraint
+	// RHS
+	Vector b(2); b(0)=3.0; b(1)=4.0;
 
-//	// eliminate y to test thrown error
-//	VectorConfig fg2;
-//	fg2.insert("x", expected);
-//	actual = lc.eliminate("y");
-//	try {
-//		Vector output = actual->solve(fg2);
-//		CHECK(false);
-//	} catch (...) {
-//		CHECK(true);
-//	}
-//}
+	// A1 - invertible
+	Matrix A1(2,2);
+	A1(0,0) = 1.0 ; A1(0,1) = 2.0;
+	A1(1,0) = 2.0 ; A1(1,1) = 1.0;
+
+	// A2 - not invertible
+	Matrix A2(2,2);
+	A2(0,0) = 1.0 ; A2(0,1) = 2.0;
+	A2(1,0) = 2.0 ; A2(1,1) = 4.0;
+
+	LinearFactor lc("x", A1, "y", A2, b, 0.0);
+
+	// eliminate x and verify results
+	ConditionalGaussian::shared_ptr actualCG;
+	LinearFactor::shared_ptr actualLF;
+	boost::tie(actualCG, actualLF) = lc.eliminate("x");
+
+	// LF should be null
+	LinearFactor expectedLF;
+	CHECK(assert_equal(*actualLF, expectedLF));
+
+	// verify CG
+	Matrix R = Matrix_(2, 2,
+			1.0,    2.0,
+			0.0,    1.0);
+	Matrix S = Matrix_(2,2,
+			1.0,    2.0,
+			0.0,    0.0);
+	Vector d = Vector_(2, 3.0, 0.6666);
+	ConditionalGaussian expectedCG("x", d, R, "y", S, zero(2));
+	CHECK(assert_equal(expectedCG, *actualCG, 1e-4));
+}
+
+/* ************************************************************************* */
+TEST ( LinearFactor, constraint_eliminate3 )
+{
+	// This test shows that ordering matters if there are non-invertable
+	// blocks, as this example can be eliminated if x is first, but not
+	// if y is first.
+
+	// Construct a linear constraint
+	// RHS
+	Vector b(2); b(0)=3.0; b(1)=4.0;
+
+	// A1 - invertible
+	Matrix A1(2,2);
+	A1(0,0) = 1.0 ; A1(0,1) = 2.0;
+	A1(1,0) = 2.0 ; A1(1,1) = 1.0;
+
+	// A2 - not invertible
+	Matrix A2(2,2);
+	A2(0,0) = 1.0 ; A2(0,1) = 2.0;
+	A2(1,0) = 2.0 ; A2(1,1) = 4.0;
+
+	LinearFactor lc("x", A1, "y", A2, b, 0.0);
+
+	// eliminate y from original graph
+	// NOTE: this will throw an exception, as
+	// the leading matrix is rank deficient
+	ConditionalGaussian::shared_ptr actualCG;
+	LinearFactor::shared_ptr actualLF;
+	try {
+		boost::tie(actualCG, actualLF) = lc.eliminate("y");
+		CHECK(false);
+	} catch (domain_error) {
+		CHECK(true);
+	}
+}
 /* ************************************************************************* */
 int main() { TestResult tr; return TestRegistry::runAllTests(tr);}
 /* ************************************************************************* */
