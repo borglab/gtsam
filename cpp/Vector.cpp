@@ -94,6 +94,13 @@ namespace gtsam {
   }
 
   /* ************************************************************************* */
+  Vector delta(size_t n, size_t i, double value) {
+	  Vector v = zero(n);
+	  v(i) = value;
+	  return v;
+  }
+
+  /* ************************************************************************* */
   void print(const Vector& v, const string& s) {
     size_t n = v.size();
     odprintf("%s[", s.c_str());
@@ -182,45 +189,32 @@ namespace gtsam {
   }
   
   /* ************************************************************************* */
-  pair<Vector, double> weightedPseudoinverse(const Vector& v, const Vector& sigmas) {
-	  if (v.size() != sigmas.size())
+  pair<Vector, double> weightedPseudoinverse(const Vector& a, const Vector& sigmas) {
+	  size_t m = sigmas.size();
+	  if (a.size() != m)
 		  throw invalid_argument("V and precisions have different sizes!");
 
 	  // detect constraints and sanity-check
-	  int constraint_index = -1;
-	  for(int i=0; i<sigmas.size(); ++i) {
-		  if (sigmas[i] < 1e-9 && v[i] > 1e-9) {
-			  if (constraint_index != -1)
-				  throw invalid_argument("Multiple constraints on a single node!");
-			  else
-				  constraint_index = i;
-		  }
-	  }
+	  for(int i=0; i<m; ++i)
+		  if (sigmas[i] < 1e-9 && fabs(a[i]) > 1e-9)
+			  return make_pair(delta(m,i,1/a[i]), 1.0/0.0);
 
-	  // compute pseudoinverse
-	  if (constraint_index != -1) {
-		  // constrained case
-		  Vector sol = zero(sigmas.size());
-		  sol(constraint_index) = 1.0;
-		  return make_pair(sol, 1.0/0.0);
-	  } else {
-		  // normal case
-		  double normV = 0.;
-		  Vector precisions(sigmas.size());
-		  for(int i = 0; i<v.size(); i++) {
-			  if (sigmas[i] < 1e-5) {
-				  precisions[i] = 1./0.;
-			  } else {
-				  precisions[i] = 1./(sigmas[i]*sigmas[i]);
-				  normV += v[i]*v[i]*precisions[i];
-			  }
+	  // normal case
+	  double normV = 0.;
+	  Vector precisions(m);
+	  for(int i = 0; i<a.size(); i++) {
+		  if (sigmas[i] < 1e-5) {
+			  precisions[i] = 1./0.;
+		  } else {
+			  precisions[i] = 1./(sigmas[i]*sigmas[i]);
+			  normV += a[i]*a[i]*precisions[i];
 		  }
-		  Vector sol = zero(v.size());
-		  for(int i = 0; i<v.size(); i++)
-			  if (sigmas[i] > 1e-5)
-				  sol[i] = precisions[i]*v[i];
-		  return make_pair(sol/normV, normV);
 	  }
+	  Vector sol = zero(a.size());
+	  for(int i = 0; i<a.size(); i++)
+		  if (sigmas[i] > 1e-5)
+			  sol[i] = precisions[i]*a[i];
+	  return make_pair(sol/normV, normV);
   }
 
   /* ************************************************************************* */

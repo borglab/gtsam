@@ -10,7 +10,9 @@
 
 #pragma once
 
+#include <list>
 #include <boost/numeric/ublas/matrix.hpp>
+#include <boost/tuple/tuple.hpp>
 #include "Vector.h"
 
 /**
@@ -118,6 +120,14 @@ Matrix sub(const Matrix& A, size_t i1, size_t i2, size_t j1, size_t j2);
  */
 Vector column(const Matrix& A, size_t j);
 
+/**
+ * extracts a row from a matrix
+ * @param matrix to extract row from
+ * @param index of the row
+ * @return the row in vector form
+ */
+Vector row(const Matrix& A, size_t j);
+
 // left multiply with scalar
 //inline Matrix operator*(double s, const Matrix& A) { return A*s;}
 
@@ -148,11 +158,13 @@ void householder_update(Matrix &A, int j, double beta, const Vector& vjm);
 /**
  * Imperative algorithm for in-place full elimination with
  * weights and constraint handling
- * @param Ab is an augmented system to eliminate
+ * @param A is a matrix to eliminate
+ * @param b is the rhs
  * @param sigmas is a vector of the measurement standard deviation
- * @return a pair of R (normalized) and new sigmas
+ * @return list of r vectors, d  and sigma
  */
-std::pair<Matrix, Vector> weighted_eliminate(Matrix& Ab, const Vector& sigmas);
+std::list<boost::tuple<Vector, double, double> >
+weighted_eliminate(Matrix& A, Vector& b, const Vector& sigmas);
 
 /**
  * Householder tranformation, Householder vectors below diagonal

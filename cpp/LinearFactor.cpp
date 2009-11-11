@@ -165,7 +165,7 @@ void LinearFactor::tally_separator(const string& key, set<string>& separator) co
 }
 
 /* ************************************************************************* */  
-pair<Matrix,Vector> LinearFactor::matrix(const Ordering& ordering) const {
+pair<Matrix,Vector> LinearFactor::matrix(const Ordering& ordering, bool weight) const {
 
 	// get pointers to the matrices
 	vector<const Matrix *> matrices;
@@ -174,12 +174,17 @@ pair<Matrix,Vector> LinearFactor::matrix(const Ordering& ordering) const {
 		matrices.push_back(&Aj);
 	}
 
-	// divide in sigma so error is indeed 0.5*|Ax-b|
-	Vector t = ediv(ones(sigmas_.size()),sigmas_);
-	Matrix A = vector_scale(collect(matrices), t);
+	// assemble
+	Matrix A = collect(matrices);
 	Vector b(b_);
-	for (int i=0; i<b_.size(); ++i)
-		b(i) *= t(i);
+
+	// divide in sigma so error is indeed 0.5*|Ax-b|
+	if (weight) {
+		Vector t = ediv(ones(sigmas_.size()),sigmas_);
+		A = vector_scale(A, t);
+		for (int i=0; i<b_.size(); ++i)
+			b(i) *= t(i);
+	}
 	return make_pair(A, b);
 }
 
@@ -303,38 +308,41 @@ LinearFactor::eliminate(const string& key)
 		if (k != key) ordering += k;
 
 	// extract A, b from the combined linear factor (ensure that x is leading)
-	// use an augmented system [A b] to prevent copying
-	Matrix Ab = matrix_augmented(ordering);
-	size_t m = Ab.size1(); size_t n = Ab.size2()-1;
+	Matrix A; Vector b;
+	boost::tie(A, b) = matrix(ordering, false);
+	size_t n = A.size2();
+
+	// Do in-place QR to get R, d of the augmented system
+	if (verbose) ::print(A,"A before");
+	if (verbose) ::print(b,"b before");
+	std::list<boost::tuple<Vector, double, double> > solution =
+							weighted_eliminate(A, b, sigmas_);
 
 	// get dimensions of the eliminated variable
 	size_t n1 = getDim(key);
 
 	// if m<n1, this factor cannot be eliminated
-	size_t maxRank = min(m,n);
+	size_t maxRank = solution.size();
 	if (maxRank<n1)
 		throw(domain_error("LinearFactor::eliminate: fewer constraints than unknowns"));
 
-	// Do in-place QR to get R, d of the augmented system
-	if (verbose) ::print(Ab,"Rd before");
-	Matrix Rd; Vector sigmas;
-	boost::tie(Rd, sigmas) = weighted_eliminate(Ab, sigmas_);
-	if (verbose) ::print(Rd,"Rd after");
-
-	//NOTE: this actually normalizes the entire R matrix automatically,
-	//      and produces the precisions
-	//      This could probably be made more efficient, but is accurate
-
-	// extract RHS
-	Vector d(maxRank);
-	for (int i=0; i<maxRank; ++i)
-		d(i) = Rd(i,n);
+	// unpack the solutions
+	Matrix R(maxRank, n);
+	Vector r, d(maxRank), newSigmas(maxRank); double di, sigma;
+	Matrix::iterator2 Rit = R.begin2();
+	size_t i = 0;
+	BOOST_FOREACH(boost::tie(r, di, sigma), solution) {
+		copy(r.begin(), r.end(), Rit); // copy r vector
+		d(i) = di;                     // copy in rhs
+		newSigmas(i) = sigma;          // copy in new sigmas
+		Rit += n; i += 1;
+	}
 
 	// create base conditional Gaussian
 	ConditionalGaussian::shared_ptr cg(new ConditionalGaussian(key,
-			sub(d, 0, n1),         // form d vector
-			sub(Rd, 0, n1, 0, n1), // form R matrix
-			sub(sigmas, 0, n1)));  // get standard deviations
+			sub(d, 0, n1),            // form d vector
+			sub(R, 0, n1, 0, n1),     // form R matrix
+			sub(newSigmas, 0, n1)));  // get standard deviations
 
 	// extract the block matrices for parents in both CG and LF
 	LinearFactor::shared_ptr lf(new LinearFactor);
@@ -342,13 +350,13 @@ LinearFactor::eliminate(const string& key)
 	BOOST_FOREACH(string cur_key, ordering)
 		if (cur_key!=key) {
 			size_t dim = getDim(cur_key);
-			cg->add(cur_key, sub(Rd, 0, n1, j, j+dim));
-			lf->insert(cur_key, sub(Rd, n1, maxRank, j, j+dim));
+			cg->add(cur_key,    sub(R, 0, n1, j, j+dim));
+			lf->insert(cur_key, sub(R, n1, maxRank, j, j+dim));
 			j+=dim;
 		}
 
 	// Set sigmas
-	lf->sigmas_ = sub(sigmas,n1,maxRank);
+	lf->sigmas_ = sub(newSigmas,n1,maxRank);
 
 	// extract ds vector for the new b
 	lf->set_b(sub(d, n1, maxRank));

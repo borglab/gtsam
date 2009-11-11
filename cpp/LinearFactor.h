@@ -185,10 +185,10 @@ public:
 
 	/**
 	 * Return (dense) matrix associated with factor
-	 * NOTE: in this case, the standard deviations are baked into A and b
 	 * @param ordering of variables needed for matrix column order
+	 * @param set weight to true to bake in the weights
 	 */
-	std::pair<Matrix, Vector> matrix(const Ordering& ordering) const;
+	std::pair<Matrix, Vector> matrix(const Ordering& ordering, bool weight = true) const;
 
 	/**
 	 * Return (dense) matrix associated with factor

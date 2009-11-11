@@ -8,6 +8,7 @@
 #include <iostream>
 #include <CppUnitLite/TestHarness.h>
 #include <boost/tuple/tuple.hpp>
+#include <boost/foreach.hpp>
 #include "Matrix.h"
 
 using namespace std;
@@ -120,6 +121,27 @@ TEST( matrix, column )
 
 	Vector a3 = column(A, 6);
 	Vector exp3 = Vector_(4, -0.2, 0.3, 0.2, -0.1);
+	CHECK(assert_equal(a3, exp3));
+}
+
+/* ************************************************************************* */
+TEST( matrix, row )
+{
+	Matrix A = Matrix_(4, 7,
+	   -1.,  0.,  1.,  0.,  0.,  0., -0.2,
+		0., -1.,  0.,  1.,  0.,  0.,  0.3,
+		1.,  0.,  0.,  0., -1.,  0.,  0.2,
+		0.,  1.,  0.,  0.,  0., -1., -0.1);
+	Vector a1 = row(A, 0);
+	Vector exp1 = Vector_(7, -1.,  0.,  1.,  0.,  0.,  0., -0.2);
+	CHECK(assert_equal(a1, exp1));
+
+	Vector a2 = row(A, 2);
+	Vector exp2 = Vector_(7, 1.,  0.,  0.,  0., -1.,  0.,  0.2);
+	CHECK(assert_equal(a2, exp2));
+
+	Vector a3 = row(A, 3);
+	Vector exp3 = Vector_(7, 0.,  1.,  0.,  0.,  0., -1., -0.1);
 	CHECK(assert_equal(a3, exp3));
 }
 
@@ -532,26 +554,43 @@ TEST( matrix, svd )
 /* ************************************************************************* */
 TEST( matrix, weighted_elimination )
 {
-	// create a matrix to eliminate - assume augmented
-	Matrix A = Matrix_(4, 7,
-		   -1.,  0.,  1.,  0.,  0.,  0., -0.2,
-		    0., -1.,  0.,  1.,  0.,  0.,  0.3,
-	        1.,  0.,  0.,  0., -1.,  0.,  0.2,
-	        0.,  1.,  0.,  0.,  0., -1., -0.1);
+	// create a matrix to eliminate
+	Matrix A = Matrix_(4, 6,
+		   -1.,  0.,  1.,  0.,  0.,  0.,
+		    0., -1.,  0.,  1.,  0.,  0.,
+	        1.,  0.,  0.,  0., -1.,  0.,
+	        0.,  1.,  0.,  0.,  0., -1.);
+	Vector b = Vector_(4, -0.2, 0.3, 0.2, -0.1);
 	Vector sigmas = Vector_(4, 0.2, 0.2, 0.1, 0.1);
 
 	// perform elimination
-	Matrix actual; Vector newSigmas;
-	boost::tie(actual, newSigmas) = weighted_eliminate(A, sigmas);
+	std::list<boost::tuple<Vector, double, double> > solution =
+								weighted_eliminate(A, b, sigmas);
 
-	// verify
-	Matrix expected = Matrix_(4, 7,
-		    1.,  0.,-0.2,  0.,-0.8,  0.,  0.2,
-			0.,  1.,  0.,-0.2,  0.,-0.8,-0.14,
-			0.,  0.,  1.,  0., -1.,  0.,  0.0,
-			0.,  0.,  0.,  1.,  0., -1.,  0.2);
-	CHECK(assert_equal(actual,expected));
+	// 	expected values
+	Matrix expectedR = Matrix_(4, 6,
+			1.,  0.,-0.2,  0.,-0.8,  0.,
+			0.,  1.,  0.,-0.2,  0.,-0.8,
+			0.,  0.,  1.,  0., -1.,  0.,
+			0.,  0.,  0.,  1.,  0., -1.);
+	Vector d = Vector_(4, 0.2, -0.14, 0.0, 0.2);
+	Vector newSigmas  = Vector_(4,
+			0.0894427,
+			0.0894427,
+			0.223607,
+			0.223607);
+
+	// unpack and verify
+	Vector r; double di, sigma;
+	size_t i = 0;
+	BOOST_FOREACH(boost::tie(r, di, sigma), solution) {
+		CHECK(assert_equal(r, row(expectedR, i))); // verify r
+		DOUBLES_EQUAL(d(i), di, 1e-8);             // verify d
+		DOUBLES_EQUAL(newSigmas(i), sigma, 1e-5);  // verify sigma
+		i += 1;
+	}
 }
+
 
 /* ************************************************************************* */
 int main() { TestResult tr; return TestRegistry::runAllTests(tr); }

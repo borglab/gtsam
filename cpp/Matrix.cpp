@@ -7,6 +7,7 @@
 #include <stdarg.h>
 #include <string.h>
 #include <iomanip>
+#include <list>
 
 #include <boost/foreach.hpp>
 #include <boost/numeric/ublas/lu.hpp>
@@ -161,6 +162,18 @@ Vector column(const Matrix& A, size_t j) {
 }
 
 /* ************************************************************************* */
+Vector row(const Matrix& A, size_t i) {
+	if (i>=A.size1())
+		throw invalid_argument("Row index out of bounds!");
+
+	size_t n = A.size2();
+	Vector a(n);
+	for (int j=0; j<n; ++j)
+		a(j) = A(i,j);
+	return a;
+}
+
+/* ************************************************************************* */
 void print(const Matrix& A, const string &s) {
   size_t m = A.size1(), n = A.size2();
 
@@ -285,18 +298,16 @@ void householder_update(Matrix &A, int j, double beta, const Vector& vjm) {
 }
 
 /* ************************************************************************* */
-std::pair<Matrix, Vector> weighted_eliminate(Matrix& A, const Vector& sigmas) {
+list<boost::tuple<Vector, double, double> >
+weighted_eliminate(Matrix& A, Vector& b, const Vector& sigmas) {
 	bool verbose = false;
 	// get sizes
 	size_t m = A.size1();
 	size_t n = A.size2();
 	size_t maxRank = min(m,n);
 
-	// create an R matrix to store the solution
-	Matrix R = eye(maxRank, n);
-
-	// create a sigma vector
-	Vector newSigmas(maxRank);
+	// create list
+	list<boost::tuple<Vector, double, double> > results;
 
 	// loop over the columns
 	for (int j=0; j<maxRank; ++j) {
@@ -308,26 +319,40 @@ std::pair<Matrix, Vector> weighted_eliminate(Matrix& A, const Vector& sigmas) {
 		Vector pseudo; double precision;
 		if (verbose) print(sigmas, "sigmas");
 		boost::tie(pseudo, precision) = weightedPseudoinverse(a, sigmas);
+
+		// if precision is zero, rank(A) was less than maxRank, so return
+		if (precision < 1e-8) {
+			maxRank = j;
+			return results;
+		}
 		if (verbose) print(pseudo, "pseudo");
 
-		// create solution and copy into R
-		for (int j2=j; j2<n; ++j2) {
-			R(j,j2) = inner_prod(pseudo, column(A, j2));
+		// create solution and copy into r
+		Vector r = basis(n, j);
+		for (int j2=j+1; j2<n; ++j2)
+			r(j2) = inner_prod(pseudo, column(A, j2));
+
+		// create the rhs
+		double d = inner_prod(pseudo, b);
+		if (verbose) print(r, "updatedR");
+		if (verbose) cout << "d = " << d << endl;
+
+		// construct solution (r, d, sigma)
+		results.push_back(boost::make_tuple(r, d, 1./sqrt(precision)));
+
+		// update A, b
+		for (int i=0;i<m;++i) { // update all rows
+			double ai = a(i);
+			b(i) -= ai*d;
+			for (int j2=j+1;j2<n;++j2) // limit to only columns in separator
+				A(i,j2) -= ai*r(j2);
 		}
-		if (verbose) print(R, "updatedR");
-
-		// update A
-		for (int i=0;i<m;++i) // update all rows
-			for (int j2=j+1;j2<n;++j2) { // limit to only columns in separator
-				A(i,j2) -= R(j,j2)*a(i);
-			}
 		if (verbose) print(A, "updatedA");
+		//if (verbose) print(sub(A, 0,m, j+1,n), "updatedA"); // bad index
 
-		// save precision information
-		newSigmas[j] = sqrt(1./precision);
 	}
 
-	return make_pair(R, newSigmas);
+	return results;
 }
 
 /* ************************************************************************* */

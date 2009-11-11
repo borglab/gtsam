@@ -42,6 +42,25 @@ Vector Vector_(size_t m, ...);
 Vector repeat(size_t n, double value);
 
 /**
+ * Create basis vector of dimension n,
+ * with a constant in spot i
+ * @param n is the size of the vector
+ * @param index of the one
+ * @param value is the value to insert into the vector
+ * @return delta vector
+ */
+Vector delta(size_t n, size_t i, double value);
+
+/**
+ * Create basis vector of dimension n,
+ * with one in spot i
+ * @param n is the size of the vector
+ * @param index of the one
+ * @return basis vector
+ */
+inline Vector basis(size_t n, size_t i) { return delta(n, i, 1.0); }
+
+/**
  * Create zero vector
  * @param size
  */
