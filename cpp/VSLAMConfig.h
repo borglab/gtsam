@@ -12,31 +12,22 @@
 #include "VectorConfig.h"
 #include "Pose3.h"
 #include "Cal3_S2.h"
+#include "Testable.h"
 
 #pragma once
 
 namespace gtsam{
 
 /**
- * special VectorConfig derived class that knows we are dealing with Pose3 objects
- * should be more elegant in later version of gtsam
- */
-class DCVectorConfig : public gtsam::VectorConfig {
-public:
-  gtsam::VectorConfig operator+(const gtsam::VectorConfig & delta) const;
-  void operator+=(const gtsam::VectorConfig & delta);
-};
-
-/**
  * Config that knows about points and poses
  */
-class VSLAMConfig {
+class VSLAMConfig : Testable<VSLAMConfig> {
 
  private:
-  typedef std::map<int, gtsam::Pose3> PoseMap;
-  typedef std::map<int, gtsam::Point3> PointMap;
-  PointMap landmarkPoints;
-  PoseMap cameraPoses;
+  typedef std::map<int, Pose3> PoseMap;
+  typedef std::map<int, Point3> PointMap;
+  PointMap landmarkPoints_;
+  PoseMap cameraPoses_;
 
  public:
   typedef std::map<std::string, Vector>::const_iterator const_iterator;
@@ -45,50 +36,23 @@ class VSLAMConfig {
    */
   VSLAMConfig() {}
 
-  /**
-   * constructor that loads from file
-   */
-  VSLAMConfig(std::string& path, int num_of_frames) { load(path, num_of_frames);}
-
-  /**
-   * constructor from an VectorConfig
-   */
-  VSLAMConfig(gtsam::VectorConfig & Vectorconfig);
-
   /*
    * copy constructor
    */
   VSLAMConfig(const VSLAMConfig& original):
-  	cameraPoses(original.cameraPoses), landmarkPoints(original.landmarkPoints){}
+  	cameraPoses_(original.cameraPoses_), landmarkPoints_(original.landmarkPoints_){}
 
 	/**
 	 * Exponential map: takes 6D vectors in VectorConfig
 	 * and applies them to the poses in the VSLAMConfig.
 	 * Needed for use in nonlinear optimization
 	 */
-  VSLAMConfig exmap(const gtsam::VectorConfig & delta) const;
+  VSLAMConfig exmap(const VectorConfig & delta) const;
 
-  /**
-   * get the VectorConfig, poses have names x1,x2, and landmarks l1,l2,...
-   */
-  DCVectorConfig getVectorConfig() const;
-
-
-
-  /**
-   *  load values from files.
-   */
-  void load(std::string& path, int num_of_frames);
-
-  /**
-   * flush the poses into files (results),
-   */
-  void flush(int referenceMarker, const std::string& path);
-
-  PoseMap::const_iterator cameraIteratorBegin() const  { return cameraPoses.begin();}
-  PoseMap::const_iterator cameraIteratorEnd() const   { return cameraPoses.end();}
-  PointMap::const_iterator landmarkIteratorBegin() const { return landmarkPoints.begin();}
-  PointMap::const_iterator landmarkIteratorEnd() const  { return landmarkPoints.end();}
+  PoseMap::const_iterator cameraIteratorBegin() const  { return cameraPoses_.begin();}
+  PoseMap::const_iterator cameraIteratorEnd() const   { return cameraPoses_.end();}
+  PointMap::const_iterator landmarkIteratorBegin() const { return landmarkPoints_.begin();}
+  PointMap::const_iterator landmarkIteratorEnd() const  { return landmarkPoints_.end();}
 
   /**
    * print
@@ -100,15 +64,15 @@ class VSLAMConfig {
    */
   bool cameraPoseExists(int i) const
   {
-    PoseMap::const_iterator it = cameraPoses.find(i);
-    if (it==cameraPoses.end())
+    PoseMap::const_iterator it = cameraPoses_.find(i);
+    if (it==cameraPoses_.end())
       return false;
     return true;
   }
 
-  gtsam::Pose3 cameraPose(int i) const {
-    PoseMap::const_iterator it = cameraPoses.find(i);
-    if (it==cameraPoses.end())
+  Pose3 cameraPose(int i) const {
+    PoseMap::const_iterator it = cameraPoses_.find(i);
+    if (it==cameraPoses_.end())
       throw(std::invalid_argument("robotPose: invalid key"));
     return it->second;
   }
@@ -118,8 +82,8 @@ class VSLAMConfig {
    */
   bool landmarkPointExists(int i) const
   {
-    PointMap::const_iterator it = landmarkPoints.find(i);
-    if (it==landmarkPoints.end())
+    PointMap::const_iterator it = landmarkPoints_.find(i);
+    if (it==landmarkPoints_.end())
       return false;
     return true;
   }
@@ -127,9 +91,9 @@ class VSLAMConfig {
   /**
    * Retrieve landmark point
    */
-  gtsam::Point3 landmarkPoint(int i) const {
-    PointMap::const_iterator it = landmarkPoints.find(i);
-    if (it==landmarkPoints.end())
+  Point3 landmarkPoint(int i) const {
+    PointMap::const_iterator it = landmarkPoints_.find(i);
+    if (it==landmarkPoints_.end())
       throw(std::invalid_argument("markerPose: invalid key"));
     return it->second;
   }
@@ -137,17 +101,17 @@ class VSLAMConfig {
   /**
    * check whether two configs are equal
    */
-  bool equals(const VSLAMConfig& c) ;
-  void addCameraPose(const int i, gtsam::Pose3 cp);
-  void addLandmarkPoint(const int i, gtsam::Point3 lp);
+  bool equals(const VSLAMConfig& c, double tol=1e-6) const;
+  void addCameraPose(const int i, Pose3 cp);
+  void addLandmarkPoint(const int i, Point3 lp);
 
   void removeCameraPose(const int i);
   void removeLandmarkPose(const int i);
 
-  void clear() {landmarkPoints.clear(); cameraPoses.clear();}
+  void clear() {landmarkPoints_.clear(); cameraPoses_.clear();}
 
   inline size_t size(){
-    return landmarkPoints.size() + cameraPoses.size();
+    return landmarkPoints_.size() + cameraPoses_.size();
   }
 };
 

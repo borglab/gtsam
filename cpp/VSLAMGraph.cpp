@@ -10,9 +10,16 @@
 #include <boost/foreach.hpp>
 
 #include "VSLAMGraph.h"
+#include "NonlinearFactorGraph-inl.h"
+#include "NonlinearOptimizer-inl.h"
 
 using namespace std;
 namespace gtsam{
+
+// explicit instantiation so all the code is there and we can link with it
+template class FactorGraph<VSLAMFactor>;
+template class NonlinearFactorGraph<VSLAMConfig>;
+template class NonlinearOptimizer<VSLAMGraph,VSLAMConfig>;
 
 /* ************************************************************************* */
 //TODO: CB: This constructor is specific to loading VO data. Should probably
