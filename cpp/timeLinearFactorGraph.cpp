@@ -7,6 +7,7 @@
 #include <time.h>
 #include <CppUnitLite/TestHarness.h>
 #include "SmallExample.h"
+#include "Ordering.h"
 
 using namespace std;
 using namespace gtsam;
@@ -27,8 +28,9 @@ double timeKalmanSmoother(int T) {
 /* ************************************************************************* */
 TEST(timeLinearFactorGraph, linearTime)
 {
-	double time1 = timeKalmanSmoother(1000); cout << time1 << endl;
-	double time2 = timeKalmanSmoother(2000); cout << time2 << endl;
+	int T = 1000;
+	double time1 = timeKalmanSmoother(  T); // cout << time1 << endl;
+	double time2 = timeKalmanSmoother(2*T); // cout << time2 << endl;
 	DOUBLES_EQUAL(2*time1,time2,0.001);
 }
 
