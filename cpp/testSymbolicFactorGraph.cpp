@@ -94,7 +94,7 @@ TEST( LinearFactorGraph, removeAndCombineFactors )
 	SymbolicFactorGraph fg(factorGraph);
 
   // combine all factors connected to x1
-  SymbolicFactor::shared_ptr actual = fg.removeAndCombineFactors("x1");
+  SymbolicFactor::shared_ptr actual = removeAndCombineFactors(fg,"x1");
 
 	list<string> keys; keys.push_back("l1"); keys.push_back("x1"); keys.push_back("x2");
   SymbolicFactor expected(keys);

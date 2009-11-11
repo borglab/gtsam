@@ -104,13 +104,6 @@ namespace gtsam {
      */
 		std::vector<sharedFactor> findAndRemoveFactors(const std::string& key);
 
-    /**
-     * extract and combine all the factors that involve a given node
-     * @param key the key for the given node
-     * @return the combined linear factor
-     */
-    sharedFactor removeAndCombineFactors(const std::string& key);
-
 	private:
 
 		/** Serialization function */
@@ -121,6 +114,15 @@ namespace gtsam {
 			ar & BOOST_SERIALIZATION_NVP(indices_);
 		}
 	}; // FactorGraph
+
+  /**
+   * Extract and combine all the factors that involve a given node
+   * Put this here as not all Factors have a combine constructor
+   * @param key the key for the given node
+   * @return the combined linear factor
+   */
+	template<class Factor> boost::shared_ptr<Factor>
+		removeAndCombineFactors(FactorGraph<Factor>& factorGraph, const std::string& key);
 
 	/** doubly templated functions */
 

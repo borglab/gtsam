@@ -205,15 +205,11 @@ FactorGraph<Factor>::findAndRemoveFactors(const string& key) {
 /* ************************************************************************* */
 /* find factors and remove them from the factor graph: O(n)                  */
 /* ************************************************************************* */
-template<class Factor>
-typename FactorGraph<Factor>::sharedFactor
-FactorGraph<Factor>::removeAndCombineFactors(const string& key)
+template<class Factor> boost::shared_ptr<Factor>
+removeAndCombineFactors(FactorGraph<Factor>& factorGraph, const string& key)
 {
-	bool verbose = false;
-	if (verbose) cout << "FactorGraph::removeAndCombineFactors" << endl;
-	vector<sharedFactor> found = findAndRemoveFactors(key);
-	sharedFactor new_factor(new Factor(found));
-	if (verbose) cout << "FactorGraph::removeAndCombineFactors done" << endl;
+	vector<boost::shared_ptr<Factor> > found = factorGraph.findAndRemoveFactors(key);
+	boost::shared_ptr<Factor> new_factor(new Factor(found));
 	return new_factor;
 }
 
@@ -225,7 +221,7 @@ boost::shared_ptr<Conditional> _eliminateOne(FactorGraph<Factor>& graph, const s
 
 	// combine the factors of all nodes connected to the variable to be eliminated
 	// if no factors are connected to key, returns an empty factor
-	boost::shared_ptr<Factor> joint_factor = graph.removeAndCombineFactors(key);
+	boost::shared_ptr<Factor> joint_factor = removeAndCombineFactors(graph,key);
 
 	// eliminate that joint factor
 	boost::shared_ptr<Factor> factor;

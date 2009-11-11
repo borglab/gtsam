@@ -79,7 +79,7 @@ TEST( LinearFactorGraph, combine_factors_x1 )
   Vector sigmas = Vector_(6, sigma1, sigma1, sigma2, sigma2, sigma3, sigma3);
 
   // combine all factors
-  LinearFactor::shared_ptr actual = fg.removeAndCombineFactors("x1");
+  LinearFactor::shared_ptr actual = removeAndCombineFactors(fg,"x1");
 
   // the expected linear factor
   Matrix Al1 = Matrix_(6,2,
@@ -141,7 +141,7 @@ TEST( LinearFactorGraph, combine_factors_x2 )
   Vector sigmas = Vector_(4, sigma1, sigma1, sigma2, sigma2);
 
   // combine all factors
-  LinearFactor::shared_ptr actual = fg.removeAndCombineFactors("x2");
+  LinearFactor::shared_ptr actual = removeAndCombineFactors(fg,"x2");
 
   // the expected linear factor
   Matrix Al1 = Matrix_(4,2,
