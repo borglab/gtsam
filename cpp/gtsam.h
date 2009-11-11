@@ -1,10 +1,19 @@
+class Ordering {
+  Ordering();
+  void push_back(string s);
+  void print(string s) const;
+};
+
+class SymbolicFactor{
+};
+
 class VectorConfig {
   VectorConfig();
   Vector get(string name) const;
   bool contains(string name) const;
   size_t size() const;
   void insert(string name, Vector val);
-  void print() const;
+  void print(string s) const;
   bool equals(const VectorConfig& expected, double tol) const;
   void clear();
 };
@@ -38,7 +47,7 @@ class LinearFactor {
   Matrix get_A(string key) const;
   double error(const VectorConfig& c) const;
   bool involves(string key) const;
-  void print() const;
+  void print(string s) const;
   bool equals(const LinearFactor& lf, double tol) const;
   pair<Matrix,Vector> matrix(const Ordering& ordering) const;
 };
@@ -63,22 +72,18 @@ class ConditionalGaussian {
 		      string name2,
 		      Matrix T,
 		      Vector sigmas);
-  void print() const;
+  void print(string s) const;
   Vector solve(const VectorConfig& x);
   void add(string key, Matrix S);
-  bool equals(const ConditionalGaussian &cg) const;
-};
-
-class Ordering {
-  Ordering();
-  void push_back(string s);
-  void print() const;
+  bool equals(const ConditionalGaussian &cg, double tol) const;
 };
 
 class GaussianBayesNet {
   GaussianBayesNet();
-  void print() const;
-  bool equals(const GaussianBayesNet& cbn) const;
+  void print(string s) const;
+  bool equals(const GaussianBayesNet& cbn, double tol) const;
+  void push_back(ConditionalGaussian* conditional);
+  void push_front(ConditionalGaussian* conditional);
 };
 
 class LinearFactorGraph {
@@ -88,11 +93,12 @@ class LinearFactorGraph {
   void push_back(LinearFactor* ptr_f);
   double error(const VectorConfig& c) const;
   double probPrime(const VectorConfig& c) const;
-  void print() const;
-  bool equals(const LinearFactorGraph& lfgraph) const;
+  void print(string s) const;
+  bool equals(const LinearFactorGraph& lfgraph, double tol) const;
 
-  VectorConfig* optimize_(const Ordering& ordering);
+  ConditionalGaussian* eliminateOne(string key);
   GaussianBayesNet* eliminate_(const Ordering& ordering);
+  VectorConfig* optimize_(const Ordering& ordering);
   pair<Matrix,Vector> matrix(const Ordering& ordering) const;
   Matrix sparse(const Ordering& ordering) const;
 };
@@ -103,7 +109,7 @@ class Point2 {
   double x();
   double y();
   size_t dim() const;
-  void print() const;
+  void print(string s) const;
 };
 
 class Point3 {
@@ -116,7 +122,7 @@ class Point3 {
   double x();
   double y();
   double z();
-  void print() const;
+  void print(string s) const;
 }; 
 
 class Point2Prior {
@@ -126,7 +132,7 @@ class Point2Prior {
   double sigma();
   Vector measurement();
   double error(const VectorConfig& c) const;
-  void print() const;
+  void print(string s) const;
 };
 
 class Simulated2DOdometry {
@@ -136,7 +142,7 @@ class Simulated2DOdometry {
   double sigma();
   Vector measurement();
   double error(const VectorConfig& c) const;
-  void print() const;
+  void print(string s) const;
 };
 
 class Simulated2DMeasurement {
@@ -146,6 +152,6 @@ class Simulated2DMeasurement {
   double sigma();
   Vector measurement();
   double error(const VectorConfig& c) const;
-  void print() const;
+  void print(string s) const;
 };
 
