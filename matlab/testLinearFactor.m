@@ -26,7 +26,7 @@ Ax1 = [
 % the RHS
 b2=[-1;1.5;2;-1];
 
-combined = LinearFactor('x2', Ax2,  'l1', Al1, 'x1', Ax1, b2);
+combined = LinearFactor('x2', Ax2,  'l1', Al1, 'x1', Ax1, b2, 1);
 
 % eliminate the combined factor
 % NOT WORKING
@@ -48,7 +48,7 @@ S13 = [
 +0.00,-8.94427
 ];
 d=[2.23607;-1.56525];
-expectedCG = ConditionalGaussian(d,R11,'l1',S12,'x1',S13);
+expectedCG = ConditionalGaussian('x2',d,R11,'l1',S12,'x1',S13,[1 1]');
 
 % the expected linear factor
 Bl1 = [
@@ -65,7 +65,7 @@ Bx1 = [
 % the RHS
 b1= [0.0;0.894427];
 
-expectedLF = LinearFactor('l1', Bl1, 'x1', Bx1, b1);
+expectedLF = LinearFactor('l1', Bl1, 'x1', Bx1, b1, 1);
 
 % check if the result matches
 % NOT WORKING 

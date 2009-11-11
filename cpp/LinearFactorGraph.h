@@ -84,6 +84,12 @@ namespace gtsam {
     VectorConfig optimize(const Ordering& ordering);
 
     /**
+     * shared pointer versions for MATLAB
+     */
+    boost::shared_ptr<GaussianBayesNet> eliminate_(const Ordering&);
+    boost::shared_ptr<VectorConfig> optimize_(const Ordering&);
+
+    /**
      * static function that combines two factor graphs
      * @param const &lfg1 Linear factor graph
      * @param const &lfg2 Linear factor graph

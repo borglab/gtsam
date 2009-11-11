@@ -65,6 +65,18 @@ VectorConfig LinearFactorGraph::optimize(const Ordering& ordering)
 }
 
 /* ************************************************************************* */
+boost::shared_ptr<GaussianBayesNet>
+LinearFactorGraph::eliminate_(const Ordering& ordering) {
+	return boost::shared_ptr<GaussianBayesNet>(new GaussianBayesNet(eliminate(ordering)));
+}
+
+/* ************************************************************************* */
+boost::shared_ptr<VectorConfig>
+LinearFactorGraph::optimize_(const Ordering& ordering) {
+	return boost::shared_ptr<VectorConfig>(new VectorConfig(optimize(ordering)));
+}
+
+/* ************************************************************************* */
 void LinearFactorGraph::combine(const LinearFactorGraph &lfg){
 	for(const_iterator factor=lfg.factors_.begin(); factor!=lfg.factors_.end(); factor++){
 		push_back(*factor);

@@ -48,13 +48,13 @@ class ConditionalGaussian {
   ConditionalGaussian(string key,
   		    Vector d,
 		      Matrix R,
-		      Vector precisions);
+		      Vector sigmas);
   ConditionalGaussian(string key,
   		    Vector d,
 		      Matrix R,
 		      string name1,
 		      Matrix S,
-		      Vector precisions);
+		      Vector sigmas);
   ConditionalGaussian(string key,
   		    Vector d,
 		      Matrix R,
@@ -62,7 +62,7 @@ class ConditionalGaussian {
 		      Matrix S,
 		      string name2,
 		      Matrix T,
-		      Vector precisions);
+		      Vector sigmas);
   void print() const;
   Vector solve(const VectorConfig& x);
   void add(string key, Matrix S);
@@ -91,8 +91,8 @@ class LinearFactorGraph {
   void print() const;
   bool equals(const LinearFactorGraph& lfgraph) const;
 
-  VectorConfig optimize(const Ordering& ordering);
-  void eliminate(const Ordering& ordering);
+  VectorConfig* optimize_(const Ordering& ordering);
+  GaussianBayesNet* eliminate_(const Ordering& ordering);
   pair<Matrix,Vector> matrix(const Ordering& ordering) const;
   Matrix sparse(const Ordering& ordering) const;
 };

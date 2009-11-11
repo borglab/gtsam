@@ -62,7 +62,7 @@ for steps=1:noRuns
     % eliminate with that ordering
     %time gt_sam
     ck=cputime;
-    BayesNet = linearFactorGraph.eliminate(ord);
+    BayesNet = linearFactorGraph.eliminate_(ord);
     time_gtsam=[time_gtsam,(cputime-ck)];
     
     clear trajectory visibility linearFactorGraph measurements odometry;
