@@ -9,6 +9,8 @@
 #include "NonlinearFactor.h"
 #include "LinearFactor.h"
 #include "Cal3_S2.h"
+#include "Testable.h"
+
 
 namespace gtsam {
 
@@ -18,7 +20,8 @@ class VSLAMConfig;
  * Non-linear factor for a constraint derived from a 2D measurement,
  * i.e. the main building block for visual SLAM.
  */
-class VSLAMFactor : public NonlinearFactor<VSLAMConfig>
+//class VSLAMFactor : public NonlinearFactor<VSLAMConfig>, Testable<NonlinearFactor<VSLAMConfig> >
+class VSLAMFactor : public NonlinearFactor<VSLAMConfig>, Testable<VSLAMFactor>
 {
  private:
 
@@ -51,7 +54,7 @@ class VSLAMFactor : public NonlinearFactor<VSLAMConfig>
   /**
    * equals
    */
-  bool equals(const NonlinearFactor<VSLAMConfig>&, double tol=1e-9) const;
+  bool equals(const VSLAMFactor&, double tol=1e-9) const;
 
   /**
    * predict the measurement

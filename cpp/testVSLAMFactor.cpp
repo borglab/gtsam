@@ -70,6 +70,21 @@ TEST( VSLAMFactor, error )
   CHECK(assert_equal(expected_config,actual_config,1e-9));
 }
 
+TEST( VSLAMFactor, equals )
+{
+	// Create two identical factors and make sure they're equal
+	Vector z = Vector_(2,323.,240.);
+	double sigma=1.0;
+	int cameraFrameNumber=1, landmarkNumber=1;
+	boost::shared_ptr<VSLAMFactor>
+	  factor1(new VSLAMFactor(z, sigma, cameraFrameNumber, landmarkNumber, K));
+
+	boost::shared_ptr<VSLAMFactor>
+		factor2(new VSLAMFactor(z, sigma, cameraFrameNumber, landmarkNumber, K));
+
+	CHECK(assert_equal(*factor1, *factor2));
+}
+
 /* ************************************************************************* */
 int main() {
 	TestResult tr;

@@ -35,11 +35,10 @@ void VSLAMFactor::print(const std::string& s) const {
 }
 
 /* ************************************************************************* */
-bool VSLAMFactor::equals(const NonlinearFactor<VSLAMConfig>& f, double tol) const {
-  const VSLAMFactor* p = dynamic_cast<const VSLAMFactor*>(&f);
-  if (p == NULL) return false;
-  if (cameraFrameNumber_ != p->cameraFrameNumber_ || landmarkNumber_ != p->landmarkNumber_) return false;
-  if (!equal_with_abs_tol(this->z_,p->z_,tol)) return false;
+  bool VSLAMFactor::equals(const VSLAMFactor& p, double tol) const {
+  if (&p == NULL) return false;
+  if (cameraFrameNumber_ != p.cameraFrameNumber_ || landmarkNumber_ != p.landmarkNumber_) return false;
+  if (!equal_with_abs_tol(this->z_,p.z_,tol)) return false;
   return true;
 }
 
