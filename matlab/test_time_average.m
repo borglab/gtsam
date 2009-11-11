@@ -62,7 +62,7 @@ for steps=1:noRuns
         if it==2
         ck_gt=cputime;
         end
-        BayesNet = linearFactorGraph.eliminate(ord); 
+        BayesNet = linearFactorGraph.eliminate_(ord); 
     end
     time_gtsam=[time_gtsam,(cputime-ck_gt)/runs];
     
