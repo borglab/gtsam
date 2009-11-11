@@ -11,6 +11,7 @@
 #include <iomanip>
 #include <cmath>
 #include <boost/foreach.hpp>
+#include <stdio.h>
 
 #ifdef WIN32
 #include <Windows.h>
