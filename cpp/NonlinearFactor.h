@@ -66,7 +66,7 @@ namespace gtsam {
 
     /** print */
     void print(const std::string& s = "") const {
-    	std::cout << "NonGaussianFactor " << s << std::endl;
+    	std::cout << "NonlinearFactor " << s << std::endl;
     	gtsam::print(z_, "  z = ");
     	std::cout << "  sigma = " << sigma_ << std::endl;
     }

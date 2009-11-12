@@ -8,7 +8,7 @@
 #include "NonlinearEquality.h"
 
 TEST ( NonlinearEquality, construction ) {
-	
+
 }
 
 /* ************************************************************************* */

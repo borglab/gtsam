@@ -26,7 +26,7 @@ NonlinearFactor1::NonlinearFactor1(const Vector& z,
 
 /* ************************************************************************* */
 void NonlinearFactor1::print(const string& s) const {
-	cout << "NonGaussianFactor1 " << s << endl;
+	cout << "NonlinearFactor1 " << s << endl;
   cout << "h  : " << (void*)h_ << endl;
   cout << "key: " << key_      << endl;
   cout << "H  : " << (void*)H_ << endl;
@@ -77,7 +77,7 @@ NonlinearFactor2::NonlinearFactor2(const Vector& z,
 
 /* ************************************************************************* */
 void NonlinearFactor2::print(const string& s) const {
-	cout << "NonGaussianFactor2 " << s << endl;
+	cout << "NonlinearFactor2 " << s << endl;
   cout << "h   : " << (void*)h_  << endl;
   cout << "key1: " << key1_      << endl;
   cout << "H2  : " << (void*)H2_ << endl;

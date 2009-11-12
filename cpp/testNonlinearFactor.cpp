@@ -21,7 +21,7 @@ using namespace gtsam;
 typedef boost::shared_ptr<NonlinearFactor<VectorConfig> > shared_nlf;
 
 /* ************************************************************************* */
-TEST( NonGaussianFactor, equals )
+TEST( NonlinearFactor, equals )
 {
 	double sigma = 1.0;
 
@@ -40,7 +40,7 @@ TEST( NonGaussianFactor, equals )
 }
 
 /* ************************************************************************* */
-TEST( NonGaussianFactor, equals2 )
+TEST( NonlinearFactor, equals2 )
 {
   // create a non linear factor graph
   ExampleNonlinearFactorGraph fg = createNonlinearFactorGraph();
@@ -54,7 +54,7 @@ TEST( NonGaussianFactor, equals2 )
 }
 
 /* ************************************************************************* */
-TEST( NonGaussianFactor, NonlinearFactor )
+TEST( NonlinearFactor, NonlinearFactor )
 {
   // create a non linear factor graph
   ExampleNonlinearFactorGraph fg = createNonlinearFactorGraph();
@@ -81,7 +81,7 @@ TEST( NonGaussianFactor, NonlinearFactor )
 }
 
 /* ************************************************************************* */
-TEST( NonGaussianFactor, linearize_f1 )
+TEST( NonlinearFactor, linearize_f1 )
 {
   // Grab a non-linear factor
   ExampleNonlinearFactorGraph nfg = createNonlinearFactorGraph();
@@ -99,7 +99,7 @@ TEST( NonGaussianFactor, linearize_f1 )
 }
 
 /* ************************************************************************* */
-TEST( NonGaussianFactor, linearize_f2 )
+TEST( NonlinearFactor, linearize_f2 )
 {
   // Grab a non-linear factor
   ExampleNonlinearFactorGraph nfg = createNonlinearFactorGraph();
@@ -117,7 +117,7 @@ TEST( NonGaussianFactor, linearize_f2 )
 }
 
 /* ************************************************************************* */
-TEST( NonGaussianFactor, linearize_f3 )
+TEST( NonlinearFactor, linearize_f3 )
 {
   // Grab a non-linear factor
   ExampleNonlinearFactorGraph nfg = createNonlinearFactorGraph();
@@ -135,7 +135,7 @@ TEST( NonGaussianFactor, linearize_f3 )
 }
 
 /* ************************************************************************* */
-TEST( NonGaussianFactor, linearize_f4 )
+TEST( NonlinearFactor, linearize_f4 )
 {
   // Grab a non-linear factor
   ExampleNonlinearFactorGraph nfg = createNonlinearFactorGraph();
@@ -153,7 +153,7 @@ TEST( NonGaussianFactor, linearize_f4 )
 }
 
 /* ************************************************************************* */
-TEST( NonGaussianFactor, size )
+TEST( NonlinearFactor, size )
 {
 	// create a non linear factor graph
 	ExampleNonlinearFactorGraph fg = createNonlinearFactorGraph();
