@@ -3,21 +3,21 @@
 
 clear;
 
-n = 100;
-m = 20;
+n = 1000;
+m = 200;
 
 % Set up the map 
-map = create_random_landmarks(n);
+    map = create_random_landmarks(n,[1000,1000]);
 figure(1);clf;
 plot(map(1,:), map(2,:),'g.'); hold on;
 
 % have the robot move in this world
 trajectory = random_walk([0.1,0.1],5,m);
 plot(trajectory(1,:),trajectory(2,:),'b+');
-axis([0 100 0 100]);axis square;
+axis([0 1000 0 1000]);axis square;
 
 % Check visibility and plot this on the problem figure
-visibility = create_visibility(map, trajectory,10);
+visibility = create_visibility(map, trajectory,50);
 gplot(visibility,[map trajectory]');
 figure(2);clf;
 spy(visibility)
@@ -38,12 +38,20 @@ ord = create_ordering(n,m);
 
 % show the matrix
 figure(3); clf;
-[A,b] = linearFactorGraph.matrix(ord);
-spy(A);
-
+[A_dense,b] = linearFactorGraph.matrix(ord);
+%spy(A);
+ A=sparse(A_dense);
 % eliminate with that ordering
+ck = cputime;
 BayesNet = linearFactorGraph.eliminate(ord);
+time_gtsam = cputime - ck
 
+ckqr = cputime;
+R = qr(A);
+time_qr = cputime - ckqr
+
+
+%time_gtsam=[time_gtsam,(cputime-ck)]
 % show the eliminated matrix
 figure(4); clf;
 [R,d] = BayesNet.matrix();
@@ -57,4 +65,4 @@ figure(5);clf;
 plot_config(optimal,n,m);hold on
 plot(trajectory(1,:),trajectory(2,:),'b+');
 plot(map(1,:), map(2,:),'g.');
-axis([0 100 0 100]);axis square;
+axis([0 1000 0 1000]);axis square;

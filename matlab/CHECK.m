@@ -1,4 +1,4 @@
-function CEHCK(name,assertion)
+function CHECK(name,assertion)
 
 if (assertion~=1)
   error(['CHECK ' name ' fails']);
