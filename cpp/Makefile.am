@@ -50,64 +50,75 @@ clean_external_libs:
 sources = Vector.cpp svdcmp.cpp Matrix.cpp numericalDerivative.cpp 
 check_PROGRAMS = testVector testMatrix 
 testVector_SOURCES = testVector.cpp
+testVector_LDADD   = libgtsam.la
 testMatrix_SOURCES = testMatrix.cpp
+testMatrix_LDADD   = libgtsam.la
 
-testVector_LDADD = libgtsam.la
-testMatrix_LDADD = libgtsam.la
-
-# nodes
-sources += VectorConfig.cpp Ordering.cpp 
-sources += SymbolicFactor.cpp LinearFactor.cpp NonlinearFactor.cpp 
-sources += ConditionalGaussian.cpp   
-check_PROGRAMS += testVectorConfig testSymbolicFactor testLinearFactor 
-check_PROGRAMS += testConditionalGaussian testNonlinearFactor 
+# GTSAM basics
+# The header files will be installed in ~/include/gtsam
+headers = gtsam.h Value.h Testable.h Factor.h Conditional.h 
+sources += Ordering.cpp  
 example = smallExample.cpp 
-testVectorConfig_SOURCES        = testVectorConfig.cpp
-testSymbolicFactor_SOURCES      = $(example) testSymbolicFactor.cpp
-testLinearFactor_SOURCES        = $(example) testLinearFactor.cpp
-testConditionalGaussian_SOURCES = $(example) testConditionalGaussian.cpp
-testNonlinearFactor_SOURCES     = $(example) testNonlinearFactor.cpp
 
-testVectorConfig_LDADD        = libgtsam.la
-testSymbolicFactor_LDADD      = libgtsam.la
-testLinearFactor_LDADD        = libgtsam.la
-testConditionalGaussian_LDADD = libgtsam.la
-testNonlinearFactor_LDADD     = libgtsam.la
+# Inference
+headers += inference.h inference-inl.h
+headers += FactorGraph.h FactorGraph-inl.h
+headers += BayesNet.h BayesNet-inl.h BayesTree.h BayesTree-inl.h
+check_PROGRAMS += testFactorgraph testBayesTree testInference  
+testFactorgraph_SOURCES        = testFactorgraph.cpp
+testBayesTree_SOURCES          = $(example) testBayesTree.cpp
+testInference_SOURCES          = $(example) testInference.cpp
+testFactorgraph_LDADD          = libgtsam.la
+testBayesTree_LDADD            = libgtsam.la
+testInference_LDADD            = libgtsam.la
+
+# Symbolic Inference
+headers += SymbolicConditional.h
+sources += SymbolicFactor.cpp SymbolicFactorGraph.cpp SymbolicBayesNet.cpp
+check_PROGRAMS += testSymbolicFactor testSymbolicFactorGraph testSymbolicBayesNet  
+testSymbolicFactor_SOURCES      = $(example) testSymbolicFactor.cpp
+testSymbolicFactor_LDADD        = libgtsam.la
+testSymbolicFactorGraph_SOURCES = $(example) testSymbolicFactorGraph.cpp
+testSymbolicFactorGraph_LDADD   = libgtsam.la
+testSymbolicBayesNet_SOURCES    = $(example) testSymbolicBayesNet.cpp
+testSymbolicBayesNet_LDADD      = libgtsam.la
+
+# Gaussian inference 
+headers += LinearFactorSet.h
+sources += VectorConfig.cpp LinearFactor.cpp LinearFactorGraph.cpp ConditionalGaussian.cpp GaussianBayesNet.cpp
+check_PROGRAMS += testVectorConfig testLinearFactor testLinearFactorGraph testConditionalGaussian testGaussianBayesNet 
+testVectorConfig_SOURCES        = testVectorConfig.cpp
+testVectorConfig_LDADD          = libgtsam.la
+testLinearFactor_SOURCES        = $(example) testLinearFactor.cpp
+testLinearFactor_LDADD          = libgtsam.la
+testLinearFactorGraph_SOURCES   = $(example) testLinearFactorGraph.cpp
+testLinearFactorGraph_LDADD     = libgtsam.la
+testConditionalGaussian_SOURCES = $(example) testConditionalGaussian.cpp
+testConditionalGaussian_LDADD   = libgtsam.la
+testGaussianBayesNet_SOURCES    = $(example) testGaussianBayesNet.cpp
+testGaussianBayesNet_LDADD      = libgtsam.la
 
 # not the correct way, I'm sure: Kai ?
 timeLinearFactor: timeLinearFactor.cpp  
 timeLinearFactor: CXXFLAGS += -I /opt/local/include
 timeLinearFactor: LDFLAGS += -L.libs -lgtsam
 
-# graphs 
-sources += SymbolicFactorGraph.cpp LinearFactorGraph.cpp 
-sources += SymbolicBayesNet.cpp GaussianBayesNet.cpp
-check_PROGRAMS += testFactorgraph testSymbolicFactorGraph
-check_PROGRAMS += testLinearFactorGraph testNonlinearFactorGraph 
-check_PROGRAMS += testGaussianBayesNet testNonlinearOptimizer
-check_PROGRAMS += testSymbolicBayesNet testBayesTree  
-testFactorgraph_SOURCES          = testFactorgraph.cpp
-testSymbolicFactorGraph_SOURCES  = $(example) testSymbolicFactorGraph.cpp
-testLinearFactorGraph_SOURCES    = $(example) testLinearFactorGraph.cpp
-testNonlinearFactorGraph_SOURCES = $(example) testNonlinearFactorGraph.cpp
-testNonlinearOptimizer_SOURCES   = $(example) testNonlinearOptimizer.cpp
-testSymbolicBayesNet_SOURCES   = $(example) testSymbolicBayesNet.cpp
-testGaussianBayesNet_SOURCES      = $(example) testGaussianBayesNet.cpp
-testBayesTree_SOURCES            = $(example) testBayesTree.cpp
-
-testFactorgraph_LDADD          = libgtsam.la
-testSymbolicFactorGraph_LDADD  = libgtsam.la
-testLinearFactorGraph_LDADD    = libgtsam.la
-testNonlinearFactorGraph_LDADD = libgtsam.la
-testNonlinearOptimizer_LDADD   = libgtsam.la
-testSymbolicBayesNet_LDADD   = libgtsam.la
-testGaussianBayesNet_LDADD      = libgtsam.la
-testBayesTree_LDADD            = libgtsam.la
-
 # not the correct way, I'm sure: Kai ?
 timeLinearFactorGraph: timeLinearFactorGraph.cpp  
 timeLinearFactorGraph: CXXFLAGS += -I /opt/local/include -I ..
 timeLinearFactorGraph: LDFLAGS += SmallExample.o -L.libs -lgtsam -L../CppUnitLite -lCppUnitLite
+
+# Nonlinear inference 
+headers += NonlinearFactorGraph.h NonlinearFactorGraph-inl.h
+headers += NonlinearOptimizer.h NonlinearOptimizer-inl.h 
+sources += NonlinearFactor.cpp
+check_PROGRAMS += testNonlinearFactor testNonlinearFactorGraph testNonlinearOptimizer
+testNonlinearFactor_SOURCES      = $(example) testNonlinearFactor.cpp
+testNonlinearFactor_LDADD        = libgtsam.la
+testNonlinearFactorGraph_SOURCES = $(example) testNonlinearFactorGraph.cpp
+testNonlinearFactorGraph_LDADD   = libgtsam.la
+testNonlinearOptimizer_SOURCES   = $(example) testNonlinearOptimizer.cpp
+testNonlinearOptimizer_LDADD     = libgtsam.la
 
 # geometry
 sources += Point2.cpp Pose2.cpp Point3.cpp Rot3.cpp Pose3.cpp Cal3_S2.cpp
@@ -138,26 +149,22 @@ testSimulated3D_SOURCES = testSimulated3D.cpp
 testSimulated3D_LDADD = libgtsam.la
 check_PROGRAMS += testSimulated3D 
 
-# Visual SLAM
-sources += CalibratedCamera.cpp SimpleCamera.cpp VSLAMConfig.cpp VSLAMGraph.cpp VSLAMFactor.cpp
-check_PROGRAMS += testCalibratedCamera testSimpleCamera testVSLAMFactor
+# Cameras
+sources += CalibratedCamera.cpp SimpleCamera.cpp
+check_PROGRAMS += testCalibratedCamera testSimpleCamera
 testCalibratedCamera_SOURCES = testCalibratedCamera.cpp
 testCalibratedCamera_LDADD = libgtsam.la
 testSimpleCamera_SOURCES = testSimpleCamera.cpp
 testSimpleCamera_LDADD = libgtsam.la
+
+# Visual SLAM
+sources += VSLAMConfig.cpp VSLAMGraph.cpp VSLAMFactor.cpp
+check_PROGRAMS += testVSLAMFactor
 testVSLAMFactor_SOURCES = testVSLAMFactor.cpp
 testVSLAMFactor_LDADD = libgtsam.la
 
-
-# The header files will be installed in ~/include/gtsam
-headers = gtsam.h Value.h Testable.h Factor.h Conditional.h SymbolicConditional.h LinearFactorSet.h 
 headers += Point2Prior.h Simulated2DOdometry.h Simulated2DMeasurement.h smallExample.h 
 headers += $(sources:.cpp=.h)
-# templates: 
-headers += FactorGraph.h FactorGraph-inl.h
-headers += NonlinearFactorGraph.h NonlinearFactorGraph-inl.h
-headers += NonlinearOptimizer.h NonlinearOptimizer-inl.h 
-headers += BayesNet.h BayesNet-inl.h BayesTree.h BayesTree-inl.h
 
 # create both dynamic and static libraries
 AM_CXXFLAGS = -I$(boost) -fPIC
