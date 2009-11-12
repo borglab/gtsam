@@ -12,9 +12,10 @@
 
 #include <colamd/colamd.h>
 
-#include "FactorGraph-inl.h"
 #include "LinearFactorGraph.h"
 #include "LinearFactorSet.h"
+#include "FactorGraph-inl.h"
+#include "inference-inl.h"
 
 using namespace std;
 using namespace gtsam;
@@ -41,6 +42,12 @@ set<string> LinearFactorGraph::find_separator(const string& key) const
 }
 
 /* ************************************************************************* */
+ConditionalGaussian::shared_ptr
+LinearFactorGraph::eliminateOne(const std::string& key) {
+	return gtsam::eliminateOne<LinearFactor,ConditionalGaussian>(*this, key);
+}
+
+/* ************************************************************************* */
 GaussianBayesNet
 LinearFactorGraph::eliminate(const Ordering& ordering)
 {
@@ -59,15 +66,19 @@ VectorConfig LinearFactorGraph::optimize(const Ordering& ordering)
 	GaussianBayesNet chordalBayesNet = eliminate(ordering);
 
 	// calculate new configuration (using backsubstitution)
-	VectorConfig newConfig = ::optimize(chordalBayesNet);
-
-	return newConfig;
+	return ::optimize(chordalBayesNet);
 }
 
 /* ************************************************************************* */
 boost::shared_ptr<GaussianBayesNet>
-LinearFactorGraph::eliminate_(const Ordering& ordering) {
-	return boost::shared_ptr<GaussianBayesNet>(new GaussianBayesNet(eliminate(ordering)));
+LinearFactorGraph::eliminate_(const Ordering& ordering)
+{
+	boost::shared_ptr<GaussianBayesNet> chordalBayesNet(new GaussianBayesNet); // empty
+	BOOST_FOREACH(string key, ordering) {
+		ConditionalGaussian::shared_ptr cg = eliminateOne(key);
+		chordalBayesNet->push_back(cg);
+	}
+	return chordalBayesNet;
 }
 
 /* ************************************************************************* */

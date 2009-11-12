@@ -18,6 +18,9 @@
 #include "Ordering.h"
 #include "FactorGraph.h"
 
+// trick from some reading group
+#define FOREACH_PAIR( KEY, VAL, COL) BOOST_FOREACH (boost::tie(KEY,VAL),COL)
+
 using namespace std;
 
 namespace gtsam {
@@ -93,6 +96,16 @@ void FactorGraph<Factor>::push_back(sharedFactor factor) {
 			indices_ptr->push_back(i);               // add the index i to it
 		}
 	}
+}
+
+/* ************************************************************************* */
+template<class Factor>
+Ordering FactorGraph<Factor>::keys() const {
+	string key;
+	Ordering keys;
+	list<int> indices_key;
+	FOREACH_PAIR(key, indices_key, indices_) keys.push_back(key);
+	return keys;
 }
 
 /* ************************************************************************* */
@@ -211,48 +224,6 @@ removeAndCombineFactors(FactorGraph<Factor>& factorGraph, const string& key)
 	vector<boost::shared_ptr<Factor> > found = factorGraph.findAndRemoveFactors(key);
 	boost::shared_ptr<Factor> new_factor(new Factor(found));
 	return new_factor;
-}
-
-/* ************************************************************************* */
-/* eliminate one node from the factor graph                           */
-/* ************************************************************************* */
-template<class Factor,class Conditional>
-boost::shared_ptr<Conditional> _eliminateOne(FactorGraph<Factor>& graph, const string& key) {
-
-	// combine the factors of all nodes connected to the variable to be eliminated
-	// if no factors are connected to key, returns an empty factor
-	boost::shared_ptr<Factor> joint_factor = removeAndCombineFactors(graph,key);
-
-	// eliminate that joint factor
-	boost::shared_ptr<Factor> factor;
-	boost::shared_ptr<Conditional> conditional;
-	boost::tie(conditional, factor) = joint_factor->eliminate(key);
-
-	// add new factor on separator back into the graph
-	if (!factor->empty()) graph.push_back(factor);
-
-	// return the conditional Gaussian
-	return conditional;
-}
-
-/* ************************************************************************* */
-// This doubly templated function is generic. There is a LinearFactorGraph
-// version that returns a more specific GaussianBayesNet.
-// Note, you will need to include this file to instantiate the function.
-// TODO: get rid of summy argument
-/* ************************************************************************* */
-template<class Factor,class Conditional>
-BayesNet<Conditional>
-_eliminate(FactorGraph<Factor>& factorGraph, const Ordering& ordering)
-{
-	BayesNet<Conditional> bayesNet; // empty
-
-	BOOST_FOREACH(string key, ordering) {
-		boost::shared_ptr<Conditional> cg = _eliminateOne<Factor,Conditional>(factorGraph,key);
-		bayesNet.push_back(cg);
-	}
-
-	return bayesNet;
 }
 
 /* ************************************************************************* */

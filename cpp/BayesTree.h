@@ -15,6 +15,7 @@
 #include <boost/serialization/list.hpp>
 
 #include "Testable.h"
+#include "FactorGraph.h"
 #include "BayesNet.h"
 
 namespace gtsam {
@@ -70,11 +71,11 @@ namespace gtsam {
 
 			/** return the marginal P(C) of the clique */
 			template<class Factor>
-			BayesNet<Conditional> marginal(shared_ptr root);
+			FactorGraph<Factor> marginal(shared_ptr root);
 
 			/** return the joint P(C1,C2), where C1==this. TODO: not a method? */
 			template<class Factor>
-			BayesNet<Conditional> joint(shared_ptr C2, shared_ptr root);
+			FactorGraph<Factor> joint(shared_ptr C2, shared_ptr root);
 		};
 
 		typedef boost::shared_ptr<Clique> sharedClique;
@@ -142,11 +143,19 @@ namespace gtsam {
 
 		/** return marginal on any variable */
 		template<class Factor>
-		BayesNet<Conditional> marginal(const std::string& key) const;
+		FactorGraph<Factor> marginal(const std::string& key) const;
+
+		/** return marginal on any variable, as a Bayes Net */
+		template<class Factor>
+		BayesNet<Conditional> marginalBayesNet(const std::string& key) const;
 
 		/** return joint on two variables */
 		template<class Factor>
-		BayesNet<Conditional> joint(const std::string& key1, const std::string& key2) const;
+		FactorGraph<Factor> joint(const std::string& key1, const std::string& key2) const;
+
+		/** return joint on two variables as a BayesNet */
+		template<class Factor>
+		BayesNet<Conditional> jointBayesNet(const std::string& key1, const std::string& key2) const;
 
 	}; // BayesTree
 

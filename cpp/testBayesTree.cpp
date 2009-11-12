@@ -177,28 +177,28 @@ TEST( BayesTree, balanced_smoother_marginals )
 	LONGS_EQUAL(7,bayesTree.size());
 
 	// Check marginal on x1
-  GaussianBayesNet expected1 = simpleGaussian("x1", zero(2), sigmax1);
-	GaussianBayesNet actual1 = bayesTree.marginal<LinearFactor>("x1");
+	GaussianBayesNet expected1 = simpleGaussian("x1", zero(2), sigmax1);
+	GaussianBayesNet actual1 = bayesTree.marginalBayesNet<LinearFactor>("x1");
 	CHECK(assert_equal(expected1,actual1,1e-4));
 
 	// Check marginal on x2
   GaussianBayesNet expected2 = simpleGaussian("x2", zero(2), sigmax2);
-	GaussianBayesNet actual2 = bayesTree.marginal<LinearFactor>("x2");
+	GaussianBayesNet actual2 = bayesTree.marginalBayesNet<LinearFactor>("x2");
 	CHECK(assert_equal(expected2,actual2,1e-4));
 
 	// Check marginal on x3
   GaussianBayesNet expected3 = simpleGaussian("x3", zero(2), sigmax3);
-	GaussianBayesNet actual3 = bayesTree.marginal<LinearFactor>("x3");
+	GaussianBayesNet actual3 = bayesTree.marginalBayesNet<LinearFactor>("x3");
 	CHECK(assert_equal(expected3,actual3,1e-4));
 
 	// Check marginal on x4
   GaussianBayesNet expected4 = simpleGaussian("x4", zero(2), sigmax4);
-	GaussianBayesNet actual4 = bayesTree.marginal<LinearFactor>("x4");
+	GaussianBayesNet actual4 = bayesTree.marginalBayesNet<LinearFactor>("x4");
 	CHECK(assert_equal(expected4,actual4,1e-4));
 
 	// Check marginal on x7 (should be equal to x1)
   GaussianBayesNet expected7 = simpleGaussian("x7", zero(2), sigmax7);
-	GaussianBayesNet actual7 = bayesTree.marginal<LinearFactor>("x7");
+	GaussianBayesNet actual7 = bayesTree.marginalBayesNet<LinearFactor>("x7");
 	CHECK(assert_equal(expected7,actual7,1e-4));
 }
 
@@ -252,7 +252,8 @@ TEST( BayesTree, balanced_smoother_clique_marginals )
 	ConditionalGaussian::shared_ptr cg(new ConditionalGaussian("x1", zero(2), eye(2), "x2", A12, sigma));
 	expected.push_front(cg);
 	Gaussian::sharedClique R = bayesTree.root(), C3 = bayesTree["x1"];
-	GaussianBayesNet actual = C3->marginal<LinearFactor>(R);
+	FactorGraph<LinearFactor> marginal = C3->marginal<LinearFactor>(R);
+	GaussianBayesNet actual = eliminate<LinearFactor,ConditionalGaussian>(marginal,C3->keys());
 	CHECK(assert_equal(expected,actual,1e-4));
 }
 
@@ -276,14 +277,14 @@ TEST( BayesTree, balanced_smoother_joint )
   GaussianBayesNet expected1 = simpleGaussian("x7", zero(2), sigmax7);
 	ConditionalGaussian::shared_ptr cg1(new ConditionalGaussian("x1", zero(2), eye(2), "x7", A, sigma));
 	expected1.push_front(cg1);
-	GaussianBayesNet actual1 = bayesTree.joint<LinearFactor>("x1","x7");
+	GaussianBayesNet actual1 = bayesTree.jointBayesNet<LinearFactor>("x1","x7");
 	CHECK(assert_equal(expected1,actual1,1e-4));
 
 	// Check the joint density P(x7,x1) factored as P(x7|x1)P(x1)
   GaussianBayesNet expected2 = simpleGaussian("x1", zero(2), sigmax1);
 	ConditionalGaussian::shared_ptr cg2(new ConditionalGaussian("x7", zero(2), eye(2), "x1", A, sigma));
 	expected2.push_front(cg2);
-	GaussianBayesNet actual2 = bayesTree.joint<LinearFactor>("x7","x1");
+	GaussianBayesNet actual2 = bayesTree.jointBayesNet<LinearFactor>("x7","x1");
 	CHECK(assert_equal(expected2,actual2,1e-4));
 
 	// Check the joint density P(x1,x4), i.e. with a root variable
@@ -292,7 +293,7 @@ TEST( BayesTree, balanced_smoother_joint )
   Matrix A14 = (-0.0769231)*eye(2);
 	ConditionalGaussian::shared_ptr cg3(new ConditionalGaussian("x1", zero(2), eye(2), "x4", A14, sigma14));
 	expected3.push_front(cg3);
-	GaussianBayesNet actual3 = bayesTree.joint<LinearFactor>("x1","x4");
+	GaussianBayesNet actual3 = bayesTree.jointBayesNet<LinearFactor>("x1","x4");
 	CHECK(assert_equal(expected3,actual3,1e-4));
 
 	// Check the joint density P(x4,x1), i.e. with a root variable, factored the other way
@@ -301,7 +302,7 @@ TEST( BayesTree, balanced_smoother_joint )
   Matrix A41 = (-0.055794)*eye(2);
 	ConditionalGaussian::shared_ptr cg4(new ConditionalGaussian("x4", zero(2), eye(2), "x1", A41, sigma41));
 	expected4.push_front(cg4);
-	GaussianBayesNet actual4 = bayesTree.joint<LinearFactor>("x4","x1");
+	GaussianBayesNet actual4 = bayesTree.jointBayesNet<LinearFactor>("x4","x1");
 	CHECK(assert_equal(expected4,actual4,1e-4));
 }
 

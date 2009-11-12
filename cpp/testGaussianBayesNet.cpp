@@ -20,7 +20,7 @@ using namespace boost::assign;
 #endif //HAVE_BOOST_SERIALIZATION
 
 #include "GaussianBayesNet.h"
-#include "BayesNet-inl.h"
+#include "BayesNet.h"
 #include "smallExample.h"
 #include "Ordering.h"
 
@@ -81,19 +81,6 @@ TEST( GaussianBayesNet, optimize )
   expected.insert("x",x);
   expected.insert("y",y);
 
-  CHECK(assert_equal(expected,actual));
-}
-
-/* ************************************************************************* */
-TEST( GaussianBayesNet, marginals )
-{
-	// create and marginalize a small Bayes net on "x"
-  GaussianBayesNet cbn = createSmallGaussianBayesNet();
-  Ordering keys("x");
-  GaussianBayesNet actual = marginals<LinearFactor>(cbn,keys);
-
-  // expected is just scalar Gaussian on x
-  GaussianBayesNet expected = scalarGaussian("x",4,sqrt(2));
   CHECK(assert_equal(expected,actual));
 }
 

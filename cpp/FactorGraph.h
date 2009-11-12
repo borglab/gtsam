@@ -86,6 +86,9 @@ namespace gtsam {
 		/** Add a factor */
 		void push_back(sharedFactor factor);
 
+		/** return keys in some random order */
+		Ordering keys() const;
+
 		/**
 		 * Compute colamd ordering
 		 */
@@ -124,27 +127,7 @@ namespace gtsam {
 	template<class Factor> boost::shared_ptr<Factor>
 		removeAndCombineFactors(FactorGraph<Factor>& factorGraph, const std::string& key);
 
-	/** doubly templated functions */
-
 	/**
-   * Eliminate a single node yielding a Conditional
-   * Eliminates the factors from the factor graph through findAndRemoveFactors
-   * and adds a new factor on the separator to the factor graph
-   */
-	template<class Factor, class Conditional>
-	boost::shared_ptr<Conditional> _eliminateOne(
-			FactorGraph<Factor>& factorGraph,
-			const std::string& key);
-
-	/**
-	 * eliminate factor graph using the given (not necessarily complete)
-	 * ordering, yielding a chordal Bayes net and (partially eliminated) FG
-	 */
-	template<class Factor, class Conditional>
-	BayesNet<Conditional>
-	_eliminate(FactorGraph<Factor>& factorGraph, const Ordering& ordering);
-
-  /**
    * static function that combines two factor graphs
    * @param const &fg1 Linear factor graph
    * @param const &fg2 Linear factor graph

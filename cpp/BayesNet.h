@@ -105,13 +105,4 @@ namespace gtsam {
 		}
 	}; // BayesNet
 
-	/** doubly templated functions */
-
-	/**
-	 * integrate out all except ordering, might be inefficient as the ordering
-	 * will simply be the current ordering with the keys put in the back
-	 */
-	template<class Factor, class Conditional>
-	BayesNet<Conditional> marginals(const BayesNet<Conditional>& bn, const Ordering& keys);
-
 } /// namespace gtsam

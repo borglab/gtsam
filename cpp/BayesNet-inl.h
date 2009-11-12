@@ -1,6 +1,6 @@
 /**
  * @file   BayesNet-inl.h
- * @brief  Bayes chain template definitions
+ * @brief  Bayes net template definitions
  * @author Frank Dellaert
  */
 
@@ -68,30 +68,6 @@ namespace gtsam {
 						"BayesNet::operator['"+key+"']: not found"));
 		return *it;
 	}
-
-	/* ************************************************************************* */
-	template<class Factor, class Conditional>
-	BayesNet<Conditional> marginals(const BayesNet<Conditional>& bn, const Ordering& keys) {
-		// Convert to factor graph
-		FactorGraph<Factor> factorGraph(bn);
-
-		// Get the keys of all variables and remove all keys we want the marginal for
-		Ordering ord = bn.ordering();
-		BOOST_FOREACH(string key, keys) ord.remove(key); // TODO: O(n*k), faster possible?
-
-		// add marginal keys at end
-		BOOST_FOREACH(string key, keys) ord.push_back(key);
-
-		// eliminate to get joint
-		BayesNet<Conditional> joint = _eliminate<Factor,Conditional>(factorGraph,ord);
-
-		// remove all integrands, P(K) = \int_I P(I|K) P(K)
-		size_t nrIntegrands = ord.size()-keys.size();
-		for(int i=0;i<nrIntegrands;i++) joint.pop_front();
-
-		// joint is now only on keys, return it
-		return joint;
-		}
 
 	/* ************************************************************************* */
 

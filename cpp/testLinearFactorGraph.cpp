@@ -19,7 +19,7 @@ using namespace boost::assign;
 #include "Ordering.h"
 #include "smallExample.h"
 #include "GaussianBayesNet.h"
-#include <FactorGraph-inl.h> // needed for FactorGraph::eliminate
+#include "inference-inl.h" // needed for eliminate and marginals
 
 using namespace gtsam;
 
@@ -420,7 +420,7 @@ TEST( LinearFactorGraph, CONSTRUCTOR_GaussianBayesNet )
 
   // Base FactorGraph only
   FactorGraph<LinearFactor> fg3(CBN);
-  GaussianBayesNet CBN3 = _eliminate<LinearFactor,ConditionalGaussian>(fg3,ord);
+  GaussianBayesNet CBN3 = gtsam::eliminate<LinearFactor,ConditionalGaussian>(fg3,ord);
   CHECK(assert_equal(CBN,CBN3));
 }
 
@@ -583,6 +583,15 @@ TEST( LinearFactorGraph, variables )
   insert(expected)("l1", 2)("x1", 2)("x2", 2);
   Dimensions actual = fg.dimensions();
   CHECK(expected==actual);
+}
+
+/* ************************************************************************* */
+TEST( LinearFactorGraph, keys )
+{
+  LinearFactorGraph fg = createLinearFactorGraph();
+  Ordering expected;
+  expected += "l1","x1","x2";
+  CHECK(assert_equal(expected,fg.keys()));
 }
 
 /* ************************************************************************* */

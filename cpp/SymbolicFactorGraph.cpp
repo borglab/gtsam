@@ -7,9 +7,9 @@
 
 #include <boost/foreach.hpp>
 #include "Ordering.h"
-#include "FactorGraph-inl.h"
 #include "SymbolicFactorGraph.h"
 #include "SymbolicBayesNet.h"
+#include "inference-inl.h"
 
 using namespace std;
 
@@ -19,6 +19,12 @@ namespace gtsam {
 	template class FactorGraph<SymbolicFactor>;
 
 	/* ************************************************************************* */
+  boost::shared_ptr<SymbolicConditional>
+  SymbolicFactorGraph::eliminateOne(const std::string& key){
+		return gtsam::eliminateOne<SymbolicFactor,SymbolicConditional>(*this, key);
+  }
+
+	/* ************************************************************************* */
 	SymbolicBayesNet
 	SymbolicFactorGraph::eliminate(const Ordering& ordering)
 	{
@@ -26,7 +32,7 @@ namespace gtsam {
 
 		BOOST_FOREACH(string key, ordering) {
 			SymbolicConditional::shared_ptr conditional =
-					_eliminateOne<SymbolicFactor,SymbolicConditional>(*this,key);
+					gtsam::eliminateOne<SymbolicFactor,SymbolicConditional>(*this,key);
 			bayesNet.push_back(conditional);
 		}
 		return bayesNet;

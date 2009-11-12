@@ -9,8 +9,7 @@
 using namespace boost::assign;
 
 #include "BayesTree.h"
-#include "FactorGraph-inl.h"
-#include "BayesNet-inl.h"
+#include "inference-inl.h"
 
 namespace gtsam {
 
@@ -106,7 +105,7 @@ namespace gtsam {
 		BOOST_REVERSE_FOREACH(string key, integrands) ordering.push_front(key);
 
 		// eliminate to get marginal
-		BayesNet<Conditional> p_S_R = _eliminate<Factor,Conditional>(p_Cp_R,ordering);
+		BayesNet<Conditional> p_S_R = eliminate<Factor,Conditional>(p_Cp_R,ordering);
 
 		// remove all integrands
 		BOOST_FOREACH(string key, integrands) p_S_R.pop_front();
@@ -123,7 +122,7 @@ namespace gtsam {
 	/* ************************************************************************* */
 	template<class Conditional>
 	template<class Factor>
-	BayesNet<Conditional>
+	FactorGraph<Factor>
 	BayesTree<Conditional>::Clique::marginal(shared_ptr R) {
 		// If we are the root, just return this root
 		if (R.get()==this) return *R;
@@ -134,7 +133,7 @@ namespace gtsam {
 		p_FSR.push_back(*R);
 
 		// Find marginal on the keys we are interested in
-		return marginals<Factor>(p_FSR,keys());
+		return marginalize<Factor,Conditional>(p_FSR,keys());
 	}
 
 	/* ************************************************************************* */
@@ -142,7 +141,7 @@ namespace gtsam {
 	/* ************************************************************************* */
 	template<class Conditional>
 	template<class Factor>
-	BayesNet<Conditional>
+	FactorGraph<Factor>
 	BayesTree<Conditional>::Clique::joint(shared_ptr C2, shared_ptr R) {
 		// For now, assume neither is the root
 
@@ -160,7 +159,7 @@ namespace gtsam {
 		keys12.unique();
 
 		// Calculate the marginal
-		return marginals<Factor>(*bn,keys12);
+		return marginalize<Factor,Conditional>(*bn,keys12);
 	}
 
 	/* ************************************************************************* */
@@ -226,17 +225,35 @@ namespace gtsam {
 	/* ************************************************************************* */
 	template<class Conditional>
 	template<class Factor>
-	BayesNet<Conditional>
+	FactorGraph<Factor>
 	BayesTree<Conditional>::marginal(const string& key) const {
 
 		// get clique containing key
 		sharedClique clique = (*this)[key];
 
 		// calculate or retrieve its marginal
-		BayesNet<Conditional> cliqueMarginal = clique->marginal<Factor>(root_);
+		FactorGraph<Factor> cliqueMarginal = clique->marginal<Factor>(root_);
 
-		// Get the marginal on the single key
-		return marginals<Factor>(cliqueMarginal,Ordering(key));
+		// create an ordering where only the requested key is not eliminated
+		Ordering ord = clique->keys();
+		ord.remove(key);
+
+		// partially eliminate, remaining factor graph is requested marginal
+		eliminate<Factor,Conditional>(cliqueMarginal,ord);
+		return cliqueMarginal;
+	}
+
+	/* ************************************************************************* */
+	template<class Conditional>
+	template<class Factor>
+	BayesNet<Conditional>
+	BayesTree<Conditional>::marginalBayesNet(const string& key) const {
+
+		// calculate marginal as a factor graph
+	  FactorGraph<Factor> fg = this->marginal<Factor>(key);
+
+		// eliminate further to Bayes net
+		return eliminate<Factor,Conditional>(fg,Ordering(key));
 	}
 
 	/* ************************************************************************* */
@@ -244,19 +261,39 @@ namespace gtsam {
 	/* ************************************************************************* */
 	template<class Conditional>
 	template<class Factor>
-	BayesNet<Conditional>
+	FactorGraph<Factor>
 	BayesTree<Conditional>::joint(const std::string& key1, const std::string& key2) const {
 
 		// get clique C1 and C2
 		sharedClique C1 = (*this)[key1], C2 = (*this)[key2];
 
 		// calculate joint
-		BayesNet<Conditional> p_C1C2 = C1->joint<Factor>(C2,root_);
+		FactorGraph<Factor> p_C1C2 = C1->joint<Factor>(C2,root_);
 
-		// Get the marginal on the two keys
+		// create an ordering where both requested keys are not eliminated
+		Ordering ord = p_C1C2.keys();
+		ord.remove(key1);
+		ord.remove(key2);
+
+		// partially eliminate, remaining factor graph is requested joint
+		// TODO, make eliminate functional
+		eliminate<Factor,Conditional>(p_C1C2,ord);
+		return p_C1C2;
+	}
+
+	/* ************************************************************************* */
+	template<class Conditional>
+	template<class Factor>
+	BayesNet<Conditional>
+	BayesTree<Conditional>::jointBayesNet(const std::string& key1, const std::string& key2) const {
+
+		// calculate marginal as a factor graph
+	  FactorGraph<Factor> fg = this->joint<Factor>(key1,key2);
+
+		// eliminate further to Bayes net
 		Ordering ordering;
 		ordering += key1, key2;
-		return marginals<Factor>(p_C1C2,ordering);
+		return eliminate<Factor,Conditional>(fg,ordering);
 	}
 
 	/* ************************************************************************* */

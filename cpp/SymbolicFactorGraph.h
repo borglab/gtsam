@@ -46,9 +46,7 @@ namespace gtsam {
      * Eliminates the factors from the factor graph through findAndRemoveFactors
      * and adds a new factor on the separator to the factor graph
      */
-    inline boost::shared_ptr<SymbolicConditional> eliminateOne(const std::string& key){
-			return _eliminateOne<SymbolicFactor,SymbolicConditional>(*this, key);
-    }
+    boost::shared_ptr<SymbolicConditional> eliminateOne(const std::string& key);
 
 		/**
 		 * eliminate factor graph in place(!) in the given order, yielding
