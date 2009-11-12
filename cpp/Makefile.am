@@ -162,9 +162,11 @@ testSimpleCamera_LDADD = libgtsam.la
 
 # Visual SLAM
 sources += VSLAMConfig.cpp VSLAMGraph.cpp VSLAMFactor.cpp
-check_PROGRAMS += testVSLAMFactor
+check_PROGRAMS += testVSLAMFactor testVSLAMGraph
 testVSLAMFactor_SOURCES = testVSLAMFactor.cpp
 testVSLAMFactor_LDADD = libgtsam.la
+testVSLAMGraph_SOURCES = testVSLAMGraph.cpp
+testVSLAMGraph_LDADD = libgtsam.la
 
 headers += Point2Prior.h Simulated2DOdometry.h Simulated2DMeasurement.h smallExample.h 
 headers += $(sources:.cpp=.h)
