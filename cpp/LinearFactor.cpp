@@ -287,13 +287,13 @@ void LinearFactor::append_factor(LinearFactor::shared_ptr f, const size_t m,
  */
 /* ************************************************************************* */
 pair<ConditionalGaussian::shared_ptr, LinearFactor::shared_ptr>
-LinearFactor::eliminate(const string& key)
+LinearFactor::eliminate(const string& key) const
 {
 	bool verbose = false;
 	if (verbose) cout << "LinearFactor::eliminate(" << key << ")" << endl;
 
 	// if this factor does not involve key, we exit with empty CG and LF
-	iterator it = As_.find(key);
+	const_iterator it = As_.find(key);
 	if (it==As_.end()) {
 		// Conditional Gaussian is just a parent-less node with P(x)=1
 		LinearFactor::shared_ptr lf(new LinearFactor);

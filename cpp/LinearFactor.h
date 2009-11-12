@@ -232,7 +232,8 @@ public:
 	 * @param key the key of the node to be eliminated
 	 * @return a new factor and a conditional gaussian on the eliminated variable
 	 */
-	std::pair<boost::shared_ptr<ConditionalGaussian>, shared_ptr> eliminate(const std::string& key);
+	std::pair<boost::shared_ptr<ConditionalGaussian>, shared_ptr>
+	eliminate(const std::string& key) const;
 
 	/**
 	 * Take the factor f, and append to current matrices. Not very general.
