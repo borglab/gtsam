@@ -193,21 +193,8 @@ TEST( LinearFactorGraph, eliminateOne_x1 )
   ConditionalGaussian::shared_ptr actual = fg.eliminateOne("x1");
 
   // create expected Conditional Gaussian
-  Matrix R11 = Matrix_(2,2,
-			 1.0, 0.0,
-			 0.0, 1.0
-			 );
-  Matrix S12 = Matrix_(2,2,
-			 -0.111111, 0.00,
-			 +0.00,-0.111111
-			 );
-  Matrix S13 = Matrix_(2,2,
-			 -0.444444, 0.00,
-			 +0.00,-0.444444
-			 );
-  Vector d(2); d(0) = -0.133333; d(1) = -0.0222222;
-  Vector sigma(2); sigma(0) = 1./15; sigma(1) = 1./15;
-
+  Matrix I = eye(2), R11 = I, S12 = -0.111111*I, S13 = -0.444444*I;
+  Vector d = Vector_(2, -0.133333, -0.0222222), sigma = repeat(2, 1./15);
   ConditionalGaussian expected("x1",d,R11,"l1",S12,"x2",S13,sigma);
 
   CHECK(assert_equal(expected,*actual,tol));
@@ -221,21 +208,8 @@ TEST( LinearFactorGraph, eliminateOne_x2 )
   ConditionalGaussian::shared_ptr actual = fg.eliminateOne("x2");
 
   // create expected Conditional Gaussian
-  Matrix R11 = Matrix_(2,2,
-			 1.0, 0.0,
-			 0.0, 1.0
-			 );
-  Matrix S12 = Matrix_(2,2,
-			 -0.2, 0.0,
-			 +0.0,-0.2
-			 );
-  Matrix S13 = Matrix_(2,2,
-			 -0.8, 0.0,
-			 +0.0,-0.8
-			 );
-  Vector d(2); d(0) = 0.2; d(1) = -0.14;
-  Vector sigma(2); sigma(0) = 0.0894427; sigma(1) = 0.0894427;
-
+  Matrix I = eye(2), R11 = I, S12 = -0.2*I, S13 = -0.8*I;
+  Vector d = Vector_(2, 0.2, -0.14), sigma = repeat(2, 0.0894427);
   ConditionalGaussian expected("x2",d,R11,"l1",S12,"x1",S13,sigma);
 
   CHECK(assert_equal(expected,*actual,tol));
@@ -248,21 +222,8 @@ TEST( LinearFactorGraph, eliminateOne_l1 )
   ConditionalGaussian::shared_ptr actual = fg.eliminateOne("l1");
 
   // create expected Conditional Gaussian
-  Matrix R11 = Matrix_(2,2,
-			 1.0, 0.0,
-			 0.0, 1.0
-			 );
-  Matrix S12 = Matrix_(2,2,
-			 -0.5, 0.0,
-			 +0.0,-0.5
-			 );
-  Matrix S13 = Matrix_(2,2,
-			 -0.5, 0.0,
-			 +0.0,-0.5
-			 );
-  Vector d(2); d(0) = -0.1; d(1) = 0.25;
-  Vector sigma(2); sigma(0) = 0.141421; sigma(1) = 0.141421;
-
+  Matrix I = eye(2), R11 = I, S12 = -0.5*I, S13 = -0.5*I;
+  Vector d = Vector_(2, -0.1, 0.25), sigma = repeat(2, 0.141421);
   ConditionalGaussian expected("l1",d,R11,"x1",S12,"x2",S13,sigma);
 
   CHECK(assert_equal(expected,*actual,tol));
@@ -272,50 +233,22 @@ TEST( LinearFactorGraph, eliminateOne_l1 )
 TEST( LinearFactorGraph, eliminateAll )
 {
   // create expected Chordal bayes Net
-  double data1[] = { 1.0, 0.0,
-                     0.0, 1.0};
-  Matrix R1 = Matrix_(2,2, data1);
-  Vector d1(2); d1(0) = -0.1; d1(1) = -0.1;
-  Vector sigma1(2); sigma1(0) = 0.1; sigma1(1) = 0.1;
+  Matrix I = eye(2);
 
-  ConditionalGaussian::shared_ptr cg1(new ConditionalGaussian("x1",d1, R1, sigma1));
+  Vector d1 = Vector_(2, -0.1,-0.1);
+  GaussianBayesNet expected = simpleGaussian("x1",d1,0.1);
 
-  double data21[] = { 1.0, 0.0,
-                      0.0, 1.0};
-  Matrix R2 = Matrix_(2,2, data21);
-  double data22[] = { -1.0,  0.0,
-                       0.0, -1.0};
-  Matrix A1 = Matrix_(2,2, data22);
-  Vector d2(2); d2(0) = 0.0; d2(1) = 0.2;
-  Vector sigma2(2); sigma2(0) = 0.149071; sigma2(1) = 0.149071;
+  Vector d2 = Vector_(2, 0.0, 0.2), sigma2 = repeat(2,0.149071);
+  push_front(expected,"l1",d2, I,"x1", (-1)*I,sigma2);
 
-  ConditionalGaussian::shared_ptr cg2(new ConditionalGaussian("l1",d2, R2,"x1", A1,sigma2));
-
-  double data31[] = { 1.0, 0.0,
-                      0.0, 1.0};
-  Matrix R3 = Matrix_(2,2, data31);
-  double data32[] = { -0.2,  0.0,
-                       0.0, -0.2};
-  Matrix A21 = Matrix_(2,2, data32);
-  double data33[] = { -0.8, 0.0,
-                       0.0, -0.8};
-  Matrix A22 = Matrix_(2,2, data33);
-
-  Vector d3(2); d3(0) = 0.2; d3(1) = -0.14;
-  Vector sigma3(2); sigma3(0) = 0.0894427; sigma3(1) = 0.0894427;
-
-  ConditionalGaussian::shared_ptr cg3(new ConditionalGaussian("x2",d3, R3,"l1", A21, "x1", A22, sigma3));
-
-  GaussianBayesNet expected;
-  expected.push_back(cg3);
-  expected.push_back(cg2);
-  expected.push_back(cg1);
+  Vector d3 = Vector_(2, 0.2, -0.14), sigma3 = repeat(2,0.0894427);
+  push_front(expected,"x2",d3, I,"l1", (-0.2)*I, "x1", (-0.8)*I, sigma3);
 
   // Check one ordering
   LinearFactorGraph fg1 = createLinearFactorGraph();
-  Ordering ord1;
-  ord1 += "x2","l1","x1";
-  GaussianBayesNet actual = fg1.eliminate(ord1);
+  Ordering ordering;
+  ordering += "x2","l1","x1";
+  GaussianBayesNet actual = fg1.eliminate(ordering);
   CHECK(assert_equal(expected,actual,tol));
 }
 

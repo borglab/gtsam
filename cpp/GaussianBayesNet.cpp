@@ -44,6 +44,20 @@ GaussianBayesNet simpleGaussian(const string& key, const Vector& mu, double sigm
 }
 
 /* ************************************************************************* */
+void push_front(GaussianBayesNet& bn, const string& key, Vector d, Matrix R,
+		const string& name1, Matrix S, Vector sigmas) {
+	ConditionalGaussian::shared_ptr cg(new ConditionalGaussian(key, d, R, name1, S, sigmas));
+	bn.push_front(cg);
+}
+
+/* ************************************************************************* */
+void push_front(GaussianBayesNet& bn, const string& key, Vector d, Matrix R,
+		const string& name1, Matrix S, const string& name2, Matrix T, Vector sigmas) {
+	ConditionalGaussian::shared_ptr cg(new ConditionalGaussian(key, d, R, name1, S, name2, T, sigmas));
+	bn.push_front(cg);
+}
+
+/* ************************************************************************* */
 VectorConfig optimize(const GaussianBayesNet& bn)
 {
   VectorConfig result;

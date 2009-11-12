@@ -26,6 +26,20 @@ namespace gtsam {
 	GaussianBayesNet simpleGaussian(const std::string& key, const Vector& mu, double sigma=1.0);
 
 	/**
+	 * Add a conditional node with one parent
+	 * |Rx+Sy-d|
+	 */
+	void push_front(GaussianBayesNet& bn, const std::string& key, Vector d, Matrix R,
+			const std::string& name1, Matrix S, Vector sigmas);
+
+	/**
+	 * Add a conditional node with two parents
+	 * |Rx+Sy+Tz-d|
+	 */
+	void push_front(GaussianBayesNet& bn, const std::string& key, Vector d, Matrix R,
+			const std::string& name1, Matrix S, const std::string& name2, Matrix T, Vector sigmas);
+
+	/**
 	 * optimize, i.e. return x = inv(R)*d
 	 */
 	VectorConfig optimize(const GaussianBayesNet&);
