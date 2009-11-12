@@ -204,9 +204,9 @@ GaussianBayesNet createSmallGaussianBayesNet()
   Vector tau(1); tau(0) = 1.0;
   
   // define nodes and specify in reverse topological sort (i.e. parents last)
-  ConditionalGaussian::shared_ptr
-    Px_y(new ConditionalGaussian("x",d1,R11,"y",S12,tau)),
-    Py(new ConditionalGaussian("y",d2,R22,tau));
+  GaussianConditional::shared_ptr
+    Px_y(new GaussianConditional("x",d1,R11,"y",S12,tau)),
+    Py(new GaussianConditional("y",d2,R22,tau));
   GaussianBayesNet cbn;
   cbn.push_back(Px_y);
   cbn.push_back(Py);
@@ -502,11 +502,11 @@ VectorConfig createMultiConstraintConfig() {
 //	Matrix R = eye(2);
 //	Vector d = c["x1"];
 //	double sigma = 0.1;
-//	ConditionalGaussian::shared_ptr f1(new ConditionalGaussian(d/sigma, R/sigma));
+//	GaussianConditional::shared_ptr f1(new GaussianConditional(d/sigma, R/sigma));
 //	cbn.insert("x1", f1);
 //
 //	// add a delta function to the cbn
-//	ConstrainedConditionalGaussian::shared_ptr f2(new ConstrainedConditionalGaussian); //(c["x0"], "x0"));
+//	ConstrainedGaussianConditional::shared_ptr f2(new ConstrainedGaussianConditional); //(c["x0"], "x0"));
 //	cbn.insert_df("x0", f2);
 //
 //	return cbn;

@@ -42,9 +42,9 @@ set<string> GaussianFactorGraph::find_separator(const string& key) const
 }
 
 /* ************************************************************************* */
-ConditionalGaussian::shared_ptr
+GaussianConditional::shared_ptr
 GaussianFactorGraph::eliminateOne(const std::string& key) {
-	return gtsam::eliminateOne<GaussianFactor,ConditionalGaussian>(*this, key);
+	return gtsam::eliminateOne<GaussianFactor,GaussianConditional>(*this, key);
 }
 
 /* ************************************************************************* */
@@ -53,7 +53,7 @@ GaussianFactorGraph::eliminate(const Ordering& ordering)
 {
 	GaussianBayesNet chordalBayesNet; // empty
 	BOOST_FOREACH(string key, ordering) {
-		ConditionalGaussian::shared_ptr cg = eliminateOne(key);
+		GaussianConditional::shared_ptr cg = eliminateOne(key);
 		chordalBayesNet.push_back(cg);
 	}
 	return chordalBayesNet;
@@ -75,7 +75,7 @@ GaussianFactorGraph::eliminate_(const Ordering& ordering)
 {
 	boost::shared_ptr<GaussianBayesNet> chordalBayesNet(new GaussianBayesNet); // empty
 	BOOST_FOREACH(string key, ordering) {
-		ConditionalGaussian::shared_ptr cg = eliminateOne(key);
+		GaussianConditional::shared_ptr cg = eliminateOne(key);
 		chordalBayesNet->push_back(cg);
 	}
 	return chordalBayesNet;

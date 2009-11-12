@@ -17,7 +17,7 @@ using namespace boost::assign;
 
 #include "Matrix.h"
 #include "Ordering.h"
-#include "ConditionalGaussian.h"
+#include "GaussianConditional.h"
 #include "smallExample.h"
 
 using namespace std;
@@ -314,7 +314,7 @@ TEST( GaussianFactor, eliminate )
 	GaussianFactor combined(lfg);
 
 	// eliminate the combined factor
-	ConditionalGaussian::shared_ptr actualCG;
+	GaussianConditional::shared_ptr actualCG;
 	GaussianFactor::shared_ptr actualLF;
 	boost::tie(actualCG,actualLF) = combined.eliminate("x2");
 
@@ -338,7 +338,7 @@ TEST( GaussianFactor, eliminate )
 	sigmas(1) = 1/sqrt(125.0);
 
 	// Check the conditional Gaussian
-	ConditionalGaussian expectedCG("x2", d,R11,"l1",S12,"x1",S13,sigmas);
+	GaussianConditional expectedCG("x2", d,R11,"l1",S12,"x1",S13,sigmas);
 
 	// the expected linear factor
 	double sigma = 0.2236;
@@ -403,7 +403,7 @@ TEST( GaussianFactor, eliminate2 )
 	GaussianFactor combined(meas, b2, sigmas);
 
 	// eliminate the combined factor
-	ConditionalGaussian::shared_ptr actualCG;
+	GaussianConditional::shared_ptr actualCG;
 	GaussianFactor::shared_ptr actualLF;
 	boost::tie(actualCG,actualLF) = combined.eliminate("x2");
 
@@ -422,7 +422,7 @@ TEST( GaussianFactor, eliminate2 )
 	x2Sigmas(0) = 0.0894427;
 	x2Sigmas(1) = 0.0894427;
 
-	ConditionalGaussian expectedCG("x2",d,R11,"l1x1",S12,x2Sigmas);
+	GaussianConditional expectedCG("x2",d,R11,"l1x1",S12,x2Sigmas);
 
 	// the expected linear factor
 	double sigma = 0.2236;
@@ -458,12 +458,12 @@ TEST( GaussianFactor, eliminate_empty )
 	GaussianFactor f;
 
 	// eliminate the empty factor
-	ConditionalGaussian::shared_ptr actualCG;
+	GaussianConditional::shared_ptr actualCG;
 	GaussianFactor::shared_ptr actualLF;
 	boost::tie(actualCG,actualLF) = f.eliminate("x2");
 
 	// expected Conditional Gaussian is just a parent-less node with P(x)=1
-	ConditionalGaussian expectedCG("x2");
+	GaussianConditional expectedCG("x2");
 
 	// expected remaining factor is still empty :-)
 	GaussianFactor expectedLF;
@@ -612,7 +612,7 @@ TEST( GaussianFactor, size )
 }
 
 /* ************************************************************************* */
-TEST( GaussianFactor, CONSTRUCTOR_ConditionalGaussian )
+TEST( GaussianFactor, CONSTRUCTOR_GaussianConditional )
 {
 	Matrix R11 = Matrix_(2,2,
 			1.00,  0.00,
@@ -628,7 +628,7 @@ TEST( GaussianFactor, CONSTRUCTOR_ConditionalGaussian )
 	sigmas(0) = 0.29907;
 	sigmas(1) = 0.29907;
 
-	ConditionalGaussian::shared_ptr CG(new ConditionalGaussian("x2",d,R11,"l1x1",S12,sigmas));
+	GaussianConditional::shared_ptr CG(new GaussianConditional("x2",d,R11,"l1x1",S12,sigmas));
 	GaussianFactor actualLF(CG);
 	//  actualLF.print();
 	GaussianFactor expectedLF("x2",R11,"l1x1",S12,d, sigmas(0));
@@ -645,7 +645,7 @@ TEST ( GaussianFactor, constraint_eliminate1 )
 	GaussianFactor lc(key, eye(2), v, 0.0);
 
 	// eliminate it
-	ConditionalGaussian::shared_ptr actualCG;
+	GaussianConditional::shared_ptr actualCG;
 	GaussianFactor::shared_ptr actualLF;
 	boost::tie(actualCG,actualLF) = lc.eliminate("x0");
 
@@ -654,7 +654,7 @@ TEST ( GaussianFactor, constraint_eliminate1 )
 
 	// verify conditional Gaussian
 	Vector sigmas = Vector_(2, 0.0, 0.0);
-	ConditionalGaussian expCG("x0", v, eye(2), sigmas);
+	GaussianConditional expCG("x0", v, eye(2), sigmas);
 	CHECK(assert_equal(expCG, *actualCG));
 }
 
@@ -678,7 +678,7 @@ TEST ( GaussianFactor, constraint_eliminate2 )
 	GaussianFactor lc("x", A1, "y", A2, b, 0.0);
 
 	// eliminate x and verify results
-	ConditionalGaussian::shared_ptr actualCG;
+	GaussianConditional::shared_ptr actualCG;
 	GaussianFactor::shared_ptr actualLF;
 	boost::tie(actualCG, actualLF) = lc.eliminate("x");
 
@@ -694,7 +694,7 @@ TEST ( GaussianFactor, constraint_eliminate2 )
 			1.0,    2.0,
 			0.0,    0.0);
 	Vector d = Vector_(2, 3.0, 0.6666);
-	ConditionalGaussian expectedCG("x", d, R, "y", S, zero(2));
+	GaussianConditional expectedCG("x", d, R, "y", S, zero(2));
 	CHECK(assert_equal(expectedCG, *actualCG, 1e-4));
 }
 
@@ -724,7 +724,7 @@ TEST ( GaussianFactor, constraint_eliminate3 )
 	// eliminate y from original graph
 	// NOTE: this will throw an exception, as
 	// the leading matrix is rank deficient
-	ConditionalGaussian::shared_ptr actualCG;
+	GaussianConditional::shared_ptr actualCG;
 	GaussianFactor::shared_ptr actualLF;
 	try {
 		boost::tie(actualCG, actualLF) = lc.eliminate("y");

@@ -42,7 +42,7 @@ TEST( GaussianBayesNet, constructor )
   sigmas(0) = 1.;
   
   // define nodes and specify in reverse topological sort (i.e. parents last)
-  ConditionalGaussian x("x",d1,R11,"y",S12, sigmas), y("y",d2,R22, sigmas);
+  GaussianConditional x("x",d1,R11,"y",S12, sigmas), y("y",d2,R22, sigmas);
 
   // check small example which uses constructor
   GaussianBayesNet cbn = createSmallGaussianBayesNet();

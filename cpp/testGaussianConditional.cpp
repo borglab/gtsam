@@ -1,5 +1,5 @@
 /**
- *  @file   testConditionalGaussian.cpp
+ *  @file   testGaussianConditional.cpp
  *  @brief  Unit tests for Conditional gaussian
  *  @author Christian Potthast
  **/
@@ -15,14 +15,14 @@
 #endif //HAVE_BOOST_SERIALIZATION
 
 #include "Matrix.h"
-#include "ConditionalGaussian.h"
+#include "GaussianConditional.h"
 
 using namespace gtsam;
 
 /* ************************************************************************* */
 /* unit test for equals                                                     */
 /* ************************************************************************* */
-TEST( ConditionalGaussian, equals )
+TEST( GaussianConditional, equals )
 {
   // create a conditional gaussian node
   Matrix A1(2,2);
@@ -44,7 +44,7 @@ TEST( ConditionalGaussian, equals )
   Vector d(2);
   d(0) = 0.2; d(1) = 0.5;
   
-  ConditionalGaussian 
+  GaussianConditional 
     expected("x",d, R, "x1", A1, "l1", A2, tau),
     actual("x",d, R, "x1", A1, "l1", A2, tau);
   
@@ -55,7 +55,7 @@ TEST( ConditionalGaussian, equals )
 /* ************************************************************************* */
 /* unit test for solve                                                      */
 /* ************************************************************************* */
-TEST( ConditionalGaussian, solve )
+TEST( GaussianConditional, solve )
 {
   //expected solution
   Vector expected(2);
@@ -76,7 +76,7 @@ TEST( ConditionalGaussian, solve )
   
   Vector tau = ones(2);
 
-  ConditionalGaussian cg("x",d, R, "x1", A1, "l1", A2, tau);
+  GaussianConditional cg("x",d, R, "x1", A1, "l1", A2, tau);
   
   Vector sx1(2);
   sx1(0) = 1.0; sx1(1) = 1.0;
@@ -98,7 +98,7 @@ TEST( ConditionalGaussian, solve )
 /* unit test for serialization                                               */ 
 /* ************************************************************************* */
 #ifdef HAVE_BOOST_SERIALIZATION
-TEST( ConditionalGaussian, serialize )
+TEST( GaussianConditional, serialize )
 {
 	 // create a conditional gaussion node
 	 Matrix A1(2,2);
@@ -116,7 +116,7 @@ TEST( ConditionalGaussian, serialize )
 	 Vector d(2);
 	 d(0) = 0.2; d(1) = 0.5;
 
-	 ConditionalGaussian cg("x2", d, R, "x1", A1, "l1", A2);
+	 GaussianConditional cg("x2", d, R, "x1", A1, "l1", A2);
 
 	 //serialize the CG
 	 std::ostringstream in_archive_stream;
@@ -127,7 +127,7 @@ TEST( ConditionalGaussian, serialize )
 	 //deserialize the CGg
 	 std::istringstream out_archive_stream(serialized);
 	 boost::archive::text_iarchive out_archive(out_archive_stream);
-	 ConditionalGaussian output;
+	 GaussianConditional output;
 	 out_archive >> output;
 
 	 //check for equality

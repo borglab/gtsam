@@ -19,7 +19,7 @@
 
 namespace gtsam {
 
-	class ConditionalGaussian;
+	class GaussianConditional;
 	class Ordering;
 
 /**
@@ -95,7 +95,7 @@ public:
 		}
 
 	/** Construct from Conditional Gaussian */
-	GaussianFactor(const boost::shared_ptr<ConditionalGaussian>& cg);
+	GaussianFactor(const boost::shared_ptr<GaussianConditional>& cg);
 
 	/**
 	 * Constructor that combines a set of factors
@@ -232,7 +232,7 @@ public:
 	 * @param key the key of the node to be eliminated
 	 * @return a new factor and a conditional gaussian on the eliminated variable
 	 */
-	std::pair<boost::shared_ptr<ConditionalGaussian>, shared_ptr>
+	std::pair<boost::shared_ptr<GaussianConditional>, shared_ptr>
 	eliminate(const std::string& key) const;
 
 	/**

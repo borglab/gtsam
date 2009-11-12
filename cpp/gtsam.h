@@ -52,19 +52,19 @@ class GaussianFactor {
   pair<Matrix,Vector> matrix(const Ordering& ordering) const;
 };
 
-class ConditionalGaussian {
-  ConditionalGaussian();
-  ConditionalGaussian(string key,
+class GaussianConditional {
+  GaussianConditional();
+  GaussianConditional(string key,
   		    Vector d,
 		      Matrix R,
 		      Vector sigmas);
-  ConditionalGaussian(string key,
+  GaussianConditional(string key,
   		    Vector d,
 		      Matrix R,
 		      string name1,
 		      Matrix S,
 		      Vector sigmas);
-  ConditionalGaussian(string key,
+  GaussianConditional(string key,
   		    Vector d,
 		      Matrix R,
 		      string name1,
@@ -75,15 +75,15 @@ class ConditionalGaussian {
   void print(string s) const;
   Vector solve(const VectorConfig& x);
   void add(string key, Matrix S);
-  bool equals(const ConditionalGaussian &cg, double tol) const;
+  bool equals(const GaussianConditional &cg, double tol) const;
 };
 
 class GaussianBayesNet {
   GaussianBayesNet();
   void print(string s) const;
   bool equals(const GaussianBayesNet& cbn, double tol) const;
-  void push_back(ConditionalGaussian* conditional);
-  void push_front(ConditionalGaussian* conditional);
+  void push_back(GaussianConditional* conditional);
+  void push_front(GaussianConditional* conditional);
 };
 
 class GaussianFactorGraph {
@@ -96,7 +96,7 @@ class GaussianFactorGraph {
   void print(string s) const;
   bool equals(const GaussianFactorGraph& lfgraph, double tol) const;
 
-  ConditionalGaussian* eliminateOne(string key);
+  GaussianConditional* eliminateOne(string key);
   GaussianBayesNet* eliminate_(const Ordering& ordering);
   VectorConfig* optimize_(const Ordering& ordering);
   pair<Matrix,Vector> matrix(const Ordering& ordering) const;

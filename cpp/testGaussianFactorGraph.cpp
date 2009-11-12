@@ -190,12 +190,12 @@ TEST( GaussianFactorGraph, combine_factors_x2 )
 TEST( GaussianFactorGraph, eliminateOne_x1 )
 {
   GaussianFactorGraph fg = createGaussianFactorGraph();
-  ConditionalGaussian::shared_ptr actual = fg.eliminateOne("x1");
+  GaussianConditional::shared_ptr actual = fg.eliminateOne("x1");
 
   // create expected Conditional Gaussian
   Matrix I = eye(2), R11 = I, S12 = -0.111111*I, S13 = -0.444444*I;
   Vector d = Vector_(2, -0.133333, -0.0222222), sigma = repeat(2, 1./15);
-  ConditionalGaussian expected("x1",d,R11,"l1",S12,"x2",S13,sigma);
+  GaussianConditional expected("x1",d,R11,"l1",S12,"x2",S13,sigma);
 
   CHECK(assert_equal(expected,*actual,tol));
 }
@@ -205,12 +205,12 @@ TEST( GaussianFactorGraph, eliminateOne_x1 )
 TEST( GaussianFactorGraph, eliminateOne_x2 )
 {
   GaussianFactorGraph fg = createGaussianFactorGraph();
-  ConditionalGaussian::shared_ptr actual = fg.eliminateOne("x2");
+  GaussianConditional::shared_ptr actual = fg.eliminateOne("x2");
 
   // create expected Conditional Gaussian
   Matrix I = eye(2), R11 = I, S12 = -0.2*I, S13 = -0.8*I;
   Vector d = Vector_(2, 0.2, -0.14), sigma = repeat(2, 0.0894427);
-  ConditionalGaussian expected("x2",d,R11,"l1",S12,"x1",S13,sigma);
+  GaussianConditional expected("x2",d,R11,"l1",S12,"x1",S13,sigma);
 
   CHECK(assert_equal(expected,*actual,tol));
 }
@@ -219,12 +219,12 @@ TEST( GaussianFactorGraph, eliminateOne_x2 )
 TEST( GaussianFactorGraph, eliminateOne_l1 )
 {
   GaussianFactorGraph fg = createGaussianFactorGraph();
-  ConditionalGaussian::shared_ptr actual = fg.eliminateOne("l1");
+  GaussianConditional::shared_ptr actual = fg.eliminateOne("l1");
 
   // create expected Conditional Gaussian
   Matrix I = eye(2), R11 = I, S12 = -0.5*I, S13 = -0.5*I;
   Vector d = Vector_(2, -0.1, 0.25), sigma = repeat(2, 0.141421);
-  ConditionalGaussian expected("l1",d,R11,"x1",S12,"x2",S13,sigma);
+  GaussianConditional expected("l1",d,R11,"x1",S12,"x2",S13,sigma);
 
   CHECK(assert_equal(expected,*actual,tol));
 }
@@ -353,7 +353,7 @@ TEST( GaussianFactorGraph, CONSTRUCTOR_GaussianBayesNet )
 
   // Base FactorGraph only
   FactorGraph<GaussianFactor> fg3(CBN);
-  GaussianBayesNet CBN3 = gtsam::eliminate<GaussianFactor,ConditionalGaussian>(fg3,ord);
+  GaussianBayesNet CBN3 = gtsam::eliminate<GaussianFactor,GaussianConditional>(fg3,ord);
   CHECK(assert_equal(CBN,CBN3));
 }
 

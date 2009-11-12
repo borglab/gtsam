@@ -85,16 +85,16 @@ testSymbolicBayesNet_LDADD      = libgtsam.la
 
 # Gaussian inference 
 headers += GaussianFactorSet.h
-sources += VectorConfig.cpp GaussianFactor.cpp GaussianFactorGraph.cpp ConditionalGaussian.cpp GaussianBayesNet.cpp
-check_PROGRAMS += testVectorConfig testGaussianFactor testGaussianFactorGraph testConditionalGaussian testGaussianBayesNet 
+sources += VectorConfig.cpp GaussianFactor.cpp GaussianFactorGraph.cpp GaussianConditional.cpp GaussianBayesNet.cpp
+check_PROGRAMS += testVectorConfig testGaussianFactor testGaussianFactorGraph testGaussianConditional testGaussianBayesNet 
 testVectorConfig_SOURCES        = testVectorConfig.cpp
 testVectorConfig_LDADD          = libgtsam.la
 testGaussianFactor_SOURCES        = $(example) testGaussianFactor.cpp
 testGaussianFactor_LDADD          = libgtsam.la
 testGaussianFactorGraph_SOURCES   = $(example) testGaussianFactorGraph.cpp
 testGaussianFactorGraph_LDADD     = libgtsam.la
-testConditionalGaussian_SOURCES = $(example) testConditionalGaussian.cpp
-testConditionalGaussian_LDADD   = libgtsam.la
+testGaussianConditional_SOURCES = $(example) testGaussianConditional.cpp
+testGaussianConditional_LDADD   = libgtsam.la
 testGaussianBayesNet_SOURCES    = $(example) testGaussianBayesNet.cpp
 testGaussianBayesNet_LDADD      = libgtsam.la
 
@@ -112,13 +112,16 @@ timeGaussianFactorGraph: LDFLAGS += smallExample.o -L.libs -lgtsam -L../CppUnitL
 headers += NonlinearFactorGraph.h NonlinearFactorGraph-inl.h
 headers += NonlinearOptimizer.h NonlinearOptimizer-inl.h 
 sources += NonlinearFactor.cpp
-check_PROGRAMS += testNonlinearFactor testNonlinearFactorGraph testNonlinearOptimizer
+sources += NonlinearEquality.cpp
+check_PROGRAMS += testNonlinearFactor testNonlinearFactorGraph testNonlinearOptimizer testNonlinearEquality
 testNonlinearFactor_SOURCES      = $(example) testNonlinearFactor.cpp
 testNonlinearFactor_LDADD        = libgtsam.la
 testNonlinearFactorGraph_SOURCES = $(example) testNonlinearFactorGraph.cpp
 testNonlinearFactorGraph_LDADD   = libgtsam.la
 testNonlinearOptimizer_SOURCES   = $(example) testNonlinearOptimizer.cpp
 testNonlinearOptimizer_LDADD     = libgtsam.la
+testNonlinearEquality_SOURCES    = testNonlinearEquality.cpp
+testNonlinearEquality_LDADD      = libgtsam.la
 
 # geometry
 sources += Point2.cpp Pose2.cpp Point3.cpp Rot3.cpp Pose3.cpp Cal3_S2.cpp

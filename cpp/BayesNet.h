@@ -23,7 +23,7 @@ namespace gtsam {
 	 * Bayes network
 	 * This is the base class for SymbolicBayesNet, DiscreteBayesNet, and GaussianBayesNet
 	 * corresponding to what is used for the "Conditional" template argument:
-	 * a SymbolicConditional, ConditionalProbabilityTable, or a ConditionalGaussian
+	 * a SymbolicConditional, ConditionalProbabilityTable, or a GaussianConditional
 	 */
 	template<class Conditional>
 	class BayesNet: public Testable<BayesNet<Conditional> > {

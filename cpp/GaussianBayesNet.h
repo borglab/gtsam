@@ -11,13 +11,13 @@
 
 #include <list>
 
-#include "ConditionalGaussian.h"
+#include "GaussianConditional.h"
 #include "BayesNet.h"
 
 namespace gtsam {
 
 	/** A Bayes net made from linear-Gaussian densities */
-	typedef BayesNet<ConditionalGaussian> GaussianBayesNet;
+	typedef BayesNet<GaussianConditional> GaussianBayesNet;
 
 	/** Create a scalar Gaussian */
 	GaussianBayesNet scalarGaussian(const std::string& key, double mu=0.0, double sigma=1.0);

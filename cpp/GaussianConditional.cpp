@@ -1,5 +1,5 @@
 /**
- * @file   ConditionalGaussian.cpp
+ * @file   GaussianConditional.cpp
  * @brief  Conditional Gaussian Base class
  * @author Christian Potthast
  */
@@ -7,26 +7,26 @@
 #include <string.h>
 #include <boost/numeric/ublas/vector.hpp>
 #include "Ordering.h"
-#include "ConditionalGaussian.h"
+#include "GaussianConditional.h"
 
 using namespace std;
 using namespace gtsam;
 
 /* ************************************************************************* */
-ConditionalGaussian::ConditionalGaussian(const string& key,Vector d, Matrix R, Vector sigmas) :
+GaussianConditional::GaussianConditional(const string& key,Vector d, Matrix R, Vector sigmas) :
 	Conditional (key), R_(R),sigmas_(sigmas),d_(d)
 {
 }
 
 /* ************************************************************************* */
-ConditionalGaussian::ConditionalGaussian(const string& key, Vector d, Matrix R,
+GaussianConditional::GaussianConditional(const string& key, Vector d, Matrix R,
 		const string& name1, Matrix S, Vector sigmas) :
 	Conditional (key), R_(R), sigmas_(sigmas), d_(d) {
 	parents_.insert(make_pair(name1, S));
 }
 
 /* ************************************************************************* */
-ConditionalGaussian::ConditionalGaussian(const string& key, Vector d, Matrix R,
+GaussianConditional::GaussianConditional(const string& key, Vector d, Matrix R,
 		const string& name1, Matrix S, const string& name2, Matrix T, Vector sigmas) :
 	Conditional (key), R_(R),sigmas_(sigmas), d_(d) {
 	parents_.insert(make_pair(name1, S));
@@ -34,13 +34,13 @@ ConditionalGaussian::ConditionalGaussian(const string& key, Vector d, Matrix R,
 }
 
 /* ************************************************************************* */
-ConditionalGaussian::ConditionalGaussian(const string& key,
+GaussianConditional::GaussianConditional(const string& key,
 		const Vector& d, const Matrix& R, const map<string, Matrix>& parents, Vector sigmas) :
 	Conditional (key), R_(R),sigmas_(sigmas), d_(d), parents_(parents) {
 }
 
 /* ************************************************************************* */
-void ConditionalGaussian::print(const string &s) const
+void GaussianConditional::print(const string &s) const
 {
   cout << s << ": density on " << key_ << endl;
   gtsam::print(R_,"R");
@@ -54,9 +54,9 @@ void ConditionalGaussian::print(const string &s) const
 }    
 
 /* ************************************************************************* */
-bool ConditionalGaussian::equals(const Conditional &c, double tol) const {
+bool GaussianConditional::equals(const Conditional &c, double tol) const {
 	if (!Conditional::equals(c)) return false;
-	const ConditionalGaussian* p = dynamic_cast<const ConditionalGaussian*> (&c);
+	const GaussianConditional* p = dynamic_cast<const GaussianConditional*> (&c);
 	if (p == NULL) return false;
 	Parents::const_iterator it = parents_.begin();
 
@@ -85,7 +85,7 @@ bool ConditionalGaussian::equals(const Conditional &c, double tol) const {
 }
 
 /* ************************************************************************* */
-list<string> ConditionalGaussian::parents() const {
+list<string> GaussianConditional::parents() const {
 	list<string> result;
 	for (Parents::const_iterator it = parents_.begin(); it != parents_.end(); it++)
 		result.push_back(it->first);
@@ -93,7 +93,7 @@ list<string> ConditionalGaussian::parents() const {
 }
 
 /* ************************************************************************* */
-Vector ConditionalGaussian::solve(const VectorConfig& x) const {
+Vector GaussianConditional::solve(const VectorConfig& x) const {
 	Vector rhs = d_;
 	for (Parents::const_iterator it = parents_.begin(); it
 			!= parents_.end(); it++) {

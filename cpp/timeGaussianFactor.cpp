@@ -69,7 +69,7 @@ int main()
   GaussianFactor combined("x2", Ax2,  "l1", Al1, "x1", Ax1, b2);
   long timeLog = clock();
   int n = 1000000;
-  ConditionalGaussian::shared_ptr conditional;
+  GaussianConditional::shared_ptr conditional;
   GaussianFactor::shared_ptr factor;
 
   for(int i = 0; i < n; i++)

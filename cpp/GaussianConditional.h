@@ -1,5 +1,5 @@
 /**
- * @file    ConditionalGaussian.h
+ * @file    GaussianConditional.h
  * @brief   Conditional Gaussian Base class
  * @author  Christian Potthast
  */
@@ -28,12 +28,12 @@ class Ordering;
  * It has a set of parents y,z, etc. and implements a probability density on x.
  * The negative log-probability is given by || Rx - (d - Sy - Tz - ...)||^2
  */
-class ConditionalGaussian : public Conditional {
+class GaussianConditional : public Conditional {
 
 public:
 	typedef std::map<std::string, Matrix> Parents;
 	typedef Parents::const_iterator const_iterator;
-	typedef boost::shared_ptr<ConditionalGaussian> shared_ptr;
+	typedef boost::shared_ptr<GaussianConditional> shared_ptr;
 
 protected:
 
@@ -52,41 +52,41 @@ protected:
 public:
 
 	/** default constructor needed for serialization */
-	ConditionalGaussian(){}
+	GaussianConditional(){}
 
 	/** constructor */
-	ConditionalGaussian(const std::string& key) :
+	GaussianConditional(const std::string& key) :
 		Conditional (key) {}
 
 	/** constructor with no parents
 	 * |Rx-d|
 	 */
-	ConditionalGaussian(const std::string& key, Vector d, Matrix R, Vector sigmas);
+	GaussianConditional(const std::string& key, Vector d, Matrix R, Vector sigmas);
 
 	/** constructor with only one parent
 	 * |Rx+Sy-d|
 	 */
-	ConditionalGaussian(const std::string& key, Vector d, Matrix R,
+	GaussianConditional(const std::string& key, Vector d, Matrix R,
 			const std::string& name1, Matrix S, Vector sigmas);
 
 	/** constructor with two parents
 	 * |Rx+Sy+Tz-d|
 	 */
-	ConditionalGaussian(const std::string& key, Vector d, Matrix R,
+	GaussianConditional(const std::string& key, Vector d, Matrix R,
 			const std::string& name1, Matrix S, const std::string& name2, Matrix T, Vector sigmas);
 
 	/**
 	 * constructor with number of arbitrary parents
 	 * |Rx+sum(Ai*xi)-d|
 	 */
-	ConditionalGaussian(const std::string& key, const Vector& d,
+	GaussianConditional(const std::string& key, const Vector& d,
 			const Matrix& R, const Parents& parents, Vector sigmas);
 
 	/** deconstructor */
-	virtual ~ConditionalGaussian() {}
+	virtual ~GaussianConditional() {}
 
 	/** print */
-	void print(const std::string& = "ConditionalGaussian") const;
+	void print(const std::string& = "GaussianConditional") const;
 
 	/** equals function */
 	bool equals(const Conditional &cg, double tol = 1e-9) const;
@@ -97,7 +97,7 @@ public:
 	/** return all parents */
 	std::list<std::string> parents() const;
 
-	/** return stuff contained in ConditionalGaussian */
+	/** return stuff contained in GaussianConditional */
 	const Vector& get_d() const {return d_;}
 	const Matrix& get_R() const {return R_;}
 	const Vector& get_sigmas() const {return sigmas_;}

@@ -11,7 +11,7 @@
 
 #include "Matrix.h"
 #include "Ordering.h"
-#include "ConditionalGaussian.h"
+#include "GaussianConditional.h"
 #include "GaussianFactor.h"
 
 using namespace std;
@@ -26,7 +26,7 @@ using namespace gtsam;
 typedef pair<const string, Matrix>& mypair;
 
 /* ************************************************************************* */
-GaussianFactor::GaussianFactor(const boost::shared_ptr<ConditionalGaussian>& cg) :
+GaussianFactor::GaussianFactor(const boost::shared_ptr<GaussianConditional>& cg) :
 	b_(cg->get_d()) {
 	As_.insert(make_pair(cg->key(), cg->get_R()));
 	std::map<std::string, Matrix>::const_iterator it = cg->parentsBegin();
@@ -282,11 +282,11 @@ void GaussianFactor::append_factor(GaussianFactor::shared_ptr f, const size_t m,
 /* Note, in place !!!!
  * Do incomplete QR factorization for the first n columns
  * We will do QR on all matrices and on RHS
- * Then take first n rows and make a ConditionalGaussian,
+ * Then take first n rows and make a GaussianConditional,
  * and last rows to make a new joint linear factor on separator
  */
 /* ************************************************************************* */
-pair<ConditionalGaussian::shared_ptr, GaussianFactor::shared_ptr>
+pair<GaussianConditional::shared_ptr, GaussianFactor::shared_ptr>
 GaussianFactor::eliminate(const string& key) const
 {
 	bool verbose = false;
@@ -297,7 +297,7 @@ GaussianFactor::eliminate(const string& key) const
 	if (it==As_.end()) {
 		// Conditional Gaussian is just a parent-less node with P(x)=1
 		GaussianFactor::shared_ptr lf(new GaussianFactor);
-		ConditionalGaussian::shared_ptr cg(new ConditionalGaussian(key));
+		GaussianConditional::shared_ptr cg(new GaussianConditional(key));
 		return make_pair(cg,lf);
 	}
 
@@ -339,7 +339,7 @@ GaussianFactor::eliminate(const string& key) const
 	}
 
 	// create base conditional Gaussian
-	ConditionalGaussian::shared_ptr cg(new ConditionalGaussian(key,
+	GaussianConditional::shared_ptr cg(new GaussianConditional(key,
 			sub(d, 0, n1),            // form d vector
 			sub(R, 0, n1, 0, n1),     // form R matrix
 			sub(newSigmas, 0, n1)));  // get standard deviations

@@ -17,7 +17,7 @@ using namespace boost::assign;
 
 using namespace gtsam;
 
-typedef BayesTree<ConditionalGaussian> Gaussian;
+typedef BayesTree<GaussianConditional> Gaussian;
 
 // Conditionals for ASIA example from the tutorial with A and D evidence
 SymbolicConditional::shared_ptr B(new SymbolicConditional("B")), L(
@@ -226,7 +226,7 @@ TEST( BayesTree, balanced_smoother_shortcuts )
 	CHECK(assert_equal(empty,actual2,1e-4));
 
 	// Check the conditional P(C3|Root), which should be equal to P(x2|x4)
-	ConditionalGaussian::shared_ptr p_x2_x4 = chordalBayesNet["x2"];
+	GaussianConditional::shared_ptr p_x2_x4 = chordalBayesNet["x2"];
 	GaussianBayesNet expected3; expected3.push_back(p_x2_x4);
 	Gaussian::sharedClique C3 = bayesTree["x1"];
 	GaussianBayesNet actual3 = C3->shortcut<GaussianFactor>(R);
@@ -252,7 +252,7 @@ TEST( BayesTree, balanced_smoother_clique_marginals )
   push_front(expected,"x1", zero(2), eye(2), "x2", A12, sigma);
 	Gaussian::sharedClique R = bayesTree.root(), C3 = bayesTree["x1"];
 	FactorGraph<GaussianFactor> marginal = C3->marginal<GaussianFactor>(R);
-	GaussianBayesNet actual = eliminate<GaussianFactor,ConditionalGaussian>(marginal,C3->keys());
+	GaussianBayesNet actual = eliminate<GaussianFactor,GaussianConditional>(marginal,C3->keys());
 	CHECK(assert_equal(expected,actual,1e-4));
 }
 
