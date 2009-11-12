@@ -1,5 +1,5 @@
 /**
- * @file    LinearFactorSet.h
+ * @file    GaussianFactorSet.h
  * @brief   Utility class: an STL set of linear factors, basically a wrappable typedef
  * @author  Frank Dellaert
  */
@@ -8,14 +8,14 @@
 
 #include <set>
 #include <boost/shared_ptr.hpp>
-#include "LinearFactor.h"
+#include "GaussianFactor.h"
 
 namespace gtsam {
   
-  class LinearFactor;
+  class GaussianFactor;
   
   // We use a vector not a an STL set, to get predictable ordering across platforms
-  struct LinearFactorSet : std::vector<boost::shared_ptr<LinearFactor> > {
-    LinearFactorSet() {}
+  struct GaussianFactorSet : std::vector<boost::shared_ptr<GaussianFactor> > {
+    GaussianFactorSet() {}
   };
 }

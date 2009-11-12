@@ -20,7 +20,7 @@
 #include "Factor.h"
 #include "Vector.h"
 #include "Matrix.h"
-#include "LinearFactor.h"
+#include "GaussianFactor.h"
 
 /**
  * Base Class
@@ -29,9 +29,9 @@
 
 namespace gtsam {
 
-	// forward declaration of LinearFactor
-	//class LinearFactor;
-	//typedef boost::shared_ptr<LinearFactor> shared_ptr;
+	// forward declaration of GaussianFactor
+	//class GaussianFactor;
+	//typedef boost::shared_ptr<GaussianFactor> shared_ptr;
 
   /**
    * Nonlinear factor which assumes Gaussian noise on a measurement
@@ -66,7 +66,7 @@ namespace gtsam {
 
     /** print */
     void print(const std::string& s = "") const {
-    	std::cout << "NonLinearFactor " << s << std::endl;
+    	std::cout << "NonGaussianFactor " << s << std::endl;
     	gtsam::print(z_, "  z = ");
     	std::cout << "  sigma = " << sigma_ << std::endl;
     }
@@ -81,8 +81,8 @@ namespace gtsam {
     /** Vector of errors */
     virtual Vector error_vector(const Config& c) const = 0;
 
-    /** linearize to a LinearFactor */
-    virtual boost::shared_ptr<LinearFactor> linearize(const Config& c) const = 0;
+    /** linearize to a GaussianFactor */
+    virtual boost::shared_ptr<GaussianFactor> linearize(const Config& c) const = 0;
 
     /** get functions */
     double sigma() const {return sigma_;}
@@ -145,7 +145,7 @@ namespace gtsam {
     }
 
     /** linearize a non-linearFactor1 to get a linearFactor1 */
-    boost::shared_ptr<LinearFactor> linearize(const VectorConfig& c) const;
+    boost::shared_ptr<GaussianFactor> linearize(const VectorConfig& c) const;
   };
 
 	/**
@@ -187,7 +187,7 @@ namespace gtsam {
     }
 
     /** Linearize a non-linearFactor2 to get a linearFactor2 */
-    boost::shared_ptr<LinearFactor> linearize(const VectorConfig& c) const;
+    boost::shared_ptr<GaussianFactor> linearize(const VectorConfig& c) const;
   };
 
   /* ************************************************************************* */

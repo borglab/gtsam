@@ -58,7 +58,7 @@ namespace gtsam {
 
 		// linearize the non-linear graph around the current config
 		// which gives a linear optimization problem in the tangent space
-		LinearFactorGraph linear = graph_->linearize(*config_);
+		GaussianFactorGraph linear = graph_->linearize(*config_);
 
 		// solve for the optimal displacement in the tangent space
 		VectorConfig delta = linear.optimize(*ordering_);
@@ -118,13 +118,13 @@ namespace gtsam {
 	/* ************************************************************************* */
 	template<class G, class C>
 	NonlinearOptimizer<G, C> NonlinearOptimizer<G, C>::try_lambda(
-			const LinearFactorGraph& linear, verbosityLevel verbosity, double factor) const {
+			const GaussianFactorGraph& linear, verbosityLevel verbosity, double factor) const {
 
 		if (verbosity >= TRYLAMBDA)
 			cout << "trying lambda = " << lambda_ << endl;
 
 		// add prior-factors
-		LinearFactorGraph damped = linear.add_priors(1.0/sqrt(lambda_));
+		GaussianFactorGraph damped = linear.add_priors(1.0/sqrt(lambda_));
 		if (verbosity >= DAMPED)
 			damped.print("damped");
 
@@ -167,7 +167,7 @@ namespace gtsam {
 			cout << "lambda = " << lambda_ << endl;
 
 		// linearize all factors once
-		LinearFactorGraph linear = graph_->linearize(*config_);
+		GaussianFactorGraph linear = graph_->linearize(*config_);
 		if (verbosity >= LINEAR)
 			linear.print("linear");
 

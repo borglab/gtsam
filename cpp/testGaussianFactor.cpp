@@ -1,5 +1,5 @@
 /**
- *  @file   testLinearFactor.cpp
+ *  @file   testGaussianFactor.cpp
  *  @brief  Unit tests for Linear Factor
  *  @author Christian Potthast
  *  @author Frank Dellaert
@@ -24,7 +24,7 @@ using namespace std;
 using namespace gtsam;
 
 /* ************************************************************************* */
-TEST( LinearFactor, linearFactor )
+TEST( GaussianFactor, linearFactor )
 {
 	double sigma = 0.1;
 
@@ -39,24 +39,24 @@ TEST( LinearFactor, linearFactor )
 	Vector b(2);
 	b(0) = 0.2 ; b(1) = -0.1;
 
-	LinearFactor expected("x1", A1,  "x2", A2, b, sigma);
+	GaussianFactor expected("x1", A1,  "x2", A2, b, sigma);
 
 	// create a small linear factor graph
-	LinearFactorGraph fg = createLinearFactorGraph();
+	GaussianFactorGraph fg = createGaussianFactorGraph();
 
 	// get the factor "f2" from the factor graph
-	LinearFactor::shared_ptr lf = fg[1];
+	GaussianFactor::shared_ptr lf = fg[1];
 
 	// check if the two factors are the same
 	CHECK(assert_equal(expected,*lf));
 }
 
 /* ************************************************************************* */
-TEST( LinearFactor, keys )
+TEST( GaussianFactor, keys )
 {
 	// get the factor "f2" from the small linear factor graph
-	LinearFactorGraph fg = createLinearFactorGraph();
-	LinearFactor::shared_ptr lf = fg[1];
+	GaussianFactorGraph fg = createGaussianFactorGraph();
+	GaussianFactor::shared_ptr lf = fg[1];
 	list<string> expected;
 	expected.push_back("x1");
 	expected.push_back("x2");
@@ -64,10 +64,10 @@ TEST( LinearFactor, keys )
 }
 
 /* ************************************************************************* */
-TEST( LinearFactor, dimensions )
+TEST( GaussianFactor, dimensions )
 {
   // get the factor "f2" from the small linear factor graph
-  LinearFactorGraph fg = createLinearFactorGraph();
+  GaussianFactorGraph fg = createGaussianFactorGraph();
 
   // Check a single factor
   Dimensions expected;
@@ -77,11 +77,11 @@ TEST( LinearFactor, dimensions )
 }
 
 /* ************************************************************************* */
-TEST( LinearFactor, getDim )
+TEST( GaussianFactor, getDim )
 {
 	// get a factor
-	LinearFactorGraph fg = createLinearFactorGraph();
-	LinearFactor::shared_ptr factor = fg[0];
+	GaussianFactorGraph fg = createGaussianFactorGraph();
+	GaussianFactor::shared_ptr factor = fg[0];
 
 	// get the size of a variable
 	size_t actual = factor->getDim("x1");
@@ -92,18 +92,18 @@ TEST( LinearFactor, getDim )
 }
 
 /* ************************************************************************* */
-TEST( LinearFactor, combine )
+TEST( GaussianFactor, combine )
 {
 	// create a small linear factor graph
-	LinearFactorGraph fg = createLinearFactorGraph();
+	GaussianFactorGraph fg = createGaussianFactorGraph();
 
 	// get two factors from it and insert the factors into a vector
-	vector<LinearFactor::shared_ptr> lfg;
+	vector<GaussianFactor::shared_ptr> lfg;
 	lfg.push_back(fg[4 - 1]);
 	lfg.push_back(fg[2 - 1]);
 
 	// combine in a factor
-	LinearFactor combined(lfg);
+	GaussianFactor combined(lfg);
 
 	// sigmas
 	double sigma2 = 0.1;
@@ -142,7 +142,7 @@ TEST( LinearFactor, combine )
 	meas.push_back(make_pair("x2", Ax2));
 	meas.push_back(make_pair("l1", Al1));
 	meas.push_back(make_pair("x1", Ax1));
-	LinearFactor expected(meas, b2, sigmas);
+	GaussianFactor expected(meas, b2, sigmas);
 	CHECK(assert_equal(expected,combined));
 }
 
@@ -154,33 +154,33 @@ TEST( NonlinearFactorGraph, combine2){
 	A11(1,0) = 0;       A11(1,1) = 1;
 	Vector b(2);
 	b(0) = 2; b(1) = -1;
-	LinearFactor::shared_ptr f1(new LinearFactor("x1", A11, b*sigma1, sigma1));
+	GaussianFactor::shared_ptr f1(new GaussianFactor("x1", A11, b*sigma1, sigma1));
 
 	double sigma2 = 0.5;
 	A11(0,0) = 1; A11(0,1) =  0;
 	A11(1,0) = 0; A11(1,1) = -1;
 	b(0) = 4 ; b(1) = -5;
-	LinearFactor::shared_ptr f2(new LinearFactor("x1", A11, b*sigma2, sigma2));
+	GaussianFactor::shared_ptr f2(new GaussianFactor("x1", A11, b*sigma2, sigma2));
 
 	double sigma3 = 0.25;
 	A11(0,0) = 1; A11(0,1) =  0;
 	A11(1,0) = 0; A11(1,1) = -1;
 	b(0) = 3 ; b(1) = -88;
-	LinearFactor::shared_ptr f3(new LinearFactor("x1", A11, b*sigma3, sigma3));
+	GaussianFactor::shared_ptr f3(new GaussianFactor("x1", A11, b*sigma3, sigma3));
 
 	// TODO: find a real sigma value for this example
 	double sigma4 = 0.1;
 	A11(0,0) = 6; A11(0,1) =  0;
 	A11(1,0) = 0; A11(1,1) = 7;
 	b(0) = 5 ; b(1) = -6;
-	LinearFactor::shared_ptr f4(new LinearFactor("x1", A11*sigma4, b*sigma4, sigma4));
+	GaussianFactor::shared_ptr f4(new GaussianFactor("x1", A11*sigma4, b*sigma4, sigma4));
 
-	vector<LinearFactor::shared_ptr> lfg;
+	vector<GaussianFactor::shared_ptr> lfg;
 	lfg.push_back(f1);
 	lfg.push_back(f2);
 	lfg.push_back(f3);
 	lfg.push_back(f4);
-	LinearFactor combined(lfg);
+	GaussianFactor combined(lfg);
 
 	Vector sigmas = Vector_(8, sigma1, sigma1, sigma2, sigma2, sigma3, sigma3, sigma4, sigma4);
 	Matrix A22(8,2);
@@ -198,19 +198,19 @@ TEST( NonlinearFactorGraph, combine2){
 
 	vector<pair<string, Matrix> > meas;
 	meas.push_back(make_pair("x1", A22));
-	LinearFactor expected(meas, exb, sigmas);
+	GaussianFactor expected(meas, exb, sigmas);
 	CHECK(assert_equal(expected,combined));
 }
 
 /* ************************************************************************* */
-TEST( LinearFactor, linearFactorN){
-  vector<LinearFactor::shared_ptr> f;
-  f.push_back(LinearFactor::shared_ptr(new LinearFactor("x1", Matrix_(2,2,
+TEST( GaussianFactor, linearFactorN){
+  vector<GaussianFactor::shared_ptr> f;
+  f.push_back(GaussianFactor::shared_ptr(new GaussianFactor("x1", Matrix_(2,2,
       1.0, 0.0,
       0.0, 1.0),
       Vector_(2,
       10.0, 5.0), 1)));
-  f.push_back(LinearFactor::shared_ptr(new LinearFactor("x1", Matrix_(2,2,
+  f.push_back(GaussianFactor::shared_ptr(new GaussianFactor("x1", Matrix_(2,2,
       -10.0, 0.0,
       0.0, -10.0),
       "x2", Matrix_(2,2,
@@ -218,7 +218,7 @@ TEST( LinearFactor, linearFactorN){
       0.0, 10.0),
       Vector_(2,
       1.0, -2.0), 1)));
-  f.push_back(LinearFactor::shared_ptr(new LinearFactor("x2", Matrix_(2,2,
+  f.push_back(GaussianFactor::shared_ptr(new GaussianFactor("x2", Matrix_(2,2,
       -10.0, 0.0,
       0.0, -10.0),
       "x3", Matrix_(2,2,
@@ -226,7 +226,7 @@ TEST( LinearFactor, linearFactorN){
       0.0, 10.0),
       Vector_(2,
       1.5, -1.5), 1)));
-  f.push_back(LinearFactor::shared_ptr(new LinearFactor("x3", Matrix_(2,2,
+  f.push_back(GaussianFactor::shared_ptr(new GaussianFactor("x3", Matrix_(2,2,
       -10.0, 0.0,
       0.0, -10.0),
       "x4", Matrix_(2,2,
@@ -235,7 +235,7 @@ TEST( LinearFactor, linearFactorN){
       Vector_(2,
       2.0, -1.0), 1)));
 
-  LinearFactor combinedFactor(f);
+  GaussianFactor combinedFactor(f);
 
   vector<pair<string, Matrix> > combinedMeasurement;
   combinedMeasurement.push_back(make_pair("x1", Matrix_(8,2,
@@ -277,18 +277,18 @@ TEST( LinearFactor, linearFactorN){
   Vector b = Vector_(8,
       10.0, 5.0, 1.0, -2.0, 1.5, -1.5, 2.0, -1.0);
 
-  LinearFactor expected(combinedMeasurement, b, 1.);
+  GaussianFactor expected(combinedMeasurement, b, 1.);
   CHECK(combinedFactor.equals(expected));
 }
 
 /* ************************************************************************* */
-TEST( LinearFactor, error )
+TEST( GaussianFactor, error )
 {
 	// create a small linear factor graph
-	LinearFactorGraph fg = createLinearFactorGraph();
+	GaussianFactorGraph fg = createGaussianFactorGraph();
 
 	// get the first factor from the factor graph
-	LinearFactor::shared_ptr lf = fg[0];
+	GaussianFactor::shared_ptr lf = fg[0];
 
 	// check the error of the first factor with noisy config
 	VectorConfig cfg = createZeroDelta();
@@ -300,22 +300,22 @@ TEST( LinearFactor, error )
 }
 
 /* ************************************************************************* */
-TEST( LinearFactor, eliminate )
+TEST( GaussianFactor, eliminate )
 {
 	// create a small linear factor graph
-	LinearFactorGraph fg = createLinearFactorGraph();
+	GaussianFactorGraph fg = createGaussianFactorGraph();
 
 	// get two factors from it and insert the factors into a vector
-	vector<LinearFactor::shared_ptr> lfg;
+	vector<GaussianFactor::shared_ptr> lfg;
 	lfg.push_back(fg[4 - 1]);
 	lfg.push_back(fg[2 - 1]);
 
 	// combine in a factor
-	LinearFactor combined(lfg);
+	GaussianFactor combined(lfg);
 
 	// eliminate the combined factor
 	ConditionalGaussian::shared_ptr actualCG;
-	LinearFactor::shared_ptr actualLF;
+	GaussianFactor::shared_ptr actualLF;
 	boost::tie(actualCG,actualLF) = combined.eliminate("x2");
 
 	// create expected Conditional Gaussian
@@ -357,7 +357,7 @@ TEST( LinearFactor, eliminate )
 	// the RHS
 	Vector b1(2); b1(0) = 0.0; b1(1) = 0.2;
 
-	LinearFactor expectedLF("l1", Bl1, "x1", Bx1, b1, sigma);
+	GaussianFactor expectedLF("l1", Bl1, "x1", Bx1, b1, sigma);
 
 	// check if the result matches
 	CHECK(assert_equal(expectedCG,*actualCG,1e-4));
@@ -366,7 +366,7 @@ TEST( LinearFactor, eliminate )
 
 
 /* ************************************************************************* */
-TEST( LinearFactor, eliminate2 )
+TEST( GaussianFactor, eliminate2 )
 {
 	// sigmas
 	double sigma1 = 0.2;
@@ -400,11 +400,11 @@ TEST( LinearFactor, eliminate2 )
 	vector<pair<string, Matrix> > meas;
 	meas.push_back(make_pair("x2", Ax2));
 	meas.push_back(make_pair("l1x1", Al1x1));
-	LinearFactor combined(meas, b2, sigmas);
+	GaussianFactor combined(meas, b2, sigmas);
 
 	// eliminate the combined factor
 	ConditionalGaussian::shared_ptr actualCG;
-	LinearFactor::shared_ptr actualLF;
+	GaussianFactor::shared_ptr actualLF;
 	boost::tie(actualCG,actualLF) = combined.eliminate("x2");
 
 	// create expected Conditional Gaussian
@@ -435,7 +435,7 @@ TEST( LinearFactor, eliminate2 )
 	// the RHS
 	Vector b1(2); b1(0) = 0.0; b1(1) = 0.894427;
 
-	LinearFactor expectedLF("l1x1", Bl1x1, b1*sigma, sigma);
+	GaussianFactor expectedLF("l1x1", Bl1x1, b1*sigma, sigma);
 
 	// check if the result matches
 	CHECK(assert_equal(expectedCG,*actualCG,1e-4));
@@ -443,30 +443,30 @@ TEST( LinearFactor, eliminate2 )
 }
 
 /* ************************************************************************* */
-TEST( LinearFactor, default_error )
+TEST( GaussianFactor, default_error )
 {
-	LinearFactor f;
+	GaussianFactor f;
 	VectorConfig c;
 	double actual = f.error(c);
 	CHECK(actual==0.0);
 }
 
 //* ************************************************************************* */
-TEST( LinearFactor, eliminate_empty )
+TEST( GaussianFactor, eliminate_empty )
 {
 	// create an empty factor
-	LinearFactor f;
+	GaussianFactor f;
 
 	// eliminate the empty factor
 	ConditionalGaussian::shared_ptr actualCG;
-	LinearFactor::shared_ptr actualLF;
+	GaussianFactor::shared_ptr actualLF;
 	boost::tie(actualCG,actualLF) = f.eliminate("x2");
 
 	// expected Conditional Gaussian is just a parent-less node with P(x)=1
 	ConditionalGaussian expectedCG("x2");
 
 	// expected remaining factor is still empty :-)
-	LinearFactor expectedLF;
+	GaussianFactor expectedLF;
 
 	// check if the result matches
 	CHECK(actualCG->equals(expectedCG));
@@ -474,21 +474,21 @@ TEST( LinearFactor, eliminate_empty )
 }
 
 //* ************************************************************************* */
-TEST( LinearFactor, empty )
+TEST( GaussianFactor, empty )
 {
 	// create an empty factor
-	LinearFactor f;
+	GaussianFactor f;
 	CHECK(f.empty()==true);
 }
 
 /* ************************************************************************* */
-TEST( LinearFactor, matrix )
+TEST( GaussianFactor, matrix )
 {
 	// create a small linear factor graph
-	LinearFactorGraph fg = createLinearFactorGraph();
+	GaussianFactorGraph fg = createGaussianFactorGraph();
 
 	// get the factor "f2" from the factor graph
-	LinearFactor::shared_ptr lf = fg[1];
+	GaussianFactor::shared_ptr lf = fg[1];
 
 	// render with a given ordering
 	Ordering ord;
@@ -507,13 +507,13 @@ TEST( LinearFactor, matrix )
 }
 
 /* ************************************************************************* */
-TEST( LinearFactor, matrix_aug )
+TEST( GaussianFactor, matrix_aug )
 {
 	// create a small linear factor graph
-	LinearFactorGraph fg = createLinearFactorGraph();
+	GaussianFactorGraph fg = createGaussianFactorGraph();
 
 	// get the factor "f2" from the factor graph
-	LinearFactor::shared_ptr lf = fg[1];
+	GaussianFactor::shared_ptr lf = fg[1];
 
 	// render with a given ordering
 	Ordering ord;
@@ -538,13 +538,13 @@ void print(const list<T>& i) {
 }
 
 /* ************************************************************************* */
-TEST( LinearFactor, sparse )
+TEST( GaussianFactor, sparse )
 {
 	// create a small linear factor graph
-	LinearFactorGraph fg = createLinearFactorGraph();
+	GaussianFactorGraph fg = createGaussianFactorGraph();
 
 	// get the factor "f2" from the factor graph
-	LinearFactor::shared_ptr lf = fg[1];
+	GaussianFactor::shared_ptr lf = fg[1];
 
 	// render with a given ordering
 	Ordering ord;
@@ -567,13 +567,13 @@ TEST( LinearFactor, sparse )
 }
 
 /* ************************************************************************* */
-TEST( LinearFactor, sparse2 )
+TEST( GaussianFactor, sparse2 )
 {
 	// create a small linear factor graph
-	LinearFactorGraph fg = createLinearFactorGraph();
+	GaussianFactorGraph fg = createGaussianFactorGraph();
 
 	// get the factor "f2" from the factor graph
-	LinearFactor::shared_ptr lf = fg[1];
+	GaussianFactor::shared_ptr lf = fg[1];
 
 	// render with a given ordering
 	Ordering ord;
@@ -596,15 +596,15 @@ TEST( LinearFactor, sparse2 )
 }
 
 /* ************************************************************************* */
-TEST( LinearFactor, size )
+TEST( GaussianFactor, size )
 {
 	// create a linear factor graph
-	LinearFactorGraph fg = createLinearFactorGraph();
+	GaussianFactorGraph fg = createGaussianFactorGraph();
 
 	// get some factors from the graph
-	boost::shared_ptr<LinearFactor> factor1 = fg[0];
-	boost::shared_ptr<LinearFactor> factor2 = fg[1];
-	boost::shared_ptr<LinearFactor> factor3 = fg[2];
+	boost::shared_ptr<GaussianFactor> factor1 = fg[0];
+	boost::shared_ptr<GaussianFactor> factor2 = fg[1];
+	boost::shared_ptr<GaussianFactor> factor3 = fg[2];
 
 	CHECK(factor1->size() == 1);
 	CHECK(factor2->size() == 2);
@@ -612,7 +612,7 @@ TEST( LinearFactor, size )
 }
 
 /* ************************************************************************* */
-TEST( LinearFactor, CONSTRUCTOR_ConditionalGaussian )
+TEST( GaussianFactor, CONSTRUCTOR_ConditionalGaussian )
 {
 	Matrix R11 = Matrix_(2,2,
 			1.00,  0.00,
@@ -629,24 +629,24 @@ TEST( LinearFactor, CONSTRUCTOR_ConditionalGaussian )
 	sigmas(1) = 0.29907;
 
 	ConditionalGaussian::shared_ptr CG(new ConditionalGaussian("x2",d,R11,"l1x1",S12,sigmas));
-	LinearFactor actualLF(CG);
+	GaussianFactor actualLF(CG);
 	//  actualLF.print();
-	LinearFactor expectedLF("x2",R11,"l1x1",S12,d, sigmas(0));
+	GaussianFactor expectedLF("x2",R11,"l1x1",S12,d, sigmas(0));
 
 	CHECK(assert_equal(expectedLF,actualLF,1e-5));
 }
 
 /* ************************************************************************* */
-TEST ( LinearFactor, constraint_eliminate1 )
+TEST ( GaussianFactor, constraint_eliminate1 )
 {
 	// construct a linear constraint
 	Vector v(2); v(0)=1.2; v(1)=3.4;
 	string key = "x0";
-	LinearFactor lc(key, eye(2), v, 0.0);
+	GaussianFactor lc(key, eye(2), v, 0.0);
 
 	// eliminate it
 	ConditionalGaussian::shared_ptr actualCG;
-	LinearFactor::shared_ptr actualLF;
+	GaussianFactor::shared_ptr actualLF;
 	boost::tie(actualCG,actualLF) = lc.eliminate("x0");
 
 	// verify linear factor
@@ -659,7 +659,7 @@ TEST ( LinearFactor, constraint_eliminate1 )
 }
 
 /* ************************************************************************* */
-TEST ( LinearFactor, constraint_eliminate2 )
+TEST ( GaussianFactor, constraint_eliminate2 )
 {
 	// Construct a linear constraint
 	// RHS
@@ -675,15 +675,15 @@ TEST ( LinearFactor, constraint_eliminate2 )
 	A2(0,0) = 1.0 ; A2(0,1) = 2.0;
 	A2(1,0) = 2.0 ; A2(1,1) = 4.0;
 
-	LinearFactor lc("x", A1, "y", A2, b, 0.0);
+	GaussianFactor lc("x", A1, "y", A2, b, 0.0);
 
 	// eliminate x and verify results
 	ConditionalGaussian::shared_ptr actualCG;
-	LinearFactor::shared_ptr actualLF;
+	GaussianFactor::shared_ptr actualLF;
 	boost::tie(actualCG, actualLF) = lc.eliminate("x");
 
 	// LF should be null
-	LinearFactor expectedLF;
+	GaussianFactor expectedLF;
 	CHECK(assert_equal(*actualLF, expectedLF));
 
 	// verify CG
@@ -699,7 +699,7 @@ TEST ( LinearFactor, constraint_eliminate2 )
 }
 
 /* ************************************************************************* */
-TEST ( LinearFactor, constraint_eliminate3 )
+TEST ( GaussianFactor, constraint_eliminate3 )
 {
 	// This test shows that ordering matters if there are non-invertable
 	// blocks, as this example can be eliminated if x is first, but not
@@ -719,13 +719,13 @@ TEST ( LinearFactor, constraint_eliminate3 )
 	A2(0,0) = 1.0 ; A2(0,1) = 2.0;
 	A2(1,0) = 2.0 ; A2(1,1) = 4.0;
 
-	LinearFactor lc("x", A1, "y", A2, b, 0.0);
+	GaussianFactor lc("x", A1, "y", A2, b, 0.0);
 
 	// eliminate y from original graph
 	// NOTE: this will throw an exception, as
 	// the leading matrix is rank deficient
 	ConditionalGaussian::shared_ptr actualCG;
-	LinearFactor::shared_ptr actualLF;
+	GaussianFactor::shared_ptr actualLF;
 	try {
 		boost::tie(actualCG, actualLF) = lc.eliminate("y");
 		CHECK(false);

@@ -84,29 +84,29 @@ testSymbolicBayesNet_SOURCES    = $(example) testSymbolicBayesNet.cpp
 testSymbolicBayesNet_LDADD      = libgtsam.la
 
 # Gaussian inference 
-headers += LinearFactorSet.h
-sources += VectorConfig.cpp LinearFactor.cpp LinearFactorGraph.cpp ConditionalGaussian.cpp GaussianBayesNet.cpp
-check_PROGRAMS += testVectorConfig testLinearFactor testLinearFactorGraph testConditionalGaussian testGaussianBayesNet 
+headers += GaussianFactorSet.h
+sources += VectorConfig.cpp GaussianFactor.cpp GaussianFactorGraph.cpp ConditionalGaussian.cpp GaussianBayesNet.cpp
+check_PROGRAMS += testVectorConfig testGaussianFactor testGaussianFactorGraph testConditionalGaussian testGaussianBayesNet 
 testVectorConfig_SOURCES        = testVectorConfig.cpp
 testVectorConfig_LDADD          = libgtsam.la
-testLinearFactor_SOURCES        = $(example) testLinearFactor.cpp
-testLinearFactor_LDADD          = libgtsam.la
-testLinearFactorGraph_SOURCES   = $(example) testLinearFactorGraph.cpp
-testLinearFactorGraph_LDADD     = libgtsam.la
+testGaussianFactor_SOURCES        = $(example) testGaussianFactor.cpp
+testGaussianFactor_LDADD          = libgtsam.la
+testGaussianFactorGraph_SOURCES   = $(example) testGaussianFactorGraph.cpp
+testGaussianFactorGraph_LDADD     = libgtsam.la
 testConditionalGaussian_SOURCES = $(example) testConditionalGaussian.cpp
 testConditionalGaussian_LDADD   = libgtsam.la
 testGaussianBayesNet_SOURCES    = $(example) testGaussianBayesNet.cpp
 testGaussianBayesNet_LDADD      = libgtsam.la
 
 # not the correct way, I'm sure: Kai ?
-timeLinearFactor: timeLinearFactor.cpp  
-timeLinearFactor: CXXFLAGS += -I /opt/local/include
-timeLinearFactor: LDFLAGS += -L.libs -lgtsam
+timeGaussianFactor: timeGaussianFactor.cpp  
+timeGaussianFactor: CXXFLAGS += -I /opt/local/include
+timeGaussianFactor: LDFLAGS += -L.libs -lgtsam
 
 # not the correct way, I'm sure: Kai ?
-timeLinearFactorGraph: timeLinearFactorGraph.cpp  
-timeLinearFactorGraph: CXXFLAGS += -I /opt/local/include -I ..
-timeLinearFactorGraph: LDFLAGS += SmallExample.o -L.libs -lgtsam -L../CppUnitLite -lCppUnitLite
+timeGaussianFactorGraph: timeGaussianFactorGraph.cpp  
+timeGaussianFactorGraph: CXXFLAGS += -I /opt/local/include -I ..
+timeGaussianFactorGraph: LDFLAGS += smallExample.o -L.libs -lgtsam -L../CppUnitLite -lCppUnitLite
 
 # Nonlinear inference 
 headers += NonlinearFactorGraph.h NonlinearFactorGraph-inl.h

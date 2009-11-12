@@ -1,12 +1,12 @@
 /**
- * @file    timeLinearFactorGraph.cpp
+ * @file    timeGaussianFactorGraph.cpp
  * @brief   Time elimination with simple Kalman Smoothing example
  * @author  Frank Dellaert
  */
 
 #include <time.h>
 #include <CppUnitLite/TestHarness.h>
-#include "SmallExample.h"
+#include "smallExample.h"
 #include "Ordering.h"
 
 using namespace std;
@@ -15,7 +15,7 @@ using namespace gtsam;
 /* ************************************************************************* */
 // Create a Kalman smoother for t=1:T and optimize
 double timeKalmanSmoother(int T) {
-	LinearFactorGraph smoother = createSmoother(T);
+	GaussianFactorGraph smoother = createSmoother(T);
 	Ordering ordering;
 	for (int t = 1; t <= T; t++) ordering.push_back(symbol('x',t));
 	clock_t start = clock();
@@ -26,7 +26,7 @@ double timeKalmanSmoother(int T) {
 }
 
 /* ************************************************************************* */
-TEST(timeLinearFactorGraph, linearTime)
+TEST(timeGaussianFactorGraph, linearTime)
 {
 	int T = 1000;
 	double time1 = timeKalmanSmoother(  T); // cout << time1 << endl;

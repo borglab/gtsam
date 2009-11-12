@@ -47,16 +47,16 @@ TEST( VSLAMFactor, error )
   Matrix Al1 = Matrix_(2, 3, 61.584, 0., 0., 0., 61.584, 0.);
   Matrix Ax1 = Matrix_(2, 6, 0., -369.504, 0., -61.584, 0., 0., 369.504, 0., 0., 0., -61.584, 0.);
   Vector b = Vector_(2,3.,0.);
-  LinearFactor expected("l1", Al1, "x1", Ax1, b, 1);
-  LinearFactor::shared_ptr actual = factor->linearize(config);
+  GaussianFactor expected("l1", Al1, "x1", Ax1, b, 1);
+  GaussianFactor::shared_ptr actual = factor->linearize(config);
   CHECK(assert_equal(expected,*actual,1e-3));
 
   // linearize graph
   VSLAMGraph graph;
 	graph.push_back(factor);
-	LinearFactorGraph expected_lfg;
+	GaussianFactorGraph expected_lfg;
 	expected_lfg.push_back(actual);
-	LinearFactorGraph actual_lfg = graph.linearize(config);
+	GaussianFactorGraph actual_lfg = graph.linearize(config);
 	CHECK(assert_equal(expected_lfg,actual_lfg));
 
 	// exmap on a config

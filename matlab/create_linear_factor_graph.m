@@ -6,7 +6,7 @@ function lfg = create_linear_factor_graph(config, measurements, odometry, measur
 m = size(measurements,2);
 
 % create linear factor graph
-lfg = LinearFactorGraph();
+lfg = GaussianFactorGraph();
 
 % create prior for initial robot pose
 prior = Point2Prior([0;0],0.2,'x1');

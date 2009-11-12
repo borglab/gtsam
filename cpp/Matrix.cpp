@@ -264,7 +264,7 @@ pair<Matrix,Matrix> qr(const Matrix& A) {
  * i.e. do outer product update A = (I-beta vv')*A = A - v*(beta*A'*v)' = A - v*w'
  * but only in relevant part, from row j onwards
  * If called from householder_ does actually more work as first j columns 
- * will not be touched. However, is called from LinearFactor.eliminate
+ * will not be touched. However, is called from GaussianFactor.eliminate
  * on a number of different matrices for which all columns change.
  */
 /* ************************************************************************* */

@@ -1,5 +1,5 @@
 /**
- *  @file   testLinearFactorGraph.cpp
+ *  @file   testGaussianFactorGraph.cpp
  *  @brief  Unit tests for Linear Factor Graph
  *  @author Christian Potthast
  **/
@@ -26,19 +26,19 @@ using namespace gtsam;
 double tol=1e-4;
 
 /* ************************************************************************* */
-/* unit test for equals (LinearFactorGraph1 == LinearFactorGraph2)           */
+/* unit test for equals (GaussianFactorGraph1 == GaussianFactorGraph2)           */
 /* ************************************************************************* */
-TEST( LinearFactorGraph, equals ){
+TEST( GaussianFactorGraph, equals ){
 
-  LinearFactorGraph fg = createLinearFactorGraph();
-  LinearFactorGraph fg2 = createLinearFactorGraph();
+  GaussianFactorGraph fg = createGaussianFactorGraph();
+  GaussianFactorGraph fg2 = createGaussianFactorGraph();
   CHECK(fg.equals(fg2));
 }
 
 /* ************************************************************************* */
-TEST( LinearFactorGraph, error )
+TEST( GaussianFactorGraph, error )
 {
-  LinearFactorGraph fg = createLinearFactorGraph();
+  GaussianFactorGraph fg = createGaussianFactorGraph();
   VectorConfig cfg = createZeroDelta();
 
   // note the error is the same as in testNonlinearFactorGraph as a
@@ -51,9 +51,9 @@ TEST( LinearFactorGraph, error )
 /* ************************************************************************* */
 /* unit test for find seperator                                              */
 /* ************************************************************************* */
-TEST( LinearFactorGraph, find_separator )
+TEST( GaussianFactorGraph, find_separator )
 {
-  LinearFactorGraph fg = createLinearFactorGraph();
+  GaussianFactorGraph fg = createGaussianFactorGraph();
 
   set<string> separator = fg.find_separator("x2");
   set<string> expected;
@@ -67,10 +67,10 @@ TEST( LinearFactorGraph, find_separator )
 }
 
 /* ************************************************************************* */
-TEST( LinearFactorGraph, combine_factors_x1 )
+TEST( GaussianFactorGraph, combine_factors_x1 )
 {
   // create a small example for a linear factor graph
-  LinearFactorGraph fg = createLinearFactorGraph();
+  GaussianFactorGraph fg = createGaussianFactorGraph();
 
   // create sigmas
   double sigma1 = 0.1;
@@ -79,7 +79,7 @@ TEST( LinearFactorGraph, combine_factors_x1 )
   Vector sigmas = Vector_(6, sigma1, sigma1, sigma2, sigma2, sigma3, sigma3);
 
   // combine all factors
-  LinearFactor::shared_ptr actual = removeAndCombineFactors(fg,"x1");
+  GaussianFactor::shared_ptr actual = removeAndCombineFactors(fg,"x1");
 
   // the expected linear factor
   Matrix Al1 = Matrix_(6,2,
@@ -122,18 +122,18 @@ TEST( LinearFactorGraph, combine_factors_x1 )
   meas.push_back(make_pair("l1", Al1));
   meas.push_back(make_pair("x1", Ax1));
   meas.push_back(make_pair("x2", Ax2));
-  LinearFactor expected(meas, b, sigmas);
-  //LinearFactor expected("l1", Al1, "x1", Ax1, "x2", Ax2, b);
+  GaussianFactor expected(meas, b, sigmas);
+  //GaussianFactor expected("l1", Al1, "x1", Ax1, "x2", Ax2, b);
 
   // check if the two factors are the same
   CHECK(assert_equal(expected,*actual));
 }
 
 /* ************************************************************************* */
-TEST( LinearFactorGraph, combine_factors_x2 )
+TEST( GaussianFactorGraph, combine_factors_x2 )
 {
  // create a small example for a linear factor graph
-  LinearFactorGraph fg = createLinearFactorGraph();
+  GaussianFactorGraph fg = createGaussianFactorGraph();
 
   // determine sigmas
   double sigma1 = 0.1;
@@ -141,7 +141,7 @@ TEST( LinearFactorGraph, combine_factors_x2 )
   Vector sigmas = Vector_(4, sigma1, sigma1, sigma2, sigma2);
 
   // combine all factors
-  LinearFactor::shared_ptr actual = removeAndCombineFactors(fg,"x2");
+  GaussianFactor::shared_ptr actual = removeAndCombineFactors(fg,"x2");
 
   // the expected linear factor
   Matrix Al1 = Matrix_(4,2,
@@ -179,7 +179,7 @@ TEST( LinearFactorGraph, combine_factors_x2 )
   meas.push_back(make_pair("l1", Al1));
   meas.push_back(make_pair("x1", Ax1));
   meas.push_back(make_pair("x2", Ax2));
-  LinearFactor expected(meas, b, sigmas);
+  GaussianFactor expected(meas, b, sigmas);
 
   // check if the two factors are the same
   CHECK(assert_equal(expected,*actual));
@@ -187,9 +187,9 @@ TEST( LinearFactorGraph, combine_factors_x2 )
 
 /* ************************************************************************* */
 
-TEST( LinearFactorGraph, eliminateOne_x1 )
+TEST( GaussianFactorGraph, eliminateOne_x1 )
 {
-  LinearFactorGraph fg = createLinearFactorGraph();
+  GaussianFactorGraph fg = createGaussianFactorGraph();
   ConditionalGaussian::shared_ptr actual = fg.eliminateOne("x1");
 
   // create expected Conditional Gaussian
@@ -202,9 +202,9 @@ TEST( LinearFactorGraph, eliminateOne_x1 )
 
 /* ************************************************************************* */
 
-TEST( LinearFactorGraph, eliminateOne_x2 )
+TEST( GaussianFactorGraph, eliminateOne_x2 )
 {
-  LinearFactorGraph fg = createLinearFactorGraph();
+  GaussianFactorGraph fg = createGaussianFactorGraph();
   ConditionalGaussian::shared_ptr actual = fg.eliminateOne("x2");
 
   // create expected Conditional Gaussian
@@ -216,9 +216,9 @@ TEST( LinearFactorGraph, eliminateOne_x2 )
 }
 
 /* ************************************************************************* */
-TEST( LinearFactorGraph, eliminateOne_l1 )
+TEST( GaussianFactorGraph, eliminateOne_l1 )
 {
-  LinearFactorGraph fg = createLinearFactorGraph();
+  GaussianFactorGraph fg = createGaussianFactorGraph();
   ConditionalGaussian::shared_ptr actual = fg.eliminateOne("l1");
 
   // create expected Conditional Gaussian
@@ -230,7 +230,7 @@ TEST( LinearFactorGraph, eliminateOne_l1 )
 }
 
 /* ************************************************************************* */
-TEST( LinearFactorGraph, eliminateAll )
+TEST( GaussianFactorGraph, eliminateAll )
 {
   // create expected Chordal bayes Net
   Matrix I = eye(2);
@@ -245,7 +245,7 @@ TEST( LinearFactorGraph, eliminateAll )
   push_front(expected,"x2",d3, I,"l1", (-0.2)*I, "x1", (-0.8)*I, sigma3);
 
   // Check one ordering
-  LinearFactorGraph fg1 = createLinearFactorGraph();
+  GaussianFactorGraph fg1 = createGaussianFactorGraph();
   Ordering ordering;
   ordering += "x2","l1","x1";
   GaussianBayesNet actual = fg1.eliminate(ordering);
@@ -253,28 +253,28 @@ TEST( LinearFactorGraph, eliminateAll )
 }
 
 /* ************************************************************************* */
-TEST( LinearFactorGraph, add_priors )
+TEST( GaussianFactorGraph, add_priors )
 {
-  LinearFactorGraph fg = createLinearFactorGraph();
-  LinearFactorGraph actual = fg.add_priors(3);
-  LinearFactorGraph expected = createLinearFactorGraph();
+  GaussianFactorGraph fg = createGaussianFactorGraph();
+  GaussianFactorGraph actual = fg.add_priors(3);
+  GaussianFactorGraph expected = createGaussianFactorGraph();
   Matrix A = eye(2);
   Vector b = zero(2);
   double sigma = 3.0;
-  expected.push_back(LinearFactor::shared_ptr(new LinearFactor("l1",A,b,sigma)));
-  expected.push_back(LinearFactor::shared_ptr(new LinearFactor("x1",A,b,sigma)));
-  expected.push_back(LinearFactor::shared_ptr(new LinearFactor("x2",A,b,sigma)));
+  expected.push_back(GaussianFactor::shared_ptr(new GaussianFactor("l1",A,b,sigma)));
+  expected.push_back(GaussianFactor::shared_ptr(new GaussianFactor("x1",A,b,sigma)));
+  expected.push_back(GaussianFactor::shared_ptr(new GaussianFactor("x2",A,b,sigma)));
   CHECK(assert_equal(expected,actual)); // Fails
 }
 
 /* ************************************************************************* */
-TEST( LinearFactorGraph, copying )
+TEST( GaussianFactorGraph, copying )
 {
   // Create a graph
-  LinearFactorGraph actual = createLinearFactorGraph();
+  GaussianFactorGraph actual = createGaussianFactorGraph();
 
   // Copy the graph !
-  LinearFactorGraph copy = actual;
+  GaussianFactorGraph copy = actual;
 
   // now eliminate the copy
   Ordering ord1;
@@ -282,17 +282,17 @@ TEST( LinearFactorGraph, copying )
   GaussianBayesNet actual1 = copy.eliminate(ord1);
 
   // Create the same graph, but not by copying
-  LinearFactorGraph expected = createLinearFactorGraph();
+  GaussianFactorGraph expected = createGaussianFactorGraph();
 
   // and check that original is still the same graph
   CHECK(assert_equal(expected,actual));
 }
 
 /* ************************************************************************* */
-TEST( LinearFactorGraph, matrix )
+TEST( GaussianFactorGraph, matrix )
 {
   // Create a graph
-  LinearFactorGraph fg = createLinearFactorGraph();
+  GaussianFactorGraph fg = createGaussianFactorGraph();
 
   // render with a given ordering
   Ordering ord;
@@ -318,10 +318,10 @@ TEST( LinearFactorGraph, matrix )
 }
 
 /* ************************************************************************* */
-TEST( LinearFactorGraph, sparse )
+TEST( GaussianFactorGraph, sparse )
 {
 	// create a small linear factor graph
-	LinearFactorGraph fg = createLinearFactorGraph();
+	GaussianFactorGraph fg = createGaussianFactorGraph();
 
 	// render with a given ordering
 	Ordering ord;
@@ -337,41 +337,41 @@ TEST( LinearFactorGraph, sparse )
 }
 
 /* ************************************************************************* */
-TEST( LinearFactorGraph, CONSTRUCTOR_GaussianBayesNet )
+TEST( GaussianFactorGraph, CONSTRUCTOR_GaussianBayesNet )
 {
-  LinearFactorGraph fg = createLinearFactorGraph();
+  GaussianFactorGraph fg = createGaussianFactorGraph();
 
   // render with a given ordering
   Ordering ord;
   ord += "x2","l1","x1";
   GaussianBayesNet CBN = fg.eliminate(ord);
 
-  // True LinearFactorGraph
-  LinearFactorGraph fg2(CBN);
+  // True GaussianFactorGraph
+  GaussianFactorGraph fg2(CBN);
   GaussianBayesNet CBN2 = fg2.eliminate(ord);
   CHECK(assert_equal(CBN,CBN2));
 
   // Base FactorGraph only
-  FactorGraph<LinearFactor> fg3(CBN);
-  GaussianBayesNet CBN3 = gtsam::eliminate<LinearFactor,ConditionalGaussian>(fg3,ord);
+  FactorGraph<GaussianFactor> fg3(CBN);
+  GaussianBayesNet CBN3 = gtsam::eliminate<GaussianFactor,ConditionalGaussian>(fg3,ord);
   CHECK(assert_equal(CBN,CBN3));
 }
 
 /* ************************************************************************* */
-TEST( LinearFactorGraph, GET_ORDERING)
+TEST( GaussianFactorGraph, GET_ORDERING)
 {
   Ordering expected;
   expected += "l1","x1","x2";
-  LinearFactorGraph fg = createLinearFactorGraph();
+  GaussianFactorGraph fg = createGaussianFactorGraph();
   Ordering actual = fg.getOrdering();
   CHECK(assert_equal(expected,actual));
 }
 
 /* ************************************************************************* */
-TEST( LinearFactorGraph, OPTIMIZE )
+TEST( GaussianFactorGraph, OPTIMIZE )
 {
 	// create a graph
-	LinearFactorGraph fg = createLinearFactorGraph();
+	GaussianFactorGraph fg = createGaussianFactorGraph();
 
 	// create an ordering
 	Ordering ord = fg.getOrdering();
@@ -386,13 +386,13 @@ TEST( LinearFactorGraph, OPTIMIZE )
 }
 
 /* ************************************************************************* */
-TEST( LinearFactorGraph, COMBINE_GRAPHS_INPLACE)
+TEST( GaussianFactorGraph, COMBINE_GRAPHS_INPLACE)
 {
 	// create a test graph
-	LinearFactorGraph fg1 = createLinearFactorGraph();
+	GaussianFactorGraph fg1 = createGaussianFactorGraph();
 
 	// create another factor graph
-	LinearFactorGraph fg2 = createLinearFactorGraph();
+	GaussianFactorGraph fg2 = createGaussianFactorGraph();
 
 	// get sizes
 	int size1 = fg1.size();
@@ -405,20 +405,20 @@ TEST( LinearFactorGraph, COMBINE_GRAPHS_INPLACE)
 }
 
 /* ************************************************************************* */
-TEST( LinearFactorGraph, COMBINE_GRAPHS)
+TEST( GaussianFactorGraph, COMBINE_GRAPHS)
 {
 	// create a test graph
-	LinearFactorGraph fg1 = createLinearFactorGraph();
+	GaussianFactorGraph fg1 = createGaussianFactorGraph();
 
 	// create another factor graph
-	LinearFactorGraph fg2 = createLinearFactorGraph();
+	GaussianFactorGraph fg2 = createGaussianFactorGraph();
 
 	// get sizes
 	int size1 = fg1.size();
 	int size2 = fg2.size();
 
 	// combine them
-	LinearFactorGraph fg3 = LinearFactorGraph::combine2(fg1, fg2);
+	GaussianFactorGraph fg3 = GaussianFactorGraph::combine2(fg1, fg2);
 
 	CHECK(size1+size2 == fg3.size());
 }
@@ -432,10 +432,10 @@ void print(vector<int> v) {
 }
 
 /* ************************************************************************* */
-TEST( LinearFactorGraph, factor_lookup)
+TEST( GaussianFactorGraph, factor_lookup)
 {
 	// create a test graph
-	LinearFactorGraph fg = createLinearFactorGraph();
+	GaussianFactorGraph fg = createGaussianFactorGraph();
 
 	// ask for all factor indices connected to x1
 	list<int> x1_factors = fg.factors("x1");
@@ -451,18 +451,18 @@ TEST( LinearFactorGraph, factor_lookup)
 }
 
 /* ************************************************************************* */
-TEST( LinearFactorGraph, findAndRemoveFactors )
+TEST( GaussianFactorGraph, findAndRemoveFactors )
 {
 	// create the graph
-	LinearFactorGraph fg = createLinearFactorGraph();
+	GaussianFactorGraph fg = createGaussianFactorGraph();
 
   // We expect to remove these three factors: 0, 1, 2
-  LinearFactor::shared_ptr f0 = fg[0];
-  LinearFactor::shared_ptr f1 = fg[1];
-  LinearFactor::shared_ptr f2 = fg[2];
+  GaussianFactor::shared_ptr f0 = fg[0];
+  GaussianFactor::shared_ptr f1 = fg[1];
+  GaussianFactor::shared_ptr f2 = fg[2];
 
   // call the function
-  vector<LinearFactor::shared_ptr> factors = fg.findAndRemoveFactors("x1");
+  vector<GaussianFactor::shared_ptr> factors = fg.findAndRemoveFactors("x1");
 
   // Check the factors
   CHECK(f0==factors[0]);
@@ -474,18 +474,18 @@ TEST( LinearFactorGraph, findAndRemoveFactors )
   }
 
 /* ************************************************************************* */
-TEST( LinearFactorGraph, findAndRemoveFactors_twice )
+TEST( GaussianFactorGraph, findAndRemoveFactors_twice )
 {
 	// create the graph
-	LinearFactorGraph fg = createLinearFactorGraph();
+	GaussianFactorGraph fg = createGaussianFactorGraph();
 
   // We expect to remove these three factors: 0, 1, 2
-  LinearFactor::shared_ptr f0 = fg[0];
-  LinearFactor::shared_ptr f1 = fg[1];
-  LinearFactor::shared_ptr f2 = fg[2];
+  GaussianFactor::shared_ptr f0 = fg[0];
+  GaussianFactor::shared_ptr f1 = fg[1];
+  GaussianFactor::shared_ptr f2 = fg[2];
 
   // call the function
-  vector<LinearFactor::shared_ptr> factors = fg.findAndRemoveFactors("x1");
+  vector<GaussianFactor::shared_ptr> factors = fg.findAndRemoveFactors("x1");
 
   // Check the factors
   CHECK(f0==factors[0]);
@@ -500,18 +500,18 @@ TEST( LinearFactorGraph, findAndRemoveFactors_twice )
   }
 
 /* ************************************************************************* */
-TEST(LinearFactorGraph, createSmoother)
+TEST(GaussianFactorGraph, createSmoother)
 {
-	LinearFactorGraph fg1 = createSmoother(2);
+	GaussianFactorGraph fg1 = createSmoother(2);
 	LONGS_EQUAL(3,fg1.size());
-	LinearFactorGraph fg2 = createSmoother(3);
+	GaussianFactorGraph fg2 = createSmoother(3);
 	LONGS_EQUAL(5,fg2.size());
 }
 
 /* ************************************************************************* */
-TEST( LinearFactorGraph, variables )
+TEST( GaussianFactorGraph, variables )
 {
-  LinearFactorGraph fg = createLinearFactorGraph();
+  GaussianFactorGraph fg = createGaussianFactorGraph();
   Dimensions expected;
   insert(expected)("l1", 2)("x1", 2)("x2", 2);
   Dimensions actual = fg.dimensions();
@@ -519,23 +519,23 @@ TEST( LinearFactorGraph, variables )
 }
 
 /* ************************************************************************* */
-TEST( LinearFactorGraph, keys )
+TEST( GaussianFactorGraph, keys )
 {
-  LinearFactorGraph fg = createLinearFactorGraph();
+  GaussianFactorGraph fg = createGaussianFactorGraph();
   Ordering expected;
   expected += "l1","x1","x2";
   CHECK(assert_equal(expected,fg.keys()));
 }
 
 /* ************************************************************************* */
-// Tests ported from ConstrainedLinearFactorGraph
+// Tests ported from ConstrainedGaussianFactorGraph
 /* ************************************************************************* */
 
 /* ************************************************************************* */
-TEST( LinearFactorGraph, constrained_simple )
+TEST( GaussianFactorGraph, constrained_simple )
 {
 	// get a graph with a constraint in it
-	LinearFactorGraph fg = createSimpleConstraintGraph();
+	GaussianFactorGraph fg = createSimpleConstraintGraph();
 
 	// eliminate and solve
 	Ordering ord;
@@ -548,10 +548,10 @@ TEST( LinearFactorGraph, constrained_simple )
 }
 
 /* ************************************************************************* */
-TEST( LinearFactorGraph, constrained_single )
+TEST( GaussianFactorGraph, constrained_single )
 {
 	// get a graph with a constraint in it
-	LinearFactorGraph fg = createSingleConstraintGraph();
+	GaussianFactorGraph fg = createSingleConstraintGraph();
 
 	// eliminate and solve
 	Ordering ord;
@@ -564,10 +564,10 @@ TEST( LinearFactorGraph, constrained_single )
 }
 
 /* ************************************************************************* */
-TEST( LinearFactorGraph, constrained_single2 )
+TEST( GaussianFactorGraph, constrained_single2 )
 {
 	// get a graph with a constraint in it
-	LinearFactorGraph fg = createSingleConstraintGraph();
+	GaussianFactorGraph fg = createSingleConstraintGraph();
 
 	// eliminate and solve
 	Ordering ord;
@@ -580,10 +580,10 @@ TEST( LinearFactorGraph, constrained_single2 )
 }
 
 /* ************************************************************************* */
-TEST( LinearFactorGraph, constrained_multi1 )
+TEST( GaussianFactorGraph, constrained_multi1 )
 {
 	// get a graph with a constraint in it
-	LinearFactorGraph fg = createMultiConstraintGraph();
+	GaussianFactorGraph fg = createMultiConstraintGraph();
 
 	// eliminate and solve
 	Ordering ord;
@@ -596,10 +596,10 @@ TEST( LinearFactorGraph, constrained_multi1 )
 }
 
 /* ************************************************************************* */
-TEST( LinearFactorGraph, constrained_multi2 )
+TEST( GaussianFactorGraph, constrained_multi2 )
 {
 	// get a graph with a constraint in it
-	LinearFactorGraph fg = createMultiConstraintGraph();
+	GaussianFactorGraph fg = createMultiConstraintGraph();
 
 	// eliminate and solve
 	Ordering ord;

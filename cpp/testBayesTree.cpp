@@ -95,7 +95,7 @@ C6           x1 : x2
 TEST( BayesTree, linear_smoother_shortcuts )
 {
 	// Create smoother with 7 nodes
-	LinearFactorGraph smoother = createSmoother(7);
+	GaussianFactorGraph smoother = createSmoother(7);
 	Ordering ordering;
 	for (int t = 1; t <= 7; t++)
 		ordering.push_back(symbol('x', t));
@@ -110,12 +110,12 @@ TEST( BayesTree, linear_smoother_shortcuts )
 	// Check the conditional P(Root|Root)
 	GaussianBayesNet empty;
 	Gaussian::sharedClique R = bayesTree.root();
-	GaussianBayesNet actual1 = R->shortcut<LinearFactor>(R);
+	GaussianBayesNet actual1 = R->shortcut<GaussianFactor>(R);
 	CHECK(assert_equal(empty,actual1,1e-4));
 
 	// Check the conditional P(C2|Root)
 	Gaussian::sharedClique C2 = bayesTree["x5"];
-	GaussianBayesNet actual2 = C2->shortcut<LinearFactor>(R);
+	GaussianBayesNet actual2 = C2->shortcut<GaussianFactor>(R);
 	CHECK(assert_equal(empty,actual2,1e-4));
 
 	// Check the conditional P(C3|Root)
@@ -124,7 +124,7 @@ TEST( BayesTree, linear_smoother_shortcuts )
 	GaussianBayesNet expected3;
 	push_front(expected3,"x5", zero(2), eye(2), "x6", A56, sigma3);
 	Gaussian::sharedClique C3 = bayesTree["x4"];
-	GaussianBayesNet actual3 = C3->shortcut<LinearFactor>(R);
+	GaussianBayesNet actual3 = C3->shortcut<GaussianFactor>(R);
 	CHECK(assert_equal(expected3,actual3,1e-4));
 
 	// Check the conditional P(C4|Root)
@@ -133,7 +133,7 @@ TEST( BayesTree, linear_smoother_shortcuts )
   GaussianBayesNet expected4;
   push_front(expected4,"x4", zero(2), eye(2), "x6", A46, sigma4);
 	Gaussian::sharedClique C4 = bayesTree["x3"];
-	GaussianBayesNet actual4 = C4->shortcut<LinearFactor>(R);
+	GaussianBayesNet actual4 = C4->shortcut<GaussianFactor>(R);
 	CHECK(assert_equal(expected4,actual4,1e-4));
 }
 
@@ -159,7 +159,7 @@ TEST( BayesTree, linear_smoother_shortcuts )
 TEST( BayesTree, balanced_smoother_marginals )
 {
 	// Create smoother with 7 nodes
-	LinearFactorGraph smoother = createSmoother(7);
+	GaussianFactorGraph smoother = createSmoother(7);
 	Ordering ordering;
 	ordering += "x1","x3","x5","x7","x2","x6","x4";
 
@@ -178,27 +178,27 @@ TEST( BayesTree, balanced_smoother_marginals )
 
 	// Check marginal on x1
 	GaussianBayesNet expected1 = simpleGaussian("x1", zero(2), sigmax1);
-	GaussianBayesNet actual1 = bayesTree.marginalBayesNet<LinearFactor>("x1");
+	GaussianBayesNet actual1 = bayesTree.marginalBayesNet<GaussianFactor>("x1");
 	CHECK(assert_equal(expected1,actual1,1e-4));
 
 	// Check marginal on x2
   GaussianBayesNet expected2 = simpleGaussian("x2", zero(2), sigmax2);
-	GaussianBayesNet actual2 = bayesTree.marginalBayesNet<LinearFactor>("x2");
+	GaussianBayesNet actual2 = bayesTree.marginalBayesNet<GaussianFactor>("x2");
 	CHECK(assert_equal(expected2,actual2,1e-4));
 
 	// Check marginal on x3
   GaussianBayesNet expected3 = simpleGaussian("x3", zero(2), sigmax3);
-	GaussianBayesNet actual3 = bayesTree.marginalBayesNet<LinearFactor>("x3");
+	GaussianBayesNet actual3 = bayesTree.marginalBayesNet<GaussianFactor>("x3");
 	CHECK(assert_equal(expected3,actual3,1e-4));
 
 	// Check marginal on x4
   GaussianBayesNet expected4 = simpleGaussian("x4", zero(2), sigmax4);
-	GaussianBayesNet actual4 = bayesTree.marginalBayesNet<LinearFactor>("x4");
+	GaussianBayesNet actual4 = bayesTree.marginalBayesNet<GaussianFactor>("x4");
 	CHECK(assert_equal(expected4,actual4,1e-4));
 
 	// Check marginal on x7 (should be equal to x1)
   GaussianBayesNet expected7 = simpleGaussian("x7", zero(2), sigmax7);
-	GaussianBayesNet actual7 = bayesTree.marginalBayesNet<LinearFactor>("x7");
+	GaussianBayesNet actual7 = bayesTree.marginalBayesNet<GaussianFactor>("x7");
 	CHECK(assert_equal(expected7,actual7,1e-4));
 }
 
@@ -206,7 +206,7 @@ TEST( BayesTree, balanced_smoother_marginals )
 TEST( BayesTree, balanced_smoother_shortcuts )
 {
 	// Create smoother with 7 nodes
-	LinearFactorGraph smoother = createSmoother(7);
+	GaussianFactorGraph smoother = createSmoother(7);
 	Ordering ordering;
 	ordering += "x1","x3","x5","x7","x2","x6","x4";
 
@@ -217,19 +217,19 @@ TEST( BayesTree, balanced_smoother_shortcuts )
 	// Check the conditional P(Root|Root)
 	GaussianBayesNet empty;
 	Gaussian::sharedClique R = bayesTree.root();
-	GaussianBayesNet actual1 = R->shortcut<LinearFactor>(R);
+	GaussianBayesNet actual1 = R->shortcut<GaussianFactor>(R);
 	CHECK(assert_equal(empty,actual1,1e-4));
 
 	// Check the conditional P(C2|Root)
 	Gaussian::sharedClique C2 = bayesTree["x3"];
-	GaussianBayesNet actual2 = C2->shortcut<LinearFactor>(R);
+	GaussianBayesNet actual2 = C2->shortcut<GaussianFactor>(R);
 	CHECK(assert_equal(empty,actual2,1e-4));
 
 	// Check the conditional P(C3|Root), which should be equal to P(x2|x4)
 	ConditionalGaussian::shared_ptr p_x2_x4 = chordalBayesNet["x2"];
 	GaussianBayesNet expected3; expected3.push_back(p_x2_x4);
 	Gaussian::sharedClique C3 = bayesTree["x1"];
-	GaussianBayesNet actual3 = C3->shortcut<LinearFactor>(R);
+	GaussianBayesNet actual3 = C3->shortcut<GaussianFactor>(R);
 	CHECK(assert_equal(expected3,actual3,1e-4));
 }
 
@@ -237,7 +237,7 @@ TEST( BayesTree, balanced_smoother_shortcuts )
 TEST( BayesTree, balanced_smoother_clique_marginals )
 {
 	// Create smoother with 7 nodes
-	LinearFactorGraph smoother = createSmoother(7);
+	GaussianFactorGraph smoother = createSmoother(7);
 	Ordering ordering;
 	ordering += "x1","x3","x5","x7","x2","x6","x4";
 
@@ -251,8 +251,8 @@ TEST( BayesTree, balanced_smoother_clique_marginals )
   Matrix A12 = (-0.5)*eye(2);
   push_front(expected,"x1", zero(2), eye(2), "x2", A12, sigma);
 	Gaussian::sharedClique R = bayesTree.root(), C3 = bayesTree["x1"];
-	FactorGraph<LinearFactor> marginal = C3->marginal<LinearFactor>(R);
-	GaussianBayesNet actual = eliminate<LinearFactor,ConditionalGaussian>(marginal,C3->keys());
+	FactorGraph<GaussianFactor> marginal = C3->marginal<GaussianFactor>(R);
+	GaussianBayesNet actual = eliminate<GaussianFactor,ConditionalGaussian>(marginal,C3->keys());
 	CHECK(assert_equal(expected,actual,1e-4));
 }
 
@@ -260,7 +260,7 @@ TEST( BayesTree, balanced_smoother_clique_marginals )
 TEST( BayesTree, balanced_smoother_joint )
 {
 	// Create smoother with 7 nodes
-	LinearFactorGraph smoother = createSmoother(7);
+	GaussianFactorGraph smoother = createSmoother(7);
 	Ordering ordering;
 	ordering += "x1","x3","x5","x7","x2","x6","x4";
 
@@ -275,13 +275,13 @@ TEST( BayesTree, balanced_smoother_joint )
   // Check the joint density P(x1,x7) factored as P(x1|x7)P(x7)
   GaussianBayesNet expected1 = simpleGaussian("x7", zero(2), sigmax7);
   push_front(expected1,"x1", zero(2), eye(2), "x7", A, sigma);
-	GaussianBayesNet actual1 = bayesTree.jointBayesNet<LinearFactor>("x1","x7");
+	GaussianBayesNet actual1 = bayesTree.jointBayesNet<GaussianFactor>("x1","x7");
 	CHECK(assert_equal(expected1,actual1,1e-4));
 
 	// Check the joint density P(x7,x1) factored as P(x7|x1)P(x1)
   GaussianBayesNet expected2 = simpleGaussian("x1", zero(2), sigmax1);
   push_front(expected2,"x7", zero(2), eye(2), "x1", A, sigma);
-	GaussianBayesNet actual2 = bayesTree.jointBayesNet<LinearFactor>("x7","x1");
+	GaussianBayesNet actual2 = bayesTree.jointBayesNet<GaussianFactor>("x7","x1");
 	CHECK(assert_equal(expected2,actual2,1e-4));
 
 	// Check the joint density P(x1,x4), i.e. with a root variable
@@ -289,7 +289,7 @@ TEST( BayesTree, balanced_smoother_joint )
 	Vector sigma14 = repeat(2, 0.784465);
   Matrix A14 = (-0.0769231)*eye(2);
   push_front(expected3,"x1", zero(2), eye(2), "x4", A14, sigma14);
-	GaussianBayesNet actual3 = bayesTree.jointBayesNet<LinearFactor>("x1","x4");
+	GaussianBayesNet actual3 = bayesTree.jointBayesNet<GaussianFactor>("x1","x4");
 	CHECK(assert_equal(expected3,actual3,1e-4));
 
 	// Check the joint density P(x4,x1), i.e. with a root variable, factored the other way
@@ -297,7 +297,7 @@ TEST( BayesTree, balanced_smoother_joint )
 	Vector sigma41 = repeat(2, 0.668096);
   Matrix A41 = (-0.055794)*eye(2);
   push_front(expected4,"x4", zero(2), eye(2), "x1", A41, sigma41);
-	GaussianBayesNet actual4 = bayesTree.jointBayesNet<LinearFactor>("x4","x1");
+	GaussianBayesNet actual4 = bayesTree.jointBayesNet<GaussianFactor>("x4","x1");
 	CHECK(assert_equal(expected4,actual4,1e-4));
 }
 

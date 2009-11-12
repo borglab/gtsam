@@ -19,9 +19,9 @@ CXXFLAGS += -DBOOST_UBLAS_NDEBUG
 # basic
 sources = Vector.cpp svdcmp.cpp Matrix.cpp numericalDerivative.cpp Ordering.cpp
 # nodes
-sources += FGConfig.cpp LinearFactor.cpp ConditionalGaussian.cpp NonlinearFactor.cpp 
+sources += FGConfig.cpp GaussianFactor.cpp ConditionalGaussian.cpp NonlinearFactor.cpp 
 # graphs
-sources += FactorGraph.cpp LinearFactorGraph.cpp NonlinearFactorGraph.cpp ChordalBayesNet.cpp
+sources += FactorGraph.cpp GaussianFactorGraph.cpp NonlinearFactorGraph.cpp ChordalBayesNet.cpp
 # geometry
 sources += Point2.cpp Point3.cpp Rot3.cpp Pose3.cpp Cal3_S2.cpp
 
@@ -109,8 +109,8 @@ tests: unit-tests timing-tests
 clean-tests:
 	-rm -rf $(executables)
 
-# make a version of timeLinearFactor instrumented for Saturn profiler
-saturn: timeLinearFactor
+# make a version of timeGaussianFactor instrumented for Saturn profiler
+saturn: timeGaussianFactor
 saturn: CXXFLAGS += -finstrument-functions
 saturn: LDLIBS += -lSaturn
 

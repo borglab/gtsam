@@ -35,7 +35,7 @@ namespace gtsam {
 	}
 
 	/* ************************************************************************* */
-	// This doubly templated function is generic. There is a LinearFactorGraph
+	// This doubly templated function is generic. There is a GaussianFactorGraph
 	// version that returns a more specific GaussianBayesNet.
 	// Note, you will need to include this file to instantiate the function.
 	/* ************************************************************************* */

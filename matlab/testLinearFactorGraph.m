@@ -1,7 +1,7 @@
 %-----------------------------------------------------------------------
 % equals
-fg = createLinearFactorGraph();
-fg2 = createLinearFactorGraph();
+fg = createGaussianFactorGraph();
+fg2 = createGaussianFactorGraph();
 CHECK('equals',fg.equals(fg2));
 
 %-----------------------------------------------------------------------
@@ -12,7 +12,7 @@ DOUBLES_EQUAL( 5.625, actual, 1e-9 );
 
 %-----------------------------------------------------------------------
 % combine_factors_x1
-fg = createLinearFactorGraph();
+fg = createGaussianFactorGraph();
 actual = fg.combine_factors('x1');
 Al1 = [
    0., 0.
@@ -43,22 +43,22 @@ Ax2 = [
 
 b=[-1;-1;2;-1;0;1];
 
-expected = LinearFactor('l1',Al1,'x1',Ax1,'x2',Ax2,b);
+expected = GaussianFactor('l1',Al1,'x1',Ax1,'x2',Ax2,b);
 CHECK('combine_factors_x1', actual.equals(expected,1e-9));
 
 %-----------------------------------------------------------------------
 % combine_factors_x2
-fg = createLinearFactorGraph();
+fg = createGaussianFactorGraph();
 actual = fg.combine_factors('x2');
 
 %-----------------------------------------------------------------------
 % eliminate_x1
-fg = createLinearFactorGraph();
+fg = createGaussianFactorGraph();
 actual = fg.eliminate_one('x1');
 
 %-----------------------------------------------------------------------
 % eliminate_x2
-fg = createLinearFactorGraph();
+fg = createGaussianFactorGraph();
 actual = fg.eliminate_one('x2');
 
 %-----------------------------------------------------------------------
@@ -91,7 +91,7 @@ expected.insert('l1', cg2);
 expected.insert('x2', cg3);
 
 % Check one ordering
-fg1 = createLinearFactorGraph();
+fg1 = createGaussianFactorGraph();
 ord1 = Ordering;
 ord1.push_back('x2');
 ord1.push_back('l1');
@@ -102,7 +102,7 @@ CHECK('eliminateAll', actual1.equals(expected));
 %-----------------------------------------------------------------------
 % matrix
 
-fg = createLinearFactorGraph();
+fg = createGaussianFactorGraph();
 ord = Ordering;
 ord.push_back('x2');
 ord.push_back('l1');

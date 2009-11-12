@@ -121,12 +121,12 @@ VectorConfig createZeroDelta() {
 }
 
 /* ************************************************************************* */
-LinearFactorGraph createLinearFactorGraph()
+GaussianFactorGraph createGaussianFactorGraph()
 {
   VectorConfig c = createNoisyConfig();
   
   // Create
-  LinearFactorGraph fg;
+  GaussianFactorGraph fg;
 
   double sigma1 = 0.1;
 
@@ -137,7 +137,7 @@ LinearFactorGraph createLinearFactorGraph()
 
   Vector b = - c["x1"];
 
-  LinearFactor::shared_ptr f1(new LinearFactor("x1", A11, b, sigma1));
+  GaussianFactor::shared_ptr f1(new GaussianFactor("x1", A11, b, sigma1));
   fg.push_back(f1);
 
   // odometry between x1 and x2
@@ -153,7 +153,7 @@ LinearFactorGraph createLinearFactorGraph()
   // Vector b(2);
   b(0) = 0.2 ; b(1) = -0.1;
 
-  LinearFactor::shared_ptr f2(new LinearFactor("x1", A21,  "x2", A22, b, sigma2));
+  GaussianFactor::shared_ptr f2(new GaussianFactor("x1", A21,  "x2", A22, b, sigma2));
   fg.push_back(f2);
 
   // measurement between x1 and l1
@@ -168,7 +168,7 @@ LinearFactorGraph createLinearFactorGraph()
 
   b(0) = 0 ; b(1) = 0.2;
 
-  LinearFactor::shared_ptr f3(new LinearFactor("x1", A31, "l1", A32, b, sigma3));
+  GaussianFactor::shared_ptr f3(new GaussianFactor("x1", A31, "l1", A32, b, sigma3));
   fg.push_back(f3);
 
   // measurement between x2 and l1
@@ -183,7 +183,7 @@ LinearFactorGraph createLinearFactorGraph()
 
   b(0)= -0.2 ; b(1) = 0.3;
 
-  LinearFactor::shared_ptr f4(new LinearFactor("x2", A41, "l1", A42, b, sigma4));
+  GaussianFactor::shared_ptr f4(new GaussianFactor("x2", A41, "l1", A42, b, sigma4));
   fg.push_back(f4);
 
   return fg;
@@ -245,7 +245,7 @@ ExampleNonlinearFactorGraph createReallyNonlinearFactorGraph() {
 }
 
 /* ************************************************************************* */
-LinearFactorGraph createSmoother(int T) {
+GaussianFactorGraph createSmoother(int T) {
 
 	// noise on measurements and odometry, respectively
 	double sigma1 = 1, sigma2 = 1;
@@ -277,12 +277,12 @@ LinearFactorGraph createSmoother(int T) {
 		poses.insert(key, xt);
 	}
 
-	LinearFactorGraph lfg = nlfg.linearize(poses);
+	GaussianFactorGraph lfg = nlfg.linearize(poses);
 	return lfg;
 }
 
 /* ************************************************************************* */
-LinearFactorGraph createSimpleConstraintGraph() {
+GaussianFactorGraph createSimpleConstraintGraph() {
 	// create unary factor
 	// prior on "x", mean = [1,-1], sigma=0.1
 	double sigma = 0.1;
@@ -290,7 +290,7 @@ LinearFactorGraph createSimpleConstraintGraph() {
 	Vector b1(2);
 	b1(0) = 1.0;
 	b1(1) = -1.0;
-	LinearFactor::shared_ptr f1(new LinearFactor("x", Ax, b1, sigma));
+	GaussianFactor::shared_ptr f1(new GaussianFactor("x", Ax, b1, sigma));
 
 	// create binary constraint factor
 	// between "x" and "y", that is going to be the only factor on "y"
@@ -299,11 +299,11 @@ LinearFactorGraph createSimpleConstraintGraph() {
 	Matrix Ax1 = eye(2);
 	Matrix Ay1 = eye(2) * -1;
 	Vector b2 = Vector_(2, 0.0, 0.0);
-	LinearFactor::shared_ptr f2(
-			new LinearFactor("x", Ax1, "y", Ay1, b2, 0.0));
+	GaussianFactor::shared_ptr f2(
+			new GaussianFactor("x", Ax1, "y", Ay1, b2, 0.0));
 
 	// construct the graph
-	LinearFactorGraph fg;
+	GaussianFactorGraph fg;
 	fg.push_back(f1);
 	fg.push_back(f2);
 
@@ -320,7 +320,7 @@ VectorConfig createSimpleConstraintConfig() {
 }
 
 /* ************************************************************************* */
-LinearFactorGraph createSingleConstraintGraph() {
+GaussianFactorGraph createSingleConstraintGraph() {
 	// create unary factor
 	// prior on "x", mean = [1,-1], sigma=0.1
 	double sigma = 0.1;
@@ -328,7 +328,7 @@ LinearFactorGraph createSingleConstraintGraph() {
 	Vector b1(2);
 	b1(0) = 1.0;
 	b1(1) = -1.0;
-	LinearFactor::shared_ptr f1(new LinearFactor("x", Ax, b1, sigma));
+	GaussianFactor::shared_ptr f1(new GaussianFactor("x", Ax, b1, sigma));
 
 	// create binary constraint factor
 	// between "x" and "y", that is going to be the only factor on "y"
@@ -339,11 +339,11 @@ LinearFactorGraph createSingleConstraintGraph() {
 	Ax1(1, 0) = 2.0; Ax1(1, 1) = 1.0;
 	Matrix Ay1 = eye(2) * 10;
 	Vector b2 = Vector_(2, 1.0, 2.0);
-	LinearFactor::shared_ptr f2(
-			new LinearFactor("x", Ax1, "y", Ay1, b2, 0.0));
+	GaussianFactor::shared_ptr f2(
+			new GaussianFactor("x", Ax1, "y", Ay1, b2, 0.0));
 
 	// construct the graph
-	LinearFactorGraph fg;
+	GaussianFactorGraph fg;
 	fg.push_back(f1);
 	fg.push_back(f2);
 
@@ -359,12 +359,12 @@ VectorConfig createSingleConstraintConfig() {
 }
 
 /* ************************************************************************* */
-LinearFactorGraph createMultiConstraintGraph() {
+GaussianFactorGraph createMultiConstraintGraph() {
 	// unary factor 1
 	double sigma = 0.1;
 	Matrix A = eye(2);
 	Vector b = Vector_(2, -2.0, 2.0);
-	LinearFactor::shared_ptr lf1(new LinearFactor("x", A, b, sigma));
+	GaussianFactor::shared_ptr lf1(new GaussianFactor("x", A, b, sigma));
 
 	// constraint 1
 	Matrix A11(2,2);
@@ -377,7 +377,7 @@ LinearFactorGraph createMultiConstraintGraph() {
 
 	Vector b1(2);
 	b1(0) = 1.0; b1(1) = 2.0;
-	LinearFactor::shared_ptr lc1(new LinearFactor("x", A11, "y", A12, b1, 0.0));
+	GaussianFactor::shared_ptr lc1(new GaussianFactor("x", A11, "y", A12, b1, 0.0));
 
 	// constraint 2
 	Matrix A21(2,2);
@@ -390,10 +390,10 @@ LinearFactorGraph createMultiConstraintGraph() {
 
 	Vector b2(2);
 	b2(0) = 3.0; b2(1) = 4.0;
-	LinearFactor::shared_ptr lc2(new LinearFactor("x", A21, "z", A22, b2, 0.0));
+	GaussianFactor::shared_ptr lc2(new GaussianFactor("x", A21, "z", A22, b2, 0.0));
 
 	// construct the graph
-	LinearFactorGraph fg;
+	GaussianFactorGraph fg;
 	fg.push_back(lf1);
 	fg.push_back(lc1);
 	fg.push_back(lc2);
@@ -411,13 +411,13 @@ VectorConfig createMultiConstraintConfig() {
 }
 
 /* ************************************************************************* */
-//LinearFactorGraph createConstrainedLinearFactorGraph()
+//GaussianFactorGraph createConstrainedGaussianFactorGraph()
 //{
-//	LinearFactorGraph graph;
+//	GaussianFactorGraph graph;
 //
 //	// add an equality factor
 //	Vector v1(2); v1(0)=1.;v1(1)=2.;
-//	LinearFactor::shared_ptr f1(new LinearFactor(v1, "x0"));
+//	GaussianFactor::shared_ptr f1(new GaussianFactor(v1, "x0"));
 //	graph.push_back_eq(f1);
 //
 //	// add a normal linear factor
@@ -429,7 +429,7 @@ VectorConfig createMultiConstraintConfig() {
 //	b(0) = 2 ; b(1) = 3;
 //
 //	double sigma = 0.1;
-//	LinearFactor::shared_ptr f2(new LinearFactor("x0", A21/sigma,  "x1", A22/sigma, b/sigma));
+//	GaussianFactor::shared_ptr f2(new GaussianFactor("x0", A21/sigma,  "x1", A22/sigma, b/sigma));
 //	graph.push_back(f2);
 //	return graph;
 //}
@@ -440,7 +440,7 @@ VectorConfig createMultiConstraintConfig() {
 //		VectorConfig c = createConstrainedConfig();
 //
 //		// equality constraint for initial pose
-//		LinearFactor::shared_ptr f1(new LinearFactor(c["x0"], "x0"));
+//		GaussianFactor::shared_ptr f1(new GaussianFactor(c["x0"], "x0"));
 //		graph.push_back_eq(f1);
 //
 //		// odometry between x0 and x1

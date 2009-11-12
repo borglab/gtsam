@@ -1,6 +1,6 @@
 /**
- * @file    timeLinearFactor.cpp
- * @brief   time LinearFactor.eliminate
+ * @file    timeGaussianFactor.cpp
+ * @brief   time GaussianFactor.eliminate
  * @author  Alireza Fathi
  */
 
@@ -12,7 +12,7 @@ using namespace std;
 
 #include <boost/tuple/tuple.hpp>
 #include "Matrix.h"
-#include "LinearFactor.h"
+#include "GaussianFactor.h"
 
 using namespace gtsam;
 
@@ -66,11 +66,11 @@ int main()
   b2(6) = 2;
   b2(7) = -1;
   
-  LinearFactor combined("x2", Ax2,  "l1", Al1, "x1", Ax1, b2);
+  GaussianFactor combined("x2", Ax2,  "l1", Al1, "x1", Ax1, b2);
   long timeLog = clock();
   int n = 1000000;
   ConditionalGaussian::shared_ptr conditional;
-  LinearFactor::shared_ptr factor;
+  GaussianFactor::shared_ptr factor;
 
   for(int i = 0; i < n; i++)
     boost::tie(conditional,factor) = combined.eliminate("x2");

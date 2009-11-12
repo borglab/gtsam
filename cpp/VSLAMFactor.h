@@ -7,7 +7,7 @@
 #pragma once
 
 #include "NonlinearFactor.h"
-#include "LinearFactor.h"
+#include "GaussianFactor.h"
 #include "Cal3_S2.h"
 #include "Testable.h"
 
@@ -69,7 +69,7 @@ class VSLAMFactor : public NonlinearFactor<VSLAMConfig>, Testable<VSLAMFactor>
   /**
    * linerarization
    */
-  LinearFactor::shared_ptr linearize(const VSLAMConfig&) const;
+  GaussianFactor::shared_ptr linearize(const VSLAMConfig&) const;
 
   int getCameraFrameNumber() const { return cameraFrameNumber_; }
   int getLandmarkNumber()    const { return landmarkNumber_;    }

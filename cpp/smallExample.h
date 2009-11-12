@@ -49,7 +49,7 @@ namespace gtsam {
 	 * create a linear factor graph
 	 * The non-linear graph above evaluated at NoisyConfig
 	 */
-	LinearFactorGraph createLinearFactorGraph();
+	GaussianFactorGraph createGaussianFactorGraph();
 
 	/**
 	 * create small Chordal Bayes Net x <- y
@@ -66,7 +66,7 @@ namespace gtsam {
 	 * Create a Kalman smoother by linearizing a non-linear factor graph
 	 * @param T number of time-steps
 	 */
-	LinearFactorGraph createSmoother(int T);
+	GaussianFactorGraph createSmoother(int T);
 
 
 	/* ******************************************************* */
@@ -77,21 +77,21 @@ namespace gtsam {
 	 * Creates a simple constrained graph with one linear factor and
 	 * one binary equality constraint that sets x = y
 	 */
-	LinearFactorGraph createSimpleConstraintGraph();
+	GaussianFactorGraph createSimpleConstraintGraph();
 	VectorConfig createSimpleConstraintConfig();
 
 	/**
 	 * Creates a simple constrained graph with one linear factor and
 	 * one binary constraint.
 	 */
-	LinearFactorGraph createSingleConstraintGraph();
+	GaussianFactorGraph createSingleConstraintGraph();
 	VectorConfig createSingleConstraintConfig();
 
 	/**
 	 * Creates a constrained graph with a linear factor and two
 	 * binary constraints that share a node
 	 */
-	LinearFactorGraph createMultiConstraintGraph();
+	GaussianFactorGraph createMultiConstraintGraph();
 	VectorConfig createMultiConstraintConfig();
 
 	/**
@@ -117,7 +117,7 @@ namespace gtsam {
 	/**
 	 * Create small example constrained factor graph
 	 */
-	//LinearFactorGraph createConstrainedLinearFactorGraph();
+	//GaussianFactorGraph createConstrainedGaussianFactorGraph();
 
 	/**
 	 * Create small example constrained nonlinear factor graph

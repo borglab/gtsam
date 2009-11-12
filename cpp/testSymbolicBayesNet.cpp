@@ -32,7 +32,7 @@ TEST( SymbolicBayesNet, constructor )
 	expected.push_back(x1);
 
 	// Create from a factor graph
-	LinearFactorGraph factorGraph = createLinearFactorGraph();
+	GaussianFactorGraph factorGraph = createGaussianFactorGraph();
 	SymbolicFactorGraph fg(factorGraph);
 
 	// eliminate it

@@ -8,7 +8,7 @@
 
 #pragma once
 
-#include "LinearFactorGraph.h"
+#include "GaussianFactorGraph.h"
 #include "NonlinearFactorGraph.h"
 
 namespace gtsam {
@@ -28,21 +28,21 @@ namespace gtsam {
 	}
 	/* ************************************************************************* */
 	template<class Config>
-	LinearFactorGraph NonlinearFactorGraph<Config>::linearize(
+	GaussianFactorGraph NonlinearFactorGraph<Config>::linearize(
 			const Config& config) const {
 		// TODO speed up the function either by returning a pointer or by
 		// returning the linearisation as a second argument and returning
 		// the reference
 
 		// create an empty linear FG
-		LinearFactorGraph linearFG;
+		GaussianFactorGraph linearFG;
 
 		typedef typename FactorGraph<NonlinearFactor<Config> >::const_iterator
 				const_iterator;
 		// linearize all factors
 		for (const_iterator factor = this->factors_.begin(); factor
 				< this->factors_.end(); factor++) {
-			boost::shared_ptr<LinearFactor> lf = (*factor)->linearize(config);
+			boost::shared_ptr<GaussianFactor> lf = (*factor)->linearize(config);
 			linearFG.push_back(lf);
 		}
 

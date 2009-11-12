@@ -1,12 +1,12 @@
 /**
- * @file    LinearFactorGraph.h
+ * @file    GaussianFactorGraph.h
  * @brief   Linear Factor Graph where all factors are Gaussians
  * @author  Kai Ni
  * @author  Christian Potthast
  * @author  Alireza Fathi
  */ 
 
-// $Id: LinearFactorGraph.h,v 1.24 2009/08/14 20:48:51 acunning Exp $
+// $Id: GaussianFactorGraph.h,v 1.24 2009/08/14 20:48:51 acunning Exp $
 
 // \callgraph
  
@@ -14,7 +14,7 @@
 
 #include <boost/shared_ptr.hpp>
 #include "FactorGraph.h"
-#include "LinearFactor.h"
+#include "GaussianFactor.h"
 #include "GaussianBayesNet.h" // needed for MATLAB toolbox !!
 
 namespace gtsam {
@@ -23,22 +23,22 @@ namespace gtsam {
 
   /**
    * A Linear Factor Graph is a factor graph where all factors are Gaussian, i.e.
-   *   Factor == LinearFactor
+   *   Factor == GaussianFactor
    *   VectorConfig = A configuration of vectors
    * Most of the time, linear factor graphs arise by linearizing a non-linear factor graph.
    */
-  class LinearFactorGraph : public FactorGraph<LinearFactor> {
+  class GaussianFactorGraph : public FactorGraph<GaussianFactor> {
   public:
 
     /**
      * Default constructor 
      */
-    LinearFactorGraph() {}
+    GaussianFactorGraph() {}
 
     /**
-     * Constructor that receives a Chordal Bayes Net and returns a LinearFactorGraph
+     * Constructor that receives a Chordal Bayes Net and returns a GaussianFactorGraph
      */
-    LinearFactorGraph(const GaussianBayesNet& CBN);
+    GaussianFactorGraph(const GaussianBayesNet& CBN);
 
 		/** unnormalized error */
 		double error(const VectorConfig& c) const {
@@ -93,14 +93,14 @@ namespace gtsam {
      * @param const &lfg2 Linear factor graph
      * @return a new combined factor graph
      */
-    static LinearFactorGraph combine2(const LinearFactorGraph& lfg1,
-				const LinearFactorGraph& lfg2);
+    static GaussianFactorGraph combine2(const GaussianFactorGraph& lfg1,
+				const GaussianFactorGraph& lfg2);
 		
     /**
      * combine two factor graphs
      * @param *lfg Linear factor graph
      */
-    void combine(const LinearFactorGraph &lfg);
+    void combine(const GaussianFactorGraph &lfg);
 
     /**
      * Find all variables and their dimensions
@@ -112,7 +112,7 @@ namespace gtsam {
      * Add zero-mean i.i.d. Gaussian prior terms to each variable
      * @param sigma Standard deviation of Gaussian
      */
-    LinearFactorGraph add_priors(double sigma) const;
+    GaussianFactorGraph add_priors(double sigma) const;
 
     /**
      * Return (dense) matrix associated with factor graph

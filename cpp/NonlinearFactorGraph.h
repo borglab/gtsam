@@ -11,13 +11,13 @@
 #pragma once
 
 #include "NonlinearFactor.h"
-#include "LinearFactorGraph.h"
+#include "GaussianFactorGraph.h"
 
 namespace gtsam {
 
 	/**
 	 * A non-linear factor graph is templated on a configuration, but the factor type
-	 * is fixed as a NonLinearFactor. The configurations are typically (in SAM) more general
+	 * is fixed as a NonGaussianFactor. The configurations are typically (in SAM) more general
 	 * than just vectors, e.g., Rot3 or Pose3, which are objects in non-linear manifolds.
 	 * Linearizing the non-linear factor graph creates a linear factor graph on the 
 	 * tangent vector space at the linearization point. Because the tangent space is a true
@@ -39,7 +39,7 @@ namespace gtsam {
 		/**
 		 * linearize a nonlinear factor graph
 		 */
-		LinearFactorGraph linearize(const Config& config) const;
+		GaussianFactorGraph linearize(const Config& config) const;
 
 	};
 

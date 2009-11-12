@@ -1,5 +1,5 @@
 /**
- * @file    LinearFactor.h
+ * @file    GaussianFactor.h
  * @brief   Linear Factor....A Gaussian
  * @brief   linearFactor
  * @author  Christian Potthast
@@ -24,13 +24,13 @@ namespace gtsam {
 
 /**
  * Base Class for a linear factor.
- * LinearFactor is non-mutable (all methods const!).
+ * GaussianFactor is non-mutable (all methods const!).
  * The factor value is exp(-0.5*||Ax-b||^2)
  */
-class LinearFactor: public Factor<VectorConfig> {
+class GaussianFactor: public Factor<VectorConfig> {
 public:
 
-	typedef boost::shared_ptr<LinearFactor> shared_ptr;
+	typedef boost::shared_ptr<GaussianFactor> shared_ptr;
 	typedef std::map<std::string, Matrix>::iterator iterator;
 	typedef std::map<std::string, Matrix>::const_iterator const_iterator;
 
@@ -43,23 +43,23 @@ protected:
 public:
 
 	// TODO: eradicate, as implies non-const
-	LinearFactor()  {
+	GaussianFactor()  {
 	}
 
 	/** Construct Null factor */
-	LinearFactor(const Vector& b_in) :
+	GaussianFactor(const Vector& b_in) :
 		b_(b_in), sigmas_(ones(b_in.size())){
 	}
 
 	/** Construct unary factor */
-	LinearFactor(const std::string& key1, const Matrix& A1,
+	GaussianFactor(const std::string& key1, const Matrix& A1,
 			const Vector& b_in, double sigma) :
 		b_(b_in), sigmas_(repeat(b_in.size(),sigma)) {
 		As_.insert(make_pair(key1, A1));
 	}
 
 	/** Construct binary factor */
-	LinearFactor(const std::string& key1, const Matrix& A1,
+	GaussianFactor(const std::string& key1, const Matrix& A1,
 			const std::string& key2, const Matrix& A2,
 			const Vector& b_in, double sigma) :
 		b_(b_in), sigmas_(repeat(b_in.size(),sigma))  {
@@ -68,7 +68,7 @@ public:
 	}
 
 	/** Construct ternary factor */
-	LinearFactor(const std::string& key1, const Matrix& A1,
+	GaussianFactor(const std::string& key1, const Matrix& A1,
 			const std::string& key2, const Matrix& A2,
 			const std::string& key3, const Matrix& A3,
 			const Vector& b_in, double sigma) :
@@ -79,7 +79,7 @@ public:
 	}
 
 	/** Construct an n-ary factor */
-	LinearFactor(const std::vector<std::pair<std::string, Matrix> > &terms,
+	GaussianFactor(const std::vector<std::pair<std::string, Matrix> > &terms,
 	    const Vector &b_in, double sigma) :
 	    b_(b_in), sigmas_(repeat(b_in.size(),sigma))  {
 	  for(unsigned int i=0; i<terms.size(); i++)
@@ -87,7 +87,7 @@ public:
 	}
 
 	/** Construct an n-ary factor with a multiple sigmas*/
-	LinearFactor(const std::vector<std::pair<std::string, Matrix> > &terms,
+	GaussianFactor(const std::vector<std::pair<std::string, Matrix> > &terms,
 				const Vector &b_in, const Vector& sigmas) :
 			b_(b_in), sigmas_(sigmas) {
 			for (unsigned int i = 0; i < terms.size(); i++)
@@ -95,13 +95,13 @@ public:
 		}
 
 	/** Construct from Conditional Gaussian */
-	LinearFactor(const boost::shared_ptr<ConditionalGaussian>& cg);
+	GaussianFactor(const boost::shared_ptr<ConditionalGaussian>& cg);
 
 	/**
 	 * Constructor that combines a set of factors
 	 * @param factors Set of factors to combine
 	 */
-	LinearFactor(const std::vector<shared_ptr> & factors);
+	GaussianFactor(const std::vector<shared_ptr> & factors);
 
 	// Implementing Testable virtual functions
 
@@ -135,7 +135,7 @@ public:
 	const Matrix& get_A(const std::string& key) const {
 		const_iterator it = As_.find(key);
 		if (it == As_.end())
-			throw(std::invalid_argument("LinearFactor::[] invalid key: " + key));
+			throw(std::invalid_argument("GaussianFactor::[] invalid key: " + key));
 		return it->second;
 	}
 
@@ -241,10 +241,10 @@ public:
 	 * @param m final number of rows of f, needs to be known in advance
 	 * @param pos where to insert in the m-sized matrices
 	 */
-	void append_factor(LinearFactor::shared_ptr f, const size_t m,
+	void append_factor(GaussianFactor::shared_ptr f, const size_t m,
 			const size_t pos);
 
-}; // LinearFactor
+}; // GaussianFactor
 
 /* ************************************************************************* */
 

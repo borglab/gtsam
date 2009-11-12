@@ -26,12 +26,12 @@ Ax1 = [
 % the RHS
 b2=[-1;1.5;2;-1];
 
-combined = LinearFactor('x2', Ax2,  'l1', Al1, 'x1', Ax1, b2, 1);
+combined = GaussianFactor('x2', Ax2,  'l1', Al1, 'x1', Ax1, b2, 1);
 
 % eliminate the combined factor
 % NOT WORKING
 % this is not working because there is no elimination function for a linear
-% factor. Just for the MutableLinearFactor
+% factor. Just for the MutableGaussianFactor
 %[actualCG,actualLF] = combined.eliminate('x2');
 
 % create expected Conditional Gaussian
@@ -65,10 +65,10 @@ Bx1 = [
 % the RHS
 b1= [0.0;0.894427];
 
-expectedLF = LinearFactor('l1', Bl1, 'x1', Bx1, b1, 1);
+expectedLF = GaussianFactor('l1', Bl1, 'x1', Bx1, b1, 1);
 
 % check if the result matches
 % NOT WORKING 
-% because can not be computed with LinearFactor.eliminate
+% because can not be computed with GaussianFactor.eliminate
 %if(~actualCG.equals(expectedCG)), warning('GTSAM:unit','~actualCG.equals(expectedCG)'); end
 %if(~actualLF.equals(expectedLF,1e-5)), warning('GTSAM:unit','~actualLF.equals(expectedLF,1e-5)');end

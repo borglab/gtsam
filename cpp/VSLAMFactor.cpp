@@ -57,7 +57,7 @@ Vector VSLAMFactor::error_vector(const VSLAMConfig& c) const {
 }
 
 /* ************************************************************************* */
-LinearFactor::shared_ptr VSLAMFactor::linearize(const VSLAMConfig& c) const
+GaussianFactor::shared_ptr VSLAMFactor::linearize(const VSLAMConfig& c) const
 {
   // get arguments from config
   Pose3 pose = c.cameraPose(cameraFrameNumber_);
@@ -74,8 +74,8 @@ LinearFactor::shared_ptr VSLAMFactor::linearize(const VSLAMConfig& c) const
   Vector b = this->z_ - h;
 
   // Make new linearfactor, divide by sigma
-  LinearFactor::shared_ptr
-    p(new LinearFactor(cameraFrameName_, Dh1, landmarkName_, Dh2, b, this->sigma_));
+  GaussianFactor::shared_ptr
+    p(new GaussianFactor(cameraFrameName_, Dh1, landmarkName_, Dh2, b, this->sigma_));
   return p;
 }
 

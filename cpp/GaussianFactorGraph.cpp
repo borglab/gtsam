@@ -1,5 +1,5 @@
 /**
- * @file    LinearFactorGraph.cpp
+ * @file    GaussianFactorGraph.cpp
  * @brief   Linear Factor Graph where all factors are Gaussians
  * @author  Kai Ni
  * @author  Christian Potthast
@@ -12,8 +12,8 @@
 
 #include <colamd/colamd.h>
 
-#include "LinearFactorGraph.h"
-#include "LinearFactorSet.h"
+#include "GaussianFactorGraph.h"
+#include "GaussianFactorSet.h"
 #include "FactorGraph-inl.h"
 #include "inference-inl.h"
 
@@ -24,15 +24,15 @@ using namespace gtsam;
 #define FOREACH_PAIR( KEY, VAL, COL) BOOST_FOREACH (boost::tie(KEY,VAL),COL)
 
 // Explicitly instantiate so we don't have to include everywhere
-template class FactorGraph<LinearFactor>;
+template class FactorGraph<GaussianFactor>;
 
 /* ************************************************************************* */
-LinearFactorGraph::LinearFactorGraph(const GaussianBayesNet& CBN) :
-	FactorGraph<LinearFactor> (CBN) {
+GaussianFactorGraph::GaussianFactorGraph(const GaussianBayesNet& CBN) :
+	FactorGraph<GaussianFactor> (CBN) {
 }
 
 /* ************************************************************************* */
-set<string> LinearFactorGraph::find_separator(const string& key) const
+set<string> GaussianFactorGraph::find_separator(const string& key) const
 {
 	set<string> separator;
 	BOOST_FOREACH(sharedFactor factor,factors_)
@@ -43,13 +43,13 @@ set<string> LinearFactorGraph::find_separator(const string& key) const
 
 /* ************************************************************************* */
 ConditionalGaussian::shared_ptr
-LinearFactorGraph::eliminateOne(const std::string& key) {
-	return gtsam::eliminateOne<LinearFactor,ConditionalGaussian>(*this, key);
+GaussianFactorGraph::eliminateOne(const std::string& key) {
+	return gtsam::eliminateOne<GaussianFactor,ConditionalGaussian>(*this, key);
 }
 
 /* ************************************************************************* */
 GaussianBayesNet
-LinearFactorGraph::eliminate(const Ordering& ordering)
+GaussianFactorGraph::eliminate(const Ordering& ordering)
 {
 	GaussianBayesNet chordalBayesNet; // empty
 	BOOST_FOREACH(string key, ordering) {
@@ -60,7 +60,7 @@ LinearFactorGraph::eliminate(const Ordering& ordering)
 }
 
 /* ************************************************************************* */
-VectorConfig LinearFactorGraph::optimize(const Ordering& ordering)
+VectorConfig GaussianFactorGraph::optimize(const Ordering& ordering)
 {
 	// eliminate all nodes in the given ordering -> chordal Bayes net
 	GaussianBayesNet chordalBayesNet = eliminate(ordering);
@@ -71,7 +71,7 @@ VectorConfig LinearFactorGraph::optimize(const Ordering& ordering)
 
 /* ************************************************************************* */
 boost::shared_ptr<GaussianBayesNet>
-LinearFactorGraph::eliminate_(const Ordering& ordering)
+GaussianFactorGraph::eliminate_(const Ordering& ordering)
 {
 	boost::shared_ptr<GaussianBayesNet> chordalBayesNet(new GaussianBayesNet); // empty
 	BOOST_FOREACH(string key, ordering) {
@@ -83,23 +83,23 @@ LinearFactorGraph::eliminate_(const Ordering& ordering)
 
 /* ************************************************************************* */
 boost::shared_ptr<VectorConfig>
-LinearFactorGraph::optimize_(const Ordering& ordering) {
+GaussianFactorGraph::optimize_(const Ordering& ordering) {
 	return boost::shared_ptr<VectorConfig>(new VectorConfig(optimize(ordering)));
 }
 
 /* ************************************************************************* */
-void LinearFactorGraph::combine(const LinearFactorGraph &lfg){
+void GaussianFactorGraph::combine(const GaussianFactorGraph &lfg){
 	for(const_iterator factor=lfg.factors_.begin(); factor!=lfg.factors_.end(); factor++){
 		push_back(*factor);
 	}
 }
 
 /* ************************************************************************* */
-LinearFactorGraph LinearFactorGraph::combine2(const LinearFactorGraph& lfg1,
-		const LinearFactorGraph& lfg2) {
+GaussianFactorGraph GaussianFactorGraph::combine2(const GaussianFactorGraph& lfg1,
+		const GaussianFactorGraph& lfg2) {
 
 	// create new linear factor graph equal to the first one
-	LinearFactorGraph fg = lfg1;
+	GaussianFactorGraph fg = lfg1;
 
 	// add the second factors_ in the graph
 	for (const_iterator factor = lfg2.factors_.begin(); factor
@@ -111,7 +111,7 @@ LinearFactorGraph LinearFactorGraph::combine2(const LinearFactorGraph& lfg1,
 
 
 /* ************************************************************************* */  
-Dimensions LinearFactorGraph::dimensions() const {
+Dimensions GaussianFactorGraph::dimensions() const {
 	Dimensions result;
 	BOOST_FOREACH(sharedFactor factor,factors_) {
 		Dimensions vs = factor->dimensions();
@@ -122,10 +122,10 @@ Dimensions LinearFactorGraph::dimensions() const {
 }
 
 /* ************************************************************************* */  
-LinearFactorGraph LinearFactorGraph::add_priors(double sigma) const {
+GaussianFactorGraph GaussianFactorGraph::add_priors(double sigma) const {
 
 	// start with this factor graph
-	LinearFactorGraph result = *this;
+	GaussianFactorGraph result = *this;
 
 	// find all variables and their dimensions
 	Dimensions vs = dimensions();
@@ -135,29 +135,29 @@ LinearFactorGraph LinearFactorGraph::add_priors(double sigma) const {
 	FOREACH_PAIR(key,dim,vs) {
 		Matrix A = eye(dim);
 		Vector b = zero(dim);
-		sharedFactor prior(new LinearFactor(key,A,b, sigma));
+		sharedFactor prior(new GaussianFactor(key,A,b, sigma));
 		result.push_back(prior);
 	}
 	return result;
 }
 
 /* ************************************************************************* */  
-pair<Matrix,Vector> LinearFactorGraph::matrix(const Ordering& ordering) const {
+pair<Matrix,Vector> GaussianFactorGraph::matrix(const Ordering& ordering) const {
 
 	// get all factors
-	LinearFactorSet found;
+	GaussianFactorSet found;
 	BOOST_FOREACH(sharedFactor factor,factors_)
 		found.push_back(factor);
 
 	// combine them
-	LinearFactor lf(found);
+	GaussianFactor lf(found);
 
 	// Return Matrix and Vector
 	return lf.matrix(ordering);
 }
 
 /* ************************************************************************* */
-Matrix LinearFactorGraph::sparse(const Ordering& ordering) const {
+Matrix GaussianFactorGraph::sparse(const Ordering& ordering) const {
 
 	// return values
 	list<int> I,J;

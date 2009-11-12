@@ -21,7 +21,7 @@ using namespace gtsam;
 typedef boost::shared_ptr<NonlinearFactor<VectorConfig> > shared_nlf;
 
 /* ************************************************************************* */
-TEST( NonLinearFactor, equals )
+TEST( NonGaussianFactor, equals )
 {
 	double sigma = 1.0;
 
@@ -40,7 +40,7 @@ TEST( NonLinearFactor, equals )
 }
 
 /* ************************************************************************* */
-TEST( NonLinearFactor, equals2 )
+TEST( NonGaussianFactor, equals2 )
 {
   // create a non linear factor graph
   ExampleNonlinearFactorGraph fg = createNonlinearFactorGraph();
@@ -54,7 +54,7 @@ TEST( NonLinearFactor, equals2 )
 }
 
 /* ************************************************************************* */
-TEST( NonLinearFactor, NonlinearFactor )
+TEST( NonGaussianFactor, NonlinearFactor )
 {
   // create a non linear factor graph
   ExampleNonlinearFactorGraph fg = createNonlinearFactorGraph();
@@ -81,7 +81,7 @@ TEST( NonLinearFactor, NonlinearFactor )
 }
 
 /* ************************************************************************* */
-TEST( NonLinearFactor, linearize_f1 )
+TEST( NonGaussianFactor, linearize_f1 )
 {
   // Grab a non-linear factor
   ExampleNonlinearFactorGraph nfg = createNonlinearFactorGraph();
@@ -90,16 +90,16 @@ TEST( NonLinearFactor, linearize_f1 )
 
   // We linearize at noisy config from SmallExample
   VectorConfig c = createNoisyConfig();
-  LinearFactor::shared_ptr actual = nlf->linearize(c);
+  GaussianFactor::shared_ptr actual = nlf->linearize(c);
 
-  LinearFactorGraph lfg = createLinearFactorGraph();
-  LinearFactor::shared_ptr expected = lfg[0];
+  GaussianFactorGraph lfg = createGaussianFactorGraph();
+  GaussianFactor::shared_ptr expected = lfg[0];
 
   CHECK(expected->equals(*actual));
 }
 
 /* ************************************************************************* */
-TEST( NonLinearFactor, linearize_f2 )
+TEST( NonGaussianFactor, linearize_f2 )
 {
   // Grab a non-linear factor
   ExampleNonlinearFactorGraph nfg = createNonlinearFactorGraph();
@@ -108,16 +108,16 @@ TEST( NonLinearFactor, linearize_f2 )
 
   // We linearize at noisy config from SmallExample
   VectorConfig c = createNoisyConfig();
-  LinearFactor::shared_ptr actual = nlf->linearize(c);
+  GaussianFactor::shared_ptr actual = nlf->linearize(c);
 
-  LinearFactorGraph lfg = createLinearFactorGraph();
-  LinearFactor::shared_ptr expected = lfg[1];
+  GaussianFactorGraph lfg = createGaussianFactorGraph();
+  GaussianFactor::shared_ptr expected = lfg[1];
 
   CHECK(expected->equals(*actual));
 }
 
 /* ************************************************************************* */
-TEST( NonLinearFactor, linearize_f3 )
+TEST( NonGaussianFactor, linearize_f3 )
 {
   // Grab a non-linear factor
   ExampleNonlinearFactorGraph nfg = createNonlinearFactorGraph();
@@ -126,16 +126,16 @@ TEST( NonLinearFactor, linearize_f3 )
 
   // We linearize at noisy config from SmallExample
   VectorConfig c = createNoisyConfig();
-  LinearFactor::shared_ptr actual = nlf->linearize(c);
+  GaussianFactor::shared_ptr actual = nlf->linearize(c);
 
-  LinearFactorGraph lfg = createLinearFactorGraph();
-  LinearFactor::shared_ptr expected = lfg[2];
+  GaussianFactorGraph lfg = createGaussianFactorGraph();
+  GaussianFactor::shared_ptr expected = lfg[2];
 
   CHECK(expected->equals(*actual));
 }
 
 /* ************************************************************************* */
-TEST( NonLinearFactor, linearize_f4 )
+TEST( NonGaussianFactor, linearize_f4 )
 {
   // Grab a non-linear factor
   ExampleNonlinearFactorGraph nfg = createNonlinearFactorGraph();
@@ -144,16 +144,16 @@ TEST( NonLinearFactor, linearize_f4 )
 
   // We linearize at noisy config from SmallExample
   VectorConfig c = createNoisyConfig();
-  LinearFactor::shared_ptr actual = nlf->linearize(c);
+  GaussianFactor::shared_ptr actual = nlf->linearize(c);
 
-  LinearFactorGraph lfg = createLinearFactorGraph();
-  LinearFactor::shared_ptr expected = lfg[3];
+  GaussianFactorGraph lfg = createGaussianFactorGraph();
+  GaussianFactor::shared_ptr expected = lfg[3];
 
   CHECK(expected->equals(*actual));
 }
 
 /* ************************************************************************* */
-TEST( NonLinearFactor, size )
+TEST( NonGaussianFactor, size )
 {
 	// create a non linear factor graph
 	ExampleNonlinearFactorGraph fg = createNonlinearFactorGraph();

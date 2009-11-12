@@ -59,8 +59,8 @@ TEST( ExampleNonlinearFactorGraph, linearize )
 {
 	ExampleNonlinearFactorGraph fg = createNonlinearFactorGraph();
 	VectorConfig initial = createNoisyConfig();
-	LinearFactorGraph linearized = fg.linearize(initial);
-	LinearFactorGraph expected = createLinearFactorGraph();
+	GaussianFactorGraph linearized = fg.linearize(initial);
+	GaussianFactorGraph expected = createGaussianFactorGraph();
 	CHECK(expected.equals(linearized));
 }
 

@@ -32,7 +32,7 @@ namespace gtsam {
 
 		/**
 		 * equality up to tolerance
-		 * tricky to implement, see NonLinearFactor1 for an example
+		 * tricky to implement, see NonGaussianFactor1 for an example
 		 * equals is not supposed to print out *anything*, just return true|false
 		 */
 		virtual bool equals(const Derived& expected, double tol) const = 0;

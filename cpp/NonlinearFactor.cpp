@@ -26,7 +26,7 @@ NonlinearFactor1::NonlinearFactor1(const Vector& z,
 
 /* ************************************************************************* */
 void NonlinearFactor1::print(const string& s) const {
-	cout << "NonLinearFactor1 " << s << endl;
+	cout << "NonGaussianFactor1 " << s << endl;
   cout << "h  : " << (void*)h_ << endl;
   cout << "key: " << key_      << endl;
   cout << "H  : " << (void*)H_ << endl;
@@ -34,7 +34,7 @@ void NonlinearFactor1::print(const string& s) const {
 }
 
 /* ************************************************************************* */
-LinearFactor::shared_ptr NonlinearFactor1::linearize(const VectorConfig& c) const {
+GaussianFactor::shared_ptr NonlinearFactor1::linearize(const VectorConfig& c) const {
 	// get argument 1 from config
 	Vector x1 = c[key_];
 
@@ -44,7 +44,7 @@ LinearFactor::shared_ptr NonlinearFactor1::linearize(const VectorConfig& c) cons
 	// Right-hand-side b = error(c) = (z - h(x1))/sigma
 	Vector b = (z_ - h_(x1));
 
-	LinearFactor::shared_ptr p(new LinearFactor(key_, A, b, sigma_));
+	GaussianFactor::shared_ptr p(new GaussianFactor(key_, A, b, sigma_));
 	return p;
 }
 
@@ -77,7 +77,7 @@ NonlinearFactor2::NonlinearFactor2(const Vector& z,
 
 /* ************************************************************************* */
 void NonlinearFactor2::print(const string& s) const {
-	cout << "NonLinearFactor2 " << s << endl;
+	cout << "NonGaussianFactor2 " << s << endl;
   cout << "h   : " << (void*)h_  << endl;
   cout << "key1: " << key1_      << endl;
   cout << "H2  : " << (void*)H2_ << endl;
@@ -87,7 +87,7 @@ void NonlinearFactor2::print(const string& s) const {
 }
 
 /* ************************************************************************* */
-LinearFactor::shared_ptr NonlinearFactor2::linearize(const VectorConfig& c) const {
+GaussianFactor::shared_ptr NonlinearFactor2::linearize(const VectorConfig& c) const {
 	// get arguments from config
 	Vector x1 = c[key1_];
 	Vector x2 = c[key2_];
@@ -99,7 +99,7 @@ LinearFactor::shared_ptr NonlinearFactor2::linearize(const VectorConfig& c) cons
 	// Right-hand-side b = (z - h(x))/sigma
 	Vector b = (z_ - h_(x1, x2));
 
-	LinearFactor::shared_ptr p(new LinearFactor(key1_, A1, key2_, A2, b, sigma_));
+	GaussianFactor::shared_ptr p(new GaussianFactor(key1_, A1, key2_, A2, b, sigma_));
 	return p;
 }
 

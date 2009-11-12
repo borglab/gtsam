@@ -1,5 +1,5 @@
 /**
- * @file    LinearFactor.cpp
+ * @file    GaussianFactor.cpp
  * @brief   Linear Factor....A Gaussian
  * @brief   linearFactor
  * @author  Christian Potthast
@@ -12,7 +12,7 @@
 #include "Matrix.h"
 #include "Ordering.h"
 #include "ConditionalGaussian.h"
-#include "LinearFactor.h"
+#include "GaussianFactor.h"
 
 using namespace std;
 using namespace boost::assign;
@@ -26,7 +26,7 @@ using namespace gtsam;
 typedef pair<const string, Matrix>& mypair;
 
 /* ************************************************************************* */
-LinearFactor::LinearFactor(const boost::shared_ptr<ConditionalGaussian>& cg) :
+GaussianFactor::GaussianFactor(const boost::shared_ptr<ConditionalGaussian>& cg) :
 	b_(cg->get_d()) {
 	As_.insert(make_pair(cg->key(), cg->get_R()));
 	std::map<std::string, Matrix>::const_iterator it = cg->parentsBegin();
@@ -41,10 +41,10 @@ LinearFactor::LinearFactor(const boost::shared_ptr<ConditionalGaussian>& cg) :
 }
 
 /* ************************************************************************* */
-LinearFactor::LinearFactor(const vector<shared_ptr> & factors)
+GaussianFactor::GaussianFactor(const vector<shared_ptr> & factors)
 {
 	bool verbose = false;
-	if (verbose) cout << "LinearFactor::LinearFactor (factors)" << endl;
+	if (verbose) cout << "GaussianFactor::GaussianFactor (factors)" << endl;
 
 	// Create RHS and sigmas of right size by adding together row counts
   size_t m = 0;
@@ -72,11 +72,11 @@ LinearFactor::LinearFactor(const vector<shared_ptr> & factors)
 
     pos += mf;
   }
-	if (verbose) cout << "LinearFactor::LinearFactor done" << endl;
+	if (verbose) cout << "GaussianFactor::GaussianFactor done" << endl;
 }
 
 /* ************************************************************************* */
-void LinearFactor::print(const string& s) const {
+void GaussianFactor::print(const string& s) const {
   cout << s << endl;
   if (empty()) cout << " empty" << endl; 
   else {
@@ -88,7 +88,7 @@ void LinearFactor::print(const string& s) const {
 }
 
 /* ************************************************************************* */
-size_t LinearFactor::getDim(const std::string& key) const {
+size_t GaussianFactor::getDim(const std::string& key) const {
 	const_iterator it = As_.find(key);
 	if (it != As_.end())
 		return it->second.size2();
@@ -98,9 +98,9 @@ size_t LinearFactor::getDim(const std::string& key) const {
 
 /* ************************************************************************* */
 // Check if two linear factors are equal
-bool LinearFactor::equals(const Factor<VectorConfig>& f, double tol) const {
+bool GaussianFactor::equals(const Factor<VectorConfig>& f, double tol) const {
     
-  const LinearFactor* lf = dynamic_cast<const LinearFactor*>(&f);
+  const GaussianFactor* lf = dynamic_cast<const GaussianFactor*>(&f);
   if (lf == NULL) return false;
 
   if (empty()) return (lf->empty());
@@ -127,7 +127,7 @@ bool LinearFactor::equals(const Factor<VectorConfig>& f, double tol) const {
 
 /* ************************************************************************* */
 // we might have multiple As, so iterate and subtract from b
-double LinearFactor::error(const VectorConfig& c) const {
+double GaussianFactor::error(const VectorConfig& c) const {
   if (empty()) return 0;
   Vector e = b_;
   string j; Matrix Aj;
@@ -138,7 +138,7 @@ double LinearFactor::error(const VectorConfig& c) const {
 }
 
 /* ************************************************************************* */
-list<string> LinearFactor::keys() const {
+list<string> GaussianFactor::keys() const {
 	list<string> result;
   string j; Matrix A;
   FOREACH_PAIR(j,A,As_)
@@ -147,7 +147,7 @@ list<string> LinearFactor::keys() const {
 }
 
 /* ************************************************************************* */
-Dimensions LinearFactor::dimensions() const {
+Dimensions GaussianFactor::dimensions() const {
   Dimensions result;
   string j; Matrix A;
   FOREACH_PAIR(j,A,As_)
@@ -156,7 +156,7 @@ Dimensions LinearFactor::dimensions() const {
 }
 
 /* ************************************************************************* */
-void LinearFactor::tally_separator(const string& key, set<string>& separator) const {
+void GaussianFactor::tally_separator(const string& key, set<string>& separator) const {
   if(involves(key)) {
     string j; Matrix A;
     FOREACH_PAIR(j,A,As_)
@@ -165,7 +165,7 @@ void LinearFactor::tally_separator(const string& key, set<string>& separator) co
 }
 
 /* ************************************************************************* */  
-pair<Matrix,Vector> LinearFactor::matrix(const Ordering& ordering, bool weight) const {
+pair<Matrix,Vector> GaussianFactor::matrix(const Ordering& ordering, bool weight) const {
 
 	// get pointers to the matrices
 	vector<const Matrix *> matrices;
@@ -189,7 +189,7 @@ pair<Matrix,Vector> LinearFactor::matrix(const Ordering& ordering, bool weight) 
 }
 
 /* ************************************************************************* */
-Matrix LinearFactor::matrix_augmented(const Ordering& ordering) const {
+Matrix GaussianFactor::matrix_augmented(const Ordering& ordering) const {
 	// get pointers to the matrices
 	vector<const Matrix *> matrices;
 	BOOST_FOREACH(string j, ordering) {
@@ -208,7 +208,7 @@ Matrix LinearFactor::matrix_augmented(const Ordering& ordering) const {
 
 /* ************************************************************************* */
 boost::tuple<list<int>, list<int>, list<double> >
-LinearFactor::sparse(const Ordering& ordering, const Dimensions& variables) const {
+GaussianFactor::sparse(const Ordering& ordering, const Dimensions& variables) const {
 
 	// declare return values
 	list<int> I,J;
@@ -244,13 +244,13 @@ LinearFactor::sparse(const Ordering& ordering, const Dimensions& variables) cons
 }
 
 /* ************************************************************************* */
-void LinearFactor::append_factor(LinearFactor::shared_ptr f, const size_t m,
+void GaussianFactor::append_factor(GaussianFactor::shared_ptr f, const size_t m,
 		const size_t pos) {
 	bool verbose = false;
-	if (verbose) cout << "LinearFactor::append_factor" << endl;
+	if (verbose) cout << "GaussianFactor::append_factor" << endl;
 
 	// iterate over all matrices from the factor f
-	LinearFactor::const_iterator it = f->begin();
+	GaussianFactor::const_iterator it = f->begin();
 	for (; it != f->end(); it++) {
 		string j = it->first;
 		Matrix A = it->second;
@@ -274,7 +274,7 @@ void LinearFactor::append_factor(LinearFactor::shared_ptr f, const size_t m,
 		if (exists) As_.erase(j);
 		insert(j, Anew);
 	}
-	if (verbose) cout << "LinearFactor::append_factor done" << endl;
+	if (verbose) cout << "GaussianFactor::append_factor done" << endl;
 
 }
 
@@ -286,17 +286,17 @@ void LinearFactor::append_factor(LinearFactor::shared_ptr f, const size_t m,
  * and last rows to make a new joint linear factor on separator
  */
 /* ************************************************************************* */
-pair<ConditionalGaussian::shared_ptr, LinearFactor::shared_ptr>
-LinearFactor::eliminate(const string& key) const
+pair<ConditionalGaussian::shared_ptr, GaussianFactor::shared_ptr>
+GaussianFactor::eliminate(const string& key) const
 {
 	bool verbose = false;
-	if (verbose) cout << "LinearFactor::eliminate(" << key << ")" << endl;
+	if (verbose) cout << "GaussianFactor::eliminate(" << key << ")" << endl;
 
 	// if this factor does not involve key, we exit with empty CG and LF
 	const_iterator it = As_.find(key);
 	if (it==As_.end()) {
 		// Conditional Gaussian is just a parent-less node with P(x)=1
-		LinearFactor::shared_ptr lf(new LinearFactor);
+		GaussianFactor::shared_ptr lf(new GaussianFactor);
 		ConditionalGaussian::shared_ptr cg(new ConditionalGaussian(key));
 		return make_pair(cg,lf);
 	}
@@ -324,7 +324,7 @@ LinearFactor::eliminate(const string& key) const
 	// if m<n1, this factor cannot be eliminated
 	size_t maxRank = solution.size();
 	if (maxRank<n1)
-		throw(domain_error("LinearFactor::eliminate: fewer constraints than unknowns"));
+		throw(domain_error("GaussianFactor::eliminate: fewer constraints than unknowns"));
 
 	// unpack the solutions
 	Matrix R(maxRank, n);
@@ -345,7 +345,7 @@ LinearFactor::eliminate(const string& key) const
 			sub(newSigmas, 0, n1)));  // get standard deviations
 
 	// extract the block matrices for parents in both CG and LF
-	LinearFactor::shared_ptr lf(new LinearFactor);
+	GaussianFactor::shared_ptr lf(new GaussianFactor);
 	size_t j = n1;
 	BOOST_FOREACH(string cur_key, ordering)
 		if (cur_key!=key) {

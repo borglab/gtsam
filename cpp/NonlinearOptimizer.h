@@ -62,7 +62,7 @@ namespace gtsam {
 		double lambda_;
 
 		// Recursively try to do tempered Gauss-Newton steps until we succeed
-		NonlinearOptimizer try_lambda(const LinearFactorGraph& linear,
+		NonlinearOptimizer try_lambda(const GaussianFactorGraph& linear,
 				verbosityLevel verbosity, double factor) const;
 
 	public:

@@ -1,4 +1,4 @@
 % run all matlab unit tests
-testLinearFactor
+testGaussianFactor
 testConditionalGaussian
-testLinearFactorGraph
+testGaussianFactorGraph

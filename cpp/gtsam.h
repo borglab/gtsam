@@ -18,23 +18,23 @@ class VectorConfig {
   void clear();
 };
 
-class LinearFactorSet {
-  LinearFactorSet();
-  void push_back(LinearFactor* factor);
+class GaussianFactorSet {
+  GaussianFactorSet();
+  void push_back(GaussianFactor* factor);
 };
 
-class LinearFactor {
-  LinearFactor(string key1,
+class GaussianFactor {
+  GaussianFactor(string key1,
 	       Matrix A1,
 	       Vector b_in,
 	       double sigma);
-  LinearFactor(string key1,
+  GaussianFactor(string key1,
 	       Matrix A1,
 	       string key2,
 	       Matrix A2,
 	       Vector b_in,
 	       double sigma);
-  LinearFactor(string key1,
+  GaussianFactor(string key1,
 	       Matrix A1,
 	       string key2,
 	       Matrix A2,
@@ -48,7 +48,7 @@ class LinearFactor {
   double error(const VectorConfig& c) const;
   bool involves(string key) const;
   void print(string s) const;
-  bool equals(const LinearFactor& lf, double tol) const;
+  bool equals(const GaussianFactor& lf, double tol) const;
   pair<Matrix,Vector> matrix(const Ordering& ordering) const;
 };
 
@@ -86,15 +86,15 @@ class GaussianBayesNet {
   void push_front(ConditionalGaussian* conditional);
 };
 
-class LinearFactorGraph {
-  LinearFactorGraph();
+class GaussianFactorGraph {
+  GaussianFactorGraph();
 
   size_t size() const;
-  void push_back(LinearFactor* ptr_f);
+  void push_back(GaussianFactor* ptr_f);
   double error(const VectorConfig& c) const;
   double probPrime(const VectorConfig& c) const;
   void print(string s) const;
-  bool equals(const LinearFactorGraph& lfgraph, double tol) const;
+  bool equals(const GaussianFactorGraph& lfgraph, double tol) const;
 
   ConditionalGaussian* eliminateOne(string key);
   GaussianBayesNet* eliminate_(const Ordering& ordering);
@@ -128,7 +128,7 @@ class Point3 {
 class Point2Prior {
   Point2Prior(Vector mu, double sigma, string key);
   Vector error_vector(const VectorConfig& c) const;
-  LinearFactor* linearize(const VectorConfig& c) const;
+  GaussianFactor* linearize(const VectorConfig& c) const;
   double sigma();
   Vector measurement();
   double error(const VectorConfig& c) const;
@@ -138,7 +138,7 @@ class Point2Prior {
 class Simulated2DOdometry {
   Simulated2DOdometry(Vector odo, double sigma, string key, string key2);
   Vector error_vector(const VectorConfig& c) const;
-  LinearFactor* linearize(const VectorConfig& c) const;
+  GaussianFactor* linearize(const VectorConfig& c) const;
   double sigma();
   Vector measurement();
   double error(const VectorConfig& c) const;
@@ -148,7 +148,7 @@ class Simulated2DOdometry {
 class Simulated2DMeasurement {
   Simulated2DMeasurement(Vector odo, double sigma, string key, string key2);
   Vector error_vector(const VectorConfig& c) const;
-  LinearFactor* linearize(const VectorConfig& c) const;
+  GaussianFactor* linearize(const VectorConfig& c) const;
   double sigma();
   Vector measurement();
   double error(const VectorConfig& c) const;

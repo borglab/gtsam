@@ -380,16 +380,16 @@
 <useDefaultCommand>true</useDefaultCommand>
 <runAllBuilders>true</runAllBuilders>
 </target>
-<target name="testLinearFactor.run" path="cpp" targetID="org.eclipse.cdt.build.MakeTargetBuilder">
+<target name="testGaussianFactor.run" path="cpp" targetID="org.eclipse.cdt.build.MakeTargetBuilder">
 <buildCommand>make</buildCommand>
-<buildTarget>testLinearFactor.run</buildTarget>
+<buildTarget>testGaussianFactor.run</buildTarget>
 <stopOnError>true</stopOnError>
 <useDefaultCommand>true</useDefaultCommand>
 <runAllBuilders>true</runAllBuilders>
 </target>
-<target name="testLinearFactorGraph.run" path="cpp" targetID="org.eclipse.cdt.build.MakeTargetBuilder">
+<target name="testGaussianFactorGraph.run" path="cpp" targetID="org.eclipse.cdt.build.MakeTargetBuilder">
 <buildCommand>make</buildCommand>
-<buildTarget>testLinearFactorGraph.run</buildTarget>
+<buildTarget>testGaussianFactorGraph.run</buildTarget>
 <stopOnError>true</stopOnError>
 <useDefaultCommand>true</useDefaultCommand>
 <runAllBuilders>true</runAllBuilders>
@@ -432,16 +432,16 @@
 <useDefaultCommand>true</useDefaultCommand>
 <runAllBuilders>true</runAllBuilders>
 </target>
-<target name="timeLinearFactor.run" path="cpp" targetID="org.eclipse.cdt.build.MakeTargetBuilder">
+<target name="timeGaussianFactor.run" path="cpp" targetID="org.eclipse.cdt.build.MakeTargetBuilder">
 <buildCommand>make</buildCommand>
-<buildTarget>timeLinearFactor.run</buildTarget>
+<buildTarget>timeGaussianFactor.run</buildTarget>
 <stopOnError>true</stopOnError>
 <useDefaultCommand>true</useDefaultCommand>
 <runAllBuilders>true</runAllBuilders>
 </target>
-<target name="timeLinearFactorGraph.run" path="cpp" targetID="org.eclipse.cdt.build.MakeTargetBuilder">
+<target name="timeGaussianFactorGraph.run" path="cpp" targetID="org.eclipse.cdt.build.MakeTargetBuilder">
 <buildCommand>make</buildCommand>
-<buildTarget>timeLinearFactorGraph.run</buildTarget>
+<buildTarget>timeGaussianFactorGraph.run</buildTarget>
 <stopOnError>true</stopOnError>
 <useDefaultCommand>true</useDefaultCommand>
 <runAllBuilders>true</runAllBuilders>

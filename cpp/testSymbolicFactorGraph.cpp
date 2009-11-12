@@ -40,7 +40,7 @@ TEST( SymbolicFactorGraph, symbolicFactorGraph )
 	expected.push_back(f4);
 
 	// construct it from the factor graph graph
-	LinearFactorGraph factorGraph = createLinearFactorGraph();
+	GaussianFactorGraph factorGraph = createGaussianFactorGraph();
 	SymbolicFactorGraph actual(factorGraph);
 
 	CHECK(assert_equal(expected, actual));
@@ -50,7 +50,7 @@ TEST( SymbolicFactorGraph, symbolicFactorGraph )
 TEST( SymbolicFactorGraph, findAndRemoveFactors )
 {
 	// construct it from the factor graph graph
-	LinearFactorGraph factorGraph = createLinearFactorGraph();
+	GaussianFactorGraph factorGraph = createGaussianFactorGraph();
 	SymbolicFactorGraph actual(factorGraph);
   SymbolicFactor::shared_ptr f1 = actual[0];
   SymbolicFactor::shared_ptr f3 = actual[2];
@@ -70,7 +70,7 @@ TEST( SymbolicFactorGraph, findAndRemoveFactors )
 TEST( SymbolicFactorGraph, factors)
 {
 	// create a test graph
-	LinearFactorGraph factorGraph = createLinearFactorGraph();
+	GaussianFactorGraph factorGraph = createGaussianFactorGraph();
 	SymbolicFactorGraph fg(factorGraph);
 
 	// ask for all factor indices connected to x1
@@ -87,10 +87,10 @@ TEST( SymbolicFactorGraph, factors)
 }
 
 /* ************************************************************************* */
-TEST( LinearFactorGraph, removeAndCombineFactors )
+TEST( GaussianFactorGraph, removeAndCombineFactors )
 {
 	// create a test graph
-	LinearFactorGraph factorGraph = createLinearFactorGraph();
+	GaussianFactorGraph factorGraph = createGaussianFactorGraph();
 	SymbolicFactorGraph fg(factorGraph);
 
   // combine all factors connected to x1
@@ -104,10 +104,10 @@ TEST( LinearFactorGraph, removeAndCombineFactors )
 }
 
 /* ************************************************************************* */
-TEST( LinearFactorGraph, eliminateOne )
+TEST( GaussianFactorGraph, eliminateOne )
 {
 	// create a test graph
-	LinearFactorGraph factorGraph = createLinearFactorGraph();
+	GaussianFactorGraph factorGraph = createGaussianFactorGraph();
 	SymbolicFactorGraph fg(factorGraph);
 
 	// eliminate
@@ -120,7 +120,7 @@ TEST( LinearFactorGraph, eliminateOne )
 }
 
 /* ************************************************************************* */
-TEST( LinearFactorGraph, eliminate )
+TEST( GaussianFactorGraph, eliminate )
 {
   // create expected Chordal bayes Net
   SymbolicConditional::shared_ptr x2(new SymbolicConditional("x2", "l1", "x1"));
@@ -133,7 +133,7 @@ TEST( LinearFactorGraph, eliminate )
   expected.push_back(x1);
 
   // create a test graph
-	LinearFactorGraph factorGraph = createLinearFactorGraph();
+	GaussianFactorGraph factorGraph = createGaussianFactorGraph();
 	SymbolicFactorGraph fg(factorGraph);
 
 	// eliminate it
