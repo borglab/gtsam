@@ -111,12 +111,27 @@ bool assert_equal(const Vector& vec1, const Vector& vec2, double tol=1e-9);
 Vector sub(const Vector &v, size_t i1, size_t i2);
 
 /**
+ * elementwise multiplication
+ * @param a first vector
+ * @param b second vector
+ * @return vector [a(i)*b(i)]
+ */
+Vector emul(const Vector &a, const Vector &b);
+
+/**
  * elementwise division
  * @param a first vector
  * @param b second vector
  * @return vector [a(i)/b(i)]
  */
 Vector ediv(const Vector &a, const Vector &b);
+
+/**
+ * sum vector elements
+ * @param a vector
+ * @return sum_i a(i)
+ */
+double sum(const Vector &a);
 
 /**
  * house(x,j) computes HouseHolder vector v and scaling factor beta

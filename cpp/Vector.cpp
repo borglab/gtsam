@@ -6,6 +6,7 @@
 */
 
 #include <stdarg.h>
+#include <limits>
 #include <iostream>
 #include <sstream>
 #include <iomanip>
@@ -40,21 +41,10 @@ namespace gtsam {
     #endif
     va_end(args);
     
-    /*
-    p += (n < 0) ? sizeof buf - 3 : n;
-    
-    while ( p > buf  &&  isspace(p[-1]) )
-      *--p = '\0';
-    
-    *p++ = '\r';
-    *p++ = '\n';
-    *p   = '\0';
-    */
-    
     #ifdef WIN32
     OutputDebugString(buf);
     #else    
-    printf(buf);
+    printf("%s",buf);
     #endif
     
   }
@@ -154,6 +144,16 @@ namespace gtsam {
   }
   
   /* ************************************************************************* */
+  Vector emul(const Vector &a, const Vector &b) {
+  	size_t n = a.size();
+		assert (b.size()==n);
+		Vector c(n);
+		for( size_t i = 0; i < n; i++ )
+			c(i) = a(i)*b(i);
+		return c;
+		}
+
+  /* ************************************************************************* */
   Vector ediv(const Vector &a, const Vector &b) {
   	size_t n = a.size();
 		assert (b.size()==n);
@@ -161,6 +161,15 @@ namespace gtsam {
 		for( size_t i = 0; i < n; i++ )
 			c(i) = a(i)/b(i);
 		return c;
+		}
+
+  /* ************************************************************************* */
+  double sum(const Vector &a) {
+  	double result;
+  	size_t n = a.size();
+		for( size_t i = 0; i < n; i++ )
+			result += a(i);
+		return result;
 		}
 
   /* ************************************************************************* */
@@ -195,27 +204,27 @@ namespace gtsam {
 	  if (a.size() != m)
 		  throw invalid_argument("V and precisions have different sizes!");
 
-	  // detect constraints and sanity-check
+	  // If there is a valid (a!=0) constraint (sigma==0) return the first one
 	  for(int i=0; i<m; ++i)
 		  if (sigmas[i] < 1e-9 && fabs(a[i]) > 1e-9)
-			  return make_pair(delta(m,i,1/a[i]), 1.0/0.0);
+			  return make_pair(delta(m,i,1/a[i]), std::numeric_limits<double>::infinity());
 
-	  // normal case
-	  double normV = 0.;
+	  // Form psuedo-inverse inv(a'inv(Sigma)a)a'inv(Sigma)
+	  // For diagonal Sigma, inv(Sigma) = diag(precisions)
+	  double precision = 0;
 	  Vector precisions(m);
-	  for(int i = 0; i<a.size(); i++) {
-		  if (sigmas[i] < 1e-5) {
-			  precisions[i] = 1./0.;
-		  } else {
+	  for(int i = 0; i<m; i++) {
+		  if (fabs(a[i]) < 1e-9) // also catches remaining sigma==0 rows
+			  precisions[i] = 0.;
+		  else {
 			  precisions[i] = 1./(sigmas[i]*sigmas[i]);
-			  normV += a[i]*a[i]*precisions[i];
+			  precision += a[i]*a[i]*precisions[i];
 		  }
 	  }
-	  Vector sol = zero(a.size());
-	  for(int i = 0; i<a.size(); i++)
-		  if (sigmas[i] > 1e-5)
-			  sol[i] = precisions[i]*a[i];
-	  return make_pair(sol/normV, normV);
+	  // precision = a'inv(Sigma)a
+	  if (precision<1e-9) return make_pair(zero(m), precision);
+	  Vector pseudo = emul(precisions,a);
+	  return make_pair(pseudo/precision, precision);
   }
 
   /* ************************************************************************* */
