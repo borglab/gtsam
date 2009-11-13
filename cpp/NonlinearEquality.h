@@ -6,6 +6,7 @@
 
 #pragma once
 
+#include <limits>
 #include <iostream>
 #include "NonlinearFactor.h"
 
@@ -69,15 +70,15 @@ public:
 	}
 
 	/** error function */
-	inline Vector error_vector(const VectorConfig& c) const {
+	inline Vector error_vector(const Config& c) const {
 		if (!compare_(key_, feasible_, c))
-			return repeat(dim_, 1.0/0.0); // set error to infinity if not equal
+			return repeat(dim_, std::numeric_limits<double>::infinity()); // set error to infinity if not equal
 		else
 			return zero(dim_); // set error to zero if equal
 	}
 
 	/** linearize a nonlinear constraint into a linear constraint */
-	boost::shared_ptr<GaussianFactor> linearize(const VectorConfig& c) const {
+	boost::shared_ptr<GaussianFactor> linearize(const Config& c) const {
 		if (!compare_(key_, feasible_, c)) {
 			throw std::invalid_argument("Linearization point not feasible for " + key_ + "!");
 		} else {
