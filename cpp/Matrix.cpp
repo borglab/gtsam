@@ -301,44 +301,45 @@ void householder_update(Matrix &A, int j, double beta, const Vector& vjm) {
 list<boost::tuple<Vector, double, double> >
 weighted_eliminate(Matrix& A, Vector& b, const Vector& sigmas) {
 	bool verbose = false;
-	// get sizes
-	size_t m = A.size1();
-	size_t n = A.size2();
+	size_t m = A.size1(), n = A.size2(); // get size(A)
 	size_t maxRank = min(m,n);
 
 	// create list
 	list<boost::tuple<Vector, double, double> > results;
 
-	// loop over the columns
-	for (int j=0; j<maxRank; ++j) {
+	// We loop over all columns, because the columns that can be eliminated
+	// are not necessarily contiguous. For each one, estimate the corresponding
+	// scalar variable x as d-rS, with S the separator (remaining columns).
+	// Then update A and b by substituting x with d-rS, zero-ing out x's column.
+	for (int j=0; j<n; ++j) {
 		// extract the first column of A
 		Vector a = column(A, j);
-		if (verbose) print(a,"a");
+		if (verbose) print(a,"a = ");
 
-		// find weighted pseudoinverse
+		// Calculate weighted pseudo-inverse and corresponding precision
 		Vector pseudo; double precision;
-		if (verbose) print(sigmas, "sigmas");
 		boost::tie(pseudo, precision) = weightedPseudoinverse(a, sigmas);
+		if (verbose) cout << "precision = " << precision << endl;
 
-		// if precision is zero, rank(A) was less than maxRank, so return
-		if (precision < 1e-8) {
-			maxRank = j;
-			return results;
-		}
-		if (verbose) print(pseudo, "pseudo");
+		// if precision is zero, no information on this column
+		if (precision < 1e-8) continue;
+		if (verbose) print(pseudo, "pseudo = ");
 
 		// create solution and copy into r
 		Vector r = basis(n, j);
 		for (int j2=j+1; j2<n; ++j2)
 			r(j2) = inner_prod(pseudo, column(A, j2));
+		if (verbose) print(r, "r = ");
 
 		// create the rhs
 		double d = inner_prod(pseudo, b);
-		if (verbose) print(r, "updatedR");
 		if (verbose) cout << "d = " << d << endl;
 
 		// construct solution (r, d, sigma)
 		results.push_back(boost::make_tuple(r, d, 1./sqrt(precision)));
+
+		// exit after rank exhausted
+		if (results.size()>=maxRank) break;
 
 		// update A, b
 		for (int i=0;i<m;++i) { // update all rows
@@ -347,9 +348,8 @@ weighted_eliminate(Matrix& A, Vector& b, const Vector& sigmas) {
 			for (int j2=j+1;j2<n;++j2) // limit to only columns in separator
 				A(i,j2) -= ai*r(j2);
 		}
-		if (verbose) print(A, "updatedA");
-		//if (verbose) print(sub(A, 0,m, j+1,n), "updatedA"); // bad index
-
+		if (verbose) print(sub(A,0,m,j+1,n), "updated A");
+		if (verbose) print(b, "updated b ");
 	}
 
 	return results;
