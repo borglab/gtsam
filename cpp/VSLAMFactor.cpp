@@ -13,18 +13,13 @@ using namespace std;
 namespace gtsam{
 
 /* ************************************************************************* */
-VSLAMFactor::VSLAMFactor(const Vector& z, double sigma, int cn, int ln, const Cal3_S2 &K)
-  : NonlinearFactor<VSLAMConfig>(z, sigma)
+VSLAMFactor::VSLAMFactor(const Point2& z, double sigma, int cn, int ln, const Cal3_S2 &K)
+  : NonlinearFactor<VSLAMConfig>(z.vector(), sigma)
 {
   cameraFrameNumber_ = cn;
-  landmarkNumber_ = ln;
-  char temp[100];
-  temp[0] = 0;
-  sprintf(temp, "x%d", cameraFrameNumber_);
-  cameraFrameName_ = string(temp);
-  temp[0] = 0;
-  sprintf(temp, "l%d", landmarkNumber_);
-  landmarkName_ = string(temp);
+  landmarkNumber_    = ln;
+  cameraFrameName_ = symbol('x',cameraFrameNumber_);
+  landmarkName_    = symbol('l',landmarkNumber_);
   K_ = K;
 }
 
@@ -35,7 +30,7 @@ void VSLAMFactor::print(const std::string& s) const {
 }
 
 /* ************************************************************************* */
-  bool VSLAMFactor::equals(const VSLAMFactor& p, double tol) const {
+bool VSLAMFactor::equals(const VSLAMFactor& p, double tol) const {
   if (&p == NULL) return false;
   if (cameraFrameNumber_ != p.cameraFrameNumber_ || landmarkNumber_ != p.landmarkNumber_) return false;
   if (!equal_with_abs_tol(this->z_,p.z_,tol)) return false;
