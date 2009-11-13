@@ -12,9 +12,11 @@
 #include "VSLAMGraph.h"
 #include "NonlinearFactorGraph-inl.h"
 #include "NonlinearOptimizer-inl.h"
+#include "NonlinearEquality.h"
 
 using namespace std;
-namespace gtsam{
+
+namespace gtsam {
 
 // explicit instantiation so all the code is there and we can link with it
 template class FactorGraph<VSLAMFactor>;
@@ -76,32 +78,20 @@ VSLAMGraph::VSLAMGraph(const std::string& path)
 }
 
 /* ************************************************************************* */
-VSLAMGraph::VSLAMGraph(const std::string& path,
-			 int nrFrames, double sigma,
-			 const gtsam::Cal3_S2 &K)
-{
-  ifstream ifs(path.c_str(), ios::in);
+bool compareLandmark(const std::string& key,
+					const VSLAMConfig& feasible,
+					const VSLAMConfig& input) {
+	int j = atoi(key.substr(1, key.size() - 1).c_str());
+	return feasible.landmarkPoint(j).equals(input.landmarkPoint(j));
+}
 
-  if(ifs) {
-    int cameraFrameNumber, landmarkNumber;
-    double landmarkX, landmarkY, landmarkZ;
-    double u, v;
-    ifs >> cameraFrameNumber >> landmarkNumber >> u >> v >> landmarkX >> landmarkY >> landmarkZ;
-
-    //Store the measurements
-    Vector z(2);
-    z(0)=u;
-    z(1)=v;
-
-    //VSLAMFactor::shared_ptr f1(new VSLAMFactor<VSLAMConfig>::VSLAMFactor(z, sigma, cameraFrameNumber, landmarkNumber, K));
-    //factors_.push_back(f1);
-  }
-  else {
-    printf("Unable to load values in %s\n", path.c_str());
-    exit(0);
-  }
-
-  ifs.close();
+/* ************************************************************************* */
+void VSLAMGraph::addLandmarkConstraint(int j, const gtsam::Point3& p) {
+  typedef NonlinearEquality<VSLAMConfig> NLE;
+  VSLAMConfig feasible;
+  feasible.addLandmarkPoint(j,p);
+  boost::shared_ptr<NLE> factor(new NLE(symbol('l',j), feasible, 3, compareLandmark));
+  push_back(factor);
 }
 
 /* ************************************************************************* */

@@ -17,7 +17,6 @@
 #include "VSLAMFactor.h"
 #include "VSLAMConfig.h"
 
-using namespace std;
 namespace gtsam{
 
 /**
@@ -41,25 +40,23 @@ public:
   VSLAMGraph(const std::string& path);
 
   /**
-   * Constructor that loads from VO file (not tested)
-   * @param path to the file
-   * @param nrFrames the number of frames to load
-   * @return new factor graph
-   */
-  VSLAMGraph(const std::string& path, int nrFrames, double sigma, const gtsam::Cal3_S2& K);
-
-  /**
    * print out graph
    */
   void print(const std::string& s = "") const {
     gtsam::NonlinearFactorGraph<VSLAMConfig>::print(s);
   }
 
-  void load_dumped(const std::string& path);
-
+  // Getters
   int Get_nFrames(){return nFrames;};
   int Get_nFeat_ids(){return feat_ids.size();};
   feat_ids_type* Get_feat_ids_map(){return &feat_ids;};
+
+  /**
+   *  Add a constraint on a landmark (for now, *must* be satisfied in any Config)
+   *  @param j index of landmark
+   *  @param p to which point to constrain it to
+   */
+  void addLandmarkConstraint(int j, const Point3& p = Point3());
 };
 
 } // namespace gtsam
