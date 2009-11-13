@@ -28,7 +28,7 @@ Cal3_S2 K(fov,w,h);
 TEST( VSLAMFactor, error )
 {
 	// Create the factor with a measurement that is 3 pixels off in x
-	Vector z = Vector_(2,323.,240.);
+	Point2 z(323.,240.);
 	double sigma=1.0;
 	int cameraFrameNumber=1, landmarkNumber=1;
 	boost::shared_ptr<VSLAMFactor>
