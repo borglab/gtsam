@@ -13,6 +13,7 @@
 #include <vector>
 #include <boost/shared_ptr.hpp>
 #include "Testable.h"
+#include "Ordering.h"
 
 namespace gtsam {
 
