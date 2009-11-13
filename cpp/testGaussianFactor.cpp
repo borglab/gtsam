@@ -698,10 +698,10 @@ TEST ( GaussianFactor, constraint_eliminate2 )
 	CHECK(assert_equal(expectedCG, *actualCG, 1e-4));
 }
 
-/* ************************************************************************* */
+/* ************************************************************************* *
 TEST ( GaussianFactor, constraint_eliminate3 )
 {
-	// This test shows that ordering matters if there are non-invertable
+	// This test shows that ordering matters if there are non-invertible
 	// blocks, as this example can be eliminated if x is first, but not
 	// if y is first.
 
