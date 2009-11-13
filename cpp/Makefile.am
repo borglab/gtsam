@@ -111,8 +111,8 @@ timeGaussianFactorGraph: LDFLAGS += smallExample.o -L.libs -lgtsam -L../CppUnitL
 # Nonlinear inference 
 headers += NonlinearFactorGraph.h NonlinearFactorGraph-inl.h
 headers += NonlinearOptimizer.h NonlinearOptimizer-inl.h 
-sources += NonlinearFactor.cpp
-sources += NonlinearEquality.cpp
+sources += NonlinearFactor.cpp 
+sources += NonlinearEquality.h
 check_PROGRAMS += testNonlinearFactor testNonlinearFactorGraph testNonlinearOptimizer testNonlinearEquality
 testNonlinearFactor_SOURCES      = $(example) testNonlinearFactor.cpp
 testNonlinearFactor_LDADD        = libgtsam.la
