@@ -16,7 +16,7 @@ Directory structure:
   matlab  MATLAB proxy classes and wrappers
 
 
-Boost Depedencies:
+Boost Dependencies:
 ------------------
 The GTSAM library is based on the 'Boost C++ Libraries' which can be
 found here: http://www.boost.org/. 
