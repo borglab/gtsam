@@ -313,8 +313,9 @@ GaussianFactor::eliminate(const string& key) const
 	size_t n = A.size2();
 
 	// Do in-place QR to get R, d of the augmented system
-	if (verbose) ::print(A,"A before");
-	if (verbose) ::print(b,"b before");
+	if (verbose) ::print(A,"A");
+	if (verbose) ::print(b,"b = ");
+	if (verbose) ::print(sigmas_,"sigmas = ");
 	std::list<boost::tuple<Vector, double, double> > solution =
 							weighted_eliminate(A, b, sigmas_);
 
@@ -339,30 +340,31 @@ GaussianFactor::eliminate(const string& key) const
 	}
 
 	// create base conditional Gaussian
-	GaussianConditional::shared_ptr cg(new GaussianConditional(key,
+	GaussianConditional::shared_ptr conditional(new GaussianConditional(key,
 			sub(d, 0, n1),            // form d vector
 			sub(R, 0, n1, 0, n1),     // form R matrix
 			sub(newSigmas, 0, n1)));  // get standard deviations
 
 	// extract the block matrices for parents in both CG and LF
-	GaussianFactor::shared_ptr lf(new GaussianFactor);
+	GaussianFactor::shared_ptr factor(new GaussianFactor);
 	size_t j = n1;
 	BOOST_FOREACH(string cur_key, ordering)
 		if (cur_key!=key) {
 			size_t dim = getDim(cur_key);
-			cg->add(cur_key,    sub(R, 0, n1, j, j+dim));
-			lf->insert(cur_key, sub(R, n1, maxRank, j, j+dim));
+			conditional->add(cur_key, sub(R, 0, n1, j, j+dim));
+			factor->insert(cur_key, sub(R, n1, maxRank, j, j+dim));
 			j+=dim;
 		}
 
 	// Set sigmas
-	lf->sigmas_ = sub(newSigmas,n1,maxRank);
+	factor->sigmas_ = sub(newSigmas,n1,maxRank);
 
 	// extract ds vector for the new b
-	lf->set_b(sub(d, n1, maxRank));
-	if (verbose) lf->print("lf");
+	factor->set_b(sub(d, n1, maxRank));
+	if (verbose) conditional->print("Conditional");
+	if (verbose) factor->print("Factor");
 
-	return make_pair(cg, lf);
+	return make_pair(conditional, factor);
 }
 
 /* ************************************************************************* */
