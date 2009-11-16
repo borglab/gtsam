@@ -113,7 +113,7 @@ headers += NonlinearFactorGraph.h NonlinearFactorGraph-inl.h
 headers += NonlinearOptimizer.h NonlinearOptimizer-inl.h 
 sources += NonlinearFactor.cpp 
 sources += NonlinearEquality.h
-check_PROGRAMS += testNonlinearFactor testNonlinearFactorGraph testNonlinearOptimizer testNonlinearEquality
+check_PROGRAMS += testNonlinearFactor testNonlinearFactorGraph testNonlinearOptimizer testNonlinearEquality testSQP
 testNonlinearFactor_SOURCES      = $(example) testNonlinearFactor.cpp
 testNonlinearFactor_LDADD        = libgtsam.la
 testNonlinearFactorGraph_SOURCES = $(example) testNonlinearFactorGraph.cpp
@@ -122,6 +122,8 @@ testNonlinearOptimizer_SOURCES   = $(example) testNonlinearOptimizer.cpp
 testNonlinearOptimizer_LDADD     = libgtsam.la
 testNonlinearEquality_SOURCES    = testNonlinearEquality.cpp
 testNonlinearEquality_LDADD      = libgtsam.la
+testSQP_SOURCES                  = testSQP.cpp
+testSQP_LDADD                    = libgtsam.la
 
 # geometry
 sources += Point2.cpp Pose2.cpp Point3.cpp Rot3.cpp Pose3.cpp Cal3_S2.cpp
