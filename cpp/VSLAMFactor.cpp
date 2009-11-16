@@ -13,6 +13,15 @@ using namespace std;
 namespace gtsam{
 
 /* ************************************************************************* */
+VSLAMFactor::VSLAMFactor() {
+	/// Arbitrary values
+	cameraFrameNumber_ = 111;
+	landmarkNumber_    = 222;
+	cameraFrameName_ = symbol('x',cameraFrameNumber_);
+	landmarkName_    = symbol('l',landmarkNumber_);
+	K_ = Cal3_S2(444,555,666,777,888);
+}
+/* ************************************************************************* */
 VSLAMFactor::VSLAMFactor(const Point2& z, double sigma, int cn, int ln, const Cal3_S2 &K)
   : NonlinearFactor<VSLAMConfig>(z.vector(), sigma)
 {

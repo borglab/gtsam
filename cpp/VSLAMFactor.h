@@ -21,56 +21,73 @@ class VSLAMConfig;
  */
 class VSLAMFactor : public NonlinearFactor<VSLAMConfig>, Testable<VSLAMFactor>
 {
- private:
+private:
 
 	int cameraFrameNumber_, landmarkNumber_;
-  std::string cameraFrameName_, landmarkName_;
-  Cal3_S2 K_; // Calibration stored in each factor. FD: need to think about this.
-  typedef NonlinearFactor<VSLAMConfig> ConvenientFactor;
+	std::string cameraFrameName_, landmarkName_;
+	Cal3_S2 K_; // Calibration stored in each factor. FD: need to think about this.
+	typedef NonlinearFactor<VSLAMConfig> ConvenientFactor;
 
- public:
+public:
 
-  typedef boost::shared_ptr<VSLAMFactor> shared_ptr; // shorthand for a smart pointer to a factor
+	typedef boost::shared_ptr<VSLAMFactor> shared_ptr; // shorthand for a smart pointer to a factor
 
-  /**
-   * Constructor
-   * @param z is the 2 dimensional location of point in image (the measurement)
-   * @param sigma is the standard deviation
-   * @param cameraFrameNumber is basically the frame number
-   * @param landmarkNumber is the index of the landmark
-   * @param K the constant calibration
-   */
-  VSLAMFactor(const Point2& z, double sigma, int cameraFrameNumber, int landmarkNumber, const Cal3_S2& K);
+	/**
+	 * Default constructor
+	 */
+	VSLAMFactor();
+
+	/**
+	 * Constructor
+	 * @param z is the 2 dimensional location of point in image (the measurement)
+	 * @param sigma is the standard deviation
+	 * @param cameraFrameNumber is basically the frame number
+	 * @param landmarkNumber is the index of the landmark
+	 * @param K the constant calibration
+	 */
+	VSLAMFactor(const Point2& z, double sigma, int cameraFrameNumber, int landmarkNumber, const Cal3_S2& K);
 
 
-  /**
-   * print
-   * @param s optional string naming the factor
-   */
-  void print(const std::string& s="VSLAMFactor") const;
+	/**
+	 * print
+	 * @param s optional string naming the factor
+	 */
+	void print(const std::string& s="VSLAMFactor") const;
 
-  /**
-   * equals
-   */
-  bool equals(const VSLAMFactor&, double tol=1e-9) const;
+	/**
+	 * equals
+	 */
+	bool equals(const VSLAMFactor&, double tol=1e-9) const;
 
-  /**
-   * predict the measurement
-   */
-  Vector predict(const VSLAMConfig&) const;
+	/**
+	 * predict the measurement
+	 */
+	Vector predict(const VSLAMConfig&) const;
 
-  /**
-   * calculate the error of the factor
-   */
-  Vector error_vector(const VSLAMConfig&) const;
+	/**
+	 * calculate the error of the factor
+	 */
+	Vector error_vector(const VSLAMConfig&) const;
 
-  /**
-   * linerarization
-   */
-  GaussianFactor::shared_ptr linearize(const VSLAMConfig&) const;
+	/**
+	 * linerarization
+	 */
+	GaussianFactor::shared_ptr linearize(const VSLAMConfig&) const;
 
-  int getCameraFrameNumber() const { return cameraFrameNumber_; }
-  int getLandmarkNumber()    const { return landmarkNumber_;    }
+	int getCameraFrameNumber() const { return cameraFrameNumber_; }
+	int getLandmarkNumber()    const { return landmarkNumber_;    }
+
+private:
+	/** Serialization function */
+	friend class boost::serialization::access;
+	template<class Archive>
+	void serialize(Archive & ar, const unsigned int version) {
+		ar & BOOST_SERIALIZATION_NVP(cameraFrameNumber_);
+		ar & BOOST_SERIALIZATION_NVP(landmarkNumber_);
+		ar & BOOST_SERIALIZATION_NVP(cameraFrameName_);
+		ar & BOOST_SERIALIZATION_NVP(landmarkName_);
+		ar & BOOST_SERIALIZATION_NVP(K_);
+	}
 };
 
 }
