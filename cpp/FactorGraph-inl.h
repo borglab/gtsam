@@ -12,6 +12,7 @@
 
 #include <list>
 #include <sstream>
+#include <stdexcept>
 #include <boost/foreach.hpp>
 #include <boost/tuple/tuple.hpp>
 #include <colamd/colamd.h>
