@@ -32,7 +32,7 @@ TEST( VSLAMFactor, error )
 	double sigma=1.0;
 	int cameraFrameNumber=1, landmarkNumber=1;
 	boost::shared_ptr<VSLAMFactor>
-		factor(new VSLAMFactor(z, sigma, cameraFrameNumber, landmarkNumber, K));
+		factor(new VSLAMFactor(z, sigma, cameraFrameNumber, landmarkNumber, VSLAMFactor::shared_ptrK(new Cal3_S2(K))));
 
   // For the following configuration, the factor predicts 320,240
   VSLAMConfig config;
@@ -77,10 +77,10 @@ TEST( VSLAMFactor, equals )
 	double sigma=1.0;
 	int cameraFrameNumber=1, landmarkNumber=1;
 	boost::shared_ptr<VSLAMFactor>
-	  factor1(new VSLAMFactor(z, sigma, cameraFrameNumber, landmarkNumber, K));
+	  factor1(new VSLAMFactor(z, sigma, cameraFrameNumber, landmarkNumber, VSLAMFactor::shared_ptrK(new Cal3_S2(K))));
 
 	boost::shared_ptr<VSLAMFactor>
-		factor2(new VSLAMFactor(z, sigma, cameraFrameNumber, landmarkNumber, K));
+		factor2(new VSLAMFactor(z, sigma, cameraFrameNumber, landmarkNumber, VSLAMFactor::shared_ptrK(new Cal3_S2(K))));
 
 	CHECK(assert_equal(*factor1, *factor2));
 }

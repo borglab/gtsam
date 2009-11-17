@@ -25,12 +25,13 @@ private:
 
 	int cameraFrameNumber_, landmarkNumber_;
 	std::string cameraFrameName_, landmarkName_;
-	Cal3_S2 K_; // Calibration stored in each factor. FD: need to think about this.
+	boost::shared_ptr<Cal3_S2> K_; // Calibration stored in each factor. FD: need to think about this.
 	typedef NonlinearFactor<VSLAMConfig> ConvenientFactor;
 
 public:
 
 	typedef boost::shared_ptr<VSLAMFactor> shared_ptr; // shorthand for a smart pointer to a factor
+	typedef boost::shared_ptr<Cal3_S2> shared_ptrK;
 
 	/**
 	 * Default constructor
@@ -45,7 +46,7 @@ public:
 	 * @param landmarkNumber is the index of the landmark
 	 * @param K the constant calibration
 	 */
-	VSLAMFactor(const Point2& z, double sigma, int cameraFrameNumber, int landmarkNumber, const Cal3_S2& K);
+	VSLAMFactor(const Point2& z, double sigma, int cameraFrameNumber, int landmarkNumber, const shared_ptrK & K);
 
 
 	/**

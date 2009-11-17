@@ -60,7 +60,8 @@ VSLAMGraph::VSLAMGraph(const std::string& path)
         //VSLAMFactor::shared_ptr testing(new VSLAMFactor());
         //factors_.push_back(testing);
 
-        VSLAMFactor::shared_ptr f1(new VSLAMFactor::VSLAMFactor(z.vector(), sigma, i+1, j, K));
+        VSLAMFactor::shared_ptr f1(new VSLAMFactor::VSLAMFactor(z.vector(), sigma, i+1, j,
+        		VSLAMFactor::shared_ptrK(new Cal3_S2(K))));
         factors_.push_back(f1);
         //cout << "Added factor " << i+1 << endl;
         // just to keep a record of all the feature id's that have been encountered

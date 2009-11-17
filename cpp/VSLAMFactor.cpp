@@ -19,10 +19,10 @@ VSLAMFactor::VSLAMFactor() {
 	landmarkNumber_    = 222;
 	cameraFrameName_ = symbol('x',cameraFrameNumber_);
 	landmarkName_    = symbol('l',landmarkNumber_);
-	K_ = Cal3_S2(444,555,666,777,888);
+	K_ = shared_ptrK(new Cal3_S2(444,555,666,777,888));
 }
 /* ************************************************************************* */
-VSLAMFactor::VSLAMFactor(const Point2& z, double sigma, int cn, int ln, const Cal3_S2 &K)
+VSLAMFactor::VSLAMFactor(const Point2& z, double sigma, int cn, int ln, const shared_ptrK &K)
   : NonlinearFactor<VSLAMConfig>(z.vector(), sigma)
 {
   cameraFrameNumber_ = cn;
@@ -50,7 +50,7 @@ bool VSLAMFactor::equals(const VSLAMFactor& p, double tol) const {
 Vector VSLAMFactor::predict(const VSLAMConfig& c) const {
   Pose3 pose = c.cameraPose(cameraFrameNumber_);
   Point3 landmark = c.landmarkPoint(landmarkNumber_);
-  return project(SimpleCamera(K_,pose), landmark).vector();
+  return project(SimpleCamera(*K_,pose), landmark).vector();
 }
 
 /* ************************************************************************* */
@@ -67,7 +67,7 @@ GaussianFactor::shared_ptr VSLAMFactor::linearize(const VSLAMConfig& c) const
   Pose3 pose = c.cameraPose(cameraFrameNumber_);
   Point3 landmark = c.landmarkPoint(landmarkNumber_);
 
-  SimpleCamera camera(K_,pose);
+  SimpleCamera camera(*K_,pose);
 
   // Jacobians
   Matrix Dh1 = Dproject_pose(camera, landmark);
