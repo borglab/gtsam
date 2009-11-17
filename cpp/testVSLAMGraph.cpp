@@ -59,12 +59,6 @@ VSLAMGraph testGraph() {
   g.push_back(VSLAMFactor::shared_ptr(new VSLAMFactor(z22, sigma, 2, 2, sK)));
   g.push_back(VSLAMFactor::shared_ptr(new VSLAMFactor(z23, sigma, 2, 3, sK)));
   g.push_back(VSLAMFactor::shared_ptr(new VSLAMFactor(z24, sigma, 2, 4, sK)));
-
-	// add 3 landmark constraints
-  g.addLandmarkConstraint(1, landmark1);
-  g.addLandmarkConstraint(2, landmark2);
-  g.addLandmarkConstraint(3, landmark3);
-
   return g;
 }
 
@@ -73,6 +67,10 @@ TEST( VSLAMGraph, optimizeLM)
 {
   // build a graph
   VSLAMGraph graph = testGraph();
+	// add 3 landmark constraints
+  graph.addLandmarkConstraint(1, landmark1);
+  graph.addLandmarkConstraint(2, landmark2);
+  graph.addLandmarkConstraint(3, landmark3);
 
   // Create an initial configuration corresponding to the ground truth
   boost::shared_ptr<VSLAMConfig> initialEstimate(new VSLAMConfig);
@@ -85,6 +83,50 @@ TEST( VSLAMGraph, optimizeLM)
 
   // Create an ordering of the variables
   list<string> keys;
+  keys.push_back("l1");
+  keys.push_back("l2");
+  keys.push_back("l3");
+  keys.push_back("l4");
+  keys.push_back("x1");
+  keys.push_back("x2");
+  Ordering ordering(keys);
+
+  // Create an optimizer and check its error
+  // We expect the initial to be zero because config is the ground truth
+  Optimizer optimizer(graph, ordering, initialEstimate, 1e-5);
+  DOUBLES_EQUAL(0.0, optimizer.error(), 1e-9);
+
+  // Iterate once, and the config should not have changed because we started
+  // with the ground truth
+  Optimizer afterOneIteration = optimizer.iterate();
+  DOUBLES_EQUAL(0.0, optimizer.error(), 1e-9);
+
+  // check if correct
+  CHECK(assert_equal(*initialEstimate,*(afterOneIteration.config())));
+}
+
+
+/* ************************************************************************* */
+TEST( VSLAMGraph, optimizeLM2)
+{
+  // build a graph
+  VSLAMGraph graph = testGraph();
+	// add 2 camera constraints
+  graph.addCameraConstraint(1, camera1);
+  graph.addCameraConstraint(2, camera2);
+
+  // Create an initial configuration corresponding to the ground truth
+  boost::shared_ptr<VSLAMConfig> initialEstimate(new VSLAMConfig);
+  initialEstimate->addCameraPose(1, camera1);
+  initialEstimate->addCameraPose(2, camera2);
+  initialEstimate->addLandmarkPoint(1, landmark1);
+  initialEstimate->addLandmarkPoint(2, landmark2);
+  initialEstimate->addLandmarkPoint(3, landmark3);
+  initialEstimate->addLandmarkPoint(4, landmark4);
+
+  // Create an ordering of the variables
+  list<string> keys;
+
   keys.push_back("l1");
   keys.push_back("l2");
   keys.push_back("l3");

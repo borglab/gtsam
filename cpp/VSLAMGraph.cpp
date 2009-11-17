@@ -103,6 +103,23 @@ void VSLAMGraph::addLandmarkConstraint(int j, const gtsam::Point3& p) {
 }
 
 /* ************************************************************************* */
+bool compareCamera(const std::string& key,
+					const VSLAMConfig& feasible,
+					const VSLAMConfig& input) {
+	int j = atoi(key.substr(1, key.size() - 1).c_str());
+	return feasible.cameraPose(j).equals(input.cameraPose(j));
+}
+
+/* ************************************************************************* */
+void VSLAMGraph::addCameraConstraint(int j, const gtsam::Pose3& p) {
+  typedef NonlinearEquality<VSLAMConfig> NLE;
+  VSLAMConfig feasible;
+  feasible.addCameraPose(j,p);
+  boost::shared_ptr<NLE> factor(new NLE(symbol('x',j), feasible, 6, compareCamera));
+  push_back(factor);
+}
+
+/* ************************************************************************* */
 
 } // namespace gtsam
 

@@ -64,6 +64,13 @@ public:
    */
   void addLandmarkConstraint(int j, const Point3& p = Point3());
 
+  /**
+   *  Add a constraint on a camera (for now, *must* be satisfied in any Config)
+   *  @param j index of camera
+   *  @param p to which pose to constrain it to
+   */
+  void addCameraConstraint(int j, const Pose3& p = Pose3());
+
 private:
 	/** Serialization function */
 	friend class boost::serialization::access;
