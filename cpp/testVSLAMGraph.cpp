@@ -49,16 +49,16 @@ VSLAMGraph testGraph() {
 	Point2 z24( 125, 125);
 
   double sigma = 1;
-  Cal3_S2 K(625, 625, 0, 0, 0);
+  VSLAMFactor::shared_ptrK sK(new Cal3_S2(625, 625, 0, 0, 0));
   VSLAMGraph g;
-  g.push_back(VSLAMFactor::shared_ptr(new VSLAMFactor(z11, sigma, 1, 1, K)));
-  g.push_back(VSLAMFactor::shared_ptr(new VSLAMFactor(z12, sigma, 1, 2, K)));
-  g.push_back(VSLAMFactor::shared_ptr(new VSLAMFactor(z13, sigma, 1, 3, K)));
-  g.push_back(VSLAMFactor::shared_ptr(new VSLAMFactor(z14, sigma, 1, 4, K)));
-  g.push_back(VSLAMFactor::shared_ptr(new VSLAMFactor(z21, sigma, 2, 1, K)));
-  g.push_back(VSLAMFactor::shared_ptr(new VSLAMFactor(z22, sigma, 2, 2, K)));
-  g.push_back(VSLAMFactor::shared_ptr(new VSLAMFactor(z23, sigma, 2, 3, K)));
-  g.push_back(VSLAMFactor::shared_ptr(new VSLAMFactor(z24, sigma, 2, 4, K)));
+  g.push_back(VSLAMFactor::shared_ptr(new VSLAMFactor(z11, sigma, 1, 1, sK)));
+  g.push_back(VSLAMFactor::shared_ptr(new VSLAMFactor(z12, sigma, 1, 2, sK)));
+  g.push_back(VSLAMFactor::shared_ptr(new VSLAMFactor(z13, sigma, 1, 3, sK)));
+  g.push_back(VSLAMFactor::shared_ptr(new VSLAMFactor(z14, sigma, 1, 4, sK)));
+  g.push_back(VSLAMFactor::shared_ptr(new VSLAMFactor(z21, sigma, 2, 1, sK)));
+  g.push_back(VSLAMFactor::shared_ptr(new VSLAMFactor(z22, sigma, 2, 2, sK)));
+  g.push_back(VSLAMFactor::shared_ptr(new VSLAMFactor(z23, sigma, 2, 3, sK)));
+  g.push_back(VSLAMFactor::shared_ptr(new VSLAMFactor(z24, sigma, 2, 4, sK)));
 
 	// add 3 landmark constraints
   g.addLandmarkConstraint(1, landmark1);
