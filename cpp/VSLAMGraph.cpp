@@ -79,6 +79,13 @@ VSLAMGraph::VSLAMGraph(const std::string& path)
 }
 
 /* ************************************************************************* */
+bool VSLAMGraph::equals(const VSLAMGraph& p, double tol) const {
+  if (&p == NULL) return false;
+  if (nFrames != p.nFrames || feat_ids != p.feat_ids ) return false;
+  return true;
+}
+
+/* ************************************************************************* */
 bool compareLandmark(const std::string& key,
 					const VSLAMConfig& feasible,
 					const VSLAMConfig& input) {
