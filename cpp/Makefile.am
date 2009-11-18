@@ -124,7 +124,7 @@ testNonlinearOptimizer_SOURCES   = $(example) testNonlinearOptimizer.cpp
 testNonlinearOptimizer_LDADD     = libgtsam.la
 testNonlinearEquality_SOURCES    = testNonlinearEquality.cpp
 testNonlinearEquality_LDADD      = libgtsam.la
-testSQP_SOURCES                  = testSQP.cpp
+testSQP_SOURCES                  = $(example) testSQP.cpp
 testSQP_LDADD                    = libgtsam.la
 
 # geometry

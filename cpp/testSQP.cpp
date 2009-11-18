@@ -11,7 +11,16 @@
 #include <boost/foreach.hpp>
 #include <CppUnitLite/TestHarness.h>
 #include <GaussianFactorGraph.h>
+#include <NonlinearEquality.h>
+#include <NonlinearFactorGraph.h>
+#include <NonlinearOptimizer.h>
+#include <Simulated2DMeasurement.h>
+#include <simulated2D.h>
 #include <Ordering.h>
+
+// templated implementations
+#include <NonlinearFactorGraph-inl.h>
+#include "NonlinearOptimizer-inl.h"
 
 using namespace std;
 using namespace gtsam;
@@ -236,6 +245,77 @@ TEST (SQP, problem1_sqp ) {
 	expected.insert("y", Vector_(1, -0.5));
 	CHECK(assert_equal(state["x"], expected["x"], 1e-2));
 	CHECK(assert_equal(state["y"], expected["y"], 1e-2));
+}
+
+// components for nonlinear factor graphs
+bool vector_compare(const std::string& key,
+					const VectorConfig& feasible,
+					const VectorConfig& input) {
+	Vector feas, lin;
+	feas = feasible[key];
+	lin = input[key];
+	return equal_with_abs_tol(lin, feas, 1e-5);
+}
+typedef NonlinearFactorGraph<VectorConfig> NLGraph;
+typedef boost::shared_ptr<NonlinearFactor<VectorConfig> > shared;
+typedef boost::shared_ptr<NonlinearEquality<VectorConfig> > shared_eq;
+typedef NonlinearOptimizer<NLGraph,VectorConfig> Optimizer;
+/**
+ * Determining a ground truth nonlinear system
+ * with two poses seeing one landmark, with each pose
+ * constrained to a particular value
+ */
+TEST (SQP, two_pose_truth ) {
+	// position (1, 1) constraint for x1
+	// position (5, 6) constraint for x2
+	VectorConfig feas;
+	feas.insert("x1", Vector_(2, 1.0, 1.0));
+	feas.insert("x2", Vector_(2, 5.0, 6.0));
+
+	// constant constraint on x1
+	shared_eq ef1(new NonlinearEquality<VectorConfig>("x1", feas, 2, *vector_compare));
+
+	// constant constraint on x2
+	shared_eq ef2(new NonlinearEquality<VectorConfig>("x2", feas, 2, *vector_compare));
+
+	// measurement from x1 to l1
+	Vector z1 = Vector_(2, 0.0, 5.0);
+	double sigma1 = 0.1;
+	shared f1(new Simulated2DMeasurement(z1, sigma1, "x1", "l1"));
+
+	// measurement from x2 to l1
+	Vector z2 = Vector_(2, -4.0, 0.0);
+	double sigma2 = 0.1;
+	shared f2(new Simulated2DMeasurement(z2, sigma2, "x2", "l1"));
+
+	// construct the graph
+	NLGraph graph;
+	graph.push_back(ef1);
+	graph.push_back(ef2);
+	graph.push_back(f1);
+	graph.push_back(f2);
+
+	// create an initial estimate
+	boost::shared_ptr<VectorConfig> initialEstimate(new VectorConfig(feas)); // must start with feasible set
+	initialEstimate->insert("l1", Vector_(2, 1.0, 6.0)); // ground truth
+	//initialEstimate->insert("l1", Vector_(2, 1.2, 5.6)); // with small error
+
+	// optimize the graph
+	Ordering ordering;
+	ordering += "x1", "x2", "l1";
+	Optimizer optimizer(graph, ordering, initialEstimate, 1e-5);
+
+	// display solution
+	double relativeThreshold = 1e-5;
+	double absoluteThreshold = 1e-5;
+	Optimizer act_opt = optimizer.gaussNewton(relativeThreshold, absoluteThreshold);
+	boost::shared_ptr<const VectorConfig> actual = act_opt.config();
+	//actual->print("Configuration after optimization");
+
+	// verify
+	VectorConfig expected(feas);
+	expected.insert("l1", Vector_(2, 1.0, 6.0));
+	CHECK(assert_equal(expected, *actual, 1e-5));
 }
 
 /* ************************************************************************* */
