@@ -39,8 +39,14 @@ SymbolicBayesTree update(const SymbolicBayesTree& initial,
 	factorGraph.push_back(newFactor);
 
 	// get the ELB clique
+	SymbolicBayesTree::sharedClique ELB = initial["B"];
+	FactorGraph<SymbolicFactor> ELB_factors(*ELB);
+
 	// add it to the factor graph
+
 	// get the SLB clique
+	SymbolicBayesTree::sharedClique SLB = initial["S"];
+
 	// add it to the factor graph
 
 	// create an ordering ESLB
@@ -90,7 +96,7 @@ TEST( BayesTree, iSAM )
 	SymbolicBayesTree actual = update(bayesTree, newFactor);
 
 	// Check whether the same
-	//CHECK(assert_equal(expected,actual));
+	CHECK(assert_equal(expected,actual));
 }
 
 /* ************************************************************************* */
