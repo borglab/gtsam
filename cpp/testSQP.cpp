@@ -24,9 +24,13 @@ using namespace boost::assign;
  * This example uses a nonlinear objective function and
  * nonlinear equality constraint.  The formulation is actually
  * the Choleski form that creates the full Hessian explicitly,
- * which should really be avoided with our QR-based machinery
+ * which should really be avoided with our QR-based machinery.
+ *
+ * Note: the update equation used here has a fixed step size
+ * and gain that is rather arbitrarily chosen, and as such,
+ * will take a silly number of iterations.
  */
-TEST (SQP, problem1 ) {
+TEST (SQP, problem1_choleski ) {
 	bool verbose = false;
 	// use a nonlinear function of f(x) = x^2+y^2
 	// nonlinear equality constraint: g(x) = x^2-5-y=0
@@ -116,9 +120,117 @@ TEST (SQP, problem1 ) {
 	expected.insert("y", Vector_(1, -0.5));
 	CHECK(assert_equal(state["x"], expected["x"], 1e-2));
 	CHECK(assert_equal(state["y"], expected["y"], 1e-2));
-
 }
-	
+
+/**
+ * This example uses a nonlinear objective function and
+ * nonlinear equality constraint.  This formulation splits
+ * the constraint into a factor and a linear constraint.
+ *
+ * This example uses the same silly number of iterations as the
+ * previous example.
+ */
+TEST (SQP, problem1_sqp ) {
+	bool verbose = false;
+	// use a nonlinear function of f(x) = x^2+y^2
+	// nonlinear equality constraint: g(x) = x^2-5-y=0
+	// Lagrangian: f(x) + lam*g(x)
+
+	// state structure: [x y lam]
+	VectorConfig init, state;
+	init.insert("x", Vector_(1, 1.0));
+	init.insert("y", Vector_(1, 1.0));
+	init.insert("lam", Vector_(1, 1.0));
+	state = init;
+
+	if (verbose) init.print("Initial State");
+
+	// loop until convergence
+	int maxIt = 50;
+	for (int i = 0; i<maxIt; ++i) {
+		if (verbose) cout << "\n******************************\nIteration: " << i+1 << endl;
+
+		// extract the states
+		double x, y, lam;
+		x = state["x"](0);
+		y = state["y"](0);
+		lam = state["lam"](0);
+
+		// create components
+		Matrix A = eye(2);
+		Matrix gradG = Matrix_(1, 2,
+				2*x, -1.0);
+		Vector g = Vector_(1,
+				x*x-y-5);
+		Vector b = Vector_(2, x, y);
+
+		/** create the linear factor
+		 * ||h(x)-z||^2 => ||Ax-b||^2
+		 *  where:
+		 *		h(x) simply returns the inputs
+		 *		z    zeros(2)
+		 *		A 	 identity
+		 *		b	 linearization point
+		 */
+		GaussianFactor::shared_ptr f1(
+						new GaussianFactor("x", sub(A, 0,2, 0,1), // A(:,1)
+										   "y", sub(A, 0,2, 1,2), // A(:,2)
+										   b,                     // rhs of f(x)
+										   1.0));                 // arbitrary sigma
+
+		/** create the constraint-linear factor
+		 * Provides a mechanism to use variable gain to force the constraint
+		 * to zero
+		 * lam*gradG*dx + dlam + lam
+		 * formulated in matrix form as:
+		 * [lam*gradG eye(1)] [dx; dlam] = lam
+		 */
+		GaussianFactor::shared_ptr f2(
+				new GaussianFactor("x", lam*sub(gradG, 0,1, 0,1), // scaled gradG(:,1)
+								   "y", lam*sub(gradG, 0,1, 1,2), // scaled gradG(:,2)
+								   "lam", eye(1),     // dlam term
+								   Vector_(1.0, lam),             // rhs is lambda
+								   1.0));                         // arbitrary sigma
+
+		// create the actual constraint
+		// [gradG] [x; y]- g = 0
+		GaussianFactor::shared_ptr c1(
+				new GaussianFactor("x", sub(gradG, 0,1, 0,1),   // slice first part of gradG
+								   "y", sub(gradG, 0,1, 1,2),   // slice second part of gradG
+								   g,                           // value of constraint function
+								   0.0));                       // force to constraint
+
+		// construct graph
+		GaussianFactorGraph fg;
+		fg.push_back(f1);
+		fg.push_back(f2);
+		fg.push_back(c1);
+		if (verbose) fg.print("Graph");
+
+		// solve
+		Ordering ord;
+		ord += "x", "y", "lam";
+		VectorConfig delta = fg.optimize(ord);
+		if (verbose) delta.print("Delta");
+
+		// update initial estimate
+		double gain = 0.3;
+		VectorConfig newState;
+		newState.insert("x", state["x"]-gain*delta["x"]);
+		newState.insert("y", state["y"]-gain*delta["y"]);
+		newState.insert("lam", state["lam"]-gain*delta["lam"]);
+		state = newState;
+
+		if (verbose) state.print("Updated State");
+	}
+
+	// verify that it converges to the nearest optimal point
+	VectorConfig expected;
+	expected.insert("x", Vector_(1, 2.12));
+	expected.insert("y", Vector_(1, -0.5));
+	CHECK(assert_equal(state["x"], expected["x"], 1e-2));
+	CHECK(assert_equal(state["y"], expected["y"], 1e-2));
+}
 
 /* ************************************************************************* */
 int main() { TestResult tr; return TestRegistry::runAllTests(tr); }
