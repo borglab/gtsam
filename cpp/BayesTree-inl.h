@@ -184,11 +184,21 @@ namespace gtsam {
 	}
 
 	/* ************************************************************************* */
+	// binary predicate to test equality of a pair for use in equals
+	template<class Conditional>
+	bool check_pair(
+			const pair<string,typename BayesTree<Conditional>::sharedClique >& v1,
+			const pair<string,typename BayesTree<Conditional>::sharedClique >& v2
+	) {
+		return v1.first == v2.first && v1.second->equals(*(v2.second));
+	}
+
+	/* ************************************************************************* */
 	template<class Conditional>
 	bool BayesTree<Conditional>::equals(const BayesTree<Conditional>& other,
 			double tol) const {
-		return size()==other.size();
-		//&& equal(nodes_.begin(),nodes_.end(),other.nodes_.begin(),equals_star<Clique>(tol));
+		return size()==other.size() &&
+				equal(nodes_.begin(),nodes_.end(),other.nodes_.begin(),check_pair<Conditional>);
 	}
 
 	/* ************************************************************************* */
