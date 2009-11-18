@@ -25,7 +25,7 @@ typedef BayesTree<GaussianConditional> GaussianBayesTree;
 // Conditionals for ASIA example from the tutorial with A and D evidence
 SymbolicConditional::shared_ptr B(new SymbolicConditional("B")), L(
 		new SymbolicConditional("L", "B")), E(
-		new SymbolicConditional("E", "L", "B")), S(new SymbolicConditional("S",
+		new SymbolicConditional("E", "B", "L")), S(new SymbolicConditional("S",
 		"L", "B")), T(new SymbolicConditional("T", "E", "L")), X(
 		new SymbolicConditional("X", "E"));
 
@@ -34,9 +34,8 @@ SymbolicConditional::shared_ptr B(new SymbolicConditional("B")), L(
 SymbolicBayesTree update(const SymbolicBayesTree& initial,
 		const boost::shared_ptr<SymbolicFactor>& newFactor) {
 
-	// create a factor graph with the new factor in it
+	// create an empty factor graph
 	SymbolicFactorGraph factorGraph;
-	factorGraph.push_back(newFactor);
 
 	// get the ELB clique
 	SymbolicBayesTree::sharedClique ELB = initial["B"];
@@ -52,6 +51,9 @@ SymbolicBayesTree update(const SymbolicBayesTree& initial,
 	// add it to the factor graph
   factorGraph = combine(factorGraph, SLB_factors);
 
+	// now add the new factor
+	factorGraph.push_back(newFactor);
+
 	// create an ordering ESLB
 	Ordering ordering;
 	ordering += "E","S","L","B";
@@ -62,13 +64,14 @@ SymbolicBayesTree update(const SymbolicBayesTree& initial,
 	// turn back into a Bayes Tree
 	BayesTree<SymbolicConditional> newTree(bayesNet);
 
-	// add orphans to the bottom of the new tree
-	// get the ophan cliques
+	// get the orphan cliques
 	SymbolicBayesTree::sharedClique TEL = initial["T"];
 	SymbolicBayesTree::sharedClique XE = initial["X"];
+
   // get clique from new tree to attach to
 	SymbolicBayesTree::sharedClique new_ELB = newTree["E"];
 
+	// add orphans to the bottom of the new tree
   new_ELB->children_ += TEL,XE;
 
 	return newTree;
@@ -85,7 +88,6 @@ TEST( BayesTree, iSAM )
 	bayesTree.insert(S);
 	bayesTree.insert(T);
 	bayesTree.insert(X);
-	//bayesTree.print("bayesTree");
 
 	// Create expected Bayes tree
 	SymbolicBayesTree expected;
@@ -95,7 +97,6 @@ TEST( BayesTree, iSAM )
 	expected.insert(E);
 	expected.insert(T);
 	expected.insert(X);
-	//expected.print("expected");
 
 	// create a new factor to be inserted
 	list<string> keys;
@@ -106,7 +107,7 @@ TEST( BayesTree, iSAM )
 	SymbolicBayesTree actual = update(bayesTree, newFactor);
 
 	// Check whether the same
-  //	CHECK(assert_equal(expected,actual));
+  //CHECK(assert_equal(expected,actual));
 }
 
 /* ************************************************************************* */
