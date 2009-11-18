@@ -33,16 +33,18 @@ SymbolicConditional::shared_ptr B(new SymbolicConditional("B")), L(
 		new SymbolicConditional("X", "E"));
 
 /* ************************************************************************* */
-TEST( BayesTree, Front )
+TEST( BayesTree, iSAM )
 {
-	SymbolicBayesNet f1;
-	f1.push_back(B);
-	f1.push_back(L);
-	SymbolicBayesNet f2;
-	f2.push_back(L);
-	f2.push_back(B);
-	CHECK(f1.equals(f1));
-	CHECK(!f1.equals(f2));
+	// Create using insert
+	SymbolicBayesTree bayesTree;
+	bayesTree.insert(B);
+	bayesTree.insert(L);
+	bayesTree.insert(E);
+	bayesTree.insert(S);
+	bayesTree.insert(T);
+	bayesTree.insert(X);
+
+	bayesTree.print("bayesTree");
 }
 
 /* ************************************************************************* */
