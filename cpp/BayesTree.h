@@ -61,6 +61,9 @@ namespace gtsam {
 			/** is this the root of a Bayes tree ? */
 			inline bool isRoot() const { return parent_==NULL;}
 
+			/** The size of subtree rooted at this clique, i.e., nr of Cliques */
+			size_t treeSize() const;
+
 			/** print this node and entire subtree below it */
 			void printTree(const std::string& indent) const;
 
@@ -124,7 +127,7 @@ namespace gtsam {
 
 		/** number of cliques */
 		inline size_t size() const {
-			return nodes_.size();
+			return root_->treeSize();
 		}
 
 		/** return root clique */

@@ -46,11 +46,20 @@ namespace gtsam {
 
 	/* ************************************************************************* */
 	template<class Conditional>
+	size_t BayesTree<Conditional>::Clique::treeSize() const {
+		size_t size = 1;
+		BOOST_FOREACH(shared_ptr child, children_)
+			size += child->treeSize();
+		return size;
+	}
+
+	/* ************************************************************************* */
+	template<class Conditional>
 	void BayesTree<Conditional>::Clique::printTree(const string& indent) const {
-			print(indent);
-			BOOST_FOREACH(shared_ptr child, children_)
-				child->printTree(indent+"  ");
-		}
+		print(indent);
+		BOOST_FOREACH(shared_ptr child, children_)
+			child->printTree(indent+"  ");
+	}
 
 	/* ************************************************************************* */
 	// The shortcut density is a conditional P(S|R) of the separator of this
@@ -178,7 +187,7 @@ namespace gtsam {
 	/* ************************************************************************* */
 	template<class Conditional>
 	void BayesTree<Conditional>::print(const string& s) const {
-		cout << s << ": size == " << nodes_.size() << endl;
+		cout << s << ": size == " << size() << endl;
 		if (nodes_.empty()) return;
 		root_->printTree("");
 	}

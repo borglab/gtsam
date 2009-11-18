@@ -53,7 +53,7 @@ TEST( BayesTree, constructor )
 	bayesTree.insert(X);
 
 	// Check Size
-	LONGS_EQUAL(6,bayesTree.size());
+	LONGS_EQUAL(4,bayesTree.size());
 
 	// Check root
 	BayesNet<SymbolicConditional> expected_root;
@@ -106,7 +106,7 @@ TEST( BayesTree, linear_smoother_shortcuts )
 
 	// Create the Bayes tree
 	GaussianBayesTree bayesTree(chordalBayesNet);
-	LONGS_EQUAL(7,bayesTree.size());
+	LONGS_EQUAL(6,bayesTree.size());
 
 	// Check the conditional P(Root|Root)
 	GaussianBayesNet empty;
@@ -175,7 +175,7 @@ TEST( BayesTree, balanced_smoother_marginals )
 
 	// Create the Bayes tree
 	GaussianBayesTree bayesTree(chordalBayesNet);
-	LONGS_EQUAL(7,bayesTree.size());
+	LONGS_EQUAL(4,bayesTree.size());
 
 	// Check marginal on x1
 	GaussianBayesNet expected1 = simpleGaussian("x1", zero(2), sigmax1);
