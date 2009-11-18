@@ -46,7 +46,7 @@ TEST( BayesTree, iSAM )
 	bayesTree.insert(S);
 	bayesTree.insert(T);
 	bayesTree.insert(X);
-	bayesTree.print("bayesTree");
+	//bayesTree.print("bayesTree");
 
 	// Create expected Bayes tree
 	SymbolicBayesTree expected;
@@ -56,7 +56,7 @@ TEST( BayesTree, iSAM )
 	expected.insert(E);
 	expected.insert(T);
 	expected.insert(X);
-	expected.print("expected");
+	//expected.print("expected");
 
 	// create a new factor to be inserted
 	list<string> keys;
