@@ -10,7 +10,7 @@ using namespace boost::assign;
 #include <CppUnitLite/TestHarness.h>
 
 #include "SymbolicBayesNet.h"
-#include "SymbolicFactor.h"
+#include "SymbolicFactorGraph.h"
 #include "GaussianBayesNet.h"
 #include "Ordering.h"
 #include "BayesTree-inl.h"
@@ -31,8 +31,31 @@ SymbolicConditional::shared_ptr B(new SymbolicConditional("B")), L(
 
 /* ************************************************************************* */
 
-SymbolicBayesTree update(const SymbolicBayesTree& initial, const SymbolicFactor& newFactor) {
-	return initial;
+SymbolicBayesTree update(const SymbolicBayesTree& initial,
+		const boost::shared_ptr<SymbolicFactor>& newFactor) {
+
+	// create a factor graph with the new factor in it
+	SymbolicFactorGraph factorGraph;
+	factorGraph.push_back(newFactor);
+
+	// get the ELB clique
+	// add it to the factor graph
+	// get the SLB clique
+	// add it to the factor graph
+
+	// create an ordering ESLB
+	Ordering ordering;
+	ordering += "S","B";
+
+	// eliminate into a Bayes net
+	SymbolicBayesNet bayesNet = eliminate<SymbolicFactor,SymbolicConditional>(factorGraph,ordering);
+
+	// turn back into a Bayes Tree
+	BayesTree<SymbolicConditional> newTree(bayesNet);
+
+	// add orphans to the bottom of the new tree
+
+	return newTree;
 }
 
 /* ************************************************************************* */
@@ -61,7 +84,7 @@ TEST( BayesTree, iSAM )
 	// create a new factor to be inserted
 	list<string> keys;
 	keys += "B","S";
-	SymbolicFactor newFactor(keys);
+	boost::shared_ptr<SymbolicFactor> newFactor(new SymbolicFactor(keys));
 
 	// do incremental inference
 	SymbolicBayesTree actual = update(bayesTree, newFactor);
