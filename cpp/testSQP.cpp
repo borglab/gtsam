@@ -146,7 +146,7 @@ TEST (SQP, problem1_sqp ) {
 	if (verbose) init.print("Initial State");
 
 	// loop until convergence
-	int maxIt = 50;
+	int maxIt = 5;
 	for (int i = 0; i<maxIt; ++i) {
 		if (verbose) cout << "\n******************************\nIteration: " << i+1 << endl;
 
@@ -189,7 +189,7 @@ TEST (SQP, problem1_sqp ) {
 				new GaussianFactor("x", lam*sub(gradG, 0,1, 0,1), // scaled gradG(:,1)
 								   "y", lam*sub(gradG, 0,1, 1,2), // scaled gradG(:,2)
 								   "lam", eye(1),     // dlam term
-								   Vector_(1.0, lam),             // rhs is lambda
+								   Vector_(1.0, 0.0),             // rhs is zero
 								   1.0));                         // arbitrary sigma
 
 		// create the actual constraint
@@ -214,11 +214,17 @@ TEST (SQP, problem1_sqp ) {
 		if (verbose) delta.print("Delta");
 
 		// update initial estimate
-		double gain = 0.3;
+		double gain = 1.0;
+		// Note:
+		// It appears that exmap uses adding rather than subtracting to
+		// update, which breaks the system.
+		//VectorConfig newState = state.exmap(delta);
 		VectorConfig newState;
 		newState.insert("x", state["x"]-gain*delta["x"]);
 		newState.insert("y", state["y"]-gain*delta["y"]);
 		newState.insert("lam", state["lam"]-gain*delta["lam"]);
+
+		// set the state to the updated state
 		state = newState;
 
 		if (verbose) state.print("Updated State");
