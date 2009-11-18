@@ -20,6 +20,14 @@ using namespace std;
 namespace gtsam {
 
 	/* ************************************************************************* */
+	SymbolicFactor::SymbolicFactor(const boost::shared_ptr<SymbolicConditional>& c) {
+		// initialize keys_ with parents
+		keys_ = c->parents();
+		// add key on which conditional is defined
+		keys_.push_back(c->key());
+	}
+
+	/* ************************************************************************* */
 	SymbolicFactor::SymbolicFactor(const vector<shared_ptr> & factors) {
 
 		// store keys in a map to make them unique (set is not portable)

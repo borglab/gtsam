@@ -30,6 +30,11 @@ namespace gtsam {
 		typedef boost::shared_ptr<SymbolicFactor> shared_ptr;
 
 		/**
+		 * Construct from SymbolicConditional
+		 */
+		SymbolicFactor(const boost::shared_ptr<SymbolicConditional>& c);
+
+		/**
 		 * Constructor from a list of keys
 		 */
 		SymbolicFactor(std::list<std::string> keys) :

@@ -13,6 +13,7 @@ using namespace boost::assign;
 #include "smallExample.h"
 #include "SymbolicFactorGraph.h"
 #include "SymbolicBayesNet.h"
+#include "FactorGraph-inl.h"
 
 using namespace std;
 using namespace gtsam;
@@ -87,7 +88,7 @@ TEST( SymbolicFactorGraph, factors)
 }
 
 /* ************************************************************************* */
-TEST( GaussianFactorGraph, removeAndCombineFactors )
+TEST( SymbolicFactorGraph, removeAndCombineFactors )
 {
 	// create a test graph
 	GaussianFactorGraph factorGraph = createGaussianFactorGraph();
@@ -104,7 +105,7 @@ TEST( GaussianFactorGraph, removeAndCombineFactors )
 }
 
 /* ************************************************************************* */
-TEST( GaussianFactorGraph, eliminateOne )
+TEST( SymbolicFactorGraph, eliminateOne )
 {
 	// create a test graph
 	GaussianFactorGraph factorGraph = createGaussianFactorGraph();
@@ -140,6 +141,41 @@ TEST( GaussianFactorGraph, eliminate )
 	Ordering ordering;
 	ordering += "x2","l1","x1";
   SymbolicBayesNet actual = fg.eliminate(ordering);
+
+  CHECK(assert_equal(expected,actual));
+}
+
+/* ************************************************************************* */
+TEST( SymbolicFactorGraph, constructFromBayesNet )
+{
+	// create expected factor graph
+	FactorGraph<SymbolicFactor> expected;
+
+	list<string> f1_keys; f1_keys += "l1","x1","x2";
+	SymbolicFactor::shared_ptr f1(new SymbolicFactor(f1_keys));
+	expected.push_back(f1);
+
+	list<string> f2_keys; f2_keys += "x1","l1";
+	SymbolicFactor::shared_ptr f2(new SymbolicFactor(f2_keys));
+	expected.push_back(f2);
+
+	list<string> f3_keys; f3_keys += "x1";
+	SymbolicFactor::shared_ptr f3(new SymbolicFactor(f3_keys));
+	expected.push_back(f3);
+
+
+  // create Bayes Net
+  SymbolicConditional::shared_ptr x2(new SymbolicConditional("x2", "l1", "x1"));
+  SymbolicConditional::shared_ptr l1(new SymbolicConditional("l1", "x1"));
+  SymbolicConditional::shared_ptr x1(new SymbolicConditional("x1"));
+
+  SymbolicBayesNet bayesNet;
+  bayesNet.push_back(x2);
+  bayesNet.push_back(l1);
+  bayesNet.push_back(x1);
+
+  // create actual factor graph from a Bayes Net
+	FactorGraph<SymbolicFactor> actual(bayesNet);
 
   CHECK(assert_equal(expected,actual));
 }
