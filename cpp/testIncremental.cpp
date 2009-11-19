@@ -2,6 +2,8 @@
  * @file    testIncremental.cpp
  * @brief   Unit tests for graph-based iSAM
  * @author  Michael Kaess
+ * @author  Viorela Ila
+ * @author  Frank Dellaert
  */
 
 #include <boost/assign/std/list.hpp> // for operator +=
@@ -21,15 +23,6 @@ using namespace gtsam;
 typedef BayesTree<SymbolicConditional> SymbolicBayesTree;
 typedef BayesTree<GaussianConditional> GaussianBayesTree;
 
-
-// Conditionals for ASIA example from the tutorial with A and D evidence
-SymbolicConditional::shared_ptr B(new SymbolicConditional("B")), L(
-		new SymbolicConditional("L", "B")), E(
-		new SymbolicConditional("E", "B", "L")), S1(new SymbolicConditional("S",
-		"B", "L")), S2(new SymbolicConditional("S", "L", "B")), T(
-		new SymbolicConditional("T", "E", "L")), X(
-		new SymbolicConditional("X", "E"));
-
 /* ************************************************************************* */
 
 SymbolicBayesTree update(const SymbolicBayesTree& initial,
@@ -43,21 +36,20 @@ SymbolicBayesTree update(const SymbolicBayesTree& initial,
 	FactorGraph<SymbolicFactor> ELB_factors(*ELB);
 
 	// add it to the factor graph
-  factorGraph = combine(factorGraph, ELB_factors); // todo: potentially expensive
+  factorGraph.push_back(ELB_factors);
 
 	// get the SLB clique
 	SymbolicBayesTree::sharedClique SLB = initial["S"];
 	FactorGraph<SymbolicFactor> SLB_factors(*SLB);
 
 	// add it to the factor graph
-  factorGraph = combine(factorGraph, SLB_factors);
+	factorGraph.push_back(SLB_factors);
 
 	// now add the new factor
 	factorGraph.push_back(newFactor);
 
-	// create an ordering ESLB
-	Ordering ordering;
-	ordering += "E","S","L","B";
+	// create an ordering BELS
+	Ordering ordering = factorGraph.getOrdering();
 
 	// eliminate into a Bayes net
 	SymbolicBayesNet bayesNet = eliminate<SymbolicFactor,SymbolicConditional>(factorGraph,ordering);
@@ -81,21 +73,37 @@ SymbolicBayesTree update(const SymbolicBayesTree& initial,
 /* ************************************************************************* */
 TEST( BayesTree, iSAM )
 {
+	// Conditionals for ASIA example from the tutorial with A and D evidence
+	SymbolicConditional::shared_ptr
+		B(new SymbolicConditional("B")),
+		L(new SymbolicConditional("L", "B")),
+		E(new SymbolicConditional("E", "B", "L")),
+		S(new SymbolicConditional("S", "L", "B")),
+		T(new SymbolicConditional("T", "E", "L")),
+		X(new SymbolicConditional("X", "E"));
+
 	// Create using insert
 	SymbolicBayesTree bayesTree;
 	bayesTree.insert(B);
 	bayesTree.insert(L);
 	bayesTree.insert(E);
-	bayesTree.insert(S2);
+	bayesTree.insert(S);
 	bayesTree.insert(T);
 	bayesTree.insert(X);
 
+	// New conditionals in modified top of the tree
+	SymbolicConditional::shared_ptr
+		S_(new SymbolicConditional("S")),
+		L_(new SymbolicConditional("L", "S")),
+		E_(new SymbolicConditional("E", "L", "S")),
+		B_(new SymbolicConditional("B", "E", "L", "S"));
+
 	// Create expected Bayes tree
 	SymbolicBayesTree expected;
-	expected.insert(B);
-	expected.insert(L);
-	expected.insert(S1);
-	expected.insert(E);
+	expected.insert(S_);
+	expected.insert(L_);
+	expected.insert(E_);
+	expected.insert(B_);
 	expected.insert(T);
 	expected.insert(X);
 
