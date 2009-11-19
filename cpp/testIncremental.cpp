@@ -31,19 +31,28 @@ SymbolicBayesTree update(const SymbolicBayesTree& initial,
 	// create an empty factor graph
 	SymbolicFactorGraph factorGraph;
 
-	// get the ELB clique
-	SymbolicBayesTree::sharedClique ELB = initial["B"];
-	FactorGraph<SymbolicFactor> ELB_factors(*ELB);
+	// process each key of the new factor
+	BOOST_FOREACH(string key, newFactor->keys()) {
+		// todo: add path to root
 
-	// add it to the factor graph
-  factorGraph.push_back(ELB_factors);
+		// only add if key is not yet in the factor graph
+		std::list<std::string> keys = factorGraph.keys();
+		if (find(keys.begin(), keys.end(), key) == keys.end()) {
 
-	// get the SLB clique
-	SymbolicBayesTree::sharedClique SLB = initial["S"];
-	FactorGraph<SymbolicFactor> SLB_factors(*SLB);
+			// get the clique
+			SymbolicBayesTree::sharedClique clique = initial[key];
+			FactorGraph<SymbolicFactor> clique_factors(*clique);
 
-	// add it to the factor graph
-	factorGraph.push_back(SLB_factors);
+			// add it to the factor graph
+			factorGraph.push_back(clique_factors);
+		}
+	}
+
+	// todo: automatically generate list of orphans, including subtrees!
+	std::list<SymbolicBayesTree::sharedClique> orphans;
+	SymbolicBayesTree::sharedClique TEL = initial["T"];
+	SymbolicBayesTree::sharedClique XE = initial["X"];
+	orphans += TEL, XE;
 
 	// now add the new factor
 	factorGraph.push_back(newFactor);
@@ -57,15 +66,33 @@ SymbolicBayesTree update(const SymbolicBayesTree& initial,
 	// turn back into a Bayes Tree
 	BayesTree<SymbolicConditional> newTree(bayesNet);
 
-	// get the orphan cliques
-	SymbolicBayesTree::sharedClique TEL = initial["T"];
-	SymbolicBayesTree::sharedClique XE = initial["X"];
-
-  // get clique from new tree to attach to
-	SymbolicBayesTree::sharedClique new_ELB = newTree["E"];
-
 	// add orphans to the bottom of the new tree
-  new_ELB->children_ += TEL,XE;
+	BOOST_FOREACH(SymbolicBayesTree::sharedClique orphan, orphans) {
+		std::list<std::string>::const_iterator it = orphan->separator_.begin();
+		for (; it != orphan->separator_.end(); it++) {
+
+			// get clique from new tree to attach to
+			SymbolicBayesTree::sharedClique clique = newTree[*it];
+
+			// check if all conditionals in there, only add once
+			bool is_subset = true;
+			std::list<std::string>::const_iterator it2 = orphan->separator_.begin();
+			for (; it2 != orphan->separator_.end(); it2++) {
+				// if any one is not included, then we have to stop and search for another clique
+				std::list<std::string> keys = clique->keys();
+				if (find(keys.begin(), keys.end(), *it2) == keys.end()) {
+					is_subset = false;
+					break;
+				}
+			}
+
+			// this clique contains all the keys of the orphan, so we can add the orphan as a child  todo: what about the tree below the orphan?
+			if (is_subset) {
+				clique->children_ += orphan;
+				break;
+			}
+		}
+	}
 
 	return newTree;
 }
@@ -90,6 +117,8 @@ TEST( BayesTree, iSAM )
 	bayesTree.insert(S);
 	bayesTree.insert(T);
 	bayesTree.insert(X);
+
+	// Now we modify the Bayes tree by inserting a new factor over B and S
 
 	// New conditionals in modified top of the tree
 	SymbolicConditional::shared_ptr
