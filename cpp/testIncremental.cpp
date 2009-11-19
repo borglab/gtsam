@@ -25,8 +25,9 @@ typedef BayesTree<GaussianConditional> GaussianBayesTree;
 // Conditionals for ASIA example from the tutorial with A and D evidence
 SymbolicConditional::shared_ptr B(new SymbolicConditional("B")), L(
 		new SymbolicConditional("L", "B")), E(
-		new SymbolicConditional("E", "B", "L")), S(new SymbolicConditional("S",
-		"L", "B")), T(new SymbolicConditional("T", "E", "L")), X(
+		new SymbolicConditional("E", "B", "L")), S1(new SymbolicConditional("S",
+		"B", "L")), S2(new SymbolicConditional("S", "L", "B")), T(
+		new SymbolicConditional("T", "E", "L")), X(
 		new SymbolicConditional("X", "E"));
 
 /* ************************************************************************* */
@@ -85,7 +86,7 @@ TEST( BayesTree, iSAM )
 	bayesTree.insert(B);
 	bayesTree.insert(L);
 	bayesTree.insert(E);
-	bayesTree.insert(S);
+	bayesTree.insert(S2);
 	bayesTree.insert(T);
 	bayesTree.insert(X);
 
@@ -93,7 +94,7 @@ TEST( BayesTree, iSAM )
 	SymbolicBayesTree expected;
 	expected.insert(B);
 	expected.insert(L);
-	expected.insert(S);
+	expected.insert(S1);
 	expected.insert(E);
 	expected.insert(T);
 	expected.insert(X);
@@ -107,7 +108,7 @@ TEST( BayesTree, iSAM )
 	SymbolicBayesTree actual = update(bayesTree, newFactor);
 
 	// Check whether the same
-  //CHECK(assert_equal(expected,actual));
+  CHECK(assert_equal(expected,actual));
 }
 
 /* ************************************************************************* */

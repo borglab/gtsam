@@ -199,11 +199,6 @@ namespace gtsam {
 			const pair<string,typename BayesTree<Conditional>::sharedClique >& v1,
 			const pair<string,typename BayesTree<Conditional>::sharedClique >& v2
 	) {
-//		cout << v1.first << " =? " << v2.first << endl;
-//		cout << (v1.first == v2.first) << endl;
-//		cout << v1.second->equals(*(v2.second)) << endl;
-//		v1.second->print("v1");
-//		v2.second->print("v2");
 		return v1.first == v2.first && v1.second->equals(*(v2.second));
 	}
 
