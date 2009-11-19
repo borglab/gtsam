@@ -198,7 +198,7 @@ TEST (SQP, problem1_sqp ) {
 				new GaussianFactor("x", lam*sub(gradG, 0,1, 0,1), // scaled gradG(:,1)
 								   "y", lam*sub(gradG, 0,1, 1,2), // scaled gradG(:,2)
 								   "lam", eye(1),     // dlam term
-								   Vector_(1.0, 0.0),             // rhs is zero
+								   Vector_(1, 0.0),             // rhs is zero
 								   1.0));                         // arbitrary sigma
 
 		// create the actual constraint
@@ -317,6 +317,69 @@ TEST (SQP, two_pose_truth ) {
 	expected.insert("l1", Vector_(2, 1.0, 6.0));
 	CHECK(assert_equal(expected, *actual, 1e-5));
 }
+
+// Test of binary nonlinear equality constraint disabled until nonlinear constraints work
+
+///**
+// *  Version that actually uses nonlinear equality constraints
+// *  to to perform optimization.  Same as above, but no
+// *  equality constraint on x2, and two landmarks that
+// *  should be the same.
+// */
+//TEST (SQP, two_pose ) {
+//	// position (1, 1) constraint for x1
+//	VectorConfig feas;
+//	feas.insert("x1", Vector_(2, 1.0, 1.0));
+//
+//	// constant constraint on x1
+//	shared_eq ef1(new NonlinearEquality<VectorConfig>("x1", feas, 2, *vector_compare));
+//
+//	// measurement from x1 to l1
+//	Vector z1 = Vector_(2, 0.0, 5.0);
+//	double sigma1 = 0.1;
+//	shared f1(new Simulated2DMeasurement(z1, sigma1, "x1", "l1"));
+//
+//	// measurement from x2 to l2
+//	Vector z2 = Vector_(2, -4.0, 0.0);
+//	double sigma2 = 0.1;
+//	shared f2(new Simulated2DMeasurement(z2, sigma2, "x2", "l1"));
+//
+//	// equality constraint between l1 and l2
+//	boost::shared_ptr<NonlinearConstraint<VectorConfig> > c1(
+//			new NonlinearConstraint<VectorConfig>(
+//					"l1", "l2",        // specify nodes constrained
+//					*g_function,       // evaluate the cost
+//					*gradG_function)); // construct the gradient of g(x)
+//
+//	// construct the graph
+//	NLGraph graph;
+//	graph.push_back(ef1);
+//	graph.push_back(c1);
+//	graph.push_back(f1);
+//	graph.push_back(f2);
+//
+//	// create an initial estimate
+//	boost::shared_ptr<VectorConfig> initialEstimate(new VectorConfig(feas)); // must start with feasible set
+//	initialEstimate->insert("l1", Vector_(2, 1.0, 6.0)); // ground truth
+//	//initialEstimate->insert("l1", Vector_(2, 1.2, 5.6)); // with small error
+//
+//	// optimize the graph
+//	Ordering ordering;
+//	ordering += "x1", "x2", "l1";
+//	Optimizer optimizer(graph, ordering, initialEstimate, 1e-5);
+//
+//	// display solution
+//	double relativeThreshold = 1e-5;
+//	double absoluteThreshold = 1e-5;
+//	Optimizer act_opt = optimizer.gaussNewton(relativeThreshold, absoluteThreshold);
+//	boost::shared_ptr<const VectorConfig> actual = act_opt.config();
+//	//actual->print("Configuration after optimization");
+//
+//	// verify
+//	VectorConfig expected(feas);
+//	expected.insert("l1", Vector_(2, 1.0, 6.0));
+//	CHECK(assert_equal(expected, *actual, 1e-5));
+//}
 
 /* ************************************************************************* */
 int main() { TestResult tr; return TestRegistry::runAllTests(tr); }

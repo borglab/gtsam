@@ -521,10 +521,10 @@
 <useDefaultCommand>true</useDefaultCommand>
 <runAllBuilders>true</runAllBuilders>
 </target>
-<target name="testIncremental.run" path="cpp" targetID="org.eclipse.cdt.build.MakeTargetBuilder">
+<target name="testNonlinearConstraint.run" path="cpp" targetID="org.eclipse.cdt.build.MakeTargetBuilder">
 <buildCommand>make</buildCommand>
 <buildArguments/>
-<buildTarget>testIncremental.run</buildTarget>
+<buildTarget>testNonlinearConstraint.run</buildTarget>
 <stopOnError>true</stopOnError>
 <useDefaultCommand>true</useDefaultCommand>
 <runAllBuilders>true</runAllBuilders>
