@@ -86,6 +86,9 @@ namespace gtsam {
 		/** Add a factor */
 		void push_back(sharedFactor factor);
 
+		/** push back many factors */
+		void push_back(const FactorGraph<Factor>& factors);
+
 		/** return keys in some random order */
 		Ordering keys() const;
 

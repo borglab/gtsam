@@ -181,6 +181,41 @@ TEST( SymbolicFactorGraph, constructFromBayesNet )
 }
 
 /* ************************************************************************* */
+TEST( SymbolicFactorGraph, push_back )
+{
+	// Create two factor graphs and expected combined graph
+	SymbolicFactorGraph fg1, fg2, expected;
+
+	list<string> f1_keys; f1_keys += "x1";
+	SymbolicFactor::shared_ptr f1(new SymbolicFactor(f1_keys));
+	fg1.push_back(f1);
+	expected.push_back(f1);
+
+	list<string> f2_keys; f2_keys.push_back("x1"); f2_keys.push_back("x2");
+	SymbolicFactor::shared_ptr f2(new SymbolicFactor(f2_keys));
+	fg1.push_back(f2);
+	expected.push_back(f2);
+
+	list<string> f3_keys; f3_keys.push_back("l1"); f3_keys.push_back("x1");
+	SymbolicFactor::shared_ptr f3(new SymbolicFactor(f3_keys));
+	fg2.push_back(f3);
+	expected.push_back(f3);
+
+	list<string> f4_keys; f4_keys.push_back("l1"); f4_keys.push_back("x2");
+	SymbolicFactor::shared_ptr f4(new SymbolicFactor(f4_keys));
+	fg2.push_back(f4);
+	expected.push_back(f4);
+
+	// combine
+	SymbolicFactorGraph actual = combine(fg1,fg2);
+	CHECK(assert_equal(expected, actual));
+
+	// combine using push_back
+	fg1.push_back(fg2);
+	CHECK(assert_equal(expected, fg1));
+}
+
+/* ************************************************************************* */
 int main() {
 	TestResult tr;
 	return TestRegistry::runAllTests(tr);

@@ -101,6 +101,14 @@ void FactorGraph<Factor>::push_back(sharedFactor factor) {
 
 /* ************************************************************************* */
 template<class Factor>
+void FactorGraph<Factor>::push_back(const FactorGraph<Factor>& factors) {
+	const_iterator factor = factors.begin();
+	for (; factor!= factors.end(); factor++)
+		push_back(*factor);
+}
+
+/* ************************************************************************* */
+template<class Factor>
 Ordering FactorGraph<Factor>::keys() const {
 	string key;
 	Ordering keys;
@@ -230,16 +238,11 @@ removeAndCombineFactors(FactorGraph<Factor>& factorGraph, const string& key)
 /* ************************************************************************* */
 template<class Factor>
 FactorGraph<Factor> combine(const FactorGraph<Factor>& fg1, const FactorGraph<Factor>& fg2) {
-
-	typedef FactorGraph<Factor> FG;
-
 	// create new linear factor graph equal to the first one
-	FG fg = fg1;
+	FactorGraph<Factor> fg = fg1;
 
 	// add the second factors_ in the graph
-	typename FG::const_iterator factor = fg2.begin();
-	for (; factor!= fg2.end(); factor++)
-		fg.push_back(*factor);
+	fg.push_back(fg2);
 
 	return fg;
 }
