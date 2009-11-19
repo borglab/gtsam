@@ -63,6 +63,17 @@ namespace gtsam {
 		}
 
 		/**
+		 * Three parents
+		 */
+		SymbolicConditional(const std::string& key, const std::string& parent1,
+				const std::string& parent2, const std::string& parent3) :
+			Conditional(key) {
+			parents_.push_back(parent1);
+			parents_.push_back(parent2);
+			parents_.push_back(parent3);
+		}
+
+		/**
 		 * A list
 		 */
 		SymbolicConditional(const std::string& key,
