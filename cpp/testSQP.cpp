@@ -11,6 +11,7 @@
 #include <boost/foreach.hpp>
 #include <CppUnitLite/TestHarness.h>
 #include <GaussianFactorGraph.h>
+#include <NonlinearFactor.h>
 #include <NonlinearEquality.h>
 #include <NonlinearFactorGraph.h>
 #include <NonlinearOptimizer.h>
@@ -251,7 +252,9 @@ bool vector_compare(const std::string& key,
 }
 typedef NonlinearFactorGraph<VectorConfig> NLGraph;
 typedef boost::shared_ptr<NonlinearFactor<VectorConfig> > shared;
+typedef boost::shared_ptr<NonlinearConstraint<VectorConfig> > shared_c;
 typedef boost::shared_ptr<NonlinearEquality<VectorConfig> > shared_eq;
+typedef boost::shared_ptr<VectorConfig> shared_cfg;
 typedef NonlinearOptimizer<NLGraph,VectorConfig> Optimizer;
 /**
  * Determining a ground truth nonlinear system
@@ -328,69 +331,103 @@ Matrix grad_g2(const VectorConfig& config, const std::string& key) {
 }
 } // \namespace sqp_test1
 
-//typedef SQPOptimizer<NLGraph,VectorConfig> Optimizer;
-//
-///**
-// *  Version that actually uses nonlinear equality constraints
-// *  to to perform optimization.  Same as above, but no
-// *  equality constraint on x2, and two landmarks that
-// *  should be the same.
-// */
-//TEST (SQP, two_pose ) {
-//	// position (1, 1) constraint for x1
-//	VectorConfig feas;
-//	feas.insert("x1", Vector_(2, 1.0, 1.0));
-//
-//	// constant constraint on x1
-//	shared_eq ef1(new NonlinearEquality<VectorConfig>("x1", feas, 2, *vector_compare));
-//
-//	// measurement from x1 to l1
-//	Vector z1 = Vector_(2, 0.0, 5.0);
-//	double sigma1 = 0.1;
-//	shared f1(new Simulated2DMeasurement(z1, sigma1, "x1", "l1"));
-//
-//	// measurement from x2 to l2
-//	Vector z2 = Vector_(2, -4.0, 0.0);
-//	double sigma2 = 0.1;
-//	shared f2(new Simulated2DMeasurement(z2, sigma2, "x2", "l2"));
-//
-//	// equality constraint between l1 and l2
-//	boost::shared_ptr<NonlinearConstraint2<VectorConfig> > c1(
-//			new NonlinearConstraint2<VectorConfig>(
-//					"l1", *sqp_test1::grad_g1,
-//					"l2", *sqp_test1::grad_g2,
-//					*sqp_test1::g_func, 2, "L_l1l2"));
-//
-//	// construct the graph
-//	NLGraph graph;
-//	graph.push_back(ef1);
-//	graph.push_back(c1);
-//	graph.push_back(f1);
-//	graph.push_back(f2);
-//
-//	// create an initial estimate
-//	boost::shared_ptr<VectorConfig> initialEstimate(new VectorConfig(feas)); // must start with feasible set
-//	initialEstimate->insert("l1", Vector_(2, 1.0, 6.0)); // ground truth
-//	initialEstimate->insert("l2", Vector_(2, -4.0, 0.0)); // starting with a separate reference frame
-//	initialEstimate->insert("x2", Vector_(2, 0.0, 0.0)); // other pose starts at origin
-//
-//	// optimize the graph
-////	Ordering ordering;
-////	ordering += "x1", "x2", "l1";
-////	NewOptimizer optimizer(graph, ordering, initialEstimate, 1e-5);
-////
-////	// display solution
-////	double relativeThreshold = 1e-5;
-////	double absoluteThreshold = 1e-5;
-////	Optimizer act_opt = optimizer.gaussNewton(relativeThreshold, absoluteThreshold);
-////	boost::shared_ptr<const VectorConfig> actual = act_opt.config();
-////	//actual->print("Configuration after optimization");
-////
-////	// verify
-////	VectorConfig expected(feas);
-////	expected.insert("l1", Vector_(2, 1.0, 6.0));
-////	CHECK(assert_equal(expected, *actual, 1e-5));
-//}
+/**
+ *  Version that actually uses nonlinear equality constraints
+ *  to to perform optimization.  Same as above, but no
+ *  equality constraint on x2, and two landmarks that
+ *  should be the same.
+ */
+TEST (SQP, two_pose ) {
+	// position (1, 1) constraint for x1
+	VectorConfig feas;
+	feas.insert("x1", Vector_(2, 1.0, 1.0));
+
+	// constant constraint on x1
+	shared_eq ef1(new NonlinearEquality<VectorConfig>("x1", feas, 2, *vector_compare));
+
+	// measurement from x1 to l1
+	Vector z1 = Vector_(2, 0.0, 5.0);
+	double sigma1 = 0.1;
+	shared f1(new Simulated2DMeasurement(z1, sigma1, "x1", "l1"));
+
+	// measurement from x2 to l2
+	Vector z2 = Vector_(2, -4.0, 0.0);
+	double sigma2 = 0.1;
+	shared f2(new Simulated2DMeasurement(z2, sigma2, "x2", "l2"));
+
+	// equality constraint between l1 and l2
+	boost::shared_ptr<NonlinearConstraint2<VectorConfig> > c1(
+			new NonlinearConstraint2<VectorConfig>(
+					"l1", *sqp_test1::grad_g1,
+					"l2", *sqp_test1::grad_g2,
+					*sqp_test1::g_func, 2, "L_l1l2"));
+
+	// construct the graph
+	NLGraph graph;
+	graph.push_back(ef1);
+	graph.push_back(c1);
+	graph.push_back(f1);
+	graph.push_back(f2);
+
+	// create an initial estimate
+	shared_cfg initialEstimate(new VectorConfig(feas)); // must start with feasible set
+	initialEstimate->insert("l1", Vector_(2, 1.0, 6.0)); // ground truth
+	initialEstimate->insert("l2", Vector_(2, -4.0, 0.0)); // starting with a separate reference frame
+	initialEstimate->insert("x2", Vector_(2, 0.0, 0.0)); // other pose starts at origin
+
+	// create an initial estimate for the lagrange multiplier
+	shared_cfg initLagrange(new VectorConfig);
+	initLagrange->insert("L_l1l2", Vector_(2, 1.0, 1.0));
+
+	// create state config variables and initialize them
+	VectorConfig state(*initialEstimate), state_lam(*initLagrange);
+
+	// optimization loop
+	int maxIt = 1;
+	for (int i = 0; i<maxIt; ++i) {
+ 		// linearize the graph
+		GaussianFactorGraph fg;
+		typedef FactorGraph<NonlinearFactor<VectorConfig> >::const_iterator const_iterator;
+		typedef NonlinearConstraint<VectorConfig> NLConstraint;
+		// iterate over all factors
+		for (const_iterator factor = graph.begin(); factor < graph.end(); factor++) {
+			const shared_c constraint = boost::shared_dynamic_cast<NLConstraint >(*factor);
+			if (constraint == NULL) {
+				// if a regular factor, linearize using the default linearization
+				GaussianFactor::shared_ptr f = (*factor)->linearize(state);
+				fg.push_back(f);
+			} else {
+				// if a constraint, linearize using the constraint method (2 configs)
+				GaussianFactor::shared_ptr f, c;
+				boost::tie(f,c) = constraint->linearize(state, state_lam);
+				fg.push_back(f);
+				fg.push_back(c);
+			}
+		}
+		fg.print("Linearized graph");
+
+		// create an ordering
+		Ordering ordering;
+		ordering += "x1", "x2", "l1", "l2", "L_l1l2";
+
+		// optimize linear graph to get full delta config
+		VectorConfig delta = fg.optimize(ordering).scale(-1.0);
+		delta.print("Delta Config");
+
+		// update both state variables
+		state = state.exmap(delta);
+		state.print("newState");
+		state_lam = state_lam.exmap(delta);
+		state_lam.print("newStateLam");
+	}
+
+	// verify
+	VectorConfig expected(feas);
+	expected.insert("l1", Vector_(2, 1.0, 6.0));
+	expected.insert("l2", Vector_(2, 1.0, 6.0));
+	expected.insert("x2", Vector_(2, 5.0, 6.0));
+	CHECK(assert_equal(expected, state, 1e-5));
+}
 
 /* ************************************************************************* */
 int main() { TestResult tr; return TestRegistry::runAllTests(tr); }
