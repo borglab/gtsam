@@ -338,6 +338,7 @@ Matrix grad_g2(const VectorConfig& config, const std::string& key) {
  *  should be the same.
  */
 TEST (SQP, two_pose ) {
+	bool verbose = false;
 	// position (1, 1) constraint for x1
 	VectorConfig feas;
 	feas.insert("x1", Vector_(2, 1.0, 1.0));
@@ -404,7 +405,7 @@ TEST (SQP, two_pose ) {
 				fg.push_back(c);
 			}
 		}
-		fg.print("Linearized graph");
+		if (verbose) fg.print("Linearized graph");
 
 		// create an ordering
 		Ordering ordering;
@@ -412,13 +413,13 @@ TEST (SQP, two_pose ) {
 
 		// optimize linear graph to get full delta config
 		VectorConfig delta = fg.optimize(ordering).scale(-1.0);
-		delta.print("Delta Config");
+		if (verbose) delta.print("Delta Config");
 
 		// update both state variables
 		state = state.exmap(delta);
-		state.print("newState");
+		if (verbose) state.print("newState");
 		state_lam = state_lam.exmap(delta);
-		state_lam.print("newStateLam");
+		if (verbose) state_lam.print("newStateLam");
 	}
 
 	// verify
