@@ -13,6 +13,8 @@
 #include <list>
 #include <sstream>
 #include <stdexcept>
+#include <functional>
+
 #include <boost/foreach.hpp>
 #include <boost/tuple/tuple.hpp>
 #include <colamd/colamd.h>
@@ -110,10 +112,9 @@ void FactorGraph<Factor>::push_back(const FactorGraph<Factor>& factors) {
 /* ************************************************************************* */
 template<class Factor>
 Ordering FactorGraph<Factor>::keys() const {
-	string key;
 	Ordering keys;
-	list<int> indices_key;
-	FOREACH_PAIR(key, indices_key, indices_) keys.push_back(key);
+	transform(indices_.begin(), indices_.end(),
+			back_inserter(keys), _Select1st<Indices::value_type>());
 	return keys;
 }
 
