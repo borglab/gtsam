@@ -89,6 +89,21 @@ TEST( VectorConfig, plus)
 }
 
 /* ************************************************************************* */
+TEST( VectorConfig, scale) {
+	VectorConfig cfg;
+	cfg.insert("x", Vector_(2, 1.0, 2.0));
+	cfg.insert("y", Vector_(2,-1.0,-2.0));
+
+	VectorConfig actual = cfg.scale(2.0);
+
+	VectorConfig expected;
+	expected.insert("x", Vector_(2, 2.0, 4.0));
+	expected.insert("y", Vector_(2,-2.0,-4.0));
+
+	CHECK(assert_equal(actual, expected));
+}
+
+/* ************************************************************************* */
 #ifdef HAVE_BOOST_SERIALIZATION
 TEST( VectorConfig, serialize)
 {

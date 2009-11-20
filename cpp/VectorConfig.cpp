@@ -27,6 +27,16 @@ void check_size(const string& key, const Vector & vj, const Vector & dj) {
 }
 
 /* ************************************************************************* */
+VectorConfig VectorConfig::scale(double gain) {
+	VectorConfig scaled;
+	string key; Vector val;
+	FOREACH_PAIR(key, val, values) {
+		scaled.insert(key, gain*val);
+	}
+	return scaled;
+}
+
+/* ************************************************************************* */
 VectorConfig VectorConfig::exmap(const VectorConfig & delta) const
 {
 	VectorConfig newConfig;
