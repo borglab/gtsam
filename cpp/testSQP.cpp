@@ -192,7 +192,7 @@ TEST (SQP, problem1_sqp ) {
 		 * to zero
 		 * lam*gradG*dx + dlam + lam
 		 * formulated in matrix form as:
-		 * [lam*gradG eye(1)] [dx; dlam] = lam
+		 * [lam*gradG eye(1)] [dx; dlam] = zero
 		 */
 		GaussianFactor::shared_ptr f2(
 				new GaussianFactor("x", lam*sub(gradG, 0,1, 0,1), // scaled gradG(:,1)

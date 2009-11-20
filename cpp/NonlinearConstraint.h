@@ -8,6 +8,7 @@
 #pragma once
 
 #include <map>
+#include <iostream>
 #include "NonlinearFactor.h"
 
 namespace gtsam {
@@ -81,7 +82,7 @@ public:
  * A unary constraint with arbitrary cost and gradient functions
  */
 template <class Config>
-class NonlinearConstraint1 :  NonlinearConstraint<Config> {
+class NonlinearConstraint1 : public NonlinearConstraint<Config> {
 
 private:
 	/** calculates the constraint function of the current config
@@ -122,21 +123,17 @@ public:
 			const std::string& lagrange_key="") :
 				NonlinearConstraint<Config>(lagrange_key, dim_constraint),
 				g_(g), gradG_(gradG), key_(key) {
-		// set a good lagrange key here - should do something smart to find a unique one
+		// set a good lagrange key here
+		// TODO:should do something smart to find a unique one
 		if (lagrange_key == "")
 			this->lagrange_key_ = "L_" + key;
 	}
 
 	/** Print */
-	void print(const std::string& s = "") const {
-		//FIXME: dummy implementation
-	}
+	void print(const std::string& s = "") const;
 
 	/** Check if two factors are equal */
-	bool equals(const Factor<Config>& f, double tol=1e-9) const {
-		//FIXME: dummy implementation
-		return false;
-	}
+	bool equals(const Factor<Config>& f, double tol=1e-9) const;
 
 	/** error function - returns the result of the constraint function */
 	inline Vector error_vector(const Config& c) const {
@@ -151,13 +148,7 @@ public:
 	 * @return a pair GaussianFactor (probabilistic) and GaussianFactor (constraint)
 	 */
 	std::pair<GaussianFactor::shared_ptr, GaussianFactor::shared_ptr>
-	linearize(const Config& config, const VectorConfig& lagrange) const {
-		//FIXME: dummy implementation
-		GaussianFactor::shared_ptr factor(new GaussianFactor);
-		GaussianFactor::shared_ptr constraint(new GaussianFactor);
-		return std::make_pair(factor, constraint);
-	}
-
+	linearize(const Config& config, const VectorConfig& lagrange) const;
 };
 
 
