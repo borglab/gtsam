@@ -20,7 +20,8 @@
 
 // templated implementations
 #include <NonlinearFactorGraph-inl.h>
-#include "NonlinearOptimizer-inl.h"
+#include <NonlinearConstraint-inl.h>
+#include <NonlinearOptimizer-inl.h>
 
 using namespace std;
 using namespace gtsam;
@@ -219,19 +220,11 @@ TEST (SQP, problem1_sqp ) {
 		// solve
 		Ordering ord;
 		ord += "x", "y", "lam";
-		VectorConfig delta = fg.optimize(ord);
+		VectorConfig delta = fg.optimize(ord).scale(-1.0); // flip sign
 		if (verbose) delta.print("Delta");
 
 		// update initial estimate
-		double gain = 1.0;
-		// Note:
-		// It appears that exmap uses adding rather than subtracting to
-		// update, which breaks the system.
-		//VectorConfig newState = state.exmap(delta);
-		VectorConfig newState;
-		newState.insert("x", state["x"]-gain*delta["x"]);
-		newState.insert("y", state["y"]-gain*delta["y"]);
-		newState.insert("lam", state["lam"]-gain*delta["lam"]);
+		VectorConfig newState = state.exmap(delta);
 
 		// set the state to the updated state
 		state = newState;
@@ -318,8 +311,25 @@ TEST (SQP, two_pose_truth ) {
 	CHECK(assert_equal(expected, *actual, 1e-5));
 }
 
-// Test of binary nonlinear equality constraint disabled until nonlinear constraints work
+namespace sqp_test1 {
+/** g(x) = x-y = 0 */
+Vector g_func(const VectorConfig& config, const std::string& key1, const std::string& key2) {
+	return config[key1]-config[key2];
+}
 
+/** gradient at l1 */
+Matrix grad_g1(const VectorConfig& config, const std::string& key) {
+	return eye(2);
+}
+
+/** gradient at l2 */
+Matrix grad_g2(const VectorConfig& config, const std::string& key) {
+	return -1*eye(2);
+}
+} // \namespace sqp_test1
+
+//typedef SQPOptimizer<NLGraph,VectorConfig> Optimizer;
+//
 ///**
 // *  Version that actually uses nonlinear equality constraints
 // *  to to perform optimization.  Same as above, but no
@@ -342,14 +352,14 @@ TEST (SQP, two_pose_truth ) {
 //	// measurement from x2 to l2
 //	Vector z2 = Vector_(2, -4.0, 0.0);
 //	double sigma2 = 0.1;
-//	shared f2(new Simulated2DMeasurement(z2, sigma2, "x2", "l1"));
+//	shared f2(new Simulated2DMeasurement(z2, sigma2, "x2", "l2"));
 //
 //	// equality constraint between l1 and l2
-//	boost::shared_ptr<NonlinearConstraint<VectorConfig> > c1(
-//			new NonlinearConstraint<VectorConfig>(
-//					"l1", "l2",        // specify nodes constrained
-//					*g_function,       // evaluate the cost
-//					*gradG_function)); // construct the gradient of g(x)
+//	boost::shared_ptr<NonlinearConstraint2<VectorConfig> > c1(
+//			new NonlinearConstraint2<VectorConfig>(
+//					"l1", *sqp_test1::grad_g1,
+//					"l2", *sqp_test1::grad_g2,
+//					*sqp_test1::g_func, 2, "L_l1l2"));
 //
 //	// construct the graph
 //	NLGraph graph;
@@ -361,24 +371,25 @@ TEST (SQP, two_pose_truth ) {
 //	// create an initial estimate
 //	boost::shared_ptr<VectorConfig> initialEstimate(new VectorConfig(feas)); // must start with feasible set
 //	initialEstimate->insert("l1", Vector_(2, 1.0, 6.0)); // ground truth
-//	//initialEstimate->insert("l1", Vector_(2, 1.2, 5.6)); // with small error
+//	initialEstimate->insert("l2", Vector_(2, -4.0, 0.0)); // starting with a separate reference frame
+//	initialEstimate->insert("x2", Vector_(2, 0.0, 0.0)); // other pose starts at origin
 //
 //	// optimize the graph
-//	Ordering ordering;
-//	ordering += "x1", "x2", "l1";
-//	Optimizer optimizer(graph, ordering, initialEstimate, 1e-5);
-//
-//	// display solution
-//	double relativeThreshold = 1e-5;
-//	double absoluteThreshold = 1e-5;
-//	Optimizer act_opt = optimizer.gaussNewton(relativeThreshold, absoluteThreshold);
-//	boost::shared_ptr<const VectorConfig> actual = act_opt.config();
-//	//actual->print("Configuration after optimization");
-//
-//	// verify
-//	VectorConfig expected(feas);
-//	expected.insert("l1", Vector_(2, 1.0, 6.0));
-//	CHECK(assert_equal(expected, *actual, 1e-5));
+////	Ordering ordering;
+////	ordering += "x1", "x2", "l1";
+////	NewOptimizer optimizer(graph, ordering, initialEstimate, 1e-5);
+////
+////	// display solution
+////	double relativeThreshold = 1e-5;
+////	double absoluteThreshold = 1e-5;
+////	Optimizer act_opt = optimizer.gaussNewton(relativeThreshold, absoluteThreshold);
+////	boost::shared_ptr<const VectorConfig> actual = act_opt.config();
+////	//actual->print("Configuration after optimization");
+////
+////	// verify
+////	VectorConfig expected(feas);
+////	expected.insert("l1", Vector_(2, 1.0, 6.0));
+////	CHECK(assert_equal(expected, *actual, 1e-5));
 //}
 
 /* ************************************************************************* */
