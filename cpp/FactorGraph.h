@@ -92,6 +92,11 @@ namespace gtsam {
 		/** return keys in some random order */
 		Ordering keys() const;
 
+		/** Check whether a factor with this variable exists */
+		bool involves(const std::string& key) {
+			return !(indices_.find(key)==indices_.end());
+		}
+
 		/**
 		 * Compute colamd ordering
 		 */

@@ -528,6 +528,16 @@ TEST( GaussianFactorGraph, keys )
 }
 
 /* ************************************************************************* */
+TEST( GaussianFactorGraph, involves )
+{
+  GaussianFactorGraph fg = createGaussianFactorGraph();
+  CHECK(fg.involves("l1"));
+  CHECK(fg.involves("x1"));
+  CHECK(fg.involves("x2"));
+  CHECK(!fg.involves("x3"));
+}
+
+/* ************************************************************************* */
 // Tests ported from ConstrainedGaussianFactorGraph
 /* ************************************************************************* */
 
