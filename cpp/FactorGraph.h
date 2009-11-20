@@ -93,7 +93,7 @@ namespace gtsam {
 		Ordering keys() const;
 
 		/** Check whether a factor with this variable exists */
-		bool involves(const std::string& key) {
+		bool involves(const std::string& key) const {
 			return !(indices_.find(key)==indices_.end());
 		}
 
