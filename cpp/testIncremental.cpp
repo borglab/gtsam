@@ -31,28 +31,33 @@ SymbolicBayesTree update(const SymbolicBayesTree& initial,
 	// create an empty factor graph
 	SymbolicFactorGraph factorGraph;
 
+	// the list of orphaned subtrees
+	std::list<SymbolicBayesTree::sharedClique> orphans;
+
 	// process each key of the new factor
 	BOOST_FOREACH(string key, newFactor->keys()) {
 		// todo: add path to root
 
 		// only add if key is not yet in the factor graph
-		std::list<std::string> keys = factorGraph.keys();
-		if (find(keys.begin(), keys.end(), key) == keys.end()) {
+		if (!factorGraph.involves(key)) {
 
 			// get the clique
 			SymbolicBayesTree::sharedClique clique = initial[key];
+
+			// if in orphans, remove the clique
+			orphans.remove(clique);
+
+			// add children to orphans
+			BOOST_FOREACH(SymbolicBayesTree::sharedClique child, clique->children_)
+				orphans.push_back(child);
+
+			// convert to factors
 			FactorGraph<SymbolicFactor> clique_factors(*clique);
 
 			// add it to the factor graph
 			factorGraph.push_back(clique_factors);
 		}
 	}
-
-	// todo: automatically generate list of orphans, including subtrees!
-	std::list<SymbolicBayesTree::sharedClique> orphans;
-	SymbolicBayesTree::sharedClique TEL = initial["T"];
-	SymbolicBayesTree::sharedClique XE = initial["X"];
-	orphans += TEL, XE;
 
 	// now add the new factor
 	factorGraph.push_back(newFactor);
