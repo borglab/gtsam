@@ -79,7 +79,7 @@ namespace gtsam {
 			/** return the joint P(C1,C2), where C1==this. TODO: not a method? */
 			template<class Factor>
 			FactorGraph<Factor> joint(shared_ptr C2, shared_ptr root);
-		};
+};
 
 		typedef boost::shared_ptr<Clique> sharedClique;
 
@@ -102,6 +102,25 @@ namespace gtsam {
 				parent_clique->children_.push_back(new_clique);
 			}
 			return new_clique;
+		}
+
+		/** remove a clique: warning, can result in a forest */
+		void removeClique(sharedClique clique) {
+		  if (clique->parent_ != NULL) {
+		    clique->parent_->children_.remove(clique);
+		  } else {
+		  	// we remove the root clique: have to make another clique the root
+		  	if (clique->children_.empty()) {
+		  		root_.reset();
+		  	} else {
+		  	  root_ = *(clique->children_.begin());
+		  	}
+		  }
+		  BOOST_FOREACH(sharedClique child, clique->children_) {
+		  	child->parent_.reset();
+		  }
+			std::string key = *(clique->keys().begin());
+			nodes_.erase(key);
 		}
 
 	public:
@@ -160,6 +179,11 @@ namespace gtsam {
 		template<class Factor>
 		BayesNet<Conditional> jointBayesNet(const std::string& key1, const std::string& key2) const;
 
+		/** IMPERATIVE! Return the factor containing all nodes contaminated by key; also,
+		 * removes those entries from the Bayes Tree, resulting in a forest of orphans
+		 */
+		template<class Factor>
+		FactorGraph<Factor> removePath(const std::string& key);
 	}; // BayesTree
 
 } /// namespace gtsam

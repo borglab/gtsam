@@ -316,6 +316,37 @@ namespace gtsam {
 	}
 
 	/* ************************************************************************* */
+	template<class Conditional>
+	template<class Factor>
+	FactorGraph<Factor>
+	BayesTree<Conditional>::removePath(const string& key) {
+		sharedClique clique = (*this)[key];
+
+#if 0
+		cout << "removing:" << endl;
+		clique->print();
+		cout << "from" << endl;
+		typedef std::pair<string, sharedClique> sometype;
+		BOOST_FOREACH(sometype clique, nodes_) {
+			clique.second->print();
+		}
+#endif
+
+		// convert clique to factor
+		FactorGraph<Factor> factors(*clique);
+
+		while (!(clique->isRoot())) {
+			sharedClique old_clique = clique;
+			clique = old_clique->parent_;
+		  removeClique(old_clique);
+			factors.push_back(*clique);
+		}
+		removeClique(clique);
+
+		return factors;
+	}
+
+	/* ************************************************************************* */
 
 }
 /// namespace gtsam

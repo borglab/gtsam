@@ -11,6 +11,7 @@ using namespace boost::assign;
 
 #include "SymbolicBayesNet.h"
 #include "GaussianBayesNet.h"
+#include "SymbolicFactorGraph.h"
 #include "Ordering.h"
 #include "BayesTree-inl.h"
 #include "smallExample.h"
@@ -300,6 +301,60 @@ TEST( BayesTree, balanced_smoother_joint )
   push_front(expected4,"x4", zero(2), I, "x1", A41, sigma41);
 	GaussianBayesNet actual4 = bayesTree.jointBayesNet<GaussianFactor>("x4","x1");
 	CHECK(assert_equal(expected4,actual4,1e-4));
+}
+
+/* ************************************************************************* *
+   Bayes Tree, for testing conversion to a forest of orphans needed for incremental.
+       A,B
+   C|A    E|B
+   D|C    F|E
+/* ************************************************************************* */
+TEST( BayesTree, removePath )
+{
+	SymbolicConditional::shared_ptr A(new SymbolicConditional("A")),
+			B(new SymbolicConditional("B", "A")),
+			C(new SymbolicConditional("C", "A")),
+			D(new SymbolicConditional("D", "C")),
+			E(new SymbolicConditional("E", "B")),
+			F(new SymbolicConditional("F", "E"));
+	SymbolicBayesTree bayesTree;
+	bayesTree.insert(A);
+	bayesTree.insert(B);
+	bayesTree.insert(C);
+	bayesTree.insert(D);
+	bayesTree.insert(E);
+	bayesTree.insert(F);
+
+	// remove C, expected outcome: factor graph with ABC, Bayes Tree now contains two orphan trees: D|C and E|B,F|E
+	SymbolicFactorGraph expected;
+	list<string> keys;
+	keys += "A","C";
+	boost::shared_ptr<SymbolicFactor> _CA(new SymbolicFactor(keys));
+	expected.push_back(_CA);
+	keys.clear();
+	keys += "A","B";
+	boost::shared_ptr<SymbolicFactor> _BA(new SymbolicFactor(keys));
+	expected.push_back(_BA);
+	keys.clear();
+	keys += "A";
+	boost::shared_ptr<SymbolicFactor> _A(new SymbolicFactor(keys));
+	expected.push_back(_A);
+	SymbolicFactorGraph actual = bayesTree.removePath<SymbolicFactor>("C");
+  CHECK(assert_equal(expected, actual));
+
+	// remove A, nothing should happen (already removed)
+	SymbolicFactorGraph expected2; // empty factor
+  actual = bayesTree.removePath<SymbolicFactor>("A");
+//  CHECK(assert_equal(expected2, actual));
+
+  // remove E: factor graph with EB; E|B removed from second orphan tree
+	SymbolicFactorGraph expected3;
+	keys.clear();
+	keys += "C","A";
+	boost::shared_ptr<SymbolicFactor> CA(new SymbolicFactor(keys));
+  expected3.push_back(CA);
+  actual = bayesTree.removePath<SymbolicFactor>("E");
+//  CHECK(assert_equal(expected3, actual));
 }
 
 /* ************************************************************************* */
