@@ -27,7 +27,6 @@ TEST(GaussianFactorGraph, createSmoother)
 	// eliminate
 	Ordering ordering;
 	GaussianBayesNet bayesNet = fg2.eliminate(ordering);
-	bayesNet.print("bayesNet");
 	FactorGraph<GaussianFactor> p_x3 = marginalize<GaussianFactor,GaussianConditional>(bayesNet, Ordering("x3"));
 	FactorGraph<GaussianFactor> p_x1 = marginalize<GaussianFactor,GaussianConditional>(bayesNet, Ordering("x1"));
 	CHECK(assert_equal(p_x1,p_x3)); // should be the same because of symmetry
