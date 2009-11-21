@@ -127,10 +127,10 @@ TEST (SQP, problem1_choleski ) {
 
 	// verify that it converges to the nearest optimal point
 	VectorConfig expected;
+	expected.insert("lam", Vector_(1, -1.0));
 	expected.insert("x", Vector_(1, 2.12));
 	expected.insert("y", Vector_(1, -0.5));
-	CHECK(assert_equal(state["x"], expected["x"], 1e-2));
-	CHECK(assert_equal(state["y"], expected["y"], 1e-2));
+	CHECK(assert_equal(expected,state, 1e-2));
 }
 
 /**
