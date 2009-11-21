@@ -51,7 +51,7 @@ namespace gtsam {
 			Ordering keys() const;
 
 			/** print this node */
-			void print(const std::string& s = "Bayes tree node") const;
+			void print(const std::string& s = "") const;
 
 			/** The size *includes* the separator */
 			size_t size() const {
@@ -94,34 +94,10 @@ namespace gtsam {
 
 		/** add a clique */
 		sharedClique addClique(const sharedConditional& conditional,
-				sharedClique parent_clique = sharedClique()) {
-			sharedClique new_clique(new Clique(conditional));
-			nodes_.insert(make_pair(conditional->key(), new_clique));
-			if (parent_clique != NULL) {
-				new_clique->parent_ = parent_clique;
-				parent_clique->children_.push_back(new_clique);
-			}
-			return new_clique;
-		}
+				sharedClique parent_clique = sharedClique());
 
 		/** remove a clique: warning, can result in a forest */
-		void removeClique(sharedClique clique) {
-		  if (clique->parent_ != NULL) {
-		    clique->parent_->children_.remove(clique);
-		  } else {
-		  	// we remove the root clique: have to make another clique the root
-		  	if (clique->children_.empty()) {
-		  		root_.reset();
-		  	} else {
-		  	  root_ = *(clique->children_.begin());
-		  	}
-		  }
-		  BOOST_FOREACH(sharedClique child, clique->children_) {
-		  	child->parent_.reset();
-		  }
-			std::string key = *(clique->keys().begin());
-			nodes_.erase(key);
-		}
+		void removeClique(sharedClique clique);
 
 	public:
 
@@ -179,11 +155,10 @@ namespace gtsam {
 		template<class Factor>
 		BayesNet<Conditional> jointBayesNet(const std::string& key1, const std::string& key2) const;
 
-		/** IMPERATIVE! Return the factor containing all nodes contaminated by key; also,
-		 * removes those entries from the Bayes Tree, resulting in a forest of orphans
-		 */
+		/** Remove path from clique to root and return that path as factors */
 		template<class Factor>
-		FactorGraph<Factor> removePath(const std::string& key);
+		FactorGraph<Factor> removePath(sharedClique clique);
+
 	}; // BayesTree
 
 } /// namespace gtsam

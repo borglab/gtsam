@@ -332,21 +332,15 @@ TEST( BayesTree, removePath )
 	expected.push_factor("A","B");
 	expected.push_factor("A");
 
-	SymbolicFactorGraph actual = bayesTree.removePath<SymbolicFactor>("C");
+	SymbolicFactorGraph actual = bayesTree.removePath<SymbolicFactor>(bayesTree["C"]);
   CHECK(assert_equal(expected, actual));
-
-	// remove A, nothing should happen (already removed)
-	SymbolicFactorGraph expected2; // empty factor
-
-  actual = bayesTree.removePath<SymbolicFactor>("A");
-//  CHECK(assert_equal(expected2, actual));
 
   // remove E: factor graph with EB; E|B removed from second orphan tree
 	SymbolicFactorGraph expected3;
-  expected3.push_factor("C","A");
+  expected3.push_factor("B","E");
 
-  actual = bayesTree.removePath<SymbolicFactor>("E");
-//  CHECK(assert_equal(expected3, actual));
+  actual = bayesTree.removePath<SymbolicFactor>(bayesTree["E"]);
+  CHECK(assert_equal(expected3, actual));
 }
 
 /* ************************************************************************* */

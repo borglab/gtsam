@@ -173,6 +173,37 @@ namespace gtsam {
 
 	/* ************************************************************************* */
 	template<class Conditional>
+	typename BayesTree<Conditional>::sharedClique BayesTree<Conditional>::addClique
+	(const sharedConditional& conditional, sharedClique parent_clique) {
+		sharedClique new_clique(new Clique(conditional));
+		nodes_.insert(make_pair(conditional->key(), new_clique));
+		if (parent_clique != NULL) {
+			new_clique->parent_ = parent_clique;
+			parent_clique->children_.push_back(new_clique);
+		}
+		return new_clique;
+	}
+
+	/* ************************************************************************* */
+	template<class Conditional>
+	void BayesTree<Conditional>::removeClique(sharedClique clique) {
+	  if (!clique->isRoot())
+	    clique->parent_->children_.remove(clique);
+	  else {
+	  	// we remove the root clique: have to make another clique the root
+	  	if (clique->children_.empty())
+	  		root_.reset();
+	  	else
+	  	  root_ = *(clique->children_.begin());
+	  }
+	  BOOST_FOREACH(sharedClique child, clique->children_)
+	  	child->parent_.reset();
+	  BOOST_FOREACH(std::string key, clique->ordering())
+			nodes_.erase(key);
+	}
+
+	/* ************************************************************************* */
+	template<class Conditional>
 	BayesTree<Conditional>::BayesTree() {
 	}
 
@@ -319,21 +350,20 @@ namespace gtsam {
 	template<class Conditional>
 	template<class Factor>
 	FactorGraph<Factor>
-	BayesTree<Conditional>::removePath(const string& key) {
-		sharedClique clique = (*this)[key];
+	BayesTree<Conditional>::removePath(sharedClique clique) {
 
-#if 0
-		cout << "removing:" << endl;
-		clique->print();
-		cout << "from" << endl;
-		typedef std::pair<string, sharedClique> sometype;
-		BOOST_FOREACH(sometype clique, nodes_) {
-			clique.second->print();
+		//if (clique==NULL) return;
+
+		bool verbose = false;
+		if (verbose) {
+			clique->print("removing");
+			cout << "before" << endl;
+			BOOST_FOREACH(typename Nodes::value_type clique, nodes_)
+				clique.second->print();
 		}
-#endif
 
 		// convert clique to factor
-		FactorGraph<Factor> factors(*clique);
+		FactorGraph<Factor> factors(*clique);// = removePath(clique->parent_);
 
 		while (!(clique->isRoot())) {
 			sharedClique old_clique = clique;
@@ -342,6 +372,12 @@ namespace gtsam {
 			factors.push_back(*clique);
 		}
 		removeClique(clique);
+
+		if (verbose) {
+			cout << "after" << endl;
+			BOOST_FOREACH(typename Nodes::value_type clique, nodes_)
+				clique.second->print();
+		}
 
 		return factors;
 	}
