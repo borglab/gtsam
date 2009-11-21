@@ -22,10 +22,25 @@ namespace gtsam {
 	class SymbolicFactorGraph: public FactorGraph<SymbolicFactor> {
 	public:
 
-		/**
-		 * Construct empty factor graph
-		 */
-		SymbolicFactorGraph() {
+		/** Construct empty factor graph */
+		SymbolicFactorGraph() {}
+
+		/** Push back unary factor */
+		void push_factor(const std::string& key) {
+			boost::shared_ptr<SymbolicFactor> factor(new SymbolicFactor(key));
+			push_back(factor);
+		}
+
+		/** Push back binary factor */
+		void push_factor(const std::string& key1, const std::string& key2) {
+			boost::shared_ptr<SymbolicFactor> factor(new SymbolicFactor(key1,key2));
+			push_back(factor);
+		}
+
+		/** Push back ternary factor */
+		void push_factor(const std::string& key1, const std::string& key2, const std::string& key3) {
+			boost::shared_ptr<SymbolicFactor> factor(new SymbolicFactor(key1,key2,key3));
+			push_back(factor);
 		}
 
 		/**

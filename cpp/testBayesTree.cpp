@@ -73,7 +73,6 @@ TEST( BayesTree, constructor )
 	ASIA.push_back(L);
 	ASIA.push_back(B);
 	SymbolicBayesTree bayesTree2(ASIA);
-	//bayesTree2.print("bayesTree2");
 
 	// Check whether the same
 	CHECK(assert_equal(bayesTree,bayesTree2));
@@ -304,14 +303,15 @@ TEST( BayesTree, balanced_smoother_joint )
 }
 
 /* ************************************************************************* *
-   Bayes Tree, for testing conversion to a forest of orphans needed for incremental.
+Bayes Tree for testing conversion to a forest of orphans needed for incremental.
        A,B
    C|A    E|B
    D|C    F|E
 /* ************************************************************************* */
 TEST( BayesTree, removePath )
 {
-	SymbolicConditional::shared_ptr A(new SymbolicConditional("A")),
+	SymbolicConditional::shared_ptr
+			A(new SymbolicConditional("A")),
 			B(new SymbolicConditional("B", "A")),
 			C(new SymbolicConditional("C", "A")),
 			D(new SymbolicConditional("D", "C")),
@@ -325,34 +325,26 @@ TEST( BayesTree, removePath )
 	bayesTree.insert(E);
 	bayesTree.insert(F);
 
-	// remove C, expected outcome: factor graph with ABC, Bayes Tree now contains two orphan trees: D|C and E|B,F|E
+	// remove C, expected outcome: factor graph with ABC,
+	// Bayes Tree now contains two orphan trees: D|C and E|B,F|E
 	SymbolicFactorGraph expected;
-	list<string> keys;
-	keys += "A","C";
-	boost::shared_ptr<SymbolicFactor> _CA(new SymbolicFactor(keys));
-	expected.push_back(_CA);
-	keys.clear();
-	keys += "A","B";
-	boost::shared_ptr<SymbolicFactor> _BA(new SymbolicFactor(keys));
-	expected.push_back(_BA);
-	keys.clear();
-	keys += "A";
-	boost::shared_ptr<SymbolicFactor> _A(new SymbolicFactor(keys));
-	expected.push_back(_A);
+	expected.push_factor("A","C");
+	expected.push_factor("A","B");
+	expected.push_factor("A");
+
 	SymbolicFactorGraph actual = bayesTree.removePath<SymbolicFactor>("C");
   CHECK(assert_equal(expected, actual));
 
 	// remove A, nothing should happen (already removed)
 	SymbolicFactorGraph expected2; // empty factor
+
   actual = bayesTree.removePath<SymbolicFactor>("A");
 //  CHECK(assert_equal(expected2, actual));
 
   // remove E: factor graph with EB; E|B removed from second orphan tree
 	SymbolicFactorGraph expected3;
-	keys.clear();
-	keys += "C","A";
-	boost::shared_ptr<SymbolicFactor> CA(new SymbolicFactor(keys));
-  expected3.push_back(CA);
+  expected3.push_factor("C","A");
+
   actual = bayesTree.removePath<SymbolicFactor>("E");
 //  CHECK(assert_equal(expected3, actual));
 }

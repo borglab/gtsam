@@ -23,24 +23,12 @@ TEST( SymbolicFactorGraph, symbolicFactorGraph )
 {
 	// construct expected symbolic graph
 	SymbolicFactorGraph expected;
+	expected.push_factor("x1");
+	expected.push_factor("x1","x2");
+	expected.push_factor("l1","x1");
+	expected.push_factor("l1","x2");
 
-	list<string> f1_keys; f1_keys += "x1";
-	SymbolicFactor::shared_ptr f1(new SymbolicFactor(f1_keys));
-	expected.push_back(f1);
-
-	list<string> f2_keys; f2_keys.push_back("x1"); f2_keys.push_back("x2");
-	SymbolicFactor::shared_ptr f2(new SymbolicFactor(f2_keys));
-	expected.push_back(f2);
-
-	list<string> f3_keys; f3_keys.push_back("l1"); f3_keys.push_back("x1");
-	SymbolicFactor::shared_ptr f3(new SymbolicFactor(f3_keys));
-	expected.push_back(f3);
-
-	list<string> f4_keys; f4_keys.push_back("l1"); f4_keys.push_back("x2");
-	SymbolicFactor::shared_ptr f4(new SymbolicFactor(f4_keys));
-	expected.push_back(f4);
-
-	// construct it from the factor graph graph
+	// construct it from the factor graph
 	GaussianFactorGraph factorGraph = createGaussianFactorGraph();
 	SymbolicFactorGraph actual(factorGraph);
 
@@ -97,10 +85,8 @@ TEST( SymbolicFactorGraph, removeAndCombineFactors )
   // combine all factors connected to x1
   SymbolicFactor::shared_ptr actual = removeAndCombineFactors(fg,"x1");
 
-	list<string> keys; keys.push_back("l1"); keys.push_back("x1"); keys.push_back("x2");
-  SymbolicFactor expected(keys);
-
-  // check if the two factors are the same
+  // check result
+  SymbolicFactor expected("l1","x1","x2");
   CHECK(assert_equal(expected,*actual));
 }
 
@@ -149,20 +135,10 @@ TEST( GaussianFactorGraph, eliminate )
 TEST( SymbolicFactorGraph, constructFromBayesNet )
 {
 	// create expected factor graph
-	FactorGraph<SymbolicFactor> expected;
-
-	list<string> f1_keys; f1_keys += "l1","x1","x2";
-	SymbolicFactor::shared_ptr f1(new SymbolicFactor(f1_keys));
-	expected.push_back(f1);
-
-	list<string> f2_keys; f2_keys += "x1","l1";
-	SymbolicFactor::shared_ptr f2(new SymbolicFactor(f2_keys));
-	expected.push_back(f2);
-
-	list<string> f3_keys; f3_keys += "x1";
-	SymbolicFactor::shared_ptr f3(new SymbolicFactor(f3_keys));
-	expected.push_back(f3);
-
+	SymbolicFactorGraph expected;
+	expected.push_factor("l1","x1","x2");
+	expected.push_factor("x1","l1");
+	expected.push_factor("x1");
 
   // create Bayes Net
   SymbolicConditional::shared_ptr x2(new SymbolicConditional("x2", "l1", "x1"));
@@ -177,7 +153,7 @@ TEST( SymbolicFactorGraph, constructFromBayesNet )
   // create actual factor graph from a Bayes Net
 	FactorGraph<SymbolicFactor> actual(bayesNet);
 
-  CHECK(assert_equal(expected,actual));
+  CHECK(assert_equal((FactorGraph<SymbolicFactor>)expected,actual));
 }
 
 /* ************************************************************************* */
@@ -186,25 +162,16 @@ TEST( SymbolicFactorGraph, push_back )
 	// Create two factor graphs and expected combined graph
 	SymbolicFactorGraph fg1, fg2, expected;
 
-	list<string> f1_keys; f1_keys += "x1";
-	SymbolicFactor::shared_ptr f1(new SymbolicFactor(f1_keys));
-	fg1.push_back(f1);
-	expected.push_back(f1);
+	fg1.push_factor("x1");
+	fg1.push_factor("x1","x2");
 
-	list<string> f2_keys; f2_keys.push_back("x1"); f2_keys.push_back("x2");
-	SymbolicFactor::shared_ptr f2(new SymbolicFactor(f2_keys));
-	fg1.push_back(f2);
-	expected.push_back(f2);
+	fg2.push_factor("l1","x1");
+	fg2.push_factor("l1","x2");
 
-	list<string> f3_keys; f3_keys.push_back("l1"); f3_keys.push_back("x1");
-	SymbolicFactor::shared_ptr f3(new SymbolicFactor(f3_keys));
-	fg2.push_back(f3);
-	expected.push_back(f3);
-
-	list<string> f4_keys; f4_keys.push_back("l1"); f4_keys.push_back("x2");
-	SymbolicFactor::shared_ptr f4(new SymbolicFactor(f4_keys));
-	fg2.push_back(f4);
-	expected.push_back(f4);
+	expected.push_factor("x1");
+	expected.push_factor("x1","x2");
+	expected.push_factor("l1","x1");
+	expected.push_factor("l1","x2");
 
 	// combine
 	SymbolicFactorGraph actual = combine(fg1,fg2);
