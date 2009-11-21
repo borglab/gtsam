@@ -18,6 +18,7 @@ using namespace boost::assign;
 #include "BayesTree-inl.h"
 #include "smallExample.h"
 
+using namespace std;
 using namespace gtsam;
 
 typedef BayesTree<SymbolicConditional> SymbolicBayesTree;
@@ -32,7 +33,7 @@ SymbolicBayesTree update(const SymbolicBayesTree& initial,
 	SymbolicFactorGraph factorGraph;
 
 	// the list of orphaned subtrees
-	std::list<SymbolicBayesTree::sharedClique> orphans;
+	list<SymbolicBayesTree::sharedClique> orphans;
 
 	// process each key of the new factor
 	BOOST_FOREACH(string key, newFactor->keys()) {
@@ -73,27 +74,26 @@ SymbolicBayesTree update(const SymbolicBayesTree& initial,
 
 	// add orphans to the bottom of the new tree
 	BOOST_FOREACH(SymbolicBayesTree::sharedClique orphan, orphans) {
-		std::list<std::string>::const_iterator it = orphan->separator_.begin();
-		for (; it != orphan->separator_.end(); it++) {
-
+		BOOST_FOREACH(string key1, orphan->separator_) {
 			// get clique from new tree to attach to
-			SymbolicBayesTree::sharedClique clique = newTree[*it];
+			SymbolicBayesTree::sharedClique candidateParent = newTree[key1];
 
 			// check if all conditionals in there, only add once
 			bool is_subset = true;
-			std::list<std::string>::const_iterator it2 = orphan->separator_.begin();
-			for (; it2 != orphan->separator_.end(); it2++) {
-				// if any one is not included, then we have to stop and search for another clique
-				std::list<std::string> keys = clique->keys();
-				if (find(keys.begin(), keys.end(), *it2) == keys.end()) {
+			BOOST_FOREACH(string key2, orphan->separator_) {
+				// if any one not included, then we have to stop and search for another clique
+				list<string> keys = candidateParent->keys();
+				if (find(keys.begin(), keys.end(), key2) == keys.end()) {
 					is_subset = false;
 					break;
 				}
 			}
 
-			// this clique contains all the keys of the orphan, so we can add the orphan as a child  todo: what about the tree below the orphan?
+			// this clique contains all the keys of the orphan,
+			// so we can add the orphan as a child
+			// todo: what about the tree below the orphan?
 			if (is_subset) {
-				clique->children_ += orphan;
+				candidateParent->children_ += orphan;
 				break;
 			}
 		}

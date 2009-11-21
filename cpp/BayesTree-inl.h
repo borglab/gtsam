@@ -187,17 +187,16 @@ namespace gtsam {
 	/* ************************************************************************* */
 	template<class Conditional>
 	void BayesTree<Conditional>::removeClique(sharedClique clique) {
-	  if (!clique->isRoot())
+
+		if (clique->isRoot())
+			root_.reset();
+		else // detach clique from parent
 	    clique->parent_->children_.remove(clique);
-	  else {
-	  	// we remove the root clique: have to make another clique the root
-	  	if (clique->children_.empty())
-	  		root_.reset();
-	  	else
-	  	  root_ = *(clique->children_.begin());
-	  }
-	  BOOST_FOREACH(sharedClique child, clique->children_)
+
+	  // orphan my children
+		BOOST_FOREACH(sharedClique child, clique->children_)
 	  	child->parent_.reset();
+
 	  BOOST_FOREACH(std::string key, clique->ordering())
 			nodes_.erase(key);
 	}
