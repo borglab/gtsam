@@ -154,11 +154,11 @@ namespace gtsam {
 		/** return joint on two variables as a BayesNet */
 		template<class Factor>
 		BayesNet<Conditional> jointBayesNet(const std::string& key1, const std::string& key2) const;
-
-		/** Remove path from clique to root and return that path as factors */
+#if 0
+		/** Remove path from clique to root and return that path as factors plus a list of orphaned subtree roots */
 		template<class Factor>
-		FactorGraph<Factor> removePath(sharedClique clique);
-
+		std::pair<FactorGraph<Factor>, std::list<sharedClique> > removePath(sharedClique clique);
+#endif
 	}; // BayesTree
 
 } /// namespace gtsam

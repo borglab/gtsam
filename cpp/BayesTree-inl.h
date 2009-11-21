@@ -344,26 +344,32 @@ namespace gtsam {
 		ordering += key1, key2;
 		return eliminate<Factor,Conditional>(fg,ordering);
 	}
-
+#if 0
 	/* ************************************************************************* */
 	template<class Conditional>
 	template<class Factor>
-	FactorGraph<Factor>
+	std::pair<FactorGraph<Factor>, std::list<sharedClique> >
 	BayesTree<Conditional>::removePath(sharedClique clique) {
 
 		// base case is NULL, return empty factor graph
-		if (clique==NULL) return FactorGraph<Factor>();
+		if (clique==NULL) {
+			list<sharedClique> orphans;
+			return make_pair<FactorGraph<Factor>(), orphans>;
+		}
 
 		// remove path above me
-		FactorGraph<Factor> factors = removePath<Factor>(clique->parent_);
+		std::pair<FactorGraph<Factor>, std::list<sharedClique> > factors_orphans = removePath<Factor>(clique->parent_);
+
+		// add children to list of orphans
+		factors_orphans.second.insert(factors_orphans.second.begin(), clique->children_.begin(), clique->children_.end());
 
 		// remove me and add my factors
 		removeClique(clique);
 		factors.push_back(*clique);
 
-		return factors;
+		return factors_orphans;
 	}
-
+#endif
 	/* ************************************************************************* */
 
 }
