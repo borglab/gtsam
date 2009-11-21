@@ -57,7 +57,7 @@ TEST (SQP, problem1_choleski ) {
 	if (verbose) init.print("Initial State");
 
 	// loop until convergence
-	int maxIt = 50;
+	int maxIt = 10;
 	for (int i = 0; i<maxIt; ++i) {
 		if (verbose) cout << "\n******************************\nIteration: " << i+1 << endl;
 
@@ -111,15 +111,11 @@ TEST (SQP, problem1_choleski ) {
 		// solve
 		Ordering ord;
 		ord += "x", "y", "lam";
-		VectorConfig delta = fg.optimize(ord);
+		VectorConfig delta = fg.optimize(ord).scale(-1.0);
 		if (verbose) delta.print("Delta");
 
 		// update initial estimate
-		double gain = 0.3;
-		VectorConfig newState;
-		newState.insert("x", state["x"]-gain*delta["x"]);
-		newState.insert("y", state["y"]-gain*delta["y"]);
-		newState.insert("lam", state["lam"]-gain*delta["lam"]);
+		VectorConfig newState = state.exmap(delta);
 		state = newState;
 
 		if (verbose) state.print("Updated State");
@@ -262,6 +258,7 @@ typedef NonlinearOptimizer<NLGraph,VectorConfig> Optimizer;
  * constrained to a particular value
  */
 TEST (SQP, two_pose_truth ) {
+	bool verbose = false;
 	// position (1, 1) constraint for x1
 	// position (5, 6) constraint for x2
 	VectorConfig feas;
@@ -306,7 +303,7 @@ TEST (SQP, two_pose_truth ) {
 	double absoluteThreshold = 1e-5;
 	Optimizer act_opt = optimizer.gaussNewton(relativeThreshold, absoluteThreshold);
 	boost::shared_ptr<const VectorConfig> actual = act_opt.config();
-	//actual->print("Configuration after optimization");
+	if (verbose) actual->print("Configuration after optimization");
 
 	// verify
 	VectorConfig expected(feas);
@@ -315,6 +312,7 @@ TEST (SQP, two_pose_truth ) {
 }
 
 namespace sqp_test1 {
+// binary constraint between landmarks
 /** g(x) = x-y = 0 */
 Vector g_func(const VectorConfig& config, const std::string& key1, const std::string& key2) {
 	return config[key1]-config[key2];
@@ -331,6 +329,19 @@ Matrix grad_g2(const VectorConfig& config, const std::string& key) {
 }
 } // \namespace sqp_test1
 
+namespace sqp_test2 {
+// Unary Constraint on x1
+/** g(x) = x -[1;1] = 0 */
+Vector g_func(const VectorConfig& config, const std::string& key) {
+	return config[key]-Vector_(2, 1.0, 1.0);
+}
+
+/** gradient at x1 */
+Matrix grad_g(const VectorConfig& config, const std::string& key) {
+	return eye(2);
+}
+} // \namespace sqp_test2
+
 /**
  *  Version that actually uses nonlinear equality constraints
  *  to to perform optimization.  Same as above, but no
@@ -344,7 +355,10 @@ TEST (SQP, two_pose ) {
 	feas.insert("x1", Vector_(2, 1.0, 1.0));
 
 	// constant constraint on x1
-	shared_eq ef1(new NonlinearEquality<VectorConfig>("x1", feas, 2, *vector_compare));
+	boost::shared_ptr<NonlinearConstraint1<VectorConfig> > c1(
+			new NonlinearConstraint1<VectorConfig>(
+					"x1", *sqp_test2::grad_g,
+					*sqp_test2::g_func, 2, "L_x1"));
 
 	// measurement from x1 to l1
 	Vector z1 = Vector_(2, 0.0, 5.0);
@@ -357,7 +371,7 @@ TEST (SQP, two_pose ) {
 	shared f2(new Simulated2DMeasurement(z2, sigma2, "x2", "l2"));
 
 	// equality constraint between l1 and l2
-	boost::shared_ptr<NonlinearConstraint2<VectorConfig> > c1(
+	boost::shared_ptr<NonlinearConstraint2<VectorConfig> > c2(
 			new NonlinearConstraint2<VectorConfig>(
 					"l1", *sqp_test1::grad_g1,
 					"l2", *sqp_test1::grad_g2,
@@ -365,8 +379,8 @@ TEST (SQP, two_pose ) {
 
 	// construct the graph
 	NLGraph graph;
-	graph.push_back(ef1);
 	graph.push_back(c1);
+	graph.push_back(c2);
 	graph.push_back(f1);
 	graph.push_back(f2);
 
@@ -379,6 +393,7 @@ TEST (SQP, two_pose ) {
 	// create an initial estimate for the lagrange multiplier
 	shared_cfg initLagrange(new VectorConfig);
 	initLagrange->insert("L_l1l2", Vector_(2, 1.0, 1.0));
+	initLagrange->insert("L_x1", Vector_(2, 1.0, 1.0));
 
 	// create state config variables and initialize them
 	VectorConfig state(*initialEstimate), state_lam(*initLagrange);
@@ -409,7 +424,7 @@ TEST (SQP, two_pose ) {
 
 		// create an ordering
 		Ordering ordering;
-		ordering += "x1", "x2", "l1", "l2", "L_l1l2";
+		ordering += "x1", "x2", "l1", "l2", "L_l1l2", "L_x1";
 
 		// optimize linear graph to get full delta config
 		VectorConfig delta = fg.optimize(ordering).scale(-1.0);
