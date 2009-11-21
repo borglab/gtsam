@@ -328,9 +328,9 @@ TEST( BayesTree, removePath )
 	// remove C, expected outcome: factor graph with ABC,
 	// Bayes Tree now contains two orphan trees: D|C and E|B,F|E
 	SymbolicFactorGraph expected;
-	expected.push_factor("A","C");
 	expected.push_factor("A","B");
 	expected.push_factor("A");
+	expected.push_factor("A","C");
 
 	SymbolicFactorGraph actual = bayesTree.removePath<SymbolicFactor>(bayesTree["C"]);
   CHECK(assert_equal(expected, actual));

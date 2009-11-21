@@ -352,32 +352,15 @@ namespace gtsam {
 	FactorGraph<Factor>
 	BayesTree<Conditional>::removePath(sharedClique clique) {
 
-		//if (clique==NULL) return;
+		// base case is NULL, return empty factor graph
+		if (clique==NULL) return FactorGraph<Factor>();
 
-		bool verbose = false;
-		if (verbose) {
-			clique->print("removing");
-			cout << "before" << endl;
-			BOOST_FOREACH(typename Nodes::value_type clique, nodes_)
-				clique.second->print();
-		}
+		// remove path above me
+		FactorGraph<Factor> factors = removePath<Factor>(clique->parent_);
 
-		// convert clique to factor
-		FactorGraph<Factor> factors(*clique);// = removePath(clique->parent_);
-
-		while (!(clique->isRoot())) {
-			sharedClique old_clique = clique;
-			clique = old_clique->parent_;
-		  removeClique(old_clique);
-			factors.push_back(*clique);
-		}
+		// remove me and add my factors
 		removeClique(clique);
-
-		if (verbose) {
-			cout << "after" << endl;
-			BOOST_FOREACH(typename Nodes::value_type clique, nodes_)
-				clique.second->print();
-		}
+		factors.push_back(*clique);
 
 		return factors;
 	}
