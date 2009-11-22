@@ -408,9 +408,7 @@ TEST( BayesTree, removeTop )
 	SymbolicBayesTree bayesTree = createAsiaSymbolicBayesTree();
 
 	// create a new factor to be inserted
-	list<string> keys;
-	keys += "B","S";
-	boost::shared_ptr<SymbolicFactor> newFactor(new SymbolicFactor(keys));
+	boost::shared_ptr<SymbolicFactor> newFactor(new SymbolicFactor("B","S"));
 
 	// Remove the contaminated part of the Bayes tree
 	FactorGraph<SymbolicFactor> factors;
@@ -423,11 +421,18 @@ TEST( BayesTree, removeTop )
 	expected.push_factor("B","L");
 	expected.push_factor("B");
 	expected.push_factor("L","B","S");
-	expected.push_factor("B","S");
   CHECK(assert_equal((FactorGraph<SymbolicFactor>)expected, factors));
 	SymbolicBayesTree::Cliques expectedOrphans;
   expectedOrphans += bayesTree["T"], bayesTree["X"];
   CHECK(assert_equal(expectedOrphans, orphans));
+
+  // Try removeTop again with a factor that should not change a thing
+	boost::shared_ptr<SymbolicFactor> newFactor2(new SymbolicFactor("B"));
+	boost::tie(factors,orphans) = bayesTree.removeTop<SymbolicFactor>(newFactor2);
+	SymbolicFactorGraph expected2;
+  CHECK(assert_equal((FactorGraph<SymbolicFactor>)expected2, factors));
+	SymbolicBayesTree::Cliques expectedOrphans2;
+  CHECK(assert_equal(expectedOrphans2, orphans));
 }
 
 /* ************************************************************************* */

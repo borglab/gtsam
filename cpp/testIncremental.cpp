@@ -27,20 +27,23 @@ typedef BayesTree<GaussianConditional> GaussianBayesTree;
 
 /* ************************************************************************* */
 
-void update(SymbolicBayesTree& bayesTree, const FactorGraph<SymbolicFactor>& factorGraph) {
+void update(SymbolicBayesTree& bayesTree, const FactorGraph<SymbolicFactor>& newFactors) {
 
 	// Remove the contaminated part of the Bayes tree
 	FactorGraph<SymbolicFactor> factors;
 	SymbolicBayesTree::Cliques orphans;
-	BOOST_FOREACH(boost::shared_ptr<SymbolicFactor> factor, factorGraph) {
+	BOOST_FOREACH(boost::shared_ptr<SymbolicFactor> factor, newFactors) {
 
-		FactorGraph<SymbolicFactor> newFactors;
-		SymbolicBayesTree::Cliques newOrphans;
-		boost::tie(newFactors, newOrphans) = bayesTree.removeTop<SymbolicFactor>(factor);
+		FactorGraph<SymbolicFactor> factors1;
+		SymbolicBayesTree::Cliques orphans1;
+		boost::tie(factors1, orphans1) = bayesTree.removeTop<SymbolicFactor>(factor);
 
-		factors.push_back(newFactors);
-		orphans.splice (orphans.begin(), newOrphans);
+		factors.push_back(factors1);
+		orphans.splice (orphans.begin(), orphans1);
 	}
+
+	// add the factors themselves
+	factors.push_back(newFactors);
 
 	// create an ordering for the new and contaminated factors
 	Ordering ordering = factors.getOrdering();
@@ -104,6 +107,7 @@ TEST( BayesTree, iSAM )
 	// create new factors to be inserted
 	SymbolicFactorGraph factorGraph;
 	factorGraph.push_factor("B","S");
+	factorGraph.push_factor("B");
 
 	// do incremental inference
 	update(bayesTree, factorGraph);

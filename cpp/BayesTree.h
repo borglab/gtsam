@@ -171,7 +171,7 @@ namespace gtsam {
 
 		/**
 		 * Given a set of factors, turn "contaminated" part of the tree back into a factor graph
-		 * and return it along with the new factors plus a list of orphaned subtree roots.
+		 * and return it along with a list of orphaned subtree roots.
 		 * This is used for incrementally updating a BayesTree given new measurements (factors).
 		 */
 		template<class Factor>

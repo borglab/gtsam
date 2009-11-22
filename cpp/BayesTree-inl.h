@@ -378,7 +378,7 @@ namespace gtsam {
 			boost::tie(factors,orphans) = removePath<Factor>(clique->parent_);
 
 			// add children to list of orphans
-			orphans.insert(orphans.begin(), clique->children_.begin(), clique->children_.end());
+			orphans.splice (orphans.begin(), clique->children_);
 
 			// add myself to factors
 			factors.push_back(*clique);
@@ -388,7 +388,6 @@ namespace gtsam {
 	}
 
 	/* ************************************************************************* */
-
 	template<class Conditional>
 	template<class Factor>
   pair<FactorGraph<Factor>, typename BayesTree<Conditional>::Cliques>
@@ -399,9 +398,7 @@ namespace gtsam {
 
 		// process each key of the new factor
 		BOOST_FOREACH(string key, newFactor->keys())
-			// only add if key is not yet in the factor graph
-			if (!factors.involves(key)) {
-
+			try {
 				// get the clique and remove it from orphans (if it exists)
 				sharedClique clique = (*this)[key];
 				orphans.remove(clique);
@@ -413,10 +410,8 @@ namespace gtsam {
 				// add to global factors and orphans
 				factors.push_back(factors1);
 				orphans.splice (orphans.begin(), orphans1);
+			} catch (std::invalid_argument e) {
 			}
-
-		// now add the new factor
-		factors.push_back(newFactor);
 
 		return make_pair(factors,orphans);
 	}
