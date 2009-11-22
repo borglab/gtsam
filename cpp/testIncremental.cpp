@@ -47,6 +47,12 @@ void update(SymbolicBayesTree& bayesTree, const boost::shared_ptr<SymbolicFactor
 
 	// add orphans to the bottom of the new tree
 	BOOST_FOREACH(SymbolicBayesTree::sharedClique orphan, orphans) {
+		string key = *(orphan->separator_.begin()); // todo: assumes there is a separator...
+		SymbolicBayesTree::sharedClique parent = bayesTree[key];
+		parent->children_ += orphan;
+	}
+
+#if 0
 		BOOST_FOREACH(string key1, orphan->separator_) {
 			// get clique from new tree to attach to
 			SymbolicBayesTree::sharedClique candidateParent = bayesTree[key1];
@@ -71,6 +77,7 @@ void update(SymbolicBayesTree& bayesTree, const boost::shared_ptr<SymbolicFactor
 			}
 		}
 	}
+#endif
 }
 
 /* ************************************************************************* */

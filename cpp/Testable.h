@@ -11,6 +11,8 @@
 #include <boost/shared_ptr.hpp>
 #include <stdio.h>
 
+#define GTSAM_PRINT(x)(x.print(#x))
+
 namespace gtsam {
 
   /**
