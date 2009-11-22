@@ -162,9 +162,20 @@ namespace gtsam {
 		template<class Factor>
 		BayesNet<Conditional> jointBayesNet(const std::string& key1, const std::string& key2) const;
 
-		/** Remove path from clique to root and return that path as factors plus a list of orphaned subtree roots */
+		/**
+		 * Remove path from clique to root and return that path as factors
+		 * plus a list of orphaned subtree roots. Used in removeTop below.
+		 */
 		template<class Factor>
 		std::pair<FactorGraph<Factor>, Cliques> removePath(sharedClique clique);
+
+		/**
+		 * Given a set of factors, turn "contaminated" part of the tree back into a factor graph
+		 * and return it along with the new factors plus a list of orphaned subtree roots.
+		 * This is used for incrementally updating a BayesTree given new measurements (factors).
+		 */
+		template<class Factor>
+		std::pair<FactorGraph<Factor>, Cliques> removeTop(const boost::shared_ptr<Factor>& newFactor);
 
 	}; // BayesTree
 

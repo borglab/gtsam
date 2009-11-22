@@ -372,6 +372,38 @@ namespace gtsam {
 	}
 
 	/* ************************************************************************* */
+	template<class Conditional>
+	template<class Factor>
+  pair<FactorGraph<Factor>, typename BayesTree<Conditional>::Cliques>
+	BayesTree<Conditional>::removeTop(const boost::shared_ptr<Factor>& newFactor) {
+
+		FactorGraph<Factor> factors;
+		Cliques orphans;
+
+		// process each key of the new factor
+		BOOST_FOREACH(string key, newFactor->keys())
+			// only add if key is not yet in the factor graph
+			if (!factors.involves(key)) {
+
+				// get the clique
+				sharedClique clique = (*this)[key];
+
+				// remove path above this clique
+				FactorGraph<Factor> factors1;	Cliques orphans1;
+				boost::tie(factors1,orphans1) = removePath<Factor>(clique->parent_);
+
+				// add to global factors and orphans
+				factors.push_back(factors1);
+				orphans.splice (orphans.begin(), orphans1);
+			}
+
+		// now add the new factor
+		factors.push_back(newFactor);
+
+		return make_pair(factors,orphans);
+	}
+
+	/* ************************************************************************* */
 
 }
 /// namespace gtsam

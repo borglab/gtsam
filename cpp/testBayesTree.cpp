@@ -346,6 +346,46 @@ TEST( BayesTree, removePath )
 }
 
 /* ************************************************************************* */
+TEST( BayesTree, removeTop )
+{
+	// Conditionals for ASIA example from the tutorial with A and D evidence
+	SymbolicConditional::shared_ptr
+		B(new SymbolicConditional("B")),
+		L(new SymbolicConditional("L", "B")),
+		E(new SymbolicConditional("E", "B", "L")),
+		S(new SymbolicConditional("S", "L", "B")),
+		T(new SymbolicConditional("T", "E", "L")),
+		X(new SymbolicConditional("X", "E"));
+
+	// Create using insert
+	SymbolicBayesTree bayesTree;
+	bayesTree.insert(B);
+	bayesTree.insert(L);
+	bayesTree.insert(E);
+	bayesTree.insert(S);
+	bayesTree.insert(T);
+	bayesTree.insert(X);
+
+	// create a new factor to be inserted
+	list<string> keys;
+	keys += "B","S";
+	boost::shared_ptr<SymbolicFactor> newFactor(new SymbolicFactor(keys));
+
+	// Remove the contaminated part of the Bayes tree
+	FactorGraph<SymbolicFactor> factors;
+	SymbolicBayesTree::Cliques orphans;
+	boost::tie(factors,orphans) = bayesTree.removeTop<SymbolicFactor>(newFactor);
+
+	// Check expected outcome
+	SymbolicFactorGraph expected;
+	expected.push_factor("B","L","E");
+	expected.push_factor("B","L");
+	expected.push_factor("B");
+	expected.push_factor("B","S");
+  CHECK(assert_equal((FactorGraph<SymbolicFactor>)expected, factors));
+}
+
+/* ************************************************************************* */
 int main() {
 	TestResult tr;
 	return TestRegistry::runAllTests(tr);
