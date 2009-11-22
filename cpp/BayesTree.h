@@ -177,6 +177,12 @@ namespace gtsam {
 		template<class Factor>
 		std::pair<FactorGraph<Factor>, Cliques> removeTop(const boost::shared_ptr<Factor>& newFactor);
 
+		/**
+		 * iSAM.
+		 */
+		template<class Factor>
+		void update(const FactorGraph<Factor>& newFactors);
+
 	}; // BayesTree
 
 } /// namespace gtsam

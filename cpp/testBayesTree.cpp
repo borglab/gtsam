@@ -2,6 +2,8 @@
  * @file    testBayesTree.cpp
  * @brief   Unit tests for Bayes Tree
  * @author  Frank Dellaert
+ * @author  Michael Kaess
+ * @author  Viorela Ila
  */
 
 #include <boost/assign/std/list.hpp> // for operator +=
@@ -433,6 +435,58 @@ TEST( BayesTree, removeTop )
   CHECK(assert_equal((FactorGraph<SymbolicFactor>)expected2, factors));
 	SymbolicBayesTree::Cliques expectedOrphans2;
   CHECK(assert_equal(expectedOrphans2, orphans));
+}
+
+
+/* ************************************************************************* */
+TEST( BayesTree, iSAM )
+{
+	// Conditionals for ASIA example from the tutorial with A and D evidence
+	SymbolicConditional::shared_ptr
+		B(new SymbolicConditional("B")),
+		L(new SymbolicConditional("L", "B")),
+		E(new SymbolicConditional("E", "B", "L")),
+		S(new SymbolicConditional("S", "L", "B")),
+		T(new SymbolicConditional("T", "E", "L")),
+		X(new SymbolicConditional("X", "E"));
+
+	// Create using insert
+	SymbolicBayesTree bayesTree;
+	bayesTree.insert(B);
+	bayesTree.insert(L);
+	bayesTree.insert(E);
+	bayesTree.insert(S);
+	bayesTree.insert(T);
+	bayesTree.insert(X);
+
+	// Now we modify the Bayes tree by inserting a new factor over B and S
+
+	// New conditionals in modified top of the tree
+	SymbolicConditional::shared_ptr
+		S_(new SymbolicConditional("S")),
+		L_(new SymbolicConditional("L", "S")),
+		E_(new SymbolicConditional("E", "L", "S")),
+		B_(new SymbolicConditional("B", "E", "L", "S"));
+
+	// Create expected Bayes tree
+	SymbolicBayesTree expected;
+	expected.insert(S_);
+	expected.insert(L_);
+	expected.insert(E_);
+	expected.insert(B_);
+	expected.insert(T);
+	expected.insert(X);
+
+	// create new factors to be inserted
+	SymbolicFactorGraph factorGraph;
+	factorGraph.push_factor("B","S");
+	factorGraph.push_factor("B");
+
+	// do incremental inference
+	bayesTree.update(factorGraph);
+
+	// Check whether the same
+  CHECK(assert_equal(expected,bayesTree));
 }
 
 /* ************************************************************************* */

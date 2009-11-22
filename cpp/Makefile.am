@@ -64,15 +64,13 @@ example = smallExample.cpp
 headers += inference.h inference-inl.h
 headers += FactorGraph.h FactorGraph-inl.h
 headers += BayesNet.h BayesNet-inl.h BayesTree.h BayesTree-inl.h
-check_PROGRAMS += testFactorgraph testBayesTree testInference testIncremental
+check_PROGRAMS += testFactorgraph testBayesTree testInference
 testFactorgraph_SOURCES        = testFactorgraph.cpp
 testBayesTree_SOURCES          = $(example) testBayesTree.cpp
 testInference_SOURCES          = $(example) testInference.cpp
-testIncremental_SOURCES        = $(example) testIncremental.cpp
 testFactorgraph_LDADD          = libgtsam.la
 testBayesTree_LDADD            = libgtsam.la
 testInference_LDADD            = libgtsam.la
-testIncremental_LDADD          = libgtsam.la
 
 # Symbolic Inference
 headers += SymbolicConditional.h

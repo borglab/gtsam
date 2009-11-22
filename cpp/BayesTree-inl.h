@@ -2,6 +2,8 @@
  * @file    BayesTree.cpp
  * @brief   Bayes Tree is a tree of cliques of a Bayes Chain
  * @author  Frank Dellaert
+ * @author  Michael Kaess
+ * @author  Viorela Ila
  */
 
 #include <boost/foreach.hpp>
@@ -416,6 +418,45 @@ namespace gtsam {
 		return make_pair(factors,orphans);
 	}
 
+	/* ************************************************************************* */
+	template<class Conditional>
+	template<class Factor>
+	void BayesTree<Conditional>::update(const FactorGraph<Factor>& newFactors) {
+		// Remove the contaminated part of the Bayes tree
+		FactorGraph<Factor> factors;
+		typename BayesTree<Conditional>::Cliques orphans;
+		BOOST_FOREACH(boost::shared_ptr<Factor> factor, newFactors) {
+
+			FactorGraph<Factor> factors1;
+			typename BayesTree<Conditional>::Cliques orphans1;
+			boost::tie(factors1, orphans1) = removeTop<Factor>(factor);
+
+			factors.push_back(factors1);
+			orphans.splice (orphans.begin(), orphans1);
+		}
+
+		// add the factors themselves
+		factors.push_back(newFactors);
+
+		// create an ordering for the new and contaminated factors
+		Ordering ordering = factors.getOrdering();
+
+		// eliminate into a Bayes net
+		BayesNet<Conditional> bayesNet = eliminate<Factor, Conditional>(factors,ordering);
+
+		// insert conditionals back in, straight into the topless bayesTree
+		typename BayesNet<Conditional>::const_reverse_iterator rit;
+		for ( rit=bayesNet.rbegin(); rit != bayesNet.rend(); ++rit )
+			insert(*rit);
+
+		// add orphans to the bottom of the new tree
+		BOOST_FOREACH(typename BayesTree<Conditional>::sharedClique orphan, orphans) {
+			string key = orphan->separator_.front(); // todo: assumes there is a separator...
+			typename BayesTree<Conditional>::sharedClique parent = (*this)[key];
+			parent->children_ += orphan;
+		}
+
+	}
 	/* ************************************************************************* */
 
 }
