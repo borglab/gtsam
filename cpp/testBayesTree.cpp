@@ -364,7 +364,7 @@ TEST( BayesTree, removePath2 )
 {
 	SymbolicBayesTree bayesTree = createAsiaSymbolicBayesTree();
 
-	// Call remove-path with clique S
+	// Call remove-path with clique B
 	FactorGraph<SymbolicFactor> factors;
 	SymbolicBayesTree::Cliques orphans;
   boost::tie(factors,orphans) = bayesTree.removePath<SymbolicFactor>(bayesTree["B"]);
@@ -427,7 +427,7 @@ TEST( BayesTree, removeTop )
   CHECK(assert_equal((FactorGraph<SymbolicFactor>)expected, factors));
 	SymbolicBayesTree::Cliques expectedOrphans;
   expectedOrphans += bayesTree["T"], bayesTree["X"];
-  //CHECK(assert_equal(expectedOrphans, orphans));
+  CHECK(assert_equal(expectedOrphans, orphans));
 }
 
 /* ************************************************************************* */

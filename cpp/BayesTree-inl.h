@@ -402,10 +402,11 @@ namespace gtsam {
 			// only add if key is not yet in the factor graph
 			if (!factors.involves(key)) {
 
-				// get the clique
+				// get the clique and remove it from orphans (if it exists)
 				sharedClique clique = (*this)[key];
+				orphans.remove(clique);
 
-				// remove path above this clique
+				// remove path from clique to root
 				FactorGraph<Factor> factors1;	Cliques orphans1;
 				boost::tie(factors1,orphans1) = removePath<Factor>(clique);
 
