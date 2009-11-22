@@ -27,13 +27,12 @@ typedef BayesTree<GaussianConditional> GaussianBayesTree;
 
 /* ************************************************************************* */
 
-SymbolicBayesTree update(SymbolicBayesTree& initial,
-		const boost::shared_ptr<SymbolicFactor>& newFactor) {
+void update(SymbolicBayesTree& bayesTree, const boost::shared_ptr<SymbolicFactor>& newFactor) {
 
 	// Remove the contaminated part of the Bayes tree
 	FactorGraph<SymbolicFactor> factors;
 	SymbolicBayesTree::Cliques orphans;
-	boost::tie(factors,orphans) = initial.removeTop<SymbolicFactor>(newFactor);
+	boost::tie(factors,orphans) = bayesTree.removeTop<SymbolicFactor>(newFactor);
 
 	// create an ordering BELS
 	Ordering ordering = factors.getOrdering();
@@ -42,13 +41,15 @@ SymbolicBayesTree update(SymbolicBayesTree& initial,
 	SymbolicBayesNet bayesNet = eliminate<SymbolicFactor,SymbolicConditional>(factors,ordering);
 
 	// turn back into a Bayes Tree
-	BayesTree<SymbolicConditional> newTree(bayesNet);
+	SymbolicBayesNet::const_reverse_iterator rit;
+	for ( rit=bayesNet.rbegin(); rit != bayesNet.rend(); ++rit )
+		bayesTree.insert(*rit);
 
 	// add orphans to the bottom of the new tree
 	BOOST_FOREACH(SymbolicBayesTree::sharedClique orphan, orphans) {
 		BOOST_FOREACH(string key1, orphan->separator_) {
 			// get clique from new tree to attach to
-			SymbolicBayesTree::sharedClique candidateParent = newTree[key1];
+			SymbolicBayesTree::sharedClique candidateParent = bayesTree[key1];
 
 			// check if all conditionals in there, only add once
 			bool is_subset = true;
@@ -70,8 +71,6 @@ SymbolicBayesTree update(SymbolicBayesTree& initial,
 			}
 		}
 	}
-
-	return newTree;
 }
 
 /* ************************************************************************* */
@@ -119,10 +118,10 @@ TEST( BayesTree, iSAM )
 	boost::shared_ptr<SymbolicFactor> newFactor(new SymbolicFactor(keys));
 
 	// do incremental inference
-	SymbolicBayesTree actual = update(bayesTree, newFactor);
+	update(bayesTree, newFactor);
 
 	// Check whether the same
-  CHECK(assert_equal(expected,actual));
+  CHECK(assert_equal(expected,bayesTree));
 }
 
 /* ************************************************************************* */
