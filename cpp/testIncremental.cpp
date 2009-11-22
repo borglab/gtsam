@@ -6,6 +6,7 @@
  * @author  Frank Dellaert
  */
 
+#include <boost/tuple/tuple.hpp>
 #include <boost/assign/std/list.hpp> // for operator +=
 using namespace boost::assign;
 
@@ -26,48 +27,19 @@ typedef BayesTree<GaussianConditional> GaussianBayesTree;
 
 /* ************************************************************************* */
 
-SymbolicBayesTree update(const SymbolicBayesTree& initial,
+SymbolicBayesTree update(SymbolicBayesTree& initial,
 		const boost::shared_ptr<SymbolicFactor>& newFactor) {
 
-	// create an empty factor graph
-	SymbolicFactorGraph factorGraph;
-
-	// the list of orphaned subtrees
-	list<SymbolicBayesTree::sharedClique> orphans;
-
-	// process each key of the new factor
-	BOOST_FOREACH(string key, newFactor->keys()) {
-		// todo: add path to root
-
-		// only add if key is not yet in the factor graph
-		if (!factorGraph.involves(key)) {
-
-			// get the clique
-			SymbolicBayesTree::sharedClique clique = initial[key];
-
-			// if in orphans, remove the clique
-			orphans.remove(clique);
-
-			// add children to orphans
-			BOOST_FOREACH(SymbolicBayesTree::sharedClique child, clique->children_)
-				orphans.push_back(child);
-
-			// convert to factors
-			FactorGraph<SymbolicFactor> clique_factors(*clique);
-
-			// add it to the factor graph
-			factorGraph.push_back(clique_factors);
-		}
-	}
-
-	// now add the new factor
-	factorGraph.push_back(newFactor);
+	// Remove the contaminated part of the Bayes tree
+	FactorGraph<SymbolicFactor> factors;
+	SymbolicBayesTree::Cliques orphans;
+	boost::tie(factors,orphans) = initial.removeTop<SymbolicFactor>(newFactor);
 
 	// create an ordering BELS
-	Ordering ordering = factorGraph.getOrdering();
+	Ordering ordering = factors.getOrdering();
 
 	// eliminate into a Bayes net
-	SymbolicBayesNet bayesNet = eliminate<SymbolicFactor,SymbolicConditional>(factorGraph,ordering);
+	SymbolicBayesNet bayesNet = eliminate<SymbolicFactor,SymbolicConditional>(factors,ordering);
 
 	// turn back into a Bayes Tree
 	BayesTree<SymbolicConditional> newTree(bayesNet);
