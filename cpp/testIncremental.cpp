@@ -27,14 +27,24 @@ typedef BayesTree<GaussianConditional> GaussianBayesTree;
 
 /* ************************************************************************* */
 
-void update(SymbolicBayesTree& bayesTree, const boost::shared_ptr<SymbolicFactor>& newFactor) {
+void update(SymbolicBayesTree& bayesTree, const FactorGraph<SymbolicFactor> factorGraph) {
 
-	// Remove the contaminated part of the Bayes tree
 	FactorGraph<SymbolicFactor> factors;
 	SymbolicBayesTree::Cliques orphans;
-	boost::tie(factors,orphans) = bayesTree.removeTop<SymbolicFactor>(newFactor);
 
-	// create an ordering BELS
+	BOOST_FOREACH(FactorGraph<SymbolicFactor>::sharedFactor factor, factorGraph) {
+		// Remove the contaminated part of the Bayes tree
+		FactorGraph<SymbolicFactor> newFactors;
+		SymbolicBayesTree::Cliques newOrphans;
+		boost::tie(newFactors, newOrphans) = bayesTree.removeTop<SymbolicFactor>(factor);
+
+		orphans.insert(orphans.begin(), newOrphans.begin(), newOrphans.end());
+		const FactorGraph<SymbolicFactor> test = newFactors;
+		BOOST_FOREACH(FactorGraph<SymbolicFactor>::sharedFactor newFactor, (const FactorGraph<SymbolicFactor>)newFactors)
+			factors.push_back(newFactor);
+	}
+
+	// create an ordering for the new and contaminated factors
 	Ordering ordering = factors.getOrdering();
 
 	// eliminate into a Bayes net
@@ -52,32 +62,6 @@ void update(SymbolicBayesTree& bayesTree, const boost::shared_ptr<SymbolicFactor
 		parent->children_ += orphan;
 	}
 
-#if 0
-		BOOST_FOREACH(string key1, orphan->separator_) {
-			// get clique from new tree to attach to
-			SymbolicBayesTree::sharedClique candidateParent = bayesTree[key1];
-
-			// check if all conditionals in there, only add once
-			bool is_subset = true;
-			BOOST_FOREACH(string key2, orphan->separator_) {
-				// if any one not included, then we have to stop and search for another clique
-				list<string> keys = candidateParent->keys();
-				if (find(keys.begin(), keys.end(), key2) == keys.end()) {
-					is_subset = false;
-					break;
-				}
-			}
-
-			// this clique contains all the keys of the orphan,
-			// so we can add the orphan as a child
-			// todo: what about the tree below the orphan?
-			if (is_subset) {
-				candidateParent->children_ += orphan;
-				break;
-			}
-		}
-	}
-#endif
 }
 
 /* ************************************************************************* */
@@ -119,13 +103,12 @@ TEST( BayesTree, iSAM )
 	expected.insert(T);
 	expected.insert(X);
 
-	// create a new factor to be inserted
-	list<string> keys;
-	keys += "B","S";
-	boost::shared_ptr<SymbolicFactor> newFactor(new SymbolicFactor(keys));
+	// create new factors to be inserted
+	SymbolicFactorGraph factorGraph;
+	factorGraph.push_factor("B","S");
 
 	// do incremental inference
-	update(bayesTree, newFactor);
+	update(bayesTree, factorGraph);
 
 	// Check whether the same
   CHECK(assert_equal(expected,bayesTree));
