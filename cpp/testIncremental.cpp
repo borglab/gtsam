@@ -27,21 +27,19 @@ typedef BayesTree<GaussianConditional> GaussianBayesTree;
 
 /* ************************************************************************* */
 
-void update(SymbolicBayesTree& bayesTree, const FactorGraph<SymbolicFactor> factorGraph) {
+void update(SymbolicBayesTree& bayesTree, const FactorGraph<SymbolicFactor>& factorGraph) {
 
+	// Remove the contaminated part of the Bayes tree
 	FactorGraph<SymbolicFactor> factors;
 	SymbolicBayesTree::Cliques orphans;
+	BOOST_FOREACH(boost::shared_ptr<SymbolicFactor> factor, factorGraph) {
 
-	BOOST_FOREACH(FactorGraph<SymbolicFactor>::sharedFactor factor, factorGraph) {
-		// Remove the contaminated part of the Bayes tree
 		FactorGraph<SymbolicFactor> newFactors;
 		SymbolicBayesTree::Cliques newOrphans;
 		boost::tie(newFactors, newOrphans) = bayesTree.removeTop<SymbolicFactor>(factor);
 
-		orphans.insert(orphans.begin(), newOrphans.begin(), newOrphans.end());
-		const FactorGraph<SymbolicFactor> test = newFactors;
-		BOOST_FOREACH(FactorGraph<SymbolicFactor>::sharedFactor newFactor, (const FactorGraph<SymbolicFactor>)newFactors)
-			factors.push_back(newFactor);
+		factors.push_back(newFactors);
+		orphans.splice (orphans.begin(), newOrphans);
 	}
 
 	// create an ordering for the new and contaminated factors
@@ -50,14 +48,14 @@ void update(SymbolicBayesTree& bayesTree, const FactorGraph<SymbolicFactor> fact
 	// eliminate into a Bayes net
 	SymbolicBayesNet bayesNet = eliminate<SymbolicFactor,SymbolicConditional>(factors,ordering);
 
-	// turn back into a Bayes Tree
+	// insert conditionals back in, straight into the topless bayesTree
 	SymbolicBayesNet::const_reverse_iterator rit;
 	for ( rit=bayesNet.rbegin(); rit != bayesNet.rend(); ++rit )
 		bayesTree.insert(*rit);
 
 	// add orphans to the bottom of the new tree
 	BOOST_FOREACH(SymbolicBayesTree::sharedClique orphan, orphans) {
-		string key = *(orphan->separator_.begin()); // todo: assumes there is a separator...
+		string key = orphan->separator_.front(); // todo: assumes there is a separator...
 		SymbolicBayesTree::sharedClique parent = bayesTree[key];
 		parent->children_ += orphan;
 	}
