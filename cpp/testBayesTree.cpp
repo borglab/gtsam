@@ -331,18 +331,18 @@ TEST( BayesTree, removePath )
 	expected.push_factor("A","B");
 	expected.push_factor("A");
 	expected.push_factor("A","C");
-#if 0
-	std::pair<FactorGraph<Factor>, std::list<sharedClique> > actual =
-			bayesTree.removePath<SymbolicFactor>(bayesTree["C"]);
-  CHECK(assert_equal(expected, actual.first));
+
+	FactorGraph<SymbolicFactor> factors;
+	list<SymbolicBayesTree::sharedClique> orphans;
+	boost::tie(factors,orphans) = bayesTree.removePath<SymbolicFactor>(bayesTree["C"]);
+  CHECK(assert_equal((FactorGraph<SymbolicFactor>)expected, factors));
 
   // remove E: factor graph with EB; E|B removed from second orphan tree
 	SymbolicFactorGraph expected3;
   expected3.push_factor("B","E");
 
-  actual = bayesTree.removePath<SymbolicFactor>(bayesTree["E"]);
-  CHECK(assert_equal(expected3, actual.first));
-#endif
+  boost::tie(factors,orphans) = bayesTree.removePath<SymbolicFactor>(bayesTree["E"]);
+  CHECK(assert_equal((FactorGraph<SymbolicFactor>)expected3, factors));
 }
 
 /* ************************************************************************* */

@@ -197,7 +197,7 @@ namespace gtsam {
 		BOOST_FOREACH(sharedClique child, clique->children_)
 	  	child->parent_.reset();
 
-	  BOOST_FOREACH(std::string key, clique->ordering())
+	  BOOST_FOREACH(string key, clique->ordering())
 			nodes_.erase(key);
 	}
 
@@ -311,7 +311,7 @@ namespace gtsam {
 	template<class Conditional>
 	template<class Factor>
 	FactorGraph<Factor>
-	BayesTree<Conditional>::joint(const std::string& key1, const std::string& key2) const {
+	BayesTree<Conditional>::joint(const string& key1, const string& key2) const {
 
 		// get clique C1 and C2
 		sharedClique C1 = (*this)[key1], C2 = (*this)[key2];
@@ -334,7 +334,7 @@ namespace gtsam {
 	template<class Conditional>
 	template<class Factor>
 	BayesNet<Conditional>
-	BayesTree<Conditional>::jointBayesNet(const std::string& key1, const std::string& key2) const {
+	BayesTree<Conditional>::jointBayesNet(const string& key1, const string& key2) const {
 
 		// calculate marginal as a factor graph
 	  FactorGraph<Factor> fg = this->joint<Factor>(key1,key2);
@@ -344,32 +344,33 @@ namespace gtsam {
 		ordering += key1, key2;
 		return eliminate<Factor,Conditional>(fg,ordering);
 	}
-#if 0
+
 	/* ************************************************************************* */
 	template<class Conditional>
 	template<class Factor>
-	std::pair<FactorGraph<Factor>, std::list<sharedClique> >
+  pair<FactorGraph<Factor>, list<typename BayesTree<Conditional>::sharedClique> >
 	BayesTree<Conditional>::removePath(sharedClique clique) {
 
-		// base case is NULL, return empty factor graph
-		if (clique==NULL) {
-			list<sharedClique> orphans;
-			return make_pair<FactorGraph<Factor>(), orphans>;
+		FactorGraph<Factor> factors;
+		list<sharedClique> orphans;
+
+		// base case is NULL, if so we do nothing and return empties above
+		if (clique!=NULL) {
+
+			// remove path above me
+			boost::tie(factors,orphans) = removePath<Factor>(clique->parent_);
+
+			// add children to list of orphans
+			orphans.insert(orphans.begin(), clique->children_.begin(), clique->children_.end());
+
+			// remove me and add my factors
+			removeClique(clique);
+			factors.push_back(*clique);
 		}
 
-		// remove path above me
-		std::pair<FactorGraph<Factor>, std::list<sharedClique> > factors_orphans = removePath<Factor>(clique->parent_);
-
-		// add children to list of orphans
-		factors_orphans.second.insert(factors_orphans.second.begin(), clique->children_.begin(), clique->children_.end());
-
-		// remove me and add my factors
-		removeClique(clique);
-		factors.push_back(*clique);
-
-		return factors_orphans;
+		return make_pair(factors,orphans);
 	}
-#endif
+
 	/* ************************************************************************* */
 
 }
