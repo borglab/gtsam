@@ -333,7 +333,7 @@ TEST( BayesTree, removePath )
 	expected.push_factor("A","C");
 
 	FactorGraph<SymbolicFactor> factors;
-	list<SymbolicBayesTree::sharedClique> orphans;
+	SymbolicBayesTree::Cliques orphans;
 	boost::tie(factors,orphans) = bayesTree.removePath<SymbolicFactor>(bayesTree["C"]);
   CHECK(assert_equal((FactorGraph<SymbolicFactor>)expected, factors));
 

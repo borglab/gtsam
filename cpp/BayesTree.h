@@ -79,9 +79,16 @@ namespace gtsam {
 			/** return the joint P(C1,C2), where C1==this. TODO: not a method? */
 			template<class Factor>
 			FactorGraph<Factor> joint(shared_ptr C2, shared_ptr root);
-};
+		};
 
+		// typedef for shared pointers to cliques
 		typedef boost::shared_ptr<Clique> sharedClique;
+
+		// A convenience class for a list of shared cliques
+		struct Cliques : public std::list<sharedClique>, public Testable<Cliques> {
+			void print(const std::string& s = "") const {}
+			bool equals(const Cliques& other, double tol = 1e-9) const { return false; }
+		};
 
 	private:
 
@@ -157,7 +164,7 @@ namespace gtsam {
 
 		/** Remove path from clique to root and return that path as factors plus a list of orphaned subtree roots */
 		template<class Factor>
-		std::pair<FactorGraph<Factor>, std::list<sharedClique> > removePath(sharedClique clique);
+		std::pair<FactorGraph<Factor>, Cliques> removePath(sharedClique clique);
 
 	}; // BayesTree
 

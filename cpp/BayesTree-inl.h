@@ -348,11 +348,11 @@ namespace gtsam {
 	/* ************************************************************************* */
 	template<class Conditional>
 	template<class Factor>
-  pair<FactorGraph<Factor>, list<typename BayesTree<Conditional>::sharedClique> >
+  pair<FactorGraph<Factor>, typename BayesTree<Conditional>::Cliques>
 	BayesTree<Conditional>::removePath(sharedClique clique) {
 
 		FactorGraph<Factor> factors;
-		list<sharedClique> orphans;
+		Cliques orphans;
 
 		// base case is NULL, if so we do nothing and return empties above
 		if (clique!=NULL) {
