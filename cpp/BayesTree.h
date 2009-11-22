@@ -86,8 +86,8 @@ namespace gtsam {
 
 		// A convenience class for a list of shared cliques
 		struct Cliques : public std::list<sharedClique>, public Testable<Cliques> {
-			void print(const std::string& s = "") const {}
-			bool equals(const Cliques& other, double tol = 1e-9) const { return false; }
+			void print(const std::string& s = "Cliques") const;
+			bool equals(const Cliques& other, double tol = 1e-9) const;
 		};
 
 	private:

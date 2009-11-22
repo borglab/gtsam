@@ -331,18 +331,24 @@ TEST( BayesTree, removePath )
 	expected.push_factor("A","B");
 	expected.push_factor("A");
 	expected.push_factor("A","C");
+	SymbolicBayesTree::Cliques expectedOrphans;
+  expectedOrphans += bayesTree["D"], bayesTree["E"];
 
 	FactorGraph<SymbolicFactor> factors;
 	SymbolicBayesTree::Cliques orphans;
 	boost::tie(factors,orphans) = bayesTree.removePath<SymbolicFactor>(bayesTree["C"]);
   CHECK(assert_equal((FactorGraph<SymbolicFactor>)expected, factors));
+  CHECK(assert_equal(expectedOrphans, orphans));
 
   // remove E: factor graph with EB; E|B removed from second orphan tree
-	SymbolicFactorGraph expected3;
-  expected3.push_factor("B","E");
+	SymbolicFactorGraph expected2;
+  expected2.push_factor("B","E");
+  SymbolicBayesTree::Cliques expectedOrphans2;
+  expectedOrphans2 += bayesTree["F"];
 
   boost::tie(factors,orphans) = bayesTree.removePath<SymbolicFactor>(bayesTree["E"]);
-  CHECK(assert_equal((FactorGraph<SymbolicFactor>)expected3, factors));
+  CHECK(assert_equal((FactorGraph<SymbolicFactor>)expected2, factors));
+  CHECK(assert_equal(expectedOrphans2, orphans));
 }
 
 /* ************************************************************************* */

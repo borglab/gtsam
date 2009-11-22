@@ -173,6 +173,20 @@ namespace gtsam {
 
 	/* ************************************************************************* */
 	template<class Conditional>
+	void BayesTree<Conditional>::Cliques::print(const std::string& s) const {
+		cout << s << " Cliques: ";
+		BOOST_FOREACH(sharedClique clique, *this)
+				clique->print();
+	}
+
+	/* ************************************************************************* */
+	template<class Conditional>
+	bool BayesTree<Conditional>::Cliques::equals(const Cliques& other, double tol) const {
+		return other == *this;
+	}
+
+	/* ************************************************************************* */
+	template<class Conditional>
 	typename BayesTree<Conditional>::sharedClique BayesTree<Conditional>::addClique
 	(const sharedConditional& conditional, sharedClique parent_clique) {
 		sharedClique new_clique(new Clique(conditional));
@@ -357,14 +371,16 @@ namespace gtsam {
 		// base case is NULL, if so we do nothing and return empties above
 		if (clique!=NULL) {
 
+			// remove me
+			removeClique(clique);
+
 			// remove path above me
 			boost::tie(factors,orphans) = removePath<Factor>(clique->parent_);
 
 			// add children to list of orphans
 			orphans.insert(orphans.begin(), clique->children_.begin(), clique->children_.end());
 
-			// remove me and add my factors
-			removeClique(clique);
+			// add myself to factors
 			factors.push_back(*clique);
 		}
 
