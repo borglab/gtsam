@@ -22,11 +22,25 @@ typedef BayesTree<SymbolicConditional> SymbolicBayesTree;
 typedef BayesTree<GaussianConditional> GaussianBayesTree;
 
 // Conditionals for ASIA example from the tutorial with A and D evidence
-SymbolicConditional::shared_ptr B(new SymbolicConditional("B")), L(
-		new SymbolicConditional("L", "B")), E(
-		new SymbolicConditional("E", "L", "B")), S(new SymbolicConditional("S",
-		"L", "B")), T(new SymbolicConditional("T", "E", "L")), X(
-		new SymbolicConditional("X", "E"));
+SymbolicConditional::shared_ptr
+	B(new SymbolicConditional("B")),
+	L(new SymbolicConditional("L", "B")),
+	E(new SymbolicConditional("E", "B", "L")),
+	S(new SymbolicConditional("S", "L", "B")),
+	T(new SymbolicConditional("T", "E", "L")),
+	X(new SymbolicConditional("X", "E"));
+
+// Bayes Tree for Asia example
+SymbolicBayesTree createAsiaSymbolicBayesTree() {
+	SymbolicBayesTree bayesTree;
+	bayesTree.insert(B);
+	bayesTree.insert(L);
+	bayesTree.insert(E);
+	bayesTree.insert(S);
+	bayesTree.insert(T);
+	bayesTree.insert(X);
+	return bayesTree;
+}
 
 /* ************************************************************************* */
 TEST( BayesTree, Front )
@@ -45,13 +59,7 @@ TEST( BayesTree, Front )
 TEST( BayesTree, constructor )
 {
 	// Create using insert
-	SymbolicBayesTree bayesTree;
-	bayesTree.insert(B);
-	bayesTree.insert(L);
-	bayesTree.insert(E);
-	bayesTree.insert(S);
-	bayesTree.insert(T);
-	bayesTree.insert(X);
+	SymbolicBayesTree bayesTree = createAsiaSymbolicBayesTree();
 
 	// Check Size
 	LONGS_EQUAL(4,bayesTree.size());
@@ -354,23 +362,7 @@ TEST( BayesTree, removePath )
 /* ************************************************************************* */
 TEST( BayesTree, removePath2 )
 {
-	// Conditionals for ASIA example from the tutorial with A and D evidence
-	SymbolicConditional::shared_ptr
-		B(new SymbolicConditional("B")),
-		L(new SymbolicConditional("L", "B")),
-		E(new SymbolicConditional("E", "B", "L")),
-		S(new SymbolicConditional("S", "L", "B")),
-		T(new SymbolicConditional("T", "E", "L")),
-		X(new SymbolicConditional("X", "E"));
-
-	// Create using insert
-	SymbolicBayesTree bayesTree;
-	bayesTree.insert(B);
-	bayesTree.insert(L);
-	bayesTree.insert(E);
-	bayesTree.insert(S);
-	bayesTree.insert(T);
-	bayesTree.insert(X);
+	SymbolicBayesTree bayesTree = createAsiaSymbolicBayesTree();
 
 	// Call remove-path with clique S
 	FactorGraph<SymbolicFactor> factors;
@@ -391,23 +383,7 @@ TEST( BayesTree, removePath2 )
 /* ************************************************************************* */
 TEST( BayesTree, removePath3 )
 {
-	// Conditionals for ASIA example from the tutorial with A and D evidence
-	SymbolicConditional::shared_ptr
-		B(new SymbolicConditional("B")),
-		L(new SymbolicConditional("L", "B")),
-		E(new SymbolicConditional("E", "B", "L")),
-		S(new SymbolicConditional("S", "L", "B")),
-		T(new SymbolicConditional("T", "E", "L")),
-		X(new SymbolicConditional("X", "E"));
-
-	// Create using insert
-	SymbolicBayesTree bayesTree;
-	bayesTree.insert(B);
-	bayesTree.insert(L);
-	bayesTree.insert(E);
-	bayesTree.insert(S);
-	bayesTree.insert(T);
-	bayesTree.insert(X);
+	SymbolicBayesTree bayesTree = createAsiaSymbolicBayesTree();
 
 	// Call remove-path with clique S
 	FactorGraph<SymbolicFactor> factors;
@@ -429,23 +405,7 @@ TEST( BayesTree, removePath3 )
 /* ************************************************************************* */
 TEST( BayesTree, removeTop )
 {
-	// Conditionals for ASIA example from the tutorial with A and D evidence
-	SymbolicConditional::shared_ptr
-		B(new SymbolicConditional("B")),
-		L(new SymbolicConditional("L", "B")),
-		E(new SymbolicConditional("E", "B", "L")),
-		S(new SymbolicConditional("S", "L", "B")),
-		T(new SymbolicConditional("T", "E", "L")),
-		X(new SymbolicConditional("X", "E"));
-
-	// Create using insert
-	SymbolicBayesTree bayesTree;
-	bayesTree.insert(B);
-	bayesTree.insert(L);
-	bayesTree.insert(E);
-	bayesTree.insert(S);
-	bayesTree.insert(T);
-	bayesTree.insert(X);
+	SymbolicBayesTree bayesTree = createAsiaSymbolicBayesTree();
 
 	// create a new factor to be inserted
 	list<string> keys;
