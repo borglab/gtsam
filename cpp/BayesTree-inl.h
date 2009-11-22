@@ -174,9 +174,9 @@ namespace gtsam {
 	/* ************************************************************************* */
 	template<class Conditional>
 	void BayesTree<Conditional>::Cliques::print(const std::string& s) const {
-		cout << s << " Cliques: ";
+		cout << s << ":\n";
 		BOOST_FOREACH(sharedClique clique, *this)
-				clique->print();
+				clique->printTree();
 	}
 
 	/* ************************************************************************* */
@@ -388,6 +388,7 @@ namespace gtsam {
 	}
 
 	/* ************************************************************************* */
+
 	template<class Conditional>
 	template<class Factor>
   pair<FactorGraph<Factor>, typename BayesTree<Conditional>::Cliques>
@@ -406,7 +407,7 @@ namespace gtsam {
 
 				// remove path above this clique
 				FactorGraph<Factor> factors1;	Cliques orphans1;
-				boost::tie(factors1,orphans1) = removePath<Factor>(clique->parent_);
+				boost::tie(factors1,orphans1) = removePath<Factor>(clique);
 
 				// add to global factors and orphans
 				factors.push_back(factors1);

@@ -65,7 +65,7 @@ namespace gtsam {
 			size_t treeSize() const;
 
 			/** print this node and entire subtree below it */
-			void printTree(const std::string& indent) const;
+			void printTree(const std::string& indent="") const;
 
 			/** return the conditional P(S|Root) on the separator given the root */
 			// TODO: create a cached version

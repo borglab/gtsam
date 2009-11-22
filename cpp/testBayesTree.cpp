@@ -352,6 +352,81 @@ TEST( BayesTree, removePath )
 }
 
 /* ************************************************************************* */
+TEST( BayesTree, removePath2 )
+{
+	// Conditionals for ASIA example from the tutorial with A and D evidence
+	SymbolicConditional::shared_ptr
+		B(new SymbolicConditional("B")),
+		L(new SymbolicConditional("L", "B")),
+		E(new SymbolicConditional("E", "B", "L")),
+		S(new SymbolicConditional("S", "L", "B")),
+		T(new SymbolicConditional("T", "E", "L")),
+		X(new SymbolicConditional("X", "E"));
+
+	// Create using insert
+	SymbolicBayesTree bayesTree;
+	bayesTree.insert(B);
+	bayesTree.insert(L);
+	bayesTree.insert(E);
+	bayesTree.insert(S);
+	bayesTree.insert(T);
+	bayesTree.insert(X);
+
+	// Call remove-path with clique S
+	FactorGraph<SymbolicFactor> factors;
+	SymbolicBayesTree::Cliques orphans;
+  boost::tie(factors,orphans) = bayesTree.removePath<SymbolicFactor>(bayesTree["B"]);
+
+	// Check expected outcome
+	SymbolicFactorGraph expected;
+	expected.push_factor("B","L","E");
+	expected.push_factor("B","L");
+	expected.push_factor("B");
+  CHECK(assert_equal((FactorGraph<SymbolicFactor>)expected, factors));
+	SymbolicBayesTree::Cliques expectedOrphans;
+  expectedOrphans += bayesTree["S"], bayesTree["T"], bayesTree["X"];
+  CHECK(assert_equal(expectedOrphans, orphans));
+}
+
+/* ************************************************************************* */
+TEST( BayesTree, removePath3 )
+{
+	// Conditionals for ASIA example from the tutorial with A and D evidence
+	SymbolicConditional::shared_ptr
+		B(new SymbolicConditional("B")),
+		L(new SymbolicConditional("L", "B")),
+		E(new SymbolicConditional("E", "B", "L")),
+		S(new SymbolicConditional("S", "L", "B")),
+		T(new SymbolicConditional("T", "E", "L")),
+		X(new SymbolicConditional("X", "E"));
+
+	// Create using insert
+	SymbolicBayesTree bayesTree;
+	bayesTree.insert(B);
+	bayesTree.insert(L);
+	bayesTree.insert(E);
+	bayesTree.insert(S);
+	bayesTree.insert(T);
+	bayesTree.insert(X);
+
+	// Call remove-path with clique S
+	FactorGraph<SymbolicFactor> factors;
+	SymbolicBayesTree::Cliques orphans;
+  boost::tie(factors,orphans) = bayesTree.removePath<SymbolicFactor>(bayesTree["S"]);
+
+	// Check expected outcome
+	SymbolicFactorGraph expected;
+	expected.push_factor("B","L","E");
+	expected.push_factor("B","L");
+	expected.push_factor("B");
+	expected.push_factor("L","B","S");
+  CHECK(assert_equal((FactorGraph<SymbolicFactor>)expected, factors));
+	SymbolicBayesTree::Cliques expectedOrphans;
+  expectedOrphans += bayesTree["T"], bayesTree["X"];
+  CHECK(assert_equal(expectedOrphans, orphans));
+}
+
+/* ************************************************************************* */
 TEST( BayesTree, removeTop )
 {
 	// Conditionals for ASIA example from the tutorial with A and D evidence
@@ -387,8 +462,12 @@ TEST( BayesTree, removeTop )
 	expected.push_factor("B","L","E");
 	expected.push_factor("B","L");
 	expected.push_factor("B");
+	expected.push_factor("L","B","S");
 	expected.push_factor("B","S");
   CHECK(assert_equal((FactorGraph<SymbolicFactor>)expected, factors));
+	SymbolicBayesTree::Cliques expectedOrphans;
+  expectedOrphans += bayesTree["T"], bayesTree["X"];
+  //CHECK(assert_equal(expectedOrphans, orphans));
 }
 
 /* ************************************************************************* */
