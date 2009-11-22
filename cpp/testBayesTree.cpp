@@ -439,25 +439,36 @@ TEST( BayesTree, removeTop )
 
 
 /* ************************************************************************* */
+TEST( BayesTree, removeTop2 )
+{
+	SymbolicBayesTree bayesTree = createAsiaSymbolicBayesTree();
+
+	// create two factors to be inserted
+	SymbolicFactorGraph newFactors;
+	newFactors.push_factor("B");
+	newFactors.push_factor("S");
+
+	// Remove the contaminated part of the Bayes tree
+	FactorGraph<SymbolicFactor> factors;
+	SymbolicBayesTree::Cliques orphans;
+	boost::tie(factors,orphans) = bayesTree.removeTop<SymbolicFactor>(newFactors);
+
+	// Check expected outcome
+	SymbolicFactorGraph expected;
+	expected.push_factor("B","L","E");
+	expected.push_factor("B","L");
+	expected.push_factor("B");
+	expected.push_factor("L","B","S");
+  CHECK(assert_equal((FactorGraph<SymbolicFactor>)expected, factors));
+	SymbolicBayesTree::Cliques expectedOrphans;
+  expectedOrphans += bayesTree["T"], bayesTree["X"];
+  // CHECK(assert_equal(expectedOrphans, orphans)); fails !
+}
+
+/* ************************************************************************* */
 TEST( BayesTree, iSAM )
 {
-	// Conditionals for ASIA example from the tutorial with A and D evidence
-	SymbolicConditional::shared_ptr
-		B(new SymbolicConditional("B")),
-		L(new SymbolicConditional("L", "B")),
-		E(new SymbolicConditional("E", "B", "L")),
-		S(new SymbolicConditional("S", "L", "B")),
-		T(new SymbolicConditional("T", "E", "L")),
-		X(new SymbolicConditional("X", "E"));
-
-	// Create using insert
-	SymbolicBayesTree bayesTree;
-	bayesTree.insert(B);
-	bayesTree.insert(L);
-	bayesTree.insert(E);
-	bayesTree.insert(S);
-	bayesTree.insert(T);
-	bayesTree.insert(X);
+	SymbolicBayesTree bayesTree = createAsiaSymbolicBayesTree();
 
 	// Now we modify the Bayes tree by inserting a new factor over B and S
 

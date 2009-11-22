@@ -390,6 +390,7 @@ namespace gtsam {
 	}
 
 	/* ************************************************************************* */
+	// TODO: add to factors and orphans
 	template<class Conditional>
 	template<class Factor>
   pair<FactorGraph<Factor>, typename BayesTree<Conditional>::Cliques>
@@ -421,19 +422,34 @@ namespace gtsam {
 	/* ************************************************************************* */
 	template<class Conditional>
 	template<class Factor>
-	void BayesTree<Conditional>::update(const FactorGraph<Factor>& newFactors) {
+  pair<FactorGraph<Factor>, typename BayesTree<Conditional>::Cliques>
+	BayesTree<Conditional>::removeTop(const FactorGraph<Factor>& newFactors) {
+
 		// Remove the contaminated part of the Bayes tree
 		FactorGraph<Factor> factors;
-		typename BayesTree<Conditional>::Cliques orphans;
+		Cliques orphans;
 		BOOST_FOREACH(boost::shared_ptr<Factor> factor, newFactors) {
 
 			FactorGraph<Factor> factors1;
-			typename BayesTree<Conditional>::Cliques orphans1;
-			boost::tie(factors1, orphans1) = removeTop<Factor>(factor);
+			Cliques orphans1;
+			boost::tie(factors1, orphans1) = this->removeTop<Factor>(factor);
 
 			factors.push_back(factors1);
 			orphans.splice (orphans.begin(), orphans1);
 		}
+
+		return make_pair(factors,orphans);
+	}
+
+	/* ************************************************************************* */
+	template<class Conditional>
+	template<class Factor>
+	void BayesTree<Conditional>::update(const FactorGraph<Factor>& newFactors) {
+
+		// Remove the contaminated part of the Bayes tree
+		FactorGraph<Factor> factors;
+		Cliques orphans;
+		boost::tie(factors, orphans) = removeTop<Factor>(newFactors);
 
 		// add the factors themselves
 		factors.push_back(newFactors);
@@ -450,9 +466,9 @@ namespace gtsam {
 			insert(*rit);
 
 		// add orphans to the bottom of the new tree
-		BOOST_FOREACH(typename BayesTree<Conditional>::sharedClique orphan, orphans) {
+		BOOST_FOREACH(sharedClique orphan, orphans) {
 			string key = orphan->separator_.front(); // todo: assumes there is a separator...
-			typename BayesTree<Conditional>::sharedClique parent = (*this)[key];
+			sharedClique parent = (*this)[key];
 			parent->children_ += orphan;
 		}
 

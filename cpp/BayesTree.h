@@ -178,6 +178,12 @@ namespace gtsam {
 		std::pair<FactorGraph<Factor>, Cliques> removeTop(const boost::shared_ptr<Factor>& newFactor);
 
 		/**
+		 * Call removeTop for several factors in a factorGraph
+		 */
+		template<class Factor>
+		std::pair<FactorGraph<Factor>, Cliques> removeTop(const FactorGraph<Factor>& newFactors);
+
+		/**
 		 * iSAM.
 		 */
 		template<class Factor>
