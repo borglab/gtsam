@@ -508,24 +508,45 @@ TEST( BayesTree, iSAM_smoother )
 	// Create smoother with 7 nodes
 	GaussianFactorGraph smoother = createSmoother(7);
 
-	// iSAM
-	GaussianBayesTree bayesTree;
-	BOOST_FOREACH(boost::shared_ptr<GaussianFactor> factor, (const GaussianFactorGraph)smoother) {
+	// run iSAM for every factor
+	GaussianBayesTree actual;
+	BOOST_FOREACH(boost::shared_ptr<GaussianFactor> factor, smoother) {
 		GaussianFactorGraph factorGraph;
 		factorGraph.push_back(factor);
-		bayesTree.update(factorGraph);
+		actual.update(factorGraph);
 	}
 
-	// expected
+	// Create expected Bayes Tree by solving smoother with "natural" ordering
 	Ordering ordering;
-	for (int t = 1; t <= 7; t++)
-		ordering.push_back(symbol('x', t));
-	// eliminate using the "natural" ordering
-	GaussianBayesNet chordalBayesNet = smoother.eliminate(ordering);
-	// Create the Bayes tree
-	GaussianBayesTree expectedBayesTree(chordalBayesNet);
+	for (int t = 1; t <= 7; t++) ordering += symbol('x', t);
+	GaussianBayesTree expected(smoother.eliminate(ordering));
 
-	CHECK(assert_equal(expectedBayesTree, bayesTree));
+	CHECK(assert_equal(expected, actual));
+}
+
+/* ************************************************************************* */
+TEST( BayesTree, iSAM_smoother2 )
+{
+	// Create smoother with 7 nodes
+	GaussianFactorGraph smoother = createSmoother(7);
+
+	// Create initial tree from first 4 timestamps in reverse order !
+	Ordering ord; ord += "x4","x3","x2","x1";
+	GaussianFactorGraph factors1;
+	for (int i=0;i<7;i++) factors1.push_back(smoother[i]);
+	GaussianBayesTree actual(factors1.eliminate(ord));
+
+	// run iSAM with remaining factors
+	GaussianFactorGraph factors2;
+	for (int i=7;i<13;i++) factors2.push_back(smoother[i]);
+	actual.update(factors2);
+
+	// Create expected Bayes Tree by solving smoother with "natural" ordering
+	Ordering ordering;
+	for (int t = 1; t <= 7; t++) ordering += symbol('x', t);
+	GaussianBayesTree expected(smoother.eliminate(ordering));
+
+	CHECK(assert_equal(expected, actual));
 }
 
 /* ************************************************************************* */
