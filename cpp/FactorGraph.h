@@ -57,25 +57,15 @@ namespace gtsam {
 		/** Check equality */
 		bool equals(const FactorGraph& fg, double tol = 1e-9) const;
 
-		/** STL like, return the iterator pointing to the first factor */
-		inline const_iterator begin() const {
-			return factors_.begin();
-		}
+		/** STL begin and end, so we can use BOOST_FOREACH */
 
-		/** STL like, return the iterator pointing to the last factor */
-		inline const_iterator end() const {
-			return factors_.end();
-		}
-
-		/** clear the factor graph */
-		inline void clear() {
-			factors_.clear();
-		}
+		inline       iterator begin()       { return factors_.begin();}
+		inline const_iterator begin() const { return factors_.begin();}
+		inline       iterator end()         { return factors_.end();  }
+		inline const_iterator end()   const { return factors_.end();  }
 
 		/** Get a specific factor by index */
-		inline sharedFactor operator[](size_t i) const {
-			return factors_[i];
-		}
+		inline sharedFactor operator[](size_t i) const {return factors_[i];}
 
 		/** return the number of factors and NULLS */
 	  inline size_t size() const { return factors_.size();}
