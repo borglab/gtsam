@@ -19,6 +19,12 @@ template<class FactorGraph, class Config>
 class SQPOptimizer {
 
 public:
+	// verbosity level
+	typedef enum {
+		SILENT,
+		FULL
+	} Verbosity;
+
 	// useful for storing configurations
 	typedef boost::shared_ptr<const Config> shared_config;
 	typedef boost::shared_ptr<const VectorConfig> shared_vconfig;
@@ -32,6 +38,7 @@ private:
 	shared_config config_;
 	shared_vconfig lagrange_config_;
 	double error_;
+	double constraint_error_;
 
 public:
 	/**
@@ -60,6 +67,12 @@ public:
 	const FactorGraph* graph() const { return graph_; }
 	const Ordering* ordering() const { return ordering_; }
 	shared_config config() const { return config_; }
+
+	/**
+	 * Primary optimization iteration, updates the configs
+	 * @return a new optimization object with updated values
+	 */
+	SQPOptimizer<FactorGraph, Config> iterate(Verbosity verbosity=SILENT) const;
 
 };
 
