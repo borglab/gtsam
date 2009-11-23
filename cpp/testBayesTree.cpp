@@ -22,6 +22,28 @@ using namespace gtsam;
 
 typedef BayesTree<SymbolicConditional> SymbolicBayesTree;
 typedef BayesTree<GaussianConditional> GaussianBayesTree;
+/* ************************************************************************* */
+// SLAM example from RSS sqrtSAM paper
+SymbolicConditional::shared_ptr x3(new SymbolicConditional("x3")),
+		x2(new SymbolicConditional("x2","x3")),
+		x1(new SymbolicConditional("x1","x2","x3")),
+		l1(new SymbolicConditional("l1","x1","x2")),
+		l2(new SymbolicConditional("l2","x1","x3"));
+
+// Bayes Tree for sqrtSAM example
+SymbolicBayesTree createSlamSymbolicBayesTree(){
+	// Create using insert
+	SymbolicBayesTree bayesTree_slam;
+	bayesTree_slam.insert(x3);
+	bayesTree_slam.insert(x2);
+	bayesTree_slam.insert(x1);
+	bayesTree_slam.insert(l2);
+	bayesTree_slam.insert(l1);
+	return bayesTree_slam;
+}
+
+/* ************************************************************************* */
+
 
 // Conditionals for ASIA example from the tutorial with A and D evidence
 SymbolicConditional::shared_ptr
@@ -500,6 +522,37 @@ TEST( BayesTree, iSAM )
 
 	// Check whether the same
   CHECK(assert_equal(expected,bayesTree));
+}
+/* ************************************************************************* */
+TEST( BayesTree, iSAM_slam )
+{
+	// Create using insert
+	SymbolicBayesTree bayesTree_slam = createSlamSymbolicBayesTree();
+
+	//New conditionals for the expected Bayes tree
+
+	SymbolicConditional::shared_ptr
+			l1_(new SymbolicConditional("l1","x1","x2","x3"));
+
+	// Create expected Bayes tree
+	SymbolicBayesTree expected_slam;
+	expected_slam.insert(x3);
+	expected_slam.insert(x2);
+	expected_slam.insert(x1);
+	expected_slam.insert(l1_);
+	expected_slam.insert(l2);
+
+
+	// create new factors to be inserted
+	SymbolicFactorGraph factorGraph_slam;
+	factorGraph_slam.push_factor("x3","l1");
+	factorGraph_slam.push_factor("x3");
+
+	// do incremental inference
+	bayesTree_slam.update(factorGraph_slam);
+
+	// Check whether the same
+    CHECK(assert_equal(expected_slam,bayesTree_slam));
 }
 
 /* ************************************************************************* */
