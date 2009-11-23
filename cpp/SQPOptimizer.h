@@ -27,16 +27,22 @@ public:
 
 	// useful for storing configurations
 	typedef boost::shared_ptr<const Config> shared_config;
-	typedef boost::shared_ptr<const VectorConfig> shared_vconfig;
+	typedef boost::shared_ptr<VectorConfig> shared_vconfig;
 
 private:
-	// keep const references to the graph and the original ordering
+	// keep const references to the graph and initial ordering
 	const FactorGraph* graph_;
 	const Ordering* ordering_;
 
 	// keep configurations
 	shared_config config_;
 	shared_vconfig lagrange_config_;
+
+	// keep a configuration that has been updated to include the lagrange multipliers
+	Ordering full_ordering_;
+
+
+	// keep a set of errors for the overall system and just the constraints
 	double error_;
 	double constraint_error_;
 

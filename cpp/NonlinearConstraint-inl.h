@@ -15,6 +15,21 @@ namespace gtsam {
 // Implementations of unary nonlinear constraints
 /* ************************************************************************* */
 
+template <class Config>
+NonlinearConstraint1<Config>::NonlinearConstraint1(
+			const std::string& key,
+			Matrix (*gradG)(const Config& config, const std::string& key),
+			Vector (*g)(const Config& config, const std::string& key),
+			size_t dim_constraint,
+			const std::string& lagrange_key) :
+				NonlinearConstraint<Config>(lagrange_key, dim_constraint),
+				g_(g), gradG_(gradG), key_(key) {
+		// set a good lagrange key here
+		// TODO:should do something smart to find a unique one
+		if (lagrange_key == "")
+			this->lagrange_key_ = "L_" + key;
+	}
+
 /* ************************************************************************* */
 template <class Config>
 void NonlinearConstraint1<Config>::print(const std::string& s) const {
@@ -63,6 +78,24 @@ NonlinearConstraint1<Config>::linearize(const Config& config, const VectorConfig
 /* ************************************************************************* */
 // Implementations of binary nonlinear constraints
 /* ************************************************************************* */
+
+/* ************************************************************************* */
+template <class Config>
+NonlinearConstraint2<Config>::NonlinearConstraint2(
+		const std::string& key1,
+		Matrix (*gradG1)(const Config& config, const std::string& key),
+		const std::string& key2,
+		Matrix (*gradG2)(const Config& config, const std::string& key),
+		Vector (*g)(const Config& config, const std::string& key1, const std::string& key2),
+		size_t dim_constraint,
+		const std::string& lagrange_key) :
+			NonlinearConstraint<Config>(lagrange_key, dim_constraint),
+			g_(g), gradG1_(gradG1), gradG2_(gradG2), key1_(key1), key2_(key2) {
+	// set a good lagrange key here
+	// TODO:should do something smart to find a unique one
+	if (lagrange_key == "")
+		this->lagrange_key_ = "L_" + key1 + key2;
+}
 
 /* ************************************************************************* */
 template <class Config>

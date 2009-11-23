@@ -43,7 +43,7 @@ TEST ( SQPOptimizer, basic ) {
 	CHECK(assert_equal(*config, *(optimizer.config())));
 }
 
-namespace sqpOptimizer_test1 {
+namespace sqp_LinearMapWarp2 {
 // binary constraint between landmarks
 /** g(x) = x-y = 0 */
 Vector g_func(const VectorConfig& config, const std::string& key1, const std::string& key2) {
@@ -59,9 +59,9 @@ Matrix grad_g1(const VectorConfig& config, const std::string& key) {
 Matrix grad_g2(const VectorConfig& config, const std::string& key) {
 	return -1*eye(2);
 }
-} // \namespace sqpOptimizer_test1
+} // \namespace sqp_LinearMapWarp2
 
-namespace sqpOptimizer_test2 {
+namespace sqp_LinearMapWarp1 {
 // Unary Constraint on x1
 /** g(x) = x -[1;1] = 0 */
 Vector g_func(const VectorConfig& config, const std::string& key) {
@@ -72,24 +72,16 @@ Vector g_func(const VectorConfig& config, const std::string& key) {
 Matrix grad_g(const VectorConfig& config, const std::string& key) {
 	return eye(2);
 }
-} // \namespace sqpOptimizer_test2
+} // \namespace sqp_LinearMapWarp12
 
 typedef SQPOptimizer<NLGraph, VectorConfig> Optimizer;
 
-/**
- * Test pulled from testSQP, with
- */
-TEST ( SQPOptimizer, simple_case ) {
-	bool verbose = false;
-	// position (1, 1) constraint for x1
-	VectorConfig feas;
-	feas.insert("x1", Vector_(2, 1.0, 1.0));
-
+NLGraph linearMapWarpGraph() {
 	// constant constraint on x1
 	boost::shared_ptr<NonlinearConstraint1<VectorConfig> > c1(
 			new NonlinearConstraint1<VectorConfig>(
-					"x1", *sqpOptimizer_test2::grad_g,
-					*sqpOptimizer_test2::g_func, 2, "L_x1"));
+					"x1", *sqp_LinearMapWarp1::grad_g,
+					*sqp_LinearMapWarp1::g_func, 2, "L_x1"));
 
 	// measurement from x1 to l1
 	Vector z1 = Vector_(2, 0.0, 5.0);
@@ -104,9 +96,9 @@ TEST ( SQPOptimizer, simple_case ) {
 	// equality constraint between l1 and l2
 	boost::shared_ptr<NonlinearConstraint2<VectorConfig> > c2(
 			new NonlinearConstraint2<VectorConfig>(
-					"l1", *sqpOptimizer_test1::grad_g1,
-					"l2", *sqpOptimizer_test1::grad_g2,
-					*sqpOptimizer_test1::g_func, 2, "L_l1l2"));
+					"l1", *sqp_LinearMapWarp2::grad_g1,
+					"l2", *sqp_LinearMapWarp2::grad_g2,
+					*sqp_LinearMapWarp2::g_func, 2, "L_l1l2"));
 
 	// construct the graph
 	NLGraph graph;
@@ -115,9 +107,19 @@ TEST ( SQPOptimizer, simple_case ) {
 	graph.push_back(f1);
 	graph.push_back(f2);
 
+	return graph;
+}
+
+/* ********************************************************************* */
+TEST ( SQPOptimizer, map_warp_initLam ) {
+	bool verbose = false;
+	// get a graph
+	NLGraph graph = linearMapWarpGraph();
+
 	// create an initial estimate
-	shared_config initialEstimate(new VectorConfig(feas)); // must start with feasible set
-	initialEstimate->insert("l1", Vector_(2, 1.0, 6.0)); // ground truth
+	shared_config initialEstimate(new VectorConfig);
+	initialEstimate->insert("x1", Vector_(2, 1.0, 1.0));
+	initialEstimate->insert("l1", Vector_(2, 1.0, 6.0));
 	initialEstimate->insert("l2", Vector_(2, -4.0, 0.0)); // starting with a separate reference frame
 	initialEstimate->insert("x2", Vector_(2, 0.0, 0.0)); // other pose starts at origin
 
@@ -132,6 +134,38 @@ TEST ( SQPOptimizer, simple_case ) {
 
 	// create an optimizer
 	Optimizer optimizer(graph, ordering, initialEstimate, initLagrange);
+
+	// perform an iteration of optimization
+	Optimizer oneIteration = optimizer.iterate(Optimizer::SILENT);
+
+	// get the config back out and verify
+	VectorConfig actual = *(oneIteration.config());
+	VectorConfig expected;
+	expected.insert("x1", Vector_(2, 1.0, 1.0));
+	expected.insert("l1", Vector_(2, 1.0, 6.0));
+	expected.insert("l2", Vector_(2, 1.0, 6.0));
+	expected.insert("x2", Vector_(2, 5.0, 6.0));
+	CHECK(assert_equal(actual, expected));
+}
+
+/* ********************************************************************* */
+TEST ( SQPOptimizer, map_warp ) {
+	// get a graph
+	NLGraph graph = linearMapWarpGraph();
+
+	// create an initial estimate
+	shared_config initialEstimate(new VectorConfig);
+	initialEstimate->insert("x1", Vector_(2, 1.0, 1.0));
+	initialEstimate->insert("l1", Vector_(2, 1.0, 6.0));
+	initialEstimate->insert("l2", Vector_(2, -4.0, 0.0)); // starting with a separate reference frame
+	initialEstimate->insert("x2", Vector_(2, 0.0, 0.0)); // other pose starts at origin
+
+	// create an ordering
+	Ordering ordering;
+	ordering += "x1", "x2", "l1", "l2";
+
+	// create an optimizer
+	Optimizer optimizer(graph, ordering, initialEstimate);
 
 	// perform an iteration of optimization
 	Optimizer oneIteration = optimizer.iterate(Optimizer::SILENT);

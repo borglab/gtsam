@@ -7,27 +7,48 @@
 #pragma once
 
 #include <boost/foreach.hpp>
+#include <boost/assign/std/list.hpp> // for operator +=
+#include <boost/assign/std/map.hpp> // for insert
 #include "GaussianFactorGraph.h"
 #include "SQPOptimizer.h"
 
 using namespace std;
+using namespace boost::assign;
+
 namespace gtsam {
 
 /* **************************************************************** */
 template <class G, class C>
 SQPOptimizer<G,C>::SQPOptimizer(const G& graph, const Ordering& ordering,
 		shared_config config)
-: graph_(&graph), ordering_(&ordering), config_(config)
+: graph_(&graph), ordering_(&ordering), full_ordering_(ordering),
+  config_(config), lagrange_config_(new VectorConfig)
 {
-	// TODO: assign a value to the lagrange config
+	// local typedefs
+	typedef typename G::const_iterator const_iterator;
+	typedef NonlinearConstraint<C> NLConstraint;
+	typedef boost::shared_ptr<NLConstraint > shared_c;
 
+	// find the constraints
+	for (const_iterator factor = graph_->begin(); factor < graph_->end(); factor++) {
+		const shared_c constraint = boost::shared_dynamic_cast<NLConstraint >(*factor);
+		if (constraint != NULL) {
+			size_t p = constraint->nrConstraints();
+			// update ordering
+			string key = constraint->lagrangeKey();
+			full_ordering_ += key;
+			// initialize lagrange multipliers
+			lagrange_config_->insert(key, ones(p));
+		}
+	}
 }
 
 /* **************************************************************** */
 template <class G, class C>
 SQPOptimizer<G,C>::SQPOptimizer(const G& graph, const Ordering& ordering,
 		shared_config config, shared_vconfig lagrange)
-: graph_(&graph), ordering_(&ordering), config_(config), lagrange_config_(lagrange)
+: graph_(&graph), ordering_(&ordering), full_ordering_(ordering),
+  config_(config), lagrange_config_(lagrange)
 {
 
 }
@@ -66,7 +87,7 @@ SQPOptimizer<G, C> SQPOptimizer<G, C>::iterate(Verbosity v) const {
 	if (verbose) fg.print("Before Optimization");
 
 	// optimize linear graph to get full delta config
-	VectorConfig delta = fg.optimize(*ordering_).scale(-1.0);
+	VectorConfig delta = fg.optimize(full_ordering_).scale(-1.0);
 
 	if (verbose) delta.print("Delta Config");
 
@@ -75,7 +96,7 @@ SQPOptimizer<G, C> SQPOptimizer<G, C>::iterate(Verbosity v) const {
 	shared_vconfig newLamConfig(new VectorConfig(lagrange_config_->exmap(delta)));
 
 	// construct a new optimizer
-	return SQPOptimizer<G, C>(*graph_, *ordering_, newConfig, newLamConfig);
+	return SQPOptimizer<G, C>(*graph_, full_ordering_, newConfig, newLamConfig);
 }
 
 }

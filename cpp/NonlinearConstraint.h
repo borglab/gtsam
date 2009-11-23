@@ -43,7 +43,7 @@ public:
 		lagrange_key_(lagrange_key), p_(dim_lagrange) {}
 
 	/** returns the key used for the Lagrange multipliers */
-	std::string& lagrangeKey() const { return lagrange_key_; }
+	std::string lagrangeKey() const { return lagrange_key_; }
 
 	/** returns the number of lagrange multipliers */
 	size_t nrConstraints() const { return p_; }
@@ -120,14 +120,7 @@ public:
 			Matrix (*gradG)(const Config& config, const std::string& key),
 			Vector (*g)(const Config& config, const std::string& key),
 			size_t dim_constraint,
-			const std::string& lagrange_key="") :
-				NonlinearConstraint<Config>(lagrange_key, dim_constraint),
-				g_(g), gradG_(gradG), key_(key) {
-		// set a good lagrange key here
-		// TODO:should do something smart to find a unique one
-		if (lagrange_key == "")
-			this->lagrange_key_ = "L_" + key;
-	}
+			const std::string& lagrange_key="");
 
 	/** Print */
 	void print(const std::string& s = "") const;
@@ -199,14 +192,7 @@ public:
 			Matrix (*gradG2)(const Config& config, const std::string& key),
 			Vector (*g)(const Config& config, const std::string& key1, const std::string& key2),
 			size_t dim_constraint,
-			const std::string& lagrange_key="") :
-				NonlinearConstraint<Config>(lagrange_key, dim_constraint),
-				g_(g), gradG1_(gradG1), gradG2_(gradG2), key1_(key1), key2_(key2) {
-		// set a good lagrange key here
-		// TODO:should do something smart to find a unique one
-		if (lagrange_key == "")
-			this->lagrange_key_ = "L_" + key1 + key2;
-	}
+			const std::string& lagrange_key="");
 
 	/** Print */
 	void print(const std::string& s = "") const;
