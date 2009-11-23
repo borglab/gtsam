@@ -5,6 +5,8 @@ class Ordering {
 };
 
 class SymbolicFactor{
+	SymbolicFactor(const Ordering& keys);
+	void print(string s) const;
 };
 
 class VectorConfig {

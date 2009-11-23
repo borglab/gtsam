@@ -33,7 +33,7 @@ namespace gtsam {
 		SymbolicFactor(const boost::shared_ptr<SymbolicConditional>& c);
 
 		/** Constructor from a list of keys */
-		SymbolicFactor(std::list<std::string> keys) :
+		SymbolicFactor(const Ordering& keys) :
 			keys_(keys) {
 		}
 
