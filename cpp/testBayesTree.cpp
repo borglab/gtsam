@@ -464,7 +464,7 @@ TEST( BayesTree, removeTop2 )
   CHECK(assert_equal((FactorGraph<SymbolicFactor>)expected, factors));
 	SymbolicBayesTree::Cliques expectedOrphans;
   expectedOrphans += bayesTree["T"], bayesTree["X"];
-  // CHECK(assert_equal(expectedOrphans, orphans)); fails !
+	CHECK(assert_equal(expectedOrphans, orphans));
 }
 
 /* ************************************************************************* */
@@ -500,6 +500,32 @@ TEST( BayesTree, iSAM )
 
 	// Check whether the same
   CHECK(assert_equal(expected,bayesTree));
+}
+
+/* ************************************************************************* */
+TEST( BayesTree, iSAM_smoother )
+{
+	// Create smoother with 7 nodes
+	GaussianFactorGraph smoother = createSmoother(7);
+
+	// iSAM
+	GaussianBayesTree bayesTree;
+	BOOST_FOREACH(boost::shared_ptr<GaussianFactor> factor, (const GaussianFactorGraph)smoother) {
+		GaussianFactorGraph factorGraph;
+		factorGraph.push_back(factor);
+		bayesTree.update(factorGraph);
+	}
+
+	// expected
+	Ordering ordering;
+	for (int t = 1; t <= 7; t++)
+		ordering.push_back(symbol('x', t));
+	// eliminate using the "natural" ordering
+	GaussianBayesNet chordalBayesNet = smoother.eliminate(ordering);
+	// Create the Bayes tree
+	GaussianBayesTree expectedBayesTree(chordalBayesNet);
+
+	CHECK(assert_equal(expectedBayesTree, bayesTree));
 }
 
 /* ************************************************************************* */
