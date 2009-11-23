@@ -393,11 +393,8 @@ namespace gtsam {
 	// TODO: add to factors and orphans
 	template<class Conditional>
 	template<class Factor>
-  pair<FactorGraph<Factor>, typename BayesTree<Conditional>::Cliques>
-	BayesTree<Conditional>::removeTop(const boost::shared_ptr<Factor>& newFactor) {
-
-		FactorGraph<Factor> factors;
-		Cliques orphans;
+  void BayesTree<Conditional>::removeTop(const boost::shared_ptr<Factor>& newFactor,
+		FactorGraph<Factor> &factors, typename BayesTree<Conditional>::Cliques& orphans) {
 
 		// process each key of the new factor
 		BOOST_FOREACH(string key, newFactor->keys())
@@ -415,8 +412,6 @@ namespace gtsam {
 				orphans.splice (orphans.begin(), orphans1);
 			} catch (std::invalid_argument e) {
 			}
-
-		return make_pair(factors,orphans);
 	}
 
 	/* ************************************************************************* */
@@ -428,15 +423,8 @@ namespace gtsam {
 		// Remove the contaminated part of the Bayes tree
 		FactorGraph<Factor> factors;
 		Cliques orphans;
-		BOOST_FOREACH(boost::shared_ptr<Factor> factor, newFactors) {
-
-			FactorGraph<Factor> factors1;
-			Cliques orphans1;
-			boost::tie(factors1, orphans1) = this->removeTop<Factor>(factor);
-
-			factors.push_back(factors1);
-			orphans.splice (orphans.begin(), orphans1);
-		}
+		BOOST_FOREACH(boost::shared_ptr<Factor> factor, newFactors)
+			this->removeTop<Factor>(factor, factors, orphans);
 
 		return make_pair(factors,orphans);
 	}

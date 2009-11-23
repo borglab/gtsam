@@ -170,18 +170,21 @@ namespace gtsam {
 		std::pair<FactorGraph<Factor>, Cliques> removePath(sharedClique clique);
 
 		/**
-		 * Given a set of factors, turn "contaminated" part of the tree back into a factor graph
-		 * and return it along with a list of orphaned subtree roots.
-		 * This is used for incrementally updating a BayesTree given new measurements (factors).
+		 * Given a factor, turn "contaminated" part of the tree back into a factor graph.
+		 * Factors and orphans are added to the in/out arguments.
 		 */
 		template<class Factor>
-		std::pair<FactorGraph<Factor>, Cliques> removeTop(const boost::shared_ptr<Factor>& newFactor);
+		void removeTop(const boost::shared_ptr<Factor>& newFactor,
+				FactorGraph<Factor> &factors, Cliques& orphans);
 
 		/**
-		 * Call removeTop for several factors in a factorGraph
+		 * Given a set of factors, turn "contaminated" part of the tree back into a
+		 * factor graph and return it along with a list of orphaned subtree roots.
+		 * Used for incrementally updating a BayesTree given new measurements (factors).
 		 */
 		template<class Factor>
-		std::pair<FactorGraph<Factor>, Cliques> removeTop(const FactorGraph<Factor>& newFactors);
+		std::pair<FactorGraph<Factor>, Cliques>
+		removeTop(const FactorGraph<Factor>& newFactors);
 
 		/**
 		 * iSAM.

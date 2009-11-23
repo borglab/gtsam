@@ -415,7 +415,7 @@ TEST( BayesTree, removeTop )
 	// Remove the contaminated part of the Bayes tree
 	FactorGraph<SymbolicFactor> factors;
 	SymbolicBayesTree::Cliques orphans;
-	boost::tie(factors,orphans) = bayesTree.removeTop<SymbolicFactor>(newFactor);
+	bayesTree.removeTop<SymbolicFactor>(newFactor, factors, orphans);
 
 	// Check expected outcome
 	SymbolicFactorGraph expected;
@@ -430,11 +430,13 @@ TEST( BayesTree, removeTop )
 
   // Try removeTop again with a factor that should not change a thing
 	boost::shared_ptr<SymbolicFactor> newFactor2(new SymbolicFactor("B"));
-	boost::tie(factors,orphans) = bayesTree.removeTop<SymbolicFactor>(newFactor2);
+	FactorGraph<SymbolicFactor> factors2;
+	SymbolicBayesTree::Cliques orphans2;
+	bayesTree.removeTop<SymbolicFactor>(newFactor2, factors2, orphans2);
 	SymbolicFactorGraph expected2;
-  CHECK(assert_equal((FactorGraph<SymbolicFactor>)expected2, factors));
+  CHECK(assert_equal((FactorGraph<SymbolicFactor>)expected2, factors2));
 	SymbolicBayesTree::Cliques expectedOrphans2;
-  CHECK(assert_equal(expectedOrphans2, orphans));
+  CHECK(assert_equal(expectedOrphans2, orphans2));
 }
 
 
