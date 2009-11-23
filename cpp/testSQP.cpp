@@ -18,6 +18,10 @@
 #include <Simulated2DMeasurement.h>
 #include <simulated2D.h>
 #include <Ordering.h>
+#include <VSLAMConfig.h>
+#include <VSLAMFactor.h>
+#include <VSLAMGraph.h>
+#include <SimpleCamera.h>
 
 // templated implementations
 #include <NonlinearFactorGraph-inl.h>
@@ -253,7 +257,7 @@ typedef boost::shared_ptr<NonlinearEquality<VectorConfig> > shared_eq;
 typedef boost::shared_ptr<VectorConfig> shared_cfg;
 typedef NonlinearOptimizer<NLGraph,VectorConfig> Optimizer;
 /**
- * Determining a ground truth nonlinear system
+ * Determining a ground truth linear system
  * with two poses seeing one landmark, with each pose
  * constrained to a particular value
  */
@@ -346,7 +350,8 @@ Matrix grad_g(const VectorConfig& config, const std::string& key) {
  *  Version that actually uses nonlinear equality constraints
  *  to to perform optimization.  Same as above, but no
  *  equality constraint on x2, and two landmarks that
- *  should be the same.
+ *  should be the same. Note that this is a linear system,
+ *  so it will converge in one step.
  */
 TEST (SQP, two_pose ) {
 	bool verbose = false;
@@ -443,6 +448,76 @@ TEST (SQP, two_pose ) {
 	expected.insert("l2", Vector_(2, 1.0, 6.0));
 	expected.insert("x2", Vector_(2, 5.0, 6.0));
 	CHECK(assert_equal(expected, state, 1e-5));
+}
+
+/* ********************************************************************* */
+// VSLAM Examples
+/* ********************************************************************* */
+// make a realistic calibration matrix
+double fov = 60; // degrees
+size_t w=640,h=480;
+Cal3_S2 K(fov,w,h);
+boost::shared_ptr<Cal3_S2> shK(new Cal3_S2(K));
+
+// typedefs for visual SLAM example
+typedef boost::shared_ptr<VSLAMFactor> shared_vf;
+typedef NonlinearOptimizer<VSLAMGraph,VSLAMConfig> VOptimizer;
+
+/**
+ * Ground truth for a visual slam example with stereo vision
+ */
+TEST (SQP, stereo_truth ) {
+	bool verbose = false;
+
+	// create initial estimates
+	Rot3 faceDownY(Matrix_(3,3,
+				1.0, 0.0, 0.0,
+				0.0, 0.0, 1.0,
+				0.0, 1.0, 0.0));
+	Pose3 pose1(faceDownY, Point3()); // origin, left camera
+	SimpleCamera camera1(K, pose1);
+	Pose3 pose2(faceDownY, Point3(2.0, 0.0, 0.0)); // 2 units to the left
+	SimpleCamera camera2(K, pose2);
+	Point3 landmark(1.0, 5.0, 0.0); //centered between the cameras, 5 units away
+
+	// create config
+	boost::shared_ptr<VSLAMConfig> truthConfig(new VSLAMConfig);
+	truthConfig->addCameraPose(1, camera1.pose());
+	truthConfig->addCameraPose(2, camera2.pose());
+	truthConfig->addLandmarkPoint(1, landmark);
+
+	// create graph
+	VSLAMGraph graph;
+
+	// create equality constraints for poses
+	graph.addCameraConstraint(1, camera1.pose());
+	graph.addCameraConstraint(2, camera2.pose());
+
+	// create VSLAM factors
+	Point2 z1 = camera1.project(landmark);
+	if (verbose) z1.print("z1");
+	shared_vf vf1(new VSLAMFactor(z1, 1.0, 1, 1, shK));
+	graph.push_back(vf1);
+	Point2 z2 = camera2.project(landmark);
+	if (verbose) z2.print("z2");
+	shared_vf vf2(new VSLAMFactor(z2, 1.0, 2, 1, shK));
+	graph.push_back(vf2);
+
+	if (verbose) graph.print("Graph after construction");
+
+	// create ordering
+	Ordering ord;
+	ord += "x1", "x2", "l1";
+
+	// create optimizer
+	VOptimizer optimizer(graph, ord, truthConfig, 1e-5);
+
+	// optimize
+	VOptimizer afterOneIteration = optimizer.iterate();
+	DOUBLES_EQUAL(0.0, optimizer.error(), 1e-9);
+
+	// check if correct
+	CHECK(assert_equal(*truthConfig,*(afterOneIteration.config())));
 }
 
 /* ************************************************************************* */
