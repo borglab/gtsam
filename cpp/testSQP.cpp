@@ -790,6 +790,79 @@ TEST (SQP, stereo_sqp_noisy ) {
 	//CHECK(assert_equal(*truthConfig,*(optimizer.config())));
 }
 
+// TEST DISABLED: There is a stability problem that sends the solution
+// further away with every iteration, and eventually will result in the linearized
+// system being underconstrained
+/**
+ * SQP version of the above stereo example,
+ * with noise in the initial estimate and manually specified
+ * lagrange multipliers
+ */
+TEST (SQP, stereo_sqp_noisy_manualLagrange ) {
+	bool verbose = false;
+
+	// get a graph
+	VSLAMGraph graph = stereoExampleGraph();
+
+	// create initial data
+	Rot3 faceDownY(Matrix_(3,3,
+			1.0, 0.0, 0.0,
+			0.0, 0.0, 1.0,
+			0.0, 1.0, 0.0));
+	Pose3 pose1(faceDownY, Point3()); // origin, left camera
+	Pose3 pose2(faceDownY, Point3(2.0, 0.0, 0.0)); // 2 units to the left
+	Point3 landmark1(0.5, 5.0, 0.0); //centered between the cameras, 5 units away
+	Point3 landmark2(1.5, 5.0, 0.0);
+
+	// noisy config
+	boost::shared_ptr<VSLAMConfig> initConfig(new VSLAMConfig);
+	initConfig->addCameraPose(1, pose1);
+	initConfig->addCameraPose(2, pose2);
+	initConfig->addLandmarkPoint(1, landmark1);
+	initConfig->addLandmarkPoint(2, landmark2); // create two landmarks in same place
+
+	// create ordering with lagrange multiplier included
+	Ordering ord;
+	ord += "x1", "x2", "l1", "l2", "L_l1l2";
+
+	// create lagrange multipliers
+	SOptimizer::shared_vconfig initLagrangeConfig(new VectorConfig);
+	initLagrangeConfig->insert("L_l1l2", Vector_(3, 0.0, 0.0, 0.0));
+
+	// create optimizer
+	SOptimizer optimizer(graph, ord, initConfig, initLagrangeConfig);
+
+	// optimize
+	double start_error = optimizer.error();
+	int maxIt = 5;
+//	for (int i=0; i<maxIt; ++i) {
+//		if (verbose) {
+//			cout << "\n ************************** \n"
+//				 << " Iteration: " << i << endl;
+//			optimizer.config()->print("Config Before Iteration");
+//			optimizer.configLagrange()->print("Lagrange Before Iteration");
+//			optimizer = optimizer.iterate(SOptimizer::FULL);
+//		}
+//		else
+//			optimizer = optimizer.iterate(SOptimizer::SILENT);
+//	}
+
+	if (verbose) cout << "Initial Error: " << start_error << "\n"
+					  << "Final Error:   " << optimizer.error() << endl;
+
+	// get the truth config
+	boost::shared_ptr<VSLAMConfig> truthConfig = stereoExampleTruthConfig();
+
+	if (verbose) {
+		initConfig->print("Initial Config");
+		truthConfig->print("Truth Config");
+		optimizer.config()->print("After optimization");
+	}
+
+	// check if correct
+	//CHECK(assert_equal(*truthConfig,*(optimizer.config())));
+}
+
 /* ************************************************************************* */
 int main() { TestResult tr; return TestRegistry::runAllTests(tr); }
 /* ************************************************************************* */

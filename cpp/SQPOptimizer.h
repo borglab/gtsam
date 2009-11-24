@@ -74,6 +74,7 @@ public:
 	const FactorGraph* graph() const { return graph_; }
 	const Ordering* ordering() const { return ordering_; }
 	shared_config config() const { return config_; }
+	shared_vconfig configLagrange() const { return lagrange_config_; }
 	double error() const { return error_; }
 
 	/**
