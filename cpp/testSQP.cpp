@@ -539,6 +539,15 @@ TEST (SQP, stereo_truth_noisy ) {
 	bool verbose = false;
 	int maxIt = 5;
 
+	// setting to determine how far away the noisy landmark is,
+	// given that the ground truth is 5m in front of the cameras
+	double noisyDist = 7.4;
+	/** RESULTS of optimization based on size of error:
+	 * With a ground truth distance away of 5m, results based on initial input:
+	 * >= 7.5m: the system diverges
+	 *  < 7.5m: system finds a solution with near zero error
+	 */
+
 	// create initial estimates
 	Rot3 faceDownY(Matrix_(3,3,
 				1.0, 0.0, 0.0,
@@ -549,7 +558,7 @@ TEST (SQP, stereo_truth_noisy ) {
 	Pose3 pose2(faceDownY, Point3(2.0, 0.0, 0.0)); // 2 units to the left
 	SimpleCamera camera2(K, pose2);
 	Point3 landmark(1.0, 5.0, 0.0); //centered between the cameras, 5 units away
-	Point3 landmarkNoisy(1.0, 15.0, 0.0); // initial point is too far out
+	Point3 landmarkNoisy(1.0, noisyDist, 0.0); // initial point is too far out
 
 	// create truth config
 	boost::shared_ptr<VSLAMConfig> truthConfig(new VSLAMConfig);
@@ -592,19 +601,30 @@ TEST (SQP, stereo_truth_noisy ) {
 	// create optimizer
 	VOptimizer optimizer(graph, ord, noisyConfig, 1e-5);
 
+	if (verbose)
+		cout << "Initial Error: " << optimizer.error() << endl;
+
+	// use Gauss-Newton optimization
+	double relThresh = 1e-5, absThresh = 1e-5;
+	optimizer = optimizer.gaussNewton(relThresh, absThresh);
+
 //	// optimize
 //	for (int i = 0; i<maxIt; ++i) {
 //		cout << "Iteration: " << i << endl;
 //		optimizer = optimizer.iterate();
 //		optimizer.config()->print("Updated Config");
+//		cout << "Error after iteration: " << optimizer.error() << endl;
 //	}
 
-//	// verify
-//	DOUBLES_EQUAL(0.0, optimizer.error(), 1e-9);
-//
-//	// check if correct
-//	if (verbose) optimizer.config()->print("After iteration");
-//	CHECK(assert_equal(*truthConfig,*(optimizer.config())));
+	// verify
+	DOUBLES_EQUAL(0.0, optimizer.error(), 1e-9);
+
+	// check if correct
+	if (verbose) {
+		optimizer.config()->print("After iteration");
+		cout << "Final error: " << optimizer.error() << endl;
+	}
+	CHECK(assert_equal(*truthConfig,*(optimizer.config())));
 }
 
 // Utility function to strip out a landmark number from a string key
