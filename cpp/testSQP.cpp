@@ -15,6 +15,7 @@
 #include <NonlinearEquality.h>
 #include <NonlinearFactorGraph.h>
 #include <NonlinearOptimizer.h>
+#include <SQPOptimizer.h>
 #include <Simulated2DMeasurement.h>
 #include <simulated2D.h>
 #include <Ordering.h>
@@ -27,6 +28,7 @@
 #include <NonlinearFactorGraph-inl.h>
 #include <NonlinearConstraint-inl.h>
 #include <NonlinearOptimizer-inl.h>
+#include <SQPOptimizer-inl.h>
 
 using namespace std;
 using namespace gtsam;
@@ -462,6 +464,7 @@ boost::shared_ptr<Cal3_S2> shK(new Cal3_S2(K));
 // typedefs for visual SLAM example
 typedef boost::shared_ptr<VSLAMFactor> shared_vf;
 typedef NonlinearOptimizer<VSLAMGraph,VSLAMConfig> VOptimizer;
+typedef SQPOptimizer<VSLAMGraph, VSLAMConfig> SOptimizer;
 
 /**
  * Ground truth for a visual slam example with stereo vision
@@ -518,6 +521,189 @@ TEST (SQP, stereo_truth ) {
 
 	// check if correct
 	CHECK(assert_equal(*truthConfig,*(afterOneIteration.config())));
+}
+
+// Utility function to strip out a landmark number from a string key
+int getNum(const string& key) {
+	return atoi(key.substr(1, key.size()-1).c_str());
+}
+
+namespace sqp_stereo {
+// binary constraint between landmarks
+/** g(x) = x-y = 0 */
+Vector g_func(const VSLAMConfig& config, const std::string& key1, const std::string& key2) {
+	return config.landmarkPoint(getNum(key1)).vector()-config.landmarkPoint(getNum(key2)).vector();
+}
+
+/** gradient at l1 */
+Matrix grad_g1(const VSLAMConfig& config, const std::string& key) {
+	return eye(3);
+}
+
+/** gradient at l2 */
+Matrix grad_g2(const VSLAMConfig& config, const std::string& key) {
+	return -1.0*eye(3);
+}
+} // \namespace sqp_test1
+
+VSLAMGraph stereoExampleGraph() {
+	// create initial estimates
+	Rot3 faceDownY(Matrix_(3,3,
+				1.0, 0.0, 0.0,
+				0.0, 0.0, 1.0,
+				0.0, 1.0, 0.0));
+	Pose3 pose1(faceDownY, Point3()); // origin, left camera
+	SimpleCamera camera1(K, pose1);
+	Pose3 pose2(faceDownY, Point3(2.0, 0.0, 0.0)); // 2 units to the left
+	SimpleCamera camera2(K, pose2);
+	Point3 landmark1(1.0, 5.0, 0.0); //centered between the cameras, 5 units away
+	Point3 landmark2(1.0, 5.0, 0.0);
+
+	// create graph
+	VSLAMGraph graph;
+
+	// create equality constraints for poses
+	graph.addCameraConstraint(1, camera1.pose());
+	graph.addCameraConstraint(2, camera2.pose());
+
+	// create VSLAM factors
+	Point2 z1 = camera1.project(landmark1);
+	shared_vf vf1(new VSLAMFactor(z1, 1.0, 1, 1, shK));
+	graph.push_back(vf1);
+	Point2 z2 = camera2.project(landmark2);
+	shared_vf vf2(new VSLAMFactor(z2, 1.0, 2, 2, shK));
+	graph.push_back(vf2);
+
+	// create the binary equality constraint between the landmarks
+	// NOTE: this is really just a linear constraint that is exactly the same
+	// as the previous examples
+	boost::shared_ptr<NonlinearConstraint2<VSLAMConfig> > c2(
+				new NonlinearConstraint2<VSLAMConfig>(
+						"l1", *sqp_stereo::grad_g1,
+						"l2", *sqp_stereo::grad_g2,
+						*sqp_stereo::g_func, 3, "L_l1l2"));
+	graph.push_back(c2);
+
+	return graph;
+}
+
+boost::shared_ptr<VSLAMConfig> stereoExampleTruthConfig() {
+	// create initial estimates
+	Rot3 faceDownY(Matrix_(3,3,
+				1.0, 0.0, 0.0,
+				0.0, 0.0, 1.0,
+				0.0, 1.0, 0.0));
+	Pose3 pose1(faceDownY, Point3()); // origin, left camera
+	SimpleCamera camera1(K, pose1);
+	Pose3 pose2(faceDownY, Point3(2.0, 0.0, 0.0)); // 2 units to the left
+	SimpleCamera camera2(K, pose2);
+	Point3 landmark1(1.0, 5.0, 0.0); //centered between the cameras, 5 units away
+	Point3 landmark2(1.0, 5.0, 0.0);
+
+	// create config
+	boost::shared_ptr<VSLAMConfig> truthConfig(new VSLAMConfig);
+	truthConfig->addCameraPose(1, camera1.pose());
+	truthConfig->addCameraPose(2, camera2.pose());
+	truthConfig->addLandmarkPoint(1, landmark1);
+	truthConfig->addLandmarkPoint(2, landmark2); // create two landmarks in same place
+
+	return truthConfig;
+}
+
+/**
+ * SQP version of the above stereo example,
+ * with the initial case as the ground truth
+ */
+TEST (SQP, stereo_sqp ) {
+	bool verbose = false;
+
+	// get a graph
+	VSLAMGraph graph = stereoExampleGraph();
+	if (verbose) graph.print("Graph after construction");
+
+	// get the truth config
+	boost::shared_ptr<VSLAMConfig> truthConfig = stereoExampleTruthConfig();
+
+	// create ordering
+	Ordering ord;
+	ord += "x1", "x2", "l1", "l2";
+
+	// create optimizer
+	SOptimizer optimizer(graph, ord, truthConfig);
+
+	// optimize
+	SOptimizer afterOneIteration = optimizer.iterate();
+
+	// check if correct
+	CHECK(assert_equal(*truthConfig,*(afterOneIteration.config())));
+}
+
+
+// Currently does not pass: after the first iteration,
+// there is a dimensionality reduction that causes the system to be
+// unsolvable.
+/**
+ * SQP version of the above stereo example,
+ * with noise in the initial estimate
+ */
+TEST (SQP, stereo_sqp_noisy ) {
+	bool verbose = false;
+
+	// get a graph
+	VSLAMGraph graph = stereoExampleGraph();
+
+	// create initial data
+	Rot3 faceDownY(Matrix_(3,3,
+			1.0, 0.0, 0.0,
+			0.0, 0.0, 1.0,
+			0.0, 1.0, 0.0));
+	Pose3 pose1(faceDownY, Point3()); // origin, left camera
+	Pose3 pose2(faceDownY, Point3(2.0, 0.0, 0.0)); // 2 units to the left
+	Point3 landmark1(0.5, 5.0, 0.0); //centered between the cameras, 5 units away
+	Point3 landmark2(1.5, 5.0, 0.0);
+
+	// noisy config
+	boost::shared_ptr<VSLAMConfig> initConfig(new VSLAMConfig);
+	initConfig->addCameraPose(1, pose1);
+	initConfig->addCameraPose(2, pose2);
+	initConfig->addLandmarkPoint(1, landmark1);
+	initConfig->addLandmarkPoint(2, landmark2); // create two landmarks in same place
+
+	// create ordering
+	Ordering ord;
+	ord += "x1", "x2", "l1", "l2";
+
+	// create optimizer
+	SOptimizer optimizer(graph, ord, initConfig);
+
+	// optimize
+	double start_error = optimizer.error();
+	int maxIt = 2;
+	for (int i=0; i<maxIt; ++i) {
+		if (verbose) cout << "\n ************************** \n"
+						  << " Iteration: " << i << endl;
+		//if (verbose) optimizer.graph()->print();
+		if (verbose) optimizer.config()->print();
+		if (verbose)
+			optimizer = optimizer.iterate(SOptimizer::FULL);
+		else
+			optimizer = optimizer.iterate(SOptimizer::SILENT);
+	}
+
+	if (verbose) cout << "Initial Error: " << start_error << "\n"
+					  << "Final Error:   " << optimizer.error() << endl;
+
+	// get the truth config
+	boost::shared_ptr<VSLAMConfig> truthConfig = stereoExampleTruthConfig();
+
+	if (verbose) {
+		initConfig->print("Initial Config");
+		truthConfig->print("Truth Config");
+		optimizer.config()->print("After optimization");
+	}
+
+	// check if correct
+	//CHECK(assert_equal(*truthConfig,*(optimizer.config())));
 }
 
 /* ************************************************************************* */

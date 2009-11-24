@@ -43,6 +43,11 @@ TEST ( SQPOptimizer, basic ) {
 	CHECK(assert_equal(*config, *(optimizer.config())));
 }
 
+/* ********************************************************************* */
+// Example that moves two separate maps into the same frame of reference
+// Note that this is a linear example, so it should converge in one step
+/* ********************************************************************* */
+
 namespace sqp_LinearMapWarp2 {
 // binary constraint between landmarks
 /** g(x) = x-y = 0 */
@@ -76,6 +81,10 @@ Matrix grad_g(const VectorConfig& config, const std::string& key) {
 
 typedef SQPOptimizer<NLGraph, VectorConfig> Optimizer;
 
+/**
+ * Creates the graph with each robot seeing the landmark, and it is
+ * known that it is the same landmark
+ */
 NLGraph linearMapWarpGraph() {
 	// constant constraint on x1
 	boost::shared_ptr<NonlinearConstraint1<VectorConfig> > c1(

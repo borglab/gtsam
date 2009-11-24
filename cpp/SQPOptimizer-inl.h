@@ -10,6 +10,8 @@
 #include <boost/assign/std/list.hpp> // for operator +=
 #include <boost/assign/std/map.hpp> // for insert
 #include "GaussianFactorGraph.h"
+#include "NonlinearFactorGraph.h"
+#include "NonlinearFactorGraph-inl.h"
 #include "SQPOptimizer.h"
 
 using namespace std;
@@ -22,7 +24,7 @@ template <class G, class C>
 SQPOptimizer<G,C>::SQPOptimizer(const G& graph, const Ordering& ordering,
 		shared_config config)
 : graph_(&graph), ordering_(&ordering), full_ordering_(ordering),
-  config_(config), lagrange_config_(new VectorConfig)
+  config_(config), lagrange_config_(new VectorConfig), error_(graph.error(*config))
 {
 	// local typedefs
 	typedef typename G::const_iterator const_iterator;
@@ -48,7 +50,7 @@ template <class G, class C>
 SQPOptimizer<G,C>::SQPOptimizer(const G& graph, const Ordering& ordering,
 		shared_config config, shared_vconfig lagrange)
 : graph_(&graph), ordering_(&ordering), full_ordering_(ordering),
-  config_(config), lagrange_config_(lagrange)
+  config_(config), lagrange_config_(lagrange), error_(graph.error(*config))
 {
 
 }

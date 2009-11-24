@@ -6,6 +6,7 @@
 
 #pragma once
 
+#include "Ordering.h"
 #include "VectorConfig.h"
 
 namespace gtsam {
@@ -73,6 +74,7 @@ public:
 	const FactorGraph* graph() const { return graph_; }
 	const Ordering* ordering() const { return ordering_; }
 	shared_config config() const { return config_; }
+	double error() const { return error_; }
 
 	/**
 	 * Primary optimization iteration, updates the configs
