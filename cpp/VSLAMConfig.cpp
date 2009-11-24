@@ -32,13 +32,17 @@ VSLAMConfig VSLAMConfig::exmap(const VectorConfig & delta) const {
 		string key = it->first;
 		if (key[0] == 'x') {
 			int cameraNumber = atoi(key.substr(1, key.size() - 1).c_str());
-			Pose3 basePose = cameraPose(cameraNumber);
-			newConfig.addCameraPose(cameraNumber, basePose.exmap(it->second));
+			if (cameraPoseExists(cameraNumber)) {
+				Pose3 basePose = cameraPose(cameraNumber);
+				newConfig.addCameraPose(cameraNumber, basePose.exmap(it->second));
+			}
 		}
 		if (key[0] == 'l') {
 			int landmarkNumber = atoi(key.substr(1, key.size() - 1).c_str());
-			Point3 basePoint = landmarkPoint(landmarkNumber);
-			newConfig.addLandmarkPoint(landmarkNumber, basePoint.exmap(it->second));
+			if (landmarkPointExists(landmarkNumber)) {
+				Point3 basePoint = landmarkPoint(landmarkNumber);
+				newConfig.addLandmarkPoint(landmarkNumber, basePoint.exmap(it->second));
+			}
 		}
 	}
 

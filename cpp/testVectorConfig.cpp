@@ -104,6 +104,25 @@ TEST( VectorConfig, scale) {
 }
 
 /* ************************************************************************* */
+TEST( VectorConfig, update_with_large_delta) {
+	// this test ensures that if the update for delta is larger than
+	// the size of the config, it only updates existing variables
+	VectorConfig init, delta;
+	init.insert("x", Vector_(2, 1.0, 2.0));
+	init.insert("y", Vector_(2, 3.0, 4.0));
+	delta.insert("x", Vector_(2, 0.1, 0.1));
+	delta.insert("y", Vector_(2, 0.1, 0.1));
+	delta.insert("penguin", Vector_(2, 0.1, 0.1));
+
+	VectorConfig actual = init.exmap(delta);
+	VectorConfig expected;
+	expected.insert("x", Vector_(2, 1.1, 2.1));
+	expected.insert("y", Vector_(2, 3.1, 4.1));
+
+	CHECK(assert_equal(actual, expected));
+}
+
+/* ************************************************************************* */
 #ifdef HAVE_BOOST_SERIALIZATION
 TEST( VectorConfig, serialize)
 {
