@@ -482,8 +482,9 @@ TEST (SQP, stereo_truth ) {
 	Pose3 pose2(faceDownY, Point3(2.0, 0.0, 0.0)); // 2 units to the left
 	SimpleCamera camera2(K, pose2);
 	Point3 landmark(1.0, 5.0, 0.0); //centered between the cameras, 5 units away
+	Point3 landmarkNoisy(1.0, 6.0, 0.0);
 
-	// create config
+	// create truth config
 	boost::shared_ptr<VSLAMConfig> truthConfig(new VSLAMConfig);
 	truthConfig->addCameraPose(1, camera1.pose());
 	truthConfig->addCameraPose(2, camera2.pose());
@@ -517,10 +518,93 @@ TEST (SQP, stereo_truth ) {
 
 	// optimize
 	VOptimizer afterOneIteration = optimizer.iterate();
+
+	// verify
 	DOUBLES_EQUAL(0.0, optimizer.error(), 1e-9);
 
 	// check if correct
+	if (verbose) afterOneIteration.config()->print("After iteration");
 	CHECK(assert_equal(*truthConfig,*(afterOneIteration.config())));
+}
+
+
+// TEST DISABLED: optimization becomes unstable with one coordinate
+// growing indefinitely and by the 4th iteration the system is
+// underconstrained
+/**
+ * Ground truth for a visual slam example with stereo vision
+ * with some noise injected into the initial config
+ */
+TEST (SQP, stereo_truth_noisy ) {
+	bool verbose = false;
+	int maxIt = 5;
+
+	// create initial estimates
+	Rot3 faceDownY(Matrix_(3,3,
+				1.0, 0.0, 0.0,
+				0.0, 0.0, 1.0,
+				0.0, 1.0, 0.0));
+	Pose3 pose1(faceDownY, Point3()); // origin, left camera
+	SimpleCamera camera1(K, pose1);
+	Pose3 pose2(faceDownY, Point3(2.0, 0.0, 0.0)); // 2 units to the left
+	SimpleCamera camera2(K, pose2);
+	Point3 landmark(1.0, 5.0, 0.0); //centered between the cameras, 5 units away
+	Point3 landmarkNoisy(1.0, 15.0, 0.0); // initial point is too far out
+
+	// create truth config
+	boost::shared_ptr<VSLAMConfig> truthConfig(new VSLAMConfig);
+	truthConfig->addCameraPose(1, camera1.pose());
+	truthConfig->addCameraPose(2, camera2.pose());
+	truthConfig->addLandmarkPoint(1, landmark);
+
+	// create config
+	boost::shared_ptr<VSLAMConfig> noisyConfig(new VSLAMConfig);
+	noisyConfig->addCameraPose(1, camera1.pose());
+	noisyConfig->addCameraPose(2, camera2.pose());
+	noisyConfig->addLandmarkPoint(1, landmarkNoisy);
+
+	// create graph
+	VSLAMGraph graph;
+
+	// create equality constraints for poses
+	graph.addCameraConstraint(1, camera1.pose());
+	graph.addCameraConstraint(2, camera2.pose());
+
+	// create VSLAM factors
+	Point2 z1 = camera1.project(landmark);
+	if (verbose) z1.print("z1");
+	shared_vf vf1(new VSLAMFactor(z1, 1.0, 1, 1, shK));
+	graph.push_back(vf1);
+	Point2 z2 = camera2.project(landmark);
+	if (verbose) z2.print("z2");
+	shared_vf vf2(new VSLAMFactor(z2, 1.0, 2, 1, shK));
+	graph.push_back(vf2);
+
+	if (verbose)  {
+		graph.print("Graph after construction");
+		noisyConfig->print("Initial config");
+	}
+
+	// create ordering
+	Ordering ord;
+	ord += "x1", "x2", "l1";
+
+	// create optimizer
+	VOptimizer optimizer(graph, ord, noisyConfig, 1e-5);
+
+//	// optimize
+//	for (int i = 0; i<maxIt; ++i) {
+//		cout << "Iteration: " << i << endl;
+//		optimizer = optimizer.iterate();
+//		optimizer.config()->print("Updated Config");
+//	}
+
+//	// verify
+//	DOUBLES_EQUAL(0.0, optimizer.error(), 1e-9);
+//
+//	// check if correct
+//	if (verbose) optimizer.config()->print("After iteration");
+//	CHECK(assert_equal(*truthConfig,*(optimizer.config())));
 }
 
 // Utility function to strip out a landmark number from a string key
@@ -639,9 +723,9 @@ TEST (SQP, stereo_sqp ) {
 }
 
 
-// Currently does not pass: after the first iteration,
-// there is a dimensionality reduction that causes the system to be
-// unsolvable.
+// TEST DISABLED: There is a stability problem that sends the solution
+// further away with every iteration, and eventually will result in the linearized
+// system being underconstrained
 /**
  * SQP version of the above stereo example,
  * with noise in the initial estimate
