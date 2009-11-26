@@ -160,6 +160,15 @@ testSimulated3D_SOURCES = testSimulated3D.cpp
 testSimulated3D_LDADD = libgtsam.la
 check_PROGRAMS += testSimulated3D 
 
+# Robot Control example system
+sources += ControlConfig.cpp ControlPoint.cpp
+#headers += ControlConfig.h ControlPoint.h
+check_PROGRAMS += testControlConfig testControlPoint
+testControlConfig_SOURCES = testControlConfig.cpp
+testControlConfig_LDADD = libgtsam.la
+testControlPoint_SOURCES = testControlPoint.cpp
+testControlPoint_LDADD = libgtsam.la
+
 # Cameras
 sources += CalibratedCamera.cpp SimpleCamera.cpp
 check_PROGRAMS += testCalibratedCamera testSimpleCamera
