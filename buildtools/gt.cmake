@@ -41,8 +41,8 @@ function(GT_USE_BOOST)
     include_directories(${Boost_INCLUDE_DIRS})
     link_libraries(${Boost_LIBRARIES})
 endfunction(GT_USE_BOOST)
-function(GT_USE_QT4 extra_components)
-    find_package(Qt4 COMPONENTS QtCore QtGui ${extra_components} REQUIRED)
+function(GT_USE_QT4)
+    find_package(Qt4 COMPONENTS QtCore QtGui ${ARGN} REQUIRED)
     include(${QT_USE_FILE})
     link_libraries(${QT_LIBRARIES})
 endfunction(GT_USE_QT4)
@@ -62,6 +62,8 @@ endfunction(GT_USE_EASY2D)
 
 ############
 ### Main target functions, calling one of these will replace the previous main target.
+
+# Set the "excluded" sources, i.e. unit tests
 
 # Define "common" sources when there is no main library or executable
 function(GT_MAIN_SOURCES)
@@ -83,14 +85,15 @@ function(GT_INSTALL_HEADERS)
     endforeach(srcpat)
 endfunction(GT_INSTALL_HEADERS)
 
-# Define the main shared library from the given sources
-function(GT_MAIN_SHLIB)
+# Define the main shared+static library from the given sources
+function(GT_MAIN_LIB)
     gt_main_sources(${ARGN})
     set(GT_COMMON_SOURCES "${GT_COMMON_SOURCES}" PARENT_SCOPE)
-    message(STATUS "[gt.cmake] Adding main shlib \"${PROJECT_NAME}\" with sources ${GT_COMMON_SOURCES}")
+    message(STATUS "[gt.cmake] Adding main lib \"${PROJECT_NAME}\" with sources ${GT_COMMON_SOURCES}")
     add_library(${PROJECT_NAME} SHARED ${GT_COMMON_SOURCES})
+    add_library(${PROJECT_NAME} STATIC ${GT_COMMON_SOURCES})
     install(TARGETS ${PROJECT_NAME} LIBRARY DESTINATION "lib" ARCHIVE DESTINATION "lib")
-endfunction(GT_MAIN_SHLIB)
+endfunction(GT_MAIN_LIB)
 
 # Define the main static library from the given sources
 function(GT_MAIN_STLIB)
