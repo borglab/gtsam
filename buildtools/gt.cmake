@@ -64,6 +64,16 @@ endfunction(GT_USE_EASY2D)
 ### Main target functions, calling one of these will replace the previous main target.
 
 # Set the "excluded" sources, i.e. unit tests
+function(GT_EXCLUDE)
+    set(EXCLUDE_SOURCES "")
+    foreach(srcpat ${ARGN})
+        # Get the sources matching the specified pattern
+        file(GLOB srcs RELATIVE "${PROJECT_SOURCE_DIR}" "${CMAKE_CURRENT_SOURCE_DIR}/${srcpat}")
+        set(EXCLUDE_SOURCES ${EXCLUDE_SOURCES} ${srcs})
+        #message(STATUS "Excluding sources: " ${srcs})
+    endforeach(srcpat)
+    set(GT_EXCLUDE_SOURCES ${GT_EXCLUDE_SOURCES} ${EXCLUDE_SOURCES} PARENT_SCOPE)
+endfunction(GT_EXCLUDE)
 
 # Define "common" sources when there is no main library or executable
 function(GT_MAIN_SOURCES)
@@ -71,9 +81,11 @@ function(GT_MAIN_SOURCES)
     foreach(srcpat ${ARGN})
         # Get the sources matching the specified pattern
         file(GLOB srcs RELATIVE "${PROJECT_SOURCE_DIR}" "${CMAKE_CURRENT_SOURCE_DIR}/${srcpat}")
-        set(GT_COMMON_SOURCES ${GT_COMMON_SOURCES} ${srcs} PARENT_SCOPE)
+        set(GT_COMMON_SOURCES ${GT_COMMON_SOURCES} ${srcs})
         #message(STATUS "Adding sources: " ${srcs})
     endforeach(srcpat)
+    list(REMOVE_ITEM GT_COMMON_SOURCES ${GT_EXCLUDE_SOURCES})
+    set(GT_COMMON_SOURCES "${GT_COMMON_SOURCES}" PARENT_SCOPE)
 endfunction(GT_MAIN_SOURCES)
 
 # Add headers to be installed
@@ -108,13 +120,13 @@ function(GT_MAIN_STLIB)
 endfunction(GT_MAIN_STLIB)
 
 # Define the main executable from the given sources
-function(GT_MAIN_EXE)
-    gt_main_sources(${ARGN})
-    set(GT_COMMON_SOURCES "${GT_COMMON_SOURCES}" PARENT_SCOPE)
-    message(STATUS "[gt.cmake] Adding main exe \"${PROJECT_NAME}\" with sources ${GT_COMMON_SOURCES}")
-    add_executable(${PROJECT_NAME} ${GT_COMMON_SOURCES})
-    install(TARGETS ${PROJECT_NAME} RUNTIME DESTINATION "bin")
-endfunction(GT_MAIN_EXE)
+#function(GT_MAIN_EXE)
+#    gt_main_sources(${ARGN})
+#    set(GT_COMMON_SOURCES "${GT_COMMON_SOURCES}" PARENT_SCOPE)
+#    message(STATUS "[gt.cmake] Adding main exe \"${PROJECT_NAME}\" with sources ${GT_COMMON_SOURCES}")
+#    add_executable(${PROJECT_NAME} ${GT_COMMON_SOURCES})
+#    install(TARGETS ${PROJECT_NAME} RUNTIME DESTINATION "bin")
+#endfunction(GT_MAIN_EXE)
 
 
 ############
