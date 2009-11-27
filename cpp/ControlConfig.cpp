@@ -62,16 +62,26 @@ void ControlConfig::addAgent(const std::string& name) {
 	if (paths_.find(name) == paths_.end()) {
 		path p;
 		paths_.insert(make_pair(name, p));
-	} else {
-		throw invalid_argument("Attempting to add already existing agent");
 	}
 }
 
 /* *************************************************************** */
-void ControlConfig::addPoint(const std::string& name, const ControlPoint& state) {
+void ControlConfig::addPoint(const std::string& name, const ControlPoint& state, int index) {
+	if (index < -1 )
+		throw invalid_argument("Attempting to add point before start of trajectory");
 	if (paths_.find(name) != paths_.end()) {
 		path &p = paths_[name];
-		p.push_back(state);
+		if (index == -1) {
+			// just add the point to the back of the trajectory
+			p.push_back(state);
+		} else if (index < p.size()) {
+			// insert to existing point
+			p[index] = state;
+		} else {
+			// pad the trajectory to a particular size
+			p.resize(index+1);
+			p[index] = state;
+		}
 	} else {
 		throw invalid_argument("Attempting to add point without existing agent");
 	}
@@ -115,4 +125,23 @@ ControlConfig ControlConfig::exmap(const VectorConfig & delta) const {
 		}
 	}
 	return newConfig;
+}
+
+/* *************************************************************** */
+string ControlConfig::nameGen(const string& name, size_t num) {
+	return name + "_" + toStr(num);
+}
+
+/* *************************************************************** */
+bool ControlConfig::compareConfigState(const std::string& key,
+			const ControlConfig& feasible, const ControlConfig& input) {
+	return feasible.get(key).equals(input.get(key));
+}
+
+/* *************************************************************** */
+ControlPoint ControlConfig::get(const std::string& key) const {
+	size_t delim = key.find_first_of('_');
+	string agent = key.substr(0, delim);
+	int num = atoi(key.substr(delim+1).c_str());
+	return getPath(agent).at(num);
 }

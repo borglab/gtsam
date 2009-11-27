@@ -21,6 +21,9 @@ namespace gtsam {
  */
 class ControlConfig : public Testable<ControlConfig> {
 public:
+	/** allow for shared pointers */
+	typedef boost::shared_ptr<ControlConfig> shared_config;
+
 	/** an individual path object for an agent */
 	typedef std::vector<ControlPoint> path;
 	typedef std::map<std::string, path>::const_iterator const_iterator;
@@ -60,13 +63,18 @@ public:
 	 * note that ordering is handled internally
 	 * @param name is the name of the robot
 	 * @param state is the ControlPoint to add
+	 * @param index is the index in the trajectory to insert the point (defaults to
+	 * pushing to the back of the trajectory)
 	 */
-	void addPoint(const std::string& name, const ControlPoint& state);
+	void addPoint(const std::string& name, const ControlPoint& state, int index=-1);
 
 	/**
 	 * returns the path of a particular robot
 	 */
 	path getPath(const std::string& agentID) const;
+
+	/** get a vector in the configuration by key */
+	ControlPoint get(const std::string& key) const;
 
 	/**
 	 * Returns true if agent is in the config
@@ -76,6 +84,25 @@ public:
 	// clearing
 	void clear() { paths_.clear(); }
 	void clearAgent(const std::string& agentID);
+
+	/**
+	 * Generates a key for a key
+	 * @param name is the name of the agent
+	 * @param num is the sequence number of the robot
+	 * @return a key in the form [name]_[num]
+	 */
+	static std::string nameGen(const std::string& name, size_t num);
+
+	/**
+	 * Compares two values of a config
+	 * Used for creating NonlinearEqualities
+	 * @param key identifier for the constrained variable
+	 * @param feasible defines the feasible set
+	 * @param input is the config to compare
+	 * @return true if the selected value in feasible equals the input config
+	 */
+	static bool compareConfigState(const std::string& key,
+			const ControlConfig& feasible, const ControlConfig& input);
 };
 } // \namespace gtsam
 

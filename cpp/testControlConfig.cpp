@@ -42,6 +42,23 @@ TEST( ControlConfig, basic ) {
 }
 
 /* ************************************************************************* */
+TEST ( ControlConfig, add_specific_points ) {
+	ControlConfig config;
+	ControlPoint s1,
+				 s2(Pose2(1.0, 1.0, 1.0), Pose2(), 2.0),
+				 s3(Pose2(2.0, 2.0, 1.0), Pose2(), 3.0);
+	config.addAgent("r1");
+	config.addPoint("r1", s1);    // add at zero
+	config.addPoint("r1", s2, 5); // add at sequence 5
+	config.addPoint("r1", s3, 3); // add at sequence 3
+
+	CHECK(config.getPath("r1").size() == 6);
+	CHECK(assert_equal(config.getPath("r1").at(0), s1));
+	CHECK(assert_equal(config.getPath("r1").at(5), s2));
+	CHECK(assert_equal(config.getPath("r1").at(3), s3));
+}
+
+/* ************************************************************************* */
 TEST ( ControlConfig, equals ) {
 	ControlConfig cfg1, cfg2, cfg3;
 	cfg1.addAgent("r1");
@@ -67,7 +84,6 @@ TEST ( ControlConfig, exmap ) {
 				 s3(Pose2(2.0, 2.0, 2.0), Pose2(0.1, 0.2, 0.3), 2.0),
 				 s4(Pose2(1.0, 2.0, 1.0), Pose2(), 0.0),
 				 s5(Pose2(3.0, 4.0, 3.0), Pose2(0.4, 0.5, 0.6), 1.5);
-
 
 	config.addAgent("r1");
 	config.addPoint("r1", s1);
@@ -104,6 +120,48 @@ TEST ( ControlConfig, exmap ) {
 	expected.addPoint("r2", s5.exmap(d2));
 
 	CHECK(assert_equal(expected, actual));
+}
+
+/* ************************************************************************* */
+TEST ( ControlConfig, namegen ) {
+	string name = "r1";
+	int num = 5;
+	string actKey = ControlConfig::nameGen(name, num);
+	string expKey = "r1_5";
+	CHECK(actKey == expKey);
+}
+
+/* ************************************************************************* */
+TEST ( ControlConfig, string_access ) {
+	ControlConfig config;
+	ControlPoint s1,
+				 s2(Pose2(1.0, 1.0, 1.0), Pose2(), 1.0),
+				 s3(Pose2(2.0, 2.0, 2.0), Pose2(0.1, 0.2, 0.3), 2.0);
+	config.addAgent("r1");
+	config.addPoint("r1", s1);
+	config.addPoint("r1", s2);
+	config.addPoint("r1", s3);
+
+	CHECK(assert_equal(config.get("r1_0"), s1));
+	CHECK(assert_equal(config.get("r1_1"), s2));
+	CHECK(assert_equal(config.get("r1_2"), s3));
+}
+
+/* ************************************************************************* */
+TEST ( ControlConfig, compare ) {
+	ControlConfig feasible, input;
+	ControlPoint s1,
+				 s2(Pose2(1.0, 1.0, 1.0), Pose2(), 1.0),
+				 s3(Pose2(2.0, 2.0, 2.0), Pose2(0.1, 0.2, 0.3), 2.0);
+	feasible.addAgent("r1");
+	feasible.addPoint("r1", s1);
+	feasible.addPoint("r1", s2);
+	input.addAgent("r1");
+	input.addPoint("r1", s1);
+	input.addPoint("r1", s3);
+
+	CHECK(ControlConfig::compareConfigState("r1_0", feasible, input));
+	CHECK(!ControlConfig::compareConfigState("r1_1", feasible, input));
 }
 
 /* ************************************************************************* */

@@ -11,8 +11,11 @@
 #include <boost/assign/std/map.hpp> // for insert
 #include "GaussianFactorGraph.h"
 #include "NonlinearFactorGraph.h"
-#include "NonlinearFactorGraph-inl.h"
 #include "SQPOptimizer.h"
+
+// implementations
+#include "NonlinearConstraint-inl.h"
+#include "NonlinearFactorGraph-inl.h"
 
 using namespace std;
 using namespace boost::assign;
