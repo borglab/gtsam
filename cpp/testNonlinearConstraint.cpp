@@ -178,5 +178,77 @@ TEST( NonlinearConstraint2, binary_scalar_equal ) {
 }
 
 /* ************************************************************************* */
+// Inequality tests
+/* ************************************************************************* */
+namespace inequality_unary {
+/** p = 1, gradG(x) = 2*x */
+Matrix grad_g(const VectorConfig& config, const std::string& key) {
+	double x = config[key](0);
+	return Matrix_(1,1, 2*x);
+}
+
+/** p = 1, g(x) x^2 - 5 > 0 */
+Vector g_func(const VectorConfig& config, const std::string& key) {
+	double x = config[key](0);
+	double g = x*x-5;
+	if (g > 0)
+		return Vector_(1, 0.0); // return exactly zero
+	else
+		return Vector_(1, g); // return the actual cost
+}
+} // \namespace test1
+
+/* ************************************************************************* */
+TEST( NonlinearConstraint1, unary_inequality ) {
+	size_t p = 1;
+	NonlinearConstraint1<VectorConfig> c1("x", *inequality_unary::grad_g,
+										  *inequality_unary::g_func, p, "L_x1");
+
+	// get configurations to use for evaluation
+	VectorConfig config1, config2;
+	config1.insert("x", Vector_(1, 10.0)); // should have zero error
+	config2.insert("x", Vector_(1, 1.0)); // should have nonzero error
+
+	// check error
+	Vector actError1 = c1.error_vector(config1);
+	Vector actError2 = c1.error_vector(config2);
+	CHECK(actError1(0) == 0.0); // NOTE: using exact comparison here, as this value is forced
+	CHECK(assert_equal(actError2, Vector_(1, -4.0, 1e-9)));
+}
+
+/* ************************************************************************* */
+TEST( NonlinearConstraint1, unary_inequality_linearize ) {
+	size_t p = 1;
+	NonlinearConstraint1<VectorConfig> c1("x", *inequality_unary::grad_g,
+										  *inequality_unary::g_func, p, "L_x");
+
+	// get configurations to use for linearization
+	VectorConfig config1, config2;
+	config1.insert("x", Vector_(1, 10.0)); // should have zero error
+	config2.insert("x", Vector_(1, 1.0)); // should have nonzero error
+
+	// get a configuration of Lagrange multipliers
+	VectorConfig lagrangeConfig;
+	lagrangeConfig.insert("L_x", Vector_(1, 3.0));
+
+	// linearize for inactive constraint
+	GaussianFactor::shared_ptr actFactor1, actConstraint1;
+	boost::tie(actFactor1, actConstraint1) = c1.linearize(config1, lagrangeConfig);
+
+	// verify empty factors
+	CHECK(actFactor1->empty());
+	CHECK(actConstraint1->empty());
+
+	// linearize for active constraint
+	GaussianFactor::shared_ptr actFactor2, actConstraint2;
+	boost::tie(actFactor2, actConstraint2) = c1.linearize(config2, lagrangeConfig);
+
+	// verify
+	GaussianFactor expFactor("x", Matrix_(1,1, 6.0), "L_x", eye(1), zero(1), 1.0);
+	GaussianFactor expConstraint("x", Matrix_(1,1, 2.0), Vector_(1,-4.0), 0.0);
+	CHECK(assert_equal(*actFactor2, expFactor));
+	CHECK(assert_equal(*actConstraint2, expConstraint));
+}
+/* ************************************************************************* */
 int main() { TestResult tr; return TestRegistry::runAllTests(tr); }
 /* ************************************************************************* */

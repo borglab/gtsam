@@ -61,6 +61,13 @@ NonlinearConstraint1<Config>::linearize(const Config& config, const VectorConfig
 	// find the error
 	Vector g = g_(config, key_);
 
+	// determine if this is an active constraint
+	if (zero(g)) {
+		GaussianFactor::shared_ptr factor(new GaussianFactor(Vector_(0)));
+		GaussianFactor::shared_ptr constraint(new GaussianFactor(Vector_(0)));
+		return std::make_pair(factor, constraint);
+	}
+
 	// construct the gradient
 	Matrix grad = gradG_(config, key_);
 
