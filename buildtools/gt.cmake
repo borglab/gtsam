@@ -12,7 +12,8 @@ cmake_policy(PUSH)
 cmake_minimum_required(VERSION 2.6)
 
 # Set the default install prefix
-set(CMAKE_INSTALL_PREFIX "$ENV{HOME}" CACHE PATH "Installation prefix" FORCE)
+set(CMAKE_INSTALL_PREFIX "$ENV{HOME}" CACHE PATH "Installation prefix")
+set(CMAKE_BUILD_TYPE "Debug" CACHE STRING "Build type, Debug or Release")
 
 # Add borg libraries and includes
 include_directories("${CMAKE_INSTALL_PREFIX}/include")
