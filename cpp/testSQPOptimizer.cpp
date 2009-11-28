@@ -15,10 +15,12 @@
 #include "NonlinearEquality.h"
 #include "VectorConfig.h"
 #include "Ordering.h"
+#include "NonlinearOptimizer.h"
 #include "SQPOptimizer.h"
 
 // implementations
 #include "NonlinearConstraint-inl.h"
+#include "NonlinearOptimizer-inl.h"
 #include "SQPOptimizer-inl.h"
 
 using namespace std;
@@ -157,7 +159,7 @@ TEST ( SQPOptimizer, map_warp_initLam ) {
 	expected.insert("l1", Vector_(2, 1.0, 6.0));
 	expected.insert("l2", Vector_(2, 1.0, 6.0));
 	expected.insert("x2", Vector_(2, 5.0, 6.0));
-	CHECK(assert_equal(actual, expected));
+	CHECK(assert_equal(expected, actual));
 }
 
 /* ********************************************************************* */
@@ -191,7 +193,7 @@ TEST ( SQPOptimizer, map_warp ) {
 	expected.insert("l1", Vector_(2, 1.0, 6.0));
 	expected.insert("l2", Vector_(2, 1.0, 6.0));
 	expected.insert("x2", Vector_(2, 5.0, 6.0));
-	CHECK(assert_equal(actual, expected));
+	CHECK(assert_equal(expected, actual));
 }
 
 /* ********************************************************************* */
@@ -235,13 +237,16 @@ Vector g_func(const VectorConfig& config, const list<string>& keys) {
 
 /** gradient at pose */
 Matrix grad_g1(const VectorConfig& config, const list<string>& keys) {
-	Matrix grad;
-	return grad;
+	Vector x2 = config[keys.front()], obs = config[keys.back()];
+	Vector grad = 2.0*(x2-obs);
+	return Matrix_(1,2, grad(0), grad(1));
 }
 
 /** gradient at obstacle */
 Matrix grad_g2(const VectorConfig& config, const list<string>& keys) {
-	return -1*eye(1);
+	Vector x2 = config[keys.front()], obs = config[keys.back()];
+	Vector grad = -2.0*(x2-obs);
+	return Matrix_(1,2, grad(0), grad(1));
 }
 }
 
@@ -276,11 +281,57 @@ pair<NLGraph, VectorConfig> obstacleAvoidGraph() {
 	graph.push_back(e1);
 	graph.push_back(e2);
 	graph.push_back(e3);
-	graph.push_back(c1);
+	//graph.push_back(c1);
 	graph.push_back(f1);
 	graph.push_back(f2);
 
 	return make_pair(graph, feasible);
+}
+
+/* ********************************************************************* */
+TEST ( SQPOptimizer, trajectory_shortening ) {
+	// fix start, end positions
+	VectorConfig feasible;
+	feasible.insert("x1", Vector_(2, 0.0, 0.0));
+	feasible.insert("x3", Vector_(2, 10.0, 0.0));
+	feasible.insert("obs", Vector_(2, 5.0, -0.5));
+	shared_NLE e1(new NLE("x1", feasible, 2, *vector_compare));
+	shared_NLE e2(new NLE("x3", feasible, 2, *vector_compare));
+	shared_NLE e3(new NLE("obs", feasible, 2, *vector_compare));
+
+	// measurement from x1 to x2
+	Vector x1x2 = Vector_(2, 5.0, 0.0);
+	double sigma1 = 0.1;
+	shared f1(new Simulated2DOdometry(x1x2, sigma1, "x1", "x2"));
+
+	// measurement from x2 to x3
+	Vector x2x3 = Vector_(2, 5.0, 0.0);
+	double sigma2 = 0.1;
+	shared f2(new Simulated2DOdometry(x2x3, sigma2, "x2", "x3"));
+
+	// construct the graph
+	NLGraph graph;
+	graph.push_back(e1);
+	graph.push_back(e2);
+	graph.push_back(e3);
+	graph.push_back(f1);
+	graph.push_back(f2);
+
+	// optimize
+	typedef NonlinearOptimizer<NLGraph, VectorConfig> Optimizer;
+	//typedef SQPOptimizer<NLGraph, VectorConfig> Optimizer;
+	Ordering ordering;
+	ordering += "x1", "x2", "x3", "obs";
+	shared_config config(new VectorConfig(feasible));
+	config->insert("x2", Vector_(2, 5.0, 10.0));
+	Optimizer optimizer(graph, ordering, config);
+
+	// perform iteration
+	Optimizer afterOneIteration = optimizer.iterate();
+
+	// print for evaluation
+//	config->print("Initial config");
+//	afterOneIteration.config()->print("Config after optimization");
 }
 
 /* ********************************************************************* */
@@ -291,7 +342,7 @@ TEST ( SQPOptimizer, inequality_inactive ) {
 
 	// create the rest of the config
 	shared_config init(new VectorConfig(feasible));
-	init->insert("x2", Vector_(2, 5.0, 0.6));
+	init->insert("x2", Vector_(2, 5.0, 100.0));
 
 	// create an ordering
 	Ordering ord;
@@ -301,18 +352,21 @@ TEST ( SQPOptimizer, inequality_inactive ) {
 	Optimizer optimizer(graph, ord, init);
 
 	// perform optimization
-	// FIXME: avoidance constraint not correctly implemented
-	//Optimizer afterOneIteration = optimizer.iterate(Optimizer::SILENT);
+	Optimizer afterOneIteration = optimizer.iterate(Optimizer::SILENT);
+
+	// print for evaluation
+//	init->print("Before SQP iteration");
+//	afterOneIteration.config()->print("After SQP iteration");
 
 }
 
 /* ********************************************************************* */
-TEST ( SQPOptimizer, inequality_active ) {
-	// create the graph
-	NLGraph graph; VectorConfig feasible;
-	boost::tie(graph, feasible) = obstacleAvoidGraph();
-
-}
+//TEST ( SQPOptimizer, inequality_active ) {
+//	// create the graph
+//	NLGraph graph; VectorConfig feasible;
+//	boost::tie(graph, feasible) = obstacleAvoidGraph();
+//
+//}
 
 
 /* ************************************************************************* */

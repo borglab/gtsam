@@ -66,7 +66,7 @@ TEST( NonlinearConstraint1, unary_scalar_linearize ) {
 
 	// verify
 	GaussianFactor expFactor("x", Matrix_(1,1, 6.0), "L_x1", eye(1), zero(1), 1.0);
-	GaussianFactor expConstraint("x", Matrix_(1,1, 2.0), Vector_(1,-4.0), 0.0);
+	GaussianFactor expConstraint("x", Matrix_(1,1, 2.0), Vector_(1, 4.0), 0.0);
 	CHECK(assert_equal(*actFactor, expFactor));
 	CHECK(assert_equal(*actConstraint, expConstraint));
 }
@@ -159,7 +159,7 @@ TEST( NonlinearConstraint2, binary_scalar_linearize ) {
 							 "L_xy", eye(1), zero(1), 1.0);
 	GaussianFactor expConstraint("x", Matrix_(1,1, 2.0),
 								 "y", Matrix_(1,1, -1.0),
-								 Vector_(1,-6.0), 0.0);
+								 Vector_(1, 6.0), 0.0);
 	CHECK(assert_equal(*actFactor, expFactor));
 	CHECK(assert_equal(*actConstraint, expConstraint));
 }
@@ -248,7 +248,7 @@ TEST( NonlinearConstraint1, unary_inequality_linearize ) {
 
 	// verify
 	GaussianFactor expFactor("x", Matrix_(1,1, 6.0), "L_x", eye(1), zero(1), 1.0);
-	GaussianFactor expConstraint("x", Matrix_(1,1, 2.0), Vector_(1,-4.0), 0.0);
+	GaussianFactor expConstraint("x", Matrix_(1,1, 2.0), Vector_(1, 4.0), 0.0);
 	CHECK(assert_equal(*actFactor2, expFactor));
 	CHECK(assert_equal(*actConstraint2, expConstraint));
 }

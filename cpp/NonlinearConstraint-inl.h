@@ -86,7 +86,7 @@ NonlinearConstraint1<Config>::linearize(const Config& config, const VectorConfig
 			GaussianFactor(key_, A1, this->lagrange_key_, eye(this->p_), zero(this->p_), 1.0));
 
 	// construct the constraint
-	GaussianFactor::shared_ptr constraint(new GaussianFactor(key_, grad, g, 0.0));
+	GaussianFactor::shared_ptr constraint(new GaussianFactor(key_, grad, -1*g, 0.0));
 
 	return std::make_pair(factor, constraint);
 }
@@ -163,7 +163,7 @@ NonlinearConstraint2<Config>::linearize(const Config& config, const VectorConfig
 					this->lagrange_key_, eye(this->p_), zero(this->p_), 1.0));
 
 	// construct the constraint
-	GaussianFactor::shared_ptr constraint(new GaussianFactor(key1_, grad1, key2_, grad2, g, 0.0));
+	GaussianFactor::shared_ptr constraint(new GaussianFactor(key1_, grad1, key2_, grad2, -1*g, 0.0));
 
 	return std::make_pair(factor, constraint);
 }

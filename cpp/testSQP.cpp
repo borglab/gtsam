@@ -223,11 +223,11 @@ TEST (SQP, problem1_sqp ) {
 		// solve
 		Ordering ord;
 		ord += "x", "y", "lam";
-		VectorConfig delta = fg.optimize(ord).scale(-1.0); // flip sign
+		VectorConfig delta = fg.optimize(ord);
 		if (verbose) delta.print("Delta");
 
 		// update initial estimate
-		VectorConfig newState = state.exmap(delta);
+		VectorConfig newState = state.exmap(delta.scale(-1.0));
 
 		// set the state to the updated state
 		state = newState;
@@ -434,7 +434,7 @@ TEST (SQP, two_pose ) {
 		ordering += "x1", "x2", "l1", "l2", "L_l1l2", "L_x1";
 
 		// optimize linear graph to get full delta config
-		VectorConfig delta = fg.optimize(ordering).scale(-1.0);
+		VectorConfig delta = fg.optimize(ordering);
 		if (verbose) delta.print("Delta Config");
 
 		// update both state variables

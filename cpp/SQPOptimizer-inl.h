@@ -96,7 +96,7 @@ SQPOptimizer<G, C> SQPOptimizer<G, C>::iterate(Verbosity v) const {
 	if (verbose) fg.print("Before Optimization");
 
 	// optimize linear graph to get full delta config
-	VectorConfig delta = fg.optimize(full_ordering_.subtract(rem)).scale(-1.0);
+	VectorConfig delta = fg.optimize(full_ordering_.subtract(rem));
 
 	if (verbose) delta.print("Delta Config");
 
