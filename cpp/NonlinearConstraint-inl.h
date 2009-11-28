@@ -12,6 +12,15 @@
 namespace gtsam {
 
 /* ************************************************************************* */
+template <class Config>
+bool NonlinearConstraint<Config>::active(const Config& config) const {
+	if (!isEquality_ && zero(error_vector(config)))
+		return false;
+	else
+		return true;
+}
+
+/* ************************************************************************* */
 // Implementations of unary nonlinear constraints
 /* ************************************************************************* */
 
@@ -21,8 +30,9 @@ NonlinearConstraint1<Config>::NonlinearConstraint1(
 			Matrix (*gradG)(const Config& config, const std::string& key),
 			Vector (*g)(const Config& config, const std::string& key),
 			size_t dim_constraint,
-			const std::string& lagrange_key) :
-				NonlinearConstraint<Config>(lagrange_key, dim_constraint),
+			const std::string& lagrange_key,
+			bool isEquality) :
+				NonlinearConstraint<Config>(lagrange_key, dim_constraint, isEquality),
 				g_(g), gradG_(gradG), key_(key) {
 		// set a good lagrange key here
 		// TODO:should do something smart to find a unique one
@@ -36,7 +46,11 @@ void NonlinearConstraint1<Config>::print(const std::string& s) const {
 	std::cout << "NonlinearConstraint1 [" << s << "]:\n"
 			<< "  key:        " << key_ << "\n"
 			<< "  p:          " << this->p_ << "\n"
-			<< "  lambda key: " << this->lagrange_key_ << std::endl;
+			<< "  lambda key: " << this->lagrange_key_ << "\n";
+	if (this->isEquality_)
+		std::cout << "  Equality Factor" << std::endl;
+	else
+		std::cout << "  Inequality Factor" << std::endl;
 }
 
 /* ************************************************************************* */
@@ -48,6 +62,7 @@ bool NonlinearConstraint1<Config>::equals(const Factor<Config>& f, double tol) c
 	if (this->lagrange_key_ != p->lagrange_key_) return false;
 	if (g_ != p->g_) return false;
 	if (gradG_ != p->gradG_) return false;
+	if (this->isEquality_ != p->isEquality_) return false;
 	return this->p_ == p->p_;
 }
 
@@ -60,13 +75,6 @@ NonlinearConstraint1<Config>::linearize(const Config& config, const VectorConfig
 
 	// find the error
 	Vector g = g_(config, key_);
-
-	// determine if this is an active constraint
-	if (zero(g)) {
-		GaussianFactor::shared_ptr factor(new GaussianFactor(Vector_(0)));
-		GaussianFactor::shared_ptr constraint(new GaussianFactor(Vector_(0)));
-		return std::make_pair(factor, constraint);
-	}
 
 	// construct the gradient
 	Matrix grad = gradG_(config, key_);
@@ -95,8 +103,9 @@ NonlinearConstraint2<Config>::NonlinearConstraint2(
 		Matrix (*gradG2)(const Config& config, const std::string& key),
 		Vector (*g)(const Config& config, const std::string& key1, const std::string& key2),
 		size_t dim_constraint,
-		const std::string& lagrange_key) :
-			NonlinearConstraint<Config>(lagrange_key, dim_constraint),
+		const std::string& lagrange_key,
+		bool isEquality) :
+			NonlinearConstraint<Config>(lagrange_key, dim_constraint, isEquality),
 			g_(g), gradG1_(gradG1), gradG2_(gradG2), key1_(key1), key2_(key2) {
 	// set a good lagrange key here
 	// TODO:should do something smart to find a unique one
@@ -125,6 +134,7 @@ bool NonlinearConstraint2<Config>::equals(const Factor<Config>& f, double tol) c
 	if (g_ != p->g_) return false;
 	if (gradG1_ != p->gradG1_) return false;
 	if (gradG2_ != p->gradG2_) return false;
+	if (this->isEquality_ != p->isEquality_) return false;
 	return this->p_ == p->p_;
 }
 

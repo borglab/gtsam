@@ -8,7 +8,6 @@
 #pragma once
 
 #include <map>
-#include <iostream>
 #include "NonlinearFactor.h"
 
 namespace gtsam {
@@ -33,20 +32,29 @@ protected:
 	/** number of lagrange multipliers */
 	size_t p_;
 
+	/** type of constraint */
+	bool isEquality_;
+
 public:
+
 	/** Constructor - sets the cost function and the lagrange multipliers
 	 * @param lagrange_key is the label for the associated lagrange multipliers
 	 * @param dim_lagrange is the number of associated constraints
+	 * @param isEquality is true if the constraint is an equality constraint
 	 */
-	NonlinearConstraint(const std::string& lagrange_key, size_t dim_lagrange) :
-		NonlinearFactor<Config>(zero(dim_lagrange), 1.0),
-		lagrange_key_(lagrange_key), p_(dim_lagrange) {}
+	NonlinearConstraint(const std::string& lagrange_key, size_t dim_lagrange,
+			bool isEquality=true)
+	:	NonlinearFactor<Config>(zero(dim_lagrange), 1.0),
+		lagrange_key_(lagrange_key), p_(dim_lagrange), isEquality_(isEquality) {}
 
 	/** returns the key used for the Lagrange multipliers */
 	std::string lagrangeKey() const { return lagrange_key_; }
 
 	/** returns the number of lagrange multipliers */
 	size_t nrConstraints() const { return p_; }
+
+	/** returns the type of constraint */
+	bool isEquality() const { return isEquality_; }
 
 	/** Print */
 	virtual void print(const std::string& s = "") const =0;
@@ -55,7 +63,14 @@ public:
 	virtual bool equals(const Factor<Config>& f, double tol=1e-9) const=0;
 
 	/** error function - returns the result of the constraint function */
-	virtual inline Vector error_vector(const Config& c) const=0;
+	virtual inline Vector error_vector(const Config& c) const { return zero(1); }
+
+	/**
+	 * Determines whether the constraint is active given a particular configuration
+	 * @param config is the input to the g(x) function
+	 * @return true if constraint needs to be linearized
+	 */
+	bool active(const Config& config) const;
 
 	/**
 	 * Linearize using a real Config and a VectorConfig of Lagrange multipliers
@@ -114,13 +129,15 @@ public:
 	 * @param g is the constraint function
 	 * @param dim_constraint is the size of the constraint (p)
 	 * @param lagrange_key is the identifier for the lagrange multiplier
+	 * @param isEquality is true if the constraint is an equality constraint
 	 */
 	NonlinearConstraint1(
 			const std::string& key,
 			Matrix (*gradG)(const Config& config, const std::string& key),
 			Vector (*g)(const Config& config, const std::string& key),
 			size_t dim_constraint,
-			const std::string& lagrange_key="");
+			const std::string& lagrange_key="",
+			bool isEquality=true);
 
 	/** Print */
 	void print(const std::string& s = "") const;
@@ -184,6 +201,7 @@ public:
 	 * @param g is the constraint function
 	 * @param dim_constraint is the size of the constraint (p)
 	 * @param lagrange_key is the identifier for the lagrange multiplier
+	 * @param isEquality is true if the constraint is an equality constraint
 	 */
 	NonlinearConstraint2(
 			const std::string& key1,
@@ -192,7 +210,8 @@ public:
 			Matrix (*gradG2)(const Config& config, const std::string& key),
 			Vector (*g)(const Config& config, const std::string& key1, const std::string& key2),
 			size_t dim_constraint,
-			const std::string& lagrange_key="");
+			const std::string& lagrange_key="",
+			bool isEquality=true);
 
 	/** Print */
 	void print(const std::string& s = "") const;

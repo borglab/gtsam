@@ -38,6 +38,13 @@ namespace gtsam {
 			std::list<std::string>(strings_in) {
 		}
 
+		/**
+		 * Remove a set of keys from an ordering
+		 * @param keys to remove
+		 * @return a new ordering without the selected keys
+		 */
+		Ordering subtract(const Ordering& keys) const;
+
 		void print(const std::string& s = "Ordering") const;
 
 		/**

@@ -55,7 +55,6 @@ SQPOptimizer<G,C>::SQPOptimizer(const G& graph, const Ordering& ordering,
 : graph_(&graph), ordering_(&ordering), full_ordering_(ordering),
   config_(config), lagrange_config_(lagrange), error_(graph.error(*config))
 {
-
 }
 
 /* **************************************************************** */
@@ -71,6 +70,9 @@ SQPOptimizer<G, C> SQPOptimizer<G, C>::iterate(Verbosity v) const {
 	// linearize the graph
 	GaussianFactorGraph fg;
 
+	// prepare an ordering of lagrange multipliers to remove
+	Ordering rem;
+
 	// iterate over all factors and linearize
 	for (const_iterator factor = graph_->begin(); factor < graph_->end(); factor++) {
 		const shared_c constraint = boost::shared_dynamic_cast<NLConstraint >(*factor);
@@ -79,7 +81,7 @@ SQPOptimizer<G, C> SQPOptimizer<G, C>::iterate(Verbosity v) const {
 			GaussianFactor::shared_ptr f = (*factor)->linearize(*config_);
 			if (verbose) f->print("Regular Factor");
 			fg.push_back(f);
-		} else {
+		} else if (constraint->active(*config_)) {
 			// if a constraint, linearize using the constraint method (2 configs)
 			GaussianFactor::shared_ptr f, c;
 			boost::tie(f,c) = constraint->linearize(*config_, *lagrange_config_);
@@ -87,12 +89,14 @@ SQPOptimizer<G, C> SQPOptimizer<G, C>::iterate(Verbosity v) const {
 			if (verbose) c->print("Constraint");
 			fg.push_back(f);
 			fg.push_back(c);
+		} else {
+			rem += constraint->lagrangeKey();
 		}
 	}
 	if (verbose) fg.print("Before Optimization");
 
 	// optimize linear graph to get full delta config
-	VectorConfig delta = fg.optimize(full_ordering_).scale(-1.0);
+	VectorConfig delta = fg.optimize(full_ordering_.subtract(rem)).scale(-1.0);
 
 	if (verbose) delta.print("Delta Config");
 
@@ -102,6 +106,16 @@ SQPOptimizer<G, C> SQPOptimizer<G, C>::iterate(Verbosity v) const {
 
 	// construct a new optimizer
 	return SQPOptimizer<G, C>(*graph_, full_ordering_, newConfig, newLamConfig);
+}
+
+/* **************************************************************** */
+template<class G, class C>
+void SQPOptimizer<G, C>::print(const std::string& s) {
+	graph_->print("Nonlinear Graph");
+	ordering_->print("Initial Ordering");
+	full_ordering_.print("Ordering including all Lagrange Multipliers");
+	config_->print("Real Config");
+	lagrange_config_->print("Lagrange Multiplier Config");
 }
 
 }

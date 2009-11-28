@@ -83,6 +83,8 @@ public:
 	 */
 	SQPOptimizer<FactorGraph, Config> iterate(Verbosity verbosity=SILENT) const;
 
+	/** Standard print function with optional name */
+	void print(const std::string& s);
 };
 
 }

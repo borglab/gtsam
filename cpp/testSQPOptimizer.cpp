@@ -8,9 +8,11 @@
 #include <boost/assign/std/list.hpp> // for operator +=
 #include <boost/assign/std/map.hpp> // for insert
 #include <Simulated2DMeasurement.h>
+#include <Simulated2DOdometry.h>
 #include <simulated2D.h>
 #include "NonlinearFactorGraph.h"
 #include "NonlinearConstraint.h"
+#include "NonlinearEquality.h"
 #include "VectorConfig.h"
 #include "Ordering.h"
 #include "SQPOptimizer.h"
@@ -143,6 +145,7 @@ TEST ( SQPOptimizer, map_warp_initLam ) {
 
 	// create an optimizer
 	Optimizer optimizer(graph, ordering, initialEstimate, initLagrange);
+	if (verbose) optimizer.print("Initialized Optimizer");
 
 	// perform an iteration of optimization
 	Optimizer oneIteration = optimizer.iterate(Optimizer::SILENT);
@@ -159,8 +162,10 @@ TEST ( SQPOptimizer, map_warp_initLam ) {
 
 /* ********************************************************************* */
 TEST ( SQPOptimizer, map_warp ) {
+	bool verbose = false;
 	// get a graph
 	NLGraph graph = linearMapWarpGraph();
+	if (verbose) graph.print("Initial map warp graph");
 
 	// create an initial estimate
 	shared_config initialEstimate(new VectorConfig);
@@ -188,6 +193,127 @@ TEST ( SQPOptimizer, map_warp ) {
 	expected.insert("x2", Vector_(2, 5.0, 6.0));
 	CHECK(assert_equal(actual, expected));
 }
+
+/* ********************************************************************* */
+// This is an obstacle avoidance demo, where there is a trajectory of
+// three points, where there is a circular obstacle in the middle.  There
+// is a binary inequality constraint connecting the obstacle to the
+// states, which enforces a minimum distance.
+/* ********************************************************************* */
+
+bool vector_compare(const std::string& key,
+					const VectorConfig& feasible,
+					const VectorConfig& input) {
+	Vector feas, lin;
+	feas = feasible[key];
+	lin = input[key];
+	return equal_with_abs_tol(lin, feas, 1e-5);
+}
+
+typedef NonlinearConstraint1<VectorConfig> NLC1;
+typedef boost::shared_ptr<NLC1> shared_NLC1;
+typedef NonlinearConstraint2<VectorConfig> NLC2;
+typedef boost::shared_ptr<NLC2> shared_NLC2;
+typedef NonlinearEquality<VectorConfig> NLE;
+typedef boost::shared_ptr<NLE> shared_NLE;
+
+namespace sqp_avoid1 {
+// avoidance radius
+double radius = 1.0;
+
+// binary avoidance constraint
+/** g(x) = ||x2-obs||^2 > radius^2 */
+Vector g_func(const VectorConfig& config, const std::string& key1, const std::string& key2) {
+	Vector delta = config[key1]-config[key2];
+	double dist2 = sum(emul(delta, delta));
+	double thresh = radius*radius;
+	if (dist2 <= thresh)
+		return Vector_(1, dist2-thresh);
+	else
+		return zero(1);
+}
+
+/** gradient at pose */
+Matrix grad_g1(const VectorConfig& config, const std::string& key) {
+	Matrix grad;
+	return grad;
+}
+
+/** gradient at obstacle */
+Matrix grad_g2(const VectorConfig& config, const std::string& key) {
+	return -1*eye(1);
+}
+}
+
+pair<NLGraph, VectorConfig> obstacleAvoidGraph() {
+	// fix start, end, obstacle positions
+	VectorConfig feasible;
+	feasible.insert("x1", Vector_(2, 0.0, 0.0));
+	feasible.insert("x3", Vector_(2, 10.0, 0.0));
+	feasible.insert("obs", Vector_(2, 5.0, -0.5));
+	shared_NLE e1(new NLE("x1", feasible, 2, *vector_compare));
+	shared_NLE e2(new NLE("x3", feasible, 2, *vector_compare));
+	shared_NLE e3(new NLE("obs", feasible, 2, *vector_compare));
+
+	// measurement from x1 to x2
+	Vector x1x2 = Vector_(2, 5.0, 0.0);
+	double sigma1 = 0.1;
+	shared f1(new Simulated2DOdometry(x1x2, sigma1, "x1", "x2"));
+
+	// measurement from x2 to x3
+	Vector x2x3 = Vector_(2, 5.0, 0.0);
+	double sigma2 = 0.1;
+	shared f2(new Simulated2DOdometry(x2x3, sigma2, "x2", "x3"));
+
+	// create a binary inequality constraint that forces the middle point away from
+	//  the obstacle
+	shared_NLC2 c1(new NLC2("x2", *sqp_avoid1::grad_g1,
+						   "obs", *sqp_avoid1::grad_g2,
+						   *sqp_avoid1::g_func, 1, "L_x2obs"));
+
+	// construct the graph
+	NLGraph graph;
+	graph.push_back(e1);
+	graph.push_back(e2);
+	graph.push_back(e3);
+	graph.push_back(c1);
+	graph.push_back(f1);
+	graph.push_back(f2);
+
+	return make_pair(graph, feasible);
+}
+
+/* ********************************************************************* */
+TEST ( SQPOptimizer, inequality_inactive ) {
+	// create the graph
+	NLGraph graph; VectorConfig feasible;
+	boost::tie(graph, feasible) = obstacleAvoidGraph();
+
+	// create the rest of the config
+	shared_config init(new VectorConfig(feasible));
+	init->insert("x2", Vector_(2, 5.0, 0.6));
+
+	// create an ordering
+	Ordering ord;
+	ord += "x1", "x2", "x3", "obs";
+
+	// create an optimizer
+	Optimizer optimizer(graph, ord, init);
+
+	// perform optimization
+	// FIXME: avoidance constraint not correctly implemented
+	//Optimizer afterOneIteration = optimizer.iterate(Optimizer::SILENT);
+
+}
+
+/* ********************************************************************* */
+TEST ( SQPOptimizer, inequality_active ) {
+	// create the graph
+	NLGraph graph; VectorConfig feasible;
+	boost::tie(graph, feasible) = obstacleAvoidGraph();
+
+}
+
 
 /* ************************************************************************* */
 int main() { TestResult tr; return TestRegistry::runAllTests(tr); }

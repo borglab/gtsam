@@ -1,4 +1,4 @@
-/*
+/**
  * @file testNonlinearConstraint.cpp
  * @brief Tests for nonlinear constraints handled via SQP
  * @author Alex Cunningham
@@ -73,7 +73,7 @@ TEST( NonlinearConstraint1, unary_scalar_linearize ) {
 /* ************************************************************************* */
 TEST( NonlinearConstraint1, unary_scalar_equal ) {
 	NonlinearConstraint1<VectorConfig>
-		c1("x", *test1::grad_g, *test1::g_func, 1, "L_x1"),
+		c1("x", *test1::grad_g, *test1::g_func, 1, "L_x1", true),
 		c2("x", *test1::grad_g, *test1::g_func, 1, "L_x1"),
 		c3("x", *test1::grad_g, *test1::g_func, 2, "L_x1"),
 		c4("y", *test1::grad_g, *test1::g_func, 1, "L_x1");
@@ -202,7 +202,8 @@ Vector g_func(const VectorConfig& config, const std::string& key) {
 TEST( NonlinearConstraint1, unary_inequality ) {
 	size_t p = 1;
 	NonlinearConstraint1<VectorConfig> c1("x", *inequality_unary::grad_g,
-										  *inequality_unary::g_func, p, "L_x1");
+										  *inequality_unary::g_func, p, "L_x1",
+										  false); // inequality constraint
 
 	// get configurations to use for evaluation
 	VectorConfig config1, config2;
@@ -220,7 +221,8 @@ TEST( NonlinearConstraint1, unary_inequality ) {
 TEST( NonlinearConstraint1, unary_inequality_linearize ) {
 	size_t p = 1;
 	NonlinearConstraint1<VectorConfig> c1("x", *inequality_unary::grad_g,
-										  *inequality_unary::g_func, p, "L_x");
+										  *inequality_unary::g_func, p, "L_x",
+										  false); // inequality constraint
 
 	// get configurations to use for linearization
 	VectorConfig config1, config2;
@@ -235,13 +237,13 @@ TEST( NonlinearConstraint1, unary_inequality_linearize ) {
 	GaussianFactor::shared_ptr actFactor1, actConstraint1;
 	boost::tie(actFactor1, actConstraint1) = c1.linearize(config1, lagrangeConfig);
 
-	// verify empty factors
-	CHECK(actFactor1->empty());
-	CHECK(actConstraint1->empty());
+	// check if the factor is active
+	CHECK(!c1.active(config1));
 
 	// linearize for active constraint
 	GaussianFactor::shared_ptr actFactor2, actConstraint2;
 	boost::tie(actFactor2, actConstraint2) = c1.linearize(config2, lagrangeConfig);
+	CHECK(c1.active(config2));
 
 	// verify
 	GaussianFactor expFactor("x", Matrix_(1,1, 6.0), "L_x", eye(1), zero(1), 1.0);
