@@ -229,7 +229,7 @@ Vector g_func(const VectorConfig& config, const list<string>& keys) {
 	Vector delta = config[keys.front()]-config[keys.back()];
 	double dist2 = sum(emul(delta, delta));
 	double thresh = radius*radius;
-	if (dist2 <= thresh)
+	if (dist2 < thresh)
 		return Vector_(1, dist2-thresh);
 	else
 		return zero(1);
@@ -274,14 +274,14 @@ pair<NLGraph, VectorConfig> obstacleAvoidGraph() {
 	//  the obstacle
 	shared_NLC2 c1(new NLC2("x2", *sqp_avoid1::grad_g1,
 						   "obs", *sqp_avoid1::grad_g2,
-						   *sqp_avoid1::g_func, 1, "L_x2obs"));
+						   *sqp_avoid1::g_func, 1, "L_x2obs", false));
 
 	// construct the graph
 	NLGraph graph;
 	graph.push_back(e1);
 	graph.push_back(e2);
 	graph.push_back(e3);
-	//graph.push_back(c1);
+	graph.push_back(c1);
 	graph.push_back(f1);
 	graph.push_back(f2);
 
@@ -289,53 +289,7 @@ pair<NLGraph, VectorConfig> obstacleAvoidGraph() {
 }
 
 /* ********************************************************************* */
-TEST ( SQPOptimizer, trajectory_shortening ) {
-	// fix start, end positions
-	VectorConfig feasible;
-	feasible.insert("x1", Vector_(2, 0.0, 0.0));
-	feasible.insert("x3", Vector_(2, 10.0, 0.0));
-	feasible.insert("obs", Vector_(2, 5.0, -0.5));
-	shared_NLE e1(new NLE("x1", feasible, 2, *vector_compare));
-	shared_NLE e2(new NLE("x3", feasible, 2, *vector_compare));
-	shared_NLE e3(new NLE("obs", feasible, 2, *vector_compare));
-
-	// measurement from x1 to x2
-	Vector x1x2 = Vector_(2, 5.0, 0.0);
-	double sigma1 = 0.1;
-	shared f1(new Simulated2DOdometry(x1x2, sigma1, "x1", "x2"));
-
-	// measurement from x2 to x3
-	Vector x2x3 = Vector_(2, 5.0, 0.0);
-	double sigma2 = 0.1;
-	shared f2(new Simulated2DOdometry(x2x3, sigma2, "x2", "x3"));
-
-	// construct the graph
-	NLGraph graph;
-	graph.push_back(e1);
-	graph.push_back(e2);
-	graph.push_back(e3);
-	graph.push_back(f1);
-	graph.push_back(f2);
-
-	// optimize
-	typedef NonlinearOptimizer<NLGraph, VectorConfig> Optimizer;
-	//typedef SQPOptimizer<NLGraph, VectorConfig> Optimizer;
-	Ordering ordering;
-	ordering += "x1", "x2", "x3", "obs";
-	shared_config config(new VectorConfig(feasible));
-	config->insert("x2", Vector_(2, 5.0, 10.0));
-	Optimizer optimizer(graph, ordering, config);
-
-	// perform iteration
-	Optimizer afterOneIteration = optimizer.iterate();
-
-	// print for evaluation
-//	config->print("Initial config");
-//	afterOneIteration.config()->print("Config after optimization");
-}
-
-/* ********************************************************************* */
-TEST ( SQPOptimizer, inequality_inactive ) {
+TEST ( SQPOptimizer, inequality_avoid ) {
 	// create the graph
 	NLGraph graph; VectorConfig feasible;
 	boost::tie(graph, feasible) = obstacleAvoidGraph();
@@ -351,22 +305,23 @@ TEST ( SQPOptimizer, inequality_inactive ) {
 	// create an optimizer
 	Optimizer optimizer(graph, ord, init);
 
-	// perform optimization
+	// perform an iteration of optimization
+	// NOTE: the constraint will be inactive in the first iteration,
+	// so it will violate the constraint after one iteration
 	Optimizer afterOneIteration = optimizer.iterate(Optimizer::SILENT);
 
-	// print for evaluation
-//	init->print("Before SQP iteration");
-//	afterOneIteration.config()->print("After SQP iteration");
+	VectorConfig exp1(feasible);
+	exp1.insert("x2", Vector_(2, 5.0, 0.0));
+	CHECK(assert_equal(exp1, *(afterOneIteration.config())));
 
+	// the second iteration will activate the constraint and force the
+	// config to a viable configuration.
+	Optimizer after2ndIteration = afterOneIteration.iterate(Optimizer::SILENT);
+
+	VectorConfig exp2(feasible);
+	exp2.insert("x2", Vector_(2, 5.0, 0.5));
+	CHECK(assert_equal(exp2, *(after2ndIteration.config())));
 }
-
-/* ********************************************************************* */
-//TEST ( SQPOptimizer, inequality_active ) {
-//	// create the graph
-//	NLGraph graph; VectorConfig feasible;
-//	boost::tie(graph, feasible) = obstacleAvoidGraph();
-//
-//}
 
 
 /* ************************************************************************* */

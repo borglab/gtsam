@@ -40,14 +40,18 @@ VectorConfig VectorConfig::scale(double gain) {
 VectorConfig VectorConfig::exmap(const VectorConfig & delta) const
 {
 	VectorConfig newConfig;
-  for (const_iterator it = values.begin(); it!=values.end(); it++) {
-    string j = it->first;
-    const Vector &vj = it->second;
-    const Vector& dj = delta[j];
-    check_size(j,vj,dj);
-    newConfig.insert(j, vj + dj);
-  }
-  return newConfig;
+	for (const_iterator it = values.begin(); it!=values.end(); it++) {
+		string j = it->first;
+		const Vector &vj = it->second;
+		if (delta.contains(j)) {
+			const Vector& dj = delta[j];
+			check_size(j,vj,dj);
+			newConfig.insert(j, vj + dj);
+		} else {
+			newConfig.insert(j, vj);
+		}
+	}
+	return newConfig;
 }
 
 /* ************************************************************************* */

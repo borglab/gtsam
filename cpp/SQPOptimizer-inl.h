@@ -90,6 +90,7 @@ SQPOptimizer<G, C> SQPOptimizer<G, C>::iterate(Verbosity v) const {
 			fg.push_back(f);
 			fg.push_back(c);
 		} else {
+			if (verbose) constraint->print("Skipping...");
 			rem += constraint->lagrangeKey();
 		}
 	}
