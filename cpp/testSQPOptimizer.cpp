@@ -323,6 +323,35 @@ TEST ( SQPOptimizer, inequality_avoid ) {
 	CHECK(assert_equal(exp2, *(after2ndIteration.config())));
 }
 
+/* ********************************************************************* */
+TEST ( SQPOptimizer, inequality_avoid_iterative ) {
+	// create the graph
+	NLGraph graph; VectorConfig feasible;
+	boost::tie(graph, feasible) = obstacleAvoidGraph();
+
+	// create the rest of the config
+	shared_config init(new VectorConfig(feasible));
+	init->insert("x2", Vector_(2, 5.0, 100.0));
+
+	// create an ordering
+	Ordering ord;
+	ord += "x1", "x2", "x3", "obs";
+
+	// create an optimizer
+	Optimizer optimizer(graph, ord, init);
+
+	double relThresh = 1e-5; // minimum change in error between iterations
+	double absThresh = 1e-5; // minimum error necessary to converge
+	double constraintThresh = 1e-9; // minimum constraint error to be feasible
+	Optimizer final = optimizer.iterateSolve(relThresh, absThresh, constraintThresh);
+
+	// verify
+	VectorConfig exp2(feasible);
+	exp2.insert("x2", Vector_(2, 5.0, 0.5));
+	CHECK(assert_equal(exp2, *(final.config())));
+}
+
+
 
 /* ************************************************************************* */
 int main() { TestResult tr; return TestRegistry::runAllTests(tr); }

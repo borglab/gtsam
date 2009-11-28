@@ -83,6 +83,30 @@ public:
 	 */
 	SQPOptimizer<FactorGraph, Config> iterate(Verbosity verbosity=SILENT) const;
 
+	/**
+	 * Iterates recursively until converence occurs
+	 * @param relThresh minimum change in error between iterations
+	 * @param absThresh  minimum error necessary to converge
+	 * @param constraintThresh  minimum constraint error to be feasible
+	 * @param maxIterations is the maximum number of iterations
+	 * @param verbosity controls output print statements
+	 * @return a new optimization object with final values
+	 */
+	SQPOptimizer<FactorGraph, Config>
+	iterateSolve(double relThresh, double absThresh, double constraintThresh,
+			size_t maxIterations = 10, Verbosity verbosity=SILENT) const;
+
+	/**
+	 * Checks whether convergence has occurred, and returns true if
+	 * the solution will not get better, based on the previous error conditions.
+	 * @param full_error is the error all the factors and constraints
+	 * @param constraint_error is the error of just the constraints
+	 * @param relThresh is the relative threshold between
+	 * @return true if the problem has converged
+	 */
+	bool checkConvergence(double relThresh, double absThresh,
+			double constraintThresh, double full_error, double constraint_error) const;
+
 	/** Standard print function with optional name */
 	void print(const std::string& s);
 };

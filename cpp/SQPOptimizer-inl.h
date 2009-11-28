@@ -24,10 +24,33 @@ namespace gtsam {
 
 /* **************************************************************** */
 template <class G, class C>
+double constraintError(const G& graph, const C& config) {
+	// local typedefs
+	typedef typename G::const_iterator const_iterator;
+	typedef NonlinearConstraint<C> NLConstraint;
+	typedef boost::shared_ptr<NLConstraint > shared_c;
+
+	// accumulate error
+	double error = 0;
+
+	// find the constraints
+	for (const_iterator factor = graph.begin(); factor < graph.end(); factor++) {
+		const shared_c constraint = boost::shared_dynamic_cast<NLConstraint >(*factor);
+		if (constraint != NULL) {
+			Vector e = constraint->error_vector(config);
+			error += inner_prod(trans(e),e);
+		}
+	}
+	return error;
+}
+
+/* **************************************************************** */
+template <class G, class C>
 SQPOptimizer<G,C>::SQPOptimizer(const G& graph, const Ordering& ordering,
 		shared_config config)
 : graph_(&graph), ordering_(&ordering), full_ordering_(ordering),
-  config_(config), lagrange_config_(new VectorConfig), error_(graph.error(*config))
+  config_(config), lagrange_config_(new VectorConfig), error_(graph.error(*config)),
+  constraint_error_(constraintError(graph, *config))
 {
 	// local typedefs
 	typedef typename G::const_iterator const_iterator;
@@ -53,7 +76,8 @@ template <class G, class C>
 SQPOptimizer<G,C>::SQPOptimizer(const G& graph, const Ordering& ordering,
 		shared_config config, shared_vconfig lagrange)
 : graph_(&graph), ordering_(&ordering), full_ordering_(ordering),
-  config_(config), lagrange_config_(lagrange), error_(graph.error(*config))
+  config_(config), lagrange_config_(lagrange), error_(graph.error(*config)),
+  constraint_error_(constraintError(graph, *config))
 {
 }
 
@@ -107,6 +131,37 @@ SQPOptimizer<G, C> SQPOptimizer<G, C>::iterate(Verbosity v) const {
 
 	// construct a new optimizer
 	return SQPOptimizer<G, C>(*graph_, full_ordering_, newConfig, newLamConfig);
+}
+
+/* **************************************************************** */
+template<class G, class C>
+SQPOptimizer<G, C> SQPOptimizer<G, C>::iterateSolve(double relThresh, double absThresh,
+		double constraintThresh, size_t maxIterations, Verbosity v) const {
+	bool verbose = v == SQPOptimizer<G, C>::FULL;
+
+	// do an iteration
+	SQPOptimizer<G, C> next = iterate(v);
+
+	// if converged or out of iterations, return result
+	if (maxIterations == 1 ||
+			next.checkConvergence(relThresh, absThresh, constraintThresh,
+								  error_, constraint_error_))
+		return next;
+	else // otherwise, recurse with a lower maxIterations
+		return next.iterateSolve(relThresh, absThresh, constraintThresh,
+				maxIterations-1, v);
+}
+
+/* **************************************************************** */
+template<class G, class C>
+bool SQPOptimizer<G, C>::checkConvergence(double relThresh, double absThresh,
+		double constraintThresh, double full_error, double constraint_error) const {
+	// if error sufficiently low, then the system has converged
+	if (error_ < absThresh && constraint_error_ < constraintThresh)
+		return true;
+
+	// TODO: determine other cases
+	return false;
 }
 
 /* **************************************************************** */
