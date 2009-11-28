@@ -27,17 +27,18 @@ bool NonlinearConstraint<Config>::active(const Config& config) const {
 template <class Config>
 NonlinearConstraint1<Config>::NonlinearConstraint1(
 			const std::string& key,
-			Matrix (*gradG)(const Config& config, const std::string& key),
-			Vector (*g)(const Config& config, const std::string& key),
+			Matrix (*gradG)(const Config& config, const std::list<std::string>& keys),
+			Vector (*g)(const Config& config, const std::list<std::string>& keys),
 			size_t dim_constraint,
 			const std::string& lagrange_key,
 			bool isEquality) :
-				NonlinearConstraint<Config>(lagrange_key, dim_constraint, isEquality),
-				g_(g), gradG_(gradG), key_(key) {
+				NonlinearConstraint<Config>(lagrange_key, dim_constraint, g, isEquality),
+				gradG_(gradG), key_(key) {
 		// set a good lagrange key here
 		// TODO:should do something smart to find a unique one
 		if (lagrange_key == "")
 			this->lagrange_key_ = "L_" + key;
+		this->keys_.push_front(key);
 	}
 
 /* ************************************************************************* */
@@ -60,7 +61,7 @@ bool NonlinearConstraint1<Config>::equals(const Factor<Config>& f, double tol) c
 	if (p == NULL) return false;
 	if (key_ != p->key_) return false;
 	if (this->lagrange_key_ != p->lagrange_key_) return false;
-	if (g_ != p->g_) return false;
+	if (this->g_ != p->g_) return false;
 	if (gradG_ != p->gradG_) return false;
 	if (this->isEquality_ != p->isEquality_) return false;
 	return this->p_ == p->p_;
@@ -74,10 +75,10 @@ NonlinearConstraint1<Config>::linearize(const Config& config, const VectorConfig
 	Vector lambda = lagrange[this->lagrange_key_];
 
 	// find the error
-	Vector g = g_(config, key_);
+	Vector g = g_(config, this->keys());
 
 	// construct the gradient
-	Matrix grad = gradG_(config, key_);
+	Matrix grad = gradG_(config, this->keys());
 
 	// construct probabilistic factor
 	Matrix A1 = vector_scale(grad, lambda);
@@ -98,19 +99,21 @@ NonlinearConstraint1<Config>::linearize(const Config& config, const VectorConfig
 template <class Config>
 NonlinearConstraint2<Config>::NonlinearConstraint2(
 		const std::string& key1,
-		Matrix (*gradG1)(const Config& config, const std::string& key),
+		Matrix (*gradG1)(const Config& config, const std::list<std::string>& keys),
 		const std::string& key2,
-		Matrix (*gradG2)(const Config& config, const std::string& key),
-		Vector (*g)(const Config& config, const std::string& key1, const std::string& key2),
+		Matrix (*gradG2)(const Config& config, const std::list<std::string>& keys),
+		Vector (*g)(const Config& config, const std::list<std::string>& keys),
 		size_t dim_constraint,
 		const std::string& lagrange_key,
 		bool isEquality) :
-			NonlinearConstraint<Config>(lagrange_key, dim_constraint, isEquality),
-			g_(g), gradG1_(gradG1), gradG2_(gradG2), key1_(key1), key2_(key2) {
+			NonlinearConstraint<Config>(lagrange_key, dim_constraint, g, isEquality),
+			gradG1_(gradG1), gradG2_(gradG2), key1_(key1), key2_(key2) {
 	// set a good lagrange key here
 	// TODO:should do something smart to find a unique one
 	if (lagrange_key == "")
 		this->lagrange_key_ = "L_" + key1 + key2;
+	this->keys_.push_front(key1);
+	this->keys_.push_back(key2);
 }
 
 /* ************************************************************************* */
@@ -131,7 +134,7 @@ bool NonlinearConstraint2<Config>::equals(const Factor<Config>& f, double tol) c
 	if (key1_ != p->key1_) return false;
 	if (key2_ != p->key2_) return false;
 	if (this->lagrange_key_ != p->lagrange_key_) return false;
-	if (g_ != p->g_) return false;
+	if (this->g_ != p->g_) return false;
 	if (gradG1_ != p->gradG1_) return false;
 	if (gradG2_ != p->gradG2_) return false;
 	if (this->isEquality_ != p->isEquality_) return false;
@@ -146,11 +149,11 @@ NonlinearConstraint2<Config>::linearize(const Config& config, const VectorConfig
 	Vector lambda = lagrange[this->lagrange_key_];
 
 	// find the error
-	Vector g = g_(config, key1_, key2_);
+	Vector g = g_(config, this->keys());
 
 	// construct the gradients
-	Matrix grad1 = gradG1_(config, key1_);
-	Matrix grad2 = gradG2_(config, key2_);
+	Matrix grad1 = gradG1_(config, this->keys());
+	Matrix grad2 = gradG2_(config, this->keys());
 
 	// construct probabilistic factor
 	Matrix A1 = vector_scale(grad1, lambda);

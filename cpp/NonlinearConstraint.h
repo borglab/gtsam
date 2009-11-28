@@ -35,17 +35,29 @@ protected:
 	/** type of constraint */
 	bool isEquality_;
 
+	/** calculates the constraint function of the current config
+	 * If the value is zero, the constraint is not active
+	 * @param config is a configuration of all the variables
+	 * @param keys is the set of keys - assumed that the function knows how to use
+	 * @return the cost for each of p constraints, arranged in a vector
+	 */
+	Vector (*g_)(const Config& config, const std::list<std::string>& keys);
+
 public:
 
 	/** Constructor - sets the cost function and the lagrange multipliers
 	 * @param lagrange_key is the label for the associated lagrange multipliers
 	 * @param dim_lagrange is the number of associated constraints
 	 * @param isEquality is true if the constraint is an equality constraint
+	 * @param g is the cost function for the constraint
 	 */
-	NonlinearConstraint(const std::string& lagrange_key, size_t dim_lagrange,
-			bool isEquality=true)
+	NonlinearConstraint(const std::string& lagrange_key,
+						size_t dim_lagrange,
+						Vector (*g)(const Config& config, const std::list<std::string>& keys),
+						bool isEquality=true)
 	:	NonlinearFactor<Config>(zero(dim_lagrange), 1.0),
-		lagrange_key_(lagrange_key), p_(dim_lagrange), isEquality_(isEquality) {}
+		lagrange_key_(lagrange_key), p_(dim_lagrange),
+		isEquality_(isEquality), g_(g) {}
 
 	/** returns the key used for the Lagrange multipliers */
 	std::string lagrangeKey() const { return lagrange_key_; }
@@ -63,7 +75,7 @@ public:
 	virtual bool equals(const Factor<Config>& f, double tol=1e-9) const=0;
 
 	/** error function - returns the result of the constraint function */
-	virtual inline Vector error_vector(const Config& c) const { return zero(1); }
+	inline Vector error_vector(const Config& c) const { return g_(c, this->keys()); }
 
 	/**
 	 * Determines whether the constraint is active given a particular configuration
@@ -100,13 +112,6 @@ template <class Config>
 class NonlinearConstraint1 : public NonlinearConstraint<Config> {
 
 private:
-	/** calculates the constraint function of the current config
-	 * If the value is zero, the constraint is not active
-	 * @param config is a configuration of all the variables
-	 * @param key is the id for the selected variable
-	 * @return the cost for each of p constraints, arranged in a vector
-	 */
-	Vector (*g_)(const Config& config, const std::string& key);
 
 	/**
 	 * Calculates the gradient of the constraint function
@@ -115,7 +120,7 @@ private:
 	 * @param key of selected variable
 	 * @return the jacobian of the constraint in terms of key
 	 */
-	Matrix (*gradG_) (const Config& config, const std::string& key);
+	Matrix (*gradG_) (const Config& config, const std::list<std::string>& keys);
 
 	/** key for the constrained variable */
 	std::string key_;
@@ -133,8 +138,8 @@ public:
 	 */
 	NonlinearConstraint1(
 			const std::string& key,
-			Matrix (*gradG)(const Config& config, const std::string& key),
-			Vector (*g)(const Config& config, const std::string& key),
+			Matrix (*gradG)(const Config& config, const std::list<std::string>& keys),
+			Vector (*g)(const Config& config, const std::list<std::string>& keys),
 			size_t dim_constraint,
 			const std::string& lagrange_key="",
 			bool isEquality=true);
@@ -144,11 +149,6 @@ public:
 
 	/** Check if two factors are equal */
 	bool equals(const Factor<Config>& f, double tol=1e-9) const;
-
-	/** error function - returns the result of the constraint function */
-	inline Vector error_vector(const Config& c) const {
-		return g_(c, key_);
-	}
 
 	/**
 	 * Linearize using a real Config and a VectorConfig of Lagrange multipliers
@@ -168,14 +168,6 @@ template <class Config>
 class NonlinearConstraint2 : public NonlinearConstraint<Config> {
 
 private:
-	/** calculates the constraint function of the current config
-	 * If the value is zero, the constraint is not active
-	 * @param config is a configuration of all the variables
-	 * @param key1 is the id for the first variable
-	 * @param key2 is the id for the second variable
-	 * @return the cost for each of p constraints, arranged in a vector
-	 */
-	Vector (*g_)(const Config& config, const std::string& key1, const std::string& key2);
 
 	/**
 	 * Calculates the gradients of the constraint function in terms of
@@ -185,8 +177,8 @@ private:
 	 * @param key of selected variable
 	 * @return the jacobian of the constraint in terms of key
 	 */
-	Matrix (*gradG1_) (const Config& config, const std::string& key);
-	Matrix (*gradG2_) (const Config& config, const std::string& key);
+	Matrix (*gradG1_) (const Config& config, const std::list<std::string>& keys);
+	Matrix (*gradG2_) (const Config& config, const std::list<std::string>& keys);
 
 	/** keys for the constrained variables */
 	std::string key1_;
@@ -205,10 +197,10 @@ public:
 	 */
 	NonlinearConstraint2(
 			const std::string& key1,
-			Matrix (*gradG1)(const Config& config, const std::string& key),
+			Matrix (*gradG1)(const Config& config, const std::list<std::string>& keys),
 			const std::string& key2,
-			Matrix (*gradG2)(const Config& config, const std::string& key),
-			Vector (*g)(const Config& config, const std::string& key1, const std::string& key2),
+			Matrix (*gradG2)(const Config& config, const std::list<std::string>& keys),
+			Vector (*g)(const Config& config, const std::list<std::string>& keys),
 			size_t dim_constraint,
 			const std::string& lagrange_key="",
 			bool isEquality=true);
@@ -218,11 +210,6 @@ public:
 
 	/** Check if two factors are equal */
 	bool equals(const Factor<Config>& f, double tol=1e-9) const;
-
-	/** error function - returns the result of the constraint function */
-	inline Vector error_vector(const Config& c) const {
-		return g_(c, key1_, key2_);
-	}
 
 	/**
 	 * Linearize using a real Config and a VectorConfig of Lagrange multipliers

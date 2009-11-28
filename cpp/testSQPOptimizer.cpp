@@ -53,17 +53,17 @@ TEST ( SQPOptimizer, basic ) {
 namespace sqp_LinearMapWarp2 {
 // binary constraint between landmarks
 /** g(x) = x-y = 0 */
-Vector g_func(const VectorConfig& config, const std::string& key1, const std::string& key2) {
-	return config[key1]-config[key2];
+Vector g_func(const VectorConfig& config, const list<string>& keys) {
+	return config[keys.front()]-config[keys.back()];
 }
 
 /** gradient at l1 */
-Matrix grad_g1(const VectorConfig& config, const std::string& key) {
+Matrix grad_g1(const VectorConfig& config, const list<string>& keys) {
 	return eye(2);
 }
 
 /** gradient at l2 */
-Matrix grad_g2(const VectorConfig& config, const std::string& key) {
+Matrix grad_g2(const VectorConfig& config, const list<string>& keys) {
 	return -1*eye(2);
 }
 } // \namespace sqp_LinearMapWarp2
@@ -71,12 +71,12 @@ Matrix grad_g2(const VectorConfig& config, const std::string& key) {
 namespace sqp_LinearMapWarp1 {
 // Unary Constraint on x1
 /** g(x) = x -[1;1] = 0 */
-Vector g_func(const VectorConfig& config, const std::string& key) {
-	return config[key]-Vector_(2, 1.0, 1.0);
+Vector g_func(const VectorConfig& config, const list<string>& keys) {
+	return config[keys.front()]-Vector_(2, 1.0, 1.0);
 }
 
 /** gradient at x1 */
-Matrix grad_g(const VectorConfig& config, const std::string& key) {
+Matrix grad_g(const VectorConfig& config, const list<string>& keys) {
 	return eye(2);
 }
 } // \namespace sqp_LinearMapWarp12
@@ -223,8 +223,8 @@ double radius = 1.0;
 
 // binary avoidance constraint
 /** g(x) = ||x2-obs||^2 > radius^2 */
-Vector g_func(const VectorConfig& config, const std::string& key1, const std::string& key2) {
-	Vector delta = config[key1]-config[key2];
+Vector g_func(const VectorConfig& config, const list<string>& keys) {
+	Vector delta = config[keys.front()]-config[keys.back()];
 	double dist2 = sum(emul(delta, delta));
 	double thresh = radius*radius;
 	if (dist2 <= thresh)
@@ -234,13 +234,13 @@ Vector g_func(const VectorConfig& config, const std::string& key1, const std::st
 }
 
 /** gradient at pose */
-Matrix grad_g1(const VectorConfig& config, const std::string& key) {
+Matrix grad_g1(const VectorConfig& config, const list<string>& keys) {
 	Matrix grad;
 	return grad;
 }
 
 /** gradient at obstacle */
-Matrix grad_g2(const VectorConfig& config, const std::string& key) {
+Matrix grad_g2(const VectorConfig& config, const list<string>& keys) {
 	return -1*eye(1);
 }
 }

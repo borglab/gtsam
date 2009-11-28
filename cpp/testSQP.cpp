@@ -320,17 +320,17 @@ TEST (SQP, two_pose_truth ) {
 namespace sqp_test1 {
 // binary constraint between landmarks
 /** g(x) = x-y = 0 */
-Vector g_func(const VectorConfig& config, const std::string& key1, const std::string& key2) {
-	return config[key1]-config[key2];
+Vector g_func(const VectorConfig& config, const list<string>& keys) {
+	return config[keys.front()]-config[keys.back()];
 }
 
 /** gradient at l1 */
-Matrix grad_g1(const VectorConfig& config, const std::string& key) {
+Matrix grad_g1(const VectorConfig& config, const list<string>& keys) {
 	return eye(2);
 }
 
 /** gradient at l2 */
-Matrix grad_g2(const VectorConfig& config, const std::string& key) {
+Matrix grad_g2(const VectorConfig& config, const list<string>& keys) {
 	return -1*eye(2);
 }
 } // \namespace sqp_test1
@@ -338,12 +338,12 @@ Matrix grad_g2(const VectorConfig& config, const std::string& key) {
 namespace sqp_test2 {
 // Unary Constraint on x1
 /** g(x) = x -[1;1] = 0 */
-Vector g_func(const VectorConfig& config, const std::string& key) {
-	return config[key]-Vector_(2, 1.0, 1.0);
+Vector g_func(const VectorConfig& config, const list<string>& keys) {
+	return config[keys.front()]-Vector_(2, 1.0, 1.0);
 }
 
 /** gradient at x1 */
-Matrix grad_g(const VectorConfig& config, const std::string& key) {
+Matrix grad_g(const VectorConfig& config, const list<string>& keys) {
 	return eye(2);
 }
 } // \namespace sqp_test2
@@ -635,17 +635,17 @@ int getNum(const string& key) {
 namespace sqp_stereo {
 // binary constraint between landmarks
 /** g(x) = x-y = 0 */
-Vector g_func(const VSLAMConfig& config, const std::string& key1, const std::string& key2) {
-	return config.landmarkPoint(getNum(key1)).vector()-config.landmarkPoint(getNum(key2)).vector();
+Vector g_func(const VSLAMConfig& config, const list<string>& keys) {
+	return config.landmarkPoint(getNum(keys.front())).vector()-config.landmarkPoint(getNum(keys.back())).vector();
 }
 
 /** gradient at l1 */
-Matrix grad_g1(const VSLAMConfig& config, const std::string& key) {
+Matrix grad_g1(const VSLAMConfig& config, const list<string>& keys) {
 	return eye(3);
 }
 
 /** gradient at l2 */
-Matrix grad_g2(const VSLAMConfig& config, const std::string& key) {
+Matrix grad_g2(const VSLAMConfig& config, const list<string>& keys) {
 	return -1.0*eye(3);
 }
 } // \namespace sqp_test1

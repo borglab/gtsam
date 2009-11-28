@@ -9,6 +9,7 @@
 #include <NonlinearConstraint.h>
 #include <NonlinearConstraint-inl.h>
 
+using namespace std;
 using namespace gtsam;
 
 /* ************************************************************************* */
@@ -16,14 +17,14 @@ using namespace gtsam;
 /* ************************************************************************* */
 namespace test1 {
 /** p = 1, gradG(x) = 2x */
-Matrix grad_g(const VectorConfig& config, const std::string& key) {
-	double x = config[key](0);
+Matrix grad_g(const VectorConfig& config, const list<string>& keys) {
+	double x = config[keys.front()](0);
 	return Matrix_(1,1, 2*x);
 }
 
 /** p = 1, g(x) = x^2-5 = 0 */
-Vector g_func(const VectorConfig& config, const std::string& key) {
-	double x = config[key](0);
+Vector g_func(const VectorConfig& config, const list<string>& keys) {
+	double x = config[keys.front()](0);
 	return Vector_(1, x*x-5);
 }
 } // \namespace test1
@@ -89,21 +90,21 @@ TEST( NonlinearConstraint1, unary_scalar_equal ) {
 /* ************************************************************************* */
 namespace test2 {
 /** gradient for x, gradG(x,y) in x: 2x*/
-Matrix grad_g1(const VectorConfig& config, const std::string& key) {
-	double x = config[key](0);
+Matrix grad_g1(const VectorConfig& config, const list<string>& keys) {
+	double x = config[keys.front()](0);
 	return Matrix_(1,1, 2.0*x);
 }
 
 /** gradient for y, gradG(x,y) in y: -1 */
-Matrix grad_g2(const VectorConfig& config, const std::string& key) {
-	double x = config[key](0);
+Matrix grad_g2(const VectorConfig& config, const list<string>& keys) {
+	double x = config[keys.back()](0);
 	return Matrix_(1,1, -1.0);
 }
 
 /** p = 1, g(x) = x^2-5 -y = 0 */
-Vector g_func(const VectorConfig& config, const std::string& key1, const std::string& key2) {
-	double x = config[key1](0);
-	double y = config[key2](0);
+Vector g_func(const VectorConfig& config, const list<string>& keys) {
+	double x = config[keys.front()](0);
+	double y = config[keys.back()](0);
 	return Vector_(1, x*x-5.0-y);
 }
 } // \namespace test2
@@ -182,14 +183,14 @@ TEST( NonlinearConstraint2, binary_scalar_equal ) {
 /* ************************************************************************* */
 namespace inequality_unary {
 /** p = 1, gradG(x) = 2*x */
-Matrix grad_g(const VectorConfig& config, const std::string& key) {
-	double x = config[key](0);
+Matrix grad_g(const VectorConfig& config, const list<string>& keys) {
+	double x = config[keys.front()](0);
 	return Matrix_(1,1, 2*x);
 }
 
 /** p = 1, g(x) x^2 - 5 > 0 */
-Vector g_func(const VectorConfig& config, const std::string& key) {
-	double x = config[key](0);
+Vector g_func(const VectorConfig& config, const list<string>& keys) {
+	double x = config[keys.front()](0);
 	double g = x*x-5;
 	if (g > 0)
 		return Vector_(1, 0.0); // return exactly zero
