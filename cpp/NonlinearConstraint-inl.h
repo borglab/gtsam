@@ -14,10 +14,7 @@ namespace gtsam {
 /* ************************************************************************* */
 template <class Config>
 bool NonlinearConstraint<Config>::active(const Config& config) const {
-	if (!isEquality_ && zero(error_vector(config)))
-		return false;
-	else
-		return true;
+	return !(!isEquality_ && greaterThanOrEqual(error_vector(config), zero(p_)));
 }
 
 /* ************************************************************************* */

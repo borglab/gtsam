@@ -210,5 +210,14 @@ TEST( TestVector, equals )
 }
 
 /* ************************************************************************* */
+TEST( TestVector, greater_than )
+{
+	Vector v1 = Vector_(3, 1.0, 2.0, 3.0),
+		   v2 = zero(3);
+	CHECK(greaterThanOrEqual(v1, v1)); // test basic greater than
+	CHECK(greaterThanOrEqual(v1, v2)); // test equals
+}
+
+/* ************************************************************************* */
 int main() { TestResult tr; return TestRegistry::runAllTests(tr); }
 /* ************************************************************************* */

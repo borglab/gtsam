@@ -38,10 +38,10 @@ namespace gtsam {
 			LAMBDA,
 			CONFIG,
 			DELTA,
-			LINEAR,
 			TRYLAMBDA,
 			TRYCONFIG,
 			TRYDELTA,
+			LINEAR,
 			DAMPED
 		};
 

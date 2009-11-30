@@ -112,6 +112,17 @@ namespace gtsam {
   }
   
   /* ************************************************************************* */
+  bool greaterThanOrEqual(const Vector& vec1, const Vector& vec2) {
+	  Vector::const_iterator it1 = vec1.begin();
+	  Vector::const_iterator it2 = vec2.begin();
+	  size_t m = vec1.size();
+	  for(size_t i=0; i<m; i++)
+		  if(!(it1[i] >= it2[i]))
+			  return false;
+	  return true;
+  }
+
+  /* ************************************************************************* */
   bool equal_with_abs_tol(const Vector& vec1, const Vector& vec2, double tol) {
     Vector::const_iterator it1 = vec1.begin();
     Vector::const_iterator it2 = vec2.begin();

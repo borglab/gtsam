@@ -95,7 +95,7 @@ SQPOptimizer<G, C> SQPOptimizer<G, C>::iterate(Verbosity v) const {
 	GaussianFactorGraph fg;
 
 	// prepare an ordering of lagrange multipliers to remove
-	Ordering rem;
+	Ordering keysToRemove;
 
 	// iterate over all factors and linearize
 	for (const_iterator factor = graph_->begin(); factor < graph_->end(); factor++) {
@@ -115,22 +115,22 @@ SQPOptimizer<G, C> SQPOptimizer<G, C>::iterate(Verbosity v) const {
 			fg.push_back(c);
 		} else {
 			if (verbose) constraint->print("Skipping...");
-			rem += constraint->lagrangeKey();
+			keysToRemove += constraint->lagrangeKey();
 		}
 	}
 	if (verbose) fg.print("Before Optimization");
 
 	// optimize linear graph to get full delta config
-	VectorConfig delta = fg.optimize(full_ordering_.subtract(rem));
+	VectorConfig delta = fg.optimize(full_ordering_.subtract(keysToRemove));
 
 	if (verbose) delta.print("Delta Config");
 
 	// update both state variables
 	shared_config newConfig(new C(config_->exmap(delta)));
-	shared_vconfig newLamConfig(new VectorConfig(lagrange_config_->exmap(delta)));
+	shared_vconfig newLambdas(new VectorConfig(lagrange_config_->exmap(delta)));
 
 	// construct a new optimizer
-	return SQPOptimizer<G, C>(*graph_, full_ordering_, newConfig, newLamConfig);
+	return SQPOptimizer<G, C>(*graph_, full_ordering_, newConfig, newLambdas);
 }
 
 /* **************************************************************** */

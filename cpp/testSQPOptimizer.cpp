@@ -224,15 +224,12 @@ namespace sqp_avoid1 {
 double radius = 1.0;
 
 // binary avoidance constraint
-/** g(x) = ||x2-obs||^2 > radius^2 */
+/** g(x) = ||x2-obs||^2 - radius^2 > 0 */
 Vector g_func(const VectorConfig& config, const list<string>& keys) {
 	Vector delta = config[keys.front()]-config[keys.back()];
 	double dist2 = sum(emul(delta, delta));
 	double thresh = radius*radius;
-	if (dist2 < thresh)
-		return Vector_(1, dist2-thresh);
-	else
-		return zero(1);
+	return Vector_(1, dist2-thresh);
 }
 
 /** gradient at pose */

@@ -528,25 +528,16 @@ TEST (SQP, stereo_truth ) {
 }
 
 
-// TEST DISABLED: optimization becomes unstable with one coordinate
-// growing indefinitely and by the 4th iteration the system is
-// underconstrained
 /**
  * Ground truth for a visual slam example with stereo vision
  * with some noise injected into the initial config
  */
 TEST (SQP, stereo_truth_noisy ) {
 	bool verbose = false;
-	int maxIt = 5;
 
 	// setting to determine how far away the noisy landmark is,
 	// given that the ground truth is 5m in front of the cameras
-	double noisyDist = 7.4;
-	/** RESULTS of optimization based on size of error:
-	 * With a ground truth distance away of 5m, results based on initial input:
-	 * >= 7.5m: the system diverges
-	 *  < 7.5m: system finds a solution with near zero error
-	 */
+	double noisyDist = 7.6;
 
 	// create initial estimates
 	Rot3 faceDownY(Matrix_(3,3,
@@ -604,17 +595,9 @@ TEST (SQP, stereo_truth_noisy ) {
 	if (verbose)
 		cout << "Initial Error: " << optimizer.error() << endl;
 
-	// use Gauss-Newton optimization
+	// use Levenberg-Marquardt optimization
 	double relThresh = 1e-5, absThresh = 1e-5;
-	optimizer = optimizer.gaussNewton(relThresh, absThresh);
-
-//	// optimize
-//	for (int i = 0; i<maxIt; ++i) {
-//		cout << "Iteration: " << i << endl;
-//		optimizer = optimizer.iterate();
-//		optimizer.config()->print("Updated Config");
-//		cout << "Error after iteration: " << optimizer.error() << endl;
-//	}
+	optimizer = optimizer.levenbergMarquardt(relThresh, absThresh, VOptimizer::SILENT);
 
 	// verify
 	DOUBLES_EQUAL(0.0, optimizer.error(), 1e-9);
@@ -742,10 +725,6 @@ TEST (SQP, stereo_sqp ) {
 	CHECK(assert_equal(*truthConfig,*(afterOneIteration.config())));
 }
 
-
-// TEST DISABLED: There is a stability problem that sends the solution
-// further away with every iteration, and eventually will result in the linearized
-// system being underconstrained
 /**
  * SQP version of the above stereo example,
  * with noise in the initial estimate
@@ -807,12 +786,9 @@ TEST (SQP, stereo_sqp_noisy ) {
 	}
 
 	// check if correct
-	//CHECK(assert_equal(*truthConfig,*(optimizer.config())));
+	CHECK(assert_equal(*truthConfig,*(optimizer.config())));
 }
 
-// TEST DISABLED: There is a stability problem that sends the solution
-// further away with every iteration, and eventually will result in the linearized
-// system being underconstrained
 /**
  * SQP version of the above stereo example,
  * with noise in the initial estimate and manually specified
@@ -855,17 +831,17 @@ TEST (SQP, stereo_sqp_noisy_manualLagrange ) {
 	// optimize
 	double start_error = optimizer.error();
 	int maxIt = 5;
-//	for (int i=0; i<maxIt; ++i) {
-//		if (verbose) {
-//			cout << "\n ************************** \n"
-//				 << " Iteration: " << i << endl;
-//			optimizer.config()->print("Config Before Iteration");
-//			optimizer.configLagrange()->print("Lagrange Before Iteration");
-//			optimizer = optimizer.iterate(SOptimizer::FULL);
-//		}
-//		else
-//			optimizer = optimizer.iterate(SOptimizer::SILENT);
-//	}
+	for (int i=0; i<maxIt; ++i) {
+		if (verbose) {
+			cout << "\n ************************** \n"
+				 << " Iteration: " << i << endl;
+			optimizer.config()->print("Config Before Iteration");
+			optimizer.configLagrange()->print("Lagrange Before Iteration");
+			optimizer = optimizer.iterate(SOptimizer::FULL);
+		}
+		else
+			optimizer = optimizer.iterate(SOptimizer::SILENT);
+	}
 
 	if (verbose) cout << "Initial Error: " << start_error << "\n"
 					  << "Final Error:   " << optimizer.error() << endl;
@@ -880,7 +856,7 @@ TEST (SQP, stereo_sqp_noisy_manualLagrange ) {
 	}
 
 	// check if correct
-	//CHECK(assert_equal(*truthConfig,*(optimizer.config())));
+	CHECK(assert_equal(*truthConfig,*(optimizer.config())));
 }
 
 /* ************************************************************************* */

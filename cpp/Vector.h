@@ -88,6 +88,13 @@ void print(const Vector& v, const std::string& s = "");
 bool operator==(const Vector& vec1,const Vector& vec2);
 
 /**
+ * Greater than or equal to operation
+ * returns true if all elements in v1
+ * are greater than corresponding elements in v2
+ */
+bool greaterThanOrEqual(const Vector& v1, const Vector& v2);
+
+/**
  * VecA == VecB up to tolerance
  */
 bool equal_with_abs_tol(const Vector& vec1, const Vector& vec2, double tol=1e-9);

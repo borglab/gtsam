@@ -134,7 +134,7 @@ namespace gtsam {
 			delta.print("delta");
 
 		// update config
-		shared_config newConfig(new C(config_->exmap(delta)));
+		shared_config newConfig(new C(config_->exmap(delta))); // TODO: updateConfig
 		if (verbosity >= TRYCONFIG)
 			newConfig->print("config");
 
