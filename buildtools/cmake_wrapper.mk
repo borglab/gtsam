@@ -36,7 +36,8 @@ configure: cmake ;
 cmake ccmake cmake_gui: builddir_exists
 	cd ${BUILD}; $@ ${CMAKE_OPTIONS} ..
 
-# Re-run CMake if the Makefile is out of date or non-existant
+# Re-run CMake if the Makefile is non-existant.  The CMake-generated makefile
+# will run CMake if the Makefile is out-of-date.
 ${BUILD}/Makefile:
 	@if [ ! -d ${BUILD} ]; then \
 		echo "[cmake_wrapper]: mkdir ${BUILD}"; \
@@ -67,6 +68,12 @@ builddir_exists:
 		echo "[cmake_wrapper]: mkdir ${BUILD}"; \
 		mkdir ${BUILD}; \
 	fi
+
+# Hack to make sure "make install" does something when there is an INSTALL file
+.PHONY: install
+install:
+	make -f$(lastword ${MAKEFILE_LIST}) ${BUILD}/Makefile
+	VERBOSE=1 make -C${BUILD} $@
 
 # Default rule to pass target to CMake Makefile
 %:
