@@ -97,6 +97,7 @@ class GaussianFactorGraph {
   double probPrime(const VectorConfig& c) const;
   void print(string s) const;
   bool equals(const GaussianFactorGraph& lfgraph, double tol) const;
+  void combine(const GaussianFactorGraph& lfg);
 
   GaussianConditional* eliminateOne(string key);
   GaussianBayesNet* eliminate_(const Ordering& ordering);
