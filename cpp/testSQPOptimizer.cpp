@@ -7,6 +7,7 @@
 #include <CppUnitLite/TestHarness.h>
 #include <boost/assign/std/list.hpp> // for operator +=
 #include <boost/assign/std/map.hpp> // for insert
+#include <boost/bind.hpp>
 #include <Simulated2DMeasurement.h>
 #include <Simulated2DOdometry.h>
 #include <simulated2D.h>
@@ -348,7 +349,100 @@ TEST ( SQPOptimizer, inequality_avoid_iterative ) {
 	CHECK(assert_equal(exp2, *(final.config())));
 }
 
+/* ********************************************************************* */
+// Use boost bind to parameterize the function
+namespace sqp_avoid2 {
+// binary avoidance constraint
+/** g(x) = ||x2-obs||^2 - radius^2 > 0 */
+Vector g_func(double radius, const VectorConfig& config, const list<string>& keys) {
+	Vector delta = config[keys.front()]-config[keys.back()];
+	double dist2 = sum(emul(delta, delta));
+	double thresh = radius*radius;
+	return Vector_(1, dist2-thresh);
+}
 
+/** gradient at pose */
+Matrix grad_g1(const VectorConfig& config, const list<string>& keys) {
+	Vector x2 = config[keys.front()], obs = config[keys.back()];
+	Vector grad = 2.0*(x2-obs);
+	return Matrix_(1,2, grad(0), grad(1));
+}
+
+/** gradient at obstacle */
+Matrix grad_g2(const VectorConfig& config, const list<string>& keys) {
+	Vector x2 = config[keys.front()], obs = config[keys.back()];
+	Vector grad = -2.0*(x2-obs);
+	return Matrix_(1,2, grad(0), grad(1));
+}
+}
+
+pair<NLGraph, VectorConfig> obstacleAvoidGraphGeneral() {
+	// fix start, end, obstacle positions
+	VectorConfig feasible;
+	feasible.insert("x1", Vector_(2, 0.0, 0.0));
+	feasible.insert("x3", Vector_(2, 10.0, 0.0));
+	feasible.insert("obs", Vector_(2, 5.0, -0.5));
+	shared_NLE e1(new NLE("x1", feasible, 2, *vector_compare));
+	shared_NLE e2(new NLE("x3", feasible, 2, *vector_compare));
+	shared_NLE e3(new NLE("obs", feasible, 2, *vector_compare));
+
+	// measurement from x1 to x2
+	Vector x1x2 = Vector_(2, 5.0, 0.0);
+	double sigma1 = 0.1;
+	shared f1(new Simulated2DOdometry(x1x2, sigma1, "x1", "x2"));
+
+	// measurement from x2 to x3
+	Vector x2x3 = Vector_(2, 5.0, 0.0);
+	double sigma2 = 0.1;
+	shared f2(new Simulated2DOdometry(x2x3, sigma2, "x2", "x3"));
+
+	double radius = 1.0;
+
+	// create a binary inequality constraint that forces the middle point away from
+	//  the obstacle
+	shared_NLC2 c1(new NLC2("x2", boost::bind(sqp_avoid2::grad_g1, _1, _2),
+						   "obs", boost::bind(sqp_avoid2::grad_g2, _1, _2),
+						   boost::bind(sqp_avoid2::g_func, radius, _1, _2), 1, "L_x2obs", false));
+
+	// construct the graph
+	NLGraph graph;
+	graph.push_back(e1);
+	graph.push_back(e2);
+	graph.push_back(e3);
+	graph.push_back(c1);
+	graph.push_back(f1);
+	graph.push_back(f2);
+
+	return make_pair(graph, feasible);
+}
+
+/* ********************************************************************* */
+TEST ( SQPOptimizer, inequality_avoid_iterative_bind ) {
+	// create the graph
+	NLGraph graph; VectorConfig feasible;
+	boost::tie(graph, feasible) = obstacleAvoidGraphGeneral();
+
+	// create the rest of the config
+	shared_config init(new VectorConfig(feasible));
+	init->insert("x2", Vector_(2, 5.0, 100.0));
+
+	// create an ordering
+	Ordering ord;
+	ord += "x1", "x2", "x3", "obs";
+
+	// create an optimizer
+	Optimizer optimizer(graph, ord, init);
+
+	double relThresh = 1e-5; // minimum change in error between iterations
+	double absThresh = 1e-5; // minimum error necessary to converge
+	double constraintThresh = 1e-9; // minimum constraint error to be feasible
+	Optimizer final = optimizer.iterateSolve(relThresh, absThresh, constraintThresh);
+
+	// verify
+	VectorConfig exp2(feasible);
+	exp2.insert("x2", Vector_(2, 5.0, 0.5));
+	CHECK(assert_equal(exp2, *(final.config())));
+}
 
 /* ************************************************************************* */
 int main() { TestResult tr; return TestRegistry::runAllTests(tr); }

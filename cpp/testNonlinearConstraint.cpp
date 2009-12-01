@@ -4,6 +4,7 @@
  * @author Alex Cunningham
  */
 
+#include <boost/bind.hpp>
 #include <CppUnitLite/TestHarness.h>
 #include <VectorConfig.h>
 #include <NonlinearConstraint.h>
@@ -192,10 +193,7 @@ Matrix grad_g(const VectorConfig& config, const list<string>& keys) {
 Vector g_func(const VectorConfig& config, const list<string>& keys) {
 	double x = config[keys.front()](0);
 	double g = x*x-5;
-	if (g > 0)
-		return Vector_(1, 0.0); // return exactly zero
-	else
-		return Vector_(1, g); // return the actual cost
+	return Vector_(1, g); // return the actual cost
 }
 } // \namespace test1
 
@@ -208,14 +206,14 @@ TEST( NonlinearConstraint1, unary_inequality ) {
 
 	// get configurations to use for evaluation
 	VectorConfig config1, config2;
-	config1.insert("x", Vector_(1, 10.0)); // should have zero error
+	config1.insert("x", Vector_(1, 10.0)); // should be inactive
 	config2.insert("x", Vector_(1, 1.0)); // should have nonzero error
 
 	// check error
-	Vector actError1 = c1.error_vector(config1);
+	CHECK(!c1.active(config1));
 	Vector actError2 = c1.error_vector(config2);
-	CHECK(actError1(0) == 0.0); // NOTE: using exact comparison here, as this value is forced
 	CHECK(assert_equal(actError2, Vector_(1, -4.0, 1e-9)));
+	CHECK(c1.active(config2));
 }
 
 /* ************************************************************************* */
@@ -252,6 +250,94 @@ TEST( NonlinearConstraint1, unary_inequality_linearize ) {
 	CHECK(assert_equal(*actFactor2, expFactor));
 	CHECK(assert_equal(*actConstraint2, expConstraint));
 }
+
+/* ************************************************************************* */
+// Binding arbitrary functions
+/* ************************************************************************* */
+namespace unary_binding_functions {
+/** p = 1, gradG(x) = 2*x */
+Matrix grad_g(double coeff, const VectorConfig& config, const list<string>& keys) {
+	double x = config[keys.front()](0);
+	return Matrix_(1,1, coeff*x);
+}
+
+/** p = 1, g(x) x^2 - r > 0 */
+Vector g_func(double r, const VectorConfig& config, const list<string>& keys) {
+	double x = config[keys.front()](0);
+	double g = x*x-r;
+	return Vector_(1, g); // return the actual cost
+}
+} // \namespace unary_binding_functions
+
+/* ************************************************************************* */
+TEST( NonlinearConstraint1, unary_binding ) {
+	size_t p = 1;
+	double coeff = 2;
+	double radius = 5;
+	NonlinearConstraint1<VectorConfig> c1("x",
+										  boost::bind(unary_binding_functions::grad_g, coeff, _1, _2),
+										  boost::bind(unary_binding_functions::g_func, radius, _1, _2),
+										  p, "L_x1",
+										  false); // inequality constraint
+
+	// get configurations to use for evaluation
+	VectorConfig config1, config2;
+	config1.insert("x", Vector_(1, 10.0)); // should have zero error
+	config2.insert("x", Vector_(1, 1.0)); // should have nonzero error
+
+	// check error
+	CHECK(!c1.active(config1));
+	Vector actError2 = c1.error_vector(config2);
+	CHECK(assert_equal(actError2, Vector_(1, -4.0, 1e-9)));
+	CHECK(c1.active(config2));
+}
+
+namespace binary_binding_functions {
+/** gradient for x, gradG(x,y) in x: 2x*/
+Matrix grad_g1(double c, const VectorConfig& config, const list<string>& keys) {
+	double x = config[keys.front()](0);
+	return Matrix_(1,1, c*x);
+}
+
+/** gradient for y, gradG(x,y) in y: -1 */
+Matrix grad_g2(double c, const VectorConfig& config, const list<string>& keys) {
+	double x = config[keys.back()](0);
+	return Matrix_(1,1, -1.0*c);
+}
+
+/** p = 1, g(x) = x^2-5 -y = 0 */
+Vector g_func(double r, const VectorConfig& config, const list<string>& keys) {
+	double x = config[keys.front()](0);
+	double y = config[keys.back()](0);
+	return Vector_(1, x*x-r-y);
+}
+} // \namespace test2
+
+/* ************************************************************************* */
+TEST( NonlinearConstraint2, binary_binding ) {
+	// construct a constraint on x and y
+	// the lagrange multipliers will be expected on L_xy
+	// and there is only one multiplier
+	size_t p = 1;
+	double a = 2.0;
+	double b = 1.0;
+	double r = 5.0;
+	NonlinearConstraint2<VectorConfig> c1(
+			"x", boost::bind(binary_binding_functions::grad_g1, a, _1, _2),
+			"y", boost::bind(binary_binding_functions::grad_g2, b, _1, _2),
+			boost::bind(binary_binding_functions::g_func, r, _1, _2), p, "L_xy");
+
+	// get a configuration to use for finding the error
+	VectorConfig config;
+	config.insert("x", Vector_(1, 1.0));
+	config.insert("y", Vector_(1, 2.0));
+
+	// calculate the error
+	Vector actual = c1.error_vector(config);
+	Vector expected = Vector_(1.0, -6.0);
+	CHECK(assert_equal(actual, expected, 1e-5));
+}
+
 /* ************************************************************************* */
 int main() { TestResult tr; return TestRegistry::runAllTests(tr); }
 /* ************************************************************************* */

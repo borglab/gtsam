@@ -8,6 +8,7 @@
 #pragma once
 
 #include <map>
+#include <boost/function.hpp>
 #include "NonlinearFactor.h"
 
 namespace gtsam {
@@ -37,11 +38,12 @@ protected:
 
 	/** calculates the constraint function of the current config
 	 * If the value is zero, the constraint is not active
+	 * Use boost.bind to create the function object
 	 * @param config is a configuration of all the variables
 	 * @param keys is the set of keys - assumed that the function knows how to use
 	 * @return the cost for each of p constraints, arranged in a vector
 	 */
-	Vector (*g_)(const Config& config, const std::list<std::string>& keys);
+	boost::function<Vector(const Config& config, const std::list<std::string>& keys)> g_;
 
 public:
 
@@ -54,10 +56,18 @@ public:
 	NonlinearConstraint(const std::string& lagrange_key,
 						size_t dim_lagrange,
 						Vector (*g)(const Config& config, const std::list<std::string>& keys),
-						bool isEquality=true)
-	:	NonlinearFactor<Config>(zero(dim_lagrange), 1.0),
-		lagrange_key_(lagrange_key), p_(dim_lagrange),
-		isEquality_(isEquality), g_(g) {}
+						bool isEquality=true);
+
+	/** Constructor - sets a more general cost function using boost::bind directly
+	 * @param lagrange_key is the label for the associated lagrange multipliers
+	 * @param dim_lagrange is the number of associated constraints
+	 * @param g is the cost function for the constraint
+	 * @param isEquality is true if the constraint is an equality constraint
+	 */
+	NonlinearConstraint(const std::string& lagrange_key,
+						size_t dim_lagrange,
+						boost::function<Vector(const Config& config, const std::list<std::string>& keys)> g,
+						bool isEquality=true);
 
 	/** returns the key used for the Lagrange multipliers */
 	std::string lagrangeKey() const { return lagrange_key_; }
@@ -116,11 +126,12 @@ private:
 	/**
 	 * Calculates the gradient of the constraint function
 	 * returns a pxn matrix
+	 * Use boost.bind to create the function object
 	 * @param config to use for linearization
 	 * @param key of selected variable
 	 * @return the jacobian of the constraint in terms of key
 	 */
-	Matrix (*gradG_) (const Config& config, const std::list<std::string>& keys);
+	boost::function<Matrix(const Config& config, const std::list<std::string>& keys)> gradG_;
 
 	/** key for the constrained variable */
 	std::string key_;
@@ -140,6 +151,23 @@ public:
 			const std::string& key,
 			Matrix (*gradG)(const Config& config, const std::list<std::string>& keys),
 			Vector (*g)(const Config& config, const std::list<std::string>& keys),
+			size_t dim_constraint,
+			const std::string& lagrange_key="",
+			bool isEquality=true);
+
+	/**
+	 * Basic constructor with boost function pointers
+	 * @param key is the identifier for the variable constrained
+	 * @param gradG gives the gradient of the constraint function
+	 * @param g is the constraint function as a boost function pointer
+	 * @param dim_constraint is the size of the constraint (p)
+	 * @param lagrange_key is the identifier for the lagrange multiplier
+	 * @param isEquality is true if the constraint is an equality constraint
+	 */
+	NonlinearConstraint1(
+			const std::string& key,
+			boost::function<Matrix(const Config& config, const std::list<std::string>& keys)> gradG,
+			boost::function<Vector(const Config& config, const std::list<std::string>& keys)> g,
 			size_t dim_constraint,
 			const std::string& lagrange_key="",
 			bool isEquality=true);
@@ -177,8 +205,8 @@ private:
 	 * @param key of selected variable
 	 * @return the jacobian of the constraint in terms of key
 	 */
-	Matrix (*gradG1_) (const Config& config, const std::list<std::string>& keys);
-	Matrix (*gradG2_) (const Config& config, const std::list<std::string>& keys);
+	boost::function<Matrix(const Config& config, const std::list<std::string>& keys)> gradG1_;
+	boost::function<Matrix(const Config& config, const std::list<std::string>& keys)> gradG2_;
 
 	/** keys for the constrained variables */
 	std::string key1_;
@@ -201,6 +229,26 @@ public:
 			const std::string& key2,
 			Matrix (*gradG2)(const Config& config, const std::list<std::string>& keys),
 			Vector (*g)(const Config& config, const std::list<std::string>& keys),
+			size_t dim_constraint,
+			const std::string& lagrange_key="",
+			bool isEquality=true);
+
+	/**
+	 * Basic constructor with direct function objects
+	 * Use boost.bind to construct the function objects
+	 * @param key is the identifier for the variable constrained
+	 * @param gradG gives the gradient of the constraint function
+	 * @param g is the constraint function
+	 * @param dim_constraint is the size of the constraint (p)
+	 * @param lagrange_key is the identifier for the lagrange multiplier
+	 * @param isEquality is true if the constraint is an equality constraint
+	 */
+	NonlinearConstraint2(
+			const std::string& key1,
+			boost::function<Matrix(const Config& config, const std::list<std::string>& keys)> gradG1,
+			const std::string& key2,
+			boost::function<Matrix(const Config& config, const std::list<std::string>& keys)> gradG2,
+			boost::function<Vector(const Config& config, const std::list<std::string>& keys)> g,
 			size_t dim_constraint,
 			const std::string& lagrange_key="",
 			bool isEquality=true);
