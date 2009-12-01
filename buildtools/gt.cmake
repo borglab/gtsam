@@ -12,14 +12,26 @@ cmake_policy(PUSH)
 cmake_minimum_required(VERSION 2.6)
 
 # Set the default install prefix
-set(CMAKE_INSTALL_PREFIX "$ENV{HOME}" CACHE PATH "Installation prefix")
-set(CMAKE_BUILD_TYPE "Debug" CACHE STRING "Build type, Debug or Release")
+IF(NOT CMAKE_INSTALL_PREFIX OR CMAKE_INSTALL_PREFIX STREQUAL "/usr/local")
+  SET(CMAKE_INSTALL_PREFIX "$ENV{HOME}" CACHE PATH "Installation prefix" FORCE)
+ENDIF()
+
+# Set the default build type
+IF(NOT CMAKE_BUILD_TYPE)
+  SET(CMAKE_BUILD_TYPE Debug CACHE STRING
+      "Choose the type of build, options are: None Debug Release RelWithDebInfo MinSizeRel."
+      FORCE)
+ENDIF()
 
 # Add borg libraries and includes
 include_directories("${CMAKE_INSTALL_PREFIX}/include")
 link_directories("${CMAKE_INSTALL_PREFIX}/lib")
 
+# Add source directory as an include directory so installed header paths match project
+include_directories("${CMAKE_CURRENT_SOURCE_DIR}")
+
 # Path to CppUnitLite
+set(BORG_SOFTWARE_ROOT "$ENV{HOME}/borg")
 set(GT_CPPUNITLITE_INCLUDE_DIR "${BORG_SOFTWARE_ROOT}/gtsam")
 set(GT_CPPUNITLITE_LIB_DIR "${BORG_SOFTWARE_ROOT}/gtsam/CppUnitLite")
 
@@ -34,7 +46,7 @@ file(TO_CMAKE_PATH "${CMAKE_CURRENT_LIST_FILE}" GT_BUILDTOOLS)
 string(REPLACE "/" ";" GT_BUILDTOOLS "${GT_BUILDTOOLS}")
 list(REMOVE_AT GT_BUILDTOOLS -1)
 string(REPLACE ";" "/" GT_BUILDTOOLS "${GT_BUILDTOOLS}")
-message(STATUS "Build tools dir ${GT_BUILDTOOLS}")
+message(STATUS "[gt.cmake] Build tools dir ${GT_BUILDTOOLS}")
 SET(CMAKE_MODULE_PATH ${CMAKE_MODULE_PATH} "${GT_BUILDTOOLS}")
 function(GT_USE_BOOST)
     if(ARGN)

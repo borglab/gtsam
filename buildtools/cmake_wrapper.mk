@@ -38,6 +38,7 @@ cmake ccmake cmake_gui: builddir_exists
 
 # Re-run CMake if the Makefile is non-existant.  The CMake-generated makefile
 # will run CMake if the Makefile is out-of-date.
+.PHONY: ${BUILD}/Makefile
 ${BUILD}/Makefile:
 	@if [ ! -d ${BUILD} ]; then \
 		echo "[cmake_wrapper]: mkdir ${BUILD}"; \
