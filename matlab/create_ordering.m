@@ -6,7 +6,7 @@ function ord = create_ordering(n,m)
 ord = Ordering();
 
 for j = 1:n
-    ord.push_back(sprintf('m%d',j));
+    ord.push_back(sprintf('l%d',j));
 end
 
 for i = 1:m

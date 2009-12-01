@@ -15,7 +15,7 @@ lfg.push_back(lf);
 
 % add prior for landmarks
 for j = 1:n
-    key = sprintf('m%d',j);
+    key = sprintf('l%d',j);
     prior = Point2Prior([0;0],1000,key);
     lf = prior.linearize(config); 
     lfg.push_back(lf);
@@ -25,7 +25,7 @@ end
 for k = 1 : size(measurements,2) 
     measurement = measurements{k};
     i = sprintf('x%d',measurement.i);
-    j = sprintf('m%d',measurement.j); 
+    j = sprintf('l%d',measurement.j); 
     nlf = Simulated2DMeasurement(measurement.z, measurement_sigma, i, j);
     lf = nlf.linearize(config);
     lfg.push_back(lf);

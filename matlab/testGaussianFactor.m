@@ -48,7 +48,7 @@ S13 = [
 +0.00,-8.94427
 ];
 d=[2.23607;-1.56525];
-expectedCG = ConditionalGaussian('x2',d,R11,'l1',S12,'x1',S13,[1 1]');
+expectedCG = GaussianConditional('x2',d,R11,'l1',S12,'x1',S13,[1 1]');
 
 % the expected linear factor
 Bl1 = [

@@ -78,7 +78,7 @@ time_gtsam=[];
 %     end
 ck_gt=cputime;
 for i=1:runs+10
-    BayesNet = linearFactorGraph.eliminate(ord);
+    BayesNet = linearFactorGraph.eliminate_(ord);
 end
     time_gtsam=(cputime-ck_gt)/runs
     %time_gtsam=[time_gtsam,(cputime-ck)];

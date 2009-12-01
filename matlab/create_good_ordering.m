@@ -10,7 +10,7 @@ mes=size(measurements,2);
 while (pose<=m)&&(j<=mes)
     ord.push_back(sprintf('x%d',pose));
     while (j<n)&&(measurements{j}.i==pose)
-        ord.push_back(sprintf('m%d',j));
+        ord.push_back(sprintf('l%d',j));
         j=j+1;
     end
     pose=pose+1;
