@@ -182,7 +182,7 @@ void print(const Matrix& A, const string &s) {
   for( size_t i = 0 ; i < m ; i++) {
     for( size_t j = 0 ; j < n ; j++) {
       double aij = A(i,j);
-      cout << setw(9) << (fabs(aij)<1e-12 ? 0 : aij);
+      cout << setw(9) << (fabs(aij)<1e-12 ? 0 : aij) << "\t";
     }
     cout << endl;
   }
