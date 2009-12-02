@@ -20,7 +20,9 @@ typedef boost::numeric::ublas::vector<double> Vector;
 
 namespace gtsam {
 
-
+/**
+ * An auxiliary function to printf for Win32 compatibility, added by Kai
+ */
 void odprintf(const char *format, ...);
 
 /**
