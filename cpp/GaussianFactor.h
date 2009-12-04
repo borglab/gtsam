@@ -241,7 +241,7 @@ public:
 	 * @param m final number of rows of f, needs to be known in advance
 	 * @param pos where to insert in the m-sized matrices
 	 */
-	void append_factor(GaussianFactor::shared_ptr f, const size_t m,
+	inline void append_factor(GaussianFactor::shared_ptr f, const size_t m,
 			const size_t pos);
 
 }; // GaussianFactor

@@ -252,27 +252,24 @@ void GaussianFactor::append_factor(GaussianFactor::shared_ptr f, const size_t m,
 	// iterate over all matrices from the factor f
 	GaussianFactor::const_iterator it = f->begin();
 	for (; it != f->end(); it++) {
-		string j = it->first;
-		Matrix A = it->second;
+		string key = it->first;
 
 		// find rows and columns
-		const size_t mrhs = A.size1(), n = A.size2();
+		const size_t mrhs = it->second.size1(), n = it->second.size2();
 
 		// find the corresponding matrix among As
-		const_iterator mine = As_.find(j);
+		iterator mine = As_.find(key);
 		const bool exists = mine != As_.end();
 
 		// create the matrix or use existing
-		Matrix Anew = exists ? mine->second : zeros(m, n);
-
-		// copy the values in the existing matrix
-		for (size_t i = 0; i < mrhs; i++)
-			for (size_t j = 0; j < n; j++)
-				Anew(pos + i, j) = A(i, j);
-
-		// insert the matrix into the factor
-		if (exists) As_.erase(j);
-		insert(j, Anew);
+		if(exists) {
+		  copy(it->second.data().begin(), it->second.data().end(), (mine->second).data().begin()+pos*n);
+		}
+		else {
+			Matrix Z = zeros(m, n);
+			copy(it->second.data().begin(), it->second.data().end(), Z.data().begin()+pos*n);
+			insert(key, Z);
+		}
 	}
 	if (verbose) cout << "GaussianFactor::append_factor done" << endl;
 
