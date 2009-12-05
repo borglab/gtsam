@@ -244,35 +244,29 @@ GaussianFactor::sparse(const Ordering& ordering, const Dimensions& variables) co
 }
 
 /* ************************************************************************* */
-void GaussianFactor::append_factor(GaussianFactor::shared_ptr f, const size_t m,
-		const size_t pos) {
-	bool verbose = false;
-	if (verbose) cout << "GaussianFactor::append_factor" << endl;
+void GaussianFactor::append_factor(GaussianFactor::shared_ptr f, size_t m, size_t pos) {
 
 	// iterate over all matrices from the factor f
-	GaussianFactor::const_iterator it = f->begin();
-	for (; it != f->end(); it++) {
-		string key = it->first;
-
-		// find rows and columns
-		const size_t mrhs = it->second.size1(), n = it->second.size2();
+	string key; Matrix A;
+	FOREACH_PAIR( key, A, f->As_) {
 
 		// find the corresponding matrix among As
 		iterator mine = As_.find(key);
 		const bool exists = mine != As_.end();
 
-		// create the matrix or use existing
-		if(exists) {
-		  copy(it->second.data().begin(), it->second.data().end(), (mine->second).data().begin()+pos*n);
-		}
+		// find rows and columns
+		const size_t n = A.size2();
+
+		// use existing or create new matrix
+		if (exists)
+		  copy(A.data().begin(), A.data().end(), (mine->second).data().begin()+pos*n);
 		else {
 			Matrix Z = zeros(m, n);
-			copy(it->second.data().begin(), it->second.data().end(), Z.data().begin()+pos*n);
+			copy(A.data().begin(), A.data().end(), Z.data().begin()+pos*n);
 			insert(key, Z);
 		}
-	}
-	if (verbose) cout << "GaussianFactor::append_factor done" << endl;
 
+	} // FOREACH
 }
 
 /* ************************************************************************* */
