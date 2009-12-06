@@ -85,6 +85,12 @@ testSymbolicFactorGraph_LDADD   = libgtsam.la
 testSymbolicBayesNet_SOURCES    = $(example) testSymbolicBayesNet.cpp
 testSymbolicBayesNet_LDADD      = libgtsam.la
 
+# Binary Inference
+headers += BinaryConditional.h
+check_PROGRAMS += testBinaryBayesNet
+testBinaryBayesNet_SOURCES    = testBinaryBayesNet.cpp
+testBinaryBayesNet_LDADD      = libgtsam.la 
+
 # Gaussian inference 
 headers += GaussianFactorSet.h
 sources += VectorConfig.cpp GaussianFactor.cpp GaussianFactorGraph.cpp GaussianConditional.cpp GaussianBayesNet.cpp
