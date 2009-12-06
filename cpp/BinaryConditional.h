@@ -14,6 +14,7 @@
 #include <boost/shared_ptr.hpp>
 #include <boost/foreach.hpp> // TODO: make cpp file
 #include <boost/serialization/list.hpp>
+#include <boost/serialization/vector.hpp>
 #include "Conditional.h"
 
 namespace gtsam {
@@ -26,6 +27,7 @@ namespace gtsam {
 	private:
 
 		std::list<std::string> parents_;
+		std::vector<double> cpt_;
 
 	public:
 
@@ -42,6 +44,8 @@ namespace gtsam {
 		 */
 		BinaryConditional(const std::string& key, double p) :
 			Conditional(key) {
+			cpt_.push_back(1-p);
+			cpt_.push_back(p);
 		}
 
 		/**
@@ -50,6 +54,7 @@ namespace gtsam {
 		BinaryConditional(const std::string& key, const std::string& parent, const std::vector<double>& cpt) :
 			Conditional(key) {
 			parents_.push_back(parent);
+			cpt_ = cpt;
 		}
 
 		/** print */
@@ -58,6 +63,9 @@ namespace gtsam {
 			if (parents_.size()>0) std::cout << " |";
 			BOOST_FOREACH(std::string parent, parents_) std::cout << " " << parent;
 			std::cout << ")" << std::endl;
+			std::cout << "Conditional Probability Table::" << std::endl;
+			BOOST_FOREACH(double p, cpt_) std::cout << p << "\t";
+			std::cout<< std::endl;
 		}
 
 		/** check equality */
@@ -65,11 +73,14 @@ namespace gtsam {
 			if (!Conditional::equals(c)) return false;
 			const BinaryConditional* p = dynamic_cast<const BinaryConditional*> (&c);
 			if (p == NULL) return false;
-			return parents_ == p->parents_;
+			return (parents_ == p->parents_ && cpt_ == p->cpt_);
 		}
 
 		/** return parents */
 		std::list<std::string> parents() const { return parents_;}
+
+		/** return Conditional probability table*/
+		std::vector<double> cpt() const { return cpt_;}
 
 		/** find the number of parents */
 		size_t nrParents() const {
@@ -83,6 +94,7 @@ namespace gtsam {
 		void serialize(Archive & ar, const unsigned int version) {
 			ar & boost::serialization::make_nvp("Conditional", boost::serialization::base_object<Conditional>(*this));
 			ar & BOOST_SERIALIZATION_NVP(parents_);
+			ar & BOOST_SERIALIZATION_NVP(cpt_);
 		}
 	};
 } /// namespace gtsam
