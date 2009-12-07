@@ -68,10 +68,10 @@ namespace gtsam {
 		inline sharedFactor operator[](size_t i) const {return factors_[i];}
 
 		/** return the number of factors and NULLS */
-	  inline size_t size() const { return factors_.size();}
+	    inline size_t size() const { return factors_.size();}
 
 		/** return the number valid factors */
-	  size_t nrFactors() const;
+	    size_t nrFactors() const;
 
 		/** Add a factor */
 		void push_back(sharedFactor factor);
