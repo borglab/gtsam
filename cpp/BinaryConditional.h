@@ -54,15 +54,19 @@ namespace gtsam {
 		BinaryConditional(const std::string& key, const std::string& parent, const std::vector<double>& cpt) :
 			Conditional(key) {
 			parents_.push_back(parent);
-			cpt_ = cpt;
+			for( int i = 0 ; i < cpt.size() ; i++ )
+				cpt_.push_back(1-cpt[i]); // p(!x|parents)
+			cpt_.insert(cpt_.end(),cpt.begin(),cpt.end()); // p(x|parents)
 		}
 
 		double probability( std::map<std::string,bool> config) {
-			int index = 0, count = 0;
-			BOOST_FOREACH( std::string parent, parents_)
-				index += pow(2,count++)*(int)(config[parent]);
+			int index = 0, count = 1;
+			BOOST_FOREACH( std::string parent, parents_){
+				index += count*(int)(config[parent]);
+				count = count << 1;
+			}
 			if( config.find(key_)->second )
-				index += pow(2,count);
+				index += count;
 			return cpt_[index];
 		}
 
