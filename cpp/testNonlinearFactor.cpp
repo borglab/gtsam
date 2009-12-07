@@ -14,6 +14,7 @@
 #include "Matrix.h"
 #include "smallExample.h"
 #include "Simulated2DMeasurement.h"
+#include "Pose2.h"
 
 using namespace std;
 using namespace gtsam;
@@ -170,6 +171,57 @@ TEST( NonlinearFactor, size )
 	CHECK(factor2->size() == 2);
 	CHECK(factor3->size() == 2);
 }
+
+/* ************************************************************************* */
+Vector RotatePoseDisplacement(Vector d, double theta) {
+	double co=cos(theta);
+	double si=sin(theta);
+	return Matrix_(3,3, co, -si, 0.0, si, co, 0.0, 0.0, 0.0, 1.0)*d;
+
+
+}
+Vector h(const Pose2& p1, const Pose2& p2) {
+	double dx= p2.x()-p1.x();
+	double dy= p2.y()-p1.y();
+	double dtheta= p2.theta()-p1.theta();
+	return RotatePoseDisplacement(Vector_(3,dx,dy,dtheta),-p1.theta());
+}
+
+Matrix H1(const Pose2& p1, const Pose2& p2) {
+
+	double dx= p2.x()-p1.x();
+	double dy= p2.y()-p1.y();
+	double co=cos(p1.theta());
+	double si=sin(p1.theta());
+	return Matrix_(3,3, -co, -si, -si*dx+co*dy, si, -co, -co*dx-si*dy, 0.0, 0.0, -1.0);
+
+}
+
+Matrix H2(const Pose2& p1) {
+	double co=cos(p1.theta());
+	double si=sin(p1.theta());
+	return Matrix_(3,3, co, si, 0.0, -si, co, 0.0, 0.0, 0.0, 1.0);
+}
+
+TEST( PoseConstraintFactor2, testFunctions )
+{
+	Pose2 p1(0.0, 6.0, 0.0);
+	Pose2 p2(0.101826, 6.111236, 0.011499);
+	//expected
+	Vector expectedh = Vector_(3, 0.101826, 0.111236, 0.011499);
+	Matrix expectedH1 = Matrix_(3,3,-1.0, 0.0, 0.111236, 0.0, -1.0, -0.101826, 0.0, 0.0, -1.0);
+	Matrix expectedH2 = Matrix_(3,3, 1.0, 0.0, 0.0, 0.0, 1.0, 0.0, 0.0, 0.0, 1.0);
+
+	// actual
+	Vector actualh = h(p1,p2);
+	Matrix actualH1 = H1(p1,p2);
+	Matrix actualH2 = H2(p1);
+
+	CHECK(assert_equal(actualh,expectedh));
+	CHECK(assert_equal(actualH1,expectedH1));
+	CHECK(assert_equal(actualH2,expectedH2));
+}
+
 /* ************************************************************************* */
 int main() { TestResult tr; return TestRegistry::runAllTests(tr);}
 /* ************************************************************************* */
