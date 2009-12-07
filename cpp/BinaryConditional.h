@@ -57,6 +57,15 @@ namespace gtsam {
 			cpt_ = cpt;
 		}
 
+		double probability( std::map<std::string,bool> config) {
+			int index = 0, count = 0;
+			BOOST_FOREACH( std::string parent, parents_)
+				index += pow(2,count++)*(int)(config[parent]);
+			if( config.find(key_)->second )
+				index += pow(2,count);
+			return cpt_[index];
+		}
+
 		/** print */
 		void print(const std::string& s = "BinaryConditional") const {
 			std::cout << s << " P(" << key_;
