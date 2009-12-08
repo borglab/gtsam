@@ -173,53 +173,60 @@ TEST( NonlinearFactor, size )
 }
 
 /* ************************************************************************* */
-Vector RotatePoseDisplacement(Vector d, double theta) {
-	double co=cos(theta);
-	double si=sin(theta);
-	return Matrix_(3,3, co, -si, 0.0, si, co, 0.0, 0.0, 0.0, 1.0)*d;
 
+#include "numericalDerivative.h"
 
-}
-Vector h(const Pose2& p1, const Pose2& p2) {
-	double dx= p2.x()-p1.x();
-	double dy= p2.y()-p1.y();
-	double dtheta= p2.theta()-p1.theta();
-	return RotatePoseDisplacement(Vector_(3,dx,dy,dtheta),-p1.theta());
+Pose2 h(const Pose2& p1, const Pose2& p2) {
+	Pose2 dpose = p2 - p1;
+	return dpose.rotate(-p1.theta());
 }
 
 Matrix H1(const Pose2& p1, const Pose2& p2) {
-
 	double dx= p2.x()-p1.x();
 	double dy= p2.y()-p1.y();
-	double co=cos(p1.theta());
-	double si=sin(p1.theta());
-	return Matrix_(3,3, -co, -si, -si*dx+co*dy, si, -co, -co*dx-si*dy, 0.0, 0.0, -1.0);
-
+	double ct=cos(p1.theta());
+	double st=sin(p1.theta());
+	return Matrix_(3,3,
+			-ct, -st, -st*dx+ct*dy,
+			 st, -ct, -ct*dx-st*dy,
+			0.0, 0.0, -1.0
+			);
 }
 
 Matrix H2(const Pose2& p1) {
-	double co=cos(p1.theta());
-	double si=sin(p1.theta());
-	return Matrix_(3,3, co, si, 0.0, -si, co, 0.0, 0.0, 0.0, 1.0);
+	double ct=cos(p1.theta());
+	double st=sin(p1.theta());
+	return Matrix_(3,3,
+			 ct,  st, 0.0,
+			-st,  ct, 0.0,
+			0.0, 0.0, 1.0
+			);
 }
 
 TEST( PoseConstraintFactor2, testFunctions )
 {
 	Pose2 p1(0.0, 6.0, 0.0);
 	Pose2 p2(0.101826, 6.111236, 0.011499);
+
 	//expected
-	Vector expectedh = Vector_(3, 0.101826, 0.111236, 0.011499);
+	Pose2 expectedh(0.101826, 0.111236, 0.011499);
 	Matrix expectedH1 = Matrix_(3,3,-1.0, 0.0, 0.111236, 0.0, -1.0, -0.101826, 0.0, 0.0, -1.0);
 	Matrix expectedH2 = Matrix_(3,3, 1.0, 0.0, 0.0, 0.0, 1.0, 0.0, 0.0, 0.0, 1.0);
 
 	// actual
-	Vector actualh = h(p1,p2);
+	Pose2 actualh = h(p1,p2);
 	Matrix actualH1 = H1(p1,p2);
 	Matrix actualH2 = H2(p1);
 
-	CHECK(assert_equal(actualh,expectedh));
-	CHECK(assert_equal(actualH1,expectedH1));
-	CHECK(assert_equal(actualH2,expectedH2));
+	CHECK(assert_equal(expectedh,actualh));
+	CHECK(assert_equal(expectedH1,actualH1));
+	CHECK(assert_equal(expectedH2,actualH2));
+
+  Matrix numericalH1 = numericalDerivative21(h, p1, p2, 1e-5);
+	//CHECK(assert_equal(numericalH1,actualH1));
+
+  Matrix numericalH2 = numericalDerivative22(h, p1, p2, 1e-5);
+	CHECK(assert_equal(numericalH2,actualH2));
 }
 
 /* ************************************************************************* */

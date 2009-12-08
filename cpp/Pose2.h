@@ -9,6 +9,7 @@
 #pragma once
 
 #include "Point2.h"
+#include "Vector.h"
 #include "Testable.h"
 
 namespace gtsam {
@@ -55,11 +56,32 @@ namespace gtsam {
 		bool equals(const Pose2& pose, double tol = 1e-9) const;
 
     /** get functions for x, y, theta */
-		double x()     const { return x_;}
-		double y()     const { return y_;}
-		double theta() const { return theta_;}
+		inline double x()     const { return x_;}
+		inline double y()     const { return y_;}
+		inline double theta() const { return theta_;}
 
+		/** return DOF, dimensionality of tangent space = 3 */
+		size_t dim() const {
+			return 3;
+		}
+
+		/* exponential map */
 		Pose2 exmap(const Vector& v) const;
-	};
+
+    /** return vectorized form (column-wise)*/
+    Vector vector() const;
+
+    /** rotate pose by theta */
+    Pose2 rotate(double theta) const;
+
+    // operators
+    Pose2 operator+(const Pose2& p2) const {
+  		return Pose2(x_ + p2.x_, y_ + p2.y_, theta_ + p2.theta_);
+    }
+
+    Pose2 operator-(const Pose2& p2) const {
+  		return Pose2(x_ - p2.x_, y_ - p2.y_, theta_ - p2.theta_);
+    }
+	}; // Pose2
 
 } // namespace gtsam
