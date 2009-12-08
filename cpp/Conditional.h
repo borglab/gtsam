@@ -10,6 +10,7 @@
 
 #include <boost/utility.hpp> // for noncopyable
 #include <boost/serialization/string.hpp>
+#include <boost/serialization/access.hpp>
 #include "Testable.h"
 
 namespace gtsam {

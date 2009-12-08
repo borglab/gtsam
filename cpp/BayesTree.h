@@ -13,6 +13,7 @@
 #include <vector>
 #include <boost/serialization/map.hpp>
 #include <boost/serialization/list.hpp>
+#include <stdexcept>
 
 #include "Testable.h"
 #include "FactorGraph.h"
