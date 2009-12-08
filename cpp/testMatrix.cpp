@@ -591,6 +591,24 @@ TEST( matrix, weighted_elimination )
 	}
 }
 
+/* ************************************************************************* */
+TEST( matrix, inverse_square_root )
+{
+	Matrix measurement_covariance = Matrix_(3,3,
+			0.25, 0.0, 0.0,
+			0.0, 0.25, 0.0,
+			0.0, 0.0, 0.01
+			);
+	Matrix actual = inverse_square_root(measurement_covariance);
+
+	Matrix square_root_inverse_covariance = Matrix_(3,3,
+			-2.0, 0.0, 0.0,
+			0.0, -2.0, 0.0,
+			0.0, 0.0, -10.0
+			);
+
+	EQUALITY(square_root_inverse_covariance,actual);
+}
 
 /* ************************************************************************* */
 int main() { TestResult tr; return TestRegistry::runAllTests(tr); }

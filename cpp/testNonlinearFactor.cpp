@@ -14,7 +14,7 @@
 #include "Matrix.h"
 #include "smallExample.h"
 #include "Simulated2DMeasurement.h"
-#include "Pose2.h"
+#include "GaussianFactor.h"
 
 using namespace std;
 using namespace gtsam;
@@ -174,59 +174,96 @@ TEST( NonlinearFactor, size )
 
 /* ************************************************************************* */
 
-#include "numericalDerivative.h"
+#include <map>
+#include "Pose2.h"
+class Pose2Config : public map<string,Pose2> {
+public:
+	Pose2 get(string key) const {
+		map<string,Pose2>::const_iterator it = find(key);
+		if (it==end()) throw std::invalid_argument("invalid key");
+		return it->second;
+	}
+};
 
-Pose2 h(const Pose2& p1, const Pose2& p2) {
-	Pose2 dpose = p2 - p1;
-	return dpose.rotate(-p1.theta());
-}
+class Pose2Constraint : public Factor<Pose2Config> {
+private:
+	std::string key1_, key2_; /** The keys of the two poses, order matters */
+	Pose2 measured_;
+	Matrix square_root_inverse_covariance_; /** sqrt(inv(measurement_covariance)) */
 
-Matrix H1(const Pose2& p1, const Pose2& p2) {
-	double dx= p2.x()-p1.x();
-	double dy= p2.y()-p1.y();
-	double ct=cos(p1.theta());
-	double st=sin(p1.theta());
-	return Matrix_(3,3,
-			-ct, -st, -st*dx+ct*dy,
-			 st, -ct, -ct*dx-st*dy,
-			0.0, 0.0, -1.0
-			);
-}
+public:
+	Pose2Constraint(const string& key1, const string& key2,
+			const Pose2& measured, const Matrix& measurement_covariance): key1_(key1),key2_(key2),measured_(measured) {
+		square_root_inverse_covariance_ = inverse_square_root(measurement_covariance);
+	}
 
-Matrix H2(const Pose2& p1) {
-	double ct=cos(p1.theta());
-	double st=sin(p1.theta());
-	return Matrix_(3,3,
-			 ct,  st, 0.0,
-			-st,  ct, 0.0,
-			0.0, 0.0, 1.0
-			);
-}
+	/** implement functions needed for Testable */
+	void print(const std::string& name) const {}
+	bool equals(const Factor<Pose2Config>& expected, double tol) const {return false;}
 
-TEST( PoseConstraintFactor2, testFunctions )
+  /** implement functions needed to derive from Factor */
+	double error(const Pose2Config& c) const {return 0;}
+  std::list<std::string> keys() const { list<string> l; return l; }
+  std::size_t size() const { return 2;}
+
+  /** linearize */
+  boost::shared_ptr<GaussianFactor> linearize(const Pose2Config& config) const {
+  	Pose2 p1 = config.get(key1_), p2 = config.get(key2_);
+  	Vector b = (measured_ - between(p1,p2)).vector();
+  	Matrix H1 = Dbetween1(p1,p2);
+  	Matrix H2 = Dbetween2(p1,p2);
+  	boost::shared_ptr<GaussianFactor> linearized(new GaussianFactor(
+						key1_, square_root_inverse_covariance_ * H1,
+						key2_, square_root_inverse_covariance_ * H2,
+						b, 1.0));
+  	return linearized;
+  }
+};
+
+TEST( Pose2Constraint, constructor )
 {
-	Pose2 p1(0.0, 6.0, 0.0);
-	Pose2 p2(0.101826, 6.111236, 0.011499);
+	// create a factor between unknown poses p1 and p2
+	Pose2 measured(2,2,M_PI_2);
+	Matrix measurement_covariance = Matrix_(3,3,
+			0.25, 0.0, 0.0,
+			0.0, 0.25, 0.0,
+			0.0, 0.0, 0.01
+			);
+	Pose2Constraint constraint("p1","p2",measured, measurement_covariance);
 
-	//expected
-	Pose2 expectedh(0.101826, 0.111236, 0.011499);
-	Matrix expectedH1 = Matrix_(3,3,-1.0, 0.0, 0.111236, 0.0, -1.0, -0.101826, 0.0, 0.0, -1.0);
-	Matrix expectedH2 = Matrix_(3,3, 1.0, 0.0, 0.0, 0.0, 1.0, 0.0, 0.0, 0.0, 1.0);
+	// Choose a linearization point
+	Pose2 p1(1.1,2,M_PI_2); // robot at (1.1,2) looking towards y (ground truth is at 1,2, see testPose2)
+	Pose2 p2(-1,4.1,M_PI);  // robot at (-1,4) looking at negative (ground truth is at 4.1,2)
+	Pose2Config config;
+	config.insert(make_pair("p1",p1));
+	config.insert(make_pair("p2",p2));
 
-	// actual
-	Pose2 actualh = h(p1,p2);
-	Matrix actualH1 = H1(p1,p2);
-	Matrix actualH2 = H2(p1);
+	// Linearize
+	boost::shared_ptr<GaussianFactor> actual = constraint.linearize(config);
 
-	CHECK(assert_equal(expectedh,actualh));
-	CHECK(assert_equal(expectedH1,actualH1));
-	CHECK(assert_equal(expectedH2,actualH2));
+	// expected
+	Matrix expectedH1 = Matrix_(3,3,
+			0.0,-1.0,2.1,
+			1.0,0.0,-2.1,
+			0.0,0.0,-1.0
+			);
+	Matrix expectedH2 = Matrix_(3,3,
+			 0.0,1.0,0.0,
+			-1.0,0.0,0.0,
+			 0.0,0.0,1.0
+			 );
+	// we need the minus signs as inverse_square_root uses SVD and sign is simply arbitrary (still a ssquare root!)
+	Matrix square_root_inverse_covariance = Matrix_(3,3,
+			-2.0, 0.0, 0.0,
+			0.0, -2.0, 0.0,
+			0.0, 0.0, -10.0
+			);
+	GaussianFactor expected(
+			"p1", square_root_inverse_covariance*expectedH1,
+			"p2", square_root_inverse_covariance*expectedH2,
+			Vector_(3,-0.1,-0.1,0.0), 1.0);
 
-  Matrix numericalH1 = numericalDerivative21(h, p1, p2, 1e-5);
-	//CHECK(assert_equal(numericalH1,actualH1));
-
-  Matrix numericalH2 = numericalDerivative22(h, p1, p2, 1e-5);
-	CHECK(assert_equal(numericalH2,actualH2));
+	CHECK(assert_equal(expected,*actual));
 }
 
 /* ************************************************************************* */
