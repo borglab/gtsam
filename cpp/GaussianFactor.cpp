@@ -181,7 +181,7 @@ pair<Matrix,Vector> GaussianFactor::matrix(const Ordering& ordering, bool weight
 	// divide in sigma so error is indeed 0.5*|Ax-b|
 	if (weight) {
 		Vector t = ediv(ones(sigmas_.size()),sigmas_);
-		A = vector_scale(A, t);
+		A = vector_scale(t, A);
 		for (int i=0; i<b_.size(); ++i)
 			b(i) *= t(i);
 	}

@@ -491,7 +491,7 @@ return collect(matrices);
 
 /* ************************************************************************* */
 // row scaling
-Matrix vector_scale(const Matrix& A, const Vector& v) {
+Matrix vector_scale(const Vector& v, const Matrix& A) {
 	Matrix M(A);
 	for (int i=0; i<A.size1(); ++i) {
 		for (int j=0; j<A.size2(); ++j) {
@@ -503,7 +503,7 @@ Matrix vector_scale(const Matrix& A, const Vector& v) {
 
 /* ************************************************************************* */
 // column scaling
-Matrix vector_scale(const Vector& v, const Matrix& A) {
+Matrix vector_scale(const Matrix& A, const Vector& v) {
 	Matrix M(A);
 	for (int i=0; i<A.size1(); ++i)
 		for (int j=0; j<A.size2(); ++j)

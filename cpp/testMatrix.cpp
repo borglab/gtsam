@@ -167,7 +167,7 @@ TEST( matrix, scale_columns )
 
 	Vector v = Vector_(4, 2., 3., 4., 5.);
 
-	Matrix actual = vector_scale(v,A);
+	Matrix actual = vector_scale(A,v);
 
 	Matrix expected(3,4);
 	expected(0,0) = 2.; expected(0,1) = 3.; expected(0,2)= 4.; expected(0,3)= 5.;
@@ -187,7 +187,7 @@ TEST( matrix, scale_rows )
 
 	Vector v = Vector_(3, 2., 3., 4.);
 
-	Matrix actual = vector_scale(A,v);
+	Matrix actual = vector_scale(v,A);
 
 	Matrix expected(3,4);
 	expected(0,0) = 2.; expected(0,1) = 2.; expected(0,2)= 2.; expected(0,3)= 2.;

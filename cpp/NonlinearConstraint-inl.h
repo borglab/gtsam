@@ -121,7 +121,7 @@ NonlinearConstraint1<Config>::linearize(const Config& config, const VectorConfig
 	Matrix grad = gradG_(config, this->keys());
 
 	// construct probabilistic factor
-	Matrix A1 = vector_scale(grad, lambda);
+	Matrix A1 = vector_scale(lambda, grad);
 	GaussianFactor::shared_ptr factor(new
 			GaussianFactor(key_, A1, this->lagrange_key_, eye(this->p_), zero(this->p_), 1.0));
 
@@ -218,8 +218,8 @@ NonlinearConstraint2<Config>::linearize(const Config& config, const VectorConfig
 	Matrix grad2 = gradG2_(config, this->keys());
 
 	// construct probabilistic factor
-	Matrix A1 = vector_scale(grad1, lambda);
-	Matrix A2 = vector_scale(grad2, lambda);
+	Matrix A1 = vector_scale(lambda, grad1);
+	Matrix A2 = vector_scale(lambda, grad2);
 	GaussianFactor::shared_ptr factor(new
 			GaussianFactor(key1_, A1, key2_, A2,
 					this->lagrange_key_, eye(this->p_), zero(this->p_), 1.0));

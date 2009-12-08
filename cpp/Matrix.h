@@ -207,11 +207,11 @@ Matrix collect(size_t nrMatrices, ...);
 
 /**
  * scales a matrix row or column by the values in a vector
- * Arguments (Matrix, Vector) scales the rows,
- * (Vector, Matrix) scales the columns
+ * Arguments (Matrix, Vector) scales the columns,
+ * (Vector, Matrix) scales the rows
  */
-Matrix vector_scale(const Matrix& A, const Vector& v); // row
-Matrix vector_scale(const Vector& v, const Matrix& A); // column
+Matrix vector_scale(const Vector& v, const Matrix& A); // row
+Matrix vector_scale(const Matrix& A, const Vector& v); // column
 
 /**
  * skew symmetric matrix returns this:
