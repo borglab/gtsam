@@ -106,20 +106,20 @@ bool equal_with_abs_tol(const Matrix& A, const Matrix& B, double tol) {
 }
 
 /* ************************************************************************* */
-bool assert_equal(const Matrix& A, const Matrix& B, double tol) {
+bool assert_equal(const Matrix& expected, const Matrix& actual, double tol) {
 
-  if (equal_with_abs_tol(A,B,tol)) return true;
+  if (equal_with_abs_tol(expected,actual,tol)) return true;
 
-  size_t n1 = A.size2(), m1 = A.size1();
-  size_t n2 = B.size2(), m2 = B.size1();
+  size_t n1 = expected.size2(), m1 = expected.size1();
+  size_t n2 = actual.size2(), m2 = actual.size1();
 
   cout << "not equal:" << endl;
-  print(A,"actual = ");
-  print(B,"expected = ");
+  print(expected,"expected = ");
+  print(actual,"actual = ");
   if(m1!=m2 || n1!=n2)
     cout << m1 << "," << n1 << " != " << m2 << "," << n2 << endl;
   else
-    print(A-B, "actual - expected = ");
+    print(actual-expected, "actual - expected = ");
   return false;
 }
 

@@ -137,11 +137,11 @@ namespace gtsam {
   }
   
   /* ************************************************************************* */
-  bool assert_equal(const Vector& vec1, const Vector& vec2, double tol) {
-    if (equal_with_abs_tol(vec1,vec2,tol)) return true;
+  bool assert_equal(const Vector& expected, const Vector& actual, double tol) {
+    if (equal_with_abs_tol(expected,actual,tol)) return true;
     cout << "not equal:" << endl;
-    print(vec1, "v1");
-    print(vec2, "v2");
+    print(expected, "expected");
+    print(actual, "actual");
     return false;
   }
   
