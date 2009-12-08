@@ -238,6 +238,9 @@ void svd(const Matrix& A, Matrix& U, Vector& S, Matrix& V);
 // in-place version
 void svd(Matrix& A, Vector& S, Matrix& V);
 
+/** Use SVD to calculate inverse square root of a matrix */
+Matrix inverse_square_root(const Matrix& A);
+
 // macro for unit tests
 #define EQUALITY(expected,actual)\
   { if (!assert_equal(expected,actual)) \

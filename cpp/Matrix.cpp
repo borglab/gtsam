@@ -570,5 +570,22 @@ void svd(const Matrix& A, Matrix& U, Vector& s, Matrix& V) {
 }
 
 /* ************************************************************************* */
+// TODO, would be faster with Cholesky
+Matrix inverse_square_root(const Matrix& A) {
+  size_t m = A.size2(), n = A.size1();
+	if (m!=n)
+		throw invalid_argument("inverse_square_root: A must be square");
+
+	// Perform SVD, TODO: symmetric SVD?
+	Matrix U,V;
+	Vector S;
+	svd(A,U,S,V);
+
+	// invert and sqrt diagonal of S
+  for(size_t i = 0; i<m; i++) S(i) = pow(S(i),-0.5);
+  return vector_scale(S, V); // V*S;
+}
+
+/* ************************************************************************* */
 
 } // namespace gtsam
