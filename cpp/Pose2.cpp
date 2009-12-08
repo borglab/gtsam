@@ -40,6 +40,59 @@ namespace gtsam {
 		return Pose2(c * x_ - s * y_, s * x_ + c * y_, theta + theta_);
 	}
 
-/* ************************************************************************* */
+	/* ************************************************************************* */
+	Point2 transform_to(const Pose2& pose, const Point2& point) {
+		double dx = point.x()-pose.x(), dy = point.y()-pose.y();
+		double ct=cos(pose.theta()), st=sin(pose.theta());
+		return Point2(ct*dx + st*dy, -st*dx + ct*dy);
+	}
+
+	// TODO, have a combined function that returns both function value and derivative
+	Matrix Dtransform_to1(const Pose2& pose, const Point2& point) {
+		double dx = point.x()-pose.x(), dy = point.y()-pose.y();
+		double ct=cos(pose.theta()), st=sin(pose.theta());
+		double transformed_x = ct*dx + st*dy, transformed_y = -st*dx + ct*dy;
+		return Matrix_(2,3,
+				-ct, -st,  transformed_y,
+				 st, -ct, -transformed_x
+				);
+	}
+
+	Matrix Dtransform_to2(const Pose2& pose, const Point2& point) {
+		double ct=cos(pose.theta()), st=sin(pose.theta());
+		return Matrix_(2,2,
+				 ct,  st,
+				-st,  ct
+				);
+	}
+
+	/* ************************************************************************* */
+	Pose2 between(const Pose2& p1, const Pose2& p2) {
+		double dx = p2.x()-p1.x(), dy = p2.y()-p1.y();
+		double ct=cos(p1.theta()), st=sin(p1.theta());
+		return Pose2(ct*dx + st*dy, -st*dx + ct*dy, p2.theta()-p1.theta());
+	}
+
+	Matrix Dbetween1(const Pose2& p1, const Pose2& p2) {
+		double dx = p2.x()-p1.x(), dy = p2.y()-p1.y();
+		double ct=cos(p1.theta()), st=sin(p1.theta());
+		double transformed_x = ct*dx + st*dy, transformed_y = -st*dx + ct*dy;
+		return Matrix_(3,3,
+				-ct, -st,  transformed_y,
+				 st, -ct, -transformed_x,
+				0.0, 0.0, -1.0
+				);
+	}
+
+	Matrix Dbetween2(const Pose2& p1, const Pose2& p2) {
+		double ct=cos(p1.theta()), st=sin(p1.theta());
+		return Matrix_(3,3,
+				 ct,  st, 0.0,
+				-st,  ct, 0.0,
+				0.0, 0.0, 1.0
+				);
+	}
+
+	/* ************************************************************************* */
 
 } // namespace gtsam

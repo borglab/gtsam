@@ -9,7 +9,7 @@
 #pragma once
 
 #include "Point2.h"
-#include "Vector.h"
+#include "Matrix.h"
 #include "Testable.h"
 
 namespace gtsam {
@@ -83,5 +83,19 @@ namespace gtsam {
   		return Pose2(x_ - p2.x_, y_ - p2.y_, theta_ - p2.theta_);
     }
 	}; // Pose2
+
+	/**
+	 * Return point coordinates in pose coordinate frame
+	 */
+	Point2 transform_to(const Pose2& pose, const Point2& point);
+	Matrix Dtransform_to1(const Pose2& pose, const Point2& point);
+	Matrix Dtransform_to2(const Pose2& pose, const Point2& point);
+
+	/**
+	 * Return relative pose between p1 and p2, in p1 coordinate frame
+	 */
+	Pose2 between(const Pose2& p1, const Pose2& p2);
+	Matrix Dbetween1(const Pose2& p1, const Pose2& p2);
+	Matrix Dbetween2(const Pose2& p1, const Pose2& p2);
 
 } // namespace gtsam
