@@ -18,6 +18,12 @@ namespace gtsam {
 	}
 
 	/* ************************************************************************* */
+	Rot3 Rot3::exmap(const Vector& v) const {
+		if (zero(v)) return (*this);
+		return rodriguez(v) * (*this);
+	}
+
+	/* ************************************************************************* */
 	/** faster than below ?                                                      */
 	/* ************************************************************************* */
 	Rot3 rodriguez(const Vector& w, double t) {
@@ -52,13 +58,7 @@ namespace gtsam {
 
 	/* ************************************************************************* */
 	Rot3 exmap(const Rot3& R, const Vector& v) {
-		return rodriguez(v) * R;
-	}
-
-	/* ************************************************************************* */
-	Rot3 Rot3::exmap(const Vector& v) const {
-		if (zero(v)) return (*this);
-		return rodriguez(v) * (*this);
+		return R.exmap(v);
 	}
 
 	/* ************************************************************************* */

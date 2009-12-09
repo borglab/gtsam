@@ -1,0 +1,92 @@
+/**
+ * @file    testRot2.cpp
+ * @brief   Unit tests for Rot2 class
+ * @author  Frank Dellaert
+ */
+
+#include <CppUnitLite/TestHarness.h>
+#include "numericalDerivative.h"
+#include "Rot2.h"
+
+using namespace gtsam;
+
+Rot2 R(0.1);
+Point2 P(0.2, 0.7);
+
+/* ************************************************************************* */
+TEST( Rot2, angle)
+{
+	DOUBLES_EQUAL(0.1,R.angle(),1e-9);
+}
+
+/* ************************************************************************* */
+TEST( Rot2, transpose)
+{
+	CHECK(assert_equal(R.inverse().matrix(),R.transpose()));
+}
+
+/* ************************************************************************* */
+TEST( Rot2, equals)
+{
+	CHECK(R.equals(R));
+	Rot2 zero;
+	CHECK(!R.equals(zero));
+}
+
+/* ************************************************************************* */
+TEST( Rot2, exmap)
+{
+	Vector v = zero(1);
+	CHECK(assert_equal(R.exmap(v), R));
+}
+
+/* ************************************************************************* */
+// rotate derivatives
+
+TEST( Rot2, Drotate1)
+{
+	Matrix computed = Drotate1(R, P);
+	Matrix numerical = numericalDerivative21(rotate, R, P);
+	CHECK(assert_equal(numerical,computed));
+}
+
+TEST( Rot2, Drotate2_DNrotate2)
+{
+	Matrix computed = Drotate2(R);
+	Matrix numerical = numericalDerivative22(rotate, R, P);
+	CHECK(assert_equal(numerical,computed));
+}
+
+/* ************************************************************************* */
+// unrotate 
+
+TEST( Rot2, unrotate)
+{
+	Point2 w = R * P;
+	CHECK(assert_equal(unrotate(R,w),P));
+}
+
+/* ************************************************************************* */
+// unrotate derivatives
+
+TEST( Rot2, Dunrotate1)
+{
+	Matrix computed = Dunrotate1(R, P);
+	Matrix numerical = numericalDerivative21(unrotate, R, P);
+	CHECK(assert_equal(numerical,computed));
+}
+
+TEST( Rot2, Dunrotate2_DNunrotate2)
+{
+	Matrix computed = Dunrotate2(R);
+	Matrix numerical = numericalDerivative22(unrotate, R, P);
+	CHECK(assert_equal(numerical,computed));
+}
+
+/* ************************************************************************* */
+int main() {
+	TestResult tr;
+	return TestRegistry::runAllTests(tr);
+}
+/* ************************************************************************* */
+
