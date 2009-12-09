@@ -149,6 +149,41 @@ TEST( VSLAMGraph, optimizeLM2)
   CHECK(assert_equal(*initialEstimate,*(afterOneIteration.config())));
 }
 
+
+/* ************************************************************************* */
+TEST( VSLAMGraph, CHECK_ORDERING)
+{
+  // build a graph
+  VSLAMGraph graph = testGraph();
+  // add 2 camera constraints
+  graph.addCameraConstraint(1, camera1);
+  graph.addCameraConstraint(2, camera2);
+
+  // Create an initial configuration corresponding to the ground truth
+  boost::shared_ptr<VSLAMConfig> initialEstimate(new VSLAMConfig);
+  initialEstimate->addCameraPose(1, camera1);
+  initialEstimate->addCameraPose(2, camera2);
+  initialEstimate->addLandmarkPoint(1, landmark1);
+  initialEstimate->addLandmarkPoint(2, landmark2);
+  initialEstimate->addLandmarkPoint(3, landmark3);
+  initialEstimate->addLandmarkPoint(4, landmark4);
+
+  Ordering ordering = graph.getOrdering();
+
+  // Create an optimizer and check its error
+  // We expect the initial to be zero because config is the ground truth
+  Optimizer optimizer(graph, ordering, initialEstimate, 1e-5);
+  DOUBLES_EQUAL(0.0, optimizer.error(), 1e-9);
+
+  // Iterate once, and the config should not have changed because we started
+  // with the ground truth
+  Optimizer afterOneIteration = optimizer.iterate();
+  DOUBLES_EQUAL(0.0, optimizer.error(), 1e-9);
+
+  // check if correct
+  CHECK(assert_equal(*initialEstimate,*(afterOneIteration.config())));
+}
+
 /* ************************************************************************* */
 int main() { TestResult tr; TestRegistry::runAllTests(tr); return 0;}
 /* ************************************************************************* */
