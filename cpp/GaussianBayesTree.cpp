@@ -19,21 +19,21 @@ template class BayesTree<GaussianConditional>;
 namespace gtsam {
 
 /* ************************************************************************* */
-void optimize(GaussianBayesTree::sharedClique clique, VectorConfig& result) {
-#if 0
+void optimize(const GaussianBayesTree::sharedClique& clique, VectorConfig& result) {
 	// parents are assumed to already be solved and available in result
-	BOOST_REVERSE_FOREACH(GaussianConditional::shared_ptr cg, clique) {
+	GaussianBayesTree::Clique::const_reverse_iterator it;
+	for(it = clique->rend(); it!=clique->rbegin(); it++) {
+		GaussianConditional::shared_ptr cg = *it;
     Vector x = cg->solve(result); // Solve for that variable
     result.insert(cg->key(),x);   // store result in partial solution
   }
 	BOOST_FOREACH(GaussianBayesTree::sharedClique child, clique->children_) {
 		optimize(child, result);
 	}
-#endif
 }
 
 /* ************************************************************************* */
-VectorConfig optimize(GaussianBayesTree& bayesTree) {
+VectorConfig optimize(const GaussianBayesTree& bayesTree) {
 	VectorConfig result;
 	// starting from the root, call optimize on each conditional
 	optimize(bayesTree.root(), result);

@@ -26,9 +26,9 @@ namespace gtsam {
 	typedef BayesTree<GaussianConditional> GaussianBayesTree;
 
 	// recursively optimize this conditional and all subtrees
-	void optimize(GaussianBayesTree::sharedClique clique, VectorConfig& result);
+	void optimize(const GaussianBayesTree::sharedClique& clique, VectorConfig& result);
 
 	// optimize the BayesTree, starting from the root
-	VectorConfig optimize(GaussianBayesTree& bayesTree);
+	VectorConfig optimize(const GaussianBayesTree& bayesTree);
 
 }/// namespace gtsam
