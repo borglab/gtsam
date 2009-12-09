@@ -4,7 +4,7 @@
  * @author Frank Dellaert
  */
 
-#include "inference.h"
+//#include "inference.h"
 #include "FactorGraph-inl.h"
 #include "BayesNet-inl.h"
 
