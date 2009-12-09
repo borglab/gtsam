@@ -1,5 +1,5 @@
 /**
- *  @file  Pose2Constraint.H
+ *  @file  Pose2Factor.H
  *  @authors Frank Dellaert, Viorela Ila
  **/
 
@@ -9,23 +9,31 @@
 #include "Pose2.h"
 #include "Matrix.h"
 #include "Pose2Config.h"
+#include "ostream"
 
 namespace gtsam {
 
-class Pose2Constraint : public Factor<Pose2Config> {
+class Pose2Factor : public Factor<Pose2Config> {
 private:
 	std::string key1_, key2_; /** The keys of the two poses, order matters */
 	Pose2 measured_;
 	Matrix square_root_inverse_covariance_; /** sqrt(inv(measurement_covariance)) */
 
 public:
-	Pose2Constraint(const std::string& key1, const std::string& key2,
+	Pose2Factor(const std::string& key1, const std::string& key2,
 			const Pose2& measured, const Matrix& measurement_covariance): key1_(key1),key2_(key2),measured_(measured) {
 		square_root_inverse_covariance_ = inverse_square_root(measurement_covariance);
 	}
 
 	/** implement functions needed for Testable */
-	void print(const std::string& name) const {}
+	void print(const std::string& name) const {
+		std::cout << name << std::endl;
+		std::cout << "Pose2Contraint"<< std::endl;
+		std::cout << "key1 "<< key1_<<std::endl;
+		std::cout << "key2 "<< key2_<<std::endl;
+		measured_.print("measured ");
+		gtsam::print(square_root_inverse_covariance_,"MeasurementCovariance");
+	}
 	bool equals(const Factor<Pose2Config>& expected, double tol) const {return false;}
 
 	/** implement functions needed to derive from Factor */

@@ -126,10 +126,10 @@ headers += NonlinearOptimizer.h NonlinearOptimizer-inl.h
 headers += SQPOptimizer.h SQPOptimizer-inl.h  
 headers += NonlinearConstraint.h NonlinearConstraint-inl.h
 headers += Pose2Config.h
-headers += Pose2Constraint.h
+headers += Pose2Factor.h
 sources += NonlinearFactor.cpp 
 sources += NonlinearEquality.h
-check_PROGRAMS += testNonlinearFactor testNonlinearFactorGraph testNonlinearOptimizer testNonlinearEquality testSQP testNonlinearConstraint testSQPOptimizer testPose2Constraint
+check_PROGRAMS += testNonlinearFactor testNonlinearFactorGraph testNonlinearOptimizer testNonlinearEquality testSQP testNonlinearConstraint testSQPOptimizer testPose2Factor
 testNonlinearFactor_SOURCES      = $(example) testNonlinearFactor.cpp
 testNonlinearFactor_LDADD        = libgtsam.la
 testNonlinearConstraint_SOURCES  = $(example) testNonlinearConstraint.cpp
@@ -144,8 +144,8 @@ testNonlinearEquality_SOURCES    = testNonlinearEquality.cpp
 testNonlinearEquality_LDADD      = libgtsam.la
 testSQP_SOURCES                  = $(example) testSQP.cpp
 testSQP_LDADD                    = libgtsam.la
-testPose2Constraint_SOURCES      = $(example) testPose2Constraint.cpp
-testPose2Constraint_LDADD        = libgtsam.la
+testPose2Factor_SOURCES      = $(example) testPose2Factor.cpp
+testPose2Factor_LDADD        = libgtsam.la
 
 # geometry
 sources += Point2.cpp Rot2.cpp Pose2.cpp Point3.cpp Rot3.cpp Pose3.cpp Cal3_S2.cpp

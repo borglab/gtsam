@@ -168,7 +168,7 @@ class Pose2{
 	double y();
 	double theta();
 	size_t dim() const;
-	Pose2 exmap(const Vector& v) const;
+	Pose2 exmap(Vector v) const;
 	Vector vector() const;
 	Pose2 rotate(double theta) const;
 };
@@ -177,11 +177,11 @@ class Pose2Config{
 	Pose2 get(string key) const;
 };
 
-class Pose2Constraint {
-	Pose2Constraint(string key1, string key2,
-			const Pose2& measured, const Matrix& measurement_covariance);
+class Pose2Factor {
+	Pose2Factor(string key1, string key2,
+			const Pose2& measured, Matrix measurement_covariance);
 	void print(string name) const;
-	bool equals(const Pose2Constraint& expected, double tol) const;
+	bool equals(const Pose2Factor& expected, double tol) const;
 	double error(const Pose2Config& c) const;
 	size_t size() const;
 	GaussianFactor* linearize(const Pose2Config& config) const;

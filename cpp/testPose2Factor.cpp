@@ -1,6 +1,6 @@
 /**
  *  @file  testPose2Constraint.cpp
- *  @brief Unit tests for Pose2Constraint Class
+ *  @brief Unit tests for Pose2Factor Class
  *  @authors Frank Dellaert, Viorela Ila
  **/
 
@@ -8,13 +8,13 @@
 #include <iostream>
 
 #include <CppUnitLite/TestHarness.h>
-#include "Pose2Constraint.h"
+#include "Pose2Factor.h"
 
 using namespace std;
 using namespace gtsam;
 
 
-TEST( Pose2Constraint, constructor )
+TEST( Pose2Factor, constructor )
 {
 	// create a factor between unknown poses p1 and p2
 	Pose2 measured(2,2,M_PI_2);
@@ -23,7 +23,7 @@ TEST( Pose2Constraint, constructor )
 			0.0, 0.25, 0.0,
 			0.0, 0.0, 0.01
 			);
-	Pose2Constraint constraint("p1","p2",measured, measurement_covariance);
+	Pose2Factor constraint("p1","p2",measured, measurement_covariance);
 
 	// Choose a linearization point
 	Pose2 p1(1.1,2,M_PI_2); // robot at (1.1,2) looking towards y (ground truth is at 1,2, see testPose2)
@@ -34,6 +34,7 @@ TEST( Pose2Constraint, constructor )
 
 	// Linearize
 	boost::shared_ptr<GaussianFactor> actual = constraint.linearize(config);
+
 
 	// expected
 	Matrix expectedH1 = Matrix_(3,3,
@@ -59,6 +60,7 @@ TEST( Pose2Constraint, constructor )
 
 	CHECK(assert_equal(expected,*actual));
 }
+
 /* ************************************************************************* */
 int main() {
 	TestResult tr;
