@@ -158,6 +158,21 @@ class Simulated2DMeasurement {
   void print(string s) const;
 };
 
+class Pose2{
+	Pose2();
+	Pose2(const Pose2& pose);
+	Pose2(double x, double y, double theta);
+	void print(string s);
+	bool equals(const Pose2& pose, double tol);
+	double x();
+	double y();
+	double theta();
+	size_t dim() const;
+	Pose2 exmap(const Vector& v) const;
+	Vector vector() const;
+	Pose2 rotate(double theta) const;
+};
+
 class Pose2Config{
 	Pose2 get(string key) const;
 };

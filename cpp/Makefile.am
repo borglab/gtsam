@@ -124,6 +124,7 @@ headers += NonlinearFactorGraph.h NonlinearFactorGraph-inl.h
 headers += NonlinearOptimizer.h NonlinearOptimizer-inl.h 
 headers += SQPOptimizer.h SQPOptimizer-inl.h  
 headers += NonlinearConstraint.h NonlinearConstraint-inl.h
+headers += Pose2Config.h
 headers += Pose2Constraint.h
 sources += NonlinearFactor.cpp 
 sources += NonlinearEquality.h
