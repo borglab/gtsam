@@ -158,3 +158,16 @@ class Simulated2DMeasurement {
   void print(string s) const;
 };
 
+class Pose2Config{
+	Pose2 get(string key) const;
+};
+
+class Pose2Constraint {
+	Pose2Constraint(string key1, string key2,
+			const Pose2& measured, const Matrix& measurement_covariance);
+	void print(string name) const;
+	bool equals(const Pose2Constraint& expected, double tol) const;
+	double error(const Pose2Config& c) const;
+	size_t size() const;
+	GaussianFactor* linearize(const Pose2Config& config) const;
+};
