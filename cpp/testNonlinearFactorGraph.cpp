@@ -10,6 +10,9 @@
 #include <iostream>
 using namespace std;
 
+#include <boost/assign/std/list.hpp>
+using namespace boost::assign;
+
 #include <CppUnitLite/TestHarness.h>
 
 #include "Matrix.h"
@@ -22,7 +25,6 @@ using namespace gtsam;
 /* ************************************************************************* */
 TEST( ExampleNonlinearFactorGraph, equals )
 {
-
 	ExampleNonlinearFactorGraph fg = createNonlinearFactorGraph();
 	ExampleNonlinearFactorGraph fg2 = createNonlinearFactorGraph();
 	CHECK( fg.equals(fg2) );
@@ -32,7 +34,6 @@ TEST( ExampleNonlinearFactorGraph, equals )
 TEST( ExampleNonlinearFactorGraph, error )
 {
 	ExampleNonlinearFactorGraph fg = createNonlinearFactorGraph();
-
 	VectorConfig c1 = createConfig();
 	double actual1 = fg.error(c1);
 	DOUBLES_EQUAL( 0.0, actual1, 1e-9 );
@@ -40,6 +41,16 @@ TEST( ExampleNonlinearFactorGraph, error )
 	VectorConfig c2 = createNoisyConfig();
 	double actual2 = fg.error(c2);
 	DOUBLES_EQUAL( 5.625, actual2, 1e-9 );
+}
+
+/* ************************************************************************* */
+TEST( ExampleNonlinearFactorGraph, GET_ORDERING)
+{
+  Ordering expected;
+  expected += "l1","x1","x2";
+  ExampleNonlinearFactorGraph nlfg = createNonlinearFactorGraph();
+  Ordering actual = nlfg.getOrdering();
+  CHECK(assert_equal(expected,actual));
 }
 
 /* ************************************************************************* */
