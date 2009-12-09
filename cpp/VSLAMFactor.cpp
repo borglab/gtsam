@@ -19,6 +19,8 @@ VSLAMFactor::VSLAMFactor() {
 	landmarkNumber_    = 222;
 	cameraFrameName_ = symbol('x',cameraFrameNumber_);
 	landmarkName_    = symbol('l',landmarkNumber_);
+  keys_.push_back(cameraFrameName_);
+  keys_.push_back(landmarkName_);
 	K_ = shared_ptrK(new Cal3_S2(444,555,666,777,888));
 }
 /* ************************************************************************* */
@@ -29,6 +31,8 @@ VSLAMFactor::VSLAMFactor(const Point2& z, double sigma, int cn, int ln, const sh
   landmarkNumber_    = ln;
   cameraFrameName_ = symbol('x',cameraFrameNumber_);
   landmarkName_    = symbol('l',landmarkNumber_);
+  keys_.push_back(cameraFrameName_);
+  keys_.push_back(landmarkName_);
   K_ = K;
 }
 
