@@ -25,13 +25,13 @@ namespace gtsam {
 	typedef BayesTree<GaussianConditional> GaussianBayesTree;
 #if 0
 	// recursively optimize starting with this conditional and all children
-	void optimize(sharedClique clique, VectorConfig& result) {
+	void optimize(GaussianBayesTree::sharedClique clique, VectorConfig& result) {
 	  // parents are assumed to already be solved and available in result
 		BOOST_REVERSE_FOREACH(GaussianConditional::shared_ptr cg, clique) {
 	    Vector x = cg->solve(result); // Solve for that variable
 	    result.insert(cg->key(),x);   // store result in partial solution
 	  }
-		BOOST_FOREACH(sharedClique child, clique->children_) {
+		BOOST_FOREACH(GaussianBayesTree::sharedClique child, clique->children_) {
 			optimize(child, result);
 		}
 	}
