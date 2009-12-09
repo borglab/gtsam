@@ -19,7 +19,6 @@
 #include "BayesTree.h"
 #include "VectorConfig.h"
 #include "GaussianConditional.h"
-#include "GaussianBayesTree.h"
 
 namespace gtsam {
 
