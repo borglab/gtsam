@@ -23,22 +23,12 @@ namespace gtsam{
 /**
  * Non-linear factor graph for visual SLAM
  */
-class VSLAMGraph : public gtsam::NonlinearFactorGraph<VSLAMConfig>, Testable<VSLAMGraph>{
-private:
-	int nFrames;
-	typedef map <int, int> feat_ids_type;
-	feat_ids_type feat_ids;
+class VSLAMGraph : public gtsam::NonlinearFactorGraph<VSLAMConfig>{
 
 public:
 
   /** default constructor is empty graph */
   VSLAMGraph() {}
-
-  /**
-   * Constructor that loads measurements from file
-   * @param path to the file
-   */
-  VSLAMGraph(const std::string& path);
 
   /**
    * print out graph
@@ -50,12 +40,9 @@ public:
   /**
    * equals
    */
-  bool equals(const VSLAMGraph&, double tol=1e-9) const;
-
-  // Getters
-  int Get_nFrames(){return nFrames;};
-  int Get_nFeat_ids(){return feat_ids.size();};
-  feat_ids_type* Get_feat_ids_map(){return &feat_ids;};
+  bool equals(const VSLAMGraph& p, double tol=1e-9) const {
+  	return gtsam::NonlinearFactorGraph<VSLAMConfig>::equals(p, tol);
+  }
 
   /**
    *  Add a constraint on a landmark (for now, *must* be satisfied in any Config)
@@ -75,10 +62,7 @@ private:
 	/** Serialization function */
 	friend class boost::serialization::access;
 	template<class Archive>
-	void serialize(Archive & ar, const unsigned int version) {
-		ar & BOOST_SERIALIZATION_NVP(nFrames);
-		ar & BOOST_SERIALIZATION_NVP(feat_ids);
-	}
+	void serialize(Archive & ar, const unsigned int version) {}
 };
 
 } // namespace gtsam
