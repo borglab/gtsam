@@ -31,6 +31,8 @@ class VSLAMConfig : Testable<VSLAMConfig> {
 
  public:
   typedef std::map<std::string, Vector>::const_iterator const_iterator;
+  typedef PoseMap::const_iterator const_Pose_iterator;
+  typedef PointMap::const_iterator const_Point_iterator;
   /**
    * default constructor
    */
