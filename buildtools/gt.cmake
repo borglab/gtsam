@@ -17,7 +17,8 @@ IF(NOT CMAKE_INSTALL_PREFIX OR CMAKE_INSTALL_PREFIX STREQUAL "/usr/local")
 ENDIF()
 
 # Set the default build type
-IF(NOT CMAKE_BUILD_TYPE)
+IF(NOT DEFINED CMAKE_BUILD_TYPE)
+  message(STATUS "[gt.cmake] CMAKE_BUILD_TYPE not defined, defaulting to Debug")
   SET(CMAKE_BUILD_TYPE Debug CACHE STRING
       "Choose the type of build, options are: None Debug Release RelWithDebInfo MinSizeRel."
       FORCE)
