@@ -65,6 +65,7 @@ headers += inference.h inference-inl.h
 headers += FactorGraph.h FactorGraph-inl.h
 headers += BayesNet.h BayesNet-inl.h
 headers += BayesTree.h BayesTree-inl.h GaussianBayesTree.h
+sources += GaussianBayesTree.cpp
 check_PROGRAMS += testFactorgraph testBayesTree testGaussianBayesTree testInference testOrdering
 testFactorgraph_SOURCES        = testFactorgraph.cpp
 testBayesTree_SOURCES          = $(example) testBayesTree.cpp

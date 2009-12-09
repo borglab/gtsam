@@ -19,26 +19,16 @@
 #include "BayesTree.h"
 #include "VectorConfig.h"
 #include "GaussianConditional.h"
+#include "GaussianBayesTree.h"
 
 namespace gtsam {
 
 	typedef BayesTree<GaussianConditional> GaussianBayesTree;
-#if 0
-	// recursively optimize starting with this conditional and all children
-	void optimize(GaussianBayesTree::sharedClique clique, VectorConfig& result) {
-	  // parents are assumed to already be solved and available in result
-		BOOST_REVERSE_FOREACH(GaussianConditional::shared_ptr cg, clique) {
-	    Vector x = cg->solve(result); // Solve for that variable
-	    result.insert(cg->key(),x);   // store result in partial solution
-	  }
-		BOOST_FOREACH(GaussianBayesTree::sharedClique child, clique->children_) {
-			optimize(child, result);
-		}
-	}
 
-	void optimize(const GaussianBayesTree& bayesTree, VectorConfig& result) {
-		// starting from the root, call optimize on each conditional
-		optimize(bayesTree.root(), result);
-	}
-#endif
-} /// namespace gtsam
+	// recursively optimize this conditional and all subtrees
+	void optimize(GaussianBayesTree::sharedClique clique, VectorConfig& result);
+
+	// optimize the BayesTree, starting from the root
+	VectorConfig optimize(GaussianBayesTree& bayesTree);
+
+}/// namespace gtsam
