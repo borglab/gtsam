@@ -266,9 +266,12 @@ TEST( BayesTree, iSAM_smoother )
 	CHECK(assert_equal(expected, actual));
 
 	// obtain solution
-	//VectorConfig expected_optimized; // no clue...
-	//VectorConfig optimized = optimize(actual);
-	//CHECK(assert_equal(expected_optimized, optimized));
+	VectorConfig e; // expected solution
+	Vector v = Vector_(2, 0., 0.);
+	for (int i=1; i<=7; i++)
+		e.insert(symbol('x', i), v);
+	VectorConfig optimized = optimize(actual); // actual solution
+	CHECK(assert_equal(e, optimized));
 }
 
 /* ************************************************************************* */
