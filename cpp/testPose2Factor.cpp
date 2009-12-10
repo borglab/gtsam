@@ -9,6 +9,7 @@
 
 #include <CppUnitLite/TestHarness.h>
 #include "Pose2Factor.h"
+#include "Pose2Graph.h"
 
 using namespace std;
 using namespace gtsam;
@@ -29,11 +30,15 @@ TEST( Pose2Factor, constructor )
 	Pose2 p1(1.1,2,M_PI_2); // robot at (1.1,2) looking towards y (ground truth is at 1,2, see testPose2)
 	Pose2 p2(-1,4.1,M_PI);  // robot at (-1,4) looking at negative (ground truth is at 4.1,2)
 	Pose2Config config;
-	config.insert(make_pair("p1",p1));
-	config.insert(make_pair("p2",p2));
+	config.insert("p1",p1);
+	config.insert("p2",p2);
+	//Pose2 pose1;
+	//pose1=config.get("p1");
+	//pose1.print("pose1");
 
 	// Linearize
 	boost::shared_ptr<GaussianFactor> actual = constraint.linearize(config);
+
 
 
 	// expected

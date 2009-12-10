@@ -2,8 +2,10 @@
  *  @file  Pose2Factor.H
  *  @authors Frank Dellaert, Viorela Ila
  **/
+#pragma once
 
 #include <map>
+#include "NonlinearFactor.h"
 #include "GaussianFactor.h"
 #include "VectorConfig.h"
 #include "Pose2.h"
@@ -13,13 +15,16 @@
 
 namespace gtsam {
 
-class Pose2Factor : public Factor<Pose2Config> {
+class Pose2Factor : public NonlinearFactor<Pose2Config> {
 private:
 	std::string key1_, key2_; /** The keys of the two poses, order matters */
 	Pose2 measured_;
 	Matrix square_root_inverse_covariance_; /** sqrt(inv(measurement_covariance)) */
 
 public:
+
+	typedef boost::shared_ptr<Pose2Factor> shared_ptr; // shorthand for a smart pointer to a factor
+
 	Pose2Factor(const std::string& key1, const std::string& key2,
 			const Pose2& measured, const Matrix& measurement_covariance): key1_(key1),key2_(key2),measured_(measured) {
 		square_root_inverse_covariance_ = inverse_square_root(measurement_covariance);
@@ -28,16 +33,21 @@ public:
 	/** implement functions needed for Testable */
 	void print(const std::string& name) const {
 		std::cout << name << std::endl;
-		std::cout << "Pose2Contraint"<< std::endl;
+		std::cout << "Factor "<< std::endl;
 		std::cout << "key1 "<< key1_<<std::endl;
 		std::cout << "key2 "<< key2_<<std::endl;
 		measured_.print("measured ");
 		gtsam::print(square_root_inverse_covariance_,"MeasurementCovariance");
 	}
-	bool equals(const Factor<Pose2Config>& expected, double tol) const {return false;}
+	bool equals(const NonlinearFactor<Pose2Config>& expected, double tol) const {return false;}
 
 	/** implement functions needed to derive from Factor */
-	double error(const Pose2Config& c) const {return 0;}
+	Vector error_vector(const Pose2Config& config) const {
+		//z-h
+		Pose2 p1 = config.get(key1_), p2 = config.get(key2_);
+		return (measured_ - between(p1,p2)).vector();
+	}
+
 	std::list<std::string> keys() const { std::list<std::string> l; return l; }
 	std::size_t size() const { return 2;}
 

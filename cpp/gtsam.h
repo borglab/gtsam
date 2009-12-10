@@ -176,6 +176,7 @@ class Pose2{
 class Pose2Config{
 	Pose2Config();
 	Pose2 get(string key) const;
+	void insert(string name, const Pose2& val);
 };
 
 class Pose2Factor {
@@ -186,4 +187,12 @@ class Pose2Factor {
 	double error(const Pose2Config& c) const;
 	size_t size() const;
 	GaussianFactor* linearize(const Pose2Config& config) const;
+};
+
+class Pose2Graph{
+	Pose2Graph();
+	void print(string s) const;
+	bool equals(const Pose2Graph& p, double tol) const;
+	GaussianFactorGraph linearize(const Pose2Config& config) const;
+	void push_back(Pose2Factor* factor);
 };

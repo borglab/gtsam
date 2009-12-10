@@ -1,3 +1,5 @@
+#pragma once
+
 #include <map>
 #include "Pose2.h"
 
@@ -14,6 +16,9 @@ public:
 		if (it == end())
 			throw std::invalid_argument("invalid key");
 		return it->second;
+	}
+	void insert(const std::string& name, const Pose2& val){
+		std::map<std::string, Pose2>::insert(make_pair(name, val));
 	}
 };
 } // namespace
