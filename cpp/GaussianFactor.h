@@ -53,16 +53,16 @@ public:
 
 	/** Construct unary factor */
 	GaussianFactor(const std::string& key1, const Matrix& A1,
-			const Vector& b_in, double sigma) :
-		b_(b_in), sigmas_(repeat(b_in.size(),sigma)) {
+			const Vector& b, double sigma) :
+		b_(b), sigmas_(repeat(b.size(),sigma)) {
 		As_.insert(make_pair(key1, A1));
 	}
 
 	/** Construct binary factor */
 	GaussianFactor(const std::string& key1, const Matrix& A1,
 			const std::string& key2, const Matrix& A2,
-			const Vector& b_in, double sigma) :
-		b_(b_in), sigmas_(repeat(b_in.size(),sigma))  {
+			const Vector& b, double sigma) :
+		b_(b), sigmas_(repeat(b.size(),sigma))  {
 		As_.insert(make_pair(key1, A1));
 		As_.insert(make_pair(key2, A2));
 	}
@@ -71,8 +71,8 @@ public:
 	GaussianFactor(const std::string& key1, const Matrix& A1,
 			const std::string& key2, const Matrix& A2,
 			const std::string& key3, const Matrix& A3,
-			const Vector& b_in, double sigma) :
-		b_(b_in), sigmas_(repeat(b_in.size(),sigma))  {
+			const Vector& b, double sigma) :
+		b_(b), sigmas_(repeat(b.size(),sigma))  {
 		As_.insert(make_pair(key1, A1));
 		As_.insert(make_pair(key2, A2));
 		As_.insert(make_pair(key3, A3));
@@ -80,16 +80,16 @@ public:
 
 	/** Construct an n-ary factor */
 	GaussianFactor(const std::vector<std::pair<std::string, Matrix> > &terms,
-	    const Vector &b_in, double sigma) :
-	    b_(b_in), sigmas_(repeat(b_in.size(),sigma))  {
+	    const Vector &b, double sigma) :
+	    b_(b), sigmas_(repeat(b.size(),sigma))  {
 	  for(unsigned int i=0; i<terms.size(); i++)
 	    As_.insert(terms[i]);
 	}
 
 	/** Construct an n-ary factor with a multiple sigmas*/
 	GaussianFactor(const std::vector<std::pair<std::string, Matrix> > &terms,
-				const Vector &b_in, const Vector& sigmas) :
-			b_(b_in), sigmas_(sigmas) {
+				const Vector &b, const Vector& sigmas) :
+			b_(b), sigmas_(sigmas) {
 			for (unsigned int i = 0; i < terms.size(); i++)
 				As_.insert(terms[i]);
 		}
