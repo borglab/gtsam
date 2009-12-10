@@ -40,18 +40,18 @@ time_gtsam=[];
      config = create_config(n,m);
 
     % create the factor graph
-    linearFactorGraph = create_linear_factor_graph(config, measurements, odometry, measurement_sigma, odo_sigma, n);
+    gaussianFactorGraph = create_linear_factor_graph(config, measurements, odometry, measurement_sigma, odo_sigma, n);
     % 
     % create an ordering
     %ord = create_good_ordering(n,m,measurements);
     ord = create_ordering(n,m);
     % show the matrix
    % figure(3); clf;
-    %[A_dense,b] = linearFactorGraph.matrix(ord);
+    %[A_dense,b] = gaussianFactorGraph.matrix(ord);
    %A=sparse(A_dense);
     
     %sparse matrix !!!
-    ijs = linearFactorGraph.sparse(ord);
+    ijs = gaussianFactorGraph.sparse(ord);
     A=sparse(ijs(1,:),ijs(2,:),ijs(3,:)); 
     %spy(A);
     %time qr
@@ -74,16 +74,16 @@ time_gtsam=[];
 %         if i==11
 %         ck_gt=cputime;
 %         end
-%         BayesNet = linearFactorGraph.eliminate(ord); 
+%         BayesNet = gaussianFactorGraph.eliminate(ord); 
 %     end
 ck_gt=cputime;
 for i=1:runs+10
-    BayesNet = linearFactorGraph.eliminate_(ord);
+    BayesNet = gaussianFactorGraph.eliminate_(ord);
 end
     time_gtsam=(cputime-ck_gt)/runs
     %time_gtsam=[time_gtsam,(cputime-ck)];
     
-%     clear trajectory visibility linearFactorGraph measurements odometry;
+%     clear trajectory visibility gaussianFactorGraph measurements odometry;
 %     m = m+5;
 %     velocity=velocity+1;
 

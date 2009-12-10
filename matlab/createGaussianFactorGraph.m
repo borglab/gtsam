@@ -48,14 +48,4 @@ f4 = GaussianFactor('x2', A42, 'l1', A43, b,sigma4);
 
 fg.push_back(f4);
 
-
-% Optimization
-n=1;
-m=2;
-
-ord = create_ordering(n,m);
-
-%BayesNet = GaussianFactorGraph.eliminate_(ord);
-
-
 end

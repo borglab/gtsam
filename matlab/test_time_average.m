@@ -39,12 +39,12 @@ for steps=1:noRuns
      config = create_config(n,m);
 
     % create the factor graph
-    linearFactorGraph = create_linear_factor_graph(config, measurements, odometry, measurement_sigma, odo_sigma, n);
+    gaussianFactorGraph = create_gaussian_factor_graph(config, measurements, odometry, measurement_sigma, odo_sigma, n);
     % 
     % create an ordering
     ord = create_ordering(n,m);
 
-    ijs = linearFactorGraph.sparse(ord);
+    ijs = gaussianFactorGraph.sparse(ord);
     A=sparse(ijs(1,:),ijs(2,:),ijs(3,:)); 
 
     
@@ -62,11 +62,11 @@ for steps=1:noRuns
         if it==2
         ck_gt=cputime;
         end
-        BayesNet = linearFactorGraph.eliminate_(ord); 
+        BayesNet = gaussianFactorGraph.eliminate_(ord); 
     end
     time_gtsam=[time_gtsam,(cputime-ck_gt)/runs];
     
-    clear trajectory visibility linearFactorGraph measurements odometry;
+    clear trajectory visibility gaussianFactorGraph measurements odometry;
     m = m+5;
     velocity=velocity+1;
     steps=steps+1;
