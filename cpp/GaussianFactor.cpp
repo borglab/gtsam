@@ -359,6 +359,24 @@ GaussianFactor::eliminate(const string& key) const
 }
 
 /* ************************************************************************* */
+void GaussianFactor::addGradientContribution(const VectorConfig& x, VectorConfig& g) const {
+	// calculate the value of the factor
+	Vector e = -b_;
+  string j; Matrix Aj;
+  FOREACH_PAIR(j, Aj, As_) e += Vector(Aj * x[j]);
+
+  // transpose
+  Vector et = trans(e);
+
+  // contribute to gradient for each connected variable
+  FOREACH_PAIR(j, Aj, As_) {
+  	Vector dj = trans(et*Aj);  // this factor's contribution to gradient on j
+  	Vector wdj = ediv(dj,emul(sigmas_,sigmas_)); // properly weight by sigmas
+  	g.add(j,wdj);
+  }
+}
+
+/* ************************************************************************* */
 namespace gtsam {
 
 	string symbol(char c, int index) {

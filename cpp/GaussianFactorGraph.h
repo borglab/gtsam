@@ -159,6 +159,11 @@ namespace gtsam {
   	 * @param ordering of variables needed for matrix column order
   	 */
   	Matrix sparse(const Ordering& ordering) const;
+
+  	/**
+  	 * Calculate Gradient of 0.5*|Ax-b| for a given config
+  	 */
+  	VectorConfig gradient(const VectorConfig& x) const;
   };
 
 }

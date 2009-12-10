@@ -200,3 +200,12 @@ Matrix GaussianFactorGraph::sparse(const Ordering& ordering) const {
 }
 
 /* ************************************************************************* */
+VectorConfig GaussianFactorGraph::gradient(const VectorConfig& x) const {
+	VectorConfig g;
+	// For each factor add the gradient contribution
+	BOOST_FOREACH(sharedFactor factor,factors_)
+		factor->addGradientContribution(x,g);
+	return g;
+}
+
+/* ************************************************************************* */

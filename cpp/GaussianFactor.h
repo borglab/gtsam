@@ -241,7 +241,14 @@ public:
 	 * @param m final number of rows of f, needs to be known in advance
 	 * @param pos where to insert in the m-sized matrices
 	 */
-	inline void append_factor(GaussianFactor::shared_ptr f, size_t m, size_t pos);
+	void append_factor(GaussianFactor::shared_ptr f, size_t m, size_t pos);
+
+	/**
+	 * Add gradient contribution to gradient config g
+	 * @param x: confif at which to evaluate gradient
+	 * @param g: I/O parameter, evolving gradient
+	 */
+	void addGradientContribution(const VectorConfig& x, VectorConfig& g) const;
 
 }; // GaussianFactor
 

@@ -538,6 +538,28 @@ TEST( GaussianFactorGraph, involves )
 }
 
 /* ************************************************************************* */
+TEST( GaussianFactorGraph, gradient )
+{
+	GaussianFactorGraph fg = createGaussianFactorGraph();
+
+	// Construct expected gradient
+	VectorConfig expected;
+
+  // 2*f(x) = 100*(x1+c["x1"])^2 + 100*(x2-x1-[0.2;-0.1])^2 + 25*(l1-x1-[0.0;0.2])^2 + 25*(l1-x2-[-0.2;0.3])^2
+	// worked out: df/dx1 = 100*[0.1;0.1] + 100*[0.2;-0.1]) + 25*[0.0;0.2] = [10+20;10-10+5] = [30;5]
+  expected.insert("x1",Vector_(2,30.0,5.0));
+  // from working implementation:
+  expected.insert("x2",Vector_(2,-25.0, 17.5));
+  expected.insert("l1",Vector_(2,  5.0,-12.5));
+
+	// calculate the gradient at delta=0
+  VectorConfig delta = createZeroDelta();
+	VectorConfig actual = fg.gradient(delta);
+
+	CHECK(assert_equal(expected,actual));
+}
+
+/* ************************************************************************* */
 // Tests ported from ConstrainedGaussianFactorGraph
 /* ************************************************************************* */
 
@@ -554,7 +576,7 @@ TEST( GaussianFactorGraph, constrained_simple )
 
 	// verify
 	VectorConfig expected = createSimpleConstraintConfig();
-	CHECK(assert_equal(actual, expected));
+	CHECK(assert_equal(expected, actual));
 }
 
 /* ************************************************************************* */
@@ -570,7 +592,7 @@ TEST( GaussianFactorGraph, constrained_single )
 
 	// verify
 	VectorConfig expected = createSingleConstraintConfig();
-	CHECK(assert_equal(actual, expected));
+	CHECK(assert_equal(expected, actual));
 }
 
 /* ************************************************************************* */
@@ -586,7 +608,7 @@ TEST( GaussianFactorGraph, constrained_single2 )
 
 	// verify
 	VectorConfig expected = createSingleConstraintConfig();
-	CHECK(assert_equal(actual, expected));
+	CHECK(assert_equal(expected, actual));
 }
 
 /* ************************************************************************* */
@@ -602,7 +624,7 @@ TEST( GaussianFactorGraph, constrained_multi1 )
 
 	// verify
 	VectorConfig expected = createMultiConstraintConfig();
-	CHECK(assert_equal(actual, expected));
+	CHECK(assert_equal(expected, actual));
 }
 
 /* ************************************************************************* */
@@ -618,7 +640,7 @@ TEST( GaussianFactorGraph, constrained_multi2 )
 
 	// verify
 	VectorConfig expected = createMultiConstraintConfig();
-	CHECK(assert_equal(actual, expected));
+	CHECK(assert_equal(expected, actual));
 }
 
 /* ************************************************************************* */
