@@ -84,6 +84,14 @@ inline Vector operator*(const Matrix& A, const Vector & v) {
 }
 
 /**
+ * overload * for vector*matrix multiplication (as BOOST does not)
+ */
+inline Vector operator*(const Vector & v, const Matrix& A) {
+  if (A.size1()!=v.size()) throw(std::invalid_argument("Matrix operator* : A.m!=v.size"));
+  return Vector(prod(v,A));
+}
+
+/**
  * overload * for matrix multiplication (as BOOST does not)
  */
 inline Matrix operator*(const Matrix& A, const Matrix& B) {
