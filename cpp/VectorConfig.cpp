@@ -55,7 +55,7 @@ VectorConfig VectorConfig::exmap(const VectorConfig & delta) const
 }
 
 /* ************************************************************************* */
-Vector VectorConfig::get(const std::string& name) const {
+const Vector& VectorConfig::get(const std::string& name) const {
   const_iterator it = values.find(name);
   if (it==values.end()) {
     print();

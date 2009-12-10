@@ -47,6 +47,12 @@ namespace gtsam {
       return *this;
     }
 
+    /** Add to vector at position j */
+    void add(const std::string& j, const Vector& a) {
+    	Vector& vj = values[j];
+    	if (vj.size()==0) vj = a; else vj += a;
+    }
+
     /**
      * Add a delta config, needed for use in NonlinearOptimizer
      * For VectorConfig, this is just addition.
@@ -60,10 +66,10 @@ namespace gtsam {
     const_iterator end()   const {return values.end();}
 
     /** get a vector in the configuration by name */
-    Vector get(const std::string& name) const;
+    const Vector& get(const std::string& name) const;
 
     /** operator[] syntax for get */
-    inline Vector operator[](const std::string& name) const { return get(name); }
+    inline const Vector& operator[](const std::string& name) const { return get(name); }
 
     bool contains(const std::string& name) const {
       const_iterator it = values.find(name);
