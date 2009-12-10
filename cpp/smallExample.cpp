@@ -35,7 +35,7 @@ boost::shared_ptr<const ExampleNonlinearFactorGraph> sharedNonlinearFactorGraph(
 
 	// prior on x1
 	double sigma1=0.1;
-	Vector mu(2); mu(0) = 0 ; mu(1) = 0;
+	Vector mu = zero(2);
 	shared f1(new Point2Prior(mu, sigma1, "x1"));
 	nlfg->push_back(f1);
 
@@ -123,68 +123,31 @@ VectorConfig createZeroDelta() {
 /* ************************************************************************* */
 GaussianFactorGraph createGaussianFactorGraph()
 {
+  Matrix I = eye(2);
   VectorConfig c = createNoisyConfig();
   
-  // Create
+  // Create empty graph
   GaussianFactorGraph fg;
 
+  // linearized prior on x1: c["x1"]+x1=0 i.e. x1=-c["x1"]
   double sigma1 = 0.1;
+  Vector b1 = - c["x1"];
+  fg.add("x1", I, b1, sigma1);
 
-  // prior on x1
-  Matrix A11(2,2);
-  A11(0,0) = 1; A11(0,1) =  0;
-  A11(1,0) =  0; A11(1,1) = 1;
-
-  Vector b = - c["x1"];
-
-  GaussianFactor::shared_ptr f1(new GaussianFactor("x1", A11, b, sigma1));
-  fg.push_back(f1);
-
-  // odometry between x1 and x2
+  // odometry between x1 and x2: x2-x1=[0.2;-0.1]
   double sigma2 = 0.1;
-  Matrix A21(2,2);
-  A21(0,0) = -1 ; A21(0,1) =   0;
-  A21(1,0) =   0 ; A21(1,1) = -1;
+  Vector b2 = Vector_(2,0.2,-0.1);
+  fg.add("x1", -I, "x2", I, b2, sigma2);
 
-  Matrix A22(2,2);
-  A22(0,0) = 1 ; A22(0,1) =  0;
-  A22(1,0) =  0 ; A22(1,1) = 1;
-
-  // Vector b(2);
-  b(0) = 0.2 ; b(1) = -0.1;
-
-  GaussianFactor::shared_ptr f2(new GaussianFactor("x1", A21,  "x2", A22, b, sigma2));
-  fg.push_back(f2);
-
-  // measurement between x1 and l1
+  // measurement between x1 and l1: l1-x1=[0.0;0.2]
   double sigma3 = 0.2;
-  Matrix A31(2,2);
-  A31(0,0) = -1; A31(0,1) =  0;
-  A31(1,0) =  0; A31(1,1) = -1;
+  Vector b3 = Vector_(2,0.0,0.2);
+  fg.add("x1", -I, "l1", I, b3, sigma3);
 
-  Matrix A32(2,2);
-  A32(0,0) = 1 ; A32(0,1) = 0;
-  A32(1,0) = 0 ; A32(1,1) = 1;
-
-  b(0) = 0 ; b(1) = 0.2;
-
-  GaussianFactor::shared_ptr f3(new GaussianFactor("x1", A31, "l1", A32, b, sigma3));
-  fg.push_back(f3);
-
-  // measurement between x2 and l1
+  // measurement between x2 and l1: l1-x2=[-0.2;0.3]
   double sigma4 = 0.2;
-  Matrix A41(2,2);
-  A41(0,0) = -1 ; A41(0,1) =  0;
-  A41(1,0) =  0 ; A41(1,1) = -1;
-
-  Matrix A42(2,2);
-  A42(0,0) = 1 ; A42(0,1) = 0;
-  A42(1,0) = 0 ; A42(1,1) = 1;
-
-  b(0)= -0.2 ; b(1) = 0.3;
-
-  GaussianFactor::shared_ptr f4(new GaussianFactor("x2", A41, "l1", A42, b, sigma4));
-  fg.push_back(f4);
+  Vector b4 = Vector_(2,-0.2,0.3);
+  fg.add("x2", -I, "l1", I, b4, sigma4);
 
   return fg;
 }
@@ -198,7 +161,7 @@ GaussianFactorGraph createGaussianFactorGraph()
 GaussianBayesNet createSmallGaussianBayesNet()
 {
   Matrix R11 = Matrix_(1,1,1.0), S12 = Matrix_(1,1,1.0);
-  Matrix                          R22 = Matrix_(1,1,1.0);
+  Matrix                         R22 = Matrix_(1,1,1.0);
   Vector d1(1), d2(1);
   d1(0) = 9; d2(0) = 5;
   Vector tau(1); tau(0) = 1.0;

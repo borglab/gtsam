@@ -40,6 +40,38 @@ namespace gtsam {
      */
     GaussianFactorGraph(const GaussianBayesNet& CBN);
 
+  	/** Add a null factor */
+    inline void add(const Vector& b) {
+    	push_back(sharedFactor(new GaussianFactor(b)));
+  	}
+
+  	/** Add a unary factor */
+    inline void add(const std::string& key1, const Matrix& A1,
+  			const Vector& b, double sigma) {
+    	push_back(sharedFactor(new GaussianFactor(key1,A1,b,sigma)));
+  	}
+
+  	/** Add a binary factor */
+    inline void add(const std::string& key1, const Matrix& A1,
+  			const std::string& key2, const Matrix& A2,
+  			const Vector& b, double sigma) {
+    	push_back(sharedFactor(new GaussianFactor(key1,A1,key2,A2,b,sigma)));
+  	}
+
+  	/** Add a ternary factor */
+    inline void add(const std::string& key1, const Matrix& A1,
+  			const std::string& key2, const Matrix& A2,
+  			const std::string& key3, const Matrix& A3,
+  			const Vector& b, double sigma) {
+    	push_back(sharedFactor(new GaussianFactor(key1,A1,key2,A2,key3,A3,b,sigma)));
+  	}
+
+  	/** Add an n-ary factor */
+    inline void add(const std::vector<std::pair<std::string, Matrix> > &terms,
+  	    const Vector &b, double sigma) {
+    	push_back(sharedFactor(new GaussianFactor(terms,b,sigma)));
+  	}
+
 		/** unnormalized error */
 		double error(const VectorConfig& c) const {
 			double total_error = 0.;
