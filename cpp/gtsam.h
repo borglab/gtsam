@@ -174,6 +174,7 @@ class Pose2{
 };
 
 class Pose2Config{
+	Pose2Config();
 	Pose2 get(string key) const;
 };
 
