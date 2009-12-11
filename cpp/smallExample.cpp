@@ -66,57 +66,41 @@ ExampleNonlinearFactorGraph createNonlinearFactorGraph() {
 }
 
 /* ************************************************************************* */
-VectorConfig createConfig()
-{
-    Vector v_x1(2); v_x1(0) = 0.;  v_x1(1) = 0.;
-    Vector v_x2(2); v_x2(0) = 1.5; v_x2(1) = 0.;
-    Vector v_l1(2); v_l1(0) = 0.;  v_l1(1) = -1.;
-    VectorConfig c;
-    c.insert("x1", v_x1);
-    c.insert("x2", v_x2);
-    c.insert("l1", v_l1);
-    return c;
+VectorConfig createConfig() {
+	VectorConfig c;
+	c.insert("x1", Vector_(2, 0.0, 0.0));
+	c.insert("x2", Vector_(2, 1.5, 0.0));
+	c.insert("l1", Vector_(2, 0.0,-1.0));
+	return c;
 }
 
 /* ************************************************************************* */
-boost::shared_ptr<const VectorConfig> sharedNoisyConfig()
-{
-    Vector v_x1(2); v_x1(0) = 0.1;  v_x1(1) = 0.1;
-    Vector v_x2(2); v_x2(0) = 1.4;  v_x2(1) = 0.2;
-    Vector v_l1(2); v_l1(0) = 0.1;  v_l1(1) = -1.1;
-    boost::shared_ptr<VectorConfig> c(new VectorConfig);
-    c->insert("x1", v_x1);
-    c->insert("x2", v_x2);
-    c->insert("l1", v_l1);
-    return c;
+boost::shared_ptr<const VectorConfig> sharedNoisyConfig() {
+	boost::shared_ptr<VectorConfig> c(new VectorConfig);
+	c->insert("x1", Vector_(2, 0.1, 0.1));
+	c->insert("x2", Vector_(2, 1.4, 0.2));
+	c->insert("l1", Vector_(2, 0.1,-1.1));
+	return c;
 }
 
 /* ************************************************************************* */
-VectorConfig createNoisyConfig() {
-	return *sharedNoisyConfig();
-}
+VectorConfig createNoisyConfig() { return *sharedNoisyConfig();}
 
 /* ************************************************************************* */
 VectorConfig createCorrectDelta() {
-  Vector v_x1(2); v_x1(0) = -0.1;  v_x1(1) = -0.1;
-  Vector v_x2(2); v_x2(0) =  0.1;  v_x2(1) = -0.2;
-  Vector v_l1(2); v_l1(0) = -0.1;  v_l1(1) =  0.1;
   VectorConfig c;
-  c.insert("x1", v_x1);
-  c.insert("x2", v_x2);
-  c.insert("l1", v_l1);
+	c.insert("x1", Vector_(2,-0.1,-0.1));
+	c.insert("x2", Vector_(2, 0.1,-0.2));
+	c.insert("l1", Vector_(2,-0.1, 0.1));
   return c;
 }
 
 /* ************************************************************************* */
 VectorConfig createZeroDelta() {
-  Vector v_x1(2); v_x1(0) = 0;  v_x1(1) = 0;
-  Vector v_x2(2); v_x2(0) = 0;  v_x2(1) = 0;
-  Vector v_l1(2); v_l1(0) = 0;  v_l1(1) = 0;
   VectorConfig c;
-  c.insert("x1", v_x1);
-  c.insert("x2", v_x2);
-  c.insert("l1", v_l1);
+	c.insert("x1", zero(2));
+	c.insert("x2", zero(2));
+	c.insert("l1", zero(2));
   return c;
 }
 
