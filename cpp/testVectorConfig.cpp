@@ -123,6 +123,28 @@ TEST( VectorConfig, update_with_large_delta) {
 }
 
 /* ************************************************************************* */
+TEST( VectorConfig, dot) {
+	VectorConfig c = createConfig();
+	DOUBLES_EQUAL(3.25,dot(c,c),1e-9);
+}
+
+/* ************************************************************************* */
+TEST( VectorConfig, dim) {
+	VectorConfig c = createConfig();
+	LONGS_EQUAL(6,c.dim());
+}
+
+/* ************************************************************************* */
+TEST( VectorConfig, operators) {
+	VectorConfig c; c.insert("x", Vector_(2, 1.1, 2.2));
+	VectorConfig expected1; expected1.insert("x", Vector_(2, 2.2, 4.4));
+	CHECK(assert_equal(expected1,c*2));
+	CHECK(assert_equal(expected1,c+c));
+	VectorConfig expected2; expected2.insert("x", Vector_(2, 0.0, 0.0));
+	CHECK(assert_equal(expected2,c-c));
+}
+
+/* ************************************************************************* */
 #ifdef HAVE_BOOST_SERIALIZATION
 TEST( VectorConfig, serialize)
 {

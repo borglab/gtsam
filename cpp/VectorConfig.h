@@ -34,24 +34,13 @@ namespace gtsam {
     virtual ~VectorConfig() {}
 
     /** return all the nodes in the graph **/
-    std::vector<std::string> get_names() const {
-      std::vector<std::string> names;
-      for(const_iterator it=values.begin(); it!=values.end(); it++)
-        names.push_back(it->first);
-      return names;
-    }
+    std::vector<std::string> get_names() const;
 
     /** Insert a value into the configuration with a given index */
-    VectorConfig& insert(const std::string& name, const Vector& val) {
-      values.insert(std::make_pair(name,val));
-      return *this;
-    }
+    VectorConfig& insert(const std::string& name, const Vector& val);
 
     /** Add to vector at position j */
-    void add(const std::string& j, const Vector& a) {
-    	Vector& vj = values[j];
-    	if (vj.size()==0) vj = a; else vj += a;
-    }
+    void add(const std::string& j, const Vector& a);
 
     /**
      * Add a delta config, needed for use in NonlinearOptimizer
@@ -59,9 +48,6 @@ namespace gtsam {
      */
     VectorConfig exmap(const VectorConfig & delta) const;
 
-    /** Scales the configuration by a gain */
-    VectorConfig scale(double gain) const;
- 
     const_iterator begin() const {return values.begin();}
     const_iterator end()   const {return values.end();}
 
@@ -73,15 +59,24 @@ namespace gtsam {
 
     bool contains(const std::string& name) const {
       const_iterator it = values.find(name);
-      if (it==values.end())
-        return false;
-      return true;
+      return (it!=values.end());
     }
 
-    /** size of the configurations */
-    size_t size() const {
-      return values.size();
-    }
+    /** Nr of vectors */
+    size_t size() const { return values.size();}
+
+    /** Total dimensionality */
+    size_t dim() const;
+
+    /** Scale */
+    VectorConfig scale(double s) const;
+    VectorConfig operator*(double s) const;
+
+    /** Add */
+    VectorConfig operator+(const VectorConfig &b) const;
+
+    /** Subtract */
+    VectorConfig operator-(const VectorConfig &b) const;
 
     /** print */
     void print(const std::string& name = "") const;
@@ -91,6 +86,8 @@ namespace gtsam {
 
     void clear() {values.clear();}
     
+    /** Dot product */
+    double dot(const VectorConfig& b) const;
     
   private:
     /** Serialization function */
@@ -100,5 +97,9 @@ namespace gtsam {
     {
       ar & BOOST_SERIALIZATION_NVP(values);
     }
-  };
-}
+  }; // VectorConfig
+
+  /** Dot product */
+  double dot(const VectorConfig&, const VectorConfig&);
+
+} // gtsam

@@ -14,7 +14,8 @@
 #define FOREACH_PAIR( KEY, VAL, COL) BOOST_FOREACH (boost::tie(KEY,VAL),COL) 
 
 using namespace std;
-using namespace gtsam;
+
+namespace gtsam {
 
 /* ************************************************************************* */
 void check_size(const string& key, const Vector & vj, const Vector & dj) {
@@ -27,12 +28,63 @@ void check_size(const string& key, const Vector & vj, const Vector & dj) {
 }
 
 /* ************************************************************************* */
-VectorConfig VectorConfig::scale(double gain) const {
+std::vector<std::string> VectorConfig::get_names() const {
+  std::vector<std::string> names;
+  for(const_iterator it=values.begin(); it!=values.end(); it++)
+    names.push_back(it->first);
+  return names;
+}
+
+/* ************************************************************************* */
+VectorConfig& VectorConfig::insert(const std::string& name, const Vector& val) {
+  values.insert(std::make_pair(name,val));
+  return *this;
+}
+
+/* ************************************************************************* */
+void VectorConfig::add(const std::string& j, const Vector& a) {
+	Vector& vj = values[j];
+	if (vj.size()==0) vj = a; else vj += a;
+}
+
+/* ************************************************************************* */
+size_t VectorConfig::dim() const {
+	size_t result=0;
+	string key; Vector v;
+	FOREACH_PAIR(key, v, values) result += v.size();
+	return result;
+}
+
+/* ************************************************************************* */
+VectorConfig VectorConfig::scale(double s) const {
 	VectorConfig scaled;
 	string key; Vector val;
 	FOREACH_PAIR(key, val, values)
-		scaled.insert(key, gain*val);
+		scaled.insert(key, s*val);
 	return scaled;
+}
+
+/* ************************************************************************* */
+VectorConfig VectorConfig::operator*(double s) const {
+	return scale(s);
+}
+
+/* ************************************************************************* */
+VectorConfig VectorConfig::operator+(const VectorConfig& b) const {
+	VectorConfig result;
+	string key; Vector v;
+	FOREACH_PAIR(key, v, values)
+		result.insert(key, v + b.get(key));
+	return result;
+}
+
+/* ************************************************************************* */
+VectorConfig VectorConfig::operator-(const VectorConfig& b) const {
+	VectorConfig result;
+	string key; Vector v;
+	FOREACH_PAIR(key, v, values)
+		result.insert(key, v - b.get(key));
+	return result;
 }
 
 /* ************************************************************************* */
@@ -90,4 +142,16 @@ bool VectorConfig::equals(const VectorConfig& expected, double tol) const {
 }
 
 /* ************************************************************************* */
+double VectorConfig::dot(const VectorConfig& b) const {
+	string j; Vector v; double result = 0.0;
+	FOREACH_PAIR(j, v, values) result += gtsam::dot(v,b.get(j));
+	return result;
+}
 
+/* ************************************************************************* */
+double dot(const VectorConfig& a, const VectorConfig& b) {
+	return a.dot(b);
+}
+/* ************************************************************************* */
+
+} // gtsam
