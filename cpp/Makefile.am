@@ -60,6 +60,17 @@ headers = gtsam.h Value.h Testable.h Factor.h Conditional.h
 sources += Ordering.cpp  
 example = smallExample.cpp 
 
+# Symbolic Inference
+headers += SymbolicConditional.h
+sources += SymbolicFactor.cpp SymbolicFactorGraph.cpp SymbolicBayesNet.cpp
+check_PROGRAMS += testSymbolicFactor testSymbolicFactorGraph testSymbolicBayesNet  
+testSymbolicFactor_SOURCES      = $(example) testSymbolicFactor.cpp
+testSymbolicFactor_LDADD        = libgtsam.la
+testSymbolicFactorGraph_SOURCES = $(example) testSymbolicFactorGraph.cpp
+testSymbolicFactorGraph_LDADD   = libgtsam.la
+testSymbolicBayesNet_SOURCES    = $(example) testSymbolicBayesNet.cpp
+testSymbolicBayesNet_LDADD      = libgtsam.la
+
 # Inference
 headers += inference.h inference-inl.h
 headers += FactorGraph.h FactorGraph-inl.h
@@ -77,17 +88,6 @@ testGaussianBayesTree_LDADD    = libgtsam.la
 testInference_LDADD            = libgtsam.la
 testOrdering_SOURCES   		   = testOrdering.cpp
 testOrdering_LDADD			   = libgtsam.la
-
-# Symbolic Inference
-headers += SymbolicConditional.h
-sources += SymbolicFactor.cpp SymbolicFactorGraph.cpp SymbolicBayesNet.cpp
-check_PROGRAMS += testSymbolicFactor testSymbolicFactorGraph testSymbolicBayesNet  
-testSymbolicFactor_SOURCES      = $(example) testSymbolicFactor.cpp
-testSymbolicFactor_LDADD        = libgtsam.la
-testSymbolicFactorGraph_SOURCES = $(example) testSymbolicFactorGraph.cpp
-testSymbolicFactorGraph_LDADD   = libgtsam.la
-testSymbolicBayesNet_SOURCES    = $(example) testSymbolicBayesNet.cpp
-testSymbolicBayesNet_LDADD      = libgtsam.la
 
 # Binary Inference
 headers += BinaryConditional.h
