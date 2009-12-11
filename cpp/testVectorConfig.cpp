@@ -31,7 +31,7 @@ TEST( VectorConfig, equals1 )
    expected.insert("a",v);
    VectorConfig actual;
    actual.insert("a",v);
-   CHECK(actual.equals(expected));
+   CHECK(assert_equal(expected,actual));
 }
 
 /* ************************************************************************* */
@@ -69,6 +69,14 @@ TEST( VectorConfig, contains)
 }
 
 /* ************************************************************************* */
+TEST( VectorConfig, exmap)
+{
+	VectorConfig c = createConfig();
+	Vector v = Vector_(6, 0.0,-1.0, 0.0, 0.0, 1.5, 0.0); // l1, x1, x2
+  CHECK(assert_equal(c.exmap(c),c.exmap(v)));
+}
+
+/* ************************************************************************* */
 TEST( VectorConfig, plus)
 {
   VectorConfig fg;
@@ -85,7 +93,7 @@ TEST( VectorConfig, plus)
 
   // functional
   VectorConfig actual = fg.exmap(delta);
-  CHECK(actual.equals(expected));
+  CHECK(assert_equal(expected,actual));
 }
 
 /* ************************************************************************* */

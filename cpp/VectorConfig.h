@@ -46,7 +46,13 @@ namespace gtsam {
      * Add a delta config, needed for use in NonlinearOptimizer
      * For VectorConfig, this is just addition.
      */
-    VectorConfig exmap(const VectorConfig & delta) const;
+    VectorConfig exmap(const VectorConfig& delta) const;
+
+    /**
+     * Add a delta vector (not a config)
+     * Will use the ordering that map uses to loop over vectors
+     */
+    VectorConfig exmap(const Vector& delta) const;
 
     const_iterator begin() const {return values.begin();}
     const_iterator end()   const {return values.end();}
