@@ -53,6 +53,7 @@ namespace gtsam {
 		 * @return bool
 		 */
 		bool equals(const Ordering &ord, double tol=0) const;
+
 	};
 
 }

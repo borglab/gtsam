@@ -12,7 +12,7 @@ namespace gtsam {
 
 // explicit instantiation so all the code is there and we can link with it
 template class FactorGraph<NonlinearFactor<gtsam::Pose2Config> > ;
-template class NonlinearFactorGraph<Pose2Factor> ;
+template class NonlinearFactorGraph<Pose2Config> ;
 //template class NonlinearOptimizer<Pose2Graph, Pose2Config> ;
 
 void Pose2Graph::print(const std::string& s) const {

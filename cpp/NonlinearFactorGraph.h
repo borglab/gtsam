@@ -41,6 +41,11 @@ namespace gtsam {
 		 */
 		GaussianFactorGraph linearize(const Config& config) const;
 
+	    /**
+	     * shared pointer versions for MATLAB
+	     */
+	    boost::shared_ptr<GaussianFactorGraph> linearize_(const Config& config) const;
+
 	};
 
 } // namespace

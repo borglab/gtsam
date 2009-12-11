@@ -2,6 +2,7 @@ class Ordering {
   Ordering();
   void push_back(string s);
   void print(string s) const;
+  void unique ();
 };
 
 class SymbolicFactor{
@@ -193,6 +194,8 @@ class Pose2Graph{
 	Pose2Graph();
 	void print(string s) const;
 	bool equals(const Pose2Graph& p, double tol) const;
-	GaussianFactorGraph linearize(const Pose2Config& config) const;
+	GaussianFactorGraph* linearize_(const Pose2Config& config) const;
 	void push_back(Pose2Factor* factor);
 };
+
+

@@ -28,27 +28,26 @@ namespace gtsam {
 	}
 	/* ************************************************************************* */
 	template<class Config>
-	GaussianFactorGraph NonlinearFactorGraph<Config>::linearize(
-			const Config& config) const {
-		// TODO speed up the function either by returning a pointer or by
-		// returning the linearisation as a second argument and returning
-		// the reference
+	boost::shared_ptr<GaussianFactorGraph> NonlinearFactorGraph<Config>::linearize_(
+			const Config& config) const{
 
 		// create an empty linear FG
-		GaussianFactorGraph linearFG;
+		boost::shared_ptr<GaussianFactorGraph>  linearFG(new GaussianFactorGraph);
 
 		typedef typename FactorGraph<NonlinearFactor<Config> >::const_iterator
-				const_iterator;
+		const_iterator;
 		// linearize all factors
 		for (const_iterator factor = this->factors_.begin(); factor
-				< this->factors_.end(); factor++) {
+		< this->factors_.end(); factor++) {
 			boost::shared_ptr<GaussianFactor> lf = (*factor)->linearize(config);
-			linearFG.push_back(lf);
+			linearFG->push_back(lf);
 		}
-
 		return linearFG;
 	}
-
-/* ************************************************************************* */
-
+	/* ************************************************************************* */
+	template<class Config>
+	GaussianFactorGraph NonlinearFactorGraph<Config>::linearize(
+			const Config& config) const {
+		return *linearize_(config);
+	}
 }
