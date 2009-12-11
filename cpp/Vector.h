@@ -142,6 +142,9 @@ Vector ediv(const Vector &a, const Vector &b);
  */
 double sum(const Vector &a);
 
+/** Dot product */
+inline double dot(const Vector &a, const Vector& b) { return sum(emul(a,b)); }
+
 /**
  * house(x,j) computes HouseHolder vector v and scaling factor beta
  *  from x, such that the corresponding Householder reflection zeroes out
