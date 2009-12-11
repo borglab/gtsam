@@ -60,7 +60,7 @@ namespace gtsam {
     VectorConfig exmap(const VectorConfig & delta) const;
 
     /** Scales the configuration by a gain */
-    VectorConfig scale(double gain);
+    VectorConfig scale(double gain) const;
  
     const_iterator begin() const {return values.begin();}
     const_iterator end()   const {return values.end();}
