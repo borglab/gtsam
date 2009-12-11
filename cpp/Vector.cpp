@@ -176,7 +176,7 @@ namespace gtsam {
 
   /* ************************************************************************* */
   double sum(const Vector &a) {
-  	double result;
+  	double result = 0.0;
   	size_t n = a.size();
 		for( size_t i = 0; i < n; i++ )
 			result += a(i);
