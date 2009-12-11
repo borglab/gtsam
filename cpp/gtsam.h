@@ -178,7 +178,6 @@ class Pose2Config{
 	Pose2Config();
 	Pose2 get(string key) const;
 	void insert(string name, const Pose2& val);
-	void print(string s) const;
 };
 
 class Pose2Factor {
