@@ -126,13 +126,20 @@ bool GaussianFactor::equals(const Factor<VectorConfig>& f, double tol) const {
 }
 
 /* ************************************************************************* */
-Vector GaussianFactor::error_vector(const VectorConfig& c) const {
+Vector GaussianFactor::unweighted_error(const VectorConfig& c) const {
   Vector e = -b_;
   if (empty()) return e;
   string j; Matrix Aj;
   FOREACH_PAIR(j, Aj, As_)
     e += Vector(Aj * c[j]);
-  return ediv(e,sigmas_);
+  return e;
+}
+
+/* ************************************************************************* */
+Vector GaussianFactor::error_vector(const VectorConfig& c) const {
+  Vector e = -b_;
+  if (empty()) return e;
+  return ediv(unweighted_error(c),sigmas_);
 }
 
 /* ************************************************************************* */
@@ -364,7 +371,8 @@ GaussianFactor::eliminate(const string& key) const
 }
 
 /* ************************************************************************* */
-void GaussianFactor::addGradientContribution(const VectorConfig& x, VectorConfig& g) const {
+void GaussianFactor::addGradientContribution(const VectorConfig& x,
+		VectorConfig& g) const {
 	// calculate the value of the factor
 	Vector e = GaussianFactor::error_vector(x);
   Vector et = trans(e); // transpose
@@ -385,13 +393,18 @@ void GaussianFactor::addGradientContribution(const VectorConfig& x, VectorConfig
 /* ************************************************************************* */
 GaussianFactor::shared_ptr GaussianFactor::alphaFactor(const VectorConfig& x,
 		const VectorConfig& d) const {
+
+	// Calculate A matrix
 	size_t m = b_.size();
-	Vector A = zero(m); Vector b = b_;
+	Vector A = zero(m);
   string j; Matrix Aj;
-  FOREACH_PAIR(j, Aj, As_) {
+  FOREACH_PAIR(j, Aj, As_)
   	A += Aj * d[j];
-  	b -= Aj * x[j];
-  }
+
+  // calculate the value of the factor for RHS
+	Vector b = - unweighted_error(x);
+
+	// construct factor
 	shared_ptr factor(new GaussianFactor("alpha",Matrix_(A),b,sigmas_));
 	return factor;
 }

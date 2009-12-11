@@ -637,6 +637,26 @@ TEST( GaussianFactor, CONSTRUCTOR_GaussianConditional )
 }
 
 /* ************************************************************************* */
+TEST( GaussianFactor, alphaFactor )
+{
+	GaussianFactorGraph fg = createGaussianFactorGraph();
+
+	// get alphafactor for first factor in fg at zero, in gradient direction
+  VectorConfig x = createZeroDelta();
+	VectorConfig d = fg.gradient(x);
+	GaussianFactor::shared_ptr factor = fg[0];
+	GaussianFactor::shared_ptr actual = factor->alphaFactor(x,d);
+
+	// calculate expected
+	Matrix A = Matrix_(2,1,30.0,5.0);
+	Vector b = Vector_(2,-0.1,-0.1);
+	Vector sigmas = Vector_(2,0.1,0.1);
+	GaussianFactor expected("alpha",A,b,sigmas);
+
+	CHECK(assert_equal(expected,*actual));
+}
+
+/* ************************************************************************* */
 TEST ( GaussianFactor, constraint_eliminate1 )
 {
 	// construct a linear constraint

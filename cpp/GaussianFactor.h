@@ -117,6 +117,7 @@ public:
 
 	// Implementing Factor virtual functions
 
+	Vector unweighted_error(const VectorConfig& c) const; /** (A*x-b) */
 	Vector error_vector(const VectorConfig& c) const; /** (A*x-b)/sigma */
 	double error(const VectorConfig& c) const; /**  0.5*(A*x-b)'*D*(A*x-b) */
 	std::size_t size() const { return As_.size();}
