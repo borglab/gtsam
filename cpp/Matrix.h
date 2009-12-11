@@ -30,12 +30,17 @@ namespace gtsam {
 /**
  *  constructor with size and initial data, row order !
  */
-Matrix Matrix_( size_t m, size_t n, const double* const data);
+Matrix Matrix_(size_t m, size_t n, const double* const data);
 
 /**
  *  constructor with size and vector data, column order !!!
  */
-Matrix Matrix_( size_t m, size_t n, const Vector& v);
+Matrix Matrix_(size_t m, size_t n, const Vector& v);
+
+/**
+ *  constructor from Vector yielding v.size()*1 vector
+ */
+inline Matrix Matrix_(const Vector& v) { return Matrix_(v.size(),1,v);}
 
 /**
  *  nice constructor, dangerous as number of arguments must be exactly right
