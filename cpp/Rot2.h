@@ -30,7 +30,7 @@ namespace gtsam {
 		/** default constructor, zero rotation */
 		Rot2() : c_(1.0), s_(0.0) {}
 
-		/** constructor from angle */
+		/** constructor from angle == exponential map at identity */
 		Rot2(double theta) : c_(cos(theta)), s_(sin(theta)) {}
 
 		/** return angle */
@@ -52,34 +52,22 @@ namespace gtsam {
 		inline Vector vector() const { return Vector_(2,c_,s_);}
 
 		/** return 2*2 rotation matrix */
-		Matrix matrix() const {
-			double r[] = { c_, -s_, s_, c_ };
-			return Matrix_(2, 2, r);
-		}
+		Matrix matrix() const;
 
 		/** return 3*3 transpose (inverse) rotation matrix   */
-		Matrix transpose() const {
-			double r[] = { c_, s_, -s_, c_ };
-			return Matrix_(2, 2, r);
-		}
+		Matrix transpose() const;
 
 		/** inverse transformation  */
-		Rot2 inverse() const { return Rot2(c_, -s_);}
+		Rot2 inverse() const;
 
 		/** composition via sum and difference formulas */
-		inline Rot2 operator*(const Rot2& R) const {
-			return Rot2(c_ * R.c_ - s_ * R.s_, s_ * R.c_ + c_ * R.s_);
-		}
+		Rot2 operator*(const Rot2& R) const;
 
 		/**  rotate from rotated to world, syntactic sugar = R*p  */
-		inline Point2 operator*(const Point2& p) const {
-			return Point2(c_ * p.x() - s_ * p.y(), s_ * p.x() + c_ * p.y());
-		}
+		Point2 operator*(const Point2& p) const;
 
 		/** rotate from world to rotated = R'*p */
-		Point2 unrotate(const Point2& p) const {
-			return Point2(c_ * p.x() + s_ * p.y(), -s_ * p.x() + c_ * p.y());
-		}
+		Point2 unrotate(const Point2& p) const;
 
 		/** friends */
 		friend Matrix Dunrotate1(const Rot2& R, const Point2& p);

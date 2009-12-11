@@ -24,7 +24,46 @@ namespace gtsam {
 	/* ************************************************************************* */
 	Rot2 Rot2::exmap(const Vector& v) const {
 		if (zero(v)) return (*this);
-		return Rot2(v(0)) * (*this);
+		return Rot2(v(0)) * (*this); // exponential map then compose
+	}
+
+	/* ************************************************************************* */
+	Matrix Rot2::matrix() const {
+		double r[] = { c_, -s_, s_, c_ };
+		return Matrix_(2, 2, r);
+	}
+
+	/* ************************************************************************* */
+	Matrix Rot2::transpose() const {
+		double r[] = { c_, s_, -s_, c_ };
+		return Matrix_(2, 2, r);
+	}
+
+	/* ************************************************************************* */
+	Rot2 Rot2::inverse() const { return Rot2(c_, -s_);}
+
+	/* ************************************************************************* */
+	Rot2 Rot2::operator*(const Rot2& R) const {
+		return Rot2(
+				c_ * R.c_ - s_ * R.s_,
+				s_ * R.c_ + c_ * R.s_
+				);
+	}
+
+	/* ************************************************************************* */
+	Point2 Rot2::operator*(const Point2& p) const {
+		return Point2(
+				c_ * p.x() - s_ * p.y(),
+				s_ * p.x() + c_ * p.y()
+				);
+	}
+
+	/* ************************************************************************* */
+	Point2 Rot2::unrotate(const Point2& p) const {
+		return Point2(
+				 c_ * p.x() + s_ * p.y(),
+				-s_ * p.x() + c_ * p.y()
+				);
 	}
 
 	/* ************************************************************************* */
