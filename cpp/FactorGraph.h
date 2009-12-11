@@ -92,6 +92,11 @@ namespace gtsam {
 		 */
 		Ordering getOrdering() const;
 
+	    /**
+	     * shared pointer versions for MATLAB
+	     */
+		boost::shared_ptr<Ordering>  getOrdering_() const;
+
     /**
      * Return indices for all factors that involve the given node
      * @param key the key for the given node

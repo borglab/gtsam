@@ -31,7 +31,6 @@ double tol=1e-4;
 TEST( GaussianFactorGraph, equals ){
 
   GaussianFactorGraph fg = createGaussianFactorGraph();
-  fg.print("fg");
   GaussianFactorGraph fg2 = createGaussianFactorGraph();
   CHECK(fg.equals(fg2));
 }

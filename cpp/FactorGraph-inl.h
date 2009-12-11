@@ -127,7 +127,7 @@ Ordering FactorGraph<Factor>::keys() const {
  * @param columns map from keys to a sparse column of non-zero row indices
  */
 template <class Key>
-Ordering colamd(int n_col, int n_row, int nrNonZeros, const map<Key, vector<int> >& columns) {
+boost::shared_ptr<Ordering> colamd(int n_col, int n_row, int nrNonZeros, const map<Key, vector<int> >& columns) {
 
 	// Convert to compressed column major format colamd wants it in (== MATLAB format!)
 	vector<Key> initialOrder;
@@ -158,17 +158,16 @@ Ordering colamd(int n_col, int n_row, int nrNonZeros, const map<Key, vector<int>
 	delete [] A; // delete symbolic A
 
 	// Convert elimination ordering in p to an ordering
-	Ordering result;
+	boost::shared_ptr<Ordering> result(new Ordering);
 	for(int j = 0; j < n_col; j++)
-		result.push_back(initialOrder[j]);
+		result->push_back(initialOrder[j]);
 	delete [] p; // delete colamd result vector
 
 	return result;
 }
-
 /* ************************************************************************* */
 template<class Factor>
-Ordering FactorGraph<Factor>::getOrdering() const {
+boost::shared_ptr<Ordering> FactorGraph<Factor>::getOrdering_() const{
 
 	// A factor graph is really laid out in row-major format, each factor a row
 	// Below, we compute a symbolic matrix stored in sparse columns.
@@ -187,9 +186,16 @@ Ordering FactorGraph<Factor>::getOrdering() const {
 	int n_col = (int)(columns.size()); /* colamd arg 2: number of columns in A */
 
 	if(n_col == 0)
-		return Ordering(); // empty ordering
+		return boost::shared_ptr<Ordering>(new Ordering); // empty ordering
 	else
 		return colamd(n_col, n_row, nrNonZeros, columns);
+}
+
+
+/* ************************************************************************* */
+template<class Factor>
+Ordering FactorGraph<Factor>::getOrdering() const {
+		return *getOrdering_(); // empty ordering
 }
 
 /* ************************************************************************* */

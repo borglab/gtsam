@@ -13,6 +13,7 @@
 #include "Pose2Factor.h"
 #include "Pose2Config.h"
 #include "Testable.h"
+#include "Ordering.h"
 
 namespace gtsam{
 

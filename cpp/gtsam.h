@@ -196,6 +196,7 @@ class Pose2Graph{
 	bool equals(const Pose2Graph& p, double tol) const;
 	GaussianFactorGraph* linearize_(const Pose2Config& config) const;
 	void push_back(Pose2Factor* factor);
+	Ordering* getOrdering_() const;
 };
 
 
