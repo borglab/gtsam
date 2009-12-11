@@ -126,14 +126,19 @@ bool GaussianFactor::equals(const Factor<VectorConfig>& f, double tol) const {
 }
 
 /* ************************************************************************* */
-// we might have multiple As, so iterate and subtract from b
-double GaussianFactor::error(const VectorConfig& c) const {
-  if (empty()) return 0;
-  Vector e = b_;
+Vector GaussianFactor::error_vector(const VectorConfig& c) const {
+  Vector e = -b_;
+  if (empty()) return e;
   string j; Matrix Aj;
   FOREACH_PAIR(j, Aj, As_)
-    e -= Vector(Aj * c[j]);
-  Vector weighted = ediv(e,sigmas_);
+    e += Vector(Aj * c[j]);
+  return ediv(e,sigmas_);
+}
+
+/* ************************************************************************* */
+double GaussianFactor::error(const VectorConfig& c) const {
+  if (empty()) return 0;
+  Vector weighted = error_vector(c);
   return 0.5 * inner_prod(weighted,weighted);
 }
 
@@ -361,17 +366,14 @@ GaussianFactor::eliminate(const string& key) const
 /* ************************************************************************* */
 void GaussianFactor::addGradientContribution(const VectorConfig& x, VectorConfig& g) const {
 	// calculate the value of the factor
-	Vector e = -b_;
-  string j; Matrix Aj;
-  FOREACH_PAIR(j, Aj, As_) e += Aj * x[j];
-
-  // transpose
-  Vector et = trans(e);
+	Vector e = GaussianFactor::error_vector(x);
+  Vector et = trans(e); // transpose
 
   // contribute to gradient for each connected variable
+  string j; Matrix Aj;
   FOREACH_PAIR(j, Aj, As_) {
-  	Vector dj = trans(et*Aj);  // this factor's contribution to gradient on j
-  	Vector wdj = ediv(dj,emul(sigmas_,sigmas_)); // properly weight by sigmas
+  	Vector dj = trans(et*Aj);      // this factor's contribution to gradient on j
+  	Vector wdj = ediv(dj,sigmas_); // properly weight by sigmas
   	g.add(j,wdj);
   }
 }
