@@ -548,15 +548,21 @@ TEST( GaussianFactorGraph, gradient )
   // 2*f(x) = 100*(x1+c["x1"])^2 + 100*(x2-x1-[0.2;-0.1])^2 + 25*(l1-x1-[0.0;0.2])^2 + 25*(l1-x2-[-0.2;0.3])^2
 	// worked out: df/dx1 = 100*[0.1;0.1] + 100*[0.2;-0.1]) + 25*[0.0;0.2] = [10+20;10-10+5] = [30;5]
   expected.insert("x1",Vector_(2,30.0,5.0));
-  // from working implementation:
   expected.insert("x2",Vector_(2,-25.0, 17.5));
   expected.insert("l1",Vector_(2,  5.0,-12.5));
 
-	// calculate the gradient at delta=0
-  VectorConfig delta = createZeroDelta();
-	VectorConfig actual = fg.gradient(delta);
-
+	// Check the gradient at delta=0
+  VectorConfig zero = createZeroDelta();
+	VectorConfig actual = fg.gradient(zero);
 	CHECK(assert_equal(expected,actual));
+
+	// Check the gradient at the solution (should be zero)
+	Ordering ord;
+  ord += "x2","l1","x1";
+	GaussianFactorGraph fg2 = createGaussianFactorGraph();
+  VectorConfig solution = fg2.optimize(ord); // destructive
+	VectorConfig actual2 = fg.gradient(solution);
+	CHECK(assert_equal(zero,actual2));
 }
 
 /* ************************************************************************* */
