@@ -58,6 +58,13 @@ public:
 		As_.insert(make_pair(key1, A1));
 	}
 
+	/** Construct unary factor with vector of sigmas*/
+	GaussianFactor(const std::string& key1, const Matrix& A1,
+			const Vector& b, const Vector& sigmas) :
+		b_(b), sigmas_(sigmas) {
+		As_.insert(make_pair(key1, A1));
+	}
+
 	/** Construct binary factor */
 	GaussianFactor(const std::string& key1, const Matrix& A1,
 			const std::string& key2, const Matrix& A2,
@@ -207,6 +214,20 @@ public:
 	boost::tuple<std::list<int>, std::list<int>, std::list<double> >
 		sparse(const Ordering& ordering, const Dimensions& variables) const;
 
+	/**
+	 * Add gradient contribution to gradient config g
+	 * @param x: confif at which to evaluate gradient
+	 * @param g: I/O parameter, evolving gradient
+	 */
+	void addGradientContribution(const VectorConfig& x, VectorConfig& g) const;
+
+	/**
+	 * Create a GaussianFactor on one variable 'alpha' (step size), in direction d
+	 * @param x: starting point for search
+	 * @param d: search direction
+	 */
+	shared_ptr alphaFactor(const VectorConfig& x, const VectorConfig& d) const;
+
 	/* ************************************************************************* */
 	// MUTABLE functions. FD:on the path to being eradicated
 	/* ************************************************************************* */
@@ -242,13 +263,6 @@ public:
 	 * @param pos where to insert in the m-sized matrices
 	 */
 	void append_factor(GaussianFactor::shared_ptr f, size_t m, size_t pos);
-
-	/**
-	 * Add gradient contribution to gradient config g
-	 * @param x: confif at which to evaluate gradient
-	 * @param g: I/O parameter, evolving gradient
-	 */
-	void addGradientContribution(const VectorConfig& x, VectorConfig& g) const;
 
 }; // GaussianFactor
 

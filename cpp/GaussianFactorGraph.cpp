@@ -209,3 +209,33 @@ VectorConfig GaussianFactorGraph::gradient(const VectorConfig& x) const {
 }
 
 /* ************************************************************************* */
+VectorConfig GaussianFactorGraph::optimalUpdate(const VectorConfig& x,
+		const VectorConfig& d) const {
+
+	// create a new graph on step-size
+	GaussianFactorGraph alphaGraph;
+	BOOST_FOREACH(sharedFactor factor,factors_) {
+		sharedFactor alphaFactor = factor->alphaFactor(x,d);
+		alphaGraph.push_back(alphaFactor);
+	}
+
+	// solve it for optimal step-size alpha
+	GaussianConditional::shared_ptr gc = alphaGraph.eliminateOne("alpha");
+	double alpha = gc->get_d()(0);
+
+	// return updated estimate by stepping in direction d
+  return x.exmap(d.scale(alpha));
+}
+
+/* ************************************************************************* */
+VectorConfig GaussianFactorGraph::gradientDescent(const VectorConfig& x0) const {
+	VectorConfig x = x0;
+	int K = 10*x.size();
+	for (int k=0;k<K;k++) {
+		VectorConfig g = gradient(x);
+		x = optimalUpdate(x,g);
+	}
+	return x;
+}
+
+/* ************************************************************************* */

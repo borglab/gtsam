@@ -566,6 +566,22 @@ TEST( GaussianFactorGraph, gradient )
 }
 
 /* ************************************************************************* */
+TEST( GaussianFactorGraph, gradientDescent )
+{
+	// Expected solution
+	Ordering ord;
+  ord += "x2","l1","x1";
+	GaussianFactorGraph fg = createGaussianFactorGraph();
+  VectorConfig expected = fg.optimize(ord); // destructive
+
+  // Do gradient descent
+  GaussianFactorGraph fg2 = createGaussianFactorGraph();
+  VectorConfig zero = createZeroDelta();
+	VectorConfig actual = fg2.gradientDescent(zero);
+	CHECK(assert_equal(expected,actual,1e-2));
+}
+
+/* ************************************************************************* */
 // Tests ported from ConstrainedGaussianFactorGraph
 /* ************************************************************************* */
 

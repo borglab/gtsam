@@ -162,8 +162,24 @@ namespace gtsam {
 
   	/**
   	 * Calculate Gradient of 0.5*|Ax-b| for a given config
+  	 * @param x: VectorConfig specifying where to calculate gradient
+  	 * @return gradient, as a VectorConfig as well
   	 */
   	VectorConfig gradient(const VectorConfig& x) const;
+
+  	/**
+  	 * Take an optimal step in direction d by calculating optimal step-size
+  	 * @param x: starting point for search
+  	 * @param d: search direction
+  	 */
+  	VectorConfig optimalUpdate(const VectorConfig& x0, const VectorConfig& d) const;
+
+  	/**
+  	 * Find solution using gradient descent
+  	 * @param x0: VectorConfig specifying initial estimate
+  	 * @return solution
+  	 */
+  	VectorConfig gradientDescent(const VectorConfig& x0) const;
   };
 
 }

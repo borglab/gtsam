@@ -363,7 +363,7 @@ void GaussianFactor::addGradientContribution(const VectorConfig& x, VectorConfig
 	// calculate the value of the factor
 	Vector e = -b_;
   string j; Matrix Aj;
-  FOREACH_PAIR(j, Aj, As_) e += Vector(Aj * x[j]);
+  FOREACH_PAIR(j, Aj, As_) e += Aj * x[j];
 
   // transpose
   Vector et = trans(e);
@@ -374,6 +374,24 @@ void GaussianFactor::addGradientContribution(const VectorConfig& x, VectorConfig
   	Vector wdj = ediv(dj,emul(sigmas_,sigmas_)); // properly weight by sigmas
   	g.add(j,wdj);
   }
+}
+
+/* ************************************************************************* */
+// Creates a factor on step-size, given initial estimate and direction d, e.g.
+// Factor |A1*x+A2*y-b|/sigma -> |A1*(x0+alpha*dx)+A2*(y0+alpha*dy)-b|/sigma
+//                            -> |(A1*dx+A2*dy)*alpha-(b-A1*x0-A2*y0)|/sigma
+/* ************************************************************************* */
+GaussianFactor::shared_ptr GaussianFactor::alphaFactor(const VectorConfig& x,
+		const VectorConfig& d) const {
+	size_t m = b_.size();
+	Vector A = zero(m); Vector b = b_;
+  string j; Matrix Aj;
+  FOREACH_PAIR(j, Aj, As_) {
+  	A += Aj * d[j];
+  	b -= Aj * x[j];
+  }
+	shared_ptr factor(new GaussianFactor("alpha",Matrix_(A),b,sigmas_));
+	return factor;
 }
 
 /* ************************************************************************* */
