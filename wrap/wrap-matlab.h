@@ -20,6 +20,13 @@ using namespace boost; // not usual, but for consiseness of generated code
 typedef numeric::ublas::vector<double> Vector;
 typedef numeric::ublas::matrix<double> Matrix;
 
+#ifdef __LP64__
+// 64-bit Mac
+#define mxUINT32OR64_CLASS mxUINT64_CLASS
+#else
+#define mxUINT32OR64_CLASS mxUINT32_CLASS
+#endif
+
 //*****************************************************************************
 // Utilities
 //*****************************************************************************
@@ -40,7 +47,7 @@ mxArray *vector(int m,  mxClassID classid) {
 
 mxArray *matrix(int m, int n,  mxClassID classid) {
   mwSize dims[2]; dims[0]=m; dims[1]=n;
-  return mxCreateNumericArray(2, dims, mxUINT32_CLASS, mxREAL);
+  return mxCreateNumericArray(2, dims, mxUINT32OR64_CLASS, mxREAL);
 }
 
 //*****************************************************************************
@@ -72,25 +79,25 @@ mxArray* wrap<string>(string& value) {
 }
 
 // specialization to bool -> uint32
-// Warning: relies on sizeof(UINT32_T)==sizeof(bool)
+// Warning: might rely on sizeof(UINT32_T)==sizeof(bool)
 template<>
 mxArray* wrap<bool>(bool& value) {
-  mxArray *result = scalar(mxUINT32_CLASS);
+  mxArray *result = scalar(mxUINT32OR64_CLASS);
   *(bool*)mxGetData(result) = value;
   return result;
 }
 
 // specialization to size_t -> uint32
-// Warning: relies on sizeof(UINT32_T)==sizeof(size_t)
+// Warning: might rely on sizeof(UINT32_T)==sizeof(size_t)
 template<>
 mxArray* wrap<size_t>(size_t& value) {
-  mxArray *result = scalar(mxUINT32_CLASS);
+  mxArray *result = scalar(mxUINT32OR64_CLASS);
   *(size_t*)mxGetData(result) = value;
   return result;
 }
 
 // specialization to int -> uint32
-// Warning: relies on sizeof(INT32_T)==sizeof(int)
+// Warning: might rely on sizeof(INT32_T)==sizeof(int)
 template<>
 mxArray* wrap<int>(int& value) {
   mxArray *result = scalar(mxINT32_CLASS);
@@ -231,84 +238,88 @@ Matrix unwrap< Matrix >(const mxArray* array) {
 
 template<typename T> class Collector;
 
-template <typename T>
+template<typename T>
 class ObjectHandle {
 private:
-  ObjectHandle* signature; // use 'this' as a unique object signature 
-  const std::type_info* type; // type checking information
-  shared_ptr<T> t; // object pointer
+	ObjectHandle* signature; // use 'this' as a unique object signature
+	const std::type_info* type; // type checking information
+	shared_ptr<T> t; // object pointer
 
 public:
-  // Constructor for free-store allocated objects.
-  // Creates shared pointer, will delete if is last one to hold pointer
-ObjectHandle(T* ptr) : type(&typeid(T)), t(shared_ptr<T>(ptr)) { 
-    signature = this; 
-    Collector<T>::register_handle(this);
-  } 
+	// Constructor for free-store allocated objects.
+	// Creates shared pointer, will delete if is last one to hold pointer
+	ObjectHandle(T* ptr) :
+		type(&typeid(T)), t(shared_ptr<T> (ptr)) {
+		signature = this;
+		Collector<T>::register_handle(this);
+	}
 
-  // Constructor for shared pointers
-  // Creates shared pointer, will delete if is last one to hold pointer
-ObjectHandle(shared_ptr<T> ptr) : type(&typeid(T)), t(ptr) { 
-    signature= this; 
-  } 
+	// Constructor for shared pointers
+	// Creates shared pointer, will delete if is last one to hold pointer
+	ObjectHandle(shared_ptr<T> ptr) :
+		type(&typeid(T)), t(ptr) {
+		signature = this;
+	}
 
-  ~ObjectHandle() { 
-    // object is in shared_ptr, will be automatically deleted
-    signature= 0; // destroy signature
-  } 
+	~ObjectHandle() {
+		// object is in shared_ptr, will be automatically deleted
+		signature = 0; // destroy signature
+	}
 
-  // Get the actual object contained by handle
-  shared_ptr<T> get_object() const { return t; }
+	// Get the actual object contained by handle
+	shared_ptr<T> get_object() const {
+		return t;
+	}
 
-  // Print the mexhandle for debugging
-  void print(const char* str) {
-    mexPrintf("mexhandle %s:\n", str);
-    mexPrintf("  signature = %d:\n", signature);
-    mexPrintf("  pointer   = %d:\n", t.get());
-  }
+	// Print the mexhandle for debugging
+	void print(const char* str) {
+		mexPrintf("mexhandle %s:\n", str);
+		mexPrintf("  signature = %d:\n", signature);
+		mexPrintf("  pointer   = %d:\n", t.get());
+	}
 
-  // Convert ObjectHandle<T> to a mxArray handle (to pass back from mex-function).
-  // Create a numeric array as handle for an ObjectHandle.
-  // We ASSUME we can store object pointer in the mxUINT32 element of mxArray.
-  mxArray* to_mex_handle() 
-  {
-    mxArray* handle  = mxCreateNumericMatrix(1, 1, mxUINT32_CLASS, mxREAL);
-    *reinterpret_cast<ObjectHandle<T>**>(mxGetPr(handle)) = this;
-    return handle;
-  }
+	// Convert ObjectHandle<T> to a mxArray handle (to pass back from mex-function).
+	// Create a numeric array as handle for an ObjectHandle.
+	// We ASSUME we can store object pointer in the mxUINT32 element of mxArray.
+	mxArray* to_mex_handle() {
+		mxArray* handle = mxCreateNumericMatrix(1, 1, mxUINT32OR64_CLASS, mxREAL);
+		*reinterpret_cast<ObjectHandle<T>**> (mxGetPr(handle)) = this;
+		return handle;
+	}
 
-  string type_name() const {return type->name();} 
+	string type_name() const {
+		return type->name();
+	}
 
-  // Convert mxArray (passed to mex-function) to an ObjectHandle<T>.
-  // Import a handle from MatLab as a mxArray of UINT32. Check that
-  // it is actually a pointer to an ObjectHandle<T>.
-  static ObjectHandle* from_mex_handle(const mxArray* handle) 
-  {
-    if (mxGetClassID(handle) != mxUINT32_CLASS 
-	|| mxIsComplex(handle) || mxGetM(handle)!=1 || mxGetN(handle)!=1)
-      error("Parameter is not an ObjectHandle type.");
+	// Convert mxArray (passed to mex-function) to an ObjectHandle<T>.
+	// Import a handle from MatLab as a mxArray of UINT32. Check that
+	// it is actually a pointer to an ObjectHandle<T>.
+	static ObjectHandle* from_mex_handle(const mxArray* handle) {
+		if (mxGetClassID(handle) != mxUINT32OR64_CLASS || mxIsComplex(handle)
+				|| mxGetM(handle) != 1 || mxGetN(handle) != 1) error(
+				"Parameter is not an ObjectHandle type.");
 
-    // We *assume* we can store ObjectHandle<T> pointer in the mxUINT32 of handle
-    ObjectHandle* obj = *reinterpret_cast<ObjectHandle**>(mxGetPr(handle));
+		// We *assume* we can store ObjectHandle<T> pointer in the mxUINT32 of handle
+		ObjectHandle* obj = *reinterpret_cast<ObjectHandle**> (mxGetPr(handle));
 
-    if (!obj) // gross check to see we don't have an invalid pointer
-      error("Parameter is NULL. It does not represent an ObjectHandle object.");
-    // TODO: change this for max-min check for pointer values
+		if (!obj) // gross check to see we don't have an invalid pointer
+		error("Parameter is NULL. It does not represent an ObjectHandle object.");
+		// TODO: change this for max-min check for pointer values
 
-    if (obj->signature != obj) // check memory has correct signature
-      error("Parameter does not represent an ObjectHandle object.");
+		if (obj->signature != obj) // check memory has correct signature
+		error("Parameter does not represent an ObjectHandle object.");
 
-/*
-  if (*(obj->type) != typeid(T)) { // check type 
-  mexPrintf("Given: <%s>, Required: <%s>.\n", obj->type_name(), typeid(T).name());
-  error("Given ObjectHandle does not represent the correct type.");
-  }
-*/
+		/*
+		 if (*(obj->type) != typeid(T)) { // check type
+		 mexPrintf("Given: <%s>, Required: <%s>.\n", obj->type_name(), typeid(T).name());
+		 error("Given ObjectHandle does not represent the correct type.");
+		 }
+		 */
 
-    return obj;
-  }
+		return obj;
+	}
 
-  friend class Collector<T>; // allow Collector access to signature
+	friend class Collector<T> ; // allow Collector access to signature
 };
 
 // --------------------------------------------------------- 
