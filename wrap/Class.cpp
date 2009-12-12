@@ -32,7 +32,7 @@ void Class::matlab_proxy(const string& classFile) {
     c.matlab_proxy_fragment(ofs,name);
   ofs << "      if nargin ~= 13 && obj.self == 0, error('" << name << " constructor failed'); end" << endl;
   ofs << "    end" << endl;
-  ofs << "    function display(obj), obj.print; end" << endl;
+  ofs << "    function display(obj), obj.print(''); end" << endl;
   ofs << "    function disp(obj), obj.display; end" << endl;
   ofs << "  end" << endl;
   ofs << "end" << endl;
