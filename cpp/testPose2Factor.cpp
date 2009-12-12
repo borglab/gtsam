@@ -39,8 +39,6 @@ TEST( Pose2Factor, constructor )
 	// Linearize
 	boost::shared_ptr<GaussianFactor> actual = constraint.linearize(config);
 
-
-
 	// expected
 	Matrix expectedH1 = Matrix_(3,3,
 			0.0,-1.0,2.1,

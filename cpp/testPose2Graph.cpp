@@ -51,7 +51,7 @@ TEST( Pose2Graph, linerization )
 	config.insert("x2",p2);
 	// Linearize
 	GaussianFactorGraph lfg_linearized = graph.linearize(config);
-	lfg_linearized.print("lfg_actual");
+	//lfg_linearized.print("lfg_actual");
 
 	// the expected linear factor
 	GaussianFactorGraph lfg_expected;
