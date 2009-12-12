@@ -44,7 +44,7 @@ namespace gtsam {
     #ifdef WIN32
     OutputDebugString(buf);
     #else    
-    printf("%s",buf);
+    cout << buf;
     #endif
     
   }
