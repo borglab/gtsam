@@ -220,35 +220,28 @@ Matrix GaussianFactor::matrix_augmented(const Ordering& ordering) const {
 
 /* ************************************************************************* */
 boost::tuple<list<int>, list<int>, list<double> >
-GaussianFactor::sparse(const Ordering& ordering, const Dimensions& variables) const {
+GaussianFactor::sparse(const Dimensions& columnIndices) const {
 
 	// declare return values
 	list<int> I,J;
 	list<double> S;
 
-	// loop over all variables in correct order
-	size_t column_start = 1;
-	BOOST_FOREACH(string key, ordering) {
-		try {
-			const Matrix& Aj = get_A(key);
-			for (size_t i = 0; i < Aj.size1(); i++) {
-				double sigma_i = sigmas_(i);
-				for (size_t j = 0; j < Aj.size2(); j++)
-					if (Aj(i, j) != 0.0) {
-						I.push_back(i + 1);
-						J.push_back(j + column_start);
-						S.push_back(Aj(i, j) / sigma_i);
-					}
-			}
-		} catch (std::invalid_argument& exception) {
-			// it's ok to not have a key in the ordering
-		}
-		// find dimension for this key
-		Dimensions::const_iterator it = variables.find(key);
+	// iterate over all matrices in the factor
+	string key; Matrix Aj;
+	FOREACH_PAIR( key, Aj, As_) {
+		// find first column index for this key
 		// TODO: check if end() and throw exception if not found
-		int dim = it->second;
-		// advance column index to next block by adding dim(key)
-		column_start += dim;
+		Dimensions::const_iterator it = columnIndices.find(key);
+		int column_start = it->second;
+		for (size_t i = 0; i < Aj.size1(); i++) {
+			double sigma_i = sigmas_(i);
+			for (size_t j = 0; j < Aj.size2(); j++)
+				if (Aj(i, j) != 0.0) {
+					I.push_back(i + 1);
+					J.push_back(j + column_start);
+					S.push_back(Aj(i, j) / sigma_i);
+				}
+		}
 	}
 
 	// return the result

@@ -157,14 +157,35 @@ pair<Matrix,Vector> GaussianFactorGraph::matrix(const Ordering& ordering) const 
 }
 
 /* ************************************************************************* */
+Dimensions GaussianFactorGraph::columnIndices(const Ordering& ordering) const {
+
+	// get the dimensions for all variables
+	Dimensions variableSet = dimensions();
+
+	// Find the starting index and dimensions for all variables given the order
+	size_t j = 1;
+	Dimensions result;
+	BOOST_FOREACH(string key, ordering) {
+		// associate key with first column index
+		result.insert(make_pair(key,j));
+		// find dimension for this key
+		Dimensions::const_iterator it = variableSet.find(key);
+		// advance column index to next block by adding dim(key)
+		j += it->second;
+	}
+
+	return result;
+}
+
+/* ************************************************************************* */
 Matrix GaussianFactorGraph::sparse(const Ordering& ordering) const {
 
 	// return values
 	list<int> I,J;
 	list<double> S;
 
-	// get the dimensions for all variables
-	Dimensions variableSet = dimensions();
+	// get the starting column indices for all variables
+	Dimensions indices = columnIndices(ordering);
 
 	// Collect the I,J,S lists for all factors
 	int row_index = 0;
@@ -173,7 +194,7 @@ Matrix GaussianFactorGraph::sparse(const Ordering& ordering) const {
 		// get sparse lists for the factor
 		list<int> i1,j1;
 		list<double> s1;
-		boost::tie(i1,j1,s1) = factor->sparse(ordering,variableSet);
+		boost::tie(i1,j1,s1) = factor->sparse(indices);
 
 		// add row_start to every row index
 		transform(i1.begin(), i1.end(), i1.begin(), bind2nd(plus<int>(), row_index));

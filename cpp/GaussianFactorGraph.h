@@ -152,6 +152,13 @@ namespace gtsam {
      */
     std::pair<Matrix,Vector> matrix (const Ordering& ordering) const;
 
+    /**
+     * get the starting column indices for all variables
+     * @param ordering of variables needed for matrix column order
+     * @return The set of all variable/index pairs
+     */
+    Dimensions columnIndices(const Ordering& ordering) const;
+
   	/**
   	 * Return 3*nzmax matrix where the rows correspond to the vectors i, j, and s
   	 * to generate an m-by-n sparse matrix, which can be given to MATLAB's sparse function.

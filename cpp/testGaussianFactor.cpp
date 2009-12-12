@@ -552,7 +552,7 @@ TEST( GaussianFactor, sparse )
 
 	list<int> i,j;
 	list<double> s;
-	boost::tie(i,j,s) = lf->sparse(ord, fg.dimensions());
+	boost::tie(i,j,s) = lf->sparse(fg.columnIndices(ord));
 
 	list<int> i1,j1;
 	i1 += 1,2,1,2;
@@ -581,14 +581,14 @@ TEST( GaussianFactor, sparse2 )
 
 	list<int> i,j;
 	list<double> s;
-	boost::tie(i,j,s) = lf->sparse(ord, fg.dimensions());
+	boost::tie(i,j,s) = lf->sparse(fg.columnIndices(ord));
 
 	list<int> i1,j1;
 	i1 += 1,2,1,2;
-	j1 += 1,2,5,6;
+	j1 += 5,6,1,2;
 
 	list<double> s1;
-	s1 += 10,10,-10,-10;
+	s1 += -10,-10,10,10;
 
 	CHECK(i==i1);
 	CHECK(j==j1);

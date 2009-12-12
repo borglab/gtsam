@@ -211,10 +211,10 @@ public:
 	 * Return vectors i, j, and s to generate an m-by-n sparse matrix
 	 * such that S(i(k),j(k)) = s(k), which can be given to MATLAB's sparse.
 	 * As above, the standard deviations are baked into A and b
-	 * @param ordering of variables needed for matrix column order
+	 * @param first column index for each variable
 	 */
 	boost::tuple<std::list<int>, std::list<int>, std::list<double> >
-		sparse(const Ordering& ordering, const Dimensions& variables) const;
+		sparse(const Dimensions& columnIndices) const;
 
 	/**
 	 * Add gradient contribution to gradient config g
