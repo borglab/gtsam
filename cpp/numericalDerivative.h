@@ -13,6 +13,25 @@
 namespace gtsam {
 
   /**
+	* Numerically compute gradient of scalar function
+	 * Class X is the input argument
+   * needs dim, exmap, vector
+   */
+  template<class X>
+  Vector numericalGradient(double (*h)(const X&), const X& x, double delta=1e-5) {
+    double hx = h(x);
+    double factor = 1.0/(2.0*delta);
+    const size_t n = x.dim();
+    Vector d(n,0.0), g(n,0.0);
+    for (size_t j=0;j<n;j++) {
+      d(j) +=   delta; double hxplus = h(x.exmap(d));
+      d(j) -= 2*delta; double hxmin  = h(x.exmap(d));
+      d(j) +=   delta; g(j) = (hxplus-hxmin)*factor;
+    }
+    return g;
+  }
+
+  /**
    * Compute numerical derivative in arument 1 of unary function
    * @param h unary function yielding m-vector
    * @param x n-dimensional value at which to evaluate h
@@ -29,8 +48,7 @@ namespace gtsam {
    * both classes need dim, exmap, vector
    */
   template<class Y, class X>
-    Matrix numericalDerivative11
-    (Y (*h)(const X&), const X& x, double delta=1e-5) {
+  Matrix numericalDerivative11(Y (*h)(const X&), const X& x, double delta=1e-5) {
     Vector hx = h(x).vector();
     double factor = 1.0/(2.0*delta);
     const size_t m = hx.size(), n = x.dim();
@@ -53,18 +71,16 @@ namespace gtsam {
    * @param delta increment for numerical derivative
    * @return m*n Jacobian computed via central differencing
    */
-  Matrix NumericalDerivative21
-    (Vector (*h)(const Vector&, const Vector&), const Vector& x1, const Vector& x2, double delta=1e-5);
+  Matrix NumericalDerivative21(Vector (*h)(const Vector&, const Vector&),
+  		const Vector& x1, const Vector& x2, double delta=1e-5);
 
   /**
    * templated version (starts with LOWERCASE n)
    * classes need dim, exmap, vector
    */
-   template<class Y, class X1, class X2>
-    Matrix numericalDerivative21
-    (Y (*h)(const X1&, const X2&), 
-     const X1& x1, const X2& x2, double delta=1e-5) 
-  {
+  template<class Y, class X1, class X2>
+  Matrix numericalDerivative21(Y (*h)(const X1&, const X2&),
+      const X1& x1, const X2& x2, double delta=1e-5) {
     Vector hx = h(x1,x2).vector();
     double factor = 1.0/(2.0*delta);
     const size_t m = hx.size(), n = x1.dim();
