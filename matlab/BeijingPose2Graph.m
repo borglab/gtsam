@@ -1,7 +1,7 @@
 load beijing.mat;
 load beijing_angles.mat;
 load beijing_graph.mat;
-load beijing_config.mat;
+%load beijing_config.mat;
 
 cov = [ 0.25, 0, 0; 0, 0.25, 0; 0, 0, 0.01];
 
@@ -12,7 +12,7 @@ ord = Ordering();
 ord2 = Ordering();
 
 for i=1:length(ways)
-    if mod(i,50) == 0
+    if mod(i,500) == 0
         fprintf(1, 'processing way %d\n', i);
     end
     for j=1:length(ways{i})-1
@@ -39,6 +39,8 @@ for i=1:length(ways)
 end
 ord.unique();
 ord2.unique();
+% ord.reverse();
+% ord2.reverse();
 
 if 0
     config=Pose2Config();
@@ -69,9 +71,14 @@ figure(2)
 spy(A2);
 
 % show R factor
-P = COLAMD(A);
+R = qr(A,0);
 figure(3)
+spy(R)
+
+% show re-ordered R factor
+P = colamd(A);
+figure(4)
 spy(A(:,P))
 R = qr(A(:,P),0);
-figure(4)
+figure(5)
 spy(R)

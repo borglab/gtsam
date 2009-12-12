@@ -3,6 +3,7 @@ class Ordering {
   void push_back(string s);
   void print(string s) const;
   void unique ();
+  void reverse ();
 };
 
 class SymbolicFactor{
