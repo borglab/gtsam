@@ -8,7 +8,6 @@ cov = [ 0.25, 0, 0; 0, 0.25, 0; 0, 0, 0.01];
 
 factors = Pose2Graph;
 factors2 = Pose2Graph;
-ord = Ordering();
 ord2 = Ordering();
 
 [~, idx] = sort(way_levels, 'descend');
@@ -30,8 +29,6 @@ for i=1:length(idx)
         if pred(id1) == id2 || pred(id2) == id1 %% in the spanning tree
             factor=Pose2Factor(key1,key2,measured, cov);
             factors.push_back(factor);
-            ord.push_back(key1);
-            ord.push_back(key2);
         else %% not in the spanning tree
             factors2.push_back(Pose2Factor(key1,key2,measured, cov));
             ord2.push_back(key1);
@@ -39,10 +36,7 @@ for i=1:length(idx)
         end
     end
 end
-ord.unique();
 ord2.unique();
-% ord.reverse();
-% ord2.reverse();
 
 if 1
     config=Pose2Config();
@@ -58,7 +52,8 @@ if 1
     save('beijing_config.mat','config');
 end
 
-amd_ord=factors.getOrdering_(); % does not work
+% Spanning tree with bottom-up ordering
+ord = bottom_up_ordering(pred);
 LFG=factors.linearize_(config);
 ijs=LFG.sparse(ord);
 A=sparse(ijs(1,:),ijs(2,:),ijs(3,:)); 
