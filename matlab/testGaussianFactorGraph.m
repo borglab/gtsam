@@ -6,8 +6,8 @@ CHECK('equals',fg.equals(fg2,1e-9));
 
 %-----------------------------------------------------------------------
 % error
-cfg = createZeroDelta();
-actual = fg.error(cfg);
+zero = createZeroDelta();
+actual = fg.error(zero);
 DOUBLES_EQUAL( 5.625, actual, 1e-9 );
 
 %-----------------------------------------------------------------------
@@ -60,25 +60,9 @@ CHECK('eliminateAll', actual1.equals(expected,1e-5));
 
 fg = createGaussianFactorGraph();
 ord = Ordering;
+ord.push_back('x1');
 ord.push_back('x2');
 ord.push_back('l1');
-ord.push_back('x1');
 
-A = fg.matrix(ord);
+[H,z] = fg.matrix(ord);
 
-%-----------------------------------------------------------------------
-% gradientDescent
-
-% Expected solution
-fg = createGaussianFactorGraph();
-expected = fg.optimize_(ord); % destructive
-
-% Do gradient descent
-% fg2 = createGaussianFactorGraph();
-% zero = createZeroDelta();
-% actual = fg2.gradientDescent(zero);
-% CHECK(assert_equal(expected,actual,1e-2));
-
-% Do conjugate gradient descent
-% actual2 = fg2.conjugateGradientDescent(zero);
-% CHECK(assert_equal(expected,actual2,1e-2));

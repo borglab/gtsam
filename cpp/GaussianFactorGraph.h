@@ -180,6 +180,13 @@ namespace gtsam {
   	 * @return solution
   	 */
   	VectorConfig gradientDescent(const VectorConfig& x0) const;
+
+  	/**
+  	 * Find solution using conjugate gradient descent
+  	 * @param x0: VectorConfig specifying initial estimate
+  	 * @return solution
+  	 */
+  	VectorConfig conjugateGradientDescent(const VectorConfig& x0) const;
   };
 
 }

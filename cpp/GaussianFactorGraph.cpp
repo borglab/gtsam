@@ -230,10 +230,42 @@ VectorConfig GaussianFactorGraph::optimalUpdate(const VectorConfig& x,
 /* ************************************************************************* */
 VectorConfig GaussianFactorGraph::gradientDescent(const VectorConfig& x0) const {
 	VectorConfig x = x0;
-	int K = 10*x.size();
-	for (int k=0;k<K;k++) {
+	int maxK = 10*x.dim();
+	for (int k=0;k<maxK;k++) {
+    // calculate gradient and check for convergence
 		VectorConfig g = gradient(x);
+		double dotg = dot(g,g);
+		if (dotg<1e-9) break;
 		x = optimalUpdate(x,g);
+	}
+	return x;
+}
+
+/* ************************************************************************* */
+// directions are actually negative of those in cgd.lyx
+VectorConfig GaussianFactorGraph::conjugateGradientDescent(
+		const VectorConfig& x0) const {
+
+	// take first step in direction of the gradient
+	VectorConfig d = gradient(x0);
+	VectorConfig x = optimalUpdate(x0,d);
+	double prev_dotg = dot(d,d);
+
+	// loop over remaining (n-1) dimensions
+	int n = d.dim();
+	for (int k=2;k<=n;k++) {
+    // calculate gradient and check for convergence
+		VectorConfig gk = gradient(x);
+		double dotg = dot(gk,gk);
+		if (dotg<1e-9) break;
+
+    // calculate new search direction
+		double beta = dotg/prev_dotg;
+		prev_dotg = dotg;
+		d = gk + d * beta;
+
+		// do step in new search direction
+		x = optimalUpdate(x,d);
 	}
 	return x;
 }
