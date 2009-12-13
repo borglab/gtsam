@@ -214,8 +214,9 @@ namespace gtsam {
 		BOOST_FOREACH(sharedClique child, clique->children_)
 	  	child->parent_.reset();
 
-	  BOOST_FOREACH(string key, clique->ordering())
+	  BOOST_FOREACH(string key, clique->ordering()) {
 			nodes_.erase(key);
+	  }
 	}
 
 	/* ************************************************************************* */
@@ -380,7 +381,7 @@ namespace gtsam {
 			// remove path above me
 			boost::tie(factors,orphans) = removePath<Factor>(clique->parent_);
 
-			// add children to list of orphans
+			// add children to list of orphans (splice also removed them from clique->children_)
 			orphans.splice (orphans.begin(), clique->children_);
 
 			// add myself to factors
@@ -454,11 +455,15 @@ namespace gtsam {
 		for ( rit=bayesNet.rbegin(); rit != bayesNet.rend(); ++rit )
 			insert(*rit);
 
+		int count = 0;
 		// add orphans to the bottom of the new tree
 		BOOST_FOREACH(sharedClique orphan, orphans) {
-			string key = orphan->separator_.front(); // todo: assumes there is a separator...
+
+			string key = orphan->separator_.front();
 			sharedClique parent = (*this)[key];
+
 			parent->children_ += orphan;
+			orphan->parent_ = parent; // set new parent!
 		}
 
 	}
