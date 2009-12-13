@@ -5,7 +5,6 @@ load beijing_config.mat;
 
 cov = [ 0.25, 0, 0; 0, 0.25, 0; 0, 0, 0.01];
 
-
 factors = Pose2Graph;
 factors2 = Pose2Graph;
 ord2 = Ordering();
@@ -36,7 +35,7 @@ for i=length(edge_order):-1:1
 end
 ord2.unique();
 
-if 0
+if 1
     config=Pose2Config();
     n=size(points,1);
     for j=1:n
@@ -70,12 +69,6 @@ R = qr(A,0);
 figure(3)
 spy(R)
 
-% plot on map
-figure(7)
-gplot(tree,points)
-%gplot(tree,points)
-axis equal
-
 % show re-ordered R factor
 % P = colamd(A);
 % figure(4)
@@ -83,3 +76,4 @@ axis equal
 % R = qr(A(:,P),0);
 % figure(5)
 % spy(R)
+
