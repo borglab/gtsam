@@ -1,7 +1,7 @@
 load beijing.mat;
 load beijing_angles.mat;
 load beijing_graph.mat;
-%load beijing_config.mat;
+load beijing_config.mat;
 
 cov = [ 0.25, 0, 0; 0, 0.25, 0; 0, 0, 0.01];
 
@@ -11,7 +11,7 @@ factors2 = Pose2Graph;
 ord2 = Ordering();
 
 [rows cols] = find(tree);
-for i=1:length(edge_order)
+for i=length(edge_order):-1:1
     if mod(i,500) == 0
         fprintf(1, 'processing edge %d\n', i);
     end
@@ -36,7 +36,7 @@ for i=1:length(edge_order)
 end
 ord2.unique();
 
-if 1
+if 0
     config=Pose2Config();
     n=size(points,1);
     for j=1:n
@@ -69,6 +69,12 @@ spy(A);
 R = qr(A,0);
 figure(3)
 spy(R)
+
+% plot on map
+figure(7)
+gplot(tree,points)
+%gplot(tree,points)
+axis equal
 
 % show re-ordered R factor
 % P = colamd(A);
