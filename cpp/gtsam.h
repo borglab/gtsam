@@ -106,6 +106,8 @@ class GaussianFactorGraph {
   VectorConfig* optimize_(const Ordering& ordering);
   pair<Matrix,Vector> matrix(const Ordering& ordering) const;
   Matrix sparse(const Ordering& ordering) const;
+  VectorConfig* gradientDescent_(const VectorConfig& x0) const;
+  VectorConfig* conjugateGradientDescent_(const VectorConfig& x0) const;
 };
 
 class Point2 {

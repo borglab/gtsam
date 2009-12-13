@@ -292,3 +292,17 @@ VectorConfig GaussianFactorGraph::conjugateGradientDescent(
 }
 
 /* ************************************************************************* */
+/* ************************************************************************* */
+boost::shared_ptr<VectorConfig>
+GaussianFactorGraph::gradientDescent_(const VectorConfig& x0) const {
+	return boost::shared_ptr<VectorConfig>(new VectorConfig(gradientDescent(x0)));
+}
+
+/* ************************************************************************* */
+boost::shared_ptr<VectorConfig>
+GaussianFactorGraph::conjugateGradientDescent_(const VectorConfig& x0) const {
+	return boost::shared_ptr<VectorConfig>(new VectorConfig(conjugateGradientDescent(x0)));
+}
+
+/* ************************************************************************* */
+
