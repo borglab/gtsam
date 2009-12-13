@@ -10,13 +10,10 @@ while ~isempty(parents)
     node_levels(parents) = current_level;
     current_level = current_level + 1;
 end
-max_level = current_level - 1;
+[~, node_order] = sort(node_levels, 'descend');  % the order of the nodes in leaves-to-root order
 
 ordering = Ordering();
-for level = max_level:-1:1
-    ids = find(node_levels==level);
-    for i = 1:length(ids)
-        ordering.push_back(sprintf('x%d', ids(i)));
-    end
+for i = 1:length(node_order)
+    ordering.push_back(sprintf('x%d', node_order(i)));
 end
 end

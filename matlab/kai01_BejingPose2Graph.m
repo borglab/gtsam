@@ -10,30 +10,28 @@ factors = Pose2Graph;
 factors2 = Pose2Graph;
 ord2 = Ordering();
 
-[~, idx] = sort(way_levels, 'descend');
-
-for i=1:length(idx)
+[rows cols] = find(tree);
+for i=1:length(edge_order)
     if mod(i,500) == 0
-        fprintf(1, 'processing way %d\n', i);
+        fprintf(1, 'processing edge %d\n', i);
     end
-    for j=1:length(ways{idx(i)})-1
-        id1 = ways{idx(i)}(j);
-        id2 = ways{idx(i)}(j+1);
-        key1 = sprintf('x%d', id1);
-        key2 = sprintf('x%d', id2);
-
-        delta_x = points(id1,:) - points(id2,:);
-        delta_angle = angles(id1) - angles(id2);
-        measured = Pose2(delta_x(1), delta_x(2), delta_angle);
-
-        if pred(id1) == id2 || pred(id2) == id1 %% in the spanning tree
-            factor=Pose2Factor(key1,key2,measured, cov);
-            factors.push_back(factor);
-        else %% not in the spanning tree
-            factors2.push_back(Pose2Factor(key1,key2,measured, cov));
-            ord2.push_back(key1);
-            ord2.push_back(key2);
-        end
+    
+    id1 = rows(edge_order(i));
+    id2 = cols(edge_order(i));
+    key1 = sprintf('x%d', id1);
+    key2 = sprintf('x%d', id2);
+    
+    delta_x = points(id1,:) - points(id2,:);
+    delta_angle = angles(id1) - angles(id2);
+    measured = Pose2(delta_x(1), delta_x(2), delta_angle);
+    
+    if pred(id1) == id2 || pred(id2) == id1 %% in the spanning tree
+        factor=Pose2Factor(key1,key2,measured, cov);
+        factors.push_back(factor);
+    else %% not in the spanning tree
+        factors2.push_back(Pose2Factor(key1,key2,measured, cov));
+        ord2.push_back(key1);
+        ord2.push_back(key2);
     end
 end
 ord2.unique();
@@ -61,11 +59,11 @@ figure(1)
 spy(A);
 %save('beijing_factors.mat', 'factors');
 
-LFG2=factors2.linearize_(config);
-ijs2=LFG2.sparse(ord2);
-A2=sparse(ijs2(1,:),ijs2(2,:),ijs2(3,:)); 
-figure(2)
-spy(A2);
+% LFG2=factors2.linearize_(config);
+% ijs2=LFG2.sparse(ord2);
+% A2=sparse(ijs2(1,:),ijs2(2,:),ijs2(3,:)); 
+% figure(2)
+% spy(A2);
 
 % show R factor
 R = qr(A,0);
@@ -73,9 +71,9 @@ figure(3)
 spy(R)
 
 % show re-ordered R factor
-P = colamd(A);
-figure(4)
-spy(A(:,P))
-R = qr(A(:,P),0);
-figure(5)
-spy(R)
+% P = colamd(A);
+% figure(4)
+% spy(A(:,P))
+% R = qr(A(:,P),0);
+% figure(5)
+% spy(R)
