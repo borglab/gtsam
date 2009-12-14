@@ -346,10 +346,12 @@ weighted_eliminate(Matrix& A, Vector& b, const Vector& sigmas) {
 			double ai = a(i);
 			b(i) -= ai*d;
 			double *Aptr = A.data().begin()+i*n+j+1;
+			double *rptr = r.data().begin()+j+1;
 			for (int j2=j+1;j2<n;++j2){ // limit to only columns in separator
 				//A(i,j2) -= ai*r(j2);
-				*Aptr -= ai*r(j2);
+				*Aptr -= ai* *rptr;
 				Aptr++;
+				rptr++;
 			}
 		}
 		if (verbose) print(sub(A,0,m,j+1,n), "updated A");
