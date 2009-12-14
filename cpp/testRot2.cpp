@@ -26,6 +26,25 @@ TEST( Rot2, transpose)
 }
 
 /* ************************************************************************* */
+TEST( Rot2, negtranspose)
+{
+    CHECK(assert_equal(-R.inverse().matrix(),R.negtranspose()));
+}
+
+/* ************************************************************************* */
+TEST( Rot2, compose)
+{
+    CHECK(assert_equal(Rot2(0.45), Rot2(0.2)*Rot2(0.25)));
+    CHECK(assert_equal(Rot2(0.45), Rot2(0.25)*Rot2(0.2)));
+}
+
+/* ************************************************************************* */
+TEST( Rot2, invcompose)
+{
+    CHECK(assert_equal(Rot2(0.2), Rot2(0.25).invcompose(Rot2(0.45))));
+}
+
+/* ************************************************************************* */
 TEST( Rot2, equals)
 {
 	CHECK(R.equals(R));
