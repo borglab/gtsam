@@ -18,7 +18,7 @@ using namespace std;
 namespace gtsam {
 
 	/* ************************************************************************* */
-	bool check_convergence(double relativeErrorTreshold,
+	inline bool check_convergence(double relativeErrorTreshold,
 			double absoluteErrorTreshold, double currentError, double newError,
 			int verbosity) {
 		// check if diverges
