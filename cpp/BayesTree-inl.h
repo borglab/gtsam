@@ -434,11 +434,10 @@ namespace gtsam {
 	/* ************************************************************************* */
 	template<class Conditional>
 	template<class Factor>
-	void BayesTree<Conditional>::update(const FactorGraph<Factor>& newFactors) {
+	void BayesTree<Conditional>::update_internal(const FactorGraph<Factor>& newFactors, Cliques& orphans) {
 
 		// Remove the contaminated part of the Bayes tree
 		FactorGraph<Factor> factors;
-		Cliques orphans;
 		boost::tie(factors, orphans) = removeTop<Factor>(newFactors);
 
 		// add the factors themselves
@@ -467,7 +466,15 @@ namespace gtsam {
 		}
 
 	}
-	/* ************************************************************************* */
+
+	template<class Conditional>
+	template<class Factor>
+	void BayesTree<Conditional>::update(const FactorGraph<Factor>& newFactors) {
+		Cliques orphans;
+		update_internal(newFactors, orphans);
+	}
+
+/* ************************************************************************* */
 
 }
 /// namespace gtsam

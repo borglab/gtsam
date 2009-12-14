@@ -188,8 +188,10 @@ namespace gtsam {
 		removeTop(const FactorGraph<Factor>& newFactors);
 
 		/**
-		 * iSAM.
+		 * iSAM. (_internal provides access to list of orphans for drawing purposes)
 		 */
+		template<class Factor>
+		void update_internal(const FactorGraph<Factor>& newFactors, Cliques& orphans);
 		template<class Factor>
 		void update(const FactorGraph<Factor>& newFactors);
 
