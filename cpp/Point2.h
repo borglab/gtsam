@@ -30,8 +30,8 @@ namespace gtsam {
     /** print with optional string */
     void print(const std::string& s = "") const;
 
-		/** equals with an tolerance, prints out message if unequal*/
-		bool equals(const Point2& q, double tol = 1e-9) const;
+    /** equals with an tolerance, prints out message if unequal*/
+    bool equals(const Point2& q, double tol = 1e-9) const;
 
     /** get functions for x, y */
     double x() const {return x_;}
@@ -40,7 +40,7 @@ namespace gtsam {
     /** return DOF, dimensionality of tangent space */
     size_t dim() const { return 2;}
 		
-    /** Given 3-dim tangent vector, create new rotation */
+    /** Given 2-dim tangent vector, create new point */
     Point2 exmap(const Vector& d) const { 
       return Point2(x_+d(0),y_+d(1));
     }

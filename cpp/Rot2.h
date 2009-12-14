@@ -34,7 +34,14 @@ namespace gtsam {
 		Rot2(double theta) : c_(cos(theta)), s_(sin(theta)) {}
 
 		/** return angle */
-		inline double angle() const {	return atan2(s_, c_);	}
+		double theta() const { return atan2(s_,c_); }
+		double angle() const { return atan2(s_,c_); }
+
+		/** return cos */
+		double c() const { return c_; }
+
+		/** return sin */
+		double s() const { return s_; }
 
 		/** print */
 		void print(const std::string& s = "theta") const;
@@ -54,11 +61,17 @@ namespace gtsam {
 		/** return 2*2 rotation matrix */
 		Matrix matrix() const;
 
-		/** return 3*3 transpose (inverse) rotation matrix   */
+		/** return 2*2 transpose (inverse) rotation matrix   */
 		Matrix transpose() const;
+
+		/** return 2*2 negative transpose */
+		Matrix negtranspose() const;
 
 		/** inverse transformation  */
 		Rot2 inverse() const;
+
+		/** compose with the inverse of this rotation */
+		Rot2 invcompose(const Rot2& R) const;
 
 		/** composition via sum and difference formulas */
 		Rot2 operator*(const Rot2& R) const;

@@ -11,88 +11,66 @@ namespace gtsam {
 
 	/* ************************************************************************* */
 	void Pose2::print(const string& s) const {
-		cout << s << "(" << x_ << ", " << y_ << ", " << theta_ << ")" << endl;
+		cout << s << "(" << t_.x() << ", " << t_.y() << ", " << r_.theta() << ")" << endl;
 	}
 
 	/* ************************************************************************* */
 	bool Pose2::equals(const Pose2& q, double tol) const {
-		return (fabs(x_ - q.x_) < tol && fabs(y_ - q.y_) < tol && fabs(theta_
-				- q.theta_) < tol);
+		return t_.equals(q.t_, tol) && r_.equals(q.r_, tol);
 	}
 
 	/* ************************************************************************* */
 	Pose2 Pose2::exmap(const Vector& v) const {
-		return Pose2(x_ + v(0), y_ + v(1), theta_ + v(2));
+	  return Pose2(t_+Point2(v(0),v(1)), r_.exmap(Vector_(1, v(2))));
 	}
 
 	/* ************************************************************************* */
 	Vector Pose2::vector() const {
-		Vector v(3);
-		v(0) = x_;
-		v(1) = y_;
-		v(2) = theta_;
-		return v;
+		return Vector_(3, t_.x(), t_.y(), r_.theta());
 	}
 
 	/* ************************************************************************* */
-	Pose2 Pose2::rotate(double theta) const {
-		double c = cos(theta), s = sin(theta);
-		return Pose2(c * x_ - s * y_, s * x_ + c * y_, theta + theta_);
-	}
+//	Pose2 Pose2::rotate(double theta) const {
+//		//return Pose2(t_, Rot2(theta)*r_);
+//	  return Pose2(Point2(0.0,0.0),-theta)*(*this);
+//	}
 
 	/* ************************************************************************* */
 	Point2 transform_to(const Pose2& pose, const Point2& point) {
-		double dx = point.x()-pose.x(), dy = point.y()-pose.y();
-		double ct=cos(pose.theta()), st=sin(pose.theta());
-		return Point2(ct*dx + st*dy, -st*dx + ct*dy);
+	  return pose*point;
 	}
 
 	// TODO, have a combined function that returns both function value and derivative
 	Matrix Dtransform_to1(const Pose2& pose, const Point2& point) {
-		double dx = point.x()-pose.x(), dy = point.y()-pose.y();
-		double ct=cos(pose.theta()), st=sin(pose.theta());
-		double transformed_x = ct*dx + st*dy, transformed_y = -st*dx + ct*dy;
-		return Matrix_(2,3,
-				-ct, -st,  transformed_y,
-				 st, -ct, -transformed_x
-				);
+	  Matrix dx_dt = pose.r().negtranspose();
+	  Matrix dx_dr = Dunrotate1(pose.r(), point-pose.t());
+	  return collect(2, &dx_dt, &dx_dr);
 	}
 
 	Matrix Dtransform_to2(const Pose2& pose, const Point2& point) {
-		double ct=cos(pose.theta()), st=sin(pose.theta());
-		return Matrix_(2,2,
-				 ct,  st,
-				-st,  ct
-				);
+	  return pose.r().transpose();
 	}
 
 	/* ************************************************************************* */
 	Pose2 between(const Pose2& p1, const Pose2& p2) {
-		double dx = p2.x()-p1.x(), dy = p2.y()-p1.y();
-		double ct=cos(p1.theta()), st=sin(p1.theta());
-		return Pose2(ct*dx + st*dy, -st*dx + ct*dy, p2.theta()-p1.theta());
+		return Pose2(
+		    p1.r().invcompose(p2.r()),
+		    p1.r().unrotate(p2.t() - p1.t()));
 	}
 
 	Matrix Dbetween1(const Pose2& p1, const Pose2& p2) {
-		double dx = p2.x()-p1.x(), dy = p2.y()-p1.y();
-		double ct=cos(p1.theta()), st=sin(p1.theta());
-		double transformed_x = ct*dx + st*dy, transformed_y = -st*dx + ct*dy;
-		return Matrix_(3,3,
-				-ct, -st,  transformed_y,
-				 st, -ct, -transformed_x,
-				0.0, 0.0, -1.0
-				);
+	  Matrix dbt_dp = Dtransform_to1(p1, p2.t());
+	  Matrix dbr_dp = Matrix_(1,3, 0.0, 0.0, -1.0);
+	  return stack(2, &dbt_dp, &dbr_dp);
 	}
 
 	Matrix Dbetween2(const Pose2& p1, const Pose2& p2) {
-		double ct=cos(p1.theta()), st=sin(p1.theta());
-		return Matrix_(3,3,
-				 ct,  st, 0.0,
-				-st,  ct, 0.0,
-				0.0, 0.0, 1.0
-				);
+	  Matrix db_dt2 = p1.r().transpose();
+	  return Matrix_(3,3,
+	      db_dt2.data()[0], db_dt2.data()[1], 0.0,
+	      db_dt2.data()[2], db_dt2.data()[3], 0.0,
+	      0.0,              0.0,              1.0);
 	}
 
 	/* ************************************************************************* */
-
 } // namespace gtsam
