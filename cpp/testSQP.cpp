@@ -37,27 +37,27 @@ using namespace boost::assign;
 // trick from some reading group
 #define FOREACH_PAIR( KEY, VAL, COL) BOOST_FOREACH (boost::tie(KEY,VAL),COL)
 
-/**
+/* *********************************************************************
  * This example uses a nonlinear objective function and
  * nonlinear equality constraint.  The formulation is actually
- * the Choleski form that creates the full Hessian explicitly,
+ * the Cholesky form that creates the full Hessian explicitly,
  * which should really be avoided with our QR-based machinery.
  *
  * Note: the update equation used here has a fixed step size
  * and gain that is rather arbitrarily chosen, and as such,
  * will take a silly number of iterations.
  */
-TEST (SQP, problem1_choleski ) {
+TEST (SQP, problem1_cholesky ) {
 	bool verbose = false;
 	// use a nonlinear function of f(x) = x^2+y^2
 	// nonlinear equality constraint: g(x) = x^2-5-y=0
-	// Lagrangian: f(x) + lam*g(x)
+	// Lagrangian: f(x) + \lambda*g(x)
 
-	// state structure: [x y lam]
+	// state structure: [x y \lambda]
 	VectorConfig init, state;
 	init.insert("x", Vector_(1, 1.0));
 	init.insert("y", Vector_(1, 1.0));
-	init.insert("lam", Vector_(1, 1.0));
+	init.insert("lambda", Vector_(1, 1.0));
 	state = init;
 
 	if (verbose) init.print("Initial State");
@@ -68,10 +68,10 @@ TEST (SQP, problem1_choleski ) {
 		if (verbose) cout << "\n******************************\nIteration: " << i+1 << endl;
 
 		// extract the states
-		double x, y, lam;
+		double x, y, lambda;
 		x = state["x"](0);
 		y = state["y"](0);
-		lam = state["lam"](0);
+		lambda = state["lambda"](0);
 
 		// calculate the components
 		Matrix H1, H2, gradG;
@@ -79,7 +79,7 @@ TEST (SQP, problem1_choleski ) {
 
 		// hessian of lagrangian function, in two columns:
 		H1 = Matrix_(2,1,
-				2.0+2.0*lam,
+				2.0+2.0*lambda,
 				0.0);
 		H2 = Matrix_(2,1,
 				0.0,
@@ -87,8 +87,8 @@ TEST (SQP, problem1_choleski ) {
 
 		// deriviative of lagrangian function
 		gradL = Vector_(2,
-				2.0*x*(1+lam),
-				2.0*y-lam);
+				2.0*x*(1+lambda),
+				2.0*y-lambda);
 
 		// constraint derivatives
 		gradG = Matrix_(2,1,
@@ -101,7 +101,7 @@ TEST (SQP, problem1_choleski ) {
 
 		// create a factor for the states
 		GaussianFactor::shared_ptr f1(new
-				GaussianFactor("x", H1, "y", H2, "lam", gradG, gradL, 1.0));
+				GaussianFactor("x", H1, "y", H2, "lambda", gradG, gradL, 1.0));
 
 		// create a factor for the lagrange multiplier
 		GaussianFactor::shared_ptr f2(new
@@ -116,7 +116,7 @@ TEST (SQP, problem1_choleski ) {
 
 		// solve
 		Ordering ord;
-		ord += "x", "y", "lam";
+		ord += "x", "y", "lambda";
 		VectorConfig delta = fg.optimize(ord).scale(-1.0);
 		if (verbose) delta.print("Delta");
 
@@ -129,13 +129,13 @@ TEST (SQP, problem1_choleski ) {
 
 	// verify that it converges to the nearest optimal point
 	VectorConfig expected;
-	expected.insert("lam", Vector_(1, -1.0));
+	expected.insert("lambda", Vector_(1, -1.0));
 	expected.insert("x", Vector_(1, 2.12));
 	expected.insert("y", Vector_(1, -0.5));
 	CHECK(assert_equal(expected,state, 1e-2));
 }
 
-/**
+/* *********************************************************************
  * This example uses a nonlinear objective function and
  * nonlinear equality constraint.  This formulation splits
  * the constraint into a factor and a linear constraint.
@@ -147,13 +147,13 @@ TEST (SQP, problem1_sqp ) {
 	bool verbose = false;
 	// use a nonlinear function of f(x) = x^2+y^2
 	// nonlinear equality constraint: g(x) = x^2-5-y=0
-	// Lagrangian: f(x) + lam*g(x)
+	// Lagrangian: f(x) + \lambda*g(x)
 
-	// state structure: [x y lam]
+	// state structure: [x y \lambda]
 	VectorConfig init, state;
 	init.insert("x", Vector_(1, 1.0));
 	init.insert("y", Vector_(1, 1.0));
-	init.insert("lam", Vector_(1, 1.0));
+	init.insert("lambda", Vector_(1, 1.0));
 	state = init;
 
 	if (verbose) init.print("Initial State");
@@ -164,18 +164,10 @@ TEST (SQP, problem1_sqp ) {
 		if (verbose) cout << "\n******************************\nIteration: " << i+1 << endl;
 
 		// extract the states
-		double x, y, lam;
+		double x, y, lambda;
 		x = state["x"](0);
 		y = state["y"](0);
-		lam = state["lam"](0);
-
-		// create components
-		Matrix A = eye(2);
-		Matrix gradG = Matrix_(1, 2,
-				2*x, -1.0);
-		Vector g = Vector_(1,
-				x*x-y-5);
-		Vector b = Vector_(2, x, y);
+		lambda = state["lambda"](0);
 
 		/** create the linear factor
 		 * ||h(x)-z||^2 => ||Ax-b||^2
@@ -185,6 +177,8 @@ TEST (SQP, problem1_sqp ) {
 		 *		A 	 identity
 		 *		b	 linearization point
 		 */
+		Matrix A = eye(2);
+		Vector b = Vector_(2, x, y);
 		GaussianFactor::shared_ptr f1(
 						new GaussianFactor("x", sub(A, 0,2, 0,1), // A(:,1)
 										   "y", sub(A, 0,2, 1,2), // A(:,2)
@@ -193,20 +187,21 @@ TEST (SQP, problem1_sqp ) {
 
 		/** create the constraint-linear factor
 		 * Provides a mechanism to use variable gain to force the constraint
-		 * to zero
-		 * lam*gradG*dx + dlam + lam
+		 * \lambda*gradG*dx + d\lambda = zero
 		 * formulated in matrix form as:
-		 * [lam*gradG eye(1)] [dx; dlam] = zero
+		 * [\lambda*gradG eye(1)] [dx; d\lambda] = zero
 		 */
+		Matrix gradG = Matrix_(1, 2,2*x, -1.0);
 		GaussianFactor::shared_ptr f2(
-				new GaussianFactor("x", lam*sub(gradG, 0,1, 0,1), // scaled gradG(:,1)
-								   "y", lam*sub(gradG, 0,1, 1,2), // scaled gradG(:,2)
-								   "lam", eye(1),     // dlam term
-								   Vector_(1, 0.0),             // rhs is zero
-								   1.0));                         // arbitrary sigma
+				new GaussianFactor("x", lambda*sub(gradG, 0,1, 0,1), // scaled gradG(:,1)
+								   "y", lambda*sub(gradG, 0,1, 1,2),         // scaled gradG(:,2)
+								   "lambda", eye(1),                         // dlambda term
+								   Vector_(1, 0.0),                          // rhs is zero
+								   1.0));                                    // arbitrary sigma
 
 		// create the actual constraint
-		// [gradG] [x; y]- g = 0
+		// [gradG] [x; y] - g = 0
+		Vector g = Vector_(1,x*x-y-5);
 		GaussianFactor::shared_ptr c1(
 				new GaussianFactor("x", sub(gradG, 0,1, 0,1),   // slice first part of gradG
 								   "y", sub(gradG, 0,1, 1,2),   // slice second part of gradG
@@ -222,7 +217,7 @@ TEST (SQP, problem1_sqp ) {
 
 		// solve
 		Ordering ord;
-		ord += "x", "y", "lam";
+		ord += "x", "y", "lambda";
 		VectorConfig delta = fg.optimize(ord);
 		if (verbose) delta.print("Delta");
 
@@ -243,6 +238,7 @@ TEST (SQP, problem1_sqp ) {
 	CHECK(assert_equal(state["y"], expected["y"], 1e-2));
 }
 
+/* ********************************************************************* */
 // components for nonlinear factor graphs
 bool vector_compare(const std::string& key,
 					const VectorConfig& feasible,
@@ -252,13 +248,15 @@ bool vector_compare(const std::string& key,
 	lin = input[key];
 	return equal_with_abs_tol(lin, feas, 1e-5);
 }
+
 typedef NonlinearFactorGraph<VectorConfig> NLGraph;
 typedef boost::shared_ptr<NonlinearFactor<VectorConfig> > shared;
 typedef boost::shared_ptr<NonlinearConstraint<VectorConfig> > shared_c;
 typedef boost::shared_ptr<NonlinearEquality<VectorConfig> > shared_eq;
 typedef boost::shared_ptr<VectorConfig> shared_cfg;
 typedef NonlinearOptimizer<NLGraph,VectorConfig> Optimizer;
-/**
+
+/* *********************************************************************
  * Determining a ground truth linear system
  * with two poses seeing one landmark, with each pose
  * constrained to a particular value
@@ -317,38 +315,43 @@ TEST (SQP, two_pose_truth ) {
 	CHECK(assert_equal(expected, *actual, 1e-5));
 }
 
+/* ********************************************************************* */
 namespace sqp_test1 {
-// binary constraint between landmarks
-/** g(x) = x-y = 0 */
-Vector g_func(const VectorConfig& config, const list<string>& keys) {
-	return config[keys.front()]-config[keys.back()];
-}
 
-/** gradient at l1 */
-Matrix grad_g1(const VectorConfig& config, const list<string>& keys) {
-	return eye(2);
-}
+	// binary constraint between landmarks
+	/** g(x) = x-y = 0 */
+	Vector g(const VectorConfig& config, const list<string>& keys) {
+		return config[keys.front()] - config[keys.back()];
+	}
 
-/** gradient at l2 */
-Matrix grad_g2(const VectorConfig& config, const list<string>& keys) {
-	return -1*eye(2);
-}
+	/** gradient at l1 */
+	Matrix G1(const VectorConfig& config, const list<string>& keys) {
+		return eye(2);
+	}
+
+	/** gradient at l2 */
+	Matrix G2(const VectorConfig& config, const list<string>& keys) {
+		return -1 * eye(2);
+	}
+
 } // \namespace sqp_test1
 
 namespace sqp_test2 {
-// Unary Constraint on x1
-/** g(x) = x -[1;1] = 0 */
-Vector g_func(const VectorConfig& config, const list<string>& keys) {
-	return config[keys.front()]-Vector_(2, 1.0, 1.0);
-}
 
-/** gradient at x1 */
-Matrix grad_g(const VectorConfig& config, const list<string>& keys) {
-	return eye(2);
-}
+	// Unary Constraint on x1
+	/** g(x) = x -[1;1] = 0 */
+	Vector g(const VectorConfig& config, const list<string>& keys) {
+		return config[keys.front()] - Vector_(2, 1.0, 1.0);
+	}
+
+	/** gradient at x1 */
+	Matrix G(const VectorConfig& config, const list<string>& keys) {
+		return eye(2);
+	}
+
 } // \namespace sqp_test2
 
-/**
+/* *********************************************************************
  *  Version that actually uses nonlinear equality constraints
  *  to to perform optimization.  Same as above, but no
  *  equality constraint on x2, and two landmarks that
@@ -364,8 +367,8 @@ TEST (SQP, two_pose ) {
 	// constant constraint on x1
 	boost::shared_ptr<NonlinearConstraint1<VectorConfig> > c1(
 			new NonlinearConstraint1<VectorConfig>(
-					"x1", *sqp_test2::grad_g,
-					*sqp_test2::g_func, 2, "L_x1"));
+					"x1", *sqp_test2::G,
+					*sqp_test2::g, 2, "L_x1"));
 
 	// measurement from x1 to l1
 	Vector z1 = Vector_(2, 0.0, 5.0);
@@ -380,9 +383,9 @@ TEST (SQP, two_pose ) {
 	// equality constraint between l1 and l2
 	boost::shared_ptr<NonlinearConstraint2<VectorConfig> > c2(
 			new NonlinearConstraint2<VectorConfig>(
-					"l1", *sqp_test1::grad_g1,
-					"l2", *sqp_test1::grad_g2,
-					*sqp_test1::g_func, 2, "L_l1l2"));
+					"l1", *sqp_test1::G1,
+					"l2", *sqp_test1::G2,
+					*sqp_test1::g, 2, "L_l1l2"));
 
 	// construct the graph
 	NLGraph graph;
@@ -403,7 +406,7 @@ TEST (SQP, two_pose ) {
 	initLagrange->insert("L_x1", Vector_(2, 1.0, 1.0));
 
 	// create state config variables and initialize them
-	VectorConfig state(*initialEstimate), state_lam(*initLagrange);
+	VectorConfig state(*initialEstimate), state_lambda(*initLagrange);
 
 	// optimization loop
 	int maxIt = 1;
@@ -422,7 +425,7 @@ TEST (SQP, two_pose ) {
 			} else {
 				// if a constraint, linearize using the constraint method (2 configs)
 				GaussianFactor::shared_ptr f, c;
-				boost::tie(f,c) = constraint->linearize(state, state_lam);
+				boost::tie(f,c) = constraint->linearize(state, state_lambda);
 				fg.push_back(f);
 				fg.push_back(c);
 			}
@@ -440,8 +443,8 @@ TEST (SQP, two_pose ) {
 		// update both state variables
 		state = state.exmap(delta);
 		if (verbose) state.print("newState");
-		state_lam = state_lam.exmap(delta);
-		if (verbose) state_lam.print("newStateLam");
+		state_lambda = state_lambda.exmap(delta);
+		if (verbose) state_lambda.print("newStateLam");
 	}
 
 	// verify
@@ -467,7 +470,7 @@ typedef NonlinearOptimizer<VSLAMGraph,VSLAMConfig> VOptimizer;
 typedef SQPOptimizer<VSLAMGraph, VSLAMConfig> SOptimizer;
 
 /**
- * Ground truth for a visual slam example with stereo vision
+ * Ground truth for a visual SLAM example with stereo vision
  */
 TEST (SQP, stereo_truth ) {
 	bool verbose = false;
@@ -528,8 +531,8 @@ TEST (SQP, stereo_truth ) {
 }
 
 
-/**
- * Ground truth for a visual slam example with stereo vision
+/* *********************************************************************
+ * Ground truth for a visual SLAM example with stereo vision
  * with some noise injected into the initial config
  */
 TEST (SQP, stereo_truth_noisy ) {
@@ -610,29 +613,35 @@ TEST (SQP, stereo_truth_noisy ) {
 	CHECK(assert_equal(*truthConfig,*(optimizer.config())));
 }
 
+/* ********************************************************************* */
 // Utility function to strip out a landmark number from a string key
 int getNum(const string& key) {
 	return atoi(key.substr(1, key.size()-1).c_str());
 }
 
+/* ********************************************************************* */
 namespace sqp_stereo {
-// binary constraint between landmarks
-/** g(x) = x-y = 0 */
-Vector g_func(const VSLAMConfig& config, const list<string>& keys) {
-	return config.landmarkPoint(getNum(keys.front())).vector()-config.landmarkPoint(getNum(keys.back())).vector();
-}
 
-/** gradient at l1 */
-Matrix grad_g1(const VSLAMConfig& config, const list<string>& keys) {
-	return eye(3);
-}
+	// binary constraint between landmarks
+	/** g(x) = x-y = 0 */
+	Vector g(const VSLAMConfig& config, const list<string>& keys) {
+		return config.landmarkPoint(getNum(keys.front())).vector()
+				- config.landmarkPoint(getNum(keys.back())).vector();
+	}
 
-/** gradient at l2 */
-Matrix grad_g2(const VSLAMConfig& config, const list<string>& keys) {
-	return -1.0*eye(3);
-}
-} // \namespace sqp_test1
+	/** gradient at l1 */
+	Matrix G1(const VSLAMConfig& config, const list<string>& keys) {
+		return eye(3);
+	}
 
+	/** gradient at l2 */
+	Matrix G2(const VSLAMConfig& config, const list<string>& keys) {
+		return -1.0 * eye(3);
+	}
+
+} // \namespace sqp_stereo
+
+/* ********************************************************************* */
 VSLAMGraph stereoExampleGraph() {
 	// create initial estimates
 	Rot3 faceDownY(Matrix_(3,3,
@@ -666,14 +675,15 @@ VSLAMGraph stereoExampleGraph() {
 	// as the previous examples
 	boost::shared_ptr<NonlinearConstraint2<VSLAMConfig> > c2(
 				new NonlinearConstraint2<VSLAMConfig>(
-						"l1", *sqp_stereo::grad_g1,
-						"l2", *sqp_stereo::grad_g2,
-						*sqp_stereo::g_func, 3, "L_l1l2"));
+						"l1", *sqp_stereo::G1,
+						"l2", *sqp_stereo::G2,
+						*sqp_stereo::g, 3, "L_l1l2"));
 	graph.push_back(c2);
 
 	return graph;
 }
 
+/* ********************************************************************* */
 boost::shared_ptr<VSLAMConfig> stereoExampleTruthConfig() {
 	// create initial estimates
 	Rot3 faceDownY(Matrix_(3,3,
@@ -697,7 +707,7 @@ boost::shared_ptr<VSLAMConfig> stereoExampleTruthConfig() {
 	return truthConfig;
 }
 
-/**
+/* *********************************************************************
  * SQP version of the above stereo example,
  * with the initial case as the ground truth
  */
@@ -725,7 +735,7 @@ TEST (SQP, stereo_sqp ) {
 	CHECK(assert_equal(*truthConfig,*(afterOneIteration.config())));
 }
 
-/**
+/* *********************************************************************
  * SQP version of the above stereo example,
  * with noise in the initial estimate
  */
@@ -789,7 +799,7 @@ TEST (SQP, stereo_sqp_noisy ) {
 	CHECK(assert_equal(*truthConfig,*(optimizer.config())));
 }
 
-/**
+/* *********************************************************************
  * SQP version of the above stereo example,
  * with noise in the initial estimate and manually specified
  * lagrange multipliers

@@ -17,17 +17,19 @@ using namespace gtsam;
 // unary functions with scalar variables
 /* ************************************************************************* */
 namespace test1 {
-/** p = 1, gradG(x) = 2x */
-Matrix grad_g(const VectorConfig& config, const list<string>& keys) {
-	double x = config[keys.front()](0);
-	return Matrix_(1,1, 2*x);
-}
 
-/** p = 1, g(x) = x^2-5 = 0 */
-Vector g_func(const VectorConfig& config, const list<string>& keys) {
-	double x = config[keys.front()](0);
-	return Vector_(1, x*x-5);
-}
+	/** p = 1, g(x) = x^2-5 = 0 */
+	Vector g(const VectorConfig& config, const list<string>& keys) {
+		double x = config[keys.front()](0);
+		return Vector_(1, x * x - 5);
+	}
+
+	/** p = 1, gradG(x) = 2x */
+	Matrix G(const VectorConfig& config, const list<string>& keys) {
+		double x = config[keys.front()](0);
+		return Matrix_(1, 1, 2 * x);
+	}
+
 } // \namespace test1
 
 /* ************************************************************************* */
@@ -36,7 +38,7 @@ TEST( NonlinearConstraint1, unary_scalar_construction ) {
 	// the lagrange multipliers will be expected on L_x1
 	// and there is only one multiplier
 	size_t p = 1;
-	NonlinearConstraint1<VectorConfig> c1("x", *test1::grad_g, *test1::g_func, p, "L_x1");
+	NonlinearConstraint1<VectorConfig> c1("x", *test1::G, *test1::g, p, "L_x1");
 
 	// get a configuration to use for finding the error
 	VectorConfig config;
@@ -44,14 +46,14 @@ TEST( NonlinearConstraint1, unary_scalar_construction ) {
 
 	// calculate the error
 	Vector actual = c1.error_vector(config);
-	Vector expected = Vector_(1.0, -4.0);
+	Vector expected = Vector_(1, -4.0);
 	CHECK(assert_equal(actual, expected, 1e-5));
 }
 
 /* ************************************************************************* */
 TEST( NonlinearConstraint1, unary_scalar_linearize ) {
 	size_t p = 1;
-	NonlinearConstraint1<VectorConfig> c1("x", *test1::grad_g, *test1::g_func, p, "L_x1");
+	NonlinearConstraint1<VectorConfig> c1("x", *test1::G, *test1::g, p, "L_x1");
 
 	// get a configuration to use for linearization
 	VectorConfig realconfig;
@@ -62,23 +64,23 @@ TEST( NonlinearConstraint1, unary_scalar_linearize ) {
 	lagrangeConfig.insert("L_x1", Vector_(1, 3.0));
 
 	// linearize the system
-	GaussianFactor::shared_ptr actFactor, actConstraint;
-	boost::tie(actFactor, actConstraint) = c1.linearize(realconfig, lagrangeConfig);
+	GaussianFactor::shared_ptr actualFactor, actualConstraint;
+	boost::tie(actualFactor, actualConstraint) = c1.linearize(realconfig, lagrangeConfig);
 
 	// verify
-	GaussianFactor expFactor("x", Matrix_(1,1, 6.0), "L_x1", eye(1), zero(1), 1.0);
-	GaussianFactor expConstraint("x", Matrix_(1,1, 2.0), Vector_(1, 4.0), 0.0);
-	CHECK(assert_equal(*actFactor, expFactor));
-	CHECK(assert_equal(*actConstraint, expConstraint));
+	GaussianFactor expectedFactor("x", Matrix_(1,1, 6.0), "L_x1", eye(1), zero(1), 1.0);
+	GaussianFactor expectedConstraint("x", Matrix_(1,1, 2.0), Vector_(1, 4.0), 0.0);
+	CHECK(assert_equal(*actualFactor, expectedFactor));
+	CHECK(assert_equal(*actualConstraint, expectedConstraint));
 }
 
 /* ************************************************************************* */
 TEST( NonlinearConstraint1, unary_scalar_equal ) {
 	NonlinearConstraint1<VectorConfig>
-		c1("x", *test1::grad_g, *test1::g_func, 1, "L_x1", true),
-		c2("x", *test1::grad_g, *test1::g_func, 1, "L_x1"),
-		c3("x", *test1::grad_g, *test1::g_func, 2, "L_x1"),
-		c4("y", *test1::grad_g, *test1::g_func, 1, "L_x1");
+		c1("x", *test1::G, *test1::g, 1, "L_x1", true),
+		c2("x", *test1::G, *test1::g, 1, "L_x1"),
+		c3("x", *test1::G, *test1::g, 2, "L_x1"),
+		c4("y", *test1::G, *test1::g, 1, "L_x1");
 
 	CHECK(assert_equal(c1, c2));
 	CHECK(assert_equal(c2, c1));
@@ -90,24 +92,26 @@ TEST( NonlinearConstraint1, unary_scalar_equal ) {
 // binary functions with scalar variables
 /* ************************************************************************* */
 namespace test2 {
-/** gradient for x, gradG(x,y) in x: 2x*/
-Matrix grad_g1(const VectorConfig& config, const list<string>& keys) {
-	double x = config[keys.front()](0);
-	return Matrix_(1,1, 2.0*x);
-}
 
-/** gradient for y, gradG(x,y) in y: -1 */
-Matrix grad_g2(const VectorConfig& config, const list<string>& keys) {
-	double x = config[keys.back()](0);
-	return Matrix_(1,1, -1.0);
-}
+	/** p = 1, g(x) = x^2-5 -y = 0 */
+	Vector g(const VectorConfig& config, const list<string>& keys) {
+		double x = config[keys.front()](0);
+		double y = config[keys.back()](0);
+		return Vector_(1, x * x - 5.0 - y);
+	}
 
-/** p = 1, g(x) = x^2-5 -y = 0 */
-Vector g_func(const VectorConfig& config, const list<string>& keys) {
-	double x = config[keys.front()](0);
-	double y = config[keys.back()](0);
-	return Vector_(1, x*x-5.0-y);
-}
+	/** gradient for x, gradG(x,y) in x: 2x*/
+	Matrix G1(const VectorConfig& config, const list<string>& keys) {
+		double x = config[keys.front()](0);
+		return Matrix_(1, 1, 2.0 * x);
+	}
+
+	/** gradient for y, gradG(x,y) in y: -1 */
+	Matrix G2(const VectorConfig& config, const list<string>& keys) {
+		double x = config[keys.back()](0);
+		return Matrix_(1, 1, -1.0);
+	}
+
 } // \namespace test2
 
 /* ************************************************************************* */
@@ -117,9 +121,9 @@ TEST( NonlinearConstraint2, binary_scalar_construction ) {
 	// and there is only one multiplier
 	size_t p = 1;
 	NonlinearConstraint2<VectorConfig> c1(
-			"x", *test2::grad_g1,
-			"y", *test2::grad_g2,
-			*test2::g_func, p, "L_xy");
+			"x", *test2::G1,
+			"y", *test2::G2,
+			*test2::g, p, "L_xy");
 
 	// get a configuration to use for finding the error
 	VectorConfig config;
@@ -137,9 +141,9 @@ TEST( NonlinearConstraint2, binary_scalar_linearize ) {
 	// create a constraint
 	size_t p = 1;
 	NonlinearConstraint2<VectorConfig> c1(
-			"x", *test2::grad_g1,
-			"y", *test2::grad_g2,
-			*test2::g_func, p, "L_xy");
+			"x", *test2::G1,
+			"y", *test2::G2,
+			*test2::g, p, "L_xy");
 
 	// get a configuration to use for finding the error
 	VectorConfig realconfig;
@@ -151,27 +155,27 @@ TEST( NonlinearConstraint2, binary_scalar_linearize ) {
 	lagrangeConfig.insert("L_xy", Vector_(1, 3.0));
 
 	// linearize the system
-	GaussianFactor::shared_ptr actFactor, actConstraint;
-	boost::tie(actFactor, actConstraint) = c1.linearize(realconfig, lagrangeConfig);
+	GaussianFactor::shared_ptr actualFactor, actualConstraint;
+	boost::tie(actualFactor, actualConstraint) = c1.linearize(realconfig, lagrangeConfig);
 
 	// verify
-	GaussianFactor expFactor("x", Matrix_(1,1, 6.0),
+	GaussianFactor expectedFactor("x", Matrix_(1,1, 6.0),
 							 "y", Matrix_(1,1, -3.0),
 							 "L_xy", eye(1), zero(1), 1.0);
-	GaussianFactor expConstraint("x", Matrix_(1,1, 2.0),
+	GaussianFactor expectedConstraint("x", Matrix_(1,1, 2.0),
 								 "y", Matrix_(1,1, -1.0),
 								 Vector_(1, 6.0), 0.0);
-	CHECK(assert_equal(*actFactor, expFactor));
-	CHECK(assert_equal(*actConstraint, expConstraint));
+	CHECK(assert_equal(*actualFactor, expectedFactor));
+	CHECK(assert_equal(*actualConstraint, expectedConstraint));
 }
 
 /* ************************************************************************* */
 TEST( NonlinearConstraint2, binary_scalar_equal ) {
 	NonlinearConstraint2<VectorConfig>
-		c1("x", *test2::grad_g1, "y", *test2::grad_g2,*test2::g_func, 1, "L_xy"),
-		c2("x", *test2::grad_g1, "y", *test2::grad_g2,*test2::g_func, 1, "L_xy"),
-		c3("y", *test2::grad_g1, "x", *test2::grad_g2,*test2::g_func, 1, "L_xy"),
-		c4("x", *test2::grad_g1, "z", *test2::grad_g2,*test2::g_func, 3, "L_xy");
+		c1("x", *test2::G1, "y", *test2::G2,*test2::g, 1, "L_xy"),
+		c2("x", *test2::G1, "y", *test2::G2,*test2::g, 1, "L_xy"),
+		c3("y", *test2::G1, "x", *test2::G2,*test2::g, 1, "L_xy"),
+		c4("x", *test2::G1, "z", *test2::G2,*test2::g, 3, "L_xy");
 
 	CHECK(assert_equal(c1, c2));
 	CHECK(assert_equal(c2, c1));
@@ -182,26 +186,28 @@ TEST( NonlinearConstraint2, binary_scalar_equal ) {
 /* ************************************************************************* */
 // Inequality tests
 /* ************************************************************************* */
-namespace inequality_unary {
-/** p = 1, gradG(x) = 2*x */
-Matrix grad_g(const VectorConfig& config, const list<string>& keys) {
-	double x = config[keys.front()](0);
-	return Matrix_(1,1, 2*x);
-}
+namespace inequality1 {
 
-/** p = 1, g(x) x^2 - 5 > 0 */
-Vector g_func(const VectorConfig& config, const list<string>& keys) {
-	double x = config[keys.front()](0);
-	double g = x*x-5;
-	return Vector_(1, g); // return the actual cost
-}
-} // \namespace test1
+	/** p = 1, g(x) x^2 - 5 > 0 */
+	Vector g(const VectorConfig& config, const list<string>& keys) {
+		double x = config[keys.front()](0);
+		double g = x * x - 5;
+		return Vector_(1, g); // return the actual cost
+	}
+
+	/** p = 1, gradG(x) = 2*x */
+	Matrix G(const VectorConfig& config, const list<string>& keys) {
+		double x = config[keys.front()](0);
+		return Matrix_(1, 1, 2 * x);
+	}
+
+} // \namespace inequality1
 
 /* ************************************************************************* */
 TEST( NonlinearConstraint1, unary_inequality ) {
 	size_t p = 1;
-	NonlinearConstraint1<VectorConfig> c1("x", *inequality_unary::grad_g,
-										  *inequality_unary::g_func, p, "L_x1",
+	NonlinearConstraint1<VectorConfig> c1("x", *inequality1::G,
+										  *inequality1::g, p, "L_x1",
 										  false); // inequality constraint
 
 	// get configurations to use for evaluation
@@ -211,16 +217,16 @@ TEST( NonlinearConstraint1, unary_inequality ) {
 
 	// check error
 	CHECK(!c1.active(config1));
-	Vector actError2 = c1.error_vector(config2);
-	CHECK(assert_equal(actError2, Vector_(1, -4.0, 1e-9)));
+	Vector actualError2 = c1.error_vector(config2);
+	CHECK(assert_equal(actualError2, Vector_(1, -4.0, 1e-9)));
 	CHECK(c1.active(config2));
 }
 
 /* ************************************************************************* */
 TEST( NonlinearConstraint1, unary_inequality_linearize ) {
 	size_t p = 1;
-	NonlinearConstraint1<VectorConfig> c1("x", *inequality_unary::grad_g,
-										  *inequality_unary::g_func, p, "L_x",
+	NonlinearConstraint1<VectorConfig> c1("x", *inequality1::G,
+										  *inequality1::g, p, "L_x",
 										  false); // inequality constraint
 
 	// get configurations to use for linearization
@@ -233,41 +239,44 @@ TEST( NonlinearConstraint1, unary_inequality_linearize ) {
 	lagrangeConfig.insert("L_x", Vector_(1, 3.0));
 
 	// linearize for inactive constraint
-	GaussianFactor::shared_ptr actFactor1, actConstraint1;
-	boost::tie(actFactor1, actConstraint1) = c1.linearize(config1, lagrangeConfig);
+	GaussianFactor::shared_ptr actualFactor1, actualConstraint1;
+	boost::tie(actualFactor1, actualConstraint1) = c1.linearize(config1, lagrangeConfig);
 
-	// check if the factor is active
+	// check if the factualor is active
 	CHECK(!c1.active(config1));
 
 	// linearize for active constraint
-	GaussianFactor::shared_ptr actFactor2, actConstraint2;
-	boost::tie(actFactor2, actConstraint2) = c1.linearize(config2, lagrangeConfig);
+	GaussianFactor::shared_ptr actualFactor2, actualConstraint2;
+	boost::tie(actualFactor2, actualConstraint2) = c1.linearize(config2, lagrangeConfig);
 	CHECK(c1.active(config2));
 
 	// verify
-	GaussianFactor expFactor("x", Matrix_(1,1, 6.0), "L_x", eye(1), zero(1), 1.0);
-	GaussianFactor expConstraint("x", Matrix_(1,1, 2.0), Vector_(1, 4.0), 0.0);
-	CHECK(assert_equal(*actFactor2, expFactor));
-	CHECK(assert_equal(*actConstraint2, expConstraint));
+	GaussianFactor expectedFactor("x", Matrix_(1,1, 6.0), "L_x", eye(1), zero(1), 1.0);
+	GaussianFactor expectedConstraint("x", Matrix_(1,1, 2.0), Vector_(1, 4.0), 0.0);
+	CHECK(assert_equal(*actualFactor2, expectedFactor));
+	CHECK(assert_equal(*actualConstraint2, expectedConstraint));
 }
 
 /* ************************************************************************* */
 // Binding arbitrary functions
 /* ************************************************************************* */
-namespace unary_binding_functions {
-/** p = 1, gradG(x) = 2*x */
-Matrix grad_g(double coeff, const VectorConfig& config, const list<string>& keys) {
-	double x = config[keys.front()](0);
-	return Matrix_(1,1, coeff*x);
-}
+namespace binding1 {
 
-/** p = 1, g(x) x^2 - r > 0 */
-Vector g_func(double r, const VectorConfig& config, const list<string>& keys) {
-	double x = config[keys.front()](0);
-	double g = x*x-r;
-	return Vector_(1, g); // return the actual cost
-}
-} // \namespace unary_binding_functions
+	/** p = 1, g(x) x^2 - r > 0 */
+	Vector g(double r, const VectorConfig& config, const list<string>& keys) {
+		double x = config[keys.front()](0);
+		double g = x * x - r;
+		return Vector_(1, g); // return the actual cost
+	}
+
+	/** p = 1, gradG(x) = 2*x */
+	Matrix G(double coeff, const VectorConfig& config,
+			const list<string>& keys) {
+		double x = config[keys.front()](0);
+		return Matrix_(1, 1, coeff * x);
+	}
+
+} // \namespace binding1
 
 /* ************************************************************************* */
 TEST( NonlinearConstraint1, unary_binding ) {
@@ -275,8 +284,8 @@ TEST( NonlinearConstraint1, unary_binding ) {
 	double coeff = 2;
 	double radius = 5;
 	NonlinearConstraint1<VectorConfig> c1("x",
-										  boost::bind(unary_binding_functions::grad_g, coeff, _1, _2),
-										  boost::bind(unary_binding_functions::g_func, radius, _1, _2),
+										  boost::bind(binding1::G, coeff, _1, _2),
+										  boost::bind(binding1::g, radius, _1, _2),
 										  p, "L_x1",
 										  false); // inequality constraint
 
@@ -287,31 +296,34 @@ TEST( NonlinearConstraint1, unary_binding ) {
 
 	// check error
 	CHECK(!c1.active(config1));
-	Vector actError2 = c1.error_vector(config2);
-	CHECK(assert_equal(actError2, Vector_(1, -4.0, 1e-9)));
+	Vector actualError2 = c1.error_vector(config2);
+	CHECK(assert_equal(actualError2, Vector_(1, -4.0, 1e-9)));
 	CHECK(c1.active(config2));
 }
 
-namespace binary_binding_functions {
-/** gradient for x, gradG(x,y) in x: 2x*/
-Matrix grad_g1(double c, const VectorConfig& config, const list<string>& keys) {
-	double x = config[keys.front()](0);
-	return Matrix_(1,1, c*x);
-}
+/* ************************************************************************* */
+namespace binding2 {
 
-/** gradient for y, gradG(x,y) in y: -1 */
-Matrix grad_g2(double c, const VectorConfig& config, const list<string>& keys) {
-	double x = config[keys.back()](0);
-	return Matrix_(1,1, -1.0*c);
-}
+	/** p = 1, g(x) = x^2-5 -y = 0 */
+	Vector g(double r, const VectorConfig& config, const list<string>& keys) {
+		double x = config[keys.front()](0);
+		double y = config[keys.back()](0);
+		return Vector_(1, x * x - r - y);
+	}
 
-/** p = 1, g(x) = x^2-5 -y = 0 */
-Vector g_func(double r, const VectorConfig& config, const list<string>& keys) {
-	double x = config[keys.front()](0);
-	double y = config[keys.back()](0);
-	return Vector_(1, x*x-r-y);
-}
-} // \namespace test2
+	/** gradient for x, gradG(x,y) in x: 2x*/
+	Matrix G1(double c, const VectorConfig& config, const list<string>& keys) {
+		double x = config[keys.front()](0);
+		return Matrix_(1, 1, c * x);
+	}
+
+	/** gradient for y, gradG(x,y) in y: -1 */
+	Matrix G2(double c, const VectorConfig& config, const list<string>& keys) {
+		double x = config[keys.back()](0);
+		return Matrix_(1, 1, -1.0 * c);
+	}
+
+} // \namespace binding2
 
 /* ************************************************************************* */
 TEST( NonlinearConstraint2, binary_binding ) {
@@ -323,9 +335,9 @@ TEST( NonlinearConstraint2, binary_binding ) {
 	double b = 1.0;
 	double r = 5.0;
 	NonlinearConstraint2<VectorConfig> c1(
-			"x", boost::bind(binary_binding_functions::grad_g1, a, _1, _2),
-			"y", boost::bind(binary_binding_functions::grad_g2, b, _1, _2),
-			boost::bind(binary_binding_functions::g_func, r, _1, _2), p, "L_xy");
+			"x", boost::bind(binding2::G1, a, _1, _2),
+			"y", boost::bind(binding2::G2, b, _1, _2),
+			boost::bind(binding2::g, r, _1, _2), p, "L_xy");
 
 	// get a configuration to use for finding the error
 	VectorConfig config;

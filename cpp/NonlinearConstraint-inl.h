@@ -204,9 +204,9 @@ bool NonlinearConstraint2<Config>::equals(const Factor<Config>& f, double tol) c
 }
 
 /* ************************************************************************* */
-template <class Config>
-std::pair<GaussianFactor::shared_ptr, GaussianFactor::shared_ptr>
-NonlinearConstraint2<Config>::linearize(const Config& config, const VectorConfig& lagrange) const {
+template<class Config>
+std::pair<GaussianFactor::shared_ptr, GaussianFactor::shared_ptr> NonlinearConstraint2<
+		Config>::linearize(const Config& config, const VectorConfig& lagrange) const {
 	// extract lagrange multiplier
 	Vector lambda = lagrange[this->lagrange_key_];
 
@@ -220,12 +220,12 @@ NonlinearConstraint2<Config>::linearize(const Config& config, const VectorConfig
 	// construct probabilistic factor
 	Matrix A1 = vector_scale(lambda, grad1);
 	Matrix A2 = vector_scale(lambda, grad2);
-	GaussianFactor::shared_ptr factor(new
-			GaussianFactor(key1_, A1, key2_, A2,
-					this->lagrange_key_, eye(this->p_), zero(this->p_), 1.0));
+	GaussianFactor::shared_ptr factor(new GaussianFactor(key1_, A1, key2_, A2,
+			this->lagrange_key_, eye(this->p_), zero(this->p_), 1.0));
 
 	// construct the constraint
-	GaussianFactor::shared_ptr constraint(new GaussianFactor(key1_, grad1, key2_, grad2, -1.0*g, 0.0));
+	GaussianFactor::shared_ptr constraint(new GaussianFactor(key1_, grad1,
+			key2_, grad2, -1.0 * g, 0.0));
 
 	return std::make_pair(factor, constraint);
 }
