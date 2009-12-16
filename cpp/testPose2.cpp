@@ -28,8 +28,8 @@ TEST(Pose2, constructors) {
 
 /* ************************************************************************* */
 TEST(Pose2, exmap) {
-  Pose2 pose(Point2(1,2), M_PI_2);
-  Pose2 expected(Point2(1.01, 1.985), M_PI_2+0.018);
+  Pose2 pose(M_PI_2, Point2(1,2));
+  Pose2 expected(M_PI_2+0.018, Point2(1.01, 1.985));
   Pose2 actual = pose.exmap(Vector_(3, 0.01, -0.015, 0.018));
   CHECK(assert_equal(expected, actual));
 }
@@ -44,15 +44,15 @@ TEST(Pose2, exmap) {
 //}
 
 /* ************************************************************************* */
-TEST(Pose2, operators) {
-  CHECK(assert_equal(Pose2(2,2,2),Pose2(1,1,1)+Pose2(1,1,1)));
-  CHECK(assert_equal(Pose2(0,0,0),Pose2(1,1,1)-Pose2(1,1,1)));
-}
+//TEST(Pose2, operators) {
+//  CHECK(assert_equal(Pose2(2,2,2),Pose2(1,1,1)+Pose2(1,1,1)));
+//  CHECK(assert_equal(Pose2(0,0,0),Pose2(1,1,1)-Pose2(1,1,1)));
+//}
 
 /* ************************************************************************* */
 TEST( Pose2, transform_to )
 {
-  Pose2 pose(1,2,M_PI_2); // robot at (1,2) looking towards y
+  Pose2 pose(M_PI_2, Point2(1,2)); // robot at (1,2) looking towards y
   Point2 point(-1,4);    // landmark at (-1,4)
 
   // expected
@@ -79,10 +79,10 @@ TEST( Pose2, transform_to )
 /* ************************************************************************* */
 TEST(Pose2, compose_a)
 {
-  Pose2 pose1(Point2(.75, .5), Rot2(M_PI/10.0));
-  Pose2 pose2(Point2(0.701289620636, 1.34933052585), Rot2(M_PI/4.0-M_PI/10.0));
+  Pose2 pose1(Rot2(M_PI/10.0), Point2(.75, .5));
+  Pose2 pose2(Rot2(M_PI/4.0-M_PI/10.0), Point2(0.701289620636, 1.34933052585));
 
-  Pose2 pose_expected(Point2(1.0, 2.0), Rot2(M_PI/4.0));
+  Pose2 pose_expected(Rot2(M_PI/4.0), Point2(1.0, 2.0));
 
   Pose2 pose_actual_op = pose2 * pose1;
   Pose2 pose_actual_fcn = pose2.compose(pose1);
@@ -94,10 +94,10 @@ TEST(Pose2, compose_a)
 /* ************************************************************************* */
 TEST(Pose2, compose_b)
 {
-  Pose2 pose1(Point2(1.0, 1.0), Rot2(M_PI/4.0));
-  Pose2 pose2(Point2(sqrt(.5), sqrt(.5)), Rot2(M_PI/4.0));
+  Pose2 pose1(Rot2(M_PI/4.0), Point2(1.0, 1.0));
+  Pose2 pose2(Rot2(M_PI/4.0), Point2(sqrt(.5), sqrt(.5)));
 
-  Pose2 pose_expected(Point2(1.0, 2.0), Rot2(M_PI/2.0));
+  Pose2 pose_expected(Rot2(M_PI/2.0), Point2(1.0, 2.0));
 
   Pose2 pose_actual_op = pose2 * pose1;
   Pose2 pose_actual_fcn = pose2.compose(pose1);
@@ -110,11 +110,11 @@ TEST(Pose2, compose_b)
 /* ************************************************************************* */
 TEST( Pose2, between )
 {
-  Pose2 p1(1,2,M_PI_2); // robot at (1,2) looking towards y
-  Pose2 p2(-1,4,M_PI);  // robot at (-1,4) loooking at negative x
+  Pose2 p1(M_PI_2, Point2(1,2)); // robot at (1,2) looking towards y
+  Pose2 p2(M_PI, Point2(-1,4));  // robot at (-1,4) loooking at negative x
 
   // expected
-  Pose2 expected(2,2,M_PI_2);
+  Pose2 expected(M_PI_2, Point2(2,2));
   Matrix expectedH1 = Matrix_(3,3,
       0.0,-1.0,2.0,
       1.0,0.0,-2.0,
