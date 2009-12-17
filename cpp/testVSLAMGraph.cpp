@@ -49,7 +49,7 @@ VSLAMGraph testGraph() {
 	Point2 z24( 125, 125);
 
   double sigma = 1;
-  VSLAMFactor::shared_ptrK sK(new Cal3_S2(625, 625, 0, 0, 0));
+  shared_ptrK sK(new Cal3_S2(625, 625, 0, 0, 0));
   VSLAMGraph g;
   g.push_back(VSLAMFactor::shared_ptr(new VSLAMFactor(z11, sigma, 1, 1, sK)));
   g.push_back(VSLAMFactor::shared_ptr(new VSLAMFactor(z12, sigma, 1, 2, sK)));

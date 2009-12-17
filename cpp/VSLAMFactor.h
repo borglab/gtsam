@@ -31,7 +31,6 @@ private:
 public:
 
 	typedef boost::shared_ptr<VSLAMFactor> shared_ptr; // shorthand for a smart pointer to a factor
-	typedef boost::shared_ptr<Cal3_S2> shared_ptrK;
 
 	/**
 	 * Default constructor

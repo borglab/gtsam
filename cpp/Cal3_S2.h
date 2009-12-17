@@ -122,6 +122,8 @@ namespace gtsam {
 		}
 	};
 
+	typedef boost::shared_ptr<Cal3_S2> shared_ptrK;
+
 	/**
 	 * convert intrinsic coordinates xy to image coordinates uv
 	 */
