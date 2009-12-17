@@ -101,25 +101,44 @@ Vector hPose (const Vector& x) {
  */
 /* ************************************************************************* */
 Matrix DhPose(const Vector& x) {
-  Matrix H = eye(6,6);
-  return H;
+	Matrix H = eye(6,6);
+	return H;
 }
 
 /* ************************************************************************* */
 Pose3 Pose3::inverse() const
-{
-  Rot3 Rt = R_.inverse();
-  return Pose3(Rt,-(Rt*t_));
-}
+		{
+	Rot3 Rt = R_.inverse();
+	return Pose3(Rt,-(Rt*t_));
+		}
 
 /* ************************************************************************* */
 Pose3 Pose3::transformPose_to(const Pose3& pose) const
-{
-		Rot3 cRv = R_ * Rot3(pose.R_.inverse());
-		Point3 t = transform_to(pose, t_);
-		
-		return Pose3(cRv, t);
-}
+		{
+	Rot3 cRv = R_ * Rot3(pose.R_.inverse());
+	Point3 t = transform_to(pose, t_);
+
+	return Pose3(cRv, t);
+		}
 /* ************************************************************************* */
 
+
+Pose3 between(const Pose3& p1, const Pose3& p2){
+	Pose3 p;
+	return p;
+	// TODO: implement
+}
+/* ************************************************************************* */
+Matrix Dbetween1(const Pose3& p1, const Pose3& p2){
+	Matrix m;
+	return m;
+	// TODO: implement
+}
+/* ************************************************************************* */
+Matrix Dbetween2(const Pose3& p1, const Pose3& p2){
+	Matrix m;
+	return m;
+	// TODO: implement
+}
+/* ************************************************************************* */
 } // namespace gtsam

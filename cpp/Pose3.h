@@ -77,6 +77,19 @@ namespace gtsam {
 		/** inverse transformation */
 		Pose3 inverse() const;
 
+		// operators
+		Pose3 operator+(const Pose3& p3) const{
+			// TODO implement the operators "+"
+			Pose3 p;
+			return p;
+		};
+
+		Pose3 operator-(const Pose3& p3) const{
+			// TODO implement the operators "-"
+			Pose3 p;
+			return p;
+		};
+
 		/** composition */
 		inline Pose3 operator*(const Pose3& B) const {
 			return Pose3(R_*B.R_, t_ + R_*B.t_);
@@ -122,6 +135,13 @@ namespace gtsam {
 	Point3 transform_to(const Pose3& pose, const Point3& p);
 	Matrix Dtransform_to1(const Pose3& pose, const Point3& p);
 	Matrix Dtransform_to2(const Pose3& pose); // does not depend on p !
+
+	/**
+	 * Return relative pose between p1 and p2, in p1 coordinate frame
+	 */
+	Pose3 between(const Pose3& p1, const Pose3& p2);
+	Matrix Dbetween1(const Pose3& p1, const Pose3& p2);
+	Matrix Dbetween2(const Pose3& p1, const Pose3& p2);
 
 	/** direct measurement of a pose */
 	Vector hPose(const Vector& x);
