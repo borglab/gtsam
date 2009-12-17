@@ -384,8 +384,11 @@ namespace gtsam {
 			// add children to list of orphans (splice also removed them from clique->children_)
 			orphans.splice (orphans.begin(), clique->children_);
 
-			// add myself to factors
-			factors.push_back(*clique);
+			// Convert clique to a factor graph, using constructor in FactorGraph
+			FactorGraph<Factor> clique_factors(*clique);
+
+			// add to the list of "imvalidated" factors
+			factors.push_back(clique_factors);
 		}
 
 		return make_pair(factors,orphans);
