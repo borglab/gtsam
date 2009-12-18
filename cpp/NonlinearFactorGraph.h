@@ -31,6 +31,9 @@ namespace gtsam {
 		/** unnormalized error */
 		double error(const Config& c) const;
 
+		/** all individual errors */
+		Vector error_vector(const Config& c) const;
+
 		/** Unnormalized probability. O(n) */
 		double probPrime(const Config& c) const {
 			return exp(-0.5 * error(c));
@@ -41,10 +44,11 @@ namespace gtsam {
 		 */
 		GaussianFactorGraph linearize(const Config& config) const;
 
-	    /**
-	     * shared pointer versions for MATLAB
-	     */
-	    boost::shared_ptr<GaussianFactorGraph> linearize_(const Config& config) const;
+		/**
+		 * shared pointer versions for MATLAB
+		 */
+		boost::shared_ptr<GaussianFactorGraph>
+				linearize_(const Config& config) const;
 
 	};
 

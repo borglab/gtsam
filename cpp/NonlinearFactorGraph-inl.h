@@ -12,7 +12,18 @@
 #include "GaussianFactorGraph.h"
 #include "NonlinearFactorGraph.h"
 
+using namespace std;
+
 namespace gtsam {
+
+	/* ************************************************************************* */
+	template<class Config>
+	Vector NonlinearFactorGraph<Config>::error_vector(const Config& c) const {
+		list<Vector> errors;
+		BOOST_FOREACH(typename NonlinearFactorGraph<Config>::sharedFactor factor, this->factors_)
+			errors.push_back(factor->error_vector(c));
+		return concatVectors(errors);
+	}
 
 	/* ************************************************************************* */
 	template<class Config>
@@ -21,9 +32,9 @@ namespace gtsam {
 		// iterate over all the factors_ to accumulate the log probabilities
 		BOOST_FOREACH(typename NonlinearFactorGraph<Config>::sharedFactor factor, this->factors_)
 			total_error += factor->error(c);
-
 		return total_error;
 	}
+
 	/* ************************************************************************* */
 	template<class Config>
 	boost::shared_ptr<GaussianFactorGraph> NonlinearFactorGraph<Config>::linearize_(
