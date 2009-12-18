@@ -79,6 +79,9 @@ namespace gtsam {
 		/** push back many factors */
 		void push_back(const FactorGraph<Factor>& factors);
 
+		/** replace a factor by index */
+		void replace(int index, sharedFactor factor);
+
 		/** return keys in some random order */
 		Ordering keys() const;
 
@@ -111,6 +114,8 @@ namespace gtsam {
 		std::vector<sharedFactor> findAndRemoveFactors(const std::string& key);
 
 	private:
+		/** Associate factor index with the variables connected to the factor */
+		void associateFactor(int index, sharedFactor factor);
 
 		/** Serialization function */
 		friend class boost::serialization::access;

@@ -17,6 +17,7 @@
 
 #include <boost/foreach.hpp>
 #include <boost/tuple/tuple.hpp>
+#include <boost/format.hpp>
 #include <colamd/colamd.h>
 #include "Ordering.h"
 #include "FactorGraph.h"
@@ -86,19 +87,7 @@ void FactorGraph<Factor>::push_back(sharedFactor factor) {
 	if (factor==NULL) return;
 
 	int i = factors_.size() - 1;                 // index of factor
-	list<string> keys = factor->keys();          // get keys for factor
-
-	BOOST_FOREACH(string key, keys){             // for each key push i onto list
-		Indices::iterator it = indices_.find(key); // old list for that key (if exists)
-		if (it==indices_.end()){                   // there's no list yet
-			list<int> indices(1,i);                  // so make one
-			indices_.insert(make_pair(key,indices)); // insert new indices into factorMap
-		}
-		else {
-			list<int> *indices_ptr = &(it->second);  // get the list
-			indices_ptr->push_back(i);               // add the index i to it
-		}
-	}
+	associateFactor(i, factor);
 }
 
 /* ************************************************************************* */
@@ -107,6 +96,36 @@ void FactorGraph<Factor>::push_back(const FactorGraph<Factor>& factors) {
 	const_iterator factor = factors.begin();
 	for (; factor!= factors.end(); factor++)
 		push_back(*factor);
+}
+
+/* ************************************************************************* */
+template<class Factor>
+void FactorGraph<Factor>::replace(int index, sharedFactor factor) {
+  if(index >= factors_.size())
+    throw invalid_argument(boost::str(boost::format(
+        "Factor graph does not contain a factor with index %d.") % index));
+  //if(factors_[index] == NULL)
+  //  throw invalid_argument(boost::str(boost::format(
+  //      "Factor with index %d is NULL." % index)));
+
+  if(factors_[index] != NULL) {
+    // Remove this factor from its variables' index lists
+    list<string> keys(factor->keys());
+    BOOST_FOREACH(string key, keys) {
+      Indices::iterator indices = indices_.find(key);
+      if(indices != indices_.end()) {
+        indices->second.remove(index);
+      } else {
+        throw invalid_argument(boost::str(boost::format(
+            "Factor graph inconsistency!  Factor %d involves variable %s but "
+            "is missing from its factor index list.") % index % key));
+      }
+    }
+  }
+
+  // Replace the factor
+  factors_[index] = factor;
+  associateFactor(index, factor);
 }
 
 /* ************************************************************************* */
@@ -232,6 +251,24 @@ FactorGraph<Factor>::findAndRemoveFactors(const string& key) {
 }
 
 /* ************************************************************************* */
+template<class Factor>
+void FactorGraph<Factor>::associateFactor(int index, sharedFactor factor) {
+  list<string> keys = factor->keys();          // get keys for factor
+
+  BOOST_FOREACH(string key, keys){             // for each key push i onto list
+      Indices::iterator it = indices_.find(key); // old list for that key (if exists)
+      if (it==indices_.end()){                   // there's no list yet
+          list<int> indices(1,index);                  // so make one
+          indices_.insert(make_pair(key,indices)); // insert new indices into factorMap
+      }
+      else {
+          list<int> *indices_ptr = &(it->second);  // get the list
+          indices_ptr->push_back(index);               // add the index i to it
+      }
+  }
+}
+
+/* ************************************************************************* */
 /* find factors and remove them from the factor graph: O(n)                  */
 /* ************************************************************************* */
 template<class Factor> boost::shared_ptr<Factor>
@@ -253,6 +290,4 @@ FactorGraph<Factor> combine(const FactorGraph<Factor>& fg1, const FactorGraph<Fa
 
 	return fg;
 }
-
-/* ************************************************************************* */
 }
