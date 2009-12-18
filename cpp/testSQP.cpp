@@ -365,10 +365,11 @@ TEST (SQP, two_pose ) {
 	feas.insert("x1", Vector_(2, 1.0, 1.0));
 
 	// constant constraint on x1
+	list<string> keys1; keys1 += "x1";
 	boost::shared_ptr<NonlinearConstraint1<VectorConfig> > c1(
 			new NonlinearConstraint1<VectorConfig>(
-					*sqp_test2::g,
-					"x1", *sqp_test2::G,
+					boost::bind(sqp_test2::g, _1, keys1),
+					"x1", boost::bind(sqp_test2::G, _1, keys1),
 					 2, "L_x1"));
 
 	// measurement from x1 to l1
@@ -382,11 +383,12 @@ TEST (SQP, two_pose ) {
 	shared f2(new Simulated2DMeasurement(z2, sigma2, "x2", "l2"));
 
 	// equality constraint between l1 and l2
+	list<string> keys2; keys2 += "l1", "l2";
 	boost::shared_ptr<NonlinearConstraint2<VectorConfig> > c2(
 			new NonlinearConstraint2<VectorConfig>(
-					*sqp_test1::g,
-					"l1", *sqp_test1::G1,
-					"l2", *sqp_test1::G2,
+					boost::bind(sqp_test1::g, _1, keys2),
+					"l1", boost::bind(sqp_test1::G1, _1, keys2),
+					"l2", boost::bind(sqp_test1::G2, _1, keys2),
 					 2, "L_l1l2"));
 
 	// construct the graph
@@ -675,11 +677,12 @@ VSLAMGraph stereoExampleGraph() {
 	// create the binary equality constraint between the landmarks
 	// NOTE: this is really just a linear constraint that is exactly the same
 	// as the previous examples
+	list<string> keys; keys += "l1", "l2";
 	boost::shared_ptr<NonlinearConstraint2<VSLAMConfig> > c2(
 				new NonlinearConstraint2<VSLAMConfig>(
-						*sqp_stereo::g,
-						"l1", *sqp_stereo::G1,
-						"l2", *sqp_stereo::G2,
+						boost::bind(sqp_stereo::g, _1, keys),
+						"l1", boost::bind(sqp_stereo::G1, _1, keys),
+						"l2", boost::bind(sqp_stereo::G2, _1, keys),
 						 3, "L_l1l2"));
 	graph.push_back(c2);
 

@@ -40,10 +40,9 @@ protected:
 	 * If the value is zero, the constraint is not active
 	 * Use boost.bind to create the function object
 	 * @param config is a configuration of all the variables
-	 * @param keys is the set of keys - assumed that the function knows how to use
 	 * @return the cost for each of p constraints, arranged in a vector
 	 */
-	boost::function<Vector(const Config& config, const std::list<std::string>& keys)> g_;
+	boost::function<Vector(const Config& config)> g_;
 
 public:
 
@@ -55,7 +54,7 @@ public:
 	 */
 	NonlinearConstraint(const std::string& lagrange_key,
 						size_t dim_lagrange,
-						Vector (*g)(const Config& config, const std::list<std::string>& keys),
+						Vector (*g)(const Config& config),
 						bool isEquality=true);
 
 	/** Constructor - sets a more general cost function using boost::bind directly
@@ -66,7 +65,7 @@ public:
 	 */
 	NonlinearConstraint(const std::string& lagrange_key,
 						size_t dim_lagrange,
-						boost::function<Vector(const Config& config, const std::list<std::string>& keys)> g,
+						boost::function<Vector(const Config& config)> g,
 						bool isEquality=true);
 
 	/** returns the key used for the Lagrange multipliers */
@@ -85,7 +84,7 @@ public:
 	virtual bool equals(const Factor<Config>& f, double tol=1e-9) const=0;
 
 	/** error function - returns the result of the constraint function */
-	inline Vector error_vector(const Config& c) const { return g_(c, this->keys()); }
+	inline Vector error_vector(const Config& c) const { return g_(c); }
 
 	/**
 	 * Determines whether the constraint is active given a particular configuration
@@ -128,10 +127,9 @@ private:
 	 * returns a pxn matrix
 	 * Use boost.bind to create the function object
 	 * @param config to use for linearization
-	 * @param key of selected variable
 	 * @return the jacobian of the constraint in terms of key
 	 */
-	boost::function<Matrix(const Config& config, const std::list<std::string>& keys)> gradG_;
+	boost::function<Matrix(const Config& config)> gradG_;
 
 	/** key for the constrained variable */
 	std::string key_;
@@ -148,9 +146,9 @@ public:
 	 * @param isEquality is true if the constraint is an equality constraint
 	 */
 	NonlinearConstraint1(
-			Vector (*g)(const Config& config, const std::list<std::string>& keys),
+			Vector (*g)(const Config& config),
 			const std::string& key,
-			Matrix (*gradG)(const Config& config, const std::list<std::string>& keys),
+			Matrix (*gradG)(const Config& config),
 			size_t dim_constraint,
 			const std::string& lagrange_key="",
 			bool isEquality=true);
@@ -165,9 +163,9 @@ public:
 	 * @param isEquality is true if the constraint is an equality constraint
 	 */
 	NonlinearConstraint1(
-			boost::function<Vector(const Config& config, const std::list<std::string>& keys)> g,
+			boost::function<Vector(const Config& config)> g,
 			const std::string& key,
-			boost::function<Matrix(const Config& config, const std::list<std::string>& keys)> gradG,
+			boost::function<Matrix(const Config& config)> gradG,
 			size_t dim_constraint,
 			const std::string& lagrange_key="",
 			bool isEquality=true);
@@ -202,11 +200,10 @@ private:
 	 * the first and second variables
 	 * returns a pxn matrix
 	 * @param config to use for linearization
-	 * @param key of selected variable
 	 * @return the jacobian of the constraint in terms of key
 	 */
-	boost::function<Matrix(const Config& config, const std::list<std::string>& keys)> gradG1_;
-	boost::function<Matrix(const Config& config, const std::list<std::string>& keys)> gradG2_;
+	boost::function<Matrix(const Config& config)> gradG1_;
+	boost::function<Matrix(const Config& config)> gradG2_;
 
 	/** keys for the constrained variables */
 	std::string key1_;
@@ -224,11 +221,11 @@ public:
 	 * @param isEquality is true if the constraint is an equality constraint
 	 */
 	NonlinearConstraint2(
-			Vector (*g)(const Config& config, const std::list<std::string>& keys),
+			Vector (*g)(const Config& config),
 			const std::string& key1,
-			Matrix (*gradG1)(const Config& config, const std::list<std::string>& keys),
+			Matrix (*gradG1)(const Config& config),
 			const std::string& key2,
-			Matrix (*gradG2)(const Config& config, const std::list<std::string>& keys),
+			Matrix (*gradG2)(const Config& config),
 			size_t dim_constraint,
 			const std::string& lagrange_key="",
 			bool isEquality=true);
@@ -244,11 +241,11 @@ public:
 	 * @param isEquality is true if the constraint is an equality constraint
 	 */
 	NonlinearConstraint2(
-			boost::function<Vector(const Config& config, const std::list<std::string>& keys)> g,
+			boost::function<Vector(const Config& config)> g,
 			const std::string& key1,
-			boost::function<Matrix(const Config& config, const std::list<std::string>& keys)> gradG1,
+			boost::function<Matrix(const Config& config)> gradG1,
 			const std::string& key2,
-			boost::function<Matrix(const Config& config, const std::list<std::string>& keys)> gradG2,
+			boost::function<Matrix(const Config& config)> gradG2,
 			size_t dim_constraint,
 			const std::string& lagrange_key="",
 			bool isEquality=true);

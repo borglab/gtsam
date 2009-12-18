@@ -92,10 +92,11 @@ typedef SQPOptimizer<NLGraph, VectorConfig> Optimizer;
  */
 NLGraph linearMapWarpGraph() {
 	// constant constraint on x1
+	list<string> keyx; keyx += "x1";
 	boost::shared_ptr<NonlinearConstraint1<VectorConfig> > c1(
 			new NonlinearConstraint1<VectorConfig>(
-					*sqp_LinearMapWarp1::g_func,
-					"x1", *sqp_LinearMapWarp1::grad_g,
+					boost::bind(sqp_LinearMapWarp1::g_func, _1, keyx),
+					"x1", boost::bind(sqp_LinearMapWarp1::grad_g, _1, keyx),
 					 2, "L_x1"));
 
 	// measurement from x1 to l1
@@ -109,11 +110,12 @@ NLGraph linearMapWarpGraph() {
 	shared f2(new Simulated2DMeasurement(z2, sigma2, "x2", "l2"));
 
 	// equality constraint between l1 and l2
+	list<string> keys; keys += "l1", "l2";
 	boost::shared_ptr<NonlinearConstraint2<VectorConfig> > c2(
 			new NonlinearConstraint2<VectorConfig>(
-					*sqp_LinearMapWarp2::g_func,
-					"l1", *sqp_LinearMapWarp2::grad_g1,
-					"l2", *sqp_LinearMapWarp2::grad_g2,
+					boost::bind(sqp_LinearMapWarp2::g_func, _1, keys),
+					"l1", boost::bind(sqp_LinearMapWarp2::grad_g1, _1, keys),
+					"l2", boost::bind(sqp_LinearMapWarp2::grad_g2, _1, keys),
 					 2, "L_l1l2"));
 
 	// construct the graph
@@ -272,9 +274,10 @@ pair<NLGraph, VectorConfig> obstacleAvoidGraph() {
 
 	// create a binary inequality constraint that forces the middle point away from
 	//  the obstacle
-	shared_NLC2 c1(new NLC2(*sqp_avoid1::g_func,
-							"x2", *sqp_avoid1::grad_g1,
-						    "obs", *sqp_avoid1::grad_g2,
+	list<string> keys; keys += "x2", "obs";
+	shared_NLC2 c1(new NLC2(boost::bind(sqp_avoid1::g_func, _1, keys),
+							"x2", boost::bind(sqp_avoid1::grad_g1, _1, keys),
+						    "obs",boost::bind(sqp_avoid1::grad_g2, _1, keys),
 						    1, "L_x2obs", false));
 
 	// construct the graph
@@ -403,9 +406,10 @@ pair<NLGraph, VectorConfig> obstacleAvoidGraphGeneral() {
 
 	// create a binary inequality constraint that forces the middle point away from
 	//  the obstacle
-	shared_NLC2 c1(new NLC2(boost::bind(sqp_avoid2::g_func, radius, _1, _2),
-						    "x2", boost::bind(sqp_avoid2::grad_g1, _1, _2),
-						    "obs", boost::bind(sqp_avoid2::grad_g2, _1, _2),
+	list<string> keys; keys += "x2", "obs";
+	shared_NLC2 c1(new NLC2(boost::bind(sqp_avoid2::g_func, radius, _1, keys),
+						    "x2", boost::bind(sqp_avoid2::grad_g1, _1, keys),
+						    "obs", boost::bind(sqp_avoid2::grad_g2, _1, keys),
 						    1, "L_x2obs", false));
 
 	// construct the graph

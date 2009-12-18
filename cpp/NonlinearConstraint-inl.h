@@ -20,17 +20,17 @@ namespace gtsam {
 template <class Config>
 NonlinearConstraint<Config>::NonlinearConstraint(const std::string& lagrange_key,
 					size_t dim_lagrange,
-					Vector (*g)(const Config& config, const std::list<std::string>& keys),
+					Vector (*g)(const Config& config),
 					bool isEquality)
 :	NonlinearFactor<Config>(zero(dim_lagrange), 1.0),
 	lagrange_key_(lagrange_key), p_(dim_lagrange),
-	isEquality_(isEquality), g_(boost::bind(g, _1, _2)) {}
+	isEquality_(isEquality), g_(boost::bind(g, _1)) {}
 
 /* ************************************************************************* */
 template <class Config>
 NonlinearConstraint<Config>::NonlinearConstraint(const std::string& lagrange_key,
 					size_t dim_lagrange,
-					boost::function<Vector(const Config& config, const std::list<std::string>& keys)> g,
+					boost::function<Vector(const Config& config)> g,
 					bool isEquality)
 :	NonlinearFactor<Config>(zero(dim_lagrange), 1.0),
 	lagrange_key_(lagrange_key), p_(dim_lagrange),
@@ -48,14 +48,14 @@ bool NonlinearConstraint<Config>::active(const Config& config) const {
 
 template <class Config>
 NonlinearConstraint1<Config>::NonlinearConstraint1(
-			Vector (*g)(const Config& config, const std::list<std::string>& keys),
+			Vector (*g)(const Config& config),
 			const std::string& key,
-			Matrix (*gradG)(const Config& config, const std::list<std::string>& keys),
+			Matrix (*gradG)(const Config& config),
 			size_t dim_constraint,
 			const std::string& lagrange_key,
 			bool isEquality) :
 				NonlinearConstraint<Config>(lagrange_key, dim_constraint, g, isEquality),
-				gradG_(boost::bind(gradG, _1, _2)), key_(key)
+				gradG_(boost::bind(gradG, _1)), key_(key)
 {
 		// set a good lagrange key here
 		// TODO:should do something smart to find a unique one
@@ -67,9 +67,9 @@ NonlinearConstraint1<Config>::NonlinearConstraint1(
 /* ************************************************************************* */
 template <class Config>
 NonlinearConstraint1<Config>::NonlinearConstraint1(
-		boost::function<Vector(const Config& config, const std::list<std::string>& keys)> g,
+		boost::function<Vector(const Config& config)> g,
 			const std::string& key,
-			boost::function<Matrix(const Config& config, const std::list<std::string>& keys)> gradG,
+			boost::function<Matrix(const Config& config)> gradG,
 			size_t dim_constraint,
 			const std::string& lagrange_key,
 			bool isEquality) :
@@ -115,10 +115,10 @@ NonlinearConstraint1<Config>::linearize(const Config& config, const VectorConfig
 	Vector lambda = lagrange[this->lagrange_key_];
 
 	// find the error
-	Vector g = g_(config, this->keys());
+	Vector g = g_(config);
 
 	// construct the gradient
-	Matrix grad = gradG_(config, this->keys());
+	Matrix grad = gradG_(config);
 
 	// construct probabilistic factor
 	Matrix A1 = vector_scale(lambda, grad);
@@ -138,16 +138,16 @@ NonlinearConstraint1<Config>::linearize(const Config& config, const VectorConfig
 /* ************************************************************************* */
 template <class Config>
 NonlinearConstraint2<Config>::NonlinearConstraint2(
-		Vector (*g)(const Config& config, const std::list<std::string>& keys),
+		Vector (*g)(const Config& config),
 		const std::string& key1,
-		Matrix (*gradG1)(const Config& config, const std::list<std::string>& keys),
+		Matrix (*gradG1)(const Config& config),
 		const std::string& key2,
-		Matrix (*gradG2)(const Config& config, const std::list<std::string>& keys),
+		Matrix (*gradG2)(const Config& config),
 		size_t dim_constraint,
 		const std::string& lagrange_key,
 		bool isEquality) :
 			NonlinearConstraint<Config>(lagrange_key, dim_constraint, g, isEquality),
-			gradG1_(boost::bind(gradG1, _1, _2)), gradG2_(boost::bind(gradG2, _1, _2)),
+			gradG1_(boost::bind(gradG1, _1)), gradG2_(boost::bind(gradG2, _1)),
 			key1_(key1), key2_(key2)
 {
 	// set a good lagrange key here
@@ -161,11 +161,11 @@ NonlinearConstraint2<Config>::NonlinearConstraint2(
 /* ************************************************************************* */
 template <class Config>
 NonlinearConstraint2<Config>::NonlinearConstraint2(
-		boost::function<Vector(const Config& config, const std::list<std::string>& keys)> g,
+		boost::function<Vector(const Config& config)> g,
 		const std::string& key1,
-		boost::function<Matrix(const Config& config, const std::list<std::string>& keys)> gradG1,
+		boost::function<Matrix(const Config& config)> gradG1,
 		const std::string& key2,
-		boost::function<Matrix(const Config& config, const std::list<std::string>& keys)> gradG2,
+		boost::function<Matrix(const Config& config)> gradG2,
 		size_t dim_constraint,
 		const std::string& lagrange_key,
 		bool isEquality)  :
@@ -211,11 +211,11 @@ std::pair<GaussianFactor::shared_ptr, GaussianFactor::shared_ptr> NonlinearConst
 	Vector lambda = lagrange[this->lagrange_key_];
 
 	// find the error
-	Vector g = g_(config, this->keys());
+	Vector g = g_(config);
 
 	// construct the gradients
-	Matrix grad1 = gradG1_(config, this->keys());
-	Matrix grad2 = gradG2_(config, this->keys());
+	Matrix grad1 = gradG1_(config);
+	Matrix grad2 = gradG2_(config);
 
 	// construct probabilistic factor
 	Matrix A1 = vector_scale(lambda, grad1);

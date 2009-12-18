@@ -4,14 +4,17 @@
  * @author Alex Cunningham
  */
 
+#include <list>
 #include <boost/bind.hpp>
 #include <CppUnitLite/TestHarness.h>
+#include <boost/assign/std/list.hpp> // for operator +=
 #include <VectorConfig.h>
 #include <NonlinearConstraint.h>
 #include <NonlinearConstraint-inl.h>
 
 using namespace std;
 using namespace gtsam;
+using namespace boost::assign;
 
 /* ************************************************************************* */
 // unary functions with scalar variables
@@ -38,7 +41,10 @@ TEST( NonlinearConstraint1, unary_scalar_construction ) {
 	// the lagrange multipliers will be expected on L_x1
 	// and there is only one multiplier
 	size_t p = 1;
-	NonlinearConstraint1<VectorConfig> c1(*test1::g, "x", *test1::G, p, "L_x1");
+	list<string> keys;	keys += "x";
+	NonlinearConstraint1<VectorConfig> c1(boost::bind(test1::g, _1, keys),
+										  "x", boost::bind(test1::G, _1, keys),
+										  p, "L_x1");
 
 	// get a configuration to use for finding the error
 	VectorConfig config;
@@ -53,7 +59,10 @@ TEST( NonlinearConstraint1, unary_scalar_construction ) {
 /* ************************************************************************* */
 TEST( NonlinearConstraint1, unary_scalar_linearize ) {
 	size_t p = 1;
-	NonlinearConstraint1<VectorConfig> c1(*test1::g, "x", *test1::G, p, "L_x1");
+	list<string> keys;	keys += "x";
+	NonlinearConstraint1<VectorConfig> c1(boost::bind(test1::g, _1, keys),
+										  "x", boost::bind(test1::G, _1, keys),
+										  p, "L_x1");
 
 	// get a configuration to use for linearization
 	VectorConfig realconfig;
@@ -76,11 +85,12 @@ TEST( NonlinearConstraint1, unary_scalar_linearize ) {
 
 /* ************************************************************************* */
 TEST( NonlinearConstraint1, unary_scalar_equal ) {
+	list<string> keys1, keys2; keys1 += "x"; keys2 += "y";
 	NonlinearConstraint1<VectorConfig>
-		c1(*test1::g, "x", *test1::G, 1, "L_x1", true),
-		c2(*test1::g, "x", *test1::G, 1, "L_x1"),
-		c3(*test1::g, "x", *test1::G, 2, "L_x1"),
-		c4(*test1::g, "y", *test1::G, 1, "L_x1");
+		c1(boost::bind(test1::g, _1, keys1), "x", boost::bind(test1::G, _1, keys1), 1, "L_x1", true),
+		c2(boost::bind(test1::g, _1, keys1), "x", boost::bind(test1::G, _1, keys1), 1, "L_x1"),
+		c3(boost::bind(test1::g, _1, keys1), "x", boost::bind(test1::G, _1, keys1), 2, "L_x1"),
+		c4(boost::bind(test1::g, _1, keys2), "y", boost::bind(test1::G, _1, keys2), 1, "L_x1");
 
 	CHECK(assert_equal(c1, c2));
 	CHECK(assert_equal(c2, c1));
@@ -120,10 +130,11 @@ TEST( NonlinearConstraint2, binary_scalar_construction ) {
 	// the lagrange multipliers will be expected on L_xy
 	// and there is only one multiplier
 	size_t p = 1;
+	list<string> keys; keys += "x", "y";
 	NonlinearConstraint2<VectorConfig> c1(
-			*test2::g,
-			"x", *test2::G1,
-			"y", *test2::G2,
+			boost::bind(test2::g, _1, keys),
+			"x", boost::bind(test2::G1, _1, keys),
+			"y", boost::bind(test2::G1, _1, keys),
 			p, "L_xy");
 
 	// get a configuration to use for finding the error
@@ -141,10 +152,11 @@ TEST( NonlinearConstraint2, binary_scalar_construction ) {
 TEST( NonlinearConstraint2, binary_scalar_linearize ) {
 	// create a constraint
 	size_t p = 1;
+	list<string> keys; keys += "x", "y";
 	NonlinearConstraint2<VectorConfig> c1(
-			*test2::g,
-			"x", *test2::G1,
-			"y", *test2::G2,
+			boost::bind(test2::g, _1, keys),
+			"x", boost::bind(test2::G1, _1, keys),
+			"y", boost::bind(test2::G2, _1, keys),
 			p, "L_xy");
 
 	// get a configuration to use for finding the error
@@ -173,11 +185,13 @@ TEST( NonlinearConstraint2, binary_scalar_linearize ) {
 
 /* ************************************************************************* */
 TEST( NonlinearConstraint2, binary_scalar_equal ) {
+	list<string> keys1, keys2, keys3;
+	keys1 += "x", "y"; keys2 += "y", "x"; keys3 += "x", "z";
 	NonlinearConstraint2<VectorConfig>
-		c1(*test2::g, "x", *test2::G1, "y", *test2::G2, 1, "L_xy"),
-		c2(*test2::g, "x", *test2::G1, "y", *test2::G2, 1, "L_xy"),
-		c3(*test2::g, "y", *test2::G1, "x", *test2::G2, 1, "L_xy"),
-		c4(*test2::g, "x", *test2::G1, "z", *test2::G2, 3, "L_xy");
+		c1(boost::bind(test2::g, _1, keys1), "x", boost::bind(test2::G1, _1, keys1), "y", boost::bind(test2::G2, _1, keys1), 1, "L_xy"),
+		c2(boost::bind(test2::g, _1, keys1), "x", boost::bind(test2::G1, _1, keys1), "y", boost::bind(test2::G2, _1, keys1), 1, "L_xy"),
+		c3(boost::bind(test2::g, _1, keys2), "y", boost::bind(test2::G1, _1, keys2), "x", boost::bind(test2::G2, _1, keys2), 1, "L_xy"),
+		c4(boost::bind(test2::g, _1, keys3), "x", boost::bind(test2::G1, _1, keys3), "z", boost::bind(test2::G2, _1, keys3), 3, "L_xy");
 
 	CHECK(assert_equal(c1, c2));
 	CHECK(assert_equal(c2, c1));
@@ -208,8 +222,9 @@ namespace inequality1 {
 /* ************************************************************************* */
 TEST( NonlinearConstraint1, unary_inequality ) {
 	size_t p = 1;
-	NonlinearConstraint1<VectorConfig> c1(*inequality1::g,
-										  "x", *inequality1::G,
+	list<string> keys; keys += "x";
+	NonlinearConstraint1<VectorConfig> c1(boost::bind(inequality1::g, _1, keys),
+										  "x", boost::bind(inequality1::G, _1, keys),
 										   p, "L_x1",
 										  false); // inequality constraint
 
@@ -228,9 +243,10 @@ TEST( NonlinearConstraint1, unary_inequality ) {
 /* ************************************************************************* */
 TEST( NonlinearConstraint1, unary_inequality_linearize ) {
 	size_t p = 1;
-	NonlinearConstraint1<VectorConfig> c1(*inequality1::g,
-										  "x", *inequality1::G,
-										   p, "L_x",
+	list<string> keys; keys += "x";
+	NonlinearConstraint1<VectorConfig> c1(boost::bind(inequality1::g, _1, keys),
+										  "x", boost::bind(inequality1::G, _1, keys),
+										   p, "L_x1",
 										  false); // inequality constraint
 
 	// get configurations to use for linearization
@@ -240,13 +256,13 @@ TEST( NonlinearConstraint1, unary_inequality_linearize ) {
 
 	// get a configuration of Lagrange multipliers
 	VectorConfig lagrangeConfig;
-	lagrangeConfig.insert("L_x", Vector_(1, 3.0));
+	lagrangeConfig.insert("L_x1", Vector_(1, 3.0));
 
 	// linearize for inactive constraint
 	GaussianFactor::shared_ptr actualFactor1, actualConstraint1;
 	boost::tie(actualFactor1, actualConstraint1) = c1.linearize(config1, lagrangeConfig);
 
-	// check if the factualor is active
+	// check if the factor is active
 	CHECK(!c1.active(config1));
 
 	// linearize for active constraint
@@ -255,7 +271,7 @@ TEST( NonlinearConstraint1, unary_inequality_linearize ) {
 	CHECK(c1.active(config2));
 
 	// verify
-	GaussianFactor expectedFactor("x", Matrix_(1,1, 6.0), "L_x", eye(1), zero(1), 1.0);
+	GaussianFactor expectedFactor("x", Matrix_(1,1, 6.0), "L_x1", eye(1), zero(1), 1.0);
 	GaussianFactor expectedConstraint("x", Matrix_(1,1, 2.0), Vector_(1, 4.0), 0.0);
 	CHECK(assert_equal(*actualFactor2, expectedFactor));
 	CHECK(assert_equal(*actualConstraint2, expectedConstraint));
@@ -287,9 +303,10 @@ TEST( NonlinearConstraint1, unary_binding ) {
 	size_t p = 1;
 	double coeff = 2;
 	double radius = 5;
+	list<string> keys; keys += "x";
 	NonlinearConstraint1<VectorConfig> c1(
-										  boost::bind(binding1::g, radius, _1, _2),
-										  "x", boost::bind(binding1::G, coeff, _1, _2),
+										  boost::bind(binding1::g, radius, _1, keys),
+										  "x", boost::bind(binding1::G, coeff, _1, keys),
 										  p, "L_x1",
 										  false); // inequality constraint
 
@@ -338,10 +355,11 @@ TEST( NonlinearConstraint2, binary_binding ) {
 	double a = 2.0;
 	double b = 1.0;
 	double r = 5.0;
+	list<string> keys; keys += "x", "y";
 	NonlinearConstraint2<VectorConfig> c1(
-			boost::bind(binding2::g, r, _1, _2),
-			"x", boost::bind(binding2::G1, a, _1, _2),
-			"y", boost::bind(binding2::G2, b, _1, _2),
+			boost::bind(binding2::g, r, _1, keys),
+			"x", boost::bind(binding2::G1, a, _1, keys),
+			"y", boost::bind(binding2::G2, b, _1, keys),
 			p, "L_xy");
 
 	// get a configuration to use for finding the error
