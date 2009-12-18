@@ -5,22 +5,19 @@
  * @author  Viorela Ila
  */
 
-#include "UrbanConfig.h"
 #include "Pose3Factor.h"
-#include "Pose3.h"
-#include "SimpleCamera.h"
 
 using namespace std;
-namespace gtsam{
+namespace gtsam {
 
-/* ************************************************************************* */
+/* ************************************************************************* *
 Pose3Factor::Pose3Factor() {
 	/// Arbitrary values
 	robotPoseNumber_ = 1;
 	robotPoseName_ = symbol('x',robotPoseNumber_);
 	keys_.push_back(robotPoseName_);
 }
-/* ************************************************************************* */
+/* ************************************************************************* *
 Pose3Factor::Pose3Factor(const Point2& z, double sigma, int cn, int ln)
 : NonlinearFactor<Pose3Config>(z.vector(), sigma)
   {
@@ -32,13 +29,13 @@ Pose3Factor::Pose3Factor(const Point2& z, double sigma, int cn, int ln)
 	keys_.push_back(landmarkName_);
   }
 
-/* ************************************************************************* */
+/* ************************************************************************* *
 void Pose3Factor::print(const std::string& s) const {
   printf("%s %s %s\n", s.c_str(), robotPoseName_.c_str(), landmarkName_.c_str());
   gtsam::print(this->z_, s+".z");
 }
 
-/* ************************************************************************* */
+/* ************************************************************************* *
 bool Pose3Factor::equals(const Pose3Factor& p, double tol) const {
   if (&p == NULL) return false;
   if (robotPoseNumber_ != p.robotPoseNumber_ || landmarkNumber_ != p.landmarkNumber_) return false;
@@ -46,6 +43,7 @@ bool Pose3Factor::equals(const Pose3Factor& p, double tol) const {
   return true;
 }
 
+/* ************************************************************************* *
 // TODO Implement transformPoint2_from
 // the difference here that we have a 2d point in a 3D coordinate
 Vector Pose3Factor::predict(const Pose3Config& c) const {
@@ -54,13 +52,14 @@ Vector Pose3Factor::predict(const Pose3Config& c) const {
   return transformPoint2_from(SimpleCamera(*K_,pose), landmark).vector();
 }
 
-/* ************************************************************************* */
+/* ************************************************************************* *
 Vector Pose3Factor::error_vector(const Pose3Config& c) const {
   // Right-hand-side b = (z - h(x))/sigma
   Point2 h = predict(c);
   return (this->z_ - h);
 }
 
+/* ************************************************************************* *
 GaussianFactor::shared_ptr Pose3Factor::linearize(const Pose3Config& c) const
 {
   // get arguments from config

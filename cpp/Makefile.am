@@ -123,35 +123,28 @@ timeGaussianFactorGraph: LDFLAGS += smallExample.o -L.libs -lgtsam -L../CppUnitL
 # Nonlinear inference 
 headers += NonlinearFactorGraph.h NonlinearFactorGraph-inl.h
 headers += NonlinearOptimizer.h NonlinearOptimizer-inl.h 
-headers += SQPOptimizer.h SQPOptimizer-inl.h  
-headers += NonlinearConstraint.h NonlinearConstraint-inl.h
-headers += NonlinearEquality.h
-headers += Pose2Config.h Pose2Factor.h 
-headers += UrbanGraph.h
 sources += NonlinearFactor.cpp 
-sources += Pose2Graph.cpp
-sources += UrbanConfig.cpp UrbanMeasurement.cpp
-check_PROGRAMS += testNonlinearFactor testNonlinearFactorGraph testNonlinearOptimizer testNonlinearEquality testSQP testNonlinearConstraint testSQPOptimizer testPose2Factor testPose2Graph testUrbanGraph
+check_PROGRAMS += testNonlinearFactor testNonlinearFactorGraph testNonlinearOptimizer
 testNonlinearFactor_SOURCES      = $(example) testNonlinearFactor.cpp
 testNonlinearFactor_LDADD        = libgtsam.la
-testNonlinearConstraint_SOURCES  = $(example) testNonlinearConstraint.cpp
-testNonlinearConstraint_LDADD    = libgtsam.la
 testNonlinearFactorGraph_SOURCES = $(example) testNonlinearFactorGraph.cpp
 testNonlinearFactorGraph_LDADD   = libgtsam.la
 testNonlinearOptimizer_SOURCES   = $(example) testNonlinearOptimizer.cpp
 testNonlinearOptimizer_LDADD     = libgtsam.la
-testSQPOptimizer_SOURCES   		 = $(example) testSQPOptimizer.cpp
-testSQPOptimizer_LDADD     		 = libgtsam.la
-testNonlinearEquality_SOURCES    = testNonlinearEquality.cpp
-testNonlinearEquality_LDADD      = libgtsam.la
-testSQP_SOURCES                  = $(example) testSQP.cpp
-testSQP_LDADD                    = libgtsam.la
-testPose2Factor_SOURCES          = $(example) testPose2Factor.cpp
-testPose2Factor_LDADD       	 = libgtsam.la
-testPose2Graph_SOURCES      	 = $(example) testPose2Graph.cpp
-testPose2Graph_LDADD        	 = libgtsam.la
-testUrbanGraph_SOURCES      	 = $(example) testUrbanGraph.cpp
-testUrbanGraph_LDADD        	 = libgtsam.la
+
+# Nonlinear constraints 
+headers += SQPOptimizer.h SQPOptimizer-inl.h  
+headers += NonlinearConstraint.h NonlinearConstraint-inl.h
+headers += NonlinearEquality.h
+check_PROGRAMS += testNonlinearConstraint testNonlinearEquality testSQP testSQPOptimizer
+testNonlinearConstraint_SOURCES = testNonlinearConstraint.cpp
+testNonlinearConstraint_LDADD   = libgtsam.la
+testNonlinearEquality_SOURCES   = testNonlinearEquality.cpp
+testNonlinearEquality_LDADD     = libgtsam.la
+testSQP_SOURCES                 = $(example) testSQP.cpp
+testSQP_LDADD                   = libgtsam.la
+testSQPOptimizer_SOURCES   		  = $(example) testSQPOptimizer.cpp
+testSQPOptimizer_LDADD     		  = libgtsam.la
 
 # geometry
 sources += Point2.cpp Rot2.cpp Pose2.cpp Point3.cpp Rot3.cpp Pose3.cpp Cal3_S2.cpp
@@ -184,15 +177,37 @@ testSimulated3D_SOURCES = testSimulated3D.cpp
 testSimulated3D_LDADD = libgtsam.la
 check_PROGRAMS += testSimulated3D 
 
+# Pose constraints
+headers += Pose2Config.h Pose2Factor.h
+sources += Pose3Factor.cpp Pose2Graph.cpp
+check_PROGRAMS += testPose2Factor testPose2Graph testPose3Factor
+testPose2Factor_SOURCES = $(example) testPose2Factor.cpp
+testPose2Factor_LDADD   = libgtsam.la
+testPose2Graph_SOURCES  = $(example) testPose2Graph.cpp
+testPose2Graph_LDADD    = libgtsam.la
+testPose3Factor_SOURCES = $(example) testPose3Factor.cpp
+testPose3Factor_LDADD   = libgtsam.la
+
+# Urban
+headers += UrbanGraph.h
+sources += UrbanConfig.cpp UrbanMeasurement.cpp
+check_PROGRAMS += testUrbanConfig testUrbanMeasurement testUrbanGraph
+testUrbanConfig_SOURCES       = $(example) testUrbanConfig.cpp
+testUrbanConfig_LDADD         = libgtsam.la
+testUrbanMeasurement_SOURCES  = $(example) testUrbanMeasurement.cpp
+testUrbanMeasurement_LDADD    = libgtsam.la
+testUrbanGraph_SOURCES        = $(example) testUrbanGraph.cpp
+testUrbanGraph_LDADD          = libgtsam.la
+
 # Robot Control example system
 sources += ControlConfig.cpp ControlPoint.cpp ControlGraph.cpp
 check_PROGRAMS += testControlConfig testControlPoint testControlGraph
 testControlConfig_SOURCES = testControlConfig.cpp
-testControlConfig_LDADD = libgtsam.la
-testControlPoint_SOURCES = testControlPoint.cpp
-testControlPoint_LDADD = libgtsam.la
-testControlGraph_SOURCES = testControlGraph.cpp
-testControlGraph_LDADD = libgtsam.la
+testControlConfig_LDADD   = libgtsam.la
+testControlPoint_SOURCES  = testControlPoint.cpp
+testControlPoint_LDADD    = libgtsam.la
+testControlGraph_SOURCES  = testControlGraph.cpp
+testControlGraph_LDADD    = libgtsam.la
 
 # Cameras
 sources += CalibratedCamera.cpp SimpleCamera.cpp
