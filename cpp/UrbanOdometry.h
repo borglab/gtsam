@@ -7,13 +7,6 @@
 
 #pragma once
 
-/*
-#include <map>
-#include "NonlinearFactor.h"
-#include "GaussianFactor.h"
-#include "VectorConfig.h"
-#include "Pose3.h"
-*/
 #include "UrbanFactor.h"
 
 namespace gtsam {
@@ -42,7 +35,7 @@ namespace gtsam {
 			std::cout << "key1 " << key1_ << std::endl;
 			std::cout << "key2 " << key2_ << std::endl;
 			gtsam::print(z_,"measured ");
-			gtsam::print(square_root_inverse_covariance_, "MeasurementCovariance");
+			gtsam::print(square_root_inverse_covariance_, "square_root_inverse_covariance");
 		}
 
 		bool equals(const NonlinearFactor<UrbanConfig>& expected, double tol) const {
@@ -56,6 +49,8 @@ namespace gtsam {
 
 		std::list<std::string> keys() const {
 			std::list<std::string> l;
+			l.push_back(key1_);
+			l.push_back(key2_);
 			return l;
 		}
 
