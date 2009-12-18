@@ -13,20 +13,15 @@
 
 namespace gtsam {
 
-	class UrbanFactor : public NonlinearFactor<UrbanConfig> {
+	/**
+	 * Base class for UrbanMeasurement and UrbanOdometry
+	 */
+	class UrbanFactor: public NonlinearFactor<UrbanConfig> {
 	public:
+
 		UrbanFactor();
+		UrbanFactor(const Vector& z, const double sigma);
 		virtual ~UrbanFactor();
-
-    /** Vector of errors */
-		Vector error_vector(const UrbanConfig& c) const { return zero(0); }
-
-    /** linearize to a GaussianFactor */
-    boost::shared_ptr<GaussianFactor> linearize(const UrbanConfig& c) const {
-    	boost::shared_ptr<GaussianFactor> factor(new GaussianFactor);
-    	return factor;
-    }
-
 	};
 
 }

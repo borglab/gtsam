@@ -8,7 +8,7 @@
 #pragma once
 
 #include "NonlinearFactorGraph.h"
-#include "UrbanFactor.h"
+#include "UrbanMeasurement.h"
 
 namespace gtsam {
 
@@ -35,13 +35,12 @@ namespace gtsam {
 		/**
 		 *  Add a landmark constraint
 		 */
-		void addMeasurement(double x, double y, double sigma, int p1, int p2);
+		void addMeasurement(double x, double y, double sigma, int i, int j);
 
 		/**
 		 *  Add an odometry constraint
 		 */
-		void addOdometry(double dx, double yaw, double sigmadx, double sigmayaw,
-				int p);
+		void addOdometry(double dx, double yaw, double sigmadx, double sigmayaw, int i);
 
 		/**
 		 *  Add an initial constraint on the first pose

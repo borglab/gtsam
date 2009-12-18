@@ -21,7 +21,7 @@ typedef NonlinearOptimizer<UrbanGraph,UrbanConfig> Optimizer;
 
 /* ************************************************************************* */
 
-Point2 landmark1(  2,  5);
+Point2 landmark(  2,  5);
 Point2 landmark2(  2, 10);
 Point2 landmark3( -2,  5);
 Point2 landmark4( -2,-10);
@@ -29,7 +29,7 @@ Point2 landmark4( -2,-10);
 /* Robot is at (0,0,0) looking in global "y" direction.
  * For the local frame we used Navlab convention,
  * x-looks forward, y-looks right, z- down*/
-Pose3 robotPose1(Matrix_(3,3,
+Pose3 robotPose(Matrix_(3,3,
 		       0., 1., 0.,
 		       1., 0., 0.,
 		       0., 0.,-1.
@@ -45,8 +45,28 @@ Pose3 robotPose2(Matrix_(3,3,
 	      Point3(0,1,0));
 
 /* ************************************************************************* */
-/* the measurements are relative to the robot pose so
- * they are in robot coordinate frame different from the global (above)*/
+TEST( UrbanGraph, addMeasurement)
+{
+	// Check adding a measurement
+  UrbanGraph g;
+  double sigma = 0.2;// 20 cm
+  g.addMeasurement(4, 2, sigma, 1, 1);
+  LONGS_EQUAL(1,g.size());
+
+	// Create a config
+	UrbanConfig config;
+	config.addRobotPose(1,robotPose);
+	config.addLandmark(1,landmark);
+
+  // Check error
+	double expected = 0.5/sigma/sigma;
+  DOUBLES_EQUAL(expected, g.error(config), 1e-9);
+}
+
+/* ************************************************************************* *
+ * the measurements are relative to the robot pose so
+ * they are in robot coordinate frame different from the global (above)
+ *
 UrbanGraph testGraph() {
 
   double sigma = 0.2;// 20 cm
@@ -68,7 +88,7 @@ UrbanGraph testGraph() {
   return g;
 }
 
-/* ************************************************************************* */
+/* ************************************************************************* *
 TEST( UrbanGraph, optimizeLM)
 {
   // build a graph
@@ -76,9 +96,9 @@ TEST( UrbanGraph, optimizeLM)
 
   // Create an initial configuration corresponding to the ground truth
   boost::shared_ptr<UrbanConfig> initialEstimate(new UrbanConfig);
-  initialEstimate->addRobotPose(1, robotPose1);
+  initialEstimate->addRobotPose(1, robotPose);
   initialEstimate->addRobotPose(2, robotPose2);
-  initialEstimate->addLandmark(1, landmark1);
+  initialEstimate->addLandmark(1, landmark);
   initialEstimate->addLandmark(2, landmark2);
   initialEstimate->addLandmark(3, landmark3);
   initialEstimate->addLandmark(4, landmark4);

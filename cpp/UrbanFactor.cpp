@@ -11,7 +11,11 @@ namespace gtsam {
 
 	UrbanFactor::UrbanFactor() {
 		// TODO Auto-generated constructor stub
+	}
 
+	UrbanFactor::UrbanFactor(const Vector& z, const double sigma) :
+		NonlinearFactor<UrbanConfig> (z,sigma) {
+		// TODO
 	}
 
 	UrbanFactor::~UrbanFactor() {

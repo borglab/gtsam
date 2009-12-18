@@ -33,9 +33,10 @@ namespace gtsam {
 	}
 
 	/* ************************************************************************* */
-	void UrbanGraph::addMeasurement(double x, double y, double sigma, int p1,
-			int p2) {
-		// TODO
+	void UrbanGraph::addMeasurement(double x, double y, double sigma, int i, int j) {
+		Point2 z(x,y);
+		sharedFactor factor(new UrbanMeasurement(z,sigma,i,j));
+		push_back(factor);
 	}
 	;
 
