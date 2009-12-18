@@ -8,6 +8,8 @@
 #include "FactorGraph-inl.h"
 #include "NonlinearOptimizer-inl.h"
 #include "UrbanGraph.h"
+#include "UrbanMeasurement.h"
+#include "UrbanOdometry.h"
 
 namespace gtsam {
 
@@ -43,7 +45,12 @@ namespace gtsam {
 	/* ************************************************************************* */
 	void UrbanGraph::addOdometry(double dx, double yaw, double sigmadx,
 			double sigmayaw, int p) {
-		// TODO
+		Vector z = Vector_(dx,0,0,yaw,0,0);
+		Matrix cov = eye(6);
+		cov(1,1)=sigmadx*sigmadx;
+		cov(4,4)=sigmadx*sigmadx;
+		sharedFactor factor(new UrbanOdometry(symbol('x',p),symbol('x',p+1),z,cov));
+		push_back(factor);
 	}
 
 	/* ************************************************************************* */

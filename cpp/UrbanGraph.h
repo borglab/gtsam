@@ -8,7 +8,7 @@
 #pragma once
 
 #include "NonlinearFactorGraph.h"
-#include "UrbanMeasurement.h"
+#include "UrbanFactor.h"
 
 namespace gtsam {
 
