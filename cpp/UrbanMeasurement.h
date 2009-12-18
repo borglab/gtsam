@@ -18,7 +18,7 @@ namespace gtsam {
 	 */
 	class UrbanMeasurement: public UrbanFactor {
 	private:
-
+		boost::shared_ptr<const Matrix> sensorMatrix_;
 		int robotPoseNumber_, landmarkNumber_;
 		std::string robotPoseName_, landmarkName_;
 		//boost::shared_ptr<Cal3_S2> K_; // Calibration stored in each factor. FD: need to think about this.
@@ -43,7 +43,8 @@ namespace gtsam {
 		 *
 		 *
 		 */
-		UrbanMeasurement(const Point2& z, double sigma, int robotPoseNumber,
+		UrbanMeasurement(const boost::shared_ptr<const Matrix> &sensorMatrix, 
+				 const Point2& z, double sigma, int robotPoseNumber,
 				int landmarkNumber);
 
 		/**
@@ -66,9 +67,7 @@ namespace gtsam {
 		 * linerarization
 		 */
 
-		GaussianFactor::shared_ptr linearize(const UrbanConfig&) const {
-			//TODO implement linearize
-		}
+		GaussianFactor::shared_ptr linearize(const UrbanConfig&) const;
 
 		int getrobotPoseNumber() const {
 			return robotPoseNumber_;
@@ -92,8 +91,12 @@ namespace gtsam {
 	/**
 	 * Transform 2D landmark into 6D pose, and its derivatives
 	 */
-	Point2 transform_to(const Pose3& pose, const Point2& p);
-	Matrix Dtransform_to1(const Pose3& pose, const Point2& p);
-	Matrix Dtransform_to2(const Pose3& pose);
+	// JC:  These are exported only for testbenches?
+	Point2 transform_to(const boost::shared_ptr<const Matrix> &sensorMatrix, 
+			    const Pose3& pose, const Point2& p);
+	Matrix Dtransform_to1(const boost::shared_ptr<const Matrix> &sensorMatrix, 
+			      const Pose3& pose, const Point2& p);
+	Matrix Dtransform_to2(const boost::shared_ptr<const Matrix> &sensorMatrix, 
+			      const Pose3& pose);
 
 } // namespace gtsam

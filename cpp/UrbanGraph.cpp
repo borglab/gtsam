@@ -35,9 +35,10 @@ namespace gtsam {
 	}
 
 	/* ************************************************************************* */
-	void UrbanGraph::addMeasurement(double x, double y, double sigma, int i, int j) {
+	void UrbanGraph::addMeasurement(const boost::shared_ptr<const Matrix> &sensorMatrix, 
+					double x, double y, double sigma, int i, int j) {
 		Point2 z(x,y);
-		sharedFactor factor(new UrbanMeasurement(z,sigma,i,j));
+		sharedFactor factor(new UrbanMeasurement(sensorMatrix, z,sigma,i,j));
 		push_back(factor);
 	}
 	;

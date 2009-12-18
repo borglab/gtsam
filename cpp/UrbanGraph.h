@@ -35,7 +35,8 @@ namespace gtsam {
 		/**
 		 *  Add a landmark constraint
 		 */
-		void addMeasurement(double x, double y, double sigma, int i, int j);
+		void addMeasurement(const boost::shared_ptr<const Matrix> &sensorMatrix,
+				    double x, double y, double sigma, int i, int j);
 
 		/**
 		 *  Add an odometry constraint

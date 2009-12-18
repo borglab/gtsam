@@ -47,8 +47,9 @@ namespace gtsam {
 		 * copy constructor
 		 */
 		UrbanConfig(const UrbanConfig& original) :
-			robotPoses_(original.robotPoses_), landmarkPoints_(
-					original.landmarkPoints_) {
+			landmarkPoints_(original.landmarkPoints_),
+			robotPoses_(original.robotPoses_)
+			{
 		}
 
 		/**

@@ -21,28 +21,30 @@ typedef NonlinearOptimizer<UrbanGraph,UrbanConfig> Optimizer;
 
 /* ************************************************************************* */
 
-Point2 landmark(  2,  5);
-Point2 landmark2(  2, 10);
-Point2 landmark3( -2,  5);
-Point2 landmark4( -2,-10);
+static Point2 landmark(  2,  5);
+static Point2 landmark2(  2, 10);
+static Point2 landmark3( -2,  5);
+static Point2 landmark4( -2,-10);
 
 /* Robot is at (0,0,0) looking in global "y" direction.
  * For the local frame we used Navlab convention,
  * x-looks forward, y-looks right, z- down*/
-Pose3 robotPose(Matrix_(3,3,
-		       0., 1., 0.,
-		       1., 0., 0.,
-		       0., 0.,-1.
-		       ),
-	      Point3(0,0,0));
+static Pose3 robotPose(Matrix_(3,3,
+			       0., 1., 0.,
+			       1., 0., 0.,
+			       0., 0.,-1.
+			       ),
+		       Point3(0,0,0));
 
 /* move at a speed 10 m/s (36 km/h or 22 mph), 10 Hz update, we move 1m.*/
-Pose3 robotPose2(Matrix_(3,3,
-		       0., 1., 0.,
-		       1., 0., 0.,
-		       0., 0.,-1.
-		       ),
-	      Point3(0,1,0));
+static Pose3 robotPose2(Matrix_(3,3,
+				0., 1., 0.,
+				1., 0., 0.,
+				0., 0.,-1.
+				),
+			Point3(0,1,0));
+
+static boost::shared_ptr<const Matrix> sensorMatrix(new Matrix(4, 4));
 
 /* ************************************************************************* */
 TEST( UrbanGraph, addMeasurement)
@@ -50,7 +52,7 @@ TEST( UrbanGraph, addMeasurement)
 	// Check adding a measurement
   UrbanGraph g;
   double sigma = 0.2;// 20 cm
-  g.addMeasurement(4, 2, sigma, 1, 1); // ground truth would be (5,2)
+  g.addMeasurement(sensorMatrix, 4, 2, sigma, 1, 1); // ground truth would be (5,2)
   LONGS_EQUAL(1,g.size());
 
 	// Create a config
@@ -95,15 +97,15 @@ UrbanGraph testGraph() {
 
   UrbanGraph g;
   g.addOriginConstraint(1); // pose1 is the origin
-  g.addMeasurement( 5,  2, sigma, 1, 1); // z11
-  g.addMeasurement(10,  2, sigma, 1, 2); // z12
-  g.addMeasurement( 5, -2, sigma, 1, 3); // z13
-  g.addMeasurement(10, -2, sigma, 1, 4); // z14
+  g.addMeasurement(sensorMatrix, 5,  2, sigma, 1, 1); // z11
+  g.addMeasurement(sensorMatrix, 10,  2, sigma, 1, 2); // z12
+  g.addMeasurement(sensorMatrix,  5, -2, sigma, 1, 3); // z13
+  g.addMeasurement(sensorMatrix, 10, -2, sigma, 1, 4); // z14
   g.addOdometry(1, 0, sigmadx,sigmayaw, 1); // 1m forward, 0 yaw
-  g.addMeasurement( 4,  2, sigma, 2, 1); // z21
-  g.addMeasurement( 9,  2, sigma, 2, 2); // z22
-  g.addMeasurement( 4, -2, sigma, 2, 3); // z23
-  g.addMeasurement( 9, -2, sigma, 2, 4); // z24
+  g.addMeasurement(sensorMatrix,  4,  2, sigma, 2, 1); // z21
+  g.addMeasurement(sensorMatrix,  9,  2, sigma, 2, 2); // z22
+  g.addMeasurement(sensorMatrix,  4, -2, sigma, 2, 3); // z23
+  g.addMeasurement(sensorMatrix,  9, -2, sigma, 2, 4); // z24
 
   return g;
 }
