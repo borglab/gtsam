@@ -28,7 +28,7 @@ TEST( Pose2Factor, constructor )
 
 	// Choose a linearization point
 	Pose2 p1(1.1,2,M_PI_2); // robot at (1.1,2) looking towards y (ground truth is at 1,2, see testPose2)
-	Pose2 p2(-1,4.1,M_PI);  // robot at (-1,4) looking at negative (ground truth is at 4.1,2)
+	Pose2 p2(-1,4.1,M_PI);  // robot at (-1,4.1) looking at negative (ground truth is at 4.1,2)
 	Pose2Config config;
 	config.insert("p1",p1);
 	config.insert("p2",p2);
@@ -59,10 +59,11 @@ TEST( Pose2Factor, constructor )
 	GaussianFactor expected(
 			"p1", square_root_inverse_covariance*expectedH1,
 			"p2", square_root_inverse_covariance*expectedH2,
-			Vector_(3,-0.1,-0.1,0.0), 1.0);
+			Vector_(3,0.1,0.1,0.0), 1.0);
 
 	CHECK(assert_equal(expected,*actual));
 }
+
 
 /* ************************************************************************* */
 int main() {

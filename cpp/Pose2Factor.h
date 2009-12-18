@@ -20,14 +20,18 @@ private:
 	std::string key1_, key2_; /** The keys of the two poses, order matters */
 	Pose2 measured_;
 	Matrix square_root_inverse_covariance_; /** sqrt(inv(measurement_covariance)) */
+	std::list<std::string> keys_;
 
 public:
 
 	typedef boost::shared_ptr<Pose2Factor> shared_ptr; // shorthand for a smart pointer to a factor
 
 	Pose2Factor(const std::string& key1, const std::string& key2,
-			const Pose2& measured, const Matrix& measurement_covariance): key1_(key1),key2_(key2),measured_(measured) {
+			const Pose2& measured, const Matrix& measurement_covariance) :
+			  key1_(key1),key2_(key2),measured_(measured) {
 		square_root_inverse_covariance_ = inverse_square_root(measurement_covariance);
+		keys_.push_back(key1);
+		keys_.push_back(key2);
 	}
 
 	/** implement functions needed for Testable */
@@ -45,16 +49,16 @@ public:
 	Vector error_vector(const Pose2Config& config) const {
 		//z-h
 		Pose2 p1 = config.get(key1_), p2 = config.get(key2_);
-		return (measured_ - between(p1,p2)).vector();
+		return -between(p1,p2).log(measured_);
 	}
 
-	std::list<std::string> keys() const { std::list<std::string> l; return l; }
-	std::size_t size() const { return 2;}
+	std::list<std::string> keys() const { return keys_; }
+	std::size_t size() const { return keys_.size(); }
 
 	/** linearize */
 	boost::shared_ptr<GaussianFactor> linearize(const Pose2Config& config) const {
 		Pose2 p1 = config.get(key1_), p2 = config.get(key2_);
-		Vector b = (measured_ - between(p1,p2)).vector();
+		Vector b = -between(p1,p2).log(measured_);
 		Matrix H1 = Dbetween1(p1,p2);
 		Matrix H2 = Dbetween2(p1,p2);
 		boost::shared_ptr<GaussianFactor> linearized(new GaussianFactor(
