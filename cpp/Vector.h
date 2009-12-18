@@ -9,6 +9,7 @@
 
 #pragma once
 
+#include <list>
 #include <boost/numeric/ublas/vector.hpp>
 #include <boost/random/linear_congruential.hpp>
 
@@ -167,8 +168,12 @@ std::pair<Vector, double> weightedPseudoinverse(const Vector& v, const Vector& s
 /**
  * concatenate Vectors
  */
-Vector concatVectors(size_t nrVectors, ...);
+Vector concatVectors(const std::list<Vector>& vs);
 
+/**
+ * concatenate Vectors
+ */
+Vector concatVectors(size_t nrVectors, ...);
 
 /**
  * random vector

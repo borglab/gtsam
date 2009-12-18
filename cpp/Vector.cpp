@@ -239,30 +239,35 @@ namespace gtsam {
   }
 
   /* ************************************************************************* */
+  Vector concatVectors(const std::list<Vector>& vs)
+  {
+    int dim = 0;
+    BOOST_FOREACH(Vector v, vs)
+      dim += v.size();
+
+    Vector A(dim);
+    int index = 0;
+    BOOST_FOREACH(Vector v, vs) {
+      for(size_t d = 0; d < v.size(); d++)
+        A(d+index) = v(d);
+      index += v.size();
+    }
+
+    return A;
+  }
+
+  /* ************************************************************************* */
   Vector concatVectors(size_t nrVectors, ...)
   {
-    int dimA = 0;
     va_list ap;
+    list<Vector> vs;
     va_start(ap, nrVectors);
-    Vector* V;
-    for( size_t i = 0 ; i < nrVectors ; i++)
-    {
-      V = va_arg(ap, Vector*);
-      dimA += V->size();
+    for( size_t i = 0 ; i < nrVectors ; i++) {
+    	Vector* V = va_arg(ap, Vector*);
+      vs.push_back(*V);
     }
     va_end(ap);
-    va_start(ap, nrVectors);
-    Vector A(dimA);
-    int index = 0;
-    for( size_t i = 0 ; i < nrVectors ; i++)
-    {
-      V = va_arg(ap, Vector *);
-      for(size_t d = 0; d < V->size(); d++)
-        A(d+index) = (*V)(d);
-      index += V->size();
-    }  
-    
-    return A;
+    return concatVectors(vs);
   }
   
   /* ************************************************************************* */

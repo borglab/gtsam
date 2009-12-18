@@ -120,10 +120,15 @@ TEST( TestVector, concatVectors)
   Vector C(7);
   for(int i = 0; i < 2; i++) C(i) = A(i);
   for(int i = 0; i < 5; i++) C(i+2) = B(i);
-	
-  Vector AB = concatVectors(2, &A, &B);
 
-  CHECK(AB == C);
+  list<Vector> vs;
+  vs.push_back(A);
+  vs.push_back(B);
+  Vector AB1 = concatVectors(vs);
+  CHECK(AB1 == C);
+
+  Vector AB2 = concatVectors(2, &A, &B);
+  CHECK(AB2 == C);
 }
 
 /* ************************************************************************* */
