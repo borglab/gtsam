@@ -67,7 +67,7 @@ TEST( Pose2Graph, linerization )
 
 
 	double sigma = 1;
-	Vector b = Vector_(3,-0.1,-0.1,0.0);
+	Vector b = Vector_(3,0.1,0.1,0.0);
 	lfg_expected.add("x1", A1, "x2", A2, b, sigma);
 
 
