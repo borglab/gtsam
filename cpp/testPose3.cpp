@@ -93,7 +93,7 @@ TEST( Pose3, Dtransform_to1)
 
 TEST( Pose3, Dtransform_to2)
 {
-  Matrix computed = Dtransform_to2(T);
+  Matrix computed = Dtransform_to2(T,P);
   Matrix numerical = numericalDerivative22(transform_to,T,P);
   CHECK(assert_equal(numerical,computed,error));
 }
@@ -139,13 +139,13 @@ TEST( Pose3, transform_roundtrip)
 TEST( Pose3, transformPose_to_origin)
 {
 		// transform to origin
-		Pose3 actual = pose1.transformPose_to(Pose3());
+		Pose3 actual = pose1.transform_to(Pose3());
 		CHECK(assert_equal(pose1, actual, error));
 }
 TEST( Pose3, transformPose_to_itself)
 {
 		// transform to itself
-		Pose3 actual = pose1.transformPose_to(pose1);
+		Pose3 actual = pose1.transform_to(pose1);
 		CHECK(assert_equal(Pose3(), actual, error));
 }
 TEST( Pose3, transformPose_to_translation)
@@ -153,7 +153,7 @@ TEST( Pose3, transformPose_to_translation)
 		// transform translation only
 		Rot3 r = rodriguez(-1.570796,0,0);
 		Pose3 pose2(r, Point3(21.,32.,13.)); 
-		Pose3 actual = pose2.transformPose_to(Pose3(Rot3(), Point3(1,2,3)));
+		Pose3 actual = pose2.transform_to(Pose3(Rot3(), Point3(1,2,3)));
 		Pose3 expected(r, Point3(20.,30.,10.));  
 		CHECK(assert_equal(expected, actual, error)); 
 }
@@ -163,7 +163,7 @@ TEST( Pose3, transformPose_to_simple_rotate)
 		Rot3 r = rodriguez(0,0,-1.570796);
 		Pose3 pose2(r, Point3(21.,32.,13.)); 
 		Pose3 transform(r, Point3(1,2,3));
-		Pose3 actual = pose2.transformPose_to(transform);
+		Pose3 actual = pose2.transform_to(transform);
 		Pose3 expected(Rot3(), Point3(-30.,20.,10.)); 
 		CHECK(assert_equal(expected, actual, 0.001)); 
 }
@@ -174,7 +174,7 @@ TEST( Pose3, transformPose_to)
 		Rot3 r2 = rodriguez(0,0,0.698131701); //40 degree yaw
 		Pose3 pose2(r2, Point3(21.,32.,13.)); 
 		Pose3 transform(r, Point3(1,2,3));
-		Pose3 actual = pose2.transformPose_to(transform);
+		Pose3 actual = pose2.transform_to(transform);
 		Pose3 expected(rodriguez(0,0,2.26892803), Point3(-30.,20.,10.)); 
 		CHECK(assert_equal(expected, actual, 0.001));  
 }
@@ -194,7 +194,7 @@ TEST( Pose3, composeTransform )
 		Pose3 target(rodriguez(0,0,2.26892803), Point3(-30.,20.,10.)); 
 		
 		// calculate transform
-		Pose3 actual = composeTransform(current, target);
+		Pose3 actual = compose(current, target);
 		
 		//verify
 		CHECK(assert_equal(exp_transform, actual, 0.001));

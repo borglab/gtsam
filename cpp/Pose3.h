@@ -102,12 +102,12 @@ namespace gtsam {
 		Matrix matrix() const;
 
 		/** transforms */
-		Pose3 transformPose_to(const Pose3& transform) const;
+		Pose3 transform_to(const Pose3& transform) const;
 
 		/** friends */
 		friend Point3 transform_from(const Pose3& pose, const Point3& p);
 		friend Point3 transform_to(const Pose3& pose, const Point3& p);
-		friend Pose3 composeTransform(const Pose3& current, const Pose3& target);
+		friend Pose3 compose(const Pose3& current, const Pose3& target);
 
 	private:
 		/** Serialization function */
@@ -122,7 +122,7 @@ namespace gtsam {
 	/**
 	 * Finds a transform from the current frame dTx to the target frame sTx
 	 */
-	inline Pose3 composeTransform(const Pose3& dTx, const Pose3& sTx) {
+	inline Pose3 compose(const Pose3& dTx, const Pose3& sTx) {
 		return dTx * sTx.inverse();
 	}
 
@@ -134,7 +134,7 @@ namespace gtsam {
 	/** receives the point in world coordinates and transforms it to Pose coordinates */
 	Point3 transform_to(const Pose3& pose, const Point3& p);
 	Matrix Dtransform_to1(const Pose3& pose, const Point3& p);
-	Matrix Dtransform_to2(const Pose3& pose); // does not depend on p !
+	Matrix Dtransform_to2(const Pose3& pose, const Point3& p);
 
 	/**
 	 * Return relative pose between p1 and p2, in p1 coordinate frame

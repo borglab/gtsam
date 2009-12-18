@@ -71,8 +71,8 @@ namespace gtsam {
 
 	/* ************************************************************************* */
 	Matrix Dproject_point(const CalibratedCamera& camera, const Point3& point) {
-		Point3 cameraPoint = transform_to(camera.pose(), point);
-		Matrix D_cameraPoint_point = Dtransform_to2(camera.pose());
+		Point3 cameraPoint = transform_to(camera.pose(),point);
+		Matrix D_cameraPoint_point = Dtransform_to2(camera.pose(),point);
 
 		Point2 intrinsic = project_to_camera(cameraPoint);
 		Matrix D_intrinsic_cameraPoint = Dproject_to_camera1(cameraPoint);
@@ -86,8 +86,8 @@ namespace gtsam {
 			Matrix& D_intrinsic_pose, Matrix& D_intrinsic_point) {
 
 		Point3 cameraPoint = transform_to(camera.pose(), point);
-		Matrix D_cameraPoint_pose = Dtransform_to1(camera.pose(), point); // 3*6
-		Matrix D_cameraPoint_point = Dtransform_to2(camera.pose()); // 3*3
+		Matrix D_cameraPoint_pose = Dtransform_to1(camera.pose(),point); // 3*6
+		Matrix D_cameraPoint_point = Dtransform_to2(camera.pose(),point); // 3*3
 
 		Point2 intrinsic = project_to_camera(cameraPoint);
 		Matrix D_intrinsic_cameraPoint = Dproject_to_camera1(cameraPoint);

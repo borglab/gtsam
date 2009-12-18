@@ -75,7 +75,7 @@ Matrix Dtransform_to1(const Pose3& pose, const Point3& p) {
 }
 
 /* ************************************************************************* */
-Matrix Dtransform_to2(const Pose3& pose) {
+Matrix Dtransform_to2(const Pose3& pose, const Point3& p) {
   return Dunrotate2(pose.rotation());
 }
 
@@ -106,10 +106,9 @@ Pose3 Pose3::inverse() const {
 }
 
 /* ************************************************************************* */
-Pose3 Pose3::transformPose_to(const Pose3& pose) const {
+Pose3 Pose3::transform_to(const Pose3& pose) const {
 	Rot3 cRv = R_ * Rot3(pose.R_.inverse());
-	Point3 t = transform_to(pose, t_);
-
+	Point3 t = gtsam::transform_to(pose, t_);
 	return Pose3(cRv, t);
 }
 
