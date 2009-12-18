@@ -27,7 +27,7 @@ namespace test1 {
 		return Vector_(1, x * x - 5);
 	}
 
-	/** p = 1, gradG(x) = 2x */
+	/** p = 1, jacobianG(x) = 2x */
 	Matrix G(const VectorConfig& config, const list<string>& keys) {
 		double x = config[keys.front()](0);
 		return Matrix_(1, 1, 2 * x);
@@ -110,13 +110,13 @@ namespace test2 {
 		return Vector_(1, x * x - 5.0 - y);
 	}
 
-	/** gradient for x, gradG(x,y) in x: 2x*/
+	/** jacobian for x, jacobianG(x,y) in x: 2x*/
 	Matrix G1(const VectorConfig& config, const list<string>& keys) {
 		double x = config[keys.front()](0);
 		return Matrix_(1, 1, 2.0 * x);
 	}
 
-	/** gradient for y, gradG(x,y) in y: -1 */
+	/** jacobian for y, jacobianG(x,y) in y: -1 */
 	Matrix G2(const VectorConfig& config, const list<string>& keys) {
 		double x = config[keys.back()](0);
 		return Matrix_(1, 1, -1.0);
@@ -211,7 +211,7 @@ namespace inequality1 {
 		return Vector_(1, g); // return the actual cost
 	}
 
-	/** p = 1, gradG(x) = 2*x */
+	/** p = 1, jacobianG(x) = 2*x */
 	Matrix G(const VectorConfig& config, const list<string>& keys) {
 		double x = config[keys.front()](0);
 		return Matrix_(1, 1, 2 * x);
@@ -289,7 +289,7 @@ namespace binding1 {
 		return Vector_(1, g); // return the actual cost
 	}
 
-	/** p = 1, gradG(x) = 2*x */
+	/** p = 1, jacobianG(x) = 2*x */
 	Matrix G(double coeff, const VectorConfig& config,
 			const list<string>& keys) {
 		double x = config[keys.front()](0);
@@ -332,13 +332,13 @@ namespace binding2 {
 		return Vector_(1, x * x - r - y);
 	}
 
-	/** gradient for x, gradG(x,y) in x: 2x*/
+	/** jacobian for x, jacobianG(x,y) in x: 2x*/
 	Matrix G1(double c, const VectorConfig& config, const list<string>& keys) {
 		double x = config[keys.front()](0);
 		return Matrix_(1, 1, c * x);
 	}
 
-	/** gradient for y, gradG(x,y) in y: -1 */
+	/** jacobian for y, jacobianG(x,y) in y: -1 */
 	Matrix G2(double c, const VectorConfig& config, const list<string>& keys) {
 		double x = config[keys.back()](0);
 		return Matrix_(1, 1, -1.0 * c);

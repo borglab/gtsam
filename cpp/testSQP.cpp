@@ -324,12 +324,12 @@ namespace sqp_test1 {
 		return config[keys.front()] - config[keys.back()];
 	}
 
-	/** gradient at l1 */
+	/** jacobian at l1 */
 	Matrix G1(const VectorConfig& config, const list<string>& keys) {
 		return eye(2);
 	}
 
-	/** gradient at l2 */
+	/** jacobian at l2 */
 	Matrix G2(const VectorConfig& config, const list<string>& keys) {
 		return -1 * eye(2);
 	}
@@ -344,7 +344,7 @@ namespace sqp_test2 {
 		return config[keys.front()] - Vector_(2, 1.0, 1.0);
 	}
 
-	/** gradient at x1 */
+	/** jacobian at x1 */
 	Matrix G(const VectorConfig& config, const list<string>& keys) {
 		return eye(2);
 	}
@@ -633,12 +633,12 @@ namespace sqp_stereo {
 				- config.landmarkPoint(getNum(keys.back())).vector();
 	}
 
-	/** gradient at l1 */
+	/** jacobian at l1 */
 	Matrix G1(const VSLAMConfig& config, const list<string>& keys) {
 		return eye(3);
 	}
 
-	/** gradient at l2 */
+	/** jacobian at l2 */
 	Matrix G2(const VSLAMConfig& config, const list<string>& keys) {
 		return -1.0 * eye(3);
 	}

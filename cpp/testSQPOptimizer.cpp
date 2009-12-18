@@ -60,13 +60,13 @@ Vector g_func(const VectorConfig& config, const list<string>& keys) {
 	return config[keys.front()]-config[keys.back()];
 }
 
-/** gradient at l1 */
-Matrix grad_g1(const VectorConfig& config, const list<string>& keys) {
+/** jacobian at l1 */
+Matrix jac_g1(const VectorConfig& config, const list<string>& keys) {
 	return eye(2);
 }
 
-/** gradient at l2 */
-Matrix grad_g2(const VectorConfig& config, const list<string>& keys) {
+/** jacobian at l2 */
+Matrix jac_g2(const VectorConfig& config, const list<string>& keys) {
 	return -1*eye(2);
 }
 } // \namespace sqp_LinearMapWarp2
@@ -78,8 +78,8 @@ Vector g_func(const VectorConfig& config, const list<string>& keys) {
 	return config[keys.front()]-Vector_(2, 1.0, 1.0);
 }
 
-/** gradient at x1 */
-Matrix grad_g(const VectorConfig& config, const list<string>& keys) {
+/** jacobian at x1 */
+Matrix jac_g(const VectorConfig& config, const list<string>& keys) {
 	return eye(2);
 }
 } // \namespace sqp_LinearMapWarp12
@@ -96,7 +96,7 @@ NLGraph linearMapWarpGraph() {
 	boost::shared_ptr<NonlinearConstraint1<VectorConfig> > c1(
 			new NonlinearConstraint1<VectorConfig>(
 					boost::bind(sqp_LinearMapWarp1::g_func, _1, keyx),
-					"x1", boost::bind(sqp_LinearMapWarp1::grad_g, _1, keyx),
+					"x1", boost::bind(sqp_LinearMapWarp1::jac_g, _1, keyx),
 					 2, "L_x1"));
 
 	// measurement from x1 to l1
@@ -114,8 +114,8 @@ NLGraph linearMapWarpGraph() {
 	boost::shared_ptr<NonlinearConstraint2<VectorConfig> > c2(
 			new NonlinearConstraint2<VectorConfig>(
 					boost::bind(sqp_LinearMapWarp2::g_func, _1, keys),
-					"l1", boost::bind(sqp_LinearMapWarp2::grad_g1, _1, keys),
-					"l2", boost::bind(sqp_LinearMapWarp2::grad_g2, _1, keys),
+					"l1", boost::bind(sqp_LinearMapWarp2::jac_g1, _1, keys),
+					"l2", boost::bind(sqp_LinearMapWarp2::jac_g2, _1, keys),
 					 2, "L_l1l2"));
 
 	// construct the graph
@@ -237,15 +237,15 @@ Vector g_func(const VectorConfig& config, const list<string>& keys) {
 	return Vector_(1, dist2-thresh);
 }
 
-/** gradient at pose */
-Matrix grad_g1(const VectorConfig& config, const list<string>& keys) {
+/** jacobian at pose */
+Matrix jac_g1(const VectorConfig& config, const list<string>& keys) {
 	Vector x2 = config[keys.front()], obs = config[keys.back()];
 	Vector grad = 2.0*(x2-obs);
 	return Matrix_(1,2, grad(0), grad(1));
 }
 
-/** gradient at obstacle */
-Matrix grad_g2(const VectorConfig& config, const list<string>& keys) {
+/** jacobian at obstacle */
+Matrix jac_g2(const VectorConfig& config, const list<string>& keys) {
 	Vector x2 = config[keys.front()], obs = config[keys.back()];
 	Vector grad = -2.0*(x2-obs);
 	return Matrix_(1,2, grad(0), grad(1));
@@ -276,8 +276,8 @@ pair<NLGraph, VectorConfig> obstacleAvoidGraph() {
 	//  the obstacle
 	list<string> keys; keys += "x2", "obs";
 	shared_NLC2 c1(new NLC2(boost::bind(sqp_avoid1::g_func, _1, keys),
-							"x2", boost::bind(sqp_avoid1::grad_g1, _1, keys),
-						    "obs",boost::bind(sqp_avoid1::grad_g2, _1, keys),
+							"x2", boost::bind(sqp_avoid1::jac_g1, _1, keys),
+						    "obs",boost::bind(sqp_avoid1::jac_g2, _1, keys),
 						    1, "L_x2obs", false));
 
 	// construct the graph
@@ -367,15 +367,15 @@ Vector g_func(double radius, const VectorConfig& config, const list<string>& key
 	return Vector_(1, dist2-thresh);
 }
 
-/** gradient at pose */
-Matrix grad_g1(const VectorConfig& config, const list<string>& keys) {
+/** jacobian at pose */
+Matrix jac_g1(const VectorConfig& config, const list<string>& keys) {
 	Vector x2 = config[keys.front()], obs = config[keys.back()];
 	Vector grad = 2.0*(x2-obs);
 	return Matrix_(1,2, grad(0), grad(1));
 }
 
-/** gradient at obstacle */
-Matrix grad_g2(const VectorConfig& config, const list<string>& keys) {
+/** jacobian at obstacle */
+Matrix jac_g2(const VectorConfig& config, const list<string>& keys) {
 	Vector x2 = config[keys.front()], obs = config[keys.back()];
 	Vector grad = -2.0*(x2-obs);
 	return Matrix_(1,2, grad(0), grad(1));
@@ -408,8 +408,8 @@ pair<NLGraph, VectorConfig> obstacleAvoidGraphGeneral() {
 	//  the obstacle
 	list<string> keys; keys += "x2", "obs";
 	shared_NLC2 c1(new NLC2(boost::bind(sqp_avoid2::g_func, radius, _1, keys),
-						    "x2", boost::bind(sqp_avoid2::grad_g1, _1, keys),
-						    "obs", boost::bind(sqp_avoid2::grad_g2, _1, keys),
+						    "x2", boost::bind(sqp_avoid2::jac_g1, _1, keys),
+						    "obs", boost::bind(sqp_avoid2::jac_g2, _1, keys),
 						    1, "L_x2obs", false));
 
 	// construct the graph
