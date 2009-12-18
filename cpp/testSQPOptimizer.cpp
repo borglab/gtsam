@@ -317,7 +317,7 @@ TEST ( SQPOptimizer, inequality_avoid ) {
 	Optimizer after2ndIteration = afterOneIteration.iterate(Optimizer::SILENT);
 
 	VectorConfig exp2(feasible);
-	exp2.insert("x2", Vector_(2, 5.0, 0.5));
+	exp2.insert("x2", Vector_(2, 5.0, 0.75));
 	CHECK(assert_equal(exp2, *(after2ndIteration.config())));
 }
 
@@ -345,7 +345,7 @@ TEST ( SQPOptimizer, inequality_avoid_iterative ) {
 
 	// verify
 	VectorConfig exp2(feasible);
-	exp2.insert("x2", Vector_(2, 5.0, 0.5));
+	exp2.insert("x2", Vector_(2, 5.0, 0.75));
 	CHECK(assert_equal(exp2, *(final.config())));
 }
 
@@ -440,7 +440,7 @@ TEST ( SQPOptimizer, inequality_avoid_iterative_bind ) {
 
 	// verify
 	VectorConfig exp2(feasible);
-	exp2.insert("x2", Vector_(2, 5.0, 0.5));
+	exp2.insert("x2", Vector_(2, 5.0, 0.75));
 	CHECK(assert_equal(exp2, *(final.config())));
 }
 
