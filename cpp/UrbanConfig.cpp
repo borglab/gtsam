@@ -86,19 +86,13 @@ bool UrbanConfig::equals(const UrbanConfig& c, double tol) const {
 /* ************************************************************************* */
 void UrbanConfig::addRobotPose(const int i, Pose3 cp)
 {
-  pair<int, Pose3> robot;
-  robot.first = i;
-  robot.second = cp;
-  robotPoses_.insert(robot);
+  robotPoses_.insert(make_pair(i,cp));
 }
 
 /* ************************************************************************* */
-void UrbanConfig::addLandmark(const int i, Point2 lp)
+void UrbanConfig::addLandmark(const int j, Point2 lp)
 {
-  pair<int, Point2> landmark;
-  landmark.first = i;
-  landmark.second = lp;
-  landmarkPoints_.insert(landmark);
+  landmarkPoints_.insert(make_pair(j,lp));
 }
 
 /* ************************************************************************* */
