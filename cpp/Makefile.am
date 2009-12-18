@@ -189,8 +189,7 @@ testPose3Factor_SOURCES = $(example) testPose3Factor.cpp
 testPose3Factor_LDADD   = libgtsam.la
 
 # Urban
-headers += UrbanGraph.h
-sources += UrbanConfig.cpp UrbanMeasurement.cpp
+sources += UrbanFactor.cpp UrbanConfig.cpp UrbanMeasurement.cpp UrbanGraph.cpp
 check_PROGRAMS += testUrbanConfig testUrbanMeasurement testUrbanGraph
 testUrbanConfig_SOURCES       = $(example) testUrbanConfig.cpp
 testUrbanConfig_LDADD         = libgtsam.la

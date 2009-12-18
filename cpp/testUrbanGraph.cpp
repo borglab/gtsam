@@ -13,9 +13,8 @@ using namespace boost::assign;
 #include "UrbanGraph.h"
 #include "NonlinearFactorGraph-inl.h"
 #include "NonlinearOptimizer-inl.h"
-#include "Pose3.h"
-#include "Point2.h"
 #include "Ordering.h"
+
 using namespace std;
 using namespace gtsam;
 typedef NonlinearOptimizer<UrbanGraph,UrbanConfig> Optimizer;

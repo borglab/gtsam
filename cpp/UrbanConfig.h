@@ -5,14 +5,11 @@
  * @author Viorela Ila
  */
 
-#include <string>
 #include <map>
-#include <vector>
-#include <fstream>
-#include "VectorConfig.h"
-#include "Pose3.h"
-#include "Point2.h"
 #include "Testable.h"
+#include "VectorConfig.h"
+#include "Point2.h"
+#include "Pose3.h"
 
 #pragma once
 

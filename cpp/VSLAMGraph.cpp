@@ -24,9 +24,6 @@ template class NonlinearFactorGraph<VSLAMConfig>;
 template class NonlinearOptimizer<VSLAMGraph,VSLAMConfig>;
 
 /* ************************************************************************* */
-
-
-/* ************************************************************************* */
 bool compareLandmark(const std::string& key,
 					const VSLAMConfig& feasible,
 					const VSLAMConfig& input) {
