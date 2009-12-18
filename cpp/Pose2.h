@@ -45,12 +45,8 @@ namespace gtsam {
       t_(x,y), r_(theta) { }
 
     /** construct from rotation and translation */
-    Pose2(const Point2& t, double theta) :
-      t_(t), r_(theta) { }
     Pose2(double theta, const Point2& t) :
       t_(t), r_(theta) { }
-    Pose2(const Point2& t, const Rot2& r) :
-      t_(t), r_(r) { }
     Pose2(const Rot2& r, const Point2& t) :
       t_(t), r_(r) { }
 
@@ -67,14 +63,17 @@ namespace gtsam {
     Point2 t()     const { return t_; }
     Rot2 r()       const { return r_; }
 
+    /** return this pose2 as a vector (x,y,r) */
+    Vector vector() const { return Vector_(3, t_.x(), t_.y(), r_.theta()); }
+
     /** return DOF, dimensionality of tangent space = 3 */
     size_t dim() const { return 3; }
 
-    /* exponential map */
+    /** exponential map */
     Pose2 exmap(const Vector& v) const;
 
-    /** return vectorized form (column-wise) */
-    Vector vector() const;
+    /** log map */
+    Vector log(const Pose2 &pose) const;
 
     /** rotate pose by theta */
     //  Pose2 rotate(double theta) const;
@@ -99,14 +98,6 @@ namespace gtsam {
       return r_.unrotate(point-t_);
     }
 
-    // operators
-    Pose2 operator+(const Pose2& p2) const {
-      return Pose2(t_+p2.t_, r_*p2.r_);
-    }
-
-    Pose2 operator-(const Pose2& p2) const {
-      return Pose2(t_-p2.t_, r_.invcompose(p2.r_));
-    }
   }; // Pose2
 
   /**

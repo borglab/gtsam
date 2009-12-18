@@ -21,7 +21,7 @@ using namespace gtsam;
 /* ************************************************************************* */
 TEST(Pose2, constructors) {
   Point2 p;
-  Pose2 pose(p,0);
+  Pose2 pose(0,p);
   Pose2 origin;
   assert_equal(pose,origin);
 }
@@ -31,6 +31,15 @@ TEST(Pose2, exmap) {
   Pose2 pose(M_PI_2, Point2(1,2));
   Pose2 expected(M_PI_2+0.018, Point2(1.01, 1.985));
   Pose2 actual = pose.exmap(Vector_(3, 0.01, -0.015, 0.018));
+  CHECK(assert_equal(expected, actual));
+}
+
+/* ************************************************************************* */
+TEST(Pose2, log) {
+  Pose2 pose0(M_PI_2, Point2(1, 2));
+  Pose2 pose(M_PI, Point2(1.1, 2.1));
+  Vector expected = Vector_(3, 0.1, 0.1, M_PI_2);
+  Vector actual = pose0.log(pose);
   CHECK(assert_equal(expected, actual));
 }
 

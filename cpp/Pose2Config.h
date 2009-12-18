@@ -4,6 +4,7 @@
 #include <boost/exception.hpp>
 #include <boost/foreach.hpp>
 #include <boost/tuple/tuple.hpp>
+#include <boost/format.hpp>
 #include <iostream>
 #include <string>
 #include "Pose2.h"
@@ -20,26 +21,26 @@ namespace gtsam {
 class Pose2Config: public Testable<Pose2Config> {
 
 private:
-  std::map<std::string, Pose2> values;
+  std::map<std::string, Pose2> values_;
 
 public:
 
 	Pose2Config() {}
-	Pose2Config(const Pose2Config &config) : values(config.values) { }
+	Pose2Config(const Pose2Config &config) : values_(config.values_) { }
 	virtual ~Pose2Config() { }
 
 	Pose2 get(std::string key) const {
-		std::map<std::string, Pose2>::const_iterator it = values.find(key);
-		if (it == values.end())
+		std::map<std::string, Pose2>::const_iterator it = values_.find(key);
+		if (it == values_.end())
 			throw std::invalid_argument("invalid key");
 		return it->second;
 	}
 	void insert(const std::string& name, const Pose2& val){
-		values.insert(make_pair(name, val));
+		values_.insert(make_pair(name, val));
 	}
 
 	Pose2Config& operator=(Pose2Config& rhs) {
-	  values = rhs.values;
+	  values_ = rhs.values_;
 	  return (*this);
 	}
 
@@ -49,7 +50,11 @@ public:
 	}
 
 	void print(const std::string &s) const {
-	  std::cout << s << std::endl;
+	  std::cout << "Pose2Config " << s << ", size " << values_.size() << "\n";
+	  std::string j; Pose2 v;
+	  FOREACH_PAIR(j, v, values_) {
+	    v.print(j + ": ");
+	  }
 	}
 
     /**
@@ -58,7 +63,7 @@ public:
     Pose2Config exmap(const VectorConfig& delta) const {
       Pose2Config newConfig;
       std::string j; Pose2 vj;
-      FOREACH_PAIR(j, vj, values) {
+      FOREACH_PAIR(j, vj, values_) {
           if (delta.contains(j)) {
               const Vector& dj = delta[j];
               //check_size(j,vj,dj);

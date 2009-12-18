@@ -15,9 +15,6 @@ template class FactorGraph<NonlinearFactor<gtsam::Pose2Config> > ;
 template class NonlinearFactorGraph<Pose2Config> ;
 //template class NonlinearOptimizer<Pose2Graph, Pose2Config> ;
 
-void Pose2Graph::print(const std::string& s) const {
-}
-
 bool Pose2Graph::equals(const Pose2Graph& p, double tol) const {
 	return false;
 }

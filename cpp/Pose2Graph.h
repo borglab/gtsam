@@ -28,11 +28,6 @@ public:
   Pose2Graph() {}
 
   /**
-   * print out graph
-   */
-  void print(const std::string& s = "") const;
-
-  /**
    * equals
    */
   bool equals(const Pose2Graph& p, double tol=1e-9) const;

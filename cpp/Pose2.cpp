@@ -21,12 +21,16 @@ namespace gtsam {
 
   /* ************************************************************************* */
   Pose2 Pose2::exmap(const Vector& v) const {
-    return Pose2(t_+Point2(v(0),v(1)), r_.exmap(Vector_(1, v(2))));
+    return Pose2(r_.exmap(Vector_(1, v(2))), t_+Point2(v(0),v(1)));
   }
 
   /* ************************************************************************* */
-  Vector Pose2::vector() const {
-    return Vector_(3, t_.x(), t_.y(), r_.theta());
+  Vector Pose2::log(const Pose2 &pose) const {
+    return Vector_(3,
+        pose.t().x() - t().x(),
+        pose.t().y() - t().y(),
+        pose.r().theta() - r().theta());
+//    return between(*this, pose).vector();
   }
 
   /* ************************************************************************* */

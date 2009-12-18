@@ -35,7 +35,6 @@ namespace gtsam {
 
     /** return angle */
     double theta() const { return atan2(s_,c_); }
-    double angle() const { return atan2(s_,c_); }
 
     /** return cos */
     double c() const { return c_; }
@@ -54,6 +53,9 @@ namespace gtsam {
 
     /** Given 1-dim tangent vector, create new rotation */
     Rot2 exmap(const Vector& d) const;
+
+    /** Return the 1-dim tangent vector of R about this rotation */
+    Vector log(const Rot2& R) const { return Vector_(1, R.theta() - theta()); }
 
     /** return vectorized form (column-wise)*/
     inline Vector vector() const { return Vector_(2,c_,s_);}
