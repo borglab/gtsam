@@ -92,7 +92,7 @@ namespace gtsam {
     /** calculate the error of the factor */
     double error(const Config& c) const {
       Vector e = error_vector(c) / sigma_;
-      return 0.5 * inner_prod(trans(e),e);
+      return 0.5 * inner_prod(e,e);
     };
 		
     /** get the size of the factor */
