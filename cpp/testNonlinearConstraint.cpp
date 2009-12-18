@@ -38,7 +38,7 @@ TEST( NonlinearConstraint1, unary_scalar_construction ) {
 	// the lagrange multipliers will be expected on L_x1
 	// and there is only one multiplier
 	size_t p = 1;
-	NonlinearConstraint1<VectorConfig> c1("x", *test1::G, *test1::g, p, "L_x1");
+	NonlinearConstraint1<VectorConfig> c1(*test1::g, "x", *test1::G, p, "L_x1");
 
 	// get a configuration to use for finding the error
 	VectorConfig config;
@@ -53,7 +53,7 @@ TEST( NonlinearConstraint1, unary_scalar_construction ) {
 /* ************************************************************************* */
 TEST( NonlinearConstraint1, unary_scalar_linearize ) {
 	size_t p = 1;
-	NonlinearConstraint1<VectorConfig> c1("x", *test1::G, *test1::g, p, "L_x1");
+	NonlinearConstraint1<VectorConfig> c1(*test1::g, "x", *test1::G, p, "L_x1");
 
 	// get a configuration to use for linearization
 	VectorConfig realconfig;
@@ -77,10 +77,10 @@ TEST( NonlinearConstraint1, unary_scalar_linearize ) {
 /* ************************************************************************* */
 TEST( NonlinearConstraint1, unary_scalar_equal ) {
 	NonlinearConstraint1<VectorConfig>
-		c1("x", *test1::G, *test1::g, 1, "L_x1", true),
-		c2("x", *test1::G, *test1::g, 1, "L_x1"),
-		c3("x", *test1::G, *test1::g, 2, "L_x1"),
-		c4("y", *test1::G, *test1::g, 1, "L_x1");
+		c1(*test1::g, "x", *test1::G, 1, "L_x1", true),
+		c2(*test1::g, "x", *test1::G, 1, "L_x1"),
+		c3(*test1::g, "x", *test1::G, 2, "L_x1"),
+		c4(*test1::g, "y", *test1::G, 1, "L_x1");
 
 	CHECK(assert_equal(c1, c2));
 	CHECK(assert_equal(c2, c1));
@@ -121,9 +121,10 @@ TEST( NonlinearConstraint2, binary_scalar_construction ) {
 	// and there is only one multiplier
 	size_t p = 1;
 	NonlinearConstraint2<VectorConfig> c1(
+			*test2::g,
 			"x", *test2::G1,
 			"y", *test2::G2,
-			*test2::g, p, "L_xy");
+			p, "L_xy");
 
 	// get a configuration to use for finding the error
 	VectorConfig config;
@@ -141,9 +142,10 @@ TEST( NonlinearConstraint2, binary_scalar_linearize ) {
 	// create a constraint
 	size_t p = 1;
 	NonlinearConstraint2<VectorConfig> c1(
+			*test2::g,
 			"x", *test2::G1,
 			"y", *test2::G2,
-			*test2::g, p, "L_xy");
+			p, "L_xy");
 
 	// get a configuration to use for finding the error
 	VectorConfig realconfig;
@@ -172,10 +174,10 @@ TEST( NonlinearConstraint2, binary_scalar_linearize ) {
 /* ************************************************************************* */
 TEST( NonlinearConstraint2, binary_scalar_equal ) {
 	NonlinearConstraint2<VectorConfig>
-		c1("x", *test2::G1, "y", *test2::G2,*test2::g, 1, "L_xy"),
-		c2("x", *test2::G1, "y", *test2::G2,*test2::g, 1, "L_xy"),
-		c3("y", *test2::G1, "x", *test2::G2,*test2::g, 1, "L_xy"),
-		c4("x", *test2::G1, "z", *test2::G2,*test2::g, 3, "L_xy");
+		c1(*test2::g, "x", *test2::G1, "y", *test2::G2, 1, "L_xy"),
+		c2(*test2::g, "x", *test2::G1, "y", *test2::G2, 1, "L_xy"),
+		c3(*test2::g, "y", *test2::G1, "x", *test2::G2, 1, "L_xy"),
+		c4(*test2::g, "x", *test2::G1, "z", *test2::G2, 3, "L_xy");
 
 	CHECK(assert_equal(c1, c2));
 	CHECK(assert_equal(c2, c1));
@@ -206,8 +208,9 @@ namespace inequality1 {
 /* ************************************************************************* */
 TEST( NonlinearConstraint1, unary_inequality ) {
 	size_t p = 1;
-	NonlinearConstraint1<VectorConfig> c1("x", *inequality1::G,
-										  *inequality1::g, p, "L_x1",
+	NonlinearConstraint1<VectorConfig> c1(*inequality1::g,
+										  "x", *inequality1::G,
+										   p, "L_x1",
 										  false); // inequality constraint
 
 	// get configurations to use for evaluation
@@ -225,8 +228,9 @@ TEST( NonlinearConstraint1, unary_inequality ) {
 /* ************************************************************************* */
 TEST( NonlinearConstraint1, unary_inequality_linearize ) {
 	size_t p = 1;
-	NonlinearConstraint1<VectorConfig> c1("x", *inequality1::G,
-										  *inequality1::g, p, "L_x",
+	NonlinearConstraint1<VectorConfig> c1(*inequality1::g,
+										  "x", *inequality1::G,
+										   p, "L_x",
 										  false); // inequality constraint
 
 	// get configurations to use for linearization
@@ -283,9 +287,9 @@ TEST( NonlinearConstraint1, unary_binding ) {
 	size_t p = 1;
 	double coeff = 2;
 	double radius = 5;
-	NonlinearConstraint1<VectorConfig> c1("x",
-										  boost::bind(binding1::G, coeff, _1, _2),
+	NonlinearConstraint1<VectorConfig> c1(
 										  boost::bind(binding1::g, radius, _1, _2),
+										  "x", boost::bind(binding1::G, coeff, _1, _2),
 										  p, "L_x1",
 										  false); // inequality constraint
 
@@ -335,9 +339,10 @@ TEST( NonlinearConstraint2, binary_binding ) {
 	double b = 1.0;
 	double r = 5.0;
 	NonlinearConstraint2<VectorConfig> c1(
+			boost::bind(binding2::g, r, _1, _2),
 			"x", boost::bind(binding2::G1, a, _1, _2),
 			"y", boost::bind(binding2::G2, b, _1, _2),
-			boost::bind(binding2::g, r, _1, _2), p, "L_xy");
+			p, "L_xy");
 
 	// get a configuration to use for finding the error
 	VectorConfig config;

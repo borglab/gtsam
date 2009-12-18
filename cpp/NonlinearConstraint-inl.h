@@ -48,9 +48,9 @@ bool NonlinearConstraint<Config>::active(const Config& config) const {
 
 template <class Config>
 NonlinearConstraint1<Config>::NonlinearConstraint1(
+			Vector (*g)(const Config& config, const std::list<std::string>& keys),
 			const std::string& key,
 			Matrix (*gradG)(const Config& config, const std::list<std::string>& keys),
-			Vector (*g)(const Config& config, const std::list<std::string>& keys),
 			size_t dim_constraint,
 			const std::string& lagrange_key,
 			bool isEquality) :
@@ -67,9 +67,9 @@ NonlinearConstraint1<Config>::NonlinearConstraint1(
 /* ************************************************************************* */
 template <class Config>
 NonlinearConstraint1<Config>::NonlinearConstraint1(
+		boost::function<Vector(const Config& config, const std::list<std::string>& keys)> g,
 			const std::string& key,
 			boost::function<Matrix(const Config& config, const std::list<std::string>& keys)> gradG,
-			boost::function<Vector(const Config& config, const std::list<std::string>& keys)> g,
 			size_t dim_constraint,
 			const std::string& lagrange_key,
 			bool isEquality) :
@@ -138,11 +138,11 @@ NonlinearConstraint1<Config>::linearize(const Config& config, const VectorConfig
 /* ************************************************************************* */
 template <class Config>
 NonlinearConstraint2<Config>::NonlinearConstraint2(
+		Vector (*g)(const Config& config, const std::list<std::string>& keys),
 		const std::string& key1,
 		Matrix (*gradG1)(const Config& config, const std::list<std::string>& keys),
 		const std::string& key2,
 		Matrix (*gradG2)(const Config& config, const std::list<std::string>& keys),
-		Vector (*g)(const Config& config, const std::list<std::string>& keys),
 		size_t dim_constraint,
 		const std::string& lagrange_key,
 		bool isEquality) :
@@ -161,11 +161,11 @@ NonlinearConstraint2<Config>::NonlinearConstraint2(
 /* ************************************************************************* */
 template <class Config>
 NonlinearConstraint2<Config>::NonlinearConstraint2(
+		boost::function<Vector(const Config& config, const std::list<std::string>& keys)> g,
 		const std::string& key1,
 		boost::function<Matrix(const Config& config, const std::list<std::string>& keys)> gradG1,
 		const std::string& key2,
 		boost::function<Matrix(const Config& config, const std::list<std::string>& keys)> gradG2,
-		boost::function<Vector(const Config& config, const std::list<std::string>& keys)> g,
 		size_t dim_constraint,
 		const std::string& lagrange_key,
 		bool isEquality)  :

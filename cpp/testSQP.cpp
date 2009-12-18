@@ -367,8 +367,9 @@ TEST (SQP, two_pose ) {
 	// constant constraint on x1
 	boost::shared_ptr<NonlinearConstraint1<VectorConfig> > c1(
 			new NonlinearConstraint1<VectorConfig>(
+					*sqp_test2::g,
 					"x1", *sqp_test2::G,
-					*sqp_test2::g, 2, "L_x1"));
+					 2, "L_x1"));
 
 	// measurement from x1 to l1
 	Vector z1 = Vector_(2, 0.0, 5.0);
@@ -383,9 +384,10 @@ TEST (SQP, two_pose ) {
 	// equality constraint between l1 and l2
 	boost::shared_ptr<NonlinearConstraint2<VectorConfig> > c2(
 			new NonlinearConstraint2<VectorConfig>(
+					*sqp_test1::g,
 					"l1", *sqp_test1::G1,
 					"l2", *sqp_test1::G2,
-					*sqp_test1::g, 2, "L_l1l2"));
+					 2, "L_l1l2"));
 
 	// construct the graph
 	NLGraph graph;
@@ -675,9 +677,10 @@ VSLAMGraph stereoExampleGraph() {
 	// as the previous examples
 	boost::shared_ptr<NonlinearConstraint2<VSLAMConfig> > c2(
 				new NonlinearConstraint2<VSLAMConfig>(
+						*sqp_stereo::g,
 						"l1", *sqp_stereo::G1,
 						"l2", *sqp_stereo::G2,
-						*sqp_stereo::g, 3, "L_l1l2"));
+						 3, "L_l1l2"));
 	graph.push_back(c2);
 
 	return graph;

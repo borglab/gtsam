@@ -94,8 +94,9 @@ NLGraph linearMapWarpGraph() {
 	// constant constraint on x1
 	boost::shared_ptr<NonlinearConstraint1<VectorConfig> > c1(
 			new NonlinearConstraint1<VectorConfig>(
+					*sqp_LinearMapWarp1::g_func,
 					"x1", *sqp_LinearMapWarp1::grad_g,
-					*sqp_LinearMapWarp1::g_func, 2, "L_x1"));
+					 2, "L_x1"));
 
 	// measurement from x1 to l1
 	Vector z1 = Vector_(2, 0.0, 5.0);
@@ -110,9 +111,10 @@ NLGraph linearMapWarpGraph() {
 	// equality constraint between l1 and l2
 	boost::shared_ptr<NonlinearConstraint2<VectorConfig> > c2(
 			new NonlinearConstraint2<VectorConfig>(
+					*sqp_LinearMapWarp2::g_func,
 					"l1", *sqp_LinearMapWarp2::grad_g1,
 					"l2", *sqp_LinearMapWarp2::grad_g2,
-					*sqp_LinearMapWarp2::g_func, 2, "L_l1l2"));
+					 2, "L_l1l2"));
 
 	// construct the graph
 	NLGraph graph;
@@ -270,9 +272,10 @@ pair<NLGraph, VectorConfig> obstacleAvoidGraph() {
 
 	// create a binary inequality constraint that forces the middle point away from
 	//  the obstacle
-	shared_NLC2 c1(new NLC2("x2", *sqp_avoid1::grad_g1,
-						   "obs", *sqp_avoid1::grad_g2,
-						   *sqp_avoid1::g_func, 1, "L_x2obs", false));
+	shared_NLC2 c1(new NLC2(*sqp_avoid1::g_func,
+							"x2", *sqp_avoid1::grad_g1,
+						    "obs", *sqp_avoid1::grad_g2,
+						    1, "L_x2obs", false));
 
 	// construct the graph
 	NLGraph graph;
@@ -400,9 +403,10 @@ pair<NLGraph, VectorConfig> obstacleAvoidGraphGeneral() {
 
 	// create a binary inequality constraint that forces the middle point away from
 	//  the obstacle
-	shared_NLC2 c1(new NLC2("x2", boost::bind(sqp_avoid2::grad_g1, _1, _2),
-						   "obs", boost::bind(sqp_avoid2::grad_g2, _1, _2),
-						   boost::bind(sqp_avoid2::g_func, radius, _1, _2), 1, "L_x2obs", false));
+	shared_NLC2 c1(new NLC2(boost::bind(sqp_avoid2::g_func, radius, _1, _2),
+						    "x2", boost::bind(sqp_avoid2::grad_g1, _1, _2),
+						    "obs", boost::bind(sqp_avoid2::grad_g2, _1, _2),
+						    1, "L_x2obs", false));
 
 	// construct the graph
 	NLGraph graph;
