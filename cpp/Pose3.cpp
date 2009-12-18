@@ -44,16 +44,14 @@ Matrix Pose3::matrix() const {
 Point3 transform_from(const Pose3& pose, const Point3& p) {
   return pose.R_ * p + pose.t_;
 }
-/* ************************************************************************* */
-/** 3by6                                                                     */
+
 /* ************************************************************************* */
 Matrix Dtransform_from1(const Pose3& pose, const Point3& p) {
   Matrix DR = Drotate1(pose.rotation(), p);
   Matrix Dt = Dadd1(pose.translation(), p);
   return collect(2,&DR,&Dt);
 }
-/* ************************************************************************* */
-/** 3by3                                                                     */
+
 /* ************************************************************************* */
 Matrix Dtransform_from2(const Pose3& pose) {
   return Drotate2(pose.rotation());
@@ -65,8 +63,7 @@ Point3 transform_to(const Pose3& pose, const Point3& p) {
 		Point3 r = unrotate(pose.R_, sub);
 		return r; 
 }
-/* ************************************************************************* */
-/** 3by6                                                                     */
+
 /* ************************************************************************* */
 Matrix Dtransform_to1(const Pose3& pose, const Point3& p) {
   Point3 q = p - pose.translation();
@@ -76,17 +73,15 @@ Matrix Dtransform_to1(const Pose3& pose, const Point3& p) {
   Matrix D_r_pose = collect(2,&D_r_R,&D_r_t);
   return D_r_pose;
 }
-/* ************************************************************************* */
-/** 3by3                                                                     */
+
 /* ************************************************************************* */
 Matrix Dtransform_to2(const Pose3& pose) {
   return Dunrotate2(pose.rotation());
 }
 
 /* ************************************************************************* */
-/** direct measurement of the deviation of a pose from the origin
- * used as soft prior
- */
+// direct measurement of the deviation of a pose from the origin
+// used as soft prior
 /* ************************************************************************* */
 Vector hPose (const Vector& x) {
   Pose3 pose(x);                            // transform from vector to Pose3
@@ -96,9 +91,8 @@ Vector hPose (const Vector& x) {
 }
 
 /* ************************************************************************* */
-/** derivative of direct measurement
- * 6*6, entry i,j is how measurement error will change 
- */
+// derivative of direct measurement
+// 6*6, entry i,j is how measurement error will change
 /* ************************************************************************* */
 Matrix DhPose(const Vector& x) {
 	Matrix H = eye(6,6);
@@ -106,39 +100,39 @@ Matrix DhPose(const Vector& x) {
 }
 
 /* ************************************************************************* */
-Pose3 Pose3::inverse() const
-		{
+Pose3 Pose3::inverse() const {
 	Rot3 Rt = R_.inverse();
-	return Pose3(Rt,-(Rt*t_));
-		}
+	return Pose3(Rt, -(Rt * t_));
+}
 
 /* ************************************************************************* */
-Pose3 Pose3::transformPose_to(const Pose3& pose) const
-		{
+Pose3 Pose3::transformPose_to(const Pose3& pose) const {
 	Rot3 cRv = R_ * Rot3(pose.R_.inverse());
 	Point3 t = transform_to(pose, t_);
 
 	return Pose3(cRv, t);
-		}
+}
+
 /* ************************************************************************* */
-
-
 Pose3 between(const Pose3& p1, const Pose3& p2){
 	Pose3 p;
 	return p;
 	// TODO: implement
 }
+
 /* ************************************************************************* */
 Matrix Dbetween1(const Pose3& p1, const Pose3& p2){
 	Matrix m;
 	return m;
 	// TODO: implement
 }
+
 /* ************************************************************************* */
 Matrix Dbetween2(const Pose3& p1, const Pose3& p2){
 	Matrix m;
 	return m;
 	// TODO: implement
 }
+
 /* ************************************************************************* */
 } // namespace gtsam
