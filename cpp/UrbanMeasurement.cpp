@@ -10,94 +10,80 @@
 
 using namespace std;
 
-// Notation:
-// ph = phi = roll
-// th = theta = pitch
-// ps = psi = yaw
-// JC:  Need to confirm that RQ does the extraction
-// that I think it's doing.  That should shake out with
-// test data.
 #define _GET_TEMPORARIES				\
-	Vector rpy = RQ(pose.rotation().matrix());	\
-	double dx = p.x() - pose.translation().x();	\
-	double dy = p.y() - pose.translation().y();	\
-	double s23 = (*sensorMatrix)(2, 3);		\
-	double cps = cos(rpy[2]);			\
-	double sps = sin(rpy[2]);			\
-	double secph = 1/cos(rpy[0]);			\
-	double tph = tan(rpy[0]);			\
-	double sph = sin(rpy[0]);			\
-	double sth = sin(rpy[1]);			\
-	double cth = cos(rpy[1]);			\
-	double tth = tan(rpy[1]);			\
-	double secth = 1/cth
 
 namespace gtsam {
 
 	/* ************************************************************************* */
 
-	// JC:  Clearly there is a lot of code overlap (and redundant calculations) between 
+	// JC:  I'd like to break this out into component calculations, but there's too much
+	// Clearly there is a lot of code overlap (and redundant calculations) between 
 	// this and the calculation of the relevant jacobians.  Need to look at cleaning
 	// this up when I have a better grasp of the larger implications.  I don't think
 	// there's any reason we can't just merge transform_to and the two derivative
 	// functions into a single function to remove the overlap.
+	
 
-	Point2 transform_to(const boost::shared_ptr<const Matrix> &sensorMatrix, 
-			    const Pose3& pose, const Point2& p) {
-		_GET_TEMPORARIES;
+
+
+	UrbanMeasurement::Transform transform_to(const boost::shared_ptr<const Matrix> &sensorMatrix, 
+						 const Pose3& robotpose, const Point2& lmpos,
+						 bool getJacobians) {
+		// Notation:
+		// ph = phi = roll
+		// th = theta = pitch
+		// ps = psi = yaw
+		Vector rpy = RQ(robotpose.rotation().matrix());	
+		double dx = lmpos.x() - robotpose.translation().x();	
+		double dy = lmpos.y() - robotpose.translation().y();	
+		double s23 = (*sensorMatrix)(2, 3);		
+		double cps = cos(rpy[2]);			
+		double sps = sin(rpy[2]);			
+		double secph = 1/cos(rpy[0]);			
+		double tph = tan(rpy[0]);			
+		double sph = sin(rpy[0]);			
+		double sth = sin(rpy[1]);			
+		double cth = cos(rpy[1]);			
+		double tth = tan(rpy[1]);			
+		double secth = 1/cth;
 		
-		return Point2(cth*dy*sps+(-s23*secph+dy*sps*sth+dx*sps*tph)*tth
-			                +cps*(cth*dx+dx*sth*tth-dy*tph*tth),
-			      secph*(cps*dy+s23*sph-dx*sps));
-
-		// JC: This code still here for my reference.  
-#if 0
-		// create a 3D point at our height (Z is assumed up)
-		Point3 global3D(p.x(),p.y(),pose.translation().z());
-		// transform into local 3D point
-		Point3 local3D = transform_to(pose,global3D);
-		// take x and y as the local measurement
-		Point2 local2D(local3D.x(),local3D.y());
-		return local2D;
-#endif
-	}
-
-	/* ************************************************************************* */
-	Matrix Dtransform_to1(const boost::shared_ptr<const Matrix> &sensorMatrix, 
-			      const Pose3& pose, const Point2& p) {
-		_GET_TEMPORARIES;
-		Matrix ret(2, 6);
-		ret(0, 0) = (-cps*secth-sps*tph*tth);
-                ret(0, 1) = (-secth*sps+cps*tph*tth);
-		ret(0, 2) = 0;
-		ret(0, 3) = -((secph*secph*(cps*dy+s23*sph-dx*sps)*tth));
-                ret(0, 4) = (-((secth*(secth*(s23*secph+(cps*dy-dx*sps)*tph)
-				       +(-cps*dx-dy*sps)*tth))));
-		ret(0, 5) = ((cth*(cps*dy-dx*sps)+(cps*(dy*sth+dx*tph)
-						   +sps*(-dx*sth+dy*tph))*tth));
+		UrbanMeasurement::Transform ret;
+		ret.get<0>().reset(new Point2(cth*dy*sps
+					    + (-s23*secph+dy*sps*sth+dx*sps*tph)*tth
+					    + cps*(cth*dx+dx*sth*tth-dy*tph*tth),
+					    secph*(cps*dy+s23*sph-dx*sps)));
 		
-                ret(1, 0) = secph*sps;
-		ret(1, 1) = -cps*secph;
-		ret(1, 2) = 0;
-                ret(1, 3) = secph*(s23*secph+(cps*dy-dx*sps)*tph);
-		ret(1, 4) = 0;
-                ret(1, 5) = secph*(-cps*dx-dy*sps);
+
+		if (getJacobians) {
+			ret.get<1>().reset(new Matrix(2, 6));
+			Matrix &D1 = *(ret.get<1>());
+			D1(0, 0) = (-cps*secth-sps*tph*tth);
+			D1(0, 1) = (-secth*sps+cps*tph*tth);
+			D1(0, 2) = 0;
+			D1(0, 3) = -((secph*secph*(cps*dy+s23*sph-dx*sps)*tth));
+			D1(0, 4) = (-((secth*(secth*(s23*secph+(cps*dy-dx*sps)*tph)
+					       +(-cps*dx-dy*sps)*tth))));
+			D1(0, 5) = ((cth*(cps*dy-dx*sps)+(cps*(dy*sth+dx*tph)
+							   +sps*(-dx*sth+dy*tph))*tth));
+			
+			D1(1, 0) = secph*sps;
+			D1(1, 1) = -cps*secph;
+			D1(1, 2) = 0;
+			D1(1, 3) = secph*(s23*secph+(cps*dy-dx*sps)*tph);
+			D1(1, 4) = 0;
+			D1(1, 5) = secph*(-cps*dx-dy*sps);
+
+			
+			ret.get<2>().reset(new Matrix(2, 2));
+			Matrix &D2 = *(ret.get<2>());
+			D2(0, 0) = cps*secth+sps*tph*tth;
+			D2(0, 1) = secth*sps-cps*tph*tth;
+			D2(1, 0) = -secph*sps;
+			D2(1, 1) = cps*secph;
+		}
 		return ret;
 	}
 
-	/* ************************************************************************* */
-	Matrix Dtransform_to2(const boost::shared_ptr<const Matrix> &sensorMatrix, 
-			      const Pose3& pose, const Point2& p) {
-		_GET_TEMPORARIES;
-		Matrix ret(2, 2);
-		ret(0, 0) = cps*secth+sps*tph*tth;
-                ret(0, 1) = secth*sps-cps*tph*tth;
-                ret(1, 0) = -secph*sps;
-		ret(1, 1) = cps*secph;
-		return zeros(2, 2);
-	}
-
-#undef _GET_TEMPORARIES
 	
 	/* ************************************************************************* */
 	UrbanMeasurement::UrbanMeasurement() {
@@ -152,8 +138,14 @@ namespace gtsam {
 		Pose3 pose = x.robotPose(robotPoseNumber_);
 		Point2 landmark = x.landmarkPoint(landmarkNumber_);
 		// Right-hand-side b = (z - h(x))/sigma
-		Point2 hx = transform_to(sensorMatrix_, pose,landmark);
-		return (z_ - hx.vector());
+//		fprintf(stderr, "p: %.16g   l: %.16g\n",
+//			pose.rotation().vector()[0],
+//			landmark.x());
+		boost::shared_ptr<Point2> h = transform_to(sensorMatrix_, pose,landmark, false).get<0>();
+//		fprintf(stderr, "H: %.16g %.16g\nz: %.16g %.16g\n",
+//			h->vector()[0], h->vector()[1],
+//			z_[0], z_[1]);
+		return (z_ - h->vector()); 
 	}
 	
 	/* ************************************************************************* */
@@ -165,8 +157,11 @@ namespace gtsam {
 		//
 		// What should the keys be?  Presumably I just need to match a convention.
 		//
-		// Should the jacobians be premultiplied at GuassianFactor
-		// construction time?
+		// Should the jacobians be premultiplied at the time of
+		// GaussianFactor construction?
+		//		
+		// Is GaussianFactor copying its constructor arguments?  (If not, this is
+		// not safe, nor is what this code replaced).
 		//
 		// Why is sigma a double instead of a matrix?
 		
@@ -179,12 +174,15 @@ namespace gtsam {
 		string lmkey = k.str();
 		k.clear();
 
+		Transform tr = transform_to(sensorMatrix_, pose,landmark, true);
+		
+
 		return GaussianFactor::shared_ptr(
 			new GaussianFactor(posekey, 
-					   Dtransform_to1(sensorMatrix_, pose, landmark),
+					   *(tr.get<1>()),
 					   lmkey,
-					   Dtransform_to2(sensorMatrix_, pose, landmark),
-					   error_vector(config),
+					   *(tr.get<2>()),
+					   z_ - tr.get<0>()->vector(),
 					   sigma_));
 	}
 } // namespace gtsam

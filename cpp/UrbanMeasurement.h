@@ -24,7 +24,12 @@ namespace gtsam {
 		//boost::shared_ptr<Cal3_S2> K_; // Calibration stored in each factor. FD: need to think about this.
 		typedef NonlinearFactor<UrbanConfig> ConvenientFactor;
 
+
 	public:
+		// Return type for the transform_to function
+		typedef boost::tuple<boost::shared_ptr<Point2>, 
+				     boost::shared_ptr<Matrix>,
+				     boost::shared_ptr<Matrix> > Transform;
 
 		typedef boost::shared_ptr<UrbanMeasurement> shared_ptr; // shorthand for a smart pointer to a factor
 		//typedef boost::shared_ptr<Cal3_S2> shared_ptrK;
@@ -92,11 +97,8 @@ namespace gtsam {
 	 * Transform 2D landmark into 6D pose, and its derivatives
 	 */
 	// JC:  These are exported only for testbenches?
-	Point2 transform_to(const boost::shared_ptr<const Matrix> &sensorMatrix, 
-			    const Pose3& pose, const Point2& p);
-	Matrix Dtransform_to1(const boost::shared_ptr<const Matrix> &sensorMatrix, 
-			      const Pose3& pose, const Point2& p);
-	Matrix Dtransform_to2(const boost::shared_ptr<const Matrix> &sensorMatrix, 
-			      const Pose3& pose);
+	UrbanMeasurement::Transform transform_to(const boost::shared_ptr<const Matrix> &sensorMatrix, 
+						 const Pose3& robotpose, const Point2& lmpos,
+						 bool getJacobians);
 
 } // namespace gtsam
