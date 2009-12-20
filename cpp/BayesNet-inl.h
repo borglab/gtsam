@@ -25,7 +25,7 @@ namespace gtsam {
 	void BayesNet<Conditional>::print(const string& s) const {
 		cout << s << ":\n";
 		std::string key;
-		BOOST_FOREACH(sharedConditional conditional,conditionals_)
+		BOOST_REVERSE_FOREACH(sharedConditional conditional,conditionals_)
 			conditional->print("Node[" + conditional->key() + "]");
 	}
 
