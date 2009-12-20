@@ -15,7 +15,7 @@ namespace gtsam {
   /**
 	* Numerically compute gradient of scalar function
 	 * Class X is the input argument
-   * needs dim, exmap, vector
+   * The class X needs to have dim, exmap, vector
    */
   template<class X>
   Vector numericalGradient(double (*h)(const X&), const X& x, double delta=1e-5) {
@@ -32,7 +32,7 @@ namespace gtsam {
   }
 
   /**
-   * Compute numerical derivative in arument 1 of unary function
+   * Compute numerical derivative in argument 1 of unary function
    * @param h unary function yielding m-vector
    * @param x n-dimensional value at which to evaluate h
    * @param delta increment for numerical derivative
@@ -42,10 +42,10 @@ namespace gtsam {
    (Vector (*h)(const Vector&), const Vector& x, double delta=1e-5);
 
   /**
-	* templated version (starts with LOWERCASE n)
-	 * Class Y is the output arguement
+	* Templated version (starts with LOWERCASE n)
+	 * Class Y is the output argument
 	 * Class X is the input argument
-   * both classes need dim, exmap, vector
+   * Both classes X,Y need dim, exmap, vector
    */
   template<class Y, class X>
   Matrix numericalDerivative11(Y (*h)(const X&), const X& x, double delta=1e-5) {
@@ -75,8 +75,8 @@ namespace gtsam {
   		const Vector& x1, const Vector& x2, double delta=1e-5);
 
   /**
-   * templated version (starts with LOWERCASE n)
-   * classes need dim, exmap, vector
+   * Templated version (starts with LOWERCASE n)
+   * All classes Y,X1,X2 need dim, exmap, vector
    */
   template<class Y, class X1, class X2>
   Matrix numericalDerivative21(Y (*h)(const X1&, const X2&),
@@ -96,7 +96,7 @@ namespace gtsam {
   }
 
   /**
-   * Compute numerical derivative in arument 2 of binary function
+   * Compute numerical derivative in argument 2 of binary function
    * @param h binary function yielding m-vector
    * @param x1 first argument value
    * @param x2 n-dimensional second argument value
@@ -107,8 +107,8 @@ namespace gtsam {
     (Vector (*h)(const Vector&, const Vector&), const Vector& x1, const Vector& x2, double delta=1e-5);
 
   /**
-   *  templated version (starts with LOWERCASE n)
-   * classes need dim, exmap, vector
+   * Templated version (starts with LOWERCASE n)
+   * All classes Y,X1,X2 need dim, exmap, vector
    */
   template<class Y, class X1, class X2>
     Matrix numericalDerivative22
@@ -141,8 +141,8 @@ namespace gtsam {
     (Vector (*h)(const Vector&, const Vector&, const Vector&), const Vector& x1, const Vector& x2, const Vector& x3, double delta=1e-5);
 
   /**
-   * templated version (starts with LOWERCASE n)
-   * classes need dim, exmap, vector
+   * Templated version (starts with LOWERCASE n)
+   * All classes Y,X1,X2,X3 need dim, exmap, vector
    */
   template<class Y, class X1, class X2, class X3>
     Matrix numericalDerivative31
