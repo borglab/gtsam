@@ -67,11 +67,14 @@ namespace gtsam {
 		/** Get a specific factor by index */
 		inline sharedFactor operator[](size_t i) const {return factors_[i];}
 
+		/** delete factor without re-arranging indexes by inserting a NULL pointer */
+		inline void remove(size_t i) { factors_[i].reset();}
+
 		/** return the number of factors and NULLS */
-	    inline size_t size() const { return factors_.size();}
+		inline size_t size() const { return factors_.size();}
 
 		/** return the number valid factors */
-	    size_t nrFactors() const;
+		size_t nrFactors() const;
 
 		/** Add a factor */
 		void push_back(sharedFactor factor);
@@ -95,9 +98,9 @@ namespace gtsam {
 		 */
 		Ordering getOrdering() const;
 
-	    /**
-	     * shared pointer versions for MATLAB
-	     */
+	  /**
+	   * shared pointer versions for MATLAB
+	   */
 		boost::shared_ptr<Ordering>  getOrdering_() const;
 
     /**

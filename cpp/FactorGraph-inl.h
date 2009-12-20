@@ -245,7 +245,7 @@ FactorGraph<Factor>::findAndRemoveFactors(const string& key) {
 	BOOST_FOREACH(int i, *indices_ptr) {
 		if(factors_[i] == NULL) continue; // skip NULL factors
 		found.push_back(factors_[i]);     // add to found
-		factors_[i].reset();              // set factor to NULL.
+		remove(i);                        // set factor to NULL.
 	}
 	return found;
 }
