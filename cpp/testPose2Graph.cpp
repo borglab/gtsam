@@ -56,22 +56,22 @@ TEST( Pose2Graph, linerization )
 	// the expected linear factor
 	GaussianFactorGraph lfg_expected;
 	Matrix A1 = Matrix_(3,3,
-			0.0,	2.0, -4.2,
-			-2.0,	0.0,  4.2,
-			0.0,	0.0,  10.0);
+	    0.0, 2.0, 4.2,
+	    -2.0, 0.0, 4.2,
+	    0.0, 0.0, 10.0);
 
 	Matrix A2 = Matrix_(3,3,
-			0.0,	-2.0,  0.0,
-			2.0,	0.0,   0.0,
-			0.0,	0.0,  -10.0);
+	    -2.0, 0.0,  0.0,
+	    0.0,-2.0,  0.0,
+	    0.0, 0.0, -10.0);
 
 
 	double sigma = 1;
-	Vector b = Vector_(3,0.1,0.1,0.0);
+	Vector b = Vector_(3,0.1,-0.1,0.0);
 	lfg_expected.add("x1", A1, "x2", A2, b, sigma);
 
 
-	CHECK(lfg_expected.equals(lfg_linearized));
+	CHECK(assert_equal(lfg_expected, lfg_linearized));
 
 }
 /* ************************************************************************* */
