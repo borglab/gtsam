@@ -85,7 +85,18 @@ bool assert_equal(const Matrix& A, const Matrix& B, double tol = 1e-9);
  */
 inline Vector operator*(const Matrix& A, const Vector & v) {
   if (A.size2()!=v.size()) throw(std::invalid_argument("Matrix operator* : A.n!=v.size"));
-  return Vector(prod(A,v));
+  return prod(A,v);
+}
+
+/**
+ * overload ^ for trans(A)*v
+ * We transpose the vectors for speed.
+ */
+inline Vector operator^(const Matrix& A, const Vector & v) {
+  if (A.size1()!=v.size()) throw(std::invalid_argument("Matrix operator^ : A.m!=v.size"));
+  Vector vt = trans(v);
+  Vector vtA = prod(vt,A);
+  return trans(vtA);
 }
 
 /**
@@ -93,7 +104,7 @@ inline Vector operator*(const Matrix& A, const Vector & v) {
  */
 inline Vector operator*(const Vector & v, const Matrix& A) {
   if (A.size1()!=v.size()) throw(std::invalid_argument("Matrix operator* : A.m!=v.size"));
-  return Vector(prod(v,A));
+  return prod(v,A);
 }
 
 /**

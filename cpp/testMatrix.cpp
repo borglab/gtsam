@@ -337,16 +337,12 @@ TEST( matrix, matrix_vector_multiplication )
 		       1.0,2.0,3.0,
 		       4.0,5.0,6.0
 		       );
-  Vector v(3);
-  v(0) = 1.0;
-  v(1) = 2.0;
-  v(2) = 3.0;
-
-  Vector Av(2);
-  Av(0) = 14.0;
-  Av(1) = 32.0;
+  Vector v = Vector_(3,1.,2.,3.);
+  Vector Av = Vector_(2,14.,32.);
+  Vector AtAv = Vector_(3,142.,188.,234.);
 
   EQUALITY(A*v,Av);
+  EQUALITY(A^Av,AtAv);
 }
 
 /* ************************************************************************* */
