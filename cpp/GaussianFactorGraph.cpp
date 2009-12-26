@@ -275,6 +275,7 @@ VectorConfig GaussianFactorGraph::conjugateGradientDescent(
 	// loop over remaining (n-1) dimensions
 	int n = d.dim();
 	for (int k=2;k<=n;k++) {
+
     // calculate gradient and check for convergence
 		VectorConfig gk = gradient(x);
 		double dotg = dot(gk,gk);
@@ -291,7 +292,6 @@ VectorConfig GaussianFactorGraph::conjugateGradientDescent(
 	return x;
 }
 
-/* ************************************************************************* */
 /* ************************************************************************* */
 boost::shared_ptr<VectorConfig>
 GaussianFactorGraph::gradientDescent_(const VectorConfig& x0) const {
