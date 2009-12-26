@@ -243,7 +243,7 @@ TEST( BayesTree, balanced_smoother_joint )
 	CHECK(assert_equal(expected4,actual4,1e-4));
 }
 
-/* ************************************************************************* */
+/* ************************************************************************* *
 TEST( BayesTree, iSAM_smoother )
 {
 	// Create smoother with 7 nodes
@@ -274,7 +274,7 @@ TEST( BayesTree, iSAM_smoother )
 	CHECK(assert_equal(e, optimized));
 }
 
-/* ************************************************************************* */
+/* ************************************************************************* *
 TEST( BayesTree, iSAM_smoother2 )
 {
 	// Create smoother with 7 nodes
