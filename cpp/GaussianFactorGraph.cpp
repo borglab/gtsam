@@ -32,6 +32,22 @@ GaussianFactorGraph::GaussianFactorGraph(const GaussianBayesNet& CBN) :
 }
 
 /* ************************************************************************* */
+double GaussianFactorGraph::error(const VectorConfig& x) const {
+	double total_error = 0.;
+	BOOST_FOREACH(sharedFactor factor,factors_)
+		total_error += factor->error(x);
+	return total_error;
+}
+
+/* ************************************************************************* */
+Errors GaussianFactorGraph::operator*(const VectorConfig& x) const {
+	Errors e;
+	BOOST_FOREACH(sharedFactor factor,factors_)
+		e.push_back((*factor)*x);
+	return e;
+}
+
+/* ************************************************************************* */
 set<string> GaussianFactorGraph::find_separator(const string& key) const
 {
 	set<string> separator;

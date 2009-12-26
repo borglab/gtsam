@@ -11,6 +11,7 @@ using namespace std;
 #include <boost/foreach.hpp>
 #include <boost/tuple/tuple.hpp>
 #include <boost/assign/std/list.hpp> // for operator +=
+#include <boost/assign/std/vector.hpp> // for operator +=
 using namespace boost::assign;
 
 #include <CppUnitLite/TestHarness.h>
@@ -576,12 +577,17 @@ TEST( GaussianFactorGraph, gradient )
 	CHECK(assert_equal(zero,actual2));
 }
 
-/* ************************************************************************* *
+/* ************************************************************************* */
 TEST( GaussianFactorGraph, multiplication )
 {
 	GaussianFactorGraph A = createGaussianFactorGraph();
   VectorConfig x = createConfig();
-  ErrorConfig actual = A * x;
+  Errors actual = A * x;
+  Errors expected;
+  expected += Vector_(2, 0.0, 0.0);
+  expected += Vector_(2,15.0, 0.0);
+  expected += Vector_(2, 0.0,-5.0);
+  expected += Vector_(2,-7.5,-5.0);
 	CHECK(assert_equal(expected,actual));
 }
 

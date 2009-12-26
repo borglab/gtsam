@@ -13,6 +13,7 @@
 #pragma once
 
 #include <boost/shared_ptr.hpp>
+#include "Errors.h"
 #include "FactorGraph.h"
 #include "GaussianFactor.h"
 #include "GaussianBayesNet.h" // needed for MATLAB toolbox !!
@@ -73,14 +74,10 @@ namespace gtsam {
   	}
 
 		/** unnormalized error */
-		double error(const VectorConfig& c) const {
-			double total_error = 0.;
-			// iterate over all the factors_ to accumulate the log probabilities
-			for (const_iterator factor = factors_.begin(); factor != factors_.end(); factor++)
-				total_error += (*factor)->error(c);
+		double error(const VectorConfig& x) const;
 
-			return total_error;
-		}
+		/** return A*x */
+		Errors operator*(const VectorConfig& x) const;
 
 		/** Unnormalized probability. O(n) */
 		double probPrime(const VectorConfig& c) const {

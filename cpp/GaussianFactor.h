@@ -230,6 +230,11 @@ public:
 	 */
 	shared_ptr alphaFactor(const VectorConfig& x, const VectorConfig& d) const;
 
+	/**
+	 * Return A*x
+	 */
+	Vector operator*(const VectorConfig& x) const;
+
 	/* ************************************************************************* */
 	// MUTABLE functions. FD:on the path to being eradicated
 	/* ************************************************************************* */

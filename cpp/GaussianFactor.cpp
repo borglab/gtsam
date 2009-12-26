@@ -131,14 +131,13 @@ Vector GaussianFactor::unweighted_error(const VectorConfig& c) const {
   if (empty()) return e;
   string j; Matrix Aj;
   FOREACH_PAIR(j, Aj, As_)
-    e += Vector(Aj * c[j]);
+    e += (Aj * c[j]);
   return e;
 }
 
 /* ************************************************************************* */
 Vector GaussianFactor::error_vector(const VectorConfig& c) const {
-  Vector e = -b_;
-  if (empty()) return e;
+  if (empty()) return (-b_);
   return ediv(unweighted_error(c),sigmas_);
 }
 
@@ -400,6 +399,18 @@ GaussianFactor::shared_ptr GaussianFactor::alphaFactor(const VectorConfig& x,
 	// construct factor
 	shared_ptr factor(new GaussianFactor("alpha",Matrix_(A),b,sigmas_));
 	return factor;
+}
+
+/* ************************************************************************* */
+Vector GaussianFactor::operator*(const VectorConfig& x) const {
+	Vector Ax = zero(b_.size());
+  if (empty()) return Ax;
+
+  string j; Matrix Aj;
+  FOREACH_PAIR(j, Aj, As_)
+    Ax += (Aj * x[j]);
+
+  return ediv(Ax,sigmas_);
 }
 
 /* ************************************************************************* */
