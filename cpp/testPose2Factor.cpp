@@ -8,7 +8,7 @@
 #include <iostream>
 
 #include <CppUnitLite/TestHarness.h>
-#include <Boost/shared_ptr.hpp>
+#include <boost/shared_ptr.hpp>
 #include "NonlinearOptimizer-inl.h"
 #include "NonlinearEquality.h"
 #include "Pose2Factor.h"
