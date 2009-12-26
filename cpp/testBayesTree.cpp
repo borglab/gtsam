@@ -20,6 +20,10 @@ using namespace boost::assign;
 using namespace gtsam;
 
 typedef BayesTree<SymbolicConditional> SymbolicBayesTree;
+typedef ISAM<SymbolicConditional> SymbolicISAM;
+
+//template class BayesTree<SymbolicConditional>; // todo: needed?
+//template class ISAM<SymbolicConditional>;
 
 /* ************************************************************************* */
 // SLAM example from RSS sqrtSAM paper
@@ -30,9 +34,9 @@ SymbolicConditional::shared_ptr x3(new SymbolicConditional("x3")),
 		l2(new SymbolicConditional("l2","x1","x3"));
 
 // Bayes Tree for sqrtSAM example
-SymbolicBayesTree createSlamSymbolicBayesTree(){
+SymbolicISAM createSlamSymbolicBayesTree(){
 	// Create using insert
-	SymbolicBayesTree bayesTree_slam;
+	SymbolicISAM bayesTree_slam;
 	bayesTree_slam.insert(x3);
 	bayesTree_slam.insert(x2);
 	bayesTree_slam.insert(x1);
@@ -54,8 +58,8 @@ SymbolicConditional::shared_ptr
 	X(new SymbolicConditional("X", "E"));
 
 // Bayes Tree for Asia example
-SymbolicBayesTree createAsiaSymbolicBayesTree() {
-	SymbolicBayesTree bayesTree;
+SymbolicISAM createAsiaSymbolicBayesTree() {
+	SymbolicISAM bayesTree;
 	bayesTree.insert(B);
 	bayesTree.insert(L);
 	bayesTree.insert(E);
@@ -124,7 +128,7 @@ TEST( BayesTree, removePath )
 			D(new SymbolicConditional("D", "C")),
 			E(new SymbolicConditional("E", "B")),
 			F(new SymbolicConditional("F", "E"));
-	SymbolicBayesTree bayesTree;
+	SymbolicISAM bayesTree;
 	bayesTree.insert(A);
 	bayesTree.insert(B);
 	bayesTree.insert(C);
@@ -138,11 +142,11 @@ TEST( BayesTree, removePath )
 	expected.push_factor("A","B");
 	expected.push_factor("A");
 	expected.push_factor("A","C");
-	SymbolicBayesTree::Cliques expectedOrphans;
+	SymbolicISAM::Cliques expectedOrphans;
   expectedOrphans += bayesTree["D"], bayesTree["E"];
 
 	FactorGraph<SymbolicFactor> factors;
-	SymbolicBayesTree::Cliques orphans;
+	SymbolicISAM::Cliques orphans;
 	boost::tie(factors,orphans) = bayesTree.removePath<SymbolicFactor>(bayesTree["C"]);
   CHECK(assert_equal((FactorGraph<SymbolicFactor>)expected, factors));
   CHECK(assert_equal(expectedOrphans, orphans));
@@ -150,7 +154,7 @@ TEST( BayesTree, removePath )
   // remove E: factor graph with EB; E|B removed from second orphan tree
 	SymbolicFactorGraph expected2;
   expected2.push_factor("B","E");
-  SymbolicBayesTree::Cliques expectedOrphans2;
+  SymbolicISAM::Cliques expectedOrphans2;
   expectedOrphans2 += bayesTree["F"];
 
   boost::tie(factors,orphans) = bayesTree.removePath<SymbolicFactor>(bayesTree["E"]);
@@ -161,11 +165,11 @@ TEST( BayesTree, removePath )
 /* ************************************************************************* */
 TEST( BayesTree, removePath2 )
 {
-	SymbolicBayesTree bayesTree = createAsiaSymbolicBayesTree();
+	SymbolicISAM bayesTree = createAsiaSymbolicBayesTree();
 
 	// Call remove-path with clique B
 	FactorGraph<SymbolicFactor> factors;
-	SymbolicBayesTree::Cliques orphans;
+	SymbolicISAM::Cliques orphans;
   boost::tie(factors,orphans) = bayesTree.removePath<SymbolicFactor>(bayesTree["B"]);
 
 	// Check expected outcome
@@ -174,7 +178,7 @@ TEST( BayesTree, removePath2 )
 	expected.push_factor("B","L");
 	expected.push_factor("B");
   CHECK(assert_equal((FactorGraph<SymbolicFactor>)expected, factors));
-	SymbolicBayesTree::Cliques expectedOrphans;
+	SymbolicISAM::Cliques expectedOrphans;
   expectedOrphans += bayesTree["S"], bayesTree["T"], bayesTree["X"];
   CHECK(assert_equal(expectedOrphans, orphans));
 }
@@ -182,11 +186,11 @@ TEST( BayesTree, removePath2 )
 /* ************************************************************************* */
 TEST( BayesTree, removePath3 )
 {
-	SymbolicBayesTree bayesTree = createAsiaSymbolicBayesTree();
+	SymbolicISAM bayesTree = createAsiaSymbolicBayesTree();
 
 	// Call remove-path with clique S
 	FactorGraph<SymbolicFactor> factors;
-	SymbolicBayesTree::Cliques orphans;
+	SymbolicISAM::Cliques orphans;
   boost::tie(factors,orphans) = bayesTree.removePath<SymbolicFactor>(bayesTree["S"]);
 
 	// Check expected outcome
@@ -196,22 +200,22 @@ TEST( BayesTree, removePath3 )
 	expected.push_factor("B");
 	expected.push_factor("L","B","S");
   CHECK(assert_equal((FactorGraph<SymbolicFactor>)expected, factors));
-	SymbolicBayesTree::Cliques expectedOrphans;
+	SymbolicISAM::Cliques expectedOrphans;
   expectedOrphans += bayesTree["T"], bayesTree["X"];
   CHECK(assert_equal(expectedOrphans, orphans));
 }
 
 /* ************************************************************************* */
-TEST( BayesTree, removeTop )
+TEST( ISAM, removeTop )
 {
-	SymbolicBayesTree bayesTree = createAsiaSymbolicBayesTree();
+	SymbolicISAM bayesTree = createAsiaSymbolicBayesTree();
 
 	// create a new factor to be inserted
 	boost::shared_ptr<SymbolicFactor> newFactor(new SymbolicFactor("B","S"));
 
 	// Remove the contaminated part of the Bayes tree
 	FactorGraph<SymbolicFactor> factors;
-	SymbolicBayesTree::Cliques orphans;
+	SymbolicISAM::Cliques orphans;
 	bayesTree.removeTop<SymbolicFactor>(newFactor, factors, orphans);
 
 	// Check expected outcome
@@ -221,26 +225,26 @@ TEST( BayesTree, removeTop )
 	expected.push_factor("B");
 	expected.push_factor("L","B","S");
   CHECK(assert_equal((FactorGraph<SymbolicFactor>)expected, factors));
-	SymbolicBayesTree::Cliques expectedOrphans;
+	SymbolicISAM::Cliques expectedOrphans;
   expectedOrphans += bayesTree["T"], bayesTree["X"];
   CHECK(assert_equal(expectedOrphans, orphans));
 
   // Try removeTop again with a factor that should not change a thing
 	boost::shared_ptr<SymbolicFactor> newFactor2(new SymbolicFactor("B"));
 	FactorGraph<SymbolicFactor> factors2;
-	SymbolicBayesTree::Cliques orphans2;
+	SymbolicISAM::Cliques orphans2;
 	bayesTree.removeTop<SymbolicFactor>(newFactor2, factors2, orphans2);
 	SymbolicFactorGraph expected2;
   CHECK(assert_equal((FactorGraph<SymbolicFactor>)expected2, factors2));
-	SymbolicBayesTree::Cliques expectedOrphans2;
+	SymbolicISAM::Cliques expectedOrphans2;
   CHECK(assert_equal(expectedOrphans2, orphans2));
 }
 
 
 /* ************************************************************************* */
-TEST( BayesTree, removeTop2 )
+TEST( ISAM, removeTop2 )
 {
-	SymbolicBayesTree bayesTree = createAsiaSymbolicBayesTree();
+	SymbolicISAM bayesTree = createAsiaSymbolicBayesTree();
 
 	// create two factors to be inserted
 	SymbolicFactorGraph newFactors;
@@ -249,7 +253,7 @@ TEST( BayesTree, removeTop2 )
 
 	// Remove the contaminated part of the Bayes tree
 	FactorGraph<SymbolicFactor> factors;
-	SymbolicBayesTree::Cliques orphans;
+	SymbolicISAM::Cliques orphans;
 	boost::tie(factors,orphans) = bayesTree.removeTop<SymbolicFactor>(newFactors);
 
 	// Check expected outcome
@@ -259,15 +263,15 @@ TEST( BayesTree, removeTop2 )
 	expected.push_factor("B");
 	expected.push_factor("L","B","S");
   CHECK(assert_equal((FactorGraph<SymbolicFactor>)expected, factors));
-	SymbolicBayesTree::Cliques expectedOrphans;
+	SymbolicISAM::Cliques expectedOrphans;
   expectedOrphans += bayesTree["T"], bayesTree["X"];
 	CHECK(assert_equal(expectedOrphans, orphans));
 }
 
 /* ************************************************************************* */
-TEST( BayesTree, iSAM )
+TEST( ISAM, iSAM )
 {
-	SymbolicBayesTree bayesTree = createAsiaSymbolicBayesTree();
+	SymbolicISAM bayesTree = createAsiaSymbolicBayesTree();
 
 	// Now we modify the Bayes tree by inserting a new factor over B and S
 
@@ -279,7 +283,7 @@ TEST( BayesTree, iSAM )
 		B_(new SymbolicConditional("B", "E", "L", "S"));
 
 	// Create expected Bayes tree
-	SymbolicBayesTree expected;
+	SymbolicISAM expected;
 	expected.insert(S_);
 	expected.insert(L_);
 	expected.insert(E_);
@@ -298,19 +302,19 @@ TEST( BayesTree, iSAM )
 	// Check whether the same
   CHECK(assert_equal(expected,bayesTree));
 }
+
 /* ************************************************************************* */
-TEST( BayesTree, iSAM_slam )
+TEST( ISAM, iSAM_slam )
 {
 	// Create using insert
-	SymbolicBayesTree bayesTree_slam = createSlamSymbolicBayesTree();
+	SymbolicISAM bayesTree_slam = createSlamSymbolicBayesTree();
 
 	//New conditionals for the expected Bayes tree
-
 	SymbolicConditional::shared_ptr
 			l1_(new SymbolicConditional("l1","x1","x2","x3"));
 
 	// Create expected Bayes tree
-	SymbolicBayesTree expected_slam;
+	SymbolicISAM expected_slam;
 	expected_slam.insert(x3);
 	expected_slam.insert(x2);
 	expected_slam.insert(x1);
@@ -327,7 +331,7 @@ TEST( BayesTree, iSAM_slam )
 	bayesTree_slam.update(factorGraph_slam);
 
 	// Check whether the same
-    CHECK(assert_equal(expected_slam,bayesTree_slam));
+	CHECK(assert_equal(expected_slam,bayesTree_slam));
 }
 
 /* ************************************************************************* */

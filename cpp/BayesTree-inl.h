@@ -237,6 +237,10 @@ namespace gtsam {
 	void BayesTree<Conditional>::print(const string& s) const {
 		cout << s << ": size == " << size() << endl;
 		if (nodes_.empty()) return;
+		if (root_.use_count() == 0) {
+			printf("WARNING: Forest...\n");
+			return;
+		}
 		root_->printTree("");
 	}
 
@@ -367,7 +371,7 @@ namespace gtsam {
 	template<class Conditional>
 	template<class Factor>
   pair<FactorGraph<Factor>, typename BayesTree<Conditional>::Cliques>
-	BayesTree<Conditional>::removePath(sharedClique clique) {
+	ISAM<Conditional>::removePath(sharedClique clique) {
 
 		FactorGraph<Factor> factors;
 		Cliques orphans;
@@ -376,10 +380,10 @@ namespace gtsam {
 		if (clique!=NULL) {
 
 			// remove me
-			removeClique(clique);
+			this->removeClique(clique);
 
 			// remove path above me
-			boost::tie(factors,orphans) = removePath<Factor>(clique->parent_);
+			boost::tie(factors,orphans) = this->removePath<Factor>(clique->parent_);
 
 			// add children to list of orphans (splice also removed them from clique->children_)
 			orphans.splice (orphans.begin(), clique->children_);
@@ -387,8 +391,9 @@ namespace gtsam {
 			// Convert clique to a factor graph, using constructor in FactorGraph
 			FactorGraph<Factor> clique_factors(*clique);
 
-			// add to the list of "imvalidated" factors
+			// add to the list of "invalidated" factors
 			factors.push_back(clique_factors);
+
 		}
 
 		return make_pair(factors,orphans);
@@ -398,7 +403,7 @@ namespace gtsam {
 	// TODO: add to factors and orphans
 	template<class Conditional>
 	template<class Factor>
-  void BayesTree<Conditional>::removeTop(const boost::shared_ptr<Factor>& newFactor,
+  void ISAM<Conditional>::removeTop(const boost::shared_ptr<Factor>& newFactor,
 		FactorGraph<Factor> &factors, typename BayesTree<Conditional>::Cliques& orphans) {
 
 		// process each key of the new factor
@@ -410,11 +415,12 @@ namespace gtsam {
 
 				// remove path from clique to root
 				FactorGraph<Factor> factors1;	Cliques orphans1;
-				boost::tie(factors1,orphans1) = removePath<Factor>(clique);
+				boost::tie(factors1,orphans1) = this->removePath<Factor>(clique);
 
 				// add to global factors and orphans
 				factors.push_back(factors1);
 				orphans.splice (orphans.begin(), orphans1);
+
 			} catch (std::invalid_argument e) {
 			}
 	}
@@ -423,11 +429,11 @@ namespace gtsam {
 	template<class Conditional>
 	template<class Factor>
   pair<FactorGraph<Factor>, typename BayesTree<Conditional>::Cliques>
-	BayesTree<Conditional>::removeTop(const FactorGraph<Factor>& newFactors) {
-
+	ISAM<Conditional>::removeTop(const FactorGraph<Factor>& newFactors) {
 		// Remove the contaminated part of the Bayes tree
 		FactorGraph<Factor> factors;
 		Cliques orphans;
+
 		BOOST_FOREACH(boost::shared_ptr<Factor> factor, newFactors)
 			this->removeTop<Factor>(factor, factors, orphans);
 
@@ -437,17 +443,24 @@ namespace gtsam {
 	/* ************************************************************************* */
 	template<class Conditional>
 	template<class Factor>
-	void BayesTree<Conditional>::update_internal(const FactorGraph<Factor>& newFactors, Cliques& orphans) {
+	void ISAM<Conditional>::update_internal(const FactorGraph<Factor>& newFactors, Cliques& orphans) {
 
 		// Remove the contaminated part of the Bayes tree
 		FactorGraph<Factor> factors;
-		boost::tie(factors, orphans) = removeTop<Factor>(newFactors);
+		boost::tie(factors, orphans) = this->removeTop<Factor>(newFactors);
 
 		// add the factors themselves
 		factors.push_back(newFactors);
 
 		// create an ordering for the new and contaminated factors
-		Ordering ordering = factors.getOrdering();
+		Ordering ordering;
+		if (true) {
+			ordering = factors.getOrdering();
+		} else {
+			list<string> keys = factors.keys();
+			keys.sort(); // todo: correct sorting order?
+			ordering = keys;
+		}
 
 		// eliminate into a Bayes net
 		BayesNet<Conditional> bayesNet = eliminate<Factor, Conditional>(factors,ordering);
@@ -455,7 +468,7 @@ namespace gtsam {
 		// insert conditionals back in, straight into the topless bayesTree
 		typename BayesNet<Conditional>::const_reverse_iterator rit;
 		for ( rit=bayesNet.rbegin(); rit != bayesNet.rend(); ++rit )
-			insert(*rit);
+			this->insert(*rit);
 
 		int count = 0;
 		// add orphans to the bottom of the new tree
@@ -472,9 +485,9 @@ namespace gtsam {
 
 	template<class Conditional>
 	template<class Factor>
-	void BayesTree<Conditional>::update(const FactorGraph<Factor>& newFactors) {
+	void ISAM<Conditional>::update(const FactorGraph<Factor>& newFactors) {
 		Cliques orphans;
-		update_internal(newFactors, orphans);
+		this->update_internal<Factor>(newFactors, orphans);
 	}
 
 /* ************************************************************************* */
