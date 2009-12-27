@@ -1,41 +1,38 @@
 /**
- * @file    GaussianBayesTree
- * @brief   Bayes Tree is a tree of cliques of a Bayes Chain
+ * @file    GaussianISAM
+ * @brief
  * @author  Michael Kaess
  */
 
-#include <boost/foreach.hpp>
-
-#include "GaussianBayesTree.h"
-#include "VectorConfig.h"
+#include "GaussianISAM.h"
 
 using namespace std;
 using namespace gtsam;
 
 // Explicitly instantiate so we don't have to include everywhere
-#include "BayesTree-inl.h"
-template class BayesTree<GaussianConditional>;
+#include "ISAM-inl.h"
+template class ISAM<GaussianConditional>;
 
 namespace gtsam {
 
 /* ************************************************************************* */
-void optimize(const GaussianBayesTree::sharedClique& clique, VectorConfig& result) {
+void optimize(const GaussianISAM::sharedClique& clique, VectorConfig& result) {
 	// parents are assumed to already be solved and available in result
-	GaussianBayesTree::Clique::const_reverse_iterator it;
+	GaussianISAM::Clique::const_reverse_iterator it;
 	for (it = clique->rbegin(); it!=clique->rend(); it++) {
 		GaussianConditional::shared_ptr cg = *it;
     Vector x = cg->solve(result); // Solve for that variable
     result.insert(cg->key(), x);   // store result in partial solution
   }
-	BOOST_FOREACH(GaussianBayesTree::sharedClique child, clique->children_) {
-//	list<GaussianBayesTree::Clique::shared_ptr>::const_iterator child;
+	BOOST_FOREACH(GaussianISAM::sharedClique child, clique->children_) {
+//	list<GaussianISAM::Clique::shared_ptr>::const_iterator child;
 //	for (child = clique->children_.begin(); child != clique->children_.end(); child++) {
 		optimize(child, result);
 	}
 }
 
 /* ************************************************************************* */
-VectorConfig optimize(const GaussianBayesTree& bayesTree) {
+VectorConfig optimize(const GaussianISAM& bayesTree) {
 	VectorConfig result;
 	// starting from the root, call optimize on each conditional
 	optimize(bayesTree.root(), result);

@@ -165,27 +165,6 @@ namespace gtsam {
 		template<class Factor>
 		BayesNet<Conditional> jointBayesNet(const std::string& key1, const std::string& key2) const;
 
-	}; // BayesTree
-
-	template<class Conditional>
-	class ISAM: public BayesTree<Conditional> {
-
-	public:
-
-		/** Create an empty Bayes Tree */
-		ISAM() : BayesTree<Conditional>() {}
-
-		/** Create a Bayes Tree from a Bayes Net */
-		ISAM(const BayesNet<Conditional>& bayesNet) : BayesTree<Conditional>(bayesNet) {}
-
-		/** Destructor */
-		virtual ~ISAM() {
-		}
-
-		typedef typename BayesTree<Conditional>::sharedClique sharedClique;
-
-		typedef typename BayesTree<Conditional>::Cliques Cliques;
-
 		/**
 		 * Remove path from clique to root and return that path as factors
 		 * plus a list of orphaned subtree roots. Used in removeTop below.
@@ -210,14 +189,6 @@ namespace gtsam {
 		std::pair<FactorGraph<Factor>, Cliques>
 		removeTop(const FactorGraph<Factor>& newFactors);
 
-		/**
-		 * iSAM. (_internal provides access to list of orphans for drawing purposes)
-		 */
-		template<class Factor>
-		void update_internal(const FactorGraph<Factor>& newFactors, Cliques& orphans);
-		template<class Factor>
-		void update(const FactorGraph<Factor>& newFactors);
-
-	}; // ISAM
+	}; // BayesTree
 
 } /// namespace gtsam

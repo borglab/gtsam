@@ -1,6 +1,6 @@
 /**
- * @file    testGaussianBayesTree.cpp
- * @brief   Unit tests for GaussianBayesTree
+ * @file    testGaussianISAM.cpp
+ * @brief   Unit tests for GaussianISAM
  * @author  Michael Kaess
  */
 
@@ -12,8 +12,8 @@ using namespace boost::assign;
 
 #include "Ordering.h"
 #include "GaussianBayesNet.h"
-#include "BayesTree-inl.h"
-#include "GaussianBayesTree.h"
+#include "ISAM-inl.h"
+#include "GaussianISAM.h"
 #include "smallExample.h"
 
 using namespace std;
@@ -24,6 +24,62 @@ using namespace gtsam;
 
 double sigmax1 = 0.786153, sigmax2 = 0.687131, sigmax3 = 0.671512, sigmax4 =
 		0.669534, sigmax5 = sigmax3, sigmax6 = sigmax2, sigmax7 = sigmax1;
+
+/* ************************************************************************* */
+TEST( ISAM, iSAM_smoother )
+{
+	// Create smoother with 7 nodes
+	GaussianFactorGraph smoother = createSmoother(7);
+
+	// run iSAM for every factor
+	GaussianISAM actual;
+	BOOST_FOREACH(boost::shared_ptr<GaussianFactor> factor, smoother) {
+		GaussianFactorGraph factorGraph;
+		factorGraph.push_back(factor);
+		actual.update(factorGraph);
+	}
+
+	// Create expected Bayes Tree by solving smoother with "natural" ordering
+	Ordering ordering;
+	for (int t = 1; t <= 7; t++) ordering += symbol('x', t);
+	GaussianISAM expected(smoother.eliminate(ordering));
+
+	// Check whether BayesTree is correct
+	CHECK(assert_equal(expected, actual));
+
+	// obtain solution
+	VectorConfig e; // expected solution
+	Vector v = Vector_(2, 0., 0.);
+	for (int i=1; i<=7; i++)
+		e.insert(symbol('x', i), v);
+	VectorConfig optimized = optimize(actual); // actual solution
+	CHECK(assert_equal(e, optimized));
+}
+
+/* ************************************************************************* */
+TEST( ISAM, iSAM_smoother2 )
+{
+	// Create smoother with 7 nodes
+	GaussianFactorGraph smoother = createSmoother(7);
+
+	// Create initial tree from first 4 timestamps in reverse order !
+	Ordering ord; ord += "x4","x3","x2","x1";
+	GaussianFactorGraph factors1;
+	for (int i=0;i<7;i++) factors1.push_back(smoother[i]);
+	GaussianISAM actual(factors1.eliminate(ord));
+
+	// run iSAM with remaining factors
+	GaussianFactorGraph factors2;
+	for (int i=7;i<13;i++) factors2.push_back(smoother[i]);
+	actual.update(factors2);
+
+	// Create expected Bayes Tree by solving smoother with "natural" ordering
+	Ordering ordering;
+	for (int t = 1; t <= 7; t++) ordering += symbol('x', t);
+	GaussianISAM expected(smoother.eliminate(ordering));
+
+	CHECK(assert_equal(expected, actual));
+}
 
 /* ************************************************************************* *
  Bayes tree for smoother with "natural" ordering:
@@ -46,17 +102,17 @@ TEST( BayesTree, linear_smoother_shortcuts )
 	GaussianBayesNet chordalBayesNet = smoother.eliminate(ordering);
 
 	// Create the Bayes tree
-	GaussianBayesTree bayesTree(chordalBayesNet);
+	GaussianISAM bayesTree(chordalBayesNet);
 	LONGS_EQUAL(6,bayesTree.size());
 
 	// Check the conditional P(Root|Root)
 	GaussianBayesNet empty;
-	GaussianBayesTree::sharedClique R = bayesTree.root();
+	GaussianISAM::sharedClique R = bayesTree.root();
 	GaussianBayesNet actual1 = R->shortcut<GaussianFactor>(R);
 	CHECK(assert_equal(empty,actual1,1e-4));
 
 	// Check the conditional P(C2|Root)
-	GaussianBayesTree::sharedClique C2 = bayesTree["x5"];
+	GaussianISAM::sharedClique C2 = bayesTree["x5"];
 	GaussianBayesNet actual2 = C2->shortcut<GaussianFactor>(R);
 	CHECK(assert_equal(empty,actual2,1e-4));
 
@@ -65,7 +121,7 @@ TEST( BayesTree, linear_smoother_shortcuts )
   Matrix A56 = Matrix_(2,2,-0.382022,0.,0.,-0.382022);
 	GaussianBayesNet expected3;
 	push_front(expected3,"x5", zero(2), eye(2), "x6", A56, sigma3);
-	GaussianBayesTree::sharedClique C3 = bayesTree["x4"];
+	GaussianISAM::sharedClique C3 = bayesTree["x4"];
 	GaussianBayesNet actual3 = C3->shortcut<GaussianFactor>(R);
 	CHECK(assert_equal(expected3,actual3,1e-4));
 
@@ -74,7 +130,7 @@ TEST( BayesTree, linear_smoother_shortcuts )
   Matrix A46 = Matrix_(2,2,-0.146067,0.,0.,-0.146067);
   GaussianBayesNet expected4;
   push_front(expected4,"x4", zero(2), eye(2), "x6", A46, sigma4);
-	GaussianBayesTree::sharedClique C4 = bayesTree["x3"];
+	GaussianISAM::sharedClique C4 = bayesTree["x3"];
 	GaussianBayesNet actual4 = C4->shortcut<GaussianFactor>(R);
 	CHECK(assert_equal(expected4,actual4,1e-4));
 }
@@ -115,7 +171,7 @@ TEST( BayesTree, balanced_smoother_marginals )
 	CHECK(assert_equal(expectedSolution,actualSolution,1e-4));
 
 	// Create the Bayes tree
-	GaussianBayesTree bayesTree(chordalBayesNet);
+	GaussianISAM bayesTree(chordalBayesNet);
 	LONGS_EQUAL(4,bayesTree.size());
 
 	// Check marginal on x1
@@ -154,23 +210,23 @@ TEST( BayesTree, balanced_smoother_shortcuts )
 
 	// Create the Bayes tree
 	GaussianBayesNet chordalBayesNet = smoother.eliminate(ordering);
-	GaussianBayesTree bayesTree(chordalBayesNet);
+	GaussianISAM bayesTree(chordalBayesNet);
 
 	// Check the conditional P(Root|Root)
 	GaussianBayesNet empty;
-	GaussianBayesTree::sharedClique R = bayesTree.root();
+	GaussianISAM::sharedClique R = bayesTree.root();
 	GaussianBayesNet actual1 = R->shortcut<GaussianFactor>(R);
 	CHECK(assert_equal(empty,actual1,1e-4));
 
 	// Check the conditional P(C2|Root)
-	GaussianBayesTree::sharedClique C2 = bayesTree["x3"];
+	GaussianISAM::sharedClique C2 = bayesTree["x3"];
 	GaussianBayesNet actual2 = C2->shortcut<GaussianFactor>(R);
 	CHECK(assert_equal(empty,actual2,1e-4));
 
 	// Check the conditional P(C3|Root), which should be equal to P(x2|x4)
 	GaussianConditional::shared_ptr p_x2_x4 = chordalBayesNet["x2"];
 	GaussianBayesNet expected3; expected3.push_back(p_x2_x4);
-	GaussianBayesTree::sharedClique C3 = bayesTree["x1"];
+	GaussianISAM::sharedClique C3 = bayesTree["x1"];
 	GaussianBayesNet actual3 = C3->shortcut<GaussianFactor>(R);
 	CHECK(assert_equal(expected3,actual3,1e-4));
 }
@@ -185,14 +241,14 @@ TEST( BayesTree, balanced_smoother_clique_marginals )
 
 	// Create the Bayes tree
 	GaussianBayesNet chordalBayesNet = smoother.eliminate(ordering);
-	GaussianBayesTree bayesTree(chordalBayesNet);
+	GaussianISAM bayesTree(chordalBayesNet);
 
 	// Check the clique marginal P(C3)
 	GaussianBayesNet expected = simpleGaussian("x2",zero(2),sigmax2);
   Vector sigma = repeat(2, 0.707107);
   Matrix A12 = (-0.5)*eye(2);
   push_front(expected,"x1", zero(2), eye(2), "x2", A12, sigma);
-	GaussianBayesTree::sharedClique R = bayesTree.root(), C3 = bayesTree["x1"];
+	GaussianISAM::sharedClique R = bayesTree.root(), C3 = bayesTree["x1"];
 	FactorGraph<GaussianFactor> marginal = C3->marginal<GaussianFactor>(R);
 	GaussianBayesNet actual = eliminate<GaussianFactor,GaussianConditional>(marginal,C3->keys());
 	CHECK(assert_equal(expected,actual,1e-4));
@@ -208,7 +264,7 @@ TEST( BayesTree, balanced_smoother_joint )
 
 	// Create the Bayes tree
 	GaussianBayesNet chordalBayesNet = smoother.eliminate(ordering);
-	GaussianBayesTree bayesTree(chordalBayesNet);
+	GaussianISAM bayesTree(chordalBayesNet);
 
   // Conditional density elements reused by both tests
 	Vector sigma = repeat(2, 0.786146);
@@ -241,62 +297,6 @@ TEST( BayesTree, balanced_smoother_joint )
   push_front(expected4,"x4", zero(2), I, "x1", A41, sigma41);
 	GaussianBayesNet actual4 = bayesTree.jointBayesNet<GaussianFactor>("x4","x1");
 	CHECK(assert_equal(expected4,actual4,1e-4));
-}
-
-/* ************************************************************************* *
-TEST( BayesTree, iSAM_smoother )
-{
-	// Create smoother with 7 nodes
-	GaussianFactorGraph smoother = createSmoother(7);
-
-	// run iSAM for every factor
-	GaussianBayesTree actual;
-	BOOST_FOREACH(boost::shared_ptr<GaussianFactor> factor, smoother) {
-		GaussianFactorGraph factorGraph;
-		factorGraph.push_back(factor);
-		actual.update(factorGraph);
-	}
-
-	// Create expected Bayes Tree by solving smoother with "natural" ordering
-	Ordering ordering;
-	for (int t = 1; t <= 7; t++) ordering += symbol('x', t);
-	GaussianBayesTree expected(smoother.eliminate(ordering));
-
-	// Check whether BayesTree is correct
-	CHECK(assert_equal(expected, actual));
-
-	// obtain solution
-	VectorConfig e; // expected solution
-	Vector v = Vector_(2, 0., 0.);
-	for (int i=1; i<=7; i++)
-		e.insert(symbol('x', i), v);
-	VectorConfig optimized = optimize(actual); // actual solution
-	CHECK(assert_equal(e, optimized));
-}
-
-/* ************************************************************************* *
-TEST( BayesTree, iSAM_smoother2 )
-{
-	// Create smoother with 7 nodes
-	GaussianFactorGraph smoother = createSmoother(7);
-
-	// Create initial tree from first 4 timestamps in reverse order !
-	Ordering ord; ord += "x4","x3","x2","x1";
-	GaussianFactorGraph factors1;
-	for (int i=0;i<7;i++) factors1.push_back(smoother[i]);
-	GaussianBayesTree actual(factors1.eliminate(ord));
-
-	// run iSAM with remaining factors
-	GaussianFactorGraph factors2;
-	for (int i=7;i<13;i++) factors2.push_back(smoother[i]);
-	actual.update(factors2);
-
-	// Create expected Bayes Tree by solving smoother with "natural" ordering
-	Ordering ordering;
-	for (int t = 1; t <= 7; t++) ordering += symbol('x', t);
-	GaussianBayesTree expected(smoother.eliminate(ordering));
-
-	CHECK(assert_equal(expected, actual));
 }
 
 /* ************************************************************************* */
