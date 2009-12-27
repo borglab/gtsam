@@ -13,8 +13,8 @@
 #pragma once
 
 #include <boost/shared_ptr.hpp>
-#include "Errors.h"
 #include "FactorGraph.h"
+#include "Errors.h"
 #include "GaussianFactor.h"
 #include "GaussianBayesNet.h" // needed for MATLAB toolbox !!
 
@@ -73,11 +73,24 @@ namespace gtsam {
     	push_back(sharedFactor(new GaussianFactor(terms,b,sigma)));
   	}
 
-		/** unnormalized error */
+		/** return A*x-b */
+		Errors errors(const VectorConfig& x) const;
+
+			/** unnormalized error */
 		double error(const VectorConfig& x) const;
 
 		/** return A*x */
 		Errors operator*(const VectorConfig& x) const;
+
+		/** return A^x */
+		VectorConfig operator^(const Errors& e) const;
+
+  	/**
+  	 * Calculate Gradient of A^(A*x-b) for a given config
+  	 * @param x: VectorConfig specifying where to calculate gradient
+  	 * @return gradient, as a VectorConfig as well
+  	 */
+  	VectorConfig gradient(const VectorConfig& x) const;
 
 		/** Unnormalized probability. O(n) */
 		double probPrime(const VectorConfig& c) const {
@@ -163,13 +176,6 @@ namespace gtsam {
   	 * @param ordering of variables needed for matrix column order
   	 */
   	Matrix sparse(const Ordering& ordering) const;
-
-  	/**
-  	 * Calculate Gradient of 0.5*|Ax-b| for a given config
-  	 * @param x: VectorConfig specifying where to calculate gradient
-  	 * @return gradient, as a VectorConfig as well
-  	 */
-  	VectorConfig gradient(const VectorConfig& x) const;
 
   	/**
   	 * Take an optimal step in direction d by calculating optimal step-size

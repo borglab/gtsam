@@ -30,6 +30,7 @@ namespace gtsam {
 
     VectorConfig() {}
     VectorConfig(const VectorConfig& cfg_in): values(cfg_in.values) {}
+    VectorConfig(const std::string& j, const Vector& a) { add(j,a); }
     
     virtual ~VectorConfig() {}
 
@@ -77,6 +78,9 @@ namespace gtsam {
     /** Scale */
     VectorConfig scale(double s) const;
     VectorConfig operator*(double s) const;
+
+    /** Add in place */
+    void operator+=(const VectorConfig &b);
 
     /** Add */
     VectorConfig operator+(const VectorConfig &b) const;

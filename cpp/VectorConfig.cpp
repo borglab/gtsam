@@ -70,20 +70,30 @@ VectorConfig VectorConfig::operator*(double s) const {
 }
 
 /* ************************************************************************* */
+void VectorConfig::operator+=(const VectorConfig& b) {
+	string j; Vector b_j;
+	FOREACH_PAIR(j, b_j, b.values) {
+		iterator it = values.find(j);
+		if (it==values.end())
+			insert(j, b_j);
+		else
+			it->second += b_j;
+	}
+}
+
+/* ************************************************************************* */
 VectorConfig VectorConfig::operator+(const VectorConfig& b) const {
-	VectorConfig result;
-	string key; Vector v;
-	FOREACH_PAIR(key, v, values)
-		result.insert(key, v + b.get(key));
+	VectorConfig result = *this;
+	result += b;
 	return result;
 }
 
 /* ************************************************************************* */
 VectorConfig VectorConfig::operator-(const VectorConfig& b) const {
 	VectorConfig result;
-	string key; Vector v;
-	FOREACH_PAIR(key, v, values)
-		result.insert(key, v - b.get(key));
+	string j; Vector v;
+	FOREACH_PAIR(j, v, values)
+		result.insert(j, v - b.get(j));
 	return result;
 }
 

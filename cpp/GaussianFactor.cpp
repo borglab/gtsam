@@ -175,6 +175,30 @@ void GaussianFactor::tally_separator(const string& key, set<string>& separator) 
   }
 }
 
+/* ************************************************************************* */
+Vector GaussianFactor::operator*(const VectorConfig& x) const {
+	Vector Ax = zero(b_.size());
+  if (empty()) return Ax;
+
+  // Just iterate over all A matrices and multiply in correct config part
+  string j; Matrix Aj;
+  FOREACH_PAIR(j, Aj, As_)
+    Ax += (Aj * x[j]);
+
+  return ediv(Ax,sigmas_);
+}
+
+/* ************************************************************************* */
+VectorConfig GaussianFactor::operator^(const Vector& e) const {
+  Vector E = ediv(e,sigmas_);
+	VectorConfig x;
+  // Just iterate over all A matrices and insert Ai^e into VectorConfig
+  string j; Matrix Aj;
+  FOREACH_PAIR(j, Aj, As_)
+    x.insert(j,Aj^E);
+	return x;
+}
+
 /* ************************************************************************* */  
 pair<Matrix,Vector> GaussianFactor::matrix(const Ordering& ordering, bool weight) const {
 
@@ -363,22 +387,6 @@ GaussianFactor::eliminate(const string& key) const
 }
 
 /* ************************************************************************* */
-void GaussianFactor::addGradientContribution(const VectorConfig& x,
-		VectorConfig& g) const {
-	// calculate the value of the factor
-	Vector e = GaussianFactor::error_vector(x);
-  Vector et = trans(e); // transpose
-
-  // contribute to gradient for each connected variable
-  string j; Matrix Aj;
-  FOREACH_PAIR(j, Aj, As_) {
-  	Vector dj = trans(et*Aj);      // this factor's contribution to gradient on j
-  	Vector wdj = ediv(dj,sigmas_); // properly weight by sigmas
-  	g.add(j,wdj);
-  }
-}
-
-/* ************************************************************************* */
 // Creates a factor on step-size, given initial estimate and direction d, e.g.
 // Factor |A1*x+A2*y-b|/sigma -> |A1*(x0+alpha*dx)+A2*(y0+alpha*dy)-b|/sigma
 //                            -> |(A1*dx+A2*dy)*alpha-(b-A1*x0-A2*y0)|/sigma
@@ -399,18 +407,6 @@ GaussianFactor::shared_ptr GaussianFactor::alphaFactor(const VectorConfig& x,
 	// construct factor
 	shared_ptr factor(new GaussianFactor("alpha",Matrix_(A),b,sigmas_));
 	return factor;
-}
-
-/* ************************************************************************* */
-Vector GaussianFactor::operator*(const VectorConfig& x) const {
-	Vector Ax = zero(b_.size());
-  if (empty()) return Ax;
-
-  string j; Matrix Aj;
-  FOREACH_PAIR(j, Aj, As_)
-    Ax += (Aj * x[j]);
-
-  return ediv(Ax,sigmas_);
 }
 
 /* ************************************************************************* */

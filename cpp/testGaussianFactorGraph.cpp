@@ -94,19 +94,19 @@ TEST( GaussianFactorGraph, combine_factors_x1 )
 			 );
 
   Matrix Ax1 = Matrix_(6,2,
-			 1.,   0.,
-			 0.00, 1.,
-			 -1.,  0.,
-			 0.00,-1.,
-			 -1.,   0.,
-			 00.,  -1.
+			 1., 0.,
+			 0., 1.,
+			-1., 0.,
+			 0.,-1.,
+			-1., 0.,
+			 0.,-1.
 			 );
 
   Matrix Ax2 = Matrix_(6,2,
 			 0., 0.,
 			 0., 0.,
 			 1., 0.,
-			 +0.,1.,
+			 0., 1.,
 			 0., 0.,
 			 0., 0.
 			 );
@@ -156,26 +156,26 @@ TEST( GaussianFactorGraph, combine_factors_x2 )
 
   Matrix Ax1 = Matrix_(4,2,
                          // x1
-			 -1.,  0.,  // f2
-			 0.00,-1.,  // f2
-			 0.00,  0., // f4
-			 0.00,  0.  // f4
+			-1., 0., // f2
+			 0.,-1., // f2
+			 0., 0., // f4
+			 0., 0.  // f4
 			 );
 
   Matrix Ax2 = Matrix_(4,2,
 			 // x2
 			 1., 0.,
-			 +0.,1.,
-			 -1., 0.,
-			 +0.,-1.
+			 0., 1.,
+			-1., 0.,
+			 0.,-1.
 			 );
 
   // the expected RHS vector
   Vector b(4);
-  b(0) = 2*sigma1;
+  b(0) =  2*sigma1;
   b(1) = -1*sigma1;
-  b(2) = -1*sigma2;
-  b(3) = 1.5*sigma2;
+  b(2) = -1  *sigma2;
+  b(3) =  1.5*sigma2;
 
   vector<pair<string, Matrix> > meas;
   meas.push_back(make_pair("l1", Al1));
@@ -188,7 +188,6 @@ TEST( GaussianFactorGraph, combine_factors_x2 )
 }
 
 /* ************************************************************************* */
-
 TEST( GaussianFactorGraph, eliminateOne_x1 )
 {
   GaussianFactorGraph fg = createGaussianFactorGraph();
@@ -203,7 +202,6 @@ TEST( GaussianFactorGraph, eliminateOne_x1 )
 }
 
 /* ************************************************************************* */
-
 TEST( GaussianFactorGraph, eliminateOne_x2 )
 {
   GaussianFactorGraph fg = createGaussianFactorGraph();
@@ -360,7 +358,7 @@ TEST( GaussianFactorGraph, CONSTRUCTOR_GaussianBayesNet )
 }
 
 /* ************************************************************************* */
-TEST( GaussianFactorGraph, GET_ORDERING)
+TEST( GaussianFactorGraph, getOrdering)
 {
   Ordering expected;
   expected += "l1","x1","x2";
@@ -370,7 +368,7 @@ TEST( GaussianFactorGraph, GET_ORDERING)
 }
 
 /* ************************************************************************* */
-TEST( GaussianFactorGraph, OPTIMIZE )
+TEST( GaussianFactorGraph, optimize )
 {
 	// create a graph
 	GaussianFactorGraph fg = createGaussianFactorGraph();
@@ -407,7 +405,7 @@ TEST( GaussianFactorGraph, COMBINE_GRAPHS_INPLACE)
 }
 
 /* ************************************************************************* */
-TEST( GaussianFactorGraph, COMBINE_GRAPHS)
+TEST( GaussianFactorGraph, combine2)
 {
 	// create a test graph
 	GaussianFactorGraph fg1 = createGaussianFactorGraph();
@@ -588,6 +586,23 @@ TEST( GaussianFactorGraph, multiplication )
   expected += Vector_(2,15.0, 0.0);
   expected += Vector_(2, 0.0,-5.0);
   expected += Vector_(2,-7.5,-5.0);
+	CHECK(assert_equal(expected,actual));
+}
+
+/* ************************************************************************* */
+TEST( GaussianFactorGraph, transposeMultiplication )
+{
+	GaussianFactorGraph A = createGaussianFactorGraph();
+  Errors e;
+  e += Vector_(2, 0.0, 0.0);
+  e += Vector_(2,15.0, 0.0);
+  e += Vector_(2, 0.0,-5.0);
+  e += Vector_(2,-7.5,-5.0);
+
+  VectorConfig expected, actual = A ^ e;
+  expected.insert("l1",Vector_(2, -37.5,-50.0));
+  expected.insert("x1",Vector_(2,-150.0, 25.0));
+  expected.insert("x2",Vector_(2, 187.5, 25.0));
 	CHECK(assert_equal(expected,actual));
 }
 

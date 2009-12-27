@@ -40,11 +40,35 @@ double GaussianFactorGraph::error(const VectorConfig& x) const {
 }
 
 /* ************************************************************************* */
-Errors GaussianFactorGraph::operator*(const VectorConfig& x) const {
+Errors GaussianFactorGraph::errors(const VectorConfig& x) const {
 	Errors e;
 	BOOST_FOREACH(sharedFactor factor,factors_)
-		e.push_back((*factor)*x);
+		e.push_back(factor->error_vector(x));
 	return e;
+}
+
+/* ************************************************************************* */
+Errors GaussianFactorGraph::operator*(const VectorConfig& x) const {
+	Errors e;
+	BOOST_FOREACH(sharedFactor Ai,factors_)
+		e.push_back((*Ai)*x);
+	return e;
+}
+
+/* ************************************************************************* */
+VectorConfig GaussianFactorGraph::operator^(const Errors& e) const {
+	VectorConfig x;
+	// For each factor add the gradient contribution
+	size_t i=0;
+	BOOST_FOREACH(sharedFactor Ai,factors_)
+		x += (*Ai)^e[i++];
+	return x;
+}
+
+/* ************************************************************************* */
+VectorConfig GaussianFactorGraph::gradient(const VectorConfig& x) const {
+	const GaussianFactorGraph& A = *this;
+	return A^errors(x);
 }
 
 /* ************************************************************************* */
@@ -234,15 +258,6 @@ Matrix GaussianFactorGraph::sparse(const Ordering& ordering) const {
 
 	// return the result
 	return ijs;
-}
-
-/* ************************************************************************* */
-VectorConfig GaussianFactorGraph::gradient(const VectorConfig& x) const {
-	VectorConfig g;
-	// For each factor add the gradient contribution
-	BOOST_FOREACH(sharedFactor factor,factors_)
-		factor->addGradientContribution(x,g);
-	return g;
 }
 
 /* ************************************************************************* */

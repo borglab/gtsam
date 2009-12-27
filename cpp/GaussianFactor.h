@@ -169,7 +169,7 @@ public:
 	 * Find all variables
 	 * @return The set of all variable keys
 	 */
-	 std::list<std::string> keys() const;
+	std::list<std::string> keys() const;
 
 	/**
 	 * Find all variables and their dimensions
@@ -191,6 +191,16 @@ public:
 	 */
 	void tally_separator(const std::string& key,
 			std::set<std::string>& separator) const;
+
+	/**
+	 * Return A*x
+	 */
+	Vector operator*(const VectorConfig& x) const;
+
+	/**
+	 * Return A^x
+	 */
+	VectorConfig operator^(const Vector& e) const;
 
 	/**
 	 * Return (dense) matrix associated with factor
@@ -217,23 +227,11 @@ public:
 		sparse(const Dimensions& columnIndices) const;
 
 	/**
-	 * Add gradient contribution to gradient config g
-	 * @param x: confif at which to evaluate gradient
-	 * @param g: I/O parameter, evolving gradient
-	 */
-	void addGradientContribution(const VectorConfig& x, VectorConfig& g) const;
-
-	/**
 	 * Create a GaussianFactor on one variable 'alpha' (step size), in direction d
 	 * @param x: starting point for search
 	 * @param d: search direction
 	 */
 	shared_ptr alphaFactor(const VectorConfig& x, const VectorConfig& d) const;
-
-	/**
-	 * Return A*x
-	 */
-	Vector operator*(const VectorConfig& x) const;
 
 	/* ************************************************************************* */
 	// MUTABLE functions. FD:on the path to being eradicated

@@ -79,9 +79,10 @@ TEST( VectorConfig, exmap)
 /* ************************************************************************* */
 TEST( VectorConfig, plus)
 {
-  VectorConfig fg;
+  VectorConfig c;
   Vector vx = Vector_(3, 5.0, 6.0, 7.0), vy = Vector_(2, 8.0, 9.0);
-  fg.insert("x", vx).insert("y",vy);
+  c += VectorConfig("x",vx);
+  c += VectorConfig("y",vy);
 
   VectorConfig delta;
   Vector dx = Vector_(3, 1.0, 1.0, 1.0), dy = Vector_(2, -1.0, -1.0);
@@ -92,7 +93,7 @@ TEST( VectorConfig, plus)
   expected.insert("x", wx).insert("y",wy);
 
   // functional
-  VectorConfig actual = fg.exmap(delta);
+  VectorConfig actual = c.exmap(delta);
   CHECK(assert_equal(expected,actual));
 }
 

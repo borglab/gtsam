@@ -26,20 +26,10 @@ using namespace gtsam;
 /* ************************************************************************* */
 TEST( GaussianFactor, linearFactor )
 {
+	Matrix I = eye(2);
+	Vector b = Vector_(2,0.2,-0.1);
 	double sigma = 0.1;
-
-	Matrix A1(2,2);
-	A1(0,0) = -1.0 ; A1(0,1) = 0.0;
-	A1(1,0) = 0.0 ; A1(1,1) = -1.0;
-
-	Matrix A2(2,2);
-	A2(0,0) = 1.0 ; A2(0,1) = 0.0;
-	A2(1,0) = 0.0 ; A2(1,1) = 1.0;
-
-	Vector b(2);
-	b(0) = 0.2 ; b(1) = -0.1;
-
-	GaussianFactor expected("x1", A1,  "x2", A2, b, sigma);
+	GaussianFactor expected("x1", -I, "x2", I, b, sigma);
 
 	// create a small linear factor graph
 	GaussianFactorGraph fg = createGaussianFactorGraph();
@@ -49,6 +39,29 @@ TEST( GaussianFactor, linearFactor )
 
 	// check if the two factors are the same
 	CHECK(assert_equal(expected,*lf));
+}
+
+/* ************************************************************************* */
+TEST( GaussianFactor, operators )
+{
+	Matrix I = eye(2);
+	Vector b = Vector_(2,0.2,-0.1);
+	double sigma = 0.1;
+	GaussianFactor lf("x1", -I, "x2", I, b, sigma);
+
+	VectorConfig c;
+	c.insert("x1",Vector_(2,10.,20.));
+	c.insert("x2",Vector_(2,30.,60.));
+
+	// test A*x
+	Vector expectedE = Vector_(2,200.,400.), e = lf*c;
+	CHECK(assert_equal(expectedE,e));
+
+	// test A^e
+	VectorConfig expectedX;
+	expectedX.insert("x1",Vector_(2,-2000.,-4000.));
+	expectedX.insert("x2",Vector_(2, 2000., 4000.));
+	CHECK(assert_equal(expectedX,lf^e));
 }
 
 /* ************************************************************************* */
@@ -184,14 +197,14 @@ TEST( NonlinearFactorGraph, combine2){
 
 	Vector sigmas = Vector_(8, sigma1, sigma1, sigma2, sigma2, sigma3, sigma3, sigma4, sigma4);
 	Matrix A22(8,2);
-	A22(0,0) = 1; A22(0,1) =  0;
-	A22(1,0) = 0;       A22(1,1) = 1;
-	A22(2,0) = 1;       A22(2,1) =  0;
-	A22(3,0) = 0;       A22(3,1) = -1;
-	A22(4,0) = 1;       A22(4,1) =  0;
-	A22(5,0) = 0;       A22(5,1) = -1;
-	A22(6,0) = 0.6;       A22(6,1) =  0;
-	A22(7,0) = 0;       A22(7,1) =  0.7;
+	A22(0,0) = 1;   A22(0,1) =  0;
+	A22(1,0) = 0;   A22(1,1) = 1;
+	A22(2,0) = 1;   A22(2,1) =  0;
+	A22(3,0) = 0;   A22(3,1) = -1;
+	A22(4,0) = 1;   A22(4,1) =  0;
+	A22(5,0) = 0;   A22(5,1) = -1;
+	A22(6,0) = 0.6; A22(6,1) =  0;
+	A22(7,0) = 0;   A22(7,1) =  0.7;
 	Vector exb(8);
 	exb(0) = 2*sigma1 ; exb(1) = -1*sigma1;  exb(2) = 4*sigma2 ; exb(3) = -5*sigma2;
 	exb(4) = 3*sigma3 ; exb(5) = -88*sigma3; exb(6) = 5*sigma4 ; exb(7) = -6*sigma4;
@@ -239,32 +252,32 @@ TEST( GaussianFactor, linearFactorN){
 
   vector<pair<string, Matrix> > combinedMeasurement;
   combinedMeasurement.push_back(make_pair("x1", Matrix_(8,2,
-      1.0, 0.0,
-      0.0, 1.0,
-      -10.0, 0.0,
-      0.0, -10.0,
-      0.0, 0.0,
-      0.0, 0.0,
-      0.0, 0.0,
-      0.0, 0.0)));
+      1.0,  0.0,
+      0.0,  1.0,
+    -10.0,  0.0,
+      0.0,-10.0,
+      0.0,  0.0,
+      0.0,  0.0,
+      0.0,  0.0,
+      0.0,  0.0)));
   combinedMeasurement.push_back(make_pair("x2", Matrix_(8,2,
-      0.0, 0.0,
-      0.0, 0.0,
-      10.0, 0.0,
+      0.0,  0.0,
+      0.0,  0.0,
+     10.0,  0.0,
       0.0, 10.0,
-      -10.0, 0.0,
-      0.0, -10.0,
-      0.0, 0.0,
-      0.0, 0.0)));
+    -10.0,  0.0,
+      0.0,-10.0,
+      0.0,  0.0,
+      0.0,  0.0)));
   combinedMeasurement.push_back(make_pair("x3", Matrix_(8,2,
-      0.0, 0.0,
-      0.0, 0.0,
-      0.0, 0.0,
-      0.0, 0.0,
-      10.0, 0.0,
+      0.0,  0.0,
+      0.0,  0.0,
+      0.0,  0.0,
+      0.0,  0.0,
+     10.0,  0.0,
       0.0, 10.0,
-      -10.0, 0.0,
-      0.0, -10.0)));
+    -10.0,  0.0,
+      0.0,-10.0)));
   combinedMeasurement.push_back(make_pair("x4", Matrix_(8,2,
       0.0, 0.0,
       0.0, 0.0,
@@ -272,8 +285,8 @@ TEST( GaussianFactor, linearFactorN){
       0.0, 0.0,
       0.0, 0.0,
       0.0, 0.0,
-      10.0, 0.0,
-      0.0, 10.0)));
+     10.0, 0.0,
+      0.0,10.0)));
   Vector b = Vector_(8,
       10.0, 5.0, 1.0, -2.0, 1.5, -1.5, 2.0, -1.0);
 
