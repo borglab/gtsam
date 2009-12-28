@@ -11,8 +11,34 @@ namespace gtsam {
 	class GaussianFactorGraph;
 	class VectorConfig;
 
-	/** typedef for combined system |Ax-b|^2 */
-	typedef std::pair<Matrix, Vector> System;
+	/** combined system |Ax-b_|^2 */
+	class System {
+	private:
+		const Matrix& A_;
+		const Vector& b_;
+
+	public:
+
+		System(const Matrix& A, const Vector& b) :
+			A_(A), b_(b) {
+		}
+
+		/** gradient of objective function 0.5*|Ax-b_|^2 at x = A_'*(Ax-b_) */
+		Vector gradient(const Vector& x) const {
+			return A_ ^ (A_ * x - b_);
+		}
+
+		/** Apply operator A_ */
+		inline Vector operator*(const Vector& x) const {
+			return A_ * x;
+		}
+
+		/** Apply operator A_^T */
+		inline Vector operator^(const Vector& e) const {
+			return A_ ^ e;
+		}
+
+	};
 
 	/**
 	 * Method of conjugate gradients (CG) template

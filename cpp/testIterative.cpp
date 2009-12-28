@@ -51,7 +51,7 @@ TEST( Iterative, conjugateGradientDescent )
 	Vector expectedX = Vector_(6, -0.1, 0.1, -0.1, -0.1, 0.1, -0.2);
 
 	// Do conjugate gradient descent, System version
-	System Ab = make_pair(A, b);
+	System Ab(A, b);
 	Vector actualX = conjugateGradientDescent(Ab, x0);
 	CHECK(assert_equal(expectedX,actualX,1e-9));
 

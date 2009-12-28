@@ -21,7 +21,7 @@ namespace gtsam {
 
 		// Start with g0 = A'*(A*x0-b), d0 = - g0
 		// i.e., first step is in direction of negative gradient
-		V g = gradient(Ab, x);
+		V g = Ab.gradient(x);
 		V d = -g;
 		double dotg0 = dot(g, g), prev_dotg = dotg0;
 		double threshold = epsilon * epsilon * dotg0;
@@ -31,7 +31,7 @@ namespace gtsam {
 				<< threshold << endl;
 
 		// loop maxIterations times
-		for (size_t k = 0; k < maxIterations; k++) {
+		for (size_t k = 1;; k++) {
 
 			// calculate optimal step-size
 			E Ad = Ab * d;
@@ -39,6 +39,7 @@ namespace gtsam {
 
 			// do step in new search direction
 			x = x + alpha * d;
+			if (k==maxIterations) break;
 
 			// update gradient
 			g = g + alpha * (Ab ^ Ad);
