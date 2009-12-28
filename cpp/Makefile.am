@@ -102,17 +102,19 @@ testBinaryBayesNet_LDADD      = libgtsam.la
 # Gaussian inference 
 headers += GaussianFactorSet.h
 sources += Errors.cpp VectorConfig.cpp GaussianFactor.cpp GaussianFactorGraph.cpp GaussianConditional.cpp GaussianBayesNet.cpp
-check_PROGRAMS += testVectorConfig testGaussianFactor testGaussianFactorGraph testGaussianConditional testGaussianBayesNet 
+check_PROGRAMS += testVectorConfig testGaussianFactor testGaussianFactorGraph testGaussianConditional testGaussianBayesNet testIterative 
 testVectorConfig_SOURCES        = testVectorConfig.cpp
 testVectorConfig_LDADD          = libgtsam.la
-testGaussianFactor_SOURCES        = $(example) testGaussianFactor.cpp
-testGaussianFactor_LDADD          = libgtsam.la
-testGaussianFactorGraph_SOURCES   = $(example) testGaussianFactorGraph.cpp
-testGaussianFactorGraph_LDADD     = libgtsam.la
+testGaussianFactor_SOURCES      = $(example) testGaussianFactor.cpp
+testGaussianFactor_LDADD        = libgtsam.la
+testGaussianFactorGraph_SOURCES = $(example) testGaussianFactorGraph.cpp
+testGaussianFactorGraph_LDADD   = libgtsam.la
 testGaussianConditional_SOURCES = $(example) testGaussianConditional.cpp
 testGaussianConditional_LDADD   = libgtsam.la
 testGaussianBayesNet_SOURCES    = $(example) testGaussianBayesNet.cpp
 testGaussianBayesNet_LDADD      = libgtsam.la
+testIterative_SOURCES           = $(example) testIterative.cpp
+testIterative_LDADD             = libgtsam.la
 
 # not the correct way, I'm sure: Kai ?
 timeGaussianFactor: timeGaussianFactor.cpp  
