@@ -275,42 +275,36 @@ VectorConfig GaussianFactorGraph::optimalUpdate(const VectorConfig& x,
 	// solve it for optimal step-size alpha
 	GaussianConditional::shared_ptr gc = alphaGraph.eliminateOne("alpha");
 	double alpha = gc->get_d()(0);
+	cout << alpha << endl;
 
 	// return updated estimate by stepping in direction d
   return x.exmap(d.scale(alpha));
 }
 
 /* ************************************************************************* */
-VectorConfig GaussianFactorGraph::gradientDescent(const VectorConfig& x0) const {
-	VectorConfig x = x0;
-	int maxK = 10*x.dim();
-	for (int k=0;k<maxK;k++) {
-    // calculate gradient and check for convergence
-		VectorConfig g = gradient(x);
-		double dotg = dot(g,g);
-		if (dotg<1e-9) break;
-		x = optimalUpdate(x,g);
-	}
-	return x;
+VectorConfig GaussianFactorGraph::steepestDescent(const VectorConfig& x0,
+		double epsilon, size_t maxIterations) const {
+	return gtsam::steepestDescent(*this, x0, epsilon, maxIterations);
 }
 
 /* ************************************************************************* */
-boost::shared_ptr<VectorConfig> GaussianFactorGraph::gradientDescent_(
-		const VectorConfig& x0) const {
-	return boost::shared_ptr<VectorConfig>(new VectorConfig(gradientDescent(x0)));
+boost::shared_ptr<VectorConfig> GaussianFactorGraph::steepestDescent_(
+		const VectorConfig& x0, double epsilon, size_t maxIterations) const {
+	return boost::shared_ptr<VectorConfig>(new VectorConfig(
+			gtsam::conjugateGradientDescent(*this, x0, epsilon, maxIterations)));
 }
 
 /* ************************************************************************* */
 VectorConfig GaussianFactorGraph::conjugateGradientDescent(
-		const VectorConfig& x0, double threshold) const {
-	return gtsam::conjugateGradientDescent(*this, x0, threshold);
+		const VectorConfig& x0, double epsilon, size_t maxIterations) const {
+	return gtsam::conjugateGradientDescent(*this, x0, epsilon, maxIterations);
 }
 
 /* ************************************************************************* */
 boost::shared_ptr<VectorConfig> GaussianFactorGraph::conjugateGradientDescent_(
-		const VectorConfig& x0, double threshold) const {
+		const VectorConfig& x0, double epsilon, size_t maxIterations) const {
 	return boost::shared_ptr<VectorConfig>(new VectorConfig(
-			gtsam::conjugateGradientDescent(*this, x0, threshold)));
+			gtsam::conjugateGradientDescent(*this, x0, epsilon, maxIterations)));
 }
 
 /* ************************************************************************* */

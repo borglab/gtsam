@@ -120,4 +120,7 @@ namespace gtsam {
   /** Dot product */
   double dot(const VectorConfig&, const VectorConfig&);
 
+  /** dim function (for iterative::CGD) */
+  inline double dim(const VectorConfig& x) { return x.dim();}
+
 } // gtsam

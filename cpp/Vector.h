@@ -79,6 +79,11 @@ inline Vector ones(size_t n) { return repeat(n,1.0);}
  * check if all zero
  */
 bool zero(const Vector& v);
+
+/**
+ * dimensionality == size
+ */
+inline size_t dim(const Vector& v) { return v.size();}
 	
 /**
  * print with optional string
