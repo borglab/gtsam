@@ -16,6 +16,7 @@
 #include "GaussianFactorSet.h"
 #include "FactorGraph-inl.h"
 #include "inference-inl.h"
+#include "iterative.h"
 
 using namespace std;
 using namespace gtsam;
@@ -294,45 +295,22 @@ VectorConfig GaussianFactorGraph::gradientDescent(const VectorConfig& x0) const 
 }
 
 /* ************************************************************************* */
-// directions are actually negative of those in cgd.lyx
-VectorConfig GaussianFactorGraph::conjugateGradientDescent(
+boost::shared_ptr<VectorConfig> GaussianFactorGraph::gradientDescent_(
 		const VectorConfig& x0) const {
-
-	// take first step in direction of the gradient
-	VectorConfig d = gradient(x0);
-	VectorConfig x = optimalUpdate(x0,d);
-	double prev_dotg = dot(d,d);
-
-	// loop over remaining (n-1) dimensions
-	int n = d.dim();
-	for (int k=2;k<=n;k++) {
-
-    // calculate gradient and check for convergence
-		VectorConfig gk = gradient(x);
-		double dotg = dot(gk,gk);
-		if (dotg<1e-9) break;
-
-    // calculate new search direction
-		double beta = dotg/prev_dotg;
-		prev_dotg = dotg;
-		d = gk + d * beta;
-
-		// do step in new search direction
-		x = optimalUpdate(x,d);
-	}
-	return x;
-}
-
-/* ************************************************************************* */
-boost::shared_ptr<VectorConfig>
-GaussianFactorGraph::gradientDescent_(const VectorConfig& x0) const {
 	return boost::shared_ptr<VectorConfig>(new VectorConfig(gradientDescent(x0)));
 }
 
 /* ************************************************************************* */
-boost::shared_ptr<VectorConfig>
-GaussianFactorGraph::conjugateGradientDescent_(const VectorConfig& x0) const {
-	return boost::shared_ptr<VectorConfig>(new VectorConfig(conjugateGradientDescent(x0)));
+VectorConfig GaussianFactorGraph::conjugateGradientDescent(
+		const VectorConfig& x0, double threshold) const {
+	return gtsam::conjugateGradientDescent(*this, x0, threshold);
+}
+
+/* ************************************************************************* */
+boost::shared_ptr<VectorConfig> GaussianFactorGraph::conjugateGradientDescent_(
+		const VectorConfig& x0, double threshold) const {
+	return boost::shared_ptr<VectorConfig>(new VectorConfig(
+			gtsam::conjugateGradientDescent(*this, x0, threshold)));
 }
 
 /* ************************************************************************* */

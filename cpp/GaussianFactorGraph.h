@@ -185,25 +185,31 @@ namespace gtsam {
   	VectorConfig optimalUpdate(const VectorConfig& x0, const VectorConfig& d) const;
 
   	/**
-  	 * Find solution using gradient descent
-  	 * @param x0: VectorConfig specifying initial estimate
-  	 * @return solution
-  	 */
-  	VectorConfig gradientDescent(const VectorConfig& x0) const;
-    /**
-     * shared pointer versions for MATLAB
-     */
-    boost::shared_ptr<VectorConfig>gradientDescent_(const VectorConfig& x0) const;
-  	/**
-  	 * Find solution using conjugate gradient descent
-  	 * @param x0: VectorConfig specifying initial estimate
-  	 * @return solution
-  	 */
-  	VectorConfig conjugateGradientDescent(const VectorConfig& x0) const;
-    /**
-     * shared pointer versions for MATLAB
-     */
-    boost::shared_ptr<VectorConfig> conjugateGradientDescent_(const VectorConfig& x0) const;
+		 * Find solution using gradient descent
+		 * @param x0: VectorConfig specifying initial estimate
+		 * @return solution
+		 */
+		VectorConfig gradientDescent(const VectorConfig& x0) const;
+
+		/**
+		 * shared pointer versions for MATLAB
+		 */
+		boost::shared_ptr<VectorConfig>
+				gradientDescent_(const VectorConfig& x0) const;
+
+		/**
+		 * Find solution using conjugate gradient descent
+		 * @param x0: VectorConfig specifying initial estimate
+		 * @return solution
+		 */
+		VectorConfig conjugateGradientDescent(const VectorConfig& x0,
+				double threshold = 1e-9) const;
+
+		/**
+		 * shared pointer versions for MATLAB
+		 */
+		boost::shared_ptr<VectorConfig> conjugateGradientDescent_(
+				const VectorConfig& x0, double threshold = 1e-9) const;
   };
 
 }
