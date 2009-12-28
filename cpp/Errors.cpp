@@ -32,5 +32,16 @@ bool Errors::equals(const Errors& expected, double tol) const {
 }
 
 /* ************************************************************************* */
+double dot(const Errors& a, const Errors& b) {
+	size_t m = a.size();
+  if (b.size()!=m)
+    throw(std::invalid_argument("Errors::dot: incompatible sizes"));
+	double result = 0.0;
+	for (size_t i = 0; i < m; i++)
+		result += gtsam::dot(a[i], b[i]);
+	return result;
+}
+
+/* ************************************************************************* */
 
 } // gtsam

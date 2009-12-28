@@ -28,4 +28,9 @@ namespace gtsam {
 
   }; // Errors
 
+  /**
+   * dot product
+   */
+  double dot(const Errors& a, const Errors& b);
+
 } // gtsam

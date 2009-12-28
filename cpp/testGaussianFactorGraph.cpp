@@ -607,6 +607,11 @@ TEST( GaussianFactorGraph, transposeMultiplication )
 }
 
 /* ************************************************************************* */
+VectorConfig gradient(const GaussianFactorGraph& Ab, const VectorConfig& x) {
+	return Ab.gradient(x);
+}
+
+/* ************************************************************************* */
 typedef pair<Matrix,Vector> System;
 
 /**
@@ -640,7 +645,7 @@ Vector operator^(const System& Ab, const Vector& x) {
 // "Vector" class V needs dot(v,v), -v, v+v, s*v
 // "Vector" class E needs dot(v,v)
 template <class S, class V, class E>
-Vector conjugateGradientDescent(const S& Ab, V x, double threshold = 1e-9) {
+V CGD(const S& Ab, V x, double threshold = 1e-9) {
 
 	// Start with g0 = A'*(A*x0-b), d0 = - g0
 	// i.e., first step is in direction of negative gradient
@@ -676,11 +681,18 @@ Vector conjugateGradientDescent(const S& Ab, V x, double threshold = 1e-9) {
 }
 
 /* ************************************************************************* */
-// Method of conjugate gradients (CG)
+// Method of conjugate gradients (CG), Matrix version
 Vector conjugateGradientDescent(const Matrix& A, const Vector& b,
 		const Vector& x, double threshold = 1e-9) {
 	System Ab = make_pair(A, b);
-	return conjugateGradientDescent<System, Vector, Vector> (Ab, x);
+	return CGD<System, Vector, Vector> (Ab, x);
+}
+
+/* ************************************************************************* */
+// Method of conjugate gradients (CG), Gaussian Factor Graph version
+VectorConfig conjugateGradientDescent(const GaussianFactorGraph& Ab,
+		const VectorConfig& x, double threshold = 1e-9) {
+	return CGD<GaussianFactorGraph, VectorConfig, Errors> (Ab, x);
 }
 
 /* ************************************************************************* */
@@ -699,8 +711,8 @@ TEST( GaussianFactorGraph, gradientDescent )
 	CHECK(assert_equal(expected,actual,1e-2));
 
   // Do conjugate gradient descent
-	VectorConfig actual2 = fg2.conjugateGradientDescent(zero);
-	//VectorConfig actual2 = conjugateGradientDescent(fg2,zero,zero);
+	//VectorConfig actual2 = fg2.conjugateGradientDescent(zero);
+	VectorConfig actual2 = conjugateGradientDescent(fg2,zero);
 	CHECK(assert_equal(expected,actual2,1e-2));
 
 	// Do conjugate gradient descent, Matrix version
@@ -715,7 +727,7 @@ TEST( GaussianFactorGraph, gradientDescent )
 
 	// Do conjugate gradient descent, System version
 	System Ab = make_pair(A,b);
-	Vector actualX2 = conjugateGradientDescent<System,Vector,Vector>(Ab,x0);
+	Vector actualX2 = CGD<System,Vector,Vector>(Ab,x0);
 	CHECK(assert_equal(expectedX,actualX2,1e-9));
 }
 

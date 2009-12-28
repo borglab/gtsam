@@ -70,6 +70,15 @@ VectorConfig VectorConfig::operator*(double s) const {
 }
 
 /* ************************************************************************* */
+VectorConfig VectorConfig::operator-() const {
+	VectorConfig result;
+	string j; Vector v;
+	FOREACH_PAIR(j, v, values)
+		result.insert(j, -v);
+	return result;
+}
+
+/* ************************************************************************* */
 void VectorConfig::operator+=(const VectorConfig& b) {
 	string j; Vector b_j;
 	FOREACH_PAIR(j, b_j, b.values) {

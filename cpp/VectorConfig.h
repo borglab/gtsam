@@ -62,7 +62,9 @@ namespace gtsam {
     const Vector& get(const std::string& name) const;
 
     /** operator[] syntax for get */
-    inline const Vector& operator[](const std::string& name) const { return get(name); }
+		inline const Vector& operator[](const std::string& name) const {
+			return get(name);
+		}
 
     bool contains(const std::string& name) const {
       const_iterator it = values.find(name);
@@ -78,6 +80,9 @@ namespace gtsam {
     /** Scale */
     VectorConfig scale(double s) const;
     VectorConfig operator*(double s) const;
+
+    /** Negation */
+    VectorConfig operator-() const;
 
     /** Add in place */
     void operator+=(const VectorConfig &b);
@@ -108,6 +113,9 @@ namespace gtsam {
       ar & BOOST_SERIALIZATION_NVP(values);
     }
   }; // VectorConfig
+
+  /** scalar product */
+  inline VectorConfig operator*(double s, const VectorConfig& x) {return x*s;}
 
   /** Dot product */
   double dot(const VectorConfig&, const VectorConfig&);
