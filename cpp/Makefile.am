@@ -101,7 +101,7 @@ testBinaryBayesNet_LDADD      = libgtsam.la
 
 # Gaussian inference 
 headers += GaussianFactorSet.h
-sources += Errors.cpp VectorConfig.cpp GaussianFactor.cpp GaussianFactorGraph.cpp GaussianConditional.cpp GaussianBayesNet.cpp
+sources += Errors.cpp VectorConfig.cpp GaussianFactor.cpp GaussianFactorGraph.cpp GaussianConditional.cpp GaussianBayesNet.cpp iterative.cpp
 check_PROGRAMS += testVectorConfig testGaussianFactor testGaussianFactorGraph testGaussianConditional testGaussianBayesNet testIterative 
 testVectorConfig_SOURCES        = testVectorConfig.cpp
 testVectorConfig_LDADD          = libgtsam.la
