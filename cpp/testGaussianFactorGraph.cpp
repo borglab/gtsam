@@ -607,6 +607,18 @@ TEST( GaussianFactorGraph, transposeMultiplication )
 }
 
 /* ************************************************************************* */
+TEST( GaussianFactorGraph, rhs )
+{
+	GaussianFactorGraph Ab = createGaussianFactorGraph();
+	Errors expected, actual = Ab.rhs();
+  expected.push_back(Vector_(2,-1.0,-1.0));
+  expected.push_back(Vector_(2, 2.0,-1.0));
+  expected.push_back(Vector_(2, 0.0, 1.0));
+  expected.push_back(Vector_(2,-1.0, 1.5));
+	CHECK(assert_equal(expected,actual));
+}
+
+/* ************************************************************************* */
 // Tests ported from ConstrainedGaussianFactorGraph
 /* ************************************************************************* */
 TEST( GaussianFactorGraph, constrained_simple )

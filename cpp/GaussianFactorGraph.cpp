@@ -182,6 +182,14 @@ GaussianFactorGraph GaussianFactorGraph::add_priors(double sigma) const {
 	return result;
 }
 
+/* ************************************************************************* */
+Errors GaussianFactorGraph::rhs() const {
+	Errors e;
+	BOOST_FOREACH(sharedFactor factor,factors_)
+		e.push_back(ediv(factor->get_b(),factor->get_sigmas()));
+	return e;
+}
+
 /* ************************************************************************* */  
 pair<Matrix,Vector> GaussianFactorGraph::matrix(const Ordering& ordering) const {
 

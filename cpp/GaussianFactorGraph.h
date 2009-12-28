@@ -157,6 +157,11 @@ namespace gtsam {
     GaussianFactorGraph add_priors(double sigma) const;
 
     /**
+     * Return RHS (b./sigmas) as Errors class
+     */
+    Errors rhs() const;
+
+    /**
      * Return (dense) matrix associated with factor graph
      * @param ordering of variables needed for matrix column order
      */
