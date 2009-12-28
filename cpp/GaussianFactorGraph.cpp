@@ -283,28 +283,31 @@ VectorConfig GaussianFactorGraph::optimalUpdate(const VectorConfig& x,
 
 /* ************************************************************************* */
 VectorConfig GaussianFactorGraph::steepestDescent(const VectorConfig& x0,
-		double epsilon, size_t maxIterations) const {
-	return gtsam::steepestDescent(*this, x0, epsilon, maxIterations);
+		bool verbose, double epsilon, size_t maxIterations) const {
+	return gtsam::steepestDescent(*this, x0, verbose, epsilon, maxIterations);
 }
 
 /* ************************************************************************* */
 boost::shared_ptr<VectorConfig> GaussianFactorGraph::steepestDescent_(
-		const VectorConfig& x0, double epsilon, size_t maxIterations) const {
+		const VectorConfig& x0, bool verbose, double epsilon, size_t maxIterations) const {
 	return boost::shared_ptr<VectorConfig>(new VectorConfig(
-			gtsam::conjugateGradientDescent(*this, x0, epsilon, maxIterations)));
+			gtsam::conjugateGradientDescent(*this, x0, verbose, epsilon,
+					maxIterations)));
 }
 
 /* ************************************************************************* */
 VectorConfig GaussianFactorGraph::conjugateGradientDescent(
-		const VectorConfig& x0, double epsilon, size_t maxIterations) const {
-	return gtsam::conjugateGradientDescent(*this, x0, epsilon, maxIterations);
+		const VectorConfig& x0, bool verbose, double epsilon, size_t maxIterations) const {
+	return gtsam::conjugateGradientDescent(*this, x0, verbose, epsilon,
+			maxIterations);
 }
 
 /* ************************************************************************* */
 boost::shared_ptr<VectorConfig> GaussianFactorGraph::conjugateGradientDescent_(
-		const VectorConfig& x0, double epsilon, size_t maxIterations) const {
+		const VectorConfig& x0, bool verbose, double epsilon, size_t maxIterations) const {
 	return boost::shared_ptr<VectorConfig>(new VectorConfig(
-			gtsam::conjugateGradientDescent(*this, x0, epsilon, maxIterations)));
+			gtsam::conjugateGradientDescent(*this, x0, verbose, epsilon,
+					maxIterations)));
 }
 
 /* ************************************************************************* */

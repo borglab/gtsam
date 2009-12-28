@@ -28,8 +28,9 @@ TEST( Iterative, steepestDescent )
 	// Do gradient descent
 	GaussianFactorGraph fg2 = createGaussianFactorGraph();
 	VectorConfig zero = createZeroDelta();
-	VectorConfig actual = fg2.steepestDescent(zero);
-	//CHECK(assert_equal(expected,actual,1e-2));
+	bool verbose = false;
+	VectorConfig actual = steepestDescent(fg2, zero, verbose);
+	CHECK(assert_equal(expected,actual,1e-2));
 }
 
 /* ************************************************************************* */
@@ -43,7 +44,8 @@ TEST( Iterative, conjugateGradientDescent )
 
 	// create graph and get matrices
 	GaussianFactorGraph fg2 = createGaussianFactorGraph();
-	Matrix A; Vector b;
+	Matrix A;
+	Vector b;
 	Vector x0 = gtsam::zero(6);
 	boost::tie(A, b) = fg2.matrix(ord);
 	Vector expectedX = Vector_(6, -0.1, 0.1, -0.1, -0.1, 0.1, -0.2);

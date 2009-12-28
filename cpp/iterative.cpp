@@ -19,10 +19,10 @@ namespace gtsam {
 	// "Vector" class E needs dot(v,v)
 	// if (steepest) does steepest descent
 	template<class S, class V, class E>
-	V conjugateGradients(const S& Ab, V x, size_t maxIterations, double epsilon,
-			bool steepest = false) {
+	V conjugateGradients(const S& Ab, V x, bool verbose, double epsilon,
+			size_t maxIterations, bool steepest = false) {
 
-		if (maxIterations == 0) maxIterations = dim(x);
+		if (maxIterations == 0) maxIterations = dim(x) * (steepest ? 10 : 1);
 
 		// Start with g0 = A'*(A*x0-b), d0 = - g0
 		// i.e., first step is in direction of negative gradient
@@ -31,8 +31,11 @@ namespace gtsam {
 		double dotg0 = dot(g, g), prev_dotg = dotg0;
 		double threshold = epsilon * epsilon * dotg0;
 
-		// loop max n times
-		size_t n = x.size();
+		if (verbose) cout << "CG: epsilon = " << epsilon << ", maxIterations = "
+				<< maxIterations << ", ||g0||^2 = " << dotg0 << ", threshold = "
+				<< threshold << endl;
+
+		// loop maxIterations times
 		for (size_t k = 0; k < maxIterations; k++) {
 
 			// calculate optimal step-size
@@ -41,13 +44,14 @@ namespace gtsam {
 
 			// do step in new search direction
 			x = x + alpha * d;
-			if (k == n) break;
 
 			// update gradient
 			g = g + alpha * (Ab ^ Ad);
 
 			// check for convergence
 			double dotg = dot(g, g);
+			if (verbose) cout << "iteration " << k << ": alpha = " << alpha
+					<< ", dotg = " << dotg << endl;
 			if (dotg < threshold) break;
 
 			// calculate new search direction
@@ -83,30 +87,30 @@ namespace gtsam {
 		return A ^ x;
 	}
 
-	Vector steepestDescent(const System& Ab, const Vector& x, double epsilon,
-			size_t maxIterations) {
-		return conjugateGradients<System, Vector, Vector> (Ab, x, epsilon,
+	Vector steepestDescent(const System& Ab, const Vector& x, bool verbose,
+			double epsilon, size_t maxIterations) {
+		return conjugateGradients<System, Vector, Vector> (Ab, x, verbose, epsilon,
 				maxIterations, true);
 	}
 
 	Vector conjugateGradientDescent(const System& Ab, const Vector& x,
-			double epsilon, size_t maxIterations) {
-		return conjugateGradients<System, Vector, Vector> (Ab, x, epsilon,
+			bool verbose, double epsilon, size_t maxIterations) {
+		return conjugateGradients<System, Vector, Vector> (Ab, x, verbose, epsilon,
 				maxIterations);
 	}
 
 	/* ************************************************************************* */
 	Vector steepestDescent(const Matrix& A, const Vector& b, const Vector& x,
-			double epsilon, size_t maxIterations) {
+			bool verbose, double epsilon, size_t maxIterations) {
 		System Ab = make_pair(A, b);
-		return conjugateGradients<System, Vector, Vector> (Ab, x, epsilon,
+		return conjugateGradients<System, Vector, Vector> (Ab, x, verbose, epsilon,
 				maxIterations, true);
 	}
 
 	Vector conjugateGradientDescent(const Matrix& A, const Vector& b,
-			const Vector& x, double epsilon, size_t maxIterations) {
+			const Vector& x, bool verbose, double epsilon, size_t maxIterations) {
 		System Ab = make_pair(A, b);
-		return conjugateGradients<System, Vector, Vector> (Ab, x, epsilon,
+		return conjugateGradients<System, Vector, Vector> (Ab, x, verbose, epsilon,
 				maxIterations);
 	}
 
@@ -116,15 +120,15 @@ namespace gtsam {
 	}
 
 	VectorConfig steepestDescent(const GaussianFactorGraph& fg,
-			const VectorConfig& x, double epsilon, size_t maxIterations) {
+			const VectorConfig& x, bool verbose, double epsilon, size_t maxIterations) {
 		return conjugateGradients<GaussianFactorGraph, VectorConfig, Errors> (fg,
-				x, epsilon, maxIterations, true);
+				x, verbose, epsilon, maxIterations, true);
 	}
 
 	VectorConfig conjugateGradientDescent(const GaussianFactorGraph& fg,
-			const VectorConfig& x, double epsilon, size_t maxIterations) {
+			const VectorConfig& x, bool verbose, double epsilon, size_t maxIterations) {
 		return conjugateGradients<GaussianFactorGraph, VectorConfig, Errors> (fg,
-				x, epsilon, maxIterations);
+				x, verbose, epsilon, maxIterations);
 	}
 
 /* ************************************************************************* */

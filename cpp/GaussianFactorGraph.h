@@ -189,29 +189,30 @@ namespace gtsam {
 		 * @param x0: VectorConfig specifying initial estimate
 		 * @return solution
 		 */
-		VectorConfig steepestDescent(const VectorConfig& x0, double epsilon = 1e-5,
-				size_t maxIterations = 0) const;
+		VectorConfig steepestDescent(const VectorConfig& x0, bool verbose = false,
+				double epsilon = 1e-3, size_t maxIterations = 0) const;
 
 		/**
 		 * shared pointer versions for MATLAB
 		 */
 		boost::shared_ptr<VectorConfig>
-		steepestDescent_(const VectorConfig& x0, double epsilon,
-				size_t maxIterations) const;
+		steepestDescent_(const VectorConfig& x0, bool verbose = false,
+				double epsilon = 1e-3, size_t maxIterations = 0) const;
 
 		/**
 		 * Find solution using conjugate gradient descent
 		 * @param x0: VectorConfig specifying initial estimate
 		 * @return solution
 		 */
-		VectorConfig conjugateGradientDescent(const VectorConfig& x0,
-				double epsilon = 1e-5, size_t maxIterations = 0) const;
+		VectorConfig conjugateGradientDescent(const VectorConfig& x0, bool verbose =
+				false, double epsilon = 1e-3, size_t maxIterations = 0) const;
 
 		/**
 		 * shared pointer versions for MATLAB
 		 */
 		boost::shared_ptr<VectorConfig> conjugateGradientDescent_(
-				const VectorConfig& x0, double epsilon, size_t maxIterations) const;
+				const VectorConfig& x0, bool verbose = false, double epsilon = 1e-3,
+				size_t maxIterations = 0) const;
   };
 
 }

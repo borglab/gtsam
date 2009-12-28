@@ -23,37 +23,40 @@ namespace gtsam {
 	/**
 	 * Method of steepest gradients, System version
 	 */
-	Vector steepestDescent(const System& Ab, const Vector& x, double epsilon =
-			1e-5, size_t maxIterations = 0);
+	Vector steepestDescent(const System& Ab, const Vector& x, bool verbose =
+			false, double epsilon = 1e-3, size_t maxIterations = 0);
 
 	/**
 	 * Method of steepest gradients, Matrix version
 	 */
 	Vector steepestDescent(const Matrix& A, const Vector& b, const Vector& x,
-			double epsilon = 1e-5, size_t maxIterations = 0);
+			bool verbose = false, double epsilon = 1e-3, size_t maxIterations = 0);
 
 	/**
 	 * Method of steepest gradients, Gaussian Factor Graph version
 	 * */
 	VectorConfig steepestDescent(const GaussianFactorGraph& fg,
-			const VectorConfig& x, double epsilon = 1e-5, size_t maxIterations = 0);
+			const VectorConfig& x, bool verbose = false, double epsilon = 1e-3,
+			size_t maxIterations = 0);
 
 	/**
 	 * Method of conjugate gradients (CG), System version
 	 */
 	Vector conjugateGradientDescent(const System& Ab, const Vector& x,
-			double epsilon = 1e-5, size_t maxIterations = 0);
+			bool verbose = false, double epsilon = 1e-3, size_t maxIterations = 0);
 
 	/**
 	 * Method of conjugate gradients (CG), Matrix version
 	 */
 	Vector conjugateGradientDescent(const Matrix& A, const Vector& b,
-			const Vector& x, double epsilon = 1e-5, size_t maxIterations = 0);
+			const Vector& x, bool verbose = false, double epsilon = 1e-3,
+			size_t maxIterations = 0);
 
 	/**
 	 * Method of conjugate gradients (CG), Gaussian Factor Graph version
 	 * */
 	VectorConfig conjugateGradientDescent(const GaussianFactorGraph& fg,
-			const VectorConfig& x, double epsilon = 1e-5, size_t maxIterations = 0);
+			const VectorConfig& x, bool verbose = false, double epsilon = 1e-3,
+			size_t maxIterations = 0);
 
 } // namespace gtsam
