@@ -15,10 +15,19 @@ namespace gtsam {
 	typedef std::pair<Matrix, Vector> System;
 
 	/**
-	 * In all calls below
-	 * x is the initial estimate
-	 * epsilon determines the convergence criterion: norm(g)<epsilon*norm(g0)
-	 */
+	 * Method of conjugate gradients (CG) template
+	 * "System" class S needs gradient(S,v), e=S*v, v=S^e
+	 * "Vector" class V needs dot(v,v), -v, v+v, s*v
+	 * "Vector" class E needs dot(v,v)
+	 * @param Ab, the "system" that needs to be solved, examples below
+	 * @param x is the initial estimate
+	 * @param epsilon determines the convergence criterion: norm(g)<epsilon*norm(g0)
+	 * @param maxIterations, if 0 will be set to |x|
+	 * @param steepest flag, if true does steepest descent, not CG
+	 * */
+	template<class S, class V, class E>
+	V conjugateGradients(const S& Ab, V x, bool verbose, double epsilon,
+			size_t maxIterations, bool steepest = false);
 
 	/**
 	 * Method of steepest gradients, System version
