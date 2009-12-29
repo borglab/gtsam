@@ -207,12 +207,24 @@ void householder_(Matrix& A, size_t k);
 void householder(Matrix& A, size_t k);
 
 /**
- * backsubstitution
- * @param R an upper triangular matrix
+ * backSubstitute U*x=b
+ * @param U an upper triangular matrix
  * @param b a RHS vector
- * @return the solution of Rx=b
+ * @param unit, set tru if unit triangular
+ * @return the solution x of U*x=b
+ * TODO: use boost
+ */
+Vector backSubstituteUpper(const Matrix& U, const Vector& b, bool unit=false);
+
+/**
+ * backSubstitute L*x=b
+ * @param L an lower triangular matrix
+ * @param b a RHS vector
+ * @param unit, set tru if unit triangular
+ * @return the solution x of L*x=b
+ * TODO: use boost
  */ 
-Vector backsubstitution(const Matrix& R, const Vector& b);
+Vector backSubstituteLower(const Matrix& L, const Vector& d, bool unit=false);
 
 /**
  * create a matrix by stacking other matrices

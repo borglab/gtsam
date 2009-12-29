@@ -387,37 +387,33 @@ TEST( matrix, inverse )
 }
 
 /* ************************************************************************* */
-/* unit test for backsubstitution                                           */
-/* ************************************************************************* */
 TEST( matrix, backsubtitution )
 {
-  // TEST ONE  2x2 matrix
-  Vector expectedA(2);
-  expectedA(0) = 3.6250 ; expectedA(1) = -0.75;
+	// TEST ONE  2x2 matrix U1*x=b1
+	Vector expected1 = Vector_(2, 3.6250, -0.75);
+	Matrix U1 = Matrix_(2, 2,
+			2., 3.,
+			0., 4.);
+	Vector b1 = U1*expected1;
+	CHECK( assert_equal(expected1 , backSubstituteUpper(U1, b1), 0.000001));
 
-  // create a 2x2 matrix
-  double dataA[] = {2, 3,
-                    0, 4 };
-  Matrix A = Matrix_(2,2,dataA);
-  Vector Ab(2); Ab(0) = 5; Ab(1) = -3;
+	// TEST TWO  3x3 matrix U2*x=b2
+	Vector expected2 = Vector_(3, 5.5, -8.5, 5.);
+	Matrix U2 = Matrix_(3, 3,
+			3., 5., 6.,
+			0., 2., 3.,
+			0., 0., 1.);
+	Vector b2 = U2*expected2;
+	CHECK( assert_equal(expected2 , backSubstituteUpper(U2, b2), 0.000001));
 
-  CHECK( assert_equal(expectedA , backsubstitution(A, Ab), 0.000001));
-
-  // TEST TWO  3x3 matrix
-  Vector expectedB(3);
-  expectedB(0) = 5.5 ; expectedB(1) = -8.5; expectedB(2) = 5;
-
-
-  // create a 3x3 matrix
-  double dataB[] = { 3, 5, 6,
-                     0, 2, 3,
-                     0, 0, 1 };
-  Matrix B = Matrix_(3,3,dataB);
-
-  Vector Bb(3);
-  Bb(0) = 4;	Bb(1) = -2; Bb(2) = 5;
-
-  CHECK( assert_equal(expectedB , backsubstitution(B, Bb), 0.000001));
+	// TEST THREE  Lower triangular 3x3 matrix L3*x=b3
+	Vector expected3 = Vector_(3, 1., 1., 1.);
+	Matrix L3 = Matrix_(3, 3,
+			3., 0., 0.,
+			5., 2., 0.,
+			6., 3., 1.);
+	Vector b3 = L3*expected3;
+	CHECK( assert_equal(expected3 , backSubstituteLower(L3, b3), 0.000001));
 }
 
 /* ************************************************************************* */

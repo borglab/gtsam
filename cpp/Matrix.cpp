@@ -405,33 +405,43 @@ void householder(Matrix &A, size_t k) {
 }
 
 /* ************************************************************************* */
-Vector backsubstitution(const Matrix& R, const Vector& b)
-{
-  // result vector
-  Vector result(b.size());
+Vector backSubstituteUpper(const Matrix& U, const Vector& b, bool unit) {
+	size_t m = U.size1(), n = U.size2();
+#ifndef NDEBUG
+	if (m!=n)
+		throw invalid_argument("backSubstituteUpper: U must be square");
+#endif
 
-  double tmp = 0.0;
-  double div = 0.0;
+	Vector result(n);
+	for (size_t i = n; i > 0; i--) {
+		double tmp = b(i-1);
+		for (size_t j = i+1; j <= n; j++)
+			tmp -= U(i-1,j-1) * result(j-1);
+		if (!unit) tmp /= U(i-1,i-1);
+		result(i-1) = tmp;
+	}
 
-  int m = R.size1(), n = R.size2(), cols=n;
+	return result;
+}
 
-  // check each row for non zero values
-  for( size_t i = m ; i > 0 ; i--){
-    cols--;
-    int j = n;
+/* ************************************************************************* */
+Vector backSubstituteLower(const Matrix& L, const Vector& b, bool unit) {
+	size_t m = L.size1(), n = L.size2();
+#ifndef NDEBUG
+	if (m!=n)
+		throw invalid_argument("backSubstituteLower: L must be square");
+#endif
 
-    div = R(i-1, cols);
+	Vector result(n);
+	for (size_t i = 1; i <= n; i++) {
+		double tmp = b(i-1);
+		for (size_t j = 1; j < i; j++)
+			tmp -= L(i-1,j-1) * result(j-1);
+		if (!unit) tmp /= L(i-1,i-1);
+		result(i-1) = tmp;
+	}
 
-    for( int ii = i ; ii < n ; ii++ ){
-      j = j - 1;
-      tmp = tmp + R(i-1,j) * result(j);
-    }
-    // assigne the result vector
-    result(i-1) = (b(i-1) - tmp) / div;
-    tmp = 0.0;
-  }
-
-  return result;
+	return result;
 }
 
 /* ************************************************************************* */
