@@ -400,7 +400,6 @@ namespace gtsam {
 	}
 
 	/* ************************************************************************* */
-	// TODO: add to factors and orphans
 	template<class Conditional>
 	template<class Factor>
   void BayesTree<Conditional>::removeTop(const boost::shared_ptr<Factor>& newFactor,

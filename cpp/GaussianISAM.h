@@ -1,6 +1,6 @@
 /**
  * @file    GaussianISAM
- * @brief
+ * @brief   Linear ISAM only
  * @author  Michael Kaess
  */
 

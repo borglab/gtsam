@@ -192,7 +192,7 @@ ExampleNonlinearFactorGraph createReallyNonlinearFactorGraph() {
 }
 
 /* ************************************************************************* */
-GaussianFactorGraph createSmoother(int T) {
+pair<ExampleNonlinearFactorGraph, VectorConfig> createNonlinearSmoother(int T) {
 
 	// noise on measurements and odometry, respectively
 	double sigma1 = 1, sigma2 = 1;
@@ -223,6 +223,15 @@ GaussianFactorGraph createSmoother(int T) {
 		// initial estimate
 		poses.insert(key, xt);
 	}
+
+	return make_pair(nlfg, poses);
+}
+
+/* ************************************************************************* */
+GaussianFactorGraph createSmoother(int T) {
+	ExampleNonlinearFactorGraph nlfg;
+	VectorConfig poses;
+	boost::tie(nlfg, poses) = createNonlinearSmoother(T);
 
 	GaussianFactorGraph lfg = nlfg.linearize(poses);
 	return lfg;

@@ -63,6 +63,12 @@ namespace gtsam {
 	ExampleNonlinearFactorGraph createReallyNonlinearFactorGraph();
 
 	/**
+	 * Create a full nonlinear smoother
+	 * @param T number of time-steps
+	 */
+	std::pair<ExampleNonlinearFactorGraph, VectorConfig> createNonlinearSmoother(int T);
+
+	/**
 	 * Create a Kalman smoother by linearizing a non-linear factor graph
 	 * @param T number of time-steps
 	 */
