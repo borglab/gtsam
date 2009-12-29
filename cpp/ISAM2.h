@@ -26,6 +26,8 @@ namespace gtsam {
 	template<class Conditional, class Config>
 	class ISAM2: public BayesTree<Conditional> {
 
+		// for keeping all original nonlinear data
+		Config config_;
 		NonlinearFactorGraph<Config> nonlinearFactors_;
 
 	public:
@@ -47,8 +49,8 @@ namespace gtsam {
 		/**
 		 * ISAM2. (update_internal provides access to list of orphans for drawing purposes)
 		 */
-		void update_internal(const NonlinearFactorGraph<Config>& newFactors, Cliques& orphans);
-		void update(const NonlinearFactorGraph<Config>& newFactors);
+		void update_internal(const NonlinearFactorGraph<Config>& newFactors, const Config& config, Cliques& orphans);
+		void update(const NonlinearFactorGraph<Config>& newFactors, const Config& config);
 
 	}; // ISAM2
 

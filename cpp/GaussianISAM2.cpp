@@ -11,7 +11,7 @@ using namespace gtsam;
 
 // Explicitly instantiate so we don't have to include everywhere
 #include "ISAM2-inl.h"
-template class ISAM2<GaussianConditional, VectorConfig>;
+//template class ISAM2<GaussianConditional, VectorConfig>;
 
 namespace gtsam {
 

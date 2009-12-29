@@ -30,10 +30,10 @@ namespace gtsam {
 
 	/* ************************************************************************* */
 	template<class Conditional, class Config>
-	void ISAM2<Conditional, Config>::update_internal(const NonlinearFactorGraph<Config>& newFactorsXXX, Cliques& orphans) {
+	void ISAM2<Conditional, Config>::update_internal(const NonlinearFactorGraph<Config>& newFactorsXXX, const Config& config, Cliques& orphans) {
 
-		Config xxx;
-		FactorGraph<GaussianFactor> newFactors; //todo = newFactorsXXX.linearize(xxx);
+		config_ = config; // todo
+		FactorGraph<GaussianFactor> newFactors = newFactorsXXX.linearize(config); // todo: just for testing
 
 		// Remove the contaminated part of the Bayes tree
 		FactorGraph<GaussianFactor> factors;
@@ -74,9 +74,9 @@ namespace gtsam {
 	}
 
 	template<class Conditional, class Config>
-	void ISAM2<Conditional, Config>::update(const NonlinearFactorGraph<Config>& newFactors) {
+	void ISAM2<Conditional, Config>::update(const NonlinearFactorGraph<Config>& newFactors, const Config& config) {
 		Cliques orphans;
-		this->update_internal(newFactors, orphans);
+		this->update_internal(newFactors, config, orphans);
 	}
 
 /* ************************************************************************* */

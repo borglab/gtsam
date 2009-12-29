@@ -24,7 +24,7 @@ using namespace gtsam;
 
 double sigmax1 = 0.786153, sigmax2 = 0.687131, sigmax3 = 0.671512, sigmax4 =
 		0.669534, sigmax5 = sigmax3, sigmax6 = sigmax2, sigmax7 = sigmax1;
-#if 0
+
 /* ************************************************************************* */
 TEST( ISAM2, ISAM2_smoother )
 {
@@ -38,7 +38,7 @@ TEST( ISAM2, ISAM2_smoother )
 	BOOST_FOREACH(boost::shared_ptr<NonlinearFactor<VectorConfig> > factor, smoother) {
 		ExampleNonlinearFactorGraph factorGraph;
 		factorGraph.push_back(factor);
-		actual.update(factorGraph);
+		actual.update(factorGraph, poses);
 	}
 
 	// Create expected Bayes Tree by solving smoother with "natural" ordering
@@ -75,7 +75,7 @@ TEST( ISAM2, ISAM2_smoother2 )
 	// run ISAM2 with remaining factors
 	ExampleNonlinearFactorGraph factors2;
 	for (int i=7;i<13;i++) factors2.push_back(smoother[i]);
-	actual.update(factors2);
+	actual.update(factors2, poses);
 
 	// Create expected Bayes Tree by solving smoother with "natural" ordering
 	Ordering ordering;
@@ -302,7 +302,7 @@ TEST( BayesTree, balanced_smoother_joint )
 	GaussianBayesNet actual4 = bayesTree.jointBayesNet<GaussianFactor>("x4","x1");
 	CHECK(assert_equal(expected4,actual4,1e-4));
 }
-#endif
+
 /* ************************************************************************* */
 int main() { TestResult tr; return TestRegistry::runAllTests(tr);}
 /* ************************************************************************* */
