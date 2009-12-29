@@ -5,6 +5,7 @@ AC_PREREQ(2.59)
 AC_INIT(gtsam, 0.0.0, dellaert@cc.gatech.edu)
 AM_INIT_AUTOMAKE(gtsam, 0.0.0)
 AC_OUTPUT(Makefile cpp/Makefile wrap/Makefile)
+AC_CONFIG_MACRO_DIR([m4])
 AC_CONFIG_SRCDIR([cpp/cal3_S2.cpp])
 AC_CONFIG_HEADER([cpp/config.h])
 AC_CONFIG_SRCDIR([wrap/wrap.cpp])
@@ -32,7 +33,7 @@ AC_PROG_CC
 #AX_BOOST_BASE([1.33]) # does not work on windows, even after compiling & installing boost manually
 
 # Checks for libraries.
-AC_PROG_RANLIB
+LT_INIT
 
 # Checks for header files.
 AC_HEADER_STDC

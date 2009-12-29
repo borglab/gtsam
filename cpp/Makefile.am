@@ -1,10 +1,3 @@
-# on the Mac, libtool is called glibtool :-(
-# documentation see /opt/local/share/doc/libtool-1.5.26/manual.html
-if DARWIN
-  LIBTOOL = glibtool --tag=CXX
-else
-  LIBTOOL = libtool
-endif
 
 # the install destination
 includedir = ${prefix}/include/gtsam
