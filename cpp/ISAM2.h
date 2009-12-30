@@ -1,6 +1,6 @@
 /**
  * @file    ISAM2.h
- * @brief   Incremental update functionality (ISAM2) for BayesTree.
+ * @brief   Incremental update functionality (ISAM2) for BayesTree, with fluid relinearization.
  * @author  Michael Kaess
  */
 
@@ -26,6 +26,8 @@ namespace gtsam {
 	template<class Conditional, class Config>
 	class ISAM2: public BayesTree<Conditional> {
 
+	protected:
+
 		// for keeping all original nonlinear data
 		Config config_;
 		NonlinearFactorGraph<Config> nonlinearFactors_;
@@ -36,7 +38,7 @@ namespace gtsam {
 		ISAM2();
 
 		/** Create a Bayes Tree from a Bayes Net */
-		ISAM2(const BayesNet<Conditional>& bayesNet);
+		ISAM2(const NonlinearFactorGraph<Config>& fg, const Ordering& ordering, const Config& config);
 
 		/** Destructor */
 		virtual ~ISAM2() {
