@@ -70,6 +70,72 @@ VectorConfig optimize(const GaussianBayesNet& bn)
   return result;
 }
 
+/*
+ * Backsubstitute using GaussianBayesNet
+ * (R*x)./sigmas = y by solving x=inv(R)*(y.*sigmas)
+ */
+VectorConfig backSubstitute(const GaussianBayesNet& bn, const VectorConfig& y) {
+	VectorConfig x;
+	/** solve each node in turn in topological sort order (parents first)*/
+	BOOST_REVERSE_FOREACH(GaussianConditional::shared_ptr cg, bn) {
+		// i^th part of R*x=y, x=inv(R)*y
+		// (Rii*xi + R_i*x(i+1:))./si = yi <-> xi = inv(Rii)*(yi.*si - R_i*x(i+1:))
+		const string& i = cg->key();
+		Vector zi = emul(y[i],cg->get_sigmas());
+		GaussianConditional::const_iterator it;
+		for (it = cg->parentsBegin(); it!= cg->parentsEnd(); it++) {
+			const string& j = it->first;
+			const Matrix& Rij = it->second;
+			zi -= Rij * x[j];
+		}
+		Vector xi = gtsam::backSubstituteUpper(cg->get_R(), zi);
+		x.insert(i,xi); // store result in partial solution
+	}
+	return x;
+}
+
+/*
+ * Transpose Backsubstitute using GaussianBayesNet
+ * gy=inv(L)*gx by solving L*gy=gx.
+ * gy=inv(R'*inv(Sigma))*gx
+ * gz'*R'=gx', gy = gz.*sigmas
+ */
+VectorConfig backSubstituteTranspose(const GaussianBayesNet& bn,
+		const VectorConfig& gx) {
+
+	// Initialize gy from gx
+	VectorConfig gy;
+	BOOST_FOREACH(GaussianConditional::shared_ptr cg, bn) {
+		const string& j = cg->key();
+		gy.insert(j,gx[j]); // initialize result
+	}
+
+	// we loop from first-eliminated to last-eliminated
+	// i^th part of L*gy=gx is done block-column by block-column of L
+	BOOST_FOREACH(GaussianConditional::shared_ptr cg, bn) {
+		const string& j = cg->key();
+		Vector& gyj = gy.getReference(j);  // should never fail
+		gyj = gtsam::backSubstituteUpper(gyj,cg->get_R());
+		GaussianConditional::const_iterator it;
+		for (it = cg->parentsBegin(); it!= cg->parentsEnd(); it++) {
+			const string& i = it->first;
+			const Matrix& Rij = it->second;
+			Vector& gyi = gy.getReference(i);  // should never fail
+			Matrix Lji = trans(Rij);  // TODO avoid transpose of matrix ?
+			gyi -= Lji * gyj;
+		}
+	}
+
+	// Scale gy
+	BOOST_FOREACH(GaussianConditional::shared_ptr cg, bn) {
+		const string& j = cg->key();
+		Vector& gyj = gy.getReference(j);  // should never fail
+		gyj = emul(gyj,cg->get_sigmas());
+	}
+
+	return gy;
+}
+
 /* ************************************************************************* */  
 pair<Matrix,Vector> matrix(const GaussianBayesNet& bn)  {
 

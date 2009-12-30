@@ -44,6 +44,20 @@ namespace gtsam {
 	 */
 	VectorConfig optimize(const GaussianBayesNet&);
 
+	/*
+	 * Backsubstitute
+	 * (R*x)./sigmas = y by solving x=inv(R)*(y.*sigmas)
+	 */
+	VectorConfig backSubstitute(const GaussianBayesNet& bn, const VectorConfig& y);
+
+	/*
+	 * Transpose Backsubstitute
+	 * gy=inv(L)*gx by solving L*gy=gx.
+	 * gy=inv(R'*inv(Sigma))*gx
+	 * gz'*R'=gx', gy = gz.*sigmas
+	 */
+	VectorConfig backSubstituteTranspose(const GaussianBayesNet& bn, const VectorConfig& gx);
+
 	/**
 	 * Return (dense) upper-triangular matrix representation
 	 */
