@@ -88,13 +88,13 @@ TEST(Pose2Factor, optimize) {
   ordering.push_back("p0");
   ordering.push_back("p1");
   NonlinearOptimizer<Pose2Graph, Pose2Config> optimizer(fg, ordering, config);
-  optimizer = optimizer.levenbergMarquardt(1e-10, 1e-10);
+  optimizer = optimizer.levenbergMarquardt(1e-15, 1e-15);
   Pose2 actual0 = optimizer.config()->get("p0");
   Pose2 actual1 = optimizer.config()->get("p1");
   Pose2 expected0 = Pose2(0,0,0);
   Pose2 expected1 = Pose2(1,2,M_PI_2);
   CHECK(assert_equal(expected0, actual0));
-  CHECK(assert_equal(expected0, actual0));
+  CHECK(assert_equal(expected1, actual1));
 }
 
 
