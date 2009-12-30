@@ -61,6 +61,9 @@ namespace gtsam {
     /** get a vector in the configuration by name */
     const Vector& get(const std::string& name) const;
 
+    /** get a vector reference by name */
+    Vector& getReference(const std::string& name);
+
     /** operator[] syntax for get */
 		inline const Vector& operator[](const std::string& name) const {
 			return get(name);

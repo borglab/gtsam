@@ -154,6 +154,15 @@ TEST( VectorConfig, operators) {
 }
 
 /* ************************************************************************* */
+TEST( VectorConfig, getReference) {
+	VectorConfig c; c.insert("x", Vector_(2, 1.1, 2.2));
+	Vector& cx = c.getReference("x");
+	cx = cx*2.0;
+	VectorConfig expected; expected.insert("x", Vector_(2, 2.2, 4.4));
+	CHECK(assert_equal(expected,c));
+}
+
+/* ************************************************************************* */
 #ifdef HAVE_BOOST_SERIALIZATION
 TEST( VectorConfig, serialize)
 {

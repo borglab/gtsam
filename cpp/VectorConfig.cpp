@@ -150,6 +150,17 @@ const Vector& VectorConfig::get(const std::string& name) const {
 }
 
 /* ************************************************************************* */
+Vector& VectorConfig::getReference(const std::string& name) {
+  iterator it = values.find(name);
+  if (it==values.end()) {
+    print();
+    cout << "asked for key " << name << endl;
+    throw(std::invalid_argument("VectorConfig::[] invalid key"));
+  }
+  return it->second;
+}
+
+/* ************************************************************************* */
 void VectorConfig::print(const std::string& name) const {
   odprintf("VectorConfig %s\n", name.c_str());
   odprintf("size: %d\n", values.size());
