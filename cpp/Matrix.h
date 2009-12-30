@@ -209,18 +209,28 @@ void householder(Matrix& A, size_t k);
 /**
  * backSubstitute U*x=b
  * @param U an upper triangular matrix
- * @param b a RHS vector
- * @param unit, set tru if unit triangular
+ * @param b an RHS vector
+ * @param unit, set true if unit triangular
  * @return the solution x of U*x=b
  * TODO: use boost
  */
 Vector backSubstituteUpper(const Matrix& U, const Vector& b, bool unit=false);
 
 /**
+ * backSubstitute x'*U=b'
+ * @param U an upper triangular matrix
+ * @param b an RHS vector
+ * @param unit, set true if unit triangular
+ * @return the solution x of x'*U=b'
+ * TODO: use boost
+ */
+Vector backSubstituteUpper(const Vector& b, const Matrix& U, bool unit=false);
+
+/**
  * backSubstitute L*x=b
  * @param L an lower triangular matrix
- * @param b a RHS vector
- * @param unit, set tru if unit triangular
+ * @param b an RHS vector
+ * @param unit, set true if unit triangular
  * @return the solution x of L*x=b
  * TODO: use boost
  */ 

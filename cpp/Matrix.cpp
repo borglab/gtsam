@@ -414,11 +414,31 @@ Vector backSubstituteUpper(const Matrix& U, const Vector& b, bool unit) {
 
 	Vector result(n);
 	for (size_t i = n; i > 0; i--) {
-		double tmp = b(i-1);
+		double zi = b(i-1);
 		for (size_t j = i+1; j <= n; j++)
-			tmp -= U(i-1,j-1) * result(j-1);
-		if (!unit) tmp /= U(i-1,i-1);
-		result(i-1) = tmp;
+			zi -= U(i-1,j-1) * result(j-1);
+		if (!unit) zi /= U(i-1,i-1);
+		result(i-1) = zi;
+	}
+
+	return result;
+}
+
+/* ************************************************************************* */
+Vector backSubstituteUpper(const Vector& b, const Matrix& U, bool unit) {
+	size_t m = U.size1(), n = U.size2();
+#ifndef NDEBUG
+	if (m!=n)
+		throw invalid_argument("backSubstituteUpper: U must be square");
+#endif
+
+	Vector result(n);
+	for (size_t i = 1; i <= n; i++) {
+		double zi = b(i-1);
+		for (size_t j = 1; j < i; j++)
+			zi -= U(j-1,i-1) * result(j-1);
+		if (!unit) zi /= U(i-1,i-1);
+		result(i-1) = zi;
 	}
 
 	return result;
@@ -434,11 +454,11 @@ Vector backSubstituteLower(const Matrix& L, const Vector& b, bool unit) {
 
 	Vector result(n);
 	for (size_t i = 1; i <= n; i++) {
-		double tmp = b(i-1);
+		double zi = b(i-1);
 		for (size_t j = 1; j < i; j++)
-			tmp -= L(i-1,j-1) * result(j-1);
-		if (!unit) tmp /= L(i-1,i-1);
-		result(i-1) = tmp;
+			zi -= L(i-1,j-1) * result(j-1);
+		if (!unit) zi /= L(i-1,i-1);
+		result(i-1) = zi;
 	}
 
 	return result;

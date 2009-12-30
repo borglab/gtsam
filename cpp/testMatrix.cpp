@@ -391,29 +391,29 @@ TEST( matrix, backsubtitution )
 {
 	// TEST ONE  2x2 matrix U1*x=b1
 	Vector expected1 = Vector_(2, 3.6250, -0.75);
-	Matrix U1 = Matrix_(2, 2,
+	Matrix U22 = Matrix_(2, 2,
 			2., 3.,
 			0., 4.);
-	Vector b1 = U1*expected1;
-	CHECK( assert_equal(expected1 , backSubstituteUpper(U1, b1), 0.000001));
+	Vector b1 = U22*expected1;
+	CHECK( assert_equal(expected1 , backSubstituteUpper(U22, b1), 0.000001));
 
 	// TEST TWO  3x3 matrix U2*x=b2
 	Vector expected2 = Vector_(3, 5.5, -8.5, 5.);
-	Matrix U2 = Matrix_(3, 3,
+	Matrix U33 = Matrix_(3, 3,
 			3., 5., 6.,
 			0., 2., 3.,
 			0., 0., 1.);
-	Vector b2 = U2*expected2;
-	CHECK( assert_equal(expected2 , backSubstituteUpper(U2, b2), 0.000001));
+	Vector b2 = U33*expected2;
+	CHECK( assert_equal(expected2 , backSubstituteUpper(U33, b2), 0.000001));
 
 	// TEST THREE  Lower triangular 3x3 matrix L3*x=b3
 	Vector expected3 = Vector_(3, 1., 1., 1.);
-	Matrix L3 = Matrix_(3, 3,
-			3., 0., 0.,
-			5., 2., 0.,
-			6., 3., 1.);
+	Matrix L3 = trans(U33);
 	Vector b3 = L3*expected3;
 	CHECK( assert_equal(expected3 , backSubstituteLower(L3, b3), 0.000001));
+
+	// TEST FOUR Try the above with transpose backSubstituteUpper
+	CHECK( assert_equal(expected3 , backSubstituteUpper(b3,U33), 0.000001));
 }
 
 /* ************************************************************************* */
