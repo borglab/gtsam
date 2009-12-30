@@ -16,7 +16,7 @@
 namespace gtsam {
 	
   /** vector of errors */
-  class Errors : public std::vector<Vector>, public Testable<Errors> {
+  class Errors : public std::list<Vector>, public Testable<Errors> {
 
   public:
 

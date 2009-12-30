@@ -60,9 +60,9 @@ Errors GaussianFactorGraph::operator*(const VectorConfig& x) const {
 VectorConfig GaussianFactorGraph::operator^(const Errors& e) const {
 	VectorConfig x;
 	// For each factor add the gradient contribution
-	size_t i=0;
+	Errors::const_iterator it = e.begin();
 	BOOST_FOREACH(sharedFactor Ai,factors_)
-		x += (*Ai)^e[i++];
+		x += (*Ai)^(*(it++));
 	return x;
 }
 
