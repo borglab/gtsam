@@ -137,8 +137,8 @@ Vector GaussianFactor::unweighted_error(const VectorConfig& c) const {
 
 /* ************************************************************************* */
 Vector GaussianFactor::error_vector(const VectorConfig& c) const {
-  if (empty()) return (-b_);
-  return ediv(unweighted_error(c),sigmas_);
+	if (empty()) return (-b_);
+	return ediv_(unweighted_error(c),sigmas_);
 }
 
 /* ************************************************************************* */
@@ -185,12 +185,12 @@ Vector GaussianFactor::operator*(const VectorConfig& x) const {
   FOREACH_PAIR(j, Aj, As_)
     Ax += (Aj * x[j]);
 
-  return ediv(Ax,sigmas_);
+  return ediv_(Ax,sigmas_);
 }
 
 /* ************************************************************************* */
 VectorConfig GaussianFactor::operator^(const Vector& e) const {
-  Vector E = ediv(e,sigmas_);
+  Vector E = ediv_(e,sigmas_);
 	VectorConfig x;
   // Just iterate over all A matrices and insert Ai^e into VectorConfig
   string j; Matrix Aj;
