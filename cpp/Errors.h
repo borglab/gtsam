@@ -26,6 +26,9 @@ namespace gtsam {
     /** equals, for unit testing */
     bool equals(const Errors& expected, double tol=1e-9) const;
 
+    /** subtraction */
+    Errors operator-(const Errors& b) const;
+
   }; // Errors
 
   /**
