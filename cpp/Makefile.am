@@ -199,18 +199,6 @@ testPose2Graph_LDADD    = libgtsam.la
 testPose3Factor_SOURCES = $(example) testPose3Factor.cpp
 testPose3Factor_LDADD   = libgtsam.la
 
-# Urban
-#sources += UrbanFactor.cpp UrbanConfig.cpp UrbanMeasurement.cpp UrbanOdometry.cpp UrbanGraph.cpp
-#check_PROGRAMS += testUrbanConfig testUrbanMeasurement testUrbanOdometry testUrbanGraph
-#testUrbanConfig_SOURCES       = $(example) testUrbanConfig.cpp
-#testUrbanConfig_LDADD         = libgtsam.la
-#testUrbanMeasurement_SOURCES  = $(example) testUrbanMeasurement.cpp
-#testUrbanMeasurement_LDADD    = libgtsam.la
-#testUrbanOdometry_SOURCES     = $(example) testUrbanOdometry.cpp
-#testUrbanOdometry_LDADD       = libgtsam.la
-#testUrbanGraph_SOURCES        = $(example) testUrbanGraph.cpp
-#testUrbanGraph_LDADD          = libgtsam.la
-
 # Robot Control example system
 sources += ControlConfig.cpp ControlPoint.cpp ControlGraph.cpp
 check_PROGRAMS += testControlConfig testControlPoint testControlGraph
