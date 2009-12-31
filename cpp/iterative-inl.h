@@ -18,6 +18,7 @@ namespace gtsam {
 			size_t maxIterations, bool steepest = false) {
 
 		if (maxIterations == 0) maxIterations = dim(x) * (steepest ? 10 : 1);
+		size_t reset = (size_t)(sqrt(dim(x))+0.5); // when to reset
 
 		// Start with g0 = A'*(A*x0-b), d0 = - g0
 		// i.e., first step is in direction of negative gradient
@@ -41,8 +42,8 @@ namespace gtsam {
 			x = x + alpha * d;
 			if (k==maxIterations) break;
 
-			// update gradient
-			g = g + alpha * (Ab ^ Ad);
+			// update gradient (or re-calculate at reset time)
+			g = (k%reset==0) ? Ab.gradient(x) : g + alpha * (Ab ^ Ad);
 
 			// check for convergence
 			double dotg = dot(g, g);
