@@ -130,4 +130,38 @@ namespace gtsam {
 	 */
 //	ConstrainedNonlinearFactorGraph<NonlinearFactor<VectorConfig>,VectorConfig>
 //		createConstrainedNonlinearFactorGraph();
-}
+
+	/* ******************************************************* */
+	// Planar graph with easy subtree for SubgraphPreconditioner
+	/* ******************************************************* */
+
+	/*
+	 * Create factor graph with N^2 nodes, for example for N=3
+	 *  x13-x23-x33
+	 *   |   |   |
+	 *  x12-x22-x32
+	 *   |   |   |
+	 * -x11-x21-x31
+	 * with x11 clamped at (1,1), and others related by 2D odometry.
+	 */
+	std::pair<GaussianFactorGraph, VectorConfig> planarGraph(size_t N);
+
+	/*
+	 * Create canonical ordering for planar graph that also works for tree
+	 * With x11 the root, e.g. for N=3
+	 * x33 x23 x13 x32 x22 x12 x31 x21 x11
+	 */
+	Ordering planarOrdering(size_t N);
+
+	/*
+	 * Split graph into tree and loop closing constraints, e.g., with N=3
+	 *  x13-x23-x33
+	 *   |
+	 *  x12-x22-x32
+	 *   |
+	 * -x11-x21-x31
+	 */
+	std::pair<GaussianFactorGraph, GaussianFactorGraph> splitOffPlanarTree(size_t N,
+			const GaussianFactorGraph& original);
+
+} // gtsam
