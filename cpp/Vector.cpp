@@ -175,6 +175,18 @@ namespace gtsam {
 		}
 
   /* ************************************************************************* */
+  Vector ediv_(const Vector &a, const Vector &b) {
+  	size_t n = a.size();
+		assert (b.size()==n);
+		Vector c(n);
+		for( size_t i = 0; i < n; i++ ) {
+			double ai = a(i), bi = b(i);
+			c(i) = (bi==0.0 && ai==0.0) ? 0.0 : a(i)/b(i);
+		}
+		return c;
+		}
+
+  /* ************************************************************************* */
   double sum(const Vector &a) {
   	double result = 0.0;
   	size_t n = a.size();

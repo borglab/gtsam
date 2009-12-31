@@ -142,6 +142,14 @@ Vector emul(const Vector &a, const Vector &b);
 Vector ediv(const Vector &a, const Vector &b);
 
 /**
+ * elementwise division, but 0/0 = 0, not inf
+ * @param a first vector
+ * @param b second vector
+ * @return vector [a(i)/b(i)]
+ */
+Vector ediv_(const Vector &a, const Vector &b);
+
+/**
  * sum vector elements
  * @param a vector
  * @return sum_i a(i)
