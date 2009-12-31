@@ -13,6 +13,7 @@
 #pragma once
 
 #include <list>
+#include <limits>
 
 #include <boost/shared_ptr.hpp>
 #include <boost/serialization/list.hpp>
@@ -91,6 +92,10 @@ namespace gtsam {
 
     /** calculate the error of the factor */
     double error(const Config& c) const {
+    	if (sigma_==0.0) {
+        Vector e = error_vector(c);
+    		return (inner_prod(e,e)>0) ? std::numeric_limits<double>::infinity() : 0.0;
+    	}
       Vector e = error_vector(c) / sigma_;
       return 0.5 * inner_prod(e,e);
     };
