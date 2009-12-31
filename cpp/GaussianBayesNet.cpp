@@ -107,7 +107,8 @@ VectorConfig backSubstituteTranspose(const GaussianBayesNet& bn,
 	VectorConfig gy;
 	BOOST_FOREACH(GaussianConditional::shared_ptr cg, bn) {
 		const string& j = cg->key();
-		gy.insert(j,gx[j]); // initialize result
+		Vector gyj = gx.contains(j) ? gx[j] : zero(cg->dim());
+		gy.insert(j,gyj); // initialize result
 	}
 
 	// we loop from first-eliminated to last-eliminated
