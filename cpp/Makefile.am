@@ -96,9 +96,9 @@ testBinaryBayesNet_SOURCES    = testBinaryBayesNet.cpp
 testBinaryBayesNet_LDADD      = libgtsam.la 
 
 # Gaussian inference 
-headers += GaussianFactorSet.h iterative-inl.h
-sources += Errors.cpp VectorConfig.cpp GaussianFactor.cpp GaussianFactorGraph.cpp GaussianConditional.cpp GaussianBayesNet.cpp iterative.cpp
-check_PROGRAMS += testVectorConfig testGaussianFactor testGaussianFactorGraph testGaussianConditional testGaussianBayesNet testIterative 
+headers += GaussianFactorSet.h
+sources += Errors.cpp VectorConfig.cpp GaussianFactor.cpp GaussianFactorGraph.cpp GaussianConditional.cpp GaussianBayesNet.cpp
+check_PROGRAMS += testVectorConfig testGaussianFactor testGaussianFactorGraph testGaussianConditional testGaussianBayesNet
 testVectorConfig_SOURCES        = testVectorConfig.cpp
 testVectorConfig_LDADD          = libgtsam.la
 testGaussianFactor_SOURCES      = $(example) testGaussianFactor.cpp
@@ -109,8 +109,17 @@ testGaussianConditional_SOURCES = $(example) testGaussianConditional.cpp
 testGaussianConditional_LDADD   = libgtsam.la
 testGaussianBayesNet_SOURCES    = $(example) testGaussianBayesNet.cpp
 testGaussianBayesNet_LDADD      = libgtsam.la
-testIterative_SOURCES           = $(example) testIterative.cpp
-testIterative_LDADD             = libgtsam.la
+
+# Iterative Methods
+headers += iterative-inl.h
+sources += iterative.cpp BayesNetPreconditioner.cpp subgraphPreconditioner.cpp
+check_PROGRAMS += testIterative testBayesNetPreconditioner testSubgraphPreconditioner
+testIterative_SOURCES              = $(example) testIterative.cpp
+testIterative_LDADD                = libgtsam.la
+testBayesNetPreconditioner_SOURCES = $(example) testBayesNetPreconditioner.cpp
+testBayesNetPreconditioner_LDADD   = libgtsam.la
+testSubgraphPreconditioner_SOURCES = $(example) testSubgraphPreconditioner.cpp
+testSubgraphPreconditioner_LDADD   = libgtsam.la
 
 # not the correct way, I'm sure: Kai ?
 timeGaussianFactor: timeGaussianFactor.cpp  
