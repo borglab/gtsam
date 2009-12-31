@@ -186,8 +186,7 @@ namespace gtsam {
 		 * Used for incrementally updating a BayesTree given new measurements (factors).
 		 */
 		template<class Factor>
-		std::pair<FactorGraph<Factor>, Cliques>
-		removeTop(const FactorGraph<Factor>& newFactors);
+		std::pair<FactorGraph<Factor>, Cliques> removeTop(const FactorGraph<Factor>& newFactors);
 
 	}; // BayesTree
 

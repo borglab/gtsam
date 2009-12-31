@@ -26,12 +26,14 @@ namespace gtsam {
 
 	/** Create a Bayes Tree from a nonlinear factor graph */
 	template<class Conditional, class Config>
-	ISAM2<Conditional, Config>::ISAM2(const NonlinearFactorGraph<Config>& nlfg, const Ordering& ordering, const Config& config) {
-
-		BayesTree<Conditional>(nlfg.linearize(config).eliminate(ordering));
-
-		nonlinearFactors_ = nlfg;
-		config_ = config;
+	ISAM2<Conditional, Config>::ISAM2(const NonlinearFactorGraph<Config>& nlfg, const Ordering& ordering, const Config& config)
+	: BayesTree<Conditional>(nlfg.linearize(config).eliminate(ordering)), nonlinearFactors_(nlfg), config_(config) {
+		// todo - debug only
+		printf("constructor keys:\n");
+		BOOST_FOREACH(string s, nonlinearFactors_.keys()) {
+			printf("%s ", s.c_str());
+		}
+		printf("\n");
 	}
 
 	/* ************************************************************************* */
@@ -55,15 +57,70 @@ namespace gtsam {
 
 		// find the corresponding original nonlinear factors, and relinearize them
 		NonlinearFactorGraph<Config> nonlinearAffectedFactors;
+#if 0
+		// simply wrong................................................................
 		list<string> keys = affectedFactors.keys();
 		for (list<string>::iterator keyIt = keys.begin(); keyIt!=keys.end(); keyIt++) {
+			// affected factors in original factor graph
 			list<int> indices = nonlinearFactors_.factors(*keyIt);
 			for (list<int>::iterator indIt = indices.begin(); indIt!=indices.end(); indIt++) {
-// todo - do we need to check if it already exists? probably...				if (*indIt)
-					nonlinearAffectedFactors.push_back(nonlinearFactors_[*indIt]);
+				// only add factors that have not already been added
+				bool alreadyAdded = false;
+				typename NonlinearFactorGraph<Config>::iterator it;
+				for (it = nonlinearAffectedFactors.begin(); it!=nonlinearAffectedFactors.end(); it++) {
+					if (*it == nonlinearFactors_[*indIt]) alreadyAdded = true;
+				}
+				if (!alreadyAdded) nonlinearAffectedFactors.push_back(nonlinearFactors_[*indIt]);
 			}
 		}
+#else
+		BOOST_FOREACH(FactorGraph<GaussianFactor>::sharedFactor fac, affectedFactors) {
+			printf("XX\n");
+			// retrieve correspondent factor from nonlinearFactors_
+			Ordering keys = fac->keys();
+			list<int> indices = nonlinearFactors_.factors(keys.front());
+			BOOST_FOREACH(int idx, indices) {
+				BOOST_FOREACH(string s, nonlinearFactors_[idx]->keys()) {
+					printf("%s ", s.c_str());
+				}
+				printf(" - versus - ");
+				BOOST_FOREACH(string s, keys) {
+					printf("%s ", s.c_str());
+				}
+				printf("\n");
+				printf("nonlinFac\n");
+				nonlinearFactors_[idx]->print();
+				printf("fac\n");
+				fac->print();
+				// todo: for some reason, nonlinearFactors returns variables in reverse order...
+				Ordering other_keys = nonlinearFactors_[idx]->keys();
+				other_keys.reverse();
+				if (keys.equals(other_keys)) {
+					// todo: can there be duplicates? they would be added multiple times then
+					printf("YY\n");
+					nonlinearAffectedFactors.push_back(nonlinearFactors_[idx]);
+				}
+			}
+		}
+#endif
 		FactorGraph<GaussianFactor> factors = nonlinearAffectedFactors.linearize(config_);
+
+		// todo - debug - test:
+		if (factors.equals(affectedFactors)) {
+			printf("factors equal\n");
+		} else {
+			FactorGraph<GaussianFactor> all = nonlinearFactors_.linearize(config_);
+			printf("=====ALL\n");
+			all.print();
+
+			printf("=====ACTUAL\n");
+			factors.print();
+			printf("=====EXPECTED\n");
+			affectedFactors.print();
+			printf("=====ORPHANS\n");
+			orphans.print();
+			printf("factors NOT equal\n"); exit(1);
+		}
 
 		// add the new factors themselves
 		factors.push_back(newFactorsLinearized);

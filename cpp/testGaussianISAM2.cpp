@@ -52,7 +52,7 @@ TEST( ISAM2, ISAM2_smoother )
 	CHECK(assert_equal(e, optimized));
 }
 
-/* ************************************************************************* */
+/* ************************************************************************* *
 TEST( ISAM2, ISAM2_smoother2 )
 {
 	// Create smoother with 7 nodes
@@ -76,7 +76,7 @@ TEST( ISAM2, ISAM2_smoother2 )
 	for (int t = 1; t <= 7; t++) ordering += symbol('x', t);
 	GaussianISAM2 expected(smoother, ordering, poses);
 
-//	CHECK(assert_equal(expected, actual)); // todo: actual is wrong...
+	CHECK(assert_equal(expected, actual));
 }
 
 /* ************************************************************************* */
