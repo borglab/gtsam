@@ -23,43 +23,43 @@ namespace gtsam {
 		
   public:
 	 
-  /** default coonstructor, unit rotation */
-  Rot3() : r1_(Point3(1.0,0.0,0.0)), 
-      r2_(Point3(0.0,1.0,0.0)),
-      r3_(Point3(0.0,0.0,1.0)) {
-    }
+		/** default constructor, unit rotation */
+		Rot3() : r1_(Point3(1.0,0.0,0.0)),
+				r2_(Point3(0.0,1.0,0.0)),
+				r3_(Point3(0.0,0.0,1.0)) {
+			}
 
-  /** constructor from columns */
-  Rot3(const Point3& r1, const Point3& r2, const Point3& r3) :
-			r1_(r1), r2_(r2), r3_(r3) {
-		}
-		
-  /**  constructor from vector */
-  Rot3(const Vector &v) : 
-    r1_(Point3(v(0),v(1),v(2))),
-      r2_(Point3(v(3),v(4),v(5))),
-      r3_(Point3(v(6),v(7),v(8)))
-      {  }
+		/** constructor from columns */
+		Rot3(const Point3& r1, const Point3& r2, const Point3& r3) :
+				r1_(r1), r2_(r2), r3_(r3) {
+			}
 			
-  /** constructor from doubles in *row* order !!! */ 
-  Rot3(double R11, double R12, double R13,
-       double R21, double R22, double R23,
-       double R31, double R32, double R33) :
-      	 r1_(Point3(R11, R21, R31)),
-      	 r2_(Point3(R12, R22, R32)),
-      	 r3_(Point3(R13, R23, R33)) {}
+		/**  constructor from vector */
+		Rot3(const Vector &v) :
+			r1_(Point3(v(0),v(1),v(2))),
+				r2_(Point3(v(3),v(4),v(5))),
+				r3_(Point3(v(6),v(7),v(8)))
+				{  }
 
-  /** constructor from matrix */
-  Rot3(const Matrix& R):
-    r1_(Point3(R(0,0), R(1,0), R(2,0))),
-      r2_(Point3(R(0,1), R(1,1), R(2,1))),
-      r3_(Point3(R(0,2), R(1,2), R(2,2))) {}
+		/** constructor from doubles in *row* order !!! */
+		Rot3(double R11, double R12, double R13,
+				 double R21, double R22, double R23,
+				 double R31, double R32, double R33) :
+					 r1_(Point3(R11, R21, R31)),
+					 r2_(Point3(R12, R22, R32)),
+					 r3_(Point3(R13, R23, R33)) {}
 
-  /** print */
-  void print(const std::string& s="R") const { gtsam::print(matrix(), s);}
+		/** constructor from matrix */
+		Rot3(const Matrix& R):
+			r1_(Point3(R(0,0), R(1,0), R(2,0))),
+				r2_(Point3(R(0,1), R(1,1), R(2,1))),
+				r3_(Point3(R(0,2), R(1,2), R(2,2))) {}
 
-  /** equals with an tolerance */
-  bool equals(const Rot3& p, double tol = 1e-9) const;
+		/** print */
+		void print(const std::string& s="R") const { gtsam::print(matrix(), s);}
+
+		/** equals with an tolerance */
+		bool equals(const Rot3& p, double tol = 1e-9) const;
 
     /** return DOF, dimensionality of tangent space */
     size_t dim() const { return 3;}
@@ -68,48 +68,19 @@ namespace gtsam {
     Rot3 exmap(const Vector& d) const;
 		
     /** return vectorized form (column-wise)*/
-    Vector vector() const {
-      double r[] = { r1_.x(), r1_.y(), r1_.z(), 
-		     r2_.x(), r2_.y(), r2_.z(),
-		     r3_.x(), r3_.y(), r3_.z() };
-      Vector v(9);
-      copy(r,r+9,v.begin());
-      return v;  
-    }
+    Vector vector() const;
 
     /** return 3*3 rotation matrix */
-    Matrix matrix() const {
-      double r[] = { r1_.x(), r2_.x(), r3_.x(), 
-		     r1_.y(), r2_.y(), r3_.y(),
-		     r1_.z(), r2_.z(), r3_.z() };
-      return Matrix_(3,3, r);  
-    }
+    Matrix matrix() const;
 
     /** return 3*3 transpose (inverse) rotation matrix   */
-    Matrix transpose() const {
-      double r[] = { r1_.x(), r1_.y(), r1_.z(),
-		     r2_.x(), r2_.y(), r2_.z(),
-		     r3_.x(), r3_.y(), r3_.z()};
-      return Matrix_(3,3, r);
-    }
+    Matrix transpose() const;
 
     /** returns column vector specified by index */
-    Point3 column(int index) const{
-    	if(index == 3)
-    		return r3_;
-    	else if (index == 2)
-    		return r2_;
-    	else
-    		return r1_; // default returns r1
-    }
+    Point3 column(int index) const;
 
     /** inverse transformation  */
-    Rot3 inverse() const {
-    	return Rot3(
-    			r1_.x(), r1_.y(), r1_.z(),
-    			r2_.x(), r2_.y(), r2_.z(),
-    			r3_.x(), r3_.y(), r3_.z());
-    	}
+    Rot3 inverse() const;
 		
     /** composition */
     inline Rot3 operator*(const Rot3& B) const { return Rot3(matrix()*B.matrix());}
@@ -153,19 +124,19 @@ namespace gtsam {
 
   /**
    * Rodriguez' formula to compute an incremental rotation matrix
-   * @param wx
-   * @param wy
-   * @param wz 
-   * @return incremental rotation matrix
-   */
-  Rot3 rodriguez(double wx, double wy, double wz);
-
-  /**
-   * Rodriguez' formula to compute an incremental rotation matrix
    * @param v a vector of incremental roll,pitch,yaw
    * @return incremental rotation matrix
    */
   Rot3 rodriguez(const Vector& v);
+
+  /**
+   * Rodriguez' formula to compute an incremental rotation matrix
+   * @param wx
+   * @param wy
+   * @param wz
+   * @return incremental rotation matrix
+   */
+  inline Rot3 rodriguez(double wx, double wy, double wz) { return rodriguez(Vector_(3,wx,wy,wz));}
 
   /**
    * Update Rotation with incremental rotation

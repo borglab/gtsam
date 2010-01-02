@@ -61,19 +61,38 @@ TEST( Rot3, equals) {
 }
 
 /* ************************************************************************* */
+Rot3 slow_but_correct_rodriguez(const Vector& w) {
+	double t = norm_2(w);
+	Matrix J = skewSymmetric(w/t);
+	if (t < 1e-5) return Rot3();
+	Matrix R = eye(3, 3) + sin(t) * J + (1.0 - cos(t)) * (J * J);
+	return R; // matrix constructor will be tripped
+}
+
+/* ************************************************************************* */
 TEST( Rot3, rodriguez) {
-  Rot3 rd1 = rodriguez(epsilon, 0, 0);
-  Vector temp(3); temp(0) = epsilon; temp(1) = 0; temp(2) = 0;
-  Rot3 rd2 = rodriguez(temp);
-  CHECK(assert_equal(rd1,rd2));
+  Rot3 R1 = rodriguez(epsilon, 0, 0);
+  Vector w = Vector_(3,epsilon,0.,0.);
+  Rot3 R2 = slow_but_correct_rodriguez(w);
+  CHECK(assert_equal(R1,R2));
 }
 
 /* ************************************************************************* */
 TEST( Rot3, rodriguez2) {
   Vector v(3); v(0) = 0; v(1) = 1; v(2) = 0;
-  Rot3 rd1 = rodriguez(v, 3.14/4.0);
-  Rot3 rd2(0.707388,0,0.706825,0,1,0,-0.706825,0,0.707388);
-  CHECK(rd1.equals(rd2,0.0001));
+  Rot3 R1 = rodriguez(v, 3.14/4.0);
+  Rot3 R2(0.707388,0,0.706825,
+  		0,1,0,
+  		-0.706825,0,0.707388);
+  CHECK(assert_equal(R1,R2,1e-5));
+}
+
+/* ************************************************************************* */
+TEST( Rot3, rodriguez3) {
+  Vector w = Vector_(3,0.1,0.2,0.3);
+  Rot3 R1 = rodriguez(w/norm_2(w), norm_2(w));
+  Rot3 R2 = slow_but_correct_rodriguez(w);
+  CHECK(assert_equal(R1,R2));
 }
 
 /* ************************************************************************* */

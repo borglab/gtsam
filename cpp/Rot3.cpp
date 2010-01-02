@@ -12,7 +12,7 @@ using namespace std;
 
 namespace gtsam {
 
-	/* ************************************************************************* */
+  /* ************************************************************************* */
 	bool Rot3::equals(const Rot3 & R, double tol) const {
 		return equal_with_abs_tol(matrix(), R.matrix(), tol);
 	}
@@ -23,37 +23,77 @@ namespace gtsam {
 		return rodriguez(v) * (*this);
 	}
 
-	/* ************************************************************************* */
-	/** faster than below ?                                                      */
-	/* ************************************************************************* */
-	Rot3 rodriguez(const Vector& w, double t) {
-		double l_w = 0.0;
-		for (int i = 0; i < 3; i++)
-			l_w += pow(w(i), 2.0);
-		if (l_w != 1.0) throw domain_error("rodriguez: length of w should be 1");
+  /* ************************************************************************* */
+  Vector Rot3::vector() const {
+    double r[] = { r1_.x(), r1_.y(), r1_.z(),
+	     r2_.x(), r2_.y(), r2_.z(),
+	     r3_.x(), r3_.y(), r3_.z() };
+    Vector v(9);
+    copy(r,r+9,v.begin());
+    return v;
+  }
 
-		double ct = cos(t), st = sin(t);
+  /* ************************************************************************* */
+  Matrix Rot3::matrix() const {
+    double r[] = { r1_.x(), r2_.x(), r3_.x(),
+	     r1_.y(), r2_.y(), r3_.y(),
+	     r1_.z(), r2_.z(), r3_.z() };
+    return Matrix_(3,3, r);
+  }
 
-		Point3 r1 = Point3(ct + w(0) * w(0) * (1 - ct), w(2) * st + w(0) * w(1) * (1 - ct), -w(1) * st + w(0) * w(2) * (1 - ct));
-		Point3 r2 = Point3(w(1) * w(0) * (1 - ct) - w(2) * st, w(1) * w(1) * (1 - ct) + ct, w(1) * w(2) * (1 - ct) + w(0) * st);
-		Point3 r3 = Point3(w(1) * st + w(2) * w(0) * (1 - ct), -w(0) * st + w(2) * w(1) * (1 - ct), ct + w(2) * w(2) * (1 - ct));
+  /* ************************************************************************* */
+  Matrix Rot3::transpose() const {
+    double r[] = { r1_.x(), r1_.y(), r1_.z(),
+	     r2_.x(), r2_.y(), r2_.z(),
+	     r3_.x(), r3_.y(), r3_.z()};
+    return Matrix_(3,3, r);
+  }
+
+  /* ************************************************************************* */
+  Point3 Rot3::column(int index) const{
+  	if(index == 3)
+  		return r3_;
+  	else if (index == 2)
+  		return r2_;
+  	else
+  		return r1_; // default returns r1
+  }
+
+  /* ************************************************************************* */
+  Rot3 Rot3::inverse() const {
+  	return Rot3(
+  			r1_.x(), r1_.y(), r1_.z(),
+  			r2_.x(), r2_.y(), r2_.z(),
+  			r3_.x(), r3_.y(), r3_.z());
+  	}
+
+	/* ************************************************************************* */
+	Rot3 rodriguez(const Vector& n, double t) {
+		double n0 = n(0), n1=n(1), n2=n(2);
+		double n00 = n0*n0, n11 = n1*n1, n22 = n2*n2;
+#ifndef NDEBUG
+		double l_n = n00+n11+n22;
+		if (fabs(l_n-1.0)>1e-9) throw domain_error("rodriguez: length of n should be 1");
+#endif
+
+		double ct = cos(t), st = sin(t), ct_1 = 1 - ct;
+
+		double s0 = n0 * st, s1 = n1 * st, s2 = n2 * st;
+		double C01 = ct_1*n0*n1, C02 = ct_1*n0*n2, C12 = ct_1*n1*n2;
+		double C00 = ct_1*n00, C11 = ct_1*n11, C22 = ct_1*n22;
+
+		Point3 r1 = Point3( ct + C00,  s2 + C01, -s1 + C02);
+		Point3 r2 = Point3(-s2 + C01,  ct + C11,  s0 + C12);
+		Point3 r3 = Point3( s1 + C02, -s0 + C12,  ct + C22);
 
 		return Rot3(r1, r2, r3);
 	}
 
 	/* ************************************************************************* */
-	Rot3 rodriguez(double wx, double wy, double wz) {
-		Matrix J = skewSymmetric(wx, wy, wz);
-		double t2 = wx * wx + wy * wy + wz * wz;
-		if (t2 < 1e-10) return Rot3();
-		double t = sqrt(t2);
-		Matrix R = eye(3, 3) + sin(t) / t * J + (1.0 - cos(t)) / t2 * (J * J);
-		return R; // matrix constructor will be tripped
-	}
-
-	/* ************************************************************************* */
-	Rot3 rodriguez(const Vector& v) {
-		return rodriguez(v(0), v(1), v(2));
+	Rot3 rodriguez(const Vector& w) {
+		double t = norm_2(w);
+		if (t < 1e-5) return Rot3();
+	  return rodriguez(w/t, t);
 	}
 
 	/* ************************************************************************* */

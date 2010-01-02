@@ -176,6 +176,11 @@ testRot3_LDADD      = libgtsam.la
 testPose3_LDADD     = libgtsam.la
 testCal3_S2_LDADD   = libgtsam.la
 
+# not the correct way, I'm sure: Kai ?
+timeRot3: timeRot3.cpp  
+timeRot3: CXXFLAGS += -I /opt/local/include
+timeRot3: LDFLAGS += -L.libs -lgtsam
+
 # simulated2D example
 sources += simulated2D.cpp 
 testSimulated2D_SOURCES = testSimulated2D.cpp
