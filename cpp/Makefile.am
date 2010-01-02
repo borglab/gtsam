@@ -112,7 +112,7 @@ testGaussianBayesNet_LDADD      = libgtsam.la
 
 # Iterative Methods
 headers += iterative-inl.h
-sources += iterative.cpp BayesNetPreconditioner.cpp subgraphPreconditioner.cpp
+sources += iterative.cpp BayesNetPreconditioner.cpp SubgraphPreconditioner.cpp
 check_PROGRAMS += testIterative testBayesNetPreconditioner testSubgraphPreconditioner
 testIterative_SOURCES              = $(example) testIterative.cpp
 testIterative_LDADD                = libgtsam.la
