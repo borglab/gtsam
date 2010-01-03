@@ -44,6 +44,10 @@ namespace gtsam {
 
 		void print(const std::string &s) const;
 
+		void clear() { values_.clear(); }
+
+		int size() { return values_.size(); };
+
 		/**
 		 * Add a delta config, needed for use in NonlinearOptimizer
 		 */
