@@ -52,7 +52,7 @@ TEST( ISAM2, ISAM2_smoother )
 	CHECK(assert_equal(e, optimized));
 }
 
-/* ************************************************************************* *
+/* ************************************************************************* */
 TEST( ISAM2, ISAM2_smoother2 )
 {
 	// Create smoother with 7 nodes

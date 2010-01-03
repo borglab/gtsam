@@ -8,6 +8,8 @@
 #include <boost/assign/std/list.hpp> // for operator +=
 using namespace boost::assign;
 
+#include <set>
+
 #include "NonlinearFactorGraph.h"
 #include "GaussianFactor.h"
 #include "VectorConfig.h"
@@ -27,14 +29,7 @@ namespace gtsam {
 	/** Create a Bayes Tree from a nonlinear factor graph */
 	template<class Conditional, class Config>
 	ISAM2<Conditional, Config>::ISAM2(const NonlinearFactorGraph<Config>& nlfg, const Ordering& ordering, const Config& config)
-	: BayesTree<Conditional>(nlfg.linearize(config).eliminate(ordering)), nonlinearFactors_(nlfg), config_(config) {
-		// todo - debug only
-		printf("constructor keys:\n");
-		BOOST_FOREACH(string s, nonlinearFactors_.keys()) {
-			printf("%s ", s.c_str());
-		}
-		printf("\n");
-	}
+	: BayesTree<Conditional>(nlfg.linearize(config).eliminate(ordering)), nonlinearFactors_(nlfg), config_(config) {}
 
 	/* ************************************************************************* */
 	template<class Conditional, class Config>
@@ -55,88 +50,61 @@ namespace gtsam {
 		FactorGraph<GaussianFactor> affectedFactors;
 		boost::tie(affectedFactors, orphans) = this->removeTop(newFactorsLinearized);
 
+
+#if 1
 		// find the corresponding original nonlinear factors, and relinearize them
 		NonlinearFactorGraph<Config> nonlinearAffectedFactors;
-#if 0
-		// simply wrong................................................................
-		list<string> keys = affectedFactors.keys();
-		for (list<string>::iterator keyIt = keys.begin(); keyIt!=keys.end(); keyIt++) {
-			// affected factors in original factor graph
-			list<int> indices = nonlinearFactors_.factors(*keyIt);
-			for (list<int>::iterator indIt = indices.begin(); indIt!=indices.end(); indIt++) {
-				// only add factors that have not already been added
-				bool alreadyAdded = false;
-				typename NonlinearFactorGraph<Config>::iterator it;
-				for (it = nonlinearAffectedFactors.begin(); it!=nonlinearAffectedFactors.end(); it++) {
-					if (*it == nonlinearFactors_[*indIt]) alreadyAdded = true;
-				}
-				if (!alreadyAdded) nonlinearAffectedFactors.push_back(nonlinearFactors_[*indIt]);
-			}
-		}
-#else
+		set<int> idxs; // avoid duplicates by putting index into set
 		BOOST_FOREACH(FactorGraph<GaussianFactor>::sharedFactor fac, affectedFactors) {
-			printf("XX\n");
 			// retrieve correspondent factor from nonlinearFactors_
 			Ordering keys = fac->keys();
-			list<int> indices = nonlinearFactors_.factors(keys.front());
-			BOOST_FOREACH(int idx, indices) {
-				BOOST_FOREACH(string s, nonlinearFactors_[idx]->keys()) {
-					printf("%s ", s.c_str());
-				}
-				printf(" - versus - ");
-				BOOST_FOREACH(string s, keys) {
-					printf("%s ", s.c_str());
-				}
-				printf("\n");
-				printf("nonlinFac\n");
-				nonlinearFactors_[idx]->print();
-				printf("fac\n");
-				fac->print();
-				// todo: for some reason, nonlinearFactors returns variables in reverse order...
-				Ordering other_keys = nonlinearFactors_[idx]->keys();
-				other_keys.reverse();
-				if (keys.equals(other_keys)) {
-					// todo: can there be duplicates? they would be added multiple times then
-					printf("YY\n");
-					nonlinearAffectedFactors.push_back(nonlinearFactors_[idx]);
+			BOOST_FOREACH(string key, keys) {
+				list<int> indices = nonlinearFactors_.factors(key);
+				BOOST_FOREACH(int idx, indices) {
+					// todo - only insert index if factor is subset of keys... not needed once we do relinearization - but then how to deal with overlap with orphans?
+					bool subset = true;
+					BOOST_FOREACH(string k, nonlinearFactors_[idx]->keys()) {
+						if (find(keys.begin(), keys.end(), k)==keys.end()) subset = false;
+					}
+					if (subset) {
+						idxs.insert(idx);
+					}
 				}
 			}
 		}
-#endif
-		FactorGraph<GaussianFactor> factors = nonlinearAffectedFactors.linearize(config_);
-
-		// todo - debug - test:
-		if (factors.equals(affectedFactors)) {
-			printf("factors equal\n");
-		} else {
-			FactorGraph<GaussianFactor> all = nonlinearFactors_.linearize(config_);
-			printf("=====ALL\n");
-			all.print();
-
-			printf("=====ACTUAL\n");
-			factors.print();
-			printf("=====EXPECTED\n");
-			affectedFactors.print();
-			printf("=====ORPHANS\n");
-			orphans.print();
-			printf("factors NOT equal\n"); exit(1);
+		BOOST_FOREACH(int idx, idxs) {
+			nonlinearAffectedFactors.push_back(nonlinearFactors_[idx]);
 		}
+		FactorGraph<GaussianFactor> factors = nonlinearAffectedFactors.linearize(config_);
 
 		// add the new factors themselves
 		factors.push_back(newFactorsLinearized);
+#endif
+
+		affectedFactors.push_back(newFactorsLinearized);
 
 		// create an ordering for the new and contaminated factors
 		Ordering ordering;
 		if (true) {
-			ordering = factors.getOrdering();
+			ordering = /*affectedF*/factors.getOrdering();
 		} else {
-			list<string> keys = factors.keys();
+			list<string> keys = /*affectedF*/factors.keys();
 			keys.sort(); // todo: correct sorting order?
 			ordering = keys;
 		}
 
 		// eliminate into a Bayes net
-		BayesNet<Conditional> bayesNet = eliminate<GaussianFactor, Conditional>(factors,ordering);
+		BayesNet<Conditional> bayesNet = eliminate<GaussianFactor, Conditional>(affectedFactors,ordering);
+
+#if 1
+		BayesNet<Conditional> bayesNetTest = eliminate<GaussianFactor, Conditional>(factors,ordering); // todo - debug only
+		if (!bayesNet.equals(bayesNetTest)) {
+			printf("differ\n");
+			bayesNet.print();
+			bayesNetTest.print();
+			exit(42);
+		}
+#endif
 
 		// insert conditionals back in, straight into the topless bayesTree
 		typename BayesNet<Conditional>::const_reverse_iterator rit;
