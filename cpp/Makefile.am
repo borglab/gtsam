@@ -121,15 +121,14 @@ testBayesNetPreconditioner_LDADD   = libgtsam.la
 testSubgraphPreconditioner_SOURCES = $(example) testSubgraphPreconditioner.cpp
 testSubgraphPreconditioner_LDADD   = libgtsam.la
 
-# not the correct way, I'm sure: Kai ?
-timeGaussianFactor: timeGaussianFactor.cpp  
-timeGaussianFactor: CXXFLAGS += -I /opt/local/include
-timeGaussianFactor: LDFLAGS += -L.libs -lgtsam
+# the timing tests below are broken for now.
+#noinst_PROGRAMS = timeGaussianFactor timeGaussianFactorGraph
 
-# not the correct way, I'm sure: Kai ?
-timeGaussianFactorGraph: timeGaussianFactorGraph.cpp  
-timeGaussianFactorGraph: CXXFLAGS += -I /opt/local/include -I ..
-timeGaussianFactorGraph: LDFLAGS += smallExample.o -L.libs -lgtsam -L../CppUnitLite -lCppUnitLite
+#timeGaussianFactor_SOURCES = timeGaussianFactor.cpp
+#timeGaussianFactorGraph_SOURCES = timeGaussianFactorGraph.cpp
+
+#timeGaussianFactor_LDADD = libgtsam.la 
+#timeGaussianFactorGraph_LDADD = libgtsam.la
 
 # Nonlinear inference 
 headers += NonlinearFactorGraph.h NonlinearFactorGraph-inl.h
@@ -176,10 +175,9 @@ testRot3_LDADD      = libgtsam.la
 testPose3_LDADD     = libgtsam.la
 testCal3_S2_LDADD   = libgtsam.la
 
-# not the correct way, I'm sure: Kai ?
-timeRot3: timeRot3.cpp  
-timeRot3: CXXFLAGS += -I /opt/local/include
-timeRot3: LDFLAGS += -L.libs -lgtsam
+noinst_PROGRAMS = timeRot3
+timeRot3_SOURCES = timeRot3.cpp
+timeRot3_LDADD = libgtsam.la
 
 # simulated2D example
 sources += simulated2D.cpp 
