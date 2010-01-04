@@ -1,7 +1,10 @@
 class Ordering {
   Ordering();
+  Ordering(string key);
+  Ordering subtract(const Ordering& keys) const;
   void push_back(string s);
   void print(string s) const;
+  bool equals(const Ordering& ord, double tol) const;
   void unique ();
   void reverse ();
 };
@@ -162,19 +165,25 @@ class Simulated2DMeasurement {
   void print(string s) const;
 };
 
-class Pose2{
-	Pose2();
-	Pose2(const Pose2& pose);
-	Pose2(double x, double y, double theta);
-	void print(string s);
-	bool equals(const Pose2& pose, double tol);
-	double x();
-	double y();
-	double theta();
-	size_t dim() const;
-	Pose2 exmap(Vector v) const;
-	Vector vector() const;
-	Pose2 rotate(double theta) const;
+class Pose2 {
+  Pose2();
+  Pose2(const Pose2& pose);
+  Pose2(double x, double y, double theta);
+  Pose2(double theta, const Point2& t);
+  Pose2(const Rot2& r, const Point2& t);
+  void print(string s) const;
+  bool equals(const Pose2& pose, double tol) const;
+  double x() const;
+  double y() const;
+  double theta() const;
+  Point2 t() const;
+  Rot2 r() const;
+  Vector vector() const;
+  size_t dim() const;
+  Pose2 exmap(const Vector& v) const;
+  Vector log(const Pose2& pose) const;
+  Pose2 inverse() const;
+  Pose2 compose(const Pose2& p1) const;
 };
 
 class Pose2Config{
