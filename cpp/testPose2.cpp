@@ -48,6 +48,19 @@ TEST(Pose2, constructors) {
 }
 
 /* ************************************************************************* */
+TEST(Pose2, manifold) {
+	Pose2 t1(M_PI_2, Point2(1, 2));
+	Pose2 t2(M_PI_2+0.018, Point2(1.015, 2.01));
+	Pose2 origin;
+	Vector d12 = t1.log(t2);
+	CHECK(assert_equal(t2, t1.exmap(d12)));
+	CHECK(assert_equal(t2, origin.exmap(d12)*t1));
+	Vector d21 = t2.log(t1);
+	CHECK(assert_equal(t1, t2.exmap(d21)));
+	CHECK(assert_equal(t1, origin.exmap(d21)*t2));
+}
+
+/* ************************************************************************* */
 TEST(Pose2, exmap) {
   Pose2 pose(M_PI_2, Point2(1, 2));
   Pose2 expected(M_PI_2+0.018, Point2(1.015, 2.01));
