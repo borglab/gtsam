@@ -156,17 +156,20 @@ pair<Matrix,Vector> matrix(const GaussianBayesNet& bn)  {
     // find corresponding conditional
     GaussianConditional::shared_ptr cg = bn[key];
     
+    // get sigmas
+    Vector sigmas = cg->get_sigmas();
+
     // get RHS and copy to d
     const Vector& d_ = cg->get_d();
     const size_t n = d_.size();
     for (size_t i=0;i<n;i++)
-      d(I+i) = d_(i);
+      d(I+i) = d_(i)/sigmas(i);
 
     // get leading R matrix and copy to R
     const Matrix& R_ = cg->get_R();
     for (size_t i=0;i<n;i++)
       for(size_t j=0;j<n;j++)
-      	R(I+i,I+j) = R_(i,j);
+      	R(I+i,I+j) = R_(i,j)/sigmas(i);
 
     // loop over S matrices and copy them into R
     GaussianConditional::const_iterator keyS = cg->parentsBegin();
@@ -176,7 +179,7 @@ pair<Matrix,Vector> matrix(const GaussianBayesNet& bn)  {
       const size_t J = mapping[keyS->first];     // find column index
       for (size_t i=0;i<m;i++)
       	for(size_t j=0;j<n;j++)
-      		R(I+i,J+j) = S(i,j);
+      		R(I+i,J+j) = S(i,j)/sigmas(i);
     } // keyS
 
   } // keyI

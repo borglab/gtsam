@@ -619,6 +619,36 @@ TEST( GaussianFactorGraph, rhs )
 }
 
 /* ************************************************************************* */
+// Extra test on elimination prompted by Michael's email to Frank 1/4/2010
+TEST( GaussianFactorGraph, elimination )
+{
+	// Create Gaussian Factor Graph
+	GaussianFactorGraph fg;
+	Matrix Ap = eye(1), An = eye(1) * -1;
+	Vector b = Vector_(1, 0.0);
+	double sigma = 1.0/0.5;
+	fg.add("x1", An, "x2", Ap, b, sigma);
+	fg.add("x1", Ap, b, sigma);
+	fg.add("x2", Ap, b, sigma);
+
+	// Eliminate
+	Ordering ord;
+	ord += "x1", "x2";
+	GaussianBayesNet bayesNet = fg.eliminate(ord);
+
+	// Check sigma
+	DOUBLES_EQUAL(1.0/0.612372,bayesNet["x2"]->get_sigmas()(0),1e-5);
+
+	// Check matrix
+	Matrix R;Vector d;
+	boost::tie(R,d) = matrix(bayesNet);
+	Matrix expected = Matrix_(2,2,
+			0.707107,	-0.353553,
+      0.0,	 0.612372);
+	CHECK(assert_equal(expected,R,1e-6));
+}
+
+ /* ************************************************************************* */
 // Tests ported from ConstrainedGaussianFactorGraph
 /* ************************************************************************* */
 TEST( GaussianFactorGraph, constrained_simple )
