@@ -218,6 +218,7 @@ namespace gtsam {
 		boost::shared_ptr<VectorConfig> conjugateGradientDescent_(
 				const VectorConfig& x0, bool verbose = false, double epsilon = 1e-3,
 				size_t maxIterations = 0) const;
+
   };
 
 }

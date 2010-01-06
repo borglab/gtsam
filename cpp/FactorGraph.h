@@ -116,6 +116,11 @@ namespace gtsam {
      */
 		std::vector<sharedFactor> findAndRemoveFactors(const std::string& key);
 
+		/**
+		 * find the minimum spanning tree
+		 */
+		std::vector<std::pair<std::string, std::string> > findMinimumSpanningTree() const;
+
 	private:
 		/** Associate factor index with the variables connected to the factor */
 		void associateFactor(int index, sharedFactor factor);

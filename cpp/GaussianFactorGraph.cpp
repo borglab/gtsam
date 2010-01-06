@@ -319,4 +319,3 @@ boost::shared_ptr<VectorConfig> GaussianFactorGraph::conjugateGradientDescent_(
 }
 
 /* ************************************************************************* */
-

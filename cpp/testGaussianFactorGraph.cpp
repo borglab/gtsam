@@ -731,5 +731,22 @@ TEST( GaussianFactorGraph, constrained_multi2 )
 }
 
 /* ************************************************************************* */
+TEST( GaussianFactorGraph, findMinimumSpanningTree )
+{
+	GaussianFactorGraph g;
+	Matrix I = eye(2);
+	Vector b = Vector_(0, 0, 0);
+	g.add("x1", I, "x2", I, b, 0);
+	g.add("x1", I, "x3", I, b, 0);
+	g.add("x1", I, "x4", I, b, 0);
+	g.add("x2", I, "x3", I, b, 0);
+	g.add("x2", I, "x4", I, b, 0);
+	g.add("x3", I, "x4", I, b, 0);
+
+	vector<pair<string, string> > tree = g.findMinimumSpanningTree();
+	LONGS_EQUAL(3,tree.size());
+}
+
+/* ************************************************************************* */
 int main() { TestResult tr; return TestRegistry::runAllTests(tr);}
 /* ************************************************************************* */

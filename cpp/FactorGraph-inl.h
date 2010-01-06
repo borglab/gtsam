@@ -18,9 +18,15 @@
 #include <boost/foreach.hpp>
 #include <boost/tuple/tuple.hpp>
 #include <boost/format.hpp>
+#include <boost/graph/graph_traits.hpp>
+#include <boost/graph/adjacency_list.hpp>
+#include <boost/graph/kruskal_min_spanning_tree.hpp>
 #include <colamd/colamd.h>
 #include "Ordering.h"
 #include "FactorGraph.h"
+
+
+
 
 // trick from some reading group
 #define FOREACH_PAIR( KEY, VAL, COL) BOOST_FOREACH (boost::tie(KEY,VAL),COL)
@@ -266,6 +272,63 @@ void FactorGraph<Factor>::associateFactor(int index, sharedFactor factor) {
           indices_ptr->push_back(index);               // add the index i to it
       }
   }
+}
+
+/* ************************************************************************* */
+template<class Factor>
+vector<pair<string, string> > FactorGraph<Factor>::findMinimumSpanningTree() const {
+
+	typedef boost::adjacency_list<
+		boost::vecS, boost::vecS, boost::undirectedS,
+		boost::property<boost::vertex_name_t, string>,
+		boost::property<boost::edge_weight_t, int> > Graph;
+	typedef boost::graph_traits<Graph>::vertex_descriptor Vertex;
+	typedef boost::graph_traits<Graph>::edge_descriptor Edge;
+
+	// convert the factor graph to boost graph
+	Graph g(0);
+	map<string, Vertex> key2vertex;
+	Vertex v1, v2;
+	BOOST_FOREACH(sharedFactor factor, factors_){
+		if (factor->keys().size() > 2)
+			throw(invalid_argument("findMinimumSpanningTree: only support factors with two keys"));
+
+		if (factor->keys().size() == 1)
+			continue;
+
+		string key1 = factor->keys().front();
+		string key2 = factor->keys().back();
+
+		if (key2vertex.find(key1) == key2vertex.end()) {
+			   v1 = add_vertex(key1, g);
+			   key2vertex.insert(make_pair(key1, v1));
+			 } else
+			   v1 = key2vertex[key1];
+
+		if (key2vertex.find(key2) == key2vertex.end()) {
+			 v2 = add_vertex(key2, g);
+			 key2vertex.insert(make_pair(key2, v2));
+		 } else
+			 v2 = key2vertex[key2];
+
+		boost::property<boost::edge_weight_t, int> edge_property(1);  // assume constant edge weight here
+		boost::add_edge(v1, v2, edge_property, g);
+	}
+
+	// find minimum spanning tree
+	vector<Edge> spanning_tree;
+	boost::kruskal_minimum_spanning_tree(g, back_inserter(spanning_tree));
+
+	// convert edge to skin
+	vector<pair<string, string> > tree;
+	for (vector<Edge>::iterator ei = spanning_tree.begin(); ei
+				!= spanning_tree.end(); ++ei) {
+		string key1 = boost::get(boost::vertex_name, g, boost::source(*ei,g));
+		string key2 = boost::get(boost::vertex_name, g, boost::target(*ei,g));
+		tree.push_back(make_pair(key1, key2));
+	}
+
+	return tree;
 }
 
 /* ************************************************************************* */
