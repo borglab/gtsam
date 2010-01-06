@@ -202,16 +202,6 @@ testPose2Graph_LDADD    = libgtsam.la
 testPose3Factor_SOURCES = $(example) testPose3Factor.cpp
 testPose3Factor_LDADD   = libgtsam.la
 
-# Robot Control example system
-sources += ControlConfig.cpp ControlPoint.cpp ControlGraph.cpp
-check_PROGRAMS += testControlConfig testControlPoint testControlGraph
-testControlConfig_SOURCES = testControlConfig.cpp
-testControlConfig_LDADD   = libgtsam.la
-testControlPoint_SOURCES  = testControlPoint.cpp
-testControlPoint_LDADD    = libgtsam.la
-testControlGraph_SOURCES  = testControlGraph.cpp
-testControlGraph_LDADD    = libgtsam.la
-
 # Cameras
 sources += CalibratedCamera.cpp SimpleCamera.cpp
 check_PROGRAMS += testCalibratedCamera testSimpleCamera
