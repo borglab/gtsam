@@ -34,7 +34,7 @@ void TestResult::addFailure (const Failure& failure)
 void TestResult::testsEnded () 
 {
 	if (failureCount > 0)
-		fprintf (stdout, "There were %ld failures\n", failureCount);
+		fprintf (stdout, "There were %d failures\n", failureCount);
 	else
 		fprintf (stdout, "There were no test failures\n");
 }

@@ -27,8 +27,8 @@ Failure::Failure (const SimpleString&	theTestName,
   fileName (theFileName), 
   lineNumber (theLineNumber)
 {
-	char *part1 = "expected ";
-	char *part3 = " but was: ";
+	const char *part1 = "expected ";
+	const char *part3 = " but was: ";
 
 	char *stage = new char [strlen (part1) 
 					+ expected.size () 
