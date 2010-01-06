@@ -96,6 +96,19 @@ TEST( Rot3, rodriguez3) {
 }
 
 /* ************************************************************************* */
+//TEST(Rot3, manifold) {
+//	Rot3 t1 = rodriguez(0.1,0.4,0.2);
+//	Rot3 t2 = rodriguez(0.3,0.1,0.7);
+//	Rot3 origin;
+//	Vector d12 = t1.log(t2);
+//	CHECK(assert_equal(t2, t1.exmap(d12)));
+//	CHECK(assert_equal(t2, origin.exmap(d12)*t1));
+//	Vector d21 = t2.log(t1);
+//	CHECK(assert_equal(t1, t2.exmap(d21)));
+//	CHECK(assert_equal(t1, origin.exmap(d21)*t2));
+//}
+
+/* ************************************************************************* */
 TEST( Rot3, exmap)
 {
   Vector v(3);
@@ -121,8 +134,6 @@ TEST( Rot3, Drotate2_DNrotate2)
 }
 
 /* ************************************************************************* */
-// unrotate 
-
 TEST( Rot3, unrotate)
 {
   Point3 w = R*P;
@@ -144,6 +155,32 @@ TEST( Rot3, Dunrotate2_DNunrotate2)
   Matrix computed = Dunrotate2(R);
   Matrix numerical = numericalDerivative22(unrotate,R,P);
   CHECK(assert_equal(numerical,computed,error));
+}
+
+/* ************************************************************************* */
+TEST( Rot3, RQ)
+{
+	// Try RQ on a pure rotation
+	Matrix actualK; Vector actual;
+  boost::tie(actualK,actual) = RQ(R.matrix());
+  Vector expected = Vector_(3,0.14715, 0.385821, 0.231671);
+  CHECK(assert_equal(eye(3),actualK));
+  CHECK(assert_equal(expected,actual,1e-6));
+
+  // Try using ypr call
+  actual = R.ypr();
+  CHECK(assert_equal(expected,actual,1e-6));
+
+  // Try RQ to recover calibration from 3*3 sub-block of projection matrix
+	Matrix K = Matrix_(3,3,
+			500.0,   0.0, 320.0,
+			  0.0, 500.0, 240.0,
+			  0.0,   0.0,   1.0
+			);
+	Matrix A = K*R.matrix();
+  boost::tie(actualK,actual) = RQ(A);
+  CHECK(assert_equal(K,actualK));
+  CHECK(assert_equal(expected,actual,1e-6));
 }
 
 /* ************************************************************************* */

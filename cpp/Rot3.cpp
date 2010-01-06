@@ -68,6 +68,22 @@ namespace gtsam {
   	}
 
 	/* ************************************************************************* */
+	Point3 Rot3::unrotate(const Point3& p) const {
+		return Point3(
+				r1_.x() * p.x() + r1_.y() * p.y() + r1_.z() * p.z(),
+				r2_.x() * p.x() + r2_.y() * p.y() + r2_.z() * p.z(),
+				r3_.x() * p.x() + r3_.y() * p.y() + r3_.z() * p.z()
+				);
+	}
+
+	/* ************************************************************************* */
+  Vector Rot3::ypr() const {
+  	Matrix I;Vector q;
+  	boost::tie(I,q)=RQ(matrix());
+  	return q;
+  }
+
+	/* ************************************************************************* */
 	Rot3 rodriguez(const Vector& n, double t) {
 		double n0 = n(0), n1=n(1), n2=n(2);
 		double n00 = n0*n0, n11 = n1*n1, n22 = n2*n2;
@@ -136,64 +152,40 @@ namespace gtsam {
 	}
 
 	/* ************************************************************************* */
-	/** This function receives a rotation 3 by 3 matrix and returns 3 rotation angles.
-	 *  The implementation is based on the algorithm in multiple view geometry
-	 *  the function returns a vector that its arguments are: thetax, thetay, thetaz in radians.
-	 */
-	/* ************************************************************************* */
-	Vector RQ(Matrix R) {
-		double Cx = R(2, 2) / (double) ((sqrt(pow((double) (R(2, 2)), 2.0) + pow(
-				(double) (R(2, 1)), 2.0)))); //cosX
-		double Sx = -R(2, 1) / (double) ((sqrt(pow((double) (R(2, 2)), 2.0) + pow(
-				(double) (R(2, 1)), 2.0)))); //sinX
-		Matrix Qx(3, 3);
-		for (int i = 0; i < 3; i++)
-			for (int j = 0; j < 3; j++)
-				Qx(i, j) = 0;
+	pair<Matrix,Vector> RQ(const Matrix& A) {
+		double A21 = A(2, 1), A22 = A(2, 2), a = sqrt(A21 * A21 + A22 * A22);
+		double Cx =  A22 / a; //cosX
+		double Sx = -A21 / a; //sinX
+		Matrix Qx = Matrix_(3, 3,
+				1.0, 0.0, 0.0,
+				0.0,  Cx, -Sx,
+				0.0,  Sx, Cx);
+		Matrix B = A * Qx;
 
-		Qx(0, 0) = 1;
-		Qx(1, 1) = Cx;
-		Qx(1, 2) = -Sx;
-		Qx(2, 1) = Sx;
-		Qx(2, 2) = Cx;
-		R = R * Qx;
-		double Cy = R(2, 2) / (sqrt(pow((double) (R(2, 2)), 2.0) + pow((double) (R(
-				2, 0)), 2.0))); //cosY
-		double Sy = R(2, 0) / (sqrt(pow((double) (R(2, 2)), 2.0) + pow((double) (R(
-				2, 0)), 2.0))); //sinY
-		Matrix Qy(3, 3);
-		for (int i = 0; i < 3; i++)
-			for (int j = 0; j < 3; j++)
-				Qy(i, j) = 0;
+		double B20 = B(2, 0), B22 = B(2, 2), b = sqrt(B20 * B20 + B22 * B22);
+		double Cy = B22 / b; //cosY
+		double Sy = B20 / b; //sinY
+		Matrix Qy = Matrix_(3,3,
+				 Cy, 0.0,  Sy,
+				0.0, 1.0, 0.0,
+				-Sy, 0.0,  Cy);
+		Matrix C = B * Qy;
 
-		Qy(0, 0) = Cy;
-		Qy(0, 2) = Sy;
-		Qy(1, 1) = 1;
-		Qy(2, 0) = -Sy;
-		Qy(2, 2) = Cy;
-		R = R * Qy;
-		double Cz = R(1, 1) / (sqrt(pow((double) (R(1, 1)), 2.0) + pow((double) (R(
-				1, 0)), 2.0))); //cosZ
-		double Sz = -R(1, 0) / (sqrt(pow((double) (R(1, 1)), 2.0) + pow(
-				(double) (R(1, 0)), 2.0)));//sinZ
-		Matrix Qz(3, 3);
-		for (int i = 0; i < 3; i++)
-			for (int j = 0; j < 3; j++)
-				Qz(i, j) = 0;
-		Qz(0, 0) = Cz;
-		Qz(0, 1) = -Sz;
-		Qz(1, 0) = Sz;
-		Qz(1, 1) = Cz;
-		Qz(2, 2) = 1;
-		R = R * Qz;
-		double pi = atan2(sqrt(2.0) / 2.0, sqrt(2.0) / 2.0) * 4.0;
+		double C10 = C(1, 0), C11 = C(1, 1), c = sqrt(C10 * C10 + C11 * C11);
+		double Cz =  C11 / c; //cosZ
+		double Sz = -C10 / c; //sinZ
+		Matrix Qz = Matrix_(3, 3,
+				 Cz, -Sz, 0.0,
+				 Sz,  Cz, 0.0,
+				0.0, 0.0, 1.0);
+		Matrix R = C * Qz;
 
-		Vector result(3);
-		result(0) = -atan2(Sx, Cx);
-		result(1) = -atan2(Sy, Cy);
-		result(2) = -atan2(Sz, Cz);
+		Vector angles(3);
+		angles(0) = -atan2(Sx, Cx);
+		angles(1) = -atan2(Sy, Cy);
+		angles(2) = -atan2(Sz, Cz);
 
-		return result;
+		return make_pair(R,angles);
 	}
 
 /* ************************************************************************* */

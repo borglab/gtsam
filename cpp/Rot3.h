@@ -91,13 +91,10 @@ namespace gtsam {
     }
 
     /** rotate from world to rotated = R'*p */
-    Point3 unrotate(const Point3& p) const {
-			return Point3(
-					r1_.x() * p.x() + r1_.y() * p.y() + r1_.z() * p.z(),
-					r2_.x() * p.x() + r2_.y() * p.y() + r2_.z() * p.z(),
-					r3_.x() * p.x() + r3_.y() * p.y() + r3_.z() * p.z()
-					);
-		}
+    Point3 unrotate(const Point3& p) const;
+
+    /** use RQ to calculate yaw-pitch-roll angle representation */
+    Vector ypr() const;
 
     /** friends */
     friend Matrix Dunrotate1(const Rot3& R, const Point3& p);
@@ -150,7 +147,7 @@ namespace gtsam {
    * rotate point from rotated coordinate frame to 
    * world = R*p
    */
-  Point3    rotate(const Rot3& R, const Point3& p);
+  Point3  rotate (const Rot3& R, const Point3& p);
   Matrix Drotate1(const Rot3& R, const Point3& p);
   Matrix Drotate2(const Rot3& R); // does not depend on p !
 
@@ -158,11 +155,20 @@ namespace gtsam {
    * rotate point from world to rotated 
    * frame = R'*p
    */
-  Point3    unrotate(const Rot3& R, const Point3& p);
+  Point3  unrotate (const Rot3& R, const Point3& p);
   Matrix Dunrotate1(const Rot3& R, const Point3& p);
   Matrix Dunrotate2(const Rot3& R); // does not depend on p !
 
-  /** receives a rotation 3 by 3 matrix and returns 3 rotation angles.*/
-  Vector RQ(Matrix R);
+	/**
+	 * [RQ] receives a 3 by 3 matrix and returns an upper triangular matrix R
+	 * and 3 rotation angles corresponding to the rotation matrix Q=Qz'*Qy'*Qx'
+	 * such that A = R*Q = R*Qz'*Qy'*Qx'. When A is a rotation matrix, R will
+	 * be the identity and Q is a yaw-pitch-roll decomposition of A.
+	 * The implementation uses Givens rotations and is based on Hartley-Zisserman.
+	 * @param a 3 by 3 matrix A=RQ
+	 * @return an upper triangular matrix R
+	 * @return a vector [thetax, thetay, thetaz] in radians.
+	 */
+  std::pair<Matrix,Vector> RQ(const Matrix& A);
 
 }

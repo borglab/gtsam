@@ -84,9 +84,9 @@ Matrix Dtransform_to2(const Pose3& pose, const Point3& p) {
 // used as soft prior
 /* ************************************************************************* */
 Vector hPose (const Vector& x) {
-  Pose3 pose(x);                            // transform from vector to Pose3
-  Vector w = RQ(pose.rotation().matrix()); // get angle differences
-  Vector d = pose.translation().vector();  // get translation differences
+  Pose3 pose(x);                          // transform from vector to Pose3
+  Vector w = pose.rotation().ypr();       // get angle differences
+  Vector d = pose.translation().vector(); // get translation differences
   return concatVectors(2,&w,&d);
 }
 
