@@ -23,6 +23,18 @@ namespace gtsam {
 		return rodriguez(v) * (*this);
 	}
 
+	/* ************************************************************************* */
+	Vector Rot3::log() const {
+		double tr = r1_.x()+r2_.y()+r3_.z();
+		if (tr==3.0) return ones(3);
+		if (tr==-1.0) throw domain_error("Rot3::log: trace == -1 not yet handled :-(");;
+		double theta = acos((tr-1.0)/2.0);
+		return (theta/2.0/sin(theta))*Vector_(3,
+				r2_.z()-r3_.y(),
+				r3_.x()-r1_.z(),
+				r1_.y()-r2_.x());
+	}
+
   /* ************************************************************************* */
   Vector Rot3::vector() const {
     double r[] = { r1_.x(), r1_.y(), r1_.z(),
@@ -118,6 +130,10 @@ namespace gtsam {
 	}
 
 	/* ************************************************************************* */
+  Vector log(const Rot3& R, const Rot3& S) {
+  	return between(R,S).log();
+  }
+	/* ************************************************************************* */
 	Point3 rotate(const Rot3& R, const Point3& p) {
 		return R * p;
 	}
@@ -149,6 +165,11 @@ namespace gtsam {
 	/* ************************************************************************* */
 	Matrix Dunrotate2(const Rot3 & R) {
 		return R.transpose();
+	}
+
+	/* ************************************************************************* */
+	Rot3 between(const Rot3& R1, const Rot3& R2) {
+		return R2 * R1.inverse();
 	}
 
 	/* ************************************************************************* */

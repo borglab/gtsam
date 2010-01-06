@@ -96,24 +96,54 @@ TEST( Rot3, rodriguez3) {
 }
 
 /* ************************************************************************* */
-//TEST(Rot3, manifold) {
-//	Rot3 t1 = rodriguez(0.1,0.4,0.2);
-//	Rot3 t2 = rodriguez(0.3,0.1,0.7);
-//	Rot3 origin;
-//	Vector d12 = t1.log(t2);
-//	CHECK(assert_equal(t2, t1.exmap(d12)));
-//	CHECK(assert_equal(t2, origin.exmap(d12)*t1));
-//	Vector d21 = t2.log(t1);
-//	CHECK(assert_equal(t1, t2.exmap(d21)));
-//	CHECK(assert_equal(t1, origin.exmap(d21)*t2));
-//}
-
-/* ************************************************************************* */
 TEST( Rot3, exmap)
 {
-  Vector v(3);
-  fill(v.begin(), v.end(), 0);
-  CHECK(assert_equal(R.exmap(v), R));
+	Vector v(3);
+	fill(v.begin(), v.end(), 0);
+	CHECK(assert_equal(R.exmap(v), R));
+}
+
+/* ************************************************************************* */
+TEST(Rot3, log)
+{
+	Vector w1 = Vector_(3, 0.1, 0.0, 0.0);
+	Rot3 R1 = rodriguez(w1);
+	CHECK(assert_equal(w1, R1.log()));
+
+	Vector w2 = Vector_(3, 0.0, 0.1, 0.0);
+	Rot3 R2 = rodriguez(w2);
+	CHECK(assert_equal(w2, R2.log()));
+
+	Vector w3 = Vector_(3, 0.0, 0.0, 0.1);
+	Rot3 R3 = rodriguez(w3);
+	CHECK(assert_equal(w3, R3.log()));
+
+	Vector w = Vector_(3, 0.1, 0.4, 0.2);
+	Rot3 R = rodriguez(w);
+	CHECK(assert_equal(w, R.log()));
+}
+
+/* ************************************************************************* */
+TEST(Rot3, between)
+{
+	Rot3 R = rodriguez(0.1, 0.4, 0.2);
+	Rot3 origin;
+	CHECK(assert_equal(R, between(origin,R)));
+	CHECK(assert_equal(R.inverse(), between(R,origin)));
+}
+
+/* ************************************************************************* */
+	TEST(Rot3, manifold)
+{
+	Rot3 t1 = rodriguez(0.1, 0.4, 0.2);
+	Rot3 t2 = rodriguez(0.3, 0.1, 0.7);
+	Rot3 origin;
+	Vector d12 = log(t1, t2);
+	CHECK(assert_equal(t2, t1.exmap(d12)));
+	CHECK(assert_equal(t2, origin.exmap(d12)*t1));
+	Vector d21 = log(t2, t1);
+	CHECK(assert_equal(t1, t2.exmap(d21)));
+	CHECK(assert_equal(t1, origin.exmap(d21)*t2));
 }
 
 /* ************************************************************************* */

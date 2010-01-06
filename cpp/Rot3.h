@@ -64,9 +64,17 @@ namespace gtsam {
     /** return DOF, dimensionality of tangent space */
     size_t dim() const { return 3;}
 		
-    /** Given 3-dim tangent vector, create new rotation */
+    /**
+     * @param a 3-dim tangent vector d (canonical coordinates of between(R,S))
+     * @return new rotation S=exp(d)*R
+     */
     Rot3 exmap(const Vector& d) const;
 		
+    /**
+     * @return log(R), i.e. canonical coordinates of R
+     */
+    Vector log() const;
+
     /** return vectorized form (column-wise)*/
     Vector vector() const;
 
@@ -144,6 +152,13 @@ namespace gtsam {
   Rot3 exmap(const Rot3& R, const Vector& v);
 
   /**
+   * @param a rotation R
+   * @param a rotation S
+   * @return log(S*R'), i.e. canonical coordinates of between(R,S)
+   */
+  Vector log(const Rot3& R, const Rot3& S);
+
+  /**
    * rotate point from rotated coordinate frame to 
    * world = R*p
    */
@@ -158,6 +173,11 @@ namespace gtsam {
   Point3  unrotate (const Rot3& R, const Point3& p);
   Matrix Dunrotate1(const Rot3& R, const Point3& p);
   Matrix Dunrotate2(const Rot3& R); // does not depend on p !
+
+	/**
+	 * Return relative rotation D s.t. R2=D*R1, i.e. D=R2*R1'
+	 */
+	Rot3 between(const Rot3& R1, const Rot3& R2);
 
 	/**
 	 * [RQ] receives a 3 by 3 matrix and returns an upper triangular matrix R
