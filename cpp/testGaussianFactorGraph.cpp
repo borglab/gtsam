@@ -743,8 +743,11 @@ TEST( GaussianFactorGraph, findMinimumSpanningTree )
 	g.add("x2", I, "x4", I, b, 0);
 	g.add("x3", I, "x4", I, b, 0);
 
-	vector<pair<string, string> > tree = g.findMinimumSpanningTree();
-	LONGS_EQUAL(3,tree.size());
+	map<string, string> tree = g.findMinimumSpanningTree();
+	CHECK(tree["x1"].compare("x1")==0);
+	CHECK(tree["x2"].compare("x1")==0);
+	CHECK(tree["x3"].compare("x1")==0);
+	CHECK(tree["x4"].compare("x1")==0);
 }
 
 /* ************************************************************************* */

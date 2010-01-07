@@ -20,7 +20,7 @@
 #include <boost/format.hpp>
 #include <boost/graph/graph_traits.hpp>
 #include <boost/graph/adjacency_list.hpp>
-#include <boost/graph/kruskal_min_spanning_tree.hpp>
+#include <boost/graph/prim_minimum_spanning_tree.hpp>
 #include <colamd/colamd.h>
 #include "Ordering.h"
 #include "FactorGraph.h"
@@ -276,13 +276,14 @@ void FactorGraph<Factor>::associateFactor(int index, sharedFactor factor) {
 
 /* ************************************************************************* */
 template<class Factor>
-vector<pair<string, string> > FactorGraph<Factor>::findMinimumSpanningTree() const {
+map<string, string> FactorGraph<Factor>::findMinimumSpanningTree() const {
 
 	typedef boost::adjacency_list<
 		boost::vecS, boost::vecS, boost::undirectedS,
 		boost::property<boost::vertex_name_t, string>,
 		boost::property<boost::edge_weight_t, int> > Graph;
 	typedef boost::graph_traits<Graph>::vertex_descriptor Vertex;
+	typedef boost::graph_traits<Graph>::vertex_iterator VertexIterator;
 	typedef boost::graph_traits<Graph>::edge_descriptor Edge;
 
 	// convert the factor graph to boost graph
@@ -316,16 +317,17 @@ vector<pair<string, string> > FactorGraph<Factor>::findMinimumSpanningTree() con
 	}
 
 	// find minimum spanning tree
-	vector<Edge> spanning_tree;
-	boost::kruskal_minimum_spanning_tree(g, back_inserter(spanning_tree));
+	vector<Vertex> p_map(boost::num_vertices(g));
+	prim_minimum_spanning_tree(g, &p_map[0]);
 
-	// convert edge to skin
-	vector<pair<string, string> > tree;
-	for (vector<Edge>::iterator ei = spanning_tree.begin(); ei
-				!= spanning_tree.end(); ++ei) {
-		string key1 = boost::get(boost::vertex_name, g, boost::source(*ei,g));
-		string key2 = boost::get(boost::vertex_name, g, boost::target(*ei,g));
-		tree.push_back(make_pair(key1, key2));
+	// convert edge to string pairs
+	map<string, string> tree;
+	VertexIterator itVertex = boost::vertices(g).first;
+	for (vector<Vertex>::iterator vi = p_map.begin(); vi!=p_map.end(); itVertex++, vi++) {
+		string key = boost::get(boost::vertex_name, g, *itVertex);
+		string parent = boost::get(boost::vertex_name, g, *vi);
+		// printf("%s parent: %s\n", key.c_str(), parent.c_str());
+		tree.insert(make_pair(key, parent));
 	}
 
 	return tree;
