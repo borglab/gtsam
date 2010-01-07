@@ -12,6 +12,26 @@ using namespace gtsam;
 using namespace boost::assign;
 
 /* ************************************************************************* */
+// x1 -> x2
+//		-> x3 -> x4
+//    -> x5
+TEST ( Ordering, constructor ) {
+	map<string, string> p_map;
+	p_map.insert(make_pair("x1", "x1"));
+	p_map.insert(make_pair("x2", "x1"));
+	p_map.insert(make_pair("x3", "x1"));
+	p_map.insert(make_pair("x4", "x3"));
+	p_map.insert(make_pair("x5", "x1"));
+
+	Ordering expected;
+	expected += "x4", "x5", "x3", "x2", "x1";
+
+	Ordering actual(p_map);
+	CHECK(assert_equal(expected, actual));
+}
+
+
+/* ************************************************************************* */
 TEST ( Ordering, subtract ) {
 	Ordering init, delta;
 	init += "a", "b", "c", "d", "e";

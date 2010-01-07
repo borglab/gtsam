@@ -8,6 +8,7 @@
 
 #include <list>
 #include <string>
+#include <map>
 #include "Testable.h"
 
 namespace gtsam {
@@ -37,6 +38,11 @@ namespace gtsam {
 		Ordering(const std::list<std::string>& strings_in) :
 			std::list<std::string>(strings_in) {
 		}
+
+		/**
+		 * Generate the ordering from a spanning tree represented by its parent map
+		 */
+		Ordering(const std::map<std::string, std::string>& p_map);
 
 		/**
 		 * Remove a set of keys from an ordering
