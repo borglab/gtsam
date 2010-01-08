@@ -289,7 +289,7 @@ map<string, string> FactorGraph<Factor>::findMinimumSpanningTree() const {
 	Vertex v1, v2;
 	BOOST_FOREACH(sharedFactor factor, factors_){
 		if (factor->keys().size() > 2)
-			throw(invalid_argument("findMinimumSpanningTree: only support factors with two keys"));
+			throw(invalid_argument("findMinimumSpanningTree: only support factors with at most two keys"));
 
 		if (factor->keys().size() == 1)
 			continue;
@@ -329,6 +329,31 @@ map<string, string> FactorGraph<Factor>::findMinimumSpanningTree() const {
 
 	return tree;
 }
+
+template<class Factor>
+pair<FactorGraph<Factor>, FactorGraph<Factor> > FactorGraph<Factor>::split(map<string, string> tree) const {
+
+	FactorGraph<Factor> Ab1, Ab2;
+	BOOST_FOREACH(sharedFactor factor, factors_){
+		if (factor->keys().size() > 2)
+			throw(invalid_argument("split: only support factors with at most two keys"));
+
+		if (factor->keys().size() == 1)
+			continue;
+
+		string key1 = factor->keys().front();
+		string key2 = factor->keys().back();
+		// if the tree contains the key
+		if (tree.find(key1) != tree.end() && tree[key1].compare(key2) == 0 ||
+				tree.find(key2) != tree.end() && tree[key2].compare(key1) == 0)
+			Ab1.push_back(factor);
+		else
+			Ab2.push_back(factor);
+	}
+
+	return make_pair(Ab1, Ab2);
+}
+
 
 /* ************************************************************************* */
 /* find factors and remove them from the factor graph: O(n)                  */

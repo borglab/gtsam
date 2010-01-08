@@ -121,6 +121,12 @@ namespace gtsam {
 		 */
 		std::map<std::string, std::string> findMinimumSpanningTree() const;
 
+		/**
+		 * Split the graph into two parts: one corresponds to the given spanning tre,
+		 * and the other corresponds to the rest of the factors
+		 */
+		std::pair<FactorGraph<Factor>, FactorGraph<Factor> > split(std::map<std::string, std::string> tree) const;
+
 	private:
 		/** Associate factor index with the variables connected to the factor */
 		void associateFactor(int index, sharedFactor factor);

@@ -751,5 +751,31 @@ TEST( GaussianFactorGraph, findMinimumSpanningTree )
 }
 
 /* ************************************************************************* */
+TEST( GaussianFactorGraph, split )
+{
+	GaussianFactorGraph g;
+	Matrix I = eye(2);
+	Vector b = Vector_(0, 0, 0);
+	g.add("x1", I, "x2", I, b, 0);
+	g.add("x1", I, "x3", I, b, 0);
+	g.add("x1", I, "x4", I, b, 0);
+	g.add("x2", I, "x3", I, b, 0);
+	g.add("x2", I, "x4", I, b, 0);
+
+	map<string, string> tree;
+	tree["x1"] = "x1";
+	tree["x2"] = "x1";
+	tree["x3"] = "x1";
+	tree["x4"] = "x1";
+
+	GaussianFactorGraph Ab1, Ab2;
+	pair<FactorGraph<GaussianFactor>, FactorGraph<GaussianFactor> > gg = g.split(tree);
+	Ab1 = *reinterpret_cast<GaussianFactorGraph*>(&(gg.first));
+	Ab2 = *reinterpret_cast<GaussianFactorGraph*>(&(gg.second));
+	LONGS_EQUAL(3, Ab1.size());
+	LONGS_EQUAL(2, Ab2.size());
+}
+
+/* ************************************************************************* */
 int main() { TestResult tr; return TestRegistry::runAllTests(tr);}
 /* ************************************************************************* */
