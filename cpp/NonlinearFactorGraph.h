@@ -10,6 +10,8 @@
 
 #pragma once
 
+#include <math.h>
+
 #include "NonlinearFactor.h"
 #include "GaussianFactorGraph.h"
 

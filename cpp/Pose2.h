@@ -13,29 +13,14 @@
 #include "Rot2.h"
 #include "Matrix.h"
 #include "Testable.h"
+#include "Lie.h"
 
 namespace gtsam {
-
-  /**
-   * Return point coordinates in pose coordinate frame
-   */
-  class Pose2;
-  Point2 transform_to(const Pose2& pose, const Point2& point);
-  Matrix Dtransform_to1(const Pose2& pose, const Point2& point);
-  Matrix Dtransform_to2(const Pose2& pose, const Point2& point);
-
-  /**
-   * Return relative pose between p1 and p2, in p1 coordinate frame
-   */
-  Pose2 between(const Pose2& p1, const Pose2& p2);
-  Matrix Dbetween1(const Pose2& p1, const Pose2& p2);
-  Matrix Dbetween2(const Pose2& p1, const Pose2& p2);
 
   /**
    * A 2D pose (Point2,Rot2)
    */
   class Pose2: Testable<Pose2>  {
-
   private:
     Point2 t_;
     Rot2 r_;
@@ -43,12 +28,10 @@ namespace gtsam {
   public:
 
     /** default constructor = origin */
-    Pose2() :
-      t_(0.0, 0.0), r_(0) { } // default is origin
+    Pose2() : t_(0.0, 0.0), r_(0) {} // default is origin
 
     /** copy constructor */
-    Pose2(const Pose2& pose) :
-      t_(pose.t_), r_(pose.r_) { }
+    Pose2(const Pose2& pose) : t_(pose.t_), r_(pose.r_) {}
 
     /**
      * construct from (x,y,theta)
@@ -56,14 +39,11 @@ namespace gtsam {
      * @param y y coordinate
      * @param theta angle with positive X-axis
      */
-    Pose2(double x, double y, double theta) :
-      t_(x,y), r_(theta) { }
+    Pose2(double x, double y, double theta) : t_(x,y), r_(theta) {}
 
     /** construct from rotation and translation */
-    Pose2(double theta, const Point2& t) :
-      t_(t), r_(theta) { }
-    Pose2(const Rot2& r, const Point2& t) :
-      t_(t), r_(r) { }
+    Pose2(double theta, const Point2& t) : t_(t), r_(theta) {}
+    Pose2(const Rot2& r, const Point2& t) : t_(t), r_(r) {}
 
     /** print with optional string */
     void print(const std::string& s = "") const;
@@ -72,39 +52,57 @@ namespace gtsam {
     bool equals(const Pose2& pose, double tol = 1e-9) const;
 
     /** get functions for x, y, theta */
-    double x()     const { return t_.x();}
-    double y()     const { return t_.y();}
-    double theta() const { return r_.theta();}
+    double x()     const { return t_.x(); }
+    double y()     const { return t_.y(); }
+    double theta() const { return r_.theta(); }
     Point2 t()     const { return t_; }
     Rot2 r()       const { return r_; }
 
-    /** return this pose2 as a vector (x,y,r) */
-    Vector vector() const { return Vector_(3, t_.x(), t_.y(), r_.theta()); }
-
-    /** return DOF, dimensionality of tangent space = 3 */
-    size_t dim() const { return 3; }
-
-    /** exponential map */
-    Pose2 exmap(const Vector& v) const { return Pose2(v[0], v[1], v[2]) * (*this); }
-
-    /** log map */
-    Vector log(const Pose2 &pose) const { return between(*this, pose).vector(); }
-
-    /** rotate pose by theta */
-    //  Pose2 rotate(double theta) const;
-
-    /** inverse transformation */
-    Pose2 inverse() const { return Pose2(r_.inverse(), r_.unrotate(Point2(-t_.x(), -t_.y()))); }
-
-    /** compose this transformation onto another (pre-multiply this*p1) */
-    Pose2 compose(const Pose2& p1) const { return Pose2(p1.r_ * r_, p1.r_ * t_ + p1.t_); }
-
-    /** same as compose (pre-multiply this*p1) */
-    Pose2 operator*(const Pose2& p1) const { return compose(p1); }
-
-    /** Return point coordinates in pose coordinate frame, same as transform_to */
-    Point2 operator*(const Point2& point) const { return r_.unrotate(point-t_); }
-
   }; // Pose2
+
+
+  /** return DOF, dimensionality of tangent space = 3 */
+  inline size_t dim(const Pose2&) { return 3; }
+
+  /** inverse transformation */
+  inline Pose2 inverse(const Pose2& pose) {
+    return Pose2(inverse(pose.r()),
+        pose.r().unrotate(Point2(-pose.t().x(), -pose.t().y()))); }
+
+  /** compose this transformation onto another (pre-multiply this*p1) */
+  inline Pose2 compose(const Pose2& p1, const Pose2& p0) {
+    return Pose2(p0.r()*p1.r(), p0.t() + p0.r()*p1.t()); }
+
+  /* exponential and log maps around identity */
+  // Create an incremental pose from x,y,theta
+  template<> inline Pose2 expmap(const Vector& v) { return Pose2(v[0], v[1], v[2]); }
+  // Return the x,y,theta of this pose
+  inline Vector logmap(const Pose2& p) { return Vector_(3, p.x(), p.y(), p.theta()); }
+
+
+  /** Return point coordinates in pose coordinate frame */
+  inline Point2 transform_to(const Pose2& pose, const Point2& point) {
+    return unrotate(pose.r(), point-pose.t()); }
+  Matrix Dtransform_to1(const Pose2& pose, const Point2& point);
+  Matrix Dtransform_to2(const Pose2& pose, const Point2& point);
+
+  /** Return point coordinates in global frame */
+  inline Point2 transform_from(const Pose2& pose, const Point2& point) {
+    return rotate(pose.r(), point)+pose.t(); }
+
+  /** Return relative pose between p1 and p2, in p1 coordinate frame */
+  // todo: make sure compiler finds this version of between.
+  //inline Pose2 between(const Pose2& p0, const Pose2& p2) {
+  //  return Pose2(p0.r().invcompose(p2.r()), p0.r().unrotate(p2.t()-p0.t())); }
+  Matrix Dbetween1(const Pose2& p0, const Pose2& p2);
+  Matrix Dbetween2(const Pose2& p0, const Pose2& p2);
+
+  /** same as compose (pre-multiply this*p1) */
+  inline Pose2 operator*(const Pose2& p1, const Pose2& p0) { return compose(p1, p0); }
+
+  /** Transform a point in this coordinate frame to global coordinates,
+   * same as transform_from */
+  inline Point2 operator*(const Pose2& pose, const Point2& point) {
+    return transform_from(pose, point); }
 
 } // namespace gtsam

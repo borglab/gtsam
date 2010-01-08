@@ -55,23 +55,9 @@ namespace gtsam {
 		bool equals(const Cal3_S2& K, double tol = 10e-9) const;
 
 		/**
-		 * return DOF, dimensionality of tangent space
-		 */
-		size_t dim() const {
-			return 5;
-		}
-
-		/**
 		 * load calibration from location (default name is calibration_info.txt)
 		 */
 		Cal3_S2(const std::string &path);
-
-		/**
-		 * Given 5-dim tangent vector, create new calibration
-		 */
-		Cal3_S2 exmap(const Vector& d) const {
-			return Cal3_S2(fx_ + d(0), fy_ + d(1), s_ + d(2), u0_ + d(3), v0_ + d(4));
-		}
 
 		/**
 		 * return the principal point
@@ -107,6 +93,7 @@ namespace gtsam {
 
 		/** friends */
 		friend Matrix Duncalibrate2(const Cal3_S2& K, const Point2& p);
+		friend Cal3_S2 expmap(const Cal3_S2& cal, const Vector& d);
 
 	private:
 		/** Serialization function */
@@ -123,6 +110,19 @@ namespace gtsam {
 	};
 
 	typedef boost::shared_ptr<Cal3_S2> shared_ptrK;
+
+    /**
+     * return DOF, dimensionality of tangent space
+     */
+    inline size_t dim(const Cal3_S2&) { return 5; }
+
+    /**
+     * Given 5-dim tangent vector, create new calibration
+     */
+    inline Cal3_S2 expmap(const Cal3_S2& cal, const Vector& d) {
+        return Cal3_S2(cal.fx_ + d(0), cal.fy_ + d(1),
+            cal.s_ + d(2), cal.u0_ + d(3), cal.v0_ + d(4));
+    }
 
 	/**
 	 * convert intrinsic coordinates xy to image coordinates uv

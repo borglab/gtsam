@@ -286,7 +286,7 @@ VectorConfig GaussianFactorGraph::optimalUpdate(const VectorConfig& x,
 	cout << alpha << endl;
 
 	// return updated estimate by stepping in direction d
-  return x.exmap(d.scale(alpha));
+  return expmap(x, d.scale(alpha));
 }
 
 /* ************************************************************************* */
@@ -319,3 +319,4 @@ boost::shared_ptr<VectorConfig> GaussianFactorGraph::conjugateGradientDescent_(
 }
 
 /* ************************************************************************* */
+

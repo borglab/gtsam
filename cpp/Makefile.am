@@ -157,6 +157,7 @@ testSQPOptimizer_SOURCES   		  = $(example) testSQPOptimizer.cpp
 testSQPOptimizer_LDADD     		  = libgtsam.la
 
 # geometry
+headers += Lie.h
 sources += Point2.cpp Rot2.cpp Pose2.cpp Point3.cpp Rot3.cpp Pose3.cpp Cal3_S2.cpp
 check_PROGRAMS += testPoint2 testRot2 testPose2 testPoint3 testRot3 testPose3 testCal3_S2
 testPoint2_SOURCES  = testPoint2.cpp

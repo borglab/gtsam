@@ -23,7 +23,7 @@ TEST( VSLAMConfig, update_with_large_delta) {
 	delta.insert("l1", Vector_(3, 0.1, 0.1, 0.1));
 	delta.insert("x2", Vector_(6, 0.0, 0.0, 0.0, 100.1, 4.1, 9.1));
 
-	VSLAMConfig actual = init.exmap(delta);
+	VSLAMConfig actual = expmap(init, delta);
 	VSLAMConfig expected;
 	expected.addCameraPose(1, Pose3(Rot3(), Point3(0.1, 0.1, 0.1)));
 	expected.addLandmarkPoint(1, Point3(1.1, 2.1, 3.1));

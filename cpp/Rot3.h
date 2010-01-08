@@ -12,71 +12,53 @@
 
 #include "Point3.h"
 #include "Testable.h"
+#include "Lie.h"
 
 namespace gtsam {
 
-  /* Rotation matrix */
+  /* 3D Rotation */
   class Rot3: Testable<Rot3> {
   private:
     /** we store columns ! */
     Point3 r1_, r2_, r3_;  
-		
+
   public:
-	 
-		/** default constructor, unit rotation */
-		Rot3() : r1_(Point3(1.0,0.0,0.0)),
-				r2_(Point3(0.0,1.0,0.0)),
-				r3_(Point3(0.0,0.0,1.0)) {
-			}
 
-		/** constructor from columns */
-		Rot3(const Point3& r1, const Point3& r2, const Point3& r3) :
-				r1_(r1), r2_(r2), r3_(r3) {
-			}
-			
-		/**  constructor from vector */
-		Rot3(const Vector &v) :
-			r1_(Point3(v(0),v(1),v(2))),
-				r2_(Point3(v(3),v(4),v(5))),
-				r3_(Point3(v(6),v(7),v(8)))
-				{  }
+    /** default constructor, unit rotation */
+    Rot3() :
+      r1_(Point3(1.0,0.0,0.0)),
+      r2_(Point3(0.0,1.0,0.0)),
+      r3_(Point3(0.0,0.0,1.0)) {}
 
-		/** constructor from doubles in *row* order !!! */
-		Rot3(double R11, double R12, double R13,
-				 double R21, double R22, double R23,
-				 double R31, double R32, double R33) :
-					 r1_(Point3(R11, R21, R31)),
-					 r2_(Point3(R12, R22, R32)),
-					 r3_(Point3(R13, R23, R33)) {}
+    /** constructor from columns */
+    Rot3(const Point3& r1, const Point3& r2, const Point3& r3) :
+      r1_(r1), r2_(r2), r3_(r3) {}
 
-		/** constructor from matrix */
-		Rot3(const Matrix& R):
-			r1_(Point3(R(0,0), R(1,0), R(2,0))),
-				r2_(Point3(R(0,1), R(1,1), R(2,1))),
-				r3_(Point3(R(0,2), R(1,2), R(2,2))) {}
+    /**  constructor from vector */
+    Rot3(const Vector &v) :
+      r1_(Point3(v(0),v(1),v(2))),
+      r2_(Point3(v(3),v(4),v(5))),
+      r3_(Point3(v(6),v(7),v(8))) {}
 
-		/** print */
-		void print(const std::string& s="R") const { gtsam::print(matrix(), s);}
+    /** constructor from doubles in *row* order !!! */
+    Rot3(double R11, double R12, double R13,
+        double R21, double R22, double R23,
+        double R31, double R32, double R33) :
+          r1_(Point3(R11, R21, R31)),
+          r2_(Point3(R12, R22, R32)),
+          r3_(Point3(R13, R23, R33)) {}
 
-		/** equals with an tolerance */
-		bool equals(const Rot3& p, double tol = 1e-9) const;
+    /** constructor from matrix */
+    Rot3(const Matrix& R):
+      r1_(Point3(R(0,0), R(1,0), R(2,0))),
+      r2_(Point3(R(0,1), R(1,1), R(2,1))),
+      r3_(Point3(R(0,2), R(1,2), R(2,2))) {}
 
-    /** return DOF, dimensionality of tangent space */
-    size_t dim() const { return 3;}
-		
-    /**
-     * @param a 3-dim tangent vector d (canonical coordinates of between(R,S))
-     * @return new rotation S=exp(d)*R
-     */
-    Rot3 exmap(const Vector& d) const;
-		
-    /**
-     * @return log(R), i.e. canonical coordinates of R
-     */
-    Vector log() const;
+    /** print */
+    void print(const std::string& s="R") const { gtsam::print(matrix(), s);}
 
-    /** return vectorized form (column-wise)*/
-    Vector vector() const;
+    /** equals with an tolerance */
+    bool equals(const Rot3& p, double tol = 1e-9) const;
 
     /** return 3*3 rotation matrix */
     Matrix matrix() const;
@@ -86,38 +68,25 @@ namespace gtsam {
 
     /** returns column vector specified by index */
     Point3 column(int index) const;
-
-    /** inverse transformation  */
-    Rot3 inverse() const;
-		
-    /** composition */
-    inline Rot3 operator*(const Rot3& B) const { return Rot3(matrix()*B.matrix());}
-
-    /**  rotate from rotated to world, syntactic sugar = R*p  */
-    inline Point3 operator*(const Point3& p) const {
-    	return r1_ * p.x() + r2_ * p.y() + r3_ * p.z();
-    }
-
-    /** rotate from world to rotated = R'*p */
-    Point3 unrotate(const Point3& p) const;
+    Point3 r1() const { return r1_; }
+    Point3 r2() const { return r2_; }
+    Point3 r3() const { return r3_; }
 
     /** use RQ to calculate yaw-pitch-roll angle representation */
     Vector ypr() const;
 
-    /** friends */
-    friend Matrix Dunrotate1(const Rot3& R, const Point3& p);
-
   private:
-  	/** Serialization function */
-  	friend class boost::serialization::access;
-  	template<class Archive>
-  	void serialize(Archive & ar, const unsigned int version)
-  	{
-  		ar & BOOST_SERIALIZATION_NVP(r1_);
-  		ar & BOOST_SERIALIZATION_NVP(r2_);
-  		ar & BOOST_SERIALIZATION_NVP(r3_);
-  	}
+    /** Serialization function */
+    friend class boost::serialization::access;
+    template<class Archive>
+    void serialize(Archive & ar, const unsigned int version)
+    {
+      ar & BOOST_SERIALIZATION_NVP(r1_);
+      ar & BOOST_SERIALIZATION_NVP(r2_);
+      ar & BOOST_SERIALIZATION_NVP(r3_);
+    }
   };
+
 
   /**
    * Rodriguez' formula to compute an incremental rotation matrix
@@ -143,26 +112,62 @@ namespace gtsam {
    */
   inline Rot3 rodriguez(double wx, double wy, double wz) { return rodriguez(Vector_(3,wx,wy,wz));}
 
+  /** return DOF, dimensionality of tangent space */
+  inline size_t dim(const Rot3&) { return 3; }
+
+  // Exponential map at identity - create a rotation from canonical coordinates
+  // using Rodriguez' formula
+  template<> inline Rot3 expmap(const Vector& v) {
+    if(zero(v)) return Rot3();
+    else return rodriguez(v);
+  }
+
+  // Log map at identity - return the canonical coordinates of this rotation
+  inline Vector logmap(const Rot3& R) {
+    double tr = R.r1().x()+R.r2().y()+R.r3().z();
+    if (tr==3.0) return ones(3); // todo: identity?
+    if (tr==-1.0) throw std::domain_error("Rot3::log: trace == -1 not yet handled :-(");;
+    double theta = acos((tr-1.0)/2.0);
+    return (theta/2.0/sin(theta))*Vector_(3,
+        R.r2().z()-R.r3().y(),
+        R.r3().x()-R.r1().z(),
+        R.r1().y()-R.r2().x());
+  }
+
+  // Compose two rotations
+  inline Rot3 compose(const Rot3& R1, const Rot3& R2) {
+    return Rot3(R1.matrix() * R2.matrix()); }
+
+  // Find the inverse rotation R^T s.t. inverse(R)*R = Rot3()
+  inline Rot3 inverse(const Rot3& R) {
+    return Rot3(
+        R.r1().x(), R.r1().y(), R.r1().z(),
+        R.r2().x(), R.r2().y(), R.r2().z(),
+        R.r3().x(), R.r3().y(), R.r3().z());
+  }
+
   /**
+
    * Update Rotation with incremental rotation
    * @param v a vector of incremental roll,pitch,yaw
    * @param R a rotated frame
    * @return incremental rotation matrix
    */
-  Rot3 exmap(const Rot3& R, const Vector& v);
+  //Rot3 exp(const Rot3& R, const Vector& v);
 
   /**
    * @param a rotation R
    * @param a rotation S
    * @return log(S*R'), i.e. canonical coordinates of between(R,S)
    */
-  Vector log(const Rot3& R, const Rot3& S);
+  //Vector log(const Rot3& R, const Rot3& S);
 
   /**
    * rotate point from rotated coordinate frame to 
    * world = R*p
    */
-  Point3  rotate (const Rot3& R, const Point3& p);
+  Point3 rotate(const Rot3& R, const Point3& p);
+  inline Point3 operator*(const Rot3& R, const Point3& p) { return rotate(R,p); }
   Matrix Drotate1(const Rot3& R, const Point3& p);
   Matrix Drotate2(const Rot3& R); // does not depend on p !
 
@@ -170,25 +175,34 @@ namespace gtsam {
    * rotate point from world to rotated 
    * frame = R'*p
    */
-  Point3  unrotate (const Rot3& R, const Point3& p);
+  Point3 unrotate(const Rot3& R, const Point3& p);
   Matrix Dunrotate1(const Rot3& R, const Point3& p);
   Matrix Dunrotate2(const Rot3& R); // does not depend on p !
 
-	/**
-	 * Return relative rotation D s.t. R2=D*R1, i.e. D=R2*R1'
-	 */
-	Rot3 between(const Rot3& R1, const Rot3& R2);
+  /**
+   * compose two rotations i.e., R=R1*R2
+   */
+  //Rot3    compose (const Rot3& R1, const Rot3& R2);
+  Matrix Dcompose1(const Rot3& R1, const Rot3& R2);
+  Matrix Dcompose2(const Rot3& R1, const Rot3& R2);
 
-	/**
-	 * [RQ] receives a 3 by 3 matrix and returns an upper triangular matrix R
-	 * and 3 rotation angles corresponding to the rotation matrix Q=Qz'*Qy'*Qx'
-	 * such that A = R*Q = R*Qz'*Qy'*Qx'. When A is a rotation matrix, R will
-	 * be the identity and Q is a yaw-pitch-roll decomposition of A.
-	 * The implementation uses Givens rotations and is based on Hartley-Zisserman.
-	 * @param a 3 by 3 matrix A=RQ
-	 * @return an upper triangular matrix R
-	 * @return a vector [thetax, thetay, thetaz] in radians.
-	 */
+  /**
+   * Return relative rotation D s.t. R2=D*R1, i.e. D=R2*R1'
+   */
+  //Rot3    between (const Rot3& R1, const Rot3& R2);
+  Matrix Dbetween1(const Rot3& R1, const Rot3& R2);
+  Matrix Dbetween2(const Rot3& R1, const Rot3& R2);
+
+  /**
+   * [RQ] receives a 3 by 3 matrix and returns an upper triangular matrix R
+   * and 3 rotation angles corresponding to the rotation matrix Q=Qz'*Qy'*Qx'
+   * such that A = R*Q = R*Qz'*Qy'*Qx'. When A is a rotation matrix, R will
+   * be the identity and Q is a yaw-pitch-roll decomposition of A.
+   * The implementation uses Givens rotations and is based on Hartley-Zisserman.
+   * @param a 3 by 3 matrix A=RQ
+   * @return an upper triangular matrix R
+   * @return a vector [thetax, thetay, thetaz] in radians.
+   */
   std::pair<Matrix,Vector> RQ(const Matrix& A);
 
 }

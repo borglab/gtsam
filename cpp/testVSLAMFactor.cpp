@@ -59,11 +59,11 @@ TEST( VSLAMFactor, error )
 	GaussianFactorGraph actual_lfg = graph.linearize(config);
 	CHECK(assert_equal(expected_lfg,actual_lfg));
 
-	// exmap on a config
+	// expmap on a config
 	VectorConfig delta;
 	delta.insert("x1",Vector_(6, 0.,0.,0., 1.,1.,1.));
 	delta.insert("l1",Vector_(3, 1.,2.,3.));
-	VSLAMConfig actual_config = config.exmap(delta);
+	VSLAMConfig actual_config = expmap(config, delta);
   VSLAMConfig expected_config;
   Point3 t2(1,1,-5); Pose3 x2(R,t2); expected_config.addCameraPose(1, x2);
   Point3 l2(1,2,3); expected_config.addLandmarkPoint(1, l2);

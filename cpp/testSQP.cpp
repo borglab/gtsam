@@ -121,7 +121,7 @@ TEST (SQP, problem1_cholesky ) {
 		if (verbose) delta.print("Delta");
 
 		// update initial estimate
-		VectorConfig newState = state.exmap(delta);
+		VectorConfig newState = expmap(state, delta);
 		state = newState;
 
 		if (verbose) state.print("Updated State");
@@ -222,7 +222,7 @@ TEST (SQP, problem1_sqp ) {
 		if (verbose) delta.print("Delta");
 
 		// update initial estimate
-		VectorConfig newState = state.exmap(delta.scale(-1.0));
+		VectorConfig newState = expmap(state, delta.scale(-1.0));
 
 		// set the state to the updated state
 		state = newState;
@@ -445,9 +445,9 @@ TEST (SQP, two_pose ) {
 		if (verbose) delta.print("Delta Config");
 
 		// update both state variables
-		state = state.exmap(delta);
+		state = expmap(state, delta);
 		if (verbose) state.print("newState");
-		state_lambda = state_lambda.exmap(delta);
+		state_lambda = expmap(state_lambda, delta);
 		if (verbose) state_lambda.print("newStateLam");
 	}
 

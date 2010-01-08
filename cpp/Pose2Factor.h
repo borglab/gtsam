@@ -49,7 +49,7 @@ public:
 	Vector error_vector(const Pose2Config& config) const {
 		//z-h
 		Pose2 p1 = config.get(key1_), p2 = config.get(key2_);
-		return -between(p1,p2).log(measured_);
+		return -logmap(between(p1,p2), measured_);
 	}
 
 	std::list<std::string> keys() const { return keys_; }
@@ -58,7 +58,7 @@ public:
 	/** linearize */
 	boost::shared_ptr<GaussianFactor> linearize(const Pose2Config& config) const {
 		Pose2 p1 = config.get(key1_), p2 = config.get(key2_);
-		Vector b = -between(p1,p2).log(measured_);
+		Vector b = -logmap(between(p1,p2), measured_);
 		Matrix H1 = Dbetween1(p1,p2);
 		Matrix H2 = Dbetween2(p1,p2);
 		boost::shared_ptr<GaussianFactor> linearized(new GaussianFactor(
@@ -68,4 +68,5 @@ public:
 		return linearized;
 	}
 };
+
 } /// namespace gtsam

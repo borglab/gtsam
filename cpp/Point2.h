@@ -9,6 +9,7 @@
 #include <boost/serialization/nvp.hpp>
 #include "Vector.h"
 #include "Testable.h"
+#include "Lie.h"
 
 namespace gtsam {
 
@@ -37,20 +38,8 @@ namespace gtsam {
     double x() const {return x_;}
     double y() const {return y_;}
 
-    /** return DOF, dimensionality of tangent space */
-    size_t dim() const { return 2;}
-		
-    /** Given 2-dim tangent vector, create new point */
-    Point2 exmap(const Vector& d) const { 
-      return Point2(x_+d(0),y_+d(1));
-    }
-		
     /** return vectorized form (column-wise) */
-    Vector vector() const {
-      Vector v(2);
-      v(0)=x_;v(1)=y_;
-      return v;
-    }
+    Vector vector() const { return Vector_(2, x_, y_); }
 
     /** operators */
     inline bool   operator ==(const Point2& q) const {return x_==q.x_ && q.y_==q.y_;}
@@ -71,5 +60,31 @@ namespace gtsam {
       ar & BOOST_SERIALIZATION_NVP(y_);
     }
   };
+
+  // Lie group functions
+
+  // Dimensionality of the tangent space
+  inline size_t dim(const Point2& obj) { return 2; }
+
+  // Exponential map around identity - just create a Point2 from a vector
+  template<> inline Point2 expmap(const Vector& dp) { return Point2(dp); }
+
+  // Log map around identity - just return the Point2 as a vector
+  inline Vector logmap(const Point2& dp) { return Vector_(2, dp.x(), dp.y()); }
+
+  // "Compose", just adds the coordinates of two points.
+  inline Point2 compose(const Point2& p1, const Point2& p0) { return p0+p1; }
+  inline Matrix Dcompose1(const Point2& p1, const Point2& p0) {
+    return Matrix_(2,2,
+        1.0, 0.0,
+        0.0, 1.0); }
+  inline Matrix Dcompose2(const Point2& p1, const Point2& p0) {
+    return Matrix_(2,2,
+        1.0, 0.0,
+        0.0, 1.0); }
+
+  // "Inverse" - negates each coordinate such that compose(p,inverse(p))=Point2()
+  inline Point2 inverse(const Point2& p) { return Point2(-p.x(), -p.y()); }
+
 }
 

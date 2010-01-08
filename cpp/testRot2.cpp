@@ -22,13 +22,13 @@ TEST( Rot2, angle)
 /* ************************************************************************* */
 TEST( Rot2, transpose)
 {
-	CHECK(assert_equal(R.inverse().matrix(),R.transpose()));
+	CHECK(assert_equal(inverse(R).matrix(),R.transpose()));
 }
 
 /* ************************************************************************* */
 TEST( Rot2, negtranspose)
 {
-    CHECK(assert_equal(-R.inverse().matrix(),R.negtranspose()));
+    CHECK(assert_equal(-inverse(R).matrix(),R.negtranspose()));
 }
 
 /* ************************************************************************* */
@@ -41,7 +41,7 @@ TEST( Rot2, compose)
 /* ************************************************************************* */
 TEST( Rot2, invcompose)
 {
-    CHECK(assert_equal(Rot2(0.2), Rot2(0.25).invcompose(Rot2(0.45))));
+    CHECK(assert_equal(Rot2(0.2), invcompose(Rot2(0.25),Rot2(0.45))));
 }
 
 /* ************************************************************************* */
@@ -53,19 +53,19 @@ TEST( Rot2, equals)
 }
 
 /* ************************************************************************* */
-TEST( Rot2, exmap)
+TEST( Rot2, expmap)
 {
 	Vector v = zero(1);
-	CHECK(assert_equal(R.exmap(v), R));
+	CHECK(assert_equal(expmap(R,v), R));
 }
 
 /* ************************************************************************* */
-TEST(Rot2, log)
+TEST(Rot2, logmap)
 {
   Rot2 rot0(M_PI_2);
   Rot2 rot(M_PI);
   Vector expected = Vector_(1, M_PI_2);
-  Vector actual = rot0.log(rot);
+  Vector actual = logmap(rot0,rot);
   CHECK(assert_equal(expected, actual));
 }
 

@@ -52,7 +52,11 @@ namespace gtsam {
 		Vector error_vector(const Config& config) const {
 			//z-h
 			Pose3 p1 = config.get(key1_), p2 = config.get(key2_);
-			return (measured_ - between(p1, p2)).vector();
+			// todo: removed vector() from Pose3, so emulating it here!  This is incorrect!
+			Pose3 betw = between(p1,p2);
+			Vector r_diff = logmap(measured_.rotation()) - logmap(betw.rotation());
+			Vector t_diff = logmap(measured_.translation()) - logmap(betw.translation());
+			return concatVectors(2, &r_diff, &t_diff);
 		}
 
 		std::list<std::string> keys() const {
@@ -66,7 +70,11 @@ namespace gtsam {
 		/** linearize */
 		boost::shared_ptr<GaussianFactor> linearize(const Config& config) const {
 			Pose3 p1 = config.get(key1_), p2 = config.get(key2_);
-			Vector b = (measured_ - between(p1, p2)).vector();
+            Pose3 betw = between(p1,p2);
+            // todo: removed vector() from Pose3, so emulating it here!  This is incorrect!
+            Vector r_diff = logmap(measured_.rotation()) - logmap(betw.rotation());
+            Vector t_diff = logmap(measured_.translation()) - logmap(betw.translation());
+			Vector b = concatVectors(2, &r_diff, &t_diff);
 			Matrix H1 = Dbetween1(p1, p2);
 			Matrix H2 = Dbetween2(p1, p2);
 			boost::shared_ptr<GaussianFactor> linearized(new GaussianFactor(key1_,

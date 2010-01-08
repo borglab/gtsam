@@ -22,12 +22,6 @@ namespace gtsam {
   }
 
   /* ************************************************************************* */
-  Rot2 Rot2::exmap(const Vector& v) const {
-    if (zero(v)) return (*this);
-    return Rot2(v(0)) * (*this); // exponential map then compose
-  }
-
-  /* ************************************************************************* */
   Matrix Rot2::matrix() const {
     return Matrix_(2, 2, c_, -s_, s_, c_);
   }
@@ -43,32 +37,6 @@ namespace gtsam {
   }
 
   /* ************************************************************************* */
-  Rot2 Rot2::inverse() const { return Rot2(c_, -s_);}
-
-  /* ************************************************************************* */
-  Rot2 Rot2::invcompose(const Rot2& R) const {
-    return Rot2(
-        c_ * R.c_ + s_ * R.s_,
-        -s_ * R.c_ + c_ * R.s_);
-  }
-
-  /* ************************************************************************* */
-  Rot2 Rot2::operator*(const Rot2& R) const {
-    return Rot2(
-        c_ * R.c_ - s_ * R.s_,
-        s_ * R.c_ + c_ * R.s_
-    );
-  }
-
-  /* ************************************************************************* */
-  Point2 Rot2::operator*(const Point2& p) const {
-    return Point2(
-        c_ * p.x() - s_ * p.y(),
-        s_ * p.x() + c_ * p.y()
-    );
-  }
-
-  /* ************************************************************************* */
   Point2 Rot2::unrotate(const Point2& p) const {
     return Point2(
         c_ * p.x() + s_ * p.y(),
@@ -77,13 +45,10 @@ namespace gtsam {
   }
 
   /* ************************************************************************* */
-  Rot2 exmap(const Rot2& R, const Vector& v) {
-    return R.exmap(v);
-  }
-
-  /* ************************************************************************* */
   Point2 rotate(const Rot2& R, const Point2& p) {
-    return R * p;
+    return Point2(
+        R.c() * p.x() - R.s() * p.y(),
+        R.s() * p.x() + R.c() * p.y());
   }
 
   /* ************************************************************************* */

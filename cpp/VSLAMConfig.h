@@ -44,13 +44,6 @@ class VSLAMConfig : Testable<VSLAMConfig> {
   VSLAMConfig(const VSLAMConfig& original):
   	cameraPoses_(original.cameraPoses_), landmarkPoints_(original.landmarkPoints_){}
 
-	/**
-	 * Exponential map: takes 6D vectors in VectorConfig
-	 * and applies them to the poses in the VSLAMConfig.
-	 * Needed for use in nonlinear optimization
-	 */
-  VSLAMConfig exmap(const VectorConfig & delta) const;
-
   PoseMap::const_iterator cameraIteratorBegin() const  { return cameraPoses_.begin();}
   PoseMap::const_iterator cameraIteratorEnd() const   { return cameraPoses_.end();}
   PointMap::const_iterator landmarkIteratorBegin() const { return landmarkPoints_.begin();}
@@ -115,7 +108,18 @@ class VSLAMConfig : Testable<VSLAMConfig> {
   inline size_t size(){
     return landmarkPoints_.size() + cameraPoses_.size();
   }
+
+  friend VSLAMConfig expmap(const VSLAMConfig& c, const VectorConfig & delta);
 };
+
+
+/**
+ * Exponential map: takes 6D vectors in VectorConfig
+ * and applies them to the poses in the VSLAMConfig.
+ * Needed for use in nonlinear optimization
+ */
+VSLAMConfig expmap(const VSLAMConfig& c, const VectorConfig & delta);
+
 
 } // namespace gtsam
 

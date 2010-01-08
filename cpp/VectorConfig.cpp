@@ -107,11 +107,11 @@ VectorConfig VectorConfig::operator-(const VectorConfig& b) const {
 }
 
 /* ************************************************************************* */
-VectorConfig VectorConfig::exmap(const VectorConfig& delta) const
+VectorConfig expmap(const VectorConfig& original, const VectorConfig& delta)
 {
 	VectorConfig newConfig;
 	string j; Vector vj;
-	FOREACH_PAIR(j, vj, values) {
+	FOREACH_PAIR(j, vj, original.values) {
 		if (delta.contains(j)) {
 			const Vector& dj = delta[j];
 			check_size(j,vj,dj);
@@ -124,12 +124,12 @@ VectorConfig VectorConfig::exmap(const VectorConfig& delta) const
 }
 
 /* ************************************************************************* */
-VectorConfig VectorConfig::exmap(const Vector& delta) const
+VectorConfig expmap(const VectorConfig& original, const Vector& delta)
 {
 	VectorConfig newConfig;
 	size_t i = 0;
 	string j; Vector vj;
-	FOREACH_PAIR(j, vj, values) {
+	FOREACH_PAIR(j, vj, original.values) {
 		size_t mj = vj.size();
 		Vector dj = sub(delta, i, i+mj);
 		newConfig.insert(j, vj + dj);

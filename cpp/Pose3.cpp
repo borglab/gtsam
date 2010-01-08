@@ -3,135 +3,184 @@
  * @brief 3D Pose
  */
 
+#include <iostream>
 #include "Pose3.h"
 
 using namespace std;
+using namespace boost::numeric::ublas;
 
 namespace gtsam {
 
-/* ************************************************************************* */
-void Pose3::print(const string& s) const {
-	R_.print(s + ".R");
-	t_.print(s + ".t");
-}
+  /* ************************************************************************* */
+  void Pose3::print(const string& s) const {
+    R_.print(s + ".R");
+    t_.print(s + ".t");
+  }
 
-/* ************************************************************************* */
-bool Pose3::equals(const Pose3& pose, double tol) const
-{
-  return R_.equals(pose.R_,tol) && t_.equals(pose.t_,tol);
-}
+  /* ************************************************************************* */
+  bool Pose3::equals(const Pose3& pose, double tol) const {
+    return R_.equals(pose.R_,tol) && t_.equals(pose.t_,tol);
+  }
 
-/* ************************************************************************* */
-// Agrawal06iros, formula (6), seems to suggest this could be wrong:
-Pose3 Pose3::exmap(const Vector& v) const { 
-  return Pose3(R_.exmap(sub(v,0,3)), t_.exmap(sub(v,3,6)));
-}
+  /** Agrawal06iros versions
+  Pose3 expmap(const Vector& d) {
 
-/* ************************************************************************* */
-Vector Pose3::vector() const {
-	Vector r = R_.vector(), t = t_.vector();
-	return concatVectors(2, &r, &t);
-}
+  	// From
+  	Vector w = vector_range<const Vector>(d, range(0,3));
+  	Vector u = vector_range<const Vector>(d, range(3,6));
+  	double t = norm_2(w);
+		if (t < 1e-5)
+			return Pose3(expmap<Rot3> (w), expmap<Point3> (u));
+		else {
+			Matrix W = skewSymmetric(w/t);
+			Matrix A = eye(3, 3) + ((1 - cos(t)) / t) * W + ((t - sin(t)) / t) * (W * W);
+			return Pose3(expmap<Rot3> (w), expmap<Point3> (A * u));
+		}
+  }
 
-/* ************************************************************************* */
-Matrix Pose3::matrix() const {
-	const double row4[] = { 0, 0, 0, 1 };
-	Matrix A34 = Matrix_(3, 4, vector()), A14 = Matrix_(1, 4, row4);
-	return stack(2, &A34, &A14);
-}
+  Vector logmap(const Pose3& p) {
+    Vector w = logmap(p.rotation()), T = p.translation().vector();
+  	double t = norm_2(w);
+		if (t < 1e-5)
+	    return concatVectors(2, &w, &T);
+		else {
+			Matrix W = skewSymmetric(w/t);
+			Matrix Ainv = eye(3, 3) - 0.5*t* W + ((2*sin(t)-t*(1+cos(t)))/2*sin(t)) * (W * W);
+			Vector u = Ainv*T;
+	    return concatVectors(2, &w, &u);
+		}
+  }
+*/
 
-/* ************************************************************************* */
-Point3 transform_from(const Pose3& pose, const Point3& p) {
-  return pose.R_ * p + pose.t_;
-}
+  /* ************************************************************************* */
+  Matrix Pose3::matrix() const {
+    const Matrix R = R_.matrix(), T = Matrix_(3,1, t_.vector());
+    const Matrix A34 = collect(2, &R, &T);
+    const Matrix A14 = Matrix_(1,4, 0.0, 0.0, 0.0, 1.0);
+    return stack(2, &A34, &A14);
+  }
 
-/* ************************************************************************* */
-Matrix Dtransform_from1(const Pose3& pose, const Point3& p) {
-  Matrix DR = Drotate1(pose.rotation(), p);
-  Matrix Dt = Dadd1(pose.translation(), p);
-  return collect(2,&DR,&Dt);
-}
+  /* ************************************************************************* */
+  Pose3 Pose3::transform_to(const Pose3& pose) const {
+		Rot3 cRv = R_ * Rot3(inverse(pose.R_));
+		Point3 t = gtsam::transform_to(pose, t_);
+		return Pose3(cRv, t);
+	}
 
-/* ************************************************************************* */
-Matrix Dtransform_from2(const Pose3& pose) {
-  return Drotate2(pose.rotation());
-}
+  /* ************************************************************************* */
+  Point3 transform_from(const Pose3& pose, const Point3& p) {
+    return pose.rotation() * p + pose.translation();
+  }
 
-/* ************************************************************************* */
-Point3 transform_to(const Pose3& pose, const Point3& p) {
-		Point3 sub = p - pose.t_;
-		Point3 r = unrotate(pose.R_, sub);
-		return r; 
-}
+  /* ************************************************************************* */
+  Matrix Dtransform_from1(const Pose3& pose, const Point3& p) {
+#ifdef NEW_EXMAP
+    Point3 q = transform_from(pose,p);
+    Matrix DR = skewSymmetric(-q.x(), -q.y(), -q.z());
+#else
+    Matrix DR = Drotate1(pose.rotation(), p);
+#endif
+    Matrix Dt = eye(3);
+    return collect(2,&DR,&Dt);
+  }
 
-/* ************************************************************************* */
-Matrix Dtransform_to1(const Pose3& pose, const Point3& p) {
-  Point3 q = p - pose.translation();
-  Matrix D_r_R =   Dunrotate1(pose.rotation(),q);
-  Matrix D_r_t = - Dunrotate2(pose.rotation()); // negative because of sub
+  /* ************************************************************************* */
+  Matrix Dtransform_from2(const Pose3& pose) {
+    return pose.rotation().matrix();
+  }
 
-  Matrix D_r_pose = collect(2,&D_r_R,&D_r_t);
-  return D_r_pose;
-}
+  /* ************************************************************************* */
+  Point3 transform_to(const Pose3& pose, const Point3& p) {
+    Point3 sub = p - pose.translation();
+    return unrotate(pose.rotation(), sub);
+  }
 
-/* ************************************************************************* */
-Matrix Dtransform_to2(const Pose3& pose, const Point3& p) {
-  return Dunrotate2(pose.rotation());
-}
+  /* ************************************************************************* */
+  Matrix Dtransform_to1(const Pose3& pose, const Point3& p) {
+    Point3 q = transform_to(pose,p);
+  	Matrix Rt = pose.rotation().transpose();
+    Matrix DR = skewSymmetric(q.x(), q.y(), q.z()) * Rt;
+    Matrix DT = - Rt; // negative because of sub
+    return collect(2,&DR,&DT);
+  }
 
-/* ************************************************************************* */
-// direct measurement of the deviation of a pose from the origin
-// used as soft prior
-/* ************************************************************************* */
-Vector hPose (const Vector& x) {
-  Pose3 pose(x);                          // transform from vector to Pose3
-  Vector w = pose.rotation().ypr();       // get angle differences
-  Vector d = pose.translation().vector(); // get translation differences
-  return concatVectors(2,&w,&d);
-}
+  /* ************************************************************************* */
+  Matrix Dtransform_to2(const Pose3& pose, const Point3& p) {
+    return pose.rotation().transpose();
+  }
 
-/* ************************************************************************* */
-// derivative of direct measurement
-// 6*6, entry i,j is how measurement error will change
-/* ************************************************************************* */
-Matrix DhPose(const Vector& x) {
-	Matrix H = eye(6,6);
-	return H;
-}
+  /* ************************************************************************* */
+  // direct measurement of the deviation of a pose from the origin
+  // used as soft prior
+  /* ************************************************************************* */
+  Vector hPose (const Vector& x) {
+    Pose3 pose(x);                            // transform from vector to Pose3
+    Vector w = pose.rotation().ypr();       // get angle differences
+    Vector d = pose.translation().vector();  // get translation differences
+    return concatVectors(2,&w,&d);
+  }
 
-/* ************************************************************************* */
-Pose3 Pose3::inverse() const {
-	Rot3 Rt = R_.inverse();
-	return Pose3(Rt, -(Rt * t_));
-}
+  /* ************************************************************************* */
+  // derivative of direct measurement
+  // 6*6, entry i,j is how measurement error will change
+  /* ************************************************************************* */
+  Matrix DhPose(const Vector& x) {
+    Matrix H = eye(6,6);
+    return H;
+  }
 
-/* ************************************************************************* */
-Pose3 Pose3::transform_to(const Pose3& pose) const {
-	Rot3 cRv = R_ * Rot3(pose.R_.inverse());
-	Point3 t = gtsam::transform_to(pose, t_);
-	return Pose3(cRv, t);
-}
+  /* ************************************************************************* */
+  /*
+  Pose3 compose(const Pose3& p1, const Pose3& p2) {
+    return Pose3(compose(p1.rotation(),p2.rotation()),transform_from(p1,p2.translation());
+  }
+  */
 
-/* ************************************************************************* */
-Pose3 between(const Pose3& p1, const Pose3& p2){
-	Pose3 p;
-	return p;
-	// TODO: implement
-}
+  /* ************************************************************************* */
+  Matrix Dcompose1(const Pose3& p1, const Pose3& p2){
+    Matrix DR_R1 = eye(3);
+    Matrix DR_t1 = zeros(3,3);
+    Matrix DR = collect(2,&DR_R1,&DR_t1);
+    Matrix Dt = Dtransform_from1(p1,p2.translation());
+    return stack(2,&DR,&Dt);
+  }
 
-/* ************************************************************************* */
-Matrix Dbetween1(const Pose3& p1, const Pose3& p2){
-	Matrix m;
-	return m;
-	// TODO: implement
-}
+  /* ************************************************************************* */
+  Matrix Dcompose2(const Pose3& p1, const Pose3& p2){
+    Matrix DR_R2 = p1.rotation().matrix();
+    Matrix DR_t2 = zeros(3,3);
+    Matrix DR = collect(2,&DR_R2,&DR_t2);
+    Matrix Dt_R2 = zeros(3,3);
+    Matrix Dt_t2 = Dtransform_from2(p1);
+    Matrix Dt = collect(2,&Dt_R2,&Dt_t2);
+    return stack(2,&DR,&Dt);
+  }
 
-/* ************************************************************************* */
-Matrix Dbetween2(const Pose3& p1, const Pose3& p2){
-	Matrix m;
-	return m;
-	// TODO: implement
-}
+  /* ************************************************************************* */
+  // inverse = Pose3(inverse(p.rotation()),-unrotate(p.rotation(),p.translation()));
+  Matrix Dinverse(const Pose3& p){
+  	Matrix Rt = p.rotation().transpose();
+    Matrix DR_R1 = -Rt;
+    Matrix DR_t1 = zeros(3,3);
+    Matrix DR = collect(2,&DR_R1,&DR_t1);
+    Matrix Dt_R1 = - (skewSymmetric(Rt*p.translation().vector()) * Rt);
+    Matrix Dt_t1 = - Rt;
+    Matrix Dt = collect(2,&Dt_R1,&Dt_t1);
+    return stack(2,&DR,&Dt);
+  }
 
-/* ************************************************************************* */
+  /* ************************************************************************* */
+  // between = compose(p2,inverse(p1));
+
+  Matrix Dbetween1(const Pose3& p1, const Pose3& p2){
+  	Pose3 invp1 = inverse(p1);
+  	return  Dinverse(p1) * Dcompose2(p2,invp1);
+  }
+
+  Matrix Dbetween2(const Pose3& p1, const Pose3& p2){
+  	Pose3 invp1 = inverse(p1);
+  	return Dcompose1(p2,invp1);
+  }
+
+  /* ************************************************************************* */
 } // namespace gtsam

@@ -23,7 +23,7 @@ namespace gtsam {
 
 /* ************************************************************************* */
 // Exponential map
-VSLAMConfig VSLAMConfig::exmap(const VectorConfig & delta) const {
+VSLAMConfig expmap(const VSLAMConfig& c, const VectorConfig & delta) {
 
 	VSLAMConfig newConfig;
 
@@ -32,16 +32,16 @@ VSLAMConfig VSLAMConfig::exmap(const VectorConfig & delta) const {
 		string key = it->first;
 		if (key[0] == 'x') {
 			int cameraNumber = atoi(key.substr(1, key.size() - 1).c_str());
-			if (cameraPoseExists(cameraNumber)) {
-				Pose3 basePose = cameraPose(cameraNumber);
-				newConfig.addCameraPose(cameraNumber, basePose.exmap(it->second));
+			if (c.cameraPoseExists(cameraNumber)) {
+				Pose3 basePose = c.cameraPose(cameraNumber);
+				newConfig.addCameraPose(cameraNumber, expmap(basePose, it->second));
 			}
 		}
 		if (key[0] == 'l') {
 			int landmarkNumber = atoi(key.substr(1, key.size() - 1).c_str());
-			if (landmarkPointExists(landmarkNumber)) {
-				Point3 basePoint = landmarkPoint(landmarkNumber);
-				newConfig.addLandmarkPoint(landmarkNumber, basePoint.exmap(it->second));
+			if (c.landmarkPointExists(landmarkNumber)) {
+				Point3 basePoint = c.landmarkPoint(landmarkNumber);
+				newConfig.addLandmarkPoint(landmarkNumber, expmap(basePoint, it->second));
 			}
 		}
 	}

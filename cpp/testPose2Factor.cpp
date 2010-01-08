@@ -82,7 +82,7 @@ TEST(Pose2Factor, optimize) {
   Pose2Config feasible;
   feasible.insert("p0", Pose2(0,0,0));
   fg.push_back(Pose2Graph::sharedFactor(
-      new NonlinearEquality<Pose2Config>("p0", feasible, Pose2().dim(), poseCompare)));
+      new NonlinearEquality<Pose2Config>("p0", feasible, dim(Pose2()), poseCompare)));
   fg.push_back(Pose2Graph::sharedFactor(
       new Pose2Factor("p0", "p1", Pose2(1,2,M_PI_2), Matrix_(3,3,
           0.5, 0.0, 0.0,

@@ -49,14 +49,14 @@ namespace gtsam {
 	}
 
 	/* ************************************************************************* */
-	Pose2Config Pose2Config::exmap(const VectorConfig& delta) const {
+	Pose2Config expmap(const Pose2Config& c, const VectorConfig& delta) {
 		Pose2Config newConfig;
 		std::string j; Pose2 pj;
-		FOREACH_PAIR(j, pj, values_) {
+		FOREACH_PAIR(j, pj, c.values_) {
 			if (delta.contains(j)) {
 				const Vector& dj = delta[j];
 				//check_size(j,vj,dj);
-				newConfig.insert(j, pj.exmap(dj));
+				newConfig.insert(j, expmap(pj,dj));
 			} else
 				newConfig.insert(j, pj);
 		}

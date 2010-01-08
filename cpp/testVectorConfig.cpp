@@ -69,11 +69,11 @@ TEST( VectorConfig, contains)
 }
 
 /* ************************************************************************* */
-TEST( VectorConfig, exmap)
+TEST( VectorConfig, expmap)
 {
 	VectorConfig c = createConfig();
 	Vector v = Vector_(6, 0.0,-1.0, 0.0, 0.0, 1.5, 0.0); // l1, x1, x2
-  CHECK(assert_equal(c.exmap(c),c.exmap(v)));
+  CHECK(assert_equal(expmap(c,c),expmap(c,v)));
 }
 
 /* ************************************************************************* */
@@ -93,7 +93,7 @@ TEST( VectorConfig, plus)
   expected.insert("x", wx).insert("y",wy);
 
   // functional
-  VectorConfig actual = c.exmap(delta);
+  VectorConfig actual = expmap(c,delta);
   CHECK(assert_equal(expected,actual));
 }
 
@@ -123,7 +123,7 @@ TEST( VectorConfig, update_with_large_delta) {
 	delta.insert("y", Vector_(2, 0.1, 0.1));
 	delta.insert("penguin", Vector_(2, 0.1, 0.1));
 
-	VectorConfig actual = init.exmap(delta);
+	VectorConfig actual = expmap(init,delta);
 	VectorConfig expected;
 	expected.insert("x", Vector_(2, 1.1, 2.1));
 	expected.insert("y", Vector_(2, 3.1, 4.1));

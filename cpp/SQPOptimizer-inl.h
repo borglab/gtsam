@@ -126,8 +126,8 @@ SQPOptimizer<G, C> SQPOptimizer<G, C>::iterate(Verbosity v) const {
 	if (verbose) delta.print("Delta Config");
 
 	// update both state variables
-	shared_config newConfig(new C(config_->exmap(delta)));
-	shared_vconfig newLambdas(new VectorConfig(lagrange_config_->exmap(delta)));
+	shared_config newConfig(new C(expmap(*config_, delta)));
+	shared_vconfig newLambdas(new VectorConfig(expmap(*lagrange_config_, delta)));
 
 	// construct a new optimizer
 	return SQPOptimizer<G, C>(*graph_, full_ordering_, newConfig, newLambdas);

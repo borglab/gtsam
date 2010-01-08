@@ -11,9 +11,9 @@ using namespace std;
 using namespace gtsam;
 
 /* ************************************************************************* */
-TEST( Point2, exmap) {
+TEST( Point2, expmap) {
   Vector d(2);d(0)=1;d(1)=-1;
-  Point2 a(4,5), b=a.exmap(d),c(5,4);
+  Point2 a(4,5), b=expmap(a,d),c(5,4);
   CHECK(assert_equal(b,c));
 }
 

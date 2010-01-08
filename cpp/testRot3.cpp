@@ -50,7 +50,7 @@ TEST( Rot3, constructor3) {
 TEST( Rot3, transpose) {
   Rot3 R(1,2,3,4,5,6,7,8,9);
   Point3 r1(1,2,3), r2(4,5,6), r3(7,8,9);
-  CHECK(assert_equal(R.inverse(),Rot3(r1,r2,r3)));
+  CHECK(assert_equal(inverse(R),Rot3(r1,r2,r3)));
 }
 
 /* ************************************************************************* */
@@ -96,54 +96,11 @@ TEST( Rot3, rodriguez3) {
 }
 
 /* ************************************************************************* */
-TEST( Rot3, exmap)
+TEST( Rot3, expmap)
 {
-	Vector v(3);
-	fill(v.begin(), v.end(), 0);
-	CHECK(assert_equal(R.exmap(v), R));
-}
-
-/* ************************************************************************* */
-TEST(Rot3, log)
-{
-	Vector w1 = Vector_(3, 0.1, 0.0, 0.0);
-	Rot3 R1 = rodriguez(w1);
-	CHECK(assert_equal(w1, R1.log()));
-
-	Vector w2 = Vector_(3, 0.0, 0.1, 0.0);
-	Rot3 R2 = rodriguez(w2);
-	CHECK(assert_equal(w2, R2.log()));
-
-	Vector w3 = Vector_(3, 0.0, 0.0, 0.1);
-	Rot3 R3 = rodriguez(w3);
-	CHECK(assert_equal(w3, R3.log()));
-
-	Vector w = Vector_(3, 0.1, 0.4, 0.2);
-	Rot3 R = rodriguez(w);
-	CHECK(assert_equal(w, R.log()));
-}
-
-/* ************************************************************************* */
-TEST(Rot3, between)
-{
-	Rot3 R = rodriguez(0.1, 0.4, 0.2);
-	Rot3 origin;
-	CHECK(assert_equal(R, between(origin,R)));
-	CHECK(assert_equal(R.inverse(), between(R,origin)));
-}
-
-/* ************************************************************************* */
-	TEST(Rot3, manifold)
-{
-	Rot3 t1 = rodriguez(0.1, 0.4, 0.2);
-	Rot3 t2 = rodriguez(0.3, 0.1, 0.7);
-	Rot3 origin;
-	Vector d12 = log(t1, t2);
-	CHECK(assert_equal(t2, t1.exmap(d12)));
-	CHECK(assert_equal(t2, origin.exmap(d12)*t1));
-	Vector d21 = log(t2, t1);
-	CHECK(assert_equal(t1, t2.exmap(d21)));
-	CHECK(assert_equal(t1, origin.exmap(d21)*t2));
+  Vector v(3);
+  fill(v.begin(), v.end(), 0);
+  CHECK(assert_equal(expmap(R,v), R));
 }
 
 /* ************************************************************************* */
@@ -156,6 +113,13 @@ TEST( Rot3, Drotate1)
   CHECK(assert_equal(numerical,computed,error));
 }
 
+TEST( Rot3, Drotate1_)
+  {
+  Matrix computed = Drotate1(inverse(R), P);
+  Matrix numerical = numericalDerivative21(rotate,inverse(R),P);
+  CHECK(assert_equal(numerical,computed,error));
+}
+
 TEST( Rot3, Drotate2_DNrotate2)
 {
   Matrix computed = Drotate2(R);
@@ -164,6 +128,8 @@ TEST( Rot3, Drotate2_DNrotate2)
 }
 
 /* ************************************************************************* */
+// unrotate 
+
 TEST( Rot3, unrotate)
 {
   Point3 w = R*P;
@@ -188,29 +154,41 @@ TEST( Rot3, Dunrotate2_DNunrotate2)
 }
 
 /* ************************************************************************* */
-TEST( Rot3, RQ)
+TEST( Rot3, compose )
 {
-	// Try RQ on a pure rotation
-	Matrix actualK; Vector actual;
-  boost::tie(actualK,actual) = RQ(R.matrix());
-  Vector expected = Vector_(3,0.14715, 0.385821, 0.231671);
-  CHECK(assert_equal(eye(3),actualK));
-  CHECK(assert_equal(expected,actual,1e-6));
+	Rot3 R1 = rodriguez(0.1, 0.2, 0.3);
+	Rot3 R2 = rodriguez(0.2, 0.3, 0.5);
 
-  // Try using ypr call
-  actual = R.ypr();
-  CHECK(assert_equal(expected,actual,1e-6));
+	Rot3 expected = R1*R2;
+	Rot3 actual = compose(R1, R2);
+	CHECK(assert_equal(expected,actual));
 
-  // Try RQ to recover calibration from 3*3 sub-block of projection matrix
-	Matrix K = Matrix_(3,3,
-			500.0,   0.0, 320.0,
-			  0.0, 500.0, 240.0,
-			  0.0,   0.0,   1.0
-			);
-	Matrix A = K*R.matrix();
-  boost::tie(actualK,actual) = RQ(A);
-  CHECK(assert_equal(K,actualK));
-  CHECK(assert_equal(expected,actual,1e-6));
+	Matrix numericalH1 = numericalDerivative21<Rot3,Rot3,Rot3>(compose, R1, R2, 1e-5);
+	Matrix actualH1 = Dcompose1(R1, R2);
+	CHECK(assert_equal(numericalH1,actualH1));
+
+	Matrix actualH2 = Dcompose2(R1, R2);
+	Matrix numericalH2 = numericalDerivative22<Rot3,Rot3,Rot3>(compose, R1, R2, 1e-5);
+	CHECK(assert_equal(numericalH2,actualH2));
+}
+
+/* ************************************************************************* */
+TEST( Rot3, between )
+{
+	Rot3 R1 = rodriguez(0.1, 0.2, 0.3);
+	Rot3 R2 = rodriguez(0.2, 0.3, 0.5);
+
+	Rot3 expected = R2*inverse(R1);
+	Rot3 actual = between(R1, R2);
+	CHECK(assert_equal(expected,actual));
+
+	Matrix numericalH1 = numericalDerivative21(between<Rot3> , R1, R2, 1e-5);
+	Matrix actualH1 = Dbetween1(R1, R2);
+	CHECK(assert_equal(numericalH1,actualH1));
+
+	Matrix actualH2 = Dbetween2(R1, R2);
+	Matrix numericalH2 = numericalDerivative22(between<Rot3> , R1, R2, 1e-5);
+	CHECK(assert_equal(numericalH2,actualH2));
 }
 
 /* ************************************************************************* */
