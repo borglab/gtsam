@@ -64,6 +64,8 @@ VectorConfig optimize(const GaussianBayesNet& bn)
 	
   /** solve each node in turn in topological sort order (parents first)*/
 	BOOST_REVERSE_FOREACH(GaussianConditional::shared_ptr cg, bn) {
+		cg->print();
+		result.print();
     Vector x = cg->solve(result); // Solve for that variable
     result.insert(cg->key(),x);   // store result in partial solution
   }

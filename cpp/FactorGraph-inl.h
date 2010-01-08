@@ -331,9 +331,8 @@ map<string, string> FactorGraph<Factor>::findMinimumSpanningTree() const {
 }
 
 template<class Factor>
-pair<FactorGraph<Factor>, FactorGraph<Factor> > FactorGraph<Factor>::split(map<string, string> tree) const {
+void FactorGraph<Factor>::split(map<string, string> tree, FactorGraph<Factor>& Ab1, FactorGraph<Factor>& Ab2) const {
 
-	FactorGraph<Factor> Ab1, Ab2;
 	BOOST_FOREACH(sharedFactor factor, factors_){
 		if (factor->keys().size() > 2)
 			throw(invalid_argument("split: only support factors with at most two keys"));
@@ -350,8 +349,6 @@ pair<FactorGraph<Factor>, FactorGraph<Factor> > FactorGraph<Factor>::split(map<s
 		else
 			Ab2.push_back(factor);
 	}
-
-	return make_pair(Ab1, Ab2);
 }
 
 

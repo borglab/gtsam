@@ -769,9 +769,7 @@ TEST( GaussianFactorGraph, split )
 	tree["x4"] = "x1";
 
 	GaussianFactorGraph Ab1, Ab2;
-	pair<FactorGraph<GaussianFactor>, FactorGraph<GaussianFactor> > gg = g.split(tree);
-	Ab1 = *reinterpret_cast<GaussianFactorGraph*>(&(gg.first));
-	Ab2 = *reinterpret_cast<GaussianFactorGraph*>(&(gg.second));
+  g.split(tree, Ab1, Ab2);
 	LONGS_EQUAL(3, Ab1.size());
 	LONGS_EQUAL(2, Ab2.size());
 }
