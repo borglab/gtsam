@@ -174,7 +174,7 @@ namespace gtsam {
 
   Matrix Dbetween1(const Pose3& p1, const Pose3& p2){
   	Pose3 invp1 = inverse(p1);
-  	return  Dinverse(p1) * Dcompose2(p2,invp1);
+  	return Dcompose2(p2,invp1) * Dinverse(p1);
   }
 
   Matrix Dbetween2(const Pose3& p1, const Pose3& p2){

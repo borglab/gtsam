@@ -283,13 +283,17 @@ TEST(Pose3, manifold) {
 /* ************************************************************************* */
 TEST( Pose3, between )
 {
+	Rot3 R = rodriguez(0.3,0.2,0.1);
+	Point3 t(3.5,-8.2,4.2);
+	Pose3 T(R,t);
+
 	Pose3 expected = pose1 * inverse(T);
 	Pose3 actual = between(T, pose1);
 	CHECK(assert_equal(expected,actual));
 
 	Matrix numericalH1 = numericalDerivative21(between<Pose3> , T, pose1, 1e-5);
 	Matrix actualH1 = Dbetween1(T, pose1);
-//	CHECK(assert_equal(numericalH1,actualH1)); // chain rule does not work ??
+	CHECK(assert_equal(numericalH1,actualH1)); // chain rule does not work ??
 
 	Matrix actualH2 = Dbetween2(T, pose1);
 	Matrix numericalH2 = numericalDerivative22(between<Pose3> , T, pose1, 1e-5);
