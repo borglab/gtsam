@@ -9,6 +9,8 @@
 #include <boost/assign/std/list.hpp> // for operator +=
 #include <boost/foreach.hpp>
 #include <boost/tuple/tuple.hpp>
+#include <boost/graph/adjacency_list.hpp>
+#include <boost/graph/breadth_first_search.hpp>
 
 #include "Ordering.h"
 
@@ -18,40 +20,56 @@ using namespace boost::assign;
 
 #define FOREACH_PAIR( KEY, VAL, COL) BOOST_FOREACH (boost::tie(KEY,VAL),COL)
 
+class key_visitor : public boost::default_bfs_visitor {
+public:
+	key_visitor(Ordering& ordering_in) : ordering_(ordering_in) {}
+	template <typename Vertex, typename Graph> void discover_vertex(Vertex u, const Graph& g) const {
+		string key = boost::get(boost::vertex_name, g, u);
+		ordering_.push_front(key);
+	}
+	Ordering& ordering_;
+};
+
 /* ************************************************************************* */
 Ordering::Ordering(const map<string, string>& p_map) {
 
-	// find the root
-	string root;
-	bool foundRoot = false;
+	typedef boost::adjacency_list<
+		boost::vecS, boost::vecS, boost::undirectedS,
+		boost::property<boost::vertex_name_t, string> > Graph;
+	typedef boost::graph_traits<Graph>::vertex_descriptor Vertex;
+
+	// build the graph corresponding to the predecessor map
+	Graph g(0);
+	map<string, Vertex> key2vertex;
+	Vertex v1, v2, root;
 	string child, parent;
+	bool foundRoot = false;
 	FOREACH_PAIR(child, parent, p_map) {
+		if (key2vertex.find(child) == key2vertex.end()) {
+			 v1 = add_vertex(child, g);
+			 key2vertex.insert(make_pair(child, v1));
+		 } else
+			 v1 = key2vertex[child];
+
+		if (key2vertex.find(parent) == key2vertex.end()) {
+			 v2 = add_vertex(parent, g);
+			 key2vertex.insert(make_pair(parent, v2));
+		 } else
+			 v2 = key2vertex[parent];
+
 		if (child.compare(parent) == 0) {
-			root = child;
+			root = v1;
 			foundRoot = true;
-			break;
-		}
+		} else
+			boost::add_edge(v1, v2, g);
 	}
-	push_front(root);
 
 	if (!foundRoot)
 		throw invalid_argument("Ordering: invalid predecessor map!");
 
-	// push front the nodes from the root level to the leaf level
-	list<string> parents(1, root);
-	while(!parents.empty()){
-		list<string> children;
-		BOOST_FOREACH(string key, parents){
-			FOREACH_PAIR(child, parent, p_map){
-				if (parent.compare(key)==0 && child.compare(key)!=0) {
-					children.push_back(child);
-					push_front(child);
-				}
-			}
-		}
-
-		parents = children;
-	}
+	// breadth first visit on the graph
+	key_visitor vis(*this);
+	boost::breadth_first_search(g, root, boost::visitor(vis));
 }
 
 /* ************************************************************************* */
