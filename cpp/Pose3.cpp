@@ -130,44 +130,35 @@ namespace gtsam {
   }
 
   /* ************************************************************************* */
-  /*
-  Pose3 compose(const Pose3& p1, const Pose3& p2) {
-    return Pose3(compose(p1.rotation(),p2.rotation()),transform_from(p1,p2.translation());
-  }
-  */
+  // compose = Pose3(compose(R1,R2),transform_from(p1,t2);
+
+  Matrix Dcompose1(const Pose3& p1, const Pose3& p2) {
+		Matrix DR_R1 = eye(3);
+		Matrix DR_t1 = zeros(3, 3);
+		Matrix DR = collect(2, &DR_R1, &DR_t1);
+		Matrix Dt = Dtransform_from1(p1, p2.translation());
+		return stack(2, &DR, &Dt);
+	}
+
+	Matrix Dcompose2(const Pose3& p1, const Pose3& p2) {
+		Matrix R1 = p1.rotation().matrix(), Z3 = zeros(3, 3);
+		Matrix DR = collect(2, &R1, &Z3);
+		Matrix Dt = collect(2, &Z3, &R1);
+		return stack(2, &DR, &Dt);
+	}
 
   /* ************************************************************************* */
-  Matrix Dcompose1(const Pose3& p1, const Pose3& p2){
-    Matrix DR_R1 = eye(3);
-    Matrix DR_t1 = zeros(3,3);
-    Matrix DR = collect(2,&DR_R1,&DR_t1);
-    Matrix Dt = Dtransform_from1(p1,p2.translation());
-    return stack(2,&DR,&Dt);
-  }
-
-  /* ************************************************************************* */
-  Matrix Dcompose2(const Pose3& p1, const Pose3& p2){
-    Matrix DR_R2 = p1.rotation().matrix();
-    Matrix DR_t2 = zeros(3,3);
-    Matrix DR = collect(2,&DR_R2,&DR_t2);
-    Matrix Dt_R2 = zeros(3,3);
-    Matrix Dt_t2 = Dtransform_from2(p1);
-    Matrix Dt = collect(2,&Dt_R2,&Dt_t2);
-    return stack(2,&DR,&Dt);
-  }
-
-  /* ************************************************************************* */
-  // inverse = Pose3(inverse(p.rotation()),-unrotate(p.rotation(),p.translation()));
-  Matrix Dinverse(const Pose3& p){
-  	Matrix Rt = p.rotation().transpose();
-    Matrix DR_R1 = -Rt;
-    Matrix DR_t1 = zeros(3,3);
-    Matrix DR = collect(2,&DR_R1,&DR_t1);
-    Matrix Dt_R1 = - (skewSymmetric(Rt*p.translation().vector()) * Rt);
-    Matrix Dt_t1 = - Rt;
-    Matrix Dt = collect(2,&Dt_R1,&Dt_t1);
-    return stack(2,&DR,&Dt);
-  }
+  // inverse = Pose3(inverse(R),-unrotate(R,t));
+	Matrix Dinverse(const Pose3& p) {
+		Matrix Rt = p.rotation().transpose();
+		Matrix DR_R1 = -Rt;
+		Matrix DR_t1 = zeros(3, 3);
+		Matrix DR = collect(2, &DR_R1, &DR_t1);
+		Matrix Dt_R1 = -(skewSymmetric(Rt * p.translation().vector()) * Rt);
+		Matrix Dt_t1 = -Rt;
+		Matrix Dt = collect(2, &Dt_R1, &Dt_t1);
+		return stack(2, &DR, &Dt);
+	}
 
   /* ************************************************************************* */
   // between = compose(p2,inverse(p1));

@@ -54,6 +54,10 @@ TEST(Pose3, expmap_b)
 /* ************************************************************************* */
 TEST( Pose3, compose )
 {
+	Rot3 R = rodriguez(0.3,0.2,0.1);
+	Point3 t(3.5,-8.2,4.2);
+	Pose3 T(R,t);
+
   Matrix actual = (T*T).matrix();
   Matrix expected = T.matrix()*T.matrix();
   CHECK(assert_equal(actual,expected,error));
