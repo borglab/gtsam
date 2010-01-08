@@ -11,8 +11,12 @@
 using namespace std;
 using namespace gtsam;
 
+/* ************************************************************************* */
 TEST( Pose3Factor, constructor )
 {
+	Pose3 measured;
+	Matrix measurement_covariance;
+	Pose3Factor("x1", "x2", measured, measurement_covariance);
 }
 
 /* ************************************************************************* */
