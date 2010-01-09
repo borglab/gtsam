@@ -33,8 +33,7 @@ public:
 /* ************************************************************************* */
 Ordering::Ordering(const map<string, string>& p_map) {
 
-	typedef boost::adjacency_list<
-		boost::vecS, boost::vecS, boost::undirectedS,
+	typedef boost::adjacency_list<boost::vecS, boost::vecS, boost::undirectedS,
 		boost::property<boost::vertex_name_t, string> > Graph;
 	typedef boost::graph_traits<Graph>::vertex_descriptor Vertex;
 

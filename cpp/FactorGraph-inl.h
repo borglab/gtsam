@@ -337,8 +337,10 @@ void FactorGraph<Factor>::split(map<string, string> tree, FactorGraph<Factor>& A
 		if (factor->keys().size() > 2)
 			throw(invalid_argument("split: only support factors with at most two keys"));
 
-		if (factor->keys().size() == 1)
+		if (factor->keys().size() == 1) {
+			Ab1.push_back(factor);
 			continue;
+		}
 
 		string key1 = factor->keys().front();
 		string key2 = factor->keys().back();
