@@ -104,6 +104,40 @@ TEST( Rot3, expmap)
 }
 
 /* ************************************************************************* */
+TEST(Rot3, log)
+{
+	Vector w1 = Vector_(3, 0.1, 0.0, 0.0);
+	Rot3 R1 = rodriguez(w1);
+	CHECK(assert_equal(w1, logmap(R1)));
+
+	Vector w2 = Vector_(3, 0.0, 0.1, 0.0);
+	Rot3 R2 = rodriguez(w2);
+	CHECK(assert_equal(w2, logmap(R2)));
+
+	Vector w3 = Vector_(3, 0.0, 0.0, 0.1);
+	Rot3 R3 = rodriguez(w3);
+	CHECK(assert_equal(w3, logmap(R3)));
+
+	Vector w = Vector_(3, 0.1, 0.4, 0.2);
+	Rot3 R = rodriguez(w);
+	CHECK(assert_equal(w, logmap(R)));
+}
+
+/* ************************************************************************* */
+	TEST(Rot3, manifold)
+{
+	Rot3 t1 = rodriguez(0.1, 0.4, 0.2);
+	Rot3 t2 = rodriguez(0.3, 0.1, 0.7);
+	Rot3 origin;
+	Vector d12 = logmap(t1, t2);
+	CHECK(assert_equal(t2, expmap(t1,d12)));
+	CHECK(assert_equal(t2, expmap<Rot3>(d12)*t1));
+	Vector d21 = logmap(t2, t1);
+	CHECK(assert_equal(t1, expmap(t2,d21)));
+	CHECK(assert_equal(t1, expmap<Rot3>(d21)*t2));
+}
+
+/* ************************************************************************* */
 // rotate derivatives
 
 TEST( Rot3, Drotate1)
@@ -128,8 +162,6 @@ TEST( Rot3, Drotate2_DNrotate2)
 }
 
 /* ************************************************************************* */
-// unrotate 
-
 TEST( Rot3, unrotate)
 {
   Point3 w = R*P;
@@ -175,6 +207,11 @@ TEST( Rot3, compose )
 /* ************************************************************************* */
 TEST( Rot3, between )
 {
+	Rot3 R = rodriguez(0.1, 0.4, 0.2);
+	Rot3 origin;
+	CHECK(assert_equal(R, between(origin,R)));
+	CHECK(assert_equal(inverse(R), between(R,origin)));
+
 	Rot3 R1 = rodriguez(0.1, 0.2, 0.3);
 	Rot3 R2 = rodriguez(0.2, 0.3, 0.5);
 
@@ -189,6 +226,71 @@ TEST( Rot3, between )
 	Matrix actualH2 = Dbetween2(R1, R2);
 	Matrix numericalH2 = numericalDerivative22(between<Rot3> , R1, R2, 1e-5);
 	CHECK(assert_equal(numericalH2,actualH2));
+}
+
+/* ************************************************************************* */
+TEST( Rot3, xyz )
+{
+	double t = 0.1, st = sin(t), ct = cos(t);
+
+	Rot3 expected1(1, 0, 0, 0, ct, -st, 0, st, ct);
+	CHECK(assert_equal(expected1,Rot3::Rx(t)));
+
+	Rot3 expected2(ct, 0, st, 0, 1, 0, -st, 0, ct);
+	CHECK(assert_equal(expected2,Rot3::Ry(t)));
+
+	// yaw is around z axis
+	Rot3 expected3(ct, -st, 0, st, ct, 0, 0, 0, 1);
+	CHECK(assert_equal(expected3,Rot3::Rz(t)));
+}
+
+/* ************************************************************************* */
+TEST( Rot3, yaw_pitch_roll )
+{
+	double t = 0.1;
+
+	// yaw is around z axis
+	CHECK(assert_equal(Rot3::Rz(t),Rot3::yaw(t)));
+
+	// pitch is around y axis
+	CHECK(assert_equal(Rot3::Ry(t),Rot3::pitch(t)));
+
+	// roll is around x axis
+	CHECK(assert_equal(Rot3::Rx(t),Rot3::roll(t)));
+}
+
+/* ************************************************************************* */
+TEST( Rot3, RQ)
+{
+	// Try RQ on a pure rotation
+	Matrix actualK; Vector actual;
+  boost::tie(actualK,actual) = RQ(R.matrix());
+  Vector expected = Vector_(3,0.14715, 0.385821, 0.231671);
+  CHECK(assert_equal(eye(3),actualK));
+  CHECK(assert_equal(expected,actual,1e-6));
+
+  // Try using xyz call
+  CHECK(assert_equal(expected,R.xyz(),1e-6));
+  CHECK(assert_equal(Vector_(3,0.1,0.2,0.3),Rot3::RzRyRx(0.1,0.2,0.3).xyz(),1e-6));
+
+  // Try using xyz call
+  CHECK(assert_equal(Vector_(3,0.1,0.2,0.3),Rot3::ypr(0.1,0.2,0.3).ypr(),1e-6));
+
+  // Try ypr for pure yaw-pitch-roll matrices
+  CHECK(assert_equal(Vector_(3,0.1,0.0,0.0),Rot3::yaw  (0.1).ypr(),1e-6));
+  CHECK(assert_equal(Vector_(3,0.0,0.1,0.0),Rot3::pitch(0.1).ypr(),1e-6));
+  CHECK(assert_equal(Vector_(3,0.0,0.0,0.1),Rot3::roll (0.1).ypr(),1e-6));
+
+  // Try RQ to recover calibration from 3*3 sub-block of projection matrix
+	Matrix K = Matrix_(3,3,
+			500.0,   0.0, 320.0,
+			  0.0, 500.0, 240.0,
+			  0.0,   0.0,   1.0
+			);
+	Matrix A = K*R.matrix();
+  boost::tie(actualK,actual) = RQ(A);
+  CHECK(assert_equal(K,actualK));
+  CHECK(assert_equal(expected,actual,1e-6));
 }
 
 /* ************************************************************************* */

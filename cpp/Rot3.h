@@ -54,6 +54,29 @@ namespace gtsam {
       r2_(Point3(R(0,1), R(1,1), R(2,1))),
       r3_(Point3(R(0,2), R(1,2), R(2,2))) {}
 
+    /** Static member function to generate some well known rotations */
+
+    /**
+     * Rotations around axes as in http://en.wikipedia.org/wiki/Rotation_matrix
+     * Counterclockwise when looking from unchanging axis.
+     */
+    static Rot3 Rx(double t);
+    static Rot3 Ry(double t);
+    static Rot3 Rz(double t);
+    static Rot3 RzRyRx(double x, double y, double z) { return Rz(z)*Ry(y)*Rx(x);}
+
+    /**
+     * Tait-Bryan system from Spatial Reference Model (SRM) (x,y,z) = (roll,pitch,yaw)
+     * as described in http://www.sedris.org/wg8home/Documents/WG80462.pdf
+     * Differs from one defined by Justin, who uses, (x,y,z) = (roll,-pitch,yaw)
+     * and http://en.wikipedia.org/wiki/Yaw,_pitch,_and_roll, where (x,y,z) = (-roll,pitch,yaw)
+     * Assumes vehicle coordinate frame X forward, Y right, Z down
+     */
+    static Rot3 yaw  (double t) { return Rz(t);} // positive yaw is to right (as in aircraft heading)
+    static Rot3 pitch(double t) { return Ry(t);} // positive pitch is up (increasing aircraft altitude)
+    static Rot3 roll (double t) { return Rx(t);} // positive roll is to right (increasing yaw in aircraft)
+    static Rot3 ypr  (double y, double p, double r) { return yaw(y)*pitch(p)*roll(r);}
+
     /** print */
     void print(const std::string& s="R") const { gtsam::print(matrix(), s);}
 
@@ -72,7 +95,16 @@ namespace gtsam {
     Point3 r2() const { return r2_; }
     Point3 r3() const { return r3_; }
 
-    /** use RQ to calculate yaw-pitch-roll angle representation */
+    /**
+     * Use RQ to calculate xyz angle representation
+     * @return a vector containing x,y,z s.t. R = Rot3::RzRyRx(x,y,z)
+     */
+    Vector xyz() const;
+
+    /**
+     * Use RQ to calculate yaw-pitch-roll angle representation
+     * @return a vector containing ypr s.t. R = Rot3::ypr(y,p,r)
+     */
     Vector ypr() const;
 
   private:

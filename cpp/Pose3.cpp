@@ -114,8 +114,8 @@ namespace gtsam {
   // used as soft prior
   /* ************************************************************************* */
   Vector hPose (const Vector& x) {
-    Pose3 pose(x);                            // transform from vector to Pose3
-    Vector w = pose.rotation().ypr();       // get angle differences
+    Pose3 pose(x);                           // transform from vector to Pose3
+    Vector w = pose.rotation().ypr();        // get angle differences
     Vector d = pose.translation().vector();  // get translation differences
     return concatVectors(2,&w,&d);
   }

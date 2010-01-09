@@ -13,20 +13,36 @@ using namespace std;
 namespace gtsam {
 
   /* ************************************************************************* */
+	// static member functions to construct rotations
+
+  Rot3 Rot3::Rx(double t) {
+  	double st = sin(t), ct = cos(t);
+  	return Rot3(
+  			1,  0,  0,
+  			0, ct,-st,
+  			0, st, ct);
+  }
+
+  Rot3 Rot3::Ry(double t) {
+  	double st = sin(t), ct = cos(t);
+  	return Rot3(
+  			 ct, 0, st,
+  			  0, 1,  0,
+  			-st, 0, ct);
+  }
+
+  Rot3 Rot3::Rz(double t) {
+  	double st = sin(t), ct = cos(t);
+  	return Rot3(
+  			ct,-st, 0,
+  			st, ct, 0,
+  			 0,  0, 1);
+  }
+
+  /* ************************************************************************* */
   bool Rot3::equals(const Rot3 & R, double tol) const {
     return equal_with_abs_tol(matrix(), R.matrix(), tol);
   }
-
-
-  /* ************************************************************************* */
-  //  Vector Rot3::vector() const {
-  //    double r[] = { r1_.x(), r1_.y(), r1_.z(),
-  //	     r2_.x(), r2_.y(), r2_.z(),
-  //	     r3_.x(), r3_.y(), r3_.z() };
-  //    Vector v(9);
-  //    copy(r,r+9,v.begin());
-  //    return v;
-  //  }
 
   /* ************************************************************************* */
   Matrix Rot3::matrix() const {
@@ -55,10 +71,15 @@ namespace gtsam {
   }
 
   /* ************************************************************************* */
-  Vector Rot3::ypr() const {
+  Vector Rot3::xyz() const {
     Matrix I;Vector q;
     boost::tie(I,q)=RQ(matrix());
     return q;
+  }
+
+  Vector Rot3::ypr() const {
+  	Vector q = xyz();
+    return Vector_(3,q(2),q(1),q(0));
   }
 
   /* ************************************************************************* */
@@ -149,41 +170,23 @@ namespace gtsam {
   }
 
   /* ************************************************************************* */
-  pair<Matrix,Vector> RQ(const Matrix& A) {
-    double A21 = A(2, 1), A22 = A(2, 2), a = sqrt(A21 * A21 + A22 * A22);
-    double Cx =  A22 / a; //cosX
-    double Sx = -A21 / a; //sinX
-    Matrix Qx = Matrix_(3, 3,
-        1.0, 0.0, 0.0,
-        0.0,  Cx, -Sx,
-        0.0,  Sx, Cx);
-    Matrix B = A * Qx;
+  pair<Matrix, Vector> RQ(const Matrix& A) {
 
-    double B20 = B(2, 0), B22 = B(2, 2), b = sqrt(B20 * B20 + B22 * B22);
-    double Cy = B22 / b; //cosY
-    double Sy = B20 / b; //sinY
-    Matrix Qy = Matrix_(3,3,
-        Cy, 0.0,  Sy,
-        0.0, 1.0, 0.0,
-        -Sy, 0.0,  Cy);
-    Matrix C = B * Qy;
+		double x = -atan2(-A(2, 1), A(2, 2));
+		Rot3 Qx = Rot3::Rx(-x);
+		Matrix B = A * Qx.matrix();
 
-    double C10 = C(1, 0), C11 = C(1, 1), c = sqrt(C10 * C10 + C11 * C11);
-    double Cz =  C11 / c; //cosZ
-    double Sz = -C10 / c; //sinZ
-    Matrix Qz = Matrix_(3, 3,
-        Cz, -Sz, 0.0,
-        Sz,  Cz, 0.0,
-        0.0, 0.0, 1.0);
-    Matrix R = C * Qz;
+		double y = -atan2(B(2, 0), B(2, 2));
+		Rot3 Qy = Rot3::Ry(-y);
+		Matrix C = B * Qy.matrix();
 
-    Vector angles(3);
-    angles(0) = -atan2(Sx, Cx);
-    angles(1) = -atan2(Sy, Cy);
-    angles(2) = -atan2(Sz, Cz);
+		double z = -atan2(-C(1, 0), C(1, 1));
+		Rot3 Qz = Rot3::Rz(-z);
+		Matrix R = C * Qz.matrix();
 
-    return make_pair(R,angles);
-  }
+		Vector xyz = Vector_(3, x, y, z);
+		return make_pair(R, xyz);
+	}
 
   /* ************************************************************************* */
 
