@@ -269,17 +269,17 @@ TEST( Rot3, RQ)
   CHECK(assert_equal(eye(3),actualK));
   CHECK(assert_equal(expected,actual,1e-6));
 
-  // Try using xyz call
+  // Try using xyz call, asserting that Rot3::RzRyRx(x,y,z).xyz()==[x;y;z]
   CHECK(assert_equal(expected,R.xyz(),1e-6));
-  CHECK(assert_equal(Vector_(3,0.1,0.2,0.3),Rot3::RzRyRx(0.1,0.2,0.3).xyz(),1e-6));
+  CHECK(assert_equal(Vector_(3,0.1,0.2,0.3),Rot3::RzRyRx(0.1,0.2,0.3).xyz()));
 
-  // Try using xyz call
-  CHECK(assert_equal(Vector_(3,0.1,0.2,0.3),Rot3::ypr(0.1,0.2,0.3).ypr(),1e-6));
+  // Try using ypr call, asserting that Rot3::ypr(y,p,r).ypr()==[y;p;r]
+  CHECK(assert_equal(Vector_(3,0.1,0.2,0.3),Rot3::ypr(0.1,0.2,0.3).ypr()));
 
   // Try ypr for pure yaw-pitch-roll matrices
-  CHECK(assert_equal(Vector_(3,0.1,0.0,0.0),Rot3::yaw  (0.1).ypr(),1e-6));
-  CHECK(assert_equal(Vector_(3,0.0,0.1,0.0),Rot3::pitch(0.1).ypr(),1e-6));
-  CHECK(assert_equal(Vector_(3,0.0,0.0,0.1),Rot3::roll (0.1).ypr(),1e-6));
+  CHECK(assert_equal(Vector_(3,0.1,0.0,0.0),Rot3::yaw  (0.1).ypr()));
+  CHECK(assert_equal(Vector_(3,0.0,0.1,0.0),Rot3::pitch(0.1).ypr()));
+  CHECK(assert_equal(Vector_(3,0.0,0.0,0.1),Rot3::roll (0.1).ypr()));
 
   // Try RQ to recover calibration from 3*3 sub-block of projection matrix
 	Matrix K = Matrix_(3,3,
