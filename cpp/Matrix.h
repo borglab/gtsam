@@ -11,6 +11,7 @@
 #pragma once
 
 #include <list>
+#include <boost/format.hpp>
 #include <boost/numeric/ublas/matrix.hpp>
 #include <boost/tuple/tuple.hpp>
 #include "Vector.h"
@@ -84,7 +85,8 @@ bool assert_equal(const Matrix& A, const Matrix& B, double tol = 1e-9);
  * overload * for matrix-vector multiplication (as BOOST does not)
  */
 inline Vector operator*(const Matrix& A, const Vector & v) {
-  if (A.size2()!=v.size()) throw(std::invalid_argument("Matrix operator* : A.n!=v.size"));
+  if (A.size2()!=v.size()) throw std::invalid_argument(
+  		boost::str(boost::format("Matrix operator* : A.n(%d)!=v.size(%d)") % A.size2() % v.size()));
   return prod(A,v);
 }
 
@@ -93,7 +95,8 @@ inline Vector operator*(const Matrix& A, const Vector & v) {
  * We transpose the vectors for speed.
  */
 inline Vector operator^(const Matrix& A, const Vector & v) {
-  if (A.size1()!=v.size()) throw(std::invalid_argument("Matrix operator^ : A.m!=v.size"));
+  if (A.size1()!=v.size()) throw std::invalid_argument(
+  		boost::str(boost::format("Matrix operator^ : A.m(%d)!=v.size(%d)") % A.size1() % v.size()));
   Vector vt = trans(v);
   Vector vtA = prod(vt,A);
   return trans(vtA);
@@ -103,7 +106,8 @@ inline Vector operator^(const Matrix& A, const Vector & v) {
  * overload * for vector*matrix multiplication (as BOOST does not)
  */
 inline Vector operator*(const Vector & v, const Matrix& A) {
-  if (A.size1()!=v.size()) throw(std::invalid_argument("Matrix operator* : A.m!=v.size"));
+  if (A.size1()!=v.size()) throw std::invalid_argument(
+  		boost::str(boost::format("Matrix operator* : A.m(%d)!=v.size(%d)") % A.size1() % v.size()));
   return prod(v,A);
 }
 
@@ -111,7 +115,8 @@ inline Vector operator*(const Vector & v, const Matrix& A) {
  * overload * for matrix multiplication (as BOOST does not)
  */
 inline Matrix operator*(const Matrix& A, const Matrix& B) {
-  if (A.size2()!=B.size1()) throw(std::invalid_argument("Matrix operator* : A.n!=B.m"));
+  if (A.size2()!=B.size1()) throw std::invalid_argument(
+  		boost::str(boost::format("Matrix operator* : A.n(%d)!=B.m(%d)") % A.size2() % B.size1()));
   return prod(A,B);
 }
 
