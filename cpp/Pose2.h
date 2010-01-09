@@ -9,18 +9,18 @@
 
 #pragma once
 
-#include "Point2.h"
-#include "Rot2.h"
 #include "Matrix.h"
 #include "Testable.h"
 #include "Lie.h"
+#include "Point2.h"
+#include "Rot2.h"
 
 namespace gtsam {
 
   /**
    * A 2D pose (Point2,Rot2)
    */
-  class Pose2: Testable<Pose2>  {
+  class Pose2: Testable<Pose2>, public Lie<Pose2>  {
   private:
     Point2 t_;
     Rot2 r_;
@@ -73,10 +73,12 @@ namespace gtsam {
   inline Pose2 compose(const Pose2& p1, const Pose2& p0) {
     return Pose2(p0.r()*p1.r(), p0.t() + p0.r()*p1.t()); }
 
-  /* exponential and log maps around identity */
-  // Create an incremental pose from x,y,theta
+  /** exponential and log maps around identity */
+
+  /** Create an incremental pose from x,y,theta */
   template<> inline Pose2 expmap(const Vector& v) { return Pose2(v[0], v[1], v[2]); }
-  // Return the x,y,theta of this pose
+
+  /** Return the x,y,theta of this pose */
   inline Vector logmap(const Pose2& p) { return Vector_(3, p.x(), p.y(), p.theta()); }
 
 
@@ -91,7 +93,7 @@ namespace gtsam {
     return rotate(pose.r(), point)+pose.t(); }
 
   /** Return relative pose between p1 and p2, in p1 coordinate frame */
-  // todo: make sure compiler finds this version of between.
+  /** todo: make sure compiler finds this version of between. */
   //inline Pose2 between(const Pose2& p0, const Pose2& p2) {
   //  return Pose2(p0.r().invcompose(p2.r()), p0.r().unrotate(p2.t()-p0.t())); }
   Matrix Dbetween1(const Pose2& p0, const Pose2& p2);
@@ -105,4 +107,7 @@ namespace gtsam {
   inline Point2 operator*(const Pose2& pose, const Point2& point) {
     return transform_from(pose, point); }
 
+
+
 } // namespace gtsam
+

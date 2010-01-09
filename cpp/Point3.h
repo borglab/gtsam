@@ -19,7 +19,7 @@
 namespace gtsam {
 
   /** A 3D point */
-  class Point3: Testable<Point3> {
+  class Point3: Testable<Point3>, public Lie<Point3> {
   private:
     double x_, y_, z_;  
 		

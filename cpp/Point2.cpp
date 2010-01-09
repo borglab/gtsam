@@ -5,10 +5,14 @@
  */
 
 #include "Point2.h"
+#include "Lie-inl.h"
 
 using namespace std;
 
 namespace gtsam {
+
+  /** Explicit instantiation of base class to export members */
+  template class Lie<Point2>;
 
   /* ************************************************************************* */
   void Point2::print(const string& s) const {

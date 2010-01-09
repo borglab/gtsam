@@ -187,6 +187,13 @@ TEST( Pose2, between )
 }
 
 /* ************************************************************************* */
+TEST(Pose2, members)
+{
+  Pose2 pose;
+  CHECK(pose.dim() == 3);
+}
+
+/* ************************************************************************* */
 int main() {
   TestResult tr;
   return TestRegistry::runAllTests(tr);

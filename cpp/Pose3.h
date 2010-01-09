@@ -17,7 +17,7 @@
 namespace gtsam {
 
   /** A 3D pose (R,t) : (Rot3,Point3) */
-  class Pose3 : Testable<Pose3> {
+  class Pose3 : Testable<Pose3>, public Lie<Pose3> {
   private:
     Rot3 R_;
     Point3 t_;

@@ -17,7 +17,7 @@
 namespace gtsam {
 
   /* 3D Rotation */
-  class Rot3: Testable<Rot3> {
+  class Rot3: Testable<Rot3>, public Lie<Rot3> {
   private:
     /** we store columns ! */
     Point3 r1_, r2_, r3_;  

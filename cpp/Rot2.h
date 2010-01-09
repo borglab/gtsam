@@ -16,7 +16,7 @@
 namespace gtsam {
 
   /* Rotation matrix */
-  class Rot2: Testable<Rot2> {
+  class Rot2: Testable<Rot2>, public Lie<Rot2> {
   private:
     /** we store cos(theta) and sin(theta) */
     double c_, s_;

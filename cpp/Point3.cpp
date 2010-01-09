@@ -4,10 +4,13 @@
  */
 
 #include "Point3.h"
+#include "Lie-inl.h"
 
 
 namespace gtsam {
 
+  /** Explicit instantiation of base class to export members */
+  template class Lie<Point3>;
 
   /* ************************************************************************* */
   bool Point3::equals(const Point3 & q, double tol) const {

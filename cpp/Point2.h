@@ -18,7 +18,7 @@ namespace gtsam {
    * Derived from testable so has standard print and equals, and assert_equals works
    * Functional, so no set functions: once created, a point is constant.
    */
-  class Point2: Testable<Point2> {
+  class Point2: Testable<Point2>, public Lie<Point2> {
   private:
     double x_, y_;
 		

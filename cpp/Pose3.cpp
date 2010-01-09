@@ -5,11 +5,15 @@
 
 #include <iostream>
 #include "Pose3.h"
+#include "Lie-inl.h"
 
 using namespace std;
 using namespace boost::numeric::ublas;
 
 namespace gtsam {
+
+  /** Explicit instantiation of base class to export members */
+  template class Lie<Pose3>;
 
   /* ************************************************************************* */
   void Pose3::print(const string& s) const {

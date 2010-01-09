@@ -38,6 +38,29 @@ namespace gtsam {
   template<class T>
   inline T expmap(const T& l0, const Vector& v) { return expmap<T>(v)*l0; }
 
+  /**
+   * Base class for Lie group type
+   */
+  template <class T>
+  class Lie {
+  public:
+
+    /**
+     * Returns dimensionality of the tangent space
+     */
+    size_t dim() const;
+
+    /**
+     * Returns Exponential mapy
+     */
+    T expmap(const Vector& v) const;
+
+    /**
+     * Returns Log map
+     */
+    Vector logmap(const T& lp) const;
+
+  };
 }
 
 
