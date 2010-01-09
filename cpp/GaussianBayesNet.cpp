@@ -64,18 +64,14 @@ VectorConfig optimize(const GaussianBayesNet& bn)
 	
   /** solve each node in turn in topological sort order (parents first)*/
 	BOOST_REVERSE_FOREACH(GaussianConditional::shared_ptr cg, bn) {
-		cg->print();
-		result.print();
     Vector x = cg->solve(result); // Solve for that variable
     result.insert(cg->key(),x);   // store result in partial solution
   }
   return result;
 }
 
-/*
- * Backsubstitute using GaussianBayesNet
- * (R*x)./sigmas = y by solving x=inv(R)*(y.*sigmas)
- */
+/* ************************************************************************* */
+// (R*x)./sigmas = y by solving x=inv(R)*(y.*sigmas)
 VectorConfig backSubstitute(const GaussianBayesNet& bn, const VectorConfig& y) {
 	VectorConfig x;
 	/** solve each node in turn in topological sort order (parents first)*/
@@ -96,12 +92,10 @@ VectorConfig backSubstitute(const GaussianBayesNet& bn, const VectorConfig& y) {
 	return x;
 }
 
-/*
- * Transpose Backsubstitute using GaussianBayesNet
- * gy=inv(L)*gx by solving L*gy=gx.
- * gy=inv(R'*inv(Sigma))*gx
- * gz'*R'=gx', gy = gz.*sigmas
- */
+/* ************************************************************************* */
+// gy=inv(L)*gx by solving L*gy=gx.
+// gy=inv(R'*inv(Sigma))*gx
+// gz'*R'=gx', gy = gz.*sigmas
 VectorConfig backSubstituteTranspose(const GaussianBayesNet& bn,
 		const VectorConfig& gx) {
 
