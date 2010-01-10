@@ -40,7 +40,7 @@ clean_external_libs:
 # we specify the library in levels
 
 # basic Math
-sources = Vector.cpp svdcmp.cpp Matrix.cpp numericalDerivative.cpp 
+sources = Vector.cpp svdcmp.cpp Matrix.cpp 
 check_PROGRAMS = testVector testMatrix 
 testVector_SOURCES = testVector.cpp
 testVector_LDADD   = libgtsam.la

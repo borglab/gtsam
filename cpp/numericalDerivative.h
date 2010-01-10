@@ -15,9 +15,9 @@
 namespace gtsam {
 
   /**
-	* Numerically compute gradient of scalar function
-	 * Class X is the input argument
-   * The class X needs to have dim, expmap, vector
+   * Numerically compute gradient of scalar function
+   * Class X is the input argument
+   * The class X needs to have dim, expmap, logmap
    */
   template<class X>
   Vector numericalGradient(double (*h)(const X&), const X& x, double delta=1e-5) {
@@ -38,16 +38,10 @@ namespace gtsam {
    * @param h unary function yielding m-vector
    * @param x n-dimensional value at which to evaluate h
    * @param delta increment for numerical derivative
+   * Class Y is the output argument
+   * Class X is the input argument
    * @return m*n Jacobian computed via central differencing
-   */
-  Matrix NumericalDerivative11
-   (Vector (*h)(const Vector&), const Vector& x, double delta=1e-5);
-
-  /**
-	* Templated version (starts with LOWERCASE n)
-	 * Class Y is the output argument
-	 * Class X is the input argument
-   * Both classes X,Y need dim, expmap, vector
+   * Both classes X,Y need dim, expmap, logmap
    */
   template<class Y, class X>
   Matrix numericalDerivative11(Y (*h)(const X&), const X& x, double delta=1e-5) {
@@ -77,13 +71,7 @@ namespace gtsam {
    * @param x2 second argument value
    * @param delta increment for numerical derivative
    * @return m*n Jacobian computed via central differencing
-   */
-  Matrix NumericalDerivative21(Vector (*h)(const Vector&, const Vector&),
-  		const Vector& x1, const Vector& x2, double delta=1e-5);
-
-  /**
-   * Templated version (starts with LOWERCASE n)
-   * All classes Y,X1,X2 need dim, expmap, vector
+   * All classes Y,X1,X2 need dim, expmap, logmap
    */
   template<class Y, class X1, class X2>
   Matrix numericalDerivative21(Y (*h)(const X1&, const X2&),
@@ -114,18 +102,12 @@ namespace gtsam {
    * @param x2 n-dimensional second argument value
    * @param delta increment for numerical derivative
    * @return m*n Jacobian computed via central differencing
-   */
-  Matrix NumericalDerivative22
-    (Vector (*h)(const Vector&, const Vector&), const Vector& x1, const Vector& x2, double delta=1e-5);
-
-  /**
-   * Templated version (starts with LOWERCASE n)
-   * All classes Y,X1,X2 need dim, expmap, vector
+   * All classes Y,X1,X2 need dim, expmap, logmap
    */
   template<class Y, class X1, class X2>
-    Matrix numericalDerivative22
-    (Y (*h)(const X1&, const X2&), 
-     const X1& x1, const X2& x2, double delta=1e-5) 
+  Matrix numericalDerivative22
+  (Y (*h)(const X1&, const X2&),
+      const X1& x1, const X2& x2, double delta=1e-5)
   {
     Y hx = h(x1,x2);
     double factor = 1.0/(2.0*delta);
@@ -153,18 +135,12 @@ namespace gtsam {
    * @param x2 second argument value
    * @param delta increment for numerical derivative
    * @return m*n Jacobian computed via central differencing
-   */
-  Matrix NumericalDerivative31
-    (Vector (*h)(const Vector&, const Vector&, const Vector&), const Vector& x1, const Vector& x2, const Vector& x3, double delta=1e-5);
-
-  /**
-   * Templated version (starts with LOWERCASE n)
-   * All classes Y,X1,X2,X3 need dim, expmap, vector
+   * All classes Y,X1,X2,X3 need dim, expmap, logmap
    */
   template<class Y, class X1, class X2, class X3>
-    Matrix numericalDerivative31
-    (Y (*h)(const X1&, const X2&, const X3&), 
-     const X1& x1, const X2& x2, const X3& x3, double delta=1e-5) 
+  Matrix numericalDerivative31
+  (Y (*h)(const X1&, const X2&, const X3&),
+      const X1& x1, const X2& x2, const X3& x3, double delta=1e-5)
   {
     Y hx = h(x1,x2,x3);
     double factor = 1.0/(2.0*delta);
