@@ -194,8 +194,11 @@ testSimulated3D_SOURCES = testSimulated3D.cpp
 testSimulated3D_LDADD = libgtsam.la
 check_PROGRAMS += testSimulated3D 
 
+# Pose SLAM headers
+headers += BetweenFactor.h LieConfig.h LieConfig-inl.h 
+
 # 2D Pose constraints
-headers += BetweenFactor.h Pose2Factor.h Pose2Prior.h 
+headers += Pose2Factor.h Pose2Prior.h 
 sources += Pose2Config.cpp Pose2Graph.cpp 
 check_PROGRAMS += testPose2Factor testPose2Config testPose2Graph 
 testPose2Factor_SOURCES = $(example) testPose2Factor.cpp
