@@ -5,6 +5,8 @@
  * Created on: Dec 28, 2009
  */
 
+#pragma once
+
 #include "GaussianFactorGraph.h"
 #include "iterative.h"
 

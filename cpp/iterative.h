@@ -5,6 +5,8 @@
  * Created on: Dec 28, 2009
  */
 
+#pragma once
+
 #include "Matrix.h"
 
 namespace gtsam {
