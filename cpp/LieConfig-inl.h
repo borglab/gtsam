@@ -16,20 +16,20 @@ using namespace std;
 namespace gtsam {
 
   template<class T>
-  void LieConfig<T>::print(const std::string &s) const {
-       std::cout << "LieConfig " << s << ", size " << values_.size() << "\n";
-       std::pair<std::string, T> v;
+  void LieConfig<T>::print(const string &s) const {
+       cout << "LieConfig " << s << ", size " << values_.size() << "\n";
+       pair<string, T> v;
        BOOST_FOREACH(v, values_)
-         ::gtsam::print(v.second, v.first + ": ");
+         gtsam::print(v.second, v.first + ": ");
      }
 
   template<class T>
   bool LieConfig<T>::equals(const LieConfig<T>& expected, double tol) const {
     if (values_.size() != expected.values_.size()) return false;
-    std::pair<std::string, T> v;
+    pair<string, T> v;
     BOOST_FOREACH(v, values_) {
       boost::optional<const T&> expval = expected.gettry(v.first);
-      if(!expval || !::gtsam::equal(v.second, *expval, tol))
+      if(!expval || !gtsam::equal(v.second, *expval, tol))
         return false;
     }
     return true;
@@ -38,7 +38,7 @@ namespace gtsam {
   template<class T>
   LieConfig<T> expmap(const LieConfig<T>& c, const VectorConfig& delta) {
     LieConfig<T> newConfig;
-    std::string j; T pj;
+    string j; T pj;
     FOREACH_PAIR(j, pj, c.values_) {
         if (delta.contains(j)) {
             const Vector& dj = delta[j];
@@ -53,7 +53,7 @@ namespace gtsam {
   template<class T>
   LieConfig<T> expmap(const LieConfig<T>& c, const Vector& delta) {
     LieConfig<T> newConfig;
-    std::pair<std::string, Vector> value;
+    pair<string, Vector> value;
     int delta_offset = 0;
     BOOST_FOREACH(value, c) {
       int cur_dim = dim(value.second);

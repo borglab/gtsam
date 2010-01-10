@@ -62,7 +62,7 @@ namespace gtsam {
   
   /** Call print on the object */
   template<class T>
-  inline void print_(const T& object, const char *s = "") {
+  inline void print_(const T& object, const std::string& s = "") {
     object.print(s);
   }
 

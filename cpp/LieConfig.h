@@ -57,14 +57,14 @@ namespace gtsam {
     virtual ~LieConfig() {}
 
     /** Retrieve a variable by key, throws std::invalid_argument if not found */
-    const T& get(std::string& key) const {
+    const T& get(const std::string& key) const {
       iterator it = values_.find(key);
       if (it == values_.end()) throw std::invalid_argument("invalid key");
       else return it->second;
     }
 
     /** Retrieve a variable by key, returns nothing if not found */
-    boost::optional<const T&> gettry(std::string& key) const {
+    boost::optional<const T&> gettry(const std::string& key) const {
       const_iterator it = values_.find(key);
       if (it == values_.end()) return boost::optional<const T&>();
       else return it->second;
