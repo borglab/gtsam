@@ -7,6 +7,7 @@
 #include <iostream>
 #include <boost/assign/std/list.hpp>
 using namespace boost::assign;
+
 #include <CppUnitLite/TestHarness.h>
 #include "Pose3Factor.h"
 #include "LieConfig-inl.h"
@@ -34,13 +35,6 @@ TEST( Pose3Factor, error )
 	// Get error z-h(x) -> logmap(h(x),z) = logmap(between(t1,t2),z)
 	Vector actual = factor.error_vector(x);
 	Vector expected = logmap(between(t1,t2),z);
-	CHECK(assert_equal(expected,actual));
-}
-
-/* ************************************************************************* */
-TEST( Pose3Factor, simple_circle )
-{
-	Pose3Config expected, actual;
 	CHECK(assert_equal(expected,actual));
 }
 

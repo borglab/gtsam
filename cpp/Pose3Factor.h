@@ -5,17 +5,10 @@
 
 #pragma once
 
-#include <map>
-#include "Pose3.h"
-#include "LieConfig.h"
+#include "Pose3Config.h"
 #include "BetweenFactor.h"
 
 namespace gtsam {
-
-	/**
-	 * A config specifically for 3D poses
-	 */
-	typedef LieConfig<Pose3> Pose3Config;
 
 	/**
 	 * A Factor for 3D pose measurements

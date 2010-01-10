@@ -194,18 +194,27 @@ testSimulated3D_SOURCES = testSimulated3D.cpp
 testSimulated3D_LDADD = libgtsam.la
 check_PROGRAMS += testSimulated3D 
 
-# Pose constraints
-headers += BetweenFactor.h Pose2Factor.h Pose2Prior.h Pose3Factor.h 
+# 2D Pose constraints
+headers += BetweenFactor.h Pose2Factor.h Pose2Prior.h 
 sources += Pose2Config.cpp Pose2Graph.cpp 
-check_PROGRAMS += testPose2Factor testPose2Config testPose2Graph testPose3Factor
+check_PROGRAMS += testPose2Factor testPose2Config testPose2Graph 
 testPose2Factor_SOURCES = $(example) testPose2Factor.cpp
 testPose2Factor_LDADD   = libgtsam.la
 testPose2Config_SOURCES = $(example) testPose2Config.cpp
 testPose2Config_LDADD   = libgtsam.la
 testPose2Graph_SOURCES  = $(example) testPose2Graph.cpp
 testPose2Graph_LDADD    = libgtsam.la
+
+# 3D Pose constraints
+headers += Pose3Factor.h  
+sources += Pose3Config.cpp Pose3Graph.cpp 
+check_PROGRAMS += testPose3Factor testPose3Config testPose3Graph 
 testPose3Factor_SOURCES = $(example) testPose3Factor.cpp
 testPose3Factor_LDADD   = libgtsam.la
+testPose3Config_SOURCES = $(example) testPose3Config.cpp
+testPose3Config_LDADD   = libgtsam.la
+testPose3Graph_SOURCES  = $(example) testPose3Graph.cpp
+testPose3Graph_LDADD    = libgtsam.la
 
 # Cameras
 sources += CalibratedCamera.cpp SimpleCamera.cpp
