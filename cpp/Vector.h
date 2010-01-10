@@ -209,21 +209,6 @@ Vector concatVectors(size_t nrVectors, ...);
  */
 Vector rand_vector_norm(size_t dim, double mean = 0, double sigma = 1);
 
-/**
- * Exponential map, just returns the vector itself
- */
-template<> inline Vector expmap(const Vector& v) { return v; }
-
-/**
- * Compose, adds vectors
- */
-inline Vector compose(const Vector& v0, const Vector& v1) { return v0+v1; }
-
-/**
- * Inverse, negates the vector
- */
-inline Vector inverse(const Vector& v) { return -v; }
-
 } // namespace gtsam
 
 static boost::minstd_rand generator(42u);
