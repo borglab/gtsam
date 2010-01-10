@@ -96,7 +96,11 @@ TEST( NonlinearFactor, linearize_f1 )
   GaussianFactorGraph lfg = createGaussianFactorGraph();
   GaussianFactor::shared_ptr expected = lfg[0];
 
-  CHECK(expected->equals(*actual));
+  CHECK(assert_equal(*expected,*actual));
+
+  // The error |A*dx-b| approximates (h(x0+dx)-z) = -error_vector
+  // Hence i.e., b = approximates z-h(x0) = error_vector(x0)
+	CHECK(assert_equal(nlf->error_vector(c),actual->get_b()));
 }
 
 /* ************************************************************************* */
