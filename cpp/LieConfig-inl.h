@@ -37,32 +37,31 @@ namespace gtsam {
 
   template<class T>
   LieConfig<T> expmap(const LieConfig<T>& c, const VectorConfig& delta) {
-    LieConfig<T> newConfig;
-    string j; T pj;
-    FOREACH_PAIR(j, pj, c.values_) {
-        if (delta.contains(j)) {
-            const Vector& dj = delta[j];
-            //check_size(j,vj,dj);
-            newConfig.insert(j, expmap(pj,dj));
-        } else
-            newConfig.insert(j, pj);
-    }
-    return newConfig;
-  }
+		LieConfig<T> newConfig;
+		string j; T pj;
+		FOREACH_PAIR(j, pj, c) {
+			if (delta.contains(j)) {
+				const Vector& dj = delta[j];
+				newConfig.insert(j, expmap(pj,dj));
+			} else
+			newConfig.insert(j, pj);
+		}
+		return newConfig;
+	}
 
+  // This version just creates a VectorConfig then calls function above
   template<class T>
   LieConfig<T> expmap(const LieConfig<T>& c, const Vector& delta) {
-    LieConfig<T> newConfig;
-    pair<string, Vector> value;
-    int delta_offset = 0;
-    BOOST_FOREACH(value, c) {
-      int cur_dim = dim(value.second);
-      newConfig.insert(value.first,
-          expmap(value.second,
-          sub(delta, delta_offset, delta_offset+cur_dim)));
-      delta_offset += cur_dim;
-    }
-    return newConfig;
-  }
+  	VectorConfig deltaConfig;
+		int delta_offset = 0;
+		string j; T pj;
+		FOREACH_PAIR(j, pj, c) {
+			int cur_dim = dim(pj);
+			Vector dj = sub(delta, delta_offset, delta_offset+cur_dim);
+			deltaConfig.insert(j,dj);
+			delta_offset += cur_dim;
+		}
+		return expmap(c,deltaConfig);
+	}
 
 }
