@@ -118,7 +118,6 @@ class Point2 {
   Point2(double x, double y);
   double x();
   double y();
-  size_t dim() const;
   void print(string s) const;
 };
 
@@ -126,8 +125,6 @@ class Point3 {
   Point3();
   Point3(double x, double y, double z);
   Point3(Vector v);
-  size_t dim() const;
-  Point3 exmap(Vector d) const;
   Vector vector() const;
   double x();
   double y();
@@ -176,27 +173,26 @@ class Pose2 {
   double x() const;
   double y() const;
   double theta() const;
+  size_t dim() const;
+  Pose2 expmap(const Vector& v) const;
+  Vector logmap(const Pose2& pose) const;
   Point2 t() const;
   Rot2 r() const;
-  Vector vector() const;
-  size_t dim() const;
-  Pose2 exmap(const Vector& v) const;
-  Vector log(const Pose2& pose) const;
-  Pose2 inverse() const;
-  Pose2 compose(const Pose2& p1) const;
 };
 
 class Pose2Config{
 	Pose2Config();
 	Pose2 get(string key) const;
 	void insert(string name, const Pose2& val);
+    void print(string s) const;
+    void clear();
+    int size();
 };
 
 class Pose2Factor {
 	Pose2Factor(string key1, string key2,
 			const Pose2& measured, Matrix measurement_covariance);
 	void print(string name) const;
-	bool equals(const Pose2Factor& expected, double tol) const;
 	double error(const Pose2Config& c) const;
 	size_t size() const;
 	GaussianFactor* linearize(const Pose2Config& config) const;
@@ -205,10 +201,8 @@ class Pose2Factor {
 class Pose2Graph{
 	Pose2Graph();
 	void print(string s) const;
-	bool equals(const Pose2Graph& p, double tol) const;
 	GaussianFactorGraph* linearize_(const Pose2Config& config) const;
 	void push_back(Pose2Factor* factor);
-	Ordering* getOrdering_() const;
 };
 
 
