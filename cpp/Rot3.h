@@ -158,7 +158,7 @@ namespace gtsam {
   // Log map at identity - return the canonical coordinates of this rotation
   inline Vector logmap(const Rot3& R) {
     double tr = R.r1().x()+R.r2().y()+R.r3().z();
-    if (tr==3.0) return ones(3); // todo: identity?
+    if (tr==3.0) return zero(3);
     if (tr==-1.0) throw std::domain_error("Rot3::log: trace == -1 not yet handled :-(");;
     double theta = acos((tr-1.0)/2.0);
     return (theta/2.0/sin(theta))*Vector_(3,

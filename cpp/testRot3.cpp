@@ -121,6 +121,14 @@ TEST(Rot3, log)
 	Vector w = Vector_(3, 0.1, 0.4, 0.2);
 	Rot3 R = rodriguez(w);
 	CHECK(assert_equal(w, logmap(R)));
+
+	Vector w5 = Vector_(3, 0.0, 0.0, 0.0);
+	Rot3 R5 = rodriguez(w5);
+	CHECK(assert_equal(w5, logmap(R5)));
+
+//	Vector w6 = Vector_(3, M_PI, 0.0, 0.0);
+//	Rot3 R6 = rodriguez(w6);
+//	CHECK(assert_equal(w6, logmap(R6)));
 }
 
 /* ************************************************************************* */
