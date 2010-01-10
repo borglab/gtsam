@@ -61,6 +61,7 @@ namespace gtsam {
     dim_ += dim(val);
   }
 
+  // todo: insert for every element is inefficient
   template<class T>
   LieConfig<T> expmap(const LieConfig<T>& c, const VectorConfig& delta) {
 		LieConfig<T> newConfig;
@@ -75,19 +76,22 @@ namespace gtsam {
 		return newConfig;
 	}
 
-  // This version just creates a VectorConfig then calls function above
+  // todo: insert for every element is inefficient
   template<class T>
   LieConfig<T> expmap(const LieConfig<T>& c, const Vector& delta) {
-    VectorConfig deltaConfig;
-        int delta_offset = 0;
-        string j; T pj;
-        FOREACH_PAIR(j, pj, c) {
-            int cur_dim = dim(pj);
-            Vector dj = sub(delta, delta_offset, delta_offset+cur_dim);
-            deltaConfig.insert(j,dj);
-            delta_offset += cur_dim;
-        }
-        return expmap(c,deltaConfig);
+    if(delta.size() != dim(c))
+      throw invalid_argument("Delta vector length does not match config dimensionality.");
+    LieConfig<T> newConfig;
+    pair<string, T> value;
+    int delta_offset = 0;
+    BOOST_FOREACH(value, c) {
+      int cur_dim = dim(value.second);
+      newConfig.insert(value.first,
+          expmap(value.second,
+            sub(delta, delta_offset, delta_offset+cur_dim)));
+      delta_offset += cur_dim;
+    }
+    return newConfig;
   }
 
 }
