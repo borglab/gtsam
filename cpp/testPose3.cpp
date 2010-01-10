@@ -269,19 +269,39 @@ TEST( Pose3, composeTransform )
 }
 
 /* ************************************************************************* */
-TEST(Pose3, manifold) {
-  //cout << "manifold" << endl;
+TEST(Pose3, manifold)
+{
+	//cout << "manifold" << endl;
 	Pose3 t1 = T;
 	Pose3 t2 = pose1;
 	Pose3 origin;
-	Vector d12 = logmap(t1,t2);
+	Vector d12 = logmap(t1, t2);
 	CHECK(assert_equal(t2, expmap(t1,d12)));
 	// todo: richard - commented out because this tests for "compose-style" (new) expmap
-	//CHECK(assert_equal(t2, expmap(origin,d12)*t1));
-	Vector d21 = logmap(t2,t1);
+	// CHECK(assert_equal(t2, expmap(origin,d12)*t1));
+	Vector d21 = logmap(t2, t1);
 	CHECK(assert_equal(t1, expmap(t2,d21)));
-    // todo: richard - commented out because this tests for "compose-style" (new) expmap
-	//CHECK(assert_equal(t1, expmap(origin,d21)*t2));
+	// todo: richard - commented out because this tests for "compose-style" (new) expmap
+	// CHECK(assert_equal(t1, expmap(origin,d21)*t2));
+
+	// Check that log(t1,t2)=-log(t2,t1) - this holds even for incorrect expmap :-)
+	CHECK(assert_equal(d12,-d21));
+
+#ifdef SLOW_BUT_CORRECT_EXPMAP
+
+	// todo: Frank - Below only works for correct "Agrawal06iros style expmap
+	// lines in canonical coordinates correspond to Abelian subgroups in SE(3)
+	 Vector d = Vector_(6,0.1,0.2,0.3,0.4,0.5,0.6);
+	// exp(-d)=inverse(exp(d))
+	 CHECK(assert_equal(expmap<Pose3>(-d),inverse(expmap<Pose3>(d))));
+	// exp(5d)=exp(2*d+3*d)=exp(2*d)exp(3*d)=exp(3*d)exp(2*d)
+	 Pose3 T2 = expmap<Pose3>(2*d);
+	 Pose3 T3 = expmap<Pose3>(3*d);
+	 Pose3 T5 = expmap<Pose3>(5*d);
+	 CHECK(assert_equal(T5,T2*T3));
+	 CHECK(assert_equal(T5,T3*T2));
+
+#endif
 }
 
 /* ************************************************************************* */
