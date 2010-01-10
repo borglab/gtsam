@@ -8,10 +8,8 @@
 #ifndef LIE_H_
 #define LIE_H_
 
+#include <string>
 #include "Vector.h"
-#include "VectorConfig.h"
-#include "Matrix.h"
-
 
 namespace gtsam {
 
@@ -61,6 +59,25 @@ namespace gtsam {
     Vector logmap(const T& lp) const;
 
   };
+  
+  /** Call print on the object */
+  template<class T>
+  inline void print_(const T& object, const char *s = "") {
+    object.print(s);
+  }
+
+  /** Call equal on the object */
+  template<class T>
+  inline bool equal(const T& obj1, const T& obj2, double tol) {
+    return obj1.equals(obj2, tol);
+  }
+
+  /** Call equal on the object without tolerance (use default tolerance) */
+  template<class T>
+  inline bool equal(const T& obj1, const T& obj2) {
+    return obj1.equal(obj2);
+  }
+
 }
 
 

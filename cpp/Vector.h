@@ -19,6 +19,8 @@
 typedef boost::numeric::ublas::vector<double> Vector;
 #endif
 
+#include "Lie.h"
+
 namespace gtsam {
 
 /**
@@ -83,7 +85,7 @@ bool zero(const Vector& v);
 /**
  * dimensionality == size
  */
-inline size_t dim(const Vector& v) { return v.size();}
+inline size_t dim(const Vector& v) { return v.size(); }
 	
 /**
  * print with optional string
@@ -106,6 +108,20 @@ bool greaterThanOrEqual(const Vector& v1, const Vector& v2);
  * VecA == VecB up to tolerance
  */
 bool equal_with_abs_tol(const Vector& vec1, const Vector& vec2, double tol=1e-9);
+
+/**
+ * Override of equal in Lie.h
+ */
+inline bool equal(const Vector& vec1, const Vector& vec2, double tol) {
+  return equal_with_abs_tol(vec1, vec2, tol);
+}
+
+/**
+ * Override of equal in Lie.h
+ */
+inline bool equal(const Vector& vec1, const Vector& vec2) {
+  return equal_with_abs_tol(vec1, vec2);
+}
 
 /**
  * Same, prints if error
@@ -192,6 +208,21 @@ Vector concatVectors(size_t nrVectors, ...);
  * random vector
  */
 Vector rand_vector_norm(size_t dim, double mean = 0, double sigma = 1);
+
+/**
+ * Exponential map, just returns the vector itself
+ */
+template<> inline Vector expmap(const Vector& v) { return v; }
+
+/**
+ * Compose, adds vectors
+ */
+inline Vector compose(const Vector& v0, const Vector& v1) { return v0+v1; }
+
+/**
+ * Inverse, negates the vector
+ */
+inline Vector inverse(const Vector& v) { return -v; }
 
 } // namespace gtsam
 

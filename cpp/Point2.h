@@ -8,6 +8,7 @@
 
 #include <boost/serialization/nvp.hpp>
 #include "Vector.h"
+#include "Matrix.h"
 #include "Testable.h"
 #include "Lie.h"
 

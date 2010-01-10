@@ -81,6 +81,8 @@ namespace gtsam {
   /** Return the x,y,theta of this pose */
   inline Vector logmap(const Pose2& p) { return Vector_(3, p.x(), p.y(), p.theta()); }
 
+  /** print using member print function, currently used by LieConfig */
+  inline void print(const Pose2& obj, const std::string& str = "") { obj.print(str); }
 
   /** Return point coordinates in pose coordinate frame */
   inline Point2 transform_to(const Pose2& pose, const Point2& point) {

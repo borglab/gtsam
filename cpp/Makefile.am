@@ -159,14 +159,15 @@ testSQPOptimizer_LDADD     		  = libgtsam.la
 # geometry
 headers += Lie.h Lie-inl.h
 sources += Point2.cpp Rot2.cpp Pose2.cpp Point3.cpp Rot3.cpp Pose3.cpp Cal3_S2.cpp
-check_PROGRAMS += testPoint2 testRot2 testPose2 testPoint3 testRot3 testPose3 testCal3_S2
+check_PROGRAMS += testPoint2 testRot2 testPose2 testPoint3 testRot3 testPose3 testCal3_S2 testLieConfig
 testPoint2_SOURCES  = testPoint2.cpp
 testRot2_SOURCES    = testRot2.cpp
 testPose2_SOURCES   = testPose2.cpp
 testPoint3_SOURCES  = testPoint3.cpp
 testRot3_SOURCES    = testRot3.cpp
 testPose3_SOURCES   = testPose3.cpp
-testCal3_S2_SOURCES = testCal3_S2.cpp               
+testCal3_S2_SOURCES = testCal3_S2.cpp
+testLieConfig_SOURCES = testLieConfig.cpp               
 
 testPoint2_LDADD    = libgtsam.la
 testRot2_LDADD      = libgtsam.la
@@ -175,6 +176,7 @@ testPoint3_LDADD    = libgtsam.la
 testRot3_LDADD      = libgtsam.la
 testPose3_LDADD     = libgtsam.la
 testCal3_S2_LDADD   = libgtsam.la
+testLieConfig_LDADD = libgtsam.la
 
 noinst_PROGRAMS = timeRot3
 timeRot3_SOURCES = timeRot3.cpp
