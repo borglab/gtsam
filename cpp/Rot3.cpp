@@ -43,6 +43,29 @@ namespace gtsam {
   			 0,  0, 1);
   }
 
+  // Considerably faster than composing matrices above !
+  Rot3 Rot3::RzRyRx(double x, double y, double z) {
+  	double cx=cos(x),sx=sin(x);
+  	double cy=cos(y),sy=sin(y);
+  	double cz=cos(z),sz=sin(z);
+  	double ss_ = sx * sy;
+  	double cs_ = cx * sy;
+  	double sc_ = sx * cy;
+  	double cc_ = cx * cy;
+  	double c_s = cx * sz;
+  	double s_s = sx * sz;
+		double _cs = cy * sz;
+  	double _cc = cy * cz;
+		double s_c = sx * cz;
+		double c_c = cx * cz;
+		double ssc = ss_ * cz, csc = cs_ * cz, sss = ss_ * sz, css = cs_ * sz;
+  	return Rot3(
+  			_cc,- c_s + ssc,  s_s + csc,
+  			_cs,  c_c + sss, -s_c + css,
+				-sy,        sc_,        cc_
+  			);
+  }
+
   /* ************************************************************************* */
   bool Rot3::equals(const Rot3 & R, double tol) const {
     return equal_with_abs_tol(matrix(), R.matrix(), tol);

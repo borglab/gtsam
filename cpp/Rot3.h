@@ -63,19 +63,17 @@ namespace gtsam {
     static Rot3 Rx(double t);
     static Rot3 Ry(double t);
     static Rot3 Rz(double t);
-    static Rot3 RzRyRx(double x, double y, double z) { return Rz(z)*Ry(y)*Rx(x);}
+    static Rot3 RzRyRx(double x, double y, double z);
 
     /**
      * Tait-Bryan system from Spatial Reference Model (SRM) (x,y,z) = (roll,pitch,yaw)
      * as described in http://www.sedris.org/wg8home/Documents/WG80462.pdf
-     * Differs from one defined by Justin, who uses, (x,y,z) = (roll,-pitch,yaw)
-     * and http://en.wikipedia.org/wiki/Yaw,_pitch,_and_roll, where (x,y,z) = (-roll,pitch,yaw)
      * Assumes vehicle coordinate frame X forward, Y right, Z down
      */
     static Rot3 yaw  (double t) { return Rz(t);} // positive yaw is to right (as in aircraft heading)
     static Rot3 pitch(double t) { return Ry(t);} // positive pitch is up (increasing aircraft altitude)
     static Rot3 roll (double t) { return Rx(t);} // positive roll is to right (increasing yaw in aircraft)
-    static Rot3 ypr  (double y, double p, double r) { return yaw(y)*pitch(p)*roll(r);}
+    static Rot3 ypr  (double y, double p, double r) { return RzRyRx(r,p,y);}
 
     /** print */
     void print(const std::string& s="R") const { gtsam::print(matrix(), s);}
@@ -177,22 +175,6 @@ namespace gtsam {
         R.r2().x(), R.r2().y(), R.r2().z(),
         R.r3().x(), R.r3().y(), R.r3().z());
   }
-
-  /**
-
-   * Update Rotation with incremental rotation
-   * @param v a vector of incremental roll,pitch,yaw
-   * @param R a rotated frame
-   * @return incremental rotation matrix
-   */
-  //Rot3 exp(const Rot3& R, const Vector& v);
-
-  /**
-   * @param a rotation R
-   * @param a rotation S
-   * @return log(S*R'), i.e. canonical coordinates of between(R,S)
-   */
-  //Vector log(const Rot3& R, const Rot3& S);
 
   /**
    * rotate point from rotated coordinate frame to 

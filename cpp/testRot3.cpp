@@ -129,12 +129,28 @@ TEST(Rot3, log)
 	Rot3 t1 = rodriguez(0.1, 0.4, 0.2);
 	Rot3 t2 = rodriguez(0.3, 0.1, 0.7);
 	Rot3 origin;
+
+	// log behaves correctly
 	Vector d12 = logmap(t1, t2);
 	CHECK(assert_equal(t2, expmap(t1,d12)));
 	CHECK(assert_equal(t2, expmap<Rot3>(d12)*t1));
 	Vector d21 = logmap(t2, t1);
 	CHECK(assert_equal(t1, expmap(t2,d21)));
 	CHECK(assert_equal(t1, expmap<Rot3>(d21)*t2));
+
+	// Check that log(t1,t2)=-log(t2,t1)
+	CHECK(assert_equal(d12,-d21));
+
+	// lines in canonical coordinates correspond to Abelian subgroups in SO(3)
+	Vector d = Vector_(3,0.1,0.2,0.3);
+	// exp(-d)=inverse(exp(d))
+	CHECK(assert_equal(expmap<Rot3>(-d),inverse(expmap<Rot3>(d))));
+	// exp(5d)=exp(2*d+3*d)=exp(2*d)exp(3*d)=exp(3*d)exp(2*d)
+	Rot3 R2 = expmap<Rot3>(2*d);
+	Rot3 R3 = expmap<Rot3>(3*d);
+	Rot3 R5 = expmap<Rot3>(5*d);
+	CHECK(assert_equal(R5,R2*R3));
+	CHECK(assert_equal(R5,R3*R2));
 }
 
 /* ************************************************************************* */
@@ -233,15 +249,39 @@ TEST( Rot3, xyz )
 {
 	double t = 0.1, st = sin(t), ct = cos(t);
 
-	Rot3 expected1(1, 0, 0, 0, ct, -st, 0, st, ct);
+	// Make sure all counterclockwise
+	// Diagrams below are all from from unchanging axis
+
+	// z
+	// |   * Y=(ct,st)
+	// x----y
+	Rot3 expected1(
+			1,  0,  0,
+			0, ct,-st,
+			0, st, ct);
 	CHECK(assert_equal(expected1,Rot3::Rx(t)));
 
-	Rot3 expected2(ct, 0, st, 0, 1, 0, -st, 0, ct);
+	// x
+	// |   * Z=(ct,st)
+	// y----z
+	Rot3 expected2(
+			 ct, 0, st,
+			  0, 1,  0,
+			-st, 0, ct);
 	CHECK(assert_equal(expected2,Rot3::Ry(t)));
 
-	// yaw is around z axis
-	Rot3 expected3(ct, -st, 0, st, ct, 0, 0, 0, 1);
+	// y
+	// |   X=* (ct,st)
+	// z----x
+	Rot3 expected3(
+			ct, -st, 0,
+			st,  ct, 0,
+			 0,  0,  1);
 	CHECK(assert_equal(expected3,Rot3::Rz(t)));
+
+	// Check compound rotation
+	Rot3 expected = Rot3::Rz(0.3)*Rot3::Ry(0.2)*Rot3::Rx(0.1);
+	CHECK(assert_equal(expected,Rot3::RzRyRx(0.1,0.2,0.3)));
 }
 
 /* ************************************************************************* */
@@ -257,6 +297,10 @@ TEST( Rot3, yaw_pitch_roll )
 
 	// roll is around x axis
 	CHECK(assert_equal(Rot3::Rx(t),Rot3::roll(t)));
+
+	// Check compound rotation
+	Rot3 expected = Rot3::yaw(0.1)*Rot3::pitch(0.2)*Rot3::roll(0.3);
+	CHECK(assert_equal(expected,Rot3::ypr(0.1,0.2,0.3)));
 }
 
 /* ************************************************************************* */
