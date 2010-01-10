@@ -593,13 +593,14 @@ TEST( matrix, inverse_square_root )
 			);
 	Matrix actual = inverse_square_root(measurement_covariance);
 
-	Matrix square_root_inverse_covariance = Matrix_(3,3,
-			-2.0, 0.0, 0.0,
-			0.0, -2.0, 0.0,
-			0.0, 0.0, -10.0
+	Matrix expected = Matrix_(3,3,
+			2.0, 0.0, 0.0,
+			0.0, 2.0, 0.0,
+			0.0, 0.0, 10.0
 			);
 
-	EQUALITY(square_root_inverse_covariance,actual);
+	EQUALITY(expected,actual);
+	EQUALITY(measurement_covariance,inverse(actual*actual));
 }
 
 /* ************************************************************************* */

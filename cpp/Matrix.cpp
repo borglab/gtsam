@@ -618,7 +618,8 @@ Matrix inverse_square_root(const Matrix& A) {
 	svd(A,U,S,V);
 
 	// invert and sqrt diagonal of S
-  for(size_t i = 0; i<m; i++) S(i) = pow(S(i),-0.5);
+	// We also arbitrarily choose sign to make result have positive signs
+  for(size_t i = 0; i<m; i++) S(i) = - pow(S(i),-0.5);
   return vector_scale(S, V); // V*S;
 }
 
