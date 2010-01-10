@@ -15,35 +15,35 @@
 </extensions>
 </storageModule>
 			<storageModule moduleId="cdtBuildSystem" version="4.0.0">
-				<configuration artifactName="gtsam" buildProperties="" description="" id="cdt.managedbuild.toolchain.gnu.macosx.base.1359703544" name="MacOSX GCC" parent="org.eclipse.cdt.build.core.emptycfg">
-					<folderInfo id="cdt.managedbuild.toolchain.gnu.macosx.base.1359703544.2031210194" name="/" resourcePath="">
-						<toolChain id="cdt.managedbuild.toolchain.gnu.macosx.base.677243255" name="cdt.managedbuild.toolchain.gnu.macosx.base" superClass="cdt.managedbuild.toolchain.gnu.macosx.base">
-							<targetPlatform archList="all" binaryParser="org.eclipse.cdt.core.MachO" id="cdt.managedbuild.target.gnu.platform.macosx.base.752782918" name="Debug Platform" osList="macosx" superClass="cdt.managedbuild.target.gnu.platform.macosx.base"/>
-							<builder id="cdt.managedbuild.target.gnu.builder.macosx.base.319933862" keepEnvironmentInBuildfile="false" managedBuildOn="false" name="Gnu Make Builder" parallelBuildOn="true" parallelizationNumber="2" superClass="cdt.managedbuild.target.gnu.builder.macosx.base"/>
-							<tool id="cdt.managedbuild.tool.macosx.c.linker.macosx.base.457360678" name="MacOS X C Linker" superClass="cdt.managedbuild.tool.macosx.c.linker.macosx.base"/>
-							<tool id="cdt.managedbuild.tool.macosx.cpp.linker.macosx.base.1011140787" name="MacOS X C++ Linker" superClass="cdt.managedbuild.tool.macosx.cpp.linker.macosx.base">
-								<inputType id="cdt.managedbuild.tool.macosx.cpp.linker.input.1032375444" superClass="cdt.managedbuild.tool.macosx.cpp.linker.input">
-									<additionalInput kind="additionalinputdependency" paths="$(USER_OBJS)"/>
-									<additionalInput kind="additionalinput" paths="$(LIBS)"/>
-								</inputType>
-							</tool>
-							<tool id="cdt.managedbuild.tool.gnu.assembler.macosx.base.85834184" name="GCC Assembler" superClass="cdt.managedbuild.tool.gnu.assembler.macosx.base">
-								<inputType id="cdt.managedbuild.tool.gnu.assembler.input.1787895621" superClass="cdt.managedbuild.tool.gnu.assembler.input"/>
-							</tool>
-							<tool id="cdt.managedbuild.tool.gnu.archiver.macosx.base.217086069" name="GCC Archiver" superClass="cdt.managedbuild.tool.gnu.archiver.macosx.base"/>
-							<tool id="cdt.managedbuild.tool.gnu.cpp.compiler.macosx.base.1629258328" name="GCC C++ Compiler" superClass="cdt.managedbuild.tool.gnu.cpp.compiler.macosx.base">
-								<option id="gnu.cpp.compiler.option.include.paths.1552452888" name="Include paths (-I)" superClass="gnu.cpp.compiler.option.include.paths" valueType="includePath">
-									<listOptionValue builtIn="false" value="&quot;${HOME}/include&quot;"/>
-								</option>
-								<inputType id="cdt.managedbuild.tool.gnu.cpp.compiler.input.1833545667" superClass="cdt.managedbuild.tool.gnu.cpp.compiler.input"/>
-							</tool>
-							<tool id="cdt.managedbuild.tool.gnu.c.compiler.macosx.base.1347102680" name="GCC C Compiler" superClass="cdt.managedbuild.tool.gnu.c.compiler.macosx.base">
-								<inputType id="cdt.managedbuild.tool.gnu.c.compiler.input.1718446861" superClass="cdt.managedbuild.tool.gnu.c.compiler.input"/>
-							</tool>
-						</toolChain>
-					</folderInfo>
-				</configuration>
-			</storageModule>
+<configuration artifactName="gtsam" buildProperties="" description="" id="cdt.managedbuild.toolchain.gnu.macosx.base.1359703544" name="MacOSX GCC" parent="org.eclipse.cdt.build.core.emptycfg">
+<folderInfo id="cdt.managedbuild.toolchain.gnu.macosx.base.1359703544.2031210194" name="/" resourcePath="">
+<toolChain id="cdt.managedbuild.toolchain.gnu.macosx.base.677243255" name="cdt.managedbuild.toolchain.gnu.macosx.base" superClass="cdt.managedbuild.toolchain.gnu.macosx.base">
+<targetPlatform archList="all" binaryParser="org.eclipse.cdt.core.MachO" id="cdt.managedbuild.target.gnu.platform.macosx.base.752782918" name="Debug Platform" osList="macosx" superClass="cdt.managedbuild.target.gnu.platform.macosx.base"/>
+<builder id="cdt.managedbuild.target.gnu.builder.macosx.base.319933862" keepEnvironmentInBuildfile="false" managedBuildOn="false" name="Gnu Make Builder" parallelBuildOn="true" parallelizationNumber="2" superClass="cdt.managedbuild.target.gnu.builder.macosx.base"/>
+<tool id="cdt.managedbuild.tool.macosx.c.linker.macosx.base.457360678" name="MacOS X C Linker" superClass="cdt.managedbuild.tool.macosx.c.linker.macosx.base"/>
+<tool id="cdt.managedbuild.tool.macosx.cpp.linker.macosx.base.1011140787" name="MacOS X C++ Linker" superClass="cdt.managedbuild.tool.macosx.cpp.linker.macosx.base">
+<inputType id="cdt.managedbuild.tool.macosx.cpp.linker.input.1032375444" superClass="cdt.managedbuild.tool.macosx.cpp.linker.input">
+<additionalInput kind="additionalinputdependency" paths="$(USER_OBJS)"/>
+<additionalInput kind="additionalinput" paths="$(LIBS)"/>
+</inputType>
+</tool>
+<tool id="cdt.managedbuild.tool.gnu.assembler.macosx.base.85834184" name="GCC Assembler" superClass="cdt.managedbuild.tool.gnu.assembler.macosx.base">
+<inputType id="cdt.managedbuild.tool.gnu.assembler.input.1787895621" superClass="cdt.managedbuild.tool.gnu.assembler.input"/>
+</tool>
+<tool id="cdt.managedbuild.tool.gnu.archiver.macosx.base.217086069" name="GCC Archiver" superClass="cdt.managedbuild.tool.gnu.archiver.macosx.base"/>
+<tool id="cdt.managedbuild.tool.gnu.cpp.compiler.macosx.base.1629258328" name="GCC C++ Compiler" superClass="cdt.managedbuild.tool.gnu.cpp.compiler.macosx.base">
+<option id="gnu.cpp.compiler.option.include.paths.1552452888" name="Include paths (-I)" superClass="gnu.cpp.compiler.option.include.paths" valueType="includePath">
+<listOptionValue builtIn="false" value="&quot;${HOME}/include&quot;"/>
+</option>
+<inputType id="cdt.managedbuild.tool.gnu.cpp.compiler.input.1833545667" superClass="cdt.managedbuild.tool.gnu.cpp.compiler.input"/>
+</tool>
+<tool id="cdt.managedbuild.tool.gnu.c.compiler.macosx.base.1347102680" name="GCC C Compiler" superClass="cdt.managedbuild.tool.gnu.c.compiler.macosx.base">
+<inputType id="cdt.managedbuild.tool.gnu.c.compiler.input.1718446861" superClass="cdt.managedbuild.tool.gnu.c.compiler.input"/>
+</tool>
+</toolChain>
+</folderInfo>
+</configuration>
+</storageModule>
 			<storageModule moduleId="org.eclipse.cdt.core.externalSettings"/>
 			<storageModule moduleId="org.eclipse.cdt.core.language.mapping"/>
 			<storageModule moduleId="org.eclipse.cdt.internal.ui.text.commentOwnerProjectMappings"/>
@@ -300,7 +300,7 @@
 <buildTargets>
 <target name="install" path="wrap" targetID="org.eclipse.cdt.build.MakeTargetBuilder">
 <buildCommand>make</buildCommand>
-<buildArguments/>
+<buildArguments>-j2</buildArguments>
 <buildTarget>install</buildTarget>
 <stopOnError>true</stopOnError>
 <useDefaultCommand>true</useDefaultCommand>
@@ -308,7 +308,7 @@
 </target>
 <target name="check" path="wrap" targetID="org.eclipse.cdt.build.MakeTargetBuilder">
 <buildCommand>make</buildCommand>
-<buildArguments/>
+<buildArguments>-j2</buildArguments>
 <buildTarget>check</buildTarget>
 <stopOnError>true</stopOnError>
 <useDefaultCommand>true</useDefaultCommand>
@@ -324,7 +324,7 @@
 </target>
 <target name="testSimpleCamera.run" path="cpp" targetID="org.eclipse.cdt.build.MakeTargetBuilder">
 <buildCommand>make</buildCommand>
-<buildArguments/>
+<buildArguments>-j2</buildArguments>
 <buildTarget>testSimpleCamera.run</buildTarget>
 <stopOnError>true</stopOnError>
 <useDefaultCommand>true</useDefaultCommand>
@@ -347,7 +347,7 @@
 </target>
 <target name="testCalibratedCamera.run" path="cpp" targetID="org.eclipse.cdt.build.MakeTargetBuilder">
 <buildCommand>make</buildCommand>
-<buildArguments/>
+<buildArguments>-j2</buildArguments>
 <buildTarget>testCalibratedCamera.run</buildTarget>
 <stopOnError>true</stopOnError>
 <useDefaultCommand>true</useDefaultCommand>
@@ -362,7 +362,7 @@
 </target>
 <target name="testPose2.run" path="cpp" targetID="org.eclipse.cdt.build.MakeTargetBuilder">
 <buildCommand>make</buildCommand>
-<buildArguments/>
+<buildArguments>-j2</buildArguments>
 <buildTarget>testPose2.run</buildTarget>
 <stopOnError>true</stopOnError>
 <useDefaultCommand>true</useDefaultCommand>
@@ -370,7 +370,7 @@
 </target>
 <target name="testRot3.run" path="cpp" targetID="org.eclipse.cdt.build.MakeTargetBuilder">
 <buildCommand>make</buildCommand>
-<buildArguments/>
+<buildArguments>-j2</buildArguments>
 <buildTarget>testRot3.run</buildTarget>
 <stopOnError>true</stopOnError>
 <useDefaultCommand>true</useDefaultCommand>
@@ -385,7 +385,7 @@
 </target>
 <target name="testGaussianFactor.run" path="cpp" targetID="org.eclipse.cdt.build.MakeTargetBuilder">
 <buildCommand>make</buildCommand>
-<buildArguments/>
+<buildArguments>-j2</buildArguments>
 <buildTarget>testGaussianFactor.run</buildTarget>
 <stopOnError>true</stopOnError>
 <useDefaultCommand>true</useDefaultCommand>
@@ -393,7 +393,7 @@
 </target>
 <target name="testGaussianFactorGraph.run" path="cpp" targetID="org.eclipse.cdt.build.MakeTargetBuilder">
 <buildCommand>make</buildCommand>
-<buildArguments/>
+<buildArguments>-j2</buildArguments>
 <buildTarget>testGaussianFactorGraph.run</buildTarget>
 <stopOnError>true</stopOnError>
 <useDefaultCommand>true</useDefaultCommand>
@@ -408,7 +408,7 @@
 </target>
 <target name="testPose3.run" path="cpp" targetID="org.eclipse.cdt.build.MakeTargetBuilder">
 <buildCommand>make</buildCommand>
-<buildArguments/>
+<buildArguments>-j2</buildArguments>
 <buildTarget>testPose3.run</buildTarget>
 <stopOnError>true</stopOnError>
 <useDefaultCommand>true</useDefaultCommand>
@@ -430,7 +430,7 @@
 </target>
 <target name="testNonlinearFactor.run" path="cpp" targetID="org.eclipse.cdt.build.MakeTargetBuilder">
 <buildCommand>make</buildCommand>
-<buildArguments/>
+<buildArguments>-j2</buildArguments>
 <buildTarget>testNonlinearFactor.run</buildTarget>
 <stopOnError>true</stopOnError>
 <useDefaultCommand>true</useDefaultCommand>
@@ -438,7 +438,7 @@
 </target>
 <target name="timeGaussianFactor.run" path="cpp" targetID="org.eclipse.cdt.build.MakeTargetBuilder">
 <buildCommand>make</buildCommand>
-<buildArguments/>
+<buildArguments>-j2</buildArguments>
 <buildTarget>timeGaussianFactor.run</buildTarget>
 <stopOnError>true</stopOnError>
 <useDefaultCommand>true</useDefaultCommand>
@@ -446,7 +446,7 @@
 </target>
 <target name="timeGaussianFactorGraph.run" path="cpp" targetID="org.eclipse.cdt.build.MakeTargetBuilder">
 <buildCommand>make</buildCommand>
-<buildArguments/>
+<buildArguments>-j2</buildArguments>
 <buildTarget>timeGaussianFactorGraph.run</buildTarget>
 <stopOnError>true</stopOnError>
 <useDefaultCommand>true</useDefaultCommand>
@@ -454,7 +454,7 @@
 </target>
 <target name="testGaussianBayesNet.run" path="cpp" targetID="org.eclipse.cdt.build.MakeTargetBuilder">
 <buildCommand>make</buildCommand>
-<buildArguments/>
+<buildArguments>-j2</buildArguments>
 <buildTarget>testGaussianBayesNet.run</buildTarget>
 <stopOnError>true</stopOnError>
 <useDefaultCommand>true</useDefaultCommand>
@@ -484,7 +484,7 @@
 </target>
 <target name="testVector.run" path="cpp" targetID="org.eclipse.cdt.build.MakeTargetBuilder">
 <buildCommand>make</buildCommand>
-<buildArguments/>
+<buildArguments>-j2</buildArguments>
 <buildTarget>testVector.run</buildTarget>
 <stopOnError>true</stopOnError>
 <useDefaultCommand>true</useDefaultCommand>
@@ -492,7 +492,7 @@
 </target>
 <target name="testMatrix.run" path="cpp" targetID="org.eclipse.cdt.build.MakeTargetBuilder">
 <buildCommand>make</buildCommand>
-<buildArguments/>
+<buildArguments>-j2</buildArguments>
 <buildTarget>testMatrix.run</buildTarget>
 <stopOnError>true</stopOnError>
 <useDefaultCommand>true</useDefaultCommand>
@@ -514,7 +514,7 @@
 </target>
 <target name="testSQP.run" path="cpp" targetID="org.eclipse.cdt.build.MakeTargetBuilder">
 <buildCommand>make</buildCommand>
-<buildArguments/>
+<buildArguments>-j2</buildArguments>
 <buildTarget>testSQP.run</buildTarget>
 <stopOnError>true</stopOnError>
 <useDefaultCommand>true</useDefaultCommand>
@@ -529,7 +529,7 @@
 </target>
 <target name="testSQPOptimizer.run" path="cpp" targetID="org.eclipse.cdt.build.MakeTargetBuilder">
 <buildCommand>make</buildCommand>
-<buildArguments/>
+<buildArguments>-j2</buildArguments>
 <buildTarget>testSQPOptimizer.run</buildTarget>
 <stopOnError>true</stopOnError>
 <useDefaultCommand>true</useDefaultCommand>
@@ -537,7 +537,7 @@
 </target>
 <target name="testVSLAMConfig.run" path="cpp" targetID="org.eclipse.cdt.build.MakeTargetBuilder">
 <buildCommand>make</buildCommand>
-<buildArguments/>
+<buildArguments>-j2</buildArguments>
 <buildTarget>testVSLAMConfig.run</buildTarget>
 <stopOnError>true</stopOnError>
 <useDefaultCommand>true</useDefaultCommand>
@@ -545,7 +545,7 @@
 </target>
 <target name="testControlConfig.run" path="cpp" targetID="org.eclipse.cdt.build.MakeTargetBuilder">
 <buildCommand>make</buildCommand>
-<buildArguments/>
+<buildArguments>-j2</buildArguments>
 <buildTarget>testControlConfig.run</buildTarget>
 <stopOnError>true</stopOnError>
 <useDefaultCommand>true</useDefaultCommand>
@@ -553,7 +553,7 @@
 </target>
 <target name="testControlPoint.run" path="cpp" targetID="org.eclipse.cdt.build.MakeTargetBuilder">
 <buildCommand>make</buildCommand>
-<buildArguments/>
+<buildArguments>-j2</buildArguments>
 <buildTarget>testControlPoint.run</buildTarget>
 <stopOnError>true</stopOnError>
 <useDefaultCommand>true</useDefaultCommand>
@@ -568,7 +568,7 @@
 </target>
 <target name="testOrdering.run" path="cpp" targetID="org.eclipse.cdt.build.MakeTargetBuilder">
 <buildCommand>make</buildCommand>
-<buildArguments/>
+<buildArguments>-j2</buildArguments>
 <buildTarget>testOrdering.run</buildTarget>
 <stopOnError>true</stopOnError>
 <useDefaultCommand>true</useDefaultCommand>
@@ -583,7 +583,7 @@
 </target>
 <target name="testRot2.run" path="cpp" targetID="org.eclipse.cdt.build.MakeTargetBuilder">
 <buildCommand>make</buildCommand>
-<buildArguments/>
+<buildArguments>-j2</buildArguments>
 <buildTarget>testRot2.run</buildTarget>
 <stopOnError>true</stopOnError>
 <useDefaultCommand>true</useDefaultCommand>
@@ -591,7 +591,7 @@
 </target>
 <target name="testGaussianBayesTree.run" path="cpp" targetID="org.eclipse.cdt.build.MakeTargetBuilder">
 <buildCommand>make</buildCommand>
-<buildArguments/>
+<buildArguments>-j2</buildArguments>
 <buildTarget>testGaussianBayesTree.run</buildTarget>
 <stopOnError>true</stopOnError>
 <useDefaultCommand>true</useDefaultCommand>
@@ -627,7 +627,7 @@
 </target>
 <target name="testUrbanOdometry.run" path="cpp" targetID="org.eclipse.cdt.build.MakeTargetBuilder">
 <buildCommand>make</buildCommand>
-<buildArguments/>
+<buildArguments>-j2</buildArguments>
 <buildTarget>testUrbanOdometry.run</buildTarget>
 <stopOnError>true</stopOnError>
 <useDefaultCommand>true</useDefaultCommand>
@@ -649,7 +649,7 @@
 </target>
 <target name="testSubgraphPreconditioner.run" path="cpp" targetID="org.eclipse.cdt.build.MakeTargetBuilder">
 <buildCommand>make</buildCommand>
-<buildArguments/>
+<buildArguments>-j2</buildArguments>
 <buildTarget>testSubgraphPreconditioner.run</buildTarget>
 <stopOnError>true</stopOnError>
 <useDefaultCommand>true</useDefaultCommand>
@@ -657,7 +657,7 @@
 </target>
 <target name="testBayesNetPreconditioner.run" path="cpp" targetID="org.eclipse.cdt.build.MakeTargetBuilder">
 <buildCommand>make</buildCommand>
-<buildArguments/>
+<buildArguments>-j2</buildArguments>
 <buildTarget>testBayesNetPreconditioner.run</buildTarget>
 <stopOnError>true</stopOnError>
 <useDefaultCommand>true</useDefaultCommand>
@@ -684,10 +684,10 @@
 <useDefaultCommand>true</useDefaultCommand>
 <runAllBuilders>true</runAllBuilders>
 </target>
-<target name="testLieConfig.run" path="cpp" targetID="org.eclipse.cdt.build.MakeTargetBuilder">
+<target name="testPose2Graph.run" path="cpp" targetID="org.eclipse.cdt.build.MakeTargetBuilder">
 <buildCommand>make</buildCommand>
-<buildArguments>-j2</buildArguments>
-<buildTarget>testLieConfig.run</buildTarget>
+<buildArguments/>
+<buildTarget>testPose2Graph.run</buildTarget>
 <stopOnError>true</stopOnError>
 <useDefaultCommand>true</useDefaultCommand>
 <runAllBuilders>true</runAllBuilders>
@@ -718,6 +718,6 @@
 </cconfiguration>
 	</storageModule>
 	<storageModule moduleId="cdtBuildSystem" version="4.0.0">
-		<project id="gtsam.null.1344331286" name="gtsam"/>
-	</storageModule>
+<project id="gtsam.null.1344331286" name="gtsam"/>
+</storageModule>
 </cproject>

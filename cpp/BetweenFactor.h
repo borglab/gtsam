@@ -63,10 +63,12 @@ namespace gtsam {
 		/** implement functions needed to derive from Factor */
 
 		/** vector of errors */
-		Vector error_vector(const Config& config) const {
+		Vector error_vector(const Config& x) const {
 			//z-h
-			T p1 = config.get(key1_), p2 = config.get(key2_);
-			return -logmap(between(p1, p2), measured_);
+			T p1 = x.get(key1_), p2 = x.get(key2_);
+			T hx = between(p1,p2);
+			// manifold equivalent of z-h(x) -> log(h(x),z)
+			return square_root_inverse_covariance_ * logmap(hx,measured_);
 		}
 
 		/** keys as a list */
@@ -76,14 +78,14 @@ namespace gtsam {
 		inline std::size_t size() const { return 2;}
 
 		/** linearize */
-		boost::shared_ptr<GaussianFactor> linearize(const Config& config) const {
-			T p1 = config.get(key1_), p2 = config.get(key2_);
-			Vector b = -logmap(between(p1, p2), measured_);
-			Matrix H1 = Dbetween1(p1, p2);
-			Matrix H2 = Dbetween2(p1, p2);
-			boost::shared_ptr<GaussianFactor> linearized(new GaussianFactor(key1_,
-					square_root_inverse_covariance_ * H1, key2_,
-					square_root_inverse_covariance_ * H2, b, 1.0));
+		boost::shared_ptr<GaussianFactor> linearize(const Config& x0) const {
+			T p1 = x0.get(key1_), p2 = x0.get(key2_);
+			Matrix A1 = Dbetween1(p1, p2);
+			Matrix A2 = Dbetween2(p1, p2);
+			Vector b = error_vector(x0); // already has sigmas in !
+			boost::shared_ptr<GaussianFactor> linearized(new GaussianFactor(
+					key1_, square_root_inverse_covariance_ * A1,
+					key2_, square_root_inverse_covariance_ * A2, b, 1.0));
 			return linearized;
 		}
 	};

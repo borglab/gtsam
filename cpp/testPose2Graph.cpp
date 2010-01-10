@@ -1,5 +1,8 @@
+/**
+ *  @file  testPose2Graph.cpp
+ *  @authors Frank Dellaert, Viorela Ila
+ **/
 
-/*STL/C++*/
 #include <iostream>
 
 #include <CppUnitLite/TestHarness.h>
@@ -10,19 +13,22 @@
 using namespace std;
 using namespace gtsam;
 
+// common measurement covariance
+static double sx=0.5, sy=0.5,st=0.1;
+static Matrix covariance = Matrix_(3,3,
+		sx*sx, 0.0, 0.0,
+		0.0, sy*sy, 0.0,
+		0.0, 0.0, st*st
+		);
 
+/* ************************************************************************* */
 TEST( Pose2Graph, constructor )
 {
 	// create a factor between unknown poses p1 and p2
 	Pose2 measured(2,2,M_PI_2);
-	Matrix measurement_covariance = Matrix_(3,3,
-			0.25, 0.0, 0.0,
-			0.0, 0.25, 0.0,
-			0.0, 0.0, 0.01
-			);
-	Pose2Factor constraint("x1","x2",measured, measurement_covariance);
+	Pose2Factor constraint("x1","x2",measured, covariance);
 	Pose2Graph graph;
-	graph.push_back(Pose2Factor::shared_ptr(new Pose2Factor("x1","x2",measured, measurement_covariance)));
+	graph.push_back(Pose2Factor::shared_ptr(new Pose2Factor("x1","x2",measured, covariance)));
 	// get the size of the graph
 	size_t actual = graph.size();
 	// verify
@@ -30,18 +36,15 @@ TEST( Pose2Graph, constructor )
 	CHECK(actual == expected);
 
 }
+
+/* ************************************************************************* */
 TEST( Pose2Graph, linerization )
 {
 	// create a factor between unknown poses p1 and p2
 	Pose2 measured(2,2,M_PI_2);
-	Matrix measurement_covariance = Matrix_(3,3,
-			0.25, 0.0, 0.0,
-			0.0, 0.25, 0.0,
-			0.0, 0.0, 0.01
-	);
-	Pose2Factor constraint("x1","x2",measured, measurement_covariance);
+	Pose2Factor constraint("x1","x2",measured, covariance);
 	Pose2Graph graph;
-	graph.push_back(Pose2Factor::shared_ptr(new Pose2Factor("x1","x2",measured, measurement_covariance)));
+	graph.push_back(Pose2Factor::shared_ptr(new Pose2Factor("x1","x2",measured, covariance)));
 
 	// Choose a linearization point
 	Pose2 p1(1.1,2,M_PI_2); // robot at (1.1,2) looking towards y (ground truth is at 1,2, see testPose2)
@@ -56,24 +59,22 @@ TEST( Pose2Graph, linerization )
 	// the expected linear factor
 	GaussianFactorGraph lfg_expected;
 	Matrix A1 = Matrix_(3,3,
-	    0.0, 2.0, 4.2,
-	    -2.0, 0.0, 4.2,
-	    0.0, 0.0, 10.0);
+	    0.0,-2.0, -4.2,
+	    2.0, 0.0, -4.2,
+	    0.0, 0.0,-10.0);
 
 	Matrix A2 = Matrix_(3,3,
-	    -2.0, 0.0,  0.0,
-	    0.0,-2.0,  0.0,
-	    0.0, 0.0, -10.0);
-
+	    2.0, 0.0,  0.0,
+	    0.0, 2.0,  0.0,
+	    0.0, 0.0, 10.0);
 
 	double sigma = 1;
-	Vector b = Vector_(3,0.1,-0.1,0.0);
+	Vector b = Vector_(3,-0.1/sx,0.1/sy,0.0);
 	lfg_expected.add("x1", A1, "x2", A2, b, sigma);
 
-
 	CHECK(assert_equal(lfg_expected, lfg_linearized));
-
 }
+
 /* ************************************************************************* */
 int main() {
 	TestResult tr;

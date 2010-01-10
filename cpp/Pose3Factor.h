@@ -11,6 +11,9 @@
 
 namespace gtsam {
 
+	/**
+	 * A config specifically for 3D poses
+	 */
 	class Pose3Config: public std::map<std::string, Pose3> {
 
 	public:
@@ -23,7 +26,10 @@ namespace gtsam {
 
 	};
 
-	/** This is just a typedef now */
+	/**
+	 * A Factor for 3D pose measurements
+	 * This is just a typedef now
+	 */
 	typedef BetweenFactor<Pose3, Pose3Config> Pose3Factor;
 
 } /// namespace gtsam
