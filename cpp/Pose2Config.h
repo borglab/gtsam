@@ -1,5 +1,5 @@
 /**
- * @file    PoseConfig.cpp
+ * @file    Pose2Config.cpp
  * @brief   Configuration of 2D poses
  * @author  Frank Dellaert
  */

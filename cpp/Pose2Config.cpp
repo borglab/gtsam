@@ -1,6 +1,6 @@
 /**
- * @file    VectorConfig.cpp
- * @brief   Pose2Graph Configuration
+ * @file    Pose2Config.cpp
+ * @brief   Configuration of 2D poses
  * @author  Frank Dellaert
  */
 
