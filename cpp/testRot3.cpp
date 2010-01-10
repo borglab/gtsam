@@ -5,6 +5,7 @@
  */
 
 #include <CppUnitLite/TestHarness.h>
+#include <boost/math/constants/constants.hpp>
 #include "numericalDerivative.h"
 #include "Point3.h"
 #include "Rot3.h"
@@ -126,9 +127,17 @@ TEST(Rot3, log)
 	Rot3 R5 = rodriguez(w5);
 	CHECK(assert_equal(w5, logmap(R5)));
 
-//	Vector w6 = Vector_(3, M_PI, 0.0, 0.0);
-//	Rot3 R6 = rodriguez(w6);
-//	CHECK(assert_equal(w6, logmap(R6)));
+	Vector w6 = Vector_(3, boost::math::constants::pi<double>(), 0.0, 0.0);
+	Rot3 R6 = rodriguez(w6);
+	CHECK(assert_equal(w6, logmap(R6)));
+
+    Vector w7 = Vector_(3, 0.0, boost::math::constants::pi<double>(), 0.0);
+    Rot3 R7 = rodriguez(w7);
+    CHECK(assert_equal(w7, logmap(R7)));
+
+    Vector w8 = Vector_(3, 0.0, 0.0, boost::math::constants::pi<double>());
+    Rot3 R8 = rodriguez(w8);
+    CHECK(assert_equal(w8, logmap(R8)));
 }
 
 /* ************************************************************************* */

@@ -10,6 +10,7 @@
 
 #pragma once
 
+#include <boost/math/constants/constants.hpp>
 #include "Point3.h"
 #include "Testable.h"
 #include "Lie.h"
@@ -156,16 +157,7 @@ namespace gtsam {
   }
 
   // Log map at identity - return the canonical coordinates of this rotation
-  inline Vector logmap(const Rot3& R) {
-    double tr = R.r1().x()+R.r2().y()+R.r3().z();
-    if (tr==3.0) return zero(3);
-    if (tr==-1.0) throw std::domain_error("Rot3::log: trace == -1 not yet handled :-(");;
-    double theta = acos((tr-1.0)/2.0);
-    return (theta/2.0/sin(theta))*Vector_(3,
-        R.r2().z()-R.r3().y(),
-        R.r3().x()-R.r1().z(),
-        R.r1().y()-R.r2().x());
-  }
+  Vector logmap(const Rot3& R);
 
   // Compose two rotations
   inline Rot3 compose(const Rot3& R1, const Rot3& R2) {

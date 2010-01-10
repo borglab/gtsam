@@ -110,6 +110,32 @@ namespace gtsam {
   }
 
   /* ************************************************************************* */
+  // Log map at identity - return the canonical coordinates of this rotation
+  inline Vector logmap(const Rot3& R) {
+    double tr = R.r1().x()+R.r2().y()+R.r3().z();
+    if (tr==3.0)         // when theta = 0, +-2pi, +-4pi, etc.
+      return zero(3);
+    else if (tr==-1.0) { // when theta = +-pi, +-3pi, +-5pi, etc.
+      if(R.r3().z() != -1.0)
+        return (boost::math::constants::pi<double>() / sqrt(2.0+2.0*R.r3().z())) *
+        Vector_(3, R.r3().x(), R.r3().y(), 1.0+R.r3().z());
+      else if(R.r2().y() != -1.0)
+        return (boost::math::constants::pi<double>() / sqrt(2.0+2.0*R.r2().y())) *
+        Vector_(3, R.r2().x(), 1.0+R.r2().y(), R.r2().z());
+      else if(R.r1().x() != -1.0)
+        return (boost::math::constants::pi<double>() / sqrt(2.0+2.0*R.r1().x())) *
+        Vector_(3, 1.0+R.r1().x(), R.r1().y(), R.r1().z());
+    } else {
+      double theta = acos((tr-1.0)/2.0);
+      return (theta/2.0/sin(theta))*Vector_(3,
+          R.r2().z()-R.r3().y(),
+          R.r3().x()-R.r1().z(),
+          R.r1().y()-R.r2().x());
+    }
+  }
+
+
+  /* ************************************************************************* */
   Rot3 rodriguez(const Vector& n, double t) {
     double n0 = n(0), n1=n(1), n2=n(2);
     double n00 = n0*n0, n11 = n1*n1, n22 = n2*n2;
