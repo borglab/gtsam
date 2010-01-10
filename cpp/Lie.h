@@ -75,7 +75,7 @@ namespace gtsam {
   /** Call equal on the object without tolerance (use default tolerance) */
   template<class T>
   inline bool equal(const T& obj1, const T& obj2) {
-    return obj1.equal(obj2);
+    return obj1.equals(obj2);
   }
 
   // Vector Group operations

@@ -77,36 +77,40 @@ namespace gtsam {
 
   // Lie group functions
 
-  // Dimensionality of the tangent space
+  /** Global print calls member function */
+  inline void print(const Rot2& r, std::string& s) { r.print(s); }
+  inline void print(const Rot2& r) { r.print(); }
+
+  /** Dimensionality of the tangent space */
   inline size_t dim(const Rot2&) { return 1; }
 
-  // Expmap around identity - create a rotation from an angle
+  /** Expmap around identity - create a rotation from an angle */
   template<> inline Rot2 expmap(const Vector& v) {
     if (zero(v)) return (Rot2());
     else return Rot2(v(0));
   }
 
-  // Logmap around identity - return the angle of the rotation
+  /** Logmap around identity - return the angle of the rotation */
   inline Vector logmap(const Rot2& r) {
     return Vector_(1, r.theta());
   }
 
-  // Compose - make a new rotation by adding angles
+  /** Compose - make a new rotation by adding angles */
   inline Rot2 compose(const Rot2& r0, const Rot2& r1) {
     return Rot2(
         r0.c() * r1.c() - r0.s() * r1.s(),
         r0.s() * r1.c() + r0.c() * r1.s());
   }
 
-  // Syntactic sugar R1*R2 = compose(R1,R2)
+  /** Syntactic sugar R1*R2 = compose(R1,R2) */
   inline Rot2 operator*(const Rot2& r0, const Rot2& r1) {
     return compose(r0, r1);
   }
 
-  // The inverse rotation - negative angle
+  /** The inverse rotation - negative angle */
   inline Rot2 inverse(const Rot2& r) { return Rot2(r.c(), -r.s());}
 
-  // Shortcut to compose the inverse: invcompose(R0,R1) = inverse(R0)*R1
+  /** Shortcut to compose the inverse: invcompose(R0,R1) = inverse(R0)*R1 */
   inline Rot2 invcompose(const Rot2& r0, const Rot2& r1) {
     return Rot2(
          r0.c() * r1.c() + r0.s() * r1.s(),

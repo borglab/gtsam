@@ -62,18 +62,22 @@ namespace gtsam {
     }
   };
 
-  // Lie group functions
+  /** Lie group functions */
 
-  // Dimensionality of the tangent space
+  /** Global print calls member function */
+  inline void print(const Point2& p, std::string& s) { p.print(s); }
+  inline void print(const Point2& p) { p.print(); }
+
+  /** Dimensionality of the tangent space */
   inline size_t dim(const Point2& obj) { return 2; }
 
-  // Exponential map around identity - just create a Point2 from a vector
+  /** Exponential map around identity - just create a Point2 from a vector */
   template<> inline Point2 expmap(const Vector& dp) { return Point2(dp); }
 
-  // Log map around identity - just return the Point2 as a vector
+  /** Log map around identity - just return the Point2 as a vector */
   inline Vector logmap(const Point2& dp) { return Vector_(2, dp.x(), dp.y()); }
 
-  // "Compose", just adds the coordinates of two points.
+  /** "Compose", just adds the coordinates of two points. */
   inline Point2 compose(const Point2& p1, const Point2& p0) { return p0+p1; }
   inline Matrix Dcompose1(const Point2& p1, const Point2& p0) {
     return Matrix_(2,2,
@@ -84,7 +88,7 @@ namespace gtsam {
         1.0, 0.0,
         0.0, 1.0); }
 
-  // "Inverse" - negates each coordinate such that compose(p,inverse(p))=Point2()
+  /** "Inverse" - negates each coordinate such that compose(p,inverse(p))=Point2() */
   inline Point2 inverse(const Point2& p) { return Point2(-p.x(), -p.y()); }
 
 }

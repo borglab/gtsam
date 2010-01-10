@@ -78,18 +78,20 @@ namespace gtsam {
   };
 
 
-  /** return DOF, dimensionality of tangent space */
+  /** Global print calls member function */
+  inline void print(const Point3& p, std::string& s) { p.print(s); }
+  inline void print(const Point3& p) { p.print(); }
 
-  // Dimensionality of the tangent space
+  /** return DOF, dimensionality of tangent space */
   inline size_t dim(const Point3&) { return 3; }
 
-  // Exponential map at identity - just create a Point3 from x,y,z
+  /** Exponential map at identity - just create a Point3 from x,y,z */
   template<> inline Point3 expmap(const Vector& dp) { return Point3(dp); }
 
-  // Log map at identity - return the x,y,z of this point
+  /** Log map at identity - return the x,y,z of this point */
   inline Vector logmap(const Point3& dp) { return Vector_(3, dp.x(), dp.y(), dp.z()); }
 
-  // "Compose" - just adds coordinates of two points
+  /** "Compose" - just adds coordinates of two points */
   inline Point3 compose(const Point3& p1, const Point3& p0) { return p0+p1; }
   inline Matrix Dcompose1(const Point3& p1, const Point3& p0) {
     return Matrix_(3,3,
@@ -104,11 +106,11 @@ namespace gtsam {
         0.0, 0.0, 1.0);
   }
 
-  // "Inverse" - negates the coordinates such that compose(p, inverse(p)) = Point3()
+  /** "Inverse" - negates the coordinates such that compose(p, inverse(p)) = Point3() */
   inline Point3 inverse(const Point3& p) { return Point3(-p.x(), -p.y(), -p.z()); }
 
 
-  // Syntactic sugar for multiplying coordinates by a scalar s*p
+  /** Syntactic sugar for multiplying coordinates by a scalar s*p */
   inline Point3 operator*(double s, const Point3& p) { return p*s;}
 
   /** add two points, add(p,q) is same as p+q */

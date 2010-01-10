@@ -68,42 +68,42 @@ namespace gtsam {
     }
   }; // Pose3 class
 
-  // global print
+  /** global print */
   inline void print(const Pose3& p, const std::string& s = "") { p.print(s);}
 
-  // Dimensionality of the tangent space
+  /** Dimensionality of the tangent space */
   inline size_t dim(const Pose3&) { return 6; }
 
-  // Compose two poses
+  /** Compose two poses */
   inline Pose3 compose(const Pose3& p0, const Pose3& p1) {
     return Pose3(p0.rotation()*p1.rotation(),
         p0.translation() + p0.rotation()*p1.translation());
   }
 
-  // Find the inverse pose s.t. inverse(p)*p = Pose3()
+  /** Find the inverse pose s.t. inverse(p)*p = Pose3() */
   inline Pose3 inverse(const Pose3& p) {
     Rot3 Rt = inverse(p.rotation());
     return Pose3(Rt, Rt*(-p.translation()));
   }
 
-  // Exponential map at identity - create a pose with a translation and
-  // rotation (in canonical coordinates)
+  /** Exponential map at identity - create a pose with a translation and
+   * rotation (in canonical coordinates). */
   template<> Pose3 expmap(const Vector& d);
 
-  // Log map at identity - return the translation and canonical rotation
-  // coordinates of a pose.
+  /** Log map at identity - return the translation and canonical rotation
+   * coordinates of a pose. */
   Vector logmap(const Pose3& p);
 
-  // todo: these are the "old-style" expmap and logmap about the specified
-  // pose.
-  // Increments the offset and rotation independently given a translation and
-  // canonical rotation coordinates
+  /** todo: these are the "old-style" expmap and logmap about the specified
+   * pose.
+   * Increments the offset and rotation independently given a translation and
+   * canonical rotation coordinates */
   template<> inline Pose3 expmap<Pose3>(const Pose3& p0, const Vector& d) {
     return Pose3(expmap(p0.rotation(), sub(d, 0, 3)),
         expmap(p0.translation(), sub(d, 3, 6)));
   }
 
-  // Independently computes the logmap of the translation and rotation.
+  /** Independently computes the logmap of the translation and rotation. */
   template<> inline Vector logmap<Pose3>(const Pose3& p0, const Pose3& pp) {
     const Vector r(logmap(p0.rotation(), pp.rotation())),
         t(logmap(p0.translation(), pp.translation()));

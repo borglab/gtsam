@@ -117,6 +117,9 @@ namespace gtsam {
     }
   };
 
+  /** Global print calls member function */
+  inline void print(const Rot3& r, std::string& s) { r.print(s); }
+  inline void print(const Rot3& r) { r.print(); }
 
   /**
    * Rodriguez' formula to compute an incremental rotation matrix
