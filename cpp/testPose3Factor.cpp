@@ -9,6 +9,7 @@
 using namespace boost::assign;
 #include <CppUnitLite/TestHarness.h>
 #include "Pose3Factor.h"
+#include "LieConfig-inl.h"
 
 using namespace std;
 using namespace gtsam;
@@ -27,12 +28,19 @@ TEST( Pose3Factor, error )
 
 	// Create config
 	Pose3Config x;
-	x.insert(make_pair("t1",t1));
-	x.insert(make_pair("t2",t2));
+	x.insert("t1",t1);
+	x.insert("t2",t2);
 
 	// Get error z-h(x) -> logmap(h(x),z) = logmap(between(t1,t2),z)
 	Vector actual = factor.error_vector(x);
 	Vector expected = logmap(between(t1,t2),z);
+	CHECK(assert_equal(expected,actual));
+}
+
+/* ************************************************************************* */
+TEST( Pose3Factor, simple_circle )
+{
+	Pose3Config expected, actual;
 	CHECK(assert_equal(expected,actual));
 }
 

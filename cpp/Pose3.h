@@ -68,6 +68,9 @@ namespace gtsam {
     }
   }; // Pose3 class
 
+  // global print
+  inline void print(const Pose3& p, const std::string& s = "") { p.print(s);}
+
   // Dimensionality of the tangent space
   inline size_t dim(const Pose3&) { return 6; }
 
