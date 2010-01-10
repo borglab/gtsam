@@ -197,9 +197,11 @@ check_PROGRAMS += testSimulated3D
 # Pose constraints
 headers += BetweenFactor.h Pose2Factor.h Pose2Prior.h Pose3Factor.h 
 sources += Pose2Config.cpp Pose2Graph.cpp 
-check_PROGRAMS += testPose2Factor testPose2Graph testPose3Factor
+check_PROGRAMS += testPose2Factor testPose2Config testPose2Graph testPose3Factor
 testPose2Factor_SOURCES = $(example) testPose2Factor.cpp
 testPose2Factor_LDADD   = libgtsam.la
+testPose2Config_SOURCES = $(example) testPose2Config.cpp
+testPose2Config_LDADD   = libgtsam.la
 testPose2Graph_SOURCES  = $(example) testPose2Graph.cpp
 testPose2Graph_LDADD    = libgtsam.la
 testPose3Factor_SOURCES = $(example) testPose3Factor.cpp
