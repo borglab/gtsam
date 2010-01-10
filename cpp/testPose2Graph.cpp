@@ -11,7 +11,6 @@ using namespace boost::assign;
 #include <CppUnitLite/TestHarness.h>
 
 #include "NonlinearOptimizer-inl.h"
-#include "NonlinearEquality.h"
 #include "Ordering.h"
 #include "Pose2Config.h"
 #include "Pose2Graph.h"
@@ -82,21 +81,11 @@ TEST( Pose2Graph, linerization )
 }
 
 /* ************************************************************************* */
-bool poseCompare(const std::string& key,
-    const gtsam::Pose2Config& feasible,
-    const gtsam::Pose2Config& input) {
-  return feasible.get(key).equals(input.get(key));
-}
-
-/* ************************************************************************* */
 TEST(Pose2Graph, optimize) {
 
 	// create a Pose graph with one equality constraint and one measurement
   Pose2Graph fg;
-  Pose2Config feasible;
-  feasible.insert("p0", Pose2(0,0,0));
-  fg.push_back(Pose2Graph::sharedFactor(
-      new NonlinearEquality<Pose2Config>("p0", feasible, dim(Pose2()), poseCompare)));
+  fg.addConstraint("p0", Pose2(0,0,0));
   fg.add("p0", "p1", Pose2(1,2,M_PI_2), covariance);
 
   // Create initial config
@@ -118,7 +107,6 @@ TEST(Pose2Graph, optimize) {
   expected.insert("p0", Pose2(0,0,0));
   expected.insert("p1", Pose2(1,2,M_PI_2));
   CHECK(assert_equal(expected, *optimizer.config()));
-
 }
 
 /* ************************************************************************* */
@@ -131,10 +119,7 @@ TEST(Pose2Graph, optimizeCircle) {
 
 	// create a Pose graph with one equality constraint and one measurement
   Pose2Graph fg;
-  Pose2Config feasible;
-  feasible.insert("p0", p0);
-  fg.push_back(Pose2Graph::sharedFactor(
-      new NonlinearEquality<Pose2Config>("p0", feasible, dim(Pose2()), poseCompare)));
+  fg.addConstraint("p0", p0);
   Pose2 delta = between(p0,p1);
   fg.add("p0", "p1", delta, covariance);
   fg.add("p1", "p2", delta, covariance);

@@ -24,13 +24,6 @@ using namespace gtsam;
 static Matrix covariance = eye(6);
 
 /* ************************************************************************* */
-bool poseCompare(const std::string& key,
-    const gtsam::Pose3Config& feasible,
-    const gtsam::Pose3Config& input) {
-  return feasible.get(key).equals(input.get(key));
-}
-
-/* ************************************************************************* */
 // test optimization with 6 poses arranged in a hexagon and a loop closure
 TEST(Pose3Graph, optimizeCircle) {
 
@@ -40,10 +33,7 @@ TEST(Pose3Graph, optimizeCircle) {
 
 	// create a Pose graph with one equality constraint and one measurement
   Pose3Graph fg;
-  Pose3Config feasible;
-  feasible.insert("p0", p0);
-  fg.push_back(Pose3Graph::sharedFactor(
-      new NonlinearEquality<Pose3Config>("p0", feasible, dim(Pose3()), poseCompare)));
+  fg.addConstraint("p0", p0);
   Pose3 delta = between(p0,p1);
   fg.add("p0", "p1", delta, covariance);
   fg.add("p1", "p2", delta, covariance);
