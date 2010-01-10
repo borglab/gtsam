@@ -78,6 +78,17 @@ namespace gtsam {
     return obj1.equal(obj2);
   }
 
+  // Vector Group operations
+  inline Vector compose(const Vector& p1,const Vector& p2) { return p1+p2;}
+  inline Vector inverse(const Vector& p) { return -p;}
+  inline Vector between(const Vector& p1,const Vector& p2) { return p2-p1;}
+
+  // Vector is a trivial Lie Group
+  template<> inline Vector expmap(const Vector& d) { return d;}
+  template<> inline Vector expmap(const Vector& p,const Vector& d) { return p+d;}
+  inline Vector logmap(const Vector& p) { return p;}
+  inline Vector logmap(const Vector& p1,const Vector& p2) { return p2-p1;}
+
 }
 
 
