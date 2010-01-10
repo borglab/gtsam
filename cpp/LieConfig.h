@@ -63,6 +63,11 @@ namespace gtsam {
       else return it->second;
     }
 
+    /** operator[] syntax for get */
+		inline const T& operator[](const std::string& name) const {
+			return get(name);
+		}
+
     /** Retrieve a variable by key, returns nothing if not found */
     boost::optional<const T&> gettry(const std::string& key) const {
       const_iterator it = values_.find(key);
