@@ -65,7 +65,7 @@ namespace gtsam {
 		/** vector of errors */
 		Vector error_vector(const Config& x) const {
 			//z-h
-			T p1 = x.get(key1_), p2 = x.get(key2_);
+			const T& p1 = x.get(key1_), p2 = x.get(key2_);
 			T hx = between(p1,p2);
 			// manifold equivalent of z-h(x) -> log(h(x),z)
 			return square_root_inverse_covariance_ * logmap(hx,measured_);
@@ -79,7 +79,7 @@ namespace gtsam {
 
 		/** linearize */
 		boost::shared_ptr<GaussianFactor> linearize(const Config& x0) const {
-			T p1 = x0.get(key1_), p2 = x0.get(key2_);
+			const T& p1 = x0.get(key1_), p2 = x0.get(key2_);
 			Matrix A1 = Dbetween1(p1, p2);
 			Matrix A2 = Dbetween2(p1, p2);
 			Vector b = error_vector(x0); // already has sigmas in !
