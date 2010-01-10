@@ -85,18 +85,11 @@ namespace gtsam {
 
   // Exponential map at identity - create a pose with a translation and
   // rotation (in canonical coordinates)
-  template<> inline Pose3 expmap(const Vector& d) {
-    Vector w = sub(d, 0,3);
-    Vector u = sub(d, 3,6);
-    return Pose3(expmap<Rot3> (w), expmap<Point3> (u));
-  }
+  template<> Pose3 expmap(const Vector& d);
 
   // Log map at identity - return the translation and canonical rotation
   // coordinates of a pose.
-  inline Vector logmap(const Pose3& p) {
-    const Vector w = logmap(p.rotation()), u = logmap(p.translation());
-    return concatVectors(2, &w, &u);
-  }
+  Vector logmap(const Pose3& p);
 
   // todo: these are the "old-style" expmap and logmap about the specified
   // pose.

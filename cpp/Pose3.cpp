@@ -26,10 +26,12 @@ namespace gtsam {
     return R_.equals(pose.R_,tol) && t_.equals(pose.t_,tol);
   }
 
-  /** Agrawal06iros versions
-  Pose3 expmap(const Vector& d) {
+  /* ************************************************************************* */
 
-  	// From
+#ifdef SLOW_BUT_CORRECT_EXPMAP
+
+  /** Agrawal06iros versions of expmap and logmap*/
+  template<> Pose3 expmap(const Vector& d) {
   	Vector w = vector_range<const Vector>(d, range(0,3));
   	Vector u = vector_range<const Vector>(d, range(3,6));
   	double t = norm_2(w);
@@ -54,7 +56,24 @@ namespace gtsam {
 	    return concatVectors(2, &w, &u);
 		}
   }
-*/
+
+#else
+
+  /* incorrect versions for which we know how to compute derivatives */
+  template<> Pose3 expmap(const Vector& d) {
+    Vector w = sub(d, 0,3);
+    Vector u = sub(d, 3,6);
+    return Pose3(expmap<Rot3> (w), expmap<Point3> (u));
+  }
+
+  // Log map at identity - return the translation and canonical rotation
+  // coordinates of a pose.
+  Vector logmap(const Pose3& p) {
+    const Vector w = logmap(p.rotation()), u = logmap(p.translation());
+    return concatVectors(2, &w, &u);
+  }
+
+#endif
 
   /* ************************************************************************* */
   Matrix Pose3::matrix() const {
