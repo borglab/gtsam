@@ -109,12 +109,12 @@ TEST(LieConfig, expmap_d)
   LieConfig<Vector> config0;
   config0.insert("v1", Vector_(3, 1.0, 2.0, 3.0));
   config0.insert("v2", Vector_(3, 5.0, 6.0, 7.0));
-  config0.print("config0");
+  //config0.print("config0");
 
   LieConfig<Pose2> poseconfig;
   poseconfig.insert("p1", Pose2(1,2,3));
   poseconfig.insert("p2", Pose2(0.3, 0.4, 0.5));
-  poseconfig.print("poseconfig");
+  //poseconfig.print("poseconfig");
 }
 
 /* ************************************************************************* */

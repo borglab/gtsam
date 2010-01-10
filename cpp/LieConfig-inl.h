@@ -5,9 +5,15 @@
  *      Author: richard
  */
 
+#include "LieConfig.h"
+
 #include <boost/foreach.hpp>
 #include <boost/tuple/tuple.hpp>
-#include "LieConfig.h"
+#include <utility>
+#include <iostream>
+#include <stdexcept>
+
+#include "VectorConfig.h"
 
 using namespace std;
 
@@ -36,6 +42,26 @@ namespace gtsam {
   }
 
   template<class T>
+  const T& LieConfig<T>::get(const std::string& key) const {
+    iterator it = values_.find(key);
+    if (it == values_.end()) throw std::invalid_argument("invalid key");
+    else return it->second;
+  }
+
+  template<class T>
+  boost::optional<const T&> LieConfig<T>::gettry(const std::string& key) const {
+    const_iterator it = values_.find(key);
+    if (it == values_.end()) return boost::optional<const T&>();
+    else return it->second;
+  }
+
+  template<class T>
+  void LieConfig<T>::insert(const std::string& name, const T& val) {
+    values_.insert(make_pair(name, val));
+    dim_ += dim(val);
+  }
+
+  template<class T>
   LieConfig<T> expmap(const LieConfig<T>& c, const VectorConfig& delta) {
 		LieConfig<T> newConfig;
 		string j; T pj;
@@ -52,16 +78,16 @@ namespace gtsam {
   // This version just creates a VectorConfig then calls function above
   template<class T>
   LieConfig<T> expmap(const LieConfig<T>& c, const Vector& delta) {
-  	VectorConfig deltaConfig;
-		int delta_offset = 0;
-		string j; T pj;
-		FOREACH_PAIR(j, pj, c) {
-			int cur_dim = dim(pj);
-			Vector dj = sub(delta, delta_offset, delta_offset+cur_dim);
-			deltaConfig.insert(j,dj);
-			delta_offset += cur_dim;
-		}
-		return expmap(c,deltaConfig);
-	}
+    VectorConfig deltaConfig;
+        int delta_offset = 0;
+        string j; T pj;
+        FOREACH_PAIR(j, pj, c) {
+            int cur_dim = dim(pj);
+            Vector dj = sub(delta, delta_offset, delta_offset+cur_dim);
+            deltaConfig.insert(j,dj);
+            delta_offset += cur_dim;
+        }
+        return expmap(c,deltaConfig);
+  }
 
 }

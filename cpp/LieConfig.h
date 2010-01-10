@@ -11,18 +11,13 @@
 
 
 #include <map>
-#include <string>
-#include <boost/foreach.hpp>
-#include <utility>
-#include <iostream>
-#include <stdexcept>
-#include <boost/optional.hpp>
 
-#include "Testable.h"
-#include "VectorConfig.h"
 #include "Vector.h"
+#include "Testable.h"
 #include "Lie.h"
 
+namespace boost { template<class T> class optional; }
+namespace gtsam { class VectorConfig; }
 
 namespace gtsam {
 
@@ -57,11 +52,7 @@ namespace gtsam {
     virtual ~LieConfig() {}
 
     /** Retrieve a variable by key, throws std::invalid_argument if not found */
-    const T& get(const std::string& key) const {
-      iterator it = values_.find(key);
-      if (it == values_.end()) throw std::invalid_argument("invalid key");
-      else return it->second;
-    }
+    const T& get(const std::string& key) const;
 
     /** operator[] syntax for get */
 		inline const T& operator[](const std::string& name) const {
@@ -69,17 +60,10 @@ namespace gtsam {
 		}
 
     /** Retrieve a variable by key, returns nothing if not found */
-    boost::optional<const T&> gettry(const std::string& key) const {
-      const_iterator it = values_.find(key);
-      if (it == values_.end()) return boost::optional<const T&>();
-      else return it->second;
-    }
+    boost::optional<const T&> gettry(const std::string& key) const;
 
     /** Add a variable with the given key */
-    void insert(const std::string& name, const T& val) {
-      values_.insert(make_pair(name, val));
-      dim_ += dim(val);
-    }
+    void insert(const std::string& name, const T& val);
 
     /** Replace all keys and variables */
     LieConfig& operator=(const LieConfig& rhs) {
