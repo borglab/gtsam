@@ -198,4 +198,9 @@ double dot(const VectorConfig& a, const VectorConfig& b) {
 }
 /* ************************************************************************* */
 
+void print(const VectorConfig& v, const std::string& s){
+	v.print(s);
+}
+/* ************************************************************************* */
+
 } // gtsam

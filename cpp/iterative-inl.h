@@ -15,8 +15,12 @@ using namespace std;
 namespace gtsam {
 
 	/* ************************************************************************* */
+	/**
+	 * conjugate gradient method.
+	 * S: linear system, V: step vector, E: errors
+	 */
 	template<class S, class V, class E>
-	V conjugateGradients(const S& Ab, V x, bool verbose, double epsilon,
+	V conjugateGradients(const S& Ab, V x, bool verbose, double epsilon, double epsilon_abs,
 			size_t maxIterations, bool steepest = false) {
 
 		if (maxIterations == 0) maxIterations = dim(x) * (steepest ? 10 : 1);
@@ -27,6 +31,7 @@ namespace gtsam {
 		V g = Ab.gradient(x);
 		V d = -g;
 		double dotg0 = dot(g, g), prev_dotg = dotg0;
+		if (dotg0 < epsilon_abs) return x;
 		double threshold = epsilon * epsilon * dotg0;
 
 		if (verbose) cout << "CG: epsilon = " << epsilon << ", maxIterations = "

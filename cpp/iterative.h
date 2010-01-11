@@ -56,19 +56,24 @@ namespace gtsam {
 			return A_ ^ e;
 		}
 
+		/**
+		 * Print with optional string
+		 */
+		void print (const std::string& s = "System") const;
 	};
 
 	/**
 	 * Method of steepest gradients, System version
 	 */
 	Vector steepestDescent(const System& Ab, const Vector& x, bool verbose =
-			false, double epsilon = 1e-3, size_t maxIterations = 0);
+			false, double epsilon = 1e-3, double epsilon_abs = 1e-5, size_t maxIterations = 0);
 
 	/**
 	 * Method of conjugate gradients (CG), System version
 	 */
 	Vector conjugateGradientDescent(const System& Ab, const Vector& x,
-			bool verbose = false, double epsilon = 1e-3, size_t maxIterations = 0);
+			bool verbose = false, double epsilon = 1e-3, double epsilon_abs = 1e-5,
+			size_t maxIterations = 0);
 
 	/** convenience calls using matrices, will create System class internally: */
 
@@ -76,14 +81,15 @@ namespace gtsam {
 	 * Method of steepest gradients, Matrix version
 	 */
 	Vector steepestDescent(const Matrix& A, const Vector& b, const Vector& x,
-			bool verbose = false, double epsilon = 1e-3, size_t maxIterations = 0);
+			bool verbose = false, double epsilon = 1e-3, double epsilon_abs = 1e-5,
+			size_t maxIterations = 0);
 
 	/**
 	 * Method of conjugate gradients (CG), Matrix version
 	 */
 	Vector conjugateGradientDescent(const Matrix& A, const Vector& b,
 			const Vector& x, bool verbose = false, double epsilon = 1e-3,
-			size_t maxIterations = 0);
+			double epsilon_abs = 1e-5, size_t maxIterations = 0);
 
 	class GaussianFactorGraph;
 	class VectorConfig;
@@ -93,13 +99,13 @@ namespace gtsam {
 	 * */
 	VectorConfig steepestDescent(const GaussianFactorGraph& fg,
 			const VectorConfig& x, bool verbose = false, double epsilon = 1e-3,
-			size_t maxIterations = 0);
+			double epsilon_abs = 1e-5, size_t maxIterations = 0);
 
 	/**
 	 * Method of conjugate gradients (CG), Gaussian Factor Graph version
 	 * */
 	VectorConfig conjugateGradientDescent(const GaussianFactorGraph& fg,
 			const VectorConfig& x, bool verbose = false, double epsilon = 1e-3,
-			size_t maxIterations = 0);
+			double epsilon_abs = 1e-5, size_t maxIterations = 0);
 
 } // namespace gtsam

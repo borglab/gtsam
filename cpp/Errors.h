@@ -36,4 +36,7 @@ namespace gtsam {
    */
   double dot(const Errors& a, const Errors& b);
 
+  /** print with optional string */
+  void print(const Errors& a, const std::string& s = "Error");
+
 } // gtsam

@@ -98,4 +98,8 @@ namespace gtsam {
 	}
 	/* ************************************************************************* */
 
+	void SubgraphPreconditioner::print(const std::string& s) const {
+		cout << s << endl;
+		Ab2_.print();
+	}
 } // nsamespace gtsam

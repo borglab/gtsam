@@ -125,4 +125,7 @@ namespace gtsam {
   /** dim function (for iterative::CGD) */
   inline double dim(const VectorConfig& x) { return x.dim();}
 
+  /** print with optional string */
+  void print(const VectorConfig& v, const std::string& s = "");
+
 } // gtsam

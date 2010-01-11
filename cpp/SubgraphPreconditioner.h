@@ -54,6 +54,9 @@ namespace gtsam {
 
 		/** Apply operator A' */
 		VectorConfig operator^(const Errors& e) const;
+
+		/** print the object */
+		void print(const std::string& s = "SubgraphPreconditioner") const;
 	};
 
 } // nsamespace gtsam

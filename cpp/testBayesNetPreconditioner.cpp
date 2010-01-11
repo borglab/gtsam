@@ -94,7 +94,7 @@ TEST( BayesNetPreconditioner, conjugateGradients )
 	double epsilon = 1e-6; // had to crank this down !!!
 	size_t maxIterations = 100;
 	VectorConfig actual_y = gtsam::conjugateGradients<BayesNetPreconditioner,
-			VectorConfig, Errors>(system, y1, verbose, epsilon, maxIterations);
+			VectorConfig, Errors>(system, y1, verbose, epsilon, epsilon, maxIterations);
 	VectorConfig actual_x = system.x(actual_y);
 	CHECK(assert_equal(xtrue,actual_x));
 

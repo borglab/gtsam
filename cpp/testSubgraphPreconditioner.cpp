@@ -195,7 +195,7 @@ TEST( SubgraphPreconditioner, conjugateGradients )
 	double epsilon = 1e-3;
 	size_t maxIterations = 100;
 	VectorConfig actual = gtsam::conjugateGradients<SubgraphPreconditioner,
-			VectorConfig, Errors>(system, y1, verbose, epsilon, maxIterations);
+			VectorConfig, Errors>(system, y1, verbose, epsilon, epsilon, maxIterations);
 	CHECK(assert_equal(y0,actual));
 
 	// Compare with non preconditioned version:
