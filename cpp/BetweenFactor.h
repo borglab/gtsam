@@ -71,6 +71,10 @@ namespace gtsam {
 			return square_root_inverse_covariance_ * logmap(hx,measured_);
 		}
 
+		/** methods to retrieve both keys */
+		inline const std::string& key1() const { return key1_;}
+		inline const std::string& key2() const { return key2_;}
+
 		/** keys as a list */
 		inline std::list<std::string> keys() const { return keys_;}
 
