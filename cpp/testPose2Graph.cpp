@@ -6,6 +6,7 @@
 #include <iostream>
 #include <boost/shared_ptr.hpp>
 #include <boost/assign/std/list.hpp>
+using namespace boost;
 using namespace boost::assign;
 
 #include <CppUnitLite/TestHarness.h>
@@ -84,9 +85,9 @@ TEST( Pose2Graph, linerization )
 TEST(Pose2Graph, optimize) {
 
 	// create a Pose graph with one equality constraint and one measurement
-  Pose2Graph fg;
-  fg.addConstraint("p0", Pose2(0,0,0));
-  fg.add("p0", "p1", Pose2(1,2,M_PI_2), covariance);
+  shared_ptr<Pose2Graph> fg(new Pose2Graph);
+  fg->addConstraint("p0", Pose2(0,0,0));
+  fg->add("p0", "p1", Pose2(1,2,M_PI_2), covariance);
 
   // Create initial config
   boost::shared_ptr<Pose2Config> initial(new Pose2Config());
@@ -94,13 +95,13 @@ TEST(Pose2Graph, optimize) {
   initial->insert("p1", Pose2(0,0,0));
 
   // Choose an ordering and optimize
-  Ordering ordering;
-  ordering += "p0","p1";
+  shared_ptr<Ordering> ordering(new Ordering);
+  *ordering += "p0","p1";
   typedef NonlinearOptimizer<Pose2Graph, Pose2Config> Optimizer;
-  Optimizer optimizer(fg, ordering, initial);
+  Optimizer optimizer0(fg, ordering, initial);
   Optimizer::verbosityLevel verbosity = Optimizer::SILENT;
   //Optimizer::verbosityLevel verbosity = Optimizer::ERROR;
-  optimizer = optimizer.levenbergMarquardt(1e-15, 1e-15, verbosity);
+  Optimizer optimizer = optimizer0.levenbergMarquardt(1e-15, 1e-15, verbosity);
 
   // Check with expected config
   Pose2Config expected;
@@ -118,15 +119,15 @@ TEST(Pose2Graph, optimizeCircle) {
   Pose2 p0 = hexagon["p0"], p1 = hexagon["p1"];
 
 	// create a Pose graph with one equality constraint and one measurement
-  Pose2Graph fg;
-  fg.addConstraint("p0", p0);
+  shared_ptr<Pose2Graph> fg(new Pose2Graph);
+  fg->addConstraint("p0", p0);
   Pose2 delta = between(p0,p1);
-  fg.add("p0", "p1", delta, covariance);
-  fg.add("p1", "p2", delta, covariance);
-  fg.add("p2", "p3", delta, covariance);
-  fg.add("p3", "p4", delta, covariance);
-  fg.add("p4", "p5", delta, covariance);
-  fg.add("p5", "p0", delta, covariance);
+  fg->add("p0", "p1", delta, covariance);
+  fg->add("p1", "p2", delta, covariance);
+  fg->add("p2", "p3", delta, covariance);
+  fg->add("p3", "p4", delta, covariance);
+  fg->add("p4", "p5", delta, covariance);
+  fg->add("p5", "p0", delta, covariance);
 
   // Create initial config
   boost::shared_ptr<Pose2Config> initial(new Pose2Config());
@@ -138,13 +139,13 @@ TEST(Pose2Graph, optimizeCircle) {
   initial->insert("p5", expmap(hexagon["p5"],Vector_(3,-0.1, 0.1,-0.1)));
 
   // Choose an ordering and optimize
-  Ordering ordering;
-  ordering += "p0","p1","p2","p3","p4","p5";
+  shared_ptr<Ordering> ordering(new Ordering);
+  *ordering += "p0","p1","p2","p3","p4","p5";
   typedef NonlinearOptimizer<Pose2Graph, Pose2Config> Optimizer;
-  Optimizer optimizer(fg, ordering, initial);
+  Optimizer optimizer0(fg, ordering, initial);
   Optimizer::verbosityLevel verbosity = Optimizer::SILENT;
 //  Optimizer::verbosityLevel verbosity = Optimizer::ERROR;
-  optimizer = optimizer.levenbergMarquardt(1e-15, 1e-15, verbosity);
+  Optimizer optimizer = optimizer0.levenbergMarquardt(1e-15, 1e-15, verbosity);
 
   Pose2Config actual = *optimizer.config();
 

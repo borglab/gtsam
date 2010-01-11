@@ -44,9 +44,9 @@ namespace gtsam {
 	// Constructors
 	/* ************************************************************************* */
 	template<class G, class C>
-	NonlinearOptimizer<G, C>::NonlinearOptimizer(const G& graph,
-			const Ordering& ordering, shared_config config, double lambda) :
-		graph_(&graph), ordering_(&ordering), config_(config), error_(graph.error(
+	NonlinearOptimizer<G, C>::NonlinearOptimizer(shared_graph graph,
+			shared_ordering ordering, shared_config config, double lambda) :
+		graph_(graph), ordering_(ordering), config_(config), error_(graph->error(
 				*config)), lambda_(lambda) {
 	}
 
@@ -88,7 +88,7 @@ namespace gtsam {
 		if (verbosity >= CONFIG)
 			newConfig->print("newConfig");
 
-		return NonlinearOptimizer(*graph_, *ordering_, newConfig);
+		return NonlinearOptimizer(graph_, ordering_, newConfig);
 	}
 
 	/* ************************************************************************* */
@@ -139,14 +139,14 @@ namespace gtsam {
 			newConfig->print("config");
 
 		// create new optimization state with more adventurous lambda
-		NonlinearOptimizer next(*graph_, *ordering_, newConfig, lambda_ / factor);
+		NonlinearOptimizer next(graph_, ordering_, newConfig, lambda_ / factor);
 
 		// if error decreased, return the new state
 		if (next.error_ <= error_)
 			return next;
 		else {
 			// TODO: can we avoid copying the config ?
-			NonlinearOptimizer cautious(*graph_, *ordering_, config_, lambda_ * factor);
+			NonlinearOptimizer cautious(graph_, ordering_, config_, lambda_ * factor);
 			return cautious.try_lambda(linear, verbosity, factor);
 		}
 	}

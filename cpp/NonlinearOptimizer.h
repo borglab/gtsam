@@ -31,6 +31,8 @@ namespace gtsam {
 
 		// For performance reasons in recursion, we store configs in a shared_ptr
 		typedef boost::shared_ptr<const Config> shared_config;
+		typedef boost::shared_ptr<const FactorGraph> shared_graph;
+		typedef boost::shared_ptr<const Ordering> shared_ordering;
 
 		enum verbosityLevel {
 			SILENT,
@@ -49,17 +51,17 @@ namespace gtsam {
 
 		// keep a reference to const versions of the graph and ordering
 		// These normally do not change
-		const FactorGraph* graph_;
-		const Ordering* ordering_;
+		const shared_graph graph_;
+		const shared_ordering ordering_;
 
 		// keep a configuration and its error
 		// These typically change once per iteration (in a functional way)
-		shared_config config_;
-		double error_;
+		const shared_config config_;
+		const double error_;
 
 		// keep current lambda for use within LM only
 		// TODO: red flag, should we have an LM class ?
-		double lambda_;
+		const double lambda_;
 
 		// Recursively try to do tempered Gauss-Newton steps until we succeed
 		NonlinearOptimizer try_lambda(const GaussianFactorGraph& linear,
@@ -70,8 +72,15 @@ namespace gtsam {
 		/**
 		 * Constructor
 		 */
-		NonlinearOptimizer(const FactorGraph& graph, const Ordering& ordering,
+		NonlinearOptimizer(shared_graph graph, shared_ordering ordering,
 				shared_config config, double lambda = 1e-5);
+
+		/**
+		 * Copy constructor
+		 */
+		NonlinearOptimizer(const NonlinearOptimizer<FactorGraph, Config> &optimizer) :
+		  graph_(optimizer.graph_), ordering_(optimizer.ordering_), config_(optimizer.config_),
+		  error_(optimizer.error_), lambda_(optimizer.lambda_) {}
 
 		/**
 		 * Return current error

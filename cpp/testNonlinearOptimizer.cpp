@@ -12,6 +12,9 @@ using namespace boost::assign;
 
 #include <CppUnitLite/TestHarness.h>
 
+#include <boost/shared_ptr.hpp>
+using namespace boost;
+
 #include "Matrix.h"
 #include "Ordering.h"
 #include "smallExample.h"
@@ -27,7 +30,7 @@ typedef NonlinearOptimizer<ExampleNonlinearFactorGraph,VectorConfig> Optimizer;
 /* ************************************************************************* */
 TEST( NonlinearOptimizer, delta )
 {
-	ExampleNonlinearFactorGraph fg = createNonlinearFactorGraph();
+	shared_ptr<ExampleNonlinearFactorGraph> fg(new ExampleNonlinearFactorGraph(createNonlinearFactorGraph()));
 	Optimizer::shared_config initial = sharedNoisyConfig();
 
 	// Expected configuration is the difference between the noisy config
@@ -47,22 +50,22 @@ TEST( NonlinearOptimizer, delta )
 	expected.insert("x2", dx2);
 
 	// Check one ordering
-	Ordering ord1;
-	ord1 += "x2","l1","x1";
+	shared_ptr<Ordering> ord1(new Ordering());
+	*ord1 += "x2","l1","x1";
 	Optimizer optimizer1(fg, ord1, initial);
 	VectorConfig actual1 = optimizer1.linearizeAndOptimizeForDelta();
 	CHECK(assert_equal(actual1,expected));
 
 	// Check another
-	Ordering ord2;
-	ord2 += "x1","x2","l1";
+	shared_ptr<Ordering> ord2(new Ordering());
+	*ord2 += "x1","x2","l1";
 	Optimizer optimizer2(fg, ord2, initial);
 	VectorConfig actual2 = optimizer2.linearizeAndOptimizeForDelta();
 	CHECK(assert_equal(actual2,expected));
 
 	// And yet another...
-	Ordering ord3;
-	ord3 += "l1","x1","x2";
+	shared_ptr<Ordering> ord3(new Ordering());
+	*ord3 += "l1","x1","x2";
 	Optimizer optimizer3(fg, ord3, initial);
 	VectorConfig actual3 = optimizer3.linearizeAndOptimizeForDelta();
 	CHECK(assert_equal(actual3,expected));
@@ -72,7 +75,7 @@ TEST( NonlinearOptimizer, delta )
 TEST( NonlinearOptimizer, iterateLM )
 {
 	// really non-linear factor graph
-	ExampleNonlinearFactorGraph fg = createReallyNonlinearFactorGraph();
+  shared_ptr<ExampleNonlinearFactorGraph> fg(new ExampleNonlinearFactorGraph(createReallyNonlinearFactorGraph()));
 
 	// config far from minimum
 	Vector x0 = Vector_(1, 3.0);
@@ -80,8 +83,8 @@ TEST( NonlinearOptimizer, iterateLM )
 	config->insert("x", x0);
 
 	// ordering
-	Ordering ord;
-	ord.push_back("x");
+	shared_ptr<Ordering> ord(new Ordering());
+	ord->push_back("x");
 
 	// create initial optimization state, with lambda=0
 	Optimizer optimizer(fg, ord, config, 0);
@@ -107,23 +110,23 @@ TEST( NonlinearOptimizer, iterateLM )
 /* ************************************************************************* */
 TEST( NonlinearOptimizer, optimize )
 {
-	ExampleNonlinearFactorGraph fg = createReallyNonlinearFactorGraph();
+  shared_ptr<ExampleNonlinearFactorGraph> fg(new ExampleNonlinearFactorGraph(createReallyNonlinearFactorGraph()));
 
 	// test error at minimum
 	Vector xstar = Vector_(1, 0.0);
 	VectorConfig cstar;
 	cstar.insert("x", xstar);
-	DOUBLES_EQUAL(0.0,fg.error(cstar),0.0);
+	DOUBLES_EQUAL(0.0,fg->error(cstar),0.0);
 
 	// test error at initial = [(1-cos(3))^2 + (sin(3))^2]*50 =
 	Vector x0 = Vector_(1, 3.0);
 	boost::shared_ptr<VectorConfig> c0(new VectorConfig);
 	c0->insert("x", x0);
-	DOUBLES_EQUAL(199.0,fg.error(*c0),1e-3);
+	DOUBLES_EQUAL(199.0,fg->error(*c0),1e-3);
 
 	// optimize parameters
-	Ordering ord;
-	ord.push_back("x");
+	shared_ptr<Ordering> ord(new Ordering());
+	ord->push_back("x");
 	double relativeThreshold = 1e-5;
 	double absoluteThreshold = 1e-5;
 

@@ -9,6 +9,7 @@
 #include <boost/assign/std/list.hpp> // for operator +=
 #include <boost/assign/std/map.hpp> // for insert
 #include <boost/foreach.hpp>
+#include <boost/shared_ptr.hpp>
 #include <CppUnitLite/TestHarness.h>
 #include <GaussianFactorGraph.h>
 #include <NonlinearFactor.h>
@@ -32,6 +33,7 @@
 
 using namespace std;
 using namespace gtsam;
+using namespace boost;
 using namespace boost::assign;
 
 // trick from some reading group
@@ -286,11 +288,11 @@ TEST (SQP, two_pose_truth ) {
 	shared f2(new Simulated2DMeasurement(z2, sigma2, "x2", "l1"));
 
 	// construct the graph
-	NLGraph graph;
-	graph.push_back(ef1);
-	graph.push_back(ef2);
-	graph.push_back(f1);
-	graph.push_back(f2);
+	shared_ptr<NLGraph> graph(new NLGraph());
+	graph->push_back(ef1);
+	graph->push_back(ef2);
+	graph->push_back(f1);
+	graph->push_back(f2);
 
 	// create an initial estimate
 	boost::shared_ptr<VectorConfig> initialEstimate(new VectorConfig(feas)); // must start with feasible set
@@ -298,8 +300,8 @@ TEST (SQP, two_pose_truth ) {
 	//initialEstimate->insert("l1", Vector_(2, 1.2, 5.6)); // with small error
 
 	// optimize the graph
-	Ordering ordering;
-	ordering += "x1", "x2", "l1";
+	shared_ptr<Ordering> ordering(new Ordering());
+	*ordering += "x1", "x2", "l1";
 	Optimizer optimizer(graph, ordering, initialEstimate, 1e-5);
 
 	// display solution
@@ -498,27 +500,27 @@ TEST (SQP, stereo_truth ) {
 	truthConfig->addLandmarkPoint(1, landmark);
 
 	// create graph
-	VSLAMGraph graph;
+	shared_ptr<VSLAMGraph> graph(new VSLAMGraph());
 
 	// create equality constraints for poses
-	graph.addCameraConstraint(1, camera1.pose());
-	graph.addCameraConstraint(2, camera2.pose());
+	graph->addCameraConstraint(1, camera1.pose());
+	graph->addCameraConstraint(2, camera2.pose());
 
 	// create VSLAM factors
 	Point2 z1 = camera1.project(landmark);
 	if (verbose) z1.print("z1");
 	shared_vf vf1(new VSLAMFactor(z1, 1.0, 1, 1, shK));
-	graph.push_back(vf1);
+	graph->push_back(vf1);
 	Point2 z2 = camera2.project(landmark);
 	if (verbose) z2.print("z2");
 	shared_vf vf2(new VSLAMFactor(z2, 1.0, 2, 1, shK));
-	graph.push_back(vf2);
+	graph->push_back(vf2);
 
-	if (verbose) graph.print("Graph after construction");
+	if (verbose) graph->print("Graph after construction");
 
 	// create ordering
-	Ordering ord;
-	ord += "x1", "x2", "l1";
+	shared_ptr<Ordering> ord(new Ordering());
+	*ord += "x1", "x2", "l1";
 
 	// create optimizer
 	VOptimizer optimizer(graph, ord, truthConfig, 1e-5);
@@ -571,40 +573,40 @@ TEST (SQP, stereo_truth_noisy ) {
 	noisyConfig->addLandmarkPoint(1, landmarkNoisy);
 
 	// create graph
-	VSLAMGraph graph;
+	shared_ptr<VSLAMGraph> graph(new VSLAMGraph());
 
 	// create equality constraints for poses
-	graph.addCameraConstraint(1, camera1.pose());
-	graph.addCameraConstraint(2, camera2.pose());
+	graph->addCameraConstraint(1, camera1.pose());
+	graph->addCameraConstraint(2, camera2.pose());
 
 	// create VSLAM factors
 	Point2 z1 = camera1.project(landmark);
 	if (verbose) z1.print("z1");
 	shared_vf vf1(new VSLAMFactor(z1, 1.0, 1, 1, shK));
-	graph.push_back(vf1);
+	graph->push_back(vf1);
 	Point2 z2 = camera2.project(landmark);
 	if (verbose) z2.print("z2");
 	shared_vf vf2(new VSLAMFactor(z2, 1.0, 2, 1, shK));
-	graph.push_back(vf2);
+	graph->push_back(vf2);
 
 	if (verbose)  {
-		graph.print("Graph after construction");
+		graph->print("Graph after construction");
 		noisyConfig->print("Initial config");
 	}
 
 	// create ordering
-	Ordering ord;
-	ord += "x1", "x2", "l1";
+	shared_ptr<Ordering> ord(new Ordering());
+	*ord += "x1", "x2", "l1";
 
 	// create optimizer
-	VOptimizer optimizer(graph, ord, noisyConfig, 1e-5);
+	VOptimizer optimizer0(graph, ord, noisyConfig, 1e-5);
 
 	if (verbose)
-		cout << "Initial Error: " << optimizer.error() << endl;
+		cout << "Initial Error: " << optimizer0.error() << endl;
 
 	// use Levenberg-Marquardt optimization
 	double relThresh = 1e-5, absThresh = 1e-5;
-	optimizer = optimizer.levenbergMarquardt(relThresh, absThresh, VOptimizer::SILENT);
+	VOptimizer optimizer(optimizer0.levenbergMarquardt(relThresh, absThresh, VOptimizer::SILENT));
 
 	// verify
 	DOUBLES_EQUAL(0.0, optimizer.error(), 1e-9);
