@@ -92,6 +92,15 @@ TEST( NonlinearOptimizer, iterateLM )
 	// LM iterate with lambda 0 should be the same
 	Optimizer iterated2 = optimizer.iterateLM();
 
+	// Try successive iterates. TODO: ugly pointers, better way ?
+	Optimizer *pointer = new Optimizer(iterated2);
+	for (int i=0;i<10;i++) {
+		Optimizer* newOptimizer = new Optimizer(pointer->iterateLM());
+		delete pointer;
+		pointer = newOptimizer;
+	}
+	delete(pointer);
+
 	CHECK(assert_equal(*iterated1.config(), *iterated2.config(), 1e-9));
 }
 
