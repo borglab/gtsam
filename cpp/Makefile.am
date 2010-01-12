@@ -66,14 +66,17 @@ testSymbolicBayesNet_LDADD      = libgtsam.la
 
 # Inference
 headers += inference.h inference-inl.h
+headers += graph-inl.h
 headers += FactorGraph.h FactorGraph-inl.h
 headers += BayesNet.h BayesNet-inl.h
 headers += BayesTree.h BayesTree-inl.h
 headers += ISAM.h ISAM-inl.h GaussianISAM.h
 headers += ISAM2.h ISAM2-inl.h GaussianISAM2.h
 sources += GaussianISAM.cpp GaussianISAM2.cpp
-check_PROGRAMS += testFactorgraph testInference testOrdering
+check_PROGRAMS += testGraph testFactorgraph testInference testOrdering
 check_PROGRAMS += testBayesTree testISAM testGaussianISAM testGaussianISAM2
+testGraph_SOURCES              = testGraph.cpp
+testGraph_LDADD                = libgtsam.la
 testFactorgraph_SOURCES        = testFactorgraph.cpp
 testInference_SOURCES          = $(example) testInference.cpp
 testFactorgraph_LDADD          = libgtsam.la

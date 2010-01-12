@@ -18,8 +18,6 @@
 #include <boost/foreach.hpp>
 #include <boost/tuple/tuple.hpp>
 #include <boost/format.hpp>
-#include <boost/graph/graph_traits.hpp>
-#include <boost/graph/adjacency_list.hpp>
 #include <boost/graph/prim_minimum_spanning_tree.hpp>
 #include <colamd/colamd.h>
 #include "Ordering.h"
@@ -275,52 +273,16 @@ void FactorGraph<Factor>::associateFactor(int index, sharedFactor factor) {
 template<class Factor>
 map<string, string> FactorGraph<Factor>::findMinimumSpanningTree() const {
 
-	typedef boost::adjacency_list<
-		boost::vecS, boost::vecS, boost::undirectedS,
-		boost::property<boost::vertex_name_t, string>,
-		boost::property<boost::edge_weight_t, int> > Graph;
-	typedef boost::graph_traits<Graph>::vertex_descriptor Vertex;
-	typedef boost::graph_traits<Graph>::vertex_iterator VertexIterator;
-	typedef boost::graph_traits<Graph>::edge_descriptor Edge;
-
-	// convert the factor graph to boost graph
-	Graph g(0);
-	map<string, Vertex> key2vertex;
-	Vertex v1, v2;
-	BOOST_FOREACH(sharedFactor factor, factors_){
-		if (factor->keys().size() > 2)
-			throw(invalid_argument("findMinimumSpanningTree: only support factors with at most two keys"));
-
-		if (factor->keys().size() == 1)
-			continue;
-
-		string key1 = factor->keys().front();
-		string key2 = factor->keys().back();
-
-		if (key2vertex.find(key1) == key2vertex.end()) {
-			   v1 = add_vertex(key1, g);
-			   key2vertex.insert(make_pair(key1, v1));
-			 } else
-			   v1 = key2vertex[key1];
-
-		if (key2vertex.find(key2) == key2vertex.end()) {
-			 v2 = add_vertex(key2, g);
-			 key2vertex.insert(make_pair(key2, v2));
-		 } else
-			 v2 = key2vertex[key2];
-
-		boost::property<boost::edge_weight_t, int> edge_property(1);  // assume constant edge weight here
-		boost::add_edge(v1, v2, edge_property, g);
-	}
+	SDGraph g = gtsam::toBoostGraph<FactorGraph<Factor>, sharedFactor>(*this);
 
 	// find minimum spanning tree
-	vector<Vertex> p_map(boost::num_vertices(g));
+	vector<BoostVertex> p_map(boost::num_vertices(g));
 	prim_minimum_spanning_tree(g, &p_map[0]);
 
 	// convert edge to string pairs
 	map<string, string> tree;
-	VertexIterator itVertex = boost::vertices(g).first;
-	for (vector<Vertex>::iterator vi = p_map.begin(); vi!=p_map.end(); itVertex++, vi++) {
+	BoostVertexIterator itVertex = boost::vertices(g).first;
+	for (vector<BoostVertex>::iterator vi = p_map.begin(); vi!=p_map.end(); itVertex++, vi++) {
 		string key = boost::get(boost::vertex_name, g, *itVertex);
 		string parent = boost::get(boost::vertex_name, g, *vi);
 		// printf("%s parent: %s\n", key.c_str(), parent.c_str());

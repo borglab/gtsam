@@ -79,6 +79,9 @@ namespace gtsam {
 		inline const std::string& key1() const { return key1_;}
 		inline const std::string& key2() const { return key2_;}
 
+		/** return the measured */
+		inline const T measured() const {return measured_;}
+
 		/** keys as a list */
 		inline std::list<std::string> keys() const { return keys_;}
 
