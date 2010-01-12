@@ -48,8 +48,13 @@ namespace gtsam {
     inline Point2 operator - (const Point2& q) const {return Point2(x_-q.x_,y_-q.y_);}
     inline Point2 operator / (double q) const {return Point2(x_/q,y_/q);}
 
+    /** norm of point */
+    double norm() const;
+
     /** distance between two points */
-    double dist(const Point2& p2) const;
+    inline double dist(const Point2& p2) const {
+			return (p2 - *this).norm();
+		}
 
   private:
     /** Serialization function */

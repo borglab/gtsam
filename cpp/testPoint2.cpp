@@ -11,22 +11,40 @@ using namespace std;
 using namespace gtsam;
 
 /* ************************************************************************* */
-TEST( Point2, expmap) {
-  Vector d(2);d(0)=1;d(1)=-1;
-  Point2 a(4,5), b=expmap(a,d),c(5,4);
-  CHECK(assert_equal(b,c));
+TEST( Point2, expmap)
+{
+	Vector d(2);
+	d(0) = 1;
+	d(1) = -1;
+	Point2 a(4, 5), b = expmap(a, d), c(5, 4);
+	CHECK(assert_equal(b,c));
 }
 
 /* ************************************************************************* */
-TEST( Point2, add) {
-  CHECK(assert_equal( Point2(4,5)+Point2(1,1), Point2(5,6) ));
+TEST( Point2, add)
+{
+	CHECK(assert_equal( Point2(4,5)+Point2(1,1), Point2(5,6) ));
 }
 
 /* ************************************************************************* */
-TEST( Point2, subtract) {
-  CHECK(assert_equal( Point2(4,5)-Point2(1,1), Point2(3,4) ));
+TEST( Point2, subtract)
+{
+	CHECK(assert_equal( Point2(4,5)-Point2(1,1), Point2(3,4) ));
 }
 
 /* ************************************************************************* */
-int main() { TestResult tr; return TestRegistry::runAllTests(tr);}
+TEST( Point2, norm)
+{
+	Point2 p0(cos(5), sin(5));
+	DOUBLES_EQUAL(1,p0.norm(),1e-6);
+	Point2 p1(4, 5), p2(1, 1);
+	DOUBLES_EQUAL( 5,p1.dist(p2),1e-6);
+	DOUBLES_EQUAL( 5,(p2-p1).norm(),1e-6);
+}
+
+/* ************************************************************************* */
+int main() {
+	TestResult tr;
+	return TestRegistry::runAllTests(tr);
+}
 /* ************************************************************************* */

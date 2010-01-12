@@ -25,8 +25,8 @@ namespace gtsam {
   }
 
   /* ************************************************************************* */
-  double Point2::dist(const Point2& p2) const {
-    return sqrt(pow(x() - p2.x(), 2.0) + pow(y() - p2.y(), 2.0));
+  double Point2::norm() const {
+    return sqrt(x_*x_ + y_*y_);
   }
 
   /* ************************************************************************* */
