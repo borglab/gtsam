@@ -60,8 +60,7 @@ Matrix Matrix_(size_t m, size_t n, ...) {
 /* ************************************************************************* */
 Matrix zeros( size_t m, size_t n )
 {
-  Matrix A(m,n);
-  fill(A.data().begin(),A.data().end(),0.0);
+  Matrix A(m,n, 0.0);
   return A;
 }
 
@@ -313,7 +312,7 @@ weighted_eliminate(Matrix& A, Vector& b, const Vector& sigmas) {
 	// Then update A and b by substituting x with d-rS, zero-ing out x's column.
 	for (int j=0; j<n; ++j) {
 		// extract the first column of A
-		Vector a = column(A, j);
+		Vector a(column(A, j));
 		if (verbose) print(a,"a = ");
 
 		// Calculate weighted pseudo-inverse and corresponding precision
@@ -326,7 +325,7 @@ weighted_eliminate(Matrix& A, Vector& b, const Vector& sigmas) {
 		if (verbose) print(pseudo, "pseudo = ");
 
 		// create solution and copy into r
-		Vector r = basis(n, j);
+		Vector r(basis(n, j));
 		for (int j2=j+1; j2<n; ++j2)
 			r(j2) = inner_prod(pseudo, column(A, j2));
 		if (verbose) print(r, "r = ");

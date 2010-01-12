@@ -80,7 +80,7 @@ namespace gtsam {
   
   /* ************************************************************************* */
   Vector repeat(size_t n, double value) {
-    Vector v(n); fill_n(v.begin(),n,value);
+    Vector v(n, value);
     return v;
   }
 
@@ -246,7 +246,7 @@ namespace gtsam {
 	  }
 	  // precision = a'inv(Sigma)a
 	  if (precision<1e-9) return make_pair(zero(m), precision);
-	  Vector pseudo = emul(precisions,a);
+	  Vector pseudo(emul(precisions,a));
 	  return make_pair(pseudo/precision, precision);
   }
 
