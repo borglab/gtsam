@@ -36,7 +36,7 @@ namespace gtsam {
   	Vector u = vector_range<const Vector>(d, range(3,6));
   	double t = norm_2(w);
 		if (t < 1e-5)
-			return Pose3(expmap<Rot3> (w), expmap<Point3> (u));
+			return Pose3(Rot3(), expmap<Point3> (u));
 		else {
 			Matrix W = skewSymmetric(w/t);
 			Matrix A = eye(3, 3) + ((1 - cos(t)) / t) * W + ((t - sin(t)) / t) * (W * W);
