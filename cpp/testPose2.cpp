@@ -66,15 +66,6 @@ TEST(Pose2, logmap) {
 }
 
 /* ************************************************************************* */
-//TEST(Pose2, rotate) {
-//  std::cout << "rotate\n";
-//	double theta = 0.1, c=cos(theta),s=sin(theta);
-//	Pose2 p1(1,0,0.2), p2(0,1,0.4);
-//	CHECK(assert_equal(Pose2( c,s,0.3),p1.rotate(theta)));
-//	CHECK(assert_equal(Pose2(-s,c,0.5),p2.rotate(theta)));
-//}
-
-/* ************************************************************************* */
 TEST( Pose2, transform_to )
 {
   //cout << "transform_to" << endl;
@@ -99,6 +90,10 @@ TEST( Pose2, transform_to )
   CHECK(assert_equal(numericalH1,actualH1));
 
   Matrix numericalH2 = numericalDerivative22(transform_to, pose, point, 1e-5);
+  CHECK(assert_equal(numericalH2,actualH2));
+
+  transform_to(pose,point,actualH1,actualH2);
+  CHECK(assert_equal(numericalH1,actualH1));
   CHECK(assert_equal(numericalH2,actualH2));
 }
 

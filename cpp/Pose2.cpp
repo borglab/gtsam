@@ -24,15 +24,25 @@ namespace gtsam {
   }
 
   /* ************************************************************************* */
-  // TODO, have a combined function that returns both function value and derivative
+  Point2 transform_to(const Pose2& pose, const Point2& point, boost::optional<
+			Matrix&> H1, boost::optional<Matrix&> H2) {
+		const Rot2& R = pose.r();
+		Point2 d = point - pose.t();
+		Point2 q = R.unrotate(d);
+		if (!H1 && !H2) return q;
+		if (H1) *H1 = Matrix_(2, 3,
+					-1.0, 0.0,  q.y(),
+					0.0, -1.0, -q.x());
+		if (H2) *H2 = R.transpose();
+		return q;
+	}
+
   Matrix Dtransform_to1(const Pose2& pose, const Point2& point) {
-    Matrix dx_dt = Matrix_(2,2, -1.0, 0.0, 0.0, -1.0);
-    Matrix dx_dr = Dunrotate1(pose.r(), point-pose.t());
-    return collect(2, &dx_dt, &dx_dr);
+		Matrix H; transform_to(pose, point, H, boost::none); return H;
   }
 
   Matrix Dtransform_to2(const Pose2& pose, const Point2& point) {
-    return pose.r().transpose();
+		Matrix H; transform_to(pose, point, boost::none, H); return H;
   }
 
   /* ************************************************************************* */

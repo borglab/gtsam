@@ -9,6 +9,7 @@
 
 #pragma once
 
+#include <boost/optional.hpp>
 #include "Matrix.h"
 #include "Testable.h"
 #include "Lie.h"
@@ -87,6 +88,8 @@ namespace gtsam {
   /** Return point coordinates in pose coordinate frame */
   inline Point2 transform_to(const Pose2& pose, const Point2& point) {
     return unrotate(pose.r(), point-pose.t()); }
+  Point2 transform_to(const Pose2& pose, const Point2& point,
+			boost::optional<Matrix&> H1, boost::optional<Matrix&> H2);
   Matrix Dtransform_to1(const Pose2& pose, const Point2& point);
   Matrix Dtransform_to2(const Pose2& pose, const Point2& point);
 
