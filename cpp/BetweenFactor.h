@@ -63,12 +63,16 @@ namespace gtsam {
 		/** implement functions needed to derive from Factor */
 
 		/** vector of errors */
-		Vector error_vector(const Config& x) const {
+		Vector error_vector(const T& p1, const T& p2) const {
 			//z-h
-			const T& p1 = x.get(key1_), p2 = x.get(key2_);
 			T hx = between(p1,p2);
 			// manifold equivalent of z-h(x) -> log(h(x),z)
 			return square_root_inverse_covariance_ * logmap(hx,measured_);
+		}
+
+		/** vector of errors */
+		Vector error_vector(const Config& c) const {
+		  return error_vector(c.get(key1_), c.get(key2_));
 		}
 
 		/** methods to retrieve both keys */
@@ -86,7 +90,7 @@ namespace gtsam {
 			const T& p1 = x0.get(key1_), p2 = x0.get(key2_);
 			Matrix A1 = Dbetween1(p1, p2);
 			Matrix A2 = Dbetween2(p1, p2);
-			Vector b = error_vector(x0); // already has sigmas in !
+			Vector b = error_vector(p1, p2); // already has sigmas in !
 			boost::shared_ptr<GaussianFactor> linearized(new GaussianFactor(
 					key1_, square_root_inverse_covariance_ * A1,
 					key2_, square_root_inverse_covariance_ * A2, b, 1.0));
