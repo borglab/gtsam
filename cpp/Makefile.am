@@ -208,6 +208,13 @@ testPose2Config_LDADD   = libgtsam.la
 testPose2Graph_SOURCES  = $(example) testPose2Graph.cpp
 testPose2Graph_LDADD    = libgtsam.la
 
+# 2D Bearing and Range
+headers += BearingFactor.h  
+sources += 
+check_PROGRAMS += testBearingFactor
+testBearingFactor_SOURCES = $(example) testBearingFactor.cpp
+testBearingFactor_LDADD   = libgtsam.la
+
 # 3D Pose constraints
 headers += Pose3Factor.h  
 sources += Pose3Config.cpp Pose3Graph.cpp 
