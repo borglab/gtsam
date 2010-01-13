@@ -124,7 +124,7 @@ public:
 			string key_from = boost::get(boost::vertex_name, g, boost::source(edge, g));
 			string key_to   = boost::get(boost::vertex_name, g, boost::target(edge, g));
 			Pose relativePose = boost::get(boost::edge_weight, g, edge);
-			config->insert(key_to, compose(config->get(key_from), relativePose));
+			config->insert(key_to, compose(relativePose, config->get(key_from)));
 	}
 
 private:

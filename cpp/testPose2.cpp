@@ -182,6 +182,15 @@ TEST( Pose2, between )
 }
 
 /* ************************************************************************* */
+TEST( Pose2, round_trip )
+{
+	Pose2 p1(1.23, 2.30, 0.2);
+	Pose2 odo(0.53, 0.39, 0.15);
+	Pose2 p2 = compose(odo, p1);
+	CHECK(assert_equal(odo, between(p1, p2)));
+}
+
+/* ************************************************************************* */
 TEST(Pose2, members)
 {
   Pose2 pose;
