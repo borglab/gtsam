@@ -34,14 +34,15 @@ TEST( Graph, composePoses )
 
 	Pose2 rootPose(3.0, 0.0, 0.0);
 
-	Pose2Config actual = composePoses<Pose2Graph, Pose2Factor, Pose2, Pose2Config>(graph, tree, rootPose);
+	boost::shared_ptr<Pose2Config> actual = composePoses<Pose2Graph, Pose2Factor, Pose2, Pose2Config>
+		(graph, tree, rootPose);
 	Pose2Config expected;
 	expected.insert("x1", Pose2(1.0, 0.0, 0.0));
 	expected.insert("x2", Pose2(3.0, 0.0, 0.0));
 	expected.insert("x3", Pose2(6.0, 0.0, 0.0));
 
-	LONGS_EQUAL(3, actual.size());
-	CHECK(assert_equal(expected, actual));
+	LONGS_EQUAL(3, actual->size());
+	CHECK(assert_equal(expected, *actual));
 }
 
 /* ************************************************************************* */

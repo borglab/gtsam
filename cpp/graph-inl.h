@@ -119,16 +119,16 @@ boost::tuple<G, V, map<string, V> > predecessorMap2Graph(const map<string, strin
 template <class V, class Pose, class PoseConfig>
 class compose_key_visitor : public boost::default_bfs_visitor {
 public:
-	compose_key_visitor(PoseConfig& config_in): config(config_in) {}
+	compose_key_visitor(boost::shared_ptr<PoseConfig> config_in) { config = config_in; }
 	template <typename Edge, typename Graph> void tree_edge(Edge edge, const Graph& g) const {
 			string key_from = boost::get(boost::vertex_name, g, boost::source(edge, g));
 			string key_to   = boost::get(boost::vertex_name, g, boost::target(edge, g));
 			Pose relativePose = boost::get(boost::edge_weight, g, edge);
-			config.insert(key_to, compose(config.get(key_from), relativePose));
+			config->insert(key_to, compose(config->get(key_from), relativePose));
 	}
 
 private:
-	PoseConfig& config;
+	boost::shared_ptr<PoseConfig> config;
 
 };
 
@@ -137,7 +137,7 @@ private:
  * Compose the poses by following the chain sepcified by the spanning tree
  */
 template<class G, class Factor, class Pose, class Config>
-Config composePoses(const G& graph, const map<string, string>& tree,
+boost::shared_ptr<Config> composePoses(const G& graph, const map<string, string>& tree,
 		const Pose& rootPose) {
 
 	//TODO: change edge_weight_t to edge_pose_t
@@ -160,10 +160,10 @@ Config composePoses(const G& graph, const map<string, string>& tree,
 
 		if (nl_factor->keys().size() > 2)
 			throw invalid_argument("composePoses: only support factors with at most two keys");
-		if (nl_factor->keys().size() == 1) continue;
 
 		// e.g. in pose2graph, nonlinear factor needs to be converted to pose2factor
 		boost::shared_ptr<Factor> factor = boost::dynamic_pointer_cast<Factor>(nl_factor);
+		if (!factor) continue;
 
 		PoseVertex v_from = key2vertex.find(factor->keys().front())->second;
 		PoseVertex v_to = key2vertex.find(factor->keys().back())->second;
@@ -171,8 +171,8 @@ Config composePoses(const G& graph, const map<string, string>& tree,
 		Pose measured = factor->measured();
 		tie(edge1, found1) = boost::edge(v_from, v_to, g);
 		tie(edge2, found2) = boost::edge(v_to, v_from, g);
-		if ((found1 && found2) || (!found1 && !found2))
-				throw invalid_argument ("composePoses: invalid spanning tree");
+		if (found1 && found2) throw invalid_argument ("composePoses: invalid spanning tree");
+		if (!found1 && !found2) continue;
 		if (found1)
 			boost::put(boost::edge_weight, g, edge1, measured);
 		else if (found2)
@@ -180,8 +180,8 @@ Config composePoses(const G& graph, const map<string, string>& tree,
 	}
 
 	// compose poses
-	Config config;
-	config.insert(boost::get(boost::vertex_name, g, root), rootPose);
+	boost::shared_ptr<Config> config(new Config);
+	config->insert(boost::get(boost::vertex_name, g, root), rootPose);
 	compose_key_visitor<PoseVertex, Pose, Config> vis(config);
 	boost::breadth_first_search(g, root, boost::visitor(vis));
 
