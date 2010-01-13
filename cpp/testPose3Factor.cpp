@@ -25,16 +25,16 @@ TEST( Pose3Factor, error )
 
 	// Create factor
 	Matrix measurement_covariance = eye(6);
-	Pose3Factor factor("t1", "t2", z, measurement_covariance);
+	Pose3Factor factor(1,2, z, measurement_covariance);
 
 	// Create config
 	Pose3Config x;
-	x.insert("t1",t1);
-	x.insert("t2",t2);
+	x.insert(1,t1);
+	x.insert(2,t2);
 
-	// Get error z-h(x) -> logmap(h(x),z) = logmap(between(t1,t2),z)
+	// Get error h(x)-z -> logmap(z,h(x)) = logmap(z,between(t1,t2))
 	Vector actual = factor.error_vector(x);
-	Vector expected = logmap(between(t1,t2),z);
+	Vector expected = logmap(z,between(t1,t2));
 	CHECK(assert_equal(expected,actual));
 }
 

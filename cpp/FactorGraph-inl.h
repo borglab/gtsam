@@ -269,7 +269,7 @@ void FactorGraph<Factor>::associateFactor(int index, sharedFactor factor) {
   }
 }
 
-/* ************************************************************************* */
+/* ************************************************************************* *
 template<class Factor>
 map<string, string> FactorGraph<Factor>::findMinimumSpanningTree() const {
 

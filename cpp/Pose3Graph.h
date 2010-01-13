@@ -7,10 +7,10 @@
 
 #pragma once
 
-#include "NonlinearFactorGraph.h"
-#include "NonlinearEquality.h"
 #include "Pose3Factor.h"
 #include "Pose3Config.h"
+#include "NonlinearFactorGraph.h"
+#include "NonlinearEquality.h"
 
 namespace gtsam {
 
@@ -33,7 +33,7 @@ namespace gtsam {
 		/**
 		 * Add a factor without having to do shared factor dance
 		 */
-		inline void add(const std::string& key1, const std::string& key2,
+		inline void add(const Pose3Config::Key& key1, const Pose3Config::Key& key2,
 				const Pose3& measured, const Matrix& covariance) {
 			push_back(sharedFactor(new Pose3Factor(key1, key2, measured, covariance)));
 		}
@@ -43,8 +43,8 @@ namespace gtsam {
 		 *  @param key of pose
 		 *  @param pose which pose to constrain it to
 		 */
-		inline void addConstraint(const std::string& key, const Pose3& pose =	Pose3()) {
-			push_back(sharedFactor(new NonlinearEquality<Pose3Config> (key, pose)));
+		inline void addConstraint(const Pose3Config::Key& key, const Pose3& pose =Pose3()) {
+			push_back(sharedFactor(new NonlinearEquality<Pose3Config,Pose3Config::Key,Pose3> (key, pose)));
 		}
 
 	private:

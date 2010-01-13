@@ -33,10 +33,8 @@ bool compareLandmark(const std::string& key,
 
 /* ************************************************************************* */
 void VSLAMGraph::addLandmarkConstraint(int j, const gtsam::Point3& p) {
-  typedef NonlinearEquality<VSLAMConfig> NLE;
-  VSLAMConfig feasible;
-  feasible.addLandmarkPoint(j,p);
-  boost::shared_ptr<NLE> factor(new NLE(symbol('l',j), feasible, 3, compareLandmark));
+  typedef NonlinearEquality<VSLAMConfig,VSLAMConfig::PointKey,Point3> NLE;
+  boost::shared_ptr<NLE> factor(new NLE(j, p));
   push_back(factor);
 }
 
@@ -50,10 +48,8 @@ bool compareCamera(const std::string& key,
 
 /* ************************************************************************* */
 void VSLAMGraph::addCameraConstraint(int j, const gtsam::Pose3& p) {
-  typedef NonlinearEquality<VSLAMConfig> NLE;
-  VSLAMConfig feasible;
-  feasible.addCameraPose(j,p);
-  boost::shared_ptr<NLE> factor(new NLE(symbol('x',j), feasible, 6, compareCamera));
+  typedef NonlinearEquality<VSLAMConfig,VSLAMConfig::PoseKey,Pose3> NLE;
+  boost::shared_ptr<NLE> factor(new NLE(j,p));
   push_back(factor);
 }
 

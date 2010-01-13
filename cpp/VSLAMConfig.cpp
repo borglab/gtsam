@@ -11,109 +11,32 @@
 #include <boost/tuple/tuple.hpp>
 
 #include "VSLAMConfig.h"
+#include "LieConfig-inl.h"
 
 using namespace std;
 
-// trick from some reading group
-#define FOREACH_PAIR( KEY, VAL, COL) BOOST_FOREACH (boost::tie(KEY,VAL),COL)
-
-#define SIGMA 1.0
-
 namespace gtsam {
 
-/* ************************************************************************* */
-// Exponential map
-VSLAMConfig expmap(const VSLAMConfig& c, const VectorConfig & delta) {
-
-	VSLAMConfig newConfig;
-
-	for (map<string, Vector>::const_iterator it = delta.begin(); it
-			!= delta.end(); it++) {
-		string key = it->first;
-		if (key[0] == 'x') {
-			int cameraNumber = atoi(key.substr(1, key.size() - 1).c_str());
-			if (c.cameraPoseExists(cameraNumber)) {
-				Pose3 basePose = c.cameraPose(cameraNumber);
-				newConfig.addCameraPose(cameraNumber, expmap(basePose, it->second));
-			}
-		}
-		if (key[0] == 'l') {
-			int landmarkNumber = atoi(key.substr(1, key.size() - 1).c_str());
-			if (c.landmarkPointExists(landmarkNumber)) {
-				Point3 basePoint = c.landmarkPoint(landmarkNumber);
-				newConfig.addLandmarkPoint(landmarkNumber, expmap(basePoint, it->second));
-			}
-		}
+	/* ************************************************************************* */
+	// Exponential map
+	VSLAMConfig expmap(const VSLAMConfig& x0, const VectorConfig & delta) {
+		VSLAMConfig x;
+		x.poses_ = expmap(x0.poses_, delta);
+		x.points_ = expmap(x0.points_, delta);
+		return x;
 	}
 
-	return newConfig;
-}
-
-/* ************************************************************************* */
-void VSLAMConfig::print(const std::string& s) const
-{
-  printf("%s:\n", s.c_str());
-  printf("Camera Poses:\n");
-  for(PoseMap::const_iterator it = cameraIteratorBegin(); it != cameraIteratorEnd(); it++)
-  {
-    printf("x%d:\n", it->first);
-    it->second.print();
-  }
-  printf("Landmark Points:\n");
-  for(PointMap::const_iterator it = landmarkIteratorBegin(); it != landmarkIteratorEnd(); it++)
-  {
-    printf("l%d:\n", (*it).first);
-    (*it).second.print();
-  }
-}
-
-/* ************************************************************************* */
-bool VSLAMConfig::equals(const VSLAMConfig& c, double tol) const {
-	for (PoseMap::const_iterator it = cameraIteratorBegin(); it
-			!= cameraIteratorEnd(); it++) {
-		if (!c.cameraPoseExists(it->first)) return false;
-		if (!it->second.equals(c.cameraPose(it->first), tol)) return false;
+	/* ************************************************************************* */
+	void VSLAMConfig::print(const std::string& s) const {
+		printf("%s:\n", s.c_str());
+		poses_.print("Poses");
+		points_.print("Points");
 	}
 
-	for (PointMap::const_iterator it = landmarkIteratorBegin(); it
-			!= landmarkIteratorEnd(); it++) {
-		if (!c.landmarkPointExists(it->first)) return false;
-		if (!it->second.equals(c.landmarkPoint(it->first), tol)) return false;
+	/* ************************************************************************* */
+	bool VSLAMConfig::equals(const VSLAMConfig& c, double tol) const {
+		return poses_.equals(c.poses_, tol) && points_.equals(c.points_, tol);
 	}
-	return true;
-}
-
-/* ************************************************************************* */
-void VSLAMConfig::addCameraPose(const int i, Pose3 cp)
-{
-  pair<int, Pose3> camera;
-  camera.first = i;
-  camera.second = cp;
-  cameraPoses_.insert(camera);
-}
-
-/* ************************************************************************* */
-void VSLAMConfig::addLandmarkPoint(const int i, Point3 lp)
-{
-  pair<int, Point3> landmark;
-  landmark.first = i;
-  landmark.second = lp;
-  landmarkPoints_.insert(landmark);
-}
-
-/* ************************************************************************* */
-void VSLAMConfig::removeCameraPose(const int i)
-{
-  if(cameraPoseExists(i))
-    cameraPoses_.erase(i);
-}
-
-/* ************************************************************************* */
-void VSLAMConfig::removeLandmarkPose(const int i)
-{
-  if(landmarkPointExists(i))
-    landmarkPoints_.erase(i);
-}
 
 /* ************************************************************************* */
 

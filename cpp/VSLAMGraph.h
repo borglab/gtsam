@@ -12,9 +12,9 @@
 #include <set>
 #include <fstream>
 
+#include "VSLAMFactor.h"
 #include "NonlinearFactorGraph.h"
 #include "FactorGraph-inl.h"
-#include "VSLAMFactor.h"
 #include "VSLAMConfig.h"
 #include "Testable.h"
 

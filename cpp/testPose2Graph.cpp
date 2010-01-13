@@ -32,9 +32,9 @@ TEST( Pose2Graph, constructor )
 {
 	// create a factor between unknown poses p1 and p2
 	Pose2 measured(2,2,M_PI_2);
-	Pose2Factor constraint("x1","x2",measured, covariance);
+	Pose2Factor constraint(1,2,measured, covariance);
 	Pose2Graph graph;
-	graph.add("x1","x2",measured, covariance);
+	graph.add(1,2,measured, covariance);
 	// get the size of the graph
 	size_t actual = graph.size();
 	// verify
@@ -48,16 +48,16 @@ TEST( Pose2Graph, linerization )
 {
 	// create a factor between unknown poses p1 and p2
 	Pose2 measured(2,2,M_PI_2);
-	Pose2Factor constraint("x1","x2",measured, covariance);
+	Pose2Factor constraint(1,2,measured, covariance);
 	Pose2Graph graph;
-	graph.add("x1","x2",measured, covariance);
+	graph.add(1,2,measured, covariance);
 
 	// Choose a linearization point
 	Pose2 p1(1.1,2,M_PI_2); // robot at (1.1,2) looking towards y (ground truth is at 1,2, see testPose2)
 	Pose2 p2(-1,4.1,M_PI);  // robot at (-1,4) looking at negative (ground truth is at 4.1,2)
 	Pose2Config config;
-	config.insert("x1",p1);
-	config.insert("x2",p2);
+	config.insert(1,p1);
+	config.insert(2,p2);
 	// Linearize
 	GaussianFactorGraph lfg_linearized = graph.linearize(config);
 	//lfg_linearized.print("lfg_actual");
@@ -86,17 +86,17 @@ TEST(Pose2Graph, optimize) {
 
 	// create a Pose graph with one equality constraint and one measurement
   shared_ptr<Pose2Graph> fg(new Pose2Graph);
-  fg->addConstraint("p0", Pose2(0,0,0));
-  fg->add("p0", "p1", Pose2(1,2,M_PI_2), covariance);
+  fg->addConstraint(0, Pose2(0,0,0));
+  fg->add(0, 1, Pose2(1,2,M_PI_2), covariance);
 
   // Create initial config
   boost::shared_ptr<Pose2Config> initial(new Pose2Config());
-  initial->insert("p0", Pose2(0,0,0));
-  initial->insert("p1", Pose2(0,0,0));
+  initial->insert(0, Pose2(0,0,0));
+  initial->insert(1, Pose2(0,0,0));
 
   // Choose an ordering and optimize
   shared_ptr<Ordering> ordering(new Ordering);
-  *ordering += "p0","p1";
+  *ordering += "x0","x1";
   typedef NonlinearOptimizer<Pose2Graph, Pose2Config> Optimizer;
   Optimizer optimizer0(fg, ordering, initial);
   Optimizer::verbosityLevel verbosity = Optimizer::SILENT;
@@ -105,8 +105,8 @@ TEST(Pose2Graph, optimize) {
 
   // Check with expected config
   Pose2Config expected;
-  expected.insert("p0", Pose2(0,0,0));
-  expected.insert("p1", Pose2(1,2,M_PI_2));
+  expected.insert(0, Pose2(0,0,0));
+  expected.insert(1, Pose2(1,2,M_PI_2));
   CHECK(assert_equal(expected, *optimizer.config()));
 }
 
@@ -115,32 +115,32 @@ TEST(Pose2Graph, optimize) {
 TEST(Pose2Graph, optimizeCircle) {
 
 	// Create a hexagon of poses
-	Pose2Config hexagon = pose2Circle(6,1.0,'p');
-  Pose2 p0 = hexagon["p0"], p1 = hexagon["p1"];
+	Pose2Config hexagon = pose2Circle(6,1.0);
+  Pose2 p0 = hexagon[0], p1 = hexagon[1];
 
 	// create a Pose graph with one equality constraint and one measurement
   shared_ptr<Pose2Graph> fg(new Pose2Graph);
-  fg->addConstraint("p0", p0);
+  fg->addConstraint(0, p0);
   Pose2 delta = between(p0,p1);
-  fg->add("p0", "p1", delta, covariance);
-  fg->add("p1", "p2", delta, covariance);
-  fg->add("p2", "p3", delta, covariance);
-  fg->add("p3", "p4", delta, covariance);
-  fg->add("p4", "p5", delta, covariance);
-  fg->add("p5", "p0", delta, covariance);
+  fg->add(0, 1, delta, covariance);
+  fg->add(1,2, delta, covariance);
+  fg->add(2,3, delta, covariance);
+  fg->add(3,4, delta, covariance);
+  fg->add(4,5, delta, covariance);
+  fg->add(5, 0, delta, covariance);
 
   // Create initial config
   boost::shared_ptr<Pose2Config> initial(new Pose2Config());
-  initial->insert("p0", p0);
-  initial->insert("p1", expmap(hexagon["p1"],Vector_(3,-0.1, 0.1,-0.1)));
-  initial->insert("p2", expmap(hexagon["p2"],Vector_(3, 0.1,-0.1, 0.1)));
-  initial->insert("p3", expmap(hexagon["p3"],Vector_(3,-0.1, 0.1,-0.1)));
-  initial->insert("p4", expmap(hexagon["p4"],Vector_(3, 0.1,-0.1, 0.1)));
-  initial->insert("p5", expmap(hexagon["p5"],Vector_(3,-0.1, 0.1,-0.1)));
+  initial->insert(0, p0);
+  initial->insert(1, expmap(hexagon[1],Vector_(3,-0.1, 0.1,-0.1)));
+  initial->insert(2, expmap(hexagon[2],Vector_(3, 0.1,-0.1, 0.1)));
+  initial->insert(3, expmap(hexagon[3],Vector_(3,-0.1, 0.1,-0.1)));
+  initial->insert(4, expmap(hexagon[4],Vector_(3, 0.1,-0.1, 0.1)));
+  initial->insert(5, expmap(hexagon[5],Vector_(3,-0.1, 0.1,-0.1)));
 
   // Choose an ordering and optimize
   shared_ptr<Ordering> ordering(new Ordering);
-  *ordering += "p0","p1","p2","p3","p4","p5";
+  *ordering += "x0","x1","x2","x3","x4","x5";
   typedef NonlinearOptimizer<Pose2Graph, Pose2Config> Optimizer;
   Optimizer optimizer0(fg, ordering, initial);
   Optimizer::verbosityLevel verbosity = Optimizer::SILENT;
@@ -153,7 +153,7 @@ TEST(Pose2Graph, optimizeCircle) {
   CHECK(assert_equal(hexagon, actual));
 
   // Check loop closure
-  CHECK(assert_equal(delta,between(actual["p5"],actual["p0"])));
+  CHECK(assert_equal(delta,between(actual[5],actual[0])));
 }
 
 /* ************************************************************************* */

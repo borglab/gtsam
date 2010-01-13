@@ -8,30 +8,44 @@
 
 #pragma once
 
+#include "VectorConfig.h"
 #include "NonlinearFactor.h"
 
 // \namespace
 
-namespace gtsam {
+namespace simulated2D {
 
-  /**
-   * Prior on a single pose
-   */
-  Vector prior (const Vector& x);
-  Matrix Dprior(const Vector& x);
+	typedef gtsam::VectorConfig VectorConfig;
 
-  /**
-   * odometry between two poses
-   */
-  Vector odo(const Vector& x1, const Vector& x2);
-  Matrix Dodo1(const Vector& x1, const Vector& x2);
-  Matrix Dodo2(const Vector& x1, const Vector& x2);
+	struct PoseKey: public std::string {
+		PoseKey(const std::string&s) :
+			std::string(s) {
+		}
+	};
+	struct PointKey: public std::string {
+		PointKey(const std::string&s) :
+			std::string(s) {
+		}
+	};
 
-  /**
-   *  measurement between landmark and pose
-   */
-  Vector mea(const Vector& x,  const Vector& l);
-  Matrix Dmea1(const Vector& x, const Vector& l);
-  Matrix Dmea2(const Vector& x, const Vector& l);
+	/**
+	 * Prior on a single pose
+	 */
+	Vector prior(const Vector& x);
+	Matrix Dprior(const Vector& x);
 
-} // namespace gtsam
+	/**
+	 * odometry between two poses
+	 */
+	Vector odo(const Vector& x1, const Vector& x2);
+	Matrix Dodo1(const Vector& x1, const Vector& x2);
+	Matrix Dodo2(const Vector& x1, const Vector& x2);
+
+	/**
+	 *  measurement between landmark and pose
+	 */
+	Vector mea(const Vector& x, const Vector& l);
+	Matrix Dmea1(const Vector& x, const Vector& l);
+	Matrix Dmea2(const Vector& x, const Vector& l);
+
+} // namespace simulated2D

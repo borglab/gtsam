@@ -1,19 +1,15 @@
 /*
  * graph-inl.h
- *
- *   Created on: Jan 11, 2010
- *       Author: nikai
- *  Description: Graph algorithm using boost library
+ * @brief Graph algorithm using boost library
+ * @author: Kai Ni
  */
 
 #pragma once
 
 #include <boost/foreach.hpp>
-#include <boost/graph/graph_traits.hpp>
-#include <boost/graph/adjacency_list.hpp>
 #include <boost/graph/breadth_first_search.hpp>
-#include <boost/shared_ptr.hpp>
 
+#include "graph.h"
 
 using namespace std;
 
@@ -21,31 +17,22 @@ using namespace std;
 
 namespace gtsam {
 
-/* ************************************************************************* */
-/**
- * type definitions
- */
-typedef boost::adjacency_list<
-	boost::vecS, boost::vecS, boost::undirectedS,
-	boost::property<boost::vertex_name_t, std::string>,
-	boost::property<boost::edge_weight_t, double> > SDGraph;
-typedef boost::graph_traits<SDGraph>::vertex_descriptor BoostVertex;
-typedef boost::graph_traits<SDGraph>::vertex_iterator BoostVertexIterator;
+// some typedefs we need
 
-typedef boost::adjacency_list<
-	boost::vecS, boost::vecS, boost::directedS,
-	boost::property<boost::vertex_name_t, string> > SGraph;
-typedef boost::graph_traits<SGraph>::vertex_descriptor SVertex;
+//typedef boost::graph_traits<SDGraph>::vertex_iterator BoostVertexIterator;
+
+//typedef boost::adjacency_list<boost::vecS, boost::vecS, boost::directedS,
+//		boost::property<boost::vertex_name_t, std::string> > SGraph;
+//typedef boost::graph_traits<SGraph>::vertex_descriptor SVertex;
+
 
 /* ************************************************************************* */
-/**
- * Convert the factor graph to a boost undirected graph
- */
-template<class G, class F>
-SDGraph toBoostGraph(const G& graph) {
+template<class G, class F, class Key>
+SDGraph<Key> toBoostGraph(const G& graph) {
 	// convert the factor graph to boost graph
-	SDGraph g(0);
-	map<string, BoostVertex> key2vertex;
+	SDGraph<Key> g(0);
+	typedef typename boost::graph_traits<SDGraph<Key> >::vertex_descriptor BoostVertex;
+	map<Key, BoostVertex> key2vertex;
 	BoostVertex v1, v2;
 	BOOST_FOREACH(F factor, graph) {
 		if (factor->keys().size() > 2)
@@ -54,8 +41,8 @@ SDGraph toBoostGraph(const G& graph) {
 		if (factor->keys().size() == 1)
 			continue;
 
-		string key1 = factor->keys().front();
-		string key2 = factor->keys().back();
+		Key key1 = factor->key1();
+		Key key2 = factor->key2();
 
 		if (key2vertex.find(key1) == key2vertex.end()) {
 				 v1 = add_vertex(key1, g);
@@ -77,16 +64,13 @@ SDGraph toBoostGraph(const G& graph) {
 }
 
 /* ************************************************************************* */
-/**
- *  build the graph corresponding to the predecessor map. Excute action for each edge.
- */
-template<class G, class V>
-boost::tuple<G, V, map<string, V> > predecessorMap2Graph(const map<string, string>& p_map) {
+template<class G, class V, class Key>
+boost::tuple<G, V, map<Key, V> > predecessorMap2Graph(const PredecessorMap<Key>& p_map) {
 
 	G g(0);
-	map<string, V> key2vertex;
+	map<Key, V> key2vertex;
 	V v1, v2, root;
-	string child, parent;
+	Key child, parent;
 	bool foundRoot = false;
 	FOREACH_PAIR(child, parent, p_map) {
 		if (key2vertex.find(child) == key2vertex.end()) {
@@ -101,7 +85,7 @@ boost::tuple<G, V, map<string, V> > predecessorMap2Graph(const map<string, strin
 		 } else
 			 v2 = key2vertex[parent];
 
-		if (child.compare(parent) == 0) {
+		if (child==parent) {
 			root = v1;
 			foundRoot = true;
 		} else
@@ -111,49 +95,47 @@ boost::tuple<G, V, map<string, V> > predecessorMap2Graph(const map<string, strin
 	if (!foundRoot)
 		throw invalid_argument("predecessorMap2Graph: invalid predecessor map!");
 
-	return boost::tuple<G, V, map<string, V> >(g, root, key2vertex);
+	return boost::tuple<G, V, map<Key, V> >(g, root, key2vertex);
 }
 
 /* ************************************************************************* */
-/**
- * Visit each edge and compose the poses
- */
-template <class V, class Pose, class PoseConfig>
+template <class V,class Pose, class Config>
 class compose_key_visitor : public boost::default_bfs_visitor {
-public:
-	compose_key_visitor(boost::shared_ptr<PoseConfig> config_in) { config = config_in; }
-	template <typename Edge, typename Graph> void tree_edge(Edge edge, const Graph& g) const {
-			string key_from = boost::get(boost::vertex_name, g, boost::source(edge, g));
-			string key_to   = boost::get(boost::vertex_name, g, boost::target(edge, g));
-			Pose relativePose = boost::get(boost::edge_weight, g, edge);
-			config->insert(key_to, compose(relativePose, config->get(key_from)));
-	}
 
 private:
-	boost::shared_ptr<PoseConfig> config;
+	boost::shared_ptr<Config> config_;
+
+public:
+
+	compose_key_visitor(boost::shared_ptr<Config> config_in) {config_ = config_in;}
+
+	template <typename Edge, typename Graph> void tree_edge(Edge edge, const Graph& g) const {
+		typename Config::Key key_from = boost::get(boost::vertex_name, g, boost::source(edge, g));
+		typename Config::Key key_to = boost::get(boost::vertex_name, g, boost::target(edge, g));
+		Pose relativePose = boost::get(boost::edge_weight, g, edge);
+		config_->insert(key_to, compose(relativePose, (*config_)[key_from]));
+	}
 
 };
 
 /* ************************************************************************* */
-/**
- * Compose the poses by following the chain sepcified by the spanning tree
- */
 template<class G, class Factor, class Pose, class Config>
-boost::shared_ptr<Config> composePoses(const G& graph, const map<string, string>& tree,
+boost::shared_ptr<Config> composePoses(const G& graph, const PredecessorMap<typename Config::Key>& tree,
 		const Pose& rootPose) {
 
 	//TODO: change edge_weight_t to edge_pose_t
 	typedef typename boost::adjacency_list<
 		boost::vecS, boost::vecS, boost::directedS,
-		boost::property<boost::vertex_name_t, string>,
+		boost::property<boost::vertex_name_t, typename Config::Key>,
 		boost::property<boost::edge_weight_t, Pose> > PoseGraph;
 	typedef typename boost::graph_traits<PoseGraph>::vertex_descriptor PoseVertex;
 	typedef typename boost::graph_traits<PoseGraph>::edge_descriptor PoseEdge;
 
 	PoseGraph g;
 	PoseVertex root;
-	map<string, PoseVertex> key2vertex;
-	boost::tie(g, root, key2vertex) = predecessorMap2Graph<PoseGraph, PoseVertex>(tree);
+	map<typename Config::Key, PoseVertex> key2vertex;
+	boost::tie(g, root, key2vertex) =
+			predecessorMap2Graph<PoseGraph, PoseVertex, typename Config::Key>(tree);
 
 	// attach the relative poses to the edges
 	PoseEdge edge1, edge2;
@@ -167,8 +149,11 @@ boost::shared_ptr<Config> composePoses(const G& graph, const map<string, string>
 		boost::shared_ptr<Factor> factor = boost::dynamic_pointer_cast<Factor>(nl_factor);
 		if (!factor) continue;
 
-		PoseVertex v_from = key2vertex.find(factor->keys().front())->second;
-		PoseVertex v_to = key2vertex.find(factor->keys().back())->second;
+		typename Config::Key key1 = factor->key1();
+		typename Config::Key key2 = factor->key2();
+
+		PoseVertex v_from = key2vertex.find(key1)->second;
+		PoseVertex v_to = key2vertex.find(key2)->second;
 
 		Pose measured = factor->measured();
 		tie(edge1, found1) = boost::edge(v_from, v_to, g);
@@ -183,7 +168,8 @@ boost::shared_ptr<Config> composePoses(const G& graph, const map<string, string>
 
 	// compose poses
 	boost::shared_ptr<Config> config(new Config);
-	config->insert(boost::get(boost::vertex_name, g, root), rootPose);
+	typename Config::Key rootKey = boost::get(boost::vertex_name, g, root);
+	config->insert(rootKey, rootPose);
 	compose_key_visitor<PoseVertex, Pose, Config> vis(config);
 	boost::breadth_first_search(g, root, boost::visitor(vis));
 

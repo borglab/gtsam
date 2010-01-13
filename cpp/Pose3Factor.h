@@ -14,6 +14,6 @@ namespace gtsam {
 	 * A Factor for 3D pose measurements
 	 * This is just a typedef now
 	 */
-	typedef BetweenFactor<Pose3, Pose3Config> Pose3Factor;
+	typedef BetweenFactor<Pose3Config,Pose3Config::Key,Pose3> Pose3Factor;
 
 } /// namespace gtsam

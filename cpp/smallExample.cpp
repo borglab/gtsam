@@ -8,6 +8,7 @@
 
 #include <iostream>
 #include <string>
+#include <boost/optional.hpp>
 
 using namespace std;
 
@@ -37,7 +38,7 @@ namespace gtsam {
 		// prior on x1
 		double sigma1 = 0.1;
 		Vector mu = zero(2);
-		shared f1(new Point2Prior(mu, sigma1, "x1"));
+		shared f1(new simulated2D::Point2Prior(mu, sigma1, "x1"));
 		nlfg->push_back(f1);
 
 		// odometry between x1 and x2
@@ -45,7 +46,7 @@ namespace gtsam {
 		Vector z2(2);
 		z2(0) = 1.5;
 		z2(1) = 0;
-		shared f2(new Simulated2DOdometry(z2, sigma2, "x1", "x2"));
+		shared f2(new simulated2D::Simulated2DOdometry(z2, sigma2, "x1", "x2"));
 		nlfg->push_back(f2);
 
 		// measurement between x1 and l1
@@ -53,7 +54,7 @@ namespace gtsam {
 		Vector z3(2);
 		z3(0) = 0.;
 		z3(1) = -1.;
-		shared f3(new Simulated2DMeasurement(z3, sigma3, "x1", "l1"));
+		shared f3(new simulated2D::Simulated2DMeasurement(z3, sigma3, "x1", "l1"));
 		nlfg->push_back(f3);
 
 		// measurement between x2 and l1
@@ -61,7 +62,7 @@ namespace gtsam {
 		Vector z4(2);
 		z4(0) = -1.5;
 		z4(1) = -1.;
-		shared f4(new Simulated2DMeasurement(z4, sigma4, "x2", "l1"));
+		shared f4(new simulated2D::Simulated2DMeasurement(z4, sigma4, "x2", "l1"));
 		nlfg->push_back(f4);
 
 		return nlfg;
@@ -173,16 +174,35 @@ namespace gtsam {
 	// Some nonlinear functions to optimize
 	/* ************************************************************************* */
 	namespace smallOptimize {
+
 		Vector h(const Vector& v) {
 			double x = v(0);
 			return Vector_(2, cos(x), sin(x));
 		}
-		;
+
 		Matrix H(const Vector& v) {
 			double x = v(0);
 			return Matrix_(2, 1, -sin(x), cos(x));
 		}
-		;
+
+		struct UnaryFactor: public gtsam::NonlinearFactor1<VectorConfig,
+				std::string, Vector> {
+
+			Vector z_;
+
+			UnaryFactor(const Vector& z, double sigma, const std::string& key) :
+				gtsam::NonlinearFactor1<VectorConfig, std::string, Vector>(sigma, key),
+						z_(z) {
+			}
+
+			Vector evaluateError(const Vector& x, boost::optional<Matrix&> A =
+					boost::none) const {
+				if (A) *A = H(x);
+				return h(x) - z_;
+			}
+
+		};
+
 	}
 
 	/* ************************************************************************* */
@@ -191,8 +211,8 @@ namespace gtsam {
 				new ExampleNonlinearFactorGraph);
 		Vector z = Vector_(2, 1.0, 0.0);
 		double sigma = 0.1;
-		boost::shared_ptr<NonlinearFactor1> factor(new NonlinearFactor1(z, sigma,
-				&smallOptimize::h, "x", &smallOptimize::H));
+		boost::shared_ptr<smallOptimize::UnaryFactor> factor(new smallOptimize::UnaryFactor(
+				z, sigma, "x"));
 		fg->push_back(factor);
 		return fg;
 	}
@@ -214,7 +234,7 @@ namespace gtsam {
 		// prior on x1
 		Vector x1 = Vector_(2, 1.0, 0.0);
 		string key1 = symbol('x', 1);
-		shared prior(new Point2Prior(x1, sigma1, key1));
+		shared prior(new simulated2D::Point2Prior(x1, sigma1, key1));
 		nlfg.push_back(prior);
 		poses.insert(key1, x1);
 
@@ -222,13 +242,13 @@ namespace gtsam {
 			// odometry between x_t and x_{t-1}
 			Vector odo = Vector_(2, 1.0, 0.0);
 			string key = symbol('x', t);
-			shared odometry(new Simulated2DOdometry(odo, sigma2, symbol('x', t - 1),
+			shared odometry(new simulated2D::Simulated2DOdometry(odo, sigma2, symbol('x', t - 1),
 					key));
 			nlfg.push_back(odometry);
 
 			// measurement on x_t is like perfect GPS
 			Vector xt = Vector_(2, (double) t, 0.0);
-			shared measurement(new Point2Prior(xt, sigma1, key));
+			shared measurement(new simulated2D::Point2Prior(xt, sigma1, key));
 			nlfg.push_back(measurement);
 
 			// initial estimate
@@ -509,7 +529,7 @@ namespace gtsam {
 
 		// Create almost hard constraint on x11, sigma=0 will work for PCG not for normal
 		double sigma0 = 1e-3;
-		shared constraint(new Point2Prior(Vector_(2, 1.0, 1.0), sigma0, "x11"));
+		shared constraint(new simulated2D::Point2Prior(Vector_(2, 1.0, 1.0), sigma0, "x11"));
 		nlfg.push_back(constraint);
 
 		double sigma = 0.01;
@@ -518,7 +538,7 @@ namespace gtsam {
 		Vector z1 = Vector_(2, 1.0, 0.0); // move right
 		for (size_t x = 1; x < N; x++)
 			for (size_t y = 1; y <= N; y++) {
-				shared f(new Simulated2DOdometry(z1, sigma, key(x, y), key(x + 1, y)));
+				shared f(new simulated2D::Simulated2DOdometry(z1, sigma, key(x, y), key(x + 1, y)));
 				nlfg.push_back(f);
 			}
 
@@ -526,7 +546,7 @@ namespace gtsam {
 		Vector z2 = Vector_(2, 0.0, 1.0); // move up
 		for (size_t x = 1; x <= N; x++)
 			for (size_t y = 1; y < N; y++) {
-				shared f(new Simulated2DOdometry(z2, sigma, key(x, y), key(x, y + 1)));
+				shared f(new simulated2D::Simulated2DOdometry(z2, sigma, key(x, y), key(x, y + 1)));
 				nlfg.push_back(f);
 			}
 

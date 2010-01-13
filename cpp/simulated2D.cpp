@@ -6,7 +6,7 @@
 
 #include "simulated2D.h"
 
-namespace gtsam {
+namespace simulated2D {
 
 
 /** prior on a single pose */
@@ -64,4 +64,4 @@ Matrix Dmea2(const Vector& x, const Vector& l) {
 }
 
 /* ************************************************************************* */
-} // namespace gtsam
+} // namespace simulated2D

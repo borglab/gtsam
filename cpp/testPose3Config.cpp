@@ -23,12 +23,12 @@ TEST( Pose3Config, pose3Circle )
 {
 	// expected is 4 poses tangent to circle with radius 1m
 	Pose3Config expected;
-	expected.insert("p0", Pose3(R1, Point3( 1, 0, 0)));
-	expected.insert("p1", Pose3(R2, Point3( 0, 1, 0)));
-	expected.insert("p2", Pose3(R3, Point3(-1, 0, 0)));
-	expected.insert("p3", Pose3(R4, Point3( 0,-1, 0)));
+	expected.insert(0, Pose3(R1, Point3( 1, 0, 0)));
+	expected.insert(1, Pose3(R2, Point3( 0, 1, 0)));
+	expected.insert(2, Pose3(R3, Point3(-1, 0, 0)));
+	expected.insert(3, Pose3(R4, Point3( 0,-1, 0)));
 
-	Pose3Config actual = pose3Circle(4,1.0,'p');
+	Pose3Config actual = pose3Circle(4,1.0);
 	CHECK(assert_equal(expected,actual));
 }
 
@@ -37,10 +37,10 @@ TEST( Pose3Config, expmap )
 {
 	// expected is circle shifted to East
 	Pose3Config expected;
-	expected.insert("p0", Pose3(R1, Point3( 1.1, 0, 0)));
-	expected.insert("p1", Pose3(R2, Point3( 0.1, 1, 0)));
-	expected.insert("p2", Pose3(R3, Point3(-0.9, 0, 0)));
-	expected.insert("p3", Pose3(R4, Point3( 0.1,-1, 0)));
+	expected.insert(0, Pose3(R1, Point3( 1.1, 0, 0)));
+	expected.insert(1, Pose3(R2, Point3( 0.1, 1, 0)));
+	expected.insert(2, Pose3(R3, Point3(-0.9, 0, 0)));
+	expected.insert(3, Pose3(R4, Point3( 0.1,-1, 0)));
 
 	// Note expmap coordinates are in global coordinates with non-compose expmap
 	// so shifting to East requires little thought, different from with Pose2 !!!
@@ -49,7 +49,7 @@ TEST( Pose3Config, expmap )
 			0.0,0.0,0.0,  0.1, 0.0, 0.0,
 			0.0,0.0,0.0,  0.1, 0.0, 0.0,
 			0.0,0.0,0.0,  0.1, 0.0, 0.0);
-	Pose3Config actual = expmap(pose3Circle(4,1.0,'p'),delta);
+	Pose3Config actual = expmap(pose3Circle(4,1.0),delta);
 	CHECK(assert_equal(expected,actual));
 }
 

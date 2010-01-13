@@ -27,12 +27,12 @@ TEST( NonlinearFactor, equals )
 	double sigma = 1.0;
 
 	// create two nonlinear2 factors
-	Vector z3(2); z3(0) = 0. ; z3(1) = -1.;
-	Simulated2DMeasurement f0(z3, sigma, "x1", "l1");
+	Vector z3 = Vector_(2,0.,-1.);
+	simulated2D::Simulated2DMeasurement f0(z3, sigma, "x1", "l1");
 
 	// measurement between x2 and l1
-	Vector z4(2); z4(0)= -1.5 ; z4(1) = -1.;
-	Simulated2DMeasurement f1(z4, sigma, "x2", "l1");
+	Vector z4 = Vector_(2,-1.5, -1.);
+	simulated2D::Simulated2DMeasurement f1(z4, sigma, "x2", "l1");
 
 	CHECK(assert_equal(f0,f0));
 	CHECK(f0.equals(f0));
@@ -68,7 +68,7 @@ TEST( NonlinearFactor, NonlinearFactor )
 
   // calculate the error_vector from the factor "f1"
   Vector actual_e = factor->error_vector(cfg);
-  Vector e(2); e(0) = -0.1;  e(1) = -0.1;
+  Vector e(2); e(0) = 0.1;  e(1) = 0.1;
   CHECK(assert_equal(e,actual_e));
 
   // the expected value for the error from the factor
@@ -81,7 +81,7 @@ TEST( NonlinearFactor, NonlinearFactor )
   DOUBLES_EQUAL(expected,actual,0.00000001);
 }
 
-/* ************************************************************************* */
+/* ************************************************************************* *
 TEST( NonlinearFactor, linearize_f1 )
 {
   // Grab a non-linear factor
@@ -103,7 +103,7 @@ TEST( NonlinearFactor, linearize_f1 )
 	CHECK(assert_equal(nlf->error_vector(c),actual->get_b()));
 }
 
-/* ************************************************************************* */
+/* ************************************************************************* *
 TEST( NonlinearFactor, linearize_f2 )
 {
   // Grab a non-linear factor
@@ -121,7 +121,7 @@ TEST( NonlinearFactor, linearize_f2 )
   CHECK(expected->equals(*actual));
 }
 
-/* ************************************************************************* */
+/* ************************************************************************* *
 TEST( NonlinearFactor, linearize_f3 )
 {
   // Grab a non-linear factor
@@ -139,7 +139,7 @@ TEST( NonlinearFactor, linearize_f3 )
   CHECK(expected->equals(*actual));
 }
 
-/* ************************************************************************* */
+/* ************************************************************************* *
 TEST( NonlinearFactor, linearize_f4 )
 {
   // Grab a non-linear factor

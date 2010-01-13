@@ -8,19 +8,17 @@
 
 #include <limits>
 #include <iostream>
+
+#include "Key.h"
 #include "NonlinearFactor.h"
 
 namespace gtsam {
 
 	/**
-	 * Template default compare function that assumes Congig.get yields a testable T
+	 * Template default compare function that assumes a testable T
 	 */
-	template<class Config, class T>
-	bool compare(const std::string& key, const Config& feasible, const Config& input) {
-		const T& t1 = feasible.get(key);
-		const T& t2 = input.get(key);
-		return t1.equals(t2);
-	}
+	template<class T>
+	bool compare(const T& a, const T& b) {return a.equals(b);	}
 
 
 	/**
@@ -28,85 +26,54 @@ namespace gtsam {
 	 * or a set of variables to be equal to each other.
 	 * Throws an error at linearization if the constraints are not met.
 	 */
-	template<class Config>
-	class NonlinearEquality: public NonlinearFactor<Config> {
+	template<class Config, class Key, class T>
+	class NonlinearEquality: public NonlinearFactor1<Config, Key, T> {
 	private:
 
-		// node to constrain
-		std::string key_;
-
-		// config containing the necessary feasible point
-		Config feasible_;
-
-		// dimension of the variable
-		size_t dim_;
+		// feasible value
+		T feasible_;
 
 	public:
 
 		/**
-		 * Function that compares a value from a config with
-		 * another to determine whether a linearization point is
-		 * a feasible point.
-		 * @param key is the identifier for the key
-		 * @param feasible is the value which is constrained
-		 * @param input is the config to be tested for feasibility
-		 * @return true if the linearization point is feasible
+		 * Function that compares two values
 		 */
-		bool (*compare_)(const std::string& key, const Config& feasible,
-				const Config& input);
+		bool (*compare_)(const T& a, const T& b);
 
-		/** Constructor */
-		NonlinearEquality(const std::string& key, const Config& feasible,
-				size_t dim, bool(*compare)(const std::string& key,
-						const Config& feasible, const Config& input)) :
-			key_(key), dim_(dim), feasible_(feasible), compare_(compare) {
-
-		}
+		typedef NonlinearFactor1<Config, Key, T> Base;
 
 		/**
-		 * Constructor with default compare
-		 * Needs class T to have dim()
-		 * and Config to have insert and get
+		 * Constructor
 		 */
-		template <class T>
-		NonlinearEquality(const std::string& key, const T& feasible) :
-			key_(key), dim_(dim(feasible)), compare_(compare<Config,T>) {
-			feasible_.insert(key,feasible);
+		NonlinearEquality(const Key& j, const T& feasible, bool (*compare)(const T&, const T&) = compare<T>) :
+			Base(0, j), feasible_(feasible), compare_(compare) {
 		}
 
 		void print(const std::string& s = "") const {
-			std::cout << "Constraint: " << s << " on [" << key_ << "]\n";
-			feasible_.print("Feasible Point");
-			std::cout << "Variable Dimension: " << dim_ << std::endl;
+			std::cout << "Constraint: " << s << " on [" << (std::string)(this->key_) << "]\n";
+			gtsam::print(feasible_,"Feasible Point");
+			std::cout << "Variable Dimension: " << dim(feasible_) << std::endl;
 		}
 
 		/** Check if two factors are equal */
 		bool equals(const Factor<Config>& f, double tol = 1e-9) const {
-			const NonlinearEquality<Config>* p =
-					dynamic_cast<const NonlinearEquality<Config>*> (&f);
+			const NonlinearEquality<Config,Key,T>* p =
+					dynamic_cast<const NonlinearEquality<Config,Key,T>*> (&f);
 			if (p == NULL) return false;
-			if (key_ != p->key_) return false;
-			if (!compare_(key_, feasible_, p->feasible_)) return false; // only check the relevant value
-			return dim_ == p->dim_;
+			if (!Base::equals(*p)) return false;
+			return compare_(feasible_, p->feasible_);
 		}
 
 		/** error function */
-		inline Vector error_vector(const Config& c) const {
-			if (!compare_(key_, feasible_, c))
-				return repeat(dim_, std::numeric_limits<double>::infinity()); // set error to infinity if not equal
-			else
-				return zero(dim_); // set error to zero if equal
-		}
-
-		/** linearize a nonlinear constraint into a linear constraint */
-		boost::shared_ptr<GaussianFactor> linearize(const Config& c) const {
-			if (!compare_(key_, feasible_, c)) {
-				throw std::invalid_argument("Linearization point not feasible for "
-						+ key_ + "!");
+		inline Vector evaluateError(const T& xj, boost::optional<Matrix&> H) const {
+			size_t nj = dim(feasible_);
+			if (compare_(feasible_,xj)) {
+				if (H) *H = eye(nj);
+				return zero(nj); // set error to zero if equal
 			} else {
-				GaussianFactor::shared_ptr ret(new GaussianFactor(key_, eye(dim_),
-						zero(dim_), 0.0));
-				return ret;
+				if (H) throw std::invalid_argument(
+						"Linearization point not feasible for " + (std::string)(this->key_) + "!");
+				return repeat(nj, std::numeric_limits<double>::infinity()); // set error to infinity if not equal
 			}
 		}
 	}; // NonlinearEquality

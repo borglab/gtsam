@@ -4,13 +4,21 @@
 #include "NonlinearFactor.h"
 #include "simulated2D.h"
 
-namespace gtsam {
+namespace simulated2D {
 
-	class Point2Prior: public NonlinearFactor1 {
-	public:
-		Point2Prior(const Vector& mu, double sigma, const std::string& key) :
-			NonlinearFactor1(mu, sigma, prior, key, Dprior) {
+	struct Point2Prior: public gtsam::NonlinearFactor1<VectorConfig, std::string, Vector> {
+
+		Vector z_;
+
+		Point2Prior(const Vector& z, double sigma, const std::string& key) :
+			gtsam::NonlinearFactor1<VectorConfig, std::string, Vector>(sigma, key), z_(z) {
 		}
+
+	  Vector evaluateError(const Vector& x, boost::optional<Matrix&> H = boost::none) const {
+	    if (H) *H = Dprior(x);
+	    return prior(x) - z_;
+	  }
+
 	};
 
-} // namespace gtsam
+} // namespace simulated2D

@@ -66,7 +66,7 @@ testSymbolicBayesNet_LDADD      = libgtsam.la
 
 # Inference
 headers += inference.h inference-inl.h
-headers += graph-inl.h
+headers += graph.h graph-inl.h
 headers += FactorGraph.h FactorGraph-inl.h
 headers += BayesNet.h BayesNet-inl.h
 headers += BayesTree.h BayesTree-inl.h
@@ -134,7 +134,7 @@ testSubgraphPreconditioner_LDADD   = libgtsam.la
 #timeGaussianFactorGraph_LDADD = libgtsam.la
 
 # Nonlinear inference 
-headers += NonlinearFactorGraph.h NonlinearFactorGraph-inl.h
+headers += Key.h NonlinearFactorGraph.h NonlinearFactorGraph-inl.h
 headers += NonlinearOptimizer.h NonlinearOptimizer-inl.h 
 sources += NonlinearFactor.cpp 
 check_PROGRAMS += testNonlinearFactor testNonlinearFactorGraph testNonlinearOptimizer

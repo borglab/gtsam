@@ -1,12 +1,9 @@
 /**
  * @file    NonlinearFactor.h
  * @brief   Non-linear factor class
- * @author  Kai Ni
- * @author  Carlos Nieto
- * @author  Christian Potthast
  * @author  Frank Dellaert
+ * @author  Richard Roberts
  */
-
 
 // \callgraph
 
@@ -16,184 +13,304 @@
 #include <limits>
 
 #include <boost/shared_ptr.hpp>
-#include <boost/serialization/list.hpp>
+#include <boost/serialization/base_object.hpp>
 
 #include "Factor.h"
 #include "Vector.h"
 #include "Matrix.h"
 #include "GaussianFactor.h"
 
-/**
- * Base Class
- * Just has the measurement and noise model
- */ 
-
 namespace gtsam {
 
-	// forward declaration of GaussianFactor
-	//class GaussianFactor;
-	//typedef boost::shared_ptr<GaussianFactor> shared_ptr;
+	// TODO class NoiseModel {};
+	// TODO class Isotropic : public NoiseModel {};
+	// TODO class Diagonal : public NoiseModel {};
+	// TODO class Full : public NoiseModel {};
+	// TODO class Robust : public NoiseModel {};
 
-  /**
-   * Nonlinear factor which assumes Gaussian noise on a measurement
-   * predicted by a non-linear function h.
-   * 
-   * Templated on a configuration type. The configurations are typically more general
-	 * than just vectors, e.g., Rot3 or Pose3, which are objects in non-linear manifolds.
-   */
-	template <class Config>
-  class NonlinearFactor : public Factor<Config>
-  {
-  protected:
+	/**
+	 * Nonlinear factor which assumes zero-mean Gaussian noise on the
+	 * on a measurement predicted by a non-linear function h.
+	 *
+	 * Templated on a configuration type. The configurations are typically
+	 * more general than just vectors, e.g., Rot3 or Pose3,
+	 * which are objects in non-linear manifolds (Lie groups).
+	 */
+	template<class Config>
+	class NonlinearFactor: public Factor<Config> {
 
-    Vector z_;     // measurement
-    double sigma_; // noise standard deviation
-    std::list<std::string> keys_; // keys
-		
-  public:
+	protected:
 
-    /** Default constructor, with easily identifiable bogus values */
-    NonlinearFactor():z_(Vector_(2,888.0,999.0)),sigma_(0.1234567) {}
+		double sigma_; // noise standard deviation
+		std::list<std::string> keys_; // keys
 
-    /**
-     *  Constructor
-     *  @param z the measurement
-     *  @param sigma the standard deviation
-     */
-    NonlinearFactor(const Vector& z, const double sigma) {
-    	z_ = z;
-    	sigma_ = sigma;
-    }
+		typedef NonlinearFactor<Config> This;
 
-    /** print */
-    void print(const std::string& s = "") const {
-    	std::cout << "NonlinearFactor " << s << std::endl;
-    	gtsam::print(z_, "  z = ");
-    	std::cout << "  sigma = " << sigma_ << std::endl;
-    }
+	public:
 
-    /** Check if two NonlinearFactor objects are equal */
-    bool equals(const Factor<Config>& f, double tol=1e-9) const {
-    	const NonlinearFactor<Config>* p = dynamic_cast<const NonlinearFactor<Config>*> (&f);
-    	if (p == NULL) return false;
-      return equal_with_abs_tol(z_,p->z_,tol) && fabs(sigma_ - p->sigma_)<=tol;
-    }
+		/** Default constructor for I/O only */
+		NonlinearFactor() {
+		}
 
-    /** Vector of errors */
-    virtual Vector error_vector(const Config& c) const = 0;
+		/**
+		 *  Constructor
+		 *  @param sigma the standard deviation
+		 *  // TODO: take a NoiseModel shared pointer
+		 */
+		NonlinearFactor(const double sigma) :
+			sigma_(sigma) {
+		}
 
-    /** linearize to a GaussianFactor */
-    virtual boost::shared_ptr<GaussianFactor> linearize(const Config& c) const = 0;
+		/** print */
+		void print(const std::string& s = "") const {
+			std::cout << "NonlinearFactor " << s << std::endl;
+			std::cout << "  sigma = " << sigma_ << std::endl;
+		}
 
-    /** get functions */
-    double sigma() const {return sigma_;}
-    Vector measurement() const {return z_;}
-    std::list<std::string> keys() const {return keys_;}
+		/** Check if two NonlinearFactor objects are equal */
+		bool equals(const Factor<Config>& f, double tol = 1e-9) const {
+			const This* p = dynamic_cast<const NonlinearFactor<Config>*> (&f);
+			if (p == NULL) return false;
+			return fabs(sigma_ - p->sigma_) <= tol;
+		}
 
-    /** calculate the error of the factor */
-    double error(const Config& c) const {
-    	if (sigma_==0.0) {
-        Vector e = error_vector(c);
-    		return (inner_prod(e,e)>0) ? std::numeric_limits<double>::infinity() : 0.0;
-    	}
-      Vector e = error_vector(c) / sigma_;
-      return 0.5 * inner_prod(e,e);
-    };
-		
-    /** get the size of the factor */
-    std::size_t size() const{return keys_.size();}
+		/**
+		 * calculate the error of the factor
+		 * TODO: use NoiseModel
+		 */
+		double error(const Config& c) const {
+			// return NoiseModel.mahalanobis(error_vector(c)); // e'*inv(C)*e
+			if (sigma_ == 0.0) {
+				Vector e = error_vector(c);
+				return (inner_prod(e, e) > 0) ? std::numeric_limits<double>::infinity()
+						: 0.0;
+			}
+			Vector e = error_vector(c) / sigma_;
+			return 0.5 * inner_prod(e, e);
+		}
+		;
 
-  private:
+		/** return keys */
+		std::list<std::string> keys() const {
+			return keys_;
+		}
+
+		/** get the size of the factor */
+		std::size_t size() const {
+			return keys_.size();
+		}
+
+		/** get functions */
+		double sigma() const {
+			return sigma_;
+		} // TODO obsolete when using NoiseModel
+
+		/** Vector of errors */
+		virtual Vector error_vector(const Config& c) const = 0;
+
+		/** linearize to a GaussianFactor */
+		virtual boost::shared_ptr<GaussianFactor>
+		linearize(const Config& c) const = 0;
+
+	private:
 
 		/** Serialization function */
 		friend class boost::serialization::access;
 		template<class Archive>
 		void serialize(Archive & ar, const unsigned int version) {
-			ar & BOOST_SERIALIZATION_NVP(z_);
-			ar & BOOST_SERIALIZATION_NVP(sigma_);
-			ar & BOOST_SERIALIZATION_NVP(keys_);
+			ar & BOOST_SERIALIZATION_NVP(sigma_); // TODO NoiseModel
 		}
 
-  }; // NonlinearFactor
+	}; // NonlinearFactor
 
-
-  /**
-   * a Gaussian nonlinear factor that takes 1 parameter
-   * Note: cannot be serialized as contains function pointers
-   * Specialized derived classes could do this
-  */
-  class NonlinearFactor1 : public NonlinearFactor<VectorConfig> {
-  private:
-
-		std::string key_;
-
-  public:
-
-		Vector (*h_)(const Vector&);
-		Matrix (*H_)(const Vector&);
-
-    /** Constructor */
-    NonlinearFactor1(const Vector& z,		  // measurement
-		     const double sigma,	  // variance
-		     Vector (*h)(const Vector&),  // measurement function
-		     const std::string& key1,     // key of the variable
-		     Matrix (*H)(const Vector&)); // derivative of the measurement function
-
-    void print(const std::string& s = "") const;
-
-    /** Check if two factors are equal */
-    bool equals(const Factor<VectorConfig>& f, double tol=1e-9) const;
-
-    /** error function */
-    inline Vector error_vector(const VectorConfig& c) const {
-      return z_ - h_(c[key_]);
-    }
-
-    /** linearize a non-linearFactor1 to get a linearFactor1 */
-    boost::shared_ptr<GaussianFactor> linearize(const VectorConfig& c) const;
-  };
 
 	/**
-	 * a Gaussian nonlinear factor that takes 2 parameters
+	 * A Gaussian nonlinear factor that takes 1 parameter
+	 * implementing the density P(z|x) \propto exp -0.5*|z-h(x)|^2_C
+	 * Templated on the parameter type X and the configuration Config
+	 * There is no return type specified for h(x). Instead, we require
+	 * the derived class implements error_vector(c) = h(x)-z \approx Ax-b
+	 * This allows a graph to have factors with measurements of mixed type.
+	 */
+	template<class Config, class Key, class X>
+	class NonlinearFactor1: public NonlinearFactor<Config> {
+
+	protected:
+
+		// The value of the key. Not const to allow serialization
+		Key key_;
+
+		typedef NonlinearFactor<Config> Base;
+		typedef NonlinearFactor1<Config, Key, X> This;
+
+	public:
+
+		/**
+		 *  Constructor
+		 *  @param z measurement
+		 *  @param key by which to look up X value in Config
+		 */
+		NonlinearFactor1(double sigma, const Key& key1) :
+			Base(sigma), key_(key1) {
+			this->keys_.push_back(key_);
+		}
+
+		/* print */
+		void print(const std::string& s = "") const {
+			std::cout << "NonlinearFactor1 " << s << std::endl;
+			std::cout << "key: " << (std::string) key_ << std::endl;
+			Base::print("parent");
+		}
+
+		/** Check if two factors are equal. Note type is Factor and needs cast. */
+		bool equals(const Factor<Config>& f, double tol = 1e-9) const {
+			const This* p = dynamic_cast<const This*> (&f);
+			if (p == NULL) return false;
+			return Base::equals(*p, tol) && (key_ == p->key_);
+		}
+
+		/** error function z-h(x) */
+		inline Vector error_vector(const Config& x) const {
+			Key j = key_;
+			const X& xj = x[j];
+			return evaluateError(xj);
+		}
+
+		/**
+		 * Linearize a non-linearFactor1 to get a GaussianFactor
+		 * Ax-b \approx h(x0+dx)-z = h(x0) + A*dx - z
+		 * Hence b = z - h(x0) = - error_vector(x)
+		 */
+		boost::shared_ptr<GaussianFactor> linearize(const Config& x) const {
+			const X& xj = x[key_];
+			Matrix A;
+			Vector b = -evaluateError(xj, A);
+			return GaussianFactor::shared_ptr(new GaussianFactor(key_, A, b,
+					this->sigma()));
+		}
+
+		/*
+		 *  Override this method to finish implementing a unary factor.
+		 *  If the optional Matrix reference argument is specified, it should compute
+		 *  both the function evaluation and its derivative in X.
+		 */
+		virtual Vector evaluateError(const X& x, boost::optional<Matrix&> H =
+				boost::none) const = 0;
+
+
+	private:
+
+		/** Serialization function */
+		friend class boost::serialization::access;
+		template<class Archive>
+		void serialize(Archive & ar, const unsigned int version) {
+			ar & boost::serialization::make_nvp("NonlinearFactor", boost::serialization::base_object<NonlinearFactor>(*this));
+			ar & BOOST_SERIALIZATION_NVP(key_);
+		}
+
+};
+
+	/**
+	 * A Gaussian nonlinear factor that takes 2 parameters
 	 * Note: cannot be serialized as contains function pointers
 	 * Specialized derived classes could do this
-	*/
-  class NonlinearFactor2 : public NonlinearFactor<VectorConfig> {
+	 */
+	template<class Config, class Key1, class X1, class Key2, class X2>
+	class NonlinearFactor2: public NonlinearFactor<Config> {
 
-  private:
+	protected:
 
-    std::string key1_;
-    std::string key2_;
+		// The values of the keys. Not const to allow serialization
+		Key1 key1_;
+		Key2 key2_;
 
-  public:
+		typedef NonlinearFactor<Config> Base;
+		typedef NonlinearFactor2<Config, Key1, X1, Key2, X2> This;
 
-  	Vector (*h_)(const Vector&, const Vector&);
-    Matrix (*H1_)(const Vector&, const Vector&);
-    Matrix (*H2_)(const Vector&, const Vector&);
+	public:
 
-    /** Constructor */
-    NonlinearFactor2(const Vector& z,	               // the measurement
-		     const double sigma,	                       // the variance
-		     Vector (*h)(const Vector&, const Vector&),  // the measurement function
-		     const std::string& key1,                    // key of the first variable
-		     Matrix (*H1)(const Vector&, const Vector&), // derivative of h in first variable
-		     const std::string& key2,                    // key of the second variable
-		     Matrix (*H2)(const Vector&, const Vector&));// derivative of h in second variable
-			
-    /** Print */
-    void print(const std::string& s = "") const;
+		/**
+		 * Default Constructor for I/O
+		 */
+		NonlinearFactor2();
 
-    /** Check if two factors are equal */
-    bool equals(const Factor<VectorConfig>& f, double tol=1e-9) const;
+		/**
+		 * Constructor
+		 * @param j1 key of the first variable
+		 * @param j2 key of the second variable
+		 */
+		NonlinearFactor2(double sigma, Key1 j1, Key2 j2) :
+			Base(sigma), key1_(j1), key2_(j2) {
+			this->keys_.push_back(key1_);
+			this->keys_.push_back(key2_);
+		}
 
-    /** error function */
-    inline Vector error_vector(const VectorConfig& c) const {
-      return z_ - h_(c[key1_], c[key2_]); 
-    }
+		/** Print */
+		void print(const std::string& s = "") const {
+			std::cout << "NonlinearFactor2 " << s << std::endl;
+			std::cout << "key1: " << (std::string) key1_ << std::endl;
+			std::cout << "key2: " << (std::string) key2_ << std::endl;
+			Base::print("parent");
+		}
 
-    /** Linearize a non-linearFactor2 to get a linearFactor2 */
-    boost::shared_ptr<GaussianFactor> linearize(const VectorConfig& c) const;
-  };
+		/** Check if two factors are equal */
+		bool equals(const Factor<Config>& f, double tol = 1e-9) const {
+			const This* p = dynamic_cast<const This*> (&f);
+			if (p == NULL) return false;
+			return Base::equals(*p, tol) && (key1_ == p->key1_)
+					&& (key2_ == p->key2_);
+		}
 
-  /* ************************************************************************* */
+		/** error function z-h(x1,x2) */
+		inline Vector error_vector(const Config& x) const {
+			const X1& x1 = x[key1_];
+			const X2& x2 = x[key2_];
+			return evaluateError(x1, x2);
+		}
+
+		/**
+		 * Linearize a non-linearFactor1 to get a GaussianFactor
+		 * Ax-b \approx h(x1+dx1,x2+dx2)-z = h(x1,x2) + A2*dx1 + A2*dx2 - z
+		 * Hence b = z - h(x1,x2) = - error_vector(x)
+		 */
+		boost::shared_ptr<GaussianFactor> linearize(const Config& c) const {
+			const X1& x1 = c[key1_];
+			const X2& x2 = c[key2_];
+			Matrix A1, A2;
+			Vector b = -evaluateError(x1, x2, A1, A2);
+			return GaussianFactor::shared_ptr(new GaussianFactor(key1_, A1, key2_,
+					A2, b, this->sigma()));
+		}
+
+		/** methods to retrieve both keys */
+		inline const Key1& key1() const {
+			return key1_;
+		}
+		inline const Key2& key2() const {
+			return key2_;
+		}
+
+		/*
+		 *  Override this method to finish implementing a binary factor.
+		 *  If any of the optional Matrix reference arguments are specified, it should compute
+		 *  both the function evaluation and its derivative(s) in X1 (and/or X2).
+		 */
+		virtual Vector evaluateError(const X1&, const X2&,
+				boost::optional<Matrix&> H1 = boost::none, boost::optional<Matrix&> H2 =
+						boost::none) const = 0;
+
+	private:
+
+		/** Serialization function */
+		friend class boost::serialization::access;
+		template<class Archive>
+		void serialize(Archive & ar, const unsigned int version) {
+			ar & boost::serialization::make_nvp("NonlinearFactor", boost::serialization::base_object<NonlinearFactor>(*this));
+			ar & BOOST_SERIALIZATION_NVP(key1_);
+			ar & BOOST_SERIALIZATION_NVP(key2_);
+		}
+
+	};
+
+/* ************************************************************************* */
 }

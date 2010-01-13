@@ -22,7 +22,7 @@ NonlinearConstraint<Config>::NonlinearConstraint(const std::string& lagrange_key
 					size_t dim_lagrange,
 					Vector (*g)(const Config& config),
 					bool isEquality)
-:	NonlinearFactor<Config>(zero(dim_lagrange), 1.0),
+:	NonlinearFactor<Config>(1.0),z_(zero(dim_lagrange)),
 	lagrange_key_(lagrange_key), p_(dim_lagrange),
 	isEquality_(isEquality), g_(boost::bind(g, _1)) {}
 
@@ -32,8 +32,8 @@ NonlinearConstraint<Config>::NonlinearConstraint(const std::string& lagrange_key
 					size_t dim_lagrange,
 					boost::function<Vector(const Config& config)> g,
 					bool isEquality)
-:	NonlinearFactor<Config>(zero(dim_lagrange), 1.0),
-	lagrange_key_(lagrange_key), p_(dim_lagrange),
+:	NonlinearFactor<Config>(1.0),
+	lagrange_key_(lagrange_key), p_(dim_lagrange),z_(zero(dim_lagrange)),
 	g_(g), isEquality_(isEquality) {}
 
 /* ************************************************************************* */

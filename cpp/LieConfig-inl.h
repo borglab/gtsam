@@ -17,58 +17,57 @@
 
 using namespace std;
 
-#define FOREACH_PAIR( KEY, VAL, COL) BOOST_FOREACH (boost::tie(KEY,VAL),COL)
-
 namespace gtsam {
 
-  template<class T>
-  void LieConfig<T>::print(const string &s) const {
+  template<class J, class T>
+  void LieConfig<J,T>::print(const string &s) const {
        cout << "LieConfig " << s << ", size " << values_.size() << "\n";
-       pair<string, T> v;
-       BOOST_FOREACH(v, values_)
-         gtsam::print(v.second, v.first + ": ");
+       BOOST_FOREACH(const typename Values::value_type& v, values_)
+         gtsam::print(v.second, (string)(v.first));
      }
 
-  template<class T>
-  bool LieConfig<T>::equals(const LieConfig<T>& expected, double tol) const {
+  template<class J, class T>
+  bool LieConfig<J,T>::equals(const LieConfig<J,T>& expected, double tol) const {
     if (values_.size() != expected.values_.size()) return false;
-    pair<string, T> v;
-    BOOST_FOREACH(v, values_) {
-      boost::optional<const T&> expval = expected.gettry(v.first);
-      if(!expval || !gtsam::equal(v.second, *expval, tol))
+    BOOST_FOREACH(const typename Values::value_type& v, values_) {
+    	if (!exists(v.first)) return false;
+      if(!gtsam::equal(v.second, expected[v.first], tol))
         return false;
     }
     return true;
   }
 
-  template<class T>
-  const T& LieConfig<T>::get(const std::string& key) const {
-    iterator it = values_.find(key);
-    if (it == values_.end()) throw std::invalid_argument("invalid key");
-    else return it->second;
-  }
-
-  template<class T>
-  boost::optional<const T&> LieConfig<T>::gettry(const std::string& key) const {
+  template<class J, class T>
+  const T& LieConfig<J,T>::at(const Key& key) const {
     const_iterator it = values_.find(key);
-    if (it == values_.end()) return boost::optional<const T&>();
+    if (it == values_.end()) throw std::invalid_argument("invalid key: " + (string)key);
     else return it->second;
   }
 
-  template<class T>
-  void LieConfig<T>::insert(const std::string& name, const T& val) {
+  template<class J, class T>
+  void LieConfig<J,T>::insert(const Key& name, const T& val) {
     values_.insert(make_pair(name, val));
     dim_ += dim(val);
   }
 
+  template<class J, class T>
+  void LieConfig<J,T>::erase(const Key& key) {
+    iterator it = values_.find(key);
+    if (it == values_.end()) throw std::invalid_argument("invalid key: " + (string)key);
+    values_.erase(it);
+  }
+
   // todo: insert for every element is inefficient
-  template<class T>
-  LieConfig<T> expmap(const LieConfig<T>& c, const VectorConfig& delta) {
-		LieConfig<T> newConfig;
-		string j; T pj;
-		FOREACH_PAIR(j, pj, c) {
-			if (delta.contains(j)) {
-				const Vector& dj = delta[j];
+  template<class J, class T>
+  LieConfig<J,T> expmap(const LieConfig<J,T>& c, const VectorConfig& delta) {
+		LieConfig<J,T> newConfig;
+		typedef pair<typename LieConfig<J,T>::Key,T> Value;
+		BOOST_FOREACH(const Value& value, c) {
+			const typename LieConfig<J,T>::Key& j = value.first;
+			const T& pj = value.second;
+			string key = (string)j;
+			if (delta.contains(key)) {
+				const Vector& dj = delta[key];
 				newConfig.insert(j, expmap(pj,dj));
 			} else
 			newConfig.insert(j, pj);
@@ -77,21 +76,22 @@ namespace gtsam {
 	}
 
   // todo: insert for every element is inefficient
-  template<class T>
-  LieConfig<T> expmap(const LieConfig<T>& c, const Vector& delta) {
+  template<class J, class T>
+  LieConfig<J,T> expmap(const LieConfig<J,T>& c, const Vector& delta) {
     if(delta.size() != dim(c))
       throw invalid_argument("Delta vector length does not match config dimensionality.");
-    LieConfig<T> newConfig;
-    pair<string, T> value;
+    LieConfig<J,T> newConfig;
     int delta_offset = 0;
-    BOOST_FOREACH(value, c) {
-      int cur_dim = dim(value.second);
-      newConfig.insert(value.first,
-          expmap(value.second,
-            sub(delta, delta_offset, delta_offset+cur_dim)));
+		typedef pair<typename LieConfig<J,T>::Key,T> Value;
+		BOOST_FOREACH(const Value& value, c) {
+			const typename LieConfig<J,T>::Key& j = value.first;
+			const T& pj = value.second;
+      int cur_dim = dim(pj);
+      newConfig.insert(j,expmap(pj,sub(delta, delta_offset, delta_offset+cur_dim)));
       delta_offset += cur_dim;
     }
     return newConfig;
   }
-
 }
+
+

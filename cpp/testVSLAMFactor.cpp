@@ -38,7 +38,7 @@ TEST( VSLAMFactor, error )
   VSLAMConfig config;
   Rot3 R;Point3 t1(0,0,-6); Pose3 x1(R,t1); config.addCameraPose(1, x1);
   Point3 l1;  config.addLandmarkPoint(1, l1);
-  CHECK(assert_equal(Vector_(2,320.,240.),factor->predict(config)));
+  CHECK(assert_equal(Point2(320.,240.),factor->predict(x1,l1)));
 
   // Which yields an error of 3^2/2 = 4.5
   DOUBLES_EQUAL(4.5,factor->error(config),1e-9);

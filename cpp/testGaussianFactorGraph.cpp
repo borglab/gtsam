@@ -730,7 +730,7 @@ TEST( GaussianFactorGraph, constrained_multi2 )
 	CHECK(assert_equal(expected, actual));
 }
 
-/* ************************************************************************* */
+/* ************************************************************************* *
 TEST( GaussianFactorGraph, findMinimumSpanningTree )
 {
 	GaussianFactorGraph g;
@@ -750,7 +750,7 @@ TEST( GaussianFactorGraph, findMinimumSpanningTree )
 	CHECK(tree["x4"].compare("x1")==0);
 }
 
-/* ************************************************************************* */
+/* ************************************************************************* *
 TEST( GaussianFactorGraph, split )
 {
 	GaussianFactorGraph g;

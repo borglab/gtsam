@@ -3,10 +3,11 @@
  * @brief   A factor graph for the 2D PoseSLAM problem
  * @authors Frank Dellaert, Viorela Ila
  */
+
+#include "Pose2Graph.h"
 #include "FactorGraph-inl.h"
 #include "NonlinearFactorGraph-inl.h"
 #include "graph-inl.h"
-#include "Pose2Graph.h"
 
 using namespace std;
 using namespace gtsam;
@@ -14,7 +15,7 @@ using namespace gtsam;
 namespace gtsam {
 
 // explicit instantiation so all the code is there and we can link with it
-template class FactorGraph<NonlinearFactor<gtsam::Pose2Config> > ;
+template class FactorGraph<NonlinearFactor<Pose2Config> > ;
 template class NonlinearFactorGraph<Pose2Config> ;
 //template class NonlinearOptimizer<Pose2Graph, Pose2Config> ;
 

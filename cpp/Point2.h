@@ -70,7 +70,7 @@ namespace gtsam {
   /** Lie group functions */
 
   /** Global print calls member function */
-  inline void print(const Point2& p, std::string& s) { p.print(s); }
+  inline void print(const Point2& p, const std::string& s) { p.print(s); }
   inline void print(const Point2& p) { p.print(); }
 
   /** Dimensionality of the tangent space */

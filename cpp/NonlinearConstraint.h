@@ -27,6 +27,10 @@ template <class Config>
 class NonlinearConstraint : public NonlinearFactor<Config> {
 
 protected:
+
+	/** Lagrange multipliers? */
+	Vector z_;
+
 	/** key for the lagrange multipliers */
 	std::string lagrange_key_;
 

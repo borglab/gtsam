@@ -6,88 +6,86 @@
 
 #pragma once
 
+#include <boost/optional.hpp>
+
 #include "NonlinearFactor.h"
-#include "GaussianFactor.h"
+#include "SimpleCamera.h"
+#include "VSLAMConfig.h"
 #include "Cal3_S2.h"
-#include "Testable.h"
 
 namespace gtsam {
 
-class VSLAMConfig;
-
-/**
- * Non-linear factor for a constraint derived from a 2D measurement,
- * i.e. the main building block for visual SLAM.
- */
-class VSLAMFactor : public NonlinearFactor<VSLAMConfig>, Testable<VSLAMFactor>
-{
-private:
-
-	int cameraFrameNumber_, landmarkNumber_;
-	std::string cameraFrameName_, landmarkName_;
-	boost::shared_ptr<Cal3_S2> K_; // Calibration stored in each factor. FD: need to think about this.
-	typedef NonlinearFactor<VSLAMConfig> ConvenientFactor;
-
-public:
-
-	typedef boost::shared_ptr<VSLAMFactor> shared_ptr; // shorthand for a smart pointer to a factor
+	typedef NonlinearFactor2<VSLAMConfig, VSLAMConfig::PoseKey,
+	Pose3, VSLAMConfig::PointKey, Point3> VSLAMFactorBase;
 
 	/**
-	 * Default constructor
+	 * Non-linear factor for a constraint derived from a 2D measurement,
+	 * i.e. the main building block for visual SLAM.
 	 */
-	VSLAMFactor();
+	class VSLAMFactor: public VSLAMFactorBase , Testable<VSLAMFactor> {
+	private:
 
-	/**
-	 * Constructor
-	 * @param z is the 2 dimensional location of point in image (the measurement)
-	 * @param sigma is the standard deviation
-	 * @param cameraFrameNumber is basically the frame number
-	 * @param landmarkNumber is the index of the landmark
-	 * @param K the constant calibration
-	 */
-	VSLAMFactor(const Point2& z, double sigma, int cameraFrameNumber, int landmarkNumber, const shared_ptrK & K);
+		// Keep a copy of measurement and calibration for I/O
+		Point2 z_;
+		boost::shared_ptr<Cal3_S2> K_;
 
+	public:
 
-	/**
-	 * print
-	 * @param s optional string naming the factor
-	 */
-	void print(const std::string& s="VSLAMFactor") const;
+		 // shorthand for a smart pointer to a factor
+		typedef boost::shared_ptr<VSLAMFactor> shared_ptr;
 
-	/**
-	 * equals
-	 */
-	bool equals(const VSLAMFactor&, double tol=1e-9) const;
+		/**
+		 * Default constructor
+		 */
+		VSLAMFactor();
 
-	/**
-	 * predict the measurement
-	 */
-	Vector predict(const VSLAMConfig&) const;
+		/**
+		 * Constructor
+		 * @param z is the 2 dimensional location of point in image (the measurement)
+		 * @param sigma is the standard deviation
+		 * @param cameraFrameNumber is basically the frame number
+		 * @param landmarkNumber is the index of the landmark
+		 * @param K the constant calibration
+		 */
+		VSLAMFactor(const Point2& z, double sigma, int cameraFrameNumber,
+				int landmarkNumber, const shared_ptrK & K);
 
-	/**
-	 * calculate the error of the factor
-	 */
-	Vector error_vector(const VSLAMConfig&) const;
+		/**
+		 * print
+		 * @param s optional string naming the factor
+		 */
+		void print(const std::string& s = "VSLAMFactor") const;
 
-	/**
-	 * linerarization
-	 */
-	GaussianFactor::shared_ptr linearize(const VSLAMConfig&) const;
+		/**
+		 * equals
+		 */
+		bool equals(const VSLAMFactor&, double tol = 1e-9) const;
 
-	int getCameraFrameNumber() const { return cameraFrameNumber_; }
-	int getLandmarkNumber()    const { return landmarkNumber_;    }
+		/** h(x) */
+		Point2 predict(const Pose3& pose, const Point3& point) const {
+			return SimpleCamera(*K_, pose).project(point);
+		}
 
-private:
-	/** Serialization function */
-	friend class boost::serialization::access;
-	template<class Archive>
-	void serialize(Archive & ar, const unsigned int version) {
-		ar & BOOST_SERIALIZATION_NVP(cameraFrameNumber_);
-		ar & BOOST_SERIALIZATION_NVP(landmarkNumber_);
-		ar & BOOST_SERIALIZATION_NVP(cameraFrameName_);
-		ar & BOOST_SERIALIZATION_NVP(landmarkName_);
-		ar & BOOST_SERIALIZATION_NVP(K_);
-	}
-};
+		/** h(x)-z */
+		Vector evaluateError(const Pose3& pose, const Point3& point,
+				boost::optional<Matrix&> H1, boost::optional<Matrix&> H2) const {
+			SimpleCamera camera(*K_, pose);
+			if (H1) *H1=Dproject_pose(camera,point);
+			if (H2) *H2=Dproject_point(camera,point);
+			Point2 reprojectionError(project(camera, point) - z_);
+			return reprojectionError.vector();
+		}
+
+	private:
+		/** Serialization function */
+		friend class boost::serialization::access;
+		template<class Archive>
+		void serialize(Archive & ar, const unsigned int version) {
+			ar & BOOST_SERIALIZATION_NVP(key1_);
+			ar & BOOST_SERIALIZATION_NVP(key2_);
+			ar & BOOST_SERIALIZATION_NVP(z_);
+			ar & BOOST_SERIALIZATION_NVP(K_);
+		}
+	};
 
 }

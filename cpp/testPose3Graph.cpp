@@ -13,10 +13,10 @@ using namespace boost::assign;
 
 #include <CppUnitLite/TestHarness.h>
 
+#include "Pose3Graph.h"
 #include "NonlinearOptimizer-inl.h"
 #include "NonlinearEquality.h"
 #include "Ordering.h"
-#include "Pose3Graph.h"
 
 using namespace std;
 using namespace gtsam;
@@ -29,32 +29,32 @@ static Matrix covariance = eye(6);
 TEST(Pose3Graph, optimizeCircle) {
 
 	// Create a hexagon of poses
-	Pose3Config hexagon = pose3Circle(6,1.0,'p');
-  Pose3 p0 = hexagon["p0"], p1 = hexagon["p1"];
+	Pose3Config hexagon = pose3Circle(6,1.0);
+  Pose3 p0 = hexagon[0], p1 = hexagon[1];
 
 	// create a Pose graph with one equality constraint and one measurement
   shared_ptr<Pose3Graph> fg(new Pose3Graph);
-  fg->addConstraint("p0", p0);
+  fg->addConstraint(0, p0);
   Pose3 delta = between(p0,p1);
-  fg->add("p0", "p1", delta, covariance);
-  fg->add("p1", "p2", delta, covariance);
-  fg->add("p2", "p3", delta, covariance);
-  fg->add("p3", "p4", delta, covariance);
-  fg->add("p4", "p5", delta, covariance);
-  fg->add("p5", "p0", delta, covariance);
+  fg->add(0,1, delta, covariance);
+  fg->add(1,2, delta, covariance);
+  fg->add(2,3, delta, covariance);
+  fg->add(3,4, delta, covariance);
+  fg->add(4,5, delta, covariance);
+  fg->add(5,0, delta, covariance);
 
   // Create initial config
   boost::shared_ptr<Pose3Config> initial(new Pose3Config());
-  initial->insert("p0", p0);
-  initial->insert("p1", expmap(hexagon["p1"],Vector_(6,-0.1, 0.1,-0.1,-0.1, 0.1,-0.1)));
-  initial->insert("p2", expmap(hexagon["p2"],Vector_(6, 0.1,-0.1, 0.1, 0.1,-0.1, 0.1)));
-  initial->insert("p3", expmap(hexagon["p3"],Vector_(6,-0.1, 0.1,-0.1,-0.1, 0.1,-0.1)));
-  initial->insert("p4", expmap(hexagon["p4"],Vector_(6, 0.1,-0.1, 0.1, 0.1,-0.1, 0.1)));
-  initial->insert("p5", expmap(hexagon["p5"],Vector_(6,-0.1, 0.1,-0.1,-0.1, 0.1,-0.1)));
+  initial->insert(0, p0);
+  initial->insert(1, expmap(hexagon[1],Vector_(6,-0.1, 0.1,-0.1,-0.1, 0.1,-0.1)));
+  initial->insert(2, expmap(hexagon[2],Vector_(6, 0.1,-0.1, 0.1, 0.1,-0.1, 0.1)));
+  initial->insert(3, expmap(hexagon[3],Vector_(6,-0.1, 0.1,-0.1,-0.1, 0.1,-0.1)));
+  initial->insert(4, expmap(hexagon[4],Vector_(6, 0.1,-0.1, 0.1, 0.1,-0.1, 0.1)));
+  initial->insert(5, expmap(hexagon[5],Vector_(6,-0.1, 0.1,-0.1,-0.1, 0.1,-0.1)));
 
   // Choose an ordering and optimize
   shared_ptr<Ordering> ordering(new Ordering);
-  *ordering += "p0","p1","p2","p3","p4","p5";
+  *ordering += "x0","x1","x2","x3","x4","x5";
   typedef NonlinearOptimizer<Pose3Graph, Pose3Config> Optimizer;
   Optimizer optimizer0(fg, ordering, initial);
   Optimizer::verbosityLevel verbosity = Optimizer::SILENT;
@@ -67,7 +67,7 @@ TEST(Pose3Graph, optimizeCircle) {
   CHECK(assert_equal(hexagon, actual,1e-5));
 
   // Check loop closure
-  CHECK(assert_equal(delta,between(actual["p5"],actual["p0"]),1e-5));
+  CHECK(assert_equal(delta,between(actual[5],actual[0]),1e-5));
 }
 
 /* ************************************************************************* */

@@ -242,19 +242,16 @@ TEST (SQP, problem1_sqp ) {
 
 /* ********************************************************************* */
 // components for nonlinear factor graphs
-bool vector_compare(const std::string& key,
-					const VectorConfig& feasible,
-					const VectorConfig& input) {
-	Vector feas, lin;
-	feas = feasible[key];
-	lin = input[key];
-	return equal_with_abs_tol(lin, feas, 1e-5);
+bool vector_compare(const Vector& a, const Vector& b) {
+	return equal_with_abs_tol(a, b, 1e-5);
 }
 
 typedef NonlinearFactorGraph<VectorConfig> NLGraph;
 typedef boost::shared_ptr<NonlinearFactor<VectorConfig> > shared;
 typedef boost::shared_ptr<NonlinearConstraint<VectorConfig> > shared_c;
-typedef boost::shared_ptr<NonlinearEquality<VectorConfig> > shared_eq;
+
+typedef NonlinearEquality<VectorConfig,string,Vector> NLE;
+typedef boost::shared_ptr<NLE> shared_eq;
 typedef boost::shared_ptr<VectorConfig> shared_cfg;
 typedef NonlinearOptimizer<NLGraph,VectorConfig> Optimizer;
 
@@ -268,24 +265,26 @@ TEST (SQP, two_pose_truth ) {
 	// position (1, 1) constraint for x1
 	// position (5, 6) constraint for x2
 	VectorConfig feas;
-	feas.insert("x1", Vector_(2, 1.0, 1.0));
-	feas.insert("x2", Vector_(2, 5.0, 6.0));
+	Vector feas1 = Vector_(2, 1.0, 1.0);
+	Vector feas2 = Vector_(2, 5.0, 6.0);
+	feas.insert("x1", feas1);
+	feas.insert("x2", feas2);
 
 	// constant constraint on x1
-	shared_eq ef1(new NonlinearEquality<VectorConfig>("x1", feas, 2, *vector_compare));
+	shared_eq ef1(new NLE("x1", feas1, vector_compare));
 
 	// constant constraint on x2
-	shared_eq ef2(new NonlinearEquality<VectorConfig>("x2", feas, 2, *vector_compare));
+	shared_eq ef2(new NLE("x2", feas2, vector_compare));
 
 	// measurement from x1 to l1
 	Vector z1 = Vector_(2, 0.0, 5.0);
 	double sigma1 = 0.1;
-	shared f1(new Simulated2DMeasurement(z1, sigma1, "x1", "l1"));
+	shared f1(new simulated2D::Simulated2DMeasurement(z1, sigma1, "x1", "l1"));
 
 	// measurement from x2 to l1
 	Vector z2 = Vector_(2, -4.0, 0.0);
 	double sigma2 = 0.1;
-	shared f2(new Simulated2DMeasurement(z2, sigma2, "x2", "l1"));
+	shared f2(new simulated2D::Simulated2DMeasurement(z2, sigma2, "x2", "l1"));
 
 	// construct the graph
 	shared_ptr<NLGraph> graph(new NLGraph());
@@ -377,12 +376,12 @@ TEST (SQP, two_pose ) {
 	// measurement from x1 to l1
 	Vector z1 = Vector_(2, 0.0, 5.0);
 	double sigma1 = 0.1;
-	shared f1(new Simulated2DMeasurement(z1, sigma1, "x1", "l1"));
+	shared f1(new simulated2D::Simulated2DMeasurement(z1, sigma1, "x1", "l1"));
 
 	// measurement from x2 to l2
 	Vector z2 = Vector_(2, -4.0, 0.0);
 	double sigma2 = 0.1;
-	shared f2(new Simulated2DMeasurement(z2, sigma2, "x2", "l2"));
+	shared f2(new simulated2D::Simulated2DMeasurement(z2, sigma2, "x2", "l2"));
 
 	// equality constraint between l1 and l2
 	list<string> keys2; keys2 += "l1", "l2";

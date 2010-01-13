@@ -17,14 +17,14 @@ namespace gtsam {
 	 * A class for a measurement predicted by "between(config[key1],config[key2])"
 	 * T is the Lie group type, Config where the T's are gotten from
 	 */
-	template<class T, class Config>
-	class BetweenFactor: public NonlinearFactor<Config> {
+	template<class Config, class Key, class T>
+	class BetweenFactor: public NonlinearFactor2<Config, Key, T, Key, T> {
 
 	private:
 
+		typedef NonlinearFactor2<Config, Key, T, Key, T> Base;
+
 		T measured_; /** The measurement */
-		std::string key1_, key2_; /** The keys of the two poses, order matters */
-		std::list<std::string> keys_; /** The keys as a list */
 		Matrix square_root_inverse_covariance_; /** sqrt(inv(measurement_covariance)) */
 
 	public:
@@ -33,72 +33,50 @@ namespace gtsam {
 		typedef typename boost::shared_ptr<BetweenFactor> shared_ptr;
 
 		/** Constructor */
-		BetweenFactor(const std::string& key1, const std::string& key2,
-				const T& measured, const Matrix& measurement_covariance) :
-			key1_(key1), key2_(key2), measured_(measured) {
+		BetweenFactor(const Key& key1, const Key& key2, const T& measured,
+				const Matrix& measurement_covariance) :
+			Base(1, key1, key2), measured_(measured) {
 			square_root_inverse_covariance_ = inverse_square_root(
 					measurement_covariance);
-			keys_.push_back(key1);
-			keys_.push_back(key2);
 		}
 
 		/** implement functions needed for Testable */
 
 		/** print */
-		void print(const std::string& name) const {
-			std::cout << name << std::endl;
-			std::cout << "Factor " << std::endl;
-			std::cout << "key1 " << key1_ << std::endl;
-			std::cout << "key2 " << key2_ << std::endl;
+		void print(const std::string& s) const {
+			Base::print(s);
 			measured_.print("measured ");
 			gtsam::print(square_root_inverse_covariance_, "MeasurementCovariance");
 		}
 
 		/** equals */
 		bool equals(const NonlinearFactor<Config>& expected, double tol) const {
-			return key1_ == expected.key1_ && key2_ == expected.key2_
-					&& measured_.equals(expected.measured_, tol);
+			const BetweenFactor<Config, Key, T> *e =
+					dynamic_cast<const BetweenFactor<Config, Key, T>*> (&expected);
+			return e != NULL && Base::equals(expected)
+					&& this->measured_.equals(e->measured_, tol);
 		}
 
 		/** implement functions needed to derive from Factor */
 
 		/** vector of errors */
-		Vector error_vector(const T& p1, const T& p2) const {
-			//z-h
-			T hx = between(p1,p2);
-			// manifold equivalent of z-h(x) -> log(h(x),z)
-			return square_root_inverse_covariance_ * logmap(hx,measured_);
+		Vector evaluateError(const T& p1, const T& p2, boost::optional<Matrix&> H1 =
+				boost::none, boost::optional<Matrix&> H2 = boost::none) const {
+			// h - z
+			T hx = between(p1, p2);
+			// TODO should be done by noise model
+			if (H1) *H1 = square_root_inverse_covariance_ * Dbetween1(p1, p2);
+			if (H2) *H2 = square_root_inverse_covariance_ * Dbetween2(p1, p2);
+			// manifold equivalent of h(x)-z -> log(z,h(x))
+			// TODO use noise model, error vector is not whitened yet
+			return square_root_inverse_covariance_ * logmap(measured_, hx);
 		}
-
-		/** vector of errors */
-		Vector error_vector(const Config& c) const {
-		  return error_vector(c.get(key1_), c.get(key2_));
-		}
-
-		/** methods to retrieve both keys */
-		inline const std::string& key1() const { return key1_;}
-		inline const std::string& key2() const { return key2_;}
 
 		/** return the measured */
 		inline const T measured() const {return measured_;}
 
-		/** keys as a list */
-		inline std::list<std::string> keys() const { return keys_;}
-
 		/** number of variables attached to this factor */
 		inline std::size_t size() const { return 2;}
-
-		/** linearize */
-		boost::shared_ptr<GaussianFactor> linearize(const Config& x0) const {
-			const T& p1 = x0.get(key1_), p2 = x0.get(key2_);
-			Matrix A1 = Dbetween1(p1, p2);
-			Matrix A2 = Dbetween2(p1, p2);
-			Vector b = error_vector(p1, p2); // already has sigmas in !
-			boost::shared_ptr<GaussianFactor> linearized(new GaussianFactor(
-					key1_, square_root_inverse_covariance_ * A1,
-					key2_, square_root_inverse_covariance_ * A2, b, 1.0));
-			return linearized;
-		}
 	};
 
 } /// namespace gtsam

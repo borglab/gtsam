@@ -12,6 +12,6 @@
 namespace gtsam {
 
 	/** This is just a typedef now */
-	typedef BetweenFactor<Pose2, Pose2Config> Pose2Factor;
+	typedef BetweenFactor<Pose2Config, Pose2Config::Key, Pose2> Pose2Factor;
 
 } /// namespace gtsam

@@ -20,6 +20,7 @@ using namespace boost::assign;
 
 #define FOREACH_PAIR( KEY, VAL, COL) BOOST_FOREACH (boost::tie(KEY,VAL),COL)
 
+/*
 class ordering_key_visitor : public boost::default_bfs_visitor {
 public:
 	ordering_key_visitor(Ordering& ordering_in) : ordering_(ordering_in) {}
@@ -36,8 +37,8 @@ public:
 		//boost::add_edge(v1, v2, g);
 	}
 };
-
-/* ************************************************************************* */
+*/
+/* ************************************************************************* *
 Ordering::Ordering(const map<string, string>& p_map) {
 
 	SGraph g;

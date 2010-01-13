@@ -5,7 +5,8 @@
  */
 
 #include <CppUnitLite/TestHarness.h>
-#include <VSLAMConfig.h>
+#include "VectorConfig.h"
+#include "VSLAMConfig.h"
 
 using namespace std;
 using namespace gtsam;
@@ -18,17 +19,17 @@ TEST( VSLAMConfig, update_with_large_delta) {
 	init.addCameraPose(1, Pose3());
 	init.addLandmarkPoint(1, Point3(1.0, 2.0, 3.0));
 
-	VectorConfig delta;
-	delta.insert("x1", Vector_(6, 0.0, 0.0, 0.0, 0.1, 0.1, 0.1));
-	delta.insert("l1", Vector_(3, 0.1, 0.1, 0.1));
-	delta.insert("x2", Vector_(6, 0.0, 0.0, 0.0, 100.1, 4.1, 9.1));
-
-	VSLAMConfig actual = expmap(init, delta);
 	VSLAMConfig expected;
 	expected.addCameraPose(1, Pose3(Rot3(), Point3(0.1, 0.1, 0.1)));
 	expected.addLandmarkPoint(1, Point3(1.1, 2.1, 3.1));
 
-	CHECK(assert_equal(actual, expected));
+	VectorConfig delta;
+	delta.insert("x1", Vector_(6, 0.0, 0.0, 0.0, 0.1, 0.1, 0.1));
+	delta.insert("l1", Vector_(3, 0.1, 0.1, 0.1));
+	delta.insert("x2", Vector_(6, 0.0, 0.0, 0.0, 100.1, 4.1, 9.1));
+	VSLAMConfig actual = expmap(init, delta);
+
+	CHECK(assert_equal(expected,actual));
 }
 
 /* ************************************************************************* */

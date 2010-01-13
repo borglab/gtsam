@@ -102,12 +102,12 @@ NLGraph linearMapWarpGraph() {
 	// measurement from x1 to l1
 	Vector z1 = Vector_(2, 0.0, 5.0);
 	double sigma1 = 0.1;
-	shared f1(new Simulated2DMeasurement(z1, sigma1, "x1", "l1"));
+	shared f1(new simulated2D::Simulated2DMeasurement(z1, sigma1, "x1", "l1"));
 
 	// measurement from x2 to l2
 	Vector z2 = Vector_(2, -4.0, 0.0);
 	double sigma2 = 0.1;
-	shared f2(new Simulated2DMeasurement(z2, sigma2, "x2", "l2"));
+	shared f2(new simulated2D::Simulated2DMeasurement(z2, sigma2, "x2", "l2"));
 
 	// equality constraint between l1 and l2
 	list<string> keys; keys += "l1", "l2";
@@ -208,20 +208,15 @@ TEST ( SQPOptimizer, map_warp ) {
 // states, which enforces a minimum distance.
 /* ********************************************************************* */
 
-bool vector_compare(const std::string& key,
-					const VectorConfig& feasible,
-					const VectorConfig& input) {
-	Vector feas, lin;
-	feas = feasible[key];
-	lin = input[key];
-	return equal_with_abs_tol(lin, feas, 1e-5);
+bool vector_compare(const Vector& a, const Vector& b) {
+	return equal_with_abs_tol(a, b, 1e-5);
 }
 
 typedef NonlinearConstraint1<VectorConfig> NLC1;
 typedef boost::shared_ptr<NLC1> shared_NLC1;
 typedef NonlinearConstraint2<VectorConfig> NLC2;
 typedef boost::shared_ptr<NLC2> shared_NLC2;
-typedef NonlinearEquality<VectorConfig> NLE;
+typedef NonlinearEquality<VectorConfig,string,Vector> NLE;
 typedef boost::shared_ptr<NLE> shared_NLE;
 
 namespace sqp_avoid1 {
@@ -255,22 +250,24 @@ Matrix jac_g2(const VectorConfig& config, const list<string>& keys) {
 pair<NLGraph, VectorConfig> obstacleAvoidGraph() {
 	// fix start, end, obstacle positions
 	VectorConfig feasible;
-	feasible.insert("x1", Vector_(2, 0.0, 0.0));
-	feasible.insert("x3", Vector_(2, 10.0, 0.0));
-	feasible.insert("obs", Vector_(2, 5.0, -0.5));
-	shared_NLE e1(new NLE("x1", feasible, 2, *vector_compare));
-	shared_NLE e2(new NLE("x3", feasible, 2, *vector_compare));
-	shared_NLE e3(new NLE("obs", feasible, 2, *vector_compare));
+	Vector feas1 = Vector_(2, 0.0, 0.0), feas2 = Vector_(2, 10.0, 0.0), feas3 =
+			Vector_(2, 5.0, -0.5);
+	feasible.insert("x1", feas1);
+	feasible.insert("x3", feas2);
+	feasible.insert("obs", feas3);
+	shared_NLE e1(new NLE("x1", feas1, vector_compare));
+	shared_NLE e2(new NLE("x3", feas2, vector_compare));
+	shared_NLE e3(new NLE("obs", feas3, vector_compare));
 
 	// measurement from x1 to x2
 	Vector x1x2 = Vector_(2, 5.0, 0.0);
 	double sigma1 = 0.1;
-	shared f1(new Simulated2DOdometry(x1x2, sigma1, "x1", "x2"));
+	shared f1(new simulated2D::Simulated2DOdometry(x1x2, sigma1, "x1", "x2"));
 
 	// measurement from x2 to x3
 	Vector x2x3 = Vector_(2, 5.0, 0.0);
 	double sigma2 = 0.1;
-	shared f2(new Simulated2DOdometry(x2x3, sigma2, "x2", "x3"));
+	shared f2(new simulated2D::Simulated2DOdometry(x2x3, sigma2, "x2", "x3"));
 
 	// create a binary inequality constraint that forces the middle point away from
 	//  the obstacle
@@ -385,22 +382,24 @@ Matrix jac_g2(const VectorConfig& config, const list<string>& keys) {
 pair<NLGraph, VectorConfig> obstacleAvoidGraphGeneral() {
 	// fix start, end, obstacle positions
 	VectorConfig feasible;
-	feasible.insert("x1", Vector_(2, 0.0, 0.0));
-	feasible.insert("x3", Vector_(2, 10.0, 0.0));
-	feasible.insert("obs", Vector_(2, 5.0, -0.5));
-	shared_NLE e1(new NLE("x1", feasible, 2, *vector_compare));
-	shared_NLE e2(new NLE("x3", feasible, 2, *vector_compare));
-	shared_NLE e3(new NLE("obs", feasible, 2, *vector_compare));
+	Vector feas1 = Vector_(2, 0.0, 0.0), feas2 = Vector_(2, 10.0, 0.0), feas3 =
+			Vector_(2, 5.0, -0.5);
+	feasible.insert("x1", feas1);
+	feasible.insert("x3", feas2);
+	feasible.insert("obs", feas3);
+	shared_NLE e1(new NLE("x1", feas1,vector_compare));
+	shared_NLE e2(new NLE("x3", feas2, vector_compare));
+	shared_NLE e3(new NLE("obs", feas3, vector_compare));
 
 	// measurement from x1 to x2
 	Vector x1x2 = Vector_(2, 5.0, 0.0);
 	double sigma1 = 0.1;
-	shared f1(new Simulated2DOdometry(x1x2, sigma1, "x1", "x2"));
+	shared f1(new simulated2D::Simulated2DOdometry(x1x2, sigma1, "x1", "x2"));
 
 	// measurement from x2 to x3
 	Vector x2x3 = Vector_(2, 5.0, 0.0);
 	double sigma2 = 0.1;
-	shared f2(new Simulated2DOdometry(x2x3, sigma2, "x2", "x3"));
+	shared f2(new simulated2D::Simulated2DOdometry(x2x3, sigma2, "x2", "x3"));
 
 	double radius = 1.0;
 

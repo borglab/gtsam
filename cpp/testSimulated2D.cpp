@@ -13,6 +13,7 @@
 
 using namespace gtsam;
 using namespace std;
+using namespace simulated2D;
 
 /* ************************************************************************* */
 TEST( simulated2D, Dprior )

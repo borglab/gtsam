@@ -79,7 +79,7 @@ namespace gtsam {
 
 
   /** Global print calls member function */
-  inline void print(const Point3& p, std::string& s) { p.print(s); }
+  inline void print(const Point3& p, const std::string& s) { p.print(s); }
   inline void print(const Point3& p) { p.print(); }
 
   /** return DOF, dimensionality of tangent space */

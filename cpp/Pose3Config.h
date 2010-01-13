@@ -14,7 +14,7 @@ namespace gtsam {
   /**
    * Pose3Config is now simply a typedef
    */
-  typedef LieConfig<Pose3> Pose3Config;
+  typedef LieConfig<Symbol<Pose3,'x'>,Pose3> Pose3Config;
 
   /**
    * Create a circle of n 3D poses tangent to circle of radius R, first pose at (R,0,0)
@@ -24,6 +24,6 @@ namespace gtsam {
    * @param c character to use for keys
    * @return circle of n 2D poses
    */
-	Pose3Config pose3Circle(size_t n, double R, char c = 'p');
+	Pose3Config pose3Circle(size_t n, double R);
 
 } // namespace
