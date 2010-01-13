@@ -30,7 +30,7 @@ namespace gtsam {
 template<class G, class F, class Key>
 SDGraph<Key> toBoostGraph(const G& graph) {
 	// convert the factor graph to boost graph
-	SDGraph<Key> g(0);
+	SDGraph<Key> g;
 	typedef typename boost::graph_traits<SDGraph<Key> >::vertex_descriptor BoostVertex;
 	map<Key, BoostVertex> key2vertex;
 	BoostVertex v1, v2;

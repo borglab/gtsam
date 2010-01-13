@@ -269,20 +269,24 @@ void FactorGraph<Factor>::associateFactor(int index, sharedFactor factor) {
   }
 }
 
-/* ************************************************************************* *
-template<class Factor>
-map<string, string> FactorGraph<Factor>::findMinimumSpanningTree() const {
+/* ************************************************************************* */
+template<class Factor> template <class Key>
+map<Key,Key> FactorGraph<Factor>::findMinimumSpanningTree() const {
 
-	SDGraph g = gtsam::toBoostGraph<FactorGraph<Factor>, sharedFactor>(*this);
+	typedef typename boost::graph_traits<SDGraph<Key> >::vertex_descriptor BoostVertex;
+	typedef typename boost::graph_traits<SDGraph<Key> >::vertex_iterator BoostVertexIterator;
+
+	SDGraph<Key> g = gtsam::toBoostGraph<FactorGraph<Factor>, sharedFactor, Key>(*this);
 
 	// find minimum spanning tree
 	vector<BoostVertex> p_map(boost::num_vertices(g));
 	prim_minimum_spanning_tree(g, &p_map[0]);
 
 	// convert edge to string pairs
-	map<string, string> tree;
+	map<Key, Key> tree;
 	BoostVertexIterator itVertex = boost::vertices(g).first;
-	for (vector<BoostVertex>::iterator vi = p_map.begin(); vi!=p_map.end(); itVertex++, vi++) {
+	typename vector<BoostVertex>::iterator vi;
+	for (vi = p_map.begin(); vi!=p_map.end(); itVertex++, vi++) {
 		string key = boost::get(boost::vertex_name, g, *itVertex);
 		string parent = boost::get(boost::vertex_name, g, *vi);
 		// printf("%s parent: %s\n", key.c_str(), parent.c_str());
@@ -292,8 +296,8 @@ map<string, string> FactorGraph<Factor>::findMinimumSpanningTree() const {
 	return tree;
 }
 
-template<class Factor>
-void FactorGraph<Factor>::split(map<string, string> tree, FactorGraph<Factor>& Ab1, FactorGraph<Factor>& Ab2) const {
+template<class Factor> template <class Key>
+void FactorGraph<Factor>::split(map<Key, Key> tree, FactorGraph<Factor>& Ab1, FactorGraph<Factor>& Ab2) const {
 
 	BOOST_FOREACH(sharedFactor factor, factors_){
 		if (factor->keys().size() > 2)

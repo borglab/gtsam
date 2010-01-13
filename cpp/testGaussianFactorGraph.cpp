@@ -730,7 +730,7 @@ TEST( GaussianFactorGraph, constrained_multi2 )
 	CHECK(assert_equal(expected, actual));
 }
 
-/* ************************************************************************* *
+/* ************************************************************************* */
 TEST( GaussianFactorGraph, findMinimumSpanningTree )
 {
 	GaussianFactorGraph g;
@@ -743,14 +743,14 @@ TEST( GaussianFactorGraph, findMinimumSpanningTree )
 	g.add("x2", I, "x4", I, b, 0);
 	g.add("x3", I, "x4", I, b, 0);
 
-	map<string, string> tree = g.findMinimumSpanningTree();
+	map<string, string> tree = g.findMinimumSpanningTree<string>();
 	CHECK(tree["x1"].compare("x1")==0);
 	CHECK(tree["x2"].compare("x1")==0);
 	CHECK(tree["x3"].compare("x1")==0);
 	CHECK(tree["x4"].compare("x1")==0);
 }
 
-/* ************************************************************************* *
+/* ************************************************************************* */
 TEST( GaussianFactorGraph, split )
 {
 	GaussianFactorGraph g;
@@ -769,7 +769,7 @@ TEST( GaussianFactorGraph, split )
 	tree["x4"] = "x1";
 
 	GaussianFactorGraph Ab1, Ab2;
-  g.split(tree, Ab1, Ab2);
+  g.split<string>(tree, Ab1, Ab2);
 	LONGS_EQUAL(3, Ab1.size());
 	LONGS_EQUAL(2, Ab2.size());
 }

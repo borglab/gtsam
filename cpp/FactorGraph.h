@@ -120,14 +120,14 @@ namespace gtsam {
 		/**
 		 * find the minimum spanning tree.
 		 */
-//		std::map<std::string, std::string> findMinimumSpanningTree() const;
+		template<class Key> std::map<Key, Key> findMinimumSpanningTree() const;
 
 		/**
 		 * Split the graph into two parts: one corresponds to the given spanning tre,
 		 * and the other corresponds to the rest of the factors
 		 */
-//		void split(std::map<std::string, std::string> tree,
-//				FactorGraph<Factor>& Ab1, FactorGraph<Factor>& Ab2) const;
+		template<class Key> void split(std::map<Key, Key> tree,
+				FactorGraph<Factor>& Ab1, FactorGraph<Factor>& Ab2) const;
 
 	private:
 		/** Associate factor index with the variables connected to the factor */

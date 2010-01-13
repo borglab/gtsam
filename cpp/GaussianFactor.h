@@ -172,6 +172,22 @@ public:
 	std::list<std::string> keys() const;
 
 	/**
+	 * return the first key
+	 * @return The set of all variable keys
+	 */
+	std::string key1() const { return As_.begin()->first; }
+
+	/**
+	 * return the first key
+	 * @return The set of all variable keys
+	 */
+	std::string key2() const {
+		if (As_.size() < 2) throw std::invalid_argument("GaussianFactor: less than 2 keys!");
+		return (++(As_.begin()))->first;
+	}
+
+
+	/**
 	 * Find all variables and their dimensions
 	 * @return The set of all variable/dimension pairs
 	 */
