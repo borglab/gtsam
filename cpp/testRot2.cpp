@@ -28,20 +28,20 @@ TEST( Rot2, transpose)
 /* ************************************************************************* */
 TEST( Rot2, negtranspose)
 {
-    CHECK(assert_equal(-inverse(R).matrix(),R.negtranspose()));
+	CHECK(assert_equal(-inverse(R).matrix(),R.negtranspose()));
 }
 
 /* ************************************************************************* */
 TEST( Rot2, compose)
 {
-    CHECK(assert_equal(Rot2(0.45), Rot2(0.2)*Rot2(0.25)));
-    CHECK(assert_equal(Rot2(0.45), Rot2(0.25)*Rot2(0.2)));
+	CHECK(assert_equal(Rot2(0.45), Rot2(0.2)*Rot2(0.25)));
+	CHECK(assert_equal(Rot2(0.45), Rot2(0.25)*Rot2(0.2)));
 }
 
 /* ************************************************************************* */
 TEST( Rot2, invcompose)
 {
-    CHECK(assert_equal(Rot2(0.2), invcompose(Rot2(0.25),Rot2(0.45))));
+	CHECK(assert_equal(Rot2(0.2), invcompose(Rot2(0.25),Rot2(0.45))));
 }
 
 /* ************************************************************************* */
@@ -62,54 +62,39 @@ TEST( Rot2, expmap)
 /* ************************************************************************* */
 TEST(Rot2, logmap)
 {
-  Rot2 rot0(M_PI_2);
-  Rot2 rot(M_PI);
-  Vector expected = Vector_(1, M_PI_2);
-  Vector actual = logmap(rot0,rot);
-  CHECK(assert_equal(expected, actual));
+	Rot2 rot0(M_PI_2);
+	Rot2 rot(M_PI);
+	Vector expected = Vector_(1, M_PI_2);
+	Vector actual = logmap(rot0, rot);
+	CHECK(assert_equal(expected, actual));
 }
 
 /* ************************************************************************* */
-// rotate derivatives
-
-TEST( Rot2, Drotate1)
+// rotate and derivatives
+inline Point2 rotate_(const Rot2 & R, const Point2& p) {return R.rotate(p);}
+TEST( Rot2, rotate)
 {
-	Matrix computed = Drotate1(R, P);
-	Matrix numerical = numericalDerivative21(rotate, R, P);
-	CHECK(assert_equal(numerical,computed));
-}
-
-TEST( Rot2, Drotate2_DNrotate2)
-{
-	Matrix computed = Drotate2(R);
-	Matrix numerical = numericalDerivative22(rotate, R, P);
-	CHECK(assert_equal(numerical,computed));
+	Matrix H1, H2;
+	Point2 actual = rotate(R, P, H1, H2);
+	CHECK(assert_equal(actual,R*P));
+	Matrix numerical1 = numericalDerivative21(rotate_, R, P);
+	CHECK(assert_equal(numerical1,H1));
+	Matrix numerical2 = numericalDerivative22(rotate_, R, P);
+	CHECK(assert_equal(numerical2,H2));
 }
 
 /* ************************************************************************* */
-// unrotate 
-
+// unrotate and derivatives
+inline Point2 unrotate_(const Rot2 & R, const Point2& p) {return R.unrotate(p);}
 TEST( Rot2, unrotate)
 {
-	Point2 w = R * P;
-	CHECK(assert_equal(unrotate(R,w),P));
-}
-
-/* ************************************************************************* */
-// unrotate derivatives
-
-TEST( Rot2, Dunrotate1)
-{
-	Matrix computed = Dunrotate1(R, P);
-	Matrix numerical = numericalDerivative21(unrotate, R, P);
-	CHECK(assert_equal(numerical,computed));
-}
-
-TEST( Rot2, Dunrotate2_DNunrotate2)
-{
-	Matrix computed = Dunrotate2(R);
-	Matrix numerical = numericalDerivative22(unrotate, R, P);
-	CHECK(assert_equal(numerical,computed));
+	Matrix H1, H2;
+	Point2 w = R * P, actual = unrotate(R, w, H1, H2);
+	CHECK(assert_equal(actual,P));
+	Matrix numerical1 = numericalDerivative21(unrotate_, R, w);
+	CHECK(assert_equal(numerical1,H1));
+	Matrix numerical2 = numericalDerivative22(unrotate_, R, w);
+	CHECK(assert_equal(numerical2,H2));
 }
 
 /* ************************************************************************* */

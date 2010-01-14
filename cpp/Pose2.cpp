@@ -46,18 +46,18 @@ namespace gtsam {
   }
 
   /* ************************************************************************* */
-  Matrix Dbetween1(const Pose2& p0, const Pose2& p2) {
-    Matrix dt_dr = Dunrotate1(p0.r(), p2.t()-p0.t());
-    Matrix dt_dt1 = -invcompose(p2.r(), p0.r()).matrix();
-    Matrix dt_dr1 = Dunrotate1(p2.r(), p2.t()-p0.t());
+  Matrix Dbetween1(const Pose2& p1, const Pose2& p2) {
+  	Point2 dt = p2.t()-p1.t();
+    Matrix dT1 = -invcompose(p2.r(), p1.r()).matrix();
+    Matrix dR1;
+    unrotate(p2.r(), dt, dR1);
     return Matrix_(3,3,
-        dt_dt1(0,0), dt_dt1(0,1), dt_dr1(0,0),
-        dt_dt1(1,0), dt_dt1(1,1), dt_dr1(1,0),
-        0.0,         0.0,         -1.0);
+        dT1(0,0), dT1(0,1), dR1(0,0),
+        dT1(1,0), dT1(1,1), dR1(1,0),
+             0.0,      0.0,     -1.0);
   }
 
-  Matrix Dbetween2(const Pose2& p0, const Pose2& p2) {
-    Matrix db_dt2 = p0.r().transpose();
+  Matrix Dbetween2(const Pose2& p1, const Pose2& p2) {
     return Matrix_(3,3,
         1.0, 0.0, 0.0,
         0.0, 1.0, 0.0,

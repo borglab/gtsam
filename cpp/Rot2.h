@@ -8,6 +8,7 @@
 #ifndef ROT2_H_
 #define ROT2_H_
 
+#include <boost/optional.hpp>
 #include "Testable.h"
 #include "Point2.h"
 #include "Matrix.h"
@@ -58,11 +59,11 @@ namespace gtsam {
     /** return 2*2 negative transpose */
     Matrix negtranspose() const;
 
+    /** rotate from world to rotated = R*p */
+    Point2 rotate(const Point2& p) const;
+
     /** rotate from world to rotated = R'*p */
     Point2 unrotate(const Point2& p) const;
-
-    /** friends */
-    friend Matrix Dunrotate1(const Rot2& R, const Point2& p);
 
   private:
     /** Serialization function */
@@ -122,20 +123,29 @@ namespace gtsam {
    * rotate point from rotated coordinate frame to
    * world = R*p
    */
-  Point2 rotate(const Rot2& R, const Point2& p);
-  inline Point2 operator*(const Rot2& R, const Point2& p) {
-    return rotate(R,p);
-  }
-  Matrix Drotate1(const Rot2& R, const Point2& p);
-  Matrix Drotate2(const Rot2& R); // does not depend on p !
+  inline Point2 operator*(const Rot2& R, const Point2& p) {return R.rotate(p);}
+	Point2 rotate(const Rot2 & R, const Point2& p, boost::optional<Matrix&> H1 =
+			boost::none, boost::optional<Matrix&> H2 = boost::none);
 
   /**
    * rotate point from world to rotated
    * frame = R'*p
    */
-  Point2 unrotate(const Rot2& R, const Point2& p);
-  Matrix Dunrotate1(const Rot2& R, const Point2& p);
-  Matrix Dunrotate2(const Rot2& R); // does not depend on p !
+	Point2 unrotate(const Rot2 & R, const Point2& p, boost::optional<Matrix&> H1 =
+			boost::none, boost::optional<Matrix&> H2 = boost::none);
+
+	/**
+	 * Calculate relative bearing to a landmark in local coordinate frame
+	 * @param point 2D location of landmark
+	 * @param H optional reference for Jacobian
+	 * @return 2D rotation \in SO(2)
+	 */
+	Rot2 relativeBearing(const Point2& d);
+
+	/**
+	 * Calculate relative bearing and optional derivative
+	 */
+	Rot2 relativeBearing(const Point2& d, boost::optional<Matrix&> H);
 
 } // gtsam
 

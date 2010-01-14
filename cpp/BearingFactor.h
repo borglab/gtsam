@@ -13,26 +13,6 @@
 namespace gtsam {
 
 	/**
-	 * Calculate relative bearing to a landmark in local coordinate frame
-	 * @param point 2D location of landmark
-	 * @param H optional reference for Jacobian
-	 * @return 2D rotation \in SO(2)
-	 */
-	Rot2 relativeBearing(const Point2& d) {
-		double n = d.norm();
-		return Rot2(d.x() / n, d.y() / n);
-	}
-
-	/**
-	 * Calculate relative bearing and optional derivative
-	 */
-	Rot2 relativeBearing(const Point2& d, boost::optional<Matrix&> H) {
-		double x = d.x(), y = d.y(), d2 = x * x + y * y, n = sqrt(d2);
-		if (H) *H = Matrix_(1, 2, -y / d2, x / d2);
-		return Rot2(x / n, y / n);
-	}
-
-	/**
 	 * Calculate bearing to a landmark
 	 * @param pose 2D pose of robot
 	 * @param point 2D location of landmark
