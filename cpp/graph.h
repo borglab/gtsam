@@ -26,6 +26,14 @@ namespace gtsam {
 	boost::edge_weight_t, double> > {
 	};
 
+	template<class Key>
+	class SGraph : public boost::adjacency_list<boost::vecS, boost::vecS, boost::directedS,
+			boost::property<boost::vertex_name_t, std::string> > {
+		typedef typename boost::graph_traits<SDGraph<Key> >::vertex_descriptor Vertex;
+	};
+
+	//typedef boost::graph_traits<SGraph>::vertex_descriptor SVertex;
+
 	/**
 	 * Map from variable key to parent key
 	 */
@@ -45,8 +53,8 @@ namespace gtsam {
 	 * G = Graph type
 	 * V = Vertex type
 	 */
-	template<class G, class V, class Key>
-	boost::tuple<G, V, std::map<Key, V> >
+	template<class Key>
+	boost::tuple<SDGraph<Key>, typename SDGraph<Key>::Vertex, std::map<Key, typename SDGraph<Key>::Vertex> >
 		predecessorMap2Graph(const PredecessorMap<Key>& p_map);
 
 	/**

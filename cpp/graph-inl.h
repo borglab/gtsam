@@ -21,9 +21,6 @@ namespace gtsam {
 
 //typedef boost::graph_traits<SDGraph>::vertex_iterator BoostVertexIterator;
 
-//typedef boost::adjacency_list<boost::vecS, boost::vecS, boost::directedS,
-//		boost::property<boost::vertex_name_t, std::string> > SGraph;
-//typedef boost::graph_traits<SGraph>::vertex_descriptor SVertex;
 
 
 /* ************************************************************************* */
@@ -64,10 +61,12 @@ SDGraph<Key> toBoostGraph(const G& graph) {
 }
 
 /* ************************************************************************* */
-template<class G, class V, class Key>
-boost::tuple<G, V, map<Key, V> > predecessorMap2Graph(const PredecessorMap<Key>& p_map) {
+template<class Key>
+boost::tuple<SDGraph<Key>, typename SDGraph<Key>::Vertex, std::map<Key, typename SDGraph<Key>::Vertex> >
+predecessorMap2Graph(const PredecessorMap<Key>& p_map) {
 
-	G g(0);
+	typedef typename SDGraph<Key>::Vertex V;
+	SDGraph<Key> g;
 	map<Key, V> key2vertex;
 	V v1, v2, root;
 	Key child, parent;
@@ -95,7 +94,7 @@ boost::tuple<G, V, map<Key, V> > predecessorMap2Graph(const PredecessorMap<Key>&
 	if (!foundRoot)
 		throw invalid_argument("predecessorMap2Graph: invalid predecessor map!");
 
-	return boost::tuple<G, V, map<Key, V> >(g, root, key2vertex);
+	return boost::tuple<SDGraph<Key>, V, std::map<Key, V> >(g, root, key2vertex);
 }
 
 /* ************************************************************************* */
