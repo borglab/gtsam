@@ -35,6 +35,7 @@ namespace gtsam {
 		// Get stuff:
 
 		size_t index() const { return j_;}
+		const char* c_str() const { return (std::string)(*this).c_str();}
 		operator std::string() const { return (boost::format("%c%d") % C % j_).str(); }
 		std::string latex() const { return (boost::format("%c_{%d}") % C % j_).str(); }
 
