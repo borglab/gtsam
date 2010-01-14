@@ -1,12 +1,11 @@
 /**
  *  @file  testBearingFactor.cpp
  *  @brief Unit tests for BearingFactor Class
- *  @authors Frank Dellaert, Viorela Ila
+ *  @authors Frank Dellaert
  **/
 
-#include <boost/bind.hpp>
 #include <CppUnitLite/TestHarness.h>
-#include "Key.h"
+
 #include "numericalDerivative.h"
 #include "BearingFactor.h"
 #include "TupleConfig.h"

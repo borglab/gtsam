@@ -27,9 +27,7 @@ namespace gtsam {
 	 * Calculate relative bearing and optional derivative
 	 */
 	Rot2 relativeBearing(const Point2& d, boost::optional<Matrix&> H) {
-		double x = d.x(), y = d.y();
-		double d2 = x * x + y * y;
-		double n = sqrt(d2);
+		double x = d.x(), y = d.y(), d2 = x * x + y * y, n = sqrt(d2);
 		if (H) *H = Matrix_(1, 2, -y / d2, x / d2);
 		return Rot2(x / n, y / n);
 	}
