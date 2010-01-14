@@ -8,6 +8,7 @@
 
 #pragma once
 
+#include "Lie.h"
 #include "Matrix.h"
 
 //#define LINEARIZE_AT_IDENTITY

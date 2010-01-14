@@ -5,8 +5,7 @@
  *      Author: Richard Roberts
  */
 
-#ifndef LIE_H_
-#define LIE_H_
+#pragma once
 
 #include <string>
 #include "Vector.h"
@@ -78,18 +77,31 @@ namespace gtsam {
     return obj1.equals(obj2);
   }
 
-  // Vector Group operations
+  // The rest of the file makes double and Vector behave as a Lie type (with + as compose)
+
+  // double,+ group operations
+  inline double compose(double p1,double p2) { return p1+p2;}
+  inline double inverse(double p) { return -p;}
+  inline double between(double p1,double p2) { return p2-p1;}
+
+  // double,+ is a trivial Lie group
+  template<> inline double expmap(const Vector& d) { return d(0);}
+  template<> inline double expmap(const double& p,const Vector& d) { return p+d(0);}
+  inline Vector logmap(const double& p) { return repeat(1,p);}
+  inline Vector logmap(const double& p1,const double& p2) { return Vector_(1,p2-p1);}
+
+  // Global functions needed for double
+  inline size_t dim(const double& v) { return 1; }
+
+  // Vector group operations
   inline Vector compose(const Vector& p1,const Vector& p2) { return p1+p2;}
   inline Vector inverse(const Vector& p) { return -p;}
   inline Vector between(const Vector& p1,const Vector& p2) { return p2-p1;}
 
-  // Vector is a trivial Lie Group
+  // Vector is a trivial Lie group
   template<> inline Vector expmap(const Vector& d) { return d;}
   template<> inline Vector expmap(const Vector& p,const Vector& d) { return p+d;}
   inline Vector logmap(const Vector& p) { return p;}
   inline Vector logmap(const Vector& p1,const Vector& p2) { return p2-p1;}
 
-}
-
-
-#endif /* LIE_H_ */
+} // namespace gtsam

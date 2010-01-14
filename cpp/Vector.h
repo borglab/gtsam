@@ -19,8 +19,6 @@
 typedef boost::numeric::ublas::vector<double> Vector;
 #endif
 
-#include "Lie.h"
-
 namespace gtsam {
 
 /**
@@ -86,7 +84,7 @@ bool zero(const Vector& v);
  * dimensionality == size
  */
 inline size_t dim(const Vector& v) { return v.size(); }
-	
+
 /**
  * print with optional string
  */
