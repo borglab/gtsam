@@ -272,7 +272,7 @@ void FactorGraph<Factor>::associateFactor(int index, sharedFactor factor) {
 
 /* ************************************************************************* */
 template<class Factor> template <class Key>
-map<Key,Key> FactorGraph<Factor>::findMinimumSpanningTree() const {
+PredecessorMap<Key> FactorGraph<Factor>::findMinimumSpanningTree() const {
 
 	SDGraph<Key> g = gtsam::toBoostGraph<FactorGraph<Factor>, sharedFactor, Key>(*this);
 
@@ -281,7 +281,7 @@ map<Key,Key> FactorGraph<Factor>::findMinimumSpanningTree() const {
 	prim_minimum_spanning_tree(g, &p_map[0]);
 
 	// convert edge to string pairs
-	map<Key, Key> tree;
+	PredecessorMap<Key> tree;
 	typename SDGraph<Key>::vertex_iterator itVertex = boost::vertices(g).first;
 	typename vector<typename SDGraph<Key>::Vertex>::iterator vi;
 	for (vi = p_map.begin(); vi!=p_map.end(); itVertex++, vi++) {

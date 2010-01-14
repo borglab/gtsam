@@ -120,7 +120,7 @@ namespace gtsam {
 		/**
 		 * find the minimum spanning tree.
 		 */
-		template<class Key> std::map<Key, Key> findMinimumSpanningTree() const;
+		template<class Key> PredecessorMap<Key> findMinimumSpanningTree() const;
 
 		/**
 		 * Split the graph into two parts: one corresponds to the given spanning tre,
