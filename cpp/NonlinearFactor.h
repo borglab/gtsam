@@ -145,6 +145,10 @@ namespace gtsam {
 
 	public:
 
+		/** Default constructor for I/O only */
+		NonlinearFactor1() {
+		}
+
 		/**
 		 *  Constructor
 		 *  @param z measurement
@@ -197,18 +201,18 @@ namespace gtsam {
 		virtual Vector evaluateError(const X& x, boost::optional<Matrix&> H =
 				boost::none) const = 0;
 
-
 	private:
 
 		/** Serialization function */
 		friend class boost::serialization::access;
 		template<class Archive>
 		void serialize(Archive & ar, const unsigned int version) {
-			ar & boost::serialization::make_nvp("NonlinearFactor", boost::serialization::base_object<NonlinearFactor>(*this));
+			ar & boost::serialization::make_nvp("NonlinearFactor",
+					boost::serialization::base_object<NonlinearFactor>(*this));
 			ar & BOOST_SERIALIZATION_NVP(key_);
 		}
 
-};
+	};
 
 	/**
 	 * A Gaussian nonlinear factor that takes 2 parameters
@@ -232,7 +236,8 @@ namespace gtsam {
 		/**
 		 * Default Constructor for I/O
 		 */
-		NonlinearFactor2();
+		NonlinearFactor2() {
+		}
 
 		/**
 		 * Constructor
@@ -305,7 +310,8 @@ namespace gtsam {
 		friend class boost::serialization::access;
 		template<class Archive>
 		void serialize(Archive & ar, const unsigned int version) {
-			ar & boost::serialization::make_nvp("NonlinearFactor", boost::serialization::base_object<NonlinearFactor>(*this));
+			ar & boost::serialization::make_nvp("NonlinearFactor",
+					boost::serialization::base_object<NonlinearFactor>(*this));
 			ar & BOOST_SERIALIZATION_NVP(key1_);
 			ar & BOOST_SERIALIZATION_NVP(key2_);
 		}
