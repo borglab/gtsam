@@ -17,7 +17,6 @@
 #include <NonlinearFactorGraph.h>
 #include <NonlinearOptimizer.h>
 #include <SQPOptimizer.h>
-#include <Simulated2DMeasurement.h>
 #include <simulated2D.h>
 #include <Ordering.h>
 #include <VSLAMConfig.h>
@@ -279,12 +278,12 @@ TEST (SQP, two_pose_truth ) {
 	// measurement from x1 to l1
 	Vector z1 = Vector_(2, 0.0, 5.0);
 	double sigma1 = 0.1;
-	shared f1(new simulated2D::Simulated2DMeasurement(z1, sigma1, "x1", "l1"));
+	shared f1(new simulated2D::Measurement(z1, sigma1, "x1", "l1"));
 
 	// measurement from x2 to l1
 	Vector z2 = Vector_(2, -4.0, 0.0);
 	double sigma2 = 0.1;
-	shared f2(new simulated2D::Simulated2DMeasurement(z2, sigma2, "x2", "l1"));
+	shared f2(new simulated2D::Measurement(z2, sigma2, "x2", "l1"));
 
 	// construct the graph
 	shared_ptr<NLGraph> graph(new NLGraph());
@@ -376,12 +375,12 @@ TEST (SQP, two_pose ) {
 	// measurement from x1 to l1
 	Vector z1 = Vector_(2, 0.0, 5.0);
 	double sigma1 = 0.1;
-	shared f1(new simulated2D::Simulated2DMeasurement(z1, sigma1, "x1", "l1"));
+	shared f1(new simulated2D::Measurement(z1, sigma1, "x1", "l1"));
 
 	// measurement from x2 to l2
 	Vector z2 = Vector_(2, -4.0, 0.0);
 	double sigma2 = 0.1;
-	shared f2(new simulated2D::Simulated2DMeasurement(z2, sigma2, "x2", "l2"));
+	shared f2(new simulated2D::Measurement(z2, sigma2, "x2", "l2"));
 
 	// equality constraint between l1 and l2
 	list<string> keys2; keys2 += "l1", "l2";

@@ -13,7 +13,7 @@
 
 #include "Matrix.h"
 #include "smallExample.h"
-#include "Simulated2DMeasurement.h"
+#include "Simulated2D.h"
 #include "GaussianFactor.h"
 
 using namespace std;
@@ -28,11 +28,11 @@ TEST( NonlinearFactor, equals )
 
 	// create two nonlinear2 factors
 	Vector z3 = Vector_(2,0.,-1.);
-	simulated2D::Simulated2DMeasurement f0(z3, sigma, "x1", "l1");
+	simulated2D::Measurement f0(z3, sigma, "x1", "l1");
 
 	// measurement between x2 and l1
 	Vector z4 = Vector_(2,-1.5, -1.);
-	simulated2D::Simulated2DMeasurement f1(z4, sigma, "x2", "l1");
+	simulated2D::Measurement f1(z4, sigma, "x2", "l1");
 
 	CHECK(assert_equal(f0,f0));
 	CHECK(f0.equals(f0));

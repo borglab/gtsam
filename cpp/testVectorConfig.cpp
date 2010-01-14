@@ -47,11 +47,15 @@ TEST( VectorConfig, equals2 )
  }
 
 /* ************************************************************************* */
+
+#include <limits>
+double inf = std::numeric_limits<double>::infinity();
+
 TEST( VectorConfig, equals_nan )
  {
    VectorConfig cfg1, cfg2;
    Vector v1 = Vector_(3, 5.0, 6.0, 7.0);
-   Vector v2 = Vector_(3, 0.0/0.0, 0.0/0.0, 0.0/0.0);
+   Vector v2 = Vector_(3, inf, inf, inf);
    cfg1.insert("x", v1);
    cfg2.insert("x", v2);
    CHECK(!cfg1.equals(cfg2));

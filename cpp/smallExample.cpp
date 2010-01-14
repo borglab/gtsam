@@ -16,9 +16,6 @@ using namespace std;
 #include "Matrix.h"
 #include "NonlinearFactor.h"
 #include "smallExample.h"
-#include "Point2Prior.h"
-#include "Simulated2DOdometry.h"
-#include "Simulated2DMeasurement.h"
 #include "simulated2D.h"
 
 // template definitions
@@ -38,7 +35,7 @@ namespace gtsam {
 		// prior on x1
 		double sigma1 = 0.1;
 		Vector mu = zero(2);
-		shared f1(new simulated2D::Point2Prior(mu, sigma1, "x1"));
+		shared f1(new simulated2D::Prior(mu, sigma1, "x1"));
 		nlfg->push_back(f1);
 
 		// odometry between x1 and x2
@@ -46,7 +43,7 @@ namespace gtsam {
 		Vector z2(2);
 		z2(0) = 1.5;
 		z2(1) = 0;
-		shared f2(new simulated2D::Simulated2DOdometry(z2, sigma2, "x1", "x2"));
+		shared f2(new simulated2D::Odometry(z2, sigma2, "x1", "x2"));
 		nlfg->push_back(f2);
 
 		// measurement between x1 and l1
@@ -54,7 +51,7 @@ namespace gtsam {
 		Vector z3(2);
 		z3(0) = 0.;
 		z3(1) = -1.;
-		shared f3(new simulated2D::Simulated2DMeasurement(z3, sigma3, "x1", "l1"));
+		shared f3(new simulated2D::Measurement(z3, sigma3, "x1", "l1"));
 		nlfg->push_back(f3);
 
 		// measurement between x2 and l1
@@ -62,7 +59,7 @@ namespace gtsam {
 		Vector z4(2);
 		z4(0) = -1.5;
 		z4(1) = -1.;
-		shared f4(new simulated2D::Simulated2DMeasurement(z4, sigma4, "x2", "l1"));
+		shared f4(new simulated2D::Measurement(z4, sigma4, "x2", "l1"));
 		nlfg->push_back(f4);
 
 		return nlfg;
@@ -234,7 +231,7 @@ namespace gtsam {
 		// prior on x1
 		Vector x1 = Vector_(2, 1.0, 0.0);
 		string key1 = symbol('x', 1);
-		shared prior(new simulated2D::Point2Prior(x1, sigma1, key1));
+		shared prior(new simulated2D::Prior(x1, sigma1, key1));
 		nlfg.push_back(prior);
 		poses.insert(key1, x1);
 
@@ -242,13 +239,13 @@ namespace gtsam {
 			// odometry between x_t and x_{t-1}
 			Vector odo = Vector_(2, 1.0, 0.0);
 			string key = symbol('x', t);
-			shared odometry(new simulated2D::Simulated2DOdometry(odo, sigma2, symbol('x', t - 1),
+			shared odometry(new simulated2D::Odometry(odo, sigma2, symbol('x', t - 1),
 					key));
 			nlfg.push_back(odometry);
 
 			// measurement on x_t is like perfect GPS
 			Vector xt = Vector_(2, (double) t, 0.0);
-			shared measurement(new simulated2D::Point2Prior(xt, sigma1, key));
+			shared measurement(new simulated2D::Prior(xt, sigma1, key));
 			nlfg.push_back(measurement);
 
 			// initial estimate
@@ -529,7 +526,7 @@ namespace gtsam {
 
 		// Create almost hard constraint on x11, sigma=0 will work for PCG not for normal
 		double sigma0 = 1e-3;
-		shared constraint(new simulated2D::Point2Prior(Vector_(2, 1.0, 1.0), sigma0, "x11"));
+		shared constraint(new simulated2D::Prior(Vector_(2, 1.0, 1.0), sigma0, "x11"));
 		nlfg.push_back(constraint);
 
 		double sigma = 0.01;
@@ -538,7 +535,7 @@ namespace gtsam {
 		Vector z1 = Vector_(2, 1.0, 0.0); // move right
 		for (size_t x = 1; x < N; x++)
 			for (size_t y = 1; y <= N; y++) {
-				shared f(new simulated2D::Simulated2DOdometry(z1, sigma, key(x, y), key(x + 1, y)));
+				shared f(new simulated2D::Odometry(z1, sigma, key(x, y), key(x + 1, y)));
 				nlfg.push_back(f);
 			}
 
@@ -546,7 +543,7 @@ namespace gtsam {
 		Vector z2 = Vector_(2, 0.0, 1.0); // move up
 		for (size_t x = 1; x <= N; x++)
 			for (size_t y = 1; y < N; y++) {
-				shared f(new simulated2D::Simulated2DOdometry(z2, sigma, key(x, y), key(x, y + 1)));
+				shared f(new simulated2D::Odometry(z2, sigma, key(x, y), key(x, y + 1)));
 				nlfg.push_back(f);
 			}
 

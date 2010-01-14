@@ -247,7 +247,7 @@ testVSLAMGraph_LDADD = libgtsam.la
 testVSLAMConfig_SOURCES = testVSLAMConfig.cpp
 testVSLAMConfig_LDADD = libgtsam.la
 
-headers += Point2Prior.h Simulated2DOdometry.h Simulated2DMeasurement.h smallExample.h 
+headers += smallExample.h 
 headers += $(sources:.cpp=.h)
 
 # create both dynamic and static libraries
