@@ -240,6 +240,7 @@ testSimpleCamera_SOURCES = testSimpleCamera.cpp
 testSimpleCamera_LDADD = libgtsam.la
 
 # Visual SLAM
+headers += VSLAMConfig.h
 sources += VSLAMGraph.cpp VSLAMFactor.cpp
 check_PROGRAMS += testVSLAMFactor testVSLAMGraph testVSLAMConfig
 testVSLAMFactor_SOURCES = testVSLAMFactor.cpp

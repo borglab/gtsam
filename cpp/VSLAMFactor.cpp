@@ -13,6 +13,8 @@
 using namespace std;
 namespace gtsam {
 
+	template class NonlinearFactor2<VSLAMConfig, VSLAMPoseKey, Pose3, VSLAMPointKey, Point3>;
+
 	/* ************************************************************************* */
 	VSLAMFactor::VSLAMFactor() {
 		/// Arbitrary values
