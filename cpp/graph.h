@@ -29,6 +29,7 @@ namespace gtsam {
 	template<class Key>
 	class SGraph : public boost::adjacency_list<boost::vecS, boost::vecS, boost::directedS,
 			boost::property<boost::vertex_name_t, std::string> > {
+	public:
 		typedef typename boost::graph_traits<SDGraph<Key> >::vertex_descriptor Vertex;
 	};
 

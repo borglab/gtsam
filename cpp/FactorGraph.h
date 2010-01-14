@@ -17,7 +17,7 @@
 
 #include "Testable.h"
 #include "BayesNet.h"
-#include "graph-inl.h"
+#include "graph.h"
 
 namespace gtsam {
 

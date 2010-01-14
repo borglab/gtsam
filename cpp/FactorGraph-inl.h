@@ -22,6 +22,7 @@
 #include <colamd/colamd.h>
 #include "Ordering.h"
 #include "FactorGraph.h"
+#include "graph-inl.h"
 
 // trick from some reading group
 #define FOREACH_PAIR( KEY, VAL, COL) BOOST_FOREACH (boost::tie(KEY,VAL),COL)

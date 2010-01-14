@@ -30,13 +30,15 @@ public:
 	Ordering& ordering_;
 };
 
-/* ************************************************************************* *
-Ordering::Ordering(const map<string, string>& p_map) {
+/* ************************************************************************* */
+Ordering::Ordering(const PredecessorMap<string>& p_map) {
 
-	SGraph g;
+	typedef SGraph<string>::Vertex SVertex;
+
+	SGraph<string> g;
 	SVertex root;
 	map<string, SVertex> key2vertex;
-	boost::tie(g, root, key2vertex) = predecessorMap2Graph<SGraph, SVertex>(p_map);
+	//boost::tie(g, root, key2vertex) = predecessorMap2Graph<string>(p_map);
 
 	// breadth first visit on the graph
 	ordering_key_visitor vis(*this);

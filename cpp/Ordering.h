@@ -10,6 +10,7 @@
 #include <string>
 #include <map>
 #include "Testable.h"
+#include "graph.h"
 
 namespace gtsam {
 
@@ -42,7 +43,7 @@ namespace gtsam {
 		/**
 		 * Generate the ordering from a spanning tree represented by its parent map
 		 */
-		//Ordering(const std::map<std::string, std::string>& p_map);
+		Ordering(const PredecessorMap<std::string>& p_map);
 
 		/**
 		 * Remove a set of keys from an ordering
