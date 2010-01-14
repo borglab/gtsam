@@ -200,7 +200,7 @@ testSimulated3D_LDADD = libgtsam.la
 check_PROGRAMS += testSimulated3D 
 
 # Pose SLAM headers
-headers += BetweenFactor.h LieConfig.h LieConfig-inl.h 
+headers += BetweenFactor.h LieConfig.h LieConfig-inl.h TupleConfig.h
 
 # 2D Pose constraints
 headers += Pose2Factor.h Pose2Prior.h 
