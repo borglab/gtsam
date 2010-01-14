@@ -48,8 +48,9 @@ namespace gtsam {
     /**
      * Typedefs
      */
-  	typedef J Key;
-    typedef std::map<Key, T> Values;
+    typedef J Key;
+    typedef T Value;
+    typedef std::map<J, T> Values;
     typedef typename Values::iterator iterator;
     typedef typename Values::const_iterator const_iterator;
 
@@ -71,17 +72,17 @@ namespace gtsam {
     /** Test whether configs are identical in keys and values */
     bool equals(const LieConfig& expected, double tol=1e-9) const;
 
-    /** Retrieve a variable by key, throws std::invalid_argument if not found */
-    const T& at(const Key& key) const;
+    /** Retrieve a variable by j, throws std::invalid_argument if not found */
+    const T& at(const J& j) const;
 
     /** operator[] syntax for get */
-		inline const T& operator[](const Key& key) const { return at(key);}
+		const T& operator[](const J& j) const { return at(j); }
 
 	  /** Check if a variable exists */
-	  bool exists(const Key& i) const {return values_.find(i)!=values_.end();}
+	  bool exists(const J& i) const { return values_.find(i)!=values_.end(); }
 
     /** The number of variables in this config */
-    int size() const { return values_.size(); }
+    size_t size() const { return values_.size(); }
 
     const_iterator begin() const { return values_.begin(); }
     const_iterator end() const { return values_.end(); }
@@ -90,11 +91,16 @@ namespace gtsam {
 
     // imperative methods:
 
-    /** Add a variable with the given key */
-    void insert(const Key& key, const T& val);
+    /** Add a variable with the given j */
+    void insert(const J& j, const T& val);
 
     /** Remove a variable from the config */
-    void erase(const Key& key) ;
+    void erase(const J& j);
+
+    /** Remove a variable from the config while returning the dimensionality of
+     * the removed element (normally not needed by user code).
+     */
+    void erase(const J& j, size_t& dim);
 
     /** Replace all keys and variables */
     LieConfig& operator=(const LieConfig& rhs) {

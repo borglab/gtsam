@@ -15,8 +15,8 @@
 
 namespace gtsam {
 
-	typedef NonlinearFactor2<VSLAMConfig, VSLAMConfig::PoseKey,
-	Pose3, VSLAMConfig::PointKey, Point3> VSLAMFactorBase;
+	typedef NonlinearFactor2<VSLAMConfig,
+	VSLAMPoseKey,	Pose3, VSLAMPointKey, Point3> VSLAMFactorBase;
 
 	/**
 	 * Non-linear factor for a constraint derived from a 2D measurement,
@@ -81,8 +81,8 @@ namespace gtsam {
 		friend class boost::serialization::access;
 		template<class Archive>
 		void serialize(Archive & ar, const unsigned int version) {
-			ar & BOOST_SERIALIZATION_NVP(key1_);
-			ar & BOOST_SERIALIZATION_NVP(key2_);
+			//ar & BOOST_SERIALIZATION_NVP(key1_);
+			//ar & BOOST_SERIALIZATION_NVP(key2_);
 			ar & BOOST_SERIALIZATION_NVP(z_);
 			ar & BOOST_SERIALIZATION_NVP(K_);
 		}

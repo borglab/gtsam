@@ -493,9 +493,9 @@ TEST (SQP, stereo_truth ) {
 
 	// create truth config
 	boost::shared_ptr<VSLAMConfig> truthConfig(new VSLAMConfig);
-	truthConfig->addCameraPose(1, camera1.pose());
-	truthConfig->addCameraPose(2, camera2.pose());
-	truthConfig->addLandmarkPoint(1, landmark);
+	truthConfig->insert(1, camera1.pose());
+	truthConfig->insert(2, camera2.pose());
+	truthConfig->insert(1, landmark);
 
 	// create graph
 	shared_ptr<VSLAMGraph> graph(new VSLAMGraph());
@@ -560,15 +560,15 @@ TEST (SQP, stereo_truth_noisy ) {
 
 	// create truth config
 	boost::shared_ptr<VSLAMConfig> truthConfig(new VSLAMConfig);
-	truthConfig->addCameraPose(1, camera1.pose());
-	truthConfig->addCameraPose(2, camera2.pose());
-	truthConfig->addLandmarkPoint(1, landmark);
+	truthConfig->insert(1, camera1.pose());
+	truthConfig->insert(2, camera2.pose());
+	truthConfig->insert(1, landmark);
 
 	// create config
 	boost::shared_ptr<VSLAMConfig> noisyConfig(new VSLAMConfig);
-	noisyConfig->addCameraPose(1, camera1.pose());
-	noisyConfig->addCameraPose(2, camera2.pose());
-	noisyConfig->addLandmarkPoint(1, landmarkNoisy);
+	noisyConfig->insert(1, camera1.pose());
+	noisyConfig->insert(2, camera2.pose());
+	noisyConfig->insert(1, landmarkNoisy);
 
 	// create graph
 	shared_ptr<VSLAMGraph> graph(new VSLAMGraph());
@@ -629,8 +629,8 @@ namespace sqp_stereo {
 	// binary constraint between landmarks
 	/** g(x) = x-y = 0 */
 	Vector g(const VSLAMConfig& config, const list<string>& keys) {
-		return config.landmarkPoint(getNum(keys.front())).vector()
-				- config.landmarkPoint(getNum(keys.back())).vector();
+		return config[VSLAMPointKey(getNum(keys.front()))].vector()
+				- config[VSLAMPointKey(getNum(keys.back()))].vector();
 	}
 
 	/** jacobian at l1 */
@@ -705,10 +705,10 @@ boost::shared_ptr<VSLAMConfig> stereoExampleTruthConfig() {
 
 	// create config
 	boost::shared_ptr<VSLAMConfig> truthConfig(new VSLAMConfig);
-	truthConfig->addCameraPose(1, camera1.pose());
-	truthConfig->addCameraPose(2, camera2.pose());
-	truthConfig->addLandmarkPoint(1, landmark1);
-	truthConfig->addLandmarkPoint(2, landmark2); // create two landmarks in same place
+	truthConfig->insert(1, camera1.pose());
+	truthConfig->insert(2, camera2.pose());
+	truthConfig->insert(1, landmark1);
+	truthConfig->insert(2, landmark2); // create two landmarks in same place
 
 	return truthConfig;
 }
@@ -763,10 +763,10 @@ TEST (SQP, stereo_sqp_noisy ) {
 
 	// noisy config
 	boost::shared_ptr<VSLAMConfig> initConfig(new VSLAMConfig);
-	initConfig->addCameraPose(1, pose1);
-	initConfig->addCameraPose(2, pose2);
-	initConfig->addLandmarkPoint(1, landmark1);
-	initConfig->addLandmarkPoint(2, landmark2); // create two landmarks in same place
+	initConfig->insert(1, pose1);
+	initConfig->insert(2, pose2);
+	initConfig->insert(1, landmark1);
+	initConfig->insert(2, landmark2); // create two landmarks in same place
 
 	// create ordering
 	Ordering ord;
@@ -828,10 +828,10 @@ TEST (SQP, stereo_sqp_noisy_manualLagrange ) {
 
 	// noisy config
 	boost::shared_ptr<VSLAMConfig> initConfig(new VSLAMConfig);
-	initConfig->addCameraPose(1, pose1);
-	initConfig->addCameraPose(2, pose2);
-	initConfig->addLandmarkPoint(1, landmark1);
-	initConfig->addLandmarkPoint(2, landmark2); // create two landmarks in same place
+	initConfig->insert(1, pose1);
+	initConfig->insert(2, pose2);
+	initConfig->insert(1, landmark1);
+	initConfig->insert(2, landmark2); // create two landmarks in same place
 
 	// create ordering with lagrange multiplier included
 	Ordering ord;

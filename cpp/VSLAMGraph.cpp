@@ -28,12 +28,12 @@ bool compareLandmark(const std::string& key,
 					const VSLAMConfig& feasible,
 					const VSLAMConfig& input) {
 	int j = atoi(key.substr(1, key.size() - 1).c_str());
-	return feasible.landmarkPoint(j).equals(input.landmarkPoint(j));
+	return feasible[VSLAMPointKey(j)].equals(input[VSLAMPointKey(j)]);
 }
 
 /* ************************************************************************* */
 void VSLAMGraph::addLandmarkConstraint(int j, const gtsam::Point3& p) {
-  typedef NonlinearEquality<VSLAMConfig,VSLAMConfig::PointKey,Point3> NLE;
+  typedef NonlinearEquality<VSLAMConfig,VSLAMPointKey,Point3> NLE;
   boost::shared_ptr<NLE> factor(new NLE(j, p));
   push_back(factor);
 }
@@ -43,12 +43,12 @@ bool compareCamera(const std::string& key,
 					const VSLAMConfig& feasible,
 					const VSLAMConfig& input) {
 	int j = atoi(key.substr(1, key.size() - 1).c_str());
-	return feasible.cameraPose(j).equals(input.cameraPose(j));
+	return feasible[VSLAMPoseKey(j)].equals(input[VSLAMPoseKey(j)]);
 }
 
 /* ************************************************************************* */
 void VSLAMGraph::addCameraConstraint(int j, const gtsam::Pose3& p) {
-  typedef NonlinearEquality<VSLAMConfig,VSLAMConfig::PoseKey,Pose3> NLE;
+  typedef NonlinearEquality<VSLAMConfig,VSLAMPoseKey,Pose3> NLE;
   boost::shared_ptr<NLE> factor(new NLE(j,p));
   push_back(factor);
 }

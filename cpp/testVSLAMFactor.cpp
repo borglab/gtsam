@@ -36,8 +36,8 @@ TEST( VSLAMFactor, error )
 
   // For the following configuration, the factor predicts 320,240
   VSLAMConfig config;
-  Rot3 R;Point3 t1(0,0,-6); Pose3 x1(R,t1); config.addCameraPose(1, x1);
-  Point3 l1;  config.addLandmarkPoint(1, l1);
+  Rot3 R;Point3 t1(0,0,-6); Pose3 x1(R,t1); config.insert(1, x1);
+  Point3 l1;  config.insert(1, l1);
   CHECK(assert_equal(Point2(320.,240.),factor->predict(x1,l1)));
 
   // Which yields an error of 3^2/2 = 4.5
@@ -65,8 +65,8 @@ TEST( VSLAMFactor, error )
 	delta.insert("l1",Vector_(3, 1.,2.,3.));
 	VSLAMConfig actual_config = expmap(config, delta);
   VSLAMConfig expected_config;
-  Point3 t2(1,1,-5); Pose3 x2(R,t2); expected_config.addCameraPose(1, x2);
-  Point3 l2(1,2,3); expected_config.addLandmarkPoint(1, l2);
+  Point3 t2(1,1,-5); Pose3 x2(R,t2); expected_config.insert(1, x2);
+  Point3 l2(1,2,3); expected_config.insert(1, l2);
   CHECK(assert_equal(expected_config,actual_config,1e-9));
 }
 

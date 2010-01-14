@@ -16,12 +16,12 @@ TEST( VSLAMConfig, update_with_large_delta) {
 	// this test ensures that if the update for delta is larger than
 	// the size of the config, it only updates existing variables
 	VSLAMConfig init;
-	init.addCameraPose(1, Pose3());
-	init.addLandmarkPoint(1, Point3(1.0, 2.0, 3.0));
+	init.insert(1, Pose3());
+	init.insert(1, Point3(1.0, 2.0, 3.0));
 
 	VSLAMConfig expected;
-	expected.addCameraPose(1, Pose3(Rot3(), Point3(0.1, 0.1, 0.1)));
-	expected.addLandmarkPoint(1, Point3(1.1, 2.1, 3.1));
+	expected.insert(1, Pose3(Rot3(), Point3(0.1, 0.1, 0.1)));
+	expected.insert(1, Point3(1.1, 2.1, 3.1));
 
 	VectorConfig delta;
 	delta.insert("x1", Vector_(6, 0.0, 0.0, 0.0, 0.1, 0.1, 0.1));

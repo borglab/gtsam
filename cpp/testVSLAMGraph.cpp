@@ -76,12 +76,12 @@ TEST( VSLAMGraph, optimizeLM)
 
   // Create an initial configuration corresponding to the ground truth
   boost::shared_ptr<VSLAMConfig> initialEstimate(new VSLAMConfig);
-  initialEstimate->addCameraPose(1, camera1);
-  initialEstimate->addCameraPose(2, camera2);
-  initialEstimate->addLandmarkPoint(1, landmark1);
-  initialEstimate->addLandmarkPoint(2, landmark2);
-  initialEstimate->addLandmarkPoint(3, landmark3);
-  initialEstimate->addLandmarkPoint(4, landmark4);
+  initialEstimate->insert(1, camera1);
+  initialEstimate->insert(2, camera2);
+  initialEstimate->insert(1, landmark1);
+  initialEstimate->insert(2, landmark2);
+  initialEstimate->insert(3, landmark3);
+  initialEstimate->insert(4, landmark4);
 
   // Create an ordering of the variables
   list<string> keys;
@@ -119,12 +119,12 @@ TEST( VSLAMGraph, optimizeLM2)
 
   // Create an initial configuration corresponding to the ground truth
   boost::shared_ptr<VSLAMConfig> initialEstimate(new VSLAMConfig);
-  initialEstimate->addCameraPose(1, camera1);
-  initialEstimate->addCameraPose(2, camera2);
-  initialEstimate->addLandmarkPoint(1, landmark1);
-  initialEstimate->addLandmarkPoint(2, landmark2);
-  initialEstimate->addLandmarkPoint(3, landmark3);
-  initialEstimate->addLandmarkPoint(4, landmark4);
+  initialEstimate->insert(1, camera1);
+  initialEstimate->insert(2, camera2);
+  initialEstimate->insert(1, landmark1);
+  initialEstimate->insert(2, landmark2);
+  initialEstimate->insert(3, landmark3);
+  initialEstimate->insert(4, landmark4);
 
   // Create an ordering of the variables
   list<string> keys;
@@ -163,12 +163,12 @@ TEST( VSLAMGraph, CHECK_ORDERING)
 
   // Create an initial configuration corresponding to the ground truth
   boost::shared_ptr<VSLAMConfig> initialEstimate(new VSLAMConfig);
-  initialEstimate->addCameraPose(1, camera1);
-  initialEstimate->addCameraPose(2, camera2);
-  initialEstimate->addLandmarkPoint(1, landmark1);
-  initialEstimate->addLandmarkPoint(2, landmark2);
-  initialEstimate->addLandmarkPoint(3, landmark3);
-  initialEstimate->addLandmarkPoint(4, landmark4);
+  initialEstimate->insert(1, camera1);
+  initialEstimate->insert(2, camera2);
+  initialEstimate->insert(1, landmark1);
+  initialEstimate->insert(2, landmark2);
+  initialEstimate->insert(3, landmark3);
+  initialEstimate->insert(4, landmark4);
 
   shared_ptr<Ordering> ordering(new Ordering(graph->getOrdering()));
 

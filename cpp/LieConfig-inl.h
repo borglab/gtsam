@@ -38,22 +38,30 @@ namespace gtsam {
   }
 
   template<class J, class T>
-  const T& LieConfig<J,T>::at(const Key& key) const {
-    const_iterator it = values_.find(key);
-    if (it == values_.end()) throw std::invalid_argument("invalid key: " + (string)key);
+  const T& LieConfig<J,T>::at(const J& j) const {
+    const_iterator it = values_.find(j);
+    if (it == values_.end()) throw std::invalid_argument("invalid j: " + (string)j);
     else return it->second;
   }
 
   template<class J, class T>
-  void LieConfig<J,T>::insert(const Key& name, const T& val) {
+  void LieConfig<J,T>::insert(const J& name, const T& val) {
     values_.insert(make_pair(name, val));
     dim_ += dim(val);
   }
 
   template<class J, class T>
-  void LieConfig<J,T>::erase(const Key& key) {
-    iterator it = values_.find(key);
-    if (it == values_.end()) throw std::invalid_argument("invalid key: " + (string)key);
+  void LieConfig<J,T>::erase(const J& j) {
+    size_t dim; // unused
+    erase(j, dim);
+  }
+
+  template<class J, class T>
+  void LieConfig<J,T>::erase(const J& j, size_t& dim) {
+    iterator it = values_.find(j);
+    if (it == values_.end()) throw std::invalid_argument("invalid j: " + (string)j);
+    dim = gtsam::dim(it->second);
+    dim_ -= dim;
     values_.erase(it);
   }
 
@@ -61,13 +69,13 @@ namespace gtsam {
   template<class J, class T>
   LieConfig<J,T> expmap(const LieConfig<J,T>& c, const VectorConfig& delta) {
 		LieConfig<J,T> newConfig;
-		typedef pair<typename LieConfig<J,T>::Key,T> Value;
+		typedef pair<J,T> Value;
 		BOOST_FOREACH(const Value& value, c) {
-			const typename LieConfig<J,T>::Key& j = value.first;
+			const J& j = value.first;
 			const T& pj = value.second;
-			string key = (string)j;
-			if (delta.contains(key)) {
-				const Vector& dj = delta[key];
+			string jstr = (string)j;
+			if (delta.contains(jstr)) {
+				const Vector& dj = delta[jstr];
 				newConfig.insert(j, expmap(pj,dj));
 			} else
 			newConfig.insert(j, pj);
@@ -82,9 +90,9 @@ namespace gtsam {
       throw invalid_argument("Delta vector length does not match config dimensionality.");
     LieConfig<J,T> newConfig;
     int delta_offset = 0;
-		typedef pair<typename LieConfig<J,T>::Key,T> Value;
+		typedef pair<J,T> Value;
 		BOOST_FOREACH(const Value& value, c) {
-			const typename LieConfig<J,T>::Key& j = value.first;
+			const J& j = value.first;
 			const T& pj = value.second;
       int cur_dim = dim(pj);
       newConfig.insert(j,expmap(pj,sub(delta, delta_offset, delta_offset+cur_dim)));
