@@ -134,7 +134,7 @@ boost::shared_ptr<Config> composePoses(const G& graph, const PredecessorMap<type
 	PoseVertex root;
 	map<typename Config::Key, PoseVertex> key2vertex;
 	boost::tie(g, root, key2vertex) =
-			predecessorMap2Graph<PoseGraph, PoseVertex, typename Config::Key>(tree);
+			predecessorMap2Graph<typename Config::Key>(tree);
 
 	// attach the relative poses to the edges
 	PoseEdge edge1, edge2;
