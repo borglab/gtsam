@@ -136,7 +136,7 @@ testSubgraphPreconditioner_LDADD   = libgtsam.la
 # Nonlinear inference 
 headers += Key.h NonlinearFactorGraph.h NonlinearFactorGraph-inl.h
 headers += NonlinearOptimizer.h NonlinearOptimizer-inl.h 
-sources += NonlinearFactor.cpp 
+headers += NonlinearFactor.h
 check_PROGRAMS += testNonlinearFactor testNonlinearFactorGraph testNonlinearOptimizer
 testNonlinearFactor_SOURCES      = $(example) testNonlinearFactor.cpp
 testNonlinearFactor_LDADD        = libgtsam.la
