@@ -20,14 +20,14 @@ using namespace boost::assign;
 TEST ( Ordering, predecessorMap2Keys ) {
 	typedef Symbol<Pose2,'x'> Key;
 	PredecessorMap<Key> p_map;
-	p_map.insert(make_pair(Key(1), Key(1)));
-	p_map.insert(make_pair(Key(2), Key(1)));
-	p_map.insert(make_pair(Key(3), Key(1)));
-	p_map.insert(make_pair(Key(4), Key(3)));
-	p_map.insert(make_pair(Key(5), Key(1)));
+	p_map.insert(1,1);
+	p_map.insert(2,1);
+	p_map.insert(3,1);
+	p_map.insert(4,3);
+	p_map.insert(5,1);
 
 	list<Key> expected;
-	expected += Key(4), Key(5), Key(3), Key(2), Key(1);
+	expected += 4,5,3,2,1;//Key(4), Key(5), Key(3), Key(2), Key(1);
 
 	list<Key> actual = predecessorMap2Keys<Key>(p_map);
 	LONGS_EQUAL(expected.size(), actual.size());

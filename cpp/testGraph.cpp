@@ -29,9 +29,9 @@ TEST( Graph, predecessorMap2Graph )
 	map<string, SVertex> key2vertex;
 
 	PredecessorMap<string> p_map;
-	p_map.insert(make_pair("x1", "x2"));
-	p_map.insert(make_pair("x2", "x2"));
-	p_map.insert(make_pair("x3", "x2"));
+	p_map.insert("x1", "x2");
+	p_map.insert("x2", "x2");
+	p_map.insert("x3", "x2");
 	tie(graph, root, key2vertex) = predecessorMap2Graph<SGraph<string>, SVertex, string>(p_map);
 
 	LONGS_EQUAL(3, boost::num_vertices(graph));
@@ -47,9 +47,9 @@ TEST( Graph, composePoses )
 	graph.push_back(boost::shared_ptr<Pose2Factor>(new Pose2Factor(2,3, Pose2(3.0, 0.0, 0.0), cov)));
 
 	PredecessorMap<Pose2Config::Key> tree;
-	tree.insert(make_pair(1,2));
-	tree.insert(make_pair(2,2));
-	tree.insert(make_pair(3,2));
+	tree.insert(1,2);
+	tree.insert(2,2);
+	tree.insert(3,2);
 
 	Pose2 rootPose(3.0, 0.0, 0.0);
 

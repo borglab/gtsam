@@ -40,8 +40,14 @@ namespace gtsam {
 	/**
 	 * Map from variable key to parent key
 	 */
-	template <class Key>
-	class PredecessorMap : public std::map<Key,Key> {};
+	template<class Key>
+	class PredecessorMap: public std::map<Key, Key> {
+	public:
+		/** convenience insert so we can pass ints for Symbol keys */
+		inline void insert(const Key& key, const Key& parent) {
+			std::map<Key, Key>::insert(std::make_pair(key, parent));
+		}
+	};
 
 	/**
 	 * Convert the factor graph to an SDGraph
