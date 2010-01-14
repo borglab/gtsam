@@ -13,7 +13,7 @@
 
 #include "Matrix.h"
 #include "smallExample.h"
-#include "Simulated2D.h"
+#include "simulated2D.h"
 #include "GaussianFactor.h"
 
 using namespace std;
