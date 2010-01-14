@@ -8,9 +8,7 @@
 #pragma once
 
 #include "Pose2Factor.h"
-#include "Pose2Config.h"
 #include "NonlinearFactorGraph.h"
-#include "NonlinearEquality.h"
 
 namespace gtsam {
 
@@ -43,9 +41,7 @@ namespace gtsam {
 		 *  @param key of pose
 		 *  @param pose which pose to constrain it to
 		 */
-		inline void addConstraint(const Pose2Config::Key& key, const Pose2& pose =	Pose2()) {
-			push_back(sharedFactor(new NonlinearEquality<Pose2Config,Pose2Config::Key,Pose2>(key, pose)));
-		}
+		void addConstraint(const Pose2Config::Key& key, const Pose2& pose =	Pose2());
 
 	private:
 		/** Serialization function */
