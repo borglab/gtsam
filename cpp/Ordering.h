@@ -41,11 +41,6 @@ namespace gtsam {
 		}
 
 		/**
-		 * Generate the ordering from a spanning tree represented by its parent map
-		 */
-		Ordering(const PredecessorMap<std::string>& p_map);
-
-		/**
 		 * Remove a set of keys from an ordering
 		 * @param keys to remove
 		 * @return a new ordering without the selected keys
@@ -62,5 +57,11 @@ namespace gtsam {
 		bool equals(const Ordering &ord, double tol=0) const;
 
 	};
+
+	/**
+	 * Generate a list of keys from a spanning tree represented by its predecessor map
+	 */
+	template<class Key>
+	std::list<Key> predecessorMap2Keys(const PredecessorMap<Key>& p_map);
 
 }

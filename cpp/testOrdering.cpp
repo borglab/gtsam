@@ -5,7 +5,9 @@
 
 #include <boost/assign/std/list.hpp> // for operator +=
 #include <CppUnitLite/TestHarness.h>
-#include "Ordering.h"
+#include "Ordering-inl.h"
+#include "Pose2Config.h"
+
 
 using namespace std;
 using namespace gtsam;
@@ -15,19 +17,25 @@ using namespace boost::assign;
 // x1 -> x2
 //		-> x3 -> x4
 //    -> x5
-TEST ( Ordering, constructorFromTree ) {
-	PredecessorMap<string> p_map;
-	p_map.insert(make_pair("x1", "x1"));
-	p_map.insert(make_pair("x2", "x1"));
-	p_map.insert(make_pair("x3", "x1"));
-	p_map.insert(make_pair("x4", "x3"));
-	p_map.insert(make_pair("x5", "x1"));
+TEST ( Ordering, predecessorMap2Keys ) {
+	typedef Symbol<Pose2,'x'> Key;
+	PredecessorMap<Key> p_map;
+	p_map.insert(make_pair(Key(1), Key(1)));
+	p_map.insert(make_pair(Key(2), Key(1)));
+	p_map.insert(make_pair(Key(3), Key(1)));
+	p_map.insert(make_pair(Key(4), Key(3)));
+	p_map.insert(make_pair(Key(5), Key(1)));
 
-	Ordering expected;
-	expected += "x4", "x5", "x3", "x2", "x1";
+	list<Key> expected;
+	expected += Key(4), Key(5), Key(3), Key(2), Key(1);
 
-	Ordering actual(p_map);
-	CHECK(assert_equal(expected, actual));
+	list<Key> actual = predecessorMap2Keys<Key>(p_map);
+	LONGS_EQUAL(expected.size(), actual.size());
+
+	list<Key>::const_iterator it1 = expected.begin();
+	list<Key>::const_iterator it2 = actual.begin();
+	for(; it1!=expected.end(); it1++, it2++)
+		CHECK(*it1 == *it2)
 }
 
 
