@@ -19,7 +19,7 @@ using namespace std;
 namespace gtsam {
 
 // explicit instantiation so all the code is there and we can link with it
-template class FactorGraph<VSLAMFactor>;
+template class FactorGraph<NonlinearFactor<VSLAMConfig> >;
 template class NonlinearFactorGraph<VSLAMConfig>;
 template class NonlinearOptimizer<VSLAMGraph,VSLAMConfig>;
 
