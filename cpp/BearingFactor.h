@@ -8,6 +8,7 @@
 #include "Rot2.h"
 #include "Pose2.h"
 #include "Point2.h"
+#include "NonlinearFactor.h"
 
 namespace gtsam {
 
@@ -33,11 +34,6 @@ namespace gtsam {
 		return Rot2(x / n, y / n);
 	}
 
-	/** old style derivative */
-	inline Matrix DrelativeBearing(const Point2& d) {
-		Matrix H; relativeBearing(d, H); return H;
-	}
-
 	/**
 	 * Calculate bearing to a landmark
 	 * @param pose 2D pose of robot
@@ -54,7 +50,7 @@ namespace gtsam {
 	 */
 	Rot2 bearing(const Pose2& pose, const Point2& point,
 			boost::optional<Matrix&> H1, boost::optional<Matrix&> H2) {
-		if (!H1 && !H2) return bearing(pose,point);
+		if (!H1 && !H2) return bearing(pose, point);
 		Point2 d = transform_to(pose, point);
 		Matrix D_result_d;
 		Rot2 result = relativeBearing(d, D_result_d);
@@ -63,14 +59,33 @@ namespace gtsam {
 		return result;
 	}
 
-	/** old style derivative */
-	inline Matrix Dbearing1(const Pose2& pose, const Point2& point) {
-		Matrix H; bearing(pose, point, H, boost::none); return H;
-	}
+	/**
+	 * Non-linear factor for a constraint derived from a 2D measurement,
+	 * i.e. the main building block for visual SLAM.
+	 */
+	template<class Config, class PoseKey, class PointKey>
+	class BearingFactor: public NonlinearFactor2<Config, PoseKey, Pose2,
+			PointKey, Point2> {
+	private:
 
-	/** old style derivative */
-	inline Matrix Dbearing2(const Pose2& pose, const Point2& point) {
-		Matrix H; bearing(pose, point, boost::none, H); return H;
-	}
+		Rot2 z_; /** measurement */
+
+		typedef NonlinearFactor2<Config, PoseKey, Pose2, PointKey, Point2> Base;
+
+	public:
+
+		BearingFactor(); /* Default constructor */
+		BearingFactor(const Rot2& z, double sigma, const PoseKey& i,
+				const PointKey& j) :
+			Base(sigma, i, j), z_(z) {
+		}
+
+		/** h(x)-z -> between(z,h(x)) for Rot2 manifold */
+		Vector evaluateError(const Pose2& pose, const Point2& point,
+				boost::optional<Matrix&> H1, boost::optional<Matrix&> H2) const {
+			Rot2 hx = bearing(pose, point, H1, H2);
+			return logmap(between(z_, hx));
+		}
+	}; // BearingFactor
 
 } // namespace gtsam
