@@ -61,12 +61,11 @@ SDGraph<Key> toBoostGraph(const G& graph) {
 }
 
 /* ************************************************************************* */
-template<class Key>
-boost::tuple<SDGraph<Key>, typename SDGraph<Key>::Vertex, std::map<Key, typename SDGraph<Key>::Vertex> >
+template<class G, class V, class Key>
+boost::tuple<G, V, map<Key,V> >
 predecessorMap2Graph(const PredecessorMap<Key>& p_map) {
 
-	typedef typename SDGraph<Key>::Vertex V;
-	SDGraph<Key> g;
+	G g;
 	map<Key, V> key2vertex;
 	V v1, v2, root;
 	Key child, parent;
@@ -94,7 +93,7 @@ predecessorMap2Graph(const PredecessorMap<Key>& p_map) {
 	if (!foundRoot)
 		throw invalid_argument("predecessorMap2Graph: invalid predecessor map!");
 
-	return boost::tuple<SDGraph<Key>, V, std::map<Key, V> >(g, root, key2vertex);
+	return boost::tuple<G, V, std::map<Key, V> >(g, root, key2vertex);
 }
 
 /* ************************************************************************* */
@@ -133,8 +132,8 @@ boost::shared_ptr<Config> composePoses(const G& graph, const PredecessorMap<type
 	PoseGraph g;
 	PoseVertex root;
 	map<typename Config::Key, PoseVertex> key2vertex;
-//	boost::tie(g, root, key2vertex) =
-//			predecessorMap2Graph<typename Config::Key>(tree);
+	boost::tie(g, root, key2vertex) =
+			predecessorMap2Graph<PoseGraph, PoseVertex, typename Config::Key>(tree);
 
 	// attach the relative poses to the edges
 	PoseEdge edge1, edge2;

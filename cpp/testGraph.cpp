@@ -21,6 +21,24 @@ using namespace boost;
 using namespace gtsam;
 
 /* ************************************************************************* */
+TEST( Graph, predecessorMap2Graph )
+{
+	typedef SGraph<string>::Vertex SVertex;
+	SGraph<string> graph;
+	SVertex root;
+	map<string, SVertex> key2vertex;
+
+	PredecessorMap<string> p_map;
+	p_map.insert(make_pair("x1", "x2"));
+	p_map.insert(make_pair("x2", "x2"));
+	p_map.insert(make_pair("x3", "x2"));
+	tie(graph, root, key2vertex) = predecessorMap2Graph<SGraph<string>, SVertex, string>(p_map);
+
+	LONGS_EQUAL(3, boost::num_vertices(graph));
+	CHECK(root == key2vertex["x2"]);
+}
+
+/* ************************************************************************* */
 TEST( Graph, composePoses )
 {
 	Pose2Graph graph;

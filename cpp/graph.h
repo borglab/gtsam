@@ -24,13 +24,15 @@ namespace gtsam {
 	class SDGraph: public boost::adjacency_list<boost::vecS, boost::vecS, boost::undirectedS,
 	boost::property<boost::vertex_name_t, Key>, boost::property<
 	boost::edge_weight_t, double> > {
+	public:
+		typedef typename boost::graph_traits<SDGraph<Key> >::vertex_descriptor Vertex;
 	};
 
 	template<class Key>
 	class SGraph : public boost::adjacency_list<boost::vecS, boost::vecS, boost::directedS,
-			boost::property<boost::vertex_name_t, std::string> > {
+			boost::property<boost::vertex_name_t, Key> > {
 	public:
-		typedef typename boost::graph_traits<SDGraph<Key> >::vertex_descriptor Vertex;
+		typedef typename boost::graph_traits<SGraph<Key> >::vertex_descriptor Vertex;
 	};
 
 	//typedef boost::graph_traits<SGraph>::vertex_descriptor SVertex;
@@ -54,9 +56,8 @@ namespace gtsam {
 	 * G = Graph type
 	 * V = Vertex type
 	 */
-	template<class Key>
-	boost::tuple<SDGraph<Key>, typename SDGraph<Key>::Vertex, std::map<Key, typename SDGraph<Key>::Vertex> >
-		predecessorMap2Graph(const PredecessorMap<Key>& p_map);
+	template<class G, class V, class Key>
+	boost::tuple<G, V, std::map<Key,V> >	predecessorMap2Graph(const PredecessorMap<Key>& p_map);
 
 	/**
 	 * Compose the poses by following the chain specified by the spanning tree

@@ -11,12 +11,12 @@ using namespace std;
 using namespace gtsam;
 using namespace boost::assign;
 
-/* ************************************************************************* *
+/* ************************************************************************* */
 // x1 -> x2
 //		-> x3 -> x4
 //    -> x5
 TEST ( Ordering, constructorFromTree ) {
-	map<string, string> p_map;
+	PredecessorMap<string> p_map;
 	p_map.insert(make_pair("x1", "x1"));
 	p_map.insert(make_pair("x2", "x1"));
 	p_map.insert(make_pair("x3", "x1"));

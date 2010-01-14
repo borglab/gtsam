@@ -38,7 +38,7 @@ Ordering::Ordering(const PredecessorMap<string>& p_map) {
 	SGraph<string> g;
 	SVertex root;
 	map<string, SVertex> key2vertex;
-	//boost::tie(g, root, key2vertex) = predecessorMap2Graph<string>(p_map);
+	boost::tie(g, root, key2vertex) = predecessorMap2Graph<SGraph<string>, SVertex, string>(p_map);
 
 	// breadth first visit on the graph
 	ordering_key_visitor vis(*this);
