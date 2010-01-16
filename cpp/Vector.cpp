@@ -210,6 +210,14 @@ namespace gtsam {
 	}
 
   /* ************************************************************************* */
+  Vector operator/(double s, const Vector& v) {
+    Vector result(v.size());
+    for(size_t i = 0; i < v.size(); i++)
+      result[i] = s / v[i];
+    return result;
+  }
+
+  /* ************************************************************************* */
   pair<double, Vector > house(Vector &x)
   {
     const double x02 = x(0)*x(0);

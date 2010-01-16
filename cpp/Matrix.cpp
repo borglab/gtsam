@@ -625,5 +625,22 @@ Matrix inverse_square_root(const Matrix& A) {
 }
 
 /* ************************************************************************* */
+Matrix square_root_positive(const Matrix& A) {
+  size_t m = A.size2(), n = A.size1();
+  if (m!=n)
+    throw invalid_argument("inverse_square_root: A must be square");
+
+  // Perform SVD, TODO: symmetric SVD?
+  Matrix U,V;
+  Vector S;
+  svd(A,U,S,V);
+
+  // invert and sqrt diagonal of S
+  // We also arbitrarily choose sign to make result have positive signs
+  for(size_t i = 0; i<m; i++) S(i) = - pow(S(i),0.5);
+  return vector_scale(S, V); // V*S;
+}
+
+/* ************************************************************************* */
 
 } // namespace gtsam

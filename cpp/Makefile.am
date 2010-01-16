@@ -100,9 +100,9 @@ testBinaryBayesNet_SOURCES    = testBinaryBayesNet.cpp
 testBinaryBayesNet_LDADD      = libgtsam.la 
 
 # Gaussian inference 
-headers += GaussianFactorSet.h
-sources += Errors.cpp VectorConfig.cpp GaussianFactor.cpp GaussianFactorGraph.cpp GaussianConditional.cpp GaussianBayesNet.cpp
-check_PROGRAMS += testVectorConfig testGaussianFactor testGaussianFactorGraph testGaussianConditional testGaussianBayesNet
+headers += GaussianFactorSet.h NoiseModel.h
+sources += Errors.cpp VectorConfig.cpp GaussianFactor.cpp GaussianFactorGraph.cpp GaussianConditional.cpp GaussianBayesNet.cpp NoiseModel.cpp
+check_PROGRAMS += testVectorConfig testGaussianFactor testGaussianFactorGraph testGaussianConditional testGaussianBayesNet testNoiseModel
 testVectorConfig_SOURCES        = testVectorConfig.cpp
 testVectorConfig_LDADD          = libgtsam.la
 testGaussianFactor_SOURCES      = $(example) testGaussianFactor.cpp
@@ -113,6 +113,8 @@ testGaussianConditional_SOURCES = $(example) testGaussianConditional.cpp
 testGaussianConditional_LDADD   = libgtsam.la
 testGaussianBayesNet_SOURCES    = $(example) testGaussianBayesNet.cpp
 testGaussianBayesNet_LDADD      = libgtsam.la
+testNoiseModel_SOURCES          = testNoiseModel.cpp
+testNoiseModel_LDADD            = libgtsam.la
 
 # Iterative Methods
 headers += iterative-inl.h
@@ -278,11 +280,3 @@ CXXLINK = $(LIBTOOL) $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=link \
 # rule to run an executable
 %.run: % libgtsam.la
 	./$^
-
-# to compile colamd and cppunitlite first when make all and make install. 
-# The part after external_libs is copied from automatically generated Makefile when without the following line
-libgtsam.la: external_libs $(libgtsam_la_OBJECTS) $(libgtsam_la_DEPENDENCIES) 
-	$(libgtsam_la_LINK) -rpath $(libdir) $(libgtsam_la_OBJECTS) $(libgtsam_la_LIBADD) $(LIBS)
-
-
-

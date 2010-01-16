@@ -188,6 +188,11 @@ double max(const Vector &a);
 inline double dot(const Vector &a, const Vector& b) { return sum(emul(a,b)); }
 
 /**
+ * Divide every element of a Vector into a scalar
+ */
+Vector operator/(double s, const Vector& v);
+
+/**
  * house(x,j) computes HouseHolder vector v and scaling factor beta
  *  from x, such that the corresponding Householder reflection zeroes out
  *  all but x.(j), j is base 0. Golub & Van Loan p 210.
