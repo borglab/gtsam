@@ -242,7 +242,7 @@ testVSLAMGraph_LDADD = libgtsam.la
 testVSLAMConfig_SOURCES = testVSLAMConfig.cpp
 testVSLAMConfig_LDADD = libgtsam.la
 
-headers += smallExample.h 
+headers += smallExample.h numericalDerivative.h
 headers += $(sources:.cpp=.h)
 
 # Timing tests
