@@ -170,6 +170,13 @@ Vector ediv_(const Vector &a, const Vector &b);
  */
 double sum(const Vector &a);
 
+/**
+ * return the max element of a vector
+ * @param a vector
+ * @return max(a)
+ */
+double max(const Vector &a);
+
 /** Dot product */
 inline double dot(const Vector &a, const Vector& b) { return sum(emul(a,b)); }
 

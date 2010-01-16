@@ -91,7 +91,12 @@ namespace gtsam {
 		if (verbosity >= CONFIG)
 			newConfig->print("newConfig");
 
-		return NonlinearOptimizer(graph_, ordering_, newConfig);
+		NonlinearOptimizer newOptimizer = NonlinearOptimizer(graph_, ordering_, newConfig);
+
+		if (verbosity >= ERROR)
+			cout << "error: " << newOptimizer.error_ << endl;
+
+		return newOptimizer;
 	}
 
 	/* ************************************************************************* */

@@ -68,6 +68,14 @@ namespace gtsam {
     /** Total dimensionality */
     size_t dim() const;
 
+    /** max of the vectors */
+    inline double max() const {
+    	double m = -std::numeric_limits<double>::infinity();
+    	for(const_iterator it=begin(); it!=end(); it++)
+    		m = std::max(m, gtsam::max(it->second));
+    	return m;
+    }
+
     /** Scale */
     VectorConfig scale(double s) const;
     VectorConfig operator*(double s) const;
@@ -124,6 +132,9 @@ namespace gtsam {
 
   /** dim function (for iterative::CGD) */
   inline double dim(const VectorConfig& x) { return x.dim();}
+
+  /** max of the vectors */
+  inline double max(const VectorConfig& x) { return x.max();}
 
   /** print with optional string */
   void print(const VectorConfig& v, const std::string& s = "");

@@ -196,6 +196,11 @@ namespace gtsam {
 		}
 
   /* ************************************************************************* */
+  double max(const Vector &a) {
+  	return *(std::max_element(a.begin(), a.end()));
+	}
+
+  /* ************************************************************************* */
   pair<double, Vector > house(Vector &x)
   {
     const double x02 = x(0)*x(0);
