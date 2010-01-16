@@ -10,8 +10,10 @@
 #include <Pose2.h>
 #include <Point2.h>
 
-#include "TupleConfig.h"
 #include "Vector.h"
+#include "Key.h"
+#include "VectorConfig.h"
+#include "TupleConfig-inl.h"
 
 using namespace gtsam;
 using namespace std;

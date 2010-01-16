@@ -11,6 +11,11 @@
 #include <boost/foreach.hpp>
 #include "GaussianFactorGraph.h"
 #include "NonlinearFactorGraph.h"
+#include "FactorGraph-inl.h"
+
+#define INSTANTIATE_NONLINEAR_FACTOR_GRAPH(C) \
+  INSTANTIATE_FACTOR_GRAPH(NonlinearFactor<C>); \
+  template class NonlinearFactorGraph<C>;
 
 using namespace std;
 

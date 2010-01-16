@@ -27,7 +27,7 @@ namespace gtsam {
  * GaussianFactor is non-mutable (all methods const!).
  * The factor value is exp(-0.5*||Ax-b||^2)
  */
-class GaussianFactor: public Factor<VectorConfig> {
+class GaussianFactor: boost::noncopyable, public Factor<VectorConfig> {
 public:
 
 	typedef boost::shared_ptr<GaussianFactor> shared_ptr;

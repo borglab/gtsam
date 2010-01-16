@@ -12,17 +12,11 @@
 #include <boost/shared_ptr.hpp>
 #include <CppUnitLite/TestHarness.h>
 #include <GaussianFactorGraph.h>
-#include <NonlinearFactor.h>
-#include <NonlinearEquality.h>
-#include <NonlinearFactorGraph.h>
 #include <NonlinearOptimizer.h>
 #include <SQPOptimizer.h>
 #include <simulated2D.h>
 #include <Ordering.h>
-#include <VSLAMConfig.h>
-#include <VSLAMFactor.h>
-#include <VSLAMGraph.h>
-#include <SimpleCamera.h>
+#include <visualSLAM.h>
 
 // templated implementations
 #include <NonlinearFactorGraph-inl.h>
@@ -468,10 +462,13 @@ size_t w=640,h=480;
 Cal3_S2 K(fov,w,h);
 boost::shared_ptr<Cal3_S2> shK(new Cal3_S2(K));
 
+using namespace gtsam::visualSLAM;
+using namespace boost;
+
 // typedefs for visual SLAM example
-typedef boost::shared_ptr<VSLAMFactor> shared_vf;
-typedef NonlinearOptimizer<VSLAMGraph,VSLAMConfig> VOptimizer;
-typedef SQPOptimizer<VSLAMGraph, VSLAMConfig> SOptimizer;
+typedef boost::shared_ptr<ProjectionFactor> shared_vf;
+typedef NonlinearOptimizer<Graph,Config> VOptimizer;
+typedef SQPOptimizer<Graph, Config> SOptimizer;
 
 /**
  * Ground truth for a visual SLAM example with stereo vision
@@ -492,26 +489,26 @@ TEST (SQP, stereo_truth ) {
 	Point3 landmarkNoisy(1.0, 6.0, 0.0);
 
 	// create truth config
-	boost::shared_ptr<VSLAMConfig> truthConfig(new VSLAMConfig);
+	boost::shared_ptr<Config> truthConfig(new Config);
 	truthConfig->insert(1, camera1.pose());
 	truthConfig->insert(2, camera2.pose());
 	truthConfig->insert(1, landmark);
 
 	// create graph
-	shared_ptr<VSLAMGraph> graph(new VSLAMGraph());
+	shared_ptr<Graph> graph(new Graph());
 
 	// create equality constraints for poses
-	graph->addCameraConstraint(1, camera1.pose());
-	graph->addCameraConstraint(2, camera2.pose());
+	graph->push_back(shared_ptr<PoseConstraint>(new PoseConstraint(1, camera1.pose())));
+	graph->push_back(shared_ptr<PoseConstraint>(new PoseConstraint(2, camera2.pose())));
 
 	// create VSLAM factors
 	Point2 z1 = camera1.project(landmark);
 	if (verbose) z1.print("z1");
-	shared_vf vf1(new VSLAMFactor(z1, 1.0, 1, 1, shK));
+	shared_vf vf1(new ProjectionFactor(z1, 1.0, 1, 1, shK));
 	graph->push_back(vf1);
 	Point2 z2 = camera2.project(landmark);
 	if (verbose) z2.print("z2");
-	shared_vf vf2(new VSLAMFactor(z2, 1.0, 2, 1, shK));
+	shared_vf vf2(new ProjectionFactor(z2, 1.0, 2, 1, shK));
 	graph->push_back(vf2);
 
 	if (verbose) graph->print("Graph after construction");
@@ -559,32 +556,32 @@ TEST (SQP, stereo_truth_noisy ) {
 	Point3 landmarkNoisy(1.0, noisyDist, 0.0); // initial point is too far out
 
 	// create truth config
-	boost::shared_ptr<VSLAMConfig> truthConfig(new VSLAMConfig);
+	boost::shared_ptr<Config> truthConfig(new Config);
 	truthConfig->insert(1, camera1.pose());
 	truthConfig->insert(2, camera2.pose());
 	truthConfig->insert(1, landmark);
 
 	// create config
-	boost::shared_ptr<VSLAMConfig> noisyConfig(new VSLAMConfig);
+	boost::shared_ptr<Config> noisyConfig(new Config);
 	noisyConfig->insert(1, camera1.pose());
 	noisyConfig->insert(2, camera2.pose());
 	noisyConfig->insert(1, landmarkNoisy);
 
 	// create graph
-	shared_ptr<VSLAMGraph> graph(new VSLAMGraph());
+	shared_ptr<Graph> graph(new Graph());
 
 	// create equality constraints for poses
-	graph->addCameraConstraint(1, camera1.pose());
-	graph->addCameraConstraint(2, camera2.pose());
+  graph->push_back(shared_ptr<PoseConstraint>(new PoseConstraint(1, camera1.pose())));
+  graph->push_back(shared_ptr<PoseConstraint>(new PoseConstraint(2, camera2.pose())));
 
 	// create VSLAM factors
 	Point2 z1 = camera1.project(landmark);
 	if (verbose) z1.print("z1");
-	shared_vf vf1(new VSLAMFactor(z1, 1.0, 1, 1, shK));
+	shared_vf vf1(new ProjectionFactor(z1, 1.0, 1, 1, shK));
 	graph->push_back(vf1);
 	Point2 z2 = camera2.project(landmark);
 	if (verbose) z2.print("z2");
-	shared_vf vf2(new VSLAMFactor(z2, 1.0, 2, 1, shK));
+	shared_vf vf2(new ProjectionFactor(z2, 1.0, 2, 1, shK));
 	graph->push_back(vf2);
 
 	if (verbose)  {
@@ -628,25 +625,25 @@ namespace sqp_stereo {
 
 	// binary constraint between landmarks
 	/** g(x) = x-y = 0 */
-	Vector g(const VSLAMConfig& config, const list<string>& keys) {
-		return config[VSLAMPointKey(getNum(keys.front()))].vector()
-				- config[VSLAMPointKey(getNum(keys.back()))].vector();
+	Vector g(const Config& config, const list<string>& keys) {
+		return config[PointKey(getNum(keys.front()))].vector()
+				- config[PointKey(getNum(keys.back()))].vector();
 	}
 
 	/** jacobian at l1 */
-	Matrix G1(const VSLAMConfig& config, const list<string>& keys) {
+	Matrix G1(const Config& config, const list<string>& keys) {
 		return eye(3);
 	}
 
 	/** jacobian at l2 */
-	Matrix G2(const VSLAMConfig& config, const list<string>& keys) {
+	Matrix G2(const Config& config, const list<string>& keys) {
 		return -1.0 * eye(3);
 	}
 
 } // \namespace sqp_stereo
 
 /* ********************************************************************* */
-VSLAMGraph stereoExampleGraph() {
+Graph stereoExampleGraph() {
 	// create initial estimates
 	Rot3 faceDownY(Matrix_(3,3,
 				1.0, 0.0, 0.0,
@@ -660,26 +657,26 @@ VSLAMGraph stereoExampleGraph() {
 	Point3 landmark2(1.0, 5.0, 0.0);
 
 	// create graph
-	VSLAMGraph graph;
+	Graph graph;
 
 	// create equality constraints for poses
-	graph.addCameraConstraint(1, camera1.pose());
-	graph.addCameraConstraint(2, camera2.pose());
+  graph.push_back(shared_ptr<PoseConstraint>(new PoseConstraint(1, camera1.pose())));
+  graph.push_back(shared_ptr<PoseConstraint>(new PoseConstraint(2, camera2.pose())));
 
-	// create VSLAM factors
+	// create  factors
 	Point2 z1 = camera1.project(landmark1);
-	shared_vf vf1(new VSLAMFactor(z1, 1.0, 1, 1, shK));
+	shared_vf vf1(new ProjectionFactor(z1, 1.0, 1, 1, shK));
 	graph.push_back(vf1);
 	Point2 z2 = camera2.project(landmark2);
-	shared_vf vf2(new VSLAMFactor(z2, 1.0, 2, 2, shK));
+	shared_vf vf2(new ProjectionFactor(z2, 1.0, 2, 2, shK));
 	graph.push_back(vf2);
 
 	// create the binary equality constraint between the landmarks
 	// NOTE: this is really just a linear constraint that is exactly the same
 	// as the previous examples
 	list<string> keys; keys += "l1", "l2";
-	boost::shared_ptr<NonlinearConstraint2<VSLAMConfig> > c2(
-				new NonlinearConstraint2<VSLAMConfig>(
+	boost::shared_ptr<NonlinearConstraint2<Config> > c2(
+				new NonlinearConstraint2<Config>(
 						boost::bind(sqp_stereo::g, _1, keys),
 						"l1", boost::bind(sqp_stereo::G1, _1, keys),
 						"l2", boost::bind(sqp_stereo::G2, _1, keys),
@@ -690,7 +687,7 @@ VSLAMGraph stereoExampleGraph() {
 }
 
 /* ********************************************************************* */
-boost::shared_ptr<VSLAMConfig> stereoExampleTruthConfig() {
+boost::shared_ptr<Config> stereoExampleTruthConfig() {
 	// create initial estimates
 	Rot3 faceDownY(Matrix_(3,3,
 				1.0, 0.0, 0.0,
@@ -704,7 +701,7 @@ boost::shared_ptr<VSLAMConfig> stereoExampleTruthConfig() {
 	Point3 landmark2(1.0, 5.0, 0.0);
 
 	// create config
-	boost::shared_ptr<VSLAMConfig> truthConfig(new VSLAMConfig);
+	boost::shared_ptr<Config> truthConfig(new Config);
 	truthConfig->insert(1, camera1.pose());
 	truthConfig->insert(2, camera2.pose());
 	truthConfig->insert(1, landmark1);
@@ -721,11 +718,11 @@ TEST (SQP, stereo_sqp ) {
 	bool verbose = false;
 
 	// get a graph
-	VSLAMGraph graph = stereoExampleGraph();
+	Graph graph = stereoExampleGraph();
 	if (verbose) graph.print("Graph after construction");
 
 	// get the truth config
-	boost::shared_ptr<VSLAMConfig> truthConfig = stereoExampleTruthConfig();
+	boost::shared_ptr<Config> truthConfig = stereoExampleTruthConfig();
 
 	// create ordering
 	Ordering ord;
@@ -749,7 +746,7 @@ TEST (SQP, stereo_sqp_noisy ) {
 	bool verbose = false;
 
 	// get a graph
-	VSLAMGraph graph = stereoExampleGraph();
+	Graph graph = stereoExampleGraph();
 
 	// create initial data
 	Rot3 faceDownY(Matrix_(3,3,
@@ -762,7 +759,7 @@ TEST (SQP, stereo_sqp_noisy ) {
 	Point3 landmark2(1.5, 5.0, 0.0);
 
 	// noisy config
-	boost::shared_ptr<VSLAMConfig> initConfig(new VSLAMConfig);
+	boost::shared_ptr<Config> initConfig(new Config);
 	initConfig->insert(1, pose1);
 	initConfig->insert(2, pose2);
 	initConfig->insert(1, landmark1);
@@ -793,7 +790,7 @@ TEST (SQP, stereo_sqp_noisy ) {
 					  << "Final Error:   " << optimizer.error() << endl;
 
 	// get the truth config
-	boost::shared_ptr<VSLAMConfig> truthConfig = stereoExampleTruthConfig();
+	boost::shared_ptr<Config> truthConfig = stereoExampleTruthConfig();
 
 	if (verbose) {
 		initConfig->print("Initial Config");
@@ -814,7 +811,7 @@ TEST (SQP, stereo_sqp_noisy_manualLagrange ) {
 	bool verbose = false;
 
 	// get a graph
-	VSLAMGraph graph = stereoExampleGraph();
+	Graph graph = stereoExampleGraph();
 
 	// create initial data
 	Rot3 faceDownY(Matrix_(3,3,
@@ -827,7 +824,7 @@ TEST (SQP, stereo_sqp_noisy_manualLagrange ) {
 	Point3 landmark2(1.5, 5.0, 0.0);
 
 	// noisy config
-	boost::shared_ptr<VSLAMConfig> initConfig(new VSLAMConfig);
+	boost::shared_ptr<Config> initConfig(new Config);
 	initConfig->insert(1, pose1);
 	initConfig->insert(2, pose2);
 	initConfig->insert(1, landmark1);
@@ -863,7 +860,7 @@ TEST (SQP, stereo_sqp_noisy_manualLagrange ) {
 					  << "Final Error:   " << optimizer.error() << endl;
 
 	// get the truth config
-	boost::shared_ptr<VSLAMConfig> truthConfig = stereoExampleTruthConfig();
+	boost::shared_ptr<Config> truthConfig = stereoExampleTruthConfig();
 
 	if (verbose) {
 		initConfig->print("Initial Config");

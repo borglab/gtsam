@@ -1,5 +1,5 @@
 /**
- * @file    testVSLAMGraph.cpp
+ * @file    testGraph.cpp
  * @brief   Unit test for two cameras and four landmarks
  * single camera
  * @author  Chris Beall
@@ -11,13 +11,16 @@
 #include <boost/shared_ptr.hpp>
 using namespace boost;
 
-#include "VSLAMGraph.h"
 #include "NonlinearFactorGraph-inl.h"
 #include "NonlinearOptimizer-inl.h"
+#include "Ordering-inl.h"
+#include "visualSLAM.h"
 
 using namespace std;
 using namespace gtsam;
-typedef NonlinearOptimizer<VSLAMGraph,VSLAMConfig> Optimizer;
+using namespace gtsam::visualSLAM;
+using namespace boost;
+typedef NonlinearOptimizer<Graph,Config> Optimizer;
 
 /* ************************************************************************* */
 Point3 landmark1(-1.0,-1.0, 0.0);
@@ -40,7 +43,7 @@ Pose3 camera2(Matrix_(3,3,
 	      Point3(0,0,5.00));
 
 /* ************************************************************************* */
-VSLAMGraph testGraph() {
+Graph testGraph() {
   Point2 z11(-100, 100);
 	Point2 z12(-100,-100);
 	Point2 z13( 100,-100);
@@ -52,30 +55,30 @@ VSLAMGraph testGraph() {
 
   double sigma = 1;
   shared_ptrK sK(new Cal3_S2(625, 625, 0, 0, 0));
-  VSLAMGraph g;
-  g.push_back(VSLAMFactor::shared_ptr(new VSLAMFactor(z11, sigma, 1, 1, sK)));
-  g.push_back(VSLAMFactor::shared_ptr(new VSLAMFactor(z12, sigma, 1, 2, sK)));
-  g.push_back(VSLAMFactor::shared_ptr(new VSLAMFactor(z13, sigma, 1, 3, sK)));
-  g.push_back(VSLAMFactor::shared_ptr(new VSLAMFactor(z14, sigma, 1, 4, sK)));
-  g.push_back(VSLAMFactor::shared_ptr(new VSLAMFactor(z21, sigma, 2, 1, sK)));
-  g.push_back(VSLAMFactor::shared_ptr(new VSLAMFactor(z22, sigma, 2, 2, sK)));
-  g.push_back(VSLAMFactor::shared_ptr(new VSLAMFactor(z23, sigma, 2, 3, sK)));
-  g.push_back(VSLAMFactor::shared_ptr(new VSLAMFactor(z24, sigma, 2, 4, sK)));
+  Graph g;
+  g.add(ProjectionFactor(z11, sigma, 1, 1, sK));
+  g.add(ProjectionFactor(z12, sigma, 1, 2, sK));
+  g.add(ProjectionFactor(z13, sigma, 1, 3, sK));
+  g.add(ProjectionFactor(z14, sigma, 1, 4, sK));
+  g.add(ProjectionFactor(z21, sigma, 2, 1, sK));
+  g.add(ProjectionFactor(z22, sigma, 2, 2, sK));
+  g.add(ProjectionFactor(z23, sigma, 2, 3, sK));
+  g.add(ProjectionFactor(z24, sigma, 2, 4, sK));
   return g;
 }
 
 /* ************************************************************************* */
-TEST( VSLAMGraph, optimizeLM)
+TEST( Graph, optimizeLM)
 {
   // build a graph
-  shared_ptr<VSLAMGraph> graph(new VSLAMGraph(testGraph()));
+  shared_ptr<Graph> graph(new Graph(testGraph()));
 	// add 3 landmark constraints
-  graph->addLandmarkConstraint(1, landmark1);
-  graph->addLandmarkConstraint(2, landmark2);
-  graph->addLandmarkConstraint(3, landmark3);
+  graph->add(PointConstraint(1, landmark1));
+  graph->add(PointConstraint(2, landmark2));
+  graph->add(PointConstraint(3, landmark3));
 
   // Create an initial configuration corresponding to the ground truth
-  boost::shared_ptr<VSLAMConfig> initialEstimate(new VSLAMConfig);
+  boost::shared_ptr<Config> initialEstimate(new Config);
   initialEstimate->insert(1, camera1);
   initialEstimate->insert(2, camera2);
   initialEstimate->insert(1, landmark1);
@@ -109,16 +112,16 @@ TEST( VSLAMGraph, optimizeLM)
 
 
 /* ************************************************************************* */
-TEST( VSLAMGraph, optimizeLM2)
+TEST( Graph, optimizeLM2)
 {
   // build a graph
-  shared_ptr<VSLAMGraph> graph(new VSLAMGraph(testGraph()));
+  shared_ptr<Graph> graph(new Graph(testGraph()));
 	// add 2 camera constraints
-  graph->addCameraConstraint(1, camera1);
-  graph->addCameraConstraint(2, camera2);
+  graph->add(PoseConstraint(1, camera1));
+  graph->add(PoseConstraint(2, camera2));
 
   // Create an initial configuration corresponding to the ground truth
-  boost::shared_ptr<VSLAMConfig> initialEstimate(new VSLAMConfig);
+  boost::shared_ptr<Config> initialEstimate(new Config);
   initialEstimate->insert(1, camera1);
   initialEstimate->insert(2, camera2);
   initialEstimate->insert(1, landmark1);
@@ -153,16 +156,16 @@ TEST( VSLAMGraph, optimizeLM2)
 
 
 /* ************************************************************************* */
-TEST( VSLAMGraph, CHECK_ORDERING)
+TEST( Graph, CHECK_ORDERING)
 {
   // build a graph
-  shared_ptr<VSLAMGraph> graph(new VSLAMGraph(testGraph()));
+  shared_ptr<Graph> graph(new Graph(testGraph()));
   // add 2 camera constraints
-  graph->addCameraConstraint(1, camera1);
-  graph->addCameraConstraint(2, camera2);
+  graph->add(PoseConstraint(1, camera1));
+  graph->add(PoseConstraint(2, camera2));
 
   // Create an initial configuration corresponding to the ground truth
-  boost::shared_ptr<VSLAMConfig> initialEstimate(new VSLAMConfig);
+  boost::shared_ptr<Config> initialEstimate(new Config);
   initialEstimate->insert(1, camera1);
   initialEstimate->insert(2, camera2);
   initialEstimate->insert(1, landmark1);

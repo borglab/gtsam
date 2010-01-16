@@ -43,6 +43,7 @@ namespace gtsam {
 
 		bool operator< (const Symbol& compare) const { return j_<compare.j_;}
 		bool operator== (const Symbol& compare) const { return j_==compare.j_;}
+		int compare(const Symbol& compare) const {return j_-compare.j_;}
 
 	private:
 

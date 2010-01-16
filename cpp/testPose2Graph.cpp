@@ -12,8 +12,8 @@ using namespace boost::assign;
 #include <CppUnitLite/TestHarness.h>
 
 #include "NonlinearOptimizer-inl.h"
+#include "FactorGraph-inl.h"
 #include "Ordering.h"
-#include "Pose2Config.h"
 #include "Pose2Graph.h"
 
 using namespace std;
@@ -154,6 +154,44 @@ TEST(Pose2Graph, optimizeCircle) {
 
   // Check loop closure
   CHECK(assert_equal(delta,between(actual[5],actual[0])));
+}
+
+/* ************************************************************************* */
+// test optimization with 6 poses arranged in a hexagon and a loop closure
+TEST(Pose2Graph, findMinimumSpanningTree) {
+	typedef Pose2Config::Key Key;
+
+	Pose2Graph G, T, C;
+	Matrix cov = eye(3);
+	G.push_back(Pose2Graph::sharedFactor(new Pose2Factor(Key(1), Key(2), Pose2(0.,0.,0.), cov)));
+	G.push_back(Pose2Graph::sharedFactor(new Pose2Factor(Key(1), Key(3), Pose2(0.,0.,0.), cov)));
+	G.push_back(Pose2Graph::sharedFactor(new Pose2Factor(Key(2), Key(3), Pose2(0.,0.,0.), cov)));
+
+	PredecessorMap<Key> tree = G.findMinimumSpanningTree<Key, Pose2Factor>();
+	CHECK(tree[Key(1)] == Key(1));
+	CHECK(tree[Key(2)] == Key(1));
+	CHECK(tree[Key(3)] == Key(1));
+}
+
+/* ************************************************************************* */
+// test optimization with 6 poses arranged in a hexagon and a loop closure
+TEST(Pose2Graph, split) {
+	typedef Pose2Config::Key Key;
+
+	Pose2Graph G, T, C;
+	Matrix cov = eye(3);
+	G.push_back(Pose2Graph::sharedFactor(new Pose2Factor(Key(1), Key(2), Pose2(0.,0.,0.), cov)));
+	G.push_back(Pose2Graph::sharedFactor(new Pose2Factor(Key(1), Key(3), Pose2(0.,0.,0.), cov)));
+	G.push_back(Pose2Graph::sharedFactor(new Pose2Factor(Key(2), Key(3), Pose2(0.,0.,0.), cov)));
+
+	PredecessorMap<Key> tree;
+	tree.insert(Key(1),Key(2));
+	tree.insert(Key(2),Key(2));
+	tree.insert(Key(3),Key(2));
+
+	G.split<Key, Pose2Factor>(tree, T, C);
+	LONGS_EQUAL(2, T.size());
+	LONGS_EQUAL(1, C.size());
 }
 
 /* ************************************************************************* */

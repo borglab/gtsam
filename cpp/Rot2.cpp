@@ -12,8 +12,8 @@ using namespace std;
 
 namespace gtsam {
 
-	/** Explicit instantiation of base class to export members */
-	template class Lie<Rot2> ;
+  /** Explicit instantiation of base class to export members */
+  INSTANTIATE_LIE(Rot2);
 
 	/* ************************************************************************* */
 	void Rot2::print(const string& s) const {

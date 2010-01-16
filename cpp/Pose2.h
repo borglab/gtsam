@@ -98,11 +98,8 @@ namespace gtsam {
     return rotate(pose.r(), point)+pose.t(); }
 
   /** Return relative pose between p1 and p2, in p1 coordinate frame */
-  /** todo: make sure compiler finds this version of between. */
-  //inline Pose2 between(const Pose2& p0, const Pose2& p2) {
-  //  return Pose2(p0.r().invcompose(p2.r()), p0.r().unrotate(p2.t()-p0.t())); }
-  Matrix Dbetween1(const Pose2& p0, const Pose2& p2);
-  Matrix Dbetween2(const Pose2& p0, const Pose2& p2);
+  Pose2 between(const Pose2& p1, const Pose2& p2,
+  		boost::optional<Matrix&> H1, boost::optional<Matrix&> H2);
 
   /** same as compose (pre-multiply this*p1) */
   inline Pose2 operator*(const Pose2& p1, const Pose2& p0) { return compose(p1, p0); }
@@ -112,7 +109,33 @@ namespace gtsam {
   inline Point2 operator*(const Pose2& pose, const Point2& point) {
     return transform_from(pose, point); }
 
+	/**
+	 * Calculate bearing to a landmark
+	 * @param pose 2D pose of robot
+	 * @param point 2D location of landmark
+	 * @return 2D rotation \in SO(2)
+	 */
+	Rot2 bearing(const Pose2& pose, const Point2& point);
 
+	/**
+	 * Calculate bearing and optional derivative(s)
+	 */
+	Rot2 bearing(const Pose2& pose, const Point2& point,
+			boost::optional<Matrix&> H1, boost::optional<Matrix&> H2);
+
+	/**
+	 * Calculate range to a landmark
+	 * @param pose 2D pose of robot
+	 * @param point 2D location of landmark
+	 * @return range (double)
+	 */
+	double range(const Pose2& pose, const Point2& point);
+
+	/**
+	 * Calculate range and optional derivative(s)
+	 */
+	double range(const Pose2& pose, const Point2& point,
+			boost::optional<Matrix&> H1, boost::optional<Matrix&> H2);
 
 } // namespace gtsam
 

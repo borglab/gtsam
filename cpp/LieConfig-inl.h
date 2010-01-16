@@ -5,8 +5,6 @@
  *      Author: richard
  */
 
-#include "LieConfig.h"
-
 #include <boost/foreach.hpp>
 #include <boost/tuple/tuple.hpp>
 #include <utility>
@@ -14,6 +12,15 @@
 #include <stdexcept>
 
 #include "VectorConfig.h"
+#include "Lie-inl.h"
+
+#include "LieConfig.h"
+
+#define INSTANTIATE_LIE_CONFIG(J,T) \
+  /*INSTANTIATE_LIE(T);*/ \
+  template LieConfig<J,T> expmap(const LieConfig<J,T>&, const VectorConfig&); \
+  template LieConfig<J,T> expmap(const LieConfig<J,T>&, const Vector&); \
+  template class LieConfig<J,T>;
 
 using namespace std;
 
@@ -47,7 +54,7 @@ namespace gtsam {
   template<class J, class T>
   void LieConfig<J,T>::insert(const J& name, const T& val) {
     values_.insert(make_pair(name, val));
-    dim_ += dim(val);
+    dim_ += gtsam::dim(val);
   }
 
   template<class J, class T>

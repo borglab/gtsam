@@ -13,6 +13,9 @@
 #include <boost/tuple/tuple.hpp>
 #include "NonlinearOptimizer.h"
 
+#define INSTANTIATE_NONLINEAR_OPTIMIZER(G,C) \
+  template class NonlinearOptimizer<G,C>;
+
 using namespace std;
 
 namespace gtsam {

@@ -24,6 +24,12 @@
 #include "FactorGraph.h"
 #include "graph-inl.h"
 
+#define INSTANTIATE_FACTOR_GRAPH(F) \
+  template class FactorGraph<F>; \
+  /*template boost::shared_ptr<F> removeAndCombineFactors(FactorGraph<F>&, const std::string&);*/ \
+  template FactorGraph<F> combine(const FactorGraph<F>&, const FactorGraph<F>&);
+
+
 // trick from some reading group
 #define FOREACH_PAIR( KEY, VAL, COL) BOOST_FOREACH (boost::tie(KEY,VAL),COL)
 
@@ -271,10 +277,10 @@ void FactorGraph<Factor>::associateFactor(int index, sharedFactor factor) {
 }
 
 /* ************************************************************************* */
-template<class Factor> template <class Key>
+template<class Factor> template <class Key, class Factor2>
 PredecessorMap<Key> FactorGraph<Factor>::findMinimumSpanningTree() const {
 
-	SDGraph<Key> g = gtsam::toBoostGraph<FactorGraph<Factor>, sharedFactor, Key>(*this);
+	SDGraph<Key> g = gtsam::toBoostGraph<FactorGraph<Factor>, Factor2, Key>(*this);
 
 	// find minimum spanning tree
 	vector<typename SDGraph<Key>::Vertex> p_map(boost::num_vertices(g));
@@ -285,8 +291,8 @@ PredecessorMap<Key> FactorGraph<Factor>::findMinimumSpanningTree() const {
 	typename SDGraph<Key>::vertex_iterator itVertex = boost::vertices(g).first;
 	typename vector<typename SDGraph<Key>::Vertex>::iterator vi;
 	for (vi = p_map.begin(); vi!=p_map.end(); itVertex++, vi++) {
-		string key = boost::get(boost::vertex_name, g, *itVertex);
-		string parent = boost::get(boost::vertex_name, g, *vi);
+		Key key = boost::get(boost::vertex_name, g, *itVertex);
+		Key parent = boost::get(boost::vertex_name, g, *vi);
 		// printf("%s parent: %s\n", key.c_str(), parent.c_str());
 		tree.insert(key, parent);
 	}
@@ -294,8 +300,8 @@ PredecessorMap<Key> FactorGraph<Factor>::findMinimumSpanningTree() const {
 	return tree;
 }
 
-template<class Factor> template <class Key>
-void FactorGraph<Factor>::split(map<Key, Key> tree, FactorGraph<Factor>& Ab1, FactorGraph<Factor>& Ab2) const {
+template<class Factor> template <class Key, class Factor2>
+void FactorGraph<Factor>::split(const PredecessorMap<Key>& tree, FactorGraph<Factor>& Ab1, FactorGraph<Factor>& Ab2) const{
 
 	BOOST_FOREACH(sharedFactor factor, factors_){
 		if (factor->keys().size() > 2)
@@ -306,14 +312,17 @@ void FactorGraph<Factor>::split(map<Key, Key> tree, FactorGraph<Factor>& Ab1, Fa
 			continue;
 		}
 
-		string key1 = factor->keys().front();
-		string key2 = factor->keys().back();
+		boost::shared_ptr<Factor2> factor2 = boost::dynamic_pointer_cast<Factor2>(factor);
+		if (!factor2) continue;
+
+		Key key1 = factor2->key1();
+		Key key2 = factor2->key2();
 		// if the tree contains the key
-		if (tree.find(key1) != tree.end() && tree[key1].compare(key2) == 0 ||
-				tree.find(key2) != tree.end() && tree[key2].compare(key1) == 0)
-			Ab1.push_back(factor);
+		if (tree.find(key1) != tree.end() && tree.find(key1)->second.compare(key2) == 0 ||
+				tree.find(key2) != tree.end() && tree.find(key2)->second.compare(key1) == 0)
+			Ab1.push_back(factor2);
 		else
-			Ab2.push_back(factor);
+			Ab2.push_back(factor2);
 	}
 }
 

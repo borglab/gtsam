@@ -65,8 +65,11 @@ namespace gtsam {
 			// h - z
 			T hx = between(p1, p2);
 			// TODO should be done by noise model
-			if (H1) *H1 = square_root_inverse_covariance_ * Dbetween1(p1, p2);
-			if (H2) *H2 = square_root_inverse_covariance_ * Dbetween2(p1, p2);
+			if (H1 || H2) {
+				between(p1,p2,H1,H2);
+				if (H1) *H1 = square_root_inverse_covariance_ * *H1;
+				if (H2) *H2 = square_root_inverse_covariance_ * *H2;
+			}
 			// manifold equivalent of h(x)-z -> log(z,h(x))
 			// TODO use noise model, error vector is not whitened yet
 			return square_root_inverse_covariance_ * logmap(measured_, hx);

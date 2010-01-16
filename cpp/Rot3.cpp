@@ -14,7 +14,7 @@ using namespace std;
 namespace gtsam {
 
   /** Explicit instantiation of base class to export members */
-  template class Lie<Rot3>;
+  INSTANTIATE_LIE(Rot3);
 
   /* ************************************************************************* */
 	// static member functions to construct rotations

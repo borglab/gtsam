@@ -152,13 +152,20 @@ TEST(Pose2, compose_c)
 /* ************************************************************************* */
 TEST( Pose2, between )
 {
-  //cout << "between" << endl;
+  // <
+  //
+	//       ^
+	//
+	// *--0--*--*
   Pose2 p1(M_PI_2, Point2(1,2)); // robot at (1,2) looking towards y
   Pose2 p2(M_PI, Point2(-1,4));  // robot at (-1,4) loooking at negative x
 
+  Matrix actualH1,actualH2;
   Pose2 expected(M_PI_2, Point2(2,2));
-  Pose2 actual = between(p1,p2);
-  CHECK(assert_equal(expected,actual));
+  Pose2 actual1 = between(p1,p2);
+  Pose2 actual2 = between(p1,p2,actualH1,actualH2);
+  CHECK(assert_equal(expected,actual1));
+  CHECK(assert_equal(expected,actual2));
 
   Matrix expectedH1 = Matrix_(3,3,
       0.0,-1.0,-2.0,
@@ -166,7 +173,6 @@ TEST( Pose2, between )
       0.0, 0.0,-1.0
   );
   Matrix numericalH1 = numericalDerivative21(between<Pose2>, p1, p2, 1e-5);
-  Matrix actualH1 = Dbetween1(p1,p2);
   CHECK(assert_equal(expectedH1,actualH1));
   CHECK(assert_equal(numericalH1,actualH1));
 
@@ -176,8 +182,22 @@ TEST( Pose2, between )
        0.0, 0.0, 1.0
   );
   Matrix numericalH2 = numericalDerivative22(between<Pose2>, p1, p2, 1e-5);
-  Matrix actualH2 = Dbetween2(p1,p2);
   CHECK(assert_equal(expectedH2,actualH2));
+  CHECK(assert_equal(numericalH2,actualH2));
+}
+
+/* ************************************************************************* */
+// reverse situation for extra test
+TEST( Pose2, between2 )
+{
+  Pose2 p2(M_PI_2, Point2(1,2)); // robot at (1,2) looking towards y
+  Pose2 p1(M_PI, Point2(-1,4));  // robot at (-1,4) loooking at negative x
+
+  Matrix actualH1,actualH2;
+  between(p1,p2,actualH1,actualH2);
+  Matrix numericalH1 = numericalDerivative21(between<Pose2>, p1, p2, 1e-5);
+  CHECK(assert_equal(numericalH1,actualH1));
+  Matrix numericalH2 = numericalDerivative22(between<Pose2>, p1, p2, 1e-5);
   CHECK(assert_equal(numericalH2,actualH2));
 }
 
@@ -195,6 +215,75 @@ TEST(Pose2, members)
 {
   Pose2 pose;
   CHECK(pose.dim() == 3);
+}
+
+/* ************************************************************************* */
+// some shared test values
+Pose2 x1, x2(1, 1, 0), x3(1, 1, M_PI_4);
+Point2 l1(1, 0), l2(1, 1), l3(2, 2), l4(1, 3);
+
+/* ************************************************************************* */
+TEST( Pose2, bearing )
+{
+	Matrix expectedH1, actualH1, expectedH2, actualH2;
+
+	// establish bearing is indeed zero
+	CHECK(assert_equal(Rot2(),bearing(x1,l1)));
+
+	// establish bearing is indeed 45 degrees
+	CHECK(assert_equal(Rot2(M_PI_4),bearing(x1,l2)));
+
+	// establish bearing is indeed 45 degrees even if shifted
+	Rot2 actual23 = bearing(x2, l3, actualH1, actualH2);
+	CHECK(assert_equal(Rot2(M_PI_4),actual23));
+
+	// Check numerical derivatives
+	expectedH1 = numericalDerivative21(bearing, x2, l3, 1e-5);
+	CHECK(assert_equal(expectedH1,actualH1));
+	expectedH2 = numericalDerivative22(bearing, x2, l3, 1e-5);
+	CHECK(assert_equal(expectedH1,actualH1));
+
+	// establish bearing is indeed 45 degrees even if rotated
+	Rot2 actual34 = bearing(x3, l4, actualH1, actualH2);
+	CHECK(assert_equal(Rot2(M_PI_4),actual34));
+
+	// Check numerical derivatives
+	expectedH1 = numericalDerivative21(bearing, x3, l4, 1e-5);
+	expectedH2 = numericalDerivative22(bearing, x3, l4, 1e-5);
+	CHECK(assert_equal(expectedH1,actualH1));
+	CHECK(assert_equal(expectedH1,actualH1));
+}
+
+/* ************************************************************************* */
+TEST( Pose2, range )
+{
+	Matrix expectedH1, actualH1, expectedH2, actualH2;
+
+	// establish range is indeed zero
+	DOUBLES_EQUAL(1,gtsam::range(x1,l1),1e-9);
+
+	// establish range is indeed 45 degrees
+	DOUBLES_EQUAL(sqrt(2),gtsam::range(x1,l2),1e-9);
+
+	// Another pair
+	double actual23 = gtsam::range(x2, l3, actualH1, actualH2);
+	DOUBLES_EQUAL(sqrt(2),actual23,1e-9);
+
+	// Check numerical derivatives
+	expectedH1 = numericalDerivative21(range, x2, l3, 1e-5);
+	CHECK(assert_equal(expectedH1,actualH1));
+	expectedH2 = numericalDerivative22(range, x2, l3, 1e-5);
+	CHECK(assert_equal(expectedH1,actualH1));
+
+	// Another test
+	double actual34 = gtsam::range(x3, l4, actualH1, actualH2);
+	DOUBLES_EQUAL(2,actual34,1e-9);
+
+	// Check numerical derivatives
+	expectedH1 = numericalDerivative21(range, x3, l4, 1e-5);
+	expectedH2 = numericalDerivative22(range, x3, l4, 1e-5);
+	CHECK(assert_equal(expectedH1,actualH1));
+	CHECK(assert_equal(expectedH1,actualH1));
 }
 
 /* ************************************************************************* */

@@ -41,6 +41,11 @@ namespace gtsam {
 			return exp(-0.5 * error(c));
 		}
 
+		template<class F>
+		void add(const F& factor) {
+			push_back(boost::shared_ptr<F>(new F(factor)));
+		}
+
 		/**
 		 * linearize a nonlinear factor graph
 		 */

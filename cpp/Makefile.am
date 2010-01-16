@@ -200,11 +200,11 @@ testSimulated3D_LDADD = libgtsam.la
 check_PROGRAMS += testSimulated3D 
 
 # Pose SLAM headers
-headers += BetweenFactor.h LieConfig.h LieConfig-inl.h TupleConfig.h
+headers += BetweenFactor.h LieConfig.h LieConfig-inl.h TupleConfig.h TupleConfig-inl.h
 
 # 2D Pose constraints
-headers += Pose2Factor.h Pose2Prior.h 
-sources += Pose2Config.cpp Pose2Graph.cpp 
+headers += Pose2Prior.h 
+sources += Pose2Graph.cpp 
 check_PROGRAMS += testPose2Factor testPose2Config testPose2Graph 
 testPose2Factor_SOURCES = $(example) testPose2Factor.cpp
 testPose2Factor_LDADD   = libgtsam.la
@@ -213,14 +213,12 @@ testPose2Config_LDADD   = libgtsam.la
 testPose2Graph_SOURCES  = $(example) testPose2Graph.cpp
 testPose2Graph_LDADD    = libgtsam.la
 
-# 2D Bearing and Range
-headers += BearingFactor.h RangeFactor.h  
-sources += 
-check_PROGRAMS += testBearingFactor testRangeFactor
-testBearingFactor_SOURCES = $(example) testBearingFactor.cpp
-testBearingFactor_LDADD   = libgtsam.la
-testRangeFactor_SOURCES = $(example) testRangeFactor.cpp
-testRangeFactor_LDADD   = libgtsam.la
+# 2D SLAM using Bearing and Range
+headers +=   
+sources += planarSLAM.cpp
+check_PROGRAMS += testPlanarSLAM
+testPlanarSLAM_SOURCES = $(example) testPlanarSLAM.cpp
+testPlanarSLAM_LDADD   = libgtsam.la
 
 # 3D Pose constraints
 headers += Pose3Factor.h  
@@ -242,8 +240,7 @@ testSimpleCamera_SOURCES = testSimpleCamera.cpp
 testSimpleCamera_LDADD = libgtsam.la
 
 # Visual SLAM
-headers += VSLAMConfig.h
-sources += VSLAMGraph.cpp VSLAMFactor.cpp
+sources += visualSLAM.cpp
 check_PROGRAMS += testVSLAMFactor testVSLAMGraph testVSLAMConfig
 testVSLAMFactor_SOURCES = testVSLAMFactor.cpp
 testVSLAMFactor_LDADD = libgtsam.la

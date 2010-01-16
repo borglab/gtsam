@@ -120,13 +120,13 @@ namespace gtsam {
 		/**
 		 * find the minimum spanning tree.
 		 */
-		template<class Key> PredecessorMap<Key> findMinimumSpanningTree() const;
+		template<class Key, class Factor2> PredecessorMap<Key> findMinimumSpanningTree() const;
 
 		/**
 		 * Split the graph into two parts: one corresponds to the given spanning tre,
 		 * and the other corresponds to the rest of the factors
 		 */
-		template<class Key> void split(std::map<Key, Key> tree,
+		template<class Key, class Factor2> void split(const PredecessorMap<Key>& tree,
 				FactorGraph<Factor>& Ab1, FactorGraph<Factor>& Ab2) const;
 
 	private:

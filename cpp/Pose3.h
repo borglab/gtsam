@@ -46,6 +46,9 @@ namespace gtsam {
     const Rot3& rotation() const { return R_; }
 
     const Point3& translation() const { return t_; }
+    double x() const { return t_.x(); }
+    double y() const { return t_.y(); }
+    double z() const { return t_.z(); }
 
     /** convert to 4*4 matrix */
     Matrix matrix() const;
@@ -110,7 +113,6 @@ namespace gtsam {
     return concatVectors(2, &r, &t);
   }
 
-
   /** receives the point in Pose coordinates and transforms it to world coordinates */
   Point3 transform_from(const Pose3& pose, const Point3& p);
   inline Point3 operator*(const Pose3& pose, const Point3& p) { return transform_from(pose, p); }
@@ -135,9 +137,10 @@ namespace gtsam {
 
   /**
    * Return relative pose between p1 and p2, in p1 coordinate frame
+   * as well as optionally the derivatives
    */
-  Matrix Dbetween1(const Pose3& p1, const Pose3& p2);
-  Matrix Dbetween2(const Pose3& p1, const Pose3& p2);
+  Pose3 between(const Pose3& p1, const Pose3& p2,
+  		boost::optional<Matrix&> H1, boost::optional<Matrix&> H2);
 
   /** direct measurement of a pose */
   Vector hPose(const Vector& x);

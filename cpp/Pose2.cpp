@@ -11,7 +11,7 @@ using namespace std;
 namespace gtsam {
 
   /** Explicit instantiation of base class to export members */
-  template class Lie<Pose2>;
+  INSTANTIATE_LIE(Pose2);
 
   /* ************************************************************************* */
   void Pose2::print(const string& s) const {
@@ -46,23 +46,61 @@ namespace gtsam {
   }
 
   /* ************************************************************************* */
-  Matrix Dbetween1(const Pose2& p1, const Pose2& p2) {
-  	Point2 dt = p2.t()-p1.t();
-    Matrix dT1 = -invcompose(p2.r(), p1.r()).matrix();
-    Matrix dR1;
-    unrotate(p2.r(), dt, dR1);
-    return Matrix_(3,3,
-        dT1(0,0), dT1(0,1), dR1(0,0),
-        dT1(1,0), dT1(1,1), dR1(1,0),
-             0.0,      0.0,     -1.0);
-  }
+  Pose2 between(const Pose2& p1, const Pose2& p2, boost::optional<Matrix&> H1,
+			boost::optional<Matrix&> H2) {
+		Rot2 dR = between(p1.r(), p2.r());
+		Point2 dt = p2.t() - p1.t();
+		Point2 q = unrotate(p1.r(), dt);
+		Pose2 dp(dR, q);
+		if (H1) {
+			Matrix dT1 = -invcompose(p2.r(), p1.r()).matrix();
+			Matrix dR1;
+			unrotate(p2.r(), dt, dR1); // FD to Richard: I do *not* understand this
+			*H1 = Matrix_(3,3,
+				dT1(0,0), dT1(0,1), dR1(0,0),
+				dT1(1,0), dT1(1,1), dR1(1,0),
+				0.0, 0.0, -1.0);
+		}
+		if (H2) *H2 = Matrix_(3,3,
+				1.0, 0.0, 0.0,
+				0.0, 1.0, 0.0,
+				0.0, 0.0, 1.0);
+		return dp;
+	}
 
-  Matrix Dbetween2(const Pose2& p1, const Pose2& p2) {
-    return Matrix_(3,3,
-        1.0, 0.0, 0.0,
-        0.0, 1.0, 0.0,
-        0.0, 0.0, 1.0);
-  }
+  /* ************************************************************************* */
+	Rot2 bearing(const Pose2& pose, const Point2& point) {
+		Point2 d = transform_to(pose, point);
+		return relativeBearing(d);
+	}
+
+	Rot2 bearing(const Pose2& pose, const Point2& point,
+			boost::optional<Matrix&> H1, boost::optional<Matrix&> H2) {
+		if (!H1 && !H2) return bearing(pose, point);
+		Point2 d = transform_to(pose, point);
+		Matrix D_result_d;
+		Rot2 result = relativeBearing(d, D_result_d);
+		if (H1) *H1 = D_result_d * Dtransform_to1(pose, point);
+		if (H2) *H2 = D_result_d * Dtransform_to2(pose, point);
+		return result;
+	}
+
+  /* ************************************************************************* */
+	double range(const Pose2& pose, const Point2& point) {
+		Point2 d = transform_to(pose, point);
+		return d.norm();
+	}
+
+	double range(const Pose2& pose, const Point2& point,
+			boost::optional<Matrix&> H1, boost::optional<Matrix&> H2) {
+		if (!H1 && !H2) return range(pose, point);
+		Point2 d = transform_to(pose, point);
+		double x = d.x(), y = d.y(), d2 = x * x + y * y, n = sqrt(d2);
+		Matrix D_result_d = Matrix_(1, 2, x / n, y / n);
+		if (H1) *H1 = D_result_d * Dtransform_to1(pose, point);
+		if (H2) *H2 = D_result_d * Dtransform_to2(pose, point);
+		return n;
+	}
 
   /* ************************************************************************* */
 } // namespace gtsam

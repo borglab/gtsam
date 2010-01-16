@@ -1,0 +1,152 @@
+/*
+ * visualSLAM.h
+ *
+ *  Created on: Jan 14, 2010
+ *      Author: Richard Roberts and Chris Beall
+ */
+
+#pragma once
+
+#include "Key.h"
+#include "Pose3.h"
+#include "Point3.h"
+#include "NonlinearFactorGraph.h"
+#include "Cal3_S2.h"
+#include "Point2.h"
+#include "SimpleCamera.h"
+#include "TupleConfig.h"
+#include "NonlinearEquality.h"
+
+namespace gtsam { namespace visualSLAM {
+
+  /**
+   * Typedefs that make up the visualSLAM namespace.
+   */
+  typedef Symbol<Pose3,'x'> PoseKey;
+  typedef Symbol<Point3,'l'> PointKey;
+  typedef PairConfig<PoseKey, Pose3, PointKey, Point3> Config;
+  typedef NonlinearFactorGraph<Config> Graph;
+  typedef NonlinearEquality<Config, PoseKey, Pose3> PoseConstraint;
+  typedef NonlinearEquality<Config, PointKey, Point3> PointConstraint;
+
+
+  /**
+   * Non-linear factor for a constraint derived from a 2D measurement,
+   * i.e. the main building block for visual SLAM.
+   */
+  class ProjectionFactor: public NonlinearFactor2<Config, PoseKey, Pose3, PointKey, Point3>, Testable<ProjectionFactor> {
+  private:
+
+    // Keep a copy of measurement and calibration for I/O
+    Point2 z_;
+    boost::shared_ptr<Cal3_S2> K_;
+
+  public:
+
+    // shorthand for base class type
+    typedef NonlinearFactor2<Config, PoseKey, Pose3, PointKey, Point3> Base;
+
+    // shorthand for a smart pointer to a factor
+    typedef boost::shared_ptr<ProjectionFactor> shared_ptr;
+
+    /**
+     * Default constructor
+     */
+    ProjectionFactor() : K_(new Cal3_S2(444, 555, 666, 777, 888)) {}
+
+    /**
+     * Constructor
+     * @param z is the 2 dimensional location of point in image (the measurement)
+     * @param sigma is the standard deviation
+     * @param cameraFrameNumber is basically the frame number
+     * @param landmarkNumber is the index of the landmark
+     * @param K the constant calibration
+     */
+    ProjectionFactor(const Point2& z, double sigma, PoseKey j_pose, PointKey j_landmark, const shared_ptrK& K) :
+        z_(z), K_(K), Base(sigma, j_pose, j_landmark) {}
+
+    /**
+     * print
+     * @param s optional string naming the factor
+     */
+    void print(const std::string& s = "ProjectionFactor") const;
+
+    /**
+     * equals
+     */
+    bool equals(const ProjectionFactor&, double tol = 1e-9) const;
+
+    //    /** h(x) */
+    //    Point2 predict(const Pose3& pose, const Point3& point) const {
+    //      return SimpleCamera(*K_, pose).project(point);
+    //    }
+
+    /** h(x)-z */
+    Vector evaluateError(const Pose3& pose, const Point3& point,
+        boost::optional<Matrix&> H1, boost::optional<Matrix&> H2) const {
+      SimpleCamera camera(*K_, pose);
+      if (H1) *H1=Dproject_pose(camera,point);
+      if (H2) *H2=Dproject_point(camera,point);
+      Point2 reprojectionError(project(camera, point) - z_);
+      return reprojectionError.vector();
+    }
+
+  private:
+    /** Serialization function */
+    friend class boost::serialization::access;
+    template<class Archive>
+    void serialize(Archive & ar, const unsigned int version) {
+      //ar & BOOST_SERIALIZATION_NVP(key1_);
+      //ar & BOOST_SERIALIZATION_NVP(key2_);
+      ar & BOOST_SERIALIZATION_NVP(z_);
+      ar & BOOST_SERIALIZATION_NVP(K_);
+    }
+  };
+
+
+  //  /**
+  //   * Non-linear factor graph for visual SLAM
+  //   */
+  //  class VSLAMGraph : public NonlinearFactorGraph<VSLAMConfig>{
+  //
+  //  public:
+  //
+  //    /** default constructor is empty graph */
+  //    VSLAMGraph() {}
+  //
+  //    /**
+  //     * print out graph
+  //     */
+  //    void print(const std::string& s = "") const {
+  //      NonlinearFactorGraph<VSLAMConfig>::print(s);
+  //    }
+  //
+  //    /**
+  //     * equals
+  //     */
+  //    bool equals(const VSLAMGraph& p, double tol=1e-9) const {
+  //      return NonlinearFactorGraph<VSLAMConfig>::equals(p, tol);
+  //    }
+  //
+  //    /**
+  //     *  Add a constraint on a landmark (for now, *must* be satisfied in any Config)
+  //     *  @param j index of landmark
+  //     *  @param p to which point to constrain it to
+  //     */
+  //    void addLandmarkConstraint(int j, const Point3& p = Point3());
+  //
+  //    /**
+  //     *  Add a constraint on a camera (for now, *must* be satisfied in any Config)
+  //     *  @param j index of camera
+  //     *  @param p to which pose to constrain it to
+  //     */
+  //    void addCameraConstraint(int j, const Pose3& p = Pose3());
+  //
+  //  private:
+  //    /** Serialization function */
+  //    friend class boost::serialization::access;
+  //    template<class Archive>
+  //    void serialize(Archive & ar, const unsigned int version) {}
+  //  };
+
+} } // namespaces

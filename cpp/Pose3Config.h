@@ -8,6 +8,7 @@
 
 #include "Pose3.h"
 #include "LieConfig.h"
+#include "Key.h"
 
 namespace gtsam {
 

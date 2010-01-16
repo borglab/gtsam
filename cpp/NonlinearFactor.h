@@ -20,6 +20,11 @@
 #include "Matrix.h"
 #include "GaussianFactor.h"
 
+#define INSTANTIATE_NONLINEAR_FACTOR1(C,J,X) \
+  template class gtsam::NonlinearFactor1<C,J,X>;
+#define INSTANTIATE_NONLINEAR_FACTOR2(C,J1,X1,J2,X2) \
+    template class gtsam::NonlinearFactor2<C,J1,X1,J2,X2>;
+
 namespace gtsam {
 
 	// TODO class NoiseModel {};
@@ -173,7 +178,7 @@ namespace gtsam {
 			return Base::equals(*p, tol) && (key_ == p->key_);
 		}
 
-		/** error function z-h(x) */
+		/** error function h(x)-z */
 		inline Vector error_vector(const Config& x) const {
 			Key j = key_;
 			const X& xj = x[j];

@@ -10,7 +10,7 @@ using namespace boost::assign;
 
 #include <set>
 
-#include "NonlinearFactorGraph.h"
+#include "NonlinearFactorGraph-inl.h"
 #include "GaussianFactor.h"
 #include "VectorConfig.h"
 

@@ -13,29 +13,11 @@
 
 #include "Vector.h"
 #include "Testable.h"
-#include "Lie.h"
-#include "Key.h"
 
 namespace boost { template<class T> class optional; }
+namespace gtsam { class VectorConfig; }
 
 namespace gtsam {
-
-	class VectorConfig;
-
-	// TODO: why are these defined *before* the class ?
-  template<class J, class T> class LieConfig;
-
-  /** Dimensionality of the tangent space */
-  template<class J, class T>
-  size_t dim(const LieConfig<J,T>& c);
-
-  /** Add a delta config */
-  template<class J, class T>
-  LieConfig<J,T> expmap(const LieConfig<J,T>& c, const VectorConfig& delta);
-
-  /** Add a delta vector, uses iterator order */
-  template<class J, class T>
-  LieConfig<J,T> expmap(const LieConfig<J,T>& c, const Vector& delta);
 
 	/**
 	 * Lie type configuration
@@ -63,7 +45,7 @@ namespace gtsam {
 
     LieConfig() : dim_(0) {}
     LieConfig(const LieConfig& config) :
-      values_(config.values_), dim_(dim(config)) {}
+      values_(config.values_), dim_(config.dim_) {}
     virtual ~LieConfig() {}
 
     /** print */
@@ -83,6 +65,11 @@ namespace gtsam {
 
     /** The number of variables in this config */
     size_t size() const { return values_.size(); }
+
+    /**
+     * The dimensionality of the tangent space
+     */
+    size_t dim() const { return dim_; }
 
     const_iterator begin() const { return values_.begin(); }
     const_iterator end() const { return values_.end(); }
@@ -105,7 +92,7 @@ namespace gtsam {
     /** Replace all keys and variables */
     LieConfig& operator=(const LieConfig& rhs) {
       values_ = rhs.values_;
-      dim_ = dim(rhs);
+      dim_ = rhs.dim_;
       return (*this);
     }
 
@@ -115,14 +102,18 @@ namespace gtsam {
       dim_ = 0;
     }
 
-//    friend LieConfig<J,T> expmap<T>(const LieConfig<J,T>& c, const VectorConfig& delta);
-//    friend LieConfig<J,T> expmap<T>(const LieConfig<J,T>& c, const Vector& delta);
-    friend size_t dim<J,T>(const LieConfig<J,T>& c);
-
   };
 
   /** Dimensionality of the tangent space */
   template<class J, class T>
-  size_t dim(const LieConfig<J,T>& c) { return c.dim_; }
+  inline size_t dim(const LieConfig<J,T>& c) { return c.dim(); }
+
+  /** Add a delta config */
+  template<class J, class T>
+  LieConfig<J,T> expmap(const LieConfig<J,T>& c, const VectorConfig& delta);
+
+  /** Add a delta vector, uses iterator order */
+  template<class J, class T>
+  LieConfig<J,T> expmap(const LieConfig<J,T>& c, const Vector& delta);
 }
 

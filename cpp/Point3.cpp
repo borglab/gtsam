@@ -10,7 +10,7 @@
 namespace gtsam {
 
   /** Explicit instantiation of base class to export members */
-  template class Lie<Point3>;
+  INSTANTIATE_LIE(Point3);
 
   /* ************************************************************************* */
   bool Point3::equals(const Point3 & q, double tol) const {

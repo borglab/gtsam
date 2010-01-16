@@ -7,6 +7,15 @@
 
 #include "Lie.h"
 
+#define INSTANTIATE_LIE(T) \
+  template T operator*(const T&, const T&); \
+  template T between(const T&, const T&); \
+  template Vector logmap(const T&, const T&); \
+  template T expmap(const T&, const Vector&); \
+  template bool equal(const T&, const T&, double); \
+  template bool equal(const T&, const T&); \
+  template class Lie<T>;
+
 namespace gtsam {
   template<class T>
   size_t Lie<T>::dim() const {

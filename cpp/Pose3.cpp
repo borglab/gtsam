@@ -6,6 +6,7 @@
 #include <iostream>
 #include "Pose3.h"
 #include "Lie-inl.h"
+#include "LieConfig.h"
 
 using namespace std;
 using namespace boost::numeric::ublas;
@@ -13,7 +14,7 @@ using namespace boost::numeric::ublas;
 namespace gtsam {
 
   /** Explicit instantiation of base class to export members */
-  template class Lie<Pose3>;
+  INSTANTIATE_LIE(Pose3);
 
   /* ************************************************************************* */
   void Pose3::print(const string& s) const {
@@ -185,16 +186,14 @@ namespace gtsam {
 
   /* ************************************************************************* */
   // between = compose(p2,inverse(p1));
-
-  Matrix Dbetween1(const Pose3& p1, const Pose3& p2){
-  	Pose3 invp1 = inverse(p1);
-  	return Dcompose2(p2,invp1) * Dinverse(p1);
-  }
-
-  Matrix Dbetween2(const Pose3& p1, const Pose3& p2){
-  	Pose3 invp1 = inverse(p1);
-  	return Dcompose1(p2,invp1);
-  }
+  Pose3 between(const Pose3& p1, const Pose3& p2, boost::optional<Matrix&> H1,
+			boost::optional<Matrix&> H2) {
+		Pose3 invp1 = inverse(p1);
+		Pose3 result = compose(p2, invp1);
+		if (H1) *H1 = Dcompose2(p2, invp1) * Dinverse(p1);
+		if (H2) *H2 = Dcompose1(p2, invp1);
+		return result;
+	}
 
   /* ************************************************************************* */
 } // namespace gtsam

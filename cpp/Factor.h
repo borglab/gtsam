@@ -36,7 +36,7 @@ namespace gtsam {
    * provide the appropriate values at the appropriate time.
    */ 
   template <class Config>
-  class Factor : boost::noncopyable, public Testable< Factor<Config> >
+  class Factor : public Testable< Factor<Config> >
   {
   public:
 

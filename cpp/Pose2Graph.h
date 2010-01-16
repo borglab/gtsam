@@ -7,10 +7,30 @@
 
 #pragma once
 
-#include "Pose2Factor.h"
 #include "NonlinearFactorGraph.h"
+#include "Pose2.h"
+#include "LieConfig.h"
+#include "BetweenFactor.h"
+#include "Key.h"
 
 namespace gtsam {
+
+  /**
+   * Pose2Config is now simply a typedef
+   */
+  typedef LieConfig<Symbol<Pose2,'x'>,Pose2> Pose2Config;
+
+  typedef BetweenFactor<Pose2Config, Pose2Config::Key, Pose2> Pose2Factor;
+
+  /**
+   * Create a circle of n 2D poses tangent to circle of radius R, first pose at (R,0)
+   * @param n number of poses
+   * @param R radius of circle
+   * @param c character to use for keys
+   * @return circle of n 2D poses
+   */
+  Pose2Config pose2Circle(size_t n, double R);
+
 
 	/**
 	 * Non-linear factor graph for visual SLAM

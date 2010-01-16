@@ -98,6 +98,29 @@ TEST( Rot2, unrotate)
 }
 
 /* ************************************************************************* */
+TEST( Rot2, relativeBearing )
+{
+	Point2 l1(1, 0), l2(1, 1);
+	Matrix expectedH, actualH;
+
+	// establish relativeBearing is indeed zero
+	Rot2 actual1 = relativeBearing(l1, actualH);
+	CHECK(assert_equal(Rot2(),actual1));
+
+	// Check numerical derivative
+	expectedH = numericalDerivative11(relativeBearing, l1, 1e-5);
+	CHECK(assert_equal(expectedH,actualH));
+
+	// establish relativeBearing is indeed 45 degrees
+	Rot2 actual2 = relativeBearing(l2, actualH);
+	CHECK(assert_equal(Rot2(M_PI_4),actual2));
+
+	// Check numerical derivative
+	expectedH = numericalDerivative11(relativeBearing, l2, 1e-5);
+	CHECK(assert_equal(expectedH,actualH));
+}
+
+/* ************************************************************************* */
 int main() {
 	TestResult tr;
 	return TestRegistry::runAllTests(tr);

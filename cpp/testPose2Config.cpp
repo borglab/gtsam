@@ -6,7 +6,7 @@
 #include <iostream>
 
 #include <CppUnitLite/TestHarness.h>
-#include "Pose2Config.h"
+#include "Pose2Graph.h"
 
 using namespace std;
 using namespace gtsam;

@@ -17,12 +17,6 @@ using namespace std;
 
 namespace gtsam {
 
-// some typedefs we need
-
-//typedef boost::graph_traits<SDGraph>::vertex_iterator BoostVertexIterator;
-
-
-
 /* ************************************************************************* */
 template<class G, class F, class Key>
 SDGraph<Key> toBoostGraph(const G& graph) {
@@ -31,12 +25,16 @@ SDGraph<Key> toBoostGraph(const G& graph) {
 	typedef typename boost::graph_traits<SDGraph<Key> >::vertex_descriptor BoostVertex;
 	map<Key, BoostVertex> key2vertex;
 	BoostVertex v1, v2;
-	BOOST_FOREACH(F factor, graph) {
-		if (factor->keys().size() > 2)
+	typename G::const_iterator itFactor;
+	for(itFactor=graph.begin(); itFactor!=graph.end(); itFactor++) {
+		if ((*itFactor)->keys().size() > 2)
 			throw(invalid_argument("toBoostGraph: only support factors with at most two keys"));
 
-		if (factor->keys().size() == 1)
+		if ((*itFactor)->keys().size() == 1)
 			continue;
+
+		boost::shared_ptr<F> factor = boost::dynamic_pointer_cast<F>(*itFactor);
+		if (!factor) continue;
 
 		Key key1 = factor->key1();
 		Key key2 = factor->key2();
