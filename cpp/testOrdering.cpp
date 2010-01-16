@@ -6,7 +6,7 @@
 #include <boost/assign/std/list.hpp> // for operator +=
 #include <CppUnitLite/TestHarness.h>
 #include "Ordering-inl.h"
-#include "Pose2Graph.h"
+#include "pose2SLAM.h"
 
 
 using namespace std;

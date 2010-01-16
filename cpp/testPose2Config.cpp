@@ -6,7 +6,7 @@
 #include <iostream>
 
 #include <CppUnitLite/TestHarness.h>
-#include "Pose2Graph.h"
+#include "pose2SLAM.h"
 
 using namespace std;
 using namespace gtsam;
@@ -21,7 +21,7 @@ TEST( Pose2Config, pose2Circle )
 	expected.insert(2, Pose2(-1,  0, - M_PI_2));
 	expected.insert(3, Pose2( 0, -1,   0     ));
 
-	Pose2Config actual = pose2Circle(4,1.0);
+	Pose2Config actual = pose2SLAM::circle(4,1.0);
 	CHECK(assert_equal(expected,actual));
 }
 
@@ -37,7 +37,7 @@ TEST( Pose2Config, expmap )
 
 	// Note expmap coordinates are in local coordinates, so shifting to right requires thought !!!
 	Vector delta = Vector_(12, 0.0,-0.1,0.0, -0.1,0.0,0.0, 0.0,0.1,0.0, 0.1,0.0,0.0);
-	Pose2Config actual = expmap(pose2Circle(4,1.0),delta);
+	Pose2Config actual = expmap(pose2SLAM::circle(4,1.0),delta);
 	CHECK(assert_equal(expected,actual));
 }
 

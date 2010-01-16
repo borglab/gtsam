@@ -6,7 +6,7 @@
 
 #include <CppUnitLite/TestHarness.h>
 #include "numericalDerivative.h"
-#include "Pose2Prior.h"
+#include "pose2SLAM.h"
 
 using namespace std;
 using namespace gtsam;

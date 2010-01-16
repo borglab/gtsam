@@ -1,17 +1,12 @@
 /**
- *  @file  Pose2Prior.h
- *  @authors Michael Kaess
+ *  @file  PriorFactor.h
+ *  @authors Frank Dellaert
  **/
 #pragma once
 
-#include <map>
+#include <ostream>
 #include "NonlinearFactor.h"
-#include "GaussianFactor.h"
 #include "Pose2.h"
-#include "Matrix.h"
-#include "Key.h"
-#include "Pose2Graph.h"
-#include "ostream"
 
 namespace gtsam {
 
@@ -67,8 +62,5 @@ namespace gtsam {
 			return square_root_inverse_covariance_ * logmap(prior_, p);
 		}
 	};
-
-	/** This is just a typedef now */
-	typedef PriorFactor<Pose2Config, Pose2Config::Key, Pose2> Pose2Prior;
 
 } /// namespace gtsam

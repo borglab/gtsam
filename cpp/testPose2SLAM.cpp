@@ -14,7 +14,7 @@ using namespace boost::assign;
 #include "NonlinearOptimizer-inl.h"
 #include "FactorGraph-inl.h"
 #include "Ordering.h"
-#include "Pose2Graph.h"
+#include "pose2SLAM.h"
 
 using namespace std;
 using namespace gtsam;
@@ -115,7 +115,7 @@ TEST(Pose2Graph, optimize) {
 TEST(Pose2Graph, optimizeCircle) {
 
 	// Create a hexagon of poses
-	Pose2Config hexagon = pose2Circle(6,1.0);
+	Pose2Config hexagon = pose2SLAM::circle(6,1.0);
   Pose2 p0 = hexagon[0], p1 = hexagon[1];
 
 	// create a Pose graph with one equality constraint and one measurement

@@ -1,4 +1,4 @@
 ./configure --prefix=$HOME --with-toolbox=$HOME/toolbox/ --with-boost=/opt/local/include/
 
 # for maximum performance on Intel Core2 platform:
-#./configure --prefix=$HOME --with-toolbox=$HOME/toolbox/ --with-boost=/opt/local/include/ CXXFLAGS="-O3 -march=nocona -mtune=generic -DNDEBUG" --disable-static
+#./configure --prefix=$HOME --with-toolbox=$HOME/toolbox/ --with-boost=/opt/local/include/ CXXFLAGS=" -g -ftree-vectorize O3 -march=nocona -mtune=generic -DNDEBUG" --disable-static

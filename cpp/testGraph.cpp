@@ -12,7 +12,7 @@
 
 #include <CppUnitLite/TestHarness.h>
 
-#include "Pose2Graph.h"
+#include "pose2SLAM.h"
 #include "LieConfig-inl.h"
 #include "graph-inl.h"
 
@@ -43,8 +43,8 @@ TEST( Graph, composePoses )
 {
 	Pose2Graph graph;
 	Matrix cov = eye(3);
-	graph.push_back(boost::shared_ptr<Pose2Factor>(new Pose2Factor(1,2, Pose2(2.0, 0.0, 0.0), cov)));
-	graph.push_back(boost::shared_ptr<Pose2Factor>(new Pose2Factor(2,3, Pose2(3.0, 0.0, 0.0), cov)));
+	graph.add(1,2, Pose2(2.0, 0.0, 0.0), cov);
+	graph.add(2,3, Pose2(3.0, 0.0, 0.0), cov);
 
 	PredecessorMap<Pose2Config::Key> tree;
 	tree.insert(1,2);

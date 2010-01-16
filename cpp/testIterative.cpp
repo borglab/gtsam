@@ -12,8 +12,7 @@ using namespace boost::assign;
 #include "Ordering.h"
 #include "iterative.h"
 #include "smallExample.h"
-#include "Pose2Graph.h"
-#include "Pose2Prior.h"
+#include "pose2SLAM.h"
 
 using namespace std;
 using namespace gtsam;
@@ -101,8 +100,6 @@ TEST( Iterative, conjugateGradientDescent_hard_constraint )
 /* ************************************************************************* */
 TEST( Iterative, conjugateGradientDescent_soft_constraint )
 {
-	typedef Pose2Config::Key Key;
-
 	Pose2Config config;
 	config.insert(1, Pose2(0.,0.,0.));
 	config.insert(2, Pose2(1.5,0.,0.));
@@ -110,8 +107,8 @@ TEST( Iterative, conjugateGradientDescent_soft_constraint )
 	Pose2Graph graph;
 	Matrix cov = eye(3);
 	Matrix cov2 = eye(3) * 1e-10;
-	graph.push_back(Pose2Graph::sharedFactor(new Pose2Factor(Key(1), Key(2), Pose2(1.,0.,0.), cov)));
-	graph.push_back(boost::shared_ptr<Pose2Prior>(new Pose2Prior(Key(1), Pose2(0.,0.,0.), cov2)));
+	graph.add(1,2, Pose2(1.,0.,0.), cov);
+	graph.addPrior(1, Pose2(0.,0.,0.), cov2);
 
 	VectorConfig zeros;
 	zeros.insert("x1",zero(3));
