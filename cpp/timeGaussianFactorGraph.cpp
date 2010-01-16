@@ -26,12 +26,35 @@ double timeKalmanSmoother(int T) {
 }
 
 /* ************************************************************************* */
+// Create a planar factor graph and optimize
+double timePlanarSmoother(int N) {
+	GaussianFactorGraph fg;
+	VectorConfig config;
+	boost::tie(fg,config) = planarGraph(N);
+	Ordering ordering = fg.getOrdering();
+	clock_t start = clock();
+	fg.optimize(ordering);
+	clock_t end = clock ();
+	double dif = (double)(end - start) / CLOCKS_PER_SEC;
+	return dif;
+}
+
+/* ************************************************************************* */
 TEST(timeGaussianFactorGraph, linearTime)
 {
 	int T = 1000;
-	double time1 = timeKalmanSmoother(  T); // cout << time1 << endl;
-	double time2 = timeKalmanSmoother(2*T); // cout << time2 << endl;
-	DOUBLES_EQUAL(2*time1,time2,0.001);
+	double time1 = timeKalmanSmoother(  T);  cout << time1 << endl;
+	double time2 = timeKalmanSmoother(2*T);  cout << time2 << endl;
+	DOUBLES_EQUAL(2*time1,time2,0.1);
+}
+
+/* ************************************************************************* */
+TEST(timeGaussianFactorGraph, planar)
+{
+	// 1740: 8.12, 8.12, 8.12, 8.16, 8.14
+	int N = 30;
+	double time = timePlanarSmoother(N); cout << time << endl;
+	DOUBLES_EQUAL(8.12,time,0.1);
 }
 
 /* ************************************************************************* */

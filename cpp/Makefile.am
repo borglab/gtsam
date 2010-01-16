@@ -125,15 +125,6 @@ testBayesNetPreconditioner_LDADD   = libgtsam.la
 testSubgraphPreconditioner_SOURCES = $(example) testSubgraphPreconditioner.cpp
 testSubgraphPreconditioner_LDADD   = libgtsam.la
 
-# the timing tests below are broken for now.
-#noinst_PROGRAMS = timeGaussianFactor timeGaussianFactorGraph
-
-#timeGaussianFactor_SOURCES = timeGaussianFactor.cpp
-#timeGaussianFactorGraph_SOURCES = timeGaussianFactorGraph.cpp
-
-#timeGaussianFactor_LDADD = libgtsam.la 
-#timeGaussianFactorGraph_LDADD = libgtsam.la
-
 # Nonlinear inference 
 headers += Key.h NonlinearFactorGraph.h NonlinearFactorGraph-inl.h
 headers += NonlinearOptimizer.h NonlinearOptimizer-inl.h 
@@ -183,10 +174,6 @@ testPose3_LDADD     = libgtsam.la
 testCal3_S2_LDADD   = libgtsam.la
 testLieConfig_LDADD = libgtsam.la
 testTupleConfig_LDADD = libgtsam.la
-
-noinst_PROGRAMS = timeRot3
-timeRot3_SOURCES = timeRot3.cpp
-timeRot3_LDADD = libgtsam.la
 
 # simulated2D example
 sources += simulated2D.cpp 
@@ -252,6 +239,15 @@ testVSLAMConfig_LDADD = libgtsam.la
 
 headers += smallExample.h 
 headers += $(sources:.cpp=.h)
+
+# Timing tests
+noinst_PROGRAMS = timeGaussianFactor timeGaussianFactorGraph timeRot3
+timeRot3_SOURCES = timeRot3.cpp
+timeRot3_LDADD = libgtsam.la
+timeGaussianFactor_SOURCES = timeGaussianFactor.cpp
+timeGaussianFactor_LDADD = $(example) libgtsam.la 
+timeGaussianFactorGraph_SOURCES = timeGaussianFactorGraph.cpp
+timeGaussianFactorGraph_LDADD = $(example) libgtsam.la
 
 # create both dynamic and static libraries
 AM_CXXFLAGS = -I$(boost) -fPIC
