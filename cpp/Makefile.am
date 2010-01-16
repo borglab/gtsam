@@ -193,13 +193,15 @@ headers += BetweenFactor.h LieConfig.h LieConfig-inl.h TupleConfig.h TupleConfig
 # 2D Pose constraints
 headers += Pose2Prior.h 
 sources += Pose2Graph.cpp 
-check_PROGRAMS += testPose2Factor testPose2Config testPose2Graph 
+check_PROGRAMS += testPose2Factor testPose2Config testPose2Graph testPose2Prior
 testPose2Factor_SOURCES = $(example) testPose2Factor.cpp
 testPose2Factor_LDADD   = libgtsam.la
 testPose2Config_SOURCES = $(example) testPose2Config.cpp
 testPose2Config_LDADD   = libgtsam.la
 testPose2Graph_SOURCES  = $(example) testPose2Graph.cpp
 testPose2Graph_LDADD    = libgtsam.la
+testPose2Prior_SOURCES  = $(example) testPose2Prior.cpp
+testPose2Prior_LDADD    = libgtsam.la
 
 # 2D SLAM using Bearing and Range
 headers +=   

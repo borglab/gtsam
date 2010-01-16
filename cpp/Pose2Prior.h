@@ -25,11 +25,10 @@ private:
 
 public:
 
-	typedef NonlinearFactor<Pose2Config> Base;
 	typedef boost::shared_ptr<Pose2Prior> shared_ptr; // shorthand for a smart pointer to a factor
 
 	Pose2Prior(const Key& key, const Pose2& measured, const Matrix& measurement_covariance) :
-			  key_(key),measured_(measured),Base(1.0) {
+			  key_(key),measured_(measured) {
 		square_root_inverse_covariance_ = inverse_square_root(measurement_covariance);
 		keys_.push_back(key);
 	}
