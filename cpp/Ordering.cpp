@@ -30,7 +30,7 @@ Ordering Ordering::subtract(const Ordering& keys) const {
 
 /* ************************************************************************* */
 void Ordering::print(const string& s) const {
-  cout << s;
+  cout << s << " (" << size() << "):";
   BOOST_FOREACH(string key, *this)
     cout << " " << key;
   cout << endl;
