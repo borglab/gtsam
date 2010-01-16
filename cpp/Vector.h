@@ -171,6 +171,13 @@ Vector ediv_(const Vector &a, const Vector &b);
 double sum(const Vector &a);
 
 /**
+ * elementwise reciprocal of vector elements
+ * @param a vector
+ * @return [1/a(i)]
+ */
+Vector reciprocal(const Vector &a);
+
+/**
  * return the max element of a vector
  * @param a vector
  * @return max(a)
@@ -192,19 +199,20 @@ std::pair<double,Vector> house(Vector &x);
  * a.k.a., the pseudoinverse of the column
  * NOTE: if any sigmas are zero (indicating a constraint)
  * the pseudoinverse will be a selection vector, and the
- * precision will be infinite
+ * variance will be zero
  * @param v is the first column of the matrix to solve
- * @param simgas is a vector of standard deviations
- * @return a pair of the pseudoinverse of v and the precision
+ * @param weights is a vector of weights/precisions where w=1/(s*s)
+ * @return a pair of the pseudoinverse of v and the associated precision/weight
  */
-std::pair<Vector, double> weightedPseudoinverse(const Vector& v, const Vector& sigmas);
+std::pair<Vector, double>
+weightedPseudoinverse(const Vector& v, const Vector& weights);
 
 /*
  * Fast version *no error checking* !
- * Pass in initialized vector pseudo of size(sigma) or will crash !
+ * Pass in initialized vector pseudo of size(weights) or will crash !
  * @return the precision, pseudoinverse in third argument
  */
-double weightedPseudoinverse(const Vector& a, const Vector& sigmas, Vector& pseudo);
+double weightedPseudoinverse(const Vector& a, const Vector& weights, Vector& pseudo);
 
 /**
  * concatenate Vectors

@@ -141,18 +141,19 @@ TEST( TestVector, weightedPseudoinverse )
 	// create sigmas
 	Vector sigmas(2);
 	sigmas(0) = 0.1; sigmas(1) = 0.2;
+	Vector weights = reciprocal(emul(sigmas,sigmas));
 
 	// perform solve
-	Vector act; double precision;
-	boost::tie(act, precision) = weightedPseudoinverse(x, sigmas);
+	Vector actual; double precision;
+	boost::tie(actual, precision) = weightedPseudoinverse(x, weights);
 
 	// construct expected
-	Vector exp(2);
-	exp(0) = 0.5; exp(1) = 0.25;
+	Vector expected(2);
+	expected(0) = 0.5; expected(1) = 0.25;
 	double expPrecision = 200.0;
 
 	// verify
-	CHECK(assert_equal(act, exp));
+	CHECK(assert_equal(expected,actual));
 	CHECK(fabs(expPrecision-precision) < 1e-5);
 }
 
@@ -166,17 +167,18 @@ TEST( TestVector, weightedPseudoinverse_constraint )
 	// create sigmas
 	Vector sigmas(2);
 	sigmas(0) = 0.0; sigmas(1) = 0.2;
+	Vector weights = reciprocal(emul(sigmas,sigmas));
 
 	// perform solve
-	Vector act; double precision;
-	boost::tie(act, precision) = weightedPseudoinverse(x, sigmas);
+	Vector actual; double precision;
+	boost::tie(actual, precision) = weightedPseudoinverse(x, weights);
 
 	// construct expected
-	Vector exp(2);
-	exp(0) = 1.0; exp(1) = 0.0;
+	Vector expected(2);
+	expected(0) = 1.0; expected(1) = 0.0;
 
 	// verify
-	CHECK(assert_equal(act, exp));
+	CHECK(assert_equal(expected,actual));
 	CHECK(isinf(precision));
 }
 
@@ -185,11 +187,12 @@ TEST( TestVector, weightedPseudoinverse_nan )
 {
 	Vector a = Vector_(4, 1., 0., 0., 0.);
 	Vector sigmas = Vector_(4, 0.1, 0.1, 0., 0.);
+	Vector weights = reciprocal(emul(sigmas,sigmas));
 	Vector pseudo; double precision;
-	boost::tie(pseudo, precision) = weightedPseudoinverse(a, sigmas);
+	boost::tie(pseudo, precision) = weightedPseudoinverse(a, weights);
 
-	Vector exp = Vector_(4, 1., 0., 0.,0.);
-	CHECK(assert_equal(pseudo, exp));
+	Vector expected = Vector_(4, 1., 0., 0.,0.);
+	CHECK(assert_equal(expected, pseudo));
 	DOUBLES_EQUAL(100, precision, 1e-5);
 }
 
@@ -221,6 +224,13 @@ TEST( TestVector, greater_than )
 		   v2 = zero(3);
 	CHECK(greaterThanOrEqual(v1, v1)); // test basic greater than
 	CHECK(greaterThanOrEqual(v1, v2)); // test equals
+}
+
+/* ************************************************************************* */
+TEST( TestVector, reciprocal )
+{
+	Vector v = Vector_(3, 1.0, 2.0, 4.0);
+  CHECK(assert_equal(Vector_(3, 1.0, 0.5, 0.25),reciprocal(v)));
 }
 
 /* ************************************************************************* */

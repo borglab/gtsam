@@ -328,7 +328,7 @@ weighted_eliminate(Matrix& A, Vector& b, const Vector& sigmas) {
 	Vector pseudo(m); // allocate storage for pseudo-inverse
 
 	// TODO: calculate weights once
-	// Vector weights =
+	Vector weights = reciprocal(emul(sigmas,sigmas));
 
 	// We loop over all columns, because the columns that can be eliminated
 	// are not necessarily contiguous. For each one, estimate the corresponding
@@ -341,9 +341,7 @@ weighted_eliminate(Matrix& A, Vector& b, const Vector& sigmas) {
 		Vector a(column(A, j));
 
 		// Calculate weighted pseudo-inverse and corresponding precision
-		// TODO: pass in weights which are calculated once
-		// TODO return variance
-		double precision = weightedPseudoinverse(a, sigmas, pseudo);
+		double precision = weightedPseudoinverse(a, weights, pseudo);
 
 		// if precision is zero, no information on this column
 		if (precision < 1e-8) continue;
@@ -357,6 +355,7 @@ weighted_eliminate(Matrix& A, Vector& b, const Vector& sigmas) {
 		double d = inner_prod(pseudo, b);
 
 		// construct solution (r, d, sigma)
+		// TODO: avoid sqrt, store precision or at least variance
 		results.push_back(boost::make_tuple(r, d, 1./sqrt(precision)));
 
 		// exit after rank exhausted

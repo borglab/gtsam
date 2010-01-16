@@ -51,8 +51,9 @@ TEST(timeGaussianFactorGraph, linearTime)
 /* ************************************************************************* */
 TEST(timeGaussianFactorGraph, planar)
 {
-	// 1741: 8.12, 8.12, 8.12, 8.16, 8.14
-	// 1742: 5.99, 5.97, 5.97, 6.02, 5.97
+	// 1741: 8.12, 8.12, 8.12, 8.14, 8.16
+	// 1742: 5.97, 5.97, 5.97, 5.99, 6.02
+	// 1746: 5.96, 5.96, 5.97, 6.00, 6.04
 	int N = 30;
 	double time = timePlanarSmoother(N); cout << time << endl;
 	DOUBLES_EQUAL(5.97,time,0.1);

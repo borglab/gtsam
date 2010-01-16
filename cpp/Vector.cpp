@@ -196,6 +196,15 @@ namespace gtsam {
 		}
 
   /* ************************************************************************* */
+  Vector reciprocal(const Vector &a) {
+  	size_t n = a.size();
+  	Vector b(n);
+  	for( size_t i = 0; i < n; i++ )
+  		b(i) = 1.0/a(i);
+  	return b;
+  	}
+
+  /* ************************************************************************* */
   double max(const Vector &a) {
   	return *(std::max_element(a.begin(), a.end()));
 	}
@@ -227,53 +236,57 @@ namespace gtsam {
   }
   
   /* ************************************************************************* */
-  // Fast version *no error checking* !
-  // Pass in initialized vector of size m or will crash !
-  double weightedPseudoinverse(const Vector& a, const Vector& sigmas, Vector& pseudo) {
-	  size_t m = sigmas.size();
+	// Fast version *no error checking* !
+	// Pass in initialized vector of size m or will crash !
+	double weightedPseudoinverse(const Vector& a, const Vector& weights,
+			Vector& pseudo) {
 
-	  // If there is a valid (a!=0) constraint (sigma==0) return the first one
-	  for(int i=0; i<m; ++i)
-		  if (sigmas[i] < 1e-9 && fabs(a[i]) > 1e-9) {
-		  	pseudo=delta(m,i,1/a[i]);
-			  return std::numeric_limits<double>::infinity();
-		  }
+		size_t m = weights.size();
+		static const double inf = std::numeric_limits<double>::infinity();
 
-	  // Form psuedo-inverse inv(a'inv(Sigma)a)a'inv(Sigma)
-	  // For diagonal Sigma, inv(Sigma) = diag(precisions)
-	  double precision = 0;
-	  // pseudo will be used to store both precisions (an intermediate) and result
-	  Vector& precisions = pseudo;
-	  for(int i = 0; i<m; i++) {
-	  	double ai=a[i];
-		  if (fabs(ai) < 1e-9) // also catches remaining sigma==0 rows
-			  precisions[i] = 0.;
-		  else {
-		  	double si=sigmas[i],pi = 1./(si*si);
-			  precision += ai*ai*pi;
-			  precisions[i] = pi;
-		  }
-	  }
-	  // precision = a'inv(Sigma)a
-	  if (precision<1e-9)
-	  	for(int i = 0; i<m; i++) pseudo[i]=0;
-	  else {
-	  	// emul(precisions,a)/precision
-	  	double f = 1.0/precision;
-	  	for(int i = 0; i<m; i++)
-	  		pseudo[i]=f*precisions[i]*a[i];
-	  }
-	  return precision;
-  }
+		// If there is a valid (a!=0) constraint (sigma==0) return the first one
+		for (int i = 0; i < m; ++i)
+			if (weights[i] == inf && fabs(a[i]) > 1e-9) {
+				pseudo = delta(m, i, 1 / a[i]);
+				return inf;
+			}
+
+		// Form psuedo-inverse inv(a'inv(Sigma)a)a'inv(Sigma)
+		// For diagonal Sigma, inv(Sigma) = diag(precisions)
+		double precision = 0;
+		for (int i = 0; i < m; i++) {
+			double ai = a[i];
+			if (fabs(ai) > 1e-9) // also catches remaining sigma==0 rows
+			precision += weights[i] * (ai * ai);
+		}
+
+		// precision = a'inv(Sigma)a
+		if (precision < 1e-9)
+			for (int i = 0; i < m; i++)
+				pseudo[i] = 0;
+		else {
+			// emul(precisions,a)/precision
+			double variance = 1.0 / precision;
+			for (int i = 0; i < m; i++) {
+				double ai = a[i];
+				if (fabs(ai) < 1e-9) // also catches remaining sigma==0 rows
+					pseudo[i] = 0;
+				else
+					pseudo[i] = variance * weights[i] * ai;
+			}
+		}
+		return precision; // sum of weights
+	}
 
   /* ************************************************************************* */
   // Slow version with error checking
-  pair<Vector, double> weightedPseudoinverse(const Vector& a, const Vector& sigmas) {
-	  size_t m = sigmas.size();
+  pair<Vector, double>
+  weightedPseudoinverse(const Vector& a, const Vector& weights) {
+	  size_t m = weights.size();
 	  if (a.size() != m)
-		  throw invalid_argument("V and precisions have different sizes!");
+		  throw invalid_argument("a and weights have different sizes!");
 	  Vector pseudo(m);
-  	double precision = weightedPseudoinverse(a, sigmas, pseudo);
+  	double precision = weightedPseudoinverse(a, weights, pseudo);
 	  return make_pair(pseudo, precision);
   }
 
@@ -324,7 +337,5 @@ namespace gtsam {
   }
   
   /* ************************************************************************* */
-  
-  
   
 } // namespace gtsam
