@@ -15,55 +15,60 @@
 
 namespace gtsam {
 
-class Pose2Prior : public NonlinearFactor<Pose2Config> {
-private:
-	typedef Pose2Config::Key Key;
-	Key key_;
-	Pose2 measured_;
-	Matrix square_root_inverse_covariance_; /** sqrt(inv(measurement_covariance)) */
-	//std::list<Key> keys_;
+	/**
+	 * A class for a soft prior on any Lie type
+	 * T is the Lie group type, Config where the T's are gotten from
+	 */
+	template<class Config, class Key, class T>
+	class PriorFactor: public NonlinearFactor1<Config, Key, T> {
 
-public:
+	private:
 
-	typedef boost::shared_ptr<Pose2Prior> shared_ptr; // shorthand for a smart pointer to a factor
+		typedef NonlinearFactor1<Config, Key, T> Base;
 
-	Pose2Prior(const Key& key, const Pose2& measured, const Matrix& measurement_covariance) :
-			  key_(key),measured_(measured) {
-		square_root_inverse_covariance_ = inverse_square_root(measurement_covariance);
-		keys_.push_back(key);
-	}
+		T prior_; /** The measurement */
+		Matrix square_root_inverse_covariance_; /** sqrt(inv(covariance)) */
 
-	/** implement functions needed for Testable */
-	void print(const std::string& name) const {
-		std::cout << name << std::endl;
-		std::cout << "Factor "<< std::endl;
-		std::cout << "key "<< (std::string)key_<<std::endl;
-		measured_.print("measured ");
-		gtsam::print(square_root_inverse_covariance_,"MeasurementCovariance");
-	}
-	bool equals(const NonlinearFactor<Pose2Config>& expected, double tol) const {return false;}
+	public:
 
-	/** implement functions needed to derive from Factor */
-	Vector error_vector(const Pose2Config& config) const {
-		Pose2 p = config[key_];
-		return square_root_inverse_covariance_ * logmap(measured_,p);
-	}
+		// shorthand for a smart pointer to a factor
+		typedef typename boost::shared_ptr<PriorFactor> shared_ptr;
 
-	//std::list<Key> keys() const { return keys_; }
-	std::size_t size() const { return keys_.size(); }
+		/** Constructor */
+		PriorFactor(const Key& key, const T& prior, const Matrix& covariance) :
+			Base(1.0, key), prior_(prior) {
+			square_root_inverse_covariance_ = inverse_square_root(covariance);
+		}
 
-	/** linearize */
-	boost::shared_ptr<GaussianFactor> linearize(const Pose2Config& config) const {
-		Pose2 p = config[key_];
-		Vector b = - error_vector(config);
-		Matrix H(3,3);
-		H(0,0)=1; H(0,1)=0; H(0,2)=0;
-		H(1,0)=0; H(1,1)=1; H(1,2)=0;
-		H(2,0)=0; H(2,1)=0; H(2,2)=1;
-		boost::shared_ptr<GaussianFactor> linearized(new GaussianFactor(
-				key_, square_root_inverse_covariance_ * H,
-				b, 1.0));
-		return linearized;
-	}
-};
+		/** implement functions needed for Testable */
+
+		/** print */
+		void print(const std::string& s) const {
+			Base::print(s);
+			prior_.print("prior");
+			gtsam::print(square_root_inverse_covariance_,
+					"Square Root Inverse Covariance");
+		}
+
+		/** equals */
+		bool equals(const NonlinearFactor<Config>& expected, double tol) const {
+			const PriorFactor<Config, Key, T> *e = dynamic_cast<const PriorFactor<
+					Config, Key, T>*> (&expected);
+			return e != NULL && Base::equals(expected) && this->prior_.equals(
+					e->prior_, tol);
+		}
+
+		/** implement functions needed to derive from Factor */
+
+		/** vector of errors */
+		Vector evaluateError(const T& p, boost::optional<Matrix&> H = boost::none) const {
+			if (H) (*H) = square_root_inverse_covariance_;
+			// manifold equivalent of h(x)-z -> log(z,h(x))
+			return square_root_inverse_covariance_ * logmap(prior_, p);
+		}
+	};
+
+	/** This is just a typedef now */
+	typedef PriorFactor<Pose2Config, Pose2Config::Key, Pose2> Pose2Prior;
+
 } /// namespace gtsam

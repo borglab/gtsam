@@ -45,16 +45,17 @@ namespace gtsam {
 		/** print */
 		void print(const std::string& s) const {
 			Base::print(s);
-			measured_.print("measured ");
-			gtsam::print(square_root_inverse_covariance_, "MeasurementCovariance");
+			measured_.print("measured");
+			gtsam::print(square_root_inverse_covariance_,
+					"Square Root Inverse Covariance");
 		}
 
 		/** equals */
 		bool equals(const NonlinearFactor<Config>& expected, double tol) const {
 			const BetweenFactor<Config, Key, T> *e =
 					dynamic_cast<const BetweenFactor<Config, Key, T>*> (&expected);
-			return e != NULL && Base::equals(expected)
-					&& this->measured_.equals(e->measured_, tol);
+			return e != NULL && Base::equals(expected) && this->measured_.equals(
+					e->measured_, tol);
 		}
 
 		/** implement functions needed to derive from Factor */
@@ -62,24 +63,24 @@ namespace gtsam {
 		/** vector of errors */
 		Vector evaluateError(const T& p1, const T& p2, boost::optional<Matrix&> H1 =
 				boost::none, boost::optional<Matrix&> H2 = boost::none) const {
-			// h - z
-			T hx = between(p1, p2);
-			// TODO should be done by noise model
+			T hx = between(p1, p2, H1, H2); // h(x)
 			if (H1 || H2) {
-				between(p1,p2,H1,H2);
 				if (H1) *H1 = square_root_inverse_covariance_ * *H1;
 				if (H2) *H2 = square_root_inverse_covariance_ * *H2;
 			}
 			// manifold equivalent of h(x)-z -> log(z,h(x))
-			// TODO use noise model, error vector is not whitened yet
 			return square_root_inverse_covariance_ * logmap(measured_, hx);
 		}
 
 		/** return the measured */
-		inline const T measured() const {return measured_;}
+		inline const T measured() const {
+			return measured_;
+		}
 
 		/** number of variables attached to this factor */
-		inline std::size_t size() const { return 2;}
+		inline std::size_t size() const {
+			return 2;
+		}
 	};
 
 } /// namespace gtsam

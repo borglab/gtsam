@@ -142,13 +142,4 @@ namespace gtsam {
   Pose3 between(const Pose3& p1, const Pose3& p2,
   		boost::optional<Matrix&> H1, boost::optional<Matrix&> H2);
 
-  /** direct measurement of a pose */
-  Vector hPose(const Vector& x);
-
-  /**
-   * derivative of direct measurement
-   * 12*6, entry i,j is how measurement error will change
-   */
-  Matrix DhPose(const Vector& x);
-
 } // namespace gtsam

@@ -54,14 +54,14 @@ TEST( Pose2Prior, error )
 static Pose2 prior(2,2,M_PI_2);
 static Pose2Prior factor(1,prior, covariance);
 
-/* ************************************************************************* *
+/* ************************************************************************* */
 // The error |A*dx-b| approximates (h(x0+dx)-z) = -error_vector
 // Hence i.e., b = approximates z-h(x0) = error_vector(x0)
 Vector h(const Pose2& p1) {
 	return factor.evaluateError(p1);
 }
 
-/* ************************************************************************* *
+/* ************************************************************************* */
 TEST( Pose2Prior, linearize )
 {
 	// Choose a linearization point at ground truth
@@ -70,11 +70,10 @@ TEST( Pose2Prior, linearize )
 
 	// Actual linearization
 	boost::shared_ptr<GaussianFactor> actual = factor.linearize(x0);
-	CHECK(assert_equal(expected,*actual));
 
-	// Numerical do not work out because BetweenFactor is approximate ?
+	// Test with numerical derivative
 	Matrix numericalH = numericalDerivative11(h, prior, 1e-5);
-	CHECK(assert_equal(expectedH,numericalH));
+	CHECK(assert_equal(numericalH,actual->get_A("x1")));
 }
 
 /* ************************************************************************* */

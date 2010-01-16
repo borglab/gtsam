@@ -134,30 +134,10 @@ namespace gtsam {
   }
 
   /* ************************************************************************* */
-  // direct measurement of the deviation of a pose from the origin
-  // used as soft prior
-  /* ************************************************************************* */
-  Vector hPose (const Vector& x) {
-    Pose3 pose(x);                           // transform from vector to Pose3
-    Vector w = pose.rotation().ypr();        // get angle differences
-    Vector d = pose.translation().vector();  // get translation differences
-    return concatVectors(2,&w,&d);
-  }
-
-  /* ************************************************************************* */
-  // derivative of direct measurement
-  // 6*6, entry i,j is how measurement error will change
-  /* ************************************************************************* */
-  Matrix DhPose(const Vector& x) {
-    Matrix H = eye(6,6);
-    return H;
-  }
-
-  /* ************************************************************************* */
   // compose = Pose3(compose(R1,R2),transform_from(p1,t2);
 
   Matrix Dcompose1(const Pose3& p1, const Pose3& p2) {
-		Matrix DR_R1 = eye(3);
+  	static const Matrix DR_R1 = eye(3);
 		Matrix DR_t1 = zeros(3, 3);
 		Matrix DR = collect(2, &DR_R1, &DR_t1);
 		Matrix Dt = Dtransform_from1(p1, p2.translation());

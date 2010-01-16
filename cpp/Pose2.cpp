@@ -61,10 +61,8 @@ namespace gtsam {
 				dT1(1,0), dT1(1,1), dR1(1,0),
 				0.0, 0.0, -1.0);
 		}
-		if (H2) *H2 = Matrix_(3,3,
-				1.0, 0.0, 0.0,
-				0.0, 1.0, 0.0,
-				0.0, 0.0, 1.0);
+  	static const Matrix I3 = eye(3);
+		if (H2) *H2 = I3;
 		return dp;
 	}
 
