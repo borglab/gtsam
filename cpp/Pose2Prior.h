@@ -46,7 +46,7 @@ public:
 	/** implement functions needed to derive from Factor */
 	Vector error_vector(const Pose2Config& config) const {
 		Pose2 p = config[key_];
-		return -logmap(p,measured_);
+		return square_root_inverse_covariance_ * logmap(measured_,p);
 	}
 
 	//std::list<Key> keys() const { return keys_; }
@@ -55,7 +55,7 @@ public:
 	/** linearize */
 	boost::shared_ptr<GaussianFactor> linearize(const Pose2Config& config) const {
 		Pose2 p = config[key_];
-		Vector b = logmap(p,measured_);
+		Vector b = - error_vector(config);
 		Matrix H(3,3);
 		H(0,0)=1; H(0,1)=0; H(0,2)=0;
 		H(1,0)=0; H(1,1)=1; H(1,2)=0;
