@@ -13,6 +13,7 @@ using namespace std;
 #include <boost/tuple/tuple.hpp>
 #include "Matrix.h"
 #include "GaussianFactor.h"
+#include "GaussianConditional.h"
 
 using namespace gtsam;
 
@@ -66,7 +67,7 @@ int main()
   b2(6) = 2;
   b2(7) = -1;
   
-  GaussianFactor combined("x2", Ax2,  "l1", Al1, "x1", Ax1, b2);
+  GaussianFactor combined("x2", Ax2,  "l1", Al1, "x1", Ax1, b2,1);
   long timeLog = clock();
   int n = 1000000;
   GaussianConditional::shared_ptr conditional;

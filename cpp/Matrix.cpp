@@ -297,14 +297,38 @@ void householder_update(Matrix &A, int j, double beta, const Vector& vjm) {
 }
 
 /* ************************************************************************* */
+// update A, b
+// A' \define A_{S}-ar and b'\define b-ad
+__attribute__ ((noinline))	// uncomment to prevent inlining when profiling
+void updateAb(Matrix& A, Vector& b, int j, const Vector& a, const Vector& r, double d) {
+	const size_t m = A.size1(), n = A.size2();
+	for (int i = 0; i < m; ++i) { // update all rows
+		double ai = a(i);
+		b(i) -= ai * d;
+		double *Aptr = A.data().begin() + i * n + j + 1;
+		const double *rptr = r.data().begin() + j + 1;
+		for (int j2 = j + 1; j2 < n; ++j2) { // limit to only columns in separator
+			//A(i,j2) -= ai*r(j2);
+			*Aptr -= ai * *rptr;
+			Aptr++;
+			rptr++;
+		}
+	}
+}
+
+/* ************************************************************************* */
 list<boost::tuple<Vector, double, double> >
 weighted_eliminate(Matrix& A, Vector& b, const Vector& sigmas) {
-	bool verbose = false;
 	size_t m = A.size1(), n = A.size2(); // get size(A)
 	size_t maxRank = min(m,n);
 
 	// create list
 	list<boost::tuple<Vector, double, double> > results;
+
+	Vector pseudo(m); // allocate storage for pseudo-inverse
+
+	// TODO: calculate weights once
+	// Vector weights =
 
 	// We loop over all columns, because the columns that can be eliminated
 	// are not necessarily contiguous. For each one, estimate the corresponding
@@ -312,27 +336,25 @@ weighted_eliminate(Matrix& A, Vector& b, const Vector& sigmas) {
 	// Then update A and b by substituting x with d-rS, zero-ing out x's column.
 	for (int j=0; j<n; ++j) {
 		// extract the first column of A
+		// TODO: this is an allocate and a copy
+		// can we somehow make a "reference" vector, boost magic
 		Vector a(column(A, j));
-		if (verbose) print(a,"a = ");
 
 		// Calculate weighted pseudo-inverse and corresponding precision
-		Vector pseudo; double precision;
-		boost::tie(pseudo, precision) = weightedPseudoinverse(a, sigmas);
-		if (verbose) cout << "precision = " << precision << endl;
+		// TODO: pass in weights which are calculated once
+		// TODO return variance
+		double precision = weightedPseudoinverse(a, sigmas, pseudo);
 
 		// if precision is zero, no information on this column
 		if (precision < 1e-8) continue;
-		if (verbose) print(pseudo, "pseudo = ");
 
 		// create solution and copy into r
 		Vector r(basis(n, j));
 		for (int j2=j+1; j2<n; ++j2)
 			r(j2) = inner_prod(pseudo, column(A, j2));
-		if (verbose) print(r, "r = ");
 
 		// create the rhs
 		double d = inner_prod(pseudo, b);
-		if (verbose) cout << "d = " << d << endl;
 
 		// construct solution (r, d, sigma)
 		results.push_back(boost::make_tuple(r, d, 1./sqrt(precision)));
@@ -340,21 +362,9 @@ weighted_eliminate(Matrix& A, Vector& b, const Vector& sigmas) {
 		// exit after rank exhausted
 		if (results.size()>=maxRank) break;
 
-		// update A, b
-		for (int i=0;i<m;++i) { // update all rows
-			double ai = a(i);
-			b(i) -= ai*d;
-			double *Aptr = A.data().begin()+i*n+j+1;
-			double *rptr = r.data().begin()+j+1;
-			for (int j2=j+1;j2<n;++j2){ // limit to only columns in separator
-				//A(i,j2) -= ai*r(j2);
-				*Aptr -= ai* *rptr;
-				Aptr++;
-				rptr++;
-			}
-		}
-		if (verbose) print(sub(A,0,m,j+1,n), "updated A");
-		if (verbose) print(b, "updated b ");
+		// update A, b, expensive, suing outer product
+		// A' \define A_{S}-a*r and b'\define b-d*a
+		updateAb(A, b, j, a, r, d);
 	}
 
 	return results;

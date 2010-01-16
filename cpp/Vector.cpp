@@ -222,32 +222,54 @@ namespace gtsam {
   }
   
   /* ************************************************************************* */
-  pair<Vector, double> weightedPseudoinverse(const Vector& a, const Vector& sigmas) {
+  // Fast version *no error checking* !
+  // Pass in initialized vector of size m or will crash !
+  double weightedPseudoinverse(const Vector& a, const Vector& sigmas, Vector& pseudo) {
 	  size_t m = sigmas.size();
-	  if (a.size() != m)
-		  throw invalid_argument("V and precisions have different sizes!");
 
 	  // If there is a valid (a!=0) constraint (sigma==0) return the first one
 	  for(int i=0; i<m; ++i)
-		  if (sigmas[i] < 1e-9 && fabs(a[i]) > 1e-9)
-			  return make_pair(delta(m,i,1/a[i]), std::numeric_limits<double>::infinity());
+		  if (sigmas[i] < 1e-9 && fabs(a[i]) > 1e-9) {
+		  	pseudo=delta(m,i,1/a[i]);
+			  return std::numeric_limits<double>::infinity();
+		  }
 
 	  // Form psuedo-inverse inv(a'inv(Sigma)a)a'inv(Sigma)
 	  // For diagonal Sigma, inv(Sigma) = diag(precisions)
 	  double precision = 0;
-	  Vector precisions(m);
+	  // pseudo will be used to store both precisions (an intermediate) and result
+	  Vector& precisions = pseudo;
 	  for(int i = 0; i<m; i++) {
-		  if (fabs(a[i]) < 1e-9) // also catches remaining sigma==0 rows
+	  	double ai=a[i];
+		  if (fabs(ai) < 1e-9) // also catches remaining sigma==0 rows
 			  precisions[i] = 0.;
 		  else {
-			  precisions[i] = 1./(sigmas[i]*sigmas[i]);
-			  precision += a[i]*a[i]*precisions[i];
+		  	double si=sigmas[i],pi = 1./(si*si);
+			  precision += ai*ai*pi;
+			  precisions[i] = pi;
 		  }
 	  }
 	  // precision = a'inv(Sigma)a
-	  if (precision<1e-9) return make_pair(zero(m), precision);
-	  Vector pseudo(emul(precisions,a));
-	  return make_pair(pseudo/precision, precision);
+	  if (precision<1e-9)
+	  	for(int i = 0; i<m; i++) pseudo[i]=0;
+	  else {
+	  	// emul(precisions,a)/precision
+	  	double f = 1.0/precision;
+	  	for(int i = 0; i<m; i++)
+	  		pseudo[i]=f*precisions[i]*a[i];
+	  }
+	  return precision;
+  }
+
+  /* ************************************************************************* */
+  // Slow version with error checking
+  pair<Vector, double> weightedPseudoinverse(const Vector& a, const Vector& sigmas) {
+	  size_t m = sigmas.size();
+	  if (a.size() != m)
+		  throw invalid_argument("V and precisions have different sizes!");
+	  Vector pseudo(m);
+  	double precision = weightedPseudoinverse(a, sigmas, pseudo);
+	  return make_pair(pseudo, precision);
   }
 
   /* ************************************************************************* */

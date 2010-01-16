@@ -192,6 +192,13 @@ std::pair<double,Vector> house(Vector &x);
  */
 std::pair<Vector, double> weightedPseudoinverse(const Vector& v, const Vector& sigmas);
 
+/*
+ * Fast version *no error checking* !
+ * Pass in initialized vector pseudo of size(sigma) or will crash !
+ * @return the precision, pseudoinverse in third argument
+ */
+double weightedPseudoinverse(const Vector& a, const Vector& sigmas, Vector& pseudo);
+
 /**
  * concatenate Vectors
  */
