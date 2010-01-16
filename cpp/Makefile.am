@@ -214,15 +214,15 @@ testPlanarSLAM_SOURCES = $(example) testPlanarSLAM.cpp
 testPlanarSLAM_LDADD   = libgtsam.la
 
 # 3D Pose constraints
-headers += Pose3Factor.h  
-sources += Pose3Config.cpp Pose3Graph.cpp 
-check_PROGRAMS += testPose3Factor testPose3Config testPose3Graph 
+headers +=   
+sources += pose3SLAM.cpp 
+check_PROGRAMS += testPose3Factor testPose3Config testPose3SLAM 
 testPose3Factor_SOURCES = $(example) testPose3Factor.cpp
 testPose3Factor_LDADD   = libgtsam.la
 testPose3Config_SOURCES = $(example) testPose3Config.cpp
 testPose3Config_LDADD   = libgtsam.la
-testPose3Graph_SOURCES  = $(example) testPose3Graph.cpp
-testPose3Graph_LDADD    = libgtsam.la
+testPose3SLAM_SOURCES  = $(example) testPose3SLAM.cpp
+testPose3SLAM_LDADD    = libgtsam.la
 
 # Cameras
 sources += CalibratedCamera.cpp SimpleCamera.cpp
@@ -280,3 +280,12 @@ CXXLINK = $(LIBTOOL) $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=link \
 # rule to run an executable
 %.run: % libgtsam.la
 	./$^
+
+# to compile colamd and cppunitlite first when make all and make install. 
+# The part after external_libs is copied from automatically generated Makefile when without the following line
+libgtsam.la: external_libs $(libgtsam_la_OBJECTS) $(libgtsam_la_DEPENDENCIES) 
+	$(libgtsam_la_LINK) -rpath $(libdir) $(libgtsam_la_OBJECTS) $(libgtsam_la_LIBADD) $(LIBS)
+
+
+
+	

@@ -6,7 +6,7 @@
 #include <iostream>
 
 #include <CppUnitLite/TestHarness.h>
-#include "Pose3Config.h"
+#include "pose3SLAM.h"
 
 using namespace std;
 using namespace gtsam;
@@ -28,7 +28,7 @@ TEST( Pose3Config, pose3Circle )
 	expected.insert(2, Pose3(R3, Point3(-1, 0, 0)));
 	expected.insert(3, Pose3(R4, Point3( 0,-1, 0)));
 
-	Pose3Config actual = pose3Circle(4,1.0);
+	Pose3Config actual = pose3SLAM::circle(4,1.0);
 	CHECK(assert_equal(expected,actual));
 }
 
@@ -49,7 +49,7 @@ TEST( Pose3Config, expmap )
 			0.0,0.0,0.0,  0.1, 0.0, 0.0,
 			0.0,0.0,0.0,  0.1, 0.0, 0.0,
 			0.0,0.0,0.0,  0.1, 0.0, 0.0);
-	Pose3Config actual = expmap(pose3Circle(4,1.0),delta);
+	Pose3Config actual = expmap(pose3SLAM::circle(4,1.0),delta);
 	CHECK(assert_equal(expected,actual));
 }
 

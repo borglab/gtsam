@@ -34,7 +34,7 @@ TEST( Pose2Graph, constructor )
 	Pose2 measured(2,2,M_PI_2);
 	Pose2Factor constraint(1,2,measured, covariance);
 	Pose2Graph graph;
-	graph.add(1,2,measured, covariance);
+	graph.addConstraint(1,2,measured, covariance);
 	// get the size of the graph
 	size_t actual = graph.size();
 	// verify
@@ -50,7 +50,7 @@ TEST( Pose2Graph, linerization )
 	Pose2 measured(2,2,M_PI_2);
 	Pose2Factor constraint(1,2,measured, covariance);
 	Pose2Graph graph;
-	graph.add(1,2,measured, covariance);
+	graph.addConstraint(1,2,measured, covariance);
 
 	// Choose a linearization point
 	Pose2 p1(1.1,2,M_PI_2); // robot at (1.1,2) looking towards y (ground truth is at 1,2, see testPose2)
@@ -86,8 +86,8 @@ TEST(Pose2Graph, optimize) {
 
 	// create a Pose graph with one equality constraint and one measurement
   shared_ptr<Pose2Graph> fg(new Pose2Graph);
-  fg->addConstraint(0, Pose2(0,0,0));
-  fg->add(0, 1, Pose2(1,2,M_PI_2), covariance);
+  fg->addHardConstraint(0, Pose2(0,0,0));
+  fg->addConstraint(0, 1, Pose2(1,2,M_PI_2), covariance);
 
   // Create initial config
   boost::shared_ptr<Pose2Config> initial(new Pose2Config());
@@ -120,14 +120,14 @@ TEST(Pose2Graph, optimizeCircle) {
 
 	// create a Pose graph with one equality constraint and one measurement
   shared_ptr<Pose2Graph> fg(new Pose2Graph);
-  fg->addConstraint(0, p0);
+  fg->addHardConstraint(0, p0);
   Pose2 delta = between(p0,p1);
-  fg->add(0, 1, delta, covariance);
-  fg->add(1,2, delta, covariance);
-  fg->add(2,3, delta, covariance);
-  fg->add(3,4, delta, covariance);
-  fg->add(4,5, delta, covariance);
-  fg->add(5, 0, delta, covariance);
+  fg->addConstraint(0, 1, delta, covariance);
+  fg->addConstraint(1,2, delta, covariance);
+  fg->addConstraint(2,3, delta, covariance);
+  fg->addConstraint(3,4, delta, covariance);
+  fg->addConstraint(4,5, delta, covariance);
+  fg->addConstraint(5, 0, delta, covariance);
 
   // Create initial config
   boost::shared_ptr<Pose2Config> initial(new Pose2Config());
@@ -159,37 +159,34 @@ TEST(Pose2Graph, optimizeCircle) {
 /* ************************************************************************* */
 // test optimization with 6 poses arranged in a hexagon and a loop closure
 TEST(Pose2Graph, findMinimumSpanningTree) {
-	typedef Pose2Config::Key Key;
-
 	Pose2Graph G, T, C;
 	Matrix cov = eye(3);
-	G.push_back(Pose2Graph::sharedFactor(new Pose2Factor(Key(1), Key(2), Pose2(0.,0.,0.), cov)));
-	G.push_back(Pose2Graph::sharedFactor(new Pose2Factor(Key(1), Key(3), Pose2(0.,0.,0.), cov)));
-	G.push_back(Pose2Graph::sharedFactor(new Pose2Factor(Key(2), Key(3), Pose2(0.,0.,0.), cov)));
+	G.addConstraint(1, 2, Pose2(0.,0.,0.), cov);
+	G.addConstraint(1, 3, Pose2(0.,0.,0.), cov);
+	G.addConstraint(2, 3, Pose2(0.,0.,0.), cov);
 
-	PredecessorMap<Key> tree = G.findMinimumSpanningTree<Key, Pose2Factor>();
-	CHECK(tree[Key(1)] == Key(1));
-	CHECK(tree[Key(2)] == Key(1));
-	CHECK(tree[Key(3)] == Key(1));
+	PredecessorMap<pose2SLAM::Key> tree =
+			G.findMinimumSpanningTree<pose2SLAM::Key, Pose2Factor>();
+	CHECK(tree[1] == 1);
+	CHECK(tree[2] == 1);
+	CHECK(tree[3] == 1);
 }
 
 /* ************************************************************************* */
 // test optimization with 6 poses arranged in a hexagon and a loop closure
 TEST(Pose2Graph, split) {
-	typedef Pose2Config::Key Key;
-
 	Pose2Graph G, T, C;
 	Matrix cov = eye(3);
-	G.push_back(Pose2Graph::sharedFactor(new Pose2Factor(Key(1), Key(2), Pose2(0.,0.,0.), cov)));
-	G.push_back(Pose2Graph::sharedFactor(new Pose2Factor(Key(1), Key(3), Pose2(0.,0.,0.), cov)));
-	G.push_back(Pose2Graph::sharedFactor(new Pose2Factor(Key(2), Key(3), Pose2(0.,0.,0.), cov)));
+	G.addConstraint(1, 2, Pose2(0.,0.,0.), cov);
+	G.addConstraint(1, 3, Pose2(0.,0.,0.), cov);
+	G.addConstraint(2, 3, Pose2(0.,0.,0.), cov);
 
-	PredecessorMap<Key> tree;
-	tree.insert(Key(1),Key(2));
-	tree.insert(Key(2),Key(2));
-	tree.insert(Key(3),Key(2));
+	PredecessorMap<pose2SLAM::Key> tree;
+	tree.insert(1,2);
+	tree.insert(2,2);
+	tree.insert(3,2);
 
-	G.split<Key, Pose2Factor>(tree, T, C);
+	G.split<pose2SLAM::Key, Pose2Factor>(tree, T, C);
 	LONGS_EQUAL(2, T.size());
 	LONGS_EQUAL(1, C.size());
 }

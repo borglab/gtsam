@@ -1,6 +1,6 @@
 /**
  *  @file  pose2SLAM.h
- *  @brief: bearing/range measurements in 2D plane
+ *  @brief: 2D Pose SLAM
  *  @authors Frank Dellaert
  **/
 
@@ -35,14 +35,14 @@ namespace gtsam {
 
 		// Factors
 		typedef PriorFactor<Config, Key, Pose2> Prior;
-		typedef BetweenFactor<Config, Key, Pose2> Odometry;
-		typedef NonlinearEquality<Config, Key, Pose2> Constraint;
+		typedef BetweenFactor<Config, Key, Pose2> Constraint;
+		typedef NonlinearEquality<Config, Key, Pose2> HardConstraint;
 
 		// Graph
 		struct Graph: public NonlinearFactorGraph<Config> {
-			void addConstraint(const Key& i, const Pose2& p);
 			void addPrior(const Key& i, const Pose2& p, const Matrix& cov);
-			void add(const Key& i, const Key& j, const Pose2& z, const Matrix& cov);
+			void addConstraint(const Key& i, const Key& j, const Pose2& z, const Matrix& cov);
+			void addHardConstraint(const Key& i, const Pose2& p);
 		};
 
 		// Optimizer
@@ -53,10 +53,9 @@ namespace gtsam {
 	/**
 	 * Backwards compatibility
 	 */
-	typedef pose2SLAM::Prior Pose2Prior;
-	typedef pose2SLAM::Odometry Pose2Factor;
-	typedef pose2SLAM::Constraint Pose2Constraint;
 	typedef pose2SLAM::Config Pose2Config;
+	typedef pose2SLAM::Prior Pose2Prior;
+	typedef pose2SLAM::Constraint Pose2Factor;
 	typedef pose2SLAM::Graph Pose2Graph;
 
 } // namespace gtsam

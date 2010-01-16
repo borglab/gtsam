@@ -1,51 +1,53 @@
 /**
- *  @file  pose2SLAM.cpp
+ *  @file  pose3SLAM.cpp
  *  @brief: bearing/range measurements in 2D plane
  *  @authors Frank Dellaert
  **/
 
-#include "pose2SLAM.h"
+#include "pose3SLAM.h"
 #include "LieConfig-inl.h"
 #include "NonlinearFactorGraph-inl.h"
 #include "NonlinearOptimizer-inl.h"
 
-// Use pose2SLAM namespace for specific SLAM instance
+// Use pose3SLAM namespace for specific SLAM instance
 namespace gtsam {
 
-	using namespace pose2SLAM;
-	INSTANTIATE_LIE_CONFIG(Key, Pose2)
+	using namespace pose3SLAM;
+	INSTANTIATE_LIE_CONFIG(Key, Pose3)
 	INSTANTIATE_NONLINEAR_FACTOR_GRAPH(Config)
 	INSTANTIATE_NONLINEAR_OPTIMIZER(Graph, Config)
 
-	namespace pose2SLAM {
+	namespace pose3SLAM {
 
 		/* ************************************************************************* */
 		Config circle(size_t n, double R) {
 			Config x;
-			double theta = 0, dtheta = 2 * M_PI / n;
+			double theta = 0, dtheta = 2*M_PI/n;
+			// Vehicle at p0 is looking towards y axis
+			Rot3 R0(Point3(0, 1, 0), Point3(1, 0, 0), Point3(0, 0, -1));
 			for (size_t i = 0; i < n; i++, theta += dtheta)
-				x.insert(i, Pose2(cos(theta), sin(theta), M_PI_2 + theta));
+				x.insert(i, Pose3(R0 * Rot3::yaw(-theta), Point3(cos(theta),sin(theta),0)));
 			return x;
 		}
 
 		/* ************************************************************************* */
-		void Graph::addPrior(const Key& i, const Pose2& p, const Matrix& cov) {
+		void Graph::addPrior(const Key& i, const Pose3& p, const Matrix& cov) {
 			sharedFactor factor(new Prior(i, p, cov));
 			push_back(factor);
 		}
 
-		void Graph::addConstraint(const Key& i, const Key& j, const Pose2& z, const Matrix& cov) {
+		void Graph::addConstraint(const Key& i, const Key& j, const Pose3& z, const Matrix& cov) {
 			sharedFactor factor(new Constraint(i, j, z, cov));
 			push_back(factor);
 		}
 
-		void Graph::addHardConstraint(const Key& i, const Pose2& p) {
+		void Graph::addHardConstraint(const Key& i, const Pose3& p) {
 			sharedFactor factor(new HardConstraint(i, p));
 			push_back(factor);
 		}
 
 	/* ************************************************************************* */
 
-	} // pose2SLAM
+	} // pose3SLAM
 
 } // gtsam

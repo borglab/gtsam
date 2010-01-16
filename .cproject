@@ -600,10 +600,10 @@
 <useDefaultCommand>true</useDefaultCommand>
 <runAllBuilders>true</runAllBuilders>
 </target>
-<target name="testPose3Factor.run" path="cpp" targetID="org.eclipse.cdt.build.MakeTargetBuilder">
+<target name="testPose3Config.run" path="cpp" targetID="org.eclipse.cdt.build.MakeTargetBuilder">
 <buildCommand>make</buildCommand>
 <buildArguments>-j2</buildArguments>
-<buildTarget>testPose3Factor.run</buildTarget>
+<buildTarget>testPose3Config.run</buildTarget>
 <stopOnError>true</stopOnError>
 <useDefaultCommand>true</useDefaultCommand>
 <runAllBuilders>true</runAllBuilders>
@@ -719,10 +719,10 @@
 <useDefaultCommand>false</useDefaultCommand>
 <runAllBuilders>true</runAllBuilders>
 </target>
-<target name="testPose3Graph.run" path="cpp" targetID="org.eclipse.cdt.build.MakeTargetBuilder">
+<target name="testPose3SLAM.run" path="cpp" targetID="org.eclipse.cdt.build.MakeTargetBuilder">
 <buildCommand>make</buildCommand>
 <buildArguments>-j2</buildArguments>
-<buildTarget>testPose3Graph.run</buildTarget>
+<buildTarget>testPose3SLAM.run</buildTarget>
 <stopOnError>true</stopOnError>
 <useDefaultCommand>true</useDefaultCommand>
 <runAllBuilders>true</runAllBuilders>

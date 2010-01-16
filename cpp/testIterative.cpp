@@ -107,8 +107,8 @@ TEST( Iterative, conjugateGradientDescent_soft_constraint )
 	Pose2Graph graph;
 	Matrix cov = eye(3);
 	Matrix cov2 = eye(3) * 1e-10;
-	graph.add(1,2, Pose2(1.,0.,0.), cov);
 	graph.addPrior(1, Pose2(0.,0.,0.), cov2);
+	graph.addConstraint(1,2, Pose2(1.,0.,0.), cov);
 
 	VectorConfig zeros;
 	zeros.insert("x1",zero(3));

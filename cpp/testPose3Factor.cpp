@@ -9,8 +9,7 @@
 using namespace boost::assign;
 
 #include <CppUnitLite/TestHarness.h>
-#include "Pose3Factor.h"
-#include "LieConfig-inl.h"
+#include "pose3SLAM.h"
 
 using namespace std;
 using namespace gtsam;

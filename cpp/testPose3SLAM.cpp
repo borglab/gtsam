@@ -13,9 +13,7 @@ using namespace boost::assign;
 
 #include <CppUnitLite/TestHarness.h>
 
-#include "Pose3Graph.h"
-#include "NonlinearOptimizer-inl.h"
-#include "NonlinearEquality.h"
+#include "pose3SLAM.h"
 #include "Ordering.h"
 
 using namespace std;
@@ -29,19 +27,19 @@ static Matrix covariance = eye(6);
 TEST(Pose3Graph, optimizeCircle) {
 
 	// Create a hexagon of poses
-	Pose3Config hexagon = pose3Circle(6,1.0);
+	Pose3Config hexagon = pose3SLAM::circle(6,1.0);
   Pose3 p0 = hexagon[0], p1 = hexagon[1];
 
 	// create a Pose graph with one equality constraint and one measurement
   shared_ptr<Pose3Graph> fg(new Pose3Graph);
-  fg->addConstraint(0, p0);
+  fg->addHardConstraint(0, p0);
   Pose3 delta = between(p0,p1);
-  fg->add(0,1, delta, covariance);
-  fg->add(1,2, delta, covariance);
-  fg->add(2,3, delta, covariance);
-  fg->add(3,4, delta, covariance);
-  fg->add(4,5, delta, covariance);
-  fg->add(5,0, delta, covariance);
+  fg->addConstraint(0,1, delta, covariance);
+  fg->addConstraint(1,2, delta, covariance);
+  fg->addConstraint(2,3, delta, covariance);
+  fg->addConstraint(3,4, delta, covariance);
+  fg->addConstraint(4,5, delta, covariance);
+  fg->addConstraint(5,0, delta, covariance);
 
   // Create initial config
   boost::shared_ptr<Pose3Config> initial(new Pose3Config());

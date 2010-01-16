@@ -43,8 +43,8 @@ TEST( Graph, composePoses )
 {
 	Pose2Graph graph;
 	Matrix cov = eye(3);
-	graph.add(1,2, Pose2(2.0, 0.0, 0.0), cov);
-	graph.add(2,3, Pose2(3.0, 0.0, 0.0), cov);
+	graph.addConstraint(1,2, Pose2(2.0, 0.0, 0.0), cov);
+	graph.addConstraint(2,3, Pose2(3.0, 0.0, 0.0), cov);
 
 	PredecessorMap<Pose2Config::Key> tree;
 	tree.insert(1,2);
