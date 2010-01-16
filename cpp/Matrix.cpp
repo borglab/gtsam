@@ -299,20 +299,17 @@ void householder_update(Matrix &A, int j, double beta, const Vector& vjm) {
 /* ************************************************************************* */
 // update A, b
 // A' \define A_{S}-ar and b'\define b-ad
-__attribute__ ((noinline))	// uncomment to prevent inlining when profiling
+// __attribute__ ((noinline))	// uncomment to prevent inlining when profiling
 void updateAb(Matrix& A, Vector& b, int j, const Vector& a, const Vector& r, double d) {
 	const size_t m = A.size1(), n = A.size2();
-	for (int i = 0; i < m; ++i) { // update all rows
+	for (int i = 0; i < m; i++) { // update all rows
 		double ai = a(i);
 		b(i) -= ai * d;
-		double *Aptr = A.data().begin() + i * n + j + 1;
+		double *Aij = A.data().begin() + i * n + j + 1;
 		const double *rptr = r.data().begin() + j + 1;
-		for (int j2 = j + 1; j2 < n; ++j2) { // limit to only columns in separator
-			//A(i,j2) -= ai*r(j2);
-			*Aptr -= ai * *rptr;
-			Aptr++;
-			rptr++;
-		}
+		// A(i,j+1:end) -= ai*r(j+1:end)
+		for (int j2 = j + 1; j2 < n; j2++,Aij++,rptr++)
+			*Aij -= ai * (*rptr);
 	}
 }
 
@@ -326,9 +323,7 @@ weighted_eliminate(Matrix& A, Vector& b, const Vector& sigmas) {
 	list<boost::tuple<Vector, double, double> > results;
 
 	Vector pseudo(m); // allocate storage for pseudo-inverse
-
-	// TODO: calculate weights once
-	Vector weights = reciprocal(emul(sigmas,sigmas));
+	Vector weights = reciprocal(emul(sigmas,sigmas)); // calculate weights once
 
 	// We loop over all columns, because the columns that can be eliminated
 	// are not necessarily contiguous. For each one, estimate the corresponding
@@ -336,9 +331,7 @@ weighted_eliminate(Matrix& A, Vector& b, const Vector& sigmas) {
 	// Then update A and b by substituting x with d-rS, zero-ing out x's column.
 	for (int j=0; j<n; ++j) {
 		// extract the first column of A
-		// TODO: this is an allocate and a copy
-		// can we somehow make a "reference" vector, boost magic
-		Vector a(column(A, j));
+		Vector a(column(A, j)); // ublas::matrix_column is slower !
 
 		// Calculate weighted pseudo-inverse and corresponding precision
 		double precision = weightedPseudoinverse(a, weights, pseudo);
@@ -349,7 +342,7 @@ weighted_eliminate(Matrix& A, Vector& b, const Vector& sigmas) {
 		// create solution and copy into r
 		Vector r(basis(n, j));
 		for (int j2=j+1; j2<n; ++j2)
-			r(j2) = inner_prod(pseudo, column(A, j2));
+			r(j2) = inner_prod(pseudo, ublas::matrix_column<Matrix>(A, j2));
 
 		// create the rhs
 		double d = inner_prod(pseudo, b);
