@@ -20,7 +20,7 @@ namespace gtsam {
 
 	/* ************************************************************************* */
   boost::shared_ptr<SymbolicConditional>
-  SymbolicFactorGraph::eliminateOne(const std::string& key){
+  SymbolicFactorGraph::eliminateOne(const Symbol& key){
 		return gtsam::eliminateOne<SymbolicFactor,SymbolicConditional>(*this, key);
   }
 
@@ -30,7 +30,7 @@ namespace gtsam {
 	{
 		SymbolicBayesNet bayesNet;
 
-		BOOST_FOREACH(string key, ordering) {
+		BOOST_FOREACH(const Symbol& key, ordering) {
 			SymbolicConditional::shared_ptr conditional =
 					gtsam::eliminateOne<SymbolicFactor,SymbolicConditional>(*this,key);
 			bayesNet.push_back(conditional);

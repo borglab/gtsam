@@ -4,6 +4,8 @@
  * @author  Frank Dellaert
  */
 
+#define GTSAM_MAGIC_KEY
+
 #include <time.h>
 #include <CppUnitLite/TestHarness.h>
 #include "smallExample.h"

@@ -11,6 +11,8 @@
 #include <boost/shared_ptr.hpp>
 using namespace boost;
 
+#define GTSAM_MAGIC_KEY
+
 #include "NonlinearFactorGraph-inl.h"
 #include "NonlinearOptimizer-inl.h"
 #include "Ordering-inl.h"
@@ -87,7 +89,7 @@ TEST( Graph, optimizeLM)
   initialEstimate->insert(4, landmark4);
 
   // Create an ordering of the variables
-  list<string> keys;
+  list<Symbol> keys;
   keys.push_back("l1");
   keys.push_back("l2");
   keys.push_back("l3");
@@ -130,7 +132,7 @@ TEST( Graph, optimizeLM2)
   initialEstimate->insert(4, landmark4);
 
   // Create an ordering of the variables
-  list<string> keys;
+  list<Symbol> keys;
 
   keys.push_back("l1");
   keys.push_back("l2");

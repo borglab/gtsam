@@ -11,6 +11,8 @@ using namespace boost::assign;
 
 #include <CppUnitLite/TestHarness.h>
 
+#define GTSAM_MAGIC_KEY
+
 #include "numericalDerivative.h"
 #include "Ordering.h"
 #include "smallExample.h"
@@ -108,7 +110,7 @@ TEST( SubgraphPreconditioner, system )
 	// Create zero config
 	VectorConfig zeros;
 	Vector z2 = zero(2);
-	BOOST_FOREACH(const string& j, ordering) zeros.insert(j,z2);
+	BOOST_FOREACH(const Symbol& j, ordering) zeros.insert(j,z2);
 
 	// Set up y0 as all zeros
 	VectorConfig y0 = zeros;

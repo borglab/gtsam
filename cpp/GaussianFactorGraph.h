@@ -47,28 +47,28 @@ namespace gtsam {
   	}
 
   	/** Add a unary factor */
-    inline void add(const std::string& key1, const Matrix& A1,
+    inline void add(const Symbol& key1, const Matrix& A1,
   			const Vector& b, double sigma) {
     	push_back(sharedFactor(new GaussianFactor(key1,A1,b,sigma)));
   	}
 
   	/** Add a binary factor */
-    inline void add(const std::string& key1, const Matrix& A1,
-  			const std::string& key2, const Matrix& A2,
+    inline void add(const Symbol& key1, const Matrix& A1,
+  			const Symbol& key2, const Matrix& A2,
   			const Vector& b, double sigma) {
     	push_back(sharedFactor(new GaussianFactor(key1,A1,key2,A2,b,sigma)));
   	}
 
   	/** Add a ternary factor */
-    inline void add(const std::string& key1, const Matrix& A1,
-  			const std::string& key2, const Matrix& A2,
-  			const std::string& key3, const Matrix& A3,
+    inline void add(const Symbol& key1, const Matrix& A1,
+  			const Symbol& key2, const Matrix& A2,
+  			const Symbol& key3, const Matrix& A3,
   			const Vector& b, double sigma) {
     	push_back(sharedFactor(new GaussianFactor(key1,A1,key2,A2,key3,A3,b,sigma)));
   	}
 
   	/** Add an n-ary factor */
-    inline void add(const std::vector<std::pair<std::string, Matrix> > &terms,
+    inline void add(const std::vector<std::pair<Symbol, Matrix> > &terms,
   	    const Vector &b, double sigma) {
     	push_back(sharedFactor(new GaussianFactor(terms,b,sigma)));
   	}
@@ -101,14 +101,14 @@ namespace gtsam {
      * find the separator, i.e. all the nodes that have at least one
      * common factor with the given node. FD: not used AFAIK.
      */
-    std::set<std::string> find_separator(const std::string& key) const;
+    std::set<Symbol> find_separator(const Symbol& key) const;
 
   	/**
      * Eliminate a single node yielding a conditional Gaussian
      * Eliminates the factors from the factor graph through findAndRemoveFactors
      * and adds a new factor on the separator to the factor graph
      */
-    GaussianConditional::shared_ptr eliminateOne(const std::string& key);
+    GaussianConditional::shared_ptr eliminateOne(const Symbol& key);
 
     /**
      * eliminate factor graph in place(!) in the given order, yielding

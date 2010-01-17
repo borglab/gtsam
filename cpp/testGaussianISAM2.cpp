@@ -10,6 +10,8 @@ using namespace boost::assign;
 
 #include <CppUnitLite/TestHarness.h>
 
+#define GTSAM_MAGIC_KEY
+
 #include "Ordering.h"
 #include "GaussianBayesNet.h"
 #include "ISAM2-inl.h"

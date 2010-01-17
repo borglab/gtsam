@@ -18,6 +18,7 @@
 #include "Conditional.h"
 #include "VectorConfig.h"
 #include "Matrix.h"
+#include "Key.h"
 
 namespace gtsam {
 
@@ -31,7 +32,7 @@ class Ordering;
 class GaussianConditional : public Conditional {
 
 public:
-	typedef std::map<std::string, Matrix> Parents;
+	typedef std::map<Symbol, Matrix> Parents;
 	typedef Parents::const_iterator const_iterator;
 	typedef boost::shared_ptr<GaussianConditional> shared_ptr;
 
@@ -55,31 +56,31 @@ public:
 	GaussianConditional(){}
 
 	/** constructor */
-	GaussianConditional(const std::string& key) :
+	GaussianConditional(const Symbol& key) :
 		Conditional (key) {}
 
 	/** constructor with no parents
 	 * |Rx-d|
 	 */
-	GaussianConditional(const std::string& key, Vector d, Matrix R, Vector sigmas);
+	GaussianConditional(const Symbol& key, Vector d, Matrix R, Vector sigmas);
 
 	/** constructor with only one parent
 	 * |Rx+Sy-d|
 	 */
-	GaussianConditional(const std::string& key, Vector d, Matrix R,
-			const std::string& name1, Matrix S, Vector sigmas);
+	GaussianConditional(const Symbol& key, Vector d, Matrix R,
+			const Symbol& name1, Matrix S, Vector sigmas);
 
 	/** constructor with two parents
 	 * |Rx+Sy+Tz-d|
 	 */
-	GaussianConditional(const std::string& key, Vector d, Matrix R,
-			const std::string& name1, Matrix S, const std::string& name2, Matrix T, Vector sigmas);
+	GaussianConditional(const Symbol& key, Vector d, Matrix R,
+			const Symbol& name1, Matrix S, const Symbol& name2, Matrix T, Vector sigmas);
 
 	/**
 	 * constructor with number of arbitrary parents
 	 * |Rx+sum(Ai*xi)-d|
 	 */
-	GaussianConditional(const std::string& key, const Vector& d,
+	GaussianConditional(const Symbol& key, const Vector& d,
 			const Matrix& R, const Parents& parents, Vector sigmas);
 
 	/** deconstructor */
@@ -95,7 +96,7 @@ public:
 	size_t dim() const { return R_.size2();}
 
 	/** return all parents */
-	std::list<std::string> parents() const;
+	std::list<Symbol> parents() const;
 
 	/** return stuff contained in GaussianConditional */
 	const Vector& get_d() const {return d_;}
@@ -118,7 +119,7 @@ public:
 	}
 
 	/** determine whether a key is among the parents */
-	size_t contains(const std::string& key) const {
+	size_t contains(const Symbol& key) const {
 		return parents_.count(key);
 	}
 	/**
@@ -131,7 +132,7 @@ public:
 	/**
 	 * adds a parent
 	 */
-	void add(const std::string key, Matrix S){
+	void add(const Symbol& key, Matrix S){
 		parents_.insert(make_pair(key, S));
 	}
 

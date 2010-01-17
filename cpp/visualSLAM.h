@@ -22,8 +22,8 @@ namespace gtsam { namespace visualSLAM {
   /**
    * Typedefs that make up the visualSLAM namespace.
    */
-  typedef Symbol<Pose3,'x'> PoseKey;
-  typedef Symbol<Point3,'l'> PointKey;
+  typedef TypedSymbol<Pose3,'x'> PoseKey;
+  typedef TypedSymbol<Point3,'l'> PointKey;
   typedef PairConfig<PoseKey, Pose3, PointKey, Point3> Config;
   typedef NonlinearFactorGraph<Config> Graph;
   typedef NonlinearEquality<Config, PoseKey, Pose3> PoseConstraint;

@@ -18,6 +18,7 @@
 #include "Testable.h"
 #include "BayesNet.h"
 #include "graph.h"
+#include "Key.h"
 
 namespace gtsam {
 
@@ -36,11 +37,12 @@ namespace gtsam {
 		typedef typename std::vector<sharedFactor>::const_iterator const_iterator;
 
 	protected:
-		/** Collection of factors */
+
+    /** Collection of factors */
 		std::vector<sharedFactor> factors_;
 
 		/** For each variable a list of factor indices connected to it  */
-		typedef std::map<std::string, std::list<int> > Indices;
+		typedef std::map<Symbol, std::list<int> > Indices;
 		Indices indices_;
 
 	public:
@@ -90,7 +92,7 @@ namespace gtsam {
 		Ordering keys() const;
 
 		/** Check whether a factor with this variable exists */
-		bool involves(const std::string& key) const {
+		bool involves(const Symbol& key) const {
 			return !(indices_.find(key)==indices_.end());
 		}
 
@@ -108,14 +110,14 @@ namespace gtsam {
      * Return indices for all factors that involve the given node
      * @param key the key for the given node
      */
-    std::list<int> factors(const std::string& key) const;
+    std::list<int> factors(const Symbol& key) const;
 
     /**
      * find all the factors that involve the given node and remove them
      * from the factor graph
      * @param key the key for the given node
      */
-		std::vector<sharedFactor> findAndRemoveFactors(const std::string& key);
+		std::vector<sharedFactor> findAndRemoveFactors(const Symbol& key);
 
 		/**
 		 * find the minimum spanning tree.
@@ -149,7 +151,7 @@ namespace gtsam {
    * @return the combined linear factor
    */
 	template<class Factor> boost::shared_ptr<Factor>
-		removeAndCombineFactors(FactorGraph<Factor>& factorGraph, const std::string& key);
+		removeAndCombineFactors(FactorGraph<Factor>& factorGraph, const Symbol& key);
 
 	/**
    * static function that combines two factor graphs

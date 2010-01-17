@@ -14,6 +14,7 @@
 
 #include "Testable.h"
 #include "Vector.h"
+#include "Key.h"
 
 namespace gtsam {
 	
@@ -22,42 +23,42 @@ namespace gtsam {
 
   protected:
     /** Map from string indices to values */
-    std::map<std::string, Vector> values;
+    std::map<Symbol, Vector> values;
 
   public:
-    typedef std::map<std::string, Vector>::iterator iterator;
-    typedef std::map<std::string, Vector>::const_iterator const_iterator;
+    typedef std::map<Symbol, Vector>::iterator iterator;
+    typedef std::map<Symbol, Vector>::const_iterator const_iterator;
 
     VectorConfig() {}
     VectorConfig(const VectorConfig& cfg_in): values(cfg_in.values) {}
-    VectorConfig(const std::string& j, const Vector& a) { add(j,a); }
+    VectorConfig(const Symbol& j, const Vector& a) { add(j,a); }
     
     virtual ~VectorConfig() {}
 
     /** return all the nodes in the graph **/
-    std::vector<std::string> get_names() const;
+    std::vector<Symbol> get_names() const;
 
     /** Insert a value into the configuration with a given index */
-    VectorConfig& insert(const std::string& name, const Vector& val);
+    VectorConfig& insert(const Symbol& name, const Vector& val);
 
     /** Add to vector at position j */
-    void add(const std::string& j, const Vector& a);
+    void add(const Symbol& j, const Vector& a);
 
     const_iterator begin() const {return values.begin();}
     const_iterator end()   const {return values.end();}
 
     /** get a vector in the configuration by name */
-    const Vector& get(const std::string& name) const;
+    const Vector& get(const Symbol& name) const;
 
     /** get a vector reference by name */
-    Vector& getReference(const std::string& name);
+    Vector& getReference(const Symbol& name);
 
     /** operator[] syntax for get */
-		inline const Vector& operator[](const std::string& name) const {
+		inline const Vector& operator[](const Symbol& name) const {
 			return get(name);
 		}
 
-    bool contains(const std::string& name) const {
+    bool contains(const Symbol& name) const {
       const_iterator it = values.find(name);
       return (it!=values.end());
     }

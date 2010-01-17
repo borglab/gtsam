@@ -15,11 +15,12 @@
 #include <list>
 #include <boost/utility.hpp> // for noncopyable
 #include "Testable.h"
+#include "Key.h"
 
 namespace gtsam {
 
 	/** A map from key to dimension, useful in various contexts */
-  typedef std::map<std::string,int> Dimensions;
+  typedef std::map<Symbol,int> Dimensions;
 	
   /** 
    * A simple factor class to use in a factor graph.
@@ -50,7 +51,7 @@ namespace gtsam {
     /**
      * return keys in preferred order
      */
-    virtual std::list<std::string> keys() const = 0;
+    virtual std::list<Symbol> keys() const = 0;
 		
     /** 
      * @return the number of nodes the factor connects

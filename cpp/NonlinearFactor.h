@@ -46,10 +46,10 @@ namespace gtsam {
 
 	protected:
 
-		double sigma_; // noise standard deviation
-		std::list<std::string> keys_; // keys
+    typedef NonlinearFactor<Config> This;
 
-		typedef NonlinearFactor<Config> This;
+    double sigma_; // noise standard deviation
+		std::list<Symbol> keys_; // keys
 
 	public:
 
@@ -96,7 +96,7 @@ namespace gtsam {
 		;
 
 		/** return keys */
-		std::list<std::string> keys() const {
+		std::list<Symbol> keys() const {
 			return keys_;
 		}
 
@@ -194,8 +194,8 @@ namespace gtsam {
 			const X& xj = x[key_];
 			Matrix A;
 			Vector b = -evaluateError(xj, A);
-			return GaussianFactor::shared_ptr(new GaussianFactor(key_, A, b,
-					this->sigma()));
+			return GaussianFactor::shared_ptr(new GaussianFactor(
+			    key_, A, b, this->sigma()));
 		}
 
 		/*
@@ -288,7 +288,8 @@ namespace gtsam {
 			const X2& x2 = c[key2_];
 			Matrix A1, A2;
 			Vector b = -evaluateError(x1, x2, A1, A2);
-			return GaussianFactor::shared_ptr(new GaussianFactor(key1_, A1, key2_,
+			return GaussianFactor::shared_ptr(new GaussianFactor(
+			    key1_, A1, key2_,
 					A2, b, this->sigma()));
 		}
 

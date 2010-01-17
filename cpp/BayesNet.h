@@ -14,6 +14,7 @@
 #include <boost/serialization/shared_ptr.hpp>
 
 #include "Testable.h"
+#include "Key.h"
 
 namespace gtsam {
 
@@ -85,7 +86,7 @@ namespace gtsam {
 		Ordering ordering() const;
 
 		/** SLOW O(n) random access to Conditional by key */
-		sharedConditional operator[](const std::string& key) const;
+		sharedConditional operator[](const Symbol& key) const;
 
 		/** return last node in ordering */
 		inline sharedConditional back() { return conditionals_.back(); }

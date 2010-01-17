@@ -11,6 +11,7 @@
 #include "Matrix.h"
 #include "VectorConfig.h"
 #include "NonlinearFactor.h"
+#include "Key.h"
 
 // \namespace
 
@@ -18,10 +19,8 @@ namespace simulated3D {
 
 	typedef gtsam::VectorConfig VectorConfig;
 
-	struct PoseKey: public std::string {
-	};
-	struct PointKey: public std::string {
-	};
+	typedef gtsam::Symbol PoseKey;
+	typedef gtsam::Symbol PointKey;
 
 	/**
 	 * Prior on a single pose

@@ -11,6 +11,9 @@
 #include <boost/foreach.hpp>
 #include <boost/shared_ptr.hpp>
 #include <CppUnitLite/TestHarness.h>
+
+#define GTSAM_MAGIC_KEY
+
 #include <GaussianFactorGraph.h>
 #include <NonlinearOptimizer.h>
 #include <SQPOptimizer.h>
@@ -52,7 +55,7 @@ TEST (SQP, problem1_cholesky ) {
 	VectorConfig init, state;
 	init.insert("x", Vector_(1, 1.0));
 	init.insert("y", Vector_(1, 1.0));
-	init.insert("lambda", Vector_(1, 1.0));
+	init.insert("L", Vector_(1, 1.0));
 	state = init;
 
 	if (verbose) init.print("Initial State");
@@ -66,7 +69,7 @@ TEST (SQP, problem1_cholesky ) {
 		double x, y, lambda;
 		x = state["x"](0);
 		y = state["y"](0);
-		lambda = state["lambda"](0);
+		lambda = state["L"](0);
 
 		// calculate the components
 		Matrix H1, H2, gradG;
@@ -96,7 +99,7 @@ TEST (SQP, problem1_cholesky ) {
 
 		// create a factor for the states
 		GaussianFactor::shared_ptr f1(new
-				GaussianFactor("x", H1, "y", H2, "lambda", gradG, gradL, 1.0));
+				GaussianFactor("x", H1, "y", H2, "L", gradG, gradL, 1.0));
 
 		// create a factor for the lagrange multiplier
 		GaussianFactor::shared_ptr f2(new
@@ -111,7 +114,7 @@ TEST (SQP, problem1_cholesky ) {
 
 		// solve
 		Ordering ord;
-		ord += "x", "y", "lambda";
+		ord += "x", "y", "L";
 		VectorConfig delta = fg.optimize(ord).scale(-1.0);
 		if (verbose) delta.print("Delta");
 
@@ -124,7 +127,7 @@ TEST (SQP, problem1_cholesky ) {
 
 	// verify that it converges to the nearest optimal point
 	VectorConfig expected;
-	expected.insert("lambda", Vector_(1, -1.0));
+	expected.insert("L", Vector_(1, -1.0));
 	expected.insert("x", Vector_(1, 2.12));
 	expected.insert("y", Vector_(1, -0.5));
 	CHECK(assert_equal(expected,state, 1e-2));
@@ -148,7 +151,7 @@ TEST (SQP, problem1_sqp ) {
 	VectorConfig init, state;
 	init.insert("x", Vector_(1, 1.0));
 	init.insert("y", Vector_(1, 1.0));
-	init.insert("lambda", Vector_(1, 1.0));
+	init.insert("L", Vector_(1, 1.0));
 	state = init;
 
 	if (verbose) init.print("Initial State");
@@ -162,7 +165,7 @@ TEST (SQP, problem1_sqp ) {
 		double x, y, lambda;
 		x = state["x"](0);
 		y = state["y"](0);
-		lambda = state["lambda"](0);
+		lambda = state["L"](0);
 
 		/** create the linear factor
 		 * ||h(x)-z||^2 => ||Ax-b||^2
@@ -190,7 +193,7 @@ TEST (SQP, problem1_sqp ) {
 		GaussianFactor::shared_ptr f2(
 				new GaussianFactor("x", lambda*sub(gradG, 0,1, 0,1), // scaled gradG(:,1)
 								   "y", lambda*sub(gradG, 0,1, 1,2),         // scaled gradG(:,2)
-								   "lambda", eye(1),                         // dlambda term
+								   "L", eye(1),                         // dlambda term
 								   Vector_(1, 0.0),                          // rhs is zero
 								   1.0));                                    // arbitrary sigma
 
@@ -212,7 +215,7 @@ TEST (SQP, problem1_sqp ) {
 
 		// solve
 		Ordering ord;
-		ord += "x", "y", "lambda";
+		ord += "x", "y", "L";
 		VectorConfig delta = fg.optimize(ord);
 		if (verbose) delta.print("Delta");
 
@@ -243,7 +246,7 @@ typedef NonlinearFactorGraph<VectorConfig> NLGraph;
 typedef boost::shared_ptr<NonlinearFactor<VectorConfig> > shared;
 typedef boost::shared_ptr<NonlinearConstraint<VectorConfig> > shared_c;
 
-typedef NonlinearEquality<VectorConfig,string,Vector> NLE;
+typedef NonlinearEquality<VectorConfig,Symbol,Vector> NLE;
 typedef boost::shared_ptr<NLE> shared_eq;
 typedef boost::shared_ptr<VectorConfig> shared_cfg;
 typedef NonlinearOptimizer<NLGraph,VectorConfig> Optimizer;
@@ -314,17 +317,17 @@ namespace sqp_test1 {
 
 	// binary constraint between landmarks
 	/** g(x) = x-y = 0 */
-	Vector g(const VectorConfig& config, const list<string>& keys) {
+	Vector g(const VectorConfig& config, const list<Symbol>& keys) {
 		return config[keys.front()] - config[keys.back()];
 	}
 
 	/** jacobian at l1 */
-	Matrix G1(const VectorConfig& config, const list<string>& keys) {
+	Matrix G1(const VectorConfig& config, const list<Symbol>& keys) {
 		return eye(2);
 	}
 
 	/** jacobian at l2 */
-	Matrix G2(const VectorConfig& config, const list<string>& keys) {
+	Matrix G2(const VectorConfig& config, const list<Symbol>& keys) {
 		return -1 * eye(2);
 	}
 
@@ -334,12 +337,12 @@ namespace sqp_test2 {
 
 	// Unary Constraint on x1
 	/** g(x) = x -[1;1] = 0 */
-	Vector g(const VectorConfig& config, const list<string>& keys) {
+	Vector g(const VectorConfig& config, const list<Symbol>& keys) {
 		return config[keys.front()] - Vector_(2, 1.0, 1.0);
 	}
 
 	/** jacobian at x1 */
-	Matrix G(const VectorConfig& config, const list<string>& keys) {
+	Matrix G(const VectorConfig& config, const list<Symbol>& keys) {
 		return eye(2);
 	}
 
@@ -359,12 +362,12 @@ TEST (SQP, two_pose ) {
 	feas.insert("x1", Vector_(2, 1.0, 1.0));
 
 	// constant constraint on x1
-	list<string> keys1; keys1 += "x1";
+	list<Symbol> keys1; keys1 += "x1";
 	boost::shared_ptr<NonlinearConstraint1<VectorConfig> > c1(
 			new NonlinearConstraint1<VectorConfig>(
 					boost::bind(sqp_test2::g, _1, keys1),
 					"x1", boost::bind(sqp_test2::G, _1, keys1),
-					 2, "L_x1"));
+					 2, "L1"));
 
 	// measurement from x1 to l1
 	Vector z1 = Vector_(2, 0.0, 5.0);
@@ -377,13 +380,13 @@ TEST (SQP, two_pose ) {
 	shared f2(new simulated2D::Measurement(z2, sigma2, "x2", "l2"));
 
 	// equality constraint between l1 and l2
-	list<string> keys2; keys2 += "l1", "l2";
+	list<Symbol> keys2; keys2 += "l1", "l2";
 	boost::shared_ptr<NonlinearConstraint2<VectorConfig> > c2(
 			new NonlinearConstraint2<VectorConfig>(
 					boost::bind(sqp_test1::g, _1, keys2),
 					"l1", boost::bind(sqp_test1::G1, _1, keys2),
 					"l2", boost::bind(sqp_test1::G2, _1, keys2),
-					 2, "L_l1l2"));
+					 2, "L12"));
 
 	// construct the graph
 	NLGraph graph;
@@ -400,8 +403,8 @@ TEST (SQP, two_pose ) {
 
 	// create an initial estimate for the lagrange multiplier
 	shared_cfg initLagrange(new VectorConfig);
-	initLagrange->insert("L_l1l2", Vector_(2, 1.0, 1.0));
-	initLagrange->insert("L_x1", Vector_(2, 1.0, 1.0));
+	initLagrange->insert("L12", Vector_(2, 1.0, 1.0));
+	initLagrange->insert("L1", Vector_(2, 1.0, 1.0));
 
 	// create state config variables and initialize them
 	VectorConfig state(*initialEstimate), state_lambda(*initLagrange);
@@ -432,7 +435,7 @@ TEST (SQP, two_pose ) {
 
 		// create an ordering
 		Ordering ordering;
-		ordering += "x1", "x2", "l1", "l2", "L_l1l2", "L_x1";
+		ordering += "x1", "x2", "l1", "l2", "L12", "L1";
 
 		// optimize linear graph to get full delta config
 		VectorConfig delta = fg.optimize(ordering);
@@ -616,27 +619,27 @@ TEST (SQP, stereo_truth_noisy ) {
 
 /* ********************************************************************* */
 // Utility function to strip out a landmark number from a string key
-int getNum(const string& key) {
-	return atoi(key.substr(1, key.size()-1).c_str());
-}
+//int getNum(const string& key) {
+//	return atoi(key.substr(1, key.size()-1).c_str());
+//}
 
 /* ********************************************************************* */
 namespace sqp_stereo {
 
 	// binary constraint between landmarks
 	/** g(x) = x-y = 0 */
-	Vector g(const Config& config, const list<string>& keys) {
-		return config[PointKey(getNum(keys.front()))].vector()
-				- config[PointKey(getNum(keys.back()))].vector();
+	Vector g(const Config& config, const list<Symbol>& keys) {
+		return config[PointKey(keys.front().index())].vector()
+				- config[PointKey(keys.back().index())].vector();
 	}
 
 	/** jacobian at l1 */
-	Matrix G1(const Config& config, const list<string>& keys) {
+	Matrix G1(const Config& config, const list<Symbol>& keys) {
 		return eye(3);
 	}
 
 	/** jacobian at l2 */
-	Matrix G2(const Config& config, const list<string>& keys) {
+	Matrix G2(const Config& config, const list<Symbol>& keys) {
 		return -1.0 * eye(3);
 	}
 
@@ -674,13 +677,13 @@ Graph stereoExampleGraph() {
 	// create the binary equality constraint between the landmarks
 	// NOTE: this is really just a linear constraint that is exactly the same
 	// as the previous examples
-	list<string> keys; keys += "l1", "l2";
+	list<Symbol> keys; keys += "l1", "l2";
 	boost::shared_ptr<NonlinearConstraint2<Config> > c2(
 				new NonlinearConstraint2<Config>(
 						boost::bind(sqp_stereo::g, _1, keys),
 						"l1", boost::bind(sqp_stereo::G1, _1, keys),
 						"l2", boost::bind(sqp_stereo::G2, _1, keys),
-						 3, "L_l1l2"));
+						 3, "L12"));
 	graph.push_back(c2);
 
 	return graph;
@@ -832,11 +835,11 @@ TEST (SQP, stereo_sqp_noisy_manualLagrange ) {
 
 	// create ordering with lagrange multiplier included
 	Ordering ord;
-	ord += "x1", "x2", "l1", "l2", "L_l1l2";
+	ord += "x1", "x2", "l1", "l2", "L12";
 
 	// create lagrange multipliers
 	SOptimizer::shared_vconfig initLagrangeConfig(new VectorConfig);
-	initLagrangeConfig->insert("L_l1l2", Vector_(3, 0.0, 0.0, 0.0));
+	initLagrangeConfig->insert("L12", Vector_(3, 0.0, 0.0, 0.0));
 
 	// create optimizer
 	SOptimizer optimizer(graph, ord, initConfig, initLagrangeConfig);

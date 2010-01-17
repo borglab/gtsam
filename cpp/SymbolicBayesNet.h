@@ -15,6 +15,7 @@
 #include "Testable.h"
 #include "BayesNet.h"
 #include "SymbolicConditional.h"
+#include "Key.h"
 
 namespace gtsam {
 
@@ -32,8 +33,8 @@ namespace gtsam {
 		typename BayesNet<Conditional>::const_iterator it = bn.begin();
 		for (; it != bn.end(); it++) {
 			boost::shared_ptr<Conditional> conditional = *it;
-			std::string key = conditional->key();
-			std::list<std::string> parents = conditional->parents();
+			Symbol key = conditional->key();
+			std::list<Symbol> parents = conditional->parents();
 			SymbolicConditional::shared_ptr c(new SymbolicConditional(key, parents));
 			result.push_back(c);
 		}

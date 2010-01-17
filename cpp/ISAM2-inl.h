@@ -23,7 +23,7 @@ namespace gtsam {
 	using namespace std;
 
 	// from inference-inl.h - need to additionally return the newly created factor for caching
-	boost::shared_ptr<GaussianConditional> _eliminateOne(FactorGraph<GaussianFactor>& graph, cachedFactors& cached, const string& key) {
+	boost::shared_ptr<GaussianConditional> _eliminateOne(FactorGraph<GaussianFactor>& graph, cachedFactors& cached, const Symbol& key) {
 
 		// combine the factors of all nodes connected to the variable to be eliminated
 		// if no factors are connected to key, returns an empty factor
@@ -47,7 +47,7 @@ namespace gtsam {
 	// from GaussianFactorGraph.cpp, see _eliminateOne above
 	GaussianBayesNet _eliminate(FactorGraph<GaussianFactor>& graph, cachedFactors& cached, const Ordering& ordering) {
 		GaussianBayesNet chordalBayesNet; // empty
-		BOOST_FOREACH(string key, ordering) {
+		BOOST_FOREACH(const Symbol& key, ordering) {
 			GaussianConditional::shared_ptr cg = _eliminateOne(graph, cached, key);
 			chordalBayesNet.push_back(cg);
 		}
@@ -98,12 +98,12 @@ namespace gtsam {
 		BOOST_FOREACH(FactorGraph<GaussianFactor>::sharedFactor fac, affectedFactors) {
 			// retrieve correspondent factor from nonlinearFactors_
 			Ordering keys = fac->keys();
-			BOOST_FOREACH(string key, keys) {
+			BOOST_FOREACH(const Symbol& key, keys) {
 				list<int> indices = nonlinearFactors_.factors(key);
 				BOOST_FOREACH(int idx, indices) {
 					// todo - only insert index if factor is subset of keys... not needed once we do relinearization - but then how to deal with overlap with orphans?
 					bool subset = true;
-					BOOST_FOREACH(string k, nonlinearFactors_[idx]->keys()) {
+					BOOST_FOREACH(const Symbol& k, nonlinearFactors_[idx]->keys()) {
 						if (find(keys.begin(), keys.end(), k)==keys.end()) subset = false;
 					}
 					if (subset) {
@@ -124,7 +124,7 @@ namespace gtsam {
 
 		// retrieve all factors that ONLY contain the affected variables
 		// (note that the remaining stuff is summarized in the cached factors)
-		list<string> affectedKeys = affectedFactors.keys();
+		list<Symbol> affectedKeys = affectedFactors.keys();
 		typename FactorGraph<NonlinearFactor<Config> >::iterator it;
 		for(it = nonlinearFactors_.begin(); it != nonlinearFactors_.end(); it++) {
 			bool inside = true;
@@ -143,10 +143,10 @@ namespace gtsam {
 		BOOST_FOREACH(sharedClique orphan, orphans) {
 			// find the last variable that is not part of the separator
 			string oneTooFar = orphan->separator_.front();
-			list<string> keys = orphan->keys();
-			list<string>::iterator it = find(keys.begin(), keys.end(), oneTooFar);
+			list<Symbol> keys = orphan->keys();
+			list<Symbol>::iterator it = find(keys.begin(), keys.end(), oneTooFar);
 			it--;
-			string key = *it;
+			const Symbol& key = *it;
 			// retrieve the cached factor and add to boundary
 			cachedBoundary.push_back(cached[key]);
 		}
@@ -176,7 +176,7 @@ namespace gtsam {
 		if (true) {
 			ordering = factors.getOrdering();
 		} else {
-			list<string> keys = factors.keys();
+			list<Symbol> keys = factors.keys();
 			keys.sort(); // todo: correct sorting order?
 			ordering = keys;
 		}
@@ -220,7 +220,7 @@ namespace gtsam {
 		// add orphans to the bottom of the new tree
 		BOOST_FOREACH(sharedClique orphan, orphans) {
 
-			string key = orphan->separator_.front();
+		  Symbol key = orphan->separator_.front();
 			sharedClique parent = (*this)[key];
 
 			parent->children_ += orphan;

@@ -12,6 +12,7 @@
 #include <boost/shared_ptr.hpp>
 #include <boost/tuple/tuple.hpp>
 #include <boost/serialization/map.hpp>
+#include <list>
 
 #include "Factor.h"
 #include "Matrix.h"
@@ -31,12 +32,12 @@ class GaussianFactor: boost::noncopyable, public Factor<VectorConfig> {
 public:
 
 	typedef boost::shared_ptr<GaussianFactor> shared_ptr;
-	typedef std::map<std::string, Matrix>::iterator iterator;
-	typedef std::map<std::string, Matrix>::const_iterator const_iterator;
+	typedef std::map<Symbol, Matrix>::iterator iterator;
+	typedef std::map<Symbol, Matrix>::const_iterator const_iterator;
 
 protected:
 
-	std::map<std::string, Matrix> As_; // linear matrices
+	std::map<Symbol, Matrix> As_; // linear matrices
 	Vector b_; // right-hand-side
 	Vector sigmas_; // vector of standard deviations for each row in the factor
 
@@ -52,22 +53,22 @@ public:
 	}
 
 	/** Construct unary factor */
-	GaussianFactor(const std::string& key1, const Matrix& A1,
+	GaussianFactor(const Symbol& key1, const Matrix& A1,
 			const Vector& b, double sigma) :
 		b_(b), sigmas_(repeat(b.size(),sigma)) {
 		As_.insert(make_pair(key1, A1));
 	}
 
 	/** Construct unary factor with vector of sigmas*/
-	GaussianFactor(const std::string& key1, const Matrix& A1,
+	GaussianFactor(const Symbol& key1, const Matrix& A1,
 			const Vector& b, const Vector& sigmas) :
 		b_(b), sigmas_(sigmas) {
 		As_.insert(make_pair(key1, A1));
 	}
 
 	/** Construct binary factor */
-	GaussianFactor(const std::string& key1, const Matrix& A1,
-			const std::string& key2, const Matrix& A2,
+	GaussianFactor(const Symbol& key1, const Matrix& A1,
+			const Symbol& key2, const Matrix& A2,
 			const Vector& b, double sigma) :
 		b_(b), sigmas_(repeat(b.size(),sigma))  {
 		As_.insert(make_pair(key1, A1));
@@ -75,9 +76,9 @@ public:
 	}
 
 	/** Construct ternary factor */
-	GaussianFactor(const std::string& key1, const Matrix& A1,
-			const std::string& key2, const Matrix& A2,
-			const std::string& key3, const Matrix& A3,
+	GaussianFactor(const Symbol& key1, const Matrix& A1,
+			const Symbol& key2, const Matrix& A2,
+			const Symbol& key3, const Matrix& A3,
 			const Vector& b, double sigma) :
 		b_(b), sigmas_(repeat(b.size(),sigma))  {
 		As_.insert(make_pair(key1, A1));
@@ -86,7 +87,7 @@ public:
 	}
 
 	/** Construct an n-ary factor */
-	GaussianFactor(const std::vector<std::pair<std::string, Matrix> > &terms,
+	GaussianFactor(const std::vector<std::pair<Symbol, Matrix> > &terms,
 	    const Vector &b, double sigma) :
 	    b_(b), sigmas_(repeat(b.size(),sigma))  {
 	  for(unsigned int i=0; i<terms.size(); i++)
@@ -94,7 +95,7 @@ public:
 	}
 
 	/** Construct an n-ary factor with a multiple sigmas*/
-	GaussianFactor(const std::vector<std::pair<std::string, Matrix> > &terms,
+	GaussianFactor(const std::vector<std::pair<Symbol, Matrix> > &terms,
 				const Vector &b, const Vector& sigmas) :
 			b_(b), sigmas_(sigmas) {
 			for (unsigned int i = 0; i < terms.size(); i++)
@@ -141,20 +142,20 @@ public:
 	 * get a copy of the A matrix from a specific node
 	 * O(log n)
 	 */
-	const Matrix& get_A(const std::string& key) const {
+	const Matrix& get_A(const Symbol& key) const {
 		const_iterator it = As_.find(key);
 		if (it == As_.end())
-			throw(std::invalid_argument("GaussianFactor::[] invalid key: " + key));
+			throw(std::invalid_argument("GaussianFactor::[] invalid key: " + (std::string)key));
 		return it->second;
 	}
 
 	/** operator[] syntax for get */
-	inline const Matrix& operator[](const std::string& name) const {
+	inline const Matrix& operator[](const Symbol& name) const {
 		return get_A(name);
 	}
 
 	/** Check if factor involves variable with key */
-	bool involves(const std::string& key) const {
+	bool involves(const Symbol& key) const {
 		const_iterator it = As_.find(key);
 		return (it != As_.end());
 	}
@@ -169,19 +170,19 @@ public:
 	 * Find all variables
 	 * @return The set of all variable keys
 	 */
-	std::list<std::string> keys() const;
+	std::list<Symbol> keys() const;
 
 	/**
 	 * return the first key
 	 * @return The set of all variable keys
 	 */
-	std::string key1() const { return As_.begin()->first; }
+	Symbol key1() const { return As_.begin()->first; }
 
 	/**
 	 * return the first key
 	 * @return The set of all variable keys
 	 */
-	std::string key2() const {
+	Symbol key2() const {
 		if (As_.size() < 2) throw std::invalid_argument("GaussianFactor: less than 2 keys!");
 		return (++(As_.begin()))->first;
 	}
@@ -198,15 +199,15 @@ public:
 	 * @param key is the name of the variable
 	 * @return the size of the variable
 	 */
-	size_t getDim(const std::string& key) const;
+	size_t getDim(const Symbol& key) const;
 
 	/**
 	 * Add to separator set if this factor involves key, but don't add key itself
 	 * @param key
 	 * @param separator set to add to
 	 */
-	void tally_separator(const std::string& key,
-			std::set<std::string>& separator) const;
+	void tally_separator(const Symbol& key,
+			std::set<Symbol>& separator) const;
 
 	/**
 	 * Return A*x
@@ -247,14 +248,14 @@ public:
 	 * @param x: starting point for search
 	 * @param d: search direction
 	 */
-	shared_ptr alphaFactor(const VectorConfig& x, const VectorConfig& d) const;
+	shared_ptr alphaFactor(const Symbol& key, const VectorConfig& x, const VectorConfig& d) const;
 
 	/* ************************************************************************* */
 	// MUTABLE functions. FD:on the path to being eradicated
 	/* ************************************************************************* */
 
 	/** insert, copies A */
-	void insert(const std::string& key, const Matrix& A) {
+	void insert(const Symbol& key, const Matrix& A) {
 		As_.insert(std::make_pair(key, A));
 	}
 
@@ -264,7 +265,7 @@ public:
 	}
 
 	// set A matrices for the linear factor, same as insert ?
-	inline void set_A(const std::string& key, const Matrix &A) {
+	inline void set_A(const Symbol& key, const Matrix &A) {
 		insert(key, A);
 	}
 
@@ -275,7 +276,7 @@ public:
 	 * @return a new factor and a conditional gaussian on the eliminated variable
 	 */
 	std::pair<boost::shared_ptr<GaussianConditional>, shared_ptr>
-	eliminate(const std::string& key) const;
+	eliminate(const Symbol& key) const;
 
 	/**
 	 * Take the factor f, and append to current matrices. Not very general.

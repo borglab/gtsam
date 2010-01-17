@@ -23,15 +23,16 @@ namespace ublas = boost::numeric::ublas;
 
 using namespace gtsam;
 
-typedef pair<const string, Matrix>& mypair;
+// richard: commented out this typedef because appears to be unused?
+//typedef pair<const Symbol, Matrix>& mypair;
 
 /* ************************************************************************* */
 GaussianFactor::GaussianFactor(const boost::shared_ptr<GaussianConditional>& cg) :
 	b_(cg->get_d()) {
 	As_.insert(make_pair(cg->key(), cg->get_R()));
-	std::map<std::string, Matrix>::const_iterator it = cg->parentsBegin();
+	std::map<Symbol, Matrix>::const_iterator it = cg->parentsBegin();
 	for (; it != cg->parentsEnd(); it++) {
-		const std::string& j = it->first;
+		const Symbol& j = it->first;
 		const Matrix& Aj = it->second;
 		As_.insert(make_pair(j, Aj));
 	}
@@ -80,15 +81,15 @@ void GaussianFactor::print(const string& s) const {
   cout << s << endl;
   if (empty()) cout << " empty" << endl; 
   else {
-    string j; Matrix A;
-    FOREACH_PAIR(j,A,As_) gtsam::print(A, "A["+j+"]=\n");
+    Symbol j; Matrix A;
+    FOREACH_PAIR(j,A,As_) gtsam::print(A, "A["+(string)j+"]=\n");
     gtsam::print(b_,"b=");
     gtsam::print(sigmas_, "sigmas = ");
   }
 }
 
 /* ************************************************************************* */
-size_t GaussianFactor::getDim(const std::string& key) const {
+size_t GaussianFactor::getDim(const Symbol& key) const {
 	const_iterator it = As_.find(key);
 	if (it != As_.end())
 		return it->second.size2();
@@ -109,7 +110,7 @@ bool GaussianFactor::equals(const Factor<VectorConfig>& f, double tol) const {
   if(As_.size() != lf->As_.size()) return false;
 
   for(; it1 != As_.end(); it1++, it2++) {
-    const string& j1 = it1->first, j2 = it2->first;
+    const Symbol& j1 = it1->first, j2 = it2->first;
     const Matrix A1 = it1->second, A2 = it2->second;
     if (j1 != j2) return false;
     if (!equal_with_abs_tol(A1,A2,tol))
@@ -129,7 +130,7 @@ bool GaussianFactor::equals(const Factor<VectorConfig>& f, double tol) const {
 Vector GaussianFactor::unweighted_error(const VectorConfig& c) const {
   Vector e = -b_;
   if (empty()) return e;
-  string j; Matrix Aj;
+  Symbol j; Matrix Aj; // rtodo: copying matrix here?
   FOREACH_PAIR(j, Aj, As_)
     e += (Aj * c[j]);
   return e;
@@ -144,14 +145,14 @@ Vector GaussianFactor::error_vector(const VectorConfig& c) const {
 /* ************************************************************************* */
 double GaussianFactor::error(const VectorConfig& c) const {
   if (empty()) return 0;
-  Vector weighted = error_vector(c);
+  Vector weighted = error_vector(c); // rtodo: copying vector here?
   return 0.5 * inner_prod(weighted,weighted);
 }
 
 /* ************************************************************************* */
-list<string> GaussianFactor::keys() const {
-	list<string> result;
-  string j; Matrix A;
+list<Symbol> GaussianFactor::keys() const {
+	list<Symbol> result;
+  Symbol j; Matrix A; // rtodo: copying matrix here?
   FOREACH_PAIR(j,A,As_)
     result.push_back(j);
   return result;
@@ -160,16 +161,16 @@ list<string> GaussianFactor::keys() const {
 /* ************************************************************************* */
 Dimensions GaussianFactor::dimensions() const {
   Dimensions result;
-  string j; Matrix A;
+  Symbol j; Matrix A; // rtodo: copying matrix here?
   FOREACH_PAIR(j,A,As_)
     result.insert(make_pair(j,A.size2()));
   return result;
 }
 
 /* ************************************************************************* */
-void GaussianFactor::tally_separator(const string& key, set<string>& separator) const {
+void GaussianFactor::tally_separator(const Symbol& key, set<Symbol>& separator) const {
   if(involves(key)) {
-    string j; Matrix A;
+    Symbol j; Matrix A; // rtodo: copying matrix here?
     FOREACH_PAIR(j,A,As_)
       if(j != key) separator.insert(j);
   }
@@ -181,7 +182,7 @@ Vector GaussianFactor::operator*(const VectorConfig& x) const {
   if (empty()) return Ax;
 
   // Just iterate over all A matrices and multiply in correct config part
-  string j; Matrix Aj;
+  Symbol j; Matrix Aj; // rtodo: copying matrix here?
   FOREACH_PAIR(j, Aj, As_)
     Ax += (Aj * x[j]);
 
@@ -193,7 +194,7 @@ VectorConfig GaussianFactor::operator^(const Vector& e) const {
   Vector E = ediv_(e,sigmas_);
 	VectorConfig x;
   // Just iterate over all A matrices and insert Ai^e into VectorConfig
-  string j; Matrix Aj;
+  Symbol j; Matrix Aj; // rtodo: copying matrix here?
   FOREACH_PAIR(j, Aj, As_)
     x.insert(j,Aj^E);
 	return x;
@@ -202,9 +203,10 @@ VectorConfig GaussianFactor::operator^(const Vector& e) const {
 /* ************************************************************************* */  
 pair<Matrix,Vector> GaussianFactor::matrix(const Ordering& ordering, bool weight) const {
 
+  // rtodo: this is called in eliminate, potential function to optimize?
 	// get pointers to the matrices
 	vector<const Matrix *> matrices;
-	BOOST_FOREACH(string j, ordering) {
+	BOOST_FOREACH(const Symbol& j, ordering) {
 		const Matrix& Aj = get_A(j);
 		matrices.push_back(&Aj);
 	}
@@ -227,7 +229,7 @@ pair<Matrix,Vector> GaussianFactor::matrix(const Ordering& ordering, bool weight
 Matrix GaussianFactor::matrix_augmented(const Ordering& ordering) const {
 	// get pointers to the matrices
 	vector<const Matrix *> matrices;
-	BOOST_FOREACH(string j, ordering) {
+	BOOST_FOREACH(const Symbol& j, ordering) {
 		const Matrix& Aj = get_A(j);
 		matrices.push_back(&Aj);
 	}
@@ -250,7 +252,7 @@ GaussianFactor::sparse(const Dimensions& columnIndices) const {
 	list<double> S;
 
 	// iterate over all matrices in the factor
-	string key; Matrix Aj;
+	Symbol key; Matrix Aj; // rtodo: copying matrix?
 	FOREACH_PAIR( key, Aj, As_) {
 		// find first column index for this key
 		// TODO: check if end() and throw exception if not found
@@ -275,7 +277,7 @@ GaussianFactor::sparse(const Dimensions& columnIndices) const {
 void GaussianFactor::append_factor(GaussianFactor::shared_ptr f, size_t m, size_t pos) {
 
 	// iterate over all matrices from the factor f
-	string key; Matrix A;
+	Symbol key; Matrix A; // rtodo: copying matrix?
 	FOREACH_PAIR( key, A, f->As_) {
 
 		// find the corresponding matrix among As
@@ -306,10 +308,10 @@ void GaussianFactor::append_factor(GaussianFactor::shared_ptr f, size_t m, size_
  */
 /* ************************************************************************* */
 pair<GaussianConditional::shared_ptr, GaussianFactor::shared_ptr>
-GaussianFactor::eliminate(const string& key) const
+GaussianFactor::eliminate(const Symbol& key) const
 {
 	bool verbose = false;
-	if (verbose) cout << "GaussianFactor::eliminate(" << key << ")" << endl;
+	if (verbose) cout << "GaussianFactor::eliminate(" << (string)key << ")" << endl;
 
 	// if this factor does not involve key, we exit with empty CG and LF
 	const_iterator it = As_.find(key);
@@ -323,7 +325,7 @@ GaussianFactor::eliminate(const string& key) const
 	// create an internal ordering that eliminates key first
 	Ordering ordering;
 	ordering += key;
-	BOOST_FOREACH(string k, keys())
+	BOOST_FOREACH(const Symbol& k, keys())
 		if (k != key) ordering += k;
 
 	// extract A, b from the combined linear factor (ensure that x is leading)
@@ -367,7 +369,7 @@ GaussianFactor::eliminate(const string& key) const
 	// extract the block matrices for parents in both CG and LF
 	GaussianFactor::shared_ptr factor(new GaussianFactor);
 	size_t j = n1;
-	BOOST_FOREACH(string cur_key, ordering)
+	BOOST_FOREACH(Symbol& cur_key, ordering)
 		if (cur_key!=key) {
 			size_t dim = getDim(cur_key);
 			conditional->add(cur_key, sub(R, 0, n1, j, j+dim));
@@ -391,13 +393,13 @@ GaussianFactor::eliminate(const string& key) const
 // Factor |A1*x+A2*y-b|/sigma -> |A1*(x0+alpha*dx)+A2*(y0+alpha*dy)-b|/sigma
 //                            -> |(A1*dx+A2*dy)*alpha-(b-A1*x0-A2*y0)|/sigma
 /* ************************************************************************* */
-GaussianFactor::shared_ptr GaussianFactor::alphaFactor(const VectorConfig& x,
+GaussianFactor::shared_ptr GaussianFactor::alphaFactor(const Symbol& key, const VectorConfig& x,
 		const VectorConfig& d) const {
 
 	// Calculate A matrix
 	size_t m = b_.size();
 	Vector A = zero(m);
-  string j; Matrix Aj;
+  Symbol j; Matrix Aj; // rtodo: copying matrix?
   FOREACH_PAIR(j, Aj, As_)
   	A += Aj * d[j];
 
@@ -405,7 +407,7 @@ GaussianFactor::shared_ptr GaussianFactor::alphaFactor(const VectorConfig& x,
 	Vector b = - unweighted_error(x);
 
 	// construct factor
-	shared_ptr factor(new GaussianFactor("alpha",Matrix_(A),b,sigmas_));
+	shared_ptr factor(new GaussianFactor(key,Matrix_(A),b,sigmas_));
 	return factor;
 }
 

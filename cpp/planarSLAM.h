@@ -79,8 +79,8 @@ namespace gtsam {
 	namespace planarSLAM {
 
 		// Keys and Config
-		typedef Symbol<Pose2, 'x'> PoseKey;
-		typedef Symbol<Point2, 'l'> PointKey;
+		typedef TypedSymbol<Pose2, 'x'> PoseKey;
+		typedef TypedSymbol<Point2, 'l'> PointKey;
 		typedef PairConfig<PoseKey, Pose2, PointKey, Point2> Config;
 
 		// Factors

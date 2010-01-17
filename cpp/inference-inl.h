@@ -4,9 +4,10 @@
  * @author Frank Dellaert
  */
 
-//#include "inference.h"
+#include "inference.h"
 #include "FactorGraph-inl.h"
 #include "BayesNet-inl.h"
+#include "Key.h"
 
 using namespace std;
 
@@ -16,7 +17,7 @@ namespace gtsam {
 	/* eliminate one node from the factor graph                           */
 	/* ************************************************************************* */
 	template<class Factor,class Conditional>
-	boost::shared_ptr<Conditional> eliminateOne(FactorGraph<Factor>& graph, const string& key) {
+	boost::shared_ptr<Conditional> eliminateOne(FactorGraph<Factor>& graph, const Symbol& key) {
 
 		// combine the factors of all nodes connected to the variable to be eliminated
 		// if no factors are connected to key, returns an empty factor
@@ -44,7 +45,7 @@ namespace gtsam {
 	{
 		BayesNet<Conditional> bayesNet; // empty
 
-		BOOST_FOREACH(string key, ordering) {
+		BOOST_FOREACH(Symbol key, ordering) {
 			boost::shared_ptr<Conditional> cg = eliminateOne<Factor,Conditional>(factorGraph,key);
 			bayesNet.push_back(cg);
 		}
@@ -61,7 +62,7 @@ namespace gtsam {
 
 		// Get the keys of all variables and remove all keys we want the marginal for
 		Ordering ord = bn.ordering();
-		BOOST_FOREACH(string key, keys) ord.remove(key); // TODO: O(n*k), faster possible?
+		BOOST_FOREACH(const Symbol& key, keys) ord.remove(key); // TODO: O(n*k), faster possible?
 
 		// eliminate partially,
 		BayesNet<Conditional> conditional = eliminate<Factor,Conditional>(factorGraph,ord);

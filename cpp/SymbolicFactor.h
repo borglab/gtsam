@@ -14,6 +14,7 @@
 #include <boost/shared_ptr.hpp>
 #include "Testable.h"
 #include "Ordering.h"
+#include "Key.h"
 
 namespace gtsam {
 
@@ -23,7 +24,7 @@ namespace gtsam {
 	class SymbolicFactor: public Testable<SymbolicFactor> {
 	private:
 
-		std::list<std::string> keys_;
+		std::list<Symbol> keys_;
 
 	public:
 
@@ -38,18 +39,18 @@ namespace gtsam {
 		}
 
 		/** Construct unary factor */
-		SymbolicFactor(const std::string& key) {
+		SymbolicFactor(const Symbol& key) {
 			keys_.push_back(key);
 		}
 
 		/** Construct binary factor */
-		SymbolicFactor(const std::string& key1, const std::string& key2) {
+		SymbolicFactor(const Symbol& key1, const Symbol& key2) {
 			keys_.push_back(key1);
 			keys_.push_back(key2);
 		}
 
 		/** Construct ternary factor */
-		SymbolicFactor(const std::string& key1, const std::string& key2, const std::string& key3) {
+		SymbolicFactor(const Symbol& key1, const Symbol& key2, const Symbol& key3) {
 			keys_.push_back(key1);
 			keys_.push_back(key2);
 			keys_.push_back(key3);
@@ -71,7 +72,7 @@ namespace gtsam {
 		 * Find all variables
 		 * @return The set of all variable keys
 		 */
-		std::list<std::string> keys() const {
+		std::list<Symbol> keys() const {
 			return keys_;
 		}
 
@@ -81,7 +82,7 @@ namespace gtsam {
 		 * @return a new factor and a symbolic conditional on the eliminated variable
 		 */
 		std::pair<boost::shared_ptr<SymbolicConditional>, shared_ptr>
-		eliminate(const std::string& key) const;
+		eliminate(const Symbol& key) const;
 
 		/**
 		 * Check if empty factor

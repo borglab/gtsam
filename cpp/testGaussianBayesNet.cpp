@@ -19,6 +19,8 @@ using namespace boost::assign;
 #include <boost/archive/text_iarchive.hpp>
 #endif //HAVE_BOOST_SERIALIZATION
 
+#define GTSAM_MAGIC_KEY
+
 #include "GaussianBayesNet.h"
 #include "BayesNet.h"
 #include "smallExample.h"

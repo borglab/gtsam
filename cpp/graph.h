@@ -43,7 +43,7 @@ namespace gtsam {
 	template<class Key>
 	class PredecessorMap: public std::map<Key, Key> {
 	public:
-		/** convenience insert so we can pass ints for Symbol keys */
+		/** convenience insert so we can pass ints for TypedSymbol keys */
 		inline void insert(const Key& key, const Key& parent) {
 			std::map<Key, Key>::insert(std::make_pair(key, parent));
 		}

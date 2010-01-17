@@ -11,6 +11,8 @@
 
 #include <CppUnitLite/TestHarness.h>
 
+#define GTSAM_MAGIC_KEY
+
 #include "Matrix.h"
 #include "smallExample.h"
 #include "simulated2D.h"

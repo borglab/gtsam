@@ -30,7 +30,7 @@ namespace gtsam {
 
 		// Use BayesNet order to add y contributions in order
 		BOOST_FOREACH(GaussianConditional::shared_ptr cg, Rc1_) {
-			const string& j = cg->key();
+			const Symbol& j = cg->key();
 			e.push_back(y[j]); // append y
 		}
 
@@ -59,7 +59,7 @@ namespace gtsam {
 
 		// Use BayesNet order to add y contributions in order
 		BOOST_FOREACH(GaussianConditional::shared_ptr cg, Rc1_) {
-			const string& j = cg->key();
+			const Symbol& j = cg->key();
 			e.push_back(y[j]); // append y
 		}
 
@@ -80,7 +80,7 @@ namespace gtsam {
 		// Use BayesNet order to remove y contributions in order
 		Errors::const_iterator it = e.begin();
 		BOOST_FOREACH(GaussianConditional::shared_ptr cg, Rc1_) {
-			const string& j = cg->key();
+			const Symbol& j = cg->key();
 			const Vector& ej = *(it++);
 			y1.insert(j,ej);
 		}

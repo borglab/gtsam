@@ -14,6 +14,8 @@
 #include <boost/archive/text_iarchive.hpp>
 #endif //HAVE_BOOST_SERIALIZATION
 
+#define GTSAM_MAGIC_KEY
+
 #include "Matrix.h"
 #include "GaussianConditional.h"
 

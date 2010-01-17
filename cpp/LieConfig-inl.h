@@ -80,9 +80,9 @@ namespace gtsam {
 		BOOST_FOREACH(const Value& value, c) {
 			const J& j = value.first;
 			const T& pj = value.second;
-			string jstr = (string)j;
-			if (delta.contains(jstr)) {
-				const Vector& dj = delta[jstr];
+			Symbol jkey = (Symbol)j;
+			if (delta.contains(jkey)) {
+				const Vector& dj = delta[jkey];
 				newConfig.insert(j, expmap(pj,dj));
 			} else
 			newConfig.insert(j, pj);

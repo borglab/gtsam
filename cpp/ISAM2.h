@@ -20,10 +20,11 @@
 #include "NonlinearFactorGraph.h"
 #include "BayesNet.h"
 #include "BayesTree.h"
+#include "Key.h"
 
 namespace gtsam {
 
-	typedef std::map<std::string, GaussianFactor::shared_ptr> cachedFactors;
+	typedef std::map<Symbol, GaussianFactor::shared_ptr> cachedFactors;
 
 	template<class Conditional, class Config>
 	class ISAM2: public BayesTree<Conditional> {

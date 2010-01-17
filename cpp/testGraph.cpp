@@ -13,8 +13,9 @@
 #include <CppUnitLite/TestHarness.h>
 
 #include "pose2SLAM.h"
-#include "LieConfig-inl.h"
+#include "TupleConfig-inl.h"
 #include "graph-inl.h"
+#include "FactorGraph-inl.h"
 
 using namespace std;
 using namespace boost;

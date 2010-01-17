@@ -16,6 +16,8 @@ using namespace boost::assign;
 
 #include <CppUnitLite/TestHarness.h>
 
+#define GTSAM_MAGIC_KEY
+
 #include "Matrix.h"
 #include "Ordering.h"
 #include "smallExample.h"
@@ -57,13 +59,13 @@ TEST( GaussianFactorGraph, find_separator )
 {
   GaussianFactorGraph fg = createGaussianFactorGraph();
 
-  set<string> separator = fg.find_separator("x2");
-  set<string> expected;
+  set<Symbol> separator = fg.find_separator("x2");
+  set<Symbol> expected;
   expected.insert("x1");
   expected.insert("l1");
 
   CHECK(separator.size()==expected.size());
-  set<string>::iterator it1 = separator.begin(), it2 = expected.begin();
+  set<Symbol>::iterator it1 = separator.begin(), it2 = expected.begin();
   for(; it1!=separator.end(); it1++, it2++)
     CHECK(*it1 == *it2);
 }
@@ -120,7 +122,7 @@ TEST( GaussianFactorGraph, combine_factors_x1 )
   b(4) =  0*sigma3;
   b(5) =  1*sigma3;
 
-  vector<pair<string, Matrix> > meas;
+  vector<pair<Symbol, Matrix> > meas;
   meas.push_back(make_pair("l1", Al1));
   meas.push_back(make_pair("x1", Ax1));
   meas.push_back(make_pair("x2", Ax2));
@@ -177,7 +179,7 @@ TEST( GaussianFactorGraph, combine_factors_x2 )
   b(2) = -1  *sigma2;
   b(3) =  1.5*sigma2;
 
-  vector<pair<string, Matrix> > meas;
+  vector<pair<Symbol, Matrix> > meas;
   meas.push_back(make_pair("l1", Al1));
   meas.push_back(make_pair("x1", Ax1));
   meas.push_back(make_pair("x2", Ax2));

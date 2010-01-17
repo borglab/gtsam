@@ -6,6 +6,8 @@
 
 #include <CppUnitLite/TestHarness.h>
 
+#define GTSAM_MAGIC_KEY
+
 #include "Ordering.h"
 #include "smallExample.h"
 #include "inference-inl.h"

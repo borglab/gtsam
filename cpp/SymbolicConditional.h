@@ -15,6 +15,7 @@
 #include <boost/foreach.hpp> // TODO: make cpp file
 #include <boost/serialization/list.hpp>
 #include "Conditional.h"
+#include "Key.h"
 
 namespace gtsam {
 
@@ -24,8 +25,7 @@ namespace gtsam {
 	class SymbolicConditional: public Conditional {
 
 	private:
-
-		std::list<std::string> parents_;
+		std::list<Symbol> parents_;
 
 	public:
 
@@ -40,14 +40,14 @@ namespace gtsam {
 		/**
 		 * No parents
 		 */
-		SymbolicConditional(const std::string& key) :
+		SymbolicConditional(const Symbol& key) :
 			Conditional(key) {
 		}
 
 		/**
 		 * Single parent
 		 */
-		SymbolicConditional(const std::string& key, const std::string& parent) :
+		SymbolicConditional(const Symbol& key, const Symbol& parent) :
 			Conditional(key) {
 			parents_.push_back(parent);
 		}
@@ -55,8 +55,8 @@ namespace gtsam {
 		/**
 		 * Two parents
 		 */
-		SymbolicConditional(const std::string& key, const std::string& parent1,
-				const std::string& parent2) :
+		SymbolicConditional(const Symbol& key, const Symbol& parent1,
+				const Symbol& parent2) :
 			Conditional(key) {
 			parents_.push_back(parent1);
 			parents_.push_back(parent2);
@@ -65,8 +65,8 @@ namespace gtsam {
 		/**
 		 * Three parents
 		 */
-		SymbolicConditional(const std::string& key, const std::string& parent1,
-				const std::string& parent2, const std::string& parent3) :
+		SymbolicConditional(const Symbol& key, const Symbol& parent1,
+				const Symbol& parent2, const Symbol& parent3) :
 			Conditional(key) {
 			parents_.push_back(parent1);
 			parents_.push_back(parent2);
@@ -76,16 +76,16 @@ namespace gtsam {
 		/**
 		 * A list
 		 */
-		SymbolicConditional(const std::string& key,
-				const std::list<std::string>& parents) :
+		SymbolicConditional(const Symbol& key,
+				const std::list<Symbol>& parents) :
 			Conditional(key), parents_(parents) {
 		}
 
 		/** print */
 		void print(const std::string& s = "SymbolicConditional") const {
-			std::cout << s << " P(" << key_;
+			std::cout << s << " P(" << (std::string)key_;
 			if (parents_.size()>0) std::cout << " |";
-			BOOST_FOREACH(std::string parent, parents_) std::cout << " " << parent;
+			BOOST_FOREACH(const Symbol& parent, parents_) std::cout << " " << (std::string)parent;
 			std::cout << ")" << std::endl;
 		}
 
@@ -98,7 +98,7 @@ namespace gtsam {
 		}
 
 		/** return parents */
-		std::list<std::string> parents() const { return parents_;}
+		std::list<Symbol> parents() const { return parents_;}
 
 		/** find the number of parents */
 		size_t nrParents() const {

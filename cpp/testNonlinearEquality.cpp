@@ -4,6 +4,9 @@
  */
 
 #include <CppUnitLite/TestHarness.h>
+
+#define GTSAM_MAGIC_KEY
+
 #include "VectorConfig.h"
 #include "NonlinearEquality.h"
 
@@ -19,7 +22,7 @@ bool vector_compare(const Vector& a, const Vector& b) {
 
 /* ************************************************************************* */
 TEST ( NonlinearEquality, linearization ) {
-	string key = "x";
+	Symbol key = "x";
 	Vector value = Vector_(2, 1.0, 2.0);
 	VectorConfig linearize;
 	linearize.insert(key, value);
@@ -35,7 +38,7 @@ TEST ( NonlinearEquality, linearization ) {
 
 /* ********************************************************************** */
 TEST ( NonlinearEquality, linearization_fail ) {
-	string key = "x";
+  Symbol key = "x";
 	Vector value = Vector_(2, 1.0, 2.0);
 	Vector wrong = Vector_(2, 3.0, 4.0);
 	VectorConfig bad_linearize;
@@ -55,7 +58,7 @@ TEST ( NonlinearEquality, linearization_fail ) {
 
 /* ************************************************************************* */
 TEST ( NonlinearEquality, error ) {
-	string key = "x";
+  Symbol key = "x";
 	Vector value = Vector_(2, 1.0, 2.0);
 	Vector wrong = Vector_(2, 3.0, 4.0);
 	VectorConfig feasible, bad_linearize;

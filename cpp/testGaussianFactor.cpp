@@ -15,6 +15,8 @@ using namespace boost::assign;
 
 #include <CppUnitLite/TestHarness.h>
 
+#define GTSAM_MAGIC_KEY
+
 #include "Matrix.h"
 #include "Ordering.h"
 #include "GaussianConditional.h"
@@ -70,7 +72,7 @@ TEST( GaussianFactor, keys )
 	// get the factor "f2" from the small linear factor graph
 	GaussianFactorGraph fg = createGaussianFactorGraph();
 	GaussianFactor::shared_ptr lf = fg[1];
-	list<string> expected;
+	list<Symbol> expected;
 	expected.push_back("x1");
 	expected.push_back("x2");
 	CHECK(lf->keys() == expected);
@@ -151,7 +153,7 @@ TEST( GaussianFactor, combine )
 	b2(3) = -0.1;
 
 	// use general constructor for making arbitrary factors
-	vector<pair<string, Matrix> > meas;
+	vector<pair<Symbol, Matrix> > meas;
 	meas.push_back(make_pair("x2", Ax2));
 	meas.push_back(make_pair("l1", Al1));
 	meas.push_back(make_pair("x1", Ax1));
@@ -209,7 +211,7 @@ TEST( NonlinearFactorGraph, combine2){
 	exb(0) = 2*sigma1 ; exb(1) = -1*sigma1;  exb(2) = 4*sigma2 ; exb(3) = -5*sigma2;
 	exb(4) = 3*sigma3 ; exb(5) = -88*sigma3; exb(6) = 5*sigma4 ; exb(7) = -6*sigma4;
 
-	vector<pair<string, Matrix> > meas;
+	vector<pair<Symbol, Matrix> > meas;
 	meas.push_back(make_pair("x1", A22));
 	GaussianFactor expected(meas, exb, sigmas);
 	CHECK(assert_equal(expected,combined));
@@ -250,7 +252,7 @@ TEST( GaussianFactor, linearFactorN){
 
   GaussianFactor combinedFactor(f);
 
-  vector<pair<string, Matrix> > combinedMeasurement;
+  vector<pair<Symbol, Matrix> > combinedMeasurement;
   combinedMeasurement.push_back(make_pair("x1", Matrix_(8,2,
       1.0,  0.0,
       0.0,  1.0,
@@ -410,9 +412,9 @@ TEST( GaussianFactor, eliminate2 )
 	b2(2) =  0.2;
 	b2(3) = -0.1;
 
-	vector<pair<string, Matrix> > meas;
+	vector<pair<Symbol, Matrix> > meas;
 	meas.push_back(make_pair("x2", Ax2));
-	meas.push_back(make_pair("l1x1", Al1x1));
+	meas.push_back(make_pair("l11", Al1x1));
 	GaussianFactor combined(meas, b2, sigmas);
 
 	// eliminate the combined factor
@@ -435,7 +437,7 @@ TEST( GaussianFactor, eliminate2 )
 	x2Sigmas(0) = 0.0894427;
 	x2Sigmas(1) = 0.0894427;
 
-	GaussianConditional expectedCG("x2",d,R11,"l1x1",S12,x2Sigmas);
+	GaussianConditional expectedCG("x2",d,R11,"l11",S12,x2Sigmas);
 
 	// the expected linear factor
 	double sigma = 0.2236;
@@ -448,7 +450,7 @@ TEST( GaussianFactor, eliminate2 )
 	// the RHS
 	Vector b1(2); b1(0) = 0.0; b1(1) = 0.894427;
 
-	GaussianFactor expectedLF("l1x1", Bl1x1, b1*sigma, sigma);
+	GaussianFactor expectedLF("l11", Bl1x1, b1*sigma, sigma);
 
 	// check if the result matches
 	CHECK(assert_equal(expectedCG,*actualCG,1e-4));
@@ -641,10 +643,10 @@ TEST( GaussianFactor, CONSTRUCTOR_GaussianConditional )
 	sigmas(0) = 0.29907;
 	sigmas(1) = 0.29907;
 
-	GaussianConditional::shared_ptr CG(new GaussianConditional("x2",d,R11,"l1x1",S12,sigmas));
+	GaussianConditional::shared_ptr CG(new GaussianConditional("x2",d,R11,"l11",S12,sigmas));
 	GaussianFactor actualLF(CG);
 	//  actualLF.print();
-	GaussianFactor expectedLF("x2",R11,"l1x1",S12,d, sigmas(0));
+	GaussianFactor expectedLF("x2",R11,"l11",S12,d, sigmas(0));
 
 	CHECK(assert_equal(expectedLF,actualLF,1e-5));
 }
@@ -655,16 +657,17 @@ TEST( GaussianFactor, alphaFactor )
 	GaussianFactorGraph fg = createGaussianFactorGraph();
 
 	// get alphafactor for first factor in fg at zero, in gradient direction
+	Symbol alphaKey(ALPHA, 1);
   VectorConfig x = createZeroDelta();
 	VectorConfig d = fg.gradient(x);
 	GaussianFactor::shared_ptr factor = fg[0];
-	GaussianFactor::shared_ptr actual = factor->alphaFactor(x,d);
+	GaussianFactor::shared_ptr actual = factor->alphaFactor(alphaKey,x,d);
 
 	// calculate expected
 	Matrix A = Matrix_(2,1,30.0,5.0);
 	Vector b = Vector_(2,-0.1,-0.1);
 	Vector sigmas = Vector_(2,0.1,0.1);
-	GaussianFactor expected("alpha",A,b,sigmas);
+	GaussianFactor expected(alphaKey,A,b,sigmas);
 
 	CHECK(assert_equal(expected,*actual));
 }

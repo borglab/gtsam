@@ -13,6 +13,7 @@
 #include "FactorGraph.h"
 #include "SymbolicFactor.h"
 #include "SymbolicBayesNet.h"
+#include "Key.h"
 
 namespace gtsam {
 
@@ -26,19 +27,19 @@ namespace gtsam {
 		SymbolicFactorGraph() {}
 
 		/** Push back unary factor */
-		void push_factor(const std::string& key) {
+		void push_factor(const Symbol& key) {
 			boost::shared_ptr<SymbolicFactor> factor(new SymbolicFactor(key));
 			push_back(factor);
 		}
 
 		/** Push back binary factor */
-		void push_factor(const std::string& key1, const std::string& key2) {
+		void push_factor(const Symbol& key1, const Symbol& key2) {
 			boost::shared_ptr<SymbolicFactor> factor(new SymbolicFactor(key1,key2));
 			push_back(factor);
 		}
 
 		/** Push back ternary factor */
-		void push_factor(const std::string& key1, const std::string& key2, const std::string& key3) {
+		void push_factor(const Symbol& key1, const Symbol& key2, const Symbol& key3) {
 			boost::shared_ptr<SymbolicFactor> factor(new SymbolicFactor(key1,key2,key3));
 			push_back(factor);
 		}
@@ -50,7 +51,7 @@ namespace gtsam {
 		SymbolicFactorGraph(const FactorGraph<Factor>& fg) {
 			for (size_t i = 0; i < fg.size(); i++) {
 				boost::shared_ptr<Factor> f = fg[i];
-				std::list<std::string> keys = f->keys();
+				std::list<Symbol> keys = f->keys();
 				SymbolicFactor::shared_ptr factor(new SymbolicFactor(keys));
 				push_back(factor);
 			}
@@ -61,7 +62,7 @@ namespace gtsam {
      * Eliminates the factors from the factor graph through findAndRemoveFactors
      * and adds a new factor on the separator to the factor graph
      */
-    boost::shared_ptr<SymbolicConditional> eliminateOne(const std::string& key);
+    boost::shared_ptr<SymbolicConditional> eliminateOne(const Symbol& key);
 
 		/**
 		 * eliminate factor graph in place(!) in the given order, yielding

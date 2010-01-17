@@ -24,9 +24,9 @@ namespace gtsam {
 	template<class Conditional>
 	void BayesNet<Conditional>::print(const string& s) const {
 		cout << s << ":\n";
-		std::string key;
+		Symbol key;
 		BOOST_REVERSE_FOREACH(sharedConditional conditional,conditionals_)
-			conditional->print("Node[" + conditional->key() + "]");
+			conditional->print("Node[" + (string)(conditional->key()) + "]");
 	}
 
 	/* ************************************************************************* */
@@ -63,10 +63,10 @@ namespace gtsam {
 
 	template<class Conditional>
 	typename BayesNet<Conditional>::sharedConditional
-	BayesNet<Conditional>::operator[](const std::string& key) const {
+	BayesNet<Conditional>::operator[](const Symbol& key) const {
 		const_iterator it = find_if(conditionals_.begin(),conditionals_.end(),onKey<Conditional>(key));
 		if (it == conditionals_.end()) throw(invalid_argument(
-						"BayesNet::operator['"+key+"']: not found"));
+						"BayesNet::operator['"+(std::string)key+"']: not found"));
 		return *it;
 	}
 

@@ -21,7 +21,7 @@ namespace gtsam {
 	namespace pose2SLAM {
 
 		// Keys and Config
-		typedef Symbol<Pose2, 'x'> Key;
+		typedef TypedSymbol<Pose2, 'x'> Key;
 		typedef LieConfig<Key, Pose2> Config;
 
 		/**

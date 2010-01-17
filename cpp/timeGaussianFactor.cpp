@@ -4,6 +4,8 @@
  * @author  Alireza Fathi
  */
 
+#define GTSAM_MAGIC_KEY
+
 #include <time.h>
 
 /*STL/C++*/

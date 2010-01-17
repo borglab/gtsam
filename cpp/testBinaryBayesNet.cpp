@@ -20,6 +20,8 @@ using namespace boost::assign;
 #include <boost/archive/text_iarchive.hpp>
 #endif //HAVE_BOOST_SERIALIZATION
 
+#define GTSAM_MAGIC_KEY
+
 #include "BinaryConditional.h"
 #include "BayesNet-inl.h"
 #include "smallExample.h"
@@ -32,7 +34,7 @@ using namespace gtsam;
 typedef BayesNet<BinaryConditional> BinaryBayesNet;
 
 
-double probability( BinaryBayesNet & bbn, map<string,bool> & config)
+double probability( BinaryBayesNet & bbn, map<Symbol,bool> & config)
 {
 	double result = 1.0;
 	BinaryBayesNet::const_iterator it = bbn.begin();
@@ -51,7 +53,7 @@ TEST( BinaryBayesNet, constructor )
 	// p(x|y=0) = 0.3
 	// p(x|y=1) = 0.6
 
-	map<string,bool> config;
+	map<Symbol,bool> config;
 	config["y"] = false;
 	config["x"] = false;
 	// unary conditional for y

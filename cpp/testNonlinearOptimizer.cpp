@@ -15,6 +15,8 @@ using namespace boost::assign;
 #include <boost/shared_ptr.hpp>
 using namespace boost;
 
+#define GTSAM_MAGIC_KEY
+
 #include "Matrix.h"
 #include "Ordering.h"
 #include "smallExample.h"

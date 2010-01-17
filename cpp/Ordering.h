@@ -11,6 +11,7 @@
 #include <map>
 #include "Testable.h"
 #include "graph.h"
+#include "Key.h"
 
 namespace gtsam {
 
@@ -18,7 +19,7 @@ namespace gtsam {
 	 * @class Ordering
 	 * @brief ordering of indices for eliminating a factor graph
 	 */
-	class Ordering: public std::list<std::string>, public Testable<Ordering> {
+	class Ordering: public std::list<Symbol>, public Testable<Ordering> {
 	public:
 		/**
 		 * Default constructor creates empty ordering
@@ -29,15 +30,15 @@ namespace gtsam {
 		/**
 		 * Create from a single string
 		 */
-		Ordering(std::string key) {
+		Ordering(Symbol key) {
 			push_back(key);
 		}
 
 		/**
 		 * Copy constructor from string vector
 		 */
-		Ordering(const std::list<std::string>& strings_in) :
-			std::list<std::string>(strings_in) {
+		Ordering(const std::list<Symbol>& keys_in) :
+			std::list<Symbol>(keys_in) {
 		}
 
 		/**

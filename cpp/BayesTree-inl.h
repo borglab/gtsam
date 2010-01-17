@@ -38,11 +38,11 @@ namespace gtsam {
 	void BayesTree<Conditional>::Clique::print(const string& s) const {
 			cout << s;
 			BOOST_FOREACH(const sharedConditional& conditional, this->conditionals_)
-				cout << " " << conditional->key();
+				cout << " " << (string)(conditional->key());
 			if (!separator_.empty()) {
 				cout << " :";
-				BOOST_FOREACH(string key, separator_)
-					cout << " " << key;
+				BOOST_FOREACH(const Symbol& key, separator_)
+					cout << " " << (std::string)key;
 			}
 			cout << endl;
 		}
@@ -105,22 +105,22 @@ namespace gtsam {
 		Ordering ordering = separator_;
 
 		// remove any variables in the root, after this integrands = Cp\R, ordering = S\R
-		BOOST_FOREACH(string key, R->ordering()) {
+		BOOST_FOREACH(const Symbol& key, R->ordering()) {
 			integrands.remove(key);
 			ordering.remove(key);
 		}
 
 		// remove any variables in the separator, after this integrands = Cp\R\S
-		BOOST_FOREACH(string key, separator_) integrands.remove(key);
+		BOOST_FOREACH(const Symbol& key, separator_) integrands.remove(key);
 
 		// form the ordering as [Cp\R\S S\R]
-		BOOST_REVERSE_FOREACH(string key, integrands) ordering.push_front(key);
+		BOOST_REVERSE_FOREACH(const Symbol& key, integrands) ordering.push_front(key);
 
 		// eliminate to get marginal
 		BayesNet<Conditional> p_S_R = eliminate<Factor,Conditional>(p_Cp_R,ordering);
 
 		// remove all integrands
-		BOOST_FOREACH(string key, integrands) p_S_R.pop_front();
+		BOOST_FOREACH(const Symbol& key, integrands) p_S_R.pop_front();
 
 		// return the parent shortcut P(Sp|R)
 		return p_S_R;
@@ -167,7 +167,7 @@ namespace gtsam {
 
 		// Find the keys of both C1 and C2
 		Ordering keys12 = keys();
-		BOOST_FOREACH(string key,C2->keys()) keys12.push_back(key);
+		BOOST_FOREACH(const Symbol& key,C2->keys()) keys12.push_back(key);
 		keys12.unique();
 
 		// Calculate the marginal
@@ -214,7 +214,7 @@ namespace gtsam {
 		BOOST_FOREACH(sharedClique child, clique->children_)
 	  	child->parent_.reset();
 
-	  BOOST_FOREACH(string key, clique->ordering()) {
+	  BOOST_FOREACH(const Symbol& key, clique->ordering()) {
 			nodes_.erase(key);
 	  }
 	}
@@ -248,8 +248,8 @@ namespace gtsam {
 	// binary predicate to test equality of a pair for use in equals
 	template<class Conditional>
 	bool check_pair(
-			const pair<string,typename BayesTree<Conditional>::sharedClique >& v1,
-			const pair<string,typename BayesTree<Conditional>::sharedClique >& v2
+			const pair<Symbol,typename BayesTree<Conditional>::sharedClique >& v1,
+			const pair<Symbol,typename BayesTree<Conditional>::sharedClique >& v2
 	) {
 		return v1.first == v2.first && v1.second->equals(*(v2.second));
 	}
@@ -267,8 +267,8 @@ namespace gtsam {
 	void BayesTree<Conditional>::insert(const sharedConditional& conditional)
 	{
 		// get key and parents
-		string key = conditional->key();
-		list<string> parents = conditional->parents();
+		const Symbol& key = conditional->key();
+		list<Symbol> parents = conditional->parents(); // rtodo: const reference?
 
 		// if no parents, start a new root clique
 		if (parents.empty()) {
@@ -277,7 +277,7 @@ namespace gtsam {
 		}
 
 		// otherwise, find the parent clique
-		string parent = parents.front();
+		Symbol parent = parents.front();
 		sharedClique parent_clique = (*this)[parent];
 
 		// if the parents and parent clique have the same size, add to parent clique
@@ -297,7 +297,7 @@ namespace gtsam {
 	template<class Conditional>
 	template<class Factor>
 	FactorGraph<Factor>
-	BayesTree<Conditional>::marginal(const string& key) const {
+	BayesTree<Conditional>::marginal(const Symbol& key) const {
 
 		// get clique containing key
 		sharedClique clique = (*this)[key];
@@ -318,7 +318,7 @@ namespace gtsam {
 	template<class Conditional>
 	template<class Factor>
 	BayesNet<Conditional>
-	BayesTree<Conditional>::marginalBayesNet(const string& key) const {
+	BayesTree<Conditional>::marginalBayesNet(const Symbol& key) const {
 
 		// calculate marginal as a factor graph
 	  FactorGraph<Factor> fg = this->marginal<Factor>(key);
@@ -333,7 +333,7 @@ namespace gtsam {
 	template<class Conditional>
 	template<class Factor>
 	FactorGraph<Factor>
-	BayesTree<Conditional>::joint(const string& key1, const string& key2) const {
+	BayesTree<Conditional>::joint(const Symbol& key1, const Symbol& key2) const {
 
 		// get clique C1 and C2
 		sharedClique C1 = (*this)[key1], C2 = (*this)[key2];
@@ -356,7 +356,7 @@ namespace gtsam {
 	template<class Conditional>
 	template<class Factor>
 	BayesNet<Conditional>
-	BayesTree<Conditional>::jointBayesNet(const string& key1, const string& key2) const {
+	BayesTree<Conditional>::jointBayesNet(const Symbol& key1, const Symbol& key2) const {
 
 		// calculate marginal as a factor graph
 	  FactorGraph<Factor> fg = this->joint<Factor>(key1,key2);
@@ -406,7 +406,7 @@ namespace gtsam {
 		FactorGraph<Factor> &factors, typename BayesTree<Conditional>::Cliques& orphans) {
 
 		// process each key of the new factor
-		BOOST_FOREACH(string key, newFactor->keys())
+		BOOST_FOREACH(const Symbol& key, newFactor->keys())
 			try {
 				// get the clique and remove it from orphans (if it exists)
 				sharedClique clique = (*this)[key];

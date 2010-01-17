@@ -13,6 +13,7 @@
 #include <boost/serialization/access.hpp>
 #include <boost/serialization/nvp.hpp>
 #include "Testable.h"
+#include "Key.h"
 
 namespace gtsam {
 
@@ -27,19 +28,15 @@ class Conditional: boost::noncopyable, public Testable<Conditional> {
 protected:
 
 	/** key of random variable */
-	std::string key_;
+  Symbol key_;
 
 public:
 
 	/** empty constructor for serialization */
-	Conditional() :
-		key_("__unitialized__") {
-	}
+	Conditional() {}
 
 	/** constructor */
-	Conditional(const std::string& key) :
-		key_(key) {
-	}
+	Conditional(const Symbol& key) : key_(key) {}
 
 	/* destructor */
 	virtual ~Conditional() {
@@ -51,12 +48,12 @@ public:
 	}
 
 	/** return key */
-	inline const std::string& key() const {
+	inline const Symbol& key() const {
 		return key_;
 	}
 
 	/** return parent keys */
-	virtual std::list<std::string> parents() const = 0;
+	virtual std::list<Symbol> parents() const = 0;
 
 	/** return the number of parents */
 	virtual std::size_t nrParents() const = 0;
@@ -73,9 +70,9 @@ private:
 // predicate to check whether a conditional has the sought key
 template<class Conditional>
 class onKey {
-	const std::string& key_;
+	const Symbol& key_;
 public:
-	onKey(const std::string& key) :
+	onKey(const Symbol& key) :
 		key_(key) {
 	}
 	bool operator()(const typename Conditional::shared_ptr& conditional) {

@@ -9,6 +9,7 @@
 
 #include "FactorGraph.h"
 #include "BayesNet.h"
+#include "Key.h"
 
 namespace gtsam {
 
@@ -23,7 +24,7 @@ namespace gtsam {
    */
 	template<class Factor, class Conditional>
 	boost::shared_ptr<Conditional>
-	eliminateOne(FactorGraph<Factor>& factorGraph, const std::string& key);
+	eliminateOne(FactorGraph<Factor>& factorGraph, const Symbol& key);
 
 	/**
 	 * eliminate factor graph using the given (not necessarily complete)

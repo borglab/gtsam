@@ -4,6 +4,8 @@
 
 #include <CppUnitLite/TestHarness.h>
 
+#define GTSAM_MAGIC_KEY
+
 #include "visualSLAM.h"
 #include "Point3.h"
 #include "Pose3.h"

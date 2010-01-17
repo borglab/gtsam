@@ -5,6 +5,9 @@
  **/
 
 #include <CppUnitLite/TestHarness.h>
+
+#define GTSAM_MAGIC_KEY
+
 #include "numericalDerivative.h"
 #include "pose2SLAM.h"
 

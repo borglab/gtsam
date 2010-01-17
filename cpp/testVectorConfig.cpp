@@ -15,6 +15,8 @@
 #include <boost/archive/text_iarchive.hpp>
 #endif //HAVE_BOOST_SERIALIZATION
 
+#define GTSAM_MAGIC_KEY
+
 #include <CppUnitLite/TestHarness.h>
 #include "Matrix.h"
 #include "VectorConfig.h"
@@ -67,9 +69,9 @@ TEST( VectorConfig, contains)
 {
   VectorConfig fg;
   Vector v = Vector_(3, 5.0, 6.0, 7.0);
-  fg.insert("ali", v);
-  CHECK(fg.contains("ali"));
-  CHECK(!fg.contains("gholi"));
+  fg.insert("a", v);
+  CHECK(fg.contains("a"));
+  CHECK(!fg.contains("g"));
 }
 
 /* ************************************************************************* */
@@ -125,7 +127,7 @@ TEST( VectorConfig, update_with_large_delta) {
 	init.insert("y", Vector_(2, 3.0, 4.0));
 	delta.insert("x", Vector_(2, 0.1, 0.1));
 	delta.insert("y", Vector_(2, 0.1, 0.1));
-	delta.insert("penguin", Vector_(2, 0.1, 0.1));
+	delta.insert("p", Vector_(2, 0.1, 0.1));
 
 	VectorConfig actual = expmap(init,delta);
 	VectorConfig expected;

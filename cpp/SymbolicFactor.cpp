@@ -31,13 +31,13 @@ namespace gtsam {
 	SymbolicFactor::SymbolicFactor(const vector<shared_ptr> & factors) {
 
 		// store keys in a map to make them unique (set is not portable)
-		map<string, string> map;
+		map<Symbol, Symbol> map;
 		BOOST_FOREACH(shared_ptr factor, factors)
-			BOOST_FOREACH(string key, factor->keys())
+			BOOST_FOREACH(const Symbol& key, factor->keys())
 				map.insert(make_pair(key,key));
 
 		// create the unique keys
-		string key,val;
+		Symbol key,val;
 		FOREACH_PAIR(key, val, map)
 			keys_.push_back(key);
 	}
@@ -45,7 +45,7 @@ namespace gtsam {
 	/* ************************************************************************* */
 	void SymbolicFactor::print(const string& s) const {
 		cout << s << " ";
-		BOOST_FOREACH(string key, keys_) cout << " " << key;
+		BOOST_FOREACH(const Symbol& key, keys_) cout << " " << (string)key;
 		cout << endl;
 	}
 
@@ -56,11 +56,11 @@ namespace gtsam {
 
 	/* ************************************************************************* */
 	pair<SymbolicConditional::shared_ptr, SymbolicFactor::shared_ptr>
-	SymbolicFactor::eliminate(const string& key) const
+	SymbolicFactor::eliminate(const Symbol& key) const
 	{
 		// get keys from input factor
-		list<string> separator;
-		BOOST_FOREACH(string j,keys_)
+		list<Symbol> separator;
+		BOOST_FOREACH(const Symbol& j,keys_)
 			if (j!=key) separator.push_back(j);
 
 		// start empty remaining factor to be returned

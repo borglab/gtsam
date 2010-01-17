@@ -16,6 +16,7 @@
 #include <boost/serialization/list.hpp>
 #include <boost/serialization/vector.hpp>
 #include "Conditional.h"
+#include "Key.h"
 
 namespace gtsam {
 
@@ -26,7 +27,7 @@ namespace gtsam {
 
 	private:
 
-		std::list<std::string> parents_;
+		std::list<Symbol> parents_;
 		std::vector<double> cpt_;
 
 	public:
@@ -42,7 +43,7 @@ namespace gtsam {
 		/**
 		 * No parents
 		 */
-		BinaryConditional(const std::string& key, double p) :
+		BinaryConditional(const Symbol& key, double p) :
 			Conditional(key) {
 			cpt_.push_back(1-p);
 			cpt_.push_back(p);
@@ -51,7 +52,7 @@ namespace gtsam {
 		/**
 		 * Single parent
 		 */
-		BinaryConditional(const std::string& key, const std::string& parent, const std::vector<double>& cpt) :
+		BinaryConditional(const Symbol& key, const Symbol& parent, const std::vector<double>& cpt) :
 			Conditional(key) {
 			parents_.push_back(parent);
 			for( int i = 0 ; i < cpt.size() ; i++ )
@@ -59,9 +60,9 @@ namespace gtsam {
 			cpt_.insert(cpt_.end(),cpt.begin(),cpt.end()); // p(x|parents)
 		}
 
-		double probability( std::map<std::string,bool> config) {
+		double probability( std::map<Symbol,bool> config) {
 			int index = 0, count = 1;
-			BOOST_FOREACH( std::string parent, parents_){
+			BOOST_FOREACH(const Symbol& parent, parents_){
 				index += count*(int)(config[parent]);
 				count = count << 1;
 			}
@@ -72,7 +73,7 @@ namespace gtsam {
 
 		/** print */
 		void print(const std::string& s = "BinaryConditional") const {
-			std::cout << s << " P(" << key_;
+			std::cout << s << " P(" << (std::string)key_;
 			if (parents_.size()>0) std::cout << " |";
 			BOOST_FOREACH(std::string parent, parents_) std::cout << " " << parent;
 			std::cout << ")" << std::endl;
@@ -90,7 +91,7 @@ namespace gtsam {
 		}
 
 		/** return parents */
-		std::list<std::string> parents() const { return parents_;}
+		std::list<Symbol> parents() const { return parents_;}
 
 		/** return Conditional probability table*/
 		std::vector<double> cpt() const { return cpt_;}

@@ -13,6 +13,7 @@
 
 #include "GaussianConditional.h"
 #include "BayesNet.h"
+#include "Key.h"
 
 namespace gtsam {
 
@@ -20,24 +21,24 @@ namespace gtsam {
 	typedef BayesNet<GaussianConditional> GaussianBayesNet;
 
 	/** Create a scalar Gaussian */
-	GaussianBayesNet scalarGaussian(const std::string& key, double mu=0.0, double sigma=1.0);
+	GaussianBayesNet scalarGaussian(const Symbol& key, double mu=0.0, double sigma=1.0);
 
 	/** Create a simple Gaussian on a single multivariate variable */
-	GaussianBayesNet simpleGaussian(const std::string& key, const Vector& mu, double sigma=1.0);
+	GaussianBayesNet simpleGaussian(const Symbol& key, const Vector& mu, double sigma=1.0);
 
 	/**
 	 * Add a conditional node with one parent
 	 * |Rx+Sy-d|
 	 */
-	void push_front(GaussianBayesNet& bn, const std::string& key, Vector d, Matrix R,
-			const std::string& name1, Matrix S, Vector sigmas);
+	void push_front(GaussianBayesNet& bn, const Symbol& key, Vector d, Matrix R,
+			const Symbol& name1, Matrix S, Vector sigmas);
 
 	/**
 	 * Add a conditional node with two parents
 	 * |Rx+Sy+Tz-d|
 	 */
-	void push_front(GaussianBayesNet& bn, const std::string& key, Vector d, Matrix R,
-			const std::string& name1, Matrix S, const std::string& name2, Matrix T, Vector sigmas);
+	void push_front(GaussianBayesNet& bn, const Symbol& key, Vector d, Matrix R,
+			const Symbol& name1, Matrix S, const Symbol& name2, Matrix T, Vector sigmas);
 
 	/**
 	 * optimize, i.e. return x = inv(R)*d

@@ -12,6 +12,8 @@
 
 using namespace std;
 
+#define GTSAM_MAGIC_KEY
+
 #include "Ordering.h"
 #include "Matrix.h"
 #include "NonlinearFactor.h"

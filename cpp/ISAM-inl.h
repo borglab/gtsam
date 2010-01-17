@@ -41,7 +41,7 @@ namespace gtsam {
 		if (true) {
 			ordering = factors.getOrdering();
 		} else {
-			list<string> keys = factors.keys();
+			list<Symbol> keys = factors.keys();
 			keys.sort(); // todo: correct sorting order?
 			ordering = keys;
 		}
@@ -58,7 +58,7 @@ namespace gtsam {
 		// add orphans to the bottom of the new tree
 		BOOST_FOREACH(sharedClique orphan, orphans) {
 
-			string key = orphan->separator_.front();
+			Symbol key = orphan->separator_.front();
 			sharedClique parent = (*this)[key];
 
 			parent->children_ += orphan;

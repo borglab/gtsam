@@ -73,9 +73,9 @@ VectorConfig GaussianFactorGraph::gradient(const VectorConfig& x) const {
 }
 
 /* ************************************************************************* */
-set<string> GaussianFactorGraph::find_separator(const string& key) const
+set<Symbol> GaussianFactorGraph::find_separator(const Symbol& key) const
 {
-	set<string> separator;
+	set<Symbol> separator;
 	BOOST_FOREACH(sharedFactor factor,factors_)
 		factor->tally_separator(key,separator);
 
@@ -84,7 +84,7 @@ set<string> GaussianFactorGraph::find_separator(const string& key) const
 
 /* ************************************************************************* */
 GaussianConditional::shared_ptr
-GaussianFactorGraph::eliminateOne(const std::string& key) {
+GaussianFactorGraph::eliminateOne(const Symbol& key) {
 	return gtsam::eliminateOne<GaussianFactor,GaussianConditional>(*this, key);
 }
 
@@ -93,7 +93,7 @@ GaussianBayesNet
 GaussianFactorGraph::eliminate(const Ordering& ordering)
 {
 	GaussianBayesNet chordalBayesNet; // empty
-	BOOST_FOREACH(string key, ordering) {
+	BOOST_FOREACH(const Symbol& key, ordering) {
 		GaussianConditional::shared_ptr cg = eliminateOne(key);
 		chordalBayesNet.push_back(cg);
 	}
@@ -115,7 +115,7 @@ boost::shared_ptr<GaussianBayesNet>
 GaussianFactorGraph::eliminate_(const Ordering& ordering)
 {
 	boost::shared_ptr<GaussianBayesNet> chordalBayesNet(new GaussianBayesNet); // empty
-	BOOST_FOREACH(string key, ordering) {
+	BOOST_FOREACH(const Symbol& key, ordering) {
 		GaussianConditional::shared_ptr cg = eliminateOne(key);
 		chordalBayesNet->push_back(cg);
 	}
@@ -156,7 +156,7 @@ Dimensions GaussianFactorGraph::dimensions() const {
 	Dimensions result;
 	BOOST_FOREACH(sharedFactor factor,factors_) {
 		Dimensions vs = factor->dimensions();
-		string key; int dim;
+		Symbol key; int dim;
 		FOREACH_PAIR(key,dim,vs) result.insert(make_pair(key,dim));
 	}
 	return result;
@@ -172,7 +172,7 @@ GaussianFactorGraph GaussianFactorGraph::add_priors(double sigma) const {
 	Dimensions vs = dimensions();
 
 	// for each of the variables, add a prior
-	string key; int dim;
+	Symbol key; int dim;
 	FOREACH_PAIR(key,dim,vs) {
 		Matrix A = eye(dim);
 		Vector b = zero(dim);
@@ -214,7 +214,7 @@ Dimensions GaussianFactorGraph::columnIndices(const Ordering& ordering) const {
 	// Find the starting index and dimensions for all variables given the order
 	size_t j = 1;
 	Dimensions result;
-	BOOST_FOREACH(string key, ordering) {
+	BOOST_FOREACH(const Symbol& key, ordering) {
 		// associate key with first column index
 		result.insert(make_pair(key,j));
 		// find dimension for this key
@@ -275,13 +275,14 @@ VectorConfig GaussianFactorGraph::optimalUpdate(const VectorConfig& x,
 
 	// create a new graph on step-size
 	GaussianFactorGraph alphaGraph;
+	Symbol alphaKey('\224', 1);
 	BOOST_FOREACH(sharedFactor factor,factors_) {
-		sharedFactor alphaFactor = factor->alphaFactor(x,d);
+		sharedFactor alphaFactor = factor->alphaFactor(alphaKey, x,d);
 		alphaGraph.push_back(alphaFactor);
 	}
 
 	// solve it for optimal step-size alpha
-	GaussianConditional::shared_ptr gc = alphaGraph.eliminateOne("alpha");
+	GaussianConditional::shared_ptr gc = alphaGraph.eliminateOne(alphaKey);
 	double alpha = gc->get_d()(0);
 	cout << alpha << endl;
 

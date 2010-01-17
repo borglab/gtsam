@@ -5,6 +5,9 @@
 
 #include <boost/assign/std/list.hpp> // for operator +=
 #include <CppUnitLite/TestHarness.h>
+
+#define GTSAM_MAGIC_KEY
+
 #include "Ordering-inl.h"
 #include "pose2SLAM.h"
 
@@ -18,7 +21,7 @@ using namespace boost::assign;
 //		-> x3 -> x4
 //    -> x5
 TEST ( Ordering, predecessorMap2Keys ) {
-	typedef Symbol<Pose2,'x'> Key;
+	typedef TypedSymbol<Pose2,'x'> Key;
 	PredecessorMap<Key> p_map;
 	p_map.insert(1,1);
 	p_map.insert(2,1);

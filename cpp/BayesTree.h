@@ -18,6 +18,7 @@
 #include "Testable.h"
 #include "FactorGraph.h"
 #include "BayesNet.h"
+#include "Key.h"
 
 namespace gtsam {
 
@@ -43,7 +44,7 @@ namespace gtsam {
 			typedef typename boost::shared_ptr<Clique> shared_ptr;
 			shared_ptr parent_;
 			std::list<shared_ptr> children_;
-			std::list<std::string> separator_; /** separator keys */
+			std::list<Symbol> separator_; /** separator keys */
 
 			//* Constructor */
 			Clique(const sharedConditional& conditional);
@@ -94,7 +95,7 @@ namespace gtsam {
 	private:
 
 		/** Map from keys to Clique */
-		typedef std::map<std::string, sharedClique> Nodes;
+		typedef std::map<Symbol, sharedClique> Nodes;
 		Nodes nodes_;
 
 		/** Root clique */
@@ -141,29 +142,29 @@ namespace gtsam {
 		}
 
 		/** find the clique to which key belongs */
-		sharedClique operator[](const std::string& key) const {
+		sharedClique operator[](const Symbol& key) const {
 			typename Nodes::const_iterator it = nodes_.find(key);
 			if (it == nodes_.end()) throw(std::invalid_argument(
-					"BayesTree::operator['" + key + "']: key not found"));
+					"BayesTree::operator['" + (std::string)key + "']: key not found"));
 			sharedClique clique = it->second;
 			return clique;
 		}
 
 		/** return marginal on any variable */
 		template<class Factor>
-		FactorGraph<Factor> marginal(const std::string& key) const;
+		FactorGraph<Factor> marginal(const Symbol& key) const;
 
 		/** return marginal on any variable, as a Bayes Net */
 		template<class Factor>
-		BayesNet<Conditional> marginalBayesNet(const std::string& key) const;
+		BayesNet<Conditional> marginalBayesNet(const Symbol& key) const;
 
 		/** return joint on two variables */
 		template<class Factor>
-		FactorGraph<Factor> joint(const std::string& key1, const std::string& key2) const;
+		FactorGraph<Factor> joint(const Symbol& key1, const Symbol& key2) const;
 
 		/** return joint on two variables as a BayesNet */
 		template<class Factor>
-		BayesNet<Conditional> jointBayesNet(const std::string& key1, const std::string& key2) const;
+		BayesNet<Conditional> jointBayesNet(const Symbol& key1, const Symbol& key2) const;
 
 		/**
 		 * Remove path from clique to root and return that path as factors

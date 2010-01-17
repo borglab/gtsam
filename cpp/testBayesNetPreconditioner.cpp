@@ -8,6 +8,8 @@
 #include <boost/tuple/tuple.hpp>
 #include <CppUnitLite/TestHarness.h>
 
+#define GTSAM_MAGIC_KEY
+
 #include "Ordering.h"
 #include "smallExample.h"
 #include "BayesNetPreconditioner.h"
@@ -83,7 +85,7 @@ TEST( BayesNetPreconditioner, conjugateGradients )
 	// Create zero config y0 and perturbed config y1
 	VectorConfig y0;
 	Vector z2 = zero(2);
-	BOOST_FOREACH(const string& j, ordering) y0.insert(j,z2);
+	BOOST_FOREACH(const Symbol& j, ordering) y0.insert(j,z2);
 
 	VectorConfig y1 = y0;
 	y1.getReference("x23") = Vector_(2, 1.0, -1.0);

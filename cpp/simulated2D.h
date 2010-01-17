@@ -10,14 +10,15 @@
 
 #include "VectorConfig.h"
 #include "NonlinearFactor.h"
+#include "Key.h"
 
 // \namespace
 
 namespace simulated2D {
 
 	typedef gtsam::VectorConfig VectorConfig;
-	typedef std::string PoseKey;
-	typedef std::string PointKey;
+	typedef gtsam::Symbol PoseKey;
+	typedef gtsam::Symbol PointKey;
 
 	/**
 	 * Prior on a single pose, and optional derivative version
@@ -42,13 +43,13 @@ namespace simulated2D {
 	/**
 	 * Unary factor encoding a soft prior on a vector
 	 */
-	struct Prior: public gtsam::NonlinearFactor1<VectorConfig, std::string,
+	struct Prior: public gtsam::NonlinearFactor1<VectorConfig, PoseKey,
 			Vector> {
 
 		Vector z_;
 
-		Prior(const Vector& z, double sigma, const std::string& key) :
-			gtsam::NonlinearFactor1<VectorConfig, std::string, Vector>(sigma, key),
+		Prior(const Vector& z, double sigma, const PoseKey& key) :
+			gtsam::NonlinearFactor1<VectorConfig, PoseKey, Vector>(sigma, key),
 					z_(z) {
 		}
 
@@ -66,8 +67,8 @@ namespace simulated2D {
 			Vector, PointKey, Vector> {
 		Vector z_;
 
-		Odometry(const Vector& z, double sigma, const std::string& j1,
-				const std::string& j2) :
+		Odometry(const Vector& z, double sigma, const PoseKey& j1,
+				const PoseKey& j2) :
 			z_(z), gtsam::NonlinearFactor2<VectorConfig, PoseKey, Vector, PointKey,
 					Vector>(sigma, j1, j2) {
 		}
@@ -87,8 +88,8 @@ namespace simulated2D {
 
 		Vector z_;
 
-		Measurement(const Vector& z, double sigma, const std::string& j1,
-				const std::string& j2) :
+		Measurement(const Vector& z, double sigma, const PoseKey& j1,
+				const PointKey& j2) :
 			z_(z), gtsam::NonlinearFactor2<VectorConfig, PoseKey, Vector, PointKey,
 					Vector>(sigma, j1, j2) {
 		}

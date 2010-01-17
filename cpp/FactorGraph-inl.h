@@ -118,15 +118,14 @@ void FactorGraph<Factor>::replace(int index, sharedFactor factor) {
 
   if(factors_[index] != NULL) {
     // Remove this factor from its variables' index lists
-    list<string> keys(factor->keys());
-    BOOST_FOREACH(string key, keys) {
+    BOOST_FOREACH(const Symbol& key, factor->keys()) {
       Indices::iterator indices = indices_.find(key);
       if(indices != indices_.end()) {
         indices->second.remove(index);
       } else {
         throw invalid_argument(boost::str(boost::format(
             "Factor graph inconsistency!  Factor %d involves variable %s but "
-            "is missing from its factor index list.") % index % key));
+            "is missing from its factor index list.") % index % (std::string)key));
       }
     }
   }
@@ -198,16 +197,15 @@ boost::shared_ptr<Ordering> FactorGraph<Factor>::getOrdering_() const{
 
 	// A factor graph is really laid out in row-major format, each factor a row
 	// Below, we compute a symbolic matrix stored in sparse columns.
-	typedef string Key;             // default case  with string keys
-	map<Key, vector<int> > columns; // map from keys to a sparse column of non-zero row indices
+	map<Symbol, vector<int> > columns; // map from keys to a sparse column of non-zero row indices
 	int nrNonZeros = 0;             // number of non-zero entries
 	int n_row = factors_.size();    /* colamd arg 1: number of rows in A */
 
 	// loop over all factors = rows
 	for (int i = 0; i < n_row; i++) {
 		if (factors_[i]==NULL) continue;
-		list<Key> keys = factors_[i]->keys();
-		BOOST_FOREACH(Key key, keys) columns[key].push_back(i);
+		list<Symbol> keys = factors_[i]->keys();
+		BOOST_FOREACH(const Symbol& key, keys) columns[key].push_back(i);
 		nrNonZeros+= keys.size();
 	}
 	int n_col = (int)(columns.size()); /* colamd arg 2: number of columns in A */
@@ -229,7 +227,7 @@ Ordering FactorGraph<Factor>::getOrdering() const {
 /** O(1)                                                                     */
 /* ************************************************************************* */
 template<class Factor>
-list<int> FactorGraph<Factor>::factors(const string& key) const {
+list<int> FactorGraph<Factor>::factors(const Symbol& key) const {
 	Indices::const_iterator it = indices_.find(key);
 	return it->second;
 }
@@ -239,13 +237,13 @@ list<int> FactorGraph<Factor>::factors(const string& key) const {
 /* ************************************************************************* */
 template<class Factor>
 vector<boost::shared_ptr<Factor> >
-FactorGraph<Factor>::findAndRemoveFactors(const string& key) {
+FactorGraph<Factor>::findAndRemoveFactors(const Symbol& key) {
 	vector<sharedFactor> found;
 
 	Indices::iterator it = indices_.find(key);
 	if (it == indices_.end())
 		throw(invalid_argument
-				("FactorGraph::findAndRemoveFactors invalid key: " + key));
+				("FactorGraph::findAndRemoveFactors invalid key: " + (std::string)key));
 
 	list<int> *indices_ptr; // pointer to indices list in indices_ map
 	indices_ptr = &(it->second);
@@ -261,15 +259,17 @@ FactorGraph<Factor>::findAndRemoveFactors(const string& key) {
 /* ************************************************************************* */
 template<class Factor>
 void FactorGraph<Factor>::associateFactor(int index, sharedFactor factor) {
-  list<string> keys = factor->keys();          // get keys for factor
+  list<Symbol> keys = factor->keys();          // get keys for factor
+  // rtodo: Can optimize factor->keys to return a const reference
 
-  BOOST_FOREACH(string key, keys){             // for each key push i onto list
+  BOOST_FOREACH(const Symbol& key, keys){             // for each key push i onto list
       Indices::iterator it = indices_.find(key); // old list for that key (if exists)
       if (it==indices_.end()){                   // there's no list yet
           list<int> indices(1,index);                  // so make one
           indices_.insert(make_pair(key,indices)); // insert new indices into factorMap
       }
       else {
+        // rtodo: what is going on with this pointer?
           list<int> *indices_ptr = &(it->second);  // get the list
           indices_ptr->push_back(index);               // add the index i to it
       }
@@ -326,12 +326,11 @@ void FactorGraph<Factor>::split(const PredecessorMap<Key>& tree, FactorGraph<Fac
 	}
 }
 
-
 /* ************************************************************************* */
 /* find factors and remove them from the factor graph: O(n)                  */
 /* ************************************************************************* */
 template<class Factor> boost::shared_ptr<Factor>
-removeAndCombineFactors(FactorGraph<Factor>& factorGraph, const string& key)
+removeAndCombineFactors(FactorGraph<Factor>& factorGraph, const Symbol& key)
 {
 	vector<boost::shared_ptr<Factor> > found = factorGraph.findAndRemoveFactors(key);
 	boost::shared_ptr<Factor> new_factor(new Factor(found));

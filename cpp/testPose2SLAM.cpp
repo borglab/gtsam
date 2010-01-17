@@ -11,6 +11,8 @@ using namespace boost::assign;
 
 #include <CppUnitLite/TestHarness.h>
 
+#define GTSAM_MAGIC_KEY
+
 #include "NonlinearOptimizer-inl.h"
 #include "FactorGraph-inl.h"
 #include "Ordering.h"

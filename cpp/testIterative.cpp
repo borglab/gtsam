@@ -9,10 +9,14 @@ using namespace boost::assign;
 
 #include <CppUnitLite/TestHarness.h>
 
+#define GTSAM_MAGIC_KEY
+
 #include "Ordering.h"
 #include "iterative.h"
 #include "smallExample.h"
 #include "pose2SLAM.h"
+#include "FactorGraph-inl.h"
+#include "NonlinearFactorGraph-inl.h"
 
 using namespace std;
 using namespace gtsam;

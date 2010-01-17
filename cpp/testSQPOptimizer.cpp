@@ -8,6 +8,9 @@
 #include <boost/assign/std/list.hpp> // for operator +=
 #include <boost/assign/std/map.hpp> // for insert
 #include <boost/bind.hpp>
+
+#define GTSAM_MAGIC_KEY
+
 #include <simulated2D.h>
 #include "NonlinearFactorGraph.h"
 #include "NonlinearConstraint.h"
@@ -54,17 +57,17 @@ TEST ( SQPOptimizer, basic ) {
 namespace sqp_LinearMapWarp2 {
 // binary constraint between landmarks
 /** g(x) = x-y = 0 */
-Vector g_func(const VectorConfig& config, const list<string>& keys) {
+Vector g_func(const VectorConfig& config, const list<Symbol>& keys) {
 	return config[keys.front()]-config[keys.back()];
 }
 
 /** jacobian at l1 */
-Matrix jac_g1(const VectorConfig& config, const list<string>& keys) {
+Matrix jac_g1(const VectorConfig& config, const list<Symbol>& keys) {
 	return eye(2);
 }
 
 /** jacobian at l2 */
-Matrix jac_g2(const VectorConfig& config, const list<string>& keys) {
+Matrix jac_g2(const VectorConfig& config, const list<Symbol>& keys) {
 	return -1*eye(2);
 }
 } // \namespace sqp_LinearMapWarp2
@@ -72,12 +75,12 @@ Matrix jac_g2(const VectorConfig& config, const list<string>& keys) {
 namespace sqp_LinearMapWarp1 {
 // Unary Constraint on x1
 /** g(x) = x -[1;1] = 0 */
-Vector g_func(const VectorConfig& config, const list<string>& keys) {
+Vector g_func(const VectorConfig& config, const list<Symbol>& keys) {
 	return config[keys.front()]-Vector_(2, 1.0, 1.0);
 }
 
 /** jacobian at x1 */
-Matrix jac_g(const VectorConfig& config, const list<string>& keys) {
+Matrix jac_g(const VectorConfig& config, const list<Symbol>& keys) {
 	return eye(2);
 }
 } // \namespace sqp_LinearMapWarp12
@@ -90,12 +93,12 @@ typedef SQPOptimizer<NLGraph, VectorConfig> Optimizer;
  */
 NLGraph linearMapWarpGraph() {
 	// constant constraint on x1
-	list<string> keyx; keyx += "x1";
+	list<Symbol> keyx; keyx += "x1";
 	boost::shared_ptr<NonlinearConstraint1<VectorConfig> > c1(
 			new NonlinearConstraint1<VectorConfig>(
 					boost::bind(sqp_LinearMapWarp1::g_func, _1, keyx),
 					"x1", boost::bind(sqp_LinearMapWarp1::jac_g, _1, keyx),
-					 2, "L_x1"));
+					 2, "L1"));
 
 	// measurement from x1 to l1
 	Vector z1 = Vector_(2, 0.0, 5.0);
@@ -108,13 +111,13 @@ NLGraph linearMapWarpGraph() {
 	shared f2(new simulated2D::Measurement(z2, sigma2, "x2", "l2"));
 
 	// equality constraint between l1 and l2
-	list<string> keys; keys += "l1", "l2";
+	list<Symbol> keys; keys += "l1", "l2";
 	boost::shared_ptr<NonlinearConstraint2<VectorConfig> > c2(
 			new NonlinearConstraint2<VectorConfig>(
 					boost::bind(sqp_LinearMapWarp2::g_func, _1, keys),
 					"l1", boost::bind(sqp_LinearMapWarp2::jac_g1, _1, keys),
 					"l2", boost::bind(sqp_LinearMapWarp2::jac_g2, _1, keys),
-					 2, "L_l1l2"));
+					 2, "L12"));
 
 	// construct the graph
 	NLGraph graph;
@@ -141,12 +144,12 @@ TEST ( SQPOptimizer, map_warp_initLam ) {
 
 	// create an initial estimate for the lagrange multiplier
 	shared_config initLagrange(new VectorConfig);
-	initLagrange->insert("L_l1l2", Vector_(2, 1.0, 1.0));
-	initLagrange->insert("L_x1", Vector_(2, 1.0, 1.0));
+	initLagrange->insert("L12", Vector_(2, 1.0, 1.0));
+	initLagrange->insert("L1", Vector_(2, 1.0, 1.0));
 
 	// create an ordering
 	Ordering ordering;
-	ordering += "x1", "x2", "l1", "l2", "L_l1l2", "L_x1";
+	ordering += "x1", "x2", "l1", "l2", "L12", "L1";
 
 	// create an optimizer
 	Optimizer optimizer(graph, ordering, initialEstimate, initLagrange);
@@ -214,7 +217,7 @@ typedef NonlinearConstraint1<VectorConfig> NLC1;
 typedef boost::shared_ptr<NLC1> shared_NLC1;
 typedef NonlinearConstraint2<VectorConfig> NLC2;
 typedef boost::shared_ptr<NLC2> shared_NLC2;
-typedef NonlinearEquality<VectorConfig,string,Vector> NLE;
+typedef NonlinearEquality<VectorConfig,Symbol,Vector> NLE;
 typedef boost::shared_ptr<NLE> shared_NLE;
 
 namespace sqp_avoid1 {
@@ -223,7 +226,7 @@ double radius = 1.0;
 
 // binary avoidance constraint
 /** g(x) = ||x2-obs||^2 - radius^2 > 0 */
-Vector g_func(const VectorConfig& config, const list<string>& keys) {
+Vector g_func(const VectorConfig& config, const list<Symbol>& keys) {
 	Vector delta = config[keys.front()]-config[keys.back()];
 	double dist2 = sum(emul(delta, delta));
 	double thresh = radius*radius;
@@ -231,14 +234,14 @@ Vector g_func(const VectorConfig& config, const list<string>& keys) {
 }
 
 /** jacobian at pose */
-Matrix jac_g1(const VectorConfig& config, const list<string>& keys) {
+Matrix jac_g1(const VectorConfig& config, const list<Symbol>& keys) {
 	Vector x2 = config[keys.front()], obs = config[keys.back()];
 	Vector grad = 2.0*(x2-obs);
 	return Matrix_(1,2, grad(0), grad(1));
 }
 
 /** jacobian at obstacle */
-Matrix jac_g2(const VectorConfig& config, const list<string>& keys) {
+Matrix jac_g2(const VectorConfig& config, const list<Symbol>& keys) {
 	Vector x2 = config[keys.front()], obs = config[keys.back()];
 	Vector grad = -2.0*(x2-obs);
 	return Matrix_(1,2, grad(0), grad(1));
@@ -252,10 +255,10 @@ pair<NLGraph, VectorConfig> obstacleAvoidGraph() {
 			Vector_(2, 5.0, -0.5);
 	feasible.insert("x1", feas1);
 	feasible.insert("x3", feas2);
-	feasible.insert("obs", feas3);
+	feasible.insert("o", feas3);
 	shared_NLE e1(new NLE("x1", feas1, vector_compare));
 	shared_NLE e2(new NLE("x3", feas2, vector_compare));
-	shared_NLE e3(new NLE("obs", feas3, vector_compare));
+	shared_NLE e3(new NLE("o", feas3, vector_compare));
 
 	// measurement from x1 to x2
 	Vector x1x2 = Vector_(2, 5.0, 0.0);
@@ -269,11 +272,11 @@ pair<NLGraph, VectorConfig> obstacleAvoidGraph() {
 
 	// create a binary inequality constraint that forces the middle point away from
 	//  the obstacle
-	list<string> keys; keys += "x2", "obs";
+	list<Symbol> keys; keys += "x2", "o";
 	shared_NLC2 c1(new NLC2(boost::bind(sqp_avoid1::g_func, _1, keys),
 							"x2", boost::bind(sqp_avoid1::jac_g1, _1, keys),
-						    "obs",boost::bind(sqp_avoid1::jac_g2, _1, keys),
-						    1, "L_x2obs", false));
+						    "o",boost::bind(sqp_avoid1::jac_g2, _1, keys),
+						    1, "L20", false));
 
 	// construct the graph
 	NLGraph graph;
@@ -299,7 +302,7 @@ TEST ( SQPOptimizer, inequality_avoid ) {
 
 	// create an ordering
 	Ordering ord;
-	ord += "x1", "x2", "x3", "obs";
+	ord += "x1", "x2", "x3", "o";
 
 	// create an optimizer
 	Optimizer optimizer(graph, ord, init);
@@ -334,7 +337,7 @@ TEST ( SQPOptimizer, inequality_avoid_iterative ) {
 
 	// create an ordering
 	Ordering ord;
-	ord += "x1", "x2", "x3", "obs";
+	ord += "x1", "x2", "x3", "o";
 
 	// create an optimizer
 	Optimizer optimizer(graph, ord, init);
@@ -355,7 +358,7 @@ TEST ( SQPOptimizer, inequality_avoid_iterative ) {
 namespace sqp_avoid2 {
 // binary avoidance constraint
 /** g(x) = ||x2-obs||^2 - radius^2 > 0 */
-Vector g_func(double radius, const VectorConfig& config, const list<string>& keys) {
+Vector g_func(double radius, const VectorConfig& config, const list<Symbol>& keys) {
 	Vector delta = config[keys.front()]-config[keys.back()];
 	double dist2 = sum(emul(delta, delta));
 	double thresh = radius*radius;
@@ -363,14 +366,14 @@ Vector g_func(double radius, const VectorConfig& config, const list<string>& key
 }
 
 /** jacobian at pose */
-Matrix jac_g1(const VectorConfig& config, const list<string>& keys) {
+Matrix jac_g1(const VectorConfig& config, const list<Symbol>& keys) {
 	Vector x2 = config[keys.front()], obs = config[keys.back()];
 	Vector grad = 2.0*(x2-obs);
 	return Matrix_(1,2, grad(0), grad(1));
 }
 
 /** jacobian at obstacle */
-Matrix jac_g2(const VectorConfig& config, const list<string>& keys) {
+Matrix jac_g2(const VectorConfig& config, const list<Symbol>& keys) {
 	Vector x2 = config[keys.front()], obs = config[keys.back()];
 	Vector grad = -2.0*(x2-obs);
 	return Matrix_(1,2, grad(0), grad(1));
@@ -384,10 +387,10 @@ pair<NLGraph, VectorConfig> obstacleAvoidGraphGeneral() {
 			Vector_(2, 5.0, -0.5);
 	feasible.insert("x1", feas1);
 	feasible.insert("x3", feas2);
-	feasible.insert("obs", feas3);
+	feasible.insert("o", feas3);
 	shared_NLE e1(new NLE("x1", feas1,vector_compare));
 	shared_NLE e2(new NLE("x3", feas2, vector_compare));
-	shared_NLE e3(new NLE("obs", feas3, vector_compare));
+	shared_NLE e3(new NLE("o", feas3, vector_compare));
 
 	// measurement from x1 to x2
 	Vector x1x2 = Vector_(2, 5.0, 0.0);
@@ -403,11 +406,11 @@ pair<NLGraph, VectorConfig> obstacleAvoidGraphGeneral() {
 
 	// create a binary inequality constraint that forces the middle point away from
 	//  the obstacle
-	list<string> keys; keys += "x2", "obs";
+	list<Symbol> keys; keys += "x2", "o";
 	shared_NLC2 c1(new NLC2(boost::bind(sqp_avoid2::g_func, radius, _1, keys),
 						    "x2", boost::bind(sqp_avoid2::jac_g1, _1, keys),
-						    "obs", boost::bind(sqp_avoid2::jac_g2, _1, keys),
-						    1, "L_x2obs", false));
+						    "o", boost::bind(sqp_avoid2::jac_g2, _1, keys),
+						    1, "L20", false));
 
 	// construct the graph
 	NLGraph graph;
@@ -433,7 +436,7 @@ TEST ( SQPOptimizer, inequality_avoid_iterative_bind ) {
 
 	// create an ordering
 	Ordering ord;
-	ord += "x1", "x2", "x3", "obs";
+	ord += "x1", "x2", "x3", "o";
 
 	// create an optimizer
 	Optimizer optimizer(graph, ord, init);

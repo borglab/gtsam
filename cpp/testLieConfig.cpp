@@ -7,6 +7,9 @@
 
 #include <CppUnitLite/TestHarness.h>
 #include <stdexcept>
+
+#define GTSAM_MAGIC_KEY
+
 #include <Pose2.h>
 
 #include "LieConfig-inl.h"

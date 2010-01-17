@@ -22,7 +22,7 @@ using namespace boost::assign;
 /* ************************************************************************* */
 Ordering Ordering::subtract(const Ordering& keys) const {
 	Ordering newOrdering = *this;
-	BOOST_FOREACH(string key, keys) {
+	BOOST_FOREACH(const Symbol& key, keys) {
 		newOrdering.remove(key);
 	}
 	return newOrdering;
@@ -31,8 +31,8 @@ Ordering Ordering::subtract(const Ordering& keys) const {
 /* ************************************************************************* */
 void Ordering::print(const string& s) const {
   cout << s << " (" << size() << "):";
-  BOOST_FOREACH(string key, *this)
-    cout << " " << key;
+  BOOST_FOREACH(const Symbol& key, *this)
+    cout << " " << (string)key;
   cout << endl;
 }
 
