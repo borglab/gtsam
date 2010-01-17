@@ -13,11 +13,7 @@ using namespace gtsam;
 
 // Common measurement covariance
 static double sx=0.5, sy=0.5,st=0.1;
-static Matrix covariance = Matrix_(3,3,
-		sx*sx, 0.0, 0.0,
-		0.0, sy*sy, 0.0,
-		0.0, 0.0, st*st
-		);
+static boost::shared_ptr<GaussianNoiseModel> model(new Sigmas(Vector_(3,sx,sy,st)));
 
 /* ************************************************************************* */
 // Very simple test establishing Ax-b \approx z-h(x)
@@ -29,7 +25,7 @@ TEST( Pose2Prior, error )
 	x0.insert(1, p1);
 
 	// Create factor
-	Pose2Prior factor(1, p1, covariance);
+	Pose2Prior factor(1, p1, model);
 
 	// Actual linearization
 	boost::shared_ptr<GaussianFactor> linear = factor.linearize(x0);
@@ -52,7 +48,7 @@ TEST( Pose2Prior, error )
 /* ************************************************************************* */
 // common Pose2Prior for tests below
 static Pose2 prior(2,2,M_PI_2);
-static Pose2Prior factor(1,prior, covariance);
+static Pose2Prior factor(1,prior, model);
 
 /* ************************************************************************* */
 // The error |A*dx-b| approximates (h(x0+dx)-z) = -error_vector

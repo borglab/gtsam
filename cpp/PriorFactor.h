@@ -5,6 +5,7 @@
 #pragma once
 
 #include <ostream>
+#include "NoiseModel.h"
 #include "NonlinearFactor.h"
 #include "Pose2.h"
 
@@ -22,7 +23,7 @@ namespace gtsam {
 		typedef NonlinearFactor1<Config, Key, T> Base;
 
 		T prior_; /** The measurement */
-		Matrix square_root_inverse_covariance_; /** sqrt(inv(covariance)) */
+		boost::shared_ptr<GaussianNoiseModel> noiseModel_;
 
 	public:
 
@@ -30,9 +31,14 @@ namespace gtsam {
 		typedef typename boost::shared_ptr<PriorFactor> shared_ptr;
 
 		/** Constructor */
-		PriorFactor(const Key& key, const T& prior, const Matrix& covariance) :
-			Base(1.0, key), prior_(prior) {
-			square_root_inverse_covariance_ = inverse_square_root(covariance);
+		PriorFactor(const Key& key, const T& prior,
+				const boost::shared_ptr<GaussianNoiseModel>& model) :
+			Base(1.0, key), prior_(prior), noiseModel_(model) {
+		}
+
+		/** Constructor */
+		PriorFactor(const Key& key, const T& prior, const Matrix& cov) :
+			Base(1.0, key), prior_(prior), noiseModel_(new FullCovariance(cov)) {
 		}
 
 		/** implement functions needed for Testable */
@@ -41,8 +47,7 @@ namespace gtsam {
 		void print(const std::string& s) const {
 			Base::print(s);
 			prior_.print("prior");
-			gtsam::print(square_root_inverse_covariance_,
-					"Square Root Inverse Covariance");
+			// Todo print NoiseModel
 		}
 
 		/** equals */
@@ -51,15 +56,16 @@ namespace gtsam {
 					Config, Key, T>*> (&expected);
 			return e != NULL && Base::equals(expected) && this->prior_.equals(
 					e->prior_, tol);
+			// Todo check NoiseModel
 		}
 
 		/** implement functions needed to derive from Factor */
 
 		/** vector of errors */
 		Vector evaluateError(const T& p, boost::optional<Matrix&> H = boost::none) const {
-			if (H) (*H) = square_root_inverse_covariance_;
+			if (H) (*H) = noiseModel_->R();
 			// manifold equivalent of h(x)-z -> log(z,h(x))
-			return square_root_inverse_covariance_ * logmap(prior_, p);
+			return noiseModel_->whiten(logmap(prior_, p));
 		}
 	};
 
