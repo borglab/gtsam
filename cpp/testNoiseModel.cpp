@@ -75,6 +75,10 @@ TEST(NoiseModel, constructors)
 	CHECK(assert_equal(expected,m3.Whiten(H)));
 	CHECK(assert_equal(expected,m4.Whiten(H)));
 	CHECK(assert_equal(expected,m5.Whiten(H)));
+
+	// can only test inplace version once :-)
+	m5.WhitenInPlace(H);
+	CHECK(assert_equal(expected,H));
 }
 
 /* ************************************************************************* */

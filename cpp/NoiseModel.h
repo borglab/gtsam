@@ -21,7 +21,15 @@ namespace gtsam {
    * It must implement a 'whiten' function to normalize an error vector, and an
    * 'unwhiten' function to unnormalize an error vector.
    */
-  struct NoiseModel /* TODO : public Testable<NoiseModel> */ {
+  class NoiseModel /* TODO : public Testable<NoiseModel> */ {
+
+  protected:
+
+  	size_t dim_;
+
+  public:
+
+  	NoiseModel(size_t dim):dim_(dim) {}
 
     /**
      * Whiten an error vector.
@@ -46,6 +54,8 @@ namespace gtsam {
 	 */
 	struct GaussianNoiseModel : public NoiseModel {
 
+		GaussianNoiseModel(size_t dim):NoiseModel(dim) {}
+
     /**
 	   * Return R itself, but note that Whiten(H) is cheaper than R*H
 	   */
@@ -56,6 +66,11 @@ namespace gtsam {
 	   * Equivalent to whitening each column of the input matrix.
 	   */
 	  Matrix Whiten(const Matrix& H) const;
+
+	  /**
+	   * In-place version
+	   */
+	  void WhitenInPlace(Matrix& H) const;
 	};
 
 	/**
@@ -65,24 +80,40 @@ namespace gtsam {
   // inline Vector operator*(const GaussianNoiseModel& R, const Vector& v) {return R.whiten(v);}
 
   /**
+   * UnitCovariance: i.i.d. noise on all m dimensions.
+   */
+  class UnitCovariance : public GaussianNoiseModel {
+  protected:
+    double sigma_;
+    double invsigma_;
+
+    UnitCovariance(size_t dim): GaussianNoiseModel(dim) {}
+
+  public:
+    Vector whiten(const Vector& v) const { return v; }
+    Vector unwhiten(const Vector& v) const { return v; }
+    Matrix R() const { return eye(dim_); }
+    Matrix Whiten(const Matrix& H) const { return H; }
+	  void WhitenInPlace(Matrix& H) const {}
+  };
+
+  /**
    * An isotropic noise model corresponds to a scaled diagonal covariance
    * This class has no public constructors.  Instead, use either either the
    * Sigma or Variance class.
    */
   class Isotropic : public GaussianNoiseModel {
   protected:
-  	size_t n_;
     double sigma_;
     double invsigma_;
 
-    Isotropic(size_t n, double sigma): n_(n), sigma_(sigma), invsigma_(1.0/sigma) {}
-    Isotropic(const Isotropic& isotropic):
-      n_(isotropic.n_), sigma_(isotropic.sigma_), invsigma_(isotropic.invsigma_) {}
+    Isotropic(size_t dim, double sigma) :
+			GaussianNoiseModel(dim), sigma_(sigma), invsigma_(1.0 / sigma) {}
 
   public:
     Vector whiten(const Vector& v) const;
     Vector unwhiten(const Vector& v) const;
-    Matrix R() const { return diag(repeat(n_,invsigma_)); }
+    Matrix R() const { return diag(repeat(dim_,invsigma_)); }
   };
 
   /**
@@ -90,7 +121,6 @@ namespace gtsam {
    */
   class Sigma : public Isotropic {
   public:
-    Sigma(const Sigma& isotropic): Isotropic(isotropic) {}
     Sigma(size_t n, double sigma): Isotropic(n, sigma) {}
   };
 
@@ -99,7 +129,6 @@ namespace gtsam {
    */
   class Variance : public Isotropic {
   public:
-    Variance(const Variance& v): Isotropic(v) {}
     Variance(size_t n, double variance): Isotropic(n, sqrt(variance)) {}
   };
 
@@ -113,9 +142,7 @@ namespace gtsam {
     Vector sigmas_;
     Vector invsigmas_;
 
-    Diagonal() {}
     Diagonal(const Vector& sigmas);
-    Diagonal(const Diagonal& d);
 
   public:
     Vector whiten(const Vector& v) const;
@@ -130,7 +157,6 @@ namespace gtsam {
    */
   class Sigmas : public Diagonal {
   public:
-    Sigmas(const Sigmas& s): Diagonal(s) {}
     Sigmas(const Vector& sigmas): Diagonal(sigmas) {}
   };
 
@@ -140,7 +166,6 @@ namespace gtsam {
    */
   class Variances : public Diagonal {
   public:
-    Variances(const Variances& s): Diagonal(s) {}
     Variances(const Vector& variances);
   };
 

@@ -13,15 +13,26 @@ typedef ublas::matrix_column<Matrix> column;
 
 namespace gtsam {
 
+	// functional
 	Matrix GaussianNoiseModel::Whiten(const Matrix& H) const {
-		size_t n = H.size2(), m = H.size1();
-		Matrix W = zeros(m, n);
+		size_t m = H.size1(), n = H.size2();
+		Matrix W(m, n);
 		for (int j = 0; j < n; j++) {
 			Vector wj = whiten(column(H, j));
 			for (int i = 0; i < m; i++)
 				W(i, j) = wj(i);
 		}
 		return W;
+	}
+
+	// in place
+	void GaussianNoiseModel::WhitenInPlace(Matrix& H) const {
+		size_t m = H.size1(), n = H.size2();
+		for (int j = 0; j < n; j++) {
+			Vector wj = whiten(column(H, j));
+			for (int i = 0; i < m; i++)
+				H(i, j) = wj(i);
+		}
 	}
 
 	Vector Isotropic::whiten(const Vector& v) const {
@@ -33,11 +44,8 @@ namespace gtsam {
 	}
 
 	Diagonal::Diagonal(const Vector& sigmas) :
-		sigmas_(sigmas), invsigmas_(1.0 / sigmas) {
-	}
-
-	Diagonal::Diagonal(const Diagonal& d) :
-		sigmas_(d.sigmas_), invsigmas_(d.invsigmas_) {
+		GaussianNoiseModel(sigmas.size()), sigmas_(sigmas), invsigmas_(reciprocal(
+				sigmas)) {
 	}
 
 	Vector Diagonal::whiten(const Vector& v) const {
@@ -48,20 +56,20 @@ namespace gtsam {
 		return emul(v, sigmas_);
 	}
 
-	Variances::Variances(const Vector& variances) {
-		sigmas_.resize(variances.size());
-		std::transform(variances.begin(), variances.end(), sigmas_.begin(), sqrt);
-		invsigmas_ = reciprocal(sigmas_);
+	static Vector sqrt(const Vector& v) {
+		Vector s(v.size());
+		transform(v.begin(), v.end(), s.begin(), ::sqrt);
+		return s;
+	}
+
+	Variances::Variances(const Vector& variances) :
+		Diagonal(sqrt(variances)) {
 	}
 
 	FullCovariance::FullCovariance(const Matrix& cov) :
-		sqrt_covariance_(square_root_positive(cov)), sqrt_inv_covariance_(
-				inverse_square_root(cov)) {
-	}
-
-	FullCovariance::FullCovariance(const FullCovariance& cov) :
-		sqrt_covariance_(cov.sqrt_covariance_), sqrt_inv_covariance_(
-				cov.sqrt_inv_covariance_) {
+		GaussianNoiseModel(cov.size1()),
+				sqrt_covariance_(square_root_positive(cov)), sqrt_inv_covariance_(
+						inverse_square_root(cov)) {
 	}
 
 	Vector FullCovariance::whiten(const Vector& v) const {
