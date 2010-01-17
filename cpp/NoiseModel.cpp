@@ -6,11 +6,19 @@
  *      Author: Frank Dellaert
  */
 
-//#include <boost/numeric/ublas/traits.hpp>
-
 #include "NoiseModel.h"
 
+namespace ublas = boost::numeric::ublas;
+typedef ublas::matrix_column<Matrix> column;
+
 namespace gtsam {
+
+	Matrix GaussianNoiseModel::whiten(const Matrix& H) {
+	  size_t n = H.size2(), m = H.size1();
+		Matrix G(m,n);
+		for(int j=0;j<n;j++)
+			column(G, j) = NoiseModel::whiten(column(H, j));
+	}
 
 	Vector Isotropic::whiten(const Vector& v) const {
 		return v * invsigma_;

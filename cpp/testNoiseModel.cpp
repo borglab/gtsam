@@ -45,6 +45,20 @@ TEST(NoiseModel, constructors)
 	CHECK(assert_equal(unwhitened,m3.unwhiten(whitened)));
 	CHECK(assert_equal(unwhitened,m4.unwhiten(whitened)));
 	CHECK(assert_equal(unwhitened,m5.unwhiten(whitened)));
+
+	Matrix H(Matrix_(3, 4,
+			1.0, 0.0, 0.0, 1.0,
+			0.0, 1.0, 0.0, 1.0,
+			0.0, 0.0, 1.0, 1.0));
+
+	Matrix expected(Matrix_(3, 4,
+			1.0, 0.0, 0.0, 1.0,
+			0.0, 1.0, 0.0, 1.0,
+			0.0, 0.0, 1.0, 1.0));
+
+	// test operator*
+//	CHECK(assert_equal(expected,m2.whiten(H)));
+
 }
 
 /* ************************************************************************* */
