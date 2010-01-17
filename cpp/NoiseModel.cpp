@@ -13,11 +13,15 @@ typedef ublas::matrix_column<Matrix> column;
 
 namespace gtsam {
 
-	Matrix GaussianNoiseModel::whiten(const Matrix& H) {
-	  size_t n = H.size2(), m = H.size1();
-		Matrix G(m,n);
-		for(int j=0;j<n;j++)
-			column(G, j) = NoiseModel::whiten(column(H, j));
+	Matrix GaussianNoiseModel::Whiten(const Matrix& H) const {
+		size_t n = H.size2(), m = H.size1();
+		Matrix W = zeros(m, n);
+		for (int j = 0; j < n; j++) {
+			Vector wj = whiten(column(H, j));
+			for (int i = 0; i < m; i++)
+				W(i, j) = wj(i);
+		}
+		return W;
 	}
 
 	Vector Isotropic::whiten(const Vector& v) const {

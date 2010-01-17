@@ -100,8 +100,8 @@ testBinaryBayesNet_SOURCES    = testBinaryBayesNet.cpp
 testBinaryBayesNet_LDADD      = libgtsam.la 
 
 # Gaussian inference 
-headers += GaussianFactorSet.h NoiseModel.h
-sources += Errors.cpp VectorConfig.cpp GaussianFactor.cpp GaussianFactorGraph.cpp GaussianConditional.cpp GaussianBayesNet.cpp NoiseModel.cpp
+headers += GaussianFactorSet.h 
+sources += NoiseModel.cpp Errors.cpp VectorConfig.cpp GaussianFactor.cpp GaussianFactorGraph.cpp GaussianConditional.cpp GaussianBayesNet.cpp
 check_PROGRAMS += testVectorConfig testGaussianFactor testGaussianFactorGraph testGaussianConditional testGaussianBayesNet testNoiseModel
 testVectorConfig_SOURCES        = testVectorConfig.cpp
 testVectorConfig_LDADD          = libgtsam.la

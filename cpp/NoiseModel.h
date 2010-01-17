@@ -8,6 +8,8 @@
 
 #pragma once
 
+#include <boost/shared_ptr.hpp>
+//#include "Testable.h" TODO
 #include "Vector.h"
 #include "Matrix.h"
 
@@ -19,7 +21,7 @@ namespace gtsam {
    * It must implement a 'whiten' function to normalize an error vector, and an
    * 'unwhiten' function to unnormalize an error vector.
    */
-  struct NoiseModel {
+  struct NoiseModel /* TODO : public Testable<NoiseModel> */ {
 
     /**
      * Whiten an error vector.
@@ -29,7 +31,7 @@ namespace gtsam {
     /**
      * Unwhiten an error vector.
      */
-    virtual Vector unwhiten(const Vector& v) const = 0;
+     virtual Vector unwhiten(const Vector& v) const = 0;
   };
 
   /**
@@ -44,12 +46,16 @@ namespace gtsam {
 	 */
 	struct GaussianNoiseModel : public NoiseModel {
 
+    /**
+	   * Return R itself, but note that Whiten(H) is cheaper than R*H
+	   */
+	  virtual Matrix R() const = 0;
+
 	  /**
 	   * Multiply a derivative with R (derivative of whiten)
 	   * Equivalent to whitening each column of the input matrix.
 	   */
-	  Matrix whiten(const Matrix& H);
-
+	  Matrix Whiten(const Matrix& H) const;
 	};
 
 	/**
@@ -65,16 +71,18 @@ namespace gtsam {
    */
   class Isotropic : public GaussianNoiseModel {
   protected:
+  	size_t n_;
     double sigma_;
     double invsigma_;
 
-    Isotropic(double sigma): sigma_(sigma), invsigma_(1.0/sigma) {}
+    Isotropic(size_t n, double sigma): n_(n), sigma_(sigma), invsigma_(1.0/sigma) {}
     Isotropic(const Isotropic& isotropic):
-      sigma_(isotropic.sigma_), invsigma_(isotropic.invsigma_) {}
+      n_(isotropic.n_), sigma_(isotropic.sigma_), invsigma_(isotropic.invsigma_) {}
 
   public:
     Vector whiten(const Vector& v) const;
     Vector unwhiten(const Vector& v) const;
+    Matrix R() const { return diag(repeat(n_,invsigma_)); }
   };
 
   /**
@@ -83,7 +91,7 @@ namespace gtsam {
   class Sigma : public Isotropic {
   public:
     Sigma(const Sigma& isotropic): Isotropic(isotropic) {}
-    Sigma(double sigma): Isotropic(sigma) {}
+    Sigma(size_t n, double sigma): Isotropic(n, sigma) {}
   };
 
   /**
@@ -92,7 +100,7 @@ namespace gtsam {
   class Variance : public Isotropic {
   public:
     Variance(const Variance& v): Isotropic(v) {}
-    Variance(double variance): Isotropic(sqrt(variance)) {}
+    Variance(size_t n, double variance): Isotropic(n, sqrt(variance)) {}
   };
 
   /**
@@ -112,6 +120,7 @@ namespace gtsam {
   public:
     Vector whiten(const Vector& v) const;
     Vector unwhiten(const Vector& v) const;
+    Matrix R() const { return diag(invsigmas_); }
   };
 
   /**
@@ -144,12 +153,11 @@ namespace gtsam {
     Matrix sqrt_inv_covariance_;
 
   public:
-
     FullCovariance(const Matrix& covariance);
     FullCovariance(const FullCovariance& c);
-
     Vector whiten(const Vector& v) const;
     Vector unwhiten(const Vector& v) const;
+    Matrix R() const { return sqrt_inv_covariance_; }
   };
 
 }
