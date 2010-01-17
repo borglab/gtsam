@@ -49,8 +49,9 @@ namespace gtsam {
 			if (k==maxIterations) break;
 
 			// update gradient (or re-calculate at reset time)
-			// g = (k%reset==0) ? Ab.gradient(x) : g + alpha * (Ab ^ Ad);
-			g = g + alpha * (Ab ^ Ad);
+			 g = (k%reset==0) ? Ab.gradient(x) : g + alpha * (Ab ^ Ad);
+//			 g = g + alpha * (Ab ^ Ad);
+//			 g = Ab.gradient(x);
 
 			// check for convergence
 			double dotg = dot(g, g);
