@@ -23,6 +23,8 @@
 
 namespace gtsam {
 
+	typedef std::map<std::string, GaussianFactor::shared_ptr> cachedFactors;
+
 	template<class Conditional, class Config>
 	class ISAM2: public BayesTree<Conditional> {
 
@@ -31,6 +33,9 @@ namespace gtsam {
 		// for keeping all original nonlinear data
 		Config config_;
 		NonlinearFactorGraph<Config> nonlinearFactors_;
+
+		// cached intermediate results for restarting computation in the middle
+		cachedFactors cached;
 
 	public:
 

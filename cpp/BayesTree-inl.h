@@ -235,12 +235,12 @@ namespace gtsam {
 	/* ************************************************************************* */
 	template<class Conditional>
 	void BayesTree<Conditional>::print(const string& s) const {
-		cout << s << ": size == " << size() << endl;
-		if (nodes_.empty()) return;
 		if (root_.use_count() == 0) {
-			printf("WARNING: Forest...\n");
+			printf("WARNING: BayesTree.print encountered a forest...\n");
 			return;
 		}
+		cout << s << ": size == " << size() << endl;
+		if (nodes_.empty()) return;
 		root_->printTree("");
 	}
 

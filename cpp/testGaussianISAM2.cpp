@@ -19,7 +19,7 @@ using namespace boost::assign;
 using namespace std;
 using namespace gtsam;
 
-/* ************************************************************************* *
+/* ************************************************************************* */
 TEST( ISAM2, ISAM2_smoother )
 {
 	// Create smoother with 7 nodes
