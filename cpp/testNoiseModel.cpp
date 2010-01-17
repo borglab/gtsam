@@ -2,7 +2,8 @@
  * testNoiseModel.cpp
  *
  *  Created on: Jan 13, 2010
- *      Author: richard
+ *      Author: Richard Roberts
+ *      Author: Frank Dellaert
  */
 
 #include <CppUnitLite/TestHarness.h>
@@ -12,46 +13,43 @@
 #include "NoiseModel.h"
 
 using namespace std;
-using namespace boost;
 using namespace gtsam;
 
-class TakesNoiseModel {
-public:
-  NoiseModel noiseModel_;
-public:
-  //template<class N>
-  TakesNoiseModel(const NoiseModel& noiseModel): noiseModel_(noiseModel) {}
-};
-
-
-TEST(NoiseModel, sharedptr)
+/* ************************************************************************* */
+TEST(NoiseModel, constructors)
 {
-//  TakesNoiseModel tnm1(Sigma(1.0));
-//  cout << endl;
-//  TakesNoiseModel tnm2(tnm1.noiseModel_);
-//
-//  if(dynamic_pointer_cast<Sigma>(tnm1.noiseModel_))
-//    cout << "tnm1 has a Sigma!" << endl;
-//  if(dynamic_pointer_cast<Variance>(tnm1.noiseModel_))
-//    cout << "tnm1 has a Variance!" << endl;
-//  if(dynamic_pointer_cast<Isotropic>(tnm1.noiseModel_))
-//    cout << "tnm1 has an Isotropic!" << endl;
-//  if(dynamic_pointer_cast<NoiseModelBase>(tnm1.noiseModel_))
-//    cout << "tnm1 has a NoiseModelBase!" << endl;
-//
-//  if(dynamic_pointer_cast<Sigma>(tnm2.noiseModel_))
-//    cout << "tnm2 has a Sigma!" << endl;
-//  if(dynamic_pointer_cast<Variance>(tnm2.noiseModel_))
-//    cout << "tnm2 has a Variance!" << endl;
-//  if(dynamic_pointer_cast<Isotropic>(tnm2.noiseModel_))
-//    cout << "tnm2 has an Isotropic!" << endl;
-//  if(dynamic_pointer_cast<NoiseModelBase>(tnm2.noiseModel_))
-//    cout << "tnm2 has a NoiseModelBase!" << endl;
+	double sigma = 2, var = sigma*sigma;
+	Vector whitened = Vector_(3,5.0,10.0,15.0);
+	Vector unwhitened = Vector_(3,10.0,20.0,30.0);
+
+	// Construct noise models
+	Sigma m1(sigma);
+	Variance m2(var);
+	Sigmas m3(Vector_(3, sigma, sigma, sigma));
+	Variances m4(Vector_(3, var, var, var));
+	FullCovariance m5(Matrix_(3, 3,
+			var, 0.0, 0.0,
+			0.0, var, 0.0,
+			0.0, 0.0, var));
+
+	// test whiten
+	CHECK(assert_equal(whitened,m1.whiten(unwhitened)));
+	CHECK(assert_equal(whitened,m2.whiten(unwhitened)));
+	CHECK(assert_equal(whitened,m3.whiten(unwhitened)));
+	CHECK(assert_equal(whitened,m4.whiten(unwhitened)));
+	CHECK(assert_equal(whitened,m5.whiten(unwhitened)));
+
+	// test unwhiten
+	CHECK(assert_equal(unwhitened,m1.unwhiten(whitened)));
+	CHECK(assert_equal(unwhitened,m2.unwhiten(whitened)));
+	CHECK(assert_equal(unwhitened,m3.unwhiten(whitened)));
+	CHECK(assert_equal(unwhitened,m4.unwhiten(whitened)));
+	CHECK(assert_equal(unwhitened,m5.unwhiten(whitened)));
 }
 
 /* ************************************************************************* */
 int main() {
-  TestResult tr;
-  return TestRegistry::runAllTests(tr);
+	TestResult tr;
+	return TestRegistry::runAllTests(tr);
 }
 /* ************************************************************************* */
