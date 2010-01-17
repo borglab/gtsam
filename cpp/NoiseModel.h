@@ -30,6 +30,7 @@ namespace gtsam {
   public:
 
   	NoiseModel(size_t dim):dim_(dim) {}
+  	virtual ~NoiseModel() {}
 
     /**
      * Whiten an error vector.
@@ -39,7 +40,7 @@ namespace gtsam {
     /**
      * Unwhiten an error vector.
      */
-     virtual Vector unwhiten(const Vector& v) const = 0;
+    virtual Vector unwhiten(const Vector& v) const = 0;
   };
 
   /**
@@ -50,139 +51,180 @@ namespace gtsam {
 	 *   x = unwhiten(x) = inv(R)*y
 	 * as indeed
 	 *   |y|^2 = y'*y = x'*R'*R*x
-	 * Various simplified models are available that implement this efficiently.
+	 * Various derived classes are available that are more efficient.
 	 */
-	struct GaussianNoiseModel : public NoiseModel {
+	struct GaussianNoiseModel: public NoiseModel {
 
-		GaussianNoiseModel(size_t dim):NoiseModel(dim) {}
+	protected:
+
+		// TODO: store as boost upper-triangular or whatever is passed from above
+		/* Matrix square root of information matrix (R) */
+		Matrix sqrt_information_;
+
+		/** protected constructor takes square root information matrix */
+		GaussianNoiseModel(const Matrix& sqrt_information) :
+			NoiseModel(sqrt_information.size1()), sqrt_information_(sqrt_information) {
+		}
+
+	public:
+
+		typedef boost::shared_ptr<GaussianNoiseModel> shared_ptr;
 
     /**
-	   * Return R itself, but note that Whiten(H) is cheaper than R*H
-	   */
-	  virtual Matrix R() const = 0;
+     * A Gaussian noise model created by specifying a square root information matrix.
+     */
+    static shared_ptr SqrtInformation(const Matrix& R) {
+    	return shared_ptr(new GaussianNoiseModel(R));
+    }
 
-	  /**
-	   * Multiply a derivative with R (derivative of whiten)
-	   * Equivalent to whitening each column of the input matrix.
-	   */
-	  Matrix Whiten(const Matrix& H) const;
+    /**
+     * A Gaussian noise model created by specifying a covariance matrix.
+     */
+    static shared_ptr Covariance(const Matrix& Sigma) {
+    	return shared_ptr(new GaussianNoiseModel(inverse_square_root(Sigma)));
+    }
 
-	  /**
-	   * In-place version
-	   */
-	  void WhitenInPlace(Matrix& H) const;
-	};
+    /**
+     * A Gaussian noise model created by specifying an information matrix.
+     */
+    static shared_ptr Information(const Matrix& Q)  {
+    	return shared_ptr(new GaussianNoiseModel(square_root_positive(Q)));
+    }
 
-	/**
-	 * We identify the Gaussian noise model with R
-	 */
+    virtual Vector whiten(const Vector& v) const;
+		virtual Vector unwhiten(const Vector& v) const;
+
+		/**
+		 * Multiply a derivative with R (derivative of whiten)
+		 * Equivalent to whitening each column of the input matrix.
+		 */
+		virtual Matrix Whiten(const Matrix& H) const;
+
+		/**
+		 * In-place version
+		 */
+		virtual void WhitenInPlace(Matrix& H) const;
+
+		/**
+		 * Return R itself, but note that Whiten(H) is cheaper than R*H
+		 */
+		const Matrix& R() const {
+			return sqrt_information_;
+		}
+
+	}; // GaussianNoiseModel
+
 	// FD: does not work, ambiguous overload :-(
   // inline Vector operator*(const GaussianNoiseModel& R, const Vector& v) {return R.whiten(v);}
 
   /**
-   * UnitCovariance: i.i.d. noise on all m dimensions.
+   * A diagonal noise model implements a diagonal covariance matrix, with the
+   * elements of the diagonal specified in a Vector.  This class has no public
+   * constructors, instead, use the static constructor functions Sigmas etc...
    */
-  class UnitCovariance : public GaussianNoiseModel {
+  class Diagonal : public GaussianNoiseModel {
   protected:
-    double sigma_;
-    double invsigma_;
 
-    UnitCovariance(size_t dim): GaussianNoiseModel(dim) {}
+  	/** sigmas and reciprocal */
+    Vector sigmas_, invsigmas_;
+
+    /** protected constructor takes sigmas */
+    Diagonal(const Vector& sigmas);
 
   public:
-    Vector whiten(const Vector& v) const { return v; }
-    Vector unwhiten(const Vector& v) const { return v; }
-    Matrix R() const { return eye(dim_); }
-    Matrix Whiten(const Matrix& H) const { return H; }
-	  void WhitenInPlace(Matrix& H) const {}
+
+		typedef boost::shared_ptr<Diagonal> shared_ptr;
+
+    /**
+     * A diagonal noise model created by specifying a Vector of sigmas, i.e.
+     * standard devations, the diagonal of the square root covariance matrix.
+     */
+    static shared_ptr Sigmas(const Vector& sigmas) {
+    	return shared_ptr(new Diagonal(sigmas));
+    }
+
+    /**
+     * A diagonal noise model created by specifying a Vector of variances, i.e.
+     * i.e. the diagonal of the covariance matrix.
+     */
+    static shared_ptr Variances(const Vector& variances) {
+    	return shared_ptr(new Diagonal(esqrt(variances)));
+    }
+
+    /**
+     * A diagonal noise model created by specifying a Vector of precisions, i.e.
+     * i.e. the diagonal of the information matrix, i.e., weights
+     */
+    static shared_ptr Precisions(const Vector& precisions) {
+    	return Variances(reciprocal(precisions));
+    }
+
+    virtual Vector whiten(const Vector& v) const;
+    virtual Vector unwhiten(const Vector& v) const;
   };
 
   /**
    * An isotropic noise model corresponds to a scaled diagonal covariance
-   * This class has no public constructors.  Instead, use either either the
-   * Sigma or Variance class.
+   * To construct, use one of the static methods
    */
-  class Isotropic : public GaussianNoiseModel {
+  class Isotropic : public Diagonal {
   protected:
-    double sigma_;
-    double invsigma_;
+    double sigma_, invsigma_;
 
+    /** protected constructor takes sigma */
     Isotropic(size_t dim, double sigma) :
-			GaussianNoiseModel(dim), sigma_(sigma), invsigma_(1.0 / sigma) {}
+			Diagonal(repeat(dim, sigma)),sigma_(sigma),invsigma_(1.0/sigma) {}
 
   public:
-    Vector whiten(const Vector& v) const;
-    Vector unwhiten(const Vector& v) const;
-    Matrix R() const { return diag(repeat(dim_,invsigma_)); }
+
+		typedef boost::shared_ptr<Isotropic> shared_ptr;
+
+    /**
+     * An isotropic noise model created by specifying a standard devation sigma
+     */
+    static shared_ptr Sigma(size_t dim, double sigma) {
+    	return shared_ptr(new Isotropic(dim, sigma));
+    }
+
+    /**
+     * An isotropic noise model created by specifying a variance = sigma^2.
+     */
+    static shared_ptr Variance(size_t dim, double variance)  {
+    	return shared_ptr(new Isotropic(dim, sqrt(variance)));
+    }
+
+    /**
+     * An isotropic noise model created by specifying a precision
+     */
+    static shared_ptr Precision(size_t dim, double precision)  {
+    	return Variance(dim, 1.0/precision);
+    }
+
+    virtual Vector whiten(const Vector& v) const;
+    virtual Vector unwhiten(const Vector& v) const;
   };
 
   /**
-   * An isotropic noise model using sigma, the standard deviation.
+   * UnitCovariance: i.i.d. unit-variance noise on all m dimensions.
    */
-  class Sigma : public Isotropic {
-  public:
-    Sigma(size_t n, double sigma): Isotropic(n, sigma) {}
-  };
-
-  /**
-   * An isotropic noise model using the noise variance = sigma^2.
-   */
-  class Variance : public Isotropic {
-  public:
-    Variance(size_t n, double variance): Isotropic(n, sqrt(variance)) {}
-  };
-
-  /**
-   * A diagonal noise model implements a diagonal covariance matrix, with the
-   * elements of the diagonal specified in a Vector.  This class has no public
-   * constructors, instead, use either the Sigmas or Variances class.
-   */
-  class Diagonal : public GaussianNoiseModel {
+  class UnitCovariance : public Isotropic {
   protected:
-    Vector sigmas_;
-    Vector invsigmas_;
 
-    Diagonal(const Vector& sigmas);
+    UnitCovariance(size_t dim): Isotropic(dim,1.0) {}
 
   public:
-    Vector whiten(const Vector& v) const;
-    Vector unwhiten(const Vector& v) const;
-    Matrix R() const { return diag(invsigmas_); }
-  };
 
-  /**
-   * A diagonal noise model created by specifying a Vector of sigmas, i.e.
-   * standard devations, i.e. the diagonal of the square root covariance
-   * matrix.
-   */
-  class Sigmas : public Diagonal {
-  public:
-    Sigmas(const Vector& sigmas): Diagonal(sigmas) {}
-  };
+    typedef boost::shared_ptr<UnitCovariance> shared_ptr;
 
-  /**
-   * A diagonal noise model created by specifying a Vector of variances, i.e.
-   * i.e. the diagonal of the covariance matrix.
-   */
-  class Variances : public Diagonal {
-  public:
-    Variances(const Vector& variances);
-  };
+    /**
+     * An isotropic noise model created by specifying a standard devation sigma
+     */
+    static shared_ptr Create(size_t dim);
 
-  /**
-   * A full covariance noise model.
-   */
-  class FullCovariance : public GaussianNoiseModel {
-  protected:
-    Matrix sqrt_covariance_;
-    Matrix sqrt_inv_covariance_;
-
-  public:
-    FullCovariance(const Matrix& covariance);
-    FullCovariance(const FullCovariance& c);
-    Vector whiten(const Vector& v) const;
-    Vector unwhiten(const Vector& v) const;
-    Matrix R() const { return sqrt_inv_covariance_; }
+    virtual Vector whiten(const Vector& v) const { return v; }
+    virtual Vector unwhiten(const Vector& v) const { return v; }
+    virtual Matrix Whiten(const Matrix& H) const { return H; }
+	  virtual void WhitenInPlace(Matrix& H) const {}
   };
 
 }

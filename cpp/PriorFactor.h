@@ -38,7 +38,7 @@ namespace gtsam {
 
 		/** Constructor */
 		PriorFactor(const Key& key, const T& prior, const Matrix& cov) :
-			Base(1.0, key), prior_(prior), noiseModel_(new FullCovariance(cov)) {
+			Base(1.0, key), prior_(prior), noiseModel_(GaussianNoiseModel::Covariance(cov)) {
 		}
 
 		/** implement functions needed for Testable */

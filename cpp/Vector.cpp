@@ -205,6 +205,13 @@ namespace gtsam {
   	}
 
   /* ************************************************************************* */
+	Vector esqrt(const Vector& v) {
+		Vector s(v.size());
+		transform(v.begin(), v.end(), s.begin(), ::sqrt);
+		return s;
+	}
+
+  /* ************************************************************************* */
   double max(const Vector &a) {
   	return *(std::max_element(a.begin(), a.end()));
 	}

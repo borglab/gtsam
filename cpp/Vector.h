@@ -178,6 +178,13 @@ double sum(const Vector &a);
 Vector reciprocal(const Vector &a);
 
 /**
+ * elementwise sqrt of vector elements
+ * @param a vector
+ * @return [sqrt(a(i))]
+ */
+Vector esqrt(const Vector& v);
+
+/**
  * return the max element of a vector
  * @param a vector
  * @return max(a)

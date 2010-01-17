@@ -13,6 +13,15 @@ typedef ublas::matrix_column<Matrix> column;
 
 namespace gtsam {
 
+	/* ************************************************************************* */
+	Vector GaussianNoiseModel::whiten(const Vector& v) const {
+		return sqrt_information_ * v;
+	}
+
+	Vector GaussianNoiseModel::unwhiten(const Vector& v) const {
+		return backSubstituteUpper(sqrt_information_, v);
+	}
+
 	// functional
 	Matrix GaussianNoiseModel::Whiten(const Matrix& H) const {
 		size_t m = H.size1(), n = H.size2();
@@ -35,17 +44,11 @@ namespace gtsam {
 		}
 	}
 
-	Vector Isotropic::whiten(const Vector& v) const {
-		return v * invsigma_;
-	}
-
-	Vector Isotropic::unwhiten(const Vector& v) const {
-		return v * sigma_;
-	}
-
+	/* ************************************************************************* */
+	// TODO: can we avoid calling reciprocal twice ?
 	Diagonal::Diagonal(const Vector& sigmas) :
-		GaussianNoiseModel(sigmas.size()), sigmas_(sigmas), invsigmas_(reciprocal(
-				sigmas)) {
+		GaussianNoiseModel(diag(reciprocal(sigmas))),
+				invsigmas_(reciprocal(sigmas)), sigmas_(sigmas) {
 	}
 
 	Vector Diagonal::whiten(const Vector& v) const {
@@ -56,28 +59,15 @@ namespace gtsam {
 		return emul(v, sigmas_);
 	}
 
-	static Vector sqrt(const Vector& v) {
-		Vector s(v.size());
-		transform(v.begin(), v.end(), s.begin(), ::sqrt);
-		return s;
+	/* ************************************************************************* */
+
+	Vector Isotropic::whiten(const Vector& v) const {
+		return v * invsigma_;
 	}
 
-	Variances::Variances(const Vector& variances) :
-		Diagonal(sqrt(variances)) {
+	Vector Isotropic::unwhiten(const Vector& v) const {
+		return v * sigma_;
 	}
 
-	FullCovariance::FullCovariance(const Matrix& cov) :
-		GaussianNoiseModel(cov.size1()),
-				sqrt_covariance_(square_root_positive(cov)), sqrt_inv_covariance_(
-						inverse_square_root(cov)) {
-	}
-
-	Vector FullCovariance::whiten(const Vector& v) const {
-		return sqrt_inv_covariance_ * v;
-	}
-
-	Vector FullCovariance::unwhiten(const Vector& v) const {
-		return sqrt_covariance_ * v;
-	}
-
+/* ************************************************************************* */
 } // gtsam

@@ -13,7 +13,7 @@ using namespace gtsam;
 
 // Common measurement covariance
 static double sx=0.5, sy=0.5,st=0.1;
-static boost::shared_ptr<GaussianNoiseModel> model(new Sigmas(Vector_(3,sx,sy,st)));
+static GaussianNoiseModel::shared_ptr model = Diagonal::Sigmas(Vector_(3,sx,sy,st));
 
 /* ************************************************************************* */
 // Very simple test establishing Ax-b \approx z-h(x)

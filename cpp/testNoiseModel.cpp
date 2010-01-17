@@ -8,7 +8,7 @@
 
 #include <CppUnitLite/TestHarness.h>
 
-#include <boost/shared_ptr.hpp>
+#include <boost/foreach.hpp>
 #include <iostream>
 #include "NoiseModel.h"
 
@@ -18,46 +18,48 @@ using namespace gtsam;
 /* ************************************************************************* */
 TEST(NoiseModel, constructors)
 {
-	double sigma = 2, var = sigma*sigma;
+	double sigma = 2, s_1=1.0/sigma, var = sigma*sigma, prc = 1.0/var;
 	Vector whitened = Vector_(3,5.0,10.0,15.0);
 	Vector unwhitened = Vector_(3,10.0,20.0,30.0);
 
 	// Construct noise models
-	Sigma m1(3,sigma);
-	Variance m2(3,var);
-	Sigmas m3(Vector_(3, sigma, sigma, sigma));
-	Variances m4(Vector_(3, var, var, var));
-	FullCovariance m5(Matrix_(3, 3,
+	vector<GaussianNoiseModel::shared_ptr> m;
+	m.push_back(GaussianNoiseModel::SqrtInformation(Matrix_(3, 3,
+			s_1, 0.0, 0.0,
+			0.0, s_1, 0.0,
+			0.0, 0.0, s_1)));
+	m.push_back(GaussianNoiseModel::Covariance(Matrix_(3, 3,
 			var, 0.0, 0.0,
 			0.0, var, 0.0,
-			0.0, 0.0, var));
+			0.0, 0.0, var)));
+	m.push_back(GaussianNoiseModel::Information(Matrix_(3, 3,
+			prc, 0.0, 0.0,
+			0.0, prc, 0.0,
+			0.0, 0.0, prc)));
+	m.push_back(Diagonal::Sigmas(Vector_(3, sigma, sigma, sigma)));
+	m.push_back(Diagonal::Variances(Vector_(3, var, var, var)));
+	m.push_back(Diagonal::Precisions(Vector_(3, prc, prc, prc)));
+	m.push_back(Isotropic::Sigma(3, sigma));
+	m.push_back(Isotropic::Variance(3, var));
+	m.push_back(Isotropic::Precision(3, prc));
 
 	// test whiten
-	CHECK(assert_equal(whitened,m1.whiten(unwhitened)));
-	CHECK(assert_equal(whitened,m2.whiten(unwhitened)));
-	CHECK(assert_equal(whitened,m3.whiten(unwhitened)));
-	CHECK(assert_equal(whitened,m4.whiten(unwhitened)));
-	CHECK(assert_equal(whitened,m5.whiten(unwhitened)));
+	int i=0;
+	BOOST_FOREACH(GaussianNoiseModel::shared_ptr mi, m)
+		CHECK(assert_equal(whitened,mi->whiten(unwhitened)));
 
 	// test unwhiten
-	CHECK(assert_equal(unwhitened,m1.unwhiten(whitened)));
-	CHECK(assert_equal(unwhitened,m2.unwhiten(whitened)));
-	CHECK(assert_equal(unwhitened,m3.unwhiten(whitened)));
-	CHECK(assert_equal(unwhitened,m4.unwhiten(whitened)));
-	CHECK(assert_equal(unwhitened,m5.unwhiten(whitened)));
+	BOOST_FOREACH(GaussianNoiseModel::shared_ptr mi, m)
+		CHECK(assert_equal(unwhitened,mi->unwhiten(whitened)));
 
 	// test R matrix
-	double s_1 = 1.0/sigma;
 	Matrix expectedR(Matrix_(3, 3,
 			s_1, 0.0, 0.0,
 			0.0, s_1, 0.0,
 			0.0, 0.0, s_1));
 
-	CHECK(assert_equal(expectedR,m1.R()));
-	CHECK(assert_equal(expectedR,m2.R()));
-	CHECK(assert_equal(expectedR,m3.R()));
-	CHECK(assert_equal(expectedR,m4.R()));
-	CHECK(assert_equal(expectedR,m5.R()));
+	BOOST_FOREACH(GaussianNoiseModel::shared_ptr mi, m)
+		CHECK(assert_equal(expectedR,mi->R()));
 
 	// test Whiten operator
 	Matrix H(Matrix_(3, 4,
@@ -70,14 +72,11 @@ TEST(NoiseModel, constructors)
 			0.0, s_1, 0.0, s_1,
 			s_1, 0.0, 0.0, s_1));
 
-	CHECK(assert_equal(expected,m1.Whiten(H)));
-	CHECK(assert_equal(expected,m2.Whiten(H)));
-	CHECK(assert_equal(expected,m3.Whiten(H)));
-	CHECK(assert_equal(expected,m4.Whiten(H)));
-	CHECK(assert_equal(expected,m5.Whiten(H)));
+	BOOST_FOREACH(GaussianNoiseModel::shared_ptr mi, m)
+		CHECK(assert_equal(expected,mi->Whiten(H)));
 
 	// can only test inplace version once :-)
-	m5.WhitenInPlace(H);
+	m[0]->WhitenInPlace(H);
 	CHECK(assert_equal(expected,H));
 }
 
