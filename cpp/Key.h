@@ -8,10 +8,13 @@
 
 #pragma once
 
+#include <iostream>
 #include <boost/format.hpp>
 #include <boost/serialization/serialization.hpp>
 #include <boost/lexical_cast.hpp>
 #include <boost/integer_traits.hpp>
+
+#include "Testable.h"
 
 #define ALPHA '\224'
 
@@ -21,12 +24,11 @@ namespace gtsam {
 	 * TypedSymbol key class is templated on
 	 * 1) the type T it is supposed to retrieve, for extra type checking
 	 * 2) the character constant used for its string representation
-	 * TODO: make Testable
 	 */
 	template <class T, char C>
-	class TypedSymbol {
+	class TypedSymbol : Testable<TypedSymbol<T,C> > {
 
-	private:
+	protected:
 		size_t j_;
 
 	public:
@@ -49,6 +51,10 @@ namespace gtsam {
 		bool operator== (const TypedSymbol& compare) const { return j_==compare.j_;}
 		int compare(const TypedSymbol& compare) const {return j_-compare.j_;}
 
+		// Testable Requirements
+		void print(const std::string& name) const {} //FIXME
+		bool equals(const TypedSymbol& expected, double tol) const { return (*this)==expected; }
+
 	private:
 
 		/** Serialization function */
@@ -56,6 +62,72 @@ namespace gtsam {
 		template<class Archive>
 		void serialize(Archive & ar, const unsigned int version) {
 			ar & BOOST_SERIALIZATION_NVP(j_);
+		}
+	};
+
+	/**
+	 * TypedLabeledSymbol is a variation of the TypedSymbol that allows
+	 * for a runtime label to be placed on the label, so as to express
+	 * "Pose 5 for robot 3"
+	 * Labels should be kept to base datatypes (int, char, etc) to
+	 * minimize cost of comparisons
+	 *
+	 * The labels will be compared first when comparing Keys, followed by the
+	 * index
+	 */
+	template <class T, char C, typename L>
+	class TypedLabeledSymbol : public TypedSymbol<T, C>, Testable<TypedLabeledSymbol<T,C,L> >  {
+
+	protected:
+		// Label
+		L label_;
+
+	public:
+
+		// Constructors:
+
+		TypedLabeledSymbol() {}
+		TypedLabeledSymbol(size_t j, L label):TypedSymbol<T,C>(j), label_(label) {}
+
+		// Get stuff:
+
+		L label() const { return label_;}
+		const char* c_str() const { return (std::string)(*this).c_str();}
+		operator std::string() const
+				{ return (boost::format("%c%label%d") % C % label_ % this->j_).str(); }
+		std::string latex() const
+				{ return (boost::format("%c%label_{%d}") % C % label_ % this->j_).str(); }
+
+		// logic:
+
+		bool operator< (const TypedLabeledSymbol& compare) const {
+			if (label_ == compare.label_) // sort by label first
+				return this->j_<compare.j_;
+			else
+				return label_<compare.label_;
+		}
+		bool operator== (const TypedLabeledSymbol& compare) const
+				{ return this->j_==compare.j_ && label_ == compare.label_;}
+		int compare(const TypedLabeledSymbol& compare) const {
+			if (label_ == compare.label_) // sort by label first
+				return this->j_-compare.j_;
+			else
+				return label_-compare.label_;
+		}
+
+		// Testable Requirements
+		void print(const std::string& name) const {} // FIXME
+		bool equals(const TypedLabeledSymbol& expected, double tol) const
+				{ return (*this)==expected; }
+
+	private:
+
+		/** Serialization function */
+		friend class boost::serialization::access;
+		template<class Archive>
+		void serialize(Archive & ar, const unsigned int version) {
+			ar & BOOST_SERIALIZATION_NVP(this->j_);
+			ar & BOOST_SERIALIZATION_NVP(label_);
 		}
 	};
 

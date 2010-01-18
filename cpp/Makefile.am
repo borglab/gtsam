@@ -131,13 +131,15 @@ testSubgraphPreconditioner_LDADD   = libgtsam.la
 headers += Key.h NonlinearFactorGraph.h NonlinearFactorGraph-inl.h
 headers += NonlinearOptimizer.h NonlinearOptimizer-inl.h 
 headers += NonlinearFactor.h
-check_PROGRAMS += testNonlinearFactor testNonlinearFactorGraph testNonlinearOptimizer
+check_PROGRAMS += testNonlinearFactor testNonlinearFactorGraph testNonlinearOptimizer testKey
 testNonlinearFactor_SOURCES      = $(example) testNonlinearFactor.cpp
 testNonlinearFactor_LDADD        = libgtsam.la
 testNonlinearFactorGraph_SOURCES = $(example) testNonlinearFactorGraph.cpp
 testNonlinearFactorGraph_LDADD   = libgtsam.la
 testNonlinearOptimizer_SOURCES   = $(example) testNonlinearOptimizer.cpp
 testNonlinearOptimizer_LDADD     = libgtsam.la
+testKey_SOURCES   				 = testKey.cpp
+testKey_LDADD     				 = libgtsam.la
 
 # Nonlinear constraints 
 headers += SQPOptimizer.h SQPOptimizer-inl.h  
