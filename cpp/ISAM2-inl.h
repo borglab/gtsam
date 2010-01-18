@@ -102,7 +102,7 @@ namespace gtsam {
 
 		BOOST_FOREACH(sharedClique orphan, orphans) {
 			// find the last variable that is not part of the separator
-			string oneTooFar = orphan->separator_.front();
+			Symbol oneTooFar = orphan->separator_.front();
 			list<Symbol> keys = orphan->keys();
 			list<Symbol>::iterator it = find(keys.begin(), keys.end(), oneTooFar);
 			it--;
