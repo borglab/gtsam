@@ -50,19 +50,18 @@ testMatrix_LDADD   = libgtsam.la
 # GTSAM basics
 # The header files will be installed in ~/include/gtsam
 headers = gtsam.h Value.h Testable.h Factor.h Conditional.h 
-headers += Ordering.h Ordering-inl.h numericalDerivative.h
-sources += Ordering.cpp  
-example = smallExample.cpp 
+headers += Ordering.h numericalDerivative.h
+sources += Ordering.cpp smallExample.cpp 
 
 # Symbolic Inference
 headers += SymbolicConditional.h
 sources += SymbolicFactor.cpp SymbolicFactorGraph.cpp SymbolicBayesNet.cpp
 check_PROGRAMS += testSymbolicFactor testSymbolicFactorGraph testSymbolicBayesNet  
-testSymbolicFactor_SOURCES      = $(example) testSymbolicFactor.cpp
+testSymbolicFactor_SOURCES      = testSymbolicFactor.cpp
 testSymbolicFactor_LDADD        = libgtsam.la
-testSymbolicFactorGraph_SOURCES = $(example) testSymbolicFactorGraph.cpp
+testSymbolicFactorGraph_SOURCES = testSymbolicFactorGraph.cpp
 testSymbolicFactorGraph_LDADD   = libgtsam.la
-testSymbolicBayesNet_SOURCES    = $(example) testSymbolicBayesNet.cpp
+testSymbolicBayesNet_SOURCES    = testSymbolicBayesNet.cpp
 testSymbolicBayesNet_LDADD      = libgtsam.la
 
 # Inference
@@ -79,18 +78,18 @@ check_PROGRAMS += testBayesTree testISAM testGaussianISAM testGaussianISAM2
 testGraph_SOURCES              = testGraph.cpp
 testGraph_LDADD                = libgtsam.la
 testFactorgraph_SOURCES        = testFactorgraph.cpp
-testInference_SOURCES          = $(example) testInference.cpp
+testInference_SOURCES          = testInference.cpp
 testFactorgraph_LDADD          = libgtsam.la
 testInference_LDADD            = libgtsam.la
 testOrdering_SOURCES   		   = testOrdering.cpp
 testOrdering_LDADD			   = libgtsam.la
-testBayesTree_SOURCES          = $(example) testBayesTree.cpp
+testBayesTree_SOURCES          = testBayesTree.cpp
 testBayesTree_LDADD            = libgtsam.la
-testGaussianISAM_SOURCES       = $(example) testGaussianISAM.cpp
+testGaussianISAM_SOURCES       = testGaussianISAM.cpp
 testGaussianISAM_LDADD         = libgtsam.la
-testGaussianISAM2_SOURCES      = $(example) testGaussianISAM2.cpp
+testGaussianISAM2_SOURCES      = testGaussianISAM2.cpp
 testGaussianISAM2_LDADD        = libgtsam.la
-testISAM_SOURCES               = $(example) testISAM.cpp
+testISAM_SOURCES               = testISAM.cpp
 testISAM_LDADD                 = libgtsam.la
 
 # Binary Inference
@@ -105,13 +104,13 @@ sources += NoiseModel.cpp Errors.cpp VectorConfig.cpp GaussianFactor.cpp Gaussia
 check_PROGRAMS += testVectorConfig testGaussianFactor testGaussianFactorGraph testGaussianConditional testGaussianBayesNet testNoiseModel
 testVectorConfig_SOURCES        = testVectorConfig.cpp
 testVectorConfig_LDADD          = libgtsam.la
-testGaussianFactor_SOURCES      = $(example) testGaussianFactor.cpp
+testGaussianFactor_SOURCES      = testGaussianFactor.cpp
 testGaussianFactor_LDADD        = libgtsam.la
-testGaussianFactorGraph_SOURCES = $(example) testGaussianFactorGraph.cpp
+testGaussianFactorGraph_SOURCES = testGaussianFactorGraph.cpp
 testGaussianFactorGraph_LDADD   = libgtsam.la
-testGaussianConditional_SOURCES = $(example) testGaussianConditional.cpp
+testGaussianConditional_SOURCES = testGaussianConditional.cpp
 testGaussianConditional_LDADD   = libgtsam.la
-testGaussianBayesNet_SOURCES    = $(example) testGaussianBayesNet.cpp
+testGaussianBayesNet_SOURCES    = testGaussianBayesNet.cpp
 testGaussianBayesNet_LDADD      = libgtsam.la
 testNoiseModel_SOURCES          = testNoiseModel.cpp
 testNoiseModel_LDADD            = libgtsam.la
@@ -120,11 +119,11 @@ testNoiseModel_LDADD            = libgtsam.la
 headers += iterative-inl.h SubgraphPreconditioner-inl.h
 sources += iterative.cpp BayesNetPreconditioner.cpp SubgraphPreconditioner.cpp
 check_PROGRAMS += testIterative testBayesNetPreconditioner testSubgraphPreconditioner
-testIterative_SOURCES              = $(example) testIterative.cpp
+testIterative_SOURCES              = testIterative.cpp
 testIterative_LDADD                = libgtsam.la
-testBayesNetPreconditioner_SOURCES = $(example) testBayesNetPreconditioner.cpp
+testBayesNetPreconditioner_SOURCES = testBayesNetPreconditioner.cpp
 testBayesNetPreconditioner_LDADD   = libgtsam.la
-testSubgraphPreconditioner_SOURCES = $(example) testSubgraphPreconditioner.cpp
+testSubgraphPreconditioner_SOURCES = testSubgraphPreconditioner.cpp
 testSubgraphPreconditioner_LDADD   = libgtsam.la
 
 # Nonlinear inference 
@@ -132,11 +131,11 @@ headers += Key.h NonlinearFactorGraph.h NonlinearFactorGraph-inl.h
 headers += NonlinearOptimizer.h NonlinearOptimizer-inl.h 
 headers += NonlinearFactor.h
 check_PROGRAMS += testNonlinearFactor testNonlinearFactorGraph testNonlinearOptimizer testKey
-testNonlinearFactor_SOURCES      = $(example) testNonlinearFactor.cpp
+testNonlinearFactor_SOURCES      = testNonlinearFactor.cpp
 testNonlinearFactor_LDADD        = libgtsam.la
-testNonlinearFactorGraph_SOURCES = $(example) testNonlinearFactorGraph.cpp
+testNonlinearFactorGraph_SOURCES = testNonlinearFactorGraph.cpp
 testNonlinearFactorGraph_LDADD   = libgtsam.la
-testNonlinearOptimizer_SOURCES   = $(example) testNonlinearOptimizer.cpp
+testNonlinearOptimizer_SOURCES   = testNonlinearOptimizer.cpp
 testNonlinearOptimizer_LDADD     = libgtsam.la
 testKey_SOURCES   				 = testKey.cpp
 testKey_LDADD     				 = libgtsam.la
@@ -150,9 +149,9 @@ testNonlinearConstraint_SOURCES = testNonlinearConstraint.cpp
 testNonlinearConstraint_LDADD   = libgtsam.la
 testNonlinearEquality_SOURCES   = testNonlinearEquality.cpp
 testNonlinearEquality_LDADD     = libgtsam.la
-testSQP_SOURCES                 = $(example) testSQP.cpp
+testSQP_SOURCES                 = testSQP.cpp
 testSQP_LDADD                   = libgtsam.la
-testSQPOptimizer_SOURCES   		  = $(example) testSQPOptimizer.cpp
+testSQPOptimizer_SOURCES   		  = testSQPOptimizer.cpp
 testSQPOptimizer_LDADD     		  = libgtsam.la
 
 # geometry
@@ -199,31 +198,31 @@ headers += LieConfig.h LieConfig-inl.h TupleConfig.h TupleConfig-inl.h
 headers +=  
 sources += pose2SLAM.cpp 
 check_PROGRAMS += testPose2Factor testPose2Config testPose2SLAM testPose2Prior
-testPose2Prior_SOURCES  = $(example) testPose2Prior.cpp
+testPose2Prior_SOURCES  = testPose2Prior.cpp
 testPose2Prior_LDADD    = libgtsam.la
-testPose2Factor_SOURCES = $(example) testPose2Factor.cpp
+testPose2Factor_SOURCES = testPose2Factor.cpp
 testPose2Factor_LDADD   = libgtsam.la
-testPose2Config_SOURCES = $(example) testPose2Config.cpp
+testPose2Config_SOURCES = testPose2Config.cpp
 testPose2Config_LDADD   = libgtsam.la
-testPose2SLAM_SOURCES  = $(example) testPose2SLAM.cpp
+testPose2SLAM_SOURCES  = testPose2SLAM.cpp
 testPose2SLAM_LDADD    = libgtsam.la
 
 # 2D SLAM using Bearing and Range
 headers +=   
 sources += planarSLAM.cpp
 check_PROGRAMS += testPlanarSLAM
-testPlanarSLAM_SOURCES = $(example) testPlanarSLAM.cpp
+testPlanarSLAM_SOURCES = testPlanarSLAM.cpp
 testPlanarSLAM_LDADD   = libgtsam.la
 
 # 3D Pose constraints
 headers +=   
 sources += pose3SLAM.cpp 
 check_PROGRAMS += testPose3Factor testPose3Config testPose3SLAM 
-testPose3Factor_SOURCES = $(example) testPose3Factor.cpp
+testPose3Factor_SOURCES = testPose3Factor.cpp
 testPose3Factor_LDADD   = libgtsam.la
-testPose3Config_SOURCES = $(example) testPose3Config.cpp
+testPose3Config_SOURCES = testPose3Config.cpp
 testPose3Config_LDADD   = libgtsam.la
-testPose3SLAM_SOURCES  = $(example) testPose3SLAM.cpp
+testPose3SLAM_SOURCES  = testPose3SLAM.cpp
 testPose3SLAM_LDADD    = libgtsam.la
 
 # Cameras
@@ -244,7 +243,6 @@ testVSLAMGraph_LDADD = libgtsam.la
 testVSLAMConfig_SOURCES = testVSLAMConfig.cpp
 testVSLAMConfig_LDADD = libgtsam.la
 
-headers += smallExample.h 
 headers += $(sources:.cpp=.h)
 
 # Timing tests
@@ -252,9 +250,9 @@ noinst_PROGRAMS = timeGaussianFactor timeGaussianFactorGraph timeRot3
 timeRot3_SOURCES = timeRot3.cpp
 timeRot3_LDADD = libgtsam.la
 timeGaussianFactor_SOURCES = timeGaussianFactor.cpp
-timeGaussianFactor_LDADD = $(example) libgtsam.la 
+timeGaussianFactor_LDADD = libgtsam.la 
 timeGaussianFactorGraph_SOURCES = timeGaussianFactorGraph.cpp
-timeGaussianFactorGraph_LDADD = $(example) libgtsam.la
+timeGaussianFactorGraph_LDADD = libgtsam.la
 
 # create both dynamic and static libraries
 AM_CXXFLAGS = -I$(boost) -fPIC

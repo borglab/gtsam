@@ -50,6 +50,12 @@ namespace gtsam {
 	};
 
 	/**
+	 * Generate a list of keys from a spanning tree represented by its predecessor map
+	 */
+	template<class Key>
+	std::list<Key> predecessorMap2Keys(const PredecessorMap<Key>& p_map);
+
+	/**
 	 * Convert the factor graph to an SDGraph
 	 * G = Graph type
 	 * F = Factor type

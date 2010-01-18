@@ -8,9 +8,7 @@
 
 #include <list>
 #include <string>
-#include <map>
 #include "Testable.h"
-#include "graph.h"
 #include "Key.h"
 
 namespace gtsam {
@@ -21,25 +19,18 @@ namespace gtsam {
 	 */
 	class Ordering: public std::list<Symbol>, public Testable<Ordering> {
 	public:
-		/**
-		 * Default constructor creates empty ordering
-		 */
-		Ordering() {
-		}
+		/** Default constructor creates empty ordering */
+		Ordering() { }
 
-		/**
-		 * Create from a single string
-		 */
-		Ordering(Symbol key) {
-			push_back(key);
-		}
+		/** Create from a single symbol */
+		Ordering(Symbol key) { push_back(key); }
 
-		/**
-		 * Copy constructor from string vector
-		 */
-		Ordering(const std::list<Symbol>& keys_in) :
-			std::list<Symbol>(keys_in) {
-		}
+		/** Copy constructor */
+		Ordering(const std::list<Symbol>& keys_in) : std::list<Symbol>(keys_in) {}
+
+		// Testable
+		void print(const std::string& s = "Ordering") const;
+		bool equals(const Ordering &ord, double tol=0) const;
 
 		/**
 		 * Remove a set of keys from an ordering
@@ -47,22 +38,6 @@ namespace gtsam {
 		 * @return a new ordering without the selected keys
 		 */
 		Ordering subtract(const Ordering& keys) const;
-
-		void print(const std::string& s = "Ordering") const;
-
-		/**
-		 * check if two orderings are the same
-		 * @param ordering
-		 * @return bool
-		 */
-		bool equals(const Ordering &ord, double tol=0) const;
-
 	};
-
-	/**
-	 * Generate a list of keys from a spanning tree represented by its predecessor map
-	 */
-	template<class Key>
-	std::list<Key> predecessorMap2Keys(const PredecessorMap<Key>& p_map);
 
 }

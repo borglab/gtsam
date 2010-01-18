@@ -15,7 +15,7 @@ using namespace boost;
 
 #include "NonlinearFactorGraph-inl.h"
 #include "NonlinearOptimizer-inl.h"
-#include "Ordering-inl.h"
+#include "graph-inl.h"
 #include "visualSLAM.h"
 
 using namespace std;

@@ -11,7 +11,7 @@
 #include <boost/tuple/tuple.hpp>
 #include "SubgraphPreconditioner.h"
 
-#include "Ordering-inl.h"
+#include "graph-inl.h"
 #include "iterative-inl.h"
 #include "FactorGraph-inl.h"
 

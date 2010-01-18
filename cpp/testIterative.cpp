@@ -18,7 +18,6 @@ using namespace boost::assign;
 #include "smallExample.h"
 #include "pose2SLAM.h"
 #include "SubgraphPreconditioner.h"
-#include "Ordering-inl.h"
 #include "FactorGraph-inl.h"
 #include "NonlinearFactorGraph-inl.h"
 #include "iterative-inl.h"

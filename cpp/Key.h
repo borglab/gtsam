@@ -8,6 +8,7 @@
 
 #pragma once
 
+#include <list>
 #include <iostream>
 #include <boost/format.hpp>
 #include <boost/serialization/serialization.hpp>
@@ -213,8 +214,17 @@ namespace gtsam {
     }
 	};
 
+	// Conversion utilities
+
 	template<class Key> Symbol key2symbol(Key key) {
 		return Symbol(key);
 	}
+
+	template<class Key> std::list<Symbol> keys2symbols(std::list<Key> keys) {
+		std::list<Symbol> symbols;
+		std::transform(keys.begin(), keys.end(), std::back_inserter(symbols), key2symbol<Key> );
+		return symbols;
+	}
+
 } // namespace gtsam
 
