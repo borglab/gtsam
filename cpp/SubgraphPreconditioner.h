@@ -9,6 +9,7 @@
 
 #include "GaussianFactorGraph.h"
 #include "GaussianBayesNet.h"
+#include "Ordering.h"
 
 namespace gtsam {
 
@@ -59,8 +60,6 @@ namespace gtsam {
 		void print(const std::string& s = "SubgraphPreconditioner") const;
 	};
 
-	class Ordering;
-
   /**
    * A linear system solver using subgraph preconditioning conjugate gradient
    */
@@ -76,11 +75,23 @@ namespace gtsam {
 		const bool verbose_;
 		const double epsilon_, epsilon_abs_;
 
+		/* the ordering derived from the spanning tree */
+		boost::shared_ptr<Ordering> ordering_;
+
+		/* the solution computed from the first subgraph */
+		boost::shared_ptr<Config> theta_bar_;
+
 		NonlinearGraph T_, C_;
 
 	public:
-		SubgraphPCG() {}
+		// kai: this constructor is for compatible with Factorization
+		SubgraphPCG() { throw std::runtime_error("SubgraphPCG: this constructor is only for compatibility!");}
+
 		SubgraphPCG(const NonlinearGraph& G, const Config& config);
+
+		boost::shared_ptr<Ordering> ordering() const { return ordering_; }
+
+		boost::shared_ptr<Config> theta_bar() const { return theta_bar_; }
 
   	/**
   	 * solve for the optimal displacement in the tangent space, and then solve

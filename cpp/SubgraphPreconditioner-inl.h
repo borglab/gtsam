@@ -29,12 +29,20 @@ namespace gtsam {
 		list<Key> keys = predecessorMap2Keys(tree);
 
 		// split the graph
-		Key root = keys.back();
 		if (verbose_) cout << "generating spanning tree and split the graph ...";
 		G.template split<Key, Constraint>(tree, T_, C_);
 		if (verbose_) cout << T_.size() << " and " << C_.size() << " factors" << endl;
 
-		// theta_bar = composePoses<Graph, Constraint, Pose, Config> (T_, tree, config[root]);
+		// make the ordering
+		list<Symbol> symbols;
+		symbols.resize(keys.size());
+		std::transform(keys.begin(), keys.end(), symbols.begin(), key2symbol<Key>);
+		ordering_ = boost::shared_ptr<Ordering>(new Ordering(symbols));
+
+		// compose the approximate solution
+		Key root = keys.back();
+		theta_bar_ = composePoses<Graph, Constraint, Pose, Config> (T_, tree, config[root]);
+
 	}
 
 	/* ************************************************************************* */
@@ -43,7 +51,7 @@ namespace gtsam {
 			const Config& theta_bar, const Ordering& ordering) const {
 
 		VectorConfig zeros;
-		BOOST_FOREACH(const string& j, ordering) zeros.insert(j,zero(3));
+		BOOST_FOREACH(const Symbol& j, ordering) zeros.insert(j,zero(3));
 
 		// build the subgraph PCG system
 		GaussianFactorGraph Ab1 = T_.linearize(theta_bar);
