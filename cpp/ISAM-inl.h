@@ -31,7 +31,7 @@ namespace gtsam {
 
 		// Remove the contaminated part of the Bayes tree
 		FactorGraph<Factor> factors;
-		boost::tie(factors, orphans) = removeTop(newFactors);
+		removeTop(newFactors.keys(), factors, orphans);
 
 		// add the factors themselves
 		factors.push_back(newFactors);

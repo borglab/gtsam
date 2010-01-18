@@ -119,6 +119,9 @@ namespace gtsam {
 	void ISAM2<Conditional, Config>::update_internal(const NonlinearFactorGraph<Config>& newFactors,
 			const Config& config, Cliques& orphans) {
 
+		// todo: updates all variables... needs to be synced with removeTop!!!
+		linPoint_ = expmap(linPoint_, delta_);
+
 		// add new variables
 		linPoint_.insert(config);
 
@@ -126,7 +129,9 @@ namespace gtsam {
 
 		// Remove the contaminated part of the Bayes tree
 		FactorGraph<GaussianFactor> affectedFactors;
-		boost::tie(affectedFactors, orphans) = this->removeTop(newFactorsLinearized);
+//		list<Symbol> keysToBeRemoved = newFactorsLinearized.keys(); // todo
+		list<Symbol> keysToBeRemoved = nonlinearFactors_.keys();
+		this->removeTop(keysToBeRemoved, affectedFactors, orphans);
 
 		// relinearize the affected factors ...
 		list<Symbol> affectedKeys = affectedFactors.keys();
@@ -172,7 +177,6 @@ namespace gtsam {
 
 		// update solution - todo: potentially expensive
 		delta_ = optimize2(*this);
-
 	}
 
 	template<class Conditional, class Config>
