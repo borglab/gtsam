@@ -23,7 +23,7 @@ namespace gtsam {
 	using namespace std;
 
 	// from inference-inl.h - need to additionally return the newly created factor for caching
-	boost::shared_ptr<GaussianConditional> _eliminateOne(FactorGraph<GaussianFactor>& graph, cachedFactors& cached, const Symbol& key) {
+	boost::shared_ptr<GaussianConditional> _eliminateOne(FactorGraph<GaussianFactor>& graph, CachedFactors& cached, const Symbol& key) {
 
 		// combine the factors of all nodes connected to the variable to be eliminated
 		// if no factors are connected to key, returns an empty factor
@@ -45,7 +45,7 @@ namespace gtsam {
 	}
 
 	// from GaussianFactorGraph.cpp, see _eliminateOne above
-	GaussianBayesNet _eliminate(FactorGraph<GaussianFactor>& graph, cachedFactors& cached, const Ordering& ordering) {
+	GaussianBayesNet _eliminate(FactorGraph<GaussianFactor>& graph, CachedFactors& cached, const Ordering& ordering) {
 		GaussianBayesNet chordalBayesNet; // empty
 		BOOST_FOREACH(const Symbol& key, ordering) {
 			GaussianConditional::shared_ptr cg = _eliminateOne(graph, cached, key);
@@ -54,7 +54,7 @@ namespace gtsam {
 		return chordalBayesNet;
 	}
 
-	GaussianBayesNet _eliminate_const(const FactorGraph<GaussianFactor>& graph, cachedFactors& cached, const Ordering& ordering) {
+	GaussianBayesNet _eliminate_const(const FactorGraph<GaussianFactor>& graph, CachedFactors& cached, const Ordering& ordering) {
 		// make a copy that can be modified locally
 		FactorGraph<GaussianFactor> graph_ignored = graph;
 		return _eliminate(graph_ignored, cached, ordering);
@@ -67,9 +67,9 @@ namespace gtsam {
 	/** Create a Bayes Tree from a nonlinear factor graph */
 	template<class Conditional, class Config>
 	ISAM2<Conditional, Config>::ISAM2(const NonlinearFactorGraph<Config>& nlfg, const Ordering& ordering, const Config& config)
-	: BayesTree<Conditional>(nlfg.linearize(config).eliminate(ordering)), nonlinearFactors_(nlfg), linPoint_(config), estimate_(config) {
+	: BayesTree<Conditional>(nlfg.linearize(config).eliminate(ordering)), nonlinearFactors_(nlfg), linPoint_(config) {
 		// todo: repeats calculation above, just to set "cached"
-		_eliminate_const(nlfg.linearize(config), cached, ordering);
+		_eliminate_const(nlfg.linearize(config), cached_, ordering);
 	}
 
 	/* ************************************************************************* */
@@ -108,7 +108,7 @@ namespace gtsam {
 			it--;
 			const Symbol& key = *it;
 			// retrieve the cached factor and add to boundary
-			cachedBoundary.push_back(cached[key]);
+			cachedBoundary.push_back(cached_[key]);
 		}
 
 		return cachedBoundary;
@@ -119,13 +119,16 @@ namespace gtsam {
 	void ISAM2<Conditional, Config>::update_internal(const NonlinearFactorGraph<Config>& newFactors,
 			const Config& config, Cliques& orphans) {
 
+#if 0 // todo - temporarily disabled --------------------------------------------------------------------------------------------------
 		// copy variables into config_, but don't overwrite existing entries (current linearization point!)
 		for (typename Config::const_iterator it = config.begin(); it!=config.end(); it++) {
 			if (!linPoint_.contains(it->first)) {
 				linPoint_.insert(it->first, it->second);
-				estimate_.insert(it->first, it->second);
 			}
 		}
+#else
+		linPoint_ = config;
+#endif
 
 		FactorGraph<GaussianFactor> newFactorsLinearized = newFactors.linearize(linPoint_);
 
@@ -155,7 +158,7 @@ namespace gtsam {
 		}
 
 		// eliminate into a Bayes net
-		BayesNet<Conditional> bayesNet = _eliminate(factors, cached, ordering);
+		BayesNet<Conditional> bayesNet = _eliminate(factors, cached_, ordering);
 
 		// remember the new factors for later relinearization
 		nonlinearFactors_.push_back(newFactors);
@@ -176,9 +179,7 @@ namespace gtsam {
 		}
 
 		// update solution - todo: potentially expensive
-		VectorConfig delta = optimize2(*this);
-//		delta.print();
-		estimate_ += delta;
+		delta_ = optimize2(*this);
 
 	}
 

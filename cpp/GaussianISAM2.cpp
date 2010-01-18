@@ -11,7 +11,9 @@ using namespace gtsam;
 
 // Explicitly instantiate so we don't have to include everywhere
 #include "ISAM2-inl.h"
+
 //template class ISAM2<GaussianConditional, VectorConfig>;
+//template class ISAM2<GaussianConditional, planarSLAM::Config>;
 
 namespace gtsam {
 
@@ -25,14 +27,35 @@ void optimize2(const GaussianISAM2::sharedClique& clique, VectorConfig& result) 
     result.insert(cg->key(), x);   // store result in partial solution
   }
 	BOOST_FOREACH(GaussianISAM2::sharedClique child, clique->children_) {
-//	list<GaussianISAM2::Clique::shared_ptr>::const_iterator child;
-//	for (child = clique->children_.begin(); child != clique->children_.end(); child++) {
 		optimize2(child, result);
 	}
 }
 
 /* ************************************************************************* */
 VectorConfig optimize2(const GaussianISAM2& bayesTree) {
+	VectorConfig result;
+	// starting from the root, call optimize on each conditional
+	optimize2(bayesTree.root(), result);
+	return result;
+}
+
+#if 0
+/* ************************************************************************* */
+void optimize2(const GaussianISAM2_P::sharedClique& clique, VectorConfig& result) {
+	// parents are assumed to already be solved and available in result
+	GaussianISAM2_P::Clique::const_reverse_iterator it;
+	for (it = clique->rbegin(); it!=clique->rend(); it++) {
+		GaussianConditional::shared_ptr cg = *it;
+    result.insert(cg->key(), cg->solve(result));   // store result in partial solution
+  }
+	BOOST_FOREACH(GaussianISAM2_P::sharedClique child, clique->children_) {
+		optimize2(child, result);
+	}
+}
+#endif
+
+/* ************************************************************************* */
+VectorConfig optimize2(const GaussianISAM2_P& bayesTree) {
 	VectorConfig result;
 	// starting from the root, call optimize on each conditional
 	optimize2(bayesTree.root(), result);

@@ -24,7 +24,7 @@
 
 namespace gtsam {
 
-	typedef std::map<Symbol, GaussianFactor::shared_ptr> cachedFactors;
+	typedef std::map<Symbol, GaussianFactor::shared_ptr> CachedFactors;
 
 	template<class Conditional, class Config>
 	class ISAM2: public BayesTree<Conditional> {
@@ -34,14 +34,14 @@ namespace gtsam {
 		// current linearization point
 		Config linPoint_;
 
-		// most recent estimate
-		Config estimate_;
+		// most recent solution
+		VectorConfig delta_;
 
 		// for keeping all original nonlinear factors
 		NonlinearFactorGraph<Config> nonlinearFactors_;
 
 		// cached intermediate results for restarting computation in the middle
-		cachedFactors cached;
+		CachedFactors cached_;
 
 	public:
 
@@ -65,7 +65,7 @@ namespace gtsam {
 		void update_internal(const NonlinearFactorGraph<Config>& newFactors, const Config& config, Cliques& orphans);
 		void update(const NonlinearFactorGraph<Config>& newFactors, const Config& config);
 
-		const Config estimate() {return estimate_;}
+		const Config estimate() {return expmap(linPoint_, delta_);}
 
 	private:
 		FactorGraph<GaussianFactor> relinearizeAffectedFactors(const std::list<Symbol>& affectedKeys);
