@@ -41,6 +41,9 @@ namespace gtsam {
     /** Insert a value into the configuration with a given index */
     VectorConfig& insert(const Symbol& name, const Vector& val);
 
+    /** Insert a config into another config */
+    void insert(const VectorConfig& config);
+
     /** Add to vector at position j */
     void add(const Symbol& j, const Vector& a);
 

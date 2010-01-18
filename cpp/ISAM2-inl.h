@@ -119,16 +119,8 @@ namespace gtsam {
 	void ISAM2<Conditional, Config>::update_internal(const NonlinearFactorGraph<Config>& newFactors,
 			const Config& config, Cliques& orphans) {
 
-#if 0 // todo - temporarily disabled --------------------------------------------------------------------------------------------------
-		// copy variables into config_, but don't overwrite existing entries (current linearization point!)
-		for (typename Config::const_iterator it = config.begin(); it!=config.end(); it++) {
-			if (!linPoint_.contains(it->first)) {
-				linPoint_.insert(it->first, it->second);
-			}
-		}
-#else
-		linPoint_ = config;
-#endif
+		// add new variables
+		linPoint_.insert(config);
 
 		FactorGraph<GaussianFactor> newFactorsLinearized = newFactors.linearize(linPoint_);
 

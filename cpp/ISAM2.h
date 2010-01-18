@@ -65,9 +65,11 @@ namespace gtsam {
 		void update_internal(const NonlinearFactorGraph<Config>& newFactors, const Config& config, Cliques& orphans);
 		void update(const NonlinearFactorGraph<Config>& newFactors, const Config& config);
 
-		const Config estimate() {return expmap(linPoint_, delta_);}
+		const Config estimate() const {return expmap(linPoint_, delta_);}
+		const Config linearizationPoint() const {return linPoint_;}
 
 	private:
+
 		FactorGraph<GaussianFactor> relinearizeAffectedFactors(const std::list<Symbol>& affectedKeys);
 		FactorGraph<GaussianFactor> getCachedBoundaryFactors(Cliques& orphans);
 

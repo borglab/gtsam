@@ -107,6 +107,8 @@ namespace gtsam {
     void insert(const J1& j, const X1& value) { insert_helper(first, j, value); }
     void insert(const J2& j, const X2& value) { insert_helper(second, j, value); }
 
+    void insert(const PairConfig& config);
+
     /**
      * Remove the variable with the given j.  Throws invalid_argument if the
      * j is not present in the config.

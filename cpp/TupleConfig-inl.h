@@ -25,4 +25,14 @@ namespace gtsam {
     second.print(s + "Config2: ");
   }
 
+  template<class J1, class X1, class J2, class X2>
+  void PairConfig<J1,X1,J2,X2>::insert(const PairConfig& config) {
+  	for (typename Config1::const_iterator it = config.first.begin(); it!=config.first.end(); it++) {
+  		insert(it->first, it->second);
+  	}
+  	for (typename Config2::const_iterator it = config.second.begin(); it!=config.second.end(); it++) {
+  		insert(it->first, it->second);
+  	}
+  }
+
 }

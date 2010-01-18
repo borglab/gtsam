@@ -42,6 +42,13 @@ VectorConfig& VectorConfig::insert(const Symbol& name, const Vector& val) {
 }
 
 /* ************************************************************************* */
+void VectorConfig::insert(const VectorConfig& config) {
+	for (const_iterator it = config.begin(); it!=config.end(); it++) {
+		insert(it->first, it->second);
+	}
+}
+
+/* ************************************************************************* */
 void VectorConfig::add(const Symbol& j, const Vector& a) {
 	Vector& vj = values[j];
 	if (vj.size()==0) vj = a; else vj += a;
