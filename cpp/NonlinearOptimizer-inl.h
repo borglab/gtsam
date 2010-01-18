@@ -44,37 +44,38 @@ namespace gtsam {
 	}
 
 	/* ************************************************************************* */
-	// Constructors
+	// Constructors without the solver
 	/* ************************************************************************* */
-	template<class G, class C>
-	NonlinearOptimizer<G, C>::NonlinearOptimizer(shared_graph graph,
-			shared_ordering ordering, shared_config config, double lambda) :
+	template<class G, class C, class LS>
+	NonlinearOptimizer<G, C, LS>::NonlinearOptimizer(shared_graph graph,
+			shared_ordering ordering, shared_config config, shared_solver solver, double lambda) :
 		graph_(graph), ordering_(ordering), config_(config), error_(graph->error(
-				*config)), lambda_(lambda) {
+				*config)), lambda_(lambda), solver_(solver) {
 	}
+
+	/* ************************************************************************* */
+	// Constructors without the solver
+	/* ************************************************************************* */
+//	template<class G, class C, class LS>
+//	NonlinearOptimizer<G, C, LS>::NonlinearOptimizer(shared_graph graph,
+//			shared_ordering ordering, shared_config config, double lambda) :
+//		graph_(graph), ordering_(ordering), config_(config), error_(graph->error(
+//				*config)), lambda_(lambda), solver_(new LS(*graph, *config)){
+//	}
 
 	/* ************************************************************************* */
 	// linearize and optimize
 	/* ************************************************************************* */
-	template<class G, class C>
-	VectorConfig NonlinearOptimizer<G, C>::linearizeAndOptimizeForDelta() const {
-
-		// linearize the non-linear graph around the current config
-		// which gives a linear optimization problem in the tangent space
-		GaussianFactorGraph linear = graph_->linearize(*config_);
-
-		// solve for the optimal displacement in the tangent space
-		VectorConfig delta = linear.optimize(*ordering_);
-
-		// return
-		return delta;
+	template<class G, class C, class LS>
+	VectorConfig NonlinearOptimizer<G, C, LS>::linearizeAndOptimizeForDelta() const {
+		return solver_->linearizeAndOptimize(*graph_, *config_, *ordering_);
 	}
 
 	/* ************************************************************************* */
 	// One iteration of Gauss Newton
 	/* ************************************************************************* */
-	template<class G, class C>
-	NonlinearOptimizer<G, C> NonlinearOptimizer<G, C>::iterate(
+	template<class G, class C, class LS>
+	NonlinearOptimizer<G, C, LS> NonlinearOptimizer<G, C, LS>::iterate(
 			verbosityLevel verbosity) const {
 
 		// linearize and optimize
@@ -91,7 +92,7 @@ namespace gtsam {
 		if (verbosity >= CONFIG)
 			newConfig->print("newConfig");
 
-		NonlinearOptimizer newOptimizer = NonlinearOptimizer(graph_, ordering_, newConfig);
+		NonlinearOptimizer newOptimizer = NonlinearOptimizer(graph_, ordering_, newConfig, solver_);
 
 		if (verbosity >= ERROR)
 			cout << "error: " << newOptimizer.error_ << endl;
@@ -100,8 +101,8 @@ namespace gtsam {
 	}
 
 	/* ************************************************************************* */
-	template<class G, class C>
-	NonlinearOptimizer<G, C> NonlinearOptimizer<G, C>::gaussNewton(
+	template<class G, class C, class LS>
+	NonlinearOptimizer<G, C, LS> NonlinearOptimizer<G, C, LS>::gaussNewton(
 			double relativeThreshold, double absoluteThreshold,
 			verbosityLevel verbosity, int maxIterations) const {
 		// linearize, solve, update
@@ -124,8 +125,8 @@ namespace gtsam {
 	// optimizer if error decreased or recurse with a larger lambda if not.
 	// TODO: in theory we can't infinitely recurse, but maybe we should put a max.
 	/* ************************************************************************* */
-	template<class G, class C>
-	NonlinearOptimizer<G, C> NonlinearOptimizer<G, C>::try_lambda(
+	template<class G, class C, class LS>
+	NonlinearOptimizer<G, C, LS> NonlinearOptimizer<G, C, LS>::try_lambda(
 			const GaussianFactorGraph& linear, verbosityLevel verbosity, double factor) const {
 
 		if (verbosity >= TRYLAMBDA)
@@ -137,7 +138,7 @@ namespace gtsam {
 			damped.print("damped");
 
 		// solve
-		VectorConfig delta = damped.optimize(*ordering_);
+		VectorConfig delta = solver_->optimize(damped, *ordering_);
 		if (verbosity >= TRYDELTA)
 			delta.print("delta");
 
@@ -147,14 +148,14 @@ namespace gtsam {
 			newConfig->print("config");
 
 		// create new optimization state with more adventurous lambda
-		NonlinearOptimizer next(graph_, ordering_, newConfig, lambda_ / factor);
+		NonlinearOptimizer next(graph_, ordering_, newConfig, solver_, lambda_ / factor);
 
 		// if error decreased, return the new state
 		if (next.error_ <= error_)
 			return next;
 		else {
 			// TODO: can we avoid copying the config ?
-			NonlinearOptimizer cautious(graph_, ordering_, config_, lambda_ * factor);
+			NonlinearOptimizer cautious(graph_, ordering_, config_, solver_, lambda_ * factor);
 			return cautious.try_lambda(linear, verbosity, factor);
 		}
 	}
@@ -162,8 +163,8 @@ namespace gtsam {
 	/* ************************************************************************* */
 	// One iteration of Levenberg Marquardt
 	/* ************************************************************************* */
-	template<class G, class C>
-	NonlinearOptimizer<G, C> NonlinearOptimizer<G, C>::iterateLM(
+	template<class G, class C, class LS>
+	NonlinearOptimizer<G, C, LS> NonlinearOptimizer<G, C, LS>::iterateLM(
 			verbosityLevel verbosity, double lambdaFactor) const {
 
 		// maybe show output
@@ -184,8 +185,8 @@ namespace gtsam {
 	}
 
 	/* ************************************************************************* */
-	template<class G, class C>
-	NonlinearOptimizer<G, C> NonlinearOptimizer<G, C>::levenbergMarquardt(
+	template<class G, class C, class LS>
+	NonlinearOptimizer<G, C, LS> NonlinearOptimizer<G, C, LS>::levenbergMarquardt(
 			double relativeThreshold, double absoluteThreshold,
 			verbosityLevel verbosity, int maxIterations, double lambdaFactor) const {
 

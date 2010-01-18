@@ -293,7 +293,6 @@ PredecessorMap<Key> FactorGraph<Factor>::findMinimumSpanningTree() const {
 	for (vi = p_map.begin(); vi!=p_map.end(); itVertex++, vi++) {
 		Key key = boost::get(boost::vertex_name, g, *itVertex);
 		Key parent = boost::get(boost::vertex_name, g, *vi);
-		// printf("%s parent: %s\n", key.c_str(), parent.c_str());
 		tree.insert(key, parent);
 	}
 

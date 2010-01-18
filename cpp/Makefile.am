@@ -117,7 +117,7 @@ testNoiseModel_SOURCES          = testNoiseModel.cpp
 testNoiseModel_LDADD            = libgtsam.la
 
 # Iterative Methods
-headers += iterative-inl.h
+headers += iterative-inl.h SubgraphPreconditioner-inl.h
 sources += iterative.cpp BayesNetPreconditioner.cpp SubgraphPreconditioner.cpp
 check_PROGRAMS += testIterative testBayesNetPreconditioner testSubgraphPreconditioner
 testIterative_SOURCES              = $(example) testIterative.cpp

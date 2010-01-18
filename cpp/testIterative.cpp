@@ -17,8 +17,12 @@ using namespace boost::assign;
 #include "iterative.h"
 #include "smallExample.h"
 #include "pose2SLAM.h"
+#include "SubgraphPreconditioner.h"
+#include "Ordering-inl.h"
 #include "FactorGraph-inl.h"
 #include "NonlinearFactorGraph-inl.h"
+#include "iterative-inl.h"
+
 
 using namespace std;
 using namespace gtsam;
@@ -111,10 +115,8 @@ TEST( Iterative, conjugateGradientDescent_soft_constraint )
 	config.insert(2, Pose2(1.5,0.,0.));
 
 	Pose2Graph graph;
-	Matrix cov = eye(3);
-	Matrix cov2 = eye(3) * 1e-10;
-	graph.addPrior(1, Pose2(0.,0.,0.), cov2);
-	graph.addConstraint(1,2, Pose2(1.,0.,0.), cov);
+	graph.addPrior(1, Pose2(0.,0.,0.), eye(3) * 1e-10);
+	graph.addConstraint(1,2, Pose2(1.,0.,0.), eye(3));
 
 	VectorConfig zeros;
 	zeros.insert("x1",zero(3));
@@ -126,6 +128,53 @@ TEST( Iterative, conjugateGradientDescent_soft_constraint )
 	VectorConfig expected;
 	expected.insert("x1", zero(3));
 	expected.insert("x2", Vector_(3,-0.5,0.,0.));
+	CHECK(assert_equal(expected, actual));
+}
+
+/* ************************************************************************* */
+TEST( Iterative, subgraphPCG )
+{
+	typedef Pose2Config::Key Key;
+
+	Pose2Config theta_bar;
+	theta_bar.insert(1, Pose2(0.,0.,0.));
+	theta_bar.insert(2, Pose2(1.5,0.,0.));
+
+	Pose2Graph graph;
+	graph.addPrior(1, Pose2(0.,0.,0.), eye(3) * 1e-10);
+	graph.addConstraint(1,2, Pose2(1.,0.,0.), eye(3));
+
+	VectorConfig zeros;
+	zeros.insert("x1",zero(3));
+	zeros.insert("x2",zero(3));
+
+	// generate spanning tree and create ordering
+	PredecessorMap<Key> tree = graph.findMinimumSpanningTree<Key, Pose2Factor>();
+	list<Key> keys = predecessorMap2Keys(tree);
+	list<Symbol> symbols;
+	symbols.resize(keys.size());
+	std::transform(keys.begin(), keys.end(), symbols.begin(), key2symbol<Key>);
+	Ordering ordering(symbols);
+
+	Key root = keys.back();
+	Pose2Graph T, C;
+	graph.split<Key, Pose2Factor>(tree, T, C);
+
+	// build the subgraph PCG system
+	GaussianFactorGraph Ab1 = T.linearize(theta_bar);
+	GaussianFactorGraph Ab2 = C.linearize(theta_bar);
+	const GaussianBayesNet Rc1 = Ab1.eliminate(ordering);
+	VectorConfig xbar = optimize(Rc1);
+	SubgraphPreconditioner system(Rc1, Ab2, xbar);
+
+	// Solve the subgraph PCG
+	VectorConfig ybar = conjugateGradients<SubgraphPreconditioner, VectorConfig,
+			Errors> (system, zeros, false, 1e-5, 1e-5, 100);
+	VectorConfig actual = system.x(ybar);
+
+	VectorConfig expected;
+	expected.insert("x1", zero(3));
+	expected.insert("x2", Vector_(3, -0.5, 0., 0.));
 	CHECK(assert_equal(expected, actual));
 }
 /* ************************************************************************* */

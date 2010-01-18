@@ -20,12 +20,12 @@ namespace gtsam {
 	 * and then one of the optimization routines is called. These recursively iterate
 	 * until convergence. All methods are functional and return a new state.
 	 *
-	 * The class is parameterized by the Graph type and Config class type, the latter
-	 * in order to be able to optimize over non-vector configurations as well.
+	 * The class is parameterized by the Graph type, Config class type and the linear solver type.
+	 * the config type is in order to be able to optimize over non-vector configurations as well.
 	 * To use in code, include <gtsam/NonlinearOptimizer-inl.h> in your cpp file
 	 * (the trick in http://www.ddj.com/cpp/184403420 did not work).
 	 */
-	template<class FactorGraph, class Config>
+	template<class FactorGraph, class Config, class LinearSolver = Factorization<FactorGraph, Config> >
 	class NonlinearOptimizer {
 	public:
 
@@ -33,6 +33,7 @@ namespace gtsam {
 		typedef boost::shared_ptr<const Config> shared_config;
 		typedef boost::shared_ptr<const FactorGraph> shared_graph;
 		typedef boost::shared_ptr<const Ordering> shared_ordering;
+		typedef boost::shared_ptr<const LinearSolver> shared_solver;
 
 		enum verbosityLevel {
 			SILENT,
@@ -63,6 +64,9 @@ namespace gtsam {
 		// TODO: red flag, should we have an LM class ?
 		const double lambda_;
 
+		// the linear system solver
+		const shared_solver solver_;
+
 		// Recursively try to do tempered Gauss-Newton steps until we succeed
 		NonlinearOptimizer try_lambda(const GaussianFactorGraph& linear,
 				verbosityLevel verbosity, double factor) const;
@@ -73,14 +77,15 @@ namespace gtsam {
 		 * Constructor
 		 */
 		NonlinearOptimizer(shared_graph graph, shared_ordering ordering,
-				shared_config config, double lambda = 1e-5);
+				shared_config config, shared_solver solver = shared_solver(new LinearSolver),
+				double lambda = 1e-5);
 
 		/**
 		 * Copy constructor
 		 */
 		NonlinearOptimizer(const NonlinearOptimizer<FactorGraph, Config> &optimizer) :
 		  graph_(optimizer.graph_), ordering_(optimizer.ordering_), config_(optimizer.config_),
-		  error_(optimizer.error_), lambda_(optimizer.lambda_) {}
+		  error_(optimizer.error_), lambda_(optimizer.lambda_), solver_(optimizer.solver_) {}
 
 		/**
 		 * Return current error

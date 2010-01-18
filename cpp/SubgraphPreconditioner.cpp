@@ -96,8 +96,8 @@ namespace gtsam {
 
 		return y1 + y2;
 	}
-	/* ************************************************************************* */
 
+	/* ************************************************************************* */
 	void SubgraphPreconditioner::print(const std::string& s) const {
 		cout << s << endl;
 		Ab2_.print();

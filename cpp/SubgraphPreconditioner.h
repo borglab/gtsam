@@ -46,7 +46,7 @@ namespace gtsam {
 		/* error, given y */
 		double error(const VectorConfig& y) const;
 
-		/** gradient */
+		/** gradient = y + inv(R1')*A2'*(A2*inv(R1)*y-b2bar) */
 		VectorConfig gradient(const VectorConfig& y) const;
 
 		/** Apply operator A */
@@ -59,6 +59,43 @@ namespace gtsam {
 		void print(const std::string& s = "SubgraphPreconditioner") const;
 	};
 
+	class Ordering;
+
+  /**
+   * A linear system solver using subgraph preconditioning conjugate gradient
+   */
+	template <class NonlinearGraph, class Config>
+	class SubgraphPCG {
+
+	private:
+		typedef typename Config::Key Key;
+		typedef typename NonlinearGraph::Constraint Constraint;
+		typedef typename NonlinearGraph::Pose Pose;
+
+		const size_t maxIterations_;
+		const bool verbose_;
+		const double epsilon_, epsilon_abs_;
+
+		NonlinearGraph T_, C_;
+
+	public:
+		SubgraphPCG() {}
+		SubgraphPCG(const NonlinearGraph& G, const Config& config);
+
+  	/**
+  	 * solve for the optimal displacement in the tangent space, and then solve
+  	 * the resulted linear system
+  	 */
+  	VectorConfig optimize(GaussianFactorGraph& fg, const Ordering& ordering) const {
+  		throw std::runtime_error("SubgraphPCG:: optimize is not supported!");
+  	}
+
+		/**
+		 * linearize the non-linear graph around the current config,
+		 */
+  	VectorConfig linearizeAndOptimize(const NonlinearGraph& g, const Config& config,
+  			const Ordering& ordering) const;
+	};
 } // nsamespace gtsam
 
 #endif /* SUBGRAPHPRECONDITIONER_H_ */

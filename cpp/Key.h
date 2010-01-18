@@ -141,5 +141,8 @@ namespace gtsam {
     }
 	};
 
+	template<class Key> Symbol key2symbol(Key key) {
+		return Symbol(key);
+	}
 } // namespace gtsam
 

@@ -20,10 +20,13 @@ using namespace boost;
 #include "Matrix.h"
 #include "Ordering.h"
 #include "smallExample.h"
+#include "pose2SLAM.h"
+#include "GaussianFactorGraph.h"
 
 // template definitions
 #include "NonlinearFactorGraph-inl.h"
 #include "NonlinearOptimizer-inl.h"
+#include "SubgraphPreconditioner-inl.h"
 
 using namespace gtsam;
 
@@ -89,7 +92,8 @@ TEST( NonlinearOptimizer, iterateLM )
 	ord->push_back("x");
 
 	// create initial optimization state, with lambda=0
-	Optimizer optimizer(fg, ord, config, 0);
+	Optimizer::shared_solver solver(new Factorization<ExampleNonlinearFactorGraph, VectorConfig>);
+	Optimizer optimizer(fg, ord, config, solver, 0.);
 
 	// normal iterate
 	Optimizer iterated1 = optimizer.iterate();
@@ -144,6 +148,61 @@ TEST( NonlinearOptimizer, optimize )
 	Optimizer actual2 = optimizer.levenbergMarquardt(relativeThreshold,
 			absoluteThreshold, Optimizer::SILENT);
 	CHECK(assert_equal(*(actual2.config()),cstar));
+}
+
+/* ************************************************************************* */
+TEST( NonlinearOptimizer, Factorization )
+{
+	typedef NonlinearOptimizer<Pose2Graph, Pose2Config, Factorization<Pose2Graph, Pose2Config> > Optimizer;
+
+	boost::shared_ptr<Pose2Config> config(new Pose2Config);
+	config->insert(1, Pose2(0.,0.,0.));
+	config->insert(2, Pose2(1.5,0.,0.));
+
+	boost::shared_ptr<Pose2Graph> graph(new Pose2Graph);
+	graph->addPrior(1, Pose2(0.,0.,0.), eye(3) * 1e-10);
+	graph->addConstraint(1,2, Pose2(1.,0.,0.), eye(3));
+
+	boost::shared_ptr<Ordering> ordering(new Ordering);
+	ordering->push_back(Pose2Config::Key(1));
+	ordering->push_back(Pose2Config::Key(2));
+
+	Optimizer optimizer(graph, ordering, config);
+	Optimizer optimized = optimizer.iterateLM();
+
+	Pose2Config expected;
+	expected.insert(1, Pose2(0.,0.,0.));
+	expected.insert(2, Pose2(1.,0.,0.));
+	CHECK(assert_equal(expected, *optimized.config(), 1e-5));
+}
+
+/* ************************************************************************* */
+TEST( NonlinearOptimizer, SubgraphPCG )
+{
+	typedef NonlinearOptimizer<Pose2Graph, Pose2Config, SubgraphPCG<Pose2Graph, Pose2Config> > Optimizer;
+
+	boost::shared_ptr<Pose2Config> config(new Pose2Config);
+	config->insert(1, Pose2(0.,0.,0.));
+	config->insert(2, Pose2(1.5,0.,0.));
+
+	boost::shared_ptr<Pose2Graph> graph(new Pose2Graph);
+	graph->addPrior(1, Pose2(0.,0.,0.), eye(3) * 1e-10);
+	graph->addConstraint(1,2, Pose2(1.,0.,0.), eye(3));
+
+	boost::shared_ptr<Ordering> ordering(new Ordering);
+	ordering->push_back(Pose2Config::Key(1));
+	ordering->push_back(Pose2Config::Key(2));
+
+	double relativeThreshold = 1e-5;
+	double absoluteThreshold = 1e-5;
+	Optimizer::shared_solver solver(new SubgraphPCG<Pose2Graph, Pose2Config>(*graph, *config));
+	Optimizer optimizer(graph, ordering, config, solver);
+	Optimizer optimized = optimizer.gaussNewton(relativeThreshold, absoluteThreshold, Optimizer::SILENT);
+
+	Pose2Config expected;
+	expected.insert(1, Pose2(0.,0.,0.));
+	expected.insert(2, Pose2(1.,0.,0.));
+	CHECK(assert_equal(expected, *optimized.config(), 1e-5));
 }
 
 /* ************************************************************************* */

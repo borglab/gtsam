@@ -220,4 +220,31 @@ namespace gtsam {
 				size_t maxIterations = 0) const;
   };
 
+  /**
+   * A linear system solver using factorization
+   */
+  template <class NonlinearGraph, class Config>
+  class Factorization {
+  public:
+  	Factorization() {}
+
+  	Factorization(const NonlinearGraph& g, const Config& config) {}
+
+  	/**
+  	 * solve for the optimal displacement in the tangent space, and then solve
+  	 * the resulted linear system
+  	 */
+  	VectorConfig optimize(GaussianFactorGraph& fg, const Ordering& ordering) const {
+  		return fg.optimize(ordering);
+  	}
+
+		/**
+		 * linearize the non-linear graph around the current config,
+		 */
+  	VectorConfig linearizeAndOptimize(const NonlinearGraph& g, const Config& config,
+  			const Ordering& ordering) const {
+  		GaussianFactorGraph linear = g.linearize(config);
+  		return optimize(linear, ordering);
+  	}
+  };
 }
