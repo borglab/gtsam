@@ -115,8 +115,9 @@ inline Vector operator*(const Vector & v, const Matrix& A) {
  * overload * for matrix multiplication (as BOOST does not)
  */
 inline Matrix operator*(const Matrix& A, const Matrix& B) {
-  if (A.size2()!=B.size1()) throw std::invalid_argument(
-  		boost::str(boost::format("Matrix operator* : A.n(%d)!=B.m(%d)") % A.size2() % B.size1()));
+  // richard: boost already does this check in debug mode I think
+//  if (A.size2()!=B.size1()) throw std::invalid_argument(
+//  		boost::str(boost::format("Matrix operator* : A.n(%d)!=B.m(%d)") % A.size2() % B.size1()));
   return prod(A,B);
 }
 

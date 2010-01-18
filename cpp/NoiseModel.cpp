@@ -47,24 +47,26 @@ namespace gtsam {
 
 		// functional
 		Matrix Gaussian::Whiten(const Matrix& H) const {
-			size_t m = H.size1(), n = H.size2();
-			Matrix W(m, n);
-			for (int j = 0; j < n; j++) {
-				Vector wj = whiten(column(H, j));
-				for (int i = 0; i < m; i++)
-					W(i, j) = wj(i);
-			}
-			return W;
+//			size_t m = H.size1(), n = H.size2();
+//			Matrix W(m, n);
+//			for (int j = 0; j < n; j++) {
+//				Vector wj = whiten(column(H, j));
+//				for (int i = 0; i < m; i++)
+//					W(i, j) = wj(i);
+//			}
+//			return W;
+		  return sqrt_information_ * H;
 		}
 
 		// in place
 		void Gaussian::WhitenInPlace(Matrix& H) const {
-			size_t m = H.size1(), n = H.size2();
-			for (int j = 0; j < n; j++) {
-				Vector wj = whiten(column(H, j));
-				for (int i = 0; i < m; i++)
-					H(i, j) = wj(i);
-			}
+//			size_t m = H.size1(), n = H.size2();
+//			for (int j = 0; j < n; j++) {
+//				Vector wj = whiten(column(H, j));
+//				for (int i = 0; i < m; i++)
+//					H(i, j) = wj(i);
+//			}
+		  H = sqrt_information_ * H;
 		}
 
 		/* ************************************************************************* */
