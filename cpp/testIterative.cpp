@@ -115,7 +115,7 @@ TEST( Iterative, conjugateGradientDescent_soft_constraint )
 	config.insert(2, Pose2(1.5,0.,0.));
 
 	Pose2Graph graph;
-	graph.addPrior(1, Pose2(0.,0.,0.), eye(3) * 1e-10);
+	graph.addPrior(1, Pose2(0.,0.,0.), sharedGaussian(Vector_(3, 1e-10, 1e-10, 1e-10)));
 	graph.addConstraint(1,2, Pose2(1.,0.,0.), eye(3));
 
 	VectorConfig zeros;
@@ -141,7 +141,7 @@ TEST( Iterative, subgraphPCG )
 	theta_bar.insert(2, Pose2(1.5,0.,0.));
 
 	Pose2Graph graph;
-	graph.addPrior(1, Pose2(0.,0.,0.), eye(3) * 1e-10);
+	graph.addPrior(1, Pose2(0.,0.,0.), sharedGaussian(Vector_(3, 1e-10, 1e-10, 1e-10)));
 	graph.addConstraint(1,2, Pose2(1.,0.,0.), eye(3));
 
 	VectorConfig zeros;
