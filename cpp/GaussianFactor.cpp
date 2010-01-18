@@ -17,14 +17,15 @@
 using namespace std;
 using namespace boost::assign;
 namespace ublas = boost::numeric::ublas;
-
-// trick from some reading group
-#define FOREACH_PAIR( KEY, VAL, COL) BOOST_FOREACH (boost::tie(KEY,VAL),COL) 
-
 using namespace gtsam;
 
-// richard: commented out this typedef because appears to be unused?
-//typedef pair<const Symbol, Matrix>& mypair;
+typedef pair<Symbol,Matrix> NamedMatrix;
+
+// MACRO to loop. Ugly with pointer, but best I could in short time
+#define FOREACH_PAIR(KEY,VAL,COL) const_iterator it = COL.begin(); \
+	const Symbol* KEY = it == COL.end() ? NULL : &(it->first); \
+	const Matrix* VAL = it == COL.end() ? NULL : &(it->second); \
+	for (; it != COL.end(); it++, KEY=&(it->first), VAL=&(it->second))
 
 /* ************************************************************************* */
 GaussianFactor::GaussianFactor(const boost::shared_ptr<GaussianConditional>& cg) :
@@ -81,8 +82,8 @@ void GaussianFactor::print(const string& s) const {
   cout << s << endl;
   if (empty()) cout << " empty" << endl; 
   else {
-    Symbol j; Matrix A;
-    FOREACH_PAIR(j,A,As_) gtsam::print(A, "A["+(string)j+"]=\n");
+  	FOREACH_PAIR(j,Aj,As_)
+  		gtsam::print(*Aj, "A["+(string)*j+"]=\n");
     gtsam::print(b_,"b=");
     gtsam::print(sigmas_, "sigmas = ");
   }
@@ -130,9 +131,8 @@ bool GaussianFactor::equals(const Factor<VectorConfig>& f, double tol) const {
 Vector GaussianFactor::unweighted_error(const VectorConfig& c) const {
   Vector e = -b_;
   if (empty()) return e;
-  Symbol j; Matrix Aj; // rtodo: copying matrix here?
-  FOREACH_PAIR(j, Aj, As_)
-    e += (Aj * c[j]);
+	FOREACH_PAIR(j,Aj,As_)
+    e += (*Aj * c[*j]);
   return e;
 }
 
@@ -152,27 +152,25 @@ double GaussianFactor::error(const VectorConfig& c) const {
 /* ************************************************************************* */
 list<Symbol> GaussianFactor::keys() const {
 	list<Symbol> result;
-  Symbol j; Matrix A; // rtodo: copying matrix here?
-  FOREACH_PAIR(j,A,As_)
-    result.push_back(j);
+	typedef pair<Symbol,Matrix> NamedMatrix;
+	BOOST_FOREACH(const NamedMatrix& jA, As_)
+    result.push_back(jA.first);
   return result;
 }
 
 /* ************************************************************************* */
 Dimensions GaussianFactor::dimensions() const {
   Dimensions result;
-  Symbol j; Matrix A; // rtodo: copying matrix here?
-  FOREACH_PAIR(j,A,As_)
-    result.insert(make_pair(j,A.size2()));
+	FOREACH_PAIR(j,Aj,As_)
+    result.insert(make_pair(*j,Aj->size2()));
   return result;
 }
 
 /* ************************************************************************* */
 void GaussianFactor::tally_separator(const Symbol& key, set<Symbol>& separator) const {
   if(involves(key)) {
-    Symbol j; Matrix A; // rtodo: copying matrix here?
     FOREACH_PAIR(j,A,As_)
-      if(j != key) separator.insert(j);
+      if(*j != key) separator.insert(*j);
   }
 }
 
@@ -182,9 +180,8 @@ Vector GaussianFactor::operator*(const VectorConfig& x) const {
   if (empty()) return Ax;
 
   // Just iterate over all A matrices and multiply in correct config part
-  Symbol j; Matrix Aj; // rtodo: copying matrix here?
   FOREACH_PAIR(j, Aj, As_)
-    Ax += (Aj * x[j]);
+    Ax += (*Aj * x[*j]);
 
   return ediv_(Ax,sigmas_);
 }
@@ -194,9 +191,8 @@ VectorConfig GaussianFactor::operator^(const Vector& e) const {
   Vector E = ediv_(e,sigmas_);
 	VectorConfig x;
   // Just iterate over all A matrices and insert Ai^e into VectorConfig
-  Symbol j; Matrix Aj; // rtodo: copying matrix here?
   FOREACH_PAIR(j, Aj, As_)
-    x.insert(j,Aj^E);
+    x.insert(*j,(*Aj)^E);
 	return x;
 }
 
@@ -252,19 +248,18 @@ GaussianFactor::sparse(const Dimensions& columnIndices) const {
 	list<double> S;
 
 	// iterate over all matrices in the factor
-	Symbol key; Matrix Aj; // rtodo: copying matrix?
 	FOREACH_PAIR( key, Aj, As_) {
 		// find first column index for this key
 		// TODO: check if end() and throw exception if not found
-		Dimensions::const_iterator it = columnIndices.find(key);
+		Dimensions::const_iterator it = columnIndices.find(*key);
 		int column_start = it->second;
-		for (size_t i = 0; i < Aj.size1(); i++) {
+		for (size_t i = 0; i < Aj->size1(); i++) {
 			double sigma_i = sigmas_(i);
-			for (size_t j = 0; j < Aj.size2(); j++)
-				if (Aj(i, j) != 0.0) {
+			for (size_t j = 0; j < Aj->size2(); j++)
+				if ((*Aj)(i, j) != 0.0) {
 					I.push_back(i + 1);
 					J.push_back(j + column_start);
-					S.push_back(Aj(i, j) / sigma_i);
+					S.push_back((*Aj)(i, j) / sigma_i);
 				}
 		}
 	}
@@ -277,23 +272,22 @@ GaussianFactor::sparse(const Dimensions& columnIndices) const {
 void GaussianFactor::append_factor(GaussianFactor::shared_ptr f, size_t m, size_t pos) {
 
 	// iterate over all matrices from the factor f
-	Symbol key; Matrix A; // rtodo: copying matrix?
 	FOREACH_PAIR( key, A, f->As_) {
 
 		// find the corresponding matrix among As
-		iterator mine = As_.find(key);
+		iterator mine = As_.find(*key);
 		const bool exists = mine != As_.end();
 
 		// find rows and columns
-		const size_t n = A.size2();
+		const size_t n = A->size2();
 
 		// use existing or create new matrix
 		if (exists)
-		  copy(A.data().begin(), A.data().end(), (mine->second).data().begin()+pos*n);
+		  copy(A->data().begin(), A->data().end(), (mine->second).data().begin()+pos*n);
 		else {
 			Matrix Z = zeros(m, n);
-			copy(A.data().begin(), A.data().end(), Z.data().begin()+pos*n);
-			insert(key, Z);
+			copy(A->data().begin(), A->data().end(), Z.data().begin()+pos*n);
+			insert(*key, Z);
 		}
 
 	} // FOREACH
@@ -399,9 +393,8 @@ GaussianFactor::shared_ptr GaussianFactor::alphaFactor(const Symbol& key, const 
 	// Calculate A matrix
 	size_t m = b_.size();
 	Vector A = zero(m);
-  Symbol j; Matrix Aj; // rtodo: copying matrix?
   FOREACH_PAIR(j, Aj, As_)
-  	A += Aj * d[j];
+  	A += *Aj * d[*j];
 
   // calculate the value of the factor for RHS
 	Vector b = - unweighted_error(x);
