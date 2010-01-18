@@ -23,7 +23,7 @@ namespace gtsam {
 	using namespace std;
 
 	// from inference-inl.h - need to additionally return the newly created factor for caching
-	boost::shared_ptr<GaussianConditional> _eliminateOne(FactorGraph<GaussianFactor>& graph, cachedFactors& cached, const Symbol& key) {
+	boost::shared_ptr<GaussianConditional> _eliminateOne(FactorGraph<GaussianFactor>& graph, cachedFactors& cached, const string& key) {
 
 		// combine the factors of all nodes connected to the variable to be eliminated
 		// if no factors are connected to key, returns an empty factor
@@ -47,7 +47,7 @@ namespace gtsam {
 	// from GaussianFactorGraph.cpp, see _eliminateOne above
 	GaussianBayesNet _eliminate(FactorGraph<GaussianFactor>& graph, cachedFactors& cached, const Ordering& ordering) {
 		GaussianBayesNet chordalBayesNet; // empty
-		BOOST_FOREACH(const Symbol& key, ordering) {
+		BOOST_FOREACH(string key, ordering) {
 			GaussianConditional::shared_ptr cg = _eliminateOne(graph, cached, key);
 			chordalBayesNet.push_back(cg);
 		}
@@ -73,6 +73,43 @@ namespace gtsam {
 	}
 
 	/* ************************************************************************* */
+	// retrieve all factors that ONLY contain the affected variables
+	// (note that the remaining stuff is summarized in the cached factors)
+	template<class Conditional, class Config>
+	FactorGraph<GaussianFactor> ISAM2<Conditional, Config>::relinearizeAffectedFactors(const list<string>& affectedKeys) {
+		NonlinearFactorGraph<Config> nonlinearAffectedFactors;
+		typename FactorGraph<NonlinearFactor<Config> >::iterator it;
+		for(it = nonlinearFactors_.begin(); it != nonlinearFactors_.end(); it++) {
+			bool inside = true;
+			BOOST_FOREACH(string key, (*it)->keys()) {
+				if (find(affectedKeys.begin(), affectedKeys.end(), key) == affectedKeys.end())
+					inside = false;
+			}
+			if (inside)
+				nonlinearAffectedFactors.push_back(*it);
+		}
+		return nonlinearAffectedFactors.linearize(config_);
+	}
+
+	/* ************************************************************************* */
+	template<class Conditional, class Config>
+	FactorGraph<GaussianFactor> ISAM2<Conditional, Config>::getCachedBoundaryFactors(Cliques& orphans) {
+		// add intermediate (linearized) factors from cache that are passed into the affected area
+		FactorGraph<GaussianFactor> cachedBoundary;
+		BOOST_FOREACH(sharedClique orphan, orphans) {
+			// find the last variable that is not part of the separator
+			string oneTooFar = orphan->separator_.front();
+			list<string> keys = orphan->keys();
+			list<string>::iterator it = find(keys.begin(), keys.end(), oneTooFar);
+			it--;
+			string key = *it;
+			// retrieve the cached factor and add to boundary
+			cachedBoundary.push_back(cached[key]);
+		}
+		return cachedBoundary;
+	}
+
+	/* ************************************************************************* */
 	template<class Conditional, class Config>
 	void ISAM2<Conditional, Config>::update_internal(const NonlinearFactorGraph<Config>& newFactors,
 			const Config& config, Cliques& orphans) {
@@ -90,125 +127,31 @@ namespace gtsam {
 		FactorGraph<GaussianFactor> affectedFactors;
 		boost::tie(affectedFactors, orphans) = this->removeTop(newFactorsLinearized);
 
-#if 1
-#if 0
-		// find the corresponding original nonlinear factors, and relinearize them
-		NonlinearFactorGraph<Config> nonlinearAffectedFactors;
-		set<int> idxs; // avoid duplicates by putting index into set
-		BOOST_FOREACH(FactorGraph<GaussianFactor>::sharedFactor fac, affectedFactors) {
-			// retrieve correspondent factor from nonlinearFactors_
-			Ordering keys = fac->keys();
-			BOOST_FOREACH(const Symbol& key, keys) {
-				list<int> indices = nonlinearFactors_.factors(key);
-				BOOST_FOREACH(int idx, indices) {
-					// todo - only insert index if factor is subset of keys... not needed once we do relinearization - but then how to deal with overlap with orphans?
-					bool subset = true;
-					BOOST_FOREACH(const Symbol& k, nonlinearFactors_[idx]->keys()) {
-						if (find(keys.begin(), keys.end(), k)==keys.end()) subset = false;
-					}
-					if (subset) {
-						idxs.insert(idx);
-					}
-				}
-			}
-		}
-		BOOST_FOREACH(int idx, idxs) {
-			nonlinearAffectedFactors.push_back(nonlinearFactors_[idx]);
-		}
+		// relinearize the affected factors ...
+		list<string> affectedKeys = affectedFactors.keys();
+		FactorGraph<GaussianFactor> factors = relinearizeAffectedFactors(affectedKeys);
 
-		FactorGraph<GaussianFactor> factors = nonlinearAffectedFactors.linearize(config_);
-
-#else
-
-		NonlinearFactorGraph<Config> nonlinearAffectedFactors;
-
-		// retrieve all factors that ONLY contain the affected variables
-		// (note that the remaining stuff is summarized in the cached factors)
-		list<Symbol> affectedKeys = affectedFactors.keys();
-		typename FactorGraph<NonlinearFactor<Config> >::iterator it;
-		for(it = nonlinearFactors_.begin(); it != nonlinearFactors_.end(); it++) {
-			bool inside = true;
-			BOOST_FOREACH(string key, (*it)->keys()) {
-				if (find(affectedKeys.begin(), affectedKeys.end(), key) == affectedKeys.end())
-					inside = false;
-			}
-			if (inside)
-				nonlinearAffectedFactors.push_back(*it);
-		}
-
-		FactorGraph<GaussianFactor> factors = nonlinearAffectedFactors.linearize(config_);
-
-		// recover intermediate factors from cache that are passed into the affected area
-		FactorGraph<GaussianFactor> cachedBoundary;
-		BOOST_FOREACH(sharedClique orphan, orphans) {
-			// find the last variable that is not part of the separator
-			string oneTooFar = orphan->separator_.front();
-			list<Symbol> keys = orphan->keys();
-			list<Symbol>::iterator it = find(keys.begin(), keys.end(), oneTooFar);
-			it--;
-			const Symbol& key = *it;
-			// retrieve the cached factor and add to boundary
-			cachedBoundary.push_back(cached[key]);
-		}
+		// ... add the cached intermediate results from the boundary of the orphans ...
+		FactorGraph<GaussianFactor> cachedBoundary = getCachedBoundaryFactors(orphans);
 		factors.push_back(cachedBoundary);
 
-#endif
-
-
-#if 0
-		printf("**************\n");
-		nonlinearFactors_.linearize(config).print("all factors");
-		printf("--------------\n");
-		newFactorsLinearized.print("newFactorsLinearized");
-		printf("--------------\n");
-		factors.print("factors");
-		printf("--------------\n");
-		affectedFactors.print("affectedFactors");
-		printf("--------------\n");
-#endif
-
-		// add the new factors themselves
+		// ... and finally add the new linearized factors themselves
 		factors.push_back(newFactorsLinearized);
-#endif
 
 		// create an ordering for the new and contaminated factors
 		Ordering ordering;
 		if (true) {
 			ordering = factors.getOrdering();
 		} else {
-			list<Symbol> keys = factors.keys();
+			list<string> keys = factors.keys();
 			keys.sort(); // todo: correct sorting order?
 			ordering = keys;
 		}
 
-#if 0
-		ordering.print();
-
-		factors.print("factors BEFORE");
-		printf("--------------\n");
-#endif
-
 		// eliminate into a Bayes net
 		BayesNet<Conditional> bayesNet = _eliminate(factors, cached, ordering);
 
-#if 1
-		// check if relinearized agrees with correct solution
-		affectedFactors.push_back(newFactorsLinearized);
-
-#if 0
-		affectedFactors.print("affectedFactors BEFORE");
-		printf("--------------\n");
-#endif
-
-		BayesNet<Conditional> bayesNetTest = eliminate<GaussianFactor, GaussianConditional>(affectedFactors, ordering);
-		if (!bayesNet.equals(bayesNetTest)) {
-			printf("differ\n");
-			bayesNet.print();
-			bayesNetTest.print();
-			exit(42);
-		}
-#endif
-
+		// remember the new factors for later relinearization
 		nonlinearFactors_.push_back(newFactors);
 
 		// insert conditionals back in, straight into the topless bayesTree
@@ -216,28 +159,24 @@ namespace gtsam {
 		for ( rit=bayesNet.rbegin(); rit != bayesNet.rend(); ++rit )
 			this->insert(*rit);
 
-		int count = 0;
 		// add orphans to the bottom of the new tree
 		BOOST_FOREACH(sharedClique orphan, orphans) {
 
-		  Symbol key = orphan->separator_.front();
+			string key = orphan->separator_.front();
 			sharedClique parent = (*this)[key];
 
 			parent->children_ += orphan;
 			orphan->parent_ = parent; // set new parent!
 		}
+
+		// update solution
+		VectorConfig solution = optimize2(*this);
+		solution.print();
+
 	}
 
 	template<class Conditional, class Config>
 	void ISAM2<Conditional, Config>::update(const NonlinearFactorGraph<Config>& newFactors, const Config& config) {
-
-#if 0
-		printf("8888888888888888\n");
-		try {
-		this->print("BayesTree");
-		} catch (char * c) {};
-		printf("8888888888888888\n");
-#endif
 
 		Cliques orphans;
 		this->update_internal(newFactors, config, orphans);

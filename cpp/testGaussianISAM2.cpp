@@ -22,6 +22,24 @@ using namespace std;
 using namespace gtsam;
 
 /* ************************************************************************* */
+TEST( ISAM2, solving )
+{
+	ExampleNonlinearFactorGraph nlfg = createNonlinearFactorGraph();
+	VectorConfig noisy = createNoisyConfig();
+	Ordering ordering;
+	ordering += symbol('x', 1);
+	ordering += symbol('x', 2);
+	ordering += symbol('l', 1);
+	GaussianISAM2 btree(nlfg, ordering, noisy);
+	VectorConfig actualDelta = optimize2(btree);
+	VectorConfig delta = createCorrectDelta();
+	CHECK(assert_equal(delta, actualDelta));
+	VectorConfig actualSolution = noisy+actualDelta;
+	VectorConfig solution = createConfig();
+	CHECK(assert_equal(solution, actualSolution));
+}
+
+/* ************************************************************************* */
 TEST( ISAM2, ISAM2_smoother )
 {
 	// Create smoother with 7 nodes

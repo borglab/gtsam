@@ -31,8 +31,13 @@ namespace gtsam {
 
 	protected:
 
-		// for keeping all original nonlinear data
-		Config config_;
+		// current linearization point
+		Config linPoint_;
+
+		// most recent estimate
+		Config estimate_;
+
+		// for keeping all original nonlinear factors
 		NonlinearFactorGraph<Config> nonlinearFactors_;
 
 		// cached intermediate results for restarting computation in the middle
@@ -59,6 +64,12 @@ namespace gtsam {
 		 */
 		void update_internal(const NonlinearFactorGraph<Config>& newFactors, const Config& config, Cliques& orphans);
 		void update(const NonlinearFactorGraph<Config>& newFactors, const Config& config);
+
+		const Config estimate() {return estimate_;}
+
+	private:
+		FactorGraph<GaussianFactor> relinearizeAffectedFactors(const std::list<Symbol>& affectedKeys);
+		FactorGraph<GaussianFactor> getCachedBoundaryFactors(Cliques& orphans);
 
 	}; // ISAM2
 
