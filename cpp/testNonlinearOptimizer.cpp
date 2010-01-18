@@ -161,8 +161,8 @@ TEST( NonlinearOptimizer, Factorization )
 	config->insert(2, Pose2(1.5,0.,0.));
 
 	boost::shared_ptr<Pose2Graph> graph(new Pose2Graph);
-	graph->addPrior(1, Pose2(0.,0.,0.), Diagonal::Sigmas(Vector_(3, 1e-10, 1e-10, 1e-10)));
-	graph->addConstraint(1,2, Pose2(1.,0.,0.), Diagonal::Sigmas(Vector_(3, 1, 1, 1)));
+	graph->addPrior(1, Pose2(0.,0.,0.), Isotropic::Sigma(3, 1e-10));
+	graph->addConstraint(1,2, Pose2(1.,0.,0.), Isotropic::Sigma(3, 1));
 
 	boost::shared_ptr<Ordering> ordering(new Ordering);
 	ordering->push_back(Pose2Config::Key(1));
@@ -187,8 +187,8 @@ TEST( NonlinearOptimizer, SubgraphPCG )
 	config->insert(2, Pose2(1.5,0.,0.));
 
 	boost::shared_ptr<Pose2Graph> graph(new Pose2Graph);
-	graph->addPrior(1, Pose2(0.,0.,0.), Diagonal::Sigmas(Vector_(3, 1e-10, 1e-10, 1e-10)));
-	graph->addConstraint(1,2, Pose2(1.,0.,0.), Diagonal::Sigmas(Vector_(3, 1, 1, 1)));
+	graph->addPrior(1, Pose2(0.,0.,0.), Isotropic::Sigma(3, 1e-10));
+	graph->addConstraint(1,2, Pose2(1.,0.,0.), Isotropic::Sigma(3, 1));
 
 	boost::shared_ptr<Ordering> ordering(new Ordering);
 	ordering->push_back(Pose2Config::Key(1));
