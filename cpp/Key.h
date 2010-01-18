@@ -12,8 +12,9 @@
 #include <iostream>
 #include <boost/format.hpp>
 #include <boost/serialization/serialization.hpp>
+#ifdef GTSAM_MAGIC_KEY
 #include <boost/lexical_cast.hpp>
-#include <boost/integer_traits.hpp>
+#endif
 
 #include "Testable.h"
 
@@ -36,7 +37,7 @@ namespace gtsam {
 
 		// Constructors:
 
-		TypedSymbol():j_(boost::integer_traits<size_t>::const_max) {}
+		TypedSymbol():j_(0) {}
 		TypedSymbol(size_t j):j_(j) {}
 
 		// Get stuff:
@@ -148,7 +149,7 @@ namespace gtsam {
 
 	public:
 	  /** Default constructor */
-	  Symbol() : c_(0), j_(boost::integer_traits<size_t>::const_max) {}
+	  Symbol() : c_(0), j_(0) {}
 
 	  /** Copy constructor */
 	  Symbol(const Symbol& key) : c_(key.c_), j_(key.j_) {}
