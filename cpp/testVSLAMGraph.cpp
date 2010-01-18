@@ -23,6 +23,7 @@ using namespace gtsam;
 using namespace gtsam::visualSLAM;
 using namespace boost;
 typedef NonlinearOptimizer<Graph,Config> Optimizer;
+static sharedGaussian sigma(noiseModel::Unit::Create(1));
 
 /* ************************************************************************* */
 Point3 landmark1(-1.0,-1.0, 0.0);
@@ -55,7 +56,6 @@ Graph testGraph() {
 	Point2 z23( 125,-125);
 	Point2 z24( 125, 125);
 
-  double sigma = 1;
   shared_ptrK sK(new Cal3_S2(625, 625, 0, 0, 0));
   Graph g;
   g.add(ProjectionFactor(z11, sigma, 1, 1, sK));

@@ -88,7 +88,7 @@ public:
 	virtual bool equals(const Factor<Config>& f, double tol=1e-9) const=0;
 
 	/** error function - returns the result of the constraint function */
-	inline Vector error_vector(const Config& c) const { return g_(c); }
+	inline Vector unwhitenedError(const Config& c) const { return g_(c); }
 
 	/**
 	 * Determines whether the constraint is active given a particular configuration

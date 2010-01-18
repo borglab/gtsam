@@ -11,6 +11,8 @@
 
 #include <CppUnitLite/TestHarness.h>
 
+// TODO: DANGEROUS, create shared pointers
+#define GTSAM_MAGIC_GAUSSIAN 2
 #define GTSAM_MAGIC_KEY
 
 #include "Matrix.h"
@@ -69,12 +71,11 @@ TEST( NonlinearFactor, NonlinearFactor )
   shared_nlf factor = fg[0];
 
   // calculate the error_vector from the factor "f1"
-  Vector actual_e = factor->error_vector(cfg);
-  Vector e(2); e(0) = 0.1;  e(1) = 0.1;
-  CHECK(assert_equal(e,actual_e));
-
-  // the expected value for the error from the factor
+  // the expected value for the whitened error from the factor
   // error_vector / sigma = [0.1 0.1]/0.1 = [1;1]
+  Vector actual_e = factor->whitenedError(cfg);
+  CHECK(assert_equal(ones(2),actual_e));
+
   // error = 0.5 * [1 1] * [1;1] = 1
   double expected = 1.0; 
 

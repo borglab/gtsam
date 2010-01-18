@@ -26,20 +26,20 @@ namespace gtsam {
 		}
 
 		void Graph::addOdometry(const PoseKey& i, const PoseKey& j, const Pose2& z,
-				const Matrix& cov) {
-			sharedFactor factor(new Odometry(i, j, z, cov));
+				const sharedGaussian& model) {
+			sharedFactor factor(new Odometry(i, j, z, model));
 			push_back(factor);
 		}
 
 		void Graph::addBearing(const PoseKey& i, const PointKey& j, const Rot2& z,
-				double sigma) {
-			sharedFactor factor(new Bearing(i, j, z, sigma));
+				const sharedGaussian& model) {
+			sharedFactor factor(new Bearing(i, j, z, model));
 			push_back(factor);
 		}
 
 		void Graph::addRange(const PoseKey& i, const PointKey& j, double z,
-				double sigma) {
-			sharedFactor factor(new Range(i, j, z, sigma));
+				const sharedGaussian& model) {
+			sharedFactor factor(new Range(i, j, z, model));
 			push_back(factor);
 		}
 

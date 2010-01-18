@@ -12,6 +12,9 @@
 
 #include <CppUnitLite/TestHarness.h>
 
+// TODO: DANGEROUS, create shared pointers
+#define GTSAM_MAGIC_GAUSSIAN 3
+
 #include "pose2SLAM.h"
 #include "TupleConfig-inl.h"
 #include "graph-inl.h"

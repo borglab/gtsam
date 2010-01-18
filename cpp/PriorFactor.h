@@ -23,7 +23,6 @@ namespace gtsam {
 		typedef NonlinearFactor1<Config, Key, T> Base;
 
 		T prior_; /** The measurement */
-		boost::shared_ptr<GaussianNoiseModel> noiseModel_;
 
 	public:
 
@@ -32,13 +31,8 @@ namespace gtsam {
 
 		/** Constructor */
 		PriorFactor(const Key& key, const T& prior,
-				const boost::shared_ptr<GaussianNoiseModel>& model) :
-			Base(1.0, key), prior_(prior), noiseModel_(model) {
-		}
-
-		/** Constructor */
-		PriorFactor(const Key& key, const T& prior, const Matrix& cov) :
-			Base(1.0, key), prior_(prior), noiseModel_(GaussianNoiseModel::Covariance(cov)) {
+				const sharedGaussian& model) :
+			Base(model, key), prior_(prior) {
 		}
 
 		/** implement functions needed for Testable */
@@ -47,7 +41,6 @@ namespace gtsam {
 		void print(const std::string& s) const {
 			Base::print(s);
 			prior_.print("prior");
-			// Todo print NoiseModel
 		}
 
 		/** equals */
@@ -56,16 +49,15 @@ namespace gtsam {
 					Config, Key, T>*> (&expected);
 			return e != NULL && Base::equals(expected) && this->prior_.equals(
 					e->prior_, tol);
-			// Todo check NoiseModel
 		}
 
 		/** implement functions needed to derive from Factor */
 
 		/** vector of errors */
 		Vector evaluateError(const T& p, boost::optional<Matrix&> H = boost::none) const {
-			if (H) (*H) = noiseModel_->R();
+			if (H) (*H) = eye(dim(p));
 			// manifold equivalent of h(x)-z -> log(z,h(x))
-			return noiseModel_->whiten(logmap(prior_, p));
+			return logmap(prior_, p);
 		}
 	};
 

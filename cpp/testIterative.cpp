@@ -9,6 +9,8 @@ using namespace boost::assign;
 
 #include <CppUnitLite/TestHarness.h>
 
+// TODO: DANGEROUS, create shared pointers
+#define GTSAM_MAGIC_GAUSSIAN 3
 #define GTSAM_MAGIC_KEY
 
 #include "Ordering.h"

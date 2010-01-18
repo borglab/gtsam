@@ -6,9 +6,8 @@
 
 #include "Simulated3D.h"
 
+namespace gtsam {
 namespace simulated3D {
-
-using namespace gtsam;
 
 Vector prior (const Vector& x)
 {
@@ -56,4 +55,4 @@ Matrix Dmea2(const Vector& x, const Vector& l)
 	return H;
 }
 
-} // namespace gtsam
+}} // namespace gtsam::simulated3D

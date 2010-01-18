@@ -18,6 +18,7 @@
 #include "Factor.h"
 #include "Vector.h"
 #include "Matrix.h"
+#include "NoiseModel.h"
 #include "GaussianFactor.h"
 
 #define INSTANTIATE_NONLINEAR_FACTOR1(C,J,X) \
@@ -26,12 +27,6 @@
     template class gtsam::NonlinearFactor2<C,J1,X1,J2,X2>;
 
 namespace gtsam {
-
-	// TODO class NoiseModel {};
-	// TODO class Isotropic : public NoiseModel {};
-	// TODO class Diagonal : public NoiseModel {};
-	// TODO class Full : public NoiseModel {};
-	// TODO class Robust : public NoiseModel {};
 
 	/**
 	 * Nonlinear factor which assumes zero-mean Gaussian noise on the
@@ -46,10 +41,10 @@ namespace gtsam {
 
 	protected:
 
-    typedef NonlinearFactor<Config> This;
+		typedef NonlinearFactor<Config> This;
 
-    double sigma_; // noise standard deviation
-		std::list<Symbol> keys_; // keys
+		sharedGaussian noiseModel_; /** Noise model */
+		std::list<Symbol> keys_; /** cached keys */
 
 	public:
 
@@ -59,41 +54,31 @@ namespace gtsam {
 
 		/**
 		 *  Constructor
-		 *  @param sigma the standard deviation
-		 *  // TODO: take a NoiseModel shared pointer
+		 *  @param noiseModel shared pointer to a noise model
 		 */
-		NonlinearFactor(const double sigma) :
-			sigma_(sigma) {
+		NonlinearFactor(const sharedGaussian& noiseModel) :
+			noiseModel_(noiseModel) {
 		}
 
 		/** print */
 		void print(const std::string& s = "") const {
 			std::cout << "NonlinearFactor " << s << std::endl;
-			std::cout << "  sigma = " << sigma_ << std::endl;
+			noiseModel_->print("noise model");
 		}
 
 		/** Check if two NonlinearFactor objects are equal */
 		bool equals(const Factor<Config>& f, double tol = 1e-9) const {
 			const This* p = dynamic_cast<const NonlinearFactor<Config>*> (&f);
 			if (p == NULL) return false;
-			return fabs(sigma_ - p->sigma_) <= tol;
+			return noiseModel_->equals(*p->noiseModel_, tol);
 		}
 
 		/**
 		 * calculate the error of the factor
-		 * TODO: use NoiseModel
 		 */
 		double error(const Config& c) const {
-			// return NoiseModel.mahalanobis(error_vector(c)); // e'*inv(C)*e
-			if (sigma_ == 0.0) {
-				Vector e = error_vector(c);
-				return (inner_prod(e, e) > 0) ? std::numeric_limits<double>::infinity()
-						: 0.0;
-			}
-			Vector e = error_vector(c) / sigma_;
-			return 0.5 * inner_prod(e, e);
+			return 0.5 * noiseModel_->Mahalanobis(unwhitenedError(c));
 		}
-		;
 
 		/** return keys */
 		std::list<Symbol> keys() const {
@@ -105,13 +90,13 @@ namespace gtsam {
 			return keys_.size();
 		}
 
-		/** get functions */
-		double sigma() const {
-			return sigma_;
-		} // TODO obsolete when using NoiseModel
+		/** Vector of errors, unwhitened ! */
+		virtual Vector unwhitenedError(const Config& c) const = 0;
 
-		/** Vector of errors */
-		virtual Vector error_vector(const Config& c) const = 0;
+		/** Vector of errors, whitened ! */
+		Vector whitenedError(const Config& c) const {
+			return noiseModel_->whiten(unwhitenedError(c));
+		}
 
 		/** linearize to a GaussianFactor */
 		virtual boost::shared_ptr<GaussianFactor>
@@ -123,7 +108,7 @@ namespace gtsam {
 		friend class boost::serialization::access;
 		template<class Archive>
 		void serialize(Archive & ar, const unsigned int version) {
-			ar & BOOST_SERIALIZATION_NVP(sigma_); // TODO NoiseModel
+			// TODO NoiseModel
 		}
 
 	}; // NonlinearFactor
@@ -159,8 +144,9 @@ namespace gtsam {
 		 *  @param z measurement
 		 *  @param key by which to look up X value in Config
 		 */
-		NonlinearFactor1(double sigma, const Key& key1) :
-			Base(sigma), key_(key1) {
+		NonlinearFactor1(const sharedGaussian& noiseModel,
+				const Key& key1) :
+			Base(noiseModel), key_(key1) {
 			this->keys_.push_back(key_);
 		}
 
@@ -178,9 +164,9 @@ namespace gtsam {
 			return Base::equals(*p, tol) && (key_ == p->key_);
 		}
 
-		/** error function h(x)-z */
-		inline Vector error_vector(const Config& x) const {
-			Key j = key_;
+		/** error function h(x)-z, unwhitened !!! */
+		inline Vector unwhitenedError(const Config& x) const {
+			const Key& j = key_;
 			const X& xj = x[j];
 			return evaluateError(xj);
 		}
@@ -190,12 +176,14 @@ namespace gtsam {
 		 * Ax-b \approx h(x0+dx)-z = h(x0) + A*dx - z
 		 * Hence b = z - h(x0) = - error_vector(x)
 		 */
-		boost::shared_ptr<GaussianFactor> linearize(const Config& x) const {
+		virtual boost::shared_ptr<GaussianFactor> linearize(const Config& x) const {
 			const X& xj = x[key_];
 			Matrix A;
-			Vector b = -evaluateError(xj, A);
-			return GaussianFactor::shared_ptr(new GaussianFactor(
-			    key_, A, b, this->sigma()));
+			Vector b = - evaluateError(xj, A);
+			// TODO pass unwhitened + noise model to Gaussian factor
+			this->noiseModel_->WhitenInPlace(A);
+			this->noiseModel_->whitenInPlace(b);
+			return GaussianFactor::shared_ptr(new GaussianFactor(key_, A, b, 1.0));
 		}
 
 		/*
@@ -249,8 +237,9 @@ namespace gtsam {
 		 * @param j1 key of the first variable
 		 * @param j2 key of the second variable
 		 */
-		NonlinearFactor2(double sigma, Key1 j1, Key2 j2) :
-			Base(sigma), key1_(j1), key2_(j2) {
+		NonlinearFactor2(const sharedGaussian& noiseModel, Key1 j1,
+				Key2 j2) :
+			Base(noiseModel), key1_(j1), key2_(j2) {
 			this->keys_.push_back(key1_);
 			this->keys_.push_back(key2_);
 		}
@@ -272,7 +261,7 @@ namespace gtsam {
 		}
 
 		/** error function z-h(x1,x2) */
-		inline Vector error_vector(const Config& x) const {
+		inline Vector unwhitenedError(const Config& x) const {
 			const X1& x1 = x[key1_];
 			const X2& x2 = x[key2_];
 			return evaluateError(x1, x2);
@@ -288,9 +277,12 @@ namespace gtsam {
 			const X2& x2 = c[key2_];
 			Matrix A1, A2;
 			Vector b = -evaluateError(x1, x2, A1, A2);
-			return GaussianFactor::shared_ptr(new GaussianFactor(
-			    key1_, A1, key2_,
-					A2, b, this->sigma()));
+			// TODO pass unwhitened + noise model to Gaussian factor
+			this->noiseModel_->WhitenInPlace(A1);
+			this->noiseModel_->WhitenInPlace(A2);
+			this->noiseModel_->whitenInPlace(b);
+			return GaussianFactor::shared_ptr(new GaussianFactor(key1_, A1, key2_,
+					A2, b, 1.0));
 		}
 
 		/** methods to retrieve both keys */
@@ -306,9 +298,9 @@ namespace gtsam {
 		 *  If any of the optional Matrix reference arguments are specified, it should compute
 		 *  both the function evaluation and its derivative(s) in X1 (and/or X2).
 		 */
-		virtual Vector evaluateError(const X1&, const X2&,
-				boost::optional<Matrix&> H1 = boost::none, boost::optional<Matrix&> H2 =
-						boost::none) const = 0;
+		virtual Vector
+		evaluateError(const X1&, const X2&, boost::optional<Matrix&> H1 =
+				boost::none, boost::optional<Matrix&> H2 = boost::none) const = 0;
 
 	private:
 

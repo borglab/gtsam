@@ -37,7 +37,7 @@ double constraintError(const G& graph, const C& config) {
 	for (const_iterator factor = graph.begin(); factor < graph.end(); factor++) {
 		const shared_c constraint = boost::shared_dynamic_cast<NLConstraint >(*factor);
 		if (constraint != NULL) {
-			Vector e = constraint->error_vector(config);
+			Vector e = constraint->unwhitenedError(config);
 			error += inner_prod(trans(e),e);
 		}
 	}

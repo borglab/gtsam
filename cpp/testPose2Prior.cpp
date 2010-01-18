@@ -16,7 +16,7 @@ using namespace gtsam;
 
 // Common measurement covariance
 static double sx=0.5, sy=0.5,st=0.1;
-static GaussianNoiseModel::shared_ptr model = Diagonal::Sigmas(Vector_(3,sx,sy,st));
+static sharedGaussian sigmas = Diagonal::Sigmas(Vector_(3,sx,sy,st));
 
 /* ************************************************************************* */
 // Very simple test establishing Ax-b \approx z-h(x)
@@ -28,7 +28,7 @@ TEST( Pose2Prior, error )
 	x0.insert(1, p1);
 
 	// Create factor
-	Pose2Prior factor(1, p1, model);
+	Pose2Prior factor(1, p1, sigmas);
 
 	// Actual linearization
 	boost::shared_ptr<GaussianFactor> linear = factor.linearize(x0);
@@ -37,27 +37,27 @@ TEST( Pose2Prior, error )
 	VectorConfig delta;
 	delta.insert("x1", zero(3));
 	Vector error_at_zero = Vector_(3,0.0,0.0,0.0);
-	CHECK(assert_equal(error_at_zero,factor.error_vector(x0)));
+	CHECK(assert_equal(error_at_zero,factor.whitenedError(x0)));
 	CHECK(assert_equal(-error_at_zero,linear->error_vector(delta)));
 
 	// Check error after increasing p2
 	VectorConfig plus = delta + VectorConfig("x1", Vector_(3, 0.1, 0.0, 0.0));
 	Pose2Config x1 = expmap(x0, plus);
 	Vector error_at_plus = Vector_(3,0.1/sx,0.0,0.0); // h(x)-z = 0.1 !
-	CHECK(assert_equal(error_at_plus,factor.error_vector(x1)));
+	CHECK(assert_equal(error_at_plus,factor.whitenedError(x1)));
 	CHECK(assert_equal(error_at_plus,linear->error_vector(plus)));
 }
 
 /* ************************************************************************* */
 // common Pose2Prior for tests below
 static Pose2 prior(2,2,M_PI_2);
-static Pose2Prior factor(1,prior, model);
+static Pose2Prior factor(1,prior, sigmas);
 
 /* ************************************************************************* */
 // The error |A*dx-b| approximates (h(x0+dx)-z) = -error_vector
 // Hence i.e., b = approximates z-h(x0) = error_vector(x0)
 Vector h(const Pose2& p1) {
-	return factor.evaluateError(p1);
+	return sigmas->whiten(factor.evaluateError(p1));
 }
 
 /* ************************************************************************* */

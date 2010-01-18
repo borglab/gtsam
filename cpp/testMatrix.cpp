@@ -16,6 +16,8 @@
 using namespace std;
 using namespace gtsam;
 
+static double inf = std::numeric_limits<double>::infinity();
+
 /* ************************************************************************* */
 TEST( matrix, constructor_data )
 {
@@ -229,7 +231,7 @@ TEST( matrix, equal_nan )
   Matrix A2(A);
 
   Matrix A3(A);
-  A3(3,3)=0.0/0.0;
+  A3(3,3)=inf;
 
   CHECK(A!=A3);
 }
@@ -567,13 +569,13 @@ static void updateAb(Matrix& A, Vector& b, int j, const Vector& a,
 
 /* ************************************************************************* */
 list<boost::tuple<Vector, double, double> >
-weighted_eliminate2(Matrix& A, Vector& b, const GaussianNoiseModel& model) {
+weighted_eliminate2(Matrix& A, Vector& b, const sharedGaussian& model) {
 	size_t m = A.size1(), n = A.size2(); // get size(A)
 	size_t maxRank = min(m,n);
 
 	// pre-whiten everything
-	model.WhitenInPlace(A);
-	b = model.whiten(b);
+	model->WhitenInPlace(A);
+	b = model->whiten(b);
 
 	// create list
 	list<boost::tuple<Vector, double, double> > results;
@@ -617,13 +619,13 @@ weighted_eliminate2(Matrix& A, Vector& b, const GaussianNoiseModel& model) {
 }
 
 /* ************************************************************************* */
-void weighted_eliminate3(Matrix& A, Vector& b, const GaussianNoiseModel& model) {
+void weighted_eliminate3(Matrix& A, Vector& b, const sharedGaussian& model) {
 	size_t m = A.size1(), n = A.size2(); // get size(A)
 	size_t maxRank = min(m,n);
 
 	// pre-whiten everything
-	model.WhitenInPlace(A);
-	b = model.whiten(b);
+	model->WhitenInPlace(A);
+	b = model->whiten(b);
 
 	householder_(A, maxRank);
 }
@@ -672,9 +674,9 @@ TEST( matrix, weighted_elimination )
 
 	// perform elimination with NoiseModel
 	Matrix A2 = A; Vector b2 = b;
-	GaussianNoiseModel::shared_ptr model = Diagonal::Sigmas(sigmas);
+	sharedGaussian model = noiseModel::Diagonal::Sigmas(sigmas);
 	std::list<boost::tuple<Vector, double, double> > solution2 =
-								weighted_eliminate2(A2, b2, *model);
+								weighted_eliminate2(A2, b2, model);
 
 	// unpack and verify
 	i=0;
@@ -686,8 +688,8 @@ TEST( matrix, weighted_elimination )
 	}
 
 	// perform elimination with NoiseModel
-	weighted_eliminate3(A, b, *model);
-	GaussianNoiseModel::shared_ptr newModel = Diagonal::Sigmas(newSigmas);
+	weighted_eliminate3(A, b, model);
+	sharedGaussian newModel = noiseModel::Diagonal::Sigmas(newSigmas);
 //	print(A);
 //	print(newModel->Whiten(expectedR));
 }

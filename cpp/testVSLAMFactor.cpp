@@ -15,13 +15,17 @@ using namespace gtsam;
 using namespace gtsam::visualSLAM;
 
 // make cube
-Point3 x000(-1, -1, -1), x001(-1, -1, +1), x010(-1, +1, -1), x011(-1, +1, +1),
-		x100(-1, -1, -1), x101(-1, -1, +1), x110(-1, +1, -1), x111(-1, +1, +1);
+static Point3
+	x000(-1, -1, -1), x001(-1, -1, +1), x010(-1, +1, -1), x011(-1, +1, +1),
+	x100(-1, -1, -1), x101(-1, -1, +1), x110(-1, +1, -1), x111(-1, +1, +1);
 
 // make a realistic calibration matrix
-double fov = 60; // degrees
-size_t w=640,h=480;
-Cal3_S2 K(fov,w,h);
+static double fov = 60; // degrees
+static size_t w=640,h=480;
+static Cal3_S2 K(fov,w,h);
+
+static sharedGaussian sigma(noiseModel::Unit::Create(1));
+static shared_ptrK sK(new Cal3_S2(K));
 
 // make cameras
 
@@ -30,17 +34,16 @@ TEST( ProjectionFactor, error )
 {
 	// Create the factor with a measurement that is 3 pixels off in x
 	Point2 z(323.,240.);
-	double sigma=1.0;
 	int cameraFrameNumber=1, landmarkNumber=1;
 	boost::shared_ptr<ProjectionFactor>
-		factor(new ProjectionFactor(z, sigma, cameraFrameNumber, landmarkNumber, shared_ptrK(new Cal3_S2(K))));
+		factor(new ProjectionFactor(z, sigma, cameraFrameNumber, landmarkNumber, sK));
 
   // For the following configuration, the factor predicts 320,240
   Config config;
   Rot3 R;Point3 t1(0,0,-6); Pose3 x1(R,t1); config.insert(1, x1);
   Point3 l1;  config.insert(1, l1);
   // Point should project to Point2(320.,240.)
-  CHECK(assert_equal(Vector_(2, -3.0, 0.0), factor->error_vector(config)));
+  CHECK(assert_equal(Vector_(2, -3.0, 0.0), factor->unwhitenedError(config)));
 
   // Which yields an error of 3^2/2 = 4.5
   DOUBLES_EQUAL(4.5,factor->error(config),1e-9);
@@ -76,13 +79,12 @@ TEST( ProjectionFactor, equals )
 {
 	// Create two identical factors and make sure they're equal
 	Vector z = Vector_(2,323.,240.);
-	double sigma=1.0;
 	int cameraFrameNumber=1, landmarkNumber=1;
 	boost::shared_ptr<ProjectionFactor>
-	  factor1(new ProjectionFactor(z, sigma, cameraFrameNumber, landmarkNumber, shared_ptrK(new Cal3_S2(K))));
+	  factor1(new ProjectionFactor(z, sigma, cameraFrameNumber, landmarkNumber, sK));
 
 	boost::shared_ptr<ProjectionFactor>
-		factor2(new ProjectionFactor(z, sigma, cameraFrameNumber, landmarkNumber, shared_ptrK(new Cal3_S2(K))));
+		factor2(new ProjectionFactor(z, sigma, cameraFrameNumber, landmarkNumber, sK));
 
 	CHECK(assert_equal(*factor1, *factor2));
 }

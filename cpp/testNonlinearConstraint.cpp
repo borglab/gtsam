@@ -54,7 +54,7 @@ TEST( NonlinearConstraint1, unary_scalar_construction ) {
 	config.insert("x", Vector_(1, 1.0));
 
 	// calculate the error
-	Vector actual = c1.error_vector(config);
+	Vector actual = c1.unwhitenedError(config);
 	Vector expected = Vector_(1, -4.0);
 	CHECK(assert_equal(actual, expected, 1e-5));
 }
@@ -146,7 +146,7 @@ TEST( NonlinearConstraint2, binary_scalar_construction ) {
 	config.insert("y", Vector_(1, 2.0));
 
 	// calculate the error
-	Vector actual = c1.error_vector(config);
+	Vector actual = c1.unwhitenedError(config);
 	Vector expected = Vector_(1.0, -6.0);
 	CHECK(assert_equal(actual, expected, 1e-5));
 }
@@ -238,7 +238,7 @@ TEST( NonlinearConstraint1, unary_inequality ) {
 
 	// check error
 	CHECK(!c1.active(config1));
-	Vector actualError2 = c1.error_vector(config2);
+	Vector actualError2 = c1.unwhitenedError(config2);
 	CHECK(assert_equal(actualError2, Vector_(1, -4.0, 1e-9)));
 	CHECK(c1.active(config2));
 }
@@ -320,7 +320,7 @@ TEST( NonlinearConstraint1, unary_binding ) {
 
 	// check error
 	CHECK(!c1.active(config1));
-	Vector actualError2 = c1.error_vector(config2);
+	Vector actualError2 = c1.unwhitenedError(config2);
 	CHECK(assert_equal(actualError2, Vector_(1, -4.0, 1e-9)));
 	CHECK(c1.active(config2));
 }
@@ -371,7 +371,7 @@ TEST( NonlinearConstraint2, binary_binding ) {
 	config.insert("y", Vector_(1, 2.0));
 
 	// calculate the error
-	Vector actual = c1.error_vector(config);
+	Vector actual = c1.unwhitenedError(config);
 	Vector expected = Vector_(1.0, -6.0);
 	CHECK(assert_equal(actual, expected, 1e-5));
 }

@@ -62,8 +62,11 @@ namespace gtsam { namespace visualSLAM {
      * @param landmarkNumber is the index of the landmark
      * @param K the constant calibration
      */
-    ProjectionFactor(const Point2& z, double sigma, PoseKey j_pose, PointKey j_landmark, const shared_ptrK& K) :
-        z_(z), K_(K), Base(sigma, j_pose, j_landmark) {}
+    ProjectionFactor(const Point2& z,
+					const sharedGaussian& model, PoseKey j_pose,
+					PointKey j_landmark, const shared_ptrK& K) :
+				z_(z), K_(K), Base(model, j_pose, j_landmark) {
+			}
 
     /**
      * print

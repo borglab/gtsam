@@ -5,21 +5,25 @@
 
 #include <iostream>
 #include <CppUnitLite/TestHarness.h>
+
 #include "planarSLAM.h"
 
 using namespace std;
 using namespace gtsam;
 
 // some shared test values
-Pose2 x1, x2(1, 1, 0), x3(1, 1, M_PI_4);
-Point2 l1(1, 0), l2(1, 1), l3(2, 2), l4(1, 3);
+static Pose2 x1, x2(1, 1, 0), x3(1, 1, M_PI_4);
+static Point2 l1(1, 0), l2(1, 1), l3(2, 2), l4(1, 3);
+
+sharedGaussian
+	sigma(noiseModel::Isotropic::Sigma(1,0.1)),
+	I3(noiseModel::Unit::Create(3));
 
 /* ************************************************************************* */
 TEST( planarSLAM, BearingFactor )
 {
 	// Create factor
 	Rot2 z(M_PI_4 + 0.1); // h(x) - z = -0.1
-	double sigma = 0.1;
 	planarSLAM::Bearing factor(2, 3, z, sigma);
 
 	// create config
@@ -28,7 +32,7 @@ TEST( planarSLAM, BearingFactor )
 	c.insert(3, l3);
 
 	// Check error
-	Vector actual = factor.error_vector(c);
+	Vector actual = factor.unwhitenedError(c);
 	CHECK(assert_equal(Vector_(1,-0.1),actual));
 }
 
@@ -37,7 +41,6 @@ TEST( planarSLAM, RangeFactor )
 {
 	// Create factor
 	double z(sqrt(2) - 0.22); // h(x) - z = 0.22
-	double sigma = 0.1;
 	planarSLAM::Range factor(2, 3, z, sigma);
 
 	// create config
@@ -46,7 +49,7 @@ TEST( planarSLAM, RangeFactor )
 	c.insert(3, l3);
 
 	// Check error
-	Vector actual = factor.error_vector(c);
+	Vector actual = factor.unwhitenedError(c);
 	CHECK(assert_equal(Vector_(1,0.22),actual));
 }
 
@@ -66,20 +69,18 @@ TEST( planarSLAM, constructor )
 	G.addPoseConstraint(2, x2); // make it feasible :-)
 
 	// Add odometry
-	G.addOdometry(2, 3, Pose2(0, 0, M_PI_4), eye(3));
+	G.addOdometry(2, 3, Pose2(0, 0, M_PI_4), I3);
 
 	// Create bearing factor
 	Rot2 z1(M_PI_4 + 0.1); // h(x) - z = -0.1
-	double sigma1 = 0.1;
-	G.addBearing(2, 3, z1, sigma1);
+	G.addBearing(2, 3, z1, sigma);
 
 	// Create range factor
 	double z2(sqrt(2) - 0.22); // h(x) - z = 0.22
-	double sigma2 = 0.1;
-	G.addRange(2, 3, z2, sigma2);
+	G.addRange(2, 3, z2, sigma);
 
 	Vector expected = Vector_(8, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, -0.1, 0.22);
-	CHECK(assert_equal(expected,G.error_vector(c)));
+	CHECK(assert_equal(expected,G.unwhitenedError(c)));
 }
 
 /* ************************************************************************* */

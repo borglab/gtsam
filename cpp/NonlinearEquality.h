@@ -46,7 +46,7 @@ namespace gtsam {
 		 * Constructor
 		 */
 		NonlinearEquality(const Key& j, const T& feasible, bool (*compare)(const T&, const T&) = compare<T>) :
-			Base(0, j), feasible_(feasible), compare_(compare) {
+			Base(noiseModel::Constrained::All(dim(feasible)), j), feasible_(feasible), compare_(compare) {
 		}
 
 		void print(const std::string& s = "") const {
@@ -76,6 +76,16 @@ namespace gtsam {
 				return repeat(nj, std::numeric_limits<double>::infinity()); // set error to infinity if not equal
 			}
 		}
+
+		// Linearize is over-written, because base linearization tries to whiten
+		virtual boost::shared_ptr<GaussianFactor> linearize(const Config& x) const {
+			const T& xj = x[this->key_];
+			Matrix A;
+			Vector b = - evaluateError(xj, A);
+			// TODO pass unwhitened + noise model to Gaussian factor
+			return GaussianFactor::shared_ptr(new GaussianFactor(this->key_, A, b, 0.0));
+		}
+
 	}; // NonlinearEquality
 
 } // namespace gtsam

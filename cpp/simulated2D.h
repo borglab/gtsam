@@ -14,7 +14,9 @@
 
 // \namespace
 
-namespace simulated2D {
+namespace gtsam {
+
+	namespace simulated2D {
 
 	typedef gtsam::VectorConfig VectorConfig;
 	typedef gtsam::Symbol PoseKey;
@@ -43,13 +45,14 @@ namespace simulated2D {
 	/**
 	 * Unary factor encoding a soft prior on a vector
 	 */
-	struct Prior: public gtsam::NonlinearFactor1<VectorConfig, PoseKey,
+	struct Prior: public NonlinearFactor1<VectorConfig, PoseKey,
 			Vector> {
 
 		Vector z_;
 
-		Prior(const Vector& z, double sigma, const PoseKey& key) :
-			gtsam::NonlinearFactor1<VectorConfig, PoseKey, Vector>(sigma, key),
+		Prior(const Vector& z, const sharedGaussian& model,
+				const PoseKey& key) :
+			NonlinearFactor1<VectorConfig, PoseKey, Vector>(model, key),
 					z_(z) {
 		}
 
@@ -63,14 +66,14 @@ namespace simulated2D {
 	/**
 	 * Binary factor simulating "odometry" between two Vectors
 	 */
-	struct Odometry: public gtsam::NonlinearFactor2<VectorConfig, PoseKey,
+	struct Odometry: public NonlinearFactor2<VectorConfig, PoseKey,
 			Vector, PointKey, Vector> {
 		Vector z_;
 
-		Odometry(const Vector& z, double sigma, const PoseKey& j1,
-				const PoseKey& j2) :
-			z_(z), gtsam::NonlinearFactor2<VectorConfig, PoseKey, Vector, PointKey,
-					Vector>(sigma, j1, j2) {
+		Odometry(const Vector& z, const sharedGaussian& model,
+				const PoseKey& j1, const PoseKey& j2) :
+			z_(z), NonlinearFactor2<VectorConfig, PoseKey, Vector, PointKey,
+					Vector>(model, j1, j2) {
 		}
 
 		Vector evaluateError(const Vector& x1, const Vector& x2, boost::optional<
@@ -83,15 +86,15 @@ namespace simulated2D {
 	/**
 	 * Binary factor simulating "measurement" between two Vectors
 	 */
-	struct Measurement: public gtsam::NonlinearFactor2<VectorConfig, PoseKey,
+	struct Measurement: public NonlinearFactor2<VectorConfig, PoseKey,
 			Vector, PointKey, Vector> {
 
 		Vector z_;
 
-		Measurement(const Vector& z, double sigma, const PoseKey& j1,
-				const PointKey& j2) :
-			z_(z), gtsam::NonlinearFactor2<VectorConfig, PoseKey, Vector, PointKey,
-					Vector>(sigma, j1, j2) {
+		Measurement(const Vector& z, const sharedGaussian& model,
+				const PoseKey& j1, const PointKey& j2) :
+			z_(z), NonlinearFactor2<VectorConfig, PoseKey, Vector, PointKey,
+					Vector>(model, j1, j2) {
 		}
 
 		Vector evaluateError(const Vector& x1, const Vector& x2, boost::optional<
@@ -101,4 +104,5 @@ namespace simulated2D {
 
 	};
 
-} // namespace simulated2D
+	} // namespace simulated2D
+} // namespace gtsam

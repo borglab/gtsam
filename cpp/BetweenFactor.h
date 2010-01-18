@@ -25,7 +25,6 @@ namespace gtsam {
 		typedef NonlinearFactor2<Config, Key, T, Key, T> Base;
 
 		T measured_; /** The measurement */
-		Matrix square_root_inverse_covariance_; /** sqrt(inv(measurement_covariance)) */
 
 	public:
 
@@ -34,10 +33,8 @@ namespace gtsam {
 
 		/** Constructor */
 		BetweenFactor(const Key& key1, const Key& key2, const T& measured,
-				const Matrix& measurement_covariance) :
-			Base(1, key1, key2), measured_(measured) {
-			square_root_inverse_covariance_ = inverse_square_root(
-					measurement_covariance);
+				const sharedGaussian& model) :
+			Base(model, key1, key2), measured_(measured) {
 		}
 
 		/** implement functions needed for Testable */
@@ -46,8 +43,6 @@ namespace gtsam {
 		void print(const std::string& s) const {
 			Base::print(s);
 			measured_.print("measured");
-			gtsam::print(square_root_inverse_covariance_,
-					"Square Root Inverse Covariance");
 		}
 
 		/** equals */
@@ -64,12 +59,8 @@ namespace gtsam {
 		Vector evaluateError(const T& p1, const T& p2, boost::optional<Matrix&> H1 =
 				boost::none, boost::optional<Matrix&> H2 = boost::none) const {
 			T hx = between(p1, p2, H1, H2); // h(x)
-			if (H1 || H2) {
-				if (H1) *H1 = square_root_inverse_covariance_ * *H1;
-				if (H2) *H2 = square_root_inverse_covariance_ * *H2;
-			}
 			// manifold equivalent of h(x)-z -> log(z,h(x))
-			return square_root_inverse_covariance_ * logmap(measured_, hx);
+			return logmap(measured_, hx);
 		}
 
 		/** return the measured */

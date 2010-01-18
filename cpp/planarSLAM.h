@@ -35,8 +35,8 @@ namespace gtsam {
 
 		BearingFactor(); /* Default constructor */
 		BearingFactor(const PoseKey& i, const PointKey& j, const Rot2& z,
-				double sigma) :
-			Base(sigma, i, j), z_(z) {
+				const sharedGaussian& model) :
+			Base(model, i, j), z_(z) {
 		}
 
 		/** h(x)-z -> between(z,h(x)) for Rot2 manifold */
@@ -63,8 +63,9 @@ namespace gtsam {
 
 		RangeFactor(); /* Default constructor */
 
-		RangeFactor(const PoseKey& i, const PointKey& j, double z, double sigma) :
-			Base(sigma, i, j), z_(z) {
+		RangeFactor(const PoseKey& i, const PointKey& j, double z,
+				const sharedGaussian& model) :
+			Base(model, i, j), z_(z) {
 		}
 
 		/** h(x)-z */
@@ -85,16 +86,19 @@ namespace gtsam {
 
 		// Factors
 		typedef NonlinearEquality<Config, PoseKey, Pose2> Constraint;
-	  typedef BetweenFactor<Config, PoseKey, Pose2> Odometry;
+		typedef BetweenFactor<Config, PoseKey, Pose2> Odometry;
 		typedef BearingFactor<Config, PoseKey, PointKey> Bearing;
 		typedef RangeFactor<Config, PoseKey, PointKey> Range;
 
 		// Graph
 		struct Graph: public NonlinearFactorGraph<Config> {
 			void addPoseConstraint(const PoseKey& i, const Pose2& p);
-			void addOdometry(const PoseKey& i, const PoseKey& j, const Pose2& z, const Matrix& cov);
-			void addBearing(const PoseKey& i, const PointKey& j, const Rot2& z, double sigma);
-			void addRange(const PoseKey& i, const PointKey& j, double z, double sigma);
+			void addOdometry(const PoseKey& i, const PoseKey& j, const Pose2& z,
+					const sharedGaussian& model);
+			void addBearing(const PoseKey& i, const PointKey& j, const Rot2& z,
+					const sharedGaussian& model);
+			void addRange(const PoseKey& i, const PointKey& j, double z,
+					const sharedGaussian& model);
 		};
 
 		// Optimizer

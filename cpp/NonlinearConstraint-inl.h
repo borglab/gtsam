@@ -32,14 +32,14 @@ NonlinearConstraint<Config>::NonlinearConstraint(const std::string& lagrange_key
 					size_t dim_lagrange,
 					boost::function<Vector(const Config& config)> g,
 					bool isEquality)
-:	NonlinearFactor<Config>(1.0),
+:	NonlinearFactor<Config>(noiseModel::Constrained::All(dim_lagrange)),
 	lagrange_key_(lagrange_key), p_(dim_lagrange),z_(zero(dim_lagrange)),
 	g_(g), isEquality_(isEquality) {}
 
 /* ************************************************************************* */
 template <class Config>
 bool NonlinearConstraint<Config>::active(const Config& config) const {
-	return !(!isEquality_ && greaterThanOrEqual(error_vector(config), zero(p_)));
+	return !(!isEquality_ && greaterThanOrEqual(unwhitenedError(config), zero(p_)));
 }
 
 /* ************************************************************************* */

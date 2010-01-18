@@ -29,6 +29,8 @@ using namespace std;
 using namespace gtsam;
 using namespace boost::assign;
 	
+static sharedGaussian sigma(noiseModel::Isotropic::Sigma(1,0.1));
+
 // typedefs
 typedef boost::shared_ptr<VectorConfig> shared_config;
 typedef NonlinearFactorGraph<VectorConfig> NLGraph;
@@ -102,13 +104,11 @@ NLGraph linearMapWarpGraph() {
 
 	// measurement from x1 to l1
 	Vector z1 = Vector_(2, 0.0, 5.0);
-	double sigma1 = 0.1;
-	shared f1(new simulated2D::Measurement(z1, sigma1, "x1", "l1"));
+	shared f1(new simulated2D::Measurement(z1, sigma, "x1", "l1"));
 
 	// measurement from x2 to l2
 	Vector z2 = Vector_(2, -4.0, 0.0);
-	double sigma2 = 0.1;
-	shared f2(new simulated2D::Measurement(z2, sigma2, "x2", "l2"));
+	shared f2(new simulated2D::Measurement(z2, sigma, "x2", "l2"));
 
 	// equality constraint between l1 and l2
 	list<Symbol> keys; keys += "l1", "l2";
@@ -262,13 +262,11 @@ pair<NLGraph, VectorConfig> obstacleAvoidGraph() {
 
 	// measurement from x1 to x2
 	Vector x1x2 = Vector_(2, 5.0, 0.0);
-	double sigma1 = 0.1;
-	shared f1(new simulated2D::Odometry(x1x2, sigma1, "x1", "x2"));
+	shared f1(new simulated2D::Odometry(x1x2, sigma, "x1", "x2"));
 
 	// measurement from x2 to x3
 	Vector x2x3 = Vector_(2, 5.0, 0.0);
-	double sigma2 = 0.1;
-	shared f2(new simulated2D::Odometry(x2x3, sigma2, "x2", "x3"));
+	shared f2(new simulated2D::Odometry(x2x3, sigma, "x2", "x3"));
 
 	// create a binary inequality constraint that forces the middle point away from
 	//  the obstacle
@@ -394,13 +392,11 @@ pair<NLGraph, VectorConfig> obstacleAvoidGraphGeneral() {
 
 	// measurement from x1 to x2
 	Vector x1x2 = Vector_(2, 5.0, 0.0);
-	double sigma1 = 0.1;
-	shared f1(new simulated2D::Odometry(x1x2, sigma1, "x1", "x2"));
+	shared f1(new simulated2D::Odometry(x1x2, sigma, "x1", "x2"));
 
 	// measurement from x2 to x3
 	Vector x2x3 = Vector_(2, 5.0, 0.0);
-	double sigma2 = 0.1;
-	shared f2(new simulated2D::Odometry(x2x3, sigma2, "x2", "x3"));
+	shared f2(new simulated2D::Odometry(x2x3, sigma, "x2", "x3"));
 
 	double radius = 1.0;
 

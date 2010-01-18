@@ -23,11 +23,12 @@ using namespace gtsam;
 
 // common measurement covariance
 static double sx=0.5, sy=0.5,st=0.1;
-static Matrix covariance = Matrix_(3,3,
-		sx*sx, 0.0, 0.0,
-		0.0, sy*sy, 0.0,
-		0.0, 0.0, st*st
-		);
+static noiseModel::Gaussian::shared_ptr covariance(
+		noiseModel::Gaussian::Covariance(Matrix_(3, 3,
+	sx*sx, 0.0, 0.0,
+	0.0, sy*sy, 0.0,
+	0.0, 0.0, st*st
+	))), I3(noiseModel::Unit::Create(3));
 
 /* ************************************************************************* */
 TEST( Pose2Graph, constructor )
@@ -162,10 +163,9 @@ TEST(Pose2Graph, optimizeCircle) {
 // test optimization with 6 poses arranged in a hexagon and a loop closure
 TEST(Pose2Graph, findMinimumSpanningTree) {
 	Pose2Graph G, T, C;
-	Matrix cov = eye(3);
-	G.addConstraint(1, 2, Pose2(0.,0.,0.), cov);
-	G.addConstraint(1, 3, Pose2(0.,0.,0.), cov);
-	G.addConstraint(2, 3, Pose2(0.,0.,0.), cov);
+	G.addConstraint(1, 2, Pose2(0.,0.,0.), I3);
+	G.addConstraint(1, 3, Pose2(0.,0.,0.), I3);
+	G.addConstraint(2, 3, Pose2(0.,0.,0.), I3);
 
 	PredecessorMap<pose2SLAM::Key> tree =
 			G.findMinimumSpanningTree<pose2SLAM::Key, Pose2Factor>();
@@ -178,10 +178,9 @@ TEST(Pose2Graph, findMinimumSpanningTree) {
 // test optimization with 6 poses arranged in a hexagon and a loop closure
 TEST(Pose2Graph, split) {
 	Pose2Graph G, T, C;
-	Matrix cov = eye(3);
-	G.addConstraint(1, 2, Pose2(0.,0.,0.), cov);
-	G.addConstraint(1, 3, Pose2(0.,0.,0.), cov);
-	G.addConstraint(2, 3, Pose2(0.,0.,0.), cov);
+	G.addConstraint(1, 2, Pose2(0.,0.,0.), I3);
+	G.addConstraint(1, 3, Pose2(0.,0.,0.), I3);
+	G.addConstraint(2, 3, Pose2(0.,0.,0.), I3);
 
 	PredecessorMap<pose2SLAM::Key> tree;
 	tree.insert(1,2);

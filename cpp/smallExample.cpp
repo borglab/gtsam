@@ -12,6 +12,8 @@
 
 using namespace std;
 
+// TODO: DANGEROUS, create shared pointers
+#define GTSAM_MAGIC_GAUSSIAN 2
 #define GTSAM_MAGIC_KEY
 
 #include "Ordering.h"

@@ -13,6 +13,8 @@ using namespace boost::assign;
 
 #include <CppUnitLite/TestHarness.h>
 
+// TODO: DANGEROUS, create shared pointers
+#define GTSAM_MAGIC_GAUSSIAN 6
 #define GTSAM_MAGIC_KEY
 
 #include "pose3SLAM.h"

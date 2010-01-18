@@ -34,7 +34,7 @@ namespace gtsam {
 		double error(const Config& c) const;
 
 		/** all individual errors */
-		Vector error_vector(const Config& c) const;
+		Vector unwhitenedError(const Config& c) const;
 
 		/** Unnormalized probability. O(n) */
 		double probPrime(const Config& c) const {

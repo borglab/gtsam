@@ -69,10 +69,10 @@ TEST ( NonlinearEquality, error ) {
 	shared_nle nle(new NLE(key, value,vector_compare));
 
 	// check error function outputs
-	Vector actual = nle->error_vector(feasible);
+	Vector actual = nle->unwhitenedError(feasible);
 	CHECK(assert_equal(actual, zero(2)));
 
-	actual = nle->error_vector(bad_linearize);
+	actual = nle->unwhitenedError(bad_linearize);
 	CHECK(assert_equal(actual, repeat(2, 1.0/0.0)));
 }
 

@@ -23,8 +23,8 @@ TEST( Pose3Factor, error )
 	Pose3 z(rodriguez(0.2,0.2,0.3),Point3(0,1.1,0));;
 
 	// Create factor
-	Matrix measurement_covariance = eye(6);
-	Pose3Factor factor(1,2, z, measurement_covariance);
+	sharedGaussian I6(noiseModel::Unit::Create(6));
+	Pose3Factor factor(1,2, z, I6);
 
 	// Create config
 	Pose3Config x;
@@ -32,7 +32,7 @@ TEST( Pose3Factor, error )
 	x.insert(2,t2);
 
 	// Get error h(x)-z -> logmap(z,h(x)) = logmap(z,between(t1,t2))
-	Vector actual = factor.error_vector(x);
+	Vector actual = factor.unwhitenedError(x);
 	Vector expected = logmap(z,between(t1,t2));
 	CHECK(assert_equal(expected,actual));
 }

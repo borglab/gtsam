@@ -23,10 +23,10 @@ namespace gtsam {
 
 	/* ************************************************************************* */
 	template<class Config>
-	Vector NonlinearFactorGraph<Config>::error_vector(const Config& c) const {
+	Vector NonlinearFactorGraph<Config>::unwhitenedError(const Config& c) const {
 		list<Vector> errors;
 		BOOST_FOREACH(typename NonlinearFactorGraph<Config>::sharedFactor factor, this->factors_)
-			errors.push_back(factor->error_vector(c));
+			errors.push_back(factor->unwhitenedError(c));
 		return concatVectors(errors);
 	}
 
