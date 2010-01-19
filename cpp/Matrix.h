@@ -252,9 +252,14 @@ Matrix stack(size_t nrMatrices, ...);
 /**
  * create a matrix by concatenating
  * Given a set of matrices: A1, A2, A3...
+ * If all matrices have the same size, specifying single matrix dimensions
+ * will avoid the lookup of dimensions
+ * @param matrices is a vector of matrices in the order to be collected
+ * @param m is the number of rows of a single matrix
+ * @param n is the number of columns of a single matrix
  * @return combined matrix [A1 A2 A3]
  */
-Matrix collect(std::vector<const Matrix *> matrices);
+Matrix collect(const std::vector<const Matrix *>& matrices, size_t m = 0, size_t n = 0);
 Matrix collect(size_t nrMatrices, ...);
 
 /**

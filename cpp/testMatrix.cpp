@@ -72,21 +72,59 @@ TEST( matrix, row_major )
 }
 
 /* ************************************************************************* */
-TEST( matrix, collect )
+TEST( matrix, collect1 )
 {
-  Matrix A = Matrix_(2,2, 
-		       -5.0 , 3.0,
-		       00.0, -5.0 );
-  Matrix B = Matrix_(2,3,
-		       -0.5 , 2.1, 1.1, 
-		       3.4 , 2.6 , 7.1);
-  Matrix AB = collect(2, &A, &B);
-  Matrix C(2,5);
-  for(int i = 0; i < 2; i++) for(int j = 0; j < 2; j++) C(i,j) = A(i,j);
-  for(int i = 0; i < 2; i++) for(int j = 0; j < 3; j++) C(i,j+2) = B(i,j);
+	Matrix A = Matrix_(2,2,
+			-5.0 , 3.0,
+			00.0, -5.0 );
+	Matrix B = Matrix_(2,3,
+			-0.5 , 2.1, 1.1,
+			3.4 , 2.6 , 7.1);
+	Matrix AB = collect(2, &A, &B);
+	Matrix C(2,5);
+	for(int i = 0; i < 2; i++) for(int j = 0; j < 2; j++) C(i,j) = A(i,j);
+	for(int i = 0; i < 2; i++) for(int j = 0; j < 3; j++) C(i,j+2) = B(i,j);
 
-  EQUALITY(C,AB);
+	EQUALITY(C,AB);
 
+}
+
+/* ************************************************************************* */
+TEST( matrix, collect2 )
+{
+	Matrix A = Matrix_(2,2,
+			-5.0 , 3.0,
+			00.0, -5.0 );
+	Matrix B = Matrix_(2,3,
+			-0.5 , 2.1, 1.1,
+			3.4 , 2.6 , 7.1);
+	vector<const Matrix*> matrices;
+	matrices.push_back(&A);
+	matrices.push_back(&B);
+	Matrix AB = collect(matrices);
+	Matrix C(2,5);
+	for(int i = 0; i < 2; i++) for(int j = 0; j < 2; j++) C(i,j) = A(i,j);
+	for(int i = 0; i < 2; i++) for(int j = 0; j < 3; j++) C(i,j+2) = B(i,j);
+
+	EQUALITY(C,AB);
+
+}
+
+/* ************************************************************************* */
+TEST( matrix, collect3 )
+{
+	Matrix A, B;
+	A = eye(2,3);
+	B = eye(2,3);
+	vector<const Matrix*> matrices;
+	matrices.push_back(&A);
+	matrices.push_back(&B);
+	Matrix AB = collect(matrices, 2, 3);
+	Matrix exp = Matrix_(2, 6,
+			1.0, 0.0, 0.0, 1.0, 0.0, 0.0,
+		    0.0, 1.0, 0.0, 0.0, 1.0, 0.0);
+
+	EQUALITY(exp,AB);
 }
 
 /* ************************************************************************* */

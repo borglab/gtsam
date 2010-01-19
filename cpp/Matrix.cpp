@@ -494,24 +494,26 @@ Matrix stack(size_t nrMatrices, ...)
 }
 
 /* ************************************************************************* */
-Matrix collect(vector<const Matrix *> matrices)
+Matrix collect(const std::vector<const Matrix *>& matrices, size_t m, size_t n)
 {
-  int dimA1 = 0;
-  int dimA2 = 0;
-  BOOST_FOREACH(const Matrix* M, matrices) {
-    dimA1 =  M->size1();  // TODO: should check if all the same !
-    dimA2 += M->size2();
-  }
-  Matrix A(dimA1, dimA2);
-  int hindex = 0;
-  BOOST_FOREACH(const Matrix* M, matrices) {
-    for(size_t d1 = 0; d1 < M->size1(); d1++)
-      for(size_t d2 = 0; d2 < M->size2(); d2++)
-	A(d1, d2+hindex) = (*M)(d1, d2);
-    hindex += M->size2();
-  }  
+	// if we have known and constant dimensions, use them
+	size_t dimA1 = m;
+	size_t dimA2 = n*matrices.size();
+	if (!m && !n)
+		BOOST_FOREACH(const Matrix* M, matrices) {
+		dimA1 =  M->size1();  // TODO: should check if all the same !
+		dimA2 += M->size2();
+	}
+	Matrix A(dimA1, dimA2);
+	size_t hindex = 0;
+	BOOST_FOREACH(const Matrix* M, matrices) {
+		for(size_t d1 = 0; d1 < M->size1(); d1++)
+			for(size_t d2 = 0; d2 < M->size2(); d2++)
+				A(d1, d2+hindex) = (*M)(d1, d2);
+		hindex += M->size2();
+	}
 
-  return A;
+	return A;
 }
 
 /* ************************************************************************* */
