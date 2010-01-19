@@ -28,7 +28,7 @@ namespace gtsam {
 		bool Gaussian::equals(const Base& m, double tol) const {
 			const Gaussian* p = dynamic_cast<const Gaussian*> (&m);
 			if (p == NULL) return false;
-			return equal_with_abs_tol(sqrt_information_, p->sqrt_information_, tol);
+			return equal_with_abs_tol(sqrt_information_, p->sqrt_information_, sqrt(tol));
 		}
 
 		Vector Gaussian::whiten(const Vector& v) const {
@@ -45,27 +45,11 @@ namespace gtsam {
 			return inner_prod(w, w);
 		}
 
-		// functional
 		Matrix Gaussian::Whiten(const Matrix& H) const {
-//			size_t m = H.size1(), n = H.size2();
-//			Matrix W(m, n);
-//			for (int j = 0; j < n; j++) {
-//				Vector wj = whiten(column(H, j));
-//				for (int i = 0; i < m; i++)
-//					W(i, j) = wj(i);
-//			}
-//			return W;
 		  return sqrt_information_ * H;
 		}
 
-		// in place
 		void Gaussian::WhitenInPlace(Matrix& H) const {
-//			size_t m = H.size1(), n = H.size2();
-//			for (int j = 0; j < n; j++) {
-//				Vector wj = whiten(column(H, j));
-//				for (int i = 0; i < m; i++)
-//					H(i, j) = wj(i);
-//			}
 		  H = sqrt_information_ * H;
 		}
 
@@ -86,6 +70,14 @@ namespace gtsam {
 
 		Vector Diagonal::unwhiten(const Vector& v) const {
 			return emul(v, sigmas_);
+		}
+
+		Matrix Diagonal::Whiten(const Matrix& H) const {
+		  return vector_scale(invsigmas_, H);
+		}
+
+		void Diagonal::WhitenInPlace(Matrix& H) const {
+		  H = vector_scale(invsigmas_, H);
 		}
 
 		/* ************************************************************************* */
@@ -124,6 +116,14 @@ namespace gtsam {
 
 		Vector Isotropic::unwhiten(const Vector& v) const {
 			return v * sigma_;
+		}
+
+		Matrix Isotropic::Whiten(const Matrix& H) const {
+		  return invsigma_ * H;
+		}
+
+		void Isotropic::WhitenInPlace(Matrix& H) const {
+		  H *= invsigma_;
 		}
 
 		/* ************************************************************************* */

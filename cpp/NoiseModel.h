@@ -51,8 +51,7 @@ namespace gtsam {	namespace noiseModel {
     virtual void unwhitenInPlace(Vector& v) const {
     	v = unwhiten(v);
     }
-
-  };
+    };
 
   /**
 	 * Gaussian implements the mathematical model
@@ -123,6 +122,14 @@ namespace gtsam {	namespace noiseModel {
 		 */
 		virtual void WhitenInPlace(Matrix& H) const;
 
+    /**
+     * Whiten a system, in place as well
+     */
+    inline void WhitenSystem(Matrix& A, Vector& b) const {
+  		WhitenInPlace(A);
+  		whitenInPlace(b);
+    }
+
 		/**
 		 * Return R itself, but note that Whiten(H) is cheaper than R*H
 		 */
@@ -180,7 +187,16 @@ namespace gtsam {	namespace noiseModel {
 		virtual void print(const std::string& name) const;
     virtual Vector whiten(const Vector& v) const;
     virtual Vector unwhiten(const Vector& v) const;
-  };
+		virtual Matrix Whiten(const Matrix& H) const;
+		virtual void WhitenInPlace(Matrix& H) const;
+
+		/**
+     * Return standard deviations (sqrt of diagonal)
+     */
+    inline const Vector& sigmas() const { return sigmas_; }
+    inline double sigma(size_t i) const { return sigmas_(i); }
+
+  }; // Diagonal
 
   /**
    * A Constrained constrained model is a specialization of Diagonal which allows
@@ -223,7 +239,8 @@ namespace gtsam {	namespace noiseModel {
 
 		virtual Matrix Whiten(const Matrix& H) const;
 		virtual void WhitenInPlace(Matrix& H) const;
-  };
+
+  }; // Constrained
 
   /**
    * An isotropic noise model corresponds to a scaled diagonal covariance
@@ -266,6 +283,13 @@ namespace gtsam {	namespace noiseModel {
 		virtual double Mahalanobis(const Vector& v) const;
     virtual Vector whiten(const Vector& v) const;
     virtual Vector unwhiten(const Vector& v) const;
+		virtual Matrix Whiten(const Matrix& H) const;
+		virtual void WhitenInPlace(Matrix& H) const;
+
+    /**
+     * Return standard deviation
+     */
+    inline double sigma() const { return sigma_; }
   };
 
   /**
@@ -315,6 +339,8 @@ namespace gtsam {	namespace noiseModel {
 		sharedGaussian(const double& s):Gaussian::shared_ptr(Isotropic::Sigma(GTSAM_MAGIC_GAUSSIAN,s)) {}
 #endif
 		};
+
+	typedef Diagonal::shared_ptr sharedDiagonal;
 
 
 } // namespace gtsam
