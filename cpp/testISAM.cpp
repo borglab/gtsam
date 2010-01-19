@@ -84,16 +84,15 @@ TEST( ISAM, iSAM )
 	// New conditionals in modified top of the tree
 	SymbolicConditional::shared_ptr
 		S_(new SymbolicConditional("S")),
-		L_(new SymbolicConditional("L", "S")),
-		E_(new SymbolicConditional("E", "L", "S")),
-		B_(new SymbolicConditional("B", "E", "L", "S"));
+		B_(new SymbolicConditional("B", "S")),
+		L_(new SymbolicConditional("L", "B", "S"));
 
 	// Create expected Bayes tree
 	SymbolicISAM expected;
 	expected.insert(S_);
-	expected.insert(L_);
-	expected.insert(E_);
 	expected.insert(B_);
+	expected.insert(L_);
+	expected.insert(E);
 	expected.insert(T);
 	expected.insert(X);
 
