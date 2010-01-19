@@ -39,7 +39,7 @@ GaussianFactor::GaussianFactor(const boost::shared_ptr<GaussianConditional>& cg)
 	}
 	// set sigmas from precisions
 	size_t n = b_.size();
-	sigmas_ = cg->get_sigmas();
+	model_ = noiseModel::Diagonal::Sigmas(cg->get_sigmas());
 }
 
 /* ************************************************************************* */
@@ -52,7 +52,7 @@ GaussianFactor::GaussianFactor(const vector<shared_ptr> & factors)
   size_t m = 0;
   BOOST_FOREACH(shared_ptr factor, factors) m += factor->numberOfRows();
   b_ = Vector(m);
-  sigmas_ = Vector(m);
+  Vector sigmas(m);
 
   size_t pos = 0; // save last position inserted into the new rhs vector
 
@@ -66,8 +66,8 @@ GaussianFactor::GaussianFactor(const vector<shared_ptr> & factors)
     const Vector bf = factor->get_b();
     for (size_t i=0; i<mf; i++) b_(pos+i) = bf(i);
 
-    // copy the sigmas_
-    for (size_t i=0; i<mf; i++) sigmas_(pos+i) = factor->sigmas_(i);
+    // copy the model_
+    for (size_t i=0; i<mf; i++) sigmas(pos+i) = factor->model_->sigma(i);
 
     // update the matrices
     append_factor(factor,m,pos);
@@ -75,6 +75,7 @@ GaussianFactor::GaussianFactor(const vector<shared_ptr> & factors)
     pos += mf;
   }
 	if (verbose) cout << "GaussianFactor::GaussianFactor done" << endl;
+	model_ = noiseModel::Diagonal::Sigmas(sigmas);
 }
 
 /* ************************************************************************* */
@@ -85,7 +86,7 @@ void GaussianFactor::print(const string& s) const {
   	FOREACH_PAIR(j,Aj,As_)
   		gtsam::print(*Aj, "A["+(string)*j+"]=\n");
     gtsam::print(b_,"b=");
-    gtsam::print(sigmas_, "sigmas = ");
+    model_->print("model");
   }
 }
 
@@ -121,10 +122,7 @@ bool GaussianFactor::equals(const Factor<VectorConfig>& f, double tol) const {
   if( !(::equal_with_abs_tol(b_, (lf->b_),tol)) )
     return false;
 
-  if( !(::equal_with_abs_tol(sigmas_, (lf->sigmas_),tol)) )
-      return false;
-
-  return true;
+  return model_->equals(*(lf->model_),tol);
 }
 
 /* ************************************************************************* */
@@ -138,8 +136,8 @@ Vector GaussianFactor::unweighted_error(const VectorConfig& c) const {
 
 /* ************************************************************************* */
 Vector GaussianFactor::error_vector(const VectorConfig& c) const {
-	if (empty()) return (-b_);
-	return ediv_(unweighted_error(c),sigmas_);
+	if (empty()) return model_->whiten(-b_);
+	return model_->whiten(unweighted_error(c));
 }
 
 /* ************************************************************************* */
@@ -183,12 +181,12 @@ Vector GaussianFactor::operator*(const VectorConfig& x) const {
   FOREACH_PAIR(j, Aj, As_)
     Ax += (*Aj * x[*j]);
 
-  return ediv_(Ax,sigmas_);
+  return model_->whiten(Ax);
 }
 
 /* ************************************************************************* */
 VectorConfig GaussianFactor::operator^(const Vector& e) const {
-  Vector E = ediv_(e,sigmas_);
+  Vector E = model_->whiten(e);
 	VectorConfig x;
   // Just iterate over all A matrices and insert Ai^e into VectorConfig
   FOREACH_PAIR(j, Aj, As_)
@@ -212,12 +210,7 @@ pair<Matrix,Vector> GaussianFactor::matrix(const Ordering& ordering, bool weight
 	Vector b(b_);
 
 	// divide in sigma so error is indeed 0.5*|Ax-b|
-	if (weight) {
-		Vector t = ediv(ones(sigmas_.size()),sigmas_);
-		A = vector_scale(t, A);
-		for (int i=0; i<b_.size(); ++i)
-			b(i) *= t(i);
-	}
+	if (weight) model_->WhitenSystem(A,b);
 	return make_pair(A, b);
 }
 
@@ -254,7 +247,7 @@ GaussianFactor::sparse(const Dimensions& columnIndices) const {
 		Dimensions::const_iterator it = columnIndices.find(*key);
 		int column_start = it->second;
 		for (size_t i = 0; i < Aj->size1(); i++) {
-			double sigma_i = sigmas_(i);
+			double sigma_i = model_->sigma(i);
 			for (size_t j = 0; j < Aj->size2(); j++)
 				if ((*Aj)(i, j) != 0.0) {
 					I.push_back(i + 1);
@@ -330,9 +323,9 @@ GaussianFactor::eliminate(const Symbol& key) const
 	// Do in-place QR to get R, d of the augmented system
 	if (verbose) ::print(A,"A");
 	if (verbose) ::print(b,"b = ");
-	if (verbose) ::print(sigmas_,"sigmas = ");
+	if (verbose) model_->print("model");
 	std::list<boost::tuple<Vector, double, double> > solution =
-							weighted_eliminate(A, b, sigmas_);
+							weighted_eliminate(A, b, model_->sigmas()); // TODO, fix using NoiseModel
 
 	// get dimensions of the eliminated variable
 	size_t n1 = getDim(key);
@@ -372,7 +365,7 @@ GaussianFactor::eliminate(const Symbol& key) const
 		}
 
 	// Set sigmas
-	factor->sigmas_ = sub(newSigmas,n1,maxRank);
+	factor->model_ = noiseModel::Diagonal::Sigmas(sub(newSigmas,n1,maxRank));
 
 	// extract ds vector for the new b
 	factor->set_b(sub(d, n1, maxRank));
@@ -400,7 +393,7 @@ GaussianFactor::shared_ptr GaussianFactor::alphaFactor(const Symbol& key, const 
 	Vector b = - unweighted_error(x);
 
 	// construct factor
-	shared_ptr factor(new GaussianFactor(key,Matrix_(A),b,sigmas_));
+	shared_ptr factor(new GaussianFactor(key,Matrix_(A),b,model_->sigmas()));
 	return factor;
 }
 

@@ -17,6 +17,7 @@
 #include "Factor.h"
 #include "Matrix.h"
 #include "VectorConfig.h"
+#include "NoiseModel.h"
 
 namespace gtsam {
 
@@ -37,9 +38,9 @@ public:
 
 protected:
 
+	sharedDiagonal model_; // Gaussian noise model with diagonal covariance matrix
 	std::map<Symbol, Matrix> As_; // linear matrices
 	Vector b_; // right-hand-side
-	Vector sigmas_; // vector of standard deviations for each row in the factor
 
 public:
 
@@ -49,20 +50,20 @@ public:
 
 	/** Construct Null factor */
 	GaussianFactor(const Vector& b_in) :
-		b_(b_in), sigmas_(ones(b_in.size())){
+		b_(b_in) {
 	}
 
 	/** Construct unary factor */
 	GaussianFactor(const Symbol& key1, const Matrix& A1,
 			const Vector& b, double sigma) :
-		b_(b), sigmas_(repeat(b.size(),sigma)) {
+		b_(b), model_(noiseModel::Isotropic::Sigma(b.size(),sigma)) {
 		As_.insert(make_pair(key1, A1));
 	}
 
 	/** Construct unary factor with vector of sigmas*/
 	GaussianFactor(const Symbol& key1, const Matrix& A1,
 			const Vector& b, const Vector& sigmas) :
-		b_(b), sigmas_(sigmas) {
+		b_(b), model_(noiseModel::Diagonal::Sigmas(sigmas)) {
 		As_.insert(make_pair(key1, A1));
 	}
 
@@ -70,7 +71,7 @@ public:
 	GaussianFactor(const Symbol& key1, const Matrix& A1,
 			const Symbol& key2, const Matrix& A2,
 			const Vector& b, double sigma) :
-		b_(b), sigmas_(repeat(b.size(),sigma))  {
+		b_(b), model_(noiseModel::Isotropic::Sigma(b.size(),sigma))  {
 		As_.insert(make_pair(key1, A1));
 		As_.insert(make_pair(key2, A2));
 	}
@@ -80,7 +81,7 @@ public:
 			const Symbol& key2, const Matrix& A2,
 			const Symbol& key3, const Matrix& A3,
 			const Vector& b, double sigma) :
-		b_(b), sigmas_(repeat(b.size(),sigma))  {
+		b_(b), model_(noiseModel::Isotropic::Sigma(b.size(),sigma))  {
 		As_.insert(make_pair(key1, A1));
 		As_.insert(make_pair(key2, A2));
 		As_.insert(make_pair(key3, A3));
@@ -89,7 +90,7 @@ public:
 	/** Construct an n-ary factor */
 	GaussianFactor(const std::vector<std::pair<Symbol, Matrix> > &terms,
 	    const Vector &b, double sigma) :
-	    b_(b), sigmas_(repeat(b.size(),sigma))  {
+	    b_(b), model_(noiseModel::Isotropic::Sigma(b.size(),sigma))  {
 	  for(unsigned int i=0; i<terms.size(); i++)
 	    As_.insert(terms[i]);
 	}
@@ -97,7 +98,7 @@ public:
 	/** Construct an n-ary factor with a multiple sigmas*/
 	GaussianFactor(const std::vector<std::pair<Symbol, Matrix> > &terms,
 				const Vector &b, const Vector& sigmas) :
-			b_(b), sigmas_(sigmas) {
+			b_(b), model_(noiseModel::Diagonal::Sigmas(sigmas)) {
 			for (unsigned int i = 0; i < terms.size(); i++)
 				As_.insert(terms[i]);
 		}
@@ -136,7 +137,7 @@ public:
 	const Vector& get_b() const {	return b_;	}
 
 	/** get a copy of sigmas */
-	const Vector& get_sigmas() const {	return sigmas_;	}
+	const Vector& get_sigmas() const {	return model_->sigmas();	}
 
 	/**
 	 * get a copy of the A matrix from a specific node
