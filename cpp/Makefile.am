@@ -249,13 +249,15 @@ testVSLAMConfig_LDADD = libgtsam.la
 headers += $(sources:.cpp=.h)
 
 # Timing tests
-noinst_PROGRAMS = timeGaussianFactor timeGaussianFactorGraph timeRot3
+noinst_PROGRAMS = timeGaussianFactor timeGaussianFactorGraph timeRot3 timeMatrix
 timeRot3_SOURCES = timeRot3.cpp
 timeRot3_LDADD = libgtsam.la
 timeGaussianFactor_SOURCES = timeGaussianFactor.cpp
 timeGaussianFactor_LDADD = libgtsam.la 
 timeGaussianFactorGraph_SOURCES = timeGaussianFactorGraph.cpp
 timeGaussianFactorGraph_LDADD = libgtsam.la
+timeMatrix_SOURCES 			  = timeMatrix.cpp 
+timeMatrix_LDADD 			  = libgtsam.la
 
 # create both dynamic and static libraries
 AM_CXXFLAGS = -I$(boost) -fPIC
