@@ -124,6 +124,8 @@ namespace gtsam {
 		FactorGraph<GaussianFactor> affectedFactors;
 		list<Symbol> newFactorsKeys = newFactors.keys();
 
+#if 1
+
 		// relinearize all keys that are in newFactors, and already exist (not new variables!)
 		list<Symbol> keysToRelinearize;
 		list<Symbol> oldKeys = nonlinearFactors_.keys();
@@ -132,7 +134,6 @@ namespace gtsam {
 				keysToRelinearize.push_back(key);
 		}
 
-#if 1
 		// basically calculate all the keys contained in the factors that contain any of the keys...
 		// the goal is to relinearize all variables directly affected by new factors
 		FactorGraph<NonlinearFactor<Config> > allAffected;
@@ -147,10 +148,14 @@ namespace gtsam {
 				allAffected.push_back(*it);
 		}
 		list<Symbol> keysToBeRemoved = allAffected.keys();
+
 #else
-		list<Symbol> keysToBeRemoved = nonlinearFactors_.keys(); // todo/debug - relinearize all (a cumbersome way to do batch)
+		// debug only: full relinearization in each step
+		list<Symbol> keysToRelinearize = nonlinearFactors_.keys();
+		list<Symbol> keysToBeRemoved = nonlinearFactors_.keys();
 #endif
 
+		// remove affected factors
 		this->removeTop(keysToBeRemoved, affectedFactors, orphans);
 
 		// selectively update the linearization point
