@@ -187,7 +187,6 @@ boost::shared_ptr<Ordering> colamd(int n_col, int n_row, int nrNonZeros, const m
 	boost::shared_ptr<Ordering> result(new Ordering);
 	for(int j = 0; j < n_col; j++)
 	  result->push_back(initialOrder[p[j]]);
-		//result->push_back(initialOrder[j]);
 	delete [] p; // delete colamd result vector
 
 	return result;
