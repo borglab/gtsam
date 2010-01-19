@@ -25,6 +25,7 @@ using namespace boost::assign;
 using namespace std;
 using namespace gtsam;
 using namespace example;
+using namespace boost;
 
 /* ************************************************************************* */
 TEST( GaussianFactor, linearFactor )
@@ -510,16 +511,36 @@ TEST( GaussianFactor, matrix )
 	Ordering ord;
 	ord += "x1","x2";
 
-	Matrix A; Vector b;
-	boost::tie(A,b) = lf->matrix(ord);
+	// Test whitened version
+	Matrix A_act1; Vector b_act1;
+	boost::tie(A_act1,b_act1) = lf->matrix(ord, true);
 
 	Matrix A1 = Matrix_(2,4,
 			-10.0,  0.0, 10.0,  0.0,
 			000.0,-10.0,  0.0, 10.0 );
 	Vector b1 = Vector_(2, 2.0, -1.0);
 
-	EQUALITY(A,A1);
-	EQUALITY(b,b1);
+	EQUALITY(A_act1,A1);
+	EQUALITY(b_act1,b1);
+
+	// Test unwhitened version
+	Matrix A_act2; Vector b_act2;
+	boost::tie(A_act2,b_act2) = lf->matrix(ord, false);
+
+
+	Matrix A2 = Matrix_(2,4,
+			-1.0,  0.0, 1.0,  0.0,
+			000.0,-1.0,  0.0, 1.0 );
+	Vector b2 = Vector_(2, 0.2, -0.1);
+
+	EQUALITY(A_act2,A2);
+	EQUALITY(b_act2,b2);
+
+	// Ensure that whitening is consistent
+	shared_ptr<noiseModel::Gaussian> model = lf->get_model();
+	model->WhitenSystem(A_act2, b_act2);
+	EQUALITY(A_act1, A_act2);
+	EQUALITY(b_act1, b_act2);
 }
 
 /* ************************************************************************* */
@@ -535,14 +556,30 @@ TEST( GaussianFactor, matrix_aug )
 	Ordering ord;
 	ord += "x1","x2";
 
-	Matrix Ab;
-	Ab = lf->matrix_augmented(ord);
+	// Test unwhitened version
+	Matrix Ab_act1;
+	Ab_act1 = lf->matrix_augmented(ord, false);
 
 	Matrix Ab1 = Matrix_(2,5,
 			-1.0,  0.0, 1.0,  0.0,  0.2,
 			00.0,- 1.0, 0.0,  1.0, -0.1 );
 
-	EQUALITY(Ab,Ab1);
+	EQUALITY(Ab_act1,Ab1);
+
+	// Test whitened version
+	Matrix Ab_act2;
+	Ab_act2 = lf->matrix_augmented(ord, true);
+
+	Matrix Ab2 = Matrix_(2,5,
+		   -10.0,  0.0, 10.0,  0.0,  2.0,
+			00.0, -10.0,  0.0, 10.0, -1.0 );
+
+	EQUALITY(Ab_act2,Ab2);
+
+	// Ensure that whitening is consistent
+	shared_ptr<noiseModel::Gaussian> model = lf->get_model();
+	model->WhitenInPlace(Ab_act1);
+	EQUALITY(Ab_act1, Ab_act2);
 }
 
 /* ************************************************************************* */

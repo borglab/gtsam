@@ -215,7 +215,7 @@ pair<Matrix,Vector> GaussianFactor::matrix(const Ordering& ordering, bool weight
 }
 
 /* ************************************************************************* */
-Matrix GaussianFactor::matrix_augmented(const Ordering& ordering) const {
+Matrix GaussianFactor::matrix_augmented(const Ordering& ordering, bool weight) const {
 	// get pointers to the matrices
 	vector<const Matrix *> matrices;
 	BOOST_FOREACH(const Symbol& j, ordering) {
@@ -229,7 +229,11 @@ Matrix GaussianFactor::matrix_augmented(const Ordering& ordering) const {
 		B_mat(i,0) = b_(i);
 	matrices.push_back(&B_mat);
 
-	return collect(matrices);
+	// divide in sigma so error is indeed 0.5*|Ax-b|
+	Matrix Ab = collect(matrices);
+	if (weight) model_->WhitenInPlace(Ab);
+
+	return Ab;
 }
 
 /* ************************************************************************* */

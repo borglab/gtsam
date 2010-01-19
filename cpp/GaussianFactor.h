@@ -233,10 +233,10 @@ public:
 	/**
 	 * Return (dense) matrix associated with factor
 	 * The returned system is an augmented matrix: [A b]
-	 * The standard deviations are NOT baked into A and b
 	 * @param ordering of variables needed for matrix column order
+	 * @param set weight to use whitening to bake in weights
 	 */
-	Matrix matrix_augmented(const Ordering& ordering) const;
+	Matrix matrix_augmented(const Ordering& ordering, bool weight = true) const;
 
 	/**
 	 * Return vectors i, j, and s to generate an m-by-n sparse matrix
