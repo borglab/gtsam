@@ -139,7 +139,7 @@ public:
 	/** get a copy of sigmas */
 	const Vector& get_sigmas() const {	return model_->sigmas();	}
 
-	/** get a copy of sigmas */
+	/** get a copy of model */
 	const sharedDiagonal& get_model() const { return model_;  }
 
 	/**
