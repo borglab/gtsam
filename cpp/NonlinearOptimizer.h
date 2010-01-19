@@ -20,20 +20,21 @@ namespace gtsam {
 	 * and then one of the optimization routines is called. These recursively iterate
 	 * until convergence. All methods are functional and return a new state.
 	 *
-	 * The class is parameterized by the Graph type, Config class type and the linear solver type.
+	 * The class is parameterized by the Graph type $G$, Config class type $T$,
+	 * linear system class $L$ and the non linear solver type $S$.
 	 * the config type is in order to be able to optimize over non-vector configurations as well.
 	 * To use in code, include <gtsam/NonlinearOptimizer-inl.h> in your cpp file
 	 * (the trick in http://www.ddj.com/cpp/184403420 did not work).
 	 */
-	template<class FactorGraph, class Config, class LinearSolver = Factorization<FactorGraph, Config> >
+	template<class G, class T, class L = GaussianFactorGraph, class S = Factorization<G, T> >
 	class NonlinearOptimizer {
 	public:
 
 		// For performance reasons in recursion, we store configs in a shared_ptr
-		typedef boost::shared_ptr<const Config> shared_config;
-		typedef boost::shared_ptr<const FactorGraph> shared_graph;
+		typedef boost::shared_ptr<const T> shared_config;
+		typedef boost::shared_ptr<const G> shared_graph;
 		typedef boost::shared_ptr<const Ordering> shared_ordering;
-		typedef boost::shared_ptr<const LinearSolver> shared_solver;
+		typedef boost::shared_ptr<const S> shared_solver;
 
 		enum verbosityLevel {
 			SILENT,
@@ -68,7 +69,7 @@ namespace gtsam {
 		const shared_solver solver_;
 
 		// Recursively try to do tempered Gauss-Newton steps until we succeed
-		NonlinearOptimizer try_lambda(const GaussianFactorGraph& linear,
+		NonlinearOptimizer try_lambda(const L& linear,
 				verbosityLevel verbosity, double factor) const;
 
 	public:
@@ -77,13 +78,13 @@ namespace gtsam {
 		 * Constructor
 		 */
 		NonlinearOptimizer(shared_graph graph, shared_ordering ordering,
-				shared_config config, shared_solver solver = shared_solver(new LinearSolver),
+				shared_config config, shared_solver solver = shared_solver(new S),
 				double lambda = 1e-5);
 
 		/**
 		 * Copy constructor
 		 */
-		NonlinearOptimizer(const NonlinearOptimizer<FactorGraph, Config> &optimizer) :
+		NonlinearOptimizer(const NonlinearOptimizer<G, T, L, S> &optimizer) :
 		  graph_(optimizer.graph_), ordering_(optimizer.ordering_), config_(optimizer.config_),
 		  error_(optimizer.error_), lambda_(optimizer.lambda_), solver_(optimizer.solver_) {}
 
@@ -110,7 +111,7 @@ namespace gtsam {
 
 		/**
 		 *  linearize and optimize
-		 *  This returns an VectorConfig, i.e., vectors in tangent space of Config
+		 *  This returns an VectorConfig, i.e., vectors in tangent space of T
 		 */
 		VectorConfig linearizeAndOptimizeForDelta() const;
 

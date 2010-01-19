@@ -12,15 +12,14 @@ using namespace std;
 namespace gtsam {
 
 	/* ************************************************************************* */
-	SubgraphPreconditioner::SubgraphPreconditioner(const GaussianBayesNet& Rc1,
-			const GaussianFactorGraph& Ab2, const VectorConfig& xbar) :
-		Rc1_(Rc1), Ab2_(Ab2), xbar_(xbar), b2bar_(Ab2_.errors(xbar)) {
+	SubgraphPreconditioner::SubgraphPreconditioner(sharedBayesNet& Rc1,	sharedFG& Ab2, sharedConfig& xbar) :
+		Rc1_(Rc1), Ab2_(Ab2), xbar_(xbar), b2bar_(Ab2_->errors_(*xbar)) {
 	}
 
 	/* ************************************************************************* */
 	// x = xbar + inv(R1)*y
 	VectorConfig SubgraphPreconditioner::x(const VectorConfig& y) const {
-		return xbar_ + gtsam::backSubstitute(Rc1_, y);
+		return *xbar_ + gtsam::backSubstitute(*Rc1_, y);
 	}
 
 	/* ************************************************************************* */
@@ -29,14 +28,14 @@ namespace gtsam {
 		Errors e;
 
 		// Use BayesNet order to add y contributions in order
-		BOOST_FOREACH(GaussianConditional::shared_ptr cg, Rc1_) {
+		BOOST_FOREACH(GaussianConditional::shared_ptr cg, *Rc1_) {
 			const Symbol& j = cg->key();
 			e.push_back(y[j]); // append y
 		}
 
 		// Add A2 contribution
 		VectorConfig x = this->x(y);
-		Errors e2 = Ab2_.errors(x);
+		Errors e2 = Ab2_->errors(x);
 		e.splice(e.end(), e2);
 
 		return 0.5 * dot(e, e);
@@ -46,8 +45,8 @@ namespace gtsam {
 	// gradient is y + inv(R1')*A2'*(A2*inv(R1)*y-b2bar),
 	VectorConfig SubgraphPreconditioner::gradient(const VectorConfig& y) const {
 		VectorConfig x = this->x(y); // x = inv(R1)*y
-		VectorConfig gx2 = Ab2_ ^ Ab2_.errors(x);
-		VectorConfig gy2 = gtsam::backSubstituteTranspose(Rc1_, gx2); // inv(R1')*gx2
+		VectorConfig gx2 = *Ab2_ ^ Ab2_->errors(x);
+		VectorConfig gy2 = gtsam::backSubstituteTranspose(*Rc1_, gx2); // inv(R1')*gx2
 		return y + gy2;
 	}
 
@@ -58,14 +57,14 @@ namespace gtsam {
 		Errors e;
 
 		// Use BayesNet order to add y contributions in order
-		BOOST_FOREACH(GaussianConditional::shared_ptr cg, Rc1_) {
+		BOOST_FOREACH(GaussianConditional::shared_ptr cg, *Rc1_) {
 			const Symbol& j = cg->key();
 			e.push_back(y[j]); // append y
 		}
 
 		// Add A2 contribution
-		VectorConfig x = gtsam::backSubstitute(Rc1_, y); // x=inv(R1)*y
-		Errors e2 = Ab2_ * x; // A2*x
+		VectorConfig x = gtsam::backSubstitute(*Rc1_, y); // x=inv(R1)*y
+		Errors e2 = *Ab2_ * x; // A2*x
 		e.splice(e.end(), e2);
 
 		return e;
@@ -79,7 +78,7 @@ namespace gtsam {
 
 		// Use BayesNet order to remove y contributions in order
 		Errors::const_iterator it = e.begin();
-		BOOST_FOREACH(GaussianConditional::shared_ptr cg, Rc1_) {
+		BOOST_FOREACH(GaussianConditional::shared_ptr cg, *Rc1_) {
 			const Symbol& j = cg->key();
 			const Vector& ej = *(it++);
 			y1.insert(j,ej);
@@ -91,8 +90,8 @@ namespace gtsam {
 		e2.push_back(*(it++));
 
 		// get A2 part,
-		VectorConfig x = Ab2_ ^ e2; // x = A2'*e2
-		VectorConfig y2 = gtsam::backSubstituteTranspose(Rc1_, x); // inv(R1')*x;
+		VectorConfig x = *Ab2_ ^ e2; // x = A2'*e2
+		VectorConfig y2 = gtsam::backSubstituteTranspose(*Rc1_, x); // inv(R1')*x;
 
 		return y1 + y2;
 	}
@@ -100,6 +99,6 @@ namespace gtsam {
 	/* ************************************************************************* */
 	void SubgraphPreconditioner::print(const std::string& s) const {
 		cout << s << endl;
-		Ab2_.print();
+		Ab2_->print();
 	}
 } // nsamespace gtsam

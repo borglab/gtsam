@@ -60,12 +60,18 @@ void push_front(GaussianBayesNet& bn, const Symbol& key, Vector d, Matrix R,
 /* ************************************************************************* */
 VectorConfig optimize(const GaussianBayesNet& bn)
 {
-  VectorConfig result;
-	
+  return *optimize_(bn);
+}
+
+/* ************************************************************************* */
+boost::shared_ptr<VectorConfig> optimize_(const GaussianBayesNet& bn)
+{
+	boost::shared_ptr<VectorConfig> result(new VectorConfig);
+
   /** solve each node in turn in topological sort order (parents first)*/
 	BOOST_REVERSE_FOREACH(GaussianConditional::shared_ptr cg, bn) {
-    Vector x = cg->solve(result); // Solve for that variable
-    result.insert(cg->key(),x);   // store result in partial solution
+    Vector x = cg->solve(*result); // Solve for that variable
+    result->insert(cg->key(),x);   // store result in partial solution
   }
   return result;
 }

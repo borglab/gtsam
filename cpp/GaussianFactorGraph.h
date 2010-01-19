@@ -76,6 +76,9 @@ namespace gtsam {
 		/** return A*x-b */
 		Errors errors(const VectorConfig& x) const;
 
+		/** shared pointer version */
+		boost::shared_ptr<Errors> errors_(const VectorConfig& x) const;
+
 			/** unnormalized error */
 		double error(const VectorConfig& x) const;
 
@@ -116,7 +119,7 @@ namespace gtsam {
      * that does not completely eliminate the graph
      */
     GaussianBayesNet eliminate(const Ordering& ordering);
-		
+
     /**
      * optimize a linear factor graph
      * @param ordering fg in order
@@ -239,12 +242,10 @@ namespace gtsam {
   	}
 
 		/**
-		 * linearize the non-linear graph around the current config,
+		 * linearize the non-linear graph around the current config
 		 */
-  	VectorConfig linearizeAndOptimize(const NonlinearGraph& g, const Config& config,
-  			const Ordering& ordering) const {
-  		GaussianFactorGraph linear = g.linearize(config);
-  		return optimize(linear, ordering);
+  	GaussianFactorGraph linearize(const NonlinearGraph& g, const Config& config) const {
+  		return g.linearize(config);
   	}
   };
 }

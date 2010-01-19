@@ -161,9 +161,9 @@ TEST( Iterative, subgraphPCG )
 
 	// build the subgraph PCG system
 	GaussianFactorGraph Ab1 = T.linearize(theta_bar);
-	GaussianFactorGraph Ab2 = C.linearize(theta_bar);
-	const GaussianBayesNet Rc1 = Ab1.eliminate(ordering);
-	VectorConfig xbar = optimize(Rc1);
+	SubgraphPreconditioner::sharedFG Ab2 = C.linearize_(theta_bar);
+	SubgraphPreconditioner::sharedBayesNet Rc1 = Ab1.eliminate_(ordering);
+	SubgraphPreconditioner::sharedConfig xbar = optimize_(*Rc1);
 	SubgraphPreconditioner system(Rc1, Ab2, xbar);
 
 	// Solve the subgraph PCG

@@ -17,12 +17,10 @@
 #include "NonlinearEquality.h"
 #include "VectorConfig.h"
 #include "Ordering.h"
-#include "NonlinearOptimizer.h"
 #include "SQPOptimizer.h"
 
 // implementations
 #include "NonlinearConstraint-inl.h"
-#include "NonlinearOptimizer-inl.h"
 #include "SQPOptimizer-inl.h"
 
 using namespace std;

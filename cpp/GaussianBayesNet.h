@@ -45,6 +45,11 @@ namespace gtsam {
 	 */
 	VectorConfig optimize(const GaussianBayesNet&);
 
+	/**
+	 * shared pointer version
+	 */
+	boost::shared_ptr<VectorConfig> optimize_(const GaussianBayesNet& bn);
+
 	/*
 	 * Backsubstitute
 	 * (R*x)./sigmas = y by solving x=inv(R)*(y.*sigmas)

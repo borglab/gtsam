@@ -20,17 +20,17 @@ using namespace std;
 namespace gtsam {
 
 	/* ************************************************************************* */
-	template<class Graph, class Config>
-	SubgraphPCG<Graph, Config>::SubgraphPCG(const Graph& G, const Config& config) :
+	template<class G, class T>
+	SubgraphPCG<G, T>::SubgraphPCG(const G& g, const T& theta0) :
 		maxIterations_(100), verbose_(false), epsilon_(1e-4), epsilon_abs_(1e-5) {
 
 		// generate spanning tree and create ordering
-		PredecessorMap<Key> tree = G.template findMinimumSpanningTree<Key, Constraint>();
+		PredecessorMap<Key> tree = g.template findMinimumSpanningTree<Key, Constraint>();
 		list<Key> keys = predecessorMap2Keys(tree);
 
 		// split the graph
 		if (verbose_) cout << "generating spanning tree and split the graph ...";
-		G.template split<Key, Constraint>(tree, T_, C_);
+		g.template split<Key, Constraint>(tree, T_, C_);
 		if (verbose_) cout << T_.size() << " and " << C_.size() << " factors" << endl;
 
 		// make the ordering
@@ -41,30 +41,32 @@ namespace gtsam {
 
 		// compose the approximate solution
 		Key root = keys.back();
-		theta_bar_ = composePoses<Graph, Constraint, Pose, Config> (T_, tree, config[root]);
+		theta_bar_ = composePoses<G, Constraint, Pose, T> (T_, tree, theta0[root]);
 
 	}
 
 	/* ************************************************************************* */
-	template<class Graph, class Config>
-	VectorConfig SubgraphPCG<Graph, Config>::linearizeAndOptimize(const Graph& g,
-			const Config& theta_bar, const Ordering& ordering) const {
+	template<class G, class T>
+	SubgraphPreconditioner SubgraphPCG<G, T>::linearize(const G& g, const T& theta_bar) const {
+		GaussianFactorGraph Ab1 = T_.linearize(theta_bar);
+		SubgraphPreconditioner::sharedFG Ab2 = C_.linearize_(theta_bar);
+		SubgraphPreconditioner::sharedBayesNet Rc1 = Ab1.eliminate_(*ordering_);
+		SubgraphPreconditioner::sharedConfig xbar = gtsam::optimize_(*Rc1);
+		return SubgraphPreconditioner(Rc1, Ab2, xbar);
+	}
 
+	/* ************************************************************************* */
+	template<class G, class T>
+	VectorConfig SubgraphPCG<G, T>::optimize(SubgraphPreconditioner& system, const Ordering& ordering) const {
 		//TODO: 3 is hard coded here
 		VectorConfig zeros;
 		BOOST_FOREACH(const Symbol& j, ordering) zeros.insert(j,zero(3));
 
-		// build the subgraph PCG system
-		GaussianFactorGraph Ab1 = T_.linearize(theta_bar);
-		GaussianFactorGraph Ab2 = C_.linearize(theta_bar);
-		const GaussianBayesNet Rc1 = Ab1.eliminate(ordering);
-		VectorConfig xbar = gtsam::optimize(Rc1);
-		SubgraphPreconditioner system(Rc1, Ab2, xbar);
-
 		// Solve the subgraph PCG
 		VectorConfig ybar = conjugateGradients<SubgraphPreconditioner, VectorConfig,
 				Errors> (system, zeros, verbose_, epsilon_, epsilon_abs_, maxIterations_);
-		VectorConfig xbar2 = system.x(ybar);
-		return xbar2;
+		VectorConfig xbar = system.x(ybar);
+		return xbar;
 	}
+
 }

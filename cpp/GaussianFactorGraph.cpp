@@ -42,9 +42,14 @@ double GaussianFactorGraph::error(const VectorConfig& x) const {
 
 /* ************************************************************************* */
 Errors GaussianFactorGraph::errors(const VectorConfig& x) const {
-	Errors e;
+	return *errors_(x);
+}
+
+/* ************************************************************************* */
+boost::shared_ptr<Errors> GaussianFactorGraph::errors_(const VectorConfig& x) const {
+	boost::shared_ptr<Errors> e(new Errors);
 	BOOST_FOREACH(sharedFactor factor,factors_)
-		e.push_back(factor->error_vector(x));
+		e->push_back(factor->error_vector(x));
 	return e;
 }
 

@@ -46,38 +46,28 @@ namespace gtsam {
 	/* ************************************************************************* */
 	// Constructors without the solver
 	/* ************************************************************************* */
-	template<class G, class C, class LS>
-	NonlinearOptimizer<G, C, LS>::NonlinearOptimizer(shared_graph graph,
+	template<class G, class C, class L, class S>
+	NonlinearOptimizer<G, C, L, S>::NonlinearOptimizer(shared_graph graph,
 			shared_ordering ordering, shared_config config, shared_solver solver, double lambda) :
 		graph_(graph), ordering_(ordering), config_(config), error_(graph->error(
 				*config)), lambda_(lambda), solver_(solver) {
 	}
 
 	/* ************************************************************************* */
-	// Constructors without the solver
-	/* ************************************************************************* */
-//	template<class G, class C, class LS>
-//	NonlinearOptimizer<G, C, LS>::NonlinearOptimizer(shared_graph graph,
-//			shared_ordering ordering, shared_config config, double lambda) :
-//		graph_(graph), ordering_(ordering), config_(config), error_(graph->error(
-//				*config)), lambda_(lambda), solver_(new LS(*graph, *config)){
-//	}
-
-	/* ************************************************************************* */
 	// linearize and optimize
 	/* ************************************************************************* */
-	template<class G, class C, class LS>
-	VectorConfig NonlinearOptimizer<G, C, LS>::linearizeAndOptimizeForDelta() const {
-		return solver_->linearizeAndOptimize(*graph_, *config_, *ordering_);
+	template<class G, class C, class L, class S>
+	VectorConfig NonlinearOptimizer<G, C, L, S>::linearizeAndOptimizeForDelta() const {
+		L linearized = solver_->linearize(*graph_, *config_);
+		return solver_->optimize(linearized, *ordering_);
 	}
 
 	/* ************************************************************************* */
 	// One iteration of Gauss Newton
 	/* ************************************************************************* */
-	template<class G, class C, class LS>
-	NonlinearOptimizer<G, C, LS> NonlinearOptimizer<G, C, LS>::iterate(
+	template<class G, class C, class L, class S>
+	NonlinearOptimizer<G, C, L, S> NonlinearOptimizer<G, C, L, S>::iterate(
 			verbosityLevel verbosity) const {
-
 		// linearize and optimize
 		VectorConfig delta = linearizeAndOptimizeForDelta();
 
@@ -101,8 +91,8 @@ namespace gtsam {
 	}
 
 	/* ************************************************************************* */
-	template<class G, class C, class LS>
-	NonlinearOptimizer<G, C, LS> NonlinearOptimizer<G, C, LS>::gaussNewton(
+	template<class G, class C, class L, class S>
+	NonlinearOptimizer<G, C, L, S> NonlinearOptimizer<G, C, L, S>::gaussNewton(
 			double relativeThreshold, double absoluteThreshold,
 			verbosityLevel verbosity, int maxIterations) const {
 		// linearize, solve, update
@@ -125,15 +115,15 @@ namespace gtsam {
 	// optimizer if error decreased or recurse with a larger lambda if not.
 	// TODO: in theory we can't infinitely recurse, but maybe we should put a max.
 	/* ************************************************************************* */
-	template<class G, class C, class LS>
-	NonlinearOptimizer<G, C, LS> NonlinearOptimizer<G, C, LS>::try_lambda(
-			const GaussianFactorGraph& linear, verbosityLevel verbosity, double factor) const {
+	template<class G, class C, class L, class S>
+	NonlinearOptimizer<G, C, L, S> NonlinearOptimizer<G, C, L, S>::try_lambda(
+			const L& linear, verbosityLevel verbosity, double factor) const {
 
 		if (verbosity >= TRYLAMBDA)
 			cout << "trying lambda = " << lambda_ << endl;
 
 		// add prior-factors
-		GaussianFactorGraph damped = linear.add_priors(1.0/sqrt(lambda_));
+		L damped = linear.add_priors(1.0/sqrt(lambda_));
 		if (verbosity >= DAMPED)
 			damped.print("damped");
 
@@ -163,8 +153,8 @@ namespace gtsam {
 	/* ************************************************************************* */
 	// One iteration of Levenberg Marquardt
 	/* ************************************************************************* */
-	template<class G, class C, class LS>
-	NonlinearOptimizer<G, C, LS> NonlinearOptimizer<G, C, LS>::iterateLM(
+	template<class G, class C, class L, class S>
+	NonlinearOptimizer<G, C, L, S> NonlinearOptimizer<G, C, L, S>::iterateLM(
 			verbosityLevel verbosity, double lambdaFactor) const {
 
 		// maybe show output
@@ -176,7 +166,7 @@ namespace gtsam {
 			cout << "lambda = " << lambda_ << endl;
 
 		// linearize all factors once
-		GaussianFactorGraph linear = graph_->linearize(*config_);
+		L linear = graph_->linearize(*config_);
 		if (verbosity >= LINEAR)
 			linear.print("linear");
 
@@ -185,8 +175,8 @@ namespace gtsam {
 	}
 
 	/* ************************************************************************* */
-	template<class G, class C, class LS>
-	NonlinearOptimizer<G, C, LS> NonlinearOptimizer<G, C, LS>::levenbergMarquardt(
+	template<class G, class C, class L, class S>
+	NonlinearOptimizer<G, C, L, S> NonlinearOptimizer<G, C, L, S>::levenbergMarquardt(
 			double relativeThreshold, double absoluteThreshold,
 			verbosityLevel verbosity, int maxIterations, double lambdaFactor) const {
 
