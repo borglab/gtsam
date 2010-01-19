@@ -62,6 +62,9 @@ namespace gtsam {
 
   /**
    * A linear system solver using subgraph preconditioning conjugate gradient
+   * Concept NonLinearSolver<G,T,L> implements
+   *   linearize: G * T -> L
+   *   solve : L -> VectorConfig
    */
 	template <class NonlinearGraph, class Config>
 	class SubgraphPCG {
