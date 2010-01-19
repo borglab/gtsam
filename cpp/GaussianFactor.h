@@ -95,7 +95,7 @@ public:
 	    As_.insert(terms[i]);
 	}
 
-	/** Construct an n-ary factor with a multiple sigmas*/
+	/** Construct an n-ary factor with multiple sigmas*/
 	GaussianFactor(const std::vector<std::pair<Symbol, Matrix> > &terms,
 				const Vector &b, const Vector& sigmas) :
 			b_(b), model_(noiseModel::Diagonal::Sigmas(sigmas)) {
@@ -138,6 +138,9 @@ public:
 
 	/** get a copy of sigmas */
 	const Vector& get_sigmas() const {	return model_->sigmas();	}
+
+	/** get a copy of sigmas */
+	const sharedDiagonal& get_model() const { return model_;  }
 
 	/**
 	 * get a copy of the A matrix from a specific node
