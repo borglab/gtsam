@@ -94,7 +94,7 @@ namespace gtsam {
   /* ************************************************************************* */
   void print(const Vector& v, const string& s) {
     size_t n = v.size();
-    odprintf("%s[", s.c_str());
+    odprintf("%s [", s.c_str());
     for(size_t i=0; i<n; i++)
       odprintf("%g%s", v[i], (i<n-1 ? "; " : ""));
     odprintf("]\n");

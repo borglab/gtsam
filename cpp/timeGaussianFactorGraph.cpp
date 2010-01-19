@@ -57,6 +57,7 @@ TEST(timeGaussianFactorGraph, planar)
 	// 1742: 5.97, 5.97, 5.97, 5.99, 6.02
 	// 1746: 5.96, 5.96, 5.97, 6.00, 6.04
 	// 1748: 5.91, 5.92, 5.93, 5.95, 5.96
+	// 1839: 0.206956 0.206939 0.206213 0.206092 0.206780 // colamd !!!!
 	int N = 30;
 	double time = timePlanarSmoother(N); cout << time << endl;
 	DOUBLES_EQUAL(5.97,time,0.1);
