@@ -301,9 +301,6 @@ void GaussianFactor::append_factor(GaussianFactor::shared_ptr f, size_t m, size_
 pair<GaussianConditional::shared_ptr, GaussianFactor::shared_ptr>
 GaussianFactor::eliminate(const Symbol& key) const
 {
-	bool verbose = false;
-	if (verbose) cout << "GaussianFactor::eliminate(" << (string)key << ")" << endl;
-
 	// if this factor does not involve key, we exit with empty CG and LF
 	const_iterator it = As_.find(key);
 	if (it==As_.end()) {
@@ -320,18 +317,21 @@ GaussianFactor::eliminate(const Symbol& key) const
 		if (k != key) ordering += k;
 
 	// extract A, b from the combined linear factor (ensure that x is leading)
+	// TODO: get Ab as augmented matrix
+	// Matrix Ab = matrix_augmented(ordering,false);
 	Matrix A; Vector b;
 	boost::tie(A, b) = matrix(ordering, false);
 	size_t n = A.size2();
 
 	// Do in-place QR to get R, d of the augmented system
-	if (verbose) ::print(A,"A");
-	if (verbose) ::print(b,"b = ");
-	if (verbose) model_->print("model");
 	std::list<boost::tuple<Vector, double, double> > solution =
-							weighted_eliminate(A, b, model_->sigmas()); // TODO, fix using NoiseModel
+							weighted_eliminate(A, b, model_->sigmas());
+
+	// TODO, fix using NoiseModel, the read out Ab
+	// model->QR(Ab)
 
 	// get dimensions of the eliminated variable
+	// TODO: this is another map find that should be avoided !
 	size_t n1 = getDim(key);
 
 	// if m<n1, this factor cannot be eliminated
@@ -373,8 +373,6 @@ GaussianFactor::eliminate(const Symbol& key) const
 
 	// extract ds vector for the new b
 	factor->set_b(sub(d, n1, maxRank));
-	if (verbose) conditional->print("Conditional");
-	if (verbose) factor->print("Factor");
 
 	return make_pair(conditional, factor);
 }
