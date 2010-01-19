@@ -93,7 +93,7 @@ namespace gtsam {
 		// kai: this constructor is for compatible with Factorization
 		SubgraphPCG() { throw std::runtime_error("SubgraphPCG: this constructor is only for compatibility!");}
 
-		SubgraphPCG(const G& G, const T& config);
+		SubgraphPCG(const G& g, const T& config);
 
 		boost::shared_ptr<Ordering> ordering() const { return ordering_; }
 
