@@ -119,19 +119,47 @@ namespace gtsam {
 	void ISAM2<Conditional, Config>::update_internal(const NonlinearFactorGraph<Config>& newFactors,
 			const Config& config, Cliques& orphans) {
 
-		// todo: updates all variables... needs to be synced with removeTop!!!
-		linPoint_ = expmap(linPoint_, delta_);
+		// determine which variables to relinearize
 
-		// add new variables
-		linPoint_.insert(config);
-
-		FactorGraph<GaussianFactor> newFactorsLinearized = newFactors.linearize(linPoint_);
-
-		// Remove the contaminated part of the Bayes tree
 		FactorGraph<GaussianFactor> affectedFactors;
-//		list<Symbol> keysToBeRemoved = newFactorsLinearized.keys(); // todo
-		list<Symbol> keysToBeRemoved = nonlinearFactors_.keys();
+		list<Symbol> newFactorsKeys = newFactors.keys();
+
+		// relinearize all keys that are in newFactors, and already exist (not new variables!)
+		list<Symbol> keysToRelinearize;
+		list<Symbol> oldKeys = nonlinearFactors_.keys();
+		BOOST_FOREACH(const Symbol& key, newFactorsKeys) {
+			if (find(oldKeys.begin(), oldKeys.end(), key)!=oldKeys.end())
+				keysToRelinearize.push_back(key);
+		}
+
+#if 1
+		// basically calculate all the keys contained in the factors that contain any of the keys...
+		// the goal is to relinearize all variables directly affected by new factors
+		FactorGraph<NonlinearFactor<Config> > allAffected;
+		typename FactorGraph<NonlinearFactor<Config> >::iterator it;
+		for(it = nonlinearFactors_.begin(); it != nonlinearFactors_.end(); it++) {
+			bool affected = false;
+			BOOST_FOREACH(const Symbol& key, (*it)->keys()) {
+				if (find(newFactorsKeys.begin(), newFactorsKeys.end(), key) != newFactorsKeys.end())
+					affected = true;
+			}
+			if (affected)
+				allAffected.push_back(*it);
+		}
+		list<Symbol> keysToBeRemoved = allAffected.keys();
+#else
+		list<Symbol> keysToBeRemoved = nonlinearFactors_.keys(); // todo/debug - relinearize all (a cumbersome way to do batch)
+#endif
+
 		this->removeTop(keysToBeRemoved, affectedFactors, orphans);
+
+		// selectively update the linearization point
+		VectorConfig selected_delta;
+		BOOST_FOREACH(const Symbol& key, keysToRelinearize) {
+			if (delta_.contains(key)) // after constructor call, delta is empty...
+				selected_delta.insert(key, delta_[key]);
+		}
+		linPoint_ = expmap(linPoint_, selected_delta); // todo-debug only
 
 		// relinearize the affected factors ...
 		list<Symbol> affectedKeys = affectedFactors.keys();
@@ -141,7 +169,10 @@ namespace gtsam {
 		FactorGraph<GaussianFactor> cachedBoundary = getCachedBoundaryFactors(orphans);
 		factors.push_back(cachedBoundary);
 
+		// add new variables
+		linPoint_.insert(config);
 		// ... and finally add the new linearized factors themselves
+		FactorGraph<GaussianFactor> newFactorsLinearized = newFactors.linearize(linPoint_);
 		factors.push_back(newFactorsLinearized);
 
 		// create an ordering for the new and contaminated factors
