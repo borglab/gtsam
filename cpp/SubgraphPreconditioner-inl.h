@@ -50,6 +50,7 @@ namespace gtsam {
 	VectorConfig SubgraphPCG<Graph, Config>::linearizeAndOptimize(const Graph& g,
 			const Config& theta_bar, const Ordering& ordering) const {
 
+		//TODO: 3 is hard coded here
 		VectorConfig zeros;
 		BOOST_FOREACH(const Symbol& j, ordering) zeros.insert(j,zero(3));
 

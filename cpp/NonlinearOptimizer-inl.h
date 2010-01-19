@@ -28,9 +28,9 @@ namespace gtsam {
 		double absoluteDecrease = currentError - newError;
 		if (verbosity >= 2)
 			cout << "absoluteDecrease: " << absoluteDecrease << endl;
-		if (absoluteDecrease < 0)
-			throw overflow_error(
-					"NonlinearFactorGraph::optimize: error increased, diverges.");
+//		if (absoluteDecrease < 0)
+//			throw overflow_error(
+//					"NonlinearFactorGraph::optimize: error increased, diverges.");
 
 		// calculate relative error decrease and update currentError
 		double relativeDecrease = absoluteDecrease / currentError;
