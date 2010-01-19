@@ -18,7 +18,7 @@ using namespace simulated2D;
 /* ************************************************************************* */
 TEST( simulated2D, Dprior )
 {
-  Vector x(2);x(0)=1;x(1)=-9;
+  Point2 x(1,-9);
   Matrix numerical = numericalDerivative11(prior,x);
   Matrix computed;
   prior(x,computed);
@@ -28,8 +28,7 @@ TEST( simulated2D, Dprior )
 /* ************************************************************************* */
   TEST( simulated2D, DOdo )
 {
-  Vector x1(2);x1(0)= 1;x1(1)=-9;
-  Vector x2(2);x2(0)=-5;x2(1)= 6;
+  Point2 x1(1,-9),x2(-5,6);
   Matrix H1,H2;
   odo(x1,x2,H1,H2);
   Matrix A1 = numericalDerivative21(odo,x1,x2);

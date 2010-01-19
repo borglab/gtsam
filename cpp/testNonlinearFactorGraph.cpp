@@ -23,43 +23,44 @@ using namespace boost::assign;
 #include "NonlinearFactorGraph-inl.h"
 
 using namespace gtsam;
+using namespace example;
 
 /* ************************************************************************* */
-TEST( ExampleNonlinearFactorGraph, equals )
+TEST( Graph, equals )
 {
-	ExampleNonlinearFactorGraph fg = createNonlinearFactorGraph();
-	ExampleNonlinearFactorGraph fg2 = createNonlinearFactorGraph();
+	Graph fg = createNonlinearFactorGraph();
+	Graph fg2 = createNonlinearFactorGraph();
 	CHECK( fg.equals(fg2) );
 }
 
 /* ************************************************************************* */
-TEST( ExampleNonlinearFactorGraph, error )
+TEST( Graph, error )
 {
-	ExampleNonlinearFactorGraph fg = createNonlinearFactorGraph();
-	VectorConfig c1 = createConfig();
+	Graph fg = createNonlinearFactorGraph();
+	Config c1 = createConfig();
 	double actual1 = fg.error(c1);
 	DOUBLES_EQUAL( 0.0, actual1, 1e-9 );
 
-	VectorConfig c2 = createNoisyConfig();
+	Config c2 = createNoisyConfig();
 	double actual2 = fg.error(c2);
 	DOUBLES_EQUAL( 5.625, actual2, 1e-9 );
 }
 
 /* ************************************************************************* */
-TEST( ExampleNonlinearFactorGraph, GET_ORDERING)
+TEST( Graph, GET_ORDERING)
 {
   Ordering expected;
   expected += "l1","x1","x2";
-  ExampleNonlinearFactorGraph nlfg = createNonlinearFactorGraph();
+  Graph nlfg = createNonlinearFactorGraph();
   Ordering actual = nlfg.getOrdering();
   CHECK(assert_equal(expected,actual));
 }
 
 /* ************************************************************************* */
-TEST( ExampleNonlinearFactorGraph, probPrime )
+TEST( Graph, probPrime )
 {
-	ExampleNonlinearFactorGraph fg = createNonlinearFactorGraph();
-	VectorConfig cfg = createConfig();
+	Graph fg = createNonlinearFactorGraph();
+	Config cfg = createConfig();
 
 	// evaluate the probability of the factor graph
 	double actual = fg.probPrime(cfg);
@@ -69,10 +70,10 @@ TEST( ExampleNonlinearFactorGraph, probPrime )
 
 /* ************************************************************************* *
 // TODO: Commented out until noise model is passed to Gaussian factor graph
-TEST( ExampleNonlinearFactorGraph, linearize )
+TEST( Graph, linearize )
 {
-	ExampleNonlinearFactorGraph fg = createNonlinearFactorGraph();
-	VectorConfig initial = createNoisyConfig();
+	Graph fg = createNonlinearFactorGraph();
+	Config initial = createNoisyConfig();
 	GaussianFactorGraph linearized = fg.linearize(initial);
 	GaussianFactorGraph expected = createGaussianFactorGraph();
 	CHECK(assert_equal(expected,linearized));

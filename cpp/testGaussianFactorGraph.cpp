@@ -26,6 +26,7 @@ using namespace boost::assign;
 #include "inference-inl.h" // needed for eliminate and marginals
 
 using namespace gtsam;
+using namespace example;
 
 double tol=1e-4;
 
@@ -581,13 +582,13 @@ TEST( GaussianFactorGraph, gradient )
 TEST( GaussianFactorGraph, multiplication )
 {
 	GaussianFactorGraph A = createGaussianFactorGraph();
-  VectorConfig x = createConfig();
+  VectorConfig x = createCorrectDelta();
   Errors actual = A * x;
   Errors expected;
-  expected += Vector_(2, 0.0, 0.0);
-  expected += Vector_(2,15.0, 0.0);
-  expected += Vector_(2, 0.0,-5.0);
-  expected += Vector_(2,-7.5,-5.0);
+  expected += Vector_(2,-1.0,-1.0);
+  expected += Vector_(2, 2.0,-1.0);
+  expected += Vector_(2, 0.0, 1.0);
+  expected += Vector_(2,-1.0, 1.5);
 	CHECK(assert_equal(expected,actual));
 }
 

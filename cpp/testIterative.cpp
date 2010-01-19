@@ -22,9 +22,9 @@ using namespace boost::assign;
 #include "NonlinearFactorGraph-inl.h"
 #include "iterative-inl.h"
 
-
 using namespace std;
 using namespace gtsam;
+using namespace example;
 
 /* ************************************************************************* */
 TEST( Iterative, steepestDescent )

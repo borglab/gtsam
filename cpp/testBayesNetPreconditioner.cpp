@@ -17,6 +17,7 @@
 
 using namespace std;
 using namespace gtsam;
+using namespace example;
 
 /* ************************************************************************* */
 TEST( BayesNetPreconditioner, operators )
@@ -88,7 +89,7 @@ TEST( BayesNetPreconditioner, conjugateGradients )
 	BOOST_FOREACH(const Symbol& j, ordering) y0.insert(j,z2);
 
 	VectorConfig y1 = y0;
-	y1.getReference("x23") = Vector_(2, 1.0, -1.0);
+	y1.getReference("x2003") = Vector_(2, 1.0, -1.0);
 	VectorConfig x1 = system.x(y1);
 
 	// Solve using PCG

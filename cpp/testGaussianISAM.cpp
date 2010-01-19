@@ -20,6 +20,7 @@ using namespace boost::assign;
 
 using namespace std;
 using namespace gtsam;
+using namespace example;
 
 /* ************************************************************************* */
 // Some numbers that should be consistent among all smoother tests

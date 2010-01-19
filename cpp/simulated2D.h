@@ -8,9 +8,9 @@
 
 #pragma once
 
-#include "VectorConfig.h"
+#include "Point2.h"
+#include "TupleConfig.h"
 #include "NonlinearFactor.h"
-#include "Key.h"
 
 // \namespace
 
@@ -18,91 +18,95 @@ namespace gtsam {
 
 	namespace simulated2D {
 
-	typedef gtsam::VectorConfig VectorConfig;
-	typedef gtsam::Symbol PoseKey;
-	typedef gtsam::Symbol PointKey;
+		// Simulated2D robots have no orientation, just a position
+		typedef TypedSymbol<Point2, 'x'> PoseKey;
+		typedef TypedSymbol<Point2, 'l'> PointKey;
+		typedef PairConfig<PoseKey, Point2, PointKey, Point2> Config;
 
-	/**
-	 * Prior on a single pose, and optional derivative version
-	 */
-	inline Vector prior(const Vector& x) {return x;}
-	Vector prior(const Vector& x, boost::optional<Matrix&> H = boost::none);
-
-	/**
-	 * odometry between two poses, and optional derivative version
-	 */
-	inline Vector odo(const Vector& x1, const Vector& x2) {return x2-x1;}
-	Vector odo(const Vector& x1, const Vector& x2, boost::optional<Matrix&> H1 =
-			boost::none, boost::optional<Matrix&> H2 = boost::none);
-
-	/**
-	 *  measurement between landmark and pose, and optional derivative version
-	 */
-	inline Vector mea(const Vector& x, const Vector& l) {return l-x;}
-	Vector mea(const Vector& x, const Vector& l, boost::optional<Matrix&> H1 =
-			boost::none, boost::optional<Matrix&> H2 = boost::none);
-
-	/**
-	 * Unary factor encoding a soft prior on a vector
-	 */
-	struct Prior: public NonlinearFactor1<VectorConfig, PoseKey,
-			Vector> {
-
-		Vector z_;
-
-		Prior(const Vector& z, const sharedGaussian& model,
-				const PoseKey& key) :
-			NonlinearFactor1<VectorConfig, PoseKey, Vector>(model, key),
-					z_(z) {
+		/**
+		 * Prior on a single pose, and optional derivative version
+		 */
+		inline Point2 prior(const Point2& x) {
+			return x;
 		}
+		Point2 prior(const Point2& x, boost::optional<Matrix&> H = boost::none);
 
-		Vector evaluateError(const Vector& x, boost::optional<Matrix&> H =
-				boost::none) const {
-			return prior(x, H) - z_;
+		/**
+		 * odometry between two poses, and optional derivative version
+		 */
+		inline Point2 odo(const Point2& x1, const Point2& x2) {
+			return x2 - x1;
 		}
+		Point2 odo(const Point2& x1, const Point2& x2, boost::optional<Matrix&> H1 =
+				boost::none, boost::optional<Matrix&> H2 = boost::none);
 
-	};
-
-	/**
-	 * Binary factor simulating "odometry" between two Vectors
-	 */
-	struct Odometry: public NonlinearFactor2<VectorConfig, PoseKey,
-			Vector, PointKey, Vector> {
-		Vector z_;
-
-		Odometry(const Vector& z, const sharedGaussian& model,
-				const PoseKey& j1, const PoseKey& j2) :
-			z_(z), NonlinearFactor2<VectorConfig, PoseKey, Vector, PointKey,
-					Vector>(model, j1, j2) {
+		/**
+		 *  measurement between landmark and pose, and optional derivative version
+		 */
+		inline Point2 mea(const Point2& x, const Point2& l) {
+			return l - x;
 		}
+		Point2 mea(const Point2& x, const Point2& l, boost::optional<Matrix&> H1 =
+				boost::none, boost::optional<Matrix&> H2 = boost::none);
 
-		Vector evaluateError(const Vector& x1, const Vector& x2, boost::optional<
-				Matrix&> H1 = boost::none, boost::optional<Matrix&> H2 = boost::none) const {
-			return odo(x1, x2, H1, H2) - z_;
-		}
+		/**
+		 * Unary factor encoding a soft prior on a vector
+		 */
+		struct Prior: public NonlinearFactor1<Config, PoseKey, Point2> {
 
-	};
+			Point2 z_;
 
-	/**
-	 * Binary factor simulating "measurement" between two Vectors
-	 */
-	struct Measurement: public NonlinearFactor2<VectorConfig, PoseKey,
-			Vector, PointKey, Vector> {
+			Prior(const Point2& z, const sharedGaussian& model, const PoseKey& key) :
+				NonlinearFactor1<Config, PoseKey, Point2> (model, key), z_(z) {
+			}
 
-		Vector z_;
+			Vector evaluateError(const Point2& x, boost::optional<Matrix&> H =
+					boost::none) const {
+				return (prior(x, H) - z_).vector();
+			}
 
-		Measurement(const Vector& z, const sharedGaussian& model,
-				const PoseKey& j1, const PointKey& j2) :
-			z_(z), NonlinearFactor2<VectorConfig, PoseKey, Vector, PointKey,
-					Vector>(model, j1, j2) {
-		}
+		};
 
-		Vector evaluateError(const Vector& x1, const Vector& x2, boost::optional<
-				Matrix&> H1 = boost::none, boost::optional<Matrix&> H2 = boost::none) const {
-			return mea(x1, x2, H1, H2) - z_;
-		}
+		/**
+		 * Binary factor simulating "odometry" between two Vectors
+		 */
+		struct Odometry: public NonlinearFactor2<Config, PoseKey, Point2, PoseKey,
+				Point2> {
+			Point2 z_;
 
-	};
+			Odometry(const Point2& z, const sharedGaussian& model, const PoseKey& j1,
+					const PoseKey& j2) :
+				z_(z), NonlinearFactor2<Config, PoseKey, Point2, PoseKey, Point2> (
+						model, j1, j2) {
+			}
+
+			Vector evaluateError(const Point2& x1, const Point2& x2, boost::optional<
+					Matrix&> H1 = boost::none, boost::optional<Matrix&> H2 = boost::none) const {
+				return (odo(x1, x2, H1, H2) - z_).vector();
+			}
+
+		};
+
+		/**
+		 * Binary factor simulating "measurement" between two Vectors
+		 */
+		struct Measurement: public NonlinearFactor2<Config, PoseKey, Point2,
+				PointKey, Point2> {
+
+			Point2 z_;
+
+			Measurement(const Point2& z, const sharedGaussian& model,
+					const PoseKey& j1, const PointKey& j2) :
+				z_(z), NonlinearFactor2<Config, PoseKey, Point2, PointKey, Point2> (
+						model, j1, j2) {
+			}
+
+			Vector evaluateError(const Point2& x1, const Point2& x2, boost::optional<
+					Matrix&> H1 = boost::none, boost::optional<Matrix&> H2 = boost::none) const {
+				return (mea(x1, x2, H1, H2) - z_).vector();
+			}
+
+		};
 
 	} // namespace simulated2D
 } // namespace gtsam

@@ -20,12 +20,13 @@ using namespace boost::assign;
 
 using namespace std;
 using namespace gtsam;
+using namespace example;
 
 /* ************************************************************************* */
 TEST( ISAM2, solving )
 {
-	ExampleNonlinearFactorGraph nlfg = createNonlinearFactorGraph();
-	VectorConfig noisy = createNoisyConfig();
+	Graph nlfg = createNonlinearFactorGraph();
+	Config noisy = createNoisyConfig();
 	Ordering ordering;
 	ordering += symbol('x', 1);
 	ordering += symbol('x', 2);
@@ -34,8 +35,8 @@ TEST( ISAM2, solving )
 	VectorConfig actualDelta = optimize2(btree);
 	VectorConfig delta = createCorrectDelta();
 	CHECK(assert_equal(delta, actualDelta));
-	VectorConfig actualSolution = noisy+actualDelta;
-	VectorConfig solution = createConfig();
+	Config actualSolution = noisy.expmap(actualDelta);
+	Config solution = createConfig();
 	CHECK(assert_equal(solution, actualSolution));
 }
 
@@ -43,14 +44,14 @@ TEST( ISAM2, solving )
 TEST( ISAM2, ISAM2_smoother )
 {
 	// Create smoother with 7 nodes
-	ExampleNonlinearFactorGraph smoother;
-	VectorConfig poses;
+	Graph smoother;
+	Config poses;
 	boost::tie(smoother, poses) = createNonlinearSmoother(7);
 
 	// run ISAM2 for every factor
 	GaussianISAM2 actual;
-	BOOST_FOREACH(boost::shared_ptr<NonlinearFactor<VectorConfig> > factor, smoother) {
-		ExampleNonlinearFactorGraph factorGraph;
+	BOOST_FOREACH(boost::shared_ptr<NonlinearFactor<Config> > factor, smoother) {
+		Graph factorGraph;
 		factorGraph.push_back(factor);
 		actual.update(factorGraph, poses);
 	}
@@ -76,18 +77,18 @@ TEST( ISAM2, ISAM2_smoother )
 TEST( ISAM2, ISAM2_smoother2 )
 {
 	// Create smoother with 7 nodes
-	ExampleNonlinearFactorGraph smoother;
-	VectorConfig poses;
+	Graph smoother;
+	Config poses;
 	boost::tie(smoother, poses) = createNonlinearSmoother(7);
 
 	// Create initial tree from first 4 timestamps in reverse order !
 	Ordering ord; ord += "x4","x3","x2","x1";
-	ExampleNonlinearFactorGraph factors1;
+	Graph factors1;
 	for (int i=0;i<7;i++) factors1.push_back(smoother[i]);
 	GaussianISAM2 actual(factors1, ord, poses);
 
 	// run ISAM2 with remaining factors
-	ExampleNonlinearFactorGraph factors2;
+	Graph factors2;
 	for (int i=7;i<13;i++) factors2.push_back(smoother[i]);
 	actual.update(factors2, poses);
 

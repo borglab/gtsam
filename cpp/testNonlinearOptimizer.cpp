@@ -30,13 +30,15 @@ using namespace boost;
 #include "SubgraphPreconditioner-inl.h"
 
 using namespace gtsam;
+using namespace example;
 
-typedef NonlinearOptimizer<ExampleNonlinearFactorGraph,VectorConfig> Optimizer;
+typedef NonlinearOptimizer<Graph,Config> Optimizer;
 
 /* ************************************************************************* */
 TEST( NonlinearOptimizer, delta )
 {
-	shared_ptr<ExampleNonlinearFactorGraph> fg(new ExampleNonlinearFactorGraph(createNonlinearFactorGraph()));
+	shared_ptr<Graph> fg(new Graph(
+			createNonlinearFactorGraph()));
 	Optimizer::shared_config initial = sharedNoisyConfig();
 
 	// Expected configuration is the difference between the noisy config
@@ -81,19 +83,21 @@ TEST( NonlinearOptimizer, delta )
 TEST( NonlinearOptimizer, iterateLM )
 {
 	// really non-linear factor graph
-  shared_ptr<ExampleNonlinearFactorGraph> fg(new ExampleNonlinearFactorGraph(createReallyNonlinearFactorGraph()));
+  shared_ptr<Graph> fg(new Graph(
+			createReallyNonlinearFactorGraph()));
 
 	// config far from minimum
-	Vector x0 = Vector_(1, 3.0);
-	boost::shared_ptr<VectorConfig> config(new VectorConfig);
-	config->insert("x", x0);
+	Point2 x0(3,0);
+	boost::shared_ptr<Config> config(new Config);
+	config->insert(simulated2D::PoseKey(1), x0);
 
 	// ordering
 	shared_ptr<Ordering> ord(new Ordering());
-	ord->push_back("x");
+	ord->push_back("x1");
 
 	// create initial optimization state, with lambda=0
-	Optimizer::shared_solver solver(new Factorization<ExampleNonlinearFactorGraph, VectorConfig>);
+	Optimizer::shared_solver solver(new Factorization<
+			Graph, Config> );
 	Optimizer optimizer(fg, ord, config, solver, 0.);
 
 	// normal iterate
@@ -117,23 +121,24 @@ TEST( NonlinearOptimizer, iterateLM )
 /* ************************************************************************* */
 TEST( NonlinearOptimizer, optimize )
 {
-  shared_ptr<ExampleNonlinearFactorGraph> fg(new ExampleNonlinearFactorGraph(createReallyNonlinearFactorGraph()));
+  shared_ptr<Graph> fg(new Graph(
+			createReallyNonlinearFactorGraph()));
 
 	// test error at minimum
-	Vector xstar = Vector_(1, 0.0);
-	VectorConfig cstar;
-	cstar.insert("x", xstar);
+	Point2 xstar(0,0);
+	Config cstar;
+	cstar.insert(simulated2D::PoseKey(1), xstar);
 	DOUBLES_EQUAL(0.0,fg->error(cstar),0.0);
 
 	// test error at initial = [(1-cos(3))^2 + (sin(3))^2]*50 =
-	Vector x0 = Vector_(1, 3.0);
-	boost::shared_ptr<VectorConfig> c0(new VectorConfig);
-	c0->insert("x", x0);
+	Point2 x0(3,3);
+	boost::shared_ptr<Config> c0(new Config);
+	c0->insert(simulated2D::PoseKey(1), x0);
 	DOUBLES_EQUAL(199.0,fg->error(*c0),1e-3);
 
 	// optimize parameters
 	shared_ptr<Ordering> ord(new Ordering());
-	ord->push_back("x");
+	ord->push_back("x1");
 	double relativeThreshold = 1e-5;
 	double absoluteThreshold = 1e-5;
 
@@ -143,12 +148,12 @@ TEST( NonlinearOptimizer, optimize )
 	// Gauss-Newton
 	Optimizer actual1 = optimizer.gaussNewton(relativeThreshold,
 			absoluteThreshold);
-	CHECK(assert_equal(*(actual1.config()),cstar));
+	DOUBLES_EQUAL(0,fg->error(*(actual1.config())),1e-3);
 
 	// Levenberg-Marquardt
 	Optimizer actual2 = optimizer.levenbergMarquardt(relativeThreshold,
 			absoluteThreshold, Optimizer::SILENT);
-	CHECK(assert_equal(*(actual2.config()),cstar));
+	DOUBLES_EQUAL(0,fg->error(*(actual2.config())),1e-3);
 }
 
 /* ************************************************************************* */

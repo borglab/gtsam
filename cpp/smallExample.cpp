@@ -20,62 +20,65 @@ using namespace std;
 #include "Matrix.h"
 #include "NonlinearFactor.h"
 #include "smallExample.h"
-#include "simulated2D.h"
 
 // template definitions
 #include "FactorGraph-inl.h"
 #include "NonlinearFactorGraph-inl.h"
 
 namespace gtsam {
+namespace example {
 
-	typedef boost::shared_ptr<NonlinearFactor<VectorConfig> > shared;
+	typedef boost::shared_ptr<NonlinearFactor<Config> > shared;
 
 	/* ************************************************************************* */
-	boost::shared_ptr<const ExampleNonlinearFactorGraph> sharedNonlinearFactorGraph() {
+	boost::shared_ptr<const Graph> sharedNonlinearFactorGraph() {
 		// Create
-		boost::shared_ptr<ExampleNonlinearFactorGraph> nlfg(
-				new ExampleNonlinearFactorGraph);
+		boost::shared_ptr<Graph> nlfg(
+				new Graph);
 
 		// prior on x1
 		double sigma1 = 0.1;
-		Vector mu = zero(2);
-		shared f1(new simulated2D::Prior(mu, sigma1, "x1"));
+		Point2 mu;
+		shared f1(new simulated2D::Prior(mu, sigma1, 1));
 		nlfg->push_back(f1);
 
 		// odometry between x1 and x2
 		double sigma2 = 0.1;
-		Vector z2(2);
-		z2(0) = 1.5;
-		z2(1) = 0;
-		shared f2(new simulated2D::Odometry(z2, sigma2, "x1", "x2"));
+		Point2 z2(1.5, 0);
+		shared f2(new simulated2D::Odometry(z2, sigma2, 1, 2));
 		nlfg->push_back(f2);
 
 		// measurement between x1 and l1
 		double sigma3 = 0.2;
-		Vector z3(2);
-		z3(0) = 0.;
-		z3(1) = -1.;
-		shared f3(new simulated2D::Measurement(z3, sigma3, "x1", "l1"));
+		Point2 z3(0, -1);
+		shared f3(new simulated2D::Measurement(z3, sigma3, 1, 1));
 		nlfg->push_back(f3);
 
 		// measurement between x2 and l1
 		double sigma4 = 0.2;
-		Vector z4(2);
-		z4(0) = -1.5;
-		z4(1) = -1.;
-		shared f4(new simulated2D::Measurement(z4, sigma4, "x2", "l1"));
+		Point2 z4(-1.5, -1.);
+		shared f4(new simulated2D::Measurement(z4, sigma4, 2, 1));
 		nlfg->push_back(f4);
 
 		return nlfg;
 	}
 
 	/* ************************************************************************* */
-	ExampleNonlinearFactorGraph createNonlinearFactorGraph() {
+	Graph createNonlinearFactorGraph() {
 		return *sharedNonlinearFactorGraph();
 	}
 
 	/* ************************************************************************* */
-	VectorConfig createConfig() {
+	Config createConfig() {
+		Config c;
+		c.insert(simulated2D::PoseKey(1), Point2(0.0, 0.0));
+		c.insert(simulated2D::PoseKey(2), Point2(1.5, 0.0));
+		c.insert(simulated2D::PointKey(1), Point2(0.0, -1.0));
+		return c;
+	}
+
+	/* ************************************************************************* */
+	VectorConfig createVectorConfig() {
 		VectorConfig c;
 		c.insert("x1", Vector_(2, 0.0, 0.0));
 		c.insert("x2", Vector_(2, 1.5, 0.0));
@@ -84,16 +87,16 @@ namespace gtsam {
 	}
 
 	/* ************************************************************************* */
-	boost::shared_ptr<const VectorConfig> sharedNoisyConfig() {
-		boost::shared_ptr<VectorConfig> c(new VectorConfig);
-		c->insert("x1", Vector_(2, 0.1, 0.1));
-		c->insert("x2", Vector_(2, 1.4, 0.2));
-		c->insert("l1", Vector_(2, 0.1, -1.1));
+	boost::shared_ptr<const Config> sharedNoisyConfig() {
+		boost::shared_ptr<Config> c(new Config);
+		c->insert(simulated2D::PoseKey(1), Point2(0.1, 0.1));
+		c->insert(simulated2D::PoseKey(2), Point2(1.4, 0.2));
+		c->insert(simulated2D::PointKey(1), Point2(0.1, -1.1));
 		return c;
 	}
 
 	/* ************************************************************************* */
-	VectorConfig createNoisyConfig() {
+	Config createNoisyConfig() {
 		return *sharedNoisyConfig();
 	}
 
@@ -118,14 +121,13 @@ namespace gtsam {
 	/* ************************************************************************* */
 	GaussianFactorGraph createGaussianFactorGraph() {
 		Matrix I = eye(2);
-		VectorConfig c = createNoisyConfig();
 
 		// Create empty graph
 		GaussianFactorGraph fg;
 
 		// linearized prior on x1: c["x1"]+x1=0 i.e. x1=-c["x1"]
 		double sigma1 = 0.1;
-		Vector b1 = -c["x1"];
+		Vector b1 = -Vector_(2,0.1, 0.1);
 		fg.add("x1", I, b1, sigma1);
 
 		// odometry between x1 and x2: x2-x1=[0.2;-0.1]
@@ -176,30 +178,31 @@ namespace gtsam {
 	/* ************************************************************************* */
 	namespace smallOptimize {
 
-		Vector h(const Vector& v) {
-			double x = v(0);
-			return Vector_(2, cos(x), sin(x));
+		Point2 h(const Point2& v) {
+			return Point2(cos(v.x()), sin(v.y()));
 		}
 
-		Matrix H(const Vector& v) {
-			double x = v(0);
-			return Matrix_(2, 1, -sin(x), cos(x));
+		Matrix H(const Point2& v) {
+			return Matrix_(2, 2,
+					-sin(v.x()), 0.0,
+					 0.0, cos(v.y()));
 		}
 
-		struct UnaryFactor: public gtsam::NonlinearFactor1<VectorConfig,
-				std::string, Vector> {
+		struct UnaryFactor: public gtsam::NonlinearFactor1<Config,
+		simulated2D::PoseKey, Point2> {
 
-			Vector z_;
+			Point2 z_;
 
-			UnaryFactor(const Vector& z, double sigma, const std::string& key) :
-				gtsam::NonlinearFactor1<VectorConfig, std::string, Vector>(sigma, key),
-						z_(z) {
+			UnaryFactor(const Point2& z, const sharedGaussian& model,
+					const simulated2D::PoseKey& key) :
+				gtsam::NonlinearFactor1<Config, simulated2D::PoseKey,
+						Point2>(model, key), z_(z) {
 			}
 
-			Vector evaluateError(const Vector& x, boost::optional<Matrix&> A =
+			Vector evaluateError(const Point2& x, boost::optional<Matrix&> A =
 					boost::none) const {
 				if (A) *A = H(x);
-				return h(x) - z_;
+				return (h(x) - z_).vector();
 			}
 
 		};
@@ -207,53 +210,50 @@ namespace gtsam {
 	}
 
 	/* ************************************************************************* */
-	boost::shared_ptr<const ExampleNonlinearFactorGraph> sharedReallyNonlinearFactorGraph() {
-		boost::shared_ptr<ExampleNonlinearFactorGraph> fg(
-				new ExampleNonlinearFactorGraph);
+	boost::shared_ptr<const Graph> sharedReallyNonlinearFactorGraph() {
+		boost::shared_ptr<Graph> fg(
+				new Graph);
 		Vector z = Vector_(2, 1.0, 0.0);
 		double sigma = 0.1;
-		boost::shared_ptr<smallOptimize::UnaryFactor> factor(new smallOptimize::UnaryFactor(
-				z, sigma, "x"));
+		boost::shared_ptr<smallOptimize::UnaryFactor> factor(
+				new smallOptimize::UnaryFactor(z, noiseModel::Isotropic::Sigma(2,sigma), 1));
 		fg->push_back(factor);
 		return fg;
 	}
 
-	ExampleNonlinearFactorGraph createReallyNonlinearFactorGraph() {
+	Graph createReallyNonlinearFactorGraph() {
 		return *sharedReallyNonlinearFactorGraph();
 	}
 
 	/* ************************************************************************* */
-	pair<ExampleNonlinearFactorGraph, VectorConfig> createNonlinearSmoother(int T) {
+	pair<Graph, Config> createNonlinearSmoother(int T) {
 
 		// noise on measurements and odometry, respectively
 		double sigma1 = 1, sigma2 = 1;
 
 		// Create
-		ExampleNonlinearFactorGraph nlfg;
-		VectorConfig poses;
+		Graph nlfg;
+		Config poses;
 
 		// prior on x1
-		Vector x1 = Vector_(2, 1.0, 0.0);
-		string key1 = symbol('x', 1);
-		shared prior(new simulated2D::Prior(x1, sigma1, key1));
+		Point2 x1(1.0, 0.0);
+		shared prior(new simulated2D::Prior(x1, sigma1, 1));
 		nlfg.push_back(prior);
-		poses.insert(key1, x1);
+		poses.insert(simulated2D::PoseKey(1), x1);
 
 		for (int t = 2; t <= T; t++) {
 			// odometry between x_t and x_{t-1}
-			Vector odo = Vector_(2, 1.0, 0.0);
-			string key = symbol('x', t);
-			shared odometry(new simulated2D::Odometry(odo, sigma2, symbol('x', t - 1),
-					key));
+			Point2 odo(1.0, 0.0);
+			shared odometry(new simulated2D::Odometry(odo, sigma2, t - 1, t));
 			nlfg.push_back(odometry);
 
 			// measurement on x_t is like perfect GPS
-			Vector xt = Vector_(2, (double) t, 0.0);
-			shared measurement(new simulated2D::Prior(xt, sigma1, key));
+			Point2 xt(t, 0);
+			shared measurement(new simulated2D::Prior(xt, sigma1, t));
 			nlfg.push_back(measurement);
 
 			// initial estimate
-			poses.insert(key, xt);
+			poses.insert(simulated2D::PoseKey(t), xt);
 		}
 
 		return make_pair(nlfg, poses);
@@ -261,8 +261,8 @@ namespace gtsam {
 
 	/* ************************************************************************* */
 	GaussianFactorGraph createSmoother(int T) {
-		ExampleNonlinearFactorGraph nlfg;
-		VectorConfig poses;
+		Graph nlfg;
+		Config poses;
 		boost::tie(nlfg, poses) = createNonlinearSmoother(T);
 
 		GaussianFactorGraph lfg = nlfg.linearize(poses);
@@ -516,27 +516,25 @@ namespace gtsam {
 
 	/* ************************************************************************* */
 	// Create key for simulated planar graph
-	string key(int x, int y) {
-		stringstream ss;
-		ss << "x" << x << y;
-		return ss.str();
+	simulated2D::PoseKey key(int x, int y) {
+		return simulated2D::PoseKey(1000*x+y);
 	}
 
 	/* ************************************************************************* */
 	pair<GaussianFactorGraph, VectorConfig> planarGraph(size_t N) {
 
 		// create empty graph
-		NonlinearFactorGraph<VectorConfig> nlfg;
+		NonlinearFactorGraph<Config> nlfg;
 
 		// Create almost hard constraint on x11, sigma=0 will work for PCG not for normal
 		double sigma0 = 1e-3;
-		shared constraint(new simulated2D::Prior(Vector_(2, 1.0, 1.0), sigma0, "x11"));
+		shared constraint(new simulated2D::Prior(Point2(1.0, 1.0), sigma0, key(1,1)));
 		nlfg.push_back(constraint);
 
 		double sigma = 0.01;
 
 		// Create horizontal constraints, 1...N*(N-1)
-		Vector z1 = Vector_(2, 1.0, 0.0); // move right
+		Point2 z1(1.0, 0.0); // move right
 		for (size_t x = 1; x < N; x++)
 			for (size_t y = 1; y <= N; y++) {
 				shared f(new simulated2D::Odometry(z1, sigma, key(x, y), key(x + 1, y)));
@@ -544,7 +542,7 @@ namespace gtsam {
 			}
 
 		// Create vertical constraints, N*(N-1)+1..2*N*(N-1)
-		Vector z2 = Vector_(2, 0.0, 1.0); // move up
+		Point2 z2(0.0, 1.0); // move up
 		for (size_t x = 1; x <= N; x++)
 			for (size_t y = 1; y < N; y++) {
 				shared f(new simulated2D::Odometry(z2, sigma, key(x, y), key(x, y + 1)));
@@ -552,11 +550,13 @@ namespace gtsam {
 			}
 
 		// Create linearization and ground xtrue config
-		VectorConfig zeros, xtrue;
+		Config zeros;
+		VectorConfig xtrue;
+		Point2 zero;
 		for (size_t x = 1; x <= N; x++)
 			for (size_t y = 1; y <= N; y++) {
-				zeros.add(key(x, y), zero(2));
-				xtrue.add(key(x, y), Vector_(2, (double) x, double(y)));
+				zeros.insert(key(x, y), zero);
+				xtrue.add((Symbol)key(x, y), Point2(x,y).vector());
 			}
 
 		// linearize around zero
@@ -601,4 +601,5 @@ namespace gtsam {
 
 /* ************************************************************************* */
 
+} // example
 } // namespace gtsam

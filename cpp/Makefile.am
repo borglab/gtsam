@@ -141,18 +141,21 @@ testKey_SOURCES   				 = testKey.cpp
 testKey_LDADD     				 = libgtsam.la
 
 # Nonlinear constraints 
-headers += SQPOptimizer.h SQPOptimizer-inl.h  
 headers += NonlinearConstraint.h NonlinearConstraint-inl.h
 headers += NonlinearEquality.h
-check_PROGRAMS += testNonlinearConstraint testNonlinearEquality testSQP testSQPOptimizer
+check_PROGRAMS += testNonlinearConstraint testNonlinearEquality 
 testNonlinearConstraint_SOURCES = testNonlinearConstraint.cpp
 testNonlinearConstraint_LDADD   = libgtsam.la
 testNonlinearEquality_SOURCES   = testNonlinearEquality.cpp
 testNonlinearEquality_LDADD     = libgtsam.la
-testSQP_SOURCES                 = testSQP.cpp
+
+# SQP
+headers += SQPOptimizer.h SQPOptimizer-inl.h  
+check_PROGRAMS += testSQP testSQPOptimizer
+testSQP_SOURCES                 = $(example) testSQP.cpp
 testSQP_LDADD                   = libgtsam.la
-testSQPOptimizer_SOURCES   		  = testSQPOptimizer.cpp
-testSQPOptimizer_LDADD     		  = libgtsam.la
+testSQPOptimizer_SOURCES   		= testSQPOptimizer.cpp
+testSQPOptimizer_LDADD     		= libgtsam.la
 
 # geometry
 headers += Lie.h Lie-inl.h

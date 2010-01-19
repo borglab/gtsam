@@ -24,7 +24,8 @@
 
 using namespace std;
 using namespace gtsam;
-	
+using namespace example;
+
 /* ************************************************************************* */
 TEST( VectorConfig, equals1 )
  {
@@ -77,7 +78,7 @@ TEST( VectorConfig, contains)
 /* ************************************************************************* */
 TEST( VectorConfig, expmap)
 {
-	VectorConfig c = createConfig();
+	VectorConfig c = createVectorConfig();
 	Vector v = Vector_(6, 0.0,-1.0, 0.0, 0.0, 1.5, 0.0); // l1, x1, x2
   CHECK(assert_equal(expmap(c,c),expmap(c,v)));
 }
@@ -139,13 +140,13 @@ TEST( VectorConfig, update_with_large_delta) {
 
 /* ************************************************************************* */
 TEST( VectorConfig, dot) {
-	VectorConfig c = createConfig();
+	VectorConfig c = createVectorConfig();
 	DOUBLES_EQUAL(3.25,dot(c,c),1e-9);
 }
 
 /* ************************************************************************* */
 TEST( VectorConfig, dim) {
-	VectorConfig c = createConfig();
+	VectorConfig c = createVectorConfig();
 	LONGS_EQUAL(6,c.dim());
 }
 

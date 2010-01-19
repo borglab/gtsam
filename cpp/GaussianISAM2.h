@@ -11,11 +11,12 @@
 #include "ISAM2.h"
 #include "GaussianConditional.h"
 #include "GaussianFactor.h"
+#include "simulated2D.h"
 #include "planarSLAM.h"
 
 namespace gtsam {
 
-	typedef ISAM2<GaussianConditional, VectorConfig> GaussianISAM2;
+	typedef ISAM2<GaussianConditional, simulated2D::Config> GaussianISAM2;
 
 	// recursively optimize this conditional and all subtrees
 	void optimize2(const GaussianISAM2::sharedClique& clique, VectorConfig& result);

@@ -19,6 +19,11 @@ using namespace std;
 using namespace gtsam;
 using namespace boost::assign;
 
+typedef TypedSymbol<Vector, 'x'> Key;
+typedef NonlinearConstraint1<VectorConfig, Key, Vector> NLC1;
+typedef NonlinearConstraint2<VectorConfig, Key, Vector, Key, Vector> NLC2;
+
+
 /* ************************************************************************* */
 // unary functions with scalar variables
 /* ************************************************************************* */
@@ -44,14 +49,15 @@ TEST( NonlinearConstraint1, unary_scalar_construction ) {
 	// the lagrange multipliers will be expected on L_x1
 	// and there is only one multiplier
 	size_t p = 1;
-	list<Symbol> keys;	keys += "x";
-	NonlinearConstraint1<VectorConfig> c1(boost::bind(test1::g, _1, keys),
-										  "x", boost::bind(test1::G, _1, keys),
-										  p, "L1");
+	list<Symbol> keys;	keys += "x1";
+	Key x1(1);
+	NLC1 c1(boost::bind(test1::g, _1, keys),
+			x1, boost::bind(test1::G, _1, keys),
+			p, "L1");
 
 	// get a configuration to use for finding the error
 	VectorConfig config;
-	config.insert("x", Vector_(1, 1.0));
+	config.insert("x1", Vector_(1, 1.0));
 
 	// calculate the error
 	Vector actual = c1.unwhitenedError(config);
@@ -62,14 +68,15 @@ TEST( NonlinearConstraint1, unary_scalar_construction ) {
 /* ************************************************************************* */
 TEST( NonlinearConstraint1, unary_scalar_linearize ) {
 	size_t p = 1;
-	list<Symbol> keys;	keys += "x";
-	NonlinearConstraint1<VectorConfig> c1(boost::bind(test1::g, _1, keys),
-										  "x", boost::bind(test1::G, _1, keys),
-										  p, "L1");
+	list<Symbol> keys;	keys += "x1";
+	Key x1(1);
+	NLC1 c1(boost::bind(test1::g, _1, keys),
+			x1, boost::bind(test1::G, _1, keys),
+			p, "L1");
 
 	// get a configuration to use for linearization
 	VectorConfig realconfig;
-	realconfig.insert("x", Vector_(1, 1.0));
+	realconfig.insert(x1, Vector_(1, 1.0));
 
 	// get a configuration of Lagrange multipliers
 	VectorConfig lagrangeConfig;
@@ -80,20 +87,21 @@ TEST( NonlinearConstraint1, unary_scalar_linearize ) {
 	boost::tie(actualFactor, actualConstraint) = c1.linearize(realconfig, lagrangeConfig);
 
 	// verify
-	GaussianFactor expectedFactor("x", Matrix_(1,1, 6.0), "L1", eye(1), zero(1), 1.0);
-	GaussianFactor expectedConstraint("x", Matrix_(1,1, 2.0), Vector_(1, 4.0), 0.0);
+	GaussianFactor expectedFactor(x1, Matrix_(1,1, 6.0), "L1", eye(1), zero(1), 1.0);
+	GaussianFactor expectedConstraint(x1, Matrix_(1,1, 2.0), Vector_(1, 4.0), 0.0);
 	CHECK(assert_equal(*actualFactor, expectedFactor));
 	CHECK(assert_equal(*actualConstraint, expectedConstraint));
 }
 
 /* ************************************************************************* */
 TEST( NonlinearConstraint1, unary_scalar_equal ) {
-	list<Symbol> keys1, keys2; keys1 += "x"; keys2 += "y";
-	NonlinearConstraint1<VectorConfig>
-		c1(boost::bind(test1::g, _1, keys1), "x", boost::bind(test1::G, _1, keys1), 1, "L_x1", true),
-		c2(boost::bind(test1::g, _1, keys1), "x", boost::bind(test1::G, _1, keys1), 1, "L_x1"),
-		c3(boost::bind(test1::g, _1, keys1), "x", boost::bind(test1::G, _1, keys1), 2, "L_x1"),
-		c4(boost::bind(test1::g, _1, keys2), "y", boost::bind(test1::G, _1, keys2), 1, "L_x1");
+	list<Symbol> keys1, keys2; keys1 += "x0"; keys2 += "x1";
+	Key x(0), y(1);
+	NLC1
+		c1(boost::bind(test1::g, _1, keys1), x, boost::bind(test1::G, _1, keys1), 1, "L_x1", true),
+		c2(boost::bind(test1::g, _1, keys1), x, boost::bind(test1::G, _1, keys1), 1, "L_x1"),
+		c3(boost::bind(test1::g, _1, keys1), x, boost::bind(test1::G, _1, keys1), 2, "L_x1"),
+		c4(boost::bind(test1::g, _1, keys2), y, boost::bind(test1::G, _1, keys2), 1, "L_x1");
 
 	CHECK(assert_equal(c1, c2));
 	CHECK(assert_equal(c2, c1));
@@ -133,17 +141,18 @@ TEST( NonlinearConstraint2, binary_scalar_construction ) {
 	// the lagrange multipliers will be expected on L_xy
 	// and there is only one multiplier
 	size_t p = 1;
-	list<Symbol> keys; keys += "x", "y";
-	NonlinearConstraint2<VectorConfig> c1(
+	list<Symbol> keys; keys += "x0", "x1";
+	Key x0(0), x1(1);
+	NLC2 c1(
 			boost::bind(test2::g, _1, keys),
-			"x", boost::bind(test2::G1, _1, keys),
-			"y", boost::bind(test2::G1, _1, keys),
+			x0, boost::bind(test2::G1, _1, keys),
+			x1, boost::bind(test2::G1, _1, keys),
 			p, "L12");
 
 	// get a configuration to use for finding the error
 	VectorConfig config;
-	config.insert("x", Vector_(1, 1.0));
-	config.insert("y", Vector_(1, 2.0));
+	config.insert("x0", Vector_(1, 1.0));
+	config.insert("x1", Vector_(1, 2.0));
 
 	// calculate the error
 	Vector actual = c1.unwhitenedError(config);
@@ -155,17 +164,18 @@ TEST( NonlinearConstraint2, binary_scalar_construction ) {
 TEST( NonlinearConstraint2, binary_scalar_linearize ) {
 	// create a constraint
 	size_t p = 1;
-	list<Symbol> keys; keys += "x", "y";
-	NonlinearConstraint2<VectorConfig> c1(
+	list<Symbol> keys; keys += "x0", "x1";
+	Key x0(0), x1(1);
+	NLC2 c1(
 			boost::bind(test2::g, _1, keys),
-			"x", boost::bind(test2::G1, _1, keys),
-			"y", boost::bind(test2::G2, _1, keys),
+			x0, boost::bind(test2::G1, _1, keys),
+			x1, boost::bind(test2::G2, _1, keys),
 			p, "L12");
 
 	// get a configuration to use for finding the error
 	VectorConfig realconfig;
-	realconfig.insert("x", Vector_(1, 1.0));
-	realconfig.insert("y", Vector_(1, 2.0));
+	realconfig.insert(x0, Vector_(1, 1.0));
+	realconfig.insert(x1, Vector_(1, 2.0));
 
 	// get a configuration of Lagrange multipliers
 	VectorConfig lagrangeConfig;
@@ -176,25 +186,26 @@ TEST( NonlinearConstraint2, binary_scalar_linearize ) {
 	boost::tie(actualFactor, actualConstraint) = c1.linearize(realconfig, lagrangeConfig);
 
 	// verify
-	GaussianFactor expectedFactor("x", Matrix_(1,1, 6.0),
-							 "y", Matrix_(1,1, -3.0),
+	GaussianFactor expectedFactor(x0, Matrix_(1,1, 6.0),
+							 x1, Matrix_(1,1, -3.0),
 							 "L12", eye(1), zero(1), 1.0);
-	GaussianFactor expectedConstraint("x", Matrix_(1,1, 2.0),
-								 "y", Matrix_(1,1, -1.0),
+	GaussianFactor expectedConstraint(x0, Matrix_(1,1, 2.0),
+								 x1, Matrix_(1,1, -1.0),
 								 Vector_(1, 6.0), 0.0);
 	CHECK(assert_equal(*actualFactor, expectedFactor));
-	CHECK(assert_equal(*actualConstraint, expectedConstraint));
+	CHECK(assert_equal(*actualConstraint, expectedConstraint)); //FAILS - wrong b value
 }
 
 /* ************************************************************************* */
 TEST( NonlinearConstraint2, binary_scalar_equal ) {
 	list<Symbol> keys1, keys2, keys3;
-	keys1 += "x", "y"; keys2 += "y", "x"; keys3 += "x", "z";
-	NonlinearConstraint2<VectorConfig>
-		c1(boost::bind(test2::g, _1, keys1), "x", boost::bind(test2::G1, _1, keys1), "y", boost::bind(test2::G2, _1, keys1), 1, "L_xy"),
-		c2(boost::bind(test2::g, _1, keys1), "x", boost::bind(test2::G1, _1, keys1), "y", boost::bind(test2::G2, _1, keys1), 1, "L_xy"),
-		c3(boost::bind(test2::g, _1, keys2), "y", boost::bind(test2::G1, _1, keys2), "x", boost::bind(test2::G2, _1, keys2), 1, "L_xy"),
-		c4(boost::bind(test2::g, _1, keys3), "x", boost::bind(test2::G1, _1, keys3), "z", boost::bind(test2::G2, _1, keys3), 3, "L_xy");
+	keys1 += "x0", "x1"; keys2 += "x1", "x0"; keys3 += "x0", "z";
+	Key x0(0), x1(1), x2(2);
+	NLC2
+		c1(boost::bind(test2::g, _1, keys1), x0, boost::bind(test2::G1, _1, keys1), x1, boost::bind(test2::G2, _1, keys1), 1, "L_xy"),
+		c2(boost::bind(test2::g, _1, keys1), x0, boost::bind(test2::G1, _1, keys1), x1, boost::bind(test2::G2, _1, keys1), 1, "L_xy"),
+		c3(boost::bind(test2::g, _1, keys2), x1, boost::bind(test2::G1, _1, keys2), x0, boost::bind(test2::G2, _1, keys2), 1, "L_xy"),
+		c4(boost::bind(test2::g, _1, keys3), x0, boost::bind(test2::G1, _1, keys3), x2, boost::bind(test2::G2, _1, keys3), 3, "L_xy");
 
 	CHECK(assert_equal(c1, c2));
 	CHECK(assert_equal(c2, c1));
@@ -208,15 +219,15 @@ TEST( NonlinearConstraint2, binary_scalar_equal ) {
 namespace inequality1 {
 
 	/** p = 1, g(x) x^2 - 5 > 0 */
-	Vector g(const VectorConfig& config, const list<Symbol>& keys) {
-		double x = config[keys.front()](0);
+	Vector g(const VectorConfig& config, const Key& key) {
+		double x = config[key](0);
 		double g = x * x - 5;
 		return Vector_(1, g); // return the actual cost
 	}
 
 	/** p = 1, jacobianG(x) = 2*x */
-	Matrix G(const VectorConfig& config, const list<Symbol>& keys) {
-		double x = config[keys.front()](0);
+	Matrix G(const VectorConfig& config, const Key& key) {
+		double x = config[key](0);
 		return Matrix_(1, 1, 2 * x);
 	}
 
@@ -225,16 +236,16 @@ namespace inequality1 {
 /* ************************************************************************* */
 TEST( NonlinearConstraint1, unary_inequality ) {
 	size_t p = 1;
-	list<Symbol> keys; keys += "x";
-	NonlinearConstraint1<VectorConfig> c1(boost::bind(inequality1::g, _1, keys),
-										  "x", boost::bind(inequality1::G, _1, keys),
-										   p, "L1",
-										  false); // inequality constraint
+	Key x0(0);
+	NLC1 c1(boost::bind(inequality1::g, _1, x0),
+			x0, boost::bind(inequality1::G, _1, x0),
+			p, "L1",
+			false); // inequality constraint
 
 	// get configurations to use for evaluation
 	VectorConfig config1, config2;
-	config1.insert("x", Vector_(1, 10.0)); // should be inactive
-	config2.insert("x", Vector_(1, 1.0)); // should have nonzero error
+	config1.insert(x0, Vector_(1, 10.0)); // should be inactive
+	config2.insert(x0, Vector_(1, 1.0)); // should have nonzero error
 
 	// check error
 	CHECK(!c1.active(config1));
@@ -246,16 +257,16 @@ TEST( NonlinearConstraint1, unary_inequality ) {
 /* ************************************************************************* */
 TEST( NonlinearConstraint1, unary_inequality_linearize ) {
 	size_t p = 1;
-	list<Symbol> keys; keys += "x";
-	NonlinearConstraint1<VectorConfig> c1(boost::bind(inequality1::g, _1, keys),
-										  "x", boost::bind(inequality1::G, _1, keys),
-										   p, "L1",
-										  false); // inequality constraint
+	Key x0(0);
+	NLC1 c1(boost::bind(inequality1::g, _1, x0),
+			x0, boost::bind(inequality1::G, _1, x0),
+			p, "L1",
+			false); // inequality constraint
 
 	// get configurations to use for linearization
 	VectorConfig config1, config2;
-	config1.insert("x", Vector_(1, 10.0)); // should have zero error
-	config2.insert("x", Vector_(1, 1.0)); // should have nonzero error
+	config1.insert(x0, Vector_(1, 10.0)); // should have zero error
+	config2.insert(x0, Vector_(1, 1.0)); // should have nonzero error
 
 	// get a configuration of Lagrange multipliers
 	VectorConfig lagrangeConfig;
@@ -274,8 +285,8 @@ TEST( NonlinearConstraint1, unary_inequality_linearize ) {
 	CHECK(c1.active(config2));
 
 	// verify
-	GaussianFactor expectedFactor("x", Matrix_(1,1, 6.0), "L1", eye(1), zero(1), 1.0);
-	GaussianFactor expectedConstraint("x", Matrix_(1,1, 2.0), Vector_(1, 4.0), 0.0);
+	GaussianFactor expectedFactor(x0, Matrix_(1,1, 6.0), "L1", eye(1), zero(1), 1.0);
+	GaussianFactor expectedConstraint(x0, Matrix_(1,1, 2.0), Vector_(1, 4.0), 0.0);
 	CHECK(assert_equal(*actualFactor2, expectedFactor));
 	CHECK(assert_equal(*actualConstraint2, expectedConstraint));
 }
@@ -286,16 +297,16 @@ TEST( NonlinearConstraint1, unary_inequality_linearize ) {
 namespace binding1 {
 
 	/** p = 1, g(x) x^2 - r > 0 */
-	Vector g(double r, const VectorConfig& config, const list<Symbol>& keys) {
-		double x = config[keys.front()](0);
+	Vector g(double r, const VectorConfig& config, const Key& key) {
+		double x = config[key](0);
 		double g = x * x - r;
 		return Vector_(1, g); // return the actual cost
 	}
 
 	/** p = 1, jacobianG(x) = 2*x */
 	Matrix G(double coeff, const VectorConfig& config,
-			const list<Symbol>& keys) {
-		double x = config[keys.front()](0);
+			const Key& key) {
+		double x = config[key](0);
 		return Matrix_(1, 1, coeff * x);
 	}
 
@@ -306,17 +317,16 @@ TEST( NonlinearConstraint1, unary_binding ) {
 	size_t p = 1;
 	double coeff = 2;
 	double radius = 5;
-	list<Symbol> keys; keys += "x";
-	NonlinearConstraint1<VectorConfig> c1(
-										  boost::bind(binding1::g, radius, _1, keys),
-										  "x", boost::bind(binding1::G, coeff, _1, keys),
-										  p, "L1",
-										  false); // inequality constraint
+	Key x0(0);
+	NLC1 c1(boost::bind(binding1::g, radius, _1, x0),
+			x0, boost::bind(binding1::G, coeff, _1, x0),
+			p, "L1",
+			false); // inequality constraint
 
 	// get configurations to use for evaluation
 	VectorConfig config1, config2;
-	config1.insert("x", Vector_(1, 10.0)); // should have zero error
-	config2.insert("x", Vector_(1, 1.0)); // should have nonzero error
+	config1.insert(x0, Vector_(1, 10.0)); // should have zero error
+	config2.insert(x0, Vector_(1, 1.0)); // should have nonzero error
 
 	// check error
 	CHECK(!c1.active(config1));
@@ -329,21 +339,20 @@ TEST( NonlinearConstraint1, unary_binding ) {
 namespace binding2 {
 
 	/** p = 1, g(x) = x^2-5 -y = 0 */
-	Vector g(double r, const VectorConfig& config, const list<Symbol>& keys) {
-		double x = config[keys.front()](0);
-		double y = config[keys.back()](0);
+	Vector g(double r, const VectorConfig& config, const Key& k1, const Key& k2) {
+		double x = config[k1](0);
+		double y = config[k2](0);
 		return Vector_(1, x * x - r - y);
 	}
 
 	/** jacobian for x, jacobianG(x,y) in x: 2x*/
-	Matrix G1(double c, const VectorConfig& config, const list<Symbol>& keys) {
-		double x = config[keys.front()](0);
+	Matrix G1(double c, const VectorConfig& config, const Key& key) {
+		double x = config[key](0);
 		return Matrix_(1, 1, c * x);
 	}
 
 	/** jacobian for y, jacobianG(x,y) in y: -1 */
-	Matrix G2(double c, const VectorConfig& config, const list<Symbol>& keys) {
-		double x = config[keys.back()](0);
+	Matrix G2(double c, const VectorConfig& config) {
 		return Matrix_(1, 1, -1.0 * c);
 	}
 
@@ -358,17 +367,16 @@ TEST( NonlinearConstraint2, binary_binding ) {
 	double a = 2.0;
 	double b = 1.0;
 	double r = 5.0;
-	list<Symbol> keys; keys += "x", "y";
-	NonlinearConstraint2<VectorConfig> c1(
-			boost::bind(binding2::g, r, _1, keys),
-			"x", boost::bind(binding2::G1, a, _1, keys),
-			"y", boost::bind(binding2::G2, b, _1, keys),
+	Key x0(0), x1(1);
+	NLC2 c1(boost::bind(binding2::g, r, _1, x0, x1),
+			x0, boost::bind(binding2::G1, a, _1, x0),
+			x1, boost::bind(binding2::G2, b, _1),
 			p, "L1");
 
 	// get a configuration to use for finding the error
 	VectorConfig config;
-	config.insert("x", Vector_(1, 1.0));
-	config.insert("y", Vector_(1, 2.0));
+	config.insert(x0, Vector_(1, 1.0));
+	config.insert(x1, Vector_(1, 2.0));
 
 	// calculate the error
 	Vector actual = c1.unwhitenedError(config);

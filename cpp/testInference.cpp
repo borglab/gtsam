@@ -14,6 +14,7 @@
 
 using namespace std;
 using namespace gtsam;
+using namespace example;
 
 /* ************************************************************************* */
 // The tests below test the *generic* inference algorithms. Some of these have

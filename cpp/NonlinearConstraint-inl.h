@@ -22,7 +22,7 @@ NonlinearConstraint<Config>::NonlinearConstraint(const std::string& lagrange_key
 					size_t dim_lagrange,
 					Vector (*g)(const Config& config),
 					bool isEquality)
-:	NonlinearFactor<Config>(1.0),z_(zero(dim_lagrange)),
+:	NonlinearFactor<Config>(1.0),
 	lagrange_key_(lagrange_key), p_(dim_lagrange),
 	isEquality_(isEquality), g_(boost::bind(g, _1)) {}
 
@@ -33,7 +33,7 @@ NonlinearConstraint<Config>::NonlinearConstraint(const std::string& lagrange_key
 					boost::function<Vector(const Config& config)> g,
 					bool isEquality)
 :	NonlinearFactor<Config>(noiseModel::Constrained::All(dim_lagrange)),
-	lagrange_key_(lagrange_key), p_(dim_lagrange),z_(zero(dim_lagrange)),
+	lagrange_key_(lagrange_key), p_(dim_lagrange),
 	g_(g), isEquality_(isEquality) {}
 
 /* ************************************************************************* */
@@ -46,10 +46,10 @@ bool NonlinearConstraint<Config>::active(const Config& config) const {
 // Implementations of unary nonlinear constraints
 /* ************************************************************************* */
 
-template <class Config>
-NonlinearConstraint1<Config>::NonlinearConstraint1(
+template <class Config, class Key, class X>
+NonlinearConstraint1<Config, Key, X>::NonlinearConstraint1(
 			Vector (*g)(const Config& config),
-			const std::string& key,
+			const Key& key,
 			Matrix (*gradG)(const Config& config),
 			size_t dim_constraint,
 			const std::string& lagrange_key,
@@ -59,16 +59,16 @@ NonlinearConstraint1<Config>::NonlinearConstraint1(
 {
 		// set a good lagrange key here
 		// TODO:should do something smart to find a unique one
-		if (lagrange_key == "")
-			this->lagrange_key_ = "L_" + key;
-		this->keys_.push_front(key);
+//		if (lagrange_key == "")
+//			this->lagrange_key_ = "L0"
+//		this->keys_.push_front(key);
 }
 
 /* ************************************************************************* */
-template <class Config>
-NonlinearConstraint1<Config>::NonlinearConstraint1(
+template <class Config, class Key, class X>
+NonlinearConstraint1<Config, Key, X>::NonlinearConstraint1(
 		boost::function<Vector(const Config& config)> g,
-			const std::string& key,
+			const Key& key,
 			boost::function<Matrix(const Config& config)> gradG,
 			size_t dim_constraint,
 			const std::string& lagrange_key,
@@ -78,39 +78,39 @@ NonlinearConstraint1<Config>::NonlinearConstraint1(
 {
 	// set a good lagrange key here
 	// TODO:should do something smart to find a unique one
-	if (lagrange_key == "")
-		this->lagrange_key_ = "L_" + key;
-	this->keys_.push_front(key);
+//	if (lagrange_key == "")
+//		this->lagrange_key_ = "L_" + key;
+//	this->keys_.push_front(key);
 }
 
 /* ************************************************************************* */
-template <class Config>
-void NonlinearConstraint1<Config>::print(const std::string& s) const {
-	std::cout << "NonlinearConstraint1 [" << s << "]:\n"
-			<< "  key:        " << key_ << "\n"
-			<< "  p:          " << this->p_ << "\n"
-			<< "  lambda key: " << this->lagrange_key_ << "\n";
-	if (this->isEquality_)
-		std::cout << "  Equality Factor" << std::endl;
-	else
-		std::cout << "  Inequality Factor" << std::endl;
+template <class Config, class Key, class X>
+void NonlinearConstraint1<Config, Key, X>::print(const std::string& s) const {
+	std::cout << "NonlinearConstraint1 [" << s << "]:\n";
+//			<< "  key:        " << key_ << "\n"
+//			<< "  p:          " << this->p_ << "\n"
+//			<< "  lambda key: " << this->lagrange_key_ << "\n";
+//	if (this->isEquality_)
+//		std::cout << "  Equality Factor" << std::endl;
+//	else
+//		std::cout << "  Inequality Factor" << std::endl;
 }
 
 /* ************************************************************************* */
-template <class Config>
-bool NonlinearConstraint1<Config>::equals(const Factor<Config>& f, double tol) const {
-	const NonlinearConstraint1<Config>* p = dynamic_cast<const NonlinearConstraint1<Config>*> (&f);
+template <class Config, class Key, class X>
+bool NonlinearConstraint1<Config, Key, X>::equals(const Factor<Config>& f, double tol) const {
+	const NonlinearConstraint1<Config, Key, X>* p = dynamic_cast<const NonlinearConstraint1<Config, Key, X>*> (&f);
 	if (p == NULL) return false;
-	if (key_ != p->key_) return false;
+	if (!(key_ == p->key_)) return false;
 	if (this->lagrange_key_ != p->lagrange_key_) return false;
 	if (this->isEquality_ != p->isEquality_) return false;
 	return this->p_ == p->p_;
 }
 
 /* ************************************************************************* */
-template <class Config>
+template <class Config, class Key, class X>
 std::pair<GaussianFactor::shared_ptr, GaussianFactor::shared_ptr>
-NonlinearConstraint1<Config>::linearize(const Config& config, const VectorConfig& lagrange) const {
+NonlinearConstraint1<Config, Key, X>::linearize(const Config& config, const VectorConfig& lagrange) const {
 	// extract lagrange multiplier
 	Vector lambda = lagrange[this->lagrange_key_];
 
@@ -136,12 +136,12 @@ NonlinearConstraint1<Config>::linearize(const Config& config, const VectorConfig
 /* ************************************************************************* */
 
 /* ************************************************************************* */
-template <class Config>
-NonlinearConstraint2<Config>::NonlinearConstraint2(
+template <class Config, class Key1, class X1, class Key2, class X2>
+NonlinearConstraint2<Config, Key1, X1, Key2, X2>::NonlinearConstraint2(
 		Vector (*g)(const Config& config),
-		const std::string& key1,
+		const Key1& key1,
 		Matrix (*G1)(const Config& config),
-		const std::string& key2,
+		const Key2& key2,
 		Matrix (*G2)(const Config& config),
 		size_t dim_constraint,
 		const std::string& lagrange_key,
@@ -152,19 +152,19 @@ NonlinearConstraint2<Config>::NonlinearConstraint2(
 {
 	// set a good lagrange key here
 	// TODO:should do something smart to find a unique one
-	if (lagrange_key == "")
-		this->lagrange_key_ = "L_" + key1 + key2;
-	this->keys_.push_front(key1);
-	this->keys_.push_back(key2);
+//	if (lagrange_key == "")
+//		this->lagrange_key_ = "L_" + key1 + key2;
+//	this->keys_.push_front(key1);
+//	this->keys_.push_back(key2);
 }
 
 /* ************************************************************************* */
-template <class Config>
-NonlinearConstraint2<Config>::NonlinearConstraint2(
+template <class Config, class Key1, class X1, class Key2, class X2>
+NonlinearConstraint2<Config, Key1, X1, Key2, X2>::NonlinearConstraint2(
 		boost::function<Vector(const Config& config)> g,
-		const std::string& key1,
+		const Key1& key1,
 		boost::function<Matrix(const Config& config)> G1,
-		const std::string& key2,
+		const Key2& key2,
 		boost::function<Matrix(const Config& config)> G2,
 		size_t dim_constraint,
 		const std::string& lagrange_key,
@@ -175,38 +175,38 @@ NonlinearConstraint2<Config>::NonlinearConstraint2(
 {
 	// set a good lagrange key here
 	// TODO:should do something smart to find a unique one
-	if (lagrange_key == "")
-		this->lagrange_key_ = "L_" + key1 + key2;
-	this->keys_.push_front(key1);
-	this->keys_.push_back(key2);
+//	if (lagrange_key == "")
+//		this->lagrange_key_ = "L_" + key1 + key2;
+//	this->keys_.push_front(key1);
+//	this->keys_.push_back(key2);
 }
 
 /* ************************************************************************* */
-template <class Config>
-void NonlinearConstraint2<Config>::print(const std::string& s) const {
-	std::cout << "NonlinearConstraint2 [" << s << "]:\n"
-			<< "  key1:       " << key1_ << "\n"
-			<< "  key2:       " << key2_ << "\n"
-			<< "  p:          " << this->p_ << "\n"
-			<< "  lambda key: " << this->lagrange_key_ << std::endl;
+template <class Config, class Key1, class X1, class Key2, class X2>
+void NonlinearConstraint2<Config, Key1, X1, Key2, X2>::print(const std::string& s) const {
+	std::cout << "NonlinearConstraint2 [" << s << "]:\n";
+//			<< "  key1:       " << key1_ << "\n"
+//			<< "  key2:       " << key2_ << "\n"
+//			<< "  p:          " << this->p_ << "\n"
+//			<< "  lambda key: " << this->lagrange_key_ << std::endl;
 }
 
 /* ************************************************************************* */
-template <class Config>
-bool NonlinearConstraint2<Config>::equals(const Factor<Config>& f, double tol) const {
-	const NonlinearConstraint2<Config>* p = dynamic_cast<const NonlinearConstraint2<Config>*> (&f);
+template <class Config, class Key1, class X1, class Key2, class X2>
+bool NonlinearConstraint2<Config, Key1, X1, Key2, X2>::equals(const Factor<Config>& f, double tol) const {
+	const NonlinearConstraint2<Config, Key1, X1, Key2, X2>* p = dynamic_cast<const NonlinearConstraint2<Config, Key1, X1, Key2, X2>*> (&f);
 	if (p == NULL) return false;
-	if (key1_ != p->key1_) return false;
-	if (key2_ != p->key2_) return false;
+	if (!(key1_ == p->key1_)) return false;
+	if (!(key2_ == p->key2_)) return false;
 	if (this->lagrange_key_ != p->lagrange_key_) return false;
 	if (this->isEquality_ != p->isEquality_) return false;
 	return this->p_ == p->p_;
 }
 
 /* ************************************************************************* */
-template<class Config>
+template<class Config, class Key1, class X1, class Key2, class X2>
 std::pair<GaussianFactor::shared_ptr, GaussianFactor::shared_ptr> NonlinearConstraint2<
-		Config>::linearize(const Config& config, const VectorConfig& lagrange) const {
+		Config, Key1, X1, Key2, X2>::linearize(const Config& config, const VectorConfig& lagrange) const {
 	// extract lagrange multiplier
 	Vector lambda = lagrange[this->lagrange_key_];
 

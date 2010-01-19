@@ -5,20 +5,28 @@
  */
 
 #include "simulated2D.h"
+#include "TupleConfig-inl.h"
 
 namespace gtsam {
+
+	using namespace simulated2D;
+//	INSTANTIATE_LIE_CONFIG(PointKey, Point2)
+	INSTANTIATE_PAIR_CONFIG(PoseKey, Point2, PointKey, Point2)
+//	INSTANTIATE_NONLINEAR_FACTOR_GRAPH(Config)
+//	INSTANTIATE_NONLINEAR_OPTIMIZER(Graph, Config)
+
 	namespace simulated2D {
 
 		static Matrix I = gtsam::eye(2);
 
 		/* ************************************************************************* */
-		Vector prior(const Vector& x, boost::optional<Matrix&> H) {
+		Point2 prior(const Point2& x, boost::optional<Matrix&> H) {
 			if (H) *H = I;
 			return x;
 		}
 
 		/* ************************************************************************* */
-		Vector odo(const Vector& x1, const Vector& x2, boost::optional<Matrix&> H1,
+		Point2 odo(const Point2& x1, const Point2& x2, boost::optional<Matrix&> H1,
 				boost::optional<Matrix&> H2) {
 			if (H1) *H1 = -I;
 			if (H2) *H2 = I;
@@ -26,7 +34,7 @@ namespace gtsam {
 		}
 
 		/* ************************************************************************* */
-		Vector mea(const Vector& x, const Vector& l, boost::optional<Matrix&> H1,
+		Point2 mea(const Point2& x, const Point2& l, boost::optional<Matrix&> H1,
 				boost::optional<Matrix&> H2) {
 			if (H1) *H1 = -I;
 			if (H2) *H2 = I;

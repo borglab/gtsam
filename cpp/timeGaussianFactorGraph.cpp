@@ -13,6 +13,7 @@
 
 using namespace std;
 using namespace gtsam;
+using namespace example;
 
 /* ************************************************************************* */
 // Create a Kalman smoother for t=1:T and optimize

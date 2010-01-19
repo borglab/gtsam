@@ -19,6 +19,7 @@ using namespace boost::assign;
 
 using namespace std;
 using namespace gtsam;
+using namespace example;
 
 /* ************************************************************************* */
 TEST( SymbolicFactorGraph, symbolicFactorGraph )

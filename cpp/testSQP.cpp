@@ -16,6 +16,7 @@
 #define GTSAM_MAGIC_GAUSSIAN 2
 #define GTSAM_MAGIC_KEY
 
+#include <Pose3.h>
 #include <GaussianFactorGraph.h>
 #include <NonlinearOptimizer.h>
 #include <SQPOptimizer.h>
@@ -239,62 +240,58 @@ TEST (SQP, problem1_sqp ) {
 }
 
 /* ********************************************************************* */
-// components for nonlinear factor graphs
-bool vector_compare(const Vector& a, const Vector& b) {
-	return equal_with_abs_tol(a, b, 1e-5);
-}
 
-typedef NonlinearFactorGraph<VectorConfig> NLGraph;
-typedef boost::shared_ptr<NonlinearFactor<VectorConfig> > shared;
-typedef boost::shared_ptr<NonlinearConstraint<VectorConfig> > shared_c;
+typedef simulated2D::Config Config2D;
+typedef NonlinearFactorGraph<Config2D> NLGraph;
+typedef NonlinearEquality<Config2D, simulated2D::PoseKey, Point2> NLE;
+typedef boost::shared_ptr<simulated2D::Measurement > shared;
+typedef NonlinearOptimizer<NLGraph, Config2D> Optimizer;
 
-typedef NonlinearEquality<VectorConfig,Symbol,Vector> NLE;
-typedef boost::shared_ptr<NLE> shared_eq;
-typedef boost::shared_ptr<VectorConfig> shared_cfg;
-typedef NonlinearOptimizer<NLGraph,VectorConfig> Optimizer;
+typedef TypedSymbol<Vector, 'L'> LamKey;
 
-/* *********************************************************************
+/*
  * Determining a ground truth linear system
  * with two poses seeing one landmark, with each pose
  * constrained to a particular value
  */
 TEST (SQP, two_pose_truth ) {
 	bool verbose = false;
+
+	// create a graph
+	shared_ptr<NLGraph> graph(new NLGraph);
+
+	// add the constraints on the ends
 	// position (1, 1) constraint for x1
 	// position (5, 6) constraint for x2
-	VectorConfig feas;
-	Vector feas1 = Vector_(2, 1.0, 1.0);
-	Vector feas2 = Vector_(2, 5.0, 6.0);
-	feas.insert("x1", feas1);
-	feas.insert("x2", feas2);
-
-	// constant constraint on x1
-	shared_eq ef1(new NLE("x1", feas1, vector_compare));
-
-	// constant constraint on x2
-	shared_eq ef2(new NLE("x2", feas2, vector_compare));
-
-	// measurement from x1 to l1
-	Vector z1 = Vector_(2, 0.0, 5.0);
-	double sigma1 = 0.1;
-	shared f1(new simulated2D::Measurement(z1, sigma1, "x1", "l1"));
-
-	// measurement from x2 to l1
-	Vector z2 = Vector_(2, -4.0, 0.0);
-	double sigma2 = 0.1;
-	shared f2(new simulated2D::Measurement(z2, sigma2, "x2", "l1"));
-
-	// construct the graph
-	shared_ptr<NLGraph> graph(new NLGraph());
+	simulated2D::PoseKey x1(1), x2(2);
+	simulated2D::PointKey l1(1);
+	Point2 pt_x1(1.0, 1.0),
+		   pt_x2(5.0, 6.0);
+	shared_ptr<NLE> ef1(new NLE(x1, pt_x1)),
+			        ef2(new NLE(x2, pt_x2));
 	graph->push_back(ef1);
 	graph->push_back(ef2);
+
+	// measurement from x1 to l1
+	Point2 z1(0.0, 5.0);
+	sharedGaussian sigma(noiseModel::Isotropic::Sigma(2, 0.1));
+	shared f1(new simulated2D::Measurement(z1, sigma, x1,l1));
 	graph->push_back(f1);
+
+	// measurement from x2 to l1
+	Point2 z2(-4.0, 0.0);
+	shared f2(new simulated2D::Measurement(z2, sigma, x2,l1));
 	graph->push_back(f2);
 
 	// create an initial estimate
-	boost::shared_ptr<VectorConfig> initialEstimate(new VectorConfig(feas)); // must start with feasible set
-	initialEstimate->insert("l1", Vector_(2, 1.0, 6.0)); // ground truth
-	//initialEstimate->insert("l1", Vector_(2, 1.2, 5.6)); // with small error
+	Point2 pt_l1(
+			1.0, 6.0 // ground truth
+		  //1.2, 5.6 // small error
+			);
+	shared_ptr<Config2D> initialEstimate(new Config2D);
+	initialEstimate->insert(l1, pt_l1);
+	initialEstimate->insert(x1, pt_x1);
+	initialEstimate->insert(x2, pt_x2);
 
 	// optimize the graph
 	shared_ptr<Ordering> ordering(new Ordering());
@@ -305,12 +302,14 @@ TEST (SQP, two_pose_truth ) {
 	double relativeThreshold = 1e-5;
 	double absoluteThreshold = 1e-5;
 	Optimizer act_opt = optimizer.gaussNewton(relativeThreshold, absoluteThreshold);
-	boost::shared_ptr<const VectorConfig> actual = act_opt.config();
+	boost::shared_ptr<const Config2D> actual = act_opt.config();
 	if (verbose) actual->print("Configuration after optimization");
 
 	// verify
-	VectorConfig expected(feas);
-	expected.insert("l1", Vector_(2, 1.0, 6.0));
+	Config2D expected;
+	expected.insert(x1, pt_x1);
+	expected.insert(x2, pt_x2);
+	expected.insert(l1, Point2(1.0, 6.0));
 	CHECK(assert_equal(expected, *actual, 1e-5));
 }
 
@@ -319,36 +318,43 @@ namespace sqp_test1 {
 
 	// binary constraint between landmarks
 	/** g(x) = x-y = 0 */
-	Vector g(const VectorConfig& config, const list<Symbol>& keys) {
-		return config[keys.front()] - config[keys.back()];
+	Vector g(const Config2D& config, const list<Symbol>& keys) {
+		Point2 pt1, pt2;
+		pt1 = config[simulated2D::PointKey(keys.front().index())];
+		pt2 = config[simulated2D::PointKey(keys.back().index())];
+		return Vector_(2, pt1.x() - pt2.x(), pt1.y() - pt2.y());
 	}
 
 	/** jacobian at l1 */
-	Matrix G1(const VectorConfig& config, const list<Symbol>& keys) {
+	Matrix G1(const Config2D& config, const list<Symbol>& keys) {
 		return eye(2);
 	}
 
 	/** jacobian at l2 */
-	Matrix G2(const VectorConfig& config, const list<Symbol>& keys) {
+	Matrix G2(const Config2D& config, const list<Symbol>& keys) {
 		return -1 * eye(2);
 	}
 
 } // \namespace sqp_test1
 
-namespace sqp_test2 {
+//namespace sqp_test2 {
+//
+//	// Unary Constraint on x1
+//	/** g(x) = x -[1;1] = 0 */
+//	Vector g(const Config2D& config, const list<Symbol>& keys) {
+//		return config[keys.front()] - Vector_(2, 1.0, 1.0);
+//	}
+//
+//	/** jacobian at x1 */
+//	Matrix G(const Config2D& config, const list<Symbol>& keys) {
+//		return eye(2);
+//	}
+//
+//} // \namespace sqp_test2
 
-	// Unary Constraint on x1
-	/** g(x) = x -[1;1] = 0 */
-	Vector g(const VectorConfig& config, const list<Symbol>& keys) {
-		return config[keys.front()] - Vector_(2, 1.0, 1.0);
-	}
 
-	/** jacobian at x1 */
-	Matrix G(const VectorConfig& config, const list<Symbol>& keys) {
-		return eye(2);
-	}
-
-} // \namespace sqp_test2
+typedef NonlinearConstraint2<
+	Config2D, simulated2D::PointKey, Point2, simulated2D::PointKey, Point2> NLC2;
 
 /* *********************************************************************
  *  Version that actually uses nonlinear equality constraints
@@ -359,68 +365,65 @@ namespace sqp_test2 {
  */
 TEST (SQP, two_pose ) {
 	bool verbose = false;
-	// position (1, 1) constraint for x1
-	VectorConfig feas;
-	feas.insert("x1", Vector_(2, 1.0, 1.0));
 
-	// constant constraint on x1
-	list<Symbol> keys1; keys1 += "x1";
-	boost::shared_ptr<NonlinearConstraint1<VectorConfig> > c1(
-			new NonlinearConstraint1<VectorConfig>(
-					boost::bind(sqp_test2::g, _1, keys1),
-					"x1", boost::bind(sqp_test2::G, _1, keys1),
-					 2, "L1"));
+	// create the graph
+	shared_ptr<NLGraph> graph(new NLGraph);
+
+	// add the constraints on the ends
+	// position (1, 1) constraint for x1
+	// position (5, 6) constraint for x2
+	simulated2D::PoseKey x1(1), x2(2);
+	simulated2D::PointKey l1(1), l2(2);
+	Point2 pt_x1(1.0, 1.0),
+		   pt_x2(5.0, 6.0);
+	shared_ptr<NLE> ef1(new NLE(x1, pt_x1));
+	graph->push_back(ef1);
 
 	// measurement from x1 to l1
-	Vector z1 = Vector_(2, 0.0, 5.0);
-	double sigma1 = 0.1;
-	shared f1(new simulated2D::Measurement(z1, sigma1, "x1", "l1"));
+	Point2 z1(0.0, 5.0);
+	sharedGaussian sigma(noiseModel::Isotropic::Sigma(2, 0.1));
+	shared f1(new simulated2D::Measurement(z1, sigma, x1,l1));
+	graph->push_back(f1);
 
 	// measurement from x2 to l2
-	Vector z2 = Vector_(2, -4.0, 0.0);
-	double sigma2 = 0.1;
-	shared f2(new simulated2D::Measurement(z2, sigma2, "x2", "l2"));
+	Point2 z2(-4.0, 0.0);
+	shared f2(new simulated2D::Measurement(z2, sigma, x2,l2));
+	graph->push_back(f2);
 
 	// equality constraint between l1 and l2
 	list<Symbol> keys2; keys2 += "l1", "l2";
-	boost::shared_ptr<NonlinearConstraint2<VectorConfig> > c2(
-			new NonlinearConstraint2<VectorConfig>(
+	boost::shared_ptr<NLC2 > c2(new NLC2(
 					boost::bind(sqp_test1::g, _1, keys2),
-					"l1", boost::bind(sqp_test1::G1, _1, keys2),
-					"l2", boost::bind(sqp_test1::G2, _1, keys2),
-					 2, "L12"));
-
-	// construct the graph
-	NLGraph graph;
-	graph.push_back(c1);
-	graph.push_back(c2);
-	graph.push_back(f1);
-	graph.push_back(f2);
+					l1, boost::bind(sqp_test1::G1, _1, keys2),
+					l2, boost::bind(sqp_test1::G2, _1, keys2),
+					2, "L1"));
+	graph->push_back(c2);
 
 	// create an initial estimate
-	shared_cfg initialEstimate(new VectorConfig(feas)); // must start with feasible set
-	initialEstimate->insert("l1", Vector_(2, 1.0, 6.0)); // ground truth
-	initialEstimate->insert("l2", Vector_(2, -4.0, 0.0)); // starting with a separate reference frame
-	initialEstimate->insert("x2", Vector_(2, 0.0, 0.0)); // other pose starts at origin
+	shared_ptr<Config2D> initialEstimate(new Config2D);
+	initialEstimate->insert(x1, pt_x1);
+	initialEstimate->insert(x2, Point2());
+	initialEstimate->insert(l1, Point2(1.0, 6.0)); // ground truth
+	initialEstimate->insert(l2, Point2(-4.0, 0.0)); // starting with a separate reference frame
 
 	// create an initial estimate for the lagrange multiplier
-	shared_cfg initLagrange(new VectorConfig);
-	initLagrange->insert("L12", Vector_(2, 1.0, 1.0));
-	initLagrange->insert("L1", Vector_(2, 1.0, 1.0));
+	shared_ptr<VectorConfig> initLagrange(new VectorConfig);
+	initLagrange->insert(LamKey(1), Vector_(2, 1.0, 1.0)); // connect the landmarks
 
 	// create state config variables and initialize them
-	VectorConfig state(*initialEstimate), state_lambda(*initLagrange);
+	Config2D state(*initialEstimate);
+	VectorConfig state_lambda(*initLagrange);
 
 	// optimization loop
 	int maxIt = 1;
 	for (int i = 0; i<maxIt; ++i) {
+
  		// linearize the graph
 		GaussianFactorGraph fg;
-		typedef FactorGraph<NonlinearFactor<VectorConfig> >::const_iterator const_iterator;
-		typedef NonlinearConstraint<VectorConfig> NLConstraint;
+		typedef FactorGraph<NonlinearFactor<Config2D> >::const_iterator const_iterator;
 		// iterate over all factors
-		for (const_iterator factor = graph.begin(); factor < graph.end(); factor++) {
-			const shared_c constraint = boost::shared_dynamic_cast<NLConstraint >(*factor);
+		for (const_iterator factor = graph->begin(); factor < graph->end(); factor++) {
+			const shared_ptr<NLC2> constraint = boost::shared_dynamic_cast<NLC2>(*factor);
 			if (constraint == NULL) {
 				// if a regular factor, linearize using the default linearization
 				GaussianFactor::shared_ptr f = (*factor)->linearize(state);
@@ -433,11 +436,12 @@ TEST (SQP, two_pose ) {
 				fg.push_back(c);
 			}
 		}
+
 		if (verbose) fg.print("Linearized graph");
 
 		// create an ordering
 		Ordering ordering;
-		ordering += "x1", "x2", "l1", "l2", "L12", "L1";
+		ordering += "x1", "x2", "l1", "l2", "L1";
 
 		// optimize linear graph to get full delta config
 		VectorConfig delta = fg.optimize(ordering);
@@ -451,10 +455,11 @@ TEST (SQP, two_pose ) {
 	}
 
 	// verify
-	VectorConfig expected(feas);
-	expected.insert("l1", Vector_(2, 1.0, 6.0));
-	expected.insert("l2", Vector_(2, 1.0, 6.0));
-	expected.insert("x2", Vector_(2, 5.0, 6.0));
+	Config2D expected;
+	expected.insert(x1, pt_x1);
+	expected.insert(l1, Point2(1.0, 6.0));
+	expected.insert(l2, Point2(1.0, 6.0));
+	expected.insert(x2, Point2(5.0, 6.0));
 	CHECK(assert_equal(expected, state, 1e-5));
 }
 
@@ -471,9 +476,14 @@ using namespace gtsam::visualSLAM;
 using namespace boost;
 
 // typedefs for visual SLAM example
+typedef visualSLAM::Config VConfig;
+typedef visualSLAM::Graph VGraph;
 typedef boost::shared_ptr<ProjectionFactor> shared_vf;
-typedef NonlinearOptimizer<Graph,Config> VOptimizer;
-typedef SQPOptimizer<Graph, Config> SOptimizer;
+typedef NonlinearOptimizer<VGraph,VConfig> VOptimizer;
+typedef SQPOptimizer<VGraph, VConfig> VSOptimizer;
+typedef NonlinearConstraint2<
+	VConfig, visualSLAM::PointKey, Pose3, visualSLAM::PointKey, Pose3> VNLC2;
+
 
 /**
  * Ground truth for a visual SLAM example with stereo vision
@@ -494,13 +504,13 @@ TEST (SQP, stereo_truth ) {
 	Point3 landmarkNoisy(1.0, 6.0, 0.0);
 
 	// create truth config
-	boost::shared_ptr<Config> truthConfig(new Config);
+	boost::shared_ptr<VConfig> truthConfig(new Config);
 	truthConfig->insert(1, camera1.pose());
 	truthConfig->insert(2, camera2.pose());
 	truthConfig->insert(1, landmark);
 
 	// create graph
-	shared_ptr<Graph> graph(new Graph());
+	shared_ptr<VGraph> graph(new VGraph());
 
 	// create equality constraints for poses
 	graph->push_back(shared_ptr<PoseConstraint>(new PoseConstraint(1, camera1.pose())));
@@ -550,9 +560,9 @@ TEST (SQP, stereo_truth_noisy ) {
 
 	// create initial estimates
 	Rot3 faceDownY(Matrix_(3,3,
-				1.0, 0.0, 0.0,
-				0.0, 0.0, 1.0,
-				0.0, 1.0, 0.0));
+			1.0, 0.0, 0.0,
+			0.0, 0.0, 1.0,
+			0.0, 1.0, 0.0));
 	Pose3 pose1(faceDownY, Point3()); // origin, left camera
 	SimpleCamera camera1(K, pose1);
 	Pose3 pose2(faceDownY, Point3(2.0, 0.0, 0.0)); // 2 units to the left
@@ -576,8 +586,8 @@ TEST (SQP, stereo_truth_noisy ) {
 	shared_ptr<Graph> graph(new Graph());
 
 	// create equality constraints for poses
-  graph->push_back(shared_ptr<PoseConstraint>(new PoseConstraint(1, camera1.pose())));
-  graph->push_back(shared_ptr<PoseConstraint>(new PoseConstraint(2, camera2.pose())));
+	graph->push_back(shared_ptr<PoseConstraint>(new PoseConstraint(1, camera1.pose())));
+	graph->push_back(shared_ptr<PoseConstraint>(new PoseConstraint(2, camera2.pose())));
 
 	// create VSLAM factors
 	Point2 z1 = camera1.project(landmark);
@@ -620,12 +630,6 @@ TEST (SQP, stereo_truth_noisy ) {
 }
 
 /* ********************************************************************* */
-// Utility function to strip out a landmark number from a string key
-//int getNum(const string& key) {
-//	return atoi(key.substr(1, key.size()-1).c_str());
-//}
-
-/* ********************************************************************* */
 namespace sqp_stereo {
 
 	// binary constraint between landmarks
@@ -648,12 +652,12 @@ namespace sqp_stereo {
 } // \namespace sqp_stereo
 
 /* ********************************************************************* */
-Graph stereoExampleGraph() {
+VGraph stereoExampleGraph() {
 	// create initial estimates
 	Rot3 faceDownY(Matrix_(3,3,
-				1.0, 0.0, 0.0,
-				0.0, 0.0, 1.0,
-				0.0, 1.0, 0.0));
+			1.0, 0.0, 0.0,
+			0.0, 0.0, 1.0,
+			0.0, 1.0, 0.0));
 	Pose3 pose1(faceDownY, Point3()); // origin, left camera
 	SimpleCamera camera1(K, pose1);
 	Pose3 pose2(faceDownY, Point3(2.0, 0.0, 0.0)); // 2 units to the left
@@ -662,11 +666,11 @@ Graph stereoExampleGraph() {
 	Point3 landmark2(1.0, 5.0, 0.0);
 
 	// create graph
-	Graph graph;
+	VGraph graph;
 
 	// create equality constraints for poses
-  graph.push_back(shared_ptr<PoseConstraint>(new PoseConstraint(1, camera1.pose())));
-  graph.push_back(shared_ptr<PoseConstraint>(new PoseConstraint(2, camera2.pose())));
+	graph.push_back(shared_ptr<PoseConstraint>(new PoseConstraint(1, camera1.pose())));
+	graph.push_back(shared_ptr<PoseConstraint>(new PoseConstraint(2, camera2.pose())));
 
 	// create  factors
 	Point2 z1 = camera1.project(landmark1);
@@ -680,19 +684,19 @@ Graph stereoExampleGraph() {
 	// NOTE: this is really just a linear constraint that is exactly the same
 	// as the previous examples
 	list<Symbol> keys; keys += "l1", "l2";
-	boost::shared_ptr<NonlinearConstraint2<Config> > c2(
-				new NonlinearConstraint2<Config>(
-						boost::bind(sqp_stereo::g, _1, keys),
-						"l1", boost::bind(sqp_stereo::G1, _1, keys),
-						"l2", boost::bind(sqp_stereo::G2, _1, keys),
-						 3, "L12"));
+	visualSLAM::PointKey l1(1), l2(2);
+	shared_ptr<VNLC2> c2(
+			new VNLC2(boost::bind(sqp_stereo::g, _1, keys),
+					 l1, boost::bind(sqp_stereo::G1, _1, keys),
+					 l2, boost::bind(sqp_stereo::G2, _1, keys),
+					 3, "L12"));
 	graph.push_back(c2);
 
 	return graph;
 }
 
 /* ********************************************************************* */
-boost::shared_ptr<Config> stereoExampleTruthConfig() {
+boost::shared_ptr<VConfig> stereoExampleTruthConfig() {
 	// create initial estimates
 	Rot3 faceDownY(Matrix_(3,3,
 				1.0, 0.0, 0.0,
@@ -723,21 +727,21 @@ TEST (SQP, stereo_sqp ) {
 	bool verbose = false;
 
 	// get a graph
-	Graph graph = stereoExampleGraph();
+	VGraph graph = stereoExampleGraph();
 	if (verbose) graph.print("Graph after construction");
 
 	// get the truth config
-	boost::shared_ptr<Config> truthConfig = stereoExampleTruthConfig();
+	boost::shared_ptr<VConfig> truthConfig = stereoExampleTruthConfig();
 
 	// create ordering
 	Ordering ord;
 	ord += "x1", "x2", "l1", "l2";
 
 	// create optimizer
-	SOptimizer optimizer(graph, ord, truthConfig);
+	VSOptimizer optimizer(graph, ord, truthConfig);
 
 	// optimize
-	SOptimizer afterOneIteration = optimizer.iterate();
+	VSOptimizer afterOneIteration = optimizer.iterate();
 
 	// check if correct
 	CHECK(assert_equal(*truthConfig,*(afterOneIteration.config())));
@@ -775,7 +779,7 @@ TEST (SQP, stereo_sqp_noisy ) {
 	ord += "x1", "x2", "l1", "l2";
 
 	// create optimizer
-	SOptimizer optimizer(graph, ord, initConfig);
+	VSOptimizer optimizer(graph, ord, initConfig);
 
 	// optimize
 	double start_error = optimizer.error();
@@ -786,9 +790,9 @@ TEST (SQP, stereo_sqp_noisy ) {
 		//if (verbose) optimizer.graph()->print();
 		if (verbose) optimizer.config()->print();
 		if (verbose)
-			optimizer = optimizer.iterate(SOptimizer::FULL);
+			optimizer = optimizer.iterate(VSOptimizer::FULL);
 		else
-			optimizer = optimizer.iterate(SOptimizer::SILENT);
+			optimizer = optimizer.iterate(VSOptimizer::SILENT);
 	}
 
 	if (verbose) cout << "Initial Error: " << start_error << "\n"
@@ -840,11 +844,11 @@ TEST (SQP, stereo_sqp_noisy_manualLagrange ) {
 	ord += "x1", "x2", "l1", "l2", "L12";
 
 	// create lagrange multipliers
-	SOptimizer::shared_vconfig initLagrangeConfig(new VectorConfig);
+	VSOptimizer::shared_vconfig initLagrangeConfig(new VectorConfig);
 	initLagrangeConfig->insert("L12", Vector_(3, 0.0, 0.0, 0.0));
 
 	// create optimizer
-	SOptimizer optimizer(graph, ord, initConfig, initLagrangeConfig);
+	VSOptimizer optimizer(graph, ord, initConfig, initLagrangeConfig);
 
 	// optimize
 	double start_error = optimizer.error();
@@ -855,10 +859,10 @@ TEST (SQP, stereo_sqp_noisy_manualLagrange ) {
 				 << " Iteration: " << i << endl;
 			optimizer.config()->print("Config Before Iteration");
 			optimizer.configLagrange()->print("Lagrange Before Iteration");
-			optimizer = optimizer.iterate(SOptimizer::FULL);
+			optimizer = optimizer.iterate(VSOptimizer::FULL);
 		}
 		else
-			optimizer = optimizer.iterate(SOptimizer::SILENT);
+			optimizer = optimizer.iterate(VSOptimizer::SILENT);
 	}
 
 	if (verbose) cout << "Initial Error: " << start_error << "\n"

@@ -28,9 +28,6 @@ class NonlinearConstraint : public NonlinearFactor<Config> {
 
 protected:
 
-	/** Lagrange multipliers? */
-	Vector z_;
-
 	/** key for the lagrange multipliers */
 	std::string lagrange_key_;
 
@@ -121,7 +118,7 @@ public:
 /**
  * A unary constraint with arbitrary cost and jacobian functions
  */
-template <class Config>
+template <class Config, class Key, class X>
 class NonlinearConstraint1 : public NonlinearConstraint<Config> {
 
 private:
@@ -136,7 +133,7 @@ private:
 	boost::function<Matrix(const Config& config)> G_;
 
 	/** key for the constrained variable */
-	std::string key_;
+	Key key_;
 
 public:
 
@@ -151,7 +148,7 @@ public:
 	 */
 	NonlinearConstraint1(
 			Vector (*g)(const Config& config),
-			const std::string& key,
+			const Key& key,
 			Matrix (*G)(const Config& config),
 			size_t dim_constraint,
 			const std::string& lagrange_key="",
@@ -168,7 +165,7 @@ public:
 	 */
 	NonlinearConstraint1(
 			boost::function<Vector(const Config& config)> g,
-			const std::string& key,
+			const Key& key,
 			boost::function<Matrix(const Config& config)> G,
 			size_t dim_constraint,
 			const std::string& lagrange_key="",
@@ -194,7 +191,7 @@ public:
 /**
  * A binary constraint with arbitrary cost and jacobian functions
  */
-template <class Config>
+template <class Config, class Key1, class X1, class Key2, class X2>
 class NonlinearConstraint2 : public NonlinearConstraint<Config> {
 
 private:
@@ -210,8 +207,8 @@ private:
 	boost::function<Matrix(const Config& config)> G2_;
 
 	/** keys for the constrained variables */
-	std::string key1_;
-	std::string key2_;
+	Key1 key1_;
+	Key2 key2_;
 
 public:
 
@@ -226,9 +223,9 @@ public:
 	 */
 	NonlinearConstraint2(
 			Vector (*g)(const Config& config),
-			const std::string& key1,
+			const Key1& key1,
 			Matrix (*G1)(const Config& config),
-			const std::string& key2,
+			const Key2& key2,
 			Matrix (*G2)(const Config& config),
 			size_t dim_constraint,
 			const std::string& lagrange_key="",
@@ -246,9 +243,9 @@ public:
 	 */
 	NonlinearConstraint2(
 			boost::function<Vector(const Config& config)> g,
-			const std::string& key1,
+			const Key1& key1,
 			boost::function<Matrix(const Config& config)> G1,
-			const std::string& key2,
+			const Key2& key2,
 			boost::function<Matrix(const Config& config)> G2,
 			size_t dim_constraint,
 			const std::string& lagrange_key="",
