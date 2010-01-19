@@ -15,6 +15,9 @@
 
 namespace gtsam {	namespace noiseModel {
 
+	class Diagonal;
+	typedef boost::shared_ptr<Diagonal> sharedDiagonal;
+
   /**
    * noiseModel::Base is the abstract base class for all noise models.
    *
@@ -130,6 +133,15 @@ namespace gtsam {	namespace noiseModel {
   		whitenInPlace(b);
     }
 
+    /**
+     * Apply appropriately weighted QR factorization to the system [A b]
+     *               Q'  *   [A b]  =  [R d]
+     * Dimensions: (r*m) * m*(n+1) = r*(n+1)
+     * @param Ab is the m*(n+1) augmented system matrix [A b]
+     * @return in-place QR factorization [R d]. Below-diagonal is undefined !!!!!
+     */
+    virtual sharedDiagonal QR(Matrix& Ab) const;
+
 		/**
 		 * Return R itself, but note that Whiten(H) is cheaper than R*H
 		 */
@@ -198,6 +210,7 @@ namespace gtsam {	namespace noiseModel {
 
   }; // Diagonal
 
+
   /**
    * A Constrained constrained model is a specialization of Diagonal which allows
    * some or all of the sigmas to be zero, forcing the error to be zero there.
@@ -208,6 +221,9 @@ namespace gtsam {	namespace noiseModel {
    */
   class Constrained : public Diagonal {
   protected:
+
+  	// Constrained does not have member variables
+  	// Instead (possibly zero) sigmas are stored in Diagonal Base class
 
     /** protected constructor takes sigmas */
   	Constrained(const Vector& sigmas) :Diagonal(sigmas) {}
@@ -239,6 +255,11 @@ namespace gtsam {	namespace noiseModel {
 
 		virtual Matrix Whiten(const Matrix& H) const;
 		virtual void WhitenInPlace(Matrix& H) const;
+
+    /**
+     * Apply QR factorization to the system [A b], taking into account constraints
+     */
+		virtual sharedDiagonal QR(Matrix& Ab) const;
 
   }; // Constrained
 
@@ -339,8 +360,6 @@ namespace gtsam {	namespace noiseModel {
 		sharedGaussian(const double& s):Gaussian::shared_ptr(Isotropic::Sigma(GTSAM_MAGIC_GAUSSIAN,s)) {}
 #endif
 		};
-
-	typedef Diagonal::shared_ptr sharedDiagonal;
 
 
 } // namespace gtsam

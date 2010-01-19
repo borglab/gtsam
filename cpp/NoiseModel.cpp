@@ -8,13 +8,15 @@
 
 #include <limits>
 #include <iostream>
+#include <boost/numeric/ublas/lu.hpp>
+#include <boost/numeric/ublas/io.hpp>
+#include <boost/foreach.hpp>
 #include "NoiseModel.h"
 
 namespace ublas = boost::numeric::ublas;
 typedef ublas::matrix_column<Matrix> column;
 
 static double inf = std::numeric_limits<double>::infinity();
-
 using namespace std;
 
 namespace gtsam {
@@ -51,6 +53,24 @@ namespace gtsam {
 
 		void Gaussian::WhitenInPlace(Matrix& H) const {
 		  H = sqrt_information_ * H;
+		}
+
+		// General QR, see also special version in Constrained
+		sharedDiagonal Gaussian::QR(Matrix& Ab) const {
+			// get size(A) and maxRank
+			// TODO: really no rank problems ?
+			size_t m = Ab.size1(), n = Ab.size2()-1;
+			size_t maxRank = min(m,n);
+
+			// pre-whiten everything (cheaply if possible)
+			WhitenInPlace(Ab);
+
+			// Perform in-place Householder
+			// TODO: think about 1 on diagonal.
+			// Currently, GaussianConditional assumes unit upper
+			householder_(Ab, maxRank);
+
+			return Unit::Create(maxRank);
 		}
 
 		/* ************************************************************************* */
@@ -100,6 +120,90 @@ namespace gtsam {
 		}
 
 		/* ************************************************************************* */
+		// update A, b
+		// A' \define A_{S}-ar and b'\define b-ad
+		// Linear algebra: takes away projection on latest orthogonal
+		// Graph: make a new factor on the separator S
+		// __attribute__ ((noinline))	// uncomment to prevent inlining when profiling
+		static void updateAb(Matrix& Ab, int j, const Vector& a, const Vector& rd) {
+			size_t m = Ab.size1(), n = Ab.size2()-1;
+			for (int i = 0; i < m; i++) { // update all rows
+				double ai = a(i);
+				double *Aij = Ab.data().begin() + i * (n+1) + j + 1;
+				const double *rptr = rd.data().begin() + j + 1;
+				// Ab(i,j+1:end) -= ai*rd(j+1:end)
+				for (int j2 = j + 1; j2 < n+1; j2++, Aij++, rptr++)
+					*Aij -= ai * (*rptr);
+			}
+		}
+
+		// Special version of QR for Constrained calls slower but smarter code
+		// that deals with possibly zero sigmas
+		// It is Gram-Schmidt orthogonalization rather than Householder
+		sharedDiagonal Constrained::QR(Matrix& Ab) const {
+			// get size(A) and maxRank
+			size_t m = Ab.size1(), n = Ab.size2()-1;
+			size_t maxRank = min(m,n);
+
+			// create storage for [R d]
+			typedef boost::tuple<size_t, Vector, double> Triple;
+			list<Triple> Rd;
+
+			Vector pseudo(m); // allocate storage for pseudo-inverse
+			Vector weights = emul(invsigmas_,invsigmas_); // calculate weights once
+
+			// We loop over all columns, because the columns that can be eliminated
+			// are not necessarily contiguous. For each one, estimate the corresponding
+			// scalar variable x as d-rS, with S the separator (remaining columns).
+			// Then update A and b by substituting x with d-rS, zero-ing out x's column.
+			for (size_t j=0; j<n; ++j) {
+				// extract the first column of A
+				Vector a(column(Ab, j)); // ublas::matrix_column is slower ! TODO Really, why ????
+
+				// Calculate weighted pseudo-inverse and corresponding precision
+				double precision = weightedPseudoinverse(a, weights, pseudo);
+
+				// If precision is zero, no information on this column
+				// This is actually not limited to constraints, could happen in Gaussian::QR
+				// In that case, we're probably hosed. TODO: make sure Householder is rank-revealing
+				if (precision < 1e-8) continue;
+
+				// create solution [r d], rhs is automatically r(n)
+				Vector rd(n+1); // uninitialized !
+				rd(j)=1.0; // put 1 on diagonal
+				for (size_t j2=j+1; j2<n+1; ++j2) // and fill in remainder with dot-products
+					rd(j2) = inner_prod(pseudo, ublas::matrix_column<Matrix>(Ab, j2));
+
+				// construct solution (r, d, sigma)
+				Rd.push_back(boost::make_tuple(j, rd, precision));
+
+				// exit after rank exhausted
+				if (Rd.size()>=maxRank) break;
+
+				// update Ab, expensive, using outer product
+				updateAb(Ab, j, a, rd);
+			}
+
+			// Create storage for precisions
+			Vector precisions(Rd.size());
+
+			// Write back result in Ab, imperative as we are
+			// TODO: test that is correct if a column was skipped !!!!
+			size_t i = 0; // start with first row
+			BOOST_FOREACH(const Triple& t, Rd) {
+				const size_t& j  = t.get<0>();
+				const Vector& rd = t.get<1>();
+				precisions(i)    = t.get<2>();
+				for (size_t j2=0; j2<j; ++j2) Ab(i,j2) = 0.0; // fill in zeros below diagonal anway
+				for (size_t j2=j; j2<n+1; ++j2) // copy the j-the row TODO memcpy
+					Ab(i,j2) = rd(j2);
+				i+=1;
+			}
+
+			return Diagonal::Precisions(precisions);
+		}
+
+		/* ************************************************************************* */
 
 		void Isotropic::print(const string& name) const {
 			cout << "Isotropic sigma " << name << " " << sigma_ << endl;
@@ -128,7 +232,7 @@ namespace gtsam {
 
 		/* ************************************************************************* */
 		void Unit::print(const std::string& name) const {
-			cout << "Unit " << name << endl;
+			cout << "Unit (" << dim_ << ") " << name << endl;
 		}
 
 	/* ************************************************************************* */
