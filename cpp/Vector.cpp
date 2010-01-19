@@ -259,9 +259,13 @@ namespace gtsam {
 		size_t m = weights.size();
 		static const double inf = std::numeric_limits<double>::infinity();
 
+		// Check once for zero entries of a. TODO: really needed ?
+		vector<bool> isZero;
+		for (size_t i = 0; i < m; ++i) isZero.push_back(fabs(a[i]) < 1e-9);
+
 		// If there is a valid (a!=0) constraint (sigma==0) return the first one
-		for (int i = 0; i < m; ++i)
-			if (weights[i] == inf && fabs(a[i]) > 1e-9) {
+		for (size_t i = 0; i < m; ++i)
+			if (weights[i] == inf && !isZero[i]) {
 				pseudo = delta(m, i, 1 / a[i]);
 				return inf;
 			}
@@ -269,26 +273,21 @@ namespace gtsam {
 		// Form psuedo-inverse inv(a'inv(Sigma)a)a'inv(Sigma)
 		// For diagonal Sigma, inv(Sigma) = diag(precisions)
 		double precision = 0;
-		for (int i = 0; i < m; i++) {
+		for (size_t i = 0; i < m; i++) {
 			double ai = a[i];
-			if (fabs(ai) > 1e-9) // also catches remaining sigma==0 rows
-			precision += weights[i] * (ai * ai);
+			if (!isZero[i]) // also catches remaining sigma==0 rows
+				precision += weights[i] * (ai * ai);
 		}
 
 		// precision = a'inv(Sigma)a
 		if (precision < 1e-9)
-			for (int i = 0; i < m; i++)
+			for (size_t i = 0; i < m; i++)
 				pseudo[i] = 0;
 		else {
 			// emul(precisions,a)/precision
 			double variance = 1.0 / precision;
-			for (int i = 0; i < m; i++) {
-				double ai = a[i];
-				if (fabs(ai) < 1e-9) // also catches remaining sigma==0 rows
-					pseudo[i] = 0;
-				else
-					pseudo[i] = variance * weights[i] * ai;
-			}
+			for (size_t i = 0; i < m; i++)
+				pseudo[i] = isZero[i] ? 0 : variance * weights[i] * a[i];
 		}
 		return precision; // sum of weights
 	}
