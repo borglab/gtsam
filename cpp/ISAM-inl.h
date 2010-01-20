@@ -52,13 +52,13 @@ namespace gtsam {
 		// insert conditionals back in, straight into the topless bayesTree
 		typename BayesNet<Conditional>::const_reverse_iterator rit;
 		for ( rit=bayesNet.rbegin(); rit != bayesNet.rend(); ++rit )
-			this->insert(*rit);
+			this->insert(*rit, &ordering);
 
 		int count = 0;
 		// add orphans to the bottom of the new tree
 		BOOST_FOREACH(sharedClique orphan, orphans) {
 
-			Symbol key = orphan->separator_.front();
+			Symbol key = findParentClique(orphan->separator_, ordering);
 			sharedClique parent = (*this)[key];
 
 			parent->children_ += orphan;
