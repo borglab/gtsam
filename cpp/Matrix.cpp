@@ -506,6 +506,16 @@ Matrix collect(const std::vector<const Matrix *>& matrices, size_t m, size_t n)
 		dimA2 += M->size2();
 	}
 
+	// original version
+//	Matrix A(dimA1, dimA2);
+//	size_t hindex = 0;
+//	BOOST_FOREACH(const Matrix* M, matrices) {
+//		for(size_t d1 = 0; d1 < M->size1(); d1++)
+//			for(size_t d2 = 0; d2 < M->size2(); d2++)
+//				A(d1, d2+hindex) = (*M)(d1, d2);
+//		hindex += M->size2();
+//	}
+
 	// matrix_range version
 	// Result: slower
 //	Matrix A(dimA1, dimA2);

@@ -14,9 +14,14 @@ using namespace gtsam;
 /*
  * Results:
  * Alex's Machine:
+ * (using p = 100000 m = 10 n = 12 reps = 50) - Average times
  *  - (1st pass of simple changes) no pass: 0.184  sec , pass: 0.181 sec
  *  - (1st rev memcpy)             no pass: 0.181  sec , pass: 0.180 sec
  *  - (1st rev matrix_range)       no pass: 0.186  sec , pass: 0.184 sec
+ * (using p = 10 m = 10 n = 12 reps = 10000000)
+ *  - (matrix_range version)       no pass: 24.21  sec , pass: 23.97 sec
+ *  - (memcpy version)             no pass: 18.96  sec , pass: 18.39 sec
+ *  - (original version)           no pass: 23.45  sec , pass: 22.80 sec
  */
 double timeCollect(size_t p, size_t m, size_t n, bool passDims, size_t reps) {
 	// create a large number of matrices
@@ -52,7 +57,8 @@ double timeCollect(size_t p, size_t m, size_t n, bool passDims, size_t reps) {
 		delete matrices[i];
 	}
 
-	return elapsed/reps;
+	return elapsed;
+	//return elapsed/reps;
 }
 
 /*
@@ -119,7 +125,8 @@ int main(int argc, char ** argv) {
 
 	// Time collect()
 	cout << "Starting Matrix::collect() Timing" << endl;
-	size_t p = 100000; size_t m = 10; size_t n = 12; size_t reps = 50;
+	//size_t p = 100000; size_t m = 10; size_t n = 12; size_t reps = 50;
+	size_t p = 10; size_t m = 10; size_t n = 12; size_t reps = 10000000;
 	double collect_time1 = timeCollect(p, m, n, false, reps);
 	double collect_time2 = timeCollect(p, m, n, true, reps);
 	cout << "Average Elapsed time for collect (no pass) [" << p << " (" << m << ", " << n << ") matrices] : " << collect_time1 << endl;
