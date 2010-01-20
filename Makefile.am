@@ -3,7 +3,7 @@ ACLOCAL_AMFLAGS = -I m4
 
 # make automake install some standard but missing files
 AUTOMAKE_OPTIONS = foreign
-SUBDIRS = cpp wrap
+SUBDIRS = colamd CppUnitLite cpp wrap
 
 # install the matlab toolbox
 install-exec-hook:

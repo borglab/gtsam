@@ -26,4 +26,10 @@ check:
 
 distdir:
 
-install:
+# Richard: added the following dependencies so that recursive make works:
+
+install: all
+
+distclean: clean
+
+check: all
