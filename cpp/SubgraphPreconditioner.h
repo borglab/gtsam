@@ -90,7 +90,7 @@ namespace gtsam {
 		G T_, C_;
 
 	public:
-		SubgraphPCG(const G& g, const T& config);
+		SubgraphPCG(const G& g, const T& theta0);
 
 		boost::shared_ptr<Ordering> ordering() const { return ordering_; }
 
