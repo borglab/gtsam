@@ -101,7 +101,8 @@ TEST(Pose2Graph, optimize) {
   shared_ptr<Ordering> ordering(new Ordering);
   *ordering += "x0","x1";
   typedef NonlinearOptimizer<Pose2Graph, Pose2Config> Optimizer;
-  Optimizer optimizer0(fg, ordering, initial);
+	Optimizer::shared_solver solver(new Optimizer::solver(ordering));
+  Optimizer optimizer0(fg, initial, solver);
   Optimizer::verbosityLevel verbosity = Optimizer::SILENT;
   //Optimizer::verbosityLevel verbosity = Optimizer::ERROR;
   Optimizer optimizer = optimizer0.levenbergMarquardt(1e-15, 1e-15, verbosity);
@@ -145,7 +146,8 @@ TEST(Pose2Graph, optimizeCircle) {
   shared_ptr<Ordering> ordering(new Ordering);
   *ordering += "x0","x1","x2","x3","x4","x5";
   typedef NonlinearOptimizer<Pose2Graph, Pose2Config> Optimizer;
-  Optimizer optimizer0(fg, ordering, initial);
+	Optimizer::shared_solver solver(new Optimizer::solver(ordering));
+  Optimizer optimizer0(fg, initial, solver);
   Optimizer::verbosityLevel verbosity = Optimizer::SILENT;
 //  Optimizer::verbosityLevel verbosity = Optimizer::ERROR;
   Optimizer optimizer = optimizer0.levenbergMarquardt(1e-15, 1e-15, verbosity);

@@ -100,7 +100,8 @@ TEST( Graph, optimizeLM)
 
   // Create an optimizer and check its error
   // We expect the initial to be zero because config is the ground truth
-  Optimizer optimizer(graph, ordering, initialEstimate);
+	Optimizer::shared_solver solver(new Optimizer::solver(ordering));
+  Optimizer optimizer(graph, initialEstimate, solver);
   DOUBLES_EQUAL(0.0, optimizer.error(), 1e-9);
 
   // Iterate once, and the config should not have changed because we started
@@ -144,7 +145,8 @@ TEST( Graph, optimizeLM2)
 
   // Create an optimizer and check its error
   // We expect the initial to be zero because config is the ground truth
-  Optimizer optimizer(graph, ordering, initialEstimate);
+	Optimizer::shared_solver solver(new Optimizer::solver(ordering));
+  Optimizer optimizer(graph, initialEstimate, solver);
   DOUBLES_EQUAL(0.0, optimizer.error(), 1e-9);
 
   // Iterate once, and the config should not have changed because we started
@@ -179,7 +181,8 @@ TEST( Graph, CHECK_ORDERING)
 
   // Create an optimizer and check its error
   // We expect the initial to be zero because config is the ground truth
-  Optimizer optimizer(graph, ordering, initialEstimate);
+	Optimizer::shared_solver solver(new Optimizer::solver(ordering));
+  Optimizer optimizer(graph, initialEstimate, solver);
   DOUBLES_EQUAL(0.0, optimizer.error(), 1e-9);
 
   // Iterate once, and the config should not have changed because we started

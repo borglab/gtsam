@@ -48,8 +48,8 @@ namespace gtsam {
 	/* ************************************************************************* */
 	template<class G, class C, class L, class S>
 	NonlinearOptimizer<G, C, L, S>::NonlinearOptimizer(shared_graph graph,
-			shared_ordering ordering, shared_config config, shared_solver solver, double lambda) :
-		graph_(graph), ordering_(ordering), config_(config), error_(graph->error(
+			shared_config config, shared_solver solver, double lambda) :
+		graph_(graph), config_(config), error_(graph->error(
 				*config)), lambda_(lambda), solver_(solver) {
 	}
 
@@ -59,7 +59,7 @@ namespace gtsam {
 	template<class G, class C, class L, class S>
 	VectorConfig NonlinearOptimizer<G, C, L, S>::linearizeAndOptimizeForDelta() const {
 		L linearized = solver_->linearize(*graph_, *config_);
-		return solver_->optimize(linearized, *ordering_);
+		return solver_->optimize(linearized);
 	}
 
 	/* ************************************************************************* */
@@ -82,7 +82,7 @@ namespace gtsam {
 		if (verbosity >= CONFIG)
 			newConfig->print("newConfig");
 
-		NonlinearOptimizer newOptimizer = NonlinearOptimizer(graph_, ordering_, newConfig, solver_);
+		NonlinearOptimizer newOptimizer = NonlinearOptimizer(graph_, newConfig, solver_);
 
 		if (verbosity >= ERROR)
 			cout << "error: " << newOptimizer.error_ << endl;
@@ -128,7 +128,7 @@ namespace gtsam {
 			damped.print("damped");
 
 		// solve
-		VectorConfig delta = solver_->optimize(damped, *ordering_);
+		VectorConfig delta = solver_->optimize(damped);
 		if (verbosity >= TRYDELTA)
 			delta.print("delta");
 
@@ -138,14 +138,14 @@ namespace gtsam {
 			newConfig->print("config");
 
 		// create new optimization state with more adventurous lambda
-		NonlinearOptimizer next(graph_, ordering_, newConfig, solver_, lambda_ / factor);
+		NonlinearOptimizer next(graph_, newConfig, solver_, lambda_ / factor);
 
 		// if error decreased, return the new state
 		if (next.error_ <= error_)
 			return next;
 		else {
 			// TODO: can we avoid copying the config ?
-			NonlinearOptimizer cautious(graph_, ordering_, config_, solver_, lambda_ * factor);
+			NonlinearOptimizer cautious(graph_, config_, solver_, lambda_ * factor);
 			return cautious.try_lambda(linear, verbosity, factor);
 		}
 	}

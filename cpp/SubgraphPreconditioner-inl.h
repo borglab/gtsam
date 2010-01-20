@@ -24,7 +24,7 @@ namespace gtsam {
 	SubgraphPCG<G, T>::SubgraphPCG(const G& g, const T& theta0) :
 		maxIterations_(100), verbose_(false), epsilon_(1e-4), epsilon_abs_(1e-5) {
 
-		// generate spanning tree and create ordering
+		// generate spanning tree
 		PredecessorMap<Key> tree = g.template findMinimumSpanningTree<Key, Constraint>();
 		list<Key> keys = predecessorMap2Keys(tree);
 
@@ -57,10 +57,10 @@ namespace gtsam {
 
 	/* ************************************************************************* */
 	template<class G, class T>
-	VectorConfig SubgraphPCG<G, T>::optimize(SubgraphPreconditioner& system, const Ordering& ordering) const {
+	VectorConfig SubgraphPCG<G, T>::optimize(SubgraphPreconditioner& system) const {
 		//TODO: 3 is hard coded here
 		VectorConfig zeros;
-		BOOST_FOREACH(const Symbol& j, ordering) zeros.insert(j,zero(3));
+		BOOST_FOREACH(const Symbol& j, *ordering_) zeros.insert(j,zero(Pose::dim()));
 
 		// Solve the subgraph PCG
 		VectorConfig ybar = conjugateGradients<SubgraphPreconditioner, VectorConfig,

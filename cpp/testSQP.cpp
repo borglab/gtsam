@@ -296,7 +296,8 @@ TEST (SQP, two_pose_truth ) {
 	// optimize the graph
 	shared_ptr<Ordering> ordering(new Ordering());
 	*ordering += "x1", "x2", "l1";
-	Optimizer optimizer(graph, ordering, initialEstimate);
+	Optimizer::shared_solver solver(new Optimizer::solver(ordering));
+	Optimizer optimizer(graph, initialEstimate, solver);
 
 	// display solution
 	double relativeThreshold = 1e-5;
@@ -533,7 +534,8 @@ TEST (SQP, stereo_truth ) {
 	*ord += "x1", "x2", "l1";
 
 	// create optimizer
-	VOptimizer optimizer(graph, ord, truthConfig);
+	VOptimizer::shared_solver solver(new VOptimizer::solver(ord));
+	VOptimizer optimizer(graph, truthConfig, solver);
 
 	// optimize
 	VOptimizer afterOneIteration = optimizer.iterate();
@@ -609,7 +611,8 @@ TEST (SQP, stereo_truth_noisy ) {
 	*ord += "x1", "x2", "l1";
 
 	// create optimizer
-	VOptimizer optimizer0(graph, ord, noisyConfig);
+	VOptimizer::shared_solver solver(new VOptimizer::solver(ord));
+	VOptimizer optimizer0(graph, noisyConfig, solver);
 
 	if (verbose)
 		cout << "Initial Error: " << optimizer0.error() << endl;

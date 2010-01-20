@@ -228,17 +228,18 @@ namespace gtsam {
    */
   template <class NonlinearGraph, class Config>
   class Factorization {
-  public:
-  	Factorization() {}
+  private:
+  	boost::shared_ptr<const Ordering> ordering_;
 
-  	Factorization(const NonlinearGraph& g, const Config& config) {}
+  public:
+  	Factorization(boost::shared_ptr<const Ordering> ordering) : ordering_(ordering) {}
 
   	/**
   	 * solve for the optimal displacement in the tangent space, and then solve
   	 * the resulted linear system
   	 */
-  	VectorConfig optimize(GaussianFactorGraph& fg, const Ordering& ordering) const {
-  		return fg.optimize(ordering);
+  	VectorConfig optimize(GaussianFactorGraph& fg) const {
+  		return fg.optimize(*ordering_);
   	}
 
 		/**

@@ -59,6 +59,8 @@ namespace gtsam {
     Point2 t()     const { return t_; }
     Rot2 r()       const { return r_; }
 
+    static inline size_t dim() { return 3; };
+
   }; // Pose2
 
 

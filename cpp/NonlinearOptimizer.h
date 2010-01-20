@@ -33,8 +33,8 @@ namespace gtsam {
 		// For performance reasons in recursion, we store configs in a shared_ptr
 		typedef boost::shared_ptr<const T> shared_config;
 		typedef boost::shared_ptr<const G> shared_graph;
-		typedef boost::shared_ptr<const Ordering> shared_ordering;
 		typedef boost::shared_ptr<const S> shared_solver;
+		typedef const S solver;
 
 		enum verbosityLevel {
 			SILENT,
@@ -51,10 +51,9 @@ namespace gtsam {
 
 	private:
 
-		// keep a reference to const versions of the graph and ordering
+		// keep a reference to const version of the graph
 		// These normally do not change
 		const shared_graph graph_;
-		const shared_ordering ordering_;
 
 		// keep a configuration and its error
 		// These typically change once per iteration (in a functional way)
@@ -77,15 +76,14 @@ namespace gtsam {
 		/**
 		 * Constructor
 		 */
-		NonlinearOptimizer(shared_graph graph, shared_ordering ordering,
-				shared_config config, shared_solver solver = shared_solver(new S),
+		NonlinearOptimizer(shared_graph graph, shared_config config, shared_solver solver,
 				double lambda = 1e-5);
 
 		/**
 		 * Copy constructor
 		 */
 		NonlinearOptimizer(const NonlinearOptimizer<G, T, L, S> &optimizer) :
-		  graph_(optimizer.graph_), ordering_(optimizer.ordering_), config_(optimizer.config_),
+		  graph_(optimizer.graph_), config_(optimizer.config_),
 		  error_(optimizer.error_), lambda_(optimizer.lambda_), solver_(optimizer.solver_) {}
 
 		/**

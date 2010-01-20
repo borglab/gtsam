@@ -90,9 +90,6 @@ namespace gtsam {
 		G T_, C_;
 
 	public:
-		// kai: this constructor is for compatible with Factorization
-		SubgraphPCG() { throw std::runtime_error("SubgraphPCG: this constructor is only for compatibility!");}
-
 		SubgraphPCG(const G& g, const T& config);
 
 		boost::shared_ptr<Ordering> ordering() const { return ordering_; }
@@ -108,7 +105,7 @@ namespace gtsam {
   	 * solve for the optimal displacement in the tangent space, and then solve
   	 * the resulted linear system
   	 */
-  	VectorConfig optimize(SubgraphPreconditioner& system, const Ordering& ordering) const;
+  	VectorConfig optimize(SubgraphPreconditioner& system) const;
 	};
 } // nsamespace gtsam
 
