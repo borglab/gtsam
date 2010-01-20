@@ -87,7 +87,7 @@ int main()
   b2(7) = -1;
   
   // time eliminate
-  GaussianFactor combined("x2", Ax2,  "l1", Al1, "x1", Ax1, b2,1);
+  GaussianFactor combined("x2", Ax2,  "l1", Al1, "x1", Ax1, b2,sharedSigma(8,1));
   long timeLog = clock();
   int n = 1000000;
   GaussianConditional::shared_ptr conditional;

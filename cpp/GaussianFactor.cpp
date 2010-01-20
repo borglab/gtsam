@@ -298,6 +298,86 @@ void GaussianFactor::append_factor(GaussianFactor::shared_ptr f, size_t m, size_
  * and last rows to make a new joint linear factor on separator
  */
 /* ************************************************************************* */
+
+#include <boost/numeric/ublas/triangular.hpp>
+#include <boost/numeric/ublas/io.hpp>
+#include <boost/numeric/ublas/matrix_proxy.hpp>
+
+pair<GaussianConditional::shared_ptr, GaussianFactor::shared_ptr>
+GaussianFactor::eliminate(const Symbol& key) const
+{
+	// if this factor does not involve key, we exit with empty CG and LF
+	const_iterator it = As_.find(key);
+	if (it==As_.end()) {
+		// Conditional Gaussian is just a parent-less node with P(x)=1
+		GaussianFactor::shared_ptr lf(new GaussianFactor);
+		GaussianConditional::shared_ptr cg(new GaussianConditional(key));
+		return make_pair(cg,lf);
+	}
+
+	// create an internal ordering that eliminates key first
+	Ordering ordering;
+	ordering += key;
+	BOOST_FOREACH(const Symbol& k, keys())
+		if (k != key) ordering += k;
+
+	// extract [A b] from the combined linear factor (ensure that x is leading)
+	Matrix Ab = matrix_augmented(ordering,false);
+
+	// Use in-place QR on dense Ab appropriate to NoiseModel
+	sharedDiagonal noiseModel = model_->QR(Ab);
+
+	// get dimensions of the eliminated variable
+	// TODO: this is another map find that should be avoided !
+	size_t n1 = getDim(key), n = Ab.size2() - 1;
+
+	// if m<n1, this factor cannot be eliminated
+	size_t maxRank = noiseModel->dim();
+	if (maxRank<n1) {
+		cout << "Perhaps your factor graph is singular." << endl;
+		cout << "Here are the keys involved in the factor now being eliminated:" << endl;
+		ordering.print("Keys");
+		cout << "The first key, '" << (string)ordering.front() << "', corresponds to the variable being eliminated" << endl;
+		throw(domain_error("GaussianFactor::eliminate: fewer constraints than unknowns"));
+	}
+
+	// Get alias to augmented RHS d
+	ublas::matrix_column<Matrix> d(Ab,n);
+
+	// create base conditional Gaussian
+	GaussianConditional::shared_ptr conditional(new GaussianConditional(key,
+			sub(d,  0, n1),                   // form d vector
+			sub(Ab, 0, n1, 0, n1),            // form R matrix
+			sub(noiseModel->sigmas(),0,n1))); // get standard deviations
+
+	// extract the block matrices for parents in both CG and LF
+	GaussianFactor::shared_ptr factor(new GaussianFactor);
+	size_t j = n1;
+	BOOST_FOREACH(Symbol& cur_key, ordering)
+		if (cur_key!=key) {
+			size_t dim = getDim(cur_key); // TODO avoid find !
+			conditional->add(cur_key, sub(Ab, 0, n1, j, j+dim));
+			factor->insert(cur_key, sub(Ab, n1, maxRank, j, j+dim));
+			j+=dim;
+		}
+
+	// Set sigmas
+	factor->model_ = noiseModel::Diagonal::Sigmas(sub(noiseModel->sigmas(),n1,maxRank));
+
+	// extract ds vector for the new b
+	factor->set_b(sub(d, n1, maxRank));
+
+	return make_pair(conditional, factor);
+}
+
+/* ************************************************************************* */
+/* Note, in place !!!!
+ * Do incomplete QR factorization for the first n columns
+ * We will do QR on all matrices and on RHS
+ * Then take first n rows and make a GaussianConditional,
+ * and last rows to make a new joint linear factor on separator
+ */
+/* ************************************************************************* *
 pair<GaussianConditional::shared_ptr, GaussianFactor::shared_ptr>
 GaussianFactor::eliminate(const Symbol& key) const
 {
@@ -326,9 +406,6 @@ GaussianFactor::eliminate(const Symbol& key) const
 	// Do in-place QR to get R, d of the augmented system
 	std::list<boost::tuple<Vector, double, double> > solution =
 							weighted_eliminate(A, b, model_->sigmas());
-
-	// TODO, fix using NoiseModel, the read out Ab
-	// model->QR(Ab)
 
 	// get dimensions of the eliminated variable
 	// TODO: this is another map find that should be avoided !
@@ -395,7 +472,7 @@ GaussianFactor::shared_ptr GaussianFactor::alphaFactor(const Symbol& key, const 
 	Vector b = - unweighted_error(x);
 
 	// construct factor
-	shared_ptr factor(new GaussianFactor(key,Matrix_(A),b,model_->sigmas()));
+	shared_ptr factor(new GaussianFactor(key,Matrix_(A),b,model_));
 	return factor;
 }
 

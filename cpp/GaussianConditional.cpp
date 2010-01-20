@@ -101,7 +101,7 @@ Vector GaussianConditional::solve(const VectorConfig& x) const {
 		const Matrix& Aj = it->second;
 		rhs -= Aj * x[j];
 	}
-	Vector result = backSubstituteUpper(R_, rhs, true);
+	Vector result = backSubstituteUpper(R_, rhs, false);
 	return result;
 }
 

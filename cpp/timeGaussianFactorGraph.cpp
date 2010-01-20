@@ -74,9 +74,12 @@ TEST(timeGaussianFactorGraph, planar)
 	//      (N = 100): 16.36
 	// Improved (int->size_t)
 	//      (N = 100): 15.39
+
+	// Switch to 100*100 grid = 10K poses
+	// 1879: 15.6498 15.3851 15.5279
 	int N = 100;
-	double time = timePlanarSmoother(N); cout << "timeGaussianFactorGraph: " << time << endl;
-	// DOUBLES_EQUAL(5.97,time,0.1);
+	double time = timePlanarSmoother(N); cout << "timeGaussianFactorGraph : " << time << endl;
+	//DOUBLES_EQUAL(5.97,time,0.1);
 }
 
 /* ************************************************************************* */

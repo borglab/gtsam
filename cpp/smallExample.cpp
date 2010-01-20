@@ -30,6 +30,10 @@ namespace example {
 
 	typedef boost::shared_ptr<NonlinearFactor<Config> > shared;
 
+	static sharedDiagonal sigma0_1 = noiseModel::Isotropic::Sigma(2,0.1);
+	static sharedDiagonal sigma0_2 = noiseModel::Isotropic::Sigma(2,0.2);
+	static sharedDiagonal constraintModel = noiseModel::Constrained::All(2);
+
 	/* ************************************************************************* */
 	boost::shared_ptr<const Graph> sharedNonlinearFactorGraph() {
 		// Create
@@ -126,24 +130,20 @@ namespace example {
 		GaussianFactorGraph fg;
 
 		// linearized prior on x1: c["x1"]+x1=0 i.e. x1=-c["x1"]
-		double sigma1 = 0.1;
 		Vector b1 = -Vector_(2,0.1, 0.1);
-		fg.add("x1", I, b1, sigma1);
+		fg.add("x1", I, b1, sigma0_1);
 
 		// odometry between x1 and x2: x2-x1=[0.2;-0.1]
-		double sigma2 = 0.1;
 		Vector b2 = Vector_(2, 0.2, -0.1);
-		fg.add("x1", -I, "x2", I, b2, sigma2);
+		fg.add("x1", -I, "x2", I, b2, sigma0_1);
 
 		// measurement between x1 and l1: l1-x1=[0.0;0.2]
-		double sigma3 = 0.2;
 		Vector b3 = Vector_(2, 0.0, 0.2);
-		fg.add("x1", -I, "l1", I, b3, sigma3);
+		fg.add("x1", -I, "l1", I, b3, sigma0_2);
 
 		// measurement between x2 and l1: l1-x2=[-0.2;0.3]
-		double sigma4 = 0.2;
 		Vector b4 = Vector_(2, -0.2, 0.3);
-		fg.add("x2", -I, "l1", I, b4, sigma4);
+		fg.add("x2", -I, "l1", I, b4, sigma0_2);
 
 		return fg;
 	}
@@ -273,12 +273,11 @@ namespace example {
 	GaussianFactorGraph createSimpleConstraintGraph() {
 		// create unary factor
 		// prior on "x", mean = [1,-1], sigma=0.1
-		double sigma = 0.1;
 		Matrix Ax = eye(2);
 		Vector b1(2);
 		b1(0) = 1.0;
 		b1(1) = -1.0;
-		GaussianFactor::shared_ptr f1(new GaussianFactor("x", Ax, b1, sigma));
+		GaussianFactor::shared_ptr f1(new GaussianFactor("x", Ax, b1, sigma0_1));
 
 		// create binary constraint factor
 		// between "x" and "y", that is going to be the only factor on "y"
@@ -288,7 +287,7 @@ namespace example {
 		Matrix Ay1 = eye(2) * -1;
 		Vector b2 = Vector_(2, 0.0, 0.0);
 		GaussianFactor::shared_ptr f2(new GaussianFactor("x", Ax1, "y", Ay1, b2,
-				0.0));
+				constraintModel));
 
 		// construct the graph
 		GaussianFactorGraph fg;
@@ -311,12 +310,11 @@ namespace example {
 	GaussianFactorGraph createSingleConstraintGraph() {
 		// create unary factor
 		// prior on "x", mean = [1,-1], sigma=0.1
-		double sigma = 0.1;
 		Matrix Ax = eye(2);
 		Vector b1(2);
 		b1(0) = 1.0;
 		b1(1) = -1.0;
-		GaussianFactor::shared_ptr f1(new GaussianFactor("x", Ax, b1, sigma));
+		GaussianFactor::shared_ptr f1(new GaussianFactor("x", Ax, b1, sigma0_1));
 
 		// create binary constraint factor
 		// between "x" and "y", that is going to be the only factor on "y"
@@ -330,7 +328,7 @@ namespace example {
 		Matrix Ay1 = eye(2) * 10;
 		Vector b2 = Vector_(2, 1.0, 2.0);
 		GaussianFactor::shared_ptr f2(new GaussianFactor("x", Ax1, "y", Ay1, b2,
-				0.0));
+				constraintModel));
 
 		// construct the graph
 		GaussianFactorGraph fg;
@@ -351,10 +349,9 @@ namespace example {
 	/* ************************************************************************* */
 	GaussianFactorGraph createMultiConstraintGraph() {
 		// unary factor 1
-		double sigma = 0.1;
 		Matrix A = eye(2);
 		Vector b = Vector_(2, -2.0, 2.0);
-		GaussianFactor::shared_ptr lf1(new GaussianFactor("x", A, b, sigma));
+		GaussianFactor::shared_ptr lf1(new GaussianFactor("x", A, b, sigma0_1));
 
 		// constraint 1
 		Matrix A11(2, 2);
@@ -373,7 +370,7 @@ namespace example {
 		b1(0) = 1.0;
 		b1(1) = 2.0;
 		GaussianFactor::shared_ptr lc1(new GaussianFactor("x", A11, "y", A12, b1,
-				0.0));
+				constraintModel));
 
 		// constraint 2
 		Matrix A21(2, 2);
@@ -392,7 +389,7 @@ namespace example {
 		b2(0) = 3.0;
 		b2(1) = 4.0;
 		GaussianFactor::shared_ptr lc2(new GaussianFactor("x", A21, "z", A22, b2,
-				0.0));
+				constraintModel));
 
 		// construct the graph
 		GaussianFactorGraph fg;

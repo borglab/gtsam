@@ -55,32 +55,16 @@ public:
 
 	/** Construct unary factor */
 	GaussianFactor(const Symbol& key1, const Matrix& A1,
-			const Vector& b, double sigma) :
-		b_(b), model_(noiseModel::Isotropic::Sigma(b.size(),sigma)) {
-		As_.insert(make_pair(key1, A1));
-	}
-
-	/** Construct unary factor with vector of sigmas */
-	GaussianFactor(const Symbol& key1, const Matrix& A1,
-			const Vector& b, const Vector& sigmas) :
-		b_(b), model_(noiseModel::Diagonal::Sigmas(sigmas)) {
+			const Vector& b, const sharedDiagonal& model) :
+		b_(b), model_(model) {
 		As_.insert(make_pair(key1, A1));
 	}
 
 	/** Construct binary factor */
 	GaussianFactor(const Symbol& key1, const Matrix& A1,
 			const Symbol& key2, const Matrix& A2,
-			const Vector& b, double sigma) :
-		b_(b), model_(noiseModel::Isotropic::Sigma(b.size(),sigma))  {
-		As_.insert(make_pair(key1, A1));
-		As_.insert(make_pair(key2, A2));
-	}
-
-	/** Construct binary factor with vector of sigmas */
-	GaussianFactor(const Symbol& key1, const Matrix& A1,
-			const Symbol& key2, const Matrix& A2,
-			const Vector& b, const Vector& sigmas) :
-		b_(b), model_(noiseModel::Diagonal::Sigmas(sigmas))  {
+			const Vector& b, const sharedDiagonal& model) :
+		b_(b), model_(model)  {
 		As_.insert(make_pair(key1, A1));
 		As_.insert(make_pair(key2, A2));
 	}
@@ -89,8 +73,8 @@ public:
 	GaussianFactor(const Symbol& key1, const Matrix& A1,
 			const Symbol& key2, const Matrix& A2,
 			const Symbol& key3, const Matrix& A3,
-			const Vector& b, double sigma) :
-		b_(b), model_(noiseModel::Isotropic::Sigma(b.size(),sigma))  {
+			const Vector& b, const sharedDiagonal& model) :
+		b_(b), model_(model)  {
 		As_.insert(make_pair(key1, A1));
 		As_.insert(make_pair(key2, A2));
 		As_.insert(make_pair(key3, A3));
@@ -98,19 +82,11 @@ public:
 
 	/** Construct an n-ary factor */
 	GaussianFactor(const std::vector<std::pair<Symbol, Matrix> > &terms,
-	    const Vector &b, double sigma) :
-	    b_(b), model_(noiseModel::Isotropic::Sigma(b.size(),sigma))  {
+	    const Vector &b, const sharedDiagonal& model) :
+	    b_(b), model_(model)  {
 	  for(unsigned int i=0; i<terms.size(); i++)
 	    As_.insert(terms[i]);
 	}
-
-	/** Construct an n-ary factor with multiple sigmas*/
-	GaussianFactor(const std::vector<std::pair<Symbol, Matrix> > &terms,
-				const Vector &b, const Vector& sigmas) :
-			b_(b), model_(noiseModel::Diagonal::Sigmas(sigmas)) {
-			for (unsigned int i = 0; i < terms.size(); i++)
-				As_.insert(terms[i]);
-		}
 
 	/** Construct from Conditional Gaussian */
 	GaussianFactor(const boost::shared_ptr<GaussianConditional>& cg);

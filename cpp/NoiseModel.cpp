@@ -25,6 +25,24 @@ namespace gtsam {
 	namespace noiseModel {
 
 		/* ************************************************************************* */
+		// update A, b
+		// A' \define A_{S}-ar and b'\define b-ad
+		// Linear algebra: takes away projection on latest orthogonal
+		// Graph: make a new factor on the separator S
+		// __attribute__ ((noinline))	// uncomment to prevent inlining when profiling
+		static void updateAb(Matrix& Ab, int j, const Vector& a, const Vector& rd) {
+			size_t m = Ab.size1(), n = Ab.size2()-1;
+			for (int i = 0; i < m; i++) { // update all rows
+				double ai = a(i);
+				double *Aij = Ab.data().begin() + i * (n+1) + j + 1;
+				const double *rptr = rd.data().begin() + j + 1;
+				// Ab(i,j+1:end) -= ai*rd(j+1:end)
+				for (int j2 = j + 1; j2 < n+1; j2++, Aij++, rptr++)
+					*Aij -= ai * (*rptr);
+			}
+		}
+
+		/* ************************************************************************* */
 		Gaussian::shared_ptr Gaussian::Covariance(const Matrix& covariance, bool smart) {
 			size_t m = covariance.size1(), n = covariance.size2();
 			if (m != n) throw invalid_argument("Gaussian::Covariance: covariance not square");
@@ -85,8 +103,6 @@ namespace gtsam {
 			WhitenInPlace(Ab);
 
 			// Perform in-place Householder
-			// TODO: think about 1 on diagonal.
-			// Currently, GaussianConditional assumes unit upper
 			householder_(Ab, maxRank);
 
 			return Unit::Create(maxRank);
@@ -149,28 +165,10 @@ namespace gtsam {
 			throw logic_error("noiseModel::Constrained cannot Whiten");
 		}
 
-		/* ************************************************************************* */
-		// update A, b
-		// A' \define A_{S}-ar and b'\define b-ad
-		// Linear algebra: takes away projection on latest orthogonal
-		// Graph: make a new factor on the separator S
-		// __attribute__ ((noinline))	// uncomment to prevent inlining when profiling
-		static void updateAb(Matrix& Ab, int j, const Vector& a, const Vector& rd) {
-			size_t m = Ab.size1(), n = Ab.size2()-1;
-			for (int i = 0; i < m; i++) { // update all rows
-				double ai = a(i);
-				double *Aij = Ab.data().begin() + i * (n+1) + j + 1;
-				const double *rptr = rd.data().begin() + j + 1;
-				// Ab(i,j+1:end) -= ai*rd(j+1:end)
-				for (int j2 = j + 1; j2 < n+1; j2++, Aij++, rptr++)
-					*Aij -= ai * (*rptr);
-			}
-		}
-
 		// Special version of QR for Constrained calls slower but smarter code
 		// that deals with possibly zero sigmas
 		// It is Gram-Schmidt orthogonalization rather than Householder
-		sharedDiagonal Constrained::QR(Matrix& Ab) const {
+		sharedDiagonal Diagonal::QR(Matrix& Ab) const {
 			// get size(A) and maxRank
 			size_t m = Ab.size1(), n = Ab.size2()-1;
 			size_t maxRank = min(m,n);
@@ -233,7 +231,7 @@ namespace gtsam {
 				i+=1;
 			}
 
-			return Diagonal::Precisions(precisions);
+			return Constrained::MixedPrecisions(precisions);
 		}
 
 		/* ************************************************************************* */

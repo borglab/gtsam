@@ -87,8 +87,10 @@ TEST( NonlinearConstraint1, unary_scalar_linearize ) {
 	boost::tie(actualFactor, actualConstraint) = c1.linearize(realconfig, lagrangeConfig);
 
 	// verify
-	GaussianFactor expectedFactor(x1, Matrix_(1,1, 6.0), "L1", eye(1), zero(1), 1.0);
-	GaussianFactor expectedConstraint(x1, Matrix_(1,1, 2.0), Vector_(1, 4.0), 0.0);
+	sharedDiagonal probModel = sharedSigma(p,1.0);
+	GaussianFactor expectedFactor(x1, Matrix_(1,1, 6.0), "L1", eye(1), zero(1), probModel);
+	sharedDiagonal constraintModel = noiseModel::Constrained::All(p);
+	GaussianFactor expectedConstraint(x1, Matrix_(1,1, 2.0), Vector_(1, 4.0), constraintModel);
 	CHECK(assert_equal(*actualFactor, expectedFactor));
 	CHECK(assert_equal(*actualConstraint, expectedConstraint));
 }
@@ -186,12 +188,14 @@ TEST( NonlinearConstraint2, binary_scalar_linearize ) {
 	boost::tie(actualFactor, actualConstraint) = c1.linearize(realconfig, lagrangeConfig);
 
 	// verify
+	sharedDiagonal probModel = sharedSigma(p,1.0);
 	GaussianFactor expectedFactor(x0, Matrix_(1,1, 6.0),
 							 x1, Matrix_(1,1, -3.0),
-							 "L12", eye(1), zero(1), 1.0);
+							 "L12", eye(1), zero(1), probModel);
+	sharedDiagonal constraintModel = noiseModel::Constrained::All(p);
 	GaussianFactor expectedConstraint(x0, Matrix_(1,1, 2.0),
 								 x1, Matrix_(1,1, -1.0),
-								 Vector_(1, 6.0), 0.0);
+								 Vector_(1, 6.0), constraintModel);
 	CHECK(assert_equal(*actualFactor, expectedFactor));
 	CHECK(assert_equal(*actualConstraint, expectedConstraint)); //FAILS - wrong b value
 }
@@ -285,8 +289,10 @@ TEST( NonlinearConstraint1, unary_inequality_linearize ) {
 	CHECK(c1.active(config2));
 
 	// verify
-	GaussianFactor expectedFactor(x0, Matrix_(1,1, 6.0), "L1", eye(1), zero(1), 1.0);
-	GaussianFactor expectedConstraint(x0, Matrix_(1,1, 2.0), Vector_(1, 4.0), 0.0);
+	sharedDiagonal probModel = sharedSigma(p,1.0);
+	GaussianFactor expectedFactor(x0, Matrix_(1,1, 6.0), "L1", eye(1), zero(1), probModel);
+	sharedDiagonal constraintModel = noiseModel::Constrained::All(p);
+	GaussianFactor expectedConstraint(x0, Matrix_(1,1, 2.0), Vector_(1, 4.0), constraintModel);
 	CHECK(assert_equal(*actualFactor2, expectedFactor));
 	CHECK(assert_equal(*actualConstraint2, expectedConstraint));
 }

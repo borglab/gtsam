@@ -47,7 +47,7 @@ TEST( Pose2Graph, constructor )
 }
 
 /* ************************************************************************* */
-TEST( Pose2Graph, linerization )
+TEST( Pose2Graph, linearization )
 {
 	// create a factor between unknown poses p1 and p2
 	Pose2 measured(2,2,M_PI_2);
@@ -79,7 +79,8 @@ TEST( Pose2Graph, linerization )
 
 	double sigma = 1;
 	Vector b = Vector_(3,-0.1/sx,0.1/sy,0.0);
-	lfg_expected.add("x1", A1, "x2", A2, b, sigma);
+	sharedDiagonal probModel1 = noiseModel::Unit::Create(3);
+	lfg_expected.add("x1", A1, "x2", A2, b, probModel1);
 
 	CHECK(assert_equal(lfg_expected, lfg_linearized));
 }

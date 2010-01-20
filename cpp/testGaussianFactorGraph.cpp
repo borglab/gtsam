@@ -263,7 +263,7 @@ TEST( GaussianFactorGraph, add_priors )
   GaussianFactorGraph expected = createGaussianFactorGraph();
   Matrix A = eye(2);
   Vector b = zero(2);
-  double sigma = 3.0;
+  sharedDiagonal sigma = sharedSigma(2,3.0);
   expected.push_back(GaussianFactor::shared_ptr(new GaussianFactor("l1",A,b,sigma)));
   expected.push_back(GaussianFactor::shared_ptr(new GaussianFactor("x1",A,b,sigma)));
   expected.push_back(GaussianFactor::shared_ptr(new GaussianFactor("x2",A,b,sigma)));
@@ -629,7 +629,7 @@ TEST( GaussianFactorGraph, elimination )
 	GaussianFactorGraph fg;
 	Matrix Ap = eye(1), An = eye(1) * -1;
 	Vector b = Vector_(1, 0.0);
-	double sigma = 1.0/0.5;
+  sharedDiagonal sigma = sharedSigma(2,2.0);
 	fg.add("x1", An, "x2", Ap, b, sigma);
 	fg.add("x1", Ap, b, sigma);
 	fg.add("x2", Ap, b, sigma);
@@ -734,17 +734,20 @@ TEST( GaussianFactorGraph, constrained_multi2 )
 }
 
 /* ************************************************************************* */
+
+sharedDiagonal model = sharedSigma(2,1);
+
 TEST( GaussianFactorGraph, findMinimumSpanningTree )
 {
 	GaussianFactorGraph g;
 	Matrix I = eye(2);
 	Vector b = Vector_(0, 0, 0);
-	g.add("x1", I, "x2", I, b, 0);
-	g.add("x1", I, "x3", I, b, 0);
-	g.add("x1", I, "x4", I, b, 0);
-	g.add("x2", I, "x3", I, b, 0);
-	g.add("x2", I, "x4", I, b, 0);
-	g.add("x3", I, "x4", I, b, 0);
+	g.add("x1", I, "x2", I, b, model);
+	g.add("x1", I, "x3", I, b, model);
+	g.add("x1", I, "x4", I, b, model);
+	g.add("x2", I, "x3", I, b, model);
+	g.add("x2", I, "x4", I, b, model);
+	g.add("x3", I, "x4", I, b, model);
 
 	map<string, string> tree = g.findMinimumSpanningTree<string, GaussianFactor>();
 	CHECK(tree["x1"].compare("x1")==0);
@@ -759,11 +762,11 @@ TEST( GaussianFactorGraph, split )
 	GaussianFactorGraph g;
 	Matrix I = eye(2);
 	Vector b = Vector_(0, 0, 0);
-	g.add("x1", I, "x2", I, b, 0);
-	g.add("x1", I, "x3", I, b, 0);
-	g.add("x1", I, "x4", I, b, 0);
-	g.add("x2", I, "x3", I, b, 0);
-	g.add("x2", I, "x4", I, b, 0);
+	g.add("x1", I, "x2", I, b, model);
+	g.add("x1", I, "x3", I, b, model);
+	g.add("x1", I, "x4", I, b, model);
+	g.add("x2", I, "x3", I, b, model);
+	g.add("x2", I, "x4", I, b, model);
 
 	PredecessorMap<string> tree;
 	tree["x1"] = "x1";

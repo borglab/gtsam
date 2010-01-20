@@ -183,7 +183,8 @@ namespace gtsam {
 			// TODO pass unwhitened + noise model to Gaussian factor
 			this->noiseModel_->WhitenInPlace(A);
 			this->noiseModel_->whitenInPlace(b);
-			return GaussianFactor::shared_ptr(new GaussianFactor(key_, A, b, 1.0));
+			return GaussianFactor::shared_ptr(new GaussianFactor(key_, A, b,
+					noiseModel::Unit::Create(b.size())));
 		}
 
 		/*
@@ -282,7 +283,7 @@ namespace gtsam {
 			this->noiseModel_->WhitenInPlace(A2);
 			this->noiseModel_->whitenInPlace(b);
 			return GaussianFactor::shared_ptr(new GaussianFactor(key1_, A1, key2_,
-					A2, b, 1.0));
+					A2, b, noiseModel::Unit::Create(b.size())));
 		}
 
 		/** methods to retrieve both keys */

@@ -31,7 +31,8 @@ TEST ( NonlinearEquality, linearization ) {
 	shared_nle nle(new NLE(key, value,vector_compare));
 
 	// check linearize
-	GaussianFactor expLF(key, eye(2), zero(2), 0.0);
+	sharedDiagonal constraintModel = noiseModel::Constrained::All(2);
+	GaussianFactor expLF(key, eye(2), zero(2), constraintModel);
 	GaussianFactor::shared_ptr actualLF = nle->linearize(linearize);
 	CHECK(assert_equal(*actualLF, expLF));
 }

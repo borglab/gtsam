@@ -35,6 +35,11 @@ using namespace gtsam;
 using namespace boost;
 using namespace boost::assign;
 
+// Models to use
+sharedDiagonal probModel1 = sharedSigma(1,1.0);
+sharedDiagonal probModel2 = sharedSigma(2,1.0);
+sharedDiagonal constraintModel1 = noiseModel::Constrained::All(1);
+
 // trick from some reading group
 #define FOREACH_PAIR( KEY, VAL, COL) BOOST_FOREACH (boost::tie(KEY,VAL),COL)
 
@@ -102,12 +107,12 @@ TEST (SQP, problem1_cholesky ) {
 
 		// create a factor for the states
 		GaussianFactor::shared_ptr f1(new
-				GaussianFactor("x", H1, "y", H2, "L", gradG, gradL, 1.0));
+				GaussianFactor("x", H1, "y", H2, "L", gradG, gradL, probModel2));
 
 		// create a factor for the lagrange multiplier
 		GaussianFactor::shared_ptr f2(new
 				GaussianFactor("x", -sub(gradG, 0, 1, 0, 1),
-							   "y", -sub(gradG, 1, 2, 0, 1), -gx, 0.0));
+							   "y", -sub(gradG, 1, 2, 0, 1), -gx, constraintModel1));
 
 		// construct graph
 		GaussianFactorGraph fg;
@@ -184,7 +189,7 @@ TEST (SQP, problem1_sqp ) {
 						new GaussianFactor("x", sub(A, 0,2, 0,1), // A(:,1)
 										   "y", sub(A, 0,2, 1,2), // A(:,2)
 										   b,                     // rhs of f(x)
-										   1.0));                 // arbitrary sigma
+										   probModel2));          // arbitrary sigma
 
 		/** create the constraint-linear factor
 		 * Provides a mechanism to use variable gain to force the constraint
@@ -195,10 +200,10 @@ TEST (SQP, problem1_sqp ) {
 		Matrix gradG = Matrix_(1, 2,2*x, -1.0);
 		GaussianFactor::shared_ptr f2(
 				new GaussianFactor("x", lambda*sub(gradG, 0,1, 0,1), // scaled gradG(:,1)
-								   "y", lambda*sub(gradG, 0,1, 1,2),         // scaled gradG(:,2)
-								   "L", eye(1),                         // dlambda term
-								   Vector_(1, 0.0),                          // rhs is zero
-								   1.0));                                    // arbitrary sigma
+								   "y", lambda*sub(gradG, 0,1, 1,2), // scaled gradG(:,2)
+								   "L", eye(1),                      // dlambda term
+								   Vector_(1, 0.0),                  // rhs is zero
+								   probModel1));                     // arbitrary sigma
 
 		// create the actual constraint
 		// [gradG] [x; y] - g = 0
@@ -207,7 +212,7 @@ TEST (SQP, problem1_sqp ) {
 				new GaussianFactor("x", sub(gradG, 0,1, 0,1),   // slice first part of gradG
 								   "y", sub(gradG, 0,1, 1,2),   // slice second part of gradG
 								   g,                           // value of constraint function
-								   0.0));                       // force to constraint
+								   constraintModel1));          // force to constraint
 
 		// construct graph
 		GaussianFactorGraph fg;

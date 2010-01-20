@@ -181,7 +181,8 @@ GaussianFactorGraph GaussianFactorGraph::add_priors(double sigma) const {
 	FOREACH_PAIR(key,dim,vs) {
 		Matrix A = eye(dim);
 		Vector b = zero(dim);
-		sharedFactor prior(new GaussianFactor(key,A,b, sigma));
+		sharedDiagonal model = noiseModel::Isotropic::Sigma(dim,sigma);
+		sharedFactor prior(new GaussianFactor(key,A,b, model));
 		result.push_back(prior);
 	}
 	return result;

@@ -339,9 +339,12 @@ weighted_eliminate(Matrix& A, Vector& b, const Vector& sigmas) {
 	for (size_t j=0; j<n; ++j) {
 		// extract the first column of A
 		Vector a(column_(A, j)); // ublas::matrix_column is slower !
+		//print(a,"a");
 
 		// Calculate weighted pseudo-inverse and corresponding precision
 		double precision = weightedPseudoinverse(a, weights, pseudo);
+//		cout << precision << endl;
+//		print(pseudo,"pseudo");
 
 		// if precision is zero, no information on this column
 		if (precision < 1e-8) continue;

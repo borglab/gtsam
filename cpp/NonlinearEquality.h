@@ -83,7 +83,8 @@ namespace gtsam {
 			Matrix A;
 			Vector b = - evaluateError(xj, A);
 			// TODO pass unwhitened + noise model to Gaussian factor
-			return GaussianFactor::shared_ptr(new GaussianFactor(this->key_, A, b, 0.0));
+			sharedDiagonal model = noiseModel::Constrained::All(b.size());
+			return	GaussianFactor::shared_ptr(new GaussianFactor(this->key_, A, b, model));
 		}
 
 	}; // NonlinearEquality

@@ -27,13 +27,16 @@ using namespace gtsam;
 using namespace example;
 using namespace boost;
 
+static sharedDiagonal
+	sigma0_1 = sharedSigma(2,0.1), sigma_02 = sharedSigma(2,0.2),
+	constraintModel = noiseModel::Constrained::All(2);
+
 /* ************************************************************************* */
 TEST( GaussianFactor, linearFactor )
 {
 	Matrix I = eye(2);
 	Vector b = Vector_(2,0.2,-0.1);
-	double sigma = 0.1;
-	GaussianFactor expected("x1", -I, "x2", I, b, sigma);
+	GaussianFactor expected("x1", -I, "x2", I, b, sigma0_1);
 
 	// create a small linear factor graph
 	GaussianFactorGraph fg = createGaussianFactorGraph();
@@ -50,8 +53,7 @@ TEST( GaussianFactor, operators )
 {
 	Matrix I = eye(2);
 	Vector b = Vector_(2,0.2,-0.1);
-	double sigma = 0.1;
-	GaussianFactor lf("x1", -I, "x2", I, b, sigma);
+	GaussianFactor lf("x1", -I, "x2", I, b, sigma0_1);
 
 	VectorConfig c;
 	c.insert("x1",Vector_(2,10.,20.));
@@ -171,26 +173,26 @@ TEST( NonlinearFactorGraph, combine2){
 	A11(1,0) = 0;       A11(1,1) = 1;
 	Vector b(2);
 	b(0) = 2; b(1) = -1;
-	GaussianFactor::shared_ptr f1(new GaussianFactor("x1", A11, b*sigma1, sigma1));
+	GaussianFactor::shared_ptr f1(new GaussianFactor("x1", A11, b*sigma1, sharedSigma(2,sigma1)));
 
 	double sigma2 = 0.5;
 	A11(0,0) = 1; A11(0,1) =  0;
 	A11(1,0) = 0; A11(1,1) = -1;
 	b(0) = 4 ; b(1) = -5;
-	GaussianFactor::shared_ptr f2(new GaussianFactor("x1", A11, b*sigma2, sigma2));
+	GaussianFactor::shared_ptr f2(new GaussianFactor("x1", A11, b*sigma2, sharedSigma(2,sigma2)));
 
 	double sigma3 = 0.25;
 	A11(0,0) = 1; A11(0,1) =  0;
 	A11(1,0) = 0; A11(1,1) = -1;
 	b(0) = 3 ; b(1) = -88;
-	GaussianFactor::shared_ptr f3(new GaussianFactor("x1", A11, b*sigma3, sigma3));
+	GaussianFactor::shared_ptr f3(new GaussianFactor("x1", A11, b*sigma3, sharedSigma(2,sigma3)));
 
 	// TODO: find a real sigma value for this example
 	double sigma4 = 0.1;
 	A11(0,0) = 6; A11(0,1) =  0;
 	A11(1,0) = 0; A11(1,1) = 7;
 	b(0) = 5 ; b(1) = -6;
-	GaussianFactor::shared_ptr f4(new GaussianFactor("x1", A11*sigma4, b*sigma4, sigma4));
+	GaussianFactor::shared_ptr f4(new GaussianFactor("x1", A11*sigma4, b*sigma4, sharedSigma(2,sigma4)));
 
 	vector<GaussianFactor::shared_ptr> lfg;
 	lfg.push_back(f1);
@@ -223,14 +225,15 @@ TEST( NonlinearFactorGraph, combine2){
 TEST( GaussianFactor, linearFactorN){
 	Matrix I = eye(2);
   vector<GaussianFactor::shared_ptr> f;
+  sharedDiagonal model = sharedSigma(2,1.0);
   f.push_back(GaussianFactor::shared_ptr(new GaussianFactor("x1", I, Vector_(2,
-			10.0, 5.0), 1)));
+			10.0, 5.0), model)));
 	f.push_back(GaussianFactor::shared_ptr(new GaussianFactor("x1", -10 * I,
-			"x2", 10 * I, Vector_(2, 1.0, -2.0), 1)));
+			"x2", 10 * I, Vector_(2, 1.0, -2.0), model)));
 	f.push_back(GaussianFactor::shared_ptr(new GaussianFactor("x2", -10 * I,
-			"x3", 10 * I, Vector_(2, 1.5, -1.5), 1)));
+			"x3", 10 * I, Vector_(2, 1.5, -1.5), model)));
 	f.push_back(GaussianFactor::shared_ptr(new GaussianFactor("x3", -10 * I,
-			"x4", 10 * I, Vector_(2, 2.0, -1.0), 1)));
+			"x4", 10 * I, Vector_(2, 2.0, -1.0), model)));
 
   GaussianFactor combinedFactor(f);
 
@@ -622,25 +625,19 @@ TEST( GaussianFactor, size )
 /* ************************************************************************* */
 TEST( GaussianFactor, CONSTRUCTOR_GaussianConditional )
 {
-	Matrix R11 = Matrix_(2,2,
-			1.00,  0.00,
-			0.00,  1.00
-	);
+	Matrix R11 = eye(2);
 	Matrix S12 = Matrix_(2,2,
 			-0.200001, 0.00,
 			+0.00,-0.200001
 	);
 	Vector d(2); d(0) = 2.23607; d(1) = -1.56525;
-
-	Vector sigmas(2);
-	sigmas(0) = 0.29907;
-	sigmas(1) = 0.29907;
-
+	Vector sigmas =repeat(2,0.29907);
 	GaussianConditional::shared_ptr CG(new GaussianConditional("x2",d,R11,"l11",S12,sigmas));
-	GaussianFactor actualLF(CG);
-	//  actualLF.print();
-	GaussianFactor expectedLF("x2",R11,"l11",S12,d, sigmas);
 
+	// Call the constructor we are testing !
+	GaussianFactor actualLF(CG);
+
+	GaussianFactor expectedLF("x2",R11,"l11",S12,d, sigmas);
 	CHECK(assert_equal(expectedLF,actualLF,1e-5));
 }
 
@@ -659,8 +656,7 @@ TEST( GaussianFactor, alphaFactor )
 	// calculate expected
 	Matrix A = Matrix_(2,1,30.0,5.0);
 	Vector b = Vector_(2,-0.1,-0.1);
-	Vector sigmas = Vector_(2,0.1,0.1);
-	GaussianFactor expected(alphaKey,A,b,sigmas);
+	GaussianFactor expected(alphaKey,A,b,sigma0_1);
 
 	CHECK(assert_equal(expected,*actual));
 }
@@ -671,7 +667,7 @@ TEST ( GaussianFactor, constraint_eliminate1 )
 	// construct a linear constraint
 	Vector v(2); v(0)=1.2; v(1)=3.4;
 	string key = "x0";
-	GaussianFactor lc(key, eye(2), v, 0.0);
+	GaussianFactor lc(key, eye(2), v, constraintModel);
 
 	// eliminate it
 	GaussianConditional::shared_ptr actualCG;
@@ -704,7 +700,7 @@ TEST ( GaussianFactor, constraint_eliminate2 )
 	A2(0,0) = 1.0 ; A2(0,1) = 2.0;
 	A2(1,0) = 2.0 ; A2(1,1) = 4.0;
 
-	GaussianFactor lc("x", A1, "y", A2, b, 0.0);
+	GaussianFactor lc("x", A1, "y", A2, b, constraintModel);
 
 	// eliminate x and verify results
 	GaussianConditional::shared_ptr actualCG;
@@ -727,41 +723,41 @@ TEST ( GaussianFactor, constraint_eliminate2 )
 	CHECK(assert_equal(expectedCG, *actualCG, 1e-4));
 }
 
-/* ************************************************************************* *
-TEST ( GaussianFactor, constraint_eliminate3 )
-{
-	// This test shows that ordering matters if there are non-invertible
-	// blocks, as this example can be eliminated if x is first, but not
-	// if y is first.
-
-	// Construct a linear constraint
-	// RHS
-	Vector b(2); b(0)=3.0; b(1)=4.0;
-
-	// A1 - invertible
-	Matrix A1(2,2);
-	A1(0,0) = 1.0 ; A1(0,1) = 2.0;
-	A1(1,0) = 2.0 ; A1(1,1) = 1.0;
-
-	// A2 - not invertible
-	Matrix A2(2,2);
-	A2(0,0) = 1.0 ; A2(0,1) = 2.0;
-	A2(1,0) = 2.0 ; A2(1,1) = 4.0;
-
-	GaussianFactor lc("x", A1, "y", A2, b, 0.0);
-
-	// eliminate y from original graph
-	// NOTE: this will throw an exception, as
-	// the leading matrix is rank deficient
-	GaussianConditional::shared_ptr actualCG;
-	GaussianFactor::shared_ptr actualLF;
-	try {
-		boost::tie(actualCG, actualLF) = lc.eliminate("y");
-		CHECK(false);
-	} catch (domain_error) {
-		CHECK(true);
-	}
-}
+///* ************************************************************************* *
+//TEST ( GaussianFactor, constraint_eliminate3 )
+//{
+//	// This test shows that ordering matters if there are non-invertible
+//	// blocks, as this example can be eliminated if x is first, but not
+//	// if y is first.
+//
+//	// Construct a linear constraint
+//	// RHS
+//	Vector b(2); b(0)=3.0; b(1)=4.0;
+//
+//	// A1 - invertible
+//	Matrix A1(2,2);
+//	A1(0,0) = 1.0 ; A1(0,1) = 2.0;
+//	A1(1,0) = 2.0 ; A1(1,1) = 1.0;
+//
+//	// A2 - not invertible
+//	Matrix A2(2,2);
+//	A2(0,0) = 1.0 ; A2(0,1) = 2.0;
+//	A2(1,0) = 2.0 ; A2(1,1) = 4.0;
+//
+//	GaussianFactor lc("x", A1, "y", A2, b, 0.0);
+//
+//	// eliminate y from original graph
+//	// NOTE: this will throw an exception, as
+//	// the leading matrix is rank deficient
+//	GaussianConditional::shared_ptr actualCG;
+//	GaussianFactor::shared_ptr actualLF;
+//	try {
+//		boost::tie(actualCG, actualLF) = lc.eliminate("y");
+//		CHECK(false);
+//	} catch (domain_error) {
+//		CHECK(true);
+//	}
+//}
 /* ************************************************************************* */
 int main() { TestResult tr; return TestRegistry::runAllTests(tr);}
 /* ************************************************************************* */

@@ -13,10 +13,11 @@
 #include "Vector.h"
 #include "Matrix.h"
 
-namespace gtsam {	namespace noiseModel {
+namespace gtsam {
 
-	class Diagonal;
-	typedef boost::shared_ptr<Diagonal> sharedDiagonal;
+	class sharedDiagonal; // forward declare, defined at end
+
+	namespace noiseModel {
 
   /**
    * noiseModel::Base is the abstract base class for all noise models.
@@ -34,6 +35,11 @@ namespace gtsam {	namespace noiseModel {
 
   	Base(size_t dim):dim_(dim) {}
   	virtual ~Base() {}
+
+  	/**
+  	 * Dimensionality
+  	 */
+  	inline size_t dim() const { return dim_;}
 
     /**
      * Whiten an error vector.
@@ -201,6 +207,11 @@ namespace gtsam {	namespace noiseModel {
 		virtual Matrix Whiten(const Matrix& H) const;
 		virtual void WhitenInPlace(Matrix& H) const;
 
+    /**
+     * Apply QR factorization to the system [A b], taking into account constraints
+     */
+		virtual sharedDiagonal QR(Matrix& Ab) const;
+
 		/**
      * Return standard deviations (sqrt of diagonal)
      */
@@ -235,15 +246,31 @@ namespace gtsam {	namespace noiseModel {
      * A diagonal noise model created by specifying a Vector of
      * standard devations, some of which might be zero
      */
-    static shared_ptr Mixed(const Vector& sigmas) {
+    static shared_ptr MixedSigmas(const Vector& sigmas) {
     	return shared_ptr(new Constrained(sigmas));
+    }
+
+    /**
+     * A diagonal noise model created by specifying a Vector of
+     * standard devations, some of which might be zero
+     */
+    static shared_ptr MixedVariances(const Vector& variances) {
+    	return shared_ptr(new Constrained(esqrt(variances)));
+    }
+
+    /**
+     * A diagonal noise model created by specifying a Vector of
+     * precisions, some of which might be inf
+     */
+    static shared_ptr MixedPrecisions(const Vector& precisions) {
+    	return MixedVariances(reciprocal(precisions));
     }
 
     /**
      * Fully constrained. TODO: subclass ?
      */
     static shared_ptr All(size_t dim) {
-    	return Mixed(repeat(dim,0));
+    	return MixedSigmas(repeat(dim,0));
     }
 
 		virtual void print(const std::string& name) const;
@@ -254,11 +281,6 @@ namespace gtsam {	namespace noiseModel {
 
 		virtual Matrix Whiten(const Matrix& H) const;
 		virtual void WhitenInPlace(Matrix& H) const;
-
-    /**
-     * Apply QR factorization to the system [A b], taking into account constraints
-     */
-		virtual sharedDiagonal QR(Matrix& Ab) const;
 
   }; // Constrained
 
@@ -342,6 +364,8 @@ namespace gtsam {	namespace noiseModel {
 
 	using namespace noiseModel;
 
+	// TODO: very ugly, just keep shared pointers and use Sigma/Sigmas everywhere
+
 	// A useful convenience class to refer to a shared Gaussian model
 	// Define GTSAM_MAGIC_GAUSSIAN to desired dimension to have access to slightly
 	// dangerous and non-shared (inefficient, wasteful) noise models. Only in tests!
@@ -358,6 +382,22 @@ namespace gtsam {	namespace noiseModel {
 		sharedGaussian(const double& s):Gaussian::shared_ptr(Isotropic::Sigma(GTSAM_MAGIC_GAUSSIAN,s)) {}
 #endif
 		};
+
+	// A useful convenience class to refer to a shared Diagonal model
+	// There are (somewhat dangerous) constructors from Vector and pair<size_t,double>
+	// that call Sigmas and Sigma, respectively.
+	struct sharedDiagonal : public Diagonal::shared_ptr {
+		sharedDiagonal() {}
+		sharedDiagonal(const    Diagonal::shared_ptr& p):Diagonal::shared_ptr(p) {}
+		sharedDiagonal(const Constrained::shared_ptr& p):Diagonal::shared_ptr(p) {}
+		sharedDiagonal(const   Isotropic::shared_ptr& p):Diagonal::shared_ptr(p) {}
+		sharedDiagonal(const        Unit::shared_ptr& p):Diagonal::shared_ptr(p) {}
+		sharedDiagonal(const Vector& sigmas):Diagonal::shared_ptr(Diagonal::Sigmas(sigmas)) {}
+		};
+
+	// TODO: make these the ones really used in unit tests
+	inline sharedDiagonal sharedSigmas(const Vector& sigmas) { return Diagonal::Sigmas(sigmas);}
+	inline sharedDiagonal sharedSigma(int dim, double sigma) { return Isotropic::Sigma(dim,sigma);}
 
 
 } // namespace gtsam
