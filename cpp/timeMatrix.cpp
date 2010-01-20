@@ -58,6 +58,7 @@ double timeCollect(size_t p, size_t m, size_t n, bool passDims, size_t reps) {
  * Results:
  * Alex's Machine:
  *  - Original: 0.60 sec (x1000)
+ *  - 1st Rev : 0.49 sec (x1000)
  */
 double timeVScaleColumn(size_t m, size_t n, size_t reps) {
 	// make a matrix to scale

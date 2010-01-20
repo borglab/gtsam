@@ -9,6 +9,7 @@
 #include <iomanip>
 #include <list>
 
+#include <boost/numeric/ublas/matrix_proxy.hpp>
 #include <boost/foreach.hpp>
 #include <boost/numeric/ublas/lu.hpp>
 #include <boost/numeric/ublas/io.hpp>
@@ -504,6 +505,19 @@ Matrix collect(const std::vector<const Matrix *>& matrices, size_t m, size_t n)
 		dimA1 =  M->size1();  // TODO: should check if all the same !
 		dimA2 += M->size2();
 	}
+
+	// matrix_range version
+	// Result: slower
+//	Matrix A(dimA1, dimA2);
+//	size_t hindex = 0;
+//	BOOST_FOREACH(const Matrix* M, matrices) {
+//		ublas::matrix_range<Matrix> mr(A, ublas::range(0, dimA1),
+//										  ublas::range(hindex, hindex+M->size2()));
+//		mr = *M;
+//		hindex += M->size2();
+//	}
+
+	// memcpy version
 	Matrix A(dimA1, dimA2);
 	double * Aptr = A.data().begin();
 	size_t hindex = 0;
@@ -561,9 +575,14 @@ Matrix vector_scale(const Vector& v, const Matrix& A) {
 // column scaling
 Matrix vector_scale(const Matrix& A, const Vector& v) {
 	Matrix M(A);
-	for (int i=0; i<A.size1(); ++i)
-		for (int j=0; j<A.size2(); ++j)
-			M(i,j) *= v(j);
+	size_t m = A.size1(); size_t n = A.size2();
+	const double * vptr = v.data().begin();
+	for (size_t i=0; i<m; ++i) { // loop over rows
+		for (size_t j=0; j<n; ++j) { // loop over columns
+			double * Mptr = M.data().begin() + i*n + j;
+			(*Mptr) = (*Mptr) * *(vptr+j);
+		}
+	}
 	return M;
 }
 
