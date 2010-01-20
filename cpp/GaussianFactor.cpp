@@ -224,9 +224,9 @@ Matrix GaussianFactor::matrix_augmented(const Ordering& ordering, bool weight) c
 	}
 
 	// load b into a matrix
-	Matrix B_mat(numberOfRows(), 1);
-	for (int i=0; i<b_.size(); ++i)
-		B_mat(i,0) = b_(i);
+	size_t rows = b_.size();
+	Matrix B_mat(rows, 1);
+	memcpy(B_mat.data().begin(), b_.data().begin(), rows*sizeof(double));
 	matrices.push_back(&B_mat);
 
 	// divide in sigma so error is indeed 0.5*|Ax-b|
