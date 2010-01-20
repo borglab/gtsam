@@ -25,6 +25,12 @@ namespace gtsam {
 	 * the config type is in order to be able to optimize over non-vector configurations as well.
 	 * To use in code, include <gtsam/NonlinearOptimizer-inl.h> in your cpp file
 	 * (the trick in http://www.ddj.com/cpp/184403420 did not work).
+	 *
+	 * For example, in a 2D case, $G$ can be Pose2Graph, $T$ can be Pose2Config,
+	 * $L$ can be GaussianFactorGraph and $S$ can be Factorization<Pose2Graph, Pose2Config>.
+	 * The solver class has two main functions: linear and optimize. The first one linear the
+	 * nonlinear cost function around the current estimate, and the second one optimize the
+	 * linearized system using various methods.
 	 */
 	template<class G, class T, class L = GaussianFactorGraph, class S = Factorization<G, T> >
 	class NonlinearOptimizer {
