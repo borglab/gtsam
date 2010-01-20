@@ -505,12 +505,24 @@ Matrix collect(const std::vector<const Matrix *>& matrices, size_t m, size_t n)
 		dimA2 += M->size2();
 	}
 	Matrix A(dimA1, dimA2);
+	double * Aptr = A.data().begin();
 	size_t hindex = 0;
 	BOOST_FOREACH(const Matrix* M, matrices) {
-		for(size_t d1 = 0; d1 < M->size1(); d1++)
-			for(size_t d2 = 0; d2 < M->size2(); d2++)
-				A(d1, d2+hindex) = (*M)(d1, d2);
-		hindex += M->size2();
+		size_t row_len = M->size2();
+
+		// find the size of the row to copy
+		size_t row_size = sizeof(double) * row_len;
+
+		// loop over rows
+		for(size_t d1 = 0; d1 < M->size1(); ++d1) { // rows
+			// get a pointer to the start of the row in each matrix
+			double * Arow = Aptr + d1*dimA2 + hindex;
+			double * Mrow = const_cast<double*> (M->data().begin() + d1*row_len);
+
+			// do direct memory copy to move the row over
+			memcpy(Arow, Mrow, row_size);
+		}
+		hindex += row_len;
 	}
 
 	return A;
