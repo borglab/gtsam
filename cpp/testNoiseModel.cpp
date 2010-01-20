@@ -185,6 +185,7 @@ TEST(NoiseModel, SmartCovariance )
 /* ************************************************************************* */
 TEST(NoiseModel, ScalarOrVector )
 {
+	bool smart = true;
 	sharedGaussian expected = Unit::Create(3);
 	sharedGaussian actual = Gaussian::Covariance(eye(3), smart);
 	CHECK(assert_equal(*expected,*actual));
