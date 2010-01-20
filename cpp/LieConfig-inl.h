@@ -85,7 +85,7 @@ namespace gtsam {
 				const Vector& dj = delta[jkey];
 				newConfig.insert(j, expmap(pj,dj));
 			} else
-			newConfig.insert(j, pj);
+				newConfig.insert(j, pj);
 		}
 		return newConfig;
 	}

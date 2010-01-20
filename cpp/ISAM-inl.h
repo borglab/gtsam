@@ -9,8 +9,8 @@
 using namespace boost::assign;
 
 #include "Conditional.h"
-#include "BayesTree-inl.h"
 #include "ISAM.h"
+#include "BayesTree-inl.h"
 
 namespace gtsam {
 
@@ -22,7 +22,8 @@ namespace gtsam {
 
 	/** Create a Bayes Tree from a Bayes Net */
 	template<class Conditional>
-	ISAM<Conditional>::ISAM(const BayesNet<Conditional>& bayesNet) : BayesTree<Conditional>(bayesNet) {}
+	ISAM<Conditional>::ISAM(const BayesNet<Conditional>& bayesNet) :
+	  BayesTree<Conditional>(bayesNet) {}
 
 	/* ************************************************************************* */
 	template<class Conditional>
@@ -73,8 +74,6 @@ namespace gtsam {
 		Cliques orphans;
 		this->update_internal<Factor>(newFactors, orphans);
 	}
-
-/* ************************************************************************* */
 
 }
 /// namespace gtsam

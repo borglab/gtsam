@@ -12,6 +12,7 @@ using namespace boost::assign;
 
 #include "Conditional.h"
 #include "BayesTree.h"
+#include "Ordering.h"
 #include "inference-inl.h"
 
 namespace gtsam {
@@ -384,6 +385,14 @@ namespace gtsam {
 		Ordering ordering;
 		ordering += key1, key2;
 		return eliminate<Factor,Conditional>(fg,ordering);
+	}
+
+	/* ************************************************************************* */
+	template<class Conditional>
+	void BayesTree<Conditional>::clear() {
+		// Remove all nodes and clear the root pointer
+		nodes_.clear();
+		root_.reset();
 	}
 
 	/* ************************************************************************* */

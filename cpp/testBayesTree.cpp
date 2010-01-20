@@ -111,6 +111,18 @@ TEST( BayesTree, constructor )
 	CHECK(assert_equal(bayesTree,bayesTree2));
 }
 
+/* ************************************************************************* */
+TEST(BayesTree, clear)
+{
+	SymbolicBayesTree bayesTree = createAsiaSymbolicBayesTree();
+	bayesTree.clear();
+
+	SymbolicBayesTree expected;
+
+	// Check whether cleared BayesTree is equal to a new BayesTree
+	CHECK(assert_equal(expected, bayesTree));
+}
+
 /* ************************************************************************* *
 Bayes Tree for testing conversion to a forest of orphans needed for incremental.
        A,B

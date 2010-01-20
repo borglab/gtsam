@@ -136,7 +136,10 @@ namespace gtsam {
 
 		/** number of cliques */
 		inline size_t size() const {
-			return root_->treeSize();
+			if(root_)
+				return root_->treeSize();
+			else
+				return 0;
 		}
 
 		/** return root clique */
@@ -168,6 +171,11 @@ namespace gtsam {
 		/** return joint on two variables as a BayesNet */
 		template<class Factor>
 		BayesNet<Conditional> jointBayesNet(const Symbol& key1, const Symbol& key2) const;
+
+		/**
+		 * Remove all nodes
+		 */
+		void clear();
 
 		/**
 		 * Remove path from clique to root and return that path as factors

@@ -13,8 +13,8 @@ using namespace boost::assign;
 
 #include "Ordering.h"
 #include "BayesNet.h"
-#include "FactorGraph-inl.h"
-#include "Conditional.h"
+//#include "FactorGraph-inl.h"
+//#include "Conditional.h"
 
 using namespace std;
 
