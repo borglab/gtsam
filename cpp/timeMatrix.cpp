@@ -151,6 +151,48 @@ double timeColumn(size_t reps) {
 	return elapsed;
 }
 
+/*
+ * Results
+ * Alex's machine
+ * Baseline (no householder, just matrix copy) : 0.05 sec
+ * Initial                                     : 8.20 sec
+ */
+double timeHouseholder(size_t reps) {
+	// create a matrix
+	Matrix Abase = Matrix_(4, 7,
+			-5,  0, 5, 0,  0,  0,  -1,
+			00, -5, 0, 5,  0,  0, 1.5,
+			10,  0, 0, 0,-10,  0,   2,
+			00, 10, 0, 0,  0,-10,  -1);
+
+	// perform timing
+	double elapsed;
+	{
+		boost::timer t;
+		for (size_t i=0; i<reps; ++i) {
+			Matrix A = Abase;
+			householder_(A,3);
+		}
+		elapsed = t.elapsed();
+	}
+	return elapsed;
+}
+
+//double data[] = {-5,  0, 5, 0,  0,  0,  -1,
+//		   00, -5, 0, 5,  0,  0, 1.5,
+//		   10,  0, 0, 0,-10,  0,   2,
+//		   00, 10, 0, 0,  0,-10,  -1};
+//
+//// check in-place householder, with v vectors below diagonal
+//double data1[] = {
+//		11.1803, 0, -2.2361, 0, -8.9443, 0, 2.236,
+//		0, 11.1803, 0, -2.2361, 0, -8.9443, -1.565,
+//		-0.618034, 0, 4.4721, 0, -4.4721, 0, 0,
+//			0, -0.618034, 0, 4.4721, 0, -4.4721, 0.894 };
+//Matrix expected1 = Matrix_(4,7, data1);
+//Matrix A1 = Matrix_(4, 7, data);
+//householder_(A1,3);
+
 int main(int argc, char ** argv) {
 
 	// Time collect()
@@ -173,11 +215,17 @@ int main(int argc, char ** argv) {
 	double vsRow_time = timeVScaleRow(m1, n1, reps1);
 	cout << "Elapsed time for vector_scale(row)    [(" << m1 << ", " << n1 << ") matrix] : " << vsRow_time << endl;
 
-	// Time column_() NOTE: using the gtsam version
+	// Time column_() NOTE: using the ublas version
 	cout << "Starting column_() Timing" << endl;
 	size_t reps2 = 200000;
 	double column_time = timeColumn(reps2);
 	cout << "Time: " << column_time << " sec" << endl;
+
+	// Time householder_ function
+	cout << "Starting householder_() Timing" << endl;
+	size_t reps_house = 500000;
+	double house_time = timeHouseholder(reps_house);
+	cout << "Elapsed time for householder_() : " << house_time << " sec" << endl;
 
 	return 0;
 }
