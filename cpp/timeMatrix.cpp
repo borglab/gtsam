@@ -87,6 +87,7 @@ double timeVScaleColumn(size_t m, size_t n, size_t reps) {
  * Results:
  * Alex's Machine:
  *  - Original: 0.54 sec (x1000)
+ *  - 1st rev : 0.44 sec (x1000)
  */
 double timeVScaleRow(size_t m, size_t n, size_t reps) {
 	// make a matrix to scale

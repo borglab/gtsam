@@ -545,9 +545,13 @@ return collect(matrices);
 // row scaling
 Matrix vector_scale(const Vector& v, const Matrix& A) {
 	Matrix M(A);
-	for (int i=0; i<A.size1(); ++i) {
-		for (int j=0; j<A.size2(); ++j) {
-			M(i,j) *= v(i);
+	size_t m = A.size1(); size_t n = A.size2();
+	for (size_t i=0; i<m; ++i) { // loop over rows
+		double vi = v(i);
+		//double vi = *(v.data().begin()+i); // not really an improvement
+		for (size_t j=0; j<n; ++j) { // loop over columns
+			double * Mptr = M.data().begin() + i*n + j;
+			(*Mptr) = (*Mptr) * vi;
 		}
 	}
 	return M;
