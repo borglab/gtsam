@@ -70,7 +70,8 @@ namespace gtsam {
 
 	private:
 
-		FactorGraph<GaussianFactor> relinearizeAffectedFactors(const std::list<Symbol>& affectedKeys);
+		boost::shared_ptr<FactorGraph<NonlinearFactor<Config> > > getAffectedFactors(const std::list<Symbol>& keys) const;
+		FactorGraph<GaussianFactor> relinearizeAffectedFactors(const std::list<Symbol>& affectedKeys) const;
 		FactorGraph<GaussianFactor> getCachedBoundaryFactors(Cliques& orphans);
 
 	}; // ISAM2
