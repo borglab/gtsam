@@ -221,36 +221,16 @@ TEST( NonlinearFactorGraph, combine2){
 
 /* ************************************************************************* */
 TEST( GaussianFactor, linearFactorN){
+	Matrix I = eye(2);
   vector<GaussianFactor::shared_ptr> f;
-  f.push_back(GaussianFactor::shared_ptr(new GaussianFactor("x1", Matrix_(2,2,
-      1.0, 0.0,
-      0.0, 1.0),
-      Vector_(2,
-      10.0, 5.0), 1)));
-  f.push_back(GaussianFactor::shared_ptr(new GaussianFactor("x1", Matrix_(2,2,
-      -10.0, 0.0,
-      0.0, -10.0),
-      "x2", Matrix_(2,2,
-      10.0, 0.0,
-      0.0, 10.0),
-      Vector_(2,
-      1.0, -2.0), 1)));
-  f.push_back(GaussianFactor::shared_ptr(new GaussianFactor("x2", Matrix_(2,2,
-      -10.0, 0.0,
-      0.0, -10.0),
-      "x3", Matrix_(2,2,
-      10.0, 0.0,
-      0.0, 10.0),
-      Vector_(2,
-      1.5, -1.5), 1)));
-  f.push_back(GaussianFactor::shared_ptr(new GaussianFactor("x3", Matrix_(2,2,
-      -10.0, 0.0,
-      0.0, -10.0),
-      "x4", Matrix_(2,2,
-      10.0, 0.0,
-      0.0, 10.0),
-      Vector_(2,
-      2.0, -1.0), 1)));
+  f.push_back(GaussianFactor::shared_ptr(new GaussianFactor("x1", I, Vector_(2,
+			10.0, 5.0), 1)));
+	f.push_back(GaussianFactor::shared_ptr(new GaussianFactor("x1", -10 * I,
+			"x2", 10 * I, Vector_(2, 1.0, -2.0), 1)));
+	f.push_back(GaussianFactor::shared_ptr(new GaussianFactor("x2", -10 * I,
+			"x3", 10 * I, Vector_(2, 1.5, -1.5), 1)));
+	f.push_back(GaussianFactor::shared_ptr(new GaussianFactor("x3", -10 * I,
+			"x4", 10 * I, Vector_(2, 2.0, -1.0), 1)));
 
   GaussianFactor combinedFactor(f);
 
@@ -294,8 +274,9 @@ TEST( GaussianFactor, linearFactorN){
   Vector b = Vector_(8,
       10.0, 5.0, 1.0, -2.0, 1.5, -1.5, 2.0, -1.0);
 
-  GaussianFactor expected(combinedMeasurement, b, 1.);
-  CHECK(combinedFactor.equals(expected));
+  Vector sigmas = repeat(8,1.0);
+  GaussianFactor expected(combinedMeasurement, b, sigmas);
+  CHECK(assert_equal(expected,combinedFactor));
 }
 
 /* ************************************************************************* */
@@ -336,45 +317,19 @@ TEST( GaussianFactor, eliminate )
 	boost::tie(actualCG,actualLF) = combined.eliminate("x2");
 
 	// create expected Conditional Gaussian
-	Matrix R11 = Matrix_(2,2,
-			1.0, 0.0,
-			0.0, 1.0
-	);
-	Matrix S12 = Matrix_(2,2,
-			-0.2, 0.0,
-			+0.0,-0.2
-	);
-	Matrix S13 = Matrix_(2,2,
-			-0.8, 0.0,
-			+0.0,-0.8
-	);
+	Matrix I = eye(2);
+	Matrix R11 = I, S12 = -0.2*I, S13 = -0.8*I;
 	Vector d(2); d(0) = 0.2; d(1) = -0.14;
 
-	Vector sigmas(2);
-	sigmas(0) = 1/sqrt(125.0);
-	sigmas(1) = 1/sqrt(125.0);
-
 	// Check the conditional Gaussian
-	GaussianConditional expectedCG("x2", d,R11,"l1",S12,"x1",S13,sigmas);
+	GaussianConditional
+		expectedCG("x2", d, R11, "l1", S12, "x1", S13, repeat(2, 1 / sqrt(125.0)));
 
 	// the expected linear factor
-	double sigma = 0.2236;
-	Matrix Bl1 = Matrix_(2,2,
-			// l1
-			1.00, 0.00,
-			0.00, 1.00
-	);
-
-	Matrix Bx1 = Matrix_(2,2,
-			// x1
-			-1.00,  0.00,
-			+0.00, -1.00
-	);
-
-	// the RHS
+	Matrix Bl1 = I, Bx1 = -I;
 	Vector b1(2); b1(0) = 0.0; b1(1) = 0.2;
 
-	GaussianFactor expectedLF("l1", Bl1, "x1", Bx1, b1, sigma);
+	GaussianFactor expectedLF("l1", Bl1, "x1", Bx1, b1, repeat(2,0.2236));
 
 	// check if the result matches
 	CHECK(assert_equal(expectedCG,*actualCG,1e-4));
@@ -452,7 +407,7 @@ TEST( GaussianFactor, eliminate2 )
 	// the RHS
 	Vector b1(2); b1(0) = 0.0; b1(1) = 0.894427;
 
-	GaussianFactor expectedLF("l11", Bl1x1, b1*sigma, sigma);
+	GaussianFactor expectedLF("l11", Bl1x1, b1*sigma, repeat(2,sigma));
 
 	// check if the result matches
 	CHECK(assert_equal(expectedCG,*actualCG,1e-4));
@@ -684,7 +639,7 @@ TEST( GaussianFactor, CONSTRUCTOR_GaussianConditional )
 	GaussianConditional::shared_ptr CG(new GaussianConditional("x2",d,R11,"l11",S12,sigmas));
 	GaussianFactor actualLF(CG);
 	//  actualLF.print();
-	GaussianFactor expectedLF("x2",R11,"l11",S12,d, sigmas(0));
+	GaussianFactor expectedLF("x2",R11,"l11",S12,d, sigmas);
 
 	CHECK(assert_equal(expectedLF,actualLF,1e-5));
 }

@@ -8,6 +8,8 @@
 
 #include <limits>
 #include <iostream>
+#include <typeinfo>
+#include <stdexcept>
 #include <boost/numeric/ublas/lu.hpp>
 #include <boost/numeric/ublas/io.hpp>
 #include <boost/foreach.hpp>
@@ -23,13 +25,30 @@ namespace gtsam {
 	namespace noiseModel {
 
 		/* ************************************************************************* */
-		void Gaussian::print(const string& name) const {
+		Gaussian::shared_ptr Gaussian::Covariance(const Matrix& covariance, bool smart) {
+			size_t m = covariance.size1(), n = covariance.size2();
+			if (m != n) throw invalid_argument("Gaussian::Covariance: covariance not square");
+			if (smart) {
+				// check all non-diagonal entries
+				int i,j;
+				for (i = 0; i < m; i++)
+					for (j = 0; j < n; j++)
+						if (i != j && fabs(covariance(i, j) > 1e-9)) goto full;
+				Vector variances(n);
+				for (j = 0; j < n; j++) variances(j) = covariance(j,j);
+				return Diagonal::Variances(variances,true);
+			}
+			full: return shared_ptr(new Gaussian(inverse_square_root(covariance)));
+		}
+
+    void Gaussian::print(const string& name) const {
 			gtsam::print(sqrt_information_, "Gaussian");
 		}
 
-		bool Gaussian::equals(const Base& m, double tol) const {
-			const Gaussian* p = dynamic_cast<const Gaussian*> (&m);
+		bool Gaussian::equals(const Base& expected, double tol) const {
+			const Gaussian* p = dynamic_cast<const Gaussian*> (&expected);
 			if (p == NULL) return false;
+			if (typeid(*this) != typeid(*p)) return false;
 			return equal_with_abs_tol(sqrt_information_, p->sqrt_information_, sqrt(tol));
 		}
 
@@ -76,11 +95,22 @@ namespace gtsam {
 		/* ************************************************************************* */
 		// TODO: can we avoid calling reciprocal twice ?
 		Diagonal::Diagonal(const Vector& sigmas) :
-			Gaussian(diag(reciprocal(sigmas))), invsigmas_(reciprocal(sigmas)),
-					sigmas_(sigmas) {
-		}
+					Gaussian(diag(reciprocal(sigmas))), invsigmas_(reciprocal(sigmas)),
+							sigmas_(sigmas) {
+				}
 
-		void Diagonal::print(const string& name) const {
+    Diagonal::shared_ptr Diagonal::Variances(const Vector& variances, bool smart) {
+			if (smart) {
+				// check whether all the same entry
+				int j, n = variances.size();
+				for (j = 1; j < n; j++)
+					if (variances(j) != variances(0)) goto full;
+				return Isotropic::Variance(n, variances(0), true);
+			}
+			full: return shared_ptr(new Diagonal(esqrt(variances)));
+    }
+
+    void Diagonal::print(const string& name) const {
 			gtsam::print(sigmas_, "Diagonal sigmas " + name);
 		}
 
@@ -205,7 +235,12 @@ namespace gtsam {
 
 		/* ************************************************************************* */
 
-		void Isotropic::print(const string& name) const {
+    Isotropic::shared_ptr Isotropic::Variance(size_t dim, double variance, bool smart)  {
+    	if (smart && fabs(variance-1.0)<1e-9) return Unit::Create(dim);
+    	return shared_ptr(new Isotropic(dim, sqrt(variance)));
+    }
+
+    void Isotropic::print(const string& name) const {
 			cout << "Isotropic sigma " << name << " " << sigma_ << endl;
 		}
 

@@ -60,7 +60,7 @@ public:
 		As_.insert(make_pair(key1, A1));
 	}
 
-	/** Construct unary factor with vector of sigmas*/
+	/** Construct unary factor with vector of sigmas */
 	GaussianFactor(const Symbol& key1, const Matrix& A1,
 			const Vector& b, const Vector& sigmas) :
 		b_(b), model_(noiseModel::Diagonal::Sigmas(sigmas)) {
@@ -72,6 +72,15 @@ public:
 			const Symbol& key2, const Matrix& A2,
 			const Vector& b, double sigma) :
 		b_(b), model_(noiseModel::Isotropic::Sigma(b.size(),sigma))  {
+		As_.insert(make_pair(key1, A1));
+		As_.insert(make_pair(key2, A2));
+	}
+
+	/** Construct binary factor with vector of sigmas */
+	GaussianFactor(const Symbol& key1, const Matrix& A1,
+			const Symbol& key2, const Matrix& A2,
+			const Vector& b, const Vector& sigmas) :
+		b_(b), model_(noiseModel::Diagonal::Sigmas(sigmas))  {
 		As_.insert(make_pair(key1, A1));
 		As_.insert(make_pair(key2, A2));
 	}

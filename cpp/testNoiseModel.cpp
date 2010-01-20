@@ -174,6 +174,23 @@ TEST( NoiseModel, QR )
 }
 
 /* ************************************************************************* */
+TEST(NoiseModel, SmartCovariance )
+{
+	bool smart = true;
+	sharedGaussian expected = Unit::Create(3);
+	sharedGaussian actual = Gaussian::Covariance(eye(3), smart);
+	CHECK(assert_equal(*expected,*actual));
+}
+
+/* ************************************************************************* */
+TEST(NoiseModel, ScalarOrVector )
+{
+	sharedGaussian expected = Unit::Create(3);
+	sharedGaussian actual = Gaussian::Covariance(eye(3), smart);
+	CHECK(assert_equal(*expected,*actual));
+}
+
+/* ************************************************************************* */
 int main() {
 	TestResult tr;
 	return TestRegistry::runAllTests(tr);
