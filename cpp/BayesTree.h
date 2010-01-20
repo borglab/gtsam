@@ -128,6 +128,9 @@ namespace gtsam {
 		/** check equality */
 		bool equals(const BayesTree<Conditional>& other, double tol = 1e-9) const;
 
+		/** find parent clique of a conditional, given an ordering */
+		Symbol findParentClique(const std::list<Symbol>& parents, const std::list<Symbol>& ordering) const;
+
 		/** insert a new conditional */
 		void insert(const sharedConditional& conditional, const std::list<Symbol>* ordering = NULL);
 

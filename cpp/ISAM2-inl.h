@@ -126,7 +126,7 @@ namespace gtsam {
 		FactorGraph<GaussianFactor> affectedFactors;
 		list<Symbol> newFactorsKeys = newFactors.keys();
 
-#if 0
+#if 1
 
 		// relinearize all keys that are in newFactors, and already exist (not new variables!)
 		list<Symbol> keysToRelinearize;
@@ -237,7 +237,8 @@ namespace gtsam {
 		// add orphans to the bottom of the new tree
 		BOOST_FOREACH(sharedClique orphan, orphans) {
 
-		  Symbol key = orphan->separator_.front();
+//		  Symbol key = orphan->separator_.front();
+			Symbol key = findParentClique(orphan->separator_, ordering);
 			sharedClique parent = (*this)[key];
 
 			parent->children_ += orphan;

@@ -264,6 +264,20 @@ namespace gtsam {
 
 	/* ************************************************************************* */
 	template<class Conditional>
+	Symbol BayesTree<Conditional>::findParentClique(const list<Symbol>& parents, const list<Symbol>& ordering) const {
+		Symbol parent;
+		for (list<Symbol>::const_iterator it = ordering.begin(); it!=ordering.end(); it++) {
+			list<Symbol>::const_iterator pit = find(parents.begin(), parents.end(), *it);
+			if (pit!=parents.end()) {
+				parent = *pit;
+				break;
+			}
+		}
+		return parent;
+	}
+
+	/* ************************************************************************* */
+	template<class Conditional>
 	void BayesTree<Conditional>::insert(const sharedConditional& conditional, const list<Symbol>* ordering)
 	{
 		// get key and parents
@@ -281,13 +295,7 @@ namespace gtsam {
 		if (!ordering) {
 			parent = parents.front(); // assumes parents are in current variable order, which is not the case (after COLAMD was activated)
 		} else {
-			for (list<Symbol>::const_iterator it = ordering->begin(); it!=ordering->end(); it++) {
-				list<Symbol>::iterator pit = find(parents.begin(), parents.end(), *it);
-				if (pit!=parents.end()) {
-					parent = *pit;
-					break;
-				}
-			}
+			parent = findParentClique(parents, *ordering);
 		}
 		sharedClique parent_clique = (*this)[parent];
 
