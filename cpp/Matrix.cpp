@@ -154,9 +154,10 @@ Vector column(const Matrix& A, size_t j) {
 	if (j>=A.size2())
 		throw invalid_argument("Column index out of bounds!");
 
+	// TODO: improve this
 	size_t m = A.size1();
 	Vector a(m);
-	for (int i=0; i<m; ++i)
+	for (size_t i=0; i<m; ++i)
 		a(i) = A(i,j);
 	return a;
 }
@@ -166,9 +167,10 @@ Vector row(const Matrix& A, size_t i) {
 	if (i>=A.size1())
 		throw invalid_argument("Row index out of bounds!");
 
+	// TODO: improve this
 	size_t n = A.size2();
 	Vector a(n);
-	for (int j=0; j<n; ++j)
+	for (size_t j=0; j<n; ++j)
 		a(j) = A(i,j);
 	return a;
 }
@@ -303,14 +305,15 @@ void householder_update(Matrix &A, int j, double beta, const Vector& vjm) {
 // __attribute__ ((noinline))	// uncomment to prevent inlining when profiling
 static void updateAb(Matrix& A, Vector& b, int j, const Vector& a,
 		const Vector& r, double d) {
+	// TODO: do some optimization here if possible
 	const size_t m = A.size1(), n = A.size2();
-	for (int i = 0; i < m; i++) { // update all rows
+	for (size_t i = 0; i < m; i++) { // update all rows
 		double ai = a(i);
 		b(i) -= ai * d;
 		double *Aij = A.data().begin() + i * n + j + 1;
 		const double *rptr = r.data().begin() + j + 1;
 		// A(i,j+1:end) -= ai*r(j+1:end)
-		for (int j2 = j + 1; j2 < n; j2++, Aij++, rptr++)
+		for (size_t j2 = j + 1; j2 < n; j2++, Aij++, rptr++)
 			*Aij -= ai * (*rptr);
 	}
 }
@@ -331,7 +334,7 @@ weighted_eliminate(Matrix& A, Vector& b, const Vector& sigmas) {
 	// are not necessarily contiguous. For each one, estimate the corresponding
 	// scalar variable x as d-rS, with S the separator (remaining columns).
 	// Then update A and b by substituting x with d-rS, zero-ing out x's column.
-	for (int j=0; j<n; ++j) {
+	for (size_t j=0; j<n; ++j) {
 		// extract the first column of A
 		Vector a(column(A, j)); // ublas::matrix_column is slower !
 
@@ -343,7 +346,7 @@ weighted_eliminate(Matrix& A, Vector& b, const Vector& sigmas) {
 
 		// create solution and copy into r
 		Vector r(basis(n, j));
-		for (int j2=j+1; j2<n; ++j2)
+		for (size_t j2=j+1; j2<n; ++j2)
 			r(j2) = inner_prod(pseudo, ublas::matrix_column<Matrix>(A, j2));
 
 		// create the rhs
@@ -470,8 +473,8 @@ Vector backSubstituteLower(const Matrix& L, const Vector& b, bool unit) {
 /* ************************************************************************* */
 Matrix stack(size_t nrMatrices, ...)
 {
-  int dimA1 = 0;
-  int dimA2 = 0;
+  size_t dimA1 = 0;
+  size_t dimA2 = 0;
   va_list ap;
   va_start(ap, nrMatrices);
   for(size_t i = 0 ; i < nrMatrices ; i++) {
@@ -482,7 +485,7 @@ Matrix stack(size_t nrMatrices, ...)
   va_end(ap);
   va_start(ap, nrMatrices);
   Matrix A(dimA1, dimA2);
-  int vindex = 0;
+  size_t vindex = 0;
   for( size_t i = 0 ; i < nrMatrices ; i++) {
     Matrix *M = va_arg(ap, Matrix *);
     for(size_t d1 = 0; d1 < M->size1(); d1++)

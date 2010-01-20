@@ -307,12 +307,12 @@ namespace gtsam {
   /* ************************************************************************* */
   Vector concatVectors(const std::list<Vector>& vs)
   {
-    int dim = 0;
+    size_t dim = 0;
     BOOST_FOREACH(Vector v, vs)
       dim += v.size();
 
     Vector A(dim);
-    int index = 0;
+    size_t index = 0;
     BOOST_FOREACH(Vector v, vs) {
       for(size_t d = 0; d < v.size(); d++)
         A(d+index) = v(d);

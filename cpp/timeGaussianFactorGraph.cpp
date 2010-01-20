@@ -49,7 +49,8 @@ TEST(timeGaussianFactorGraph, linearTime)
 
 	// Alex's Results
 	// T = 100000
-	// 1907: T - 1.65, 2T = 3.28
+	// 1907 (init)    : T - 1.65, 2T = 3.28
+	//    int->size_t : T - 1.63, 2T = 3.27
 
 	int T = 100000;
 	double time1 = timeKalmanSmoother(  T);  cout << "timeKalmanSmoother( T): " << time1;
@@ -68,8 +69,11 @@ TEST(timeGaussianFactorGraph, planar)
 	// 1839: 0.206956 0.206939 0.206213 0.206092 0.206780 // colamd !!!!
 
 	// Alex's Machine
+	// Initial:
 	// 1907 (N = 30) :  0.14
 	//      (N = 100): 16.36
+	// Improved (int->size_t)
+	//      (N = 100): 15.39
 	int N = 100;
 	double time = timePlanarSmoother(N); cout << "timeGaussianFactorGraph: " << time << endl;
 	// DOUBLES_EQUAL(5.97,time,0.1);
