@@ -264,11 +264,11 @@ namespace gtsam {
 
 	/* ************************************************************************* */
 	template<class Conditional>
-	void BayesTree<Conditional>::insert(const sharedConditional& conditional)
+	void BayesTree<Conditional>::insert(const sharedConditional& conditional, const list<Symbol>* ordering)
 	{
 		// get key and parents
 		const Symbol& key = conditional->key();
-		list<Symbol> parents = conditional->parents(); // rtodo: const reference?
+		list<Symbol> parents = conditional->parents(); // todo: const reference?
 
 		// if no parents, start a new root clique
 		if (parents.empty()) {
@@ -277,7 +277,18 @@ namespace gtsam {
 		}
 
 		// otherwise, find the parent clique
-		Symbol parent = parents.front();
+		Symbol parent;
+		if (!ordering) {
+			parent = parents.front(); // assumes parents are in current variable order, which is not the case (after COLAMD was activated)
+		} else {
+			for (list<Symbol>::const_iterator it = ordering->begin(); it!=ordering->end(); it++) {
+				list<Symbol>::iterator pit = find(parents.begin(), parents.end(), *it);
+				if (pit!=parents.end()) {
+					parent = *pit;
+					break;
+				}
+			}
+		}
 		sharedClique parent_clique = (*this)[parent];
 
 		// if the parents and parent clique have the same size, add to parent clique
@@ -370,20 +381,25 @@ namespace gtsam {
 	/* ************************************************************************* */
 	template<class Conditional>
 	template<class Factor>
-  pair<FactorGraph<Factor>, typename BayesTree<Conditional>::Cliques>
-	BayesTree<Conditional>::removePath(sharedClique clique) {
-
-		FactorGraph<Factor> factors;
-		Cliques orphans;
+	void BayesTree<Conditional>::removePath(sharedClique clique,
+			FactorGraph<Factor> &factors, typename BayesTree<Conditional>::Cliques& orphans) {
 
 		// base case is NULL, if so we do nothing and return empties above
 		if (clique!=NULL) {
+
+#if 0
+			printf("++++++ removing\n");
+			clique->print();
+#endif
+
+			// remove the clique from orphans in case it has been added earlier
+			orphans.remove(clique);
 
 			// remove me
 			this->removeClique(clique);
 
 			// remove path above me
-			boost::tie(factors,orphans) = this->removePath<Factor>(clique->parent_);
+			this->removePath<Factor>(clique->parent_, factors, orphans);
 
 			// add children to list of orphans (splice also removed them from clique->children_)
 			orphans.splice (orphans.begin(), clique->children_);
@@ -394,31 +410,30 @@ namespace gtsam {
 			// add to the list of "invalidated" factors
 			factors.push_back(clique_factors);
 
-		}
+#if 0
+			printf("++++++ factors\n");
+			factors.print();
+			printf("++++++ orphans\n");
+			orphans.print();
+#endif
 
-		return make_pair(factors,orphans);
+		}
 	}
 
 	/* ************************************************************************* */
 	template<class Conditional>
 	template<class Factor>
   void BayesTree<Conditional>::removeTop(const list<Symbol>& keys,
-		FactorGraph<Factor> &factors, typename BayesTree<Conditional>::Cliques& orphans) {
+  		FactorGraph<Factor> &factors, typename BayesTree<Conditional>::Cliques& orphans) {
 
 		// process each key of the new factor
 		BOOST_FOREACH(const Symbol& key, keys)
 			try {
-				// get the clique and remove it from orphans (if it exists)
+				// get the clique
 				sharedClique clique = (*this)[key];
-				orphans.remove(clique);
 
 				// remove path from clique to root
-				FactorGraph<Factor> factors1;	Cliques orphans1;
-				boost::tie(factors1,orphans1) = this->removePath<Factor>(clique);
-
-				// add to global factors and orphans
-				factors.push_back(factors1);
-				orphans.splice (orphans.begin(), orphans1);
+				this->removePath<Factor>(clique, factors, orphans);
 
 			} catch (std::invalid_argument e) {
 			}

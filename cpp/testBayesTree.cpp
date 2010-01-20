@@ -145,7 +145,7 @@ TEST( BayesTree, removePath )
 
 	FactorGraph<SymbolicFactor> factors;
 	SymbolicBayesTree::Cliques orphans;
-	boost::tie(factors,orphans) = bayesTree.removePath<SymbolicFactor>(bayesTree["C"]);
+	bayesTree.removePath<SymbolicFactor>(bayesTree["C"], factors, orphans);
   CHECK(assert_equal((FactorGraph<SymbolicFactor>)expected, factors));
   CHECK(assert_equal(expectedOrphans, orphans));
 
@@ -155,9 +155,11 @@ TEST( BayesTree, removePath )
   SymbolicBayesTree::Cliques expectedOrphans2;
   expectedOrphans2 += bayesTree["F"];
 
-  boost::tie(factors,orphans) = bayesTree.removePath<SymbolicFactor>(bayesTree["E"]);
-  CHECK(assert_equal((FactorGraph<SymbolicFactor>)expected2, factors));
-  CHECK(assert_equal(expectedOrphans2, orphans));
+	FactorGraph<SymbolicFactor> factors2;
+	SymbolicBayesTree::Cliques orphans2;
+  bayesTree.removePath<SymbolicFactor>(bayesTree["E"], factors2, orphans2);
+  CHECK(assert_equal((FactorGraph<SymbolicFactor>)expected2, factors2));
+  CHECK(assert_equal(expectedOrphans2, orphans2));
 }
 
 /* ************************************************************************* */
@@ -168,7 +170,7 @@ TEST( BayesTree, removePath2 )
 	// Call remove-path with clique B
 	FactorGraph<SymbolicFactor> factors;
 	SymbolicBayesTree::Cliques orphans;
-  boost::tie(factors,orphans) = bayesTree.removePath<SymbolicFactor>(bayesTree["B"]);
+  bayesTree.removePath<SymbolicFactor>(bayesTree["B"], factors, orphans);
 
 	// Check expected outcome
 	SymbolicFactorGraph expected;
@@ -189,7 +191,7 @@ TEST( BayesTree, removePath3 )
 	// Call remove-path with clique S
 	FactorGraph<SymbolicFactor> factors;
 	SymbolicBayesTree::Cliques orphans;
-  boost::tie(factors,orphans) = bayesTree.removePath<SymbolicFactor>(bayesTree["S"]);
+  bayesTree.removePath<SymbolicFactor>(bayesTree["S"], factors, orphans);
 
 	// Check expected outcome
 	SymbolicFactorGraph expected;
@@ -238,7 +240,6 @@ TEST( BayesTree, removeTop )
   CHECK(assert_equal(expectedOrphans2, orphans2));
 }
 
-
 /* ************************************************************************* */
 TEST( BayesTree, removeTop2 )
 {
@@ -267,6 +268,32 @@ TEST( BayesTree, removeTop2 )
 }
 
 /* ************************************************************************* */
+TEST( BayesTree, removeTop3 )
+{
+	// simple test case that failed after COLAMD was fixed/activated
+	SymbolicConditional::shared_ptr
+	X(new SymbolicConditional("l5")),
+	A(new SymbolicConditional("x4", "l5")),
+	B(new SymbolicConditional("x3", "x4")),
+	C(new SymbolicConditional("x2", "x3"));
+
+	SymbolicBayesTree bayesTree;
+	bayesTree.insert(X);
+	bayesTree.insert(A);
+	bayesTree.insert(B);
+	bayesTree.insert(C);
+
+	// remove all
+	list<Symbol> keys;
+	keys += "l5", "x2", "x3", "x4";
+	FactorGraph<SymbolicFactor> factors;
+	SymbolicBayesTree::Cliques orphans;
+	bayesTree.removeTop<SymbolicFactor>(keys, factors, orphans);
+
+	CHECK(orphans.size() == 0);
+}
+/* ************************************************************************* */
+
 int main() {
 	TestResult tr;
 	return TestRegistry::runAllTests(tr);

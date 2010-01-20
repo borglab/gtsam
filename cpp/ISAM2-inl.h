@@ -34,7 +34,7 @@ namespace gtsam {
 		boost::shared_ptr<GaussianConditional> conditional;
 		boost::tie(conditional, factor) = joint_factor->eliminate(key);
 
-		// remember the intermediate result to be able to later restart computation in the middle
+		// ADDED: remember the intermediate result to be able to later restart computation in the middle
 		cached[key] = factor;
 
 		// add new factor on separator back into the graph
@@ -119,12 +119,14 @@ namespace gtsam {
 	void ISAM2<Conditional, Config>::update_internal(const NonlinearFactorGraph<Config>& newFactors,
 			const Config& config, Cliques& orphans) {
 
+
+#if 1
 		// determine which variables to relinearize
 
 		FactorGraph<GaussianFactor> affectedFactors;
 		list<Symbol> newFactorsKeys = newFactors.keys();
 
-#if 1
+#if 0
 
 		// relinearize all keys that are in newFactors, and already exist (not new variables!)
 		list<Symbol> keysToRelinearize;
@@ -155,6 +157,15 @@ namespace gtsam {
 		list<Symbol> keysToBeRemoved = nonlinearFactors_.keys();
 #endif
 
+#if 0
+		printf("original tree\n");
+		this->print();
+		printf("ToBeRemoved\n");
+		BOOST_FOREACH(string key, keysToBeRemoved) {
+			printf("%s ", key.c_str());
+		}
+#endif
+
 		// remove affected factors
 		this->removeTop(keysToBeRemoved, affectedFactors, orphans);
 
@@ -170,9 +181,23 @@ namespace gtsam {
 		list<Symbol> affectedKeys = affectedFactors.keys();
 		FactorGraph<GaussianFactor> factors = relinearizeAffectedFactors(affectedKeys); // todo: searches through all factors, potentially expensive
 
+#if 0
+		printf("affected factors:\n");
+		factors.print();
+#endif
+
 		// ... add the cached intermediate results from the boundary of the orphans ...
 		FactorGraph<GaussianFactor> cachedBoundary = getCachedBoundaryFactors(orphans);
 		factors.push_back(cachedBoundary);
+#else
+		// todo - debug only: batch operation
+		FactorGraph<GaussianFactor> affectedFactors;
+		list<Symbol> keysToBeRemoved = nonlinearFactors_.keys();
+		this->removeTop(keysToBeRemoved, affectedFactors, orphans);
+		this->print("---------------");
+		linPoint_ = expmap(linPoint_, delta_); // todo-debug only
+		FactorGraph<GaussianFactor> factors = nonlinearFactors_.linearize(linPoint_);
+#endif
 
 		// add new variables
 		linPoint_.insert(config);
@@ -198,8 +223,16 @@ namespace gtsam {
 
 		// insert conditionals back in, straight into the topless bayesTree
 		typename BayesNet<Conditional>::const_reverse_iterator rit;
-		for ( rit=bayesNet.rbegin(); rit != bayesNet.rend(); ++rit )
-			this->insert(*rit);
+		for ( rit=bayesNet.rbegin(); rit != bayesNet.rend(); ++rit ) {
+			this->insert(*rit, &ordering);
+		}
+
+#if 0
+		printf("new factors\n");
+		newFactors.print();
+		printf("orphans:\n");
+		orphans.print();
+#endif
 
 		// add orphans to the bottom of the new tree
 		BOOST_FOREACH(sharedClique orphan, orphans) {
@@ -210,6 +243,8 @@ namespace gtsam {
 			parent->children_ += orphan;
 			orphan->parent_ = parent; // set new parent!
 		}
+
+//		this->print();
 
 		// update solution - todo: potentially expensive
 		delta_ = optimize2(*this);

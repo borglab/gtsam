@@ -129,7 +129,7 @@ namespace gtsam {
 		bool equals(const BayesTree<Conditional>& other, double tol = 1e-9) const;
 
 		/** insert a new conditional */
-		void insert(const sharedConditional& conditional);
+		void insert(const sharedConditional& conditional, const std::list<Symbol>* ordering = NULL);
 
 		/** number of cliques */
 		inline size_t size() const {
@@ -171,7 +171,7 @@ namespace gtsam {
 		 * plus a list of orphaned subtree roots. Used in removeTop below.
 		 */
 		template<class Factor>
-		std::pair<FactorGraph<Factor>, Cliques> removePath(sharedClique clique);
+		void removePath(sharedClique clique, FactorGraph<Factor> &factors, Cliques& orphans);
 
 		/**
 		 * Given a list of keys, turn "contaminated" part of the tree back into a factor graph.
