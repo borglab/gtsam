@@ -14,8 +14,9 @@ using namespace gtsam;
 /*
  * Results:
  * Alex's Machine:
- *  - (1st pass of simple changes) no pass: 0.184 sec , pass: 0.181 sec
- *  - (1st rev memcpy)             no pass: 0.181 sec , pass: 0.180 sec
+ *  - (1st pass of simple changes) no pass: 0.184  sec , pass: 0.181 sec
+ *  - (1st rev memcpy)             no pass: 0.181  sec , pass: 0.180 sec
+ *  - (1st rev matrix_range)       no pass: 0.186  sec , pass: 0.184 sec
  */
 double timeCollect(size_t p, size_t m, size_t n, bool passDims, size_t reps) {
 	// create a large number of matrices

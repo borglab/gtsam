@@ -513,7 +513,7 @@ Matrix collect(const std::vector<const Matrix *>& matrices, size_t m, size_t n)
 //	BOOST_FOREACH(const Matrix* M, matrices) {
 //		ublas::matrix_range<Matrix> mr(A, ublas::range(0, dimA1),
 //										  ublas::range(hindex, hindex+M->size2()));
-//		mr = *M;
+//		noalias(mr) = *M;
 //		hindex += M->size2();
 //	}
 
