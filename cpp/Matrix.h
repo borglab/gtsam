@@ -144,11 +144,12 @@ Matrix sub(const Matrix& A, size_t i1, size_t i2, size_t j1, size_t j2);
 
 /**
  * extracts a column from a matrix
+ * NOTE: using this without the underscore is the ublas version!
  * @param matrix to extract column from
  * @param index of the column
  * @return the column in vector form
  */
-Vector column(const Matrix& A, size_t j);
+Vector column_(const Matrix& A, size_t j);
 
 /**
  * extracts a row from a matrix

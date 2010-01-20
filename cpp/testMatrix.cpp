@@ -153,15 +153,15 @@ TEST( matrix, column )
 		0., -1.,  0.,  1.,  0.,  0.,  0.3,
 		1.,  0.,  0.,  0., -1.,  0.,  0.2,
 		0.,  1.,  0.,  0.,  0., -1., -0.1);
-	Vector a1 = column(A, 0);
+	Vector a1 = column_(A, 0);
 	Vector exp1 = Vector_(4, -1., 0., 1., 0.);
 	CHECK(assert_equal(a1, exp1));
 
-	Vector a2 = column(A, 3);
+	Vector a2 = column_(A, 3);
 	Vector exp2 = Vector_(4,  0., 1., 0., 0.);
 	CHECK(assert_equal(a2, exp2));
 
-	Vector a3 = column(A, 6);
+	Vector a3 = column_(A, 6);
 	Vector exp3 = Vector_(4, -0.2, 0.3, 0.2, -0.1);
 	CHECK(assert_equal(a3, exp3));
 }

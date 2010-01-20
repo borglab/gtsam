@@ -150,16 +150,18 @@ Vector Vector_(const Matrix& A)
 }
 
 /* ************************************************************************* */
-Vector column(const Matrix& A, size_t j) {
-	if (j>=A.size2())
-		throw invalid_argument("Column index out of bounds!");
+Vector column_(const Matrix& A, size_t j) {
+//	if (j>=A.size2())
+//		throw invalid_argument("Column index out of bounds!");
+
+	return column(A,j); // real boost version
 
 	// TODO: improve this
-	size_t m = A.size1();
-	Vector a(m);
-	for (size_t i=0; i<m; ++i)
-		a(i) = A(i,j);
-	return a;
+//	size_t m = A.size1();
+//	Vector a(m);
+//	for (size_t i=0; i<m; ++i)
+//		a(i) = A(i,j);
+//	return a;
 }
 
 /* ************************************************************************* */
@@ -336,7 +338,7 @@ weighted_eliminate(Matrix& A, Vector& b, const Vector& sigmas) {
 	// Then update A and b by substituting x with d-rS, zero-ing out x's column.
 	for (size_t j=0; j<n; ++j) {
 		// extract the first column of A
-		Vector a(column(A, j)); // ublas::matrix_column is slower !
+		Vector a(column_(A, j)); // ublas::matrix_column is slower !
 
 		// Calculate weighted pseudo-inverse and corresponding precision
 		double precision = weightedPseudoinverse(a, weights, pseudo);
@@ -347,7 +349,7 @@ weighted_eliminate(Matrix& A, Vector& b, const Vector& sigmas) {
 		// create solution and copy into r
 		Vector r(basis(n, j));
 		for (size_t j2=j+1; j2<n; ++j2)
-			r(j2) = inner_prod(pseudo, ublas::matrix_column<Matrix>(A, j2));
+			r(j2) = inner_prod(pseudo, ublas::matrix_column<Matrix>(A, j2)); // TODO: don't use ublas
 
 		// create the rhs
 		double d = inner_prod(pseudo, b);
@@ -359,7 +361,7 @@ weighted_eliminate(Matrix& A, Vector& b, const Vector& sigmas) {
 		// exit after rank exhausted
 		if (results.size()>=maxRank) break;
 
-		// update A, b, expensive, suing outer product
+		// update A, b, expensive, using outer product
 		// A' \define A_{S}-a*r and b'\define b-d*a
 		updateAb(A, b, j, a, r, d);
 	}

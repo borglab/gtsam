@@ -5,11 +5,13 @@
  */
 
 #include <iostream>
+#include <boost/numeric/ublas/matrix_proxy.hpp>
 #include <boost/timer.hpp>
 #include "Matrix.h"
 
 using namespace std;
 using namespace gtsam;
+namespace ublas = boost::numeric::ublas;
 
 /*
  * Results:
@@ -114,10 +116,38 @@ double timeVScaleRow(size_t m, size_t n, size_t reps) {
 	{
 		boost::timer t;
 		for (int i=0; i<reps; ++i)
-			Matrix result = vector_scale(V,M);
+			result = vector_scale(V,M);
 		elapsed = t.elapsed();
 	}
 
+	return elapsed;
+}
+
+/**
+ * Results:
+ * Alex's Machine
+ *  - ublas matrix_column  : 4.63 sec
+ *  - naive implementation : 4.70 sec
+ */
+double timeColumn(size_t reps) {
+	// create a matrix
+	size_t m = 100; size_t n = 100;
+	Matrix M(m, n);
+	for (int i=0; i<m; ++i)
+			for (int j=0; j<n; ++j)
+				M(i,j) = 2*i+j;
+
+	// extract a column
+	double elapsed;
+	Vector result;
+	{
+		boost::timer t;
+		for (size_t i=0; i<reps; ++i)
+			for (size_t j = 0; j<n; ++j)
+				result = ublas::matrix_column<Matrix>(M, j);
+				//result = column(M, j);
+		elapsed = t.elapsed();
+	}
 	return elapsed;
 }
 
@@ -142,6 +172,12 @@ int main(int argc, char ** argv) {
 	cout << "Starting Matrix::vector_scale(row)    Timing" << endl;
 	double vsRow_time = timeVScaleRow(m1, n1, reps1);
 	cout << "Elapsed time for vector_scale(row)    [(" << m1 << ", " << n1 << ") matrix] : " << vsRow_time << endl;
+
+	// Time column_() NOTE: using the gtsam version
+	cout << "Starting column_() Timing" << endl;
+	size_t reps2 = 200000;
+	double column_time = timeColumn(reps2);
+	cout << "Time: " << column_time << " sec" << endl;
 
 	return 0;
 }

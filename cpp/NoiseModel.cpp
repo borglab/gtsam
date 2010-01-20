@@ -188,7 +188,10 @@ namespace gtsam {
 			// Then update A and b by substituting x with d-rS, zero-ing out x's column.
 			for (size_t j=0; j<n; ++j) {
 				// extract the first column of A
-				Vector a(column(Ab, j)); // ublas::matrix_column is slower ! TODO Really, why ????
+				// ublas::matrix_column is slower ! TODO Really, why ????
+				//  AGC: if you use column() you will automatically call ublas, use
+				//      column_() to actually use the one in our library
+				Vector a(column(Ab, j));
 
 				// Calculate weighted pseudo-inverse and corresponding precision
 				double precision = weightedPseudoinverse(a, weights, pseudo);
