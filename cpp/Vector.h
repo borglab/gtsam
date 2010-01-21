@@ -185,6 +185,13 @@ Vector reciprocal(const Vector &a);
 Vector esqrt(const Vector& v);
 
 /**
+ * absolut values of vector elements
+ * @param a vector
+ * @return [abs(a(i))]
+ */
+Vector abs(const Vector& v);
+
+/**
  * return the max element of a vector
  * @param a vector
  * @return max(a)

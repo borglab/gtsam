@@ -18,47 +18,38 @@ using namespace gtsam;
 namespace gtsam {
 
 /* ************************************************************************* */
-void optimize2(const GaussianISAM2::sharedClique& clique, VectorConfig& result) {
+void optimize2(const GaussianISAM2::sharedClique& clique, double threshold, VectorConfig& result) {
+	bool process_children = false;
 	// parents are assumed to already be solved and available in result
 	GaussianISAM2::Clique::const_reverse_iterator it;
 	for (it = clique->rbegin(); it!=clique->rend(); it++) {
 		GaussianConditional::shared_ptr cg = *it;
     Vector x = cg->solve(result); // Solve for that variable
+    if (max(abs(x)) >= threshold) {
+    	process_children = true;
+    }
     result.insert(cg->key(), x);   // store result in partial solution
   }
-	BOOST_FOREACH(GaussianISAM2::sharedClique child, clique->children_) {
-		optimize2(child, result);
+	if (process_children) {
+		BOOST_FOREACH(GaussianISAM2::sharedClique child, clique->children_) {
+			optimize2(child, threshold, result);
+		}
 	}
 }
 
 /* ************************************************************************* */
-VectorConfig optimize2(const GaussianISAM2& bayesTree) {
+VectorConfig optimize2(const GaussianISAM2& bayesTree, double threshold) {
 	VectorConfig result;
 	// starting from the root, call optimize on each conditional
-	optimize2(bayesTree.root(), result);
+	optimize2(bayesTree.root(), threshold, result);
 	return result;
 }
 
-#if 0
 /* ************************************************************************* */
-void optimize2(const GaussianISAM2_P::sharedClique& clique, VectorConfig& result) {
-	// parents are assumed to already be solved and available in result
-	GaussianISAM2_P::Clique::const_reverse_iterator it;
-	for (it = clique->rbegin(); it!=clique->rend(); it++) {
-		GaussianConditional::shared_ptr cg = *it;
-    result.insert(cg->key(), cg->solve(result));   // store result in partial solution
-  }
-	BOOST_FOREACH(GaussianISAM2_P::sharedClique child, clique->children_) {
-		optimize2(child, result);
-	}
-}
-#endif
-
-/* ************************************************************************* */
-VectorConfig optimize2(const GaussianISAM2_P& bayesTree) {
+VectorConfig optimize2(const GaussianISAM2_P& bayesTree, double threshold) {
 	VectorConfig result;
 	// starting from the root, call optimize on each conditional
-	optimize2(bayesTree.root(), result);
+	optimize2(bayesTree.root(), threshold, result);
 	return result;
 }
 

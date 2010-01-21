@@ -19,10 +19,10 @@ namespace gtsam {
 	typedef ISAM2<GaussianConditional, simulated2D::Config> GaussianISAM2;
 
 	// recursively optimize this conditional and all subtrees
-	void optimize2(const GaussianISAM2::sharedClique& clique, VectorConfig& result);
+	void optimize2(const GaussianISAM2::sharedClique& clique, double threshold, VectorConfig& result);
 
 	// optimize the BayesTree, starting from the root
-	VectorConfig optimize2(const GaussianISAM2& bayesTree);
+	VectorConfig optimize2(const GaussianISAM2& bayesTree, double threshold = 0.);
 
 
 	// todo: copy'n'paste to avoid template hell
@@ -33,6 +33,6 @@ namespace gtsam {
 //	void optimize2(const GaussianISAM2_P::sharedClique& clique, VectorConfig& result);
 
 	// optimize the BayesTree, starting from the root
-	VectorConfig optimize2(const GaussianISAM2_P& bayesTree);
+	VectorConfig optimize2(const GaussianISAM2_P& bayesTree, double threshold = 0.);
 
 }/// namespace gtsam

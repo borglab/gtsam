@@ -34,14 +34,14 @@ namespace gtsam {
 		// current linearization point
 		Config linPoint_;
 
-		// most recent solution
-		VectorConfig delta_;
-
 		// for keeping all original nonlinear factors
 		NonlinearFactorGraph<Config> nonlinearFactors_;
 
 		// cached intermediate results for restarting computation in the middle
 		CachedFactors cached_;
+
+		// variables that have been updated, requiring the corresponding factors to be relinearized
+		std::list<Symbol> marked_;
 
 	public:
 
@@ -62,11 +62,13 @@ namespace gtsam {
 		/**
 		 * ISAM2. (update_internal provides access to list of orphans for drawing purposes)
 		 */
-		void update_internal(const NonlinearFactorGraph<Config>& newFactors, const Config& config, Cliques& orphans);
-		void update(const NonlinearFactorGraph<Config>& newFactors, const Config& config);
+		void update_internal(const NonlinearFactorGraph<Config>& newFactors,
+				const Config& config, Cliques& orphans,
+				double wildfire_threshold, double relinearize_threshold);
+		void update(const NonlinearFactorGraph<Config>& newFactors, const Config& config,
+				double wildfire_threshold = 0., double relinearize_threshold = 0.);
 
-		const Config estimate() const {return expmap(linPoint_, delta_);}
-		const Config linearizationPoint() const {return linPoint_;}
+		const Config estimate() const {return linPoint_;}
 
 	private:
 
