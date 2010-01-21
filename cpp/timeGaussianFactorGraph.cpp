@@ -55,7 +55,7 @@ TEST(timeGaussianFactorGraph, linearTime)
 	int T = 100000;
 	double time1 = timeKalmanSmoother(  T);  cout << "timeKalmanSmoother( T): " << time1;
 	double time2 = timeKalmanSmoother(2*T);  cout << "  (2*T): " << time2 << endl;
-	DOUBLES_EQUAL(2*time1,time2,0.1);
+	DOUBLES_EQUAL(2*time1,time2,0.2);
 }
 
 /* ************************************************************************* */
@@ -70,10 +70,11 @@ TEST(timeGaussianFactorGraph, planar)
 
 	// Alex's Machine
 	// Initial:
-	// 1907 (N = 30) :  0.14
-	//      (N = 100): 16.36
+	// 1907 (N = 30)               :  0.14
+	//      (N = 100)			   : 16.36
 	// Improved (int->size_t)
-	//      (N = 100): 15.39
+	//      (N = 100)              : 15.39
+	// Using GSL/BLAS for updateAb : 12.87
 
 	// Switch to 100*100 grid = 10K poses
 	// 1879: 15.6498 15.3851 15.5279

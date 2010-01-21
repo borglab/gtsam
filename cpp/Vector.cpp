@@ -18,6 +18,11 @@
 #include <Windows.h>
 #endif
 
+#ifdef GSL
+#include <gsl/gsl_blas.h> // needed for gsl blas
+#include <gsl/gsl_linalg.h>
+#endif
+
 #include <boost/random/normal_distribution.hpp>
 #include <boost/random/variate_generator.hpp>
 
@@ -232,29 +237,30 @@ namespace gtsam {
   }
 
   /* ************************************************************************* */
-  pair<double, Vector > house(Vector &x)
-  {
-    const double x02 = x(0)*x(0);
-    const double sigma = inner_prod(trans(x),x) - x02;
-    double beta = 0.0;
-    
-    Vector v(x); v(0) = 1.0;
-    
-    if( sigma == 0.0 )
-      beta = 0.0;
-    else {
-      double mu = sqrt(x02 + sigma);
-      if( x(0) <= 0.0 )
-        v(0) = x(0) - mu;
-      else
-        v(0) = -sigma / (x(0) + mu);
-      
-      const double v02 = v(0)*v(0);
-      beta = 2.0 * v02 / (sigma + v02);
-      v = v / v(0);
-    }
-    
-    return make_pair(beta, v);
+  pair<double, Vector > house(const Vector &x) {
+	  const double x0 = x(0);
+	  const double x02 = x0*x0;
+
+	  // old code - GSL verison was actually a bit slower
+	  const double sigma = inner_prod(trans(x),x) - x02;
+	  double beta = 0.0;
+
+	  Vector v(x); v(0) = 1.0;
+
+	  if( sigma == 0.0 )
+		  beta = 0.0;
+	  else {
+		  double mu = sqrt(x02 + sigma);
+		  if( x0 <= 0.0 )
+			  v(0) = x0 - mu;
+		  else
+			  v(0) = -sigma / (x0 + mu);
+
+		  const double v02 = v(0)*v(0);
+		  beta = 2.0 * v02 / (sigma + v02);
+		  v = v / v(0);
+	  }
+	  return make_pair(beta, v);
   }
   
   /* ************************************************************************* */

@@ -211,7 +211,7 @@ Vector operator/(double s, const Vector& v);
  *  from x, such that the corresponding Householder reflection zeroes out
  *  all but x.(j), j is base 0. Golub & Van Loan p 210.
  */
-std::pair<double,Vector> house(Vector &x);
+std::pair<double,Vector> house(const Vector &x);
 
 /**
  * Weighted Householder solution vector,

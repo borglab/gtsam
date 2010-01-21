@@ -157,7 +157,7 @@ Vector column_(const Matrix& A, size_t j);
  * @param index of the row
  * @return the row in vector form
  */
-Vector row(const Matrix& A, size_t j);
+Vector row_(const Matrix& A, size_t j);
 
 // left multiply with scalar
 //inline Matrix operator*(double s, const Matrix& A) { return A*s;}

@@ -171,16 +171,19 @@ Vector column_(const Matrix& A, size_t j) {
 }
 
 /* ************************************************************************* */
-Vector row(const Matrix& A, size_t i) {
+Vector row_(const Matrix& A, size_t i) {
 	if (i>=A.size1())
 		throw invalid_argument("Row index out of bounds!");
 
+	const double * Aptr = A.data().begin() + A.size2() * i;
+	return Vector_(A.size2(), Aptr);
+
 	// TODO: improve this
-	size_t n = A.size2();
-	Vector a(n);
-	for (size_t j=0; j<n; ++j)
-		a(j) = A(i,j);
-	return a;
+//	size_t n = A.size2();
+//	Vector a(n);
+//	for (size_t j=0; j<n; ++j)
+//		a(j) = A(i,j);
+//	return a;
 }
 
 /* ************************************************************************* */
@@ -322,8 +325,30 @@ void householder_update(Matrix &A, int j, double beta, const Vector& vjm) {
 // __attribute__ ((noinline))	// uncomment to prevent inlining when profiling
 static void updateAb(Matrix& A, Vector& b, int j, const Vector& a,
 		const Vector& r, double d) {
-	// TODO: do some optimization here if possible
 	const size_t m = A.size1(), n = A.size2();
+#ifdef GSL
+
+	// update A
+	// A(0:m,j+1:end) = A(0:m,j+1:end) - a(0:m)*r(j+1:end)'
+	// get a view for A
+//	gsl_matrix_view Ag = gsl_matrix_view_array(A.data().begin(), m, n);
+//	gsl_matrix_view Ag_view = gsl_matrix_submatrix (&(Ag.matrix), 0, j+1, m, n-j-1);
+//	// get a view for r
+//	gsl_vector_const_view rg = gsl_vector_const_view_array(r.data().begin()+j+1, n-j-1);
+//	// get a view for a
+//	gsl_vector_const_view ag = gsl_vector_const_view_array(a.data().begin(), m);
+//
+//	// rank one update
+//	gsl_blas_dger (-1.0, &(ag.vector), &(rg.vector), &(Ag_view.matrix));
+//
+//	// update b
+//	double * bptr = b.data().begin();
+//	const double * aptr = a.data().begin();
+//	for (size_t i = 0; i < m; i++) {
+//		*(bptr+i) -= d* *(aptr+i);
+//	}
+
+	// original
 	for (size_t i = 0; i < m; i++) { // update all rows
 		double ai = a(i);
 		b(i) -= ai * d;
@@ -333,6 +358,18 @@ static void updateAb(Matrix& A, Vector& b, int j, const Vector& a,
 		for (size_t j2 = j + 1; j2 < n; j2++, Aij++, rptr++)
 			*Aij -= ai * (*rptr);
 	}
+
+#else
+	for (size_t i = 0; i < m; i++) { // update all rows
+		double ai = a(i);
+		b(i) -= ai * d;
+		double *Aij = A.data().begin() + i * n + j + 1;
+		const double *rptr = r.data().begin() + j + 1;
+		// A(i,j+1:end) -= ai*r(j+1:end)
+		for (size_t j2 = j + 1; j2 < n; j2++, Aij++, rptr++)
+			*Aij -= ai * (*rptr);
+	}
+#endif
 }
 
 /* ************************************************************************* */
@@ -396,7 +433,54 @@ void householder_(Matrix &A, size_t k)
 {
 	const size_t m = A.size1(), n = A.size2(), kprime = min(k,min(m,n));
 
-	// Original version
+#ifdef GSL
+	// loop over the kprime first columns
+	for(size_t j=0; j < kprime; j++){
+		// below, the indices r,c always refer to original A
+
+		// copy column from matrix to xjm, i.e. x(j:m) = A(j:m,j)
+		Vector xjm(m-j);
+		for(size_t r = j ; r < m; r++)
+			xjm(r-j) = A(r,j);
+
+		// calculate the Householder vector
+		// COPIED IN: boost::tie(beta,vjm) = house(xjm);
+		const double x0 = xjm(0);
+		const double x02 = x0*x0;
+
+		const double sigma = inner_prod(trans(xjm),xjm) - x02;
+		double beta = 0.0; Vector vjm(xjm);  vjm(0) = 1.0;
+
+		if( sigma == 0.0 )
+			beta = 0.0;
+		else {
+			double mu = sqrt(x02 + sigma);
+			if( x0 <= 0.0 )
+				vjm(0) = x0 - mu;
+			else
+				vjm(0) = -sigma / (x0 + mu);
+
+			const double v02 = vjm(0)*vjm(0);
+			beta = 2.0 * v02 / (sigma + v02);
+			vjm = vjm / vjm(0);
+		}
+
+		// do outer product update A = (I-beta vv')*A = A - v*(beta*A'*v)' = A - v*w'
+		//householder_update(A, j, beta, vjm);
+
+		// inlined use GSL version
+		gsl_vector_const_view v = gsl_vector_const_view_array(vjm.data().begin(), m-j);
+		gsl_matrix_view Ag = gsl_matrix_view_array(A.data().begin(), m, n);
+		gsl_matrix_view Ag_view = gsl_matrix_submatrix (&(Ag.matrix), j, 0, m-j, n);
+		gsl_linalg_householder_hm (beta, &(v.vector), &(Ag_view.matrix));
+
+		// the Householder vector is copied in the zeroed out part
+		for( size_t r = j+1 ; r < m ; r++ )
+			A(r,j) = vjm(r-j);
+
+	} // column j
+
+#else
 	// loop over the kprime first columns
 	for(size_t j=0; j < kprime; j++){
 		// below, the indices r,c always refer to original A
@@ -411,13 +495,14 @@ void householder_(Matrix &A, size_t k)
 		boost::tie(beta,vjm) = house(xjm);
 
 		// do outer product update A = (I-beta vv')*A = A - v*(beta*A'*v)' = A - v*w'
-		householder_update(A, j, beta, vjm) ;
+		householder_update(A, j, beta, vjm);
 
 		// the Householder vector is copied in the zeroed out part
 		for( size_t r = j+1 ; r < m ; r++ )
 			A(r,j) = vjm(r-j);
 
 	} // column j
+#endif
 }
 
 /* ************************************************************************* */
@@ -529,27 +614,6 @@ Matrix collect(const std::vector<const Matrix *>& matrices, size_t m, size_t n)
 		dimA1 =  M->size1();  // TODO: should check if all the same !
 		dimA2 += M->size2();
 	}
-
-	// original version
-//	Matrix A(dimA1, dimA2);
-//	size_t hindex = 0;
-//	BOOST_FOREACH(const Matrix* M, matrices) {
-//		for(size_t d1 = 0; d1 < M->size1(); d1++)
-//			for(size_t d2 = 0; d2 < M->size2(); d2++)
-//				A(d1, d2+hindex) = (*M)(d1, d2);
-//		hindex += M->size2();
-//	}
-
-	// matrix_range version
-	// Result: slower
-//	Matrix A(dimA1, dimA2);
-//	size_t hindex = 0;
-//	BOOST_FOREACH(const Matrix* M, matrices) {
-//		ublas::matrix_range<Matrix> mr(A, ublas::range(0, dimA1),
-//										  ublas::range(hindex, hindex+M->size2()));
-//		noalias(mr) = *M;
-//		hindex += M->size2();
-//	}
 
 	// memcpy version
 	Matrix A(dimA1, dimA2);

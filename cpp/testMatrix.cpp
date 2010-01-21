@@ -174,15 +174,15 @@ TEST( matrix, row )
 		0., -1.,  0.,  1.,  0.,  0.,  0.3,
 		1.,  0.,  0.,  0., -1.,  0.,  0.2,
 		0.,  1.,  0.,  0.,  0., -1., -0.1);
-	Vector a1 = row(A, 0);
+	Vector a1 = row_(A, 0);
 	Vector exp1 = Vector_(7, -1.,  0.,  1.,  0.,  0.,  0., -0.2);
 	CHECK(assert_equal(a1, exp1));
 
-	Vector a2 = row(A, 2);
+	Vector a2 = row_(A, 2);
 	Vector exp2 = Vector_(7, 1.,  0.,  0.,  0., -1.,  0.,  0.2);
 	CHECK(assert_equal(a2, exp2));
 
-	Vector a3 = row(A, 3);
+	Vector a3 = row_(A, 3);
 	Vector exp3 = Vector_(7, 0.,  1.,  0.,  0.,  0., -1., -0.1);
 	CHECK(assert_equal(a3, exp3));
 }
