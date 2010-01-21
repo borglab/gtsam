@@ -114,7 +114,6 @@ namespace gtsam {
   inline Vector logmap(const Rot3& R) {
     double tr = R.r1().x()+R.r2().y()+R.r3().z();
     if (fabs(tr-3.0) < 1e-10)   // when theta = 0, +-2pi, +-4pi, etc.
-//    if (tr == 3.0)   // when theta = 0, +-2pi, +-4pi, etc.
       return zero(3);
     else if (tr==-1.0) { // when theta = +-pi, +-3pi, +-5pi, etc.
       if(R.r3().z() != -1.0)
