@@ -218,6 +218,11 @@ namespace gtsam {
     inline const Vector& sigmas() const { return sigmas_; }
     inline double sigma(size_t i) const { return sigmas_(i); }
 
+    /**
+     * generate random variate
+     */
+    virtual Vector sample() const;
+
   }; // Diagonal
 
 
@@ -331,6 +336,12 @@ namespace gtsam {
      * Return standard deviation
      */
     inline double sigma() const { return sigma_; }
+
+    /**
+     * generate random variate
+     */
+    virtual Vector sample() const;
+
   };
 
   /**
