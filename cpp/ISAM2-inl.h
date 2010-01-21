@@ -137,6 +137,12 @@ namespace gtsam {
 	void ISAM2<Conditional, Config>::update_internal(const NonlinearFactorGraph<Config>& newFactors,
 			const Config& config, Cliques& orphans, double wildfire_threshold, double relinearize_threshold) {
 
+
+
+		// todo - debug only
+//		marked_ = nonlinearFactors_.keys();
+
+
 		//// 1 - add in new information
 
 		// add new variables
@@ -158,7 +164,7 @@ namespace gtsam {
 		BayesNet<GaussianConditional> affectedBayesNet;
 		this->removeTop(marked_, affectedBayesNet, orphans);
 
-		//// 3 - find factors connected to marked variables
+		//// 3 - find factors connected to affected variables
 		//// 4 - linearize
 
 		// ordering provides all keys in conditionals, there cannot be others because path to root included
