@@ -32,7 +32,7 @@ namespace gtsam {
 	protected:
 
 		// current linearization point
-		Config linPoint_;
+		Config theta_;
 
 		// for keeping all original nonlinear factors
 		NonlinearFactorGraph<Config> nonlinearFactors_;
@@ -68,7 +68,7 @@ namespace gtsam {
 		void update(const NonlinearFactorGraph<Config>& newFactors, const Config& config,
 				double wildfire_threshold = 0., double relinearize_threshold = 0.);
 
-		const Config estimate() const {return linPoint_;}
+		const Config estimate() const {return theta_;}
 
 	private:
 

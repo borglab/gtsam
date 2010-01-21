@@ -67,7 +67,7 @@ namespace gtsam {
 	/** Create a Bayes Tree from a nonlinear factor graph */
 	template<class Conditional, class Config>
 	ISAM2<Conditional, Config>::ISAM2(const NonlinearFactorGraph<Config>& nlfg, const Ordering& ordering, const Config& config)
-	: BayesTree<Conditional>(nlfg.linearize(config).eliminate(ordering)), nonlinearFactors_(nlfg), linPoint_(config) {
+	: BayesTree<Conditional>(nlfg.linearize(config).eliminate(ordering)), nonlinearFactors_(nlfg), theta_(config) {
 		// todo: repeats calculation above, just to set "cached"
 		_eliminate_const(nlfg.linearize(config), cached_, ordering);
 	}
@@ -113,7 +113,7 @@ namespace gtsam {
 				nonlinearAffectedFactors.push_back(*it);
 		}
 
-		return nonlinearAffectedFactors.linearize(linPoint_);
+		return nonlinearAffectedFactors.linearize(theta_);
 	}
 
 	/* ************************************************************************* */
@@ -135,30 +135,26 @@ namespace gtsam {
 	/* ************************************************************************* */
 	template<class Conditional, class Config>
 	void ISAM2<Conditional, Config>::update_internal(const NonlinearFactorGraph<Config>& newFactors,
-			const Config& config, Cliques& orphans, double wildfire_threshold, double relinearize_threshold) {
-
+			const Config& theta_new, Cliques& orphans, double wildfire_threshold, double relinearize_threshold) {
 
 
 		// todo - debug only
-//		marked_ = nonlinearFactors_.keys();
+		//		marked_ = nonlinearFactors_.keys();
 
-
-		//// 1 - add in new information
-
-		// add new variables
-		linPoint_.insert(config);
-
-		// remember the new factors for later relinearization
+		//// 1 - Remember the new factors for later relinearization
 		nonlinearFactors_.push_back(newFactors);
 
+		//// 2 - add in new information
+		// add new variables
+		theta_.insert(theta_new);
 
-		// todo - not in lyx yet: relin requires more than just removing the cliques corresponding to the variables!!! It's about factors!!!
+		// todo - not in lyx yet: relin requires more than just removing the cliques corresponding to the variables!!!
+		// It's about factors!!!
 
 		// basically calculate all the keys contained in the factors that contain any of the keys...
 		// the goal is to relinearize all variables directly affected by new factors
 		boost::shared_ptr<FactorGraph<NonlinearFactor<Config> > > allAffected = getAffectedFactors(marked_);
 		marked_ = allAffected->keys();
-
 
 		// merge keys of new factors with mask
 		const list<Symbol> newKeys = newFactors.keys();
@@ -167,7 +163,7 @@ namespace gtsam {
 		marked_.sort();
 		marked_.unique();
 
-		//// 2 - invalidate all cliques involving marked variables
+		//// 4 - removeTop invalidate all cliques involving marked variables
 
 		// remove affected factors
 		BayesNet<GaussianConditional> affectedBayesNet;
@@ -232,7 +228,7 @@ namespace gtsam {
 
 		//// 8 - relinearize selected variables
 
-		linPoint_ = expmap(linPoint_, deltaMarked);
+		theta_ = expmap(theta_, deltaMarked);
 
 	}
 
