@@ -397,17 +397,11 @@ namespace gtsam {
 
 	/* ************************************************************************* */
 	template<class Conditional>
-	template<class Factor>
 	void BayesTree<Conditional>::removePath(sharedClique clique,
-			FactorGraph<Factor> &factors, typename BayesTree<Conditional>::Cliques& orphans) {
+			BayesNet<Conditional>& bn, typename BayesTree<Conditional>::Cliques& orphans) {
 
 		// base case is NULL, if so we do nothing and return empties above
 		if (clique!=NULL) {
-
-#if 0
-			printf("++++++ removing\n");
-			clique->print();
-#endif
 
 			// remove the clique from orphans in case it has been added earlier
 			orphans.remove(clique);
@@ -416,32 +410,20 @@ namespace gtsam {
 			this->removeClique(clique);
 
 			// remove path above me
-			this->removePath<Factor>(clique->parent_, factors, orphans);
+			this->removePath(clique->parent_, bn, orphans);
 
 			// add children to list of orphans (splice also removed them from clique->children_)
 			orphans.splice (orphans.begin(), clique->children_);
 
-			// Convert clique to a factor graph, using constructor in FactorGraph
-			FactorGraph<Factor> clique_factors(*clique);
-
-			// add to the list of "invalidated" factors
-			factors.push_back(clique_factors);
-
-#if 0
-			printf("++++++ factors\n");
-			factors.print();
-			printf("++++++ orphans\n");
-			orphans.print();
-#endif
+			bn.push_back(*clique);
 
 		}
 	}
 
 	/* ************************************************************************* */
 	template<class Conditional>
-	template<class Factor>
   void BayesTree<Conditional>::removeTop(const list<Symbol>& keys,
-  		FactorGraph<Factor> &factors, typename BayesTree<Conditional>::Cliques& orphans) {
+  		BayesNet<Conditional>& bn, typename BayesTree<Conditional>::Cliques& orphans) {
 
 		// process each key of the new factor
 		BOOST_FOREACH(const Symbol& key, keys)
@@ -450,7 +432,7 @@ namespace gtsam {
 				sharedClique clique = (*this)[key];
 
 				// remove path from clique to root
-				this->removePath<Factor>(clique, factors, orphans);
+				this->removePath(clique, bn, orphans);
 
 			} catch (std::invalid_argument e) {
 			}

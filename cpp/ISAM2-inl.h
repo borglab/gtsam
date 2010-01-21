@@ -137,9 +137,6 @@ namespace gtsam {
 	void ISAM2<Conditional, Config>::update_internal(const NonlinearFactorGraph<Config>& newFactors,
 			const Config& config, Cliques& orphans) {
 
-#if 1 // 0=skip most, do batch
-
-		FactorGraph<GaussianFactor> affectedFactors;
 		list<Symbol> newFactorsKeys = newFactors.keys();
 
 #if 1 // 0=relinearize all in each step
@@ -163,7 +160,8 @@ namespace gtsam {
 #endif
 
 		// remove affected factors
-		this->removeTop(keysToBeRemoved, affectedFactors, orphans);
+		BayesNet<GaussianConditional> affectedBayesNet;
+		this->removeTop(keysToBeRemoved, affectedBayesNet, orphans);
 
 		// selectively update the linearization point
 		VectorConfig selected_delta;
@@ -174,21 +172,12 @@ namespace gtsam {
 		linPoint_ = expmap(linPoint_, selected_delta);
 
 		// relinearize the affected factors ...
-		list<Symbol> affectedKeys = affectedFactors.keys();
+		list<Symbol> affectedKeys = affectedBayesNet.ordering(); // all keys in conditionals, there cannot be others because path to root included
 		FactorGraph<GaussianFactor> factors = relinearizeAffectedFactors(affectedKeys);
 
 		// ... add the cached intermediate results from the boundary of the orphans ...
 		FactorGraph<GaussianFactor> cachedBoundary = getCachedBoundaryFactors(orphans);
 		factors.push_back(cachedBoundary);
-#else
-		// todo - debug only: batch operation
-		FactorGraph<GaussianFactor> affectedFactors;
-		list<Symbol> keysToBeRemoved = nonlinearFactors_.keys();
-		this->removeTop(keysToBeRemoved, affectedFactors, orphans);
-		this->print("---------------");
-		linPoint_ = expmap(linPoint_, delta_); // todo-debug only
-		FactorGraph<GaussianFactor> factors = nonlinearFactors_.linearize(linPoint_);
-#endif
 
 		// add new variables
 		linPoint_.insert(config);

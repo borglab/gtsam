@@ -31,8 +31,9 @@ namespace gtsam {
 	void ISAM<Conditional>::update_internal(const FactorGraph<Factor>& newFactors, Cliques& orphans) {
 
 		// Remove the contaminated part of the Bayes tree
-		FactorGraph<Factor> factors;
-		removeTop(newFactors.keys(), factors, orphans);
+		BayesNet<Conditional> bn;
+		removeTop(newFactors.keys(), bn, orphans);
+		FactorGraph<Factor> factors(bn);
 
 		// add the factors themselves
 		factors.push_back(newFactors);

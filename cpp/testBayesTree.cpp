@@ -155,9 +155,10 @@ TEST( BayesTree, removePath )
 	SymbolicBayesTree::Cliques expectedOrphans;
   expectedOrphans += bayesTree["D"], bayesTree["E"];
 
-	FactorGraph<SymbolicFactor> factors;
+  BayesNet<SymbolicConditional> bn;
 	SymbolicBayesTree::Cliques orphans;
-	bayesTree.removePath<SymbolicFactor>(bayesTree["C"], factors, orphans);
+	bayesTree.removePath(bayesTree["C"], bn, orphans);
+	FactorGraph<SymbolicFactor> factors(bn);
   CHECK(assert_equal((FactorGraph<SymbolicFactor>)expected, factors));
   CHECK(assert_equal(expectedOrphans, orphans));
 
@@ -167,9 +168,10 @@ TEST( BayesTree, removePath )
   SymbolicBayesTree::Cliques expectedOrphans2;
   expectedOrphans2 += bayesTree["F"];
 
-	FactorGraph<SymbolicFactor> factors2;
+  BayesNet<SymbolicConditional> bn2;
 	SymbolicBayesTree::Cliques orphans2;
-  bayesTree.removePath<SymbolicFactor>(bayesTree["E"], factors2, orphans2);
+  bayesTree.removePath(bayesTree["E"], bn2, orphans2);
+  FactorGraph<SymbolicFactor> factors2(bn2);
   CHECK(assert_equal((FactorGraph<SymbolicFactor>)expected2, factors2));
   CHECK(assert_equal(expectedOrphans2, orphans2));
 }
@@ -180,9 +182,10 @@ TEST( BayesTree, removePath2 )
 	SymbolicBayesTree bayesTree = createAsiaSymbolicBayesTree();
 
 	// Call remove-path with clique B
-	FactorGraph<SymbolicFactor> factors;
+	BayesNet<SymbolicConditional> bn;
 	SymbolicBayesTree::Cliques orphans;
-  bayesTree.removePath<SymbolicFactor>(bayesTree["B"], factors, orphans);
+  bayesTree.removePath(bayesTree["B"], bn, orphans);
+	FactorGraph<SymbolicFactor> factors(bn);
 
 	// Check expected outcome
 	SymbolicFactorGraph expected;
@@ -201,9 +204,10 @@ TEST( BayesTree, removePath3 )
 	SymbolicBayesTree bayesTree = createAsiaSymbolicBayesTree();
 
 	// Call remove-path with clique S
-	FactorGraph<SymbolicFactor> factors;
+	BayesNet<SymbolicConditional> bn;
 	SymbolicBayesTree::Cliques orphans;
-  bayesTree.removePath<SymbolicFactor>(bayesTree["S"], factors, orphans);
+  bayesTree.removePath(bayesTree["S"], bn, orphans);
+	FactorGraph<SymbolicFactor> factors(bn);
 
 	// Check expected outcome
 	SymbolicFactorGraph expected;
@@ -226,9 +230,10 @@ TEST( BayesTree, removeTop )
 	boost::shared_ptr<SymbolicFactor> newFactor(new SymbolicFactor("B","S"));
 
 	// Remove the contaminated part of the Bayes tree
-	FactorGraph<SymbolicFactor> factors;
+	BayesNet<SymbolicConditional> bn;
 	SymbolicBayesTree::Cliques orphans;
-	bayesTree.removeTop<SymbolicFactor>(newFactor->keys(), factors, orphans);
+	bayesTree.removeTop(newFactor->keys(), bn, orphans);
+	FactorGraph<SymbolicFactor> factors(bn);
 
 	// Check expected outcome
 	SymbolicFactorGraph expected;
@@ -243,9 +248,10 @@ TEST( BayesTree, removeTop )
 
   // Try removeTop again with a factor that should not change a thing
 	boost::shared_ptr<SymbolicFactor> newFactor2(new SymbolicFactor("B"));
-	FactorGraph<SymbolicFactor> factors2;
+	BayesNet<SymbolicConditional> bn2;
 	SymbolicBayesTree::Cliques orphans2;
-	bayesTree.removeTop<SymbolicFactor>(newFactor2->keys(), factors2, orphans2);
+	bayesTree.removeTop(newFactor2->keys(), bn2, orphans2);
+	FactorGraph<SymbolicFactor> factors2(bn2);
 	SymbolicFactorGraph expected2;
   CHECK(assert_equal((FactorGraph<SymbolicFactor>)expected2, factors2));
 	SymbolicBayesTree::Cliques expectedOrphans2;
@@ -263,9 +269,10 @@ TEST( BayesTree, removeTop2 )
 	newFactors.push_factor("S");
 
 	// Remove the contaminated part of the Bayes tree
-	FactorGraph<SymbolicFactor> factors;
+	BayesNet<SymbolicConditional> bn;
 	SymbolicBayesTree::Cliques orphans;
-	bayesTree.removeTop<SymbolicFactor>(newFactors.keys(), factors, orphans);
+	bayesTree.removeTop(newFactors.keys(), bn, orphans);
+	FactorGraph<SymbolicFactor> factors(bn);
 
 	// Check expected outcome
 	SymbolicFactorGraph expected;
@@ -298,9 +305,10 @@ TEST( BayesTree, removeTop3 )
 	// remove all
 	list<Symbol> keys;
 	keys += "l5", "x2", "x3", "x4";
-	FactorGraph<SymbolicFactor> factors;
+	BayesNet<SymbolicConditional> bn;
 	SymbolicBayesTree::Cliques orphans;
-	bayesTree.removeTop<SymbolicFactor>(keys, factors, orphans);
+	bayesTree.removeTop(keys, bn, orphans);
+	FactorGraph<SymbolicFactor> factors(bn);
 
 	CHECK(orphans.size() == 0);
 }

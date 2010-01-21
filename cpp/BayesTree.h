@@ -181,16 +181,13 @@ namespace gtsam {
 		 * Remove path from clique to root and return that path as factors
 		 * plus a list of orphaned subtree roots. Used in removeTop below.
 		 */
-		template<class Factor>
-		void removePath(sharedClique clique, FactorGraph<Factor> &factors, Cliques& orphans);
+		void removePath(sharedClique clique, BayesNet<Conditional>& bn, Cliques& orphans);
 
 		/**
 		 * Given a list of keys, turn "contaminated" part of the tree back into a factor graph.
 		 * Factors and orphans are added to the in/out arguments.
 		 */
-		template<class Factor>
-		void removeTop(const std::list<Symbol>& keys,
-				FactorGraph<Factor> &factors, Cliques& orphans);
+		void removeTop(const std::list<Symbol>& keys,	BayesNet<Conditional>& bn, Cliques& orphans);
 
 	}; // BayesTree
 
