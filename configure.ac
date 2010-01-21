@@ -23,6 +23,26 @@ AC_ARG_ENABLE([debug],
        *) AC_MSG_ERROR([bad value ${enableval} for --enable-debug]) ;;
      esac],[debug=false])
      AM_CONDITIONAL([DEBUG], [test x$debug = xtrue])
+     
+# enable using GSL for linalg
+AC_ARG_ENABLE([gsl],
+     [  --enable-gsl    Enable the GSL library],
+     [case "${enableval}" in
+       yes) gsl=true ;;
+       no)  gsl=false ;;
+       *) AC_MSG_ERROR([bad value ${enableval} for --enable-gsl]) ;;
+     esac],[gsl=false])
+     AM_CONDITIONAL([GSL], [test x$gsl = xtrue])
+     
+# enable using ATLAS for BLAS
+AC_ARG_ENABLE([atlas],
+     [  --enable-atlas    Enable ATLAS optimized BLAS],
+     [case "${enableval}" in
+       yes) atlas=true ;;
+       no)  atlas=false ;;
+       *) AC_MSG_ERROR([bad value ${enableval} for --enable-atlas]) ;;
+     esac],[atlas=false])
+     AM_CONDITIONAL([ATLAS], [test x$atlas = xtrue])
 
 # Checks for programs.
 AC_PROG_CXX

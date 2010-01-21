@@ -9,6 +9,11 @@
 #include <iomanip>
 #include <list>
 
+#ifdef GSL
+#include <gsl/gsl_blas.h> // needed for gsl blas
+#include <gsl/gsl_linalg.h>
+#endif
+
 #include <boost/numeric/ublas/matrix_proxy.hpp>
 #include <boost/foreach.hpp>
 #include <boost/numeric/ublas/lu.hpp>
@@ -18,6 +23,7 @@
 #include "Matrix.h"
 #include "Vector.h"
 #include "svdcmp.h"
+
 
 using namespace std;
 namespace ublas = boost::numeric::ublas;
@@ -276,6 +282,14 @@ void householder_update(Matrix &A, int j, double beta, const Vector& vjm) {
 
   const size_t m = A.size1(), n = A.size2();
 
+#ifdef GSL
+  // use GSL version
+  gsl_vector_const_view v = gsl_vector_const_view_array(vjm.data().begin(), m-j);
+  gsl_matrix_view Ag = gsl_matrix_view_array(A.data().begin(), m, n);
+  gsl_matrix_view Ag_view = gsl_matrix_submatrix (&(Ag.matrix), j, 0, m-j, n);
+  gsl_linalg_householder_hm (beta, &(v.vector), &(Ag_view.matrix));
+
+#else
   // elegant but slow: A -= Matrix(outer_prod(v,beta*trans(A)*v));
   // faster code below
 
@@ -299,6 +313,7 @@ void householder_update(Matrix &A, int j, double beta, const Vector& vjm) {
       // A(r,c) -= vjm(r-j) * wjn(c-j);
       (*a) -= v[s] * wc;
   }
+#endif
 }
 
 /* ************************************************************************* */
@@ -379,29 +394,30 @@ weighted_eliminate(Matrix& A, Vector& b, const Vector& sigmas) {
 /* ************************************************************************* */
 void householder_(Matrix &A, size_t k) 
 {
-  const size_t m = A.size1(), n = A.size2(), kprime = min(k,min(m,n));
-  
-  // loop over the kprime first columns 
-  for(size_t j=0; j < kprime; j++){
-    // below, the indices r,c always refer to original A
+	const size_t m = A.size1(), n = A.size2(), kprime = min(k,min(m,n));
 
-    // copy column from matrix to xjm, i.e. x(j:m) = A(j:m,j)
-    Vector xjm(m-j);
-    for(size_t r = j ; r < m; r++)
-      xjm(r-j) = A(r,j);
-        
-    // calculate the Householder vector
-    double beta; Vector vjm;
-    boost::tie(beta,vjm) = house(xjm);
+	// Original version
+	// loop over the kprime first columns
+	for(size_t j=0; j < kprime; j++){
+		// below, the indices r,c always refer to original A
 
-    // do outer product update A = (I-beta vv')*A = A - v*(beta*A'*v)' = A - v*w'
-    householder_update(A, j, beta, vjm) ;
+		// copy column from matrix to xjm, i.e. x(j:m) = A(j:m,j)
+		Vector xjm(m-j);
+		for(size_t r = j ; r < m; r++)
+			xjm(r-j) = A(r,j);
 
-    // the Householder vector is copied in the zeroed out part
-    for( size_t r = j+1 ; r < m ; r++ )
-      A(r,j) = vjm(r-j);
+		// calculate the Householder vector
+		double beta; Vector vjm;
+		boost::tie(beta,vjm) = house(xjm);
 
-  } // column j
+		// do outer product update A = (I-beta vv')*A = A - v*(beta*A'*v)' = A - v*w'
+		householder_update(A, j, beta, vjm) ;
+
+		// the Householder vector is copied in the zeroed out part
+		for( size_t r = j+1 ; r < m ; r++ )
+			A(r,j) = vjm(r-j);
+
+	} // column j
 }
 
 /* ************************************************************************* */

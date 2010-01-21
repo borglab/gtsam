@@ -156,6 +156,8 @@ double timeColumn(size_t reps) {
  * Alex's machine
  * Baseline (no householder, just matrix copy) : 0.05 sec
  * Initial                                     : 8.20 sec
+ * All in one function                         : 7.89 sec
+ * Replace householder update with GSL, ATLAS  : 0.92 sec
  */
 double timeHouseholder(size_t reps) {
 	// create a matrix
@@ -178,48 +180,33 @@ double timeHouseholder(size_t reps) {
 	return elapsed;
 }
 
-//double data[] = {-5,  0, 5, 0,  0,  0,  -1,
-//		   00, -5, 0, 5,  0,  0, 1.5,
-//		   10,  0, 0, 0,-10,  0,   2,
-//		   00, 10, 0, 0,  0,-10,  -1};
-//
-//// check in-place householder, with v vectors below diagonal
-//double data1[] = {
-//		11.1803, 0, -2.2361, 0, -8.9443, 0, 2.236,
-//		0, 11.1803, 0, -2.2361, 0, -8.9443, -1.565,
-//		-0.618034, 0, 4.4721, 0, -4.4721, 0, 0,
-//			0, -0.618034, 0, 4.4721, 0, -4.4721, 0.894 };
-//Matrix expected1 = Matrix_(4,7, data1);
-//Matrix A1 = Matrix_(4, 7, data);
-//householder_(A1,3);
-
 int main(int argc, char ** argv) {
 
-	// Time collect()
-	cout << "Starting Matrix::collect() Timing" << endl;
-	//size_t p = 100000; size_t m = 10; size_t n = 12; size_t reps = 50;
-	size_t p = 10; size_t m = 10; size_t n = 12; size_t reps = 10000000;
-	double collect_time1 = timeCollect(p, m, n, false, reps);
-	double collect_time2 = timeCollect(p, m, n, true, reps);
-	cout << "Average Elapsed time for collect (no pass) [" << p << " (" << m << ", " << n << ") matrices] : " << collect_time1 << endl;
-	cout << "Average Elapsed time for collect (pass)    [" << p << " (" << m << ", " << n << ") matrices] : " << collect_time2 << endl;
-
-	// Time vector_scale_column
-	cout << "Starting Matrix::vector_scale(column) Timing" << endl;
-	size_t m1 = 400; size_t n1 = 480; size_t reps1 = 1000;
-	double vsColumn_time = timeVScaleColumn(m1, n1, reps1);
-	cout << "Elapsed time for vector_scale(column) [(" << m1 << ", " << n1 << ") matrix] : " << vsColumn_time << endl;
-
-	// Time vector_scale_row
-	cout << "Starting Matrix::vector_scale(row)    Timing" << endl;
-	double vsRow_time = timeVScaleRow(m1, n1, reps1);
-	cout << "Elapsed time for vector_scale(row)    [(" << m1 << ", " << n1 << ") matrix] : " << vsRow_time << endl;
-
-	// Time column_() NOTE: using the ublas version
-	cout << "Starting column_() Timing" << endl;
-	size_t reps2 = 200000;
-	double column_time = timeColumn(reps2);
-	cout << "Time: " << column_time << " sec" << endl;
+//	// Time collect()
+//	cout << "Starting Matrix::collect() Timing" << endl;
+//	//size_t p = 100000; size_t m = 10; size_t n = 12; size_t reps = 50;
+//	size_t p = 10; size_t m = 10; size_t n = 12; size_t reps = 10000000;
+//	double collect_time1 = timeCollect(p, m, n, false, reps);
+//	double collect_time2 = timeCollect(p, m, n, true, reps);
+//	cout << "Average Elapsed time for collect (no pass) [" << p << " (" << m << ", " << n << ") matrices] : " << collect_time1 << endl;
+//	cout << "Average Elapsed time for collect (pass)    [" << p << " (" << m << ", " << n << ") matrices] : " << collect_time2 << endl;
+//
+//	// Time vector_scale_column
+//	cout << "Starting Matrix::vector_scale(column) Timing" << endl;
+//	size_t m1 = 400; size_t n1 = 480; size_t reps1 = 1000;
+//	double vsColumn_time = timeVScaleColumn(m1, n1, reps1);
+//	cout << "Elapsed time for vector_scale(column) [(" << m1 << ", " << n1 << ") matrix] : " << vsColumn_time << endl;
+//
+//	// Time vector_scale_row
+//	cout << "Starting Matrix::vector_scale(row)    Timing" << endl;
+//	double vsRow_time = timeVScaleRow(m1, n1, reps1);
+//	cout << "Elapsed time for vector_scale(row)    [(" << m1 << ", " << n1 << ") matrix] : " << vsRow_time << endl;
+//
+//	// Time column_() NOTE: using the ublas version
+//	cout << "Starting column_() Timing" << endl;
+//	size_t reps2 = 200000;
+//	double column_time = timeColumn(reps2);
+//	cout << "Time: " << column_time << " sec" << endl;
 
 	// Time householder_ function
 	cout << "Starting householder_() Timing" << endl;

@@ -266,6 +266,26 @@ include_HEADERS = $(headers)
 AM_CXXFLAGS += -I.. 
 AM_LDFLAGS = -L../CppUnitLite -lCppUnitLite $(BOOST_LDFLAGS) $(boost_serialization) #-L. -lgtsam
 
+# TO ENABLE GSL AND ATLAS, uncomment this part!
+# Direct call for gsl and atlas
+# AM_LDFLAGS += -lgsl -lcblas -latlas 
+# libgtsam_la_LDFLAGS += -lgsl -lcblas -latlas
+# AM_CXXFLAGS += -DGSL
+# libgtsam_la_CPPFLAGS += -DGSL
+
+# GSL using ATLAS
+# if GSL
+#	AM_CXXFLAGS += -DGSL
+#	libgtsam_la_CPPFLAGS += -DGSL 
+#	if ATLAS
+#		AM_LDFLAGS += -lgsl -lcblas -latlas 
+#		libgtsam_la_LDFLAGS += -lgsl -lcblas -latlas
+#	else 
+#		AM_LDFLAGS += -lgsl -lgslcblas 
+#		libgtsam_la_LDFLAGS += -lgsl -lgslcblas
+#	endif
+# endif
+
 TESTS = $(check_PROGRAMS)
 CXXLINK = $(LIBTOOL) $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=link \
 	$(CXXLD) -g $(AM_CXXFLAGS) $(CXXFLAGS) $(AM_LDFLAGS) $(LDFLAGS) \
