@@ -151,6 +151,15 @@ namespace gtsam {
 		// remember the new factors for later relinearization
 		nonlinearFactors_.push_back(newFactors);
 
+
+		// todo - not in lyx yet: relin requires more than just removing the cliques corresponding to the variables!!! It's about factors!!!
+
+		// basically calculate all the keys contained in the factors that contain any of the keys...
+		// the goal is to relinearize all variables directly affected by new factors
+		boost::shared_ptr<FactorGraph<NonlinearFactor<Config> > > allAffected = getAffectedFactors(marked_);
+		marked_ = allAffected->keys();
+
+
 		// merge keys of new factors with mask
 		const list<Symbol> newKeys = newFactors.keys();
 		marked_.insert(marked_.begin(), newKeys.begin(), newKeys.end());
