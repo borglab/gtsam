@@ -139,6 +139,10 @@ namespace gtsam {
 		NonlinearFactor1() {
 		}
 
+		inline const Key& key() const {
+			return key_;
+		}
+
 		/**
 		 *  Constructor
 		 *  @param z measurement

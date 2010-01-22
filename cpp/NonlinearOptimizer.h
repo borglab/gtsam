@@ -14,6 +14,12 @@
 
 namespace gtsam {
 
+	class NullOptimizerWriter {
+	public:
+		NullOptimizerWriter(double error) {}
+		virtual void write(double error) {}
+	};
+
 	/**
 	 * The class NonlinearOptimizer encapsulates an optimization state.
 	 * Typically it is instantiated with a NonlinearFactorGraph and an initial config
@@ -32,7 +38,7 @@ namespace gtsam {
 	 * nonlinear cost function around the current estimate, and the second one optimize the
 	 * linearized system using various methods.
 	 */
-	template<class G, class T, class L = GaussianFactorGraph, class S = Factorization<G, T> >
+	template<class G, class T, class L = GaussianFactorGraph, class S = Factorization<G, T>, class Writer = NullOptimizerWriter>
 	class NonlinearOptimizer {
 	public:
 
