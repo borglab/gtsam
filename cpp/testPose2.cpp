@@ -203,6 +203,8 @@ TEST( Pose2, matrix )
   // check inverse pose
   Matrix _1Mg = matrix(inverse(gT1));
   CHECK(assert_equal(inverse(gM1),_1Mg));
+  CHECK(assert_equal(eye(3),inverse(_1Mg)*_1Mg));
+  CHECK(assert_equal(eye(3),inverse(gM1)*gM1));
 }
 
 /* ************************************************************************* */

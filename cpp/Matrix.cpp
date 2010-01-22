@@ -216,11 +216,18 @@ Matrix sub(const Matrix& A, size_t i1, size_t i2, size_t j1, size_t j2) {
 /* ************************************************************************* */
 void solve(Matrix& A, Matrix& B)
 {
-  // perform LU-factorization
-  ublas::lu_factorize(A);
+	typedef ublas::permutation_matrix<std::size_t> pmatrix;
+	// create a working copy of the input
+	Matrix A_(A);
+	// create a permutation matrix for the LU-factorization
+	pmatrix pm(A_.size1());
 
-  // backsubstitute
-  ublas::lu_substitute<const Matrix, Matrix>(A, B);
+	// perform LU-factorization
+	int res = lu_factorize(A_,pm);
+	if( res != 0 ) throw runtime_error ("Matrix::solve: lu_factorize failed!");
+
+	// backsubstitute to get the inverse
+	lu_substitute(A_, pm, B);
 }
 
 /* ************************************************************************* */

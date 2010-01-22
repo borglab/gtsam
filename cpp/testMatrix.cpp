@@ -429,6 +429,24 @@ TEST( matrix, inverse )
 }
 
 /* ************************************************************************* */
+TEST( matrix, inverse2 )
+{
+  Matrix A(3,3);
+  A(0,0)= 0;  A(0,1)=-1; A(0,2)=1;
+  A(1,0)= 1;  A(1,1)= 0; A(1,2)=2;
+  A(2,0)= 0;  A(2,1)= 0; A(2,2)=1;
+
+  Matrix Ainv = inverse(A);
+
+  Matrix expected(3,3);
+  expected(0,0)= 0;   expected(0,1)=1; expected(0,2)=-2;
+  expected(1,0)=-1;   expected(1,1)=0; expected(1,2)= 1;
+  expected(2,0)= 0;   expected(2,1)=0; expected(2,2)= 1;
+
+  CHECK(assert_equal(expected, Ainv, 1e-4));
+}
+
+/* ************************************************************************* */
 TEST( matrix, backsubtitution )
 {
 	// TEST ONE  2x2 matrix U1*x=b1
