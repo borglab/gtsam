@@ -27,22 +27,25 @@ namespace gtsam {
 /* ************************************************************************* */
 pair<string, boost::optional<SharedDiagonal> > dataset(const string& dataset,  const string& user_path) {
 	string path = user_path, set = dataset;
-	boost::optional<SharedDiagonal> model;
+	boost::optional<SharedDiagonal> null_model;
 	boost::optional<SharedDiagonal> identity = SharedDiagonal(Vector_(3, 1., 1., 1.));
+	boost::optional<SharedDiagonal> small = SharedDiagonal(noiseModel::Diagonal::Variances(
+			gtsam::Vector_(3,0.0001,0.0001,0.0003), true));
+
 
 	if (path.empty()) path = string(getenv("HOME")) + "/";
 	if (set.empty()) set = string(getenv("DATASET"));
-	if (set == "intel") return make_pair(path + "data/iSAM/Laser/intel.graph", model);
-	if (set == "intel-gfs") return make_pair(path + "data/iSAM/Laser/intel.gfs.graph", model);
-	if (set == "Killian-gfs") return make_pair(path + "data/iSAM/Laser/Killian.gfs.graph", model);
-	if (set == "Killian") return make_pair(path + "data/iSAM/Laser/Killian.graph", model);
-	if (set == "Killian-noised") return make_pair(path + "data/iSAM/Laser/Killian-noised.graph", model);
+	if (set == "intel") return make_pair(path + "data/iSAM/Laser/intel.graph", null_model);
+	if (set == "intel-gfs") return make_pair(path + "data/iSAM/Laser/intel.gfs.graph", null_model);
+	if (set == "Killian-gfs") return make_pair(path + "data/iSAM/Laser/Killian.gfs.graph", null_model);
+	if (set == "Killian") return make_pair(path + "data/iSAM/Laser/Killian.graph", small);
+	if (set == "Killian-noised") return make_pair(path + "data/iSAM/Laser/Killian-noised.graph", null_model);
 	if (set == "3") return make_pair(path + "borg/toro/data/2D/w3-odom.graph", identity);
 	if (set == "100") return make_pair(path + "borg/toro/data/2D/w100-odom.graph", identity);
 	if (set == "10K") return make_pair(path + "borg/toro/data/2D/w10000-odom.graph", identity);
-	if (set == "olson") return make_pair(path + "data/iSAM/ISAM2/olson06icra.txt", model);
-	if (set == "victoria") return make_pair(path + "data/iSAM/ISAM2/victoria_park.txt", model);
-	return make_pair("unknown", model);
+	if (set == "olson") return make_pair(path + "data/iSAM/ISAM2/olson06icra.txt", null_model);
+	if (set == "victoria") return make_pair(path + "data/iSAM/ISAM2/victoria_park.txt", null_model);
+	return make_pair("unknown", null_model);
 }
 
 /* ************************************************************************* */
@@ -155,8 +158,8 @@ void save2D(const Pose2Graph& graph, const Pose2Config& config, const SharedDiag
 		pose = inverse(factor->measured());
 		stream << "EDGE2 " << factor->key2().index() << " " << factor->key1().index()
 				<< " " << pose.x() << " " << pose.y() << " " << pose.theta()
-				<< " " << R(0, 0) << " " << R(0, 1) << " " << R(1, 1) << " " << R(2, 2)
-				<< " " << R(0, 2) << " " << R(1, 2) << endl;
+				<< " " << RR(0, 0) << " " << RR(0, 1) << " " << RR(1, 1) << " " << RR(2, 2)
+				<< " " << RR(0, 2) << " " << RR(1, 2) << endl;
 	}
 
 	stream.close();
