@@ -19,6 +19,7 @@
 #include "FactorGraph.h"
 #include "BayesNet.h"
 #include "Key.h"
+#include "IndexTable.h"
 
 namespace gtsam {
 
@@ -128,11 +129,14 @@ namespace gtsam {
 		/** check equality */
 		bool equals(const BayesTree<Conditional>& other, double tol = 1e-9) const;
 
-		/** find parent clique of a conditional, given an ordering */
-		Symbol findParentClique(const std::list<Symbol>& parents, const std::list<Symbol>& ordering) const;
+		/**
+		 * Find parent clique of a conditional, given an IndexTable constructed from an ordering.
+		 * It will look at all parents and return the one with the lowest index in the ordering.
+		 */
+		Symbol findParentClique(const std::list<Symbol>& parents, const IndexTable<Symbol>& index) const;
 
 		/** insert a new conditional */
-		void insert(const sharedConditional& conditional, const std::list<Symbol>* ordering = NULL);
+		void insert(const sharedConditional& conditional, const IndexTable<Symbol>& index);
 
 		/** number of cliques */
 		inline size_t size() const {

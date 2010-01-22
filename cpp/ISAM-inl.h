@@ -48,20 +48,23 @@ namespace gtsam {
 			ordering = keys;
 		}
 
+		// Create Index from ordering
+		IndexTable<Symbol> index(ordering);
+
 		// eliminate into a Bayes net
 		BayesNet<Conditional> bayesNet = eliminate<Factor, Conditional>(factors,ordering);
 
 		// insert conditionals back in, straight into the topless bayesTree
 		typename BayesNet<Conditional>::const_reverse_iterator rit;
 		for ( rit=bayesNet.rbegin(); rit != bayesNet.rend(); ++rit )
-			this->insert(*rit, &ordering);
+			this->insert(*rit, index);
 
 		int count = 0;
 		// add orphans to the bottom of the new tree
 		BOOST_FOREACH(sharedClique orphan, orphans) {
 
-			Symbol key = findParentClique(orphan->separator_, ordering);
-			sharedClique parent = (*this)[key];
+			Symbol parentRepresentative = findParentClique(orphan->separator_, index);
+			sharedClique parent = (*this)[parentRepresentative];
 
 			parent->children_ += orphan;
 			orphan->parent_ = parent; // set new parent!

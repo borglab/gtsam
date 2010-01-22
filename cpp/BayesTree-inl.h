@@ -228,9 +228,10 @@ namespace gtsam {
 	/* ************************************************************************* */
 	template<class Conditional>
 	BayesTree<Conditional>::BayesTree(const BayesNet<Conditional>& bayesNet) {
+		IndexTable<Symbol> index(bayesNet.ordering());
 		typename BayesNet<Conditional>::const_reverse_iterator rit;
 		for ( rit=bayesNet.rbegin(); rit != bayesNet.rend(); ++rit )
-			insert(*rit);
+			insert(*rit, index);
 	}
 
 	/* ************************************************************************* */
@@ -265,21 +266,26 @@ namespace gtsam {
 
 	/* ************************************************************************* */
 	template<class Conditional>
-	Symbol BayesTree<Conditional>::findParentClique(const list<Symbol>& parents, const list<Symbol>& ordering) const {
-		Symbol parent;
-		for (list<Symbol>::const_iterator it = ordering.begin(); it!=ordering.end(); it++) {
-			list<Symbol>::const_iterator pit = find(parents.begin(), parents.end(), *it);
-			if (pit!=parents.end()) {
-				parent = *pit;
-				break;
+	Symbol BayesTree<Conditional>::findParentClique(const list<Symbol>& parents,
+			const IndexTable<Symbol>& index) const {
+		boost::optional<Symbol> parentCliqueRepresentative;
+		boost::optional<size_t> lowest;
+		BOOST_FOREACH(const Symbol& p, parents) {
+			size_t i = index(p);
+			if (!lowest || i<*lowest) {
+				lowest.reset(i);
+				parentCliqueRepresentative.reset(p);
 			}
 		}
-		return parent;
+		if (!lowest) throw
+			invalid_argument("BayesTree::findParentClique: no parents given or key not present in index");
+		return *parentCliqueRepresentative;
 	}
 
 	/* ************************************************************************* */
 	template<class Conditional>
-	void BayesTree<Conditional>::insert(const sharedConditional& conditional, const list<Symbol>* ordering)
+	void BayesTree<Conditional>::insert(const sharedConditional& conditional,
+			const IndexTable<Symbol>& index)
 	{
 		// get key and parents
 		const Symbol& key = conditional->key();
@@ -291,14 +297,10 @@ namespace gtsam {
 			return;
 		}
 
-		// otherwise, find the parent clique
-		Symbol parent;
-		if (!ordering) {
-			parent = parents.front(); // assumes parents are in current variable order, which is not the case (after COLAMD was activated)
-		} else {
-			parent = findParentClique(parents, *ordering);
-		}
-		sharedClique parent_clique = (*this)[parent];
+		// otherwise, find the parent clique by using the index data structure
+		// to find the lowest-ordered parent
+		Symbol parentRepresentative = findParentClique(parents, index);
+		sharedClique parent_clique = (*this)[parentRepresentative];
 
 		// if the parents and parent clique have the same size, add to parent clique
 		if (parent_clique->size() == parents.size()) {

@@ -30,7 +30,7 @@ typedef ISAM<SymbolicConditional> SymbolicISAM;
 double sigmax1 = 0.786153, sigmax2 = 0.687131, sigmax3 = 0.671512, sigmax4 =
 		0.669534, sigmax5 = sigmax3, sigmax6 = sigmax2, sigmax7 = sigmax1;
 
-/* ************************************************************************* */
+/* ************************************************************************* *
 
 // SLAM example from RSS sqrtSAM paper
 SymbolicConditional::shared_ptr x3(new SymbolicConditional("x3")),
@@ -51,7 +51,7 @@ SymbolicISAM createSlamSymbolicISAM(){
 	return bayesTree_slam;
 }
 
-/* ************************************************************************* */
+/* ************************************************************************* *
 
 // Conditionals for ASIA example from the tutorial with A and D evidence
 SymbolicConditional::shared_ptr
@@ -74,7 +74,7 @@ SymbolicISAM createAsiaSymbolicISAM() {
 	return bayesTree;
 }
 
-/* ************************************************************************* */
+/* ************************************************************************* *
 TEST( ISAM, iSAM )
 {
 	SymbolicISAM bayesTree = createAsiaSymbolicISAM();
@@ -108,7 +108,7 @@ TEST( ISAM, iSAM )
   CHECK(assert_equal(expected,bayesTree));
 }
 
-/* ************************************************************************* */
+/* ************************************************************************* *
 TEST( ISAM, iSAM_slam )
 {
 	// Create using insert

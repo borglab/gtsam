@@ -54,7 +54,9 @@ namespace gtsam {
 		int compare(const TypedSymbol& compare) const {return j_-compare.j_;}
 
 		// Testable Requirements
-		void print(const std::string& name) const {} //FIXME
+		virtual void print(const std::string& s) const {
+			std::cout << s << ": " << (std::string)(*this) << std::endl;
+		}
 		bool equals(const TypedSymbol& expected, double tol) const { return (*this)==expected; }
 
 	private:
@@ -118,7 +120,6 @@ namespace gtsam {
 		}
 
 		// Testable Requirements
-		void print(const std::string& name) const {} // FIXME
 		bool equals(const TypedLabeledSymbol& expected, double tol) const
 				{ return (*this)==expected; }
 
@@ -139,10 +140,8 @@ namespace gtsam {
 	 * GaussianFactor, etc.  These keys are generated at runtime from TypedSymbol
 	 * keys when linearizing a nonlinear factor graph.  This key is not type
 	 * safe, so cannot be used with any Nonlinear* classes.
-	 *
-	 * richard:  temporarily named 'Symbol' to make refactoring easier
 	 */
-	class Symbol {
+	class Symbol : Testable<Symbol> {
 	private:
 	  unsigned char c_;
 	  size_t j_;
@@ -189,6 +188,12 @@ namespace gtsam {
       }
 	  }
 #endif
+
+		// Testable Requirements
+		void print(const std::string& s) const {
+			std::cout << s << ": " << (std::string)(*this) << std::endl;
+		}
+		bool equals(const Symbol& expected, double tol) const { return (*this)==expected; }
 
 	  /** Retrieve key character */
 	  unsigned char chr() const { return c_; }

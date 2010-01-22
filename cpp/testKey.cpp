@@ -31,7 +31,7 @@ TEST ( TypedSymbol, basic_operations ) {
 	CHECK(key3 < key4);
 }
 
-/* ************************************************************************* */
+/* ************************************************************************* *
 TEST ( TypedLabledSymbol, basic_operations ) {
 	typedef TypedLabeledSymbol<Pose3, 'x', int> RobotKey;
 

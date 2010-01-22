@@ -11,13 +11,12 @@ using namespace boost::assign;
 
 #include <CppUnitLite/TestHarness.h>
 
-#define GTSAM_MAGIC_KEY
-
 #include "SymbolicBayesNet.h"
 #include "SymbolicFactorGraph.h"
 #include "Ordering.h"
 #include "BayesTree-inl.h"
 #include "smallExample.h"
+#include "IndexTable.h"
 
 using namespace gtsam;
 
@@ -25,45 +24,48 @@ typedef BayesTree<SymbolicConditional> SymbolicBayesTree;
 
 /* ************************************************************************* */
 // SLAM example from RSS sqrtSAM paper
-SymbolicConditional::shared_ptr x3(new SymbolicConditional("x3")),
-		x2(new SymbolicConditional("x2","x3")),
-		x1(new SymbolicConditional("x1","x2","x3")),
-		l1(new SymbolicConditional("l1","x1","x2")),
-		l2(new SymbolicConditional("l2","x1","x3"));
+Symbol _x1_('x', 1), _x2_('x', 2), _x3_('x', 3), _l1_('l', 1), _l2_('l', 2);
+SymbolicConditional::shared_ptr
+		x3(new SymbolicConditional(_x3_)),
+		x2(new SymbolicConditional(_x2_,_x3_)),
+		x1(new SymbolicConditional(_x1_,_x2_,_x3_)),
+		l1(new SymbolicConditional(_l1_,_x1_,_x2_)),
+		l2(new SymbolicConditional(_l2_,_x1_,_x3_));
 
 // Bayes Tree for sqrtSAM example
 SymbolicBayesTree createSlamSymbolicBayesTree(){
 	// Create using insert
+	Ordering slamOrdering; slamOrdering += _x3_, _x2_, _x1_, _l2_, _l1_;
 	SymbolicBayesTree bayesTree_slam;
-	bayesTree_slam.insert(x3);
-	bayesTree_slam.insert(x2);
-	bayesTree_slam.insert(x1);
-	bayesTree_slam.insert(l2);
-	bayesTree_slam.insert(l1);
+	bayesTree_slam.insert(x3,slamOrdering);
+	bayesTree_slam.insert(x2,slamOrdering);
+	bayesTree_slam.insert(x1,slamOrdering);
+	bayesTree_slam.insert(l2,slamOrdering);
+	bayesTree_slam.insert(l1,slamOrdering);
 	return bayesTree_slam;
 }
 
 /* ************************************************************************* */
-
-
 // Conditionals for ASIA example from the tutorial with A and D evidence
+Symbol _B_('B', 0), _L_('L', 0), _E_('E', 0), _S_('S', 0), _T_('T', 0), _X_('X',0);
 SymbolicConditional::shared_ptr
-	B(new SymbolicConditional("B")),
-	L(new SymbolicConditional("L", "B")),
-	E(new SymbolicConditional("E", "B", "L")),
-	S(new SymbolicConditional("S", "L", "B")),
-	T(new SymbolicConditional("T", "E", "L")),
-	X(new SymbolicConditional("X", "E"));
+	B(new SymbolicConditional(_B_)),
+	L(new SymbolicConditional(_L_, _B_)),
+	E(new SymbolicConditional(_E_, _B_, _L_)),
+	S(new SymbolicConditional(_S_, _L_, _B_)),
+	T(new SymbolicConditional(_T_, _E_, _L_)),
+	X(new SymbolicConditional(_X_, _E_));
 
 // Bayes Tree for Asia example
 SymbolicBayesTree createAsiaSymbolicBayesTree() {
 	SymbolicBayesTree bayesTree;
-	bayesTree.insert(B);
-	bayesTree.insert(L);
-	bayesTree.insert(E);
-	bayesTree.insert(S);
-	bayesTree.insert(T);
-	bayesTree.insert(X);
+	Ordering asiaOrdering; asiaOrdering += _X_, _T_, _S_, _E_, _L_, _B_;
+	bayesTree.insert(B,asiaOrdering);
+	bayesTree.insert(L,asiaOrdering);
+	bayesTree.insert(E,asiaOrdering);
+	bayesTree.insert(S,asiaOrdering);
+	bayesTree.insert(T,asiaOrdering);
+	bayesTree.insert(X,asiaOrdering);
 	return bayesTree;
 }
 
@@ -109,6 +111,16 @@ TEST( BayesTree, constructor )
 
 	// Check whether the same
 	CHECK(assert_equal(bayesTree,bayesTree2));
+
+	// CHECK findParentClique, should *not depend on order of parents*
+	Ordering ordering; ordering += _X_, _T_, _S_, _E_, _L_, _B_;
+	IndexTable<Symbol> index(ordering);
+
+	list<Symbol> parents1; parents1 += _E_, _L_;
+	CHECK(assert_equal(_E_,bayesTree.findParentClique(parents1, index)));
+
+	list<Symbol> parents2; parents2 += _L_, _E_;
+	CHECK(assert_equal(_E_,bayesTree.findParentClique(parents2, index)));
 }
 
 /* ************************************************************************* */
@@ -131,46 +143,48 @@ Bayes Tree for testing conversion to a forest of orphans needed for incremental.
 /* ************************************************************************* */
 TEST( BayesTree, removePath )
 {
+	Symbol _A_('A', 0), _B_('B', 0), _C_('C', 0), _D_('D', 0), _E_('E', 0), _F_('F',0);
 	SymbolicConditional::shared_ptr
-			A(new SymbolicConditional("A")),
-			B(new SymbolicConditional("B", "A")),
-			C(new SymbolicConditional("C", "A")),
-			D(new SymbolicConditional("D", "C")),
-			E(new SymbolicConditional("E", "B")),
-			F(new SymbolicConditional("F", "E"));
+			A(new SymbolicConditional(_A_)),
+			B(new SymbolicConditional(_B_, _A_)),
+			C(new SymbolicConditional(_C_, _A_)),
+			D(new SymbolicConditional(_D_, _C_)),
+			E(new SymbolicConditional(_E_, _B_)),
+			F(new SymbolicConditional(_F_, _E_));
 	SymbolicBayesTree bayesTree;
-	bayesTree.insert(A);
-	bayesTree.insert(B);
-	bayesTree.insert(C);
-	bayesTree.insert(D);
-	bayesTree.insert(E);
-	bayesTree.insert(F);
+	Ordering ord; ord += _A_,_B_,_C_,_D_,_E_,_F_;
+	bayesTree.insert(A,ord);
+	bayesTree.insert(B,ord);
+	bayesTree.insert(C,ord);
+	bayesTree.insert(D,ord);
+	bayesTree.insert(E,ord);
+	bayesTree.insert(F,ord);
 
 	// remove C, expected outcome: factor graph with ABC,
 	// Bayes Tree now contains two orphan trees: D|C and E|B,F|E
 	SymbolicFactorGraph expected;
-	expected.push_factor("A","B");
-	expected.push_factor("A");
-	expected.push_factor("A","C");
+	expected.push_factor(_A_,_B_);
+	expected.push_factor(_A_);
+	expected.push_factor(_A_,_C_);
 	SymbolicBayesTree::Cliques expectedOrphans;
-  expectedOrphans += bayesTree["D"], bayesTree["E"];
+  expectedOrphans += bayesTree[_D_], bayesTree[_E_];
 
   BayesNet<SymbolicConditional> bn;
 	SymbolicBayesTree::Cliques orphans;
-	bayesTree.removePath(bayesTree["C"], bn, orphans);
+	bayesTree.removePath(bayesTree[_C_], bn, orphans);
 	FactorGraph<SymbolicFactor> factors(bn);
   CHECK(assert_equal((FactorGraph<SymbolicFactor>)expected, factors));
   CHECK(assert_equal(expectedOrphans, orphans));
 
   // remove E: factor graph with EB; E|B removed from second orphan tree
 	SymbolicFactorGraph expected2;
-  expected2.push_factor("B","E");
+  expected2.push_factor(_B_,_E_);
   SymbolicBayesTree::Cliques expectedOrphans2;
-  expectedOrphans2 += bayesTree["F"];
+  expectedOrphans2 += bayesTree[_F_];
 
   BayesNet<SymbolicConditional> bn2;
 	SymbolicBayesTree::Cliques orphans2;
-  bayesTree.removePath(bayesTree["E"], bn2, orphans2);
+  bayesTree.removePath(bayesTree[_E_], bn2, orphans2);
   FactorGraph<SymbolicFactor> factors2(bn2);
   CHECK(assert_equal((FactorGraph<SymbolicFactor>)expected2, factors2));
   CHECK(assert_equal(expectedOrphans2, orphans2));
@@ -184,17 +198,17 @@ TEST( BayesTree, removePath2 )
 	// Call remove-path with clique B
 	BayesNet<SymbolicConditional> bn;
 	SymbolicBayesTree::Cliques orphans;
-  bayesTree.removePath(bayesTree["B"], bn, orphans);
+  bayesTree.removePath(bayesTree[_B_], bn, orphans);
 	FactorGraph<SymbolicFactor> factors(bn);
 
 	// Check expected outcome
 	SymbolicFactorGraph expected;
-	expected.push_factor("B","L","E");
-	expected.push_factor("B","L");
-	expected.push_factor("B");
+	expected.push_factor(_B_,_L_,_E_);
+	expected.push_factor(_B_,_L_);
+	expected.push_factor(_B_);
   CHECK(assert_equal((FactorGraph<SymbolicFactor>)expected, factors));
 	SymbolicBayesTree::Cliques expectedOrphans;
-  expectedOrphans += bayesTree["S"], bayesTree["T"], bayesTree["X"];
+  expectedOrphans += bayesTree[_S_], bayesTree[_T_], bayesTree[_X_];
   CHECK(assert_equal(expectedOrphans, orphans));
 }
 
@@ -206,18 +220,18 @@ TEST( BayesTree, removePath3 )
 	// Call remove-path with clique S
 	BayesNet<SymbolicConditional> bn;
 	SymbolicBayesTree::Cliques orphans;
-  bayesTree.removePath(bayesTree["S"], bn, orphans);
+  bayesTree.removePath(bayesTree[_S_], bn, orphans);
 	FactorGraph<SymbolicFactor> factors(bn);
 
 	// Check expected outcome
 	SymbolicFactorGraph expected;
-	expected.push_factor("B","L","E");
-	expected.push_factor("B","L");
-	expected.push_factor("B");
-	expected.push_factor("L","B","S");
+	expected.push_factor(_B_,_L_,_E_);
+	expected.push_factor(_B_,_L_);
+	expected.push_factor(_B_);
+	expected.push_factor(_L_,_B_,_S_);
   CHECK(assert_equal((FactorGraph<SymbolicFactor>)expected, factors));
 	SymbolicBayesTree::Cliques expectedOrphans;
-  expectedOrphans += bayesTree["T"], bayesTree["X"];
+  expectedOrphans += bayesTree[_T_], bayesTree[_X_];
   CHECK(assert_equal(expectedOrphans, orphans));
 }
 
@@ -227,7 +241,7 @@ TEST( BayesTree, removeTop )
 	SymbolicBayesTree bayesTree = createAsiaSymbolicBayesTree();
 
 	// create a new factor to be inserted
-	boost::shared_ptr<SymbolicFactor> newFactor(new SymbolicFactor("B","S"));
+	boost::shared_ptr<SymbolicFactor> newFactor(new SymbolicFactor(_B_,_S_));
 
 	// Remove the contaminated part of the Bayes tree
 	BayesNet<SymbolicConditional> bn;
@@ -237,17 +251,17 @@ TEST( BayesTree, removeTop )
 
 	// Check expected outcome
 	SymbolicFactorGraph expected;
-	expected.push_factor("B","L","E");
-	expected.push_factor("B","L");
-	expected.push_factor("B");
-	expected.push_factor("L","B","S");
+	expected.push_factor(_B_,_L_,_E_);
+	expected.push_factor(_B_,_L_);
+	expected.push_factor(_B_);
+	expected.push_factor(_L_,_B_,_S_);
   CHECK(assert_equal((FactorGraph<SymbolicFactor>)expected, factors));
 	SymbolicBayesTree::Cliques expectedOrphans;
-  expectedOrphans += bayesTree["T"], bayesTree["X"];
+  expectedOrphans += bayesTree[_T_], bayesTree[_X_];
   CHECK(assert_equal(expectedOrphans, orphans));
 
   // Try removeTop again with a factor that should not change a thing
-	boost::shared_ptr<SymbolicFactor> newFactor2(new SymbolicFactor("B"));
+	boost::shared_ptr<SymbolicFactor> newFactor2(new SymbolicFactor(_B_));
 	BayesNet<SymbolicConditional> bn2;
 	SymbolicBayesTree::Cliques orphans2;
 	bayesTree.removeTop(newFactor2->keys(), bn2, orphans2);
@@ -265,8 +279,8 @@ TEST( BayesTree, removeTop2 )
 
 	// create two factors to be inserted
 	SymbolicFactorGraph newFactors;
-	newFactors.push_factor("B");
-	newFactors.push_factor("S");
+	newFactors.push_factor(_B_);
+	newFactors.push_factor(_S_);
 
 	// Remove the contaminated part of the Bayes tree
 	BayesNet<SymbolicConditional> bn;
@@ -276,35 +290,38 @@ TEST( BayesTree, removeTop2 )
 
 	// Check expected outcome
 	SymbolicFactorGraph expected;
-	expected.push_factor("B","L","E");
-	expected.push_factor("B","L");
-	expected.push_factor("B");
-	expected.push_factor("L","B","S");
+	expected.push_factor(_B_,_L_,_E_);
+	expected.push_factor(_B_,_L_);
+	expected.push_factor(_B_);
+	expected.push_factor(_L_,_B_,_S_);
   CHECK(assert_equal((FactorGraph<SymbolicFactor>)expected, factors));
 	SymbolicBayesTree::Cliques expectedOrphans;
-  expectedOrphans += bayesTree["T"], bayesTree["X"];
+  expectedOrphans += bayesTree[_T_], bayesTree[_X_];
 	CHECK(assert_equal(expectedOrphans, orphans));
 }
 
 /* ************************************************************************* */
 TEST( BayesTree, removeTop3 )
 {
+	Symbol _l5_('l', 5), _x4_('x', 4);
 	// simple test case that failed after COLAMD was fixed/activated
 	SymbolicConditional::shared_ptr
-	X(new SymbolicConditional("l5")),
-	A(new SymbolicConditional("x4", "l5")),
-	B(new SymbolicConditional("x3", "x4")),
-	C(new SymbolicConditional("x2", "x3"));
+	X(new SymbolicConditional(_l5_)),
+	A(new SymbolicConditional(_x4_, _l5_)),
+	B(new SymbolicConditional(_x3_, _x4_)),
+	C(new SymbolicConditional(_x2_, _x3_));
 
+	Ordering newOrdering;
+	newOrdering += _x3_, _x2_, _x1_, _l2_, _l1_, _x4_, _l5_;
 	SymbolicBayesTree bayesTree;
-	bayesTree.insert(X);
-	bayesTree.insert(A);
-	bayesTree.insert(B);
-	bayesTree.insert(C);
+	bayesTree.insert(X,newOrdering);
+	bayesTree.insert(A,newOrdering);
+	bayesTree.insert(B,newOrdering);
+	bayesTree.insert(C,newOrdering);
 
 	// remove all
 	list<Symbol> keys;
-	keys += "l5", "x2", "x3", "x4";
+	keys += _l5_, _x2_, _x3_, _x4_;
 	BayesNet<SymbolicConditional> bn;
 	SymbolicBayesTree::Cliques orphans;
 	bayesTree.removeTop(keys, bn, orphans);
