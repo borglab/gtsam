@@ -10,12 +10,14 @@
 
 #include <boost/foreach.hpp>
 #include <boost/assign/std/list.hpp> // for operator +=
+#include <fstream>
 using namespace boost::assign;
 
 #include "Conditional.h"
 #include "BayesTree.h"
 #include "Ordering.h"
 #include "inference-inl.h"
+#include "Key.h"
 
 namespace gtsam {
 
@@ -85,6 +87,47 @@ namespace gtsam {
 			getCliqueData(data, c);
 		}
 	}
+
+	/* ************************************************************************* */
+	template<class Conditional>
+	void BayesTree<Conditional>::saveGraph(const std::string &s) const {
+		ofstream of(s.c_str());
+		of<< "digraph G{\n";
+		saveGraph(of, root_);
+		of<<"}";
+		of.close();
+	}
+
+	template<class Conditional>
+	void BayesTree<Conditional>::saveGraph(ostream &s,
+			BayesTree<Conditional>::sharedClique clique,
+			int parentnum, int num) const {
+		bool first = true;
+		std::stringstream out;
+		out << num;
+		string parent = out.str();
+		parent += "[label=\"";
+		BOOST_FOREACH(boost::shared_ptr<Conditional> c, clique->conditionals_) {
+			if(!first) parent += ","; first = false;
+			parent += (string(c->key())).c_str();
+		}
+		if( clique != root_){
+			parent += " : ";
+			s << parentnum << "->" << num << "\n";
+		}
+		first = true;
+		BOOST_FOREACH(const Symbol& sep, clique->separator_) {
+			if(!first) parent += ","; first = false;
+			parent += ((string)sep).c_str();
+		}
+		parent += "\"];\n";
+		s << parent;
+		parentnum = num;
+		BOOST_FOREACH(sharedClique c, clique->children_) {
+			saveGraph(s, c, parentnum, ++num);
+		}
+	}
+
 
 	template<class Conditional>
 	typename BayesTree<Conditional>::CliqueStats

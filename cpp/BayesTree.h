@@ -127,6 +127,13 @@ namespace gtsam {
 		/** print */
 		void print(const std::string& s = "") const;
 
+		/** saves the Tree to a text file in GraphViz format */
+		void saveGraph(const std::string& s) const;
+	private:
+		void saveGraph(std::ostream &s, sharedClique clique,
+				int parentnum = 0, int num = 0) const;
+	public:
+
 		/** check equality */
 		bool equals(const BayesTree<Conditional>& other, double tol = 1e-9) const;
 
@@ -170,6 +177,7 @@ namespace gtsam {
 			CliqueStats getStats() const;
 		};
 		CliqueData getCliqueData() const;
+
 	private:
 		void getCliqueData(CliqueData& stats, sharedClique clique) const;
 	public:
