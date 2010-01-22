@@ -85,26 +85,27 @@ namespace gtsam {
 				for (j = 0; j < n; j++) variances(j) = covariance(j,j);
 				return Diagonal::Variances(variances,true);
 			}
-			full: return shared_ptr(new Gaussian(inverse_square_root(covariance)));
+			full: return shared_ptr(new Gaussian(n, inverse_square_root(covariance)));
 		}
 
     void Gaussian::print(const string& name) const {
-			gtsam::print(sqrt_information_, "Gaussian");
+			gtsam::print(thisR(), "Gaussian");
 		}
 
 		bool Gaussian::equals(const Base& expected, double tol) const {
 			const Gaussian* p = dynamic_cast<const Gaussian*> (&expected);
 			if (p == NULL) return false;
 			if (typeid(*this) != typeid(*p)) return false;
-			return equal_with_abs_tol(sqrt_information_, p->sqrt_information_, sqrt(tol));
+			//if (!sqrt_information_) return true; // ALEX todo;
+			return equal_with_abs_tol(R(), p->R(), sqrt(tol));
 		}
 
 		Vector Gaussian::whiten(const Vector& v) const {
-			return sqrt_information_ * v;
+			return thisR() * v;
 		}
 
 		Vector Gaussian::unwhiten(const Vector& v) const {
-			return backSubstituteUpper(sqrt_information_, v);
+			return backSubstituteUpper(thisR(), v);
 		}
 
 		double Gaussian::Mahalanobis(const Vector& v) const {
@@ -114,11 +115,11 @@ namespace gtsam {
 		}
 
 		Matrix Gaussian::Whiten(const Matrix& H) const {
-		  return sqrt_information_ * H;
+		  return thisR() * H;
 		}
 
 		void Gaussian::WhitenInPlace(Matrix& H) const {
-		  H = sqrt_information_ * H;
+		  H = thisR() * H;
 		}
 
 		// General QR, see also special version in Constrained
@@ -140,8 +141,8 @@ namespace gtsam {
 		/* ************************************************************************* */
 		// TODO: can we avoid calling reciprocal twice ?
 		Diagonal::Diagonal(const Vector& sigmas) :
-					Gaussian(diag(reciprocal(sigmas))), invsigmas_(reciprocal(sigmas)),
-							sigmas_(sigmas) {
+					Gaussian(sigmas.size()), invsigmas_(reciprocal(sigmas)), sigmas_(
+							sigmas) {
 				}
 
     Diagonal::shared_ptr Diagonal::Variances(const Vector& variances, bool smart) {

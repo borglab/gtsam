@@ -74,15 +74,26 @@ namespace gtsam {
 	 */
 	struct Gaussian: public Base {
 
-	protected:
+	private:
 
 		// TODO: store as boost upper-triangular or whatever is passed from above
 		/* Matrix square root of information matrix (R) */
-		Matrix sqrt_information_;
+		boost::optional<Matrix> sqrt_information_;
+
+		/**
+		 * Return R itself, but note that Whiten(H) is cheaper than R*H
+		 */
+   const Matrix& thisR() const {
+			// should never happen
+			if (!sqrt_information_) throw std::runtime_error("Gaussian: has no R matrix");
+			return *sqrt_information_;
+		}
+
+	protected:
 
 		/** protected constructor takes square root information matrix */
-		Gaussian(const Matrix& sqrt_information) :
-			Base(sqrt_information.size1()), sqrt_information_(sqrt_information) {
+		Gaussian(size_t dim, const boost::optional<Matrix>& sqrt_information = boost::none) :
+			Base(dim), sqrt_information_(sqrt_information) {
 		}
 
 	public:
@@ -94,7 +105,7 @@ namespace gtsam {
      * @param smart, check if can be simplified to derived class
      */
     static shared_ptr SqrtInformation(const Matrix& R) {
-    	return shared_ptr(new Gaussian(R));
+    	return shared_ptr(new Gaussian(R.size1(),R));
     }
 
     /**
@@ -107,7 +118,7 @@ namespace gtsam {
      * A Gaussian noise model created by specifying an information matrix.
      */
     static shared_ptr Information(const Matrix& Q)  {
-    	return shared_ptr(new Gaussian(square_root_positive(Q)));
+    	return shared_ptr(new Gaussian(Q.size1(),square_root_positive(Q)));
     }
 
 		virtual void print(const std::string& name) const;
@@ -151,9 +162,7 @@ namespace gtsam {
 		/**
 		 * Return R itself, but note that Whiten(H) is cheaper than R*H
 		 */
-		const Matrix& R() const {
-			return sqrt_information_;
-		}
+    virtual Matrix R() const { return thisR();}
 
 	}; // Gaussian
 
@@ -223,6 +232,12 @@ namespace gtsam {
      */
     virtual Vector sample() const;
 
+		/**
+		 * Return R itself, but note that Whiten(H) is cheaper than R*H
+		 */
+		virtual Matrix R() const {
+			return diag(invsigmas_);
+		}
   }; // Diagonal
 
 
