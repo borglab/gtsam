@@ -35,7 +35,7 @@ GaussianConditional::GaussianConditional(const Symbol& key, Vector d, Matrix R,
 
 /* ************************************************************************* */
 GaussianConditional::GaussianConditional(const Symbol& key,
-		const Vector& d, const Matrix& R, const map<Symbol, Matrix>& parents, Vector sigmas) :
+		const Vector& d, const Matrix& R, const SymbolMap<Matrix>& parents, Vector sigmas) :
 	Conditional (key), R_(R),sigmas_(sigmas), d_(d), parents_(parents) {
 }
 

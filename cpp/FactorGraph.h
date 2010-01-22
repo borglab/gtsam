@@ -19,6 +19,7 @@
 #include "BayesNet.h"
 #include "graph.h"
 #include "Key.h"
+#include "SymbolMap.h"
 
 namespace gtsam {
 
@@ -42,7 +43,7 @@ namespace gtsam {
 		std::vector<sharedFactor> factors_;
 
 		/** For each variable a list of factor indices connected to it  */
-		typedef std::map<Symbol, std::list<int> > Indices;
+		typedef SymbolMap<std::list<int> > Indices;
 		Indices indices_;
 
 	public:

@@ -13,11 +13,13 @@
 #include <boost/tuple/tuple.hpp>
 #include <boost/serialization/map.hpp>
 #include <list>
+#include <set>
 
 #include "Factor.h"
 #include "Matrix.h"
 #include "VectorConfig.h"
 #include "NoiseModel.h"
+#include "SymbolMap.h"
 
 namespace gtsam {
 
@@ -33,13 +35,13 @@ class GaussianFactor: boost::noncopyable, public Factor<VectorConfig> {
 public:
 
 	typedef boost::shared_ptr<GaussianFactor> shared_ptr;
-	typedef std::map<Symbol, Matrix>::iterator iterator;
-	typedef std::map<Symbol, Matrix>::const_iterator const_iterator;
+	typedef SymbolMap<Matrix>::iterator iterator;
+	typedef SymbolMap<Matrix>::const_iterator const_iterator;
 
 protected:
 
 	sharedDiagonal model_; // Gaussian noise model with diagonal covariance matrix
-	std::map<Symbol, Matrix> As_; // linear matrices
+	SymbolMap<Matrix> As_; // linear matrices
 	Vector b_; // right-hand-side
 
 public:
@@ -132,10 +134,7 @@ public:
 	 * O(log n)
 	 */
 	const Matrix& get_A(const Symbol& key) const {
-		const_iterator it = As_.find(key);
-		if (it == As_.end())
-			throw(std::invalid_argument("GaussianFactor::[] invalid key: " + (std::string)key));
-		return it->second;
+		return As_.at(key);
 	}
 
 	/** operator[] syntax for get */

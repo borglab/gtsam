@@ -147,24 +147,12 @@ VectorConfig expmap(const VectorConfig& original, const Vector& delta)
 
 /* ************************************************************************* */
 const Vector& VectorConfig::get(const Symbol& name) const {
-  const_iterator it = values.find(name);
-  if (it==values.end()) {
-    print();
-    cout << "asked for key " << (string)name << endl;
-    throw(std::invalid_argument("VectorConfig::[] invalid key"));
-  }
-  return it->second;
+  return values.at(name);
 }
 
 /* ************************************************************************* */
 Vector& VectorConfig::getReference(const Symbol& name) {
-  iterator it = values.find(name);
-  if (it==values.end()) {
-    print();
-    cout << "asked for key " << (string)name << endl;
-    throw(std::invalid_argument("VectorConfig::[] invalid key"));
-  }
-  return it->second;
+  return values.at(name);
 }
 
 /* ************************************************************************* */

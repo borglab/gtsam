@@ -11,6 +11,7 @@
 #include <boost/tuple/tuple.hpp>
 #include "SymbolicConditional.h"
 #include "SymbolicFactor.h"
+#include "SymbolMap.h"
 
 using namespace std;
 
@@ -31,7 +32,7 @@ namespace gtsam {
 	SymbolicFactor::SymbolicFactor(const vector<shared_ptr> & factors) {
 
 		// store keys in a map to make them unique (set is not portable)
-		map<Symbol, Symbol> map;
+		SymbolMap<Symbol> map;
 		BOOST_FOREACH(shared_ptr factor, factors)
 			BOOST_FOREACH(const Symbol& key, factor->keys())
 				map.insert(make_pair(key,key));

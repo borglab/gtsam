@@ -19,6 +19,7 @@
 #include "VectorConfig.h"
 #include "Matrix.h"
 #include "Key.h"
+#include "SymbolMap.h"
 
 namespace gtsam {
 
@@ -32,7 +33,7 @@ class Ordering;
 class GaussianConditional : public Conditional {
 
 public:
-	typedef std::map<Symbol, Matrix> Parents;
+	typedef SymbolMap<Matrix> Parents;
 	typedef Parents::const_iterator const_iterator;
 	typedef boost::shared_ptr<GaussianConditional> shared_ptr;
 

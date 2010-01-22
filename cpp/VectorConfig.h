@@ -15,6 +15,7 @@
 #include "Testable.h"
 #include "Vector.h"
 #include "Key.h"
+#include "SymbolMap.h"
 
 namespace gtsam {
 	
@@ -23,11 +24,11 @@ namespace gtsam {
 
   protected:
     /** Map from string indices to values */
-    std::map<Symbol, Vector> values;
+    SymbolMap<Vector> values;
 
   public:
-    typedef std::map<Symbol, Vector>::iterator iterator;
-    typedef std::map<Symbol, Vector>::const_iterator const_iterator;
+    typedef SymbolMap<Vector>::iterator iterator;
+    typedef SymbolMap<Vector>::const_iterator const_iterator;
 
     VectorConfig() {}
     VectorConfig(const VectorConfig& cfg_in): values(cfg_in.values) {}

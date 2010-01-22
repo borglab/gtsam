@@ -21,10 +21,11 @@
 #include "BayesNet.h"
 #include "BayesTree.h"
 #include "Key.h"
+#include "SymbolMap.h"
 
 namespace gtsam {
 
-	typedef std::map<Symbol, GaussianFactor::shared_ptr> CachedFactors;
+	typedef SymbolMap<GaussianFactor::shared_ptr> CachedFactors;
 
 	template<class Conditional, class Config>
 	class ISAM2: public BayesTree<Conditional> {
@@ -69,6 +70,8 @@ namespace gtsam {
 				double wildfire_threshold = 0., double relinearize_threshold = 0.);
 
 		const Config estimate() const {return theta_;}
+
+		const std::list<Symbol>& getMarked() const { return marked_; }
 
 	private:
 

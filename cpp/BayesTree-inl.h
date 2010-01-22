@@ -6,6 +6,8 @@
  * @author  Viorela Ila
  */
 
+#include <iostream>
+
 #include <boost/foreach.hpp>
 #include <boost/assign/std/list.hpp> // for operator +=
 using namespace boost::assign;
@@ -63,6 +65,51 @@ namespace gtsam {
 		print(indent);
 		BOOST_FOREACH(shared_ptr child, children_)
 			child->printTree(indent+"  ");
+	}
+
+	/* ************************************************************************* */
+	template<class Conditional>
+	typename BayesTree<Conditional>::CliqueData
+	BayesTree<Conditional>::getCliqueData() const {
+		CliqueData data;
+		getCliqueData(data, root_);
+		return data;
+	}
+
+	template<class Conditional>
+	void BayesTree<Conditional>::getCliqueData(CliqueData& data,
+			BayesTree<Conditional>::sharedClique clique) const {
+		data.conditionalSizes.push_back(clique->conditionals_.size());
+		data.separatorSizes.push_back(clique->separator_.size());
+		BOOST_FOREACH(sharedClique c, clique->children_) {
+			getCliqueData(data, c);
+		}
+	}
+
+	template<class Conditional>
+	typename BayesTree<Conditional>::CliqueStats
+	BayesTree<Conditional>::CliqueData::getStats() const {
+		CliqueStats stats;
+
+		double sum = 0.0;
+		size_t max = 0;
+		BOOST_FOREACH(size_t s, conditionalSizes) {
+			sum += (double)s;
+			if(s > max) max = s;
+		}
+		stats.avgConditionalSize = sum / (double)conditionalSizes.size();
+		stats.maxConditionalSize = max;
+
+		sum = 0.0;
+		max = 1;
+		BOOST_FOREACH(size_t s, separatorSizes) {
+			sum += (double)s;
+			if(s > max) max = s;
+		}
+		stats.avgSeparatorSize = sum / (double)separatorSizes.size();
+		stats.maxSeparatorSize = max;
+
+		return stats;
 	}
 
 	/* ************************************************************************* */

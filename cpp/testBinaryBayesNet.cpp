@@ -26,6 +26,7 @@ using namespace boost::assign;
 #include "BayesNet-inl.h"
 #include "smallExample.h"
 #include "Ordering.h"
+#include "SymbolMap.h"
 
 using namespace std;
 using namespace gtsam;
@@ -34,7 +35,7 @@ using namespace gtsam;
 typedef BayesNet<BinaryConditional> BinaryBayesNet;
 
 
-double probability( BinaryBayesNet & bbn, map<Symbol,bool> & config)
+double probability( BinaryBayesNet & bbn, SymbolMap<bool> & config)
 {
 	double result = 1.0;
 	BinaryBayesNet::const_iterator it = bbn.begin();
@@ -53,7 +54,7 @@ TEST( BinaryBayesNet, constructor )
 	// p(x|y=0) = 0.3
 	// p(x|y=1) = 0.6
 
-	map<Symbol,bool> config;
+	SymbolMap<bool> config;
 	config["y"] = false;
 	config["x"] = false;
 	// unary conditional for y

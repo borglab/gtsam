@@ -119,14 +119,7 @@ void FactorGraph<Factor>::replace(int index, sharedFactor factor) {
   if(factors_[index] != NULL) {
     // Remove this factor from its variables' index lists
     BOOST_FOREACH(const Symbol& key, factor->keys()) {
-      Indices::iterator indices = indices_.find(key);
-      if(indices != indices_.end()) {
-        indices->second.remove(index);
-      } else {
-        throw invalid_argument(boost::str(boost::format(
-            "Factor graph inconsistency!  Factor %d involves variable %s but "
-            "is missing from its factor index list.") % index % (std::string)key));
-      }
+    	indices_.at(key).remove(index);
     }
   }
 
@@ -228,8 +221,7 @@ Ordering FactorGraph<Factor>::getOrdering() const {
 /* ************************************************************************* */
 template<class Factor>
 list<int> FactorGraph<Factor>::factors(const Symbol& key) const {
-	Indices::const_iterator it = indices_.find(key);
-	return it->second;
+	return indices_.at(key);
 }
 
 /* ************************************************************************* */
@@ -240,15 +232,8 @@ vector<boost::shared_ptr<Factor> >
 FactorGraph<Factor>::findAndRemoveFactors(const Symbol& key) {
 	vector<sharedFactor> found;
 
-	Indices::iterator it = indices_.find(key);
-	if (it == indices_.end())
-		throw(invalid_argument
-				("FactorGraph::findAndRemoveFactors invalid key: " + (std::string)key));
-
-	list<int> *indices_ptr; // pointer to indices list in indices_ map
-	indices_ptr = &(it->second);
-
-	BOOST_FOREACH(int i, *indices_ptr) {
+	const list<int>& indices = indices_.at(key);
+	BOOST_FOREACH(const int& i, indices) {
 		if(factors_[i] == NULL) continue; // skip NULL factors
 		found.push_back(factors_[i]);     // add to found
 		remove(i);                        // set factor to NULL.

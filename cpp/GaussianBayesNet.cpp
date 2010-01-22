@@ -10,6 +10,7 @@
 
 #include "GaussianBayesNet.h"
 #include "VectorConfig.h"
+#include "SymbolMap.h"
 
 using namespace std;
 using namespace gtsam;
@@ -144,7 +145,7 @@ pair<Matrix,Vector> matrix(const GaussianBayesNet& bn)  {
 
   // add the dimensions of all variables to get matrix dimension
   // and at the same time create a mapping from keys to indices
-  size_t N=0; map<Symbol,size_t> mapping;
+  size_t N=0; SymbolMap<size_t> mapping;
   BOOST_FOREACH(GaussianConditional::shared_ptr cg,bn) {
     mapping.insert(make_pair(cg->key(),N));
     N += cg->dim();

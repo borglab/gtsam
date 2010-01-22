@@ -10,17 +10,16 @@
 
 #pragma once
 
-#include <set>
-#include <map>
 #include <list>
 #include <boost/utility.hpp> // for noncopyable
 #include "Testable.h"
 #include "Key.h"
+#include "SymbolMap.h"
 
 namespace gtsam {
 
 	/** A map from key to dimension, useful in various contexts */
-  typedef std::map<Symbol,int> Dimensions;
+  typedef SymbolMap<int> Dimensions;
 	
   /** 
    * A simple factor class to use in a factor graph.

@@ -31,7 +31,7 @@ typedef pair<Symbol,Matrix> NamedMatrix;
 GaussianFactor::GaussianFactor(const boost::shared_ptr<GaussianConditional>& cg) :
 	b_(cg->get_d()) {
 	As_.insert(make_pair(cg->key(), cg->get_R()));
-	std::map<Symbol, Matrix>::const_iterator it = cg->parentsBegin();
+	SymbolMap<Matrix>::const_iterator it = cg->parentsBegin();
 	for (; it != cg->parentsEnd(); it++) {
 		const Symbol& j = it->first;
 		const Matrix& Aj = it->second;
@@ -247,9 +247,7 @@ GaussianFactor::sparse(const Dimensions& columnIndices) const {
 	// iterate over all matrices in the factor
 	FOREACH_PAIR( key, Aj, As_) {
 		// find first column index for this key
-		// TODO: check if end() and throw exception if not found
-		Dimensions::const_iterator it = columnIndices.find(*key);
-		int column_start = it->second;
+		int column_start = columnIndices.at(*key);
 		for (size_t i = 0; i < Aj->size1(); i++) {
 			double sigma_i = model_->sigma(i);
 			for (size_t j = 0; j < Aj->size2(); j++)

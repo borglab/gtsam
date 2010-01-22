@@ -116,7 +116,7 @@ testSubgraphPreconditioner_SOURCES = testSubgraphPreconditioner.cpp
 testSubgraphPreconditioner_LDADD   = libgtsam.la
 
 # Nonlinear inference 
-headers += Key.h NonlinearFactorGraph.h NonlinearFactorGraph-inl.h
+headers += Key.h SymbolMap.h NonlinearFactorGraph.h NonlinearFactorGraph-inl.h
 headers += NonlinearOptimizer.h NonlinearOptimizer-inl.h 
 headers += NonlinearFactor.h
 check_PROGRAMS += testNonlinearFactor testNonlinearFactorGraph testNonlinearOptimizer testKey
@@ -238,7 +238,7 @@ testVSLAMConfig_LDADD = libgtsam.la
 headers += $(sources:.cpp=.h)
 
 # Timing tests
-noinst_PROGRAMS = timeGaussianFactor timeGaussianFactorGraph timeRot3 timeMatrix
+noinst_PROGRAMS = timeGaussianFactor timeGaussianFactorGraph timeRot3 timeMatrix timeSymbolMaps
 timeRot3_SOURCES = timeRot3.cpp
 timeRot3_LDADD = libgtsam.la
 timeGaussianFactor_SOURCES = timeGaussianFactor.cpp
@@ -247,6 +247,8 @@ timeGaussianFactorGraph_SOURCES = timeGaussianFactorGraph.cpp
 timeGaussianFactorGraph_LDADD = libgtsam.la
 timeMatrix_SOURCES 			  = timeMatrix.cpp 
 timeMatrix_LDADD 			  = libgtsam.la
+timeSymbolMaps_SOURCES        = timeSymbolMaps.cpp
+timeSymbolMaps_LDADD          = libgtsam.la
 
 # create both dynamic and static libraries
 AM_CXXFLAGS = -I$(boost) -fPIC

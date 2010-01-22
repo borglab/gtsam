@@ -17,6 +17,7 @@
 #include <boost/serialization/vector.hpp>
 #include "Conditional.h"
 #include "Key.h"
+#include "SymbolMap.h"
 
 namespace gtsam {
 
@@ -60,13 +61,13 @@ namespace gtsam {
 			cpt_.insert(cpt_.end(),cpt.begin(),cpt.end()); // p(x|parents)
 		}
 
-		double probability( std::map<Symbol,bool> config) {
+		double probability( SymbolMap<bool> config) {
 			int index = 0, count = 1;
 			BOOST_FOREACH(const Symbol& parent, parents_){
 				index += count*(int)(config[parent]);
 				count = count << 1;
 			}
-			if( config.find(key_)->second )
+			if( config.at(key_) )
 				index += count;
 			return cpt_[index];
 		}

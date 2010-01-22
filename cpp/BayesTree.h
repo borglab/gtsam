@@ -8,7 +8,6 @@
 
 #pragma once
 
-#include <map>
 #include <list>
 #include <vector>
 #include <boost/serialization/map.hpp>
@@ -46,6 +45,8 @@ namespace gtsam {
 			shared_ptr parent_;
 			std::list<shared_ptr> children_;
 			std::list<Symbol> separator_; /** separator keys */
+
+			friend class BayesTree<Conditional>;
 
 			//* Constructor */
 			Clique(const sharedConditional& conditional);
@@ -96,7 +97,7 @@ namespace gtsam {
 	private:
 
 		/** Map from keys to Clique */
-		typedef std::map<Symbol, sharedClique> Nodes;
+		typedef SymbolMap<sharedClique> Nodes;
 		Nodes nodes_;
 
 		/** Root clique */
@@ -153,12 +154,25 @@ namespace gtsam {
 
 		/** find the clique to which key belongs */
 		sharedClique operator[](const Symbol& key) const {
-			typename Nodes::const_iterator it = nodes_.find(key);
-			if (it == nodes_.end()) throw(std::invalid_argument(
-					"BayesTree::operator['" + (std::string)key + "']: key not found"));
-			sharedClique clique = it->second;
-			return clique;
+			return nodes_.at(key);
 		}
+
+		/** clique statistics */
+		struct CliqueStats {
+			double avgConditionalSize;
+			std::size_t maxConditionalSize;
+			double avgSeparatorSize;
+			std::size_t maxSeparatorSize;
+		};
+		struct CliqueData {
+			std::vector<std::size_t> conditionalSizes;
+			std::vector<std::size_t> separatorSizes;
+			CliqueStats getStats() const;
+		};
+		CliqueData getCliqueData() const;
+	private:
+		void getCliqueData(CliqueData& stats, sharedClique clique) const;
+	public:
 
 		/** return marginal on any variable */
 		template<class Factor>
