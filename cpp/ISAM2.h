@@ -34,12 +34,17 @@ namespace gtsam {
 
 		// current linearization point
 		Config theta_;
+		Config thetaFuture_; // lin point of next iteration
 
 		// for keeping all original nonlinear factors
 		NonlinearFactorGraph<Config> nonlinearFactors_;
 
 		// cached intermediate results for restarting computation in the middle
 		CachedFactors cached_;
+
+		// the linear solution, an update to the estimate in theta
+		VectorConfig delta_;
+		VectorConfig deltaMarked_;
 
 		// variables that have been updated, requiring the corresponding factors to be relinearized
 		std::list<Symbol> marked_;
@@ -64,19 +69,24 @@ namespace gtsam {
 		 * ISAM2. (update_internal provides access to list of orphans for drawing purposes)
 		 */
 		void update_internal(const NonlinearFactorGraph<Config>& newFactors,
-				const Config& config, Cliques& orphans,
+				const Config& newTheta, Cliques& orphans,
 				double wildfire_threshold, double relinearize_threshold);
-		void update(const NonlinearFactorGraph<Config>& newFactors, const Config& config,
+		void update(const NonlinearFactorGraph<Config>& newFactors, const Config& newTheta,
 				double wildfire_threshold = 0., double relinearize_threshold = 0.);
 
-		const Config estimate() const {return theta_;}
+		// needed to create initial estimates (note that this will be the linearization point in the next step!)
+		const Config getLinearizationPoint() const {return thetaFuture_;}
+		// estimate based on incomplete delta (threshold!)
+		const Config calculateEstimate() const {return expmap(theta_, delta_);}
+		// estimate based on full delta (note that this is based on the actual current linearization point)
+		const Config calculateBestEstimate() const {return expmap(theta_, optimize2(*this, 0.));}
 
 		const std::list<Symbol>& getMarked() const { return marked_; }
 
 	private:
 
-		boost::shared_ptr<FactorGraph<NonlinearFactor<Config> > > getAffectedFactors(const std::list<Symbol>& keys) const;
-		FactorGraph<GaussianFactor> relinearizeAffectedFactors(const std::list<Symbol>& affectedKeys) const;
+		FactorGraph<NonlinearFactor<Config> > getAffectedFactors(const std::list<Symbol>& keys) const;
+		FactorGraph<GaussianFactor> relinearizeAffectedFactors(const std::set<Symbol>& affectedKeys) const;
 		FactorGraph<GaussianFactor> getCachedBoundaryFactors(Cliques& orphans);
 
 	}; // ISAM2

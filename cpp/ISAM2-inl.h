@@ -67,16 +67,16 @@ namespace gtsam {
 	/** Create a Bayes Tree from a nonlinear factor graph */
 	template<class Conditional, class Config>
 	ISAM2<Conditional, Config>::ISAM2(const NonlinearFactorGraph<Config>& nlfg, const Ordering& ordering, const Config& config)
-	: BayesTree<Conditional>(nlfg.linearize(config).eliminate(ordering)), nonlinearFactors_(nlfg), theta_(config) {
+	: BayesTree<Conditional>(nlfg.linearize(config).eliminate(ordering)), theta_(config), thetaFuture_(config), nonlinearFactors_(nlfg) {
 		// todo: repeats calculation above, just to set "cached"
 		_eliminate_const(nlfg.linearize(config), cached_, ordering);
 	}
 
 	/* ************************************************************************* */
 	template<class Conditional, class Config>
-	boost::shared_ptr<FactorGraph<NonlinearFactor<Config> > >
+	FactorGraph<NonlinearFactor<Config> >
 	ISAM2<Conditional, Config>::getAffectedFactors(const list<Symbol>& keys) const {
-		boost::shared_ptr<FactorGraph<NonlinearFactor<Config> > > allAffected(new FactorGraph<NonlinearFactor<Config> >);
+	  FactorGraph<NonlinearFactor<Config> > allAffected;
 		list<int> indices;
 		BOOST_FOREACH(const Symbol& key, keys) {
 			const list<int> l = nonlinearFactors_.factors(key);
@@ -85,7 +85,7 @@ namespace gtsam {
 		indices.sort();
 		indices.unique();
 		BOOST_FOREACH(int i, indices) {
-			allAffected->push_back(nonlinearFactors_[i]);
+			allAffected.push_back(nonlinearFactors_[i]);
 		}
 		return allAffected;
 	}
@@ -94,17 +94,19 @@ namespace gtsam {
 	// retrieve all factors that ONLY contain the affected variables
 	// (note that the remaining stuff is summarized in the cached factors)
 	template<class Conditional, class Config>
-	FactorGraph<GaussianFactor> ISAM2<Conditional, Config>::relinearizeAffectedFactors(const list<Symbol>& affectedKeys) const {
+	FactorGraph<GaussianFactor> ISAM2<Conditional, Config>::relinearizeAffectedFactors(const set<Symbol>& affectedKeys) const {
 
-		boost::shared_ptr<FactorGraph<NonlinearFactor<Config> > > candidates = getAffectedFactors(affectedKeys);
+		list<Symbol> affectedKeysList; // todo: shouldn't have to convert back to list...
+		affectedKeysList.insert(affectedKeysList.begin(), affectedKeys.begin(), affectedKeys.end());
+		FactorGraph<NonlinearFactor<Config> > candidates = getAffectedFactors(affectedKeysList);
 
 		NonlinearFactorGraph<Config> nonlinearAffectedFactors;
 
 		typename FactorGraph<NonlinearFactor<Config> >::const_iterator it;
-		for(it = candidates->begin(); it != candidates->end(); it++) {
+		for(it = candidates.begin(); it != candidates.end(); it++) {
 			bool inside = true;
 			BOOST_FOREACH(const Symbol& key, (*it)->keys()) {
-				if (find(affectedKeys.begin(), affectedKeys.end(), key) == affectedKeys.end()) {
+				if (affectedKeys.find(key) == affectedKeys.end()) {
 					inside = false;
 					break;
 				}
@@ -135,26 +137,32 @@ namespace gtsam {
 	/* ************************************************************************* */
 	template<class Conditional, class Config>
 	void ISAM2<Conditional, Config>::update_internal(const NonlinearFactorGraph<Config>& newFactors,
-			const Config& theta_new, Cliques& orphans, double wildfire_threshold, double relinearize_threshold) {
+			const Config& newTheta, Cliques& orphans, double wildfire_threshold, double relinearize_threshold) {
 
+		//		marked_ = nonlinearFactors_.keys(); // debug only ////////////
 
-		// todo - debug only
-		//		marked_ = nonlinearFactors_.keys();
+		//// 1 - relinearize selected variables
 
-		//// 1 - Remember the new factors for later relinearization
+		theta_ = expmap(theta_, deltaMarked_);
+
+		//// 2 - Add new factors (for later relinearization)
+
 		nonlinearFactors_.push_back(newFactors);
 
-		//// 2 - add in new information
-		// add new variables
-		theta_.insert(theta_new);
+		//// 3 - Initialize new variables
+
+		theta_.insert(newTheta);
+		thetaFuture_.insert(newTheta);
+
+		//// 4 - Mark affected variables as invalid
 
 		// todo - not in lyx yet: relin requires more than just removing the cliques corresponding to the variables!!!
 		// It's about factors!!!
 
 		// basically calculate all the keys contained in the factors that contain any of the keys...
 		// the goal is to relinearize all variables directly affected by new factors
-		boost::shared_ptr<FactorGraph<NonlinearFactor<Config> > > allAffected = getAffectedFactors(marked_);
-		marked_ = allAffected->keys();
+		FactorGraph<NonlinearFactor<Config> > allAffected = getAffectedFactors(marked_);
+		marked_ = allAffected.keys();
 
 		// merge keys of new factors with mask
 		const list<Symbol> newKeys = newFactors.keys();
@@ -163,23 +171,27 @@ namespace gtsam {
 		marked_.sort();
 		marked_.unique();
 
-		//// 4 - removeTop invalidate all cliques involving marked variables
+		//// 5 - removeTop invalidate all cliques involving marked variables
 
 		// remove affected factors
 		BayesNet<GaussianConditional> affectedBayesNet;
 		this->removeTop(marked_, affectedBayesNet, orphans);
 
-		//// 3 - find factors connected to affected variables
-		//// 4 - linearize
+		//// 6 - find factors connected to affected variables
+		//// 7 - linearize
 
 		// ordering provides all keys in conditionals, there cannot be others because path to root included
-		list<Symbol> affectedKeys = affectedBayesNet.ordering();
+		set<Symbol> affectedKeys;
+		list<Symbol> tmp = affectedBayesNet.ordering();
+		affectedKeys.insert(tmp.begin(), tmp.end());
 
 		// todo - remerge in keys of new factors
-		affectedKeys.insert(affectedKeys.begin(), newKeys.begin(), newKeys.end());
+		affectedKeys.insert(newKeys.begin(), newKeys.end());
+#if 0 // no longer needed for set
 		// eliminate duplicates
 		affectedKeys.sort();
 		affectedKeys.unique();
+#endif
 
 		FactorGraph<GaussianFactor> factors = relinearizeAffectedFactors(affectedKeys);
 
@@ -187,7 +199,7 @@ namespace gtsam {
 		FactorGraph<GaussianFactor> cachedBoundary = getCachedBoundaryFactors(orphans);
 		factors.push_back(cachedBoundary);
 
-		//// 5 - eliminate and add orphans back in
+		//// 8 - eliminate and add orphans back in
 
 		// create an ordering for the new and contaminated factors
 		Ordering ordering = factors.getOrdering();
@@ -211,36 +223,35 @@ namespace gtsam {
 			orphan->parent_ = parent; // set new parent!
 		}
 
-		//// 6 - update solution
+		//// 9 - update solution
 
-		VectorConfig delta = optimize2(*this, wildfire_threshold);
+		delta_ = optimize2(*this, wildfire_threshold);
 
-		//// 7 - mark variables, if significant change
+		//// 10 - mark variables, if significant change
 
 		marked_.clear();
-		VectorConfig deltaMarked;
-		for (VectorConfig::const_iterator it = delta.begin(); it!=delta.end(); it++) {
+		deltaMarked_ = VectorConfig(); // clear
+		for (VectorConfig::const_iterator it = delta_.begin(); it!=delta_.end(); it++) {
 			Symbol key = it->first;
 			Vector v = it->second;
 			if (max(abs(v)) >= relinearize_threshold) {
 				marked_.push_back(key);
-				deltaMarked.insert(key, v);
+				deltaMarked_.insert(key, v);
 			}
 		}
 
-		//// 8 - relinearize selected variables
-
-		theta_ = expmap(theta_, deltaMarked);
+		// not part of the formal algorithm, but needed to allow initialization of new variables outside by the user
+		thetaFuture_ = expmap(thetaFuture_, deltaMarked_);
 
 	}
 
 	template<class Conditional, class Config>
 	void ISAM2<Conditional, Config>::update(
-			const NonlinearFactorGraph<Config>& newFactors, const Config& config,
+			const NonlinearFactorGraph<Config>& newFactors, const Config& newTheta,
 			double wildfire_threshold, double relinearize_threshold) {
 
 		Cliques orphans;
-		this->update_internal(newFactors, config, orphans, wildfire_threshold, relinearize_threshold);
+		this->update_internal(newFactors, newTheta, orphans, wildfire_threshold, relinearize_threshold);
 
 	}
 
