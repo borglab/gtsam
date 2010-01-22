@@ -85,7 +85,7 @@ namespace gtsam {
 
 	private:
 
-		FactorGraph<NonlinearFactor<Config> > getAffectedFactors(const std::list<Symbol>& keys) const;
+		std::list<int> getAffectedFactors(const std::list<Symbol>& keys) const;
 		FactorGraph<GaussianFactor> relinearizeAffectedFactors(const std::set<Symbol>& affectedKeys) const;
 		FactorGraph<GaussianFactor> getCachedBoundaryFactors(Cliques& orphans);
 

@@ -74,8 +74,7 @@ namespace gtsam {
 
 	/* ************************************************************************* */
 	template<class Conditional, class Config>
-	FactorGraph<NonlinearFactor<Config> >
-	ISAM2<Conditional, Config>::getAffectedFactors(const list<Symbol>& keys) const {
+	list<int>	ISAM2<Conditional, Config>::getAffectedFactors(const list<Symbol>& keys) const {
 	  FactorGraph<NonlinearFactor<Config> > allAffected;
 		list<int> indices;
 		BOOST_FOREACH(const Symbol& key, keys) {
@@ -84,10 +83,7 @@ namespace gtsam {
 		}
 		indices.sort();
 		indices.unique();
-		BOOST_FOREACH(int i, indices) {
-			allAffected.push_back(nonlinearFactors_[i]);
-		}
-		return allAffected;
+		return indices;
 	}
 
 	/* ************************************************************************* */
@@ -98,21 +94,20 @@ namespace gtsam {
 
 		list<Symbol> affectedKeysList; // todo: shouldn't have to convert back to list...
 		affectedKeysList.insert(affectedKeysList.begin(), affectedKeys.begin(), affectedKeys.end());
-		FactorGraph<NonlinearFactor<Config> > candidates = getAffectedFactors(affectedKeysList);
+		list<int> candidates = getAffectedFactors(affectedKeysList);
 
 		NonlinearFactorGraph<Config> nonlinearAffectedFactors;
 
-		typename FactorGraph<NonlinearFactor<Config> >::const_iterator it;
-		for(it = candidates.begin(); it != candidates.end(); it++) {
+		BOOST_FOREACH(int idx, candidates) {
 			bool inside = true;
-			BOOST_FOREACH(const Symbol& key, (*it)->keys()) {
+			BOOST_FOREACH(const Symbol& key, nonlinearFactors_[idx]->keys()) {
 				if (affectedKeys.find(key) == affectedKeys.end()) {
 					inside = false;
 					break;
 				}
 			}
 			if (inside)
-				nonlinearAffectedFactors.push_back(*it);
+				nonlinearAffectedFactors.push_back(nonlinearFactors_[idx]);
 		}
 
 		return nonlinearAffectedFactors.linearize(theta_);
@@ -161,8 +156,14 @@ namespace gtsam {
 
 		// basically calculate all the keys contained in the factors that contain any of the keys...
 		// the goal is to relinearize all variables directly affected by new factors
-		FactorGraph<NonlinearFactor<Config> > allAffected = getAffectedFactors(marked_);
-		marked_ = allAffected.keys();
+		list<int> allAffected = getAffectedFactors(marked_);
+		set<Symbol> accumulate;
+		BOOST_FOREACH(int idx, allAffected) {
+			list<Symbol> tmp = nonlinearFactors_[idx]->keys();
+			accumulate.insert(tmp.begin(), tmp.end());
+		}
+		marked_.clear();
+		marked_.insert(marked_.begin(), accumulate.begin(), accumulate.end());
 
 		// merge keys of new factors with mask
 		const list<Symbol> newKeys = newFactors.keys();
