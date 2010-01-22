@@ -2,7 +2,7 @@
 % equals
 fg = createGaussianFactorGraph();
 fg2 = createGaussianFactorGraph();
-CHECK('equals',fg.equals(fg2));
+CHECK('equals',fg.equals(fg2,1e-9));
 
 %-----------------------------------------------------------------------
 % error

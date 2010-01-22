@@ -23,7 +23,7 @@ TEST( Pose3Factor, error )
 	Pose3 z(rodriguez(0.2,0.2,0.3),Point3(0,1.1,0));;
 
 	// Create factor
-	sharedGaussian I6(noiseModel::Unit::Create(6));
+	SharedGaussian I6(noiseModel::Unit::Create(6));
 	Pose3Factor factor(1,2, z, I6);
 
 	// Create config

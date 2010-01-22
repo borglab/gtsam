@@ -114,7 +114,7 @@ TEST( Pose2Factor, linearize )
 	Vector expected_b = Vector_(3, 0.0, 0.0, 0.0);
 
 	// expected linear factor
-	sharedDiagonal probModel1 = noiseModel::Unit::Create(3);
+	SharedDiagonal probModel1 = noiseModel::Unit::Create(3);
 	GaussianFactor expected("x1", expectedH1, "x2", expectedH2, expected_b, probModel1);
 
 	// Actual linearization

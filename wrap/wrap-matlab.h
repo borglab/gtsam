@@ -15,10 +15,16 @@ extern "C" {
 #include <boost/shared_ptr.hpp>
 
 using namespace std;
-using namespace boost; // not usual, but for consiseness of generated code
+using namespace boost; // not usual, but for conciseness of generated code
 
+// start GTSAM Specifics /////////////////////////////////////////////////
 typedef numeric::ublas::vector<double> Vector;
 typedef numeric::ublas::matrix<double> Matrix;
+// to make keys be constructed from strings:
+#define GTSAM_MAGIC_KEY
+// to enable Matrix and Vector constructor for SharedGaussian:
+#define GTSAM_MAGIC_GAUSSIAN
+// end GTSAM Specifics /////////////////////////////////////////////////
 
 #ifdef __LP64__
 // 64-bit Mac

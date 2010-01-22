@@ -15,7 +15,7 @@
 
 namespace gtsam {
 
-	class sharedDiagonal; // forward declare, defined at end
+	class SharedDiagonal; // forward declare, defined at end
 
 	namespace noiseModel {
 
@@ -146,7 +146,7 @@ namespace gtsam {
      * @param Ab is the m*(n+1) augmented system matrix [A b]
      * @return in-place QR factorization [R d]. Below-diagonal is undefined !!!!!
      */
-    virtual sharedDiagonal QR(Matrix& Ab) const;
+    virtual SharedDiagonal QR(Matrix& Ab) const;
 
 		/**
 		 * Return R itself, but note that Whiten(H) is cheaper than R*H
@@ -210,7 +210,7 @@ namespace gtsam {
     /**
      * Apply QR factorization to the system [A b], taking into account constraints
      */
-		virtual sharedDiagonal QR(Matrix& Ab) const;
+		virtual SharedDiagonal QR(Matrix& Ab) const;
 
 		/**
      * Return standard deviations (sqrt of diagonal)
@@ -373,42 +373,5 @@ namespace gtsam {
 
 	} // namespace noiseModel
 
-	using namespace noiseModel;
-
-	// TODO: very ugly, just keep shared pointers and use Sigma/Sigmas everywhere
-
-	// A useful convenience class to refer to a shared Gaussian model
-	// Define GTSAM_MAGIC_GAUSSIAN to desired dimension to have access to slightly
-	// dangerous and non-shared (inefficient, wasteful) noise models. Only in tests!
-	struct sharedGaussian : public Gaussian::shared_ptr {
-		sharedGaussian() {}
-		sharedGaussian(const    Gaussian::shared_ptr& p):Gaussian::shared_ptr(p) {}
-		sharedGaussian(const    Diagonal::shared_ptr& p):Gaussian::shared_ptr(p) {}
-		sharedGaussian(const Constrained::shared_ptr& p):Gaussian::shared_ptr(p) {}
-		sharedGaussian(const   Isotropic::shared_ptr& p):Gaussian::shared_ptr(p) {}
-		sharedGaussian(const        Unit::shared_ptr& p):Gaussian::shared_ptr(p) {}
-#ifdef GTSAM_MAGIC_GAUSSIAN
-		sharedGaussian(const Matrix& covariance):Gaussian::shared_ptr(Gaussian::Covariance(covariance)) {}
-		sharedGaussian(const Vector& sigmas):Gaussian::shared_ptr(Diagonal::Sigmas(sigmas)) {}
-		sharedGaussian(const double& s):Gaussian::shared_ptr(Isotropic::Sigma(GTSAM_MAGIC_GAUSSIAN,s)) {}
-#endif
-		};
-
-	// A useful convenience class to refer to a shared Diagonal model
-	// There are (somewhat dangerous) constructors from Vector and pair<size_t,double>
-	// that call Sigmas and Sigma, respectively.
-	struct sharedDiagonal : public Diagonal::shared_ptr {
-		sharedDiagonal() {}
-		sharedDiagonal(const    Diagonal::shared_ptr& p):Diagonal::shared_ptr(p) {}
-		sharedDiagonal(const Constrained::shared_ptr& p):Diagonal::shared_ptr(p) {}
-		sharedDiagonal(const   Isotropic::shared_ptr& p):Diagonal::shared_ptr(p) {}
-		sharedDiagonal(const        Unit::shared_ptr& p):Diagonal::shared_ptr(p) {}
-		sharedDiagonal(const Vector& sigmas):Diagonal::shared_ptr(Diagonal::Sigmas(sigmas)) {}
-		};
-
-	// TODO: make these the ones really used in unit tests
-	inline sharedDiagonal sharedSigmas(const Vector& sigmas) { return Diagonal::Sigmas(sigmas);}
-	inline sharedDiagonal sharedSigma(int dim, double sigma) { return Isotropic::Sigma(dim,sigma);}
-
-
 } // namespace gtsam
+

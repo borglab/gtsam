@@ -33,7 +33,7 @@ namespace gtsam {
 
 		/** Constructor */
 		BetweenFactor(const Key& key1, const Key& key2, const T& measured,
-				const sharedGaussian& model) :
+				const SharedGaussian& model) :
 			Base(model, key1, key2), measured_(measured) {
 		}
 

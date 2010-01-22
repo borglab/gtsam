@@ -1,3 +1,12 @@
+class SharedGaussian {
+		SharedGaussian(Matrix covariance);
+		SharedGaussian(Vector sigmas);
+};
+
+class SharedDiagonal {
+	SharedDiagonal(Vector sigmas);
+};
+
 class Ordering {
   Ordering();
   Ordering(string key);
@@ -25,22 +34,17 @@ class VectorConfig {
   void clear();
 };
 
-class GaussianFactorSet {
-  GaussianFactorSet();
-  void push_back(GaussianFactor* factor);
-};
-
 class GaussianFactor {
   GaussianFactor(string key1,
 	       Matrix A1,
 	       Vector b_in,
-	       double sigma);
+	       const SharedDiagonal& model);
   GaussianFactor(string key1,
 	       Matrix A1,
 	       string key2,
 	       Matrix A2,
 	       Vector b_in,
-	       double sigma);
+	       const SharedDiagonal& model);
   GaussianFactor(string key1,
 	       Matrix A1,
 	       string key2,
@@ -48,7 +52,7 @@ class GaussianFactor {
 	       string key3,
 	       Matrix A3,
 	       Vector b_in,
-	       double sigma);
+	       const SharedDiagonal& model);
   bool empty() const;
   Vector get_b() const;
   Matrix get_A(string key) const;
@@ -57,6 +61,11 @@ class GaussianFactor {
   void print(string s) const;
   bool equals(const GaussianFactor& lf, double tol) const;
   pair<Matrix,Vector> matrix(const Ordering& ordering) const;
+};
+
+class GaussianFactorSet {
+  GaussianFactorSet();
+  void push_back(GaussianFactor* factor);
 };
 
 class GaussianConditional {
@@ -132,36 +141,6 @@ class Point3 {
   void print(string s) const;
 }; 
 
-class Point2Prior {
-  Point2Prior(Vector mu, double sigma, string key);
-  Vector error_vector(const VectorConfig& c) const;
-  GaussianFactor* linearize(const VectorConfig& c) const;
-  double sigma();
-  Vector measurement();
-  double error(const VectorConfig& c) const;
-  void print(string s) const;
-};
-
-class Simulated2DOdometry {
-  Simulated2DOdometry(Vector odo, double sigma, string key, string key2);
-  Vector error_vector(const VectorConfig& c) const;
-  GaussianFactor* linearize(const VectorConfig& c) const;
-  double sigma();
-  Vector measurement();
-  double error(const VectorConfig& c) const;
-  void print(string s) const;
-};
-
-class Simulated2DMeasurement {
-  Simulated2DMeasurement(Vector odo, double sigma, string key, string key2);
-  Vector error_vector(const VectorConfig& c) const;
-  GaussianFactor* linearize(const VectorConfig& c) const;
-  double sigma();
-  Vector measurement();
-  double error(const VectorConfig& c) const;
-  void print(string s) const;
-};
-
 class Pose2 {
   Pose2();
   Pose2(const Pose2& pose);
@@ -179,30 +158,3 @@ class Pose2 {
   Point2 t() const;
   Rot2 r() const;
 };
-
-class Pose2Config{
-	Pose2Config();
-	Pose2 get(string key) const;
-	void insert(string name, const Pose2& val);
-    void print(string s) const;
-    void clear();
-    int size();
-};
-
-class Pose2Factor {
-	Pose2Factor(string key1, string key2,
-			const Pose2& measured, Matrix measurement_covariance);
-	void print(string name) const;
-	double error(const Pose2Config& c) const;
-	size_t size() const;
-	GaussianFactor* linearize(const Pose2Config& config) const;
-};
-
-class Pose2Graph{
-	Pose2Graph();
-	void print(string s) const;
-	GaussianFactorGraph* linearize_(const Pose2Config& config) const;
-	void push_back(Pose2Factor* factor);
-};
-
-

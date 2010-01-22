@@ -49,7 +49,7 @@ namespace simulated3D {
 		Vector z_;
 
 		Point2Prior3D(const Vector& z,
-					const sharedGaussian& model, const PoseKey& j) :
+					const SharedGaussian& model, const PoseKey& j) :
 				NonlinearFactor1<VectorConfig, PoseKey, Vector> (model, j), z_(z) {
 			}
 
@@ -66,7 +66,7 @@ namespace simulated3D {
 		Vector z_;
 
 		Simulated3DMeasurement(const Vector& z,
-					const sharedGaussian& model, PoseKey& j1, PointKey j2) :
+					const SharedGaussian& model, PoseKey& j1, PointKey j2) :
 				z_(z),
 						NonlinearFactor2<VectorConfig, PoseKey, Vector, PointKey, Vector> (
 								model, j1, j2) {

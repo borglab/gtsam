@@ -12,8 +12,6 @@
 
 using namespace std;
 
-// TODO: DANGEROUS, create shared pointers
-#define GTSAM_MAGIC_GAUSSIAN 2
 #define GTSAM_MAGIC_KEY
 
 #include "Ordering.h"
@@ -30,9 +28,10 @@ namespace example {
 
 	typedef boost::shared_ptr<NonlinearFactor<Config> > shared;
 
-	static sharedDiagonal sigma0_1 = noiseModel::Isotropic::Sigma(2,0.1);
-	static sharedDiagonal sigma0_2 = noiseModel::Isotropic::Sigma(2,0.2);
-	static sharedDiagonal constraintModel = noiseModel::Constrained::All(2);
+	static SharedDiagonal sigma1_0 = noiseModel::Isotropic::Sigma(2,1.0);
+	static SharedDiagonal sigma0_1 = noiseModel::Isotropic::Sigma(2,0.1);
+	static SharedDiagonal sigma0_2 = noiseModel::Isotropic::Sigma(2,0.2);
+	static SharedDiagonal constraintModel = noiseModel::Constrained::All(2);
 
 	/* ************************************************************************* */
 	boost::shared_ptr<const Graph> sharedNonlinearFactorGraph() {
@@ -41,27 +40,23 @@ namespace example {
 				new Graph);
 
 		// prior on x1
-		double sigma1 = 0.1;
 		Point2 mu;
-		shared f1(new simulated2D::Prior(mu, sigma1, 1));
+		shared f1(new simulated2D::Prior(mu, sigma0_1, 1));
 		nlfg->push_back(f1);
 
 		// odometry between x1 and x2
-		double sigma2 = 0.1;
 		Point2 z2(1.5, 0);
-		shared f2(new simulated2D::Odometry(z2, sigma2, 1, 2));
+		shared f2(new simulated2D::Odometry(z2, sigma0_1, 1, 2));
 		nlfg->push_back(f2);
 
 		// measurement between x1 and l1
-		double sigma3 = 0.2;
 		Point2 z3(0, -1);
-		shared f3(new simulated2D::Measurement(z3, sigma3, 1, 1));
+		shared f3(new simulated2D::Measurement(z3, sigma0_2, 1, 1));
 		nlfg->push_back(f3);
 
 		// measurement between x2 and l1
-		double sigma4 = 0.2;
 		Point2 z4(-1.5, -1.);
-		shared f4(new simulated2D::Measurement(z4, sigma4, 2, 1));
+		shared f4(new simulated2D::Measurement(z4, sigma0_2, 2, 1));
 		nlfg->push_back(f4);
 
 		return nlfg;
@@ -193,7 +188,7 @@ namespace example {
 
 			Point2 z_;
 
-			UnaryFactor(const Point2& z, const sharedGaussian& model,
+			UnaryFactor(const Point2& z, const SharedGaussian& model,
 					const simulated2D::PoseKey& key) :
 				gtsam::NonlinearFactor1<Config, simulated2D::PoseKey,
 						Point2>(model, key), z_(z) {
@@ -228,28 +223,25 @@ namespace example {
 	/* ************************************************************************* */
 	pair<Graph, Config> createNonlinearSmoother(int T) {
 
-		// noise on measurements and odometry, respectively
-		double sigma1 = 1, sigma2 = 1;
-
 		// Create
 		Graph nlfg;
 		Config poses;
 
 		// prior on x1
 		Point2 x1(1.0, 0.0);
-		shared prior(new simulated2D::Prior(x1, sigma1, 1));
+		shared prior(new simulated2D::Prior(x1, sigma1_0, 1));
 		nlfg.push_back(prior);
 		poses.insert(simulated2D::PoseKey(1), x1);
 
 		for (int t = 2; t <= T; t++) {
 			// odometry between x_t and x_{t-1}
 			Point2 odo(1.0, 0.0);
-			shared odometry(new simulated2D::Odometry(odo, sigma2, t - 1, t));
+			shared odometry(new simulated2D::Odometry(odo, sigma1_0, t - 1, t));
 			nlfg.push_back(odometry);
 
 			// measurement on x_t is like perfect GPS
 			Point2 xt(t, 0);
-			shared measurement(new simulated2D::Prior(xt, sigma1, t));
+			shared measurement(new simulated2D::Prior(xt, sigma1_0, t));
 			nlfg.push_back(measurement);
 
 			// initial estimate
@@ -524,17 +516,14 @@ namespace example {
 		NonlinearFactorGraph<Config> nlfg;
 
 		// Create almost hard constraint on x11, sigma=0 will work for PCG not for normal
-		double sigma0 = 1e-3;
-		shared constraint(new simulated2D::Prior(Point2(1.0, 1.0), sigma0, key(1,1)));
+		shared constraint(new simulated2D::Prior(Point2(1.0, 1.0), sharedSigma(2,1e-3), key(1,1)));
 		nlfg.push_back(constraint);
-
-		double sigma = 0.01;
 
 		// Create horizontal constraints, 1...N*(N-1)
 		Point2 z1(1.0, 0.0); // move right
 		for (size_t x = 1; x < N; x++)
 			for (size_t y = 1; y <= N; y++) {
-				shared f(new simulated2D::Odometry(z1, sigma, key(x, y), key(x + 1, y)));
+				shared f(new simulated2D::Odometry(z1, sharedSigma(2,0.01), key(x, y), key(x + 1, y)));
 				nlfg.push_back(f);
 			}
 
@@ -542,7 +531,7 @@ namespace example {
 		Point2 z2(0.0, 1.0); // move up
 		for (size_t x = 1; x <= N; x++)
 			for (size_t y = 1; y < N; y++) {
-				shared f(new simulated2D::Odometry(z2, sigma, key(x, y), key(x, y + 1)));
+				shared f(new simulated2D::Odometry(z2, sharedSigma(2,0.01), key(x, y), key(x, y + 1)));
 				nlfg.push_back(f);
 			}
 

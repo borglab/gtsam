@@ -48,14 +48,14 @@ namespace gtsam {
 
   	/** Add a unary factor */
     inline void add(const Symbol& key1, const Matrix& A1,
-  			const Vector& b, const sharedDiagonal& model) {
+  			const Vector& b, const SharedDiagonal& model) {
     	push_back(sharedFactor(new GaussianFactor(key1,A1,b,model)));
   	}
 
   	/** Add a binary factor */
     inline void add(const Symbol& key1, const Matrix& A1,
   			const Symbol& key2, const Matrix& A2,
-  			const Vector& b, const sharedDiagonal& model) {
+  			const Vector& b, const SharedDiagonal& model) {
     	push_back(sharedFactor(new GaussianFactor(key1,A1,key2,A2,b,model)));
   	}
 
@@ -63,13 +63,13 @@ namespace gtsam {
     inline void add(const Symbol& key1, const Matrix& A1,
   			const Symbol& key2, const Matrix& A2,
   			const Symbol& key3, const Matrix& A3,
-  			const Vector& b, const sharedDiagonal& model) {
+  			const Vector& b, const SharedDiagonal& model) {
     	push_back(sharedFactor(new GaussianFactor(key1,A1,key2,A2,key3,A3,b,model)));
   	}
 
   	/** Add an n-ary factor */
     inline void add(const std::vector<std::pair<Symbol, Matrix> > &terms,
-  	    const Vector &b, const sharedDiagonal& model) {
+  	    const Vector &b, const SharedDiagonal& model) {
     	push_back(sharedFactor(new GaussianFactor(terms,b,model)));
   	}
 

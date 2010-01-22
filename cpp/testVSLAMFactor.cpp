@@ -24,7 +24,7 @@ static double fov = 60; // degrees
 static size_t w=640,h=480;
 static Cal3_S2 K(fov,w,h);
 
-static sharedGaussian sigma(noiseModel::Unit::Create(1));
+static SharedGaussian sigma(noiseModel::Unit::Create(1));
 static shared_ptrK sK(new Cal3_S2(K));
 
 // make cameras
@@ -52,7 +52,7 @@ TEST( ProjectionFactor, error )
   Matrix Al1 = Matrix_(2, 3, 61.584, 0., 0., 0., 61.584, 0.);
   Matrix Ax1 = Matrix_(2, 6, 0., -369.504, 0., -61.584, 0., 0., 369.504, 0., 0., 0., -61.584, 0.);
   Vector b = Vector_(2,3.,0.);
-  sharedDiagonal probModel1 = noiseModel::Unit::Create(2);
+  SharedDiagonal probModel1 = noiseModel::Unit::Create(2);
   GaussianFactor expected("l1", Al1, "x1", Ax1, b, probModel1);
   GaussianFactor::shared_ptr actual = factor->linearize(config);
   CHECK(assert_equal(expected,*actual,1e-3));

@@ -181,15 +181,15 @@ Matrix matrix(const Pose2& gTl) {
 TEST( Pose2, matrix )
 {
 	Point2 origin, t(1,2);
-	Pose2 gT1(M_PI_2, t); // robot at (1,2) looking towards y
-  Matrix gM1 = matrix(gT1);
+	Pose2 gTl(M_PI_2, t); // robot at (1,2) looking towards y
+  Matrix gMl = matrix(gTl);
   CHECK(assert_equal(Matrix_(3,3,
   		0.0, -1.0, 1.0,
   		1.0,  0.0, 2.0,
   		0.0,  0.0, 1.0),
-  		gM1));
-  Rot2 gR1 = gT1.r();
-  CHECK(assert_equal(homogeneous(t),gM1*homogeneous(origin)));
+  		gMl));
+  Rot2 gR1 = gTl.r();
+  CHECK(assert_equal(homogeneous(t),gMl*homogeneous(origin)));
   Point2 x_axis(1,0), y_axis(0,1);
   CHECK(assert_equal(Matrix_(2,2,
   		0.0, -1.0,
@@ -197,14 +197,26 @@ TEST( Pose2, matrix )
   		gR1.matrix()));
   CHECK(assert_equal(Point2(0,1),gR1*x_axis));
   CHECK(assert_equal(Point2(-1,0),gR1*y_axis));
-  CHECK(assert_equal(homogeneous(Point2(1+0,2+1)),gM1*homogeneous(x_axis)));
-  CHECK(assert_equal(homogeneous(Point2(1-1,2+0)),gM1*homogeneous(y_axis)));
+  CHECK(assert_equal(homogeneous(Point2(1+0,2+1)),gMl*homogeneous(x_axis)));
+  CHECK(assert_equal(homogeneous(Point2(1-1,2+0)),gMl*homogeneous(y_axis)));
 
   // check inverse pose
-  Matrix _1Mg = matrix(inverse(gT1));
-  CHECK(assert_equal(inverse(gM1),_1Mg));
-  CHECK(assert_equal(eye(3),inverse(_1Mg)*_1Mg));
-  CHECK(assert_equal(eye(3),inverse(gM1)*gM1));
+  Matrix lMg = matrix(inverse(gTl));
+  CHECK(assert_equal(Matrix_(3,3,
+  		0.0,  1.0,-2.0,
+  	 -1.0,  0.0, 1.0,
+  		0.0,  0.0, 1.0),
+  		lMg));
+}
+
+/* ************************************************************************* */
+TEST( Pose2, compose_matrix )
+{
+  Pose2 gT1(M_PI_2, Point2(1,2)); // robot at (1,2) looking towards y
+  Pose2 _1T2(M_PI, Point2(-1,4));  // local robot at (-1,4) loooking at negative x
+  Matrix gM1(matrix(gT1)),_1M2(matrix(_1T2));
+  CHECK(assert_equal(gM1*_1M2,matrix(compose(_1T2,gT1)))); // WRONG CHECKS OUT !
+  // CHECK(assert_equal(gM1*_1M2,matrix(compose(gT1,_1T2)))); RIGHT DOES NOT
 }
 
 /* ************************************************************************* */
@@ -221,13 +233,6 @@ TEST( Pose2, between )
   Matrix actualH1,actualH2;
   Pose2 expected(M_PI_2, Point2(2,2));
   Pose2 actual1 = between(gT1,gT2); // gT2 * 1Tg does not make sense !!!!!
-  GTSAM_PRINT(between(gT1,gT2));
-  // what we want is 1T2 = 1Tg * gT2 = between(2Tg,1Tg)
-//  print(matrix(gT1));
-//  print(matrix(gT2));
-//  print(inverse(matrix(gT1))*matrix(gT2)); // 1T2
-//  print(inverse(matrix(gT2))*matrix(gT1)); // 2T1
-//  GTSAM_PRINT(between(inverse(gT2),inverse(gT1)));
   Pose2 actual2 = between(gT1,gT2,actualH1,actualH2);
   CHECK(assert_equal(expected,actual1));
   CHECK(assert_equal(expected,actual2));

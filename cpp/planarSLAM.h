@@ -35,7 +35,7 @@ namespace gtsam {
 
 		BearingFactor(); /* Default constructor */
 		BearingFactor(const PoseKey& i, const PointKey& j, const Rot2& z,
-				const sharedGaussian& model) :
+				const SharedGaussian& model) :
 			Base(model, i, j), z_(z) {
 		}
 
@@ -64,7 +64,7 @@ namespace gtsam {
 		RangeFactor(); /* Default constructor */
 
 		RangeFactor(const PoseKey& i, const PointKey& j, double z,
-				const sharedGaussian& model) :
+				const SharedGaussian& model) :
 			Base(model, i, j), z_(z) {
 		}
 
@@ -94,11 +94,11 @@ namespace gtsam {
 		struct Graph: public NonlinearFactorGraph<Config> {
 			void addPoseConstraint(const PoseKey& i, const Pose2& p);
 			void addOdometry(const PoseKey& i, const PoseKey& j, const Pose2& z,
-					const sharedGaussian& model);
+					const SharedGaussian& model);
 			void addBearing(const PoseKey& i, const PointKey& j, const Rot2& z,
-					const sharedGaussian& model);
+					const SharedGaussian& model);
 			void addRange(const PoseKey& i, const PointKey& j, double z,
-					const sharedGaussian& model);
+					const SharedGaussian& model);
 		};
 
 		// Optimizer

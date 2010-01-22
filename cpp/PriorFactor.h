@@ -31,7 +31,7 @@ namespace gtsam {
 
 		/** Constructor */
 		PriorFactor(const Key& key, const T& prior,
-				const sharedGaussian& model) :
+				const SharedGaussian& model) :
 			Base(model, key), prior_(prior) {
 		}
 

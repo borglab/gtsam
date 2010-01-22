@@ -56,7 +56,7 @@ namespace gtsam {
 
 			Point2 z_;
 
-			Prior(const Point2& z, const sharedGaussian& model, const PoseKey& key) :
+			Prior(const Point2& z, const SharedGaussian& model, const PoseKey& key) :
 				NonlinearFactor1<Config, PoseKey, Point2> (model, key), z_(z) {
 			}
 
@@ -74,7 +74,7 @@ namespace gtsam {
 				Point2> {
 			Point2 z_;
 
-			Odometry(const Point2& z, const sharedGaussian& model, const PoseKey& j1,
+			Odometry(const Point2& z, const SharedGaussian& model, const PoseKey& j1,
 					const PoseKey& j2) :
 				z_(z), NonlinearFactor2<Config, PoseKey, Point2, PoseKey, Point2> (
 						model, j1, j2) {
@@ -95,7 +95,7 @@ namespace gtsam {
 
 			Point2 z_;
 
-			Measurement(const Point2& z, const sharedGaussian& model,
+			Measurement(const Point2& z, const SharedGaussian& model,
 					const PoseKey& j1, const PointKey& j2) :
 				z_(z), NonlinearFactor2<Config, PoseKey, Point2, PointKey, Point2> (
 						model, j1, j2) {

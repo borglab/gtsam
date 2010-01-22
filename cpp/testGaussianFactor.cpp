@@ -27,7 +27,7 @@ using namespace gtsam;
 using namespace example;
 using namespace boost;
 
-static sharedDiagonal
+static SharedDiagonal
 	sigma0_1 = sharedSigma(2,0.1), sigma_02 = sharedSigma(2,0.2),
 	constraintModel = noiseModel::Constrained::All(2);
 
@@ -225,7 +225,7 @@ TEST( NonlinearFactorGraph, combine2){
 TEST( GaussianFactor, linearFactorN){
 	Matrix I = eye(2);
   vector<GaussianFactor::shared_ptr> f;
-  sharedDiagonal model = sharedSigma(2,1.0);
+  SharedDiagonal model = sharedSigma(2,1.0);
   f.push_back(GaussianFactor::shared_ptr(new GaussianFactor("x1", I, Vector_(2,
 			10.0, 5.0), model)));
 	f.push_back(GaussianFactor::shared_ptr(new GaussianFactor("x1", -10 * I,

@@ -79,7 +79,7 @@ TEST( Pose2Graph, linearization )
 
 	double sigma = 1;
 	Vector b = Vector_(3,-0.1/sx,0.1/sy,0.0);
-	sharedDiagonal probModel1 = noiseModel::Unit::Create(3);
+	SharedDiagonal probModel1 = noiseModel::Unit::Create(3);
 	lfg_expected.add("x1", A1, "x2", A2, b, probModel1);
 
 	CHECK(assert_equal(lfg_expected, lfg_linearized));

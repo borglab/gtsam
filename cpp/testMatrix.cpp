@@ -11,7 +11,6 @@
 #include <boost/foreach.hpp>
 #include <boost/numeric/ublas/matrix_proxy.hpp>
 #include "Matrix.h"
-#include "NoiseModel.h"
 
 using namespace std;
 using namespace gtsam;
@@ -419,6 +418,8 @@ TEST( matrix, inverse )
   A(2,0)= 1;  A(2,1)=0; A(2,2)=6;
 
   Matrix Ainv = inverse(A);
+  CHECK(assert_equal(eye(3), A*Ainv));
+  CHECK(assert_equal(eye(3), Ainv*A));
 
   Matrix expected(3,3);
   expected(0,0)= 1.0909;   expected(0,1)=-0.5454; expected(0,2)=-0.0909;
@@ -426,6 +427,26 @@ TEST( matrix, inverse )
   expected(2,0)= -0.1818;  expected(2,1)= 0.0909; expected(2,2)=0.1818;
 
   CHECK(assert_equal(expected, Ainv, 1e-4));
+
+  // These two matrices failed before version 2003 because we called LU incorrectly
+  Matrix lMg(Matrix_(3,3,
+  		0.0,  1.0,-2.0,
+  	 -1.0,  0.0, 1.0,
+  		0.0,  0.0, 1.0));
+  CHECK(assert_equal(Matrix_(3,3,
+  		0.0, -1.0, 1.0,
+  		1.0,  0.0, 2.0,
+  		0.0,  0.0, 1.0),
+  		inverse(lMg)));
+  Matrix gMl(Matrix_(3,3,
+  		0.0, -1.0, 1.0,
+  		1.0,  0.0, 2.0,
+  		0.0,  0.0, 1.0));
+  CHECK(assert_equal(Matrix_(3,3,
+  		0.0,  1.0,-2.0,
+  	 -1.0,  0.0, 1.0,
+  		0.0,  0.0, 1.0),
+  		inverse(gMl)));
 }
 
 /* ************************************************************************* */
@@ -624,69 +645,6 @@ static void updateAb(Matrix& A, Vector& b, int j, const Vector& a,
 }
 
 /* ************************************************************************* */
-list<boost::tuple<Vector, double, double> >
-weighted_eliminate2(Matrix& A, Vector& b, const sharedGaussian& model) {
-	size_t m = A.size1(), n = A.size2(); // get size(A)
-	size_t maxRank = min(m,n);
-
-	// pre-whiten everything
-	model->WhitenInPlace(A);
-	b = model->whiten(b);
-
-	// create list
-	list<boost::tuple<Vector, double, double> > results;
-
-	// We loop over all columns, because the columns that can be eliminated
-	// are not necessarily contiguous. For each one, estimate the corresponding
-	// scalar variable x as d-rS, with S the separator (remaining columns).
-	// Then update A and b by substituting x with d-rS, zero-ing out x's column.
-	for (int j=0; j<n; ++j) {
-		// extract the first column of A
-		Vector a(column(A, j)); // ublas::matrix_column is slower !
-
-		// Calculate weighted pseudo-inverse and corresponding precision
-		double precision = dot(a,a);
-		Vector pseudo = a/precision;
-
-		// if precision is zero, no information on this column
-		if (precision < 1e-8) continue;
-
-		// create solution and copy into r
-		Vector r(basis(n, j));
-		for (int j2=j+1; j2<n; ++j2) // expensive !!
-			r(j2) = inner_prod(pseudo, boost::numeric::ublas::matrix_column<Matrix>(A, j2));
-
-		// create the rhs
-		double d = inner_prod(pseudo, b);
-
-		// construct solution (r, d, sigma)
-		// TODO: avoid sqrt, store precision or at least variance
-		results.push_back(boost::make_tuple(r, d, 1./sqrt(precision)));
-
-		// exit after rank exhausted
-		if (results.size()>=maxRank) break;
-
-		// update A, b, expensive, suing outer product
-		// A' \define A_{S}-a*r and b'\define b-d*a
-		updateAb(A, b, j, a, r, d);
-	}
-
-	return results;
-}
-
-/* ************************************************************************* */
-void weighted_eliminate3(Matrix& A, Vector& b, const sharedGaussian& model) {
-	size_t m = A.size1(), n = A.size2(); // get size(A)
-	size_t maxRank = min(m,n);
-
-	// pre-whiten everything
-	model->WhitenInPlace(A);
-	b = model->whiten(b);
-
-	householder_(A, maxRank);
-}
-
-/* ************************************************************************* */
 TEST( matrix, weighted_elimination )
 {
 	// create a matrix to eliminate
@@ -727,27 +685,6 @@ TEST( matrix, weighted_elimination )
 		DOUBLES_EQUAL(newSigmas(i), sigma, 1e-5);  // verify sigma
 		i += 1;
 	}
-
-	// perform elimination with NoiseModel
-	Matrix A2 = A; Vector b2 = b;
-	sharedGaussian model = noiseModel::Diagonal::Sigmas(sigmas);
-	std::list<boost::tuple<Vector, double, double> > solution2 =
-								weighted_eliminate2(A2, b2, model);
-
-	// unpack and verify
-	i=0;
-	BOOST_FOREACH(boost::tie(r, di, sigma), solution2) {
-		CHECK(assert_equal(r, row(expectedR, i))); // verify r
-		DOUBLES_EQUAL(d(i), di, 1e-8);             // verify d
-		DOUBLES_EQUAL(newSigmas(i), sigma, 1e-5);  // verify sigma
-		i += 1;
-	}
-
-	// perform elimination with NoiseModel
-	weighted_eliminate3(A, b, model);
-	sharedGaussian newModel = noiseModel::Diagonal::Sigmas(newSigmas);
-//	print(A);
-//	print(newModel->Whiten(expectedR));
 }
 
 /* ************************************************************************* */

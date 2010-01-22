@@ -323,7 +323,7 @@ GaussianFactor::eliminate(const Symbol& key) const
 	Matrix Ab = matrix_augmented(ordering,false);
 
 	// Use in-place QR on dense Ab appropriate to NoiseModel
-	sharedDiagonal noiseModel = model_->QR(Ab);
+	SharedDiagonal noiseModel = model_->QR(Ab);
 
 	// get dimensions of the eliminated variable
 	// TODO: this is another map find that should be avoided !

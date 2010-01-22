@@ -29,7 +29,7 @@ using namespace boost;
 using namespace boost::assign;
 using namespace simulated2D;
 	
-static sharedGaussian sigma(noiseModel::Isotropic::Sigma(1,0.1));
+static SharedGaussian sigma(noiseModel::Isotropic::Sigma(1,0.1));
 
 // typedefs
 typedef simulated2D::Config Config2D;

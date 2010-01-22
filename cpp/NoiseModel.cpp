@@ -24,6 +24,7 @@
 #include <boost/random/variate_generator.hpp>
 
 #include "NoiseModel.h"
+#include "SharedDiagonal.h"
 
 namespace ublas = boost::numeric::ublas;
 typedef ublas::matrix_column<Matrix> column;
@@ -121,7 +122,7 @@ namespace gtsam {
 		}
 
 		// General QR, see also special version in Constrained
-		sharedDiagonal Gaussian::QR(Matrix& Ab) const {
+		SharedDiagonal Gaussian::QR(Matrix& Ab) const {
 			// get size(A) and maxRank
 			// TODO: really no rank problems ?
 			size_t m = Ab.size1(), n = Ab.size2()-1;
@@ -207,7 +208,7 @@ namespace gtsam {
 		// Special version of QR for Constrained calls slower but smarter code
 		// that deals with possibly zero sigmas
 		// It is Gram-Schmidt orthogonalization rather than Householder
-		sharedDiagonal Diagonal::QR(Matrix& Ab) const {
+		SharedDiagonal Diagonal::QR(Matrix& Ab) const {
 			// get size(A) and maxRank
 			size_t m = Ab.size1(), n = Ab.size2()-1;
 			size_t maxRank = min(m,n);

@@ -42,8 +42,8 @@ namespace gtsam {
 		struct Graph: public NonlinearFactorGraph<Config> {
 			typedef BetweenFactor<Config, Key, Pose2> Constraint;
 			typedef Pose2 Pose;
-			void addPrior(const Key& i, const Pose2& p, const sharedGaussian& model);
-			void addConstraint(const Key& i, const Key& j, const Pose2& z, const sharedGaussian& model);
+			void addPrior(const Key& i, const Pose2& p, const SharedGaussian& model);
+			void addConstraint(const Key& i, const Key& j, const Pose2& z, const SharedGaussian& model);
 			void addHardConstraint(const Key& i, const Pose2& p);
 		};
 

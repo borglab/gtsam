@@ -122,12 +122,12 @@ NonlinearConstraint1<Config, Key, X>::linearize(const Config& config, const Vect
 
 	// construct probabilistic factor
 	Matrix A1 = vector_scale(lambda, grad);
-	sharedDiagonal probModel = sharedSigma(this->p_,1.0);
+	SharedDiagonal probModel = sharedSigma(this->p_,1.0);
 	GaussianFactor::shared_ptr factor(new
 			GaussianFactor(key_, A1, this->lagrange_key_, eye(this->p_), zero(this->p_), probModel));
 
 	// construct the constraint
-	sharedDiagonal constraintModel = noiseModel::Constrained::All(this->p_);
+	SharedDiagonal constraintModel = noiseModel::Constrained::All(this->p_);
 	GaussianFactor::shared_ptr constraint(new GaussianFactor(key_, grad, -1*g, constraintModel));
 
 	return std::make_pair(factor, constraint);
@@ -222,12 +222,12 @@ std::pair<GaussianFactor::shared_ptr, GaussianFactor::shared_ptr> NonlinearConst
 	// construct probabilistic factor
 	Matrix A1 = vector_scale(lambda, grad1);
 	Matrix A2 = vector_scale(lambda, grad2);
-	sharedDiagonal probModel = sharedSigma(this->p_,1.0);
+	SharedDiagonal probModel = sharedSigma(this->p_,1.0);
 	GaussianFactor::shared_ptr factor(new GaussianFactor(key1_, A1, key2_, A2,
 			this->lagrange_key_, eye(this->p_), zero(this->p_), probModel));
 
 	// construct the constraint
-	sharedDiagonal constraintModel = noiseModel::Constrained::All(this->p_);
+	SharedDiagonal constraintModel = noiseModel::Constrained::All(this->p_);
 	GaussianFactor::shared_ptr constraint(new GaussianFactor(key1_, grad1,
 			key2_, grad2, -1.0 * g, constraintModel));
 

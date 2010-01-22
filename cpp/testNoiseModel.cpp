@@ -11,6 +11,8 @@
 #include <boost/foreach.hpp>
 #include <iostream>
 #include "NoiseModel.h"
+#include "SharedGaussian.h"
+#include "SharedDiagonal.h"
 
 using namespace std;
 using namespace gtsam;
@@ -148,12 +150,12 @@ TEST(NoiseModel, ConstrainedAll )
 //
 //	// Expected result
 //	Vector expectedSigmas = Vector_(4, 0.0894427, 0.0894427, 0.223607, 0.223607);
-//	sharedDiagonal expectedModel = noiseModel::Diagonal::Sigmas(expectedSigmas);
+//	SharedDiagonal expectedModel = noiseModel::Diagonal::Sigmas(expectedSigmas);
 //
 //	// Call Gaussian version
-//	sharedDiagonal diagonal = noiseModel::Diagonal::Sigmas(sigmas);
-//	sharedDiagonal actual1 = diagonal->QR(Ab1);
-//	sharedDiagonal expected = noiseModel::Unit::Create(4);
+//	SharedDiagonal diagonal = noiseModel::Diagonal::Sigmas(sigmas);
+//	SharedDiagonal actual1 = diagonal->QR(Ab1);
+//	SharedDiagonal expected = noiseModel::Unit::Create(4);
 //	CHECK(assert_equal(*expected,*actual1));
 //	Matrix expectedRd1 = Matrix_(4, 6+1,
 //			11.1803,   0.0,   -2.23607, 0.0,    -8.94427, 0.0,     2.23607,
@@ -163,8 +165,8 @@ TEST(NoiseModel, ConstrainedAll )
 //	CHECK(assert_equal(expectedRd1,Ab1,1e-4)); // Ab was modified in place !!!
 //
 //	// Call Constrained version
-//	sharedDiagonal constrained = noiseModel::Constrained::MixedSigmas(sigmas);
-//	sharedDiagonal actual2 = constrained->QR(Ab2);
+//	SharedDiagonal constrained = noiseModel::Constrained::MixedSigmas(sigmas);
+//	SharedDiagonal actual2 = constrained->QR(Ab2);
 //	CHECK(assert_equal(*expectedModel,*actual2));
 //	Matrix expectedRd2 = Matrix_(4, 6+1,
 //			1.,  0., -0.2,  0., -0.8, 0.,  0.2,
@@ -177,13 +179,13 @@ TEST(NoiseModel, ConstrainedAll )
 /* ************************************************************************* */
 TEST(NoiseModel, QRNan )
 {
-	sharedDiagonal constrained = noiseModel::Constrained::All(2);
+	SharedDiagonal constrained = noiseModel::Constrained::All(2);
 	Matrix Ab = Matrix_(2, 5, 1., 2., 1., 2., 3., 2., 1., 2., 4., 4.);
 
-	sharedDiagonal expected = noiseModel::Constrained::All(2);
+	SharedDiagonal expected = noiseModel::Constrained::All(2);
 	Matrix expectedAb = Matrix_(2, 5, 1., 2., 1., 2., 3., 0., 1., 0., 0., 2.0/3);
 
-	sharedDiagonal actual = constrained->QR(Ab);
+	SharedDiagonal actual = constrained->QR(Ab);
 	CHECK(assert_equal(*expected,*actual));
 	CHECK(assert_equal(expectedAb,Ab));
 }
@@ -192,8 +194,8 @@ TEST(NoiseModel, QRNan )
 TEST(NoiseModel, SmartCovariance )
 {
 	bool smart = true;
-	sharedGaussian expected = Unit::Create(3);
-	sharedGaussian actual = Gaussian::Covariance(eye(3), smart);
+	SharedGaussian expected = Unit::Create(3);
+	SharedGaussian actual = Gaussian::Covariance(eye(3), smart);
 	CHECK(assert_equal(*expected,*actual));
 }
 
@@ -201,8 +203,8 @@ TEST(NoiseModel, SmartCovariance )
 TEST(NoiseModel, ScalarOrVector )
 {
 	bool smart = true;
-	sharedGaussian expected = Unit::Create(3);
-	sharedGaussian actual = Gaussian::Covariance(eye(3), smart);
+	SharedGaussian expected = Unit::Create(3);
+	SharedGaussian actual = Gaussian::Covariance(eye(3), smart);
 	CHECK(assert_equal(*expected,*actual));
 }
 

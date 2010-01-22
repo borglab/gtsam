@@ -13,7 +13,7 @@
 #include <CppUnitLite/TestHarness.h>
 
 // TODO: DANGEROUS, create shared pointers
-#define GTSAM_MAGIC_GAUSSIAN 2
+#define GTSAM_DANGEROUS_GAUSSIAN 2
 #define GTSAM_MAGIC_KEY
 
 #include <Pose3.h>
@@ -36,9 +36,9 @@ using namespace boost;
 using namespace boost::assign;
 
 // Models to use
-sharedDiagonal probModel1 = sharedSigma(1,1.0);
-sharedDiagonal probModel2 = sharedSigma(2,1.0);
-sharedDiagonal constraintModel1 = noiseModel::Constrained::All(1);
+SharedDiagonal probModel1 = sharedSigma(1,1.0);
+SharedDiagonal probModel2 = sharedSigma(2,1.0);
+SharedDiagonal constraintModel1 = noiseModel::Constrained::All(1);
 
 // trick from some reading group
 #define FOREACH_PAIR( KEY, VAL, COL) BOOST_FOREACH (boost::tie(KEY,VAL),COL)
@@ -279,7 +279,7 @@ TEST (SQP, two_pose_truth ) {
 
 	// measurement from x1 to l1
 	Point2 z1(0.0, 5.0);
-	sharedGaussian sigma(noiseModel::Isotropic::Sigma(2, 0.1));
+	SharedGaussian sigma(noiseModel::Isotropic::Sigma(2, 0.1));
 	shared f1(new simulated2D::Measurement(z1, sigma, x1,l1));
 	graph->push_back(f1);
 
@@ -387,7 +387,7 @@ TEST (SQP, two_pose ) {
 
 	// measurement from x1 to l1
 	Point2 z1(0.0, 5.0);
-	sharedGaussian sigma(noiseModel::Isotropic::Sigma(2, 0.1));
+	SharedGaussian sigma(noiseModel::Isotropic::Sigma(2, 0.1));
 	shared f1(new simulated2D::Measurement(z1, sigma, x1,l1));
 	graph->push_back(f1);
 

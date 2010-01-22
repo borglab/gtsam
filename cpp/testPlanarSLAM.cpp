@@ -15,7 +15,7 @@ using namespace gtsam;
 static Pose2 x1, x2(1, 1, 0), x3(1, 1, M_PI_4);
 static Point2 l1(1, 0), l2(1, 1), l3(2, 2), l4(1, 3);
 
-sharedGaussian
+SharedGaussian
 	sigma(noiseModel::Isotropic::Sigma(1,0.1)),
 	I3(noiseModel::Unit::Create(3));
 

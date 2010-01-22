@@ -18,7 +18,7 @@
 #include "Factor.h"
 #include "Vector.h"
 #include "Matrix.h"
-#include "NoiseModel.h"
+#include "SharedGaussian.h"
 #include "GaussianFactor.h"
 
 #define INSTANTIATE_NONLINEAR_FACTOR1(C,J,X) \
@@ -43,7 +43,7 @@ namespace gtsam {
 
 		typedef NonlinearFactor<Config> This;
 
-		sharedGaussian noiseModel_; /** Noise model */
+		SharedGaussian noiseModel_; /** Noise model */
 		std::list<Symbol> keys_; /** cached keys */
 
 	public:
@@ -56,7 +56,7 @@ namespace gtsam {
 		 *  Constructor
 		 *  @param noiseModel shared pointer to a noise model
 		 */
-		NonlinearFactor(const sharedGaussian& noiseModel) :
+		NonlinearFactor(const SharedGaussian& noiseModel) :
 			noiseModel_(noiseModel) {
 		}
 
@@ -148,7 +148,7 @@ namespace gtsam {
 		 *  @param z measurement
 		 *  @param key by which to look up X value in Config
 		 */
-		NonlinearFactor1(const sharedGaussian& noiseModel,
+		NonlinearFactor1(const SharedGaussian& noiseModel,
 				const Key& key1) :
 			Base(noiseModel), key_(key1) {
 			this->keys_.push_back(key_);
@@ -242,7 +242,7 @@ namespace gtsam {
 		 * @param j1 key of the first variable
 		 * @param j2 key of the second variable
 		 */
-		NonlinearFactor2(const sharedGaussian& noiseModel, Key1 j1,
+		NonlinearFactor2(const SharedGaussian& noiseModel, Key1 j1,
 				Key2 j2) :
 			Base(noiseModel), key1_(j1), key2_(j2) {
 			this->keys_.push_back(key1_);

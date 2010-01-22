@@ -18,7 +18,7 @@
 #include "Factor.h"
 #include "Matrix.h"
 #include "VectorConfig.h"
-#include "NoiseModel.h"
+#include "SharedDiagonal.h"
 #include "SymbolMap.h"
 
 namespace gtsam {
@@ -40,7 +40,7 @@ public:
 
 protected:
 
-	sharedDiagonal model_; // Gaussian noise model with diagonal covariance matrix
+	SharedDiagonal model_; // Gaussian noise model with diagonal covariance matrix
 	SymbolMap<Matrix> As_; // linear matrices
 	Vector b_; // right-hand-side
 
@@ -57,7 +57,7 @@ public:
 
 	/** Construct unary factor */
 	GaussianFactor(const Symbol& key1, const Matrix& A1,
-			const Vector& b, const sharedDiagonal& model) :
+			const Vector& b, const SharedDiagonal& model) :
 		b_(b), model_(model) {
 		As_.insert(make_pair(key1, A1));
 	}
@@ -65,7 +65,7 @@ public:
 	/** Construct binary factor */
 	GaussianFactor(const Symbol& key1, const Matrix& A1,
 			const Symbol& key2, const Matrix& A2,
-			const Vector& b, const sharedDiagonal& model) :
+			const Vector& b, const SharedDiagonal& model) :
 		b_(b), model_(model)  {
 		As_.insert(make_pair(key1, A1));
 		As_.insert(make_pair(key2, A2));
@@ -75,7 +75,7 @@ public:
 	GaussianFactor(const Symbol& key1, const Matrix& A1,
 			const Symbol& key2, const Matrix& A2,
 			const Symbol& key3, const Matrix& A3,
-			const Vector& b, const sharedDiagonal& model) :
+			const Vector& b, const SharedDiagonal& model) :
 		b_(b), model_(model)  {
 		As_.insert(make_pair(key1, A1));
 		As_.insert(make_pair(key2, A2));
@@ -84,7 +84,7 @@ public:
 
 	/** Construct an n-ary factor */
 	GaussianFactor(const std::vector<std::pair<Symbol, Matrix> > &terms,
-	    const Vector &b, const sharedDiagonal& model) :
+	    const Vector &b, const SharedDiagonal& model) :
 	    b_(b), model_(model)  {
 	  for(unsigned int i=0; i<terms.size(); i++)
 	    As_.insert(terms[i]);
@@ -127,7 +127,7 @@ public:
 	const Vector& get_sigmas() const {	return model_->sigmas();	}
 
 	/** get a copy of model */
-	const sharedDiagonal& get_model() const { return model_;  }
+	const SharedDiagonal& get_model() const { return model_;  }
 
 	/**
 	 * get a copy of the A matrix from a specific node
