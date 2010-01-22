@@ -18,6 +18,10 @@
 #include <boost/foreach.hpp>
 #include <boost/numeric/ublas/lu.hpp>
 #include <boost/numeric/ublas/io.hpp>
+#include <boost/numeric/ublas/triangular.hpp>
+#include <boost/numeric/ublas/symmetric.hpp>
+#include <boost/numeric/ublas/matrix_proxy.hpp>
+#include <boost/numeric/ublas/vector_proxy.hpp>
 #include <boost/tuple/tuple.hpp>
 
 #include "Matrix.h"
@@ -714,6 +718,55 @@ double** createNRC(Matrix& A) {
   return a;
 }
 
+
+
+/* ******************************************
+ * 
+ * Modified from Justin's codebase
+ *
+ *  Idea came from other public domain code.  Takes a S.P.D. matrix
+ *  and computes the LL^t decomposition.  returns L, which is lower
+ *  triangular.  Note this is the opposite convention from Matlab,
+ *  which calculates Q'Q where Q is upper triangular.
+ *
+ * ******************************************/
+
+namespace BNU = boost::numeric::ublas;
+
+
+Matrix cholesky(const Matrix& A)
+{
+	assert(A.size1() == A.size2());
+        Matrix L = zeros(A.size1(), A.size1());
+
+        for (size_t i = 0 ; i < A.size1(); i++) {
+                double p = A(i,i) - BNU::inner_prod( BNU::project( BNU::row(L, i), BNU::range(0, i) ),
+						     BNU::project( BNU::row(L, i), BNU::range(0, i) ) );
+                assert(p > 0); // Rank failure
+                double l_i_i = sqrt(p);
+                L(i,i) = l_i_i;
+                
+		BNU::matrix_column<Matrix> l_i(L, i);
+                project( l_i, BNU::range(i+1, A.size1()) )
+                        = ( BNU::project( BNU::column(A, i), BNU::range(i+1, A.size1()) )
+                            - BNU::prod( BNU::project(L, BNU::range(i+1, A.size1()), BNU::range(0, i)), 
+					 BNU::project(BNU::row(L, i), BNU::range(0, i) ) ) ) / l_i_i;
+        }
+        return L;
+}
+
+/*
+ * This is not ultra efficient, but not terrible, either.
+ */
+Matrix cholesky_inverse(const Matrix &A)
+{
+        Matrix L = cholesky(A);
+        Matrix inv(boost::numeric::ublas::identity_matrix<double>(A.size1()));
+        inplace_solve (L, inv, BNU::lower_tag ());
+        return BNU::prod(trans(inv), inv);
+}
+
+
 /* ************************************************************************* */
 /** SVD                                                                      */
 /* ************************************************************************* */
@@ -749,6 +802,7 @@ void svd(const Matrix& A, Matrix& U, Vector& s, Matrix& V) {
   svd(U,s,V); // call in-place version
 }
 
+#if 0
 /* ************************************************************************* */
 // TODO, would be faster with Cholesky
 Matrix inverse_square_root(const Matrix& A) {
@@ -766,6 +820,23 @@ Matrix inverse_square_root(const Matrix& A) {
   for(size_t i = 0; i<m; i++) S(i) = - pow(S(i),-0.5);
   return vector_scale(S, V); // V*S;
 }
+#endif
+
+/* ************************************************************************* */
+// New, improved, with 100% more Cholesky goodness!
+//
+// Semantics: 
+// if B = inverse_square_root(A), then all of the following are true:
+// inv(B) * inv(B)' == A
+// inv(B' * B) == A
+Matrix inverse_square_root(const Matrix& A) {
+	Matrix L = cholesky(A);
+        Matrix inv(boost::numeric::ublas::identity_matrix<double>(A.size1()));
+        inplace_solve (L, inv, BNU::lower_tag ());
+	return inv;
+}
+
+
 
 /* ************************************************************************* */
 Matrix square_root_positive(const Matrix& A) {
