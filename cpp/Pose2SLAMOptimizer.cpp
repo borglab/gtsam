@@ -33,6 +33,17 @@ namespace gtsam {
 
 		// initialize non-linear solver
 		solver_.initialize(*graph_, *theta_);
+
+		linearize();
+	}
+
+	/* ************************************************************************* */
+	void Pose2SLAMOptimizer::print(const string& str) const {
+		GTSAM_PRINT(*graph_);
+		GTSAM_PRINT(*theta_);
+		//TODO
+		//GTSAM_PRINT(solver_);
+		GTSAM_PRINT(*system_);
 	}
 
 	/* ************************************************************************* */

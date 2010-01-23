@@ -45,6 +45,11 @@ namespace gtsam {
 				const std::string& path = "");
 
 		/**
+		 * print the object
+		 */
+		void print(const std::string& str = "") const;
+
+		/**
 		 * Virtual destructor
 		 */
 		virtual ~Pose2SLAMOptimizer() {

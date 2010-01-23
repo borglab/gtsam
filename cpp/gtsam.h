@@ -1,5 +1,6 @@
 class Pose2SLAMOptimizer {
 	Pose2SLAMOptimizer(string dataset_name);
+	void print(string s) const;
 	void update(Vector x) const;
 	Vector optimize() const;
 	double error() const;
