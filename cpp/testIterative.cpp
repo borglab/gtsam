@@ -160,11 +160,12 @@ TEST( Iterative, subgraphPCG )
 	graph.split<Key, Pose2Factor>(tree, T, C);
 
 	// build the subgraph PCG system
-	GaussianFactorGraph Ab1 = T.linearize(theta_bar);
+	GaussianFactorGraph Ab1_ = T.linearize(theta_bar);
+	SubgraphPreconditioner::sharedFG Ab1 = T.linearize_(theta_bar);
 	SubgraphPreconditioner::sharedFG Ab2 = C.linearize_(theta_bar);
-	SubgraphPreconditioner::sharedBayesNet Rc1 = Ab1.eliminate_(ordering);
+	SubgraphPreconditioner::sharedBayesNet Rc1 = Ab1_.eliminate_(ordering);
 	SubgraphPreconditioner::sharedConfig xbar = optimize_(*Rc1);
-	SubgraphPreconditioner system(Rc1, Ab2, xbar);
+	SubgraphPreconditioner system(Ab1, Ab2, Rc1, xbar);
 
 	// Solve the subgraph PCG
 	VectorConfig ybar = conjugateGradients<SubgraphPreconditioner, VectorConfig,

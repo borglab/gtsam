@@ -75,16 +75,17 @@ double error(const VectorConfig& x) {
 	boost::tie(Ab, xtrue) = planarGraph(N); // A*x-b
 
 	// Get the spanning tree and corresponding ordering
-	GaussianFactorGraph Ab1, Ab2_; // A1*x-b1 and A2*x-b2
-	boost::tie(Ab1, Ab2_) = splitOffPlanarTree(N, Ab);
+	GaussianFactorGraph Ab1_, Ab2_; // A1*x-b1 and A2*x-b2
+	boost::tie(Ab1_, Ab2_) = splitOffPlanarTree(N, Ab);
+	SubgraphPreconditioner::sharedFG Ab1(new GaussianFactorGraph(Ab1_));
 	SubgraphPreconditioner::sharedFG Ab2(new GaussianFactorGraph(Ab2_));
 
 	// Eliminate the spanning tree to build a prior
 	Ordering ordering = planarOrdering(N);
-	SubgraphPreconditioner::sharedBayesNet Rc1 = Ab1.eliminate_(ordering); // R1*x-c1
+	SubgraphPreconditioner::sharedBayesNet Rc1 = Ab1_.eliminate_(ordering); // R1*x-c1
 	SubgraphPreconditioner::sharedConfig xbar = optimize_(*Rc1); // xbar = inv(R1)*c1
 
-	SubgraphPreconditioner system(Rc1, Ab2, xbar);
+	SubgraphPreconditioner system(Ab1, Ab2, Rc1, xbar);
 	return system.error(x);
 }
 
@@ -98,17 +99,18 @@ TEST( SubgraphPreconditioner, system )
 	boost::tie(Ab, xtrue) = planarGraph(N); // A*x-b
 
 	// Get the spanning tree and corresponding ordering
-	GaussianFactorGraph Ab1, Ab2_; // A1*x-b1 and A2*x-b2
-	boost::tie(Ab1, Ab2_) = splitOffPlanarTree(N, Ab);
+	GaussianFactorGraph Ab1_, Ab2_; // A1*x-b1 and A2*x-b2
+	boost::tie(Ab1_, Ab2_) = splitOffPlanarTree(N, Ab);
+	SubgraphPreconditioner::sharedFG Ab1(new GaussianFactorGraph(Ab1_));
 	SubgraphPreconditioner::sharedFG Ab2(new GaussianFactorGraph(Ab2_));
 
 	// Eliminate the spanning tree to build a prior
 	Ordering ordering = planarOrdering(N);
-	SubgraphPreconditioner::sharedBayesNet Rc1 = Ab1.eliminate_(ordering); // R1*x-c1
+	SubgraphPreconditioner::sharedBayesNet Rc1 = Ab1_.eliminate_(ordering); // R1*x-c1
 	SubgraphPreconditioner::sharedConfig xbar = optimize_(*Rc1); // xbar = inv(R1)*c1
 
 	// Create Subgraph-preconditioned system
-	SubgraphPreconditioner system(Rc1, Ab2, xbar);
+	SubgraphPreconditioner system(Ab1, Ab2, Rc1, xbar);
 
 	// Create zero config
 	VectorConfig zeros;
@@ -175,17 +177,18 @@ TEST( SubgraphPreconditioner, conjugateGradients )
 	boost::tie(Ab, xtrue) = planarGraph(N); // A*x-b
 
 	// Get the spanning tree and corresponding ordering
-	GaussianFactorGraph Ab1, Ab2_; // A1*x-b1 and A2*x-b2
-	boost::tie(Ab1, Ab2_) = splitOffPlanarTree(N, Ab);
+	GaussianFactorGraph Ab1_, Ab2_; // A1*x-b1 and A2*x-b2
+	boost::tie(Ab1_, Ab2_) = splitOffPlanarTree(N, Ab);
+	SubgraphPreconditioner::sharedFG Ab1(new GaussianFactorGraph(Ab1_));
 	SubgraphPreconditioner::sharedFG Ab2(new GaussianFactorGraph(Ab2_));
 
 	// Eliminate the spanning tree to build a prior
 	Ordering ordering = planarOrdering(N);
-	SubgraphPreconditioner::sharedBayesNet Rc1 = Ab1.eliminate_(ordering); // R1*x-c1
+	SubgraphPreconditioner::sharedBayesNet Rc1 = Ab1_.eliminate_(ordering); // R1*x-c1
 	SubgraphPreconditioner::sharedConfig xbar = optimize_(*Rc1); // xbar = inv(R1)*c1
 
 	// Create Subgraph-preconditioned system
-	SubgraphPreconditioner system(Rc1, Ab2, xbar);
+	SubgraphPreconditioner system(Ab1, Ab2, Rc1, xbar);
 
 	// Create zero config y0 and perturbed config y1
 	VectorConfig y0;
