@@ -77,11 +77,12 @@ namespace gtsam {
 		}
 
 		/**
-		 * linearize around current theta: done at construction and at update
+		 * Optimize to get a
 		 */
-		void optimize() {
+		Vector optimize() {
 			VectorConfig X = solver_.optimize(*system_);
-			update(X);
+			Vector x; // TODO convert to Vector
+			return x;
 		}
 
 		/**
