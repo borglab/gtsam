@@ -1,3 +1,10 @@
+class Pose2SLAMOptimizer {
+	Pose2SLAMOptimizer(string dataset_name);
+	Matrix Ab1() const;
+	Matrix Ab2() const;
+	void update(Vector x) const;
+};
+
 class SharedGaussian {
 		SharedGaussian(Matrix covariance);
 		SharedGaussian(Vector sigmas);

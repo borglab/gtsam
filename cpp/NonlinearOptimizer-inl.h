@@ -58,8 +58,8 @@ namespace gtsam {
 	/* ************************************************************************* */
 	template<class G, class C, class L, class S, class W>
 	VectorConfig NonlinearOptimizer<G, C, L, S, W>::linearizeAndOptimizeForDelta() const {
-		L linearized = solver_->linearize(*graph_, *config_);
-		return solver_->optimize(linearized);
+		boost::shared_ptr<L> linearized = solver_->linearize(*graph_, *config_);
+		return solver_->optimize(*linearized);
 	}
 
 	/* ************************************************************************* */
@@ -170,12 +170,12 @@ namespace gtsam {
 			cout << "lambda = " << lambda_ << endl;
 
 		// linearize all factors once
-		L linear = graph_->linearize(*config_);
+		boost::shared_ptr<L> linear = solver_->linearize(*graph_, *config_);
 		if (verbosity >= LINEAR)
-			linear.print("linear");
+			linear->print("linear");
 
 		// try lambda steps with successively larger lambda until we achieve descent
-		return try_lambda(linear, verbosity, lambdaFactor);
+		return try_lambda(*linear, verbosity, lambdaFactor);
 	}
 
 	/* ************************************************************************* */

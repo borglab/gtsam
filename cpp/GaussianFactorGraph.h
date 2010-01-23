@@ -165,6 +165,11 @@ namespace gtsam {
     Errors rhs() const;
 
     /**
+     * Return RHS (b./sigmas) as Vector
+     */
+    Vector rhsVector() const;
+
+    /**
      * Return (dense) matrix associated with factor graph
      * @param ordering of variables needed for matrix column order
      */
@@ -245,8 +250,8 @@ namespace gtsam {
 		/**
 		 * linearize the non-linear graph around the current config
 		 */
-  	GaussianFactorGraph linearize(const NonlinearGraph& g, const Config& config) const {
-  		return g.linearize(config);
+  	boost::shared_ptr<GaussianFactorGraph> linearize(const NonlinearGraph& g, const Config& config) const {
+  		return g.linearize_(config);
   	}
   };
 }

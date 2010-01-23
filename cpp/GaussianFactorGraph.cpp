@@ -196,6 +196,12 @@ Errors GaussianFactorGraph::rhs() const {
 	return e;
 }
 
+/* ************************************************************************* */
+Vector GaussianFactorGraph::rhsVector() const {
+	Vector v;
+	return v;
+}
+
 /* ************************************************************************* */  
 pair<Matrix,Vector> GaussianFactorGraph::matrix(const Ordering& ordering) const {
 

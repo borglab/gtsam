@@ -21,8 +21,13 @@ namespace gtsam {
 
 	/* ************************************************************************* */
 	template<class G, class T>
-	SubgraphPCG<G, T>::SubgraphPCG(const G& g, const T& theta0) :
-		maxIterations_(100), verbose_(false), epsilon_(1e-4), epsilon_abs_(1e-5) {
+	SubgraphPCG<G, T>::SubgraphPCG(const G& g, const T& theta0) {
+		initialize(g,theta0);
+	}
+
+	/* ************************************************************************* */
+	template<class G, class T>
+	void SubgraphPCG<G, T>::initialize(const G& g, const T& theta0) {
 
 		// generate spanning tree
 		PredecessorMap<Key> tree = g.template findMinimumSpanningTree<Key, Constraint>();
@@ -42,17 +47,22 @@ namespace gtsam {
 		// compose the approximate solution
 		Key root = keys.back();
 		theta_bar_ = composePoses<G, Constraint, Pose, T> (T_, tree, theta0[root]);
-
 	}
 
 	/* ************************************************************************* */
 	template<class G, class T>
-	SubgraphPreconditioner SubgraphPCG<G, T>::linearize(const G& g, const T& theta_bar) const {
-		GaussianFactorGraph Ab1 = T_.linearize(theta_bar);
+	boost::shared_ptr<SubgraphPreconditioner> SubgraphPCG<G, T>::linearize(const G& g, const T& theta_bar) const {
+		SubgraphPreconditioner::sharedFG Ab1 = T_.linearize_(theta_bar);
 		SubgraphPreconditioner::sharedFG Ab2 = C_.linearize_(theta_bar);
-		SubgraphPreconditioner::sharedBayesNet Rc1 = Ab1.eliminate_(*ordering_);
+#ifdef TIMING
+		SubgraphPreconditioner::sharedBayesNet Rc1;
+		SubgraphPreconditioner::sharedConfig xbar;
+#else
+		GaussianFactorGraph sacrificialAb1 = T_.linearize(theta_bar); // duplicate !!!!!
+		SubgraphPreconditioner::sharedBayesNet Rc1 = sacrificialAb1.eliminate_(*ordering_);
 		SubgraphPreconditioner::sharedConfig xbar = gtsam::optimize_(*Rc1);
-		return SubgraphPreconditioner(Rc1, Ab2, xbar);
+#endif
+		return boost::shared_ptr<SubgraphPreconditioner>(new SubgraphPreconditioner(Ab1, Ab2, Rc1, xbar));
 	}
 
 	/* ************************************************************************* */

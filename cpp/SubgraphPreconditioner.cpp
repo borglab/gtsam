@@ -12,8 +12,8 @@ using namespace std;
 namespace gtsam {
 
 	/* ************************************************************************* */
-	SubgraphPreconditioner::SubgraphPreconditioner(sharedBayesNet& Rc1,	sharedFG& Ab2, sharedConfig& xbar) :
-		Rc1_(Rc1), Ab2_(Ab2), xbar_(xbar), b2bar_(Ab2_->errors_(*xbar)) {
+	SubgraphPreconditioner::SubgraphPreconditioner(sharedFG& Ab1, sharedFG& Ab2, sharedBayesNet& Rc1,	sharedConfig& xbar) :
+		Ab1_(Ab1), Ab2_(Ab2), Rc1_(Rc1), xbar_(xbar), b2bar_(Ab2_->errors_(*xbar)) {
 	}
 
 	/* ************************************************************************* */

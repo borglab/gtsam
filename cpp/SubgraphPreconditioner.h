@@ -29,8 +29,8 @@ namespace gtsam {
 		typedef boost::shared_ptr<const Errors> sharedErrors;
 
 	private:
+		sharedFG Ab1_, Ab2_;
 		sharedBayesNet Rc1_;
-		sharedFG Ab2_;
 		sharedConfig xbar_;
 		sharedErrors b2bar_; /** b2 - A2*xbar */
 
@@ -42,7 +42,10 @@ namespace gtsam {
 		 * @param Ab2: the Graph A2*x=b2
 		 * @param xbar: the solution to R1*x=c1
 		 */
-		SubgraphPreconditioner(sharedBayesNet& Rc1,	sharedFG& Ab2, sharedConfig& xbar);
+		SubgraphPreconditioner(sharedFG& Ab1, sharedFG& Ab2, sharedBayesNet& Rc1,	sharedConfig& xbar);
+
+		Matrix Ab1(const Ordering& ordering) const { return Ab1_->sparse(ordering); }
+		Matrix Ab2(const Ordering& ordering) const { return Ab2_->sparse(ordering); }
 
 		/* x = xbar + inv(R1)*y */
 		VectorConfig x(const VectorConfig& y) const;
@@ -77,9 +80,10 @@ namespace gtsam {
 		typedef typename G::Constraint Constraint;
 		typedef typename G::Pose Pose;
 
-		const size_t maxIterations_;
-		const bool verbose_;
-		const double epsilon_, epsilon_abs_;
+		// TODO not hardcode
+		static const size_t maxIterations_=100;
+		static const bool verbose_=false;
+		static const double epsilon_=1e-4, epsilon_abs_=1e-5;
 
 		/* the ordering derived from the spanning tree */
 		boost::shared_ptr<Ordering> ordering_;
@@ -90,7 +94,11 @@ namespace gtsam {
 		G T_, C_;
 
 	public:
+		SubgraphPCG() {}
+
 		SubgraphPCG(const G& g, const T& theta0);
+
+		void initialize(const G& g, const T& theta0);
 
 		boost::shared_ptr<Ordering> ordering() const { return ordering_; }
 
@@ -99,7 +107,7 @@ namespace gtsam {
 		/**
 		 * linearize the non-linear graph around the current config and build the subgraph preconditioner systme
 		 */
-		SubgraphPreconditioner linearize(const G& g, const T& theta_bar) const;
+		boost::shared_ptr<SubgraphPreconditioner> linearize(const G& g, const T& theta_bar) const;
 
   	/**
   	 * solve for the optimal displacement in the tangent space, and then solve

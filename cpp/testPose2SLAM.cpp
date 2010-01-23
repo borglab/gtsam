@@ -17,6 +17,7 @@ using namespace boost::assign;
 #include "FactorGraph-inl.h"
 #include "Ordering.h"
 #include "pose2SLAM.h"
+#include "Pose2SLAMOptimizer.h"
 
 using namespace std;
 using namespace gtsam;
@@ -143,15 +144,15 @@ TEST(Pose2Graph, optimizeCircle) {
   initial->insert(4, expmap(hexagon[4],Vector_(3, 0.1,-0.1, 0.1)));
   initial->insert(5, expmap(hexagon[5],Vector_(3,-0.1, 0.1,-0.1)));
 
-  // Choose an ordering and optimize
+  // Choose an ordering
   shared_ptr<Ordering> ordering(new Ordering);
   *ordering += "x0","x1","x2","x3","x4","x5";
-  typedef NonlinearOptimizer<Pose2Graph, Pose2Config> Optimizer;
-	Optimizer::shared_solver solver(new Optimizer::solver(ordering));
-  Optimizer optimizer0(fg, initial, solver);
-  Optimizer::verbosityLevel verbosity = Optimizer::SILENT;
-//  Optimizer::verbosityLevel verbosity = Optimizer::ERROR;
-  Optimizer optimizer = optimizer0.levenbergMarquardt(1e-15, 1e-15, verbosity);
+
+  // optimize
+  pose2SLAM::Optimizer::shared_solver solver(new pose2SLAM::Optimizer::solver(ordering));
+  pose2SLAM::Optimizer optimizer0(fg, initial, solver);
+  pose2SLAM::Optimizer::verbosityLevel verbosity = pose2SLAM::Optimizer::SILENT;
+  pose2SLAM::Optimizer optimizer = optimizer0.levenbergMarquardt(1e-15, 1e-15, verbosity);
 
   Pose2Config actual = *optimizer.config();
 
@@ -160,10 +161,29 @@ TEST(Pose2Graph, optimizeCircle) {
 
   // Check loop closure
   CHECK(assert_equal(delta,between(actual[5],actual[0])));
+
+  // Try PCG class
+//  Pose2SLAMOptimizer myOptimizer("3");
+
+//  Matrix Ab1 = myOptimizer.Ab1();
+//  CHECK(assert_equal(Matrix_(1,1,1.0),Ab1));
+//
+//  Matrix Ab2 = myOptimizer.Ab2();
+//  CHECK(assert_equal(Matrix_(1,1,1.0),Ab2));
+
+  // Here, call matlab to
+  // A=[A1;A2], b=[b1;b2]
+  // R=qr(A1)
+  // call pcg on A,b, with preconditioner R -> get x
+
+//  Vector x;
+//  myOptimizer.update(x);
+
+  // Check with ground truth
+//  CHECK(assert_equal(hexagon, *myOptimizer.theta()));
 }
 
 /* ************************************************************************* */
-// test optimization with 6 poses arranged in a hexagon and a loop closure
 TEST(Pose2Graph, findMinimumSpanningTree) {
 	Pose2Graph G, T, C;
 	G.addConstraint(1, 2, Pose2(0.,0.,0.), I3);
@@ -178,7 +198,6 @@ TEST(Pose2Graph, findMinimumSpanningTree) {
 }
 
 /* ************************************************************************* */
-// test optimization with 6 poses arranged in a hexagon and a loop closure
 TEST(Pose2Graph, split) {
 	Pose2Graph G, T, C;
 	G.addConstraint(1, 2, Pose2(0.,0.,0.), I3);

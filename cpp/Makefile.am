@@ -187,8 +187,8 @@ headers += BetweenFactor.h PriorFactor.h
 headers += LieConfig.h LieConfig-inl.h TupleConfig.h TupleConfig-inl.h
 
 # 2D Pose SLAM
-headers +=  dataset.h
-sources += pose2SLAM.cpp dataset.cpp
+headers +=  
+sources += pose2SLAM.cpp pose2SLAMOptimizer.cpp dataset.cpp
 check_PROGRAMS += testPose2Factor testPose2Config testPose2SLAM testPose2Prior
 testPose2Prior_SOURCES  = testPose2Prior.cpp
 testPose2Prior_LDADD    = libgtsam.la

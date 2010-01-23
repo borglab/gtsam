@@ -262,17 +262,19 @@ namespace gtsam {
 			// Write back result in Ab, imperative as we are
 			// TODO: test that is correct if a column was skipped !!!!
 			size_t i = 0; // start with first row
+			bool mixed = false;
 			BOOST_FOREACH(const Triple& t, Rd) {
 				const size_t& j  = t.get<0>();
 				const Vector& rd = t.get<1>();
 				precisions(i)    = t.get<2>();
+				if (precisions(i)==inf) mixed = true;
 				for (size_t j2=0; j2<j; ++j2) Ab(i,j2) = 0.0; // fill in zeros below diagonal anway
 				for (size_t j2=j; j2<n+1; ++j2) // copy the j-the row TODO memcpy
 					Ab(i,j2) = rd(j2);
 				i+=1;
 			}
 
-			return Constrained::MixedPrecisions(precisions);
+			return mixed ? Constrained::MixedPrecisions(precisions) : Diagonal::Precisions(precisions);
 		}
 
 		/* ************************************************************************* */
