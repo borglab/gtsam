@@ -249,12 +249,13 @@ Dimensions GaussianFactorGraph::columnIndices(const Ordering& ordering) const {
 		result.insert(make_pair(key,j));
 		// find dimension for this key
 		Dimensions::const_iterator it = variableSet.find(key);
+		if (it==variableSet.end()) // key not found, now what ?
+				throw invalid_argument("ColumnIndices: this ordering contains keys not in the graph");
 		// advance column index to next block by adding dim(key)
 		j += it->second;
 	}
 
-	return result;
-}
+	return result;}
 
 /* ************************************************************************* */
 Matrix GaussianFactorGraph::sparse(const Ordering& ordering) const {
@@ -265,6 +266,16 @@ Matrix GaussianFactorGraph::sparse(const Ordering& ordering) const {
 
 	// get the starting column indices for all variables
 	Dimensions indices = columnIndices(ordering);
+
+	return sparse(indices);
+}
+
+/* ************************************************************************* */
+Matrix GaussianFactorGraph::sparse(const Dimensions& indices) const {
+
+	// return values
+	list<int> I,J;
+	list<double> S;
 
 	// Collect the I,J,S lists for all factors
 	int row_index = 0;

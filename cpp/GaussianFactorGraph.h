@@ -198,6 +198,12 @@ namespace gtsam {
   	Matrix sparse(const Ordering& ordering) const;
 
   	/**
+  	 * Version that takes column indices rather than ordering
+  	 */
+  	Matrix sparse(const Dimensions& indices) const;
+
+
+  	/**
   	 * Take an optimal step in direction d by calculating optimal step-size
   	 * @param x: starting point for search
   	 * @param d: search direction

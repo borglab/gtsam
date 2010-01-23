@@ -92,6 +92,8 @@ namespace gtsam {
 		Matrix a2() const { return system_->A2(*solver_.ordering()); }
 		Vector b1() const { return system_->b1(); }
 		Vector b2() const { return system_->b2(); }
+		std::pair<Matrix,Vector> Ab1() const { return system_->Ab1(*solver_.ordering()); }
+		std::pair<Matrix,Vector> Ab2() const { return system_->Ab2(*solver_.ordering()); }
 
 		/**
 		 * update estimate with pure delta config x
