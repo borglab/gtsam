@@ -45,6 +45,7 @@ pair<string, boost::optional<SharedDiagonal> > dataset(const string& dataset,  c
 	if (set == "10K") return make_pair(path + "borg/toro/data/2D/w10000-odom.graph", identity);
 	if (set == "olson") return make_pair(path + "data/iSAM/ISAM2/olson06icra.txt", null_model);
 	if (set == "victoria") return make_pair(path + "data/iSAM/ISAM2/victoria_park.txt", null_model);
+	if (set == "beijing") return make_pair(path + "data/BeijingData/beijingData_trips.log", null_model);
 	return make_pair("unknown", null_model);
 }
 
@@ -113,7 +114,7 @@ pair<sharedPose2Graph, sharedPose2Config> load2D(const string& filename,
 			// hack use diagonal for now !
 			//Vector variances = Vector_(3,m(1,1),m(2,2),m(3,3)); // UNITS in file ???
 			if (!model) {
-				Vector variances = Vector_(3,0.0001,0.0001,0.0003);
+				Vector variances = Vector_(3,m(1,1),m(2,2),m(3,3));
 				model = noiseModel::Diagonal::Variances(variances, smart);
 			}
 
