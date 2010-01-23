@@ -198,8 +198,8 @@ Errors GaussianFactorGraph::rhs() const {
 
 /* ************************************************************************* */
 Vector GaussianFactorGraph::rhsVector() const {
-	Vector v;
-	return v;
+	Errors e = rhs();
+	return concatVectors(e);
 }
 
 /* ************************************************************************* */  
@@ -215,6 +215,24 @@ pair<Matrix,Vector> GaussianFactorGraph::matrix(const Ordering& ordering) const 
 
 	// Return Matrix and Vector
 	return lf.matrix(ordering);
+}
+
+/* ************************************************************************* */
+VectorConfig GaussianFactorGraph::assembleConfig(const Vector& vs, const Ordering& ordering) const {
+	Dimensions dims = dimensions();
+	VectorConfig config;
+	Vector::const_iterator itSrc = vs.begin();
+	Vector::iterator itDst;
+	BOOST_FOREACH(const Symbol& key, ordering){
+		int dim = dims.find(key)->second;
+		Vector v(dim);
+		for (itDst=v.begin(); itDst!=v.end(); itDst++, itSrc++)
+			*itDst = *itSrc;
+		config.insert(key, v);
+	}
+	if (itSrc != vs.end())
+		throw runtime_error("assembleConfig: input vector and ordering are not compatible with the graph");
+	return config;
 }
 
 /* ************************************************************************* */

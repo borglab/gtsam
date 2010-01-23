@@ -1,8 +1,12 @@
 class Pose2SLAMOptimizer {
 	Pose2SLAMOptimizer(string dataset_name);
-	Matrix Ab1() const;
-	Matrix Ab2() const;
 	void update(Vector x) const;
+	Vector optimize() const;
+	double error() const;
+	Matrix a1() const;
+	Matrix a2() const;
+	Vector b1() const;
+	Vector b2() const;
 };
 
 class SharedGaussian {

@@ -176,6 +176,13 @@ namespace gtsam {
     std::pair<Matrix,Vector> matrix (const Ordering& ordering) const;
 
     /**
+     * split the source vector w.r.t. the given ordering and assemble a vector config
+     * @param v: the source vector
+     * @param ordeirng: the ordering corresponding to the vector
+     */
+    VectorConfig assembleConfig(const Vector& v, const Ordering& ordering) const;
+
+    /**
      * get the starting column indices for all variables
      * @param ordering of variables needed for matrix column order
      * @return The set of all variable/index pairs

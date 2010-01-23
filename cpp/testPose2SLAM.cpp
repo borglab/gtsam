@@ -162,25 +162,53 @@ TEST(Pose2Graph, optimizeCircle) {
   // Check loop closure
   CHECK(assert_equal(delta,between(actual[5],actual[0])));
 
-  // Try PCG class
 //  Pose2SLAMOptimizer myOptimizer("3");
-
-//  Matrix Ab1 = myOptimizer.Ab1();
-//  CHECK(assert_equal(Matrix_(1,1,1.0),Ab1));
+//  myOptimizer.linearize();
 //
-//  Matrix Ab2 = myOptimizer.Ab2();
-//  CHECK(assert_equal(Matrix_(1,1,1.0),Ab2));
-
-  // Here, call matlab to
-  // A=[A1;A2], b=[b1;b2]
-  // R=qr(A1)
-  // call pcg on A,b, with preconditioner R -> get x
-
-//  Vector x;
+//  Matrix A1 = myOptimizer.a1();
+//  LONGS_EQUAL(3,  A1.size1());
+//  LONGS_EQUAL(17, A1.size2()); // 7 + 7 + 3
+//
+//  Matrix A2 = myOptimizer.a2();
+//  LONGS_EQUAL(3, A1.size1());
+//  LONGS_EQUAL(7, A2.size2()); // 7
+//
+//  Vector b1 = myOptimizer.b1();
+//  LONGS_EQUAL(9, b1.size()); // 3 + 3 + 3
+//
+//  Vector b2 = myOptimizer.b2();
+//  LONGS_EQUAL(3, b2.size()); // 3
+//
+//  // Here, call matlab to
+//  // A=[A1;A2], b=[b1;b2]
+//  // R=qr(A1)
+//  // call pcg on A,b, with preconditioner R -> get x
+//
+//  Vector x = myOptimizer.optimize();
+//  LONGS_EQUAL(9, x.size()); // 3 + 3 + 3
+//
 //  myOptimizer.update(x);
+//
+//  Pose2Config expected;
+//  expected.insert(0, Pose2(0.,0.,0.));
+//  expected.insert(1, Pose2(1.,0.,0.));
+//  expected.insert(2, Pose2(2.,0.,0.));
+//
+//  // Check with ground truth
+//  CHECK(assert_equal(expected, *myOptimizer.theta()));
+}
 
-  // Check with ground truth
-//  CHECK(assert_equal(hexagon, *myOptimizer.theta()));
+TEST(Pose2Graph, optimize2) {
+//  Pose2SLAMOptimizer myOptimizer("100");
+//
+//  //cout << "error: " << myOptimizer.error() << endl;
+//  for(int i = 0; i<10; i++) {
+//  	myOptimizer.linearize();
+//  	Vector x = myOptimizer.optimize();
+//  	myOptimizer.update(x);
+//  }
+//  //cout << "error: " << myOptimizer.error() << endl;
+//  CHECK(myOptimizer.error() < 1.);
 }
 
 /* ************************************************************************* */

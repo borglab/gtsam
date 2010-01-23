@@ -44,8 +44,11 @@ namespace gtsam {
 		 */
 		SubgraphPreconditioner(sharedFG& Ab1, sharedFG& Ab2, sharedBayesNet& Rc1,	sharedConfig& xbar);
 
-		Matrix Ab1(const Ordering& ordering) const { return Ab1_->sparse(ordering); }
-		Matrix Ab2(const Ordering& ordering) const { return Ab2_->sparse(ordering); }
+		Matrix A1(const Ordering& ordering) const { return Ab1_->sparse(ordering); }
+		Matrix A2(const Ordering& ordering) const { return Ab2_->sparse(ordering); }
+		Vector b1() const { return Ab1_->rhsVector(); }
+		Vector b2() const { return Ab2_->rhsVector(); }
+		VectorConfig assembleConfig(const Vector& v, const Ordering& ordering) const { return Ab1_->assembleConfig(v, ordering); }
 
 		/* x = xbar + inv(R1)*y */
 		VectorConfig x(const VectorConfig& y) const;

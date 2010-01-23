@@ -8,6 +8,8 @@
 #ifndef POSE2SLAMOPTIMIZER_H_
 #define POSE2SLAMOPTIMIZER_H_
 
+#include <boost/foreach.hpp>
+
 #include "pose2SLAM.h"
 #include "Ordering.h"
 #include "SubgraphPreconditioner.h"
@@ -54,12 +56,14 @@ namespace gtsam {
 		boost::shared_ptr<const Pose2Graph> graph() const {
 			 return graph_;
 		}
+
 		/**
-		 * linearize around current theta
+		 * return the current linearization point
 		 */
 		boost::shared_ptr<const Pose2Config> theta() const {
 			return theta_;
 		}
+
 		/**
 		 * linearize around current theta
 		 */
@@ -68,30 +72,21 @@ namespace gtsam {
 		}
 
 		/**
-		 * update estimate with pure delta config x
-		 */
-		void update(const VectorConfig& x) {
-			// TODO instead of assigning can we create a new one and replace the shared ptr ?
-			*theta_ = expmap(*theta_, x);
-			linearize();
-		}
-
-		/**
 		 * Optimize to get a
 		 */
-		Vector optimize() {
-			VectorConfig X = solver_.optimize(*system_);
-			Vector x; // TODO convert to Vector
-			return x;
-		}
+		Vector optimize() const;
+
+		double error() const;
 
 		/**
 		 * Return matrices associated with optimization problem
 		 * around current non-linear estimate theta
 		 * Returns [IJS] sparse representation
 		 */
-		Matrix Ab1() const { return system_->Ab1(*solver_.ordering()); }
-		Matrix Ab2() const { return system_->Ab2(*solver_.ordering()); }
+		Matrix a1() const { return system_->A1(*solver_.ordering()); }
+		Matrix a2() const { return system_->A2(*solver_.ordering()); }
+		Vector b1() const { return system_->b1(); }
+		Vector b2() const { return system_->b2(); }
 
 		/**
 		 * update estimate with pure delta config x
