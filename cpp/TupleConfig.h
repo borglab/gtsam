@@ -6,6 +6,7 @@
  */
 
 #include "LieConfig.h"
+#include "VectorConfig.h"
 
 #pragma once
 
@@ -98,8 +99,17 @@ namespace gtsam {
     /**
      * expmap each element
      */
-    PairConfig<J1,X1,J2,X2> expmap(const VectorConfig& delta) {
+    PairConfig<J1,X1,J2,X2> expmap(const VectorConfig& delta) const {
       return PairConfig(gtsam::expmap(first, delta), gtsam::expmap(second, delta)); }
+
+    /**
+     * logmap each element
+     */
+    VectorConfig logmap(const PairConfig<J1,X1,J2,X2>& cp) const {
+    	VectorConfig ret(gtsam::logmap(first, cp.first));
+    	ret.insert(gtsam::logmap(second, cp.second));
+    	return ret;
+    }
 
     /**
      * Insert a variable with the given j
@@ -126,7 +136,9 @@ namespace gtsam {
   };
 
   template<class J1, class X1, class J2, class X2>
-  inline PairConfig<J1,X1,J2,X2> expmap(PairConfig<J1,X1,J2,X2> c, const VectorConfig& delta) { return c.expmap(delta); }
+  inline PairConfig<J1,X1,J2,X2> expmap(const PairConfig<J1,X1,J2,X2> c, const VectorConfig& delta) { return c.expmap(delta); }
 
+  template<class J1, class X1, class J2, class X2>
+  inline VectorConfig logmap(const PairConfig<J1,X1,J2,X2> c0, const PairConfig<J1,X1,J2,X2>& cp) { return c0.logmap(cp); }
 
 }

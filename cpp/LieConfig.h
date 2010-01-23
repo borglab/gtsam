@@ -115,5 +115,9 @@ namespace gtsam {
   /** Add a delta vector, uses iterator order */
   template<class J, class T>
   LieConfig<J,T> expmap(const LieConfig<J,T>& c, const Vector& delta);
+
+  /** Get a delta config about a linearization point c0 */
+  template<class J, class T>
+  VectorConfig logmap(const LieConfig<J,T>& c0, const LieConfig<J,T>& cp);
 }
 

@@ -20,6 +20,7 @@
   /*INSTANTIATE_LIE(T);*/ \
   template LieConfig<J,T> expmap(const LieConfig<J,T>&, const VectorConfig&); \
   template LieConfig<J,T> expmap(const LieConfig<J,T>&, const Vector&); \
+  template VectorConfig logmap(const LieConfig<J,T>&, const LieConfig<J,T>&); \
   template class LieConfig<J,T>;
 
 using namespace std;
@@ -106,6 +107,20 @@ namespace gtsam {
       delta_offset += cur_dim;
     }
     return newConfig;
+  }
+
+  // todo: insert for every element is inefficient
+  // todo: currently only logmaps elements in both configs
+  template<class J, class T>
+  VectorConfig logmap(const LieConfig<J,T>& c0, const LieConfig<J,T>& cp) {
+  	VectorConfig delta;
+  	typedef pair<J,T> Value;
+  	BOOST_FOREACH(const Value& value, cp) {
+  		if(c0.exists(value.first))
+  			delta.insert(value.first,
+  					logmap(c0[value.first], value.second));
+  	}
+  	return delta;
   }
 }
 

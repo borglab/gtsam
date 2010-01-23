@@ -201,7 +201,13 @@ namespace gtsam {
 			// todo - remerge in keys of new factors
 			affectedKeys.insert(newKeys.begin(), newKeys.end());
 
+			// Save number of affected variables
+			lastAffectedVariableCount = affectedKeys.size();
+
 			factors = relinearizeAffectedFactors(affectedKeys);
+
+			// Save number of affected factors
+			lastAffectedFactorCount = factors.size();
 
 			// add the cached intermediate results from the boundary of the orphans ...
 			FactorGraph<GaussianFactor> cachedBoundary = getCachedBoundaryFactors(orphans);
@@ -228,6 +234,9 @@ namespace gtsam {
 		typename BayesNet<Conditional>::const_reverse_iterator rit;
 		for ( rit=bayesNet.rbegin(); rit != bayesNet.rend(); ++rit )
 			this->insert(*rit, index);
+
+		// Save number of affectedCliques
+		lastAffectedCliqueCount = this->size();
 
 		// add orphans to the bottom of the new tree
 		BOOST_FOREACH(sharedClique orphan, orphans) {

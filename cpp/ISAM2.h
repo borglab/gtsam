@@ -81,7 +81,17 @@ namespace gtsam {
 		// estimate based on full delta (note that this is based on the actual current linearization point)
 		const Config calculateBestEstimate() const {return expmap(theta_, optimize2(*this, 0.));}
 
-		const std::list<Symbol>& getMarked() const { return marked_; }
+		const std::list<Symbol>& getMarkedUnsafe() const { return marked_; }
+
+		const NonlinearFactorGraph<Config>& getFactorsUnsafe() const { return nonlinearFactors_; }
+
+		const Config& getThetaUnsafe() const { return theta_; }
+
+		const VectorConfig& getDeltaUnsafe() const { return delta_; }
+
+		size_t lastAffectedVariableCount;
+		size_t lastAffectedFactorCount;
+		size_t lastAffectedCliqueCount;
 
 	private:
 
