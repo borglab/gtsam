@@ -162,18 +162,7 @@ TEST(Pose2Graph, optimizeCircle) {
   // Check loop closure
   CHECK(assert_equal(delta,between(actual[5],actual[0])));
 
-  Pose2SLAMOptimizer myOptimizer("3");
-  myOptimizer.linearize();
-
-//  Matrix A1;Vector b1;
-//  boost::tie(A1,b1)=myOptimizer.Ab1();
-//  print(A1,"A1");
-//  print(b1,"b1");
-//
-//  Matrix A2;Vector b2;
-//  boost::tie(A2,b2)=myOptimizer.Ab2();
-//  print(A2,"A2");
-//  print(b2,"b2");
+//  Pose2SLAMOptimizer myOptimizer("3");
 
 //  Matrix A1 = myOptimizer.a1();
 //  LONGS_EQUAL(3,  A1.size1());
@@ -188,42 +177,42 @@ TEST(Pose2Graph, optimizeCircle) {
 //
 //  Vector b2 = myOptimizer.b2();
 //  LONGS_EQUAL(3, b2.size()); // 3
-
-  // Here, call matlab to
-  // A=[A1;A2], b=[b1;b2]
-  // R=qr(A1)
-  // call pcg on A,b, with preconditioner R -> get x
-
-  Vector x = myOptimizer.optimize();
-  LONGS_EQUAL(9, x.size()); // 3 + 3 + 3
-
-  myOptimizer.update(x);
-
-  Pose2Config expected;
-  expected.insert(0, Pose2(0.,0.,0.));
-  expected.insert(1, Pose2(1.,0.,0.));
-  expected.insert(2, Pose2(2.,0.,0.));
-
-  // Check with ground truth
-  CHECK(assert_equal(expected, *myOptimizer.theta()));
+//
+//  // Here, call matlab to
+//  // A=[A1;A2], b=[b1;b2]
+//  // R=qr(A1)
+//  // call pcg on A,b, with preconditioner R -> get x
+//
+//  Vector x = myOptimizer.optimize();
+//  LONGS_EQUAL(9, x.size()); // 3 + 3 + 3
+//
+//  myOptimizer.update(x);
+//
+//  Pose2Config expected;
+//  expected.insert(0, Pose2(0.,0.,0.));
+//  expected.insert(1, Pose2(1.,0.,0.));
+//  expected.insert(2, Pose2(2.,0.,0.));
+//
+//  // Check with ground truth
+//  CHECK(assert_equal(expected, *myOptimizer.theta()));
 }
 
 /* ************************************************************************* */
 TEST(Pose2Graph, optimize2) {
-  Pose2SLAMOptimizer myOptimizer("100");
-  Matrix A1 = myOptimizer.a1();
-  Matrix A2 = myOptimizer.a2();
-  cout << "A1: " << A1.size1() << " " << A1.size2() << endl;
-  cout << "A2: " << A2.size1() << " " << A2.size2() << endl;
-
-  //cout << "error: " << myOptimizer.error() << endl;
-  for(int i = 0; i<10; i++) {
-  	myOptimizer.linearize();
-  	Vector x = myOptimizer.optimize();
-  	myOptimizer.update(x);
-  }
-  //cout << "error: " << myOptimizer.error() << endl;
-  CHECK(myOptimizer.error() < 1.);
+//  Pose2SLAMOptimizer myOptimizer("100");
+//  Matrix A1 = myOptimizer.a1();
+//  Matrix A2 = myOptimizer.a2();
+//  cout << "A1: " << A1.size1() << " " << A1.size2() << endl;
+//  cout << "A2: " << A2.size1() << " " << A2.size2() << endl;
+//
+//  //cout << "error: " << myOptimizer.error() << endl;
+//  for(int i = 0; i<10; i++) {
+//  	myOptimizer.linearize();
+//  	Vector x = myOptimizer.optimize();
+//  	myOptimizer.update(x);
+//  }
+//  //cout << "error: " << myOptimizer.error() << endl;
+//  CHECK(myOptimizer.error() < 1.);
 }
 
 /* ************************************************************************* */

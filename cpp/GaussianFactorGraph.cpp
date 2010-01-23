@@ -255,14 +255,11 @@ Dimensions GaussianFactorGraph::columnIndices(const Ordering& ordering) const {
 		j += it->second;
 	}
 
-	return result;}
+	return result;
+}
 
 /* ************************************************************************* */
 Matrix GaussianFactorGraph::sparse(const Ordering& ordering) const {
-
-	// return values
-	list<int> I,J;
-	list<double> S;
 
 	// get the starting column indices for all variables
 	Dimensions indices = columnIndices(ordering);
