@@ -70,9 +70,9 @@ namespace gtsam {
 		 */
 		void update_internal(const NonlinearFactorGraph<Config>& newFactors,
 				const Config& newTheta, Cliques& orphans,
-				double wildfire_threshold, double relinearize_threshold);
+				double wildfire_threshold, double relinearize_threshold, bool relinearize);
 		void update(const NonlinearFactorGraph<Config>& newFactors, const Config& newTheta,
-				double wildfire_threshold = 0., double relinearize_threshold = 0.);
+				double wildfire_threshold = 0., double relinearize_threshold = 0., bool relinearize = true);
 
 		// needed to create initial estimates (note that this will be the linearization point in the next step!)
 		const Config getLinearizationPoint() const {return thetaFuture_;}

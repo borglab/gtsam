@@ -132,13 +132,19 @@ namespace gtsam {
 	/* ************************************************************************* */
 	template<class Conditional, class Config>
 	void ISAM2<Conditional, Config>::update_internal(const NonlinearFactorGraph<Config>& newFactors,
-			const Config& newTheta, Cliques& orphans, double wildfire_threshold, double relinearize_threshold) {
+			const Config& newTheta, Cliques& orphans, double wildfire_threshold, double relinearize_threshold, bool relinearize) {
 
 		//		marked_ = nonlinearFactors_.keys(); // debug only ////////////
 
+		// only relinearize if requested in previous step AND necessary (ie. at least one variable changes)
+		relinearize = true; // todo - switched off
+		bool relinFromLast = true; //marked_.size() > 0;
+
 		//// 1 - relinearize selected variables
 
-		theta_ = expmap(theta_, deltaMarked_);
+		if (relinFromLast) {
+			theta_ = expmap(theta_, deltaMarked_);
+		}
 
 		//// 2 - Add new factors (for later relinearization)
 
@@ -154,18 +160,21 @@ namespace gtsam {
 		// todo - not in lyx yet: relin requires more than just removing the cliques corresponding to the variables!!!
 		// It's about factors!!!
 
-		// basically calculate all the keys contained in the factors that contain any of the keys...
-		// the goal is to relinearize all variables directly affected by new factors
-		list<int> allAffected = getAffectedFactors(marked_);
-		set<Symbol> accumulate;
-		BOOST_FOREACH(int idx, allAffected) {
-			list<Symbol> tmp = nonlinearFactors_[idx]->keys();
-			accumulate.insert(tmp.begin(), tmp.end());
-		}
-		marked_.clear();
-		marked_.insert(marked_.begin(), accumulate.begin(), accumulate.end());
+		if (relinFromLast) {
+			// mark variables that have to be removed as invalid (removeFATtop)
+			// basically calculate all the keys contained in the factors that contain any of the keys...
+			// the goal is to relinearize all variables directly affected by new factors
+			list<int> allAffected = getAffectedFactors(marked_);
+			set<Symbol> accumulate;
+			BOOST_FOREACH(int idx, allAffected) {
+				list<Symbol> tmp = nonlinearFactors_[idx]->keys();
+				accumulate.insert(tmp.begin(), tmp.end());
+			}
+			marked_.clear();
+			marked_.insert(marked_.begin(), accumulate.begin(), accumulate.end());
+		} // else: marked_ is empty anyways
 
-		// merge keys of new factors with mask
+		// also mark variables that are affected by new factors as invalid
 		const list<Symbol> newKeys = newFactors.keys();
 		marked_.insert(marked_.begin(), newKeys.begin(), newKeys.end());
 		// eliminate duplicates
@@ -181,24 +190,28 @@ namespace gtsam {
 		//// 6 - find factors connected to affected variables
 		//// 7 - linearize
 
-		// ordering provides all keys in conditionals, there cannot be others because path to root included
-		set<Symbol> affectedKeys;
-		list<Symbol> tmp = affectedBayesNet.ordering();
-		affectedKeys.insert(tmp.begin(), tmp.end());
+		FactorGraph<GaussianFactor> factors;
 
-		// todo - remerge in keys of new factors
-		affectedKeys.insert(newKeys.begin(), newKeys.end());
-#if 0 // no longer needed for set
-		// eliminate duplicates
-		affectedKeys.sort();
-		affectedKeys.unique();
-#endif
+		if (relinFromLast) {
+			// ordering provides all keys in conditionals, there cannot be others because path to root included
+			set<Symbol> affectedKeys;
+			list<Symbol> tmp = affectedBayesNet.ordering();
+			affectedKeys.insert(tmp.begin(), tmp.end());
 
-		FactorGraph<GaussianFactor> factors = relinearizeAffectedFactors(affectedKeys);
+			// todo - remerge in keys of new factors
+			affectedKeys.insert(newKeys.begin(), newKeys.end());
 
-		// add the cached intermediate results from the boundary of the orphans ...
-		FactorGraph<GaussianFactor> cachedBoundary = getCachedBoundaryFactors(orphans);
-		factors.push_back(cachedBoundary);
+			factors = relinearizeAffectedFactors(affectedKeys);
+
+			// add the cached intermediate results from the boundary of the orphans ...
+			FactorGraph<GaussianFactor> cachedBoundary = getCachedBoundaryFactors(orphans);
+			factors.push_back(cachedBoundary);
+		} else {
+			// reuse the old factors
+			FactorGraph<GaussianFactor> tmp(affectedBayesNet);
+			factors.push_back(tmp);
+			factors.push_back(newFactors.linearize(theta_));
+		}
 
 		//// 8 - eliminate and add orphans back in
 
@@ -232,27 +245,30 @@ namespace gtsam {
 
 		marked_.clear();
 		deltaMarked_ = VectorConfig(); // clear
-		for (VectorConfig::const_iterator it = delta_.begin(); it!=delta_.end(); it++) {
-			Symbol key = it->first;
-			Vector v = it->second;
-			if (max(abs(v)) >= relinearize_threshold) {
-				marked_.push_back(key);
-				deltaMarked_.insert(key, v);
-			}
-		}
+		if (relinearize) { // decides about next step!!!
 
-		// not part of the formal algorithm, but needed to allow initialization of new variables outside by the user
-		thetaFuture_ = expmap(thetaFuture_, deltaMarked_);
+			for (VectorConfig::const_iterator it = delta_.begin(); it!=delta_.end(); it++) {
+				Symbol key = it->first;
+				Vector v = it->second;
+				if (max(abs(v)) >= relinearize_threshold) {
+					marked_.push_back(key);
+					deltaMarked_.insert(key, v);
+				}
+			}
+
+			// not part of the formal algorithm, but needed to allow initialization of new variables outside by the user
+			thetaFuture_ = expmap(thetaFuture_, deltaMarked_);
+		}
 
 	}
 
 	template<class Conditional, class Config>
 	void ISAM2<Conditional, Config>::update(
 			const NonlinearFactorGraph<Config>& newFactors, const Config& newTheta,
-			double wildfire_threshold, double relinearize_threshold) {
+			double wildfire_threshold, double relinearize_threshold, bool relinearize) {
 
 		Cliques orphans;
-		this->update_internal(newFactors, newTheta, orphans, wildfire_threshold, relinearize_threshold);
+		this->update_internal(newFactors, newTheta, orphans, wildfire_threshold, relinearize_threshold, relinearize);
 
 	}
 
