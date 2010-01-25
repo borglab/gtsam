@@ -188,7 +188,7 @@ headers += LieConfig.h LieConfig-inl.h TupleConfig.h TupleConfig-inl.h
 
 # 2D Pose SLAM
 headers +=  
-sources += pose2SLAM.cpp pose2SLAMOptimizer.cpp dataset.cpp
+sources += pose2SLAM.cpp Pose2SLAMOptimizer.cpp dataset.cpp
 check_PROGRAMS += testPose2Factor testPose2Config testPose2SLAM testPose2Prior
 testPose2Prior_SOURCES  = testPose2Prior.cpp
 testPose2Prior_LDADD    = libgtsam.la
@@ -273,10 +273,10 @@ AM_LDFLAGS = -L../CppUnitLite -lCppUnitLite $(BOOST_LDFLAGS) $(boost_serializati
 #######################
 
 # TO ENABLE GSL AND ATLAS, uncomment this part!
-# AM_LDFLAGS += -lgsl -lcblas -latlas 
-# libgtsam_la_LDFLAGS += -lgsl -lcblas -latlas
-# AM_CXXFLAGS += -DGSL
-# libgtsam_la_CPPFLAGS += -DGSL
+AM_LDFLAGS += -lgsl -lcblas -latlas 
+libgtsam_la_LDFLAGS += -lgsl -lcblas -latlas
+AM_CXXFLAGS += -DGSL
+libgtsam_la_CPPFLAGS += -DGSL
 
 # TO ENABLE JUST GSL, uncomment this part!
 # AM_LDFLAGS += -lgsl -lgslcblas
