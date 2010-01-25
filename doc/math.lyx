@@ -1,0 +1,1067 @@
+#LyX 1.6.5 created this file. For more info see http://www.lyx.org/
+\lyxformat 345
+\begin_document
+\begin_header
+\textclass article
+\use_default_options false
+\language english
+\inputencoding auto
+\font_roman times
+\font_sans default
+\font_typewriter default
+\font_default_family rmdefault
+\font_sc false
+\font_osf false
+\font_sf_scale 100
+\font_tt_scale 100
+
+\graphics default
+\paperfontsize 12
+\spacing single
+\use_hyperref false
+\papersize default
+\use_geometry false
+\use_amsmath 1
+\use_esint 0
+\cite_engine basic
+\use_bibtopic false
+\paperorientation portrait
+\secnumdepth 3
+\tocdepth 3
+\paragraph_separation indent
+\defskip medskip
+\quotes_language english
+\papercolumns 1
+\papersides 1
+\paperpagestyle default
+\tracking_changes false
+\output_changes false
+\author "" 
+\author "" 
+\end_header
+
+\begin_body
+
+\begin_layout Title
+Geometry Derivatives and Other Hairy Math
+\end_layout
+
+\begin_layout Author
+Frank Dellaert
+\end_layout
+
+\begin_layout Standard
+\begin_inset FormulaMacro
+\newcommand{\Skew}[1]{[#1]_{\times}}
+{[#1]_{\times}}
+\end_inset
+
+
+\end_layout
+
+\begin_layout Standard
+This document should be kept up to date and specify how each of the derivatives
+ in the geometry modules are computed.
+\end_layout
+
+\begin_layout Section
+Rot2 (in gtsam)
+\end_layout
+
+\begin_layout Standard
+A rotation is stored as 
+\begin_inset Formula $(\cos\theta,\sin\theta)$
+\end_inset
+
+.
+ An incremental rotation is applied using the trigonometric sum rule:
+\begin_inset Formula \[
+\cos\theta'=\cos\theta\cos\delta-\sin\theta\sin\delta\]
+
+\end_inset
+
+
+\begin_inset Formula \[
+\sin\theta'=\sin\theta\cos\delta+\cos\theta\sin\delta\]
+
+\end_inset
+
+where 
+\begin_inset Formula $\delta$
+\end_inset
+
+ is an incremental rotation angle.
+ The derivatives of 
+\series bold
+\emph on
+rotate
+\series default
+\emph default
+ are then found easily, using
+\begin_inset Formula \begin{eqnarray*}
+\frac{\partial x'}{\partial\delta} & = & \frac{\partial(x\cos\theta'-y\sin\theta')}{\partial\delta}\\
+ & = & \frac{\partial(x(\cos\theta\cos\delta-\sin\theta\sin\delta)-y(\sin\theta\cos\delta+\cos\theta\sin\delta))}{\partial\delta}\\
+ & = & x(-\cos\theta\sin\delta-\sin\theta\cos\delta)-y(-\sin\theta\sin\delta+\cos\theta\cos\delta)\\
+ & = & -x\sin\theta-y\cos\theta=-y'\end{eqnarray*}
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Standard
+\begin_inset Formula \begin{eqnarray*}
+\frac{\partial y'}{\partial\delta} & = & \frac{\partial(x\sin\theta'+y\cos\theta')}{\partial\delta}\\
+ & = & \frac{\partial(x(\sin\theta\cos\delta+\cos\theta\sin\delta)+y(\cos\theta\cos\delta-\sin\theta\sin\delta))}{\partial\delta}\\
+ & = & x(-\sin\theta\sin\delta+\cos\theta\cos\delta)+y(-\cos\theta\sin\delta-\sin\theta\cos\delta)\\
+ & = & x\cos\theta-y\sin\theta=x'\end{eqnarray*}
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Standard
+\begin_inset Formula \[
+\frac{\partial p'}{\partial p}=\frac{\partial(Rp)}{\partial p}=R\]
+
+\end_inset
+
+Similarly, unrotate
+\end_layout
+
+\begin_layout Standard
+\begin_inset Formula \begin{eqnarray*}
+\frac{\partial x'}{\partial\delta} & = & \frac{\partial(x\cos\theta'+y\sin\theta')}{\partial\delta}\\
+ & = & \frac{\partial(x(\cos\theta\cos\delta-\sin\theta\sin\delta)+y(\sin\theta\cos\delta+\cos\theta\sin\delta))}{\partial\delta}\\
+ & = & x(-\cos\theta\sin\delta-\sin\theta\cos\delta)+y(-\sin\theta\sin\delta+\cos\theta\cos\delta)\\
+ & = & -x\sin\theta+y\cos\theta=y'\end{eqnarray*}
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Standard
+\begin_inset Formula \begin{eqnarray*}
+\frac{\partial y'}{\partial\delta} & = & \frac{\partial(-x\sin\theta'+y\cos\theta')}{\partial\delta}\\
+ & = & \frac{\partial(-x(\sin\theta\cos\delta+\cos\theta\sin\delta)+y(\cos\theta\cos\delta-\sin\theta\sin\delta))}{\partial\delta}\\
+ & = & -x(-\sin\theta\sin\delta+\cos\theta\cos\delta)+y(-\cos\theta\sin\delta-\sin\theta\cos\delta)\\
+ & = & -x\cos\theta-y\sin\theta=-x'\end{eqnarray*}
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Standard
+\begin_inset Formula \[
+\frac{\partial p'}{\partial p}=\frac{\partial(Rp)}{\partial p}=R\]
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Section
+Point3
+\end_layout
+
+\begin_layout Standard
+A cross product 
+\begin_inset Formula $a\times b$
+\end_inset
+
+ can be written as a matrix multiplication
+\begin_inset Formula \[
+a\times b=\Skew ab\]
+
+\end_inset
+
+where 
+\begin_inset Formula $\Skew a$
+\end_inset
+
+ is a skew-symmetric matrix defined as
+\begin_inset Formula \[
+\Skew{x,y,z}=\left[\begin{array}{ccc}
+0 & -z & y\\
+z & 0 & -x\\
+-y & x & 0\end{array}\right]\]
+
+\end_inset
+
+We also have
+\begin_inset Formula \[
+a^{T}\Skew b=-(\Skew ba)^{T}=-(a\times b)^{T}\]
+
+\end_inset
+
+The derivative of a cross product 
+\begin_inset Formula \begin{equation}
+\frac{\partial(a\times b)}{\partial a}=\Skew{-b}\label{eq:Dcross1}\end{equation}
+
+\end_inset
+
+
+\begin_inset Formula \begin{equation}
+\frac{\partial(a\times b)}{\partial b}=\Skew a\label{eq:Dcross2}\end{equation}
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Section
+Rot3
+\end_layout
+
+\begin_layout Standard
+An incremental rotation is applied as (switched to right-multiply Jan 25
+ 2010)
+\begin_inset Formula \[
+R'=R(I+\Omega)\]
+
+\end_inset
+
+where 
+\begin_inset Formula $\Omega=\Skew{\omega}$
+\end_inset
+
+ is the skew symmetric matrix corresponding to the incremental rotation
+ angles 
+\begin_inset Formula $\omega=(\omega_{x},\omega_{y},\omega_{z})$
+\end_inset
+
+.
+ The derivatives of 
+\series bold
+\emph on
+rotate
+\series default
+\emph default
+ are then found easily, using 
+\begin_inset CommandInset ref
+LatexCommand eqref
+reference "eq:Dcross1"
+
+\end_inset
+
+:
+\begin_inset Formula \[
+\frac{\partial(R(I+\Omega)x)}{\partial\omega}=\frac{\partial(R\Omega x)}{\partial\omega}=\frac{\partial(R\left(\omega\times x\right))}{\partial\omega}=R\frac{\partial\left(\omega\times x\right)}{\partial\omega}=R\Skew{-x}\]
+
+\end_inset
+
+
+\begin_inset Formula \[
+\frac{\partial(Rx)}{\partial x}=R\]
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Standard
+For composition and transposing of rotation matrices the situation is a
+ bit more complex.
+ We want to figure out what incremental rotation 
+\begin_inset Formula $\Omega'$
+\end_inset
+
+ on the composed matrix, will yield the same change as 
+\begin_inset Formula $\Omega$
+\end_inset
+
+ applied to either the first (
+\begin_inset Formula $A$
+\end_inset
+
+) or second argument 
+\begin_inset Formula $(B$
+\end_inset
+
+).
+ Hence, the derivative with respect to the second argument is now easy:
+\begin_inset Formula \begin{eqnarray*}
+(AB)(I+\Omega') & = & A\left[B(I+\Omega)\right]\\
+AB+AB\Omega' & = & AB+AB\Omega\\
+\Omega' & = & \Omega\\
+\omega' & = & \omega\end{eqnarray*}
+
+\end_inset
+
+i.e.
+ the derivative is the identity matrix.
+\end_layout
+
+\begin_layout Standard
+For the first argument of 
+\series bold
+\emph on
+compose
+\series default
+\emph default
+, we will make use of useful property of rotation matrices 
+\begin_inset Formula $A$
+\end_inset
+
+:
+\begin_inset Formula \begin{eqnarray}
+A\Omega A^{T} & = & A\Omega\left[\begin{array}{ccc}
+a_{1} & a_{2} & a_{3}\end{array}\right]\nonumber \\
+ & = & A\left[\begin{array}{ccc}
+\omega\times a_{1} & \omega\times a_{2} & \omega\times a_{3}\end{array}\right]\nonumber \\
+ & = & \left[\begin{array}{ccc}
+a_{1}(\omega\times a_{1}) & a_{1}(\omega\times a_{2}) & a_{1}(\omega\times a_{3})\\
+a_{2}(\omega\times a_{1}) & a_{2}(\omega\times a_{2}) & a_{2}(\omega\times a_{3})\\
+a_{3}(\omega\times a_{1}) & a_{3}(\omega\times a_{2}) & a_{3}(\omega\times a_{3})\end{array}\right]\nonumber \\
+ & = & \left[\begin{array}{ccc}
+\omega(a_{1}\times a_{1}) & \omega(a_{2}\times a_{1}) & \omega(a_{3}\times a_{1})\\
+\omega(a_{1}\times a_{2}) & \omega(a_{2}\times a_{2}) & \omega(a_{3}\times a_{2})\\
+\omega(a_{1}\times a_{3}) & \omega(a_{2}\times a_{3}) & \omega(a_{3}\times a_{3})\end{array}\right]\nonumber \\
+ & = & \left[\begin{array}{ccc}
+0 & -\omega a_{3} & \omega a_{2}\\
+\omega a_{3} & 0 & -\omega a_{1}\\
+-\omega a_{2} & \omega a_{1} & 0\end{array}\right]\nonumber \\
+ & = & \Skew{A\omega}\label{eq:property1}\end{eqnarray}
+
+\end_inset
+
+where 
+\begin_inset Formula $a_{x}$
+\end_inset
+
+ are the 
+\emph on
+rows
+\emph default
+ of 
+\begin_inset Formula $A$
+\end_inset
+
+, we made use of the orthogonality of rotation matrices, and the triple
+ product rule:
+\begin_inset Formula \[
+a(b\times c)=b(c\times a)=c(a\times b)\]
+
+\end_inset
+
+The derivative in the first argument of 
+\series bold
+\emph on
+compose
+\series default
+\emph default
+ can then be found using 
+\begin_inset CommandInset ref
+LatexCommand eqref
+reference "eq:property1"
+
+\end_inset
+
+: 
+\end_layout
+
+\begin_layout Standard
+\begin_inset Formula \begin{eqnarray*}
+(AB)(I+\Omega') & = & A(I+\Omega)B\\
+AB+AB\Omega' & = & AB+A\Omega B\\
+B\Omega' & = & \Omega B\\
+\Omega' & = & B^{T}\Omega B=\Skew{B^{T}\omega}\\
+\omega' & = & B^{T}\omega\end{eqnarray*}
+
+\end_inset
+
+The derivative of 
+\series bold
+\emph on
+transpose
+\series default
+\emph default
+ can be found similarly:
+\begin_inset Formula \begin{eqnarray*}
+A^{T}(I+\Omega') & = & \left[A(I+\Omega)\right]^{T}\\
+A^{T}+A^{T}\Omega' & = & (I-\Omega)A^{T}\\
+A^{T}\Omega' & = & -\Omega A^{T}\\
+\Omega' & = & -A\Omega A^{T}\\
+ & = & -\Skew{A\omega}\\
+\omega' & = & -A\omega\end{eqnarray*}
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Standard
+Let's find the derivative of 
+\begin_inset Formula $between(A,B)=compose(inverse(A),B)$
+\end_inset
+
+, so
+\end_layout
+
+\begin_layout Standard
+\begin_inset Formula \[
+\frac{\partial c(i(A),B)}{\partial a}=dc1(i(A),B)di(A)=-B^{T}A=-between(B,A)\]
+
+\end_inset
+
+
+\begin_inset Formula \[
+\frac{\partial c(i(A),B)}{\partial b}=dc2(i(A),B)=I_{3}\]
+
+\end_inset
+
+Similarly, the derivative of 
+\begin_inset Formula $unrotate(R,x)=rotate(inverse(R),x)$
+\end_inset
+
+, so
+\end_layout
+
+\begin_layout Standard
+\begin_inset Formula \[
+\frac{\partial r(i(R),x)}{\partial\omega}=dr1(i(R),x)di(R)=R^{T}\Skew xR=\Skew{R^{T}x}\]
+
+\end_inset
+
+
+\begin_inset Formula \[
+\frac{\partial r(i(R),x)}{\partial x}=i(R)=R^{T}\]
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Section
+Pose3 (gtsam, old-style exmap)
+\end_layout
+
+\begin_layout Standard
+In the old-style, we have 
+\end_layout
+
+\begin_layout Standard
+
+\family roman
+\series medium
+\shape up
+\size normal
+\emph off
+\bar no
+\noun off
+\color none
+\begin_inset Formula $R'=(I+\Omega)R$
+\end_inset
+
+
+\end_layout
+
+\begin_layout Standard
+\begin_inset Formula $t'=t+dt$
+\end_inset
+
+
+\end_layout
+
+\begin_layout Standard
+In this case, the derivative of transform_from, 
+\begin_inset Formula $Rx+t$
+\end_inset
+
+:
+\end_layout
+
+\begin_layout Standard
+\begin_inset Formula \[
+\frac{\partial((I+\Omega)Rx+t)}{\partial\omega}=\frac{\partial(\Omega Rx)}{\partial\omega}=\frac{\partial(\omega\times Rx)}{\partial\omega}=-\Skew{Rx}\]
+
+\end_inset
+
+and with respect to 
+\begin_inset Formula $dt$
+\end_inset
+
+ is easy:
+\end_layout
+
+\begin_layout Standard
+\begin_inset Formula \[
+\frac{\partial(Rx+t+dt)}{\partial dt}=I\]
+
+\end_inset
+
+The derivative of transform_to, 
+\begin_inset Formula $R^{T}(x-t)$
+\end_inset
+
+, noting that 
+\family roman
+\series medium
+\shape up
+\size normal
+\emph off
+\bar no
+\noun off
+\color none
+
+\begin_inset Formula $R'^{T}=R^{T}(I-\Omega)$
+\end_inset
+
+, is
+\end_layout
+
+\begin_layout Standard
+\begin_inset Formula \[
+\frac{\partial(R'^{T}(x-t))}{\partial\omega}=\frac{\partial(R^{T}(I-\Omega)(x-t))}{\partial\omega}=-\frac{\partial(R^{T}\Omega(x-t))}{\partial\omega}=-\frac{\partial(\Skew{R^{T}\omega}R^{T}(x-t))}{\partial\omega}=\Skew{R^{T}(x-t)}\frac{\partial(R^{T}\omega)}{\partial\omega}=\Skew{R^{T}(x-t)}R^{T}\]
+
+\end_inset
+
+and with respect to 
+\begin_inset Formula $dt$
+\end_inset
+
+ is easy:
+\end_layout
+
+\begin_layout Standard
+\begin_inset Formula \[
+\frac{\partial(R^{T}(x-t-dt))}{\partial dt}=-R^{T}\]
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Standard
+The derivative of 
+\begin_inset Formula $inverse=R^{T},-R^{T}t=R^{T}(I,-t)$
+\end_inset
+
+, first derivative of rotation in rotation argument:
+\begin_inset Formula \begin{eqnarray*}
+(I+\Omega')R^{T} & = & \left((I+\Omega)R\right)^{T}\\
+R^{T}+\Omega'R^{T} & = & R^{T}(I-\Omega)\\
+\Omega'R^{T} & = & -R^{T}\Omega\\
+\Omega' & = & -R^{T}\Omega R=-\Skew{R^{T}\omega}\\
+\omega' & = & -R^{T}\omega\end{eqnarray*}
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Section
+Pose3 (gtsam, new-style exmap)
+\end_layout
+
+\begin_layout Standard
+In the new-style exponential map, Pose3 is composed with a delta pose as
+ follows
+\end_layout
+
+\begin_layout Standard
+
+\family roman
+\series medium
+\shape up
+\size normal
+\emph off
+\bar no
+\noun off
+\color none
+\begin_inset Formula $R'=(I+\Omega)R$
+\end_inset
+
+
+\end_layout
+
+\begin_layout Standard
+\begin_inset Formula $t'=(I+\Omega)t+dt$
+\end_inset
+
+
+\end_layout
+
+\begin_layout Standard
+The derivative of transform_from, 
+\begin_inset Formula $Rx+t$
+\end_inset
+
+:
+\end_layout
+
+\begin_layout Standard
+\begin_inset Formula \[
+\frac{\partial((I+\Omega)Rx+(I+\Omega)t)}{\partial\omega}=\frac{\partial(\Omega(Rx+t))}{\partial\omega}=\frac{\partial(\omega\times(Rx+t))}{\partial\omega}=-\Skew{Rx+t}\]
+
+\end_inset
+
+and with respect to 
+\begin_inset Formula $dt$
+\end_inset
+
+ is easy:
+\end_layout
+
+\begin_layout Standard
+\begin_inset Formula \[
+\frac{\partial(Rx+t+dt)}{\partial dt}=I\]
+
+\end_inset
+
+The derivative of transform_to, 
+\begin_inset Formula $R^{T}(x-t)$
+\end_inset
+
+, eludes me.
+ The calculation below is just an attempt:
+\end_layout
+
+\begin_layout Standard
+Noting that 
+\family roman
+\series medium
+\shape up
+\size normal
+\emph off
+\bar no
+\noun off
+\color none
+
+\begin_inset Formula $R'^{T}=R^{T}(I-\Omega)$
+\end_inset
+
+, and 
+\begin_inset Formula $(I-\Omega)(x-(I+\Omega)t)=(I-\Omega)(x-t-\Omega t)=x-t-dt-\Omega x+\Omega^{2}t$
+\end_inset
+
+
+\end_layout
+
+\begin_layout Standard
+\begin_inset Formula \[
+\frac{\partial(R'^{T}(x-t'))}{\partial\omega}=\frac{\partial(R^{T}(I-\Omega)(x-(I+\Omega)t))}{\partial\omega}=-\frac{\partial(R^{T}(\Omega(x-\Omega t)))}{\partial\omega}\]
+
+\end_inset
+
+
+\begin_inset Formula \[
+-\frac{\partial(\Skew{R^{T}\omega}R^{T}x)}{\partial\omega}=\Skew{R^{T}x}\frac{\partial(R^{T}\omega)}{\partial\omega}=\Skew{R^{T}x}R^{T}\]
+
+\end_inset
+
+
+\begin_inset Formula \[
+=\frac{\partial(R^{T}\Omega^{2}t)}{\partial\omega}+\Skew{R^{T}x}R^{T}\]
+
+\end_inset
+
+and with respect to 
+\begin_inset Formula $dt$
+\end_inset
+
+ is easy:
+\end_layout
+
+\begin_layout Standard
+\begin_inset Formula \[
+\frac{\partial(R^{T}(x-t-dt))}{\partial dt}=-R^{T}\]
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Section
+Line3vd
+\end_layout
+
+\begin_layout Standard
+One representation of a line is through 2 vectors 
+\begin_inset Formula $(v,d)$
+\end_inset
+
+, where 
+\begin_inset Formula $v$
+\end_inset
+
+ is the direction and the vector 
+\begin_inset Formula $d$
+\end_inset
+
+ points from the orgin to the closest point on the line.
+\end_layout
+
+\begin_layout Standard
+In this representation, transforming a 3D line from a world coordinate frame
+ to a camera at 
+\begin_inset Formula $(R_{w}^{c},t^{w})$
+\end_inset
+
+ is done by
+\begin_inset Formula \[
+v^{c}=R_{w}^{c}v^{w}\]
+
+\end_inset
+
+
+\begin_inset Formula \[
+d^{c}=R_{w}^{c}\left(d^{w}+(t^{w}v^{w})v^{w}-t^{w}\right)\]
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Section
+Line3
+\end_layout
+
+\begin_layout Standard
+For 3D lines, we use a parameterization due to C.J.
+ Taylor, using a rotation matrix 
+\begin_inset Formula $R$
+\end_inset
+
+ and 2 scalars 
+\begin_inset Formula $a$
+\end_inset
+
+ and 
+\begin_inset Formula $b$
+\end_inset
+
+.
+ The line direction 
+\begin_inset Formula $v$
+\end_inset
+
+ is simply the Z-axis of the rotated frame, i.e., 
+\begin_inset Formula $v=R_{3}$
+\end_inset
+
+, while the vector 
+\begin_inset Formula $d$
+\end_inset
+
+ is given by 
+\begin_inset Formula $d=aR_{1}+bR_{2}$
+\end_inset
+
+.
+\end_layout
+
+\begin_layout Standard
+Now, we will 
+\emph on
+not
+\emph default
+ use the incremental rotation scheme we used for rotations: because the
+ matrix R translates from the line coordinate frame to the world frame,
+ we need to apply the incremental rotation on the right-side:
+\begin_inset Formula \[
+R'=R(I+\Omega)\]
+
+\end_inset
+
+Projecting a line to 2D can be done easily, as both 
+\begin_inset Formula $v$
+\end_inset
+
+ and 
+\begin_inset Formula $d$
+\end_inset
+
+ are also the 2D homogenous coordinates of two points on the projected line,
+ and hence we have
+\begin_inset Formula \begin{eqnarray*}
+l & = & v\times d\\
+ & = & R_{3}\times\left(aR_{1}+bR_{2}\right)\\
+ & = & a\left(R_{3}\times R_{1}\right)+b\left(R_{3}\times R_{2}\right)\\
+ & = & aR_{2}-bR_{1}\end{eqnarray*}
+
+\end_inset
+
+This can be written as a rotation of a point,
+\begin_inset Formula \[
+l=R\left(\begin{array}{c}
+-b\\
+a\\
+0\end{array}\right)\]
+
+\end_inset
+
+but because the incremental rotation is now done on the right, we need to
+ figure out the derivatives again:
+\begin_inset Formula \begin{equation}
+\frac{\partial(R(I+\Omega)x)}{\partial\omega}=\frac{\partial(R\Omega x)}{\partial\omega}=R\frac{\partial(\Omega x)}{\partial\omega}=R\Skew{-x}\label{eq:rotateRight}\end{equation}
+
+\end_inset
+
+and hence the derivative of the projection 
+\begin_inset Formula $l$
+\end_inset
+
+ with respect to the rotation matrix 
+\begin_inset Formula $R$
+\end_inset
+
+of the 3D line is 
+\begin_inset Formula \begin{equation}
+\frac{\partial(l)}{\partial\omega}=R\Skew{\left(\begin{array}{c}
+b\\
+-a\\
+0\end{array}\right)}=\left[\begin{array}{ccc}
+aR_{3} & bR_{3} & -(aR_{1}+bR_{2})\end{array}\right]\end{equation}
+
+\end_inset
+
+or the 
+\begin_inset Formula $a,b$
+\end_inset
+
+ scalars:
+\begin_inset Formula \[
+\frac{\partial(l)}{\partial a}=R_{2}\]
+
+\end_inset
+
+
+\begin_inset Formula \[
+\frac{\partial(l)}{\partial b}=-R_{1}\]
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Standard
+Transforming a 3D line 
+\begin_inset Formula $(R,(a,b))$
+\end_inset
+
+ from a world coordinate frame to a camera frame 
+\begin_inset Formula $(R_{w}^{c},t^{w})$
+\end_inset
+
+ is done by
+\end_layout
+
+\begin_layout Standard
+\begin_inset Formula \[
+R'=R_{w}^{c}R\]
+
+\end_inset
+
+
+\begin_inset Formula \[
+a'=a-R_{1}^{T}t^{w}\]
+
+\end_inset
+
+
+\begin_inset Formula \[
+b'=b-R_{2}^{T}t^{w}\]
+
+\end_inset
+
+Again, we need to redo the derivatives, as R is incremented from the right.
+ The first argument is incremented from the left, but the result is incremented
+ on the right:
+\begin_inset Formula \begin{eqnarray*}
+R'(I+\Omega')=(AB)(I+\Omega') & = & (I+\Skew{S\omega})AB\\
+I+\Omega' & = & (AB)^{T}(I+\Skew{S\omega})(AB)\\
+\Omega' & = & R'^{T}\Skew{S\omega}R'\\
+\Omega' & = & \Skew{R'^{T}S\omega}\\
+\omega' & = & R'^{T}S\omega\end{eqnarray*}
+
+\end_inset
+
+For the second argument 
+\begin_inset Formula $R$
+\end_inset
+
+ we now simply have:
+\begin_inset Formula \begin{eqnarray*}
+AB(I+\Omega') & = & AB(I+\Omega)\\
+\Omega' & = & \Omega\\
+\omega' & = & \omega\end{eqnarray*}
+
+\end_inset
+
+The scalar derivatives can be found by realizing that 
+\begin_inset Formula \[
+\left(\begin{array}{c}
+a'\\
+b'\\
+...\end{array}\right)=\left(\begin{array}{c}
+a\\
+b\\
+0\end{array}\right)-R^{T}t^{w}\]
+
+\end_inset
+
+where we don't care about the third row.
+ Hence
+\begin_inset Formula \[
+\frac{\partial(\left(R(I+\Omega_{2})\right)^{T}t^{w})}{\partial\omega}=-\frac{\partial(\Omega_{2}R^{T}t^{w})}{\partial\omega}=-\Skew{R^{T}t^{w}}=\left[\begin{array}{ccc}
+0 & R_{3}^{T}t^{w} & -R_{2}^{T}t^{w}\\
+-R_{3}^{T}t^{w} & 0 & R_{1}^{T}t^{w}\\
+... & ... & 0\end{array}\right]\]
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Section
+2D Line Segments
+\end_layout
+
+\begin_layout Standard
+The error between an infinite line 
+\begin_inset Formula $(a,b,c)$
+\end_inset
+
+ and a 2D line segment 
+\begin_inset Formula $((x1,y1),(x2,y2))$
+\end_inset
+
+ is defined in Line3.ml.
+\end_layout
+
+\begin_layout Section
+
+\series bold
+Recovering Pose
+\end_layout
+
+\begin_layout Standard
+Below is the explanaition underlying Pose3.align, i.e.
+ aligning two point clouds using SVD.
+ Inspired but modified from CVOnline...
+\end_layout
+
+\begin_layout Standard
+
+\emph on
+Our
+\emph default
+ model is
+\begin_inset Formula \[
+p^{c}=R\left(p^{w}-t\right)\]
+
+\end_inset
+
+i.e., 
+\begin_inset Formula $R$
+\end_inset
+
+ is from camera to world, and 
+\begin_inset Formula $t$
+\end_inset
+
+ is the camera location in world coordinates.
+ The objective function is
+\begin_inset Formula \begin{equation}
+\frac{1}{2}\sum\left(p^{c}-R(p^{w}-t)\right)^{2}=\frac{1}{2}\sum\left(p^{c}-Rp^{w}+Rt\right)^{2}=\frac{1}{2}\sum\left(p^{c}-Rp^{w}-t'\right)^{2}\label{eq:J}\end{equation}
+
+\end_inset
+
+where 
+\begin_inset Formula $t'=-Rt$
+\end_inset
+
+ is the location of the origin in the camera frame.
+ Taking the derivative with respect to 
+\begin_inset Formula $t'$
+\end_inset
+
+ and setting to zero we have
+\begin_inset Formula \[
+\sum\left(p^{c}-Rp^{w}-t'\right)=0\]
+
+\end_inset
+
+or
+\begin_inset Formula \begin{equation}
+t'=\frac{1}{n}\sum\left(p^{c}-Rp^{w}\right)=\bar{p}^{c}-R\bar{p}^{w}\label{eq:t}\end{equation}
+
+\end_inset
+
+here 
+\begin_inset Formula $\bar{p}^{c}$
+\end_inset
+
+ and 
+\begin_inset Formula $\bar{p}^{w}$
+\end_inset
+
+ are the point cloud centroids.
+ Substituting back into 
+\begin_inset CommandInset ref
+LatexCommand eqref
+reference "eq:J"
+
+\end_inset
+
+, we get
+\begin_inset Formula \[
+\frac{1}{2}\sum\left(p^{c}-R(p^{w}-t)\right)^{2}=\frac{1}{2}\sum\left(\left(p^{c}-\bar{p}^{c}\right)-R\left(p^{w}-\bar{p}^{w}\right)\right)^{2}=\frac{1}{2}\sum\left(\hat{p}^{c}-R\hat{p}^{w}\right)^{2}\]
+
+\end_inset
+
+Now, to minimize the above it suffices to maximize (see CVOnline) 
+\begin_inset Formula \[
+\mathop{trace}\left(R^{T}C\right)\]
+
+\end_inset
+
+where 
+\begin_inset Formula $C=\sum\hat{p}^{c}\left(\hat{p}^{w}\right)^{T}$
+\end_inset
+
+ is the correlation matrix.
+ Intuitively, the cloud of points is rotated to align with the principal
+ axes.
+ This can be achieved by SVD decomposition on 
+\begin_inset Formula $C$
+\end_inset
+
+
+\begin_inset Formula \[
+C=USV^{T}\]
+
+\end_inset
+
+and setting 
+\begin_inset Formula \[
+R=UV^{T}\]
+
+\end_inset
+
+Clearly, from 
+\begin_inset CommandInset ref
+LatexCommand eqref
+reference "eq:t"
+
+\end_inset
+
+ we then also recover the optimal 
+\begin_inset Formula $t$
+\end_inset
+
+ as 
+\begin_inset Formula \[
+t=\bar{p}^{w}-R^{T}\bar{p}^{c}\]
+
+\end_inset
+
+
+\end_layout
+
+\end_body
+\end_document
