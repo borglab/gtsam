@@ -65,6 +65,106 @@ This document should be kept up to date and specify how each of the derivatives
 \end_layout
 
 \begin_layout Section
+General Lie group derivations
+\end_layout
+
+\begin_layout Standard
+The derivatives for 
+\emph on
+compose
+\emph default
+, 
+\emph on
+inverse
+\emph default
+, and 
+\emph on
+between
+\emph default
+ can be derived from Lie group principals to work with any transformation
+ type.
+ To find the derivatives of these functions, we look for the necessary 
+\begin_inset Quotes eld
+\end_inset
+
+delta
+\begin_inset Quotes erd
+\end_inset
+
+ in the tangent space of the function 
+\emph on
+output
+\emph default
+ that corresponds to a 
+\begin_inset Quotes eld
+\end_inset
+
+delta
+\begin_inset Quotes erd
+\end_inset
+
+ in the tangent space of the function 
+\emph on
+input
+\emph default
+.
+ For example, to find the derivative of a function 
+\begin_inset Formula $f\left(X\right)$
+\end_inset
+
+, we include the differential changes in the tangent space:
+\begin_inset Formula \[
+f\left(X\right)\exp\partial f=f\left(X\exp\partial x\right)\]
+
+\end_inset
+
+and then taking the partial derivatives 
+\begin_inset Formula $\frac{\partial y}{\partial x}$
+\end_inset
+
+.
+ Calculating these derivatives requires that we know the form of the function
+ 
+\begin_inset Formula $f$
+\end_inset
+
+.
+\end_layout
+
+\begin_layout Standard
+
+\series bold
+\emph on
+This section is not correct - math doesn't make sense and need to fix.
+\end_layout
+
+\begin_layout Standard
+Starting with inverse:
+\begin_inset Formula \begin{align*}
+X^{-1}\exp\partial i & =\left(X\exp\left[\partial x\right]\right)^{-1}\\
+ & =\left(\exp-\left[\partial x\right]\right)X^{-1}\\
+\exp\partial i & =X\left(\exp-\left[\partial x\right]\right)X^{-1}\\
+ & =\exp-X\left[\partial x\right]X^{-1}\\
+\partial i & =-X\left[\partial x\right]X^{-1}\end{align*}
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Standard
+Compose can be derived similarly:
+\begin_inset Formula \begin{align*}
+AB\exp\partial c & =A\left(\exp\left[\partial a\right]\right)B\\
+\exp\partial c & =B^{-1}\left(\exp\left[\partial a\right]\right)B\\
+\partial c & =B^{-1}\left[\partial a\right]B\end{align*}
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Section
 Rot2 (in gtsam)
 \end_layout
 
@@ -453,7 +553,7 @@ In the old-style, we have
 \bar no
 \noun off
 \color none
-\begin_inset Formula $R'=(I+\Omega)R$
+\begin_inset Formula $R'=R(I+\Omega)$
 \end_inset
 
 
@@ -467,7 +567,13 @@ In the old-style, we have
 \end_layout
 
 \begin_layout Standard
-In this case, the derivative of transform_from, 
+In this case, the derivative of 
+\series bold
+\emph on
+transform_from
+\series default
+\emph default
+, 
 \begin_inset Formula $Rx+t$
 \end_inset
 
@@ -476,7 +582,7 @@ In this case, the derivative of transform_from,
 
 \begin_layout Standard
 \begin_inset Formula \[
-\frac{\partial((I+\Omega)Rx+t)}{\partial\omega}=\frac{\partial(\Omega Rx)}{\partial\omega}=\frac{\partial(\omega\times Rx)}{\partial\omega}=-\Skew{Rx}\]
+\frac{\partial(R(I+\Omega)x+t)}{\partial\omega}=\frac{\partial(R\Omega x)}{\partial\omega}=\frac{\partial(R\left(\omega\times x\right))}{\partial\omega}=R\Skew{-x}\]
 
 \end_inset
 
@@ -493,32 +599,26 @@ and with respect to
 
 \end_inset
 
-The derivative of transform_to, 
-\begin_inset Formula $R^{T}(x-t)$
+The derivative of 
+\series bold
+\emph on
+transform_to
+\series default
+\emph default
+, 
+\begin_inset Formula $inv(R)(x-t)$
 \end_inset
 
-, noting that 
-\family roman
-\series medium
-\shape up
-\size normal
-\emph off
-\bar no
-\noun off
-\color none
+ we can obtain using the chain rule:
+\begin_inset Formula \[
+\frac{\partial(inv(R)(x-t))}{\partial\omega}=\frac{\partial unrot(R,(x-t))}{\partial\omega}=skew(R^{T}\left(x-t\right))\]
 
-\begin_inset Formula $R'^{T}=R^{T}(I-\Omega)$
 \end_inset
 
-, is
+
 \end_layout
 
 \begin_layout Standard
-\begin_inset Formula \[
-\frac{\partial(R'^{T}(x-t))}{\partial\omega}=\frac{\partial(R^{T}(I-\Omega)(x-t))}{\partial\omega}=-\frac{\partial(R^{T}\Omega(x-t))}{\partial\omega}=-\frac{\partial(\Skew{R^{T}\omega}R^{T}(x-t))}{\partial\omega}=\Skew{R^{T}(x-t)}\frac{\partial(R^{T}\omega)}{\partial\omega}=\Skew{R^{T}(x-t)}R^{T}\]
-
-\end_inset
-
 and with respect to 
 \begin_inset Formula $dt$
 \end_inset
@@ -541,12 +641,114 @@ The derivative of
 \end_inset
 
 , first derivative of rotation in rotation argument:
+\end_layout
+
+\begin_layout Standard
+The partials
+\begin_inset Formula \[
+\frac{\partial\omega^{\prime}}{\partial\omega}=\frac{\partial inv(R)}{\partial\omega}=-R\]
+
+\end_inset
+
+
+\begin_inset Formula \[
+\frac{\partial t^{\prime}}{\partial\omega}=\frac{-\partial unrot(R,t)}{\partial\omega}=-skew(R^{T}t)\]
+
+\end_inset
+
+
+\begin_inset Formula \[
+\frac{\partial\omega^{\prime}}{\partial t}=\mathbf{0}\]
+
+\end_inset
+
+
+\begin_inset Formula \[
+\frac{\partial t^{\prime}}{\partial t}=\frac{-\partial unrot(R,t)}{\partial t}=-R^{T}\]
+
+\end_inset
+
+
+\series bold
+old stuff:
+\series default
+
 \begin_inset Formula \begin{eqnarray*}
 (I+\Omega')R^{T} & = & \left((I+\Omega)R\right)^{T}\\
 R^{T}+\Omega'R^{T} & = & R^{T}(I-\Omega)\\
 \Omega'R^{T} & = & -R^{T}\Omega\\
 \Omega' & = & -R^{T}\Omega R=-\Skew{R^{T}\omega}\\
 \omega' & = & -R^{T}\omega\end{eqnarray*}
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Standard
+Now 
+\series bold
+\emph on
+compose
+\series default
+\emph default
+, first w.r.t.
+ a change in rotation in the first argument:
+\begin_inset Formula \begin{align*}
+AB & =\left(T_{A}R_{A}T_{B}\right)\left(R_{A}R_{B}\right)\\
+\left(T_{A}R_{A}T_{B}\left(I+T^{\prime}\right)\right)\left(R_{A}R_{B}\left(I+\Omega^{\prime}\right)\right) & =\left(T_{A}R_{A}\left(I+\Omega\right)T_{B}\right)\left(R_{A}\left(I+\Omega\right)R_{B}\right)\\
+\textrm{translation only:}\\
+T_{A}R_{A}T_{B}\left(I+T^{\prime}\right) & =T_{A}R_{A}\left(I+\Omega\right)T_{B}\\
+T_{B}\left(I+T^{\prime}\right) & =\left(I+\Omega\right)T_{B}\\
+T_{B}+T_{B}T^{\prime} & =T_{B}+\Omega T_{B}\\
+T^{\prime} & =T_{B}^{-1}skew(\omega)T_{B}\\
+T^{\prime} & =skew(T_{B}\omega)\,???\\
+\textrm{rotation only:}\\
+R_{A}R_{B}\left(I+\Omega^{\prime}\right) & =R_{A}\left(I+\Omega\right)R_{B}\\
+R_{B}\Omega^{\prime} & =\Omega R_{B}\\
+\Omega^{\prime} & =R_{B}^{T}\Omega R_{B}\\
+ & =skew(R_{B}^{T}\omega)\\
+\omega^{\prime} & =R_{B}^{T}\omega\end{align*}
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Standard
+And w.r.t.
+ a rotation in the second argument:
+\begin_inset Formula \begin{align*}
+\left(T_{A}R_{A}T_{B}\left(I+T^{\prime}\right)\right)\left(R_{A}R_{B}\left(I+\Omega^{\prime}\right)\right) & =\left(T_{A}R_{A}T_{B}\right)\left(R_{A}R_{B}\left(I+\Omega\right)\right)\\
+\left(R_{A}R_{B}\left(I+\Omega^{\prime}\right)\right) & =\left(R_{A}R_{B}\left(I+\Omega\right)\right)\\
+\omega^{\prime} & =\omega\\
+t^{\prime} & =0\end{align*}
+
+\end_inset
+
+w.r.t.
+ a translation in the second argument:
+\begin_inset Formula \begin{align*}
+\left(T_{A}R_{A}T_{B}\left(I+T^{\prime}\right)\right)\left(R_{A}R_{B}\left(I+\Omega^{\prime}\right)\right) & =\left(T_{A}R_{A}T_{B}\left(I+T\right)\right)\left(R_{A}R_{B}\right)\\
+\omega^{\prime} & =0\\
+t^{\prime} & =t\end{align*}
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Standard
+Finally, 
+\series bold
+\emph on
+between
+\series default
+\emph default
+ in the first argument:
+\begin_inset Formula \begin{align*}
+\frac{\partial A^{-1}B}{\partial A} & =\frac{\partial c\left(A^{-1},B\right)}{\partial A^{-1}}\frac{\partial inv(A)}{A}\\
+\frac{\partial A^{-1}B}{B} & =\frac{\partial c\left(A^{-1},B\right)}{\partial B}\end{align*}
 
 \end_inset
 
