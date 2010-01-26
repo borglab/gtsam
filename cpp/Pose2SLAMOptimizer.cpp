@@ -27,7 +27,7 @@ namespace gtsam {
 		boost::tie(filename, noiseModel) = dataset(dataset_name);
 
 		// read graph and initial estimate
-		boost::tie(graph_, theta_) = load2D(filename, maxID, noiseModel, addNoise);
+		boost::tie(graph_, theta_) = load2D(filename, noiseModel, maxID, addNoise);
 		graph_->addPrior(theta_->begin()->first, theta_->begin()->second,
 				noiseModel::Unit::Create(3));
 
