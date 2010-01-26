@@ -114,7 +114,7 @@ pair<sharedPose2Graph, sharedPose2Config> load2D(const string& filename,
 			if (maxID && (id1 >= maxID || id2 >= maxID)) continue;
 
 
-			measured = Pose2(x, y, yaw);
+			measured = inverse(Pose2(x, y, yaw));
 
 //			SharedGaussian noise = noiseModel::Gaussian::Covariance(m, smart);
 			// hack use diagonal for now !
