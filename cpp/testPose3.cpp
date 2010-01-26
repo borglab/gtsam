@@ -246,29 +246,6 @@ TEST( Pose3, transformPose_to)
 }
 
 /* ************************************************************************* */
-TEST( Pose3, composeTransform )
-{
-	// known transform
-	Rot3 R1 = rodriguez(0, 0, -1.570796);
-	Pose3 expected(R1, Point3(1, 2, 3));
-
-	// current
-	Rot3 R2 = rodriguez(0, 0, 0.698131701);
-	Pose3 current(R2, Point3(21., 32., 13.));
-
-	// target
-	Pose3 target(rodriguez(0, 0, 2.26892803), Point3(-30., 20., 10.));
-
-	// calculate transform
-	// todo: which should this be?
-	//Pose3 actual = compose(current, target);
-	Pose3 actual = between<Pose3> (target, current);
-
-	//verify
-	CHECK(assert_equal(expected, actual, 0.001));
-}
-
-/* ************************************************************************* */
 TEST(Pose3, manifold)
 {
 	//cout << "manifold" << endl;
@@ -311,7 +288,7 @@ TEST( Pose3, between )
 	Point3 t(3.5,-8.2,4.2);
 	Pose3 T(R,t);
 
-	Pose3 expected = pose1 * inverse(T);
+	Pose3 expected = inverse(T) * pose1;
 	Matrix actualH1,actualH2;
 	Pose3 actual = between(T, pose1, actualH1,actualH2);
 	CHECK(assert_equal(expected,actual));

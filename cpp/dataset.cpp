@@ -51,8 +51,14 @@ pair<string, boost::optional<SharedDiagonal> > dataset(const string& dataset,  c
 
 /* ************************************************************************* */
 
+pair<sharedPose2Graph, sharedPose2Config> load2D(
+		pair<string, boost::optional<SharedDiagonal> > dataset,
+		int maxID, bool addNoise, bool smart) {
+	return load2D(dataset.first, dataset.second, maxID, addNoise, smart);
+}
+
 pair<sharedPose2Graph, sharedPose2Config> load2D(const string& filename,
-		int maxID, boost::optional<SharedDiagonal> model, bool addNoise, bool smart) {
+		boost::optional<SharedDiagonal> model, int maxID, bool addNoise, bool smart) {
 	cout << "Will try to read " << filename << endl;
 	ifstream is(filename.c_str());
 	if (!is) {
@@ -108,7 +114,7 @@ pair<sharedPose2Graph, sharedPose2Config> load2D(const string& filename,
 			if (maxID && (id1 >= maxID || id2 >= maxID)) continue;
 
 
-			measured = inverse(Pose2(x, y, yaw));
+			measured = Pose2(x, y, yaw);
 
 //			SharedGaussian noise = noiseModel::Gaussian::Covariance(m, smart);
 			// hack use diagonal for now !
@@ -123,7 +129,7 @@ pair<sharedPose2Graph, sharedPose2Config> load2D(const string& filename,
 
 			// Insert vertices if pure odometry file
 			if (!poses->exists(id1)) poses->insert(id1, Pose2());
-			if (!poses->exists(id2)) poses->insert(id2, measured * poses->at(id1));
+			if (!poses->exists(id2)) poses->insert(id2, poses->at(id1) * measured);
 
 			Pose2Graph::sharedFactor factor(new Pose2Factor(id1, id2,measured,*model));
 			graph->push_back(factor);

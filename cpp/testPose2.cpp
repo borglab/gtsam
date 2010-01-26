@@ -31,10 +31,10 @@ TEST(Pose2, manifold) {
 	Pose2 origin;
 	Vector d12 = logmap(t1,t2);
 	CHECK(assert_equal(t2, expmap(t1,d12)));
-	CHECK(assert_equal(t2, expmap(origin,d12)*t1));
+	CHECK(assert_equal(t2, t1*expmap(origin,d12)));
 	Vector d21 = logmap(t2,t1);
 	CHECK(assert_equal(t1, expmap(t2,d21)));
-	CHECK(assert_equal(t1, expmap(origin,d21)*t2));
+	CHECK(assert_equal(t1, t2*expmap(origin,d21)));
 }
 
 /* ************************************************************************* */
@@ -51,7 +51,7 @@ TEST(Pose2, expmap0) {
   //cout << "expmap0" << endl;
   Pose2 pose(M_PI_2, Point2(1, 2));
   Pose2 expected(M_PI_2+0.018, Point2(1.015, 2.01));
-  Pose2 actual = expmap<Pose2>(Vector_(3, 0.01, -0.015, 0.018)) * pose;
+  Pose2 actual = pose * expmap<Pose2>(Vector_(3, 0.01, -0.015, 0.018));
   CHECK(assert_equal(expected, actual));
 }
 
@@ -105,12 +105,12 @@ TEST(Pose2, compose_a)
   Pose2 pose2(M_PI/2.0, Point2(0.0, 2.0));
 
   Pose2 expected(3.0*M_PI/4.0, Point2(-sqrt(0.5), 3.0*sqrt(0.5)));
-  Pose2 actual = pose2 * pose1;
+  Pose2 actual = pose1 * pose2;
   CHECK(assert_equal(expected, actual));
 
   Point2 point(sqrt(0.5), 3.0*sqrt(0.5));
   Point2 expected_point(-1.0, -1.0);
-  Point2 actual_point1 = transform_to(pose2 * pose1, point);
+  Point2 actual_point1 = transform_to(pose1 * pose2, point);
   Point2 actual_point2 = transform_to(pose2, transform_to(pose1, point));
   CHECK(assert_equal(expected_point, actual_point1));
   CHECK(assert_equal(expected_point, actual_point2));
@@ -125,8 +125,8 @@ TEST(Pose2, compose_b)
 
   Pose2 pose_expected(Rot2(M_PI/4.0), Point2(1.0, 2.0));
 
-  Pose2 pose_actual_op = pose2 * pose1;
-  Pose2 pose_actual_fcn = compose(pose2,pose1);
+  Pose2 pose_actual_op = pose1 * pose2;
+  Pose2 pose_actual_fcn = compose(pose1, pose2);
 
   CHECK(assert_equal(pose_expected, pose_actual_op));
   CHECK(assert_equal(pose_expected, pose_actual_fcn));
@@ -141,8 +141,8 @@ TEST(Pose2, compose_c)
 
   Pose2 pose_expected(Rot2(M_PI/2.0), Point2(1.0, 2.0));
 
-  Pose2 pose_actual_op = pose2 * pose1;
-  Pose2 pose_actual_fcn = compose(pose2,pose1);
+  Pose2 pose_actual_op = pose1 * pose2;
+  Pose2 pose_actual_fcn = compose(pose1,pose2);
 
   CHECK(assert_equal(pose_expected, pose_actual_op));
   CHECK(assert_equal(pose_expected, pose_actual_fcn));
@@ -215,8 +215,7 @@ TEST( Pose2, compose_matrix )
   Pose2 gT1(M_PI_2, Point2(1,2)); // robot at (1,2) looking towards y
   Pose2 _1T2(M_PI, Point2(-1,4));  // local robot at (-1,4) loooking at negative x
   Matrix gM1(matrix(gT1)),_1M2(matrix(_1T2));
-  CHECK(assert_equal(gM1*_1M2,matrix(compose(_1T2,gT1)))); // WRONG CHECKS OUT !
-  // CHECK(assert_equal(gM1*_1M2,matrix(compose(gT1,_1T2)))); RIGHT DOES NOT
+  CHECK(assert_equal(gM1*_1M2,matrix(compose(gT1,_1T2)))); // RIGHT DOES NOT
 }
 
 /* ************************************************************************* */
@@ -276,7 +275,7 @@ TEST( Pose2, round_trip )
 {
 	Pose2 p1(1.23, 2.30, 0.2);
 	Pose2 odo(0.53, 0.39, 0.15);
-	Pose2 p2 = compose(odo, p1);
+	Pose2 p2 = compose(p1, odo);
 	CHECK(assert_equal(odo, between(p1, p2)));
 }
 

@@ -25,15 +25,15 @@ namespace gtsam {
 
   // Compute l1 s.t. l2=l1*l0
   template<class T>
-  inline T between(const T& l0, const T& l2) { return l2*inverse(l0); }
+  inline T between(const T& l1, const T& l2) { return inverse(l1)*l2; }
 
   // Log map centered at l0, s.t. exp(l0,log(l0,lp)) = lp
   template<class T>
   inline Vector logmap(const T& l0, const T& lp) { return logmap(between(l0,lp)); }
 
-  /* Exponential map centered at l0, s.t. exp(l0,v) = exp(v)*l0 */
+  /* Exponential map centered at l0, s.t. exp(t,d) = t*exp(d) */
   template<class T>
-  inline T expmap(const T& l0, const Vector& v) { return expmap<T>(v)*l0; }
+  inline T expmap(const T& t, const Vector& d) { return t * expmap<T>(d); }
 
   /**
    * Base class for Lie group type

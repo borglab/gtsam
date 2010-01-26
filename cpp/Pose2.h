@@ -73,7 +73,7 @@ namespace gtsam {
         pose.r().unrotate(Point2(-pose.t().x(), -pose.t().y()))); }
 
   /** compose this transformation onto another (pre-multiply this*p1) */
-  inline Pose2 compose(const Pose2& p1, const Pose2& p0) {
+  inline Pose2 compose(const Pose2& p0, const Pose2& p1) {
     return Pose2(p0.r()*p1.r(), p0.t() + p0.r()*p1.t()); }
 
   /** exponential and log maps around identity */

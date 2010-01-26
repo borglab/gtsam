@@ -33,9 +33,12 @@ std::pair<std::string, boost::optional<gtsam::SharedDiagonal> >
  * @param smart: try to reduce complexity of covariance to cheapest model
  */
 std::pair<boost::shared_ptr<gtsam::Pose2Graph>, boost::shared_ptr<gtsam::Pose2Config> > load2D(
-		const std::string& filename, int maxID = 0,
+		std::pair<std::string, boost::optional<SharedDiagonal> > dataset,
+		int maxID = 0, bool addNoise=false, bool smart=true);
+std::pair<boost::shared_ptr<gtsam::Pose2Graph>, boost::shared_ptr<gtsam::Pose2Config> > load2D(
+		const std::string& filename,
 		boost::optional<gtsam::SharedDiagonal> model = boost::optional<gtsam::SharedDiagonal>(),
-		bool addNoise=false, bool smart=true);
+		int maxID = 0, bool addNoise=false, bool smart=true);
 
 /** save 2d graph */
 void save2D(const gtsam::Pose2Graph& graph, const gtsam::Pose2Config& config, const gtsam::SharedDiagonal model,

@@ -20,14 +20,22 @@ namespace gtsam {
 	namespace pose3SLAM {
 
 		/* ************************************************************************* */
-		Config circle(size_t n, double R) {
+		Config circle(size_t n, double radius) {
 			Config x;
 			double theta = 0, dtheta = 2 * M_PI / n;
-			// Vehicle at p0 is looking towards y axis
-			Rot3 R0(Point3(0, 1, 0), Point3(1, 0, 0), Point3(0, 0, -1));
-			for (size_t i = 0; i < n; i++, theta += dtheta)
-				x.insert(i, Pose3(R0 * Rot3::yaw(-theta), Point3(cos(theta),
-						sin(theta), 0)));
+			// We use aerospace/navlab convention, X forward, Y right, Z down
+			// First pose will be at (R,0,0)
+			// ^y   ^ X
+			// |    |
+			// z-->xZ--> Y  (z pointing towards viewer, Z pointing away from viewer)
+			// Vehicle at p0 is looking towards y axis (X-axis points towards world y)
+			Rot3 gR0(Point3(0, 1, 0), Point3(1, 0, 0), Point3(0, 0, -1));
+			for (size_t i = 0; i < n; i++, theta += dtheta) {
+				Point3 gti(radius*cos(theta), radius*sin(theta), 0);
+				Rot3 _0Ri = Rot3::yaw(-theta); // negative yaw goes counterclockwise, with Z down !
+				Pose3 gTi(gR0 * _0Ri, gti);
+				x.insert(i, gTi);
+			}
 			return x;
 		}
 

@@ -122,9 +122,8 @@ namespace gtsam {
   /* ************************************************************************* */
   Matrix Dtransform_to1(const Pose3& pose, const Point3& p) {
     Point3 q = transform_to(pose,p);
-  	Matrix Rt = pose.rotation().transpose();
-    Matrix DR = skewSymmetric(q.x(), q.y(), q.z()) * Rt;
-    Matrix DT = - Rt; // negative because of sub
+    Matrix DR = skewSymmetric(q.x(), q.y(), q.z());
+    Matrix DT = - pose.rotation().transpose(); // negative because of sub
     return collect(2,&DR,&DT);
   }
 
@@ -137,7 +136,7 @@ namespace gtsam {
   // compose = Pose3(compose(R1,R2),transform_from(p1,t2);
 
   Matrix Dcompose1(const Pose3& p1, const Pose3& p2) {
-  	static const Matrix DR_R1 = eye(3);
+  	Matrix DR_R1 = p2.rotation().transpose();
 		Matrix DR_t1 = zeros(3, 3);
 		Matrix DR = collect(2, &DR_R1, &DR_t1);
 		Matrix Dt = Dtransform_from1(p1, p2.translation());
@@ -145,8 +144,10 @@ namespace gtsam {
 	}
 
 	Matrix Dcompose2(const Pose3& p1, const Pose3& p2) {
-		Matrix R1 = p1.rotation().matrix(), Z3 = zeros(3, 3);
-		Matrix DR = collect(2, &R1, &Z3);
+		Matrix R1 = p1.rotation().matrix();
+		const static Matrix I = eye(3,3);
+		const static Matrix Z3 = zeros(3, 3);
+		Matrix DR = collect(2, &I, &Z3);
 		Matrix Dt = collect(2, &Z3, &R1);
 		return stack(2, &DR, &Dt);
 	}
@@ -155,10 +156,10 @@ namespace gtsam {
   // inverse = Pose3(inverse(R),-unrotate(R,t));
 	Matrix Dinverse(const Pose3& p) {
 		Matrix Rt = p.rotation().transpose();
-		Matrix DR_R1 = -Rt;
+		Matrix DR_R1 = -p.rotation().matrix();
 		Matrix DR_t1 = zeros(3, 3);
 		Matrix DR = collect(2, &DR_R1, &DR_t1);
-		Matrix Dt_R1 = -(skewSymmetric(Rt * p.translation().vector()) * Rt);
+		Matrix Dt_R1 = -skewSymmetric(unrotate(p.rotation(),p.translation()).vector());
 		Matrix Dt_t1 = -Rt;
 		Matrix Dt = collect(2, &Dt_R1, &Dt_t1);
 		return stack(2, &DR, &Dt);
@@ -169,9 +170,9 @@ namespace gtsam {
   Pose3 between(const Pose3& p1, const Pose3& p2, boost::optional<Matrix&> H1,
 			boost::optional<Matrix&> H2) {
 		Pose3 invp1 = inverse(p1);
-		Pose3 result = compose(p2, invp1);
-		if (H1) *H1 = Dcompose2(p2, invp1) * Dinverse(p1);
-		if (H2) *H2 = Dcompose1(p2, invp1);
+		Pose3 result = compose(invp1, p2);
+		if (H1) *H1 = Dcompose1(invp1, p2) * Dinverse(p1);
+		if (H2) *H2 = Dcompose2(invp1, p2);
 		return result;
 	}
 

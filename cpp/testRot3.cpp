@@ -143,17 +143,17 @@ TEST(Rot3, log)
 /* ************************************************************************* */
 	TEST(Rot3, manifold)
 {
-	Rot3 t1 = rodriguez(0.1, 0.4, 0.2);
-	Rot3 t2 = rodriguez(0.3, 0.1, 0.7);
+	Rot3 gR1 = rodriguez(0.1, 0.4, 0.2);
+	Rot3 gR2 = rodriguez(0.3, 0.1, 0.7);
 	Rot3 origin;
 
 	// log behaves correctly
-	Vector d12 = logmap(t1, t2);
-	CHECK(assert_equal(t2, expmap(t1,d12)));
-	CHECK(assert_equal(t2, expmap<Rot3>(d12)*t1));
-	Vector d21 = logmap(t2, t1);
-	CHECK(assert_equal(t1, expmap(t2,d21)));
-	CHECK(assert_equal(t1, expmap<Rot3>(d21)*t2));
+	Vector d12 = logmap(gR1, gR2);
+	CHECK(assert_equal(gR2, expmap(gR1,d12)));
+	CHECK(assert_equal(gR2, gR1*expmap<Rot3>(d12)));
+	Vector d21 = logmap(gR2, gR1);
+	CHECK(assert_equal(gR1, expmap(gR2,d21)));
+	CHECK(assert_equal(gR1, gR2*expmap<Rot3>(d21)));
 
 	// Check that log(t1,t2)=-log(t2,t1)
 	CHECK(assert_equal(d12,-d21));
@@ -238,6 +238,21 @@ TEST( Rot3, compose )
 }
 
 /* ************************************************************************* */
+
+TEST( Rot3, inverse )
+{
+	Rot3 R = rodriguez(0.1, 0.2, 0.3);
+
+	Rot3 I;
+	CHECK(assert_equal(I,R*inverse(R)));
+	CHECK(assert_equal(I,inverse(R)*R));
+
+	Matrix numericalH = numericalDerivative11<Rot3,Rot3>(inverse, R, 1e-5);
+	Matrix actualH = Dinverse(R);
+	CHECK(assert_equal(numericalH,actualH));
+}
+
+/* ************************************************************************* */
 TEST( Rot3, between )
 {
 	Rot3 R = rodriguez(0.1, 0.4, 0.2);
@@ -248,7 +263,7 @@ TEST( Rot3, between )
 	Rot3 R1 = rodriguez(0.1, 0.2, 0.3);
 	Rot3 R2 = rodriguez(0.2, 0.3, 0.5);
 
-	Rot3 expected = R2*inverse(R1);
+	Rot3 expected = inverse(R1)*R2;
 	Rot3 actual = between(R1, R2);
 	CHECK(assert_equal(expected,actual));
 

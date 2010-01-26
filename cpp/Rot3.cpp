@@ -171,8 +171,7 @@ namespace gtsam {
 
   /* ************************************************************************* */
   Matrix Drotate1(const Rot3& R, const Point3& p) {
-    Point3 q = R * p;
-    return skewSymmetric(-q.x(), -q.y(), -q.z());
+    return R.matrix() * skewSymmetric(-p.x(), -p.y(), -p.z());
   }
 
   /* ************************************************************************* */
@@ -194,7 +193,7 @@ namespace gtsam {
   /* ************************************************************************* */
   Matrix Dunrotate1(const Rot3 & R, const Point3 & p) {
     Point3 q = unrotate(R,p);
-    return skewSymmetric(q.x(), q.y(), q.z()) * R.transpose();
+    return skewSymmetric(q.x(), q.y(), q.z());
   }
 
   /* ************************************************************************* */
@@ -204,22 +203,22 @@ namespace gtsam {
 
   /* ************************************************************************* */
   Matrix Dcompose1(const Rot3& R1, const Rot3& R2){
-  	return eye(3);
+    return R2.transpose();
   }
 
   /* ************************************************************************* */
   Matrix Dcompose2(const Rot3& R1, const Rot3& R2){
-    return R1.matrix();
+  	return eye(3);
   }
 
   /* ************************************************************************* */
   Matrix Dbetween1(const Rot3& R1, const Rot3& R2){
-  	return -between(R1,R2).matrix();
+  	return -(R2.transpose()*R1.matrix());
   }
 
   /* ************************************************************************* */
   Matrix Dbetween2(const Rot3& R1, const Rot3& R2){
-    return eye(3);
+  	return eye(3);
   }
 
   /* ************************************************************************* */

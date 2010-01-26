@@ -171,6 +171,9 @@ namespace gtsam {
         R.r3().x(), R.r3().y(), R.r3().z());
   }
 
+  // and its derivative
+  inline Matrix Dinverse(Rot3 R) { return -R.matrix();}
+
   /**
    * rotate point from rotated coordinate frame to 
    * world = R*p
