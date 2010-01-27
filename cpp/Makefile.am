@@ -259,7 +259,7 @@ libgtsam_la_LDFLAGS = -version-info $(version) -L../colamd -lcolamd #-lboost_ser
 
 # enable debug if --enable-debug is set in configure
 if DEBUG
-     AM_CXXFLAGS += -g
+AM_CXXFLAGS += -g
 endif
 
 # install the header files
@@ -271,31 +271,18 @@ AM_LDFLAGS = -L../CppUnitLite -lCppUnitLite $(BOOST_LDFLAGS) $(boost_serializati
 #######################
 # GSL/ATLAS inclusion
 #######################
-
-# TO ENABLE GSL AND ATLAS, uncomment this part!
-# AM_LDFLAGS += -lgsl -lcblas -latlas 
-# libgtsam_la_LDFLAGS += -lgsl -lcblas -latlas # Note: order of libraries is critical
-# AM_CXXFLAGS += -DGSL
-# libgtsam_la_CPPFLAGS += -DGSL
-
-# TO ENABLE JUST GSL, uncomment this part!
-# AM_LDFLAGS += -lgsl -lgslcblas
-# libgtsam_la_LDFLAGS += -lgsl -lgslcblas
-# AM_CXXFLAGS += -DGSL
-# libgtsam_la_CPPFLAGS += -DGSL
-
-# GSL using ATLAS
-# if GSL
-#	AM_CXXFLAGS += -DGSL
-#	libgtsam_la_CPPFLAGS += -DGSL 
-#	if ATLAS
-#		AM_LDFLAGS += -lgsl -lcblas -latlas 
-#		libgtsam_la_LDFLAGS += -lgsl -lcblas -latlas
-#	else 
-#		AM_LDFLAGS += -lgsl -lgslcblas 
-#		libgtsam_la_LDFLAGS += -lgsl -lgslcblas
-#	endif
-# endif
+#GSL using ATLAS
+if GSL
+AM_CXXFLAGS += -DGSL $(GSL_CFLAGS)
+libgtsam_la_CPPFLAGS += -DGSL $(GSL_CFLAGS)
+if ATLAS
+AM_LDFLAGS += $(GSL_LIBS) -lgsl -lcblas -latlas 
+libgtsam_la_LDFLAGS += $(GSL_LIBS) -lgsl -lcblas -latlas
+else 
+AM_LDFLAGS += $(GSL_LIBS) -lgsl -lgslcblas 
+libgtsam_la_LDFLAGS += $(GSL_LIBS) -lgsl -lgslcblas
+endif
+endif
 
 TESTS = $(check_PROGRAMS)
 CXXLINK = $(LIBTOOL) $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=link \

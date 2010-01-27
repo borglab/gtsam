@@ -22,7 +22,11 @@ AC_ARG_ENABLE([debug],
        no)  debug=false ;;
        *) AC_MSG_ERROR([bad value ${enableval} for --enable-debug]) ;;
      esac],[debug=false])
-     AM_CONDITIONAL([DEBUG], [test x$debug = xtrue])
+
+AM_CONDITIONAL([DEBUG], [test x$debug = xtrue])
+
+# search for gsl
+AM_PATH_GSL(1.1)
      
 # enable using GSL for linalg
 AC_ARG_ENABLE([gsl],
@@ -32,7 +36,9 @@ AC_ARG_ENABLE([gsl],
        no)  gsl=false ;;
        *) AC_MSG_ERROR([bad value ${enableval} for --enable-gsl]) ;;
      esac],[gsl=false])
-     AM_CONDITIONAL([GSL], [test x$gsl = xtrue])
+
+AM_CONDITIONAL([GSL], TRUE)
+
      
 # enable using ATLAS for BLAS
 AC_ARG_ENABLE([atlas],
@@ -42,7 +48,8 @@ AC_ARG_ENABLE([atlas],
        no)  atlas=false ;;
        *) AC_MSG_ERROR([bad value ${enableval} for --enable-atlas]) ;;
      esac],[atlas=false])
-     AM_CONDITIONAL([ATLAS], [test x$atlas = xtrue])
+
+AM_CONDITIONAL([ATLAS], [test x$atlas = xtrue])
 
 # Checks for programs.
 AC_PROG_CXX
@@ -69,16 +76,6 @@ AC_TYPE_SIZE_T
 AC_FUNC_ERROR_AT_LINE
 AC_CHECK_FUNCS([pow sqrt])
 
-# ask for CppUnitLite directory
-#AC_ARG_WITH([CppUnitLite],
-#            [AS_HELP_STRING([--with-CppUnitLite],
-#              [specify the directory of CppUnitLite library (mandatory)])],
-#            [CppUnitLite=$withval],
-#            [AC_MSG_FAILURE(
-#                   [--with-CppUnitLite has to be specified])
-#            ])
-#AC_SUBST([CppUnitLite])
-
 # ask for toolbox directory
 AC_ARG_WITH([toolbox],
             [AS_HELP_STRING([--with-toolbox],
@@ -104,12 +101,9 @@ AC_ARG_WITH([boost_serialization],
 	     [AS_HELP_STRING([--with-boost-serialization],
 			      [(optional) use the Serialization library from boost - specify the library linking command with the full name of the library
 			        e.g. --with-boost-serialization=-lboost_serialization-gcc-mt-d-1_33_1])],
-		[AC_DEFINE([HAVE_BOOST_SERIALIZATION], ["<boost/foreach.hpp>"], [boost serialization flag]) 
+	     [AC_DEFINE([HAVE_BOOST_SERIALIZATION], ["<boost/foreach.hpp>"], [boost serialization flag]) 
                 
 		 boost_serialization=$withval ])
 AC_SUBST([boost_serialization])
-
-#AC_DEFINE([TEST_AC_DEFINE], ["<boost/foreach.hpp>"], [testing of ac_define])
-	     
-
+	
 AC_OUTPUT
