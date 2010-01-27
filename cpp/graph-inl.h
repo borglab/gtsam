@@ -139,7 +139,7 @@ public:
 		typename Config::Key key_from = boost::get(boost::vertex_name, g, boost::source(edge, g));
 		typename Config::Key key_to = boost::get(boost::vertex_name, g, boost::target(edge, g));
 		Pose relativePose = boost::get(boost::edge_weight, g, edge);
-		config_->insert(key_to, compose(relativePose, (*config_)[key_from]));
+		config_->insert(key_to, compose((*config_)[key_from],relativePose));
 	}
 
 };
@@ -164,7 +164,7 @@ boost::shared_ptr<Config> composePoses(const G& graph, const PredecessorMap<type
 			predecessorMap2Graph<PoseGraph, PoseVertex, typename Config::Key>(tree);
 
 	// attach the relative poses to the edges
-	PoseEdge edge1, edge2;
+	PoseEdge edge12, edge21;
 	bool found1, found2;
 	BOOST_FOREACH(typename G::sharedFactor nl_factor, graph) {
 
@@ -178,18 +178,18 @@ boost::shared_ptr<Config> composePoses(const G& graph, const PredecessorMap<type
 		typename Config::Key key1 = factor->key1();
 		typename Config::Key key2 = factor->key2();
 
-		PoseVertex v_from = key2vertex.find(key1)->second;
-		PoseVertex v_to = key2vertex.find(key2)->second;
+		PoseVertex v1 = key2vertex.find(key1)->second;
+		PoseVertex v2 = key2vertex.find(key2)->second;
 
-		Pose measured = factor->measured();
-		tie(edge1, found1) = boost::edge(v_from, v_to, g);
-		tie(edge2, found2) = boost::edge(v_to, v_from, g);
+		Pose l1Xl2 = factor->measured();
+		tie(edge12, found1) = boost::edge(v1, v2, g);
+		tie(edge21, found2) = boost::edge(v2, v1, g);
 		if (found1 && found2) throw invalid_argument ("composePoses: invalid spanning tree");
 		if (!found1 && !found2) continue;
 		if (found1)
-			boost::put(boost::edge_weight, g, edge1, measured);
+			boost::put(boost::edge_weight, g, edge12, l1Xl2);
 		else if (found2)
-			boost::put(boost::edge_weight, g, edge2, inverse(measured));
+			boost::put(boost::edge_weight, g, edge21, inverse(l1Xl2));
 	}
 
 	// compose poses

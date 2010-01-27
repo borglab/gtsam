@@ -76,6 +76,7 @@ TEST( ProjectionFactor, error )
   CHECK(assert_equal(expected_config,actual_config,1e-9));
 }
 
+/* ************************************************************************* */
 TEST( ProjectionFactor, equals )
 {
 	// Create two identical factors and make sure they're equal

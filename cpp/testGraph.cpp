@@ -72,25 +72,30 @@ TEST( Graph, composePoses )
 {
 	Pose2Graph graph;
 	Matrix cov = eye(3);
-	graph.addConstraint(1,2, Pose2(2.0, 0.0, 0.0), cov);
-	graph.addConstraint(2,3, Pose2(3.0, 0.0, 0.0), cov);
+	Pose2 p1(1.0, 2.0, 0.3), p2(4.0, 5.0, 0.6), p3(7.0, 8.0, 0.9), p4(2.0, 2.0, 2.9);
+	Pose2 p12=between(p1,p2), p23=between(p2,p3), p43=between(p4,p3);
+	graph.addConstraint(1,2, p12, cov);
+	graph.addConstraint(2,3, p23, cov);
+	graph.addConstraint(4,3, p43, cov);
 
 	PredecessorMap<Pose2Config::Key> tree;
 	tree.insert(1,2);
 	tree.insert(2,2);
 	tree.insert(3,2);
+	tree.insert(4,3);
 
-	Pose2 rootPose(3.0, 0.0, 0.0);
+	Pose2 rootPose = p2;
 
 	boost::shared_ptr<Pose2Config> actual = composePoses<Pose2Graph, Pose2Factor,
 			Pose2, Pose2Config> (graph, tree, rootPose);
 
 	Pose2Config expected;
-	expected.insert(1, Pose2(1.0, 0.0, 0.0));
-	expected.insert(2, Pose2(3.0, 0.0, 0.0));
-	expected.insert(3, Pose2(6.0, 0.0, 0.0));
+	expected.insert(1, p1);
+	expected.insert(2, p2);
+	expected.insert(3, p3);
+	expected.insert(4, p4);
 
-	LONGS_EQUAL(3, actual->size());
+	LONGS_EQUAL(4, actual->size());
 	CHECK(assert_equal(expected, *actual));
 }
 
