@@ -232,3 +232,8 @@ an Autoconf bug.  Until the bug is fixed you can use this workaround:
 `configure' also accepts some other, not widely useful, options.  Run
 `configure --help' for more details.
 
+`--enable-gsl=yes(no)'
+     Whether to enable the GSL library
+
+`--enable-atlas=yes(no)'
+     Whether to enable the ATLAS library
