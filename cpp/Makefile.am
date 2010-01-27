@@ -273,14 +273,8 @@ AM_LDFLAGS = -L../CppUnitLite -lCppUnitLite $(BOOST_LDFLAGS) $(boost_serializati
 #######################
 
 # TO ENABLE GSL AND ATLAS, uncomment this part!
-AM_LDFLAGS += -lgsl -lcblas -latlas 
-libgtsam_la_LDFLAGS += -lgsl -lcblas -latlas
-AM_CXXFLAGS += -DGSL
-libgtsam_la_CPPFLAGS += -DGSL
-
-# TO ENABLE JUST GSL, uncomment this part!
-# AM_LDFLAGS += -lgsl -lgslcblas
-# libgtsam_la_LDFLAGS += -lgsl -lgslcblas
+# AM_LDFLAGS += -lgsl -lcblas -latlas 
+# libgtsam_la_LDFLAGS += -lgsl -lcblas -latlas
 # AM_CXXFLAGS += -DGSL
 # libgtsam_la_CPPFLAGS += -DGSL
 
