@@ -91,7 +91,6 @@ pair<sharedPose2Graph, sharedPose2Config> load2D(const string& filename,
 	is.seekg(0, ios::beg);
 
 	// load the factors
-	Pose2 measured;
 	while (is) {
 		char buf[LINESIZE];
 		is.getline(buf, LINESIZE);
@@ -102,7 +101,7 @@ pair<sharedPose2Graph, sharedPose2Config> load2D(const string& filename,
 		if ((tag == "EDGE2") || (tag == "EDGE") || (tag == "ODOMETRY")) {
 			int id1, id2;
 			double x, y, yaw;
-			ls >> id2 >> id1 >> x >> y >> yaw;
+			ls >> id1 >> id2 >> x >> y >> yaw;
 
 			Matrix m = eye(3);
 			ls >> m(0, 0) >> m(0, 1) >> m(1, 1) >> m(2, 2) >> m(0, 2) >> m(1, 2);
@@ -113,8 +112,7 @@ pair<sharedPose2Graph, sharedPose2Config> load2D(const string& filename,
 			// optional filter
 			if (maxID && (id1 >= maxID || id2 >= maxID)) continue;
 
-
-			measured = inverse(Pose2(x, y, yaw));
+			Pose2 l1Xl2(x, y, yaw);
 
 //			SharedGaussian noise = noiseModel::Gaussian::Covariance(m, smart);
 			// hack use diagonal for now !
@@ -125,13 +123,13 @@ pair<sharedPose2Graph, sharedPose2Config> load2D(const string& filename,
 			}
 
 			if (addNoise)
-				measured = expmap(measured,(*model)->sample());
+				l1Xl2 = expmap(l1Xl2,(*model)->sample());
 
 			// Insert vertices if pure odometry file
 			if (!poses->exists(id1)) poses->insert(id1, Pose2());
-			if (!poses->exists(id2)) poses->insert(id2, poses->at(id1) * measured);
+			if (!poses->exists(id2)) poses->insert(id2, poses->at(id1) * l1Xl2);
 
-			Pose2Graph::sharedFactor factor(new Pose2Factor(id1, id2,measured,*model));
+			Pose2Graph::sharedFactor factor(new Pose2Factor(id1, id2, l1Xl2, *model));
 			graph->push_back(factor);
 		}
 	}
