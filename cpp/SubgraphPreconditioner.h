@@ -120,6 +120,12 @@ namespace gtsam {
   	 */
   	VectorConfig optimize(SubgraphPreconditioner& system) const;
 	};
+
+	template<class G, class T> const size_t SubgraphPCG<G,T>::maxIterations_;
+	template<class G, class T> const bool SubgraphPCG<G,T>::verbose_;
+	template<class G, class T> const double SubgraphPCG<G,T>::epsilon_;
+	template<class G, class T> const double	SubgraphPCG<G,T>::epsilon_abs_;
+
 } // nsamespace gtsam
 
 #endif /* SUBGRAPHPRECONDITIONER_H_ */
