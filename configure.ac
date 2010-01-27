@@ -37,7 +37,7 @@ AC_ARG_ENABLE([gsl],
        *) AC_MSG_ERROR([bad value ${enableval} for --enable-gsl]) ;;
      esac],[gsl=false])
 
-AM_CONDITIONAL([GSL], TRUE)
+AM_CONDITIONAL([GSL], [test x$gsl = xtrue])
 
      
 # enable using ATLAS for BLAS
