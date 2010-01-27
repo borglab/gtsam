@@ -108,6 +108,11 @@ GaussianFactorGraph::eliminate(const Ordering& ordering)
 /* ************************************************************************* */
 VectorConfig GaussianFactorGraph::optimize(const Ordering& ordering)
 {
+	bool verbose = false;
+	if (verbose)
+		BOOST_FOREACH(sharedFactor factor,factors_)
+			factor->get_model()->print("Starting model");
+
 	// eliminate all nodes in the given ordering -> chordal Bayes net
 	GaussianBayesNet chordalBayesNet = eliminate(ordering);
 

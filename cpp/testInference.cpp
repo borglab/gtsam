@@ -47,7 +47,7 @@ TEST( Inference, marginals )
   BayesNet<GaussianConditional> actual = eliminate<GaussianFactor,GaussianConditional>(fg,keys);
 
   // expected is just scalar Gaussian on x
-  GaussianBayesNet expected = scalarGaussian("x",4,sqrt(2));
+  GaussianBayesNet expected = scalarGaussian("x", 4, sqrt(2));
   CHECK(assert_equal(expected,actual));
 }
 

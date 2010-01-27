@@ -27,6 +27,7 @@ using namespace boost::assign;
  * Alex's Machine
  * Results for Eliminate:
  * Initial (1891): 17.91 sec, 55834.7 calls/sec
+ * NoiseQR       : 12.58 sec
  *
  * Results for matrix_augmented:
  * Initial (1891)       :  0.85 sec, 1.17647e+06 calls/sec

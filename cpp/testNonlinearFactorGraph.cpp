@@ -68,15 +68,14 @@ TEST( Graph, probPrime )
 	DOUBLES_EQUAL(expected,actual,0);
 }
 
-/* ************************************************************************* *
-// TODO: Commented out until noise model is passed to Gaussian factor graph
+/* ************************************************************************* */
 TEST( Graph, linearize )
 {
 	Graph fg = createNonlinearFactorGraph();
 	Config initial = createNoisyConfig();
 	GaussianFactorGraph linearized = fg.linearize(initial);
 	GaussianFactorGraph expected = createGaussianFactorGraph();
-	CHECK(assert_equal(expected,linearized));
+	CHECK(assert_equal(expected,linearized)); // Needs correct linearizations
 }
 
 /* ************************************************************************* */

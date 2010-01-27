@@ -85,16 +85,15 @@ TEST( NonlinearFactor, NonlinearFactor )
   DOUBLES_EQUAL(expected,actual,0.00000001);
 }
 
-/* ************************************************************************* *
+/* ************************************************************************* */
 TEST( NonlinearFactor, linearize_f1 )
 {
   // Grab a non-linear factor
   Graph nfg = createNonlinearFactorGraph();
-  boost::shared_ptr<NonlinearFactor1> nlf = 
-    boost::static_pointer_cast<NonlinearFactor1>(nfg[0]);
+  Graph::sharedFactor nlf = nfg[0];
 
   // We linearize at noisy config from SmallExample
-  VectorConfig c = createNoisyConfig();
+  Config c = createNoisyConfig();
   GaussianFactor::shared_ptr actual = nlf->linearize(c);
 
   GaussianFactorGraph lfg = createGaussianFactorGraph();
@@ -104,61 +103,58 @@ TEST( NonlinearFactor, linearize_f1 )
 
   // The error |A*dx-b| approximates (h(x0+dx)-z) = -error_vector
   // Hence i.e., b = approximates z-h(x0) = error_vector(x0)
-	CHECK(assert_equal(nlf->error_vector(c),actual->get_b()));
+	//CHECK(assert_equal(nlf->error_vector(c),actual->get_b()));
 }
 
-/* ************************************************************************* *
+/* ************************************************************************* */
 TEST( NonlinearFactor, linearize_f2 )
 {
   // Grab a non-linear factor
   Graph nfg = createNonlinearFactorGraph();
-  boost::shared_ptr<NonlinearFactor1> nlf = 
-    boost::static_pointer_cast<NonlinearFactor1>(nfg[1]);
+  Graph::sharedFactor nlf = nfg[1];
 
   // We linearize at noisy config from SmallExample
-  VectorConfig c = createNoisyConfig();
+  Config c = createNoisyConfig();
   GaussianFactor::shared_ptr actual = nlf->linearize(c);
 
   GaussianFactorGraph lfg = createGaussianFactorGraph();
   GaussianFactor::shared_ptr expected = lfg[1];
 
-  CHECK(expected->equals(*actual));
+  CHECK(assert_equal(*expected,*actual));
 }
 
-/* ************************************************************************* *
+/* ************************************************************************* */
 TEST( NonlinearFactor, linearize_f3 )
 {
   // Grab a non-linear factor
   Graph nfg = createNonlinearFactorGraph();
-  boost::shared_ptr<NonlinearFactor1> nlf = 
-    boost::static_pointer_cast<NonlinearFactor1>(nfg[2]);
+  Graph::sharedFactor nlf = nfg[2];
 
   // We linearize at noisy config from SmallExample
-  VectorConfig c = createNoisyConfig();
+  Config c = createNoisyConfig();
   GaussianFactor::shared_ptr actual = nlf->linearize(c);
 
   GaussianFactorGraph lfg = createGaussianFactorGraph();
   GaussianFactor::shared_ptr expected = lfg[2];
 
-  CHECK(expected->equals(*actual));
+  CHECK(assert_equal(*expected,*actual));
 }
 
-/* ************************************************************************* *
+/* ************************************************************************* */
 TEST( NonlinearFactor, linearize_f4 )
 {
   // Grab a non-linear factor
   Graph nfg = createNonlinearFactorGraph();
-  boost::shared_ptr<NonlinearFactor1> nlf = 
-    boost::static_pointer_cast<NonlinearFactor1>(nfg[3]);
+  Graph::sharedFactor nlf = nfg[3];
 
   // We linearize at noisy config from SmallExample
-  VectorConfig c = createNoisyConfig();
+  Config c = createNoisyConfig();
   GaussianFactor::shared_ptr actual = nlf->linearize(c);
 
   GaussianFactorGraph lfg = createGaussianFactorGraph();
   GaussianFactor::shared_ptr expected = lfg[3];
 
-  CHECK(expected->equals(*actual));
+  CHECK(assert_equal(*expected,*actual));
 }
 
 /* ************************************************************************* */

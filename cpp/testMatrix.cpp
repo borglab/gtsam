@@ -502,32 +502,33 @@ TEST( matrix, backsubtitution )
 /* ************************************************************************* */
 TEST( matrix, houseHolder )
 {
-  double data[] = {-5,  0, 5, 0,  0,  0,  -1,
-		   00, -5, 0, 5,  0,  0, 1.5,
-		   10,  0, 0, 0,-10,  0,   2,
-		   00, 10, 0, 0,  0,-10,  -1};
+	double data[] = {
+			-5,  0, 5, 0,  0,  0,  -1,
+			00, -5, 0, 5,  0,  0, 1.5,
+			10,  0, 0, 0,-10,  0,   2,
+			00, 10, 0, 0,  0,-10,  -1};
 
-  // check in-place householder, with v vectors below diagonal
-  double data1[] = {
-  		11.1803, 0, -2.2361, 0, -8.9443, 0, 2.236,
-  		0, 11.1803, 0, -2.2361, 0, -8.9443, -1.565,
-  		-0.618034, 0, 4.4721, 0, -4.4721, 0, 0,
-			0, -0.618034, 0, 4.4721, 0, -4.4721, 0.894 };
-  Matrix expected1 = Matrix_(4,7, data1);
-  Matrix A1 = Matrix_(4, 7, data);
-  householder_(A1,3);
-  CHECK(assert_equal(expected1, A1, 1e-3));
+	// check in-place householder, with v vectors below diagonal
+	double data1[] = {
+			11.1803,         0, -2.2361,       0, -8.9443,       0,   2.236,
+			      0,   11.1803,       0, -2.2361,       0, -8.9443,  -1.565,
+		  -0.618034,         0,  4.4721,       0, -4.4721,       0,       0,
+			      0, -0.618034,       0,  4.4721,       0, -4.4721,   0.894 };
+	Matrix expected1 = Matrix_(4,7, data1);
+	Matrix A1 = Matrix_(4, 7, data);
+	householder_(A1,3);
+	CHECK(assert_equal(expected1, A1, 1e-3));
 
-  // in-place, with zeros below diagonal
-  double data2[] = {
-  		11.1803, 0, -2.2361, 0, -8.9443, 0, 2.236,
-  		0, 11.1803, 0, -2.2361, 0, -8.9443, -1.565,
-  		0, 0, 4.4721, 0, -4.4721, 0, 0,
-  		0, 0, 0, 4.4721, 0, -4.4721, 0.894 };
-  Matrix expected = Matrix_(4,7, data2);
-  Matrix A2 = Matrix_(4, 7, data);
-  householder(A2,3);  
-  CHECK(assert_equal(expected, A2, 1e-3));
+	// in-place, with zeros below diagonal
+	double data2[] = {
+			11.1803, 0, -2.2361, 0, -8.9443, 0, 2.236,
+			0, 11.1803, 0, -2.2361, 0, -8.9443, -1.565,
+			0, 0, 4.4721, 0, -4.4721, 0, 0,
+			0, 0, 0, 4.4721, 0, -4.4721, 0.894 };
+	Matrix expected = Matrix_(4,7, data2);
+	Matrix A2 = Matrix_(4, 7, data);
+	householder(A2,3);
+	CHECK(assert_equal(expected, A2, 1e-3));
 }
 /* ************************************************************************* */
 // unit test for qr factorization (and hence householder)
@@ -535,39 +536,39 @@ TEST( matrix, houseHolder )
 /* ************************************************************************* */
 TEST( matrix, qr )
 {
-  double data[] = {-5,  0,  5,  0, 
-		   00, -5,  0,  5, 
-		   10,  0,  0,  0, 
-		   00, 10,  0,  0,
-		   00,  0,  0,-10,
-		   10,  0,-10,  0};
-  Matrix A = Matrix_(6, 4, data);
+	double data[] = {-5,  0,  5,  0,
+			00, -5,  0,  5,
+			10,  0,  0,  0,
+			00, 10,  0,  0,
+			00,  0,  0,-10,
+			10,  0,-10,  0};
+	Matrix A = Matrix_(6, 4, data);
 
-  double dataQ[] = {
-    -0.3333,         0,    0.2981,         0,         0,   -0.8944,
-    0000000,   -0.4472,         0,    0.3651,   -0.8165,         0,
-    00.6667,         0,    0.7454,         0,         0,         0,
-    0000000,    0.8944,         0,    0.1826,   -0.4082,         0,
-    0000000,         0,         0,   -0.9129,   -0.4082,         0,
-    00.6667,         0,   -0.5963,         0,         0,   -0.4472,
-  };
-  Matrix expectedQ = Matrix_(6,6, dataQ);
-  
-  double dataR[] = {
-    15,        0,   -8.3333,         0,
-    00,  11.1803,         0,   -2.2361,
-    00,        0,    7.4536,         0,
-    00,        0,         0,   10.9545,
-    00,        0,         0,         0,
-    00,        0,         0,         0,
-  };
-  Matrix expectedR = Matrix_(6,4, dataR);
+	double dataQ[] = {
+			-0.3333,         0,    0.2981,         0,         0,   -0.8944,
+			0000000,   -0.4472,         0,    0.3651,   -0.8165,         0,
+			00.6667,         0,    0.7454,         0,         0,         0,
+			0000000,    0.8944,         0,    0.1826,   -0.4082,         0,
+			0000000,         0,         0,   -0.9129,   -0.4082,         0,
+			00.6667,         0,   -0.5963,         0,         0,   -0.4472,
+	};
+	Matrix expectedQ = Matrix_(6,6, dataQ);
 
-  Matrix Q,R;
-  boost::tie(Q,R) = qr(A);
-  CHECK(assert_equal(expectedQ, Q,  1e-4));
-  CHECK(assert_equal(expectedR, R, 1e-4));
-  CHECK(assert_equal(A, Q*R, 1e-14));
+	double dataR[] = {
+			15,        0,   -8.3333,         0,
+			00,  11.1803,         0,   -2.2361,
+			00,        0,    7.4536,         0,
+			00,        0,         0,   10.9545,
+			00,        0,         0,         0,
+			00,        0,         0,         0,
+	};
+	Matrix expectedR = Matrix_(6,4, dataR);
+
+	Matrix Q,R;
+	boost::tie(Q,R) = qr(A);
+	CHECK(assert_equal(expectedQ, Q,  1e-4));
+	CHECK(assert_equal(expectedR, R, 1e-4));
+	CHECK(assert_equal(A, Q*R, 1e-14));
 }
 
 /* ************************************************************************* */

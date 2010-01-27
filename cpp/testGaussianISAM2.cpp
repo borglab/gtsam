@@ -22,6 +22,8 @@ using namespace std;
 using namespace gtsam;
 using namespace example;
 
+const double tol = 1e-4;
+
 /* ************************************************************************* */
 TEST( ISAM2, solving )
 {
@@ -34,10 +36,10 @@ TEST( ISAM2, solving )
 	GaussianISAM2 btree(nlfg, ordering, noisy);
 	VectorConfig actualDelta = optimize2(btree);
 	VectorConfig delta = createCorrectDelta();
-	CHECK(assert_equal(delta, actualDelta));
+	CHECK(assert_equal(delta, actualDelta, 0.01));
 	Config actualSolution = noisy.expmap(actualDelta);
 	Config solution = createConfig();
-	CHECK(assert_equal(solution, actualSolution));
+	CHECK(assert_equal(solution, actualSolution, tol));
 }
 
 /* ************************************************************************* */

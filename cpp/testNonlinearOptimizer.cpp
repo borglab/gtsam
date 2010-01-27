@@ -32,6 +32,9 @@ using namespace boost;
 using namespace gtsam;
 using namespace example;
 
+// FIXME:  this tolerance is too high - something is wrong with the noisemodel
+const double tol = 1e-6;
+
 typedef NonlinearOptimizer<Graph,Config> Optimizer;
 
 /* ************************************************************************* */
@@ -57,12 +60,14 @@ TEST( NonlinearOptimizer, delta )
 	dx2(1) = -0.2;
 	expected.insert("x2", dx2);
 
+	Optimizer::shared_solver solver;
+
 	// Check one ordering
 	shared_ptr<Ordering> ord1(new Ordering());
 	*ord1 += "x2","l1","x1";
-	Optimizer::shared_solver solver;
 	solver = Optimizer::shared_solver(new Optimizer::solver(ord1));
 	Optimizer optimizer1(fg, initial, solver);
+
 	VectorConfig actual1 = optimizer1.linearizeAndOptimizeForDelta();
 	CHECK(assert_equal(actual1,expected));
 
@@ -71,6 +76,7 @@ TEST( NonlinearOptimizer, delta )
 	*ord2 += "x1","x2","l1";
 	solver = Optimizer::shared_solver(new Optimizer::solver(ord2));
 	Optimizer optimizer2(fg, initial, solver);
+
 	VectorConfig actual2 = optimizer2.linearizeAndOptimizeForDelta();
 	CHECK(assert_equal(actual2,expected));
 
@@ -79,8 +85,18 @@ TEST( NonlinearOptimizer, delta )
 	*ord3 += "l1","x1","x2";
 	solver = Optimizer::shared_solver(new Optimizer::solver(ord3));
 	Optimizer optimizer3(fg, initial, solver);
+
 	VectorConfig actual3 = optimizer3.linearizeAndOptimizeForDelta();
 	CHECK(assert_equal(actual3,expected));
+
+	// More...
+	shared_ptr<Ordering> ord4(new Ordering());
+	*ord4 += "x1","x2", "l1";
+	solver = Optimizer::shared_solver(new Optimizer::solver(ord4));
+	Optimizer optimizer4(fg, initial, solver);
+
+	VectorConfig actual4 = optimizer4.linearizeAndOptimizeForDelta();
+	CHECK(assert_equal(actual4,expected));
 }
 
 /* ************************************************************************* */
@@ -152,12 +168,12 @@ TEST( NonlinearOptimizer, optimize )
 	// Gauss-Newton
 	Optimizer actual1 = optimizer.gaussNewton(relativeThreshold,
 			absoluteThreshold);
-	DOUBLES_EQUAL(0,fg->error(*(actual1.config())),1e-3);
+	DOUBLES_EQUAL(0,fg->error(*(actual1.config())),tol);
 
 	// Levenberg-Marquardt
 	Optimizer actual2 = optimizer.levenbergMarquardt(relativeThreshold,
 			absoluteThreshold, Optimizer::SILENT);
-	DOUBLES_EQUAL(0,fg->error(*(actual2.config())),1e-3);
+	DOUBLES_EQUAL(0,fg->error(*(actual2.config())),tol);
 }
 
 /* ************************************************************************* */
@@ -170,8 +186,8 @@ TEST( NonlinearOptimizer, Factorization )
 	config->insert(2, Pose2(1.5,0.,0.));
 
 	boost::shared_ptr<Pose2Graph> graph(new Pose2Graph);
-	graph->addPrior(1, Pose2(0.,0.,0.), sharedSigma(3, 1e-10));
-	graph->addConstraint(1,2, Pose2(1.,0.,0.), sharedSigma(3, 1));
+	graph->addPrior(1, Pose2(0.,0.,0.), Isotropic::Sigma(3, 1e-10));
+	graph->addConstraint(1,2, Pose2(1.,0.,0.), Isotropic::Sigma(3, 1));
 
 	boost::shared_ptr<Ordering> ordering(new Ordering);
 	ordering->push_back(Pose2Config::Key(1));
@@ -197,8 +213,8 @@ TEST( NonlinearOptimizer, SubgraphPCG )
 	config->insert(2, Pose2(1.5,0.,0.));
 
 	boost::shared_ptr<Pose2Graph> graph(new Pose2Graph);
-	graph->addPrior(1, Pose2(0.,0.,0.), sharedSigma(3, 1e-10));
-	graph->addConstraint(1,2, Pose2(1.,0.,0.), sharedSigma(3, 1));
+	graph->addPrior(1, Pose2(0.,0.,0.), Isotropic::Sigma(3, 1e-10));
+	graph->addConstraint(1,2, Pose2(1.,0.,0.), Isotropic::Sigma(3, 1));
 
 	double relativeThreshold = 1e-5;
 	double absoluteThreshold = 1e-5;

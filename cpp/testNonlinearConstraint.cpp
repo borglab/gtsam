@@ -197,7 +197,7 @@ TEST( NonlinearConstraint2, binary_scalar_linearize ) {
 								 x1, Matrix_(1,1, -1.0),
 								 Vector_(1, 6.0), constraintModel);
 	CHECK(assert_equal(*actualFactor, expectedFactor));
-	CHECK(assert_equal(*actualConstraint, expectedConstraint)); //FAILS - wrong b value
+	CHECK(assert_equal(*actualConstraint, expectedConstraint));
 }
 
 /* ************************************************************************* */

@@ -372,7 +372,7 @@ TEST ( SQPOptimizer, inequality_avoid_iterative ) {
 	// verify
 	Config2D exp2(feasible);
 	exp2.insert(x2, Point2(5.0, 0.5));
-	CHECK(assert_equal(exp2, *(final.config()))); // FAILS
+	CHECK(assert_equal(exp2, *(final.config())));
 }
 
 /* ************************************************************************* */

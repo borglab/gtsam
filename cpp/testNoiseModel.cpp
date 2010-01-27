@@ -135,46 +135,46 @@ TEST(NoiseModel, ConstrainedAll )
 	DOUBLES_EQUAL(0.0,i->Mahalanobis(feasible),1e-9);
 }
 
-	// Currently does not pass
-///* ************************************************************************* */
-//TEST( NoiseModel, QR )
-//{
-//	// create a matrix to eliminate
-//	Matrix Ab1 = Matrix_(4, 6+1,
-//		   -1.,  0.,  1.,  0.,  0.,  0., -0.2,
-//		    0., -1.,  0.,  1.,  0.,  0.,  0.3,
-//	      1.,  0.,  0.,  0., -1.,  0.,  0.2,
-//	      0.,  1.,  0.,  0.,  0., -1., -0.1);
-//	Matrix Ab2 = Ab1; // otherwise overwritten !
-//	Vector sigmas = Vector_(4, 0.2, 0.2, 0.1, 0.1);
-//
-//	// Expected result
-//	Vector expectedSigmas = Vector_(4, 0.0894427, 0.0894427, 0.223607, 0.223607);
-//	SharedDiagonal expectedModel = noiseModel::Diagonal::Sigmas(expectedSigmas);
-//
-//	// Call Gaussian version
-//	SharedDiagonal diagonal = noiseModel::Diagonal::Sigmas(sigmas);
-//	SharedDiagonal actual1 = diagonal->QR(Ab1);
-//	SharedDiagonal expected = noiseModel::Unit::Create(4);
-//	CHECK(assert_equal(*expected,*actual1));
-//	Matrix expectedRd1 = Matrix_(4, 6+1,
-//			11.1803,   0.0,   -2.23607, 0.0,    -8.94427, 0.0,     2.23607,
-//			0.0,      11.1803, 0.0,    -2.23607, 0.0,    -8.94427,-1.56525,
-//			-0.618034, 0.0,    4.47214, 0.0,    -4.47214, 0.0,     0.0,
-//			0.0, -0.618034,    0.0,     4.47214, 0.0,    -4.47214, 0.894427);
-//	CHECK(assert_equal(expectedRd1,Ab1,1e-4)); // Ab was modified in place !!!
-//
-//	// Call Constrained version
-//	SharedDiagonal constrained = noiseModel::Constrained::MixedSigmas(sigmas);
-//	SharedDiagonal actual2 = constrained->QR(Ab2);
-//	CHECK(assert_equal(*expectedModel,*actual2));
-//	Matrix expectedRd2 = Matrix_(4, 6+1,
-//			1.,  0., -0.2,  0., -0.8, 0.,  0.2,
-//			0.,  1.,  0.,-0.2,   0., -0.8,-0.14,
-//			0.,  0.,  1.,   0., -1.,  0.,  0.0,
-//			0.,  0.,  0.,   1.,  0., -1.,  0.2);
-//	CHECK(assert_equal(expectedRd2,Ab2,1e-6)); // Ab was modified in place !!!
-//}
+/* ************************************************************************* */
+TEST( NoiseModel, QR )
+{
+	// create a matrix to eliminate
+	Matrix Ab1 = Matrix_(4, 6+1,
+		   -1.,  0.,  1.,  0.,  0.,  0., -0.2,
+			0., -1.,  0.,  1.,  0.,  0.,  0.3,
+			1.,  0.,  0.,  0., -1.,  0.,  0.2,
+			0.,  1.,  0.,  0.,  0., -1., -0.1);
+	Matrix Ab2 = Ab1; // otherwise overwritten !
+	Vector sigmas = Vector_(4, 0.2, 0.2, 0.1, 0.1);
+
+	// Expected result
+	Vector expectedSigmas = Vector_(4, 0.0894427, 0.0894427, 0.223607, 0.223607);
+	SharedDiagonal expectedModel = noiseModel::Diagonal::Sigmas(expectedSigmas);
+
+	// Call Gaussian version
+	SharedDiagonal diagonal = noiseModel::Diagonal::Sigmas(sigmas);
+	SharedDiagonal actual1 = diagonal->QR(Ab1);
+	SharedDiagonal expected = noiseModel::Unit::Create(4);
+	CHECK(assert_equal(*expected,*actual1));
+	Matrix expectedRd1 = Matrix_(4, 6+1,
+			11.1803,   0.0,   -2.23607, 0.0,    -8.94427, 0.0,     2.23607,
+			0.0,   11.1803,    0.0,    -2.23607, 0.0,    -8.94427,-1.56525,
+			0.0,       0.0,    4.47214, 0.0,    -4.47214, 0.0,     0.0,
+			0.0,       0.0,   0.0,     4.47214, 0.0,    -4.47214, 0.894427);
+	CHECK(assert_equal(expectedRd1,Ab1,1e-4)); // Ab was modified in place !!!
+
+	// Call Constrained version
+	SharedDiagonal constrained = noiseModel::Constrained::MixedSigmas(sigmas);
+	SharedDiagonal actual2 = constrained->QR(Ab2);
+	SharedDiagonal expectedModel2 = noiseModel::Diagonal::Sigmas(expectedSigmas);
+	CHECK(assert_equal(*expectedModel2,*actual2));
+	Matrix expectedRd2 = Matrix_(4, 6+1,
+			1.,  0., -0.2,  0., -0.8, 0.,  0.2,
+			0.,  1.,  0.,-0.2,   0., -0.8,-0.14,
+			0.,  0.,  1.,   0., -1.,  0.,  0.0,
+			0.,  0.,  0.,   1.,  0., -1.,  0.2);
+	CHECK(assert_equal(expectedRd2,Ab2,1e-6)); // Ab was modified in place !!!
+}
 
 /* ************************************************************************* */
 TEST(NoiseModel, QRNan )

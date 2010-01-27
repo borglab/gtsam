@@ -75,6 +75,8 @@ TEST(timeGaussianFactorGraph, planar)
 	// Improved (int->size_t)
 	//      (N = 100)              : 15.39
 	// Using GSL/BLAS for updateAb : 12.87
+	// Using NoiseQR               : 16.33
+	// Using correct system        : 10.00
 
 	// Switch to 100*100 grid = 10K poses
 	// 1879: 15.6498 15.3851 15.5279

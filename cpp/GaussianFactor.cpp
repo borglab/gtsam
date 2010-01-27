@@ -57,6 +57,7 @@ GaussianFactor::GaussianFactor(const vector<shared_ptr> & factors)
   size_t pos = 0; // save last position inserted into the new rhs vector
 
   // iterate over all factors
+  bool constrained = false;
   BOOST_FOREACH(shared_ptr factor, factors){
   	if (verbose) factor->print();
     // number of rows for factor f
@@ -72,10 +73,25 @@ GaussianFactor::GaussianFactor(const vector<shared_ptr> & factors)
     // update the matrices
     append_factor(factor,m,pos);
 
+    // check if there are constraints
+    if (verbose) factor->model_->print("Checking for zeros");
+    if (!constrained && factor->model_->isConstrained()) {
+    	constrained = true;
+    	if (verbose) cout << "Found a constraint!" << endl;
+    }
+
     pos += mf;
   }
-	if (verbose) cout << "GaussianFactor::GaussianFactor done" << endl;
-	model_ = noiseModel::Diagonal::Sigmas(sigmas);
+
+  if (verbose) cout << "GaussianFactor::GaussianFactor done" << endl;
+
+  if (constrained) {
+	  model_ = noiseModel::Constrained::MixedSigmas(sigmas);
+	  if (verbose) model_->print("Just created Constraint ^");
+  } else {
+	  model_ = noiseModel::Diagonal::Sigmas(sigmas);
+	  if (verbose) model_->print("Just created Diagonal");
+  }
 }
 
 /* ************************************************************************* */
@@ -304,6 +320,7 @@ void GaussianFactor::append_factor(GaussianFactor::shared_ptr f, size_t m, size_
 pair<GaussianConditional::shared_ptr, GaussianFactor::shared_ptr>
 GaussianFactor::eliminate(const Symbol& key) const
 {
+	bool verbose = false;
 	// if this factor does not involve key, we exit with empty CG and LF
 	const_iterator it = As_.find(key);
 	if (it==As_.end()) {
@@ -323,7 +340,9 @@ GaussianFactor::eliminate(const Symbol& key) const
 	Matrix Ab = matrix_augmented(ordering,false);
 
 	// Use in-place QR on dense Ab appropriate to NoiseModel
+	if (verbose) model_->print("Before QR");
 	SharedDiagonal noiseModel = model_->QR(Ab);
+	if (verbose) model_->print("After QR");
 
 	// get dimensions of the eliminated variable
 	// TODO: this is another map find that should be avoided !
@@ -355,96 +374,16 @@ GaussianFactor::eliminate(const Symbol& key) const
 		if (cur_key!=key) {
 			size_t dim = getDim(cur_key); // TODO avoid find !
 			conditional->add(cur_key, sub(Ab, 0, n1, j, j+dim));
-			factor->insert(cur_key, sub(Ab, n1, maxRank, j, j+dim));
+			factor->insert(cur_key, sub(Ab, n1, maxRank, j, j+dim)); // TODO: handle zeros properly
 			j+=dim;
 		}
 
 	// Set sigmas
-	factor->model_ = noiseModel::Diagonal::Sigmas(sub(noiseModel->sigmas(),n1,maxRank));
-
-	// extract ds vector for the new b
-	factor->set_b(sub(d, n1, maxRank));
-
-	return make_pair(conditional, factor);
-}
-
-/* ************************************************************************* */
-/* Note, in place !!!!
- * Do incomplete QR factorization for the first n columns
- * We will do QR on all matrices and on RHS
- * Then take first n rows and make a GaussianConditional,
- * and last rows to make a new joint linear factor on separator
- */
-/* ************************************************************************* *
-pair<GaussianConditional::shared_ptr, GaussianFactor::shared_ptr>
-GaussianFactor::eliminate(const Symbol& key) const
-{
-	// if this factor does not involve key, we exit with empty CG and LF
-	const_iterator it = As_.find(key);
-	if (it==As_.end()) {
-		// Conditional Gaussian is just a parent-less node with P(x)=1
-		GaussianFactor::shared_ptr lf(new GaussianFactor);
-		GaussianConditional::shared_ptr cg(new GaussianConditional(key));
-		return make_pair(cg,lf);
-	}
-
-	// create an internal ordering that eliminates key first
-	Ordering ordering;
-	ordering += key;
-	BOOST_FOREACH(const Symbol& k, keys())
-		if (k != key) ordering += k;
-
-	// extract A, b from the combined linear factor (ensure that x is leading)
-	// TODO: get Ab as augmented matrix
-	// Matrix Ab = matrix_augmented(ordering,false);
-	Matrix A; Vector b;
-	boost::tie(A, b) = matrix(ordering, false);
-	size_t n = A.size2();
-
-	// Do in-place QR to get R, d of the augmented system
-	std::list<boost::tuple<Vector, double, double> > solution =
-							weighted_eliminate(A, b, model_->sigmas());
-
-	// get dimensions of the eliminated variable
-	// TODO: this is another map find that should be avoided !
-	size_t n1 = getDim(key);
-
-	// if m<n1, this factor cannot be eliminated
-	size_t maxRank = solution.size();
-	if (maxRank<n1)
-		throw(domain_error("GaussianFactor::eliminate: fewer constraints than unknowns"));
-
-	// unpack the solutions
-	Matrix R(maxRank, n);
-	Vector r, d(maxRank), newSigmas(maxRank); double di, sigma;
-	Matrix::iterator2 Rit = R.begin2();
-	size_t i = 0;
-	BOOST_FOREACH(boost::tie(r, di, sigma), solution) {
-		copy(r.begin(), r.end(), Rit); // copy r vector
-		d(i) = di;                     // copy in rhs
-		newSigmas(i) = sigma;          // copy in new sigmas
-		Rit += n; i += 1;
-	}
-
-	// create base conditional Gaussian
-	GaussianConditional::shared_ptr conditional(new GaussianConditional(key,
-			sub(d, 0, n1),            // form d vector
-			sub(R, 0, n1, 0, n1),     // form R matrix
-			sub(newSigmas, 0, n1)));  // get standard deviations
-
-	// extract the block matrices for parents in both CG and LF
-	GaussianFactor::shared_ptr factor(new GaussianFactor);
-	size_t j = n1;
-	BOOST_FOREACH(Symbol& cur_key, ordering)
-		if (cur_key!=key) {
-			size_t dim = getDim(cur_key);
-			conditional->add(cur_key, sub(R, 0, n1, j, j+dim));
-			factor->insert(cur_key, sub(R, n1, maxRank, j, j+dim));
-			j+=dim;
-		}
-
-	// Set sigmas
-	factor->model_ = noiseModel::Diagonal::Sigmas(sub(newSigmas,n1,maxRank));
+	// set the right model here
+	if (noiseModel->isConstrained())
+		factor->model_ = noiseModel::Constrained::MixedSigmas(sub(noiseModel->sigmas(),n1,maxRank));
+	else
+		factor->model_ = noiseModel::Diagonal::Sigmas(sub(noiseModel->sigmas(),n1,maxRank));
 
 	// extract ds vector for the new b
 	factor->set_b(sub(d, n1, maxRank));

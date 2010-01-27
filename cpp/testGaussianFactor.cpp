@@ -35,8 +35,8 @@ static SharedDiagonal
 TEST( GaussianFactor, linearFactor )
 {
 	Matrix I = eye(2);
-	Vector b = Vector_(2,0.2,-0.1);
-	GaussianFactor expected("x1", -I, "x2", I, b, sigma0_1);
+	Vector b = Vector_(2, 2.0, -1.0);
+	GaussianFactor expected("x1", -10*I,"x2", 10*I, b, noiseModel::Unit::Create(2));
 
 	// create a small linear factor graph
 	GaussianFactorGraph fg = createGaussianFactorGraph();
@@ -131,37 +131,37 @@ TEST( GaussianFactor, combine )
 
 	// the expected combined linear factor
 	Matrix Ax2 = Matrix_(4, 2, // x2
-			-1., 0.,
-			+0., -1.,
-			1., 0.,
-			+0., 1.);
+			-5., 0.,
+			+0., -5.,
+			10., 0.,
+			+0., 10.);
 
 	Matrix Al1 = Matrix_(4, 2,	// l1
-			1., 0.,
-			0., 1.,
+			5., 0.,
+			0., 5.,
 			0., 0.,
 			0., 0.);
 
 	Matrix Ax1 = Matrix_(4, 2,	// x1
 			0.00, 0., // f4
 			0.00, 0., // f4
-			-1., 0., // f2
-			0.00, -1. // f2
+			-10., 0., // f2
+			0.00, -10. // f2
 	);
 
 	// the RHS
 	Vector b2(4);
-	b2(0) = -0.2;
-	b2(1) = 0.3;
-	b2(2) = 0.2;
-	b2(3) = -0.1;
+	b2(0) = -1.0;
+	b2(1) =  1.5;
+	b2(2) =  2.0;
+	b2(3) = -1.0;
 
 	// use general constructor for making arbitrary factors
 	vector<pair<Symbol, Matrix> > meas;
 	meas.push_back(make_pair("x2", Ax2));
 	meas.push_back(make_pair("l1", Al1));
 	meas.push_back(make_pair("x1", Ax1));
-	GaussianFactor expected(meas, b2, sigmas);
+	GaussianFactor expected(meas, b2, noiseModel::Diagonal::Sigmas(ones(4)));
 	CHECK(assert_equal(expected,combined));
 }
 
@@ -320,23 +320,24 @@ TEST( GaussianFactor, eliminate )
 	boost::tie(actualCG,actualLF) = combined.eliminate("x2");
 
 	// create expected Conditional Gaussian
-	Matrix I = eye(2);
+	Matrix I = eye(2)*sqrt(125.0);
 	Matrix R11 = I, S12 = -0.2*I, S13 = -0.8*I;
-	Vector d(2); d(0) = 0.2; d(1) = -0.14;
+	Vector d = I*Vector_(2,0.2,-0.14);
 
 	// Check the conditional Gaussian
 	GaussianConditional
-		expectedCG("x2", d, R11, "l1", S12, "x1", S13, repeat(2, 1 / sqrt(125.0)));
+	expectedCG("x2", d, R11, "l1", S12, "x1", S13, repeat(2, 1.0));
 
 	// the expected linear factor
+	I = eye(2)/0.2236;
 	Matrix Bl1 = I, Bx1 = -I;
-	Vector b1(2); b1(0) = 0.0; b1(1) = 0.2;
+	Vector b1 = I*Vector_(2,0.0,0.2);
 
-	GaussianFactor expectedLF("l1", Bl1, "x1", Bx1, b1, repeat(2,0.2236));
+	GaussianFactor expectedLF("l1", Bl1, "x1", Bx1, b1, repeat(2,1.0));
 
 	// check if the result matches
-	CHECK(assert_equal(expectedCG,*actualCG,1e-4));
-	CHECK(assert_equal(expectedLF,*actualLF,1e-5));
+	CHECK(assert_equal(expectedCG,*actualCG,1e-3));
+	CHECK(assert_equal(expectedLF,*actualLF,1e-3));
 }
 
 
@@ -383,21 +384,18 @@ TEST( GaussianFactor, eliminate2 )
 	boost::tie(actualCG,actualLF) = combined.eliminate("x2");
 
 	// create expected Conditional Gaussian
+	double oldSigma = 0.0894427; // from when R was made unit
 	Matrix R11 = Matrix_(2,2,
 			1.00,  0.00,
 			0.00,  1.00
-	);
+	)/oldSigma;
 	Matrix S12 = Matrix_(2,4,
 			-0.20, 0.00,-0.80, 0.00,
 			+0.00,-0.20,+0.00,-0.80
-	);
-	Vector d(2); d(0) = 0.2; d(1) = -0.14;
-
-	Vector x2Sigmas(2);
-	x2Sigmas(0) = 0.0894427;
-	x2Sigmas(1) = 0.0894427;
-
-	GaussianConditional expectedCG("x2",d,R11,"l11",S12,x2Sigmas);
+	)/oldSigma;
+	Vector d = Vector_(2,0.2,-0.14)/oldSigma;
+	GaussianConditional expectedCG("x2",d,R11,"l11",S12,ones(2));
+	CHECK(assert_equal(expectedCG,*actualCG,1e-4));
 
 	// the expected linear factor
 	double sigma = 0.2236;
@@ -405,16 +403,10 @@ TEST( GaussianFactor, eliminate2 )
 			// l1          x1
 			1.00, 0.00, -1.00,  0.00,
 			0.00, 1.00, +0.00, -1.00
-	);
-
-	// the RHS
-	Vector b1(2); b1(0) = 0.0; b1(1) = 0.894427;
-
-	GaussianFactor expectedLF("l11", Bl1x1, b1*sigma, repeat(2,sigma));
-
-	// check if the result matches
-	CHECK(assert_equal(expectedCG,*actualCG,1e-4));
-	CHECK(assert_equal(expectedLF,*actualLF,1e-5));
+	)/sigma;
+	Vector b1 =Vector_(2,0.0,0.894427);
+	GaussianFactor expectedLF("l11", Bl1x1, b1, repeat(2,1.0));
+	CHECK(assert_equal(expectedLF,*actualLF,1e-3));
 }
 
 /* ************************************************************************* */
@@ -463,7 +455,10 @@ TEST( GaussianFactor, matrix )
 	GaussianFactorGraph fg = createGaussianFactorGraph();
 
 	// get the factor "f2" from the factor graph
-	GaussianFactor::shared_ptr lf = fg[1];
+	//GaussianFactor::shared_ptr lf = fg[1]; // NOTE: using the older version
+	Vector b2 = Vector_(2, 0.2, -0.1);
+	Matrix I = eye(2);
+	GaussianFactor::shared_ptr lf(new GaussianFactor("x1", -I, "x2", I, b2, sigma0_1));
 
 	// render with a given ordering
 	Ordering ord;
@@ -489,7 +484,7 @@ TEST( GaussianFactor, matrix )
 	Matrix A2 = Matrix_(2,4,
 			-1.0,  0.0, 1.0,  0.0,
 			000.0,-1.0,  0.0, 1.0 );
-	Vector b2 = Vector_(2, 0.2, -0.1);
+	//Vector b2 = Vector_(2, 2.0, -1.0);
 
 	EQUALITY(A_act2,A2);
 	EQUALITY(b_act2,b2);
@@ -508,7 +503,10 @@ TEST( GaussianFactor, matrix_aug )
 	GaussianFactorGraph fg = createGaussianFactorGraph();
 
 	// get the factor "f2" from the factor graph
-	GaussianFactor::shared_ptr lf = fg[1];
+	//GaussianFactor::shared_ptr lf = fg[1];
+	Vector b2 = Vector_(2, 0.2, -0.1);
+	Matrix I = eye(2);
+	GaussianFactor::shared_ptr lf(new GaussianFactor("x1", -I, "x2", I, b2, sigma0_1));
 
 	// render with a given ordering
 	Ordering ord;
@@ -654,9 +652,9 @@ TEST( GaussianFactor, alphaFactor )
 	GaussianFactor::shared_ptr actual = factor->alphaFactor(alphaKey,x,d);
 
 	// calculate expected
-	Matrix A = Matrix_(2,1,30.0,5.0);
-	Vector b = Vector_(2,-0.1,-0.1);
-	GaussianFactor expected(alphaKey,A,b,sigma0_1);
+	Matrix A = Matrix_(2,1,300.0,50.0);
+	Vector b = Vector_(2,-1.0,-1.0);
+	GaussianFactor expected(alphaKey,A,b,noiseModel::Unit::Create(2));
 
 	CHECK(assert_equal(expected,*actual));
 }

@@ -85,6 +85,11 @@ namespace gtsam {
 			return keys_;
 		}
 
+		/** access to the noise model */
+		SharedGaussian get_noiseModel() const {
+			return noiseModel_;
+		}
+
 		/** get the size of the factor */
 		std::size_t size() const {
 			return keys_.size();

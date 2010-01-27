@@ -29,7 +29,7 @@ namespace gtsam {
 GaussianBayesNet scalarGaussian(const Symbol& key, double mu, double sigma) {
 	GaussianBayesNet bn;
 	GaussianConditional::shared_ptr
-		conditional(new GaussianConditional(key, Vector_(1,mu), eye(1), Vector_(1,sigma)));
+		conditional(new GaussianConditional(key, Vector_(1,mu)/sigma, eye(1)/sigma, ones(1)));
 	bn.push_back(conditional);
 	return bn;
 }
@@ -39,7 +39,7 @@ GaussianBayesNet simpleGaussian(const Symbol& key, const Vector& mu, double sigm
 	GaussianBayesNet bn;
 	size_t n = mu.size();
 	GaussianConditional::shared_ptr
-		conditional(new GaussianConditional(key, mu, eye(n), repeat(n,sigma)));
+		conditional(new GaussianConditional(key, mu/sigma, eye(n)/sigma, ones(n)));
 	bn.push_back(conditional);
 	return bn;
 }

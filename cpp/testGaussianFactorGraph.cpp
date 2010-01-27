@@ -28,7 +28,7 @@ using namespace boost::assign;
 using namespace gtsam;
 using namespace example;
 
-double tol=1e-4;
+double tol=1e-5;
 
 /* ************************************************************************* */
 /* unit test for equals (GaussianFactorGraph1 == GaussianFactorGraph2)           */
@@ -77,12 +77,6 @@ TEST( GaussianFactorGraph, combine_factors_x1 )
   // create a small example for a linear factor graph
   GaussianFactorGraph fg = createGaussianFactorGraph();
 
-  // create sigmas
-  double sigma1 = 0.1;
-  double sigma2 = 0.1;
-  double sigma3 = 0.2;
-  Vector sigmas = Vector_(6, sigma1, sigma1, sigma2, sigma2, sigma3, sigma3);
-
   // combine all factors
   GaussianFactor::shared_ptr actual = removeAndCombineFactors(fg,"x1");
 
@@ -92,42 +86,42 @@ TEST( GaussianFactorGraph, combine_factors_x1 )
 			 0., 0.,
 			 0., 0.,
 			 0., 0.,
-			 1., 0.,
-			 0., 1.
+			 5., 0.,
+			 0., 5.
 			 );
 
   Matrix Ax1 = Matrix_(6,2,
-			 1., 0.,
-			 0., 1.,
-			-1., 0.,
-			 0.,-1.,
-			-1., 0.,
-			 0.,-1.
+			 10., 0.,
+			 0., 10.,
+			-10., 0.,
+			 0.,-10.,
+			-5., 0.,
+			 0.,-5.
 			 );
 
   Matrix Ax2 = Matrix_(6,2,
 			 0., 0.,
 			 0., 0.,
-			 1., 0.,
-			 0., 1.,
+			 10., 0.,
+			 0., 10.,
 			 0., 0.,
 			 0., 0.
 			 );
 
   // the expected RHS vector
   Vector b(6);
-  b(0) = -1*sigma1;
-  b(1) = -1*sigma1;
-  b(2) =  2*sigma2;
-  b(3) = -1*sigma2;
-  b(4) =  0*sigma3;
-  b(5) =  1*sigma3;
+  b(0) = -1;
+  b(1) = -1;
+  b(2) =  2;
+  b(3) = -1;
+  b(4) =  0;
+  b(5) =  1;
 
   vector<pair<Symbol, Matrix> > meas;
   meas.push_back(make_pair("l1", Al1));
   meas.push_back(make_pair("x1", Ax1));
   meas.push_back(make_pair("x2", Ax2));
-  GaussianFactor expected(meas, b, sigmas);
+  GaussianFactor expected(meas, b, ones(6));
   //GaussianFactor expected("l1", Al1, "x1", Ax1, "x2", Ax2, b);
 
   // check if the two factors are the same
@@ -140,11 +134,6 @@ TEST( GaussianFactorGraph, combine_factors_x2 )
  // create a small example for a linear factor graph
   GaussianFactorGraph fg = createGaussianFactorGraph();
 
-  // determine sigmas
-  double sigma1 = 0.1;
-  double sigma2 = 0.2;
-  Vector sigmas = Vector_(4, sigma1, sigma1, sigma2, sigma2);
-
   // combine all factors
   GaussianFactor::shared_ptr actual = removeAndCombineFactors(fg,"x2");
 
@@ -153,38 +142,38 @@ TEST( GaussianFactorGraph, combine_factors_x2 )
 			 // l1
 			 0., 0.,
 			 0., 0.,
-			 1., 0.,
-			 0., 1.
+			 5., 0.,
+			 0., 5.
 			 );
 
   Matrix Ax1 = Matrix_(4,2,
                          // x1
-			-1., 0., // f2
-			 0.,-1., // f2
+			-10., 0., // f2
+			 0.,-10., // f2
 			 0., 0., // f4
 			 0., 0.  // f4
 			 );
 
   Matrix Ax2 = Matrix_(4,2,
 			 // x2
-			 1., 0.,
-			 0., 1.,
-			-1., 0.,
-			 0.,-1.
+			 10., 0.,
+			 0., 10.,
+			-5., 0.,
+			 0.,-5.
 			 );
 
   // the expected RHS vector
   Vector b(4);
-  b(0) =  2*sigma1;
-  b(1) = -1*sigma1;
-  b(2) = -1  *sigma2;
-  b(3) =  1.5*sigma2;
+  b(0) =  2;
+  b(1) = -1;
+  b(2) = -1;
+  b(3) =  1.5;
 
   vector<pair<Symbol, Matrix> > meas;
   meas.push_back(make_pair("l1", Al1));
   meas.push_back(make_pair("x1", Ax1));
   meas.push_back(make_pair("x2", Ax2));
-  GaussianFactor expected(meas, b, sigmas);
+  GaussianFactor expected(meas, b, ones(4));
 
   // check if the two factors are the same
   CHECK(assert_equal(expected,*actual));
@@ -197,9 +186,9 @@ TEST( GaussianFactorGraph, eliminateOne_x1 )
   GaussianConditional::shared_ptr actual = fg.eliminateOne("x1");
 
   // create expected Conditional Gaussian
-  Matrix I = eye(2), R11 = I, S12 = -0.111111*I, S13 = -0.444444*I;
-  Vector d = Vector_(2, -0.133333, -0.0222222), sigma = repeat(2, 1./15);
-  GaussianConditional expected("x1",d,R11,"l1",S12,"x2",S13,sigma);
+  Matrix I = 15*eye(2), R11 = I, S12 = -0.111111*I, S13 = -0.444444*I;
+  Vector d = Vector_(2, -0.133333, -0.0222222), sigma = ones(2);
+  GaussianConditional expected("x1",15*d,R11,"l1",S12,"x2",S13,sigma);
 
   CHECK(assert_equal(expected,*actual,tol));
 }
@@ -211,8 +200,9 @@ TEST( GaussianFactorGraph, eliminateOne_x2 )
   GaussianConditional::shared_ptr actual = fg.eliminateOne("x2");
 
   // create expected Conditional Gaussian
-  Matrix I = eye(2), R11 = I, S12 = -0.2*I, S13 = -0.8*I;
-  Vector d = Vector_(2, 0.2, -0.14), sigma = repeat(2, 0.0894427);
+  double sig = 0.0894427;
+  Matrix I = eye(2)/sig, R11 = I, S12 = -0.2*I, S13 = -0.8*I;
+  Vector d = Vector_(2, 0.2, -0.14)/sig, sigma = ones(2);
   GaussianConditional expected("x2",d,R11,"l1",S12,"x1",S13,sigma);
 
   CHECK(assert_equal(expected,*actual,tol));
@@ -225,8 +215,9 @@ TEST( GaussianFactorGraph, eliminateOne_l1 )
   GaussianConditional::shared_ptr actual = fg.eliminateOne("l1");
 
   // create expected Conditional Gaussian
-  Matrix I = eye(2), R11 = I, S12 = -0.5*I, S13 = -0.5*I;
-  Vector d = Vector_(2, -0.1, 0.25), sigma = repeat(2, 0.141421);
+  double sig = sqrt(2)/10.;
+  Matrix I = eye(2)/sig, R11 = I, S12 = -0.5*I, S13 = -0.5*I;
+  Vector d = Vector_(2, -0.1, 0.25)/sig, sigma = ones(2);
   GaussianConditional expected("l1",d,R11,"x1",S12,"x2",S13,sigma);
 
   CHECK(assert_equal(expected,*actual,tol));
@@ -235,24 +226,26 @@ TEST( GaussianFactorGraph, eliminateOne_l1 )
 /* ************************************************************************* */
 TEST( GaussianFactorGraph, eliminateAll )
 {
-  // create expected Chordal bayes Net
-  Matrix I = eye(2);
+	// create expected Chordal bayes Net
+	Matrix I = eye(2);
 
-  Vector d1 = Vector_(2, -0.1,-0.1);
-  GaussianBayesNet expected = simpleGaussian("x1",d1,0.1);
+	Vector d1 = Vector_(2, -0.1,-0.1);
+	GaussianBayesNet expected = simpleGaussian("x1",d1,0.1);
 
-  Vector d2 = Vector_(2, 0.0, 0.2), sigma2 = repeat(2,0.149071);
-  push_front(expected,"l1",d2, I,"x1", (-1)*I,sigma2);
+	double sig1 = 0.149071;
+	Vector d2 = Vector_(2, 0.0, 0.2)/sig1, sigma2 = ones(2);
+	push_front(expected,"l1",d2, I/sig1,"x1", (-1)*I/sig1,sigma2);
 
-  Vector d3 = Vector_(2, 0.2, -0.14), sigma3 = repeat(2,0.0894427);
-  push_front(expected,"x2",d3, I,"l1", (-0.2)*I, "x1", (-0.8)*I, sigma3);
+	double sig2 = 0.0894427;
+	Vector d3 = Vector_(2, 0.2, -0.14)/sig2, sigma3 = ones(2);
+	push_front(expected,"x2",d3, I/sig2,"l1", (-0.2)*I/sig2, "x1", (-0.8)*I/sig2, sigma3);
 
-  // Check one ordering
-  GaussianFactorGraph fg1 = createGaussianFactorGraph();
-  Ordering ordering;
-  ordering += "x2","l1","x1";
-  GaussianBayesNet actual = fg1.eliminate(ordering);
-  CHECK(assert_equal(expected,actual,tol));
+	// Check one ordering
+	GaussianFactorGraph fg1 = createGaussianFactorGraph();
+	Ordering ordering;
+	ordering += "x2","l1","x1";
+	GaussianBayesNet actual = fg1.eliminate(ordering);
+	CHECK(assert_equal(expected,actual,tol));
 }
 
 /* ************************************************************************* */
@@ -267,7 +260,7 @@ TEST( GaussianFactorGraph, add_priors )
   expected.push_back(GaussianFactor::shared_ptr(new GaussianFactor("l1",A,b,sigma)));
   expected.push_back(GaussianFactor::shared_ptr(new GaussianFactor("x1",A,b,sigma)));
   expected.push_back(GaussianFactor::shared_ptr(new GaussianFactor("x2",A,b,sigma)));
-  CHECK(assert_equal(expected,actual)); // Fails
+  CHECK(assert_equal(expected,actual));
 }
 
 /* ************************************************************************* */
@@ -640,14 +633,14 @@ TEST( GaussianFactorGraph, elimination )
 	GaussianBayesNet bayesNet = fg.eliminate(ord);
 
 	// Check sigma
-	DOUBLES_EQUAL(1.0/0.612372,bayesNet["x2"]->get_sigmas()(0),1e-5);
+	DOUBLES_EQUAL(1.0,bayesNet["x2"]->get_sigmas()(0),1e-5);
 
 	// Check matrix
 	Matrix R;Vector d;
 	boost::tie(R,d) = matrix(bayesNet);
 	Matrix expected = Matrix_(2,2,
 			0.707107,	-0.353553,
-      0.0,	 0.612372);
+			0.0,	 0.612372);
 	CHECK(assert_equal(expected,R,1e-6));
 }
 
