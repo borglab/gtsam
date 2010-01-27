@@ -24,6 +24,7 @@ namespace ublas = boost::numeric::ublas;
  *  - (matrix_range version)       no pass: 24.21  sec , pass: 23.97 sec
  *  - (memcpy version)             no pass: 18.96  sec , pass: 18.39 sec
  *  - (original version)           no pass: 23.45  sec , pass: 22.80 sec
+ *  - rev 2100                     no pass: 18.45  sec , pass: 18.35 sec
  */
 double timeCollect(size_t p, size_t m, size_t n, bool passDims, size_t reps) {
 	// create a large number of matrices
@@ -66,8 +67,9 @@ double timeCollect(size_t p, size_t m, size_t n, bool passDims, size_t reps) {
 /*
  * Results:
  * Alex's Machine:
- *  - Original: 0.60 sec (x1000)
- *  - 1st Rev : 0.49 sec (x1000)
+ *  - Original : 0.60 sec (x1000)
+ *  - 1st Rev  : 0.49 sec (x1000)
+ *  - rev 2100 : 0.52 sec (x1000)
  */
 double timeVScaleColumn(size_t m, size_t n, size_t reps) {
 	// make a matrix to scale
@@ -96,8 +98,9 @@ double timeVScaleColumn(size_t m, size_t n, size_t reps) {
 /*
  * Results:
  * Alex's Machine:
- *  - Original: 0.54 sec (x1000)
- *  - 1st rev : 0.44 sec (x1000)
+ *  - Original : 0.54 sec (x1000)
+ *  - 1st rev  : 0.44 sec (x1000)
+ *  - rev 2100 : 1.69 sec (x1000)
  */
 double timeVScaleRow(size_t m, size_t n, size_t reps) {
 	// make a matrix to scale
@@ -130,7 +133,7 @@ double timeVScaleRow(size_t m, size_t n, size_t reps) {
  *  - naive implementation : 4.70 sec
  *
  * reps = 2000000
- *  -
+ *  - rev 2100             : 45.11 sec
  */
 double timeColumn(size_t reps) {
 	// create a matrix
@@ -172,6 +175,7 @@ double timeColumn(size_t reps) {
  * GSL/Atlas version of updateAb               : 9.03 sec // Why does this have an effect?
  * Inlining house()                            : 6.33 sec
  * Inlining householder_update [GSL]           : 6.15 sec
+ * Rev 2100                                    : 5.75 sec
  *
  */
 double timeHouseholder(size_t reps) {

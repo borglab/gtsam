@@ -27,7 +27,7 @@ using namespace boost::assign;
  * Alex's Machine
  * Results for Eliminate:
  * Initial (1891): 17.91 sec, 55834.7 calls/sec
- * NoiseQR       : 12.58 sec
+ * NoiseQR       : 11.69 sec
  *
  * Results for matrix_augmented:
  * Initial (1891)       :  0.85 sec, 1.17647e+06 calls/sec
@@ -35,6 +35,7 @@ using namespace boost::assign;
  * w/ original collect():  8.73 sec (for n1 reps)
  * b memcpy Version     :  8.64 sec (for n1 reps) with original version of collect()
  * w/ memcpy collect()  :  8.40 sec (for n1 reps)
+ * Rev 2100             :  8.15 sec
  */
 
 int main()

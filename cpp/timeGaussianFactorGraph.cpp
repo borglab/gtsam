@@ -51,6 +51,7 @@ TEST(timeGaussianFactorGraph, linearTime)
 	// T = 100000
 	// 1907 (init)    : T - 1.65, 2T = 3.28
 	//    int->size_t : T - 1.63, 2T = 3.27
+	// 2100           : T - 1.52, 2T = 2.96
 
 	int T = 100000;
 	double time1 = timeKalmanSmoother(  T);  cout << "timeKalmanSmoother( T): " << time1;
