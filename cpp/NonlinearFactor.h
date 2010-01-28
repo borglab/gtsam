@@ -190,6 +190,11 @@ namespace gtsam {
 			Matrix A;
 			Vector b = - evaluateError(xj, A);
 			// TODO pass unwhitened + noise model to Gaussian factor
+			SharedDiagonal constrained =
+					boost::shared_dynamic_cast<noiseModel::Constrained>(this->noiseModel_);
+			if (constrained.get() != NULL) {
+				return GaussianFactor::shared_ptr(new GaussianFactor(key_, A, b, constrained));
+			}
 			this->noiseModel_->WhitenInPlace(A);
 			this->noiseModel_->whitenInPlace(b);
 			return GaussianFactor::shared_ptr(new GaussianFactor(key_, A, b,
@@ -288,6 +293,12 @@ namespace gtsam {
 			Matrix A1, A2;
 			Vector b = -evaluateError(x1, x2, A1, A2);
 			// TODO pass unwhitened + noise model to Gaussian factor
+			SharedDiagonal constrained =
+					boost::shared_dynamic_cast<noiseModel::Constrained>(this->noiseModel_);
+			if (constrained.get() != NULL) {
+				return GaussianFactor::shared_ptr(new GaussianFactor(key1_, A1, key2_,
+						A2, b, constrained));
+			}
 			this->noiseModel_->WhitenInPlace(A1);
 			this->noiseModel_->WhitenInPlace(A2);
 			this->noiseModel_->whitenInPlace(b);

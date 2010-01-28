@@ -164,6 +164,11 @@ virtual SharedDiagonal QR(Matrix& Ab) const;
 	 */
 virtual Matrix R() const { return thisR();}
 
+/**
+ * Simple check for constrained-ness
+ */
+virtual bool isConstrained() const {return false;}
+
 }; // Gaussian
 
 
@@ -232,12 +237,6 @@ public:
 		virtual Matrix R() const {
 			return diag(invsigmas_);
 		}
-
-		/**
-		 * Simple check for constrained-ness
-		 */
-		virtual bool isConstrained() {return false;}
-
 }; // Diagonal
 
 /**
@@ -308,9 +307,9 @@ public:
 	virtual SharedDiagonal QR(Matrix& Ab) const;
 
 	/**
-	 * Not constrained
+	 * Check constrained is always true
 	 */
-	virtual bool isConstrained() {return true;}
+	virtual bool isConstrained() const {return true;}
 
 }; // Constrained
 

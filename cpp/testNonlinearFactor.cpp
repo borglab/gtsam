@@ -176,5 +176,44 @@ TEST( NonlinearFactor, size )
 }
 
 /* ************************************************************************* */
+TEST( NonlinearFactor, linearize_constraint1 )
+{
+	Vector sigmas = Vector_(2, 0.2, 0.0);
+	SharedDiagonal constraint = noiseModel::Constrained::MixedSigmas(sigmas);
+
+	Point2 mu(1., -1.);
+	Graph::sharedFactor f0(new simulated2D::Prior(mu, constraint, 1));
+
+	Config config;
+	config.insert(simulated2D::PoseKey(1), Point2(1.0, 2.0));
+	GaussianFactor::shared_ptr actual = f0->linearize(config);
+
+	// create expected
+	Vector b = Vector_(2, 0., -3.);
+	GaussianFactor expected("x1", eye(2), b, constraint);
+	CHECK(assert_equal(expected, *actual));
+}
+
+/* ************************************************************************* */
+TEST( NonlinearFactor, linearize_constraint2 )
+{
+	Vector sigmas = Vector_(2, 0.2, 0.0);
+	SharedDiagonal constraint = noiseModel::Constrained::MixedSigmas(sigmas);
+
+	Point2 z3(1.,-1.);
+	simulated2D::Measurement f0(z3, constraint, 1,1);
+
+	Config config;
+	config.insert(simulated2D::PoseKey(1), Point2(1.0, 2.0));
+	config.insert(simulated2D::PointKey(1), Point2(5.0, 4.0));
+	GaussianFactor::shared_ptr actual = f0.linearize(config);
+
+	// create expected
+	Vector b = Vector_(2, -3., -3.);
+	GaussianFactor expected("x1", -1*eye(2), "l1", eye(2), b, constraint);
+	CHECK(assert_equal(expected, *actual));
+}
+
+/* ************************************************************************* */
 int main() { TestResult tr; return TestRegistry::runAllTests(tr);}
 /* ************************************************************************* */
