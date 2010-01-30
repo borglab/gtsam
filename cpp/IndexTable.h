@@ -7,6 +7,7 @@
 
 #pragma once
 
+#include <map>
 #include <boost/foreach.hpp> // TODO should not be in header
 #include "Testable.h"
 
