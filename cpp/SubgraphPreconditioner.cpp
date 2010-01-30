@@ -71,6 +71,24 @@ namespace gtsam {
 	}
 
 	/* ************************************************************************* */
+	// In-place version that overwrites e
+	void SubgraphPreconditioner::multiplyInPlace(const VectorConfig& y, Errors& e) const {
+
+		Errors::iterator ei = e.begin();
+
+		// Use BayesNet order to add y contributions in order
+		BOOST_FOREACH(GaussianConditional::shared_ptr cg, *Rc1_) {
+			const Symbol& j = cg->key();
+			*ei = y[j]; // append y
+			ei++;
+		}
+
+		// Add A2 contribution
+		VectorConfig x = gtsam::backSubstitute(*Rc1_, y); // x=inv(R1)*y
+		Ab2_->multiplyInPlace(x,ei); // use iterator version
+	}
+
+	/* ************************************************************************* */
 	// Apply operator A', A'*e = [I inv(R1')*A2']*e = e1 + inv(R1')*A2'*e2
 	VectorConfig SubgraphPreconditioner::operator^(const Errors& e) const {
 

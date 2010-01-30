@@ -85,6 +85,12 @@ namespace gtsam {
 		/** return A*x */
 		Errors operator*(const VectorConfig& x) const;
 
+		/* In-place version e <- A*x that overwrites e. */
+		void multiplyInPlace(const VectorConfig& x, Errors& e) const;
+
+		/* In-place version e <- A*x that takes an iterator. */
+		void multiplyInPlace(const VectorConfig& x, const Errors::iterator& e) const;
+
 		/** return A^x */
 		VectorConfig operator^(const Errors& e) const;
 

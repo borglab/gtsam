@@ -64,7 +64,10 @@ namespace gtsam {
 		/** Apply operator A */
 		Errors operator*(const VectorConfig& y) const;
 
-		/** Apply operator A' */
+		/** Apply operator A in place: needs e allocated already */
+		void multiplyInPlace(const VectorConfig& y, Errors& e) const;
+
+			/** Apply operator A' */
 		VectorConfig operator^(const Errors& e) const;
 
 		/** print the object */

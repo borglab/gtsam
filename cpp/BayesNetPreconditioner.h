@@ -53,6 +53,9 @@ namespace gtsam {
 		/** Apply operator A */
 		Errors operator*(const VectorConfig& y) const;
 
+		/** In-place version that overwrites e */
+		void multiplyInPlace(const VectorConfig& y, Errors& e) const;
+
 		/** Apply operator A' */
 		VectorConfig operator^(const Errors& e) const;
 	};

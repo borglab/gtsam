@@ -62,6 +62,21 @@ Errors GaussianFactorGraph::operator*(const VectorConfig& x) const {
 }
 
 /* ************************************************************************* */
+void GaussianFactorGraph::multiplyInPlace(const VectorConfig& x, Errors& e) const {
+	multiplyInPlace(x,e.begin());
+}
+
+/* ************************************************************************* */
+void GaussianFactorGraph::multiplyInPlace(const VectorConfig& x,
+		const Errors::iterator& e) const {
+	Errors::iterator ei = e;
+	BOOST_FOREACH(sharedFactor Ai,factors_) {
+		*ei = (*Ai)*x;
+		ei++;
+	}
+}
+
+/* ************************************************************************* */
 VectorConfig GaussianFactorGraph::operator^(const Errors& e) const {
 	VectorConfig x;
 	// For each factor add the gradient contribution

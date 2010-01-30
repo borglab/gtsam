@@ -51,6 +51,11 @@ namespace gtsam {
 			return A_ * x;
 		}
 
+		/** Apply operator A_ in place*/
+		inline void multiplyInPlace(const Vector& x, Vector& e) const {
+			e = A_ * x;
+		}
+
 		/** Apply operator A_^T */
 		inline Vector operator^(const Vector& e) const {
 			return A_ ^ e;

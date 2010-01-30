@@ -29,19 +29,21 @@ namespace gtsam {
 		// i.e., first step is in direction of negative gradient
 		V g = Ab.gradient(x);
 		V d = g; // instead of negating gradient, alpha will be negated
-		double dotg0 = dot(g, g), prev_dotg = dotg0;
-		if (dotg0 < epsilon_abs) return x;
-		double threshold = epsilon * epsilon * dotg0;
+		double gamma0 = dot(g, g), gamma_old = gamma0;
+		if (gamma0 < epsilon_abs) return x;
+		double threshold = epsilon * epsilon * gamma0;
 
 		if (verbose) cout << "CG: epsilon = " << epsilon << ", maxIterations = "
-				<< maxIterations << ", ||g0||^2 = " << dotg0 << ", threshold = "
+				<< maxIterations << ", ||g0||^2 = " << gamma0 << ", threshold = "
 				<< threshold << endl;
+
+		// Allocate and calculate A*d for first iteration
+		E Ad = Ab * d;
 
 		// loop maxIterations times
 		for (size_t k = 1;; k++) {
 
 			// calculate optimal step-size
-			E Ad = Ab * d;
 			double alpha = - dot(d, g) / dot(Ad, Ad);
 
 			// do step in new search direction
@@ -55,21 +57,24 @@ namespace gtsam {
 				axpy(alpha, Ab ^ Ad, g);  // g += alpha*(Ab^Ad)
 
 			// check for convergence
-			double dotg = dot(g, g);
+			double gamma = dot(g, g);
 			if (verbose) cout << "iteration " << k << ": alpha = " << alpha
-					<< ", dotg = " << dotg << endl;
-			if (dotg < threshold) break;
+					<< ", dotg = " << gamma << endl;
+			if (gamma < threshold) break;
 
 			// calculate new search direction
 			if (steepest)
 				d = g;
 			else {
-				double beta = dotg / prev_dotg;
-				prev_dotg = dotg;
+				double beta = gamma / gamma_old;
+				gamma_old = gamma;
 				// d = g + d*beta;
 				scal(beta,d);
 				axpy(1.0, g, d);
 			}
+
+			// In-place recalculation Ad <- A*d to avoid re-allocating Ad
+			Ab.multiplyInPlace(d,Ad);
 		}
 		return x;
 	}

@@ -47,6 +47,12 @@ namespace gtsam {
 	}
 
 	/* ************************************************************************* */
+	// In-place version that overwrites e
+	void BayesNetPreconditioner::multiplyInPlace(const VectorConfig& y, Errors& e) const {
+		Ab_.multiplyInPlace(x(y),e); // TODO Avoid temporary x ?
+	}
+
+	/* ************************************************************************* */
 	// Apply operator inv(R')*A'*e
 	VectorConfig BayesNetPreconditioner::operator^(const Errors& e) const {
 		VectorConfig x = Ab_ ^ e; // x = A'*e2
