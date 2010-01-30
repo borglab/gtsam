@@ -138,6 +138,11 @@ namespace gtsam {
   double dot(const VectorConfig&, const VectorConfig&);
 
   /**
+   * BLAS Level 1 scal: x <- alpha*x
+   */
+  void scal(double alpha, VectorConfig& x);
+
+  /**
    * BLAS Level 1 axpy: y <- alpha*x + y
    * UNSAFE !!!! Only works if x and y laid out in exactly same shape
    * Used in internal loop in iterative for fast conjugate gradients

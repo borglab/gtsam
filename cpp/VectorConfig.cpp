@@ -193,6 +193,12 @@ double dot(const VectorConfig& a, const VectorConfig& b) {
 }
 
 /* ************************************************************************* */
+void scal(double alpha, VectorConfig& x) {
+	for (VectorConfig::iterator xj = x.begin(); xj != x.end(); xj++)
+		scal(alpha, xj->second);
+}
+
+/* ************************************************************************* */
 void axpy(double alpha, const VectorConfig& x, VectorConfig& y) {
 	VectorConfig::const_iterator xj = x.begin();
 	for (VectorConfig::iterator yj = y.begin(); yj != y.end(); yj++, xj++)

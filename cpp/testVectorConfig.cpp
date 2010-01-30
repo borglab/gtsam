@@ -133,6 +133,17 @@ TEST( VectorConfig, axpy) {
 }
 
 /* ************************************************************************* */
+TEST( VectorConfig, scal) {
+  VectorConfig x,expected;
+  x += VectorConfig("x",Vector_(3, 1.0, 2.0, 3.0));
+  x += VectorConfig("y",Vector_(2, 4.0, 5.0));
+  expected += VectorConfig("x",Vector_(3, 10.0, 20.0, 30.0));
+  expected += VectorConfig("y",Vector_(2, 40.0, 50.0));
+  scal(10,x);
+  CHECK(assert_equal(expected,x));
+}
+
+/* ************************************************************************* */
 TEST( VectorConfig, update_with_large_delta) {
 	// this test ensures that if the update for delta is larger than
 	// the size of the config, it only updates existing variables

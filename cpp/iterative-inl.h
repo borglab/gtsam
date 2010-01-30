@@ -42,17 +42,17 @@ namespace gtsam {
 
 			// calculate optimal step-size
 			E Ad = Ab * d;
-			double alpha = -dot(d, g) / dot(Ad, Ad);
+			double alpha = - dot(d, g) / dot(Ad, Ad);
 
 			// do step in new search direction
-			x += alpha * d;
+			axpy(alpha, d, x); // x += alpha*d
 			if (k==maxIterations) break;
 
 			// update gradient (or re-calculate at reset time)
 			if (k%reset==0)
 				g = Ab.gradient(x);
 			else
-				axpy(alpha, Ab ^ Ad, g);
+				axpy(alpha, Ab ^ Ad, g);  // g += alpha*(Ab^Ad)
 
 			// check for convergence
 			double dotg = dot(g, g);
@@ -66,7 +66,9 @@ namespace gtsam {
 			else {
 				double beta = dotg / prev_dotg;
 				prev_dotg = dotg;
-				d = g + d*beta;
+				// d = g + d*beta;
+				scal(beta,d);
+				axpy(1.0, g, d);
 			}
 		}
 		return x;

@@ -202,6 +202,11 @@ double max(const Vector &a);
 double dot(const Vector &a, const Vector& b);
 
 /**
+ * BLAS Level 1 scal: x <- alpha*x
+ */
+void scal(double alpha, Vector& x);
+
+/**
  * BLAS Level 1 axpy: y <- alpha*x + y
  */
 void axpy(double alpha, const Vector& x, Vector& y);
