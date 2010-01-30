@@ -50,6 +50,8 @@ namespace gtsam {
 
     const_iterator begin() const {return values.begin();}
     const_iterator end()   const {return values.end();}
+    iterator begin() {return values.begin();}
+    iterator end()   {return values.end();}
 
     /** get a vector in the configuration by name */
     const Vector& get(const Symbol& name) const;
@@ -134,6 +136,14 @@ namespace gtsam {
 
   /** Dot product */
   double dot(const VectorConfig&, const VectorConfig&);
+
+  /**
+   * BLAS Level 1 axpy: y <- alpha*x + y
+   * UNSAFE !!!! Only works if x and y laid out in exactly same shape
+   * Used in internal loop in iterative for fast conjugate gradients
+   * Consider using other functions if this is not in hotspot
+   */
+  void axpy(double alpha, const VectorConfig& x, VectorConfig& y);
 
   /** dim function (for iterative::CGD) */
   inline double dim(const VectorConfig& x) { return x.dim();}

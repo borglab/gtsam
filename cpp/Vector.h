@@ -199,7 +199,12 @@ Vector abs(const Vector& v);
 double max(const Vector &a);
 
 /** Dot product */
-inline double dot(const Vector &a, const Vector& b) { return sum(emul(a,b)); }
+double dot(const Vector &a, const Vector& b);
+
+/**
+ * BLAS Level 1 axpy: y <- alpha*x + y
+ */
+void axpy(double alpha, const Vector& x, Vector& y);
 
 /**
  * Divide every element of a Vector into a scalar

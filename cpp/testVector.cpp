@@ -200,12 +200,30 @@ TEST( TestVector, weightedPseudoinverse_nan )
 /* ************************************************************************* */
 TEST( TestVector, ediv )
 {
-  Vector a(3); a(0) = 10; a(1) = 20; a(2) = 30;
-  Vector b(3); b(0) =  2; b(1) = 5;  b(2) =  6;
+  Vector a = Vector_(3,10.,20.,30.);
+  Vector b = Vector_(3,2.0,5.0,6.0);
   Vector actual(ediv(a,b));
 
-  Vector c(3); c(0) =  5; c(1) = 4;  c(2) =  5;
+  Vector c = Vector_(3,5.0,4.0,5.0);
   CHECK(assert_equal(c,actual));
+}
+
+/* ************************************************************************* */
+TEST( TestVector, dot )
+{
+  Vector a = Vector_(3,10.,20.,30.);
+  Vector b = Vector_(3,2.0,5.0,6.0);
+  DOUBLES_EQUAL(20+100+180,dot(a,b),1e-9);
+}
+
+/* ************************************************************************* */
+TEST( TestVector, axpy )
+{
+  Vector x = Vector_(3,10.,20.,30.);
+  Vector y = Vector_(3,2.0,5.0,6.0);
+  axpy(0.1,x,y);
+  Vector expected = Vector_(3,3.0,7.0,9.0);
+  CHECK(assert_equal(expected,y));
 }
 
 /* ************************************************************************* */

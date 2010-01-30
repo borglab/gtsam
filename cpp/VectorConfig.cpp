@@ -191,6 +191,14 @@ double VectorConfig::dot(const VectorConfig& b) const {
 double dot(const VectorConfig& a, const VectorConfig& b) {
 	return a.dot(b);
 }
+
+/* ************************************************************************* */
+void axpy(double alpha, const VectorConfig& x, VectorConfig& y) {
+	VectorConfig::const_iterator xj = x.begin();
+	for (VectorConfig::iterator yj = y.begin(); yj != y.end(); yj++, xj++)
+		axpy(alpha, xj->second, yj->second);
+}
+
 /* ************************************************************************* */
 
 void print(const VectorConfig& v, const std::string& s){
