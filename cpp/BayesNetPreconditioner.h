@@ -58,6 +58,9 @@ namespace gtsam {
 
 		/** Apply operator A' */
 		VectorConfig operator^(const Errors& e) const;
+
+		/** BLAS level 2 equivalent y += alpha*inv(R')*A'*e */
+		void transposeMultiplyAdd(double alpha, const Errors& e, VectorConfig& y) const;
 	};
 
 } // namespace gtsam

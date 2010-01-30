@@ -54,7 +54,8 @@ namespace gtsam {
 			if (k%reset==0)
 				g = Ab.gradient(x);
 			else
-				axpy(alpha, Ab ^ Ad, g);  // g += alpha*(Ab^Ad)
+				// axpy(alpha, Ab ^ Ad, g);  // g += alpha*(Ab^Ad)
+				Ab.transposeMultiplyAdd(alpha, Ad, g);
 
 			// check for convergence
 			double gamma = dot(g, g);

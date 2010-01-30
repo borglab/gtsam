@@ -60,6 +60,14 @@ namespace gtsam {
 	}
 
 	/* ************************************************************************* */
+	// y += alpha*inv(R')*A'*e
+	void BayesNetPreconditioner::transposeMultiplyAdd(double alpha,
+			const Errors& e, VectorConfig& y) const {
+		VectorConfig x = Ab_ ^ e; // x = A'*e2
+		y += alpha * gtsam::backSubstituteTranspose(Rd_, x); // TODO avoid temp
+	}
+
+	/* ************************************************************************* */
 
 } // namespace gtsam
 

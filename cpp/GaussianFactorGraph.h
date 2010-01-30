@@ -91,8 +91,11 @@ namespace gtsam {
 		/* In-place version e <- A*x that takes an iterator. */
 		void multiplyInPlace(const VectorConfig& x, const Errors::iterator& e) const;
 
-		/** return A^x */
+		/** return A^e */
 		VectorConfig operator^(const Errors& e) const;
+
+		/** x += alpha*A'*e */
+		void transposeMultiplyAdd(double alpha, const Errors& e, VectorConfig& x) const;
 
   	/**
   	 * Calculate Gradient of A^(A*x-b) for a given config

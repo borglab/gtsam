@@ -61,6 +61,11 @@ namespace gtsam {
 			return A_ ^ e;
 		}
 
+		/** x += alpha* A_^T */
+		inline void transposeMultiplyAdd(double alpha, const Vector& e, Vector& x) const {
+			x += alpha * A_ ^ e;
+		}
+
 		/**
 		 * Print with optional string
 		 */

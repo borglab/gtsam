@@ -87,6 +87,16 @@ VectorConfig GaussianFactorGraph::operator^(const Errors& e) const {
 }
 
 /* ************************************************************************* */
+// x += alpha*A'*e
+void GaussianFactorGraph::transposeMultiplyAdd(double alpha, const Errors& e,
+		VectorConfig& x) const {
+	// For each factor add the gradient contribution
+	Errors::const_iterator it = e.begin();
+	BOOST_FOREACH(sharedFactor Ai,factors_)
+		x += (*Ai)^(alpha*(*(it++)));
+}
+
+/* ************************************************************************* */
 VectorConfig GaussianFactorGraph::gradient(const VectorConfig& x) const {
 	const GaussianFactorGraph& A = *this;
 	return A^errors(x);

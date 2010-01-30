@@ -70,6 +70,9 @@ namespace gtsam {
 			/** Apply operator A' */
 		VectorConfig operator^(const Errors& e) const;
 
+		/** y += alpha*A'*e */
+		void transposeMultiplyAdd(double alpha, const Errors& e, VectorConfig& y) const;
+
 		/** print the object */
 		void print(const std::string& s = "SubgraphPreconditioner") const;
 	};

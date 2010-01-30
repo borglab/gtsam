@@ -92,14 +92,14 @@ namespace gtsam {
 	// Apply operator A', A'*e = [I inv(R1')*A2']*e = e1 + inv(R1')*A2'*e2
 	VectorConfig SubgraphPreconditioner::operator^(const Errors& e) const {
 
-		VectorConfig y1;
+		VectorConfig y;
 
 		// Use BayesNet order to remove y contributions in order
 		Errors::const_iterator it = e.begin();
 		BOOST_FOREACH(GaussianConditional::shared_ptr cg, *Rc1_) {
 			const Symbol& j = cg->key();
 			const Vector& ej = *(it++);
-			y1.insert(j,ej);
+			y.insert(j,ej);
 		}
 
 		// create e2 with what's left of e
@@ -109,9 +109,34 @@ namespace gtsam {
 
 		// get A2 part,
 		VectorConfig x = *Ab2_ ^ e2; // x = A2'*e2
-		VectorConfig y2 = gtsam::backSubstituteTranspose(*Rc1_, x); // inv(R1')*x;
+		y += gtsam::backSubstituteTranspose(*Rc1_, x); // inv(R1')*x;
 
-		return y1 + y2;
+		return y;
+	}
+
+	/* ************************************************************************* */
+	// y += alpha*A'*e
+	// TODO avoid code duplication
+	void SubgraphPreconditioner::transposeMultiplyAdd
+		(double alpha, const Errors& e, VectorConfig& y) const {
+
+		// Use BayesNet order to remove y contributions in order
+		Errors::const_iterator it = e.begin();
+		BOOST_FOREACH(GaussianConditional::shared_ptr cg, *Rc1_) {
+			const Symbol& j = cg->key();
+			const Vector& ej = *(it++);
+			Vector& yj = y.getReference(j);
+			axpy(alpha,ej,yj);
+		}
+
+		// create e2 with what's left of e
+		Errors e2;
+		while (it != e.end())
+		e2.push_back(*(it++));
+
+		// get A2 part,
+		VectorConfig x = *Ab2_ ^ e2; // x = A2'*e2
+		y += alpha * gtsam::backSubstituteTranspose(*Rc1_, x); // inv(R1')*x;
 	}
 
 	/* ************************************************************************* */
