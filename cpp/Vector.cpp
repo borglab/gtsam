@@ -23,12 +23,15 @@
 #include <gsl/gsl_linalg.h>
 #endif
 
+#include <boost/numeric/ublas/io.hpp>
+#include <boost/numeric/ublas/vector_proxy.hpp>
 #include <boost/random/normal_distribution.hpp>
 #include <boost/random/variate_generator.hpp>
 
 #include "Vector.h"
 
 using namespace std;
+namespace ublas = boost::numeric::ublas;
 
 namespace gtsam {
   
@@ -159,6 +162,12 @@ namespace gtsam {
     return v_return;
   }
   
+  /* ************************************************************************* */
+  void subInsert(Vector& big, const Vector& small, size_t i) {
+	  ublas::vector_range<Vector> colsubproxy(big, ublas::range (i, i+small.size()));
+	  colsubproxy = small;
+  }
+
   /* ************************************************************************* */
   Vector emul(const Vector &a, const Vector &b) {
   	size_t n = a.size();

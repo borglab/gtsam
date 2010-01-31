@@ -140,6 +140,14 @@ bool assert_equal(const Vector& vec1, const Vector& vec2, double tol=1e-9);
 Vector sub(const Vector &v, size_t i1, size_t i2);
 
 /**
+ * Inserts a subvector into a vector IN PLACE
+ * @param big is the vector to be changed
+ * @param small is the vector to insert
+ * @param i is the index where the subvector should be inserted
+ */
+void subInsert(Vector& big, const Vector& small, size_t i);
+
+/**
  * elementwise multiplication
  * @param a first vector
  * @param b second vector

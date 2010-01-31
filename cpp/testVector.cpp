@@ -85,6 +85,20 @@ TEST( TestVector, sub )
 }
 
 /* ************************************************************************* */
+TEST( TestVector, subInsert )
+{
+	Vector big = zero(6),
+		   small = ones(3);
+
+	size_t i = 2;
+	subInsert(big, small, i);
+
+	Vector expected = Vector_(6, 0.0, 0.0, 1.0, 1.0, 1.0, 0.0);
+
+	CHECK(assert_equal(expected, big));
+}
+
+/* ************************************************************************* */
 TEST( TestVector, householder )
 {
   Vector x(4); 
