@@ -63,7 +63,7 @@ namespace gtsam {
 
 		/** x += alpha* A'*e */
 		inline void transposeMultiplyAdd(double alpha, const Vector& e, Vector& x) const {
-			gtsam::transposeMultiplyAdd(A_,alpha*e,x);
+			gtsam::transposeMultiplyAdd(alpha,A_,e,x);
 		}
 
 		/**

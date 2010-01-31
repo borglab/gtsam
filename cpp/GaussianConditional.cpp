@@ -98,7 +98,7 @@ Vector GaussianConditional::solve(const VectorConfig& x) const {
 	for (Parents::const_iterator it = parents_.begin(); it!= parents_.end(); it++) {
 		const Symbol& j = it->first;
 		const Matrix& Aj = it->second;
-		axpy(-1, Aj * x[j], rhs); // TODO use BLAS level 2
+		multiplyAdd(-1.0,Aj,x[j],rhs);
 	}
 	return backSubstituteUpper(R_, rhs, false);
 }

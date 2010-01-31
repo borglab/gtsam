@@ -218,7 +218,7 @@ void GaussianFactor::transposeMultiplyAdd(double alpha, const Vector& e,
 	FOREACH_PAIR(j, Aj, As_)
 	{
 		Vector& Xj = x.getReference(*j);
-		gtsam::transposeMultiplyAdd(*Aj, E, Xj);
+		gtsam::transposeMultiplyAdd(1.0, *Aj, E, Xj);
 	}
 }
 

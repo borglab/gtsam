@@ -87,15 +87,20 @@ bool assert_equal(const Matrix& A, const Matrix& B, double tol = 1e-9);
 inline Vector operator*(const Matrix& A, const Vector & v) { return prod(A,v);}
 
 /**
+ * BLAS Level-2 style e <- e + alpha*A*x
+ */
+void multiplyAdd(double alpha, const Matrix& A, const Vector& x, Vector& e);
+
+/**
  * overload ^ for trans(A)*v
  * We transpose the vectors for speed.
  */
 Vector operator^(const Matrix& A, const Vector & v);
 
 /**
- * BLAS Level-2 style x <- x + A'*e
+ * BLAS Level-2 style x <- x + alpha*A'*e
  */
-void transposeMultiplyAdd(const Matrix& A, const Vector& e, Vector& x);
+void transposeMultiplyAdd(double alpha, const Matrix& A, const Vector& e, Vector& x);
 
 /**
  * overload * for vector*matrix multiplication (as BOOST does not)

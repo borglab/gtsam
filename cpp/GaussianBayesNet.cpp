@@ -99,7 +99,7 @@ void backSubstituteInPlace(const GaussianBayesNet& bn, VectorConfig& y) {
 			const Symbol& j = it->first;
 			const Matrix& Rij = it->second;
 			Vector& xj = x.getReference(j);
-			axpy(-1.0, Rij*xj, zi); // TODO: use BLAS level 2
+			multiplyAdd(-1.0,Rij,xj,zi);
 		}
 		Vector& xi = x.getReference(i);
 		xi = gtsam::backSubstituteUpper(cg->get_R(), zi);
@@ -132,8 +132,7 @@ VectorConfig backSubstituteTranspose(const GaussianBayesNet& bn,
 			const Symbol& i = it->first;
 			const Matrix& Rij = it->second;
 			Vector& gyi = gy.getReference(i);  // should never fail
-			Matrix Lji = trans(Rij);  // TODO avoid transpose of matrix ?
-			gyi -= Lji * gyj;
+			transposeMultiplyAdd(-1.0,Rij,gyj,gyi);
 		}
 	}
 
