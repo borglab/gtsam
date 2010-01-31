@@ -10,6 +10,7 @@
 #include <boost/tuple/tuple.hpp>
 #include <boost/foreach.hpp>
 #include <boost/numeric/ublas/matrix_proxy.hpp>
+#include <boost/numeric/ublas/io.hpp>
 #include "Matrix.h"
 
 using namespace std;
@@ -166,6 +167,45 @@ TEST( matrix, column )
 }
 
 /* ************************************************************************* */
+TEST( matrix, insert_column )
+{
+	Matrix big = zeros(5,6);
+	Vector col = ones(5);
+	size_t j = 3;
+
+	insertColumn(big, col, j);
+
+	Matrix expected = Matrix_(5,6,
+			0.0, 0.0, 0.0, 1.0, 0.0, 0.0,
+			0.0, 0.0, 0.0, 1.0, 0.0, 0.0,
+			0.0, 0.0, 0.0, 1.0, 0.0, 0.0,
+			0.0, 0.0, 0.0, 1.0, 0.0, 0.0,
+			0.0, 0.0, 0.0, 1.0, 0.0, 0.0);
+
+	CHECK(assert_equal(expected, big));
+}
+
+/* ************************************************************************* */
+TEST( matrix, insert_subcolumn )
+{
+	Matrix big = zeros(5,6);
+	Vector col = ones(2);
+	size_t i = 1;
+	size_t j = 3;
+
+	insertColumn(big, col, i, j);
+
+	Matrix expected = Matrix_(5,6,
+			0.0, 0.0, 0.0, 0.0, 0.0, 0.0,
+			0.0, 0.0, 0.0, 1.0, 0.0, 0.0,
+			0.0, 0.0, 0.0, 1.0, 0.0, 0.0,
+			0.0, 0.0, 0.0, 0.0, 0.0, 0.0,
+			0.0, 0.0, 0.0, 0.0, 0.0, 0.0);
+
+	CHECK(assert_equal(expected, big));
+}
+
+/* ************************************************************************* */
 TEST( matrix, row )
 {
 	Matrix A = Matrix_(4, 7,
@@ -196,6 +236,24 @@ TEST( matrix, zeros )
   Matrix zero = zeros(2,3);
 
   EQUALITY(A , zero);
+}
+
+/* ************************************************************************* */
+TEST( matrix, insert_sub )
+{
+	Matrix big = zeros(5,6),
+		   small = Matrix_(2,3, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0);
+
+	insertSub(big, small, 1, 2);
+
+	Matrix expected = Matrix_(5,6,
+			0.0, 0.0, 0.0, 0.0, 0.0, 0.0,
+			0.0, 0.0, 1.0, 1.0, 1.0, 0.0,
+			0.0, 0.0, 1.0, 1.0, 1.0, 0.0,
+			0.0, 0.0, 0.0, 0.0, 0.0, 0.0,
+			0.0, 0.0, 0.0, 0.0, 0.0, 0.0);
+
+	CHECK(assert_equal(expected, big));
 }
 
 /* ************************************************************************* */

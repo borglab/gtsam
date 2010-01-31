@@ -28,6 +28,9 @@
 #include "Vector.h"
 #include "svdcmp.h"
 
+// use for switching quickly between GSL and nonGSL versions without reconfigure
+//#define REVERTGSL
+
 
 using namespace std;
 namespace ublas = boost::numeric::ublas;
@@ -199,13 +202,6 @@ Vector row_(const Matrix& A, size_t i) {
 
 	const double * Aptr = A.data().begin() + A.size2() * i;
 	return Vector_(A.size2(), Aptr);
-
-	// TODO: improve this
-//	size_t n = A.size2();
-//	Vector a(n);
-//	for (size_t j=0; j<n; ++j)
-//		a(j) = A(i,j);
-//	return a;
 }
 
 /* ************************************************************************* */
@@ -233,6 +229,33 @@ Matrix sub(const Matrix& A, size_t i1, size_t i2, size_t j1, size_t j2) {
   for (size_t i=i1,k=0;i<i2;i++,k++)
     memcpy(&B(k,0),&A(i,j1),n*sizeof(double));
   return B;
+}
+
+/* ************************************************************************* */
+void insertSub(Matrix& big, const Matrix& small, size_t i, size_t j) {
+	// direct pointer method
+	size_t ib = big.size1(), jb = big.size2(),
+		   is = small.size1(), js = small.size2();
+
+	// pointer to start of window in big
+	double * bigptr = big.data().begin() + i*jb + j;
+	const double * smallptr = small.data().begin();
+	for (size_t row=0; row<is; ++row)
+		memcpy(bigptr+row*jb, smallptr+row*js, js*sizeof(double));
+}
+
+/* ************************************************************************* */
+void insertColumn(Matrix& A, const Vector& col, size_t j) {
+	ublas::matrix_column<Matrix> colproxy(A, j);
+	colproxy = col;
+}
+
+/* ************************************************************************* */
+void insertColumn(Matrix& A, const Vector& col, size_t i, size_t j) {
+	ublas::matrix_column<Matrix> colproxy(A, j);
+	ublas::vector_range<ublas::matrix_column<Matrix> > colsubproxy(colproxy,
+			ublas::range (i, i+col.size()));
+	colsubproxy = col;
 }
 
 /* ************************************************************************* */
@@ -310,41 +333,45 @@ pair<Matrix,Matrix> qr(const Matrix& A) {
  * on a number of different matrices for which all columns change.
  */
 /* ************************************************************************* */
+inline void householder_update_manual(Matrix &A, int j, double beta, const Vector& vjm) {
+	const size_t m = A.size1(), n = A.size2();
+	// w = beta*transpose(A(j:m,:))*v(j:m)
+	Vector w(n);
+	for( size_t c = 0; c < n; c++) {
+		w(c) = 0.0;
+		// dangerous as relies on row-major scheme
+		const double *a = &A(j,c), * const v = &vjm(0);
+		for( size_t r=j, s=0 ; r < m ; r++, s++, a+=n )
+			// w(c) += A(r,c) * vjm(r-j)
+			w(c) += (*a) * v[s];
+		w(c) *= beta;
+	}
+
+	// rank 1 update A(j:m,:) -= v(j:m)*w'
+	for( size_t c = 0 ; c < n; c++) {
+		double wc = w(c);
+		double *a = &A(j,c); const double * const v =&vjm(0);
+		for( size_t r=j, s=0 ; r < m ; r++, s++, a+=n )
+			// A(r,c) -= vjm(r-j) * wjn(c-j);
+			(*a) -= v[s] * wc;
+	}
+}
+
 void householder_update(Matrix &A, int j, double beta, const Vector& vjm) {
-
-  const size_t m = A.size1(), n = A.size2();
-
 #ifdef GSL
-  // use GSL version
-  gsl_vector_const_view v = gsl_vector_const_view_array(vjm.data().begin(), m-j);
-  gsl_matrix_view Ag = gsl_matrix_view_array(A.data().begin(), m, n);
-  gsl_matrix_view Ag_view = gsl_matrix_submatrix (&(Ag.matrix), j, 0, m-j, n);
-  gsl_linalg_householder_hm (beta, &(v.vector), &(Ag_view.matrix));
+#ifndef REVERTGSL
+	const size_t m = A.size1(), n = A.size2();
+	// use GSL version
+	gsl_vector_const_view v = gsl_vector_const_view_array(vjm.data().begin(), m-j);
+	gsl_matrix_view Ag = gsl_matrix_view_array(A.data().begin(), m, n);
+	gsl_matrix_view Ag_view = gsl_matrix_submatrix (&(Ag.matrix), j, 0, m-j, n);
+	gsl_linalg_householder_hm (beta, &(v.vector), &(Ag_view.matrix));
+#else
+	householder_update_manual(A,j,beta,vjm);
+#endif
 
 #else
-  // elegant but slow: A -= Matrix(outer_prod(v,beta*trans(A)*v));
-  // faster code below
-
-  // w = beta*transpose(A(j:m,:))*v(j:m)
-  Vector w(n);
-  for( size_t c = 0; c < n; c++) {
-    w(c) = 0.0;
-    // dangerous as relies on row-major scheme
-    const double *a = &A(j,c), * const v = &vjm(0);
-    for( size_t r=j, s=0 ; r < m ; r++, s++, a+=n )
-      // w(c) += A(r,c) * vjm(r-j)
-      w(c) += (*a) * v[s];
-    w(c) *= beta;
-  }
-
-  // rank 1 update A(j:m,:) -= v(j:m)*w'
-  for( size_t c = 0 ; c < n; c++) {
-    double wc = w(c);
-    double *a = &A(j,c); const double * const v =&vjm(0);
-    for( size_t r=j, s=0 ; r < m ; r++, s++, a+=n )
-      // A(r,c) -= vjm(r-j) * wjn(c-j);
-      (*a) -= v[s] * wc;
-  }
+	householder_update_manual(A,j,beta,vjm);
 #endif
 }
 
@@ -352,52 +379,51 @@ void householder_update(Matrix &A, int j, double beta, const Vector& vjm) {
 // update A, b
 // A' \define A_{S}-ar and b'\define b-ad
 // __attribute__ ((noinline))	// uncomment to prevent inlining when profiling
-static void updateAb(Matrix& A, Vector& b, int j, const Vector& a,
+inline void updateAB_manual(Matrix& A, Vector& b, int j, const Vector& a,
 		const Vector& r, double d) {
 	const size_t m = A.size1(), n = A.size2();
-#ifdef GSL
+	for (size_t i = 0; i < m; i++) { // update all rows
+		double ai = a(i);
+		b(i) -= ai * d;
+		double *Aij = A.data().begin() + i * n + j + 1;
+		const double *rptr = r.data().begin() + j + 1;
+		// A(i,j+1:end) -= ai*r(j+1:end)
+		for (size_t j2 = j + 1; j2 < n; j2++, Aij++, rptr++)
+			*Aij -= ai * (*rptr);
+	}
+}
 
+static void updateAb(Matrix& A, Vector& b, int j, const Vector& a,
+		const Vector& r, double d) {
+#ifdef GSL
+#ifndef REVERTGSL
+	const size_t m = A.size1(), n = A.size2();
 	// update A
 	// A(0:m,j+1:end) = A(0:m,j+1:end) - a(0:m)*r(j+1:end)'
 	// get a view for A
-//	gsl_matrix_view Ag = gsl_matrix_view_array(A.data().begin(), m, n);
-//	gsl_matrix_view Ag_view = gsl_matrix_submatrix (&(Ag.matrix), 0, j+1, m, n-j-1);
-//	// get a view for r
-//	gsl_vector_const_view rg = gsl_vector_const_view_array(r.data().begin()+j+1, n-j-1);
-//	// get a view for a
-//	gsl_vector_const_view ag = gsl_vector_const_view_array(a.data().begin(), m);
-//
-//	// rank one update
-//	gsl_blas_dger (-1.0, &(ag.vector), &(rg.vector), &(Ag_view.matrix));
-//
-//	// update b
-//	double * bptr = b.data().begin();
-//	const double * aptr = a.data().begin();
-//	for (size_t i = 0; i < m; i++) {
-//		*(bptr+i) -= d* *(aptr+i);
-//	}
+	gsl_matrix_view Ag = gsl_matrix_view_array(A.data().begin(), m, n);
+	gsl_matrix_view Ag_view = gsl_matrix_submatrix (&(Ag.matrix), 0, j+1, m, n-j-1);
+	// get a view for r
+	gsl_vector_const_view rg = gsl_vector_const_view_array(r.data().begin()+j+1, n-j-1);
+	// get a view for a
+	gsl_vector_const_view ag = gsl_vector_const_view_array(a.data().begin(), m);
 
-	// original
-	for (size_t i = 0; i < m; i++) { // update all rows
-		double ai = a(i);
-		b(i) -= ai * d;
-		double *Aij = A.data().begin() + i * n + j + 1;
-		const double *rptr = r.data().begin() + j + 1;
-		// A(i,j+1:end) -= ai*r(j+1:end)
-		for (size_t j2 = j + 1; j2 < n; j2++, Aij++, rptr++)
-			*Aij -= ai * (*rptr);
+	// rank one update
+	gsl_blas_dger (-1.0, &(ag.vector), &(rg.vector), &(Ag_view.matrix));
+
+	// update b
+	double * bptr = b.data().begin();
+	const double * aptr = a.data().begin();
+	for (size_t i = 0; i < m; i++) {
+		*(bptr+i) -= d* *(aptr+i);
 	}
 
 #else
-	for (size_t i = 0; i < m; i++) { // update all rows
-		double ai = a(i);
-		b(i) -= ai * d;
-		double *Aij = A.data().begin() + i * n + j + 1;
-		const double *rptr = r.data().begin() + j + 1;
-		// A(i,j+1:end) -= ai*r(j+1:end)
-		for (size_t j2 = j + 1; j2 < n; j2++, Aij++, rptr++)
-			*Aij -= ai * (*rptr);
-	}
+	updateAB_manual(A, b,j,a,r,d);
+#endif
+
+#else
+	updateAb_manual(A,b,j,a,r,d);
 #endif
 }
 
@@ -458,11 +484,36 @@ weighted_eliminate(Matrix& A, Vector& b, const Vector& sigmas) {
  * version with Householder vectors below diagonal, as in GVL
  */
 /* ************************************************************************* */
+inline void householder_manual(Matrix &A, size_t k) {
+	const size_t m = A.size1(), n = A.size2(), kprime = min(k,min(m,n));
+	// loop over the kprime first columns
+	for(size_t j=0; j < kprime; j++){
+		// below, the indices r,c always refer to original A
+
+		// copy column from matrix to xjm, i.e. x(j:m) = A(j:m,j)
+		Vector xjm(m-j);
+		for(size_t r = j ; r < m; r++)
+			xjm(r-j) = A(r,j);
+
+		// calculate the Householder vector
+		double beta; Vector vjm;
+		boost::tie(beta,vjm) = house(xjm);
+
+		// do outer product update A = (I-beta vv')*A = A - v*(beta*A'*v)' = A - v*w'
+		householder_update(A, j, beta, vjm);
+
+		// the Householder vector is copied in the zeroed out part
+		for( size_t r = j+1 ; r < m ; r++ )
+			A(r,j) = vjm(r-j);
+
+	} // column j
+}
+
 void householder_(Matrix &A, size_t k) 
 {
-	const size_t m = A.size1(), n = A.size2(), kprime = min(k,min(m,n));
-
 #ifdef GSL
+#ifndef REVERTGSL
+	const size_t m = A.size1(), n = A.size2(), kprime = min(k,min(m,n));
 	// loop over the kprime first columns
 	for(size_t j=0; j < kprime; j++){
 		// below, the indices r,c always refer to original A
@@ -510,27 +561,11 @@ void householder_(Matrix &A, size_t k)
 	} // column j
 
 #else
-	// loop over the kprime first columns
-	for(size_t j=0; j < kprime; j++){
-		// below, the indices r,c always refer to original A
+	householder_manual(A, k);
+#endif
 
-		// copy column from matrix to xjm, i.e. x(j:m) = A(j:m,j)
-		Vector xjm(m-j);
-		for(size_t r = j ; r < m; r++)
-			xjm(r-j) = A(r,j);
-
-		// calculate the Householder vector
-		double beta; Vector vjm;
-		boost::tie(beta,vjm) = house(xjm);
-
-		// do outer product update A = (I-beta vv')*A = A - v*(beta*A'*v)' = A - v*w'
-		householder_update(A, j, beta, vjm);
-
-		// the Householder vector is copied in the zeroed out part
-		for( size_t r = j+1 ; r < m ; r++ )
-			A(r,j) = vjm(r-j);
-
-	} // column j
+#else
+	householder_manual(A, k);
 #endif
 }
 

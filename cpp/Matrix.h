@@ -134,6 +134,16 @@ void print(const Matrix& A, const std::string& s = "");
 Matrix sub(const Matrix& A, size_t i1, size_t i2, size_t j1, size_t j2);
 
 /**
+ * insert a submatrix IN PLACE at a specified location in a larger matrix
+ * NOTE: there is no size checking
+ * @param large matrix to be updated
+ * @param small matrix to be inserted
+ * @param i is the row of the upper left corner insert location
+ * @param j is the column of the upper left corner insert location
+ */
+void insertSub(Matrix& big, const Matrix& small, size_t i, size_t j);
+
+/**
  * extracts a column from a matrix
  * NOTE: using this without the underscore is the ublas version!
  * @param matrix to extract column from
@@ -141,6 +151,17 @@ Matrix sub(const Matrix& A, size_t i1, size_t i2, size_t j1, size_t j2);
  * @return the column in vector form
  */
 Vector column_(const Matrix& A, size_t j);
+
+/**
+ * inserts a column into a matrix IN PLACE
+ * NOTE: there is no size checking
+ * Alternate form allows for vectors smaller than the whole column to be inserted
+ * @param A matrix to be modified in place
+ * @param col is the vector to be inserted
+ * @param j is the index to insert the column
+ */
+void insertColumn(Matrix& A, const Vector& col, size_t j);
+void insertColumn(Matrix& A, const Vector& col, size_t i, size_t j);
 
 /**
  * extracts a row from a matrix
@@ -163,6 +184,12 @@ void solve(Matrix& A, Matrix& B);
  * invert A
  */
 Matrix inverse(const Matrix& A);
+
+/**
+ * Perform updates of system matrices
+ */
+static void updateAb(Matrix& A, Vector& b, int j, const Vector& a,
+		const Vector& r, double d);
 
 /**
  * QR factorization, inefficient, best use imperative householder below

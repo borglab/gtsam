@@ -198,6 +198,31 @@ double timeHouseholder(size_t reps) {
 	}
 	return elapsed;
 }
+/**
+ * Results: (Alex's machine)
+ * reps: 200000
+ *
+ * Initial (boost matrix proxies) - 12.08
+ * Direct pointer method          - 4.62
+ */
+double timeMatrixInsert(size_t reps) {
+	// create a matrix
+	Matrix bigBase = zeros(100, 100);
+	Matrix small = eye(5,5);
+
+	// perform timing
+	double elapsed;
+	{
+		boost::timer t;
+		Matrix big = bigBase;
+		for (size_t rep=0; rep<reps; ++rep)
+			for (size_t i=0; i<100; i += 5)
+				for (size_t j=0; j<100; j += 5)
+					insertSub(big, small, i,j);
+		elapsed = t.elapsed();
+	}
+	return elapsed;
+}
 
 int main(int argc, char ** argv) {
 
@@ -232,6 +257,12 @@ int main(int argc, char ** argv) {
 	size_t reps_house = 5000000;
 	double house_time = timeHouseholder(reps_house);
 	cout << "Elapsed time for householder_() : " << house_time << " sec" << endl;
+
+	// Time matrix insertion
+	cout << "Starting insertSub() Timing" << endl;
+	size_t reps_insert = 200000;
+	double insert_time = timeMatrixInsert(reps_insert);
+	cout << "Elapsed time for insertSub() : " << insert_time << " sec" << endl;
 
 	return 0;
 }
