@@ -773,5 +773,20 @@ TEST( matrix, square_root_positive )
 }
 
 /* ************************************************************************* */
+TEST( matrix, transposeMultiplyAdd )
+{
+  Matrix A = Matrix_(3,4,
+			4., 0., 0., 1.,
+			0., 4., 0., 2.,
+			0., 0., 1., 3.
+      );
+	Vector x = Vector_(4, 1., 2., 3., 4.), e = Vector_(3, 5., 6., 7.),
+			expected = x + prod(trans(A), e);
+
+  transposeMultiplyAdd(A,e,x);
+  CHECK(assert_equal(expected, x));
+}
+
+/* ************************************************************************* */
 int main() { TestResult tr; return TestRegistry::runAllTests(tr); }
 /* ************************************************************************* */

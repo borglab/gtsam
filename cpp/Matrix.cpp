@@ -133,20 +133,26 @@ bool assert_equal(const Matrix& expected, const Matrix& actual, double tol) {
   return false;
 }
 
-/* ************************************************************************ */
-/** negation                                                                */
-/* ************************************************************************ */
-/*
-Matrix operator-() const
-{
-  size_t m = size1(),n=size2();
-  Matrix M(m,n);
-  for(size_t i = 0; i < m; i++)
-    for(size_t j = 0; j < n; j++)
-      M(i,j) = -matrix_(i,j);
-  return M;  
+/* ************************************************************************* */
+Vector operator^(const Matrix& A, const Vector & v) {
+  if (A.size1()!=v.size()) throw std::invalid_argument(
+  		boost::str(boost::format("Matrix operator^ : A.m(%d)!=v.size(%d)") % A.size1() % v.size()));
+  Vector vt = trans(v);
+  Vector vtA = prod(vt,A);
+  return trans(vtA);
 }
-*/
+
+/* ************************************************************************* */
+void transposeMultiplyAdd(const Matrix& A, const Vector& e, Vector& x) {
+	// ublas Xj += prod(trans(Aj),Ei) is terribly slow
+	// TODO: use BLAS
+	for (int j = 0; j < A.size2(); j++) {
+		double& Xj1 = x(j);
+		for (int i = 0; i < A.size1(); i++) {
+			Xj1 += A(i, j) * e(i);
+		}
+	}
+}
 
 /* ************************************************************************* */
 Vector Vector_(const Matrix& A)
