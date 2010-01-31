@@ -36,12 +36,6 @@ std::vector<Symbol> VectorConfig::get_names() const {
 }
 
 /* ************************************************************************* */
-VectorConfig& VectorConfig::insert(const Symbol& name, const Vector& val) {
-  values.insert(std::make_pair(name,val));
-  return *this;
-}
-
-/* ************************************************************************* */
 void VectorConfig::insert(const VectorConfig& config) {
 	for (const_iterator it = config.begin(); it!=config.end(); it++) {
 		insert(it->first, it->second);

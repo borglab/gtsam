@@ -40,7 +40,10 @@ namespace gtsam {
     std::vector<Symbol> get_names() const;
 
     /** Insert a value into the configuration with a given index */
-    VectorConfig& insert(const Symbol& name, const Vector& val);
+    inline VectorConfig& insert(const Symbol& name, const Vector& val) {
+      values.insert(std::make_pair(name,val));
+      return *this;
+    }
 
     /** Insert a config into another config */
     void insert(const VectorConfig& config);
