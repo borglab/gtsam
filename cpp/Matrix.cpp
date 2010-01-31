@@ -392,7 +392,7 @@ void householder_update(Matrix &A, int j, double beta, const Vector& vjm) {
 // update A, b
 // A' \define A_{S}-ar and b'\define b-ad
 // __attribute__ ((noinline))	// uncomment to prevent inlining when profiling
-inline void updateAB_manual(Matrix& A, Vector& b, int j, const Vector& a,
+inline void updateAb_manual(Matrix& A, Vector& b, int j, const Vector& a,
 		const Vector& r, double d) {
 	const size_t m = A.size1(), n = A.size2();
 	for (size_t i = 0; i < m; i++) { // update all rows
@@ -432,7 +432,7 @@ static void updateAb(Matrix& A, Vector& b, int j, const Vector& a,
 	}
 
 #else
-	updateAB_manual(A, b,j,a,r,d);
+	updateAb_manual(A,b,j,a,r,d);
 #endif
 
 #else
