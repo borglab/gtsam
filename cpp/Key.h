@@ -57,7 +57,7 @@ namespace gtsam {
 		virtual void print(const std::string& s) const {
 			std::cout << s << ": " << (std::string)(*this) << std::endl;
 		}
-		bool equals(const TypedSymbol& expected, double tol) const { return (*this)==expected; }
+		bool equals(const TypedSymbol& expected, double tol=0.0) const { return (*this)==expected; }
 
 	private:
 
@@ -120,7 +120,7 @@ namespace gtsam {
 		}
 
 		// Testable Requirements
-		bool equals(const TypedLabeledSymbol& expected, double tol) const
+		bool equals(const TypedLabeledSymbol& expected, double tol=0.0) const
 				{ return (*this)==expected; }
 
 	private:
@@ -193,7 +193,7 @@ namespace gtsam {
 		void print(const std::string& s) const {
 			std::cout << s << ": " << (std::string)(*this) << std::endl;
 		}
-		bool equals(const Symbol& expected, double tol) const { return (*this)==expected; }
+		bool equals(const Symbol& expected, double tol=0.0) const { return (*this)==expected; }
 
 	  /** Retrieve key character */
 	  unsigned char chr() const { return c_; }
