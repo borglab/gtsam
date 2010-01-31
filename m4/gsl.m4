@@ -29,6 +29,7 @@ AC_ARG_ENABLE(gsltest, [  --disable-gsltest       Do not try to compile and run 
   else
     GSL_CFLAGS=`$GSL_CONFIG --cflags`
     GSL_LIBS=`$GSL_CONFIG --libs`
+    GSL_LIBS_NO_CBLAS=`$GSL_CONFIG --libs-without-cblas`
 
     gsl_major_version=`$GSL_CONFIG --version | \
            sed 's/^\([[0-9]]*\).*/\1/'`
@@ -156,6 +157,7 @@ int main (void)
   fi
   AC_SUBST(GSL_CFLAGS)
   AC_SUBST(GSL_LIBS)
+  AC_SUBST(GSL_LIBS_NO_CBLAS)
   rm -f conf.gsltest
 ])
 

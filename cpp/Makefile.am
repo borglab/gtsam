@@ -278,11 +278,11 @@ if GSL
 AM_CXXFLAGS += -DGSL $(GSL_CFLAGS)
 libgtsam_la_CPPFLAGS += -DGSL $(GSL_CFLAGS)
 if ATLAS
-AM_LDFLAGS += $(GSL_LIBS) -lgsl -lcblas -latlas 
-libgtsam_la_LDFLAGS += $(GSL_LIBS) -lgsl -lcblas -latlas
+AM_LDFLAGS += $(GSL_LIBS_NO_CBLAS) -lcblas -latlas 
+libgtsam_la_LDFLAGS += $(GSL_LIBS_NO_CBLAS) -lcblas -latlas
 else 
-AM_LDFLAGS += $(GSL_LIBS) -lgsl -lgslcblas 
-libgtsam_la_LDFLAGS += $(GSL_LIBS) -lgsl -lgslcblas
+AM_LDFLAGS += $(GSL_LIBS) 
+libgtsam_la_LDFLAGS += $(GSL_LIBS) 
 endif
 endif
 
