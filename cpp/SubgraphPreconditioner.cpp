@@ -19,7 +19,10 @@ namespace gtsam {
 	/* ************************************************************************* */
 	// x = xbar + inv(R1)*y
 	VectorConfig SubgraphPreconditioner::x(const VectorConfig& y) const {
-		return *xbar_ + gtsam::backSubstitute(*Rc1_, y);
+		VectorConfig x = y;
+		backSubstituteInPlace(*Rc1_,x);
+		x += *xbar_;
+		return x;
 	}
 
 	/* ************************************************************************* */
@@ -63,7 +66,8 @@ namespace gtsam {
 		}
 
 		// Add A2 contribution
-		VectorConfig x = gtsam::backSubstitute(*Rc1_, y); // x=inv(R1)*y
+		VectorConfig x = y; // TODO avoid ?
+		gtsam::backSubstituteInPlace(*Rc1_, x); // x=inv(R1)*y
 		Errors e2 = *Ab2_ * x; // A2*x
 		e.splice(e.end(), e2);
 
@@ -84,7 +88,8 @@ namespace gtsam {
 		}
 
 		// Add A2 contribution
-		VectorConfig x = gtsam::backSubstitute(*Rc1_, y); // x=inv(R1)*y
+		VectorConfig x = y; // TODO avoid ?
+		gtsam::backSubstituteInPlace(*Rc1_, x); // x=inv(R1)*y
 		Ab2_->multiplyInPlace(x,ei); // use iterator version
 	}
 

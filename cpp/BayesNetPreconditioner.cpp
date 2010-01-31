@@ -48,8 +48,11 @@ namespace gtsam {
 
 	/* ************************************************************************* */
 	// In-place version that overwrites e
+	// TODO: version that takes scratch space for x
 	void BayesNetPreconditioner::multiplyInPlace(const VectorConfig& y, Errors& e) const {
-		Ab_.multiplyInPlace(x(y),e); // TODO Avoid temporary x ?
+		VectorConfig x = y;
+		backSubstituteInPlace(Rd_,x);
+		Ab_.multiplyInPlace(x,e);
 	}
 
 	/* ************************************************************************* */

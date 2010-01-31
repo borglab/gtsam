@@ -95,14 +95,12 @@ list<Symbol> GaussianConditional::parents() const {
 /* ************************************************************************* */
 Vector GaussianConditional::solve(const VectorConfig& x) const {
 	Vector rhs = d_;
-	for (Parents::const_iterator it = parents_.begin(); it
-			!= parents_.end(); it++) {
+	for (Parents::const_iterator it = parents_.begin(); it!= parents_.end(); it++) {
 		const Symbol& j = it->first;
 		const Matrix& Aj = it->second;
-		rhs -= Aj * x[j];
+		axpy(-1, Aj * x[j], rhs); // TODO use BLAS level 2
 	}
-	Vector result = backSubstituteUpper(R_, rhs, false);
-	return result;
+	return backSubstituteUpper(R_, rhs, false);
 }
 
 /* ************************************************************************* */

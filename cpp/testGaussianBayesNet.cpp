@@ -79,12 +79,30 @@ TEST( GaussianBayesNet, optimize )
   VectorConfig actual = optimize(cbn);
 
   VectorConfig expected;
-  Vector x(1), y(1);
-  x(0) = 4; y(0) = 5;
-  expected.insert("x",x);
-  expected.insert("y",y);
+  expected.insert("x",Vector_(1,4.));
+  expected.insert("y",Vector_(1,5.));
 
   CHECK(assert_equal(expected,actual));
+}
+
+/* ************************************************************************* */
+TEST( GaussianBayesNet, backSubstitute )
+{
+  GaussianBayesNet cbn = createSmallGaussianBayesNet();
+
+  VectorConfig y, expected;
+  y.insert("x",Vector_(1,4.));
+  y.insert("y",Vector_(1,2.));
+  expected.insert("x",Vector_(1,2.));
+  expected.insert("y",Vector_(1,2.));
+
+  // test functional version
+  VectorConfig actual = backSubstitute(cbn,y);
+  CHECK(assert_equal(expected,actual));
+
+  // test imperative version
+  backSubstituteInPlace(cbn,y);
+  CHECK(assert_equal(expected,y));
 }
 
 /* ************************************************************************* */

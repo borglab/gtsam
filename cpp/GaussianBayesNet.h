@@ -57,6 +57,11 @@ namespace gtsam {
 	VectorConfig backSubstitute(const GaussianBayesNet& bn, const VectorConfig& y);
 
 	/*
+	 * Backsubstitute in place, y is replaced with solution
+	 */
+	void backSubstituteInPlace(const GaussianBayesNet& bn, VectorConfig& y);
+
+	/*
 	 * Transpose Backsubstitute
 	 * gy=inv(L)*gx by solving L*gy=gx.
 	 * gy=inv(R'*inv(Sigma))*gx

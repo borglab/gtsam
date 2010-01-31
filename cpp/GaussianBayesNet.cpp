@@ -78,9 +78,16 @@ boost::shared_ptr<VectorConfig> optimize_(const GaussianBayesNet& bn)
 }
 
 /* ************************************************************************* */
-// (R*x)./sigmas = y by solving x=inv(R)*(y.*sigmas)
 VectorConfig backSubstitute(const GaussianBayesNet& bn, const VectorConfig& y) {
-	VectorConfig x;
+	VectorConfig x = y;
+	backSubstituteInPlace(bn,x);
+	return x;
+}
+
+/* ************************************************************************* */
+// (R*x)./sigmas = y by solving x=inv(R)*(y.*sigmas)
+void backSubstituteInPlace(const GaussianBayesNet& bn, VectorConfig& y) {
+	VectorConfig& x = y;
 	/** solve each node in turn in topological sort order (parents first)*/
 	BOOST_REVERSE_FOREACH(GaussianConditional::shared_ptr cg, bn) {
 		// i^th part of R*x=y, x=inv(R)*y
@@ -91,12 +98,12 @@ VectorConfig backSubstitute(const GaussianBayesNet& bn, const VectorConfig& y) {
 		for (it = cg->parentsBegin(); it!= cg->parentsEnd(); it++) {
 			const Symbol& j = it->first;
 			const Matrix& Rij = it->second;
-			zi -= Rij * x[j];
+			Vector& xj = x.getReference(j);
+			axpy(-1.0, Rij*xj, zi); // TODO: use BLAS level 2
 		}
-		Vector xi = gtsam::backSubstituteUpper(cg->get_R(), zi);
-		x.insert(i,xi); // store result in partial solution
+		Vector& xi = x.getReference(i);
+		xi = gtsam::backSubstituteUpper(cg->get_R(), zi);
 	}
-	return x;
 }
 
 /* ************************************************************************* */
