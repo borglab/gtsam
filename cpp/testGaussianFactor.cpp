@@ -629,6 +629,29 @@ TEST( GaussianFactor, size )
 }
 
 /* ************************************************************************* */
+TEST( GaussianFactor, tally_separator )
+{
+	GaussianFactor f("x1", eye(2), "x2", eye(2), "l1", eye(2), ones(2), sigma0_1);
+
+	std::set<Symbol> act1, act2, act3;
+	f.tally_separator("x1",	act1);
+	f.tally_separator("x2",	act2);
+	f.tally_separator("l1",	act3);
+
+	CHECK(act1.size() == 2);
+	CHECK(act1.count("x2") == 1);
+	CHECK(act1.count("l1") == 1);
+
+	CHECK(act2.size() == 2);
+	CHECK(act2.count("x1") == 1);
+	CHECK(act2.count("l1") == 1);
+
+	CHECK(act3.size() == 2);
+	CHECK(act3.count("x1") == 1);
+	CHECK(act3.count("x2") == 1);
+}
+
+/* ************************************************************************* */
 TEST( GaussianFactor, CONSTRUCTOR_GaussianConditional )
 {
 	Matrix R11 = eye(2);
@@ -728,6 +751,36 @@ TEST ( GaussianFactor, constraint_eliminate2 )
 	GaussianConditional expectedCG("x", d, R, "y", S, zero(2));
 	CHECK(assert_equal(expectedCG, *actualCG, 1e-4));
 }
+/* ************************************************************************* */
+TEST ( GaussianFactor, combine_matrix ) {
+	// create a small linear factor graph
+	GaussianFactorGraph fg = createGaussianFactorGraph();
+	Dimensions dimensions = fg.dimensions();
+
+	// get two factors from it and insert the factors into a vector
+	vector<GaussianFactor::shared_ptr> lfg;
+	lfg.push_back(fg[4 - 1]);
+	lfg.push_back(fg[2 - 1]);
+
+	// combine in a factor
+	Matrix Ab; SharedDiagonal noise;
+	Ordering order; order += "x2", "l1", "x1";
+	boost::tie(Ab, noise) = GaussianFactor::combineFactorsAndCreateMatrix(lfg, order, dimensions);
+
+	// the expected augmented matrix
+	Matrix expAb = Matrix_(4, 7,
+			-5.,  0., 5., 0.,  0.,  0.,-1.0,
+			+0., -5., 0., 5.,  0.,  0., 1.5,
+			10.,  0., 0., 0.,-10.,  0., 2.0,
+			+0., 10., 0., 0.,  0.,-10.,-1.0);
+
+	// expected noise model
+	SharedDiagonal expModel = noiseModel::Unit::Create(4);
+
+	CHECK(assert_equal(expAb, Ab));
+	CHECK(assert_equal(*expModel, *noise));
+}
+
 
 ///* ************************************************************************* *
 //TEST ( GaussianFactor, constraint_eliminate3 )

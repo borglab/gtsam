@@ -175,8 +175,7 @@ list<Symbol> GaussianFactor::keys() const {
 /* ************************************************************************* */
 Dimensions GaussianFactor::dimensions() const {
   Dimensions result;
-	FOREACH_PAIR(j,Aj,As_)
-    result.insert(make_pair(*j,Aj->size2()));
+  FOREACH_PAIR(j,Aj,As_) result.insert(make_pair(*j,Aj->size2()));
   return result;
 }
 
@@ -265,6 +264,74 @@ Matrix GaussianFactor::matrix_augmented(const Ordering& ordering, bool weight) c
 }
 
 /* ************************************************************************* */
+std::pair<Matrix, SharedDiagonal> GaussianFactor::combineFactorsAndCreateMatrix(
+		const vector<GaussianFactor::shared_ptr>& factors,
+		const Ordering& order, const Dimensions& dimensions) {
+	// find the size of Ab
+	size_t m = 0, n = 1;
+
+	// number of rows
+	BOOST_FOREACH(GaussianFactor::shared_ptr factor, factors) {
+		m += factor->numberOfRows();
+	}
+
+	// find the number of columns
+	BOOST_FOREACH(const Symbol& key, order) {
+		n += dimensions.at(key);
+	}
+
+	// Allocate the new matrix
+	Matrix Ab = zeros(m,n);
+
+	// Allocate a sigmas vector to make into a full noisemodel
+	Vector sigmas = ones(m);
+
+	// copy data over
+	size_t cur_m = 0;
+	bool constrained = false;
+	bool unit = true;
+	BOOST_FOREACH(GaussianFactor::shared_ptr factor, factors) {
+		// loop through ordering
+		size_t cur_n = 0;
+		BOOST_FOREACH(const Symbol& key, order) {
+			// copy over matrix if it exists
+			if (factor->involves(key)) {
+				insertSub(Ab, factor->get_A(key), cur_m, cur_n);
+			}
+			// move onto next element
+			cur_n += dimensions.at(key);
+		}
+		// copy over the RHS
+		insertColumn(Ab, factor->get_b(), cur_m, n-1);
+
+		// check if the model is unit already
+		if (!boost::shared_dynamic_cast<noiseModel::Unit>(factor->get_model())) {
+			unit = false;
+			const Vector& subsigmas = factor->get_model()->sigmas();
+			subInsert(sigmas, subsigmas, cur_m);
+
+			// check for constraint
+			if (boost::shared_dynamic_cast<noiseModel::Constrained>(factor->get_model()))
+				constrained = true;
+		}
+
+		// move to next row
+		cur_m += factor->numberOfRows();
+	}
+
+	// combine the noisemodels
+	SharedDiagonal model;
+	if (unit) {
+		model = noiseModel::Unit::Create(m);
+	} else if (constrained) {
+		model = noiseModel::Constrained::MixedSigmas(sigmas);
+	} else {
+		model = noiseModel::Diagonal::Sigmas(sigmas);
+	}
+	return make_pair(Ab, model);
+}
+
+/* ************************************************************************* */
 boost::tuple<list<int>, list<int>, list<double> >
 GaussianFactor::sparse(const Dimensions& columnIndices) const {
 
@@ -330,35 +397,20 @@ void GaussianFactor::append_factor(GaussianFactor::shared_ptr f, size_t m, size_
 #include <boost/numeric/ublas/matrix_proxy.hpp>
 
 pair<GaussianConditional::shared_ptr, GaussianFactor::shared_ptr>
-GaussianFactor::eliminate(const Symbol& key) const
-{
+GaussianFactor::eliminateMatrix(Matrix& Ab, SharedDiagonal model,
+		        const Ordering& ordering,
+		        const Dimensions& dimensions) {
 	bool verbose = false;
-	// if this factor does not involve key, we exit with empty CG and LF
-	const_iterator it = As_.find(key);
-	if (it==As_.end()) {
-		// Conditional Gaussian is just a parent-less node with P(x)=1
-		GaussianFactor::shared_ptr lf(new GaussianFactor);
-		GaussianConditional::shared_ptr cg(new GaussianConditional(key));
-		return make_pair(cg,lf);
-	}
-
-	// create an internal ordering that eliminates key first
-	Ordering ordering;
-	ordering += key;
-	BOOST_FOREACH(const Symbol& k, keys())
-		if (k != key) ordering += k;
-
-	// extract [A b] from the combined linear factor (ensure that x is leading)
-	Matrix Ab = matrix_augmented(ordering,false);
+	Symbol key = ordering.front();
 
 	// Use in-place QR on dense Ab appropriate to NoiseModel
-	if (verbose) model_->print("Before QR");
-	SharedDiagonal noiseModel = model_->QR(Ab);
-	if (verbose) model_->print("After QR");
+	if (verbose) model->print("Before QR");
+	SharedDiagonal noiseModel = model->QR(Ab);
+	if (verbose) model->print("After QR");
 
 	// get dimensions of the eliminated variable
 	// TODO: this is another map find that should be avoided !
-	size_t n1 = getDim(key), n = Ab.size2() - 1;
+	size_t n1 = dimensions.at(key), n = Ab.size2() - 1;
 
 	// if m<n1, this factor cannot be eliminated
 	size_t maxRank = noiseModel->dim();
@@ -382,9 +434,9 @@ GaussianFactor::eliminate(const Symbol& key) const
 	// extract the block matrices for parents in both CG and LF
 	GaussianFactor::shared_ptr factor(new GaussianFactor);
 	size_t j = n1;
-	BOOST_FOREACH(Symbol& cur_key, ordering)
+	BOOST_FOREACH(const Symbol& cur_key, ordering)
 		if (cur_key!=key) {
-			size_t dim = getDim(cur_key); // TODO avoid find !
+			size_t dim = dimensions.at(cur_key); // TODO avoid find !
 			conditional->add(cur_key, sub(Ab, 0, n1, j, j+dim));
 			factor->insert(cur_key, sub(Ab, n1, maxRank, j, j+dim)); // TODO: handle zeros properly
 			j+=dim;
@@ -401,6 +453,32 @@ GaussianFactor::eliminate(const Symbol& key) const
 	factor->set_b(sub(d, n1, maxRank));
 
 	return make_pair(conditional, factor);
+}
+
+pair<GaussianConditional::shared_ptr, GaussianFactor::shared_ptr>
+GaussianFactor::eliminate(const Symbol& key) const
+{
+	bool verbose = false;
+	// if this factor does not involve key, we exit with empty CG and LF
+	const_iterator it = As_.find(key);
+	if (it==As_.end()) {
+		// Conditional Gaussian is just a parent-less node with P(x)=1
+		GaussianFactor::shared_ptr lf(new GaussianFactor);
+		GaussianConditional::shared_ptr cg(new GaussianConditional(key));
+		return make_pair(cg,lf);
+	}
+
+	// create an internal ordering that eliminates key first
+	Ordering ordering;
+	ordering += key;
+	BOOST_FOREACH(const Symbol& k, keys())
+		if (k != key) ordering += k;
+
+	// extract [A b] from the combined linear factor (ensure that x is leading)
+	Matrix Ab = matrix_augmented(ordering,false);
+
+	// TODO: this is where to split
+	return eliminateMatrix(Ab, model_, ordering, dimensions());
 }
 
 /* ************************************************************************* */

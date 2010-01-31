@@ -224,6 +224,50 @@ TEST( GaussianFactorGraph, eliminateOne_l1 )
 }
 
 /* ************************************************************************* */
+TEST( GaussianFactorGraph, eliminateOne_x1_fast )
+{
+  GaussianFactorGraph fg = createGaussianFactorGraph();
+  GaussianConditional::shared_ptr actual = fg.eliminateOne("x1", false);
+
+  // create expected Conditional Gaussian
+  Matrix I = 15*eye(2), R11 = I, S12 = -0.111111*I, S13 = -0.444444*I;
+  Vector d = Vector_(2, -0.133333, -0.0222222), sigma = ones(2);
+  GaussianConditional expected("x1",15*d,R11,"l1",S12,"x2",S13,sigma);
+
+  CHECK(assert_equal(expected,*actual,tol));
+}
+
+/* ************************************************************************* */
+TEST( GaussianFactorGraph, eliminateOne_x2_fast )
+{
+  GaussianFactorGraph fg = createGaussianFactorGraph();
+  GaussianConditional::shared_ptr actual = fg.eliminateOne("x2", false);
+
+  // create expected Conditional Gaussian
+  double sig = 0.0894427;
+  Matrix I = eye(2)/sig, R11 = I, S12 = -0.2*I, S13 = -0.8*I;
+  Vector d = Vector_(2, 0.2, -0.14)/sig, sigma = ones(2);
+  GaussianConditional expected("x2",d,R11,"l1",S12,"x1",S13,sigma);
+
+  CHECK(assert_equal(expected,*actual,tol));
+}
+
+/* ************************************************************************* */
+TEST( GaussianFactorGraph, eliminateOne_l1_fast )
+{
+  GaussianFactorGraph fg = createGaussianFactorGraph();
+  GaussianConditional::shared_ptr actual = fg.eliminateOne("l1", false);
+
+  // create expected Conditional Gaussian
+  double sig = sqrt(2)/10.;
+  Matrix I = eye(2)/sig, R11 = I, S12 = -0.5*I, S13 = -0.5*I;
+  Vector d = Vector_(2, -0.1, 0.25)/sig, sigma = ones(2);
+  GaussianConditional expected("l1",d,R11,"x1",S12,"x2",S13,sigma);
+
+  CHECK(assert_equal(expected,*actual,tol));
+}
+
+/* ************************************************************************* */
 TEST( GaussianFactorGraph, eliminateAll )
 {
 	// create expected Chordal bayes Net
@@ -245,6 +289,31 @@ TEST( GaussianFactorGraph, eliminateAll )
 	Ordering ordering;
 	ordering += "x2","l1","x1";
 	GaussianBayesNet actual = fg1.eliminate(ordering);
+	CHECK(assert_equal(expected,actual,tol));
+}
+
+/* ************************************************************************* */
+TEST( GaussianFactorGraph, eliminateAll_fast )
+{
+	// create expected Chordal bayes Net
+	Matrix I = eye(2);
+
+	Vector d1 = Vector_(2, -0.1,-0.1);
+	GaussianBayesNet expected = simpleGaussian("x1",d1,0.1);
+
+	double sig1 = 0.149071;
+	Vector d2 = Vector_(2, 0.0, 0.2)/sig1, sigma2 = ones(2);
+	push_front(expected,"l1",d2, I/sig1,"x1", (-1)*I/sig1,sigma2);
+
+	double sig2 = 0.0894427;
+	Vector d3 = Vector_(2, 0.2, -0.14)/sig2, sigma3 = ones(2);
+	push_front(expected,"x2",d3, I/sig2,"l1", (-0.2)*I/sig2, "x1", (-0.8)*I/sig2, sigma3);
+
+	// Check one ordering
+	GaussianFactorGraph fg1 = createGaussianFactorGraph();
+	Ordering ordering;
+	ordering += "x2","l1","x1";
+	GaussianBayesNet actual = fg1.eliminate(ordering, false);
 	CHECK(assert_equal(expected,actual,tol));
 }
 

@@ -119,21 +119,34 @@ namespace gtsam {
      * Eliminate a single node yielding a conditional Gaussian
      * Eliminates the factors from the factor graph through findAndRemoveFactors
      * and adds a new factor on the separator to the factor graph
+     * @param key is the key to eliminate
+     * @param enableJoinFactor uses the older joint factor combine process when true,
+     *    and when false uses the newer single matrix combine
      */
-    GaussianConditional::shared_ptr eliminateOne(const Symbol& key);
+    GaussianConditional::shared_ptr eliminateOne(const Symbol& key, bool enableJoinFactor = true);
+
+    /**
+     * Peforms a supposedly-faster (fewer matrix copy) version of elimination
+     * CURRENTLY IN TESTING
+     */
+    inline GaussianConditional::shared_ptr eliminateOneMatrixJoin(const Symbol& key);
 
     /**
      * eliminate factor graph in place(!) in the given order, yielding
      * a chordal Bayes net. Allows for passing an incomplete ordering
      * that does not completely eliminate the graph
+     * @param enableJoinFactor uses the older joint factor combine process when true,
+     *    and when false uses the newer single matrix combine
      */
-    GaussianBayesNet eliminate(const Ordering& ordering);
+    GaussianBayesNet eliminate(const Ordering& ordering, bool enableJoinFactor = true);
 
     /**
      * optimize a linear factor graph
      * @param ordering fg in order
+     * @param enableJoinFactor uses the older joint factor combine process when true,
+     *    and when false uses the newer single matrix combine
      */
-    VectorConfig optimize(const Ordering& ordering);
+    VectorConfig optimize(const Ordering& ordering, bool enableJoinFactor = true);
 
     /**
      * shared pointer versions for MATLAB

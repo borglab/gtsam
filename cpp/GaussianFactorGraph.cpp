@@ -9,6 +9,7 @@
 #include <boost/tuple/tuple.hpp>
 #include <boost/numeric/ublas/lu.hpp>
 #include <boost/numeric/ublas/io.hpp>
+#include <boost/assign/std/list.hpp> // for operator += in Ordering
 
 #include <colamd/colamd.h>
 
@@ -20,6 +21,10 @@
 
 using namespace std;
 using namespace gtsam;
+using namespace boost::assign;
+
+//#define USE_FAST_ELIMINATE
+
 
 // trick from some reading group
 #define FOREACH_PAIR( KEY, VAL, COL) BOOST_FOREACH (boost::tie(KEY,VAL),COL)
@@ -114,24 +119,71 @@ set<Symbol> GaussianFactorGraph::find_separator(const Symbol& key) const
 
 /* ************************************************************************* */
 GaussianConditional::shared_ptr
-GaussianFactorGraph::eliminateOne(const Symbol& key) {
-	return gtsam::eliminateOne<GaussianFactor,GaussianConditional>(*this, key);
+GaussianFactorGraph::eliminateOne(const Symbol& key, bool old) {
+#ifdef USE_FAST_ELIMINATE
+	return eliminateOneMatrixJoin(key);
+#else
+	if (old)
+		return gtsam::eliminateOne<GaussianFactor,GaussianConditional>(*this, key);
+	else
+		return eliminateOneMatrixJoin(key);
+#endif
+}
+
+/* ************************************************************************* */
+GaussianConditional::shared_ptr
+GaussianFactorGraph::eliminateOneMatrixJoin(const Symbol& key) {
+	// get a vector of all of the factors in the separator as well as an ordering
+	vector<GaussianFactor::shared_ptr> factors = findAndRemoveFactors(key);
+
+	set<Symbol> separator;
+	Dimensions dimensions;
+	BOOST_FOREACH(GaussianFactor::shared_ptr factor, factors) {
+		Dimensions factor_dim = factor->dimensions();
+		dimensions.insert(factor_dim.begin(), factor_dim.end());
+		BOOST_FOREACH(const Symbol& k, factor->keys()) {
+			if (!k.equals(key)) {
+				separator.insert(k);
+			}
+		}
+	}
+
+	// add the keys to the rendering
+	Ordering render; render += key;
+	BOOST_FOREACH(const Symbol& k, separator)
+			if (k != key) render += k;
+
+	// combine the factors to get a noisemodel and a combined matrix
+	Matrix Ab; SharedDiagonal model;
+
+	boost::tie(Ab, model) = GaussianFactor::combineFactorsAndCreateMatrix(factors,render,dimensions);
+
+	// eliminate that joint factor
+	GaussianFactor::shared_ptr factor;
+	GaussianConditional::shared_ptr conditional;
+	boost::tie(conditional, factor) = GaussianFactor::eliminateMatrix(Ab, model, render, dimensions);
+
+	// add new factor on separator back into the graph
+	if (!factor->empty()) push_back(factor);
+
+	// return the conditional Gaussian
+	return conditional;
 }
 
 /* ************************************************************************* */
 GaussianBayesNet
-GaussianFactorGraph::eliminate(const Ordering& ordering)
+GaussianFactorGraph::eliminate(const Ordering& ordering, bool old)
 {
 	GaussianBayesNet chordalBayesNet; // empty
 	BOOST_FOREACH(const Symbol& key, ordering) {
-		GaussianConditional::shared_ptr cg = eliminateOne(key);
+		GaussianConditional::shared_ptr cg = eliminateOne(key, old);
 		chordalBayesNet.push_back(cg);
 	}
 	return chordalBayesNet;
 }
 
 /* ************************************************************************* */
-VectorConfig GaussianFactorGraph::optimize(const Ordering& ordering)
+VectorConfig GaussianFactorGraph::optimize(const Ordering& ordering, bool old)
 {
 	bool verbose = false;
 	if (verbose)
@@ -139,7 +191,7 @@ VectorConfig GaussianFactorGraph::optimize(const Ordering& ordering)
 			factor->get_model()->print("Starting model");
 
 	// eliminate all nodes in the given ordering -> chordal Bayes net
-	GaussianBayesNet chordalBayesNet = eliminate(ordering);
+	GaussianBayesNet chordalBayesNet = eliminate(ordering, old);
 
 	// calculate new configuration (using backsubstitution)
 	return ::optimize(chordalBayesNet);

@@ -266,12 +266,32 @@ public:
 	eliminate(const Symbol& key) const;
 
 	/**
+	 * Performs elimination given an augmented matrix
+	 * @param
+	 */
+	static std::pair<boost::shared_ptr<GaussianConditional>, shared_ptr>
+	eliminateMatrix(Matrix& Ab, SharedDiagonal model,
+			        const Ordering& ordering,
+			        const Dimensions& dimensions);
+
+	/**
 	 * Take the factor f, and append to current matrices. Not very general.
 	 * @param f linear factor graph
 	 * @param m final number of rows of f, needs to be known in advance
 	 * @param pos where to insert in the m-sized matrices
 	 */
 	void append_factor(GaussianFactor::shared_ptr f, size_t m, size_t pos);
+
+	/**
+	 * Returns the augmented matrix version of a set of factors
+	 * with the corresponding noiseModel
+	 * @param factors is the set of factors to combine
+	 * @param ordering of variables needed for matrix column order
+	 * @return the augmented matrix and a noise model
+	 */
+	static std::pair<Matrix, SharedDiagonal> combineFactorsAndCreateMatrix(
+			const std::vector<GaussianFactor::shared_ptr>& factors,
+			const Ordering& order, const Dimensions& dimensions);
 
 }; // GaussianFactor
 
