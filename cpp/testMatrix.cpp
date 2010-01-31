@@ -791,7 +791,7 @@ TEST( matrix, inverse_square_root )
 /* *********************************************************************** */
 // M was generated as the covariance of a set of random numbers.  L that
 // we are checking against was generated via chol(M)' on octave
-TEST( matrix, cholesky ) 
+TEST( matrix, LLt ) 
 {
 	Matrix M = Matrix_(5, 5,
 			   0.0874197,  -0.0030860,   0.0116969,   0.0081463,   0.0048741,
@@ -807,7 +807,7 @@ TEST( matrix, cholesky )
 				  0.027552165831157,  0.043423266737274,  0.021695600982708, 0.267613525371710, 0.000000000000000,
 				  0.016485031422565, -0.012072546984405, -0.006621889326331, 0.014405837566082, 0.300462176944247);
 
-	EQUALITY(expected, cholesky(M));
+	EQUALITY(expected, LLt(M));
 }
 
 /* ************************************************************************* */

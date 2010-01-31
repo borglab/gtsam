@@ -321,7 +321,10 @@ Matrix inverse_square_root(const Matrix& A);
 Matrix square_root_positive(const Matrix& A);
 
 /** Calculate the LL^t decomposition of a S.P.D matrix */
-Matrix cholesky(const Matrix& A);
+Matrix LLt(const Matrix& A);
+
+/** Calculate the R^tR decomposition of a S.P.D matrix */
+Matrix RtR(const Matrix& A);
 
 /** Return the inverse of a S.P.D. matrix.  Inversion is done via Cholesky decomposition. */
 Matrix cholesky_inverse(const Matrix &A);

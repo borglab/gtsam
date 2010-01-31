@@ -787,7 +787,7 @@ double** createNRC(Matrix& A) {
 namespace BNU = boost::numeric::ublas;
 
 
-Matrix cholesky(const Matrix& A)
+Matrix LLt(const Matrix& A)
 {
 	assert(A.size1() == A.size2());
         Matrix L = zeros(A.size1(), A.size1());
@@ -808,12 +808,17 @@ Matrix cholesky(const Matrix& A)
         return L;
 }
 
+Matrix RtR(const Matrix &A)
+{
+	return trans(LLt(A));
+}
+
 /*
  * This is not ultra efficient, but not terrible, either.
  */
 Matrix cholesky_inverse(const Matrix &A)
 {
-        Matrix L = cholesky(A);
+        Matrix L = LLt(A);
         Matrix inv(boost::numeric::ublas::identity_matrix<double>(A.size1()));
         inplace_solve (L, inv, BNU::lower_tag ());
         return BNU::prod(trans(inv), inv);
@@ -883,7 +888,7 @@ Matrix inverse_square_root(const Matrix& A) {
 // inv(B) * inv(B)' == A
 // inv(B' * B) == A
 Matrix inverse_square_root(const Matrix& A) {
-	Matrix L = cholesky(A);
+	Matrix L = LLt(A);
         Matrix inv(boost::numeric::ublas::identity_matrix<double>(A.size1()));
         inplace_solve (L, inv, BNU::lower_tag ());
 	return inv;
