@@ -145,11 +145,13 @@ void multiplyAdd(double alpha, const Matrix& A, const Vector& x, Vector& e) {
 	gsl_blas_dgemv (CblasNoTrans, alpha, &(Ag.matrix), &(xg.vector), 1.0, &(eg.vector));
 #else
 	// ublas e += prod(A,x) is terribly slow
-	for (int i = 0; i < A.size1(); i++) {
-		double& ei = e(i);
-		for (int j = 0; j < A.size2(); j++) {
-			ei += alpha * A(i, j) * x(j);
-		}
+  size_t m = A.size1(), n = A.size2();
+	double * ei = e.data().begin();
+	const double * aij = A.data().begin();
+	for (int i = 0; i < m; i++, ei++) {
+		const double * xj = x.data().begin();
+		for (int j = 0; j < n; j++, aij++, xj++)
+			(*ei) += alpha * (*aij) * (*xj);
 	}
 #endif
 }
@@ -173,11 +175,13 @@ void transposeMultiplyAdd(double alpha, const Matrix& A, const Vector& e, Vector
 #else
 	// ublas x += prod(trans(A),e) is terribly slow
 	// TODO: use BLAS
-	for (int j = 0; j < A.size2(); j++) {
-		double& xj = x(j);
-		for (int i = 0; i < A.size1(); i++) {
-			xj += alpha * A(i, j) * e(i);
-		}
+  size_t m = A.size1(), n = A.size2();
+	double * xj = x.data().begin();
+	for (int j = 0; j < n; j++,xj++) {
+		const double * ei = e.data().begin();
+		const double * aij = A.data().begin() + j;
+		for (int i = 0; i < m; i++, aij+=n, ei++)
+			(*xj) += alpha * (*aij) * (*ei);
 	}
 #endif
 }
