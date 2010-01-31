@@ -46,24 +46,24 @@ namespace gtsam {
 			return A_ ^ (A_ * x - b_);
 		}
 
-		/** Apply operator A_ */
+		/** Apply operator A */
 		inline Vector operator*(const Vector& x) const {
 			return A_ * x;
 		}
 
-		/** Apply operator A_ in place*/
+		/** Apply operator A in place */
 		inline void multiplyInPlace(const Vector& x, Vector& e) const {
 			e = A_ * x;
 		}
 
-		/** Apply operator A_^T */
+		/** Apply operator A'*e */
 		inline Vector operator^(const Vector& e) const {
 			return A_ ^ e;
 		}
 
-		/** x += alpha* A_^T */
+		/** x += alpha* A'*e */
 		inline void transposeMultiplyAdd(double alpha, const Vector& e, Vector& x) const {
-			x += alpha * A_ ^ e;
+			gtsam::transposeMultiplyAdd(A_,alpha*e,x);
 		}
 
 		/**

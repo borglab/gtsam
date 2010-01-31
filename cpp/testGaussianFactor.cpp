@@ -68,6 +68,14 @@ TEST( GaussianFactor, operators )
 	expectedX.insert("x1",Vector_(2,-2000.,-4000.));
 	expectedX.insert("x2",Vector_(2, 2000., 4000.));
 	CHECK(assert_equal(expectedX,lf^e));
+
+	// test transposeMultiplyAdd
+	VectorConfig x;
+	x.insert("x1",Vector_(2, 1.,2.));
+	x.insert("x2",Vector_(2, 3.,4.));
+	VectorConfig expectedX2 = x + 0.1 * (lf^e);
+	lf.transposeMultiplyAdd(0.1,e,x);
+	CHECK(assert_equal(expectedX2,x));
 }
 
 /* ************************************************************************* */

@@ -197,15 +197,14 @@ public:
 	void tally_separator(const Symbol& key,
 			std::set<Symbol>& separator) const;
 
-	/**
-	 * Return A*x
-	 */
+	/** Return A*x */
 	Vector operator*(const VectorConfig& x) const;
 
-	/**
-	 * Return A^x
-	 */
+	/** Return A'*e */
 	VectorConfig operator^(const Vector& e) const;
+
+	/** x += A'*e */
+	void transposeMultiplyAdd(double alpha, const Vector& e, VectorConfig& x) const;
 
 	/**
 	 * Return (dense) matrix associated with factor

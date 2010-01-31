@@ -210,6 +210,18 @@ VectorConfig GaussianFactor::operator^(const Vector& e) const {
 	return x;
 }
 
+/* ************************************************************************* */
+void GaussianFactor::transposeMultiplyAdd(double alpha, const Vector& e,
+		VectorConfig& x) const {
+	Vector E = alpha * model_->whiten(e);
+	// Just iterate over all A matrices and insert Ai^e into VectorConfig
+	FOREACH_PAIR(j, Aj, As_)
+	{
+		Vector& Xj = x.getReference(*j);
+		gtsam::transposeMultiplyAdd(*Aj, E, Xj);
+	}
+}
+
 /* ************************************************************************* */  
 pair<Matrix,Vector> GaussianFactor::matrix(const Ordering& ordering, bool weight) const {
 
