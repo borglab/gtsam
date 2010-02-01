@@ -58,7 +58,7 @@ public:
 	/** Construct unary factor */
 	GaussianFactor(const Symbol& key1, const Matrix& A1,
 			const Vector& b, const SharedDiagonal& model) :
-		b_(b), model_(model) {
+		model_(model),b_(b) {
 		As_.insert(make_pair(key1, A1));
 	}
 
@@ -66,7 +66,7 @@ public:
 	GaussianFactor(const Symbol& key1, const Matrix& A1,
 			const Symbol& key2, const Matrix& A2,
 			const Vector& b, const SharedDiagonal& model) :
-		b_(b), model_(model)  {
+		model_(model), b_(b)  {
 		As_.insert(make_pair(key1, A1));
 		As_.insert(make_pair(key2, A2));
 	}
@@ -76,7 +76,7 @@ public:
 			const Symbol& key2, const Matrix& A2,
 			const Symbol& key3, const Matrix& A3,
 			const Vector& b, const SharedDiagonal& model) :
-		b_(b), model_(model)  {
+	        model_(model),b_(b)  {
 		As_.insert(make_pair(key1, A1));
 		As_.insert(make_pair(key2, A2));
 		As_.insert(make_pair(key3, A3));
@@ -85,7 +85,7 @@ public:
 	/** Construct an n-ary factor */
 	GaussianFactor(const std::vector<std::pair<Symbol, Matrix> > &terms,
 	    const Vector &b, const SharedDiagonal& model) :
-	    b_(b), model_(model)  {
+		model_(model), b_(b)  {
 	  for(unsigned int i=0; i<terms.size(); i++)
 	    As_.insert(terms[i]);
 	}
