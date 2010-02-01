@@ -14,7 +14,8 @@ install-exec-hook:
 	install -d $(prefix)/include && \
 	install -d $(prefix)/include/colamd && \
 	cp -f colamd/colamd.h $(prefix)/include/colamd/ && \
-	cp -f colamd/UFconfig.h $(prefix)/include/colamd/
+	cp -f colamd/UFconfig.h $(prefix)/include/colamd/ && \
+	cp -f colamd/libcolamd.a $(prefix)/lib/
 
 dist-hook:
 	mkdir $(distdir)/CppUnitLite
