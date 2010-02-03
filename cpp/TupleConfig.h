@@ -184,22 +184,29 @@ namespace gtsam {
 
 	  // erase an element by key
 	  template<class Key>
-	  void erase(const Key& j)  {  }
-	  void erase(const Key1& j)  {  }
+	  void erase(const Key& j)  { second_.erase(j); }
+	  void erase(const Key1& j)  { first_.erase(j); }
 
 	  // determine whether an element exists
 	  template<class Key>
 	  bool exists(const Key& j) const { return second_.exists(j); }
 	  bool exists(const Key1& j) const { return first_.exists(j); }
 
-	  // access operator - currently configs after the first one will not be found
+	  // access operator
 	  template<class Key>
 	  const typename Key::Value_t & operator[](const Key& j) const { return second_[j]; }
 	  const Value1& operator[](const Key1& j) const { return first_[j]; }
 
+	  // at access function
 	  template<class Key>
 	  const typename Key::Value_t & at(const Key& j) const { return second_.at(j); }
 	  const Value1& at(const Key1& j) const { return first_.at(j); }
+
+	  // size function - adds recursively
+	  size_t size() const { return first_.size() + second_.size(); }
+
+	  // dim function
+	  size_t dim() const { return first_.dim() + second_.dim(); }
 
   };
 
@@ -230,11 +237,15 @@ namespace gtsam {
 
 	  const Value1& operator[](const Key1& j) const { return first_[j]; }
 
-	  void erase(const Key1& j) {  }
+	  void erase(const Key1& j) { first_.erase(j); }
 
 	  bool exists(const Key1& j) const { return first_.exists(j); }
 
 	  const Value1& at(const Key1& j) const { return first_.at(j); }
+
+	  size_t size() const { return first_.size(); }
+
+	  size_t dim() const { return first_.dim(); }
 
   };
 }

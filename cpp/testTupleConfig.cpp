@@ -183,7 +183,7 @@ typedef TupleConfig<PoseConfig, TupleConfigEnd<PointConfig> > ConfigA;
 typedef TupleConfig<PoseConfig, TupleConfig<PointConfig, TupleConfigEnd<LamConfig> > > ConfigB;
 
 /* ************************************************************************* */
-TEST(TupleConfig, create_insert) {
+TEST(TupleConfig, basic_functions) {
 	// create some tuple configs
 	ConfigA configA;
 	ConfigB configB;
@@ -223,6 +223,14 @@ TEST(TupleConfig, create_insert) {
 	CHECK(assert_equal(configB.at(x1), pose1));
 	CHECK(assert_equal(configB.at(l1), point1));
 	CHECK(assert_equal(configB.at(L1), lam1));
+
+	// size
+	CHECK(configA.size() == 2);
+	CHECK(configB.size() == 3);
+
+	// dim
+	CHECK(configA.dim() == 5);
+	CHECK(configB.dim() == 6);
 }
 
 
