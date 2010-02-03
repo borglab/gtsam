@@ -167,5 +167,65 @@ TEST(PairConfig, expmap)
 }
 
 /* ************************************************************************* */
+
+// some key types
+typedef TypedSymbol<Pose2, 'x'> PoseKey;
+typedef TypedSymbol<Point2, 'l'> PointKey;
+typedef TypedSymbol<Vector, 'L'> LamKey;
+
+// some config types
+typedef LieConfig<PoseKey, Pose2> PoseConfig;
+typedef LieConfig<PointKey, Point2> PointConfig;
+typedef LieConfig<LamKey, Vector> LamConfig;
+
+// some TupleConfig types
+typedef TupleConfig<PoseConfig, TupleConfigEnd<PointConfig> > ConfigA;
+typedef TupleConfig<PoseConfig, TupleConfig<PointConfig, TupleConfigEnd<LamConfig> > > ConfigB;
+
+/* ************************************************************************* */
+TEST(TupleConfig, create_insert) {
+	// create some tuple configs
+	ConfigA configA;
+	ConfigB configB;
+
+	PoseKey x1(1);
+	PointKey l1(1);
+	LamKey L1(1);
+	Pose2 pose1(1.0, 2.0, 0.3);
+	Point2 point1(2.0, 3.0);
+	Vector lam1 = Vector_(1, 2.3);
+
+	// Insert
+	configA.insert(x1, pose1);
+	configA.insert(l1, point1);
+
+	configB.insert(x1, pose1);
+	configB.insert(l1, point1);
+	configB.insert(L1, lam1);
+
+	// bracket operator - FAILS on config types after first one
+	CHECK(assert_equal(configA[x1], pose1));
+//	CHECK(assert_equal(configA[l1], point1));
+	CHECK(assert_equal(configB[x1], pose1));
+//	CHECK(assert_equal(configB[l1], point1));
+//	CHECK(assert_equal(configB[L1], lam1));
+
+	// exists
+	CHECK(configA.exists(x1));
+	CHECK(configA.exists(l1));
+	CHECK(configB.exists(x1));
+	CHECK(configB.exists(l1));
+	CHECK(configB.exists(L1));
+
+	// at - access function - FAILS as with bracket operator
+	CHECK(assert_equal(configA.at(x1), pose1));
+//	CHECK(assert_equal(configA.at(l1), point1));
+	CHECK(assert_equal(configB.at(x1), pose1));
+//	CHECK(assert_equal(configB.at(l1), point1));
+//	CHECK(assert_equal(configB.at(L1), lam1));
+}
+
+
+/* ************************************************************************* */
 int main() { TestResult tr; return TestRegistry::runAllTests(tr); }
 /* ************************************************************************* */

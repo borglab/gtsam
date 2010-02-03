@@ -141,4 +141,100 @@ namespace gtsam {
   template<class J1, class X1, class J2, class X2>
   inline VectorConfig logmap(const PairConfig<J1,X1,J2,X2> c0, const PairConfig<J1,X1,J2,X2>& cp) { return c0.logmap(cp); }
 
+
+  /**
+   *  Tuple configs to handle subconfigs of LieConfigs
+   *
+   *  This uses a recursive structure of config pairs to form a lisp-like
+   *  list, with a special case (TupleConfigEnd) that contains only one config
+   *  at the end.  In a final use case, this should be aliased to something clearer
+   *  but still with the same recursive type machinery.
+   *
+   *  STILL UNDER TESTING - DO NOT USE
+   */
+  template<class Config1, class Config2>
+  class TupleConfig : public Testable<TupleConfig<Config1, Config2> > {
+
+  protected:
+	  // Data for internal configs
+	  Config1 first_;
+	  Config2 second_;
+
+  public:
+	  // typedefs
+	  typedef class Config1::Key Key1;
+	  typedef class Config1::Value Value1;
+
+  public:
+	  TupleConfig() {}
+	  virtual ~TupleConfig() {}
+
+	  /** Print */
+	  void print(const std::string& s = "") const {}
+
+	  /** Test for equality in keys and values */
+	  bool equals(const TupleConfig<Config1, Config2>& c, double tol=1e-9) const {
+		  return false;
+	  }
+
+	  // insert function that uses the second (recursive) config
+	  template<class Key, class Value>
+	  void insert(const Key& key, const Value& value) {second_.insert(key, value);}
+	  void insert(const Key1& key, const Value1& value) {first_.insert(key, value);}
+
+	  // erase an element by key
+	  template<class Key>
+	  void erase(const Key& j)  {  }
+	  void erase(const Key1& j)  {  }
+
+	  // determine whether an element exists
+	  template<class Key>
+	  bool exists(const Key& j) const { return second_.exists(j); }
+	  bool exists(const Key1& j) const { return first_.exists(j); }
+
+	  // access operator - currently configs after the first one will not be found
+	  template<class Key, class Value>
+	  const Value& operator[](const Key& j) const { return second_[j]; }
+	  const Value1& operator[](const Key1& j) const { return first_[j]; }
+
+	  template<class Key, class Value>
+	  const Value& at(const Key& j) const { return second_.at(j); }
+	  const Value1& at(const Key1& j) const { return first_.at(j); }
+
+  };
+
+  template<class Config>
+  class TupleConfigEnd : public Testable<TupleConfigEnd<Config> > {
+  protected:
+	  // Data for internal configs
+	  Config first_;
+
+  public:
+	  // typedefs
+	  typedef class Config::Key Key1;
+	  typedef class Config::Value Value1;
+
+  public:
+	  TupleConfigEnd() {}
+	  virtual ~TupleConfigEnd() {}
+
+	  /** Print */
+	  void print(const std::string& s = "") const {}
+
+	  /** Test for equality in keys and values */
+	  bool equals(const TupleConfigEnd<Config>& c, double tol=1e-9) const {
+		  return false;
+	  }
+
+	  void insert(const Key1& key, const Value1& value) {first_.insert(key, value); }
+
+	  const Value1& operator[](const Key1& j) const { return first_[j]; }
+
+	  void erase(const Key1& j) {  }
+
+	  bool exists(const Key1& j) const { return first_.exists(j); }
+
+	  const Value1& at(const Key1& j) const { return first_.at(j); }
+
+  };
 }

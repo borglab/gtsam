@@ -35,6 +35,9 @@ namespace gtsam {
 
 	public:
 
+		// typedefs
+		typedef T Value_t;
+
 		// Constructors:
 
 		TypedSymbol():j_(0) {}
