@@ -193,12 +193,12 @@ namespace gtsam {
 	  bool exists(const Key1& j) const { return first_.exists(j); }
 
 	  // access operator - currently configs after the first one will not be found
-	  template<class Key, class Value>
-	  const Value& operator[](const Key& j) const { return second_[j]; }
+	  template<class Key>
+	  const typename Key::Value_t & operator[](const Key& j) const { return second_[j]; }
 	  const Value1& operator[](const Key1& j) const { return first_[j]; }
 
-	  template<class Key, class Value>
-	  const Value& at(const Key& j) const { return second_.at(j); }
+	  template<class Key>
+	  const typename Key::Value_t & at(const Key& j) const { return second_.at(j); }
 	  const Value1& at(const Key1& j) const { return first_.at(j); }
 
   };

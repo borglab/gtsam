@@ -203,12 +203,12 @@ TEST(TupleConfig, create_insert) {
 	configB.insert(l1, point1);
 	configB.insert(L1, lam1);
 
-	// bracket operator - FAILS on config types after first one
+	// bracket operator
 	CHECK(assert_equal(configA[x1], pose1));
-//	CHECK(assert_equal(configA[l1], point1));
+	CHECK(assert_equal(configA[l1], point1));
 	CHECK(assert_equal(configB[x1], pose1));
-//	CHECK(assert_equal(configB[l1], point1));
-//	CHECK(assert_equal(configB[L1], lam1));
+	CHECK(assert_equal(configB[l1], point1));
+	CHECK(assert_equal(configB[L1], lam1));
 
 	// exists
 	CHECK(configA.exists(x1));
@@ -217,12 +217,12 @@ TEST(TupleConfig, create_insert) {
 	CHECK(configB.exists(l1));
 	CHECK(configB.exists(L1));
 
-	// at - access function - FAILS as with bracket operator
+	// at
 	CHECK(assert_equal(configA.at(x1), pose1));
-//	CHECK(assert_equal(configA.at(l1), point1));
+	CHECK(assert_equal(configA.at(l1), point1));
 	CHECK(assert_equal(configB.at(x1), pose1));
-//	CHECK(assert_equal(configB.at(l1), point1));
-//	CHECK(assert_equal(configB.at(L1), lam1));
+	CHECK(assert_equal(configB.at(l1), point1));
+	CHECK(assert_equal(configB.at(L1), lam1));
 }
 
 
