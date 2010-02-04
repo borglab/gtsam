@@ -5,6 +5,8 @@
  *      Author: richard
  */
 
+#pragma once
+
 #include <boost/foreach.hpp>
 #include <boost/tuple/tuple.hpp>
 #include <utility>
