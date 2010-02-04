@@ -13,6 +13,9 @@
 
 namespace gtsam {
 
+/** Typedef for Lagrange key type - must be present in factors and config */
+typedef TypedSymbol<Vector, 'L'> LagrangeKey;
+
 /**
  * Base class for nonlinear constraints
  * This allows for both equality and inequality constraints,
@@ -29,7 +32,7 @@ class NonlinearConstraint : public NonlinearFactor<Config> {
 protected:
 
 	/** key for the lagrange multipliers */
-	std::string lagrange_key_;
+	LagrangeKey lagrange_key_;
 
 	/** number of lagrange multipliers */
 	size_t p_;
@@ -53,7 +56,7 @@ public:
 	 * @param isEquality is true if the constraint is an equality constraint
 	 * @param g is the cost function for the constraint
 	 */
-	NonlinearConstraint(const std::string& lagrange_key,
+	NonlinearConstraint(const LagrangeKey& lagrange_key,
 						size_t dim_lagrange,
 						Vector (*g)(const Config& config),
 						bool isEquality=true);
@@ -64,13 +67,13 @@ public:
 	 * @param g is the cost function for the constraint
 	 * @param isEquality is true if the constraint is an equality constraint
 	 */
-	NonlinearConstraint(const std::string& lagrange_key,
+	NonlinearConstraint(const LagrangeKey& lagrange_key,
 						size_t dim_lagrange,
 						boost::function<Vector(const Config& config)> g,
 						bool isEquality=true);
 
 	/** returns the key used for the Lagrange multipliers */
-	std::string lagrangeKey() const { return lagrange_key_; }
+	LagrangeKey lagrangeKey() const { return lagrange_key_; }
 
 	/** returns the number of lagrange multipliers */
 	size_t nrConstraints() const { return p_; }
@@ -95,23 +98,11 @@ public:
 	bool active(const Config& config) const;
 
 	/**
-	 * Linearize using a real Config and a VectorConfig of Lagrange multipliers
-	 * Returns the two separate Gaussian factors to solve
-	 * @param config is the real Config of the real variables
-	 * @param lagrange is the VectorConfig of lagrange multipliers
-	 * @return a pair GaussianFactor (probabilistic) and GaussianFactor (constraint)
+	 * Real linearize, given a config that includes Lagrange multipliers
+	 * @param config is the configuration (with lagrange multipliers)
+	 * @return a combined linear factor containing both the constraint and the constraint factor
 	 */
-	virtual std::pair<GaussianFactor::shared_ptr, GaussianFactor::shared_ptr>
-	linearize(const Config& config, const VectorConfig& lagrange) const=0;
-
-	/**
-	 * linearize with only Config, which is not currently implemented
-	 * This will be implemented later for other constrained optimization
-	 * algorithms
-	 */
-	virtual boost::shared_ptr<GaussianFactor> linearize(const Config& c) const {
-		throw std::invalid_argument("No current constraint linearization for a single Config!");
-	}
+	virtual boost::shared_ptr<GaussianFactor> linearize(const Config& c) const=0;
 };
 
 
@@ -151,7 +142,7 @@ public:
 			const Key& key,
 			Matrix (*G)(const Config& config),
 			size_t dim_constraint,
-			const std::string& lagrange_key="",
+			const LagrangeKey& lagrange_key,
 			bool isEquality=true);
 
 	/**
@@ -168,7 +159,7 @@ public:
 			const Key& key,
 			boost::function<Matrix(const Config& config)> G,
 			size_t dim_constraint,
-			const std::string& lagrange_key="",
+			const LagrangeKey& lagrange_key,
 			bool isEquality=true);
 
 	/** Print */
@@ -178,14 +169,9 @@ public:
 	bool equals(const Factor<Config>& f, double tol=1e-9) const;
 
 	/**
-	 * Linearize using a real Config and a VectorConfig of Lagrange multipliers
-	 * Returns the two separate Gaussian factors to solve
-	 * @param config is the real Config of the real variables
-	 * @param lagrange is the VectorConfig of lagrange multipliers
-	 * @return a pair GaussianFactor (probabilistic) and GaussianFactor (constraint)
+	 * Linearize from config - must have Lagrange multipliers
 	 */
-	std::pair<GaussianFactor::shared_ptr, GaussianFactor::shared_ptr>
-	linearize(const Config& config, const VectorConfig& lagrange) const;
+	virtual boost::shared_ptr<GaussianFactor> linearize(const Config& c) const;
 };
 
 /**
@@ -228,7 +214,7 @@ public:
 			const Key2& key2,
 			Matrix (*G2)(const Config& config),
 			size_t dim_constraint,
-			const std::string& lagrange_key="",
+			const LagrangeKey& lagrange_key,
 			bool isEquality=true);
 
 	/**
@@ -248,7 +234,7 @@ public:
 			const Key2& key2,
 			boost::function<Matrix(const Config& config)> G2,
 			size_t dim_constraint,
-			const std::string& lagrange_key="",
+			const LagrangeKey& lagrange_key,
 			bool isEquality=true);
 
 	/** Print */
@@ -258,14 +244,9 @@ public:
 	bool equals(const Factor<Config>& f, double tol=1e-9) const;
 
 	/**
-	 * Linearize using a real Config and a VectorConfig of Lagrange multipliers
-	 * Returns the two separate Gaussian factors to solve
-	 * @param config is the real Config of the real variables
-	 * @param lagrange is the VectorConfig of lagrange multipliers
-	 * @return a pair GaussianFactor (probabilistic) and GaussianFactor (constraint)
+	 * Linearize from config - must have Lagrange multipliers
 	 */
-	std::pair<GaussianFactor::shared_ptr, GaussianFactor::shared_ptr>
-	linearize(const Config& config, const VectorConfig& lagrange) const;
+	virtual boost::shared_ptr<GaussianFactor> linearize(const Config& c) const;
 };
 
 }

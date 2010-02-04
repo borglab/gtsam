@@ -18,7 +18,7 @@ namespace gtsam {
 
 /* ************************************************************************* */
 template <class Config>
-NonlinearConstraint<Config>::NonlinearConstraint(const std::string& lagrange_key,
+NonlinearConstraint<Config>::NonlinearConstraint(const LagrangeKey& lagrange_key,
 					size_t dim_lagrange,
 					Vector (*g)(const Config& config),
 					bool isEquality)
@@ -28,7 +28,7 @@ NonlinearConstraint<Config>::NonlinearConstraint(const std::string& lagrange_key
 
 /* ************************************************************************* */
 template <class Config>
-NonlinearConstraint<Config>::NonlinearConstraint(const std::string& lagrange_key,
+NonlinearConstraint<Config>::NonlinearConstraint(const LagrangeKey& lagrange_key,
 					size_t dim_lagrange,
 					boost::function<Vector(const Config& config)> g,
 					bool isEquality)
@@ -52,16 +52,11 @@ NonlinearConstraint1<Config, Key, X>::NonlinearConstraint1(
 			const Key& key,
 			Matrix (*gradG)(const Config& config),
 			size_t dim_constraint,
-			const std::string& lagrange_key,
+			const LagrangeKey& lagrange_key,
 			bool isEquality) :
 				NonlinearConstraint<Config>(lagrange_key, dim_constraint, g, isEquality),
 				G_(boost::bind(gradG, _1)), key_(key)
 {
-		// set a good lagrange key here
-		// TODO:should do something smart to find a unique one
-//		if (lagrange_key == "")
-//			this->lagrange_key_ = "L0"
-//		this->keys_.push_front(key);
 }
 
 /* ************************************************************************* */
@@ -71,16 +66,11 @@ NonlinearConstraint1<Config, Key, X>::NonlinearConstraint1(
 			const Key& key,
 			boost::function<Matrix(const Config& config)> gradG,
 			size_t dim_constraint,
-			const std::string& lagrange_key,
+			const LagrangeKey& lagrange_key,
 			bool isEquality) :
 				NonlinearConstraint<Config>(lagrange_key, dim_constraint, g, isEquality),
 				G_(gradG), key_(key)
 {
-	// set a good lagrange key here
-	// TODO:should do something smart to find a unique one
-//	if (lagrange_key == "")
-//		this->lagrange_key_ = "L_" + key;
-//	this->keys_.push_front(key);
 }
 
 /* ************************************************************************* */
@@ -102,17 +92,19 @@ bool NonlinearConstraint1<Config, Key, X>::equals(const Factor<Config>& f, doubl
 	const NonlinearConstraint1<Config, Key, X>* p = dynamic_cast<const NonlinearConstraint1<Config, Key, X>*> (&f);
 	if (p == NULL) return false;
 	if (!(key_ == p->key_)) return false;
-	if (this->lagrange_key_ != p->lagrange_key_) return false;
+	if (!(this->lagrange_key_.equals(p->lagrange_key_))) return false;
 	if (this->isEquality_ != p->isEquality_) return false;
 	return this->p_ == p->p_;
 }
 
 /* ************************************************************************* */
 template <class Config, class Key, class X>
-std::pair<GaussianFactor::shared_ptr, GaussianFactor::shared_ptr>
-NonlinearConstraint1<Config, Key, X>::linearize(const Config& config, const VectorConfig& lagrange) const {
+GaussianFactor::shared_ptr
+NonlinearConstraint1<Config, Key, X>::linearize(const Config& config) const {
+	const size_t p = this->p_;
+
 	// extract lagrange multiplier
-	Vector lambda = lagrange[this->lagrange_key_];
+	Vector lambda = config[this->lagrange_key_];
 
 	// find the error
 	Vector g = g_(config);
@@ -120,17 +112,25 @@ NonlinearConstraint1<Config, Key, X>::linearize(const Config& config, const Vect
 	// construct the gradient
 	Matrix grad = G_(config);
 
-	// construct probabilistic factor
-	Matrix A1 = vector_scale(lambda, grad);
-	SharedDiagonal probModel = sharedSigma(this->p_,1.0);
+	// construct combined factor
+	Matrix Ax = zeros(grad.size1()*2, grad.size2());
+	insertSub(Ax, vector_scale(lambda, grad), 0, 0);
+	insertSub(Ax, grad, grad.size1(), 0);
+
+	Matrix AL = eye(p*2, p);
+
+	Vector rhs = zero(p*2);
+	subInsert(rhs, -1*g, p);
+
+	// construct a mixed constraint model
+	Vector sigmas = zero(p*2);
+	subInsert(sigmas, ones(p), 0);
+	SharedDiagonal mixedConstraint = noiseModel::Constrained::MixedSigmas(sigmas);
+
 	GaussianFactor::shared_ptr factor(new
-			GaussianFactor(key_, A1, this->lagrange_key_, eye(this->p_), zero(this->p_), probModel));
+			GaussianFactor(key_, Ax, this->lagrange_key_, AL, rhs, mixedConstraint));
 
-	// construct the constraint
-	SharedDiagonal constraintModel = noiseModel::Constrained::All(this->p_);
-	GaussianFactor::shared_ptr constraint(new GaussianFactor(key_, grad, -1*g, constraintModel));
-
-	return std::make_pair(factor, constraint);
+	return factor;
 }
 
 /* ************************************************************************* */
@@ -146,18 +146,12 @@ NonlinearConstraint2<Config, Key1, X1, Key2, X2>::NonlinearConstraint2(
 		const Key2& key2,
 		Matrix (*G2)(const Config& config),
 		size_t dim_constraint,
-		const std::string& lagrange_key,
+		const LagrangeKey& lagrange_key,
 		bool isEquality) :
 			NonlinearConstraint<Config>(lagrange_key, dim_constraint, g, isEquality),
 			G1_(boost::bind(G1, _1)), G2_(boost::bind(G2, _1)),
 			key1_(key1), key2_(key2)
 {
-	// set a good lagrange key here
-	// TODO:should do something smart to find a unique one
-//	if (lagrange_key == "")
-//		this->lagrange_key_ = "L_" + key1 + key2;
-//	this->keys_.push_front(key1);
-//	this->keys_.push_back(key2);
 }
 
 /* ************************************************************************* */
@@ -169,18 +163,12 @@ NonlinearConstraint2<Config, Key1, X1, Key2, X2>::NonlinearConstraint2(
 		const Key2& key2,
 		boost::function<Matrix(const Config& config)> G2,
 		size_t dim_constraint,
-		const std::string& lagrange_key,
+		const LagrangeKey& lagrange_key,
 		bool isEquality)  :
 				NonlinearConstraint<Config>(lagrange_key, dim_constraint, g, isEquality),
 				G1_(G1), G2_(G2),
 				key1_(key1), key2_(key2)
 {
-	// set a good lagrange key here
-	// TODO:should do something smart to find a unique one
-//	if (lagrange_key == "")
-//		this->lagrange_key_ = "L_" + key1 + key2;
-//	this->keys_.push_front(key1);
-//	this->keys_.push_back(key2);
 }
 
 /* ************************************************************************* */
@@ -200,17 +188,17 @@ bool NonlinearConstraint2<Config, Key1, X1, Key2, X2>::equals(const Factor<Confi
 	if (p == NULL) return false;
 	if (!(key1_ == p->key1_)) return false;
 	if (!(key2_ == p->key2_)) return false;
-	if (this->lagrange_key_ != p->lagrange_key_) return false;
+	if (!(this->lagrange_key_.equals(p->lagrange_key_))) return false;
 	if (this->isEquality_ != p->isEquality_) return false;
 	return this->p_ == p->p_;
 }
 
 /* ************************************************************************* */
 template<class Config, class Key1, class X1, class Key2, class X2>
-std::pair<GaussianFactor::shared_ptr, GaussianFactor::shared_ptr> NonlinearConstraint2<
-		Config, Key1, X1, Key2, X2>::linearize(const Config& config, const VectorConfig& lagrange) const {
+GaussianFactor::shared_ptr
+NonlinearConstraint2<Config, Key1, X1, Key2, X2>::linearize(const Config& config) const {
 	// extract lagrange multiplier
-	Vector lambda = lagrange[this->lagrange_key_];
+	Vector lambda = config[this->lagrange_key_];
 
 	// find the error
 	Vector g = g_(config);
@@ -231,7 +219,7 @@ std::pair<GaussianFactor::shared_ptr, GaussianFactor::shared_ptr> NonlinearConst
 	GaussianFactor::shared_ptr constraint(new GaussianFactor(key1_, grad1,
 			key2_, grad2, -1.0 * g, constraintModel));
 
-	return std::make_pair(factor, constraint);
+	return factor;
 }
 
 }
