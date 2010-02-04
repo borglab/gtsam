@@ -328,6 +328,14 @@ TEST(TupleConfig, typedefs)
 	TupleConfig6<PoseConfig, PointConfig, LamConfig, Point3Config, Pose3Config, Point3Config2> cfg5;
 }
 
+/* ************************************************************************* */
+TEST( TupleConfig, constructor_insert )
+{
+	PoseConfig cfg1;
+	PointConfig cfg2;
+	LamConfig cfg3;
+	TupleConfig3<PoseConfig, PointConfig, LamConfig> config(cfg1, cfg2, cfg3);
+}
 
 /* ************************************************************************* */
 int main() { TestResult tr; return TestRegistry::runAllTests(tr); }

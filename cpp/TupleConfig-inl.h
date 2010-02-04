@@ -5,6 +5,8 @@
  *      Author: richard
  */
 
+#pragma once
+
 #include "LieConfig-inl.h"
 
 #include "TupleConfig.h"
@@ -21,16 +23,16 @@ namespace gtsam {
   template<class J1, class X1, class J2, class X2>
   void PairConfig<J1,X1,J2,X2>::print(const std::string& s) const {
     std::cout << "TupleConfig " << s << ", size " << size_ << "\n";
-    first.print(s + "Config1: ");
-    second.print(s + "Config2: ");
+    first().print(s + "Config1: ");
+    second().print(s + "Config2: ");
   }
 
   template<class J1, class X1, class J2, class X2>
   void PairConfig<J1,X1,J2,X2>::insert(const PairConfig& config) {
-  	for (typename Config1::const_iterator it = config.first.begin(); it!=config.first.end(); it++) {
+  	for (typename Config1::const_iterator it = config.first().begin(); it!=config.first().end(); it++) {
   		insert(it->first, it->second);
   	}
-  	for (typename Config2::const_iterator it = config.second.begin(); it!=config.second.end(); it++) {
+  	for (typename Config2::const_iterator it = config.second().begin(); it!=config.second().end(); it++) {
   		insert(it->first, it->second);
   	}
   }
