@@ -12,6 +12,8 @@
 
 #include <Pose2.h>
 #include <Point2.h>
+#include <Pose3.h>
+#include <Point3.h>
 
 #include "Vector.h"
 #include "Key.h"
@@ -169,14 +171,18 @@ TEST(PairConfig, expmap)
 /* ************************************************************************* */
 
 // some key types
-typedef TypedSymbol<Pose2, 'x'> PoseKey;
-typedef TypedSymbol<Point2, 'l'> PointKey;
 typedef TypedSymbol<Vector, 'L'> LamKey;
+typedef TypedSymbol<Pose3, 'a'> Pose3Key;
+typedef TypedSymbol<Point3, 'b'> Point3Key;
+typedef TypedSymbol<Point3, 'c'> Point3Key2;
 
 // some config types
 typedef LieConfig<PoseKey, Pose2> PoseConfig;
 typedef LieConfig<PointKey, Point2> PointConfig;
 typedef LieConfig<LamKey, Vector> LamConfig;
+typedef LieConfig<Pose3Key, Pose3> Pose3Config;
+typedef LieConfig<Point3Key, Point3> Point3Config;
+typedef LieConfig<Point3Key2, Point3> Point3Config2;
 
 // some TupleConfig types
 typedef TupleConfig<PoseConfig, TupleConfigEnd<PointConfig> > ConfigA;
@@ -310,6 +316,16 @@ TEST(TupleConfig, expmap)
 
 	CHECK(assert_equal(expected, expmap(cfg1, increment)));
 	CHECK(assert_equal(increment, logmap(cfg1, expected)));
+}
+
+/* ************************************************************************* */
+TEST(TupleConfig, typedefs)
+{
+	TupleConfig2<PoseConfig, PointConfig> cfg1;
+	TupleConfig3<PoseConfig, PointConfig, LamConfig> cfg2;
+	TupleConfig4<PoseConfig, PointConfig, LamConfig, Point3Config> cfg3;
+	TupleConfig5<PoseConfig, PointConfig, LamConfig, Point3Config, Pose3Config> cfg4;
+	TupleConfig6<PoseConfig, PointConfig, LamConfig, Point3Config, Pose3Config, Point3Config2> cfg5;
 }
 
 

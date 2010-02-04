@@ -141,7 +141,6 @@ namespace gtsam {
   template<class J1, class X1, class J2, class X2>
   inline VectorConfig logmap(const PairConfig<J1,X1,J2,X2> c0, const PairConfig<J1,X1,J2,X2>& cp) { return c0.logmap(cp); }
 
-
   /**
    *  Tuple configs to handle subconfigs of LieConfigs
    *
@@ -311,4 +310,42 @@ namespace gtsam {
     inline VectorConfig logmap(const TupleConfigEnd<Config> c0, const TupleConfigEnd<Config>& cp) {
 	  return c0.logmap(cp);
   }
+
+  /**
+   * Typedefs for existing config types
+   */
+  template<class Config1, class Config2>
+  struct TupleConfig2 : TupleConfig<Config1, TupleConfigEnd<Config2> > {
+	  TupleConfig2() {}
+	  TupleConfig2(const TupleConfig2<Config1, Config2>& config) :
+		  TupleConfig<Config1, TupleConfigEnd<Config2> >(config) {}
+  };
+
+  template<class Config1, class Config2, class Config3>
+  struct TupleConfig3 : TupleConfig<Config1, TupleConfig<Config2, TupleConfigEnd<Config3> > > {
+	  TupleConfig3() {}
+	  TupleConfig3(const TupleConfig3<Config1, Config2, Config3>& config) :
+		  TupleConfig<Config1, TupleConfig<Config2, TupleConfigEnd<Config3> > >(config) {}
+  };
+
+  template<class Config1, class Config2, class Config3, class Config4>
+  struct TupleConfig4 : TupleConfig<Config1, TupleConfig<Config2,TupleConfig<Config3, TupleConfigEnd<Config4> > > > {
+	  TupleConfig4() {}
+	  TupleConfig4(const TupleConfig4<Config1, Config2, Config3, Config4>& config) :
+		  TupleConfig<Config1, TupleConfig<Config2, TupleConfig<Config3, TupleConfigEnd<Config4> > > >(config) {}
+  };
+
+  template<class Config1, class Config2, class Config3, class Config4, class Config5>
+  struct TupleConfig5 : TupleConfig<Config1, TupleConfig<Config2, TupleConfig<Config3, TupleConfig<Config4, TupleConfigEnd<Config5> > > > > {
+	  TupleConfig5() {}
+	  TupleConfig5(const TupleConfig5<Config1, Config2, Config3, Config4, Config5>& config) :
+		  TupleConfig<Config1, TupleConfig<Config2, TupleConfig<Config3, TupleConfig<Config4, TupleConfigEnd<Config5> > > > >(config) {}
+  };
+
+  template<class Config1, class Config2, class Config3, class Config4, class Config5, class Config6>
+  struct TupleConfig6 : TupleConfig<Config1, TupleConfig<Config2, TupleConfig<Config3, TupleConfig<Config4, TupleConfig<Config5, TupleConfigEnd<Config6> > > > > > {
+	  TupleConfig6() {}
+	  TupleConfig6(const TupleConfig6<Config1, Config2, Config3, Config4, Config5, Config6>& config) :
+			  TupleConfig<Config1, TupleConfig<Config2, TupleConfig<Config3, TupleConfig<Config4, TupleConfig<Config5, TupleConfigEnd<Config6> > > > > >(config) {}
+  };
 }
