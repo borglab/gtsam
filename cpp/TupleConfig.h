@@ -149,8 +149,6 @@ namespace gtsam {
    *  list, with a special case (TupleConfigEnd) that contains only one config
    *  at the end.  In a final use case, this should be aliased to something clearer
    *  but still with the same recursive type machinery.
-   *
-   *  STILL UNDER TESTING - DO NOT USE
    */
   template<class Config1, class Config2>
   class TupleConfig : public Testable<TupleConfig<Config1, Config2> > {
@@ -166,7 +164,18 @@ namespace gtsam {
 	  typedef class Config1::Value Value1;
 
   public:
+
+	  /** default constructor */
 	  TupleConfig() {}
+
+	  /** Copy constructor */
+	  TupleConfig(const TupleConfig<Config1, Config2>& config) :
+		  first_(config.first_), second_(config.second_) {}
+
+	  /** Construct from configs */
+	  TupleConfig(const Config1& cfg1, const Config2& cfg2) :
+		  first_(cfg1), second_(cfg2) {}
+
 	  virtual ~TupleConfig() {}
 
 	  /** Print */
@@ -174,7 +183,7 @@ namespace gtsam {
 
 	  /** Test for equality in keys and values */
 	  bool equals(const TupleConfig<Config1, Config2>& c, double tol=1e-9) const {
-		  return false;
+		  return first_.equals(c.first_) && second_.equals(c.second_);
 	  }
 
 	  // insert function that uses the second (recursive) config
@@ -208,8 +217,25 @@ namespace gtsam {
 	  // dim function
 	  size_t dim() const { return first_.dim() + second_.dim(); }
 
+	  // Expmap
+	  TupleConfig<Config1, Config2> expmap(const VectorConfig& delta) const {
+	        return TupleConfig(gtsam::expmap(first_, delta), second_.expmap(delta));
+	  }
+
+	  /** logmap each element */
+	  VectorConfig logmap(const TupleConfig<Config1, Config2>& cp) const {
+		  VectorConfig ret(gtsam::logmap(first_, cp.first_));
+		  ret.insert(second_.logmap(cp.second_));
+		  return ret;
+	  }
+
   };
 
+  /**
+   * End of a recursive TupleConfig - contains only one config
+   *
+   * This should not be used directly
+   */
   template<class Config>
   class TupleConfigEnd : public Testable<TupleConfigEnd<Config> > {
   protected:
@@ -223,6 +249,13 @@ namespace gtsam {
 
   public:
 	  TupleConfigEnd() {}
+
+	  TupleConfigEnd(const TupleConfigEnd<Config>& config) :
+		  first_(config.first_) {}
+
+	  TupleConfigEnd(const Config& cfg) :
+		  first_(cfg) {}
+
 	  virtual ~TupleConfigEnd() {}
 
 	  /** Print */
@@ -230,7 +263,7 @@ namespace gtsam {
 
 	  /** Test for equality in keys and values */
 	  bool equals(const TupleConfigEnd<Config>& c, double tol=1e-9) const {
-		  return false;
+		  return first_.equals(c.first_);
 	  }
 
 	  void insert(const Key1& key, const Value1& value) {first_.insert(key, value); }
@@ -247,5 +280,35 @@ namespace gtsam {
 
 	  size_t dim() const { return first_.dim(); }
 
+	  TupleConfigEnd<Config> expmap(const VectorConfig& delta) const {
+	        return TupleConfigEnd(gtsam::expmap(first_, delta));
+	  }
+
+	  VectorConfig logmap(const TupleConfigEnd<Config>& cp) const {
+		  VectorConfig ret(gtsam::logmap(first_, cp.first_));
+		  return ret;
+	  }
   };
+
+  /** Exmap static functions */
+  template<class Config1, class Config2>
+  inline TupleConfig<Config1, Config2> expmap(const TupleConfig<Config1, Config2> c, const VectorConfig& delta) {
+	  return c.expmap(delta);
+  }
+
+  template<class Config>
+  inline TupleConfigEnd<Config> expmap(const TupleConfigEnd<Config> c, const VectorConfig& delta) {
+	  return c.expmap(delta);
+  }
+
+  /** logmap static functions */
+  template<class Config1, class Config2>
+    inline VectorConfig logmap(const TupleConfig<Config1, Config2> c0, const TupleConfig<Config1, Config2>& cp) {
+	  return c0.logmap(cp);
+  }
+
+  template<class Config>
+    inline VectorConfig logmap(const TupleConfigEnd<Config> c0, const TupleConfigEnd<Config>& cp) {
+	  return c0.logmap(cp);
+  }
 }
