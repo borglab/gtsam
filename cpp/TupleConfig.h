@@ -33,8 +33,6 @@ namespace gtsam {
 	  typedef class Config1::Key Key1;
 	  typedef class Config1::Value Value1;
 
-  public:
-
 	  /** default constructor */
 	  TupleConfig() {}
 
@@ -81,6 +79,10 @@ namespace gtsam {
 	  const typename Key::Value_t & at(const Key& j) const { return second_.at(j); }
 	  const Value1& at(const Key1& j) const { return first_.at(j); }
 
+	  // direct config access
+	  const Config1& config() const { return first_; }
+	  const Config2& rest() const { return second_; }
+
 	  // size function - adds recursively
 	  size_t size() const { return first_.size() + second_.size(); }
 
@@ -108,6 +110,7 @@ namespace gtsam {
    */
   template<class Config>
   class TupleConfigEnd : public Testable<TupleConfigEnd<Config> > {
+
   protected:
 	  // Data for internal configs
 	  Config first_;
@@ -117,7 +120,6 @@ namespace gtsam {
 	  typedef class Config::Key Key1;
 	  typedef class Config::Value Value1;
 
-  public:
 	  TupleConfigEnd() {}
 
 	  TupleConfigEnd(const TupleConfigEnd<Config>& config) :
@@ -139,6 +141,8 @@ namespace gtsam {
 	  void insert(const Key1& key, const Value1& value) {first_.insert(key, value); }
 
 	  const Value1& operator[](const Key1& j) const { return first_[j]; }
+
+	  const Config& config() const { return first_; }
 
 	  void erase(const Key1& j) { first_.erase(j); }
 
@@ -183,45 +187,110 @@ namespace gtsam {
   }
 
   /**
-   * Typedefs for existing config types
+   * Wrapper classes to act as containers for configs.  Note that these can be cascaded
+   * recursively, as they are TupleConfigs, and are primarily a short form of the config
+   * structure to make use of the TupleConfigs easier.
+   *
+   * The interface is designed to mimic PairConfig, but for 2-6 config types.
    */
   template<class Config1, class Config2>
-  struct TupleConfig2 : TupleConfig<Config1, TupleConfigEnd<Config2> > {
+  class TupleConfig2 : public TupleConfig<Config1, TupleConfigEnd<Config2> > {
+  public:
+	  // typedefs
+	  typedef Config1 Config1_t;
+	  typedef Config2 Config2_t;
+
 	  TupleConfig2() {}
-	  TupleConfig2(const TupleConfig2<Config1, Config2>& config) :
-		  TupleConfig<Config1, TupleConfigEnd<Config2> >(config) {}
-	  TupleConfig2(const Config1& cfg1, const Config2& cfg2) :
-			  TupleConfig<Config1, TupleConfigEnd<Config2> >(cfg1, TupleConfigEnd<Config2>(cfg2)) {}
+	  TupleConfig2(const TupleConfig2<Config1, Config2>& config);
+	  TupleConfig2(const Config1& cfg1, const Config2& cfg2);
+
+	  // access functions
+	  inline const Config1_t& first() const { return this->config(); }
+	  inline const Config2_t& second() const { return this->rest().config(); }
   };
 
   template<class Config1, class Config2, class Config3>
-  struct TupleConfig3 : TupleConfig<Config1, TupleConfig<Config2, TupleConfigEnd<Config3> > > {
+  class TupleConfig3 : public TupleConfig<Config1, TupleConfig<Config2, TupleConfigEnd<Config3> > > {
+  public:
+	  // typedefs
+	  typedef Config1 Config1_t;
+	  typedef Config2 Config2_t;
+	  typedef Config3 Config3_t;
+
 	  TupleConfig3() {}
-	  TupleConfig3(const TupleConfig3<Config1, Config2, Config3>& config) :
-		  TupleConfig<Config1, TupleConfig<Config2, TupleConfigEnd<Config3> > >(config) {}
-	  TupleConfig3(const Config1& cfg1, const Config2& cfg2, const Config3& cfg3) :
-			  TupleConfig<Config1, TupleConfig<Config2, TupleConfigEnd<Config3> > >(cfg1, TupleConfig<Config2, TupleConfigEnd<Config3> >(cfg2, TupleConfigEnd<Config3>(cfg3))) {}
+	  TupleConfig3(const TupleConfig3<Config1, Config2, Config3>& config);
+	  TupleConfig3(const Config1& cfg1, const Config2& cfg2, const Config3& cfg3);
+	  // access functions
+	  inline const Config1_t& first() const { return this->config(); }
+	  inline const Config2_t& second() const { return this->rest().config(); }
+	  inline const Config3_t& third() const { return this->rest().rest().config(); }
   };
 
   template<class Config1, class Config2, class Config3, class Config4>
-  struct TupleConfig4 : TupleConfig<Config1, TupleConfig<Config2,TupleConfig<Config3, TupleConfigEnd<Config4> > > > {
+  class TupleConfig4 : public TupleConfig<Config1, TupleConfig<Config2,TupleConfig<Config3, TupleConfigEnd<Config4> > > > {
+  public:
+	  // typedefs
+	  typedef Config1 Config1_t;
+	  typedef Config2 Config2_t;
+	  typedef Config3 Config3_t;
+	  typedef Config4 Config4_t;
+
 	  TupleConfig4() {}
-	  TupleConfig4(const TupleConfig4<Config1, Config2, Config3, Config4>& config) :
-		  TupleConfig<Config1, TupleConfig<Config2, TupleConfig<Config3, TupleConfigEnd<Config4> > > >(config) {}
+	  TupleConfig4(const TupleConfig4<Config1, Config2, Config3, Config4>& config);
+	  TupleConfig4(const Config1& cfg1, const Config2& cfg2, const Config3& cfg3,const Config4& cfg4);
+
+	  // access functions
+	  inline const Config1_t& first() const { return this->config(); }
+	  inline const Config2_t& second() const { return this->rest().config(); }
+	  inline const Config3_t& third() const { return this->rest().rest().config(); }
+	  inline const Config4_t& fourth() const { return this->rest().rest().rest().config(); }
   };
 
   template<class Config1, class Config2, class Config3, class Config4, class Config5>
-  struct TupleConfig5 : TupleConfig<Config1, TupleConfig<Config2, TupleConfig<Config3, TupleConfig<Config4, TupleConfigEnd<Config5> > > > > {
+  class TupleConfig5 : public TupleConfig<Config1, TupleConfig<Config2, TupleConfig<Config3, TupleConfig<Config4, TupleConfigEnd<Config5> > > > > {
+  public:
+	  // typedefs
+	  typedef Config1 Config1_t;
+	  typedef Config2 Config2_t;
+	  typedef Config3 Config3_t;
+	  typedef Config4 Config4_t;
+	  typedef Config5 Config5_t;
+
 	  TupleConfig5() {}
-	  TupleConfig5(const TupleConfig5<Config1, Config2, Config3, Config4, Config5>& config) :
-		  TupleConfig<Config1, TupleConfig<Config2, TupleConfig<Config3, TupleConfig<Config4, TupleConfigEnd<Config5> > > > >(config) {}
+	  TupleConfig5(const TupleConfig5<Config1, Config2, Config3, Config4, Config5>& config);
+	  TupleConfig5(const Config1& cfg1, const Config2& cfg2, const Config3& cfg3,
+				   const Config4& cfg4, const Config5& cfg5);
+
+	  // access functions
+	  inline const Config1_t& first() const { return this->config(); }
+	  inline const Config2_t& second() const { return this->rest().config(); }
+	  inline const Config3_t& third() const { return this->rest().rest().config(); }
+	  inline const Config4_t& fourth() const { return this->rest().rest().rest().config(); }
+	  inline const Config5_t& fifth() const { return this->rest().rest().rest().rest().config(); }
   };
 
   template<class Config1, class Config2, class Config3, class Config4, class Config5, class Config6>
-  struct TupleConfig6 : TupleConfig<Config1, TupleConfig<Config2, TupleConfig<Config3, TupleConfig<Config4, TupleConfig<Config5, TupleConfigEnd<Config6> > > > > > {
+  class TupleConfig6 : public TupleConfig<Config1, TupleConfig<Config2, TupleConfig<Config3, TupleConfig<Config4, TupleConfig<Config5, TupleConfigEnd<Config6> > > > > > {
+  public:
+	  // typedefs
+	  typedef Config1 Config1_t;
+	  typedef Config2 Config2_t;
+	  typedef Config3 Config3_t;
+	  typedef Config4 Config4_t;
+	  typedef Config5 Config5_t;
+	  typedef Config6 Config6_t;
+
 	  TupleConfig6() {}
-	  TupleConfig6(const TupleConfig6<Config1, Config2, Config3, Config4, Config5, Config6>& config) :
-			  TupleConfig<Config1, TupleConfig<Config2, TupleConfig<Config3, TupleConfig<Config4, TupleConfig<Config5, TupleConfigEnd<Config6> > > > > >(config) {}
+	  TupleConfig6(const TupleConfig6<Config1, Config2, Config3, Config4, Config5, Config6>& config);
+	  TupleConfig6(const Config1& cfg1, const Config2& cfg2, const Config3& cfg3,
+				   const Config4& cfg4, const Config5& cfg5, const Config6& cfg6);
+	  // access functions
+	  inline const Config1_t& first() const { return this->config(); }
+	  inline const Config2_t& second() const { return this->rest().config(); }
+	  inline const Config3_t& third() const { return this->rest().rest().config(); }
+	  inline const Config4_t& fourth() const { return this->rest().rest().rest().config(); }
+	  inline const Config5_t& fifth() const { return this->rest().rest().rest().rest().config(); }
+	  inline const Config6_t& sixth() const { return this->rest().rest().rest().rest().rest().config(); }
   };
 
   /**
@@ -229,7 +298,8 @@ namespace gtsam {
    * STILL IN TESTING - will soon replace PairConfig
    */
 //  template<class J1, class X1, class J2, class X2>
-//  struct PairConfig : TupleConfig2<LieConfig<J1, X1>, LieConfig<J2, X2> > {
+//  class PairConfig : public  TupleConfig2<LieConfig<J1, X1>, LieConfig<J2, X2> > {
+//  public:
 //	  PairConfig() {}
 //	  PairConfig(const PairConfig<J1, X1, J2, X2>& config) :
 //		  TupleConfig2<LieConfig<J1, X1>, LieConfig<J2, X2> >(config) {}
@@ -239,6 +309,7 @@ namespace gtsam {
 
   /**
    * PairConfig:  a config that holds two data types.
+   * Note: this should eventually be replaced with a wrapper on TupleConfig2
    */
   template<class J1, class X1, class J2, class X2>
   class PairConfig : public Testable<PairConfig<J1, X1, J2, X2> > {
@@ -288,7 +359,7 @@ namespace gtsam {
     bool equals(const PairConfig<J1, X1, J2, X2>& c, double tol=1e-9) const {
       return first_.equals(c.first_, tol) && second_.equals(c.second_, tol); }
 
-    /** Direct access functions */
+    /** Returns the real config */
     inline const Config1& first() const { return first_; }
     inline const Config2& second() const { return second_; }
 

@@ -34,16 +34,16 @@ TEST( PairConfig, insert_equals1 )
   Point2 l1(4,5), l2(9,10);
 
   Config expected;
-  expected.insert(1, x1);
-  expected.insert(2, x2);
-  expected.insert(1, l1);
-  expected.insert(2, l2);
+  expected.insert(PoseKey(1), x1);
+  expected.insert(PoseKey(2), x2);
+  expected.insert(PointKey(1), l1);
+  expected.insert(PointKey(2), l2);
 
   Config actual;
-  actual.insert(1, x1);
-  actual.insert(2, x2);
-  actual.insert(1, l1);
-  actual.insert(2, l2);
+  actual.insert(PoseKey(1), x1);
+  actual.insert(PoseKey(2), x2);
+  actual.insert(PointKey(1), l1);
+  actual.insert(PointKey(2), l2);
 
   CHECK(assert_equal(expected,actual));
 }
@@ -55,15 +55,15 @@ TEST( PairConfig, insert_equals2 )
   Point2 l1(4,5), l2(9,10);
 
   Config cfg1;
-  cfg1.insert(1, x1);
-  cfg1.insert(2, x2);
-  cfg1.insert(1, l1);
-  cfg1.insert(2, l2);
+  cfg1.insert(PoseKey(1), x1);
+  cfg1.insert(PoseKey(2), x2);
+  cfg1.insert(PointKey(1), l1);
+  cfg1.insert(PointKey(2), l2);
 
   Config cfg2;
-  cfg2.insert(1, x1);
-  cfg2.insert(2, x2);
-  cfg2.insert(1, l1);
+  cfg2.insert(PoseKey(1), x1);
+  cfg2.insert(PoseKey(2), x2);
+  cfg2.insert(PointKey(1), l1);
 
   CHECK(!cfg1.equals(cfg2));
 
@@ -98,10 +98,10 @@ TEST( PairConfig, size_dim )
   Point2 l1(4,5), l2(9,10);
 
   Config cfg1;
-  cfg1.insert(1, x1);
-  cfg1.insert(2, x2);
-  cfg1.insert(1, l1);
-  cfg1.insert(2, l2);
+  cfg1.insert(PoseKey(1), x1);
+  cfg1.insert(PoseKey(2), x2);
+  cfg1.insert(PointKey(1), l1);
+  cfg1.insert(PointKey(2), l2);
 
   CHECK(cfg1.size() == 4);
   CHECK(cfg1.dim() == 10);
@@ -114,10 +114,10 @@ TEST(PairConfig, at)
   Point2 l1(4,5), l2(9,10);
 
   Config cfg1;
-  cfg1.insert(1, x1);
-  cfg1.insert(2, x2);
-  cfg1.insert(1, l1);
-  cfg1.insert(2, l2);
+  cfg1.insert(PoseKey(1), x1);
+  cfg1.insert(PoseKey(2), x2);
+  cfg1.insert(PointKey(1), l1);
+  cfg1.insert(PointKey(2), l2);
 
   CHECK(assert_equal(x1, cfg1[PoseKey(1)]));
   CHECK(assert_equal(x2, cfg1[PoseKey(2)]));
@@ -148,10 +148,10 @@ TEST(PairConfig, expmap)
   Point2 l1(4,5), l2(9,10);
 
   Config cfg1;
-  cfg1.insert(1, x1);
-  cfg1.insert(2, x2);
-  cfg1.insert(1, l1);
-  cfg1.insert(2, l2);
+  cfg1.insert(PoseKey(1), x1);
+  cfg1.insert(PoseKey(2), x2);
+  cfg1.insert(PointKey(1), l1);
+  cfg1.insert(PointKey(2), l2);
 
   VectorConfig increment;
   increment.insert("x1", Vector_(3, 1.0, 1.1, 1.2));
@@ -160,12 +160,13 @@ TEST(PairConfig, expmap)
   increment.insert("l2", Vector_(2, 1.3, 1.4));
 
   Config expected;
-  expected.insert(1, expmap(x1, Vector_(3, 1.0, 1.1, 1.2)));
-  expected.insert(2, expmap(x2, Vector_(3, 1.3, 1.4, 1.5)));
-  expected.insert(1, Point2(5.0, 6.1));
-  expected.insert(2, Point2(10.3, 11.4));
+  expected.insert(PoseKey(1), expmap(x1, Vector_(3, 1.0, 1.1, 1.2)));
+  expected.insert(PoseKey(2), expmap(x2, Vector_(3, 1.3, 1.4, 1.5)));
+  expected.insert(PointKey(1), Point2(5.0, 6.1));
+  expected.insert(PointKey(2), Point2(10.3, 11.4));
 
-  CHECK(assert_equal(expected, expmap(cfg1, increment)));
+  Config actual = expmap(cfg1, increment);
+  CHECK(assert_equal(expected, actual));
 }
 
 /* ************************************************************************* */
@@ -323,18 +324,33 @@ TEST(TupleConfig, typedefs)
 {
 	TupleConfig2<PoseConfig, PointConfig> cfg1;
 	TupleConfig3<PoseConfig, PointConfig, LamConfig> cfg2;
-	TupleConfig4<PoseConfig, PointConfig, LamConfig, Point3Config> cfg3;
-	TupleConfig5<PoseConfig, PointConfig, LamConfig, Point3Config, Pose3Config> cfg4;
-	TupleConfig6<PoseConfig, PointConfig, LamConfig, Point3Config, Pose3Config, Point3Config2> cfg5;
+//	TupleConfig4<PoseConfig, PointConfig, LamConfig, Point3Config> cfg3;
+//	TupleConfig5<PoseConfig, PointConfig, LamConfig, Point3Config, Pose3Config> cfg4;
+//	TupleConfig6<PoseConfig, PointConfig, LamConfig, Point3Config, Pose3Config, Point3Config2> cfg5;
 }
 
 /* ************************************************************************* */
-TEST( TupleConfig, constructor_insert )
+TEST( TupleConfig, pairconfig_style )
 {
-	PoseConfig cfg1;
-	PointConfig cfg2;
-	LamConfig cfg3;
+	PoseKey x1(1);
+	PointKey l1(1);
+	LamKey L1(1);
+	Pose2 pose1(1.0, 2.0, 0.3);
+	Point2 point1(2.0, 3.0);
+	Vector lam1 = Vector_(1, 2.3);
+
+	PoseConfig cfg1; cfg1.insert(x1, pose1);
+	PointConfig cfg2; cfg2.insert(l1, point1);
+	LamConfig cfg3; cfg3.insert(L1, lam1);
+
+	// Constructor
 	TupleConfig3<PoseConfig, PointConfig, LamConfig> config(cfg1, cfg2, cfg3);
+
+	// access
+	CHECK(assert_equal(cfg1, config.first()));
+	CHECK(assert_equal(cfg2, config.second()));
+	CHECK(assert_equal(cfg3, config.third()));
+
 }
 
 /* ************************************************************************* */
