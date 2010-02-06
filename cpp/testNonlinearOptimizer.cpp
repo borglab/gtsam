@@ -32,7 +32,6 @@ using namespace boost;
 using namespace gtsam;
 using namespace example;
 
-// FIXME:  this tolerance is too high - something is wrong with the noisemodel
 const double tol = 1e-6;
 
 typedef NonlinearOptimizer<Graph,Config> Optimizer;
