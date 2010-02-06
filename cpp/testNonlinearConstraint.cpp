@@ -186,24 +186,15 @@ TEST( NonlinearConstraint2, binary_scalar_linearize ) {
 	// linearize the system
 	GaussianFactor::shared_ptr actualFactor = c1.linearize(realconfig);
 
-	// verify
+	// verify - probabilistic component goes on top
 	Matrix Ax0 = Matrix_(2,1, 6.0, 2.0),
 		   Ax1 = Matrix_(2,1,-3.0,-1.0),
 		   AL  = Matrix_(2,1, 1.0, 0.0);
-	Vector rhs = Vector_(2, 0, 6.0),
+	Vector rhs = Vector_(2, 0.0, 6.0),
 		   sigmas = Vector_(2, 1.0, 0.0);
 	SharedDiagonal expModel = noiseModel::Constrained::MixedSigmas(sigmas);
-
-//	SharedDiagonal probModel = sharedSigma(p,1.0);
-//	GaussianFactor expectedFactor(x0, Matrix_(1,1, 6.0),
-//							 	  x1, Matrix_(1,1, -3.0),
-//							      L1, eye(1), zero(1), probModel);
-//	SharedDiagonal constraintModel = noiseModel::Constrained::All(p);
-//	GaussianFactor expectedConstraint(x0, Matrix_(1,1, 2.0),
-//								      x1, Matrix_(1,1, -1.0),
-//								       Vector_(1, 6.0), constraintModel);
-//	CHECK(assert_equal(*actualFactor, expectedFactor));
-//	CHECK(assert_equal(*actualConstraint, expectedConstraint));
+	GaussianFactor expFactor(x0,Ax0, x1, Ax1,L1, AL, rhs, expModel);
+	CHECK(assert_equal(expFactor, *actualFactor));
 }
 
 /* ************************************************************************* */

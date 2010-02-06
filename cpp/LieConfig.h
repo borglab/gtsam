@@ -49,7 +49,7 @@ namespace gtsam {
     virtual ~LieConfig() {}
 
     /** print */
-    void print(const std::string &s) const;
+    void print(const std::string &s="") const;
 
     /** Test whether configs are identical in keys and values */
     bool equals(const LieConfig& expected, double tol=1e-9) const;
