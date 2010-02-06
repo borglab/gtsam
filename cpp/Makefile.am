@@ -139,12 +139,9 @@ testNonlinearEquality_SOURCES   = testNonlinearEquality.cpp
 testNonlinearEquality_LDADD     = libgtsam.la
 
 # SQP
-headers += SQPOptimizer.h SQPOptimizer-inl.h  
-check_PROGRAMS += testSQP testSQPOptimizer
+check_PROGRAMS += testSQP 
 testSQP_SOURCES                 = $(example) testSQP.cpp
 testSQP_LDADD                   = libgtsam.la
-testSQPOptimizer_SOURCES   		= testSQPOptimizer.cpp
-testSQPOptimizer_LDADD     		= libgtsam.la
 
 # geometry
 headers += Lie.h Lie-inl.h
