@@ -34,7 +34,8 @@ namespace gtsam { namespace visualSLAM {
    * Non-linear factor for a constraint derived from a 2D measurement,
    * i.e. the main building block for visual SLAM.
    */
-  class ProjectionFactor: public NonlinearFactor2<Config, PoseKey, Pose3, PointKey, Point3>, Testable<ProjectionFactor> {
+  template <class Cfg=Config>
+  class GenericProjectionFactor : public NonlinearFactor2<Cfg, PoseKey, Pose3, PointKey, Point3>, Testable<GenericProjectionFactor<Cfg> > {
   private:
 
     // Keep a copy of measurement and calibration for I/O
@@ -44,15 +45,15 @@ namespace gtsam { namespace visualSLAM {
   public:
 
     // shorthand for base class type
-    typedef NonlinearFactor2<Config, PoseKey, Pose3, PointKey, Point3> Base;
+    typedef NonlinearFactor2<Cfg, PoseKey, Pose3, PointKey, Point3> Base;
 
     // shorthand for a smart pointer to a factor
-    typedef boost::shared_ptr<ProjectionFactor> shared_ptr;
+    typedef boost::shared_ptr<GenericProjectionFactor> shared_ptr;
 
     /**
      * Default constructor
      */
-    ProjectionFactor() : K_(new Cal3_S2(444, 555, 666, 777, 888)) {}
+    GenericProjectionFactor() : K_(new Cal3_S2(444, 555, 666, 777, 888)) {}
 
     /**
      * Constructor
@@ -62,7 +63,7 @@ namespace gtsam { namespace visualSLAM {
      * @param landmarkNumber is the index of the landmark
      * @param K the constant calibration
      */
-    ProjectionFactor(const Point2& z,
+    GenericProjectionFactor(const Point2& z,
 					const SharedGaussian& model, PoseKey j_pose,
 					PointKey j_landmark, const shared_ptrK& K) :
 				z_(z), K_(K), Base(model, j_pose, j_landmark) {
@@ -72,12 +73,18 @@ namespace gtsam { namespace visualSLAM {
      * print
      * @param s optional string naming the factor
      */
-    void print(const std::string& s = "ProjectionFactor") const;
+    void print(const std::string& s = "ProjectionFactor") const {
+        Base::print(s);
+        z_.print(s + ".z");
+    }
 
     /**
      * equals
      */
-    bool equals(const ProjectionFactor&, double tol = 1e-9) const;
+    bool equals(const GenericProjectionFactor<Cfg>& p, double tol = 1e-9) const {
+        return Base::equals(p, tol) && z_.equals(p.z_, tol)
+                  && K_->equals(*p.K_, tol);
+    }
 
     //    /** h(x) */
     //    Point2 predict(const Pose3& pose, const Point3& point) const {
@@ -105,6 +112,10 @@ namespace gtsam { namespace visualSLAM {
       ar & BOOST_SERIALIZATION_NVP(K_);
     }
   };
+
+  typedef GenericProjectionFactor<Config> ProjectionFactor;
+
+
 
 
   //  /**

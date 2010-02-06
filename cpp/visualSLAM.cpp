@@ -18,17 +18,17 @@ namespace gtsam {
 
   namespace visualSLAM {
 
-    /* ************************************************************************* */
-    void ProjectionFactor::print(const std::string& s) const {
-      Base::print(s);
-      z_.print(s + ".z");
-    }
-
-    /* ************************************************************************* */
-    bool ProjectionFactor::equals(const ProjectionFactor& p, double tol) const {
-      return Base::equals(p, tol) && z_.equals(p.z_, tol)
-                && K_->equals(*p.K_, tol);
-    }
+//    /* ************************************************************************* */
+//    void ProjectionFactor::print(const std::string& s) const {
+//      Base::print(s);
+//      z_.print(s + ".z");
+//    }
+//
+//    /* ************************************************************************* */
+//    bool ProjectionFactor::equals(const ProjectionFactor& p, double tol) const {
+//      return Base::equals(p, tol) && z_.equals(p.z_, tol)
+//                && K_->equals(*p.K_, tol);
+//    }
 
     //  /* ************************************************************************* */
     //  bool compareLandmark(const std::string& key,
