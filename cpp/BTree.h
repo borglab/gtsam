@@ -51,12 +51,12 @@ typename Node<Key,Value>::Tree bal(const typename Node<Key,Value>::Tree& l, cons
 	size_t hl = height(l), hr = height(r);
 	if(hl > hr+2) {
 		if(hl == 0) throw("Left tree is empty");
-		else if(l->left_->height_ >= l->right_->height_) {
+		else if(height(l->left_) >= height(l->right_)) {
 		  //  create ll lv ld (create lr x d r)
 			return create(l->left_,l->key_,l->value_, create(l->right_, key, value, r));
 		}
 		else{
-			if(l->right_->height_ == 0) throw("Left->Right is empty");
+			if(height(l->right_) == 0) throw("Left->Right is empty");
 			else {
 				 // create (create ll lv ld lrl) lrv lrd (create lrr x d r)
 				return create(
@@ -69,12 +69,12 @@ typename Node<Key,Value>::Tree bal(const typename Node<Key,Value>::Tree& l, cons
 	}
 	else if (hr > hl + 2) {
 		if(hr == 0) throw("Right tree is empty");
-		else if(r->right_->height_ >= r->left_->height_) {
+		else if(height(r->right_) >= height(r->left_)) {
 			//  create (create l x d rl) rv rd rr
 			return create(create(l,key,value,r->left_),r->key_,r->value_,r);
 		}
 		else{
-			if(r->left_->height_ == 0) throw("Right->Left is empty");
+			if(height(r->left_) == 0) throw("Right->Left is empty");
 		  else {
 			  //  create (create l x d rll) rlv rld (create rlr rv rd rr)
 			  return create(
@@ -96,7 +96,7 @@ typename Node<Key, Value>::Tree add(const Key& key, const Value& value, const ty
 		return typename Node<Key,Value>::Tree(new Node<Key,Value>(key, value));
 	}
 	if(key == tree->key_) {
-		return typename Node<Key,Value>::Tree(new Node<Key, Value>(tree->left_, key, value, tree->right_, tree->height_));
+		return typename Node<Key,Value>::Tree(new Node<Key, Value>(tree->left_, key, value, tree->right_, height(tree)));
 	}
 	else if( key < tree->key_) {
 		return bal(add(key, value, tree->left_), tree->key_, tree->value_, tree->right_);
@@ -144,7 +144,7 @@ void walk(const typename boost::shared_ptr<Node<Key,Value> >& tree, std::string 
 	}
 	Key k = tree->key_;
 	std::stringstream ss;
-	ss << tree->height_;
+	ss << height(tree);
 	k.print(ss.str() +" "+ s);
 	if(tree->right_ !=NULL) {
 		walk(tree->right_, s+"->r");
