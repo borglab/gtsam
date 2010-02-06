@@ -6,6 +6,8 @@
 #include <boost/shared_ptr.hpp>
 #include <CppUnitLite/TestHarness.h>
 #include "Key.h"
+#include <iostream>
+#include <sstream>
 
 //    type 'a t =
 //        Empty
@@ -105,13 +107,48 @@ typename Node<Key, Value>::Tree add(const Key& key, const Value& value, const ty
 }
 
 template <class Key, class Value>
-Value find(const typename boost::shared_ptr<Node<Key,Value> >& tree, const Key& key){
+boost::optional<Value> find(const typename boost::shared_ptr<Node<Key,Value> >& tree, const Key& key){
   if(tree->key_ == key)
   	return tree->value_;
-  if(key < tree->key_)
+  if(key < tree->key_ && tree->left_ != NULL)
   	return find(tree->left_, key);
-  else
+  else if(tree->right_ != NULL)
   	return find(tree->right_,key);
+  return boost::none;
+}
+
+template <class Key, class Value>
+typename Node<Key, Value>::Tree begin(const typename Node<Key,Value>::Tree& tree) {
+	if(tree->left_ !=NULL){
+		return begin(tree->left_);
+	}
+	else {
+		return tree;
+	}
+}
+
+template <class Key, class Value>
+typename Node<Key, Value>::Tree end(const typename Node<Key,Value>::Tree& tree) {
+	if(tree->right_ !=NULL){
+		return begin(tree->right_);
+	}
+	else {
+		return tree;
+	}
+}
+
+template <class Key, class Value>
+void walk(const typename boost::shared_ptr<Node<Key,Value> >& tree, std::string s) {
+	if(tree->left_ !=NULL) {
+		walk(tree->left_, s+"->l");
+	}
+	Key k = tree->key_;
+	std::stringstream ss;
+	ss << tree->height_;
+	k.print(ss.str() +" "+ s);
+	if(tree->right_ !=NULL) {
+		walk(tree->right_, s+"->r");
+	}
 }
 
 }
