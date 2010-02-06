@@ -47,11 +47,11 @@ namespace gtsam {
 	  virtual ~TupleConfig() {}
 
 	  /** Print */
-	  void print(const std::string& s = "") const {}
+	  void print(const std::string& s = "") const;
 
 	  /** Test for equality in keys and values */
 	  bool equals(const TupleConfig<Config1, Config2>& c, double tol=1e-9) const {
-		  return first_.equals(c.first_) && second_.equals(c.second_);
+		  return first_.equals(c.first_, tol) && second_.equals(c.second_, tol);
 	  }
 
 	  // insert function that uses the second (recursive) config
@@ -131,11 +131,11 @@ namespace gtsam {
 	  virtual ~TupleConfigEnd() {}
 
 	  /** Print */
-	  void print(const std::string& s = "") const {}
+	  void print(const std::string& s = "") const;
 
 	  /** Test for equality in keys and values */
 	  bool equals(const TupleConfigEnd<Config>& c, double tol=1e-9) const {
-		  return first_.equals(c.first_);
+		  return first_.equals(c.first_, tol);
 	  }
 
 	  void insert(const Key1& key, const Value1& value) {first_.insert(key, value); }
@@ -202,6 +202,7 @@ namespace gtsam {
 
 	  TupleConfig2() {}
 	  TupleConfig2(const TupleConfig2<Config1, Config2>& config);
+	  TupleConfig2(const TupleConfig<Config1, TupleConfigEnd<Config2> >& config);
 	  TupleConfig2(const Config1& cfg1, const Config2& cfg2);
 
 	  // access functions
@@ -218,8 +219,10 @@ namespace gtsam {
 	  typedef Config3 Config3_t;
 
 	  TupleConfig3() {}
+	  TupleConfig3(const TupleConfig<Config1, TupleConfig<Config2, TupleConfigEnd<Config3> > >& config);
 	  TupleConfig3(const TupleConfig3<Config1, Config2, Config3>& config);
 	  TupleConfig3(const Config1& cfg1, const Config2& cfg2, const Config3& cfg3);
+
 	  // access functions
 	  inline const Config1_t& first() const { return this->config(); }
 	  inline const Config2_t& second() const { return this->rest().config(); }
@@ -237,6 +240,7 @@ namespace gtsam {
 
 	  TupleConfig4() {}
 	  TupleConfig4(const TupleConfig4<Config1, Config2, Config3, Config4>& config);
+	  TupleConfig4(const TupleConfig<Config1, TupleConfig<Config2,TupleConfig<Config3, TupleConfigEnd<Config4> > > >& config);
 	  TupleConfig4(const Config1& cfg1, const Config2& cfg2, const Config3& cfg3,const Config4& cfg4);
 
 	  // access functions
@@ -258,6 +262,7 @@ namespace gtsam {
 
 	  TupleConfig5() {}
 	  TupleConfig5(const TupleConfig5<Config1, Config2, Config3, Config4, Config5>& config);
+	  TupleConfig5(const TupleConfig<Config1, TupleConfig<Config2, TupleConfig<Config3, TupleConfig<Config4, TupleConfigEnd<Config5> > > > >& config);
 	  TupleConfig5(const Config1& cfg1, const Config2& cfg2, const Config3& cfg3,
 				   const Config4& cfg4, const Config5& cfg5);
 
@@ -282,6 +287,7 @@ namespace gtsam {
 
 	  TupleConfig6() {}
 	  TupleConfig6(const TupleConfig6<Config1, Config2, Config3, Config4, Config5, Config6>& config);
+	  TupleConfig6(const TupleConfig<Config1, TupleConfig<Config2, TupleConfig<Config3, TupleConfig<Config4, TupleConfig<Config5, TupleConfigEnd<Config6> > > > > >& config);
 	  TupleConfig6(const Config1& cfg1, const Config2& cfg2, const Config3& cfg3,
 				   const Config4& cfg4, const Config5& cfg5, const Config6& cfg6);
 	  // access functions

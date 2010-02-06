@@ -324,9 +324,9 @@ TEST(TupleConfig, typedefs)
 {
 	TupleConfig2<PoseConfig, PointConfig> cfg1;
 	TupleConfig3<PoseConfig, PointConfig, LamConfig> cfg2;
-//	TupleConfig4<PoseConfig, PointConfig, LamConfig, Point3Config> cfg3;
-//	TupleConfig5<PoseConfig, PointConfig, LamConfig, Point3Config, Pose3Config> cfg4;
-//	TupleConfig6<PoseConfig, PointConfig, LamConfig, Point3Config, Pose3Config, Point3Config2> cfg5;
+	TupleConfig4<PoseConfig, PointConfig, LamConfig, Point3Config> cfg3;
+	TupleConfig5<PoseConfig, PointConfig, LamConfig, Point3Config, Pose3Config> cfg4;
+	TupleConfig6<PoseConfig, PointConfig, LamConfig, Point3Config, Pose3Config, Point3Config2> cfg5;
 }
 
 /* ************************************************************************* */
@@ -350,9 +350,22 @@ TEST( TupleConfig, pairconfig_style )
 	CHECK(assert_equal(cfg1, config.first()));
 	CHECK(assert_equal(cfg2, config.second()));
 	CHECK(assert_equal(cfg3, config.third()));
-
 }
 
+/* ************************************************************************* */
+#include "NonlinearFactorGraph-inl.h"
+TEST( TupleConfig, graphs_and_factors )
+{
+	typedef TupleConfig3<PoseConfig, PointConfig, LamConfig> ConfigC;
+	typedef NonlinearFactorGraph<ConfigC> GraphC;
+	typedef NonlinearFactor1<ConfigC, PoseKey, Pose2> FactorC;
+
+	// test creation
+	GraphC graph;
+	ConfigC config;
+//	FactorC::shared_ptr f1(new FactorC());
+
+}
 /* ************************************************************************* */
 int main() { TestResult tr; return TestRegistry::runAllTests(tr); }
 /* ************************************************************************* */
