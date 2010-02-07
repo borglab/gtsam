@@ -755,119 +755,119 @@ TEST (SQP, stereo_sqp ) {
 	// create optimizer
 	VOptimizer optimizer(graph, truthConfig, solver);
 
-	// optimize
-	VOptimizer afterOneIteration = optimizer.iterate();
-
-	// check if correct
-	CHECK(assert_equal(*truthConfig,*(afterOneIteration.config())));
+//	// optimize
+//	VOptimizer afterOneIteration = optimizer.iterate();
+//
+//	// check if correct
+//	CHECK(assert_equal(*truthConfig,*(afterOneIteration.config())));
 }
 
-/* *********************************************************************
- * SQP version of the above stereo example,
- * with noise in the initial estimate
- */
-TEST (SQP, stereo_sqp_noisy ) {
-	bool verbose = false;
-
-	// get a graph
-	boost::shared_ptr<VGraph> graph = stereoExampleGraph();
-
-	// create initial data
-	Rot3 faceDownY(Matrix_(3,3,
-			1.0, 0.0, 0.0,
-			0.0, 0.0, 1.0,
-			0.0, 1.0, 0.0));
-	Pose3 pose1(faceDownY, Point3()); // origin, left camera
-	Pose3 pose2(faceDownY, Point3(2.0, 0.0, 0.0)); // 2 units to the left
-	Point3 landmark1(0.5, 5.0, 0.0); //centered between the cameras, 5 units away
-	Point3 landmark2(1.5, 5.0, 0.0);
-
-	// noisy config
-	boost::shared_ptr<VConfig> initConfig(new VConfig);
-	initConfig->insert(Pose3Key(1), pose1);
-	initConfig->insert(Pose3Key(2), pose2);
-	initConfig->insert(Point3Key(1), landmark1);
-	initConfig->insert(Point3Key(2), landmark2); // create two landmarks in same place
-	initConfig->insert(LagrangeKey(12), Vector_(3, 1.0, 1.0, 1.0));
-
-	// create ordering
-	shared_ptr<Ordering> ord(new Ordering());
-	*ord += "x1", "x2", "l1", "l2", "L12";
-	VOptimizer::shared_solver solver(new VOptimizer::solver(ord));
-
-	// create optimizer
-	VOptimizer optimizer(graph, initConfig, solver);
-
-	// optimize
-	VOptimizer *pointer = new VOptimizer(optimizer);
-	for (int i=0;i<1;i++) {
-		VOptimizer* newOptimizer = new VOptimizer(pointer->iterateLM());
-		delete pointer;
-		pointer = newOptimizer;
-	}
-	VOptimizer::shared_config actual = pointer->config();
-	delete(pointer);
-
-	// get the truth config
-	boost::shared_ptr<VConfig> truthConfig = stereoExampleTruthConfig();
-	truthConfig->insert(LagrangeKey(12), Vector_(3, 0.0, 1.0, 1.0));
-
-	// check if correct
-	CHECK(assert_equal(*truthConfig,*actual, 1e-5));
-}
-
-static SharedGaussian sigma(noiseModel::Isotropic::Sigma(1,0.1));
-
-// typedefs
-//typedef simulated2D::Config Config2D;
-//typedef boost::shared_ptr<Config2D> shared_config;
-//typedef NonlinearFactorGraph<Config2D> NLGraph;
-//typedef boost::shared_ptr<NonlinearFactor<Config2D> > shared;
-
-namespace map_warp_example {
-typedef NonlinearConstraint1<
-	Config2D, simulated2D::PoseKey, Point2> NLC1;
-//typedef NonlinearConstraint2<
-//	Config2D, simulated2D::PointKey, Point2, simulated2D::PointKey, Point2> NLC2;
-} // \namespace map_warp_example
-
-/* ********************************************************************* */
-// Example that moves two separate maps into the same frame of reference
-// Note that this is a linear example, so it should converge in one step
-/* ********************************************************************* */
-
-namespace sqp_LinearMapWarp2 {
-// binary constraint between landmarks
-/** g(x) = x-y = 0 */
-Vector g_func(const Config2D& config, const simulated2D::PointKey& key1, const simulated2D::PointKey& key2) {
-	Point2 p = config[key1]-config[key2];
-	return Vector_(2, p.x(), p.y());
-}
-
-/** jacobian at l1 */
-Matrix jac_g1(const Config2D& config) {
-	return eye(2);
-}
-
-/** jacobian at l2 */
-Matrix jac_g2(const Config2D& config) {
-	return -1*eye(2);
-}
-} // \namespace sqp_LinearMapWarp2
-
-namespace sqp_LinearMapWarp1 {
-// Unary Constraint on x1
-/** g(x) = x -[1;1] = 0 */
-Vector g_func(const Config2D& config, const simulated2D::PoseKey& key) {
-	Point2 p = config[key]-Point2(1.0, 1.0);
-	return Vector_(2, p.x(), p.y());
-}
-
-/** jacobian at x1 */
-Matrix jac_g(const Config2D& config) {
-	return eye(2);
-}
-} // \namespace sqp_LinearMapWarp12
+///* *********************************************************************
+// * SQP version of the above stereo example,
+// * with noise in the initial estimate
+// */
+//TEST (SQP, stereo_sqp_noisy ) {
+//	bool verbose = false;
+//
+//	// get a graph
+//	boost::shared_ptr<VGraph> graph = stereoExampleGraph();
+//
+//	// create initial data
+//	Rot3 faceDownY(Matrix_(3,3,
+//			1.0, 0.0, 0.0,
+//			0.0, 0.0, 1.0,
+//			0.0, 1.0, 0.0));
+//	Pose3 pose1(faceDownY, Point3()); // origin, left camera
+//	Pose3 pose2(faceDownY, Point3(2.0, 0.0, 0.0)); // 2 units to the left
+//	Point3 landmark1(0.5, 5.0, 0.0); //centered between the cameras, 5 units away
+//	Point3 landmark2(1.5, 5.0, 0.0);
+//
+//	// noisy config
+//	boost::shared_ptr<VConfig> initConfig(new VConfig);
+//	initConfig->insert(Pose3Key(1), pose1);
+//	initConfig->insert(Pose3Key(2), pose2);
+//	initConfig->insert(Point3Key(1), landmark1);
+//	initConfig->insert(Point3Key(2), landmark2); // create two landmarks in same place
+//	initConfig->insert(LagrangeKey(12), Vector_(3, 1.0, 1.0, 1.0));
+//
+//	// create ordering
+//	shared_ptr<Ordering> ord(new Ordering());
+//	*ord += "x1", "x2", "l1", "l2", "L12";
+//	VOptimizer::shared_solver solver(new VOptimizer::solver(ord));
+//
+//	// create optimizer
+//	VOptimizer optimizer(graph, initConfig, solver);
+//
+//	// optimize
+//	VOptimizer *pointer = new VOptimizer(optimizer);
+//	for (int i=0;i<1;i++) {
+//		VOptimizer* newOptimizer = new VOptimizer(pointer->iterateLM());
+//		delete pointer;
+//		pointer = newOptimizer;
+//	}
+//	VOptimizer::shared_config actual = pointer->config();
+//	delete(pointer);
+//
+//	// get the truth config
+//	boost::shared_ptr<VConfig> truthConfig = stereoExampleTruthConfig();
+//	truthConfig->insert(LagrangeKey(12), Vector_(3, 0.0, 1.0, 1.0));
+//
+//	// check if correct
+//	CHECK(assert_equal(*truthConfig,*actual, 1e-5));
+//}
+//
+//static SharedGaussian sigma(noiseModel::Isotropic::Sigma(1,0.1));
+//
+//// typedefs
+////typedef simulated2D::Config Config2D;
+////typedef boost::shared_ptr<Config2D> shared_config;
+////typedef NonlinearFactorGraph<Config2D> NLGraph;
+////typedef boost::shared_ptr<NonlinearFactor<Config2D> > shared;
+//
+//namespace map_warp_example {
+//typedef NonlinearConstraint1<
+//	Config2D, simulated2D::PoseKey, Point2> NLC1;
+////typedef NonlinearConstraint2<
+////	Config2D, simulated2D::PointKey, Point2, simulated2D::PointKey, Point2> NLC2;
+//} // \namespace map_warp_example
+//
+///* ********************************************************************* */
+//// Example that moves two separate maps into the same frame of reference
+//// Note that this is a linear example, so it should converge in one step
+///* ********************************************************************* */
+//
+//namespace sqp_LinearMapWarp2 {
+//// binary constraint between landmarks
+///** g(x) = x-y = 0 */
+//Vector g_func(const Config2D& config, const simulated2D::PointKey& key1, const simulated2D::PointKey& key2) {
+//	Point2 p = config[key1]-config[key2];
+//	return Vector_(2, p.x(), p.y());
+//}
+//
+///** jacobian at l1 */
+//Matrix jac_g1(const Config2D& config) {
+//	return eye(2);
+//}
+//
+///** jacobian at l2 */
+//Matrix jac_g2(const Config2D& config) {
+//	return -1*eye(2);
+//}
+//} // \namespace sqp_LinearMapWarp2
+//
+//namespace sqp_LinearMapWarp1 {
+//// Unary Constraint on x1
+///** g(x) = x -[1;1] = 0 */
+//Vector g_func(const Config2D& config, const simulated2D::PoseKey& key) {
+//	Point2 p = config[key]-Point2(1.0, 1.0);
+//	return Vector_(2, p.x(), p.y());
+//}
+//
+///** jacobian at x1 */
+//Matrix jac_g(const Config2D& config) {
+//	return eye(2);
+//}
+//} // \namespace sqp_LinearMapWarp12
 
 //typedef NonlinearOptimizer<NLGraph, Config2D> Optimizer;
 
@@ -875,86 +875,86 @@ Matrix jac_g(const Config2D& config) {
  * Creates the graph with each robot seeing the landmark, and it is
  * known that it is the same landmark
  */
-boost::shared_ptr<Graph2D> linearMapWarpGraph() {
-	using namespace map_warp_example;
-	// keys
-	simulated2D::PoseKey x1(1), x2(2);
-	simulated2D::PointKey l1(1), l2(2);
-
-	// constant constraint on x1
-	LagrangeKey L1(1);
-	shared_ptr<NLC1> c1(new NLC1(boost::bind(sqp_LinearMapWarp1::g_func, _1, x1),
-							x1, boost::bind(sqp_LinearMapWarp1::jac_g, _1),
-							2, L1));
-
-	// measurement from x1 to l1
-	Point2 z1(0.0, 5.0);
-	shared f1(new simulated2D::GenericMeasurement<Config2D>(z1, sigma, x1,l1));
-
-	// measurement from x2 to l2
-	Point2 z2(-4.0, 0.0);
-	shared f2(new simulated2D::GenericMeasurement<Config2D>(z2, sigma, x2,l2));
-
-	// equality constraint between l1 and l2
-	LagrangeKey L12(12);
-	shared_ptr<NLC2> c2 (new NLC2(
-			boost::bind(sqp_LinearMapWarp2::g_func, _1, l1, l2),
-			l1, boost::bind(sqp_LinearMapWarp2::jac_g1, _1),
-			l2, boost::bind(sqp_LinearMapWarp2::jac_g2, _1),
-			2, L12));
-
-	// construct the graph
-	boost::shared_ptr<Graph2D> graph(new Graph2D());
-	graph->push_back(c1);
-	graph->push_back(c2);
-	graph->push_back(f1);
-	graph->push_back(f2);
-
-	return graph;
-}
-
-/* ********************************************************************* */
-TEST ( SQPOptimizer, map_warp_initLam ) {
-	bool verbose = false;
-	// get a graph
-	boost::shared_ptr<Graph2D> graph = linearMapWarpGraph();
-
-	// keys
-	simulated2D::PoseKey x1(1), x2(2);
-	simulated2D::PointKey l1(1), l2(2);
-	LagrangeKey L1(1), L12(12);
-
-	// create an initial estimate
-	shared_ptr<Config2D> initialEstimate(new Config2D);
-	initialEstimate->insert(x1, Point2(1.0, 1.0));
-	initialEstimate->insert(l1, Point2(1.0, 6.0));
-	initialEstimate->insert(l2, Point2(-4.0, 0.0)); // starting with a separate reference frame
-	initialEstimate->insert(x2, Point2(0.0, 0.0)); // other pose starts at origin
-	initialEstimate->insert(L12, Vector_(2, 1.0, 1.0));
-	initialEstimate->insert(L1, Vector_(2, 1.0, 1.0));
-
-	// create an ordering
-	shared_ptr<Ordering> ordering(new Ordering());
-	*ordering += "x1", "x2", "l1", "l2", "L12", "L1";
-
-	// create an optimizer
-	Optimizer::shared_solver solver(new Optimizer::solver(ordering));
-	Optimizer optimizer(graph, initialEstimate, solver);
-
-	// perform an iteration of optimization
-	Optimizer oneIteration = optimizer.iterate(Optimizer::SILENT);
-
-	// get the config back out and verify
-	Config2D actual = *(oneIteration.config());
-	Config2D expected;
-	expected.insert(x1, Point2(1.0, 1.0));
-	expected.insert(l1, Point2(1.0, 6.0));
-	expected.insert(l2, Point2(1.0, 6.0));
-	expected.insert(x2, Point2(5.0, 6.0));
-	expected.insert(L1, Vector_(2, 1.0, 1.0));
-	expected.insert(L12, Vector_(2, 6.0, 7.0));
-	CHECK(assert_equal(expected, actual));
-}
+//boost::shared_ptr<Graph2D> linearMapWarpGraph() {
+//	using namespace map_warp_example;
+//	// keys
+//	simulated2D::PoseKey x1(1), x2(2);
+//	simulated2D::PointKey l1(1), l2(2);
+//
+//	// constant constraint on x1
+//	LagrangeKey L1(1);
+//	shared_ptr<NLC1> c1(new NLC1(boost::bind(sqp_LinearMapWarp1::g_func, _1, x1),
+//							x1, boost::bind(sqp_LinearMapWarp1::jac_g, _1),
+//							2, L1));
+//
+//	// measurement from x1 to l1
+//	Point2 z1(0.0, 5.0);
+//	shared f1(new simulated2D::GenericMeasurement<Config2D>(z1, sigma, x1,l1));
+//
+//	// measurement from x2 to l2
+//	Point2 z2(-4.0, 0.0);
+//	shared f2(new simulated2D::GenericMeasurement<Config2D>(z2, sigma, x2,l2));
+//
+//	// equality constraint between l1 and l2
+//	LagrangeKey L12(12);
+//	shared_ptr<NLC2> c2 (new NLC2(
+//			boost::bind(sqp_LinearMapWarp2::g_func, _1, l1, l2),
+//			l1, boost::bind(sqp_LinearMapWarp2::jac_g1, _1),
+//			l2, boost::bind(sqp_LinearMapWarp2::jac_g2, _1),
+//			2, L12));
+//
+//	// construct the graph
+//	boost::shared_ptr<Graph2D> graph(new Graph2D());
+//	graph->push_back(c1);
+//	graph->push_back(c2);
+//	graph->push_back(f1);
+//	graph->push_back(f2);
+//
+//	return graph;
+//}
+//
+///* ********************************************************************* */
+//TEST ( SQPOptimizer, map_warp_initLam ) {
+//	bool verbose = false;
+//	// get a graph
+//	boost::shared_ptr<Graph2D> graph = linearMapWarpGraph();
+//
+//	// keys
+//	simulated2D::PoseKey x1(1), x2(2);
+//	simulated2D::PointKey l1(1), l2(2);
+//	LagrangeKey L1(1), L12(12);
+//
+//	// create an initial estimate
+//	shared_ptr<Config2D> initialEstimate(new Config2D);
+//	initialEstimate->insert(x1, Point2(1.0, 1.0));
+//	initialEstimate->insert(l1, Point2(1.0, 6.0));
+//	initialEstimate->insert(l2, Point2(-4.0, 0.0)); // starting with a separate reference frame
+//	initialEstimate->insert(x2, Point2(0.0, 0.0)); // other pose starts at origin
+//	initialEstimate->insert(L12, Vector_(2, 1.0, 1.0));
+//	initialEstimate->insert(L1, Vector_(2, 1.0, 1.0));
+//
+//	// create an ordering
+//	shared_ptr<Ordering> ordering(new Ordering());
+//	*ordering += "x1", "x2", "l1", "l2", "L12", "L1";
+//
+//	// create an optimizer
+//	Optimizer::shared_solver solver(new Optimizer::solver(ordering));
+//	Optimizer optimizer(graph, initialEstimate, solver);
+//
+//	// perform an iteration of optimization
+//	Optimizer oneIteration = optimizer.iterate(Optimizer::SILENT);
+//
+//	// get the config back out and verify
+//	Config2D actual = *(oneIteration.config());
+//	Config2D expected;
+//	expected.insert(x1, Point2(1.0, 1.0));
+//	expected.insert(l1, Point2(1.0, 6.0));
+//	expected.insert(l2, Point2(1.0, 6.0));
+//	expected.insert(x2, Point2(5.0, 6.0));
+//	expected.insert(L1, Vector_(2, 1.0, 1.0));
+//	expected.insert(L12, Vector_(2, 6.0, 7.0));
+//	CHECK(assert_equal(expected, actual));
+//}
 
 ///* ********************************************************************* */
 //// This is an obstacle avoidance demo, where there is a trajectory of

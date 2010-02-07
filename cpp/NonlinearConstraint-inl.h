@@ -20,21 +20,9 @@ namespace gtsam {
 template <class Config>
 NonlinearConstraint<Config>::NonlinearConstraint(const LagrangeKey& lagrange_key,
 					size_t dim_lagrange,
-					Vector (*g)(const Config& config),
-					bool isEquality)
-:	NonlinearFactor<Config>(1.0),
-	lagrange_key_(lagrange_key), p_(dim_lagrange),
-	isEquality_(isEquality), g_(boost::bind(g, _1)) {}
-
-/* ************************************************************************* */
-template <class Config>
-NonlinearConstraint<Config>::NonlinearConstraint(const LagrangeKey& lagrange_key,
-					size_t dim_lagrange,
-					boost::function<Vector(const Config& config)> g,
-					bool isEquality)
-:	NonlinearFactor<Config>(noiseModel::Constrained::All(dim_lagrange)),
-	lagrange_key_(lagrange_key), p_(dim_lagrange),
-	g_(g), isEquality_(isEquality) {}
+					bool isEquality) :
+	NonlinearFactor<Config>(noiseModel::Constrained::All(dim_lagrange)),
+	lagrange_key_(lagrange_key), p_(dim_lagrange), isEquality_(isEquality) {}
 
 /* ************************************************************************* */
 template <class Config>
@@ -54,8 +42,8 @@ NonlinearConstraint1<Config, Key, X>::NonlinearConstraint1(
 			size_t dim_constraint,
 			const LagrangeKey& lagrange_key,
 			bool isEquality) :
-				NonlinearConstraint<Config>(lagrange_key, dim_constraint, g, isEquality),
-				G_(boost::bind(gradG, _1)), key_(key)
+				NonlinearConstraint<Config>(lagrange_key, dim_constraint, isEquality),
+				g_(boost::bind(g, _1)), G_(boost::bind(gradG, _1)), key_(key)
 {
 }
 
@@ -68,22 +56,21 @@ NonlinearConstraint1<Config, Key, X>::NonlinearConstraint1(
 			size_t dim_constraint,
 			const LagrangeKey& lagrange_key,
 			bool isEquality) :
-				NonlinearConstraint<Config>(lagrange_key, dim_constraint, g, isEquality),
-				G_(gradG), key_(key)
+				NonlinearConstraint<Config>(lagrange_key, dim_constraint, isEquality),
+				g_(g), G_(gradG), key_(key)
 {
 }
 
 /* ************************************************************************* */
 template <class Config, class Key, class X>
 void NonlinearConstraint1<Config, Key, X>::print(const std::string& s) const {
-	std::cout << "NonlinearConstraint1 [" << s << "]:\n";
-//			<< "  key:        " << key_ << "\n"
-//			<< "  p:          " << this->p_ << "\n"
-//			<< "  lambda key: " << this->lagrange_key_ << "\n";
-//	if (this->isEquality_)
-//		std::cout << "  Equality Factor" << std::endl;
-//	else
-//		std::cout << "  Inequality Factor" << std::endl;
+	std::cout << "NonlinearConstraint1 [" << s << "]: Dim: " << this->p_ << "\n"
+			  << "  Key         : " << (std::string) this->key_ << "\n"
+			  << "  Lagrange Key: " << (std::string) this->lagrange_key_ << "\n";
+	if (this->isEquality_)
+		std::cout << "  Equality Factor" << std::endl;
+	else
+		std::cout << "  Inequality Factor" << std::endl;
 }
 
 /* ************************************************************************* */
@@ -148,8 +135,8 @@ NonlinearConstraint2<Config, Key1, X1, Key2, X2>::NonlinearConstraint2(
 		size_t dim_constraint,
 		const LagrangeKey& lagrange_key,
 		bool isEquality) :
-			NonlinearConstraint<Config>(lagrange_key, dim_constraint, g, isEquality),
-			G1_(boost::bind(G1, _1)), G2_(boost::bind(G2, _1)),
+			NonlinearConstraint<Config>(lagrange_key, dim_constraint, isEquality),
+			g_(boost::bind(g, _1)), G1_(boost::bind(G1, _1)), G2_(boost::bind(G2, _1)),
 			key1_(key1), key2_(key2)
 {
 }
@@ -165,8 +152,8 @@ NonlinearConstraint2<Config, Key1, X1, Key2, X2>::NonlinearConstraint2(
 		size_t dim_constraint,
 		const LagrangeKey& lagrange_key,
 		bool isEquality)  :
-				NonlinearConstraint<Config>(lagrange_key, dim_constraint, g, isEquality),
-				G1_(G1), G2_(G2),
+				NonlinearConstraint<Config>(lagrange_key, dim_constraint, isEquality),
+				g_(g), G1_(G1), G2_(G2),
 				key1_(key1), key2_(key2)
 {
 }
@@ -174,11 +161,14 @@ NonlinearConstraint2<Config, Key1, X1, Key2, X2>::NonlinearConstraint2(
 /* ************************************************************************* */
 template <class Config, class Key1, class X1, class Key2, class X2>
 void NonlinearConstraint2<Config, Key1, X1, Key2, X2>::print(const std::string& s) const {
-	std::cout << "NonlinearConstraint2 [" << s << "]:\n";
-//			<< "  key1:       " << key1_ << "\n"
-//			<< "  key2:       " << key2_ << "\n"
-//			<< "  p:          " << this->p_ << "\n"
-//			<< "  lambda key: " << this->lagrange_key_ << std::endl;
+	std::cout << "NonlinearConstraint2 [" << s << "]: Dim: " << this->p_ << "\n"
+			  << "  Key1        : " << (std::string) this->key1_ << "\n"
+			  << "  Key2        : " << (std::string) this->key2_ << "\n"
+			  << "  Lagrange Key: " << (std::string) this->lagrange_key_ << "\n";
+	if (this->isEquality_)
+		std::cout << "  Equality Factor" << std::endl;
+	else
+		std::cout << "  Inequality Factor" << std::endl;
 }
 
 /* ************************************************************************* */
@@ -198,7 +188,6 @@ template<class Config, class Key1, class X1, class Key2, class X2>
 GaussianFactor::shared_ptr
 NonlinearConstraint2<Config, Key1, X1, Key2, X2>::linearize(const Config& config) const {
 	const size_t p = this->p_;
-
 	// extract lagrange multiplier
 	Vector lambda = config[this->lagrange_key_];
 
@@ -231,19 +220,6 @@ NonlinearConstraint2<Config, Key1, X1, Key2, X2>::linearize(const Config& config
 
 	GaussianFactor::shared_ptr factor(new
 			GaussianFactor(key1_, Ax1, key2_, Ax2, this->lagrange_key_, AL, rhs, mixedConstraint));
-
-//	// construct probabilistic factor
-//	Matrix A1 = vector_scale(lambda, grad1);
-//	Matrix A2 = vector_scale(lambda, grad2);
-//	SharedDiagonal probModel = sharedSigma(this->p_,1.0);
-//	GaussianFactor::shared_ptr factor(new GaussianFactor(key1_, A1, key2_, A2,
-//			this->lagrange_key_, eye(this->p_), zero(this->p_), probModel));
-//
-//	// construct the constraint
-//	SharedDiagonal constraintModel = noiseModel::Constrained::All(this->p_);
-//	GaussianFactor::shared_ptr constraint(new GaussianFactor(key1_, grad1,
-//			key2_, grad2, -1.0 * g, constraintModel));
-
 	return factor;
 }
 

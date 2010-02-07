@@ -40,36 +40,15 @@ protected:
 	/** type of constraint */
 	bool isEquality_;
 
-	/** calculates the constraint function of the current config
-	 * If the value is zero, the constraint is not active
-	 * Use boost.bind to create the function object
-	 * @param config is a configuration of all the variables
-	 * @return the cost for each of p constraints, arranged in a vector
-	 */
-	boost::function<Vector(const Config& config)> g_;
-
 public:
 
 	/** Constructor - sets the cost function and the lagrange multipliers
 	 * @param lagrange_key is the label for the associated lagrange multipliers
 	 * @param dim_lagrange is the number of associated constraints
 	 * @param isEquality is true if the constraint is an equality constraint
-	 * @param g is the cost function for the constraint
 	 */
 	NonlinearConstraint(const LagrangeKey& lagrange_key,
 						size_t dim_lagrange,
-						Vector (*g)(const Config& config),
-						bool isEquality=true);
-
-	/** Constructor - sets a more general cost function using boost::bind directly
-	 * @param lagrange_key is the label for the associated lagrange multipliers
-	 * @param dim_lagrange is the number of associated constraints
-	 * @param g is the cost function for the constraint
-	 * @param isEquality is true if the constraint is an equality constraint
-	 */
-	NonlinearConstraint(const LagrangeKey& lagrange_key,
-						size_t dim_lagrange,
-						boost::function<Vector(const Config& config)> g,
 						bool isEquality=true);
 
 	/** returns the key used for the Lagrange multipliers */
@@ -88,7 +67,7 @@ public:
 	virtual bool equals(const Factor<Config>& f, double tol=1e-9) const=0;
 
 	/** error function - returns the result of the constraint function */
-	inline Vector unwhitenedError(const Config& c) const { return g_(c); }
+	virtual Vector unwhitenedError(const Config& c) const=0;
 
 	/**
 	 * Determines whether the constraint is active given a particular configuration
@@ -108,6 +87,8 @@ public:
 
 /**
  * A unary constraint with arbitrary cost and jacobian functions
+ * This is an example class designed for easy testing, but real uses should probably
+ * subclass NonlinearConstraint and implement virtual functions directly
  */
 template <class Config, class Key, class X>
 class NonlinearConstraint1 : public NonlinearConstraint<Config> {
@@ -122,6 +103,14 @@ private:
 	 * @return the jacobian of the constraint in terms of key
 	 */
 	boost::function<Matrix(const Config& config)> G_;
+
+	/** calculates the constraint function of the current config
+	 * If the value is zero, the constraint is not active
+	 * Use boost.bind to create the function object
+	 * @param config is a configuration of all the variables
+	 * @return the cost for each of p constraints, arranged in a vector
+	 */
+	boost::function<Vector(const Config& config)> g_;
 
 	/** key for the constrained variable */
 	Key key_;
@@ -168,6 +157,9 @@ public:
 	/** Check if two factors are equal */
 	bool equals(const Factor<Config>& f, double tol=1e-9) const;
 
+	/** Error function */
+	virtual inline Vector unwhitenedError(const Config& c) const { return g_(c); }
+
 	/**
 	 * Linearize from config - must have Lagrange multipliers
 	 */
@@ -191,6 +183,14 @@ private:
 	 */
 	boost::function<Matrix(const Config& config)> G1_;
 	boost::function<Matrix(const Config& config)> G2_;
+
+	/** calculates the constraint function of the current config
+	 * If the value is zero, the constraint is not active
+	 * Use boost.bind to create the function object
+	 * @param config is a configuration of all the variables
+	 * @return the cost for each of p constraints, arranged in a vector
+	 */
+	boost::function<Vector(const Config& config)> g_;
 
 	/** keys for the constrained variables */
 	Key1 key1_;
@@ -242,6 +242,9 @@ public:
 
 	/** Check if two factors are equal */
 	bool equals(const Factor<Config>& f, double tol=1e-9) const;
+
+	/** Error function */
+	virtual inline Vector unwhitenedError(const Config& c) const { return g_(c); }
 
 	/**
 	 * Linearize from config - must have Lagrange multipliers

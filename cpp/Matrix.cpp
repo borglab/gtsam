@@ -375,6 +375,25 @@ inline void householder_update_manual(Matrix &A, int j, double beta, const Vecto
 }
 
 void householder_update(Matrix &A, int j, double beta, const Vector& vjm) {
+	// TODO: SWAP IN ATLAS VERSION OF THE SYSTEM
+//	// straight atlas version
+//	const size_t m = A.size1(), n = A.size2(), mj = m-j;
+//
+//	// find pointers to the data
+//	const double * vptr = vjm.data().begin(); // mj long
+//	double * Aptr = A.data().begin() + n*j; // mj x n - note that this starts at row j
+//
+//	// first step: get w = beta*trans(A(j:m,:))*vjm
+//	Vector w(n);
+//	double * wptr = w.data().begin();
+//
+//	// execute w generation
+//	cblas_dgemv(CblasRowMajor, CblasTrans, mj, n, beta, Aptr, n, vptr, 1, 0.0, wptr, 1);
+//
+//	// second step: rank 1 update A(j:m,:) = v(j:m)*w' + A(j:m,:)
+//	cblas_dger(CblasRowMajor, mj, n, 1.0, vptr, 1, wptr, 1, Aptr, n);
+
+
 #ifdef GSL
 #ifndef REVERTGSL
 	const size_t m = A.size1(), n = A.size2();
