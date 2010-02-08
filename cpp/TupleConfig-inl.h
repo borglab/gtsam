@@ -18,6 +18,10 @@
   /*template void PairConfig<J1,X1,J2,X2>::print(const std::string&) const;*/ \
   template PairConfig<J1,X1,J2,X2> expmap(PairConfig<J1,X1,J2,X2>, const VectorConfig&);
 
+#define INSTANTIATE_TUPLE_CONFIG(CONFIG) \
+		template class CONFIG; \
+		template CONFIG expmap(CONFIG, const VectorConfig&);
+
 namespace gtsam {
 
 /* ************************************************************************* */
