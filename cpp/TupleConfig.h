@@ -210,6 +210,11 @@ namespace gtsam {
 	  inline const Config2_t& second() const { return this->rest().config(); }
   };
 
+  template<class Config1, class Config2>
+  TupleConfig2<Config1, Config2> exmap(const TupleConfig2<Config1, Config2> c, const VectorConfig& delta) {
+	  return c.exmap(delta);
+  }
+
   template<class Config1, class Config2, class Config3>
   class TupleConfig3 : public TupleConfig<Config1, TupleConfig<Config2, TupleConfigEnd<Config3> > > {
   public:
@@ -228,6 +233,11 @@ namespace gtsam {
 	  inline const Config2_t& second() const { return this->rest().config(); }
 	  inline const Config3_t& third() const { return this->rest().rest().config(); }
   };
+
+  template<class Config1, class Config2, class Config3>
+  TupleConfig3<Config1, Config2, Config3> exmap(const TupleConfig3<Config1, Config2, Config3> c, const VectorConfig& delta) {
+	  return c.exmap(delta);
+  }
 
   template<class Config1, class Config2, class Config3, class Config4>
   class TupleConfig4 : public TupleConfig<Config1, TupleConfig<Config2,TupleConfig<Config3, TupleConfigEnd<Config4> > > > {
@@ -249,6 +259,11 @@ namespace gtsam {
 	  inline const Config3_t& third() const { return this->rest().rest().config(); }
 	  inline const Config4_t& fourth() const { return this->rest().rest().rest().config(); }
   };
+
+  template<class Config1, class Config2, class Config3, class Config4>
+  TupleConfig4<Config1, Config2, Config3, Config4> exmap(const TupleConfig4<Config1, Config2, Config3, Config4> c, const VectorConfig& delta) {
+	  return c.exmap(delta);
+  }
 
   template<class Config1, class Config2, class Config3, class Config4, class Config5>
   class TupleConfig5 : public TupleConfig<Config1, TupleConfig<Config2, TupleConfig<Config3, TupleConfig<Config4, TupleConfigEnd<Config5> > > > > {
@@ -274,6 +289,11 @@ namespace gtsam {
 	  inline const Config5_t& fifth() const { return this->rest().rest().rest().rest().config(); }
   };
 
+  template<class Config1, class Config2, class Config3, class Config4, class Config5>
+  TupleConfig5<Config1, Config2, Config3, Config4, Config5> exmap(const TupleConfig5<Config1, Config2, Config3, Config4, Config5> c, const VectorConfig& delta) {
+	  return c.exmap(delta);
+  }
+
   template<class Config1, class Config2, class Config3, class Config4, class Config5, class Config6>
   class TupleConfig6 : public TupleConfig<Config1, TupleConfig<Config2, TupleConfig<Config3, TupleConfig<Config4, TupleConfig<Config5, TupleConfigEnd<Config6> > > > > > {
   public:
@@ -298,6 +318,11 @@ namespace gtsam {
 	  inline const Config5_t& fifth() const { return this->rest().rest().rest().rest().config(); }
 	  inline const Config6_t& sixth() const { return this->rest().rest().rest().rest().rest().config(); }
   };
+
+  template<class Config1, class Config2, class Config3, class Config4, class Config5, class Config6>
+  TupleConfig6<Config1, Config2, Config3, Config4, Config5, Config6> exmap(const TupleConfig6<Config1, Config2, Config3, Config4, Config5, Config6> c, const VectorConfig& delta) {
+	  return c.exmap(delta);
+  }
 
   /**
    * PairConfig: an alias for a pair of configs using TupleConfig2

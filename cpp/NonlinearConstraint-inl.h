@@ -10,6 +10,10 @@
 #include <boost/bind.hpp>
 #include "NonlinearConstraint.h"
 
+#define INSTANTIATE_NONLINEAR_CONSTRAINT(C) \
+  INSTANTIATE_FACTOR_GRAPH(NonlinearConstraint<C>); \
+  template class NonlinearConstraint<C>;
+
 namespace gtsam {
 
 /* ************************************************************************* */
