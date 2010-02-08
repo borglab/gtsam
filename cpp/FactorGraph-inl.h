@@ -118,7 +118,7 @@ void FactorGraph<Factor>::replace(int index, sharedFactor factor) {
 
   if(factors_[index] != NULL) {
     // Remove this factor from its variables' index lists
-    BOOST_FOREACH(const Symbol& key, factor->keys()) {
+    BOOST_FOREACH(const Symbol& key, factors_[index]->keys()) {
     	indices_.at(key).remove(index);
     }
   }
