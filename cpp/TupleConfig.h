@@ -200,9 +200,12 @@ namespace gtsam {
 	  typedef Config1 Config1_t;
 	  typedef Config2 Config2_t;
 
+	  typedef TupleConfig<Config1, TupleConfigEnd<Config2> > Base;
+	  typedef TupleConfig2<Config1, Config2> This;
+
 	  TupleConfig2() {}
-	  TupleConfig2(const TupleConfig2<Config1, Config2>& config);
-	  TupleConfig2(const TupleConfig<Config1, TupleConfigEnd<Config2> >& config);
+	  TupleConfig2(const This& config);
+	  TupleConfig2(const Base& config);
 	  TupleConfig2(const Config1& cfg1, const Config2& cfg2);
 
 	  // access functions
@@ -211,8 +214,8 @@ namespace gtsam {
   };
 
   template<class Config1, class Config2>
-  TupleConfig2<Config1, Config2> exmap(const TupleConfig2<Config1, Config2> c, const VectorConfig& delta) {
-	  return c.exmap(delta);
+  TupleConfig2<Config1, Config2> expmap(const TupleConfig2<Config1, Config2> c, const VectorConfig& delta) {
+	  return c.expmap(delta);
   }
 
   template<class Config1, class Config2, class Config3>
@@ -235,8 +238,8 @@ namespace gtsam {
   };
 
   template<class Config1, class Config2, class Config3>
-  TupleConfig3<Config1, Config2, Config3> exmap(const TupleConfig3<Config1, Config2, Config3> c, const VectorConfig& delta) {
-	  return c.exmap(delta);
+  TupleConfig3<Config1, Config2, Config3> expmap(const TupleConfig3<Config1, Config2, Config3> c, const VectorConfig& delta) {
+	  return c.expmap(delta);
   }
 
   template<class Config1, class Config2, class Config3, class Config4>
@@ -248,9 +251,12 @@ namespace gtsam {
 	  typedef Config3 Config3_t;
 	  typedef Config4 Config4_t;
 
+	  typedef TupleConfig<Config1, TupleConfig<Config2,TupleConfig<Config3, TupleConfigEnd<Config4> > > > Base;
+	  typedef TupleConfig4<Config1, Config2, Config3, Config4> This;
+
 	  TupleConfig4() {}
-	  TupleConfig4(const TupleConfig4<Config1, Config2, Config3, Config4>& config);
-	  TupleConfig4(const TupleConfig<Config1, TupleConfig<Config2,TupleConfig<Config3, TupleConfigEnd<Config4> > > >& config);
+	  TupleConfig4(const This& config);
+	  TupleConfig4(const Base& config);
 	  TupleConfig4(const Config1& cfg1, const Config2& cfg2, const Config3& cfg3,const Config4& cfg4);
 
 	  // access functions
@@ -261,8 +267,8 @@ namespace gtsam {
   };
 
   template<class Config1, class Config2, class Config3, class Config4>
-  TupleConfig4<Config1, Config2, Config3, Config4> exmap(const TupleConfig4<Config1, Config2, Config3, Config4> c, const VectorConfig& delta) {
-	  return c.exmap(delta);
+  TupleConfig4<Config1, Config2, Config3, Config4> expmap(const TupleConfig4<Config1, Config2, Config3, Config4> c, const VectorConfig& delta) {
+	  return c.expmap(delta);
   }
 
   template<class Config1, class Config2, class Config3, class Config4, class Config5>
@@ -290,8 +296,8 @@ namespace gtsam {
   };
 
   template<class Config1, class Config2, class Config3, class Config4, class Config5>
-  TupleConfig5<Config1, Config2, Config3, Config4, Config5> exmap(const TupleConfig5<Config1, Config2, Config3, Config4, Config5> c, const VectorConfig& delta) {
-	  return c.exmap(delta);
+  TupleConfig5<Config1, Config2, Config3, Config4, Config5> expmap(const TupleConfig5<Config1, Config2, Config3, Config4, Config5> c, const VectorConfig& delta) {
+	  return c.expmap(delta);
   }
 
   template<class Config1, class Config2, class Config3, class Config4, class Config5, class Config6>
@@ -320,8 +326,8 @@ namespace gtsam {
   };
 
   template<class Config1, class Config2, class Config3, class Config4, class Config5, class Config6>
-  TupleConfig6<Config1, Config2, Config3, Config4, Config5, Config6> exmap(const TupleConfig6<Config1, Config2, Config3, Config4, Config5, Config6> c, const VectorConfig& delta) {
-	  return c.exmap(delta);
+  TupleConfig6<Config1, Config2, Config3, Config4, Config5, Config6> expmap(const TupleConfig6<Config1, Config2, Config3, Config4, Config5, Config6> c, const VectorConfig& delta) {
+	  return c.expmap(delta);
   }
 
   /**

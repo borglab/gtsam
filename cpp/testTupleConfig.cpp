@@ -344,8 +344,7 @@ TEST(TupleConfig, expmap_typedefs)
 	expected.insert(l1k, Point2(5.0, 6.1));
 	expected.insert(l2k, Point2(10.3, 11.4));
 
-	actual = expmap(cfg1, increment);
-	CHECK(assert_equal(expected, actual));
+	CHECK(assert_equal(expected, expmap(cfg1, increment)));
 	//CHECK(assert_equal(increment, logmap(cfg1, expected)));
 }
 
