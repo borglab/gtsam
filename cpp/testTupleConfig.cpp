@@ -320,6 +320,36 @@ TEST(TupleConfig, expmap)
 }
 
 /* ************************************************************************* */
+TEST(TupleConfig, expmap_typedefs)
+{
+	Pose2 x1(1,2,3), x2(6,7,8);
+	PoseKey x1k(1), x2k(2);
+	Point2 l1(4,5), l2(9,10);
+	PointKey l1k(1), l2k(2);
+
+	TupleConfig2<PoseConfig, PointConfig> cfg1, expected, actual;
+	cfg1.insert(x1k, x1);
+	cfg1.insert(x2k, x2);
+	cfg1.insert(l1k, l1);
+	cfg1.insert(l2k, l2);
+
+	VectorConfig increment;
+	increment.insert("x1", Vector_(3, 1.0, 1.1, 1.2));
+	increment.insert("x2", Vector_(3, 1.3, 1.4, 1.5));
+	increment.insert("l1", Vector_(2, 1.0, 1.1));
+	increment.insert("l2", Vector_(2, 1.3, 1.4));
+
+	expected.insert(x1k, expmap(x1, Vector_(3, 1.0, 1.1, 1.2)));
+	expected.insert(x2k, expmap(x2, Vector_(3, 1.3, 1.4, 1.5)));
+	expected.insert(l1k, Point2(5.0, 6.1));
+	expected.insert(l2k, Point2(10.3, 11.4));
+
+	actual = expmap(cfg1, increment);
+	CHECK(assert_equal(expected, actual));
+	//CHECK(assert_equal(increment, logmap(cfg1, expected)));
+}
+
+/* ************************************************************************* */
 TEST(TupleConfig, typedefs)
 {
 	TupleConfig2<PoseConfig, PointConfig> cfg1;
@@ -363,7 +393,6 @@ TEST( TupleConfig, graphs_and_factors )
 	// test creation
 	GraphC graph;
 	ConfigC config;
-//	FactorC::shared_ptr f1(new FactorC());
 
 }
 /* ************************************************************************* */

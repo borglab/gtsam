@@ -20,24 +20,19 @@
 
 // TupleConfig instantiations for N = 1-6
 #define INSTANTIATE_TUPLE_CONFIG2(Config1, Config2) \
-		template class TupleConfig2<Config1, Config2>; \
-		template TupleConfig2<Config1, Config2> expmap(const TupleConfig2<Config1, Config2>, const VectorConfig&);
+		template class TupleConfig2<Config1, Config2>;
 
 #define INSTANTIATE_TUPLE_CONFIG3(Config1, Config2, Config3) \
-		template class TupleConfig3<Config1, Config2, Config3>; \
-		template TupleConfig3<Config1, Config2, Config3> expmap(const TupleConfig3<Config1, Config2, Config3>, const VectorConfig&);
+		template class TupleConfig3<Config1, Config2, Config3>;
 
 #define INSTANTIATE_TUPLE_CONFIG4(Config1, Config2, Config3, Config4) \
-		template class TupleConfig4<Config1, Config2, Config3, Config4>; \
-		template TupleConfig4<Config1, Config2, Config3, Config4> expmap(const TupleConfig4<Config1, Config2, Config3, Config4>, const VectorConfig&);
+		template class TupleConfig4<Config1, Config2, Config3, Config4>;
 
 #define INSTANTIATE_TUPLE_CONFIG5(Config1, Config2, Config3, Config4, Config5) \
-		template class TupleConfig5<Config1, Config2, Config3, Config4, Config5>; \
-		template TupleConfig5<Config1, Config2, Config3, Config4, Config5> expmap(const TupleConfig5<Config1, Config2, Config3, Config4, Config5>, const VectorConfig&);
+		template class TupleConfig5<Config1, Config2, Config3, Config4, Config5>;
 
 #define INSTANTIATE_TUPLE_CONFIG6(Config1, Config2, Config3, Config4, Config5, Config6) \
-		template class TupleConfig6<Config1, Config2, Config3, Config4, Config5, Config6>; \
-		template TupleConfig6<Config1, Config2, Config3, Config4, Config5, Config6> expmap(const TupleConfig6<Config1, Config2, Config3, Config4, Config5, Config6>, const VectorConfig&);
+		template class TupleConfig6<Config1, Config2, Config3, Config4, Config5, Config6>;
 
 
 namespace gtsam {
