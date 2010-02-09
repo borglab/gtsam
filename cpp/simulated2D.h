@@ -52,13 +52,13 @@ namespace gtsam {
 		/**
 		 * Unary factor encoding a soft prior on a vector
 		 */
-		template<class Cfg=Config>
-		struct GenericPrior: public NonlinearFactor1<Cfg, PoseKey, Point2> {
+		template<class Cfg=Config, class Key=PoseKey>
+		struct GenericPrior: public NonlinearFactor1<Cfg, Key, Point2> {
 
 			Point2 z_;
 
-			GenericPrior(const Point2& z, const SharedGaussian& model, const PoseKey& key) :
-				NonlinearFactor1<Cfg, PoseKey, Point2> (model, key), z_(z) {
+			GenericPrior(const Point2& z, const SharedGaussian& model, const Key& key) :
+				NonlinearFactor1<Cfg, Key, Point2> (model, key), z_(z) {
 			}
 
 			Vector evaluateError(const Point2& x, boost::optional<Matrix&> H =
@@ -71,14 +71,14 @@ namespace gtsam {
 		/**
 		 * Binary factor simulating "odometry" between two Vectors
 		 */
-		template<class Cfg=Config>
-		struct GenericOdometry: public NonlinearFactor2<Cfg, PoseKey, Point2, PoseKey,
+		template<class Cfg=Config, class Key=PoseKey>
+		struct GenericOdometry: public NonlinearFactor2<Cfg, Key, Point2, Key,
 				Point2> {
 			Point2 z_;
 
-			GenericOdometry(const Point2& z, const SharedGaussian& model, const PoseKey& j1,
-					const PoseKey& j2) :
-				z_(z), NonlinearFactor2<Cfg, PoseKey, Point2, PoseKey, Point2> (
+			GenericOdometry(const Point2& z, const SharedGaussian& model, const Key& j1,
+					const Key& j2) :
+				z_(z), NonlinearFactor2<Cfg, Key, Point2, Key, Point2> (
 						model, j1, j2) {
 			}
 
@@ -92,16 +92,15 @@ namespace gtsam {
 		/**
 		 * Binary factor simulating "measurement" between two Vectors
 		 */
-		template<class Cfg=Config>
-		class GenericMeasurement: public NonlinearFactor2<Cfg, PoseKey, Point2,
-				PointKey, Point2> {
+		template<class Cfg=Config, class XKey=PoseKey, class LKey=PointKey>
+		class GenericMeasurement: public NonlinearFactor2<Cfg, XKey, Point2, LKey, Point2> {
 			public:
 
 				Point2 z_;
 
 				GenericMeasurement(const Point2& z, const SharedGaussian& model,
-						const PoseKey& j1, const PointKey& j2) :
-					z_(z), NonlinearFactor2<Cfg, PoseKey, Point2, PointKey, Point2> (
+						const XKey& j1, const LKey& j2) :
+					z_(z), NonlinearFactor2<Cfg, XKey, Point2, LKey, Point2> (
 							model, j1, j2) {
 				}
 
@@ -113,9 +112,9 @@ namespace gtsam {
 		};
 
 		/** Typedefs for regular use */
-		typedef GenericPrior<Config> Prior;
-		typedef GenericOdometry<Config> Odometry;
-		typedef GenericMeasurement<Config> Measurement;
+		typedef GenericPrior<Config, PoseKey> Prior;
+		typedef GenericOdometry<Config, PoseKey> Odometry;
+		typedef GenericMeasurement<Config, PoseKey, PointKey> Measurement;
 
 	} // namespace simulated2D
 } // namespace gtsam
