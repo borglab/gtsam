@@ -97,6 +97,9 @@ namespace gtsam {
 		inline const_reverse_iterator const rbegin() const {return conditionals_.rbegin();}
 		inline const_reverse_iterator const rend()   const {return conditionals_.rend();}
 
+		/** saves the bayes to a text file in GraphViz format */
+		void saveGraph(const std::string& s) const;
+
 	private:
 		/** Serialization function */
 		friend class boost::serialization::access;

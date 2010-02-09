@@ -5,6 +5,7 @@
  */
 
 #include <iostream>
+#include <fstream>
 #include <boost/foreach.hpp>
 #include <boost/tuple/tuple.hpp>
 
@@ -57,6 +58,21 @@ namespace gtsam {
 		BOOST_FOREACH(sharedConditional conditional,conditionals_)
 		   ord.push_back(conditional->key());
 		return ord;
+	}
+
+	/* ************************************************************************* */
+	template<class Conditional>
+	void BayesNet<Conditional>::saveGraph(const std::string &s) const {
+		ofstream of(s.c_str());
+		of<< "digraph G{\n";
+		BOOST_FOREACH(sharedConditional conditional,conditionals_) {
+			Symbol child = conditional->key();
+			BOOST_FOREACH(const Symbol& parent,conditional->parents()) {
+				of << (string)parent << "->" << (string)child << endl;
+			}
+		}
+		of<<"}";
+		of.close();
 	}
 
 	/* ************************************************************************* */
