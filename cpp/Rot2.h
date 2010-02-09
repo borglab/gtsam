@@ -27,6 +27,14 @@ namespace gtsam {
     /** constructor from cos/sin */
     Rot2(double c, double s) :
       c_(c), s_(s) {
+    	// rtodo: Could do this scale correction only when creating from compose
+    	// Don't let scale drift
+    	double scale = c*c + s*s;
+    	if(scale != 1.0) {
+    		scale = pow(scale, -0.5);
+    		c_ *= scale;
+    		s_ *= scale;
+    	}
     }
 
     /** default constructor, zero rotation */
