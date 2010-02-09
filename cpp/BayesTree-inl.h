@@ -101,20 +101,24 @@ namespace gtsam {
 	template<class Conditional>
 	void BayesTree<Conditional>::saveGraph(ostream &s,
 			BayesTree<Conditional>::sharedClique clique,
-			int parentnum, int num) const {
+			int parentnum) const {
+		static int num = 0;
 		bool first = true;
 		std::stringstream out;
 		out << num;
 		string parent = out.str();
 		parent += "[label=\"";
+
 		BOOST_FOREACH(boost::shared_ptr<Conditional> c, clique->conditionals_) {
 			if(!first) parent += ","; first = false;
 			parent += (string(c->key())).c_str();
 		}
+
 		if( clique != root_){
 			parent += " : ";
 			s << parentnum << "->" << num << "\n";
 		}
+
 		first = true;
 		BOOST_FOREACH(const Symbol& sep, clique->separator_) {
 			if(!first) parent += ","; first = false;
@@ -123,8 +127,10 @@ namespace gtsam {
 		parent += "\"];\n";
 		s << parent;
 		parentnum = num;
+
 		BOOST_FOREACH(sharedClique c, clique->children_) {
-			saveGraph(s, c, parentnum, ++num);
+			num++;
+			saveGraph(s, c, parentnum);
 		}
 	}
 

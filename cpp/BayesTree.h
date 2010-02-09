@@ -131,7 +131,7 @@ namespace gtsam {
 		void saveGraph(const std::string& s) const;
 	private:
 		void saveGraph(std::ostream &s, sharedClique clique,
-				int parentnum = 0, int num = 0) const;
+				int parentnum = 0) const;
 	public:
 
 		/** check equality */

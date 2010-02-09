@@ -56,6 +56,14 @@ namespace gtsam {
 			keys_.push_back(key3);
 		}
 
+		/** Construct 4-way factor */
+		SymbolicFactor(const Symbol& key1, const Symbol& key2, const Symbol& key3, const Symbol& key4) {
+			keys_.push_back(key1);
+			keys_.push_back(key2);
+			keys_.push_back(key3);
+			keys_.push_back(key4);
+		}
+
 		/**
 		 * Constructor that combines a set of factors
 		 * @param factors Set of factors to combine

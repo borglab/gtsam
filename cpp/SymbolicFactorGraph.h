@@ -44,6 +44,12 @@ namespace gtsam {
 			push_back(factor);
 		}
 
+		/** Push back 4-way factor */
+		void push_factor(const Symbol& key1, const Symbol& key2, const Symbol& key3, const Symbol& key4) {
+			boost::shared_ptr<SymbolicFactor> factor(new SymbolicFactor(key1,key2,key3,key4));
+			push_back(factor);
+		}
+
 		/**
 		 * Construct from a factor graph of any type
 		 */

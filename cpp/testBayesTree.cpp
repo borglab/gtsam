@@ -121,6 +121,9 @@ TEST( BayesTree, constructor )
 
 	list<Symbol> parents2; parents2 += _L_, _E_;
 	CHECK(assert_equal(_E_,bayesTree.findParentClique(parents2, index)));
+
+	list<Symbol> parents3; parents3 += _L_, _B_;
+	CHECK(assert_equal(_L_,bayesTree.findParentClique(parents3, index)));
 }
 
 /* ************************************************************************* */
