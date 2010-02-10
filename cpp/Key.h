@@ -213,10 +213,14 @@ namespace gtsam {
 
 		L label() const { return label_;}
 		const char* c_str() const { return (std::string)(*this).c_str();}
-		operator std::string() const
-				{ return (boost::format("%c%label%d") % C % label_ % this->j_).str(); }
-		std::string latex() const
-				{ return (boost::format("%c%label_{%d}") % C % label_ % this->j_).str(); }
+		operator std::string() const {
+			std::string label_s = (boost::format("%1%") % label_).str();
+			return (boost::format("%c%s_%d") % C % label_s % this->j_).str();
+		}
+		std::string latex() const {
+			std::string label_s = (boost::format("%1%") % label_).str();
+			return (boost::format("%c%s_{%d}") % C % label_s % this->j_).str();
+		}
 
 		// Needed for conversion to LabeledSymbol
 		size_t convertLabel() const { return label_; }
