@@ -77,8 +77,10 @@ TEST ( TypedLabledSymbol, encoding ) {
 	// check casting
 	Symbol act2 = (Symbol) key1;
 	CHECK(assert_equal(exp, act2));
-}
 
+	// decode
+	CHECK(assert_equal(key1, RobotKey(act1)));
+}
 
 /* ************************************************************************* *
 TEST ( TypedLabledSymbol, symbol_translation ) {

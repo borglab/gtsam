@@ -73,89 +73,9 @@ namespace gtsam {
 		}
 	};
 
-	/**
-	 * TypedLabeledSymbol is a variation of the TypedSymbol that allows
-	 * for a runtime label to be placed on the label, so as to express
-	 * "Pose 5 for robot 3"
-	 * Labels should be kept to base datatypes (int, char, etc) to
-	 * minimize cost of comparisons
-	 *
-	 * The labels will be compared first when comparing Keys, followed by the
-	 * index
-	 */
-	template <class T, char C, typename L>
-	class TypedLabeledSymbol : public TypedSymbol<T, C>, Testable<TypedLabeledSymbol<T,C,L> >  {
-
-	protected:
-		// Label
-		L label_;
-
-	public:
-
-		// Constructors:
-
-		TypedLabeledSymbol() {}
-		TypedLabeledSymbol(size_t j, L label):TypedSymbol<T,C>(j), label_(label) {}
-
-		// Get stuff:
-
-		L label() const { return label_;}
-		const char* c_str() const { return (std::string)(*this).c_str();}
-		operator std::string() const
-				{ return (boost::format("%c%label%d") % C % label_ % this->j_).str(); }
-		std::string latex() const
-				{ return (boost::format("%c%label_{%d}") % C % label_ % this->j_).str(); }
-
-		// Needed for conversion to LabeledSymbol
-		size_t convertLabel() const { return label_; }
-
-		/**
-		 * Encoding two numbers into a single size_t for conversion to Symbol
-		 * Stores the label in the upper bytes of the index
-		 */
-		size_t encode() const {
-			short label = (short) label_; //bound size of label to 2 bytes
-			size_t shift = (sizeof(size_t)-sizeof(short)) * 8;
-			size_t modifier = ((size_t) label) << shift;
-			return this->j_ + modifier;
-		}
-
-
-		// logic:
-
-		bool operator< (const TypedLabeledSymbol& compare) const {
-			if (label_ == compare.label_) // sort by label first
-				return this->j_<compare.j_;
-			else
-				return label_<compare.label_;
-		}
-		bool operator== (const TypedLabeledSymbol& compare) const
-				{ return this->j_==compare.j_ && label_ == compare.label_;}
-		int compare(const TypedLabeledSymbol& compare) const {
-			if (label_ == compare.label_) // sort by label first
-				return this->j_-compare.j_;
-			else
-				return label_-compare.label_;
-		}
-
-		// Testable Requirements
-		void print(const std::string& s="") const {
-					std::cout << s << ": " << (std::string)(*this) << std::endl;
-				}
-		bool equals(const TypedLabeledSymbol& expected, double tol=0.0) const
-				{ return (*this)==expected; }
-
-	private:
-
-		/** Serialization function */
-		friend class boost::serialization::access;
-		template<class Archive>
-		void serialize(Archive & ar, const unsigned int version) {
-			ar & BOOST_SERIALIZATION_NVP(this->j_);
-			ar & BOOST_SERIALIZATION_NVP(label_);
-		}
-	};
-
+	/** forward declaration to avoid circular dependencies */
+	template<class T, char C, typename L>
+	class TypedLabeledSymbol;
 
 	/**
 	 * Character and index key used in VectorConfig, GaussianFactorGraph,
@@ -259,72 +179,92 @@ namespace gtsam {
 	}
 
 	/**
-	 * Alternate version of Symbol for the Labeled typed keys
-	 * It is assumed that all Label types have a means to convert to
-	 * an unsigned int in the Symbol form.
+	 * TypedLabeledSymbol is a variation of the TypedSymbol that allows
+	 * for a runtime label to be placed on the label, so as to express
+	 * "Pose 5 for robot 3"
+	 * Labels should be kept to base datatypes (int, char, etc) to
+	 * minimize cost of comparisons
 	 *
-	 * At the moment, this is mostly useless due to the hardcoding of
-	 * the key in gaussian factors
+	 * The labels will be compared first when comparing Keys, followed by the
+	 * index
 	 */
-//	class LabeledSymbol : public Symbol, Testable<LabeledSymbol> {
-//	protected:
-//	  size_t label_;
-//
-//	public:
-//	  /** Default constructor */
-//	  LabeledSymbol() : Symbol(0, 0), label_(0) {}
-//
-//	  /** Copy constructor */
-//	  LabeledSymbol(const LabeledSymbol& key) : Symbol(key.c_, key.j_), label_(key.label_) {}
-//
-//	  /** Constructor */
-//	  LabeledSymbol(unsigned char c, size_t j, size_t label): Symbol(c, j), label_(label) {}
-//
-//	  /** Casting constructor from TypedSymbol */
-//	  template<class T, char C, typename L>
-//	  LabeledSymbol(const TypedLabeledSymbol<T,C,L>& symbol)
-//		  : Symbol(C, symbol.index()), label_(symbol.convertLabel()) {}
-//
-//		// Testable Requirements
-//		void print(const std::string& s="") const {
-//			std::cout << s << ": " << (std::string)(*this) << std::endl;
-//		}
-//		bool equals(const LabeledSymbol& expected, double tol=0.0) const { return (*this)==expected; }
-//
-//	  /** Retrieve key character */
-//	  unsigned char chr() const { return c_; }
-//
-//	  /** Retrieve key index */
-//	  size_t index() const { return j_; }
-//
-//	  /** Retrieve label number */
-//	  size_t label() const { return label_; }
-//
-//	  /** Create a string from the key */
-//	  operator std::string() const { return str(boost::format("%c%d_%d") % c_ % j_ % label_); }
-//
-//	  /** Comparison for use in maps */
-//	  bool operator< (const LabeledSymbol& comp) const {
-//		  return c_ < comp.c_ ||
-//			     (comp.c_ == c_ && label_ < comp.label_) ||
-//				 (comp.c_ == c_ && label_ == comp.label_ && j_ < comp.j_);
-//	  }
-//	  bool operator== (const LabeledSymbol& comp) const
-//			  { return comp.c_ == c_ && comp.j_ == j_ && label_ == comp.label_; }
-//	  bool operator!= (const LabeledSymbol& comp) const
-//			  { return comp.c_ != c_ || comp.j_ != j_ || comp.label_ != label_; }
-//
-//  private:
-//
-//    /** Serialization function */
-//    friend class boost::serialization::access;
-//    template<class Archive>
-//    void serialize(Archive & ar, const unsigned int version) {
-//      ar & BOOST_SERIALIZATION_NVP(c_);
-//      ar & BOOST_SERIALIZATION_NVP(j_);
-//      ar & BOOST_SERIALIZATION_NVP(label_);
-//    }
-//	};
+	template <class T, char C, typename L>
+	class TypedLabeledSymbol : public TypedSymbol<T, C>, Testable<TypedLabeledSymbol<T,C,L> >  {
 
+	protected:
+		// Label
+		L label_;
+
+	public:
+
+		// Constructors:
+
+		TypedLabeledSymbol() {}
+		TypedLabeledSymbol(size_t j, L label):TypedSymbol<T,C>(j), label_(label) {}
+
+		/** Constructor that decodes encoded labels */
+		TypedLabeledSymbol(const Symbol& sym) : TypedSymbol<T,C>(0) {
+			size_t shift = (sizeof(size_t)-sizeof(short)) * 8;
+			this->j_ = (sym.index() << shift) >> shift; // truncate upper bits
+			label_ = (L) (sym.index() >> shift); // remove lower bits
+		}
+
+		// Get stuff:
+
+		L label() const { return label_;}
+		const char* c_str() const { return (std::string)(*this).c_str();}
+		operator std::string() const
+				{ return (boost::format("%c%label%d") % C % label_ % this->j_).str(); }
+		std::string latex() const
+				{ return (boost::format("%c%label_{%d}") % C % label_ % this->j_).str(); }
+
+		// Needed for conversion to LabeledSymbol
+		size_t convertLabel() const { return label_; }
+
+		/**
+		 * Encoding two numbers into a single size_t for conversion to Symbol
+		 * Stores the label in the upper bytes of the index
+		 */
+		size_t encode() const {
+			short label = (short) label_; //bound size of label to 2 bytes
+			size_t shift = (sizeof(size_t)-sizeof(short)) * 8;
+			size_t modifier = ((size_t) label) << shift;
+			return this->j_ + modifier;
+		}
+
+		// logic:
+
+		bool operator< (const TypedLabeledSymbol& compare) const {
+			if (label_ == compare.label_) // sort by label first
+				return this->j_<compare.j_;
+			else
+				return label_<compare.label_;
+		}
+		bool operator== (const TypedLabeledSymbol& compare) const
+				{ return this->j_==compare.j_ && label_ == compare.label_;}
+		int compare(const TypedLabeledSymbol& compare) const {
+			if (label_ == compare.label_) // sort by label first
+				return this->j_-compare.j_;
+			else
+				return label_-compare.label_;
+		}
+
+		// Testable Requirements
+		void print(const std::string& s="") const {
+					std::cout << s << ": " << (std::string)(*this) << std::endl;
+				}
+		bool equals(const TypedLabeledSymbol& expected, double tol=0.0) const
+				{ return (*this)==expected; }
+
+	private:
+
+		/** Serialization function */
+		friend class boost::serialization::access;
+		template<class Archive>
+		void serialize(Archive & ar, const unsigned int version) {
+			ar & BOOST_SERIALIZATION_NVP(this->j_);
+			ar & BOOST_SERIALIZATION_NVP(label_);
+		}
+	};
 } // namespace gtsam
 
