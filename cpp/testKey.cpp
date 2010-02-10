@@ -54,27 +54,29 @@ TEST ( TypedLabledSymbol, basic_operations ) {
 	CHECK(key5 < key6);
 }
 
-/* ************************************************************************* *
+/* ************************************************************************* */
 TEST ( TypedLabledSymbol, encoding ) {
 	typedef TypedLabeledSymbol<Pose3, 'x', char> RobotKey;
 
-	cout << "short : " << sizeof(short) << "  size_t: " << sizeof(size_t) << endl;
-	cout << "unsigned int : " << sizeof(unsigned int) << endl;
-
 	RobotKey key1(37, 'A');
 
-	size_t index = key1.index();
-	size_t modifier = 65;
-	modifier = modifier << sizeof(size_t) * 4;
-	index += modifier;
-	cout << "index: " << index << "  modifier: " << modifier << endl;
+	// Note: calculations done in test due to possible differences between machines
+	// take the upper two bytes for the label
+	short label = key1.label();
 
+	// find the shift necessary
+	size_t shift = (sizeof(size_t)-sizeof(short)) * 8;
+	size_t modifier = label;
+	modifier = modifier << shift;
+	size_t index = key1.index() + modifier;
 
-//	short encoded = 65;
-//	size_t modifier = encoded << 32;
-//	size_t index = 37 + encoded;
-//	Symbol act(key1), exp('x', index);
-//	CHECK(assert_equal(exp, act));
+	// check index encoding
+	Symbol act1(key1), exp('x', index);
+	CHECK(assert_equal(exp, act1));
+
+	// check casting
+	Symbol act2 = (Symbol) key1;
+	CHECK(assert_equal(exp, act2));
 }
 
 

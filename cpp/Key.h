@@ -111,13 +111,13 @@ namespace gtsam {
 
 		/**
 		 * Encoding two numbers into a single size_t for conversion to Symbol
-		 * Stores the label in the upper bits of the index
-		 *
-		 * STILL IN TESTING - DO NOT USE!!
+		 * Stores the label in the upper bytes of the index
 		 */
-		size_t encode() {
-			//short label = label_;
-			return this->j_; // + (label << 32);
+		size_t encode() const {
+			short label = (short) label_; //bound size of label to 2 bytes
+			size_t shift = (sizeof(size_t)-sizeof(short)) * 8;
+			size_t modifier = ((size_t) label) << shift;
+			return this->j_ + modifier;
 		}
 
 
@@ -184,7 +184,7 @@ namespace gtsam {
 
 	  /** Casting constructor from TypedLabeledSymbol */
 	  template<class T, char C, typename L>
-	  Symbol(const TypedLabeledSymbol<T,C, L>& symbol): c_(C), j_(symbol.encode()) {}
+	  Symbol(const TypedLabeledSymbol<T,C,L>& symbol): c_(C), j_(symbol.encode()) {}
 
 	  /** "Magic" key casting constructor from string */
 #ifdef GTSAM_MAGIC_KEY
