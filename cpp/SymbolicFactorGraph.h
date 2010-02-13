@@ -14,8 +14,13 @@
 #include "SymbolicFactor.h"
 #include "SymbolicBayesNet.h"
 #include "Key.h"
+#include "LieConfig.h"
 
 namespace gtsam {
+
+	class Point2;
+
+	typedef LieConfig<Symbol, Point2> SymbolicConfig;
 
 	class SymbolicConditional;
 
@@ -78,6 +83,8 @@ namespace gtsam {
 
 	};
 
+	// save graph to the graphviz format
+	void saveGraph(const SymbolicFactorGraph& fg, const SymbolicConfig& config, const std::string& s);
 }
 
 #endif /* SYMBOLICFACTORGRAPH_H_ */

@@ -5,11 +5,16 @@
  *      Author: Frank Dellaert
  */
 
+#include <iostream>
+#include <fstream>
+#include <boost/format.hpp>
 #include <boost/foreach.hpp>
+#include "Point2.h"
 #include "Ordering.h"
 #include "SymbolicFactorGraph.h"
 #include "SymbolicBayesNet.h"
 #include "inference-inl.h"
+#include "LieConfig-inl.h"
 
 using namespace std;
 
@@ -36,6 +41,41 @@ namespace gtsam {
 			bayesNet.push_back(conditional);
 		}
 		return bayesNet;
+	}
+
+	/* ************************************************************************* */
+	void saveGraph(const SymbolicFactorGraph& fg, const SymbolicConfig& config, const std::string& s) {
+
+		Symbol key;
+		Point2 pt;
+		float scale = 100;
+
+		ofstream of(s.c_str());
+		of << "graph G{" << endl;
+		of << "bgcolor=\"transparent\";" << endl;
+
+		BOOST_FOREACH(boost::tie(key, pt), config){
+			of << (string)key << "[label=\"" << (string)key << "\"][pos=\"" << pt.x()*scale << "," << pt.y()*scale << "\"];" << endl;
+		}
+
+		int index = 0;
+		BOOST_FOREACH(const SymbolicFactorGraph::sharedFactor& factor, fg) {
+			index++;
+			Point2 center;
+			BOOST_FOREACH(const Symbol& key, factor->keys())
+				center = center + config[key];
+			center = Point2(center.x() / factor->keys().size(), center.y() / factor->keys().size());
+			of << "f" << index << "[pos=\"" << center.x()*scale << "," << center.y()*scale << "\"][shape=\"point\"];" << endl;
+			BOOST_FOREACH(const Symbol& key, factor->keys())
+				of << "f" << index << "--" << (string)key << endl;
+		}
+		of<<"}";
+		of.close();
+
+		char filename[100];
+		sscanf(s.c_str(), "%s.dot", filename);
+		string cmd = boost::str(boost::format("neato -s -n -Tpdf %s -o %s.pdf") % s % filename);
+		system(cmd.c_str());
 	}
 
 	/* ************************************************************************* */

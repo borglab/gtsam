@@ -135,6 +135,21 @@ TEST( GaussianFactorGraph, eliminate )
 }
 
 /* ************************************************************************* */
+TEST( GaussianFactorGraph, eliminate2 )
+{
+  // create a test graph
+	SymbolicFactorGraph fg;
+	fg.push_factor("x1", "x2");
+
+	fg.eliminateOne("x1");
+	SymbolicFactorGraph expected;
+	expected.push_back(boost::shared_ptr<SymbolicFactor>());
+	expected.push_factor("x2");
+
+	CHECK(assert_equal(expected, fg));
+}
+
+/* ************************************************************************* */
 TEST( SymbolicFactorGraph, constructFromBayesNet )
 {
 	// create expected factor graph
