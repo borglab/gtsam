@@ -333,6 +333,62 @@ TEST( BayesTree, removeTop3 )
 	CHECK(orphans.size() == 0);
 }
 /* ************************************************************************* */
+/**
+ *  x2 - x3 - x4 - x5
+ *   |  /       \   |
+ *  x1 /				 \ x6
+ */
+TEST( BayesTree, insert )
+{
+	// construct bayes tree by split the graph along the separator x3 - x4
+	Symbol _x4_('x', 4), _x5_('x', 5), _x6_('x', 6);
+	SymbolicFactorGraph fg1, fg2, fg3;
+	fg1.push_factor(_x3_, _x4_);
+	fg2.push_factor(_x1_, _x2_);
+	fg2.push_factor(_x2_, _x3_);
+	fg2.push_factor(_x1_, _x3_);
+	fg3.push_factor(_x4_, _x5_);
+	fg3.push_factor(_x5_, _x6_);
+	fg3.push_factor(_x4_, _x6_);
+
+	Ordering ordering1; ordering1 += _x3_, _x4_;
+	Ordering ordering2; ordering2 += _x1_, _x2_;
+	Ordering ordering3; ordering3 += _x6_, _x5_;
+
+	BayesNet<SymbolicConditional> bn1, bn2, bn3;
+	bn1 = fg1.eliminate(ordering1);
+	bn2 = fg2.eliminate(ordering2);
+	bn3 = fg3.eliminate(ordering3);
+
+	// insert child cliques
+	SymbolicBayesTree actual;
+	list<SymbolicBayesTree::sharedClique> children;
+	SymbolicBayesTree::sharedClique r1 = actual.insert(bn2, children);
+	SymbolicBayesTree::sharedClique r2 = actual.insert(bn3, children);
+
+	// insert root clique
+	children.push_back(r1);
+	children.push_back(r2);
+	actual.insert(bn1, children, true);
+
+	// traditional way
+	SymbolicFactorGraph fg;
+	fg.push_factor(_x3_, _x4_);
+	fg.push_factor(_x1_, _x2_);
+	fg.push_factor(_x2_, _x3_);
+	fg.push_factor(_x1_, _x3_);
+	fg.push_factor(_x4_, _x5_);
+	fg.push_factor(_x5_, _x6_);
+	fg.push_factor(_x4_, _x6_);
+
+	Ordering ordering;  ordering += _x1_, _x2_, _x6_, _x5_, _x3_, _x4_;
+	BayesNet<SymbolicConditional> bn;
+	bn = fg.eliminate(ordering);
+	SymbolicBayesTree expected(bn);
+	CHECK(assert_equal(expected, actual));
+
+}
+/* ************************************************************************* */
 
 int main() {
 	TestResult tr;

@@ -25,6 +25,10 @@ namespace gtsam {
 
 	/* ************************************************************************* */
 	template<class Conditional>
+	BayesTree<Conditional>::Clique::Clique() {}
+
+	/* ************************************************************************* */
+	template<class Conditional>
 	BayesTree<Conditional>::Clique::Clique(const sharedConditional& conditional) {
 			separator_ = conditional->parents();
 			this->push_back(conditional);
@@ -300,6 +304,18 @@ namespace gtsam {
 
 	/* ************************************************************************* */
 	template<class Conditional>
+	typename BayesTree<Conditional>::sharedClique BayesTree<Conditional>::addClique
+	(const sharedConditional& conditional, list<sharedClique>& child_cliques) {
+		sharedClique new_clique(new Clique(conditional));
+		nodes_.insert(make_pair(conditional->key(), new_clique));
+		new_clique->children_ = child_cliques;
+		BOOST_FOREACH(sharedClique& child, child_cliques)
+			child->parent_ = new_clique;
+		return new_clique;
+	}
+
+	/* ************************************************************************* */
+	template<class Conditional>
 	void BayesTree<Conditional>::removeClique(sharedClique clique) {
 
 		if (clique->isRoot())
@@ -337,8 +353,9 @@ namespace gtsam {
 			printf("WARNING: BayesTree.print encountered a forest...\n");
 			return;
 		}
-		cout << s << ": size == " << size() << endl;
+		cout << s << ": clique size == " << size() << ", node size == " << nodes_.size() <<  endl;
 		if (nodes_.empty()) return;
+		printf("printing tree!\n");
 		root_->printTree("");
 	}
 
@@ -407,6 +424,31 @@ namespace gtsam {
 
 		// otherwise, start a new clique and add it to the tree
 		addClique(conditional,parent_clique);
+	}
+
+	/* ************************************************************************* */
+	template<class Conditional>
+	typename BayesTree<Conditional>::sharedClique BayesTree<Conditional>::insert(
+			const BayesNet<Conditional>& bayesNet, list<sharedClique>& children, bool isRootClique)
+	{
+		if (bayesNet.size() == 0)
+			throw invalid_argument("BayesTree::insert: empty bayes net!");
+
+		// create a new clique and add all the conditionals to the clique
+		sharedClique new_clique;
+		typename BayesNet<Conditional>::sharedConditional conditional;
+		BOOST_REVERSE_FOREACH(conditional, bayesNet) {
+			if (!new_clique.get()) {
+				new_clique = addClique(conditional,children);
+			} else {
+				nodes_.insert(make_pair(conditional->key(), new_clique));
+				new_clique->push_front(conditional);
+			}
+		}
+
+		if (isRootClique) root_ = new_clique;
+
+		return new_clique;
 	}
 
 	/* ************************************************************************* */

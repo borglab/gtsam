@@ -51,6 +51,8 @@ namespace gtsam {
 			//* Constructor */
 			Clique(const sharedConditional& conditional);
 
+			Clique();
+
 			/** return keys in frontal:separator order */
 			Ordering keys() const;
 
@@ -100,17 +102,21 @@ namespace gtsam {
 		typedef SymbolMap<sharedClique> Nodes;
 		Nodes nodes_;
 
+	protected:
+
 		/** Root clique */
 		sharedClique root_;
 
-		/** add a clique */
+		/** remove a clique: warning, can result in a forest */
+		void removeClique(sharedClique clique);
+
+		/** add a clique (top down) */
 		sharedClique addClique(const sharedConditional& conditional,
 				sharedClique parent_clique = sharedClique());
 
-	protected:
-
-		/** remove a clique: warning, can result in a forest */
-		void removeClique(sharedClique clique);
+		/** add a clique (bottom up) */
+		sharedClique addClique(const sharedConditional& conditional,
+				std::list<sharedClique>& child_cliques);
 
 	public:
 
@@ -145,6 +151,12 @@ namespace gtsam {
 
 		/** insert a new conditional */
 		void insert(const sharedConditional& conditional, const IndexTable<Symbol>& index);
+
+		/** insert a new clique corresponding to the given bayes net.
+		 * it is the caller's responsibility to decide whether the given bayes net is a valid clique,
+		 * i.e. all the variables (frontal and separator) are connected */
+		sharedClique insert(const BayesNet<Conditional>& bayesNet,
+				std::list<sharedClique>& children, bool isRootClique = false);
 
 		/** number of cliques */
 		inline size_t size() const {
