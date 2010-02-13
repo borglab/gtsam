@@ -132,6 +132,11 @@ namespace gtsam {
 		template<class Key, class Factor2> void split(const PredecessorMap<Key>& tree,
 				FactorGraph<Factor>& Ab1, FactorGraph<Factor>& Ab2) const;
 
+		/**
+		 * Check consistency of the index map, useful for debugging
+		 */
+		void checkGraphConsistency() const;
+
 	private:
 		/** Associate factor index with the variables connected to the factor */
 		void associateFactor(int index, sharedFactor factor);

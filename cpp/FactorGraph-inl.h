@@ -262,6 +262,46 @@ void FactorGraph<Factor>::associateFactor(int index, sharedFactor factor) {
 }
 
 /* ************************************************************************* */
+template<class Factor> void FactorGraph<Factor>::checkGraphConsistency() const {
+  // Consistency check for debugging
+
+	// Make sure each factor is listed in its variables index lists
+  for(size_t i=0; i<factors_.size(); i++) {
+  	if(factors_[i] == NULL) {
+  		cout << "** Warning: factor " << i << " is NULL" << endl;
+  	} else {
+  		// Get involved variables
+  		list<Symbol> keys = factors_[i]->keys();
+
+  		// Make sure each involved variable is listed as being associated with this factor
+  		BOOST_FOREACH(const Symbol& var, keys) {
+  			if(std::find(indices_.at(var).begin(), indices_.at(var).end(), i) == indices_.at(var).end())
+  				cout << "*** Factor graph inconsistency: " << (string)var << " is not mapped to factor " << i << endl;
+  		}
+  	}
+  }
+
+  // Make sure each factor listed for a variable actually involves that variable
+  BOOST_FOREACH(const SymbolMap<list<int> >::value_type& var, indices_) {
+  	BOOST_FOREACH(int i, var.second) {
+  		if(i >= factors_.size()) {
+  			cout << "*** Factor graph inconsistency: " << (string)var.first << " lists factor " <<
+  					i << " but the graph does not contain this many factors." << endl;
+  		}
+  		if(factors_[i] == NULL) {
+  			cout << "*** Factor graph inconsistency: " << (string)var.first << " lists factor " <<
+  					i << " but this factor is set to NULL." << endl;
+  		}
+    	list<Symbol> keys = factors_[i]->keys();
+  		if(std::find(keys.begin(), keys.end(), var.first) == keys.end()) {
+  			cout << "*** Factor graph inconsistency: " << (string)var.first << " lists factor " <<
+  					i << " but this factor does not involve this variable." << endl;
+  		}
+  	}
+  }
+}
+
+/* ************************************************************************* */
 template<class Factor> template <class Key, class Factor2>
 PredecessorMap<Key> FactorGraph<Factor>::findMinimumSpanningTree() const {
 

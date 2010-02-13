@@ -843,5 +843,40 @@ TEST( GaussianFactorGraph, split )
 }
 
 /* ************************************************************************* */
+TEST(GaussianFactorGraph, replace)
+{
+	SharedDiagonal noise(sharedSigma(3, 1.0));
+
+	GaussianFactorGraph::sharedFactor f1(new GaussianFactor(
+			"x1", eye(3,3), "x2", eye(3,3), zero(3), noise));
+	GaussianFactorGraph::sharedFactor f2(new GaussianFactor(
+			"x2", eye(3,3), "x3", eye(3,3), zero(3), noise));
+	GaussianFactorGraph::sharedFactor f3(new GaussianFactor(
+			"x3", eye(3,3), "x4", eye(3,3), zero(3), noise));
+	GaussianFactorGraph::sharedFactor f4(new GaussianFactor(
+			"x5", eye(3,3), "x6", eye(3,3), zero(3), noise));
+
+	GaussianFactorGraph actual;
+	actual.push_back(f1);
+	actual.checkGraphConsistency();
+	actual.push_back(f2);
+	actual.checkGraphConsistency();
+	actual.push_back(f3);
+	actual.checkGraphConsistency();
+	actual.replace(0, f4);
+	actual.checkGraphConsistency();
+
+	GaussianFactorGraph expected;
+	expected.push_back(f4);
+	actual.checkGraphConsistency();
+	expected.push_back(f2);
+	actual.checkGraphConsistency();
+	expected.push_back(f3);
+	actual.checkGraphConsistency();
+
+	CHECK(assert_equal(expected, actual));
+}
+
+/* ************************************************************************* */
 int main() { TestResult tr; return TestRegistry::runAllTests(tr);}
 /* ************************************************************************* */
