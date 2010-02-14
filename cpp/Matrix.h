@@ -306,7 +306,7 @@ inline Matrix skewSymmetric(const Vector& w) { return skewSymmetric(w(0),w(1),w(
  * SVD computes economy SVD A=U*S*V'
  * @param A an m*n matrix
  * @param U output argument: m*n matrix
- * @param S output argument: n-dim vector of singular values, *not* sorted !!!
+ * @param S output argument: n-dim vector of singular values, sorted by default, pass false as last argument to avoid sorting!!!
  * @param V output argument: n*n matrix
  * @param sort boolean flag to sort singular values and V
  */ 
