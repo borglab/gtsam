@@ -31,7 +31,7 @@ namespace gtsam {
 			k = 0;
 			verbose = verb;
 			steepest = steep;
-			maxIterations == maxIt ? maxIt : dim(x) * (steepest ? 10 : 1);
+			maxIterations = (maxIt > 0) ? maxIt : dim(x) * (steepest ? 10 : 1);
 			reset = (size_t) (sqrt(dim(x)) + 0.5); // when to reset
 
 			// Start with g0 = A'*(A*x0-b), d0 = - g0
@@ -48,16 +48,18 @@ namespace gtsam {
 		}
 
 		/** print */
-		void print() {
+		void print(const V& x) {
 			cout << "iteration = " << k << endl;
+			gtsam::print(x,"x");
+			gtsam::print(g, "g");
 			cout << "dotg = " << gamma << endl;
-			gtsam::print(g,"g");
-			gtsam::print(d,"d");
-			gtsam::print(Ad,"Ad");
+			gtsam::print(d, "d");
+			gtsam::print(Ad, "Ad");
 		}
 
 		/** step the solution */
 		double takeOptimalStep(V& x) {
+			// TODO: can we use gamma instead of dot(d,g) ????? Answer not trivial
 			double alpha = -dot(d, g) / dot(Ad, Ad); // calculate optimal step-size
 			axpy(alpha, d, x); // // do step in new search direction, x += alpha*d
 			return alpha;
@@ -68,8 +70,9 @@ namespace gtsam {
 			k += 1; // increase iteration number
 
 			double alpha = takeOptimalStep(x);
+			print(x);
 
-			if (k == maxIterations) return true; //---------------------------------->
+			if (k >= maxIterations) return true; //---------------------------------->
 
 			// update gradient (or re-calculate at reset time)
 			if (k % reset == 0)
@@ -80,20 +83,20 @@ namespace gtsam {
 
 			// check for convergence
 			double new_gamma = dot(g, g);
-			if (verbose) cout << "iteration " << k << ": alpha = " << alpha << ", dotg = " << new_gamma << endl;
-			// print();
-			if (new_gamma < threshold) return true;  //---------------------------------->
+			if (verbose) cout << "iteration " << k << ": alpha = " << alpha
+					<< ", dotg = " << new_gamma << endl;
+			if (new_gamma < threshold) return true; //---------------------------------->
 
 			// calculate new search direction
 			if (steepest)
 				d = g;
 			else {
 				double beta = new_gamma / gamma;
-				gamma = new_gamma;
 				// d = g + d*beta;
 				scal(beta, d);
 				axpy(1.0, g, d);
 			}
+			gamma = new_gamma;
 
 			// In-place recalculation Ad <- A*d to avoid re-allocating Ad
 			Ab.multiplyInPlace(d, Ad);
@@ -109,11 +112,12 @@ namespace gtsam {
 	V conjugateGradients(const S& Ab, V x, bool verbose, double epsilon,
 			double epsilon_abs, size_t maxIterations, bool steepest = false) {
 
-		CGState<S, V, E> state(Ab, x, verbose, epsilon, epsilon_abs, maxIterations, steepest);
+		CGState<S, V, E> state(Ab, x, verbose, epsilon, epsilon_abs, maxIterations,
+				steepest);
 		if (state.gamma < state.threshold) return x;
 
 		if (verbose) cout << "CG: epsilon = " << epsilon << ", maxIterations = "
-				<< maxIterations << ", ||g0||^2 = " << state.gamma
+				<< state.maxIterations << ", ||g0||^2 = " << state.gamma
 				<< ", threshold = " << state.threshold << endl;
 
 		// loop maxIterations times
