@@ -210,7 +210,7 @@ TEST( SubgraphPreconditioner, conjugateGradients )
 	// Compare with non preconditioned version:
 	VectorConfig actual2 = conjugateGradientDescent(Ab, x1, verbose, epsilon,
 			maxIterations);
-	CHECK(assert_equal(xtrue,actual2,1e-5));
+	CHECK(assert_equal(xtrue,actual2,1e-4));
 }
 
 /* ************************************************************************* */

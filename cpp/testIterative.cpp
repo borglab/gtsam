@@ -26,6 +26,8 @@ using namespace std;
 using namespace gtsam;
 using namespace example;
 
+static bool verbose = false;
+
 /* ************************************************************************* */
 TEST( Iterative, steepestDescent )
 {
@@ -38,7 +40,6 @@ TEST( Iterative, steepestDescent )
 	// Do gradient descent
 	GaussianFactorGraph fg2 = createGaussianFactorGraph();
 	VectorConfig zero = createZeroDelta();
-	bool verbose = false;
 	VectorConfig actual = steepestDescent(fg2, zero, verbose);
 	CHECK(assert_equal(expected,actual,1e-2));
 }
@@ -62,20 +63,20 @@ TEST( Iterative, conjugateGradientDescent )
 
 	// Do conjugate gradient descent, System version
 	System Ab(A, b);
-	Vector actualX = conjugateGradientDescent(Ab, x0);
+	Vector actualX = conjugateGradientDescent(Ab, x0, verbose);
 	CHECK(assert_equal(expectedX,actualX,1e-9));
 
 	// Do conjugate gradient descent, Matrix version
-	Vector actualX2 = conjugateGradientDescent(A, b, x0);
+	Vector actualX2 = conjugateGradientDescent(A, b, x0, verbose);
 	CHECK(assert_equal(expectedX,actualX2,1e-9));
 
 	// Do conjugate gradient descent on factor graph
 	VectorConfig zero = createZeroDelta();
-	VectorConfig actual = conjugateGradientDescent(fg2, zero);
+	VectorConfig actual = conjugateGradientDescent(fg2, zero, verbose);
 	CHECK(assert_equal(expected,actual,1e-2));
 
 	// Test method
-	VectorConfig actual2 = fg2.conjugateGradientDescent(zero);
+	VectorConfig actual2 = fg2.conjugateGradientDescent(zero, verbose);
 	CHECK(assert_equal(expected,actual2,1e-2));
 }
 
@@ -122,7 +123,7 @@ TEST( Iterative, conjugateGradientDescent_soft_constraint )
 	zeros.insert("x2",zero(3));
 
 	GaussianFactorGraph fg = graph.linearize(config);
-	VectorConfig actual = conjugateGradientDescent(fg, zeros, false, 1e-3, 1e-5, 100);
+	VectorConfig actual = conjugateGradientDescent(fg, zeros, verbose, 1e-3, 1e-5, 100);
 
 	VectorConfig expected;
 	expected.insert("x1", zero(3));
@@ -169,7 +170,7 @@ TEST( Iterative, subgraphPCG )
 
 	// Solve the subgraph PCG
 	VectorConfig ybar = conjugateGradients<SubgraphPreconditioner, VectorConfig,
-			Errors> (system, zeros, false, 1e-5, 1e-5, 100);
+			Errors> (system, zeros, verbose, 1e-5, 1e-5, 100);
 	VectorConfig actual = system.x(ybar);
 
 	VectorConfig expected;
