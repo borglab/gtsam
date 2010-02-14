@@ -700,6 +700,11 @@ TEST( matrix, svd )
 /* ************************************************************************* */
 TEST( matrix, svdordering )
 {
+	/// Homography matrix for points
+	//Point2h(0, 0, 1), Point2h(4, 5, 1);
+	//Point2h(1, 0, 1), Point2h(5, 5, 1);
+	//Point2h(1, 1, 1), Point2h(5, 6, 1);
+	//Point2h(0, 1, 1), Point2h(4, 6, 1);
 	double data[] = {0,0,0,-4,-5,-1,0,0,0,
 					4,5,1,0,0,0,0,0,0,
 					0,0,0,0,0,0,0,0,0,
