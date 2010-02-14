@@ -308,11 +308,12 @@ inline Matrix skewSymmetric(const Vector& w) { return skewSymmetric(w(0),w(1),w(
  * @param U output argument: m*n matrix
  * @param S output argument: n-dim vector of singular values, *not* sorted !!!
  * @param V output argument: n*n matrix
+ * @param sort boolean flag to sort singular values and V
  */ 
-void svd(const Matrix& A, Matrix& U, Vector& S, Matrix& V);
+void svd(const Matrix& A, Matrix& U, Vector& S, Matrix& V, bool sort=true);
 
 // in-place version
-void svd(Matrix& A, Vector& S, Matrix& V);
+void svd(Matrix& A, Vector& S, Matrix& V, bool sort=true);
 
 /** Use SVD to calculate inverse square root of a matrix */
 Matrix inverse_square_root(const Matrix& A);

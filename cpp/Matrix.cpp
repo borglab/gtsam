@@ -866,7 +866,7 @@ Matrix cholesky_inverse(const Matrix &A)
 /* ************************************************************************* */
 
 // version with in place modification of A
-void svd(Matrix& A, Vector& s, Matrix& V) {
+void svd(Matrix& A, Vector& s, Matrix& V, bool sort) {
 
   const size_t m=A.size1(), n=A.size2();
 
@@ -878,7 +878,7 @@ void svd(Matrix& A, Vector& s, Matrix& V) {
 
   // perform SVD
   // need to pass pointer - 1 in NRC routines so u[1][1] is first element !
-  svdcmp(u-1,m,n,q-1,v-1);
+  svdcmp(u-1,m,n,q-1,v-1, sort);
 	
   // copy singular values back
   s.resize(n);
@@ -891,9 +891,9 @@ void svd(Matrix& A, Vector& s, Matrix& V) {
 }
 
 /* ************************************************************************* */
-void svd(const Matrix& A, Matrix& U, Vector& s, Matrix& V) {
+void svd(const Matrix& A, Matrix& U, Vector& s, Matrix& V, bool sort) {
   U = A;      // copy
-  svd(U,s,V); // call in-place version
+  svd(U,s,V,sort); // call in-place version
 }
 
 #if 0
@@ -941,7 +941,7 @@ Matrix square_root_positive(const Matrix& A) {
   // Perform SVD, TODO: symmetric SVD?
   Matrix U,V;
   Vector S;
-  svd(A,U,S,V);
+  svd(A,U,S,V,false);
 
   // invert and sqrt diagonal of S
   // We also arbitrarily choose sign to make result have positive signs

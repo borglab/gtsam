@@ -10,5 +10,5 @@
 #pragma once
 
 /** SVD decomposition */
-void svdcmp(double **a, int m, int n, double w[], double **v);
+void svdcmp(double **a, int m, int n, double w[], double **v, bool sort = true);
 
