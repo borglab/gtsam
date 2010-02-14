@@ -222,6 +222,15 @@ testCalibratedCamera_LDADD = libgtsam.la
 testSimpleCamera_SOURCES = testSimpleCamera.cpp
 testSimpleCamera_LDADD = libgtsam.la
 
+# Tensors
+headers += Tensor1Expression.h Tensor2Expression.h Tensor3Expression.h Tensor5Expression.h
+headers += Tensor1.h Tensor2.h Tensor3.h Tensor5.h
+headers += projectiveGeometry.h tensorInterface.h 
+sources += projectiveGeometry.cpp tensorInterface.cpp
+check_PROGRAMS += testHomography2
+testHomography2_SOURCES = testHomography2.cpp
+testHomography2_LDADD = libgtsam.la
+
 # Visual SLAM
 sources += visualSLAM.cpp
 check_PROGRAMS += testVSLAMFactor testVSLAMGraph testVSLAMConfig
