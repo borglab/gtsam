@@ -103,6 +103,11 @@ Vector operator^(const Matrix& A, const Vector & v);
 void transposeMultiplyAdd(double alpha, const Matrix& A, const Vector& e, Vector& x);
 
 /**
+ * BLAS Level-2 style x <- x + alpha*A'*e
+ */
+void transposeMultiplyAdd(double alpha, const Matrix& A, const Vector& e, SubVector& x);
+
+/**
  * overload * for vector*matrix multiplication (as BOOST does not)
  */
 inline Vector operator*(const Vector & v, const Matrix& A) { return prod(v,A);}

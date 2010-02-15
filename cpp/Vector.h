@@ -11,6 +11,7 @@
 
 #include <list>
 #include <boost/numeric/ublas/vector.hpp>
+#include <boost/numeric/ublas/vector_proxy.hpp>
 #include <boost/random/linear_congruential.hpp>
 
 // Vector is a *global* typedef
@@ -18,6 +19,7 @@
 #if ! defined (MEX_H)
 typedef boost::numeric::ublas::vector<double> Vector;
 #endif
+typedef boost::numeric::ublas::vector_range<Vector> SubVector;
 
 namespace gtsam {
 
@@ -218,6 +220,7 @@ void scal(double alpha, Vector& x);
  * BLAS Level 1 axpy: y <- alpha*x + y
  */
 void axpy(double alpha, const Vector& x, Vector& y);
+void axpy(double alpha, const Vector& x, SubVector& y);
 
 /**
  * Divide every element of a Vector into a scalar

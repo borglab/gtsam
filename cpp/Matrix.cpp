@@ -187,6 +187,19 @@ void transposeMultiplyAdd(double alpha, const Matrix& A, const Vector& e, Vector
 }
 
 /* ************************************************************************* */
+void transposeMultiplyAdd(double alpha, const Matrix& A, const Vector& e, SubVector& x) {
+	// ublas x += prod(trans(A),e) is terribly slow
+	// TODO: use BLAS
+  size_t m = A.size1(), n = A.size2();
+	for (int j = 0; j < n; j++) {
+		const double * ei = e.data().begin();
+		const double * aij = A.data().begin() + j;
+		for (int i = 0; i < m; i++, aij+=n, ei++)
+			x(j) += alpha * (*aij) * (*ei);
+	}
+}
+
+/* ************************************************************************* */
 Vector Vector_(const Matrix& A)
 {
   size_t m = A.size1(), n = A.size2();

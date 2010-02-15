@@ -263,6 +263,14 @@ namespace gtsam {
   }
 
   /* ************************************************************************* */
+  void axpy(double alpha, const Vector& x, SubVector& y) {
+  	size_t n = x.size();
+		assert (y.size()==n);
+  	for (size_t i = 0; i < n; i++)
+  		y[i] += alpha * x[i];
+  }
+
+  /* ************************************************************************* */
   Vector operator/(double s, const Vector& v) {
     Vector result(v.size());
     for(size_t i = 0; i < v.size(); i++)
