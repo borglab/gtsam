@@ -79,9 +79,9 @@ namespace example {
 	/* ************************************************************************* */
 	VectorConfig createVectorConfig() {
 		VectorConfig c;
+		c.insert("l1", Vector_(2, 0.0, -1.0));
 		c.insert("x1", Vector_(2, 0.0, 0.0));
 		c.insert("x2", Vector_(2, 1.5, 0.0));
-		c.insert("l1", Vector_(2, 0.0, -1.0));
 		return c;
 	}
 
@@ -102,18 +102,18 @@ namespace example {
 	/* ************************************************************************* */
 	VectorConfig createCorrectDelta() {
 		VectorConfig c;
+		c.insert("l1", Vector_(2, -0.1, 0.1));
 		c.insert("x1", Vector_(2, -0.1, -0.1));
 		c.insert("x2", Vector_(2, 0.1, -0.2));
-		c.insert("l1", Vector_(2, -0.1, 0.1));
 		return c;
 	}
 
 	/* ************************************************************************* */
 	VectorConfig createZeroDelta() {
 		VectorConfig c;
+		c.insert("l1", zero(2));
 		c.insert("x1", zero(2));
 		c.insert("x2", zero(2));
-		c.insert("l1", zero(2));
 		return c;
 	}
 
@@ -552,7 +552,7 @@ namespace example {
 		for (size_t x = 1; x <= N; x++)
 			for (size_t y = 1; y <= N; y++) {
 				zeros.insert(key(x, y), zero);
-				xtrue.add((Symbol)key(x, y), Point2(x,y).vector());
+				xtrue.insert((Symbol)key(x, y), Point2(x,y).vector());
 			}
 
 		// linearize around zero
