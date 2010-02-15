@@ -70,7 +70,6 @@ namespace gtsam {
 			k += 1; // increase iteration number
 
 			double alpha = takeOptimalStep(x);
-			print(x);
 
 			if (k >= maxIterations) return true; //---------------------------------->
 
