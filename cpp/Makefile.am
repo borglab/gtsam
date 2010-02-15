@@ -227,11 +227,13 @@ headers += tensors.h Tensor1.h Tensor2.h Tensor3.h Tensor4.h Tensor5.h
 headers += Tensor1Expression.h Tensor2Expression.h Tensor3Expression.h Tensor5Expression.h
 headers += projectiveGeometry.h tensorInterface.h 
 sources += projectiveGeometry.cpp tensorInterface.cpp
-check_PROGRAMS += testTensors testHomography2
+check_PROGRAMS += testTensors testHomography2 testTrifocal
 testHomography2_SOURCES = testHomography2.cpp
 testHomography2_LDADD = libgtsam.la
 testTensors_SOURCES = testTensors.cpp
 testTensors_LDADD = libgtsam.la
+testTrifocal_SOURCES = testTrifocal.cpp
+testTrifocal_LDADD = libgtsam.la
 
 # Visual SLAM
 sources += visualSLAM.cpp
