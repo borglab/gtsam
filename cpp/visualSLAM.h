@@ -34,8 +34,8 @@ namespace gtsam { namespace visualSLAM {
    * Non-linear factor for a constraint derived from a 2D measurement,
    * i.e. the main building block for visual SLAM.
    */
-  template <class Cfg=Config>
-  class GenericProjectionFactor : public NonlinearFactor2<Cfg, PoseKey, Pose3, PointKey, Point3>, Testable<GenericProjectionFactor<Cfg> > {
+  template <class Cfg=Config, class LmK=PointKey, class PosK=PoseKey>
+  class GenericProjectionFactor : public NonlinearFactor2<Cfg, PosK, Pose3, LmK, Point3>, Testable<GenericProjectionFactor<Cfg> > {
   private:
 
     // Keep a copy of measurement and calibration for I/O
@@ -45,7 +45,7 @@ namespace gtsam { namespace visualSLAM {
   public:
 
     // shorthand for base class type
-    typedef NonlinearFactor2<Cfg, PoseKey, Pose3, PointKey, Point3> Base;
+    typedef NonlinearFactor2<Cfg, PosK, Pose3, LmK, Point3> Base;
 
     // shorthand for a smart pointer to a factor
     typedef boost::shared_ptr<GenericProjectionFactor> shared_ptr;
@@ -64,8 +64,8 @@ namespace gtsam { namespace visualSLAM {
      * @param K the constant calibration
      */
     GenericProjectionFactor(const Point2& z,
-					const SharedGaussian& model, PoseKey j_pose,
-					PointKey j_landmark, const shared_ptrK& K) :
+					const SharedGaussian& model, PosK j_pose,
+					LmK j_landmark, const shared_ptrK& K) :
 				z_(z), K_(K), Base(model, j_pose, j_landmark) {
 			}
 
@@ -113,7 +113,8 @@ namespace gtsam { namespace visualSLAM {
     }
   };
 
-  typedef GenericProjectionFactor<Config> ProjectionFactor;
+  // Typedef for general use
+  typedef GenericProjectionFactor<Config, PointKey, PoseKey> ProjectionFactor;
 
 
 

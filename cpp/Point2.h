@@ -20,6 +20,10 @@ namespace gtsam {
    * Functional, so no set functions: once created, a point is constant.
    */
   class Point2: Testable<Point2>, public Lie<Point2> {
+  public:
+	  /// dimension of the variable - used to autodetect sizes
+	  static inline size_t dim() {return 2;}
+
   private:
     double x_, y_;
 		
