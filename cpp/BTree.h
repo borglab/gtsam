@@ -1,154 +1,404 @@
 /*
  *  Created on: Feb 3, 2010
- *      Author: cbeall3
+ *  @brief: purely functional binary tree
+ *  @Author: Chris Beall
+ *  @Author: Frank Dellaert
  */
 
-#include <boost/shared_ptr.hpp>
-#include <CppUnitLite/TestHarness.h>
-#include "Key.h"
-#include <iostream>
+#include <stack>
 #include <sstream>
+#include <boost/shared_ptr.hpp>
+#include <boost/function.hpp>
 
-//    type 'a t =
-//        Empty
-//      | Node of 'a t * key * 'a * 'a t * int
+namespace gtsam {
 
-namespace gtsam{
-
-template <class Key, class Value>
-struct Node {
-	typedef boost::shared_ptr<Node> Tree;
-	Tree left_, right_;
-	Key key_;
-	Value value_;
-	size_t height_;
 	/**
-	 * leaf node with height 1
+	 *  @brief Binary tree
 	 */
-	Node(const Key& key, const Value& value)
-	:key_(key),value_(value),height_(1) {}
-	Node(const Tree& l, const Key& key, const Value& value, const Tree& r, size_t height)
-	:left_(l),key_(key),value_(value),right_(r),height_(height) {}
-	Node() {}
-};
+	template<class Key, class Value>
+	class BTree {
 
-template <class Key, class Value>
-size_t height(const typename boost::shared_ptr<Node<Key,Value> >& t) {
-	if (t) return t->height_; else return 0;
-}
+	public:
 
-template <class Key, class Value>
-typename Node<Key,Value>::Tree create(const typename Node<Key,Value>::Tree& l, const Key& key,
-		const Value& value, const typename Node<Key,Value>::Tree& r) {
-	size_t hl = height(l), hr = height(r);
-	size_t h = hl >= hr ? hl + 1 : hr + 1;
-	return typename Node<Key,Value>::Tree(new Node<Key, Value>(l,key,value,r, h));
-}
+		typedef std::pair<Key, Value> value_type;
 
-template <class Key, class Value>
-typename Node<Key,Value>::Tree bal(const typename Node<Key,Value>::Tree& l, const Key& key,
-		const Value& value, const typename Node<Key,Value>::Tree& r) {
-	size_t hl = height(l), hr = height(r);
-	if(hl > hr+2) {
-		if(hl == 0) throw("Left tree is empty");
-		else if(height(l->left_) >= height(l->right_)) {
-		  //  create ll lv ld (create lr x d r)
-			return create(l->left_,l->key_,l->value_, create(l->right_, key, value, r));
-		}
-		else{
-			if(height(l->right_) == 0) throw("Left->Right is empty");
-			else {
-				 // create (create ll lv ld lrl) lrv lrd (create lrr x d r)
-				return create(
-						create(l->left_,l->key_,l->value_,l->right_->left_),
-						l->right_->key_,
-						l->right_->value_,
-						create(l->right_->right_,key,value,r));
+	private:
+
+		/**
+		 *  @brief Node in a tree
+		 */
+		struct Node {
+
+			size_t height_;
+			const value_type keyValue_;
+			BTree left, right;
+
+			/** default constructor */
+			Node() {
 			}
+
+			/**
+			 * leaf node with height 1
+			 */
+			Node(const value_type& keyValue) :
+				keyValue_(keyValue), height_(1) {
+			}
+
+			/**
+			 * Create a node from two subtrees and a key value pair
+			 */
+			Node(const BTree& l, const value_type& keyValue, const BTree& r) :
+				left(l), keyValue_(keyValue), right(r) {
+				size_t hl = l.height(), hr = r.height();
+				height_ = hl >= hr ? hl + 1 : hr + 1;
+			}
+
+			inline const Key& key() const { return keyValue_.first;}
+			inline const Value& value() const { return keyValue_.second;}
+
+		}; // Node
+
+		// We store a shared pointer to the root of the functional tree
+		// composed of Node classes. If root_==NULL, the tree is empty.
+		typedef boost::shared_ptr<Node> sharedNode;
+		sharedNode root_;
+
+		inline const value_type& keyValue() const { return root_->keyValue_;}
+		inline const Key&        key()      const { return root_->key();    }
+		inline const Value&      value()    const { return root_->value();  }
+		inline const BTree&      left()     const { return root_->left;     }
+		inline const BTree&      right()    const { return root_->right;    }
+
+		/** create a new balanced tree out of two trees and a key-value pair */
+		static BTree balance(const BTree& l, const value_type& xd, const BTree& r) {
+			size_t hl = l.height(), hr = r.height();
+			if (hl > hr + 2) {
+				const BTree& ll = l.left(), lr = l.right();
+				if (ll.height() >= lr.height())
+					return BTree(ll, l.keyValue(), BTree(lr, xd, r));
+				else {
+					BTree _left(ll, l.keyValue(), lr.left());
+					BTree _right(lr.right(), xd, r);
+					return BTree(_left, lr.keyValue(), _right);
+				}
+			} else if (hr > hl + 2) {
+				const BTree& rl = r.left(), rr = r.right();
+				if (rr.height() >= rl.height())
+					return BTree(BTree(l, xd, rl), r.keyValue(), rr);
+				else {
+					BTree _left(l, xd, rl.left());
+					BTree _right(rl.right(), r.keyValue(), rr);
+					return BTree(_left, rl.keyValue(), _right);
+				}
+			} else
+				return BTree(l, xd, r);
 		}
-	}
-	else if (hr > hl + 2) {
-		if(hr == 0) throw("Right tree is empty");
-		else if(height(r->right_) >= height(r->left_)) {
-			//  create (create l x d rl) rv rd rr
-			return create(create(l,key,value,r->left_),r->key_,r->value_,r);
+
+	public:
+
+		/** default constructor creates an empty tree */
+		BTree() {
 		}
-		else{
-			if(height(r->left_) == 0) throw("Right->Left is empty");
-		  else {
-			  //  create (create l x d rll) rlv rld (create rlr rv rd rr)
-			  return create(
-			  		create(l,key,value,r->left_->left_),
-			  		r->left_->key_,
-			  		r->left_->value_,
-			  		create(r->left_->right_,r->key_,r->value_,r->right_));
-		  }
+
+		/** create leaf from key-value pair */
+		BTree(const value_type& keyValue) :
+			root_(new Node(keyValue)) {
 		}
-	}
-	else {
-    return create(l,key,value,r);
-	}
-}
 
-template <class Key, class Value>
-typename Node<Key, Value>::Tree add(const Key& key, const Value& value, const typename Node<Key,Value>::Tree& tree) {
-	if(tree == NULL) {
-		return typename Node<Key,Value>::Tree(new Node<Key,Value>(key, value));
-	}
-	if(key == tree->key_) {
-		return typename Node<Key,Value>::Tree(new Node<Key, Value>(tree->left_, key, value, tree->right_, height(tree)));
-	}
-	else if( key < tree->key_) {
-		return bal(add(key, value, tree->left_), tree->key_, tree->value_, tree->right_);
-	}
-	else {
-		return bal(tree->left_, tree->key_, tree->value_, add(key, value, tree->right_));
-	}
-}
+		/** create from key-value pair and left, right subtrees */
+		BTree(const BTree& l, const value_type& keyValue, const BTree& r) :
+			root_(new Node(l, keyValue, r)) {
+		}
 
-template <class Key, class Value>
-boost::optional<Value> find(const typename boost::shared_ptr<Node<Key,Value> >& tree, const Key& key){
-  if(tree->key_ == key)
-  	return tree->value_;
-  if(key < tree->key_ && tree->left_ != NULL)
-  	return find(tree->left_, key);
-  else if(tree->right_ != NULL)
-  	return find(tree->right_,key);
-  return boost::none;
-}
+		/** Check whether tree is empty */
+		bool empty() const {
+			return !root_;
+		}
 
-template <class Key, class Value>
-typename Node<Key, Value>::Tree begin(const typename Node<Key,Value>::Tree& tree) {
-	if(tree->left_ !=NULL){
-		return begin(tree->left_);
-	}
-	else {
-		return tree;
-	}
-}
+		/** add a key-value pair */
+		BTree add(const value_type& xd) const {
+			if (empty()) return BTree(xd);
+			const Key& x = xd.first;
+			if (x == key())
+				return BTree(left(), xd, right());
+			else if (x < key())
+				return balance(left().add(xd), keyValue(), right());
+			else
+				return balance(left(), keyValue(), right().add(xd));
+		}
 
-template <class Key, class Value>
-typename Node<Key, Value>::Tree end(const typename Node<Key,Value>::Tree& tree) {
-	if(tree->right_ !=NULL){
-		return begin(tree->right_);
-	}
-	else {
-		return tree;
-	}
-}
+		/** add a key-value pair */
+		BTree add(const Key& x, const Value& d) const {
+			return add(make_pair(x, d));
+		}
 
-template <class Key, class Value>
-void walk(const typename boost::shared_ptr<Node<Key,Value> >& tree, std::string s) {
-	if(tree->left_ !=NULL) {
-		walk(tree->left_, s+"->l");
-	}
-	Key k = tree->key_;
-	std::stringstream ss;
-	ss << height(tree);
-	k.print(ss.str() +" "+ s);
-	if(tree->right_ !=NULL) {
-		walk(tree->right_, s+"->r");
-	}
-}
+		/** member predicate */
+		bool mem(const Key& x) const {
+			if (!root_) return false;
+			if (x == key()) return true;
+			if (x < key())
+				return left().mem(x);
+			else
+				return right().mem(x);
+		}
 
-}
+		/** Check whether trees are *exactly* the same (occupy same memory) */
+		inline bool same(const BTree& other) const {
+			return (other.root_ == root_);
+		}
+
+		/**
+		 * Check whether trees are structurally the same,
+		 * i.e., contain the same values in same tree-structure.
+		 */
+		bool operator==(const BTree& other) const {
+			if (other.root_ == root_) return true; // if same, we're done
+			if (empty() && !other.empty()) return false;
+			if (!empty() && other.empty()) return false;
+			// both non-empty, recurse: check this key-value pair and subtrees...
+			return (keyValue() == other.keyValue()) && (left() == other.left())
+					&& (right() == other.right());
+		}
+
+		inline bool operator!=(const BTree& other) const {
+			return !operator==(other);
+		}
+
+		/** minimum key binding */
+		const value_type& min() const {
+			if (!root_) throw std::invalid_argument("BTree::min: empty tree");
+			if (left().empty()) return keyValue();
+			return left().min();
+		}
+
+		/** remove minimum key binding */
+		BTree remove_min() const {
+			if (!root_) throw std::invalid_argument("BTree::remove_min: empty tree");
+			if (left().empty()) return right();
+			return balance(left().remove_min(), keyValue(), right());
+		}
+
+		/** merge two trees */
+		static BTree merge(const BTree& t1, const BTree& t2) {
+			if (t1.empty()) return t2;
+			if (t2.empty()) return t1;
+			const value_type& xd = t2.min();
+			return balance(t1, xd, t2.remove_min());
+		}
+
+		/** remove a key-value pair */
+		BTree remove(const Key& x) const {
+			if (!root_) return BTree();
+			if (x == key())
+				return merge(left(), right());
+			else if (x < key())
+				return balance(left().remove(x), keyValue(), right());
+			else
+				return balance(left(), keyValue(), right().remove(x));
+		}
+
+		/** Return height of the tree, 0 if empty */
+		size_t height() const {
+			return (root_ != NULL) ? root_->height_ : 0;
+		}
+
+		/** return size of the tree */
+		size_t size() const {
+			if (!root_) return 0;
+			return left().size() + 1 + right().size();
+		}
+
+
+#ifdef RECURSIVE_FIND
+		/** find a value given a key, throws exception when not found */
+		const Value& find(const Key& k) const {
+			if (!root_) throw std::invalid_argument("BTree::find: key '"
+					+ (std::string) k + "' not found");
+			const Node& node = *root_;
+			const Key& key = node.key();
+			if (k < key) return node.left.find(k);
+			if (key < k) return node.right.find(k);
+			return node.value(); // (key() == k)
+		}
+#else
+		/**
+		 *  find a value given a key, throws exception when not found
+		 *  Optimized non-recursive version as [find] is crucial for speed
+		 */
+		const Value& find(const Key& k) const {
+			Node* node = root_.get();
+			while (node) {
+				const Key& key = node->key();
+				if      (k < key) node = node->left.root_.get();
+				else if (key < k) node = node->right.root_.get();
+				else /* (key() == k) */ return node->value();
+			}
+			throw std::invalid_argument("BTree::find: key '" + (std::string) k + "' not found");
+		}
+#endif
+
+		/** print in-order */
+		void print(const std::string& s = "") const {
+			if (empty()) return;
+			Key k = key();
+			std::stringstream ss;
+			ss << height();
+			k.print(s + ss.str() + " ");
+			left().print(s + "L ");
+			right().print(s + "R ");
+		}
+
+		/** iterate over tree */
+		void iter(boost::function<void(const Key&, const Value&)> f) const {
+			if (!root_) return;
+			left().iter(f);
+			f(key(), value());
+			right().iter(f);
+		}
+
+		/** map key-values in tree over function f that computes a new value */
+		template<class To>
+		BTree<Key, To> map(boost::function<To(const Key&, const Value&)> f) const {
+			if (empty()) return BTree<Key, To> ();
+			std::pair<Key, To> xd(key(), f(key(), value()));
+			return BTree<Key, To> (left().map(f), xd, right().map(f));
+		}
+
+		/**
+		 * t.fold(f,a) computes [(f kN dN ... (f k1 d1 a)...)],
+		 * where [k1 ... kN] are the keys of all bindings in [m],
+		 * and [d1 ... dN] are the associated data.
+		 * The associated values are passed to [f] in reverse sort order
+		 */
+		template<class Acc>
+		Acc fold(boost::function<Acc(const Key&, const Value&, const Acc&)> f,
+				const Acc& a) const {
+			if (!root_) return a;
+			Acc ar = right().fold(f, a); // fold over right subtree
+			Acc am = f(key(), value(), ar); // apply f with current value
+			return left().fold(f, am); // fold over left subtree
+		}
+
+		/**
+		 *  @brief Const iterator
+		 *  Not trivial: iterator keeps a stack to indicate current path from root_
+		 */
+		class const_iterator {
+
+		private:
+
+			typedef const_iterator Self;
+			typedef std::pair<sharedNode, bool> flagged;
+
+			/** path to the iterator, annotated with flag */
+			std::stack<flagged> path_;
+
+			const sharedNode& current() const {
+				return path_.top().first;
+			}
+
+			bool done() const {
+				return path_.top().second;
+			}
+
+			// The idea is we already iterated through the left-subtree and current key-value.
+			// We now try pushing left subtree of right onto the stack. If there is no right
+			// sub-tree, we pop this node of the stack and the parent becomes the iterator.
+			// We avoid going down a right-subtree that was already visited by checking the flag.
+			void increment() {
+				if (path_.empty()) return;
+				sharedNode t = current()->right.root_;
+				if (!t || done()) {
+					// no right subtree, iterator becomes first parent with a non-visited right subtree
+					path_.pop();
+					while (!path_.empty() && done())
+						path_.pop();
+				} else {
+					path_.top().second = true; // flag we visited right
+					// push right root and its left-most path onto the stack
+					while (t) {
+						path_.push(make_pair(t, false));
+						t = t->left.root_;
+					}
+				}
+			}
+
+		public:
+
+			// traits for playing nice with STL
+			typedef ptrdiff_t difference_type; // correct ?
+			typedef std::forward_iterator_tag iterator_category;
+			typedef std::pair<Key, Value> value_type;
+			typedef const value_type* pointer;
+			typedef const value_type& reference;
+
+			/** initialize end */
+			const_iterator() {
+			}
+
+			/** initialize from root */
+			const_iterator(const sharedNode& root) {
+				sharedNode t = root;
+				while (t) {
+					path_.push(make_pair(t, false));
+					t = t->left.root_;
+				}
+			}
+
+			/** equality */
+			bool operator==(const Self& __x) const {
+				return path_ == __x.path_;
+			}
+
+			/** inequality */
+			bool operator!=(const Self& __x) const {
+				return path_ != __x.path_;
+			}
+
+			/** dereference */
+			reference operator*() const {
+				if (path_.empty()) throw std::invalid_argument(
+						"operator*: tried to dereference end");
+				return current()->keyValue_;
+			}
+
+			/** dereference */
+			pointer operator->() const {
+				if (path_.empty()) throw std::invalid_argument(
+						"operator->: tried to dereference end");
+				return &(current()->keyValue_);
+			}
+
+			/** pre-increment */
+			Self& operator++() {
+				increment();
+				return *this;
+			}
+
+			/** post-increment */
+			Self operator++(int) {
+				Self __tmp = *this;
+				increment();
+				return __tmp;
+			}
+
+		}; // const_iterator
+
+		// hack to make BTree work with BOOST_FOREACH
+		// We do *not* want a non-const iterator
+		typedef const_iterator iterator;
+
+		/** return iterator */
+		const_iterator begin() const {
+			return const_iterator(root_);
+		}
+
+		/** return iterator */
+		const_iterator end() const {
+			return const_iterator();
+		}
+
+	}; // BTree
+
+} // namespace gtsam
+
