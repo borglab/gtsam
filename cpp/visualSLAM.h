@@ -35,8 +35,8 @@ namespace gtsam { namespace visualSLAM {
    * i.e. the main building block for visual SLAM.
    */
   template <class Cfg=Config, class LmK=PointKey, class PosK=PoseKey>
-  class GenericProjectionFactor : public NonlinearFactor2<Cfg, PosK, Pose3, LmK, Point3>, Testable<GenericProjectionFactor<Cfg> > {
-  private:
+  class GenericProjectionFactor : public NonlinearFactor2<Cfg, PosK, Pose3, LmK, Point3>, Testable<GenericProjectionFactor<Cfg, LmK, PosK> > {
+  protected:
 
     // Keep a copy of measurement and calibration for I/O
     Point2 z_;
@@ -81,9 +81,9 @@ namespace gtsam { namespace visualSLAM {
     /**
      * equals
      */
-    bool equals(const GenericProjectionFactor<Cfg>& p, double tol = 1e-9) const {
-        return Base::equals(p, tol) && z_.equals(p.z_, tol)
-                  && K_->equals(*p.K_, tol);
+    bool equals(const GenericProjectionFactor<Cfg, LmK, PosK>& p, double tol = 1e-9) const {
+        return Base::equals(p, tol) && this->z_.equals(p.z_, tol)
+                  && this->K_->equals(*p.K_, tol);
     }
 
     //    /** h(x) */
