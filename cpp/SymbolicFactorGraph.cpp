@@ -20,6 +20,8 @@ using namespace std;
 
 namespace gtsam {
 
+	INSTANTIATE_LIE_CONFIG(Symbol, Point2)
+
 	// Explicitly instantiate so we don't have to include everywhere
 	template class FactorGraph<SymbolicFactor>;
 
