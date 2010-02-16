@@ -20,6 +20,9 @@ namespace gtsam {
 
   /** A 3D point */
   class Point3: Testable<Point3>, public Lie<Point3> {
+  public:
+	  /// dimension of the variable - used to autodetect sizes
+	  static inline size_t dim() {return 3;}
   private:
     double x_, y_, z_;  
 		
