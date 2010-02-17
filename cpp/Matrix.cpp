@@ -187,7 +187,7 @@ void transposeMultiplyAdd(double alpha, const Matrix& A, const Vector& e, Vector
 }
 
 /* ************************************************************************* */
-void transposeMultiplyAdd(double alpha, const Matrix& A, const Vector& e, SubVector& x) {
+void transposeMultiplyAdd(double alpha, const Matrix& A, const Vector& e, SubVector x) {
 	// ublas x += prod(trans(A),e) is terribly slow
 	// TODO: use BLAS
   size_t m = A.size1(), n = A.size2();

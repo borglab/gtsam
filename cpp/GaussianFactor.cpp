@@ -215,10 +215,7 @@ void GaussianFactor::transposeMultiplyAdd(double alpha, const Vector& e,
 	Vector E = alpha * model_->whiten(e);
 	// Just iterate over all A matrices and insert Ai^e into VectorConfig
 	FOREACH_PAIR(j, Aj, As_)
-	{
-		Vector& Xj = x.getReference(*j);
-		gtsam::transposeMultiplyAdd(1.0, *Aj, E, Xj);
-	}
+		gtsam::transposeMultiplyAdd(1.0, *Aj, E, x[*j]);
 }
 
 /* ************************************************************************* */  
@@ -479,28 +476,6 @@ GaussianFactor::eliminate(const Symbol& key) const
 
 	// TODO: this is where to split
 	return eliminateMatrix(Ab, model_, ordering, dimensions());
-}
-
-/* ************************************************************************* */
-// Creates a factor on step-size, given initial estimate and direction d, e.g.
-// Factor |A1*x+A2*y-b|/sigma -> |A1*(x0+alpha*dx)+A2*(y0+alpha*dy)-b|/sigma
-//                            -> |(A1*dx+A2*dy)*alpha-(b-A1*x0-A2*y0)|/sigma
-/* ************************************************************************* */
-GaussianFactor::shared_ptr GaussianFactor::alphaFactor(const Symbol& key, const VectorConfig& x,
-		const VectorConfig& d) const {
-
-	// Calculate A matrix
-	size_t m = b_.size();
-	Vector A = zero(m);
-  FOREACH_PAIR(j, Aj, As_)
-  	A += *Aj * d[*j];
-
-  // calculate the value of the factor for RHS
-	Vector b = - unweighted_error(x);
-
-	// construct factor
-	shared_ptr factor(new GaussianFactor(key,Matrix_(A),b,model_));
-	return factor;
 }
 
 /* ************************************************************************* */

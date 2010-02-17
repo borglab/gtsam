@@ -14,7 +14,7 @@ using namespace boost::assign;
 #define GTSAM_MAGIC_KEY
 
 #include "Ordering.h"
-#include "iterative.h"
+#include "VectorConfig.h"
 #include "smallExample.h"
 #include "pose2SLAM.h"
 #include "SubgraphPreconditioner.h"
@@ -92,7 +92,7 @@ TEST( Iterative, conjugateGradientDescent_hard_constraint )
 	Pose2Graph graph;
 	Matrix cov = eye(3);
 	graph.push_back(Pose2Graph::sharedFactor(new Pose2Factor(Key(1), Key(2), Pose2(1.,0.,0.), cov)));
-	graph.addConstraint(1, config[1]);
+	graph.addHardConstraint(1, config[1]);
 
 	VectorConfig zeros;
 	zeros.insert("x1",zero(3));
@@ -144,10 +144,6 @@ TEST( Iterative, subgraphPCG )
 	graph.addPrior(1, Pose2(0.,0.,0.), Isotropic::Sigma(3, 1e-10));
 	graph.addConstraint(1,2, Pose2(1.,0.,0.), Isotropic::Sigma(3, 1));
 
-	VectorConfig zeros;
-	zeros.insert("x1",zero(3));
-	zeros.insert("x2",zero(3));
-
 	// generate spanning tree and create ordering
 	PredecessorMap<Key> tree = graph.findMinimumSpanningTree<Key, Pose2Factor>();
 	list<Key> keys = predecessorMap2Keys(tree);
@@ -168,6 +164,8 @@ TEST( Iterative, subgraphPCG )
 	SubgraphPreconditioner::sharedConfig xbar = optimize_(*Rc1);
 	SubgraphPreconditioner system(Ab1, Ab2, Rc1, xbar);
 
+	VectorConfig zeros = VectorConfig::zero(*xbar);
+
 	// Solve the subgraph PCG
 	VectorConfig ybar = conjugateGradients<SubgraphPreconditioner, VectorConfig,
 			Errors> (system, zeros, verbose, 1e-5, 1e-5, 100);
@@ -178,6 +176,7 @@ TEST( Iterative, subgraphPCG )
 	expected.insert("x2", Vector_(3, -0.5, 0., 0.));
 	CHECK(assert_equal(expected, actual));
 }
+
 /* ************************************************************************* */
 int main() {
 	TestResult tr;

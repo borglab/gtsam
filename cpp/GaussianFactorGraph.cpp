@@ -86,8 +86,10 @@ VectorConfig GaussianFactorGraph::operator^(const Errors& e) const {
 	VectorConfig x;
 	// For each factor add the gradient contribution
 	Errors::const_iterator it = e.begin();
-	BOOST_FOREACH(sharedFactor Ai,factors_)
-		x += (*Ai)^(*(it++));
+	BOOST_FOREACH(sharedFactor Ai,factors_) {
+		VectorConfig xi = (*Ai)^(*(it++));
+		x.insertAdd(xi);
+	}
 	return x;
 }
 
@@ -103,8 +105,10 @@ void GaussianFactorGraph::transposeMultiplyAdd(double alpha, const Errors& e,
 
 /* ************************************************************************* */
 VectorConfig GaussianFactorGraph::gradient(const VectorConfig& x) const {
-	const GaussianFactorGraph& A = *this;
-	return A^errors(x);
+	// It is crucial for performance to make a zero-valued clone of x
+	VectorConfig g = VectorConfig::zero(x);
+	transposeMultiplyAdd(1.0, errors(x), g);
+	return g;
 }
 
 /* ************************************************************************* */
@@ -387,27 +391,6 @@ Matrix GaussianFactorGraph::sparse(const Dimensions& indices) const {
 
 	// return the result
 	return ijs;
-}
-
-/* ************************************************************************* */
-VectorConfig GaussianFactorGraph::optimalUpdate(const VectorConfig& x,
-		const VectorConfig& d) const {
-
-	// create a new graph on step-size
-	GaussianFactorGraph alphaGraph;
-	Symbol alphaKey('\224', 1);
-	BOOST_FOREACH(sharedFactor factor,factors_) {
-		sharedFactor alphaFactor = factor->alphaFactor(alphaKey, x,d);
-		alphaGraph.push_back(alphaFactor);
-	}
-
-	// solve it for optimal step-size alpha
-	GaussianConditional::shared_ptr gc = alphaGraph.eliminateOne(alphaKey);
-	double alpha = gc->get_d()(0);
-	cout << alpha << endl;
-
-	// return updated estimate by stepping in direction d
-  return expmap(x, d.scale(alpha));
 }
 
 /* ************************************************************************* */

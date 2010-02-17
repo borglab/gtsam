@@ -230,13 +230,6 @@ public:
 	boost::tuple<std::list<int>, std::list<int>, std::list<double> >
 		sparse(const Dimensions& columnIndices) const;
 
-	/**
-	 * Create a GaussianFactor on one variable 'alpha' (step size), in direction d
-	 * @param x: starting point for search
-	 * @param d: search direction
-	 */
-	shared_ptr alphaFactor(const Symbol& key, const VectorConfig& x, const VectorConfig& d) const;
-
 	/* ************************************************************************* */
 	// MUTABLE functions. FD:on the path to being eradicated
 	/* ************************************************************************* */

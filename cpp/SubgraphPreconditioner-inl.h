@@ -68,9 +68,7 @@ namespace gtsam {
 	/* ************************************************************************* */
 	template<class G, class T>
 	VectorConfig SubgraphPCG<G, T>::optimize(SubgraphPreconditioner& system) const {
-		//TODO: 3 is hard coded here
-		VectorConfig zeros;
-		BOOST_FOREACH(const Symbol& j, *ordering_) zeros.insert(j,zero(Pose::dim()));
+		VectorConfig zeros = system.zero();
 
 		// Solve the subgraph PCG
 		VectorConfig ybar = conjugateGradients<SubgraphPreconditioner, VectorConfig,

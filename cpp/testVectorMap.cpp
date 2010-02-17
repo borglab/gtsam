@@ -1,5 +1,5 @@
 /**
- * @file   testVectorConfig.cpp
+ * @file   testVectorMap.cpp
  * @brief  Unit tests for Factor Graph Configuration
  * @author Carlos Nieto
  **/
@@ -19,28 +19,37 @@
 
 #include <CppUnitLite/TestHarness.h>
 #include "Matrix.h"
-#include "VectorConfig.h"
-#include "smallExample.cpp"
+#include "VectorMap.h"
 
 using namespace std;
 using namespace gtsam;
-using namespace example;
+
+static Symbol l1('l',1), x1('x',1), x2('x',2);
 
 /* ************************************************************************* */
-TEST( VectorConfig, equals1 )
+VectorMap smallVectorMap() {
+	VectorMap c;
+	c.insert(l1, Vector_(2,  0.0, -1.0));
+	c.insert(x1, Vector_(2,  0.0,  0.0));
+	c.insert(x2, Vector_(2,  1.5,  0.0));
+	return c;
+}
+
+/* ************************************************************************* */
+TEST( VectorMap, equals1 )
  {
-   VectorConfig expected;
+   VectorMap expected;
    Vector v = Vector_(3, 5.0, 6.0, 7.0);
    expected.insert("a",v);
-   VectorConfig actual;
+   VectorMap actual;
    actual.insert("a",v);
    CHECK(assert_equal(expected,actual));
 }
 
 /* ************************************************************************* */
-TEST( VectorConfig, equals2 )
+TEST( VectorMap, equals2 )
  {	 
-   VectorConfig cfg1, cfg2;
+   VectorMap cfg1, cfg2;
    Vector v1 = Vector_(3, 5.0, 6.0, 7.0);
    Vector v2 = Vector_(3, 5.0, 6.0, 8.0);
    cfg1.insert("x", v1);
@@ -54,9 +63,9 @@ TEST( VectorConfig, equals2 )
 #include <limits>
 double inf = std::numeric_limits<double>::infinity();
 
-TEST( VectorConfig, equals_nan )
+TEST( VectorMap, equals_nan )
  {
-   VectorConfig cfg1, cfg2;
+   VectorMap cfg1, cfg2;
    Vector v1 = Vector_(3, 5.0, 6.0, 7.0);
    Vector v2 = Vector_(3, inf, inf, inf);
    cfg1.insert("x", v1);
@@ -66,9 +75,9 @@ TEST( VectorConfig, equals_nan )
  }
 
 /* ************************************************************************* */
-TEST( VectorConfig, contains)
+TEST( VectorMap, contains)
 {
-  VectorConfig fg;
+  VectorMap fg;
   Vector v = Vector_(3, 5.0, 6.0, 7.0);
   fg.insert("a", v);
   CHECK(fg.contains("a"));
@@ -76,43 +85,43 @@ TEST( VectorConfig, contains)
 }
 
 /* ************************************************************************* */
-TEST( VectorConfig, expmap)
+TEST( VectorMap, expmap)
 {
-	VectorConfig c = createVectorConfig();
+	VectorMap c = smallVectorMap();
 	Vector v = Vector_(6, 0.0,-1.0, 0.0, 0.0, 1.5, 0.0); // l1, x1, x2
   CHECK(assert_equal(expmap(c,c),expmap(c,v)));
 }
 
 /* ************************************************************************* */
-TEST( VectorConfig, plus)
+TEST( VectorMap, plus)
 {
-  VectorConfig c;
+  VectorMap c;
   Vector vx = Vector_(3, 5.0, 6.0, 7.0), vy = Vector_(2, 8.0, 9.0);
-  c += VectorConfig("x",vx);
-  c += VectorConfig("y",vy);
+  c += VectorMap("x",vx);
+  c += VectorMap("y",vy);
 
-  VectorConfig delta;
+  VectorMap delta;
   Vector dx = Vector_(3, 1.0, 1.0, 1.0), dy = Vector_(2, -1.0, -1.0);
   delta.insert("x", dx).insert("y",dy);
 
-  VectorConfig expected;
+  VectorMap expected;
   Vector wx = Vector_(3, 6.0, 7.0, 8.0), wy = Vector_(2, 7.0, 8.0);
   expected.insert("x", wx).insert("y",wy);
 
   // functional
-  VectorConfig actual = expmap(c,delta);
+  VectorMap actual = expmap(c,delta);
   CHECK(assert_equal(expected,actual));
 }
 
 /* ************************************************************************* */
-TEST( VectorConfig, scale) {
-	VectorConfig cfg;
+TEST( VectorMap, scale) {
+	VectorMap cfg;
 	cfg.insert("x", Vector_(2, 1.0, 2.0));
 	cfg.insert("y", Vector_(2,-1.0,-2.0));
 
-	VectorConfig actual = cfg.scale(2.0);
+	VectorMap actual = cfg.scale(2.0);
 
-	VectorConfig expected;
+	VectorMap expected;
 	expected.insert("x", Vector_(2, 2.0, 4.0));
 	expected.insert("y", Vector_(2,-2.0,-4.0));
 
@@ -120,42 +129,42 @@ TEST( VectorConfig, scale) {
 }
 
 /* ************************************************************************* */
-TEST( VectorConfig, axpy) {
-  VectorConfig x,y,expected;
-  x += VectorConfig("x",Vector_(3, 1.0, 1.0, 1.0));
-  x += VectorConfig("y",Vector_(2, -1.0, -1.0));
-  y += VectorConfig("x",Vector_(3, 5.0, 6.0, 7.0));
-  y += VectorConfig("y",Vector_(2, 8.0, 9.0));
-  expected += VectorConfig("x",Vector_(3, 15.0, 16.0, 17.0));
-  expected += VectorConfig("y",Vector_(2, -2.0, -1.0));
+TEST( VectorMap, axpy) {
+  VectorMap x,y,expected;
+  x += VectorMap("x",Vector_(3, 1.0, 1.0, 1.0));
+  x += VectorMap("y",Vector_(2, -1.0, -1.0));
+  y += VectorMap("x",Vector_(3, 5.0, 6.0, 7.0));
+  y += VectorMap("y",Vector_(2, 8.0, 9.0));
+  expected += VectorMap("x",Vector_(3, 15.0, 16.0, 17.0));
+  expected += VectorMap("y",Vector_(2, -2.0, -1.0));
   axpy(10,x,y);
   CHECK(assert_equal(expected,y));
 }
 
 /* ************************************************************************* */
-TEST( VectorConfig, scal) {
-  VectorConfig x,expected;
-  x += VectorConfig("x",Vector_(3, 1.0, 2.0, 3.0));
-  x += VectorConfig("y",Vector_(2, 4.0, 5.0));
-  expected += VectorConfig("x",Vector_(3, 10.0, 20.0, 30.0));
-  expected += VectorConfig("y",Vector_(2, 40.0, 50.0));
+TEST( VectorMap, scal) {
+  VectorMap x,expected;
+  x += VectorMap("x",Vector_(3, 1.0, 2.0, 3.0));
+  x += VectorMap("y",Vector_(2, 4.0, 5.0));
+  expected += VectorMap("x",Vector_(3, 10.0, 20.0, 30.0));
+  expected += VectorMap("y",Vector_(2, 40.0, 50.0));
   scal(10,x);
   CHECK(assert_equal(expected,x));
 }
 
 /* ************************************************************************* */
-TEST( VectorConfig, update_with_large_delta) {
+TEST( VectorMap, update_with_large_delta) {
 	// this test ensures that if the update for delta is larger than
 	// the size of the config, it only updates existing variables
-	VectorConfig init, delta;
+	VectorMap init, delta;
 	init.insert("x", Vector_(2, 1.0, 2.0));
 	init.insert("y", Vector_(2, 3.0, 4.0));
 	delta.insert("x", Vector_(2, 0.1, 0.1));
 	delta.insert("y", Vector_(2, 0.1, 0.1));
 	delta.insert("p", Vector_(2, 0.1, 0.1));
 
-	VectorConfig actual = expmap(init,delta);
-	VectorConfig expected;
+	VectorMap actual = expmap(init,delta);
+	VectorMap expected;
 	expected.insert("x", Vector_(2, 1.1, 2.1));
 	expected.insert("y", Vector_(2, 3.1, 4.1));
 
@@ -163,45 +172,45 @@ TEST( VectorConfig, update_with_large_delta) {
 }
 
 /* ************************************************************************* */
-TEST( VectorConfig, dot) {
-	VectorConfig c = createVectorConfig();
+TEST( VectorMap, dot) {
+	VectorMap c = smallVectorMap();
 	DOUBLES_EQUAL(3.25,dot(c,c),1e-9);
 }
 
 /* ************************************************************************* */
-TEST( VectorConfig, dim) {
-	VectorConfig c = createVectorConfig();
+TEST( VectorMap, dim) {
+	VectorMap c = smallVectorMap();
 	LONGS_EQUAL(6,c.dim());
 }
 
 /* ************************************************************************* */
-TEST( VectorConfig, operators) {
-	VectorConfig c; c.insert("x", Vector_(2, 1.1, 2.2));
-	VectorConfig expected1; expected1.insert("x", Vector_(2, 2.2, 4.4));
+TEST( VectorMap, operators) {
+	VectorMap c; c.insert("x", Vector_(2, 1.1, 2.2));
+	VectorMap expected1; expected1.insert("x", Vector_(2, 2.2, 4.4));
 	CHECK(assert_equal(expected1,c*2));
 	CHECK(assert_equal(expected1,c+c));
-	VectorConfig expected2; expected2.insert("x", Vector_(2, 0.0, 0.0));
+	VectorMap expected2; expected2.insert("x", Vector_(2, 0.0, 0.0));
 	CHECK(assert_equal(expected2,c-c));
 }
 
 /* ************************************************************************* */
-TEST( VectorConfig, getReference) {
-	VectorConfig c; c.insert("x", Vector_(2, 1.1, 2.2));
-	Vector& cx = c.getReference("x");
+TEST( VectorMap, getReference) {
+	VectorMap c; c.insert("x", Vector_(2, 1.1, 2.2));
+	Vector& cx = c["x"];
 	cx = cx*2.0;
-	VectorConfig expected; expected.insert("x", Vector_(2, 2.2, 4.4));
+	VectorMap expected; expected.insert("x", Vector_(2, 2.2, 4.4));
 	CHECK(assert_equal(expected,c));
 }
 
 /* ************************************************************************* */
 #ifdef HAVE_BOOST_SERIALIZATION
-TEST( VectorConfig, serialize)
+TEST( VectorMap, serialize)
 {
     //DEBUG:
-    cout << "VectorConfig: Running Serialization Test" << endl;
+    cout << "VectorMap: Running Serialization Test" << endl;
     
-    //create an VectorConfig
-    VectorConfig fg = createConfig();
+    //create an VectorMap
+    VectorMap fg = createConfig();
     
     //serialize the config
     std::ostringstream in_archive_stream;
@@ -212,7 +221,7 @@ TEST( VectorConfig, serialize)
     //deserialize the config
     std::istringstream out_archive_stream(serialized_fgc);
     boost::archive::text_iarchive out_archive(out_archive_stream);
-    VectorConfig output;
+    VectorMap output;
     out_archive >> output;
     
     //check for equality

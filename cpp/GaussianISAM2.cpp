@@ -31,7 +31,7 @@ void optimize2(const GaussianISAM2::sharedClique& clique, double threshold, Vect
     result.insert(cg->key(), x);   // store result in partial solution
   }
 	if (process_children) {
-		BOOST_FOREACH(GaussianISAM2::sharedClique child, clique->children_) {
+		BOOST_FOREACH(const GaussianISAM2::sharedClique& child, clique->children_) {
 			optimize2(child, threshold, result);
 		}
 	}

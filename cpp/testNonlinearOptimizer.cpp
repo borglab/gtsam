@@ -205,25 +205,34 @@ TEST( NonlinearOptimizer, Factorization )
 /* ************************************************************************* */
 TEST( NonlinearOptimizer, SubgraphPCG )
 {
-	typedef NonlinearOptimizer<Pose2Graph, Pose2Config, SubgraphPreconditioner, SubgraphPCG<Pose2Graph, Pose2Config> > Optimizer;
+	typedef NonlinearOptimizer<Pose2Graph, Pose2Config, SubgraphPreconditioner,
+			SubgraphPCG<Pose2Graph, Pose2Config> > Optimizer;
 
-	boost::shared_ptr<Pose2Config> config(new Pose2Config);
-	config->insert(1, Pose2(0.,0.,0.));
-	config->insert(2, Pose2(1.5,0.,0.));
-
+	// Create a graph
 	boost::shared_ptr<Pose2Graph> graph(new Pose2Graph);
-	graph->addPrior(1, Pose2(0.,0.,0.), Isotropic::Sigma(3, 1e-10));
-	graph->addConstraint(1,2, Pose2(1.,0.,0.), Isotropic::Sigma(3, 1));
+	graph->addPrior(1, Pose2(0., 0., 0.), Isotropic::Sigma(3, 1e-10));
+	graph->addConstraint(1, 2, Pose2(1., 0., 0.), Isotropic::Sigma(3, 1));
 
+	// Create an initial config
+	boost::shared_ptr<Pose2Config> config(new Pose2Config);
+	config->insert(1, Pose2(0., 0., 0.));
+	config->insert(2, Pose2(1.5, 0., 0.));
+
+	// Create solver and optimizer
+	Optimizer::shared_solver solver
+		(new SubgraphPCG<Pose2Graph, Pose2Config> (*graph, *config));
+	Optimizer optimizer(graph, config, solver);
+
+	// Optimize !!!!
 	double relativeThreshold = 1e-5;
 	double absoluteThreshold = 1e-5;
-	Optimizer::shared_solver solver(new SubgraphPCG<Pose2Graph, Pose2Config>(*graph, *config));
-	Optimizer optimizer(graph, config, solver);
-	Optimizer optimized = optimizer.gaussNewton(relativeThreshold, absoluteThreshold, Optimizer::SILENT);
+	Optimizer optimized = optimizer.gaussNewton(relativeThreshold,
+			absoluteThreshold, Optimizer::SILENT);
 
+	// Check solution
 	Pose2Config expected;
-	expected.insert(1, Pose2(0.,0.,0.));
-	expected.insert(2, Pose2(1.,0.,0.));
+	expected.insert(1, Pose2(0., 0., 0.));
+	expected.insert(2, Pose2(1., 0., 0.));
 	CHECK(assert_equal(expected, *optimized.config(), 1e-5));
 }
 

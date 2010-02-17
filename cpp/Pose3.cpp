@@ -81,7 +81,7 @@ namespace gtsam {
     const Matrix R = R_.matrix(), T = Matrix_(3,1, t_.vector());
     const Matrix A34 = collect(2, &R, &T);
     const Matrix A14 = Matrix_(1,4, 0.0, 0.0, 0.0, 1.0);
-    return stack(2, &A34, &A14);
+    return gtsam::stack(2, &A34, &A14);
   }
 
   /* ************************************************************************* */
@@ -140,7 +140,7 @@ namespace gtsam {
 		Matrix DR_t1 = zeros(3, 3);
 		Matrix DR = collect(2, &DR_R1, &DR_t1);
 		Matrix Dt = Dtransform_from1(p1, p2.translation());
-		return stack(2, &DR, &Dt);
+		return gtsam::stack(2, &DR, &Dt);
 	}
 
 	Matrix Dcompose2(const Pose3& p1, const Pose3& p2) {
@@ -149,7 +149,7 @@ namespace gtsam {
 		const static Matrix Z3 = zeros(3, 3);
 		Matrix DR = collect(2, &I, &Z3);
 		Matrix Dt = collect(2, &Z3, &R1);
-		return stack(2, &DR, &Dt);
+		return gtsam::stack(2, &DR, &Dt);
 	}
 
   /* ************************************************************************* */
@@ -162,7 +162,7 @@ namespace gtsam {
 		Matrix Dt_R1 = -skewSymmetric(unrotate(p.rotation(),p.translation()).vector());
 		Matrix Dt_t1 = -Rt;
 		Matrix Dt = collect(2, &Dt_R1, &Dt_t1);
-		return stack(2, &DR, &Dt);
+		return gtsam::stack(2, &DR, &Dt);
 	}
 
   /* ************************************************************************* */

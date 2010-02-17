@@ -60,7 +60,7 @@ namespace gtsam {
 	template<class Conditional>
 	size_t BayesTree<Conditional>::Clique::treeSize() const {
 		size_t size = 1;
-		BOOST_FOREACH(shared_ptr child, children_)
+		BOOST_FOREACH(const shared_ptr& child, children_)
 			size += child->treeSize();
 		return size;
 	}
@@ -69,7 +69,7 @@ namespace gtsam {
 	template<class Conditional>
 	void BayesTree<Conditional>::Clique::printTree(const string& indent) const {
 		print(indent);
-		BOOST_FOREACH(shared_ptr child, children_)
+		BOOST_FOREACH(const shared_ptr& child, children_)
 			child->printTree(indent+"  ");
 	}
 

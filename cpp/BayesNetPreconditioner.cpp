@@ -36,7 +36,9 @@ namespace gtsam {
 	/* ************************************************************************* */
 	// gradient is inv(R')*A'*(A*inv(R)*y-b),
 	VectorConfig BayesNetPreconditioner::gradient(const VectorConfig& y) const {
-		VectorConfig gx = Ab_ ^ Ab_.errors(x(y));
+		VectorConfig gx = VectorConfig::zero(y);
+		Errors e = Ab_.errors(x(y));
+		Ab_.transposeMultiplyAdd(1.0,e,gx);
 		return gtsam::backSubstituteTranspose(Rd_, gx);
 	}
 
@@ -66,8 +68,9 @@ namespace gtsam {
 	// y += alpha*inv(R')*A'*e
 	void BayesNetPreconditioner::transposeMultiplyAdd(double alpha,
 			const Errors& e, VectorConfig& y) const {
-		VectorConfig x = Ab_ ^ e; // x = A'*e2
-		y += alpha * gtsam::backSubstituteTranspose(Rd_, x); // TODO avoid temp
+		VectorConfig x = VectorConfig::zero(y);
+		Ab_.transposeMultiplyAdd(1.0,e,x); // x += A'*e
+		axpy(alpha, gtsam::backSubstituteTranspose(Rd_, x), y); // y += alpha*inv(R')*x
 	}
 
 	/* ************************************************************************* */

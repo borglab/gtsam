@@ -105,7 +105,7 @@ void transposeMultiplyAdd(double alpha, const Matrix& A, const Vector& e, Vector
 /**
  * BLAS Level-2 style x <- x + alpha*A'*e
  */
-void transposeMultiplyAdd(double alpha, const Matrix& A, const Vector& e, SubVector& x);
+void transposeMultiplyAdd(double alpha, const Matrix& A, const Vector& e, SubVector x);
 
 /**
  * overload * for vector*matrix multiplication (as BOOST does not)

@@ -40,7 +40,13 @@ testMatrix_LDADD   = libgtsam.la
 # The header files will be installed in ~/include/gtsam
 headers = gtsam.h Value.h Testable.h Factor.h Conditional.h 
 headers += Ordering.h IndexTable.h numericalDerivative.h
+headers += BTree.h
 sources += Ordering.cpp smallExample.cpp 
+check_PROGRAMS += testOrdering testBTree
+testOrdering_SOURCES = testOrdering.cpp
+testOrdering_LDADD   = libgtsam.la
+testBTree_SOURCES    = testBTree.cpp
+testBTree_LDADD		   = libgtsam.la
 
 # Symbolic Inference
 headers += SymbolicConditional.h
@@ -70,8 +76,6 @@ testFactorgraph_SOURCES        = testFactorgraph.cpp
 testInference_SOURCES          = testInference.cpp
 testFactorgraph_LDADD          = libgtsam.la
 testInference_LDADD            = libgtsam.la
-testOrdering_SOURCES   		   = testOrdering.cpp
-testOrdering_LDADD			   = libgtsam.la
 testBayesTree_SOURCES          = testBayesTree.cpp
 testBayesTree_LDADD            = libgtsam.la
 testGaussianISAM_SOURCES       = testGaussianISAM.cpp
@@ -88,11 +92,13 @@ testBinaryBayesNet_SOURCES    = testBinaryBayesNet.cpp
 testBinaryBayesNet_LDADD      = libgtsam.la 
 
 # Gaussian inference 
-headers += GaussianFactorSet.h SharedGaussian.h SharedDiagonal.h
-sources += NoiseModel.cpp Errors.cpp VectorConfig.cpp GaussianFactor.cpp GaussianFactorGraph.cpp GaussianConditional.cpp GaussianBayesNet.cpp
-check_PROGRAMS += testVectorConfig testGaussianFactor testGaussianFactorGraph testGaussianConditional testGaussianBayesNet testNoiseModel
-testVectorConfig_SOURCES        = testVectorConfig.cpp
-testVectorConfig_LDADD          = libgtsam.la
+headers += GaussianFactorSet.h SharedGaussian.h SharedDiagonal.h VectorConfig.h
+sources += NoiseModel.cpp Errors.cpp VectorMap.cpp VectorBTree.cpp GaussianFactor.cpp GaussianFactorGraph.cpp GaussianConditional.cpp GaussianBayesNet.cpp
+check_PROGRAMS += testVectorMap testVectorBTree testGaussianFactor testGaussianFactorGraph testGaussianConditional testGaussianBayesNet testNoiseModel
+testVectorMap_SOURCES           = testVectorMap.cpp
+testVectorMap_LDADD             = libgtsam.la
+testVectorBTree_SOURCES         = testVectorBTree.cpp
+testVectorBTree_LDADD           = libgtsam.la
 testGaussianFactor_SOURCES      = testGaussianFactor.cpp
 testGaussianFactor_LDADD        = libgtsam.la
 testGaussianFactorGraph_SOURCES = testGaussianFactorGraph.cpp

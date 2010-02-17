@@ -31,7 +31,7 @@ using namespace example;
 double tol=1e-5;
 
 /* ************************************************************************* */
-/* unit test for equals (GaussianFactorGraph1 == GaussianFactorGraph2)           */
+/* unit test for equals (GaussianFactorGraph1 == GaussianFactorGraph2)       */
 /* ************************************************************************* */
 TEST( GaussianFactorGraph, equals ){
 

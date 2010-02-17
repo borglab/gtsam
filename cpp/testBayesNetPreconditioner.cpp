@@ -89,8 +89,25 @@ TEST( BayesNetPreconditioner, conjugateGradients )
 	BOOST_FOREACH(const Symbol& j, ordering) y0.insert(j,z2);
 
 	VectorConfig y1 = y0;
-	y1.getReference("x2003") = Vector_(2, 1.0, -1.0);
+	y1["x2003"] = Vector_(2, 1.0, -1.0);
 	VectorConfig x1 = system.x(y1);
+
+	// Check gradient for y0
+	VectorConfig expectedGradient0;
+	expectedGradient0.insert("x1001", Vector_(2,-1000.,-1000.));
+	expectedGradient0.insert("x1002", Vector_(2,    0., -300.));
+	expectedGradient0.insert("x1003", Vector_(2,    0., -300.));
+	expectedGradient0.insert("x2001", Vector_(2, -100.,  200.));
+	expectedGradient0.insert("x2002", Vector_(2, -100.,    0.));
+	expectedGradient0.insert("x2003", Vector_(2, -100., -200.));
+	expectedGradient0.insert("x3001", Vector_(2, -100.,  100.));
+	expectedGradient0.insert("x3002", Vector_(2, -100.,    0.));
+	expectedGradient0.insert("x3003", Vector_(2, -100., -100.));
+	VectorConfig actualGradient0 = system.gradient(y0);
+	CHECK(assert_equal(expectedGradient0,actualGradient0));
+#ifdef VECTORBTREE
+	CHECK(actualGradient0.cloned(y0));
+#endif
 
 	// Solve using PCG
 	bool verbose = false;

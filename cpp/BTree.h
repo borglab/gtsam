@@ -29,9 +29,9 @@ namespace gtsam {
 		 */
 		struct Node {
 
-			size_t height_;
+			const size_t height_;
 			const value_type keyValue_;
-			BTree left, right;
+			const BTree left, right;
 
 			/** default constructor */
 			Node() {
@@ -48,9 +48,8 @@ namespace gtsam {
 			 * Create a node from two subtrees and a key value pair
 			 */
 			Node(const BTree& l, const value_type& keyValue, const BTree& r) :
-				left(l), keyValue_(keyValue), right(r) {
-				size_t hl = l.height(), hr = r.height();
-				height_ = hl >= hr ? hl + 1 : hr + 1;
+				left(l), keyValue_(keyValue), right(r),
+				height_(l.height() >= r.height() ? l.height() + 1 : r.height() + 1) {
 			}
 
 			inline const Key& key() const { return keyValue_.first;}
@@ -60,7 +59,7 @@ namespace gtsam {
 
 		// We store a shared pointer to the root of the functional tree
 		// composed of Node classes. If root_==NULL, the tree is empty.
-		typedef boost::shared_ptr<Node> sharedNode;
+		typedef boost::shared_ptr<const Node> sharedNode;
 		sharedNode root_;
 
 		inline const value_type& keyValue() const { return root_->keyValue_;}
@@ -98,6 +97,11 @@ namespace gtsam {
 
 		/** default constructor creates an empty tree */
 		BTree() {
+		}
+
+		/** copy constructor */
+		BTree(const BTree& other) :
+			root_(other.root_) {
 		}
 
 		/** create leaf from key-value pair */
@@ -208,25 +212,12 @@ namespace gtsam {
 			return left().size() + 1 + right().size();
 		}
 
-
-#ifdef RECURSIVE_FIND
-		/** find a value given a key, throws exception when not found */
-		const Value& find(const Key& k) const {
-			if (!root_) throw std::invalid_argument("BTree::find: key '"
-					+ (std::string) k + "' not found");
-			const Node& node = *root_;
-			const Key& key = node.key();
-			if (k < key) return node.left.find(k);
-			if (key < k) return node.right.find(k);
-			return node.value(); // (key() == k)
-		}
-#else
 		/**
 		 *  find a value given a key, throws exception when not found
 		 *  Optimized non-recursive version as [find] is crucial for speed
 		 */
 		const Value& find(const Key& k) const {
-			Node* node = root_.get();
+			const Node* node = root_.get();
 			while (node) {
 				const Key& key = node->key();
 				if      (k < key) node = node->left.root_.get();
@@ -235,7 +226,6 @@ namespace gtsam {
 			}
 			throw std::invalid_argument("BTree::find: key '" + (std::string) k + "' not found");
 		}
-#endif
 
 		/** print in-order */
 		void print(const std::string& s = "") const {
@@ -317,7 +307,7 @@ namespace gtsam {
 					path_.top().second = true; // flag we visited right
 					// push right root and its left-most path onto the stack
 					while (t) {
-						path_.push(make_pair(t, false));
+						path_.push(std::make_pair(t, false));
 						t = t->left.root_;
 					}
 				}
@@ -340,7 +330,7 @@ namespace gtsam {
 			const_iterator(const sharedNode& root) {
 				sharedNode t = root;
 				while (t) {
-					path_.push(make_pair(t, false));
+					path_.push(std::make_pair(t, false));
 					t = t->left.root_;
 				}
 			}

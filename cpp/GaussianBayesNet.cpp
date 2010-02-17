@@ -98,11 +98,9 @@ void backSubstituteInPlace(const GaussianBayesNet& bn, VectorConfig& y) {
 		for (it = cg->parentsBegin(); it!= cg->parentsEnd(); it++) {
 			const Symbol& j = it->first;
 			const Matrix& Rij = it->second;
-			Vector& xj = x.getReference(j);
-			multiplyAdd(-1.0,Rij,xj,zi);
+			multiplyAdd(-1.0,Rij,x[j],zi);
 		}
-		Vector& xi = x.getReference(i);
-		xi = gtsam::backSubstituteUpper(cg->get_R(), zi);
+		x[i] = gtsam::backSubstituteUpper(cg->get_R(), zi);
 	}
 }
 
@@ -114,33 +112,26 @@ VectorConfig backSubstituteTranspose(const GaussianBayesNet& bn,
 		const VectorConfig& gx) {
 
 	// Initialize gy from gx
-	VectorConfig gy;
-	BOOST_FOREACH(GaussianConditional::shared_ptr cg, bn) {
-		const Symbol& j = cg->key();
-		Vector gyj = gx.contains(j) ? gx[j] : zero(cg->dim());
-		gy.insert(j,gyj); // initialize result
-	}
+	// TODO: used to insert zeros if gx did not have an entry for a variable in bn
+	VectorConfig gy = gx;
 
 	// we loop from first-eliminated to last-eliminated
 	// i^th part of L*gy=gx is done block-column by block-column of L
 	BOOST_FOREACH(GaussianConditional::shared_ptr cg, bn) {
 		const Symbol& j = cg->key();
-		Vector& gyj = gy.getReference(j);  // should never fail
-		gyj = gtsam::backSubstituteUpper(gyj,cg->get_R());
+		gy[j] = gtsam::backSubstituteUpper(gy[j],cg->get_R());
 		GaussianConditional::const_iterator it;
 		for (it = cg->parentsBegin(); it!= cg->parentsEnd(); it++) {
 			const Symbol& i = it->first;
 			const Matrix& Rij = it->second;
-			Vector& gyi = gy.getReference(i);  // should never fail
-			transposeMultiplyAdd(-1.0,Rij,gyj,gyi);
+			transposeMultiplyAdd(-1.0,Rij,gy[j],gy[i]);
 		}
 	}
 
 	// Scale gy
 	BOOST_FOREACH(GaussianConditional::shared_ptr cg, bn) {
 		const Symbol& j = cg->key();
-		Vector& gyj = gy.getReference(j);  // should never fail
-		gyj = emul(gyj,cg->get_sigmas());
+		gy[j] = emul(gy[j],cg->get_sigmas());
 	}
 
 	return gy;

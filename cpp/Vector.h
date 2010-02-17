@@ -20,6 +20,7 @@
 typedef boost::numeric::ublas::vector<double> Vector;
 #endif
 typedef boost::numeric::ublas::vector_range<Vector> SubVector;
+typedef boost::numeric::ublas::vector_range<const Vector> ConstSubVector;
 
 namespace gtsam {
 
@@ -133,6 +134,16 @@ inline bool equal(const Vector& vec1, const Vector& vec2) {
 bool assert_equal(const Vector& vec1, const Vector& vec2, double tol=1e-9);
 
 /**
+ * Same, prints if error
+ * @param vec1 Vector
+ * @param vec2 Vector
+ * @param tol 1e-9
+ * @return bool
+ */
+bool assert_equal(SubVector vec1, SubVector vec2, double tol=1e-9);
+bool assert_equal(ConstSubVector vec1, ConstSubVector vec2, double tol=1e-9);
+
+/**
  * extract subvector, slice semantics, i.e. range = [i1,i2[ excluding i2
  * @param v Vector
  * @param i1 first row index
@@ -220,7 +231,7 @@ void scal(double alpha, Vector& x);
  * BLAS Level 1 axpy: y <- alpha*x + y
  */
 void axpy(double alpha, const Vector& x, Vector& y);
-void axpy(double alpha, const Vector& x, SubVector& y);
+void axpy(double alpha, const Vector& x, SubVector y);
 
 /**
  * Divide every element of a Vector into a scalar

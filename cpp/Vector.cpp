@@ -152,7 +152,25 @@ namespace gtsam {
     print(actual, "actual");
     return false;
   }
-  
+
+  /* ************************************************************************* */
+  bool assert_equal(SubVector expected, SubVector actual, double tol) {
+    if (equal_with_abs_tol(expected,actual,tol)) return true;
+    cout << "not equal:" << endl;
+    print(expected, "expected");
+    print(actual, "actual");
+    return false;
+  }
+
+  /* ************************************************************************* */
+  bool assert_equal(ConstSubVector expected, ConstSubVector actual, double tol) {
+    if (equal_with_abs_tol(expected,actual,tol)) return true;
+    cout << "not equal:" << endl;
+    print(expected, "expected");
+    print(actual, "actual");
+    return false;
+  }
+
   /* ************************************************************************* */
   Vector sub(const Vector &v, size_t i1, size_t i2) {
     size_t n = i2-i1;
@@ -263,7 +281,7 @@ namespace gtsam {
   }
 
   /* ************************************************************************* */
-  void axpy(double alpha, const Vector& x, SubVector& y) {
+  void axpy(double alpha, const Vector& x, SubVector y) {
   	size_t n = x.size();
 		assert (y.size()==n);
   	for (size_t i = 0; i < n; i++)

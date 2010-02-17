@@ -6,29 +6,18 @@
 
 #include <iostream>
 #include <boost/timer.hpp>
-#include "VectorConfig.h"
+#include "VectorBTree.h"
+#include "VectorMap.h"
 
 using namespace std;
 using namespace gtsam;
 
-#define TIME(STATEMENT) { boost::timer t; \
-		for (int j = 0; j < n; ++j) STATEMENT; \
+#define TIME1(STATEMENT) { boost::timer t; \
+		STATEMENT; \
 		double time = t.elapsed(); \
 		cout << "Average elapsed time :" << 10e3 * time / n << "ms." << endl; }
 
-/* ************************************************************************* */
-void unsafe_assign(VectorConfig& a, const VectorConfig& b) {
-	VectorConfig::const_iterator bp = b.begin();
-	for (VectorConfig::iterator ap = a.begin(); ap != a.end(); ap++, bp++)
-		ap->second = bp->second;
-}
-
-/* ************************************************************************* */
-void unsafe_add(VectorConfig& a, const VectorConfig& b) {
-	VectorConfig::const_iterator bp = b.begin();
-	for (VectorConfig::iterator ap = a.begin(); ap != a.end(); ap++, bp++)
-		ap->second += bp->second;
-}
+#define TIME(STATEMENT) TIME1(for (int j = 0; j < n; ++j) STATEMENT;)
 
 /* ************************************************************************* */
 int main(int argc, char ** argv) {
@@ -39,35 +28,42 @@ int main(int argc, char ** argv) {
 	// n =  number of times to loop
 	// m =  number of vectors
 	// r =  rows per vector
-	size_t n = 100, m = 10000, r = 3, alpha = 0.1;
+	size_t n = 100, m = 30000, r = 3, alpha = 0.1;
 
-	// Create 2 VectorConfigs
-	VectorConfig x, y;
-	for (int i = 0; i < m; ++i) {
-		Vector v = zero(r);
-		Symbol key('x', i);
-		x.add(key, v);
-		y.add(key, v);
+	{
+		cout << "Vector:" << endl;
+		Vector v = zero(m * r), w = zero(m * r);
+		TIME(v=w);
+		TIME(v+=w);
+		TIME(v+=alpha*w);
+		TIME(axpy(alpha,v,w));
 	}
 
-	cout << "Convenient VectorConfig:" << endl;
-	TIME(x=y);
-	TIME(x+=y);
-	TIME(x+=alpha*y);
-	//TIME(a=a+b);
+	{
+		// Create 2 VectorBTrees and one VectorMap
+		VectorBTree p, q;
+		VectorMap old;
+		cout << "Creating VectorBTree:" << endl;
+		TIME1(for (int i = 0; i < m; ++i) {
+			Vector v = zero(r);
+			Symbol key('x', i);
+			p.insert(key, v);
+			q.insert(key, v);
+			old.insert(key, v);
+		})
 
-	cout << "Unsafe VectorConfig:" << endl;
-	TIME(unsafe_assign(x,y));
-	TIME(unsafe_add(x,y));
-	TIME(axpy(alpha,x,y));
+		cout << "VectorBTree:" << endl;
+		TIME(p=q);
+		TIME(p+=q);
+		TIME(p+=alpha*q);
+		TIME(axpy(alpha,p,q));
 
-	cout << "Compares with Vector:" << endl;
-	Vector v = zero(m * r), w = zero(m * r);
-	TIME(v=w);
-	TIME(v+=w);
-	TIME(v+=alpha*w);
-	TIME(axpy(alpha,v,w));
-	//	TIME(v=v+w);
+		cout << "VectorBTree get:" << endl;
+		TIME1(for (int i = 0; i < m; ++i) p[Symbol('x', i)]);
+
+		cout << "VectorMap get:" << endl;
+		TIME1(for (int i = 0; i < m; ++i) old[Symbol('x', i)]);
+}
 
 	return 0;
 }

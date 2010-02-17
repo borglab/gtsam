@@ -671,26 +671,6 @@ TEST( GaussianFactor, CONSTRUCTOR_GaussianConditional )
 }
 
 /* ************************************************************************* */
-TEST( GaussianFactor, alphaFactor )
-{
-	GaussianFactorGraph fg = createGaussianFactorGraph();
-
-	// get alphafactor for first factor in fg at zero, in gradient direction
-	Symbol alphaKey(ALPHA, 1);
-  VectorConfig x = createZeroDelta();
-	VectorConfig d = fg.gradient(x);
-	GaussianFactor::shared_ptr factor = fg[0];
-	GaussianFactor::shared_ptr actual = factor->alphaFactor(alphaKey,x,d);
-
-	// calculate expected
-	Matrix A = Matrix_(2,1,300.0,50.0);
-	Vector b = Vector_(2,-1.0,-1.0);
-	GaussianFactor expected(alphaKey,A,b,noiseModel::Unit::Create(2));
-
-	CHECK(assert_equal(expected,*actual));
-}
-
-/* ************************************************************************* */
 TEST ( GaussianFactor, constraint_eliminate1 )
 {
 	// construct a linear constraint
@@ -817,6 +797,7 @@ TEST ( GaussianFactor, combine_matrix ) {
 //		CHECK(true);
 //	}
 //}
+
 /* ************************************************************************* */
 int main() { TestResult tr; return TestRegistry::runAllTests(tr);}
 /* ************************************************************************* */

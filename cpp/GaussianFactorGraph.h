@@ -224,14 +224,6 @@ namespace gtsam {
   	 */
   	Matrix sparse(const Dimensions& indices) const;
 
-
-  	/**
-  	 * Take an optimal step in direction d by calculating optimal step-size
-  	 * @param x: starting point for search
-  	 * @param d: search direction
-  	 */
-  	VectorConfig optimalUpdate(const VectorConfig& x0, const VectorConfig& d) const;
-
   	/**
 		 * Find solution using gradient descent
 		 * @param x0: VectorConfig specifying initial estimate

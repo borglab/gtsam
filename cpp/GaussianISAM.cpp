@@ -24,7 +24,7 @@ void optimize(const GaussianISAM::sharedClique& clique, VectorConfig& result) {
     Vector x = cg->solve(result); // Solve for that variable
     result.insert(cg->key(), x);   // store result in partial solution
   }
-	BOOST_FOREACH(GaussianISAM::sharedClique child, clique->children_) {
+	BOOST_FOREACH(const GaussianISAM::sharedClique& child, clique->children_) {
 //	list<GaussianISAM::Clique::shared_ptr>::const_iterator child;
 //	for (child = clique->children_.begin(); child != clique->children_.end(); child++) {
 		optimize(child, result);

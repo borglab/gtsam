@@ -55,6 +55,9 @@ namespace gtsam {
 		/* x = xbar + inv(R1)*y */
 		VectorConfig x(const VectorConfig& y) const;
 
+		/* A zero VectorConfig with the structure of xbar */
+		VectorConfig zero() const { return VectorConfig::zero(*xbar_);}
+
 		/* error, given y */
 		double error(const VectorConfig& y) const;
 
@@ -70,10 +73,21 @@ namespace gtsam {
 			/** Apply operator A' */
 		VectorConfig operator^(const Errors& e) const;
 
-		/** y += alpha*A'*e */
+		/**
+		 * Add A'*e to y
+		 *  y += alpha*A'*[e1;e2] = [alpha*e1; alpha*inv(R1')*A2'*e2]
+		 */
 		void transposeMultiplyAdd(double alpha, const Errors& e, VectorConfig& y) const;
 
-		/** print the object */
+		/**
+		 * Add constraint part of the error only, used in both calls above
+		 * y += alpha*inv(R1')*A2'*e2
+		 * Takes a range indicating e2 !!!!
+		 */
+		void transposeMultiplyAdd2(double alpha, Errors::const_iterator begin,
+				Errors::const_iterator end, VectorConfig& y) const;
+
+			/** print the object */
 		void print(const std::string& s = "SubgraphPreconditioner") const;
 	};
 

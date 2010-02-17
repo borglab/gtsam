@@ -13,6 +13,7 @@
 
 #include "Vector.h"
 #include "Testable.h"
+#include "VectorConfig.h"
 
 namespace boost { template<class T> class optional; }
 namespace gtsam { class VectorConfig; }
