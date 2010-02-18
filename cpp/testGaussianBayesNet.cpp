@@ -88,21 +88,43 @@ TEST( GaussianBayesNet, optimize )
 /* ************************************************************************* */
 TEST( GaussianBayesNet, backSubstitute )
 {
+	// y=R*x, x=inv(R)*y
+	// 2 = 1 1  -1
+	// 3     1   3
   GaussianBayesNet cbn = createSmallGaussianBayesNet();
 
-  VectorConfig y, expected;
-  y.insert("x",Vector_(1,4.));
-  y.insert("y",Vector_(1,2.));
-  expected.insert("x",Vector_(1,2.));
-  expected.insert("y",Vector_(1,2.));
+  VectorConfig y, x;
+  y.insert("x",Vector_(1,2.));
+  y.insert("y",Vector_(1,3.));
+  x.insert("x",Vector_(1,-1.));
+  x.insert("y",Vector_(1, 3.));
 
   // test functional version
   VectorConfig actual = backSubstitute(cbn,y);
-  CHECK(assert_equal(expected,actual));
+  CHECK(assert_equal(x,actual));
 
   // test imperative version
   backSubstituteInPlace(cbn,y);
-  CHECK(assert_equal(expected,y));
+  CHECK(assert_equal(x,y));
+}
+
+/* ************************************************************************* */
+TEST( GaussianBayesNet, backSubstituteTranspose )
+{
+	// x=R'*y, y=inv(R')*x
+	// 2 = 1    2
+	// 5   1 1  3
+  GaussianBayesNet cbn = createSmallGaussianBayesNet();
+
+  VectorConfig x, y;
+  x.insert("x",Vector_(1,2.));
+  x.insert("y",Vector_(1,5.));
+  y.insert("x",Vector_(1,2.));
+  y.insert("y",Vector_(1,3.));
+
+  // test functional version
+  VectorConfig actual = backSubstituteTranspose(cbn,x);
+  CHECK(assert_equal(y,actual));
 }
 
 /* ************************************************************************* */
