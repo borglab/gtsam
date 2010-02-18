@@ -14,6 +14,15 @@ namespace gtsam {
   INSTANTIATE_LIE(Pose2);
 
   /* ************************************************************************* */
+  Matrix Pose2::matrix() const {
+  	Matrix R = r_.matrix();
+  	Matrix Z = zeros(1,2);
+  	R = stack(2, &R, &Z);
+  	Matrix T = Matrix_(3,1, t_.x(), t_.y(), 1.0);
+  	return collect(2, &R, &T);
+  }
+
+  /* ************************************************************************* */
   void Pose2::print(const string& s) const {
     cout << s << "(" << t_.x() << ", " << t_.y() << ", " << r_.theta() << ")" << endl;
   }

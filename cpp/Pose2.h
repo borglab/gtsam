@@ -52,6 +52,9 @@ namespace gtsam {
     /** assert equality up to a tolerance */
     bool equals(const Pose2& pose, double tol = 1e-9) const;
 
+    /** return transformation matrix */
+    Matrix matrix() const;
+
     /** get functions for x, y, theta */
     double x()     const { return t_.x(); }
     double y()     const { return t_.y(); }
