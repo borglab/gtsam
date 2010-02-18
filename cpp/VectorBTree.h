@@ -102,6 +102,10 @@ public:
 		SubVector operator[](const Symbol& j);
 		ConstSubVector operator[](const Symbol& j) const;
 
+		/** [set] and [get] provided for access via MATLAB */
+		void set(const Symbol& j, const Vector& v) { (*this)[j] = v; }
+		inline const Vector get(const Symbol& j) const { return (*this)[j];}
+
 		/** max of the vectors */
 		double max() const;
 

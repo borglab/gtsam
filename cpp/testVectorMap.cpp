@@ -44,6 +44,7 @@ TEST( VectorMap, equals1 )
    VectorMap actual;
    actual.insert("a",v);
    CHECK(assert_equal(expected,actual));
+   CHECK(assert_equal(expected["a"],actual.get("a")))
 }
 
 /* ************************************************************************* */

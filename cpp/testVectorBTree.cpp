@@ -48,6 +48,7 @@ TEST( VectorBTree, constructor_insert_get )
 	LONGS_EQUAL(1,actual.size())
 	CHECK(assert_equal(expected,actual))
 	CHECK(equal_with_abs_tol(v,actual[x1]))
+	CHECK(equal_with_abs_tol(v,actual.get(x1)))
 }
 
 /* ************************************************************************* */

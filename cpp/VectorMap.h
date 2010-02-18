@@ -60,7 +60,12 @@ namespace gtsam {
 		Vector& operator[](const Symbol& j);
 		const Vector& operator[](const Symbol& j) const;
 
-    bool contains(const Symbol& name) const {
+		/** [set] and [get] provided for access via MATLAB */
+		inline Vector& get(const Symbol& j) { return (*this)[j];}
+		void set(const Symbol& j, const Vector& v) { (*this)[j] = v; }
+		inline const Vector& get(const Symbol& j) const { return (*this)[j];}
+
+		bool contains(const Symbol& name) const {
       const_iterator it = values.find(name);
       return (it!=values.end());
     }
