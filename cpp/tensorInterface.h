@@ -6,7 +6,7 @@
  */
 
 #include "tensors.h"
-#include "Matrix.h""
+#include "Matrix.h"
 
 namespace gtsam {
 
