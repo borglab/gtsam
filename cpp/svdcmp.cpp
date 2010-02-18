@@ -264,8 +264,8 @@ void svdcmp(double **a, int m, int n, double w[], double **v, bool sort) {
 	}
 
 	if (sort) {
-		int *indices1 = new int[n];
-		int *indices2 = new int[n];
+		int *indices1 = new int[n+1];
+		int *indices2 = new int[n+1];
 		for (int i1 = 1; i1 <= n; i1++) {
 			indices1[i1] = i1;
 			indices2[i1] = i1;

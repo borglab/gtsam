@@ -43,7 +43,7 @@ namespace gtsam {
 
 	/* ************************************************************************* */
 	Point3h point3h(double X, double Y, double Z, double W) {
-		double data[3];
+		double data[4];
 		data[0] = X;
 		data[1] = Y;
 		data[2] = Z;
@@ -53,7 +53,7 @@ namespace gtsam {
 
 	/* ************************************************************************* */
 	Plane3h plane3h(double a, double b, double c, double d) {
-		double data[3];
+		double data[4];
 		data[0] = a;
 		data[1] = b;
 		data[2] = c;
