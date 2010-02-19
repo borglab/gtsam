@@ -95,6 +95,7 @@ namespace gtsam {
 	/* ************************************************************************* */
 	template<class Conditional>
 	void BayesTree<Conditional>::saveGraph(const std::string &s) const {
+		if (!root_.get()) throw invalid_argument("the root of bayes tree has not been initialized!");
 		ofstream of(s.c_str());
 		of<< "digraph G{\n";
 		saveGraph(of, root_);
