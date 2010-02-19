@@ -12,6 +12,7 @@
 #include "NonlinearFactor.h"
 #include "TupleConfig.h"
 #include "NonlinearEquality.h"
+#include "PriorFactor.h"
 #include "BetweenFactor.h"
 #include "NonlinearFactorGraph.h"
 #include "NonlinearOptimizer.h"
@@ -86,12 +87,14 @@ namespace gtsam {
 
 		// Factors
 		typedef NonlinearEquality<Config, PoseKey, Pose2> Constraint;
+		typedef PriorFactor<Config, PoseKey, Pose2> Prior;
 		typedef BetweenFactor<Config, PoseKey, Pose2> Odometry;
 		typedef BearingFactor<Config, PoseKey, PointKey> Bearing;
 		typedef RangeFactor<Config, PoseKey, PointKey> Range;
 
 		// Graph
 		struct Graph: public NonlinearFactorGraph<Config> {
+			void addPrior(const PoseKey& i, const Pose2& p, const SharedGaussian& model);
 			void addPoseConstraint(const PoseKey& i, const Pose2& p);
 			void addOdometry(const PoseKey& i, const PoseKey& j, const Pose2& z,
 					const SharedGaussian& model);

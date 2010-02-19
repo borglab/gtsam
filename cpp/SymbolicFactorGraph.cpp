@@ -52,7 +52,8 @@ namespace gtsam {
 		Point2 pt;
 		float scale = 100;
 
-		ofstream of(s.c_str());
+		string dotfile = s + ".dot";
+		ofstream of(dotfile.c_str());
 		of << "graph G{" << endl;
 		of << "bgcolor=\"transparent\";" << endl;
 
@@ -74,9 +75,7 @@ namespace gtsam {
 		of<<"}";
 		of.close();
 
-		char filename[100];
-		sscanf(s.c_str(), "%s.dot", filename);
-		string cmd = boost::str(boost::format("neato -s -n -Tpdf %s -o %s.pdf") % s % filename);
+		string cmd = boost::str(boost::format("neato -s -n -Tpdf %s -o %s.pdf") % dotfile % s);
 		system(cmd.c_str());
 	}
 

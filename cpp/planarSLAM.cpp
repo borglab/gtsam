@@ -20,6 +20,12 @@ namespace gtsam {
 
 	namespace planarSLAM {
 
+		void Graph::addPrior(const PoseKey& i, const Pose2& p,
+				const SharedGaussian& model) {
+			sharedFactor factor(new Prior(i, p, model));
+			push_back(factor);
+		}
+
 	  void Graph::addPoseConstraint(const PoseKey& i, const Pose2& p) {
 	  	sharedFactor factor(new Constraint(i, p));
 			push_back(factor);
