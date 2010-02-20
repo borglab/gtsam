@@ -83,6 +83,8 @@ namespace gtsam {
 		// Keys and Config
 		typedef TypedSymbol<Pose2, 'x'> PoseKey;
 		typedef TypedSymbol<Point2, 'l'> PointKey;
+		typedef LieConfig<PoseKey, Pose2> PoseConfig;
+		typedef LieConfig<PointKey, Point2> PointConfig;
 		typedef PairConfig<PoseKey, Pose2, PointKey, Point2> Config;
 
 		// Factors
