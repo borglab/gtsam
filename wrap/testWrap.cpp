@@ -87,5 +87,5 @@ TEST( wrap, matlab_code ) {
 }
 
 /* ************************************************************************* */
-int main() { TestResult tr; TestRegistry::runAllTests(tr); return 0; }
+int main() { TestResult tr; return TestRegistry::runAllTests(tr); }
 /* ************************************************************************* */

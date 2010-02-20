@@ -237,9 +237,5 @@ TEST(timeGaussianFactorGraph, planar_join_new)
 
 
 /* ************************************************************************* */
-int main() {
-	TestResult tr;
-	TestRegistry::runAllTests(tr);
-	return 0;
-}
+int main() { TestResult tr; return TestRegistry::runAllTests(tr); }
 /* ************************************************************************* */

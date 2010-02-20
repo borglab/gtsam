@@ -90,5 +90,5 @@ TEST( spirit, constMethod_p ) {
 }
 
 /* ************************************************************************* */
-int main() { TestResult tr; TestRegistry::runAllTests(tr); return 0; }
+int main() { TestResult tr; return TestRegistry::runAllTests(tr); }
 /* ************************************************************************* */
