@@ -157,6 +157,19 @@ void multiplyAdd(double alpha, const Matrix& A, const Vector& x, Vector& e) {
 }
 
 /* ************************************************************************* */
+void multiplyAdd(const Matrix& A, const Vector& x, Vector& e) {
+	// ublas e += prod(A,x) is terribly slow
+  size_t m = A.size1(), n = A.size2();
+	double * ei = e.data().begin();
+	const double * aij = A.data().begin();
+	for (int i = 0; i < m; i++, ei++) {
+		const double * xj = x.data().begin();
+		for (int j = 0; j < n; j++, aij++, xj++)
+			(*ei) += (*aij) * (*xj);
+	}
+}
+
+/* ************************************************************************* */
 Vector operator^(const Matrix& A, const Vector & v) {
   if (A.size1()!=v.size()) throw std::invalid_argument(
   		boost::str(boost::format("Matrix operator^ : A.m(%d)!=v.size(%d)") % A.size1() % v.size()));
@@ -184,6 +197,20 @@ void transposeMultiplyAdd(double alpha, const Matrix& A, const Vector& e, Vector
 			(*xj) += alpha * (*aij) * (*ei);
 	}
 #endif
+}
+
+/* ************************************************************************* */
+void transposeMultiplyAdd(const Matrix& A, const Vector& e, Vector& x) {
+	// ublas x += prod(trans(A),e) is terribly slow
+	// TODO: use BLAS
+  size_t m = A.size1(), n = A.size2();
+	double * xj = x.data().begin();
+	for (int j = 0; j < n; j++,xj++) {
+		const double * ei = e.data().begin();
+		const double * aij = A.data().begin() + j;
+		for (int i = 0; i < m; i++, aij+=n, ei++)
+			(*xj) += (*aij) * (*ei);
+	}
 }
 
 /* ************************************************************************* */

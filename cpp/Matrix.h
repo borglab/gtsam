@@ -92,6 +92,11 @@ inline Vector operator*(const Matrix& A, const Vector & v) { return prod(A,v);}
 void multiplyAdd(double alpha, const Matrix& A, const Vector& x, Vector& e);
 
 /**
+ * BLAS Level-2 style e <- e + A*x
+ */
+void multiplyAdd(const Matrix& A, const Vector& x, Vector& e);
+
+/**
  * overload ^ for trans(A)*v
  * We transpose the vectors for speed.
  */
@@ -101,6 +106,11 @@ Vector operator^(const Matrix& A, const Vector & v);
  * BLAS Level-2 style x <- x + alpha*A'*e
  */
 void transposeMultiplyAdd(double alpha, const Matrix& A, const Vector& e, Vector& x);
+
+/**
+ * BLAS Level-2 style x <- x + A'*e
+ */
+void transposeMultiplyAdd(const Matrix& A, const Vector& e, Vector& x);
 
 /**
  * BLAS Level-2 style x <- x + alpha*A'*e
