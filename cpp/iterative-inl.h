@@ -25,7 +25,8 @@ namespace gtsam {
 		V g, d;
 		E Ad;
 
-		/** constructor */
+		/* ************************************************************************* */
+		// Constructor
 		CGState(const S& Ab, const V& x, bool verb, double epsilon,
 				double epsilon_abs, size_t maxIt, bool steep) {
 			k = 0;
@@ -47,7 +48,8 @@ namespace gtsam {
 			if (gamma > epsilon) Ad = Ab * d;
 		}
 
-		/** print */
+		/* ************************************************************************* */
+		// print
 		void print(const V& x) {
 			cout << "iteration = " << k << endl;
 			gtsam::print(x,"x");
@@ -57,7 +59,8 @@ namespace gtsam {
 			gtsam::print(Ad, "Ad");
 		}
 
-		/** step the solution */
+		/* ************************************************************************* */
+		// step the solution
 		double takeOptimalStep(V& x) {
 			// TODO: can we use gamma instead of dot(d,g) ????? Answer not trivial
 			double alpha = -dot(d, g) / dot(Ad, Ad); // calculate optimal step-size
@@ -65,7 +68,8 @@ namespace gtsam {
 			return alpha;
 		}
 
-		/** take a step, return true if converged */
+		/* ************************************************************************* */
+		// take a step, return true if converged
 		bool step(const S& Ab, V& x) {
 			k += 1; // increase iteration number
 
@@ -101,12 +105,12 @@ namespace gtsam {
 			Ab.multiplyInPlace(d, Ad);
 			return false;
 		}
-	};
 
-	/**
-	 * conjugate gradient method.
-	 * S: linear system, V: step vector, E: errors
-	 */
+	}; // CGState Class
+
+	/* ************************************************************************* */
+	// conjugate gradient method.
+	// S: linear system, V: step vector, E: errors
 	template<class S, class V, class E>
 	V conjugateGradients(const S& Ab, V x, bool verbose, double epsilon,
 			double epsilon_abs, size_t maxIterations, bool steepest = false) {
