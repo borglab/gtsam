@@ -73,6 +73,7 @@ class GaussianFactor {
   void print(string s) const;
   bool equals(const GaussianFactor& lf, double tol) const;
   pair<Matrix,Vector> matrix(const Ordering& ordering) const;
+  pair<GaussianConditional*,GaussianFactor*> eliminate(string key) const;
 };
 
 class GaussianFactorSet {

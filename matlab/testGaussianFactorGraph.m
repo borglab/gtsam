@@ -22,24 +22,18 @@ actual = fg.eliminateOne('x2');
 
 %-----------------------------------------------------------------------
 % eliminateAll
-sigma1=[.1;.1];
 I = eye(2);
-R1 = I;
-d1=[-.1;-.1];
-cg1 = GaussianConditional('x1',d1, R1,sigma1);
+cg1 = GaussianConditional('x1',[-1;-1], 10*I,[1;1]);
 
-sigma2=[0.149071; 0.149071];
-R2 = I;
-A1= -I;
-d2=[0; .2];
-cg2 = GaussianConditional('l1',d2, R2, 'x1', A1,sigma2);
+sig1=0.149071;
+d2=[0; .2]/sig1;
+cg2 = GaussianConditional('l1', d2, I/sig1, 'x1', -I/sig1, [1;1]);
 
-sigma3=[0.0894427; 0.0894427];
-R3 = I;
-A21 = -0.2*I;
-A22 = -0.8*I;
-d3 =[.2; -.14];
-cg3 = GaussianConditional('x2',d3, R3, 'l1', A21, 'x1', A22, sigma3);
+sig2 = 0.0894427;
+A21 = -0.2*I/sig2;
+A22 = -0.8*I/sig2;
+d3 =[.2; -.14]/sig2;
+cg3 = GaussianConditional('x2',d3, I/sig2, 'l1', A21, 'x1', A22, [1;1]);
 
 expected = GaussianBayesNet;
 expected.push_back(cg3);

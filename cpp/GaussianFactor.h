@@ -19,11 +19,11 @@
 #include "Matrix.h"
 #include "VectorConfig.h"
 #include "SharedDiagonal.h"
+#include "GaussianConditional.h" // Needed for MATLAB
 #include "SymbolMap.h"
 
 namespace gtsam {
 
-	class GaussianConditional;
 	class Ordering;
 
 /**

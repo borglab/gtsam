@@ -25,12 +25,10 @@ Ax1 = [
 
 % the RHS
 b2=[-1;1.5;2;-1];
-model = SharedDiagonal([1;1]);
-combined = GaussianFactor('x2', Ax2,  'l1', Al1, 'x1', Ax1, b2, model);
+model4 = SharedDiagonal([1;1;1;1]);
+combined = GaussianFactor('x2', Ax2,  'l1', Al1, 'x1', Ax1, b2, model4);
 
 % eliminate the combined factor
-% NOT WORKING
-% this is not working because the eliminate has to be added back to gtsam.h
 [actualCG,actualLF] = combined.eliminate('x2');
 
 % create expected Conditional Gaussian
@@ -47,7 +45,7 @@ S13 = [
 +0.00,-8.94427
 ];
 d=[2.23607;-1.56525];
-expectedCG = GaussianConditional('x2',d,R11,'l1',S12,'x1',S13,model);
+expectedCG = GaussianConditional('x2',d,R11,'l1',S12,'x1',S13,[1;1]);
 
 % the expected linear factor
 Bl1 = [
@@ -64,10 +62,9 @@ Bx1 = [
 % the RHS
 b1= [0.0;0.894427];
 
-expectedLF = GaussianFactor('l1', Bl1, 'x1', Bx1, b1, 1);
+model2 = SharedDiagonal([1;1]);
+expectedLF = GaussianFactor('l1', Bl1, 'x1', Bx1, b1, model2);
 
 % check if the result matches
-% NOT WORKING 
-% because can not be computed with GaussianFactor.eliminate
-if(~actualCG.equals(expectedCG)), warning('GTSAM:unit','~actualCG.equals(expectedCG)'); end
-if(~actualLF.equals(expectedLF,1e-5)), warning('GTSAM:unit','~actualLF.equals(expectedLF,1e-5)');end
+CHECK('actualCG.equals(expectedCG,1e-5)',actualCG.equals(expectedCG,1e-4));
+CHECK('actualLF.equals(expectedLF,1e-5)',actualLF.equals(expectedLF,1e-4));
