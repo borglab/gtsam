@@ -264,39 +264,20 @@ void svdcmp(double **a, int m, int n, double w[], double **v, bool sort) {
 	}
 
 	if (sort) {
-		int *indices1 = new int[n+1];
-		int *indices2 = new int[n+1];
 		for (int i1 = 1; i1 <= n; i1++) {
-			indices1[i1] = i1;
-			indices2[i1] = i1;
-		}
-
-		for (int i1 = 1; i1 <= n; i1++) {
-			for (int i2 = i1; i2 <= n; i2++) {
+			for (int i2 = i1+1; i2 <= n; i2++) {
 				if (w[i1] < w[i2]) {
 					double temp = w[i1];
 					w[i1] = w[i2];
 					w[i2] = temp;
-					int ind = indices2[i1];
-					indices2[i1] = indices2[i2];
-					indices2[i2] = ind;
+					for (int j = 1; j <= n; j++) {
+						double temp1 = v[j][i1];
+						v[j][i1] = v[j][i2];
+						v[j][i2] = temp1;
+					}
 				}
 			}
 		}
-
-		for (int i1 = 1; i1 <= n; i1++) {
-			if (indices1[i1] != indices2[i1]) {
-				int src = indices1[i1], dst = indices2[i1];
-				for (int j = 1; j <= n; j++) {
-					double temp = v[j][src];
-					v[j][src] = v[j][dst];
-					v[j][dst] = temp;
-				}
-				indices1[dst] = src;
-			}
-		}
-		delete[] indices1;
-		delete[] indices2;
 	}
 
 	delete[] rv1;
