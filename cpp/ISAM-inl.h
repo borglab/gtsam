@@ -40,13 +40,13 @@ namespace gtsam {
 
 		// create an ordering for the new and contaminated factors
 		Ordering ordering;
-		if (true) {
+#ifndef SORT_KEYS
 			ordering = factors.getOrdering();
-		} else {
+#else
 			list<Symbol> keys = factors.keys();
 			keys.sort(); // todo: correct sorting order?
 			ordering = keys;
-		}
+#endif
 
 		// Create Index from ordering
 		IndexTable<Symbol> index(ordering);
