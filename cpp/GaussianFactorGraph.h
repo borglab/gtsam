@@ -129,7 +129,7 @@ namespace gtsam {
      * Peforms a supposedly-faster (fewer matrix copy) version of elimination
      * CURRENTLY IN TESTING
      */
-    inline GaussianConditional::shared_ptr eliminateOneMatrixJoin(const Symbol& key);
+    GaussianConditional::shared_ptr eliminateOneMatrixJoin(const Symbol& key);
 
     /**
      * eliminate factor graph in place(!) in the given order, yielding

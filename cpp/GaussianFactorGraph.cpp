@@ -53,7 +53,7 @@ Errors GaussianFactorGraph::errors(const VectorConfig& x) const {
 /* ************************************************************************* */
 boost::shared_ptr<Errors> GaussianFactorGraph::errors_(const VectorConfig& x) const {
 	boost::shared_ptr<Errors> e(new Errors);
-	BOOST_FOREACH(sharedFactor factor,factors_)
+	BOOST_FOREACH(const sharedFactor& factor,factors_)
 		e->push_back(factor->error_vector(x));
 	return e;
 }
@@ -61,7 +61,7 @@ boost::shared_ptr<Errors> GaussianFactorGraph::errors_(const VectorConfig& x) co
 /* ************************************************************************* */
 Errors GaussianFactorGraph::operator*(const VectorConfig& x) const {
 	Errors e;
-	BOOST_FOREACH(sharedFactor Ai,factors_)
+	BOOST_FOREACH(const sharedFactor& Ai,factors_)
 		e.push_back((*Ai)*x);
 	return e;
 }
@@ -75,7 +75,7 @@ void GaussianFactorGraph::multiplyInPlace(const VectorConfig& x, Errors& e) cons
 void GaussianFactorGraph::multiplyInPlace(const VectorConfig& x,
 		const Errors::iterator& e) const {
 	Errors::iterator ei = e;
-	BOOST_FOREACH(sharedFactor Ai,factors_) {
+	BOOST_FOREACH(const sharedFactor& Ai,factors_) {
 		*ei = (*Ai)*x;
 		ei++;
 	}
@@ -86,7 +86,7 @@ VectorConfig GaussianFactorGraph::operator^(const Errors& e) const {
 	VectorConfig x;
 	// For each factor add the gradient contribution
 	Errors::const_iterator it = e.begin();
-	BOOST_FOREACH(sharedFactor Ai,factors_) {
+	BOOST_FOREACH(const sharedFactor& Ai,factors_) {
 		VectorConfig xi = (*Ai)^(*(it++));
 		x.insertAdd(xi);
 	}
@@ -99,7 +99,7 @@ void GaussianFactorGraph::transposeMultiplyAdd(double alpha, const Errors& e,
 		VectorConfig& x) const {
 	// For each factor add the gradient contribution
 	Errors::const_iterator ei = e.begin();
-	BOOST_FOREACH(sharedFactor Ai,factors_)
+	BOOST_FOREACH(const sharedFactor& Ai,factors_)
 		Ai->transposeMultiplyAdd(alpha,*(ei++),x);
 }
 
@@ -115,7 +115,7 @@ VectorConfig GaussianFactorGraph::gradient(const VectorConfig& x) const {
 set<Symbol> GaussianFactorGraph::find_separator(const Symbol& key) const
 {
 	set<Symbol> separator;
-	BOOST_FOREACH(sharedFactor factor,factors_)
+	BOOST_FOREACH(const sharedFactor& factor,factors_)
 		factor->tally_separator(key,separator);
 
 	return separator;
@@ -137,19 +137,18 @@ GaussianFactorGraph::eliminateOne(const Symbol& key, bool old) {
 /* ************************************************************************* */
 GaussianConditional::shared_ptr
 GaussianFactorGraph::eliminateOneMatrixJoin(const Symbol& key) {
-	// get a vector of all of the factors in the separator as well as an ordering
+	// find and remove all factors connected to key
 	vector<GaussianFactor::shared_ptr> factors = findAndRemoveFactors(key);
 
+	// Collect all dimensions as well as the set of separator keys
 	set<Symbol> separator;
 	Dimensions dimensions;
-	BOOST_FOREACH(GaussianFactor::shared_ptr factor, factors) {
+	BOOST_FOREACH(const sharedFactor& factor, factors) {
 		Dimensions factor_dim = factor->dimensions();
 		dimensions.insert(factor_dim.begin(), factor_dim.end());
-		BOOST_FOREACH(const Symbol& k, factor->keys()) {
-			if (!k.equals(key)) {
+		BOOST_FOREACH(const Symbol& k, factor->keys())
+			if (!k.equals(key))
 				separator.insert(k);
-			}
-		}
 	}
 
 	// add the keys to the rendering
@@ -160,12 +159,14 @@ GaussianFactorGraph::eliminateOneMatrixJoin(const Symbol& key) {
 	// combine the factors to get a noisemodel and a combined matrix
 	Matrix Ab; SharedDiagonal model;
 
-	boost::tie(Ab, model) = GaussianFactor::combineFactorsAndCreateMatrix(factors,render,dimensions);
+	boost::tie(Ab, model) =
+			GaussianFactor::combineFactorsAndCreateMatrix(factors,render,dimensions);
 
 	// eliminate that joint factor
 	GaussianFactor::shared_ptr factor;
 	GaussianConditional::shared_ptr conditional;
-	boost::tie(conditional, factor) = GaussianFactor::eliminateMatrix(Ab, model, render, dimensions);
+	boost::tie(conditional, factor) =
+			GaussianFactor::eliminateMatrix(Ab, model, render, dimensions);
 
 	// add new factor on separator back into the graph
 	if (!factor->empty()) push_back(factor);
@@ -191,7 +192,7 @@ VectorConfig GaussianFactorGraph::optimize(const Ordering& ordering, bool old)
 {
 	bool verbose = false;
 	if (verbose)
-		BOOST_FOREACH(sharedFactor factor,factors_)
+		BOOST_FOREACH(const sharedFactor& factor,factors_)
 			factor->get_model()->print("Starting model");
 
 	// eliminate all nodes in the given ordering -> chordal Bayes net
@@ -245,7 +246,7 @@ GaussianFactorGraph GaussianFactorGraph::combine2(const GaussianFactorGraph& lfg
 /* ************************************************************************* */  
 Dimensions GaussianFactorGraph::dimensions() const {
 	Dimensions result;
-	BOOST_FOREACH(sharedFactor factor,factors_) {
+	BOOST_FOREACH(const sharedFactor& factor,factors_) {
 		Dimensions vs = factor->dimensions();
 		Symbol key; int dim;
 		FOREACH_PAIR(key,dim,vs) result.insert(make_pair(key,dim));
@@ -277,7 +278,7 @@ GaussianFactorGraph GaussianFactorGraph::add_priors(double sigma) const {
 /* ************************************************************************* */
 Errors GaussianFactorGraph::rhs() const {
 	Errors e;
-	BOOST_FOREACH(sharedFactor factor,factors_)
+	BOOST_FOREACH(const sharedFactor& factor,factors_)
 		e.push_back(ediv(factor->get_b(),factor->get_sigmas()));
 	return e;
 }
@@ -293,7 +294,7 @@ pair<Matrix,Vector> GaussianFactorGraph::matrix(const Ordering& ordering) const 
 
 	// get all factors
 	GaussianFactorSet found;
-	BOOST_FOREACH(sharedFactor factor,factors_)
+	BOOST_FOREACH(const sharedFactor& factor,factors_)
 		found.push_back(factor);
 
 	// combine them
@@ -362,7 +363,7 @@ Matrix GaussianFactorGraph::sparse(const Dimensions& indices) const {
 
 	// Collect the I,J,S lists for all factors
 	int row_index = 0;
-	BOOST_FOREACH(sharedFactor factor,factors_) {
+	BOOST_FOREACH(const sharedFactor& factor,factors_) {
 
 		// get sparse lists for the factor
 		list<int> i1,j1;

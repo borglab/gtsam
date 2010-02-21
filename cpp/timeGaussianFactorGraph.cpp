@@ -105,33 +105,8 @@ double timePlanarSmootherCombined(int N, size_t reps) {
 	clock_t start = clock();
 
 	for (size_t i = 0; i<reps; ++i) {
-		// setup
 		GaussianFactorGraph fg(fgBase);
-
-		Ordering render; render += key; // start with variable to eliminate
-		vector<GaussianFactor::shared_ptr> factors = fg.findAndRemoveFactors(key);
-
-		set<Symbol> separator;
-		Dimensions dimensions;
-		BOOST_FOREACH(GaussianFactor::shared_ptr factor, factors) {
-			Dimensions factor_dim = factor->dimensions();
-			dimensions.insert(factor_dim.begin(), factor_dim.end());
-			BOOST_FOREACH(const Symbol& k, factor->keys()) {
-				if (!k.equals(key)) {
-					separator.insert(k);
-				}
-			}
-		}
-
-		// add the keys to the rendering
-		BOOST_FOREACH(const Symbol& k, separator)
-		if (k != key) render += k;
-
-		// combine the factors to get a noisemodel and a combined matrix
-		Matrix Ab; SharedDiagonal model;
-
-		boost::tie(Ab, model) = GaussianFactor::combineFactorsAndCreateMatrix(factors,render,dimensions);
-
+		fg.eliminateOneMatrixJoin(key);
 	}
 
 	clock_t end = clock ();

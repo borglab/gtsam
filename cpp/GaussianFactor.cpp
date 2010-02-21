@@ -50,7 +50,7 @@ GaussianFactor::GaussianFactor(const vector<shared_ptr> & factors)
 
 	// Create RHS and sigmas of right size by adding together row counts
   size_t m = 0;
-  BOOST_FOREACH(shared_ptr factor, factors) m += factor->numberOfRows();
+  BOOST_FOREACH(const shared_ptr& factor, factors) m += factor->numberOfRows();
   b_ = Vector(m);
   Vector sigmas(m);
 
@@ -58,7 +58,7 @@ GaussianFactor::GaussianFactor(const vector<shared_ptr> & factors)
 
   // iterate over all factors
   bool constrained = false;
-  BOOST_FOREACH(shared_ptr factor, factors){
+  BOOST_FOREACH(const shared_ptr& factor, factors){
   	if (verbose) factor->print();
     // number of rows for factor f
     const size_t mf = factor->numberOfRows();
@@ -452,6 +452,7 @@ GaussianFactor::eliminateMatrix(Matrix& Ab, SharedDiagonal model,
 	return make_pair(conditional, factor);
 }
 
+/* ************************************************************************* */
 pair<GaussianConditional::shared_ptr, GaussianFactor::shared_ptr>
 GaussianFactor::eliminate(const Symbol& key) const
 {
