@@ -430,16 +430,16 @@ TEST (SQP, two_pose ) {
 	Config2D state(*initialEstimate);
 
 	// linearize the graph
-	GaussianFactorGraph fg = graph->linearize(state);
+	boost::shared_ptr<GaussianFactorGraph> fg = graph->linearize(state);
 
-	if (verbose) fg.print("Linearized graph");
+	if (verbose) fg->print("Linearized graph");
 
 	// create an ordering
 	Ordering ordering;
 	ordering += "x1", "x2", "l1", "l2", "L1";
 
 	// optimize linear graph to get full delta config
-	GaussianBayesNet cbn = fg.eliminate(ordering);
+	GaussianBayesNet cbn = fg->eliminate(ordering);
 	if (verbose) cbn.print("ChordalBayesNet");
 
 	VectorConfig delta = optimize(cbn); //fg.optimize(ordering);

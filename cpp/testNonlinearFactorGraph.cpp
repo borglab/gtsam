@@ -73,9 +73,9 @@ TEST( Graph, linearize )
 {
 	Graph fg = createNonlinearFactorGraph();
 	Config initial = createNoisyConfig();
-	GaussianFactorGraph linearized = fg.linearize(initial);
+	boost::shared_ptr<GaussianFactorGraph> linearized = fg.linearize(initial);
 	GaussianFactorGraph expected = createGaussianFactorGraph();
-	CHECK(assert_equal(expected,linearized)); // Needs correct linearizations
+	CHECK(assert_equal(expected,*linearized)); // Needs correct linearizations
 }
 
 /* ************************************************************************* */

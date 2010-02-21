@@ -63,8 +63,8 @@ TEST( Pose2Graph, linearization )
 	config.insert(1,p1);
 	config.insert(2,p2);
 	// Linearize
-	GaussianFactorGraph lfg_linearized = graph.linearize(config);
-	//lfg_linearized.print("lfg_actual");
+	boost::shared_ptr<GaussianFactorGraph> lfg_linearized = graph.linearize(config);
+	//lfg_linearized->print("lfg_actual");
 
 	// the expected linear factor
 	GaussianFactorGraph lfg_expected;
@@ -83,7 +83,7 @@ TEST( Pose2Graph, linearization )
 	SharedDiagonal probModel1 = noiseModel::Unit::Create(3);
 	lfg_expected.add("x1", A1, "x2", A2, b, probModel1);
 
-	CHECK(assert_equal(lfg_expected, lfg_linearized));
+	CHECK(assert_equal(lfg_expected, *lfg_linearized));
 }
 
 /* ************************************************************************* */

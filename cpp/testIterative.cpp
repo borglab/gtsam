@@ -122,8 +122,8 @@ TEST( Iterative, conjugateGradientDescent_soft_constraint )
 	zeros.insert("x1",zero(3));
 	zeros.insert("x2",zero(3));
 
-	GaussianFactorGraph fg = graph.linearize(config);
-	VectorConfig actual = conjugateGradientDescent(fg, zeros, verbose, 1e-3, 1e-5, 100);
+	boost::shared_ptr<GaussianFactorGraph> fg = graph.linearize(config);
+	VectorConfig actual = conjugateGradientDescent(*fg, zeros, verbose, 1e-3, 1e-5, 100);
 
 	VectorConfig expected;
 	expected.insert("x1", zero(3));
@@ -157,10 +157,10 @@ TEST( Iterative, subgraphPCG )
 	graph.split<Key, Pose2Factor>(tree, T, C);
 
 	// build the subgraph PCG system
-	GaussianFactorGraph Ab1_ = T.linearize(theta_bar);
-	SubgraphPreconditioner::sharedFG Ab1 = T.linearize_(theta_bar);
-	SubgraphPreconditioner::sharedFG Ab2 = C.linearize_(theta_bar);
-	SubgraphPreconditioner::sharedBayesNet Rc1 = Ab1_.eliminate_(ordering);
+	boost::shared_ptr<GaussianFactorGraph> Ab1_ = T.linearize(theta_bar);
+	SubgraphPreconditioner::sharedFG Ab1 = T.linearize(theta_bar);
+	SubgraphPreconditioner::sharedFG Ab2 = C.linearize(theta_bar);
+	SubgraphPreconditioner::sharedBayesNet Rc1 = Ab1_->eliminate_(ordering);
 	SubgraphPreconditioner::sharedConfig xbar = optimize_(*Rc1);
 	SubgraphPreconditioner system(Ab1, Ab2, Rc1, xbar);
 

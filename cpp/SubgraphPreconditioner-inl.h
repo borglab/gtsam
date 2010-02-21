@@ -52,16 +52,18 @@ namespace gtsam {
 	/* ************************************************************************* */
 	template<class G, class T>
 	boost::shared_ptr<SubgraphPreconditioner> SubgraphPCG<G, T>::linearize(const G& g, const T& theta_bar) const {
-		SubgraphPreconditioner::sharedFG Ab1 = T_.linearize_(theta_bar);
-		SubgraphPreconditioner::sharedFG Ab2 = C_.linearize_(theta_bar);
+		SubgraphPreconditioner::sharedFG Ab1 = T_.linearize(theta_bar);
+		SubgraphPreconditioner::sharedFG Ab2 = C_.linearize(theta_bar);
 #ifdef TIMING
 		SubgraphPreconditioner::sharedBayesNet Rc1;
 		SubgraphPreconditioner::sharedConfig xbar;
 #else
-		GaussianFactorGraph sacrificialAb1 = T_.linearize(theta_bar); // duplicate !!!!!
+		GaussianFactorGraph sacrificialAb1 = *Ab1; // duplicate !!!!!
 		SubgraphPreconditioner::sharedBayesNet Rc1 = sacrificialAb1.eliminate_(*ordering_);
 		SubgraphPreconditioner::sharedConfig xbar = gtsam::optimize_(*Rc1);
 #endif
+		// TODO: there does not seem to be a good reason to have Ab1_
+		// It seems only be used to provide an ordering for creating sparse matrices
 		return boost::shared_ptr<SubgraphPreconditioner>(new SubgraphPreconditioner(Ab1, Ab2, Rc1, xbar));
 	}
 

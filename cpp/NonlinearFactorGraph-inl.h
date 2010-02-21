@@ -42,24 +42,22 @@ namespace gtsam {
 
 	/* ************************************************************************* */
 	template<class Config>
-	boost::shared_ptr<GaussianFactorGraph> NonlinearFactorGraph<Config>::linearize_(
+	boost::shared_ptr<GaussianFactorGraph> NonlinearFactorGraph<Config>::linearize(
 			const Config& config) const{
 
 		// create an empty linear FG
-		boost::shared_ptr<GaussianFactorGraph>  linearFG(new GaussianFactorGraph);
+		boost::shared_ptr<GaussianFactorGraph> linearFG(new GaussianFactorGraph);
 
 		// linearize all factors
-		BOOST_FOREACH(typename NonlinearFactorGraph<Config>::sharedFactor factor, this->factors_) {
+		typedef typename NonlinearFactorGraph<Config>::sharedFactor Factor;
+		BOOST_FOREACH(const Factor& factor, this->factors_) {
 			boost::shared_ptr<GaussianFactor> lf = factor->linearize(config);
 			linearFG->push_back(lf);
 		}
+
 		return linearFG;
 	}
+
 	/* ************************************************************************* */
-	template<class Config>
-	GaussianFactorGraph NonlinearFactorGraph<Config>::linearize(
-			const Config& config) const {
-		return *linearize_(config);
-	}
 
 } // namespace gtsam

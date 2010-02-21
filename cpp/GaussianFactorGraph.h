@@ -278,7 +278,7 @@ namespace gtsam {
 		 * linearize the non-linear graph around the current config
 		 */
   	boost::shared_ptr<GaussianFactorGraph> linearize(const NonlinearGraph& g, const Config& config) const {
-  		return g.linearize_(config);
+  		return g.linearize(config);
   	}
   };
 }

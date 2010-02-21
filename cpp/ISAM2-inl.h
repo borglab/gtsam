@@ -67,9 +67,10 @@ namespace gtsam {
 	/** Create a Bayes Tree from a nonlinear factor graph */
 	template<class Conditional, class Config>
 	ISAM2<Conditional, Config>::ISAM2(const NonlinearFactorGraph<Config>& nlfg, const Ordering& ordering, const Config& config)
-	: BayesTree<Conditional>(nlfg.linearize(config).eliminate(ordering)), theta_(config), thetaFuture_(config), nonlinearFactors_(nlfg) {
+	: BayesTree<Conditional>(nlfg.linearize(config)->eliminate(ordering)), theta_(config), thetaFuture_(config), nonlinearFactors_(nlfg) {
 		// todo: repeats calculation above, just to set "cached"
-		_eliminate_const(nlfg.linearize(config), cached_, ordering);
+		// De-referencing shared pointer can be quite expensive because creates temporary
+		_eliminate_const(*nlfg.linearize(config), cached_, ordering);
 	}
 
 	/* ************************************************************************* */
@@ -90,7 +91,8 @@ namespace gtsam {
 	// retrieve all factors that ONLY contain the affected variables
 	// (note that the remaining stuff is summarized in the cached factors)
 	template<class Conditional, class Config>
-	FactorGraph<GaussianFactor> ISAM2<Conditional, Config>::relinearizeAffectedFactors(const set<Symbol>& affectedKeys) const {
+	boost::shared_ptr<GaussianFactorGraph> ISAM2<Conditional, Config>::relinearizeAffectedFactors
+	(const set<Symbol>& affectedKeys) const {
 
 		list<Symbol> affectedKeysList; // todo: shouldn't have to convert back to list...
 		affectedKeysList.insert(affectedKeysList.begin(), affectedKeys.begin(), affectedKeys.end());
@@ -110,6 +112,7 @@ namespace gtsam {
 				nonlinearAffectedFactors.push_back(nonlinearFactors_[idx]);
 		}
 
+		// TODO: temporary might be expensive, return shared pointer ?
 		return nonlinearAffectedFactors.linearize(theta_);
 	}
 
@@ -190,7 +193,7 @@ namespace gtsam {
 		//// 6 - find factors connected to affected variables
 		//// 7 - linearize
 
-		FactorGraph<GaussianFactor> factors;
+		boost::shared_ptr<GaussianFactorGraph> factors;
 
 		if (relinFromLast) {
 			// ordering provides all keys in conditionals, there cannot be others because path to root included
@@ -207,25 +210,26 @@ namespace gtsam {
 			factors = relinearizeAffectedFactors(affectedKeys);
 
 			// Save number of affected factors
-			lastAffectedFactorCount = factors.size();
+			lastAffectedFactorCount = factors->size();
 
 			// add the cached intermediate results from the boundary of the orphans ...
 			FactorGraph<GaussianFactor> cachedBoundary = getCachedBoundaryFactors(orphans);
-			factors.push_back(cachedBoundary);
+			factors->push_back(cachedBoundary);
 		} else {
 			// reuse the old factors
 			FactorGraph<GaussianFactor> tmp(affectedBayesNet);
-			factors.push_back(tmp);
-			factors.push_back(newFactors.linearize(theta_));
+			factors.reset(new GaussianFactorGraph);
+			factors->push_back(tmp);
+			factors->push_back(*newFactors.linearize(theta_)); // avoid temporary ?
 		}
 
 		//// 8 - eliminate and add orphans back in
 
 		// create an ordering for the new and contaminated factors
-		Ordering ordering = factors.getOrdering();
+		Ordering ordering = factors->getOrdering();
 
 		// eliminate into a Bayes net
-		BayesNet<Conditional> bayesNet = _eliminate(factors, cached_, ordering);
+		BayesNet<Conditional> bayesNet = _eliminate(*factors, cached_, ordering);
 
 		// Create Index from ordering
 		IndexTable<Symbol> index(ordering);

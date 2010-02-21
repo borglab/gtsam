@@ -96,7 +96,7 @@ namespace gtsam {
 	private:
 
 		std::list<int> getAffectedFactors(const std::list<Symbol>& keys) const;
-		FactorGraph<GaussianFactor> relinearizeAffectedFactors(const std::set<Symbol>& affectedKeys) const;
+		boost::shared_ptr<GaussianFactorGraph> relinearizeAffectedFactors(const std::set<Symbol>& affectedKeys) const;
 		FactorGraph<GaussianFactor> getCachedBoundaryFactors(Cliques& orphans);
 
 	}; // ISAM2

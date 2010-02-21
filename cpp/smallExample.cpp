@@ -266,8 +266,7 @@ namespace example {
 		Config poses;
 		boost::tie(nlfg, poses) = createNonlinearSmoother(T);
 
-		GaussianFactorGraph lfg = nlfg.linearize(poses);
-		return lfg;
+		return *nlfg.linearize(poses);
 	}
 
 	/* ************************************************************************* */
@@ -556,9 +555,7 @@ namespace example {
 			}
 
 		// linearize around zero
-		GaussianFactorGraph A = nlfg.linearize(zeros);
-
-		return make_pair(A, xtrue);
+		return make_pair(*nlfg.linearize(zeros), xtrue);
 	}
 
 	/* ************************************************************************* */

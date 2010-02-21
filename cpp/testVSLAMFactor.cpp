@@ -62,8 +62,8 @@ TEST( ProjectionFactor, error )
 	graph.push_back(factor);
 	GaussianFactorGraph expected_lfg;
 	expected_lfg.push_back(actual);
-	GaussianFactorGraph actual_lfg = graph.linearize(config);
-	CHECK(assert_equal(expected_lfg,actual_lfg));
+	boost::shared_ptr<GaussianFactorGraph> actual_lfg = graph.linearize(config);
+	CHECK(assert_equal(expected_lfg,*actual_lfg));
 
 	// expmap on a config
 	VectorConfig delta;
