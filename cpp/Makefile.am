@@ -93,8 +93,10 @@ testBinaryBayesNet_LDADD      = libgtsam.la
 
 # Gaussian inference 
 headers += GaussianFactorSet.h SharedGaussian.h SharedDiagonal.h VectorConfig.h
-sources += NoiseModel.cpp Errors.cpp VectorMap.cpp VectorBTree.cpp GaussianFactor.cpp GaussianFactorGraph.cpp GaussianConditional.cpp GaussianBayesNet.cpp
-check_PROGRAMS += testVectorMap testVectorBTree testGaussianFactor testGaussianFactorGraph testGaussianConditional testGaussianBayesNet testNoiseModel
+sources += NoiseModel.cpp Errors.cpp VectorMap.cpp VectorBTree.cpp GaussianFactor.cpp 
+sources += GaussianFactorGraph.cpp GaussianConditional.cpp GaussianBayesNet.cpp
+check_PROGRAMS += testVectorMap testVectorBTree testGaussianFactor testGaussianFactorGraph 
+check_PROGRAMS += testGaussianConditional testGaussianBayesNet testNoiseModel testErrors
 testVectorMap_SOURCES           = testVectorMap.cpp
 testVectorMap_LDADD             = libgtsam.la
 testVectorBTree_SOURCES         = testVectorBTree.cpp
@@ -109,6 +111,8 @@ testGaussianBayesNet_SOURCES    = testGaussianBayesNet.cpp
 testGaussianBayesNet_LDADD      = libgtsam.la
 testNoiseModel_SOURCES          = testNoiseModel.cpp
 testNoiseModel_LDADD            = libgtsam.la
+testErrors_SOURCES              = testErrors.cpp
+testErrors_LDADD                = libgtsam.la
 
 # Iterative Methods
 headers += iterative-inl.h SubgraphPreconditioner-inl.h

@@ -38,9 +38,11 @@ bool Errors::equals(const Errors& expected, double tol) const {
 
 /* ************************************************************************* */
 Errors Errors::operator-(const Errors& b) const {
+#ifndef NDEBUG
 	size_t m = size();
-  if (b.size()!=m)
+	if (b.size()!=m)
     throw(std::invalid_argument("Errors::operator-: incompatible sizes"));
+#endif
 	Errors result;
 	Errors::const_iterator it = b.begin();
   BOOST_FOREACH(const Vector& ai, *this)
@@ -50,14 +52,23 @@ Errors Errors::operator-(const Errors& b) const {
 
 /* ************************************************************************* */
 double dot(const Errors& a, const Errors& b) {
+#ifndef NDEBUG
 	size_t m = a.size();
   if (b.size()!=m)
     throw(std::invalid_argument("Errors::dot: incompatible sizes"));
-	double result = 0.0;
+#endif
+  double result = 0.0;
 	Errors::const_iterator it = b.begin();
   BOOST_FOREACH(const Vector& ai, a)
 		result += gtsam::dot(ai, *(it++));
 	return result;
+}
+
+/* ************************************************************************* */
+void axpy(double alpha, const Errors& x, Errors& y) {
+	Errors::const_iterator it = x.begin();
+  BOOST_FOREACH(Vector& yi, y)
+		axpy(alpha,*(it++),yi);
 }
 
 /* ************************************************************************* */
