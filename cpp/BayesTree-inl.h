@@ -255,7 +255,7 @@ namespace gtsam {
 	/* ************************************************************************* */
 	template<class Conditional>
 	template<class Factor>
-	FactorGraph<Factor>
+	pair<FactorGraph<Factor>, Ordering>
 	BayesTree<Conditional>::Clique::joint(shared_ptr C2, shared_ptr R) {
 		// For now, assume neither is the root
 
@@ -273,7 +273,7 @@ namespace gtsam {
 		keys12.unique();
 
 		// Calculate the marginal
-		return marginalize<Factor,Conditional>(*bn,keys12);
+		return make_pair(marginalize<Factor,Conditional>(*bn,keys12), keys12);
 	}
 
 	/* ************************************************************************* */
@@ -500,10 +500,11 @@ namespace gtsam {
 		sharedClique C1 = (*this)[key1], C2 = (*this)[key2];
 
 		// calculate joint
-		FactorGraph<Factor> p_C1C2 = C1->joint<Factor>(C2,root_);
+		Ordering ord;
+		FactorGraph<Factor> p_C1C2;
+		boost::tie(p_C1C2,ord) = C1->joint<Factor>(C2,root_);
 
 		// create an ordering where both requested keys are not eliminated
-		Ordering ord = p_C1C2.keys();
 		ord.remove(key1);
 		ord.remove(key2);
 

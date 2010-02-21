@@ -84,7 +84,7 @@ namespace gtsam {
 
 			/** return the joint P(C1,C2), where C1==this. TODO: not a method? */
 			template<class Factor>
-			FactorGraph<Factor> joint(shared_ptr C2, shared_ptr root);
+			std::pair<FactorGraph<Factor>,Ordering> joint(shared_ptr C2, shared_ptr root);
 		};
 
 		// typedef for shared pointers to cliques
