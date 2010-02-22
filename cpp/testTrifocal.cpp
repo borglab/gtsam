@@ -62,6 +62,7 @@ TEST(Tensors, TrifocalTensor)
 		{ {  0, 0, 0.301511 }, { 0, 0, 0 }, { 0, 0, 0 } }
 	};
 	TrifocalTensor T(t);
+	//print(T(a,b,c));
 
 	list<Point3h> points;
 	points += P1, P2, P3, P4, P5, P6, P7, P8;
@@ -101,7 +102,51 @@ TEST(Tensors, TrifocalTensor)
 	CHECK(assert_equality(expected2(_c,_g), eta(_f,_c,_g) * p.third(f)));
 
 	TrifocalTensor actual = estimateTrifocalTensor(triplets);
+
+	//print(actual(a,b,c));
 	CHECK(assert_equality(T(_a,b,c),actual(_a,b,c),1e-6));
+}
+
+TEST(Tensors, TrifocalTensor1){
+	// Manually clicked points
+	// Points in frame1
+	// 339   336   281    51   367   265   135
+	// 152   344   246   210    76   248   246
+	// Points in frame2
+	// 380   381   311   108   395   294   161
+	// 148   340   242   208    73   243   242
+	// Points in frame3
+	// 440   441   360   181   444   344   207
+	// 151   343   246   212    74   247   245
+
+	Triplet p1(point2h(339,152,1), point2h(380,148,1), point2h(440,151,1));
+	Triplet p2(point2h(336,344,1), point2h(381,340,1), point2h(441,343,1));
+	Triplet p3(point2h(281,246,1), point2h(311,242,1), point2h(360,246,1));
+	Triplet p4(point2h(51,210,1 ), point2h(108,208,1), point2h(181,212,1));
+	Triplet p5(point2h(367,76,1 ), point2h(395,73,1 ), point2h(444,74,1) );
+	Triplet p6(point2h(265,248,1), point2h(294,243,1), point2h(344,247,1));
+	Triplet p7(point2h(135,246,1), point2h(161,242,1), point2h(207,245,1));
+	list<Triplet> triplets;
+	triplets += p1, p2, p3, p4, p5, p6, p7;
+
+	// Checked with MATLAB !
+	/*double t[3][3][3] = {
+	{ {	-0.0145,0.0081,0.0000}, {-0.0004,-0.0180,0.0000}, {0.2334,-0.6283,-0.0230}},
+	{ {	-0.0162,-0.0001,0.0000}, {0.0049,-0.0075,0.0000}, {0.7406,0.0209,-0.0140}},
+	{ {	-0.0001,-0.0000,-0.0000}, {-0.0000,-0.0001,0.0000}, {0.0096,0.0063,-0.0000}}
+	};*/
+	double t[3][3][3] = {
+	{ {	0.0145,0.0004,-0.2334}, {-0.0081,0.0180,0.6283}, {0.0000,0.0000,0.0230}},
+	{ {	0.0162,-0.0049,-0.7406}, {0.0001,-0.0075,-0.0209}, {0.0000,0.0000,0.0140}},
+	{ {	0.0001,-0.0000,-0.0096}, {0.0000,0.0001,-0.0063}, {0.0000,-0.0000,-0.0000}}
+	};
+	TrifocalTensor T(t);
+
+	TrifocalTensor actual = estimateTrifocalTensor(triplets);
+
+	print(T(_a,b,c));
+	print(actual(_a,b,c));
+	CHECK(assert_equality(T(_a,b,c), actual(_a,b,c),1e-1));
 }
 
 /* ************************************************************************* */
