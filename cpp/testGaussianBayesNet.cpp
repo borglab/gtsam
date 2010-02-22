@@ -43,7 +43,7 @@ TEST( GaussianBayesNet, constructor )
   d1(0) = 9; d2(0) = 5;
   Vector sigmas(1);
   sigmas(0) = 1.;
-  
+
   // define nodes and specify in reverse topological sort (i.e. parents last)
   GaussianConditional x("x",d1,R11,"y",S12, sigmas), y("y",d2,R22, sigmas);
 
@@ -81,6 +81,37 @@ TEST( GaussianBayesNet, optimize )
   VectorConfig expected;
   expected.insert("x",Vector_(1,4.));
   expected.insert("y",Vector_(1,5.));
+
+  CHECK(assert_equal(expected,actual));
+}
+
+/* ************************************************************************* */
+TEST( GaussianBayesNet, optimize2 )
+{
+
+	// Create empty graph
+	GaussianFactorGraph fg;
+
+	fg.add("y", eye(1), 2*ones(1), noiseModel::Unit::Create(1));
+
+	fg.add("x", eye(1),"y", -eye(1), -2*ones(1),
+			noiseModel::Unit::Create(1));
+
+	fg.add("y", eye(1),"z", -eye(1), -9*ones(1),
+				noiseModel::Unit::Create(1));
+
+	fg.add("z", eye(1),"x", -eye(1), 3*ones(1),
+				noiseModel::Unit::Create(1));
+
+	Ordering ordering; ordering += "x", "y", "z";
+	GaussianBayesNet cbn = fg.eliminate(ordering);
+	cbn.print("cbn");
+  VectorConfig actual = optimize(cbn);
+
+  VectorConfig expected;
+  expected.insert("x",Vector_(1,1.));
+  expected.insert("y",Vector_(1,2.));
+  expected.insert("z",Vector_(1,3.));
 
   CHECK(assert_equal(expected,actual));
 }
