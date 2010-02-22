@@ -63,9 +63,13 @@ TEST( NonlinearConstraint1, unary_scalar_construction ) {
 	config.insert(x1, Vector_(1, 1.0));
 
 	// calculate the error
-	Vector actual = c1.unwhitenedError(config);
-	Vector expected = Vector_(1, -4.0);
-	CHECK(assert_equal(actual, expected, 1e-5));
+	Vector actualVec = c1.unwhitenedError(config);
+	Vector expectedVec = Vector_(1, -4.0);
+	CHECK(assert_equal(actualVec, expectedVec, 1e-5));
+
+	double actError = c1.error(config);
+	double expError = 8.0;
+	DOUBLES_EQUAL(expError, actError, 1e-5);
 }
 
 /* ************************************************************************* */

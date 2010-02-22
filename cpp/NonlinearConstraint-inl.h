@@ -25,7 +25,7 @@ template <class Config>
 NonlinearConstraint<Config>::NonlinearConstraint(const LagrangeKey& lagrange_key,
 					size_t dim_lagrange,
 					bool isEquality) :
-	NonlinearFactor<Config>(noiseModel::Constrained::All(dim_lagrange)),
+	NonlinearFactor<Config>(noiseModel::Unit::Create(dim_lagrange)),
 	lagrange_key_(lagrange_key), p_(dim_lagrange), isEquality_(isEquality) {
 	this->keys_.push_back(lagrange_key_);
 }
