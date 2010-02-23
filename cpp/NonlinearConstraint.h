@@ -25,6 +25,12 @@ typedef TypedSymbol<Vector, 'L'> LagrangeKey;
  *
  * The measurement z in the underlying NonlinearFactor is the
  * set of Lagrange multipliers.
+ *
+ * Note on NoiseModel:
+ * The nonlinear constraint actually uses a Unit noisemodel so that
+ * it is possible to have a finite error value when the constraint is
+ * not fulfilled.  Using a constrained noisemodel will immediately cause
+ * infinite error and break optimization.
  */
 template <class Config>
 class NonlinearConstraint : public NonlinearFactor<Config> {
