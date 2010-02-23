@@ -27,6 +27,7 @@ struct Module {
    */
   void matlab_code(const std::string& path, 
 		   const std::string& nameSpace, 
-		   const std::string& mexFlags);
+		   const std::string& mexFlags,
+		   bool verbose);
 };
 

@@ -12,6 +12,7 @@
 #include "Module.h"
 
 using namespace std;
+static bool verbose = false;
 
 /* ************************************************************************* */
 TEST( wrap, ArgumentList ) {
@@ -62,7 +63,7 @@ TEST( wrap, matlab_code ) {
 
   // emit MATLAB code
   // make_geometry will not compile, use make testwrap to generate real make
-  module.matlab_code("actual", "", "-O5");
+  module.matlab_code("actual", "", "-O5", verbose);
 
   CHECK(files_equal("expected/@Point2/Point2.m"  , "actual/@Point2/Point2.m"  ));
   CHECK(files_equal("expected/@Point2/x.cpp"     , "actual/@Point2/x.cpp"     ));

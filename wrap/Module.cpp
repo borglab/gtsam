@@ -166,7 +166,8 @@ Module::Module(const string& interfacePath,
 /* ************************************************************************* */
 void Module::matlab_code(const string& toolboxPath, 
 			 const string& nameSpace, 
-			 const string& mexFlags) 
+			 const string& mexFlags,
+			 bool verbose)
 {
   try {
     string installCmd = "install -d " + toolboxPath;
@@ -177,7 +178,7 @@ void Module::matlab_code(const string& toolboxPath,
     ofstream ofs(makeFile.c_str());
     if(!ofs) throw CantOpenFile(makeFile);
 
-    cerr << "generating " << makeFile << endl;
+    if (verbose) cerr << "generating " << makeFile << endl;
     emit_header_comment(ofs,"%");
     ofs << "echo on" << endl << endl;
     ofs << "toolboxpath = pwd" << endl;

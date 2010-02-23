@@ -25,7 +25,7 @@ void generate_matlab_toolbox(const string& interfacePath,
   Module module(interfacePath, moduleName);
 
   // emit MATLAB code
-  module.matlab_code(toolboxPath,nameSpace,mexFlags);
+  module.matlab_code(toolboxPath,nameSpace,mexFlags,true);
 }
 
 /* ************************************************************************* */
