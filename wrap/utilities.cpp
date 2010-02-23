@@ -29,10 +29,10 @@ string file_contents(const string& filename, bool skipheader) {
 }
 
 /* ************************************************************************* */
-bool files_equal(const string& actual, const string& expected, bool skipheader) {
+bool files_equal(const string& expected, const string& actual, bool skipheader) {
   try {
+    string expected_contents = file_contents(expected, skipheader);
     string actual_contents   = file_contents(actual, skipheader);
-    string expected_contents = file_contents(expected);
     bool equal = actual_contents == expected_contents;
     if (!equal) {
       stringstream command;
