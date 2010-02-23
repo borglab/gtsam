@@ -89,9 +89,9 @@ TEST(Tensors, TrifocalTensor)
 
 	// This checks the rank 3 (with answer checked in MATLAB);
 	double matlab3[3][3][3] = {
-		{	{	-0, -0, 0}, { 4, 2, -4}, { 2, 1, -2}},
-		{	{	-4, -2, 4}, {-0, -0, 0}, {-2, -1, 2}},
-		{	{	-2, -1, 2}, { 2, 1, -2}, {-0, -0, 0}}
+		{{ -0, -0, 0}, { 4, 2, -4}, { 2, 1, -2}},
+		{{ -4, -2, 4}, {-0, -0, 0}, {-2, -1, 2}},
+		{{ -2, -1, 2}, { 2, 1, -2}, {-0, -0, 0}}
 	};
 	Tensor3<3,3,3> expected3(matlab3);
 	CHECK(assert_equality(expected3(a,_b,_e), p.first(a)* (eta(_d,_b,_e) * p.second(d))));
@@ -144,8 +144,6 @@ TEST(Tensors, TrifocalTensor1){
 
 	TrifocalTensor actual = estimateTrifocalTensor(triplets);
 
-	print(T(_a,b,c));
-	print(actual(_a,b,c));
 	CHECK(assert_equality(T(_a,b,c), actual(_a,b,c),1e-1));
 }
 
