@@ -17,8 +17,9 @@ struct Method {
   ArgumentList args;
   std::string returns, returns2, name;
   bool returns_ptr, returns_ptr2, returns_pair;
+  bool verbose_;
 
-Method() : returns_ptr(false), returns_ptr2(false), returns_pair(false) {}
+  Method(bool verbose=true) : returns_ptr(false), returns_ptr2(false), returns_pair(false), verbose_(verbose) {}
 
   enum pairing {arg1, arg2, pair};
   std::string return_type(bool add_ptr, pairing p);

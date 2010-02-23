@@ -28,7 +28,7 @@ TEST( wrap, ArgumentList ) {
 
 /* ************************************************************************* */
 TEST( wrap, parse ) {
-  Module module(".", "geometry");
+  Module module(".", "geometry",false);
   CHECK(module.classes.size()==3);
 
   // check second class, Point3
@@ -59,11 +59,11 @@ TEST( wrap, parse ) {
 /* ************************************************************************* */
 TEST( wrap, matlab_code ) {
   // Parse into class object
-  Module module(".","geometry");
+  Module module(".","geometry",false);
 
   // emit MATLAB code
   // make_geometry will not compile, use make testwrap to generate real make
-  module.matlab_code("actual", "", "-O5", verbose);
+  module.matlab_code("actual", "", "-O5");
 
   CHECK(files_equal("expected/@Point2/Point2.m"  , "actual/@Point2/Point2.m"  ));
   CHECK(files_equal("expected/@Point2/x.cpp"     , "actual/@Point2/x.cpp"     ));

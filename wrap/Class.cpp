@@ -18,7 +18,7 @@ void Class::matlab_proxy(const string& classFile) {
   // open destination classFile
   ofstream ofs(classFile.c_str());
   if(!ofs) throw CantOpenFile(classFile);
-  cerr << "generating " << classFile << endl;
+  if(verbose_) cerr << "generating " << classFile << endl;
 
   // emit class proxy code
   emit_header_comment(ofs,"%");

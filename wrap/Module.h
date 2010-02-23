@@ -15,19 +15,20 @@
 struct Module {
   std::string name;
   std::list<Class> classes;
+  bool verbose_;
 
   /**
    * constructor that parses interface file
    */
   Module(const std::string& interfacePath, 
-	 const std::string& moduleName);
+	 const std::string& moduleName,
+	 bool verbose=true);
 
   /**
    *  MATLAB code generation:
    */
   void matlab_code(const std::string& path, 
 		   const std::string& nameSpace, 
-		   const std::string& mexFlags,
-		   bool verbose);
+		   const std::string& mexFlags);
 };
 

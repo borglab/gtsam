@@ -41,7 +41,7 @@ void Method::matlab_mfile(const string& classPath) {
   string wrapperFile = classPath + "/" + name + ".m";
   ofstream ofs(wrapperFile.c_str());
   if(!ofs) throw CantOpenFile(wrapperFile);
-  cerr << "generating " << wrapperFile << endl;
+  if(verbose_) cerr << "generating " << wrapperFile << endl;
 
   // generate code
   emit_header_comment(ofs, "%");
@@ -66,7 +66,7 @@ void Method::matlab_wrapper(const string& classPath,
   string wrapperFile = classPath + "/" + name + ".cpp";
   ofstream ofs(wrapperFile.c_str());
   if(!ofs) throw CantOpenFile(wrapperFile);
-  cerr << "generating " << wrapperFile << endl;
+  if(verbose_) cerr << "generating " << wrapperFile << endl;
 
   // generate code
 

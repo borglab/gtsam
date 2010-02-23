@@ -17,6 +17,9 @@ struct Class {
   std::string name;
   std::list<Constructor> constructors;
   std::list<Method> methods;
+  bool verbose_;
+
+  Class(bool verbose=true) : verbose_(verbose) {}
 
   // MATLAB code generation:
   void matlab_proxy(const std::string& classFile);          // proxy class

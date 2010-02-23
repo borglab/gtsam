@@ -14,6 +14,9 @@
 // Constructor class
 struct Constructor {
   ArgumentList args;
+  bool verbose_;
+
+  Constructor(bool verbose=true) : verbose_(verbose) {}
 
   // MATLAB code generation
   // toolboxPath is main toolbox directory, e.g., ../matlab

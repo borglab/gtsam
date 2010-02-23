@@ -22,10 +22,10 @@ void generate_matlab_toolbox(const string& interfacePath,
 			     const string& mexFlags) 
 {
   // Parse into class object
-  Module module(interfacePath, moduleName);
+  Module module(interfacePath, moduleName, false);
 
   // emit MATLAB code
-  module.matlab_code(toolboxPath,nameSpace,mexFlags,true);
+  module.matlab_code(toolboxPath,nameSpace,mexFlags);
 }
 
 /* ************************************************************************* */

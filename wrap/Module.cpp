@@ -27,15 +27,15 @@ typedef rule<BOOST_SPIRIT_CLASSIC_NS::phrase_scanner_t> Rule;
 /* ************************************************************************* */
 
 Module::Module(const string& interfacePath,
-	       const string& moduleName) : name(moduleName)
+	       const string& moduleName, bool verbose) : name(moduleName), verbose_(verbose)
 {
   // these variables will be imperatively updated to gradually build [cls]
   // The one with postfix 0 are used to reset the variables after parse.
   Argument arg0, arg;
   ArgumentList args0, args;
-  Constructor constructor0, constructor;
-  Method method0, method;
-  Class cls0,cls;
+  Constructor constructor0(verbose), constructor(verbose);
+  Method method0(verbose), method(verbose);
+  Class cls0(verbose),cls(verbose);
 
   //----------------------------------------------------------------------------
   // Grammar with actions that build the Class object. Actions are
@@ -166,8 +166,7 @@ Module::Module(const string& interfacePath,
 /* ************************************************************************* */
 void Module::matlab_code(const string& toolboxPath, 
 			 const string& nameSpace, 
-			 const string& mexFlags,
-			 bool verbose)
+			 const string& mexFlags)
 {
   try {
     string installCmd = "install -d " + toolboxPath;
@@ -178,7 +177,7 @@ void Module::matlab_code(const string& toolboxPath,
     ofstream ofs(makeFile.c_str());
     if(!ofs) throw CantOpenFile(makeFile);
 
-    if (verbose) cerr << "generating " << makeFile << endl;
+    if (verbose_) cerr << "generating " << makeFile << endl;
     emit_header_comment(ofs,"%");
     ofs << "echo on" << endl << endl;
     ofs << "toolboxpath = pwd" << endl;
