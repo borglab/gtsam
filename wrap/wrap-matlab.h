@@ -46,14 +46,10 @@ mxArray *scalar(mxClassID classid) {
   return mxCreateNumericArray(1, dims, classid, mxREAL);
 }
 
-mxArray *vector(int m,  mxClassID classid) {
-  mwSize dims[1]; dims[0]=m;
-  return mxCreateNumericArray(1, dims, classid, mxREAL);
-}
-
-mxArray *matrix(int m, int n,  mxClassID classid) {
-  mwSize dims[2]; dims[0]=m; dims[1]=n;
-  return mxCreateNumericArray(2, dims, mxUINT32OR64_CLASS, mxREAL);
+void checkScalar(const mxArray* array, const char* str) {
+	int m = mxGetM(array), n = mxGetN(array);
+	if (m!=1 || n!=1)
+		mexErrMsgIdAndTxt("wrap: not a scalar in ", str);
 }
 
 //*****************************************************************************
@@ -84,8 +80,7 @@ mxArray* wrap<string>(string& value) {
   return mxCreateString(value.c_str());
 }
 
-// specialization to bool -> uint32
-// Warning: might rely on sizeof(UINT32_T)==sizeof(bool)
+// specialization to bool
 template<>
 mxArray* wrap<bool>(bool& value) {
   mxArray *result = scalar(mxUINT32OR64_CLASS);
@@ -93,8 +88,7 @@ mxArray* wrap<bool>(bool& value) {
   return result;
 }
 
-// specialization to size_t -> uint32
-// Warning: might rely on sizeof(UINT32_T)==sizeof(size_t)
+// specialization to size_t
 template<>
 mxArray* wrap<size_t>(size_t& value) {
   mxArray *result = scalar(mxUINT32OR64_CLASS);
@@ -102,11 +96,10 @@ mxArray* wrap<size_t>(size_t& value) {
   return result;
 }
 
-// specialization to int -> uint32
-// Warning: might rely on sizeof(INT32_T)==sizeof(int)
+// specialization to int
 template<>
 mxArray* wrap<int>(int& value) {
-  mxArray *result = scalar(mxINT32_CLASS);
+  mxArray *result = scalar(mxUINT32OR64_CLASS);
   *(int*)mxGetData(result) = value;
   return result;
 }
@@ -184,34 +177,31 @@ string unwrap<string>(const mxArray* array) {
 }
 
 // specialization to bool
-// returns a pointer to the array data itself
-// Warning: relies on sizeof(UINT32_T)==sizeof(bool)
 template<>
 bool unwrap<bool>(const mxArray* array) {
-  return *(bool*)mxGetData(array);
+	checkScalar(array,"unwrap<bool>");
+  return mxGetScalar(array) != 0.0;
 }
 
 // specialization to size_t
-// returns a pointer to the array data itself
-// Warning: relies on sizeof(UINT32_T)==sizeof(size_t)
 template<>
 size_t unwrap<size_t>(const mxArray* array) {
-  return *(size_t*)mxGetData(array);
+	checkScalar(array,"unwrap<size_t>");
+  return (size_t)mxGetScalar(array);
 }
 
 // specialization to int
-// returns a pointer to the array data itself
-// Warning: relies on sizeof(INT32_T)==sizeof(int)
 template<>
 int unwrap<int>(const mxArray* array) {
-  return *(int*)mxGetData(array);
+	checkScalar(array,"unwrap<int>");
+  return (int)mxGetScalar(array);
 }
 
 // specialization to double
-// returns a pointer to the array data itself
 template<>
 double unwrap<double>(const mxArray* array) {
-  return *(double*)mxGetData(array);
+	checkScalar(array,"unwrap<double>");
+  return (double)mxGetScalar(array);
 }
 
 // specialization to BOOST vector
