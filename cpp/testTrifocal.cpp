@@ -144,6 +144,17 @@ TEST(Tensors, TrifocalTensor1){
 
 	TrifocalTensor actual = estimateTrifocalTensor(triplets);
 
+	Eta3 eta;
+	double data[3][3] = { { 0, 0, 0 }, { 0, 0, 0 }, { 0, 0, 0 } };
+	Tensor2<3,3> zero(data);
+
+	BOOST_FOREACH(const Triplet& t, triplets) {
+		Tensor2<3,3> T1 = actual(_a,b,c) * t.first(a);
+		Tensor2<3,3> T2 = eta(_d,_b,_e) * t.second(d);
+		Tensor2<3,3> T3 = eta(_f,_c,_g) * t.third(f);
+		CHECK(assert_equality(zero(_e,_g), (T1(b,c) * T2(_b,_e)) * T3(_c,_g),1e-2));
+	}
+
 	CHECK(assert_equality(T(_a,b,c), actual(_a,b,c),1e-1));
 }
 
