@@ -761,42 +761,34 @@ TEST ( GaussianFactor, combine_matrix ) {
 	CHECK(assert_equal(*expModel, *noise));
 }
 
+/* ************************************************************************* */
+// FIXME: Executing this test results in a memory corruption error that
+// crashes out and prints a stack trace on Ubuntu.
+TEST ( GaussianFactor, exploding_MAST_factor ) {
 
-///* ************************************************************************* *
-//TEST ( GaussianFactor, constraint_eliminate3 )
-//{
-//	// This test shows that ordering matters if there are non-invertible
-//	// blocks, as this example can be eliminated if x is first, but not
-//	// if y is first.
-//
-//	// Construct a linear constraint
-//	// RHS
-//	Vector b(2); b(0)=3.0; b(1)=4.0;
-//
-//	// A1 - invertible
-//	Matrix A1(2,2);
-//	A1(0,0) = 1.0 ; A1(0,1) = 2.0;
-//	A1(1,0) = 2.0 ; A1(1,1) = 1.0;
-//
-//	// A2 - not invertible
-//	Matrix A2(2,2);
-//	A2(0,0) = 1.0 ; A2(0,1) = 2.0;
-//	A2(1,0) = 2.0 ; A2(1,1) = 4.0;
-//
-//	GaussianFactor lc("x", A1, "y", A2, b, 0.0);
-//
-//	// eliminate y from original graph
-//	// NOTE: this will throw an exception, as
-//	// the leading matrix is rank deficient
-//	GaussianConditional::shared_ptr actualCG;
-//	GaussianFactor::shared_ptr actualLF;
-//	try {
-//		boost::tie(actualCG, actualLF) = lc.eliminate("y");
-//		CHECK(false);
-//	} catch (domain_error) {
-//		CHECK(true);
-//	}
-//}
+	// Tried switching to a different number, still same problem
+	Symbol lA2('l', 18295873486192642);
+	Matrix A1 = eye(2);
+	Vector b1 = zero(2);
+	SharedDiagonal model1 = noiseModel::Isotropic::Sigma(2, 1.0/sqrt(2.0));
+	GaussianFactor::shared_ptr f1(new GaussianFactor(lA2, A1, b1, model1));
+
+	Matrix A2 = Matrix_(3,3,
+			5.45735,	  1.94835,	 -1.68176,
+				  0,	  10.2778,	 0.973046,
+				  0,	        0,	   12.253);
+	Vector b2 = Vector_(3, 1.29627e-16, 5.14706e-16, 4.19527e-16);
+	SharedDiagonal model2 = noiseModel::Diagonal::Sigmas(ones(3));
+	GaussianFactor::shared_ptr f2(new GaussianFactor(lA2, A2, b2, model2));
+
+	GaussianFactorGraph fg;
+	fg.push_back(f1);
+	fg.push_back(f2);
+
+	// FIXME: Uncomment to cause the error
+	//GaussianConditional::shared_ptr cg = fg.eliminateOne(lA2);
+}
+
 
 /* ************************************************************************* */
 int main() { TestResult tr; return TestRegistry::runAllTests(tr);}
