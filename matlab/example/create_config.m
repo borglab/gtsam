@@ -3,12 +3,13 @@
 
 function config = create_config(n,m)
 
-config = VectorConfig();
-
-for j = 1:n
-    config.insert(sprintf('l%d',j), [0;0]);
-end
+config = Simulated2DConfig();
+origin = Point2;
 
 for i = 1:m
-    config.insert(sprintf('x%d',i), [0;0]); 
+    config.insertPose(i, origin); 
+end
+
+for j = 1:n
+    config.insertPoint(j, origin);
 end

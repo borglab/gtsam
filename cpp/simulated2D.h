@@ -52,7 +52,7 @@ namespace gtsam {
 		/**
 		 * Unary factor encoding a soft prior on a vector
 		 */
-		template<class Cfg=Config, class Key=PoseKey>
+		template<class Cfg = Config, class Key = PoseKey>
 		struct GenericPrior: public NonlinearFactor1<Cfg, Key, Point2> {
 
 			Point2 z_;
@@ -71,15 +71,14 @@ namespace gtsam {
 		/**
 		 * Binary factor simulating "odometry" between two Vectors
 		 */
-		template<class Cfg=Config, class Key=PoseKey>
+		template<class Cfg = Config, class Key = PoseKey>
 		struct GenericOdometry: public NonlinearFactor2<Cfg, Key, Point2, Key,
 				Point2> {
 			Point2 z_;
 
-			GenericOdometry(const Point2& z, const SharedGaussian& model, const Key& j1,
-					const Key& j2) :
-				z_(z), NonlinearFactor2<Cfg, Key, Point2, Key, Point2> (
-						model, j1, j2) {
+			GenericOdometry(const Point2& z, const SharedGaussian& model,
+					const Key& i1, const Key& i2) :
+				z_(z), NonlinearFactor2<Cfg, Key, Point2, Key, Point2> (model, i1, i2) {
 			}
 
 			Vector evaluateError(const Point2& x1, const Point2& x2, boost::optional<
@@ -92,22 +91,22 @@ namespace gtsam {
 		/**
 		 * Binary factor simulating "measurement" between two Vectors
 		 */
-		template<class Cfg=Config, class XKey=PoseKey, class LKey=PointKey>
-		class GenericMeasurement: public NonlinearFactor2<Cfg, XKey, Point2, LKey, Point2> {
-			public:
+		template<class Cfg = Config, class XKey = PoseKey, class LKey = PointKey>
+		class GenericMeasurement: public NonlinearFactor2<Cfg, XKey, Point2, LKey,
+				Point2> {
+		public:
 
-				Point2 z_;
+			Point2 z_;
 
-				GenericMeasurement(const Point2& z, const SharedGaussian& model,
-						const XKey& j1, const LKey& j2) :
-					z_(z), NonlinearFactor2<Cfg, XKey, Point2, LKey, Point2> (
-							model, j1, j2) {
-				}
+			GenericMeasurement(const Point2& z, const SharedGaussian& model,
+					const XKey& i, const LKey& j) :
+				z_(z), NonlinearFactor2<Cfg, XKey, Point2, LKey, Point2> (model, i, j) {
+			}
 
-				Vector evaluateError(const Point2& x1, const Point2& x2, boost::optional<
-						Matrix&> H1 = boost::none, boost::optional<Matrix&> H2 = boost::none) const {
-					return (mea(x1, x2, H1, H2) - z_).vector();
-				}
+			Vector evaluateError(const Point2& x1, const Point2& x2, boost::optional<
+					Matrix&> H1 = boost::none, boost::optional<Matrix&> H2 = boost::none) const {
+				return (mea(x1, x2, H1, H2) - z_).vector();
+			}
 
 		};
 

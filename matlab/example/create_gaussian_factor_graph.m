@@ -8,35 +8,39 @@ m = size(measurements,2);
 % create linear factor graph
 lfg = GaussianFactorGraph();
 
+% Point2 at origin
+origin = Point2;
+
 % create prior for initial robot pose
-prior = Point2Prior([0;0],0.2,'x1');
+model0_2 = SharedDiagonal([0.2;0.2]);
+prior = Simulated2DPosePrior(origin,model0_2,1);
 lf = prior.linearize(config);
 lfg.push_back(lf);
 
 % add prior for landmarks
+model1000 = SharedDiagonal([1000;1000]);
 for j = 1:n
-    key = sprintf('l%d',j);
-    prior = Point2Prior([0;0],1000,key);
+    prior = Simulated2DPointPrior(origin,model1000,j);
     lf = prior.linearize(config); 
     lfg.push_back(lf);
 end
 
-% add measurement factors
-for k = 1 : size(measurements,2) 
-    measurement = measurements{k};
-    i = sprintf('x%d',measurement.i);
-    j = sprintf('l%d',measurement.j); 
-    nlf = Simulated2DMeasurement(measurement.z, measurement_sigma, i, j);
+% add odometry factors
+odo_model = SharedDiagonal([odo_sigma;odo_sigma]);
+for i = 2 : size(odometry,2)
+    odo = Point2(odometry{i}(1),odometry{i}(2));
+    nlf = Simulated2DOdometry(odo, odo_model, i-1, i);
     lf = nlf.linearize(config);
     lfg.push_back(lf);
 end
 
-% add odometry factors
-for i = 2 : size(odometry,2)
-    odo = odometry{i};
-    p = sprintf('x%d',i-1);
-    c = sprintf('x%d',i);
-    nlf = Simulated2DOdometry(odo, odo_sigma, p, c);
+% add measurement factors
+measurement_model = SharedDiagonal([measurement_sigma;measurement_sigma]);
+for k = 1 : size(measurements,2) 
+    measurement = measurements{k};
+    point = Point2(measurement.z(1),measurement.z(2));
+    nlf = Simulated2DMeasurement(point, measurement_model, measurement.i, measurement.j);
     lf = nlf.linearize(config);
     lfg.push_back(lf);
 end
+

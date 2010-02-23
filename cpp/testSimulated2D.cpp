@@ -10,10 +10,20 @@
 
 #include "numericalDerivative.h"
 #include "simulated2D.h"
+#include "Simulated2DConfig.h"
 
 using namespace gtsam;
 using namespace std;
 using namespace simulated2D;
+
+/* ************************************************************************* */
+TEST( simulated2D, Simulated2DConfig )
+{
+	Simulated2DConfig actual;
+	actual.insertPose(1,Point2(1,1));
+	actual.insertPoint(2,Point2(2,2));
+  CHECK(assert_equal(actual,actual,1e-9));
+}
 
 /* ************************************************************************* */
 TEST( simulated2D, Dprior )

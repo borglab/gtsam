@@ -178,6 +178,9 @@ testLieConfig_LDADD = libgtsam.la
 testTupleConfig_LDADD = libgtsam.la
 
 # simulated2D example
+headers += Simulated2DConfig.h 
+headers += Simulated2DPosePrior.h Simulated2DPointPrior.h 
+headers += Simulated2DOdometry.h Simulated2DMeasurement.h
 sources += simulated2D.cpp 
 testSimulated2D_SOURCES = testSimulated2D.cpp
 testSimulated2D_LDADD = libgtsam.la
