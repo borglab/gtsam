@@ -91,17 +91,15 @@ TEST( GaussianBayesNet, optimize2 )
 
 	// Create empty graph
 	GaussianFactorGraph fg;
+	SharedDiagonal noise = noiseModel::Unit::Create(1);
 
-	fg.add("y", eye(1), 2*ones(1), noiseModel::Unit::Create(1));
+	fg.add("y", eye(1), 2*ones(1), noise);
 
-	fg.add("x", eye(1),"y", -eye(1), -ones(1),
-			noiseModel::Unit::Create(1));
+	fg.add("x", eye(1),"y", -eye(1), -ones(1), noise);
 
-	fg.add("y", eye(1),"z", -eye(1), -ones(1),
-				noiseModel::Unit::Create(1));
+	fg.add("y", eye(1),"z", -eye(1), -ones(1), noise);
 
-	fg.add("z", eye(1),"x", -eye(1), 2*ones(1),
-				noiseModel::Unit::Create(1));
+	fg.add("z", eye(1),"x", -eye(1), 2*ones(1), noise);
 
 	Ordering ordering; ordering += "x", "y", "z";
 	GaussianBayesNet cbn = fg.eliminate(ordering);
