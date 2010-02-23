@@ -27,7 +27,7 @@ TEST( wrap, ArgumentList ) {
 
 /* ************************************************************************* */
 TEST( wrap, parse ) {
-  Module module("../interfaces", "geometry");
+  Module module(".", "geometry");
   CHECK(module.classes.size()==3);
 
   // check second class, Point3
@@ -58,32 +58,32 @@ TEST( wrap, parse ) {
 /* ************************************************************************* */
 TEST( wrap, matlab_code ) {
   // Parse into class object
-  Module module("../interfaces","geometry");
+  Module module(".","geometry");
 
   // emit MATLAB code
   // make_geometry will not compile, use make testwrap to generate real make
-  module.matlab_code("/Users/dellaert/projects/gtsam/matlab", "", "-O5");
+  module.matlab_code("actual", "", "-O5");
 
-  CHECK(files_equal("../matlab/@Point2/Point2.m"  , "../matlab/@Point2/Point2-expected.m"  ));
-  CHECK(files_equal("../matlab/@Point2/x.cpp"     , "../matlab/@Point2/x-expected.cpp"     ));
+  CHECK(files_equal("expected/@Point2/Point2.m"  , "actual/@Point2/Point2.m"  ));
+  CHECK(files_equal("expected/@Point2/x.cpp"     , "actual/@Point2/x.cpp"     ));
 
-  CHECK(files_equal("../matlab/@Point3/Point3.m"  , "../matlab/@Point3/Point3-expected.m"  ));
-  CHECK(files_equal("../matlab/new_Point3_ddd.m"  , "../matlab/new_Point3_ddd-expected.m"  ));
-  CHECK(files_equal("../matlab/new_Point3_ddd.cpp", "../matlab/new_Point3_ddd-expected.cpp"));
-  CHECK(files_equal("../matlab/@Point3/norm.m"    , "../matlab/@Point3/norm-expected.m"    ));
-  CHECK(files_equal("../matlab/@Point3/norm.cpp"  , "../matlab/@Point3/norm-expected.cpp"  ));
+  CHECK(files_equal("expected/@Point3/Point3.m"  , "actual/@Point3/Point3.m"  ));
+  CHECK(files_equal("expected/new_Point3_ddd.m"  , "actual/new_Point3_ddd.m"  ));
+  CHECK(files_equal("expected/new_Point3_ddd.cpp", "actual/new_Point3_ddd.cpp"));
+  CHECK(files_equal("expected/@Point3/norm.m"    , "actual/@Point3/norm.m"    ));
+  CHECK(files_equal("expected/@Point3/norm.cpp"  , "actual/@Point3/norm.cpp"  ));
 
-  CHECK(files_equal("../matlab/new_Test_.cpp"           , "../matlab/new_Test_-expected.cpp"           ));
-  CHECK(files_equal("../matlab/@Test/Test.m"            , "../matlab/@Test/Test-expected.m"            ));
-  CHECK(files_equal("../matlab/@Test/return_string.cpp" , "../matlab/@Test/return_string-expected.cpp" ));
-  CHECK(files_equal("../matlab/@Test/return_pair.cpp"   , "../matlab/@Test/return_pair-expected.cpp"   ));
-  CHECK(files_equal("../matlab/@Test/return_field.cpp"  , "../matlab/@Test/return_field-expected.cpp"  ));
-  CHECK(files_equal("../matlab/@Test/return_TestPtr.cpp", "../matlab/@Test/return_TestPtr-expected.cpp"));
-  CHECK(files_equal("../matlab/@Test/return_ptrs.cpp"   , "../matlab/@Test/return_ptrs-expected.cpp"   ));
-  CHECK(files_equal("../matlab/@Test/print.m"           , "../matlab/@Test/print-expected.m"           ));
-  CHECK(files_equal("../matlab/@Test/print.cpp"         , "../matlab/@Test/print-expected.cpp"         ));
+  CHECK(files_equal("expected/new_Test_.cpp"           , "actual/new_Test_.cpp"           ));
+  CHECK(files_equal("expected/@Test/Test.m"            , "actual/@Test/Test.m"            ));
+  CHECK(files_equal("expected/@Test/return_string.cpp" , "actual/@Test/return_string.cpp" ));
+  CHECK(files_equal("expected/@Test/return_pair.cpp"   , "actual/@Test/return_pair.cpp"   ));
+  CHECK(files_equal("expected/@Test/return_field.cpp"  , "actual/@Test/return_field.cpp"  ));
+  CHECK(files_equal("expected/@Test/return_TestPtr.cpp", "actual/@Test/return_TestPtr.cpp"));
+  CHECK(files_equal("expected/@Test/return_ptrs.cpp"   , "actual/@Test/return_ptrs.cpp"   ));
+  CHECK(files_equal("expected/@Test/print.m"           , "actual/@Test/print.m"           ));
+  CHECK(files_equal("expected/@Test/print.cpp"         , "actual/@Test/print.cpp"         ));
 
-  CHECK(files_equal("../matlab/make_geometry.m"   , "../matlab/make_geometry_expected.m"   ));
+  CHECK(files_equal("expected/make_geometry.m"   , "actual/make_geometry.m"   ));
 }
 
 /* ************************************************************************* */
