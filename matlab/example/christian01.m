@@ -20,7 +20,7 @@ plot(map(1,:), map(2,:),'g.'); hold on;
 axis([0 mappingArea(1) 0 mappingArea(2)]);axis square;
 
 % Check visibility and plot this on the problem figure
-visibility = create_visibility(map, trajectory,10);
+visibility = create_visibility(map, trajectory,20);
 gplot(visibility,[map trajectory]');
 
 % simulate the measurements
@@ -39,7 +39,8 @@ ord = create_ordering(n,m);
 
 % show the matrix
 figure(2); clf;
-A = factorGraph.matrix(ord);
+ijs = factorGraph.sparse(ord);
+A=sparse(ijs(1,:),ijs(2,:),ijs(3,:));
 spy(A);
 
 % optimizing a BayesNet is not possible from MATLAB as
