@@ -146,7 +146,7 @@ Ordering FactorGraph<Factor>::keys() const {
  * @param columns map from keys to a sparse column of non-zero row indices
  */
 template <class Key>
-boost::shared_ptr<Ordering> colamd(int n_col, int n_row, int nrNonZeros, const map<Key, vector<int> >& columns) {
+void colamd(int n_col, int n_row, int nrNonZeros, const map<Key, vector<int> >& columns, Ordering& ordering) {
 
 	// Convert to compressed column major format colamd wants it in (== MATLAB format!)
 	vector<Key> initialOrder;
@@ -177,16 +177,14 @@ boost::shared_ptr<Ordering> colamd(int n_col, int n_row, int nrNonZeros, const m
 	delete [] A; // delete symbolic A
 
 	// Convert elimination ordering in p to an ordering
-	boost::shared_ptr<Ordering> result(new Ordering);
 	for(int j = 0; j < n_col; j++)
-	  result->push_back(initialOrder[p[j]]);
+		ordering.push_back(initialOrder[p[j]]);
 	delete [] p; // delete colamd result vector
-
-	return result;
 }
+
 /* ************************************************************************* */
 template<class Factor>
-boost::shared_ptr<Ordering> FactorGraph<Factor>::getOrdering_() const{
+void FactorGraph<Factor>::getOrdering(Ordering& ordering) const{
 
 	// A factor graph is really laid out in row-major format, each factor a row
 	// Below, we compute a symbolic matrix stored in sparse columns.
@@ -202,18 +200,24 @@ boost::shared_ptr<Ordering> FactorGraph<Factor>::getOrdering_() const{
 		nrNonZeros+= keys.size();
 	}
 	int n_col = (int)(columns.size()); /* colamd arg 2: number of columns in A */
-
-	if(n_col == 0)
-		return boost::shared_ptr<Ordering>(new Ordering); // empty ordering
-	else
-		return colamd(n_col, n_row, nrNonZeros, columns);
+	if(n_col != 0)
+		return colamd(n_col, n_row, nrNonZeros, columns, ordering);
 }
 
 
 /* ************************************************************************* */
 template<class Factor>
+boost::shared_ptr<Ordering> FactorGraph<Factor>::getOrdering_() const{
+	boost::shared_ptr<Ordering> ordering(new Ordering);
+	getOrdering(*ordering);
+}
+
+/* ************************************************************************* */
+template<class Factor>
 Ordering FactorGraph<Factor>::getOrdering() const {
-		return *getOrdering_(); // empty ordering
+	Ordering ordering;
+	getOrdering(ordering);
+	return ordering;
 }
 
 /* ************************************************************************* */

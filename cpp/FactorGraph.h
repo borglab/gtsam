@@ -98,13 +98,10 @@ namespace gtsam {
 		}
 
 		/**
-		 * Compute colamd ordering
+		 * Compute colamd ordering, including I/O and shared pointer version
 		 */
+		void getOrdering(Ordering& ordering) const;
 		Ordering getOrdering() const;
-
-	  /**
-	   * shared pointer versions for MATLAB
-	   */
 		boost::shared_ptr<Ordering>  getOrdering_() const;
 
     /**
