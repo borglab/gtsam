@@ -762,11 +762,11 @@ TEST ( GaussianFactor, combine_matrix ) {
 }
 
 /* ************************************************************************* */
-// FIXME: Executing this test results in a memory corruption error that
-// crashes out and prints a stack trace on Ubuntu.
 TEST ( GaussianFactor, exploding_MAST_factor ) {
+	// Test derived from a crashing error in MAST
+	// Works properly with the newer elimination code
+	// This is only a test of execution without crashing
 
-	// Tried switching to a different number, still same problem
 	Symbol lA2('l', 18295873486192642);
 	Matrix A1 = eye(2);
 	Vector b1 = zero(2);
@@ -785,8 +785,9 @@ TEST ( GaussianFactor, exploding_MAST_factor ) {
 	fg.push_back(f1);
 	fg.push_back(f2);
 
-	// FIXME: Uncomment to cause the error
-	//GaussianConditional::shared_ptr cg = fg.eliminateOne(lA2);
+	// works when using the newer implementation of eliminate
+	GaussianConditional::shared_ptr cg = fg.eliminateOne(lA2);
+	CHECK(true);
 }
 
 
