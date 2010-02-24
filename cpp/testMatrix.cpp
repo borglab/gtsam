@@ -170,9 +170,12 @@ TEST( matrix, insert_column )
 
 	insertColumn(big, col, j);
 
-	Matrix expected = Matrix_(5, 6, 0.0, 0.0, 0.0, 1.0, 0.0, 0.0, 0.0, 0.0,
-			0.0, 1.0, 0.0, 0.0, 0.0, 0.0, 0.0, 1.0, 0.0, 0.0, 0.0, 0.0, 0.0,
-			1.0, 0.0, 0.0, 0.0, 0.0, 0.0, 1.0, 0.0, 0.0);
+	Matrix expected = Matrix_(5, 6,
+			0.0, 0.0, 0.0, 1.0, 0.0, 0.0,
+			0.0, 0.0, 0.0, 1.0, 0.0, 0.0,
+			0.0, 0.0, 0.0, 1.0, 0.0, 0.0,
+			0.0, 0.0, 0.0, 1.0, 0.0, 0.0,
+			0.0, 0.0, 0.0, 1.0, 0.0, 0.0);
 
 	CHECK(assert_equal(expected, big));
 }
@@ -181,15 +184,21 @@ TEST( matrix, insert_column )
 TEST( matrix, insert_subcolumn )
 {
 	Matrix big = zeros(5, 6);
-	Vector col = ones(2);
+	Vector col1 = ones(2);
 	size_t i = 1;
 	size_t j = 3;
 
-	insertColumn(big, col, i, j);
+	insertColumn(big, col1, i, j); // check 1
 
-	Matrix expected = Matrix_(5, 6, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0,
-			0.0, 1.0, 0.0, 0.0, 0.0, 0.0, 0.0, 1.0, 0.0, 0.0, 0.0, 0.0, 0.0,
-			0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0);
+	Vector col2 = ones(1);
+	insertColumn(big, col2, 4, 5); // check 2
+
+	Matrix expected = Matrix_(5, 6,
+			0.0, 0.0, 0.0, 0.0, 0.0, 0.0,
+			0.0, 0.0, 0.0, 1.0, 0.0, 0.0,
+			0.0, 0.0, 0.0, 1.0, 0.0, 0.0,
+			0.0, 0.0, 0.0, 0.0, 0.0, 0.0,
+			0.0, 0.0, 0.0, 0.0, 0.0, 1.0);
 
 	CHECK(assert_equal(expected, big));
 }

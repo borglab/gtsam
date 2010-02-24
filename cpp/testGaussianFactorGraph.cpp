@@ -691,7 +691,7 @@ TEST( GaussianFactorGraph, elimination )
 	GaussianFactorGraph fg;
 	Matrix Ap = eye(1), An = eye(1) * -1;
 	Vector b = Vector_(1, 0.0);
-  SharedDiagonal sigma = sharedSigma(2,2.0);
+  SharedDiagonal sigma = sharedSigma(1,2.0);
 	fg.add("x1", An, "x2", Ap, b, sigma);
 	fg.add("x1", Ap, b, sigma);
 	fg.add("x2", Ap, b, sigma);
