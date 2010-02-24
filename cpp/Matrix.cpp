@@ -10,6 +10,11 @@
 #include <list>
 #include <fstream>
 
+// TESTING
+#ifdef CBLAS
+#include <cblas.h>
+#endif
+
 #ifdef GSL
 #include <gsl/gsl_blas.h> // needed for gsl blas
 #include <gsl/gsl_linalg.h>
@@ -139,7 +144,24 @@ bool assert_equal(const Matrix& expected, const Matrix& actual, double tol) {
 
 /* ************************************************************************* */
 void multiplyAdd(double alpha, const Matrix& A, const Vector& x, Vector& e) {
-#ifdef GSL
+#if defined CBLAS
+
+	// get sizes
+	const size_t m = A.size1(), n = A.size2();
+
+	// get pointers
+	const double * Aptr = A.data().begin();
+	const double * Xptr = x.data().begin();
+	double * Eptr = e.data().begin();
+
+	// fill in parameters
+	const double beta = 1.0;
+	const int incx = 1, incy = 1, ida = n;
+
+	// execute blas call
+	cblas_dgemv(CblasRowMajor, CblasNoTrans, m, n, alpha, Aptr, ida, Xptr, incx, beta, Eptr, incy);
+
+#elif defined GSL
 	gsl_vector_const_view xg = gsl_vector_const_view_array(x.data().begin(), x.size());
 	gsl_vector_view eg = gsl_vector_view_array(e.data().begin(), e.size());
 	gsl_matrix_const_view Ag = gsl_matrix_const_view_array(A.data().begin(), A.size1(), A.size2());
@@ -159,15 +181,16 @@ void multiplyAdd(double alpha, const Matrix& A, const Vector& x, Vector& e) {
 
 /* ************************************************************************* */
 void multiplyAdd(const Matrix& A, const Vector& x, Vector& e) {
+	multiplyAdd(1.0, A, x, e);
 	// ublas e += prod(A,x) is terribly slow
-  size_t m = A.size1(), n = A.size2();
-	double * ei = e.data().begin();
-	const double * aij = A.data().begin();
-	for (int i = 0; i < m; i++, ei++) {
-		const double * xj = x.data().begin();
-		for (int j = 0; j < n; j++, aij++, xj++)
-			(*ei) += (*aij) * (*xj);
-	}
+//  size_t m = A.size1(), n = A.size2();
+//	double * ei = e.data().begin();
+//	const double * aij = A.data().begin();
+//	for (int i = 0; i < m; i++, ei++) {
+//		const double * xj = x.data().begin();
+//		for (int j = 0; j < n; j++, aij++, xj++)
+//			(*ei) += (*aij) * (*xj);
+//	}
 }
 
 /* ************************************************************************* */
@@ -181,7 +204,24 @@ Vector operator^(const Matrix& A, const Vector & v) {
 
 /* ************************************************************************* */
 void transposeMultiplyAdd(double alpha, const Matrix& A, const Vector& e, Vector& x) {
-#ifdef GSL
+#if defined CBLAS
+
+	// get sizes
+	const size_t m = A.size1(), n = A.size2();
+
+	// get pointers
+	const double * Aptr = A.data().begin();
+	const double * Xptr = e.data().begin();
+	double * Eptr = x.data().begin();
+
+	// fill in parameters
+	const double beta = 1.0;
+	const int incx = 1, incy = 1, ida = n;
+
+	// execute blas call
+	cblas_dgemv(CblasRowMajor, CblasTrans, m, n, alpha, Aptr, ida, Xptr, incx, beta, Eptr, incy);
+
+#elif defined GSL
 	gsl_vector_const_view eg = gsl_vector_const_view_array(e.data().begin(), e.size());
 	gsl_vector_view xg = gsl_vector_view_array(x.data().begin(), x.size());
 	gsl_matrix_const_view Ag = gsl_matrix_const_view_array(A.data().begin(), A.size1(), A.size2());
@@ -202,16 +242,17 @@ void transposeMultiplyAdd(double alpha, const Matrix& A, const Vector& e, Vector
 
 /* ************************************************************************* */
 void transposeMultiplyAdd(const Matrix& A, const Vector& e, Vector& x) {
+	transposeMultiplyAdd(1.0, A, e, x);
 	// ublas x += prod(trans(A),e) is terribly slow
 	// TODO: use BLAS
-  size_t m = A.size1(), n = A.size2();
-	double * xj = x.data().begin();
-	for (int j = 0; j < n; j++,xj++) {
-		const double * ei = e.data().begin();
-		const double * aij = A.data().begin() + j;
-		for (int i = 0; i < m; i++, aij+=n, ei++)
-			(*xj) += (*aij) * (*ei);
-	}
+//  size_t m = A.size1(), n = A.size2();
+//	double * xj = x.data().begin();
+//	for (int j = 0; j < n; j++,xj++) {
+//		const double * ei = e.data().begin();
+//		const double * aij = A.data().begin() + j;
+//		for (int i = 0; i < m; i++, aij+=n, ei++)
+//			(*xj) += (*aij) * (*ei);
+//	}
 }
 
 /* ************************************************************************* */

@@ -293,6 +293,12 @@ include_HEADERS = $(headers)
 AM_CXXFLAGS += -I.. 
 AM_LDFLAGS = -L../CppUnitLite -lCppUnitLite $(BOOST_LDFLAGS) $(boost_serialization) #-L. -lgtsam
 
+# TESTING: adding cblas implementation with atlas
+#AM_CXXFLAGS += -DCBLAS 
+#libgtsam_la_CPPFLAGS += -DCBLAS
+#AM_LDFLAGS += -lcblas -latlas 
+#libgtsam_la_LDFLAGS += -lcblas -latlas
+
 #######################
 # GSL/ATLAS inclusion
 #######################
