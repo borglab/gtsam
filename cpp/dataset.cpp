@@ -28,9 +28,9 @@ namespace gtsam {
 pair<string, boost::optional<SharedDiagonal> > dataset(const string& dataset,  const string& user_path) {
 	string path = user_path, set = dataset;
 	boost::optional<SharedDiagonal> null_model;
-	boost::optional<SharedDiagonal> identity = SharedDiagonal(Vector_(3, 1., 1., 1.));
-	boost::optional<SharedDiagonal> small = SharedDiagonal(noiseModel::Diagonal::Variances(
-			gtsam::Vector_(3,0.0001,0.0001,0.0003), true));
+	boost::optional<SharedDiagonal> identity(noiseModel::Unit::Create(3));
+	boost::optional<SharedDiagonal> small(noiseModel::Diagonal::Variances(
+				gtsam::Vector_(3, 0.0001, 0.0001, 0.0003)));
 
 
 	if (path.empty()) path = string(getenv("HOME")) + "/";
@@ -69,42 +69,37 @@ pair<sharedPose2Graph, sharedPose2Config> load2D(const string& filename,
 	sharedPose2Config poses(new Pose2Config);
 	sharedPose2Graph graph(new Pose2Graph);
 
+	string tag;
+
 	// load the poses
 	bool firstPose;
 	while (is) {
-		char buf[LINESIZE];
-		is.getline(buf, LINESIZE);
-		istringstream ls(buf);
-		string tag;
-		ls >> tag;
+		is >> tag;
 
 		if ((tag == "VERTEX2") || (tag == "VERTEX")) {
 			int id;
 			double x, y, yaw;
-			ls >> id >> x >> y >> yaw;
+			is >> id >> x >> y >> yaw;
 			// optional filter
 			if (maxID && id >= maxID) continue;
 			poses->insert(id, Pose2(x, y, yaw));
 		}
+		is.ignore(LINESIZE, '\n');
 	}
 	is.clear(); /* clears the end-of-file and error flags */
 	is.seekg(0, ios::beg);
 
 	// load the factors
 	while (is) {
-		char buf[LINESIZE];
-		is.getline(buf, LINESIZE);
-		istringstream ls(buf);
-		string tag;
-		ls >> tag;
+		is >> tag;
 
 		if ((tag == "EDGE2") || (tag == "EDGE") || (tag == "ODOMETRY")) {
 			int id1, id2;
 			double x, y, yaw;
-			ls >> id1 >> id2 >> x >> y >> yaw;
+			is >> id1 >> id2 >> x >> y >> yaw;
 
 			Matrix m = eye(3);
-			ls >> m(0, 0) >> m(0, 1) >> m(1, 1) >> m(2, 2) >> m(0, 2) >> m(1, 2);
+			is >> m(0, 0) >> m(0, 1) >> m(1, 1) >> m(2, 2) >> m(0, 2) >> m(1, 2);
 			m(2, 0) = m(0, 2);
 			m(2, 1) = m(1, 2);
 			m(1, 0) = m(0, 1);
@@ -114,9 +109,7 @@ pair<sharedPose2Graph, sharedPose2Config> load2D(const string& filename,
 
 			Pose2 l1Xl2(x, y, yaw);
 
-//			SharedGaussian noise = noiseModel::Gaussian::Covariance(m, smart);
-			// hack use diagonal for now !
-			//Vector variances = Vector_(3,m(1,1),m(2,2),m(3,3)); // UNITS in file ???
+			// SharedGaussian noise = noiseModel::Gaussian::Covariance(m, smart);
 			if (!model) {
 				Vector variances = Vector_(3,m(1,1),m(2,2),m(3,3));
 				model = noiseModel::Diagonal::Variances(variances, smart);
@@ -132,6 +125,7 @@ pair<sharedPose2Graph, sharedPose2Config> load2D(const string& filename,
 			Pose2Graph::sharedFactor factor(new Pose2Factor(id1, id2, l1Xl2, *model));
 			graph->push_back(factor);
 		}
+		is.ignore(LINESIZE, '\n');
 	}
 
 	cout << "load2D read a graph file with " << poses->size() << " vertices and "
