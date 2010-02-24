@@ -802,18 +802,21 @@ return collect(matrices);
 }
 
 /* ************************************************************************* */
-// row scaling
-Matrix vector_scale(const Vector& v, const Matrix& A) {
-	Matrix M(A);
+// row scaling, in-place
+void vector_scale_inplace(const Vector& v, Matrix& A) {
 	size_t m = A.size1(); size_t n = A.size2();
 	for (size_t i=0; i<m; ++i) { // loop over rows
 		double vi = v(i);
-		//double vi = *(v.data().begin()+i); // not really an improvement
-		for (size_t j=0; j<n; ++j) { // loop over columns
-			double * Mptr = M.data().begin() + i*n + j;
-			(*Mptr) = (*Mptr) * vi;
-		}
+		double *Aij = A.data().begin() + i*n;
+		for (size_t j=0; j<n; ++j, ++Aij) (*Aij) *= vi;
 	}
+}
+
+/* ************************************************************************* */
+// row scaling
+Matrix vector_scale(const Vector& v, const Matrix& A) {
+	Matrix M(A);
+	vector_scale_inplace(v, M);
 	return M;
 }
 

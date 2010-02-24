@@ -306,6 +306,7 @@ Matrix collect(size_t nrMatrices, ...);
  * Arguments (Matrix, Vector) scales the columns,
  * (Vector, Matrix) scales the rows
  */
+void vector_scale_inplace(const Vector& v, Matrix& A); // row
 Matrix vector_scale(const Vector& v, const Matrix& A); // row
 Matrix vector_scale(const Matrix& A, const Vector& v); // column
 
