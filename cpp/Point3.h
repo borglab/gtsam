@@ -46,9 +46,9 @@ namespace gtsam {
     }
 
     /** get functions for x, y, z */
-    double x() const {return x_;}
-    double y() const {return y_;}
-    double z() const {return z_;}
+    inline double x() const {return x_;}
+    inline double y() const {return y_;}
+    inline double z() const {return z_;}
 
     /** operators */
     Point3 operator - () const { return Point3(-x_,-y_,-z_);}

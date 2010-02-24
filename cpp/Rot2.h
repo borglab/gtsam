@@ -25,8 +25,9 @@ namespace gtsam {
   public:
 
     /** constructor from cos/sin */
-    Rot2(double c, double s) :
+    inline Rot2(double c, double s) :
       c_(c), s_(s) {
+#ifdef ROT2_RENORMALIZE
     	// rtodo: Could do this scale correction only when creating from compose
     	// Don't let scale drift
     	double scale = c*c + s*s;
@@ -35,6 +36,7 @@ namespace gtsam {
     		c_ *= scale;
     		s_ *= scale;
     	}
+#endif
     }
 
     /** default constructor, zero rotation */
@@ -47,10 +49,10 @@ namespace gtsam {
     double theta() const { return atan2(s_,c_); }
 
     /** return cos */
-    double c() const { return c_; }
+    inline double c() const { return c_; }
 
     /** return sin */
-    double s() const { return s_; }
+    inline double s() const { return s_; }
 
     /** print */
     void print(const std::string& s = "theta") const;

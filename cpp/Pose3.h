@@ -43,12 +43,12 @@ namespace gtsam {
       R_(V(0), V(3), V(6), V(1), V(4), V(7), V(2), V(5), V(8)),
       t_(V(9), V(10),V(11)) {}
 
-    const Rot3& rotation() const { return R_; }
+    inline const Rot3& rotation() const { return R_; }
+    inline const Point3& translation() const { return t_; }
 
-    const Point3& translation() const { return t_; }
-    double x() const { return t_.x(); }
-    double y() const { return t_.y(); }
-    double z() const { return t_.z(); }
+    inline double x() const { return t_.x(); }
+    inline double y() const { return t_.y(); }
+    inline double z() const { return t_.z(); }
 
     /** convert to 4*4 matrix */
     Matrix matrix() const;

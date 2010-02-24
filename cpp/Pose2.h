@@ -56,11 +56,12 @@ namespace gtsam {
     Matrix matrix() const;
 
     /** get functions for x, y, theta */
-    double x()     const { return t_.x(); }
-    double y()     const { return t_.y(); }
-    double theta() const { return r_.theta(); }
-    Point2 t()     const { return t_; }
-    Rot2 r()       const { return r_; }
+    inline double x()     const { return t_.x(); }
+    inline double y()     const { return t_.y(); }
+    inline double theta() const { return r_.theta(); }
+
+    inline const Point2& t() const { return t_; }
+    inline const Rot2&   r() const { return r_; }
 
     static inline size_t dim() { return 3; };
 
