@@ -13,6 +13,8 @@ namespace gtsam {
   /** Explicit instantiation of base class to export members */
   INSTANTIATE_LIE(Pose2);
 
+	static const Matrix I3 = eye(3);
+
   /* ************************************************************************* */
   Matrix Pose2::matrix() const {
   	Matrix R = r_.matrix();
@@ -57,22 +59,32 @@ namespace gtsam {
   /* ************************************************************************* */
   Pose2 between(const Pose2& p1, const Pose2& p2, boost::optional<Matrix&> H1,
 			boost::optional<Matrix&> H2) {
-		Rot2 dR = between(p1.r(), p2.r());
+  	// get cosines and sines from rotation matrices
+  	const Rot2& R1 = p1.r(), R2 = p2.r();
+  	double c1=R1.c(), s1=R1.s(), c2=R2.c(), s2=R2.s();
+
+  	// Calculate delta rotation = between(R1,R2)
+		double c = c1 * c2 + s1 * s2, s = -s1 * c2 + c1 * s2;
+    Rot2 R(c,s);
+
+  	// Calculate delta translation = unrotate(R1, dt);
 		Point2 dt = p2.t() - p1.t();
-		Point2 q = unrotate(p1.r(), dt);
-		Pose2 dp(dR, q);
+		double x = dt.x(), y = dt.y();
+		Point2 t(c1 * x + s1 * y, -s1 * x + c1 * y);
+
+		// FD: I don't understand this code (a performance-driven transformation
+		// from Richard's heavier code) but it works.
 		if (H1) {
-			Matrix dT1 = -invcompose(p2.r(), p1.r()).matrix();
-			Matrix dR1;
-			unrotate(p2.r(), dt, dR1); // FD to Richard: I do *not* understand this
+			double dt1 = -s2 * x + c2 * y;
+			double dt2 = -c2 * x - s2 * y;
 			*H1 = Matrix_(3,3,
-				dT1(0,0), dT1(0,1), dR1(0,0),
-				dT1(1,0), dT1(1,1), dR1(1,0),
-				0.0, 0.0, -1.0);
+				-c,  -s,  dt1,
+				 s,  -c,  dt2,
+			 0.0, 0.0, -1.0);
 		}
-  	static const Matrix I3 = eye(3);
 		if (H2) *H2 = I3;
-		return dp;
+
+		return Pose2(R,t);
 	}
 
   /* ************************************************************************* */
