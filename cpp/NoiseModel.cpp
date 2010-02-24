@@ -189,7 +189,7 @@ Matrix Diagonal::Whiten(const Matrix& H) const {
 }
 
 void Diagonal::WhitenInPlace(Matrix& H) const {
-	H = vector_scale(invsigmas_, H);
+	vector_scale_inplace(invsigmas_, H);
 }
 
 Vector Diagonal::sample() const {
