@@ -8,6 +8,7 @@
 #include <string.h>
 #include <iomanip>
 #include <list>
+#include <fstream>
 
 #ifdef GSL
 #include <gsl/gsl_blas.h> // needed for gsl blas
@@ -262,19 +263,26 @@ Vector row_(const Matrix& A, size_t i) {
 }
 
 /* ************************************************************************* */
-void print(const Matrix& A, const string &s) {
+void print(const Matrix& A, const string &s, ostream& stream) {
   size_t m = A.size1(), n = A.size2();
 
   // print out all elements
-  cout << s << "[\n";
+  stream << s << "[\n";
   for( size_t i = 0 ; i < m ; i++) {
     for( size_t j = 0 ; j < n ; j++) {
       double aij = A(i,j);
-      cout << setw(9) << (fabs(aij)<1e-12 ? 0 : aij) << "\t";
+      stream << setw(9) << (fabs(aij)<1e-12 ? 0 : aij) << "\t";
     }
-    cout << endl;
+    stream << endl;
   }
-  cout << "]" << endl;
+  stream << "]" << endl;
+}
+
+/* ************************************************************************* */
+void save(const Matrix& A, const string &s, const string& filename) {
+	fstream stream(filename.c_str(), fstream::out);
+	print(A, s + "=", stream);
+	stream.close();
 }
 
 /* ************************************************************************* */

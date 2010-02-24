@@ -135,7 +135,12 @@ Vector Vector_(const Matrix& A);
 /**
  * print a matrix
  */
-void print(const Matrix& A, const std::string& s = "");
+void print(const Matrix& A, const std::string& s = "", std::ostream& stream = std::cout);
+
+/**
+ * save a matrix to file, which can be loaded by matlab
+ */
+void save(const Matrix& A, const std::string &s, const std::string& filename);
 
 /**
  * extract submatrix, slice semantics, i.e. range = [i1,i2[ excluding i2

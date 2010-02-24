@@ -91,7 +91,12 @@ inline size_t dim(const Vector& v) { return v.size(); }
 /**
  * print with optional string
  */
-void print(const Vector& v, const std::string& s = "");
+void print(const Vector& v, const std::string& s = "", std::ostream& stream = std::cout);
+
+/**
+ * save a vector to file, which can be loaded by matlab
+ */
+void save(const Vector& A, const std::string &s, const std::string& filename);
 
 /**
  * operator==()

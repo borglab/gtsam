@@ -8,6 +8,7 @@
 #include <stdarg.h>
 #include <limits>
 #include <iostream>
+#include <fstream>
 #include <sstream>
 #include <iomanip>
 #include <cmath>
@@ -35,13 +36,13 @@ namespace ublas = boost::numeric::ublas;
 
 namespace gtsam {
   
-  void odprintf(const char *format, ...)
-  {
+  /* ************************************************************************* */
+  void odprintf_(const char *format, ostream& stream, ...) {
     char    buf[4096], *p = buf;
     int     n;
     
     va_list args;
-    va_start(args, format);
+    va_start(args, stream);
     #ifdef WIN32
     n = _vsnprintf(p, sizeof buf - 3, format, args); // buf-3 is room for CR/LF/NUL
     #else
@@ -52,11 +53,33 @@ namespace gtsam {
     #ifdef WIN32
     OutputDebugString(buf);
     #else    
+    stream << buf;
+    #endif
+  }
+
+  /* ************************************************************************* */
+  // copy and paste from above, as two functions can not be easily merged
+  void odprintf(const char *format, ...)
+  {
+    char    buf[4096], *p = buf;
+    int     n;
+
+    va_list args;
+    va_start(args, format);
+    #ifdef WIN32
+    n = _vsnprintf(p, sizeof buf - 3, format, args); // buf-3 is room for CR/LF/NUL
+    #else
+    n = vsnprintf(p, sizeof buf - 3, format, args); // buf-3 is room for CR/LF/NUL
+    #endif
+    va_end(args);
+
+    #ifdef WIN32
+    OutputDebugString(buf);
+    #else
     cout << buf;
     #endif
-    
   }
-  
+
   /* ************************************************************************* */
   Vector Vector_( size_t m, const double* const data) {
     Vector v(m);
@@ -100,14 +123,21 @@ namespace gtsam {
   }
 
   /* ************************************************************************* */
-  void print(const Vector& v, const string& s) {
+  void print(const Vector& v, const string& s, ostream& stream) {
     size_t n = v.size();
-    odprintf("%s [", s.c_str());
+    odprintf_("%s [", stream, s.c_str());
     for(size_t i=0; i<n; i++)
-      odprintf("%g%s", v[i], (i<n-1 ? "; " : ""));
-    odprintf("]\n");
+      odprintf_("%g%s", stream, v[i], (i<n-1 ? "; " : ""));
+    odprintf_("]\n", stream);
   }
   
+  /* ************************************************************************* */
+  void save(const Vector& v, const string &s, const string& filename) {
+  	fstream stream(filename.c_str(), fstream::out);
+  	print(v, s + "=", stream);
+  	stream.close();
+  }
+
   /* ************************************************************************* */
   bool operator==(const Vector& vec1,const Vector& vec2) {
     Vector::const_iterator it1 = vec1.begin();
