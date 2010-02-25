@@ -59,6 +59,14 @@ namespace gtsam {
 	  void insert(const Key& key, const Value& value) {second_.insert(key, value);}
 	  void insert(const Key1& key, const Value1& value) {first_.insert(key, value);}
 
+	  // insert function for whole configs
+	  template<class Cfg1, class Cfg2>
+	  void insert(const TupleConfig<Cfg1, Cfg2>& config) { second_.insert(config); }
+	  void insert(const TupleConfig<Config1, Config2>& config) {
+		  first_.insert(config.first_);
+		  second_.insert(config.second_);
+	  }
+
 	  // erase an element by key
 	  template<class Key>
 	  void erase(const Key& j)  { second_.erase(j); }
@@ -139,6 +147,9 @@ namespace gtsam {
 	  }
 
 	  void insert(const Key1& key, const Value1& value) {first_.insert(key, value); }
+
+	  // insert function for whole configs
+	  void insert(const TupleConfigEnd<Config>& config) {first_.insert(config.first_); }
 
 	  const Value1& operator[](const Key1& j) const { return first_[j]; }
 

@@ -54,6 +54,29 @@ TEST( LieConfig, equals_nan )
 }
 
 /* ************************************************************************* */
+TEST( LieConfig, insert_config )
+{
+  LieConfig<string,Vector> cfg1, cfg2, expected;
+  Vector v1 = Vector_(3, 5.0, 6.0, 7.0);
+  Vector v2 = Vector_(3, 8.0, 9.0, 1.0);
+  Vector v3 = Vector_(3, 2.0, 4.0, 3.0);
+  Vector v4 = Vector_(3, 8.0, 3.0, 7.0);
+  cfg1.insert("x1", v1);
+  cfg1.insert("x2", v2);
+  cfg2.insert("x2", v3);
+  cfg2.insert("x3", v4);
+
+  cfg1.insert(cfg2);
+
+  expected.insert("x1", v1);
+  expected.insert("x2", v2);
+  expected.insert("x2", v3);
+  expected.insert("x3", v4);
+
+  CHECK(assert_equal(cfg1, expected));
+}
+
+/* ************************************************************************* */
 TEST(LieConfig, expmap_a)
 {
   LieConfig<string,Vector> config0;

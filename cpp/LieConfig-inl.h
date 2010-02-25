@@ -61,6 +61,13 @@ namespace gtsam {
   }
 
   template<class J, class T>
+  void LieConfig<J,T>::insert(const LieConfig<J,T>& cfg) {
+	  BOOST_FOREACH(const typename Values::value_type& v, cfg.values_)
+		 insert(v.first, v.second);
+	  dim_ += cfg.dim_;
+  }
+
+  template<class J, class T>
   void LieConfig<J,T>::erase(const J& j) {
     size_t dim; // unused
     erase(j, dim);

@@ -252,6 +252,37 @@ TEST(TupleConfig, basic_functions) {
 }
 
 /* ************************************************************************* */
+TEST(TupleConfig, insert_config) {
+	ConfigB config1, config2, expected;
+
+	PoseKey x1(1), x2(2);
+	PointKey l1(1), l2(2);
+	LamKey L1(1), L2(2);
+	Pose2 pose1(1.0, 2.0, 0.3), pose2(3.0, 4.0, 5.0);
+	Point2 point1(2.0, 3.0), point2(5.0, 6.0);
+	Vector lam1 = Vector_(1, 2.3), lam2 = Vector_(1, 4.5);
+
+	config1.insert(x1, pose1);
+	config1.insert(l1, point1);
+	config1.insert(L1, lam1);
+
+	config2.insert(x2, pose2);
+	config2.insert(l2, point2);
+	config2.insert(L2, lam2);
+
+	config1.insert(config2);
+
+	expected.insert(x1, pose1);
+	expected.insert(l1, point1);
+	expected.insert(L1, lam1);
+	expected.insert(x2, pose2);
+	expected.insert(l2, point2);
+	expected.insert(L2, lam2);
+
+	CHECK(assert_equal(expected, config1));
+}
+
+/* ************************************************************************* */
 TEST( TupleConfig, equals )
 {
 	Pose2 x1(1,2,3), x2(6,7,8), x2_alt(5,6,7);

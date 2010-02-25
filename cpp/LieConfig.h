@@ -82,6 +82,9 @@ namespace gtsam {
     /** Add a variable with the given j */
     void insert(const J& j, const T& val);
 
+    /** Add a set of variables */
+    void insert(const LieConfig& cfg);
+
     /** Remove a variable from the config */
     void erase(const J& j);
 
