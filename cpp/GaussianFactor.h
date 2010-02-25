@@ -12,6 +12,7 @@
 #include <boost/shared_ptr.hpp>
 #include <boost/tuple/tuple.hpp>
 #include <boost/serialization/map.hpp>
+#include <boost/foreach.hpp>
 #include <list>
 #include <set>
 
@@ -88,6 +89,14 @@ public:
 		model_(model), b_(b)  {
 	  for(unsigned int i=0; i<terms.size(); i++)
 	    As_.insert(terms[i]);
+	}
+
+	GaussianFactor(const std::list<std::pair<Symbol, Matrix> > &terms,
+	    const Vector &b, const SharedDiagonal& model) :
+		model_(model), b_(b)  {
+		std::pair<Symbol, Matrix> pair;
+		BOOST_FOREACH(pair, terms)
+			As_.insert(pair);
 	}
 
 	/** Construct from Conditional Gaussian */
