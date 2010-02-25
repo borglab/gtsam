@@ -262,16 +262,18 @@ namespace gtsam {
   class Factorization {
   private:
   	boost::shared_ptr<const Ordering> ordering_;
+  	bool useOldEliminate_;
 
   public:
-  	Factorization(boost::shared_ptr<const Ordering> ordering) : ordering_(ordering) {}
+  	Factorization(boost::shared_ptr<const Ordering> ordering, bool old=true)
+		: ordering_(ordering), useOldEliminate_(old) {}
 
   	/**
   	 * solve for the optimal displacement in the tangent space, and then solve
   	 * the resulted linear system
   	 */
   	VectorConfig optimize(GaussianFactorGraph& fg) const {
-  		return fg.optimize(*ordering_);
+  		return fg.optimize(*ordering_, useOldEliminate_);
   	}
 
 		/**
