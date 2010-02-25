@@ -12,9 +12,11 @@ using namespace boost::assign;
 
 #include <CppUnitLite/TestHarness.h>
 
+#include "Testable.h"
 #include "tensors.h"
 #include "tensorInterface.h"
 #include "projectiveGeometry.h"
+#include "Pose3.h"
 
 using namespace std;
 using namespace gtsam;
@@ -93,6 +95,97 @@ TEST( Homography2, EstimateReverse)
 	correspondences += p1.swap(), p2.swap(), p3.swap(), p4.swap();
 	Homography2 estimatedH = estimateHomography2(correspondences);
 	CHECK(assert_equality(reverse(_a,b),estimatedH(_a,b)*(1.0/estimatedH(2,2))));
+}
+
+/* ************************************************************************* */
+/**
+ * Computes the homography H(I,_T) from template to image
+ * given the pose tEc of the camera in the template coordinate frame.
+ * Assumption is Z is normal to the template, template texture in X-Y plane.
+ */
+Homography2 patchH(const Pose3& tEc) {
+	Pose3 cEt = inverse(tEc);
+	Rot3 cRt = cEt.rotation();
+	Point3 r1 = cRt.column(1), r2 = cRt.column(2), t = cEt.translation();
+
+	// TODO cleanup !!!!
+	// column 1
+	double H11 = r1.x();
+	double H21 = r1.y();
+	double H31 = r1.z();
+	// column 2
+	double H12 = r2.x();
+	double H22 = r2.y();
+	double H32 = r2.z();
+	// column 3
+	double H13 = t.x();
+	double H23 = t.y();
+	double H33 = t.z();
+	double data2[3][3] = { { H11, H21, H31 }, { H12, H22, H32 },
+			{ H13, H23, H33 } };
+	return Homography2(data2);
+}
+
+/* ************************************************************************* */
+namespace gtsam {
+	size_t dim(const tensors::Tensor2<3, 3>& H) {return 9;}
+	Vector toVector(const tensors::Tensor2<3, 3>& H) {
+		Index<3, 'T'> _T; // covariant 2D template
+		Index<3, 'C'> I; // contravariant 2D camera
+		return toVector(H(I,_T));
+	}
+	Vector logmap(const tensors::Tensor2<3, 3>& A, const tensors::Tensor2<3, 3>& B) {
+		return toVector(A)-toVector(B); // TODO correct order ?
+	}
+}
+
+#include "numericalDerivative.h"
+
+/* ************************************************************************* */
+TEST( Homography2, patchH)
+{
+	Index<3, 'T'> _T; // covariant 2D template
+	Index<3, 'C'> I; // contravariant 2D camera
+
+	// data[_T][I]
+	double data1[3][3] = {{1,0,0},{0,-1,0},{0,0,10}};
+	Homography2 expected(data1);
+
+	// camera rotation, looking in negative Z
+	Rot3 gRc(Point3(1,0,0),Point3(0,-1,0),Point3(0,0,-1));
+	Point3 gTc(0,0,10); // Camera location, out on the Z axis
+	Pose3 gEc(gRc,gTc); // Camera pose
+
+	Homography2 actual = patchH(gEc);
+
+//	GTSAM_PRINT(expected(I,_T));
+//	GTSAM_PRINT(actual(I,_T));
+	CHECK(assert_equality(expected(I,_T),actual(I,_T)));
+
+  Matrix D = numericalDerivative11<Homography2,Pose3>(patchH, gEc);
+//  print(D,"D");
+}
+
+/* ************************************************************************* */
+TEST( Homography2, patchH2)
+{
+	Index<3, 'T'> _T; // covariant 2D template
+	Index<3, 'C'> I; // contravariant 2D camera
+
+	// data[_T][I]
+	double data1[3][3] = {{1,0,0},{0,-1,0},{0,0,10}};
+	Homography2 expected(data1);
+
+	// camera rotation, looking in negative Z
+	Rot3 gRc(Point3(1,0,0),Point3(0,-1,0),Point3(0,0,-1));
+	Point3 gTc(0,0,10); // Camera location, out on the Z axis
+	Pose3 gEc(gRc,gTc); // Camera pose
+
+	Homography2 actual = patchH(gEc);
+
+//	GTSAM_PRINT(expected(I,_T));
+//	GTSAM_PRINT(actual(I,_T));
+	CHECK(assert_equality(expected(I,_T),actual(I,_T)));
 }
 
 /* ************************************************************************* */

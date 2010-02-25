@@ -10,10 +10,10 @@
 
 namespace gtsam {
 
-	/** Reshape 3*3 rank 2 tensor into Matrix */
+	/** Reshape rank 2 tensor into Matrix */
 	template<class A, class I, class J>
 	Matrix reshape(const tensors::Tensor2Expression<A, I, J>& T, int m, int n) {
-		if (m * n != 9) throw std::invalid_argument(
+		if (m * n != I::dim * J::dim) throw std::invalid_argument(
 				"reshape: incompatible dimensions");
 		Matrix M(m, n);
 		size_t t = 0;
@@ -21,6 +21,17 @@ namespace gtsam {
 			for (int i = 0; i < I::dim; i++)
 				M.data()[t++] = T(i, j);
 		return M;
+	}
+
+	/** Reshape 3*3 rank 2 tensor into Vector : TODO 9 ???*/
+	template<class A, class I, class J>
+	Vector toVector(const tensors::Tensor2Expression<A, I, J>& T) {
+		Vector v(I::dim * J::dim);
+		size_t t = 0;
+		for (int j = 0; j < J::dim; j++)
+			for (int i = 0; i < I::dim; i++)
+				v(t++) = T(i, j);
+		return v;
 	}
 
 	/** Reshape Vector into rank 2 tensor */
