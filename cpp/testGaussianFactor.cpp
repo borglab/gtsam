@@ -786,7 +786,7 @@ TEST ( GaussianFactor, exploding_MAST_factor ) {
 	fg.push_back(f2);
 
 	// works when using the newer implementation of eliminate
-	GaussianConditional::shared_ptr cg = fg.eliminateOne(lA2);
+	GaussianConditional::shared_ptr cg = fg.eliminateOne(lA2, false);
 	CHECK(true);
 }
 

@@ -123,7 +123,7 @@ namespace gtsam {
      * @param enableJoinFactor uses the older joint factor combine process when true,
      *    and when false uses the newer single matrix combine
      */
-    GaussianConditional::shared_ptr eliminateOne(const Symbol& key, bool enableJoinFactor = false);
+    GaussianConditional::shared_ptr eliminateOne(const Symbol& key, bool enableJoinFactor = true);
 
     /**
      * Peforms a supposedly-faster (fewer matrix copy) version of elimination
@@ -138,7 +138,7 @@ namespace gtsam {
      * @param enableJoinFactor uses the older joint factor combine process when true,
      *    and when false uses the newer single matrix combine
      */
-    GaussianBayesNet eliminate(const Ordering& ordering, bool enableJoinFactor = false);
+    GaussianBayesNet eliminate(const Ordering& ordering, bool enableJoinFactor = true);
 
     /**
      * optimize a linear factor graph
@@ -146,7 +146,7 @@ namespace gtsam {
      * @param enableJoinFactor uses the older joint factor combine process when true,
      *    and when false uses the newer single matrix combine
      */
-    VectorConfig optimize(const Ordering& ordering, bool enableJoinFactor = false);
+    VectorConfig optimize(const Ordering& ordering, bool enableJoinFactor = true);
 
     /**
      * shared pointer versions for MATLAB
