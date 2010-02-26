@@ -41,9 +41,25 @@ TEST(Pose2, manifold) {
 TEST(Pose2, expmap) {
   //cout << "expmap" << endl;
   Pose2 pose(M_PI_2, Point2(1, 2));
-  Pose2 expected(M_PI_2+0.018, Point2(1.015, 2.01));
-  Pose2 actual = expmap(pose, Vector_(3, 0.01, -0.015, 0.018));
+  Pose2 expected(M_PI_2+0.99, Point2(1.015, 2.01));
+  Pose2 actual = expmap(pose, Vector_(3, 0.01, -0.015, 0.99));
   CHECK(assert_equal(expected, actual));
+}
+
+/* ************************************************************************* */
+TEST(Pose2, expmap2) {
+  // do an actual series exponential map
+	// see e.g. http://www.cis.upenn.edu/~cis610/cis610lie1.ps
+  Matrix A = Matrix_(3,3,
+  		0.0, -0.99,  0.01,
+  		0.99,  0.0, -0.015,
+  		0.0,   0.0,  0.0);
+  Matrix A2 = A*A/2.0, A3 = A2*A/3.0, A4=A3*A/4.0;
+  Matrix expected = eye(3) + A + A2 + A3 + A4;
+
+  Pose2 pose = expmap<Pose2>(Vector_(3, 0.01, -0.015, 0.99));
+  Matrix actual = pose.matrix();
+  //CHECK(assert_equal(expected, actual));
 }
 
 /* ************************************************************************* */
