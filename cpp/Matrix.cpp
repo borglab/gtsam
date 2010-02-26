@@ -1021,9 +1021,9 @@ Matrix inverse_square_root(const Matrix& A) {
 // inv(B) * inv(B)' == A
 // inv(B' * B) == A
 Matrix inverse_square_root(const Matrix& A) {
-	Matrix L = LLt(A);
+	Matrix R = RtR(A);
         Matrix inv(boost::numeric::ublas::identity_matrix<double>(A.size1()));
-        inplace_solve (L, inv, BNU::lower_tag ());
+        inplace_solve (R, inv, BNU::upper_tag ());
 	return inv;
 }
 
