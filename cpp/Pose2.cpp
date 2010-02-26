@@ -57,6 +57,22 @@ namespace gtsam {
   }
 
   /* ************************************************************************* */
+  static const Rot2 R_PI_2(0., 1.);
+	static Matrix DR1 = Matrix_(1, 3, 0., 0., 1.);
+
+  Matrix Dcompose1(const Pose2& p1, const Pose2& p2) {
+		Matrix R2_inv = p2.r().transpose();
+		Point2 Rt2_ = R_PI_2 * inverse(p2.r()) * p2.t();
+		Matrix Rt2 = Matrix_(2, 1, Rt2_.x(), Rt2_.y());
+		Matrix Dt1 = collect(2, &R2_inv, &Rt2);
+		return gtsam::stack(2, &Dt1, &DR1);
+  }
+
+  Matrix Dcompose2(const Pose2& p1, const Pose2& p2) {
+  	return eye(3);
+  }
+
+  /* ************************************************************************* */
   Pose2 between(const Pose2& p1, const Pose2& p2, boost::optional<Matrix&> H1,
 			boost::optional<Matrix&> H2) {
   	// get cosines and sines from rotation matrices

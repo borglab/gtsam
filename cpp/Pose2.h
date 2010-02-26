@@ -76,9 +76,11 @@ namespace gtsam {
     return Pose2(inverse(pose.r()),
         pose.r().unrotate(Point2(-pose.t().x(), -pose.t().y()))); }
 
-  /** compose this transformation onto another (pre-multiply this*p1) */
+  /** compose this transformation onto another (first p1 and then p2) */
   inline Pose2 compose(const Pose2& p0, const Pose2& p1) {
-    return Pose2(p0.r()*p1.r(), p0.t() + p0.r()*p1.t()); }
+      return Pose2(p0.r()*p1.r(), p0.t() + p0.r()*p1.t()); }
+  Matrix Dcompose1(const Pose2& p1, const Pose2& p2);
+  Matrix Dcompose2(const Pose2& p1, const Pose2& p2);
 
   /** exponential and log maps around identity */
 

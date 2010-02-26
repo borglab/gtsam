@@ -120,9 +120,25 @@ TEST(Pose2, compose_a)
   Pose2 pose1(M_PI/4.0, Point2(sqrt(0.5), sqrt(0.5)));
   Pose2 pose2(M_PI/2.0, Point2(0.0, 2.0));
 
+  Pose2 actual = compose(pose1, pose2);
+  Matrix actualH1 = Dcompose1(pose1, pose2);
+  Matrix actualH2 = Dcompose2(pose1, pose2);
+
   Pose2 expected(3.0*M_PI/4.0, Point2(-sqrt(0.5), 3.0*sqrt(0.5)));
-  Pose2 actual = pose1 * pose2;
   CHECK(assert_equal(expected, actual));
+
+  Matrix expectedH1 = Matrix_(3,3,
+  		0.0, 1.0, 0.0,
+  	 -1.0, 0.0, 2.0,
+  		0.0, 0.0, 1.0
+  );
+  Matrix expectedH2 = eye(3);
+  Matrix numericalH1 = numericalDerivative21<Pose2, Pose2, Pose2>(compose, pose1, pose2, 1e-5);
+  Matrix numericalH2 = numericalDerivative22<Pose2, Pose2, Pose2>(compose, pose1, pose2, 1e-5);
+  CHECK(assert_equal(expectedH1,actualH1));
+  CHECK(assert_equal(numericalH1,actualH1));
+  CHECK(assert_equal(expectedH2,actualH2));
+  CHECK(assert_equal(numericalH2,actualH2));
 
   Point2 point(sqrt(0.5), 3.0*sqrt(0.5));
   Point2 expected_point(-1.0, -1.0);
@@ -143,6 +159,13 @@ TEST(Pose2, compose_b)
 
   Pose2 pose_actual_op = pose1 * pose2;
   Pose2 pose_actual_fcn = compose(pose1, pose2);
+  Matrix actualH1 = Dcompose1(pose1, pose2);
+  Matrix actualH2 = Dcompose2(pose1, pose2);
+
+  Matrix numericalH1 = numericalDerivative21<Pose2, Pose2, Pose2>(compose, pose1, pose2, 1e-5);
+  Matrix numericalH2 = numericalDerivative22<Pose2, Pose2, Pose2>(compose, pose1, pose2, 1e-5);
+  CHECK(assert_equal(numericalH1,actualH1));
+  CHECK(assert_equal(numericalH2,actualH2));
 
   CHECK(assert_equal(pose_expected, pose_actual_op));
   CHECK(assert_equal(pose_expected, pose_actual_fcn));
@@ -159,6 +182,13 @@ TEST(Pose2, compose_c)
 
   Pose2 pose_actual_op = pose1 * pose2;
   Pose2 pose_actual_fcn = compose(pose1,pose2);
+  Matrix actualH1 = Dcompose1(pose1, pose2);
+  Matrix actualH2 = Dcompose2(pose1, pose2);
+
+  Matrix numericalH1 = numericalDerivative21<Pose2, Pose2, Pose2>(compose, pose1, pose2, 1e-5);
+  Matrix numericalH2 = numericalDerivative22<Pose2, Pose2, Pose2>(compose, pose1, pose2, 1e-5);
+  CHECK(assert_equal(numericalH1,actualH1));
+  CHECK(assert_equal(numericalH2,actualH2));
 
   CHECK(assert_equal(pose_expected, pose_actual_op));
   CHECK(assert_equal(pose_expected, pose_actual_fcn));
