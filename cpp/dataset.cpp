@@ -46,6 +46,9 @@ pair<string, boost::optional<SharedDiagonal> > dataset(const string& dataset,  c
 	if (set == "olson") return make_pair(path + "data/iSAM/ISAM2/olson06icra.txt", null_model);
 	if (set == "victoria") return make_pair(path + "data/iSAM/ISAM2/victoria_park.txt", null_model);
 	if (set == "beijing") return make_pair(path + "data/BeijingData/beijingData_trips.log", null_model);
+
+	if (set == "10K_tree") return make_pair(path + "borg/CitySLAM/data/10k.tree", identity);
+	if (set == "10K_cnstr") return make_pair(path + "borg/CitySLAM/data/10k.cnstr", identity);
 	return make_pair("unknown", null_model);
 }
 
@@ -97,7 +100,6 @@ pair<sharedPose2Graph, sharedPose2Config> load2D(const string& filename,
 			int id1, id2;
 			double x, y, yaw;
 			is >> id1 >> id2 >> x >> y >> yaw;
-
 			Matrix m = eye(3);
 			is >> m(0, 0) >> m(0, 1) >> m(1, 1) >> m(2, 2) >> m(0, 2) >> m(1, 2);
 			m(2, 0) = m(0, 2);
