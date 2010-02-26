@@ -47,65 +47,37 @@ protected:
 
 public:
 
-	// TODO: eradicate, as implies non-const
-	GaussianFactor()  {
-	}
+	/* default constructor for I/O */
+	GaussianFactor()  {}
 
 	/** Construct Null factor */
-	GaussianFactor(const Vector& b_in) :
-		b_(b_in) {
-	}
+	GaussianFactor(const Vector& b_in);
 
 	/** Construct unary factor */
 	GaussianFactor(const Symbol& key1, const Matrix& A1,
-			const Vector& b, const SharedDiagonal& model) :
-		model_(model),b_(b) {
-		As_.insert(make_pair(key1, A1));
-	}
+			const Vector& b, const SharedDiagonal& model);
 
 	/** Construct binary factor */
 	GaussianFactor(const Symbol& key1, const Matrix& A1,
 			const Symbol& key2, const Matrix& A2,
-			const Vector& b, const SharedDiagonal& model) :
-		model_(model), b_(b)  {
-		As_.insert(make_pair(key1, A1));
-		As_.insert(make_pair(key2, A2));
-	}
+			const Vector& b, const SharedDiagonal& model);
 
 	/** Construct ternary factor */
-	GaussianFactor(const Symbol& key1, const Matrix& A1,
-			const Symbol& key2, const Matrix& A2,
-			const Symbol& key3, const Matrix& A3,
-			const Vector& b, const SharedDiagonal& model) :
-	        model_(model),b_(b)  {
-		As_.insert(make_pair(key1, A1));
-		As_.insert(make_pair(key2, A2));
-		As_.insert(make_pair(key3, A3));
-	}
+	GaussianFactor(const Symbol& key1, const Matrix& A1, const Symbol& key2,
+			const Matrix& A2, const Symbol& key3, const Matrix& A3,
+			const Vector& b, const SharedDiagonal& model);
 
 	/** Construct an n-ary factor */
 	GaussianFactor(const std::vector<std::pair<Symbol, Matrix> > &terms,
-	    const Vector &b, const SharedDiagonal& model) :
-		model_(model), b_(b)  {
-	  for(unsigned int i=0; i<terms.size(); i++)
-	    As_.insert(terms[i]);
-	}
+	    const Vector &b, const SharedDiagonal& model);
 
 	GaussianFactor(const std::list<std::pair<Symbol, Matrix> > &terms,
-	    const Vector &b, const SharedDiagonal& model) :
-		model_(model), b_(b)  {
-		std::pair<Symbol, Matrix> pair;
-		BOOST_FOREACH(pair, terms)
-			As_.insert(pair);
-	}
+	    const Vector &b, const SharedDiagonal& model);
 
 	/** Construct from Conditional Gaussian */
 	GaussianFactor(const boost::shared_ptr<GaussianConditional>& cg);
 
-	/**
-	 * Constructor that combines a set of factors
-	 * @param factors Set of factors to combine
-	 */
+	/** Constructor that combines a set of factors */
 	GaussianFactor(const std::vector<shared_ptr> & factors);
 
 	// Implementing Testable virtual functions

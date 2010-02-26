@@ -21,21 +21,63 @@ using namespace gtsam;
 
 typedef pair<Symbol,Matrix> NamedMatrix;
 
-// MACRO to loop. Ugly with pointer, but best I could in short time
-#define FOREACH_PAIR(KEY,VAL,COL) const_iterator it = COL.begin(); \
-	const Symbol* KEY = it == COL.end() ? NULL : &(it->first); \
-	const Matrix* VAL = it == COL.end() ? NULL : &(it->second); \
-	for (; it != COL.end(); it++, KEY=&(it->first), VAL=&(it->second))
+/* ************************************************************************* */
+GaussianFactor::GaussianFactor(const Vector& b_in) :
+	b_(b_in) {
+}
+
+/* ************************************************************************* */
+GaussianFactor::GaussianFactor(const Symbol& key1, const Matrix& A1,
+		const Vector& b, const SharedDiagonal& model) :
+	model_(model),b_(b) {
+	As_[key1] = A1;
+}
+
+/* ************************************************************************* */
+GaussianFactor::GaussianFactor(const Symbol& key1, const Matrix& A1,
+		const Symbol& key2, const Matrix& A2,
+		const Vector& b, const SharedDiagonal& model) :
+	model_(model), b_(b)  {
+	As_[key1] = A1;
+	As_[key2] = A2;
+}
+
+/* ************************************************************************* */
+GaussianFactor::GaussianFactor(const Symbol& key1, const Matrix& A1,
+		const Symbol& key2, const Matrix& A2,
+		const Symbol& key3, const Matrix& A3,
+		const Vector& b, const SharedDiagonal& model) :
+        model_(model),b_(b)  {
+	As_[key1] = A1;
+	As_[key2] = A2;
+	As_[key3] = A3;
+}
+
+/* ************************************************************************* */
+GaussianFactor::GaussianFactor(const std::vector<std::pair<Symbol, Matrix> > &terms,
+    const Vector &b, const SharedDiagonal& model) :
+	model_(model), b_(b)  {
+	BOOST_FOREACH(const NamedMatrix& pair, terms)
+    As_.insert(pair);
+}
+
+/* ************************************************************************* */
+GaussianFactor::GaussianFactor(const std::list<std::pair<Symbol, Matrix> > &terms,
+    const Vector &b, const SharedDiagonal& model) :
+	model_(model), b_(b)  {
+	BOOST_FOREACH(const NamedMatrix& pair, terms)
+		As_.insert(pair);
+}
 
 /* ************************************************************************* */
 GaussianFactor::GaussianFactor(const boost::shared_ptr<GaussianConditional>& cg) :
 	b_(cg->get_d()) {
-	As_.insert(make_pair(cg->key(), cg->get_R()));
+	As_.insert(NamedMatrix(cg->key(), cg->get_R()));
 	SymbolMap<Matrix>::const_iterator it = cg->parentsBegin();
 	for (; it != cg->parentsEnd(); it++) {
 		const Symbol& j = it->first;
 		const Matrix& Aj = it->second;
-		As_.insert(make_pair(j, Aj));
+		As_.insert(NamedMatrix(j, Aj));
 	}
 	// set sigmas from precisions
 	size_t n = b_.size();
@@ -99,8 +141,8 @@ void GaussianFactor::print(const string& s) const {
   cout << s << endl;
   if (empty()) cout << " empty" << endl; 
   else {
-  	FOREACH_PAIR(j,Aj,As_)
-  		gtsam::print(*Aj, "A["+(string)*j+"]=\n");
+  	BOOST_FOREACH(const NamedMatrix& jA, As_)
+  		gtsam::print(jA.second, "A["+(string)jA.first+"]=\n");
     gtsam::print(b_,"b=");
     model_->print("model");
   }
@@ -145,8 +187,8 @@ bool GaussianFactor::equals(const Factor<VectorConfig>& f, double tol) const {
 Vector GaussianFactor::unweighted_error(const VectorConfig& c) const {
   Vector e = -b_;
   if (empty()) return e;
-	FOREACH_PAIR(j,Aj,As_)
-    e += (*Aj * c[*j]);
+	BOOST_FOREACH(const NamedMatrix& jA, As_)
+    e += (jA.second * c[jA.first]);
   return e;
 }
 
@@ -175,15 +217,16 @@ list<Symbol> GaussianFactor::keys() const {
 /* ************************************************************************* */
 Dimensions GaussianFactor::dimensions() const {
   Dimensions result;
-  FOREACH_PAIR(j,Aj,As_) result.insert(make_pair(*j,Aj->size2()));
+  BOOST_FOREACH(const NamedMatrix& jA, As_)
+		result.insert(std::pair<Symbol,int>(jA.first,jA.second.size2()));
   return result;
 }
 
 /* ************************************************************************* */
 void GaussianFactor::tally_separator(const Symbol& key, set<Symbol>& separator) const {
   if(involves(key)) {
-    FOREACH_PAIR(j,A,As_)
-      if(*j != key) separator.insert(*j);
+    BOOST_FOREACH(const NamedMatrix& jA, As_)
+      if(jA.first != key) separator.insert(jA.first);
   }
 }
 
@@ -193,8 +236,8 @@ Vector GaussianFactor::operator*(const VectorConfig& x) const {
   if (empty()) return Ax;
 
   // Just iterate over all A matrices and multiply in correct config part
-  FOREACH_PAIR(j, Aj, As_)
-    Ax += (*Aj * x[*j]);
+  BOOST_FOREACH(const NamedMatrix& jA, As_)
+    Ax += (jA.second * x[jA.first]);
 
   return model_->whiten(Ax);
 }
@@ -204,8 +247,8 @@ VectorConfig GaussianFactor::operator^(const Vector& e) const {
   Vector E = model_->whiten(e);
 	VectorConfig x;
   // Just iterate over all A matrices and insert Ai^e into VectorConfig
-  FOREACH_PAIR(j, Aj, As_)
-    x.insert(*j,(*Aj)^E);
+  BOOST_FOREACH(const NamedMatrix& jA, As_)
+    x.insert(jA.first,jA.second^E);
 	return x;
 }
 
@@ -214,8 +257,8 @@ void GaussianFactor::transposeMultiplyAdd(double alpha, const Vector& e,
 		VectorConfig& x) const {
 	Vector E = alpha * model_->whiten(e);
 	// Just iterate over all A matrices and insert Ai^e into VectorConfig
-	FOREACH_PAIR(j, Aj, As_)
-		gtsam::transposeMultiplyAdd(1.0, *Aj, E, x[*j]);
+	BOOST_FOREACH(const NamedMatrix& jA, As_)
+		gtsam::transposeMultiplyAdd(1.0, jA.second, E, x[jA.first]);
 }
 
 /* ************************************************************************* */  
@@ -337,16 +380,16 @@ GaussianFactor::sparse(const Dimensions& columnIndices) const {
 	list<double> S;
 
 	// iterate over all matrices in the factor
-	FOREACH_PAIR( key, Aj, As_) {
+	BOOST_FOREACH(const NamedMatrix& jA, As_) {
 		// find first column index for this key
-		int column_start = columnIndices.at(*key);
-		for (size_t i = 0; i < Aj->size1(); i++) {
+		int column_start = columnIndices.at(jA.first);
+		for (size_t i = 0; i < jA.second.size1(); i++) {
 			double sigma_i = model_->sigma(i);
-			for (size_t j = 0; j < Aj->size2(); j++)
-				if ((*Aj)(i, j) != 0.0) {
+			for (size_t j = 0; j < jA.second.size2(); j++)
+				if (jA.second(i, j) != 0.0) {
 					I.push_back(i + 1);
 					J.push_back(j + column_start);
-					S.push_back((*Aj)(i, j) / sigma_i);
+					S.push_back(jA.second(i, j) / sigma_i);
 				}
 		}
 	}
@@ -359,22 +402,24 @@ GaussianFactor::sparse(const Dimensions& columnIndices) const {
 void GaussianFactor::append_factor(GaussianFactor::shared_ptr f, size_t m, size_t pos) {
 
 	// iterate over all matrices from the factor f
-	FOREACH_PAIR( key, A, f->As_) {
+	BOOST_FOREACH(const NamedMatrix& p, f->As_) {
+		const Symbol& key = p.first;
+		const Matrix& Aj = p.second;
 
 		// find the corresponding matrix among As
-		iterator mine = As_.find(*key);
+		iterator mine = As_.find(key);
 		const bool exists = mine != As_.end();
 
 		// find rows and columns
-		const size_t n = A->size2();
+		const size_t n = Aj.size2();
 
 		// use existing or create new matrix
 		if (exists)
-		  copy(A->data().begin(), A->data().end(), (mine->second).data().begin()+pos*n);
+		  copy(Aj.data().begin(), Aj.data().end(), (mine->second).data().begin()+pos*n);
 		else {
 			Matrix Z = zeros(m, n);
-			copy(A->data().begin(), A->data().end(), Z.data().begin()+pos*n);
-			insert(*key, Z);
+			copy(Aj.data().begin(), Aj.data().end(), Z.data().begin()+pos*n);
+			insert(key, Z);
 		}
 
 	} // FOREACH
