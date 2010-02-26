@@ -74,11 +74,8 @@ GaussianFactor::GaussianFactor(const boost::shared_ptr<GaussianConditional>& cg)
 	b_(cg->get_d()) {
 	As_.insert(NamedMatrix(cg->key(), cg->get_R()));
 	SymbolMap<Matrix>::const_iterator it = cg->parentsBegin();
-	for (; it != cg->parentsEnd(); it++) {
-		const Symbol& j = it->first;
-		const Matrix& Aj = it->second;
-		As_.insert(NamedMatrix(j, Aj));
-	}
+	for (; it != cg->parentsEnd(); it++)
+		As_.insert(*it);
 	// set sigmas from precisions
 	size_t n = b_.size();
 	model_ = noiseModel::Diagonal::Sigmas(cg->get_sigmas());
