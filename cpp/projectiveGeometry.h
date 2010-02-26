@@ -5,6 +5,8 @@
  * @author: Frank Dellaert
  */
 
+#pragma once
+
 #include <list>
 #include "tensors.h"
 
