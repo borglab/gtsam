@@ -77,10 +77,12 @@ namespace gtsam {
 		if (H1) {
 			double dt1 = -s2 * x + c2 * y;
 			double dt2 = -c2 * x - s2 * y;
-			*H1 = Matrix_(3,3,
+			H1->resize(3,3);
+			double data[9] = {
 				-c,  -s,  dt1,
 				 s,  -c,  dt2,
-			 0.0, 0.0, -1.0);
+			 0.0, 0.0, -1.0};
+			 copy(data, data+9, H1->data().begin());
 		}
 		if (H2) *H2 = I3;
 
