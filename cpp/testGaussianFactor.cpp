@@ -48,6 +48,19 @@ TEST( GaussianFactor, linearFactor )
 	CHECK(assert_equal(expected,*lf));
 }
 
+TEST( GaussianFactor, constructor)
+{
+	Vector b = Vector_(3, 1., 2., 3.);
+	SharedDiagonal noise = noiseModel::Diagonal::Sigmas(Vector_(3,1.,1.,1.));
+	Symbol x0('x',0), x1('x',1);
+	std::list<std::pair<Symbol, Matrix> > terms;
+	terms.push_back(make_pair(x0, eye(2)));
+	terms.push_back(make_pair(x1, 2.*eye(2)));
+	GaussianFactor actual(terms, b, noise);
+	GaussianFactor expected(x0, eye(2), x1, 2.*eye(2), b, noise);
+	CHECK(assert_equal(expected, actual));
+}
+
 /* ************************************************************************* */
 TEST( GaussianFactor, operators )
 {
