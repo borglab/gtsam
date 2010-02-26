@@ -234,13 +234,21 @@ list<int> FactorGraph<Factor>::factors(const Symbol& key) const {
 template<class Factor>
 vector<boost::shared_ptr<Factor> >
 FactorGraph<Factor>::findAndRemoveFactors(const Symbol& key) {
-	vector<sharedFactor> found;
 
-	const list<int>& indices = indices_.at(key);
-	BOOST_FOREACH(const int& i, indices) {
-		if(factors_[i] == NULL) continue; // skip NULL factors
-		found.push_back(factors_[i]);     // add to found
-		remove(i);                        // set factor to NULL.
+	// find all factor indices associated with the key
+	Indices::const_iterator it = indices_.find(key);
+	if (it==indices_.end())
+		throw std::invalid_argument(
+				"FactorGraph::findAndRemoveFactors: key "
+				+ (string)key + " not found");
+	const list<int>& factorsAssociatedWithKey = it->second;
+
+	vector<sharedFactor> found;
+	BOOST_FOREACH(const int& i, factorsAssociatedWithKey) {
+		sharedFactor& fi = factors_.at(i); // throws exception !
+		if(fi == NULL) continue; // skip NULL factors
+		found.push_back(fi);     // add to found
+		fi.reset();              // set factor to NULL == remove(i)
 	}
 	return found;
 }
