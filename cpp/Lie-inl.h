@@ -24,6 +24,7 @@ namespace gtsam {
 
   /**
    * Returns Exponential mapy
+   * This is for matlab wrapper
    */
   template<class T>
   T Lie<T>::expmap(const Vector& v) const {
