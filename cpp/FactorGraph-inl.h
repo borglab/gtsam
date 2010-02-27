@@ -201,7 +201,7 @@ void FactorGraph<Factor>::getOrdering(Ordering& ordering) const{
 	}
 	int n_col = (int)(columns.size()); /* colamd arg 2: number of columns in A */
 	if(n_col != 0)
-		return colamd(n_col, n_row, nrNonZeros, columns, ordering);
+		colamd(n_col, n_row, nrNonZeros, columns, ordering);
 }
 
 
@@ -210,6 +210,7 @@ template<class Factor>
 boost::shared_ptr<Ordering> FactorGraph<Factor>::getOrdering_() const{
 	boost::shared_ptr<Ordering> ordering(new Ordering);
 	getOrdering(*ordering);
+	return ordering;
 }
 
 /* ************************************************************************* */
