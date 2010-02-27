@@ -326,14 +326,23 @@ inline Matrix skewSymmetric(const Vector& w) { return skewSymmetric(w(0),w(1),w(
 /**
  * SVD computes economy SVD A=U*S*V'
  * @param A an m*n matrix
- * @param U output argument: m*n matrix
- * @param S output argument: n-dim vector of singular values, sorted by default, pass false as last argument to avoid sorting!!!
- * @param V output argument: n*n matrix
+ * @param U output argument: rotation matrix
+ * @param S output argument: vector of singular values, sorted by default, pass false as last argument to avoid sorting!!!
+ * @param V output argument: rotation matrix
  * @param sort boolean flag to sort singular values and V
+ * if m > n then U*S*V' = (m*n)*(n*n)*(n*n) (the m-n columns of U are of no use)
+ * if m < n then U*S*V' = (m*m)*(m*m)*(m*n) (the n-m columns of V are of no use)
  */ 
 void svd(const Matrix& A, Matrix& U, Vector& S, Matrix& V, bool sort=true);
 
-// in-place version
+/*
+ * In place SVD, will throw an exception when m < n
+ * @param A an m*n matrix is modified to contain U
+ * @param S output argument: vector of singular values, sorted by default, pass false as last argument to avoid sorting!!!
+ * @param V output argument: rotation matrix
+ * @param sort boolean flag to sort singular values and V
+ * if m > n then U*S*V' = (m*n)*(n*n)*(n*n) (the m-n columns of U are of no use)
+ */
 void svd(Matrix& A, Vector& S, Matrix& V, bool sort=true);
 
 /** Use SVD to calculate inverse square root of a matrix */

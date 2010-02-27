@@ -966,6 +966,8 @@ Matrix cholesky_inverse(const Matrix &A)
 void svd(Matrix& A, Vector& s, Matrix& V, bool sort) {
 
   const size_t m=A.size1(), n=A.size2();
+  if( m < n )
+	 throw invalid_argument("in-place svd calls NRC which needs matrix A with m>n");
 
   double * q = new double[n]; // singular values
 
@@ -984,13 +986,19 @@ void svd(Matrix& A, Vector& s, Matrix& V, bool sort) {
   delete[] v;
   delete[] q; //switched to array delete
   delete[] u;
-
 }
 
 /* ************************************************************************* */
 void svd(const Matrix& A, Matrix& U, Vector& s, Matrix& V, bool sort) {
-  U = A;      // copy
-  svd(U,s,V,sort); // call in-place version
+  const size_t m=A.size1(), n=A.size2();
+  if( m < n ) {
+	  V = trans(A);
+	  svd(V,s,U,sort); // A'=V*diag(s)*U'
+  }
+  else{
+	  U = A;      // copy
+	  svd(U,s,V,sort); // call in-place version
+  }
 }
 
 #if 0
