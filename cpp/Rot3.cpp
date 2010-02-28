@@ -16,6 +16,8 @@ namespace gtsam {
   /** Explicit instantiation of base class to export members */
   INSTANTIATE_LIE(Rot3);
 
+	static const Matrix I3 = eye(3);
+
   /* ************************************************************************* */
 	// static member functions to construct rotations
 
@@ -134,7 +136,6 @@ namespace gtsam {
     }
   }
 
-
   /* ************************************************************************* */
   Rot3 rodriguez(const Vector& n, double t) {
     double n0 = n(0), n1=n(1), n2=n(2);
@@ -208,7 +209,7 @@ namespace gtsam {
 
   /* ************************************************************************* */
   Matrix Dcompose2(const Rot3& R1, const Rot3& R2){
-  	return eye(3);
+  	return I3;
   }
 
   /* ************************************************************************* */
@@ -218,7 +219,7 @@ namespace gtsam {
 
   /* ************************************************************************* */
   Matrix Dbetween2(const Rot3& R1, const Rot3& R2){
-  	return eye(3);
+  	return I3;
   }
 
   /* ************************************************************************* */
