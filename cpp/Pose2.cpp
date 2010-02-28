@@ -13,13 +13,13 @@ namespace gtsam {
   /** Explicit instantiation of base class to export members */
   INSTANTIATE_LIE(Pose2);
 
-	static const Matrix I3 = eye(3);
+	static const Matrix I3 = eye(3), Z12 = zeros(1,2);
+  static const Rot2 R_PI_2(0., 1.);
 
   /* ************************************************************************* */
   Matrix Pose2::matrix() const {
   	Matrix R = r_.matrix();
-  	Matrix Z = zeros(1,2);
-  	R = stack(2, &R, &Z);
+  	R = stack(2, &R, &Z12);
   	Matrix T = Matrix_(3,1, t_.x(), t_.y(), 1.0);
   	return collect(2, &R, &T);
   }
@@ -33,6 +33,31 @@ namespace gtsam {
   bool Pose2::equals(const Pose2& q, double tol) const {
     return t_.equals(q.t_, tol) && r_.equals(q.r_, tol);
   }
+
+  /* ************************************************************************* */
+  // Calculate Adjoint map
+  // Ad_pose is 3*3 matrix that when applied to twist xi, returns Ad_pose(xi)
+  Matrix AdjointMap(const Pose2& p) {
+		const Rot2 R = p.r();
+		const Point2 t = p.t();
+  	double c = R.c(), s = R.s(), x = t.x(), y = t.y();
+		return Matrix_(3,3,
+				  c,  -s,   y,
+				  s,   c,  -x,
+				0.0, 0.0, 1.0
+				);
+	}
+
+  /* ************************************************************************* */
+  Pose2 inverse(const Pose2& pose) {
+		const Rot2& R = pose.r();
+		const Point2& t = pose.t();
+		return Pose2(inverse(R), R.unrotate(Point2(-t.x(), -t.y())));
+	}
+
+	Matrix Dinverse(const Pose2& pose) {
+		return -AdjointMap(pose);
+	}
 
   /* ************************************************************************* */
   Point2 transform_to(const Pose2& pose, const Point2& point, boost::optional<
@@ -56,20 +81,12 @@ namespace gtsam {
 		Matrix H; transform_to(pose, point, boost::none, H); return H;
   }
 
-  /* ************************************************************************* */
-  static const Rot2 R_PI_2(0., 1.);
-	static Matrix DR1 = Matrix_(1, 3, 0., 0., 1.);
-
   Matrix Dcompose1(const Pose2& p1, const Pose2& p2) {
-		Matrix R2_inv = p2.r().transpose();
-		Point2 Rt2_ = R_PI_2 * inverse(p2.r()) * p2.t();
-		Matrix Rt2 = Matrix_(2, 1, Rt2_.x(), Rt2_.y());
-		Matrix Dt1 = collect(2, &R2_inv, &Rt2);
-		return gtsam::stack(2, &Dt1, &DR1);
+		return AdjointMap(inverse(p2));
   }
 
   Matrix Dcompose2(const Pose2& p1, const Pose2& p2) {
-  	return eye(3);
+  	return I3;
   }
 
   /* ************************************************************************* */
@@ -97,8 +114,7 @@ namespace gtsam {
 		double x = dt.x(), y = dt.y();
 		Point2 t(c1 * x + s1 * y, -s1 * x + c1 * y);
 
-		// FD: I don't understand this code (a performance-driven transformation
-		// from Richard's heavier code) but it works.
+		// FD: This is just -AdjointMap(between(p2,p1)) inlined and re-using above
 		if (H1) {
 			double dt1 = -s2 * x + c2 * y;
 			double dt2 = -c2 * x - s2 * y;

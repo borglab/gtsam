@@ -71,10 +71,15 @@ namespace gtsam {
   /** return DOF, dimensionality of tangent space = 3 */
   inline size_t dim(const Pose2&) { return 3; }
 
+  /**
+  * Calculate Adjoint map
+  * Ad_pose is 3*3 matrix that when applied to twist xi, returns Ad_pose(xi)
+  */
+  Matrix AdjointMap(const Pose2& p);
+
   /** inverse transformation */
-  inline Pose2 inverse(const Pose2& pose) {
-    return Pose2(inverse(pose.r()),
-        pose.r().unrotate(Point2(-pose.t().x(), -pose.t().y()))); }
+  Pose2 inverse(const Pose2& pose);
+  Matrix Dinverse(const Pose2& pose);
 
   /** compose this transformation onto another (first p1 and then p2) */
   inline Pose2 compose(const Pose2& p0, const Pose2& p1) {

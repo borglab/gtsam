@@ -148,8 +148,8 @@ TEST(Pose2, compose_a)
   Pose2 pose2(M_PI/2.0, Point2(0.0, 2.0));
 
   Pose2 actual = compose(pose1, pose2);
-  Matrix actualH1 = Dcompose1(pose1, pose2);
-  Matrix actualH2 = Dcompose2(pose1, pose2);
+  Matrix actualDcompose1 = Dcompose1(pose1, pose2);
+  Matrix actualDcompose2 = Dcompose2(pose1, pose2);
 
   Pose2 expected(3.0*M_PI/4.0, Point2(-sqrt(0.5), 3.0*sqrt(0.5)));
   CHECK(assert_equal(expected, actual));
@@ -162,10 +162,10 @@ TEST(Pose2, compose_a)
   Matrix expectedH2 = eye(3);
   Matrix numericalH1 = numericalDerivative21<Pose2, Pose2, Pose2>(compose, pose1, pose2, 1e-5);
   Matrix numericalH2 = numericalDerivative22<Pose2, Pose2, Pose2>(compose, pose1, pose2, 1e-5);
-  CHECK(assert_equal(expectedH1,actualH1));
-  CHECK(assert_equal(numericalH1,actualH1));
-  CHECK(assert_equal(expectedH2,actualH2));
-  CHECK(assert_equal(numericalH2,actualH2));
+  CHECK(assert_equal(expectedH1,actualDcompose1));
+  CHECK(assert_equal(numericalH1,actualDcompose1));
+  CHECK(assert_equal(expectedH2,actualDcompose2));
+  CHECK(assert_equal(numericalH2,actualDcompose2));
 
   Point2 point(sqrt(0.5), 3.0*sqrt(0.5));
   Point2 expected_point(-1.0, -1.0);
@@ -186,13 +186,13 @@ TEST(Pose2, compose_b)
 
   Pose2 pose_actual_op = pose1 * pose2;
   Pose2 pose_actual_fcn = compose(pose1, pose2);
-  Matrix actualH1 = Dcompose1(pose1, pose2);
-  Matrix actualH2 = Dcompose2(pose1, pose2);
+  Matrix actualDcompose1 = Dcompose1(pose1, pose2);
+  Matrix actualDcompose2 = Dcompose2(pose1, pose2);
 
   Matrix numericalH1 = numericalDerivative21<Pose2, Pose2, Pose2>(compose, pose1, pose2, 1e-5);
   Matrix numericalH2 = numericalDerivative22<Pose2, Pose2, Pose2>(compose, pose1, pose2, 1e-5);
-  CHECK(assert_equal(numericalH1,actualH1));
-  CHECK(assert_equal(numericalH2,actualH2));
+  CHECK(assert_equal(numericalH1,actualDcompose1));
+  CHECK(assert_equal(numericalH2,actualDcompose2));
 
   CHECK(assert_equal(pose_expected, pose_actual_op));
   CHECK(assert_equal(pose_expected, pose_actual_fcn));
@@ -209,13 +209,13 @@ TEST(Pose2, compose_c)
 
   Pose2 pose_actual_op = pose1 * pose2;
   Pose2 pose_actual_fcn = compose(pose1,pose2);
-  Matrix actualH1 = Dcompose1(pose1, pose2);
-  Matrix actualH2 = Dcompose2(pose1, pose2);
+  Matrix actualDcompose1 = Dcompose1(pose1, pose2);
+  Matrix actualDcompose2 = Dcompose2(pose1, pose2);
 
   Matrix numericalH1 = numericalDerivative21<Pose2, Pose2, Pose2>(compose, pose1, pose2, 1e-5);
   Matrix numericalH2 = numericalDerivative22<Pose2, Pose2, Pose2>(compose, pose1, pose2, 1e-5);
-  CHECK(assert_equal(numericalH1,actualH1));
-  CHECK(assert_equal(numericalH2,actualH2));
+  CHECK(assert_equal(numericalH1,actualDcompose1));
+  CHECK(assert_equal(numericalH2,actualDcompose2));
 
   CHECK(assert_equal(pose_expected, pose_actual_op));
   CHECK(assert_equal(pose_expected, pose_actual_fcn));
@@ -234,8 +234,12 @@ TEST(Pose2, inverse )
 	Point2 l(4,5), g(-4,6);
 	CHECK(assert_equal(g,gTl*l));
 	CHECK(assert_equal(l,lTg*g));
-}
 
+	// Check derivative
+  Matrix numericalH = numericalDerivative11<Pose2,Pose2>(inverse, lTg, 1e-5);
+  Matrix actualDinverse = Dinverse(lTg);
+  CHECK(assert_equal(numericalH,actualDinverse));
+}
 
 /* ************************************************************************* */
 Vector homogeneous(const Point2& p) {
@@ -304,7 +308,7 @@ TEST( Pose2, between )
 
   Matrix actualH1,actualH2;
   Pose2 expected(M_PI_2, Point2(2,2));
-  Pose2 actual1 = between(gT1,gT2); // gT2 * 1Tg does not make sense !!!!!
+  Pose2 actual1 = between(gT1,gT2);
   Pose2 actual2 = between(gT1,gT2,actualH1,actualH2);
   CHECK(assert_equal(expected,actual1));
   CHECK(assert_equal(expected,actual2));
@@ -317,6 +321,8 @@ TEST( Pose2, between )
   Matrix numericalH1 = numericalDerivative21(between<Pose2>, gT1, gT2, 1e-5);
   CHECK(assert_equal(expectedH1,actualH1));
   CHECK(assert_equal(numericalH1,actualH1));
+	// Assert H1 = -AdjointMap(between(p2,p1)) as in doc/math.lyx
+  CHECK(assert_equal(-AdjointMap(between(gT2,gT1)),actualH1));
 
   Matrix expectedH2 = Matrix_(3,3,
        1.0, 0.0, 0.0,
@@ -326,6 +332,7 @@ TEST( Pose2, between )
   Matrix numericalH2 = numericalDerivative22(between<Pose2>, gT1, gT2, 1e-5);
   CHECK(assert_equal(expectedH2,actualH2));
   CHECK(assert_equal(numericalH2,actualH2));
+
 }
 
 /* ************************************************************************* */
