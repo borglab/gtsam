@@ -511,11 +511,103 @@ Hence, now we undo
 \end_layout
 
 \begin_layout Section
-Important Lie Groups
+Derivatives of Actions
+\end_layout
+
+\begin_layout Standard
+\begin_inset FormulaMacro
+\newcommand{\deriv}[2]{\frac{\partial#1}{\partial#2}}
+{\frac{\partial#1}{\partial#2}}
+\end_inset
+
+
+\begin_inset FormulaMacro
+\newcommand{\at}[2]{#1\biggr\rvert_{#2}}
+{#1\biggr\rvert_{#2}}
+\end_inset
+
+ 
+\begin_inset FormulaMacro
+\newcommand{\Jac}[3]{ \at{\deriv{#1}{#2}} {#3} }
+{\at{\deriv{#1}{#2}}{#3}}
+\end_inset
+
+
+\end_layout
+
+\begin_layout Standard
+When a Lie group 
+\begin_inset Formula $G$
+\end_inset
+
+ acts on a vector space 
+\begin_inset Formula $V$
+\end_inset
+
+, we are interested in the derivatives of 
+\begin_inset Formula \[
+f_{1}\left(g\right)=gv\mbox{ and }f_{2}(v)=gv\]
+
+\end_inset
+
+with 
+\begin_inset Formula $f_{1}:G\rightarrow V$
+\end_inset
+
+ and 
+\begin_inset Formula $f_{2}:V\rightarrow V$
+\end_inset
+
+.
+ The brilliance of Lie group theory is that we only need to know how the
+ generators of the group act around the group's identity element 
+\begin_inset Formula $g=id$
+\end_inset
+
+, and then we can use the Adjoint map to effectuate that action in the correct
+ frame of reference.
+ Specifically, if 
+\begin_inset Formula \[
+H_{v}=\left[\begin{array}{ccc}
+\frac{\partial f_{1}}{\partial x_{1}} & \ldots & \frac{\partial f_{1}}{\partial x_{n}}\end{array}\right]\rvert_{g=id}\]
+
+\end_inset
+
+is the 
+\begin_inset Formula $m\times n$
+\end_inset
+
+ Jacobian of the group action on 
+\begin_inset Formula $\mbox{v\in}V$
+\end_inset
+
+with respect to an incremental change 
+\begin_inset Formula $x$
+\end_inset
+
+, we have 
+\begin_inset Formula \[
+\Jac{f_{1}}xg=H_{v}\Ad g\]
+
+\end_inset
+
+The meaning of 
+\begin_inset Formula $H$
+\end_inset
+
+ will depend on the group 
+\begin_inset Formula $G$
+\end_inset
+
+ and will be very intuitive!
+\end_layout
+
+\begin_layout Section
+3D Rotations
 \end_layout
 
 \begin_layout Subsection
-3D Rotations
+Basics
 \end_layout
 
 \begin_layout Standard
@@ -654,6 +746,10 @@ and this is defines the canonical parameterization of
 .
 \end_layout
 
+\begin_layout Subsection
+The Adjoint Map
+\end_layout
+
 \begin_layout Standard
 We can prove the following identity for rotation matrices 
 \begin_inset Formula $R$
@@ -787,6 +883,10 @@ q=e^{\Skew{R\omega}}p\]
 
 \end_layout
 
+\begin_layout Subsection
+Derivatives of Mappings
+\end_layout
+
 \begin_layout Standard
 Hence, we are now in a position to simply posit the derivative of 
 \series bold
@@ -837,6 +937,181 @@ and between in its second argument,
 \end_layout
 
 \begin_layout Subsection
+Derivatives of Actions
+\end_layout
+
+\begin_layout Standard
+The beauty of Lie group theory comes in play when we talk about the derivative
+ of a group action.
+ In the case of 
+\begin_inset Formula $\SOthree$
+\end_inset
+
+ the vector space is  
+\begin_inset Formula $\Rthree$
+\end_inset
+
+, and the group action corresponds to rotating a point
+\begin_inset Formula \[
+q=Rp\]
+
+\end_inset
+
+We would now like to know what an incremental rotation parameterized by
+ 
+\begin_inset Formula $\omega$
+\end_inset
+
+ would do
+\begin_inset Formula \[
+\deriv q{\omega}=\deriv{}{\omega}\left(Rp\right)=\deriv{}{\omega}\left(e^{\Skew{\omega}}p\right)\]
+
+\end_inset
+
+Since
+\begin_inset Formula \[
+e^{A}=I+A+\frac{A^{2}}{2!}+\frac{A^{3}}{3!}+\ldots\]
+
+\end_inset
+
+and derivative is linear and we are only interested in first order we have
+\begin_inset Formula \[
+\deriv{e^{\Skew{\omega}}}{\omega}=\deriv{\Skew{\omega}}{\omega}=\omega_{x}G_{1}+\omega_{y}G_{2}+\omega_{z}G_{3}\]
+
+\end_inset
+
+Specifically, the generators for 
+\begin_inset Formula $\SOthree$
+\end_inset
+
+ are
+\begin_inset Formula \[
+G_{1}=\left(\begin{array}{ccc}
+0 & 0 & 0\\
+0 & 0 & -1\\
+0 & 1 & 0\end{array}\right)\mbox{}G_{2}=\left(\begin{array}{ccc}
+0 & 0 & 1\\
+0 & 0 & 0\\
+-1 & 0 & 0\end{array}\right)\mbox{ }G_{1}=\left(\begin{array}{ccc}
+0 & -1 & 0\\
+1 & 0 & 0\\
+0 & 0 & 0\end{array}\right)\]
+
+\end_inset
+
+corresponding to a rotation around 
+\begin_inset Formula $X$
+\end_inset
+
+, 
+\begin_inset Formula $Y$
+\end_inset
+
+, and 
+\begin_inset Formula $Z$
+\end_inset
+
+, respectively.
+ When given an incremental angular velocity 
+\begin_inset Formula $\omega$
+\end_inset
+
+, we obtain the effect of the group action around the identity: 
+\begin_inset Formula \[
+H\omega=\omega_{x}G_{1}+\omega_{y}G_{2}+\omega_{z}G_{3}=\left[\begin{array}{ccc}
+0 & -\omega_{z} & \omega_{y}\\
+\omega_{z} & 0 & -\omega_{x}\\
+-\omega_{y} & \omega_{x} & 0\end{array}\right]=\Skew{\omega}\]
+
+\end_inset
+
+Hence, at the origin, the effect of an incremental action 
+\begin_inset Formula $\omega$
+\end_inset
+
+ on a point 
+\begin_inset Formula $p$
+\end_inset
+
+ is a velocity
+\begin_inset Formula \[
+\Skew{\omega}p=\omega\times p\]
+
+\end_inset
+
+We can write this as a 
+\begin_inset Formula $3\times3$
+\end_inset
+
+ Jacobian 
+\begin_inset Formula $H_{p}$
+\end_inset
+
+ that is multipled with 
+\begin_inset Formula $\omega$
+\end_inset
+
+, 
+\begin_inset Formula \[
+\omega\times p=-p\times\omega=-\Skew p\omega=H_{p}\omega\]
+
+\end_inset
+
+Now, if we want to apply this in a frame 
+\begin_inset Formula $R$
+\end_inset
+
+, we need to do something quite similar to the Adjoint map: (a) transform
+ the point 
+\begin_inset Formula $p$
+\end_inset
+
+ to the origin using 
+\begin_inset Formula $R$
+\end_inset
+
+, apply the action 
+\begin_inset Formula $\Skew{\omega}$
+\end_inset
+
+, and transform back with 
+\begin_inset Formula $R^{T}$
+\end_inset
+
+.
+ In short
+\begin_inset Formula \[
+q=R^{T}e^{\Skew{\omega}}Rp=\exp\left(\Ad{R^{T}}\Skew{\omega}\right)p=\exp\left(\Skew{R^{T}\omega}\right)p\]
+
+\end_inset
+
+and hence the velocity becomes
+\begin_inset Formula \[
+\Skew{R^{T}\omega}\times p=-\Skew pR^{T}\omega=-R^{T}R\Skew pR^{T}\omega=-R^{T}\Skew{Rp}\omega=R^{T}H_{Rp}\omega\]
+
+\end_inset
+
+This is quite intuitive in hindsight: we transform 
+\begin_inset Formula $p$
+\end_inset
+
+ to 
+\begin_inset Formula $Rp$
+\end_inset
+
+, calculate the velocity by 
+\begin_inset Formula $H_{Rp}$
+\end_inset
+
+, and transform back by the rotation 
+\begin_inset Formula $R^{T}$
+\end_inset
+
+.
+ 
+\end_layout
+
+\begin_layout Section
 3D Rigid Transformations
 \end_layout
 
@@ -961,6 +1236,10 @@ key "Murray94book"
 .
 \end_layout
 
+\begin_layout Subsection
+The Adjoint Map
+\end_layout
+
 \begin_layout Standard
 The adjoint is 
 \begin_inset Formula \begin{eqnarray*}
@@ -1001,6 +1280,14 @@ v\end{array}\right]\]
 
 \end_inset
 
+
+\end_layout
+
+\begin_layout Subsection
+Derivatives of Mappings
+\end_layout
+
+\begin_layout Standard
 Hence, as with 
 \begin_inset Formula $\SOthree$
 \end_inset
@@ -1065,6 +1352,207 @@ and between in its second argument,
 \end_layout
 
 \begin_layout Subsection
+The derivatives of Actions
+\end_layout
+
+\begin_layout Standard
+The action of 
+\begin_inset Formula $\SEthree$
+\end_inset
+
+ on 3D points is done by embedding the points in 
+\begin_inset Formula $\mathbb{R}^{4}$
+\end_inset
+
+ by using homogeneous coordinates
+\begin_inset Formula \[
+q=\left[\begin{array}{cc}
+R & t\\
+0 & 1\end{array}\right]\left[\begin{array}{c}
+p\\
+1\end{array}\right]\]
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Standard
+The generators for 
+\begin_inset Formula $\SEthree$
+\end_inset
+
+ are
+\begin_inset Formula \[
+G_{1}=\left(\begin{array}{cccc}
+0 & 0 & 0 & 0\\
+0 & 0 & -1 & 0\\
+0 & 1 & 0 & 0\\
+0 & 0 & 0 & 0\end{array}\right)\mbox{}G_{2}=\left(\begin{array}{cccc}
+0 & 0 & 1 & 0\\
+0 & 0 & 0 & 0\\
+-1 & 0 & 0 & 0\\
+0 & 0 & 0 & 0\end{array}\right)\mbox{ }G_{1}=\left(\begin{array}{cccc}
+0 & -1 & 0 & 0\\
+1 & 0 & 0 & 0\\
+0 & 0 & 0 & 0\\
+0 & 0 & 0 & 0\end{array}\right)\]
+
+\end_inset
+
+
+\begin_inset Formula \[
+G_{4}=\left(\begin{array}{cccc}
+0 & 0 & 0 & 1\\
+0 & 0 & 0 & 0\\
+0 & 0 & 0 & 0\\
+0 & 0 & 0 & 0\end{array}\right)\mbox{}G_{5}=\left(\begin{array}{cccc}
+0 & 0 & 0 & 0\\
+0 & 0 & 0 & 1\\
+0 & 0 & 0 & 0\\
+0 & 0 & 0 & 0\end{array}\right)\mbox{ }G_{6}=\left(\begin{array}{cccc}
+0 & 0 & 0 & 0\\
+0 & 0 & 0 & 0\\
+0 & 0 & 0 & 1\\
+0 & 0 & 0 & 0\end{array}\right)\]
+
+\end_inset
+
+and hence a twist around the origin applies to homogeneous coordinates 
+\begin_inset Formula $\hat{p}\in\mathbb{R}^{4}$
+\end_inset
+
+ as
+\begin_inset Formula \[
+\sum_{i}\xi_{i}G_{i}=\left(\begin{array}{cccc}
+0 & -\omega_{z} & \omega_{y} & v_{x}\\
+\omega_{z} & 0 & -\omega_{x} & v_{y}\\
+-\omega_{y} & \omega_{x} & 0 & v_{z}\\
+0 & 0 & 0 & 0\end{array}\right)=\left[\begin{array}{cc}
+\Skew{\omega} & v\\
+0 & 0\end{array}\right]=\xihat\]
+
+\end_inset
+
+Hence, at the origin, an incremental action 
+\begin_inset Formula $\xi$
+\end_inset
+
+ on a point 
+\begin_inset Formula $p$
+\end_inset
+
+ induces the velocity 
+\begin_inset Formula \[
+\left[\begin{array}{cc}
+\Skew{\omega} & v\\
+0 & 0\end{array}\right]\left[\begin{array}{c}
+p\\
+1\end{array}\right]=\left[\begin{array}{c}
+\omega\times p+v\\
+0\end{array}\right]\]
+
+\end_inset
+
+We can write this as a velocity in 
+\begin_inset Formula $\Rthree$
+\end_inset
+
+ as the product of a 
+\begin_inset Formula $3\times6$
+\end_inset
+
+ matrix 
+\begin_inset Formula $H(p)$
+\end_inset
+
+ that acts upon the exponential coordinates 
+\begin_inset Formula $\xi$
+\end_inset
+
+ directly:
+\begin_inset Formula \[
+\omega\times p+v=-p\times\omega+v=\left[\begin{array}{cc}
+-\Skew p & I_{3}\end{array}\right]\left[\begin{array}{c}
+\omega\\
+v\end{array}\right]=H(p)\xi\]
+
+\end_inset
+
+Now, if we want to apply this in a frame 
+\begin_inset Formula $T$
+\end_inset
+
+, we can (1) transform the point 
+\begin_inset Formula $p$
+\end_inset
+
+ to the origin using 
+\begin_inset Formula $T^{-1}$
+\end_inset
+
+, apply the action 
+\begin_inset Formula $\xihat$
+\end_inset
+
+, and transform back to 
+\begin_inset Formula $T$
+\end_inset
+
+.
+ In short
+\begin_inset Formula \[
+\left[\begin{array}{c}
+q\\
+1\end{array}\right]=Te^{\xihat}T^{-1}\left[\begin{array}{c}
+p\\
+1\end{array}\right]=\exp\left(\Ad T\xihat\right)\left[\begin{array}{c}
+p\\
+1\end{array}\right]\]
+
+\end_inset
+
+To get the velocity of the point in frame 
+\begin_inset Formula $T$
+\end_inset
+
+, we have
+\begin_inset Formula \[
+H(p)\Ad T\xi=\left[\begin{array}{cc}
+-\Skew p & I_{3}\end{array}\right]\left[\begin{array}{cc}
+R & 0\\
+\Skew tR & R\end{array}\right]\xi=R\left[\begin{array}{cc}
+-\Skew{T^{-1}p} & I_{3}\end{array}\right]\xi=H(T^{-1}p)\xi\]
+
+\end_inset
+
+where I made use of 
+\begin_inset Formula $\Skew{t-p}R=-RR^{T}\Skew{p-t}R=-R\Skew{R^{T}(p-t)}=-R\Skew{T^{-1}p}$
+\end_inset
+
+.
+ This is intuitive in hindsight: we transform 
+\begin_inset Formula $p$
+\end_inset
+
+ back to the orgin by 
+\begin_inset Formula $T^{-1}p$
+\end_inset
+
+, apply 
+\begin_inset Formula $H(.)$
+\end_inset
+
+ to get a velocity, and only need the rotation 
+\begin_inset Formula $R$
+\end_inset
+
+ to transform it back to the orginal frame (as velocities are not affected
+ by translation).
+ 
+\end_layout
+
+\begin_layout Section
 2D Rotations
 \end_layout
 
@@ -1228,6 +1716,14 @@ R=e^{\skew{\theta}}=\left[\begin{array}{cc}
 
 \end_inset
 
+
+\end_layout
+
+\begin_layout Subsection
+Derivatives of Mappings
+\end_layout
+
+\begin_layout Standard
 The adjoint map for 
 \begin_inset Formula $\sotwo$
 \end_inset
@@ -1281,7 +1777,7 @@ and between in its second argument,
 
 \end_layout
 
-\begin_layout Subsection
+\begin_layout Section
 2D Rigid Transformations
 \end_layout
 
@@ -1383,6 +1879,10 @@ T=\exp\xihat\]
 A closed form solution for the exponential map is in the works...
 \end_layout
 
+\begin_layout Subsection
+The Adjoint Map
+\end_layout
+
 \begin_layout Standard
 The adjoint is 
 \begin_inset Formula \begin{eqnarray*}
@@ -1415,6 +1915,14 @@ v\\
 
 \end_inset
 
+
+\end_layout
+
+\begin_layout Subsection
+Derivatives of Mappings
+\end_layout
+
+\begin_layout Standard
 We can just define all derivatives in terms of the above adjoint map:
 \begin_inset Formula \begin{eqnarray*}
 \frac{\partial T^{^{-1}}}{\partial\xi} & = & -\Ad T\end{eqnarray*}
@@ -1732,126 +2240,6 @@ and with respect to
 \begin_layout Standard
 \begin_inset Formula \[
 \frac{\partial(R^{T}(x-t-dt))}{\partial dt}=-R^{T}\]
-
-\end_inset
-
-
-\end_layout
-
-\begin_layout Standard
-The derivative of 
-\begin_inset Formula $inverse=R^{T},-R^{T}t=R^{T}(I,-t)$
-\end_inset
-
-, first derivative of rotation in rotation argument:
-\end_layout
-
-\begin_layout Standard
-The partials
-\begin_inset Formula \[
-\frac{\partial\omega^{\prime}}{\partial\omega}=\frac{\partial inv(R)}{\partial\omega}=-R\]
-
-\end_inset
-
-
-\begin_inset Formula \[
-\frac{\partial t^{\prime}}{\partial\omega}=\frac{-\partial unrot(R,t)}{\partial\omega}=-skew(R^{T}t)\]
-
-\end_inset
-
-
-\begin_inset Formula \[
-\frac{\partial\omega^{\prime}}{\partial t}=\mathbf{0}\]
-
-\end_inset
-
-
-\begin_inset Formula \[
-\frac{\partial t^{\prime}}{\partial t}=\frac{-\partial unrot(R,t)}{\partial t}=-R^{T}\]
-
-\end_inset
-
-
-\series bold
-old stuff:
-\series default
-
-\begin_inset Formula \begin{eqnarray*}
-(I+\Omega')R^{T} & = & \left((I+\Omega)R\right)^{T}\\
-R^{T}+\Omega'R^{T} & = & R^{T}(I-\Omega)\\
-\Omega'R^{T} & = & -R^{T}\Omega\\
-\Omega' & = & -R^{T}\Omega R=-\Skew{R^{T}\omega}\\
-\omega' & = & -R^{T}\omega\end{eqnarray*}
-
-\end_inset
-
-
-\end_layout
-
-\begin_layout Standard
-Now 
-\series bold
-\emph on
-compose
-\series default
-\emph default
-, first w.r.t.
- a change in rotation in the first argument:
-\begin_inset Formula \begin{align*}
-AB & =\left(T_{A}R_{A}T_{B}\right)\left(R_{A}R_{B}\right)\\
-\left(T_{A}R_{A}T_{B}\left(I+T^{\prime}\right)\right)\left(R_{A}R_{B}\left(I+\Omega^{\prime}\right)\right) & =\left(T_{A}R_{A}\left(I+\Omega\right)T_{B}\right)\left(R_{A}\left(I+\Omega\right)R_{B}\right)\\
-\textrm{translation only:}\\
-T_{A}R_{A}T_{B}\left(I+T^{\prime}\right) & =T_{A}R_{A}\left(I+\Omega\right)T_{B}\\
-T_{B}\left(I+T^{\prime}\right) & =\left(I+\Omega\right)T_{B}\\
-T_{B}+T_{B}T^{\prime} & =T_{B}+\Omega T_{B}\\
-T^{\prime} & =T_{B}^{-1}skew(\omega)T_{B}\\
-T^{\prime} & =skew(T_{B}\omega)\,???\\
-\textrm{rotation only:}\\
-R_{A}R_{B}\left(I+\Omega^{\prime}\right) & =R_{A}\left(I+\Omega\right)R_{B}\\
-R_{B}\Omega^{\prime} & =\Omega R_{B}\\
-\Omega^{\prime} & =R_{B}^{T}\Omega R_{B}\\
- & =skew(R_{B}^{T}\omega)\\
-\omega^{\prime} & =R_{B}^{T}\omega\end{align*}
-
-\end_inset
-
-
-\end_layout
-
-\begin_layout Standard
-And w.r.t.
- a rotation in the second argument:
-\begin_inset Formula \begin{align*}
-\left(T_{A}R_{A}T_{B}\left(I+T^{\prime}\right)\right)\left(R_{A}R_{B}\left(I+\Omega^{\prime}\right)\right) & =\left(T_{A}R_{A}T_{B}\right)\left(R_{A}R_{B}\left(I+\Omega\right)\right)\\
-\left(R_{A}R_{B}\left(I+\Omega^{\prime}\right)\right) & =\left(R_{A}R_{B}\left(I+\Omega\right)\right)\\
-\omega^{\prime} & =\omega\\
-t^{\prime} & =0\end{align*}
-
-\end_inset
-
-w.r.t.
- a translation in the second argument:
-\begin_inset Formula \begin{align*}
-\left(T_{A}R_{A}T_{B}\left(I+T^{\prime}\right)\right)\left(R_{A}R_{B}\left(I+\Omega^{\prime}\right)\right) & =\left(T_{A}R_{A}T_{B}\left(I+T\right)\right)\left(R_{A}R_{B}\right)\\
-\omega^{\prime} & =0\\
-t^{\prime} & =t\end{align*}
-
-\end_inset
-
-
-\end_layout
-
-\begin_layout Standard
-Finally, 
-\series bold
-\emph on
-between
-\series default
-\emph default
- in the first argument:
-\begin_inset Formula \begin{align*}
-\frac{\partial A^{-1}B}{\partial A} & =\frac{\partial c\left(A^{-1},B\right)}{\partial A^{-1}}\frac{\partial inv(A)}{A}\\
-\frac{\partial A^{-1}B}{B} & =\frac{\partial c\left(A^{-1},B\right)}{\partial B}\end{align*}
 
 \end_inset
 
