@@ -63,12 +63,12 @@ TEST( Pose3, compose )
   CHECK(assert_equal(actual,expected,error));
 
 	Matrix numericalH1 = numericalDerivative21<Pose3,Pose3,Pose3>(compose, T, T, 1e-5);
-	Matrix actualH1 = Dcompose1(T, T);
-	CHECK(assert_equal(numericalH1,actualH1));
+	Matrix actualDcompose1 = Dcompose1(T, T);
+	CHECK(assert_equal(numericalH1,actualDcompose1));
 
-	Matrix actualH2 = Dcompose2(T, T);
+	Matrix actualDcompose2 = Dcompose2(T, T);
 	Matrix numericalH2 = numericalDerivative22<Pose3,Pose3,Pose3>(compose, T, T, 1e-5);
-	CHECK(assert_equal(numericalH2,actualH2));}
+	CHECK(assert_equal(numericalH2,actualDcompose2));}
 
 /* ************************************************************************* */
 TEST( Pose3, inverse)
@@ -78,8 +78,20 @@ TEST( Pose3, inverse)
   CHECK(assert_equal(actual,expected,error));
 
 	Matrix numericalH = numericalDerivative11<Pose3,Pose3>(inverse, T, 1e-5);
-	Matrix actualH = Dinverse(T);
-	CHECK(assert_equal(numericalH,actualH));
+	Matrix actualDinverse = Dinverse(T);
+	CHECK(assert_equal(numericalH,actualDinverse));
+}
+
+/* ************************************************************************* */
+TEST( Pose3, inverseDerivatives2)
+{
+	Rot3 R = rodriguez(0.3,0.4,-0.5);
+	Point3 t(3.5,-8.2,4.2);
+	Pose3 T(R,t);
+
+	Matrix numericalH = numericalDerivative11<Pose3,Pose3>(inverse, T, 1e-5);
+	Matrix actualDinverse = Dinverse(T);
+	CHECK(assert_equal(numericalH,actualDinverse));
 }
 
 /* ************************************************************************* */
@@ -289,15 +301,15 @@ TEST( Pose3, between )
 	Pose3 T(R,t);
 
 	Pose3 expected = inverse(T) * pose1;
-	Matrix actualH1,actualH2;
-	Pose3 actual = between(T, pose1, actualH1,actualH2);
+	Matrix actualDBetween1,actualDBetween2;
+	Pose3 actual = between(T, pose1, actualDBetween1,actualDBetween2);
 	CHECK(assert_equal(expected,actual));
 
 	Matrix numericalH1 = numericalDerivative21(between<Pose3> , T, pose1, 1e-5);
-	CHECK(assert_equal(numericalH1,actualH1)); // chain rule does not work ??
+	CHECK(assert_equal(numericalH1,actualDBetween1)); // chain rule does not work ??
 
 	Matrix numericalH2 = numericalDerivative22(between<Pose3> , T, pose1, 1e-5);
-	CHECK(assert_equal(numericalH2,actualH2));
+	CHECK(assert_equal(numericalH2,actualDBetween2));
 }
 
 /* ************************************************************************* */
