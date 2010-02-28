@@ -114,6 +114,33 @@ TEST( Pose2, transform_to )
 }
 
 /* ************************************************************************* */
+Point2 transform_from_proxy(const Pose2& pose, const Point2& point) {
+	return transform_from(pose, point);
+}
+
+TEST (Pose2, transform_from)
+{
+	Pose2 pose(1., 0., M_PI_2);
+	Point2 pt(2., 1.);
+	Matrix H1, H2;
+	Point2 actual = transform_from(pose, pt, H1, H2);
+
+	Point2 expected(0., 2.);
+	CHECK(assert_equal(expected, actual));
+
+	Matrix H1_expected = Matrix_(2, 3, 0., -1., -2., 1., 0., -1.);
+	Matrix H2_expected = Matrix_(2, 2, 0., -1., 1., 0.);
+
+	Matrix numericalH1 = numericalDerivative21(transform_from_proxy, pose, pt, 1e-5);
+	CHECK(assert_equal(H1_expected, H1));
+	CHECK(assert_equal(H1_expected, numericalH1));
+
+	Matrix numericalH2 = numericalDerivative22(transform_from_proxy, pose, pt, 1e-5);
+	CHECK(assert_equal(H2_expected, H2));
+	CHECK(assert_equal(H2_expected, numericalH2));
+}
+
+/* ************************************************************************* */
 TEST(Pose2, compose_a)
 {
   //cout << "compose_a" << endl;

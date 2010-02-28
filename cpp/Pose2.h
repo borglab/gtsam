@@ -102,8 +102,8 @@ namespace gtsam {
   Matrix Dtransform_to2(const Pose2& pose, const Point2& point);
 
   /** Return point coordinates in global frame */
-  inline Point2 transform_from(const Pose2& pose, const Point2& point) {
-    return rotate(pose.r(), point)+pose.t(); }
+  Point2 transform_from(const Pose2& pose, const Point2& point,
+  		boost::optional<Matrix&> H1 = boost::none, boost::optional<Matrix&> H2 = boost::none);
 
   /** Return relative pose between p1 and p2, in p1 coordinate frame */
   Pose2 between(const Pose2& p1, const Pose2& p2,

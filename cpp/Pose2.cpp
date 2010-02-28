@@ -73,6 +73,15 @@ namespace gtsam {
   }
 
   /* ************************************************************************* */
+  Point2 transform_from(const Pose2& pose, const Point2& point,
+  		boost::optional<Matrix&> H1, boost::optional<Matrix&> H2) {
+  	Point2 point_transformed = rotate(pose.r(), point, H1, H2) + pose.t();
+  	Matrix R = pose.r().matrix();
+  	if (H1) *H1 = collect(2, &R, &(*H1));
+    return  point_transformed;
+  }
+
+  /* ************************************************************************* */
   Pose2 between(const Pose2& p1, const Pose2& p2, boost::optional<Matrix&> H1,
 			boost::optional<Matrix&> H2) {
   	// get cosines and sines from rotation matrices
