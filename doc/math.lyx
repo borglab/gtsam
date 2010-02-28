@@ -58,6 +58,10 @@ Frank Dellaert
 Review of Lie Groups
 \end_layout
 
+\begin_layout Subsection
+A Manifold and a Group
+\end_layout
+
 \begin_layout Standard
 \begin_inset FormulaMacro
 \newcommand{\xhat}{\hat{x}}
@@ -137,7 +141,91 @@ that maps elements in G to an element in
 \end_inset
 
 .
- For 
+\end_layout
+
+\begin_layout Subsection
+Lie Algebra
+\end_layout
+
+\begin_layout Standard
+The Lie Algebra 
+\begin_inset Formula $\gg$
+\end_inset
+
+ is called an algebra because it is endowed with a binary operation, the
+ Lie bracket 
+\begin_inset Formula $[X,Y]$
+\end_inset
+
+, the properties of which are closely related to the group operation of
+ 
+\begin_inset Formula $G$
+\end_inset
+
+.
+ For example, in matrix Lie groups, the Lie bracket is given by 
+\begin_inset Formula $[A,B]\define AB-BA$
+\end_inset
+
+.
+ The Lie bracket does not mimick the group operation, as in non-commutative
+ Lie groups we do not have the usual simplification 
+\begin_inset Formula \[
+e^{Z}=e^{X}e^{Y}\neq e^{X+Y}\]
+
+\end_inset
+
+where 
+\begin_inset Formula $X$
+\end_inset
+
+, 
+\begin_inset Formula $Y$
+\end_inset
+
+, and 
+\begin_inset Formula $Z$
+\end_inset
+
+ elements of the Lie algebra 
+\begin_inset Formula $\gg$
+\end_inset
+
+.
+ Instead, 
+\begin_inset Formula $Z$
+\end_inset
+
+ can be calculated using the Baker-Campbell-Hausdorff (BCH) formula:
+\begin_inset Foot
+status collapsed
+
+\begin_layout Plain Layout
+http://en.wikipedia.org/wiki/Baker–Campbell–Hausdorff_formula
+\end_layout
+
+\end_inset
+
+
+\begin_inset Formula \[
+Z=X+Y+[X,Y]/2+[X-Y,[X,Y]]/12-[Y,[X,[X,Y]]]/24+\ldots\]
+
+\end_inset
+
+For commutative groups the bracket is zero and we recover 
+\begin_inset Formula $Z=X+Y$
+\end_inset
+
+.
+ For non-commutative groups we can use the BCH formula to approximate it.
+\end_layout
+
+\begin_layout Subsection
+Exponential Coordinates
+\end_layout
+
+\begin_layout Standard
+For 
 \begin_inset Formula $n$
 \end_inset
 
@@ -149,7 +237,7 @@ that maps elements in G to an element in
 \begin_inset Formula $\mathbb{R}^{n}$
 \end_inset
 
-, and we can define the map
+, and we can define the mapping
 \begin_inset Formula \[
 \hat{}:\mathbb{R}^{n}\rightarrow\gg\]
 
@@ -190,7 +278,34 @@ which maps
 \begin_inset Formula $n\times n$
 \end_inset
 
- matrices.
+ matrices, and the map is given by
+\begin_inset Formula \begin{equation}
+\xhat=\sum_{i=1}^{n}x_{i}G^{i}\label{eq:generators}\end{equation}
+
+\end_inset
+
+where the 
+\begin_inset Formula $G^{i}$
+\end_inset
+
+ are 
+\begin_inset Formula $n\times n$
+\end_inset
+
+ matrices known as the Lie group generators.
+ The meaning of the map 
+\begin_inset Formula $x\rightarrow\xhat$
+\end_inset
+
+ will depend on the group 
+\begin_inset Formula $G$
+\end_inset
+
+ and will be very intuitive.
+\end_layout
+
+\begin_layout Subsection
+The Adjoint Map
 \end_layout
 
 \begin_layout Standard
@@ -385,10 +500,6 @@ e^{\yhat} & =ge^{-\xhat}g^{-1}=e^{\Ad g\left(-\xhat\right)}\nonumber \\
 
 \end_inset
 
-
-\end_layout
-
-\begin_layout Standard
 In other words, and this is very intuitive in hindsight, the inverse is
  just negation of 
 \begin_inset Formula $\xhat$
@@ -512,6 +623,13 @@ Hence, now we undo
 
 \begin_layout Section
 Derivatives of Actions
+\begin_inset CommandInset label
+LatexCommand label
+name "sec:Derivatives-of-Actions"
+
+\end_inset
+
+
 \end_layout
 
 \begin_layout Standard
@@ -536,70 +654,129 @@ Derivatives of Actions
 \end_layout
 
 \begin_layout Standard
-When a Lie group 
+The (usual) action of an 
+\begin_inset Formula $n$
+\end_inset
+
+-dimensional matrix group 
 \begin_inset Formula $G$
 \end_inset
 
- acts on a vector space 
-\begin_inset Formula $V$
+ is matrix-vector multiplication on 
+\begin_inset Formula $\mathbb{R}^{n}$
 \end_inset
 
-, we are interested in the derivatives of 
+, 
 \begin_inset Formula \[
-f_{1}\left(g\right)=gv\mbox{ and }f_{2}(v)=gv\]
+q=Tp\]
 
 \end_inset
 
 with 
-\begin_inset Formula $f_{1}:G\rightarrow V$
+\begin_inset Formula $p,q\in\mathbb{R}^{n}$
 \end_inset
 
  and 
-\begin_inset Formula $f_{2}:V\rightarrow V$
+\begin_inset Formula $T\in GL(n)$
 \end_inset
 
 .
- The brilliance of Lie group theory is that we only need to know how the
- generators of the group act around the group's identity element 
-\begin_inset Formula $g=id$
+ Let us first do away with the derivative in 
+\begin_inset Formula $p$
 \end_inset
 
-, and then we can use the Adjoint map to effectuate that action in the correct
- frame of reference.
- Specifically, if 
+, which is easy:
 \begin_inset Formula \[
-H_{v}=\left[\begin{array}{ccc}
-\frac{\partial f_{1}}{\partial x_{1}} & \ldots & \frac{\partial f_{1}}{\partial x_{n}}\end{array}\right]\rvert_{g=id}\]
+\deriv{\left(Tp\right)}p=T\]
 
 \end_inset
 
-is the 
-\begin_inset Formula $m\times n$
+We would now like to know what an incremental action 
+\begin_inset Formula $\xhat$
 \end_inset
 
- Jacobian of the group action on 
-\begin_inset Formula $\mbox{v\in}V$
-\end_inset
-
-with respect to an incremental change 
-\begin_inset Formula $x$
-\end_inset
-
-, we have 
+ would do, through the exponential map
 \begin_inset Formula \[
-\Jac{f_{1}}xg=H_{v}\Ad g\]
+q(x)=Te^{\xhat}p\]
 
 \end_inset
 
-The meaning of 
-\begin_inset Formula $H$
+with derivative
+\begin_inset Formula \[
+\deriv{q(x)}x=T\deriv{}x\left(e^{\xhat}p\right)\]
+
 \end_inset
 
- will depend on the group 
-\begin_inset Formula $G$
+Since the matrix exponential is given by the series
+\begin_inset Formula \[
+e^{A}=I+A+\frac{A^{2}}{2!}+\frac{A^{3}}{3!}+\ldots\]
+
 \end_inset
 
- and will be very intuitive!
+we have, to first order
+\begin_inset Formula \[
+e^{\xhat}p=p+\xhat p+\ldots\]
+
+\end_inset
+
+and the derivative of an incremental action x at the origin is
+\begin_inset Formula \[
+H_{p}\define\deriv{e^{\xhat}p}x=\deriv{\left(\xhat p\right)}x\]
+
+\end_inset
+
+Recalling the definition 
+\begin_inset CommandInset ref
+LatexCommand eqref
+reference "eq:generators"
+
+\end_inset
+
+ of the map 
+\begin_inset Formula $x\rightarrow\xhat$
+\end_inset
+
+, we can calculate 
+\family roman
+\series medium
+\shape up
+\size normal
+\emph off
+\bar no
+\noun off
+\color none
+
+\begin_inset Formula $\xhat p$
+\end_inset
+
+
+\family default
+\series default
+\shape default
+\size default
+\emph default
+\bar default
+\noun default
+\color inherit
+ as (using tensor notation)
+\begin_inset Formula \[
+\left(\xhat p\right)_{jk}=G_{jk}^{i}x_{i}p^{k}\]
+
+\end_inset
+
+and hence the derivative is
+\begin_inset Formula \[
+\left(H_{p}\right)_{j}^{i}=G_{jk}^{i}p^{k}\]
+
+\end_inset
+
+and the final derivative becomes
+\begin_inset Formula \[
+\deriv{q(x)}x=TH_{p}\]
+
+\end_inset
+
+
 \end_layout
 
 \begin_layout Section
@@ -707,10 +884,62 @@ which maps 3-vectors
 \Skew{\omega}=\left[\begin{array}{ccc}
 0 & -\omega_{z} & \omega_{y}\\
 \omega_{z} & 0 & -\omega_{x}\\
--\omega_{y} & \omega_{x} & 0\end{array}\right]\]
+-\omega_{y} & \omega_{x} & 0\end{array}\right]=\omega_{x}G^{x}+\omega_{y}G^{y}+\omega_{z}G^{z}\]
 
 \end_inset
 
+where the 
+\begin_inset Formula $G^{i}$
+\end_inset
+
+ are the generators for 
+\begin_inset Formula $\SOthree$
+\end_inset
+
+,
+\begin_inset Formula \[
+G^{x}=\left(\begin{array}{ccc}
+0 & 0 & 0\\
+0 & 0 & -1\\
+0 & 1 & 0\end{array}\right)\mbox{}G^{y}=\left(\begin{array}{ccc}
+0 & 0 & 1\\
+0 & 0 & 0\\
+-1 & 0 & 0\end{array}\right)\mbox{ }G^{z}=\left(\begin{array}{ccc}
+0 & -1 & 0\\
+1 & 0 & 0\\
+0 & 0 & 0\end{array}\right)\]
+
+\end_inset
+
+corresponding to a rotation around 
+\begin_inset Formula $X$
+\end_inset
+
+, 
+\begin_inset Formula $Y$
+\end_inset
+
+, and 
+\begin_inset Formula $Z$
+\end_inset
+
+, respectively.
+ The Lie bracket 
+\begin_inset Formula $[x,y]$
+\end_inset
+
+ corresponds to the cross product 
+\begin_inset Formula $x\times y$
+\end_inset
+
+ in 
+\begin_inset Formula $\Rthree$
+\end_inset
+
+.
+\end_layout
+
+\begin_layout Standard
 For every 
 \begin_inset Formula $3-$
 \end_inset
@@ -941,9 +1170,7 @@ Derivatives of Actions
 \end_layout
 
 \begin_layout Standard
-The beauty of Lie group theory comes in play when we talk about the derivative
- of a group action.
- In the case of 
+In the case of 
 \begin_inset Formula $\SOthree$
 \end_inset
 
@@ -962,153 +1189,42 @@ We would now like to know what an incremental rotation parameterized by
 \begin_inset Formula $\omega$
 \end_inset
 
- would do
+ would do:
 \begin_inset Formula \[
-\deriv q{\omega}=\deriv{}{\omega}\left(Rp\right)=\deriv{}{\omega}\left(e^{\Skew{\omega}}p\right)\]
+q(\omega)=Re^{\Skew{\omega}}p\]
 
 \end_inset
 
-Since
+hence the derivative (following the exposition in Section 
+\begin_inset CommandInset ref
+LatexCommand ref
+reference "sec:Derivatives-of-Actions"
+
+\end_inset
+
+):
 \begin_inset Formula \[
-e^{A}=I+A+\frac{A^{2}}{2!}+\frac{A^{3}}{3!}+\ldots\]
+\deriv{q(\omega)}{\omega}=R\deriv{}{\omega}\left(e^{\Skew{\omega}}p\right)=R\deriv{}{\omega}\left(\Skew{\omega}p\right)=RH_{p}\]
 
 \end_inset
 
-and derivative is linear and we are only interested in first order we have
-\begin_inset Formula \[
-\deriv{e^{\Skew{\omega}}}{\omega}=\deriv{\Skew{\omega}}{\omega}=\omega_{x}G_{1}+\omega_{y}G_{2}+\omega_{z}G_{3}\]
-
-\end_inset
-
-Specifically, the generators for 
-\begin_inset Formula $\SOthree$
-\end_inset
-
- are
-\begin_inset Formula \[
-G_{1}=\left(\begin{array}{ccc}
-0 & 0 & 0\\
-0 & 0 & -1\\
-0 & 1 & 0\end{array}\right)\mbox{}G_{2}=\left(\begin{array}{ccc}
-0 & 0 & 1\\
-0 & 0 & 0\\
--1 & 0 & 0\end{array}\right)\mbox{ }G_{1}=\left(\begin{array}{ccc}
-0 & -1 & 0\\
-1 & 0 & 0\\
-0 & 0 & 0\end{array}\right)\]
-
-\end_inset
-
-corresponding to a rotation around 
-\begin_inset Formula $X$
-\end_inset
-
-, 
-\begin_inset Formula $Y$
-\end_inset
-
-, and 
-\begin_inset Formula $Z$
-\end_inset
-
-, respectively.
- When given an incremental angular velocity 
-\begin_inset Formula $\omega$
-\end_inset
-
-, we obtain the effect of the group action around the identity: 
-\begin_inset Formula \[
-H\omega=\omega_{x}G_{1}+\omega_{y}G_{2}+\omega_{z}G_{3}=\left[\begin{array}{ccc}
-0 & -\omega_{z} & \omega_{y}\\
-\omega_{z} & 0 & -\omega_{x}\\
--\omega_{y} & \omega_{x} & 0\end{array}\right]=\Skew{\omega}\]
-
-\end_inset
-
-Hence, at the origin, the effect of an incremental action 
-\begin_inset Formula $\omega$
-\end_inset
-
- on a point 
-\begin_inset Formula $p$
-\end_inset
-
- is a velocity
-\begin_inset Formula \[
-\Skew{\omega}p=\omega\times p\]
-
-\end_inset
-
-We can write this as a 
-\begin_inset Formula $3\times3$
-\end_inset
-
- Jacobian 
+To calculate 
 \begin_inset Formula $H_{p}$
 \end_inset
 
- that is multipled with 
-\begin_inset Formula $\omega$
-\end_inset
-
-, 
+ we make use of 
 \begin_inset Formula \[
-\omega\times p=-p\times\omega=-\Skew p\omega=H_{p}\omega\]
+\Skew{\omega}p=\omega\times p=-p\times\omega=\Skew{-p}\omega\]
 
 \end_inset
 
-Now, if we want to apply this in a frame 
-\begin_inset Formula $R$
-\end_inset
-
-, we need to do something quite similar to the Adjoint map: (a) transform
- the point 
-\begin_inset Formula $p$
-\end_inset
-
- to the origin using 
-\begin_inset Formula $R$
-\end_inset
-
-, apply the action 
-\begin_inset Formula $\Skew{\omega}$
-\end_inset
-
-, and transform back with 
-\begin_inset Formula $R^{T}$
-\end_inset
-
-.
- In short
+Hence, the final derivative of an action in its first argument is
 \begin_inset Formula \[
-q=R^{T}e^{\Skew{\omega}}Rp=\exp\left(\Ad{R^{T}}\Skew{\omega}\right)p=\exp\left(\Skew{R^{T}\omega}\right)p\]
+\deriv{q(\omega)}{\omega}=RH_{p}=R\Skew{-p}\]
 
 \end_inset
 
-and hence the velocity becomes
-\begin_inset Formula \[
-\Skew{R^{T}\omega}\times p=-\Skew pR^{T}\omega=-R^{T}R\Skew pR^{T}\omega=-R^{T}\Skew{Rp}\omega=R^{T}H_{Rp}\omega\]
 
-\end_inset
-
-This is quite intuitive in hindsight: we transform 
-\begin_inset Formula $p$
-\end_inset
-
- to 
-\begin_inset Formula $Rp$
-\end_inset
-
-, calculate the velocity by 
-\begin_inset Formula $H_{Rp}$
-\end_inset
-
-, and transform back by the rotation 
-\begin_inset Formula $R^{T}$
-\end_inset
-
-.
- 
 \end_layout
 
 \begin_layout Section
@@ -1117,25 +1233,25 @@ This is quite intuitive in hindsight: we transform
 
 \begin_layout Standard
 \begin_inset FormulaMacro
-\newcommand{\Rsix}{\mathfrak{\mathbb{R}^{6}}}
+\renewcommand{\Rsix}{\mathfrak{\mathbb{R}^{6}}}
 {\mathfrak{\mathbb{R}^{6}}}
 \end_inset
 
 
 \begin_inset FormulaMacro
-\newcommand{\SEthree}{SE(3)}
+\renewcommand{\SEthree}{SE(3)}
 {SE(3)}
 \end_inset
 
 
 \begin_inset FormulaMacro
-\newcommand{\sethree}{\mathfrak{se(3)}}
+\renewcommand{\sethree}{\mathfrak{se(3)}}
 {\mathfrak{se(3)}}
 \end_inset
 
 
 \begin_inset FormulaMacro
-\newcommand{\xihat}{\hat{\xi}}
+\renewcommand{\xihat}{\hat{\xi}}
 {\hat{\xi}}
 \end_inset
 
