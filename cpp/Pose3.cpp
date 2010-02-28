@@ -16,6 +16,21 @@ namespace gtsam {
   /** Explicit instantiation of base class to export members */
   INSTANTIATE_LIE(Pose3);
 
+  static const Matrix I3 = eye(3), I6 = eye(6), Z3 = zeros(3, 3);
+
+  /* ************************************************************************* */
+  // Calculate Adjoint map
+  // Ad_pose is 6*6 matrix that when applied to twist xi, returns Ad_pose(xi)
+  // Experimental - unit tests of derivatives based on it do not check out yet
+  static Matrix AdjointMap(const Pose3& p) {
+		const Matrix R = p.rotation().matrix();
+		const Vector t = p.translation().vector();
+		Matrix A = skewSymmetric(t)*R;
+		Matrix DR = collect(2, &R, &Z3);
+		Matrix Dt = collect(2, &A, &R);
+		return gtsam::stack(2, &DR, &Dt);
+	}
+
   /* ************************************************************************* */
   void Pose3::print(const string& s) const {
     R_.print(s + ".R");
@@ -40,7 +55,7 @@ namespace gtsam {
 			return Pose3(Rot3(), expmap<Point3> (u));
 		else {
 			Matrix W = skewSymmetric(w/t);
-			Matrix A = eye(3, 3) + ((1 - cos(t)) / t) * W + ((t - sin(t)) / t) * (W * W);
+			Matrix A = I3 + ((1 - cos(t)) / t) * W + ((t - sin(t)) / t) * (W * W);
 			return Pose3(expmap<Rot3> (w), expmap<Point3> (A * u));
 		}
   }
@@ -52,7 +67,7 @@ namespace gtsam {
 	    return concatVectors(2, &w, &T);
 		else {
 			Matrix W = skewSymmetric(w/t);
-			Matrix Ainv = eye(3, 3) - 0.5*t* W + ((2*sin(t)-t*(1+cos(t)))/2*sin(t)) * (W * W);
+			Matrix Ainv = I3 - 0.5*t* W + ((2*sin(t)-t*(1+cos(t)))/2*sin(t)) * (W * W);
 			Vector u = Ainv*T;
 	    return concatVectors(2, &w, &u);
 		}
@@ -104,8 +119,7 @@ namespace gtsam {
 #else
     Matrix DR = Drotate1(pose.rotation(), p);
 #endif
-    Matrix Dt = eye(3);
-    return collect(2,&DR,&Dt);
+    return collect(2,&DR,&I3);
   }
 
   /* ************************************************************************* */
@@ -133,36 +147,49 @@ namespace gtsam {
   }
 
   /* ************************************************************************* */
-  // compose = Pose3(compose(R1,R2),transform_from(p1,t2);
-
+  // compose = Pose3(compose(R1,R2),transform_from(p1,t2)
   Matrix Dcompose1(const Pose3& p1, const Pose3& p2) {
-  	Matrix DR_R1 = p2.rotation().transpose();
-		Matrix DR_t1 = zeros(3, 3);
+#ifdef SLOW_BUT_CORRECT_EXPMAP
+		// actually does NOT pan out at the moment
+		return AdjointMap(p2);
+#else
+		const Rot3& R2 = p2.rotation();
+		const Point3& t2 = p2.translation();
+  	Matrix DR_R1 = R2.transpose(), DR_t1 = Z3;
 		Matrix DR = collect(2, &DR_R1, &DR_t1);
-		Matrix Dt = Dtransform_from1(p1, p2.translation());
+		Matrix Dt = Dtransform_from1(p1, t2);
 		return gtsam::stack(2, &DR, &Dt);
+#endif
 	}
 
 	Matrix Dcompose2(const Pose3& p1, const Pose3& p2) {
+#ifdef SLOW_BUT_CORRECT_EXPMAP
+		return I6;
+#else
 		Matrix R1 = p1.rotation().matrix();
-		const static Matrix I = eye(3,3);
-		const static Matrix Z3 = zeros(3, 3);
-		Matrix DR = collect(2, &I, &Z3);
+		Matrix DR = collect(2, &I3, &Z3);
 		Matrix Dt = collect(2, &Z3, &R1);
 		return gtsam::stack(2, &DR, &Dt);
+#endif
 	}
 
   /* ************************************************************************* */
   // inverse = Pose3(inverse(R),-unrotate(R,t));
+	// TODO: combined function will save !
 	Matrix Dinverse(const Pose3& p) {
-		Matrix Rt = p.rotation().transpose();
-		Matrix DR_R1 = -p.rotation().matrix();
-		Matrix DR_t1 = zeros(3, 3);
+#ifdef SLOW_BUT_CORRECT_EXPMAP
+		// actually does NOT pan out at the moment
+		return - AdjointMap(p);
+#else
+		const Rot3& R = p.rotation();
+		const Point3& t = p.translation();
+		Matrix Rt = R.transpose();
+		Matrix DR_R1 = -R.matrix(), DR_t1 = Z3;
+		Matrix Dt_R1 = -skewSymmetric(unrotate(R,t).vector()), Dt_t1 = -Rt;
 		Matrix DR = collect(2, &DR_R1, &DR_t1);
-		Matrix Dt_R1 = -skewSymmetric(unrotate(p.rotation(),p.translation()).vector());
-		Matrix Dt_t1 = -Rt;
 		Matrix Dt = collect(2, &Dt_R1, &Dt_t1);
 		return gtsam::stack(2, &DR, &Dt);
+#endif
 	}
 
   /* ************************************************************************* */
