@@ -82,6 +82,11 @@ inline bool operator!=(const Matrix& A, const Matrix& B) {
 bool assert_equal(const Matrix& A, const Matrix& B, double tol = 1e-9);
 
 /**
+ * equals with an tolerance, prints out message if unequal
+ */
+bool assert_equal(const std::list<Matrix>& As, const std::list<Matrix>& Bs, double tol = 1e-9);
+
+/**
  * overload * for matrix-vector multiplication (as BOOST does not)
  */
 inline Vector operator*(const Matrix& A, const Vector & v) { return prod(A,v);}

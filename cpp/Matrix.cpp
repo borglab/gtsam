@@ -143,6 +143,19 @@ bool assert_equal(const Matrix& expected, const Matrix& actual, double tol) {
 }
 
 /* ************************************************************************* */
+bool assert_equal(const std::list<Matrix>& As, const std::list<Matrix>& Bs, double tol) {
+	if (As.size() != Bs.size()) return false;
+
+	list<Matrix>::const_iterator itA, itB;
+	itA = As.begin(); itB = Bs.begin();
+	for (; itA != As.end(); itA++, itB++)
+		if (!assert_equal(*itB, *itA, tol))
+			return false;
+
+	return true;
+}
+
+/* ************************************************************************* */
 void multiplyAdd(double alpha, const Matrix& A, const Vector& x, Vector& e) {
 #if defined CBLAS
 
