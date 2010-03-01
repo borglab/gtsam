@@ -113,13 +113,14 @@ namespace gtsam {
 
   /* ************************************************************************* */
   Matrix Dtransform_from1(const Pose3& pose, const Point3& p) {
-#ifdef NEW_EXMAP
-    Point3 q = transform_from(pose,p);
-    Matrix DR = skewSymmetric(-q.x(), -q.y(), -q.z());
+#ifdef SLOW_BUT_CORRECT_EXPMAP
+		const Matrix R = pose.rotation().matrix();
+    Matrix DR = R*skewSymmetric(-p.x(), -p.y(), -p.z());
+    return collect(2,&DR,&R);
 #else
     Matrix DR = Drotate1(pose.rotation(), p);
-#endif
     return collect(2,&DR,&I3);
+#endif
   }
 
   /* ************************************************************************* */

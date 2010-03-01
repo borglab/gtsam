@@ -105,26 +105,26 @@ TEST( Pose3, compose_inverse)
 /* ************************************************************************* */
 TEST( Pose3, Dtransform_from1_a)
 {
-  Matrix computed = Dtransform_from1(T, P);
+  Matrix actualDtransform_from1 = Dtransform_from1(T, P);
   Matrix numerical = numericalDerivative21(transform_from,T,P);
-  CHECK(assert_equal(numerical,computed,error));
+  CHECK(assert_equal(numerical,actualDtransform_from1,error));
 }
 
 TEST( Pose3, Dtransform_from1_b)
 {
 	Pose3 origin;
-  Matrix computed = Dtransform_from1(origin, P);
+  Matrix actualDtransform_from1 = Dtransform_from1(origin, P);
   Matrix numerical = numericalDerivative21(transform_from,origin,P);
-  CHECK(assert_equal(numerical,computed,error));
+  CHECK(assert_equal(numerical,actualDtransform_from1,error));
 }
 
 TEST( Pose3, Dtransform_from1_c)
 {
 	Point3 origin;
 	Pose3 T0(R,origin);
-  Matrix computed = Dtransform_from1(T0, P);
+  Matrix actualDtransform_from1 = Dtransform_from1(T0, P);
   Matrix numerical = numericalDerivative21(transform_from,T0,P);
-  CHECK(assert_equal(numerical,computed,error));
+  CHECK(assert_equal(numerical,actualDtransform_from1,error));
 }
 
 TEST( Pose3, Dtransform_from1_d)
@@ -132,19 +132,19 @@ TEST( Pose3, Dtransform_from1_d)
 	Rot3 I;
 	Point3 t0(100,0,0);
 	Pose3 T0(I,t0);
-  Matrix computed = Dtransform_from1(T0, P);
+  Matrix actualDtransform_from1 = Dtransform_from1(T0, P);
   //print(computed, "Dtransform_from1_d computed:");
   Matrix numerical = numericalDerivative21(transform_from,T0,P);
   //print(numerical, "Dtransform_from1_d numerical:");
-  CHECK(assert_equal(numerical,computed,error));
+  CHECK(assert_equal(numerical,actualDtransform_from1,error));
 }
 
 /* ************************************************************************* */
 TEST( Pose3, Dtransform_from2)
 {
-  Matrix computed = Dtransform_from2(T);
+  Matrix actualDtransform_from2 = Dtransform_from2(T);
   Matrix numerical = numericalDerivative22(transform_from,T,P);
-  CHECK(assert_equal(numerical,computed,error));
+  CHECK(assert_equal(numerical,actualDtransform_from2,error));
 }
 
 /* ************************************************************************* */
