@@ -51,9 +51,9 @@ namespace gtsam {
 	}
 
 	/* ************************************************************************* */
-	// see libraries/caml/geometry/math.ml
-	Point2 rotate(const Rot2 & R, const Point2& p,
-			boost::optional<Matrix&> H1, boost::optional<Matrix&> H2) {
+  // see doc/math.lyx, SO(2) section
+	Point2 rotate(const Rot2 & R, const Point2& p, boost::optional<Matrix&> H1,
+			boost::optional<Matrix&> H2) {
 		Point2 q = R * p;
 		if (H1) *H1 = Matrix_(2, 1, -q.y(), q.x());
 		if (H2) *H2 = R.matrix();
@@ -61,11 +61,11 @@ namespace gtsam {
 	}
 
 	/* ************************************************************************* */
-	// see libraries/caml/geometry/math.lyx, derivative of unrotate
+  // see doc/math.lyx, SO(2) section
 	Point2 unrotate(const Rot2 & R, const Point2& p,
 			boost::optional<Matrix&> H1, boost::optional<Matrix&> H2) {
 		Point2 q = R.unrotate(p);
-		if (H1) *H1 = Matrix_(2, 1, q.y(), -q.x());
+		if (H1) *H1 = Matrix_(2, 1, q.y(), -q.x());  // R_{pi/2}q
 		if (H2) *H2 = R.transpose();
 		return q;
 	}
