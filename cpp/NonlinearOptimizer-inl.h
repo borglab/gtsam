@@ -147,6 +147,8 @@ namespace gtsam {
 		// if error decreased, return the new state
 		if (next.error_ <= error_)
 			return next;
+		else if (lambda_ / factor > 1e+80) // if lambda gets too big, something is broken
+			throw runtime_error("Lambda has grown too large!");
 		else {
 			// TODO: can we avoid copying the config ?
 			NonlinearOptimizer cautious(graph_, config_, solver_, lambda_ * factor);
