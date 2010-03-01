@@ -46,6 +46,14 @@ namespace tensors {
 			return Tensor3Expression<Tensor3, Index<N1, I> , Index<N2, J> , Index<N3,
 					K> > (*this);
 		}
+
+		/** convert to expression */
+		template<char I, char J, char K> Tensor3Expression<const Tensor3, Index<N1, I> ,
+				Index<N2, J> , Index<N3, K> > operator()(const Index<N1, I>& i,
+				const Index<N2, J>& j, const Index<N3, K>& k) const {
+			return Tensor3Expression<const Tensor3, Index<N1, I> , Index<N2, J> , Index<N3,
+					K> > (*this);
+		}
 	}; // Tensor3
 
 	/** Rank 3 permutation tensor */
