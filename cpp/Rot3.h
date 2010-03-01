@@ -106,6 +106,9 @@ namespace gtsam {
      */
     Vector ypr() const;
 
+    /** get the dimension by the type */
+    static inline size_t dim() { return 3; };
+
   private:
     /** Serialization function */
     friend class boost::serialization::access;

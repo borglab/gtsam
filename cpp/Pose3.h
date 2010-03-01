@@ -61,6 +61,9 @@ namespace gtsam {
 
     Pose3 transform_to(const Pose3& pose) const;
 
+    /** get the dimension by the type */
+    static inline size_t dim() { return 6; };
+
   private:
     /** Serialization function */
     friend class boost::serialization::access;

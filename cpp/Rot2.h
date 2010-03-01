@@ -75,6 +75,9 @@ namespace gtsam {
     /** rotate from world to rotated = R'*p */
     Point2 unrotate(const Point2& p) const;
 
+    /** get the dimension by the type */
+    static inline size_t dim() { return 1; };
+
   private:
     /** Serialization function */
     friend class boost::serialization::access;
