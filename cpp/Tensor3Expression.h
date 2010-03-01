@@ -86,7 +86,7 @@ namespace tensors {
 		/** Contracting with rank1 tensor */
 		template<class B>
 		inline Tensor2Expression<TimesRank1_<B> , J, K> operator*(
-				const Tensor1Expression<B, I> &b) {
+				const Tensor1Expression<B, I> &b) const {
 			return TimesRank1_<B> (*this, b);
 		}
 
