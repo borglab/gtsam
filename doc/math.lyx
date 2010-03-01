@@ -1233,25 +1233,25 @@ Hence, the final derivative of an action in its first argument is
 
 \begin_layout Standard
 \begin_inset FormulaMacro
-\renewcommand{\Rsix}{\mathfrak{\mathbb{R}^{6}}}
+\newcommand{\Rsix}{\mathfrak{\mathbb{R}^{6}}}
 {\mathfrak{\mathbb{R}^{6}}}
 \end_inset
 
 
 \begin_inset FormulaMacro
-\renewcommand{\SEthree}{SE(3)}
+\newcommand{\SEthree}{SE(3)}
 {SE(3)}
 \end_inset
 
 
 \begin_inset FormulaMacro
-\renewcommand{\sethree}{\mathfrak{se(3)}}
+\newcommand{\sethree}{\mathfrak{se(3)}}
 {\mathfrak{se(3)}}
 \end_inset
 
 
 \begin_inset FormulaMacro
-\renewcommand{\xihat}{\hat{\xi}}
+\newcommand{\xihat}{\hat{\xi}}
 {\hat{\xi}}
 \end_inset
 
@@ -1327,7 +1327,47 @@ v\end{array}\right]\rightarrow\xihat\define\left[\begin{array}{cc}
 
 Note we follow Frank Park's convention and reserve the first three components
  for rotation, and the last three for translation.
- Applying the exponential map to a twist 
+ Hence, with this parameterization, the generators for 
+\begin_inset Formula $\SEthree$
+\end_inset
+
+ are
+\begin_inset Formula \[
+G^{1}=\left(\begin{array}{cccc}
+0 & 0 & 0 & 0\\
+0 & 0 & -1 & 0\\
+0 & 1 & 0 & 0\\
+0 & 0 & 0 & 0\end{array}\right)\mbox{}G^{2}=\left(\begin{array}{cccc}
+0 & 0 & 1 & 0\\
+0 & 0 & 0 & 0\\
+-1 & 0 & 0 & 0\\
+0 & 0 & 0 & 0\end{array}\right)\mbox{ }G^{3}=\left(\begin{array}{cccc}
+0 & -1 & 0 & 0\\
+1 & 0 & 0 & 0\\
+0 & 0 & 0 & 0\\
+0 & 0 & 0 & 0\end{array}\right)\]
+
+\end_inset
+
+
+\begin_inset Formula \[
+G^{4}=\left(\begin{array}{cccc}
+0 & 0 & 0 & 1\\
+0 & 0 & 0 & 0\\
+0 & 0 & 0 & 0\\
+0 & 0 & 0 & 0\end{array}\right)\mbox{}G^{5}=\left(\begin{array}{cccc}
+0 & 0 & 0 & 0\\
+0 & 0 & 0 & 1\\
+0 & 0 & 0 & 0\\
+0 & 0 & 0 & 0\end{array}\right)\mbox{ }G^{6}=\left(\begin{array}{cccc}
+0 & 0 & 0 & 0\\
+0 & 0 & 0 & 0\\
+0 & 0 & 0 & 1\\
+0 & 0 & 0 & 0\end{array}\right)\]
+
+\end_inset
+
+Applying the exponential map to a twist 
 \begin_inset Formula $\xi$
 \end_inset
 
@@ -1482,85 +1522,55 @@ The action of
 
  by using homogeneous coordinates
 \begin_inset Formula \[
-q=\left[\begin{array}{cc}
+\hat{q}=\left[\begin{array}{c}
+q\\
+1\end{array}\right]=\left[\begin{array}{cc}
 R & t\\
 0 & 1\end{array}\right]\left[\begin{array}{c}
 p\\
-1\end{array}\right]\]
+1\end{array}\right]=T\hat{p}\]
 
 \end_inset
 
-
-\end_layout
-
-\begin_layout Standard
-The generators for 
-\begin_inset Formula $\SEthree$
-\end_inset
-
- are
-\begin_inset Formula \[
-G_{1}=\left(\begin{array}{cccc}
-0 & 0 & 0 & 0\\
-0 & 0 & -1 & 0\\
-0 & 1 & 0 & 0\\
-0 & 0 & 0 & 0\end{array}\right)\mbox{}G_{2}=\left(\begin{array}{cccc}
-0 & 0 & 1 & 0\\
-0 & 0 & 0 & 0\\
--1 & 0 & 0 & 0\\
-0 & 0 & 0 & 0\end{array}\right)\mbox{ }G_{1}=\left(\begin{array}{cccc}
-0 & -1 & 0 & 0\\
-1 & 0 & 0 & 0\\
-0 & 0 & 0 & 0\\
-0 & 0 & 0 & 0\end{array}\right)\]
-
-\end_inset
-
-
-\begin_inset Formula \[
-G_{4}=\left(\begin{array}{cccc}
-0 & 0 & 0 & 1\\
-0 & 0 & 0 & 0\\
-0 & 0 & 0 & 0\\
-0 & 0 & 0 & 0\end{array}\right)\mbox{}G_{5}=\left(\begin{array}{cccc}
-0 & 0 & 0 & 0\\
-0 & 0 & 0 & 1\\
-0 & 0 & 0 & 0\\
-0 & 0 & 0 & 0\end{array}\right)\mbox{ }G_{6}=\left(\begin{array}{cccc}
-0 & 0 & 0 & 0\\
-0 & 0 & 0 & 0\\
-0 & 0 & 0 & 1\\
-0 & 0 & 0 & 0\end{array}\right)\]
-
-\end_inset
-
-and hence a twist around the origin applies to homogeneous coordinates 
-\begin_inset Formula $\hat{p}\in\mathbb{R}^{4}$
-\end_inset
-
- as
-\begin_inset Formula \[
-\sum_{i}\xi_{i}G_{i}=\left(\begin{array}{cccc}
-0 & -\omega_{z} & \omega_{y} & v_{x}\\
-\omega_{z} & 0 & -\omega_{x} & v_{y}\\
--\omega_{y} & \omega_{x} & 0 & v_{z}\\
-0 & 0 & 0 & 0\end{array}\right)=\left[\begin{array}{cc}
-\Skew{\omega} & v\\
-0 & 0\end{array}\right]=\xihat\]
-
-\end_inset
-
-Hence, at the origin, an incremental action 
+We would now like to know what an incremental rotation parameterized by
+ 
 \begin_inset Formula $\xi$
 \end_inset
 
- on a point 
-\begin_inset Formula $p$
+ would do:
+\begin_inset Formula \[
+\hat{q}(\xi)=Te^{\xihat}\hat{p}\]
+
 \end_inset
 
- induces the velocity 
+hence the derivative (following the exposition in Section 
+\begin_inset CommandInset ref
+LatexCommand ref
+reference "sec:Derivatives-of-Actions"
+
+\end_inset
+
+):
 \begin_inset Formula \[
-\left[\begin{array}{cc}
+\deriv{\hat{q}(\xi)}{\xi}=T\deriv{}{\xi}\left(\xihat\hat{p}\right)=TH_{p}\]
+
+\end_inset
+
+where 
+\begin_inset Formula $\xihat\hat{p}$
+\end_inset
+
+ corresponds to a velocity in 
+\begin_inset Formula $\mathbb{R}^{4}$
+\end_inset
+
+ (in the local 
+\begin_inset Formula $T$
+\end_inset
+
+ frame): 
+\begin_inset Formula \[
+\xihat\hat{p}=\left[\begin{array}{cc}
 \Skew{\omega} & v\\
 0 & 0\end{array}\right]\left[\begin{array}{c}
 p\\
@@ -1570,16 +1580,23 @@ p\\
 
 \end_inset
 
-We can write this as a velocity in 
+Notice how velocities are anologous to points at infinity in projective
+ geometry: they correspond to free vectors indicating a direction and magnitude
+ of change.
+ 
+\end_layout
+
+\begin_layout Standard
+By only taking the top three rows, we can write this as a velocity in 
 \begin_inset Formula $\Rthree$
 \end_inset
 
- as the product of a 
+, as the product of a 
 \begin_inset Formula $3\times6$
 \end_inset
 
  matrix 
-\begin_inset Formula $H(p)$
+\begin_inset Formula $H_{p}$
 \end_inset
 
  that acts upon the exponential coordinates 
@@ -1591,81 +1608,33 @@ We can write this as a velocity in
 \omega\times p+v=-p\times\omega+v=\left[\begin{array}{cc}
 -\Skew p & I_{3}\end{array}\right]\left[\begin{array}{c}
 \omega\\
-v\end{array}\right]=H(p)\xi\]
+v\end{array}\right]=H_{p}\xi\]
 
 \end_inset
 
-Now, if we want to apply this in a frame 
-\begin_inset Formula $T$
-\end_inset
-
-, we can (1) transform the point 
-\begin_inset Formula $p$
-\end_inset
-
- to the origin using 
-\begin_inset Formula $T^{-1}$
-\end_inset
-
-, apply the action 
-\begin_inset Formula $\xihat$
-\end_inset
-
-, and transform back to 
-\begin_inset Formula $T$
-\end_inset
-
-.
- In short
+Hence, the final derivative of the group action is
 \begin_inset Formula \[
-\left[\begin{array}{c}
-q\\
-1\end{array}\right]=Te^{\xihat}T^{-1}\left[\begin{array}{c}
-p\\
-1\end{array}\right]=\exp\left(\Ad T\xihat\right)\left[\begin{array}{c}
-p\\
-1\end{array}\right]\]
+\deriv{\hat{q}(\xi)}{\xi}=T\hat{H}_{p}=\left[\begin{array}{cc}
+R & t\\
+0 & 1\end{array}\right]\left[\begin{array}{cc}
+\Skew{-p} & I_{3}\\
+0 & 0\end{array}\right]\]
 
 \end_inset
 
-To get the velocity of the point in frame 
-\begin_inset Formula $T$
+in homogenous coordinates.
+ In 
+\begin_inset Formula $\Rthree$
 \end_inset
 
-, we have
+ this becomes:
 \begin_inset Formula \[
-H(p)\Ad T\xi=\left[\begin{array}{cc}
--\Skew p & I_{3}\end{array}\right]\left[\begin{array}{cc}
-R & 0\\
-\Skew tR & R\end{array}\right]\xi=R\left[\begin{array}{cc}
--\Skew{T^{-1}p} & I_{3}\end{array}\right]\xi=H(T^{-1}p)\xi\]
+\deriv{q(\xi)}{\xi}=R\left[\begin{array}{cc}
+-\Skew p & I_{3}\end{array}\right]\]
 
 \end_inset
 
-where I made use of 
-\begin_inset Formula $\Skew{t-p}R=-RR^{T}\Skew{p-t}R=-R\Skew{R^{T}(p-t)}=-R\Skew{T^{-1}p}$
-\end_inset
 
-.
- This is intuitive in hindsight: we transform 
-\begin_inset Formula $p$
-\end_inset
-
- back to the orgin by 
-\begin_inset Formula $T^{-1}p$
-\end_inset
-
-, apply 
-\begin_inset Formula $H(.)$
-\end_inset
-
- to get a velocity, and only need the rotation 
-\begin_inset Formula $R$
-\end_inset
-
- to transform it back to the orginal frame (as velocities are not affected
- by translation).
- 
 \end_layout
 
 \begin_layout Section
@@ -1800,30 +1769,6 @@ which maps the angle
 
 \end_inset
 
-Note that 
-\begin_inset Formula \begin{equation}
-\skew{\theta}\left[\begin{array}{c}
-x\\
-y\end{array}\right]=\theta R_{\pi/2}\left[\begin{array}{c}
-x\\
-y\end{array}\right]=\theta\left[\begin{array}{c}
--y\\
-x\end{array}\right]\label{eq:RestrictedCross}\end{equation}
-
-\end_inset
-
-which acts like a restricted 
-\begin_inset Quotes eld
-\end_inset
-
-cross product
-\begin_inset Quotes erd
-\end_inset
-
- in the plane.
-\end_layout
-
-\begin_layout Standard
 The exponential map can be computed in closed form as
 \begin_inset Formula \[
 R=e^{\skew{\theta}}=\left[\begin{array}{cc}
@@ -1887,6 +1832,92 @@ between
 and between in its second argument,
 \begin_inset Formula \begin{eqnarray*}
 \frac{\partial\left(R_{1}^{T}R_{2}\right)}{\partial\theta_{2}} & = & 1\end{eqnarray*}
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Subsection
+Derivatives of Actions
+\end_layout
+
+\begin_layout Standard
+In the case of 
+\begin_inset Formula $\SOtwo$
+\end_inset
+
+ the vector space is 
+\begin_inset Formula $\Rtwo$
+\end_inset
+
+, and the group action corresponds to rotating a point
+\begin_inset Formula \[
+q=Rp\]
+
+\end_inset
+
+We would now like to know what an incremental rotation parameterized by
+ 
+\begin_inset Formula $\theta$
+\end_inset
+
+ would do:
+\begin_inset Formula \[
+q(\text{\theta})=Re^{\skew{\theta}}p\]
+
+\end_inset
+
+hence the derivative (following the exposition in Section 
+\begin_inset CommandInset ref
+LatexCommand ref
+reference "sec:Derivatives-of-Actions"
+
+\end_inset
+
+):
+\begin_inset Formula \[
+\deriv{q(\omega)}{\omega}=R\deriv{}{\omega}\left(e^{\skew{\theta}}p\right)=R\deriv{}{\omega}\left(\skew{\theta}p\right)=RH_{p}\]
+
+\end_inset
+
+Note that 
+\begin_inset Formula \begin{equation}
+\skew{\theta}\left[\begin{array}{c}
+x\\
+y\end{array}\right]=\theta R_{\pi/2}\left[\begin{array}{c}
+x\\
+y\end{array}\right]=\theta\left[\begin{array}{c}
+-y\\
+x\end{array}\right]\label{eq:RestrictedCross}\end{equation}
+
+\end_inset
+
+which acts like a restricted 
+\begin_inset Quotes eld
+\end_inset
+
+cross product
+\begin_inset Quotes erd
+\end_inset
+
+ in the plane.
+ Hence 
+\begin_inset Formula \[
+\skew{\theta}p=\left[\begin{array}{c}
+-y\\
+x\end{array}\right]\theta=H_{p}\theta\]
+
+\end_inset
+
+with 
+\begin_inset Formula $H_{p}=R_{pi/2}p$
+\end_inset
+
+.
+ Hence, the final derivative of an action in its first argument is
+\begin_inset Formula \[
+\deriv{q(\theta)}{\theta}=RH_{p}=RR_{pi/2}p=R_{pi/2}Rp=R_{pi/2}q\]
 
 \end_inset
 
@@ -1978,7 +2009,40 @@ Note we think of robots as having a pose
 
  and hence I switched the order above, reserving the first two components
  for translation and the last for rotation.
- Applying the exponential map to a twist 
+ 
+\family roman
+\series medium
+\shape up
+\size normal
+\emph off
+\bar no
+\noun off
+\color none
+The Lie group generators are
+\begin_inset Formula \[
+G^{x}=\left[\begin{array}{ccc}
+0 & 0 & 1\\
+0 & 0 & 0\\
+0 & 0 & 0\end{array}\right]\mbox{ }G^{y}=\left[\begin{array}{ccc}
+0 & 0 & 0\\
+0 & 0 & 1\\
+0 & 0 & 0\end{array}\right]\mbox{ }G^{\theta}=\left[\begin{array}{ccc}
+0 & -1 & 0\\
+1 & 0 & 0\\
+0 & 0 & 0\end{array}\right]\]
+
+\end_inset
+
+
+\family default
+\series default
+\shape default
+\size default
+\emph default
+\bar default
+\noun default
+\color inherit
+Applying the exponential map to a twist 
 \begin_inset Formula $\xi$
 \end_inset
 
@@ -2060,8 +2124,89 @@ We can just define all derivatives in terms of the above adjoint map:
 
 \end_layout
 
-\begin_layout Part
-Old Stuff
+\begin_layout Subsection
+The derivatives of Actions
+\end_layout
+
+\begin_layout Standard
+The action of 
+\begin_inset Formula $\SEtwo$
+\end_inset
+
+ on 2D points is done by embedding the points in 
+\begin_inset Formula $\mathbb{R}^{3}$
+\end_inset
+
+ by using homogeneous coordinates
+\begin_inset Formula \[
+\hat{q}=\left[\begin{array}{c}
+q\\
+1\end{array}\right]=\left[\begin{array}{cc}
+R & t\\
+0 & 1\end{array}\right]\left[\begin{array}{c}
+p\\
+1\end{array}\right]=T\hat{p}\]
+
+\end_inset
+
+Analoguous to 
+\begin_inset Formula $\SEthree$
+\end_inset
+
+, we can compute a velocity 
+\begin_inset Formula $\xihat\hat{p}$
+\end_inset
+
+ in the local 
+\begin_inset Formula $T$
+\end_inset
+
+ frame: 
+\begin_inset Formula \[
+\xihat\hat{p}=\left[\begin{array}{cc}
+\skew{\omega} & v\\
+0 & 0\end{array}\right]\left[\begin{array}{c}
+p\\
+1\end{array}\right]=\left[\begin{array}{c}
+\skew{\omega}p+v\\
+0\end{array}\right]\]
+
+\end_inset
+
+By only taking the top two rows, we can write this as a velocity in 
+\begin_inset Formula $\Rtwo$
+\end_inset
+
+, as the product of a 
+\begin_inset Formula $2\times3$
+\end_inset
+
+ matrix 
+\begin_inset Formula $H_{p}$
+\end_inset
+
+ that acts upon the exponential coordinates 
+\begin_inset Formula $\xi$
+\end_inset
+
+ directly:
+\begin_inset Formula \[
+\skew{\omega}p+v=v+R_{pi/2}p\omega=\left[\begin{array}{cc}
+I_{2} & R_{pi/2}p\end{array}\right]\left[\begin{array}{c}
+v\\
+\omega\end{array}\right]=H_{p}\xi\]
+
+\end_inset
+
+Hence, the final derivative of the group action is
+\begin_inset Formula \[
+\deriv{q(\xi)}{\xi}=R\left[\begin{array}{cc}
+I_{2} & R_{pi/2}p\end{array}\right]=\left[\begin{array}{cc}
+R & R_{pi/2}q\end{array}\right]\]
+
+\end_inset
+
+
 \end_layout
 
 \begin_layout Section
@@ -2091,43 +2236,10 @@ where
 \end_inset
 
  is an incremental rotation angle.
- The derivatives of 
-\series bold
-\emph on
-rotate
-\series default
-\emph default
- are then found easily, using
-\begin_inset Formula \begin{eqnarray*}
-\frac{\partial x'}{\partial\delta} & = & \frac{\partial(x\cos\theta'-y\sin\theta')}{\partial\delta}\\
- & = & \frac{\partial(x(\cos\theta\cos\delta-\sin\theta\sin\delta)-y(\sin\theta\cos\delta+\cos\theta\sin\delta))}{\partial\delta}\\
- & = & x(-\cos\theta\sin\delta-\sin\theta\cos\delta)-y(-\sin\theta\sin\delta+\cos\theta\cos\delta)\\
- & = & -x\sin\theta-y\cos\theta=-y'\end{eqnarray*}
-
-\end_inset
-
-
 \end_layout
 
 \begin_layout Standard
-\begin_inset Formula \begin{eqnarray*}
-\frac{\partial y'}{\partial\delta} & = & \frac{\partial(x\sin\theta'+y\cos\theta')}{\partial\delta}\\
- & = & \frac{\partial(x(\sin\theta\cos\delta+\cos\theta\sin\delta)+y(\cos\theta\cos\delta-\sin\theta\sin\delta))}{\partial\delta}\\
- & = & x(-\sin\theta\sin\delta+\cos\theta\cos\delta)+y(-\cos\theta\sin\delta-\sin\theta\cos\delta)\\
- & = & x\cos\theta-y\sin\theta=x'\end{eqnarray*}
-
-\end_inset
-
-
-\end_layout
-
-\begin_layout Standard
-\begin_inset Formula \[
-\frac{\partial p'}{\partial p}=\frac{\partial(Rp)}{\partial p}=R\]
-
-\end_inset
-
-Similarly, unrotate
+Derivatives of unrotate
 \end_layout
 
 \begin_layout Standard
@@ -2206,56 +2318,6 @@ The derivative of a cross product
 
 \begin_inset Formula \begin{equation}
 \frac{\partial(a\times b)}{\partial b}=\Skew a\label{eq:Dcross2}\end{equation}
-
-\end_inset
-
-
-\end_layout
-
-\begin_layout Section
-Rot3
-\end_layout
-
-\begin_layout Standard
-An incremental rotation is applied as (switched to right-multiply Jan 25
- 2010)
-\begin_inset Formula \[
-R'=R(I+\Omega)\]
-
-\end_inset
-
-where 
-\begin_inset Formula $\Omega=\Skew{\omega}$
-\end_inset
-
- is the skew symmetric matrix corresponding to the incremental rotation
- angles 
-\begin_inset Formula $\omega=(\omega_{x},\omega_{y},\omega_{z})$
-\end_inset
-
-.
- The derivatives of 
-\series bold
-\emph on
-rotate
-\series default
-\emph default
- are then found easily, using 
-\begin_inset CommandInset ref
-LatexCommand eqref
-reference "eq:Dcross1"
-
-\end_inset
-
-:
-\begin_inset Formula \[
-\frac{\partial(R(I+\Omega)x)}{\partial\omega}=\frac{\partial(R\Omega x)}{\partial\omega}=\frac{\partial(R\left(\omega\times x\right))}{\partial\omega}=R\frac{\partial\left(\omega\times x\right)}{\partial\omega}=R\Skew{-x}\]
-
-\end_inset
-
-
-\begin_inset Formula \[
-\frac{\partial(Rx)}{\partial x}=R\]
 
 \end_inset
 
