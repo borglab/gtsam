@@ -182,24 +182,19 @@ namespace gtsam {
 
   /* ************************************************************************* */
   Point3 unrotate(const Rot3& R, const Point3& p) {
-    return Point3(
-        R.r1().x() * p.x() + R.r1().y() * p.y() + R.r1().z() * p.z(),
-        R.r2().x() * p.x() + R.r2().y() * p.y() + R.r2().z() * p.z(),
-        R.r3().x() * p.x() + R.r3().y() * p.y() + R.r3().z() * p.z()
-    );
+    const Matrix Rt(R.transpose());
+    return Rt*p.vector(); // q = Rt*p
   }
 
   /* ************************************************************************* */
-  /** see libraries/caml/geometry/math.lyx, derivative of unrotate              */
-  /* ************************************************************************* */
-  Matrix Dunrotate1(const Rot3 & R, const Point3 & p) {
-    Point3 q = unrotate(R,p);
-    return skewSymmetric(q.x(), q.y(), q.z());
-  }
-
-  /* ************************************************************************* */
-  Matrix Dunrotate2(const Rot3 & R) {
-    return R.transpose();
+  // see doc/math.lyx, SO(3) section
+  Point3 unrotate(const Rot3& R, const Point3& p,
+  		boost::optional<Matrix&> H1, boost::optional<Matrix&> H2) {
+    const Matrix Rt(R.transpose());
+    Point3 q(Rt*p.vector()); // q = Rt*p
+    if (H1) *H1 = skewSymmetric(q.x(), q.y(), q.z());
+    if (H2) *H2 = Rt;
+    return q;
   }
 
   /* ************************************************************************* */

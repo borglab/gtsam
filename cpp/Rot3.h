@@ -188,8 +188,8 @@ namespace gtsam {
    * frame = R'*p
    */
   Point3 unrotate(const Rot3& R, const Point3& p);
-  Matrix Dunrotate1(const Rot3& R, const Point3& p);
-  Matrix Dunrotate2(const Rot3& R); // does not depend on p !
+  Point3 unrotate(const Rot3& R, const Point3& p,
+  	boost::optional<Matrix&> H1, boost::optional<Matrix&> H2);
 
   /**
    * compose two rotations i.e., R=R1*R2

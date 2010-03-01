@@ -213,47 +213,38 @@ TEST(Rot3, BCH)
 
 TEST( Rot3, Drotate1)
 {
-	Matrix computed = Drotate1(R, P);
+	Matrix actualDrotate1 = Drotate1(R, P);
 	Matrix numerical = numericalDerivative21(rotate, R, P);
-	CHECK(assert_equal(numerical,computed,error));
+	CHECK(assert_equal(numerical,actualDrotate1,error));
 }
 
 TEST( Rot3, Drotate1_)
 {
-	Matrix computed = Drotate1(inverse(R), P);
+	Matrix actualDrotate1 = Drotate1(inverse(R), P);
 	Matrix numerical = numericalDerivative21(rotate, inverse(R), P);
-	CHECK(assert_equal(numerical,computed,error));
+	CHECK(assert_equal(numerical,actualDrotate1,error));
 }
 
 TEST( Rot3, Drotate2_DNrotate2)
 {
-	Matrix computed = Drotate2(R);
+	Matrix actualDrotate2 = Drotate2(R);
 	Matrix numerical = numericalDerivative22(rotate, R, P);
-	CHECK(assert_equal(numerical,computed,error));
+	CHECK(assert_equal(numerical,actualDrotate2,error));
 }
 
 /* ************************************************************************* */
 TEST( Rot3, unrotate)
 {
 	Point3 w = R * P;
-	CHECK(assert_equal(unrotate(R,w),P));
-}
+	Matrix H1,H2;
+	Point3 actual = unrotate(R,w,H1,H2);
+	CHECK(assert_equal(P,actual));
 
-/* ************************************************************************* */
-// unrotate derivatives
+	Matrix numerical1 = numericalDerivative21(unrotate, R, w);
+	CHECK(assert_equal(numerical1,H1,error));
 
-TEST( Rot3, Dunrotate1)
-{
-	Matrix computed = Dunrotate1(R, P);
-	Matrix numerical = numericalDerivative21(unrotate, R, P);
-	CHECK(assert_equal(numerical,computed,error));
-}
-
-TEST( Rot3, Dunrotate2_DNunrotate2)
-{
-	Matrix computed = Dunrotate2(R);
-	Matrix numerical = numericalDerivative22(unrotate, R, P);
-	CHECK(assert_equal(numerical,computed,error));
+	Matrix numerical2 = numericalDerivative22(unrotate, R, w);
+	CHECK(assert_equal(numerical2,H2,error));
 }
 
 /* ************************************************************************* */
