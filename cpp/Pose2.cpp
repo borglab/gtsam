@@ -90,12 +90,18 @@ namespace gtsam {
   }
 
   /* ************************************************************************* */
-  Point2 transform_from(const Pose2& pose, const Point2& point,
+  // see doc/math.lyx, SE(2) section
+  Point2 transform_from(const Pose2& pose, const Point2& p,
   		boost::optional<Matrix&> H1, boost::optional<Matrix&> H2) {
-  	Point2 point_transformed = rotate(pose.r(), point, H1, H2) + pose.t();
-  	Matrix R = pose.r().matrix();
-  	if (H1) *H1 = collect(2, &R, &(*H1));
-    return  point_transformed;
+  	const Rot2& rot = pose.r();
+		const Point2 q = rot * p;
+  	if (H1 || H2) {
+			const Matrix R = rot.matrix();
+			const Matrix Drotate1 = Matrix_(2, 1, -q.y(), q.x());
+	  	if (H1) *H1 = collect(2, &R, &Drotate1); // [R R_{pi/2}q]
+			if (H2) *H2 = R;                         // R
+  	}
+		return q + pose.t();
   }
 
   /* ************************************************************************* */
