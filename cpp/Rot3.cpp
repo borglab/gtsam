@@ -140,25 +140,22 @@ namespace gtsam {
   Rot3 rodriguez(const Vector& w, double theta) {
   	// get components of axis \omega
     double wx = w(0), wy=w(1), wz=w(2);
-    double w2_xx = wx*wx, w2_yy = wy*wy, w2_zz = wz*wz;
+    double wwTxx = wx*wx, wwTyy = wy*wy, wwTzz = wz*wz;
 #ifndef NDEBUG
-    double l_n = w2_xx + w2_yy + w2_zz;
+    double l_n = wwTxx + wwTyy + wwTzz;
     if (fabs(l_n-1.0)>1e-9) throw domain_error("rodriguez: length of n should be 1");
 #endif
 
     double c = cos(theta), s = sin(theta), c_1 = 1 - c;
 
     double swx = wx * s, swy = wy * s, swz = wz * s;
-    double C00 = c_1*w2_xx, C01 = c_1*wx*wy, C02 = c_1*wx*wz;
-    double                  C11 = c_1*w2_yy, C12 = c_1*wy*wz;
-    double                                   C22 = c_1*w2_zz;
+    double C00 = c_1*wwTxx, C01 = c_1*wx*wy, C02 = c_1*wx*wz;
+    double                  C11 = c_1*wwTyy, C12 = c_1*wy*wz;
+    double                                   C22 = c_1*wwTzz;
 
-    // Important: these are columns, so this reads transposed !!!!
-    Point3 r1 = Point3(   c + C00,  swz + C01, -swy + C02);
-    Point3 r2 = Point3(-swz + C01,    c + C11,  swx + C12);
-    Point3 r3 = Point3( swy + C02, -swx + C12,    c + C22);
-
-    return Rot3(r1, r2, r3);
+    return Rot3(   c + C00, -swz + C01,  swy + C02,
+    		         swz + C01,    c + C11, -swx + C12,
+				        -swy + C02,  swx + C12,    c + C22);
   }
 
   /* ************************************************************************* */
