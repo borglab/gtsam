@@ -46,6 +46,11 @@ namespace gtsam {
 			Rot2 hx = bearing(pose, point, H1, H2);
 			return logmap(between(z_, hx));
 		}
+
+		/** return the measured */
+		inline const Rot2 measured() const {
+			return z_;
+		}
 	}; // BearingFactor
 
 	/**
@@ -74,6 +79,11 @@ namespace gtsam {
 				boost::optional<Matrix&> H1, boost::optional<Matrix&> H2) const {
 			double hx = gtsam::range(pose, point, H1, H2);
 			return Vector_(1, hx - z_);
+		}
+
+		/** return the measured */
+		inline const double measured() const {
+			return z_;
 		}
 	}; // RangeFactor
 
