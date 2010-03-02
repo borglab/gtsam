@@ -68,12 +68,13 @@ TEST( Rot3, equals)
 }
 
 /* ************************************************************************* */
+// Notice this uses J^2 whereas fast uses w*w', and has cos(t)*I + ....
 Rot3 slow_but_correct_rodriguez(const Vector& w) {
 	double t = norm_2(w);
 	Matrix J = skewSymmetric(w / t);
 	if (t < 1e-5) return Rot3();
-	Matrix R = eye(3, 3) + sin(t) * J + (1.0 - cos(t)) * (J * J);
-	return R; // matrix constructor will be tripped
+	Matrix R = eye(3) + sin(t) * J + (1.0 - cos(t)) * (J * J);
+	return R;
 }
 
 /* ************************************************************************* */
@@ -82,19 +83,19 @@ TEST( Rot3, rodriguez)
 	Rot3 R1 = rodriguez(epsilon, 0, 0);
 	Vector w = Vector_(3, epsilon, 0., 0.);
 	Rot3 R2 = slow_but_correct_rodriguez(w);
-	CHECK(assert_equal(R1,R2));
+	CHECK(assert_equal(R2,R1));
 }
 
 /* ************************************************************************* */
 TEST( Rot3, rodriguez2)
 {
-	Vector v(3);
-	v(0) = 0;
-	v(1) = 1;
-	v(2) = 0;
-	Rot3 R1 = rodriguez(v, 3.14 / 4.0);
-	Rot3 R2(0.707388, 0, 0.706825, 0, 1, 0, -0.706825, 0, 0.707388);
-	CHECK(assert_equal(R1,R2,1e-5));
+	Vector axis = Vector_(3,0.,1.,0.); // rotation around Y
+	double angle = 3.14 / 4.0;
+	Rot3 actual = rodriguez(axis, angle);
+	Rot3 expected(0.707388, 0, 0.706825,
+			                 0, 1,        0,
+			         -0.706825, 0, 0.707388);
+	CHECK(assert_equal(expected,actual,1e-5));
 }
 
 /* ************************************************************************* */
@@ -103,7 +104,21 @@ TEST( Rot3, rodriguez3)
 	Vector w = Vector_(3, 0.1, 0.2, 0.3);
 	Rot3 R1 = rodriguez(w / norm_2(w), norm_2(w));
 	Rot3 R2 = slow_but_correct_rodriguez(w);
-	CHECK(assert_equal(R1,R2));
+	CHECK(assert_equal(R2,R1));
+}
+
+/* ************************************************************************* */
+TEST( Rot3, rodriguez4)
+{
+	Vector axis = Vector_(3,0.,0.,1.); // rotation around Z
+	double angle = M_PI_2;
+	Rot3 actual = rodriguez(axis, angle);
+	double c=cos(angle),s=sin(angle);
+	Rot3 expected(c,-s, 0,
+			          s, c, 0,
+			          0, 0, 1);
+	CHECK(assert_equal(expected,actual,1e-5));
+	CHECK(assert_equal(slow_but_correct_rodriguez(axis*angle),actual,1e-5));
 }
 
 /* ************************************************************************* */
