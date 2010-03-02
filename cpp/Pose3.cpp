@@ -46,17 +46,24 @@ namespace gtsam {
 
 #ifdef SLOW_BUT_CORRECT_EXPMAP
 
-  /** Agrawal06iros versions of expmap and logmap*/
-  template<> Pose3 expmap(const Vector& d) {
-  	Vector w = vector_range<const Vector>(d, range(0,3));
-  	Vector u = vector_range<const Vector>(d, range(3,6));
-  	double t = norm_2(w);
-		if (t < 1e-5)
-			return Pose3(Rot3(), expmap<Point3> (u));
+  /** Modified from Murray94book version (which assumes w and v normalized?) */
+  template<> Pose3 expmap(const Vector& xi) {
+
+  	// get angular velocity omega and translational velocity v from twist xi
+  	Point3 w(xi(0),xi(1),xi(2)), v(xi(3),xi(4),xi(5));
+
+    double theta = norm(w);
+		if (theta < 1e-5) {
+		  static const Rot3 I;
+			return Pose3(I, v);
+		}
 		else {
-			Matrix W = skewSymmetric(w/t);
-			Matrix A = I3 + ((1 - cos(t)) / t) * W + ((t - sin(t)) / t) * (W * W);
-			return Pose3(expmap<Rot3> (w), expmap<Point3> (A * u));
+			Point3 n(w/theta); // axis unit vector
+			Rot3 R = rodriguez(n.vector(),theta);
+			double vn = dot(n,v); // translation parallel to n
+			Point3 n_cross_v = cross(n,v); // points towards axis
+			Point3 t = (n_cross_v - R*n_cross_v)/theta + vn*n;
+			return Pose3(R, t);
 		}
   }
 
@@ -67,7 +74,7 @@ namespace gtsam {
 	    return concatVectors(2, &w, &T);
 		else {
 			Matrix W = skewSymmetric(w/t);
-			Matrix Ainv = I3 - 0.5*t* W + ((2*sin(t)-t*(1+cos(t)))/2*sin(t)) * (W * W);
+			Matrix Ainv = I3 - (0.5*t)*W + ((2*sin(t)-t*(1+cos(t)))/(2*sin(t))) * (W * W);
 			Vector u = Ainv*T;
 	    return concatVectors(2, &w, &u);
 		}
@@ -152,7 +159,7 @@ namespace gtsam {
   Matrix Dcompose1(const Pose3& p1, const Pose3& p2) {
 #ifdef SLOW_BUT_CORRECT_EXPMAP
 		// actually does NOT pan out at the moment
-		return AdjointMap(p2);
+		return AdjointMap(inverse(p2));
 #else
 		const Rot3& R2 = p2.rotation();
 		const Point3& t2 = p2.translation();

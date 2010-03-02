@@ -172,4 +172,11 @@ namespace gtsam {
   	return wedge(xi(0),xi(1),xi(2),xi(3),xi(4),xi(5));
   }
 
+  /**
+   * Calculate Adjoint map
+   * Ad_pose is 6*6 matrix that when applied to twist xi, returns Ad_pose(xi)
+   */
+  Matrix AdjointMap(const Pose3& p);
+  inline Vector Adjoint(const Pose3& p, const Vector& xi) {return AdjointMap(p)*xi; }
+
 } // namespace gtsam
