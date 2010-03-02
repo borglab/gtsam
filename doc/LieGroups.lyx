@@ -1,0 +1,1544 @@
+#LyX 1.6.5 created this file. For more info see http://www.lyx.org/
+\lyxformat 345
+\begin_document
+\begin_header
+\textclass article
+\use_default_options false
+\begin_modules
+theorems-std
+\end_modules
+\language english
+\inputencoding auto
+\font_roman times
+\font_sans default
+\font_typewriter default
+\font_default_family rmdefault
+\font_sc false
+\font_osf false
+\font_sf_scale 100
+\font_tt_scale 100
+
+\graphics default
+\paperfontsize 12
+\spacing single
+\use_hyperref false
+\papersize default
+\use_geometry true
+\use_amsmath 1
+\use_esint 0
+\cite_engine basic
+\use_bibtopic false
+\paperorientation portrait
+\leftmargin 1in
+\topmargin 1in
+\rightmargin 1in
+\bottommargin 1in
+\secnumdepth 3
+\tocdepth 3
+\paragraph_separation indent
+\defskip medskip
+\quotes_language english
+\papercolumns 1
+\papersides 1
+\paperpagestyle default
+\tracking_changes false
+\output_changes false
+\author "" 
+\author "" 
+\end_header
+
+\begin_body
+
+\begin_layout Title
+Lie Groups for Beginners
+\end_layout
+
+\begin_layout Author
+Frank Dellaert
+\end_layout
+
+\begin_layout Standard
+\begin_inset CommandInset include
+LatexCommand include
+filename "macros.lyx"
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Section
+Basic Lie Group Concepts
+\end_layout
+
+\begin_layout Subsection
+A Manifold and a Group
+\end_layout
+
+\begin_layout Standard
+A Lie group 
+\begin_inset Formula $G$
+\end_inset
+
+ is a manifold that possesses a smooth group operation.
+ Associated with it is a Lie Algebra 
+\begin_inset Formula $\gg$
+\end_inset
+
+ which, loosely speaking, can be identified with the tangent space at the
+ identity and completely defines how the groups behaves around the identity.
+ There is a mapping from 
+\begin_inset Formula $\gg$
+\end_inset
+
+ back to 
+\begin_inset Formula $G$
+\end_inset
+
+, called the exponential map
+\begin_inset Formula \[
+\exp:\gg\rightarrow G\]
+
+\end_inset
+
+and a corresponding inverse 
+\begin_inset Formula \[
+\log:G\rightarrow\gg\]
+
+\end_inset
+
+that maps elements in G to an element in 
+\begin_inset Formula $\gg$
+\end_inset
+
+.
+\end_layout
+
+\begin_layout Subsection
+Lie Algebra
+\end_layout
+
+\begin_layout Standard
+The Lie Algebra 
+\begin_inset Formula $\gg$
+\end_inset
+
+ is called an algebra because it is endowed with a binary operation, the
+ Lie bracket 
+\begin_inset Formula $[X,Y]$
+\end_inset
+
+, the properties of which are closely related to the group operation of
+ 
+\begin_inset Formula $G$
+\end_inset
+
+.
+ For example, in matrix Lie groups, the Lie bracket is given by 
+\begin_inset Formula $[A,B]\define AB-BA$
+\end_inset
+
+.
+ The relationship with the group operation is as follows: for commutative
+ Lie groups vector addition 
+\begin_inset Formula $X+Y$
+\end_inset
+
+ in 
+\begin_inset Formula $\gg$
+\end_inset
+
+ mimicks the group operation.
+ For example, if we have 
+\begin_inset Formula $Z=X+Y$
+\end_inset
+
+ in 
+\begin_inset Formula $\gg$
+\end_inset
+
+, when mapped backed to 
+\begin_inset Formula $G$
+\end_inset
+
+ via the exponential map we obtain 
+\begin_inset Formula \[
+e^{Z}=e^{X+Y}=e^{X}e^{Y}\]
+
+\end_inset
+
+However, this does 
+\emph on
+not
+\emph default
+ hold for non-commutative Lie groups:
+\begin_inset Formula \[
+Z=\log(e^{X}e^{Y})\neq X+Y\]
+
+\end_inset
+
+Instead, 
+\begin_inset Formula $Z$
+\end_inset
+
+ can be calculated using the Baker-Campbell-Hausdorff (BCH) formula:
+\begin_inset Foot
+status collapsed
+
+\begin_layout Plain Layout
+http://en.wikipedia.org/wiki/Baker–Campbell–Hausdorff_formula
+\end_layout
+
+\end_inset
+
+
+\begin_inset Formula \[
+Z=X+Y+[X,Y]/2+[X-Y,[X,Y]]/12-[Y,[X,[X,Y]]]/24+\ldots\]
+
+\end_inset
+
+For commutative groups the bracket is zero and we recover 
+\begin_inset Formula $Z=X+Y$
+\end_inset
+
+.
+ For non-commutative groups we can use the BCH formula to approximate it.
+\end_layout
+
+\begin_layout Subsection
+Exponential Coordinates
+\end_layout
+
+\begin_layout Standard
+For 
+\begin_inset Formula $n$
+\end_inset
+
+-dimensional matrix Lie groups, the Lie algebra 
+\begin_inset Formula $\gg$
+\end_inset
+
+ is isomorphic to 
+\begin_inset Formula $\mathbb{R}^{n}$
+\end_inset
+
+, and we can define the mapping
+\begin_inset Formula \[
+\hat{}:\mathbb{R}^{n}\rightarrow\gg\]
+
+\end_inset
+
+
+\begin_inset Formula \[
+\hat{}:x\rightarrow\xhat\]
+
+\end_inset
+
+which maps 
+\begin_inset Formula $n$
+\end_inset
+
+-vectors 
+\begin_inset Formula $x\in$
+\end_inset
+
+
+\begin_inset Formula $\Rn$
+\end_inset
+
+ to elements of 
+\begin_inset Formula $\gg$
+\end_inset
+
+.
+ In the case of matrix Lie groups, the elements 
+\begin_inset Formula $\xhat$
+\end_inset
+
+ of 
+\begin_inset Formula $\gg$
+\end_inset
+
+ are 
+\begin_inset Formula $n\times n$
+\end_inset
+
+ matrices, and the map is given by
+\begin_inset Formula \begin{equation}
+\xhat=\sum_{i=1}^{n}x_{i}G^{i}\label{eq:generators}\end{equation}
+
+\end_inset
+
+where the 
+\begin_inset Formula $G^{i}$
+\end_inset
+
+ are 
+\begin_inset Formula $n\times n$
+\end_inset
+
+ matrices known as the Lie group generators.
+ The meaning of the map 
+\begin_inset Formula $x\rightarrow\xhat$
+\end_inset
+
+ will depend on the group 
+\begin_inset Formula $G$
+\end_inset
+
+ and will be very intuitive.
+\end_layout
+
+\begin_layout Subsection
+The Adjoint Map
+\end_layout
+
+\begin_layout Standard
+Below we frequently make use of the equality
+\begin_inset Foot
+status collapsed
+
+\begin_layout Plain Layout
+http://en.wikipedia.org/wiki/Exponential_map
+\end_layout
+
+\end_inset
+
+
+\begin_inset Formula \[
+ge^{\xhat}g^{-1}=e^{\Ad g{\xhat}}\]
+
+\end_inset
+
+where 
+\begin_inset Formula $\Ad g:\gg\rightarrow\mathfrak{\gg}$
+\end_inset
+
+ is a map parameterized by a group element 
+\begin_inset Formula $g$
+\end_inset
+
+.
+ The intuitive explanation is that a change 
+\begin_inset Formula $\exp\left(\xhat\right)$
+\end_inset
+
+ defined around the orgin, but applied at the group element 
+\begin_inset Formula $g$
+\end_inset
+
+, can be written in one step by taking the adjoint 
+\begin_inset Formula $\Ad g{\xhat}$
+\end_inset
+
+ of 
+\begin_inset Formula $\xhat$
+\end_inset
+
+.
+ In the case of a matrix group the ajoint can be written as 
+\begin_inset Foot
+status collapsed
+
+\begin_layout Plain Layout
+http://en.wikipedia.org/wiki/Adjoint_representation_of_a_Lie_group
+\end_layout
+
+\end_inset
+
+
+\begin_inset Formula \[
+\Ad T{\xhat}\define Te^{\xhat}T^{-1}\]
+
+\end_inset
+
+and hence we have
+\end_layout
+
+\begin_layout Standard
+\begin_inset Formula \[
+Te^{\xhat}T^{-1}=e^{T\xhat T^{-1}}\]
+
+\end_inset
+
+where both 
+\begin_inset Formula $T$
+\end_inset
+
+ and 
+\begin_inset Formula $\xhat$
+\end_inset
+
+ are 
+\begin_inset Formula $n\times n$
+\end_inset
+
+ matrices for an 
+\begin_inset Formula $n$
+\end_inset
+
+-dimensional Lie group.
+\end_layout
+
+\begin_layout Subsection
+Actions
+\end_layout
+
+\begin_layout Standard
+The (usual) action of an 
+\begin_inset Formula $n$
+\end_inset
+
+-dimensional matrix group 
+\begin_inset Formula $G$
+\end_inset
+
+ is matrix-vector multiplication on 
+\begin_inset Formula $\mathbb{R}^{n}$
+\end_inset
+
+, 
+\begin_inset Formula \[
+q=Tp\]
+
+\end_inset
+
+with 
+\begin_inset Formula $p,q\in\mathbb{R}^{n}$
+\end_inset
+
+ and 
+\begin_inset Formula $T\in GL(n)$
+\end_inset
+
+.
+\end_layout
+
+\begin_layout Standard
+\begin_inset Newpage pagebreak
+\end_inset
+
+
+\end_layout
+
+\begin_layout Section
+2D Rotations
+\end_layout
+
+\begin_layout Standard
+We first look at a very simple group, the 2D rotations.
+\end_layout
+
+\begin_layout Subsection
+Basics
+\end_layout
+
+\begin_layout Standard
+The Lie group 
+\begin_inset Formula $\SOtwo$
+\end_inset
+
+ is a subgroup of the general linear group 
+\begin_inset Formula $GL(2)$
+\end_inset
+
+ of 
+\begin_inset Formula $2\times2$
+\end_inset
+
+ invertible matrices.
+ Its Lie algebra 
+\begin_inset Formula $\sotwo$
+\end_inset
+
+ is the vector space of 
+\begin_inset Formula $2\times2$
+\end_inset
+
+ skew-symmetric matrices.
+ Since 
+\begin_inset Formula $\SOtwo$
+\end_inset
+
+ is a one-dimensional manifold, 
+\begin_inset Formula $\sotwo$
+\end_inset
+
+ is isomorphic to 
+\begin_inset Formula $\mathbb{R}$
+\end_inset
+
+ and we define
+\begin_inset Formula \[
+\hat{}:\mathbb{R}\rightarrow\sotwo\]
+
+\end_inset
+
+
+\begin_inset Formula \[
+\hat{}:\theta\rightarrow\that=\skew{\theta}\]
+
+\end_inset
+
+which maps the angle 
+\begin_inset Formula $\theta$
+\end_inset
+
+ to the 
+\begin_inset Formula $2\times2$
+\end_inset
+
+ skew-symmetric matrix 
+\family roman
+\series medium
+\shape up
+\size normal
+\emph off
+\bar no
+\noun off
+\color none
+
+\begin_inset Formula $\skew{\theta}$
+\end_inset
+
+:
+\family default
+\series default
+\shape default
+\size default
+\emph default
+\bar default
+\noun default
+\color inherit
+
+\begin_inset Formula \[
+\skew{\theta}=\left[\begin{array}{cc}
+0 & -\theta\\
+\theta & 0\end{array}\right]\]
+
+\end_inset
+
+The exponential map can be computed in closed form as
+\begin_inset Formula \[
+R=e^{\skew{\theta}}=\left[\begin{array}{cc}
+\cos\theta & -\sin\theta\\
+\sin\theta & \cos\theta\end{array}\right]\]
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Subsection
+Actions
+\end_layout
+
+\begin_layout Standard
+In the case of 
+\begin_inset Formula $\SOtwo$
+\end_inset
+
+ the vector space is 
+\begin_inset Formula $\Rtwo$
+\end_inset
+
+, and the group action corresponds to rotating a point
+\begin_inset Formula \[
+q=Rp\]
+
+\end_inset
+
+We would now like to know what an incremental rotation parameterized by
+ 
+\begin_inset Formula $\theta$
+\end_inset
+
+ would do:
+\begin_inset Formula \[
+q(\text{\theta})=Re^{\skew{\theta}}p\]
+
+\end_inset
+
+hence the derivative is:
+\begin_inset Formula \[
+\deriv{q(\omega)}{\omega}=R\deriv{}{\omega}\left(e^{\skew{\theta}}p\right)=R\deriv{}{\omega}\left(\skew{\theta}p\right)=RH_{p}\]
+
+\end_inset
+
+Note that 
+\begin_inset Formula \begin{equation}
+\skew{\theta}\left[\begin{array}{c}
+x\\
+y\end{array}\right]=\theta R_{\pi/2}\left[\begin{array}{c}
+x\\
+y\end{array}\right]=\theta\left[\begin{array}{c}
+-y\\
+x\end{array}\right]\label{eq:RestrictedCross}\end{equation}
+
+\end_inset
+
+which acts like a restricted 
+\begin_inset Quotes eld
+\end_inset
+
+cross product
+\begin_inset Quotes erd
+\end_inset
+
+ in the plane.
+\end_layout
+
+\begin_layout Standard
+\begin_inset Newpage pagebreak
+\end_inset
+
+
+\end_layout
+
+\begin_layout Section
+2D Rigid Transformations
+\end_layout
+
+\begin_layout Subsection
+Basics
+\end_layout
+
+\begin_layout Standard
+The Lie group 
+\begin_inset Formula $\SEtwo$
+\end_inset
+
+ is a subgroup of the general linear group 
+\begin_inset Formula $GL(3)$
+\end_inset
+
+ of 
+\begin_inset Formula $3\times3$
+\end_inset
+
+ invertible matrices of the form
+\begin_inset Formula \[
+T\define\left[\begin{array}{cc}
+R & t\\
+0 & 1\end{array}\right]\]
+
+\end_inset
+
+where 
+\begin_inset Formula $R\in\SOtwo$
+\end_inset
+
+ is a rotation matrix and 
+\begin_inset Formula $t\in\Rtwo$
+\end_inset
+
+ is a translation vector.
+ Its Lie algebra 
+\begin_inset Formula $\setwo$
+\end_inset
+
+ is the vector space of 
+\begin_inset Formula $3\times3$
+\end_inset
+
+ twists 
+\begin_inset Formula $\xihat$
+\end_inset
+
+ parameterized by the 
+\emph on
+twist coordinates
+\emph default
+ 
+\begin_inset Formula $\xi\in\Rthree$
+\end_inset
+
+, with the mapping 
+\begin_inset Formula \[
+\xi\define\left[\begin{array}{c}
+v\\
+\omega\end{array}\right]\rightarrow\xihat\define\left[\begin{array}{cc}
+\skew{\omega} & v\\
+0 & 0\end{array}\right]\]
+
+\end_inset
+
+Note we think of robots as having a pose 
+\begin_inset Formula $(x,y,\theta)$
+\end_inset
+
+ and hence I reserved the first two components for translation and the last
+ for rotation.
+ 
+\family roman
+\series medium
+\shape up
+\size normal
+\emph off
+\bar no
+\noun off
+\color none
+The Lie group generators are
+\begin_inset Formula \[
+G^{x}=\left[\begin{array}{ccc}
+0 & 0 & 1\\
+0 & 0 & 0\\
+0 & 0 & 0\end{array}\right]\mbox{ }G^{y}=\left[\begin{array}{ccc}
+0 & 0 & 0\\
+0 & 0 & 1\\
+0 & 0 & 0\end{array}\right]\mbox{ }G^{\theta}=\left[\begin{array}{ccc}
+0 & -1 & 0\\
+1 & 0 & 0\\
+0 & 0 & 0\end{array}\right]\]
+
+\end_inset
+
+
+\family default
+\series default
+\shape default
+\size default
+\emph default
+\bar default
+\noun default
+\color inherit
+Applying the exponential map to a twist 
+\begin_inset Formula $\xi$
+\end_inset
+
+ yields a screw motion yielding an element in 
+\begin_inset Formula $\SEtwo$
+\end_inset
+
+: 
+\begin_inset Formula \[
+T=\exp\xihat\]
+
+\end_inset
+
+A closed form solution for the exponential map is in the works...
+\end_layout
+
+\begin_layout Subsection
+The Adjoint Map
+\end_layout
+
+\begin_layout Standard
+The adjoint is 
+\begin_inset Formula \begin{eqnarray}
+\Ad T{\xihat} & = & T\xihat T^{-1}\nonumber \\
+ & = & \left[\begin{array}{cc}
+R & t\\
+0 & 1\end{array}\right]\left[\begin{array}{cc}
+\skew{\omega} & v\\
+0 & 0\end{array}\right]\left[\begin{array}{cc}
+R^{T} & -R^{T}t\\
+0 & 1\end{array}\right]\nonumber \\
+ & = & \left[\begin{array}{cc}
+\skew{\omega} & -\skew{\omega}t+Rv\\
+0 & 0\end{array}\right]\nonumber \\
+ & = & \left[\begin{array}{cc}
+\skew{\omega} & Rv-\omega R_{\pi/2}t\\
+0 & 0\end{array}\right]\label{eq:adjointSE2}\end{eqnarray}
+
+\end_inset
+
+From this we can express the Adjoint map in terms of plane twist coordinates:
+\begin_inset Formula \[
+\left[\begin{array}{c}
+v'\\
+\omega'\end{array}\right]=\left[\begin{array}{cc}
+R & -R_{\pi/2}t\\
+0 & 1\end{array}\right]\left[\begin{array}{c}
+v\\
+\omega\end{array}\right]\]
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Subsection
+Actions
+\end_layout
+
+\begin_layout Standard
+The action of 
+\begin_inset Formula $\SEtwo$
+\end_inset
+
+ on 2D points is done by embedding the points in 
+\begin_inset Formula $\mathbb{R}^{3}$
+\end_inset
+
+ by using homogeneous coordinates
+\begin_inset Formula \[
+\hat{q}=\left[\begin{array}{c}
+q\\
+1\end{array}\right]=\left[\begin{array}{cc}
+R & t\\
+0 & 1\end{array}\right]\left[\begin{array}{c}
+p\\
+1\end{array}\right]=T\hat{p}\]
+
+\end_inset
+
+Analoguous to 
+\begin_inset Formula $\SEthree$
+\end_inset
+
+, we can compute a velocity 
+\begin_inset Formula $\xihat\hat{p}$
+\end_inset
+
+ in the local 
+\begin_inset Formula $T$
+\end_inset
+
+ frame: 
+\begin_inset Formula \[
+\xihat\hat{p}=\left[\begin{array}{cc}
+\skew{\omega} & v\\
+0 & 0\end{array}\right]\left[\begin{array}{c}
+p\\
+1\end{array}\right]=\left[\begin{array}{c}
+\skew{\omega}p+v\\
+0\end{array}\right]\]
+
+\end_inset
+
+By only taking the top two rows, we can write this as a velocity in 
+\begin_inset Formula $\Rtwo$
+\end_inset
+
+, as the product of a 
+\begin_inset Formula $2\times3$
+\end_inset
+
+ matrix 
+\begin_inset Formula $H_{p}$
+\end_inset
+
+ that acts upon the exponential coordinates 
+\begin_inset Formula $\xi$
+\end_inset
+
+ directly:
+\begin_inset Formula \[
+\skew{\omega}p+v=v+R_{\pi/2}p\omega=\left[\begin{array}{cc}
+I_{2} & R_{\pi/2}p\end{array}\right]\left[\begin{array}{c}
+v\\
+\omega\end{array}\right]=H_{p}\xi\]
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Standard
+\begin_inset Newpage pagebreak
+\end_inset
+
+
+\end_layout
+
+\begin_layout Section
+3D Rotations
+\end_layout
+
+\begin_layout Subsection
+Basics
+\end_layout
+
+\begin_layout Standard
+The Lie group 
+\begin_inset Formula $\SOthree$
+\end_inset
+
+ is a subgroup of the general linear group 
+\begin_inset Formula $GL(3)$
+\end_inset
+
+ of 
+\begin_inset Formula $3\times3$
+\end_inset
+
+ invertible matrices.
+ Its Lie algebra 
+\begin_inset Formula $\sothree$
+\end_inset
+
+ is the vector space of 
+\begin_inset Formula $3\times3$
+\end_inset
+
+ skew-symmetric matrices.
+ The exponential map can be computed in closed form using Rodrigues' formula.
+\end_layout
+
+\begin_layout Standard
+Since 
+\begin_inset Formula $\SOthree$
+\end_inset
+
+ is a three-dimensional manifold, 
+\begin_inset Formula $\sothree$
+\end_inset
+
+ is isomorphic to 
+\begin_inset Formula $\Rthree$
+\end_inset
+
+ and we define the map
+\begin_inset Formula \[
+\hat{}:\Rthree\rightarrow\sothree\]
+
+\end_inset
+
+
+\begin_inset Formula \[
+\hat{}:\omega\rightarrow\what=\Skew{\omega}\]
+
+\end_inset
+
+which maps 3-vectors 
+\begin_inset Formula $\omega$
+\end_inset
+
+ to skew-symmetric matrices 
+\begin_inset Formula $\Skew{\omega}$
+\end_inset
+
+ :
+\begin_inset Formula \[
+\Skew{\omega}=\left[\begin{array}{ccc}
+0 & -\omega_{z} & \omega_{y}\\
+\omega_{z} & 0 & -\omega_{x}\\
+-\omega_{y} & \omega_{x} & 0\end{array}\right]=\omega_{x}G^{x}+\omega_{y}G^{y}+\omega_{z}G^{z}\]
+
+\end_inset
+
+where the 
+\begin_inset Formula $G^{i}$
+\end_inset
+
+ are the generators for 
+\begin_inset Formula $\SOthree$
+\end_inset
+
+,
+\begin_inset Formula \[
+G^{x}=\left(\begin{array}{ccc}
+0 & 0 & 0\\
+0 & 0 & -1\\
+0 & 1 & 0\end{array}\right)\mbox{}G^{y}=\left(\begin{array}{ccc}
+0 & 0 & 1\\
+0 & 0 & 0\\
+-1 & 0 & 0\end{array}\right)\mbox{ }G^{z}=\left(\begin{array}{ccc}
+0 & -1 & 0\\
+1 & 0 & 0\\
+0 & 0 & 0\end{array}\right)\]
+
+\end_inset
+
+corresponding to a rotation around 
+\begin_inset Formula $X$
+\end_inset
+
+, 
+\begin_inset Formula $Y$
+\end_inset
+
+, and 
+\begin_inset Formula $Z$
+\end_inset
+
+, respectively.
+ The Lie bracket 
+\begin_inset Formula $[x,y]$
+\end_inset
+
+ corresponds to the cross product 
+\begin_inset Formula $x\times y$
+\end_inset
+
+ in 
+\begin_inset Formula $\Rthree$
+\end_inset
+
+.
+\end_layout
+
+\begin_layout Standard
+For every 
+\begin_inset Formula $3-$
+\end_inset
+
+vector 
+\begin_inset Formula $\omega$
+\end_inset
+
+ there is a corresponding rotation matrix
+\begin_inset Formula \[
+R=e^{\Skew{\omega}}\]
+
+\end_inset
+
+and this is defines the canonical parameterization of 
+\begin_inset Formula $\SOthree$
+\end_inset
+
+, with 
+\begin_inset Formula $\omega$
+\end_inset
+
+ known as the canonical or exponential coordinates.
+ It is equivalent to the axis-angle representation for rotations, where
+ the unit vector 
+\begin_inset Formula $\omega/\left\Vert \omega\right\Vert $
+\end_inset
+
+ defines the rotation axis, and its magnitude the amount of rotation 
+\begin_inset Formula $\theta$
+\end_inset
+
+.
+\end_layout
+
+\begin_layout Subsection
+The Adjoint Map
+\end_layout
+
+\begin_layout Standard
+For rotation matrices 
+\begin_inset Formula $R$
+\end_inset
+
+ we can prove the following identity (see 
+\begin_inset CommandInset ref
+LatexCommand vref
+reference "remove"
+
+\end_inset
+
+): 
+\begin_inset Formula \begin{equation}
+R\Skew{\omega}R^{T}=\Skew{R\omega}\label{eq:property1}\end{equation}
+
+\end_inset
+
+Hence, given property 
+\begin_inset CommandInset ref
+LatexCommand eqref
+reference "remove"
+
+\end_inset
+
+, the adjoint map for 
+\begin_inset Formula $\sothree$
+\end_inset
+
+ simplifies to
+\begin_inset Formula \[
+\Ad R{\Skew{\omega}}=R\Skew{\omega}R^{T}=\Skew{R\omega}\]
+
+\end_inset
+
+and this can be expressed in exponential coordinates simply by rotating
+ the axis 
+\begin_inset Formula $\omega$
+\end_inset
+
+ to 
+\begin_inset Formula $R\omega$
+\end_inset
+
+.
+ 
+\end_layout
+
+\begin_layout Standard
+As an example, to apply an axis-angle rotation 
+\begin_inset Formula $\omega$
+\end_inset
+
+ to a point 
+\begin_inset Formula $p$
+\end_inset
+
+ in the frame 
+\begin_inset Formula $R$
+\end_inset
+
+, we could:
+\end_layout
+
+\begin_layout Enumerate
+First transform 
+\begin_inset Formula $p$
+\end_inset
+
+ back to the world frame, apply 
+\begin_inset Formula $\omega$
+\end_inset
+
+, and then rotate back:
+\begin_inset Formula \[
+q=Re^{\Skew{\omega}}R^{T}\]
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Enumerate
+Immediately apply the transformed axis-angle transformation 
+\begin_inset Formula $\Ad R{\Skew{\omega}}=\Skew{R\omega}$
+\end_inset
+
+:
+\begin_inset Formula \[
+q=e^{\Skew{R\omega}}p\]
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Subsection
+Actions
+\end_layout
+
+\begin_layout Standard
+In the case of 
+\begin_inset Formula $\SOthree$
+\end_inset
+
+ the vector space is  
+\begin_inset Formula $\Rthree$
+\end_inset
+
+, and the group action corresponds to rotating a point
+\begin_inset Formula \[
+q=Rp\]
+
+\end_inset
+
+We would now like to know what an incremental rotation parameterized by
+ 
+\begin_inset Formula $\omega$
+\end_inset
+
+ would do:
+\begin_inset Formula \[
+q(\omega)=Re^{\Skew{\omega}}p\]
+
+\end_inset
+
+hence the derivative is:
+\begin_inset Formula \[
+\deriv{q(\omega)}{\omega}=R\deriv{}{\omega}\left(e^{\Skew{\omega}}p\right)=R\deriv{}{\omega}\left(\Skew{\omega}p\right)=RH_{p}\]
+
+\end_inset
+
+To calculate 
+\begin_inset Formula $H_{p}$
+\end_inset
+
+ we make use of 
+\begin_inset Formula \[
+\Skew{\omega}p=\omega\times p=-p\times\omega=\Skew{-p}\omega\]
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Standard
+\begin_inset Newpage pagebreak
+\end_inset
+
+
+\end_layout
+
+\begin_layout Section
+3D Rigid Transformations
+\end_layout
+
+\begin_layout Standard
+The Lie group 
+\begin_inset Formula $\SEthree$
+\end_inset
+
+ is a subgroup of the general linear group 
+\begin_inset Formula $GL(4)$
+\end_inset
+
+ of 
+\begin_inset Formula $4\times4$
+\end_inset
+
+ invertible matrices of the form
+\begin_inset Formula \[
+T\define\left[\begin{array}{cc}
+R & t\\
+0 & 1\end{array}\right]\]
+
+\end_inset
+
+where 
+\begin_inset Formula $R\in\SOthree$
+\end_inset
+
+ is a rotation matrix and 
+\begin_inset Formula $t\in\Rthree$
+\end_inset
+
+ is a translation vector.
+ Its Lie algebra 
+\begin_inset Formula $\sethree$
+\end_inset
+
+ is the vector space of 
+\begin_inset Formula $4\times4$
+\end_inset
+
+ twists 
+\begin_inset Formula $\xihat$
+\end_inset
+
+ parameterized by the 
+\emph on
+twist coordinates
+\emph default
+ 
+\begin_inset Formula $\xi\in\Rsix$
+\end_inset
+
+, with the mapping 
+\begin_inset CommandInset citation
+LatexCommand cite
+key "Murray94book"
+
+\end_inset
+
+ 
+\begin_inset Formula \[
+\xi\define\left[\begin{array}{c}
+\omega\\
+v\end{array}\right]\rightarrow\xihat\define\left[\begin{array}{cc}
+\Skew{\omega} & v\\
+0 & 0\end{array}\right]\]
+
+\end_inset
+
+Note we follow Frank Park's convention and reserve the first three components
+ for rotation, and the last three for translation.
+ Hence, with this parameterization, the generators for 
+\begin_inset Formula $\SEthree$
+\end_inset
+
+ are
+\begin_inset Formula \[
+G^{1}=\left(\begin{array}{cccc}
+0 & 0 & 0 & 0\\
+0 & 0 & -1 & 0\\
+0 & 1 & 0 & 0\\
+0 & 0 & 0 & 0\end{array}\right)\mbox{}G^{2}=\left(\begin{array}{cccc}
+0 & 0 & 1 & 0\\
+0 & 0 & 0 & 0\\
+-1 & 0 & 0 & 0\\
+0 & 0 & 0 & 0\end{array}\right)\mbox{ }G^{3}=\left(\begin{array}{cccc}
+0 & -1 & 0 & 0\\
+1 & 0 & 0 & 0\\
+0 & 0 & 0 & 0\\
+0 & 0 & 0 & 0\end{array}\right)\]
+
+\end_inset
+
+
+\begin_inset Formula \[
+G^{4}=\left(\begin{array}{cccc}
+0 & 0 & 0 & 1\\
+0 & 0 & 0 & 0\\
+0 & 0 & 0 & 0\\
+0 & 0 & 0 & 0\end{array}\right)\mbox{}G^{5}=\left(\begin{array}{cccc}
+0 & 0 & 0 & 0\\
+0 & 0 & 0 & 1\\
+0 & 0 & 0 & 0\\
+0 & 0 & 0 & 0\end{array}\right)\mbox{ }G^{6}=\left(\begin{array}{cccc}
+0 & 0 & 0 & 0\\
+0 & 0 & 0 & 0\\
+0 & 0 & 0 & 1\\
+0 & 0 & 0 & 0\end{array}\right)\]
+
+\end_inset
+
+Applying the exponential map to a twist 
+\begin_inset Formula $\xi$
+\end_inset
+
+ yields a screw motion yielding an element in 
+\begin_inset Formula $\SEthree$
+\end_inset
+
+: 
+\begin_inset Formula \[
+T=\exp\xihat\]
+
+\end_inset
+
+A closed form solution for the exponential map is given in 
+\begin_inset CommandInset citation
+LatexCommand cite
+after "page 42"
+key "Murray94book"
+
+\end_inset
+
+.
+\end_layout
+
+\begin_layout Subsection
+The Adjoint Map
+\end_layout
+
+\begin_layout Standard
+The adjoint is 
+\begin_inset Formula \begin{eqnarray*}
+\Ad T{\xihat} & = & T\xihat T^{-1}\\
+ & = & \left[\begin{array}{cc}
+R & t\\
+0 & 1\end{array}\right]\left[\begin{array}{cc}
+\Skew{\omega} & v\\
+0 & 0\end{array}\right]\left[\begin{array}{cc}
+R^{T} & -R^{T}t\\
+0 & 1\end{array}\right]\\
+ & = & \left[\begin{array}{cc}
+\Skew{R\omega} & -\Skew{R\omega}t+Rv\\
+0 & 0\end{array}\right]\\
+ & = & \left[\begin{array}{cc}
+\Skew{R\omega} & t\times R\omega+Rv\\
+0 & 0\end{array}\right]\end{eqnarray*}
+
+\end_inset
+
+From this we can express the Adjoint map in terms of twist coordinates (see
+ also 
+\begin_inset CommandInset citation
+LatexCommand cite
+key "Murray94book"
+
+\end_inset
+
+ and FP):
+\begin_inset Formula \[
+\left[\begin{array}{c}
+\omega'\\
+v'\end{array}\right]=\left[\begin{array}{cc}
+R & 0\\
+\Skew tR & R\end{array}\right]\left[\begin{array}{c}
+\omega\\
+v\end{array}\right]\]
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Subsection
+Actions
+\end_layout
+
+\begin_layout Standard
+The action of 
+\begin_inset Formula $\SEthree$
+\end_inset
+
+ on 3D points is done by embedding the points in 
+\begin_inset Formula $\mathbb{R}^{4}$
+\end_inset
+
+ by using homogeneous coordinates
+\begin_inset Formula \[
+\hat{q}=\left[\begin{array}{c}
+q\\
+1\end{array}\right]=\left[\begin{array}{cc}
+R & t\\
+0 & 1\end{array}\right]\left[\begin{array}{c}
+p\\
+1\end{array}\right]=T\hat{p}\]
+
+\end_inset
+
+We would now like to know what an incremental rotation parameterized by
+ 
+\begin_inset Formula $\xi$
+\end_inset
+
+ would do:
+\begin_inset Formula \[
+\hat{q}(\xi)=Te^{\xihat}\hat{p}\]
+
+\end_inset
+
+hence the derivative (following the exposition in Section 
+\begin_inset CommandInset ref
+LatexCommand ref
+reference "sec:Derivatives-of-Actions"
+
+\end_inset
+
+):
+\begin_inset Formula \[
+\deriv{\hat{q}(\xi)}{\xi}=T\deriv{}{\xi}\left(\xihat\hat{p}\right)=TH_{p}\]
+
+\end_inset
+
+where 
+\begin_inset Formula $\xihat\hat{p}$
+\end_inset
+
+ corresponds to a velocity in 
+\begin_inset Formula $\mathbb{R}^{4}$
+\end_inset
+
+ (in the local 
+\begin_inset Formula $T$
+\end_inset
+
+ frame): 
+\begin_inset Formula \[
+\xihat\hat{p}=\left[\begin{array}{cc}
+\Skew{\omega} & v\\
+0 & 0\end{array}\right]\left[\begin{array}{c}
+p\\
+1\end{array}\right]=\left[\begin{array}{c}
+\omega\times p+v\\
+0\end{array}\right]\]
+
+\end_inset
+
+Notice how velocities are anologous to points at infinity in projective
+ geometry: they correspond to free vectors indicating a direction and magnitude
+ of change.
+\end_layout
+
+\begin_layout Standard
+By only taking the top three rows, we can write this as a velocity in 
+\begin_inset Formula $\Rthree$
+\end_inset
+
+, as the product of a 
+\begin_inset Formula $3\times6$
+\end_inset
+
+ matrix 
+\begin_inset Formula $H_{p}$
+\end_inset
+
+ that acts upon the exponential coordinates 
+\begin_inset Formula $\xi$
+\end_inset
+
+ directly:
+\begin_inset Formula \[
+\omega\times p+v=-p\times\omega+v=\left[\begin{array}{cc}
+-\Skew p & I_{3}\end{array}\right]\left[\begin{array}{c}
+\omega\\
+v\end{array}\right]=H_{p}\xi\]
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Standard
+\begin_inset Newpage pagebreak
+\end_inset
+
+
+\end_layout
+
+\begin_layout Section*
+Appendix: Proof of Property 
+\begin_inset CommandInset ref
+LatexCommand ref
+reference "remove"
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Standard
+We can prove the following identity for rotation matrices 
+\begin_inset Formula $R$
+\end_inset
+
+,
+\begin_inset Formula \begin{eqnarray}
+R\Skew{\omega}R^{T} & = & R\Skew{\omega}\left[\begin{array}{ccc}
+a_{1} & a_{2} & a_{3}\end{array}\right]\nonumber \\
+ & = & R\left[\begin{array}{ccc}
+\omega\times a_{1} & \omega\times a_{2} & \omega\times a_{3}\end{array}\right]\nonumber \\
+ & = & \left[\begin{array}{ccc}
+a_{1}(\omega\times a_{1}) & a_{1}(\omega\times a_{2}) & a_{1}(\omega\times a_{3})\\
+a_{2}(\omega\times a_{1}) & a_{2}(\omega\times a_{2}) & a_{2}(\omega\times a_{3})\\
+a_{3}(\omega\times a_{1}) & a_{3}(\omega\times a_{2}) & a_{3}(\omega\times a_{3})\end{array}\right]\nonumber \\
+ & = & \left[\begin{array}{ccc}
+\omega(a_{1}\times a_{1}) & \omega(a_{2}\times a_{1}) & \omega(a_{3}\times a_{1})\\
+\omega(a_{1}\times a_{2}) & \omega(a_{2}\times a_{2}) & \omega(a_{3}\times a_{2})\\
+\omega(a_{1}\times a_{3}) & \omega(a_{2}\times a_{3}) & \omega(a_{3}\times a_{3})\end{array}\right]\nonumber \\
+ & = & \left[\begin{array}{ccc}
+0 & -\omega a_{3} & \omega a_{2}\\
+\omega a_{3} & 0 & -\omega a_{1}\\
+-\omega a_{2} & \omega a_{1} & 0\end{array}\right]\nonumber \\
+ & = & \Skew{R\omega}\label{remove}\end{eqnarray}
+
+\end_inset
+
+where 
+\begin_inset Formula $a_{1}$
+\end_inset
+
+, 
+\begin_inset Formula $a_{2}$
+\end_inset
+
+, and 
+\begin_inset Formula $a_{3}$
+\end_inset
+
+ are the 
+\emph on
+rows
+\emph default
+ of 
+\begin_inset Formula $R$
+\end_inset
+
+.
+ Above we made use of the orthogonality of rotation matrices and the triple
+ product rule:
+\begin_inset Formula \[
+a(b\times c)=b(c\times a)=c(a\times b)\]
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Standard
+\begin_inset CommandInset bibtex
+LatexCommand bibtex
+bibfiles "/Users/dellaert/papers/refs"
+options "plain"
+
+\end_inset
+
+
+\end_layout
+
+\end_body
+\end_document

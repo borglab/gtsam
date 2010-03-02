@@ -1,0 +1,294 @@
+#LyX 1.6.5 created this file. For more info see http://www.lyx.org/
+\lyxformat 345
+\begin_document
+\begin_header
+\textclass article
+\use_default_options true
+\language english
+\inputencoding auto
+\font_roman default
+\font_sans default
+\font_typewriter default
+\font_default_family default
+\font_sc false
+\font_osf false
+\font_sf_scale 100
+\font_tt_scale 100
+
+\graphics default
+\paperfontsize default
+\use_hyperref false
+\papersize default
+\use_geometry false
+\use_amsmath 1
+\use_esint 1
+\cite_engine basic
+\use_bibtopic false
+\paperorientation portrait
+\secnumdepth 3
+\tocdepth 3
+\paragraph_separation indent
+\defskip medskip
+\quotes_language english
+\papercolumns 1
+\papersides 1
+\paperpagestyle default
+\tracking_changes false
+\output_changes false
+\author "" 
+\author "" 
+\end_header
+
+\begin_body
+
+\begin_layout Standard
+\begin_inset Note Comment
+status open
+
+\begin_layout Plain Layout
+Derivatives
+\end_layout
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Standard
+\begin_inset FormulaMacro
+\newcommand{\deriv}[2]{\frac{\partial#1}{\partial#2}}
+{\frac{\partial#1}{\partial#2}}
+\end_inset
+
+
+\begin_inset FormulaMacro
+\newcommand{\at}[2]{#1\biggr\rvert_{#2}}
+{#1\biggr\rvert_{#2}}
+\end_inset
+
+ 
+\begin_inset FormulaMacro
+\newcommand{\Jac}[3]{ \at{\deriv{#1}{#2}} {#3} }
+{\at{\deriv{#1}{#2}}{#3}}
+\end_inset
+
+
+\end_layout
+
+\begin_layout Standard
+\begin_inset Note Comment
+status open
+
+\begin_layout Plain Layout
+Lie Groups
+\end_layout
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Standard
+\begin_inset FormulaMacro
+\newcommand{\xhat}{\hat{x}}
+{\hat{x}}
+\end_inset
+
+
+\begin_inset FormulaMacro
+\newcommand{\yhat}{\hat{y}}
+{\hat{y}}
+\end_inset
+
+
+\begin_inset FormulaMacro
+\newcommand{\Ad}[1]{Ad_{#1}}
+{Ad_{#1}}
+\end_inset
+
+
+\end_layout
+
+\begin_layout Standard
+\begin_inset FormulaMacro
+\newcommand{\define}{\stackrel{\Delta}{=}}
+{\stackrel{\Delta}{=}}
+\end_inset
+
+
+\begin_inset FormulaMacro
+\newcommand{\gg}{\mathfrak{g}}
+{\mathfrak{g}}
+\end_inset
+
+
+\begin_inset FormulaMacro
+\newcommand{\Rn}{\mathbb{R}^{n}}
+{\mathbb{R}^{n}}
+\end_inset
+
+
+\end_layout
+
+\begin_layout Standard
+\begin_inset Note Comment
+status open
+
+\begin_layout Plain Layout
+SO(2)
+\end_layout
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Standard
+\begin_inset FormulaMacro
+\newcommand{\Rtwo}{\mathfrak{\mathbb{R}^{2}}}
+{\mathfrak{\mathbb{R}^{2}}}
+\end_inset
+
+
+\begin_inset FormulaMacro
+\newcommand{\SOtwo}{SO(2)}
+{SO(2)}
+\end_inset
+
+
+\begin_inset FormulaMacro
+\newcommand{\sotwo}{\mathfrak{so(2)}}
+{\mathfrak{so(2)}}
+\end_inset
+
+
+\begin_inset FormulaMacro
+\newcommand{\that}{\hat{\theta}}
+{\hat{\theta}}
+\end_inset
+
+
+\begin_inset FormulaMacro
+\newcommand{\skew}[1]{[#1]_{+}}
+{[#1]_{+}}
+\end_inset
+
+
+\end_layout
+
+\begin_layout Standard
+\begin_inset Note Comment
+status open
+
+\begin_layout Plain Layout
+SE(2)
+\end_layout
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Standard
+\begin_inset FormulaMacro
+\newcommand{\SEtwo}{SE(2)}
+{SE(2)}
+\end_inset
+
+
+\begin_inset FormulaMacro
+\newcommand{\setwo}{\mathfrak{se(2)}}
+{\mathfrak{se(2)}}
+\end_inset
+
+
+\end_layout
+
+\begin_layout Standard
+\begin_inset Note Comment
+status open
+
+\begin_layout Plain Layout
+SO(3)
+\end_layout
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Standard
+\begin_inset FormulaMacro
+\newcommand{\Rthree}{\mathfrak{\mathbb{R}^{3}}}
+{\mathfrak{\mathbb{R}^{3}}}
+\end_inset
+
+
+\begin_inset FormulaMacro
+\newcommand{\SOthree}{SO(3)}
+{SO(3)}
+\end_inset
+
+
+\begin_inset FormulaMacro
+\newcommand{\sothree}{\mathfrak{so(3)}}
+{\mathfrak{so(3)}}
+\end_inset
+
+
+\begin_inset FormulaMacro
+\newcommand{\what}{\hat{\omega}}
+{\hat{\omega}}
+\end_inset
+
+
+\begin_inset FormulaMacro
+\newcommand{\Skew}[1]{[#1]_{\times}}
+{[#1]_{\times}}
+\end_inset
+
+
+\end_layout
+
+\begin_layout Standard
+\begin_inset Note Comment
+status open
+
+\begin_layout Plain Layout
+SE(3)
+\end_layout
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Standard
+\begin_inset FormulaMacro
+\newcommand{\Rsix}{\mathfrak{\mathbb{R}^{6}}}
+{\mathfrak{\mathbb{R}^{6}}}
+\end_inset
+
+
+\begin_inset FormulaMacro
+\newcommand{\SEthree}{SE(3)}
+{SE(3)}
+\end_inset
+
+
+\begin_inset FormulaMacro
+\newcommand{\sethree}{\mathfrak{se(3)}}
+{\mathfrak{se(3)}}
+\end_inset
+
+
+\begin_inset FormulaMacro
+\newcommand{\xihat}{\hat{\xi}}
+{\hat{\xi}}
+\end_inset
+
+
+\end_layout
+
+\end_body
+\end_document

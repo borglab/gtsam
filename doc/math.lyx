@@ -54,350 +54,18 @@ Geometry Derivatives and Other Hairy Math
 Frank Dellaert
 \end_layout
 
-\begin_layout Section
-Review of Lie Groups
-\end_layout
-
-\begin_layout Subsection
-A Manifold and a Group
-\end_layout
-
 \begin_layout Standard
-\begin_inset FormulaMacro
-\newcommand{\xhat}{\hat{x}}
-{\hat{x}}
-\end_inset
-
-
-\begin_inset FormulaMacro
-\newcommand{\yhat}{\hat{y}}
-{\hat{y}}
-\end_inset
-
-
-\begin_inset FormulaMacro
-\newcommand{\Ad}[1]{Ad_{#1}}
-{Ad_{#1}}
-\end_inset
-
-
-\end_layout
-
-\begin_layout Standard
-\begin_inset FormulaMacro
-\newcommand{\define}{\stackrel{\Delta}{=}}
-{\stackrel{\Delta}{=}}
-\end_inset
-
-
-\begin_inset FormulaMacro
-\newcommand{\gg}{\mathfrak{g}}
-{\mathfrak{g}}
-\end_inset
-
-
-\begin_inset FormulaMacro
-\newcommand{\Rn}{\mathbb{R}^{n}}
-{\mathbb{R}^{n}}
-\end_inset
-
-
-\end_layout
-
-\begin_layout Standard
-A Lie group 
-\begin_inset Formula $G$
-\end_inset
-
- is a manifold that possesses a smooth group operation.
- Associated with it is a Lie Algebra 
-\begin_inset Formula $\gg$
-\end_inset
-
- which, loosely speaking, can be identified with the tangent space at the
- identity and completely defines how the groups behaves around the identity.
- There is a mapping from 
-\begin_inset Formula $\gg$
-\end_inset
-
- back to 
-\begin_inset Formula $G$
-\end_inset
-
-, called the exponential map
-\begin_inset Formula \[
-\exp:\gg\rightarrow G\]
-
-\end_inset
-
-and a corresponding inverse 
-\begin_inset Formula \[
-\log:G\rightarrow\gg\]
-
-\end_inset
-
-that maps elements in G to an element in 
-\begin_inset Formula $\gg$
-\end_inset
-
-.
-\end_layout
-
-\begin_layout Subsection
-Lie Algebra
-\end_layout
-
-\begin_layout Standard
-The Lie Algebra 
-\begin_inset Formula $\gg$
-\end_inset
-
- is called an algebra because it is endowed with a binary operation, the
- Lie bracket 
-\begin_inset Formula $[X,Y]$
-\end_inset
-
-, the properties of which are closely related to the group operation of
- 
-\begin_inset Formula $G$
-\end_inset
-
-.
- For example, in matrix Lie groups, the Lie bracket is given by 
-\begin_inset Formula $[A,B]\define AB-BA$
-\end_inset
-
-.
- The Lie bracket does not mimick the group operation, as in non-commutative
- Lie groups we do not have the usual simplification 
-\begin_inset Formula \[
-e^{Z}=e^{X}e^{Y}\neq e^{X+Y}\]
-
-\end_inset
-
-where 
-\begin_inset Formula $X$
-\end_inset
-
-, 
-\begin_inset Formula $Y$
-\end_inset
-
-, and 
-\begin_inset Formula $Z$
-\end_inset
-
- elements of the Lie algebra 
-\begin_inset Formula $\gg$
-\end_inset
-
-.
- Instead, 
-\begin_inset Formula $Z$
-\end_inset
-
- can be calculated using the Baker-Campbell-Hausdorff (BCH) formula:
-\begin_inset Foot
-status collapsed
-
-\begin_layout Plain Layout
-http://en.wikipedia.org/wiki/Baker–Campbell–Hausdorff_formula
-\end_layout
+\begin_inset CommandInset include
+LatexCommand include
+filename "macros.lyx"
 
 \end_inset
 
 
-\begin_inset Formula \[
-Z=X+Y+[X,Y]/2+[X-Y,[X,Y]]/12-[Y,[X,[X,Y]]]/24+\ldots\]
-
-\end_inset
-
-For commutative groups the bracket is zero and we recover 
-\begin_inset Formula $Z=X+Y$
-\end_inset
-
-.
- For non-commutative groups we can use the BCH formula to approximate it.
-\end_layout
-
-\begin_layout Subsection
-Exponential Coordinates
-\end_layout
-
-\begin_layout Standard
-For 
-\begin_inset Formula $n$
-\end_inset
-
--dimensional matrix Lie groups, the Lie algebra 
-\begin_inset Formula $\gg$
-\end_inset
-
- is isomorphic to 
-\begin_inset Formula $\mathbb{R}^{n}$
-\end_inset
-
-, and we can define the mapping
-\begin_inset Formula \[
-\hat{}:\mathbb{R}^{n}\rightarrow\gg\]
-
-\end_inset
-
-
-\begin_inset Formula \[
-\hat{}:x\rightarrow\xhat\]
-
-\end_inset
-
-which maps 
-\begin_inset Formula $n$
-\end_inset
-
--vectors 
-\begin_inset Formula $x\in$
-\end_inset
-
-
-\begin_inset Formula $\Rn$
-\end_inset
-
- to elements of 
-\begin_inset Formula $\gg$
-\end_inset
-
-.
- In the case of matrix Lie groups, the elements 
-\begin_inset Formula $\xhat$
-\end_inset
-
- of 
-\begin_inset Formula $\gg$
-\end_inset
-
- are 
-\begin_inset Formula $n\times n$
-\end_inset
-
- matrices, and the map is given by
-\begin_inset Formula \begin{equation}
-\xhat=\sum_{i=1}^{n}x_{i}G^{i}\label{eq:generators}\end{equation}
-
-\end_inset
-
-where the 
-\begin_inset Formula $G^{i}$
-\end_inset
-
- are 
-\begin_inset Formula $n\times n$
-\end_inset
-
- matrices known as the Lie group generators.
- The meaning of the map 
-\begin_inset Formula $x\rightarrow\xhat$
-\end_inset
-
- will depend on the group 
-\begin_inset Formula $G$
-\end_inset
-
- and will be very intuitive.
-\end_layout
-
-\begin_layout Subsection
-The Adjoint Map
-\end_layout
-
-\begin_layout Standard
-Below we frequently make use of the equality
-\begin_inset Foot
-status collapsed
-
-\begin_layout Plain Layout
-http://en.wikipedia.org/wiki/Exponential_map
-\end_layout
-
-\end_inset
-
-
-\begin_inset Formula \[
-ge^{\xhat}g^{-1}=e^{\Ad g{\xhat}}\]
-
-\end_inset
-
-where 
-\begin_inset Formula $\Ad g:\gg\rightarrow\mathfrak{\gg}$
-\end_inset
-
- is a map parameterized by a group element 
-\begin_inset Formula $g$
-\end_inset
-
-.
- The intuitive explanation is that a change 
-\begin_inset Formula $\exp\left(\xhat\right)$
-\end_inset
-
- defined around the orgin, but applied at the group element 
-\begin_inset Formula $g$
-\end_inset
-
-, can be written in one step by taking the adjoint 
-\begin_inset Formula $\Ad g{\xhat}$
-\end_inset
-
- of 
-\begin_inset Formula $\xhat$
-\end_inset
-
-.
- In the case of a matrix group the ajoint can be written as 
-\begin_inset Foot
-status collapsed
-
-\begin_layout Plain Layout
-http://en.wikipedia.org/wiki/Adjoint_representation_of_a_Lie_group
-\end_layout
-
-\end_inset
-
-
-\begin_inset Formula \[
-\Ad T{\xhat}\define Te^{\xhat}T^{-1}\]
-
-\end_inset
-
-and hence we have
-\end_layout
-
-\begin_layout Standard
-\begin_inset Formula \[
-Te^{\xhat}T^{-1}=e^{T\xhat T^{-1}}\]
-
-\end_inset
-
-where both 
-\begin_inset Formula $T$
-\end_inset
-
- and 
-\begin_inset Formula $\xhat$
-\end_inset
-
- are 
-\begin_inset Formula $n\times n$
-\end_inset
-
- matrices for an 
-\begin_inset Formula $n$
-\end_inset
-
--dimensional Lie group.
- Below we introduce the most important Lie groups that we deal with.
 \end_layout
 
 \begin_layout Section
-Derivatives of Mappings
+Derivatives of Lie Group Mappings
 \end_layout
 
 \begin_layout Standard
@@ -632,25 +300,8 @@ name "sec:Derivatives-of-Actions"
 
 \end_layout
 
-\begin_layout Standard
-\begin_inset FormulaMacro
-\newcommand{\deriv}[2]{\frac{\partial#1}{\partial#2}}
-{\frac{\partial#1}{\partial#2}}
-\end_inset
-
-
-\begin_inset FormulaMacro
-\newcommand{\at}[2]{#1\biggr\rvert_{#2}}
-{#1\biggr\rvert_{#2}}
-\end_inset
-
- 
-\begin_inset FormulaMacro
-\newcommand{\Jac}[3]{ \at{\deriv{#1}{#2}} {#3} }
-{\at{\deriv{#1}{#2}}{#3}}
-\end_inset
-
-
+\begin_layout Subsection
+Forward Action
 \end_layout
 
 \begin_layout Standard
@@ -719,12 +370,30 @@ e^{\xhat}p=p+\xhat p+\ldots\]
 
 \end_inset
 
-and the derivative of an incremental action x at the origin is
+and the derivative of an incremental action x for matrix Lie groups becomes
 \begin_inset Formula \[
-H_{p}\define\deriv{e^{\xhat}p}x=\deriv{\left(\xhat p\right)}x\]
+\deriv{q(x)}x=T\deriv{\left(\xhat p\right)}x\define TH_{p}\]
 
 \end_inset
 
+where 
+\begin_inset Formula $H_{p}$
+\end_inset
+
+ is an 
+\begin_inset Formula $n\times n$
+\end_inset
+
+ Jacobian matrix that depends on 
+\begin_inset Formula $p$
+\end_inset
+
+.
+ 
+\begin_inset Note Note
+status collapsed
+
+\begin_layout Plain Layout
 Recalling the definition 
 \begin_inset CommandInset ref
 LatexCommand eqref
@@ -779,337 +448,458 @@ and the final derivative becomes
 
 \end_layout
 
+\end_inset
+
+
+\end_layout
+
+\begin_layout Subsection
+Inverse Action
+\end_layout
+
+\begin_layout Standard
+When we apply the inverse transformation 
+\begin_inset Formula \[
+q=T^{-1}p\]
+
+\end_inset
+
+we would now like to know what an incremental action 
+\begin_inset Formula $\xhat$
+\end_inset
+
+ on 
+\begin_inset Formula $T$
+\end_inset
+
+ would do:
+\begin_inset Formula \begin{eqnarray*}
+q(x) & = & \left(Te^{\xhat}\right)^{-1}p\\
+ & = & e^{-\xhat}T^{-1}p\\
+ & = & T^{-1}Te^{-\xhat}T^{-1}p\\
+ & = & -T^{-1}\exp\left(T\xhat T^{-1}\right)p\end{eqnarray*}
+
+\end_inset
+
+Hence
+\begin_inset Formula \begin{equation}
+\deriv{q(x)}x=-T^{-1}\deriv{\left(T\xhat T^{-1}\mbox{ }p\right)}x\label{eq:inverseAction}\end{equation}
+
+\end_inset
+
+The derivative in 
+\begin_inset Formula $p$
+\end_inset
+
+ is again easy for matrix Lie groups:
+\begin_inset Formula \[
+\deriv{\left(T^{-1}p\right)}p=T^{-1}\]
+
+\end_inset
+
+
+\end_layout
+
 \begin_layout Section
-3D Rotations
-\end_layout
-
-\begin_layout Subsection
-Basics
+Point3
 \end_layout
 
 \begin_layout Standard
-\begin_inset FormulaMacro
-\newcommand{\Rthree}{\mathfrak{\mathbb{R}^{3}}}
-{\mathfrak{\mathbb{R}^{3}}}
+A cross product 
+\begin_inset Formula $a\times b$
 \end_inset
 
-
-\begin_inset FormulaMacro
-\newcommand{\SOthree}{SO(3)}
-{SO(3)}
-\end_inset
-
-
-\begin_inset FormulaMacro
-\newcommand{\sothree}{\mathfrak{so(3)}}
-{\mathfrak{so(3)}}
-\end_inset
-
-
-\begin_inset FormulaMacro
-\newcommand{\what}{\hat{\omega}}
-{\hat{\omega}}
-\end_inset
-
-
-\begin_inset FormulaMacro
-\newcommand{\Skew}[1]{[#1]_{\times}}
-{[#1]_{\times}}
-\end_inset
-
-
-\end_layout
-
-\begin_layout Standard
-The Lie group 
-\begin_inset Formula $\SOthree$
-\end_inset
-
- is a subgroup of the general linear group 
-\begin_inset Formula $GL(3)$
-\end_inset
-
- of 
-\begin_inset Formula $3\times3$
-\end_inset
-
- invertible matrices.
- Its Lie algebra 
-\begin_inset Formula $\sothree$
-\end_inset
-
- is the vector space of 
-\begin_inset Formula $3\times3$
-\end_inset
-
- skew-symmetric matrices.
- The exponential map can be computed in closed form using Rodrigues' formula.
-\end_layout
-
-\begin_layout Standard
-Since 
-\begin_inset Formula $\SOthree$
-\end_inset
-
- is a three-dimensional manifold, 
-\begin_inset Formula $\sothree$
-\end_inset
-
- is isomorphic to 
-\begin_inset Formula $\Rthree$
-\end_inset
-
- and we define the map
+ can be written as a matrix multiplication
 \begin_inset Formula \[
-\hat{}:\Rthree\rightarrow\sothree\]
-
-\end_inset
-
-
-\begin_inset Formula \[
-\hat{}:\omega\rightarrow\what=\Skew{\omega}\]
-
-\end_inset
-
-which maps 3-vectors 
-\begin_inset Formula $\omega$
-\end_inset
-
- to skew-symmetric matrices 
-\begin_inset Formula $\Skew{\omega}$
-\end_inset
-
- :
-\begin_inset Formula \[
-\Skew{\omega}=\left[\begin{array}{ccc}
-0 & -\omega_{z} & \omega_{y}\\
-\omega_{z} & 0 & -\omega_{x}\\
--\omega_{y} & \omega_{x} & 0\end{array}\right]=\omega_{x}G^{x}+\omega_{y}G^{y}+\omega_{z}G^{z}\]
-
-\end_inset
-
-where the 
-\begin_inset Formula $G^{i}$
-\end_inset
-
- are the generators for 
-\begin_inset Formula $\SOthree$
-\end_inset
-
-,
-\begin_inset Formula \[
-G^{x}=\left(\begin{array}{ccc}
-0 & 0 & 0\\
-0 & 0 & -1\\
-0 & 1 & 0\end{array}\right)\mbox{}G^{y}=\left(\begin{array}{ccc}
-0 & 0 & 1\\
-0 & 0 & 0\\
--1 & 0 & 0\end{array}\right)\mbox{ }G^{z}=\left(\begin{array}{ccc}
-0 & -1 & 0\\
-1 & 0 & 0\\
-0 & 0 & 0\end{array}\right)\]
-
-\end_inset
-
-corresponding to a rotation around 
-\begin_inset Formula $X$
-\end_inset
-
-, 
-\begin_inset Formula $Y$
-\end_inset
-
-, and 
-\begin_inset Formula $Z$
-\end_inset
-
-, respectively.
- The Lie bracket 
-\begin_inset Formula $[x,y]$
-\end_inset
-
- corresponds to the cross product 
-\begin_inset Formula $x\times y$
-\end_inset
-
- in 
-\begin_inset Formula $\Rthree$
-\end_inset
-
-.
-\end_layout
-
-\begin_layout Standard
-For every 
-\begin_inset Formula $3-$
-\end_inset
-
-vector 
-\begin_inset Formula $\omega$
-\end_inset
-
- there is a corresponding rotation matrix
-\begin_inset Formula \[
-R=e^{\Skew{\omega}}\]
-
-\end_inset
-
-and this is defines the canonical parameterization of 
-\begin_inset Formula $\SOthree$
-\end_inset
-
-, with 
-\begin_inset Formula $\omega$
-\end_inset
-
- known as the canonical or exponential coordinates.
- It is equivalent to the axis-angle representation for rotations, where
- the unit vector 
-\begin_inset Formula $\omega/\left\Vert \omega\right\Vert $
-\end_inset
-
- defines the rotation axis, and its magnitude the amount of rotation 
-\begin_inset Formula $\theta$
-\end_inset
-
-.
-\end_layout
-
-\begin_layout Subsection
-The Adjoint Map
-\end_layout
-
-\begin_layout Standard
-We can prove the following identity for rotation matrices 
-\begin_inset Formula $R$
-\end_inset
-
-,
-\begin_inset Formula \begin{eqnarray}
-R\Skew{\omega}R^{T} & = & R\Skew{\omega}\left[\begin{array}{ccc}
-a_{1} & a_{2} & a_{3}\end{array}\right]\nonumber \\
- & = & R\left[\begin{array}{ccc}
-\omega\times a_{1} & \omega\times a_{2} & \omega\times a_{3}\end{array}\right]\nonumber \\
- & = & \left[\begin{array}{ccc}
-a_{1}(\omega\times a_{1}) & a_{1}(\omega\times a_{2}) & a_{1}(\omega\times a_{3})\\
-a_{2}(\omega\times a_{1}) & a_{2}(\omega\times a_{2}) & a_{2}(\omega\times a_{3})\\
-a_{3}(\omega\times a_{1}) & a_{3}(\omega\times a_{2}) & a_{3}(\omega\times a_{3})\end{array}\right]\nonumber \\
- & = & \left[\begin{array}{ccc}
-\omega(a_{1}\times a_{1}) & \omega(a_{2}\times a_{1}) & \omega(a_{3}\times a_{1})\\
-\omega(a_{1}\times a_{2}) & \omega(a_{2}\times a_{2}) & \omega(a_{3}\times a_{2})\\
-\omega(a_{1}\times a_{3}) & \omega(a_{2}\times a_{3}) & \omega(a_{3}\times a_{3})\end{array}\right]\nonumber \\
- & = & \left[\begin{array}{ccc}
-0 & -\omega a_{3} & \omega a_{2}\\
-\omega a_{3} & 0 & -\omega a_{1}\\
--\omega a_{2} & \omega a_{1} & 0\end{array}\right]\nonumber \\
- & = & \Skew{R\omega}\label{eq:property1}\end{eqnarray}
+a\times b=\Skew ab\]
 
 \end_inset
 
 where 
-\begin_inset Formula $a_{1}$
+\begin_inset Formula $\Skew a$
 \end_inset
 
-, 
-\begin_inset Formula $a_{2}$
-\end_inset
-
-, and 
-\begin_inset Formula $a_{3}$
-\end_inset
-
- are the 
-\emph on
-rows
-\emph default
- of 
-\begin_inset Formula $R$
-\end_inset
-
-.
- Above we made use of the orthogonality of rotation matrices and the triple
- product rule:
+ is a skew-symmetric matrix defined as
 \begin_inset Formula \[
-a(b\times c)=b(c\times a)=c(a\times b)\]
+\Skew{x,y,z}=\left[\begin{array}{ccc}
+0 & -z & y\\
+z & 0 & -x\\
+-y & x & 0\end{array}\right]\]
 
 \end_inset
 
-Hence, given property 
-\begin_inset CommandInset ref
-LatexCommand eqref
-reference "eq:property1"
-
-\end_inset
-
-, the adjoint map for 
-\begin_inset Formula $\sothree$
-\end_inset
-
- simplifies to
+We also have
 \begin_inset Formula \[
-\Ad R{\Skew{\omega}}=R\Skew{\omega}R^{T}=\Skew{R\omega}\]
+a^{T}\Skew b=-(\Skew ba)^{T}=-(a\times b)^{T}\]
 
 \end_inset
 
-and this can be expressed in exponential coordinates simply by rotating
- the axis 
-\begin_inset Formula $\omega$
+The derivative of a cross product 
+\begin_inset Formula \begin{equation}
+\frac{\partial(a\times b)}{\partial a}=\Skew{-b}\label{eq:Dcross1}\end{equation}
+
 \end_inset
 
- to 
-\begin_inset Formula $R\omega$
+
+\begin_inset Formula \begin{equation}
+\frac{\partial(a\times b)}{\partial b}=\Skew a\label{eq:Dcross2}\end{equation}
+
 \end_inset
 
-.
- 
+
+\end_layout
+
+\begin_layout Standard
+\begin_inset Newpage pagebreak
+\end_inset
+
+
+\end_layout
+
+\begin_layout Section
+2D Rotations
+\end_layout
+
+\begin_layout Subsection
+Rot2 (in gtsam)
 \end_layout
 
 \begin_layout Standard
-As an example, to apply an axis-angle rotation 
-\begin_inset Formula $\omega$
+A rotation is stored as 
+\begin_inset Formula $(\cos\theta,\sin\theta)$
 \end_inset
 
- to a point 
-\begin_inset Formula $p$
-\end_inset
-
- in the frame 
-\begin_inset Formula $R$
-\end_inset
-
-, we could:
-\end_layout
-
-\begin_layout Enumerate
-First transform 
-\begin_inset Formula $p$
-\end_inset
-
- back to the world frame, apply 
-\begin_inset Formula $\omega$
-\end_inset
-
-, and then rotate back:
+.
+ An incremental rotation is applied using the trigonometric sum rule:
 \begin_inset Formula \[
-q=Re^{\Skew{\omega}}R^{T}\]
+\cos\theta'=\cos\theta\cos\delta-\sin\theta\sin\delta\]
+
+\end_inset
+
+
+\begin_inset Formula \[
+\sin\theta'=\sin\theta\cos\delta+\cos\theta\sin\delta\]
+
+\end_inset
+
+where 
+\begin_inset Formula $\delta$
+\end_inset
+
+ is an incremental rotation angle.
+\end_layout
+
+\begin_layout Subsection
+Derivatives of Mappings
+\end_layout
+
+\begin_layout Standard
+The adjoint map for 
+\begin_inset Formula $\sotwo$
+\end_inset
+
+ is trivially equal to the identity, as is the case for 
+\emph on
+all
+\emph default
+ commutative groups, and we have the derivative of 
+\series bold
+inverse
+\series default
+,
+\begin_inset Formula \[
+\frac{\partial R^{T}}{\partial\theta}=-\Ad R=-1\mbox{ }\]
+
+\end_inset
+
+
+\series bold
+compose,
+\series default
+
+\begin_inset Formula \[
+\frac{\partial\left(R_{1}R_{2}\right)}{\partial\theta_{1}}=\Ad{R_{2}^{T}}=1\mbox{ and }\frac{\partial\left(R_{1}R_{2}\right)}{\partial\theta_{2}}=1\]
+
+\end_inset
+
+
+\series bold
+
+\begin_inset Formula $and$
+\end_inset
+
+between:
+\series default
+
+\begin_inset Formula \[
+\frac{\partial\left(R_{1}^{T}R_{2}\right)}{\partial\theta_{1}}=-\Ad{R_{2}^{T}R_{1}}=-1\mbox{ and }\frac{\partial\left(R_{1}^{T}R_{2}\right)}{\partial\theta_{2}}=1\]
 
 \end_inset
 
 
 \end_layout
 
-\begin_layout Enumerate
-Immediately apply the transformed axis-angle transformation 
-\begin_inset Formula $\Ad R{\Skew{\omega}}=\Skew{R\omega}$
+\begin_layout Subsection
+Derivatives of Actions
+\end_layout
+
+\begin_layout Standard
+In the case of 
+\begin_inset Formula $\SOtwo$
+\end_inset
+
+ the vector space is 
+\begin_inset Formula $\Rtwo$
+\end_inset
+
+, and the group action corresponds to rotating a point
+\begin_inset Formula \[
+q=Rp\]
+
+\end_inset
+
+We would now like to know what an incremental rotation parameterized by
+ 
+\begin_inset Formula $\theta$
+\end_inset
+
+ would do:
+\begin_inset Formula \[
+q(\text{\theta})=Re^{\skew{\theta}}p\]
+
+\end_inset
+
+hence the derivative (following the exposition in Section 
+\begin_inset CommandInset ref
+LatexCommand ref
+reference "sec:Derivatives-of-Actions"
+
+\end_inset
+
+):
+\begin_inset Formula \[
+\deriv{q(\omega)}{\omega}=R\deriv{}{\omega}\left(e^{\skew{\theta}}p\right)=R\deriv{}{\omega}\left(\skew{\theta}p\right)=RH_{p}\]
+
+\end_inset
+
+Note that 
+\begin_inset Formula \begin{equation}
+\skew{\theta}\left[\begin{array}{c}
+x\\
+y\end{array}\right]=\theta R_{\pi/2}\left[\begin{array}{c}
+x\\
+y\end{array}\right]=\theta\left[\begin{array}{c}
+-y\\
+x\end{array}\right]\label{eq:RestrictedCross}\end{equation}
+
+\end_inset
+
+which acts like a restricted 
+\begin_inset Quotes eld
+\end_inset
+
+cross product
+\begin_inset Quotes erd
+\end_inset
+
+ in the plane.
+ Hence 
+\begin_inset Formula \[
+\skew{\theta}p=\left[\begin{array}{c}
+-y\\
+x\end{array}\right]\theta=H_{p}\theta\]
+
+\end_inset
+
+with 
+\begin_inset Formula $H_{p}=R_{pi/2}p$
+\end_inset
+
+.
+ Hence, the final derivative of an action in its first argument is
+\begin_inset Formula \[
+\deriv{q(\theta)}{\theta}=RH_{p}=RR_{pi/2}p=R_{pi/2}Rp=R_{pi/2}q\]
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Standard
+\begin_inset Newpage pagebreak
+\end_inset
+
+
+\end_layout
+
+\begin_layout Section
+2D Rigid Transformations
+\end_layout
+
+\begin_layout Subsection
+Derivatives of Mappings
+\end_layout
+
+\begin_layout Standard
+We can just define all derivatives in terms of the above adjoint map:
+\begin_inset Formula \begin{eqnarray*}
+\frac{\partial T^{^{-1}}}{\partial\xi} & = & -\Ad T\end{eqnarray*}
+
+\end_inset
+
+
+\begin_inset Formula \begin{eqnarray*}
+\frac{\partial\left(T_{1}T_{2}\right)}{\partial\xi_{1}} & = & \Ad{T_{2}^{^{-1}}}=1\mbox{ and }\frac{\partial\left(T_{1}T_{2}\right)}{\partial\xi_{2}}=I_{3}\end{eqnarray*}
+
+\end_inset
+
+
+\begin_inset Formula \begin{eqnarray*}
+\frac{\partial\left(T_{1}^{-1}T_{2}\right)}{\partial\xi_{1}} & = & -\Ad{T_{2}^{^{-1}}T_{1}}=-\Ad{between(T_{2},T_{1})}\mbox{ and }\frac{\partial\left(T_{1}^{-1}T_{2}\right)}{\partial\xi_{2}}=I_{3}\end{eqnarray*}
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Subsection
+The derivatives of Actions
+\end_layout
+
+\begin_layout Standard
+The action of 
+\begin_inset Formula $\SEtwo$
+\end_inset
+
+ on 2D points is done by embedding the points in 
+\begin_inset Formula $\mathbb{R}^{3}$
+\end_inset
+
+ by using homogeneous coordinates
+\begin_inset Formula \[
+\hat{q}=\left[\begin{array}{c}
+q\\
+1\end{array}\right]=\left[\begin{array}{cc}
+R & t\\
+0 & 1\end{array}\right]\left[\begin{array}{c}
+p\\
+1\end{array}\right]=T\hat{p}\]
+
+\end_inset
+
+Analoguous to 
+\begin_inset Formula $\SEthree$
+\end_inset
+
+, we can compute a velocity 
+\begin_inset Formula $\xihat\hat{p}$
+\end_inset
+
+ in the local 
+\begin_inset Formula $T$
+\end_inset
+
+ frame: 
+\begin_inset Formula \[
+\xihat\hat{p}=\left[\begin{array}{cc}
+\skew{\omega} & v\\
+0 & 0\end{array}\right]\left[\begin{array}{c}
+p\\
+1\end{array}\right]=\left[\begin{array}{c}
+\skew{\omega}p+v\\
+0\end{array}\right]\]
+
+\end_inset
+
+By only taking the top two rows, we can write this as a velocity in 
+\begin_inset Formula $\Rtwo$
+\end_inset
+
+, as the product of a 
+\begin_inset Formula $2\times3$
+\end_inset
+
+ matrix 
+\begin_inset Formula $H_{p}$
+\end_inset
+
+ that acts upon the exponential coordinates 
+\begin_inset Formula $\xi$
+\end_inset
+
+ directly:
+\begin_inset Formula \[
+\skew{\omega}p+v=v+R_{\pi/2}p\omega=\left[\begin{array}{cc}
+I_{2} & R_{\pi/2}p\end{array}\right]\left[\begin{array}{c}
+v\\
+\omega\end{array}\right]=H_{p}\xi\]
+
+\end_inset
+
+Hence, the final derivative of the group action is
+\begin_inset Formula \[
+\deriv{q(\xi)}{\xi}=R\left[\begin{array}{cc}
+I_{2} & R_{\pi/2}p\end{array}\right]=\left[\begin{array}{cc}
+R & R_{\pi/2}q\end{array}\right]\]
+
+\end_inset
+
+The derivative of the inverse action 
+\begin_inset Formula $\hat{q}=T^{-1}\hat{p}$
+\end_inset
+
+ is given by 
+\begin_inset CommandInset ref
+LatexCommand eqref
+reference "eq:inverseAction"
+
+\end_inset
+
+, specialized to 
+\begin_inset Formula $\SEtwo$
 \end_inset
 
 :
+\end_layout
+
+\begin_layout Standard
 \begin_inset Formula \[
-q=e^{\Skew{R\omega}}p\]
+\deriv{\left(T^{-1}\hat{p}\right)}{\xi}=-T^{-1}\deriv{\left(\Ad T\hat{\xi}\right)\hat{p}}{\xi}\]
+
+\end_inset
+
+where the velocity now is
+\begin_inset Formula \[
+\left(\Ad T\hat{\xi}\right)\hat{p}=\left[\begin{array}{cc}
+\skew{\omega} & Rv-\omega R_{\pi/2}t\\
+0 & 0\end{array}\right]\left[\begin{array}{c}
+p\\
+1\end{array}\right]=\left[\begin{array}{c}
+Rv+R_{\pi/2}(p-t)\omega\\
+0\end{array}\right]\]
+
+\end_inset
+
+and hence
+\begin_inset Formula \[
+\deriv{q(\xi)}{\xi}=-R^{T}\left[\begin{array}{cc}
+R & R_{\pi/2}(p-t)\end{array}\right]=\left[\begin{array}{cc}
+-I_{2} & -R_{\pi/2}q\end{array}\right]\]
 
 \end_inset
 
 
+\end_layout
+
+\begin_layout Standard
+\begin_inset Newpage pagebreak
+\end_inset
+
+
+\end_layout
+
+\begin_layout Section
+3D Rotations
 \end_layout
 
 \begin_layout Subsection
@@ -1130,18 +920,17 @@ inverse
 
 
 \series bold
-compose
+compose,
 \series default
- in its first argument,
-\begin_inset Formula \begin{eqnarray*}
-\Skew{\omega'} & = & \Ad{R_{2}^{T}}\left(\Skew{\omega}\right)=\Skew{R_{2}^{T}\omega}\\
-\frac{\partial\left(R_{1}R_{2}\right)}{\partial\omega_{1}} & = & R_{2}^{T}\end{eqnarray*}
+
+\begin_inset Formula \[
+\Skew{\omega'}=\Ad{R_{2}^{T}}\left(\Skew{\omega}\right)=\Skew{R_{2}^{T}\omega}\]
 
 \end_inset
 
-compose in its second argument,
-\begin_inset Formula \begin{eqnarray*}
-\frac{\partial\left(R_{1}R_{2}\right)}{\partial\omega_{2}} & = & I_{3}\end{eqnarray*}
+
+\begin_inset Formula \[
+\frac{\partial\left(R_{1}R_{2}\right)}{\partial\omega_{1}}=R_{2}^{T}\mbox{ and }\frac{\partial\left(R_{1}R_{2}\right)}{\partial\omega_{2}}=I_{3}\]
 
 \end_inset
 
@@ -1227,216 +1016,39 @@ Hence, the final derivative of an action in its first argument is
 
 \end_layout
 
+\begin_layout Standard
+The derivative of the inverse action is given by 
+\begin_inset CommandInset ref
+LatexCommand ref
+reference "eq:inverseAction"
+
+\end_inset
+
+, specialized to 
+\begin_inset Formula $\SOthree$
+\end_inset
+
+:
+\end_layout
+
+\begin_layout Standard
+\begin_inset Formula \[
+\deriv{q(\omega)}{\omega}=-R^{T}\deriv{\left(\Skew{R\omega\mbox{ }}p\right)}{\omega}=R^{T}\Skew pR=\Skew{R^{T}p}\]
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Standard
+\begin_inset Newpage pagebreak
+\end_inset
+
+
+\end_layout
+
 \begin_layout Section
 3D Rigid Transformations
-\end_layout
-
-\begin_layout Standard
-\begin_inset FormulaMacro
-\newcommand{\Rsix}{\mathfrak{\mathbb{R}^{6}}}
-{\mathfrak{\mathbb{R}^{6}}}
-\end_inset
-
-
-\begin_inset FormulaMacro
-\newcommand{\SEthree}{SE(3)}
-{SE(3)}
-\end_inset
-
-
-\begin_inset FormulaMacro
-\newcommand{\sethree}{\mathfrak{se(3)}}
-{\mathfrak{se(3)}}
-\end_inset
-
-
-\begin_inset FormulaMacro
-\newcommand{\xihat}{\hat{\xi}}
-{\hat{\xi}}
-\end_inset
-
-
-\end_layout
-
-\begin_layout Standard
-The Lie group 
-\begin_inset Formula $\SEthree$
-\end_inset
-
- is a subgroup of the general linear group 
-\begin_inset Formula $GL(4)$
-\end_inset
-
- of 
-\begin_inset Formula $4\times4$
-\end_inset
-
- invertible matrices of the form
-\begin_inset Formula \[
-T\define\left[\begin{array}{cc}
-R & t\\
-0 & 1\end{array}\right]\]
-
-\end_inset
-
-where 
-\begin_inset Formula $R\in\SOthree$
-\end_inset
-
- is a rotation matrix and 
-\begin_inset Formula $t\in\Rthree$
-\end_inset
-
- is a translation vector.
- Its Lie algebra 
-\begin_inset Formula $\sethree$
-\end_inset
-
- is the vector space of 
-\begin_inset Formula $4\times4$
-\end_inset
-
- twists 
-\begin_inset Formula $\xihat$
-\end_inset
-
- parameterized by the 
-\emph on
-twist coordinates
-\emph default
- 
-\begin_inset Formula $\xi\in\Rsix$
-\end_inset
-
-, with the mapping 
-\begin_inset CommandInset citation
-LatexCommand cite
-key "Murray94book"
-
-\end_inset
-
- 
-\begin_inset Formula \[
-\xi\define\left[\begin{array}{c}
-\omega\\
-v\end{array}\right]\rightarrow\xihat\define\left[\begin{array}{cc}
-\Skew{\omega} & v\\
-0 & 0\end{array}\right]\]
-
-\end_inset
-
-Note we follow Frank Park's convention and reserve the first three components
- for rotation, and the last three for translation.
- Hence, with this parameterization, the generators for 
-\begin_inset Formula $\SEthree$
-\end_inset
-
- are
-\begin_inset Formula \[
-G^{1}=\left(\begin{array}{cccc}
-0 & 0 & 0 & 0\\
-0 & 0 & -1 & 0\\
-0 & 1 & 0 & 0\\
-0 & 0 & 0 & 0\end{array}\right)\mbox{}G^{2}=\left(\begin{array}{cccc}
-0 & 0 & 1 & 0\\
-0 & 0 & 0 & 0\\
--1 & 0 & 0 & 0\\
-0 & 0 & 0 & 0\end{array}\right)\mbox{ }G^{3}=\left(\begin{array}{cccc}
-0 & -1 & 0 & 0\\
-1 & 0 & 0 & 0\\
-0 & 0 & 0 & 0\\
-0 & 0 & 0 & 0\end{array}\right)\]
-
-\end_inset
-
-
-\begin_inset Formula \[
-G^{4}=\left(\begin{array}{cccc}
-0 & 0 & 0 & 1\\
-0 & 0 & 0 & 0\\
-0 & 0 & 0 & 0\\
-0 & 0 & 0 & 0\end{array}\right)\mbox{}G^{5}=\left(\begin{array}{cccc}
-0 & 0 & 0 & 0\\
-0 & 0 & 0 & 1\\
-0 & 0 & 0 & 0\\
-0 & 0 & 0 & 0\end{array}\right)\mbox{ }G^{6}=\left(\begin{array}{cccc}
-0 & 0 & 0 & 0\\
-0 & 0 & 0 & 0\\
-0 & 0 & 0 & 1\\
-0 & 0 & 0 & 0\end{array}\right)\]
-
-\end_inset
-
-Applying the exponential map to a twist 
-\begin_inset Formula $\xi$
-\end_inset
-
- yields a screw motion yielding an element in 
-\begin_inset Formula $\SEthree$
-\end_inset
-
-: 
-\begin_inset Formula \[
-T=\exp\xihat\]
-
-\end_inset
-
-A closed form solution for the exponential map is given in 
-\begin_inset CommandInset citation
-LatexCommand cite
-after "page 42"
-key "Murray94book"
-
-\end_inset
-
-.
-\end_layout
-
-\begin_layout Subsection
-The Adjoint Map
-\end_layout
-
-\begin_layout Standard
-The adjoint is 
-\begin_inset Formula \begin{eqnarray*}
-\Ad T{\xihat} & = & T\xihat T^{-1}\\
- & = & \left[\begin{array}{cc}
-R & t\\
-0 & 1\end{array}\right]\left[\begin{array}{cc}
-\Skew{\omega} & v\\
-0 & 0\end{array}\right]\left[\begin{array}{cc}
-R^{T} & -R^{T}t\\
-0 & 1\end{array}\right]\\
- & = & \left[\begin{array}{cc}
-\Skew{R\omega} & -\Skew{R\omega}t+Rv\\
-0 & 0\end{array}\right]\\
- & = & \left[\begin{array}{cc}
-\Skew{R\omega} & t\times R\omega+Rv\\
-0 & 0\end{array}\right]\end{eqnarray*}
-
-\end_inset
-
-From this we can express the Adjoint map in terms of twist coordinates (see
- also 
-\begin_inset CommandInset citation
-LatexCommand cite
-key "Murray94book"
-
-\end_inset
-
- and FP):
-\begin_inset Formula \[
-\left[\begin{array}{c}
-\omega'\\
-v'\end{array}\right]=\left[\begin{array}{cc}
-R & 0\\
-\Skew tR & R\end{array}\right]\left[\begin{array}{c}
-\omega\\
-v\end{array}\right]\]
-
-\end_inset
-
-
 \end_layout
 
 \begin_layout Subsection
@@ -1637,694 +1249,7 @@ in homogenous coordinates.
 
 \end_layout
 
-\begin_layout Section
-2D Rotations
-\end_layout
-
-\begin_layout Standard
-\begin_inset FormulaMacro
-\newcommand{\Rtwo}{\mathfrak{\mathbb{R}^{2}}}
-{\mathfrak{\mathbb{R}^{2}}}
-\end_inset
-
-
-\begin_inset FormulaMacro
-\newcommand{\SOtwo}{SO(2)}
-{SO(2)}
-\end_inset
-
-
-\begin_inset FormulaMacro
-\newcommand{\sotwo}{\mathfrak{so(2)}}
-{\mathfrak{so(2)}}
-\end_inset
-
-
-\begin_inset FormulaMacro
-\newcommand{\that}{\hat{\theta}}
-{\hat{\theta}}
-\end_inset
-
-
-\begin_inset FormulaMacro
-\newcommand{\skew}[1]{[#1]_{+}}
-{[#1]_{+}}
-\end_inset
-
-
-\end_layout
-
-\begin_layout Standard
-The Lie group 
-\begin_inset Formula $\SOtwo$
-\end_inset
-
- is a subgroup of the general linear group 
-\begin_inset Formula $GL(2)$
-\end_inset
-
- of 
-\begin_inset Formula $2\times2$
-\end_inset
-
- invertible matrices.
- Its Lie algebra 
-\begin_inset Formula $\sotwo$
-\end_inset
-
- is the vector space of 
-\begin_inset Formula $2\times2$
-\end_inset
-
- skew-symmetric matrices.
- Though simpler than 
-\begin_inset Formula $\SOthree$
-\end_inset
-
- it is 
-\emph on
-commutative
-\emph default
- and hence things simplify in ways that do not generalize well, so we treat
- it only now.
- Since 
-\begin_inset Formula $\SOtwo$
-\end_inset
-
- is a one-dimensional manifold, 
-\begin_inset Formula $\sotwo$
-\end_inset
-
- is isomorphic to 
-\begin_inset Formula $\mathbb{R}$
-\end_inset
-
- and we define
-\begin_inset Formula \[
-\hat{}:\mathbb{R}\rightarrow\sotwo\]
-
-\end_inset
-
-
-\begin_inset Formula \[
-\hat{}:\theta\rightarrow\that=\skew{\theta}\]
-
-\end_inset
-
-which maps the angle 
-\begin_inset Formula $\theta$
-\end_inset
-
- to the 
-\begin_inset Formula $2\times2$
-\end_inset
-
- skew-symmetric matrix 
-\family roman
-\series medium
-\shape up
-\size normal
-\emph off
-\bar no
-\noun off
-\color none
-
-\begin_inset Formula $\skew{\theta}$
-\end_inset
-
-:
-\family default
-\series default
-\shape default
-\size default
-\emph default
-\bar default
-\noun default
-\color inherit
-
-\begin_inset Formula \[
-\skew{\theta}=\left[\begin{array}{cc}
-0 & -\theta\\
-\theta & 0\end{array}\right]\]
-
-\end_inset
-
-The exponential map can be computed in closed form as
-\begin_inset Formula \[
-R=e^{\skew{\theta}}=\left[\begin{array}{cc}
-\cos\theta & -\sin\theta\\
-\sin\theta & \cos\theta\end{array}\right]\]
-
-\end_inset
-
-
-\end_layout
-
 \begin_layout Subsection
-Derivatives of Mappings
-\end_layout
-
-\begin_layout Standard
-The adjoint map for 
-\begin_inset Formula $\sotwo$
-\end_inset
-
- is trivially equal to the identity, as is the case for 
-\emph on
-all
-\emph default
- commutative groups, and we have the derivative of 
-\series bold
-inverse
-\series default
-,
-\begin_inset Formula \begin{eqnarray*}
-\frac{\partial R^{T}}{\partial\theta} & = & -\Ad R=-1\end{eqnarray*}
-
-\end_inset
-
-
-\series bold
-compose
-\series default
- in its first argument,
-\begin_inset Formula \begin{eqnarray*}
-\frac{\partial\left(R_{1}R_{2}\right)}{\partial\theta_{1}} & = & \Ad{R_{2}^{T}}=1\end{eqnarray*}
-
-\end_inset
-
-compose in its second argument,
-\begin_inset Formula \begin{eqnarray*}
-\frac{\partial\left(R_{1}R_{2}\right)}{\partial\theta_{2}} & = & 1\end{eqnarray*}
-
-\end_inset
-
-
-\series bold
-between
-\series default
- in its first argument,
-\begin_inset Formula \begin{eqnarray*}
-\frac{\partial\left(R_{1}^{T}R_{2}\right)}{\partial\theta_{1}} & = & -\Ad{R_{2}^{T}R_{1}}=-1\end{eqnarray*}
-
-\end_inset
-
-and between in its second argument,
-\begin_inset Formula \begin{eqnarray*}
-\frac{\partial\left(R_{1}^{T}R_{2}\right)}{\partial\theta_{2}} & = & 1\end{eqnarray*}
-
-\end_inset
-
-
-\end_layout
-
-\begin_layout Subsection
-Derivatives of Actions
-\end_layout
-
-\begin_layout Standard
-In the case of 
-\begin_inset Formula $\SOtwo$
-\end_inset
-
- the vector space is 
-\begin_inset Formula $\Rtwo$
-\end_inset
-
-, and the group action corresponds to rotating a point
-\begin_inset Formula \[
-q=Rp\]
-
-\end_inset
-
-We would now like to know what an incremental rotation parameterized by
- 
-\begin_inset Formula $\theta$
-\end_inset
-
- would do:
-\begin_inset Formula \[
-q(\text{\theta})=Re^{\skew{\theta}}p\]
-
-\end_inset
-
-hence the derivative (following the exposition in Section 
-\begin_inset CommandInset ref
-LatexCommand ref
-reference "sec:Derivatives-of-Actions"
-
-\end_inset
-
-):
-\begin_inset Formula \[
-\deriv{q(\omega)}{\omega}=R\deriv{}{\omega}\left(e^{\skew{\theta}}p\right)=R\deriv{}{\omega}\left(\skew{\theta}p\right)=RH_{p}\]
-
-\end_inset
-
-Note that 
-\begin_inset Formula \begin{equation}
-\skew{\theta}\left[\begin{array}{c}
-x\\
-y\end{array}\right]=\theta R_{\pi/2}\left[\begin{array}{c}
-x\\
-y\end{array}\right]=\theta\left[\begin{array}{c}
--y\\
-x\end{array}\right]\label{eq:RestrictedCross}\end{equation}
-
-\end_inset
-
-which acts like a restricted 
-\begin_inset Quotes eld
-\end_inset
-
-cross product
-\begin_inset Quotes erd
-\end_inset
-
- in the plane.
- Hence 
-\begin_inset Formula \[
-\skew{\theta}p=\left[\begin{array}{c}
--y\\
-x\end{array}\right]\theta=H_{p}\theta\]
-
-\end_inset
-
-with 
-\begin_inset Formula $H_{p}=R_{pi/2}p$
-\end_inset
-
-.
- Hence, the final derivative of an action in its first argument is
-\begin_inset Formula \[
-\deriv{q(\theta)}{\theta}=RH_{p}=RR_{pi/2}p=R_{pi/2}Rp=R_{pi/2}q\]
-
-\end_inset
-
-
-\end_layout
-
-\begin_layout Section
-2D Rigid Transformations
-\end_layout
-
-\begin_layout Standard
-\begin_inset FormulaMacro
-\newcommand{\SEtwo}{SE(2)}
-{SE(2)}
-\end_inset
-
-
-\begin_inset FormulaMacro
-\newcommand{\setwo}{\mathfrak{se(2)}}
-{\mathfrak{se(2)}}
-\end_inset
-
-
-\end_layout
-
-\begin_layout Standard
-The Lie group 
-\begin_inset Formula $\SEtwo$
-\end_inset
-
- is a subgroup of the general linear group 
-\begin_inset Formula $GL(3)$
-\end_inset
-
- of 
-\begin_inset Formula $3\times3$
-\end_inset
-
- invertible matrices of the form
-\begin_inset Formula \[
-T\define\left[\begin{array}{cc}
-R & t\\
-0 & 1\end{array}\right]\]
-
-\end_inset
-
-where 
-\begin_inset Formula $R\in\SOtwo$
-\end_inset
-
- is a rotation matrix and 
-\begin_inset Formula $t\in\Rtwo$
-\end_inset
-
- is a translation vector.
- Its Lie algebra 
-\begin_inset Formula $\setwo$
-\end_inset
-
- is the vector space of 
-\begin_inset Formula $3\times3$
-\end_inset
-
- twists 
-\begin_inset Formula $\xihat$
-\end_inset
-
- parameterized by the 
-\emph on
-twist coordinates
-\emph default
- 
-\begin_inset Formula $\xi\in\Rthree$
-\end_inset
-
-, with the mapping 
-\begin_inset Formula \[
-\xi\define\left[\begin{array}{c}
-v\\
-\omega\end{array}\right]\rightarrow\xihat\define\left[\begin{array}{cc}
-\skew{\omega} & v\\
-0 & 0\end{array}\right]\]
-
-\end_inset
-
-Note we think of robots as having a pose 
-\begin_inset Formula $(x,y,\theta)$
-\end_inset
-
- and hence I switched the order above, reserving the first two components
- for translation and the last for rotation.
- 
-\family roman
-\series medium
-\shape up
-\size normal
-\emph off
-\bar no
-\noun off
-\color none
-The Lie group generators are
-\begin_inset Formula \[
-G^{x}=\left[\begin{array}{ccc}
-0 & 0 & 1\\
-0 & 0 & 0\\
-0 & 0 & 0\end{array}\right]\mbox{ }G^{y}=\left[\begin{array}{ccc}
-0 & 0 & 0\\
-0 & 0 & 1\\
-0 & 0 & 0\end{array}\right]\mbox{ }G^{\theta}=\left[\begin{array}{ccc}
-0 & -1 & 0\\
-1 & 0 & 0\\
-0 & 0 & 0\end{array}\right]\]
-
-\end_inset
-
-
-\family default
-\series default
-\shape default
-\size default
-\emph default
-\bar default
-\noun default
-\color inherit
-Applying the exponential map to a twist 
-\begin_inset Formula $\xi$
-\end_inset
-
- yields a screw motion yielding an element in 
-\begin_inset Formula $\SEtwo$
-\end_inset
-
-: 
-\begin_inset Formula \[
-T=\exp\xihat\]
-
-\end_inset
-
-A closed form solution for the exponential map is in the works...
-\end_layout
-
-\begin_layout Subsection
-The Adjoint Map
-\end_layout
-
-\begin_layout Standard
-The adjoint is 
-\begin_inset Formula \begin{eqnarray*}
-\Ad T{\xihat} & = & T\xihat T^{-1}\\
- & = & \left[\begin{array}{cc}
-R & t\\
-0 & 1\end{array}\right]\left[\begin{array}{cc}
-\skew{\omega} & v\\
-0 & 0\end{array}\right]\left[\begin{array}{cc}
-R^{T} & -R^{T}t\\
-0 & 1\end{array}\right]\\
- & = & \left[\begin{array}{cc}
-\skew{\omega} & -\skew{\omega}t+Rv\\
-0 & 0\end{array}\right]\\
- & = & \left[\begin{array}{cc}
-\skew{\omega} & Rv-\omega R_{\pi/2}t\\
-0 & 0\end{array}\right]\end{eqnarray*}
-
-\end_inset
-
-From this we can express the Adjoint map in terms of plane twist coordinates:
-\begin_inset Formula \[
-\left[\begin{array}{c}
-v'\\
-\omega'\end{array}\right]=\left[\begin{array}{cc}
-R & -R_{\pi/2}t\\
-0 & 1\end{array}\right]\left[\begin{array}{c}
-v\\
-\omega\end{array}\right]\]
-
-\end_inset
-
-
-\end_layout
-
-\begin_layout Subsection
-Derivatives of Mappings
-\end_layout
-
-\begin_layout Standard
-We can just define all derivatives in terms of the above adjoint map:
-\begin_inset Formula \begin{eqnarray*}
-\frac{\partial T^{^{-1}}}{\partial\xi} & = & -\Ad T\end{eqnarray*}
-
-\end_inset
-
-
-\begin_inset Formula \begin{eqnarray*}
-\frac{\partial\left(T_{1}T_{2}\right)}{\partial\xi_{1}} & = & \Ad{T_{2}^{^{-1}}}=1\mbox{ and }\frac{\partial\left(T_{1}T_{2}\right)}{\partial\xi_{2}}=I_{3}\end{eqnarray*}
-
-\end_inset
-
-
-\begin_inset Formula \begin{eqnarray*}
-\frac{\partial\left(T_{1}^{-1}T_{2}\right)}{\partial\xi_{1}} & = & -\Ad{T_{2}^{^{-1}}T_{1}}=-\Ad{between(T_{2},T_{1})}\mbox{ and }\frac{\partial\left(T_{1}^{-1}T_{2}\right)}{\partial\xi_{2}}=I_{3}\end{eqnarray*}
-
-\end_inset
-
-
-\end_layout
-
-\begin_layout Subsection
-The derivatives of Actions
-\end_layout
-
-\begin_layout Standard
-The action of 
-\begin_inset Formula $\SEtwo$
-\end_inset
-
- on 2D points is done by embedding the points in 
-\begin_inset Formula $\mathbb{R}^{3}$
-\end_inset
-
- by using homogeneous coordinates
-\begin_inset Formula \[
-\hat{q}=\left[\begin{array}{c}
-q\\
-1\end{array}\right]=\left[\begin{array}{cc}
-R & t\\
-0 & 1\end{array}\right]\left[\begin{array}{c}
-p\\
-1\end{array}\right]=T\hat{p}\]
-
-\end_inset
-
-Analoguous to 
-\begin_inset Formula $\SEthree$
-\end_inset
-
-, we can compute a velocity 
-\begin_inset Formula $\xihat\hat{p}$
-\end_inset
-
- in the local 
-\begin_inset Formula $T$
-\end_inset
-
- frame: 
-\begin_inset Formula \[
-\xihat\hat{p}=\left[\begin{array}{cc}
-\skew{\omega} & v\\
-0 & 0\end{array}\right]\left[\begin{array}{c}
-p\\
-1\end{array}\right]=\left[\begin{array}{c}
-\skew{\omega}p+v\\
-0\end{array}\right]\]
-
-\end_inset
-
-By only taking the top two rows, we can write this as a velocity in 
-\begin_inset Formula $\Rtwo$
-\end_inset
-
-, as the product of a 
-\begin_inset Formula $2\times3$
-\end_inset
-
- matrix 
-\begin_inset Formula $H_{p}$
-\end_inset
-
- that acts upon the exponential coordinates 
-\begin_inset Formula $\xi$
-\end_inset
-
- directly:
-\begin_inset Formula \[
-\skew{\omega}p+v=v+R_{pi/2}p\omega=\left[\begin{array}{cc}
-I_{2} & R_{pi/2}p\end{array}\right]\left[\begin{array}{c}
-v\\
-\omega\end{array}\right]=H_{p}\xi\]
-
-\end_inset
-
-Hence, the final derivative of the group action is
-\begin_inset Formula \[
-\deriv{q(\xi)}{\xi}=R\left[\begin{array}{cc}
-I_{2} & R_{pi/2}p\end{array}\right]=\left[\begin{array}{cc}
-R & R_{pi/2}q\end{array}\right]\]
-
-\end_inset
-
-
-\end_layout
-
-\begin_layout Section
-Rot2 (in gtsam)
-\end_layout
-
-\begin_layout Standard
-A rotation is stored as 
-\begin_inset Formula $(\cos\theta,\sin\theta)$
-\end_inset
-
-.
- An incremental rotation is applied using the trigonometric sum rule:
-\begin_inset Formula \[
-\cos\theta'=\cos\theta\cos\delta-\sin\theta\sin\delta\]
-
-\end_inset
-
-
-\begin_inset Formula \[
-\sin\theta'=\sin\theta\cos\delta+\cos\theta\sin\delta\]
-
-\end_inset
-
-where 
-\begin_inset Formula $\delta$
-\end_inset
-
- is an incremental rotation angle.
-\end_layout
-
-\begin_layout Standard
-Derivatives of unrotate
-\end_layout
-
-\begin_layout Standard
-\begin_inset Formula \begin{eqnarray*}
-\frac{\partial x'}{\partial\delta} & = & \frac{\partial(x\cos\theta'+y\sin\theta')}{\partial\delta}\\
- & = & \frac{\partial(x(\cos\theta\cos\delta-\sin\theta\sin\delta)+y(\sin\theta\cos\delta+\cos\theta\sin\delta))}{\partial\delta}\\
- & = & x(-\cos\theta\sin\delta-\sin\theta\cos\delta)+y(-\sin\theta\sin\delta+\cos\theta\cos\delta)\\
- & = & -x\sin\theta+y\cos\theta=y'\end{eqnarray*}
-
-\end_inset
-
-
-\end_layout
-
-\begin_layout Standard
-\begin_inset Formula \begin{eqnarray*}
-\frac{\partial y'}{\partial\delta} & = & \frac{\partial(-x\sin\theta'+y\cos\theta')}{\partial\delta}\\
- & = & \frac{\partial(-x(\sin\theta\cos\delta+\cos\theta\sin\delta)+y(\cos\theta\cos\delta-\sin\theta\sin\delta))}{\partial\delta}\\
- & = & -x(-\sin\theta\sin\delta+\cos\theta\cos\delta)+y(-\cos\theta\sin\delta-\sin\theta\cos\delta)\\
- & = & -x\cos\theta-y\sin\theta=-x'\end{eqnarray*}
-
-\end_inset
-
-
-\end_layout
-
-\begin_layout Standard
-\begin_inset Formula \[
-\frac{\partial p'}{\partial p}=\frac{\partial(Rp)}{\partial p}=R\]
-
-\end_inset
-
-
-\end_layout
-
-\begin_layout Section
-Point3
-\end_layout
-
-\begin_layout Standard
-A cross product 
-\begin_inset Formula $a\times b$
-\end_inset
-
- can be written as a matrix multiplication
-\begin_inset Formula \[
-a\times b=\Skew ab\]
-
-\end_inset
-
-where 
-\begin_inset Formula $\Skew a$
-\end_inset
-
- is a skew-symmetric matrix defined as
-\begin_inset Formula \[
-\Skew{x,y,z}=\left[\begin{array}{ccc}
-0 & -z & y\\
-z & 0 & -x\\
--y & x & 0\end{array}\right]\]
-
-\end_inset
-
-We also have
-\begin_inset Formula \[
-a^{T}\Skew b=-(\Skew ba)^{T}=-(a\times b)^{T}\]
-
-\end_inset
-
-The derivative of a cross product 
-\begin_inset Formula \begin{equation}
-\frac{\partial(a\times b)}{\partial a}=\Skew{-b}\label{eq:Dcross1}\end{equation}
-
-\end_inset
-
-
-\begin_inset Formula \begin{equation}
-\frac{\partial(a\times b)}{\partial b}=\Skew a\label{eq:Dcross2}\end{equation}
-
-\end_inset
-
-
-\end_layout
-
-\begin_layout Section
 Pose3 (gtsam, old-style exmap)
 \end_layout
 
@@ -2424,130 +1349,31 @@ and with respect to
 
 \end_layout
 
-\begin_layout Section
-Pose3 (gtsam, new-style exmap)
-\end_layout
-
 \begin_layout Standard
-In the new-style exponential map, Pose3 is composed with a delta pose as
- follows
-\end_layout
-
-\begin_layout Standard
-
-\family roman
-\series medium
-\shape up
-\size normal
-\emph off
-\bar no
-\noun off
-\color none
-\begin_inset Formula $R'=(I+\Omega)R$
-\end_inset
-
-
-\end_layout
-
-\begin_layout Standard
-\begin_inset Formula $t'=(I+\Omega)t+dt$
-\end_inset
-
-
-\end_layout
-
-\begin_layout Standard
-The derivative of transform_from, 
-\begin_inset Formula $Rx+t$
-\end_inset
-
-:
-\end_layout
-
-\begin_layout Standard
-\begin_inset Formula \[
-\frac{\partial((I+\Omega)Rx+(I+\Omega)t)}{\partial\omega}=\frac{\partial(\Omega(Rx+t))}{\partial\omega}=\frac{\partial(\omega\times(Rx+t))}{\partial\omega}=-\Skew{Rx+t}\]
-
-\end_inset
-
-and with respect to 
-\begin_inset Formula $dt$
-\end_inset
-
- is easy:
-\end_layout
-
-\begin_layout Standard
-\begin_inset Formula \[
-\frac{\partial(Rx+t+dt)}{\partial dt}=I\]
-
-\end_inset
-
-The derivative of transform_to, 
-\begin_inset Formula $R^{T}(x-t)$
-\end_inset
-
-, eludes me.
- The calculation below is just an attempt:
-\end_layout
-
-\begin_layout Standard
-Noting that 
-\family roman
-\series medium
-\shape up
-\size normal
-\emph off
-\bar no
-\noun off
-\color none
-
-\begin_inset Formula $R'^{T}=R^{T}(I-\Omega)$
-\end_inset
-
-, and 
-\begin_inset Formula $(I-\Omega)(x-(I+\Omega)t)=(I-\Omega)(x-t-\Omega t)=x-t-dt-\Omega x+\Omega^{2}t$
-\end_inset
-
-
-\end_layout
-
-\begin_layout Standard
-\begin_inset Formula \[
-\frac{\partial(R'^{T}(x-t'))}{\partial\omega}=\frac{\partial(R^{T}(I-\Omega)(x-(I+\Omega)t))}{\partial\omega}=-\frac{\partial(R^{T}(\Omega(x-\Omega t)))}{\partial\omega}\]
-
-\end_inset
-
-
-\begin_inset Formula \[
--\frac{\partial(\Skew{R^{T}\omega}R^{T}x)}{\partial\omega}=\Skew{R^{T}x}\frac{\partial(R^{T}\omega)}{\partial\omega}=\Skew{R^{T}x}R^{T}\]
-
-\end_inset
-
-
-\begin_inset Formula \[
-=\frac{\partial(R^{T}\Omega^{2}t)}{\partial\omega}+\Skew{R^{T}x}R^{T}\]
-
-\end_inset
-
-and with respect to 
-\begin_inset Formula $dt$
-\end_inset
-
- is easy:
-\end_layout
-
-\begin_layout Standard
-\begin_inset Formula \[
-\frac{\partial(R^{T}(x-t-dt))}{\partial dt}=-R^{T}\]
-
+\begin_inset Newpage pagebreak
 \end_inset
 
 
 \end_layout
 
 \begin_layout Section
-Line3vd
+2D Line Segments (Ocaml)
+\end_layout
+
+\begin_layout Standard
+The error between an infinite line 
+\begin_inset Formula $(a,b,c)$
+\end_inset
+
+ and a 2D line segment 
+\begin_inset Formula $((x1,y1),(x2,y2))$
+\end_inset
+
+ is defined in Line3.ml.
+\end_layout
+
+\begin_layout Section
+Line3vd (Ocaml)
 \end_layout
 
 \begin_layout Standard
@@ -2588,7 +1414,7 @@ d^{c}=R_{w}^{c}\left(d^{w}+(t^{w}v^{w})v^{w}-t^{w}\right)\]
 \end_layout
 
 \begin_layout Section
-Line3
+Line3 (Ocaml)
 \end_layout
 
 \begin_layout Standard
@@ -2789,25 +1615,9 @@ where we don't care about the third row.
 \end_layout
 
 \begin_layout Section
-2D Line Segments
-\end_layout
-
-\begin_layout Standard
-The error between an infinite line 
-\begin_inset Formula $(a,b,c)$
-\end_inset
-
- and a 2D line segment 
-\begin_inset Formula $((x1,y1),(x2,y2))$
-\end_inset
-
- is defined in Line3.ml.
-\end_layout
-
-\begin_layout Section
 
 \series bold
-Recovering Pose
+Aligning 3D Scans
 \end_layout
 
 \begin_layout Standard
