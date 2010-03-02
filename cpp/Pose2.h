@@ -100,19 +100,21 @@ namespace gtsam {
 
   /** Return point coordinates in pose coordinate frame */
   inline Point2 transform_to(const Pose2& pose, const Point2& point) {
-    return unrotate(pose.r(), point-pose.t()); }
+		return unrotate(pose.r(), point - pose.t());
+	}
   Point2 transform_to(const Pose2& pose, const Point2& point,
-			boost::optional<Matrix&> H1, boost::optional<Matrix&> H2);
-  Matrix Dtransform_to1(const Pose2& pose, const Point2& point);
-  Matrix Dtransform_to2(const Pose2& pose, const Point2& point);
+		boost::optional<Matrix&> H1, boost::optional<Matrix&> H2);
 
   /** Return point coordinates in global frame */
+  inline Point2 transform_from(const Pose2& pose, const Point2& point) {
+		return rotate(pose.r(), point) + pose.t();
+	}
   Point2 transform_from(const Pose2& pose, const Point2& point,
-  		boost::optional<Matrix&> H1 = boost::none, boost::optional<Matrix&> H2 = boost::none);
+  	boost::optional<Matrix&> H1, boost::optional<Matrix&> H2);
 
   /** Return relative pose between p1 and p2, in p1 coordinate frame */
   Pose2 between(const Pose2& p1, const Pose2& p2,
-  		boost::optional<Matrix&> H1, boost::optional<Matrix&> H2);
+  	boost::optional<Matrix&> H1, boost::optional<Matrix&> H2);
 
   /** same as compose (pre-multiply this*p1) */
   inline Pose2 operator*(const Pose2& p1, const Pose2& p0) { return compose(p1, p0); }

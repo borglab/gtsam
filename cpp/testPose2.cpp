@@ -84,32 +84,25 @@ TEST(Pose2, logmap) {
 /* ************************************************************************* */
 TEST( Pose2, transform_to )
 {
-  //cout << "transform_to" << endl;
   Pose2 pose(M_PI_2, Point2(1,2)); // robot at (1,2) looking towards y
   Point2 point(-1,4);    // landmark at (-1,4)
 
   // expected
   Point2 expected(2,2);
-//  Matrix expectedH1 = Matrix_(2,3, 0.0, -1.0, 2.0,  1.0, 0.0, -2.0);
-//  Matrix expectedH2 = Matrix_(2,2, 0.0, 1.0,  -1.0, 0.0);
+  Matrix expectedH1 = Matrix_(2,3, -1.0, 0.0, 2.0,  0.0, -1.0, -2.0);
+  Matrix expectedH2 = Matrix_(2,2, 0.0, 1.0,  -1.0, 0.0);
 
   // actual
-  Point2 actual = transform_to(pose,point);
-  Matrix actualH1 = Dtransform_to1(pose,point);
-  Matrix actualH2 = Dtransform_to2(pose,point);
-
+  Matrix actualH1, actualH2;
+  Point2 actual = transform_to(pose,point, actualH1, actualH2);
   CHECK(assert_equal(expected,actual));
-//  CHECK(assert_equal(expectedH1,actualH1));
-//  CHECK(assert_equal(expectedH2,actualH2));
 
+  CHECK(assert_equal(expectedH1,actualH1));
   Matrix numericalH1 = numericalDerivative21(transform_to, pose, point, 1e-5);
   CHECK(assert_equal(numericalH1,actualH1));
 
+  CHECK(assert_equal(expectedH2,actualH2));
   Matrix numericalH2 = numericalDerivative22(transform_to, pose, point, 1e-5);
-  CHECK(assert_equal(numericalH2,actualH2));
-
-  transform_to(pose,point,actualH1,actualH2);
-  CHECK(assert_equal(numericalH1,actualH1));
   CHECK(assert_equal(numericalH2,actualH2));
 }
 
