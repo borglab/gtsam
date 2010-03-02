@@ -3,7 +3,6 @@
  * @brief  Unit tests for Pose3 class
  */
 
-
 #include <CppUnitLite/TestHarness.h>
 #include "numericalDerivative.h"
 #include "Pose3.h"
@@ -49,6 +48,31 @@ TEST(Pose3, expmap_b)
       0.0, 0.0, 0.1,  0.0, 0.0, 0.0));
   Pose3 expected(rodriguez(0.0, 0.0, 0.1), Point3(100.0, 0.0, 0.0));
   CHECK(assert_equal(expected, p2));
+}
+
+/* ************************************************************************* *
+// test case for screw motion in the plane
+namespace screw {
+  double a=0.3, c=cos(a), s=sin(a), w=0.3;
+	Vector xi = Vector_(6, 0.0, 0.0, w, w, 0.0, 0.0);
+	Rot3 expectedR(c, -s, 0, s, c, 0, 0, 0, 1);
+	Point3 expectedT(0.29552, 0.0446635, 0);
+	Pose3 expected(expectedR, expectedT);
+}
+
+TEST(Pose3, expmap_c)
+{
+  CHECK(assert_equal(screw::expected, expm<Pose3>(screw::xi),1e-6));
+  CHECK(assert_equal(screw::expected, expmap<Pose3>(screw::xi),1e-6));
+}
+
+TEST(Pose3, Adjoint)
+{
+	// assert that T*exp(xi)*T^-1
+	Pose3 expected = T * expmap<Pose3>(screw::xi) * inverse(T);
+  // is equal to exp(Ad_T(xi))
+	Vector xiprime = Adjoint(T, screw::xi);
+	CHECK(assert_equal(expected, expmap<Pose3>(xiprime), 1e-6));
 }
 
 /* ************************************************************************* */

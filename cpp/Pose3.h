@@ -145,4 +145,31 @@ namespace gtsam {
   Pose3 between(const Pose3& p1, const Pose3& p2,
   		boost::optional<Matrix&> H1, boost::optional<Matrix&> H2);
 
+  /**
+   * wedge for Pose3:
+   * @param xi 6-dim twist (omega,v) where
+   *  omega = (wx,wy,wz) 3D angular velocity
+   *  v (vx,vy,vz) = 3D velocity
+   * @return xihat, 4*4 element of Lie algebra that can be exponentiated
+   */
+  inline Matrix wedge(double wx, double wy, double wz, double vx, double vy, double vz) {
+  	return Matrix_(4,4,
+  			 0.,-wz,  wy,  vx,
+  			 wz,  0.,-wx,  vy,
+  			-wy, wx,   0., vz,
+  			 0.,  0.,  0.,  0.);
+  }
+
+  /**
+   * wedge for Pose3:
+   * @param xi 6-dim twist (omega,v) where
+   *  omega = 3D angular velocity
+   *  v = 3D velocity
+   * @return xihat, 4*4 element of Lie algebra that can be exponentiated
+   */
+  template <>
+  inline Matrix wedge<Pose3>(const Vector& xi) {
+  	return wedge(xi(0),xi(1),xi(2),xi(3),xi(4),xi(5));
+  }
+
 } // namespace gtsam

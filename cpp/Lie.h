@@ -8,7 +8,7 @@
 #pragma once
 
 #include <string>
-#include "Vector.h"
+#include "Matrix.h"
 
 namespace gtsam {
 
@@ -117,6 +117,24 @@ namespace gtsam {
   	T X_Y = bracket(X, Y);
   	return X + Y + _2 * X_Y + _12 * bracket(X - Y, X_Y) - _24 * bracket(Y,
   			bracket(X, X_Y));
+  }
+
+  /**
+   * Declaration of wedge (see Murray94book) used to convert
+   * from n exponential coordinates to n*n element of the Lie algebra
+   */
+  template <class T> Matrix wedge(const Vector& x);
+
+  /**
+   * Exponential map given exponential coordinates
+   * class T needs a wedge<> function and a constructor from Matrix
+   * @param x exponential coordinates, vector of size n
+   * @ return a T
+   */
+  template <class T>
+  T expm(const Vector& x, int K=7) {
+  	Matrix xhat = wedge<T>(x);
+    return expm(xhat,K);
   }
 
 } // namespace gtsam

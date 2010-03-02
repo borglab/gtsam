@@ -22,7 +22,7 @@ namespace gtsam {
   // Calculate Adjoint map
   // Ad_pose is 6*6 matrix that when applied to twist xi, returns Ad_pose(xi)
   // Experimental - unit tests of derivatives based on it do not check out yet
-  static Matrix AdjointMap(const Pose3& p) {
+  Matrix AdjointMap(const Pose3& p) {
 		const Matrix R = p.rotation().matrix();
 		const Vector t = p.translation().vector();
 		Matrix A = skewSymmetric(t)*R;
