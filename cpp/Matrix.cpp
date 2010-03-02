@@ -1048,8 +1048,6 @@ Matrix inverse_square_root(const Matrix& A) {
 	return inv;
 }
 
-
-
 /* ************************************************************************* */
 Matrix square_root_positive(const Matrix& A) {
   size_t m = A.size2(), n = A.size1();
@@ -1065,6 +1063,16 @@ Matrix square_root_positive(const Matrix& A) {
   // We also arbitrarily choose sign to make result have positive signs
   for(size_t i = 0; i<m; i++) S(i) = - pow(S(i),0.5);
   return vector_scale(S, V); // V*S;
+}
+
+/* ************************************************************************* */
+Matrix expm(const Matrix& A, int K) {
+	Matrix E = eye(A.size1()), A_k = eye(4);
+	for (int k=1;k<=K;k++) {
+		A_k = A_k*A/k;
+		E = E + A_k;
+	}
+	return E;
 }
 
 /* ************************************************************************* */

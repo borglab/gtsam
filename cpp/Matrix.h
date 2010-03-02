@@ -365,7 +365,12 @@ Matrix RtR(const Matrix& A);
 /** Return the inverse of a S.P.D. matrix.  Inversion is done via Cholesky decomposition. */
 Matrix cholesky_inverse(const Matrix &A);
 
-
+/**
+ * Numerical exponential map, naive approach, not industrial strength !!!
+ * @param A matrix to exponentiate
+ * @param K number of iterations
+ */
+Matrix expm(const Matrix& A, int K=7);
 
 // macro for unit tests
 #define EQUALITY(expected,actual)\
