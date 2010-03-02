@@ -85,6 +85,12 @@ namespace gtsam {
 			return keys_;
 		}
 
+		/* return the begin iterator of keys */
+		std::list<Symbol>::const_iterator begin() const { return keys_.begin(); }
+
+		/* return the end iterator of keys */
+		std::list<Symbol>::const_iterator end() const { return keys_.end(); }
+
 		/** access to the noise model */
 		SharedGaussian get_noiseModel() const {
 			return noiseModel_;
