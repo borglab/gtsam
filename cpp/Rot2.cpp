@@ -16,6 +16,19 @@ namespace gtsam {
   INSTANTIATE_LIE(Rot2);
 
 	/* ************************************************************************* */
+	Rot2 Rot2::fromCosSin(double c, double s) {
+		if (fabs(c * c + s * s - 1.0) > 1e-9) throw std::invalid_argument(
+				"Rot2::fromCosSin: needs cos/sin pair");
+		return Rot2(c, s);
+	}
+
+	/* ************************************************************************* */
+	Rot2 Rot2::atan2(double y, double x) {
+		Rot2 R(x, y);
+		return R.normalize();
+	}
+
+	/* ************************************************************************* */
 	void Rot2::print(const string& s) const {
 		cout << s << ":" << theta() << endl;
 	}
@@ -24,6 +37,17 @@ namespace gtsam {
 	bool Rot2::equals(const Rot2& R, double tol) const {
 		return fabs(c_ - R.c_) <= tol && fabs(s_ - R.s_) <= tol;
 	}
+
+	/* ************************************************************************* */
+  Rot2& Rot2::normalize() {
+  	double scale = c_*c_ + s_*s_;
+  	if(fabs(scale-1.0)>1e-9) {
+  		scale = pow(scale, -0.5);
+  		c_ *= scale;
+  		s_ *= scale;
+  	}
+  	return *this;
+  }
 
 	/* ************************************************************************* */
 	Matrix Rot2::matrix() const {

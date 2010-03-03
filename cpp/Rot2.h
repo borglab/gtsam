@@ -24,26 +24,11 @@ namespace gtsam {
     /** we store cos(theta) and sin(theta) */
     double c_, s_;
 
-    /** normalize to make sure cos and sin form unit vector */
-    inline Rot2& normalize() {
-    	double scale = c_*c_ + s_*s_;
-    	if(scale != 1.0) {
-    		scale = pow(scale, -0.5);
-    		c_ *= scale;
-    		s_ *= scale;
-    	}
-    	return *this;
-    }
+    /** private constructor from cos/sin */
+    inline Rot2(double c, double s) : c_(c), s_(s) {}
 
-    /** constructor from cos/sin */
-    inline Rot2(double c, double s) :
-      c_(c), s_(s) {
-#ifdef ROT2_RENORMALIZE
-    	// rtodo: Could do this scale correction only when creating from compose
-    	// Don't let scale drift
-    	normalize();
-#endif
-    }
+    /** normalize to make sure cos and sin form unit vector */
+    Rot2& normalize();
 
   public:
 
@@ -53,20 +38,13 @@ namespace gtsam {
     /** "named constructors" */
 
     /** Named constructor from angle == exponential map at identity */
-    static Rot2 fromAngle(double theta) { return Rot2(cos(theta),sin(theta));}
+    static Rot2 fromAngle(double theta);
 
     /** Named constructor from cos(theta),sin(theta) pair, will *not* normalize! */
-    static Rot2 fromCosSin(double c, double s) {
-    	if (fabs(c*c + s*s - 1.0)>1e-9)
-				throw std::invalid_argument("Rot2::fromCosSin: needs cos/sin pair");
-			return Rot2(c, s);
-		}
+    static Rot2 fromCosSin(double c, double s);
 
     /** Named constructor that behaves as atan2, i.e., y,x order (!) and normalizes */
-  	static Rot2 atan2(double y, double x) {
-			Rot2 R(x,y);
-			return R.normalize();
-  	}
+  	static Rot2 atan2(double y, double x);
 
   	/** return angle */
     double theta() const { return ::atan2(s_,c_); }
@@ -116,6 +94,11 @@ namespace gtsam {
     }
 
   }; // Rot2
+
+	/* inline named constructor implementation */
+	inline Rot2 Rot2::fromAngle(double theta) {
+		return Rot2(cos(theta), sin(theta));
+	}
 
   // Lie group functions
 
