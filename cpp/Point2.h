@@ -51,6 +51,7 @@ namespace gtsam {
     inline bool   operator ==(const Point2& q) const {return x_==q.x_ && q.y_==q.y_;}
     inline Point2 operator + (const Point2& q) const {return Point2(x_+q.x_,y_+q.y_);}
     inline Point2 operator - (const Point2& q) const {return Point2(x_-q.x_,y_-q.y_);}
+    inline Point2 operator * (double s) const {return Point2(x_*s,y_*s);}
     inline Point2 operator / (double q) const {return Point2(x_/q,y_/q);}
 
     /** norm of point */
@@ -100,5 +101,7 @@ namespace gtsam {
   /** "Inverse" - negates each coordinate such that compose(p,inverse(p))=Point2() */
   inline Point2 inverse(const Point2& p) { return Point2(-p.x(), -p.y()); }
 
+  /** multiply with scalar */
+  inline Point2 operator*(double s, const Point2& p) {return p*s;}
 }
 
