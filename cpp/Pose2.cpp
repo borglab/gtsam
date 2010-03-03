@@ -153,7 +153,7 @@ namespace gtsam {
 
   	// Calculate delta rotation = between(R1,R2)
 		double c = c1 * c2 + s1 * s2, s = -s1 * c2 + c1 * s2;
-    Rot2 R(Rot2::fromCosSin(c,s));
+    Rot2 R(Rot2::atan2(s,c)); // normalizes
 
   	// Calculate delta translation = unrotate(R1, dt);
 		Point2 dt = p2.t() - p1.t();

@@ -52,7 +52,7 @@ namespace gtsam {
 
     /** Constructor from 3*3 matrix */
     Pose2(const Matrix &T) :
-      r_(Rot2::fromCosSin(T(0, 0), T(1, 0))), t_(T(0, 2), T(1, 2)) {}
+      r_(Rot2::atan2(T(1, 0), T(0, 0))), t_(T(0, 2), T(1, 2)) {}
 
     /** print with optional string */
     void print(const std::string& s = "") const;
