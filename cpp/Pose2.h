@@ -29,7 +29,7 @@ namespace gtsam {
   public:
 
     /** default constructor = origin */
-    Pose2() : t_(0.0, 0.0), r_(0) {} // default is origin
+    Pose2() {} // default is origin
 
     /** copy constructor */
     Pose2(const Pose2& pose) : t_(pose.t_), r_(pose.r_) {}
@@ -40,11 +40,19 @@ namespace gtsam {
      * @param y y coordinate
      * @param theta angle with positive X-axis
      */
-    Pose2(double x, double y, double theta) : t_(x,y), r_(theta) {}
+    Pose2(double x, double y, double theta) :
+			t_(x, y), r_(Rot2::fromAngle(theta)) {
+		}
 
     /** construct from rotation and translation */
-    Pose2(double theta, const Point2& t) : t_(t), r_(theta) {}
+    Pose2(double theta, const Point2& t) :
+			t_(t), r_(Rot2::fromAngle(theta)) {
+		}
     Pose2(const Rot2& r, const Point2& t) : t_(t), r_(r) {}
+
+    /** Constructor from 3*3 matrix */
+    Pose2(const Matrix &T) :
+      r_(Rot2::fromCosSin(T(0, 0), T(1, 0))), t_(T(0, 2), T(1, 2)) {}
 
     /** print with optional string */
     void print(const std::string& s = "") const;
@@ -67,9 +75,21 @@ namespace gtsam {
 
   }; // Pose2
 
+  /** print using member print function, currently used by LieConfig */
+  inline void print(const Pose2& obj, const std::string& str = "") { obj.print(str); }
 
   /** return DOF, dimensionality of tangent space = 3 */
   inline size_t dim(const Pose2&) { return 3; }
+
+  /**
+   * Exponential map from se(2) to SE(2)
+   */
+  template<> Pose2 expmap(const Vector& v);
+
+  /**
+   * Inverse of exponential map, from SE(2) to se(2)
+   */
+  Vector logmap(const Pose2& p);
 
   /**
   * Calculate Adjoint map
@@ -77,52 +97,63 @@ namespace gtsam {
   */
   Matrix AdjointMap(const Pose2& p);
 
-  /** inverse transformation */
+  /**
+   * wedge for SE(2):
+   * @param xi 3-dim twist (v,omega) where
+   *  omega is angular velocity
+   *  v (vx,vy) = 2D velocity
+   * @return xihat, 3*3 element of Lie algebra that can be exponentiated
+   */
+  inline Matrix wedge(double vx, double vy, double w) {
+  	return Matrix_(3,3,
+  			 0.,-w,  vx,
+  			 w,  0., vy,
+  			 0., 0.,  0.);
+  }
+
+  template <>
+  inline Matrix wedge<Pose2>(const Vector& xi) {
+  	return wedge(xi(0),xi(1),xi(2));
+  }
+
+  /**
+   * inverse transformation
+   */
   Pose2 inverse(const Pose2& pose);
   Matrix Dinverse(const Pose2& pose);
 
-  /** compose this transformation onto another (first p1 and then p2) */
-  inline Pose2 compose(const Pose2& p0, const Pose2& p1) {
-      return Pose2(p0.r()*p1.r(), p0.t() + p0.r()*p1.t()); }
+  /**
+   * compose this transformation onto another (first p1 and then p2)
+   */
+  inline Pose2 compose(const Pose2& p0, const Pose2& p1)
+		{ return Pose2(p0.r()*p1.r(), p0.t() + p0.r()*p1.t());}
   Matrix Dcompose1(const Pose2& p1, const Pose2& p2);
   Matrix Dcompose2(const Pose2& p1, const Pose2& p2);
+  inline Pose2 operator*(const Pose2& p1, const Pose2& p0) { return compose(p1, p0);}
 
-  /** exponential and log maps around identity */
-
-  /** Create an incremental pose from x,y,theta */
-  template<> inline Pose2 expmap(const Vector& v) { return Pose2(v[0], v[1], v[2]); }
-
-  /** Return the x,y,theta of this pose */
-  inline Vector logmap(const Pose2& p) { return Vector_(3, p.x(), p.y(), p.theta()); }
-
-  /** print using member print function, currently used by LieConfig */
-  inline void print(const Pose2& obj, const std::string& str = "") { obj.print(str); }
-
-  /** Return point coordinates in pose coordinate frame */
-  inline Point2 transform_to(const Pose2& pose, const Point2& point) {
-		return unrotate(pose.r(), point - pose.t());
-	}
+  /**
+   * Return point coordinates in pose coordinate frame
+   */
+  inline Point2 transform_to(const Pose2& pose, const Point2& point)
+		{ return unrotate(pose.r(), point - pose.t());}
   Point2 transform_to(const Pose2& pose, const Point2& point,
 		boost::optional<Matrix&> H1, boost::optional<Matrix&> H2);
 
-  /** Return point coordinates in global frame */
-  inline Point2 transform_from(const Pose2& pose, const Point2& point) {
-		return rotate(pose.r(), point) + pose.t();
-	}
+  /**
+   * Return point coordinates in global frame
+   */
+  inline Point2 transform_from(const Pose2& pose, const Point2& point)
+		{ return rotate(pose.r(), point) + pose.t();}
   Point2 transform_from(const Pose2& pose, const Point2& point,
   	boost::optional<Matrix&> H1, boost::optional<Matrix&> H2);
+  inline Point2 operator*(const Pose2& pose, const Point2& point)
+		{ return transform_from(pose, point);}
 
-  /** Return relative pose between p1 and p2, in p1 coordinate frame */
+  /**
+   * Return relative pose between p1 and p2, in p1 coordinate frame
+   */
   Pose2 between(const Pose2& p1, const Pose2& p2,
   	boost::optional<Matrix&> H1, boost::optional<Matrix&> H2);
-
-  /** same as compose (pre-multiply this*p1) */
-  inline Pose2 operator*(const Pose2& p1, const Pose2& p0) { return compose(p1, p0); }
-
-  /** Transform a point in this coordinate frame to global coordinates,
-   * same as transform_from */
-  inline Point2 operator*(const Pose2& pose, const Point2& point) {
-    return transform_from(pose, point); }
 
 	/**
 	 * Calculate bearing to a landmark
@@ -131,10 +162,6 @@ namespace gtsam {
 	 * @return 2D rotation \in SO(2)
 	 */
 	Rot2 bearing(const Pose2& pose, const Point2& point);
-
-	/**
-	 * Calculate bearing and optional derivative(s)
-	 */
 	Rot2 bearing(const Pose2& pose, const Point2& point,
 			boost::optional<Matrix&> H1, boost::optional<Matrix&> H2);
 
@@ -145,10 +172,6 @@ namespace gtsam {
 	 * @return range (double)
 	 */
 	double range(const Pose2& pose, const Point2& point);
-
-	/**
-	 * Calculate range and optional derivative(s)
-	 */
 	double range(const Pose2& pose, const Point2& point,
 			boost::optional<Matrix&> H1, boost::optional<Matrix&> H2);
 

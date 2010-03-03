@@ -36,11 +36,6 @@ namespace gtsam {
 	}
 
 	/* ************************************************************************* */
-	Matrix Rot2::negtranspose() const {
-		return Matrix_(2, 2, -c_, -s_, s_, -c_);
-	}
-
-	/* ************************************************************************* */
 	Point2 Rot2::rotate(const Point2& p) const {
 		return Point2(c_ * p.x() + -s_ * p.y(), s_ * p.x() + c_ * p.y());
 	}
@@ -73,14 +68,14 @@ namespace gtsam {
 	/* ************************************************************************* */
 	Rot2 relativeBearing(const Point2& d) {
 		double n = d.norm();
-		return Rot2(d.x() / n, d.y() / n);
+		return Rot2::fromCosSin(d.x() / n, d.y() / n);
 	}
 
 	/* ************************************************************************* */
 	Rot2 relativeBearing(const Point2& d, boost::optional<Matrix&> H) {
 		double x = d.x(), y = d.y(), d2 = x * x + y * y, n = sqrt(d2);
 		if (H) *H = Matrix_(1, 2, -y / d2, x / d2);
-		return Rot2(x / n, y / n);
+		return Rot2::fromCosSin(x / n, y / n);
 	}
 
 /* ************************************************************************* */

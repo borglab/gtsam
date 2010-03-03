@@ -23,7 +23,7 @@ SharedGaussian
 TEST( planarSLAM, BearingFactor )
 {
 	// Create factor
-	Rot2 z(M_PI_4 + 0.1); // h(x) - z = -0.1
+	Rot2 z = Rot2::fromAngle(M_PI_4 + 0.1); // h(x) - z = -0.1
 	planarSLAM::Bearing factor(2, 3, z, sigma);
 
 	// create config
@@ -72,7 +72,7 @@ TEST( planarSLAM, constructor )
 	G.addOdometry(2, 3, Pose2(0, 0, M_PI_4), I3);
 
 	// Create bearing factor
-	Rot2 z1(M_PI_4 + 0.1); // h(x) - z = -0.1
+	Rot2 z1 = Rot2::fromAngle(M_PI_4 + 0.1); // h(x) - z = -0.1
 	G.addBearing(2, 3, z1, sigma);
 
 	// Create range factor

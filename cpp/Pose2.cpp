@@ -14,7 +14,7 @@ namespace gtsam {
   INSTANTIATE_LIE(Pose2);
 
 	static const Matrix I3 = eye(3), Z12 = zeros(1,2);
-  static const Rot2 R_PI_2(0., 1.);
+  static const Rot2 R_PI_2(Rot2::fromCosSin(0., 1.));
 
   /* ************************************************************************* */
   Matrix Pose2::matrix() const {
@@ -33,6 +33,50 @@ namespace gtsam {
   bool Pose2::equals(const Pose2& q, double tol) const {
     return t_.equals(q.t_, tol) && r_.equals(q.r_, tol);
   }
+
+  /* ************************************************************************* */
+
+#ifdef SLOW_BUT_CORRECT_EXPMAP
+
+	template<> Pose2 expmap(const Vector& xi) {
+		Point2 v(xi(0),xi(1));
+		double w = xi(2);
+		if (fabs(w) < 1e-5)
+			return Pose2(xi[0], xi[1], xi[2]);
+		else {
+			Rot2 R(Rot2::fromAngle(w));
+			Point2 v_ortho = R_PI_2 * v; // points towards rot center
+			Point2 t = (v_ortho - rotate(R,v_ortho)) / w;
+			return Pose2(R, t);
+		}
+	}
+
+  Vector logmap(const Pose2& p) {
+  	const Rot2& R = p.r();
+  	const Point2& t = p.t();
+		double w = R.theta();
+		if (fabs(w) < 1e-5)
+			return Vector_(3, t.x(), t.y(), w);
+		else {
+			double c_1 = R.c()-1.0, s = R.s();
+			double det = c_1*c_1 + s*s;
+			Point2 p = R_PI_2 * (unrotate(R, t) - t);
+			Point2 v = (w/det) * p;
+			return Vector_(3, v.x(), v.y(), w);
+		}
+  }
+
+#else
+
+	template<> Pose2 expmap(const Vector& v) {
+		return Pose2(v[0], v[1], v[2]);
+	}
+
+	Vector logmap(const Pose2& p) {
+		return Vector_(3, p.x(), p.y(), p.theta());
+	}
+
+#endif
 
   /* ************************************************************************* */
   // Calculate Adjoint map
@@ -109,7 +153,7 @@ namespace gtsam {
 
   	// Calculate delta rotation = between(R1,R2)
 		double c = c1 * c2 + s1 * s2, s = -s1 * c2 + c1 * s2;
-    Rot2 R(c,s);
+    Rot2 R(Rot2::fromCosSin(c,s));
 
   	// Calculate delta translation = unrotate(R1, dt);
 		Point2 dt = p2.t() - p1.t();

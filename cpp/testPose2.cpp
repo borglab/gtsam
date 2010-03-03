@@ -14,6 +14,8 @@
 using namespace gtsam;
 using namespace std;
 
+// #define SLOW_BUT_CORRECT_EXPMAP
+
 /* ************************************************************************* */
 TEST(Pose2, constructors) {
   //cout << "constructors" << endl;
@@ -21,6 +23,8 @@ TEST(Pose2, constructors) {
   Pose2 pose(0,p);
   Pose2 origin;
   assert_equal(pose,origin);
+	Pose2 t(M_PI_2+0.018, Point2(1.015, 2.01));
+	CHECK(assert_equal(t,Pose2(t.matrix())));
 }
 
 /* ************************************************************************* */
@@ -41,9 +45,13 @@ TEST(Pose2, manifold) {
 TEST(Pose2, expmap) {
   //cout << "expmap" << endl;
   Pose2 pose(M_PI_2, Point2(1, 2));
+#ifdef SLOW_BUT_CORRECT_EXPMAP
+  Pose2 expected(1.00811, 2.01528, 2.5608);
+#else
   Pose2 expected(M_PI_2+0.99, Point2(1.015, 2.01));
+#endif
   Pose2 actual = expmap(pose, Vector_(3, 0.01, -0.015, 0.99));
-  CHECK(assert_equal(expected, actual));
+  CHECK(assert_equal(expected, actual, 1e-5));
 }
 
 /* ************************************************************************* */
@@ -66,19 +74,46 @@ TEST(Pose2, expmap2) {
 TEST(Pose2, expmap0) {
   //cout << "expmap0" << endl;
   Pose2 pose(M_PI_2, Point2(1, 2));
+#ifdef SLOW_BUT_CORRECT_EXPMAP
+  Pose2 expected(1.01491, 2.01013, 1.5888);
+#else
   Pose2 expected(M_PI_2+0.018, Point2(1.015, 2.01));
+#endif
   Pose2 actual = pose * expmap<Pose2>(Vector_(3, 0.01, -0.015, 0.018));
-  CHECK(assert_equal(expected, actual));
+  CHECK(assert_equal(expected, actual, 1e-5));
 }
+
+#ifdef SLOW_BUT_CORRECT_EXPMAP
+/* ************************************************************************* */
+// test case for screw motion in the plane
+namespace screw {
+  double w=0.3;
+	Vector xi = Vector_(3, 0.0, w, w);
+	Rot2 expectedR = Rot2::fromAngle(w);
+	Point2 expectedT(-0.0446635, 0.29552);
+	Pose2 expected(expectedR, expectedT);
+}
+
+TEST(Pose3, expmap_c)
+{
+  CHECK(assert_equal(screw::expected, expm<Pose2>(screw::xi),1e-6));
+  CHECK(assert_equal(screw::expected, expmap<Pose2>(screw::xi),1e-6));
+  CHECK(assert_equal(screw::xi, logmap(screw::expected),1e-6));
+}
+#endif
 
 /* ************************************************************************* */
 TEST(Pose2, logmap) {
   //cout << "logmap" << endl;
   Pose2 pose0(M_PI_2, Point2(1, 2));
   Pose2 pose(M_PI_2+0.018, Point2(1.015, 2.01));
+#ifdef SLOW_BUT_CORRECT_EXPMAP
+  Vector expected = Vector_(3, 0.00986473, -0.0150896, 0.018);
+#else
   Vector expected = Vector_(3, 0.01, -0.015, 0.018);
+#endif
   Vector actual = logmap(pose0,pose);
-  CHECK(assert_equal(expected, actual));
+  CHECK(assert_equal(expected, actual, 1e-5));
 }
 
 /* ************************************************************************* */
@@ -172,10 +207,10 @@ TEST(Pose2, compose_a)
 TEST(Pose2, compose_b)
 {
   //cout << "compose_b" << endl;
-  Pose2 pose1(Rot2(M_PI/10.0), Point2(.75, .5));
-  Pose2 pose2(Rot2(M_PI/4.0-M_PI/10.0), Point2(0.701289620636, 1.34933052585));
+  Pose2 pose1(Rot2::fromAngle(M_PI/10.0), Point2(.75, .5));
+  Pose2 pose2(Rot2::fromAngle(M_PI/4.0-M_PI/10.0), Point2(0.701289620636, 1.34933052585));
 
-  Pose2 pose_expected(Rot2(M_PI/4.0), Point2(1.0, 2.0));
+  Pose2 pose_expected(Rot2::fromAngle(M_PI/4.0), Point2(1.0, 2.0));
 
   Pose2 pose_actual_op = pose1 * pose2;
   Pose2 pose_actual_fcn = compose(pose1, pose2);
@@ -184,7 +219,7 @@ TEST(Pose2, compose_b)
 
   Matrix numericalH1 = numericalDerivative21<Pose2, Pose2, Pose2>(compose, pose1, pose2, 1e-5);
   Matrix numericalH2 = numericalDerivative22<Pose2, Pose2, Pose2>(compose, pose1, pose2, 1e-5);
-  CHECK(assert_equal(numericalH1,actualDcompose1));
+  CHECK(assert_equal(numericalH1,actualDcompose1,1e-5));
   CHECK(assert_equal(numericalH2,actualDcompose2));
 
   CHECK(assert_equal(pose_expected, pose_actual_op));
@@ -195,10 +230,10 @@ TEST(Pose2, compose_b)
 TEST(Pose2, compose_c)
 {
   //cout << "compose_c" << endl;
-  Pose2 pose1(Rot2(M_PI/4.0), Point2(1.0, 1.0));
-  Pose2 pose2(Rot2(M_PI/4.0), Point2(sqrt(.5), sqrt(.5)));
+  Pose2 pose1(Rot2::fromAngle(M_PI/4.0), Point2(1.0, 1.0));
+  Pose2 pose2(Rot2::fromAngle(M_PI/4.0), Point2(sqrt(.5), sqrt(.5)));
 
-  Pose2 pose_expected(Rot2(M_PI/2.0), Point2(1.0, 2.0));
+  Pose2 pose_expected(Rot2::fromAngle(M_PI/2.0), Point2(1.0, 2.0));
 
   Pose2 pose_actual_op = pose1 * pose2;
   Pose2 pose_actual_fcn = compose(pose1,pose2);
@@ -207,7 +242,7 @@ TEST(Pose2, compose_c)
 
   Matrix numericalH1 = numericalDerivative21<Pose2, Pose2, Pose2>(compose, pose1, pose2, 1e-5);
   Matrix numericalH2 = numericalDerivative22<Pose2, Pose2, Pose2>(compose, pose1, pose2, 1e-5);
-  CHECK(assert_equal(numericalH1,actualDcompose1));
+  CHECK(assert_equal(numericalH1,actualDcompose1,1e-5));
   CHECK(assert_equal(numericalH2,actualDcompose2));
 
   CHECK(assert_equal(pose_expected, pose_actual_op));
@@ -373,11 +408,11 @@ TEST( Pose2, bearing )
 	CHECK(assert_equal(Rot2(),bearing(x1,l1)));
 
 	// establish bearing is indeed 45 degrees
-	CHECK(assert_equal(Rot2(M_PI_4),bearing(x1,l2)));
+	CHECK(assert_equal(Rot2::fromAngle(M_PI_4),bearing(x1,l2)));
 
 	// establish bearing is indeed 45 degrees even if shifted
 	Rot2 actual23 = bearing(x2, l3, actualH1, actualH2);
-	CHECK(assert_equal(Rot2(M_PI_4),actual23));
+	CHECK(assert_equal(Rot2::fromAngle(M_PI_4),actual23));
 
 	// Check numerical derivatives
 	expectedH1 = numericalDerivative21(bearing, x2, l3, 1e-5);
@@ -387,7 +422,7 @@ TEST( Pose2, bearing )
 
 	// establish bearing is indeed 45 degrees even if rotated
 	Rot2 actual34 = bearing(x3, l4, actualH1, actualH2);
-	CHECK(assert_equal(Rot2(M_PI_4),actual34));
+	CHECK(assert_equal(Rot2::fromAngle(M_PI_4),actual34));
 
 	// Check numerical derivatives
 	expectedH1 = numericalDerivative21(bearing, x3, l4, 1e-5);

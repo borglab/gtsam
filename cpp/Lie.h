@@ -15,17 +15,12 @@ namespace gtsam {
   template<class T>
   T expmap(const Vector& v);  /* Exponential map about identity */
 
-  // Syntactic sugar
-  template<class T>
-  inline T operator*(const T& l1, const T& l0) { return compose(l1, l0); }
-
-
   // The following functions may be overridden in your own class file
   // with more efficient versions if possible.
 
   // Compute l1 s.t. l2=l1*l0
   template<class T>
-  inline T between(const T& l1, const T& l2) { return inverse(l1)*l2; }
+  inline T between(const T& l1, const T& l2) { return compose(inverse(l1),l2); }
 
   // Log map centered at l0, s.t. exp(l0,log(l0,lp)) = lp
   template<class T>
@@ -33,7 +28,7 @@ namespace gtsam {
 
   /* Exponential map centered at l0, s.t. exp(t,d) = t*exp(d) */
   template<class T>
-  inline T expmap(const T& t, const Vector& d) { return t * expmap<T>(d); }
+  inline T expmap(const T& t, const Vector& d) { return compose(t,expmap<T>(d)); }
 
   /**
    * Base class for Lie group type

@@ -166,11 +166,6 @@ namespace gtsam {
   }
 
   /* ************************************************************************* */
-  Point3 rotate(const Rot3& R, const Point3& p) {
-    return R.r1() * p.x() + R.r2() * p.y() + R.r3() * p.z();
-  }
-
-  /* ************************************************************************* */
   Matrix Drotate1(const Rot3& R, const Point3& p) {
     return R.matrix() * skewSymmetric(-p.x(), -p.y(), -p.z());
   }

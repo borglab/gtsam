@@ -108,7 +108,7 @@ namespace gtsam {
 
   /* ************************************************************************* */
   Pose3 Pose3::transform_to(const Pose3& pose) const {
-		Rot3 cRv = R_ * Rot3(inverse(pose.R_));
+		Rot3 cRv = R_ * Rot3(gtsam::inverse(pose.R_));
 		Point3 t = gtsam::transform_to(pose, t_);
 		return Pose3(cRv, t);
 	}

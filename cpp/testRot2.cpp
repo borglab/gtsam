@@ -10,13 +10,16 @@
 
 using namespace gtsam;
 
-Rot2 R(0.1);
+Rot2 R(Rot2::fromAngle(0.1));
 Point2 P(0.2, 0.7);
 
 /* ************************************************************************* */
-TEST( Rot2, angle)
+TEST( Rot2, constructors_and_angle)
 {
+	double c=cos(0.1), s=sin(0.1);
 	DOUBLES_EQUAL(0.1,R.theta(),1e-9);
+	CHECK(assert_equal(R,Rot2::fromCosSin(c,s)));
+	CHECK(assert_equal(R,Rot2::atan2(s*5,c*5)));
 }
 
 /* ************************************************************************* */
@@ -26,22 +29,10 @@ TEST( Rot2, transpose)
 }
 
 /* ************************************************************************* */
-TEST( Rot2, negtranspose)
-{
-	CHECK(assert_equal(-inverse(R).matrix(),R.negtranspose()));
-}
-
-/* ************************************************************************* */
 TEST( Rot2, compose)
 {
-	CHECK(assert_equal(Rot2(0.45), Rot2(0.2)*Rot2(0.25)));
-	CHECK(assert_equal(Rot2(0.45), Rot2(0.25)*Rot2(0.2)));
-}
-
-/* ************************************************************************* */
-TEST( Rot2, invcompose)
-{
-	CHECK(assert_equal(Rot2(0.2), invcompose(Rot2(0.25),Rot2(0.45))));
+	CHECK(assert_equal(Rot2::fromAngle(0.45), Rot2::fromAngle(0.2)*Rot2::fromAngle(0.25)));
+	CHECK(assert_equal(Rot2::fromAngle(0.45), Rot2::fromAngle(0.25)*Rot2::fromAngle(0.2)));
 }
 
 /* ************************************************************************* */
@@ -62,8 +53,8 @@ TEST( Rot2, expmap)
 /* ************************************************************************* */
 TEST(Rot2, logmap)
 {
-	Rot2 rot0(M_PI_2);
-	Rot2 rot(M_PI);
+	Rot2 rot0(Rot2::fromAngle(M_PI_2));
+	Rot2 rot(Rot2::fromAngle(M_PI));
 	Vector expected = Vector_(1, M_PI_2);
 	Vector actual = logmap(rot0, rot);
 	CHECK(assert_equal(expected, actual));
@@ -113,7 +104,7 @@ TEST( Rot2, relativeBearing )
 
 	// establish relativeBearing is indeed 45 degrees
 	Rot2 actual2 = relativeBearing(l2, actualH);
-	CHECK(assert_equal(Rot2(M_PI_4),actual2));
+	CHECK(assert_equal(Rot2::fromAngle(M_PI_4),actual2));
 
 	// Check numerical derivative
 	expectedH = numericalDerivative11(relativeBearing, l2, 1e-5);

@@ -59,6 +59,17 @@ namespace gtsam {
     /** assert equality up to a tolerance */
     bool equals(const Pose3& pose, double tol = 1e-9) const;
 
+    /** Find the inverse pose s.t. inverse(p)*p = Pose3() */
+    inline Pose3 inverse() const {
+      const Rot3 Rt(R_.inverse());
+      return Pose3(Rt, - (Rt*t_));
+    }
+
+    /** Compose two poses */
+    inline Pose3 operator*(const Pose3& T) const {
+      return Pose3(R_*T.R_, t_ + R_*T.t_);
+    }
+
     Pose3 transform_to(const Pose3& pose) const;
 
     /** get the dimension by the type */
@@ -81,10 +92,7 @@ namespace gtsam {
   inline size_t dim(const Pose3&) { return 6; }
 
   /** Compose two poses */
-  inline Pose3 compose(const Pose3& p0, const Pose3& p1) {
-    return Pose3(p0.rotation()*p1.rotation(),
-        p0.translation() + p0.rotation()*p1.translation());
-  }
+  inline Pose3 compose(const Pose3& p0, const Pose3& p1) { return p0*p1;}
 
   /** Find the inverse pose s.t. inverse(p)*p = Pose3() */
   inline Pose3 inverse(const Pose3& p) {

@@ -18,11 +18,22 @@ namespace gtsam {
 
   /* Rotation matrix */
   class Rot2: Testable<Rot2>, public Lie<Rot2> {
+
   private:
+
     /** we store cos(theta) and sin(theta) */
     double c_, s_;
 
-  public:
+    /** normalize to make sure cos and sin form unit vector */
+    inline Rot2& normalize() {
+    	double scale = c_*c_ + s_*s_;
+    	if(scale != 1.0) {
+    		scale = pow(scale, -0.5);
+    		c_ *= scale;
+    		s_ *= scale;
+    	}
+    	return *this;
+    }
 
     /** constructor from cos/sin */
     inline Rot2(double c, double s) :
@@ -30,23 +41,35 @@ namespace gtsam {
 #ifdef ROT2_RENORMALIZE
     	// rtodo: Could do this scale correction only when creating from compose
     	// Don't let scale drift
-    	double scale = c*c + s*s;
-    	if(scale != 1.0) {
-    		scale = pow(scale, -0.5);
-    		c_ *= scale;
-    		s_ *= scale;
-    	}
+    	normalize();
 #endif
     }
+
+  public:
 
     /** default constructor, zero rotation */
     Rot2() : c_(1.0), s_(0.0) {}
 
-    /** constructor from angle == exponential map at identity */
-    Rot2(double theta) : c_(cos(theta)), s_(sin(theta)) {}
+    /** "named constructors" */
 
-    /** return angle */
-    double theta() const { return atan2(s_,c_); }
+    /** Named constructor from angle == exponential map at identity */
+    static Rot2 fromAngle(double theta) { return Rot2(cos(theta),sin(theta));}
+
+    /** Named constructor from cos(theta),sin(theta) pair, will *not* normalize! */
+    static Rot2 fromCosSin(double c, double s) {
+    	if (fabs(c*c + s*s - 1.0)>1e-9)
+				throw std::invalid_argument("Rot2::fromCosSin: needs cos/sin pair");
+			return Rot2(c, s);
+		}
+
+    /** Named constructor that behaves as atan2, i.e., y,x order (!) and normalizes */
+  	static Rot2 atan2(double y, double x) {
+			Rot2 R(x,y);
+			return R.normalize();
+  	}
+
+  	/** return angle */
+    double theta() const { return ::atan2(s_,c_); }
 
     /** return cos */
     inline double c() const { return c_; }
@@ -66,8 +89,13 @@ namespace gtsam {
     /** return 2*2 transpose (inverse) rotation matrix   */
     Matrix transpose() const;
 
-    /** return 2*2 negative transpose */
-    Matrix negtranspose() const;
+    /** The inverse rotation - negative angle */
+    Rot2 inverse() const { return Rot2(c_, -s_);}
+
+    /** Compose - make a new rotation by adding angles */
+    Rot2 operator*(const Rot2& R) const {
+			return fromCosSin(c_ * R.c_ - s_ * R.s_, s_ * R.c_ + c_ * R.s_);
+		}
 
     /** rotate from world to rotated = R*p */
     Point2 rotate(const Point2& p) const;
@@ -86,8 +114,8 @@ namespace gtsam {
       ar & BOOST_SERIALIZATION_NVP(c_);
       ar & BOOST_SERIALIZATION_NVP(s_);
     }
-  };
 
+  }; // Rot2
 
   // Lie group functions
 
@@ -100,7 +128,7 @@ namespace gtsam {
   /** Expmap around identity - create a rotation from an angle */
   template<> inline Rot2 expmap(const Vector& v) {
     if (zero(v)) return (Rot2());
-    else return Rot2(v(0));
+    else return Rot2::fromAngle(v(0));
   }
 
   /** Logmap around identity - return the angle of the rotation */
@@ -109,27 +137,10 @@ namespace gtsam {
   }
 
   /** Compose - make a new rotation by adding angles */
-  inline Rot2 compose(const Rot2& r0, const Rot2& r1) {
-    return Rot2(
-        r0.c() * r1.c() - r0.s() * r1.s(),
-        r0.s() * r1.c() + r0.c() * r1.s());
-  }
-
-  /** Syntactic sugar R1*R2 = compose(R1,R2) */
-  inline Rot2 operator*(const Rot2& r0, const Rot2& r1) {
-    return compose(r0, r1);
-  }
+  inline Rot2 compose(const Rot2& R1, const Rot2& R2) { return R1*R2;}
 
   /** The inverse rotation - negative angle */
-  inline Rot2 inverse(const Rot2& r) { return Rot2(r.c(), -r.s());}
-
-  /** Shortcut to compose the inverse: invcompose(R0,R1) = inverse(R0)*R1 */
-  inline Rot2 invcompose(const Rot2& r0, const Rot2& r1) {
-    return Rot2(
-         r0.c() * r1.c() + r0.s() * r1.s(),
-        -r0.s() * r1.c() + r0.c() * r1.s());
-  }
-
+  inline Rot2 inverse(const Rot2& R) { return R.inverse();}
 
   /**
    * rotate point from rotated coordinate frame to

@@ -8,7 +8,6 @@
 #include "Lie.h"
 
 #define INSTANTIATE_LIE(T) \
-  template T operator*(const T&, const T&); \
   template T between(const T&, const T&); \
   template Vector logmap(const T&, const T&); \
   template T expmap(const T&, const Vector&); \

@@ -109,6 +109,27 @@ namespace gtsam {
     /** get the dimension by the type */
     static inline size_t dim() { return 3; };
 
+    /* Find the inverse rotation R^T s.t. inverse(R)*R = I */
+    inline Rot3 inverse() const {
+      return Rot3(
+          r1_.x(), r1_.y(), r1_.z(),
+          r2_.x(), r2_.y(), r2_.z(),
+          r3_.x(), r3_.y(), r3_.z());
+    }
+
+    /** compose two rotations */
+    Rot3 operator*(const Rot3& R2) const {
+      return Rot3(rotate(R2.r1_), rotate(R2.r2_), rotate(R2.r3_));
+    }
+
+    /**
+     * rotate point from rotated coordinate frame to
+     * world = R*p
+     */
+    Point3 rotate(const Point3& p) const
+			{return r1_ * p.x() + r2_ * p.y() + r3_ * p.z();}
+    inline Point3 operator*(const Point3& p) const { return rotate(p);}
+
   private:
     /** Serialization function */
     friend class boost::serialization::access;
@@ -147,7 +168,8 @@ namespace gtsam {
    * @param wz
    * @return incremental rotation matrix
    */
-  inline Rot3 rodriguez(double wx, double wy, double wz) { return rodriguez(Vector_(3,wx,wy,wz));}
+  inline Rot3 rodriguez(double wx, double wy, double wz)
+		{ return rodriguez(Vector_(3,wx,wy,wz));}
 
   /** return DOF, dimensionality of tangent space */
   inline size_t dim(const Rot3&) { return 3; }
@@ -163,16 +185,10 @@ namespace gtsam {
   Vector logmap(const Rot3& R);
 
   // Compose two rotations
-  inline Rot3 compose(const Rot3& R1, const Rot3& R2) {
-    return Rot3(R1.matrix() * R2.matrix()); }
+  inline Rot3 compose(const Rot3& R1, const Rot3& R2) { return R1*R2;}
 
   // Find the inverse rotation R^T s.t. inverse(R)*R = Rot3()
-  inline Rot3 inverse(const Rot3& R) {
-    return Rot3(
-        R.r1().x(), R.r1().y(), R.r1().z(),
-        R.r2().x(), R.r2().y(), R.r2().z(),
-        R.r3().x(), R.r3().y(), R.r3().z());
-  }
+  inline Rot3 inverse(const Rot3& R) { return R.inverse();}
 
   // and its derivative
   inline Matrix Dinverse(Rot3 R) { return -R.matrix();}
@@ -181,8 +197,7 @@ namespace gtsam {
    * rotate point from rotated coordinate frame to 
    * world = R*p
    */
-  Point3 rotate(const Rot3& R, const Point3& p);
-  inline Point3 operator*(const Rot3& R, const Point3& p) { return rotate(R,p); }
+  inline Point3 rotate(const Rot3& R, const Point3& p) { return R*p;}
   Matrix Drotate1(const Rot3& R, const Point3& p);
   Matrix Drotate2(const Rot3& R); // does not depend on p !
 
