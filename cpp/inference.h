@@ -55,6 +55,6 @@ namespace gtsam {
 	 * Hacked-together function to compute a Gaussian marginal for the given variable.
 	 * todo: This is inefficient!
 	 */
-	std::pair<Vector,Matrix> marginalGaussian(const GaussianFactorGraph& fg, const Symbol& key);
+	//std::pair<Vector,Matrix> marginalGaussian(const GaussianFactorGraph& fg, const Symbol& key);
 
 } /// namespace gtsam

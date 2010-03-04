@@ -85,36 +85,36 @@ namespace gtsam {
 		}
 
 	/* ************************************************************************* */
-	pair<Vector,Matrix> marginalGaussian(const GaussianFactorGraph& fg, const Symbol& key) {
-
-		// todo: this does not use colamd!
-
-		list<Symbol> ord;
-		BOOST_FOREACH(const Symbol& k, fg.keys()) {
-			if(k != key)
-				ord.push_back(k);
-		}
-		Ordering ordering(ord);
-
-		// Now make another factor graph where we eliminate all the other variables
-		GaussianFactorGraph marginal(fg);
-		marginal.eliminate(ordering);
-
-		GaussianFactor::shared_ptr factor;
-		for(size_t i=0; i<marginal.size(); i++)
-			if(marginal[i] != NULL) {
-				factor = marginal[i];
-				break;
-			}
-
-		if(factor->keys().size() != 1 || factor->keys().front() != key)
-			throw runtime_error("Didn't get the right marginal!");
-
-		VectorConfig mean_cfg(marginal.optimize(Ordering(key)));
-		Matrix A(factor->get_A(key));
-
-		return make_pair(mean_cfg[key], inverse(trans(A)*A));
-	}
+//	pair<Vector,Matrix> marginalGaussian(const GaussianFactorGraph& fg, const Symbol& key) {
+//
+//		// todo: this does not use colamd!
+//
+//		list<Symbol> ord;
+//		BOOST_FOREACH(const Symbol& k, fg.keys()) {
+//			if(k != key)
+//				ord.push_back(k);
+//		}
+//		Ordering ordering(ord);
+//
+//		// Now make another factor graph where we eliminate all the other variables
+//		GaussianFactorGraph marginal(fg);
+//		marginal.eliminate(ordering);
+//
+//		GaussianFactor::shared_ptr factor;
+//		for(size_t i=0; i<marginal.size(); i++)
+//			if(marginal[i] != NULL) {
+//				factor = marginal[i];
+//				break;
+//			}
+//
+//		if(factor->keys().size() != 1 || factor->keys().front() != key)
+//			throw runtime_error("Didn't get the right marginal!");
+//
+//		VectorConfig mean_cfg(marginal.optimize(Ordering(key)));
+//		Matrix A(factor->get_A(key));
+//
+//		return make_pair(mean_cfg[key], inverse(prod(trans(A), A)));
+//	}
 
 	/* ************************************************************************* */
 
