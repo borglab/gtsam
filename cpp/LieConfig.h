@@ -10,6 +10,7 @@
 #pragma once
 
 #include <map>
+#include <set>
 
 #include "Vector.h"
 #include "Testable.h"
@@ -92,6 +93,12 @@ namespace gtsam {
      * the removed element (normally not needed by user code).
      */
     void erase(const J& j, size_t& dim);
+
+    /**
+     * Returns a set of keys in the config
+     * Note: by construction, the list is ordered
+     */
+    std::list<J> keys() const;
 
     /** Replace all keys and variables */
     LieConfig& operator=(const LieConfig& rhs) {

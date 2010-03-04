@@ -68,6 +68,14 @@ namespace gtsam {
   }
 
   template<class J, class T>
+  std::list<J> LieConfig<J,T>::keys() const {
+	  std::list<J> ret;
+	  BOOST_FOREACH(const typename Values::value_type& v, values_)
+		  ret.push_back(v.first);
+	  return ret;
+  }
+
+  template<class J, class T>
   void LieConfig<J,T>::erase(const J& j) {
     size_t dim; // unused
     erase(j, dim);

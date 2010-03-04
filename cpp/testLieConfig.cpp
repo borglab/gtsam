@@ -8,6 +8,9 @@
 #include <CppUnitLite/TestHarness.h>
 #include <stdexcept>
 
+#include <boost/assign/std/list.hpp> // for operator +=
+using namespace boost::assign;
+
 #define GTSAM_MAGIC_KEY
 
 #include <Pose2.h>
@@ -145,6 +148,28 @@ TEST(LieConfig, expmap_d)
   //poseconfig.print("poseconfig");
   CHECK(equal(config0, config0));
   CHECK(config0.equals(config0));
+}
+
+/* ************************************************************************* */
+TEST(LieConfig, extract_keys)
+{
+	typedef TypedSymbol<Pose2, 'x'> PoseKey;
+	LieConfig<PoseKey, Pose2> config;
+
+	config.insert(PoseKey(1), Pose2());
+	config.insert(PoseKey(2), Pose2());
+	config.insert(PoseKey(4), Pose2());
+	config.insert(PoseKey(5), Pose2());
+
+	list<PoseKey> expected, actual;
+	expected += PoseKey(1), PoseKey(2), PoseKey(4), PoseKey(5);
+	actual = config.keys();
+
+	CHECK(actual.size() == expected.size());
+	list<PoseKey>::const_iterator itAct = actual.begin(), itExp = expected.begin();
+	for (; itAct != actual.end() && itExp != expected.end(); ++itAct, ++itExp) {
+		CHECK(assert_equal(*itExp, *itAct));
+	}
 }
 
 /* ************************************************************************* */
