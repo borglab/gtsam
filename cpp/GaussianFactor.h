@@ -118,6 +118,9 @@ public:
 		return As_.at(key);
 	}
 
+	/** erase the A associated with the input key */
+	size_t erase_A(const Symbol& key) { return As_.erase(key); }
+
 	/** operator[] syntax for get */
 	inline const Matrix& operator[](const Symbol& name) const {
 		return get_A(name);
