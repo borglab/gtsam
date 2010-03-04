@@ -55,10 +55,249 @@ Frank Dellaert
 \end_layout
 
 \begin_layout Standard
-\begin_inset CommandInset include
-LatexCommand include
-filename "macros.lyx"
+\begin_inset Note Comment
+status open
 
+\begin_layout Plain Layout
+Derivatives
+\end_layout
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Standard
+\begin_inset FormulaMacro
+\newcommand{\deriv}[2]{\frac{\partial#1}{\partial#2}}
+{\frac{\partial#1}{\partial#2}}
+\end_inset
+
+
+\begin_inset FormulaMacro
+\newcommand{\at}[2]{#1\biggr\rvert_{#2}}
+{#1\biggr\rvert_{#2}}
+\end_inset
+
+ 
+\begin_inset FormulaMacro
+\newcommand{\Jac}[3]{ \at{\deriv{#1}{#2}} {#3} }
+{\at{\deriv{#1}{#2}}{#3}}
+\end_inset
+
+
+\end_layout
+
+\begin_layout Standard
+\begin_inset Note Comment
+status open
+
+\begin_layout Plain Layout
+Lie Groups
+\end_layout
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Standard
+\begin_inset FormulaMacro
+\newcommand{\xhat}{\hat{x}}
+{\hat{x}}
+\end_inset
+
+
+\begin_inset FormulaMacro
+\newcommand{\yhat}{\hat{y}}
+{\hat{y}}
+\end_inset
+
+
+\begin_inset FormulaMacro
+\newcommand{\Ad}[1]{Ad_{#1}}
+{Ad_{#1}}
+\end_inset
+
+
+\end_layout
+
+\begin_layout Standard
+\begin_inset FormulaMacro
+\newcommand{\define}{\stackrel{\Delta}{=}}
+{\stackrel{\Delta}{=}}
+\end_inset
+
+
+\begin_inset FormulaMacro
+\newcommand{\gg}{\mathfrak{g}}
+{\mathfrak{g}}
+\end_inset
+
+
+\begin_inset FormulaMacro
+\newcommand{\Rn}{\mathbb{R}^{n}}
+{\mathbb{R}^{n}}
+\end_inset
+
+
+\end_layout
+
+\begin_layout Standard
+\begin_inset Note Comment
+status open
+
+\begin_layout Plain Layout
+SO(2)
+\end_layout
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Standard
+\begin_inset FormulaMacro
+\newcommand{\Rtwo}{\mathfrak{\mathbb{R}^{2}}}
+{\mathfrak{\mathbb{R}^{2}}}
+\end_inset
+
+
+\begin_inset FormulaMacro
+\newcommand{\SOtwo}{SO(2)}
+{SO(2)}
+\end_inset
+
+
+\begin_inset FormulaMacro
+\newcommand{\sotwo}{\mathfrak{so(2)}}
+{\mathfrak{so(2)}}
+\end_inset
+
+
+\begin_inset FormulaMacro
+\newcommand{\that}{\hat{\theta}}
+{\hat{\theta}}
+\end_inset
+
+
+\begin_inset FormulaMacro
+\newcommand{\skew}[1]{[#1]_{+}}
+{[#1]_{+}}
+\end_inset
+
+
+\end_layout
+
+\begin_layout Standard
+\begin_inset Note Comment
+status open
+
+\begin_layout Plain Layout
+SE(2)
+\end_layout
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Standard
+\begin_inset FormulaMacro
+\newcommand{\SEtwo}{SE(2)}
+{SE(2)}
+\end_inset
+
+
+\begin_inset FormulaMacro
+\newcommand{\setwo}{\mathfrak{se(2)}}
+{\mathfrak{se(2)}}
+\end_inset
+
+
+\end_layout
+
+\begin_layout Standard
+\begin_inset Note Comment
+status open
+
+\begin_layout Plain Layout
+SO(3)
+\end_layout
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Standard
+\begin_inset FormulaMacro
+\newcommand{\Rthree}{\mathfrak{\mathbb{R}^{3}}}
+{\mathfrak{\mathbb{R}^{3}}}
+\end_inset
+
+
+\begin_inset FormulaMacro
+\newcommand{\SOthree}{SO(3)}
+{SO(3)}
+\end_inset
+
+
+\begin_inset FormulaMacro
+\newcommand{\sothree}{\mathfrak{so(3)}}
+{\mathfrak{so(3)}}
+\end_inset
+
+
+\begin_inset FormulaMacro
+\newcommand{\what}{\hat{\omega}}
+{\hat{\omega}}
+\end_inset
+
+
+\begin_inset FormulaMacro
+\newcommand{\Skew}[1]{[#1]_{\times}}
+{[#1]_{\times}}
+\end_inset
+
+
+\end_layout
+
+\begin_layout Standard
+\begin_inset Note Comment
+status open
+
+\begin_layout Plain Layout
+SE(3)
+\end_layout
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Standard
+\begin_inset FormulaMacro
+\newcommand{\Rsix}{\mathfrak{\mathbb{R}^{6}}}
+{\mathfrak{\mathbb{R}^{6}}}
+\end_inset
+
+
+\begin_inset FormulaMacro
+\newcommand{\SEthree}{SE(3)}
+{SE(3)}
+\end_inset
+
+
+\begin_inset FormulaMacro
+\newcommand{\sethree}{\mathfrak{se(3)}}
+{\mathfrak{se(3)}}
+\end_inset
+
+
+\begin_inset FormulaMacro
+\newcommand{\xihat}{\hat{\xi}}
+{\hat{\xi}}
 \end_inset
 
 
@@ -287,6 +526,72 @@ Hence, now we undo
 \end_inset
 
  frame.
+\end_layout
+
+\begin_layout Subsection*
+Numerical Derivatives
+\end_layout
+
+\begin_layout Standard
+Let's examine
+\begin_inset Formula \[
+f\left(g\right)e^{\yhat}=f\left(ge^{\xhat}\right)\]
+
+\end_inset
+
+and multiply with 
+\begin_inset Formula $f(g)^{-1}$
+\end_inset
+
+ on both sides then take the log (which in our case returns 
+\begin_inset Formula $y$
+\end_inset
+
+, not 
+\begin_inset Formula $\yhat$
+\end_inset
+
+):
+\begin_inset Formula \[
+y(x)=\log\left[f\left(g\right)^{-1}f\left(ge^{\xhat}\right)\right]\]
+
+\end_inset
+
+Let us look at 
+\begin_inset Formula $x=0$
+\end_inset
+
+, and perturb in direction 
+\begin_inset Formula $i$
+\end_inset
+
+, 
+\begin_inset Formula $e_{i}=[0,0,d,0,0]$
+\end_inset
+
+.
+ Then take derivative, 
+\begin_inset Formula \[
+\deriv{y(d)}d\define\lim_{d->0}\frac{y(d)-y(0)}{d}=\lim_{d->0}\frac{1}{d}\log\left[f\left(g\right)^{-1}f\left(ge^{\hat{e_{i}}}\right)\right]\]
+
+\end_inset
+
+which is the basis for a numerical derivative scheme.
+\end_layout
+
+\begin_layout Standard
+Let us also look at a chain rule.
+ If we know the behavior at the origin 
+\begin_inset Formula $I$
+\end_inset
+
+, we can extrapolate
+\begin_inset Formula \[
+f(ge^{\xhat})=f(ge^{\xhat}g^{-1}g)=f(e^{\Ad g\xhat}g)\]
+
+\end_inset
+
+ 
 \end_layout
 
 \begin_layout Section
@@ -594,15 +899,7 @@ Derivatives of Mappings
 \end_layout
 
 \begin_layout Standard
-The adjoint map for 
-\begin_inset Formula $\sotwo$
-\end_inset
-
- is trivially equal to the identity, as is the case for 
-\emph on
-all
-\emph default
- commutative groups, and we have the derivative of 
+We have the derivative of 
 \series bold
 inverse
 \series default
@@ -1065,10 +1362,10 @@ Hence, as with
 inverse
 \series default
 ,
-\begin_inset Formula \begin{eqnarray*}
-\frac{\partial T^{-1}}{\partial\xi} & = & -\left[\begin{array}{cc}
+\begin_inset Formula \[
+\frac{\partial T^{-1}}{\partial\xi}=\Ad T=-\left[\begin{array}{cc}
 R & 0\\
-\Skew tR & R\end{array}\right]\end{eqnarray*}
+\Skew tR & R\end{array}\right]\]
 
 \end_inset
 
@@ -1077,16 +1374,18 @@ R & 0\\
 compose
 \series default
  in its first argument,
-\begin_inset Formula \begin{eqnarray*}
-\frac{\partial\left(T_{1}T_{2}\right)}{\partial\xi_{1}} & = & \left[\begin{array}{cc}
+\begin_inset Formula \[
+\frac{\partial\left(T_{1}T_{2}\right)}{\partial\xi_{1}}=\Ad{T_{2}^{-1}}=\left[\begin{array}{cc}
 R_{2}^{T} & 0\\
-\Skew{-R_{2}^{T}t}R_{2}^{T} & R_{2}^{T}\end{array}\right]\end{eqnarray*}
+\Skew{-R_{2}^{T}t_{2}}R_{2}^{T} & R_{2}^{T}\end{array}\right]=\left[\begin{array}{cc}
+R_{2}^{T} & 0\\
+R_{2}^{T}\Skew{-t_{2}} & R_{2}^{T}\end{array}\right]\]
 
 \end_inset
 
 compose in its second argument,
-\begin_inset Formula \begin{eqnarray*}
-\frac{\partial\left(T_{1}T_{2}\right)}{\partial\xi_{2}} & = & I_{6}\end{eqnarray*}
+\begin_inset Formula \[
+\frac{\partial\left(T_{1}T_{2}\right)}{\partial\xi_{2}}=I_{6}\]
 
 \end_inset
 
@@ -1095,16 +1394,16 @@ compose in its second argument,
 between
 \series default
  in its first argument,
-\begin_inset Formula \begin{eqnarray*}
-\frac{\partial\left(T_{1}^{^{-1}}T_{2}\right)}{\partial\xi_{1}} & = & -\left[\begin{array}{cc}
+\begin_inset Formula \[
+\frac{\partial\left(T_{1}^{^{-1}}T_{2}\right)}{\partial\xi_{1}}=\Ad{T_{21}}=-\left[\begin{array}{cc}
 R & 0\\
-\Skew tR & R\end{array}\right]\end{eqnarray*}
+\Skew tR & R\end{array}\right]\]
 
 \end_inset
 
 with 
 \begin_inset Formula \[
-\left[\begin{array}{cc}
+T_{12}=\left[\begin{array}{cc}
 R & t\\
 0 & 1\end{array}\right]=T_{1}^{^{-1}}T_{2}=between(T_{2},T_{1})\]
 
