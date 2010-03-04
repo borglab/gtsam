@@ -14,6 +14,7 @@
 namespace gtsam {
 
 	class Ordering;
+	class GaussianFactorGraph;
 
 	// ELIMINATE: FACTOR GRAPH -> BAYES NET
 
@@ -49,5 +50,11 @@ namespace gtsam {
 	 */
 	template<class Factor, class Conditional>
 	FactorGraph<Factor> marginalize(const BayesNet<Conditional>& bn, const Ordering& keys);
+
+	/**
+	 * Hacked-together function to compute a Gaussian marginal for the given variable.
+	 * todo: This is inefficient!
+	 */
+	std::pair<Vector,Matrix> marginalGaussian(const GaussianFactorGraph& fg, const Symbol& key);
 
 } /// namespace gtsam
