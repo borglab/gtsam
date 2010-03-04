@@ -627,14 +627,14 @@ TEST (SQP, stereo_truth_noisy ) {
 	VOptimizer optimizer(optimizer0.levenbergMarquardt(relThresh, absThresh, VOptimizer::SILENT));
 
 	// verify
-	DOUBLES_EQUAL(0.0, optimizer.error(), 1e-9);
+	DOUBLES_EQUAL(0.0, optimizer.error(), 1e-5);
 
 	// check if correct
 	if (verbose) {
 		optimizer.config()->print("After iteration");
 		cout << "Final error: " << optimizer.error() << endl;
 	}
-	CHECK(assert_equal(*truthConfig,*(optimizer.config())));
+	CHECK(assert_equal(*truthConfig,*(optimizer.config()), 1e-5));
 }
 
 /* ********************************************************************* */

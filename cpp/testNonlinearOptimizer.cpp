@@ -32,7 +32,7 @@ using namespace boost;
 using namespace gtsam;
 using namespace example;
 
-const double tol = 1e-6;
+const double tol = 1e-5;
 
 typedef NonlinearOptimizer<Graph,Config> Optimizer;
 

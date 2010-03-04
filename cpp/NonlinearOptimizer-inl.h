@@ -186,6 +186,10 @@ namespace gtsam {
 			double relativeThreshold, double absoluteThreshold,
 			verbosityLevel verbosity, int maxIterations, double lambdaFactor) const {
 
+		// check if we're already close enough
+		if (error_ < absoluteThreshold)
+			return *this;
+
 		// do one iteration of LM
 		NonlinearOptimizer next = iterateLM(verbosity, lambdaFactor);
 
