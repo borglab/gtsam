@@ -31,8 +31,9 @@ namespace gtsam {
 		pose_(pose) {
 	}
 
-	CalibratedCamera::~CalibratedCamera() {
-	}
+	CalibratedCamera::CalibratedCamera(const Vector &v) : pose_(expmap<Pose3>(v)) {}
+
+	CalibratedCamera::~CalibratedCamera() {}
 
 	CalibratedCamera CalibratedCamera::level(const Pose2& pose2, double height) {
 		double st = sin(pose2.theta()), ct = cos(pose2.theta());

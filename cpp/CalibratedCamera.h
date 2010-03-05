@@ -37,11 +37,23 @@ namespace gtsam {
 
 	public:
 		CalibratedCamera(const Pose3& pose);
+		CalibratedCamera(const Vector &v) ;
 		virtual ~CalibratedCamera();
 
-		const Pose3& pose() const {
-			return pose_;
+		inline const Pose3& pose() const {	return pose_; }
+		bool equals (const CalibratedCamera &camera, double tol = 1e-9) const {
+			return pose_.equals(camera.pose(), tol) ;
 		}
+
+		inline const CalibratedCamera compose(const CalibratedCamera &c) const {
+			return CalibratedCamera( pose_ * c.pose() ) ;
+		}
+
+		inline const CalibratedCamera inverse() const {
+			return CalibratedCamera( pose_.inverse() ) ;
+		}
+
+		inline static size_t dim() { return 6 ; }
 
 		/**
 		 * Create a level camera at the given 2D pose and height
