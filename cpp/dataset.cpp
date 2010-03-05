@@ -53,7 +53,7 @@ pair<string, boost::optional<SharedDiagonal> > dataset(const string& dataset,  c
 	if (set == "Killian") return make_pair(path + "borg/CitySLAM/data/Killian/Killian.graph", small);
 	if (set == "Killian-noised") return make_pair(path + "borg/CitySLAM/data/Killian/Killian-noised.graph", null_model);
 	if (set == "3") return make_pair(path + "borg/CitySLAM/data/TORO/w3-odom.graph", identity);
-	if (set == "100") return make_pair(path + "borg/CitySLAM/data/TORO/2D/w100-odom.graph", identity);
+	if (set == "100") return make_pair(path + "borg/CitySLAM/data/TORO/w100-odom.graph", identity);
 	if (set == "10K") return make_pair(path + "borg/CitySLAM/data/TORO/w10000-odom.graph", identity);
 	if (set == "olson") return make_pair(path + "borg/CitySLAM/data/Olson/olson06icra.graph", null_model);
 	if (set == "victoria") return make_pair(path + "borg/CitySLAM/data/VictoriaPark/victoria_park.praph", null_model);
@@ -63,14 +63,14 @@ pair<string, boost::optional<SharedDiagonal> > dataset(const string& dataset,  c
 	if (set == "intel_tree") return make_pair(path + "borg/CitySLAM/data/Intel/intel.tree", null_model);
 	if (set == "intel-gfs_tree") return make_pair(path + "borg/CitySLAM/data/Intel/intel.gfs.tree", null_model);
 	if (set == "3_tree") return make_pair(path + "borg/CitySLAM/data/TORO/w3-odom.tree", identity);
-	if (set == "100_tree") return make_pair(path + "borg/CitySLAM/data/TORO/2D/w100-odom.tree", identity);
+	if (set == "100_tree") return make_pair(path + "borg/CitySLAM/data/TORO/w100-odom.tree", identity);
 	if (set == "10K_tree") return make_pair(path + "borg/CitySLAM/data/TORO/w10000-odom.tree", identity);
 
 	//constraints
 	if (set == "intel_cnstr") return make_pair(path + "borg/CitySLAM/data/Intel/intel.cnstr", null_model);
 	if (set == "intel-gfs_cnstr") return make_pair(path + "borg/CitySLAM/data/Intel/intel.gfs.cnstr", null_model);
 	if (set == "3_cnstr") return make_pair(path + "borg/CitySLAM/data/TORO/w3-odom.cnstr", identity);
-	if (set == "100_cnstr") return make_pair(path + "borg/CitySLAM/data/TORO/2D/w100-odom.cnstr", identity);
+	if (set == "100_cnstr") return make_pair(path + "borg/CitySLAM/data/TORO/w100-odom.cnstr", identity);
 	if (set == "10K_cnstr") return make_pair(path + "borg/CitySLAM/data/TORO/w10000-odom.cnstr", identity);
 	return make_pair("unknown", null_model);
 }
