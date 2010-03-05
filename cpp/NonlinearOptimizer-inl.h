@@ -44,13 +44,17 @@ namespace gtsam {
 	}
 
 	/* ************************************************************************* */
-	// Constructors without the solver
-	/* ************************************************************************* */
 	template<class G, class C, class L, class S, class W>
 	NonlinearOptimizer<G, C, L, S, W>::NonlinearOptimizer(shared_graph graph,
 			shared_config config, shared_solver solver, double lambda) :
-		graph_(graph), config_(config), error_(graph->error(
-				*config)), lambda_(lambda), solver_(solver) {
+		graph_(graph), config_(config), lambda_(lambda), solver_(solver) {
+		if (!graph) throw std::invalid_argument(
+				"NonlinearOptimizer constructor: graph = NULL");
+		if (!config) throw std::invalid_argument(
+				"NonlinearOptimizer constructor: config = NULL");
+		if (!solver) throw std::invalid_argument(
+				"NonlinearOptimizer constructor: solver = NULL");
+		error_ = graph->error(*config);
 	}
 
 	/* ************************************************************************* */

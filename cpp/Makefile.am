@@ -92,7 +92,7 @@ testBinaryBayesNet_SOURCES    = testBinaryBayesNet.cpp
 testBinaryBayesNet_LDADD      = libgtsam.la 
 
 # Gaussian inference 
-headers += GaussianFactorSet.h SharedGaussian.h SharedDiagonal.h VectorConfig.h
+headers += GaussianFactorSet.h SharedGaussian.h SharedDiagonal.h VectorConfig.h Factorization.h
 sources += NoiseModel.cpp Errors.cpp VectorMap.cpp VectorBTree.cpp GaussianFactor.cpp 
 sources += GaussianFactorGraph.cpp GaussianConditional.cpp GaussianBayesNet.cpp
 check_PROGRAMS += testVectorMap testVectorBTree testGaussianFactor testGaussianFactorGraph 
@@ -296,24 +296,24 @@ AM_LDFLAGS = -L../CppUnitLite -lCppUnitLite $(BOOST_LDFLAGS) $(boost_serializati
 # TESTING: adding cblas implementation with atlas
 #AM_CXXFLAGS += -DCBLAS 
 #libgtsam_la_CPPFLAGS += -DCBLAS
-#AM_LDFLAGS += -lcblas -latlas 
-#libgtsam_la_LDFLAGS += -lcblas -latlas
+#AM_LDFLAGS += -L/opt/local/lib -lcblas -latlas -llapack -lptcblas -lptf77blas -lf77blas
+#libgtsam_la_LDFLAGS += -L/opt/local/lib -lcblas -latlas -llapack -lptcblas -lptf77blas -lf77blas
 
 #######################
 # GSL/ATLAS inclusion
 #######################
 #GSL using ATLAS
-if GSL
-AM_CXXFLAGS += -DGSL $(GSL_CFLAGS)
-libgtsam_la_CPPFLAGS += -DGSL $(GSL_CFLAGS)
-if ATLAS
-AM_LDFLAGS += $(GSL_LIBS_NO_CBLAS) -lcblas -latlas 
-libgtsam_la_LDFLAGS += $(GSL_LIBS_NO_CBLAS) -lcblas -latlas
-else 
-AM_LDFLAGS += $(GSL_LIBS) 
-libgtsam_la_LDFLAGS += $(GSL_LIBS) 
-endif
-endif
+#if GSL
+#AM_CXXFLAGS += -DGSL $(GSL_CFLAGS)
+#libgtsam_la_CPPFLAGS += -DGSL $(GSL_CFLAGS)
+#if ATLAS
+#AM_LDFLAGS += $(GSL_LIBS_NO_CBLAS) -lcblas -latlas 
+#libgtsam_la_LDFLAGS += $(GSL_LIBS_NO_CBLAS) -lcblas -latlas
+#else 
+#AM_LDFLAGS += $(GSL_LIBS) 
+#libgtsam_la_LDFLAGS += $(GSL_LIBS) 
+#endif
+#endif
 
 TESTS = $(check_PROGRAMS)
 CXXLINK = $(LIBTOOL) $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=link \

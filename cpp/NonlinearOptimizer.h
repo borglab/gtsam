@@ -9,8 +9,9 @@
 #define NONLINEAROPTIMIZER_H_
 
 #include <boost/shared_ptr.hpp>
-#include "NonlinearFactorGraph.h"
 #include "VectorConfig.h"
+#include "NonlinearFactorGraph.h"
+#include "Factorization.h"
 
 namespace gtsam {
 
@@ -69,7 +70,7 @@ namespace gtsam {
 		// keep a configuration and its error
 		// These typically change once per iteration (in a functional way)
 		const shared_config config_;
-		const double error_;
+		double error_; // TODO FD: no more const because in constructor I need to set it after checking :-(
 
 		// keep current lambda for use within LM only
 		// TODO: red flag, should we have an LM class ?
