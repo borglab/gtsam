@@ -25,7 +25,6 @@ namespace gtsam { namespace visualSLAM {
   typedef TypedSymbol<Pose3,'x'> PoseKey;
   typedef TypedSymbol<Point3,'l'> PointKey;
   typedef PairConfig<PoseKey, Pose3, PointKey, Point3> Config;
-  typedef NonlinearFactorGraph<Config> Graph;
   typedef NonlinearEquality<Config, PoseKey, Pose3> PoseConstraint;
   typedef NonlinearEquality<Config, PointKey, Point3> PointConstraint;
 
@@ -116,52 +115,58 @@ namespace gtsam { namespace visualSLAM {
   // Typedef for general use
   typedef GenericProjectionFactor<Config, PointKey, PoseKey> ProjectionFactor;
 
+  /**
+	 * Non-linear factor graph for vanilla visual SLAM
+	 */
+	class Graph: public NonlinearFactorGraph<Config> {
 
+	public:
 
+		/** default constructor is empty graph */
+		Graph() {
+		}
 
-  //  /**
-  //   * Non-linear factor graph for visual SLAM
-  //   */
-  //  class VSLAMGraph : public NonlinearFactorGraph<VSLAMConfig>{
-  //
-  //  public:
-  //
-  //    /** default constructor is empty graph */
-  //    VSLAMGraph() {}
-  //
-  //    /**
-  //     * print out graph
-  //     */
-  //    void print(const std::string& s = "") const {
-  //      NonlinearFactorGraph<VSLAMConfig>::print(s);
-  //    }
-  //
-  //    /**
-  //     * equals
-  //     */
-  //    bool equals(const VSLAMGraph& p, double tol=1e-9) const {
-  //      return NonlinearFactorGraph<VSLAMConfig>::equals(p, tol);
-  //    }
-  //
-  //    /**
-  //     *  Add a constraint on a landmark (for now, *must* be satisfied in any Config)
-  //     *  @param j index of landmark
-  //     *  @param p to which point to constrain it to
-  //     */
-  //    void addLandmarkConstraint(int j, const Point3& p = Point3());
-  //
-  //    /**
-  //     *  Add a constraint on a camera (for now, *must* be satisfied in any Config)
-  //     *  @param j index of camera
-  //     *  @param p to which pose to constrain it to
-  //     */
-  //    void addCameraConstraint(int j, const Pose3& p = Pose3());
-  //
-  //  private:
-  //    /** Serialization function */
-  //    friend class boost::serialization::access;
-  //    template<class Archive>
-  //    void serialize(Archive & ar, const unsigned int version) {}
-  //  };
+		/** print out graph */
+		void print(const std::string& s = "") const {
+			NonlinearFactorGraph<Config>::print(s);
+		}
+
+		/** equals */
+		bool equals(const Graph& p, double tol = 1e-9) const {
+			return NonlinearFactorGraph<Config>::equals(p, tol);
+		}
+
+		/**
+		 *  Add a measurement
+		 *  @param j index of camera
+		 *  @param p to which pose to constrain it to
+		 */
+		void addMeasurement(const Point2& z, const SharedGaussian& model,
+				PoseKey i, PointKey j, const shared_ptrK& K) {
+			boost::shared_ptr<ProjectionFactor> factor(new ProjectionFactor(z, model, i, j, K));
+			push_back(factor);
+		}
+
+		/**
+		 *  Add a constraint on a pose (for now, *must* be satisfied in any Config)
+		 *  @param j index of camera
+		 *  @param p to which pose to constrain it to
+		 */
+		void addPoseConstraint(int j, const Pose3& p = Pose3()) {
+			boost::shared_ptr<PoseConstraint> factor(new PoseConstraint(j, p));
+			push_back(factor);
+		}
+
+		/**
+		 *  Add a constraint on a point (for now, *must* be satisfied in any Config)
+		 *  @param j index of landmark
+		 *  @param p to which point to constrain it to
+		 */
+		void addPointConstraint(int j, const Point3& p = Point3()) {
+			boost::shared_ptr<PointConstraint> factor(new PointConstraint(j, p));
+			push_back(factor);
+		}
+
+	}; // Graph
 
 } } // namespaces

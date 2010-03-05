@@ -58,14 +58,14 @@ Graph testGraph() {
 
   shared_ptrK sK(new Cal3_S2(625, 625, 0, 0, 0));
   Graph g;
-  g.add(ProjectionFactor(z11, sigma, 1, 1, sK));
-  g.add(ProjectionFactor(z12, sigma, 1, 2, sK));
-  g.add(ProjectionFactor(z13, sigma, 1, 3, sK));
-  g.add(ProjectionFactor(z14, sigma, 1, 4, sK));
-  g.add(ProjectionFactor(z21, sigma, 2, 1, sK));
-  g.add(ProjectionFactor(z22, sigma, 2, 2, sK));
-  g.add(ProjectionFactor(z23, sigma, 2, 3, sK));
-  g.add(ProjectionFactor(z24, sigma, 2, 4, sK));
+  g.addMeasurement(z11, sigma, 1, 1, sK);
+  g.addMeasurement(z12, sigma, 1, 2, sK);
+  g.addMeasurement(z13, sigma, 1, 3, sK);
+  g.addMeasurement(z14, sigma, 1, 4, sK);
+  g.addMeasurement(z21, sigma, 2, 1, sK);
+  g.addMeasurement(z22, sigma, 2, 2, sK);
+  g.addMeasurement(z23, sigma, 2, 3, sK);
+  g.addMeasurement(z24, sigma, 2, 4, sK);
   return g;
 }
 
@@ -75,9 +75,9 @@ TEST( Graph, optimizeLM)
   // build a graph
   shared_ptr<Graph> graph(new Graph(testGraph()));
 	// add 3 landmark constraints
-  graph->add(PointConstraint(1, landmark1));
-  graph->add(PointConstraint(2, landmark2));
-  graph->add(PointConstraint(3, landmark3));
+  graph->addPointConstraint(1, landmark1);
+  graph->addPointConstraint(2, landmark2);
+  graph->addPointConstraint(3, landmark3);
 
   // Create an initial configuration corresponding to the ground truth
   boost::shared_ptr<Config> initialEstimate(new Config);
@@ -120,8 +120,8 @@ TEST( Graph, optimizeLM2)
   // build a graph
   shared_ptr<Graph> graph(new Graph(testGraph()));
 	// add 2 camera constraints
-  graph->add(PoseConstraint(1, camera1));
-  graph->add(PoseConstraint(2, camera2));
+  graph->addPoseConstraint(1, camera1);
+  graph->addPoseConstraint(2, camera2);
 
   // Create an initial configuration corresponding to the ground truth
   boost::shared_ptr<Config> initialEstimate(new Config);
@@ -165,8 +165,8 @@ TEST( Graph, CHECK_ORDERING)
   // build a graph
   shared_ptr<Graph> graph(new Graph(testGraph()));
   // add 2 camera constraints
-  graph->add(PoseConstraint(1, camera1));
-  graph->add(PoseConstraint(2, camera2));
+  graph->addPoseConstraint(1, camera1);
+  graph->addPoseConstraint(2, camera2);
 
   // Create an initial configuration corresponding to the ground truth
   boost::shared_ptr<Config> initialEstimate(new Config);
