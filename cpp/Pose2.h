@@ -96,6 +96,7 @@ namespace gtsam {
   * Ad_pose is 3*3 matrix that when applied to twist xi, returns Ad_pose(xi)
   */
   Matrix AdjointMap(const Pose2& p);
+  inline Vector Adjoint(const Pose2& p, const Vector& xi) { return AdjointMap(p)*xi;}
 
   /**
    * wedge for SE(2):
