@@ -32,10 +32,10 @@ pair<string, boost::optional<SharedDiagonal> > dataset(const string& dataset,  c
 	boost::optional<SharedDiagonal> small(noiseModel::Diagonal::Variances(
 				gtsam::Vector_(3, 0.0001, 0.0001, 0.0003)));
 
-
 	if (path.empty()) path = string(getenv("HOME")) + "/";
 	if (set.empty()) set = string(getenv("DATASET"));
-	if (set == "intel") return make_pair(path + "data/iSAM/Laser/intel.graph", null_model);
+
+	/*if (set == "intel") return make_pair(path + "data/iSAM/Laser/intel.graph", null_model);
 	if (set == "intel-gfs") return make_pair(path + "data/iSAM/Laser/intel.gfs.graph", null_model);
 	if (set == "Killian-gfs") return make_pair(path + "data/iSAM/Laser/Killian.gfs.graph", null_model);
 	if (set == "Killian") return make_pair(path + "data/iSAM/Laser/Killian.graph", small);
@@ -45,10 +45,33 @@ pair<string, boost::optional<SharedDiagonal> > dataset(const string& dataset,  c
 	if (set == "10K") return make_pair(path + "borg/toro/data/2D/w10000-odom.graph", identity);
 	if (set == "olson") return make_pair(path + "data/iSAM/ISAM2/olson06icra.txt", null_model);
 	if (set == "victoria") return make_pair(path + "data/iSAM/ISAM2/victoria_park.txt", null_model);
-	if (set == "beijing") return make_pair(path + "data/BeijingData/beijingData_trips.log", null_model);
+	if (set == "beijing") return make_pair(path + "data/BeijingData/beijingData_trips.log", null_model);*/
 
-	if (set == "10K_tree") return make_pair(path + "borg/CitySLAM/data/10k.tree", identity);
-	if (set == "10K_cnstr") return make_pair(path + "borg/CitySLAM/data/10k.cnstr", identity);
+	if (set == "intel") return make_pair(path + "borg/CitySLAM/data/Intel/intel.graph", null_model);
+	if (set == "intel-gfs") return make_pair(path + "borg/CitySLAM/data/Intel/intel.gfs.graph", null_model);
+	if (set == "Killian-gfs") return make_pair(path + "borg/CitySLAM/data/Killian/Killian.gfs.graph", null_model);
+	if (set == "Killian") return make_pair(path + "borg/CitySLAM/data/Killian/Killian.graph", small);
+	if (set == "Killian-noised") return make_pair(path + "borg/CitySLAM/data/Killian/Killian-noised.graph", null_model);
+	if (set == "3") return make_pair(path + "borg/CitySLAM/data/TORO/w3-odom.graph", identity);
+	if (set == "100") return make_pair(path + "borg/CitySLAM/data/TORO/2D/w100-odom.graph", identity);
+	if (set == "10K") return make_pair(path + "borg/CitySLAM/data/TORO/w10000-odom.graph", identity);
+	if (set == "olson") return make_pair(path + "borg/CitySLAM/data/Olson/olson06icra.graph", null_model);
+	if (set == "victoria") return make_pair(path + "borg/CitySLAM/data/VictoriaPark/victoria_park.praph", null_model);
+	if (set == "beijing") return make_pair(path + "borg/CitySLAM/data/Beijing/beijingData_trips.graph", null_model);
+
+	// trees
+	if (set == "intel_tree") return make_pair(path + "borg/CitySLAM/data/Intel/intel.tree", null_model);
+	if (set == "intel-gfs_tree") return make_pair(path + "borg/CitySLAM/data/Intel/intel.gfs.tree", null_model);
+	if (set == "3_tree") return make_pair(path + "borg/CitySLAM/data/TORO/w3-odom.tree", identity);
+	if (set == "100_tree") return make_pair(path + "borg/CitySLAM/data/TORO/2D/w100-odom.tree", identity);
+	if (set == "10K_tree") return make_pair(path + "borg/CitySLAM/data/TORO/w10000-odom.tree", identity);
+
+	//constraints
+	if (set == "intel_cnstr") return make_pair(path + "borg/CitySLAM/data/Intel/intel.cnstr", null_model);
+	if (set == "intel-gfs_cnstr") return make_pair(path + "borg/CitySLAM/data/Intel/intel.gfs.cnstr", null_model);
+	if (set == "3_cnstr") return make_pair(path + "borg/CitySLAM/data/TORO/w3-odom.cnstr", identity);
+	if (set == "100_cnstr") return make_pair(path + "borg/CitySLAM/data/TORO/2D/w100-odom.cnstr", identity);
+	if (set == "10K_cnstr") return make_pair(path + "borg/CitySLAM/data/TORO/w10000-odom.cnstr", identity);
 	return make_pair("unknown", null_model);
 }
 
