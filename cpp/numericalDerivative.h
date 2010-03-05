@@ -52,15 +52,10 @@ namespace gtsam {
     Vector d(n,0.0);
     Matrix H = zeros(m,n);
     for (size_t j=0;j<n;j++) {
-#ifdef LINEARIZE_AT_IDENTITY
-      d(j) +=   delta; Vector hxplus = logmap(h(expmap(x,d)));
-      d(j) -= 2*delta; Vector hxmin  = logmap(h(expmap(x,d)));
-#else
-      d(j) +=   delta; Vector hxplus = logmap(hx, h(expmap(x,d)));
-      d(j) -= 2*delta; Vector hxmin  = logmap(hx, h(expmap(x,d)));
-#endif
-      d(j) +=   delta; Vector dh = (hxplus-hxmin)*factor;
-      for (size_t i=0;i<m;i++) H(i,j) = dh(i);
+    	d(j) +=   delta; Vector hxplus = logmap(hx, h(expmap(x,d)));
+    	d(j) -= 2*delta; Vector hxmin  = logmap(hx, h(expmap(x,d)));
+    	d(j) +=   delta; Vector dh = (hxplus-hxmin)*factor;
+    	for (size_t i=0;i<m;i++) H(i,j) = dh(i);
     }
     return H;
   }
@@ -83,15 +78,10 @@ namespace gtsam {
     Vector d(n,0.0);
     Matrix H = zeros(m,n);
     for (size_t j=0;j<n;j++) {
-#ifdef LINEARIZE_AT_IDENTITY
-      d(j) +=   delta; Vector hxplus = logmap(h(expmap(x1,d),x2));
-      d(j) -= 2*delta; Vector hxmin  = logmap(h(expmap(x1,d),x2));
-#else
-      d(j) +=   delta; Vector hxplus = logmap(hx, h(expmap(x1,d),x2));
-      d(j) -= 2*delta; Vector hxmin  = logmap(hx, h(expmap(x1,d),x2));
-#endif
-      d(j) +=   delta; Vector dh = (hxplus-hxmin)*factor;
-      for (size_t i=0;i<m;i++) H(i,j) = dh(i);
+    	d(j) +=   delta; Vector hxplus = logmap(hx, h(expmap(x1,d),x2));
+    	d(j) -= 2*delta; Vector hxmin  = logmap(hx, h(expmap(x1,d),x2));
+    	d(j) +=   delta; Vector dh = (hxplus-hxmin)*factor;
+    	for (size_t i=0;i<m;i++) H(i,j) = dh(i);
     }
     return H;
   }
@@ -116,15 +106,10 @@ namespace gtsam {
     Vector d(n,0.0);
     Matrix H = zeros(m,n);
     for (size_t j=0;j<n;j++) {
-#ifdef LINEARIZE_AT_IDENTITY
-      d(j) +=   delta; Vector hxplus = logmap(h(x1,expmap(x2,d)));
-      d(j) -= 2*delta; Vector hxmin  = logmap(h(x1,expmap(x2,d)));
-#else
-      d(j) +=   delta; Vector hxplus = logmap(hx, h(x1,expmap(x2,d)));
-      d(j) -= 2*delta; Vector hxmin  = logmap(hx, h(x1,expmap(x2,d)));
-#endif
-      d(j) +=   delta; Vector dh = (hxplus-hxmin)*factor;
-      for (size_t i=0;i<m;i++) H(i,j) = dh(i);
+    	d(j) +=   delta; Vector hxplus = logmap(hx, h(x1,expmap(x2,d)));
+    	d(j) -= 2*delta; Vector hxmin  = logmap(hx, h(x1,expmap(x2,d)));
+    	d(j) +=   delta; Vector dh = (hxplus-hxmin)*factor;
+    	for (size_t i=0;i<m;i++) H(i,j) = dh(i);
     }
     return H;
   }
@@ -149,17 +134,51 @@ namespace gtsam {
     Vector d(n,0.0);
     Matrix H = zeros(m,n);
     for (size_t j=0;j<n;j++) {
-#ifdef LINEARIZE_AT_IDENTITY
-      d(j) +=   delta; Vector hxplus = logmap(h(expmap(x1,d),x2,x3));
-      d(j) -= 2*delta; Vector hxmin  = logmap(h(expmap(x1,d),x2,x3));
-#else
       d(j) +=   delta; Vector hxplus = logmap(hx, h(expmap(x1,d),x2,x3));
       d(j) -= 2*delta; Vector hxmin  = logmap(hx, h(expmap(x1,d),x2,x3));
-#endif
       d(j) +=   delta; Vector dh = (hxplus-hxmin)*factor;
       for (size_t i=0;i<m;i++) H(i,j) = dh(i);
     }
     return H;
   }
 
+  // arg 2
+  template<class Y, class X1, class X2, class X3>
+  Matrix numericalDerivative32
+  (Y (*h)(const X1&, const X2&, const X3&),
+      const X1& x1, const X2& x2, const X3& x3, double delta=1e-5)
+  {
+    Y hx = h(x1,x2,x3);
+    double factor = 1.0/(2.0*delta);
+    const size_t m = dim(hx), n = dim(x1);
+    Vector d(n,0.0);
+    Matrix H = zeros(m,n);
+    for (size_t j=0;j<n;j++) {
+      d(j) +=   delta; Vector hxplus = logmap(hx, h(x1, expmap(x2,d),x3));
+      d(j) -= 2*delta; Vector hxmin  = logmap(hx, h(x1, expmap(x2,d),x3));
+      d(j) +=   delta; Vector dh = (hxplus-hxmin)*factor;
+      for (size_t i=0;i<m;i++) H(i,j) = dh(i);
+    }
+    return H;
+  }
+
+  // arg 3
+  template<class Y, class X1, class X2, class X3>
+  Matrix numericalDerivative33
+  (Y (*h)(const X1&, const X2&, const X3&),
+      const X1& x1, const X2& x2, const X3& x3, double delta=1e-5)
+  {
+    Y hx = h(x1,x2,x3);
+    double factor = 1.0/(2.0*delta);
+    const size_t m = dim(hx), n = dim(x1);
+    Vector d(n,0.0);
+    Matrix H = zeros(m,n);
+    for (size_t j=0;j<n;j++) {
+      d(j) +=   delta; Vector hxplus = logmap(hx, h(x1, x2, expmap(x3,d)));
+      d(j) -= 2*delta; Vector hxmin  = logmap(hx, h(x1, x2, expmap(x3,d)));
+      d(j) +=   delta; Vector dh = (hxplus-hxmin)*factor;
+      for (size_t i=0;i<m;i++) H(i,j) = dh(i);
+    }
+    return H;
+  }
 }
