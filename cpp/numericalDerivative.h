@@ -150,7 +150,7 @@ namespace gtsam {
   {
     Y hx = h(x1,x2,x3);
     double factor = 1.0/(2.0*delta);
-    const size_t m = dim(hx), n = dim(x1);
+    const size_t m = dim(hx), n = dim(x2);
     Vector d(n,0.0);
     Matrix H = zeros(m,n);
     for (size_t j=0;j<n;j++) {
@@ -170,7 +170,7 @@ namespace gtsam {
   {
     Y hx = h(x1,x2,x3);
     double factor = 1.0/(2.0*delta);
-    const size_t m = dim(hx), n = dim(x1);
+    const size_t m = dim(hx), n = dim(x3);
     Vector d(n,0.0);
     Matrix H = zeros(m,n);
     for (size_t j=0;j<n;j++) {
