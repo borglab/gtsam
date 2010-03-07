@@ -101,6 +101,13 @@ namespace gtsam {
 			verbosityLevel verbosity, int maxIterations) const {
 		static W writer(error_);
 
+		// check if we're already close enough
+		if (error_ < absoluteThreshold) {
+			if (verbosity >= ERROR) cout << "Exiting, as error = " << error_
+					<< " < absoluteThreshold (" << absoluteThreshold << ")" << endl;
+			return *this;
+		}
+
 		// linearize, solve, update
 		NonlinearOptimizer next = iterate(verbosity);
 
@@ -191,8 +198,11 @@ namespace gtsam {
 			verbosityLevel verbosity, int maxIterations, double lambdaFactor) const {
 
 		// check if we're already close enough
-		if (error_ < absoluteThreshold)
+		if (error_ < absoluteThreshold) {
+			if (verbosity >= ERROR) cout << "Exiting, as error = " << error_
+					<< " < absoluteThreshold (" << absoluteThreshold << ")" << endl;
 			return *this;
+		}
 
 		// do one iteration of LM
 		NonlinearOptimizer next = iterateLM(verbosity, lambdaFactor);
