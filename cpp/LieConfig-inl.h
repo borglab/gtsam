@@ -40,7 +40,7 @@ namespace gtsam {
   bool LieConfig<J,T>::equals(const LieConfig<J,T>& expected, double tol) const {
     if (values_.size() != expected.values_.size()) return false;
     BOOST_FOREACH(const typename Values::value_type& v, values_) {
-    	if (!exists(v.first)) return false;
+    	if (!expected.exists(v.first)) return false;
       if(!gtsam::equal(v.second, expected[v.first], tol))
         return false;
     }
