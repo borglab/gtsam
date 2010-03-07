@@ -54,7 +54,20 @@ Geometry Derivatives and Other Hairy Math
 Frank Dellaert
 \end_layout
 
-\begin_layout Standard
+\begin_layout Plain Layout
+\begin_inset Box Frameless
+position "t"
+hor_pos "c"
+has_inner_box 1
+inner_pos "t"
+use_parbox 0
+width "100col%"
+special "none"
+height "1in"
+height_special "totalheight"
+status collapsed
+
+\begin_layout Plain Layout
 \begin_inset Note Comment
 status open
 
@@ -67,7 +80,7 @@ Derivatives
 
 \end_layout
 
-\begin_layout Standard
+\begin_layout Plain Layout
 \begin_inset FormulaMacro
 \newcommand{\deriv}[2]{\frac{\partial#1}{\partial#2}}
 {\frac{\partial#1}{\partial#2}}
@@ -88,7 +101,7 @@ Derivatives
 
 \end_layout
 
-\begin_layout Standard
+\begin_layout Plain Layout
 \begin_inset Note Comment
 status open
 
@@ -101,7 +114,7 @@ Lie Groups
 
 \end_layout
 
-\begin_layout Standard
+\begin_layout Plain Layout
 \begin_inset FormulaMacro
 \newcommand{\xhat}{\hat{x}}
 {\hat{x}}
@@ -122,7 +135,7 @@ Lie Groups
 
 \end_layout
 
-\begin_layout Standard
+\begin_layout Plain Layout
 \begin_inset FormulaMacro
 \newcommand{\define}{\stackrel{\Delta}{=}}
 {\stackrel{\Delta}{=}}
@@ -143,7 +156,7 @@ Lie Groups
 
 \end_layout
 
-\begin_layout Standard
+\begin_layout Plain Layout
 \begin_inset Note Comment
 status open
 
@@ -156,7 +169,7 @@ SO(2)
 
 \end_layout
 
-\begin_layout Standard
+\begin_layout Plain Layout
 \begin_inset FormulaMacro
 \newcommand{\Rtwo}{\mathfrak{\mathbb{R}^{2}}}
 {\mathfrak{\mathbb{R}^{2}}}
@@ -189,7 +202,7 @@ SO(2)
 
 \end_layout
 
-\begin_layout Standard
+\begin_layout Plain Layout
 \begin_inset Note Comment
 status open
 
@@ -202,7 +215,7 @@ SE(2)
 
 \end_layout
 
-\begin_layout Standard
+\begin_layout Plain Layout
 \begin_inset FormulaMacro
 \newcommand{\SEtwo}{SE(2)}
 {SE(2)}
@@ -217,7 +230,7 @@ SE(2)
 
 \end_layout
 
-\begin_layout Standard
+\begin_layout Plain Layout
 \begin_inset Note Comment
 status open
 
@@ -230,7 +243,7 @@ SO(3)
 
 \end_layout
 
-\begin_layout Standard
+\begin_layout Plain Layout
 \begin_inset FormulaMacro
 \newcommand{\Rthree}{\mathfrak{\mathbb{R}^{3}}}
 {\mathfrak{\mathbb{R}^{3}}}
@@ -263,7 +276,7 @@ SO(3)
 
 \end_layout
 
-\begin_layout Standard
+\begin_layout Plain Layout
 \begin_inset Note Comment
 status open
 
@@ -276,7 +289,7 @@ SE(3)
 
 \end_layout
 
-\begin_layout Standard
+\begin_layout Plain Layout
 \begin_inset FormulaMacro
 \newcommand{\Rsix}{\mathfrak{\mathbb{R}^{6}}}
 {\mathfrak{\mathbb{R}^{6}}}
@@ -303,8 +316,117 @@ SE(3)
 
 \end_layout
 
+\end_inset
+
+
+\end_layout
+
 \begin_layout Section
 Derivatives of Lie Group Mappings
+\end_layout
+
+\begin_layout Subsection
+New
+\end_layout
+
+\begin_layout Standard
+The following is relevant 
+\begin_inset CommandInset citation
+LatexCommand cite
+after "page 45"
+key "Hall00book"
+
+\end_inset
+
+: suppose that 
+\begin_inset Formula $\Phi:G\rightarrow H$
+\end_inset
+
+ is a a mapping (Lie group homomorphism).
+ Then there exists a unique linear map 
+\begin_inset Formula $\phi:\gg\rightarrow\mathfrak{h}$
+\end_inset
+
+ 
+\begin_inset Formula \[
+\phi(\xhat)\define\lim_{t\rightarrow0}\frac{d}{dt}\Phi\left(e^{t\xhat}\right)\]
+
+\end_inset
+
+such that
+\end_layout
+
+\begin_layout Enumerate
+\begin_inset Formula $\Phi\left(e^{\xhat}\right)=e^{\phi\left(\xhat\right)}$
+\end_inset
+
+
+\end_layout
+
+\begin_layout Enumerate
+\begin_inset Formula $\phi\left(T\xhat T^{-1}\right)=\Phi(T)\phi(\xhat)\Phi(T^{-1})$
+\end_inset
+
+
+\end_layout
+
+\begin_layout Enumerate
+\begin_inset Formula $\phi\left([\xhat,\yhat]\right)=\left[\phi(\xhat),\phi(\yhat)\right]$
+\end_inset
+
+
+\end_layout
+
+\begin_layout Standard
+In other words, the map 
+\begin_inset Formula $\phi$
+\end_inset
+
+ is the derivative of 
+\begin_inset Formula $\Phi$
+\end_inset
+
+ at the identity.
+ It suffices to compute 
+\begin_inset Formula $\phi$
+\end_inset
+
+ for a basis of 
+\begin_inset Formula $\gg$
+\end_inset
+
+.
+ Since 
+\begin_inset Formula \[
+e^{-\xhat}=\left(e^{-\xhat}\right)^{-1}\]
+
+\end_inset
+
+ clearly 
+\begin_inset Formula $\phi(\xhat)=-\xhat$
+\end_inset
+
+ for the inverse mapping.
+\end_layout
+
+\begin_layout Standard
+Let us define two mappings
+\begin_inset Formula \[
+\Phi_{1}(A)=AB\mbox{ and }\Phi_{2}(B)=AB\]
+
+\end_inset
+
+Then 
+\begin_inset Formula \[
+\phi_{1}(\xhat)=\lim_{t\rightarrow0}\frac{d}{dt}\Phi_{1}\left(e^{t\xhat}B\right)=\]
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Subsection
+Old
 \end_layout
 
 \begin_layout Standard
@@ -962,11 +1084,11 @@ We would now like to know what an incremental rotation parameterized by
 
  would do:
 \begin_inset Formula \[
-q(\text{\theta})=Re^{\skew{\theta}}p\]
+q(\text{\omega t})=Re^{\skew{\omega t}}p\]
 
 \end_inset
 
-hence the derivative (following the exposition in Section 
+The derivative is (following the exposition in Section 
 \begin_inset CommandInset ref
 LatexCommand ref
 reference "sec:Derivatives-of-Actions"
@@ -975,7 +1097,7 @@ reference "sec:Derivatives-of-Actions"
 
 ):
 \begin_inset Formula \[
-\deriv{q(\omega)}{\omega}=R\deriv{}{\omega}\left(e^{\skew{\theta}}p\right)=R\deriv{}{\omega}\left(\skew{\theta}p\right)=RH_{p}\]
+\deriv{q(\omega t)}t=R\deriv{}t\left(e^{\skew{\omega t}}p\right)=R\deriv{}t\left(\skew{\omega t}p\right)\]
 
 \end_inset
 
@@ -1004,22 +1126,34 @@ cross product
 \begin_inset Formula \[
 \skew{\theta}p=\left[\begin{array}{c}
 -y\\
-x\end{array}\right]\theta=H_{p}\theta\]
+x\end{array}\right]\theta=\omega R_{pi/2}pt\]
 
 \end_inset
 
-with 
-\begin_inset Formula $H_{p}=R_{pi/2}p$
+Hence, the final derivative of an action in its first argument is
+\begin_inset Formula \[
+\deriv{q(\omega t)}{\omega t}=\omega RR_{pi/2}p=\omega R_{pi/2}Rp=\omega R_{pi/2}q\]
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Standard
+Really need to think of relationship 
+\begin_inset Formula $\omega$
+\end_inset
+
+ and 
+\begin_inset Formula $t$
 \end_inset
 
 .
- Hence, the final derivative of an action in its first argument is
-\begin_inset Formula \[
-\deriv{q(\theta)}{\theta}=RH_{p}=RR_{pi/2}p=R_{pi/2}Rp=R_{pi/2}q\]
-
+ We don't have a time 
+\begin_inset Formula $t$
 \end_inset
 
-
+ in our code.
 \end_layout
 
 \begin_layout Standard

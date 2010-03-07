@@ -348,7 +348,7 @@ Aff(2),6
 
 \begin_layout Standard
 \begin_inset Note Comment
-status open
+status collapsed
 
 \begin_layout Plain Layout
 SL(3),8
@@ -388,36 +388,6 @@ SL(3),8
 
 \begin_layout Section
 Motivation: Rigid Motions in the Plane
-\end_layout
-
-\begin_layout Standard
-\begin_inset Float figure
-placement h
-wide false
-sideways false
-status collapsed
-
-\begin_layout Plain Layout
-IMAGINE A FIGURE HERE
-\begin_inset Caption
-
-\begin_layout Plain Layout
-(a) A robot translating.
- (b) A robot rotating.
-\end_layout
-
-\end_inset
-
-
-\end_layout
-
-\begin_layout Plain Layout
-
-\end_layout
-
-\end_inset
-
-
 \end_layout
 
 \begin_layout Standard
@@ -480,6 +450,7 @@ where
 \end_inset
 
  in counterclockwise direction.
+ 
 \end_layout
 
 \begin_layout Standard
@@ -490,7 +461,13 @@ sideways false
 status collapsed
 
 \begin_layout Plain Layout
-IMAGINE A FIGURE HERE
+\align center
+\begin_inset Graphics
+	filename images/circular.pdf
+
+\end_inset
+
+
 \begin_inset Caption
 
 \begin_layout Plain Layout
@@ -520,7 +497,7 @@ The reason is that, if we move the robot a tiny bit according to the velocity
 \begin_inset Formula $(v_{x},\, v_{y},\,\omega)$
 \end_inset
 
-, we do have to first order
+, we have (to first order)
 \begin_inset Formula \[
 (x_{t+\delta},\, y_{t+\delta},\,\theta_{t+\delta})=(x_{0}+v_{x}\delta,\, y_{0}+v_{y}\delta,\,\theta_{0}+\omega\delta)\]
 
@@ -608,7 +585,13 @@ sideways false
 status open
 
 \begin_layout Plain Layout
-IMAGINE A FIGURE HERE
+\align center
+\begin_inset Graphics
+	filename images/n-steps.pdf
+
+\end_inset
+
+
 \begin_inset Caption
 
 \begin_layout Plain Layout
@@ -718,18 +701,13 @@ T(t)=\lim_{n\rightarrow\infty}\left(I+\frac{t}{n}\xihat\right)^{n}\]
 For real numbers, this series is familiar and is actually a way to compute
  the exponential function:
 \begin_inset Formula \[
-e^{x}=\lim_{n\rightarrow\infty}\left(I+\frac{x}{n}\right)^{n}=\sum_{k=0}^{\infty}\frac{x^{k}}{k!}\]
+e^{x}=\lim_{n\rightarrow\infty}\left(1+\frac{x}{n}\right)^{n}=\sum_{k=0}^{\infty}\frac{x^{k}}{k!}\]
 
 \end_inset
 
-The series can be similarly defined for square matrices, 
-\begin_inset Formula \[
-e^{A}=\lim_{n\rightarrow\infty}\left(I+\frac{A}{n}\right)^{n}=\sum_{k=0}^{\infty}\frac{A^{k}}{k!}\]
-
-\end_inset
-
-Our final result is that we can write the motion of a robot along a circular
- trajectory, resulting from the 2D twist 
+The series can be similarly defined for square matrices,and the final result
+ is that we can write the motion of a robot along a circular trajectory,
+ resulting from the 2D twist 
 \begin_inset Formula $\xi=(v,\omega)$
 \end_inset
 
@@ -757,7 +735,7 @@ exponential map.
 \end_layout
 
 \begin_layout Standard
-The above has all elemtns of Lie group theory.
+The above has all elements of Lie group theory.
  We call the space of 2D rigid transformations, along with the composition
  operation, the 
 \emph on
@@ -1212,7 +1190,7 @@ The Lie group
 
 
 \begin_inset Formula \[
-\hat{}:\theta\rightarrow\that=\skew{\theta}\]
+\hat{}:\omega\rightarrow\what=\skew{\omega}\]
 
 \end_inset
 
@@ -1256,13 +1234,46 @@ which maps the angle
 
 The exponential map can be computed in closed form as
 \begin_inset Formula \[
-R=e^{\skew{\theta}}=\left[\begin{array}{cc}
+R=e^{\skew{\omega t}}=e^{\skew{\theta}}=\left[\begin{array}{cc}
 \cos\theta & -\sin\theta\\
 \sin\theta & \cos\theta\end{array}\right]\]
 
 \end_inset
 
+This can be proven 
+\begin_inset CommandInset citation
+LatexCommand cite
+key "Hall00book"
 
+\end_inset
+
+ by realizing 
+\begin_inset Formula $\skew 1$
+\end_inset
+
+ is diagonizable with eigenvalues 
+\begin_inset Formula $-i$
+\end_inset
+
+ and 
+\begin_inset Formula $i$
+\end_inset
+
+ , and eigenvectors 
+\begin_inset Formula $\left[\begin{array}{c}
+1\\
+i\end{array}\right]$
+\end_inset
+
+ and 
+\begin_inset Formula $\left[\begin{array}{c}
+i\\
+1\end{array}\right]$
+\end_inset
+
+.
+ Readers familiar with projective geometry will recognize these as the circular
+ points when promoted to homogeneous coordinates.
 \end_layout
 
 \begin_layout Subsection
@@ -1336,13 +1347,13 @@ We would now like to know what an incremental rotation parameterized by
 
  would do:
 \begin_inset Formula \[
-q(\text{\theta})=Re^{\skew{\theta}}p\]
+q(\text{\omega t})=Re^{\skew{\omega t}}p\]
 
 \end_inset
 
 hence the derivative is:
 \begin_inset Formula \[
-\deriv{q(\omega)}{\omega}=R\deriv{}{\omega}\left(e^{\skew{\theta}}p\right)=R\deriv{}{\omega}\left(\skew{\theta}p\right)=RH_{p}\]
+\deriv{q(\omega t)}t=R\deriv{}t\left(e^{\skew{\omega t}}p\right)=R\deriv{}t\left(\skew{\omega t}p\right)=RH_{p}\]
 
 \end_inset
 
@@ -2872,7 +2883,7 @@ Applying a homography is then a tensor contraction
 .
 \end_layout
 
-\begin_layout Plain Layout
+\begin_layout Standard
 \begin_inset Note Note
 status collapsed
 
