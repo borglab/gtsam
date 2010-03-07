@@ -42,7 +42,7 @@ namespace gtsam {
 /* ************************************************************************* */
 template<class J1, class X1, class J2, class X2>
 void PairConfig<J1,X1,J2,X2>::print(const std::string& s) const {
-	std::cout << "TupleConfig " << s << ", size " << size_ << "\n";
+	std::cout << "TupleConfig " << s << ", size " << size() << "\n";
 	first().print(s + "Config1: ");
 	second().print(s + "Config2: ");
 }

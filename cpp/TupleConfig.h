@@ -376,25 +376,21 @@ namespace gtsam {
 
   private:
 
-    size_t size_;
-    size_t dim_;
-
     PairConfig(const LieConfig<J1,X1>& config1, const LieConfig<J2,X2>& config2) :
-      first_(config1), second_(config2),
-      size_(config1.size()+config2.size()), dim_(gtsam::dim(config1)+gtsam::dim(config2)) {}
+      first_(config1), second_(config2){}
 
   public:
 
     /**
      * Default constructor creates an empty config.
      */
-    PairConfig(): size_(0), dim_(0) {}
+    PairConfig(){}
 
     /**
      * Copy constructor
      */
     PairConfig(const PairConfig<J1, X1, J2, X2>& c):
-      first_(c.first_), second_(c.second_), size_(c.size_), dim_(c.dim_) {}
+      first_(c.first_), second_(c.second_){}
 
     /**
      * Print
@@ -422,27 +418,23 @@ namespace gtsam {
     /**
      * size is the total number of variables in this config.
      */
-    size_t size() const { return size_; }
+    size_t size() const { return first_.size() + second_.size(); }
 
     /**
      * dim is the dimensionality of the tangent space
      */
-    size_t dim() const { return dim_; }
+    size_t dim() const { return first_.dim() + second_.dim(); }
 
   private:
     template<class Config, class Key, class Value>
     void insert_helper(Config& config, const Key& j, const Value& value) {
       config.insert(j, value);
-      size_ ++;
-      dim_ += gtsam::dim(value);
     }
 
     template<class Config, class Key>
     void erase_helper(Config& config, const Key& j) {
       size_t dim;
       config.erase(j, dim);
-      dim_ -= dim;
-      size_ --;
     }
 
   public:
