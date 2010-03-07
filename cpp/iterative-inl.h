@@ -115,13 +115,15 @@ namespace gtsam {
 	V conjugateGradients(const S& Ab, V x, bool verbose, double epsilon,
 			double epsilon_abs, size_t maxIterations, bool steepest = false) {
 
-		CGState<S, V, E> state(Ab, x, verbose, epsilon, epsilon_abs, maxIterations,
-				steepest);
-		if (state.gamma < state.threshold) return x;
-
+		CGState<S, V, E> state(Ab, x, verbose, epsilon, epsilon_abs, maxIterations,steepest);
 		if (verbose) cout << "CG: epsilon = " << epsilon << ", maxIterations = "
 				<< state.maxIterations << ", ||g0||^2 = " << state.gamma
 				<< ", threshold = " << state.threshold << endl;
+
+		if (state.gamma < state.threshold) {
+			if (verbose) cout << "||g0||^2 < threshold, exiting immediately !" << endl;
+			return x;
+		}
 
 		// loop maxIterations times
 		while (!state.step(Ab, x))
