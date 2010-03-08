@@ -74,7 +74,7 @@ namespace gtsam {
 
 	/* ************************************************************************* */
 	Point2 Dproject_pose_point(const SimpleCamera& camera, const Point3& point,
-			Matrix& D_projection_pose, Matrix& D_projection_point) {
+		Matrix& D_projection_pose, Matrix& D_projection_point) {
 
 		Point2 intrinsic = project(camera.calibrated_, point);
 		Matrix D_intrinsic_pose = Dproject_pose(camera.calibrated_, point);
