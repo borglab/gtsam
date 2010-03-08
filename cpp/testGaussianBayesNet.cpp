@@ -137,6 +137,43 @@ TEST( GaussianBayesNet, backSubstitute )
 }
 
 /* ************************************************************************* */
+TEST( GaussianBayesNet, rhs )
+{
+	// y=R*x, x=inv(R)*y
+	// 2 = 1 1  -1
+	// 3     1   3
+  GaussianBayesNet cbn = createSmallGaussianBayesNet();
+	VectorConfig expected = gtsam::optimize(cbn);
+	VectorConfig d = rhs(cbn);
+	VectorConfig actual = backSubstitute(cbn, d);
+	CHECK(assert_equal(expected, actual));
+}
+
+/* ************************************************************************* */
+TEST( GaussianBayesNet, rhs_with_sigmas )
+{
+	Matrix R11 = Matrix_(1, 1, 1.0), S12 = Matrix_(1, 1, 1.0);
+	Matrix R22 = Matrix_(1, 1, 1.0);
+	Vector d1(1), d2(1);
+	d1(0) = 9;
+	d2(0) = 5;
+	Vector tau(1);
+	tau(0) = 0.25;
+
+	// define nodes and specify in reverse topological sort (i.e. parents last)
+	GaussianConditional::shared_ptr Px_y(new GaussianConditional("x", d1, R11,
+			"y", S12, tau)), Py(new GaussianConditional("y", d2, R22, tau));
+	GaussianBayesNet cbn;
+	cbn.push_back(Px_y);
+	cbn.push_back(Py);
+
+	VectorConfig expected = gtsam::optimize(cbn);
+	VectorConfig d = rhs(cbn);
+	VectorConfig actual = backSubstitute(cbn, d);
+	CHECK(assert_equal(expected, actual));
+}
+
+/* ************************************************************************* */
 TEST( GaussianBayesNet, backSubstituteTranspose )
 {
 	// x=R'*y, y=inv(R')*x

@@ -188,5 +188,21 @@ pair<Matrix,Vector> matrix(const GaussianBayesNet& bn)  {
 }
 
 /* ************************************************************************* */
+VectorConfig rhs(const GaussianBayesNet& bn) {
+	VectorConfig result;
+  BOOST_FOREACH(GaussianConditional::shared_ptr cg,bn) {
+  	const Symbol& key = cg->key();
+  	// get sigmas
+    Vector sigmas = cg->get_sigmas();
+
+    // get RHS and copy to d
+    const Vector& d = cg->get_d();
+    result.insert(key,ediv_(d,sigmas)); // TODO ediv_? I think not
+  }
+
+  return result;
+}
+
+/* ************************************************************************* */
 
 } // namespace gtsam

@@ -74,4 +74,10 @@ namespace gtsam {
 	 */
 	std::pair<Matrix, Vector> matrix(const GaussianBayesNet&);
 
+  /**
+   * Return RHS d as a VectorConfig
+   * Such that backSubstitute(bn,d) = optimize(bn)
+   */
+  VectorConfig rhs(const GaussianBayesNet&);
+
 } /// namespace gtsam
