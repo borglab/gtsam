@@ -54,7 +54,7 @@ template<class Factor>
 void FactorGraph<Factor>::print(const string& s) const {
 	cout << s << endl;
 	printf("size: %d\n", (int) size());
-	for (int i = 0; i < factors_.size(); i++) {
+	for (size_t i = 0; i < factors_.size(); i++) {
 		stringstream ss;
 		ss << "factor " << i << ":";
 		if (factors_[i] != NULL) factors_[i]->print(ss.str());

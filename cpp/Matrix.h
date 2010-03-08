@@ -211,12 +211,6 @@ void solve(Matrix& A, Matrix& B);
 Matrix inverse(const Matrix& A);
 
 /**
- * Perform updates of system matrices
- */
-static void updateAb(Matrix& A, Vector& b, int j, const Vector& a,
-		const Vector& r, double d);
-
-/**
  * QR factorization, inefficient, best use imperative householder below
  * m*n matrix -> m*m Q, m*n R
  * @param A a matrix

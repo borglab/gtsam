@@ -536,6 +536,9 @@ inline void updateAb_manual(Matrix& A, Vector& b, int j, const Vector& a,
 	}
 }
 
+/**
+ * Perform updates of system matrices
+ */
 static void updateAb(Matrix& A, Vector& b, int j, const Vector& a,
 		const Vector& r, double d) {
 #ifdef GSL
