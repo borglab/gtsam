@@ -56,22 +56,9 @@ pair<string, boost::optional<SharedDiagonal> > dataset(const string& dataset,  c
 	if (set == "100") return make_pair(path + "borg/CitySLAM/data/TORO/w100-odom.graph", identity);
 	if (set == "10K") return make_pair(path + "borg/CitySLAM/data/TORO/w10000-odom.graph", identity);
 	if (set == "olson") return make_pair(path + "borg/CitySLAM/data/Olson/olson06icra.graph", null_model);
-	if (set == "victoria") return make_pair(path + "borg/CitySLAM/data/VictoriaPark/victoria_park.praph", null_model);
+	if (set == "victoria") return make_pair(path + "borg/CitySLAM/data/VictoriaPark/victoria_park.graph", null_model);
 	if (set == "beijing") return make_pair(path + "borg/CitySLAM/data/Beijing/beijingData_trips.graph", null_model);
 
-	// trees
-	if (set == "intel_tree") return make_pair(path + "borg/CitySLAM/data/Intel/intel.tree", null_model);
-	if (set == "intel-gfs_tree") return make_pair(path + "borg/CitySLAM/data/Intel/intel.gfs.tree", null_model);
-	if (set == "3_tree") return make_pair(path + "borg/CitySLAM/data/TORO/w3-odom.tree", identity);
-	if (set == "100_tree") return make_pair(path + "borg/CitySLAM/data/TORO/w100-odom.tree", identity);
-	if (set == "10K_tree") return make_pair(path + "borg/CitySLAM/data/TORO/w10000-odom.tree", identity);
-
-	//constraints
-	if (set == "intel_cnstr") return make_pair(path + "borg/CitySLAM/data/Intel/intel.cnstr", null_model);
-	if (set == "intel-gfs_cnstr") return make_pair(path + "borg/CitySLAM/data/Intel/intel.gfs.cnstr", null_model);
-	if (set == "3_cnstr") return make_pair(path + "borg/CitySLAM/data/TORO/w3-odom.cnstr", identity);
-	if (set == "100_cnstr") return make_pair(path + "borg/CitySLAM/data/TORO/w100-odom.cnstr", identity);
-	if (set == "10K_cnstr") return make_pair(path + "borg/CitySLAM/data/TORO/w10000-odom.cnstr", identity);
 	return make_pair("unknown", null_model);
 }
 
@@ -122,6 +109,7 @@ pair<sharedPose2Graph, sharedPose2Config> load2D(const string& filename,
 		if ((tag == "EDGE2") || (tag == "EDGE") || (tag == "ODOMETRY")) {
 			int id1, id2;
 			double x, y, yaw;
+
 			is >> id1 >> id2 >> x >> y >> yaw;
 			Matrix m = eye(3);
 			is >> m(0, 0) >> m(0, 1) >> m(1, 1) >> m(2, 2) >> m(0, 2) >> m(1, 2);
