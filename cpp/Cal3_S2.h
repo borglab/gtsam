@@ -91,6 +91,14 @@ namespace gtsam {
 			return Point2(fx_ * x + s_ * y + u0_, fy_ * y + v0_);
 		}
 
+		/**
+		 * convert image coordinates uv to intrinsic coordinates xy
+		 */
+		Point2 calibrate(const Point2& p) const {
+			const double u = p.x(), v = p.y();
+			return Point2((1/fx_)*(u-u0_ - (s_/fy_)*(v-v0_)), (1/fy_)*(v-v0_));
+		}
+
 		/** friends */
 		friend Matrix Duncalibrate2(const Cal3_S2& K, const Point2& p);
 		friend Cal3_S2 expmap(const Cal3_S2& cal, const Vector& d);

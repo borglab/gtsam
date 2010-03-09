@@ -25,6 +25,17 @@ TEST( Cal3_S2, easy_constructor)
 }
 
 /* ************************************************************************* */
+TEST( Cal3_S2, calibrate)
+{
+	Cal3_S2 K1(500, 500, 0.1, 640 / 2, 480 / 2);
+	Point2 intrinsic(2,3);
+	Point2 expectedimage(1320.3, 1740);
+	Point2 imagecoordinates = K1.uncalibrate(intrinsic);
+	CHECK(assert_equal(expectedimage,imagecoordinates));
+	CHECK(assert_equal(intrinsic,K1.calibrate(imagecoordinates)));
+}
+
+/* ************************************************************************* */
 TEST( Cal3_S2, Duncalibrate1)
 {
 	Matrix computed = Duncalibrate1(K, p);
