@@ -68,6 +68,9 @@ namespace gtsam {
     /** The number of variables in this config */
     size_t size() const { return values_.size(); }
 
+    /** whether the config is empty */
+    bool empty() const { return values_.empty(); }
+
     /**
      * The dimensionality of the tangent space
      */
