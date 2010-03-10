@@ -41,13 +41,12 @@ namespace gtsam {
   private:
 
     Values values_;
-    size_t dim_;
 
   public:
 
-    LieConfig() : dim_(0) {}
+    LieConfig() {}
     LieConfig(const LieConfig& config) :
-      values_(config.values_), dim_(config.dim_) {}
+      values_(config.values_) {}
     virtual ~LieConfig() {}
 
     /** print */
@@ -71,10 +70,11 @@ namespace gtsam {
     /** whether the config is empty */
     bool empty() const { return values_.empty(); }
 
-    /**
-     * The dimensionality of the tangent space
-     */
-    size_t dim() const { return dim_; }
+    /** The dimensionality of the tangent space */
+    size_t dim() const;
+
+    /** Get a zero Vectorconfig of the correct structure */
+    VectorConfig zero() const;
 
     const_iterator begin() const { return values_.begin(); }
     const_iterator end() const { return values_.end(); }
@@ -106,14 +106,12 @@ namespace gtsam {
     /** Replace all keys and variables */
     LieConfig& operator=(const LieConfig& rhs) {
       values_ = rhs.values_;
-      dim_ = rhs.dim_;
       return (*this);
     }
 
     /** Remove all variables from the config */
     void clear() {
       values_.clear();
-      dim_ = 0;
     }
 
   };

@@ -7,19 +7,19 @@
 
 #include <CppUnitLite/TestHarness.h>
 #include <stdexcept>
-
+#include <limits>
 #include <boost/assign/std/list.hpp> // for operator +=
 using namespace boost::assign;
 
 #define GTSAM_MAGIC_KEY
 
-#include <Pose2.h>
-
+#include "Pose2.h"
 #include "LieConfig-inl.h"
 #include "Vector.h"
 
 using namespace gtsam;
 using namespace std;
+static double inf = std::numeric_limits<double>::infinity();
 
 /* ************************************************************************* */
 TEST( LieConfig, equals1 )
@@ -49,7 +49,7 @@ TEST( LieConfig, equals_nan )
 {
   LieConfig<string,Vector> cfg1, cfg2;
   Vector v1 = Vector_(3, 5.0, 6.0, 7.0);
-  Vector v2 = Vector_(3, 0.0/0.0, 0.0/0.0, 0.0/0.0);
+  Vector v2 = Vector_(3, inf, inf, inf);
   cfg1.insert("x", v1);
   cfg2.insert("x", v2);
   CHECK(!cfg1.equals(cfg2));
@@ -77,6 +77,20 @@ TEST( LieConfig, insert_config )
   expected.insert("x3", v4);
 
   CHECK(assert_equal(cfg1, expected));
+}
+
+/* ************************************************************************* */
+TEST(LieConfig, dim_zero)
+{
+  LieConfig<string,Vector> config0;
+  config0.insert("v1", Vector_(2, 2.0, 3.0));
+  config0.insert("v2", Vector_(3, 5.0, 6.0, 7.0));
+  LONGS_EQUAL(5,config0.dim());
+
+  VectorConfig expected;
+  expected.insert("v1", zero(2));
+  expected.insert("v2", zero(3));
+  CHECK(assert_equal(expected, config0.zero()));
 }
 
 /* ************************************************************************* */
@@ -132,7 +146,7 @@ TEST(LieConfig, expmap_c)
   CHECK(assert_equal(expected, expmap(config0, increment)));
 }
 
-/* ************************************************************************* */
+/* ************************************************************************* *
 TEST(LieConfig, expmap_d)
 {
   LieConfig<string,Vector> config0;
@@ -150,7 +164,7 @@ TEST(LieConfig, expmap_d)
   CHECK(config0.equals(config0));
 }
 
-/* ************************************************************************* */
+/* ************************************************************************* *
 TEST(LieConfig, extract_keys)
 {
 	typedef TypedSymbol<Pose2, 'x'> PoseKey;

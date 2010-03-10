@@ -55,16 +55,32 @@ namespace gtsam {
   }
 
   template<class J, class T>
+  size_t LieConfig<J,T>::dim() const {
+  	size_t n = 0;
+  	typedef pair<J,T> Value;
+  	BOOST_FOREACH(const Value& value, values_)
+  		n += gtsam::dim(value.second);
+  	return n;
+  }
+
+  template<class J, class T>
+  VectorConfig LieConfig<J,T>::zero() const {
+  	VectorConfig z;
+  	typedef pair<J,T> Value;
+  	BOOST_FOREACH(const Value& value, values_)
+  		z.insert(value.first,gtsam::zero(gtsam::dim(value.second)));
+  	return z;
+  }
+
+  template<class J, class T>
   void LieConfig<J,T>::insert(const J& name, const T& val) {
     values_.insert(make_pair(name, val));
-    dim_ += gtsam::dim(val);
   }
 
   template<class J, class T>
   void LieConfig<J,T>::insert(const LieConfig<J,T>& cfg) {
 	  BOOST_FOREACH(const typename Values::value_type& v, cfg.values_)
 		 insert(v.first, v.second);
-	  dim_ += cfg.dim_;
   }
 
   template<class J, class T>
@@ -86,7 +102,6 @@ namespace gtsam {
     iterator it = values_.find(j);
     if (it == values_.end()) throw std::invalid_argument("invalid j: " + (string)j);
     dim = gtsam::dim(it->second);
-    dim_ -= dim;
     values_.erase(it);
   }
 
@@ -111,8 +126,10 @@ namespace gtsam {
   // todo: insert for every element is inefficient
   template<class J, class T>
   LieConfig<J,T> expmap(const LieConfig<J,T>& c, const Vector& delta) {
-    if(delta.size() != dim(c))
+    if(delta.size() != dim(c)) {
+    	cout << "LieConfig::dim (" << dim(c) << ") <> delta.size (" << delta.size() << ")" << endl;
       throw invalid_argument("Delta vector length does not match config dimensionality.");
+    }
     LieConfig<J,T> newConfig;
     int delta_offset = 0;
 		typedef pair<J,T> Value;
@@ -139,6 +156,7 @@ namespace gtsam {
   	}
   	return delta;
   }
+
 }
 
 
