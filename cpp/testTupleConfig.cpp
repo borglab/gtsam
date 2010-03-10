@@ -54,42 +54,41 @@ TEST( PairConfig, insert_equals2 )
   Pose2 x1(1,2,3), x2(6,7,8);
   Point2 l1(4,5), l2(9,10);
 
-  Config cfg1;
-  cfg1.insert(PoseKey(1), x1);
-  cfg1.insert(PoseKey(2), x2);
-  cfg1.insert(PointKey(1), l1);
-  cfg1.insert(PointKey(2), l2);
+  Config config1;
+  config1.insert(PoseKey(1), x1);
+  config1.insert(PoseKey(2), x2);
+  config1.insert(PointKey(1), l1);
+  config1.insert(PointKey(2), l2);
 
-  Config cfg2;
-  cfg2.insert(PoseKey(1), x1);
-  cfg2.insert(PoseKey(2), x2);
-  cfg2.insert(PointKey(1), l1);
+  Config config2;
+  config2.insert(PoseKey(1), x1);
+  config2.insert(PoseKey(2), x2);
+  config2.insert(PointKey(1), l1);
 
-  CHECK(!cfg1.equals(cfg2));
+  CHECK(!config1.equals(config2));
 
-  cfg2.insert(2, Point2(9,11));
+  config2.insert(2, Point2(9,11));
 
-  CHECK(!cfg1.equals(cfg2));
+  CHECK(!config1.equals(config2));
 }
 
 ///* ************************************************************************* */
-//TEST( PairConfig, insert_duplicate )
-//{
-//  Pose2 x1(1,2,3), x2(6,7,8);
-//  Point2 l1(4,5), l2(9,10);
-//
-//  Config cfg1;
-//  cfg1.insert(1, x1);
-//  cfg1.insert(2, x2);
-//  cfg1.insert(1, l1);
-//  cfg1.insert(2, l2);
-//  cfg1.insert(2, l1);
-//
-//  CHECK(assert_equal(l2, cfg1[PointKey(2)]));
-//  CHECK(cfg1.size() == 4);
-//  CHECK(cfg1.dim() == 10);
-//}
+TEST( PairConfig, insert_duplicate )
+{
+  Pose2 x1(1,2,3), x2(6,7,8);
+  Point2 l1(4,5), l2(9,10);
 
+  Config config1;
+  config1.insert(1, x1); // 3
+  config1.insert(2, x2); // 6
+  config1.insert(1, l1); // 8
+  config1.insert(2, l2); // 10
+  config1.insert(2, l1); // still 10 !!!!
+
+  CHECK(assert_equal(l2, config1[PointKey(2)]));
+  LONGS_EQUAL(4,config1.size());
+  LONGS_EQUAL(10,config1.dim());
+}
 
 /* ************************************************************************* */
 TEST( PairConfig, size_dim )
@@ -97,14 +96,14 @@ TEST( PairConfig, size_dim )
   Pose2 x1(1,2,3), x2(6,7,8);
   Point2 l1(4,5), l2(9,10);
 
-  Config cfg1;
-  cfg1.insert(PoseKey(1), x1);
-  cfg1.insert(PoseKey(2), x2);
-  cfg1.insert(PointKey(1), l1);
-  cfg1.insert(PointKey(2), l2);
+  Config config1;
+  config1.insert(PoseKey(1), x1);
+  config1.insert(PoseKey(2), x2);
+  config1.insert(PointKey(1), l1);
+  config1.insert(PointKey(2), l2);
 
-  CHECK(cfg1.size() == 4);
-  CHECK(cfg1.dim() == 10);
+  CHECK(config1.size() == 4);
+  CHECK(config1.dim() == 10);
 }
 
 /* ************************************************************************* */
@@ -113,20 +112,20 @@ TEST(PairConfig, at)
   Pose2 x1(1,2,3), x2(6,7,8);
   Point2 l1(4,5), l2(9,10);
 
-  Config cfg1;
-  cfg1.insert(PoseKey(1), x1);
-  cfg1.insert(PoseKey(2), x2);
-  cfg1.insert(PointKey(1), l1);
-  cfg1.insert(PointKey(2), l2);
+  Config config1;
+  config1.insert(PoseKey(1), x1);
+  config1.insert(PoseKey(2), x2);
+  config1.insert(PointKey(1), l1);
+  config1.insert(PointKey(2), l2);
 
-  CHECK(assert_equal(x1, cfg1[PoseKey(1)]));
-  CHECK(assert_equal(x2, cfg1[PoseKey(2)]));
-  CHECK(assert_equal(l1, cfg1[PointKey(1)]));
-  CHECK(assert_equal(l2, cfg1[PointKey(2)]));
+  CHECK(assert_equal(x1, config1[PoseKey(1)]));
+  CHECK(assert_equal(x2, config1[PoseKey(2)]));
+  CHECK(assert_equal(l1, config1[PointKey(1)]));
+  CHECK(assert_equal(l2, config1[PointKey(2)]));
 
   bool caught = false;
   try {
-    cfg1[PoseKey(3)];
+    config1[PoseKey(3)];
   } catch(invalid_argument e) {
     caught = true;
   }
@@ -134,7 +133,7 @@ TEST(PairConfig, at)
 
   caught = false;
   try {
-    cfg1[PointKey(3)];
+    config1[PointKey(3)];
   } catch(invalid_argument e) {
     caught = true;
   }
@@ -142,22 +141,30 @@ TEST(PairConfig, at)
 }
 
 /* ************************************************************************* */
-TEST(PairConfig, expmap)
+TEST(PairConfig, zero_expmap_logmap)
 {
   Pose2 x1(1,2,3), x2(6,7,8);
   Point2 l1(4,5), l2(9,10);
 
-  Config cfg1;
-  cfg1.insert(PoseKey(1), x1);
-  cfg1.insert(PoseKey(2), x2);
-  cfg1.insert(PointKey(1), l1);
-  cfg1.insert(PointKey(2), l2);
+  Config config1;
+  config1.insert(PoseKey(1), x1);
+  config1.insert(PoseKey(2), x2);
+  config1.insert(PointKey(1), l1);
+  config1.insert(PointKey(2), l2);
 
-  VectorConfig increment;
-  increment.insert("x1", Vector_(3, 1.0, 1.1, 1.2));
-  increment.insert("x2", Vector_(3, 1.3, 1.4, 1.5));
-  increment.insert("l1", Vector_(2, 1.0, 1.1));
-  increment.insert("l2", Vector_(2, 1.3, 1.4));
+  VectorConfig expected_zero;
+  expected_zero.insert("x1", zero(3));
+  expected_zero.insert("x2", zero(3));
+  expected_zero.insert("l1", zero(2));
+  expected_zero.insert("l2", zero(2));
+
+  CHECK(assert_equal(expected_zero, config1.zero()));
+
+  VectorConfig delta;
+  delta.insert("x1", Vector_(3, 1.0, 1.1, 1.2));
+  delta.insert("x2", Vector_(3, 1.3, 1.4, 1.5));
+  delta.insert("l1", Vector_(2, 1.0, 1.1));
+  delta.insert("l2", Vector_(2, 1.3, 1.4));
 
   Config expected;
   expected.insert(PoseKey(1), expmap(x1, Vector_(3, 1.0, 1.1, 1.2)));
@@ -165,8 +172,13 @@ TEST(PairConfig, expmap)
   expected.insert(PointKey(1), Point2(5.0, 6.1));
   expected.insert(PointKey(2), Point2(10.3, 11.4));
 
-  Config actual = expmap(cfg1, increment);
+  Config actual = expmap(config1, delta);
   CHECK(assert_equal(expected, actual));
+
+  // Check log
+  VectorConfig expected_log = delta;
+  VectorConfig actual_log = logmap(config1,actual);
+  CHECK(assert_equal(expected_log, actual_log));
 }
 
 /* ************************************************************************* */
@@ -290,34 +302,34 @@ TEST( TupleConfig, equals )
 	Point2 l1(4,5), l2(9,10);
 	PointKey l1k(1), l2k(2);
 
-	ConfigA cfg1, cfg2, cfg3, cfg4, cfg5;
+	ConfigA config1, config2, config3, config4, config5;
 
-	cfg1.insert(x1k, x1);
-	cfg1.insert(x2k, x2);
-	cfg1.insert(l1k, l1);
-	cfg1.insert(l2k, l2);
+	config1.insert(x1k, x1);
+	config1.insert(x2k, x2);
+	config1.insert(l1k, l1);
+	config1.insert(l2k, l2);
 
-	cfg2.insert(x1k, x1);
-	cfg2.insert(x2k, x2);
-	cfg2.insert(l1k, l1);
-	cfg2.insert(l2k, l2);
+	config2.insert(x1k, x1);
+	config2.insert(x2k, x2);
+	config2.insert(l1k, l1);
+	config2.insert(l2k, l2);
 
-	cfg3.insert(x2k, x2);
-	cfg3.insert(l1k, l1);
+	config3.insert(x2k, x2);
+	config3.insert(l1k, l1);
 
-	cfg4.insert(x1k, x1);
-	cfg4.insert(x2k, x2_alt);
-	cfg4.insert(l1k, l1);
-	cfg4.insert(l2k, l2);
+	config4.insert(x1k, x1);
+	config4.insert(x2k, x2_alt);
+	config4.insert(l1k, l1);
+	config4.insert(l2k, l2);
 
-	ConfigA cfg6(cfg1);
+	ConfigA config6(config1);
 
-	CHECK(assert_equal(cfg1,cfg2));
-	CHECK(assert_equal(cfg1,cfg1));
-	CHECK(!cfg1.equals(cfg3));
-	CHECK(!cfg1.equals(cfg4));
-	CHECK(!cfg1.equals(cfg5));
-	CHECK(assert_equal(cfg1, cfg6));
+	CHECK(assert_equal(config1,config2));
+	CHECK(assert_equal(config1,config1));
+	CHECK(!config1.equals(config3));
+	CHECK(!config1.equals(config4));
+	CHECK(!config1.equals(config5));
+	CHECK(assert_equal(config1, config6));
 }
 
 /* ************************************************************************* */
@@ -328,17 +340,17 @@ TEST(TupleConfig, expmap)
 	Point2 l1(4,5), l2(9,10);
 	PointKey l1k(1), l2k(2);
 
-	ConfigA cfg1;
-	cfg1.insert(x1k, x1);
-	cfg1.insert(x2k, x2);
-	cfg1.insert(l1k, l1);
-	cfg1.insert(l2k, l2);
+	ConfigA config1;
+	config1.insert(x1k, x1);
+	config1.insert(x2k, x2);
+	config1.insert(l1k, l1);
+	config1.insert(l2k, l2);
 
-	VectorConfig increment;
-	increment.insert("x1", Vector_(3, 1.0, 1.1, 1.2));
-	increment.insert("x2", Vector_(3, 1.3, 1.4, 1.5));
-	increment.insert("l1", Vector_(2, 1.0, 1.1));
-	increment.insert("l2", Vector_(2, 1.3, 1.4));
+	VectorConfig delta;
+	delta.insert("x1", Vector_(3, 1.0, 1.1, 1.2));
+	delta.insert("x2", Vector_(3, 1.3, 1.4, 1.5));
+	delta.insert("l1", Vector_(2, 1.0, 1.1));
+	delta.insert("l2", Vector_(2, 1.3, 1.4));
 
 	ConfigA expected;
 	expected.insert(x1k, expmap(x1, Vector_(3, 1.0, 1.1, 1.2)));
@@ -346,8 +358,8 @@ TEST(TupleConfig, expmap)
 	expected.insert(l1k, Point2(5.0, 6.1));
 	expected.insert(l2k, Point2(10.3, 11.4));
 
-	CHECK(assert_equal(expected, expmap(cfg1, increment)));
-	CHECK(assert_equal(increment, logmap(cfg1, expected)));
+	CHECK(assert_equal(expected, expmap(config1, delta)));
+	CHECK(assert_equal(delta, logmap(config1, expected)));
 }
 
 /* ************************************************************************* */
@@ -358,35 +370,35 @@ TEST(TupleConfig, expmap_typedefs)
 	Point2 l1(4,5), l2(9,10);
 	PointKey l1k(1), l2k(2);
 
-	TupleConfig2<PoseConfig, PointConfig> cfg1, expected, actual;
-	cfg1.insert(x1k, x1);
-	cfg1.insert(x2k, x2);
-	cfg1.insert(l1k, l1);
-	cfg1.insert(l2k, l2);
+	TupleConfig2<PoseConfig, PointConfig> config1, expected, actual;
+	config1.insert(x1k, x1);
+	config1.insert(x2k, x2);
+	config1.insert(l1k, l1);
+	config1.insert(l2k, l2);
 
-	VectorConfig increment;
-	increment.insert("x1", Vector_(3, 1.0, 1.1, 1.2));
-	increment.insert("x2", Vector_(3, 1.3, 1.4, 1.5));
-	increment.insert("l1", Vector_(2, 1.0, 1.1));
-	increment.insert("l2", Vector_(2, 1.3, 1.4));
+	VectorConfig delta;
+	delta.insert("x1", Vector_(3, 1.0, 1.1, 1.2));
+	delta.insert("x2", Vector_(3, 1.3, 1.4, 1.5));
+	delta.insert("l1", Vector_(2, 1.0, 1.1));
+	delta.insert("l2", Vector_(2, 1.3, 1.4));
 
 	expected.insert(x1k, expmap(x1, Vector_(3, 1.0, 1.1, 1.2)));
 	expected.insert(x2k, expmap(x2, Vector_(3, 1.3, 1.4, 1.5)));
 	expected.insert(l1k, Point2(5.0, 6.1));
 	expected.insert(l2k, Point2(10.3, 11.4));
 
-	CHECK(assert_equal(expected, expmap(cfg1, increment)));
-	//CHECK(assert_equal(increment, logmap(cfg1, expected)));
+	CHECK(assert_equal(expected, expmap(config1, delta)));
+	//CHECK(assert_equal(delta, logmap(config1, expected)));
 }
 
 /* ************************************************************************* */
 TEST(TupleConfig, typedefs)
 {
-	TupleConfig2<PoseConfig, PointConfig> cfg1;
-	TupleConfig3<PoseConfig, PointConfig, LamConfig> cfg2;
-	TupleConfig4<PoseConfig, PointConfig, LamConfig, Point3Config> cfg3;
-	TupleConfig5<PoseConfig, PointConfig, LamConfig, Point3Config, Pose3Config> cfg4;
-	TupleConfig6<PoseConfig, PointConfig, LamConfig, Point3Config, Pose3Config, Point3Config2> cfg5;
+	TupleConfig2<PoseConfig, PointConfig> config1;
+	TupleConfig3<PoseConfig, PointConfig, LamConfig> config2;
+	TupleConfig4<PoseConfig, PointConfig, LamConfig, Point3Config> config3;
+	TupleConfig5<PoseConfig, PointConfig, LamConfig, Point3Config, Pose3Config> config4;
+	TupleConfig6<PoseConfig, PointConfig, LamConfig, Point3Config, Pose3Config, Point3Config2> config5;
 }
 
 /* ************************************************************************* */
@@ -399,17 +411,17 @@ TEST( TupleConfig, pairconfig_style )
 	Point2 point1(2.0, 3.0);
 	Vector lam1 = Vector_(1, 2.3);
 
-	PoseConfig cfg1; cfg1.insert(x1, pose1);
-	PointConfig cfg2; cfg2.insert(l1, point1);
-	LamConfig cfg3; cfg3.insert(L1, lam1);
+	PoseConfig config1; config1.insert(x1, pose1);
+	PointConfig config2; config2.insert(l1, point1);
+	LamConfig config3; config3.insert(L1, lam1);
 
 	// Constructor
-	TupleConfig3<PoseConfig, PointConfig, LamConfig> config(cfg1, cfg2, cfg3);
+	TupleConfig3<PoseConfig, PointConfig, LamConfig> config(config1, config2, config3);
 
 	// access
-	CHECK(assert_equal(cfg1, config.first()));
-	CHECK(assert_equal(cfg2, config.second()));
-	CHECK(assert_equal(cfg3, config.third()));
+	CHECK(assert_equal(config1, config.first()));
+	CHECK(assert_equal(config2, config.second()));
+	CHECK(assert_equal(config3, config.third()));
 }
 
 /* ************************************************************************* */

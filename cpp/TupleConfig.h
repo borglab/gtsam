@@ -438,14 +438,22 @@ namespace gtsam {
     }
 
   public:
+
+    /** zero: create VectorConfig of appropriate structure */
+    VectorConfig zero() const {
+    	VectorConfig z1 = first_.zero(), z2 = second_.zero();
+    	z1.insert(z2);
+    	return z1;
+    }
+
     /**
-     * expmap each element
+     * Exponential map: expmap each element
      */
     PairConfig<J1,X1,J2,X2> expmap(const VectorConfig& delta) const {
       return PairConfig(gtsam::expmap(first_, delta), gtsam::expmap(second_, delta)); }
 
     /**
-     * logmap each element
+     * Logarithm: logmap each element
      */
     VectorConfig logmap(const PairConfig<J1,X1,J2,X2>& cp) const {
     	VectorConfig ret(gtsam::logmap(first_, cp.first_));
@@ -477,10 +485,18 @@ namespace gtsam {
 
   };
 
+  /** exponential map */
   template<class J1, class X1, class J2, class X2>
-  inline PairConfig<J1,X1,J2,X2> expmap(const PairConfig<J1,X1,J2,X2> c, const VectorConfig& delta) { return c.expmap(delta); }
+	inline PairConfig<J1, X1, J2, X2> expmap(const PairConfig<J1, X1, J2, X2> c,
+			const VectorConfig& delta) {
+		return c.expmap(delta);
+	}
 
-  template<class J1, class X1, class J2, class X2>
-  inline VectorConfig logmap(const PairConfig<J1,X1,J2,X2> c0, const PairConfig<J1,X1,J2,X2>& cp) { return c0.logmap(cp); }
+  /** log, inverse of exponential map */
+	template<class J1, class X1, class J2, class X2>
+	inline VectorConfig logmap(const PairConfig<J1, X1, J2, X2> c0,
+			const PairConfig<J1, X1, J2, X2>& cp) {
+		return c0.logmap(cp);
+	}
 
 }
