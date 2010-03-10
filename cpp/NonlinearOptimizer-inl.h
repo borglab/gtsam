@@ -132,7 +132,7 @@ namespace gtsam {
 	/* ************************************************************************* */
 	template<class G, class C, class L, class S, class W>
 	NonlinearOptimizer<G, C, L, S, W> NonlinearOptimizer<G, C, L, S, W>::try_lambda(
-			const L& linear, verbosityLevel verbosity, double factor) const {
+			const L& linear, verbosityLevel verbosity, double factor, LambdaMode lambdaMode) const {
 
 		if (verbosity >= TRYLAMBDA)
 			cout << "trying lambda = " << lambda_ << endl;
@@ -155,15 +155,43 @@ namespace gtsam {
 		// create new optimization state with more adventurous lambda
 		NonlinearOptimizer next(graph_, newConfig, solver_, lambda_ / factor);
 
-		// if error decreased, return the new state
-		if (next.error_ <= error_)
+		if(lambdaMode >= CAUTIOUS) {
+			throw runtime_error("CAUTIOUS mode not working yet, please use BOUNDED.");
+		}
+
+		if(next.error_ <= error_) {
+
+			// If we're cautious, see if the current lambda is better
+			// todo:  include stopping criterion here?
+			if(lambdaMode == CAUTIOUS) {
+				NonlinearOptimizer sameLambda(graph_, newConfig, solver_, lambda_);
+				if(sameLambda.error_ <= next.error_)
+					return sameLambda;
+			}
+
+			// Either we're not cautious, or we are but the adventerous lambda is better than the same one.
 			return next;
-		else if (lambda_ / factor > 1e+80) // if lambda gets too big, something is broken
-			throw runtime_error("Lambda has grown too large!");
-		else {
+
+		} else {
+
+			// A more adventerous lambda was worse.  If we're cautious, try the same lambda.
+			if(lambdaMode == CAUTIOUS) {
+				NonlinearOptimizer sameLambda(graph_, newConfig, solver_, lambda_);
+				if(sameLambda.error_ <= error_)
+					return sameLambda;
+			}
+
+			// Either we're not cautious, or the same lambda was worse than the current error.
+			// The more adventerous lambda was worse too, so make lambda more conservative
+			// and keep the same config.
 			// TODO: can we avoid copying the config ?
-			NonlinearOptimizer cautious(graph_, config_, solver_, lambda_ * factor);
-			return cautious.try_lambda(linear, verbosity, factor);
+			if(lambdaMode >= BOUNDED && lambda_ >= 1.0e5) {
+				return NonlinearOptimizer(graph_, newConfig, solver_, lambda_);;
+			} else {
+				NonlinearOptimizer cautious(graph_, config_, solver_, lambda_ * factor);
+				return cautious.try_lambda(linear, verbosity, factor, lambdaMode);
+			}
+
 		}
 	}
 
@@ -172,7 +200,7 @@ namespace gtsam {
 	/* ************************************************************************* */
 	template<class G, class C, class L, class S, class W>
 	NonlinearOptimizer<G, C, L, S, W> NonlinearOptimizer<G, C, L, S, W>::iterateLM(
-			verbosityLevel verbosity, double lambdaFactor) const {
+			verbosityLevel verbosity, double lambdaFactor, LambdaMode lambdaMode) const {
 
 		// maybe show output
 		if (verbosity >= CONFIG)
@@ -188,14 +216,14 @@ namespace gtsam {
 			linear->print("linear");
 
 		// try lambda steps with successively larger lambda until we achieve descent
-		return try_lambda(*linear, verbosity, lambdaFactor);
+		return try_lambda(*linear, verbosity, lambdaFactor, lambdaMode);
 	}
 
 	/* ************************************************************************* */
 	template<class G, class C, class L, class S, class W>
 	NonlinearOptimizer<G, C, L, S, W> NonlinearOptimizer<G, C, L, S, W>::levenbergMarquardt(
 			double relativeThreshold, double absoluteThreshold,
-			verbosityLevel verbosity, int maxIterations, double lambdaFactor) const {
+			verbosityLevel verbosity, int maxIterations, double lambdaFactor, LambdaMode lambdaMode) const {
 
 		// check if we're already close enough
 		if (error_ < absoluteThreshold) {
@@ -205,7 +233,7 @@ namespace gtsam {
 		}
 
 		// do one iteration of LM
-		NonlinearOptimizer next = iterateLM(verbosity, lambdaFactor);
+		NonlinearOptimizer next = iterateLM(verbosity, lambdaFactor, lambdaMode);
 
 		// check convergence
 		// TODO: move convergence checks here and incorporate in verbosity levels
@@ -225,7 +253,7 @@ namespace gtsam {
 			return next;
 		} else
 			return next.levenbergMarquardt(relativeThreshold, absoluteThreshold,
-					verbosity, lambdaFactor);
+					verbosity, maxIterations-1, lambdaFactor, lambdaMode);
 	}
 
 /* ************************************************************************* */

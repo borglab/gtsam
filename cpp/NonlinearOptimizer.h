@@ -61,6 +61,12 @@ namespace gtsam {
 			DAMPED
 		};
 
+		enum LambdaMode {
+			FAST,
+			BOUNDED,
+			CAUTIOUS
+		};
+
 	private:
 
 		// keep a reference to const version of the graph
@@ -81,7 +87,7 @@ namespace gtsam {
 
 		// Recursively try to do tempered Gauss-Newton steps until we succeed
 		NonlinearOptimizer try_lambda(const L& linear,
-				verbosityLevel verbosity, double factor) const;
+				verbosityLevel verbosity, double factor, LambdaMode lambdaMode) const;
 
 	public:
 
@@ -144,7 +150,7 @@ namespace gtsam {
 		 * One iteration of Levenberg Marquardt
 		 */
 		NonlinearOptimizer iterateLM(verbosityLevel verbosity = SILENT,
-				double lambdaFactor = 10) const;
+				double lambdaFactor = 10, LambdaMode lambdaMode = BOUNDED) const;
 
 		/**
 		 * Optimize using Levenberg-Marquardt. Really Levenberg's
@@ -163,7 +169,7 @@ namespace gtsam {
 		NonlinearOptimizer
 		levenbergMarquardt(double relativeThreshold, double absoluteThreshold,
 				verbosityLevel verbosity = SILENT, int maxIterations = 100,
-				double lambdaFactor = 10) const;
+				double lambdaFactor = 10, LambdaMode lambdaMode = BOUNDED) const;
 
 	};
 
