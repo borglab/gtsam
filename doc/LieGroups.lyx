@@ -2042,15 +2042,11 @@ q(\omega)=Re^{\Skew{\omega}}p\]
 
 hence the derivative is:
 \begin_inset Formula \[
-\deriv{q(\omega)}{\omega}=R\deriv{}{\omega}\left(e^{\Skew{\omega}}p\right)=R\deriv{}{\omega}\left(\Skew{\omega}p\right)=RH_{p}\]
+\deriv{q(\omega)}{\omega}=R\deriv{}{\omega}\left(e^{\Skew{\omega}}p\right)=R\deriv{}{\omega}\left(\Skew{\omega}p\right)=R\Skew{-p}\]
 
 \end_inset
 
-To calculate 
-\begin_inset Formula $H_{p}$
-\end_inset
-
- we make use of 
+To show the last equality note that 
 \begin_inset Formula \[
 \Skew{\omega}p=\omega\times p=-p\times\omega=\Skew{-p}\omega\]
 
@@ -2323,16 +2319,9 @@ We would now like to know what an incremental rotation parameterized by
 
 \end_inset
 
-hence the derivative (following the exposition in Section 
-\begin_inset CommandInset ref
-LatexCommand ref
-reference "sec:Derivatives-of-Actions"
-
-\end_inset
-
-):
+hence the derivative is
 \begin_inset Formula \[
-\deriv{\hat{q}(\xi)}{\xi}=T\deriv{}{\xi}\left(\xihat\hat{p}\right)=TH_{p}\]
+\deriv{\hat{q}(\xi)}{\xi}=T\deriv{}{\xi}\left(\xihat\hat{p}\right)\]
 
 \end_inset
 
@@ -2387,7 +2376,7 @@ By only taking the top three rows, we can write this as a velocity in
 \omega\times p+v=-p\times\omega+v=\left[\begin{array}{cc}
 -\Skew p & I_{3}\end{array}\right]\left[\begin{array}{c}
 \omega\\
-v\end{array}\right]=H_{p}\xi\]
+v\end{array}\right]\]
 
 \end_inset
 
