@@ -177,23 +177,13 @@ namespace gtsam {
 
   /** Exmap static functions */
   template<class Config1, class Config2>
-  inline TupleConfig<Config1, Config2> expmap(const TupleConfig<Config1, Config2> c, const VectorConfig& delta) {
-	  return c.expmap(delta);
-  }
-
-  template<class Config>
-  inline TupleConfigEnd<Config> expmap(const TupleConfigEnd<Config> c, const VectorConfig& delta) {
+  inline TupleConfig<Config1, Config2> expmap(const TupleConfig<Config1, Config2>& c, const VectorConfig& delta) {
 	  return c.expmap(delta);
   }
 
   /** logmap static functions */
   template<class Config1, class Config2>
-    inline VectorConfig logmap(const TupleConfig<Config1, Config2> c0, const TupleConfig<Config1, Config2>& cp) {
-	  return c0.logmap(cp);
-  }
-
-  template<class Config>
-    inline VectorConfig logmap(const TupleConfigEnd<Config> c0, const TupleConfigEnd<Config>& cp) {
+    inline VectorConfig logmap(const TupleConfig<Config1, Config2>& c0, const TupleConfig<Config1, Config2>& cp) {
 	  return c0.logmap(cp);
   }
 
@@ -225,7 +215,7 @@ namespace gtsam {
   };
 
   template<class Config1, class Config2>
-  TupleConfig2<Config1, Config2> expmap(const TupleConfig2<Config1, Config2> c, const VectorConfig& delta) {
+  TupleConfig2<Config1, Config2> expmap(const TupleConfig2<Config1, Config2>& c, const VectorConfig& delta) {
 	  return c.expmap(delta);
   }
 
@@ -249,7 +239,7 @@ namespace gtsam {
   };
 
   template<class Config1, class Config2, class Config3>
-  TupleConfig3<Config1, Config2, Config3> expmap(const TupleConfig3<Config1, Config2, Config3> c, const VectorConfig& delta) {
+  TupleConfig3<Config1, Config2, Config3> expmap(const TupleConfig3<Config1, Config2, Config3>& c, const VectorConfig& delta) {
 	  return c.expmap(delta);
   }
 
@@ -278,7 +268,7 @@ namespace gtsam {
   };
 
   template<class Config1, class Config2, class Config3, class Config4>
-  TupleConfig4<Config1, Config2, Config3, Config4> expmap(const TupleConfig4<Config1, Config2, Config3, Config4> c, const VectorConfig& delta) {
+  TupleConfig4<Config1, Config2, Config3, Config4> expmap(const TupleConfig4<Config1, Config2, Config3, Config4>& c, const VectorConfig& delta) {
 	  return c.expmap(delta);
   }
 
@@ -307,7 +297,7 @@ namespace gtsam {
   };
 
   template<class Config1, class Config2, class Config3, class Config4, class Config5>
-  TupleConfig5<Config1, Config2, Config3, Config4, Config5> expmap(const TupleConfig5<Config1, Config2, Config3, Config4, Config5> c, const VectorConfig& delta) {
+  TupleConfig5<Config1, Config2, Config3, Config4, Config5> expmap(const TupleConfig5<Config1, Config2, Config3, Config4, Config5>& c, const VectorConfig& delta) {
 	  return c.expmap(delta);
   }
 
@@ -337,7 +327,7 @@ namespace gtsam {
   };
 
   template<class Config1, class Config2, class Config3, class Config4, class Config5, class Config6>
-  TupleConfig6<Config1, Config2, Config3, Config4, Config5, Config6> expmap(const TupleConfig6<Config1, Config2, Config3, Config4, Config5, Config6> c, const VectorConfig& delta) {
+  TupleConfig6<Config1, Config2, Config3, Config4, Config5, Config6> expmap(const TupleConfig6<Config1, Config2, Config3, Config4, Config5, Config6>& c, const VectorConfig& delta) {
 	  return c.expmap(delta);
   }
 
@@ -487,14 +477,14 @@ namespace gtsam {
 
   /** exponential map */
   template<class J1, class X1, class J2, class X2>
-	inline PairConfig<J1, X1, J2, X2> expmap(const PairConfig<J1, X1, J2, X2> c,
+	inline PairConfig<J1, X1, J2, X2> expmap(const PairConfig<J1, X1, J2, X2>& c,
 			const VectorConfig& delta) {
 		return c.expmap(delta);
 	}
 
   /** log, inverse of exponential map */
 	template<class J1, class X1, class J2, class X2>
-	inline VectorConfig logmap(const PairConfig<J1, X1, J2, X2> c0,
+	inline VectorConfig logmap(const PairConfig<J1, X1, J2, X2>& c0,
 			const PairConfig<J1, X1, J2, X2>& cp) {
 		return c0.logmap(cp);
 	}

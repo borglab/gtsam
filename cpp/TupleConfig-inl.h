@@ -16,7 +16,7 @@
   /*INSTANTIATE_LIE_CONFIG(J2,X2);*/ \
   template class PairConfig<J1,X1,J2,X2>; \
   /*template void PairConfig<J1,X1,J2,X2>::print(const std::string&) const;*/ \
-  template PairConfig<J1,X1,J2,X2> expmap(PairConfig<J1,X1,J2,X2>, const VectorConfig&);
+  template PairConfig<J1,X1,J2,X2> expmap(const PairConfig<J1,X1,J2,X2>&, const VectorConfig&);
 
 // TupleConfig instantiations for N = 1-6
 #define INSTANTIATE_TUPLE_CONFIG2(Config1, Config2) \
