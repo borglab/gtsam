@@ -419,9 +419,9 @@ The solution to this trivial differential equation is, with
 \begin_inset Formula $x$
 \end_inset
 
--position f the robot,
+-position of the robot,
 \begin_inset Formula \[
-x=x_{0}+v_{x}t\]
+x_{t}=x_{0}+v_{x}t\]
 
 \end_inset
 
@@ -431,13 +431,13 @@ A similar story holds for translation in the
 
  direction, and in fact for translations in general:
 \begin_inset Formula \[
-(x,\, y,\,\theta)=(x_{0}+v_{x}t,\, y_{0}+v_{y}t,\,\theta_{0})\]
+(x_{t},\, y_{t},\,\theta_{t})=(x_{0}+v_{x}t,\, y_{0}+v_{y}t,\,\theta_{0})\]
 
 \end_inset
 
 Similarly for rotation we have 
 \begin_inset Formula \[
-(x,\, y,\,\theta)=(x_{0},\, y_{0},\,\theta_{0}+\omega t)\]
+(x_{t},\, y_{t},\,\theta_{t})=(x_{0},\, y_{0},\,\theta_{0}+\omega t)\]
 
 \end_inset
 
@@ -488,7 +488,7 @@ Robot moving along a circular trajectory.
 However, if we combine translation and rotation, the story breaks down!
  We cannot write
 \begin_inset Formula \[
-(x,\, y,\,\theta)=(x_{0}+v_{x}t,\, y_{0}+v_{y}t,\,\theta_{0}+\omega t)\]
+(x_{t},\, y_{t},\,\theta_{t})=(x_{0}+v_{x}t,\, y_{0}+v_{y}t,\,\theta_{0}+\omega t)\]
 
 \end_inset
 
@@ -499,7 +499,7 @@ The reason is that, if we move the robot a tiny bit according to the velocity
 
 , we have (to first order)
 \begin_inset Formula \[
-(x_{t+\delta},\, y_{t+\delta},\,\theta_{t+\delta})=(x_{0}+v_{x}\delta,\, y_{0}+v_{y}\delta,\,\theta_{0}+\omega\delta)\]
+(x_{\delta},\, y_{\delta},\,\theta_{\delta})=(x_{0}+v_{x}\delta,\, y_{0}+v_{y}\delta,\,\theta_{0}+\omega\delta)\]
 
 \end_inset
 
@@ -530,6 +530,43 @@ If rotation and translation commuted, we could do all rotations before leaving
 \end_layout
 
 \begin_layout Standard
+\begin_inset Float figure
+placement h
+wide false
+sideways false
+status collapsed
+
+\begin_layout Plain Layout
+\align center
+\begin_inset Graphics
+	filename /Users/dellaert/borg/gtsam/doc/images/n-steps.pdf
+
+\end_inset
+
+
+\begin_inset Caption
+
+\begin_layout Plain Layout
+\begin_inset CommandInset label
+LatexCommand label
+name "fig:n-step-program"
+
+\end_inset
+
+Approximating a circular trajectory with 
+\begin_inset Formula $n$
+\end_inset
+
+ steps.
+\end_layout
+
+\end_inset
+
+
+\end_layout
+
+\end_inset
+
 To make progress, we have to be more precise about how the robot behaves.
  Specifically, let us define composition of two poses 
 \begin_inset Formula $T_{1}$
@@ -574,52 +611,7 @@ R=\left[\begin{array}{cc}
 
 \end_inset
 
-
-\end_layout
-
-\begin_layout Standard
-\begin_inset Float figure
-placement h
-wide false
-sideways false
-status open
-
-\begin_layout Plain Layout
-\align center
-\begin_inset Graphics
-	filename images/n-steps.pdf
-
-\end_inset
-
-
-\begin_inset Caption
-
-\begin_layout Plain Layout
-\begin_inset CommandInset label
-LatexCommand label
-name "fig:n-step-program"
-
-\end_inset
-
-Approximating a circular trajectory with 
-\begin_inset Formula $n$
-\end_inset
-
- steps.
-\end_layout
-
-\end_inset
-
-
-\end_layout
-
-\end_inset
-
-
-\end_layout
-
-\begin_layout Standard
-Now, a 
+Now a 
 \begin_inset Quotes eld
 \end_inset
 
@@ -638,7 +630,7 @@ T(\delta)=\left[\begin{array}{ccc}
 0 & 0 & 1\end{array}\right]=I+\delta\left[\begin{array}{ccc}
 0 & -\omega & v_{x}\\
 \omega & 0 & v_{y}\\
-0 & 0 & 1\end{array}\right]\]
+0 & 0 & 0\end{array}\right]\]
 
 \end_inset
 
@@ -655,7 +647,7 @@ Let us define the
 \xihat\define\left[\begin{array}{ccc}
 0 & -\omega & v_{x}\\
 \omega & 0 & v_{y}\\
-0 & 0 & 1\end{array}\right]\]
+0 & 0 & 0\end{array}\right]\]
 
 \end_inset
 
@@ -715,13 +707,17 @@ The series can be similarly defined for square matrices,and the final result
 \begin_inset Formula $ $
 \end_inset
 
- as the matrix exponential of 
+ as the 
+\emph on
+matrix exponential
+\emph default
+ of 
 \begin_inset Formula $\xihat$
 \end_inset
 
 :
 \begin_inset Formula \[
-T(t)=e^{t\xihat}\define\lim_{n\rightarrow\infty}\left(I+\frac{t}{n}\xihat\right)^{n}=\sum_{k=0}^{\infty}\frac{\left(t\xihat\right)^{k}}{k!}\]
+T(t)=e^{t\xihat}\define\lim_{n\rightarrow\infty}\left(I+\frac{t}{n}\xihat\right)^{n}=\sum_{k=0}^{\infty}\frac{t^{k}}{k!}\xihat^{k}\]
 
 \end_inset
 
@@ -746,8 +742,8 @@ special Euclidean group
 \end_inset
 
 .
- It is called a Lie group because it is both a manifold, and its group operation
- is smooth when operating on this manifold.
+ It is called a Lie group because it is both a manifold and a group, and
+ its group operation is smooth when operating on this manifold.
  The space of 2D twists, together with a special binary operation to be
  defined below, is called the Lie algebra 
 \begin_inset Formula $\setwo$
@@ -813,7 +809,7 @@ logarithm
 \begin_inset Quotes erd
 \end_inset
 
-: 
+ 
 \begin_inset Formula \[
 \log:G\rightarrow\gg\]
 
@@ -855,8 +851,11 @@ The Lie Algebra
 \end_inset
 
 .
- The relationship with the group operation is as follows: for commutative
- Lie groups vector addition 
+\end_layout
+
+\begin_layout Standard
+The relationship of the Lie bracket to the group operation is as follows:
+ for commutative Lie groups vector addition 
 \begin_inset Formula $X+Y$
 \end_inset
 
@@ -1460,7 +1459,7 @@ T=\left[\begin{array}{cc}
 0 & t\\
 0 & 1\end{array}\right]\left[\begin{array}{cc}
 R & 0\\
-0 & k\end{array}\right]\]
+0 & 1\end{array}\right]\]
 
 \end_inset
 
@@ -1770,18 +1769,11 @@ where
 
 .
  Hence, a slightly more efficient variant is
-\end_layout
-
-\begin_layout Standard
 \begin_inset Formula \[
 e^{\what}=\cos\theta I+\what sin\theta+\omega\omega^{T}(1\text{−}cos\theta)\]
 
 \end_inset
 
-
-\end_layout
-
-\begin_layout Standard
 Since 
 \begin_inset Formula $\SOthree$
 \end_inset
@@ -1935,7 +1927,7 @@ R\Skew{\omega}R^{T}=\Skew{R\omega}\label{eq:property1}\end{equation}
 Hence, given property 
 \begin_inset CommandInset ref
 LatexCommand eqref
-reference "proof1"
+reference "eq:property1"
 
 \end_inset
 
@@ -2521,7 +2513,8 @@ From this it can be gleaned that the groups
 \bar no
 \noun off
 \color none
-By choosing the generators carefully we maintain this subgroup hierarchy.
+By choosing the generators carefully we maintain this hierarchy among the
+ associated Lie algebras.
  In particular, 
 \begin_inset Formula $\setwo$
 \end_inset
@@ -2612,10 +2605,6 @@ a_{4}+a_{3} & -a_{5}-a_{6} & a_{2}\\
 
 \end_inset
 
-
-\end_layout
-
-\begin_layout Standard
 Note that 
 \begin_inset Formula $G_{5}$
 \end_inset
@@ -2634,10 +2623,10 @@ Note that
 
  but without changing the determinant: 
 \begin_inset Formula \[
-e^{xG_{5}}=\exp\left(\left[\begin{array}{ccc}
+e^{xG_{5}}=\exp\left[\begin{array}{ccc}
 x & 0 & 0\\
 0 & -x & 0\\
-0 & 0 & 0\end{array}\right]\right)=\left[\begin{array}{ccc}
+0 & 0 & 0\end{array}\right]=\left[\begin{array}{ccc}
 e^{x} & 0 & 0\\
 0 & 1/e^{x} & 0\\
 0 & 0 & 1\end{array}\right]\]
@@ -2646,10 +2635,10 @@ e^{x} & 0 & 0\\
 
 
 \begin_inset Formula \[
-e^{xG_{6}}=\exp\left(\left[\begin{array}{ccc}
+e^{xG_{6}}=\exp\left[\begin{array}{ccc}
 0 & 0 & 0\\
 0 & -x & 0\\
-0 & 0 & x\end{array}\right]\right)=\left[\begin{array}{ccc}
+0 & 0 & x\end{array}\right]=\left[\begin{array}{ccc}
 1 & 0 & 0\\
 0 & 1/e^{x} & 0\\
 0 & 0 & e^{x}\end{array}\right]\]
@@ -2696,10 +2685,10 @@ and hence
 \color inherit
  
 \begin_inset Formula \[
-e^{xG_{5}}=\exp\left(\left[\begin{array}{ccc}
+e^{xG_{5}}=\exp\left[\begin{array}{ccc}
 x & 0 & 0\\
 0 & 0 & 0\\
-0 & 0 & -x\end{array}\right]\right)=\left[\begin{array}{ccc}
+0 & 0 & -x\end{array}\right]=\left[\begin{array}{ccc}
 e^{x} & 0 & 0\\
 0 & 1 & 0\\
 0 & 0 & 1/e^{x}\end{array}\right]\]
@@ -2708,10 +2697,10 @@ e^{x} & 0 & 0\\
 
 
 \begin_inset Formula \[
-e^{xG_{6}}=\exp\left(\left[\begin{array}{ccc}
+e^{xG_{6}}=\exp\left[\begin{array}{ccc}
 0 & 0 & 0\\
 0 & x & 0\\
-0 & 0 & -x\end{array}\right]\right)=\left[\begin{array}{ccc}
+0 & 0 & -x\end{array}\right]=\left[\begin{array}{ccc}
 1 & 0 & 0\\
 0 & e^{x} & 0\\
 0 & 0 & 1/e^{x}\end{array}\right]\]
