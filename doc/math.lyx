@@ -54,7 +54,7 @@ Geometry Derivatives and Other Hairy Math
 Frank Dellaert
 \end_layout
 
-\begin_layout Plain Layout
+\begin_layout Standard
 \begin_inset Box Frameless
 position "t"
 hor_pos "c"
@@ -326,7 +326,7 @@ Derivatives of Lie Group Mappings
 \end_layout
 
 \begin_layout Subsection
-New
+Homomorphisms
 \end_layout
 
 \begin_layout Standard
@@ -410,6 +410,10 @@ e^{-\xhat}=\left(e^{-\xhat}\right)^{-1}\]
 \end_layout
 
 \begin_layout Standard
+\begin_inset Note Note
+status open
+
+\begin_layout Plain Layout
 Let us define two mappings
 \begin_inset Formula \[
 \Phi_{1}(A)=AB\mbox{ and }\Phi_{2}(B)=AB\]
@@ -425,8 +429,13 @@ Then
 
 \end_layout
 
+\end_inset
+
+
+\end_layout
+
 \begin_layout Subsection
-Old
+Derivatives
 \end_layout
 
 \begin_layout Standard
@@ -903,28 +912,22 @@ we would now like to know what an incremental action
 \begin_inset Formula \begin{eqnarray*}
 q(x) & = & \left(Te^{\xhat}\right)^{-1}p\\
  & = & e^{-\xhat}T^{-1}p\\
- & = & T^{-1}Te^{-\xhat}T^{-1}p\\
- & = & -T^{-1}\exp\left(T\xhat T^{-1}\right)p\end{eqnarray*}
+ & = & e^{-\xhat}q\\
+ & \approx & q-\xhat q\end{eqnarray*}
 
 \end_inset
 
 Hence
 \begin_inset Formula \begin{equation}
-\deriv{q(x)}x=-T^{-1}\deriv{\left(T\xhat T^{-1}\mbox{ }p\right)}x\label{eq:inverseAction}\end{equation}
+\deriv{q(x)}x=\deriv{\left(q-\xhat q\right)}x=-\deriv{\left(\xhat q\right)}x=-H_{q}\label{eq:inverseAction}\end{equation}
 
 \end_inset
 
-The derivative in 
-\begin_inset Formula $p$
+where 
+\begin_inset Formula $H_{q}$
 \end_inset
 
- is again easy for matrix Lie groups:
-\begin_inset Formula \[
-\deriv{\left(T^{-1}p\right)}p=T^{-1}\]
-
-\end_inset
-
-
+ will be as above.
 \end_layout
 
 \begin_layout Section
@@ -1676,6 +1679,36 @@ in homogenous coordinates.
 \begin_inset Formula \[
 \deriv{q(\xi)}{\xi}=R\left[\begin{array}{cc}
 -\Skew p & I_{3}\end{array}\right]\]
+
+\end_inset
+
+The derivative of the inverse action 
+\begin_inset Formula $T^{-1}p$
+\end_inset
+
+ is given by formula 
+\begin_inset CommandInset ref
+LatexCommand ref
+reference "eq:inverseAction"
+
+\end_inset
+
+:
+\end_layout
+
+\begin_layout Standard
+
+\family roman
+\series medium
+\shape up
+\size normal
+\emph off
+\bar no
+\noun off
+\color none
+\begin_inset Formula \[
+\deriv{\hat{q}(\xi)}{\xi}=-H_{q}=\left[\begin{array}{cc}
+\Skew q & -I_{3}\end{array}\right]\]
 
 \end_inset
 
