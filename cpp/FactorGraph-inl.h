@@ -29,10 +29,6 @@
   /*template boost::shared_ptr<F> removeAndCombineFactors(FactorGraph<F>&, const std::string&);*/ \
   template FactorGraph<F> combine(const FactorGraph<F>&, const FactorGraph<F>&);
 
-
-// trick from some reading group
-#define FOREACH_PAIR( KEY, VAL, COL) BOOST_FOREACH (boost::tie(KEY,VAL),COL)
-
 using namespace std;
 
 namespace gtsam {
@@ -340,7 +336,7 @@ PredecessorMap<Key> FactorGraph<Factor>::findMinimumSpanningTree() const {
 template<class Factor> template <class Key, class Factor2>
 void FactorGraph<Factor>::split(const PredecessorMap<Key>& tree, FactorGraph<Factor>& Ab1, FactorGraph<Factor>& Ab2) const{
 
-	BOOST_FOREACH(sharedFactor factor, factors_){
+	BOOST_FOREACH(const sharedFactor& factor, factors_){
 		if (factor->keys().size() > 2)
 			throw(invalid_argument("split: only support factors with at most two keys"));
 

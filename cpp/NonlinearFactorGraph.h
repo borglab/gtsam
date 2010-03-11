@@ -30,6 +30,8 @@ namespace gtsam {
 
 	public:
 
+		typedef typename boost::shared_ptr<NonlinearFactor<Config> > sharedFactor;
+
 		/** unnormalized error */
 		double error(const Config& c) const;
 

@@ -25,7 +25,7 @@ namespace gtsam {
 	template<class Config>
 	Vector NonlinearFactorGraph<Config>::unwhitenedError(const Config& c) const {
 		list<Vector> errors;
-		BOOST_FOREACH(typename NonlinearFactorGraph<Config>::sharedFactor factor, this->factors_)
+		BOOST_FOREACH(const sharedFactor& factor, this->factors_)
 			errors.push_back(factor->unwhitenedError(c));
 		return concatVectors(errors);
 	}
@@ -35,7 +35,7 @@ namespace gtsam {
 	double NonlinearFactorGraph<Config>::error(const Config& c) const {
 		double total_error = 0.;
 		// iterate over all the factors_ to accumulate the log probabilities
-		BOOST_FOREACH(typename NonlinearFactorGraph<Config>::sharedFactor factor, this->factors_)
+		BOOST_FOREACH(const sharedFactor& factor, this->factors_)
 			total_error += factor->error(c);
 		return total_error;
 	}
@@ -49,8 +49,7 @@ namespace gtsam {
 		boost::shared_ptr<GaussianFactorGraph> linearFG(new GaussianFactorGraph);
 
 		// linearize all factors
-		typedef typename NonlinearFactorGraph<Config>::sharedFactor Factor;
-		BOOST_FOREACH(const Factor& factor, this->factors_) {
+		BOOST_FOREACH(const sharedFactor& factor, this->factors_) {
 			boost::shared_ptr<GaussianFactor> lf = factor->linearize(config);
 			linearFG->push_back(lf);
 		}
