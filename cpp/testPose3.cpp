@@ -17,8 +17,6 @@ static Pose3 T(R,Point3(3.5,-8.2,4.2));
 static Pose3 T2(rodriguez(0.3,0.2,0.1),Point3(3.5,-8.2,4.2));
 static Pose3 T3(rodriguez(-90, 0, 0), Point3(1, 2, 3));
 
-double error = 1e-8;
-
 /* ************************************************************************* */
 TEST( Pose3, equals)
 {
@@ -36,8 +34,13 @@ TEST( Pose3, expmap_a)
   fill(v.begin(), v.end(), 0);
   v(0) = 0.3;
   CHECK(assert_equal(expmap(id,v), Pose3(R, Point3())));
+#ifndef FASTER_BUT_INCORRECT_EXMAP
+
+  v(3)=0.2;v(4)=0.394742;v(5)=-2.08998;
+#else
   v(3)=0.2;v(4)=0.7;v(5)=-2;
-  CHECK(assert_equal(expmap(id,v), Pose3(R, P)));
+#endif
+  CHECK(assert_equal(Pose3(R, P),expmap(id,v),1e-5));
 }
 
 TEST(Pose3, expmap_b)
@@ -49,7 +52,8 @@ TEST(Pose3, expmap_b)
   CHECK(assert_equal(expected, p2));
 }
 
-#ifdef SLOW_BUT_CORRECT_EXPMAP
+#ifndef FASTER_BUT_INCORRECT_EXMAP
+
 /* ************************************************************************* */
 // test case for screw motion in the plane
 namespace screw {
@@ -147,11 +151,11 @@ TEST( Pose3, compose )
 {
   Matrix actual = (T2*T2).matrix();
   Matrix expected = T2.matrix()*T2.matrix();
-  CHECK(assert_equal(actual,expected,error));
+  CHECK(assert_equal(actual,expected,1e-8));
 
 	Matrix numericalH1 = numericalDerivative21<Pose3,Pose3,Pose3>(compose, T2, T2, 1e-5);
 	Matrix actualDcompose1 = Dcompose1(T2, T2);
-	CHECK(assert_equal(numericalH1,actualDcompose1));
+	CHECK(assert_equal(numericalH1,actualDcompose1,5e-5));
 
 	Matrix actualDcompose2 = Dcompose2(T2, T2);
 	Matrix numericalH2 = numericalDerivative22<Pose3,Pose3,Pose3>(compose, T2, T2, 1e-5);
@@ -164,11 +168,11 @@ TEST( Pose3, compose2 )
 	const Pose3& T1 = T;
   Matrix actual = (T1*T2).matrix();
   Matrix expected = T1.matrix()*T2.matrix();
-  CHECK(assert_equal(actual,expected,error));
+  CHECK(assert_equal(actual,expected,1e-8));
 
 	Matrix numericalH1 = numericalDerivative21<Pose3,Pose3,Pose3>(compose, T1, T2, 1e-5);
 	Matrix actualDcompose1 = Dcompose1(T1, T2);
-	CHECK(assert_equal(numericalH1,actualDcompose1));
+	CHECK(assert_equal(numericalH1,actualDcompose1,5e-5));
 
 	Matrix actualDcompose2 = Dcompose2(T1, T2);
 	Matrix numericalH2 = numericalDerivative22<Pose3,Pose3,Pose3>(compose, T1, T2, 1e-5);
@@ -179,7 +183,7 @@ TEST( Pose3, inverse)
 {
   Matrix actual = inverse(T).matrix();
   Matrix expected = inverse(T.matrix());
-  CHECK(assert_equal(actual,expected,error));
+  CHECK(assert_equal(actual,expected,1e-8));
 
 	Matrix numericalH = numericalDerivative11<Pose3,Pose3>(inverse, T, 1e-5);
 	Matrix actualDinverse = Dinverse(T);
@@ -195,7 +199,7 @@ TEST( Pose3, inverseDerivatives2)
 
 	Matrix numericalH = numericalDerivative11<Pose3,Pose3>(inverse, T, 1e-5);
 	Matrix actualDinverse = Dinverse(T);
-	CHECK(assert_equal(numericalH,actualDinverse));
+	CHECK(assert_equal(numericalH,actualDinverse,5e-5));
 }
 
 /* ************************************************************************* */
@@ -203,7 +207,7 @@ TEST( Pose3, compose_inverse)
 {
   Matrix actual = (T*inverse(T)).matrix();
   Matrix expected = eye(4,4);
-  CHECK(assert_equal(actual,expected,error));
+  CHECK(assert_equal(actual,expected,1e-8));
 }
 
 /* ************************************************************************* */
@@ -211,7 +215,7 @@ TEST( Pose3, Dtransform_from1_a)
 {
   Matrix actualDtransform_from1 = Dtransform_from1(T, P);
   Matrix numerical = numericalDerivative21(transform_from,T,P);
-  CHECK(assert_equal(numerical,actualDtransform_from1,error));
+  CHECK(assert_equal(numerical,actualDtransform_from1,1e-8));
 }
 
 TEST( Pose3, Dtransform_from1_b)
@@ -219,7 +223,7 @@ TEST( Pose3, Dtransform_from1_b)
 	Pose3 origin;
   Matrix actualDtransform_from1 = Dtransform_from1(origin, P);
   Matrix numerical = numericalDerivative21(transform_from,origin,P);
-  CHECK(assert_equal(numerical,actualDtransform_from1,error));
+  CHECK(assert_equal(numerical,actualDtransform_from1,1e-8));
 }
 
 TEST( Pose3, Dtransform_from1_c)
@@ -228,7 +232,7 @@ TEST( Pose3, Dtransform_from1_c)
 	Pose3 T0(R,origin);
   Matrix actualDtransform_from1 = Dtransform_from1(T0, P);
   Matrix numerical = numericalDerivative21(transform_from,T0,P);
-  CHECK(assert_equal(numerical,actualDtransform_from1,error));
+  CHECK(assert_equal(numerical,actualDtransform_from1,1e-8));
 }
 
 TEST( Pose3, Dtransform_from1_d)
@@ -240,7 +244,7 @@ TEST( Pose3, Dtransform_from1_d)
   //print(computed, "Dtransform_from1_d computed:");
   Matrix numerical = numericalDerivative21(transform_from,T0,P);
   //print(numerical, "Dtransform_from1_d numerical:");
-  CHECK(assert_equal(numerical,actualDtransform_from1,error));
+  CHECK(assert_equal(numerical,actualDtransform_from1,1e-8));
 }
 
 /* ************************************************************************* */
@@ -248,7 +252,7 @@ TEST( Pose3, Dtransform_from2)
 {
   Matrix actualDtransform_from2 = Dtransform_from2(T);
   Matrix numerical = numericalDerivative22(transform_from,T,P);
-  CHECK(assert_equal(numerical,actualDtransform_from2,error));
+  CHECK(assert_equal(numerical,actualDtransform_from2,1e-8));
 }
 
 /* ************************************************************************* */
@@ -256,7 +260,7 @@ TEST( Pose3, Dtransform_to1)
 {
   Matrix computed = Dtransform_to1(T, P);
   Matrix numerical = numericalDerivative21(transform_to,T,P);
-  CHECK(assert_equal(numerical,computed,error));
+  CHECK(assert_equal(numerical,computed,1e-8));
 }
 
 /* ************************************************************************* */
@@ -264,7 +268,7 @@ TEST( Pose3, Dtransform_to2)
 {
   Matrix computed = Dtransform_to2(T,P);
   Matrix numerical = numericalDerivative22(transform_to,T,P);
-  CHECK(assert_equal(numerical,computed,error));
+  CHECK(assert_equal(numerical,computed,1e-8));
 }
 
 /* ************************************************************************* */
@@ -314,7 +318,7 @@ TEST( Pose3, transformPose_to_origin)
 {
 		// transform to origin
 		Pose3 actual = T3.transform_to(Pose3());
-		CHECK(assert_equal(T3, actual, error));
+		CHECK(assert_equal(T3, actual, 1e-8));
 }
 
 /* ************************************************************************* */
@@ -322,7 +326,7 @@ TEST( Pose3, transformPose_to_itself)
 {
 		// transform to itself
 		Pose3 actual = T3.transform_to(T3);
-		CHECK(assert_equal(Pose3(), actual, error));
+		CHECK(assert_equal(Pose3(), actual, 1e-8));
 }
 
 /* ************************************************************************* */
@@ -333,7 +337,7 @@ TEST( Pose3, transformPose_to_translation)
 		Pose3 pose2(r, Point3(21.,32.,13.)); 
 		Pose3 actual = pose2.transform_to(Pose3(Rot3(), Point3(1,2,3)));
 		Pose3 expected(r, Point3(20.,30.,10.));  
-		CHECK(assert_equal(expected, actual, error)); 
+		CHECK(assert_equal(expected, actual, 1e-8));
 }
 
 /* ************************************************************************* */
@@ -380,7 +384,8 @@ TEST(Pose3, manifold)
 	// Check that log(t1,t2)=-log(t2,t1) - this holds even for incorrect expmap :-)
 	CHECK(assert_equal(d12,-d21));
 
-#ifdef SLOW_BUT_CORRECT_EXPMAP
+#ifndef FASTER_BUT_INCORRECT_EXMAP
+
 
 	// todo: Frank - Below only works for correct "Agrawal06iros style expmap
 	// lines in canonical coordinates correspond to Abelian subgroups in SE(3)
@@ -406,7 +411,7 @@ TEST( Pose3, between )
 	CHECK(assert_equal(expected,actual));
 
 	Matrix numericalH1 = numericalDerivative21(between<Pose3> , T2, T3, 1e-5);
-	CHECK(assert_equal(numericalH1,actualDBetween1)); // chain rule does not work ??
+	CHECK(assert_equal(numericalH1,actualDBetween1,5e-5));
 
 	Matrix numericalH2 = numericalDerivative22(between<Pose3> , T2, T3, 1e-5);
 	CHECK(assert_equal(numericalH2,actualDBetween2));

@@ -35,12 +35,19 @@ TEST( Pose3Config, pose3Circle )
 /* ************************************************************************* */
 TEST( Pose3Config, expmap )
 {
-	// expected is circle shifted to East
 	Pose3Config expected;
+#ifdef FASTER_BUT_INCORRECT_EXMAP
+	// expected is circle shifted to East
 	expected.insert(0, Pose3(R1, Point3( 1.1, 0, 0)));
 	expected.insert(1, Pose3(R2, Point3( 0.1, 1, 0)));
 	expected.insert(2, Pose3(R3, Point3(-0.9, 0, 0)));
 	expected.insert(3, Pose3(R4, Point3( 0.1,-1, 0)));
+#else
+	expected.insert(0, Pose3(R1, Point3( 1.0, 0.1, 0)));
+	expected.insert(1, Pose3(R2, Point3(-0.1, 1.0, 0)));
+	expected.insert(2, Pose3(R3, Point3(-1.0,-0.1, 0)));
+	expected.insert(3, Pose3(R4, Point3( 0.1,-1.0, 0)));
+#endif
 
 	// Note expmap coordinates are in global coordinates with non-compose expmap
 	// so shifting to East requires little thought, different from with Pose2 !!!

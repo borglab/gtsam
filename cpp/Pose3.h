@@ -108,21 +108,11 @@ namespace gtsam {
    * coordinates of a pose. */
   Vector logmap(const Pose3& p);
 
-  /** todo: these are the "old-style" expmap and logmap about the specified
-   * pose.
-   * Increments the offset and rotation independently given a translation and
-   * canonical rotation coordinates */
-  template<> inline Pose3 expmap<Pose3>(const Pose3& p0, const Vector& d) {
-    return Pose3(expmap(p0.rotation(), sub(d, 0, 3)),
-        expmap(p0.translation(), sub(d, 3, 6)));
-  }
+  /** Exponential map around another pose */
+  Pose3 expmap(const Pose3& T, const Vector& d);
 
-  /** Independently computes the logmap of the translation and rotation. */
-  template<> inline Vector logmap<Pose3>(const Pose3& p0, const Pose3& pp) {
-    const Vector r(logmap(p0.rotation(), pp.rotation())),
-        t(logmap(p0.translation(), pp.translation()));
-    return concatVectors(2, &r, &t);
-  }
+  /** Logarithm map around another pose T1 */
+  Vector logmap(const Pose3& T1, const Pose3& T2);
 
   /** receives the point in Pose coordinates and transforms it to world coordinates */
   Point3 transform_from(const Pose3& pose, const Point3& p);
