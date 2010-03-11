@@ -641,9 +641,9 @@ inline void householder_manual(Matrix &A, size_t k) {
 		for(size_t r = j ; r < m; r++)
 			xjm(r-j) = A(r,j);
 
-		// calculate the Householder vector
-		double beta; Vector vjm;
-		boost::tie(beta,vjm) = house(xjm);
+		// calculate the Householder vector, in place
+		double beta = houseInPlace(xjm);
+		Vector& vjm = xjm;
 
 		// do outer product update A = (I-beta vv')*A = A - v*(beta*A'*v)' = A - v*w'
 		householder_update(A, j, beta, vjm);

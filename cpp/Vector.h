@@ -250,6 +250,9 @@ Vector operator/(double s, const Vector& v);
  */
 std::pair<double,Vector> house(const Vector &x);
 
+/** beta = house(x) computes the HouseHolder vector in place */
+double houseInPlace(Vector &x);
+
 /**
  * Weighted Householder solution vector,
  * a.k.a., the pseudoinverse of the column
