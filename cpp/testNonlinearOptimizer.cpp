@@ -27,7 +27,7 @@ using namespace boost;
 // template definitions
 #include "NonlinearFactorGraph-inl.h"
 #include "NonlinearOptimizer-inl.h"
-#include "SubgraphPreconditioner-inl.h"
+#include "SubgraphSolver-inl.h"
 
 using namespace gtsam;
 
@@ -202,10 +202,10 @@ TEST( NonlinearOptimizer, Factorization )
 }
 
 /* ************************************************************************* */
-TEST( NonlinearOptimizer, SubgraphPCG )
+TEST( NonlinearOptimizer, SubgraphSolver )
 {
 	using namespace pose2SLAM;
-	typedef SubgraphPCG<Graph, Config> Solver;
+	typedef SubgraphSolver<Graph, Config> Solver;
 	typedef NonlinearOptimizer<Graph, Config, SubgraphPreconditioner, Solver> Optimizer;
 
 	// Create a graph
@@ -220,7 +220,7 @@ TEST( NonlinearOptimizer, SubgraphPCG )
 
 	// Create solver and optimizer
 	Optimizer::shared_solver solver
-		(new SubgraphPCG<Graph, Config> (*graph, *config));
+		(new SubgraphSolver<Graph, Config> (*graph, *config));
 	Optimizer optimizer(graph, config, solver);
 
 	// Optimize !!!!

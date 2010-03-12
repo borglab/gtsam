@@ -12,7 +12,7 @@
 
 #include "pose2SLAM.h"
 #include "Ordering.h"
-#include "SubgraphPreconditioner.h"
+#include "SubgraphSolver.h"
 
 namespace gtsam {
 
@@ -31,7 +31,7 @@ namespace gtsam {
 		boost::shared_ptr<Pose2Config> theta_;
 
 		/** Non-linear solver */
-		typedef SubgraphPCG<Pose2Graph, Pose2Config> SPCG_Solver;
+		typedef SubgraphSolver<Pose2Graph, Pose2Config> SPCG_Solver;
 		SPCG_Solver solver_;
 
 		/** Linear Solver */

@@ -1,5 +1,5 @@
 /*
- * SubgraphPreconditioner-inl.h
+ * SubgraphSolver-inl.h
  *
  *   Created on: Jan 17, 2010
  *       Author: nikai
@@ -9,7 +9,7 @@
 #pragma once
 
 #include <boost/tuple/tuple.hpp>
-#include "SubgraphPreconditioner.h"
+#include "SubgraphSolver.h"
 
 #include "graph-inl.h"
 #include "iterative-inl.h"
@@ -21,13 +21,13 @@ namespace gtsam {
 
 	/* ************************************************************************* */
 	template<class G, class T>
-	SubgraphPCG<G, T>::SubgraphPCG(const G& g, const T& theta0) {
+	SubgraphSolver<G, T>::SubgraphSolver(const G& g, const T& theta0) {
 		initialize(g,theta0);
 	}
 
 	/* ************************************************************************* */
 	template<class G, class T>
-	void SubgraphPCG<G, T>::initialize(const G& g, const T& theta0) {
+	void SubgraphSolver<G, T>::initialize(const G& g, const T& theta0) {
 
 		// generate spanning tree
 		PredecessorMap<Key> tree = g.template findMinimumSpanningTree<Key, Constraint>();
@@ -51,7 +51,7 @@ namespace gtsam {
 
 	/* ************************************************************************* */
 	template<class G, class T>
-	boost::shared_ptr<SubgraphPreconditioner> SubgraphPCG<G, T>::linearize(const G& g, const T& theta_bar) const {
+	boost::shared_ptr<SubgraphPreconditioner> SubgraphSolver<G, T>::linearize(const G& g, const T& theta_bar) const {
 		SubgraphPreconditioner::sharedFG Ab1 = T_.linearize(theta_bar);
 		SubgraphPreconditioner::sharedFG Ab2 = C_.linearize(theta_bar);
 #ifdef TIMING
@@ -69,7 +69,7 @@ namespace gtsam {
 
 	/* ************************************************************************* */
 	template<class G, class T>
-	VectorConfig SubgraphPCG<G, T>::optimize(SubgraphPreconditioner& system) const {
+	VectorConfig SubgraphSolver<G, T>::optimize(SubgraphPreconditioner& system) const {
 		VectorConfig zeros = system.zero();
 
 		// Solve the subgraph PCG

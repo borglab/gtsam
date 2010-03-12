@@ -8,7 +8,7 @@
 #include "Pose2SLAMOptimizer.h"
 #include "pose2SLAM.h"
 #include "dataset.h"
-#include "SubgraphPreconditioner-inl.h"
+#include "SubgraphSolver-inl.h"
 
 using namespace std;
 namespace gtsam {
