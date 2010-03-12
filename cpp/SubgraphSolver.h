@@ -19,13 +19,13 @@ namespace gtsam {
    *   linearize: G * T -> L
    *   solve : L -> VectorConfig
    */
-	template<class G, class T>
+	template<class Graph, class Config>
 	class SubgraphSolver {
 
 	private:
-		typedef typename T::Key Key;
-		typedef typename G::Constraint Constraint;
-		typedef typename G::Pose Pose;
+		typedef typename Config::Key Key;
+		typedef typename Graph::Constraint Constraint;
+		typedef typename Graph::Pose Pose;
 
 		// TODO not hardcode
 		static const size_t maxIterations_=100;
@@ -36,25 +36,25 @@ namespace gtsam {
 		boost::shared_ptr<Ordering> ordering_;
 
 		/* the solution computed from the first subgraph */
-		boost::shared_ptr<T> theta_bar_;
+		boost::shared_ptr<Config> theta_bar_;
 
-		G T_, C_;
+		Graph T_, C_;
 
 	public:
 		SubgraphSolver() {}
 
-		SubgraphSolver(const G& g, const T& theta0);
+		SubgraphSolver(const Graph& G, const Config& theta0);
 
-		void initialize(const G& g, const T& theta0);
+		void initialize(const Graph& G, const Config& theta0);
 
 		boost::shared_ptr<Ordering> ordering() const { return ordering_; }
 
-		boost::shared_ptr<T> theta_bar() const { return theta_bar_; }
+		boost::shared_ptr<Config> theta_bar() const { return theta_bar_; }
 
 		/**
 		 * linearize the non-linear graph around the current config and build the subgraph preconditioner systme
 		 */
-		boost::shared_ptr<SubgraphPreconditioner> linearize(const G& g, const T& theta_bar) const;
+		boost::shared_ptr<SubgraphPreconditioner> linearize(const Graph& G, const Config& theta_bar) const;
 
   	/**
   	 * solve for the optimal displacement in the tangent space, and then solve
@@ -63,9 +63,9 @@ namespace gtsam {
   	VectorConfig optimize(SubgraphPreconditioner& system) const;
 	};
 
-	template<class G, class T> const size_t SubgraphSolver<G,T>::maxIterations_;
-	template<class G, class T> const bool SubgraphSolver<G,T>::verbose_;
-	template<class G, class T> const double SubgraphSolver<G,T>::epsilon_;
-	template<class G, class T> const double	SubgraphSolver<G,T>::epsilon_abs_;
+	template<class Graph, class Config> const size_t SubgraphSolver<Graph,Config>::maxIterations_;
+	template<class Graph, class Config> const bool SubgraphSolver<Graph,Config>::verbose_;
+	template<class Graph, class Config> const double SubgraphSolver<Graph,Config>::epsilon_;
+	template<class Graph, class Config> const double	SubgraphSolver<Graph,Config>::epsilon_abs_;
 
 } // nsamespace gtsam

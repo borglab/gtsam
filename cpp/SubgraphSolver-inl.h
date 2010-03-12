@@ -20,22 +20,22 @@ using namespace std;
 namespace gtsam {
 
 	/* ************************************************************************* */
-	template<class G, class T>
-	SubgraphSolver<G, T>::SubgraphSolver(const G& g, const T& theta0) {
-		initialize(g,theta0);
+	template<class Graph, class Config>
+	SubgraphSolver<Graph, Config>::SubgraphSolver(const Graph& G, const Config& theta0) {
+		initialize(G,theta0);
 	}
 
 	/* ************************************************************************* */
-	template<class G, class T>
-	void SubgraphSolver<G, T>::initialize(const G& g, const T& theta0) {
+	template<class Graph, class Config>
+	void SubgraphSolver<Graph, Config>::initialize(const Graph& G, const Config& theta0) {
 
 		// generate spanning tree
-		PredecessorMap<Key> tree = g.template findMinimumSpanningTree<Key, Constraint>();
+		PredecessorMap<Key> tree = G.template findMinimumSpanningTree<Key, Constraint>();
 		list<Key> keys = predecessorMap2Keys(tree);
 
 		// split the graph
 		if (verbose_) cout << "generating spanning tree and split the graph ...";
-		g.template split<Key, Constraint>(tree, T_, C_);
+		G.template split<Key, Constraint>(tree, T_, C_);
 		if (verbose_) cout << T_.size() << " and " << C_.size() << " factors" << endl;
 
 		// make the ordering
@@ -46,12 +46,12 @@ namespace gtsam {
 
 		// compose the approximate solution
 		Key root = keys.back();
-		theta_bar_ = composePoses<G, Constraint, Pose, T> (T_, tree, theta0[root]);
+		theta_bar_ = composePoses<Graph, Constraint, Pose, Config> (T_, tree, theta0[root]);
 	}
 
 	/* ************************************************************************* */
-	template<class G, class T>
-	boost::shared_ptr<SubgraphPreconditioner> SubgraphSolver<G, T>::linearize(const G& g, const T& theta_bar) const {
+	template<class Graph, class Config>
+	boost::shared_ptr<SubgraphPreconditioner> SubgraphSolver<Graph, Config>::linearize(const Graph& G, const Config& theta_bar) const {
 		SubgraphPreconditioner::sharedFG Ab1 = T_.linearize(theta_bar);
 		SubgraphPreconditioner::sharedFG Ab2 = C_.linearize(theta_bar);
 #ifdef TIMING
@@ -68,8 +68,8 @@ namespace gtsam {
 	}
 
 	/* ************************************************************************* */
-	template<class G, class T>
-	VectorConfig SubgraphSolver<G, T>::optimize(SubgraphPreconditioner& system) const {
+	template<class Graph, class Config>
+	VectorConfig SubgraphSolver<Graph, Config>::optimize(SubgraphPreconditioner& system) const {
 		VectorConfig zeros = system.zero();
 
 		// Solve the subgraph PCG
