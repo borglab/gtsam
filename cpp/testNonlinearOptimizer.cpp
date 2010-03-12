@@ -30,18 +30,17 @@ using namespace boost;
 #include "SubgraphPreconditioner-inl.h"
 
 using namespace gtsam;
-using namespace example;
 
 const double tol = 1e-5;
 
-typedef NonlinearOptimizer<Graph,Config> Optimizer;
+typedef NonlinearOptimizer<example::Graph,example::Config> Optimizer;
 
 /* ************************************************************************* */
 TEST( NonlinearOptimizer, delta )
 {
-	shared_ptr<Graph> fg(new Graph(
-			createNonlinearFactorGraph()));
-	Optimizer::shared_config initial = sharedNoisyConfig();
+	shared_ptr<example::Graph> fg(new example::Graph(
+			example::createNonlinearFactorGraph()));
+	Optimizer::shared_config initial = example::sharedNoisyConfig();
 
 	// Expected configuration is the difference between the noisy config
 	// and the ground-truth config. One step only because it's linear !
@@ -102,12 +101,12 @@ TEST( NonlinearOptimizer, delta )
 TEST( NonlinearOptimizer, iterateLM )
 {
 	// really non-linear factor graph
-  shared_ptr<Graph> fg(new Graph(
-			createReallyNonlinearFactorGraph()));
+  shared_ptr<example::Graph> fg(new example::Graph(
+  		example::createReallyNonlinearFactorGraph()));
 
 	// config far from minimum
 	Point2 x0(3,0);
-	boost::shared_ptr<Config> config(new Config);
+	boost::shared_ptr<example::Config> config(new example::Config);
 	config->insert(simulated2D::PoseKey(1), x0);
 
 	// ordering
@@ -139,18 +138,18 @@ TEST( NonlinearOptimizer, iterateLM )
 /* ************************************************************************* */
 TEST( NonlinearOptimizer, optimize )
 {
-  shared_ptr<Graph> fg(new Graph(
-			createReallyNonlinearFactorGraph()));
+  shared_ptr<example::Graph> fg(new example::Graph(
+  		example::createReallyNonlinearFactorGraph()));
 
 	// test error at minimum
 	Point2 xstar(0,0);
-	Config cstar;
+	example::Config cstar;
 	cstar.insert(simulated2D::PoseKey(1), xstar);
 	DOUBLES_EQUAL(0.0,fg->error(cstar),0.0);
 
 	// test error at initial = [(1-cos(3))^2 + (sin(3))^2]*50 =
 	Point2 x0(3,3);
-	boost::shared_ptr<Config> c0(new Config);
+	boost::shared_ptr<example::Config> c0(new example::Config);
 	c0->insert(simulated2D::PoseKey(1), x0);
 	DOUBLES_EQUAL(199.0,fg->error(*c0),1e-3);
 
@@ -205,22 +204,23 @@ TEST( NonlinearOptimizer, Factorization )
 /* ************************************************************************* */
 TEST( NonlinearOptimizer, SubgraphPCG )
 {
-	typedef NonlinearOptimizer<Pose2Graph, Pose2Config, SubgraphPreconditioner,
-			SubgraphPCG<Pose2Graph, Pose2Config> > Optimizer;
+	using namespace pose2SLAM;
+	typedef SubgraphPCG<Graph, Config> Solver;
+	typedef NonlinearOptimizer<Graph, Config, SubgraphPreconditioner, Solver> Optimizer;
 
 	// Create a graph
-	boost::shared_ptr<Pose2Graph> graph(new Pose2Graph);
+	boost::shared_ptr<Graph> graph(new Graph);
 	graph->addPrior(1, Pose2(0., 0., 0.), Isotropic::Sigma(3, 1e-10));
 	graph->addConstraint(1, 2, Pose2(1., 0., 0.), Isotropic::Sigma(3, 1));
 
 	// Create an initial config
-	boost::shared_ptr<Pose2Config> config(new Pose2Config);
+	boost::shared_ptr<Config> config(new Config);
 	config->insert(1, Pose2(0., 0., 0.));
 	config->insert(2, Pose2(1.5, 0., 0.));
 
 	// Create solver and optimizer
 	Optimizer::shared_solver solver
-		(new SubgraphPCG<Pose2Graph, Pose2Config> (*graph, *config));
+		(new SubgraphPCG<Graph, Config> (*graph, *config));
 	Optimizer optimizer(graph, config, solver);
 
 	// Optimize !!!!
@@ -230,7 +230,7 @@ TEST( NonlinearOptimizer, SubgraphPCG )
 			absoluteThreshold, Optimizer::SILENT);
 
 	// Check solution
-	Pose2Config expected;
+	Config expected;
 	expected.insert(1, Pose2(0., 0., 0.));
 	expected.insert(2, Pose2(1., 0., 0.));
 	CHECK(assert_equal(expected, *optimized.config(), 1e-5));
