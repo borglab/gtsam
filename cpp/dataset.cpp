@@ -55,6 +55,8 @@ pair<string, boost::optional<SharedDiagonal> > dataset(const string& dataset,  c
 	if (set == "3") return make_pair(path + "borg/CitySLAM/data/TORO/w3-odom.graph", identity);
 	if (set == "100") return make_pair(path + "borg/CitySLAM/data/TORO/w100-odom.graph", identity);
 	if (set == "10K") return make_pair(path + "borg/CitySLAM/data/TORO/w10000-odom.graph", identity);
+	if (set == "Eiffel100") return make_pair(path + "borg/CitySLAM/data/TORO/w100-Eiffel.graph", identity);
+	if (set == "Eiffel10K") return make_pair(path + "borg/CitySLAM/data/TORO/w10000-Eiffel.graph", identity);
 	if (set == "olson") return make_pair(path + "borg/CitySLAM/data/Olson/olson06icra.graph", null_model);
 	if (set == "victoria") return make_pair(path + "borg/CitySLAM/data/VictoriaPark/victoria_park.graph", null_model);
 	if (set == "beijing") return make_pair(path + "borg/CitySLAM/data/Beijing/beijingData_trips.graph", null_model);
