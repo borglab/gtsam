@@ -34,7 +34,7 @@ TEST( Pose3, expmap_a)
   fill(v.begin(), v.end(), 0);
   v(0) = 0.3;
   CHECK(assert_equal(expmap(id,v), Pose3(R, Point3())));
-#ifndef FASTER_BUT_INCORRECT_EXMAP
+#ifdef CORRECT_POSE3_EXMAP
 
   v(3)=0.2;v(4)=0.394742;v(5)=-2.08998;
 #else
@@ -52,7 +52,7 @@ TEST(Pose3, expmap_b)
   CHECK(assert_equal(expected, p2));
 }
 
-#ifndef FASTER_BUT_INCORRECT_EXMAP
+#ifdef CORRECT_POSE3_EXMAP
 
 /* ************************************************************************* */
 // test case for screw motion in the plane
@@ -384,7 +384,7 @@ TEST(Pose3, manifold)
 	// Check that log(t1,t2)=-log(t2,t1) - this holds even for incorrect expmap :-)
 	CHECK(assert_equal(d12,-d21));
 
-#ifndef FASTER_BUT_INCORRECT_EXMAP
+#ifdef CORRECT_POSE3_EXMAP
 
 
 	// todo: Frank - Below only works for correct "Agrawal06iros style expmap

@@ -44,7 +44,7 @@ namespace gtsam {
 
   /* ************************************************************************* */
 
-#ifndef FASTER_BUT_INCORRECT_EXMAP
+#ifdef CORRECT_POSE3_EXMAP
 
   /** Modified from Murray94book version (which assumes w and v normalized?) */
   template<> Pose3 expmap(const Vector& xi) {
@@ -144,7 +144,7 @@ namespace gtsam {
 
   /* ************************************************************************* */
   Matrix Dtransform_from1(const Pose3& pose, const Point3& p) {
-#ifndef FASTER_BUT_INCORRECT_EXMAP
+#ifdef CORRECT_POSE3_EXMAP
 		const Matrix R = pose.rotation().matrix();
     Matrix DR = R*skewSymmetric(-p.x(), -p.y(), -p.z());
     return collect(2,&DR,&R);
@@ -170,7 +170,7 @@ namespace gtsam {
   Matrix Dtransform_to1(const Pose3& pose, const Point3& p) {
     Point3 q = transform_to(pose,p);
     Matrix DR = skewSymmetric(q.x(), q.y(), q.z());
-#ifndef FASTER_BUT_INCORRECT_EXMAP
+#ifdef CORRECT_POSE3_EXMAP
 		return collect(2, &DR, &_I3);
 #else
     Matrix DT = - pose.rotation().transpose(); // negative because of sub
@@ -186,7 +186,7 @@ namespace gtsam {
   /* ************************************************************************* */
   // compose = Pose3(compose(R1,R2),transform_from(p1,t2)
   Matrix Dcompose1(const Pose3& p1, const Pose3& p2) {
-#ifndef FASTER_BUT_INCORRECT_EXMAP
+#ifdef CORRECT_POSE3_EXMAP
 		return AdjointMap(inverse(p2));
 #else
 		const Rot3& R2 = p2.rotation();
@@ -199,7 +199,7 @@ namespace gtsam {
 	}
 
 	Matrix Dcompose2(const Pose3& p1, const Pose3& p2) {
-#ifndef FASTER_BUT_INCORRECT_EXMAP
+#ifdef CORRECT_POSE3_EXMAP
 
 		return I6;
 #else
@@ -214,7 +214,7 @@ namespace gtsam {
   // inverse = Pose3(inverse(R),-unrotate(R,t));
 	// TODO: combined function will save !
 	Matrix Dinverse(const Pose3& p) {
-#ifndef FASTER_BUT_INCORRECT_EXMAP
+#ifdef CORRECT_POSE3_EXMAP
 		return - AdjointMap(p);
 #else
 		const Rot3& R = p.rotation();
