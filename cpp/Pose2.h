@@ -73,6 +73,14 @@ namespace gtsam {
 
     static inline size_t dim() { return 3; };
 
+  private:
+    // Serialization function
+    friend class boost::serialization::access;
+    template<class Archive>
+    void serialize(Archive & ar, const unsigned int version) {
+		ar & BOOST_SERIALIZATION_NVP(t_);
+		ar & BOOST_SERIALIZATION_NVP(r_);
+    }
   }; // Pose2
 
   /** print using member print function, currently used by LieConfig */
