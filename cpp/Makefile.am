@@ -294,11 +294,18 @@ AM_CXXFLAGS += -I..
 AM_LDFLAGS = -L../CppUnitLite -lCppUnitLite $(BOOST_LDFLAGS) $(boost_serialization) #-L. -lgtsam
 
 # adding cblas implementation with atlas
-if USE_BLAS
+if USE_BLAS_LINUX
 AM_CXXFLAGS += -DCBLAS 
 libgtsam_la_CPPFLAGS += -DCBLAS
 AM_LDFLAGS += $(BLAS_LIBS) $(LIBS) $(FLIBS) # -lcblas -latlas 
 libgtsam_la_LDFLAGS += $(BLAS_LIBS) $(LIBS) $(FLIBS) # -lcblas -latlas
+endif
+
+if USE_BLAS_MACOS
+AM_CXXFLAGS += -DYA_BLAS -DYA_LAPACK -DYA_BLASMULT -I/System/Library/Frameworks/vecLib.framework/Headers 
+libgtsam_la_CPPFLAGS += -DYA_BLAS -DYA_LAPACK -DYA_BLASMULT -I/System/Library/Frameworks/vecLib.framework/Headers 
+AM_LDFLAGS += -lcblas -latlas 
+libgtsam_la_LDFLAGS += -framework vecLib -lcblas -latlas
 endif
 
 

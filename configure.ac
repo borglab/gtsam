@@ -63,7 +63,8 @@ AC_ARG_ENABLE([blas],
        *) AC_MSG_ERROR([bad value ${enableval} for --enable-blas]) ;;
      esac],[blas=false])
 
-AM_CONDITIONAL([USE_BLAS], [test x$blas = xtrue])
+AM_CONDITIONAL([USE_BLAS_MACOS], [test x$blas = xtrue && test -f "/System/Library/Frameworks/vecLib.framework/Headers/cblas.h"])
+AM_CONDITIONAL([USE_BLAS_LINUX], [test x$blas = xtrue && USE_BLAS_MAC = false])
 
 # Checks for programs.
 AC_PROG_CXX
