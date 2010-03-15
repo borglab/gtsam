@@ -34,10 +34,6 @@
 #include "Vector.h"
 #include "svdcmp.h"
 
-// use for switching quickly between GSL and nonGSL versions without reconfigure
-//#define REVERTGSL
-
-
 using namespace std;
 namespace ublas = boost::numeric::ublas;
 
@@ -158,7 +154,6 @@ bool assert_equal(const std::list<Matrix>& As, const std::list<Matrix>& Bs, doub
 /* ************************************************************************* */
 void multiplyAdd(double alpha, const Matrix& A, const Vector& x, Vector& e) {
 #if defined CBLAS
-
 	// get sizes
 	const size_t m = A.size1(), n = A.size2();
 
@@ -227,15 +222,15 @@ void transposeMultiplyAdd(double alpha, const Matrix& A, const Vector& e, Vector
 
 	// get pointers
 	const double * Aptr = A.data().begin();
-	const double * Xptr = e.data().begin();
-	double * Eptr = x.data().begin();
+	const double * Eptr = e.data().begin();
+	double * Xptr = x.data().begin();
 
 	// fill in parameters
 	const double beta = 1.0;
 	const int incx = 1, incy = 1, ida = n;
 
 	// execute blas call
-	cblas_dgemv(CblasRowMajor, CblasTrans, m, n, alpha, Aptr, ida, Xptr, incx, beta, Eptr, incy);
+	cblas_dgemv(CblasRowMajor, CblasTrans, m, n, alpha, Aptr, ida, Eptr, incx, beta, Xptr, incy);
 
 #elif defined GSL
 	gsl_vector_const_view eg = gsl_vector_const_view_array(e.data().begin(), e.size());
@@ -482,37 +477,65 @@ inline void householder_update_manual(Matrix &A, int j, double beta, const Vecto
 }
 
 void householder_update(Matrix &A, int j, double beta, const Vector& vjm) {
-	// TODO: SWAP IN ATLAS VERSION OF THE SYSTEM
+	const size_t m = A.size1(), n = A.size2();
+#if defined CBLAS
+
+	// CBLAS version not working, using manual approach
+	householder_update_manual(A,j,beta,vjm);
+
 //	// straight atlas version
-//	const size_t m = A.size1(), n = A.size2(), mj = m-j;
+//	const size_t mj = m-j;
 //
 //	// find pointers to the data
 //	const double * vptr = vjm.data().begin(); // mj long
 //	double * Aptr = A.data().begin() + n*j; // mj x n - note that this starts at row j
 //
 //	// first step: get w = beta*trans(A(j:m,:))*vjm
-//	Vector w(n);
+//	Vector w = zero(n);
 //	double * wptr = w.data().begin();
+//
+//	// DEBUG: create a duplicate version of the problem to solve simultaneously
+//	Matrix aA(A); Vector avjm(vjm);
 //
 //	// execute w generation
 //	cblas_dgemv(CblasRowMajor, CblasTrans, mj, n, beta, Aptr, n, vptr, 1, 0.0, wptr, 1);
 //
+//	// Execute w generation with alternate code
+//	Vector aw(n);
+//	for( size_t c = 0; c < n; c++) {
+//		aw(c) = 0.0;
+//		// dangerous as relies on row-major scheme
+//		const double *a = &aA(j,c), * const v = &avjm(0);
+//		for( size_t r=j, s=0 ; r < m ; r++, s++, a+=n )
+//			// w(c) += A(r,c) * vjm(r-j)
+//			aw(c) += (*a) * v[s];
+//		aw(c) *= beta;
+//	}
+//
+//	print(w, "CBLAS w");
+//	print(aw, "Alternate w");
+//
 //	// second step: rank 1 update A(j:m,:) = v(j:m)*w' + A(j:m,:)
-//	cblas_dger(CblasRowMajor, mj, n, 1.0, vptr, 1, wptr, 1, Aptr, n);
+//	cblas_dger(CblasRowMajor, mj, n, 1.0, vptr, 1, wptr, 1, Aptr, n); // not correct
+//
+//	// Execute second step using alternate code
+//	for( size_t c = 0 ; c < n; c++) {
+//		double wc = aw(c);
+//		double *a = &aA(j,c); const double * const v =&avjm(0);
+//		for( size_t r=j, s=0 ; r < m ; r++, s++, a+=n )
+//			// A(r,c) -= vjm(r-j) * wjn(c-j);
+//			(*a) -= v[s] * wc;
+//	}
+//
+//	// copy in alternate results, which should be correct
+//	A = aA;
 
-
-#ifdef GSL
-#ifndef REVERTGSL
-	const size_t m = A.size1(), n = A.size2();
+#elif defined GSL
 	// use GSL version
 	gsl_vector_const_view v = gsl_vector_const_view_array(vjm.data().begin(), m-j);
 	gsl_matrix_view Ag = gsl_matrix_view_array(A.data().begin(), m, n);
 	gsl_matrix_view Ag_view = gsl_matrix_submatrix (&(Ag.matrix), j, 0, m-j, n);
 	gsl_linalg_householder_hm (beta, &(v.vector), &(Ag_view.matrix));
-#else
-	householder_update_manual(A,j,beta,vjm);
-#endif
-
 #else
 	householder_update_manual(A,j,beta,vjm);
 #endif

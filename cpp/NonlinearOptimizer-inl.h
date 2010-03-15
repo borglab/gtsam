@@ -149,11 +149,12 @@ namespace gtsam {
 
 		// update config
 		shared_config newConfig(new C(expmap(*config_,delta))); // TODO: updateConfig
-		if (verbosity >= TRYCONFIG)
-			newConfig->print("config");
+//		if (verbosity >= TRYCONFIG)
+//			newConfig->print("config");
 
 		// create new optimization state with more adventurous lambda
 		NonlinearOptimizer next(graph_, newConfig, solver_, lambda_ / factor);
+		cout << "next error = " << next.error_ << endl;
 
 		if(lambdaMode >= CAUTIOUS) {
 			throw runtime_error("CAUTIOUS mode not working yet, please use BOUNDED.");
@@ -171,8 +172,9 @@ namespace gtsam {
 
 			// Either we're not cautious, or we are but the adventerous lambda is better than the same one.
 			return next;
-
-		} else {
+		} else if (lambda_ > 1e+10) // if lambda gets too big, something is broken
+			throw runtime_error("Lambda has grown too large!");
+		else {
 
 			// A more adventerous lambda was worse.  If we're cautious, try the same lambda.
 			if(lambdaMode == CAUTIOUS) {
@@ -184,6 +186,7 @@ namespace gtsam {
 			// Either we're not cautious, or the same lambda was worse than the current error.
 			// The more adventerous lambda was worse too, so make lambda more conservative
 			// and keep the same config.
+
 			// TODO: can we avoid copying the config ?
 			if(lambdaMode >= BOUNDED && lambda_ >= 1.0e5) {
 				return NonlinearOptimizer(graph_, newConfig, solver_, lambda_);;
@@ -216,6 +219,7 @@ namespace gtsam {
 			linear->print("linear");
 
 		// try lambda steps with successively larger lambda until we achieve descent
+		cout << "Trying Lambda for the first time" << endl;
 		return try_lambda(*linear, verbosity, lambdaFactor, lambdaMode);
 	}
 

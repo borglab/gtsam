@@ -293,27 +293,14 @@ include_HEADERS = $(headers)
 AM_CXXFLAGS += -I.. 
 AM_LDFLAGS = -L../CppUnitLite -lCppUnitLite $(BOOST_LDFLAGS) $(boost_serialization) #-L. -lgtsam
 
-# TESTING: adding cblas implementation with atlas
-#AM_CXXFLAGS += -DCBLAS 
-#libgtsam_la_CPPFLAGS += -DCBLAS
-#AM_LDFLAGS += -L/opt/local/lib -lcblas -latlas -llapack -lptcblas -lptf77blas -lf77blas
-#libgtsam_la_LDFLAGS += -L/opt/local/lib -lcblas -latlas -llapack -lptcblas -lptf77blas -lf77blas
+# adding cblas implementation with atlas
+if USE_BLAS
+AM_CXXFLAGS += -DCBLAS 
+libgtsam_la_CPPFLAGS += -DCBLAS
+AM_LDFLAGS += $(BLAS_LIBS) $(LIBS) $(FLIBS) # -lcblas -latlas 
+libgtsam_la_LDFLAGS += $(BLAS_LIBS) $(LIBS) $(FLIBS) # -lcblas -latlas
+endif
 
-#######################
-# GSL/ATLAS inclusion
-#######################
-#GSL using ATLAS
-#if GSL
-#AM_CXXFLAGS += -DGSL $(GSL_CFLAGS)
-#libgtsam_la_CPPFLAGS += -DGSL $(GSL_CFLAGS)
-#if ATLAS
-#AM_LDFLAGS += $(GSL_LIBS_NO_CBLAS) -lcblas -latlas 
-#libgtsam_la_LDFLAGS += $(GSL_LIBS_NO_CBLAS) -lcblas -latlas
-#else 
-#AM_LDFLAGS += $(GSL_LIBS) 
-#libgtsam_la_LDFLAGS += $(GSL_LIBS) 
-#endif
-#endif
 
 TESTS = $(check_PROGRAMS)
 CXXLINK = $(LIBTOOL) $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=link \
