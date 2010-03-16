@@ -293,7 +293,7 @@ include_HEADERS = $(headers)
 AM_CXXFLAGS += -I.. 
 AM_LDFLAGS = -L../CppUnitLite -lCppUnitLite $(BOOST_LDFLAGS) $(boost_serialization) #-L. -lgtsam
 
-# adding cblas implementation with atlas
+# adding cblas implementation 
 if USE_BLAS_LINUX
 AM_CXXFLAGS += -DCBLAS 
 libgtsam_la_CPPFLAGS += -DCBLAS
@@ -302,8 +302,8 @@ libgtsam_la_LDFLAGS += $(BLAS_LIBS) $(LIBS) $(FLIBS) # -lcblas -latlas
 endif
 
 if USE_BLAS_MACOS
-AM_CXXFLAGS += -DYA_BLAS -DYA_LAPACK -DYA_BLASMULT -I/System/Library/Frameworks/vecLib.framework/Headers 
-libgtsam_la_CPPFLAGS += -DYA_BLAS -DYA_LAPACK -DYA_BLASMULT -I/System/Library/Frameworks/vecLib.framework/Headers 
+AM_CXXFLAGS += -DCBLAS -DYA_BLAS -DYA_LAPACK -DYA_BLASMULT -I/System/Library/Frameworks/vecLib.framework/Headers 
+libgtsam_la_CPPFLAGS += -DCBLAS -DYA_BLAS -DYA_LAPACK -DYA_BLASMULT -I/System/Library/Frameworks/vecLib.framework/Headers 
 AM_LDFLAGS += -lcblas -latlas 
 libgtsam_la_LDFLAGS += -framework vecLib -lcblas -latlas
 endif
