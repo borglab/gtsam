@@ -15,6 +15,10 @@
 #include <cblas.h>
 #endif
 
+#ifdef YA_BLAS
+#include <vecLib/cblas.h>
+#endif
+
 #ifdef GSL
 #include <gsl/gsl_blas.h> // needed for gsl blas
 #include <gsl/gsl_linalg.h>
@@ -153,10 +157,10 @@ bool assert_equal(const std::list<Matrix>& As, const std::list<Matrix>& Bs, doub
 
 /* ************************************************************************* */
 void multiplyAdd(double alpha, const Matrix& A, const Vector& x, Vector& e) {
-#if defined CBLAS
+#if defined (CBLAS) || defined (YA_BLAS)
 
 	// uncomment and run tests to verify blas is enabled
-//	throw runtime_error("You are in multiplyAdd!");
+//	throw runtime_error("You are in multiplyAdd / cblas!");
 
 	// get sizes
 	const size_t m = A.size1(), n = A.size2();
@@ -174,11 +178,13 @@ void multiplyAdd(double alpha, const Matrix& A, const Vector& x, Vector& e) {
 	cblas_dgemv(CblasRowMajor, CblasNoTrans, m, n, alpha, Aptr, ida, Xptr, incx, beta, Eptr, incy);
 
 #elif defined GSL
+//	throw runtime_error("You are in multiplyAdd / gsl!");
 	gsl_vector_const_view xg = gsl_vector_const_view_array(x.data().begin(), x.size());
 	gsl_vector_view eg = gsl_vector_view_array(e.data().begin(), e.size());
 	gsl_matrix_const_view Ag = gsl_matrix_const_view_array(A.data().begin(), A.size1(), A.size2());
 	gsl_blas_dgemv (CblasNoTrans, alpha, &(Ag.matrix), &(xg.vector), 1.0, &(eg.vector));
 #else
+//	throw runtime_error("You are in multiplyAdd / unoptimized!");
 	// ublas e += prod(A,x) is terribly slow
   size_t m = A.size1(), n = A.size2();
 	double * ei = e.data().begin();
