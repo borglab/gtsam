@@ -154,6 +154,10 @@ bool assert_equal(const std::list<Matrix>& As, const std::list<Matrix>& Bs, doub
 /* ************************************************************************* */
 void multiplyAdd(double alpha, const Matrix& A, const Vector& x, Vector& e) {
 #if defined CBLAS
+
+	// uncomment and run tests to verify blas is enabled
+//	throw runtime_error("You are in multiplyAdd!");
+
 	// get sizes
 	const size_t m = A.size1(), n = A.size2();
 
@@ -512,16 +516,18 @@ void householder_update(Matrix &A, int j, double beta, const Vector& vjm) {
 //		aw(c) *= beta;
 //	}
 //
-//	print(w, "CBLAS w");
+//	print(w,  "CBLAS w    ");
 //	print(aw, "Alternate w");
 //
 //	// second step: rank 1 update A(j:m,:) = v(j:m)*w' + A(j:m,:)
 //	cblas_dger(CblasRowMajor, mj, n, 1.0, vptr, 1, wptr, 1, Aptr, n); // not correct
 //
 //	// Execute second step using alternate code
+//	// rank 1 update A(j:m,:) -= v(j:m)*w'
 //	for( size_t c = 0 ; c < n; c++) {
 //		double wc = aw(c);
-//		double *a = &aA(j,c); const double * const v =&avjm(0);
+//		double *a = &aA(j,c);
+//		const double * const v =&avjm(0);
 //		for( size_t r=j, s=0 ; r < m ; r++, s++, a+=n )
 //			// A(r,c) -= vjm(r-j) * wjn(c-j);
 //			(*a) -= v[s] * wc;
