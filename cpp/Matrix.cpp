@@ -11,7 +11,11 @@
 #include <fstream>
 
 #ifdef GT_USE_CBLAS
+	#ifdef YA_BLAS
+#include <vecLib/cblas.h>
+	#else
 #include <cblas.h>
+	#endif
 #endif
 
 #include <boost/numeric/ublas/matrix_proxy.hpp>
