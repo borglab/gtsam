@@ -10,18 +10,8 @@
 #include <list>
 #include <fstream>
 
-// TESTING
-#ifdef CBLAS
+#ifdef GT_USE_CBLAS
 #include <cblas.h>
-#endif
-
-#ifdef YA_BLAS
-#include <vecLib/cblas.h>
-#endif
-
-#ifdef GSL
-#include <gsl/gsl_blas.h> // needed for gsl blas
-#include <gsl/gsl_linalg.h>
 #endif
 
 #include <boost/numeric/ublas/matrix_proxy.hpp>
@@ -157,10 +147,10 @@ bool assert_equal(const std::list<Matrix>& As, const std::list<Matrix>& Bs, doub
 
 /* ************************************************************************* */
 void multiplyAdd(double alpha, const Matrix& A, const Vector& x, Vector& e) {
-#if defined (CBLAS) || defined (YA_BLAS)
+#if defined GT_USE_CBLAS
 
 	// uncomment and run tests to verify blas is enabled
-//	throw runtime_error("You are in multiplyAdd / cblas!");
+//	throw runtime_error("You are in multiplyAdd!");
 
 	// get sizes
 	const size_t m = A.size1(), n = A.size2();
@@ -177,12 +167,6 @@ void multiplyAdd(double alpha, const Matrix& A, const Vector& x, Vector& e) {
 	// execute blas call
 	cblas_dgemv(CblasRowMajor, CblasNoTrans, m, n, alpha, Aptr, ida, Xptr, incx, beta, Eptr, incy);
 
-#elif defined GSL
-//	throw runtime_error("You are in multiplyAdd / gsl!");
-	gsl_vector_const_view xg = gsl_vector_const_view_array(x.data().begin(), x.size());
-	gsl_vector_view eg = gsl_vector_view_array(e.data().begin(), e.size());
-	gsl_matrix_const_view Ag = gsl_matrix_const_view_array(A.data().begin(), A.size1(), A.size2());
-	gsl_blas_dgemv (CblasNoTrans, alpha, &(Ag.matrix), &(xg.vector), 1.0, &(eg.vector));
 #else
 //	throw runtime_error("You are in multiplyAdd / unoptimized!");
 	// ublas e += prod(A,x) is terribly slow
@@ -200,7 +184,7 @@ void multiplyAdd(double alpha, const Matrix& A, const Vector& x, Vector& e) {
 /* ************************************************************************* */
 void multiplyAdd(const Matrix& A, const Vector& x, Vector& e) {
 	// ublas e += prod(A,x) is terribly slow
-#ifdef CBLAS
+#ifdef GT_USE_CBLAS
 	multiplyAdd(1.0, A, x, e);
 #else
   size_t m = A.size1(), n = A.size2();
@@ -225,7 +209,7 @@ Vector operator^(const Matrix& A, const Vector & v) {
 
 /* ************************************************************************* */
 void transposeMultiplyAdd(double alpha, const Matrix& A, const Vector& e, Vector& x) {
-#if defined CBLAS
+#if defined GT_USE_CBLAS
 
 	// get sizes
 	const size_t m = A.size1(), n = A.size2();
@@ -242,11 +226,6 @@ void transposeMultiplyAdd(double alpha, const Matrix& A, const Vector& e, Vector
 	// execute blas call
 	cblas_dgemv(CblasRowMajor, CblasTrans, m, n, alpha, Aptr, ida, Eptr, incx, beta, Xptr, incy);
 
-#elif defined GSL
-	gsl_vector_const_view eg = gsl_vector_const_view_array(e.data().begin(), e.size());
-	gsl_vector_view xg = gsl_vector_view_array(x.data().begin(), x.size());
-	gsl_matrix_const_view Ag = gsl_matrix_const_view_array(A.data().begin(), A.size1(), A.size2());
-	gsl_blas_dgemv (CblasTrans, alpha, &(Ag.matrix), &(eg.vector), 1.0, &(xg.vector));
 #else
 	// ublas x += prod(trans(A),e) is terribly slow
 	// TODO: use BLAS
@@ -264,7 +243,7 @@ void transposeMultiplyAdd(double alpha, const Matrix& A, const Vector& e, Vector
 /* ************************************************************************* */
 void transposeMultiplyAdd(const Matrix& A, const Vector& e, Vector& x) {
 	// ublas x += prod(trans(A),e) is terribly slow
-#ifdef CBLAS
+#ifdef GT_USE_CBLAS
 	transposeMultiplyAdd(1.0, A, e, x);
 #else
   size_t m = A.size1(), n = A.size2();
@@ -488,7 +467,7 @@ inline void householder_update_manual(Matrix &A, int j, double beta, const Vecto
 
 void householder_update(Matrix &A, int j, double beta, const Vector& vjm) {
 	const size_t m = A.size1(), n = A.size2();
-#if defined CBLAS
+#if defined GT_USE_CBLAS
 
 	// CBLAS version not working, using manual approach
 	householder_update_manual(A,j,beta,vjm);
@@ -542,12 +521,6 @@ void householder_update(Matrix &A, int j, double beta, const Vector& vjm) {
 //	// copy in alternate results, which should be correct
 //	A = aA;
 
-#elif defined GSL
-	// use GSL version
-	gsl_vector_const_view v = gsl_vector_const_view_array(vjm.data().begin(), m-j);
-	gsl_matrix_view Ag = gsl_matrix_view_array(A.data().begin(), m, n);
-	gsl_matrix_view Ag_view = gsl_matrix_submatrix (&(Ag.matrix), j, 0, m-j, n);
-	gsl_linalg_householder_hm (beta, &(v.vector), &(Ag_view.matrix));
 #else
 	householder_update_manual(A,j,beta,vjm);
 #endif
@@ -576,36 +549,8 @@ inline void updateAb_manual(Matrix& A, Vector& b, int j, const Vector& a,
  */
 static void updateAb(Matrix& A, Vector& b, int j, const Vector& a,
 		const Vector& r, double d) {
-#ifdef GSL
-#ifndef REVERTGSL
-	const size_t m = A.size1(), n = A.size2();
-	// update A
-	// A(0:m,j+1:end) = A(0:m,j+1:end) - a(0:m)*r(j+1:end)'
-	// get a view for A
-	gsl_matrix_view Ag = gsl_matrix_view_array(A.data().begin(), m, n);
-	gsl_matrix_view Ag_view = gsl_matrix_submatrix (&(Ag.matrix), 0, j+1, m, n-j-1);
-	// get a view for r
-	gsl_vector_const_view rg = gsl_vector_const_view_array(r.data().begin()+j+1, n-j-1);
-	// get a view for a
-	gsl_vector_const_view ag = gsl_vector_const_view_array(a.data().begin(), m);
-
-	// rank one update
-	gsl_blas_dger (-1.0, &(ag.vector), &(rg.vector), &(Ag_view.matrix));
-
-	// update b
-	double * bptr = b.data().begin();
-	const double * aptr = a.data().begin();
-	for (size_t i = 0; i < m; i++) {
-		*(bptr+i) -= d* *(aptr+i);
-	}
-
-#else
+	// TODO: reimplement using BLAS
 	updateAb_manual(A,b,j,a,r,d);
-#endif
-
-#else
-	updateAb_manual(A,b,j,a,r,d);
-#endif
 }
 
 /* ************************************************************************* */
@@ -692,62 +637,7 @@ inline void householder_manual(Matrix &A, size_t k) {
 
 void householder_(Matrix &A, size_t k) 
 {
-#ifdef GSL
-#ifndef REVERTGSL
-	const size_t m = A.size1(), n = A.size2(), kprime = min(k,min(m,n));
-	// loop over the kprime first columns
-	for(size_t j=0; j < kprime; j++){
-		// below, the indices r,c always refer to original A
-
-		// copy column from matrix to xjm, i.e. x(j:m) = A(j:m,j)
-		Vector xjm(m-j);
-		for(size_t r = j ; r < m; r++)
-			xjm(r-j) = A(r,j);
-
-		// calculate the Householder vector
-		// COPIED IN: boost::tie(beta,vjm) = house(xjm);
-		const double x0 = xjm(0);
-		const double x02 = x0*x0;
-
-		const double sigma = inner_prod(trans(xjm),xjm) - x02;
-		double beta = 0.0; Vector vjm(xjm);  vjm(0) = 1.0;
-
-		if( sigma == 0.0 )
-			beta = 0.0;
-		else {
-			double mu = sqrt(x02 + sigma);
-			if( x0 <= 0.0 )
-				vjm(0) = x0 - mu;
-			else
-				vjm(0) = -sigma / (x0 + mu);
-
-			const double v02 = vjm(0)*vjm(0);
-			beta = 2.0 * v02 / (sigma + v02);
-			vjm = vjm / vjm(0);
-		}
-
-		// do outer product update A = (I-beta vv')*A = A - v*(beta*A'*v)' = A - v*w'
-		//householder_update(A, j, beta, vjm);
-
-		// inlined use GSL version
-		gsl_vector_const_view v = gsl_vector_const_view_array(vjm.data().begin(), m-j);
-		gsl_matrix_view Ag = gsl_matrix_view_array(A.data().begin(), m, n);
-		gsl_matrix_view Ag_view = gsl_matrix_submatrix (&(Ag.matrix), j, 0, m-j, n);
-		gsl_linalg_householder_hm (beta, &(v.vector), &(Ag_view.matrix));
-
-		// the Householder vector is copied in the zeroed out part
-		for( size_t r = j+1 ; r < m ; r++ )
-			A(r,j) = vjm(r-j);
-
-	} // column j
-
-#else
 	householder_manual(A, k);
-#endif
-
-#else
-	householder_manual(A, k);
-#endif
 }
 
 /* ************************************************************************* */
