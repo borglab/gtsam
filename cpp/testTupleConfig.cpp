@@ -457,18 +457,33 @@ TEST(TupleConfig, insert_config_typedef) {
 }
 
 /* ************************************************************************* */
-#include "NonlinearFactorGraph-inl.h"
-TEST( TupleConfig, graphs_and_factors )
-{
-	typedef TupleConfig3<PoseConfig, PointConfig, LamConfig> ConfigC;
-	typedef NonlinearFactorGraph<ConfigC> GraphC;
-	typedef NonlinearFactor1<ConfigC, PoseKey, Pose2> FactorC;
+TEST(TupleConfig, partial_insert) {
+	TupleConfig3<PoseConfig, PointConfig, LamConfig> init, expected;
 
-	// test creation
-	GraphC graph;
-	ConfigC config;
+	PoseKey x1(1), x2(2);
+	PointKey l1(1), l2(2);
+	LamKey L1(1), L2(2);
+	Pose2 pose1(1.0, 2.0, 0.3), pose2(3.0, 4.0, 5.0);
+	Point2 point1(2.0, 3.0), point2(5.0, 6.0);
+	Vector lam1 = Vector_(1, 2.3), lam2 = Vector_(1, 4.5);
 
+	init.insert(x1, pose1);
+	init.insert(l1, point1);
+	init.insert(L1, lam1);
+
+	PoseConfig cfg1;
+	cfg1.insert(x2, pose2);
+
+	init.insertSub(cfg1);
+
+	expected.insert(x1, pose1);
+	expected.insert(l1, point1);
+	expected.insert(L1, lam1);
+	expected.insert(x2, pose2);
+
+	CHECK(assert_equal(expected, init));
 }
+
 /* ************************************************************************* */
 int main() { TestResult tr; return TestRegistry::runAllTests(tr); }
 /* ************************************************************************* */
