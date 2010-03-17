@@ -293,17 +293,19 @@ include_HEADERS = $(headers)
 AM_CXXFLAGS += -I.. 
 AM_LDFLAGS = -L../CppUnitLite -lCppUnitLite $(BOOST_LDFLAGS) $(boost_serialization) #-L. -lgtsam
 
-# adding cblas implementation 
+# adding cblas implementation - split into a default linux version using the 
+# autotools script, and a mac version that is hardcoded 
+# NOTE: the GT_USE_CBLAS is just used as a means of detecting when blas is available
 if USE_BLAS_LINUX
-AM_CXXFLAGS += -DCBLAS 
-libgtsam_la_CPPFLAGS += -DCBLAS
-AM_LDFLAGS += $(BLAS_LIBS) $(LIBS) $(FLIBS) # -lcblas -latlas 
-libgtsam_la_LDFLAGS += $(BLAS_LIBS) $(LIBS) $(FLIBS) # -lcblas -latlas
+AM_CXXFLAGS += -DGT_USE_CBLAS
+libgtsam_la_CPPFLAGS += -DGT_USE_CBLAS
+AM_LDFLAGS += $(BLAS_LIBS) $(LIBS) $(FLIBS)  
+libgtsam_la_LDFLAGS += $(BLAS_LIBS) $(LIBS) $(FLIBS) 
 endif
 
 if USE_BLAS_MACOS
-AM_CXXFLAGS += -DYA_BLAS -DYA_LAPACK -DYA_BLASMULT -I/System/Library/Frameworks/vecLib.framework/Headers 
-libgtsam_la_CPPFLAGS += -DYA_BLAS -DYA_LAPACK -DYA_BLASMULT -I/System/Library/Frameworks/vecLib.framework/Headers 
+AM_CXXFLAGS += -DGT_USE_CBLAS -DYA_BLAS -DYA_LAPACK -DYA_BLASMULT -I/System/Library/Frameworks/vecLib.framework/Headers 
+libgtsam_la_CPPFLAGS += -DGT_USE_CBLAS -DYA_BLAS -DYA_LAPACK -DYA_BLASMULT -I/System/Library/Frameworks/vecLib.framework/Headers 
 AM_LDFLAGS += -lcblas -latlas 
 libgtsam_la_LDFLAGS += -framework vecLib -lcblas -latlas
 endif

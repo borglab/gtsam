@@ -25,32 +25,6 @@ AC_ARG_ENABLE([debug],
 
 AM_CONDITIONAL([DEBUG], [test x$debug = xtrue])
 
-# search for gsl
-#AM_PATH_GSL(1.1)
-     
-# enable using GSL for linalg
-#AC_ARG_ENABLE([gsl],
-#     [  --enable-gsl    Enable the GSL library],
-#     [case "${enableval}" in
-#       yes) gsl=true ;;
-#       no)  gsl=false ;;
-#       *) AC_MSG_ERROR([bad value ${enableval} for --enable-gsl]) ;;
-#     esac],[gsl=false])
-#
-#AM_CONDITIONAL([GSL], [test x$gsl = xtrue])
-
-     
-# enable using ATLAS for BLAS
-#AC_ARG_ENABLE([atlas],
-#     [  --enable-atlas    Enable ATLAS optimized BLAS],
-#     [case "${enableval}" in
-#       yes) atlas=true ;;
-#       no)  atlas=false ;;
-#       *) AC_MSG_ERROR([bad value ${enableval} for --enable-atlas]) ;;
-#     esac],[atlas=false])
-#
-#AM_CONDITIONAL([ATLAS], [test x$atlas = xtrue])
-
 # search for a blas implementation
 AX_BLAS()
 
@@ -63,8 +37,21 @@ AC_ARG_ENABLE([blas],
        *) AC_MSG_ERROR([bad value ${enableval} for --enable-blas]) ;;
      esac],[blas=false])
 
-AM_CONDITIONAL([USE_BLAS_MACOS], [test x$blas = xtrue && test -f "/System/Library/Frameworks/vecLib.framework/Headers/cblas.h"])
-AM_CONDITIONAL([USE_BLAS_LINUX], [test x$blas = xtrue && USE_BLAS_MAC = false])
+AC_CANONICAL_HOST
+# We need to determine what os we are on to determine if we need to do 
+# special things because we are on a mac
+case $host_os in
+  darwin* )
+        # Do something specific for mac
+        ISMAC=true
+        ;;
+  *)
+        ISMAC=false
+        ;;
+esac
+
+AM_CONDITIONAL([USE_BLAS_MACOS], [test x$blas = xtrue && test x$ISMAC = xtrue])
+AM_CONDITIONAL([USE_BLAS_LINUX], [test x$blas = xtrue && test x$ISMAC = xfalse])
 
 # Checks for programs.
 AC_PROG_CXX

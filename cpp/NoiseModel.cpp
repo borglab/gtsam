@@ -11,11 +11,6 @@
 #include <typeinfo>
 #include <stdexcept>
 
-#ifdef GSL
-#include <gsl/gsl_blas.h> // needed for gsl blas
-#include <gsl/gsl_linalg.h>
-#endif
-
 #include <boost/numeric/ublas/lu.hpp>
 #include <boost/numeric/ublas/io.hpp>
 #include <boost/foreach.hpp>
@@ -43,22 +38,6 @@ namespace noiseModel {
 // __attribute__ ((noinline))	// uncomment to prevent inlining when profiling
 static void updateAb(Matrix& Ab, int j, const Vector& a, const Vector& rd) {
 	size_t m = Ab.size1(), n = Ab.size2()-1;
-#ifdef GSL
-	// Ab(0:m,j+1:n) = Ab(0:m,j+1:n) - a(0:m)*rd(j+1:end)'
-	// get a view for Ab
-	gsl_matrix_view Abg = gsl_matrix_view_array(Ab.data().begin(), m, n+1);
-	gsl_matrix_view Abg_view = gsl_matrix_submatrix (&(Abg.matrix), 0, j+1, m, n-j);
-
-	// get a view for a
-	gsl_vector_const_view ag = gsl_vector_const_view_array(a.data().begin(), m);
-
-	// get a view for r
-	gsl_vector_const_view rdg = gsl_vector_const_view_array(rd.data().begin()+j+1, n-j);
-
-	// rank one update
-	gsl_blas_dger (-1.0, &(ag.vector), &(rdg.vector), &(Abg_view.matrix));
-
-#else
 
 	for (int i = 0; i < m; i++) { // update all rows
 		double ai = a(i);
@@ -68,7 +47,6 @@ static void updateAb(Matrix& Ab, int j, const Vector& a, const Vector& rd) {
 		for (int j2 = j + 1; j2 < n+1; j2++, Aij++, rptr++)
 			*Aij -= ai * (*rptr);
 	}
-#endif
 }
 
 
