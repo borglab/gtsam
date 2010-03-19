@@ -23,8 +23,8 @@ namespace gtsam {
    */
   class Pose2: Testable<Pose2>, public Lie<Pose2>  {
   private:
-    Point2 t_;
     Rot2 r_;
+    Point2 t_;
 
   public:
 
@@ -32,7 +32,7 @@ namespace gtsam {
     Pose2() {} // default is origin
 
     /** copy constructor */
-    Pose2(const Pose2& pose) : t_(pose.t_), r_(pose.r_) {}
+    Pose2(const Pose2& pose) : r_(pose.r_), t_(pose.t_) {}
 
     /**
      * construct from (x,y,theta)
@@ -41,14 +41,14 @@ namespace gtsam {
      * @param theta angle with positive X-axis
      */
     Pose2(double x, double y, double theta) :
-			t_(x, y), r_(Rot2::fromAngle(theta)) {
+    	r_(Rot2::fromAngle(theta)), t_(x, y) {
 		}
 
     /** construct from rotation and translation */
     Pose2(double theta, const Point2& t) :
-			t_(t), r_(Rot2::fromAngle(theta)) {
+    	r_(Rot2::fromAngle(theta)), t_(t) {
 		}
-    Pose2(const Rot2& r, const Point2& t) : t_(t), r_(r) {}
+    Pose2(const Rot2& r, const Point2& t) : r_(r), t_(t) {}
 
     /** Constructor from 3*3 matrix */
     Pose2(const Matrix &T) :
