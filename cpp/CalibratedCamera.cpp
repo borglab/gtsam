@@ -23,6 +23,10 @@ namespace gtsam {
 		return Matrix_(2, 3, d, 0.0, -P.x() * d2, 0.0, d, -P.y() * d2);
 	}
 
+	Point3 backproject_from_camera(const Point2& p, const double scale) {
+		return Point3(p.x() * scale, p.y() * scale, scale);
+	}
+
 	/* ************************************************************************* */
 	// Methods
 	/* ************************************************************************* */

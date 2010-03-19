@@ -49,6 +49,11 @@ namespace gtsam {
 		Point2 project(const Point3& P) const;
 
 		/**
+		 * backproject a 2d point from the camera up to a given scale
+		 */
+		Point3 backproject(const Point2& projection, const double scale) const;
+
+		/**
 		 * Create a level camera at the given 2D pose and height
 		 * @param pose2 specifies the location and viewing direction
 		 * (theta 0 = looking in direction of positive X axis)

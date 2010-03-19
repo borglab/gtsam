@@ -61,6 +61,15 @@ TEST( SimpleCamera, project)
 }
 
 /* ************************************************************************* */
+TEST( SimpleCamera, backproject)
+{
+  CHECK(assert_equal( camera.backproject(Point2(-100,  100), 0.5),  point1));
+  CHECK(assert_equal( camera.backproject(Point2(-100, -100), 0.5),  point2));
+  CHECK(assert_equal( camera.backproject(Point2( 100, -100), 0.5),  point3));
+  CHECK(assert_equal( camera.backproject(Point2( 100,  100), 0.5),  point4));
+}
+
+/* ************************************************************************* */
 Point2 project2(const Pose3& pose, const Point3& point) {
 	return project(SimpleCamera(K,pose), point);
 }

@@ -27,6 +27,11 @@ namespace gtsam {
 	Matrix Dproject_to_camera1(const Point3& cameraPoint); /*2by3 <--*/
 
 	/**
+	 * backproject a 2-dimensional point to a 3-dimension point
+	 */
+	Point3 backproject_from_camera(const Point2& p, const double scale);
+
+	/**
 	 * A Calibrated camera class [R|-R't], calibration K=I.
 	 * If calibration is known, it is more computationally efficient
 	 * to calibrate the measurements rather than try to predict in pixels.

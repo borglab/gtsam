@@ -38,6 +38,12 @@ namespace gtsam {
 		return projected.first;
 	}
 
+	Point3 SimpleCamera::backproject(const Point2& projection, const double scale) const {
+		Point2 intrinsic = K_.calibrate(projection);
+		Point3 cameraPoint = backproject_from_camera(intrinsic, scale);
+		return transform_from(calibrated_.pose(), cameraPoint);
+	}
+
 	SimpleCamera SimpleCamera::level(const Cal3_S2& K, const Pose2& pose2, double height) {
 		return SimpleCamera(K, CalibratedCamera::level(pose2, height));
 	}
