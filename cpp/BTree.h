@@ -224,7 +224,8 @@ namespace gtsam {
 				else if (key < k) node = node->right.root_.get();
 				else /* (key() == k) */ return node->value();
 			}
-			throw std::invalid_argument("BTree::find: key '" + (std::string) k + "' not found");
+			//throw std::invalid_argument("BTree::find: key '" + (std::string) k + "' not found");
+			throw std::invalid_argument("BTree::find: key not found");
 		}
 
 		/** print in-order */

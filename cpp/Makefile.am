@@ -40,13 +40,15 @@ testMatrix_LDADD   = libgtsam.la
 # The header files will be installed in ~/include/gtsam
 headers = gtsam.h Value.h Testable.h Factor.h Conditional.h 
 headers += Ordering.h IndexTable.h numericalDerivative.h
-headers += BTree.h
+headers += BTree.h DSF.h
 sources += Ordering.cpp smallExample.cpp 
-check_PROGRAMS += testOrdering testBTree
+check_PROGRAMS += testOrdering testBTree testDSF
 testOrdering_SOURCES = testOrdering.cpp
 testOrdering_LDADD   = libgtsam.la
 testBTree_SOURCES    = testBTree.cpp
 testBTree_LDADD		   = libgtsam.la
+testDSF_SOURCES    = testDSF.cpp
+testDSF_LDADD      = libgtsam.la
 
 # Symbolic Inference
 headers += SymbolicConditional.h
