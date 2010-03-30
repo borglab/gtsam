@@ -23,6 +23,7 @@
 #include "Ordering.h"
 #include "FactorGraph.h"
 #include "graph-inl.h"
+#include "DSF.h"
 
 #define INSTANTIATE_FACTOR_GRAPH(F) \
   template class FactorGraph<F>; \
@@ -360,6 +361,37 @@ void FactorGraph<Factor>::split(const PredecessorMap<Key>& tree, FactorGraph<Fac
 }
 
 /* ************************************************************************* */
+template<class Factor>
+std::pair<FactorGraph<Factor>, FactorGraph<Factor> > FactorGraph<Factor>::splitMinimumSpanningTree() const {
+	//	create an empty factor graph T (tree) and factor graph C (constraints)
+	FactorGraph<Factor> T;
+	FactorGraph<Factor> C;
+	DSF<Symbol> dsf(keys());
+
+	//	while G is nonempty and T is not yet spanning
+	size_t m = nrFactors();
+	for (size_t i=0;i<m;i++) {
+		const sharedFactor& f = factors_[i];
+
+		// retrieve the labels of all the keys
+		set<Symbol> labels;
+		BOOST_FOREACH(const Symbol& key, f->keys())
+			labels.insert(dsf.findSet(key));
+
+		//	if that factor connects two different trees, then add it to T
+		if (labels.size() > 1) {
+			T.push_back(f);
+			set<Symbol>::const_iterator it = labels.begin();
+			Symbol root = *it;
+			for (it++; it!=labels.end(); it++)
+				dsf = dsf.makeUnion(root, *it);
+		} else //	otherwise add that factor to C
+			C.push_back(f);
+	}
+	return make_pair(T,C);
+}
+
+/* ************************************************************************* */
 /* find factors and remove them from the factor graph: O(n)                  */
 /* ************************************************************************* */
 template<class Factor> boost::shared_ptr<Factor>
@@ -381,4 +413,5 @@ FactorGraph<Factor> combine(const FactorGraph<Factor>& fg1, const FactorGraph<Fa
 
 	return fg;
 }
-}
+
+} // namespace gtsam

@@ -118,7 +118,7 @@ namespace gtsam {
 		std::vector<sharedFactor> findAndRemoveFactors(const Symbol& key);
 
 		/**
-		 * find the minimum spanning tree.
+		 * find the minimum spanning tree using boost graph library
 		 */
 		template<class Key, class Factor2> PredecessorMap<Key> findMinimumSpanningTree() const;
 
@@ -128,6 +128,11 @@ namespace gtsam {
 		 */
 		template<class Key, class Factor2> void split(const PredecessorMap<Key>& tree,
 				FactorGraph<Factor>& Ab1, FactorGraph<Factor>& Ab2) const;
+
+		/**
+		 * find the minimum spanning tree using DSF
+		 */
+		std::pair<FactorGraph<Factor>, FactorGraph<Factor> > splitMinimumSpanningTree() const;
 
 		/**
 		 * Check consistency of the index map, useful for debugging

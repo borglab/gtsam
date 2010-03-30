@@ -13,6 +13,7 @@ using namespace boost::assign;
 #include <CppUnitLite/TestHarness.h>
 
 #include "DSF.h"
+#include "key.h"
 
 using namespace std;
 using namespace gtsam;
@@ -191,10 +192,10 @@ TEST(DSF, map) {
 
 	DSFInt actual = dsf.map(&func);
 	DSFInt expected;
-	dsf = dsf.makeSet(15);
-	dsf = dsf.makeSet(16);
-	dsf = dsf.makeSet(17);
-	dsf = dsf.makeUnion(15,16);
+	expected = expected.makeSet(15);
+	expected = expected.makeSet(16);
+	expected = expected.makeSet(17);
+	expected = expected.makeUnion(15,16);
 	CHECK(actual == expected);
 }
 
@@ -216,6 +217,26 @@ TEST(DSF, flatten) {
 	expected = expected.makePair(1, 7);
 	CHECK(actual == expected);
 }
+
+/* ************************************************************************* */
+TEST(DSF, flatten2) {
+	Symbol x1('x',1);
+	Symbol x2('x',2), x3('x',3), x4('x',4);
+	list<Symbol> keys; keys += x1,x2,x3,x4;
+	DSFSymbol dsf(keys);
+	dsf = dsf.makeUnion(x1,x2);
+	dsf = dsf.makeUnion(x3,x4);
+	dsf = dsf.makeUnion(x1,x3);
+
+	CHECK(dsf != dsf.flatten());
+
+	DSFSymbol expected2;
+	expected2 = expected2.makePair(x1, x2);
+	expected2 = expected2.makePair(x1, x3);
+	expected2 = expected2.makePair(x1, x4);
+	CHECK(expected2 == dsf.flatten());
+}
+
 /* ************************************************************************* */
 int main() { TestResult tr; return TestRegistry::runAllTests(tr);}
 /* ************************************************************************* */

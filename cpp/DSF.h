@@ -37,16 +37,19 @@ namespace gtsam {
 		// constructor
 		DSF(const Tree& tree) : Tree(tree) {}
 
+		// constructor with a list of unconnected keys
+		DSF(const std::list<Key>& keys) : Tree() { BOOST_FOREACH(const Key& key, keys) *this = this->add(key, key); }
+
 		// create a new singleton, does nothing if already exists
-		Self makeSet(const Key& key) const { if (mem(key)) return *this; else return add(key, key); }
+		Self makeSet(const Key& key) const { if (mem(key)) return *this; else return this->add(key, key); }
 
 		// find the label of the set in which {key} lives
 		Label findSet(const Key& key) const {
-			Key parent = find(key);
+			Key parent = this->find(key);
 			return parent == key ? key : findSet(parent); }
 
 		// return a new DSF where x and y are in the same set. Kai: the caml implementation is not const, and I followed
-		Self makeUnion(const Key& key1, const Key& key2) { return add(findSet_(key2), findSet_(key1));	}
+		Self makeUnion(const Key& key1, const Key& key2) { return this->add(findSet_(key2), findSet_(key1));	}
 
 		// create a new singleton with two connected keys
 		Self makePair(const Key& key1, const Key& key2) const { return makeSet(key1).makeSet(key2).makeUnion(key1, key2); }
@@ -71,7 +74,7 @@ namespace gtsam {
 		DSF map(boost::function<Key(const Key&)> func) const {
 			DSF t;
 			BOOST_FOREACH(const KeyLabel& pair, (Tree)*this)
-				t.add(func(pair.first), func(pair.second));
+				t = t.add(func(pair.first), func(pair.second));
 			return t;
 		}
 
@@ -105,8 +108,15 @@ namespace gtsam {
 		/** equality */
 		bool operator==(const Self& t) const { return (Tree)*this == (Tree)t;	}
 
+		/** inequality */
+		bool operator!=(const Self& t) const { return (Tree)*this != (Tree)t;	}
+
 		// print the object
-		void print(std::string& name = "DSF") const { Tree::print(name); }
+		void print(const std::string& name = "DSF") const {
+			std::cout << name << std::endl;
+			BOOST_FOREACH(const KeyLabel& pair, (Tree)*this)
+				std::cout << (std::string)pair.first << " " << (std::string)pair.second << std::endl;
+		}
 
 	private:
 
@@ -115,12 +125,12 @@ namespace gtsam {
 		 * the root, each parent pointer is made to directly point to it
 		 */
 		Key findSet_(const Key& key) {
-			Key parent = find(key);
+			Key parent = this->find(key);
 			if (parent == key)
 				return parent;
 			else {
 				Key label = findSet_(parent);
-				*this = add(key, label);
+				*this = this->add(key, label);
 				return label;
 			}
 		}
