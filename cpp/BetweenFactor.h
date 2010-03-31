@@ -17,12 +17,12 @@ namespace gtsam {
 	 * A class for a measurement predicted by "between(config[key1],config[key2])"
 	 * T is the Lie group type, Config where the T's are gotten from
 	 */
-	template<class Config, class Key, class T>
-	class BetweenFactor: public NonlinearFactor2<Config, Key, T, Key, T> {
+	template<class Config, class Key1, class T, class Key2 = Key1>
+	class BetweenFactor: public NonlinearFactor2<Config, Key1, T, Key2, T> {
 
 	private:
 
-		typedef NonlinearFactor2<Config, Key, T, Key, T> Base;
+		typedef NonlinearFactor2<Config, Key1, T, Key2, T> Base;
 
 		T measured_; /** The measurement */
 
@@ -32,7 +32,7 @@ namespace gtsam {
 		typedef typename boost::shared_ptr<BetweenFactor> shared_ptr;
 
 		/** Constructor */
-		BetweenFactor(const Key& key1, const Key& key2, const T& measured,
+		BetweenFactor(const Key1& key1, const Key2& key2, const T& measured,
 				const SharedGaussian& model) :
 			Base(model, key1, key2), measured_(measured) {
 		}
@@ -47,8 +47,8 @@ namespace gtsam {
 
 		/** equals */
 		bool equals(const NonlinearFactor<Config>& expected, double tol) const {
-			const BetweenFactor<Config, Key, T> *e =
-					dynamic_cast<const BetweenFactor<Config, Key, T>*> (&expected);
+			const BetweenFactor<Config, Key1, T, Key2> *e =
+					dynamic_cast<const BetweenFactor<Config, Key1, T>*> (&expected);
 			return e != NULL && Base::equals(expected) && this->measured_.equals(
 					e->measured_, tol);
 		}
