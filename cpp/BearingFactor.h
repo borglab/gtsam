@@ -13,37 +13,11 @@
 namespace gtsam {
 
 	/**
-	 * Calculate bearing to a landmark
-	 * @param pose 2D pose of robot
-	 * @param point 2D location of landmark
-	 * @return 2D rotation \in SO(2)
-	 */
-	Rot2 bearing(const Pose2& pose, const Point2& point) {
-		Point2 d = transform_to(pose, point);
-		return relativeBearing(d);
-	}
-
-	/**
-	 * Calculate bearing and optional derivative(s)
-	 */
-	Rot2 bearing(const Pose2& pose, const Point2& point,
-			boost::optional<Matrix&> H1, boost::optional<Matrix&> H2) {
-		if (!H1 && !H2) return bearing(pose, point);
-		Point2 d = transform_to(pose, point);
-		Matrix D_result_d;
-		Rot2 result = relativeBearing(d, D_result_d);
-		if (H1) *H1 = D_result_d * Dtransform_to1(pose, point);
-		if (H2) *H2 = D_result_d * Dtransform_to2(pose, point);
-		return result;
-	}
-
-	/**
-	 * Non-linear factor for a constraint derived from a 2D measurement,
-	 * i.e. the main building block for visual SLAM.
+	 * Binary factor for a bearing measurement
 	 */
 	template<class Config, class PoseKey, class PointKey>
 	class BearingFactor: public NonlinearFactor2<Config, PoseKey, Pose2,
-			PointKey, Point2> {
+	PointKey, Point2> {
 	private:
 
 		Rot2 z_; /** measurement */
@@ -53,9 +27,9 @@ namespace gtsam {
 	public:
 
 		BearingFactor(); /* Default constructor */
-		BearingFactor(const Rot2& z, double sigma, const PoseKey& i,
-				const PointKey& j) :
-			Base(sigma, i, j), z_(z) {
+		BearingFactor(const PoseKey& i, const PointKey& j, const Rot2& z,
+				const SharedGaussian& model) :
+					Base(model, i, j), z_(z) {
 		}
 
 		/** h(x)-z -> between(z,h(x)) for Rot2 manifold */
@@ -63,6 +37,11 @@ namespace gtsam {
 				boost::optional<Matrix&> H1, boost::optional<Matrix&> H2) const {
 			Rot2 hx = bearing(pose, point, H1, H2);
 			return logmap(between(z_, hx));
+		}
+
+		/** return the measured */
+		inline const Rot2 measured() const {
+			return z_;
 		}
 	}; // BearingFactor
 
