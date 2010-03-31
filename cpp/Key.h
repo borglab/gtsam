@@ -55,6 +55,7 @@ namespace gtsam {
 
 		bool operator< (const TypedSymbol& compare) const { return j_<compare.j_;}
 		bool operator== (const TypedSymbol& compare) const { return j_==compare.j_;}
+		bool operator!= (const TypedSymbol& compare) const { return j_!=compare.j_;}
 		int compare(const TypedSymbol& compare) const {return j_-compare.j_;}
 
 		// Testable Requirements
