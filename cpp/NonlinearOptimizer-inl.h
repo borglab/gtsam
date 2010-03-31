@@ -154,7 +154,7 @@ namespace gtsam {
 
 		// create new optimization state with more adventurous lambda
 		NonlinearOptimizer next(graph_, newConfig, solver_, lambda_ / factor);
-		cout << "next error = " << next.error_ << endl;
+		if (verbosity >= TRYLAMBDA) cout << "next error = " << next.error_ << endl;
 
 		if(lambdaMode >= CAUTIOUS) {
 			throw runtime_error("CAUTIOUS mode not working yet, please use BOUNDED.");
@@ -219,7 +219,7 @@ namespace gtsam {
 			linear->print("linear");
 
 		// try lambda steps with successively larger lambda until we achieve descent
-		cout << "Trying Lambda for the first time" << endl;
+		if (verbosity >= LAMBDA) cout << "Trying Lambda for the first time" << endl;
 		return try_lambda(*linear, verbosity, lambdaFactor, lambdaMode);
 	}
 
