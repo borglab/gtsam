@@ -6,8 +6,7 @@
 
 #pragma once
 
-#include "BearingFactor.h"
-#include "RangeFactor.h"
+#include "BearingRangeFactor.h"
 #include "TupleConfig.h"
 #include "NonlinearEquality.h"
 #include "PriorFactor.h"
@@ -34,6 +33,7 @@ namespace gtsam {
 		typedef BetweenFactor<Config, PoseKey, Pose2> Odometry;
 		typedef BearingFactor<Config, PoseKey, PointKey> Bearing;
 		typedef RangeFactor<Config, PoseKey, PointKey> Range;
+		typedef BearingRangeFactor<Config, PoseKey, PointKey> BearingRange;
 
 		// Graph
 		struct Graph: public NonlinearFactorGraph<Config> {

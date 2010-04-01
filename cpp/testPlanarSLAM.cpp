@@ -7,6 +7,7 @@
 #include <CppUnitLite/TestHarness.h>
 
 #include "planarSLAM.h"
+#include "BearingRangeFactor.h"
 
 using namespace std;
 using namespace gtsam;
@@ -17,6 +18,7 @@ static Point2 l1(1, 0), l2(1, 1), l3(2, 2), l4(1, 3);
 
 SharedGaussian
 	sigma(noiseModel::Isotropic::Sigma(1,0.1)),
+	sigma2(noiseModel::Isotropic::Sigma(2,0.1)),
 	I3(noiseModel::Unit::Create(3));
 
 /* ************************************************************************* */
@@ -51,6 +53,24 @@ TEST( planarSLAM, RangeFactor )
 	// Check error
 	Vector actual = factor.unwhitenedError(c);
 	CHECK(assert_equal(Vector_(1,0.22),actual));
+}
+
+/* ************************************************************************* */
+TEST( planarSLAM, BearingRangeFactor )
+{
+	// Create factor
+	Rot2 r = Rot2::fromAngle(M_PI_4 + 0.1); // h(x) - z = -0.1
+	double b(sqrt(2) - 0.22); // h(x) - z = 0.22
+	planarSLAM::BearingRange factor(2, 3, make_pair(r,b), sigma2);
+
+	// create config
+	planarSLAM::Config c;
+	c.insert(2, x2);
+	c.insert(3, l3);
+
+	// Check error
+	Vector actual = factor.unwhitenedError(c);
+	CHECK(assert_equal(Vector_(2,-0.1, 0.22),actual));
 }
 
 /* ************************************************************************* */

@@ -212,7 +212,7 @@ testPose2SLAM_SOURCES  = testPose2SLAM.cpp
 testPose2SLAM_LDADD    = libgtsam.la
 
 # 2D SLAM using Bearing and Range
-headers += BearingFactor.h RangeFactor.h
+headers += BearingFactor.h RangeFactor.h BearingRangeFactor.h
 sources += planarSLAM.cpp
 check_PROGRAMS += testPlanarSLAM
 testPlanarSLAM_SOURCES = testPlanarSLAM.cpp
