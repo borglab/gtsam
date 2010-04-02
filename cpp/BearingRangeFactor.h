@@ -40,12 +40,15 @@ namespace gtsam {
 		/** h(x)-z -> between(z,h(x)) for Rot2 manifold */
 		Vector evaluateError(const Pose2& pose, const Point2& point,
 				boost::optional<Matrix&> H1, boost::optional<Matrix&> H2) const {
-			boost::optional<Matrix&> H11 = H1, H21 = H1;
-			boost::optional<Matrix&> H12 = H2, H22 = H2;
-			Vector e1 = bearing_.evaluateError(pose, point, H11, H12);
-			Vector e2 =   range_.evaluateError(pose, point, H21, H21);
-			if (H1) *H1 = stack(2, &(*H11), &(*H21));
-			if (H2) *H2 = stack(2, &(*H12), &(*H22));
+			Matrix H11, H21, H12, H22;
+			boost::optional<Matrix&> H11_ = H1 ? boost::optional<Matrix&>(H11) : boost::optional<Matrix&>();
+			boost::optional<Matrix&> H21_ = H1 ? boost::optional<Matrix&>(H21) : boost::optional<Matrix&>();
+			boost::optional<Matrix&> H12_ = H2 ? boost::optional<Matrix&>(H12) : boost::optional<Matrix&>();
+			boost::optional<Matrix&> H22_ = H2 ? boost::optional<Matrix&>(H22) : boost::optional<Matrix&>();
+			Vector e1 = bearing_.evaluateError(pose, point, H11_, H12_);
+			Vector e2 =   range_.evaluateError(pose, point, H21_, H22_);
+			if (H1) *H1 = stack_matrices(H11, H21);
+			if (H2) *H2 = stack_matrices(H12, H22);
 			return concatVectors(2, &e1, &e2);
 		}
 
@@ -53,6 +56,13 @@ namespace gtsam {
 		inline const std::pair<Rot2, double> measured() const {
 			return concatVectors(2, bearing_.measured(), range_.measured());
 		}
+
+		/** return the bearing factor */
+		const BearingFactor<Config, PoseKey, PointKey>& bearing() const { return bearing_; }
+
+		/** return the range factor */
+		const RangeFactor<Config, PoseKey, PointKey>& range() const { return range_; }
+
 	}; // BearingRangeFactor
 
 } // namespace gtsam
