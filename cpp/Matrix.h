@@ -287,9 +287,6 @@ Vector backSubstituteLower(const Matrix& L, const Vector& d, bool unit=false);
  */
 Matrix stack(size_t nrMatrices, ...);
 
-/** a shortcut to prevent the name confliction with STL stack */
-Matrix stack_matrices(const Matrix& A, const Matrix& B);
-
 /**
  * create a matrix by concatenating
  * Given a set of matrices: A1, A2, A3...

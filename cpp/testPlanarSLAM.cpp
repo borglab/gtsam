@@ -61,7 +61,7 @@ TEST( planarSLAM, BearingRangeFactor )
 	// Create factor
 	Rot2 r = Rot2::fromAngle(M_PI_4 + 0.1); // h(x) - z = -0.1
 	double b(sqrt(2) - 0.22); // h(x) - z = 0.22
-	planarSLAM::BearingRange factor(2, 3, make_pair(r,b), sigma2);
+	planarSLAM::BearingRange factor(2, 3, r, b, sigma2);
 
 	// create config
 	planarSLAM::Config c;

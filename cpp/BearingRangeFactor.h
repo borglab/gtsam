@@ -21,20 +21,18 @@ namespace gtsam {
 	PointKey, Point2> {
 	private:
 
-		// the bearing factor
-		BearingFactor<Config, PoseKey, PointKey> bearing_;
-
-		// the range factor
-		RangeFactor<Config, PoseKey, PointKey> range_;
+		// the measurement
+		Rot2 bearing_;
+		double range_;
 
 		typedef NonlinearFactor2<Config, PoseKey, Pose2, PointKey, Point2> Base;
 
 	public:
 
 		BearingRangeFactor(); /* Default constructor */
-		BearingRangeFactor(const PoseKey& i, const PointKey& j, const std::pair<Rot2, double>& z,
+		BearingRangeFactor(const PoseKey& i, const PointKey& j, const Rot2& bearing, const double range,
 				const SharedGaussian& model) :
-					Base(model, i, j), bearing_(i, j, z.first, model), range_(i, j, z.second, model) {
+					Base(model, i, j), bearing_(bearing), range_(range) {
 		}
 
 		/** h(x)-z -> between(z,h(x)) for Rot2 manifold */
@@ -45,24 +43,22 @@ namespace gtsam {
 			boost::optional<Matrix&> H21_ = H1 ? boost::optional<Matrix&>(H21) : boost::optional<Matrix&>();
 			boost::optional<Matrix&> H12_ = H2 ? boost::optional<Matrix&>(H12) : boost::optional<Matrix&>();
 			boost::optional<Matrix&> H22_ = H2 ? boost::optional<Matrix&>(H22) : boost::optional<Matrix&>();
-			Vector e1 = bearing_.evaluateError(pose, point, H11_, H12_);
-			Vector e2 =   range_.evaluateError(pose, point, H21_, H22_);
-			if (H1) *H1 = stack_matrices(H11, H21);
-			if (H2) *H2 = stack_matrices(H12, H22);
+
+			Rot2 y1 = gtsam::bearing(pose, point, H11_, H12_);
+			Vector e1 = logmap(between(bearing_, y1));
+
+			double y2 = gtsam::range(pose, point, H21_, H22_);
+			Vector e2 = Vector_(1, y2 - range_);
+
+			if (H1) *H1 = gtsam::stack(2, &H11, &H21);
+			if (H2) *H2 = gtsam::stack(2, &H12, &H22);
 			return concatVectors(2, &e1, &e2);
 		}
 
 		/** return the measured */
 		inline const std::pair<Rot2, double> measured() const {
-			return concatVectors(2, bearing_.measured(), range_.measured());
+			return std::make_pair(bearing_, range_);
 		}
-
-		/** return the bearing factor */
-		const BearingFactor<Config, PoseKey, PointKey>& bearing() const { return bearing_; }
-
-		/** return the range factor */
-		const RangeFactor<Config, PoseKey, PointKey>& range() const { return range_; }
-
 	}; // BearingRangeFactor
 
 } // namespace gtsam

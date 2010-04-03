@@ -97,6 +97,11 @@ namespace gtsam {
 			return !(indices_.find(key)==indices_.end());
 		}
 
+		/** check whether a variable is a singleton, i.e. it only involve*/
+
+		/** remove singleton variables and the related factors */
+		std::pair<FactorGraph<Factor>, std::set<Symbol> > removeSingletons();
+
 		/**
 		 * Compute colamd ordering, including I/O and shared pointer version
 		 */

@@ -135,6 +135,41 @@ Ordering FactorGraph<Factor>::keys() const {
 }
 
 /* ************************************************************************* */
+template<class Factor>
+std::pair<FactorGraph<Factor>, set<Symbol> > FactorGraph<Factor>::removeSingletons() {
+	FactorGraph<Factor> singletonGraph;
+	set<Symbol> singletons;
+
+	while(true) {
+		// find all the singleton variables
+		Ordering new_singletons;
+		Symbol key;
+		list<int> indices;
+		BOOST_FOREACH(boost::tie(key, indices), indices_) {
+			// find out the number of factors associated with the current key
+			int numValidFactors = 0;
+			BOOST_FOREACH(const int& i, indices)
+				if (factors_[i]!=NULL) numValidFactors++;
+
+			if (numValidFactors == 1) {
+				new_singletons.push_back(key);
+				BOOST_FOREACH(const int& i, indices)
+					if (factors_[i]!=NULL) singletonGraph.push_back(factors_[i]);
+			}
+		}
+		singletons.insert(new_singletons.begin(), new_singletons.end());
+
+		BOOST_FOREACH(const Symbol& singleton, new_singletons)
+			findAndRemoveFactors(singleton);
+
+		// exit when there are no more singletons
+		if (new_singletons.empty()) break;
+	}
+
+	return make_pair(singletonGraph, singletons);
+}
+
+/* ************************************************************************* */
 /**
  * Call colamd given a column-major symbolic matrix A
  * @param n_col colamd arg 1: number of rows in A
@@ -248,6 +283,9 @@ FactorGraph<Factor>::findAndRemoveFactors(const Symbol& key) {
 		found.push_back(fi);     // add to found
 		fi.reset();              // set factor to NULL == remove(i)
 	}
+
+	indices_.erase(key);
+
 	return found;
 }
 

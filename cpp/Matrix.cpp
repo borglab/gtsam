@@ -743,11 +743,6 @@ Matrix stack(size_t nrMatrices, ...)
 }
 
 /* ************************************************************************* */
-Matrix stack_matrices(const Matrix& A, const Matrix& B) {
-	return stack(2, &A, &B);
-}
-
-/* ************************************************************************* */
 Matrix collect(const std::vector<const Matrix *>& matrices, size_t m, size_t n)
 {
 	// if we have known and constant dimensions, use them
