@@ -34,15 +34,24 @@ namespace gtsam {
 		Pose2 prior(const Pose2& x, boost::optional<Matrix&> H = boost::none);
 
 		/**
+		 * odometry between two poses, and optional derivative version
+		 */
+		inline Pose2 odo(const Pose2& x1, const Pose2& x2) {
+			return between(x1, x2);
+		}
+		Pose2 odo(const Pose2& x1, const Pose2& x2, boost::optional<Matrix&> H1 =
+				boost::none, boost::optional<Matrix&> H2 = boost::none);
+
+		/**
 		 * Unary factor encoding a soft prior on a vector
 		 */
 		template<class Cfg = Config, class Key = PoseKey>
-		struct GenericPosePrior: public NonlinearFactor1<Cfg, Key, Point2> {
+		struct GenericPosePrior: public NonlinearFactor1<Cfg, Key, Pose2> {
 
 			Pose2 z_;
 
 			GenericPosePrior(const Pose2& z, const SharedGaussian& model, const Key& key) :
-				NonlinearFactor1<Cfg, Key, Point2> (model, key), z_(z) {
+				NonlinearFactor1<Cfg, Key, Pose2> (model, key), z_(z) {
 			}
 
 			Vector evaluateError(const Pose2& x, boost::optional<Matrix&> H =
@@ -51,6 +60,28 @@ namespace gtsam {
 			}
 
 		};
+
+		/**
+		 * Binary factor simulating "odometry" between two Vectors
+		 */
+		template<class Cfg = Config, class Key = PoseKey>
+		struct GenericOdometry: public NonlinearFactor2<Cfg, Key, Pose2, Key,
+				Pose2> {
+			Pose2 z_;
+
+			GenericOdometry(const Pose2& z, const SharedGaussian& model,
+					const Key& i1, const Key& i2) :
+				z_(z), NonlinearFactor2<Cfg, Key, Pose2, Key, Pose2> (model, i1, i2) {
+			}
+
+			Vector evaluateError(const Pose2& x1, const Pose2& x2, boost::optional<
+					Matrix&> H1 = boost::none, boost::optional<Matrix&> H2 = boost::none) const {
+				return logmap(z_, odo(x1, x2, H1, H2));
+			}
+
+		};
+
+		typedef GenericOdometry<Config, PoseKey> Odometry;
 
 	} // namespace simulated2DOriented
 } // namespace gtsam

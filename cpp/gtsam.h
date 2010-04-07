@@ -209,6 +209,13 @@ class Simulated2DOdometry {
   double error(const Simulated2DConfig& c) const;
 };
 
+class Simulated2DOrientedOdometry {
+	Simulated2DOrientedOdometry(Pose2& mu, const SharedDiagonal& model, int i1, int i2);
+  void print(string s) const;
+	GaussianFactor* linearize(const Simulated2DOrientedConfig& config) const;
+  double error(const Simulated2DOrientedConfig& c) const;
+};
+
 class Simulated2DMeasurement {
   Simulated2DMeasurement(Point2& mu, const SharedDiagonal& model, int i, int j);
   void print(string s) const;

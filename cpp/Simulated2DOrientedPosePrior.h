@@ -1,8 +1,8 @@
 /*
- * Simulated2DPosePrior.h
+ * Simulated2DOrientedPosePrior.h
  *
  * Re-created on Feb 22, 2010 for compatibility with MATLAB
- * Author: Frank Dellaert
+ * Author: Kai Ni
  */
 
 #pragma once
