@@ -12,6 +12,8 @@
 #include <map>
 #include <set>
 
+#include <boost/serialization/map.hpp>
+
 #include "Vector.h"
 #include "Testable.h"
 #include "VectorConfig.h"
@@ -114,6 +116,14 @@ namespace gtsam {
       values_.clear();
     }
 
+  private:
+  	/** Serialization function */
+  	friend class boost::serialization::access;
+  	template<class Archive>
+  	void serialize(Archive & ar, const unsigned int version) {
+  		ar & BOOST_SERIALIZATION_NVP(values_);
+  	}
+
   };
 
   /** Dimensionality of the tangent space */
@@ -131,5 +141,6 @@ namespace gtsam {
   /** Get a delta config about a linearization point c0 */
   template<class J, class T>
   VectorConfig logmap(const LieConfig<J,T>& c0, const LieConfig<J,T>& cp);
+
 }
 

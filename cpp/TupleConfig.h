@@ -480,6 +480,14 @@ namespace gtsam {
     bool exists(const J1& j) const { return first_.exists(j); }
     bool exists(const J2& j) const { return second_.exists(j); }
 
+  private:
+  	/** Serialization function */
+  	friend class boost::serialization::access;
+  	template<class Archive>
+  	void serialize(Archive & ar, const unsigned int version) {
+  		ar & BOOST_SERIALIZATION_NVP(first_);
+  		ar & BOOST_SERIALIZATION_NVP(second_);
+  	}
 
   };
 
