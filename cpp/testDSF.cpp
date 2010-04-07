@@ -13,7 +13,7 @@ using namespace boost::assign;
 #include <CppUnitLite/TestHarness.h>
 
 #include "DSF.h"
-#include "key.h"
+#include "Key.h"
 
 using namespace std;
 using namespace gtsam;
