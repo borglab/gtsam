@@ -170,11 +170,29 @@ class Simulated2DConfig {
 	Point2* point(int j);
 };
 
+class Simulated2DOrientedConfig {
+	Simulated2DOrientedConfig();
+  void print(string s) const;
+	void insertPose(int i, const Pose2& p);
+	void insertPoint(int j, const Point2& p);
+	int nrPoses() const;
+	int nrPoints() const;
+	Pose2* pose(int i);
+	Point2* point(int j);
+};
+
 class Simulated2DPosePrior {
 	Simulated2DPosePrior(Point2& mu, const SharedDiagonal& model, int i);
   void print(string s) const;
 	GaussianFactor* linearize(const Simulated2DConfig& config) const;
   double error(const Simulated2DConfig& c) const;
+};
+
+class Simulated2DOrientedPosePrior {
+	Simulated2DOrientedPosePrior(Pose2& mu, const SharedDiagonal& model, int i);
+  void print(string s) const;
+	GaussianFactor* linearize(const Simulated2DOrientedConfig& config) const;
+  double error(const Simulated2DOrientedConfig& c) const;
 };
 
 class Simulated2DPointPrior {
