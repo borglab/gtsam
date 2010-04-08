@@ -28,6 +28,9 @@ namespace gtsam {
 		/** Copy constructor */
 		Ordering(const std::list<Symbol>& keys_in) : std::list<Symbol>(keys_in) {}
 
+		/** whether a key exists */
+		bool exists(const Symbol& key) { return std::find(begin(), end(), key) != end(); }
+
 		// Testable
 		void print(const std::string& s = "Ordering") const;
 		bool equals(const Ordering &ord, double tol=0) const;
