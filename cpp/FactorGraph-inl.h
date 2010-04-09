@@ -407,8 +407,7 @@ std::pair<FactorGraph<Factor>, FactorGraph<Factor> > FactorGraph<Factor>::splitM
 	DSF<Symbol> dsf(keys());
 
 	//	while G is nonempty and T is not yet spanning
-	size_t m = nrFactors();
-	for (size_t i=0;i<m;i++) {
+	for (size_t i=0;i<size();i++) {
 		const sharedFactor& f = factors_[i];
 
 		// retrieve the labels of all the keys

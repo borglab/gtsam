@@ -92,6 +92,9 @@ namespace gtsam {
 		/** return keys in some random order */
 		Ordering keys() const;
 
+		/** return the number of the keys */
+		inline size_t nrKeys() const {return indices_.size(); };
+
 		/** Check whether a factor with this variable exists */
 		bool involves(const Symbol& key) const {
 			return !(indices_.find(key)==indices_.end());

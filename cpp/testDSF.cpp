@@ -182,6 +182,20 @@ TEST(DSF, partition3) {
 }
 
 /* ************************************************************************* */
+TEST(DSF, set) {
+	DSFInt dsf;
+	dsf = dsf.makeSet(5);
+	dsf = dsf.makeSet(6);
+	dsf = dsf.makeSet(7);
+	dsf = dsf.makeUnion(5,6);
+	set<int> set = dsf.set(5);
+	LONGS_EQUAL(2, set.size());
+
+	std::set<int> expected; expected += 5, 6;
+	CHECK(expected == set);
+}
+
+/* ************************************************************************* */
 int func(const int& a) { return a + 10; }
 TEST(DSF, map) {
 	DSFInt dsf;

@@ -105,6 +105,14 @@ namespace gtsam {
 			return partitions;
 		}
 
+		// get the nodes in the given tree
+		Set set(const Label& label) {
+			Set set;
+			BOOST_FOREACH(const KeyLabel& pair, (Tree)*this)
+				if (pair.second==label) set.insert(pair.first);
+			return set;
+		}
+
 		/** equality */
 		bool operator==(const Self& t) const { return (Tree)*this == (Tree)t;	}
 
