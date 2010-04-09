@@ -67,6 +67,14 @@ namespace gtsam {
 		  second_.insert(config.second_);
 	  }
 
+	  // update function for whole configs
+	  template<class Cfg1, class Cfg2>
+	  void update(const TupleConfig<Cfg1, Cfg2>& config) { second_.update(config); }
+	  void update(const TupleConfig<Config1, Config2>& config) {
+	  	first_.update(config.first_);
+	  	second_.update(config.second_);
+	  }
+
 	  // insert a subconfig
 	  template<class Cfg>
 	  void insertSub(const Cfg& config) { second_.insertSub(config); }
@@ -81,6 +89,11 @@ namespace gtsam {
 	  template<class Key>
 	  bool exists(const Key& j) const { return second_.exists(j); }
 	  bool exists(const Key1& j) const { return first_.exists(j); }
+
+	  // a variant of exists
+	  template<class Key>
+	  boost::optional<typename Key::Value_t> exists_(const Key& j)  const { return second_.exists_(j); }
+	  boost::optional<Value1>                exists_(const Key1& j) const { return first_.exists_(j); }
 
 	  // access operator
 	  template<class Key>
@@ -156,6 +169,9 @@ namespace gtsam {
 	  // insert function for whole configs
 	  void insert(const TupleConfigEnd<Config>& config) {first_.insert(config.first_); }
 
+	  // update function for whole configs
+	  void update(const TupleConfigEnd<Config>& config) {first_.update(config.first_); }
+
 	  // insert function for sub configs
 	  void insertSub(const Config& config) {first_.insert(config); }
 
@@ -166,6 +182,8 @@ namespace gtsam {
 	  void erase(const Key1& j) { first_.erase(j); }
 
 	  bool exists(const Key1& j) const { return first_.exists(j); }
+
+	  boost::optional<Value1> exists_(const Key1& j) const { return first_.exists_(j); }
 
 	  const Value1& at(const Key1& j) const { return first_.at(j); }
 
@@ -479,6 +497,8 @@ namespace gtsam {
      */
     bool exists(const J1& j) const { return first_.exists(j); }
     bool exists(const J2& j) const { return second_.exists(j); }
+    boost::optional<X1> exists_(const J1& j) const { return first_.exists_(j); }
+    boost::optional<X2> exists_(const J2& j) const { return second_.exists_(j); }
 
   private:
   	/** Serialization function */

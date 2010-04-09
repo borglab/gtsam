@@ -66,6 +66,12 @@ namespace gtsam {
 	  /** Check if a variable exists */
 	  bool exists(const J& i) const { return values_.find(i)!=values_.end(); }
 
+	  /** Check if a variable exists and return it if so */
+	  boost::optional<T> exists_(const J& i) const {
+	  	const_iterator it = values_.find(i);
+			if (it==values_.end()) return boost::none; else	return it->second;
+	  }
+
     /** The number of variables in this config */
     size_t size() const { return values_.size(); }
 
@@ -90,6 +96,9 @@ namespace gtsam {
 
     /** Add a set of variables */
     void insert(const LieConfig& cfg);
+
+    /** update the current available values without adding new ones */
+    void update(const LieConfig& cfg);
 
     /** Remove a variable from the config */
     void erase(const J& j);

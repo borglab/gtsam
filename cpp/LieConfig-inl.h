@@ -84,6 +84,14 @@ namespace gtsam {
   }
 
   template<class J, class T>
+  void LieConfig<J,T>::update(const LieConfig<J,T>& cfg) {
+	  BOOST_FOREACH(const typename Values::value_type& v, values_) {
+	  	boost::optional<T> t = cfg.exists_(v.first);
+	  	if (t) insert(v.first, *t);
+	  }
+  }
+
+  template<class J, class T>
   std::list<J> LieConfig<J,T>::keys() const {
 	  std::list<J> ret;
 	  BOOST_FOREACH(const typename Values::value_type& v, values_)
