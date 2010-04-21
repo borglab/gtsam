@@ -557,9 +557,6 @@ TEST( GaussianFactorGraph, findAndRemoveFactors_twice )
   CHECK(f1==factors[1]);
   CHECK(f2==factors[2]);
 
-  factors = fg.findAndRemoveFactors("x1");
-  CHECK(factors.size() == 0);
-
   // CHECK if the factors are deleted from the factor graph
   LONGS_EQUAL(1,fg.nrFactors());
   }
