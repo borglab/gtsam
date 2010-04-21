@@ -25,17 +25,6 @@ AC_ARG_ENABLE([debug],
 
 AM_CONDITIONAL([DEBUG], [test x$debug = xtrue])
 
-# search for a blas implementation
-AX_BLAS()
-
-# enable BLAS with general purpose script
-AC_ARG_ENABLE([blas],
-     [  --enable-blas    Enable external BLAS library],
-     [case "${enableval}" in
-       yes) blas=true ;;
-       no)  blas=false ;;
-       *) AC_MSG_ERROR([bad value ${enableval} for --enable-blas]) ;;
-     esac],[blas=false])
 
 AC_CANONICAL_HOST
 # We need to determine what os we are on to determine if we need to do 
@@ -49,6 +38,18 @@ case $host_os in
         ISMAC=false
         ;;
 esac
+
+# search for a blas implementation. Kai: this can not be easily turned off for Mac.
+# AX_BLAS(true) 
+
+# enable BLAS with general purpose script
+AC_ARG_ENABLE([blas],
+     [  --enable-blas    Enable external BLAS library],
+     [case "${enableval}" in
+       yes) blas=true ;;
+       no)  blas=false ;;
+       *) AC_MSG_ERROR([bad value ${enableval} for --enable-blas]) ;;
+     esac],[blas=false])
 
 AM_CONDITIONAL([USE_BLAS_MACOS], [test x$blas = xtrue && test x$ISMAC = xtrue])
 AM_CONDITIONAL([USE_BLAS_LINUX], [test x$blas = xtrue && test x$ISMAC = xfalse])
