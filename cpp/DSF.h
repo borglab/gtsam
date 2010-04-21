@@ -11,6 +11,7 @@
 
 #pragma once
 
+#include <iostream>
 #include <list>
 #include <set>
 #include <map>
@@ -22,7 +23,7 @@ namespace gtsam {
 	class Symbol;
 
 	template <class Key>
-	class DSF : BTree<Key, Key> {
+	class DSF : protected BTree<Key, Key> {
 
 	public:
 		typedef Key Label; // label can be different from key, but for now they are same
@@ -126,7 +127,7 @@ namespace gtsam {
 				std::cout << (std::string)pair.first << " " << (std::string)pair.second << std::endl;
 		}
 
-	private:
+	protected:
 
 		/**
 		 * same as findSet except with path compression: After we have traversed the path to
