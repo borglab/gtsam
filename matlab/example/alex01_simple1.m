@@ -30,32 +30,33 @@ for i=1:maxIt
     % evaluate derivatives in x
     dfx = [2*x1; 2*(x2-2)];
     dcx = [8*x1; 2*x2]; 
+    dL = dfx - lam * dcx;
 
     % update the hessian (BFGS)
     if (i>1)
         Bis = Bi*s;
-        y = dfx - prev_dfx;
+        y = dL - prev_dL;
         Bi = Bi + (y*y')/(y'*s) - (Bis*Bis')/(s'*Bis);
     end
-    prev_dfx = dfx;
+    prev_dL = dL;
     
     % evaluate hessians in x
     ddfx = diag([2, 2]);
     ddcx = diag([8, 2]);
 
     % construct and solve CQP subproblem
-    dL = dfx - lam * dcx;
+    Bgn0 = dfx * dfx';
     Bgn1 = dfx * dfx' - lam * dcx * dcx'; % GN approx 1
     Bgn2 = dL * dL'; % GN approx 2
     Ba = ddfx - lam * ddcx; % analytic hessians
 
-    B = Bi;
+    B = ddfx;
     g = dfx;
     h = -cx;
     [delta lambda] = solveCQP(B, -dcx, -dcx', g, h);
     
     % update 
-    s = 0.2*delta;
+    s = 0.5*delta;
     x = x + s
     lam = lambda
     

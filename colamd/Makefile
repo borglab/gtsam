@@ -6,7 +6,6 @@ all: libcolamd.a
 
 CC=gcc
 CXX=gcc
-CPP=gcc
 CXXFLAGS += -O2
 CXXFLAGS += -fPIC
 
@@ -20,8 +19,8 @@ library = libcolamd.a
 # This should probably be fixed, but will work for 64 bit machines now
 
 $(library): $(objects) 
-	$(CPP) $(CXXFLAGS) -c -o colamd.o colamd.c
-	$(CPP) $(CXXFLAGS) -c -o colamd_global.o colamd_global.c
+	$(CXX) $(CXXFLAGS) -c -o colamd.o colamd.c
+	$(CXX) $(CXXFLAGS) -c -o colamd_global.o colamd_global.c
 	ar crsv $@ $(objects) 
 	ranlib $(library)
 

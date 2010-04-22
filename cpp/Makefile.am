@@ -283,7 +283,7 @@ AM_CXXFLAGS = -I$(boost) -fPIC
 lib_LTLIBRARIES = libgtsam.la
 libgtsam_la_SOURCES = $(sources)
 libgtsam_la_CPPFLAGS = $(AM_CXXFLAGS)
-libgtsam_la_LDFLAGS = -version-info $(version) -L../colamd -lcolamd #-lboost_serialization-mt
+libgtsam_la_LDFLAGS = -version-info $(version) ../ldl/libldl.a -L../colamd -lcolamd # -lboost_serialization-mt
 
 # enable debug if --enable-debug is set in configure
 if DEBUG
@@ -294,7 +294,7 @@ endif
 include_HEADERS = $(headers)
 
 AM_CXXFLAGS += -I.. 
-AM_LDFLAGS = -L../CppUnitLite -lCppUnitLite $(BOOST_LDFLAGS) $(boost_serialization) #-L. -lgtsam
+AM_LDFLAGS = -L../CppUnitLite -lCppUnitLite ../ldl/libldl.a $(BOOST_LDFLAGS) $(boost_serialization)
 
 # adding cblas implementation - split into a default linux version using the 
 # autotools script, and a mac version that is hardcoded 

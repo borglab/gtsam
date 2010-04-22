@@ -7,6 +7,7 @@
 
 #include <iostream>
 #include <CppUnitLite/TestHarness.h>
+//#include <ldl/ldl.h>
 #include <boost/tuple/tuple.hpp>
 #include <boost/foreach.hpp>
 #include <boost/numeric/ublas/matrix_proxy.hpp>
@@ -933,6 +934,35 @@ TEST( matrix, transposeMultiplyAdd )
 
 	transposeMultiplyAdd(1, A, e, x);
 	CHECK(assert_equal(expected, x));
+}
+
+/* ************************************************************************* */
+TEST( matrix, LDL_factorization ) {
+
+	// run demo inside Matrix.cpp code
+
+	// create a matrix (from ldlsimple.c example)
+	Matrix A = Matrix_(10, 10,
+			1.7,    0.0,   0.0,   0.0,   0.0,   0.0,   0.0,   0.0,  .13,   0.0,
+			0.0,   1.,    0.0,   0.0,  .02,    0.0,   0.0,   0.0,   0.0,  .01,
+			0.0,   0.0,  1.5,    0.0,   0.0,   0.0,   0.0,   0.0,   0.0,  0.0,
+			0.0,   0.0,   0.0,  1.1,    0.0,   0.0,   0.0,   0.0,   0.0,  0.0,
+			0.0,   .02,    0.0,   0.0,  2.6,    0.0,  .16,   .09,   .52,   .53,
+			0.0,   0.0,   0.0,   0.0,   0.0,  1.2,    0.0,   0.0,   0.0,  0.0,
+			0.0,   0.0,   0.0,   0.0,  .16,    0.0,  1.3,    0.0,   0.0,  .56,
+			0.0,   0.0,   0.0,   0.0,  .09,    0.0,   0.0,  1.6,   .11,   0.0,
+			.13,    0.0,   0.0,   0.0,  .52,    0.0,   0.0,  .11,   1.4,   0.0,
+			0.0,    .01,    0.0,   0.0,  .53,    0.0,  .56,    0.0,   0.0,  3.1);
+	Vector b = Vector_(10, .287, .22, .45, .44, 2.486, .72, 1.55, 1.424, 1.621, 3.759);
+
+	// perform LDL solving
+	Vector actual = solve_ldl(A, b);
+
+	// check solution
+    Vector expected = Vector_(10, .1, .2, .3, .4, .5, .6, .7, .8, .9, 1.0);
+
+    CHECK(assert_equal(expected, actual));
+
 }
 
 /* ************************************************************************* */

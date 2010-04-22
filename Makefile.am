@@ -3,7 +3,7 @@ ACLOCAL_AMFLAGS = -I m4
 
 # make automake install some standard but missing files
 AUTOMAKE_OPTIONS = foreign
-SUBDIRS = colamd CppUnitLite cpp wrap
+SUBDIRS = colamd CppUnitLite ldl cpp wrap
 
 # install the matlab toolbox
 install-exec-hook:
@@ -15,7 +15,11 @@ install-exec-hook:
 	install -d $(prefix)/include/colamd && \
 	cp -f colamd/colamd.h $(prefix)/include/colamd/ && \
 	cp -f colamd/UFconfig.h $(prefix)/include/colamd/ && \
-	cp -f colamd/libcolamd.a $(prefix)/lib/
+	cp -f colamd/libcolamd.a $(prefix)/lib/ && \
+	install -d $(prefix)/include/ldl && \
+	cp -f ldl/ldl.h $(prefix)/include/ldl/ && \
+	cp -f ldl/UFconfig.h $(prefix)/include/ldl/ && \
+	cp -f ldl/libldl.a $(prefix)/lib/
 
 dist-hook:
 	mkdir $(distdir)/CppUnitLite
@@ -27,5 +31,10 @@ dist-hook:
 	cp -p $(srcdir)/colamd/*.h $(distdir)/colamd
 	cp -p $(srcdir)/colamd/*.c $(distdir)/colamd
 	cp -p $(srcdir)/colamd/*.cpp $(distdir)/colamd
+	mkdir $(distdir)/ldl
+	cp -p $(srcdir)/ldl/Makefile $(distdir)/ldl
+	cp -p $(srcdir)/ldl/*.h $(distdir)/ldl
+	cp -p $(srcdir)/ldl/*.c $(distdir)/ldl
+	cp -p $(srcdir)/ldl/*.cpp $(distdir)/ldl
 	mkdir $(distdir)/matlab
 	cp -p $(srcdir)/matlab/*.m $(distdir)/matlab

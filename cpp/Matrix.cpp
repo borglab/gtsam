@@ -28,6 +28,8 @@
 #include <boost/numeric/ublas/vector_proxy.hpp>
 #include <boost/tuple/tuple.hpp>
 
+#include <ldl/ldl.h>
+
 #include "Matrix.h"
 #include "Vector.h"
 #include "svdcmp.h"
@@ -889,6 +891,60 @@ Matrix LLt(const Matrix& A)
 Matrix RtR(const Matrix &A)
 {
 	return trans(LLt(A));
+}
+
+/* ************************************************************************* */
+Vector solve_ldl(const Matrix& M, const Vector& rhs) {
+	// execute test in here
+
+	// create a matrix (from ldlsimple.c example)
+	const int N = 10, // size of the matrix
+		   ANZ = 19, // # of nonzeros on diagonal and upper triangular part of A
+		   LNZ = 13; // # of nonzeros below the diagonal of L
+	Matrix A = Matrix_(N, N,
+		1.7,    0.0,   0.0,   0.0,   0.0,   0.0,   0.0,   0.0,  .13,   0.0,
+		 0.0,   1.,    0.0,   0.0,  .02,    0.0,   0.0,   0.0,   0.0,  .01,
+		 0.0,   0.0,  1.5,    0.0,   0.0,   0.0,   0.0,   0.0,   0.0,  0.0,
+		 0.0,   0.0,   0.0,  1.1,    0.0,   0.0,   0.0,   0.0,   0.0,  0.0,
+		 0.0,   .02,    0.0,   0.0,  2.6,    0.0,  .16,   .09,   .52,   .53,
+		 0.0,   0.0,   0.0,   0.0,   0.0,  1.2,    0.0,   0.0,   0.0,  0.0,
+		 0.0,   0.0,   0.0,   0.0,  .16,    0.0,  1.3,    0.0,   0.0,  .56,
+		 0.0,   0.0,   0.0,   0.0,  .09,    0.0,   0.0,  1.6,   .11,   0.0,
+		.13,    0.0,   0.0,   0.0,  .52,    0.0,   0.0,  .11,   1.4,   0.0,
+		 0.0,    .01,    0.0,   0.0,  .53,    0.0,  .56,    0.0,   0.0,  3.1);
+
+	// convert to the right format
+
+    /* only the upper triangular part of A is required */
+    int    Ap [N+1] = {0, 1, 2, 3, 4,   6, 7,   9,   11,      15,     ANZ},
+           Ai [ANZ] = {0, 1, 2, 3, 1,4, 5, 4,6, 4,7, 0,4,7,8, 1,4,6,9 } ;
+    double Ax [ANZ] = {1.7, 1., 1.5, 1.1, .02,2.6, 1.2, .16,1.3, .09,1.6,
+		     .13,.52,.11,1.4, .01,.53,.56,3.1},
+           b [N] = {.287, .22, .45, .44, 2.486, .72, 1.55, 1.424, 1.621, 3.759};
+    double Lx [LNZ], D [N], Y [N] ;
+    int Li [LNZ], Lp [N+1], Parent [N], Lnz [N], Flag [N], Pattern [N], d, i ;
+
+    /* factorize A into LDL' (P and Pinv not used) */
+    LDL_symbolic (N, Ap, Ai, Lp, Parent, Lnz, Flag, NULL, NULL);
+
+    cout << "Nonzeros in L, excluding diagonal: " << Lp [N] << endl;
+    d = LDL_numeric (N, Ap, Ai, Ax, Lp, Parent, Lnz, Li, Lx, D, Y, Pattern,
+    		Flag, NULL, NULL) ;
+
+    if (d == N)
+    {
+    	/* solve Ax=b, overwriting b with the solution x */
+    	LDL_lsolve (N, b, Lp, Li, Lx) ;
+    	LDL_dsolve (N, b, D) ;
+    	LDL_ltsolve (N, b, Lp, Li, Lx) ;
+    	for (i = 0 ; i < N ; i++)
+    		cout << "x [" << i << "] = " << b[i] << endl;
+    }
+
+    // copy solution out
+    Vector result = Vector_(N, b);
+
+    return result;
 }
 
 /*
