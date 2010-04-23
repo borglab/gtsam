@@ -1,1 +1,1 @@
-./configure --prefix=$HOME --with-toolbox=$HOME/toolbox/ --with-boost=/opt/local/include/ --enable-blas CXXFLAGS=" -g -O2 -march=core2 -DNDEBUG" --disable-static
+./configure --prefix=$HOME --with-toolbox=$HOME/toolbox/ --with-boost=/opt/local/include/ CXXFLAGS=" -g -O2 -march=core2 -DNDEBUG" --disable-static
