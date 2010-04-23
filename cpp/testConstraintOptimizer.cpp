@@ -5,6 +5,7 @@
  */
 
 #include <iostream>
+#include <limits>
 
 #include <boost/tuple/tuple.hpp>
 #include <boost/optional.hpp>
@@ -12,9 +13,11 @@
 #include <CppUnitLite/TestHarness.h>
 
 #include <ConstraintOptimizer.h>
+#include <smallExample.h>
 
 using namespace std;
 using namespace gtsam;
+using namespace example;
 
 /* ************************************************************************* */
 // Example of a single Constrained QP problem from the matlab testCQP.m file.
@@ -181,12 +184,9 @@ TEST( matrix, SQP_simple_manual_bfgs ) {
 	    }
 	    prev_dfx = dfx;
 
-	    // use bfgs
-		Matrix B = Bi;
-
-		// solve subproblem
+	    // solve subproblem
 		Vector delta, lambda;
-		boost::tie(delta, lambda) = solveCQP(B, -dcx, dfx, -cx);
+		boost::tie(delta, lambda) = solveCQP(Bi, -dcx, dfx, -cx);
 
 		// update
 		step = stepsize * delta;
@@ -202,6 +202,95 @@ TEST( matrix, SQP_simple_manual_bfgs ) {
 	CHECK(assert_equal(expLambda, lam, 1e-4));
 }
 
+/* ************************************************************************* */
+TEST( matrix, SQP_simple_bfgs ) {
+	using namespace sqp_example1;
+
+	// parameters
+	double stepsize = 0.25;
+	size_t maxIt = 50;
+
+	// initial conditions
+	Vector x0 = Vector_(2, 2.0, 4.0),
+		   lam0 = Vector_(1, -0.5);
+
+	// create a BFGSEstimator
+	BFGSEstimator hessian(2);
+
+	// current state
+	Vector x = x0, lam = lam0;
+	Vector step;
+
+	for (size_t i=0; i<maxIt; ++i) {
+
+		// evaluate functions
+		Vector dfx; Matrix dcx;
+		Vector fx = objective(x, dfx);
+		Vector cx = constraint(x, dcx);
+
+		// Just use dfx for the Hessian
+	    if (i>0) {
+	    	hessian.update(dfx, step);
+	    } else {
+	    	hessian.update(dfx);
+	    }
+
+		// solve subproblem
+		Vector delta, lambda;
+		boost::tie(delta, lambda) = solveCQP(hessian.getB(), -dcx, dfx, -cx);
+
+		// update
+		step = stepsize * delta;
+		x = x + step;
+		lam = lambda;
+	}
+
+	// verify
+	Vector expX = Vector_(2, 0.0, 1.0),
+		   expLambda = Vector_(1, -1.0);
+
+	CHECK(assert_equal(expX, x, 1e-4));
+	CHECK(assert_equal(expLambda, lam, 1e-4));
+}
+
+/* ************************************************************************* */
+TEST( matrix, unconstrained_fg ) {
+	// create a graph
+	GaussianFactorGraph fg = createGaussianFactorGraph();
+
+	// parameters
+	size_t maxIt = 5;
+	double stepsize = 0.1;
+
+	// iterate to solve
+	VectorConfig x = createZeroDelta();
+	BFGSEstimator B(x.dim());
+
+	Vector step;
+
+	for (size_t i=0; i<maxIt; ++i) {
+		// find the gradient
+		Vector dfx = fg.gradient(x).vector();
+
+		// update hessian
+	    if (i>0) {
+	    	B.update(dfx, step);
+	    } else {
+	    	B.update(dfx);
+	    }
+
+	    // solve subproblem
+	    Vector delta = solve_ldl(B.getB(), -dfx);
+
+	    // update
+		step = stepsize * delta;
+	    x = x.vectorUpdate(step);
+	}
+
+	// verify
+	VectorConfig expected = createCorrectDelta();
+	CHECK(assert_equal(expected,x));
+}
 
 /* ************************************************************************* */
 int main() { TestResult tr; return TestRegistry::runAllTests(tr); }

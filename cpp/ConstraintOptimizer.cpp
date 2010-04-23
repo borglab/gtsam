@@ -8,6 +8,16 @@
 using namespace std;
 using namespace gtsam;
 
+/* ************************************************************************* */
+void gtsam::BFGSEstimator::update(const Vector& dfx, const boost::optional<Vector&> step) {
+	if (step) {
+		Vector Bis = B_ * *step,
+				y = dfx - prev_dfx_;
+		B_ = B_ + outer_prod(y, y) / inner_prod(y, *step)
+                - outer_prod(Bis, Bis) / inner_prod(*step, Bis);
+	}
+	prev_dfx_ = dfx;
+}
 
 /* ************************************************************************* */
 pair<Vector, Vector> gtsam::solveCQP(const Matrix& B, const Matrix& A,

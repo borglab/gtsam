@@ -6,9 +6,48 @@
 
 #pragma once
 
+#include <boost/optional.hpp>
 #include <Matrix.h>
 
 namespace gtsam {
+
+	/**
+	 * BFGS Hessian estimator
+	 * Maintains an estimate for a hessian matrix using
+	 * only derivatives and the step
+	 */
+	class BFGSEstimator {
+	protected:
+		size_t n_; // dimension of square matrix
+		Matrix B_; // current estimate
+		Vector prev_dfx_; // previous gradient value
+	public:
+
+		/**
+		 * Creates an estimator of a particular dimension
+		 */
+		BFGSEstimator(size_t n) : n_(n), B_(eye(2,2)) {}
+
+		~BFGSEstimator() {}
+
+		/**
+		 * Direct vector interface - useful for small problems
+		 *
+		 * Update will set the previous gradient and update the
+		 * estimate for the Hessian.  When specified without
+		 * the step, this is the initialization phase, and will not
+		 * change the Hessian estimate
+		 * @param df is the gradient of the function
+		 * @param step is the step vector applied at the last iteration
+		 */
+		void update(const Vector& df, const boost::optional<Vector&> step = boost::none);
+
+		// access functions
+		const Matrix& getB() const { return B_; }
+		size_t dim() const { return n_; }
+
+	};
+
 
 	/**
 	 * Basic function that uses LDL factorization to solve a
