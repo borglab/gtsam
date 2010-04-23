@@ -283,7 +283,7 @@ AM_CXXFLAGS = -I$(boost) -fPIC
 lib_LTLIBRARIES = libgtsam.la
 libgtsam_la_SOURCES = $(sources)
 libgtsam_la_CPPFLAGS = $(AM_CXXFLAGS)
-libgtsam_la_LDFLAGS = -version-info $(version) ../ldl/libldl.a -L../colamd -lcolamd # -lboost_serialization-mt
+libgtsam_la_LDFLAGS = -version-info $(version) -L../colamd -lcolamd -L../ldl -lldl # ../ldl/libldl.a -lboost_serialization-mt
 
 # enable debug if --enable-debug is set in configure
 if DEBUG
