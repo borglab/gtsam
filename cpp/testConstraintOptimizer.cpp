@@ -4,9 +4,12 @@
  * @author Alex Cunningham
  */
 
-#include <CppUnitLite/TestHarness.h>
+#include <iostream>
+
 #include <boost/tuple/tuple.hpp>
 #include <boost/optional.hpp>
+
+#include <CppUnitLite/TestHarness.h>
 
 #include <ConstraintOptimizer.h>
 
@@ -105,12 +108,6 @@ namespace sqp_example1 {
 TEST( matrix, SQP_simple_analytic ) {
 	using namespace sqp_example1;
 
-//	 Problem:
-//	  min(x) f(x) = (x2-2)^2 + x1^2
-//	    s.t. c(x) = 4x1^2 + x2^2 - 1 =0
-//	 state is x = [x1 x2]' , with dim(state) = 2
-//	 constraint has dim p = 1
-
 	// parameters
 	double stepsize = 0.25;
 	size_t maxIt = 50;
@@ -150,7 +147,61 @@ TEST( matrix, SQP_simple_analytic ) {
 	CHECK(assert_equal(expX, x, 1e-4));
 	CHECK(assert_equal(expLambda, lam, 1e-4));
 }
-	
+
+/* ************************************************************************* */
+TEST( matrix, SQP_simple_manual_bfgs ) {
+	using namespace sqp_example1;
+
+	// parameters
+	double stepsize = 0.25;
+	size_t maxIt = 50;
+
+	// initial conditions
+	Vector x0 = Vector_(2, 2.0, 4.0),
+		   lam0 = Vector_(1, -0.5);
+
+	// current state
+	Vector x = x0, lam = lam0;
+	Matrix Bi = eye(2,2);
+	Vector step, prev_dfx;
+
+	for (size_t i=0; i<maxIt; ++i) {
+
+		// evaluate functions
+		Vector dfx; Matrix dcx;
+		Vector fx = objective(x, dfx);
+		Vector cx = constraint(x, dcx);
+
+		// Just use dfx for the Hessian
+	    if (i>0) {
+	        Vector Bis = Bi * step,
+	        	   y = dfx - prev_dfx;
+	        Bi = Bi + outer_prod(y, y) / inner_prod(y, step)
+	        		- outer_prod(Bis, Bis) / inner_prod(step, Bis);
+	    }
+	    prev_dfx = dfx;
+
+	    // use bfgs
+		Matrix B = Bi;
+
+		// solve subproblem
+		Vector delta, lambda;
+		boost::tie(delta, lambda) = solveCQP(B, -dcx, dfx, -cx);
+
+		// update
+		step = stepsize * delta;
+		x = x + step;
+		lam = lambda;
+	}
+
+	// verify
+	Vector expX = Vector_(2, 0.0, 1.0),
+		   expLambda = Vector_(1, -1.0);
+
+	CHECK(assert_equal(expX, x, 1e-4));
+	CHECK(assert_equal(expLambda, lam, 1e-4));
+}
+
 
 /* ************************************************************************* */
 int main() { TestResult tr; return TestRegistry::runAllTests(tr); }
