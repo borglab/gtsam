@@ -151,9 +151,13 @@ testNonlinearEquality_SOURCES   = testNonlinearEquality.cpp
 testNonlinearEquality_LDADD     = libgtsam.la
 
 # SQP
-check_PROGRAMS += testSQP 
+headers += ConstraintOptimizer.h
+sources += ConstraintOptimizer.cpp
+check_PROGRAMS += testSQP testConstraintOptimizer
 testSQP_SOURCES                 = $(example) testSQP.cpp
 testSQP_LDADD                   = libgtsam.la
+testConstraintOptimizer_SOURCES = $(example) testConstraintOptimizer.cpp
+testConstraintOptimizer_LDADD   = libgtsam.la
 
 # geometry
 headers += Lie.h Lie-inl.h
@@ -294,7 +298,7 @@ endif
 include_HEADERS = $(headers)
 
 AM_CXXFLAGS += -I.. 
-AM_LDFLAGS = -L../CppUnitLite -lCppUnitLite ../ldl/libldl.a $(BOOST_LDFLAGS) $(boost_serialization)
+AM_LDFLAGS = -L../CppUnitLite -lCppUnitLite $(BOOST_LDFLAGS) $(boost_serialization)
 
 # adding cblas implementation - split into a default linux version using the 
 # autotools script, and a mac version that is hardcoded 
