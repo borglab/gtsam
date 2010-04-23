@@ -133,6 +133,33 @@ VectorMap VectorMap::zero(const VectorMap& x) {
 }
 
 /* ************************************************************************* */
+Vector VectorMap::vector() const {
+	Vector result(dim());
+
+	size_t cur_dim = 0;
+	Symbol j; Vector vj;
+	FOREACH_PAIR(j, vj, values) {
+		subInsert(result, vj, cur_dim);
+		cur_dim += vj.size();
+	}
+	return result;
+}
+
+/* ************************************************************************* */
+VectorMap VectorMap::vectorUpdate(const Vector& delta) const {
+	VectorMap result;
+
+	size_t cur_dim = 0;
+	Symbol j; Vector vj;
+	FOREACH_PAIR(j, vj, values) {
+		result.insert(j, vj + sub(delta, cur_dim, cur_dim + vj.size()));
+		cur_dim += vj.size();
+	}
+
+	return result;
+}
+
+/* ************************************************************************* */
 VectorMap expmap(const VectorMap& original, const VectorMap& delta)
 {
 	VectorMap newConfig;

@@ -39,6 +39,9 @@ namespace gtsam {
     /** return all the nodes in the graph **/
     std::vector<Symbol> get_names() const;
 
+    /** convert into a single large vector */
+    Vector vector() const;
+
     /** Insert a value into the configuration with a given index */
     VectorMap& insert(const Symbol& name, const Vector& v);
 
@@ -111,6 +114,9 @@ namespace gtsam {
     /** Dot product */
     double dot(const VectorMap& b) const;
     
+    /** Adds the contents of a vector to the config - assumes ordering is identical */
+    VectorMap vectorUpdate(const Vector& delta) const;
+
 		/** Set all vectors to zero */
     VectorMap& zero();
 
