@@ -229,6 +229,8 @@ namespace gtsam {
 			double relativeThreshold, double absoluteThreshold,
 			verbosityLevel verbosity, int maxIterations, double lambdaFactor, LambdaMode lambdaMode) const {
 
+		if (maxIterations <= 0) return *this;
+
 		// check if we're already close enough
 		if (error_ < absoluteThreshold) {
 			if (verbosity >= ERROR) cout << "Exiting, as error = " << error_
