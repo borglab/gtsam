@@ -17,8 +17,11 @@ namespace gtsam {
 
 	/* ************************************************************************* */
 	Rot2 Rot2::fromCosSin(double c, double s) {
-		if (fabs(c * c + s * s - 1.0) > 1e-9) throw std::invalid_argument(
-				"Rot2::fromCosSin: needs cos/sin pair");
+		if (fabs(c * c + s * s - 1.0) > 1e-9) {
+    	double norm_cs = sqrt(c*c + s*s);
+    	c = c/norm_cs;
+    	s = s/norm_cs;
+		}
 		return Rot2(c, s);
 	}
 
