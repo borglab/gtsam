@@ -187,5 +187,34 @@ TEST(LieConfig, extract_keys)
 }
 
 /* ************************************************************************* */
+TEST(LieConfig, exists_)
+{
+	LieConfig<string,Vector> config0;
+	config0.insert("v1", Vector_(1, 1.));
+	config0.insert("v2", Vector_(1, 2.));
+
+	boost::optional<Vector> v = config0.exists_("v1");
+	CHECK(assert_equal(Vector_(1, 1.),*v));
+}
+
+/* ************************************************************************* */
+TEST(LieConfig, update)
+{
+	LieConfig<string,Vector> config0;
+	config0.insert("v1", Vector_(1, 1.));
+	config0.insert("v2", Vector_(1, 2.));
+
+	LieConfig<string,Vector> superset;
+	superset.insert("v1", Vector_(1, -1.));
+	superset.insert("v2", Vector_(1, -2.));
+	superset.insert("v3", Vector_(1, -3.));
+	config0.update(superset);
+
+	LieConfig<string,Vector> expected;
+	expected.insert("v1", Vector_(1, -1.));
+	expected.insert("v2", Vector_(1, -2.));
+	CHECK(assert_equal(expected,config0));
+}
+/* ************************************************************************* */
 int main() { TestResult tr; return TestRegistry::runAllTests(tr); }
 /* ************************************************************************* */

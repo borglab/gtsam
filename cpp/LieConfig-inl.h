@@ -87,7 +87,7 @@ namespace gtsam {
   void LieConfig<J,T>::update(const LieConfig<J,T>& cfg) {
 	  BOOST_FOREACH(const typename Values::value_type& v, values_) {
 	  	boost::optional<T> t = cfg.exists_(v.first);
-	  	if (t) insert(v.first, *t);
+	  	if (t) values_[v.first] = *t;
 	  }
   }
 

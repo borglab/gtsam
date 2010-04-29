@@ -485,5 +485,33 @@ TEST(TupleConfig, partial_insert) {
 }
 
 /* ************************************************************************* */
+TEST(TupleConfig, update) {
+	TupleConfig3<PoseConfig, PointConfig, LamConfig> init, superset, expected;
+
+	PoseKey x1(1), x2(2);
+	PointKey l1(1), l2(2);
+	Pose2 pose1(1.0, 2.0, 0.3), pose2(3.0, 4.0, 5.0);
+	Point2 point1(2.0, 3.0), point2(5.0, 6.0);
+
+	init.insert(x1, pose1);
+	init.insert(l1, point1);
+
+
+	Pose2 pose1_(1.0, 2.0, 0.4);
+	Point2 point1_(2.0, 4.0);
+	superset.insert(x1, pose1_);
+	superset.insert(l1, point1_);
+	superset.insert(x2, pose2);
+	superset.insert(l2, point2);
+	init.update(superset);
+
+	expected.insert(x1, pose1_);
+	expected.insert(l1, point1_);
+
+	CHECK(assert_equal(expected, init));
+}
+
+
+/* ************************************************************************* */
 int main() { TestResult tr; return TestRegistry::runAllTests(tr); }
 /* ************************************************************************* */
