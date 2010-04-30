@@ -113,9 +113,6 @@ namespace gtsam {
     
     /** Dot product */
     double dot(const VectorMap& b) const;
-    
-    /** Adds the contents of a vector to the config - assumes ordering is identical */
-    VectorMap vectorUpdate(const Vector& delta) const;
 
 		/** Set all vectors to zero */
     VectorMap& zero();

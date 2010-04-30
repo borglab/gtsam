@@ -35,10 +35,10 @@ for i=1:maxIt
     % update the hessian (BFGS)
     if (i>1)
         Bis = Bi*s;
-        y = dL - prev_dL;
+        y = dfx - prev_dfx;
         Bi = Bi + (y*y')/(y'*s) - (Bis*Bis')/(s'*Bis);
     end
-    prev_dL = dL;
+    prev_dfx = dfx;
     
     % evaluate hessians in x
     ddfx = diag([2, 2]);
@@ -50,13 +50,13 @@ for i=1:maxIt
     Bgn2 = dL * dL'; % GN approx 2
     Ba = ddfx - lam * ddcx; % analytic hessians
 
-    B = ddfx;
+    B = Bi;
     g = dfx;
     h = -cx;
     [delta lambda] = solveCQP(B, -dcx, -dcx', g, h);
     
     % update 
-    s = 0.5*delta;
+    s = 0.1*delta;
     x = x + s
     lam = lambda
     

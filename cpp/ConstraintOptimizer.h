@@ -26,7 +26,7 @@ namespace gtsam {
 		/**
 		 * Creates an estimator of a particular dimension
 		 */
-		BFGSEstimator(size_t n) : n_(n), B_(eye(2,2)) {}
+		BFGSEstimator(size_t n) : n_(n), B_(eye(n,n)) {}
 
 		~BFGSEstimator() {}
 
@@ -66,6 +66,13 @@ namespace gtsam {
 	 */
 	std::pair<Vector, Vector> solveCQP(const Matrix& B, const Matrix& A,
 									   const Vector& g, const Vector& h);
+
+	/**
+	 * Simple line search function using an externally specified
+	 * penalty function
+	 */
+	Vector linesearch(const Vector& x, const Vector& delta,
+			double (*penalty)(const Vector&), size_t maxIt = 10);
 
 } // \namespace gtsam
 

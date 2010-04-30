@@ -69,20 +69,6 @@ TEST( VectorMap, fullVector)
 }
 
 /* ************************************************************************* */
-TEST( VectorMap, vectorUpdate)
-{
-	VectorMap c = smallVectorMap();
-	Vector delta = Vector_(6, 1.0, 2.0, 3.0,  4.0, 5.0,  6.0);
-
-	VectorMap actual = c.vectorUpdate(delta);
-	VectorMap expected;
-	expected.insert(l1, Vector_(2,  1.0, 1.0));
-	expected.insert(x1, Vector_(2,  3.0,  4.0));
-	expected.insert(x2, Vector_(2,  6.5,  6.0));
-	CHECK(assert_equal(expected, actual));
-}
-
-/* ************************************************************************* */
 
 #include <limits>
 double inf = std::numeric_limits<double>::infinity();

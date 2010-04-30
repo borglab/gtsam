@@ -47,3 +47,24 @@ pair<Vector, Vector> gtsam::solveCQP(const Matrix& B, const Matrix& A,
 	return make_pair(sub(fullResult, 0, n), sub(fullResult, n, n+p));
 }
 
+/* ************************************************************************* */
+Vector gtsam::linesearch(const Vector& x0, const Vector& delta,
+		double (*penalty)(const Vector&), size_t maxIt) {
+
+	// calculate the initial error
+	double init_error = penalty(x0);
+	Vector step = delta;
+	for (size_t i=0; i<maxIt; ++i) {
+		Vector x = x0 + step;
+		double cur_error = penalty(x);
+		if (cur_error < init_error) // if we have improved, return the step
+			return step;
+		else { // otherwise, make a smaller step
+			step = 0.5 * step;
+		}
+	}
+
+	// TODO: should do something clever here
+	return step;
+}
+
