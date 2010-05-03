@@ -100,6 +100,9 @@ namespace gtsam {
     /** update the current available values without adding new ones */
     void update(const LieConfig& cfg);
 
+    /** single element change of existing element */
+    void update(const J& j, const T& val);
+
     /** Remove a variable from the config */
     void erase(const J& j);
 

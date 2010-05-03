@@ -92,6 +92,11 @@ namespace gtsam {
   }
 
   template<class J, class T>
+  void LieConfig<J,T>::update(const J& j, const T& val) {
+	  	values_[j] = val;
+  }
+
+  template<class J, class T>
   std::list<J> LieConfig<J,T>::keys() const {
 	  std::list<J> ret;
 	  BOOST_FOREACH(const typename Values::value_type& v, values_)

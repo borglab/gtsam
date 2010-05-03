@@ -80,6 +80,22 @@ TEST( LieConfig, insert_config )
 }
 
 /* ************************************************************************* */
+TEST( LieConfig, insert_overlap )
+{
+  LieConfig<string,Vector> cfg;
+  Vector v1 = Vector_(3, 5.0, 6.0, 7.0);
+  Vector v2 = Vector_(3, 8.0, 9.0, 1.0);
+
+  cfg.insert("x1", v1);
+  CHECK(cfg.size() == 1);
+  CHECK(assert_equal(v1, cfg.at("x1")));
+
+  cfg.update("x1", v2);
+  CHECK(cfg.size() == 1);
+  CHECK(assert_equal(v2, cfg.at("x1"))); // fails - need to change behavior
+}
+
+/* ************************************************************************* */
 TEST(LieConfig, dim_zero)
 {
   LieConfig<string,Vector> config0;
