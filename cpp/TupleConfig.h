@@ -75,6 +75,11 @@ namespace gtsam {
 	  	second_.update(config.second_);
 	  }
 
+	  // update function for single elements
+	  template<class Key, class Value>
+	  void update(const Key& key, const Value& value) { second_.update(key, value); }
+	  void update(const Key1& key, const Value1& value) { first_.update(key, value); }
+
 	  // insert a subconfig
 	  template<class Cfg>
 	  void insertSub(const Cfg& config) { second_.insertSub(config); }
@@ -171,6 +176,8 @@ namespace gtsam {
 
 	  // update function for whole configs
 	  void update(const TupleConfigEnd<Config>& config) {first_.update(config.first_); }
+
+	  void update(const Key1& key, const Value1& value) { first_.update(key, value); }
 
 	  // insert function for sub configs
 	  void insertSub(const Config& config) {first_.insert(config); }

@@ -295,6 +295,32 @@ TEST(TupleConfig, insert_config) {
 }
 
 /* ************************************************************************* */
+TEST( TupleConfig, update_element )
+{
+	TupleConfig2<PoseConfig, PointConfig> cfg;
+	Pose2 x1(2.0, 1.0, 2.0), x2(3.0, 4.0, 5.0);
+	Point2 l1(1.0, 2.0), l2(3.0, 4.0);
+	PoseKey xk(1);
+	PointKey lk(1);
+
+	cfg.insert(xk, x1);
+	CHECK(cfg.size() == 1);
+	CHECK(assert_equal(x1, cfg.at(xk)));
+
+	cfg.update(xk, x2);
+	CHECK(cfg.size() == 1);
+	CHECK(assert_equal(x2, cfg.at(xk)));
+
+	cfg.insert(lk, l1);
+	CHECK(cfg.size() == 2);
+	CHECK(assert_equal(l1, cfg.at(lk)));
+
+	cfg.update(lk, l2);
+	CHECK(cfg.size() == 2);
+	CHECK(assert_equal(l2, cfg.at(lk)));
+}
+
+/* ************************************************************************* */
 TEST( TupleConfig, equals )
 {
 	Pose2 x1(1,2,3), x2(6,7,8), x2_alt(5,6,7);

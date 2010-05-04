@@ -80,7 +80,7 @@ TEST( LieConfig, insert_config )
 }
 
 /* ************************************************************************* */
-TEST( LieConfig, insert_overlap )
+TEST( LieConfig, update_element )
 {
   LieConfig<string,Vector> cfg;
   Vector v1 = Vector_(3, 5.0, 6.0, 7.0);
@@ -92,7 +92,7 @@ TEST( LieConfig, insert_overlap )
 
   cfg.update("x1", v2);
   CHECK(cfg.size() == 1);
-  CHECK(assert_equal(v2, cfg.at("x1"))); // fails - need to change behavior
+  CHECK(assert_equal(v2, cfg.at("x1")));
 }
 
 /* ************************************************************************* */
