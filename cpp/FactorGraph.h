@@ -147,7 +147,7 @@ namespace gtsam {
 
 	private:
 		/** Associate factor index with the variables connected to the factor */
-		void associateFactor(int index, sharedFactor factor);
+		void associateFactor(int index, const sharedFactor& factor);
 
 		/** Serialization function */
 		friend class boost::serialization::access;

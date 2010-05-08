@@ -291,22 +291,12 @@ FactorGraph<Factor>::findAndRemoveFactors(const Symbol& key) {
 
 /* ************************************************************************* */
 template<class Factor>
-void FactorGraph<Factor>::associateFactor(int index, sharedFactor factor) {
-  list<Symbol> keys = factor->keys();          // get keys for factor
+void FactorGraph<Factor>::associateFactor(int index, const sharedFactor& factor) {
+  const list<Symbol> keys = factor->keys();          // get keys for factor
   // rtodo: Can optimize factor->keys to return a const reference
 
-  BOOST_FOREACH(const Symbol& key, keys){             // for each key push i onto list
-      Indices::iterator it = indices_.find(key); // old list for that key (if exists)
-      if (it==indices_.end()){                   // there's no list yet
-          list<int> indices(1,index);                  // so make one
-          indices_.insert(make_pair(key,indices)); // insert new indices into factorMap
-      }
-      else {
-        // rtodo: what is going on with this pointer?
-          list<int> *indices_ptr = &(it->second);  // get the list
-          indices_ptr->push_back(index);               // add the index i to it
-      }
-  }
+  BOOST_FOREACH(const Symbol& key, keys)             // for each key push i onto list
+			indices_[key].push_back(index);
 }
 
 /* ************************************************************************* */
