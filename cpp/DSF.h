@@ -52,6 +52,9 @@ namespace gtsam {
 		// return a new DSF where x and y are in the same set. Kai: the caml implementation is not const, and I followed
 		Self makeUnion(const Key& key1, const Key& key2) { return this->add(findSet_(key2), findSet_(key1));	}
 
+		// the in-place version of makeUnion
+		void makeUnionInPlace(const Key& key1, const Key& key2) { *this = this->add(findSet_(key2), findSet_(key1)); }
+
 		// create a new singleton with two connected keys
 		Self makePair(const Key& key1, const Key& key2) const { return makeSet(key1).makeSet(key2).makeUnion(key1, key2); }
 
