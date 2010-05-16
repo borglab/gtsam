@@ -78,7 +78,7 @@ GaussianFactor::GaussianFactor(const boost::shared_ptr<GaussianConditional>& cg)
 		As_.insert(*it);
 	// set sigmas from precisions
 	size_t n = b_.size();
-	model_ = noiseModel::Diagonal::Sigmas(cg->get_sigmas());
+	model_ = noiseModel::Diagonal::Sigmas(cg->get_sigmas(), true);
 }
 
 /* ************************************************************************* */

@@ -20,6 +20,7 @@ using namespace boost::assign;
 #include "Matrix.h"
 #include "Ordering.h"
 #include "GaussianConditional.h"
+#include "inference-inl.h"
 #include "smallExample.h"
 
 using namespace std;
@@ -681,6 +682,22 @@ TEST( GaussianFactor, CONSTRUCTOR_GaussianConditional )
 
 	GaussianFactor expectedLF("x2",R11,"l11",S12,d, sigmas);
 	CHECK(assert_equal(expectedLF,actualLF,1e-5));
+}
+
+/* ************************************************************************* */
+TEST( GaussianFactor, CONSTRUCTOR_GaussianConditionalConstrained )
+{
+  Matrix Ax = eye(2);
+  Vector b = Vector_(2, 3.0, 5.0);
+  SharedDiagonal noisemodel = noiseModel::Constrained::All(2);
+  GaussianFactor::shared_ptr expected(new GaussianFactor("x0", Ax, b, noisemodel));
+  GaussianFactorGraph graph;
+  graph.push_back(expected);
+
+  GaussianConditional::shared_ptr conditional = graph.eliminateOne("x0");
+  GaussianFactor actual(conditional);
+
+  CHECK(assert_equal(*expected, actual));
 }
 
 /* ************************************************************************* */
