@@ -143,6 +143,14 @@ namespace gtsam {
   }
 
   /* ************************************************************************* */
+  Point3 transform_from(const Pose3& pose, const Point3& p,
+		  boost::optional<Matrix&> H1, boost::optional<Matrix&> H2) {
+	  if (H1) *H1 = Dtransform_from1(pose, p);
+	  if (H2) *H2 = Dtransform_from2(pose);
+	  return transform_from(pose, p);
+  }
+
+  /* ************************************************************************* */
   Matrix Dtransform_from1(const Pose3& pose, const Point3& p) {
 #ifdef CORRECT_POSE3_EXMAP
 		const Matrix R = pose.rotation().matrix();
@@ -163,6 +171,14 @@ namespace gtsam {
   Point3 transform_to(const Pose3& pose, const Point3& p) {
     Point3 sub = p - pose.translation();
     return unrotate(pose.rotation(), sub);
+  }
+
+  /* ************************************************************************* */
+  Point3 transform_to(const Pose3& pose, const Point3& p,
+    		  	boost::optional<Matrix&> H1, boost::optional<Matrix&> H2) {
+	  if (H1) *H1 = Dtransform_to1(pose, p);
+	  if (H2) *H2 = Dtransform_to2(pose, p);
+	  return transform_to(pose, p);
   }
 
   /* ************************************************************************* */

@@ -272,6 +272,28 @@ TEST( Pose3, Dtransform_to2)
 }
 
 /* ************************************************************************* */
+TEST( Pose3, transform_to_with_derivatives)
+{
+	Matrix actH1, actH2;
+	transform_to(T,P,actH1,actH2);
+	Matrix expH1 = numericalDerivative21(transform_to, T,P),
+		   expH2 = numericalDerivative22(transform_to, T,P);
+	CHECK(assert_equal(expH1, actH1, 1e-8));
+	CHECK(assert_equal(expH2, actH2, 1e-8));
+}
+
+/* ************************************************************************* */
+TEST( Pose3, transform_from_with_derivatives)
+{
+	Matrix actH1, actH2;
+	transform_from(T,P,actH1,actH2);
+	Matrix expH1 = numericalDerivative21(transform_from, T,P),
+		   expH2 = numericalDerivative22(transform_from, T,P);
+	CHECK(assert_equal(expH1, actH1, 1e-8));
+	CHECK(assert_equal(expH2, actH2, 1e-8));
+}
+
+/* ************************************************************************* */
 TEST( Pose3, transform_to_translate)
 {
 		Point3 actual = transform_to(Pose3(Rot3(), Point3(1, 2, 3)), Point3(10.,20.,30.));
