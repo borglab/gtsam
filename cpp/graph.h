@@ -9,6 +9,8 @@
 
 #include <map>
 
+#define BOOST_NO_HASH  // to pacify the warnings about depricated headers in boost.graph
+
 #include <boost/graph/graph_traits.hpp>
 #include <boost/graph/adjacency_list.hpp>
 #include <boost/shared_ptr.hpp>
