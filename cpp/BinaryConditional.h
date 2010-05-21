@@ -56,7 +56,7 @@ namespace gtsam {
 		BinaryConditional(const Symbol& key, const Symbol& parent, const std::vector<double>& cpt) :
 			Conditional(key) {
 			parents_.push_back(parent);
-			for( int i = 0 ; i < cpt.size() ; i++ )
+			for( size_t i = 0 ; i < cpt.size() ; i++ )
 				cpt_.push_back(1-cpt[i]); // p(!x|parents)
 			cpt_.insert(cpt_.end(),cpt.begin(),cpt.end()); // p(x|parents)
 		}

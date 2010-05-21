@@ -22,7 +22,6 @@ namespace gtsam {
    */
   template<class X>
   Vector numericalGradient(double (*h)(const X&), const X& x, double delta=1e-5) {
-    double hx = h(x);
     double factor = 1.0/(2.0*delta);
     const size_t n = x.dim();
     Vector d(n,0.0), g(n,0.0);

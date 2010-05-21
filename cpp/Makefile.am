@@ -306,8 +306,8 @@ AM_LDFLAGS = -L../CppUnitLite -lCppUnitLite $(BOOST_LDFLAGS) $(boost_serializati
 if USE_BLAS_LINUX
 AM_CXXFLAGS += -DGT_USE_CBLAS
 libgtsam_la_CPPFLAGS += -DGT_USE_CBLAS
-AM_LDFLAGS += $(BLAS_LIBS) $(LIBS) $(FLIBS)  
-libgtsam_la_LDFLAGS += $(BLAS_LIBS) $(LIBS) $(FLIBS) 
+AM_LDFLAGS += -lcblas -latlas           # If getting from script: $(BLAS_LIBS) $(LIBS) $(FLIBS)  
+libgtsam_la_LDFLAGS += -lcblas -latlas  # $(BLAS_LIBS) $(LIBS) $(FLIBS) 
 endif
 
 if USE_BLAS_MACOS

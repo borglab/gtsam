@@ -87,7 +87,7 @@ namespace gtsam {
 		void push_back(const FactorGraph<Factor>& factors);
 
 		/** replace a factor by index */
-		void replace(int index, sharedFactor factor);
+		void replace(size_t index, sharedFactor factor);
 
 		/** return keys in some random order */
 		Ordering keys() const;

@@ -105,7 +105,7 @@ void FactorGraph<Factor>::push_back(const FactorGraph<Factor>& factors) {
 
 /* ************************************************************************* */
 template<class Factor>
-void FactorGraph<Factor>::replace(int index, sharedFactor factor) {
+void FactorGraph<Factor>::replace(size_t index, sharedFactor factor) {
   if(index >= factors_.size())
     throw invalid_argument(boost::str(boost::format(
         "Factor graph does not contain a factor with index %d.") % index));
@@ -321,7 +321,7 @@ template<class Factor> void FactorGraph<Factor>::checkGraphConsistency() const {
 
   // Make sure each factor listed for a variable actually involves that variable
   BOOST_FOREACH(const SymbolMap<list<int> >::value_type& var, indices_) {
-  	BOOST_FOREACH(int i, var.second) {
+  	BOOST_FOREACH(size_t i, var.second) {
   		if(i >= factors_.size()) {
   			cout << "*** Factor graph inconsistency: " << (string)var.first << " lists factor " <<
   					i << " but the graph does not contain this many factors." << endl;
@@ -380,8 +380,8 @@ void FactorGraph<Factor>::split(const PredecessorMap<Key>& tree, FactorGraph<Fac
 		Key key1 = factor2->key1();
 		Key key2 = factor2->key2();
 		// if the tree contains the key
-		if (tree.find(key1) != tree.end() && tree.find(key1)->second.compare(key2) == 0 ||
-				tree.find(key2) != tree.end() && tree.find(key2)->second.compare(key1) == 0)
+		if ((tree.find(key1) != tree.end() && tree.find(key1)->second.compare(key2) == 0) ||
+			(tree.find(key2) != tree.end() && tree.find(key2)->second.compare(key1) == 0))
 			Ab1.push_back(factor2);
 		else
 			Ab2.push_back(factor2);

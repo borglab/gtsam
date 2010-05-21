@@ -65,7 +65,7 @@ namespace gtsam { namespace visualSLAM {
     GenericProjectionFactor(const Point2& z,
 					const SharedGaussian& model, PosK j_pose,
 					LmK j_landmark, const shared_ptrK& K) :
-				z_(z), K_(K), Base(model, j_pose, j_landmark) {
+						Base(model, j_pose, j_landmark), z_(z), K_(K) {
 			}
 
     /**

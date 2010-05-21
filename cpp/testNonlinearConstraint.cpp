@@ -139,7 +139,6 @@ namespace test2 {
 
 	/** jacobian for y, jacobianG(x,y) in y: -1 */
 	Matrix G2(const VecConfig& config, const list<Key>& keys) {
-		double x = config[keys.back()](0);
 		return Matrix_(1, 1, -1.0);
 	}
 

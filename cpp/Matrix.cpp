@@ -267,11 +267,11 @@ void transposeMultiplyAdd(const Matrix& A, const Vector& e, Vector& x) {
 void transposeMultiplyAdd(double alpha, const Matrix& A, const Vector& e, SubVector x) {
 	// ublas x += prod(trans(A),e) is terribly slow
 	// TODO: use BLAS
-  size_t m = A.size1(), n = A.size2();
-	for (int j = 0; j < n; j++) {
+	size_t m = A.size1(), n = A.size2();
+	for (size_t j = 0; j < n; j++) {
 		const double * ei = e.data().begin();
 		const double * aij = A.data().begin() + j;
-		for (int i = 0; i < m; i++, aij+=n, ei++)
+		for (size_t i = 0; i < m; i++, aij+=n, ei++)
 			x(j) += alpha * (*aij) * (*ei);
 	}
 }
@@ -293,13 +293,6 @@ Vector column_(const Matrix& A, size_t j) {
 //		throw invalid_argument("Column index out of bounds!");
 
 	return column(A,j); // real boost version
-
-	// TODO: improve this
-//	size_t m = A.size1();
-//	Vector a(m);
-//	for (size_t i=0; i<m; ++i)
-//		a(i) = A(i,j);
-//	return a;
 }
 
 /* ************************************************************************* */
@@ -348,7 +341,7 @@ Matrix sub(const Matrix& A, size_t i1, size_t i2, size_t j1, size_t j2) {
 /* ************************************************************************* */
 void insertSub(Matrix& big, const Matrix& small, size_t i, size_t j) {
 	// direct pointer method
-	size_t ib = big.size1(), jb = big.size2(),
+	size_t jb = big.size2(),
 		   is = small.size1(), js = small.size2();
 
 	// pointer to start of window in big
@@ -472,13 +465,13 @@ inline void householder_update_manual(Matrix &A, int j, double beta, const Vecto
 }
 
 void householder_update(Matrix &A, int j, double beta, const Vector& vjm) {
-	const size_t m = A.size1(), n = A.size2();
 #if defined GT_USE_CBLAS
 
 	// CBLAS version not working, using manual approach
 	householder_update_manual(A,j,beta,vjm);
 
 //	// straight atlas version
+//	const size_t m = A.size1(), n = A.size2();
 //	const size_t mj = m-j;
 //
 //	// find pointers to the data
@@ -659,8 +652,9 @@ void householder(Matrix &A, size_t k) {
 
 /* ************************************************************************* */
 Vector backSubstituteUpper(const Matrix& U, const Vector& b, bool unit) {
-	size_t m = U.size1(), n = U.size2();
+	size_t n = U.size2();
 #ifndef NDEBUG
+	size_t m = U.size1();
 	if (m!=n)
 		throw invalid_argument("backSubstituteUpper: U must be square");
 #endif
@@ -679,8 +673,9 @@ Vector backSubstituteUpper(const Matrix& U, const Vector& b, bool unit) {
 
 /* ************************************************************************* */
 Vector backSubstituteUpper(const Vector& b, const Matrix& U, bool unit) {
-	size_t m = U.size1(), n = U.size2();
+	size_t n = U.size2();
 #ifndef NDEBUG
+	size_t m = U.size1();
 	if (m!=n)
 		throw invalid_argument("backSubstituteUpper: U must be square");
 #endif
@@ -699,8 +694,9 @@ Vector backSubstituteUpper(const Vector& b, const Matrix& U, bool unit) {
 
 /* ************************************************************************* */
 Vector backSubstituteLower(const Matrix& L, const Vector& b, bool unit) {
-	size_t m = L.size1(), n = L.size2();
+	size_t n = L.size2();
 #ifndef NDEBUG
+	size_t m = U.size1();
 	if (m!=n)
 		throw invalid_argument("backSubstituteLower: L must be square");
 #endif
@@ -750,10 +746,11 @@ Matrix collect(const std::vector<const Matrix *>& matrices, size_t m, size_t n)
 	// if we have known and constant dimensions, use them
 	size_t dimA1 = m;
 	size_t dimA2 = n*matrices.size();
-	if (!m && !n)
+	if (!m && !n) {
 		BOOST_FOREACH(const Matrix* M, matrices) {
-		dimA1 =  M->size1();  // TODO: should check if all the same !
-		dimA2 += M->size2();
+			dimA1 =  M->size1();  // TODO: should check if all the same !
+			dimA2 += M->size2();
+		}
 	}
 
 	// memcpy version
@@ -896,11 +893,11 @@ Matrix RtR(const Matrix &A)
 /* ************************************************************************* */
 Vector solve_ldl(const Matrix& M, const Vector& rhs) {
 
-	int N = M.size1(); // size of the matrix
+	unsigned int N = M.size1(); // size of the matrix
 
 	// count the nonzero entries above diagonal
 	double thresh = 1e-9;
-	size_t nrANZ = 0; // # of nonzeros on diagonal and upper triangular part of A
+	unsigned int nrANZ = 0; // # of nonzeros on diagonal and upper triangular part of A
 	for (size_t i=0; i<N; ++i) // rows
 			for (size_t j=i; j<N; ++j) // columns
 				if (fabs(M(i,j)) > thresh)
@@ -950,7 +947,7 @@ Vector solve_ldl(const Matrix& M, const Vector& rhs) {
 	double * Lx = new double[nrLNZ];
 	int * Li = new int [nrLNZ];
 
-    int d = LDL_numeric (N, Ap, Ai, Ax, Lp, Parent, Lnz, Li, Lx, D, Y, Pattern,
+    size_t d = LDL_numeric (N, Ap, Ai, Ax, Lp, Parent, Lnz, Li, Lx, D, Y, Pattern,
     		Flag, NULL, NULL);
 
     if (d == N) {

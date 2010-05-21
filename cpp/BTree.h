@@ -41,15 +41,15 @@ namespace gtsam {
 			 * leaf node with height 1
 			 */
 			Node(const value_type& keyValue) :
-				keyValue_(keyValue), height_(1) {
+				height_(1), keyValue_(keyValue) {
 			}
 
 			/**
 			 * Create a node from two subtrees and a key value pair
 			 */
 			Node(const BTree& l, const value_type& keyValue, const BTree& r) :
-				left(l), keyValue_(keyValue), right(r),
-				height_(l.height() >= r.height() ? l.height() + 1 : r.height() + 1) {
+				height_(l.height() >= r.height() ? l.height() + 1 : r.height() + 1),
+				keyValue_(keyValue), left(l), right(r) {
 			}
 
 			inline const Key& key() const { return keyValue_.first;}

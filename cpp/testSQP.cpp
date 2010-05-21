@@ -915,7 +915,6 @@ boost::shared_ptr<Graph2D> linearMapWarpGraph() {
 
 /* ********************************************************************* */
 TEST ( SQPOptimizer, map_warp_initLam ) {
-	bool verbose = false;
 	// get a graph
 	boost::shared_ptr<Graph2D> graph = linearMapWarpGraph();
 

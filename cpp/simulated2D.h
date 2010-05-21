@@ -78,7 +78,7 @@ namespace gtsam {
 
 			GenericOdometry(const Point2& z, const SharedGaussian& model,
 					const Key& i1, const Key& i2) :
-				z_(z), NonlinearFactor2<Cfg, Key, Point2, Key, Point2> (model, i1, i2) {
+				NonlinearFactor2<Cfg, Key, Point2, Key, Point2> (model, i1, i2), z_(z) {
 			}
 
 			Vector evaluateError(const Point2& x1, const Point2& x2, boost::optional<
@@ -100,7 +100,7 @@ namespace gtsam {
 
 			GenericMeasurement(const Point2& z, const SharedGaussian& model,
 					const XKey& i, const LKey& j) :
-				z_(z), NonlinearFactor2<Cfg, XKey, Point2, LKey, Point2> (model, i, j) {
+				NonlinearFactor2<Cfg, XKey, Point2, LKey, Point2> (model, i, j), z_(z) {
 			}
 
 			Vector evaluateError(const Point2& x1, const Point2& x2, boost::optional<

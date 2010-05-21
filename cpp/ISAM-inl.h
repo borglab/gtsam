@@ -59,7 +59,6 @@ namespace gtsam {
 		for ( rit=bayesNet.rbegin(); rit != bayesNet.rend(); ++rit )
 			this->insert(*rit, index);
 
-		int count = 0;
 		// add orphans to the bottom of the new tree
 		BOOST_FOREACH(sharedClique orphan, orphans) {
 

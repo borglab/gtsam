@@ -67,9 +67,8 @@ namespace simulated3D {
 
 		Simulated3DMeasurement(const Vector& z,
 					const SharedGaussian& model, PoseKey& j1, PointKey j2) :
-				z_(z),
-						NonlinearFactor2<VectorConfig, PoseKey, Vector, PointKey, Vector> (
-								model, j1, j2) {
+				NonlinearFactor2<VectorConfig, PoseKey, Vector, PointKey, Vector> (
+								model, j1, j2), z_(z) {
 			}
 
 		Vector evaluateError(const Vector& x1, const Vector& x2, boost::optional<

@@ -49,7 +49,7 @@ NonlinearConstraint1<Config, Key, X>::NonlinearConstraint1(
 			const LagrangeKey& lagrange_key,
 			bool isEquality) :
 				NonlinearConstraint<Config>(lagrange_key, dim_constraint, isEquality),
-				g_(boost::bind(g, _1)), G_(boost::bind(gradG, _1)), key_(key)
+				G_(boost::bind(gradG, _1)), g_(boost::bind(g, _1)), key_(key)
 {
 	this->keys_.push_back(key);
 }
@@ -64,7 +64,7 @@ NonlinearConstraint1<Config, Key, X>::NonlinearConstraint1(
 			const LagrangeKey& lagrange_key,
 			bool isEquality) :
 				NonlinearConstraint<Config>(lagrange_key, dim_constraint, isEquality),
-				g_(g), G_(gradG), key_(key)
+				G_(gradG), g_(g), key_(key)
 {
 	this->keys_.push_back(key);
 }
@@ -144,7 +144,7 @@ NonlinearConstraint2<Config, Key1, X1, Key2, X2>::NonlinearConstraint2(
 		const LagrangeKey& lagrange_key,
 		bool isEquality) :
 			NonlinearConstraint<Config>(lagrange_key, dim_constraint, isEquality),
-			g_(boost::bind(g, _1)), G1_(boost::bind(G1, _1)), G2_(boost::bind(G2, _1)),
+			G1_(boost::bind(G1, _1)), G2_(boost::bind(G2, _1)), g_(boost::bind(g, _1)),
 			key1_(key1), key2_(key2)
 {
 	this->keys_.push_back(key1);
@@ -163,7 +163,7 @@ NonlinearConstraint2<Config, Key1, X1, Key2, X2>::NonlinearConstraint2(
 		const LagrangeKey& lagrange_key,
 		bool isEquality)  :
 				NonlinearConstraint<Config>(lagrange_key, dim_constraint, isEquality),
-				g_(g), G1_(G1), G2_(G2),
+				G1_(G1), G2_(G2), g_(g),
 				key1_(key1), key2_(key2)
 {
 	this->keys_.push_back(key1);

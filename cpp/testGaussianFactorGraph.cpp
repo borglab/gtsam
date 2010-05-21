@@ -460,8 +460,8 @@ TEST( GaussianFactorGraph, combine)
 	GaussianFactorGraph fg2 = createGaussianFactorGraph();
 
 	// get sizes
-	int size1 = fg1.size();
-	int size2 = fg2.size();
+	size_t size1 = fg1.size();
+	size_t size2 = fg2.size();
 
 	// combine them
 	fg1.combine(fg2);
@@ -479,8 +479,8 @@ TEST( GaussianFactorGraph, combine2)
 	GaussianFactorGraph fg2 = createGaussianFactorGraph();
 
 	// get sizes
-	int size1 = fg1.size();
-	int size2 = fg2.size();
+	size_t size1 = fg1.size();
+	size_t size2 = fg2.size();
 
 	// combine them
 	GaussianFactorGraph fg3 = GaussianFactorGraph::combine2(fg1, fg2);
@@ -491,7 +491,7 @@ TEST( GaussianFactorGraph, combine2)
 /* ************************************************************************* */
 // print a vector of ints if needed for debugging
 void print(vector<int> v) {
-	for (int k = 0; k < v.size(); k++)
+	for (size_t k = 0; k < v.size(); k++)
 		cout << v[k] << " ";
 	cout << endl;
 }

@@ -53,7 +53,6 @@ TEST(NoiseModel, constructors)
 	m.push_back(Isotropic::Precision(3, prc));
 
 	// test whiten
-	int i=0;
 	BOOST_FOREACH(Gaussian::shared_ptr mi, m)
 		CHECK(assert_equal(whitened,mi->whiten(unwhitened)));
 
