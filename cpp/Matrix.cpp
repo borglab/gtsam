@@ -696,7 +696,7 @@ Vector backSubstituteUpper(const Vector& b, const Matrix& U, bool unit) {
 Vector backSubstituteLower(const Matrix& L, const Vector& b, bool unit) {
 	size_t n = L.size2();
 #ifndef NDEBUG
-	size_t m = U.size1();
+	size_t m = L.size1();
 	if (m!=n)
 		throw invalid_argument("backSubstituteLower: L must be square");
 #endif
