@@ -134,11 +134,14 @@ namespace gtsam {
   /**
    * compose this transformation onto another (first p1 and then p2)
    */
-  inline Pose2 compose(const Pose2& p0, const Pose2& p1)
-		{ return Pose2(p0.r()*p1.r(), p0.t() + p0.r()*p1.t());}
+  inline Pose2 operator*(const Pose2& p1, const Pose2& p2) {
+    return Pose2(p1.r()*p2.r(), p1.t() + p1.r()*p2.t()); }
+  inline Pose2 compose(const Pose2& p1, const Pose2& p2) { return p1*p2; }
+  Pose2 compose(const Pose2& p1, const Pose2& p2,
+    boost::optional<Matrix&> H1,
+    boost::optional<Matrix&> H2 = boost::none);
   Matrix Dcompose1(const Pose2& p1, const Pose2& p2);
   Matrix Dcompose2(const Pose2& p1, const Pose2& p2);
-  inline Pose2 operator*(const Pose2& p1, const Pose2& p0) { return compose(p1, p0);}
 
   /**
    * Return point coordinates in pose coordinate frame

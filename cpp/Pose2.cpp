@@ -121,6 +121,14 @@ namespace gtsam {
   /* ************************************************************************* */
   // see doc/math.lyx, SE(2) section
 
+  Pose2 compose(const Pose2& p1, const Pose2& p2, boost::optional<Matrix&> H1,
+      boost::optional<Matrix&> H2) {
+    // TODO: inline and reuse?
+    if(H1) *H1 = AdjointMap(inverse(p2));
+    if(H2) *H2 = I3;
+    return p1*p2;
+  }
+
   Matrix Dcompose1(const Pose2& p1, const Pose2& p2) {
 		return AdjointMap(inverse(p2));
   }

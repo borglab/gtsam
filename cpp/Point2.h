@@ -88,7 +88,13 @@ namespace gtsam {
   inline Vector logmap(const Point2& dp) { return Vector_(2, dp.x(), dp.y()); }
 
   /** "Compose", just adds the coordinates of two points. */
-  inline Point2 compose(const Point2& p1, const Point2& p0) { return p0+p1; }
+  inline Point2 compose(const Point2& p1, const Point2& p2) { return p1+p2; }
+  inline Point2 compose(const Point2& p1, const Point2& p2,
+      boost::optional<Matrix&> H1, boost::optional<Matrix&> H2=boost::none) {
+    if(H1) *H1 = eye(2);
+    if(H2) *H2 = eye(2);
+    return compose(p1, p2);
+  }
   inline Matrix Dcompose1(const Point2& p1, const Point2& p0) {
     return Matrix_(2,2,
         1.0, 0.0,
@@ -97,6 +103,15 @@ namespace gtsam {
     return Matrix_(2,2,
         1.0, 0.0,
         0.0, 1.0); }
+
+  /** "Between", subtracts point coordinates */
+  inline Point2 between(const Point2& p1, const Point2& p2) { return p2-p1; }
+  inline Point2 between(const Point2& p1, const Point2& p2,
+      boost::optional<Matrix&> H1, boost::optional<Matrix&> H2=boost::none) {
+    if(H1) *H1 = -eye(2);
+    if(H2) *H2 = eye(2);
+    return between(p1, p2);
+  }
 
   /** "Inverse" - negates each coordinate such that compose(p,inverse(p))=Point2() */
   inline Point2 inverse(const Point2& p) { return Point2(-p.x(), -p.y()); }
