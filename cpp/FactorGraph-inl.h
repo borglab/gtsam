@@ -216,7 +216,7 @@ void colamd(int n_col, int n_row, int nrNonZeros, const map<Key, vector<int> >& 
 
 /* ************************************************************************* */
 template<class Factor>
-void FactorGraph<Factor>::getOrdering(Ordering& ordering) const{
+void FactorGraph<Factor>::getOrdering(Ordering& ordering, boost::optional<const set<Symbol>&> interested) const{
 
 	// A factor graph is really laid out in row-major format, each factor a row
 	// Below, we compute a symbolic matrix stored in sparse columns.
@@ -225,11 +225,16 @@ void FactorGraph<Factor>::getOrdering(Ordering& ordering) const{
 	int n_row = factors_.size();    /* colamd arg 1: number of rows in A */
 
 	// loop over all factors = rows
+	bool hasInterested = interested.is_initialized();
 	for (int i = 0; i < n_row; i++) {
 		if (factors_[i]==NULL) continue;
 		list<Symbol> keys = factors_[i]->keys();
-		BOOST_FOREACH(const Symbol& key, keys) columns[key].push_back(i);
-		nrNonZeros+= keys.size();
+		BOOST_FOREACH(const Symbol& key, keys) {
+			if (!hasInterested || interested->find(key) != interested->end()) {
+				columns[key].push_back(i);
+				nrNonZeros++;
+			}
+		}
 	}
 	int n_col = (int)(columns.size()); /* colamd arg 2: number of columns in A */
 	if(n_col != 0)
@@ -250,6 +255,14 @@ template<class Factor>
 Ordering FactorGraph<Factor>::getOrdering() const {
 	Ordering ordering;
 	getOrdering(ordering);
+	return ordering;
+}
+
+/* ************************************************************************* */
+template<class Factor>
+Ordering FactorGraph<Factor>::getOrdering(const set<Symbol>& interested) const {
+	Ordering ordering;
+	getOrdering(ordering, interested);
 	return ordering;
 }
 

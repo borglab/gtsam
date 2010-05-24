@@ -11,6 +11,7 @@ using namespace std;
 #include <boost/foreach.hpp>
 #include <boost/tuple/tuple.hpp>
 #include <boost/assign/std/list.hpp> // for operator +=
+#include <boost/assign/std/set.hpp> // for operator +=
 #include <boost/assign/std/vector.hpp> // for operator +=
 using namespace boost::assign;
 
@@ -429,6 +430,16 @@ TEST( GaussianFactorGraph, getOrdering)
   expected += "l1","x1","x2";
   GaussianFactorGraph fg = createGaussianFactorGraph();
   Ordering actual = fg.getOrdering();
+  CHECK(assert_equal(expected,actual));
+}
+
+TEST( GaussianFactorGraph, getOrdering2)
+{
+  Ordering expected;
+  expected += "l1","x1";
+  GaussianFactorGraph fg = createGaussianFactorGraph();
+  set<Symbol> interested; interested += "l1","x1";
+  Ordering actual = fg.getOrdering(interested);
   CHECK(assert_equal(expected,actual));
 }
 
