@@ -289,7 +289,7 @@ namespace gtsam {
 		}
 
 		/**
-		 * Linearize a non-linearFactor1 to get a GaussianFactor
+		 * Linearize a non-linearFactor2 to get a GaussianFactor
 		 * Ax-b \approx h(x1+dx1,x2+dx2)-z = h(x1,x2) + A2*dx1 + A2*dx2 - z
 		 * Hence b = z - h(x1,x2) = - error_vector(x)
 		 */
@@ -344,4 +344,133 @@ namespace gtsam {
 	};
 
 /* ************************************************************************* */
+
+  /**
+   * A Gaussian nonlinear factor that takes 3 parameters
+   * Note: cannot be serialized as contains function pointers
+   * Specialized derived classes could do this
+   */
+  template<class Config, class Key1, class X1, class Key2, class X2, class Key3, class X3>
+  class NonlinearFactor3: public NonlinearFactor<Config> {
+
+  protected:
+
+    // The values of the keys. Not const to allow serialization
+    Key1 key1_;
+    Key2 key2_;
+    Key3 key3_;
+
+    typedef NonlinearFactor<Config> Base;
+    typedef NonlinearFactor3<Config, Key1, X1, Key2, X2, Key3, X3> This;
+
+  public:
+
+    /**
+     * Default Constructor for I/O
+     */
+    NonlinearFactor3() {
+    }
+
+    /**
+     * Constructor
+     * @param j1 key of the first variable
+     * @param j2 key of the second variable
+     * @param j3 key of the third variable
+     */
+    NonlinearFactor3(const SharedGaussian& noiseModel, Key1 j1, Key2 j2, Key3 j3) :
+      Base(noiseModel), key1_(j1), key2_(j2), key3_(j3) {
+      this->keys_.push_back(key1_);
+      this->keys_.push_back(key2_);
+      this->keys_.push_back(key3_);
+    }
+
+    /** Print */
+    void print(const std::string& s = "") const {
+      std::cout << "NonlinearFactor2 " << s << std::endl;
+      std::cout << "key1: " << (std::string) key1_ << std::endl;
+      std::cout << "key2: " << (std::string) key2_ << std::endl;
+      std::cout << "key3: " << (std::string) key3_ << std::endl;
+      Base::print("parent");
+    }
+
+    /** Check if two factors are equal */
+    bool equals(const Factor<Config>& f, double tol = 1e-9) const {
+      const This* p = dynamic_cast<const This*> (&f);
+      if (p == NULL) return false;
+      return Base::equals(*p, tol) && (key1_ == p->key1_)
+          && (key2_ == p->key2_) && (key3_ == p->key3_);
+    }
+
+    /** error function z-h(x1,x2) */
+    inline Vector unwhitenedError(const Config& x) const {
+      const X1& x1 = x[key1_];
+      const X2& x2 = x[key2_];
+      const X3& x3 = x[key3_];
+      return evaluateError(x1, x2, x3);
+    }
+
+    /**
+     * Linearize a non-linearFactor2 to get a GaussianFactor
+     * Ax-b \approx h(x1+dx1,x2+dx2,x3+dx3)-z = h(x1,x2,x3) + A2*dx1 + A2*dx2 + A3*dx3 - z
+     * Hence b = z - h(x1,x2,x3) = - error_vector(x)
+     */
+    boost::shared_ptr<GaussianFactor> linearize(const Config& c) const {
+      const X1& x1 = c[key1_];
+      const X2& x2 = c[key2_];
+      const X2& x3 = c[key3_];
+      Matrix A1, A2, A3;
+      Vector b = -evaluateError(x1, x2, x3, A1, A2, A3);
+      // TODO pass unwhitened + noise model to Gaussian factor
+      SharedDiagonal constrained =
+          boost::shared_dynamic_cast<noiseModel::Constrained>(this->noiseModel_);
+      if (constrained.get() != NULL) {
+        return GaussianFactor::shared_ptr(
+            new GaussianFactor(key1_, A1, key2_, A2, key3_, A3, b, constrained));
+      }
+      this->noiseModel_->WhitenInPlace(A1);
+      this->noiseModel_->WhitenInPlace(A2);
+      this->noiseModel_->WhitenInPlace(A3);
+      this->noiseModel_->whitenInPlace(b);
+      return GaussianFactor::shared_ptr(
+          new GaussianFactor(key1_, A1, key2_, A2, key3_, A3, b, noiseModel::Unit::Create(b.size())));
+    }
+
+    /** methods to retrieve keys */
+    inline const Key1& key1() const {
+      return key1_;
+    }
+    inline const Key2& key2() const {
+      return key2_;
+    }
+    inline const Key3& key3() const {
+      return key3_;
+    }
+
+    /*
+     *  Override this method to finish implementing a trinary factor.
+     *  If any of the optional Matrix reference arguments are specified, it should compute
+     *  both the function evaluation and its derivative(s) in X1 (and/or X2, X3).
+     */
+    virtual Vector
+    evaluateError(const X1&, const X2&, const X3&,
+        boost::optional<Matrix&> H1 = boost::none,
+        boost::optional<Matrix&> H2 = boost::none,
+        boost::optional<Matrix&> H3 = boost::none) const = 0;
+
+  private:
+
+    /** Serialization function */
+    friend class boost::serialization::access;
+    template<class Archive>
+    void serialize(Archive & ar, const unsigned int version) {
+      ar & boost::serialization::make_nvp("NonlinearFactor",
+          boost::serialization::base_object<NonlinearFactor>(*this));
+      ar & BOOST_SERIALIZATION_NVP(key1_);
+      ar & BOOST_SERIALIZATION_NVP(key2_);
+    }
+
+  };
+
+/* ************************************************************************* */
+
 }
