@@ -7,6 +7,7 @@
 #pragma once
 
 #include <list>
+#include <set>
 #include <string>
 #include "Testable.h"
 #include "Key.h"
@@ -43,4 +44,26 @@ namespace gtsam {
 		Ordering subtract(const Ordering& keys) const;
 	};
 
+	/**
+	 * @class Unordered
+	 * @brief a set of unordered indice
+	 */
+	class Unordered: public std::set<Symbol>, public Testable<Unordered> {
+	public:
+		/** Default constructor creates empty ordering */
+		Unordered() { }
+
+		/** Create from a single symbol */
+		Unordered(Symbol key) { insert(key); }
+
+		/** Copy constructor */
+		Unordered(const std::set<Symbol>& keys_in) : std::set<Symbol>(keys_in) {}
+
+		/** whether a key exists */
+		bool exists(const Symbol& key) { return find(key) != end(); }
+
+		// Testable
+		void print(const std::string& s = "Unordered") const;
+		bool equals(const Unordered &t, double tol=0) const;
+	};
 }

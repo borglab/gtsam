@@ -222,19 +222,23 @@ void FactorGraph<Factor>::getOrdering(Ordering& ordering, boost::optional<const 
 	// Below, we compute a symbolic matrix stored in sparse columns.
 	map<Symbol, vector<int> > columns; // map from keys to a sparse column of non-zero row indices
 	int nrNonZeros = 0;             // number of non-zero entries
-	int n_row = factors_.size();    /* colamd arg 1: number of rows in A */
+	int n_row = 0;                  /* colamd arg 1: number of rows in A */
 
 	// loop over all factors = rows
 	bool hasInterested = interested.is_initialized();
-	for (int i = 0; i < n_row; i++) {
-		if (factors_[i]==NULL) continue;
-		list<Symbol> keys = factors_[i]->keys();
+	bool inserted;
+	BOOST_FOREACH(const sharedFactor& factor, factors_) {
+		if (factor==NULL) continue;
+		list<Symbol> keys = factor->keys();
+		inserted = false;
 		BOOST_FOREACH(const Symbol& key, keys) {
 			if (!hasInterested || interested->find(key) != interested->end()) {
-				columns[key].push_back(i);
+				columns[key].push_back(n_row);
 				nrNonZeros++;
+				inserted = true;
 			}
 		}
+		if (inserted) n_row++;
 	}
 	int n_col = (int)(columns.size()); /* colamd arg 2: number of columns in A */
 	if(n_col != 0)

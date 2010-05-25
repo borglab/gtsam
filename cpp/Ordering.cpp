@@ -37,3 +37,16 @@ Ordering Ordering::subtract(const Ordering& keys) const {
 }
 
 /* ************************************************************************* */
+void Unordered::print(const string& s) const {
+  cout << s << " (" << size() << "):";
+  BOOST_FOREACH(const Symbol& key, *this)
+    cout << " " << (string)key;
+  cout << endl;
+}
+
+/* ************************************************************************* */
+bool Unordered::equals(const Unordered &other, double tol) const {
+	return *this == other;
+}
+
+/* ************************************************************************* */
