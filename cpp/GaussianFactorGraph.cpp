@@ -346,6 +346,17 @@ Dimensions GaussianFactorGraph::columnIndices(const Ordering& ordering) const {
 }
 
 /* ************************************************************************* */
+pair<size_t, size_t> GaussianFactorGraph::sizeOfA() const {
+	size_t m = 0, n = 0;
+	Dimensions variableSet = dimensions();
+	BOOST_FOREACH(const Dimensions::value_type value, variableSet)
+		n += value.second;
+	BOOST_FOREACH(const sharedFactor& factor,factors_)
+		m += factor->numberOfRows();
+	return make_pair(m, n);
+}
+
+/* ************************************************************************* */
 Matrix GaussianFactorGraph::sparse(const Ordering& ordering) const {
 
 	// get the starting column indices for all variables

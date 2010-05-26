@@ -211,6 +211,11 @@ namespace gtsam {
      */
     Dimensions columnIndices(const Ordering& ordering) const;
 
+    /**
+     * return the size of corresponding A matrix
+     */
+    std::pair<std::size_t, std::size_t> sizeOfA() const;
+
   	/**
   	 * Return 3*nzmax matrix where the rows correspond to the vectors i, j, and s
   	 * to generate an m-by-n sparse matrix, which can be given to MATLAB's sparse function.

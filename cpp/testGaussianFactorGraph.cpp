@@ -384,6 +384,17 @@ TEST( GaussianFactorGraph, matrix )
 }
 
 /* ************************************************************************* */
+TEST( GaussianFactorGraph, sizeOfA )
+{
+	// create a small linear factor graph
+	GaussianFactorGraph fg = createGaussianFactorGraph();
+
+  pair<size_t, size_t> mn = fg.sizeOfA();
+  CHECK(8 == mn.first);
+  CHECK(6 == mn.second);
+}
+
+/* ************************************************************************* */
 TEST( GaussianFactorGraph, sparse )
 {
 	// create a small linear factor graph

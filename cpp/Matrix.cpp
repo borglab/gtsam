@@ -317,12 +317,12 @@ void print(const Matrix& A, const string &s, ostream& stream) {
     }
     stream << endl;
   }
-  stream << "]" << endl;
+  stream << "];" << endl;
 }
 
 /* ************************************************************************* */
 void save(const Matrix& A, const string &s, const string& filename) {
-	fstream stream(filename.c_str(), fstream::out);
+	fstream stream(filename.c_str(), fstream::out | fstream::app);
 	print(A, s + "=", stream);
 	stream.close();
 }

@@ -128,12 +128,12 @@ namespace gtsam {
     odprintf_("%s [", stream, s.c_str());
     for(size_t i=0; i<n; i++)
       odprintf_("%g%s", stream, v[i], (i<n-1 ? "; " : ""));
-    odprintf_("]\n", stream);
+    odprintf_("];\n", stream);
   }
   
   /* ************************************************************************* */
   void save(const Vector& v, const string &s, const string& filename) {
-  	fstream stream(filename.c_str(), fstream::out);
+  	fstream stream(filename.c_str(), fstream::out | fstream::app);
   	print(v, s + "=", stream);
   	stream.close();
   }
