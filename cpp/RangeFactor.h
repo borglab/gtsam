@@ -40,7 +40,7 @@ namespace gtsam {
 		}
 
 		/** return the measured */
-		inline const double measured() const {
+		inline double measured() const {
 			return z_;
 		}
 	}; // RangeFactor
