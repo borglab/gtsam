@@ -298,7 +298,13 @@ endif
 include_HEADERS = $(headers)
 
 AM_CXXFLAGS += -I.. 
-AM_LDFLAGS = -L../CppUnitLite -lCppUnitLite $(BOOST_LDFLAGS) $(boost_serialization)
+AM_LDFLAGS = -L../CppUnitLite -lCppUnitLite $(BOOST_LDFLAGS) $(boost_serialization) 
+
+# adding SparseQR support
+if USE_SPQR
+AM_CXXFLAGS += -I$(HOME)/include/SuiteSparse -DUSE_SPQR
+AM_LDFLAGS += -L$(HOME)/lib/SuiteSparse -lcholmod -lsqpr
+endif
 
 # adding cblas implementation - split into a default linux version using the 
 # autotools script, and a mac version that is hardcoded 

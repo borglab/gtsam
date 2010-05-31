@@ -202,6 +202,35 @@ TEST( NonlinearOptimizer, Factorization )
 }
 
 /* ************************************************************************* */
+#ifdef USE_SPQR
+TEST( NonlinearOptimizer, FactorizationSPQR )
+{
+	typedef NonlinearOptimizer<Pose2Graph, Pose2Config, GaussianFactorGraph, FactorizationSPQR<Pose2Graph, Pose2Config> > Optimizer;
+
+	boost::shared_ptr<Pose2Config> config(new Pose2Config);
+	config->insert(1, Pose2(0.,0.,0.));
+	config->insert(2, Pose2(1.5,0.,0.));
+
+	boost::shared_ptr<Pose2Graph> graph(new Pose2Graph);
+	graph->addPrior(1, Pose2(0.,0.,0.), Isotropic::Sigma(3, 1e-10));
+	graph->addPrior(2, Pose2(1.5,0.,0.), Isotropic::Sigma(3, 1e-10));
+
+	boost::shared_ptr<Ordering> ordering(new Ordering);
+	ordering->push_back(Pose2Config::Key(1));
+	ordering->push_back(Pose2Config::Key(2));
+	Optimizer::shared_solver solver(new FactorizationSPQR<Pose2Graph, Pose2Config>(ordering));
+
+	Optimizer optimizer(graph, config, solver);
+	Optimizer optimized = optimizer.iterateLM();
+
+	Pose2Config expected;
+	expected.insert(1, Pose2(0.,0.,0.));
+	expected.insert(2, Pose2(1.5,0.,0.));
+	CHECK(assert_equal(expected, *optimized.config(), 1e-5));
+}
+#endif
+
+/* ************************************************************************* */
 TEST( NonlinearOptimizer, SubgraphSolver )
 {
 	using namespace pose2SLAM;

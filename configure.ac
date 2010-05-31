@@ -54,6 +54,17 @@ AC_ARG_ENABLE([blas],
 AM_CONDITIONAL([USE_BLAS_MACOS], [test x$blas = xtrue && test x$ISMAC = xtrue])
 AM_CONDITIONAL([USE_BLAS_LINUX], [test x$blas = xtrue && test x$ISMAC = xfalse])
 
+#enabgle SparseQR for linear solving
+AC_ARG_ENABLE([spqr],
+     [  --enable-spqr    Enable SparseQR library support],
+     [case "${enableval}" in
+       yes) spqr=true ;;
+       no)  spqr=false ;;
+       *) AC_MSG_ERROR([bad value ${enableval} for --enable-spqr]) ;;
+     esac],[spqr=false])
+
+AM_CONDITIONAL([USE_SPQR], [test x$spqr = xtrue])
+
 # Checks for programs.
 AC_PROG_CXX
 AC_PROG_CC

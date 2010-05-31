@@ -323,7 +323,7 @@ VectorConfig GaussianFactorGraph::assembleConfig(const Vector& vs, const Orderin
 }
 
 /* ************************************************************************* */
-Dimensions GaussianFactorGraph::columnIndices(const Ordering& ordering) const {
+pair<Dimensions, size_t> GaussianFactorGraph::columnIndices_(const Ordering& ordering) const {
 
 	// get the dimensions for all variables
 	Dimensions variableSet = dimensions();
@@ -342,7 +342,12 @@ Dimensions GaussianFactorGraph::columnIndices(const Ordering& ordering) const {
 		j += it->second;
 	}
 
-	return result;
+	return make_pair(result, j-1);
+}
+
+/* ************************************************************************* */
+Dimensions GaussianFactorGraph::columnIndices(const Ordering& ordering) const {
+	return columnIndices_(ordering).first;
 }
 
 /* ************************************************************************* */
@@ -434,5 +439,140 @@ boost::shared_ptr<VectorConfig> GaussianFactorGraph::conjugateGradientDescent_(
 					maxIterations)));
 }
 
+#ifdef USE_SPQR
 /* ************************************************************************* */
+cholmod_sparse* GaussianFactorGraph::cholmodSparse(const Ordering& ordering, vector<size_t>& orderedDimensions) const {
+	Dimensions colIndices;
+	size_t numCols;
+	boost::tie(colIndices, numCols) = columnIndices_(ordering);
 
+	typedef pair<int, int> RowValue; // the pair of row index and non-zero value
+	int row_start = 0, column_start = 0;
+	size_t nnz = 0;
+	vector<vector<RowValue> > ivs_vector;
+	ivs_vector.resize(numCols);
+	Vector sigmas;
+	SymbolMap<Matrix>::const_iterator jA;
+	BOOST_FOREACH(const sharedFactor& factor,factors_) {       // iterate over all the factors
+		for(jA = factor->begin(); jA!=factor->end(); jA++) {     // iterate over all matrices in the factor
+			column_start = colIndices.at(jA->first) - 1;           // find the first column index for this key
+			sigmas = factor->get_sigmas();
+			for (size_t i = 0; i < jA->second.size1(); i++)        // interate over all the non-zero entries in the submatrix
+				for (size_t j = 0; j < jA->second.size2(); j++)
+					if (jA->second(i, j) != 0.0) {
+						ivs_vector[j + column_start].push_back(make_pair(i + row_start, jA->second(i, j) / sigmas[i]));
+						nnz++;
+					}
+		}
+		row_start += factor->numberOfRows();
+	}
+
+	// assemble the CHOLMOD data structure
+	cholmod_sparse* A = new cholmod_sparse();
+	long* p = new long[numCols + 1];  // starting and ending index in A->i for each column
+	long* i = new long[nnz];          // row indices of nnz entries
+	double* x = new double[nnz];       // the values of nnz entries
+	p[0] = 0;
+	int p_index = 1;
+	int i_index = 0;
+	BOOST_FOREACH(const vector<RowValue>& ivs, ivs_vector) {
+		p[p_index] = p[p_index-1] + ivs.size();
+		BOOST_FOREACH(const RowValue& iv, ivs) {
+			i[i_index] = iv.first;
+			x[i_index++] = iv.second;
+		}
+		p_index ++;
+	}
+	A->nrow = row_start; A->ncol = numCols;	A->nzmax = nnz;
+	A->p = p; 	A->i = i; A->x = x;
+	A->stype = 0;
+	A->xtype = CHOLMOD_REAL;
+	A->dtype = CHOLMOD_DOUBLE;
+	A->itype = CHOLMOD_LONG;
+	A->packed = 1;	A->sorted = 1;
+
+	// order the column indices w.r.t. the given ordering
+	vector<size_t> orderedIndices;
+	BOOST_FOREACH(const Symbol& key, ordering)
+		orderedIndices.push_back(colIndices[key] - 1);
+	orderedIndices.push_back(numCols);
+
+	// record the dimensions for each key as the same order in the {ordering}
+	vector<size_t>::const_iterator it1 = orderedIndices.begin();
+	vector<size_t>::const_iterator it2 = orderedIndices.begin(); it2++;
+	while(it2 != orderedIndices.end())
+		orderedDimensions.push_back(*(it2++) - *(it1++));
+
+	return A;
+}
+
+
+/* ************************************************************************* */
+cholmod_dense* GaussianFactorGraph::cholmodRhs() const {
+	cholmod_dense* b = new cholmod_dense();
+	// compute the number of rows
+	b->nrow = 0;
+	BOOST_FOREACH(const sharedFactor& factor,factors_)
+		b->nrow += factor->numberOfRows();
+
+	b->ncol = 1;	b->nzmax = b->nrow;	b->d = b->nrow;
+	b->xtype = CHOLMOD_REAL;
+	b->dtype = CHOLMOD_DOUBLE;
+
+	// fill the data
+	double* x = new double[b->nrow];
+	double* x_current = x;
+  Vector::const_iterator it_b, it_sigmas, it_b_end;
+	BOOST_FOREACH(const sharedFactor& factor,factors_) {
+		it_b = factor->get_b().begin();
+		it_b_end = factor->get_b().end();
+		it_sigmas = factor->get_sigmas().begin();
+		for(; it_b != it_b_end; )
+			*(x_current++) = *(it_b++) / *(it_sigmas++);
+	}
+	b->x = x;
+
+	return b;
+}
+
+/* ************************************************************************* */
+VectorConfig GaussianFactorGraph::optimizeSPQR(const Ordering& ordering) const
+{
+	// set up the default parameters
+	cholmod_common Common, *cc ;
+	cc = &Common ;
+	cholmod_l_start(cc) ;
+
+	// get the A matrix and rhs in the compress column-format
+	vector<size_t> orderedDimensions;
+	cholmod_sparse* A = cholmodSparse(ordering, orderedDimensions);
+	cholmod_dense* b = cholmodRhs();
+
+	// QR
+	double tol = 1e-30;
+	cholmod_dense* x = SuiteSparseQR_min2norm<double> (0, tol, A, b, cc) ;
+
+	// create the update vector
+	VectorConfig config;
+	double *x_start = (double*)x->x, *x_end;
+	vector<size_t>::const_iterator itDim = orderedDimensions.begin();
+	BOOST_FOREACH(const Symbol& key, ordering) {
+		Vector v(*itDim);
+		x_end = x_start + *itDim;
+		copy(x_start, x_end, v.data().begin());
+		config.insert(key, v);
+		itDim++;
+		x_start = x_end;
+	}
+
+	// free memory
+	cholmod_l_free_sparse(&A, cc);
+	cholmod_l_free_dense (&b, cc) ;
+	cholmod_l_free_dense (&x, cc);
+	cholmod_l_finish(cc);
+
+	return config;
+}
+#endif
+
+/* ************************************************************************* */

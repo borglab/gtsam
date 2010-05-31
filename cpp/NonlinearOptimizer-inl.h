@@ -26,16 +26,21 @@ namespace gtsam {
 			int verbosity) {
 		// check if diverges
 		double absoluteDecrease = currentError - newError;
-		if (verbosity >= 2)
-			cout << "absoluteDecrease: " << absoluteDecrease << endl;
-//		if (absoluteDecrease < 0)
-//			throw overflow_error(
-//					"NonlinearFactorGraph::optimize: error increased, diverges.");
+		if (verbosity >= 2) {
+			if (absoluteDecrease < absoluteErrorTreshold)
+				cout << "absoluteDecrease: " << absoluteDecrease << " < " << absoluteErrorTreshold << endl;
+			else
+				cout << "absoluteDecrease: " << absoluteDecrease << " >= " << absoluteErrorTreshold << endl;
+		}
 
 		// calculate relative error decrease and update currentError
 		double relativeDecrease = absoluteDecrease / currentError;
-		if (verbosity >= 2)
-			cout << "relativeDecrease: " << relativeDecrease << endl;
+		if (verbosity >= 2) {
+			if (relativeDecrease < relativeErrorTreshold)
+				cout << "relativeDecrease: " << relativeDecrease << " < " << relativeErrorTreshold << endl;
+			else
+				cout << "relativeDecrease: " << relativeDecrease << " >= " << relativeErrorTreshold << endl;
+		}
 		bool converged = (relativeDecrease < relativeErrorTreshold)
 				|| (absoluteDecrease < absoluteErrorTreshold);
 		if (verbosity >= 1 && converged)
