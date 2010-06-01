@@ -270,18 +270,19 @@ namespace gtsam {
 		 * Convert to CHOLMOD's compressed-column form, refer to CHOLMOD's user guide for details.
 		 * The returned pointer needs to be free by calling cholmod_l_free_sparse
 		 */
-		cholmod_sparse* cholmodSparse(const Ordering& ordering, std::vector<std::size_t>& orderedDimensions) const;
+		cholmod_sparse* cholmodSparse(const Ordering& ordering, std::vector<std::size_t>& orderedDimensions,
+				cholmod_common *cc) const;
 
 		/**
 		 * Convert the RHS to CHOLMOD's column-major matrix format
 		 * The returned pointer needs to be free by calling cholmod_l_free_sparse
 		 */
-		cholmod_dense* cholmodRhs() const;
+		cholmod_dense* cholmodRhs(cholmod_common *cc) const;
 
     /**
      * optimizing using SparseQR package
      */
-    VectorConfig optimizeSPQR(const Ordering& ordering) const;
+    VectorConfig optimizeSPQR(const Ordering& ordering);
 #endif
   };
 } // namespace gtsam

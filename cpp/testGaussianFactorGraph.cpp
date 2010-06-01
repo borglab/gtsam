@@ -422,7 +422,10 @@ TEST( GaussianFactorGraph, cholmodSparse )
 
 	Ordering ord; ord += "x2","l1","x1";
 	vector<size_t> dimensions;
-	cholmod_sparse* A = fg.cholmodSparse(ord, dimensions);
+	cholmod_common Common, *cc ;
+	cc = &Common ;
+	cholmod_l_start (cc) ;
+	cholmod_sparse* A = fg.cholmodSparse(ord, dimensions, cc);
 
 	CHECK(A->ncol == 6);
 	CHECK(A->nrow == 8);
@@ -446,9 +449,6 @@ TEST( GaussianFactorGraph, cholmodSparse )
 	for(int index=0; index<14; index++)
 		CHECK(x[index] == *((double*)A->x + index));
 
-	cholmod_common Common, *cc ;
-	cc = &Common ;
-	cholmod_l_start (cc) ;
 	cholmod_l_free_sparse(&A, cc);
 	cholmod_l_finish(cc) ;
 }
@@ -459,7 +459,10 @@ TEST( GaussianFactorGraph, cholmodRhs )
 	// create a small linear factor graph
 	GaussianFactorGraph fg = createGaussianFactorGraph();
 
-	cholmod_dense* b = fg.cholmodRhs();
+	cholmod_common Common, *cc;
+	cc = &Common;
+	cholmod_l_start (cc);
+	cholmod_dense* b = fg.cholmodRhs(cc);
 
 	CHECK(b->ncol == 1);
 	CHECK(b->nrow == 8);
@@ -472,9 +475,6 @@ TEST( GaussianFactorGraph, cholmodRhs )
 	for(int index=0; index<8; index++)
 		CHECK(x[index] == *((double*)b->x + index));
 
-	cholmod_common Common, *cc;
-	cc = &Common;
-	cholmod_l_start (cc);
 	cholmod_l_free_dense(&b, cc);
 	cholmod_l_finish(cc);
 }

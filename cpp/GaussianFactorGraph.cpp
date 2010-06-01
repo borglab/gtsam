@@ -441,12 +441,14 @@ boost::shared_ptr<VectorConfig> GaussianFactorGraph::conjugateGradientDescent_(
 
 #ifdef USE_SPQR
 /* ************************************************************************* */
-cholmod_sparse* GaussianFactorGraph::cholmodSparse(const Ordering& ordering, vector<size_t>& orderedDimensions) const {
+cholmod_sparse* GaussianFactorGraph::cholmodSparse(const Ordering& ordering, vector<size_t>& orderedDimensions,
+		cholmod_common *cc) const {
 	Dimensions colIndices;
 	size_t numCols;
 	boost::tie(colIndices, numCols) = columnIndices_(ordering);
 
-	typedef pair<int, int> RowValue; // the pair of row index and non-zero value
+	// sort the data from row ordering to the column ordering
+	typedef pair<int, double> RowValue; // the pair of row index and non-zero value
 	int row_start = 0, column_start = 0;
 	size_t nnz = 0;
 	vector<vector<RowValue> > ivs_vector;
@@ -468,28 +470,20 @@ cholmod_sparse* GaussianFactorGraph::cholmodSparse(const Ordering& ordering, vec
 	}
 
 	// assemble the CHOLMOD data structure
-	cholmod_sparse* A = new cholmod_sparse();
-	long* p = new long[numCols + 1];  // starting and ending index in A->i for each column
-	long* i = new long[nnz];          // row indices of nnz entries
-	double* x = new double[nnz];       // the values of nnz entries
+	int numRows = row_start;
+	cholmod_sparse *A = cholmod_l_allocate_sparse(numRows, numCols, nnz, 1, 1, 0, CHOLMOD_REAL, cc);
+	long* p = (long*)(A->p);   // starting index in A->i for each column
+	long* p2 = p+1;            // ending index in A->i for each column
+	long* i = (long*)(A->i);   // row indices of nnz entries
+	double* x = (double*)A->x; // the values of nnz entries
 	p[0] = 0;
-	int p_index = 1;
-	int i_index = 0;
 	BOOST_FOREACH(const vector<RowValue>& ivs, ivs_vector) {
-		p[p_index] = p[p_index-1] + ivs.size();
+		*(p2++) = *(p++) + ivs.size();
 		BOOST_FOREACH(const RowValue& iv, ivs) {
-			i[i_index] = iv.first;
-			x[i_index++] = iv.second;
+			*(i++) = iv.first;
+			*(x++) = iv.second;
 		}
-		p_index ++;
 	}
-	A->nrow = row_start; A->ncol = numCols;	A->nzmax = nnz;
-	A->p = p; 	A->i = i; A->x = x;
-	A->stype = 0;
-	A->xtype = CHOLMOD_REAL;
-	A->dtype = CHOLMOD_DOUBLE;
-	A->itype = CHOLMOD_LONG;
-	A->packed = 1;	A->sorted = 1;
 
 	// order the column indices w.r.t. the given ordering
 	vector<size_t> orderedIndices;
@@ -508,20 +502,16 @@ cholmod_sparse* GaussianFactorGraph::cholmodSparse(const Ordering& ordering, vec
 
 
 /* ************************************************************************* */
-cholmod_dense* GaussianFactorGraph::cholmodRhs() const {
-	cholmod_dense* b = new cholmod_dense();
-	// compute the number of rows
-	b->nrow = 0;
-	BOOST_FOREACH(const sharedFactor& factor,factors_)
-		b->nrow += factor->numberOfRows();
+// learn from spqr_mx_get_dense
+cholmod_dense* GaussianFactorGraph::cholmodRhs(cholmod_common *cc) const {
 
-	b->ncol = 1;	b->nzmax = b->nrow;	b->d = b->nrow;
-	b->xtype = CHOLMOD_REAL;
-	b->dtype = CHOLMOD_DOUBLE;
+	int nrow = 0;
+	BOOST_FOREACH(const sharedFactor& factor,factors_)
+		nrow += factor->numberOfRows();
+	cholmod_dense* b = cholmod_l_allocate_dense(nrow, 1, nrow, CHOLMOD_REAL, cc);
 
 	// fill the data
-	double* x = new double[b->nrow];
-	double* x_current = x;
+	double* x_current = (double*)b->x;
   Vector::const_iterator it_b, it_sigmas, it_b_end;
 	BOOST_FOREACH(const sharedFactor& factor,factors_) {
 		it_b = factor->get_b().begin();
@@ -530,27 +520,31 @@ cholmod_dense* GaussianFactorGraph::cholmodRhs() const {
 		for(; it_b != it_b_end; )
 			*(x_current++) = *(it_b++) / *(it_sigmas++);
 	}
-	b->x = x;
 
 	return b;
 }
 
 /* ************************************************************************* */
-VectorConfig GaussianFactorGraph::optimizeSPQR(const Ordering& ordering) const
+VectorConfig GaussianFactorGraph::optimizeSPQR(const Ordering& ordering)
 {
 	// set up the default parameters
 	cholmod_common Common, *cc ;
 	cc = &Common ;
 	cholmod_l_start(cc) ;
+  cc->metis_memory = 0.0 ;
+  cc->SPQR_grain = 4 ;
+  cc->SPQR_small = 1e6 ;
+  cc->SPQR_nthreads = 2 ; // number of TBB threads (0 = default)
 
 	// get the A matrix and rhs in the compress column-format
 	vector<size_t> orderedDimensions;
-	cholmod_sparse* A = cholmodSparse(ordering, orderedDimensions);
-	cholmod_dense* b = cholmodRhs();
+	cholmod_sparse* A = cholmodSparse(ordering, orderedDimensions, cc);
+	cholmod_dense* b = cholmodRhs(cc);
 
 	// QR
-	double tol = 1e-30;
-	cholmod_dense* x = SuiteSparseQR_min2norm<double> (0, tol, A, b, cc) ;
+	int ord_method = SPQR_ORDERING_BEST;  // matlab uses 7
+	double tol = SPQR_NO_TOL; // matlab uses SPQR_DEFAULT_TOL
+	cholmod_dense* x = SuiteSparseQR<double> (ord_method, tol, A, b, cc) ;
 
 	// create the update vector
 	VectorConfig config;
