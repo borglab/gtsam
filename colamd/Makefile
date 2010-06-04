@@ -11,17 +11,17 @@ CXXFLAGS += -fPIC
 
 
 sources = $(shell ls *.c)
-objects = $(sources:.c=.o)
 
 library = libcolamd.a
 
 #Note: hack was added to ensure that flags are acutally used for compilation 
 # This should probably be fixed, but will work for 64 bit machines now
 
-$(library): $(objects) 
-	$(CXX) $(CXXFLAGS) -c -o colamd.o colamd.c
+$(library):
+	$(CXX) $(CXXFLAGS) -c         -o colamd.o   colamd.c
+	$(CXX) $(CXXFLAGS) -c -DDLONG -o colamd_l.o colamd.c
 	$(CXX) $(CXXFLAGS) -c -o colamd_global.o colamd_global.c
-	ar crsv $@ $(objects) 
+	ar crsv $@ colamd.o colamd_l.o colamd_global.o
 	ranlib $(library)
 
 clean:
