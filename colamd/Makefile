@@ -4,8 +4,8 @@
 
 all: libcolamd.a
 
-CC=gcc
-CXX=gcc
+CC ?= gcc
+CXX ?= g++
 CXXFLAGS += -O2
 CXXFLAGS += -fPIC
 

@@ -9,7 +9,7 @@ include ./UFconfig.mk
 CXXFLAGS += -O2
 CXXFLAGS += -fPIC -I./
 
-CXX = g++
+CXX ?= g++
 
 all: demo
 

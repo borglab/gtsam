@@ -4,9 +4,9 @@
 
 all: libCppUnitLite.a
 
-CC=gcc
-CXX=gcc
-CPP=gcc
+CC ?= gcc
+CXX ?= g++
+CPP ?= cpp
 CXXFLAGS += -O2
 
 sources = $(shell ls *.cpp)

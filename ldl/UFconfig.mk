@@ -33,7 +33,7 @@
 # C compiler and compiler flags:  These will normally not give you optimal
 # performance.  You should select the optimization parameters that are best
 # for your system.  On Linux, use "CFLAGS = -O3 -fexceptions" for example.
-CC = cc
+CC ?= cc
 # CFLAGS = -O   (for example; see below for details)
 
 # C++ compiler (also uses CFLAGS)
