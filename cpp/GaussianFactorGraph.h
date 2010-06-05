@@ -14,10 +14,6 @@
 
 #include <boost/shared_ptr.hpp>
 
-#ifdef USE_SPQR
-#include <SuiteSparseQR.hpp>
-#endif
-
 #include "FactorGraph.h"
 #include "Errors.h"
 #include "GaussianFactor.h"
@@ -264,25 +260,5 @@ namespace gtsam {
 		boost::shared_ptr<VectorConfig> conjugateGradientDescent_(
 				const VectorConfig& x0, bool verbose = false, double epsilon = 1e-3,
 				size_t maxIterations = 0) const;
-
-#ifdef USE_SPQR
-		/**
-		 * Convert to CHOLMOD's compressed-column form, refer to CHOLMOD's user guide for details.
-		 * The returned pointer needs to be free by calling cholmod_l_free_sparse
-		 */
-		cholmod_sparse* cholmodSparse(const Ordering& ordering, std::vector<std::size_t>& orderedDimensions,
-				cholmod_common *cc) const;
-
-		/**
-		 * Convert the RHS to CHOLMOD's column-major matrix format
-		 * The returned pointer needs to be free by calling cholmod_l_free_sparse
-		 */
-		cholmod_dense* cholmodRhs(cholmod_common *cc) const;
-
-    /**
-     * optimizing using SparseQR package
-     */
-    VectorConfig optimizeSPQR(const Ordering& ordering);
-#endif
   };
 } // namespace gtsam

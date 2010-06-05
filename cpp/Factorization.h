@@ -45,37 +45,13 @@ namespace gtsam {
   	boost::shared_ptr<GaussianFactorGraph> linearize(const NonlinearGraph& g, const Config& config) const {
   		return g.linearize(config);
   	}
-  };
-
-#ifdef USE_SPQR
-  /**
-   * A linear system solver using factorization
-   */
-  template <class NonlinearGraph, class Config>
-  class FactorizationSPQR {
-  private:
-  	boost::shared_ptr<const Ordering> ordering_;
-
-  public:
-  	FactorizationSPQR(boost::shared_ptr<const Ordering> ordering, bool old=true)
-		: ordering_(ordering) {
-  		if (!ordering) throw std::invalid_argument("FactorizationSPQR constructor: ordering = NULL");
-  	}
 
   	/**
-  	 * solve for the optimal displacement in the tangent space, and then solve
-  	 * the resulted linear system
+  	 * Does not do anything here in Factorization.
   	 */
-  	VectorConfig optimize(GaussianFactorGraph& fg) const {
-  		return fg.optimizeSPQR(*ordering_);
-  	}
-
-		/**
-		 * linearize the non-linear graph around the current config
-		 */
-  	boost::shared_ptr<GaussianFactorGraph> linearize(const NonlinearGraph& g, const Config& config) const {
-  		return g.linearize(config);
+  	boost::shared_ptr<Factorization> prepareLinear(const GaussianFactorGraph& fg) const {
+  		return boost::shared_ptr<Factorization>(new Factorization(*this));
   	}
   };
-#endif
+
 }

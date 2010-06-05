@@ -303,7 +303,8 @@ AM_LDFLAGS = -L../CppUnitLite -lCppUnitLite $(BOOST_LDFLAGS) $(boost_serializati
 # adding SparseQR support
 if USE_SPQR
 AM_CXXFLAGS += -I$(HOME)/include/SuiteSparse -DUSE_SPQR
-AM_LDFLAGS += -L$(HOME)/lib/SuiteSparse -lcholmod -lsqpr
+AM_LDFLAGS += -L$(HOME)/lib/SuiteSparse -lufconfig -lamd -lcamd -lcolamd -lbtf -lklu -lldl -lccolamd -lumfpack -lcholmod -lcxsparse -lspqr
+#AM_LDFLAGS += -L$(HOME)/lib/SuiteSparse -lsqpr
 endif
 
 # adding cblas implementation - split into a default linux version using the 

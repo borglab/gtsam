@@ -92,10 +92,17 @@ namespace gtsam {
 	public:
 
 		/**
-		 * Constructor
+		 * Constructor that evaluates new error
 		 */
 		NonlinearOptimizer(shared_graph graph, shared_config config, shared_solver solver,
-				double lambda = 1e-5);
+				const double lambda = 1e-5);
+
+		/**
+		 * Constructor that does not do any computation
+		 */
+		NonlinearOptimizer(shared_graph graph, shared_config config, shared_solver solver,
+				const double error, const double lambda): graph_(graph), config_(config),
+			  error_(error), lambda_(lambda), solver_(solver) {}
 
 		/**
 		 * Copy constructor

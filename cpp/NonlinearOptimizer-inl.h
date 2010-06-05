@@ -220,12 +220,13 @@ namespace gtsam {
 
 		// linearize all factors once
 		boost::shared_ptr<L> linear = solver_->linearize(*graph_, *config_);
+		NonlinearOptimizer prepared(graph_, config_, solver_->prepareLinear(*linear), error_, lambda_);
 		if (verbosity >= LINEAR)
 			linear->print("linear");
 
 		// try lambda steps with successively larger lambda until we achieve descent
 		if (verbosity >= LAMBDA) cout << "Trying Lambda for the first time" << endl;
-		return try_lambda(*linear, verbosity, lambdaFactor, lambdaMode);
+		return prepared.try_lambda(*linear, verbosity, lambdaFactor, lambdaMode);
 	}
 
 	/* ************************************************************************* */
