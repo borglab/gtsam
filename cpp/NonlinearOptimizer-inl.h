@@ -68,7 +68,8 @@ namespace gtsam {
 	template<class G, class C, class L, class S, class W>
 	VectorConfig NonlinearOptimizer<G, C, L, S, W>::linearizeAndOptimizeForDelta() const {
 		boost::shared_ptr<L> linearized = solver_->linearize(*graph_, *config_);
-		return solver_->optimize(*linearized);
+		NonlinearOptimizer prepared(graph_, config_, solver_->prepareLinear(*linearized), error_, lambda_);
+		return prepared.solver_->optimize(*linearized);
 	}
 
 	/* ************************************************************************* */
