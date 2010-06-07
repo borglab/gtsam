@@ -397,12 +397,11 @@ namespace gtsam {
     LieConfig<J1, X1> first_;
     LieConfig<J2, X2> second_;
 
-  private:
+  public:
 
     PairConfig(const LieConfig<J1,X1>& config1, const LieConfig<J2,X2>& config2) :
       first_(config1), second_(config2){}
 
-  public:
 
     /**
      * Default constructor creates an empty config.

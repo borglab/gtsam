@@ -28,10 +28,32 @@ typedef TypedSymbol<Point2, 'l'> PointKey;
 typedef PairConfig<PoseKey, Pose2, PointKey, Point2> Config;
 
 /* ************************************************************************* */
+TEST( PairConfig, constructors )
+{
+	Pose2 x1(1,2,3), x2(6,7,8);
+	Point2 l1(4,5), l2(9,10);
+
+	Config::Config1 cfg1;
+	cfg1.insert(PoseKey(1), x1);
+	cfg1.insert(PoseKey(2), x2);
+	Config::Config2 cfg2;
+	cfg2.insert(PointKey(1), l1);
+	cfg2.insert(PointKey(2), l2);
+
+	Config actual(cfg1, cfg2), expected;
+	expected.insert(PoseKey(1), x1);
+	expected.insert(PoseKey(2), x2);
+	expected.insert(PointKey(1), l1);
+	expected.insert(PointKey(2), l2);
+
+	CHECK(assert_equal(expected, actual));
+}
+
+/* ************************************************************************* */
 TEST( PairConfig, insert_equals1 )
 {
-  Pose2 x1(1,2,3), x2(6,7,8);
-  Point2 l1(4,5), l2(9,10);
+	Pose2 x1(1,2,3), x2(6,7,8);
+	Point2 l1(4,5), l2(9,10);
 
   Config expected;
   expected.insert(PoseKey(1), x1);
@@ -48,7 +70,6 @@ TEST( PairConfig, insert_equals1 )
   CHECK(assert_equal(expected,actual));
 }
 
-/* ************************************************************************* */
 TEST( PairConfig, insert_equals2 )
 {
   Pose2 x1(1,2,3), x2(6,7,8);
