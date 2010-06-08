@@ -495,6 +495,10 @@ namespace gtsam {
 
     void insert(const PairConfig& config);
 
+    /** Insert a subconfig */
+    void insertSub(const Config1& config) { first_.insert(config); }
+    void insertSub(const Config2& config) { second_.insert(config); }
+
     /**
      * Remove the variable with the given j.  Throws invalid_argument if the
      * j is not present in the config.
