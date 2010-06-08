@@ -437,6 +437,10 @@ namespace gtsam {
     const X1& operator[](const J1& j) const { return first_[j]; }
     const X2& operator[](const J2& j) const { return second_[j]; }
 
+    /** member function version of access function */
+    const X1& at(const J1& j) const { return first_[j]; }
+    const X2& at(const J2& j) const { return second_[j]; }
+
     /**
      * size is the total number of variables in this config.
      */
