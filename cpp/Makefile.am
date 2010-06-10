@@ -191,7 +191,9 @@ headers += Simulated2DOdometry.h Simulated2DMeasurement.h Simulated2DOrientedOdo
 sources += simulated2D.cpp simulated2DOriented.cpp 
 testSimulated2D_SOURCES = testSimulated2D.cpp
 testSimulated2D_LDADD = libgtsam.la
-check_PROGRAMS += testSimulated2D 
+testSimulated2DOriented_SOURCES = testSimulated2DOriented.cpp
+testSimulated2DOriented_LDADD = libgtsam.la
+check_PROGRAMS += testSimulated2D testSimulated2DOriented
 
 # simulated3D example
 sources += Simulated3D.cpp 

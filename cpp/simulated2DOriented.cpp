@@ -28,9 +28,7 @@ namespace gtsam {
 		/* ************************************************************************* */
 		Pose2 odo(const Pose2& x1, const Pose2& x2, boost::optional<Matrix&> H1,
 				boost::optional<Matrix&> H2) {
-			if (H1) *H1 = -I;
-			if (H2) *H2 = I;
-			return between(x1, x2);
+			return between(x1, x2, H1, H2);
 		}
 
 	/* ************************************************************************* */
