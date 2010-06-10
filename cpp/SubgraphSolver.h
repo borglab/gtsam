@@ -61,6 +61,10 @@ namespace gtsam {
   	 * the resulted linear system
   	 */
   	VectorConfig optimize(SubgraphPreconditioner& system) const;
+
+  	boost::shared_ptr<SubgraphSolver> prepareLinear(const SubgraphPreconditioner& fg) const {
+  		return boost::shared_ptr<SubgraphSolver>(new SubgraphSolver(*this));
+  	}
 	};
 
 	template<class Graph, class Config> const size_t SubgraphSolver<Graph,Config>::maxIterations_;
