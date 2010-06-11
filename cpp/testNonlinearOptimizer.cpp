@@ -201,7 +201,7 @@ TEST( NonlinearOptimizer, Factorization )
 	CHECK(assert_equal(expected, *optimized.config(), 1e-5));
 }
 
-/* ************************************************************************* *
+/* ************************************************************************* */
 TEST( NonlinearOptimizer, SubgraphSolver )
 {
 	using namespace pose2SLAM;
