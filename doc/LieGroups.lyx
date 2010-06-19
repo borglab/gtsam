@@ -1,4 +1,4 @@
-#LyX 1.6.5 created this file. For more info see http://www.lyx.org/
+#LyX 1.6.6.1 created this file. For more info see http://www.lyx.org/
 \lyxformat 345
 \begin_document
 \begin_header
@@ -534,12 +534,12 @@ If rotation and translation commuted, we could do all rotations before leaving
 placement h
 wide false
 sideways false
-status collapsed
+status open
 
 \begin_layout Plain Layout
 \align center
 \begin_inset Graphics
-	filename /Users/dellaert/borg/gtsam/doc/images/n-steps.pdf
+	filename images/n-steps.pdf
 
 \end_inset
 
@@ -3094,7 +3094,7 @@ We choose to use a different linear combination as the basis.
 \begin_layout Standard
 \begin_inset CommandInset bibtex
 LatexCommand bibtex
-bibfiles "/Users/dellaert/papers/refs"
+bibfiles "../../../papers/refs"
 options "plain"
 
 \end_inset
