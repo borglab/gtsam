@@ -123,6 +123,12 @@ Lie Groups
 \end_inset
 
 
+\begin_inset FormulaMacro
+\newcommand{\AAdd}[1]{\mathbf{\mathop{Ad}}{}_{#1}}
+{\mathbf{\mathop{Ad}}{}_{#1}}
+\end_inset
+
+
 \end_layout
 
 \begin_layout Standard
@@ -583,7 +589,7 @@ T_{1}T_{2}=(x_{1},\, y_{1},\,\theta_{1})(x_{2},\, y_{2},\,\theta_{2})=(x_{1}+\co
 \end_inset
 
 This is a bit clumsy, so we resort to a trick: embed the 2D poses in the
- 
+ space of 
 \begin_inset Formula $3\times3$
 \end_inset
 
@@ -697,7 +703,7 @@ e^{x}=\lim_{n\rightarrow\infty}\left(1+\frac{x}{n}\right)^{n}=\sum_{k=0}^{\infty
 
 \end_inset
 
-The series can be similarly defined for square matrices,and the final result
+The series can be similarly defined for square matrices, and the final result
  is that we can write the motion of a robot along a circular trajectory,
  resulting from the 2D twist 
 \begin_inset Formula $\xi=(v,\omega)$
@@ -742,8 +748,9 @@ special Euclidean group
 \end_inset
 
 .
- It is called a Lie group because it is both a manifold and a group, and
- its group operation is smooth when operating on this manifold.
+ It is called a Lie group because it is simultaneously a topological group
+ and a manifold, which implies that the multiplication and the inversion
+ operations are smooth.
  The space of 2D twists, together with a special binary operation to be
  defined below, is called the Lie algebra 
 \begin_inset Formula $\setwo$
@@ -778,7 +785,7 @@ A Lie group
 \begin_inset Formula $G$
 \end_inset
 
- is a manifold that possesses a smooth group operation.
+ is a a group and a manifold that possesses a smooth group operation.
  Associated with it is a Lie Algebra 
 \begin_inset Formula $\gg$
 \end_inset
@@ -896,8 +903,15 @@ Instead,
 \begin_inset Formula $Z$
 \end_inset
 
- can be calculated using the Baker-Campbell-Hausdorff (BCH) formula:
-\begin_inset Foot
+ can be calculated using the Baker-Campbell-Hausdorff (BCH) formula
+\begin_inset CommandInset citation
+LatexCommand cite
+key "Hall00book"
+
+\end_inset
+
+
+\begin_inset Note Note
 status collapsed
 
 \begin_layout Plain Layout
@@ -906,7 +920,7 @@ http://en.wikipedia.org/wiki/Baker–Campbell–Hausdorff_formula
 
 \end_inset
 
-
+:
 \begin_inset Formula \[
 Z=X+Y+[X,Y]/2+[X-Y,[X,Y]]/12-[Y,[X,[X,Y]]]/24+\ldots\]
 
@@ -929,7 +943,7 @@ For
 \begin_inset Formula $n$
 \end_inset
 
--dimensional matrix Lie groups, the Lie algebra 
+-dimensional matrix Lie groups, as a vector space the Lie algebra 
 \begin_inset Formula $\gg$
 \end_inset
 
@@ -937,7 +951,7 @@ For
 \begin_inset Formula $\mathbb{R}^{n}$
 \end_inset
 
-, and we can define the wedge operator 
+, and we can define the hat operator 
 \begin_inset CommandInset citation
 LatexCommand cite
 after "page 41"
@@ -990,7 +1004,7 @@ where the
 \begin_inset Formula $n\times n$
 \end_inset
 
- matrices known as the Lie group generators.
+ matrices known as Lie group generators.
  The meaning of the map 
 \begin_inset Formula $x\rightarrow\xhat$
 \end_inset
@@ -1003,12 +1017,92 @@ where the
 \end_layout
 
 \begin_layout Subsection
-The Adjoint Map
+Tangent Spaces and the Tangent Bundle
 \end_layout
 
 \begin_layout Standard
-Below we frequently make use of the equality
-\begin_inset Foot
+The tangent space 
+\begin_inset Formula $T_{g}G$
+\end_inset
+
+ at a group element 
+\begin_inset Formula $g\in G$
+\end_inset
+
+ is the vector space of tangent vectors at 
+\begin_inset Formula $g$
+\end_inset
+
+.
+ The tangent bundle 
+\begin_inset Formula $TG$
+\end_inset
+
+ is the set of all tangent vectors
+\begin_inset Formula \[
+TG\define\bigcup_{g\in G}T_{g}G\]
+
+\end_inset
+
+A vector field 
+\begin_inset Formula $X:G\rightarrow TG$
+\end_inset
+
+ assigns to each element 
+\begin_inset Formula $g$
+\end_inset
+
+ as single tangent vector 
+\begin_inset Formula $x\in T_{g}G$
+\end_inset
+
+.
+\end_layout
+
+\begin_layout Subsection
+The Adjoint Map and Adjoint Representation
+\end_layout
+
+\begin_layout Standard
+\begin_inset Note Note
+status open
+
+\begin_layout Plain Layout
+We do not fully understand this yet!!!
+\end_layout
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Standard
+The 
+\emph on
+adjoint map
+\emph default
+ 
+\begin_inset Formula $\AAdd g$
+\end_inset
+
+ maps a group element 
+\begin_inset Formula $a\in G$
+\end_inset
+
+ to its conjugate 
+\begin_inset Formula $gag^{-1}$
+\end_inset
+
+ by 
+\begin_inset Formula $g$
+\end_inset
+
+.
+\end_layout
+
+\begin_layout Standard
+Below we frequently make use of the equality 
+\begin_inset Note Note
 status collapsed
 
 \begin_layout Plain Layout
@@ -1019,7 +1113,7 @@ http://en.wikipedia.org/wiki/Exponential_map
 
 
 \begin_inset Formula \[
-ge^{\xhat}g^{-1}=e^{\Ad g{\xhat}}\]
+\AAdd ge^{\xhat}=ge^{\xhat}g^{-1}=e^{\Ad g{\xhat}}\]
 
 \end_inset
 
@@ -1031,8 +1125,17 @@ where
 \begin_inset Formula $g$
 \end_inset
 
+, and is called the 
+\emph on
+adjoint representation
+\emph default
 .
- The intuitive explanation is that a change 
+ 
+\begin_inset Note Note
+status open
+
+\begin_layout Plain Layout
+The intuitive explanation is that a change 
 \begin_inset Formula $\exp\left(\xhat\right)$
 \end_inset
 
@@ -1049,8 +1152,16 @@ where
 \end_inset
 
 .
- In the case of a matrix group the ajoint can be written as 
-\begin_inset Foot
+\end_layout
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Standard
+In the case of a matrix group the adjoint can be written as 
+\begin_inset Note Note
 status collapsed
 
 \begin_layout Plain Layout
@@ -1307,13 +1418,9 @@ all
 
 \end_inset
 
-which we can write in terms of 
-\begin_inset Formula $\omega$
-\end_inset
-
- as
+i.e., 
 \begin_inset Formula \[
-\Ad R\omega=\omega\]
+\Ad R\what=\what\]
 
 \end_inset
 
@@ -2292,6 +2399,8 @@ The action of
 \begin_inset Formula \[
 \hat{q}=\left[\begin{array}{c}
 q\\
+1\end{array}\right]=\left[\begin{array}{c}
+Rp+t\\
 1\end{array}\right]=\left[\begin{array}{cc}
 R & t\\
 0 & 1\end{array}\right]\left[\begin{array}{c}
@@ -2369,6 +2478,24 @@ By only taking the top three rows, we can write this as a velocity in
 -\Skew p & I_{3}\end{array}\right]\left[\begin{array}{c}
 \omega\\
 v\end{array}\right]\]
+
+\end_inset
+
+The inverse action 
+\begin_inset Formula $T^{-1}p$
+\end_inset
+
+ is
+\begin_inset Formula \[
+\hat{q}=\left[\begin{array}{c}
+q\\
+1\end{array}\right]=\left[\begin{array}{c}
+R^{T}(p-t)\\
+1\end{array}\right]=\left[\begin{array}{cc}
+R^{T} & -R^{T}t\\
+0 & 1\end{array}\right]\left[\begin{array}{c}
+p\\
+1\end{array}\right]=T^{-1}\hat{p}\]
 
 \end_inset
 
