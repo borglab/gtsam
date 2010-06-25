@@ -110,7 +110,7 @@ namespace gtsam {
 		}
 
 		// get the nodes in the tree with the given label
-		Set set(const Label& label) {
+		Set set(const Label& label) const {
 			Set set;
 			BOOST_FOREACH(const KeyLabel& pair, (Tree)*this) {
 				if (pair.second == label || findSet(pair.second) == label)

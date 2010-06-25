@@ -99,6 +99,10 @@ namespace gtsam {
 			return keys_.empty();
 		}
 
+		/** get the size of the factor */
+		std::size_t size() const {
+			return keys_.size();
+		}
 
 	};
 
