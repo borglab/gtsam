@@ -641,7 +641,7 @@ TEST( matrix, houseHolder )
 /* ************************************************************************* */
 // unit tests for housholder transformation
 /* ************************************************************************* */
-#ifdef GT_USE_CBLAS
+#ifdef GT_USE_LAPACK
 TEST( matrix, houseHolder2 )
 {
 	double data[] = { -5, 0, 5, 0, 0, 0, -1,

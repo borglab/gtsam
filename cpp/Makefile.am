@@ -322,12 +322,19 @@ libgtsam_la_LDFLAGS += -lcblas -latlas  # $(BLAS_LIBS) $(LIBS) $(FLIBS)
 endif
 
 if USE_BLAS_MACOS
-AM_CXXFLAGS += -DGT_USE_CBLAS -DYA_BLAS -DYA_LAPACK -DYA_BLASMULT -I/System/Library/Frameworks/vecLib.framework/Headers 
+AM_CXXFLAGS += -DGT_USE_CBLAS
+endif
+
+if USE_LAPACK_MACOS
+AM_CXXFLAGS += -DGT_USE_LAPACK
+endif
+
+if USE_VECLIB_MACOS
+AM_CXXFLAGS += -DYA_BLAS -DYA_LAPACK -DYA_BLASMULT -I/System/Library/Frameworks/vecLib.framework/Headers 
 libgtsam_la_CPPFLAGS += -DGT_USE_CBLAS -DYA_BLAS -DYA_LAPACK -DYA_BLASMULT -I/System/Library/Frameworks/vecLib.framework/Headers 
 AM_LDFLAGS += -lcblas -latlas 
 libgtsam_la_LDFLAGS += -framework vecLib -lcblas -latlas
 endif
-
 
 TESTS = $(check_PROGRAMS)
 CXXLINK = $(LIBTOOL) $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=link \

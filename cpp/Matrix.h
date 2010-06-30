@@ -255,7 +255,7 @@ void householder(Matrix& A, size_t k);
  * @param k number of columns to zero out below diagonal
  * @return nothing: in place !!!
  */
-#ifdef GT_USE_CBLAS
+#ifdef GT_USE_LAPACK
 void householder(Matrix &A);
 #endif
 

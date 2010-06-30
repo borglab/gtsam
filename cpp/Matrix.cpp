@@ -13,10 +13,13 @@
 #ifdef GT_USE_CBLAS
 	#ifdef YA_BLAS
 #include <vecLib/cblas.h>
-#include <vecLib/clapack.h>
 	#else
 #include <cblas.h>
 	#endif
+#endif
+
+#ifdef GT_USE_LAPACK
+#include <vecLib/clapack.h>
 #endif
 
 #include <boost/numeric/ublas/matrix_proxy.hpp>
@@ -654,7 +657,7 @@ void householder(Matrix &A, size_t k) {
 /* ************************************************************************* */
 /** in-place householder                                                     */
 /* ************************************************************************* */
-#ifdef GT_USE_CBLAS
+#ifdef GT_USE_LAPACK
 void householder(Matrix &A) {
 	int m = A.size1();
 	int n = A.size2();

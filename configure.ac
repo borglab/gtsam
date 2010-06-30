@@ -54,6 +54,18 @@ AC_ARG_ENABLE([blas],
 AM_CONDITIONAL([USE_BLAS_MACOS], [test x$blas = xtrue && test x$ISMAC = xtrue])
 AM_CONDITIONAL([USE_BLAS_LINUX], [test x$blas = xtrue && test x$ISMAC = xfalse])
 
+# enable LAPACK
+AC_ARG_ENABLE([lapack],
+     [  --enable-lapack    Enable external LAPACK library],
+     [case "${enableval}" in
+       yes) lapack=true ;;
+       no)  lapack=false ;;
+       *) AC_MSG_ERROR([bad value ${enableval} for --enable-lapack]) ;;
+     esac],[lapack=false])
+
+AM_CONDITIONAL([USE_LAPACK_MACOS], [test x$lapack = xtrue && test x$ISMAC = xtrue])
+AM_CONDITIONAL([USE_VECLIB_MACOS], [(test x$lapack = xtrue || test x$blas = xtrue) && test x$ISMAC = xtrue])
+
 #enabgle SparseQR for linear solving
 AC_ARG_ENABLE([spqr],
      [  --enable-spqr    Enable SparseQR library support],
