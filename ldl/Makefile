@@ -23,7 +23,7 @@ libldl.a: ldl.cpp ldl.h
 	$(RANLIB) libldl.a
 
 demo: ldlsimple.cpp libldl.a
-	$(CXX) ldlsimple.cpp -o ldldemo -L./ -lldl
+	$(CXX) $(CXXFLAGS) $(LDFLAGS) ldlsimple.cpp -o ldldemo -L./ -lldl
 
 clean:
 	$(RM) $(CLEAN) libldl.a ldldemo
