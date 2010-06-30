@@ -118,7 +118,12 @@ SharedDiagonal Gaussian::QR(Matrix& Ab) const {
 	if (verbose) gtsam::print(Ab, "Ab after whitening");
 
 	// Perform in-place Householder
+#ifdef GT_USE_CBLAS
+	householder(Ab);
+#else
 	householder(Ab, maxRank);
+#endif
+
 	if (verbose) gtsam::print(Ab, "Ab before householder");
 
 	return Unit::Create(maxRank);

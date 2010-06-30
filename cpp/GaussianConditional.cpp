@@ -63,11 +63,13 @@ bool GaussianConditional::equals(const Conditional &c, double tol) const {
 	// check if the size of the parents_ map is the same
 	if (parents_.size() != p->parents_.size()) return false;
 
-	// check if R_ is equal
-	if (!(equal_with_abs_tol(R_, p->R_, tol))) return false;
+	bool equal_R1 = equal_with_abs_tol(R_,      p->R_, tol);
+	bool equal_R2 = equal_with_abs_tol(R_*(-1), p->R_, tol);
+	bool equal_d1 = ::equal_with_abs_tol(d_,      p->d_, tol);
+	bool equal_d2 = ::equal_with_abs_tol(d_*(-1), p->d_, tol);
 
-	// check if d_ is equal
-	if (!(::equal_with_abs_tol(d_, p->d_, tol))) return false;
+	// check if R_ and d_ are equal up to a sign
+	if (!((equal_R1 && equal_d1) || (equal_R2 && equal_d2))) return false;
 
 	// check if sigmas are equal
 	if (!(::equal_with_abs_tol(sigmas_, p->sigmas_, tol))) return false;
@@ -77,7 +79,9 @@ bool GaussianConditional::equals(const Conditional &c, double tol) const {
 	for (it = parents_.begin(); it != parents_.end(); it++) {
 		Parents::const_iterator it2 = p->parents_.find(it->first);
 		if (it2 != p->parents_.end()) {
-			if (!(equal_with_abs_tol(it->second, it2->second, tol))) return false;
+			if (!(equal_with_abs_tol(it->second, it2->second, tol)) &&
+					!(equal_with_abs_tol(it->second*(-1), it2->second, tol)))
+				return false;
 		} else
 			return false;
 	}

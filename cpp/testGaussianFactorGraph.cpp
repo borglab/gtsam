@@ -729,7 +729,10 @@ TEST( GaussianFactorGraph, elimination )
 	Matrix expected = Matrix_(2,2,
 			0.707107,	-0.353553,
 			0.0,	 0.612372);
-	CHECK(assert_equal(expected,R,1e-6));
+	Matrix expected2 = Matrix_(2,2,
+			0.707107,	-0.353553,
+			0.0,	 -0.612372);
+	CHECK(equal_with_abs_tol(expected, R, 1e-6) || equal_with_abs_tol(expected2, R, 1e-6));
 }
 
  /* ************************************************************************* */

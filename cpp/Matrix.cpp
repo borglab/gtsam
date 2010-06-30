@@ -13,6 +13,7 @@
 #ifdef GT_USE_CBLAS
 	#ifdef YA_BLAS
 #include <vecLib/cblas.h>
+#include <vecLib/clapack.h>
 	#else
 #include <cblas.h>
 	#endif
@@ -649,6 +650,42 @@ void householder(Matrix &A, size_t k) {
     for( size_t i = j+1 ; i < m ; i++ )
       A(i,j) = 0.0;
 }
+
+/* ************************************************************************* */
+/** in-place householder                                                     */
+/* ************************************************************************* */
+#ifdef GT_USE_CBLAS
+void householder(Matrix &A) {
+	int m = A.size1();
+	int n = A.size2();
+
+	// convert from row major to column major
+	double a[m*n]; int k = 0;
+	for(int j=0; j<n; j++)
+		for(int i=0; i<m; i++, k++)
+			a[k] = A(i,j);
+
+	double tau[n];
+	double work_optimal_size;
+	int lwork = -1;
+	int info;
+
+	dgeqrf_(&m, &n, a, &m, tau, &work_optimal_size, &lwork, &info);
+	lwork = (int)work_optimal_size;
+	double work[lwork];
+	dgeqrf_(&m, &n, a, &m, tau, work, &lwork, &info);
+
+	int k0 = 0;
+	int j0;
+	memset(A.data().begin(), 0, m*n*sizeof(double));
+	for(int j=0; j<n; j++, k0+=m) {
+		k = k0;
+		j0 = min(j+1,m);
+		for(int i=0; i<j0; i++, k++)
+			A(i,j) = a[k];
+	}
+}
+#endif
 
 /* ************************************************************************* */
 Vector backSubstituteUpper(const Matrix& U, const Vector& b, bool unit) {

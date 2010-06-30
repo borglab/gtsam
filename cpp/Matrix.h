@@ -251,6 +251,15 @@ void householder_(Matrix& A, size_t k);
 void householder(Matrix& A, size_t k);
 
 /**
+ * Householder tranformation, zeros below diagonal
+ * @param k number of columns to zero out below diagonal
+ * @return nothing: in place !!!
+ */
+#ifdef GT_USE_CBLAS
+void householder(Matrix &A);
+#endif
+
+/**
  * backSubstitute U*x=b
  * @param U an upper triangular matrix
  * @param b an RHS vector

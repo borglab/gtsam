@@ -613,13 +613,16 @@ TEST( matrix, backsubtitution )
 /* ************************************************************************* */
 TEST( matrix, houseHolder )
 {
-	double data[] = { -5, 0, 5, 0, 0, 0, -1, 00, -5, 0, 5, 0, 0, 1.5, 10, 0, 0,
-			0, -10, 0, 2, 00, 10, 0, 0, 0, -10, -1 };
+	double data[] = { -5, 0, 5, 0, 0, 0, -1,
+										00,-5, 0, 5, 0, 0, 1.5,
+										10, 0, 0,	0,-10,0,   2,
+										00, 10,0, 0, 0, -10, -1 };
 
 	// check in-place householder, with v vectors below diagonal
-	double data1[] = { 11.1803, 0, -2.2361, 0, -8.9443, 0, 2.236, 0, 11.1803,
-			0, -2.2361, 0, -8.9443, -1.565, -0.618034, 0, 4.4721, 0, -4.4721,
-			0, 0, 0, -0.618034, 0, 4.4721, 0, -4.4721, 0.894 };
+	double data1[] = { 11.1803, 0, -2.2361, 0, -8.9443, 0, 2.236,
+										0, 11.1803,	0, -2.2361, 0, -8.9443, -1.565,
+										-0.618034, 0, 4.4721, 0, -4.4721,	0, 0,
+										0, -0.618034, 0, 4.4721, 0, -4.4721, 0.894 };
 	Matrix expected1 = Matrix_(4, 7, data1);
 	Matrix A1 = Matrix_(4, 7, data);
 	householder_(A1, 3);
@@ -634,6 +637,30 @@ TEST( matrix, houseHolder )
 	householder(A2, 3);
 	CHECK(assert_equal(expected, A2, 1e-3));
 }
+
+/* ************************************************************************* */
+// unit tests for housholder transformation
+/* ************************************************************************* */
+#ifdef GT_USE_CBLAS
+TEST( matrix, houseHolder2 )
+{
+	double data[] = { -5, 0, 5, 0, 0, 0, -1,
+										00,-5, 0, 5, 0, 0, 1.5,
+										10, 0, 0,	0,-10,0,   2,
+										00, 10,0, 0, 0, -10, -1 };
+
+	// check in-place householder, with v vectors below diagonal
+	double data1[] = { 11.1803, 0, -2.2361, 0, -8.9443, 0, 2.236,
+										0, 11.1803,	0, -2.2361, 0, -8.9443, -1.565,
+										0, 0, 4.4721, 0, -4.4721,	0, 0,
+										0, 0, 0, 4.4721, 0, -4.4721, 0.894 };
+	Matrix expected1 = Matrix_(4, 7, data1);
+	Matrix A1 = Matrix_(4, 7, data);
+	householder(A1);
+	CHECK(assert_equal(expected1, A1, 1e-3));
+}
+#endif
+
 /* ************************************************************************* */
 // unit test for qr factorization (and hence householder)
 // This behaves the same as QR in matlab: [Q,R] = qr(A), except for signs
