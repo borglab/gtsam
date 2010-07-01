@@ -2,7 +2,7 @@
  * LieConfig.cpp
  *
  *  Created on: Jan 8, 2010
- *      Author: richard
+ *  @Author: Richard Roberts
  */
 
 #pragma once
@@ -57,8 +57,7 @@ namespace gtsam {
   template<class J, class T>
   size_t LieConfig<J,T>::dim() const {
   	size_t n = 0;
-  	typedef pair<J,T> Value;
-  	BOOST_FOREACH(const Value& value, values_)
+  	BOOST_FOREACH(const typename Values::value_type& value, values_)
   		n += gtsam::dim(value.second);
   	return n;
   }
@@ -66,8 +65,7 @@ namespace gtsam {
   template<class J, class T>
   VectorConfig LieConfig<J,T>::zero() const {
   	VectorConfig z;
-  	typedef pair<J,T> Value;
-  	BOOST_FOREACH(const Value& value, values_)
+  	BOOST_FOREACH(const typename Values::value_type& value, values_)
   		z.insert(value.first,gtsam::zero(gtsam::dim(value.second)));
   	return z;
   }
@@ -122,8 +120,8 @@ namespace gtsam {
   template<class J, class T>
   LieConfig<J,T> expmap(const LieConfig<J,T>& c, const VectorConfig& delta) {
 		LieConfig<J,T> newConfig;
-		typedef pair<J,T> Value;
-		BOOST_FOREACH(const Value& value, c) {
+		typedef pair<J,T> KeyValue;
+		BOOST_FOREACH(const KeyValue& value, c) {
 			const J& j = value.first;
 			const T& pj = value.second;
 			Symbol jkey = (Symbol)j;
@@ -145,8 +143,8 @@ namespace gtsam {
     }
     LieConfig<J,T> newConfig;
     int delta_offset = 0;
-		typedef pair<J,T> Value;
-		BOOST_FOREACH(const Value& value, c) {
+		typedef pair<J,T> KeyValue;
+		BOOST_FOREACH(const KeyValue& value, c) {
 			const J& j = value.first;
 			const T& pj = value.second;
       int cur_dim = dim(pj);
@@ -161,8 +159,8 @@ namespace gtsam {
   template<class J, class T>
   VectorConfig logmap(const LieConfig<J,T>& c0, const LieConfig<J,T>& cp) {
   	VectorConfig delta;
-  	typedef pair<J,T> Value;
-  	BOOST_FOREACH(const Value& value, cp) {
+		typedef pair<J,T> KeyValue;
+  	BOOST_FOREACH(const KeyValue& value, cp) {
   		if(c0.exists(value.first))
   			delta.insert(value.first,
   					logmap(c0[value.first], value.second));

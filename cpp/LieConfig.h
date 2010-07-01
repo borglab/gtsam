@@ -2,9 +2,15 @@
  * LieConfig.h
  *
  *  Created on: Jan 5, 2010
- *      Author: Richard Roberts
+ *  @Author: Richard Roberts
  *
  *  A templated config for Lie-group elements
+ *
+ *  Detailed story:
+ *  A configuration is a map from keys to values. It is used to specify the value of a bunch
+ *  of variables in a factor graph. A LieConfig is a configuration which can hold variables that
+ *  are elements of Lie groups, not just vectors. It then, as a whole, implements a aggregate type
+ *  which is also a Lie group, and hence supports operations dim, exmap, and logmap.
  */
 
 #pragma once
@@ -25,17 +31,20 @@ namespace gtsam {
 
 	/**
 	 * Lie type configuration
+	 * Takes two template types
+	 *  J: a type to look up values in the configuration (need to be sortable)
+	 *  T: the type of values being stored in the configuration
 	 */
   template<class J, class T>
-  class LieConfig : public Testable<LieConfig<J,T> > {
+  class LieConfig : public Testable<LieConfig<J, T> > {
 
   public:
 
     /**
      * Typedefs
      */
-    typedef J Key;
-    typedef T Value;
+  	typedef J Key;
+  	typedef T Value;
     typedef std::map<J, T> Values;
     typedef typename Values::iterator iterator;
     typedef typename Values::const_iterator const_iterator;
