@@ -13,7 +13,12 @@ namespace gtsam {
 
 	/**
 	 * A class for a soft prior on any Lie type
-	 * T is the Lie group type, Config where the T's are gotten from
+	 * It takes three template parameters:
+	 *   T is the Lie group type for which the prior is define
+	 *   Key (typically TypedSymbol) is used to look up T's in a Config
+	 *   Config where the T's are stored, typically LieConfig<Key,T> or a TupleConfig<...>
+	 * The Key type is not arbitrary: we need to cast to a Symbol at linearize, so
+	 * a simple type like int will not work
 	 */
 	template<class Config, class Key, class T>
 	class PriorFactor: public NonlinearFactor1<Config, Key, T> {
