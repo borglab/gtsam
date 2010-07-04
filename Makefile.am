@@ -3,7 +3,7 @@ ACLOCAL_AMFLAGS = -I m4
 
 # make automake install some standard but missing files
 AUTOMAKE_OPTIONS = foreign
-SUBDIRS = colamd CppUnitLite ldl cpp wrap
+SUBDIRS = colamd CppUnitLite ldl spqr_mini cpp wrap
 
 # install the matlab toolbox
 install-exec-hook:
@@ -20,6 +20,10 @@ install-exec-hook:
 	cp -f ldl/ldl.h $(prefix)/include/ldl/ && \
 	cp -f ldl/UFconfig.h $(prefix)/include/ldl/ && \
 	cp -f ldl/libldl.a $(prefix)/lib/
+	install -d $(prefix)/include/spqr_mini && \
+	cp -f spqr_mini/*.h   $(prefix)/include/spqr_mini/ && \
+	cp -f spqr_mini/*.hpp $(prefix)/include/spqr_mini/ && \
+	cp -f spqr_mini/libspqr_mini.a $(prefix)/lib/
 
 dist-hook:
 	mkdir $(distdir)/CppUnitLite
@@ -36,5 +40,10 @@ dist-hook:
 	cp -p $(srcdir)/ldl/*.h $(distdir)/ldl
 	cp -p $(srcdir)/ldl/*.c $(distdir)/ldl
 	cp -p $(srcdir)/ldl/*.cpp $(distdir)/ldl
+	mkdir $(distdir)/spqr_mini
+	cp -p $(srcdir)/spqr_mini/Makefile $(distdir)/spqr_mini
+	cp -p $(srcdir)/spqr_mini/*.h $(distdir)/spqr_mini
+	cp -p $(srcdir)/spqr_mini/*.c $(distdir)/spqr_mini
+	cp -p $(srcdir)/spqr_mini/*.cpp $(distdir)/spqr_mini
 	mkdir $(distdir)/matlab
 	cp -p $(srcdir)/matlab/*.m $(distdir)/matlab

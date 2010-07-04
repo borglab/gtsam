@@ -156,6 +156,20 @@ bool assert_equal(const std::list<Matrix>& As, const std::list<Matrix>& Bs, doub
 }
 
 /* ************************************************************************* */
+bool linear_dependent(const Matrix& A, const Matrix& B, double tol) {
+  size_t n1 = A.size2(), m1 = A.size1();
+  size_t n2 = B.size2(), m2 = B.size1();
+
+  if(m1!=m2 || n1!=n2) return false;
+
+  for(int i=0; i<m1; i++) {
+  	if (!gtsam::linear_dependent(row_(A,i), row_(B,i), tol))
+  		return false;
+  }
+  return true;
+}
+
+/* ************************************************************************* */
 void multiplyAdd(double alpha, const Matrix& A, const Vector& x, Vector& e) {
 #if defined GT_USE_CBLAS
 

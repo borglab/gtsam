@@ -203,7 +203,8 @@ VectorConfig GaussianFactorGraph::optimize(const Ordering& ordering, bool old)
 	GaussianBayesNet chordalBayesNet = eliminate(ordering, old);
 
 	// calculate new configuration (using backsubstitution)
-	return ::optimize(chordalBayesNet);
+	VectorConfig delta = ::optimize(chordalBayesNet);
+	return delta;
 }
 
 /* ************************************************************************* */

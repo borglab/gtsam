@@ -20,6 +20,7 @@
 
 #include "NoiseModel.h"
 #include "SharedDiagonal.h"
+#include "SPQRUtil.h"
 
 namespace ublas = boost::numeric::ublas;
 typedef ublas::matrix_column<Matrix> column;
@@ -104,8 +105,6 @@ void Gaussian::WhitenInPlace(Matrix& H) const {
 
 // General QR, see also special version in Constrained
 SharedDiagonal Gaussian::QR(Matrix& Ab) const {
-	bool verbose = false;
-	if (verbose) cout << "\nIn Gaussian::QR" << endl;
 
 	// get size(A) and maxRank
 	// TODO: really no rank problems ?
@@ -113,18 +112,22 @@ SharedDiagonal Gaussian::QR(Matrix& Ab) const {
 	size_t maxRank = min(m,n);
 
 	// pre-whiten everything (cheaply if possible)
-	if (verbose) gtsam::print(Ab, "Ab before whitening");
 	WhitenInPlace(Ab);
-	if (verbose) gtsam::print(Ab, "Ab after whitening");
 
 	// Perform in-place Householder
 #ifdef GT_USE_LAPACK
-	householder(Ab);
+	long* Stair = MakeStairs(Ab);
+//	double t0, t1;
+//	t0 = clock();
+//	gtsam::print(Ab, "Ab");
+	householder_spqr(Ab, Stair);
+//		householder_spqr(Ab);
+//	gtsam::print(Ab, "Ab");
+//	t1 = clock();
+//	printf("QR: %ld %ld %g\n", m, n, (double) (t1 - t0) / CLOCKS_PER_SEC  * 1000);
 #else
 	householder(Ab, maxRank);
 #endif
-
-	if (verbose) gtsam::print(Ab, "Ab before householder");
 
 	return Unit::Create(maxRank);
 }

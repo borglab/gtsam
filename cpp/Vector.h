@@ -149,6 +149,15 @@ bool assert_equal(SubVector vec1, SubVector vec2, double tol=1e-9);
 bool assert_equal(ConstSubVector vec1, ConstSubVector vec2, double tol=1e-9);
 
 /**
+ * check whether two vectors are linearly dependent
+ * @param vec1 Vector
+ * @param vec2 Vector
+ * @param tol 1e-9
+ * @return bool
+ */
+bool linear_dependent(const Vector& vec1, const Vector& vec2, double tol=1e-9);
+
+/**
  * extract subvector, slice semantics, i.e. range = [i1,i2[ excluding i2
  * @param v Vector
  * @param i1 first row index

@@ -160,7 +160,7 @@ TEST( NoiseModel, QR )
 			0.0,   11.1803,    0.0,    -2.23607, 0.0,    -8.94427,-1.56525,
 			0.0,       0.0,    4.47214, 0.0,    -4.47214, 0.0,     0.0,
 			0.0,       0.0,   0.0,     4.47214, 0.0,    -4.47214, 0.894427);
-	CHECK(assert_equal(expectedRd1,Ab1,1e-4)); // Ab was modified in place !!!
+	CHECK(linear_dependent(expectedRd1,Ab1,1e-4)); // Ab was modified in place !!!
 
 	// Call Constrained version
 	SharedDiagonal constrained = noiseModel::Constrained::MixedSigmas(sigmas);
@@ -172,7 +172,7 @@ TEST( NoiseModel, QR )
 			0.,  1.,  0.,-0.2,   0., -0.8,-0.14,
 			0.,  0.,  1.,   0., -1.,  0.,  0.0,
 			0.,  0.,  0.,   1.,  0., -1.,  0.2);
-	CHECK(assert_equal(expectedRd2,Ab2,1e-6)); // Ab was modified in place !!!
+	CHECK(linear_dependent(expectedRd2,Ab2,1e-6)); // Ab was modified in place !!!
 }
 
 /* ************************************************************************* */

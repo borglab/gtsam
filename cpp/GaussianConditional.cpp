@@ -63,28 +63,32 @@ bool GaussianConditional::equals(const Conditional &c, double tol) const {
 	// check if the size of the parents_ map is the same
 	if (parents_.size() != p->parents_.size()) return false;
 
-	bool equal_R1 = equal_with_abs_tol(R_,      p->R_, tol);
-	bool equal_R2 = equal_with_abs_tol(R_*(-1), p->R_, tol);
-	bool equal_d1 = ::equal_with_abs_tol(d_,      p->d_, tol);
-	bool equal_d2 = ::equal_with_abs_tol(d_*(-1), p->d_, tol);
-
 	// check if R_ and d_ are equal up to a sign
-	if (!((equal_R1 && equal_d1) || (equal_R2 && equal_d2))) return false;
+	for (int i=0; i<d_.size(); i++) {
+		Vector row1 = row_(R_, i);
+		Vector row2 = row_(p->R_, i);
+		if (!((::equal_with_abs_tol(row1, row2, tol)      && fabs(d_(i) - p->d_(i)) < tol) ||
+	  			(::equal_with_abs_tol(row1, row2*(-1), tol) && fabs(d_(i) + p->d_(i)) < tol)))
+			return false;
+
+		float sign = ::equal_with_abs_tol(row1, row2, tol) ? 1 : -1;
+
+		// check if the matrices are the same
+		// iterate over the parents_ map
+		for (it = parents_.begin(); it != parents_.end(); it++) {
+			Parents::const_iterator it2 = p->parents_.find(it->first);
+			if (it2 != p->parents_.end()) {
+				if (!::equal_with_abs_tol(row_(it->second*sign, i), row_(it2->second,i), tol))
+					return false;
+			} else
+				return false;
+		}
+
+	}
 
 	// check if sigmas are equal
 	if (!(::equal_with_abs_tol(sigmas_, p->sigmas_, tol))) return false;
 
-	// check if the matrices are the same
-	// iterate over the parents_ map
-	for (it = parents_.begin(); it != parents_.end(); it++) {
-		Parents::const_iterator it2 = p->parents_.find(it->first);
-		if (it2 != p->parents_.end()) {
-			if (!(equal_with_abs_tol(it->second, it2->second, tol)) &&
-					!(equal_with_abs_tol(it->second*(-1), it2->second, tol)))
-				return false;
-		} else
-			return false;
-	}
 	return true;
 }
 

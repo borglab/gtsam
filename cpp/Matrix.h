@@ -87,6 +87,11 @@ bool assert_equal(const Matrix& A, const Matrix& B, double tol = 1e-9);
 bool assert_equal(const std::list<Matrix>& As, const std::list<Matrix>& Bs, double tol = 1e-9);
 
 /**
+ * check whether the rows of two matrices are linear indepdent
+ */
+bool linear_dependent(const Matrix& A, const Matrix& B, double tol = 1e-9);
+
+/**
  * overload * for matrix-vector multiplication (as BOOST does not)
  */
 inline Vector operator*(const Matrix& A, const Vector & v) { return prod(A,v);}

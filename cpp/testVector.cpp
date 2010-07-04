@@ -266,5 +266,29 @@ TEST( TestVector, reciprocal )
 }
 
 /* ************************************************************************* */
+TEST( TestVector, linear_dependent )
+{
+	Vector v1 = Vector_(3, 1.0, 2.0, 3.0);
+	Vector v2 = Vector_(3, -2.0, -4.0, -6.0);
+	CHECK(linear_dependent(v1, v2));
+}
+
+/* ************************************************************************* */
+TEST( TestVector, linear_dependent2 )
+{
+	Vector v1 = Vector_(3, 0.0, 2.0, 0.0);
+	Vector v2 = Vector_(3, 0.0, -4.0, 0.0);
+	CHECK(linear_dependent(v1, v2));
+}
+
+/* ************************************************************************* */
+TEST( TestVector, linear_dependent3 )
+{
+	Vector v1 = Vector_(3, 0.0, 2.0, 0.0);
+	Vector v2 = Vector_(3, 0.1, -4.1, 0.0);
+	CHECK(!linear_dependent(v1, v2));
+}
+
+/* ************************************************************************* */
 int main() { TestResult tr; return TestRegistry::runAllTests(tr); }
 /* ************************************************************************* */

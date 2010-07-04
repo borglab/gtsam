@@ -29,12 +29,14 @@ version = $(current):$(revision):$(age)
 # we specify the library in levels
 
 # basic Math
-sources = Vector.cpp svdcmp.cpp Matrix.cpp 
-check_PROGRAMS = testVector testMatrix 
+sources = Vector.cpp svdcmp.cpp Matrix.cpp SPQRUtil.cpp
+check_PROGRAMS = testVector testMatrix testSPQRUtil
 testVector_SOURCES = testVector.cpp
 testVector_LDADD   = libgtsam.la
 testMatrix_SOURCES = testMatrix.cpp
 testMatrix_LDADD   = libgtsam.la
+testSPQRUtil_SOURCES = testSPQRUtil.cpp
+testSPQRUtil_LDADD   = libgtsam.la
 
 # GTSAM basics
 # The header files will be installed in ~/include/gtsam
@@ -291,7 +293,7 @@ AM_CXXFLAGS = -I$(boost) -fPIC
 lib_LTLIBRARIES = libgtsam.la
 libgtsam_la_SOURCES = $(sources)
 libgtsam_la_CPPFLAGS = $(AM_CXXFLAGS)
-libgtsam_la_LDFLAGS = -version-info $(version) -L../colamd -lcolamd -L../ldl -lldl # ../ldl/libldl.a -lboost_serialization-mt
+libgtsam_la_LDFLAGS = -version-info $(version) -L../colamd -lcolamd -L../ldl -lldl -L../spqr_mini -lspqr_mini # ../ldl/libldl.a -lboost_serialization-mt
 
 # enable debug if --enable-debug is set in configure
 if DEBUG
@@ -303,13 +305,6 @@ include_HEADERS = $(headers)
 
 AM_CXXFLAGS += -I.. 
 AM_LDFLAGS = -L../CppUnitLite -lCppUnitLite $(BOOST_LDFLAGS) $(boost_serialization) 
-
-# adding SparseQR support
-if USE_SPQR
-AM_CXXFLAGS += -I$(HOME)/include/SuiteSparse -DUSE_SPQR
-AM_LDFLAGS += -L$(HOME)/lib/SuiteSparse -lufconfig -lamd -lcamd -lcolamd -lbtf -lklu -lldl -lccolamd -lumfpack -lcholmod -lcxsparse -lspqr
-#AM_LDFLAGS += -L$(HOME)/lib/SuiteSparse -lsqpr
-endif
 
 # adding cblas implementation - split into a default linux version using the 
 # autotools script, and a mac version that is hardcoded 

@@ -13,6 +13,7 @@
 #include <iomanip>
 #include <cmath>
 #include <boost/foreach.hpp>
+#include <boost/optional.hpp>
 #include <stdio.h>
 
 #ifdef WIN32
@@ -199,6 +200,25 @@ namespace gtsam {
     print(expected, "expected");
     print(actual, "actual");
     return false;
+  }
+
+  /* ************************************************************************* */
+  bool linear_dependent(const Vector& vec1, const Vector& vec2, double tol) {
+    if (vec1.size()!=vec2.size()) return false;
+    Vector::const_iterator it1 = vec1.begin();
+    Vector::const_iterator it2 = vec2.begin();
+    boost::optional<double> scale;
+    for(size_t i=0; i<vec1.size(); i++) {
+    	if((fabs(it1[i])>tol&&fabs(it2[i])<tol) || (fabs(it1[i])<tol&&fabs(it2[i])>tol))
+    		return false;
+    	if(it1[i] == 0 && it2[i] == 0)
+    		continue;
+    	if (!scale)
+    		scale = it1[i] / it2[i];
+    	else if (fabs(it1[i] - it2[i] * (*scale)) > tol)
+    		return false;
+    }
+    return scale.is_initialized();
   }
 
   /* ************************************************************************* */

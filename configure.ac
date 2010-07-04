@@ -4,11 +4,12 @@
 AC_PREREQ(2.59)
 AC_INIT(gtsam, 0.0.0, dellaert@cc.gatech.edu)
 AM_INIT_AUTOMAKE(gtsam, 0.0.0)
-AC_OUTPUT(Makefile cpp/Makefile wrap/Makefile)
+AC_OUTPUT(Makefile spqr_mini/Makefile cpp/Makefile wrap/Makefile)
 AC_CONFIG_MACRO_DIR([m4])
 AC_CONFIG_SRCDIR([cpp/cal3_S2.cpp])
 AC_CONFIG_HEADER([cpp/config.h])
 AC_CONFIG_SRCDIR([wrap/wrap.cpp])
+AC_CONFIG_SRCDIR([spqr_mini/spqr_front.cpp])
 
 # Check for OS
 AC_CANONICAL_HOST    # needs to be called at some point earlier

@@ -166,16 +166,29 @@ bool GaussianFactor::equals(const Factor<VectorConfig>& f, double tol) const {
   const_iterator it1 = As_.begin(), it2 = lf->As_.begin();
   if(As_.size() != lf->As_.size()) return false;
 
-  for(; it1 != As_.end(); it1++, it2++) {
-    const Symbol& j1 = it1->first, j2 = it2->first;
-    const Matrix A1 = it1->second, A2 = it2->second;
-    if (j1 != j2) return false;
-    if (!equal_with_abs_tol(A1,A2,tol))
-      return false;
-  }
+  // check whether each row is up to a sign
+  for (int i=0; i<b_.size(); i++) {
+  	list<Vector> row1;
+  	list<Vector> row2;
+  	row1.push_back(Vector_(1,     b_(i)));
+  	row2.push_back(Vector_(1, lf->b_(i)));
 
-  if( !(::equal_with_abs_tol(b_, (lf->b_),tol)) )
-    return false;
+  	for(; it1 != As_.end(); it1++, it2++) {
+  		const Symbol& j1 = it1->first, j2 = it2->first;
+  		const Matrix A1 = it1->second, A2 = it2->second;
+  		if (j1 != j2) return false;
+
+  		row1.push_back(row_(A1,i));
+  		row2.push_back(row_(A2,i));
+  	}
+
+  	Vector r1 = concatVectors(row1);
+  	Vector r2 = concatVectors(row2);
+  	if( !::equal_with_abs_tol(r1,      r2, tol) &&
+  			!::equal_with_abs_tol(r1*(-1), r2, tol)) {
+  		return false;
+  	}
+  }
 
   return model_->equals(*(lf->model_),tol);
 }

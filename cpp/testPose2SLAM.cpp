@@ -116,6 +116,44 @@ TEST(Pose2Graph, optimize) {
 }
 
 /* ************************************************************************* */
+// test optimization with 3 poses
+TEST(Pose2Graph, optimizeThreePoses) {
+
+	// Create a hexagon of poses
+	Pose2Config hexagon = pose2SLAM::circle(3,1.0);
+  Pose2 p0 = hexagon[0], p1 = hexagon[1];
+
+	// create a Pose graph with one equality constraint and one measurement
+  shared_ptr<Pose2Graph> fg(new Pose2Graph);
+  fg->addHardConstraint(0, p0);
+  Pose2 delta = between(p0,p1);
+  fg->addConstraint(0, 1, delta, covariance);
+  fg->addConstraint(1, 2, delta, covariance);
+  fg->addConstraint(2, 0, delta, covariance);
+
+  // Create initial config
+  boost::shared_ptr<Pose2Config> initial(new Pose2Config());
+  initial->insert(0, p0);
+  initial->insert(1, expmap(hexagon[1],Vector_(3,-0.1, 0.1,-0.1)));
+  initial->insert(2, expmap(hexagon[2],Vector_(3, 0.1,-0.1, 0.1)));
+
+  // Choose an ordering
+  shared_ptr<Ordering> ordering(new Ordering);
+  *ordering += "x0","x1","x2";
+
+  // optimize
+  pose2SLAM::Optimizer::shared_solver solver(new pose2SLAM::Optimizer::solver(ordering));
+  pose2SLAM::Optimizer optimizer0(fg, initial, solver);
+  pose2SLAM::Optimizer::verbosityLevel verbosity = pose2SLAM::Optimizer::SILENT;
+  pose2SLAM::Optimizer optimizer = optimizer0.levenbergMarquardt(1e-15, 1e-15, verbosity);
+
+  Pose2Config actual = *optimizer.config();
+
+  // Check with ground truth
+  CHECK(assert_equal(hexagon, actual));
+}
+
+/* ************************************************************************* */
 // test optimization with 6 poses arranged in a hexagon and a loop closure
 TEST(Pose2Graph, optimizeCircle) {
 
