@@ -117,14 +117,8 @@ SharedDiagonal Gaussian::QR(Matrix& Ab) const {
 	// Perform in-place Householder
 #ifdef GT_USE_LAPACK
 	long* Stair = MakeStairs(Ab);
-//	double t0, t1;
-//	t0 = clock();
-//	gtsam::print(Ab, "Ab");
 	householder_spqr(Ab, Stair);
 //		householder_spqr(Ab);
-//	gtsam::print(Ab, "Ab");
-//	t1 = clock();
-//	printf("QR: %ld %ld %g\n", m, n, (double) (t1 - t0) / CLOCKS_PER_SEC  * 1000);
 #else
 	householder(Ab, maxRank);
 #endif
