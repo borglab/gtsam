@@ -293,7 +293,7 @@ AM_CXXFLAGS = -I$(boost) -fPIC
 lib_LTLIBRARIES = libgtsam.la
 libgtsam_la_SOURCES = $(sources)
 libgtsam_la_CPPFLAGS = $(AM_CXXFLAGS)
-libgtsam_la_LDFLAGS = -version-info $(version) -L../colamd -lcolamd -L../ldl -lldl -L../spqr_mini -lspqr_mini # ../ldl/libldl.a -lboost_serialization-mt
+libgtsam_la_LDFLAGS = -version-info $(version) -L../colamd -lcolamd -L../ldl -lldl  
 
 # enable debug if --enable-debug is set in configure
 if DEBUG
@@ -321,6 +321,7 @@ AM_CXXFLAGS += -DGT_USE_CBLAS
 endif
 
 if USE_LAPACK_MACOS
+libgtsam_la_LDFLAGS += -L../spqr_mini -lspqr_mini
 AM_CXXFLAGS += -DGT_USE_LAPACK
 endif
 
