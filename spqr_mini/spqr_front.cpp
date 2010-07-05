@@ -309,16 +309,6 @@ template <typename Entry> Int spqr_front
     cholmod_common *cc  // for cc->hypotenuse function
 )
 {
-//		std::cout << "**************spqr_front dumping started****************" << std::endl;
-//		std::cout << "m: " << m << " n: " << n << " npiv: " << npiv << " tol: " << tol
-//				<< " ntol: " << ntol << " fchunk: " << fchunk << std::endl;
-//		for (int i=0; i<m; i++) {
-//			for (int j=0; j<n; j++)
-//				std::cout << F[j*m+i] << "\t";
-//			std::cout << std::endl;
-//		}
-//		std::cout << "**************spqr_front duming finished****************" << std::endl;
-
     Entry tau ;
     double wk ;
     Entry *V ;

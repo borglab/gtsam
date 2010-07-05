@@ -19,10 +19,6 @@
 #include "inference-inl.h"
 #include "iterative.h"
 
-#ifdef USE_SPQR
-#include <spqr.hpp>;
-#endif
-
 using namespace std;
 using namespace gtsam;
 using namespace boost::assign;
@@ -194,11 +190,6 @@ GaussianFactorGraph::eliminate(const Ordering& ordering, bool old)
 /* ************************************************************************* */
 VectorConfig GaussianFactorGraph::optimize(const Ordering& ordering, bool old)
 {
-	bool verbose = false;
-	if (verbose)
-		BOOST_FOREACH(const sharedFactor& factor,factors_)
-			factor->get_model()->print("Starting model");
-
 	// eliminate all nodes in the given ordering -> chordal Bayes net
 	GaussianBayesNet chordalBayesNet = eliminate(ordering, old);
 
