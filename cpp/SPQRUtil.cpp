@@ -19,66 +19,58 @@ namespace gtsam {
 
 		const long m = A.size1();
 		const long n = A.size2();
+		long* Stair = new long[n];
 
 		// record the starting pointer of each row
 		double* a[m];
+		list<int> remained;
 		a[0] = A.data().begin();
-		for(int i=1; i<m; i++)
-			a[i] = a[i-1] + n;
+		for(int i=0; i<m-1; i++) {
+			a[i+1] = a[i] + n;
+			remained.push_back(i);
+		}
+		remained.push_back(m-1);
 
-		// go through each column from left to right
+		// reorder the rows
 		int j;
-		int i0, i1, i2, tmpi;
-		long* Stair = new long[n];
-		int sizeOfRow;
-		double tmp[n], *row1, *row2;
-		double tmpd;
+		vector<int> sorted;
+		list<int>::iterator itRemained;
 		for(j = 0; j < min(m,n); ) {
-
-			i0 = (j==0) ? 0 : Stair[j-1];
-
-			// find all the rows with leading zeros in the current column
-			vector<int> i_zeros, i_nonzeros, i_all;
-			map<int, int> i2vi;
-			for(int i = i0; i < m; i++) {
-				i_all.push_back(i);
-				i2vi.insert(make_pair(i, i-i0));
-				if (*(a[i]) == 0)
-					i_zeros.push_back(i);
-				else
-					i_nonzeros.push_back(i);
-			}
-
-			// resort the rows from i_all to i_target
-			vector<int>& i_target = i_nonzeros;
-			i_target.insert(i_nonzeros.end(), i_zeros.begin(), i_zeros.end());
-			sizeOfRow = (n - j) * sizeof(double);
-			for (int vi=0; vi<m-i0; vi++) {
-				i1 = i_all[vi];
-				i2 = i_target[vi];
-				if (i1 != i2) {
-					row1 = a[vi + i0];
-					tmpi = i2vi[i2];
-					row2 = a[i2vi[i2] + i0];
-					memcpy(tmp,  row1, sizeOfRow);
-					memcpy(row1, row2, sizeOfRow);
-					memcpy(row2, tmp,  sizeOfRow);
-					std::swap(i_all[vi], i_all[tmpi]);
-					std::swap(i2vi[i1], i2vi[i2]);
+			// remove the non-zero rows in the current column
+			for(itRemained = remained.begin(); itRemained!=remained.end(); ) {
+				if (*(a[*itRemained]) != 0) {
+					sorted.push_back(*itRemained);
+					itRemained = remained.erase(itRemained);
+				} else {
+					a[*itRemained]++;
+					itRemained ++;
 				}
 			}
 
 			// record the stair number
-			Stair[j++] = m - i_zeros.size();
-			if (i_zeros.empty()) break;
+			Stair[j++] = m - remained.size();
 
-			// right shift the pointers
-			for(int i=0; i<m; i++) a[i]++;
+			if(remained.empty()) break;
 		}
 
 		// all the remained columns have maximum stair
 		for (; j<n; j++)
 			Stair[j] = m;
+
+		// copy the new row
+		Matrix A_new = zeros(m,n);
+		int offset[m];
+		offset[0] = 0;
+		for(int i=1; i<m; i++)
+			offset[i] = offset[i-1] +n;
+		vector<int>::const_iterator itSorted;
+		double* ptr1 = A.data().begin();
+		double* ptr2 = A_new.data().begin();
+		int row = 0, sizeOfRow = n * sizeof(double);
+		for(itSorted=sorted.begin(); itSorted!=sorted.end(); itSorted++, row++)
+			memcpy(ptr2+offset[row], ptr1+offset[*itSorted], sizeOfRow);
+
+		A = A_new;
 
 		return Stair;
 	}
