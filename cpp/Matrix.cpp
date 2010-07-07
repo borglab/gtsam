@@ -701,7 +701,7 @@ void householder(Matrix &A) {
 	memset(A.data().begin(), 0, m*n*sizeof(double));
 	for(int j=0; j<n; j++, k0+=m) {
 		k = k0;
-		j0 = j+1>m?j+1:m;
+		j0 = j+1<m?j+1:m;
 		for(int i=0; i<j0; i++, k++)
 			A(i,j) = a[k];
 	}
