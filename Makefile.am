@@ -23,7 +23,7 @@ install-exec-hook:
 	install -d $(prefix)/include/spqr_mini && \
 	cp -f spqr_mini/*.h   $(prefix)/include/spqr_mini/ && \
 	cp -f spqr_mini/*.hpp $(prefix)/include/spqr_mini/ && \
-	cp -f spqr_mini/libspqr_mini.a $(prefix)/lib/
+	[ -f spqr_mini/libspqr_mini.a ] &&  cp -f spqr_mini/libspqr_mini.a $(prefix)/lib/
 
 dist-hook:
 	mkdir $(distdir)/CppUnitLite
