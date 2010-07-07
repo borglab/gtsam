@@ -96,11 +96,33 @@ namespace gtsam {
 			bool equals(const Cliques& other, double tol = 1e-9) const;
 		};
 
+		/** clique statistics */
+		struct CliqueStats {
+			double avgConditionalSize;
+			std::size_t maxConditionalSize;
+			double avgSeparatorSize;
+			std::size_t maxSeparatorSize;
+		};
+
+		/** store all the sizes  */
+		struct CliqueData {
+			std::vector<std::size_t> conditionalSizes;
+			std::vector<std::size_t> separatorSizes;
+			CliqueStats getStats() const;
+		};
+
 	private:
 
 		/** Map from keys to Clique */
 		typedef SymbolMap<sharedClique> Nodes;
 		Nodes nodes_;
+
+		/** private helper method for saving the Tree to a text file in GraphViz format */
+		void saveGraph(std::ostream &s, sharedClique clique,
+				int parentnum = 0) const;
+
+		/** Gather data on a single clique */
+		void getCliqueData(CliqueData& stats, sharedClique clique) const;
 
 	protected:
 
@@ -130,15 +152,23 @@ namespace gtsam {
 		virtual ~BayesTree() {
 		}
 
-		/** print */
-		void print(const std::string& s = "") const;
+		/**
+		 * Constructing Bayes trees
+		 */
 
-		/** saves the Tree to a text file in GraphViz format */
-		void saveGraph(const std::string& s) const;
-	private:
-		void saveGraph(std::ostream &s, sharedClique clique,
-				int parentnum = 0) const;
-	public:
+		/** Insert a new conditional */
+		void insert(const sharedConditional& conditional, const IndexTable<Symbol>& index);
+
+		/** Insert a new clique corresponding to the given Bayes net.
+		 * It is the caller's responsibility to decide whether the given Bayes net is a valid clique,
+		 * i.e. all the variables (frontal and separator) are connected
+		 */
+		sharedClique insert(const BayesNet<Conditional>& bayesNet,
+				std::list<sharedClique>& children, bool isRootClique = false);
+
+		/**
+		 * Querying Bayes trees
+		 */
 
 		/** check equality */
 		bool equals(const BayesTree<Conditional>& other, double tol = 1e-9) const;
@@ -148,15 +178,6 @@ namespace gtsam {
 		 * It will look at all parents and return the one with the lowest index in the ordering.
 		 */
 		Symbol findParentClique(const std::list<Symbol>& parents, const IndexTable<Symbol>& index) const;
-
-		/** insert a new conditional */
-		void insert(const sharedConditional& conditional, const IndexTable<Symbol>& index);
-
-		/** insert a new clique corresponding to the given bayes net.
-		 * it is the caller's responsibility to decide whether the given bayes net is a valid clique,
-		 * i.e. all the variables (frontal and separator) are connected */
-		sharedClique insert(const BayesNet<Conditional>& bayesNet,
-				std::list<sharedClique>& children, bool isRootClique = false);
 
 		/** number of cliques */
 		inline size_t size() const {
@@ -176,23 +197,8 @@ namespace gtsam {
 			return nodes_.at(key);
 		}
 
-		/** clique statistics */
-		struct CliqueStats {
-			double avgConditionalSize;
-			std::size_t maxConditionalSize;
-			double avgSeparatorSize;
-			std::size_t maxSeparatorSize;
-		};
-		struct CliqueData {
-			std::vector<std::size_t> conditionalSizes;
-			std::vector<std::size_t> separatorSizes;
-			CliqueStats getStats() const;
-		};
+		/** Gather data on all cliques */
 		CliqueData getCliqueData() const;
-
-	private:
-		void getCliqueData(CliqueData& stats, sharedClique clique) const;
-	public:
 
 		/** return marginal on any variable */
 		template<class Factor>
@@ -209,6 +215,20 @@ namespace gtsam {
 		/** return joint on two variables as a BayesNet */
 		template<class Factor>
 		BayesNet<Conditional> jointBayesNet(const Symbol& key1, const Symbol& key2) const;
+
+		/**
+		 * Read only with side effects
+		 */
+
+		/** print */
+		void print(const std::string& s = "") const;
+
+		/** saves the Tree to a text file in GraphViz format */
+		void saveGraph(const std::string& s) const;
+
+		/**
+		 * Altering Bayes trees
+		 */
 
 		/**
 		 * Remove all nodes

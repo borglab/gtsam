@@ -21,6 +21,24 @@ using namespace std;
 using namespace gtsam;
 using namespace example;
 
+Symbol _B_('B', 0), _L_('L', 0);
+SymbolicConditional::shared_ptr
+	B(new SymbolicConditional(_B_)),
+	L(new SymbolicConditional(_L_, _B_));
+
+/* ************************************************************************* */
+TEST( SymbolicBayesNet, equals )
+{
+	SymbolicBayesNet f1;
+	f1.push_back(B);
+	f1.push_back(L);
+	SymbolicBayesNet f2;
+	f2.push_back(L);
+	f2.push_back(B);
+	CHECK(f1.equals(f1));
+	CHECK(!f1.equals(f2));
+}
+
 /* ************************************************************************* */
 TEST( SymbolicBayesNet, constructor )
 {

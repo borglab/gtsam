@@ -70,19 +70,6 @@ SymbolicBayesTree createAsiaSymbolicBayesTree() {
 }
 
 /* ************************************************************************* */
-TEST( BayesTree, Front )
-{
-	SymbolicBayesNet f1;
-	f1.push_back(B);
-	f1.push_back(L);
-	SymbolicBayesNet f2;
-	f2.push_back(L);
-	f2.push_back(B);
-	CHECK(f1.equals(f1));
-	CHECK(!f1.equals(f2));
-}
-
-/* ************************************************************************* */
 TEST( BayesTree, constructor )
 {
 	// Create using insert
