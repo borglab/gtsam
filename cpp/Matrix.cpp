@@ -678,8 +678,8 @@ void householder(Matrix &A, size_t k) {
 #ifdef GT_USE_LAPACK
 #ifdef YA_BLAS
 void householder(Matrix &A) {
-	int m = A.size1();
-	int n = A.size2();
+	__CLPK_integer m = A.size1();
+	__CLPK_integer n = A.size2();
 
 	// convert from row major to column major
 	double a[m*n]; int k = 0;
@@ -689,8 +689,8 @@ void householder(Matrix &A) {
 
 	double tau[n];
 	double work_optimal_size;
-	int lwork = -1;
-	int info;
+	__CLPK_integer lwork = -1;
+	__CLPK_integer info;
 
 	dgeqrf_(&m, &n, a, &m, tau, &work_optimal_size, &lwork, &info);
 	lwork = (int)work_optimal_size;
@@ -701,7 +701,7 @@ void householder(Matrix &A) {
 	memset(A.data().begin(), 0, m*n*sizeof(double));
 	for(int j=0; j<n; j++, k0+=m) {
 		k = k0;
-		j0 = min(j+1,m);
+		j0 = j+1>m?j+1:m;
 		for(int i=0; i<j0; i++, k++)
 			A(i,j) = a[k];
 	}

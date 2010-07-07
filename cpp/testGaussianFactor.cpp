@@ -768,7 +768,7 @@ TEST ( GaussianFactor, exploding_MAST_factor ) {
 	// Works properly with the newer elimination code
 	// This is only a test of execution without crashing
 
-	Symbol lA2('l', 18295873486192642);
+	Symbol lA2('l', 182958734);
 	Matrix A1 = eye(2);
 	Vector b1 = zero(2);
 	SharedDiagonal model1 = noiseModel::Isotropic::Sigma(2, 1.0/sqrt(2.0));
