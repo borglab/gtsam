@@ -78,6 +78,17 @@ AC_ARG_ENABLE([spqr],
 
 AM_CONDITIONAL([USE_SPQR], [test x$spqr = xtrue])
 
+# enable profiling
+AC_ARG_ENABLE([profiling],
+     [  --enable-profiling    Enable profiling],
+     [case "${enableval}" in
+       yes) profiling=true ;;
+       no)  profiling=false ;;
+       *) AC_MSG_ERROR([bad value ${enableval} for --enable-profiling]) ;;
+     esac],[profiling=false])
+
+AM_CONDITIONAL([USE_PROFILING], [test x$profiling = xtrue])
+
 # Checks for programs.
 AC_PROG_CXX
 AC_PROG_CC

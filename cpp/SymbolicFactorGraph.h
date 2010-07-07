@@ -81,6 +81,10 @@ namespace gtsam {
 		 */
 		SymbolicBayesNet eliminate(const Ordering& ordering);
 
+		/**
+		 * Same as eliminate in the SymbolicFactorGraph case
+		 */
+		SymbolicBayesNet eliminateFrontals(const Ordering& ordering);
 	};
 
 	// save graph to the graphviz format

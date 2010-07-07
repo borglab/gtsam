@@ -24,7 +24,10 @@ using namespace boost::assign;
 #include "smallExample.h"
 #include "GaussianBayesNet.h"
 #include "numericalDerivative.h"
+#include "SymbolicFactorGraph.h"
+#include "BayesTree.h"
 #include "inference-inl.h" // needed for eliminate and marginals
+
 
 using namespace gtsam;
 using namespace example;
@@ -472,6 +475,38 @@ TEST( GaussianFactorGraph, optimize )
   CHECK(assert_equal(expected,actual));
 }
 
+/* ************************************************************************* *
+ Bayes tree for smoother with "nested dissection" ordering:
+	 C1		 x5 x6 x4
+	 C2		  x3 x2 : x4
+	 C3		    x1 : x2
+	 C4		  x7 : x6
+
+/* ************************************************************************* */
+TEST( GaussianFactorGraph, optimizeMultiFrontal )
+{
+	// create a graph
+	GaussianFactorGraph fg = createSmoother(7);
+
+	// create an ordering
+	Ordering ordering;
+	ordering += "x1","x3","x5","x7","x2","x6","x4";
+
+	// Symbolic factorization
+	// GaussianFactorGraph -> SymbolicFactorGraph -> SymbolicBayesNet -> SymbolicBayesTree
+	SymbolicFactorGraph sfg(fg);
+	SymbolicBayesNet sbn = sfg.eliminate(ordering);
+	BayesTree<SymbolicConditional> sbt(sbn);
+
+//	// optimize the graph
+//	VectorConfig actual = fg.optimizeMultiFrontal(sbt);
+//
+//	// verify
+//	VectorConfig expected = createCorrectDelta();
+//
+//  CHECK(assert_equal(expected,actual));
+}
+
 /* ************************************************************************* */
 TEST( GaussianFactorGraph, combine)
 {
@@ -897,6 +932,36 @@ TEST(GaussianFactorGraph, replace)
 	actual.checkGraphConsistency();
 
 	CHECK(assert_equal(expected, actual));
+}
+
+/* ************************************************************************* */
+TEST ( GaussianFactorGraph, combine_matrix ) {
+	// create a small linear factor graph
+	GaussianFactorGraph fg = createGaussianFactorGraph();
+	Dimensions dimensions = fg.dimensions();
+
+	// get two factors from it and insert the factors into a vector
+	vector<GaussianFactor::shared_ptr> lfg;
+	lfg.push_back(fg[4 - 1]);
+	lfg.push_back(fg[2 - 1]);
+
+	// combine in a factor
+	Matrix Ab; SharedDiagonal noise;
+	Ordering order; order += "x2", "l1", "x1";
+	boost::tie(Ab, noise) = combineFactorsAndCreateMatrix(lfg, order, dimensions);
+
+	// the expected augmented matrix
+	Matrix expAb = Matrix_(4, 7,
+			-5.,  0., 5., 0.,  0.,  0.,-1.0,
+			+0., -5., 0., 5.,  0.,  0., 1.5,
+			10.,  0., 0., 0.,-10.,  0., 2.0,
+			+0., 10., 0., 0.,  0.,-10.,-1.0);
+
+	// expected noise model
+	SharedDiagonal expModel = noiseModel::Unit::Create(4);
+
+	CHECK(assert_equal(expAb, Ab));
+	CHECK(assert_equal(*expModel, *noise));
 }
 
 /* ************************************************************************* */

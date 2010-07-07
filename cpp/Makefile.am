@@ -69,6 +69,7 @@ testSymbolicBayesNet_LDADD      = libgtsam.la
 headers += inference.h inference-inl.h
 headers += graph.h graph-inl.h
 headers += FactorGraph.h FactorGraph-inl.h
+headers += JunctionTree.h JunctionTree-inl.h
 headers += BayesNet.h BayesNet-inl.h
 headers += BayesTree.h BayesTree-inl.h
 headers += ISAM.h ISAM-inl.h GaussianISAM.h
@@ -290,6 +291,7 @@ timeVectorConfig_LDADD 	 = libgtsam.la
 
 # create both dynamic and static libraries
 AM_CXXFLAGS = -I$(boost) -fPIC
+AM_LDFLAGS =
 lib_LTLIBRARIES = libgtsam.la
 libgtsam_la_SOURCES = $(sources)
 libgtsam_la_CPPFLAGS = $(AM_CXXFLAGS)
@@ -300,11 +302,18 @@ if DEBUG
 AM_CXXFLAGS += -g
 endif
 
+if USE_PROFILING
+AM_CXXFLAGS += -pg
+libgtsam_la_CPPFLAGS += -pg
+AM_LDFLAGS += -pg
+libgtsam_la_LDFLAGS += -pg
+endif
+
 # install the header files
 include_HEADERS = $(headers)
 
 AM_CXXFLAGS += -I.. 
-AM_LDFLAGS = -L../CppUnitLite -lCppUnitLite $(BOOST_LDFLAGS) $(boost_serialization) 
+AM_LDFLAGS += -L../CppUnitLite -lCppUnitLite $(BOOST_LDFLAGS) $(boost_serialization) 
 
 # adding cblas implementation - split into a default linux version using the 
 # autotools script, and a mac version that is hardcoded 

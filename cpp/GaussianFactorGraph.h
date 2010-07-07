@@ -142,6 +142,11 @@ namespace gtsam {
     GaussianBayesNet eliminate(const Ordering& ordering, bool enableJoinFactor = true);
 
     /**
+     * Eliminate multiple variables at once, mostly used to eliminate frontal variables
+     */
+    GaussianBayesNet eliminateFrontals(const Ordering& frontals);
+
+    /**
      * optimize a linear factor graph
      * @param ordering fg in order
      * @param enableJoinFactor uses the older joint factor combine process when true,
@@ -261,4 +266,17 @@ namespace gtsam {
 				const VectorConfig& x0, bool verbose = false, double epsilon = 1e-3,
 				size_t maxIterations = 0) const;
   };
+
+	/**
+	 * Returns the augmented matrix version of a set of factors
+	 * with the corresponding noiseModel
+	 * @param factors is the set of factors to combine
+	 * @param ordering of variables needed for matrix column order
+	 * @return the augmented matrix and a noise model
+	 */
+	template <class Factors>
+	std::pair<Matrix, SharedDiagonal> combineFactorsAndCreateMatrix(
+			const Factors& factors,
+			const Ordering& order, const Dimensions& dimensions);
+
 } // namespace gtsam

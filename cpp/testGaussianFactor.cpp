@@ -761,35 +761,6 @@ TEST ( GaussianFactor, constraint_eliminate2 )
 	GaussianConditional expectedCG("x", d, R, "y", S, zero(2));
 	CHECK(assert_equal(expectedCG, *actualCG, 1e-4));
 }
-/* ************************************************************************* */
-TEST ( GaussianFactor, combine_matrix ) {
-	// create a small linear factor graph
-	GaussianFactorGraph fg = createGaussianFactorGraph();
-	Dimensions dimensions = fg.dimensions();
-
-	// get two factors from it and insert the factors into a vector
-	vector<GaussianFactor::shared_ptr> lfg;
-	lfg.push_back(fg[4 - 1]);
-	lfg.push_back(fg[2 - 1]);
-
-	// combine in a factor
-	Matrix Ab; SharedDiagonal noise;
-	Ordering order; order += "x2", "l1", "x1";
-	boost::tie(Ab, noise) = GaussianFactor::combineFactorsAndCreateMatrix(lfg, order, dimensions);
-
-	// the expected augmented matrix
-	Matrix expAb = Matrix_(4, 7,
-			-5.,  0., 5., 0.,  0.,  0.,-1.0,
-			+0., -5., 0., 5.,  0.,  0., 1.5,
-			10.,  0., 0., 0.,-10.,  0., 2.0,
-			+0., 10., 0., 0.,  0.,-10.,-1.0);
-
-	// expected noise model
-	SharedDiagonal expModel = noiseModel::Unit::Create(4);
-
-	CHECK(assert_equal(expAb, Ab));
-	CHECK(assert_equal(*expModel, *noise));
-}
 
 /* ************************************************************************* */
 TEST ( GaussianFactor, exploding_MAST_factor ) {

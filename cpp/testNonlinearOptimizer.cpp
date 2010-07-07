@@ -36,7 +36,7 @@ const double tol = 1e-5;
 typedef NonlinearOptimizer<example::Graph,example::Config> Optimizer;
 
 /* ************************************************************************* */
-TEST( NonlinearOptimizer, delta )
+TEST( NonlinearOptimizer, linearizeAndOptimizeForDelta )
 {
 	shared_ptr<example::Graph> fg(new example::Graph(
 			example::createNonlinearFactorGraph()));
@@ -235,6 +235,31 @@ TEST( NonlinearOptimizer, SubgraphSolver )
 	expected.insert(2, Pose2(1., 0., 0.));
 	CHECK(assert_equal(expected, *optimized.config(), 1e-5));
 }
+
+/* ************************************************************************* */
+//TEST( NonlinearOptimizer, MultiFrontalSolver )
+//{
+//	shared_ptr<example::Graph> fg(new example::Graph(
+//			example::createNonlinearFactorGraph()));
+//	Optimizer::shared_config initial = example::sharedNoisyConfig();
+//
+//	Config expected;
+//	expected.insert(simulated2D::PoseKey(1), Point2(0.0, 0.0));
+//	expected.insert(simulated2D::PoseKey(2), Point2(1.5, 0.0));
+//	expected.insert(simulated2D::PointKey(1), Point2(0.0, -1.0));
+//
+//	Optimizer::shared_solver solver;
+//
+//	// Check one ordering
+//	shared_ptr<Ordering> ord1(new Ordering());
+//	*ord1 += "x2","l1","x1";
+//	solver = Optimizer::shared_solver(new Optimizer::solver(ord1));
+//	Optimizer optimizer1(fg, initial, solver);
+//
+//	Config actual = optimizer1.levenbergMarquardt();
+//	CHECK(assert_equal(actual,expected));
+//}
+
 
 /* ************************************************************************* */
 int main() {

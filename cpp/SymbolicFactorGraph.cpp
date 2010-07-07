@@ -46,6 +46,13 @@ namespace gtsam {
 	}
 
 	/* ************************************************************************* */
+	SymbolicBayesNet
+	SymbolicFactorGraph::eliminateFrontals(const Ordering& ordering)
+	{
+		return eliminate(ordering);
+	}
+
+	/* ************************************************************************* */
 	void saveGraph(const SymbolicFactorGraph& fg, const SymbolicConfig& config, const std::string& s) {
 
 		Symbol key;

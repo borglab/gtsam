@@ -29,6 +29,8 @@ using namespace boost::assign;
 // trick from some reading group
 #define FOREACH_PAIR( KEY, VAL, COL) BOOST_FOREACH (boost::tie(KEY,VAL),COL)
 
+namespace gtsam {
+
 // Explicitly instantiate so we don't have to include everywhere
 template class FactorGraph<GaussianFactor>;
 
@@ -135,6 +137,75 @@ GaussianFactorGraph::eliminateOne(const Symbol& key, bool old) {
 }
 
 /* ************************************************************************* */
+template <class Factors>
+std::pair<Matrix, SharedDiagonal> combineFactorsAndCreateMatrix(
+		const Factors& factors,
+		const Ordering& order, const Dimensions& dimensions) {
+	// find the size of Ab
+	size_t m = 0, n = 1;
+
+	// number of rows
+	BOOST_FOREACH(GaussianFactor::shared_ptr factor, factors) {
+		m += factor->numberOfRows();
+	}
+
+	// find the number of columns
+	BOOST_FOREACH(const Symbol& key, order) {
+		n += dimensions.at(key);
+	}
+
+	// Allocate the new matrix
+	Matrix Ab = zeros(m,n);
+
+	// Allocate a sigmas vector to make into a full noisemodel
+	Vector sigmas = ones(m);
+
+	// copy data over
+	size_t cur_m = 0;
+	bool constrained = false;
+	bool unit = true;
+	BOOST_FOREACH(GaussianFactor::shared_ptr factor, factors) {
+		// loop through ordering
+		size_t cur_n = 0;
+		BOOST_FOREACH(const Symbol& key, order) {
+			// copy over matrix if it exists
+			if (factor->involves(key)) {
+				insertSub(Ab, factor->get_A(key), cur_m, cur_n);
+			}
+			// move onto next element
+			cur_n += dimensions.at(key);
+		}
+		// copy over the RHS
+		insertColumn(Ab, factor->get_b(), cur_m, n-1);
+
+		// check if the model is unit already
+		if (!boost::shared_dynamic_cast<noiseModel::Unit>(factor->get_model())) {
+			unit = false;
+			const Vector& subsigmas = factor->get_model()->sigmas();
+			subInsert(sigmas, subsigmas, cur_m);
+
+			// check for constraint
+			if (boost::shared_dynamic_cast<noiseModel::Constrained>(factor->get_model()))
+				constrained = true;
+		}
+
+		// move to next row
+		cur_m += factor->numberOfRows();
+	}
+
+	// combine the noisemodels
+	SharedDiagonal model;
+	if (unit) {
+		model = noiseModel::Unit::Create(m);
+	} else if (constrained) {
+		model = noiseModel::Constrained::MixedSigmas(sigmas);
+	} else {
+		model = noiseModel::Diagonal::Sigmas(sigmas);
+	}
+	return make_pair(Ab, model);
+}
+
+/* ************************************************************************* */
 GaussianConditional::shared_ptr
 GaussianFactorGraph::eliminateOneMatrixJoin(const Symbol& key) {
 	// find and remove all factors connected to key
@@ -159,8 +230,7 @@ GaussianFactorGraph::eliminateOneMatrixJoin(const Symbol& key) {
 	// combine the factors to get a noisemodel and a combined matrix
 	Matrix Ab; SharedDiagonal model;
 
-	boost::tie(Ab, model) =
-			GaussianFactor::combineFactorsAndCreateMatrix(factors,render,dimensions);
+	boost::tie(Ab, model) =	combineFactorsAndCreateMatrix(factors,render,dimensions);
 
 	// eliminate that joint factor
 	GaussianFactor::shared_ptr factor;
@@ -186,6 +256,25 @@ GaussianFactorGraph::eliminate(const Ordering& ordering, bool old)
 	}
 	return chordalBayesNet;
 }
+
+/* ************************************************************************* */
+GaussianBayesNet
+GaussianFactorGraph::eliminateFrontals(const Ordering& frontals)
+{
+	Matrix Ab; SharedDiagonal model;
+	Dimensions dimensions = this->dimensions();
+	boost::tie(Ab, model) = combineFactorsAndCreateMatrix(*this, keys(), dimensions);
+
+	// eliminate that joint factor
+	GaussianFactor::shared_ptr factor;
+//	GaussianConditional::shared_ptr conditional;
+	GaussianBayesNet bn;
+//	boost::tie(bn, factor) =
+//			GaussianFactor::eliminateMatrix(Ab, model, frontals, dimensions);
+
+	return bn;
+}
+
 
 /* ************************************************************************* */
 VectorConfig GaussianFactorGraph::optimize(const Ordering& ordering, bool old)
@@ -436,3 +525,11 @@ boost::shared_ptr<VectorConfig> GaussianFactorGraph::conjugateGradientDescent_(
 }
 
 /* ************************************************************************* */
+
+template std::pair<Matrix, SharedDiagonal> combineFactorsAndCreateMatrix<vector<GaussianFactor::shared_ptr> >(
+		const vector<GaussianFactor::shared_ptr>& factors,	const Ordering& order, const Dimensions& dimensions);
+
+template std::pair<Matrix, SharedDiagonal> combineFactorsAndCreateMatrix<GaussianFactorGraph>(
+		const GaussianFactorGraph& factors,	const Ordering& order, const Dimensions& dimensions);
+
+} // namespace gtsam
