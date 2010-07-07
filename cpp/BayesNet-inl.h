@@ -4,6 +4,8 @@
  * @author Frank Dellaert
  */
 
+#pragma once
+
 #include <iostream>
 #include <fstream>
 #include <boost/foreach.hpp>

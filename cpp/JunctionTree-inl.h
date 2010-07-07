@@ -6,6 +6,8 @@
  *  Description: the junction tree
  */
 
+#pragma once
+
 #include <boost/tuple/tuple.hpp>
 #include <boost/foreach.hpp>
 #include <boost/optional.hpp>

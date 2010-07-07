@@ -25,7 +25,7 @@ using namespace boost::assign;
 #include "GaussianBayesNet.h"
 #include "numericalDerivative.h"
 #include "SymbolicFactorGraph.h"
-#include "BayesTree.h"
+#include "BayesTree-inl.h"
 #include "inference-inl.h" // needed for eliminate and marginals
 
 
