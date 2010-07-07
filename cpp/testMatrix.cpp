@@ -642,6 +642,7 @@ TEST( matrix, houseHolder )
 // unit tests for housholder transformation
 /* ************************************************************************* */
 #ifdef GT_USE_LAPACK
+#ifdef YA_BLAS
 TEST( matrix, houseHolder2 )
 {
 	double data[] = { -5, 0, 5, 0, 0, 0, -1,
@@ -659,6 +660,7 @@ TEST( matrix, houseHolder2 )
 	householder(A1);
 	CHECK(assert_equal(expected1, A1, 1e-3));
 }
+#endif
 #endif
 
 /* ************************************************************************* */

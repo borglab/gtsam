@@ -2,7 +2,7 @@
 includedir = ${prefix}/include/spqr_mini
 libdir = ${exec_prefix}/lib
 
-if USE_LAPACK_MACOS
+if USE_LAPACK
    sources = cholmod_error.c cholmod_common.c cholmod_memory.c spqr_front.cpp spqr_larftb.cpp
    headers = UFconfig.h cholmod_common.h cholmod_internal.h cholmod_blas.h cholmod_core.h
    headers += SuiteSparseQR_definitions.h SuiteSparseQR_subset.hpp spqr_subset.hpp spqr_larftb.h spqr_front.h
@@ -22,6 +22,13 @@ AM_CXXFLAGS += -DYA_BLAS -DYA_LAPACK -DYA_BLASMULT -I/System/Library/Frameworks/
 libspqr_mini_la_CPPFLAGS = -DDLONG -DGT_USE_CBLAS -DYA_BLAS -DYA_LAPACK -DYA_BLASMULT -I/System/Library/Frameworks/vecLib.framework/Headers 
 AM_LDFLAGS = -lcblas -latlas 
 libspqr_mini_la_LDFLAGS = -framework vecLib -lcblas -latlas
+endif
+
+if USE_LAPACK_LINUX
+AM_CXXFLAGS += -DDLONG -DGT_USE_LAPACK -I/usr/include
+libspqr_mini_la_CPPFLAGS = -DDLONG -DGT_USE_LAPACK
+AM_LDFLAGS = -llapack
+libspqr_mini_la_LDFLAGS = -llapack
 endif
 
 endif

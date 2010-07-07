@@ -65,6 +65,8 @@ AC_ARG_ENABLE([lapack],
      esac],[lapack=false])
 
 AM_CONDITIONAL([USE_LAPACK_MACOS], [test x$lapack = xtrue && test x$ISMAC = xtrue])
+AM_CONDITIONAL([USE_LAPACK_LINUX], [test x$lapack = xtrue && test x$ISMAC = xfalse])
+AM_CONDITIONAL([USE_LAPACK], test x$lapack = xtrue)
 AM_CONDITIONAL([USE_VECLIB_MACOS], [(test x$lapack = xtrue || test x$blas = xtrue) && test x$ISMAC = xtrue])
 
 #enabgle SparseQR for linear solving

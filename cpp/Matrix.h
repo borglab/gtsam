@@ -261,7 +261,9 @@ void householder(Matrix& A, size_t k);
  * @return nothing: in place !!!
  */
 #ifdef GT_USE_LAPACK
+#ifdef YA_BLAS
 void householder(Matrix &A);
+#endif
 #endif
 
 /**

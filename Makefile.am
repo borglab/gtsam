@@ -20,10 +20,6 @@ install-exec-hook:
 	cp -f ldl/ldl.h $(prefix)/include/ldl/ && \
 	cp -f ldl/UFconfig.h $(prefix)/include/ldl/ && \
 	cp -f ldl/libldl.a $(prefix)/lib/
-	install -d $(prefix)/include/spqr_mini && \
-	cp -f spqr_mini/*.h   $(prefix)/include/spqr_mini/ && \
-	cp -f spqr_mini/*.hpp $(prefix)/include/spqr_mini/ && \
-	[ -f spqr_mini/libspqr_mini.a ] &&  cp -f spqr_mini/libspqr_mini.a $(prefix)/lib/ || echo "Skipping spqr"
 
 dist-hook:
 	mkdir $(distdir)/CppUnitLite

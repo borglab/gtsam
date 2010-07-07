@@ -329,7 +329,14 @@ if USE_BLAS_MACOS
 AM_CXXFLAGS += -DGT_USE_CBLAS
 endif
 
-if USE_LAPACK_MACOS
+if USE_LAPACK_LINUX
+AM_CXXFLAGS += -I/usr/include
+AM_LDFLAGS += -llapack
+libgtsam_la_LDFLAGS += -llapack
+endif
+
+if USE_LAPACK
+AM_LDFLAGS += -L../spqr_mini -lspqr_mini
 libgtsam_la_LDFLAGS += -L../spqr_mini -lspqr_mini
 AM_CXXFLAGS += -DGT_USE_LAPACK
 endif
@@ -349,4 +356,4 @@ CXXLINK = $(LIBTOOL) $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=link \
 # rule to run an executable
 %.run: % libgtsam.la
 	./$^
-	
+

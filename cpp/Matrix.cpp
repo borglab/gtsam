@@ -19,7 +19,11 @@
 #endif
 
 #ifdef GT_USE_LAPACK
+  #ifdef YA_BLAS
 #include <vecLib/clapack.h>
+  #else
+#include <clapack.h>
+  #endif
 #endif
 
 #include <boost/numeric/ublas/matrix_proxy.hpp>
@@ -672,6 +676,7 @@ void householder(Matrix &A, size_t k) {
 /** in-place householder                                                     */
 /* ************************************************************************* */
 #ifdef GT_USE_LAPACK
+#ifdef YA_BLAS
 void householder(Matrix &A) {
 	int m = A.size1();
 	int n = A.size2();
@@ -691,7 +696,6 @@ void householder(Matrix &A) {
 	lwork = (int)work_optimal_size;
 	double work[lwork];
 	dgeqrf_(&m, &n, a, &m, tau, work, &lwork, &info);
-
 	int k0 = 0;
 	int j0;
 	memset(A.data().begin(), 0, m*n*sizeof(double));
@@ -702,6 +706,7 @@ void householder(Matrix &A) {
 			A(i,j) = a[k];
 	}
 }
+#endif
 #endif
 
 /* ************************************************************************* */
