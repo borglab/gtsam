@@ -3,7 +3,7 @@ includedir = ${prefix}/include/spqr_mini
 libdir = ${exec_prefix}/lib
 
 if USE_LAPACK_MACOS
-   sources = cholmod_common.c cholmod_memory.c spqr_front.cpp spqr_larftb.cpp
+   sources = cholmod_error.c cholmod_common.c cholmod_memory.c spqr_front.cpp spqr_larftb.cpp
    headers = UFconfig.h cholmod_common.h cholmod_internal.h cholmod_blas.h cholmod_core.h
    headers += SuiteSparseQR_definitions.h SuiteSparseQR_subset.hpp spqr_subset.hpp spqr_larftb.h spqr_front.h
 
