@@ -18,13 +18,17 @@ namespace gtsam {
 	 * Template default compare function that assumes a testable T
 	 */
 	template<class T>
-	bool compare(const T& a, const T& b) {return a.equals(b);	}
-
+	bool compare(const T& a, const T& b) { return a.equals(b); }
 
 	/**
 	 * An equality factor that forces either one variable to a constant,
 	 * or a set of variables to be equal to each other.
-	 * Throws an error at linearization if the constraints are not met.
+	 *
+	 * Depending on flag, throws an error at linearization if the constraints are not met.
+	 *
+	 * Switchable implementation:
+	 *   - ALLLOW_ERROR : if we allow that there can be nonzero error, does not throw, and uses gain
+	 *   - ONLY_EXACT   : throws error at linearization if not at exact feasible point, and infinite error
 	 */
 	template<class Config, class Key, class T>
 	class NonlinearEquality: public NonlinearFactor1<Config, Key, T> {
@@ -32,6 +36,12 @@ namespace gtsam {
 
 		// feasible value
 		T feasible_;
+
+		// error handling flag
+		bool allow_error_;
+
+		// error gain in allow error case
+		double error_gain_;
 
 	public:
 
@@ -43,10 +53,21 @@ namespace gtsam {
 		typedef NonlinearFactor1<Config, Key, T> Base;
 
 		/**
-		 * Constructor
+		 * Constructor - forces exact evaluation
 		 */
 		NonlinearEquality(const Key& j, const T& feasible, bool (*compare)(const T&, const T&) = compare<T>) :
-			Base(noiseModel::Constrained::All(dim(feasible)), j), feasible_(feasible), compare_(compare) {
+			Base(noiseModel::Constrained::All(dim(feasible)), j), feasible_(feasible),
+			allow_error_(false), error_gain_(std::numeric_limits<double>::infinity()),
+			compare_(compare) {
+		}
+
+		/**
+		 * Constructor - allows inexact evaluation
+		 */
+		NonlinearEquality(const Key& j, const T& feasible, double error_gain, bool (*compare)(const T&, const T&) = compare<T>) :
+			Base(noiseModel::Constrained::All(dim(feasible)), j), feasible_(feasible),
+			allow_error_(true), error_gain_(error_gain),
+			compare_(compare) {
 		}
 
 		void print(const std::string& s = "") const {
@@ -64,10 +85,24 @@ namespace gtsam {
 			return compare_(feasible_, p->feasible_);
 		}
 
+		/** actual error function calculation */
+		virtual double error(const Config& c) const {
+			const T& xj = c[this->key_];
+			Vector e = this->unwhitenedError(c);
+			if (allow_error_ || !compare_(xj, feasible_)) {
+				return error_gain_ * inner_prod(e,e);
+			} else {
+				return 0.0;
+			}
+		}
+
 		/** error function */
-		inline Vector evaluateError(const T& xj, boost::optional<Matrix&> H) const {
+		inline Vector evaluateError(const T& xj, boost::optional<Matrix&> H = boost::none) const {
 			size_t nj = dim(feasible_);
-			if (compare_(feasible_,xj)) {
+			if (allow_error_) {
+				if (H) *H = eye(nj); // FIXME: this is not the right linearization for nonlinear compare
+				return logmap(xj, feasible_);
+			} else if (compare_(feasible_,xj)) {
 				if (H) *H = eye(nj);
 				return zero(nj); // set error to zero if equal
 			} else {

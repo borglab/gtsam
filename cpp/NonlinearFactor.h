@@ -75,8 +75,9 @@ namespace gtsam {
 
 		/**
 		 * calculate the error of the factor
+		 * Override for systems with unusual noise models
 		 */
-		double error(const Config& c) const {
+		virtual double error(const Config& c) const {
 			return 0.5 * noiseModel_->Mahalanobis(unwhitenedError(c));
 		}
 

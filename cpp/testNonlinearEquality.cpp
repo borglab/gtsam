@@ -19,6 +19,7 @@ using namespace gtsam;
 
 typedef NonlinearEquality<VectorConfig,string,Vector> NLE;
 typedef boost::shared_ptr<NLE> shared_nle;
+
 typedef TypedSymbol<Pose2, 'x'> PoseKey;
 typedef LieConfig<PoseKey, Pose2> PoseConfig;
 typedef NonlinearEquality<PoseConfig, PoseKey, Pose2> PoseNLE;
@@ -139,7 +140,7 @@ TEST ( NonlinearEquality, error ) {
 	CHECK(assert_equal(actual, zero(2)));
 
 	actual = nle->unwhitenedError(bad_linearize);
-	CHECK(assert_equal(actual, repeat(2, 1.0/0.0)));
+	CHECK(assert_equal(actual, repeat(2, std::numeric_limits<double>::infinity())));
 }
 
 /* ************************************************************************* */
@@ -159,6 +160,34 @@ TEST ( NonlinearEquality, equals ) {
 	CHECK(!nle1->equals(*nle3)); // test config
 }
 
+/* ************************************************************************* */
+TEST ( NonlinearEquality, allow_error_vector ) {
+	Symbol key1 = "x";
+	Vector feasible1 = Vector_(3, 1.0, 2.0, 3.0);
+	double error_gain = 500.0;
+	NLE nle(key1, feasible1, error_gain,vector_compare);
+
+	// the unwhitened error should provide logmap to the feasible state
+	Vector badPoint1 = Vector_(3, 0.0, 2.0, 3.0);
+	Vector actVec = nle.evaluateError(badPoint1);
+	Vector expVec = Vector_(3, 1.0, 0.0, 0.0);
+	CHECK(assert_equal(expVec, actVec));
+
+	// the actual error should have a gain on it
+	VectorConfig config;
+	config.insert(key1, badPoint1);
+	double actError = nle.error(config);
+	DOUBLES_EQUAL(500.0, actError, 1e-9);
+
+	// check linearization
+	GaussianFactor::shared_ptr actLinFactor = nle.linearize(config);
+	Matrix A1 = eye(3,3);
+	Vector b = -expVec;
+	SharedDiagonal model = noiseModel::Constrained::All(3);
+	GaussianFactor::shared_ptr expLinFactor(new GaussianFactor(key1, A1, b, model));
+	CHECK(assert_equal(*expLinFactor, *actLinFactor));
+
+}
 
 /* ************************************************************************* */
 int main() { TestResult tr; return TestRegistry::runAllTests(tr); }
