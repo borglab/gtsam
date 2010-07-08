@@ -11,8 +11,6 @@
 #include <boost/numeric/ublas/io.hpp>
 #include <boost/assign/std/list.hpp> // for operator += in Ordering
 
-#include <colamd/colamd.h>
-
 #include "GaussianFactorGraph.h"
 #include "GaussianFactorSet.h"
 #include "FactorGraph-inl.h"

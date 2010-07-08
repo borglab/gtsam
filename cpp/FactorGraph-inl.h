@@ -15,6 +15,10 @@
 #include <stdexcept>
 #include <functional>
 
+extern "C" {
+#include <colamd/colamd.h>
+}
+
 #include <boost/foreach.hpp>
 #include <boost/tuple/tuple.hpp>
 #include <boost/format.hpp>
