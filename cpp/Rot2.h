@@ -16,7 +16,9 @@
 
 namespace gtsam {
 
-  /* Rotation matrix */
+  /** Rotation matrix
+   * NOTE: the angle theta is in radians unless explicitly stated
+   */
   class Rot2: Testable<Rot2>, public Lie<Rot2> {
 
   private:
@@ -37,8 +39,14 @@ namespace gtsam {
 
     /** "named constructors" */
 
-    /** Named constructor from angle == exponential map at identity */
+    /** Named constructor from angle == exponential map at identity  - theta is in radians*/
     static Rot2 fromAngle(double theta);
+
+    /** Named constructor from angle in degrees */
+    static Rot2 fromDegrees(double theta) {
+    	const double degree = M_PI / 180;
+    	return fromAngle(theta * degree);
+    }
 
     /** Named constructor from cos(theta),sin(theta) pair, will *not* normalize! */
     static Rot2 fromCosSin(double c, double s);
