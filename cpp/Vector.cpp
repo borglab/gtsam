@@ -20,11 +20,6 @@
 #include <Windows.h>
 #endif
 
-#ifdef GSL
-#include <gsl/gsl_blas.h> // needed for gsl blas
-#include <gsl/gsl_linalg.h>
-#endif
-
 #include <boost/numeric/ublas/io.hpp>
 #include <boost/numeric/ublas/vector_proxy.hpp>
 #include <boost/random/normal_distribution.hpp>

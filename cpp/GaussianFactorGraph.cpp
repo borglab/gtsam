@@ -22,9 +22,6 @@ using namespace std;
 using namespace gtsam;
 using namespace boost::assign;
 
-//#define USE_FAST_ELIMINATE
-
-
 // trick from some reading group
 #define FOREACH_PAIR( KEY, VAL, COL) BOOST_FOREACH (boost::tie(KEY,VAL),COL)
 
@@ -125,14 +122,10 @@ set<Symbol> GaussianFactorGraph::find_separator(const Symbol& key) const
 /* ************************************************************************* */
 GaussianConditional::shared_ptr
 GaussianFactorGraph::eliminateOne(const Symbol& key, bool old) {
-#ifdef USE_FAST_ELIMINATE
-	return eliminateOneMatrixJoin(key);
-#else
 	if (old)
 		return gtsam::eliminateOne<GaussianFactor,GaussianConditional>(*this, key);
 	else
 		return eliminateOneMatrixJoin(key);
-#endif
 }
 
 /* ************************************************************************* */
