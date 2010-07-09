@@ -133,6 +133,7 @@ namespace gtsam {
 	}
 
 	/* ************************************************************************* */
+	// todo: will be obsolete soon
 	template<class Conditional, class Config>
 	void ISAM2<Conditional, Config>::update_internal(const NonlinearFactorGraph<Config>& newFactors,
 			const Config& newTheta, Cliques& orphans, double wildfire_threshold, double relinearize_threshold, bool relinearize) {
@@ -279,13 +280,121 @@ namespace gtsam {
 	}
 
 	template<class Conditional, class Config>
+	void ISAM2<Conditional, Config>::linear_update(const FactorGraph<GaussianFactor>& newFactors) {
+
+		// Input: BayesTree(this), newFactors
+
+		// 1. Remove top of Bayes tree and convert to a factor graph:
+		// (a) For each affected variable, remove the corresponding clique and all parents up to the root.
+		// (b) Store orphaned sub-trees \BayesTree_{O} of removed cliques.
+		const list<Symbol> newKeys = newFactors.keys();
+		Cliques& orphans;
+		BayesNet<GaussianConditional> affectedBayesNet;
+		this->removeTop(newKeys, affectedBayesNet, orphans);
+		FactorGraph<GaussianFactor> factors(affectedBayesNet);
+
+		// 2. Add the new factors \Factors' into the resulting factor graph
+		factors.push_back(newFactors);
+
+		// 3. Re-order and eliminate the factor graph into a Bayes net (Algorithm [alg:eliminate]), and re-assemble into a new Bayes tree (Algorithm [alg:BayesTree])
+
+		// create an ordering for the new and contaminated factors
+		// newKeys are passed in: those variables will be forced to the end in the ordering
+		set<Symbol> newKeysSet;
+		newKeysSet.insert(newKeys.begin(), newKeys.end());
+		Ordering ordering = factors.getConstrainedOrdering(newKeysSet);
+
+		// eliminate into a Bayes net
+		BayesNet<Conditional> bayesNet = _eliminate(factors, cached_, ordering);
+
+		// Create Index from ordering
+		IndexTable<Symbol> index(ordering);
+
+		// insert conditionals back in, straight into the topless bayesTree
+		typename BayesNet<Conditional>::const_reverse_iterator rit;
+		for ( rit=bayesNet.rbegin(); rit != bayesNet.rend(); ++rit )
+			this->insert(*rit, index);
+
+		// Save number of affectedCliques
+		lastAffectedCliqueCount = this->size();
+
+		// 4. Insert the orphans back into the new Bayes tree.
+
+		// add orphans to the bottom of the new tree
+		BOOST_FOREACH(sharedClique orphan, orphans) {
+			Symbol parentRepresentative = findParentClique(orphan->separator_, index);
+			sharedClique parent = (*this)[parentRepresentative];
+			parent->children_ += orphan;
+			orphan->parent_ = parent; // set new parent!
+		}
+
+		// Output: BayesTree(this)
+
+	}
+
+	template<class Conditional, class Config>
+	void ISAM2<Conditional, Config>::fluid_relinearization(double relinearize_threshold) {
+
+		// Input: nonlinear factors factors_, linearization point theta_, Bayes tree (this), delta_
+
+		// 1. Mark variables in \Delta above threshold \beta: J=\{\Delta_{j}\in\Delta|\Delta_{j}\geq\beta\}.
+		std::list<Symbol> marked;
+		VectorConfig deltaMarked;
+		for (VectorConfig::const_iterator it = delta_.begin(); it!=delta_.end(); it++) {
+			Symbol key = it->first;
+			Vector v = it->second;
+			if (max(abs(v)) >= relinearize_threshold) {
+				marked.push_back(key);
+				deltaMarked.insert(key, v);
+			}
+		}
+
+		// 2. Update linearization point for marked variables: \Theta_{J}:=\Theta_{J}+\Delta_{J}.
+		theta_ = expmap(theta_, deltaMarked);
+
+		// 3. Mark all cliques that involve marked variables \Theta_{J} and all their ancestors.
+
+		// 4. From the leaves to the top, if a clique is marked:
+		//    re-linearize the original factors in \Factors associated with the clique,
+		//    add the cached marginal factors from its children, and re-eliminate.
+
+		// Output: updated Bayes tree (this), updated linearization point theta_
+
+	}
+
+	template<class Conditional, class Config>
 	void ISAM2<Conditional, Config>::update(
 			const NonlinearFactorGraph<Config>& newFactors, const Config& newTheta,
 			double wildfire_threshold, double relinearize_threshold, bool relinearize) {
 
+#if 1
+		// old algorithm:
 		Cliques orphans;
 		this->update_internal(newFactors, newTheta, orphans, wildfire_threshold, relinearize_threshold, relinearize);
+#else
 
+		// 1. Add any new factors \Factors:=\Factors\cup\Factors'.
+		nonlinearFactors_.push_back(newFactors);
+
+		// 2. Initialize any new variables \Theta_{new} and add \Theta:=\Theta\cup\Theta_{new}.
+		theta_.insert(newTheta);
+
+		// 3. Linearize new factor
+		FactorGraph<GaussianFactor> linearFactors = newFactors.linearize(theta_);
+
+		// 4. Linear iSAM step (alg 3)
+		linear_update(linearFactors); // in: this
+
+		// 5. Calculate Delta (alg 0)
+		delta_ = optimize2(*this, wildfire_threshold);
+
+		// 6. Iterate Algorithm 4 until no more re-linearizations occur
+		if (relinearize)
+			fluid_relinearization(relinearize_threshold); // in: delta_, theta_, nonlinearFactors_, this
+
+		// todo: linearization point and delta_ do not fit... have to update delta again
+		delta_ = optimize2(*this, wildfire_threshold);
+#endif
 	}
 
 /* ************************************************************************* */
