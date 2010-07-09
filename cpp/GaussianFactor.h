@@ -248,8 +248,8 @@ public:
 	 */
 	static std::pair<boost::shared_ptr<GaussianConditional>, shared_ptr>
 	eliminateMatrix(Matrix& Ab, SharedDiagonal model,
-			        const Ordering& ordering,
-			        const Dimensions& dimensions);
+			const Ordering& frontal, const Ordering& separator,
+			const Dimensions& dimensions);
 
 	/**
 	 * Take the factor f, and append to current matrices. Not very general.

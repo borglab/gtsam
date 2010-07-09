@@ -382,10 +382,9 @@ void GaussianFactor::append_factor(GaussianFactor::shared_ptr f, size_t m, size_
 
 pair<GaussianConditional::shared_ptr, GaussianFactor::shared_ptr>
 GaussianFactor::eliminateMatrix(Matrix& Ab, SharedDiagonal model,
-		        const Ordering& ordering,
+		        const Ordering& frontal, const Ordering& separator,
 		        const Dimensions& dimensions) {
 	bool verbose = false;
-	Symbol key = ordering.front();
 
 	// Use in-place QR on dense Ab appropriate to NoiseModel
 	if (verbose) model->print("Before QR");
@@ -394,15 +393,15 @@ GaussianFactor::eliminateMatrix(Matrix& Ab, SharedDiagonal model,
 
 	// get dimensions of the eliminated variable
 	// TODO: this is another map find that should be avoided !
-	size_t n1 = dimensions.at(key), n = Ab.size2() - 1;
+	size_t n1 = dimensions.at(frontal.front()), n = Ab.size2() - 1;
 
 	// if m<n1, this factor cannot be eliminated
 	size_t maxRank = noiseModel->dim();
 	if (maxRank<n1) {
 		cout << "Perhaps your factor graph is singular." << endl;
 		cout << "Here are the keys involved in the factor now being eliminated:" << endl;
-		ordering.print("Keys");
-		cout << "The first key, '" << (string)ordering.front() << "', corresponds to the variable being eliminated" << endl;
+		separator.print("Keys");
+		cout << "The first key, '" << (string)frontal.front() << "', corresponds to the variable being eliminated" << endl;
 		throw(domain_error("GaussianFactor::eliminate: fewer constraints than unknowns"));
 	}
 
@@ -410,7 +409,7 @@ GaussianFactor::eliminateMatrix(Matrix& Ab, SharedDiagonal model,
 	ublas::matrix_column<Matrix> d(Ab,n);
 
 	// create base conditional Gaussian
-	GaussianConditional::shared_ptr conditional(new GaussianConditional(key,
+	GaussianConditional::shared_ptr conditional(new GaussianConditional(frontal.front(),
 			sub(d,  0, n1),                   // form d vector
 			sub(Ab, 0, n1, 0, n1),            // form R matrix
 			sub(noiseModel->sigmas(),0,n1))); // get standard deviations
@@ -418,8 +417,8 @@ GaussianFactor::eliminateMatrix(Matrix& Ab, SharedDiagonal model,
 	// extract the block matrices for parents in both CG and LF
 	GaussianFactor::shared_ptr factor(new GaussianFactor);
 	size_t j = n1;
-	BOOST_FOREACH(const Symbol& cur_key, ordering)
-		if (cur_key!=key) {
+	BOOST_FOREACH(const Symbol& cur_key, separator)
+		if (cur_key!=frontal.front()) {
 			size_t dim = dimensions.at(cur_key); // TODO avoid find !
 			conditional->add(cur_key, sub(Ab, 0, n1, j, j+dim));
 			factor->insert(cur_key, sub(Ab, n1, maxRank, j, j+dim)); // TODO: handle zeros properly
@@ -454,7 +453,8 @@ GaussianFactor::eliminate(const Symbol& key) const
 	}
 
 	// create an internal ordering that eliminates key first
-	Ordering ordering;
+	Ordering frontal, ordering;
+	frontal += key;
 	ordering += key;
 	BOOST_FOREACH(const Symbol& k, keys())
 		if (k != key) ordering += k;
@@ -463,7 +463,8 @@ GaussianFactor::eliminate(const Symbol& key) const
 	Matrix Ab = matrix_augmented(ordering,false);
 
 	// TODO: this is where to split
-	return eliminateMatrix(Ab, model_, ordering, dimensions());
+	ordering.pop_front();
+	return eliminateMatrix(Ab, model_, frontal, ordering, dimensions());
 }
 
 /* ************************************************************************* */

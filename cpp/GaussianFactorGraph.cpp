@@ -223,7 +223,7 @@ GaussianFactorGraph::eliminateOneMatrixJoin(const Symbol& key) {
 	}
 
 	// add the keys to the rendering
-	Ordering render; render += key;
+	Ordering frontal, render; frontal += key; render += key;
 	BOOST_FOREACH(const Symbol& k, separator)
 			if (k != key) render += k;
 
@@ -235,8 +235,9 @@ GaussianFactorGraph::eliminateOneMatrixJoin(const Symbol& key) {
 	// eliminate that joint factor
 	GaussianFactor::shared_ptr factor;
 	GaussianConditional::shared_ptr conditional;
+	render.pop_front();
 	boost::tie(conditional, factor) =
-			GaussianFactor::eliminateMatrix(Ab, model, render, dimensions);
+			GaussianFactor::eliminateMatrix(Ab, model, frontal, render, dimensions);
 
 	// add new factor on separator back into the graph
 	if (!factor->empty()) push_back(factor);
