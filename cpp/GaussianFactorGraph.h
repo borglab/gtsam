@@ -155,6 +155,11 @@ namespace gtsam {
     VectorConfig optimize(const Ordering& ordering, bool enableJoinFactor = true);
 
     /**
+     * optimize a linear factor graph with multi-frontals
+     */
+    VectorConfig optimizeMultiFrontals(const Ordering& ordering);
+
+    /**
      * shared pointer versions for MATLAB
      */
     boost::shared_ptr<GaussianBayesNet> eliminate_(const Ordering&);

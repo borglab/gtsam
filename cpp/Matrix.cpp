@@ -693,7 +693,7 @@ void householder(Matrix &A) {
 	__CLPK_integer info;
 
 	dgeqrf_(&m, &n, a, &m, tau, &work_optimal_size, &lwork, &info);
-	lwork = (int)work_optimal_size;
+	lwork = (__CLPK_integer)work_optimal_size;
 	double work[lwork];
 	dgeqrf_(&m, &n, a, &m, tau, work, &lwork, &info);
 	int k0 = 0;

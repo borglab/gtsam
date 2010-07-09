@@ -475,38 +475,6 @@ TEST( GaussianFactorGraph, optimize )
   CHECK(assert_equal(expected,actual));
 }
 
-/* ************************************************************************* *
- Bayes tree for smoother with "nested dissection" ordering:
-	 C1		 x5 x6 x4
-	 C2		  x3 x2 : x4
-	 C3		    x1 : x2
-	 C4		  x7 : x6
-
-/* ************************************************************************* */
-TEST( GaussianFactorGraph, optimizeMultiFrontal )
-{
-	// create a graph
-	GaussianFactorGraph fg = createSmoother(7);
-
-	// create an ordering
-	Ordering ordering;
-	ordering += "x1","x3","x5","x7","x2","x6","x4";
-
-	// Symbolic factorization
-	// GaussianFactorGraph -> SymbolicFactorGraph -> SymbolicBayesNet -> SymbolicBayesTree
-	SymbolicFactorGraph sfg(fg);
-	SymbolicBayesNet sbn = sfg.eliminate(ordering);
-	BayesTree<SymbolicConditional> sbt(sbn);
-
-//	// optimize the graph
-//	VectorConfig actual = fg.optimizeMultiFrontal(sbt);
-//
-//	// verify
-//	VectorConfig expected = createCorrectDelta();
-//
-//  CHECK(assert_equal(expected,actual));
-}
-
 /* ************************************************************************* */
 TEST( GaussianFactorGraph, combine)
 {
@@ -584,7 +552,8 @@ TEST( GaussianFactorGraph, findAndRemoveFactors )
   GaussianFactor::shared_ptr f2 = fg[2];
 
   // call the function
-  vector<GaussianFactor::shared_ptr> factors = fg.findAndRemoveFactors("x1");
+  vector<GaussianFactor::shared_ptr> factors = fg.findAndRemoveFactors
+  		<vector<GaussianFactor::shared_ptr> >("x1");
 
   // Check the factors
   CHECK(f0==factors[0]);
@@ -607,7 +576,8 @@ TEST( GaussianFactorGraph, findAndRemoveFactors_twice )
   GaussianFactor::shared_ptr f2 = fg[2];
 
   // call the function
-  vector<GaussianFactor::shared_ptr> factors = fg.findAndRemoveFactors("x1");
+  vector<GaussianFactor::shared_ptr> factors = fg.findAndRemoveFactors
+  		<vector<GaussianFactor::shared_ptr> >("x1");
 
   // Check the factors
   CHECK(f0==factors[0]);

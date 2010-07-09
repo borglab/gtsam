@@ -165,7 +165,7 @@ std::pair<FactorGraph<Factor>, set<Symbol> > FactorGraph<Factor>::removeSingleto
 		singletons.insert(new_singletons.begin(), new_singletons.end());
 
 		BOOST_FOREACH(const Symbol& singleton, new_singletons)
-			findAndRemoveFactors(singleton);
+			findAndRemoveFactors<vector<boost::shared_ptr<Factor> > >(singleton);
 
 		// exit when there are no more singletons
 		if (new_singletons.empty()) break;
@@ -317,9 +317,8 @@ list<int> FactorGraph<Factor>::factors(const Symbol& key) const {
 /* ************************************************************************* */
 /** find all non-NULL factors for a variable, then set factors to NULL       */
 /* ************************************************************************* */
-template<class Factor>
-vector<boost::shared_ptr<Factor> >
-FactorGraph<Factor>::findAndRemoveFactors(const Symbol& key) {
+template<class Factor> template<class Factors>
+Factors FactorGraph<Factor>::findAndRemoveFactors(const Symbol& key) {
 
 	// find all factor indices associated with the key
 	Indices::const_iterator it = indices_.find(key);
@@ -329,7 +328,7 @@ FactorGraph<Factor>::findAndRemoveFactors(const Symbol& key) {
 				+ (string)key + " not found");
 	const list<int>& factorsAssociatedWithKey = it->second;
 
-	vector<sharedFactor> found;
+	Factors found;
 	BOOST_FOREACH(const int& i, factorsAssociatedWithKey) {
 		sharedFactor& fi = factors_.at(i); // throws exception !
 		if(fi == NULL) continue; // skip NULL factors
@@ -477,7 +476,8 @@ std::pair<FactorGraph<Factor>, FactorGraph<Factor> > FactorGraph<Factor>::splitM
 template<class Factor> boost::shared_ptr<Factor>
 removeAndCombineFactors(FactorGraph<Factor>& factorGraph, const Symbol& key)
 {
-	vector<boost::shared_ptr<Factor> > found = factorGraph.findAndRemoveFactors(key);
+	typedef vector<boost::shared_ptr<Factor> > Factors;
+	Factors found = factorGraph.template findAndRemoveFactors<Factors>(key);
 	boost::shared_ptr<Factor> new_factor(new Factor(found));
 	return new_factor;
 }

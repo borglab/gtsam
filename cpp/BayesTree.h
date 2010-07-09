@@ -67,6 +67,9 @@ namespace gtsam {
 			/** is this the root of a Bayes tree ? */
 			inline bool isRoot() const { return parent_==NULL;}
 
+			/** return the const reference of children */
+			const std::list<shared_ptr>& children() const { return children_; }
+
 			/** The size of subtree rooted at this clique, i.e., nr of Cliques */
 			size_t treeSize() const;
 
@@ -230,9 +233,7 @@ namespace gtsam {
 		 * Altering Bayes trees
 		 */
 
-		/**
-		 * Remove all nodes
-		 */
+		/** Remove all nodes */
 		void clear();
 
 		/**

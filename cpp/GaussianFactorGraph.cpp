@@ -16,6 +16,7 @@
 #include "FactorGraph-inl.h"
 #include "inference-inl.h"
 #include "iterative.h"
+#include "JunctionTree-inl.h"
 
 using namespace std;
 using namespace gtsam;
@@ -207,7 +208,8 @@ std::pair<Matrix, SharedDiagonal> combineFactorsAndCreateMatrix(
 GaussianConditional::shared_ptr
 GaussianFactorGraph::eliminateOneMatrixJoin(const Symbol& key) {
 	// find and remove all factors connected to key
-	vector<GaussianFactor::shared_ptr> factors = findAndRemoveFactors(key);
+	typedef vector<GaussianFactor::shared_ptr> Factors;
+	Factors factors = findAndRemoveFactors<Factors>(key);
 
 	// Collect all dimensions as well as the set of separator keys
 	set<Symbol> separator;
@@ -283,6 +285,14 @@ VectorConfig GaussianFactorGraph::optimize(const Ordering& ordering, bool old)
 	// calculate new configuration (using backsubstitution)
 	VectorConfig delta = ::optimize(chordalBayesNet);
 	return delta;
+}
+
+/* ************************************************************************* */
+VectorConfig GaussianFactorGraph::optimizeMultiFrontals(const Ordering& ordering)
+{
+	GaussianJunctionTree<GaussianFactorGraph> junctionTree(*this, ordering);
+
+	return junctionTree.optimize();
 }
 
 /* ************************************************************************* */

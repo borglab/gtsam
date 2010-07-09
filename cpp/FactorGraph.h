@@ -123,7 +123,8 @@ namespace gtsam {
      * from the factor graph
      * @param key the key for the given node
      */
-		std::vector<sharedFactor> findAndRemoveFactors(const Symbol& key);
+    template<class Factors>
+    Factors findAndRemoveFactors(const Symbol& key);
 
 		/**
 		 * find the minimum spanning tree using boost graph library

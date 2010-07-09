@@ -18,128 +18,114 @@
 namespace gtsam {
 
 	/* ************************************************************************* */
-	template <class Conditional, class FG>
-	class JunctionTree/*: public BayesTree<Conditional>*/ {
+	template <class FG>
+	class JunctionTree : public Testable<JunctionTree<FG> > {
 	public:
-		typedef typename BayesTree<Conditional>::sharedClique sharedClique;
-
-		// the threshold for the sizes of submaps. Smaller ones will be absorbed into the separator
-		static const int const_minNodesPerMap_default = 10;
-		static const int const_minNodesPerMap_ultra = 1;
-
-		// when to stop partitioning
-		static const int const_numNodeStopPartition_default = 50;
-		static const int const_numNodeStopPartition_ultra = 3;     // so that A,B,C all have one variable
-
-
 		// the class for subgraphs that also include the pointers to the parents and two children
-		class SubFG : public FG {
-		public:
-			typedef typename boost::shared_ptr<SubFG> shared_ptr;
+		class Clique : public FG {
+		private:
+			typedef typename boost::shared_ptr<Clique> shared_ptr;
 			shared_ptr parent_;                  // the parent subgraph node
+			std::vector<shared_ptr> children_;   // the child cliques
 			Ordering frontal_;                   // the frontal varaibles
-			Unordered separator_;         // the separator variables
+			Unordered separator_;                // the separator variables
 
-			friend class JunctionTree<Conditional, FG>;
+			friend class JunctionTree<FG>;
 
 		public:
-			std::vector<shared_ptr> children_;         // the child cliques
 
 			// empty constructor
-			SubFG() {}
+			Clique() {}
 
 			// constructor with all the information
-			SubFG(const FG& fgLocal, const Ordering& frontal, const Unordered& separator,
+			Clique(const FG& fgLocal, const Ordering& frontal, const Unordered& separator,
 					 const shared_ptr& parent)
 				: frontal_(frontal), separator_(separator), FG(fgLocal), parent_(parent) {}
 
 			// constructor for an empty graph
-			SubFG(const Ordering& frontal, const Unordered& separator, const shared_ptr& parent)
+			Clique(const Ordering& frontal, const Unordered& separator, const shared_ptr& parent)
 				: frontal_(frontal), separator_(separator), parent_(parent) {}
 
+			// return the members
 			const Ordering& frontal() const            { return frontal_;}
 			const Unordered& separator() const         { return separator_;}
-			std::vector<shared_ptr>& children()        { return children_; } // TODO:: add const
+			const std::vector<shared_ptr>& children()  { return children_; }
 
 			// add a child node
 			void addChild(const shared_ptr& child) { children_.push_back(child); }
 
+			// print the object
+			void print(const std::string& indent) const;
 			void printTree(const std::string& indent) const;
+
+			// check equality
+			bool equals(const Clique& other) const;
 		};
 
 		// typedef for shared pointers to cliques
-		typedef typename SubFG::shared_ptr sharedSubFG;
-		typedef boost::function<void (sharedSubFG)> VisitorSubFG;
+		typedef typename Clique::shared_ptr sharedClique;
 
 	protected:
 		// Root clique
-		sharedSubFG rootFG_;
+		sharedClique root_;
 
 	private:
+		// distribute the factors along the Bayes tree
+		sharedClique distributeFactors(FG& fg, const BayesTree<SymbolicConditional>::sharedClique clique);
 
 		// utility function called by eliminateBottomUp
-		std::pair<FG, sharedClique> eliminateOneClique(sharedSubFG fg_, BayesTree<Conditional>& bayesTree);
+		template <class Conditional>
+		std::pair<FG, typename BayesTree<Conditional>::sharedClique> eliminateOneClique(
+				sharedClique fg_, BayesTree<Conditional>& bayesTree);
 
 	public:
+		// constructor
+		JunctionTree() {}
 
-		JunctionTree() : verboseLevel(0) {}
+		// constructor given a factor graph and the elimination ordering
+		JunctionTree(FG& fg, const Ordering& ordering);
 
-		// return the root graph
-		sharedSubFG rootFG() const { return rootFG_; }
+		// return the root clique
+		sharedClique root() const { return root_; }
 
 		// eliminate the factors in the subgraphs
+		template <class Conditional>
 		BayesTree<Conditional> eliminate();
 
 		// print the object
 		void print(const std::string& str) const {
-			if (rootFG_.get()) rootFG_->printTree("");
+			cout << str << endl;
+			if (root_.get()) root_->printTree("");
 		}
 
-		// iterate over all the subgraphs from root to leaves in the DFS order, recursive
-		void iterSubGraphsDFS(VisitorSubFG visitor, sharedSubFG current = sharedSubFG());
+		/** check equality */
+		bool equals(const JunctionTree<FG>& other, double tol = 1e-9) const;
 
-		// iterate over all the subgraphs from root to leaves in the BFS order, non-recursive
-		void iterSubGraphsBFS(VisitorSubFG visitor);
-
-		// the output level
-		int verboseLevel;
 	}; // JunctionTree
 
 	/* ************************************************************************* */
 	/**
-	 * Linear JunctionTree which can do optimization
+	 * GaussianJunctionTree that does the optimization
 	 */
-	template <class Conditional, class FG>
-	class LinearJunctionTree: public JunctionTree<Conditional, FG> {
+	template <class FG>
+	class GaussianJunctionTree: public JunctionTree<FG> {
 	public:
-		typedef JunctionTree<Conditional, FG> Base;
-		typedef typename BayesTree<Conditional>::sharedClique sharedClique;
-		typedef typename JunctionTree<Conditional, FG>::sharedSubFG sharedSubFG;
+		typedef JunctionTree<FG> Base;
+		typedef typename JunctionTree<FG>::sharedClique sharedClique;
 
 	protected:
 		// back-substitute in topological sort order (parents first)
-		void btreeBackSubstitue(typename BayesTree<Conditional>::sharedClique current, VectorConfig& config);
+		void btreeBackSubstitue(typename BayesTree<GaussianConditional>::sharedClique current, VectorConfig& config);
 
 	public :
 
-		LinearJunctionTree() : Base() {}
+		GaussianJunctionTree() : Base() {}
 
 		// constructor
-		LinearJunctionTree(const FG& fg, const Ordering& ordering, int numNodeStopPartition = Base::const_numNodeStopPartition_default,
-				int minNodesPerMap = Base::const_minNodesPerMap_default) :
-			Base(fg, ordering, numNodeStopPartition, minNodesPerMap) {}
+		GaussianJunctionTree(FG& fg, const Ordering& ordering) : Base(fg, ordering) {}
 
 		// optimize the linear graph
 		VectorConfig optimize();
 	}; // Linear JunctionTree
-
-	class SymbolicConditional;
-	class SymbolicFactorGraph;
-
-	/**
-	 *  recursive partitioning
-	 */
-	typedef JunctionTree<SymbolicConditional, SymbolicFactorGraph> SymbolicTSAM;
-	typedef JunctionTree<GaussianConditional, GaussianFactorGraph> GaussianTSAM;
 
 } // namespace gtsam
