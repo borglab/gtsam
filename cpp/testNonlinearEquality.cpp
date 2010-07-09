@@ -9,8 +9,12 @@
 
 #include "Key.h"
 #include "Pose2.h"
+#include "Ordering.h"
 #include "VectorConfig.h"
 #include "NonlinearEquality.h"
+#include "PriorFactor.h"
+#include "NonlinearFactorGraph.h"
+#include "NonlinearOptimizer-inl.h"
 
 #include "LieConfig-inl.h"
 
@@ -22,8 +26,12 @@ typedef boost::shared_ptr<NLE> shared_nle;
 
 typedef TypedSymbol<Pose2, 'x'> PoseKey;
 typedef LieConfig<PoseKey, Pose2> PoseConfig;
+typedef PriorFactor<PoseConfig, PoseKey, Pose2> PosePrior;
 typedef NonlinearEquality<PoseConfig, PoseKey, Pose2> PoseNLE;
 typedef boost::shared_ptr<PoseNLE> shared_poseNLE;
+
+typedef NonlinearFactorGraph<PoseConfig> PoseGraph;
+typedef NonlinearOptimizer<PoseGraph,PoseConfig> PoseOptimizer;
 
 bool vector_compare(const Vector& a, const Vector& b) {
 	return equal_with_abs_tol(a, b, 1e-5);
@@ -182,11 +190,105 @@ TEST ( NonlinearEquality, allow_error_vector ) {
 	// check linearization
 	GaussianFactor::shared_ptr actLinFactor = nle.linearize(config);
 	Matrix A1 = eye(3,3);
-	Vector b = -expVec;
+	Vector b = expVec;
 	SharedDiagonal model = noiseModel::Constrained::All(3);
 	GaussianFactor::shared_ptr expLinFactor(new GaussianFactor(key1, A1, b, model));
 	CHECK(assert_equal(*expLinFactor, *actLinFactor));
+}
 
+/* ************************************************************************* */
+TEST ( NonlinearEquality, allow_error_pose ) {
+	PoseKey key1(1);
+	Pose2 feasible1(1.0, 2.0, 3.0);
+	double error_gain = 500.0;
+	PoseNLE nle(key1, feasible1, error_gain);
+
+	// the unwhitened error should provide logmap to the feasible state
+	Pose2 badPoint1(0.0, 2.0, 3.0);
+	Vector actVec = nle.evaluateError(badPoint1);
+	Vector expVec = Vector_(3, -0.989992, -0.14112, 0.0);
+	CHECK(assert_equal(expVec, actVec, 1e-5));
+
+	// the actual error should have a gain on it
+	PoseConfig config;
+	config.insert(key1, badPoint1);
+	double actError = nle.error(config);
+	DOUBLES_EQUAL(500.0, actError, 1e-9);
+
+	// check linearization
+	GaussianFactor::shared_ptr actLinFactor = nle.linearize(config);
+	Matrix A1 = eye(3,3);
+	Vector b = expVec;
+	SharedDiagonal model = noiseModel::Constrained::All(3);
+	GaussianFactor::shared_ptr expLinFactor(new GaussianFactor(key1, A1, b, model));
+	CHECK(assert_equal(*expLinFactor, *actLinFactor, 1e-5));
+}
+
+/* ************************************************************************* */
+TEST ( NonlinearEquality, allow_error_optimize ) {
+	PoseKey key1(1);
+	Pose2 feasible1(1.0, 2.0, 3.0);
+	double error_gain = 500.0;
+	PoseNLE nle(key1, feasible1, error_gain);
+
+	// add to a graph
+	boost::shared_ptr<PoseGraph> graph(new PoseGraph());
+	graph->add(nle);
+
+	// initialize away from the ideal
+	Pose2 initPose(0.0, 2.0, 3.0);
+	boost::shared_ptr<PoseConfig> init(new PoseConfig());
+	init->insert(key1, initPose);
+
+	// optimize
+	boost::shared_ptr<Ordering> ord(new Ordering());
+	ord->push_back(key1);
+	PoseOptimizer::shared_solver solver(new PoseOptimizer::solver(ord));
+	PoseOptimizer optimizer(graph, init, solver);
+	double relThresh = 1e-5, absThresh = 1e-5;
+	PoseOptimizer result = optimizer.levenbergMarquardt(relThresh, absThresh, PoseOptimizer::SILENT);
+
+	// verify
+	PoseConfig expected;
+	expected.insert(key1, feasible1);
+	CHECK(assert_equal(expected, *result.config()));
+}
+
+/* ************************************************************************* */
+TEST ( NonlinearEquality, allow_error_optimize_with_factors ) {
+
+	// create a hard constraint
+	PoseKey key1(1);
+	Pose2 feasible1(1.0, 2.0, 3.0);
+
+	// initialize away from the ideal
+	boost::shared_ptr<PoseConfig> init(new PoseConfig());
+	Pose2 initPose(0.0, 2.0, 3.0);
+	init->insert(key1, initPose);
+
+	double error_gain = 500.0;
+	PoseNLE nle(key1, feasible1, error_gain);
+
+	// create a soft prior that conflicts
+	PosePrior prior(key1, initPose, noiseModel::Isotropic::Sigma(3, 0.1));
+
+	// add to a graph
+	boost::shared_ptr<PoseGraph> graph(new PoseGraph());
+	graph->add(nle);
+	graph->add(prior);
+
+	// optimize
+	boost::shared_ptr<Ordering> ord(new Ordering());
+	ord->push_back(key1);
+	PoseOptimizer::shared_solver solver(new PoseOptimizer::solver(ord));
+	PoseOptimizer optimizer(graph, init, solver);
+	double relThresh = 1e-5, absThresh = 1e-5;
+	PoseOptimizer result = optimizer.levenbergMarquardt(relThresh, absThresh, PoseOptimizer::SILENT);
+
+	// verify
+	PoseConfig expected;
+	expected.insert(key1, feasible1);
+	CHECK(assert_equal(expected, *result.config()));
 }
 
 /* ************************************************************************* */
