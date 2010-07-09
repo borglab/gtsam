@@ -226,7 +226,10 @@ namespace gtsam {
 		//// 8 - eliminate and add orphans back in
 
 		// create an ordering for the new and contaminated factors
-		Ordering ordering = factors->getOrdering();
+		// newKeys are passed in: those variables will be forced to the end in the ordering
+		set<Symbol> newKeysSet;
+		newKeysSet.insert(newKeys.begin(), newKeys.end());
+		Ordering ordering = factors->getConstrainedOrdering(newKeysSet);
 
 		// eliminate into a Bayes net
 		BayesNet<Conditional> bayesNet = _eliminate(*factors, cached_, ordering);

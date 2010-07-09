@@ -106,9 +106,10 @@ namespace gtsam {
 		/**
 		 * Compute colamd ordering, including I/O and shared pointer version
 		 */
-		void getOrdering(Ordering& ordering, boost::optional<const std::set<Symbol>&> interested = boost::none) const;
+		void getOrdering(Ordering& ordering, const std::set<Symbol>& lastKeys, boost::optional<const std::set<Symbol>&> interested = boost::none) const;
 		Ordering getOrdering() const;
 		Ordering getOrdering(const std::set<Symbol>& interested) const;
+		Ordering getConstrainedOrdering(const std::set<Symbol>& lastKeys) const;
 		boost::shared_ptr<Ordering>  getOrdering_() const;
 
     /**

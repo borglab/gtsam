@@ -17,6 +17,7 @@
 
 extern "C" {
 #include <colamd/colamd.h>
+#include <colamd/ccolamd.h>
 }
 
 #include <boost/foreach.hpp>
@@ -180,27 +181,42 @@ std::pair<FactorGraph<Factor>, set<Symbol> > FactorGraph<Factor>::removeSingleto
  * @param n_row colamd arg 2: number of columns in A
  * @param nrNonZeros number of non-zero entries in A
  * @param columns map from keys to a sparse column of non-zero row indices
+ * @param lastKeys set of keys that should appear last in the ordering
  */
 template <class Key>
-void colamd(int n_col, int n_row, int nrNonZeros, const map<Key, vector<int> >& columns, Ordering& ordering) {
+void colamd(int n_col, int n_row, int nrNonZeros, const map<Key, vector<int> >& columns,
+		Ordering& ordering, const set<Symbol>& lastKeys) {
 
 	// Convert to compressed column major format colamd wants it in (== MATLAB format!)
 	vector<Key> initialOrder;
-	int Alen = nrNonZeros*30;     /* colamd arg 3: size of the array A TODO: use Tim's function ! */
+//	int Alen = nrNonZeros*30;     /* colamd arg 3: size of the array A TODO: use Tim's function ! */
+	int Alen = ccolamd_recommended(nrNonZeros, n_row, n_col);     /* colamd arg 3: size of the array A */
 	int * A = new int[Alen];      /* colamd arg 4: row indices of A, of size Alen */
 	int * p = new int[n_col + 1]; /* colamd arg 5: column pointers of A, of size n_col+1 */
+	int * cmember = new int[n_col];  /* Constraint set of A, of size n_col */
 
 	p[0] = 0;
 	int j = 1;
 	int count = 0;
 	typedef typename map<Key, vector<int> >::const_iterator iterator;
+	bool front_exists = false;
 	for(iterator it = columns.begin(); it != columns.end(); it++) {
 		const Key& key = it->first;
 		const vector<int>& column = it->second;
 		initialOrder.push_back(key);
 		BOOST_FOREACH(int i, column) A[count++] = i; // copy sparse column
 		p[j] = count; // column j (base 1) goes from A[j-1] to A[j]-1
+		if (lastKeys.find(key)==lastKeys.end()) {
+			cmember[j-1] = 0;
+			front_exists = true;
+		} else {
+			cmember[j-1] = 1; // force lastKeys to be at the end
+		}
 		j+=1;
+	}
+	if (!front_exists) { // if only 1 entries, set everything to 0...
+		for(int j = 0; j < n_col; j++)
+			cmember[j] = 0;
 	}
 
 	double* knobs = NULL;    /* colamd arg 6: parameters (uses defaults if NULL) */
@@ -208,9 +224,14 @@ void colamd(int n_col, int n_row, int nrNonZeros, const map<Key, vector<int> >& 
 
 	// call colamd, result will be in p *************************************************
 	/* TODO: returns (1) if successful, (0) otherwise*/
+#if 0
 	::colamd(n_row, n_col, Alen, A, p, knobs, stats);
+#else
+	::ccolamd(n_row, n_col, Alen, A, p, knobs, stats, cmember);
+#endif
 	// **********************************************************************************
 	delete [] A; // delete symbolic A
+	delete [] cmember;
 
 	// Convert elimination ordering in p to an ordering
 	for(int j = 0; j < n_col; j++)
@@ -220,7 +241,8 @@ void colamd(int n_col, int n_row, int nrNonZeros, const map<Key, vector<int> >& 
 
 /* ************************************************************************* */
 template<class Factor>
-void FactorGraph<Factor>::getOrdering(Ordering& ordering, boost::optional<const set<Symbol>&> interested) const{
+void FactorGraph<Factor>::getOrdering(Ordering& ordering, const set<Symbol>& lastKeys,
+		boost::optional<const set<Symbol>&> interested) const {
 
 	// A factor graph is really laid out in row-major format, each factor a row
 	// Below, we compute a symbolic matrix stored in sparse columns.
@@ -246,7 +268,7 @@ void FactorGraph<Factor>::getOrdering(Ordering& ordering, boost::optional<const 
 	}
 	int n_col = (int)(columns.size()); /* colamd arg 2: number of columns in A */
 	if(n_col != 0)
-		colamd(n_col, n_row, nrNonZeros, columns, ordering);
+		colamd(n_col, n_row, nrNonZeros, columns, ordering, lastKeys);
 }
 
 
@@ -254,7 +276,8 @@ void FactorGraph<Factor>::getOrdering(Ordering& ordering, boost::optional<const 
 template<class Factor>
 boost::shared_ptr<Ordering> FactorGraph<Factor>::getOrdering_() const{
 	boost::shared_ptr<Ordering> ordering(new Ordering);
-	getOrdering(*ordering);
+	set<Symbol> lastKeys;
+	getOrdering(*ordering, lastKeys);
 	return ordering;
 }
 
@@ -262,7 +285,8 @@ boost::shared_ptr<Ordering> FactorGraph<Factor>::getOrdering_() const{
 template<class Factor>
 Ordering FactorGraph<Factor>::getOrdering() const {
 	Ordering ordering;
-	getOrdering(ordering);
+	set<Symbol> lastKeys;
+	getOrdering(ordering, lastKeys);
 	return ordering;
 }
 
@@ -270,7 +294,15 @@ Ordering FactorGraph<Factor>::getOrdering() const {
 template<class Factor>
 Ordering FactorGraph<Factor>::getOrdering(const set<Symbol>& interested) const {
 	Ordering ordering;
-	getOrdering(ordering, interested);
+	set<Symbol> lastKeys;
+	getOrdering(ordering, lastKeys, interested);
+	return ordering;
+}
+
+template<class Factor>
+Ordering FactorGraph<Factor>::getConstrainedOrdering(const set<Symbol>& lastKeys) const {
+	Ordering ordering;
+	getOrdering(ordering, lastKeys);
 	return ordering;
 }
 
