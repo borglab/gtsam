@@ -6,6 +6,7 @@
  * @author Carlos Nieto
  * @author Frank Dellaert
  * @author Alireza Fathi
+ * @author Michael Kaess
  */
 
 #pragma once
@@ -189,7 +190,6 @@ void colamd(int n_col, int n_row, int nrNonZeros, const map<Key, vector<int> >& 
 
 	// Convert to compressed column major format colamd wants it in (== MATLAB format!)
 	vector<Key> initialOrder;
-//	int Alen = nrNonZeros*30;     /* colamd arg 3: size of the array A TODO: use Tim's function ! */
 	int Alen = ccolamd_recommended(nrNonZeros, n_row, n_col);     /* colamd arg 3: size of the array A */
 	int * A = new int[Alen];      /* colamd arg 4: row indices of A, of size Alen */
 	int * p = new int[n_col + 1]; /* colamd arg 5: column pointers of A, of size n_col+1 */
@@ -224,11 +224,7 @@ void colamd(int n_col, int n_row, int nrNonZeros, const map<Key, vector<int> >& 
 
 	// call colamd, result will be in p *************************************************
 	/* TODO: returns (1) if successful, (0) otherwise*/
-#if 0
-	::colamd(n_row, n_col, Alen, A, p, knobs, stats);
-#else
 	::ccolamd(n_row, n_col, Alen, A, p, knobs, stats, cmember);
-#endif
 	// **********************************************************************************
 	delete [] A; // delete symbolic A
 	delete [] cmember;

@@ -3,6 +3,7 @@
  * @brief   Factor Graph Base Class
  * @author  Carlos Nieto
  * @author  Christian Potthast
+ * @author  Michael Kaess
  */
 
 // \callgraph
@@ -104,7 +105,7 @@ namespace gtsam {
 		std::pair<FactorGraph<Factor>, std::set<Symbol> > removeSingletons();
 
 		/**
-		 * Compute colamd ordering, including I/O and shared pointer version
+		 * Compute colamd ordering, including I/O, constrained ordering, and shared pointer version
 		 */
 		void getOrdering(Ordering& ordering, const std::set<Symbol>& lastKeys, boost::optional<const std::set<Symbol>&> interested = boost::none) const;
 		Ordering getOrdering() const;

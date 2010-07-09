@@ -441,7 +441,7 @@ TEST( GaussianFactorGraph, CONSTRUCTOR_GaussianBayesNet )
 TEST( GaussianFactorGraph, getOrdering)
 {
   Ordering expected;
-  expected += "l1","x1","x2";
+  expected += "l1","x2","x1";
   GaussianFactorGraph fg = createGaussianFactorGraph();
   Ordering actual = fg.getOrdering();
   CHECK(assert_equal(expected,actual));
