@@ -50,7 +50,7 @@ TEST( Graph, error )
 TEST( Graph, GET_ORDERING)
 {
   Ordering expected;
-  expected += "l1","x1","x2";
+  expected += "l1","x2","x1";
   Graph nlfg = createNonlinearFactorGraph();
   Ordering actual = nlfg.getOrdering();
   CHECK(assert_equal(expected,actual));
