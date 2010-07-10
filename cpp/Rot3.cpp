@@ -115,16 +115,16 @@ namespace gtsam {
   // Log map at identity - return the canonical coordinates of this rotation
   inline Vector logmap(const Rot3& R) {
     double tr = R.r1().x()+R.r2().y()+R.r3().z();
-    if (fabs(tr-3.0) < 1e-10)   // when theta = 0, +-2pi, +-4pi, etc.
+    if (fabs(tr-3.0) < 1e-10) {   // when theta = 0, +-2pi, +-4pi, etc.
       return zero(3);
-    else if (tr==-1.0) { // when theta = +-pi, +-3pi, +-5pi, etc.
+    } else if (tr==-1.0) { // when theta = +-pi, +-3pi, +-5pi, etc.
       if(R.r3().z() != -1.0)
         return (boost::math::constants::pi<double>() / sqrt(2.0+2.0*R.r3().z())) *
         Vector_(3, R.r3().x(), R.r3().y(), 1.0+R.r3().z());
       else if(R.r2().y() != -1.0)
         return (boost::math::constants::pi<double>() / sqrt(2.0+2.0*R.r2().y())) *
         Vector_(3, R.r2().x(), 1.0+R.r2().y(), R.r2().z());
-      else if(R.r1().x() != -1.0)
+      else // if(R.r1().x() != -1.0)  TODO: fix this?
         return (boost::math::constants::pi<double>() / sqrt(2.0+2.0*R.r1().x())) *
         Vector_(3, 1.0+R.r1().x(), R.r1().y(), R.r1().z());
     } else {
