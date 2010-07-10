@@ -38,8 +38,14 @@ namespace gtsam { // note, deliberately not in noiseModel namespace
 	inline SharedDiagonal sharedSigmas(const Vector& sigmas) {
 		return noiseModel::Diagonal::Sigmas(sigmas);
 	}
-	inline SharedDiagonal sharedSigma(int dim, double sigma) {
+	inline SharedDiagonal sharedSigma(size_t dim, double sigma) {
 		return noiseModel::Isotropic::Sigma(dim, sigma);
+	}
+	inline SharedDiagonal sharedPrecisions(const Vector& precisions) {
+	  return noiseModel::Diagonal::Precisions(precisions);
+	}
+	inline SharedDiagonal sharedPrecision(size_t dim, double precision) {
+	  return noiseModel::Isotropic::Precision(dim, precision);
 	}
 
 }

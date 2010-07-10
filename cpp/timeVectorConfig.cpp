@@ -17,7 +17,7 @@ using namespace gtsam;
 		double time = t.elapsed(); \
 		cout << "Average elapsed time :" << 10e3 * time / n << "ms." << endl; }
 
-#define TIME(STATEMENT) TIME1(for (int j = 0; j < n; ++j) STATEMENT;)
+#define TIME(STATEMENT) TIME1(for (size_t j = 0; j < n; ++j) STATEMENT;)
 
 /* ************************************************************************* */
 int main(int argc, char ** argv) {
@@ -44,7 +44,7 @@ int main(int argc, char ** argv) {
 		VectorBTree p, q;
 		VectorMap old;
 		cout << "Creating VectorBTree:" << endl;
-		TIME1(for (int i = 0; i < m; ++i) {
+		TIME1(for (size_t i = 0; i < m; ++i) {
 			Vector v = zero(r);
 			Symbol key('x', i);
 			p.insert(key, v);
@@ -59,10 +59,10 @@ int main(int argc, char ** argv) {
 		TIME(axpy(alpha,p,q));
 
 		cout << "VectorBTree get:" << endl;
-		TIME1(for (int i = 0; i < m; ++i) p[Symbol('x', i)]);
+		TIME1(for (size_t i = 0; i < m; ++i) p[Symbol('x', i)]);
 
 		cout << "VectorMap get:" << endl;
-		TIME1(for (int i = 0; i < m; ++i) old[Symbol('x', i)]);
+		TIME1(for (size_t i = 0; i < m; ++i) old[Symbol('x', i)]);
 }
 
 	return 0;

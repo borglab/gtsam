@@ -35,7 +35,7 @@ double timeCollect(size_t p, size_t m, size_t n, bool passDims, size_t reps) {
 
 	// fill the matrices with identities
 	vector<const Matrix *> matrices;
-	for (int i=0; i<p;++i) {
+	for (size_t i=0; i<p;++i) {
 		Matrix * M = new Matrix;
 		(*M) = eye(m,n);
 		matrices.push_back(M);
@@ -48,15 +48,15 @@ double timeCollect(size_t p, size_t m, size_t n, bool passDims, size_t reps) {
 		boost::timer t;
 
 		if (passDims)
-			for (int i=0; i<reps; ++i)
+			for (size_t i=0; i<reps; ++i)
 				result = collect(matrices, m, n);
 		else
-			for (int i=0; i<reps; ++i)
+			for (size_t i=0; i<reps; ++i)
 				result = collect(matrices);
 		elapsed = t.elapsed();
 	}
 	// delete the matrices
-	for (int i=0; i<p;++i) {
+	for (size_t i=0; i<p;++i) {
 		delete matrices[i];
 	}
 
@@ -74,20 +74,20 @@ double timeCollect(size_t p, size_t m, size_t n, bool passDims, size_t reps) {
 double timeVScaleColumn(size_t m, size_t n, size_t reps) {
 	// make a matrix to scale
 	Matrix M(m, n);
-	for (int i=0; i<m; ++i)
-		for (int j=0; j<n; ++j)
+	for (size_t i=0; i<m; ++i)
+		for (size_t j=0; j<n; ++j)
 			M(i,j) = 2*i+j;
 
 	// make a vector to use for scaling
 	Vector V(m);
-	for (int i=0; i<m; ++i)
+	for (size_t i=0; i<m; ++i)
 		V(i) = i*2;
 
 	double elapsed;
 	Matrix result;
 	{
 		boost::timer t;
-		for (int i=0; i<reps; ++i)
+		for (size_t i=0; i<reps; ++i)
 			Matrix result = vector_scale(M,V);
 		elapsed = t.elapsed();
 	}
@@ -105,20 +105,20 @@ double timeVScaleColumn(size_t m, size_t n, size_t reps) {
 double timeVScaleRow(size_t m, size_t n, size_t reps) {
 	// make a matrix to scale
 	Matrix M(m, n);
-	for (int i=0; i<m; ++i)
-		for (int j=0; j<n; ++j)
+	for (size_t i=0; i<m; ++i)
+		for (size_t j=0; j<n; ++j)
 			M(i,j) = 2*i+j;
 
 	// make a vector to use for scaling
 	Vector V(n);
-	for (int i=0; i<n; ++i)
+	for (size_t i=0; i<n; ++i)
 		V(i) = i*2;
 
 	double elapsed;
 	Matrix result;
 	{
 		boost::timer t;
-		for (int i=0; i<reps; ++i)
+		for (size_t i=0; i<reps; ++i)
 			result = vector_scale(V,M);
 		elapsed = t.elapsed();
 	}
@@ -139,8 +139,8 @@ double timeColumn(size_t reps) {
 	// create a matrix
 	size_t m = 100; size_t n = 100;
 	Matrix M(m, n);
-	for (int i=0; i<m; ++i)
-			for (int j=0; j<n; ++j)
+	for (size_t i=0; i<m; ++i)
+			for (size_t j=0; j<n; ++j)
 				M(i,j) = 2*i+j;
 
 	// extract a column

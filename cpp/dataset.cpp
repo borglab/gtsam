@@ -87,7 +87,6 @@ pair<sharedPose2Graph, sharedPose2Config> load2D(const string& filename,
 	string tag;
 
 	// load the poses
-	bool firstPose;
 	while (is) {
 		is >> tag;
 
@@ -200,7 +199,6 @@ bool load3D(const string& filename) {
 	is.clear(); /* clears the end-of-file and error flags */
 	is.seekg(0, ios::beg);
 
-	bool edgesOk = true;
 	while (is) {
 		char buf[LINESIZE];
 		is.getline(buf, LINESIZE);

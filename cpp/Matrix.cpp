@@ -166,7 +166,7 @@ bool linear_dependent(const Matrix& A, const Matrix& B, double tol) {
 
   if(m1!=m2 || n1!=n2) return false;
 
-  for(int i=0; i<m1; i++) {
+  for(size_t i=0; i<m1; i++) {
   	if (!gtsam::linear_dependent(row_(A,i), row_(B,i), tol))
   		return false;
   }

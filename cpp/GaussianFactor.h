@@ -146,12 +146,16 @@ public:
 
 	/**
 	 * return the first key
+	 * TODO: this function should be removed and the minimum spanning tree code
+	 * modified accordingly.
 	 * @return The set of all variable keys
 	 */
 	Symbol key1() const { return As_.begin()->first; }
 
 	/**
 	 * return the first key
+   * TODO: this function should be removed and the minimum spanning tree code
+   * modified accordingly.
 	 * @return The set of all variable keys
 	 */
 	Symbol key2() const {

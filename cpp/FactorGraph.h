@@ -44,7 +44,7 @@ namespace gtsam {
 		std::vector<sharedFactor> factors_;
 
 		/** For each variable a list of factor indices connected to it  */
-		typedef SymbolMap<std::list<int> > Indices;
+		typedef SymbolMap<std::list<size_t> > Indices;
 		Indices indices_;
 
 	public:
@@ -117,7 +117,7 @@ namespace gtsam {
      * Return indices for all factors that involve the given node
      * @param key the key for the given node
      */
-    std::list<int> factors(const Symbol& key) const;
+    std::list<size_t> factors(const Symbol& key) const;
 
     /**
      * find all the factors that involve the given node and remove them
@@ -151,7 +151,7 @@ namespace gtsam {
 
 	private:
 		/** Associate factor index with the variables connected to the factor */
-		void associateFactor(int index, const sharedFactor& factor);
+		void associateFactor(size_t index, const sharedFactor& factor);
 
 		/** Serialization function */
 		friend class boost::serialization::access;

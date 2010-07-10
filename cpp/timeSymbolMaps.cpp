@@ -85,7 +85,7 @@ struct Value {
 	double v;
 	Value() : v(0.0) {}
 	Value(double vi) : v(vi) {}
-	operator string() { lexical_cast<string>(v); }
+	operator string() { return lexical_cast<string>(v); }
 	bool operator!=(const Value& vc) { return v != vc.v; }
 };
 
@@ -175,4 +175,6 @@ int main(int argc, char *argv[]) {
 			cout << i << " values, avg " << (time/(double)i)*1e6 << " mu-s per lookup" << endl;
 		}
 	}
+
+	return 0;
 }

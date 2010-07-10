@@ -40,12 +40,12 @@ namespace noiseModel {
 static void updateAb(Matrix& Ab, int j, const Vector& a, const Vector& rd) {
 	size_t m = Ab.size1(), n = Ab.size2()-1;
 
-	for (int i = 0; i < m; i++) { // update all rows
+	for (size_t i = 0; i < m; i++) { // update all rows
 		double ai = a(i);
 		double *Aij = Ab.data().begin() + i * (n+1) + j + 1;
 		const double *rptr = rd.data().begin() + j + 1;
 		// Ab(i,j+1:end) -= ai*rd(j+1:end)
-		for (int j2 = j + 1; j2 < n+1; j2++, Aij++, rptr++)
+		for (size_t j2 = j + 1; j2 < n+1; j2++, Aij++, rptr++)
 			*Aij -= ai * (*rptr);
 	}
 }
@@ -57,7 +57,7 @@ Gaussian::shared_ptr Gaussian::Covariance(const Matrix& covariance, bool smart) 
 	if (m != n) throw invalid_argument("Gaussian::Covariance: covariance not square");
 	if (smart) {
 		// check all non-diagonal entries
-		int i,j;
+		size_t i,j;
 		for (i = 0; i < m; i++)
 			for (j = 0; j < n; j++)
 				if (i != j && fabs(covariance(i, j) > 1e-9)) goto full;
@@ -128,7 +128,7 @@ SharedDiagonal Gaussian::QR(Matrix& Ab) const {
 
 /* ************************************************************************* */
 Diagonal::Diagonal(const Vector& sigmas) :
-		Gaussian(sigmas.size()), invsigmas_(reciprocal(sigmas)), sigmas_(sigmas) {
+		Gaussian(sigmas.size()), sigmas_(sigmas), invsigmas_(reciprocal(sigmas)) {
 }
 
 Diagonal::shared_ptr Diagonal::Variances(const Vector& variances, bool smart) {
@@ -174,7 +174,7 @@ void Diagonal::WhitenInPlace(Matrix& H) const {
 
 Vector Diagonal::sample() const {
 	Vector result(dim_);
-	for (int i = 0; i < dim_; i++) {
+	for (size_t i = 0; i < dim_; i++) {
 		typedef boost::normal_distribution<double> Normal;
 		Normal dist(0.0, this->sigmas_(i));
 		boost::variate_generator<boost::minstd_rand&, Normal> norm(generator, dist);
@@ -315,7 +315,7 @@ Vector Isotropic::sample() const {
 	Normal dist(0.0, this->sigma_);
 	boost::variate_generator<boost::minstd_rand&, Normal> norm(generator, dist);
 	Vector result(dim_);
-	for (int i = 0; i < dim_; i++)
+	for (size_t i = 0; i < dim_; i++)
 		result(i) = norm();
 	return result;
 }

@@ -85,7 +85,7 @@ bool FactorGraph<Factor>::equals
 /* ************************************************************************* */
 template<class Factor>
 size_t FactorGraph<Factor>::nrFactors() const {
-	int size_ = 0;
+	size_t size_ = 0;
 	for (const_iterator factor = factors_.begin(); factor != factors_.end(); factor++)
 		if (*factor != NULL) size_++;
 	return size_;
@@ -97,7 +97,7 @@ void FactorGraph<Factor>::push_back(sharedFactor factor) {
 	factors_.push_back(factor);                  // add the actual factor
 	if (factor==NULL) return;
 
-	int i = factors_.size() - 1;                 // index of factor
+	size_t i = factors_.size() - 1;                 // index of factor
 	associateFactor(i, factor);
 }
 
@@ -150,16 +150,16 @@ std::pair<FactorGraph<Factor>, set<Symbol> > FactorGraph<Factor>::removeSingleto
 		// find all the singleton variables
 		Ordering new_singletons;
 		Symbol key;
-		list<int> indices;
+		list<size_t> indices;
 		BOOST_FOREACH(boost::tie(key, indices), indices_) {
 			// find out the number of factors associated with the current key
-			int numValidFactors = 0;
-			BOOST_FOREACH(const int& i, indices)
+			size_t numValidFactors = 0;
+			BOOST_FOREACH(const size_t& i, indices)
 				if (factors_[i]!=NULL) numValidFactors++;
 
 			if (numValidFactors == 1) {
 				new_singletons.push_back(key);
-				BOOST_FOREACH(const int& i, indices)
+				BOOST_FOREACH(const size_t& i, indices)
 					if (factors_[i]!=NULL) singletonGraph.push_back(factors_[i]);
 			}
 		}
@@ -306,7 +306,7 @@ Ordering FactorGraph<Factor>::getConstrainedOrdering(const set<Symbol>& lastKeys
 /** O(1)                                                                     */
 /* ************************************************************************* */
 template<class Factor>
-list<int> FactorGraph<Factor>::factors(const Symbol& key) const {
+list<size_t> FactorGraph<Factor>::factors(const Symbol& key) const {
 	return indices_.at(key);
 }
 
@@ -322,10 +322,10 @@ Factors FactorGraph<Factor>::findAndRemoveFactors(const Symbol& key) {
 		throw std::invalid_argument(
 				"FactorGraph::findAndRemoveFactors: key "
 				+ (string)key + " not found");
-	const list<int>& factorsAssociatedWithKey = it->second;
+	const list<size_t>& factorsAssociatedWithKey = it->second;
 
 	Factors found;
-	BOOST_FOREACH(const int& i, factorsAssociatedWithKey) {
+	BOOST_FOREACH(const size_t& i, factorsAssociatedWithKey) {
 		sharedFactor& fi = factors_.at(i); // throws exception !
 		if(fi == NULL) continue; // skip NULL factors
 		found.push_back(fi);     // add to found
@@ -339,7 +339,7 @@ Factors FactorGraph<Factor>::findAndRemoveFactors(const Symbol& key) {
 
 /* ************************************************************************* */
 template<class Factor>
-void FactorGraph<Factor>::associateFactor(int index, const sharedFactor& factor) {
+void FactorGraph<Factor>::associateFactor(size_t index, const sharedFactor& factor) {
   const list<Symbol> keys = factor->keys();          // get keys for factor
   // rtodo: Can optimize factor->keys to return a const reference
 
@@ -368,7 +368,7 @@ template<class Factor> void FactorGraph<Factor>::checkGraphConsistency() const {
   }
 
   // Make sure each factor listed for a variable actually involves that variable
-  BOOST_FOREACH(const SymbolMap<list<int> >::value_type& var, indices_) {
+  BOOST_FOREACH(const SymbolMap<list<size_t> >::value_type& var, indices_) {
   	BOOST_FOREACH(size_t i, var.second) {
   		if(i >= factors_.size()) {
   			cout << "*** Factor graph inconsistency: " << (string)var.first << " lists factor " <<

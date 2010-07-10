@@ -77,7 +77,6 @@ GaussianFactor::GaussianFactor(const boost::shared_ptr<GaussianConditional>& cg)
 	for (; it != cg->parentsEnd(); it++)
 		As_.insert(*it);
 	// set sigmas from precisions
-	size_t n = b_.size();
 	model_ = noiseModel::Diagonal::Sigmas(cg->get_sigmas(), true);
 }
 
@@ -167,7 +166,7 @@ bool GaussianFactor::equals(const Factor<VectorConfig>& f, double tol) const {
   if(As_.size() != lf->As_.size()) return false;
 
   // check whether each row is up to a sign
-  for (int i=0; i<b_.size(); i++) {
+  for (size_t i=0; i<b_.size(); i++) {
   	list<Vector> row1;
   	list<Vector> row2;
   	row1.push_back(Vector_(1,     b_(i)));
@@ -442,7 +441,6 @@ GaussianFactor::eliminateMatrix(Matrix& Ab, SharedDiagonal model,
 pair<GaussianConditional::shared_ptr, GaussianFactor::shared_ptr>
 GaussianFactor::eliminate(const Symbol& key) const
 {
-	bool verbose = false;
 	// if this factor does not involve key, we exit with empty CG and LF
 	const_iterator it = As_.find(key);
 	if (it==As_.end()) {

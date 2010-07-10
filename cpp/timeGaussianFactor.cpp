@@ -110,7 +110,7 @@ int main()
   size_t n1 = 10000000;
   timeLog = clock();
 
-  for(int i = 0; i < n1; i++)
+  for(size_t i = 0; i < n1; i++)
 	  Matrix Ab = combined.matrix_augmented(ordering, true);
 
   timeLog2 = clock();

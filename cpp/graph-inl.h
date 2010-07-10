@@ -120,8 +120,8 @@ predecessorMap2Graph(const PredecessorMap<Key>& p_map) {
 
 	if (!foundRoot)
 		throw invalid_argument("predecessorMap2Graph: invalid predecessor map!");
-
-	return boost::tuple<G, V, std::map<Key, V> >(g, root, key2vertex);
+	else
+	  return boost::tuple<G, V, std::map<Key, V> >(g, root, key2vertex);
 }
 
 /* ************************************************************************* */

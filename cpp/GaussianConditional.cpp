@@ -14,21 +14,21 @@ using namespace gtsam;
 
 /* ************************************************************************* */
 GaussianConditional::GaussianConditional(const Symbol& key,Vector d, Matrix R, Vector sigmas) :
-	Conditional (key), R_(R),sigmas_(sigmas),d_(d)
+	Conditional (key), R_(R),d_(d),sigmas_(sigmas)
 {
 }
 
 /* ************************************************************************* */
 GaussianConditional::GaussianConditional(const Symbol& key, Vector d, Matrix R,
 		const Symbol& name1, Matrix S, Vector sigmas) :
-	Conditional (key), R_(R), sigmas_(sigmas), d_(d) {
+	Conditional (key), R_(R), d_(d), sigmas_(sigmas) {
 	parents_.insert(make_pair(name1, S));
 }
 
 /* ************************************************************************* */
 GaussianConditional::GaussianConditional(const Symbol& key, Vector d, Matrix R,
 		const Symbol& name1, Matrix S, const Symbol& name2, Matrix T, Vector sigmas) :
-	Conditional (key), R_(R),sigmas_(sigmas), d_(d) {
+	Conditional (key), R_(R), d_(d),sigmas_(sigmas) {
 	parents_.insert(make_pair(name1, S));
 	parents_.insert(make_pair(name2, T));
 }
@@ -36,7 +36,7 @@ GaussianConditional::GaussianConditional(const Symbol& key, Vector d, Matrix R,
 /* ************************************************************************* */
 GaussianConditional::GaussianConditional(const Symbol& key,
 		const Vector& d, const Matrix& R, const SymbolMap<Matrix>& parents, Vector sigmas) :
-	Conditional (key), R_(R),sigmas_(sigmas), d_(d), parents_(parents) {
+	Conditional (key), R_(R), parents_(parents), d_(d),sigmas_(sigmas) {
 }
 
 /* ************************************************************************* */
@@ -64,7 +64,7 @@ bool GaussianConditional::equals(const Conditional &c, double tol) const {
 	if (parents_.size() != p->parents_.size()) return false;
 
 	// check if R_ and d_ are equal up to a sign
-	for (int i=0; i<d_.size(); i++) {
+	for (size_t i=0; i<d_.size(); i++) {
 		Vector row1 = row_(R_, i);
 		Vector row2 = row_(p->R_, i);
 		if (!((::equal_with_abs_tol(row1, row2, tol)      && fabs(d_(i) - p->d_(i)) < tol) ||
