@@ -162,8 +162,8 @@ TEST(LieConfig, expmap_c)
   CHECK(assert_equal(expected, expmap(config0, increment)));
 }
 
-/* ************************************************************************* *
-TEST(LieConfig, expmap_d)
+/* ************************************************************************* */
+/*TEST(LieConfig, expmap_d)
 {
   LieConfig<string,Vector> config0;
   config0.insert("v1", Vector_(3, 1.0, 2.0, 3.0));
@@ -178,10 +178,10 @@ TEST(LieConfig, expmap_d)
   //poseconfig.print("poseconfig");
   CHECK(equal(config0, config0));
   CHECK(config0.equals(config0));
-}
+}*/
 
-/* ************************************************************************* *
-TEST(LieConfig, extract_keys)
+/* ************************************************************************* */
+/*TEST(LieConfig, extract_keys)
 {
 	typedef TypedSymbol<Pose2, 'x'> PoseKey;
 	LieConfig<PoseKey, Pose2> config;
@@ -200,7 +200,7 @@ TEST(LieConfig, extract_keys)
 	for (; itAct != actual.end() && itExp != expected.end(); ++itAct, ++itExp) {
 		CHECK(assert_equal(*itExp, *itAct));
 	}
-}
+}*/
 
 /* ************************************************************************* */
 TEST(LieConfig, exists_)

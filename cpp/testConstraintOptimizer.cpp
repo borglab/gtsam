@@ -376,7 +376,7 @@ TEST( matrix, line_search ) {
 	double init_error = penalty(x0),
 		   final_error = penalty(x0 + actual);
 
-	double actual_stepsize = dot(actual, delta)/dot(delta, delta);
+	//double actual_stepsize = dot(actual, delta)/dot(delta, delta);
 //	cout << "actual_stepsize: " << actual_stepsize << endl;
 
 	CHECK(final_error <= init_error);

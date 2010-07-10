@@ -80,8 +80,8 @@ TEST( Iterative, conjugateGradientDescent )
 	CHECK(assert_equal(expected,actual2,1e-2));
 }
 
-/* ************************************************************************* *
-TEST( Iterative, conjugateGradientDescent_hard_constraint )
+/* ************************************************************************* */
+/*TEST( Iterative, conjugateGradientDescent_hard_constraint )
 {
 	typedef Pose2Config::Key Key;
 
@@ -105,7 +105,7 @@ TEST( Iterative, conjugateGradientDescent_hard_constraint )
 	expected.insert("x1", zero(3));
 	expected.insert("x2", Vector_(-0.5,0.,0.));
 	CHECK(assert_equal(expected, actual));
-}
+}*/
 
 /* ************************************************************************* */
 TEST( Iterative, conjugateGradientDescent_soft_constraint )

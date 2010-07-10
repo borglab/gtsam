@@ -97,7 +97,7 @@ namespace gtsam {
 
 	private:
 
-		std::list<int> getAffectedFactors(const std::list<Symbol>& keys) const;
+		std::list<size_t> getAffectedFactors(const std::list<Symbol>& keys) const;
 		boost::shared_ptr<GaussianFactorGraph> relinearizeAffectedFactors(const std::set<Symbol>& affectedKeys) const;
 		FactorGraph<GaussianFactor> getCachedBoundaryFactors(Cliques& orphans);
 

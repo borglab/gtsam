@@ -767,7 +767,6 @@ TEST (SQP, stereo_sqp ) {
  * with noise in the initial estimate
  */
 TEST (SQP, stereo_sqp_noisy ) {
-	bool verbose = false;
 
 	// get a graph
 	boost::shared_ptr<VGraph> graph = stereoExampleGraph();

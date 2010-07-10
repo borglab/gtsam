@@ -75,11 +75,11 @@ namespace gtsam {
 
 	/* ************************************************************************* */
 	template<class Conditional, class Config>
-	list<int>	ISAM2<Conditional, Config>::getAffectedFactors(const list<Symbol>& keys) const {
+	list<size_t> ISAM2<Conditional, Config>::getAffectedFactors(const list<Symbol>& keys) const {
 	  FactorGraph<NonlinearFactor<Config> > allAffected;
-		list<int> indices;
+		list<size_t> indices;
 		BOOST_FOREACH(const Symbol& key, keys) {
-			const list<int> l = nonlinearFactors_.factors(key);
+			const list<size_t> l = nonlinearFactors_.factors(key);
 			indices.insert(indices.begin(), l.begin(), l.end());
 		}
 		indices.sort();
@@ -96,11 +96,11 @@ namespace gtsam {
 
 		list<Symbol> affectedKeysList; // todo: shouldn't have to convert back to list...
 		affectedKeysList.insert(affectedKeysList.begin(), affectedKeys.begin(), affectedKeys.end());
-		list<int> candidates = getAffectedFactors(affectedKeysList);
+		list<size_t> candidates = getAffectedFactors(affectedKeysList);
 
 		NonlinearFactorGraph<Config> nonlinearAffectedFactors;
 
-		BOOST_FOREACH(int idx, candidates) {
+		BOOST_FOREACH(size_t idx, candidates) {
 			bool inside = true;
 			BOOST_FOREACH(const Symbol& key, nonlinearFactors_[idx]->keys()) {
 				if (affectedKeys.find(key) == affectedKeys.end()) {
@@ -168,7 +168,7 @@ namespace gtsam {
 			// mark variables that have to be removed as invalid (removeFATtop)
 			// basically calculate all the keys contained in the factors that contain any of the keys...
 			// the goal is to relinearize all variables directly affected by new factors
-			list<int> allAffected = getAffectedFactors(marked_);
+			list<size_t> allAffected = getAffectedFactors(marked_);
 			set<Symbol> accumulate;
 			BOOST_FOREACH(int idx, allAffected) {
 				list<Symbol> tmp = nonlinearFactors_[idx]->keys();
