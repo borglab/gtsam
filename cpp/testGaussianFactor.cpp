@@ -809,6 +809,38 @@ TEST( GaussianFactor, erase)
 	CHECK(assert_equal(expected, actual));
 }
 
+/* ************************************************************************* */
+TEST( GaussianFactor, eliminateMatrix)
+{
+	Matrix Ab = Matrix_(3, 4,
+			1., 2., 0., 3.,
+			0., 4., 5., 6.,
+			0., 0., 7., 8.);
+	SharedDiagonal model(Vector_(3, 0.5, 0.5, 0.5));
+	Ordering frontals; frontals += "x1", "x2";
+	Ordering separator; separator += "x3";
+	Dimensions dimensions;
+	dimensions.insert(make_pair("x1", 1));
+	dimensions.insert(make_pair("x2", 1));
+	dimensions.insert(make_pair("x3", 1));
+
+	GaussianFactor::shared_ptr factor;
+	GaussianBayesNet bn;
+	boost::tie(bn, factor) =
+			GaussianFactor::eliminateMatrix(Ab, model, frontals, separator, dimensions);
+
+	GaussianBayesNet bn_expected;
+	GaussianBayesNet::sharedConditional conditional1(new GaussianConditional("x1", Vector_(1, 6.), Matrix_(1, 1, 2.),
+			"x2", Matrix_(1, 1, 4.), "x3", Matrix_(1, 1, 0.), Vector_(1, 1.)));
+	GaussianBayesNet::sharedConditional conditional2(new GaussianConditional("x2", Vector_(1, 12.), Matrix_(1, 1, 8.),
+			"x3", Matrix_(1, 1, 10.), Vector_(1, 1.)));
+	bn_expected.push_back(conditional1);
+	bn_expected.push_back(conditional2);
+	CHECK(assert_equal(bn_expected, bn));
+
+	GaussianFactor factor_expected("x3", Matrix_(1, 1, 14.), Vector_(1, 16.), SharedDiagonal(Vector_(1, 1.)));
+	CHECK(assert_equal(factor_expected, *factor));
+}
 
 /* ************************************************************************* */
 int main() { TestResult tr; return TestRegistry::runAllTests(tr);}

@@ -45,7 +45,6 @@ namespace gtsam {
 	template <class FG>
 	void JunctionTree<FG>::Clique::print(const string& indent) const {
 		// FG::print(indent);
-		cout << "kai1" << endl;
 		cout << indent;
 		BOOST_FOREACH(const Symbol& key, frontal_)
 		cout << (string)key << " ";
@@ -70,7 +69,6 @@ namespace gtsam {
 		SymbolicFactorGraph sfg(fg);
 		SymbolicBayesNet sbn = sfg.eliminate(ordering);
 		BayesTree<SymbolicConditional> sbt(sbn);
-		sbt.print("sbt");
 
 		// distribtue factors
 		root_ = distributeFactors(fg, sbt.root());
@@ -106,39 +104,49 @@ namespace gtsam {
 
 	/* ************************************************************************* */
 	template <class FG> template <class Conditional>
-	pair<FG, typename BayesTree<Conditional>::sharedClique>
-	JunctionTree<FG>::eliminateOneClique(sharedClique current, BayesTree<Conditional>& bayesTree) {
+	pair<FG, BayesTree<Conditional> >
+	JunctionTree<FG>::eliminateOneClique(sharedClique current) {
+
+//		current->frontal_.print("current clique:");
+
 		typedef typename BayesTree<Conditional>::sharedClique sharedBtreeClique;
 		FG fg; // factor graph will be assembled from local factors and marginalized children
-		list<sharedBtreeClique> children;
+		list<BayesTree<Conditional> > children;
 		fg.push_back(*current); // add the local factor graph
+
+//		BOOST_FOREACH(const typename FG::sharedFactor& factor_, fg)
+//			Ordering(factor_->keys()).print("local factor:");
+
 		BOOST_FOREACH(sharedClique& child, current->children_) {
 			// receive the factors from the child and its clique point
-			FG fgChild; sharedBtreeClique cliqueChild;
-			boost::tie(fgChild, cliqueChild) = eliminateOneClique(child, bayesTree);
-			if (!cliqueChild.get()) throw runtime_error("eliminateOneClique: child clique is invalid!");
+			FG fgChild; BayesTree<Conditional> childTree;
+			boost::tie(fgChild, childTree) = eliminateOneClique<Conditional>(child);
+
+//			BOOST_FOREACH(const typename FG::sharedFactor& factor_, fgChild)
+//				Ordering(factor_->keys()).print("factor from child:");
 
 			fg.push_back(fgChild);
-			children.push_back(cliqueChild);
+			children.push_back(childTree);
 		}
 
 		// eliminate the combined factors
 		// warning: fg is being eliminated in-place and will contain marginal afterwards
-//		BayesNet<Conditional> bn = fg.eliminate(current->frontal_);
 		BayesNet<Conditional> bn = fg.eliminateFrontals(current->frontal_);
 
 		// create a new clique corresponding the combined factors
-		sharedBtreeClique new_clique = bayesTree.insert(bn, children);
+		BayesTree<Conditional> bayesTree(bn, children);
 
-		return make_pair(fg, new_clique);
+		return make_pair(fg, bayesTree);
 	}
 
 	/* ************************************************************************* */
 	template <class FG> template <class Conditional>
 	BayesTree<Conditional> JunctionTree<FG>::eliminate() {
-		BayesTree<Conditional> bayesTree;
-		eliminateOneClique(root_, bayesTree);
-		return bayesTree;
+		pair<FG, BayesTree<Conditional> > ret = this->eliminateOneClique<Conditional>(root_);
+//		ret.first.print("ret.first");
+		if (ret.first.nrFactors() != 0)
+			throw runtime_error("JuntionTree::eliminate: elimination failed because of factors left over!");
+		return ret.second;
 	}
 
 	/* ************************************************************************* */
@@ -173,7 +181,8 @@ namespace gtsam {
 	VectorConfig GaussianJunctionTree<FG>::optimize() {
 		// eliminate from leaves to the root
 		typedef JunctionTree<FG> Base;
-		BayesTree<GaussianConditional> bayesTree = this->eliminate<GaussianConditional>();
+		BayesTree<GaussianConditional> bayesTree;
+				this->eliminate<GaussianConditional>();
 
 		// back-substitution
 		VectorConfig result;

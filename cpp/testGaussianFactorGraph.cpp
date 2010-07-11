@@ -935,5 +935,41 @@ TEST ( GaussianFactorGraph, combine_matrix ) {
 }
 
 /* ************************************************************************* */
+/**
+ *   x2 x1 x3 b
+ *    1  1    1       1  1  0  1
+ *    1    1  1  ->      1  1  1
+ *         1  1             1  1
+ */
+TEST ( GaussianFactorGraph, eliminateFrontals ) {
+	typedef GaussianFactorGraph::sharedFactor Factor;
+	SharedDiagonal model(Vector_(1, 0.5));
+	GaussianFactorGraph fg;
+	Factor factor1(new GaussianFactor("x1", Matrix_(1,1,1.), "x2", Matrix_(1,1,1.), Vector_(1,1.),  model));
+	Factor factor2(new GaussianFactor("x2", Matrix_(1,1,1.), "x3", Matrix_(1,1,1.), Vector_(1,1.),  model));
+	Factor factor3(new GaussianFactor("x3", Matrix_(1,1,1.), "x3", Matrix_(1,1,1.), Vector_(1,1.),  model));
+	fg.push_back(factor1);
+	fg.push_back(factor2);
+	fg.push_back(factor3);
+
+	Ordering frontals; frontals += "x2", "x1";
+	GaussianBayesNet bn = fg.eliminateFrontals(frontals);
+
+	GaussianBayesNet bn_expected;
+	GaussianBayesNet::sharedConditional conditional1(new GaussianConditional("x2", Vector_(1, 2.), Matrix_(1, 1, 2.),
+			"x1", Matrix_(1, 1, 1.), "x3", Matrix_(1, 1, 1.), Vector_(1, 1.)));
+	GaussianBayesNet::sharedConditional conditional2(new GaussianConditional("x1", Vector_(1, 0.), Matrix_(1, 1, -1.),
+			"x3", Matrix_(1, 1, 1.), Vector_(1, 1.)));
+	bn_expected.push_back(conditional1);
+	bn_expected.push_back(conditional2);
+	CHECK(assert_equal(bn_expected, bn));
+
+	GaussianFactorGraph::sharedFactor factor_expected(new GaussianFactor("x3", Matrix_(1, 1, 2.), Vector_(1, 2.), SharedDiagonal(Vector_(1, 1.))));
+	GaussianFactorGraph fg_expected;
+	fg_expected.push_back(factor_expected);
+	CHECK(assert_equal(fg_expected, fg));
+}
+
+/* ************************************************************************* */
 int main() { TestResult tr; return TestRegistry::runAllTests(tr);}
 /* ************************************************************************* */

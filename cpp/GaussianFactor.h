@@ -21,6 +21,7 @@
 #include "VectorConfig.h"
 #include "SharedDiagonal.h"
 #include "GaussianConditional.h" // Needed for MATLAB
+#include "GaussianBayesNet.h"
 #include "SymbolMap.h"
 
 namespace gtsam {
@@ -250,10 +251,16 @@ public:
 	 * Performs elimination given an augmented matrix
 	 * @param
 	 */
-	static std::pair<boost::shared_ptr<GaussianConditional>, shared_ptr>
+	static std::pair<GaussianBayesNet, shared_ptr>
 	eliminateMatrix(Matrix& Ab, SharedDiagonal model,
 			const Ordering& frontal, const Ordering& separator,
 			const Dimensions& dimensions);
+
+	static std::pair<GaussianConditional::shared_ptr, shared_ptr>
+	eliminateMatrix(Matrix& Ab, SharedDiagonal model,
+			const Symbol& frontal, const Ordering& separator,
+			const Dimensions& dimensions);
+
 
 	/**
 	 * Take the factor f, and append to current matrices. Not very general.

@@ -64,26 +64,46 @@ bool GaussianConditional::equals(const Conditional &c, double tol) const {
 	if (parents_.size() != p->parents_.size()) return false;
 
 	// check if R_ and d_ are equal up to a sign
+//	for (size_t i=0; i<d_.size(); i++) {
+//		Vector row1 = row_(R_, i);
+//		Vector row2 = row_(p->R_, i);
+//		if (!((::equal_with_abs_tol(row1, row2, tol)      && fabs(d_(i) - p->d_(i)) < tol) ||
+//	  			(::equal_with_abs_tol(row1, row2*(-1), tol) && fabs(d_(i) + p->d_(i)) < tol)))
+//			return false;
+//
+//		float sign = ::equal_with_abs_tol(row1, row2, tol) ? 1 : -1;
+//
+//		// check if the matrices are the same
+//		// iterate over the parents_ map
+//		for (it = parents_.begin(); it != parents_.end(); it++) {
+//			Parents::const_iterator it2 = p->parents_.find(it->first);
+//			if (it2 != p->parents_.end()) {
+//				if (!::equal_with_abs_tol(row_(it->second*sign, i), row_(it2->second,i), tol))
+//					return false;
+//			} else
+//				return false;
+//		}
+//
+//	}
+	// check if R_ and d_ are linear independent
 	for (size_t i=0; i<d_.size(); i++) {
-		Vector row1 = row_(R_, i);
-		Vector row2 = row_(p->R_, i);
-		if (!((::equal_with_abs_tol(row1, row2, tol)      && fabs(d_(i) - p->d_(i)) < tol) ||
-	  			(::equal_with_abs_tol(row1, row2*(-1), tol) && fabs(d_(i) + p->d_(i)) < tol)))
-			return false;
-
-		float sign = ::equal_with_abs_tol(row1, row2, tol) ? 1 : -1;
+		list<Vector> rows1; rows1.push_back(row_(R_, i));
+		list<Vector> rows2; rows2.push_back(row_(p->R_, i));
 
 		// check if the matrices are the same
 		// iterate over the parents_ map
 		for (it = parents_.begin(); it != parents_.end(); it++) {
 			Parents::const_iterator it2 = p->parents_.find(it->first);
 			if (it2 != p->parents_.end()) {
-				if (!::equal_with_abs_tol(row_(it->second*sign, i), row_(it2->second,i), tol))
-					return false;
+				rows1.push_back(row_(it->second, i));
+				rows2.push_back(row_(it2->second,i));
 			} else
 				return false;
 		}
 
+		Vector row1 = concatVectors(rows1);
+		Vector row2 = concatVectors(rows2);
+		if (!linear_dependent(row1, row2, tol)) return false;
 	}
 
 	// check if sigmas are equal

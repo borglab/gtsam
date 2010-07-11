@@ -151,6 +151,12 @@ namespace gtsam {
 		/** Create a Bayes Tree from a Bayes Net */
 		BayesTree(const BayesNet<Conditional>& bayesNet);
 
+		/**
+		 * Create a Bayes Tree from a Bayes Net and some subtrees. The Bayes net corresponds to the
+		 * new root clique and the subtrees are connected to the root clique.
+		 */
+		BayesTree(const BayesNet<Conditional>& bayesNet, std::list<BayesTree<Conditional> > subtrees);
+
 		/** Destructor */
 		virtual ~BayesTree() {
 		}

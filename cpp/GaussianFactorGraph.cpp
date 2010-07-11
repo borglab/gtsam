@@ -216,7 +216,7 @@ GaussianFactorGraph::eliminateOneMatrixJoin(const Symbol& key) {
 	}
 
 	// add the keys to the rendering
-	Ordering frontal, render; frontal += key; render += key;
+	Ordering render; render += key;
 	BOOST_FOREACH(const Symbol& k, separator)
 			if (k != key) render += k;
 
@@ -230,7 +230,7 @@ GaussianFactorGraph::eliminateOneMatrixJoin(const Symbol& key) {
 	GaussianConditional::shared_ptr conditional;
 	render.pop_front();
 	boost::tie(conditional, factor) =
-			GaussianFactor::eliminateMatrix(Ab, model, frontal, render, dimensions);
+			GaussianFactor::eliminateMatrix(Ab, model, key, render, dimensions);
 
 	// add new factor on separator back into the graph
 	if (!factor->empty()) push_back(factor);
@@ -255,16 +255,31 @@ GaussianFactorGraph::eliminate(const Ordering& ordering, bool old)
 GaussianBayesNet
 GaussianFactorGraph::eliminateFrontals(const Ordering& frontals)
 {
-	Matrix Ab; SharedDiagonal model;
+	// find the factors that contain at least one of the frontal variables
 	Dimensions dimensions = this->dimensions();
-	boost::tie(Ab, model) = combineFactorsAndCreateMatrix(*this, keys(), dimensions);
+
+	// collect separator
+	Ordering separator;
+	set<Symbol> frontal_set(frontals.begin(), frontals.end());
+	BOOST_FOREACH(const Symbol& key, this->keys()) {
+		if (frontal_set.find(key) == frontal_set.end())
+			separator.push_back(key);
+	}
+
+	Matrix Ab; SharedDiagonal model;
+	Ordering ord = frontals;
+	ord.insert(ord.end(), separator.begin(), separator.end());
+	boost::tie(Ab, model) = combineFactorsAndCreateMatrix(*this, ord, dimensions);
 
 	// eliminate that joint factor
 	GaussianFactor::shared_ptr factor;
-//	GaussianConditional::shared_ptr conditional;
 	GaussianBayesNet bn;
-//	boost::tie(bn, factor) =
-//			GaussianFactor::eliminateMatrix(Ab, model, frontals, dimensions);
+	boost::tie(bn, factor) =
+			GaussianFactor::eliminateMatrix(Ab, model, frontals, separator, dimensions);
+
+	// add new factor on separator back into the graph
+	*this = GaussianFactorGraph();
+	if (!factor->empty()) push_back(factor);
 
 	return bn;
 }

@@ -48,8 +48,10 @@ namespace gtsam {
 	template<class Conditional>
 	void BayesTree<Conditional>::Clique::print(const string& s) const {
 			cout << s;
-			BOOST_FOREACH(const sharedConditional& conditional, this->conditionals_)
+			BOOST_FOREACH(const sharedConditional& conditional, this->conditionals_) {
+				conditional->print("conditioanl");
 				cout << " " << (string)(conditional->key());
+			}
 			if (!separator_.empty()) {
 				cout << " :";
 				BOOST_FOREACH(const Symbol& key, separator_)
@@ -351,6 +353,34 @@ namespace gtsam {
 
 	/* ************************************************************************* */
 	template<class Conditional>
+	BayesTree<Conditional>::BayesTree(const BayesNet<Conditional>& bayesNet, std::list<BayesTree<Conditional> > subtrees) {
+		if (bayesNet.size() == 0)
+			throw invalid_argument("BayesTree::insert: empty bayes net!");
+
+		// get the roots of child subtrees and merge their nodes_
+		list<sharedClique> childRoots;
+		BOOST_FOREACH(const BayesTree<Conditional>& subtree, subtrees) {
+			nodes_.insert(subtree.nodes_.begin(), subtree.nodes_.end());
+			childRoots.push_back(subtree.root());
+		}
+
+		// create a new clique and add all the conditionals to the clique
+		sharedClique new_clique;
+		typename BayesNet<Conditional>::sharedConditional conditional;
+		BOOST_REVERSE_FOREACH(conditional, bayesNet) {
+			if (!new_clique.get()) {
+				new_clique = addClique(conditional,childRoots);
+			} else {
+				nodes_.insert(make_pair(conditional->key(), new_clique));
+				new_clique->push_front(conditional);
+			}
+		}
+
+		root_ = new_clique;
+	}
+
+	/* ************************************************************************* */
+	template<class Conditional>
 	void BayesTree<Conditional>::print(const string& s) const {
 		if (root_.use_count() == 0) {
 			printf("WARNING: BayesTree.print encountered a forest...\n");
@@ -358,7 +388,6 @@ namespace gtsam {
 		}
 		cout << s << ": clique size == " << size() << ", node size == " << nodes_.size() <<  endl;
 		if (nodes_.empty()) return;
-		printf("printing tree!\n");
 		root_->printTree("");
 	}
 
@@ -430,6 +459,7 @@ namespace gtsam {
 	}
 
 	/* ************************************************************************* */
+	//TODO: remove this function after removing TSAM.cpp
 	template<class Conditional>
 	typename BayesTree<Conditional>::sharedClique BayesTree<Conditional>::insert(
 			const BayesNet<Conditional>& bayesNet, list<sharedClique>& children, bool isRootClique)

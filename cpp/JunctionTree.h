@@ -73,10 +73,9 @@ namespace gtsam {
 		// distribute the factors along the Bayes tree
 		sharedClique distributeFactors(FG& fg, const BayesTree<SymbolicConditional>::sharedClique clique);
 
-		// utility function called by eliminateBottomUp
+		// utility function called by eliminate
 		template <class Conditional>
-		std::pair<FG, typename BayesTree<Conditional>::sharedClique> eliminateOneClique(
-				sharedClique fg_, BayesTree<Conditional>& bayesTree);
+		std::pair<FG, BayesTree<Conditional> > eliminateOneClique(sharedClique fg_);
 
 	public:
 		// constructor
@@ -126,6 +125,6 @@ namespace gtsam {
 
 		// optimize the linear graph
 		VectorConfig optimize();
-	}; // Linear JunctionTree
+	}; // GaussianJunctionTree
 
 } // namespace gtsam
