@@ -9,6 +9,7 @@
 #include <iomanip>
 #include <list>
 #include <fstream>
+#include <limits>
 
 #ifdef GT_USE_CBLAS
 extern "C" {
@@ -720,6 +721,10 @@ Vector backSubstituteUpper(const Matrix& U, const Vector& b, bool unit) {
 		double zi = b(i-1);
 		for (size_t j = i+1; j <= n; j++)
 			zi -= U(i-1,j-1) * result(j-1);
+#ifndef NDEBUG
+		if(!unit && fabs(U(i-1,i-1)) <= numeric_limits<double>::epsilon())
+		  throw invalid_argument("backSubstituteUpper: U is singular");
+#endif
 		if (!unit) zi /= U(i-1,i-1);
 		result(i-1) = zi;
 	}
@@ -741,6 +746,10 @@ Vector backSubstituteUpper(const Vector& b, const Matrix& U, bool unit) {
 		double zi = b(i-1);
 		for (size_t j = 1; j < i; j++)
 			zi -= U(j-1,i-1) * result(j-1);
+#ifndef NDEBUG
+		if(!unit && fabs(U(i-1,i-1)) <= numeric_limits<double>::epsilon())
+		  throw invalid_argument("backSubstituteUpper: U is singular");
+#endif
 		if (!unit) zi /= U(i-1,i-1);
 		result(i-1) = zi;
 	}
@@ -762,6 +771,10 @@ Vector backSubstituteLower(const Matrix& L, const Vector& b, bool unit) {
 		double zi = b(i-1);
 		for (size_t j = 1; j < i; j++)
 			zi -= L(i-1,j-1) * result(j-1);
+#ifndef NDEBUG
+		if(!unit && fabs(L(i-1,i-1)) <= numeric_limits<double>::epsilon())
+		  throw invalid_argument("backSubstituteLower: L is singular");
+#endif
 		if (!unit) zi /= L(i-1,i-1);
 		result(i-1) = zi;
 	}
