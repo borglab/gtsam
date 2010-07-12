@@ -16,7 +16,7 @@
 #include "FactorGraph-inl.h"
 #include "inference-inl.h"
 #include "iterative.h"
-#include "JunctionTree-inl.h"
+#include "GaussianJunctionTree-inl.h"
 
 using namespace std;
 using namespace gtsam;

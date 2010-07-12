@@ -6,7 +6,7 @@
 check_PROGRAMS = testBayesNetPreconditioner testConstraintOptimizer 
 check_PROGRAMS += testGaussianBayesNet testGaussianFactor testGaussianFactorGraph 
 check_PROGRAMS += testGaussianISAM testGaussianISAM2 testGraph
-check_PROGRAMS += testInference testIterative testJunctionTree 
+check_PROGRAMS += testInference testIterative testGaussianJunctionTree 
 check_PROGRAMS += testNonlinearEquality testNonlinearFactor testNonlinearFactorGraph
 check_PROGRAMS += testNonlinearOptimizer testSQP testSubgraphPreconditioner
 check_PROGRAMS += testSymbolicBayesNet testSymbolicFactorGraph testTupleConfig

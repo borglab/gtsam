@@ -10,10 +10,8 @@
 
 #include <set>
 #include <boost/shared_ptr.hpp>
-#include <boost/function.hpp>
-#include "GaussianConditional.h"
-#include "GaussianFactorGraph.h"
 #include "BayesTree.h"
+#include "SymbolicConditional.h"
 
 namespace gtsam {
 
@@ -101,30 +99,5 @@ namespace gtsam {
 		bool equals(const JunctionTree<FG>& other, double tol = 1e-9) const;
 
 	}; // JunctionTree
-
-	/* ************************************************************************* */
-	/**
-	 * GaussianJunctionTree that does the optimization
-	 */
-	template <class FG>
-	class GaussianJunctionTree: public JunctionTree<FG> {
-	public:
-		typedef JunctionTree<FG> Base;
-		typedef typename JunctionTree<FG>::sharedClique sharedClique;
-
-	protected:
-		// back-substitute in topological sort order (parents first)
-		void btreeBackSubstitue(typename BayesTree<GaussianConditional>::sharedClique current, VectorConfig& config);
-
-	public :
-
-		GaussianJunctionTree() : Base() {}
-
-		// constructor
-		GaussianJunctionTree(FG& fg, const Ordering& ordering) : Base(fg, ordering) {}
-
-		// optimize the linear graph
-		VectorConfig optimize();
-	}; // GaussianJunctionTree
 
 } // namespace gtsam

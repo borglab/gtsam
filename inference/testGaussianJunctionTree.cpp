@@ -16,7 +16,7 @@ using namespace boost::assign;
 
 #define GTSAM_MAGIC_KEY
 
-#include "JunctionTree-inl.h"
+#include "GaussianJunctionTree-inl.h"
 
 using namespace std;
 using namespace gtsam;
