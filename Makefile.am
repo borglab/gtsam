@@ -35,14 +35,6 @@ libgtsam_la_LDFLAGS = -version-info 0:0:0
 noinst_HEADERS = gtsam.h
 EXTRA_DIST = autogen.sh configure.ac THANKS 
 
-# install the headers and matlab toolbox
-# TODO: wrap is only called after the toolbox is installed!
-install-exec-hook:
-	install -d ${toolbox}/gtsam && \
-	cp -rf toolbox/* ${toolbox}/gtsam && \
-	install -d ${prefix}/include/wrap && \
-	cp -f wrap/wrap-matlab.h  ${prefix}/include/wrap/matlab.h
-
 # Todo: Also do CppUnitLite with automake 
 dist-hook:
 	mkdir $(distdir)/config

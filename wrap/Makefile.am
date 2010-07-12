@@ -24,6 +24,13 @@ AM_LDFLAGS = -L../CppUnitLite -lCppUnitLite $(BOOST_LDFLAGS)
 
 TESTS = $(check_PROGRAMS)
 
+# install the headers and matlab toolbox
+install-exec-hook: all
+	install -d ${toolbox}/gtsam && \
+	cp -rf ../toolbox/* ${toolbox}/gtsam && \
+	install -d ${includedir}/wrap && \
+	cp -f wrap-matlab.h  ${includedir}/wrap/matlab.h
+
 # clean local toolbox dir
 clean:
 	@test -z "wrap" || rm -f wrap
