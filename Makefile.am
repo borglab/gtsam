@@ -9,17 +9,21 @@ ACLOCAL_AMFLAGS = -I m4
 AUTOMAKE_OPTIONS = foreign
 
 # All the sub-directories that need to be built
-SUBDIRS = CppUnitLite colamd ldl spqr_mini base cpp geometry slam . tests wrap  
+SUBDIRS = CppUnitLite colamd ldl spqr_mini base inference geometry nonlinear slam . tests wrap  
 
 # And the corresponding libraries produced
 SUBLIBS = colamd/libcolamd.la ldl/libldl.la \
-          base/libbase.la cpp/libcpp.la geometry/libgeometry.la slam/libslam.la
+          base/libbase.la inference/libinference.la \
+          geometry/libgeometry.la nonlinear/libnonlinear.la slam/libslam.la
 
 if USE_LAPACK
 SUBLIBS += spqr_mini/libspqr_mini.la
 endif
 
-EXTRA_DIST = autogen.sh configure.ac THANKS 
+# TODO: UFconfig, CCOLAMD, and LDL automake magic without adding or touching any file
+# in those directories as to not invalidate the LGPL license
+# See some possibilities in
+# http://www.gnu.org/software/hello/manual/automake/Third_002dParty-Makefiles.html
 
 # The following lines specify the actual shared library to be built with libtool
 lib_LTLIBRARIES = libgtsam.la
@@ -27,12 +31,12 @@ libgtsam_la_SOURCES =
 libgtsam_la_LIBADD = $(SUBLIBS)
 libgtsam_la_LDFLAGS = -version-info 0:0:0
 
-# TODO: UFconfig, CCOLAMD, and LDL automake magic without adding or touching any file
-# in those directories as to not invalidate the LGPL license
-# See some possibilities in
-# http://www.gnu.org/software/hello/manual/automake/Third_002dParty-Makefiles.html
+# Add these files to make dure they're in the distribution
+noinst_HEADERS = gtsam.h
+EXTRA_DIST = autogen.sh configure.ac THANKS 
 
 # install the headers and matlab toolbox
+# TODO: wrap is only called after the toolbox is installed!
 install-exec-hook:
 	install -d ${toolbox}/gtsam && \
 	cp -rf toolbox/* ${toolbox}/gtsam && \

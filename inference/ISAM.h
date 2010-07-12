@@ -20,7 +20,6 @@
 #include "BayesNet.h"
 #include "BayesTree.h"
 #include "VectorConfig.h"
-#include "NonlinearFactorGraph.h"
 
 namespace gtsam {
 

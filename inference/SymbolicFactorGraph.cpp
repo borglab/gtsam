@@ -13,7 +13,6 @@
 #include "SymbolicFactorGraph.h"
 #include "SymbolicBayesNet.h"
 #include "inference-inl.h"
-#include "LieConfig-inl.h"
 
 using namespace std;
 

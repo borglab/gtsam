@@ -13,7 +13,6 @@
 #include "SymbolicFactor.h"
 #include "SymbolicBayesNet.h"
 #include "Key.h"
-#include "LieConfig.h"
 
 namespace gtsam {
 
