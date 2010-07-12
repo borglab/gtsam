@@ -1,33 +1,36 @@
 #----------------------------------------------------------------------------------------------------
-# GTSAM nonlinear
-# Non-linear optimization
+# GTSAM linear: inference in Gaussian factor graphs
 #----------------------------------------------------------------------------------------------------
 
 headers =
 sources = 
 check_PROGRAMS = 
 
-#----------------------------------------------------------------------------------------------------
-# nonlinear
-#----------------------------------------------------------------------------------------------------
+# Noise Model
+headers += SharedGaussian.h SharedDiagonal.h 
+sources += NoiseModel.cpp Errors.cpp
+check_PROGRAMS += testNoiseModel testErrors
 
-# Lie Groups
-headers += LieConfig.h LieConfig-inl.h TupleConfig.h TupleConfig-inl.h
-check_PROGRAMS += testLieConfig 
+# Vector Configurations
+headers += VectorConfig.h 
+sources += VectorMap.cpp VectorBTree.cpp  
+check_PROGRAMS += testVectorMap testVectorBTree  
 
-# Nonlinear nonlinear 
-headers += NonlinearFactorGraph.h NonlinearFactorGraph-inl.h
-headers += NonlinearOptimizer.h NonlinearOptimizer-inl.h 
-headers += NonlinearFactor.h
+# Gaussian Factor Graphs
+headers += GaussianFactorSet.h Factorization.h
+sources += GaussianFactor.cpp GaussianFactorGraph.cpp
+headers += GaussianJunctionTree.h GaussianJunctionTree-inl.h
+sources += GaussianConditional.cpp GaussianBayesNet.cpp
+sources += GaussianISAM.cpp
+check_PROGRAMS += testGaussianFactor testGaussianJunctionTree testGaussianConditional
 
-# Nonlinear constraints 
-headers += NonlinearConstraint.h NonlinearConstraint-inl.h
-headers += NonlinearEquality.h
-check_PROGRAMS += testNonlinearConstraint  
+# Iterative Methods
+headers += iterative-inl.h SubgraphSolver.h SubgraphSolver-inl.h
+sources += iterative.cpp BayesNetPreconditioner.cpp SubgraphPreconditioner.cpp
+check_PROGRAMS += testBayesNetPreconditioner
 
-# SQP
-sources += ConstraintOptimizer.cpp
-check_PROGRAMS += testConstraintOptimizer
+# Timing tests
+noinst_PROGRAMS = timeGaussianFactor timeVectorConfig
 
 #----------------------------------------------------------------------------------------------------
 # Create a libtool library that is not installed
@@ -36,9 +39,9 @@ check_PROGRAMS += testConstraintOptimizer
 #----------------------------------------------------------------------------------------------------
 headers += $(sources:.cpp=.h)
 pkginclude_HEADERS = $(headers)
-noinst_LTLIBRARIES = libnonlinear.la
-libnonlinear_la_SOURCES = $(sources)
-AM_CPPFLAGS = -I$(boost) -I../colamd -I../base -I../inference -I../linear
+noinst_LTLIBRARIES = liblinear.la
+liblinear_la_SOURCES = $(sources)
+AM_CPPFLAGS = -I$(boost) -I../colamd -I../base -I../inference
 AM_CXXFLAGS =
 
 #----------------------------------------------------------------------------------------------------
@@ -46,7 +49,7 @@ AM_CXXFLAGS =
 #----------------------------------------------------------------------------------------------------
 TESTS = $(check_PROGRAMS)
 AM_LDFLAGS = $(BOOST_LDFLAGS) $(boost_serialization) 
-LDADD = libnonlinear.la ../linear/liblinear.la ../inference/libinference.la ../base/libbase.la 
+LDADD = liblinear.la ../inference/libinference.la ../base/libbase.la 
 LDADD += ../CppUnitLite/libCppUnitLite.a ../colamd/libcolamd.la ../ldl/libldl.la 
 AM_DEFAULT_SOURCE_EXT = .cpp
 

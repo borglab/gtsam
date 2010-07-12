@@ -19,7 +19,8 @@ using namespace boost::assign;
 
 #include "Matrix.h"
 #include "Ordering.h"
-#include "GaussianConditional.h"
+#include "GaussianFactorGraph.h"
+#include "SharedDiagonal.h"
 #include "inference-inl.h"
 
 using namespace std;

@@ -10,7 +10,6 @@
 #include "FactorGraph-inl.h"
 #include "BayesNet-inl.h"
 #include "Key.h"
-#include "GaussianFactorGraph.h"
 
 using namespace std;
 

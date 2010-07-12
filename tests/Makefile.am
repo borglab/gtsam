@@ -20,7 +20,8 @@ noinst_PROGRAMS = timeGaussianFactorGraph
 noinst_HEADERS = smallExample.h
 noinst_LIBRARIES = libtests.a
 libtests_a_SOURCES = smallExample.cpp
-AM_CPPFLAGS = -I$(boost) -I../colamd -I../base -I../inference  -I../nonlinear -I../geometry -I../nonlinear -I../slam 
+AM_CPPFLAGS = -I$(boost) -I../colamd 
+AM_CPPFLAGS += -I../base -I../geometry -I../inference  -I../linear -I../nonlinear -I../slam 
 
 #----------------------------------------------------------------------------------------------------
 # rules to build unit tests

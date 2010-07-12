@@ -19,7 +19,6 @@
 #include "FactorGraph.h"
 #include "BayesNet.h"
 #include "BayesTree.h"
-#include "VectorConfig.h"
 
 namespace gtsam {
 

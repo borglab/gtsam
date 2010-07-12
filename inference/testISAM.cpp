@@ -15,7 +15,6 @@ using namespace boost::assign;
 #include "SymbolicBayesNet.h"
 #include "SymbolicFactorGraph.h"
 #include "Ordering.h"
-#include "GaussianBayesNet.h"
 #include "ISAM-inl.h"
 
 using namespace std;

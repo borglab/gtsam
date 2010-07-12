@@ -56,7 +56,7 @@ headers += $(sources:.cpp=.h)
 pkginclude_HEADERS = $(headers)
 noinst_LTLIBRARIES = libslam.la
 libslam_la_SOURCES = $(sources)
-AM_CPPFLAGS = -I$(boost) -I../colamd -I../base -I../inference  -I../nonlinear -I../geometry 
+AM_CPPFLAGS = -I$(boost) -I../colamd -I../base -I../inference -I../linear -I../nonlinear -I../geometry 
 
 #----------------------------------------------------------------------------------------------------
 # rules to build local programs
@@ -64,7 +64,7 @@ AM_CPPFLAGS = -I$(boost) -I../colamd -I../base -I../inference  -I../nonlinear -I
 TESTS = $(check_PROGRAMS)
 AM_DEFAULT_SOURCE_EXT = .cpp
 AM_LDFLAGS = $(BOOST_LDFLAGS) $(boost_serialization)
-LDADD = libslam.la ../geometry/libgeometry.la ../inference/libinference.la ../nonlinear/libnonlinear.la ../base/libbase.la 
+LDADD = libslam.la ../geometry/libgeometry.la  ../nonlinear/libnonlinear.la ../linear/liblinear.la ../inference/libinference.la ../base/libbase.la 
 LDADD += ../CppUnitLite/libCppUnitLite.a ../ldl/libldl.la ../colamd/libcolamd.la  
 
 if USE_LAPACK

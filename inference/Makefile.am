@@ -1,5 +1,5 @@
 #----------------------------------------------------------------------------------------------------
-# GTSAM core functionality: discrete, linear, and non-linear
+# GTSAM core functionality: base classes for inference, as well as symbolic and discrete
 #----------------------------------------------------------------------------------------------------
 
 headers =
@@ -25,12 +25,11 @@ headers += inference.h inference-inl.h
 headers += graph.h graph-inl.h
 headers += FactorGraph.h FactorGraph-inl.h
 headers += JunctionTree.h JunctionTree-inl.h
-headers += GaussianJunctionTree.h GaussianJunctionTree-inl.h
 headers += BayesNet.h BayesNet-inl.h
 headers += BayesTree.h BayesTree-inl.h
 headers += ISAM.h ISAM-inl.h
 headers += ISAM2.h ISAM2-inl.h
-check_PROGRAMS += testFactorGraph testGaussianJunctionTree testOrdering
+check_PROGRAMS += testFactorGraph testOrdering
 check_PROGRAMS += testBayesTree testISAM
 
 #----------------------------------------------------------------------------------------------------
@@ -41,25 +40,8 @@ check_PROGRAMS += testBayesTree testISAM
 headers += BinaryConditional.h
 check_PROGRAMS += testBinaryBayesNet
 
-#----------------------------------------------------------------------------------------------------
-# linear
-#----------------------------------------------------------------------------------------------------
-
-# Gaussian inference 
-headers += GaussianFactorSet.h SharedGaussian.h SharedDiagonal.h VectorConfig.h Factorization.h
-sources += NoiseModel.cpp Errors.cpp VectorMap.cpp VectorBTree.cpp GaussianFactor.cpp 
-sources += GaussianFactorGraph.cpp GaussianConditional.cpp GaussianBayesNet.cpp
-sources += GaussianISAM.cpp
-check_PROGRAMS += testVectorMap testVectorBTree testGaussianFactor 
-check_PROGRAMS += testGaussianConditional testNoiseModel testErrors
-
-# Iterative Methods
-headers += iterative-inl.h SubgraphSolver.h SubgraphSolver-inl.h
-sources += iterative.cpp BayesNetPreconditioner.cpp SubgraphPreconditioner.cpp
-check_PROGRAMS += testBayesNetPreconditioner
-
 # Timing tests
-noinst_PROGRAMS = timeGaussianFactor timeSymbolMaps timeVectorConfig
+noinst_PROGRAMS = timeSymbolMaps
 
 #----------------------------------------------------------------------------------------------------
 # Create a libtool library that is not installed
