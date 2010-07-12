@@ -600,16 +600,15 @@ namespace gtsam {
   		BayesNet<Conditional>& bn, typename BayesTree<Conditional>::Cliques& orphans) {
 
 		// process each key of the new factor
-		BOOST_FOREACH(const Symbol& key, keys)
-			try {
-				// get the clique
-				sharedClique clique = (*this)[key];
+	  BOOST_FOREACH(const Symbol& key, keys) {
 
-				// remove path from clique to root
-				this->removePath(clique, bn, orphans);
-
-			} catch (std::invalid_argument e) {
-			}
+	    // get the clique
+	    typename Nodes::iterator clique(nodes_.find(key));
+	    if(clique != nodes_.end()) {
+	      // remove path from clique to root
+	      this->removePath(clique->second, bn, orphans);
+	    }
+	  }
 	}
 
 /* ************************************************************************* */
