@@ -279,6 +279,7 @@ namespace gtsam {
 
 	}
 
+	/*
 	template<class Conditional, class Config>
 	void ISAM2<Conditional, Config>::linear_update(const FactorGraph<GaussianFactor>& newFactors) {
 
@@ -329,8 +330,8 @@ namespace gtsam {
 		}
 
 		// Output: BayesTree(this)
-
 	}
+	*/
 
 	template<class Conditional, class Config>
 	void ISAM2<Conditional, Config>::fluid_relinearization(double relinearize_threshold) {

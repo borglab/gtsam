@@ -1,46 +1,49 @@
+#----------------------------------------------------------------------------------------------------
+# GTSAM top-level automake file
+#----------------------------------------------------------------------------------------------------
+
 #The option -I m4 tells Autoconf to look for additional Autoconf macros in the m4 subdirectory.
 ACLOCAL_AMFLAGS = -I m4
 
 # make automake install some standard but missing files
 AUTOMAKE_OPTIONS = foreign
-SUBDIRS = colamd CppUnitLite ldl spqr_mini cpp wrap
 
-# install the matlab toolbox
+# All the sub-directories that need to be built
+SUBDIRS = CppUnitLite colamd ldl spqr_mini base cpp geometry slam . tests wrap  
+
+# And the corresponding libraries produced
+SUBLIBS = colamd/libcolamd.la ldl/libldl.la \
+          base/libbase.la cpp/libcpp.la geometry/libgeometry.la slam/libslam.la
+
+if USE_LAPACK
+SUBLIBS += spqr_mini/libspqr_mini.la
+endif
+
+EXTRA_DIST = autogen.sh configure.ac THANKS 
+
+# The following lines specify the actual shared library to be built with libtool
+lib_LTLIBRARIES = libgtsam.la
+libgtsam_la_SOURCES =
+libgtsam_la_LIBADD = $(SUBLIBS)
+libgtsam_la_LDFLAGS = -version-info 0:0:0
+
+# TODO: UFconfig, CCOLAMD, and LDL automake magic without adding or touching any file
+# in those directories as to not invalidate the LGPL license
+# See some possibilities in
+# http://www.gnu.org/software/hello/manual/automake/Third_002dParty-Makefiles.html
+
+# install the headers and matlab toolbox
 install-exec-hook:
 	install -d ${toolbox}/gtsam && \
 	cp -rf toolbox/* ${toolbox}/gtsam && \
 	install -d ${prefix}/include/wrap && \
-	cp -f wrap/wrap-matlab.h  ${prefix}/include/wrap/matlab.h && \
-	install -d $(prefix)/include && \
-	install -d $(prefix)/include/colamd && \
-	cp -f colamd/colamd.h $(prefix)/include/colamd/ && \
-	cp -f colamd/ccolamd.h $(prefix)/include/colamd/ && \
-	cp -f colamd/UFconfig.h $(prefix)/include/colamd/ && \
-	cp -f colamd/libcolamd.a $(prefix)/lib/ && \
-	install -d $(prefix)/include/ldl && \
-	cp -f ldl/ldl.h $(prefix)/include/ldl/ && \
-	cp -f ldl/UFconfig.h $(prefix)/include/ldl/ && \
-	cp -f ldl/libldl.a $(prefix)/lib/
+	cp -f wrap/wrap-matlab.h  ${prefix}/include/wrap/matlab.h
 
+# Todo: Also do CppUnitLite with automake 
 dist-hook:
-	mkdir $(distdir)/CppUnitLite
-	cp -p $(srcdir)/CppUnitLite/Makefile $(distdir)/CppUnitLite
-	cp -p $(srcdir)/CppUnitLite/*.h $(distdir)/CppUnitLite
-	cp -p $(srcdir)/CppUnitLite/*.cpp $(distdir)/CppUnitLite
-	mkdir $(distdir)/colamd
-	cp -p $(srcdir)/colamd/Makefile $(distdir)/colamd
-	cp -p $(srcdir)/colamd/*.h $(distdir)/colamd
-	cp -p $(srcdir)/colamd/*.c $(distdir)/colamd
-	cp -p $(srcdir)/colamd/*.cpp $(distdir)/colamd
-	mkdir $(distdir)/ldl
-	cp -p $(srcdir)/ldl/Makefile $(distdir)/ldl
-	cp -p $(srcdir)/ldl/*.h $(distdir)/ldl
-	cp -p $(srcdir)/ldl/*.c $(distdir)/ldl
-	cp -p $(srcdir)/ldl/*.cpp $(distdir)/ldl
-	mkdir $(distdir)/spqr_mini
-	cp -p $(srcdir)/spqr_mini/Makefile $(distdir)/spqr_mini
-	cp -p $(srcdir)/spqr_mini/*.h $(distdir)/spqr_mini
-	cp -p $(srcdir)/spqr_mini/*.c $(distdir)/spqr_mini
-	cp -p $(srcdir)/spqr_mini/*.cpp $(distdir)/spqr_mini
+	mkdir $(distdir)/config
 	mkdir $(distdir)/matlab
 	cp -p $(srcdir)/matlab/*.m $(distdir)/matlab
+	cp -r $(srcdir)/wrap/expected $(distdir)/wrap
+
+

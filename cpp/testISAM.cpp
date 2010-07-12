@@ -17,7 +17,6 @@ using namespace boost::assign;
 #include "Ordering.h"
 #include "GaussianBayesNet.h"
 #include "ISAM-inl.h"
-#include "smallExample.h"
 
 using namespace std;
 using namespace gtsam;

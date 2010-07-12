@@ -20,7 +20,7 @@ all:
 	./wrap ${interfacePath} ${moduleName} ${toolboxpath} ${nameSpace} ${mexFlags}
 
 # install the header files
-include_HEADERS = utilities.h Argument.h Constructor.h Method.h Class.h Module.h wrap-matlab.h
+include_HEADERS = geometry.h utilities.h Argument.h Constructor.h Method.h Class.h Module.h wrap-matlab.h
 
 install: all
 
@@ -37,5 +37,3 @@ clean:
 # rule to run an executable
 %.run: % libgtsam.la
 	./$^
-
-	

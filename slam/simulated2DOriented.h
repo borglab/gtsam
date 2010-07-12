@@ -71,7 +71,7 @@ namespace gtsam {
 
 			GenericOdometry(const Pose2& z, const SharedGaussian& model,
 					const Key& i1, const Key& i2) :
-				NonlinearFactor2<Cfg, Key, Pose2, Key, Pose2> (model, i1, i2), z_(z) {
+				z_(z), NonlinearFactor2<Cfg, Key, Pose2, Key, Pose2> (model, i1, i2) {
 			}
 
 			Vector evaluateError(const Pose2& x1, const Pose2& x2, boost::optional<

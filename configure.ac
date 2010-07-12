@@ -4,12 +4,19 @@
 AC_PREREQ(2.59)
 AC_INIT(gtsam, 0.0.0, dellaert@cc.gatech.edu)
 AM_INIT_AUTOMAKE(gtsam, 0.0.0)
-AC_OUTPUT(Makefile spqr_mini/Makefile cpp/Makefile wrap/Makefile)
+AC_OUTPUT(Makefile CppUnitLite/Makefile colamd/Makefile ldl/Makefile spqr_mini/Makefile base/Makefile geometry/Makefile cpp/Makefile slam/Makefile tests/Makefile wrap/Makefile)
 AC_CONFIG_MACRO_DIR([m4])
-AC_CONFIG_SRCDIR([cpp/cal3_S2.cpp])
-AC_CONFIG_HEADER([cpp/config.h])
-AC_CONFIG_SRCDIR([wrap/wrap.cpp])
+AC_CONFIG_HEADER([config.h])
+AC_CONFIG_SRCDIR([CppUnitLite/Test.cpp])
+AC_CONFIG_SRCDIR([colamd/colamd.c])
+AC_CONFIG_SRCDIR([ldl/ldl.cpp])
 AC_CONFIG_SRCDIR([spqr_mini/spqr_front.cpp])
+AC_CONFIG_SRCDIR([base/DSFVector.cpp])
+AC_CONFIG_SRCDIR([geometry/Cal3_S2.cpp])
+AC_CONFIG_SRCDIR([cpp/GaussianFactor.cpp])
+AC_CONFIG_SRCDIR([slam/pose2SLAM.cpp])
+AC_CONFIG_SRCDIR([tests/testSQP.cpp])
+AC_CONFIG_SRCDIR([wrap/wrap.cpp])
 
 # Check for OS
 AC_CANONICAL_HOST    # needs to be called at some point earlier
@@ -52,6 +59,7 @@ AC_ARG_ENABLE([blas],
        *) AC_MSG_ERROR([bad value ${enableval} for --enable-blas]) ;;
      esac],[blas=false])
 
+AM_CONDITIONAL([USE_BLAS], test x$blas = xtrue)
 AM_CONDITIONAL([USE_BLAS_MACOS], [test x$blas = xtrue && test x$ISMAC = xtrue])
 AM_CONDITIONAL([USE_BLAS_LINUX], [test x$blas = xtrue && test x$ISMAC = xfalse])
 
@@ -64,12 +72,14 @@ AC_ARG_ENABLE([lapack],
        *) AC_MSG_ERROR([bad value ${enableval} for --enable-lapack]) ;;
      esac],[lapack=false])
 
+AM_CONDITIONAL([USE_LAPACK], test x$lapack = xtrue)
 AM_CONDITIONAL([USE_LAPACK_MACOS], [test x$lapack = xtrue && test x$ISMAC = xtrue])
 AM_CONDITIONAL([USE_LAPACK_LINUX], [test x$lapack = xtrue && test x$ISMAC = xfalse])
-AM_CONDITIONAL([USE_LAPACK], test x$lapack = xtrue)
-AM_CONDITIONAL([USE_VECLIB_MACOS], [(test x$lapack = xtrue || test x$blas = xtrue) && test x$ISMAC = xtrue])
 
-#enabgle SparseQR for linear solving
+# On Mac, we use the Accelerate framework for BLAS/LAPACK
+AM_CONDITIONAL([USE_ACCELERATE_MACOS], [(test x$lapack = xtrue || test x$blas = xtrue) && test x$ISMAC = xtrue])
+
+#enable SparseQR for linear solving
 AC_ARG_ENABLE([spqr],
      [  --enable-spqr    Enable SparseQR library support],
      [case "${enableval}" in

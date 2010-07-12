@@ -13,7 +13,6 @@ using namespace boost::assign;
 
 #define GTSAM_MAGIC_KEY
 
-#include "Pose2.h"
 #include "LieConfig-inl.h"
 #include "Vector.h"
 

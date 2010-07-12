@@ -12,31 +12,30 @@
 using namespace boost::assign;
 
 #include <CppUnitLite/TestHarness.h>
-#include "Key.h"
 #include "BTree.h"
 
 using namespace std;
 using namespace gtsam;
 
 typedef pair<size_t, size_t> Range;
-typedef BTree<Symbol, Range> RangeTree;
-typedef BTree<Symbol, int> IntTree;
+typedef BTree<string, Range> RangeTree;
+typedef BTree<string, int> IntTree;
 
 static std::stringstream ss;
-static Symbol x1('x', 1), x2('x', 2), x3('x', 3), x4('x', 4), x5('x', 5);
-typedef pair<Symbol, int> KeyInt;
+static string x1("x1"), x2("x2"), x3("x3"), x4("x4"), x5("x5");
+typedef pair<string, int> KeyInt;
 KeyInt p1(x1, 1), p2(x2, 2), p3(x3, 3), p4(x4, 4), p5(x5, 5);
 
 /* ************************************************************************* */
-int f(const Symbol& key, const Range& range) {
+int f(const string& key, const Range& range) {
 	return range.first;
 }
 
-void g(const Symbol& key, int i) {
+void g(const string& key, int i) {
 	ss << (string) key;
 }
 
-int add(const Symbol& k, int v, int a) {
+int add(const string& k, int v, int a) {
 	return v + a;
 }
 
@@ -122,7 +121,7 @@ TEST( BTree, iterating )
 	LONGS_EQUAL(25,tree.fold<int>(add,10))
 
 	// test iterator
-	BTree<Symbol, int>::const_iterator it = tree.begin(), it2 = tree.begin();
+	BTree<string, int>::const_iterator it = tree.begin(), it2 = tree.begin();
 	CHECK(it==it2)
 	CHECK(*it == p1)
 	CHECK(it->first == x1)
@@ -168,7 +167,7 @@ TEST( BTree, stress )
 	list<RangeTree::value_type> expected;
 	int N = 128;
 	for (int i = 1; i <= N; i++) {
-		Symbol key('a', i);
+		string key('a', i);
 		Range value(i - 1, i);
 		tree = tree.add(key, value);
 		LONGS_EQUAL(i,tree.size())
@@ -186,7 +185,7 @@ TEST( BTree, stress )
 
 	// deconstruct the tree
 	for (int i = N; i >= N; i--) {
-		Symbol key('a', i);
+		string key('a', i);
 		tree = tree.remove(key);
 		LONGS_EQUAL(i-1,tree.size())
 		CHECK(!tree.mem(key))

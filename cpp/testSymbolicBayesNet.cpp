@@ -13,13 +13,11 @@ using namespace boost::assign;
 #define GTSAM_MAGIC_KEY
 
 #include "Ordering.h"
-#include "smallExample.h"
 #include "SymbolicBayesNet.h"
 #include "SymbolicFactorGraph.h"
 
 using namespace std;
 using namespace gtsam;
-using namespace example;
 
 Symbol _B_('B', 0), _L_('L', 0);
 SymbolicConditional::shared_ptr
@@ -37,31 +35,6 @@ TEST( SymbolicBayesNet, equals )
 	f2.push_back(B);
 	CHECK(f1.equals(f1));
 	CHECK(!f1.equals(f2));
-}
-
-/* ************************************************************************* */
-TEST( SymbolicBayesNet, constructor )
-{
-	// Create manually
-	SymbolicConditional::shared_ptr
-		x2(new SymbolicConditional("x2","l1", "x1")),
-		l1(new SymbolicConditional("l1","x1")),
-		x1(new SymbolicConditional("x1"));
-	SymbolicBayesNet expected;
-	expected.push_back(x2);
-	expected.push_back(l1);
-	expected.push_back(x1);
-
-	// Create from a factor graph
-	GaussianFactorGraph factorGraph = createGaussianFactorGraph();
-	SymbolicFactorGraph fg(factorGraph);
-
-	// eliminate it
-	Ordering ordering;
-	ordering += "x2","l1","x1";
-  SymbolicBayesNet actual = fg.eliminate(ordering);
-
-  CHECK(assert_equal(expected, actual));
 }
 
 /* ************************************************************************* */

@@ -15,7 +15,6 @@ using namespace boost::assign;
 #include "SymbolicFactorGraph.h"
 #include "Ordering.h"
 #include "BayesTree-inl.h"
-#include "smallExample.h"
 #include "IndexTable.h"
 
 using namespace gtsam;

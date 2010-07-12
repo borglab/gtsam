@@ -1,0 +1,77 @@
+#----------------------------------------------------------------------------------------------------
+# SLAM and SFM sources
+#----------------------------------------------------------------------------------------------------
+
+headers =
+sources = 
+check_PROGRAMS = 
+
+# simulated2D example
+headers += Simulated2DConfig.h 
+headers += Simulated2DPosePrior.h Simulated2DPointPrior.h 
+headers += Simulated2DOdometry.h Simulated2DMeasurement.h 
+sources += simulated2D.cpp  
+check_PROGRAMS += testSimulated2D 
+
+# simulated2DOriented example
+headers +=  Simulated2DOrientedConfig.h
+headers +=  Simulated2DOrientedPosePrior.h
+headers +=  Simulated2DOrientedOdometry.h
+sources +=  simulated2DOriented.cpp 
+check_PROGRAMS += testSimulated2DOriented
+
+# simulated3D example
+sources += Simulated3D.cpp 
+check_PROGRAMS += testSimulated3D 
+
+# Pose SLAM headers
+headers += BetweenFactor.h PriorFactor.h
+
+# 2D Pose SLAM
+sources += pose2SLAM.cpp Pose2SLAMOptimizer.cpp dataset.cpp
+check_PROGRAMS += testPose2Factor testPose2Config testPose2SLAM testPose2Prior
+
+# 2D SLAM using Bearing and Range
+headers += BearingFactor.h RangeFactor.h BearingRangeFactor.h
+sources += planarSLAM.cpp
+check_PROGRAMS += testPlanarSLAM
+
+# 3D Pose constraints
+sources += pose3SLAM.cpp 
+check_PROGRAMS += testPose3Factor testPose3Config testPose3SLAM 
+
+# Visual SLAM
+sources += visualSLAM.cpp
+check_PROGRAMS += testVSLAMFactor testVSLAMGraph testVSLAMConfig
+
+# GaussianISAM2 is fairly SLAM-specific
+sources += GaussianISAM2.cpp
+
+#----------------------------------------------------------------------------------------------------
+# Create a libtool library that is not installed
+# It will be packaged in the toplevel libgtsam.la as specfied in ../Makefile.am 
+# The headers are installed in $(includedir)/gtsam: 
+#----------------------------------------------------------------------------------------------------
+headers += $(sources:.cpp=.h)
+pkginclude_HEADERS = $(headers)
+noinst_LTLIBRARIES = libslam.la
+libslam_la_SOURCES = $(sources)
+AM_CPPFLAGS = -I$(boost) -I../colamd -I../base -I../cpp -I../geometry 
+
+#----------------------------------------------------------------------------------------------------
+# rules to build local programs
+#----------------------------------------------------------------------------------------------------
+TESTS = $(check_PROGRAMS)
+AM_DEFAULT_SOURCE_EXT = .cpp
+AM_LDFLAGS = $(BOOST_LDFLAGS) $(boost_serialization)
+LDADD = libslam.la ../geometry/libgeometry.la ../cpp/libcpp.la ../base/libbase.la 
+LDADD += ../CppUnitLite/libCppUnitLite.a ../ldl/libldl.la ../colamd/libcolamd.la  
+
+if USE_LAPACK
+LDADD += ../spqr_mini/libspqr_mini.la
+endif
+
+# rule to run an executable
+%.run: % $(LDADD)
+	./$^
+

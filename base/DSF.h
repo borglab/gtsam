@@ -20,8 +20,6 @@
 
 namespace gtsam {
 
-	class Symbol;
-
 	template <class Key>
 	class DSF : protected BTree<Key, Key> {
 
@@ -153,6 +151,5 @@ namespace gtsam {
 
 	// shortcuts
 	typedef DSF<int> DSFInt;
-	typedef DSF<Symbol> DSFSymbol;
 
 } // namespace gtsam

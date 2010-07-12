@@ -1,1 +1,12 @@
 The GTSAM library has not been licensed yet. See also COPYING
+
+
+GTSAM depends on the following packages that are built locally:
+
+UFconfig
+Copyright (c) 2006-2009, Timothy A. Davis. Distributed under the GNU LGPL license.
+
+CCOLAMD
+Copyright (c) 1998-2007, University of Florida. Author: Timothy A. Davis, Siva Rajamanickam, 
+and Stefan Larimore. The COLAMD algorithm was developed in collaboration Esmond Ng and John Gilbert.
+Distributed under the GNU LGPL license.

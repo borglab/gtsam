@@ -5,8 +5,7 @@
  *      Author: Frank Dellaert
  */
 
-#ifndef SYMBOLICFACTORGRAPH_H_
-#define SYMBOLICFACTORGRAPH_H_
+#pragma once
 
 #include <string>
 #include <list>
@@ -17,10 +16,6 @@
 #include "LieConfig.h"
 
 namespace gtsam {
-
-	class Point2;
-
-	typedef LieConfig<Symbol, Point2> SymbolicConfig;
 
 	class SymbolicConditional;
 
@@ -87,8 +82,4 @@ namespace gtsam {
 		SymbolicBayesNet eliminateFrontals(const Ordering& ordering);
 	};
 
-	// save graph to the graphviz format
-	void saveGraph(const SymbolicFactorGraph& fg, const SymbolicConfig& config, const std::string& s);
-}
-
-#endif /* SYMBOLICFACTORGRAPH_H_ */
+} // namespace gtsam

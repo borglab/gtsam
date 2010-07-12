@@ -16,20 +16,16 @@
 #include <stdexcept>
 #include <functional>
 
-extern "C" {
-#include <colamd/colamd.h>
-#include <colamd/ccolamd.h>
-}
-
 #include <boost/foreach.hpp>
 #include <boost/tuple/tuple.hpp>
 #include <boost/format.hpp>
 #include <boost/graph/prim_minimum_spanning_tree.hpp>
-#include <colamd/colamd.h>
+#include "ccolamd.h"
 #include "Ordering.h"
 #include "FactorGraph.h"
 #include "graph-inl.h"
 #include "DSF.h"
+
 
 #define INSTANTIATE_FACTOR_GRAPH(F) \
   template class FactorGraph<F>; \
@@ -189,7 +185,6 @@ void colamd(int n_col, int n_row, int nrNonZeros, const map<Key, vector<int> >& 
 		Ordering& ordering, const set<Symbol>& lastKeys) {
 
 	// Convert to compressed column major format colamd wants it in (== MATLAB format!)
-	vector<Key> initialOrder;
 	int Alen = ccolamd_recommended(nrNonZeros, n_row, n_col);     /* colamd arg 3: size of the array A */
 	int * A = new int[Alen];      /* colamd arg 4: row indices of A, of size Alen */
 	int * p = new int[n_col + 1]; /* colamd arg 5: column pointers of A, of size n_col+1 */
@@ -200,6 +195,7 @@ void colamd(int n_col, int n_row, int nrNonZeros, const map<Key, vector<int> >& 
 	int count = 0;
 	typedef typename map<Key, vector<int> >::const_iterator iterator;
 	bool front_exists = false;
+	vector<Key> initialOrder;
 	for(iterator it = columns.begin(); it != columns.end(); it++) {
 		const Key& key = it->first;
 		const vector<int>& column = it->second;
@@ -220,7 +216,7 @@ void colamd(int n_col, int n_row, int nrNonZeros, const map<Key, vector<int> >& 
 	}
 
 	double* knobs = NULL;    /* colamd arg 6: parameters (uses defaults if NULL) */
-	int stats[COLAMD_STATS]; /* colamd arg 7: colamd output statistics and error codes */
+	int stats[CCOLAMD_STATS]; /* colamd arg 7: colamd output statistics and error codes */
 
 	// call colamd, result will be in p *************************************************
 	/* TODO: returns (1) if successful, (0) otherwise*/

@@ -12,7 +12,6 @@ using namespace boost::assign;
 #define GTSAM_MAGIC_KEY
 
 #include "Ordering.h"
-#include "pose2SLAM.h"
 
 using namespace std;
 using namespace gtsam;

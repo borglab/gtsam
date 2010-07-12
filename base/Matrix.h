@@ -226,7 +226,7 @@ std::pair<Matrix,Matrix> qr(const Matrix& A);
 /**
  * Imperative version of Householder rank 1 update
  */
-void householder_update(Matrix &A, int j, double beta, const Vector& vjm);
+void householder_update(Matrix &A, size_t j, double beta, const Vector& vjm);
 
 /**
  * Imperative algorithm for in-place full elimination with
@@ -383,7 +383,7 @@ Vector solve_ldl(const Matrix& A, const Vector& b);
  * @param A matrix to exponentiate
  * @param K number of iterations
  */
-Matrix expm(const Matrix& A, int K=7);
+Matrix expm(const Matrix& A, size_t K=7);
 
 // macro for unit tests
 #define EQUALITY(expected,actual)\

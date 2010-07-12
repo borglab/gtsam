@@ -24,7 +24,6 @@ using namespace boost::assign;
 
 #include "BinaryConditional.h"
 #include "BayesNet-inl.h"
-#include "smallExample.h"
 #include "Ordering.h"
 #include "SymbolMap.h"
 

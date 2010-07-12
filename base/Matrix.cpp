@@ -11,19 +11,16 @@
 #include <fstream>
 
 #ifdef GT_USE_CBLAS
-	#ifdef YA_BLAS
-#include <vecLib/cblas.h>
-	#else
+extern "C" {
 #include <cblas.h>
-	#endif
+}
 #endif
 
 #ifdef GT_USE_LAPACK
-  #ifdef YA_BLAS
-#include <vecLib/clapack.h>
-  #else
+extern "C" {
+#include <cblas.h>
 #include <clapack.h>
-  #endif
+}
 #endif
 
 #include <boost/numeric/ublas/matrix_proxy.hpp>
@@ -190,7 +187,7 @@ void multiplyAdd(double alpha, const Matrix& A, const Vector& x, Vector& e) {
 
 	// fill in parameters
 	const double beta = 1.0;
-	const int incx = 1, incy = 1, ida = n;
+	const size_t incx = 1, incy = 1, ida = n;
 
 	// execute blas call
 	cblas_dgemv(CblasRowMajor, CblasNoTrans, m, n, alpha, Aptr, ida, Xptr, incx, beta, Eptr, incy);
@@ -201,9 +198,9 @@ void multiplyAdd(double alpha, const Matrix& A, const Vector& x, Vector& e) {
   size_t m = A.size1(), n = A.size2();
 	double * ei = e.data().begin();
 	const double * aij = A.data().begin();
-	for (int i = 0; i < m; i++, ei++) {
+	for(size_t i = 0; i < m; i++, ei++) {
 		const double * xj = x.data().begin();
-		for (int j = 0; j < n; j++, aij++, xj++)
+		for(size_t j = 0; j < n; j++, aij++, xj++)
 			(*ei) += alpha * (*aij) * (*xj);
 	}
 #endif
@@ -218,9 +215,9 @@ void multiplyAdd(const Matrix& A, const Vector& x, Vector& e) {
   size_t m = A.size1(), n = A.size2();
 	double * ei = e.data().begin();
 	const double * aij = A.data().begin();
-	for (int i = 0; i < m; i++, ei++) {
+	for(size_t i = 0; i < m; i++, ei++) {
 		const double * xj = x.data().begin();
-		for (int j = 0; j < n; j++, aij++, xj++)
+		for(size_t j = 0; j < n; j++, aij++, xj++)
 			(*ei) += (*aij) * (*xj);
 	}
 #endif
@@ -249,7 +246,7 @@ void transposeMultiplyAdd(double alpha, const Matrix& A, const Vector& e, Vector
 
 	// fill in parameters
 	const double beta = 1.0;
-	const int incx = 1, incy = 1, ida = n;
+	const size_t incx = 1, incy = 1, ida = n;
 
 	// execute blas call
 	cblas_dgemv(CblasRowMajor, CblasTrans, m, n, alpha, Aptr, ida, Eptr, incx, beta, Xptr, incy);
@@ -259,10 +256,10 @@ void transposeMultiplyAdd(double alpha, const Matrix& A, const Vector& e, Vector
 	// TODO: use BLAS
   size_t m = A.size1(), n = A.size2();
 	double * xj = x.data().begin();
-	for (int j = 0; j < n; j++,xj++) {
+	for(size_t j = 0; j < n; j++,xj++) {
 		const double * ei = e.data().begin();
 		const double * aij = A.data().begin() + j;
-		for (int i = 0; i < m; i++, aij+=n, ei++)
+		for(size_t i = 0; i < m; i++, aij+=n, ei++)
 			(*xj) += alpha * (*aij) * (*ei);
 	}
 #endif
@@ -276,10 +273,10 @@ void transposeMultiplyAdd(const Matrix& A, const Vector& e, Vector& x) {
 #else
   size_t m = A.size1(), n = A.size2();
 	double * xj = x.data().begin();
-	for (int j = 0; j < n; j++,xj++) {
+	for(size_t j = 0; j < n; j++,xj++) {
 		const double * ei = e.data().begin();
 		const double * aij = A.data().begin() + j;
-		for (int i = 0; i < m; i++, aij+=n, ei++)
+		for(size_t i = 0; i < m; i++, aij+=n, ei++)
 			(*xj) += (*aij) * (*ei);
 	}
 #endif
@@ -397,7 +394,7 @@ void solve(Matrix& A, Matrix& B)
 	pmatrix pm(A_.size1());
 
 	// perform LU-factorization
-	int res = lu_factorize(A_,pm);
+	size_t res = lu_factorize(A_,pm);
 	if( res != 0 ) throw runtime_error ("Matrix::solve: lu_factorize failed!");
 
 	// backsubstitute to get the inverse
@@ -462,7 +459,7 @@ pair<Matrix,Matrix> qr(const Matrix& A) {
  * on a number of different matrices for which all columns change.
  */
 /* ************************************************************************* */
-inline void householder_update_manual(Matrix &A, int j, double beta, const Vector& vjm) {
+inline void householder_update_manual(Matrix &A, size_t j, double beta, const Vector& vjm) {
 	const size_t m = A.size1(), n = A.size2();
 	// w = beta*transpose(A(j:m,:))*v(j:m)
 	Vector w(n);
@@ -486,7 +483,7 @@ inline void householder_update_manual(Matrix &A, int j, double beta, const Vecto
 	}
 }
 
-void householder_update(Matrix &A, int j, double beta, const Vector& vjm) {
+void householder_update(Matrix &A, size_t j, double beta, const Vector& vjm) {
 #if defined GT_USE_CBLAS
 
 	// CBLAS version not working, using manual approach
@@ -551,7 +548,7 @@ void householder_update(Matrix &A, int j, double beta, const Vector& vjm) {
 // update A, b
 // A' \define A_{S}-ar and b'\define b-ad
 // __attribute__ ((noinline))	// uncomment to prevent inlining when profiling
-inline void updateAb_manual(Matrix& A, Vector& b, int j, const Vector& a,
+inline void updateAb_manual(Matrix& A, Vector& b, size_t j, const Vector& a,
 		const Vector& r, double d) {
 	const size_t m = A.size1(), n = A.size2();
 	for (size_t i = 0; i < m; i++) { // update all rows
@@ -568,7 +565,7 @@ inline void updateAb_manual(Matrix& A, Vector& b, int j, const Vector& a,
 /**
  * Perform updates of system matrices
  */
-static void updateAb(Matrix& A, Vector& b, int j, const Vector& a,
+static void updateAb(Matrix& A, Vector& b, size_t j, const Vector& a,
 		const Vector& r, double d) {
 	// TODO: reimplement using BLAS
 	updateAb_manual(A,b,j,a,r,d);
@@ -682,9 +679,9 @@ void householder(Matrix &A) {
 	__CLPK_integer n = A.size2();
 
 	// convert from row major to column major
-	double a[m*n]; int k = 0;
-	for(int j=0; j<n; j++)
-		for(int i=0; i<m; i++, k++)
+	double a[m*n]; size_t k = 0;
+	for(size_t j=0; j<n; j++)
+		for(size_t i=0; i<m; i++, k++)
 			a[k] = A(i,j);
 
 	double tau[n];
@@ -696,13 +693,13 @@ void householder(Matrix &A) {
 	lwork = (__CLPK_integer)work_optimal_size;
 	double work[lwork];
 	dgeqrf_(&m, &n, a, &m, tau, work, &lwork, &info);
-	int k0 = 0;
-	int j0;
+	size_t k0 = 0;
+	size_t j0;
 	memset(A.data().begin(), 0, m*n*sizeof(double));
-	for(int j=0; j<n; j++, k0+=m) {
+	for(size_t j=0; j<n; j++, k0+=m) {
 		k = k0;
 		j0 = j+1<m?j+1:m;
-		for(int i=0; i<j0; i++, k++)
+		for(size_t i=0; i<j0; i++, k++)
 			A(i,j) = a[k];
 	}
 }
@@ -952,13 +949,13 @@ Matrix RtR(const Matrix &A)
 /* ************************************************************************* */
 Vector solve_ldl(const Matrix& M, const Vector& rhs) {
 
-	unsigned int N = M.size1(); // size of the matrix
+	int N = M.size1(); // size of the matrix
 
 	// count the nonzero entries above diagonal
 	double thresh = 1e-9;
-	unsigned int nrANZ = 0; // # of nonzeros on diagonal and upper triangular part of A
-	for (size_t i=0; i<N; ++i) // rows
-			for (size_t j=i; j<N; ++j) // columns
+	int nrANZ = 0; // # of nonzeros on diagonal and upper triangular part of A
+	for (int i=0; i<N; ++i) // rows
+			for (int j=i; j<N; ++j) // columns
 				if (fabs(M(i,j)) > thresh)
 					++nrANZ;
 
@@ -972,10 +969,10 @@ Vector solve_ldl(const Matrix& M, const Vector& rhs) {
 	Ap[N] = nrANZ;
 
 	// copy in the full A matrix to compressed column form
-	size_t t = 0; // count the elements added
-	for (size_t j=0; j<N; ++j) { // columns
+	int t = 0; // count the elements added
+	for (int j=0; j<N; ++j) { // columns
 		Ap[j] = t;   // add to the column indices
-		for (size_t i=0; i<=j; ++i) { // rows
+		for (int i=0; i<=j; ++i) { // rows
 			const double& m = M(i,j);
 			if (fabs(m) > thresh) {
 				Ai[t] = i;
@@ -985,7 +982,7 @@ Vector solve_ldl(const Matrix& M, const Vector& rhs) {
 	}
 
 	// copy in RHS
-	for (size_t i = 0; i < N; ++i)
+	for (int i = 0; i < N; ++i)
 		b[i] = rhs(i);
 
 	// workspace variables
@@ -1000,13 +997,13 @@ Vector solve_ldl(const Matrix& M, const Vector& rhs) {
     // factorize A into LDL' (P and Pinv not used)
     LDL_symbolic (N, Ap, Ai, Lp, Parent, Lnz, Flag, NULL, NULL);
 
-    size_t nrLNZ = Lp[N]; // # of nonzeros below the diagonal of L
+    int nrLNZ = Lp[N]; // # of nonzeros below the diagonal of L
 
     // after getting size of L, initialize storage arrays
 	double * Lx = new double[nrLNZ];
 	int * Li = new int [nrLNZ];
 
-    size_t d = LDL_numeric (N, Ap, Ai, Ax, Lp, Parent, Lnz, Li, Lx, D, Y, Pattern,
+    int d = LDL_numeric (N, Ap, Ai, Ax, Lp, Parent, Lnz, Li, Lx, D, Y, Pattern,
     		Flag, NULL, NULL);
 
     if (d == N) {
@@ -1138,9 +1135,9 @@ Matrix square_root_positive(const Matrix& A) {
 }
 
 /* ************************************************************************* */
-Matrix expm(const Matrix& A, int K) {
+Matrix expm(const Matrix& A, size_t K) {
 	Matrix E = eye(A.size1()), A_k = eye(4);
-	for (int k=1;k<=K;k++) {
+	for(size_t k=1;k<=K;k++) {
 		A_k = A_k*A/k;
 		E = E + A_k;
 	}

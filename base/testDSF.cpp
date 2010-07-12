@@ -13,7 +13,6 @@ using namespace boost::assign;
 #include <CppUnitLite/TestHarness.h>
 
 #include "DSF.h"
-#include "Key.h"
 
 using namespace std;
 using namespace gtsam;
@@ -249,17 +248,16 @@ TEST(DSF, flatten) {
 
 /* ************************************************************************* */
 TEST(DSF, flatten2) {
-	Symbol x1('x',1);
-	Symbol x2('x',2), x3('x',3), x4('x',4);
-	list<Symbol> keys; keys += x1,x2,x3,x4;
-	DSFSymbol dsf(keys);
+	static string x1("x1"), x2("x2"), x3("x3"), x4("x4");
+	list<string> keys; keys += x1,x2,x3,x4;
+	DSF<string> dsf(keys);
 	dsf = dsf.makeUnion(x1,x2);
 	dsf = dsf.makeUnion(x3,x4);
 	dsf = dsf.makeUnion(x1,x3);
 
 	CHECK(dsf != dsf.flatten());
 
-	DSFSymbol expected2;
+	DSF<string> expected2;
 	expected2 = expected2.makePair(x1, x2);
 	expected2 = expected2.makePair(x1, x3);
 	expected2 = expected2.makePair(x1, x4);
