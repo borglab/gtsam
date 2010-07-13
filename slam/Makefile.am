@@ -57,7 +57,8 @@ headers += $(sources:.cpp=.h)
 pkginclude_HEADERS = $(headers)
 noinst_LTLIBRARIES = libslam.la
 libslam_la_SOURCES = $(sources)
-AM_CPPFLAGS = -I$(boost) -I../colamd -I../base -I../inference -I../linear -I../nonlinear -I../geometry 
+AM_CPPFLAGS = -I$(boost) -I$(top_srcdir) -I$(top_srcdir)/colamd -I$(top_srcdir)/base -I$(top_srcdir)/inference  
+AM_CPPFLAGS += -I$(top_srcdir)/linear -I$(top_srcdir)/nonlinear -I$(top_srcdir)/geometry 
 
 #----------------------------------------------------------------------------------------------------
 # rules to build local programs

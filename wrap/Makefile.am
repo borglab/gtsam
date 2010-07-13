@@ -5,7 +5,7 @@ testSpirit_SOURCES  = testSpirit.cpp
 testWrap_SOURCES = testWrap.cpp ${common}
 
 # generate local toolbox dir
-interfacePath = ../
+interfacePath = $(top_srcdir)
 moduleName = gtsam
 toolboxpath = ../toolbox
 nameSpace = "gtsam"
@@ -14,11 +14,11 @@ all:
 	./wrap ${interfacePath} ${moduleName} ${toolboxpath} ${nameSpace} ${mexFlags}
 
 # install the header files
-include_HEADERS = geometry.h utilities.h Argument.h Constructor.h Method.h Class.h Module.h wrap-matlab.h
+noinst_HEADERS = geometry.h utilities.h Argument.h Constructor.h Method.h Class.h Module.h wrap-matlab.h
 
 noinst_PROGRAMS = wrap
 wrap_SOURCES = ${common} wrap.cpp
-AM_CPPFLAGS = -I$(boost)
+AM_CPPFLAGS = -I$(boost) -I$(top_srcdir)
 AM_CXXFLAGS = -MMD
 AM_LDFLAGS = -L../CppUnitLite -lCppUnitLite $(BOOST_LDFLAGS)
 
@@ -29,7 +29,7 @@ install-exec-hook: all
 	install -d ${toolbox}/gtsam && \
 	cp -rf ../toolbox/* ${toolbox}/gtsam && \
 	install -d ${includedir}/wrap && \
-	cp -f wrap-matlab.h  ${includedir}/wrap/matlab.h
+	cp -f ${srcdir}/wrap-matlab.h  ${includedir}/wrap/matlab.h
 
 # clean local toolbox dir
 clean:

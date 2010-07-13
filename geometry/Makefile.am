@@ -32,7 +32,7 @@ headers += $(sources:.cpp=.h)
 pkginclude_HEADERS = $(headers)
 noinst_LTLIBRARIES = libgeometry.la
 libgeometry_la_SOURCES = $(sources)
-AM_CPPFLAGS = -I$(boost) -I../base
+AM_CPPFLAGS = -I$(boost) -I$(top_srcdir) -I$(top_srcdir)/base
 
 #----------------------------------------------------------------------------------------------------
 # rules to build local programs

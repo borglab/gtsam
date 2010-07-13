@@ -68,7 +68,7 @@ Installation:
 -------------
 To finally install the library go into the directory where you unpacked the 
 GTSAM library, run the command below for example:
-$]./configure --with-toolbox=$HOME/toolbox/ --with-boost=/opt/local/include/
+$] ./configure --with-toolbox=$HOME/toolbox/ --with-boost=/opt/local/include/
 
 where the path after --with-toolbox should point to the directory you want to have the gtsam
 matlab scripts installed in.
@@ -88,6 +88,19 @@ Set the path to this folder.
 After configure you makefile you have to compile the library
 Type:
 $] make
+$] make install
+
+Parallel Build
+----------------
+
+The above will put object files and executables in the source directories. If you like, it is 
+very easy to configure the libraries to put all these in a parallel build tree so they do not 
+clutter the source tree. To do this, instead of running configure in the gtsam directory itself, 
+run it in sub-directory of choice, e.g.:
+
+$] mkdir build
+$] cd build
+$] ../configure --with-toolbox=$HOME/toolbox/ --with-boost=/opt/local/include/
 $] make install
 
 Built-in Unit Tests:

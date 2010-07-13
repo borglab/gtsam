@@ -40,7 +40,7 @@ pkginclude_HEADERS = $(headers)
 noinst_LTLIBRARIES = libbase.la
 libbase_la_SOURCES = $(sources)
 
-AM_CPPFLAGS = -I$(boost)
+AM_CPPFLAGS = -I$(boost) -I$(top_srcdir)
 
 if USE_BLAS
 AM_CPPFLAGS += -DGT_USE_CBLAS

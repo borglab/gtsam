@@ -52,7 +52,7 @@ headers += $(sources:.cpp=.h)
 pkginclude_HEADERS = $(headers)
 noinst_LTLIBRARIES = libinference.la
 libinference_la_SOURCES = $(sources)
-AM_CPPFLAGS = -I$(boost) -I../colamd -I../base 
+AM_CPPFLAGS = -I$(boost) -I$(top_srcdir) -I$(top_srcdir)/colamd -I$(top_srcdir)/base 
 AM_CXXFLAGS =
 
 #----------------------------------------------------------------------------------------------------

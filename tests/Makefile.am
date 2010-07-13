@@ -18,8 +18,8 @@ noinst_PROGRAMS = timeGaussianFactorGraph
 # rules to build unit tests
 #----------------------------------------------------------------------------------------------------
 TESTS = $(check_PROGRAMS)
-AM_CPPFLAGS = -I$(boost) -I../colamd 
-AM_CPPFLAGS += -I../base -I../geometry -I../inference  -I../linear -I../nonlinear -I../slam 
+AM_CPPFLAGS = -I$(boost) -I$(top_srcdir)/colamd -I$(top_srcdir)/base -I$(top_srcdir)/geometry 
+AM_CPPFLAGS += -I$(top_srcdir) -I$(top_srcdir)/inference  -I$(top_srcdir)/linear -I$(top_srcdir)/nonlinear -I$(top_srcdir)/slam 
 AM_LDFLAGS = $(BOOST_LDFLAGS) $(boost_serialization) 
 LDADD = ../libgtsam.la ../CppUnitLite/libCppUnitLite.a  
 AM_DEFAULT_SOURCE_EXT = .cpp

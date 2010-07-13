@@ -38,7 +38,7 @@ headers += $(sources:.cpp=.h)
 pkginclude_HEADERS = $(headers)
 noinst_LTLIBRARIES = libnonlinear.la
 libnonlinear_la_SOURCES = $(sources)
-AM_CPPFLAGS = -I$(boost) -I../colamd -I../base -I../inference -I../linear
+AM_CPPFLAGS = -I$(boost) -I$(top_srcdir) -I$(top_srcdir)/colamd -I$(top_srcdir)/base -I$(top_srcdir)/inference -I$(top_srcdir)/linear
 AM_CXXFLAGS =
 
 #----------------------------------------------------------------------------------------------------
