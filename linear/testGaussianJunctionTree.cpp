@@ -1,9 +1,8 @@
 /*
- * testJunctionTree.cpp
+ * testGaussianJunctionTree.cpp
  *
- *   Created on: Jul 8, 2010
- *       Author: nikai
- *  Description:
+ * Created on: Jul 8, 2010
+ * @author Kai Ni
  */
 
 #include <iostream>
@@ -16,44 +15,11 @@ using namespace boost::assign;
 
 #define GTSAM_MAGIC_KEY
 
-#include "GaussianJunctionTree-inl.h"
+#include "Ordering.h"
+#include "GaussianJunctionTree.h"
 
 using namespace std;
 using namespace gtsam;
-
-/* ************************************************************************* */
-/**
- * x1 - x2 - x3 - x4
- * x3 x4
- *    x2 x1 : x3
- */
-TEST( GaussianFactorGraph, constructor )
-{
-	typedef GaussianFactorGraph::sharedFactor Factor;
-	SharedDiagonal model(Vector_(1, 0.2));
-	Factor factor1(new GaussianFactor("x1", Matrix_(1,1,1.), "x2", Matrix_(1,1,1.), Vector_(1,1.),  model));
-	Factor factor2(new GaussianFactor("x2", Matrix_(1,1,1.), "x3", Matrix_(1,1,1.), Vector_(1,1.),  model));
-	Factor factor3(new GaussianFactor("x3", Matrix_(1,1,1.), "x4", Matrix_(1,1,1.), Vector_(1,1.),  model));
-
-	GaussianFactorGraph fg;
-	fg.push_back(factor1);
-	fg.push_back(factor2);
-	fg.push_back(factor3);
-
-	Ordering ordering; ordering += "x2","x1","x3","x4";
-	GaussianJunctionTree<GaussianFactorGraph> junctionTree(fg, ordering);
-
-	Ordering frontal1; frontal1 += "x3", "x4";
-	Ordering frontal2; frontal2 += "x2", "x1";
-	Unordered sep1;
-	Unordered sep2; sep2 += "x3";
-	CHECK(assert_equal(frontal1, junctionTree.root()->frontal()));
-	CHECK(assert_equal(sep1,     junctionTree.root()->separator()));
-	LONGS_EQUAL(1,               junctionTree.root()->size());
-	CHECK(assert_equal(frontal2, junctionTree.root()->children()[0]->frontal()));
-	CHECK(assert_equal(sep2,     junctionTree.root()->children()[0]->separator()));
-	LONGS_EQUAL(2,               junctionTree.root()->children()[0]->size());
-}
 
 /* ************************************************************************* */
 /**
@@ -69,7 +35,7 @@ TEST( GaussianFactorGraph, constructor )
  *
  *  1  0  0  1
  */
-TEST( GaussianFactorGraph, eliminate )
+TEST( GaussianJunctionTree, eliminate )
 {
 	typedef GaussianFactorGraph::sharedFactor Factor;
 	SharedDiagonal model(Vector_(1, 0.5));
@@ -85,7 +51,7 @@ TEST( GaussianFactorGraph, eliminate )
 	fg.push_back(factor4);
 
 	Ordering ordering; ordering += "x2","x1","x3","x4";
-	GaussianJunctionTree<GaussianFactorGraph> junctionTree(fg, ordering);
+	GaussianJunctionTree junctionTree(fg, ordering);
 		BayesTree<GaussianConditional> bayesTree = junctionTree.eliminate<GaussianConditional>();
 
 	typedef BayesTree<GaussianConditional>::sharedConditional sharedConditional;

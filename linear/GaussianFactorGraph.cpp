@@ -16,7 +16,7 @@
 #include "FactorGraph-inl.h"
 #include "inference-inl.h"
 #include "iterative.h"
-#include "GaussianJunctionTree-inl.h"
+#include "GaussianJunctionTree.h"
 
 using namespace std;
 using namespace gtsam;
@@ -121,8 +121,8 @@ set<Symbol> GaussianFactorGraph::find_separator(const Symbol& key) const
 
 /* ************************************************************************* */
 GaussianConditional::shared_ptr
-GaussianFactorGraph::eliminateOne(const Symbol& key, bool old) {
-	if (old)
+GaussianFactorGraph::eliminateOne(const Symbol& key, bool enableJoinFactor) {
+	if (enableJoinFactor)
 		return gtsam::eliminateOne<GaussianFactor,GaussianConditional>(*this, key);
 	else
 		return eliminateOneMatrixJoin(key);
@@ -241,11 +241,11 @@ GaussianFactorGraph::eliminateOneMatrixJoin(const Symbol& key) {
 
 /* ************************************************************************* */
 GaussianBayesNet
-GaussianFactorGraph::eliminate(const Ordering& ordering, bool old)
+GaussianFactorGraph::eliminate(const Ordering& ordering, bool enableJoinFactor)
 {
 	GaussianBayesNet chordalBayesNet; // empty
 	BOOST_FOREACH(const Symbol& key, ordering) {
-		GaussianConditional::shared_ptr cg = eliminateOne(key, old);
+		GaussianConditional::shared_ptr cg = eliminateOne(key, enableJoinFactor);
 		chordalBayesNet.push_back(cg);
 	}
 	return chordalBayesNet;
@@ -299,7 +299,7 @@ VectorConfig GaussianFactorGraph::optimize(const Ordering& ordering, bool old)
 /* ************************************************************************* */
 VectorConfig GaussianFactorGraph::optimizeMultiFrontals(const Ordering& ordering)
 {
-	GaussianJunctionTree<GaussianFactorGraph> junctionTree(*this, ordering);
+	GaussianJunctionTree junctionTree(*this, ordering);
 
 	return junctionTree.optimize();
 }

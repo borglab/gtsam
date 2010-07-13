@@ -19,7 +19,7 @@ check_PROGRAMS += testVectorMap testVectorBTree
 # Gaussian Factor Graphs
 headers += GaussianFactorSet.h Factorization.h
 sources += GaussianFactor.cpp GaussianFactorGraph.cpp
-headers += GaussianJunctionTree.h GaussianJunctionTree-inl.h
+sources += GaussianJunctionTree.cpp 
 sources += GaussianConditional.cpp GaussianBayesNet.cpp
 sources += GaussianISAM.cpp
 check_PROGRAMS += testGaussianFactor testGaussianJunctionTree testGaussianConditional

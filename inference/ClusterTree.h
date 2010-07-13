@@ -1,9 +1,9 @@
 /*
- * JunctionTree.h
- *
- *   Created on: Feb 4, 2010
- *       Author: nikai
- *  Description: The junction tree
+ * ClusterTree.h
+ * Created on: July 13, 2010
+ * @author Kai Ni
+ * @author Frank Dellaert
+ * @brief: Collects factorgraph fragments defined on variable clusters, arranged in a tree
  */
 
 #pragma once
@@ -17,7 +17,7 @@ namespace gtsam {
 
 	/* ************************************************************************* */
 	template <class FG>
-	class JunctionTree : public Testable<JunctionTree<FG> > {
+	class ClusterTree : public Testable<ClusterTree<FG> > {
 	public:
 		// the class for subgraphs that also include the pointers to the parents and two children
 		class Clique : public FG {
@@ -28,7 +28,7 @@ namespace gtsam {
 			Ordering frontal_;                   // the frontal varaibles
 			Unordered separator_;                // the separator variables
 
-			friend class JunctionTree<FG>;
+			friend class ClusterTree<FG>;
 
 		public:
 
@@ -77,10 +77,10 @@ namespace gtsam {
 
 	public:
 		// constructor
-		JunctionTree() {}
+		ClusterTree() {}
 
 		// constructor given a factor graph and the elimination ordering
-		JunctionTree(FG& fg, const Ordering& ordering);
+		ClusterTree(FG& fg, const Ordering& ordering);
 
 		// return the root clique
 		sharedClique root() const { return root_; }
@@ -91,13 +91,13 @@ namespace gtsam {
 
 		// print the object
 		void print(const std::string& str) const {
-			std::cout << str << std::endl;
+			cout << str << endl;
 			if (root_.get()) root_->printTree("");
 		}
 
 		/** check equality */
-		bool equals(const JunctionTree<FG>& other, double tol = 1e-9) const;
+		bool equals(const ClusterTree<FG>& other, double tol = 1e-9) const;
 
-	}; // JunctionTree
+	}; // ClusterTree
 
 } // namespace gtsam

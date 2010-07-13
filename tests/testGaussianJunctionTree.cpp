@@ -1,5 +1,5 @@
 /*
- * testJunctionTree.cpp
+ * testGaussianJunctionTree.cpp
  *
  *   Created on: Jul 8, 2010
  *       Author: nikai
@@ -16,8 +16,9 @@ using namespace boost::assign;
 
 #define GTSAM_MAGIC_KEY
 
+#include "Ordering.h"
+#include "GaussianJunctionTree.h"
 #include "smallExample.h"
-#include "GaussianJunctionTree-inl.h"
 
 using namespace std;
 using namespace gtsam;
@@ -30,7 +31,7 @@ using namespace example;
 	 C3		    x1 : x2
 	 C4		  x7 : x6
 /* ************************************************************************* */
-TEST( GaussianFactorGraph, constructor2 )
+TEST( GaussianJunctionTree, constructor2 )
 {
 	// create a graph
 	GaussianFactorGraph fg = createSmoother(7);
@@ -38,7 +39,7 @@ TEST( GaussianFactorGraph, constructor2 )
 	// create an ordering
 	Ordering ordering; ordering += "x1","x3","x5","x7","x2","x6","x4";
 
-	GaussianJunctionTree<GaussianFactorGraph> junctionTree(fg, ordering);
+	GaussianJunctionTree junctionTree(fg, ordering);
 	Ordering frontal1; frontal1 += "x5", "x6", "x4";
 	Ordering frontal2; frontal2 += "x3", "x2";
 	Ordering frontal3; frontal3 += "x1";
@@ -62,7 +63,7 @@ TEST( GaussianFactorGraph, constructor2 )
 }
 
 /* ************************************************************************* *
-TEST( GaussianFactorGraph, optimizeMultiFrontal )
+TEST( GaussianJunctionTree, optimizeMultiFrontal )
 {
 	// create a graph
 	GaussianFactorGraph fg = createSmoother(7);

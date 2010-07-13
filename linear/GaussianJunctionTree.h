@@ -1,9 +1,9 @@
 /*
  * GaussianJunctionTree.h
- *
- *   Created on: Jul 12, 2010
- *       Author: nikai
- *  Description: the Gaussian junction tree
+ * Created on: Jul 12, 2010
+ * @author Kai Ni
+ * @author Frank Dellaert
+ * @brief: the Gaussian junction tree
  */
 
 #pragma once
@@ -18,22 +18,21 @@ namespace gtsam {
 	/**
 	 * GaussianJunctionTree that does the optimization
 	 */
-	template <class FG>
-	class GaussianJunctionTree: public JunctionTree<FG> {
+	class GaussianJunctionTree: public JunctionTree<GaussianFactorGraph> {
 	public:
-		typedef JunctionTree<FG> Base;
-		typedef typename JunctionTree<FG>::sharedClique sharedClique;
+		typedef JunctionTree<GaussianFactorGraph> Base;
+		typedef Base::sharedClique sharedClique;
 
 	protected:
 		// back-substitute in topological sort order (parents first)
-		void btreeBackSubstitue(typename BayesTree<GaussianConditional>::sharedClique current, VectorConfig& config);
+		void btreeBackSubstitue(BayesTree<GaussianConditional>::sharedClique current, VectorConfig& config);
 
 	public :
 
 		GaussianJunctionTree() : Base() {}
 
 		// constructor
-		GaussianJunctionTree(FG& fg, const Ordering& ordering) : Base(fg, ordering) {}
+		GaussianJunctionTree(GaussianFactorGraph& fg, const Ordering& ordering) : Base(fg, ordering) {}
 
 		// optimize the linear graph
 		VectorConfig optimize();

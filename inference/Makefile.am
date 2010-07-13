@@ -24,13 +24,13 @@ check_PROGRAMS += testSymbolicFactor testSymbolicFactorGraph testSymbolicBayesNe
 headers += inference.h inference-inl.h
 headers += graph.h graph-inl.h
 headers += FactorGraph.h FactorGraph-inl.h
+headers += ClusterTree.h ClusterTree-inl.h
 headers += JunctionTree.h JunctionTree-inl.h
 headers += BayesNet.h BayesNet-inl.h
 headers += BayesTree.h BayesTree-inl.h
 headers += ISAM.h ISAM-inl.h
 headers += ISAM2.h ISAM2-inl.h
-check_PROGRAMS += testFactorGraph testOrdering
-check_PROGRAMS += testBayesTree testISAM
+check_PROGRAMS += testFactorGraph testClusterTree testJunctionTree testBayesTree testISAM
 
 #----------------------------------------------------------------------------------------------------
 # discrete
