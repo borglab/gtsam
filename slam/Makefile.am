@@ -10,7 +10,7 @@ check_PROGRAMS =
 headers += Simulated2DConfig.h 
 headers += Simulated2DPosePrior.h Simulated2DPointPrior.h 
 headers += Simulated2DOdometry.h Simulated2DMeasurement.h 
-sources += simulated2D.cpp  
+sources += simulated2D.cpp smallExample.cpp
 check_PROGRAMS += testSimulated2D 
 
 # simulated2DOriented example
@@ -46,6 +46,7 @@ check_PROGRAMS += testVSLAMFactor testVSLAMGraph testVSLAMConfig
 
 # GaussianISAM2 is fairly SLAM-specific
 sources += GaussianISAM2.cpp
+check_PROGRAMS += testGaussianISAM2
 
 #----------------------------------------------------------------------------------------------------
 # Create a libtool library that is not installed
