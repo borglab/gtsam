@@ -28,6 +28,9 @@ namespace gtsam {
 
 	class Ordering;
 
+	/** A map from key to dimension, useful in various contexts */
+  typedef SymbolMap<int> Dimensions;
+
 /**
  * Base Class for a linear factor.
  * GaussianFactor is non-mutable (all methods const!).
@@ -163,7 +166,6 @@ public:
 		if (As_.size() < 2) throw std::invalid_argument("GaussianFactor: less than 2 keys!");
 		return (++(As_.begin()))->first;
 	}
-
 
 	/**
 	 * Find all variables and their dimensions

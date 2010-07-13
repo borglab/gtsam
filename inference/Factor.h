@@ -18,9 +18,6 @@
 
 namespace gtsam {
 
-	/** A map from key to dimension, useful in various contexts */
-  typedef SymbolMap<int> Dimensions;
-	
   /** 
    * A simple factor class to use in a factor graph.
    *
