@@ -15,18 +15,21 @@ using namespace boost::assign;
 
 #include "Ordering.h"
 #include "SymbolicFactorGraph.h"
+#include "JunctionTree.h"
+#include "ClusterTree-inl.h"
 #include "JunctionTree-inl.h"
 
 using namespace gtsam;
 
+// explicit instantiation and typedef
+template class JunctionTree<SymbolicFactorGraph>;
 typedef JunctionTree<SymbolicFactorGraph> SymbolicJunctionTree;
 
-/* ************************************************************************* */
-/**
+/* ************************************************************************* *
  * x1 - x2 - x3 - x4
  * x3 x4
  *    x2 x1 : x3
- */
+ ****************************************************************************/
 TEST( JunctionTree, constructor )
 {
 	SymbolicFactorGraph fg;

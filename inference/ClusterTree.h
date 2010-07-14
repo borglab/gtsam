@@ -10,38 +10,45 @@
 
 #include <set>
 #include <boost/shared_ptr.hpp>
-#include "BayesTree.h"
-#include "SymbolicConditional.h"
 
 namespace gtsam {
 
-	/* ************************************************************************* */
+	/**
+	 * A cluster-tree is associated with a factor graph and is defined as in Koller-Friedman:
+	 * each node k represents a subset C_k \sub X, and the tree is family preserving, in that
+	 * each factor f_i is associated with a single cluster and scope(f_i) \sub C_k.
+	 */
 	template <class FG>
 	class ClusterTree : public Testable<ClusterTree<FG> > {
-	public:
-		// the class for subgraphs that also include the pointers to the parents and two children
-		class Clique : public FG {
-		private:
-			typedef typename boost::shared_ptr<Clique> shared_ptr;
-			shared_ptr parent_;                  // the parent subgraph node
-			std::vector<shared_ptr> children_;   // the child cliques
-			Ordering frontal_;                   // the frontal varaibles
-			Unordered separator_;                // the separator variables
 
-			friend class ClusterTree<FG>;
+	public:
+
+		// the class for subgraphs that also include the pointers to the parents and two children
+		class Cluster : public FG {
+
+		public:
+
+			typedef typename boost::shared_ptr<Cluster> shared_ptr;
+
+		/* commented private out to make compile but needs to be addressed */
+
+			shared_ptr parent_;                  // the parent subgraph node
+			std::vector<shared_ptr> children_;   // the child clusters
+			Ordering frontal_;                   // the frontal variables
+			Unordered separator_;                // the separator variables
 
 		public:
 
 			// empty constructor
-			Clique() {}
+			Cluster() {}
 
 			// constructor with all the information
-			Clique(const FG& fgLocal, const Ordering& frontal, const Unordered& separator,
+			Cluster(const FG& fgLocal, const Ordering& frontal, const Unordered& separator,
 					 const shared_ptr& parent)
 				: frontal_(frontal), separator_(separator), FG(fgLocal), parent_(parent) {}
 
 			// constructor for an empty graph
-			Clique(const Ordering& frontal, const Unordered& separator, const shared_ptr& parent)
+			Cluster(const Ordering& frontal, const Unordered& separator, const shared_ptr& parent)
 				: frontal_(frontal), separator_(separator), parent_(parent) {}
 
 			// return the members
@@ -57,23 +64,15 @@ namespace gtsam {
 			void printTree(const std::string& indent) const;
 
 			// check equality
-			bool equals(const Clique& other) const;
+			bool equals(const Cluster& other) const;
 		};
 
-		// typedef for shared pointers to cliques
-		typedef typename Clique::shared_ptr sharedClique;
+		// typedef for shared pointers to clusters
+		typedef typename Cluster::shared_ptr sharedCluster;
 
 	protected:
-		// Root clique
-		sharedClique root_;
-
-	private:
-		// distribute the factors along the Bayes tree
-		sharedClique distributeFactors(FG& fg, const BayesTree<SymbolicConditional>::sharedClique clique);
-
-		// utility function called by eliminate
-		template <class Conditional>
-		std::pair<FG, BayesTree<Conditional> > eliminateOneClique(sharedClique fg_);
+		// Root cluster
+		sharedCluster root_;
 
 	public:
 		// constructor
@@ -82,16 +81,12 @@ namespace gtsam {
 		// constructor given a factor graph and the elimination ordering
 		ClusterTree(FG& fg, const Ordering& ordering);
 
-		// return the root clique
-		sharedClique root() const { return root_; }
-
-		// eliminate the factors in the subgraphs
-		template <class Conditional>
-		BayesTree<Conditional> eliminate();
+		// return the root cluster
+		sharedCluster root() const { return root_; }
 
 		// print the object
 		void print(const std::string& str) const {
-			cout << str << endl;
+			std::cout << str << std::endl;
 			if (root_.get()) root_->printTree("");
 		}
 

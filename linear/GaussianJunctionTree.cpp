@@ -8,6 +8,7 @@
 
 #include <boost/foreach.hpp>
 
+#include "ClusterTree-inl.h"
 #include "JunctionTree-inl.h"
 #include "GaussianJunctionTree.h"
 
