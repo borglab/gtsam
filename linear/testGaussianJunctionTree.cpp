@@ -17,6 +17,7 @@ using namespace boost::assign;
 
 #include "Ordering.h"
 #include "GaussianJunctionTree.h"
+#include "BayesTree-inl.h"
 
 using namespace std;
 using namespace gtsam;
