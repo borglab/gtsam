@@ -56,7 +56,7 @@ TEST( wrap, parse ) {
 		CHECK(m1.args.size()==0);
 		CHECK(m1.is_const);
 
-	} catch (CantOpenFile e) {
+	} catch (exception& e) {
 		FAIL(e.what());
 	}
 }
@@ -91,7 +91,7 @@ TEST( wrap, matlab_code ) {
 		CHECK(files_equal("expected/@Test/print.cpp"         , "actual/@Test/print.cpp"         ));
 
 		CHECK(files_equal("expected/make_geometry.m"   , "actual/make_geometry.m"   ));
-	} catch (CantOpenFile e) {
+	} catch (exception& e) {
 		FAIL(e.what()); // fails if file is in wrong place
 	}
 }
