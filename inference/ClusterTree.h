@@ -21,25 +21,23 @@ namespace gtsam {
 	template <class FG>
 	class ClusterTree : public Testable<ClusterTree<FG> > {
 
-	public:
+	protected:
 
 		// the class for subgraphs that also include the pointers to the parents and two children
 		struct Cluster : public FG {
 
 			typedef typename boost::shared_ptr<Cluster> shared_ptr;
 
-			shared_ptr parent_;                  // the parent cluster
-			std::vector<shared_ptr> children_;   // the child clusters
 			Ordering frontal_;                   // the frontal variables
 			Unordered separator_;                // the separator variables
+			shared_ptr parent_;                  // the parent cluster
+			std::vector<shared_ptr> children_;   // the child clusters
 
-			// empty constructor
+			// Construct empty clique
 			Cluster() {}
 
-			// return the members
-			const Ordering& frontal() const            { return frontal_;}
-			const Unordered& separator() const         { return separator_;}
-			const std::vector<shared_ptr>& children()  { return children_; }
+			/* Create a node with a single frontal variable */
+			Cluster(const FG& fg, const Symbol& key);
 
 			// print the object
 			void print(const std::string& indent) const;
@@ -52,16 +50,12 @@ namespace gtsam {
 		// typedef for shared pointers to clusters
 		typedef typename Cluster::shared_ptr sharedCluster;
 
-	protected:
 		// Root cluster
 		sharedCluster root_;
 
 	public:
-		// constructor
+		// constructor of empty tree
 		ClusterTree() {}
-
-		// constructor given a factor graph and the elimination ordering
-		ClusterTree(FG& fg, const Ordering& ordering);
 
 		// return the root cluster
 		sharedCluster root() const { return root_; }
