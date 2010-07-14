@@ -8,8 +8,8 @@
 
 #pragma once
 
-#include <set>
 #include <boost/shared_ptr.hpp>
+#include "Ordering.h"
 
 namespace gtsam {
 
@@ -24,40 +24,22 @@ namespace gtsam {
 	public:
 
 		// the class for subgraphs that also include the pointers to the parents and two children
-		class Cluster : public FG {
-
-		public:
+		struct Cluster : public FG {
 
 			typedef typename boost::shared_ptr<Cluster> shared_ptr;
 
-		/* commented private out to make compile but needs to be addressed */
-
-			shared_ptr parent_;                  // the parent subgraph node
+			shared_ptr parent_;                  // the parent cluster
 			std::vector<shared_ptr> children_;   // the child clusters
 			Ordering frontal_;                   // the frontal variables
 			Unordered separator_;                // the separator variables
 
-		public:
-
 			// empty constructor
 			Cluster() {}
-
-			// constructor with all the information
-			Cluster(const FG& fgLocal, const Ordering& frontal, const Unordered& separator,
-					 const shared_ptr& parent)
-				: frontal_(frontal), separator_(separator), FG(fgLocal), parent_(parent) {}
-
-			// constructor for an empty graph
-			Cluster(const Ordering& frontal, const Unordered& separator, const shared_ptr& parent)
-				: frontal_(frontal), separator_(separator), parent_(parent) {}
 
 			// return the members
 			const Ordering& frontal() const            { return frontal_;}
 			const Unordered& separator() const         { return separator_;}
 			const std::vector<shared_ptr>& children()  { return children_; }
-
-			// add a child node
-			void addChild(const shared_ptr& child) { children_.push_back(child); }
 
 			// print the object
 			void print(const std::string& indent) const;

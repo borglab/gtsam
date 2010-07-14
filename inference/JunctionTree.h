@@ -23,34 +23,37 @@ namespace gtsam {
 	 * represent the clique tree associated with a Bayes net, and the JunctionTree is
 	 * used to collect the factors associated with each clique during the elimination process.
 	 */
-	template <class FG>
-	class JunctionTree : public ClusterTree<FG> {
+	template<class FG>
+	class JunctionTree: public ClusterTree<FG> {
 
 	public:
 
-		/**
-		 * In a junction tree each cluster is associated with a clique
-		 */
+		// In a junction tree each cluster is associated with a clique
 		typedef typename ClusterTree<FG>::Cluster Clique;
 		typedef typename Clique::shared_ptr sharedClique;
 
+		// And we will frequently refer to a symbolic Bayes tree
+		typedef BayesTree<SymbolicConditional> SymbolicBayesTree;
+
 	private:
 		// distribute the factors along the Bayes tree
-		sharedClique distributeFactors(FG& fg, const BayesTree<SymbolicConditional>::sharedClique clique);
+		sharedClique distributeFactors(FG& fg,
+				const SymbolicBayesTree::sharedClique clique);
 
 		// utility function called by eliminate
-		template <class Conditional>
+		template<class Conditional>
 		std::pair<FG, BayesTree<Conditional> > eliminateOneClique(sharedClique fg_);
 
 	public:
 		// constructor
-		JunctionTree() {}
+		JunctionTree() {
+		}
 
 		// constructor given a factor graph and the elimination ordering
 		JunctionTree(FG& fg, const Ordering& ordering);
 
 		// eliminate the factors in the subgraphs
-		template <class Conditional>
+		template<class Conditional>
 		BayesTree<Conditional> eliminate();
 
 	}; // JunctionTree
