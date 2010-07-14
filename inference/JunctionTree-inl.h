@@ -51,10 +51,9 @@ namespace gtsam {
 		// collect the factors
 		typedef vector<typename FG::sharedFactor> Factors;
 		BOOST_FOREACH(const Symbol& frontal, clique->frontal_) {
-			Factors factors = fg.template findAndRemoveFactors<Factors>(frontal);
-			BOOST_FOREACH(const typename FG::sharedFactor& factor_, factors) {
+			Factors factors = fg.template findAndRemoveFactors(frontal);
+			BOOST_FOREACH(const typename FG::sharedFactor& factor_, factors)
 				clique->push_back(factor_);
-			}
 		}
 
 		return clique;

@@ -201,8 +201,7 @@ std::pair<Matrix, SharedDiagonal> combineFactorsAndCreateMatrix(
 GaussianConditional::shared_ptr
 GaussianFactorGraph::eliminateOneMatrixJoin(const Symbol& key) {
 	// find and remove all factors connected to key
-	typedef vector<GaussianFactor::shared_ptr> Factors;
-	Factors factors = findAndRemoveFactors<Factors>(key);
+	vector<GaussianFactor::shared_ptr> factors = findAndRemoveFactors(key);
 
 	// Collect all dimensions as well as the set of separator keys
 	set<Symbol> separator;

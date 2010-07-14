@@ -47,7 +47,19 @@ namespace gtsam {
 		typedef SymbolMap<std::list<size_t> > Indices;
 		Indices indices_;
 
+		/** Associate factor index with the variables connected to the factor */
+		void associateFactor(size_t index, const sharedFactor& factor);
+
+		/**
+		 * Return an ordering in first argument, potentially using a set of
+		 * keys that need to appear last, and potentially restricting scope
+		 */
+		void getOrdering(Ordering& ordering, const std::set<Symbol>& lastKeys,
+				boost::optional<const std::set<Symbol>&> scope = boost::none) const;
+
 	public:
+
+		/** ------------------ Creating Factor Graphs ---------------------------- */
 
 		/** Default constructor */
 		FactorGraph() {}
@@ -56,6 +68,14 @@ namespace gtsam {
 		template<class Conditional>
 		FactorGraph(const BayesNet<Conditional>& bayesNet);
 
+		/** Add a factor */
+		void push_back(sharedFactor factor);
+
+		/** push back many factors */
+		void push_back(const FactorGraph<Factor>& factors);
+
+		/** ------------------ Querying Factor Graphs ---------------------------- */
+
 		/** print out graph */
 		void print(const std::string& s = "FactorGraph") const;
 
@@ -63,32 +83,17 @@ namespace gtsam {
 		bool equals(const FactorGraph& fg, double tol = 1e-9) const;
 
 		/** STL begin and end, so we can use BOOST_FOREACH */
-
-		inline       iterator begin()       { return factors_.begin();}
 		inline const_iterator begin() const { return factors_.begin();}
-		inline       iterator end()         { return factors_.end();  }
 		inline const_iterator end()   const { return factors_.end();  }
 
 		/** Get a specific factor by index */
 		inline sharedFactor operator[](size_t i) const {return factors_[i];}
-
-		/** delete factor without re-arranging indexes by inserting a NULL pointer */
-		inline void remove(size_t i) { factors_[i].reset();}
 
 		/** return the number of factors and NULLS */
 		inline size_t size() const { return factors_.size();}
 
 		/** return the number valid factors */
 		size_t nrFactors() const;
-
-		/** Add a factor */
-		void push_back(sharedFactor factor);
-
-		/** push back many factors */
-		void push_back(const FactorGraph<Factor>& factors);
-
-		/** replace a factor by index */
-		void replace(size_t index, sharedFactor factor);
 
 		/** return keys in some random order */
 		Ordering keys() const;
@@ -101,39 +106,29 @@ namespace gtsam {
 			return !(indices_.find(key)==indices_.end());
 		}
 
-		/** remove singleton variables and the related factors */
-		std::pair<FactorGraph<Factor>, std::set<Symbol> > removeSingletons();
-
-		/**
-		 * Compute colamd ordering, including I/O, constrained ordering, and shared pointer version
-		 */
-		void getOrdering(Ordering& ordering, const std::set<Symbol>& lastKeys, boost::optional<const std::set<Symbol>&> interested = boost::none) const;
-		Ordering getOrdering() const;
-		Ordering getOrdering(const std::set<Symbol>& interested) const;
-		Ordering getConstrainedOrdering(const std::set<Symbol>& lastKeys) const;
-		boost::shared_ptr<Ordering>  getOrdering_() const;
-
     /**
      * Return indices for all factors that involve the given node
      * @param key the key for the given node
      */
     std::list<size_t> factors(const Symbol& key) const;
 
-    /**
-     * find all the factors that involve the given node and remove them
-     * from the factor graph
-     * @param key the key for the given node
-     */
-    template<class Factors>
-    Factors findAndRemoveFactors(const Symbol& key);
+		/**
+		 * Compute colamd ordering, including I/O, constrained ordering,
+		 * and shared pointer version.
+		 */
+		Ordering getOrdering() const;
+		boost::shared_ptr<Ordering> getOrdering_() const;
+		Ordering getOrdering(const std::set<Symbol>& scope) const;
+		Ordering getConstrainedOrdering(const std::set<Symbol>& lastKeys) const;
 
 		/**
 		 * find the minimum spanning tree using boost graph library
 		 */
-		template<class Key, class Factor2> PredecessorMap<Key> findMinimumSpanningTree() const;
+		template<class Key, class Factor2> PredecessorMap<Key>
+				findMinimumSpanningTree() const;
 
 		/**
-		 * Split the graph into two parts: one corresponds to the given spanning tre,
+		 * Split the graph into two parts: one corresponds to the given spanning tree,
 		 * and the other corresponds to the rest of the factors
 		 */
 		template<class Key, class Factor2> void split(const PredecessorMap<Key>& tree,
@@ -142,16 +137,37 @@ namespace gtsam {
 		/**
 		 * find the minimum spanning tree using DSF
 		 */
-		std::pair<FactorGraph<Factor>, FactorGraph<Factor> > splitMinimumSpanningTree() const;
+		std::pair<FactorGraph<Factor> , FactorGraph<Factor> >
+				splitMinimumSpanningTree() const;
 
 		/**
 		 * Check consistency of the index map, useful for debugging
 		 */
 		void checkGraphConsistency() const;
 
+		/** ----------------- Modifying Factor Graphs ---------------------------- */
+
+		/** STL begin and end, so we can use BOOST_FOREACH */
+		inline       iterator begin()       { return factors_.begin();}
+		inline       iterator end()         { return factors_.end();  }
+
+		/** delete factor without re-arranging indexes by inserting a NULL pointer */
+		inline void remove(size_t i) { factors_[i].reset();}
+
+		/** replace a factor by index */
+		void replace(size_t index, sharedFactor factor);
+
+    /**
+     * Find all the factors that involve the given node and remove them
+     * from the factor graph
+     * @param key the key for the given node
+     */
+    std::vector<sharedFactor> findAndRemoveFactors(const Symbol& key);
+
+		/** remove singleton variables and the related factors */
+		std::pair<FactorGraph<Factor>, std::set<Symbol> > removeSingletons();
+
 	private:
-		/** Associate factor index with the variables connected to the factor */
-		void associateFactor(size_t index, const sharedFactor& factor);
 
 		/** Serialization function */
 		friend class boost::serialization::access;
@@ -162,15 +178,6 @@ namespace gtsam {
 		}
 	}; // FactorGraph
 
-  /**
-   * Extract and combine all the factors that involve a given node
-   * Put this here as not all Factors have a combine constructor
-   * @param key the key for the given node
-   * @return the combined linear factor
-   */
-	template<class Factor> boost::shared_ptr<Factor>
-		removeAndCombineFactors(FactorGraph<Factor>& factorGraph, const Symbol& key);
-
 	/**
    * static function that combines two factor graphs
    * @param const &fg1 Linear factor graph
@@ -179,6 +186,15 @@ namespace gtsam {
    */
 	template<class Factor>
 	FactorGraph<Factor> combine(const FactorGraph<Factor>& fg1, const FactorGraph<Factor>& fg2);
+
+  /**
+   * Extract and combine all the factors that involve a given node
+   * Put this here as not all Factors have a combine constructor
+   * @param key the key for the given node
+   * @return the combined linear factor
+   */
+	template<class Factor> boost::shared_ptr<Factor>
+		removeAndCombineFactors(FactorGraph<Factor>& factorGraph, const Symbol& key);
 
 } // namespace gtsam
 

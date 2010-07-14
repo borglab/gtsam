@@ -46,7 +46,7 @@ TEST( SymbolicFactorGraph, findAndRemoveFactors )
 	SymbolicFactorGraph actual(factorGraph);
   SymbolicFactor::shared_ptr f1 = actual[0];
   SymbolicFactor::shared_ptr f3 = actual[2];
-	actual.findAndRemoveFactors<SymbolicFactorGraph>("x2");
+	actual.findAndRemoveFactors("x2");
 
 	// construct expected graph after find_factors_and_remove
 	SymbolicFactorGraph expected;

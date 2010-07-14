@@ -552,32 +552,7 @@ TEST( GaussianFactorGraph, findAndRemoveFactors )
   GaussianFactor::shared_ptr f2 = fg[2];
 
   // call the function
-  vector<GaussianFactor::shared_ptr> factors = fg.findAndRemoveFactors
-  		<vector<GaussianFactor::shared_ptr> >("x1");
-
-  // Check the factors
-  CHECK(f0==factors[0]);
-  CHECK(f1==factors[1]);
-  CHECK(f2==factors[2]);
-
-  // CHECK if the factors are deleted from the factor graph
-  LONGS_EQUAL(1,fg.nrFactors());
-  }
-
-/* ************************************************************************* */
-TEST( GaussianFactorGraph, findAndRemoveFactors_twice )
-{
-	// create the graph
-	GaussianFactorGraph fg = createGaussianFactorGraph();
-
-  // We expect to remove these three factors: 0, 1, 2
-  GaussianFactor::shared_ptr f0 = fg[0];
-  GaussianFactor::shared_ptr f1 = fg[1];
-  GaussianFactor::shared_ptr f2 = fg[2];
-
-  // call the function
-  vector<GaussianFactor::shared_ptr> factors = fg.findAndRemoveFactors
-  		<vector<GaussianFactor::shared_ptr> >("x1");
+  vector<GaussianFactor::shared_ptr> factors = fg.findAndRemoveFactors("x1");
 
   // Check the factors
   CHECK(f0==factors[0]);
