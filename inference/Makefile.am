@@ -26,11 +26,12 @@ headers += graph.h graph-inl.h
 headers += FactorGraph.h FactorGraph-inl.h
 headers += ClusterTree.h ClusterTree-inl.h
 headers += JunctionTree.h JunctionTree-inl.h
+headers += EliminationTree.h EliminationTree-inl.h
 headers += BayesNet.h BayesNet-inl.h
 headers += BayesTree.h BayesTree-inl.h
 headers += ISAM.h ISAM-inl.h
 headers += ISAM2.h ISAM2-inl.h
-check_PROGRAMS += testFactorGraph testClusterTree testJunctionTree testBayesTree testISAM
+check_PROGRAMS += testFactorGraph testClusterTree testEliminationTree testJunctionTree testBayesTree testISAM
 
 #----------------------------------------------------------------------------------------------------
 # discrete

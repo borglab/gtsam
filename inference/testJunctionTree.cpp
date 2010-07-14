@@ -1,6 +1,6 @@
 /**
  * @file    testJunctionTree.cpp
- * @brief   Unit tests for Bayes Tree
+ * @brief   Unit tests for Junction Tree
  * @author  Kai Ni
  * @author  Frank Dellaert
  */

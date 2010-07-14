@@ -1,9 +1,9 @@
 /*
  * JunctionTree.h
- *
- *   Created on: Feb 4, 2010
- *       Author: nikai
- *  Description: The junction tree
+ * Created on: Feb 4, 2010
+ * @Author: Kai Ni
+ * @Author: Frank Dellaert
+ * @brief: The junction tree
  */
 
 #pragma once

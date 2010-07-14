@@ -1,9 +1,9 @@
 /*
  * JunctionTree-inl.h
- *
- *   Created on: Feb 4, 2010
- *       Author: nikai
- *  Description: the junction tree
+ * Created on: Feb 4, 2010
+ * @Author: Kai Ni
+ * @Author: Frank Dellaert
+ * @brief: The junction tree, template bodies
  */
 
 #pragma once
