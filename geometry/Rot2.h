@@ -54,8 +54,14 @@ namespace gtsam {
     /** Named constructor that behaves as atan2, i.e., y,x order (!) and normalizes */
   	static Rot2 atan2(double y, double x);
 
-  	/** return angle */
+  	/** return angle (RADIANS) */
     double theta() const { return ::atan2(s_,c_); }
+
+    /** return angle (DEGREES) */
+    double degrees() const {
+    	const double degree = M_PI / 180;
+    	return theta() / degree;
+    }
 
     /** return cos */
     inline double c() const { return c_; }
