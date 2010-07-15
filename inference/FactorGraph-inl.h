@@ -430,18 +430,16 @@ namespace gtsam {
 
 		// find all factor indices associated with the key
 		Indices::const_iterator it = indices_.find(key);
-		if (it == indices_.end()) throw std::invalid_argument(
-				"FactorGraph::findAndRemoveFactors: key " + (string) key + " not found");
-		const list<size_t>& factorsAssociatedWithKey = it->second;
-
 		vector<sharedFactor> found;
-		BOOST_FOREACH(const size_t& i, factorsAssociatedWithKey) {
+		if (it != indices_.end()) {
+			const list<size_t>& factorsAssociatedWithKey = it->second;
+			BOOST_FOREACH(const size_t& i, factorsAssociatedWithKey) {
 				sharedFactor& fi = factors_.at(i); // throws exception !
 				if (fi == NULL) continue; // skip NULL factors
 				found.push_back(fi); // add to found
 				fi.reset(); // set factor to NULL == remove(i)
 			}
-
+		}
 		indices_.erase(key);
 
 		return found;
