@@ -9,6 +9,7 @@
 #pragma once
 
 #include <stdexcept>
+#include <functional>
 #include <boost/foreach.hpp>
 #include "EliminationTree.h"
 
@@ -52,9 +53,12 @@ namespace gtsam {
 	EliminationTree<FG>::EliminationTree(const OrderedGraphs& graphs) :
 		nrVariables_(graphs.size()), nodes_(nrVariables_) {
 
-		// Create a temporary map from key to ordering index
+		// Get ordering by (map first graphs)
 		Ordering ordering;
-		transform(graphs.begin(), graphs.end(), std::back_inserter(ordering), getName);
+		transform(graphs.begin(), graphs.end(), back_inserter(ordering),
+				_Select1st<typename OrderedGraphs::value_type> ());
+
+		// Create a temporary map from key to ordering index
 		IndexTable<Symbol> indexTable(ordering);
 
 		// Go over the collection in reverse elimination order
@@ -68,7 +72,7 @@ namespace gtsam {
 	EliminationTree<FG>::EliminationTree(FG& fg, const Ordering& ordering) :
 		nrVariables_(ordering.size()), nodes_(nrVariables_) {
 
-		// Loop over all variables and get factors that have it
+		// Loop over all variables and get factors that are connected
 		OrderedGraphs graphs;
 		BOOST_FOREACH(const Symbol& key, ordering) {
 			// TODO: a collection of factors is a factor graph and this should be returned

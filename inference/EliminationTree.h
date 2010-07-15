@@ -17,7 +17,7 @@ namespace gtsam {
 	/**
 	 * An elimination tree (see Gilbert01bit) associated with a factorg raph and an ordering
 	 * is a cluster-tree where there is one node j for each variable, and the parent of each node
-	 * corresponds to the first variable in the ordering that variable j is connected to.
+	 * corresponds to the first variable up the ordering in the Cholesky factor that j is connected to.
 	 */
 	template<class FG>
 	class EliminationTree: public ClusterTree<FG> {
@@ -40,10 +40,6 @@ namespace gtsam {
 		/** Map from ordering index to Nodes */
 		typedef std::vector<sharedNode> Nodes;
 		Nodes nodes_;
-
-		static inline Symbol getName(const NamedGraph& namedGraph) {
-			return namedGraph.first;
-		}
 
 		/**
 		 * add a factor graph fragment with given frontal key into the tree. Assumes
