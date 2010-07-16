@@ -69,6 +69,7 @@ namespace gtsam {
 		 * ISAM2. (update_internal provides access to list of orphans for drawing purposes)
 		 */
 		void linear_update(const FactorGraph<GaussianFactor>& newFactors);
+		void find_all(sharedClique clique, std::list<Symbol>& keys, const std::list<Symbol>& marked); // helper function
 		void fluid_relinearization(double relinearize_threshold);
 		void update_internal(const NonlinearFactorGraph<Config>& newFactors,
 				const Config& newTheta, Cliques& orphans,
