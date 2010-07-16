@@ -62,8 +62,11 @@ AM_CXXFLAGS =
 TESTS = $(check_PROGRAMS)
 AM_LDFLAGS = $(BOOST_LDFLAGS) $(boost_serialization) 
 LDADD = libinference.la ../base/libbase.la 
-LDADD += ../CppUnitLite/libCppUnitLite.a ../colamd/libcolamd.la ../ldl/libldl.la 
+LDADD += ../CppUnitLite/libCppUnitLite.a ../colamd/libcolamd.la 
 AM_DEFAULT_SOURCE_EXT = .cpp
+if USE_LDL
+LDADD += libldl.la 
+endif 
 
 # rule to run an executable
 %.run: % $(LDADD)

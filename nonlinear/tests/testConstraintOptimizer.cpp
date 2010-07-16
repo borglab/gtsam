@@ -4,6 +4,8 @@
  * @author Alex Cunningham
  */
 
+/** IMPORTANT NOTE: this file is only compiled when LDL is available */
+
 #include <iostream>
 #include <limits>
 

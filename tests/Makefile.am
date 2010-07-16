@@ -3,13 +3,17 @@
 # More elaborate unit tests that test functionality with slam examples
 #----------------------------------------------------------------------------------------------------
 
-check_PROGRAMS = testBayesNetPreconditioner testConstraintOptimizer 
+check_PROGRAMS = testBayesNetPreconditioner 
 check_PROGRAMS += testGaussianBayesNet testGaussianFactor testGaussianFactorGraph 
 check_PROGRAMS += testGaussianISAM testGraph
 check_PROGRAMS += testInference testIterative testGaussianJunctionTree 
 check_PROGRAMS += testNonlinearEquality testNonlinearFactor testNonlinearFactorGraph
 check_PROGRAMS += testNonlinearOptimizer testSQP testSubgraphPreconditioner
 check_PROGRAMS += testSymbolicBayesNet testSymbolicFactorGraph testTupleConfig
+
+if USE_LDL
+check_PROGRAMS = testConstraintOptimizer 
+endif
 
 # Timing tests
 noinst_PROGRAMS = timeGaussianFactorGraph

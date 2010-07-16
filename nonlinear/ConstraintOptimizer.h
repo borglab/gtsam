@@ -4,6 +4,13 @@
  * @author Alex Cunningham
  */
 
+/**
+ * IMPORTANT NOTE: This is an EXPERIMENTAL system that is not ready for use!
+ * DO NOT USE if you actually wanted to accomplish something
+ *
+ * REQUIRES --enable-ldl flag to be set for this class to work, not compiled otherwise
+ */
+
 #pragma once
 
 #include <boost/optional.hpp>
@@ -75,5 +82,4 @@ namespace gtsam {
 			double (*penalty)(const Vector&), size_t maxIt = 10);
 
 } // \namespace gtsam
-
 

@@ -9,10 +9,10 @@ ACLOCAL_AMFLAGS = -I m4
 AUTOMAKE_OPTIONS = foreign
 
 # All the sub-directories that need to be built
-SUBDIRS = CppUnitLite colamd ldl spqr_mini base geometry inference linear nonlinear slam . tests wrap  
+SUBDIRS = CppUnitLite colamd spqr_mini base geometry inference linear nonlinear slam . tests wrap  
 
 # And the corresponding libraries produced
-SUBLIBS = colamd/libcolamd.la ldl/libldl.la \
+SUBLIBS = colamd/libcolamd.la \
           base/libbase.la geometry/libgeometry.la inference/libinference.la \
           linear/liblinear.la nonlinear/libnonlinear.la slam/libslam.la
 

@@ -39,8 +39,11 @@ AM_CPPFLAGS = -I$(boost) -I$(top_srcdir) -I$(top_srcdir)/base
 #----------------------------------------------------------------------------------------------------
 TESTS = $(check_PROGRAMS)
 AM_LDFLAGS = $(BOOST_LDFLAGS) $(boost_serialization) 
-LDADD = libgeometry.la ../base/libbase.la ../ldl/libldl.la ../CppUnitLite/libCppUnitLite.a
+LDADD = libgeometry.la ../base/libbase.la ../CppUnitLite/libCppUnitLite.a
 AM_DEFAULT_SOURCE_EXT = .cpp
+if USE_LDL
+LDADD += libldl.la 
+endif  
 
 # rule to run an executable
 %.run: % $(LDADD)

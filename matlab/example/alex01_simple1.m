@@ -1,4 +1,6 @@
 % Script to perform SQP on a simple example from the SQP tutorial
+% This makes use of LDL solving of a full quadratic programming
+% problem
 % 
 % Problem:
 %  min(x) f(x) = (x2-2)^2 - x1^2
@@ -32,7 +34,7 @@ for i=1:maxIt
     dcx = [8*x1; 2*x2]; 
     dL = dfx - lam * dcx;
 
-    % update the hessian (BFGS)
+    % update the hessian (BFGS) - note: this does not use the full lagrangian
     if (i>1)
         Bis = Bi*s;
         y = dfx - prev_dfx;

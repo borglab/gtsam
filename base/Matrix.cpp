@@ -34,7 +34,9 @@ extern "C" {
 #include <boost/numeric/ublas/vector_proxy.hpp>
 #include <boost/tuple/tuple.hpp>
 
-#include <ldl/ldl.h>
+#ifdef GT_USE_LDL
+#include <suitesparse/ldl.h>
+#endif
 
 #include "Matrix.h"
 #include "Vector.h"
@@ -972,6 +974,7 @@ Matrix RtR(const Matrix &A)
 }
 
 /* ************************************************************************* */
+#ifdef GT_USE_LDL
 Vector solve_ldl(const Matrix& M, const Vector& rhs) {
 
 	int N = M.size1(); // size of the matrix
@@ -1052,6 +1055,7 @@ Vector solve_ldl(const Matrix& M, const Vector& rhs) {
 
     return result;
 }
+#endif
 
 /*
  * This is not ultra efficient, but not terrible, either.

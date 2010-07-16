@@ -7,7 +7,6 @@
 
 #include <iostream>
 #include <CppUnitLite/TestHarness.h>
-//#include <ldl/ldl.h>
 #include <boost/tuple/tuple.hpp>
 #include <boost/foreach.hpp>
 #include <boost/numeric/ublas/matrix_proxy.hpp>
@@ -966,6 +965,7 @@ TEST( matrix, transposeMultiplyAdd )
 }
 
 /* ************************************************************************* */
+#ifdef GT_USE_LDL
 TEST( matrix, LDL_factorization ) {
 
 	// run demo inside Matrix.cpp code
@@ -994,6 +994,7 @@ TEST( matrix, LDL_factorization ) {
     CHECK(assert_equal(expected, actual));
 
 }
+#endif
 
 /* ************************************************************************* */
 TEST( matrix, linear_dependent )

@@ -4,12 +4,11 @@
 AC_PREREQ(2.59)
 AC_INIT(gtsam, 0.0.0, dellaert@cc.gatech.edu)
 AM_INIT_AUTOMAKE(gtsam, 0.0.0)
-AC_OUTPUT(Makefile CppUnitLite/Makefile colamd/Makefile ldl/Makefile spqr_mini/Makefile base/Makefile inference/Makefile linear/Makefile geometry/Makefile nonlinear/Makefile slam/Makefile tests/Makefile wrap/Makefile)
+AC_OUTPUT(Makefile CppUnitLite/Makefile colamd/Makefile spqr_mini/Makefile base/Makefile inference/Makefile linear/Makefile geometry/Makefile nonlinear/Makefile slam/Makefile tests/Makefile wrap/Makefile)
 AC_CONFIG_MACRO_DIR([m4])
 AC_CONFIG_HEADER([config.h])
 AC_CONFIG_SRCDIR([CppUnitLite/Test.cpp])
 AC_CONFIG_SRCDIR([colamd/colamd.c])
-AC_CONFIG_SRCDIR([ldl/ldl.cpp])
 AC_CONFIG_SRCDIR([spqr_mini/spqr_front.cpp])
 AC_CONFIG_SRCDIR([base/DSFVector.cpp])
 AC_CONFIG_SRCDIR([geometry/Cal3_S2.cpp])
@@ -60,7 +59,7 @@ AC_ARG_ENABLE([blas],
        no)  blas=false ;;
        *) AC_MSG_ERROR([bad value ${enableval} for --enable-blas]) ;;
      esac],[blas=false])
-
+ak
 AM_CONDITIONAL([USE_BLAS], test x$blas = xtrue)
 AM_CONDITIONAL([USE_BLAS_MACOS], [test x$blas = xtrue && test x$ISMAC = xtrue])
 AM_CONDITIONAL([USE_BLAS_LINUX], [test x$blas = xtrue && test x$ISMAC = xfalse])
@@ -91,6 +90,17 @@ AC_ARG_ENABLE([spqr],
      esac],[spqr=false])
 
 AM_CONDITIONAL([USE_SPQR], [test x$spqr = xtrue])
+
+# enable using LDL library from SuiteSparse
+AC_ARG_ENABLE([ldl],
+     [  --enable-ldl    Enable LDL library support],
+     [case "${enableval}" in
+       yes) ldl=true ;;
+       no)  ldl=false ;;
+       *) AC_MSG_ERROR([bad value ${enableval} for --enable-debug]) ;;
+     esac],[ldl=false])
+
+AM_CONDITIONAL([USE_LDL], [test x$ldl = xtrue])
 
 # enable profiling
 AC_ARG_ENABLE([profiling],

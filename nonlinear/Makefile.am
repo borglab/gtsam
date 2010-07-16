@@ -26,8 +26,10 @@ headers += NonlinearEquality.h
 check_PROGRAMS += tests/testNonlinearConstraint  
 
 # SQP
+if USE_LDL
 sources += ConstraintOptimizer.cpp
 check_PROGRAMS += tests/testConstraintOptimizer
+endif
 
 #----------------------------------------------------------------------------------------------------
 # Create a libtool library that is not installed
@@ -47,8 +49,11 @@ AM_CXXFLAGS =
 TESTS = $(check_PROGRAMS)
 AM_LDFLAGS = $(BOOST_LDFLAGS) $(boost_serialization) 
 LDADD = libnonlinear.la ../linear/liblinear.la ../inference/libinference.la ../base/libbase.la 
-LDADD += ../CppUnitLite/libCppUnitLite.a ../colamd/libcolamd.la ../ldl/libldl.la 
+LDADD += ../CppUnitLite/libCppUnitLite.a ../colamd/libcolamd.la 
 AM_DEFAULT_SOURCE_EXT = .cpp
+if USE_LDL
+LDADD += libldl.la 
+endif 
 
 # rule to run an executable
 %.run: % $(LDADD)
