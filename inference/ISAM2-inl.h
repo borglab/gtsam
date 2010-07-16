@@ -384,7 +384,7 @@ namespace gtsam {
 		BayesNet<GaussianConditional> affectedBayesNet;
 		this->removeTop(affectedSymbols, affectedBayesNet, orphans);
 		// remember original ordering
-//		Ordering original_ordering = affectedBayesNet.ordering();
+		Ordering original_ordering = affectedBayesNet.ordering();
 
 		boost::shared_ptr<GaussianFactorGraph> factors;
 
@@ -393,8 +393,6 @@ namespace gtsam {
 		list<Symbol> tmp = affectedBayesNet.ordering();
 		affectedKeys.insert(tmp.begin(), tmp.end());
 		factors = relinearizeAffectedFactors(affectedKeys);
-
-		Ordering original_ordering = factors->getOrdering(); // todo - hack
 
 		// add the cached intermediate results from the boundary of the orphans ...
 		FactorGraph<GaussianFactor> cachedBoundary = getCachedBoundaryFactors(orphans);
@@ -433,46 +431,33 @@ namespace gtsam {
 		Cliques orphans;
 		this->update_internal(newFactors, newTheta, orphans, wildfire_threshold, relinearize_threshold, relinearize);
 
-		delta_.print();
-		this->print();
-
 #else
 
-		printf("**1\n");fflush(stdout);
 		// 1. Add any new factors \Factors:=\Factors\cup\Factors'.
 		nonlinearFactors_.push_back(newFactors);
-		printf("**2\n");fflush(stdout);
+
 		// 2. Initialize any new variables \Theta_{new} and add \Theta:=\Theta\cup\Theta_{new}.
 		theta_.insert(newTheta);
-		printf("**3\n");fflush(stdout);
 
 		// 3. Linearize new factor
 		boost::shared_ptr<GaussianFactorGraph> linearFactors = newFactors.linearize(theta_);
-		printf("**4\n");fflush(stdout);
 
 		// 4. Linear iSAM step (alg 3)
 		linear_update(*linearFactors); // in: this
 
-		printf("**5\n");fflush(stdout);
 		// 5. Calculate Delta (alg 0)
 		delta_ = optimize2(*this, wildfire_threshold);
 
-		printf("**6\n");fflush(stdout);
 		// 6. Iterate Algorithm 4 until no more re-linearizations occur
-//		if (relinearize)
-//			fluid_relinearization(relinearize_threshold); // in: delta_, theta_, nonlinearFactors_, this
+		if (relinearize)
+			fluid_relinearization(relinearize_threshold); // in: delta_, theta_, nonlinearFactors_, this
 
-		printf("**7\n");fflush(stdout);
 
 		// todo: linearization point and delta_ do not fit... have to update delta again
 		delta_ = optimize2(*this, wildfire_threshold);
-		printf("**8\n");fflush(stdout);
 
-		delta_.print();
-		this->print();
-
-		printf("**9\n");fflush(stdout);
-
+		// todo: for getLinearizationPoint(), see ISAM2.h
+		thetaFuture_ = theta_;
 
 #endif
 	}
