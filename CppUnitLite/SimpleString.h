@@ -25,12 +25,13 @@ public:
 						~SimpleString ();
 
 	SimpleString		operator= (const SimpleString& other);
+	SimpleString		operator+ (const SimpleString& other);
 
 	char				*asCharString () const;
 	int					size() const;
 
 private:
-	char				*buffer;
+	char				*buffer_;
 };
 
 

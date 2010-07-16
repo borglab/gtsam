@@ -31,6 +31,11 @@ public:
 			 const SimpleString&		expected,
 			 const SimpleString&		actual);
 
+	Failure (const SimpleString&		theTestName,
+			 const SimpleString&		theFileName,
+			 const SimpleString&		theCondition);
+
+
 	SimpleString		message;
 	SimpleString		testName;
 	SimpleString		fileName;

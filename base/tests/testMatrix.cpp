@@ -34,7 +34,6 @@ TEST( matrix, constructor_data )
 }
 
 /* ************************************************************************* */
-
 TEST( matrix, constructor_vector )
 {
 	double data[] = { -5, 3, 0, -5 };

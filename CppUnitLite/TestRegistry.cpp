@@ -1,8 +1,12 @@
 
 
+#include <exception>
+
 #include "Test.h"
+#include "Failure.h"
 #include "TestResult.h"
 #include "TestRegistry.h"
+#include "SimpleString.h"
 
 
 void TestRegistry::addTest (Test *test) 
@@ -13,7 +17,7 @@ void TestRegistry::addTest (Test *test)
 
 int TestRegistry::runAllTests (TestResult& result) 
 {
-	instance ().run (result);
+	return instance ().run (result);
 }
 
 
@@ -30,7 +34,7 @@ void TestRegistry::add (Test *test)
 		tests = test;
 		return;
 	}
-	
+
 	test->setNext (tests);
 	tests = test;
 }
@@ -40,10 +44,22 @@ int TestRegistry::run (TestResult& result)
 {
 	result.testsStarted ();
 
-	for (Test *test = tests; test != 0; test = test->getNext ())
-		test->run (result);
+	for (Test *test = tests; test != 0; test = test->getNext ()) {
+		// TODO: add a try/catch wrapper here
+		try {
+			test->run (result);
+		} catch (std::exception& e) {
+			result.addFailure(
+					Failure(test->getName(), test->getFilename(), test->getLineNumber(),
+							SimpleString("Exception: ") + SimpleString(e.what())));
+		} catch (...) {
+			result.addFailure(
+					Failure(test->getName(), test->getFilename(), test->getLineNumber(),
+							SimpleString("ExceptionThrown!")));
+		}
+	}
 	result.testsEnded ();
-  return result.getFailureCount();
+	return result.getFailureCount();
 }
 
 

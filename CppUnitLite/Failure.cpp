@@ -17,6 +17,16 @@ Failure::Failure (const SimpleString&	theTestName,
 {
 }
 
+Failure::Failure (const SimpleString&	theTestName,
+				  const SimpleString&	theFileName,
+		          const SimpleString&	theCondition)
+: message (theCondition),
+  testName (theTestName),
+  fileName (theFileName),
+  lineNumber (-1)
+{
+}
+
 
 Failure::Failure (const SimpleString&	theTestName, 
 			 	  const SimpleString&	theFileName, 

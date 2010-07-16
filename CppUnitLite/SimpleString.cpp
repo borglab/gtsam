@@ -9,47 +9,56 @@
 static const int DEFAULT_SIZE = 20;
 
 SimpleString::SimpleString ()
-: buffer(new char [1])
+: buffer_(new char [1])
 {
-	buffer [0] = '\0';
+	buffer_ [0] = '\0';
 }
 
 
 SimpleString::SimpleString (const char *otherBuffer)
-: buffer (new char [strlen (otherBuffer) + 1])
+: buffer_ (new char [strlen (otherBuffer) + 1])
 {
-	strcpy (buffer, otherBuffer);
+	strcpy (buffer_, otherBuffer);
 }
 
 SimpleString::SimpleString (const SimpleString& other)
 {
-	buffer = new char [other.size() + 1];
-	strcpy(buffer, other.buffer);
+	buffer_ = new char [other.size() + 1];
+	strcpy(buffer_, other.buffer_);
 }
 
 
 SimpleString SimpleString::operator= (const SimpleString& other)
 {
-	delete buffer;
-	buffer = new char [other.size() + 1];
-	strcpy(buffer, other.buffer);	
+	delete buffer_;
+	buffer_ = new char [other.size() + 1];
+	strcpy(buffer_, other.buffer_);
 	return *this;
 }
 
+SimpleString SimpleString::operator+ (const SimpleString& other)
+{
+	SimpleString ret;
+	delete ret.buffer_;
+	ret.buffer_ = new char [size() + other.size() - 1];
+	strcpy(ret.buffer_, buffer_);
+	strcat(ret.buffer_, other.buffer_);
+	return ret;
+}
 
 char *SimpleString::asCharString () const
 {
-	return buffer;
+	return buffer_;
 }
 
 int SimpleString::size() const
 {
-	return strlen (buffer);
+	return strlen (buffer_);
 }
 
 SimpleString::~SimpleString ()
 {
-	delete [] buffer;
+	delete [] buffer_;
 }
 
 

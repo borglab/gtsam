@@ -12,6 +12,11 @@ Test::Test (const SimpleString& testName)
 	TestRegistry::addTest (this);
 }
 
+Test::Test (const SimpleString& testName, const SimpleString& filename, long lineNumber)
+	: name_(testName), filename_(filename), lineNumber_(lineNumber)
+{
+	TestRegistry::addTest (this);
+}
 
 
 Test *Test::getNext() const

@@ -22,6 +22,7 @@ class Test
 {
 public:
 	Test (const SimpleString& testName);
+	Test (const SimpleString& testName, const SimpleString& filename, long lineNumber);
   virtual ~Test() {};
 
 	virtual void	run (TestResult& result) = 0;
@@ -29,6 +30,9 @@ public:
 
 	void			setNext(Test *test);
 	Test			*getNext () const;
+	SimpleString    getName() const {return name_;}
+	SimpleString 	getFilename() const {return filename_;}
+	long			getLineNumber() const {return lineNumber_;}
 
 protected:
 
@@ -37,13 +41,15 @@ protected:
 
 	SimpleString	name_;
 	Test			*next_;
+	SimpleString 	filename_;
+	long 			lineNumber_; /// This is the line line number of the test, rather than the a single check
 
 };
 
 
 #define TEST(testName, testGroup)\
   class testGroup##testName##Test : public Test \
-	{ public: testGroup##testName##Test () : Test (#testName "Test") {} \
+	{ public: testGroup##testName##Test () : Test (#testName "Test", __FILE__, __LINE__) {} \
             void run (TestResult& result_);} \
     testGroup##testName##Instance; \
 	void testGroup##testName##Test::run (TestResult& result_) 
