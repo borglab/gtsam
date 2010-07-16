@@ -60,7 +60,11 @@ protected:
 { if (!(condition)) \
 { result_.addFailure (Failure (name_, __FILE__,__LINE__, #condition)); return; } }
 
-
+#define THROWS_EXCEPTION(condition)\
+{ try { condition; \
+		result_.addFailure (Failure (name_, __FILE__,__LINE__, SimpleString("Didn't throw: ") + StringFrom(#condition))); \
+		return; } \
+  catch (...) {} }
 
 #define CHECK_EQUAL(expected,actual)\
 { if ((expected) == (actual)) return; result_.addFailure(Failure(name_, __FILE__, __LINE__, StringFrom(expected), StringFrom(actual))); }

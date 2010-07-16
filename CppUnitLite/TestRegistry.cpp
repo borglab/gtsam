@@ -45,14 +45,15 @@ int TestRegistry::run (TestResult& result)
 	result.testsStarted ();
 
 	for (Test *test = tests; test != 0; test = test->getNext ()) {
-		// TODO: add a try/catch wrapper here
 		try {
 			test->run (result);
 		} catch (std::exception& e) {
+			// catch standard exceptions and derivatives
 			result.addFailure(
 					Failure(test->getName(), test->getFilename(), test->getLineNumber(),
 							SimpleString("Exception: ") + SimpleString(e.what())));
 		} catch (...) {
+			// catch all other exceptions
 			result.addFailure(
 					Failure(test->getName(), test->getFilename(), test->getLineNumber(),
 							SimpleString("ExceptionThrown!")));

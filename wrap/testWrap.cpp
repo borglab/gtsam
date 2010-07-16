@@ -27,6 +27,11 @@ TEST( wrap, ArgumentList ) {
 }
 
 /* ************************************************************************* */
+TEST( wrap, check_exception ) {
+	THROWS_EXCEPTION(Module(".", "geometry",verbose));
+}
+
+/* ************************************************************************* */
 TEST( wrap, parse ) {
 	Module module(".", "geometry",verbose);
 	CHECK(module.classes.size()==3);
