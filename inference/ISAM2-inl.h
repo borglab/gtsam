@@ -279,7 +279,6 @@ namespace gtsam {
 
 	}
 
-	/*
 	template<class Conditional, class Config>
 	void ISAM2<Conditional, Config>::linear_update(const FactorGraph<GaussianFactor>& newFactors) {
 
@@ -289,7 +288,7 @@ namespace gtsam {
 		// (a) For each affected variable, remove the corresponding clique and all parents up to the root.
 		// (b) Store orphaned sub-trees \BayesTree_{O} of removed cliques.
 		const list<Symbol> newKeys = newFactors.keys();
-		Cliques& orphans;
+		Cliques orphans;
 		BayesNet<GaussianConditional> affectedBayesNet;
 		this->removeTop(newKeys, affectedBayesNet, orphans);
 		FactorGraph<GaussianFactor> factors(affectedBayesNet);
@@ -331,7 +330,23 @@ namespace gtsam {
 
 		// Output: BayesTree(this)
 	}
-	*/
+
+	template<class Conditional, class Config>
+	void ISAM2<Conditional, Config>::find_all(sharedClique clique, list<Symbol>& keys, const list<Symbol>& marked) {
+		// does the separator contain any of the variables?
+		bool found = false;
+		BOOST_FOREACH(const Symbol& key, clique->separator_) {
+			if (find(marked.begin(), marked.end(), key) != marked.end())
+				found = true;
+		}
+		if (found) {
+			// then add this clique
+			keys.push_back(clique->keys().front());
+		}
+		BOOST_FOREACH(const sharedClique& child, clique->children_) {
+			find_all(child, keys, marked);
+		}
+	}
 
 	template<class Conditional, class Config>
 	void ISAM2<Conditional, Config>::fluid_relinearization(double relinearize_threshold) {
@@ -339,7 +354,7 @@ namespace gtsam {
 		// Input: nonlinear factors factors_, linearization point theta_, Bayes tree (this), delta_
 
 		// 1. Mark variables in \Delta above threshold \beta: J=\{\Delta_{j}\in\Delta|\Delta_{j}\geq\beta\}.
-		std::list<Symbol> marked;
+	  list<Symbol> marked;
 		VectorConfig deltaMarked;
 		for (VectorConfig::const_iterator it = delta_.begin(); it!=delta_.end(); it++) {
 			Symbol key = it->first;
@@ -355,9 +370,54 @@ namespace gtsam {
 
 		// 3. Mark all cliques that involve marked variables \Theta_{J} and all their ancestors.
 
+		// mark all cliques that involve marked variables
+		list<Symbol> affectedSymbols(marked); // add all marked
+		find_all(this->root(), affectedSymbols, marked); // add other cliques that have the marked ones in the separator
+
 		// 4. From the leaves to the top, if a clique is marked:
 		//    re-linearize the original factors in \Factors associated with the clique,
 		//    add the cached marginal factors from its children, and re-eliminate.
+
+		// todo: for simplicity, currently simply remove the top and recreate it using the original ordering
+
+		Cliques orphans;
+		BayesNet<GaussianConditional> affectedBayesNet;
+		this->removeTop(affectedSymbols, affectedBayesNet, orphans);
+		// remember original ordering
+//		Ordering original_ordering = affectedBayesNet.ordering();
+
+		boost::shared_ptr<GaussianFactorGraph> factors;
+
+		// ordering provides all keys in conditionals, there cannot be others because path to root included
+		set<Symbol> affectedKeys;
+		list<Symbol> tmp = affectedBayesNet.ordering();
+		affectedKeys.insert(tmp.begin(), tmp.end());
+		factors = relinearizeAffectedFactors(affectedKeys);
+
+		Ordering original_ordering = factors->getOrdering(); // todo - hack
+
+		// add the cached intermediate results from the boundary of the orphans ...
+		FactorGraph<GaussianFactor> cachedBoundary = getCachedBoundaryFactors(orphans);
+		factors->push_back(cachedBoundary);
+
+		// eliminate into a Bayes net
+		BayesNet<Conditional> bayesNet = _eliminate(*factors, cached_, original_ordering);
+
+		// Create Index from ordering
+		IndexTable<Symbol> index(original_ordering);
+
+		// insert conditionals back in, straight into the topless bayesTree
+		typename BayesNet<Conditional>::const_reverse_iterator rit;
+		for ( rit=bayesNet.rbegin(); rit != bayesNet.rend(); ++rit )
+			this->insert(*rit, index);
+
+		// add orphans to the bottom of the new tree
+		BOOST_FOREACH(sharedClique orphan, orphans) {
+			Symbol parentRepresentative = findParentClique(orphan->separator_, index);
+			sharedClique parent = (*this)[parentRepresentative];
+			parent->children_ += orphan;
+			orphan->parent_ = parent; // set new parent!
+		}
 
 		// Output: updated Bayes tree (this), updated linearization point theta_
 
@@ -372,29 +432,48 @@ namespace gtsam {
 		// old algorithm:
 		Cliques orphans;
 		this->update_internal(newFactors, newTheta, orphans, wildfire_threshold, relinearize_threshold, relinearize);
+
+		delta_.print();
+		this->print();
+
 #else
 
+		printf("**1\n");fflush(stdout);
 		// 1. Add any new factors \Factors:=\Factors\cup\Factors'.
 		nonlinearFactors_.push_back(newFactors);
-
+		printf("**2\n");fflush(stdout);
 		// 2. Initialize any new variables \Theta_{new} and add \Theta:=\Theta\cup\Theta_{new}.
 		theta_.insert(newTheta);
+		printf("**3\n");fflush(stdout);
 
 		// 3. Linearize new factor
-		FactorGraph<GaussianFactor> linearFactors = newFactors.linearize(theta_);
+		boost::shared_ptr<GaussianFactorGraph> linearFactors = newFactors.linearize(theta_);
+		printf("**4\n");fflush(stdout);
 
 		// 4. Linear iSAM step (alg 3)
-		linear_update(linearFactors); // in: this
+		linear_update(*linearFactors); // in: this
 
+		printf("**5\n");fflush(stdout);
 		// 5. Calculate Delta (alg 0)
 		delta_ = optimize2(*this, wildfire_threshold);
 
+		printf("**6\n");fflush(stdout);
 		// 6. Iterate Algorithm 4 until no more re-linearizations occur
-		if (relinearize)
-			fluid_relinearization(relinearize_threshold); // in: delta_, theta_, nonlinearFactors_, this
+//		if (relinearize)
+//			fluid_relinearization(relinearize_threshold); // in: delta_, theta_, nonlinearFactors_, this
+
+		printf("**7\n");fflush(stdout);
 
 		// todo: linearization point and delta_ do not fit... have to update delta again
 		delta_ = optimize2(*this, wildfire_threshold);
+		printf("**8\n");fflush(stdout);
+
+		delta_.print();
+		this->print();
+
+		printf("**9\n");fflush(stdout);
+
+
 #endif
 	}
 
