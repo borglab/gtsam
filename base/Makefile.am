@@ -9,11 +9,11 @@ check_PROGRAMS =
 
 # base Math
 sources += Vector.cpp svdcmp.cpp Matrix.cpp
-check_PROGRAMS += testVector testMatrix
+check_PROGRAMS += tests/testVector tests/testMatrix
 
 if USE_LAPACK
 sources += SPQRUtil.cpp
-check_PROGRAMS += testSPQRUtil
+check_PROGRAMS += tests/testSPQRUtil
 endif
 
 # Testing
@@ -25,10 +25,10 @@ headers += Lie.h Lie-inl.h
 # Data structures
 headers += BTree.h DSF.h
 sources += DSFVector.cpp
-check_PROGRAMS += testBTree testDSF testDSFVector
+check_PROGRAMS += tests/testBTree tests/testDSF tests/testDSFVector
 
 # Timing tests
-noinst_PROGRAMS = timeMatrix
+noinst_PROGRAMS = tests/timeMatrix
 
 #----------------------------------------------------------------------------------------------------
 # Create a libtool library that is not installed

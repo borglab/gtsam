@@ -9,12 +9,12 @@ check_PROGRAMS =
 # Noise Model
 headers += SharedGaussian.h SharedDiagonal.h 
 sources += NoiseModel.cpp Errors.cpp
-check_PROGRAMS += testNoiseModel testErrors
+check_PROGRAMS += tests/testNoiseModel tests/testErrors
 
 # Vector Configurations
 headers += VectorConfig.h 
 sources += VectorMap.cpp VectorBTree.cpp  
-check_PROGRAMS += testVectorMap testVectorBTree  
+check_PROGRAMS += tests/testVectorMap tests/testVectorBTree  
 
 # Gaussian Factor Graphs
 headers += GaussianFactorSet.h Factorization.h
@@ -22,15 +22,15 @@ sources += GaussianFactor.cpp GaussianFactorGraph.cpp
 sources += GaussianJunctionTree.cpp 
 sources += GaussianConditional.cpp GaussianBayesNet.cpp
 sources += GaussianISAM.cpp
-check_PROGRAMS += testGaussianFactor testGaussianJunctionTree testGaussianConditional
+check_PROGRAMS += tests/testGaussianFactor tests/testGaussianJunctionTree tests/testGaussianConditional
 
 # Iterative Methods
 headers += iterative-inl.h SubgraphSolver.h SubgraphSolver-inl.h
 sources += iterative.cpp BayesNetPreconditioner.cpp SubgraphPreconditioner.cpp
-check_PROGRAMS += testBayesNetPreconditioner
+check_PROGRAMS += tests/testBayesNetPreconditioner
 
 # Timing tests
-noinst_PROGRAMS = timeGaussianFactor timeVectorConfig
+noinst_PROGRAMS = tests/timeGaussianFactor tests/timeVectorConfig
 
 #----------------------------------------------------------------------------------------------------
 # Create a libtool library that is not installed

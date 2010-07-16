@@ -13,7 +13,7 @@ check_PROGRAMS =
 
 # Lie Groups
 headers += LieConfig.h LieConfig-inl.h TupleConfig.h TupleConfig-inl.h
-check_PROGRAMS += testLieConfig 
+check_PROGRAMS += tests/testLieConfig 
 
 # Nonlinear nonlinear 
 headers += NonlinearFactorGraph.h NonlinearFactorGraph-inl.h
@@ -23,11 +23,11 @@ headers += NonlinearFactor.h
 # Nonlinear constraints 
 headers += NonlinearConstraint.h NonlinearConstraint-inl.h
 headers += NonlinearEquality.h
-check_PROGRAMS += testNonlinearConstraint  
+check_PROGRAMS += tests/testNonlinearConstraint  
 
 # SQP
 sources += ConstraintOptimizer.cpp
-check_PROGRAMS += testConstraintOptimizer
+check_PROGRAMS += tests/testConstraintOptimizer
 
 #----------------------------------------------------------------------------------------------------
 # Create a libtool library that is not installed

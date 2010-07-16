@@ -8,20 +8,20 @@ check_PROGRAMS =
 
 # Points and poses
 sources += Point2.cpp Rot2.cpp Pose2.cpp Point3.cpp Rot3.cpp Pose3.cpp 
-check_PROGRAMS += testPoint2 testRot2 testPose2 testPoint3 testRot3 testPose3
+check_PROGRAMS += tests/testPoint2 tests/testRot2 tests/testPose2 tests/testPoint3 tests/testRot3 tests/testPose3
 
 # Cameras
 sources += Cal3_S2.cpp CalibratedCamera.cpp SimpleCamera.cpp
-check_PROGRAMS += testCal3_S2 testCalibratedCamera testSimpleCamera
+check_PROGRAMS += tests/testCal3_S2 tests/testCalibratedCamera tests/testSimpleCamera
 
 # Tensors
 headers += tensors.h Tensor1.h Tensor2.h Tensor3.h Tensor4.h Tensor5.h
 headers += Tensor1Expression.h Tensor2Expression.h Tensor3Expression.h Tensor5Expression.h
 sources += projectiveGeometry.cpp tensorInterface.cpp
-check_PROGRAMS += testTensors testHomography2 testTrifocal
+check_PROGRAMS += tests/testTensors tests/testHomography2 tests/testTrifocal
 
 # Timing tests
-noinst_PROGRAMS = timeRot3
+noinst_PROGRAMS = tests/timeRot3
 
 #----------------------------------------------------------------------------------------------------
 # Create a libtool library that is not installed
