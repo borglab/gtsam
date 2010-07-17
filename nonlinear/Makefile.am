@@ -17,8 +17,9 @@ check_PROGRAMS += tests/testLieConfig
 
 # Nonlinear nonlinear 
 headers += NonlinearFactorGraph.h NonlinearFactorGraph-inl.h
-headers += NonlinearOptimizer.h NonlinearOptimizer-inl.h 
+headers += NonlinearOptimizer-inl.h 
 headers += NonlinearFactor.h
+sources += NonlinearOptimizer.cpp
 
 # Nonlinear constraints 
 headers += NonlinearConstraint.h NonlinearConstraint-inl.h
