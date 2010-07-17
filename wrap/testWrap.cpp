@@ -28,7 +28,7 @@ TEST( wrap, ArgumentList ) {
 
 /* ************************************************************************* */
 TEST( wrap, check_exception ) {
-	THROWS_EXCEPTION(Module(".", "geometry",verbose));
+	THROWS_EXCEPTION(Module("/home", "geometry",verbose));
 }
 
 /* ************************************************************************* */

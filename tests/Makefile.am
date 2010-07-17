@@ -12,7 +12,7 @@ check_PROGRAMS += testNonlinearOptimizer testSQP testSubgraphPreconditioner
 check_PROGRAMS += testSymbolicBayesNet testSymbolicFactorGraph testTupleConfig
 
 if USE_LDL
-check_PROGRAMS = testConstraintOptimizer 
+check_PROGRAMS += testConstraintOptimizer 
 endif
 
 # Timing tests
