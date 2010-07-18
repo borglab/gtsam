@@ -45,7 +45,7 @@ namespace gtsam {
 		// eliminate from leaves to the root
 		typedef JunctionTree<GaussianFactorGraph> Base;
 		BayesTree<GaussianConditional> bayesTree;
-		this->eliminate<GaussianConditional>();
+		bayesTree = this->eliminate<GaussianConditional>();
 
 		// back-substitution
 		VectorConfig result;

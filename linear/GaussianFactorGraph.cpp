@@ -16,7 +16,7 @@
 #include "FactorGraph-inl.h"
 #include "inference-inl.h"
 #include "iterative.h"
-//#include "GaussianJunctionTree.h"
+#include "GaussianJunctionTree.h"
 
 using namespace std;
 using namespace gtsam;
@@ -296,12 +296,14 @@ VectorConfig GaussianFactorGraph::optimize(const Ordering& ordering, bool old)
 }
 
 /* ************************************************************************* */
-//VectorConfig GaussianFactorGraph::optimizeMultiFrontals(const Ordering& ordering)
-//{
-//	GaussianJunctionTree junctionTree(*this, ordering);
-//
-//	return junctionTree.optimize();
-//}
+VectorConfig GaussianFactorGraph::optimizeMultiFrontals(const Ordering& ordering)
+{
+	GaussianJunctionTree junctionTree(*this, ordering);
+
+	// calculate new configuration (using backsubstitution)
+	VectorConfig delta = junctionTree.optimize();
+	return delta;
+}
 
 /* ************************************************************************* */
 boost::shared_ptr<GaussianBayesNet>

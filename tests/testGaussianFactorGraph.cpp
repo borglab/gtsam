@@ -476,6 +476,24 @@ TEST( GaussianFactorGraph, optimize )
 }
 
 /* ************************************************************************* */
+TEST( GaussianFactorGraph, optimizeMultiFrontlas )
+{
+	// create a graph
+	GaussianFactorGraph fg = createGaussianFactorGraph();
+
+	// create an ordering
+	Ordering ord; ord += "x2","l1","x1";
+
+	// optimize the graph
+	VectorConfig actual = fg.optimizeMultiFrontals(ord);
+
+	// verify
+	VectorConfig expected = createCorrectDelta();
+
+  CHECK(assert_equal(expected,actual));
+}
+
+/* ************************************************************************* */
 TEST( GaussianFactorGraph, combine)
 {
 	// create a test graph

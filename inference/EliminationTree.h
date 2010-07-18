@@ -15,7 +15,7 @@
 namespace gtsam {
 
 	/**
-	 * An elimination tree (see Gilbert01bit) associated with a factorg raph and an ordering
+	 * An elimination tree (see Gilbert01bit) associated with a factor graph and an ordering
 	 * is a cluster-tree where there is one node j for each variable, and the parent of each node
 	 * corresponds to the first variable up the ordering in the Cholesky factor that j is connected to.
 	 */

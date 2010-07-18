@@ -36,7 +36,7 @@ namespace gtsam {
 		typedef BayesTree<SymbolicConditional> SymbolicBayesTree;
 
 	private:
-		// distribute the factors along the Bayes tree
+		// distribute the factors along the cluster tree
 		sharedClique distributeFactors(FG& fg,
 				const SymbolicBayesTree::sharedClique clique);
 

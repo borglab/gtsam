@@ -389,7 +389,6 @@ GaussianFactor::eliminateMatrix(Matrix& Ab, SharedDiagonal model,
 	if (verbose) model->print("Before QR");
 	SharedDiagonal noiseModel = model->QR(Ab);
 	if (verbose) model->print("After QR");
-//	gtsam::print(Ab, "Ab after QR");
 
 	// get dimensions of the eliminated variable
 	// TODO: this is another map find that should be avoided !
@@ -397,34 +396,6 @@ GaussianFactor::eliminateMatrix(Matrix& Ab, SharedDiagonal model,
 
 	// Get alias to augmented RHS d
 	ublas::matrix_column<Matrix> d(Ab,n);
-
-//	// create base conditional Gaussian
-//	GaussianConditional::shared_ptr conditional(new GaussianConditional(frontals.front(),
-//			sub(d,  0, n1),                   // form d vector
-//			sub(Ab, 0, n1, 0, n1),            // form R matrix
-//			sub(noiseModel->sigmas(),0,n1))); // get standard deviations
-//
-//	// extract the block matrices for parents in both CG and LF
-//	GaussianFactor::shared_ptr factor(new GaussianFactor);
-//	size_t j = n1;
-//	BOOST_FOREACH(const Symbol& cur_key, separators) {
-//		size_t dim = dimensions.at(cur_key); // TODO avoid find !
-//		conditional->add(cur_key, sub(Ab, 0, n1, j, j+dim));
-//		factor->insert(cur_key, sub(Ab, n1, maxRank, j, j+dim)); // TODO: handle zeros properly
-//		j+=dim;
-//	}
-//
-//	// Set sigmas
-//	// set the right model here
-//	if (noiseModel->isConstrained())
-//		factor->model_ = noiseModel::Constrained::MixedSigmas(sub(noiseModel->sigmas(),n1,maxRank));
-//	else
-//		factor->model_ = noiseModel::Diagonal::Sigmas(sub(noiseModel->sigmas(),n1,maxRank));
-//
-//	// extract ds vector for the new b
-//	factor->set_b(sub(d, n1, maxRank));
-//
-//	return make_pair(conditional, factor);
 
 	// extract the conditionals
 	GaussianBayesNet bn;

@@ -38,12 +38,8 @@ TEST( GaussianJunctionTree, constructor2 )
 
 	// create an ordering
 	Ordering ordering; ordering += "x1","x3","x5","x7","x2","x6","x4";
-
-	GaussianJunctionTree expected;
 	GaussianJunctionTree actual(fg, ordering);
-//	CHECK(assert_equal<GaussianJunctionTree>(expected, actual));
 
-	/*
 	Ordering frontal1; frontal1 += "x5", "x6", "x4";
 	Ordering frontal2; frontal2 += "x3", "x2";
 	Ordering frontal3; frontal3 += "x1";
@@ -52,22 +48,21 @@ TEST( GaussianJunctionTree, constructor2 )
 	Unordered sep2; sep2 += "x4";
 	Unordered sep3; sep3 += "x2";
 	Unordered sep4; sep4 += "x6";
-	CHECK(assert_equal(frontal1, actual.root()->frontal()));
-	CHECK(assert_equal(sep1,     actual.root()->separator()));
+	CHECK(assert_equal(frontal1, actual.root()->frontal_));
+	CHECK(assert_equal(sep1,     actual.root()->separator_));
 	LONGS_EQUAL(5,               actual.root()->size());
-	CHECK(assert_equal(frontal2, actual.root()->children()[0]->frontal()));
-	CHECK(assert_equal(sep2,     actual.root()->children()[0]->separator()));
-	LONGS_EQUAL(4,               actual.root()->children()[0]->size());
-	CHECK(assert_equal(frontal3, actual.root()->children()[0]->children()[0]->frontal()));
-	CHECK(assert_equal(sep3,     actual.root()->children()[0]->children()[0]->separator()));
-	LONGS_EQUAL(2,               actual.root()->children()[0]->children()[0]->size());
-	CHECK(assert_equal(frontal4, actual.root()->children()[1]->frontal()));
-	CHECK(assert_equal(sep4,     actual.root()->children()[1]->separator()));
-	LONGS_EQUAL(2,               actual.root()->children()[1]->size());
-	*/
+	CHECK(assert_equal(frontal2, actual.root()->children_[0]->frontal_));
+	CHECK(assert_equal(sep2,     actual.root()->children_[0]->separator_));
+	LONGS_EQUAL(4,               actual.root()->children_[0]->size());
+	CHECK(assert_equal(frontal3, actual.root()->children_[0]->children_[0]->frontal_));
+	CHECK(assert_equal(sep3,     actual.root()->children_[0]->children_[0]->separator_));
+	LONGS_EQUAL(2,               actual.root()->children_[0]->children_[0]->size());
+	CHECK(assert_equal(frontal4, actual.root()->children_[1]->frontal_));
+	CHECK(assert_equal(sep4,     actual.root()->children_[1]->separator_));
+	LONGS_EQUAL(2,               actual.root()->children_[1]->size());
 }
 
-/* ************************************************************************* *
+/* ************************************************************************* */
 TEST( GaussianJunctionTree, optimizeMultiFrontal )
 {
 	// create a graph
@@ -77,13 +72,33 @@ TEST( GaussianJunctionTree, optimizeMultiFrontal )
 	Ordering ordering; ordering += "x1","x3","x5","x7","x2","x6","x4";
 
 	// optimize the graph
-	GaussianJunctionTree<GaussianFactorGraph> actual(fg, ordering);
-	VectorConfig actual = actual.optimize();
+	GaussianJunctionTree tree(fg, ordering);
+	VectorConfig actual = tree.optimize();
 
 	// verify
-//	VectorConfig expected = createCorrectDelta();
-//
-//  CHECK(assert_equal(expected,actual));
+	VectorConfig expected; // expected solution
+	Vector v = Vector_(2, 0., 0.);
+	for (int i=1; i<=7; i++)
+		expected.insert(symbol('x', i), v);
+  CHECK(assert_equal(expected,actual));
+}
+
+/* ************************************************************************* */
+TEST( GaussianJunctionTree, optimizeMultiFrontal2)
+{
+	// create a graph
+	Graph nlfg = createNonlinearFactorGraph();
+	Config noisy = createNoisyConfig();
+	GaussianFactorGraph fg = *nlfg.linearize(noisy);
+
+	// optimize the graph
+	Ordering ordering; ordering += "x1","x2","l1";
+	GaussianJunctionTree tree(fg, ordering);
+	VectorConfig actual = tree.optimize();
+
+	// verify
+	VectorConfig expected = createCorrectDelta(); // expected solution
+  CHECK(assert_equal(expected,actual));
 }
 
 /* ************************************************************************* */

@@ -41,20 +41,18 @@ TEST( JunctionTree, constructor )
 
 	Ordering ordering; ordering += "x2","x1","x3","x4";
 	SymbolicJunctionTree actual(fg, ordering);
+//	CHECK(assert_equal<SymbolicJunctionTree>(expected, actual));
 
-	/*
-	CHECK(assert_equal<SymbolicJunctionTree>(expected, actual));
 	Ordering frontal1; frontal1 += "x3", "x4";
 	Ordering frontal2; frontal2 += "x2", "x1";
 	Unordered sep1;
 	Unordered sep2; sep2 += "x3";
-	CHECK(assert_equal(frontal1, actual.root()->frontal()));
-	CHECK(assert_equal(sep1,     actual.root()->separator()));
+	CHECK(assert_equal(frontal1, actual.root()->frontal_));
+	CHECK(assert_equal(sep1,     actual.root()->separator_));
 	LONGS_EQUAL(1,               actual.root()->size());
-	CHECK(assert_equal(frontal2, actual.root()->children()[0]->frontal()));
-	CHECK(assert_equal(sep2,     actual.root()->children()[0]->separator()));
-	LONGS_EQUAL(2,               actual.root()->children()[0]->size());
-	*/
+	CHECK(assert_equal(frontal2, actual.root()->children_[0]->frontal_));
+	CHECK(assert_equal(sep2,     actual.root()->children_[0]->separator_));
+	LONGS_EQUAL(2,               actual.root()->children_[0]->size());
 }
 
 /* ************************************************************************* */

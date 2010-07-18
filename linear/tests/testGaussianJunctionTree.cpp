@@ -22,6 +22,24 @@ using namespace boost::assign;
 using namespace std;
 using namespace gtsam;
 
+GaussianFactorGraph createChain() {
+
+	typedef GaussianFactorGraph::sharedFactor Factor;
+	SharedDiagonal model(Vector_(1, 0.5));
+	Factor factor1(new GaussianFactor("x1", Matrix_(1,1,1.), "x2", Matrix_(1,1,1.), Vector_(1,1.),  model));
+	Factor factor2(new GaussianFactor("x2", Matrix_(1,1,1.), "x3", Matrix_(1,1,1.), Vector_(1,1.),  model));
+	Factor factor3(new GaussianFactor("x3", Matrix_(1,1,1.), "x4", Matrix_(1,1,1.), Vector_(1,1.),  model));
+	Factor factor4(new GaussianFactor("x4", Matrix_(1,1,1.), Vector_(1,1.),  model));
+
+	GaussianFactorGraph fg;
+	fg.push_back(factor1);
+	fg.push_back(factor2);
+	fg.push_back(factor3);
+	fg.push_back(factor4);
+
+	return fg;
+}
+
 /* ************************************************************************* */
 /**
  * x1 - x2 - x3 - x4
@@ -38,19 +56,7 @@ using namespace gtsam;
  */
 TEST( GaussianJunctionTree, eliminate )
 {
-	typedef GaussianFactorGraph::sharedFactor Factor;
-	SharedDiagonal model(Vector_(1, 0.5));
-	Factor factor1(new GaussianFactor("x1", Matrix_(1,1,1.), "x2", Matrix_(1,1,1.), Vector_(1,1.),  model));
-	Factor factor2(new GaussianFactor("x2", Matrix_(1,1,1.), "x3", Matrix_(1,1,1.), Vector_(1,1.),  model));
-	Factor factor3(new GaussianFactor("x3", Matrix_(1,1,1.), "x4", Matrix_(1,1,1.), Vector_(1,1.),  model));
-	Factor factor4(new GaussianFactor("x4", Matrix_(1,1,1.), Vector_(1,1.),  model));
-
-	GaussianFactorGraph fg;
-	fg.push_back(factor1);
-	fg.push_back(factor2);
-	fg.push_back(factor3);
-	fg.push_back(factor4);
-
+	GaussianFactorGraph fg = createChain();
 	Ordering ordering; ordering += "x2","x1","x3","x4";
 	GaussianJunctionTree junctionTree(fg, ordering);
 		BayesTree<GaussianConditional> bayesTree = junctionTree.eliminate<GaussianConditional>();
@@ -64,6 +70,23 @@ TEST( GaussianJunctionTree, eliminate )
 	bayesTree_expected.insert(sharedConditional(new GaussianConditional("x1", Vector_(1,0.), one*(-1), "x3", one, Vector_(1,1.))), ordering);
 	bayesTree_expected.insert(sharedConditional(new GaussianConditional("x2", Vector_(1,2.), two, "x1", one, "x3", one, Vector_(1,1.))), ordering);
 	CHECK(assert_equal(bayesTree_expected, bayesTree));
+}
+
+
+/* ************************************************************************* */
+TEST( GaussianJunctionTree, optimizeMultiFrontal )
+{
+	GaussianFactorGraph fg = createChain();
+	Ordering ordering; ordering += "x2","x1","x3","x4";
+	GaussianJunctionTree tree(fg, ordering);
+
+	VectorConfig actual = tree.optimize();
+	VectorConfig expected;
+	expected.insert("x1", Vector_(1, 0.));
+	expected.insert("x2", Vector_(1, 1.));
+	expected.insert("x3", Vector_(1, 0.));
+	expected.insert("x4", Vector_(1, 1.));
+	CHECK(assert_equal(expected,actual));
 }
 
 /* ************************************************************************* */

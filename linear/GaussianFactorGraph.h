@@ -155,7 +155,8 @@ namespace gtsam {
     VectorConfig optimize(const Ordering& ordering, bool enableJoinFactor = true);
 
     /**
-     * optimize a linear factor graph with multi-frontals
+     * optimize a linear factor graph using a multi-frontal solver
+     * @param ordering fg in order
      */
     VectorConfig optimizeMultiFrontals(const Ordering& ordering);
 
