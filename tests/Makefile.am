@@ -8,7 +8,7 @@ check_PROGRAMS += testGaussianBayesNet testGaussianFactor testGaussianFactorGrap
 check_PROGRAMS += testGaussianISAM testGraph
 check_PROGRAMS += testInference testIterative testGaussianJunctionTree 
 check_PROGRAMS += testNonlinearEquality testNonlinearFactor testNonlinearFactorGraph
-check_PROGRAMS += testNonlinearOptimizer testSQP testSubgraphPreconditioner
+check_PROGRAMS += testNonlinearOptimizer testNonlinearConstraint testSubgraphPreconditioner
 check_PROGRAMS += testSymbolicBayesNet testSymbolicFactorGraph testTupleConfig
 
 if USE_LDL

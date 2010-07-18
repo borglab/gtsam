@@ -5,8 +5,6 @@
  * Created on: Jul 17, 2010
  */
 
-#pragma once
-
 #include "NonlinearOptimizer.h"
 
 namespace gtsam {

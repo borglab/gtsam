@@ -86,6 +86,11 @@ namespace gtsam {
 			return keys_;
 		}
 
+		/** get the dimension of the factor (number of rows on linearization) */
+		size_t dim() const {
+			return noiseModel_->dim();
+		}
+
 		/* return the begin iterator of keys */
 		std::list<Symbol>::const_iterator begin() const { return keys_.begin(); }
 

@@ -1,7 +1,7 @@
 /*
  * @file NonlinearConstraint.h
- * @brief Implements nonlinear constraints that can be linearized and
- * inserted into an existing nonlinear graph and solved via SQP
+ * @brief Implements nonlinear constraints that can be linearized using
+ * direct linearization and solving through a quadratic merit function
  * @author Alex Cunningham
  */
 
@@ -13,9 +13,6 @@
 
 namespace gtsam {
 
-/** Typedef for Lagrange key type - must be present in factors and config */
-typedef TypedSymbol<Vector, 'L'> LagrangeKey;
-
 /**
  * Base class for nonlinear constraints
  * This allows for both equality and inequality constraints,
@@ -23,68 +20,43 @@ typedef TypedSymbol<Vector, 'L'> LagrangeKey;
  * nonzero constraint functions will still be active - inequality
  * constraints should be sure to force to actual zero)
  *
- * The measurement z in the underlying NonlinearFactor is the
- * set of Lagrange multipliers.
+ * NOTE: inequality constraints removed for now
  *
- * Note on NoiseModel:
- * The nonlinear constraint actually uses a Unit noisemodel so that
- * it is possible to have a finite error value when the constraint is
- * not fulfilled.  Using a constrained noisemodel will immediately cause
- * infinite error and break optimization.
+ * Nonlinear constraints evaluate their error as a part of a quadratic
+ * error function: ||h(x)-z||^2 + mu * ||c(x)|| where mu is a gain
+ * on the constraint function that should be made high enough to be
+ * significant
  */
 template <class Config>
 class NonlinearConstraint : public NonlinearFactor<Config> {
 
 protected:
 
-	/** key for the lagrange multipliers */
-	LagrangeKey lagrange_key_;
-
-	/** number of lagrange multipliers */
-	size_t p_;
-
-	/** type of constraint */
-	bool isEquality_;
+	double mu_; // gain for quadratic merit function
 
 public:
 
 	/** Constructor - sets the cost function and the lagrange multipliers
-	 * @param lagrange_key is the label for the associated lagrange multipliers
-	 * @param dim_lagrange is the number of associated constraints
-	 * @param isEquality is true if the constraint is an equality constraint
+	 * @param dim is the dimension of the factor
+	 * @param mu is the gain used at error evaluation (forced to be positive)
 	 */
-	NonlinearConstraint(const LagrangeKey& lagrange_key,
-						size_t dim_lagrange,
-						bool isEquality=true);
+	NonlinearConstraint(size_t dim, double mu = 1000.0);
 
-	/** returns the key used for the Lagrange multipliers */
-	LagrangeKey lagrangeKey() const { return lagrange_key_; }
-
-	/** returns the number of lagrange multipliers */
-	size_t nrConstraints() const { return p_; }
-
-	/** returns the type of constraint */
-	bool isEquality() const { return isEquality_; }
+	/** returns the gain mu */
+	double mu() const { return mu_; }
 
 	/** Print */
-	virtual void print(const std::string& s = "") const =0;
+	virtual void print(const std::string& s = "") const=0;
 
 	/** Check if two factors are equal */
 	virtual bool equals(const Factor<Config>& f, double tol=1e-9) const=0;
 
-	/** error function - returns the result of the constraint function */
-	virtual Vector unwhitenedError(const Config& c) const=0;
+	/** error function - returns the quadratic merit function */
+	virtual double error(const Config& c) const;
 
 	/**
-	 * Determines whether the constraint is active given a particular configuration
-	 * @param config is the input to the g(x) function
-	 * @return true if constraint needs to be linearized
-	 */
-	bool active(const Config& config) const;
-
-	/**
-	 * Real linearize, given a config that includes Lagrange multipliers
-	 * @param config is the configuration (with lagrange multipliers)
+	 * Linearizes around a given config
+	 * @param config is the configuration
 	 * @return a combined linear factor containing both the constraint and the constraint factor
 	 */
 	virtual boost::shared_ptr<GaussianFactor> linearize(const Config& c) const=0;
@@ -128,34 +100,30 @@ public:
 	 * @param key is the identifier for the variable constrained
 	 * @param G gives the jacobian of the constraint function
 	 * @param g is the constraint function
-	 * @param dim_constraint is the size of the constraint (p)
-	 * @param lagrange_key is the identifier for the lagrange multiplier
-	 * @param isEquality is true if the constraint is an equality constraint
+	 * @param dim is the size of the constraint (p)
+	 * @param mu is the gain for the factor
 	 */
 	NonlinearConstraint1(
 			Vector (*g)(const Config& config),
 			const Key& key,
 			Matrix (*G)(const Config& config),
-			size_t dim_constraint,
-			const LagrangeKey& lagrange_key,
-			bool isEquality=true);
+			size_t dim,
+			double mu = 1000.0);
 
 	/**
 	 * Basic constructor with boost function pointers
 	 * @param key is the identifier for the variable constrained
 	 * @param G gives the jacobian of the constraint function
 	 * @param g is the constraint function as a boost function pointer
-	 * @param dim_constraint is the size of the constraint (p)
-	 * @param lagrange_key is the identifier for the lagrange multiplier
-	 * @param isEquality is true if the constraint is an equality constraint
+	 * @param dim is the size of the constraint (p)
+	 * @param mu is the gain for the factor
 	 */
 	NonlinearConstraint1(
 			boost::function<Vector(const Config& config)> g,
 			const Key& key,
 			boost::function<Matrix(const Config& config)> G,
-			size_t dim_constraint,
-			const LagrangeKey& lagrange_key,
-			bool isEquality=true);
+			size_t dim,
+			double mu = 1000.0);
 
 	/** Print */
 	void print(const std::string& s = "") const;
@@ -166,9 +134,7 @@ public:
 	/** Error function */
 	virtual inline Vector unwhitenedError(const Config& c) const { return g_(c); }
 
-	/**
-	 * Linearize from config - must have Lagrange multipliers
-	 */
+	/** Linearize from config */
 	virtual boost::shared_ptr<GaussianFactor> linearize(const Config& c) const;
 };
 
@@ -209,9 +175,8 @@ public:
 	 * @param key is the identifier for the variable constrained
 	 * @param G gives the jacobian of the constraint function
 	 * @param g is the constraint function
-	 * @param dim_constraint is the size of the constraint (p)
-	 * @param lagrange_key is the identifier for the lagrange multiplier
-	 * @param isEquality is true if the constraint is an equality constraint
+	 * @param dim is the size of the constraint (p)
+	 * @param mu is the gain for the factor
 	 */
 	NonlinearConstraint2(
 			Vector (*g)(const Config& config),
@@ -219,9 +184,8 @@ public:
 			Matrix (*G1)(const Config& config),
 			const Key2& key2,
 			Matrix (*G2)(const Config& config),
-			size_t dim_constraint,
-			const LagrangeKey& lagrange_key,
-			bool isEquality=true);
+			size_t dim,
+			double mu = 1000.0);
 
 	/**
 	 * Basic constructor with direct function objects
@@ -229,9 +193,8 @@ public:
 	 * @param key is the identifier for the variable constrained
 	 * @param G gives the jacobian of the constraint function
 	 * @param g is the constraint function
-	 * @param dim_constraint is the size of the constraint (p)
-	 * @param lagrange_key is the identifier for the lagrange multiplier
-	 * @param isEquality is true if the constraint is an equality constraint
+	 * @param dim is the size of the constraint (p)
+	 * @param mu is the gain for the factor
 	 */
 	NonlinearConstraint2(
 			boost::function<Vector(const Config& config)> g,
@@ -239,9 +202,8 @@ public:
 			boost::function<Matrix(const Config& config)> G1,
 			const Key2& key2,
 			boost::function<Matrix(const Config& config)> G2,
-			size_t dim_constraint,
-			const LagrangeKey& lagrange_key,
-			bool isEquality=true);
+			size_t dim,
+			double mu = 1000.0);
 
 	/** Print */
 	void print(const std::string& s = "") const;
@@ -252,9 +214,7 @@ public:
 	/** Error function */
 	virtual inline Vector unwhitenedError(const Config& c) const { return g_(c); }
 
-	/**
-	 * Linearize from config - must have Lagrange multipliers
-	 */
+	/** Linearize from config */
 	virtual boost::shared_ptr<GaussianFactor> linearize(const Config& c) const;
 };
 

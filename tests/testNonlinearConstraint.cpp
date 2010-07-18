@@ -41,223 +41,9 @@ SharedDiagonal constraintModel1 = noiseModel::Constrained::All(1);
 // trick from some reading group
 #define FOREACH_PAIR( KEY, VAL, COL) BOOST_FOREACH (boost::tie(KEY,VAL),COL)
 
-/* *********************************************************************
- * This example uses a nonlinear objective function and
- * nonlinear equality constraint.  The formulation is actually
- * the Cholesky form that creates the full Hessian explicitly,
- * which should really be avoided with our QR-based machinery.
- *
- * Note: the update equation used here has a fixed step size
- * and gain that is rather arbitrarily chosen, and as such,
- * will take a silly number of iterations.
- */
-TEST (SQP, problem1_cholesky ) {
-	bool verbose = false;
-	// use a nonlinear function of f(x) = x^2+y^2
-	// nonlinear equality constraint: g(x) = x^2-5-y=0
-	// Lagrangian: f(x) + \lambda*g(x)
-
-	// Symbols
-	Symbol x1("x1"), y1("y1"), L1("L1");
-
-	// state structure: [x y \lambda]
-	VectorConfig init, state;
-	init.insert(x1, Vector_(1, 1.0));
-	init.insert(y1, Vector_(1, 1.0));
-	init.insert(L1, Vector_(1, 1.0));
-	state = init;
-
-	if (verbose) init.print("Initial State");
-
-	// loop until convergence
-	int maxIt = 10;
-	for (int i = 0; i<maxIt; ++i) {
-		if (verbose) cout << "\n******************************\nIteration: " << i+1 << endl;
-
-		// extract the states
-		double x, y, lambda;
-		x = state[x1](0);
-		y = state[y1](0);
-		lambda = state[L1](0);
-
-		// calculate the components
-		Matrix H1, H2, gradG;
-		Vector gradL, gx;
-
-		// hessian of lagrangian function, in two columns:
-		H1 = Matrix_(2,1,
-				2.0+2.0*lambda,
-				0.0);
-		H2 = Matrix_(2,1,
-				0.0,
-				2.0);
-
-		// deriviative of lagrangian function
-		gradL = Vector_(2,
-				2.0*x*(1+lambda),
-				2.0*y-lambda);
-
-		// constraint derivatives
-		gradG = Matrix_(2,1,
-				2.0*x,
-				0.0);
-
-		// constraint value
-		gx = Vector_(1,
-				x*x-5-y);
-
-		// create a factor for the states
-		GaussianFactor::shared_ptr f1(new
-				GaussianFactor(x1, H1, y1, H2, L1, gradG, gradL, probModel2));
-
-		// create a factor for the lagrange multiplier
-		GaussianFactor::shared_ptr f2(new
-				GaussianFactor(x1, -sub(gradG, 0, 1, 0, 1),
-							   y1, -sub(gradG, 1, 2, 0, 1), -gx, constraintModel1));
-
-		// construct graph
-		GaussianFactorGraph fg;
-		fg.push_back(f1);
-		fg.push_back(f2);
-		if (verbose) fg.print("Graph");
-
-		// solve
-		Ordering ord;
-		ord += x1, y1, L1;
-		VectorConfig delta = fg.optimize(ord).scale(-1.0);
-		if (verbose) delta.print("Delta");
-
-		// update initial estimate
-		VectorConfig newState = expmap(state, delta);
-		state = newState;
-
-		if (verbose) state.print("Updated State");
-	}
-
-	// verify that it converges to the nearest optimal point
-	VectorConfig expected;
-	expected.insert(L1, Vector_(1, -1.0));
-	expected.insert(x1, Vector_(1, 2.12));
-	expected.insert(y1, Vector_(1, -0.5));
-	CHECK(assert_equal(expected,state, 1e-2));
-}
-
-/* *********************************************************************
- * This example uses a nonlinear objective function and
- * nonlinear equality constraint.  This formulation splits
- * the constraint into a factor and a linear constraint.
- *
- * This example uses the same silly number of iterations as the
- * previous example.
- */
-TEST (SQP, problem1_sqp ) {
-	bool verbose = false;
-	// use a nonlinear function of f(x) = x^2+y^2
-	// nonlinear equality constraint: g(x) = x^2-5-y=0
-	// Lagrangian: f(x) + \lambda*g(x)
-
-	// Symbols
-	Symbol x1("x1"), y1("y1"), L1("L1");
-
-	// state structure: [x y \lambda]
-	VectorConfig init, state;
-	init.insert(x1, Vector_(1, 1.0));
-	init.insert(y1, Vector_(1, 1.0));
-	init.insert(L1, Vector_(1, 1.0));
-	state = init;
-
-	if (verbose) init.print("Initial State");
-
-	// loop until convergence
-	int maxIt = 5;
-	for (int i = 0; i<maxIt; ++i) {
-		if (verbose) cout << "\n******************************\nIteration: " << i+1 << endl;
-
-		// extract the states
-		double x, y, lambda;
-		x = state[x1](0);
-		y = state[y1](0);
-		lambda = state[L1](0);
-
-		/** create the linear factor
-		 * ||h(x)-z||^2 => ||Ax-b||^2
-		 *  where:
-		 *		h(x) simply returns the inputs
-		 *		z    zeros(2)
-		 *		A 	 identity
-		 *		b	 linearization point
-		 */
-		Matrix A = eye(2);
-		Vector b = Vector_(2, x, y);
-		GaussianFactor::shared_ptr f1(
-						new GaussianFactor(x1, sub(A, 0,2, 0,1), // A(:,1)
-										   y1, sub(A, 0,2, 1,2), // A(:,2)
-										   b,                     // rhs of f(x)
-										   probModel2));          // arbitrary sigma
-
-		/** create the constraint-linear factor
-		 * Provides a mechanism to use variable gain to force the constraint
-		 * \lambda*gradG*dx + d\lambda = zero
-		 * formulated in matrix form as:
-		 * [\lambda*gradG eye(1)] [dx; d\lambda] = zero
-		 */
-		Matrix gradG = Matrix_(1, 2,2*x, -1.0);
-		GaussianFactor::shared_ptr f2(
-				new GaussianFactor(x1, lambda*sub(gradG, 0,1, 0,1), // scaled gradG(:,1)
-								   y1, lambda*sub(gradG, 0,1, 1,2), // scaled gradG(:,2)
-								   L1, eye(1),                      // dlambda term
-								   Vector_(1, 0.0),                  // rhs is zero
-								   probModel1));                     // arbitrary sigma
-
-		// create the actual constraint
-		// [gradG] [x; y] - g = 0
-		Vector g = Vector_(1,x*x-y-5);
-		GaussianFactor::shared_ptr c1(
-				new GaussianFactor(x1, sub(gradG, 0,1, 0,1),   // slice first part of gradG
-								   y1, sub(gradG, 0,1, 1,2),   // slice second part of gradG
-								   g,                           // value of constraint function
-								   constraintModel1));          // force to constraint
-
-		// construct graph
-		GaussianFactorGraph fg;
-		fg.push_back(f1);
-		fg.push_back(f2);
-		fg.push_back(c1);
-		if (verbose) fg.print("Graph");
-
-		// solve
-		Ordering ord;
-		ord += x1, y1, L1;
-		VectorConfig delta = fg.optimize(ord);
-		if (verbose) delta.print("Delta");
-
-		// update initial estimate
-		VectorConfig newState = expmap(state, delta.scale(-1.0));
-
-		// set the state to the updated state
-		state = newState;
-
-		if (verbose) state.print("Updated State");
-	}
-
-	// verify that it converges to the nearest optimal point
-	VectorConfig expected;
-	expected.insert(x1, Vector_(1, 2.12));
-	expected.insert(y1, Vector_(1, -0.5));
-	CHECK(assert_equal(state[x1], expected[x1], 1e-2));
-	CHECK(assert_equal(state[y1], expected[y1], 1e-2));
-}
-
 /* ********************************************************************* */
-
-// Basic configs
-typedef LieConfig<LagrangeKey, Vector> LagrangeConfig;
-
 // full components
-typedef TupleConfig3<LieConfig<simulated2D::PoseKey, Point2>,
-					 LieConfig<simulated2D::PointKey, Point2>,
-					 LieConfig<LagrangeKey, Vector> > Config2D;
-//typedef TupleConfig<LagrangeConfig, TupleConfigEnd<simulated2D::Config> > Config2D;
+typedef simulated2D::Config Config2D;
 typedef NonlinearFactorGraph<Config2D> Graph2D;
 typedef NonlinearEquality<Config2D, simulated2D::PoseKey, Point2> NLE;
 typedef boost::shared_ptr<simulated2D::GenericMeasurement<Config2D> > shared;
@@ -268,7 +54,7 @@ typedef NonlinearOptimizer<Graph2D, Config2D> Optimizer;
  * with two poses seeing one landmark, with each pose
  * constrained to a particular value
  */
-TEST (SQP, two_pose_truth ) {
+TEST (NonlinearConstraint, two_pose_truth ) {
 	bool verbose = false;
 
 	// create a graph
@@ -379,7 +165,7 @@ typedef NonlinearConstraint2<
  *  should be the same. Note that this is a linear system,
  *  so it will converge in one step.
  */
-TEST (SQP, two_pose ) {
+TEST (NonlinearConstraint, two_pose ) {
 	bool verbose = false;
 
 	// create the graph
@@ -407,13 +193,12 @@ TEST (SQP, two_pose ) {
 	graph->push_back(f2);
 
 	// equality constraint between l1 and l2
-	LagrangeKey L1(1);
 	list<simulated2D::PointKey> keys2; keys2 += l1, l2;
 	boost::shared_ptr<NLC2 > c2(new NLC2(
 					boost::bind(sqp_test1::g, _1, keys2),
 					l1, boost::bind(sqp_test1::G1, _1, keys2),
 					l2, boost::bind(sqp_test1::G2, _1, keys2),
-					2, L1));
+					2));
 	graph->push_back(c2);
 
 	if (verbose) graph->print("Initial nonlinear graph with constraints");
@@ -424,7 +209,6 @@ TEST (SQP, two_pose ) {
 	initialEstimate->insert(x2, Point2());
 	initialEstimate->insert(l1, Point2(1.0, 6.0)); // ground truth
 	initialEstimate->insert(l2, Point2(-4.0, 0.0)); // starting with a separate reference frame
-	initialEstimate->insert(L1, Vector_(2, 1.0, 1.0)); // connect the landmarks
 
 	// create state config variables and initialize them
 	Config2D state(*initialEstimate);
@@ -436,7 +220,7 @@ TEST (SQP, two_pose ) {
 
 	// create an ordering
 	Ordering ordering;
-	ordering += "x1", "x2", "l1", "l2", "L1";
+	ordering += "x1", "x2", "l1", "l2";
 
 	// optimize linear graph to get full delta config
 	GaussianBayesNet cbn = fg->eliminate(ordering);
@@ -455,7 +239,6 @@ TEST (SQP, two_pose ) {
 	expected.insert(l1, Point2(1.0, 6.0));
 	expected.insert(l2, Point2(1.0, 6.0));
 	expected.insert(x2, Point2(5.0, 6.0));
-	expected.insert(L1, Vector_(2, 6.0, 7.0));
 	CHECK(assert_equal(expected, state, 1e-5));
 }
 
@@ -474,9 +257,10 @@ using namespace boost;
 // typedefs for visual SLAM example
 typedef TypedSymbol<Pose3, 'x'> Pose3Key;
 typedef TypedSymbol<Point3, 'l'> Point3Key;
-typedef TupleConfig3<LieConfig<LagrangeKey, Vector>,
-					 LieConfig<Pose3Key, Pose3>,
-					 LieConfig<Point3Key, Point3> > VConfig;
+//typedef TupleConfig3<LieConfig<LagrangeKey, Vector>,
+//					 LieConfig<Pose3Key, Pose3>,
+//					 LieConfig<Point3Key, Point3> > VConfig;
+typedef visualSLAM::Config VConfig;
 typedef NonlinearFactorGraph<VConfig> VGraph;
 typedef boost::shared_ptr<GenericProjectionFactor<VConfig> > shared_vf;
 typedef NonlinearOptimizer<VGraph,VConfig> VOptimizer;
@@ -487,7 +271,7 @@ typedef NonlinearEquality<VConfig, Pose3Key, Pose3> Pose3Constraint;
 /**
  * Ground truth for a visual SLAM example with stereo vision
  */
-TEST (SQP, stereo_truth ) {
+TEST (NonlinearConstraint, stereo_truth ) {
 	bool verbose = false;
 
 	// create initial estimates
@@ -555,7 +339,7 @@ TEST (SQP, stereo_truth ) {
  * Ground truth for a visual SLAM example with stereo vision
  * with some noise injected into the initial config
  */
-TEST (SQP, stereo_truth_noisy ) {
+TEST (NonlinearConstraint, stereo_truth_noisy ) {
 	bool verbose = false;
 
 	// setting to determine how far away the noisy landmark is,
@@ -696,12 +480,11 @@ boost::shared_ptr<VGraph> stereoExampleGraph() {
 	// as the previous examples
 	visualSLAM::PointKey l1(1), l2(2);
 	list<Point3Key> keys; keys += l1, l2;
-	LagrangeKey L12(12);
 	shared_ptr<VNLC2> c2(
 			new VNLC2(boost::bind(sqp_stereo::g, _1, keys),
 					 l1, boost::bind(sqp_stereo::G1, _1, keys),
 					 l2, boost::bind(sqp_stereo::G2, _1, keys),
-					 3, L12));
+					 3));
 	graph->push_back(c2);
 
 	return graph;
@@ -736,7 +519,7 @@ boost::shared_ptr<VConfig> stereoExampleTruthConfig() {
  * SQP version of the above stereo example,
  * with the initial case as the ground truth
  */
-TEST (SQP, stereo_sqp ) {
+TEST (NonlinearConstraint, stereo_sqp ) {
 	bool verbose = false;
 
 	// get a graph
@@ -745,11 +528,10 @@ TEST (SQP, stereo_sqp ) {
 
 	// get the truth config
 	boost::shared_ptr<VConfig> truthConfig = stereoExampleTruthConfig();
-	truthConfig->insert(LagrangeKey(12), Vector_(3, 1.0, 1.0, 1.0));
 
 	// create ordering
 	shared_ptr<Ordering> ord(new Ordering());
-	*ord += "x1", "x2", "l1", "l2", "L12";
+	*ord += "x1", "x2", "l1", "l2";
 	VOptimizer::shared_solver solver(new VOptimizer::solver(ord));
 
 	// create optimizer
@@ -766,7 +548,7 @@ TEST (SQP, stereo_sqp ) {
  * SQP version of the above stereo example,
  * with noise in the initial estimate
  */
-TEST (SQP, stereo_sqp_noisy ) {
+TEST (NonlinearConstraint, stereo_sqp_noisy ) {
 
 	// get a graph
 	boost::shared_ptr<VGraph> graph = stereoExampleGraph();
@@ -787,11 +569,10 @@ TEST (SQP, stereo_sqp_noisy ) {
 	initConfig->insert(Pose3Key(2), pose2);
 	initConfig->insert(Point3Key(1), landmark1);
 	initConfig->insert(Point3Key(2), landmark2); // create two landmarks in same place
-	initConfig->insert(LagrangeKey(12), Vector_(3, 1.0, 1.0, 1.0));
 
 	// create ordering
 	shared_ptr<Ordering> ord(new Ordering());
-	*ord += "x1", "x2", "l1", "l2", "L12";
+	*ord += "x1", "x2", "l1", "l2";
 	VOptimizer::shared_solver solver(new VOptimizer::solver(ord));
 
 	// create optimizer
@@ -809,7 +590,6 @@ TEST (SQP, stereo_sqp_noisy ) {
 
 	// get the truth config
 	boost::shared_ptr<VConfig> truthConfig = stereoExampleTruthConfig();
-	truthConfig->insert(LagrangeKey(12), Vector_(3, 0.0, 1.0, 1.0));
 
 	// check if correct
 	CHECK(assert_equal(*truthConfig,*actual, 1e-5));
@@ -817,17 +597,9 @@ TEST (SQP, stereo_sqp_noisy ) {
 
 static SharedGaussian sigma(noiseModel::Isotropic::Sigma(1,0.1));
 
-// typedefs
-//typedef simulated2D::Config Config2D;
-//typedef boost::shared_ptr<Config2D> shared_config;
-//typedef NonlinearFactorGraph<Config2D> NLGraph;
-//typedef boost::shared_ptr<NonlinearFactor<Config2D> > shared;
-
 namespace map_warp_example {
 typedef NonlinearConstraint1<
 	Config2D, simulated2D::PoseKey, Point2> NLC1;
-//typedef NonlinearConstraint2<
-//	Config2D, simulated2D::PointKey, Point2, simulated2D::PointKey, Point2> NLC2;
 } // \namespace map_warp_example
 
 /* ********************************************************************* */
@@ -881,10 +653,9 @@ boost::shared_ptr<Graph2D> linearMapWarpGraph() {
 	simulated2D::PointKey l1(1), l2(2);
 
 	// constant constraint on x1
-	LagrangeKey L1(1);
 	shared_ptr<NLC1> c1(new NLC1(boost::bind(sqp_LinearMapWarp1::g_func, _1, x1),
 							x1, boost::bind(sqp_LinearMapWarp1::jac_g, _1),
-							2, L1));
+							2));
 
 	// measurement from x1 to l1
 	Point2 z1(0.0, 5.0);
@@ -895,12 +666,11 @@ boost::shared_ptr<Graph2D> linearMapWarpGraph() {
 	shared f2(new simulated2D::GenericMeasurement<Config2D>(z2, sigma, x2,l2));
 
 	// equality constraint between l1 and l2
-	LagrangeKey L12(12);
 	shared_ptr<NLC2> c2 (new NLC2(
 			boost::bind(sqp_LinearMapWarp2::g_func, _1, l1, l2),
 			l1, boost::bind(sqp_LinearMapWarp2::jac_g1, _1),
 			l2, boost::bind(sqp_LinearMapWarp2::jac_g2, _1),
-			2, L12));
+			2));
 
 	// construct the graph
 	boost::shared_ptr<Graph2D> graph(new Graph2D());
@@ -920,7 +690,6 @@ TEST ( SQPOptimizer, map_warp_initLam ) {
 	// keys
 	simulated2D::PoseKey x1(1), x2(2);
 	simulated2D::PointKey l1(1), l2(2);
-	LagrangeKey L1(1), L12(12);
 
 	// create an initial estimate
 	shared_ptr<Config2D> initialEstimate(new Config2D);
@@ -928,12 +697,10 @@ TEST ( SQPOptimizer, map_warp_initLam ) {
 	initialEstimate->insert(l1, Point2(1.0, 6.0));
 	initialEstimate->insert(l2, Point2(-4.0, 0.0)); // starting with a separate reference frame
 	initialEstimate->insert(x2, Point2(0.0, 0.0)); // other pose starts at origin
-	initialEstimate->insert(L12, Vector_(2, 1.0, 1.0));
-	initialEstimate->insert(L1, Vector_(2, 1.0, 1.0));
 
 	// create an ordering
 	shared_ptr<Ordering> ordering(new Ordering());
-	*ordering += "x1", "x2", "l1", "l2", "L12", "L1";
+	*ordering += "x1", "x2", "l1", "l2";
 
 	// create an optimizer
 	Optimizer::shared_solver solver(new Optimizer::solver(ordering));
@@ -949,8 +716,6 @@ TEST ( SQPOptimizer, map_warp_initLam ) {
 	expected.insert(l1, Point2(1.0, 6.0));
 	expected.insert(l2, Point2(1.0, 6.0));
 	expected.insert(x2, Point2(5.0, 6.0));
-	expected.insert(L1, Vector_(2, 1.0, 1.0));
-	expected.insert(L12, Vector_(2, 6.0, 7.0));
 	CHECK(assert_equal(expected, actual));
 }
 
@@ -1106,6 +871,215 @@ TEST ( SQPOptimizer, map_warp_initLam ) {
 //	exp2.insert(x2, Point2(5.0, 0.5));
 //	CHECK(assert_equal(exp2, *(final.config())));
 //}
+
+/* *********************************************************************
+ * Example from SQP testing:
+ *
+ * This example uses a nonlinear objective function and
+ * nonlinear equality constraint.  The formulation is actually
+ * the Cholesky form that creates the full Hessian explicitly,
+ * which should really be avoided with our QR-based machinery.
+ *
+ * Note: the update equation used here has a fixed step size
+ * and gain that is rather arbitrarily chosen, and as such,
+ * will take a silly number of iterations.
+ */
+TEST (NonlinearConstraint, problem1_cholesky ) {
+	bool verbose = false;
+	// use a nonlinear function of f(x) = x^2+y^2
+	// nonlinear equality constraint: g(x) = x^2-5-y=0
+	// Lagrangian: f(x) + \lambda*g(x)
+
+	// Symbols
+	Symbol x1("x1"), y1("y1"), L1("L1");
+
+	// state structure: [x y \lambda]
+	VectorConfig init, state;
+	init.insert(x1, Vector_(1, 1.0));
+	init.insert(y1, Vector_(1, 1.0));
+	init.insert(L1, Vector_(1, 1.0));
+	state = init;
+
+	if (verbose) init.print("Initial State");
+
+	// loop until convergence
+	int maxIt = 10;
+	for (int i = 0; i<maxIt; ++i) {
+		if (verbose) cout << "\n******************************\nIteration: " << i+1 << endl;
+
+		// extract the states
+		double x, y, lambda;
+		x = state[x1](0);
+		y = state[y1](0);
+		lambda = state[L1](0);
+
+		// calculate the components
+		Matrix H1, H2, gradG;
+		Vector gradL, gx;
+
+		// hessian of lagrangian function, in two columns:
+		H1 = Matrix_(2,1,
+				2.0+2.0*lambda,
+				0.0);
+		H2 = Matrix_(2,1,
+				0.0,
+				2.0);
+
+		// deriviative of lagrangian function
+		gradL = Vector_(2,
+				2.0*x*(1+lambda),
+				2.0*y-lambda);
+
+		// constraint derivatives
+		gradG = Matrix_(2,1,
+				2.0*x,
+				0.0);
+
+		// constraint value
+		gx = Vector_(1,
+				x*x-5-y);
+
+		// create a factor for the states
+		GaussianFactor::shared_ptr f1(new
+				GaussianFactor(x1, H1, y1, H2, L1, gradG, gradL, probModel2));
+
+		// create a factor for the lagrange multiplier
+		GaussianFactor::shared_ptr f2(new
+				GaussianFactor(x1, -sub(gradG, 0, 1, 0, 1),
+							   y1, -sub(gradG, 1, 2, 0, 1), -gx, constraintModel1));
+
+		// construct graph
+		GaussianFactorGraph fg;
+		fg.push_back(f1);
+		fg.push_back(f2);
+		if (verbose) fg.print("Graph");
+
+		// solve
+		Ordering ord;
+		ord += x1, y1, L1;
+		VectorConfig delta = fg.optimize(ord).scale(-1.0);
+		if (verbose) delta.print("Delta");
+
+		// update initial estimate
+		VectorConfig newState = expmap(state, delta);
+		state = newState;
+
+		if (verbose) state.print("Updated State");
+	}
+
+	// verify that it converges to the nearest optimal point
+	VectorConfig expected;
+	expected.insert(L1, Vector_(1, -1.0));
+	expected.insert(x1, Vector_(1, 2.12));
+	expected.insert(y1, Vector_(1, -0.5));
+	CHECK(assert_equal(expected,state, 1e-2));
+}
+
+/* *********************************************************************
+ * This example uses a nonlinear objective function and
+ * nonlinear equality constraint.  This formulation splits
+ * the constraint into a factor and a linear constraint.
+ *
+ * This example uses the same silly number of iterations as the
+ * previous example.
+ */
+TEST (NonlinearConstraint, problem1_sqp ) {
+	bool verbose = false;
+	// use a nonlinear function of f(x) = x^2+y^2
+	// nonlinear equality constraint: g(x) = x^2-5-y=0
+	// Lagrangian: f(x) + \lambda*g(x)
+
+	// Symbols
+	Symbol x1("x1"), y1("y1"), L1("L1");
+
+	// state structure: [x y \lambda]
+	VectorConfig init, state;
+	init.insert(x1, Vector_(1, 1.0));
+	init.insert(y1, Vector_(1, 1.0));
+	init.insert(L1, Vector_(1, 1.0));
+	state = init;
+
+	if (verbose) init.print("Initial State");
+
+	// loop until convergence
+	int maxIt = 5;
+	for (int i = 0; i<maxIt; ++i) {
+		if (verbose) cout << "\n******************************\nIteration: " << i+1 << endl;
+
+		// extract the states
+		double x, y, lambda;
+		x = state[x1](0);
+		y = state[y1](0);
+		lambda = state[L1](0);
+
+		/** create the linear factor
+		 * ||h(x)-z||^2 => ||Ax-b||^2
+		 *  where:
+		 *		h(x) simply returns the inputs
+		 *		z    zeros(2)
+		 *		A 	 identity
+		 *		b	 linearization point
+		 */
+		Matrix A = eye(2);
+		Vector b = Vector_(2, x, y);
+		GaussianFactor::shared_ptr f1(
+						new GaussianFactor(x1, sub(A, 0,2, 0,1), // A(:,1)
+										   y1, sub(A, 0,2, 1,2), // A(:,2)
+										   b,                     // rhs of f(x)
+										   probModel2));          // arbitrary sigma
+
+		/** create the constraint-linear factor
+		 * Provides a mechanism to use variable gain to force the constraint
+		 * \lambda*gradG*dx + d\lambda = zero
+		 * formulated in matrix form as:
+		 * [\lambda*gradG eye(1)] [dx; d\lambda] = zero
+		 */
+		Matrix gradG = Matrix_(1, 2,2*x, -1.0);
+		GaussianFactor::shared_ptr f2(
+				new GaussianFactor(x1, lambda*sub(gradG, 0,1, 0,1), // scaled gradG(:,1)
+								   y1, lambda*sub(gradG, 0,1, 1,2), // scaled gradG(:,2)
+								   L1, eye(1),                      // dlambda term
+								   Vector_(1, 0.0),                  // rhs is zero
+								   probModel1));                     // arbitrary sigma
+
+		// create the actual constraint
+		// [gradG] [x; y] - g = 0
+		Vector g = Vector_(1,x*x-y-5);
+		GaussianFactor::shared_ptr c1(
+				new GaussianFactor(x1, sub(gradG, 0,1, 0,1),   // slice first part of gradG
+								   y1, sub(gradG, 0,1, 1,2),   // slice second part of gradG
+								   g,                           // value of constraint function
+								   constraintModel1));          // force to constraint
+
+		// construct graph
+		GaussianFactorGraph fg;
+		fg.push_back(f1);
+		fg.push_back(f2);
+		fg.push_back(c1);
+		if (verbose) fg.print("Graph");
+
+		// solve
+		Ordering ord;
+		ord += x1, y1, L1;
+		VectorConfig delta = fg.optimize(ord);
+		if (verbose) delta.print("Delta");
+
+		// update initial estimate
+		VectorConfig newState = expmap(state, delta.scale(-1.0));
+
+		// set the state to the updated state
+		state = newState;
+
+		if (verbose) state.print("Updated State");
+	}
+
+	// verify that it converges to the nearest optimal point
+	VectorConfig expected;
+	expected.insert(x1, Vector_(1, 2.12));
+	expected.insert(y1, Vector_(1, -0.5));
+	CHECK(assert_equal(state[x1], expected[x1], 1e-2));
+	CHECK(assert_equal(state[y1], expected[y1], 1e-2));
+}
 
 /* ************************************************************************* */
 int main() { TestResult tr; return TestRegistry::runAllTests(tr); }
