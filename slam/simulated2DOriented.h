@@ -21,7 +21,9 @@ namespace gtsam {
 		// The types that take an oriented pose2 rather than point2
 		typedef TypedSymbol<Point2, 'l'> PointKey;
 		typedef TypedSymbol<Pose2,  'x'> PoseKey;
-		typedef PairConfig<PoseKey, Pose2,  PointKey, Point2> Config;
+		typedef LieConfig<PoseKey, Pose2> PoseConfig;
+		typedef LieConfig<PointKey, Point2> PointConfig;
+		typedef TupleConfig2<PoseConfig, PointConfig> Config;
 
 		//TODO:: point prior is not implemented right now
 
@@ -71,7 +73,7 @@ namespace gtsam {
 
 			GenericOdometry(const Pose2& z, const SharedGaussian& model,
 					const Key& i1, const Key& i2) :
-				z_(z), NonlinearFactor2<Cfg, Key, Pose2, Key, Pose2> (model, i1, i2) {
+				NonlinearFactor2<Cfg, Key, Pose2, Key, Pose2> (model, i1, i2), z_(z) {
 			}
 
 			Vector evaluateError(const Pose2& x1, const Pose2& x2, boost::optional<

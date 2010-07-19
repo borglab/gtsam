@@ -11,7 +11,7 @@
 #include "NonlinearFactorGraph-inl.h"
 
 namespace gtsam {
-	INSTANTIATE_PAIR_CONFIG(visualSLAM::PoseKey, Pose3, visualSLAM::PointKey, Point3)
+	INSTANTIATE_TUPLE_CONFIG2(visualSLAM::PoseConfig, visualSLAM::PointConfig)
 	INSTANTIATE_NONLINEAR_FACTOR_GRAPH(visualSLAM::Config)
 	INSTANTIATE_NONLINEAR_OPTIMIZER(visualSLAM::Graph, visualSLAM::Config)
 

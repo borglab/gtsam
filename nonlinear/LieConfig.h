@@ -100,10 +100,10 @@ namespace gtsam {
 
     // imperative methods:
 
-    /** Add a variable with the given j */
+    /** Add a variable with the given j - does not replace existing values */
     void insert(const J& j, const T& val);
 
-    /** Add a set of variables */
+    /** Add a set of variables - does note replace existing values */
     void insert(const LieConfig& cfg);
 
     /** update the current available values without adding new ones */

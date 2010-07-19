@@ -21,6 +21,7 @@ using namespace std;
 
 // template definitions
 #include "FactorGraph-inl.h"
+#include "TupleConfig-inl.h"
 #include "NonlinearFactorGraph-inl.h"
 
 namespace gtsam {

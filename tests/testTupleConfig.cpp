@@ -25,10 +25,12 @@ using namespace std;
 
 typedef TypedSymbol<Pose2, 'x'> PoseKey;
 typedef TypedSymbol<Point2, 'l'> PointKey;
-typedef PairConfig<PoseKey, Pose2, PointKey, Point2> Config;
+typedef LieConfig<PoseKey, Pose2> PoseConfig;
+typedef LieConfig<PointKey, Point2> PointConfig;
+typedef TupleConfig2<PoseConfig, PointConfig> Config;
 
 /* ************************************************************************* */
-TEST( PairConfig, constructors )
+TEST( TupleConfig, constructors )
 {
 	Pose2 x1(1,2,3), x2(6,7,8);
 	Point2 l1(4,5), l2(9,10);
@@ -50,7 +52,7 @@ TEST( PairConfig, constructors )
 }
 
 /* ************************************************************************* */
-TEST( PairConfig, insert_equals1 )
+TEST( TupleConfig, insert_equals1 )
 {
 	Pose2 x1(1,2,3), x2(6,7,8);
 	Point2 l1(4,5), l2(9,10);
@@ -70,7 +72,7 @@ TEST( PairConfig, insert_equals1 )
   CHECK(assert_equal(expected,actual));
 }
 
-TEST( PairConfig, insert_equals2 )
+TEST( TupleConfig, insert_equals2 )
 {
   Pose2 x1(1,2,3), x2(6,7,8);
   Point2 l1(4,5), l2(9,10);
@@ -94,7 +96,7 @@ TEST( PairConfig, insert_equals2 )
 }
 
 ///* ************************************************************************* */
-TEST( PairConfig, insert_duplicate )
+TEST( TupleConfig, insert_duplicate )
 {
   Pose2 x1(1,2,3), x2(6,7,8);
   Point2 l1(4,5), l2(9,10);
@@ -112,7 +114,7 @@ TEST( PairConfig, insert_duplicate )
 }
 
 /* ************************************************************************* */
-TEST( PairConfig, size_dim )
+TEST( TupleConfig, size_dim )
 {
   Pose2 x1(1,2,3), x2(6,7,8);
   Point2 l1(4,5), l2(9,10);
@@ -128,7 +130,7 @@ TEST( PairConfig, size_dim )
 }
 
 /* ************************************************************************* */
-TEST(PairConfig, at)
+TEST(TupleConfig, at)
 {
   Pose2 x1(1,2,3), x2(6,7,8);
   Point2 l1(4,5), l2(9,10);
@@ -162,7 +164,7 @@ TEST(PairConfig, at)
 }
 
 /* ************************************************************************* */
-TEST(PairConfig, zero_expmap_logmap)
+TEST(TupleConfig, zero_expmap_logmap)
 {
   Pose2 x1(1,2,3), x2(6,7,8);
   Point2 l1(4,5), l2(9,10);

@@ -24,7 +24,10 @@ namespace gtsam { namespace visualSLAM {
    */
   typedef TypedSymbol<Pose3,'x'> PoseKey;
   typedef TypedSymbol<Point3,'l'> PointKey;
-  typedef PairConfig<PoseKey, Pose3, PointKey, Point3> Config;
+  typedef LieConfig<PoseKey, Pose3> PoseConfig;
+  typedef LieConfig<PointKey, Point3> PointConfig;
+  typedef TupleConfig2<PoseConfig, PointConfig> Config;
+
   typedef NonlinearEquality<Config, PoseKey, Pose3> PoseConstraint;
   typedef NonlinearEquality<Config, PointKey, Point3> PointConstraint;
 

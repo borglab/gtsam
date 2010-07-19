@@ -25,7 +25,7 @@ namespace gtsam {
 		typedef TypedSymbol<Point2, 'l'> PointKey;
 		typedef LieConfig<PoseKey, Pose2> PoseConfig;
 		typedef LieConfig<PointKey, Point2> PointConfig;
-		typedef PairConfig<PoseKey, Pose2, PointKey, Point2> Config;
+		typedef TupleConfig2<PoseConfig, PointConfig> Config;
 
 		// Factors
 		typedef NonlinearEquality<Config, PoseKey, Pose2> Constraint;

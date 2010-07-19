@@ -21,7 +21,9 @@ namespace gtsam {
 		// Simulated2D robots have no orientation, just a position
 		typedef TypedSymbol<Point2, 'x'> PoseKey;
 		typedef TypedSymbol<Point2, 'l'> PointKey;
-		typedef PairConfig<PoseKey, Point2, PointKey, Point2> Config;
+		typedef LieConfig<PoseKey, Point2> PoseConfig;
+		typedef LieConfig<PointKey, Point2> PointConfig;
+		typedef TupleConfig2<PoseConfig, PointConfig> Config;
 
 		/**
 		 * Prior on a single pose, and optional derivative version
