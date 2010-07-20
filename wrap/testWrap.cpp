@@ -33,7 +33,8 @@ TEST( wrap, ArgumentList ) {
 
 /* ************************************************************************* */
 TEST( wrap, check_exception ) {
-	THROWS_EXCEPTION(Module("/home", "geometry",verbose));
+	THROWS_EXCEPTION(Module("/notarealpath", "geometry",verbose));
+	CHECK_EXCEPTION(Module("/alsonotarealpath", "geometry",verbose), CantOpenFile);
 }
 
 /* ************************************************************************* */

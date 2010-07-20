@@ -66,6 +66,15 @@ protected:
 		return; } \
   catch (...) {} }
 
+#define CHECK_EXCEPTION(condition, exception_name)\
+{ try { condition; \
+		result_.addFailure (Failure (name_, __FILE__,__LINE__, SimpleString("Didn't throw: ") + StringFrom(#condition))); \
+		return; } \
+  catch (exception_name& e) {} \
+  catch (...) { \
+	result_.addFailure (Failure (name_, __FILE__,__LINE__, SimpleString("Wrong exception: ") + StringFrom(#condition) + StringFrom(", expected: ") + StringFrom(#exception_name))); \
+	return; } }
+
 #define CHECK_EQUAL(expected,actual)\
 { if ((expected) == (actual)) return; result_.addFailure(Failure(name_, __FILE__, __LINE__, StringFrom(expected), StringFrom(actual))); }
 

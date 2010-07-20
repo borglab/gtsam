@@ -146,21 +146,8 @@ TEST(TupleConfig, at)
   CHECK(assert_equal(l1, config1[PointKey(1)]));
   CHECK(assert_equal(l2, config1[PointKey(2)]));
 
-  bool caught = false;
-  try {
-    config1[PoseKey(3)];
-  } catch(invalid_argument e) {
-    caught = true;
-  }
-  CHECK(caught);
-
-  caught = false;
-  try {
-    config1[PointKey(3)];
-  } catch(invalid_argument e) {
-    caught = true;
-  }
-  CHECK(caught);
+  CHECK_EXCEPTION(config1[PoseKey(3)], std::invalid_argument);
+  CHECK_EXCEPTION(config1[PointKey(3)], std::invalid_argument);
 }
 
 /* ************************************************************************* */

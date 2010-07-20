@@ -81,12 +81,7 @@ TEST ( NonlinearEquality, linearization_fail ) {
 	shared_nle nle(new NLE(key, value,vector_compare));
 
 	// check linearize to ensure that it fails for bad linearization points
-	try {
-		GaussianFactor::shared_ptr actualLF = nle->linearize(bad_linearize);
-		CHECK(false);
-	} catch (std::invalid_argument) {
-		CHECK(true);
-	}
+	CHECK_EXCEPTION(nle->linearize(bad_linearize), std::invalid_argument);
 }
 
 /* ********************************************************************** */
@@ -102,12 +97,7 @@ TEST ( NonlinearEquality, linearization_fail_pose ) {
 	shared_poseNLE nle(new PoseNLE(key, value));
 
 	// check linearize to ensure that it fails for bad linearization points
-	try {
-		GaussianFactor::shared_ptr actualLF = nle->linearize(bad_linearize);
-		CHECK(false);
-	} catch (std::invalid_argument) {
-		CHECK(true);
-	}
+	CHECK_EXCEPTION(nle->linearize(bad_linearize), std::invalid_argument);
 }
 
 /* ********************************************************************** */
@@ -123,12 +113,7 @@ TEST ( NonlinearEquality, linearization_fail_pose_origin ) {
 	shared_poseNLE nle(new PoseNLE(key, value));
 
 	// check linearize to ensure that it fails for bad linearization points
-	try {
-		GaussianFactor::shared_ptr actualLF = nle->linearize(bad_linearize);
-		CHECK(false);
-	} catch (std::invalid_argument) {
-		CHECK(true);
-	}
+	CHECK_EXCEPTION(nle->linearize(bad_linearize), std::invalid_argument);
 }
 
 /* ************************************************************************* */
