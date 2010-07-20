@@ -35,7 +35,7 @@ namespace gtsam {
 		int j;
 		vector<int> sorted;
 		list<int>::iterator itRemained;
-		for(j = 0; j < min(m,n); ) {
+		for(j = 0; j < n; ) {
 			// remove the non-zero rows in the current column
 			for(itRemained = remained.begin(); itRemained!=remained.end(); ) {
 				if (*(a[*itRemained]) != 0) {
