@@ -178,6 +178,29 @@ namespace gtsam {
 				verbosityLevel verbosity = SILENT, int maxIterations = 100,
 				double lambdaFactor = 10, LambdaMode lambdaMode = BOUNDED) const;
 
+
+		/**
+		 * Static interface to LM optimization using default ordering and thresholds
+		 * @param graph 	   Nonlinear factor graph to optimize
+		 * @param config       Initial config
+		 * @param verbosity    Integer specifying how much output to provide
+		 * @return 			   an optimized configuration
+		 */
+		static shared_config optimizeLM(shared_graph graph, shared_config config,
+				verbosityLevel verbosity = SILENT) {
+			boost::shared_ptr<gtsam::Ordering> ord(new gtsam::Ordering(graph->getOrdering()));
+			double relativeThreshold = 1e-5, absoluteThreshold = 1e-5;
+
+			// initial optimization state is the same in both cases tested
+			shared_solver solver(new NonlinearOptimizer::solver(ord));
+			NonlinearOptimizer optimizer(graph, config, solver);
+
+			// Levenberg-Marquardt
+			NonlinearOptimizer result = optimizer.levenbergMarquardt(relativeThreshold,
+					absoluteThreshold, verbosity);
+			return result.config();
+		}
+
 	};
 
 	/**
