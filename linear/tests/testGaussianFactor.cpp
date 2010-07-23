@@ -428,35 +428,6 @@ TEST ( GaussianFactor, constraint_eliminate2 )
 }
 
 /* ************************************************************************* */
-TEST ( GaussianFactor, exploding_MAST_factor ) {
-	// Test derived from a crashing error in MAST
-	// Works properly with the newer elimination code
-	// This is only a test of execution without crashing
-
-	Symbol lA2('l', 182958734);
-	Matrix A1 = eye(2);
-	Vector b1 = zero(2);
-	SharedDiagonal model1 = noiseModel::Isotropic::Sigma(2, 1.0/sqrt(2.0));
-	GaussianFactor::shared_ptr f1(new GaussianFactor(lA2, A1, b1, model1));
-
-	Matrix A2 = Matrix_(3,3,
-			5.45735,	  1.94835,	 -1.68176,
-				  0,	  10.2778,	 0.973046,
-				  0,	        0,	   12.253);
-	Vector b2 = Vector_(3, 1.29627e-16, 5.14706e-16, 4.19527e-16);
-	SharedDiagonal model2 = noiseModel::Diagonal::Sigmas(ones(3));
-	GaussianFactor::shared_ptr f2(new GaussianFactor(lA2, A2, b2, model2));
-
-	GaussianFactorGraph fg;
-	fg.push_back(f1);
-	fg.push_back(f2);
-
-	// works when using the newer implementation of eliminate
-	GaussianConditional::shared_ptr cg = fg.eliminateOne(lA2, false);
-	CHECK(true);
-}
-
-/* ************************************************************************* */
 TEST( GaussianFactor, erase)
 {
 	Vector b = Vector_(3, 1., 2., 3.);
