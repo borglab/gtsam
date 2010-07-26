@@ -198,10 +198,12 @@ namespace gtsam {
 
 	public:
 
+		typedef TypedSymbol<T, C> Base;
+
 		// Constructors:
 
 		TypedLabeledSymbol() {}
-		TypedLabeledSymbol(size_t j, L label):TypedSymbol<T,C>(j), label_(label) {}
+		TypedLabeledSymbol(size_t j, L label) : Base(j), label_(label) {}
 
 		/** Constructor that decodes encoded labels */
 		TypedLabeledSymbol(const Symbol& sym) : TypedSymbol<T,C>(0) {
@@ -209,6 +211,9 @@ namespace gtsam {
 			this->j_ = (sym.index() << shift) >> shift; // truncate upper bits
 			label_ = (L) (sym.index() >> shift); // remove lower bits
 		}
+
+		/** Constructor to upgrade an existing typed label with a label */
+		TypedLabeledSymbol(const Base& key, L label) : Base(key.index()), label_(label) {}
 
 		// Get stuff:
 

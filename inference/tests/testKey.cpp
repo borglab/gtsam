@@ -33,14 +33,19 @@ TEST ( TypedSymbol, basic_operations ) {
 
 /* ************************************************************************* */
 TEST ( TypedLabledSymbol, basic_operations ) {
+	typedef TypedSymbol<Pose3, 'x'> SimpleKey;
 	typedef TypedLabeledSymbol<Pose3, 'x', int> RobotKey;
 
+	SimpleKey key7(1);
 	RobotKey key1(0, 1),
 			 key2(0, 1),
 			 key3(1, 1),
 			 key4(2, 1),
 			 key5(0, 2),
-			 key6(1, 2);
+			 key6(1, 2),
+			 key8(1, 3),
+			 key9(key7, 3);
+
 
 	CHECK(key1.label()==1);
 	CHECK(key1.index()==0);
@@ -52,6 +57,7 @@ TEST ( TypedLabledSymbol, basic_operations ) {
 	CHECK(!(key1 == key5));
 	CHECK(key1 < key5);
 	CHECK(key5 < key6);
+	CHECK(assert_equal(key9, key8));
 }
 
 /* ************************************************************************* */
@@ -80,48 +86,6 @@ TEST ( TypedLabledSymbol, encoding ) {
 
 	// decode
 	CHECK(assert_equal(key1, RobotKey(act1)));
-}
-
-/* ************************************************************************* *
-TEST ( TypedLabledSymbol, symbol_translation ) {
-	typedef TypedLabeledSymbol<Pose3, 'x', char> Key;
-
-	Key key1(0, 'A'),
-		key2(1, 'A'),
-		key3(0, 'B'),
-		key4(1, 'B');
-
-	LabeledSymbol act1(key1), act2(key2), act3(key3), act4(key4);
-	LabeledSymbol exp1('x', 0, 'A'),
-				  exp2('x', 1, 'A'),
-				  exp3('x', 0, 'B'),
-				  exp4('x', 1, 'B');
-	CHECK(assert_equal(exp1, act1));
-	CHECK(assert_equal(exp2, act2));
-	CHECK(assert_equal(exp3, act3));
-	CHECK(assert_equal(exp4, act4));
-
-}
-
-/* ************************************************************************* *
-TEST ( TypedLabledSymbol, symbol_comparison ) {
-	typedef TypedLabeledSymbol<Pose3, 'x', char> Key1;
-	typedef TypedSymbol<Pose3, 'x'> Key2;
-
-	Key1 key1(0, 'A'),
-		 key2(1, 'A'),
-		 key3(0, 'B'),
-		 key4(1, 'B');
-	Key2 key5(0), key6(1);
-
-	LabeledSymbol act1(key1), act2(key2), act3(key3), act4(key4);
-
-	CHECK(act1 != act2);
-	CHECK(act1 != act3);
-	CHECK(act1 != act4);
-	CHECK(act1 == act1);
-	CHECK(act1 < act2);
-	CHECK(act1 < act3);
 }
 
 /* ************************************************************************* */
