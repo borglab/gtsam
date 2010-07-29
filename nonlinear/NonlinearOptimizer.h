@@ -192,7 +192,7 @@ namespace gtsam {
 			double relativeThreshold = 1e-5, absoluteThreshold = 1e-5;
 
 			// initial optimization state is the same in both cases tested
-			shared_solver solver(new NonlinearOptimizer::solver(ord));
+			shared_solver solver(new S(ord));
 			NonlinearOptimizer optimizer(graph, config, solver);
 
 			// Levenberg-Marquardt
