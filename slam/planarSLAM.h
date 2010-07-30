@@ -37,6 +37,8 @@ namespace gtsam {
 
 		// Graph
 		struct Graph: public NonlinearFactorGraph<Config> {
+			Graph(){}
+			Graph(const NonlinearFactorGraph<Config>& graph);
 			void addPrior(const PoseKey& i, const Pose2& p, const SharedGaussian& model);
 			void addPoseConstraint(const PoseKey& i, const Pose2& p);
 			void addOdometry(const PoseKey& i, const PoseKey& j, const Pose2& z,

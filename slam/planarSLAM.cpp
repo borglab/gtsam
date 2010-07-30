@@ -20,6 +20,9 @@ namespace gtsam {
 
 	namespace planarSLAM {
 
+		Graph::Graph(const NonlinearFactorGraph<Config>& graph) :
+				NonlinearFactorGraph<Config>(graph) {}
+
 		void Graph::addPrior(const PoseKey& i, const Pose2& p,
 				const SharedGaussian& model) {
 			sharedFactor factor(new Prior(i, p, model));
