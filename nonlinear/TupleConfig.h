@@ -128,6 +128,9 @@ namespace gtsam {
 	  void erase(const Key& j)  { second_.erase(j); }
 	  void erase(const Key1& j)  { first_.erase(j); }
 
+	  /** clears the config */
+	  void clear() { first_.clear(); second_.clear(); }
+
 	  /** determine whether an element exists */
 	  template<class Key>
 	  bool exists(const Key& j) const { return second_.exists(j); }
@@ -161,6 +164,9 @@ namespace gtsam {
 
 	  /** @return number of key/value pairs stored */
 	  size_t size() const { return first_.size() + second_.size(); }
+
+	  /** @return true if config is empty */
+	  bool empty() const { return first_.empty() && second_.empty(); }
 
 	  /** @return The dimensionality of the tangent space */
 	  size_t dim() const { return first_.dim() + second_.dim(); }
@@ -240,6 +246,10 @@ namespace gtsam {
 	  const Config& config() const { return first_; }
 
 	  void erase(const Key1& j) { first_.erase(j); }
+
+	  void clear() { first_.clear(); }
+
+	  bool empty() const { return first_.empty(); }
 
 	  bool exists(const Key1& j) const { return first_.exists(j); }
 

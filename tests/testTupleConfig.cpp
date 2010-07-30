@@ -95,7 +95,7 @@ TEST( TupleConfig, insert_equals2 )
   CHECK(!config1.equals(config2));
 }
 
-///* ************************************************************************* */
+/* ************************************************************************* */
 TEST( TupleConfig, insert_duplicate )
 {
   Pose2 x1(1,2,3), x2(6,7,8);
@@ -271,6 +271,16 @@ TEST(TupleConfig, basic_functions) {
 	configB.erase(L1);
 	CHECK(!configB.exists(L1));
 	CHECK(configB.size() == 2);
+
+	// clear
+	configA.clear();
+	CHECK(configA.size() == 0);
+	configB.clear();
+	CHECK(configB.size() == 0);
+
+	// empty
+	CHECK(configA.empty());
+	CHECK(configB.empty());
 }
 
 /* ************************************************************************* */
