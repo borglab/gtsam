@@ -43,13 +43,12 @@ namespace gtsam {
 	/* ************************************************************************* */
 	VectorConfig GaussianJunctionTree::optimize() {
 		// eliminate from leaves to the root
-		typedef JunctionTree<GaussianFactorGraph> Base;
-		BayesTree<GaussianConditional> bayesTree;
-		bayesTree = this->eliminate<GaussianConditional>();
+		BayesTree<GaussianConditional>::sharedClique rootClique;
+		rootClique = this->eliminate<GaussianConditional>();
 
 		// back-substitution
 		VectorConfig result;
-		btreeBackSubstitue(bayesTree.root(), result);
+		btreeBackSubstitue(rootClique, result);
 		return result;
 	}
 

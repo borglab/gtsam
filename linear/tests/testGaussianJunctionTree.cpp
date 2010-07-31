@@ -59,7 +59,7 @@ TEST( GaussianJunctionTree, eliminate )
 	GaussianFactorGraph fg = createChain();
 	Ordering ordering; ordering += "x2","x1","x3","x4";
 	GaussianJunctionTree junctionTree(fg, ordering);
-		BayesTree<GaussianConditional> bayesTree = junctionTree.eliminate<GaussianConditional>();
+	BayesTree<GaussianConditional>::sharedClique rootClique = junctionTree.eliminate<GaussianConditional>();
 
 	typedef BayesTree<GaussianConditional>::sharedConditional sharedConditional;
 	Matrix two = Matrix_(1,1,2.);
@@ -69,7 +69,9 @@ TEST( GaussianJunctionTree, eliminate )
 	bayesTree_expected.insert(sharedConditional(new GaussianConditional("x3", Vector_(1,2.), two, "x4", two, Vector_(1,1.))), ordering);
 	bayesTree_expected.insert(sharedConditional(new GaussianConditional("x1", Vector_(1,0.), one*(-1), "x3", one, Vector_(1,1.))), ordering);
 	bayesTree_expected.insert(sharedConditional(new GaussianConditional("x2", Vector_(1,2.), two, "x1", one, "x3", one, Vector_(1,1.))), ordering);
-	CHECK(assert_equal(bayesTree_expected, bayesTree));
+	CHECK(assert_equal(*bayesTree_expected.root(), *rootClique));
+	CHECK(assert_equal(*(bayesTree_expected.root()->children_.front()), *(rootClique->children_.front())));
+
 }
 
 

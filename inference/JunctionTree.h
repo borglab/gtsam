@@ -42,7 +42,7 @@ namespace gtsam {
 
 		// utility function called by eliminate
 		template<class Conditional>
-		std::pair<FG, BayesTree<Conditional> > eliminateOneClique(sharedClique fg_);
+		std::pair<FG, typename BayesTree<Conditional>::sharedClique> eliminateOneClique(sharedClique fg_);
 
 	public:
 		// constructor
@@ -54,7 +54,7 @@ namespace gtsam {
 
 		// eliminate the factors in the subgraphs
 		template<class Conditional>
-		BayesTree<Conditional> eliminate();
+		typename BayesTree<Conditional>::sharedClique eliminate();
 
 	}; // JunctionTree
 

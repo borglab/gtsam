@@ -49,9 +49,11 @@ namespace gtsam {
 			friend class BayesTree<Conditional>;
 
 			//* Constructor */
+			Clique();
+
 			Clique(const sharedConditional& conditional);
 
-			Clique();
+			Clique(const BayesNet<Conditional>& bayesNet);
 
 			/** return keys in frontal:separator order */
 			Ordering keys() const;

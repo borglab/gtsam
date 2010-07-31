@@ -32,9 +32,16 @@ namespace gtsam {
 	/* ************************************************************************* */
 	template<class Conditional>
 	BayesTree<Conditional>::Clique::Clique(const sharedConditional& conditional) {
-			separator_ = conditional->parents();
-			this->push_back(conditional);
-		}
+		separator_ = conditional->parents();
+		this->push_back(conditional);
+	}
+
+	/* ************************************************************************* */
+	template<class Conditional>
+	BayesTree<Conditional>::Clique::Clique(const BayesNet<Conditional>& bayesNet)
+	: BayesNet<Conditional>(bayesNet) {
+		separator_ = (*bayesNet.rbegin())->parents();
+	}
 
 	/* ************************************************************************* */
 	template<class Conditional>

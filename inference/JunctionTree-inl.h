@@ -61,29 +61,21 @@ namespace gtsam {
 
 	/* ************************************************************************* */
 	template <class FG> template <class Conditional>
-	pair<FG, BayesTree<Conditional> >
+	pair<FG, typename BayesTree<Conditional>::sharedClique>
 	JunctionTree<FG>::eliminateOneClique(sharedClique current) {
-
-//		current->frontal_.print("current clique:");
 
 		typedef typename BayesTree<Conditional>::sharedClique sharedBtreeClique;
 		FG fg; // factor graph will be assembled from local factors and marginalized children
-		list<BayesTree<Conditional> > children;
+		list<sharedBtreeClique> children;
 		fg.push_back(*current); // add the local factor graph
-
-//		BOOST_FOREACH(const typename FG::sharedFactor& factor_, fg)
-//			Ordering(factor_->keys()).print("local factor:");
 
 		BOOST_FOREACH(sharedClique& child, current->children_) {
 			// receive the factors from the child and its clique point
-			FG fgChild; BayesTree<Conditional> childTree;
-			boost::tie(fgChild, childTree) = eliminateOneClique<Conditional>(child);
-
-//			BOOST_FOREACH(const typename FG::sharedFactor& factor_, fgChild)
-//				Ordering(factor_->keys()).print("factor from child:");
+			FG fgChild; sharedBtreeClique childRoot;
+			boost::tie(fgChild, childRoot) = eliminateOneClique<Conditional>(child);
 
 			fg.push_back(fgChild);
-			children.push_back(childTree);
+			children.push_back(childRoot);
 		}
 
 		// eliminate the combined factors
@@ -91,15 +83,20 @@ namespace gtsam {
 		BayesNet<Conditional> bn = fg.eliminateFrontals(current->frontal_);
 
 		// create a new clique corresponding the combined factors
-		BayesTree<Conditional> bayesTree(bn, children);
+//		BayesTree<Conditional> bayesTree(bn, children);
+		sharedBtreeClique new_clique(new typename BayesTree<Conditional>::Clique(bn));
+		new_clique->children_ = children;
 
-		return make_pair(fg, bayesTree);
+		BOOST_FOREACH(sharedBtreeClique& childRoot, children)
+			childRoot->parent_ = new_clique;
+
+		return make_pair(fg, new_clique);
 	}
 
 	/* ************************************************************************* */
 	template <class FG> template <class Conditional>
-	BayesTree<Conditional> JunctionTree<FG>::eliminate() {
-		pair<FG, BayesTree<Conditional> > ret = this->eliminateOneClique<Conditional>(this->root());
+	typename BayesTree<Conditional>::sharedClique JunctionTree<FG>::eliminate() {
+		pair<FG, typename BayesTree<Conditional>::sharedClique> ret = this->eliminateOneClique<Conditional>(this->root());
 		if (ret.first.nrFactors() != 0)
 			throw runtime_error("JuntionTree::eliminate: elimination failed because of factors left over!");
 		return ret.second;
