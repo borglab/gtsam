@@ -8,8 +8,10 @@ sources =
 check_PROGRAMS = 
 
 # base Math
+
+headers += FixedVector.h
 sources += Vector.cpp svdcmp.cpp Matrix.cpp
-check_PROGRAMS += tests/testVector tests/testMatrix
+check_PROGRAMS += tests/testFixedVector tests/testVector tests/testMatrix 
 
 if USE_LAPACK
 sources += SPQRUtil.cpp
