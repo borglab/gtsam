@@ -175,7 +175,7 @@ TEST( NonlinearOptimizer, optimize )
 }
 
 /* ************************************************************************* */
-TEST( NonlinearOptimizer, SimpleOptimizer )
+TEST( NonlinearOptimizer, SimpleLMOptimizer )
 {
 	  shared_ptr<example::Graph> fg(new example::Graph(
 	  		example::createReallyNonlinearFactorGraph()));
@@ -191,6 +191,26 @@ TEST( NonlinearOptimizer, SimpleOptimizer )
 		c0->insert(simulated2D::PoseKey(1), x0);
 
 		Optimizer::shared_config actual = Optimizer::optimizeLM(fg, c0);
+		DOUBLES_EQUAL(0,fg->error(*actual),tol);
+}
+
+/* ************************************************************************* */
+TEST( NonlinearOptimizer, SimpleGNOptimizer )
+{
+	  shared_ptr<example::Graph> fg(new example::Graph(
+	  		example::createReallyNonlinearFactorGraph()));
+
+		// test error at minimum
+		Point2 xstar(0,0);
+		example::Config cstar;
+		cstar.insert(simulated2D::PoseKey(1), xstar);
+
+		// test error at initial = [(1-cos(3))^2 + (sin(3))^2]*50 =
+		Point2 x0(3,3);
+		boost::shared_ptr<example::Config> c0(new example::Config);
+		c0->insert(simulated2D::PoseKey(1), x0);
+
+		Optimizer::shared_config actual = Optimizer::optimizeGN(fg, c0);
 		DOUBLES_EQUAL(0,fg->error(*actual),tol);
 }
 

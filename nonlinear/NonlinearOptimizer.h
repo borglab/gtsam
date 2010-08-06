@@ -201,6 +201,28 @@ namespace gtsam {
 			return result.config();
 		}
 
+		/**
+		 * Static interface to GN optimization using default ordering and thresholds
+		 * @param graph 	   Nonlinear factor graph to optimize
+		 * @param config       Initial config
+		 * @param verbosity    Integer specifying how much output to provide
+		 * @return 			   an optimized configuration
+		 */
+		static shared_config optimizeGN(shared_graph graph, shared_config config,
+				verbosityLevel verbosity = SILENT) {
+			boost::shared_ptr<gtsam::Ordering> ord(new gtsam::Ordering(graph->getOrdering()));
+			double relativeThreshold = 1e-5, absoluteThreshold = 1e-5;
+
+			// initial optimization state is the same in both cases tested
+			shared_solver solver(new S(ord));
+			NonlinearOptimizer optimizer(graph, config, solver);
+
+			// Gauss-Newton
+			NonlinearOptimizer result = optimizer.gaussNewton(relativeThreshold,
+					absoluteThreshold, verbosity);
+			return result.config();
+		}
+
 	};
 
 	/**
