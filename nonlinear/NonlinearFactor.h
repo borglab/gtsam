@@ -236,8 +236,6 @@ namespace gtsam {
 
 	/**
 	 * A Gaussian nonlinear factor that takes 2 parameters
-	 * Note: cannot be serialized as contains function pointers
-	 * Specialized derived classes could do this
 	 */
 	template<class Config, class Key1, class X1, class Key2, class X2>
 	class NonlinearFactor2: public NonlinearFactor<Config> {
@@ -353,8 +351,6 @@ namespace gtsam {
 
   /**
    * A Gaussian nonlinear factor that takes 3 parameters
-   * Note: cannot be serialized as contains function pointers
-   * Specialized derived classes could do this
    */
   template<class Config, class Key1, class X1, class Key2, class X2, class Key3, class X3>
   class NonlinearFactor3: public NonlinearFactor<Config> {

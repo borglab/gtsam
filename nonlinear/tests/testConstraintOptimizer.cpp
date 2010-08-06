@@ -25,6 +25,106 @@ using namespace boost::assign;
 using namespace std;
 using namespace gtsam;
 
+/* *********************************************************************
+ * Example from SQP testing:
+ *
+ * This example uses a nonlinear objective function and
+ * nonlinear equality constraint.  The formulation is actually
+ * the Cholesky form that creates the full Hessian explicitly,
+ * and isn't expecially compatible with our machinery.
+ */
+TEST (NonlinearConstraint, problem1_cholesky ) {
+	bool verbose = false;
+	// use a nonlinear function of f(x) = x^2+y^2
+	// nonlinear equality constraint: g(x) = x^2-5-y=0
+	// Lagrangian: f(x) + \lambda*g(x)
+
+	// Symbols
+	Symbol x1("x1"), y1("y1"), L1("L1");
+
+	// state structure: [x y \lambda]
+	VectorConfig init, state;
+	init.insert(x1, Vector_(1, 1.0));
+	init.insert(y1, Vector_(1, 1.0));
+	init.insert(L1, Vector_(1, 1.0));
+	state = init;
+
+	if (verbose) init.print("Initial State");
+
+	// loop until convergence
+	int maxIt = 10;
+	for (int i = 0; i<maxIt; ++i) {
+		if (verbose) cout << "\n******************************\nIteration: " << i+1 << endl;
+
+		// extract the states
+		double x, y, lambda;
+		x = state[x1](0);
+		y = state[y1](0);
+		lambda = state[L1](0);
+
+		// calculate the components
+		Matrix H1, H2, gradG;
+		Vector gradL, gx;
+
+		// hessian of lagrangian function, in two columns:
+		H1 = Matrix_(2,1,
+				2.0+2.0*lambda,
+				0.0);
+		H2 = Matrix_(2,1,
+				0.0,
+				2.0);
+
+		// deriviative of lagrangian function
+		gradL = Vector_(2,
+				2.0*x*(1+lambda),
+				2.0*y-lambda);
+
+		// constraint derivatives
+		gradG = Matrix_(2,1,
+				2.0*x,
+				0.0);
+
+		// constraint value
+		gx = Vector_(1,
+				x*x-5-y);
+
+		// create a factor for the states
+		GaussianFactor::shared_ptr f1(new
+				GaussianFactor(x1, H1, y1, H2, L1, gradG, gradL, probModel2));
+
+		// create a factor for the lagrange multiplier
+		GaussianFactor::shared_ptr f2(new
+				GaussianFactor(x1, -sub(gradG, 0, 1, 0, 1),
+							   y1, -sub(gradG, 1, 2, 0, 1), -gx, constraintModel1));
+
+		// construct graph
+		GaussianFactorGraph fg;
+		fg.push_back(f1);
+		fg.push_back(f2);
+		if (verbose) fg.print("Graph");
+
+		// solve
+		Ordering ord;
+		ord += x1, y1, L1;
+		VectorConfig delta = fg.optimize(ord).scale(-1.0);
+		if (verbose) delta.print("Delta");
+
+		// update initial estimate
+		VectorConfig newState = expmap(state, delta);
+		state = newState;
+
+		if (verbose) state.print("Updated State");
+	}
+
+	// verify that it converges to the nearest optimal point
+	VectorConfig expected;
+	expected.insert(L1, Vector_(1, -1.0));
+	expected.insert(x1, Vector_(1, 2.12));
+	expected.insert(y1, Vector_(1, -0.5));
+	CHECK(assert_equal(expected,state, 1e-2));
+}
+
+
 /* ************************************************************************* */
 // Example of a single Constrained QP problem from the matlab testCQP.m file.
 TEST( matrix, CQP_example ) {

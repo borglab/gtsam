@@ -22,9 +22,8 @@ headers += NonlinearFactor.h
 sources += NonlinearOptimizer.cpp
 
 # Nonlinear constraints 
-headers += NonlinearConstraint.h NonlinearConstraint-inl.h
+headers += NonlinearConstraint.h 
 headers += NonlinearEquality.h
-check_PROGRAMS += tests/testNonlinearConstraint  
 
 # SQP
 if USE_LDL

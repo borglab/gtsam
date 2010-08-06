@@ -31,7 +31,8 @@ template <class Config>
 class NonlinearConstraint : public NonlinearFactor<Config> {
 
 protected:
-
+	typedef NonlinearConstraint<Config> This;
+	typedef NonlinearFactor<Config> Base;
 	double mu_; // gain for quadratic merit function
 
 public:
@@ -40,7 +41,8 @@ public:
 	 * @param dim is the dimension of the factor
 	 * @param mu is the gain used at error evaluation (forced to be positive)
 	 */
-	NonlinearConstraint(size_t dim, double mu = 1000.0);
+	NonlinearConstraint(size_t dim, double mu = 1000.0):
+		Base(noiseModel::Constrained::All(dim)), mu_(fabs(mu)) {}
 
 	/** returns the gain mu */
 	double mu() const { return mu_; }
@@ -49,10 +51,29 @@ public:
 	virtual void print(const std::string& s = "") const=0;
 
 	/** Check if two factors are equal */
-	virtual bool equals(const Factor<Config>& f, double tol=1e-9) const=0;
+	virtual bool equals(const Factor<Config>& f, double tol=1e-9) const {
+		const This* p = dynamic_cast<const This*> (&f);
+		if (p == NULL) return false;
+		return Base::equals(*p, tol) && (mu_ == p->mu_);
+	}
 
 	/** error function - returns the quadratic merit function */
-	virtual double error(const Config& c) const;
+	virtual double error(const Config& c) const  {
+		const Vector error_vector = unwhitenedError(c);
+		if (active(c))
+			return mu_ * inner_prod(error_vector, error_vector);
+		else return 0.0;
+	}
+
+	/** Raw error vector function g(x) */
+	virtual Vector unwhitenedError(const Config& c) const = 0;
+
+	/**
+	 * active set check, defines what type of constraint this is
+	 * By default, the constraint is always active, so it is an equality constraint
+	 * @return true if the constraint is active
+	 */
+	virtual bool active(const Config& c) const { return true; }
 
 	/**
 	 * Linearizes around a given config
@@ -64,31 +85,14 @@ public:
 
 
 /**
- * A unary constraint with arbitrary cost and jacobian functions
- * This is an example class designed for easy testing, but real uses should probably
- * subclass NonlinearConstraint and implement virtual functions directly
+ * A unary constraint that defaults to an equality constraint
  */
 template <class Config, class Key, class X>
 class NonlinearConstraint1 : public NonlinearConstraint<Config> {
 
-private:
-
-	/**
-	 * Calculates the jacobian of the constraint function
-	 * returns a pxn matrix
-	 * Use boost.bind to create the function object
-	 * @param config to use for linearization
-	 * @return the jacobian of the constraint in terms of key
-	 */
-	boost::function<Matrix(const Config& config)> G_;
-
-	/** calculates the constraint function of the current config
-	 * If the value is zero, the constraint is not active
-	 * Use boost.bind to create the function object
-	 * @param config is a configuration of all the variables
-	 * @return the cost for each of p constraints, arranged in a vector
-	 */
-	boost::function<Vector(const Config& config)> g_;
+protected:
+	typedef NonlinearConstraint1<Config,Key,X> This;
+	typedef NonlinearConstraint<Config> Base;
 
 	/** key for the constrained variable */
 	Key key_;
@@ -98,44 +102,52 @@ public:
 	/**
 	 * Basic constructor
 	 * @param key is the identifier for the variable constrained
-	 * @param G gives the jacobian of the constraint function
-	 * @param g is the constraint function
 	 * @param dim is the size of the constraint (p)
 	 * @param mu is the gain for the factor
 	 */
-	NonlinearConstraint1(
-			Vector (*g)(const Config& config),
-			const Key& key,
-			Matrix (*G)(const Config& config),
-			size_t dim,
-			double mu = 1000.0);
+	NonlinearConstraint1(const Key& key, size_t dim, double mu = 1000.0)
+		: Base(dim, mu), key_(key) {
+		this->keys_.push_back(key);
+	}
 
-	/**
-	 * Basic constructor with boost function pointers
-	 * @param key is the identifier for the variable constrained
-	 * @param G gives the jacobian of the constraint function
-	 * @param g is the constraint function as a boost function pointer
-	 * @param dim is the size of the constraint (p)
-	 * @param mu is the gain for the factor
-	 */
-	NonlinearConstraint1(
-			boost::function<Vector(const Config& config)> g,
-			const Key& key,
-			boost::function<Matrix(const Config& config)> G,
-			size_t dim,
-			double mu = 1000.0);
+	/* print */
+	void print(const std::string& s = "") const {
+		std::cout << "NonlinearConstraint1 " << s << std::endl;
+		std::cout << "key: " << (std::string) key_ << std::endl;
+		std::cout << "mu: " << this->mu_ << std::endl;
+	}
 
-	/** Print */
-	void print(const std::string& s = "") const;
+	/** Check if two factors are equal. Note type is Factor and needs cast. */
+	virtual bool equals(const Factor<Config>& f, double tol = 1e-9) const {
+		const This* p = dynamic_cast<const This*> (&f);
+		if (p == NULL) return false;
+		return Base::equals(*p, tol) && (key_ == p->key_);
+	}
 
-	/** Check if two factors are equal */
-	bool equals(const Factor<Config>& f, double tol=1e-9) const;
-
-	/** Error function */
-	virtual inline Vector unwhitenedError(const Config& c) const { return g_(c); }
+	/** error function g(x) */
+	inline Vector unwhitenedError(const Config& x) const {
+		const Key& j = key_;
+		const X& xj = x[j];
+		return evaluateError(xj);
+	}
 
 	/** Linearize from config */
-	virtual boost::shared_ptr<GaussianFactor> linearize(const Config& c) const;
+	boost::shared_ptr<GaussianFactor> linearize(const Config& c) const {
+		if (!active(c)) {
+			boost::shared_ptr<GaussianFactor> factor;
+			return factor;
+		}
+		const Key& j = key_;
+		const X& x = c[j];
+		Matrix grad;
+		Vector g = -1.0 * evaluateError(x, grad);
+		SharedDiagonal model = noiseModel::Constrained::All(this->dim());
+		return GaussianFactor::shared_ptr(new GaussianFactor(this->key_, grad, g, model));
+	}
+
+	/** g(x) with optional derivative */
+	virtual Vector evaluateError(const X& x, boost::optional<Matrix&> H =
+			boost::none) const = 0;
 };
 
 /**
@@ -144,25 +156,9 @@ public:
 template <class Config, class Key1, class X1, class Key2, class X2>
 class NonlinearConstraint2 : public NonlinearConstraint<Config> {
 
-private:
-
-	/**
-	 * Calculates the jacobians of the constraint function in terms of
-	 * the first and second variables
-	 * returns a pxn matrix
-	 * @param config to use for linearization
-	 * @return the jacobian of the constraint in terms of key
-	 */
-	boost::function<Matrix(const Config& config)> G1_;
-	boost::function<Matrix(const Config& config)> G2_;
-
-	/** calculates the constraint function of the current config
-	 * If the value is zero, the constraint is not active
-	 * Use boost.bind to create the function object
-	 * @param config is a configuration of all the variables
-	 * @return the cost for each of p constraints, arranged in a vector
-	 */
-	boost::function<Vector(const Config& config)> g_;
+protected:
+	typedef NonlinearConstraint2<Config,Key1,X1,Key2,X2> This;
+	typedef NonlinearConstraint<Config> Base;
 
 	/** keys for the constrained variables */
 	Key1 key1_;
@@ -172,50 +168,59 @@ public:
 
 	/**
 	 * Basic constructor
-	 * @param key is the identifier for the variable constrained
-	 * @param G gives the jacobian of the constraint function
-	 * @param g is the constraint function
+	 * @param key1 is the identifier for the first variable constrained
+	 * @param key2 is the identifier for the second variable constrained
 	 * @param dim is the size of the constraint (p)
 	 * @param mu is the gain for the factor
 	 */
-	NonlinearConstraint2(
-			Vector (*g)(const Config& config),
-			const Key1& key1,
-			Matrix (*G1)(const Config& config),
-			const Key2& key2,
-			Matrix (*G2)(const Config& config),
-			size_t dim,
-			double mu = 1000.0);
+	NonlinearConstraint2(const Key1& key1, const Key2& key2, size_t dim, double mu = 1000.0) :
+			Base(dim, mu), key1_(key1), key2_(key2) {
+		this->keys_.push_back(key1);
+		this->keys_.push_back(key2);
+	}
 
-	/**
-	 * Basic constructor with direct function objects
-	 * Use boost.bind to construct the function objects
-	 * @param key is the identifier for the variable constrained
-	 * @param G gives the jacobian of the constraint function
-	 * @param g is the constraint function
-	 * @param dim is the size of the constraint (p)
-	 * @param mu is the gain for the factor
-	 */
-	NonlinearConstraint2(
-			boost::function<Vector(const Config& config)> g,
-			const Key1& key1,
-			boost::function<Matrix(const Config& config)> G1,
-			const Key2& key2,
-			boost::function<Matrix(const Config& config)> G2,
-			size_t dim,
-			double mu = 1000.0);
+	/* print */
+	void print(const std::string& s = "") const {
+		std::cout << "NonlinearConstraint2 " << s << std::endl;
+		std::cout << "key1: " << (std::string) key1_ << std::endl;
+		std::cout << "key2: " << (std::string) key2_ << std::endl;
+		std::cout << "mu: " << this->mu_ << std::endl;
+	}
 
-	/** Print */
-	void print(const std::string& s = "") const;
+	/** Check if two factors are equal. Note type is Factor and needs cast. */
+	virtual bool equals(const Factor<Config>& f, double tol = 1e-9) const {
+		const This* p = dynamic_cast<const This*> (&f);
+		if (p == NULL) return false;
+		return Base::equals(*p, tol) && (key1_ == p->key1_) && (key2_ == p->key2_);
+	}
 
-	/** Check if two factors are equal */
-	bool equals(const Factor<Config>& f, double tol=1e-9) const;
-
-	/** Error function */
-	virtual inline Vector unwhitenedError(const Config& c) const { return g_(c); }
+	/** error function g(x) */
+	inline Vector unwhitenedError(const Config& x) const {
+		const Key1& j1 = key1_;
+		const Key2& j2 = key2_;
+		const X1& xj1 = x[j1];
+		const X2& xj2 = x[j2];
+		return evaluateError(xj1, xj2);
+	}
 
 	/** Linearize from config */
-	virtual boost::shared_ptr<GaussianFactor> linearize(const Config& c) const;
+	boost::shared_ptr<GaussianFactor> linearize(const Config& c) const {
+		if (!active(c)) {
+			boost::shared_ptr<GaussianFactor> factor;
+			return factor;
+		}
+		const Key1& j1 = key1_; const Key2& j2 = key2_;
+		const X1& x1 = c[j1]; const X2& x2 = c[j2];
+		Matrix grad1, grad2;
+		Vector g = -1.0 * evaluateError(x1, x2, grad1, grad2);
+		SharedDiagonal model = noiseModel::Constrained::All(this->dim());
+		return GaussianFactor::shared_ptr(new GaussianFactor(j1, grad1, j2, grad2, g, model));
+	}
+
+	/** g(x) with optional derivative2 */
+	virtual Vector evaluateError(const X1& x1, const X2& x2,
+			boost::optional<Matrix&> H1 = boost::none,
+			boost::optional<Matrix&> H2 = boost::none) const = 0;
 };
 
 }
