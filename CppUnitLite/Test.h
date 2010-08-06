@@ -54,8 +54,20 @@ protected:
     testGroup##testName##Instance; \
 	void testGroup##testName##Test::run (TestResult& result_) 
 
+/*
+ * Convention for tests:
+ *  - "EXPECT" is a test that will not end execution of the series of tests
+ *  - Otherwise, upon a failure, the test will end
+ *
+ * Usage:
+ *  EXPECT is useful when checking several different parts of an condition so
+ *  that a failure of one check won't hide another failure.
+ *
+ * Note: Exception tests are not available in a EXPECT form, as exceptions rarely
+ * fit the criteria of an assertion that does not need to be true to continue
+ */
 
-
+/* True ASSERTs: tests end at first failure */
 #define CHECK(condition)\
 { if (!(condition)) \
 { result_.addFailure (Failure (name_, __FILE__,__LINE__, #condition)); return; } }
@@ -78,15 +90,12 @@ protected:
 #define CHECK_EQUAL(expected,actual)\
 { if ((expected) == (actual)) return; result_.addFailure(Failure(name_, __FILE__, __LINE__, StringFrom(expected), StringFrom(actual))); }
 
-
 #define LONGS_EQUAL(expected,actual)\
 { long actualTemp = actual; \
   long expectedTemp = expected; \
   if ((expectedTemp) != (actualTemp)) \
 { result_.addFailure (Failure (name_, __FILE__, __LINE__, StringFrom(expectedTemp), \
 StringFrom(actualTemp))); return; } }
-
-
 
 #define DOUBLES_EQUAL(expected,actual,threshold)\
 { double actualTemp = actual; \
@@ -95,6 +104,25 @@ StringFrom(actualTemp))); return; } }
 { result_.addFailure (Failure (name_, __FILE__, __LINE__, \
 StringFrom((double)expectedTemp), StringFrom((double)actualTemp))); return; } }
 
+
+/* EXPECTs: tests will continue running after a failure */
+#define EXPECT(condition)\
+{ if (!(condition)) \
+{ result_.addFailure (Failure (name_, __FILE__,__LINE__, #condition)); } }
+
+#define EXPECT_LONGS_EQUAL(expected,actual)\
+{ long actualTemp = actual; \
+  long expectedTemp = expected; \
+  if ((expectedTemp) != (actualTemp)) \
+{ result_.addFailure (Failure (name_, __FILE__, __LINE__, StringFrom(expectedTemp), \
+StringFrom(actualTemp))); } }
+
+#define EXPECT_DOUBLES_EQUAL(expected,actual,threshold)\
+{ double actualTemp = actual; \
+  double expectedTemp = expected; \
+  if (fabs ((expectedTemp)-(actualTemp)) > threshold) \
+{ result_.addFailure (Failure (name_, __FILE__, __LINE__, \
+StringFrom((double)expectedTemp), StringFrom((double)actualTemp))); } }
 
 
 #define FAIL(text) \

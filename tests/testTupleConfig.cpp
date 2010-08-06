@@ -125,8 +125,8 @@ TEST( TupleConfig, size_dim )
   config1.insert(PointKey(1), l1);
   config1.insert(PointKey(2), l2);
 
-  CHECK(config1.size() == 4);
-  CHECK(config1.dim() == 10);
+  EXPECT(config1.size() == 4);
+  EXPECT(config1.dim() == 10);
 }
 
 /* ************************************************************************* */
@@ -141,10 +141,10 @@ TEST(TupleConfig, at)
   config1.insert(PointKey(1), l1);
   config1.insert(PointKey(2), l2);
 
-  CHECK(assert_equal(x1, config1[PoseKey(1)]));
-  CHECK(assert_equal(x2, config1[PoseKey(2)]));
-  CHECK(assert_equal(l1, config1[PointKey(1)]));
-  CHECK(assert_equal(l2, config1[PointKey(2)]));
+  EXPECT(assert_equal(x1, config1[PoseKey(1)]));
+  EXPECT(assert_equal(x2, config1[PoseKey(2)]));
+  EXPECT(assert_equal(l1, config1[PointKey(1)]));
+  EXPECT(assert_equal(l2, config1[PointKey(2)]));
 
   CHECK_EXCEPTION(config1[PoseKey(3)], std::invalid_argument);
   CHECK_EXCEPTION(config1[PointKey(3)], std::invalid_argument);
@@ -233,33 +233,33 @@ TEST(TupleConfig, basic_functions) {
 	configB.insert(L1, lam1);
 
 	// bracket operator
-	CHECK(assert_equal(configA[x1], pose1));
-	CHECK(assert_equal(configA[l1], point1));
-	CHECK(assert_equal(configB[x1], pose1));
-	CHECK(assert_equal(configB[l1], point1));
-	CHECK(assert_equal(configB[L1], lam1));
+	EXPECT(assert_equal(configA[x1], pose1));
+	EXPECT(assert_equal(configA[l1], point1));
+	EXPECT(assert_equal(configB[x1], pose1));
+	EXPECT(assert_equal(configB[l1], point1));
+	EXPECT(assert_equal(configB[L1], lam1));
 
 	// exists
-	CHECK(configA.exists(x1));
-	CHECK(configA.exists(l1));
-	CHECK(configB.exists(x1));
-	CHECK(configB.exists(l1));
-	CHECK(configB.exists(L1));
+	EXPECT(configA.exists(x1));
+	EXPECT(configA.exists(l1));
+	EXPECT(configB.exists(x1));
+	EXPECT(configB.exists(l1));
+	EXPECT(configB.exists(L1));
 
 	// at
-	CHECK(assert_equal(configA.at(x1), pose1));
-	CHECK(assert_equal(configA.at(l1), point1));
-	CHECK(assert_equal(configB.at(x1), pose1));
-	CHECK(assert_equal(configB.at(l1), point1));
-	CHECK(assert_equal(configB.at(L1), lam1));
+	EXPECT(assert_equal(configA.at(x1), pose1));
+	EXPECT(assert_equal(configA.at(l1), point1));
+	EXPECT(assert_equal(configB.at(x1), pose1));
+	EXPECT(assert_equal(configB.at(l1), point1));
+	EXPECT(assert_equal(configB.at(L1), lam1));
 
 	// size
-	CHECK(configA.size() == 2);
-	CHECK(configB.size() == 3);
+	EXPECT(configA.size() == 2);
+	EXPECT(configB.size() == 3);
 
 	// dim
-	CHECK(configA.dim() == 5);
-	CHECK(configB.dim() == 6);
+	EXPECT(configA.dim() == 5);
+	EXPECT(configB.dim() == 6);
 
 	// erase
 	configA.erase(x1);
@@ -274,13 +274,13 @@ TEST(TupleConfig, basic_functions) {
 
 	// clear
 	configA.clear();
-	CHECK(configA.size() == 0);
+	EXPECT(configA.size() == 0);
 	configB.clear();
-	CHECK(configB.size() == 0);
+	EXPECT(configB.size() == 0);
 
 	// empty
-	CHECK(configA.empty());
-	CHECK(configB.empty());
+	EXPECT(configA.empty());
+	EXPECT(configB.empty());
 }
 
 /* ************************************************************************* */
@@ -370,12 +370,12 @@ TEST( TupleConfig, equals )
 
 	ConfigA config6(config1);
 
-	CHECK(assert_equal(config1,config2));
-	CHECK(assert_equal(config1,config1));
-	CHECK(!config1.equals(config3));
-	CHECK(!config1.equals(config4));
-	CHECK(!config1.equals(config5));
-	CHECK(assert_equal(config1, config6));
+	EXPECT(assert_equal(config1,config2));
+	EXPECT(assert_equal(config1,config1));
+	EXPECT(!config1.equals(config3));
+	EXPECT(!config1.equals(config4));
+	EXPECT(!config1.equals(config5));
+	EXPECT(assert_equal(config1, config6));
 }
 
 /* ************************************************************************* */
