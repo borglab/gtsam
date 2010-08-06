@@ -6,13 +6,14 @@
 #include <CppUnitLite/TestHarness.h>
 
 #include <simulated2DConstraints.h>
+#include <visualSLAM.h>
 #include <NonlinearFactorGraph-inl.h>
 #include <NonlinearOptimizer-inl.h>
 
 using namespace std;
 using namespace gtsam;
 
-static const double tol = 1e-9;
+static const double tol = 1e-5;
 
 SharedDiagonal hard_model = noiseModel::Constrained::All(2);
 SharedDiagonal soft_model = noiseModel::Isotropic::Sigma(2, 1.0);
@@ -181,8 +182,166 @@ TEST( testNonlinearEqualityConstraint, odo_simple_optimize ) {
 	expected.insert(key1, truth_pt1);
 	expected.insert(key2, truth_pt2);
 	CHECK(assert_equal(expected, *actual, tol));
-
 }
+
+/* ********************************************************************* */
+TEST (testNonlinearEqualityConstraint, two_pose ) {
+	/*
+	 * Determining a ground truth linear system
+	 * with two poses seeing one landmark, with each pose
+	 * constrained to a particular value
+	 */
+
+	shared_graph graph(new Graph());
+
+	simulated2D::PoseKey x1(1), x2(2);
+	simulated2D::PointKey l1(1), l2(2);
+	Point2 pt_x1(1.0, 1.0),
+		   pt_x2(5.0, 6.0);
+	graph->add(simulated2D::UnaryEqualityConstraint(pt_x1, x1));
+	graph->add(simulated2D::UnaryEqualityConstraint(pt_x2, x2));
+
+	Point2 z1(0.0, 5.0);
+	SharedGaussian sigma(noiseModel::Isotropic::Sigma(2, 0.1));
+	graph->add(simulated2D::Measurement(z1, sigma, x1,l1));
+
+	Point2 z2(-4.0, 0.0);
+	graph->add(simulated2D::Measurement(z2, sigma, x2,l2));
+
+	graph->add(simulated2D::PointEqualityConstraint(l1, l2));
+
+	shared_config initialEstimate(new simulated2D::Config());
+	initialEstimate->insert(x1, pt_x1);
+	initialEstimate->insert(x2, Point2());
+	initialEstimate->insert(l1, Point2(1.0, 6.0)); // ground truth
+	initialEstimate->insert(l2, Point2(-4.0, 0.0)); // starting with a separate reference frame
+
+	Optimizer::shared_config actual = Optimizer::optimizeLM(graph, initialEstimate);
+
+	simulated2D::Config expected;
+	expected.insert(x1, pt_x1);
+	expected.insert(l1, Point2(1.0, 6.0));
+	expected.insert(l2, Point2(1.0, 6.0));
+	expected.insert(x2, Point2(5.0, 6.0));
+	CHECK(assert_equal(expected, *actual, 1e-5));
+}
+
+/* ********************************************************************* */
+TEST (testNonlinearEqualityConstraint, map_warp ) {
+	// get a graph
+	shared_graph graph(new Graph());
+
+	// keys
+	simulated2D::PoseKey x1(1), x2(2);
+	simulated2D::PointKey l1(1), l2(2);
+
+	// constant constraint on x1
+	Point2 pose1(1.0, 1.0);
+	graph->add(simulated2D::UnaryEqualityConstraint(pose1, x1));
+
+	SharedDiagonal sigma = noiseModel::Isotropic::Sigma(1,0.1);
+
+	// measurement from x1 to l1
+	Point2 z1(0.0, 5.0);
+	graph->add(simulated2D::Measurement(z1, sigma, x1, l1));
+
+	// measurement from x2 to l2
+	Point2 z2(-4.0, 0.0);
+	graph->add(simulated2D::Measurement(z2, sigma, x2, l2));
+
+	// equality constraint between l1 and l2
+	graph->add(simulated2D::PointEqualityConstraint(l1, l2));
+
+	// create an initial estimate
+	shared_config initialEstimate(new simulated2D::Config());
+	initialEstimate->insert(x1, Point2( 1.0, 1.0));
+	initialEstimate->insert(l1, Point2( 1.0, 6.0));
+	initialEstimate->insert(l2, Point2(-4.0, 0.0)); // starting with a separate reference frame
+	initialEstimate->insert(x2, Point2( 0.0, 0.0)); // other pose starts at origin
+
+	// optimize
+	Optimizer::shared_config actual = Optimizer::optimizeLM(graph, initialEstimate);
+
+	simulated2D::Config expected;
+	expected.insert(x1, Point2(1.0, 1.0));
+	expected.insert(l1, Point2(1.0, 6.0));
+	expected.insert(l2, Point2(1.0, 6.0));
+	expected.insert(x2, Point2(5.0, 6.0));
+	CHECK(assert_equal(expected, *actual, tol));
+}
+
+// make a realistic calibration matrix
+double fov = 60; // degrees
+size_t w=640,h=480;
+Cal3_S2 K(fov,w,h);
+boost::shared_ptr<Cal3_S2> shK(new Cal3_S2(K));
+
+// typedefs for visual SLAM example
+typedef visualSLAM::Config VConfig;
+typedef boost::shared_ptr<VConfig> shared_vconfig;
+typedef visualSLAM::Graph VGraph;
+typedef NonlinearOptimizer<VGraph,VConfig> VOptimizer;
+
+// factors for visual slam
+typedef NonlinearEquality2<VConfig, visualSLAM::PointKey, Point3> Point3Equality;
+
+/* ********************************************************************* */
+TEST (testNonlinearEqualityConstraint, stereo_constrained ) {
+
+	// create initial estimates
+	Rot3 faceDownY(Matrix_(3,3,
+			1.0, 0.0, 0.0,
+			0.0, 0.0, 1.0,
+			0.0, 1.0, 0.0));
+	Pose3 pose1(faceDownY, Point3()); // origin, left camera
+	SimpleCamera camera1(K, pose1);
+	Pose3 pose2(faceDownY, Point3(2.0, 0.0, 0.0)); // 2 units to the left
+	SimpleCamera camera2(K, pose2);
+	Point3 landmark(1.0, 5.0, 0.0); //centered between the cameras, 5 units away
+
+	// keys
+	visualSLAM::PoseKey x1(1), x2(2);
+	visualSLAM::PointKey l1(1), l2(2);
+
+	// create graph
+	VGraph::shared_graph graph(new VGraph());
+
+	// create equality constraints for poses
+	graph->addPoseConstraint(1, camera1.pose());
+	graph->addPoseConstraint(2, camera2.pose());
+
+	// create  factors
+	SharedDiagonal vmodel = noiseModel::Unit::Create(3);
+	graph->addMeasurement(camera1.project(landmark), vmodel, 1, 1, shK);
+	graph->addMeasurement(camera2.project(landmark), vmodel, 2, 2, shK);
+
+	// add equality constraint
+	graph->add(Point3Equality(l1, l2));
+
+	// create initial data
+	Point3 landmark1(0.5, 5.0, 0.0);
+	Point3 landmark2(1.5, 5.0, 0.0);
+
+	shared_vconfig initConfig(new VConfig());
+	initConfig->insert(x1, pose1);
+	initConfig->insert(x2, pose2);
+	initConfig->insert(l1, landmark1);
+	initConfig->insert(l2, landmark2);
+
+	// optimize
+	VOptimizer::shared_config actual = VOptimizer::optimizeLM(graph, initConfig);
+
+	// create config
+	VConfig truthConfig;
+	truthConfig.insert(x1, camera1.pose());
+	truthConfig.insert(x2, camera2.pose());
+	truthConfig.insert(l1, landmark);
+	truthConfig.insert(l2, landmark);
+
+	// check if correct
+	CHECK(assert_equal(truthConfig, *actual, 1e-5));
+}
+
 
 /* ************************************************************************* */
 int main() { TestResult tr; return TestRegistry::runAllTests(tr); }

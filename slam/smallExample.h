@@ -82,7 +82,7 @@ namespace gtsam {
 		GaussianFactorGraph createSmoother(int T);
 
 		/* ******************************************************* */
-		// Constrained Examples
+		// Linear Constrained Examples
 		/* ******************************************************* */
 
 		/**
@@ -105,37 +105,6 @@ namespace gtsam {
 		 */
 		GaussianFactorGraph createMultiConstraintGraph();
 		VectorConfig createMultiConstraintConfig();
-
-		/**
-		 * These are the old examples from the EqualityFactor/DeltaFunction
-		 * They should be updated for use at some point, but are disabled for now
-		 */
-		/**
-		 * Create configuration for constrained example
-		 * This is the ground truth version
-		 */
-		//VectorConfig createConstrainedConfig();
-
-		/**
-		 * Create a noisy configuration for linearization
-		 */
-		//VectorConfig createConstrainedLinConfig();
-
-		/**
-		 * Create the correct delta configuration
-		 */
-		//VectorConfig createConstrainedCorrectDelta();
-
-		/**
-		 * Create small example constrained factor graph
-		 */
-		//GaussianFactorGraph createConstrainedGaussianFactorGraph();
-
-		/**
-		 * Create small example constrained nonlinear factor graph
-		 */
-		//	ConstrainedNonlinearFactorGraph<NonlinearFactor<VectorConfig>,VectorConfig>
-		//		createConstrainedNonlinearFactorGraph();
 
 		/* ******************************************************* */
 		// Planar graph with easy subtree for SubgraphPreconditioner

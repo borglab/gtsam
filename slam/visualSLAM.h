@@ -27,6 +27,7 @@ namespace gtsam { namespace visualSLAM {
   typedef LieConfig<PoseKey, Pose3> PoseConfig;
   typedef LieConfig<PointKey, Point3> PointConfig;
   typedef TupleConfig2<PoseConfig, PointConfig> Config;
+  typedef boost::shared_ptr<Config> shared_config;
 
   typedef NonlinearEquality<Config, PoseKey, Pose3> PoseConstraint;
   typedef NonlinearEquality<Config, PointKey, Point3> PointConstraint;
@@ -50,7 +51,7 @@ namespace gtsam { namespace visualSLAM {
     typedef NonlinearFactor2<Cfg, PosK, Pose3, LmK, Point3> Base;
 
     // shorthand for a smart pointer to a factor
-    typedef boost::shared_ptr<GenericProjectionFactor> shared_ptr;
+    typedef boost::shared_ptr<GenericProjectionFactor<Cfg, LmK, PosK> > shared_ptr;
 
     /**
      * Default constructor
@@ -124,6 +125,8 @@ namespace gtsam { namespace visualSLAM {
 	class Graph: public NonlinearFactorGraph<Config> {
 
 	public:
+
+		typedef boost::shared_ptr<Graph> shared_graph;
 
 		/** default constructor is empty graph */
 		Graph() {

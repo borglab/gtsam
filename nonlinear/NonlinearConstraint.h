@@ -223,4 +223,31 @@ public:
 			boost::optional<Matrix&> H2 = boost::none) const = 0;
 };
 
+/**
+ * Simple binary equality constraint - this constraint forces two factors to
+ * be the same.  This constraint requires the underlying type to a Lie type
+ */
+template<class Config, class Key, class X>
+class NonlinearEquality2 : public NonlinearConstraint2<Config, Key, X, Key, X> {
+protected:
+	typedef NonlinearConstraint2<Config, Key, X, Key, X> Base;
+
+public:
+
+	typedef boost::shared_ptr<NonlinearEquality2<Config, Key, X> > shared_ptr;
+
+	NonlinearEquality2(const Key& key1, const Key& key2, double mu = 1000.0)
+		: Base(key1, key2, X::dim(), mu) {}
+
+	/** g(x) with optional derivative2 */
+	Vector evaluateError(const X& x1, const X& x2,
+			boost::optional<Matrix&> H1 = boost::none,
+			boost::optional<Matrix&> H2 = boost::none) const {
+		const size_t p = X::dim();
+		if (H1) *H1 = -eye(p);
+		if (H2) *H2 = eye(p);
+		return logmap(x1, x2);
+	}
+};
+
 }

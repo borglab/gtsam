@@ -18,7 +18,7 @@ namespace gtsam {
 	namespace simulated2D {
 
 		/**
-		 * Unary factor encoding a hard equality on a Point
+		 * Unary constraint encoding a hard equality on a Point
 		 */
 		template<class Cfg = Config, class Key = PoseKey>
 		struct GenericUnaryEqualityConstraint: public NonlinearConstraint1<Cfg, Key, Point2> {
@@ -39,7 +39,7 @@ namespace gtsam {
 		};
 
 		/**
-		 * Binary factor simulating "odometry" between two Vectors
+		 * Binary constraint simulating "odometry" between two Poses
 		 */
 		template<class Cfg = Config, class Key = PoseKey>
 		struct GenericOdoHardEqualityConstraint: public NonlinearConstraint2<Cfg, Key, Point2, Key,	Point2> {
@@ -62,6 +62,10 @@ namespace gtsam {
 		/** Typedefs for regular use */
 		typedef GenericUnaryEqualityConstraint<Config, PoseKey> UnaryEqualityConstraint;
 		typedef GenericOdoHardEqualityConstraint<Config, PoseKey> OdoEqualityConstraint;
+
+		/** Equality between variables */
+		typedef NonlinearEquality2<Config, PoseKey, Point2> PoseEqualityConstraint;
+		typedef NonlinearEquality2<Config, PointKey, Point2> PointEqualityConstraint;
 
 	} // namespace simulated2D
 } // namespace gtsam
