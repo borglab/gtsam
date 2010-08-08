@@ -224,8 +224,8 @@ TEST( NonlinearOptimizer, Factorization )
 	config->insert(2, Pose2(1.5,0.,0.));
 
 	boost::shared_ptr<Pose2Graph> graph(new Pose2Graph);
-	graph->addPrior(1, Pose2(0.,0.,0.), Isotropic::Sigma(3, 1e-10));
-	graph->addConstraint(1,2, Pose2(1.,0.,0.), Isotropic::Sigma(3, 1));
+	graph->addPrior(1, Pose2(0.,0.,0.), noiseModel::Isotropic::Sigma(3, 1e-10));
+	graph->addConstraint(1,2, Pose2(1.,0.,0.), noiseModel::Isotropic::Sigma(3, 1));
 
 	boost::shared_ptr<Ordering> ordering(new Ordering);
 	ordering->push_back(Pose2Config::Key(1));
@@ -250,8 +250,8 @@ TEST( NonlinearOptimizer, SubgraphSolver )
 
 	// Create a graph
 	boost::shared_ptr<Graph> graph(new Graph);
-	graph->addPrior(1, Pose2(0., 0., 0.), Isotropic::Sigma(3, 1e-10));
-	graph->addConstraint(1, 2, Pose2(1., 0., 0.), Isotropic::Sigma(3, 1));
+	graph->addPrior(1, Pose2(0., 0., 0.), noiseModel::Isotropic::Sigma(3, 1e-10));
+	graph->addConstraint(1, 2, Pose2(1., 0., 0.), noiseModel::Isotropic::Sigma(3, 1));
 
 	// Create an initial config
 	boost::shared_ptr<Config> config(new Config);

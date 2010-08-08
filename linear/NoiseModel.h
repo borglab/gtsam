@@ -397,5 +397,4 @@ namespace gtsam {
 
 	} // namespace noiseModel
 
-	using namespace noiseModel;
 } // namespace gtsam
