@@ -14,6 +14,10 @@ check_PROGRAMS += tests/testPoint2 tests/testRot2 tests/testPose2 tests/testPoin
 sources += Cal3_S2.cpp CalibratedCamera.cpp SimpleCamera.cpp
 check_PROGRAMS += tests/testCal3_S2 tests/testCalibratedCamera tests/testSimpleCamera
 
+# Stereo
+sources += StereoPoint2.cpp StereoCamera.cpp
+check_PROGRAMS += tests/testStereoCamera
+
 # Tensors
 headers += tensors.h Tensor1.h Tensor2.h Tensor3.h Tensor4.h Tensor5.h
 headers += Tensor1Expression.h Tensor2Expression.h Tensor3Expression.h Tensor5Expression.h
