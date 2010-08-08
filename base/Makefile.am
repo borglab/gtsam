@@ -58,7 +58,7 @@ endif
 
 # On Mac, we compile using the BLAS/LAPACK headers in the Accelerate framework 
 if USE_ACCELERATE_MACOS
-AM_CPPFLAGS += -F Accelerate
+AM_CPPFLAGS += -I/System/Library/Frameworks/vecLib.framework/Headers
 endif
 
 #----------------------------------------------------------------------------------------------------
