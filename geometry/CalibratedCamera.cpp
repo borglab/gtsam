@@ -64,43 +64,49 @@ namespace gtsam {
 
 	/* ************************************************************************* */
 	Matrix Dproject_pose(const CalibratedCamera& camera, const Point3& point) {
-		Point3 cameraPoint = transform_to(camera.pose(), point);
-		Matrix D_cameraPoint_pose = Dtransform_to1(camera.pose(), point);
-
-		Point2 intrinsic = project_to_camera(cameraPoint);
-		Matrix D_intrinsic_cameraPoint = Dproject_to_camera1(cameraPoint);
-
-		Matrix D_intrinsic_pose = D_intrinsic_cameraPoint * D_cameraPoint_pose;
-		return D_intrinsic_pose;
+		const Pose3& pose = camera.pose();
+		const Rot3& R = pose.rotation();
+		const Point3& r1 = R.r1(), r2 = R.r2(), r3 = R.r3();
+		Point3 q = transform_to(pose, point);
+		double X = q.x(), Y = q.y(), Z = q.z();
+		double d = 1.0 / Z, d2 = d * d, Xd2 = X*d2, Yd2 = Y*d2;
+		return Matrix_(2,6,
+				X*Yd2, -Z*d-X*Xd2,  d*Y, -d*r1.x()+r3.x()*Xd2, -d*r1.y()+r3.y()*Xd2, -d*r1.z()+r3.z()*Xd2,
+				d*Z+Y*Yd2, -X*Yd2, -d*X, -d*r2.x()+r3.x()*Yd2, -d*r2.y()+r3.y()*Yd2, -d*r2.z()+r3.z()*Yd2);
 	}
 
 	/* ************************************************************************* */
 	Matrix Dproject_point(const CalibratedCamera& camera, const Point3& point) {
-		Point3 cameraPoint = transform_to(camera.pose(),point);
-		Matrix D_cameraPoint_point = Dtransform_to2(camera.pose(),point);
-
-		Point2 intrinsic = project_to_camera(cameraPoint);
-		Matrix D_intrinsic_cameraPoint = Dproject_to_camera1(cameraPoint);
-
-		Matrix D_intrinsic_point = D_intrinsic_cameraPoint * D_cameraPoint_point;
-		return D_intrinsic_point;
+		const Pose3& pose = camera.pose();
+		const Rot3& R = pose.rotation();
+		const Point3& r1 = R.r1(), r2 = R.r2(), r3 = R.r3();
+		Point3 q = transform_to(pose, point);
+		double X = q.x(), Y = q.y(), Z = q.z();
+		double d = 1.0 / Z, d2 = d * d, Xd2 = X*d2, Yd2 = Y*d2;
+		return Matrix_(2,3,
+				d*r1.x()-r3.x()*Xd2, d*r1.y()-r3.y()*Xd2, d*r1.z()-r3.z()*Xd2,
+				d*r2.x()-r3.x()*Yd2, d*r2.y()-r3.y()*Yd2, d*r2.z()-r3.z()*Yd2);
 	}
 
 	/* ************************************************************************* */
 	Point2 Dproject_pose_point(const CalibratedCamera& camera, const Point3& point,
 			Matrix& D_intrinsic_pose, Matrix& D_intrinsic_point) {
 
-		Point3 cameraPoint = transform_to(camera.pose(), point);
-		Matrix D_cameraPoint_pose = Dtransform_to1(camera.pose(),point); // 3*6
-		Matrix D_cameraPoint_point = Dtransform_to2(camera.pose(),point); // 3*3
-
-		Point2 intrinsic = project_to_camera(cameraPoint);
-		Matrix D_intrinsic_cameraPoint = Dproject_to_camera1(cameraPoint);
-
-		D_intrinsic_pose = D_intrinsic_cameraPoint * D_cameraPoint_pose; // 2*6
-		D_intrinsic_point = D_intrinsic_cameraPoint * D_cameraPoint_point; // 2*3
-
-		return intrinsic;
+		const Pose3& pose = camera.pose();
+		const Rot3& R = pose.rotation();
+		const Point3& r1 = R.r1(), r2 = R.r2(), r3 = R.r3();
+		Point3 q = transform_to(pose, point);
+		double X = q.x(), Y = q.y(), Z = q.z();
+		double d = 1.0 / Z, d2 = d * d, Xd2 = X*d2, Yd2 = Y*d2;
+		double dp11 = d*r1.x()-r3.x()*Xd2, dp12 = d*r1.y()-r3.y()*Xd2, dp13 = d*r1.z()-r3.z()*Xd2;
+		double dp21 = d*r2.x()-r3.x()*Yd2, dp22 = d*r2.y()-r3.y()*Yd2, dp23 = d*r2.z()-r3.z()*Yd2;
+		D_intrinsic_pose = Matrix_(2,6,
+				X*Yd2, -Z*d-X*Xd2,  d*Y, -dp11, -dp12, -dp13,
+				d*Z+Y*Yd2, -X*Yd2, -d*X, -dp21, -dp22, -dp23);
+		D_intrinsic_point = Matrix_(2,3,
+						dp11, dp12, dp13,
+						dp21, dp22, dp23);
+		return project_to_camera(q);
 	}
 
 /* ************************************************************************* */
