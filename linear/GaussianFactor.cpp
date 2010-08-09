@@ -227,7 +227,7 @@ list<Symbol> GaussianFactor::keys() const {
 Dimensions GaussianFactor::dimensions() const {
   Dimensions result;
   BOOST_FOREACH(const NamedMatrix& jA, As_)
-		result.insert(std::pair<Symbol,int>(jA.first,jA.second.size2()));
+		result.insert(std::pair<Symbol,size_t>(jA.first,jA.second.size2()));
   return result;
 }
 

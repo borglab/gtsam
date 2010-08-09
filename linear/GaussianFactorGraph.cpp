@@ -351,7 +351,7 @@ Dimensions GaussianFactorGraph::dimensions() const {
 	Dimensions result;
 	BOOST_FOREACH(const sharedFactor& factor,factors_) {
 		Dimensions vs = factor->dimensions();
-		Symbol key; int dim;
+		Symbol key; size_t dim;
 		FOREACH_PAIR(key,dim,vs) result.insert(make_pair(key,dim));
 	}
 	return result;
@@ -367,7 +367,7 @@ GaussianFactorGraph GaussianFactorGraph::add_priors(double sigma) const {
 	Dimensions vs = dimensions();
 
 	// for each of the variables, add a prior
-	Symbol key; int dim;
+	Symbol key; size_t dim;
 	FOREACH_PAIR(key,dim,vs) {
 		Matrix A = eye(dim);
 		Vector b = zero(dim);

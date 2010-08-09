@@ -29,7 +29,7 @@ namespace gtsam {
 	class Ordering;
 
 	/** A map from key to dimension, useful in various contexts */
-  typedef SymbolMap<int> Dimensions;
+  typedef SymbolMap<size_t> Dimensions;
 
 /**
  * Base Class for a linear factor.
