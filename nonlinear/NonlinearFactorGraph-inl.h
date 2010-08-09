@@ -51,7 +51,7 @@ namespace gtsam {
 		// linearize all factors
 		BOOST_FOREACH(const sharedFactor& factor, this->factors_) {
 			boost::shared_ptr<GaussianFactor> lf = factor->linearize(config);
-			linearFG->push_back(lf);
+			if (lf)	linearFG->push_back(lf);
 		}
 
 		return linearFG;

@@ -17,55 +17,56 @@ namespace gtsam {
 
 	namespace simulated2D {
 
-		/**
-		 * Unary constraint encoding a hard equality on a Point
-		 */
-		template<class Cfg = Config, class Key = PoseKey>
-		struct GenericUnaryEqualityConstraint: public NonlinearConstraint1<Cfg, Key, Point2> {
-			typedef NonlinearConstraint1<Cfg, Key, Point2> Base;
-			typedef boost::shared_ptr<GenericUnaryEqualityConstraint<Cfg, Key> > shared_ptr;
+		namespace equality_constraints {
 
-			Point2 z_;
+			/** Typedefs for regular use */
+			typedef NonlinearEquality1<Config, PoseKey, Point2> UnaryEqualityConstraint;
+			typedef BetweenConstraint<Config, PoseKey, Point2> OdoEqualityConstraint;
 
-			GenericUnaryEqualityConstraint(const Point2& z, const Key& key, double mu = 1000.0) :
-				Base(key, 2, mu), z_(z) {
-			}
+			/** Equality between variables */
+			typedef NonlinearEquality2<Config, PoseKey, Point2> PoseEqualityConstraint;
+			typedef NonlinearEquality2<Config, PointKey, Point2> PointEqualityConstraint;
 
-			Vector evaluateError(const Point2& x, boost::optional<Matrix&> H =
-					boost::none) const {
-				return (prior(x, H) - z_).vector();
-			}
+		} // \namespace equality_constraints
 
-		};
+		namespace inequality_constraints {
 
-		/**
-		 * Binary constraint simulating "odometry" between two Poses
-		 */
-		template<class Cfg = Config, class Key = PoseKey>
-		struct GenericOdoHardEqualityConstraint: public NonlinearConstraint2<Cfg, Key, Point2, Key,	Point2> {
-			typedef NonlinearConstraint2<Cfg, Key, Point2, Key,	Point2> Base;
-			typedef boost::shared_ptr<GenericOdoHardEqualityConstraint<Cfg,Key> > shared_ptr;
-			Point2 z_;
+			/**
+			 * Unary inequality constraint forcing a coordinate to be greater than a fixed value (c)
+			 */
+			template<class Cfg, class Key, unsigned int Idx>
+			struct ScalarInequalityConstraint1: public NonlinearConstraint1<Cfg, Key, Point2> {
+				typedef NonlinearConstraint1<Cfg, Key, Point2> Base;
+				typedef boost::shared_ptr<ScalarInequalityConstraint1<Cfg, Key, Idx> > shared_ptr;
 
-			GenericOdoHardEqualityConstraint(
-					const Point2& z, const Key& i1, const Key& i2, double mu = 1000.0) :
-				Base (i1, i2, 2, mu), z_(z) {
-			}
+				double c_; 	   /// min value of the selected coordinate
 
-			Vector evaluateError(const Point2& x1, const Point2& x2, boost::optional<
-					Matrix&> H1 = boost::none, boost::optional<Matrix&> H2 = boost::none) const {
-				return (odo(x1, x2, H1, H2) - z_).vector();
-			}
+				ScalarInequalityConstraint1(const Key& key, double c, double mu = 1000.0) :
+					Base(key, 1, mu), c_(c) {
+				}
 
-		};
+				/** active when constraint not met */
+				virtual bool active(const Cfg& c) const {
+					return c[this->key_].vector()(Idx) <= c_; // greater than or equals to avoid zigzagging
+				}
 
-		/** Typedefs for regular use */
-		typedef GenericUnaryEqualityConstraint<Config, PoseKey> UnaryEqualityConstraint;
-		typedef GenericOdoHardEqualityConstraint<Config, PoseKey> OdoEqualityConstraint;
+				Vector evaluateError(const Point2& x, boost::optional<Matrix&> H =
+						boost::none) const {
+					if (H) {
+						Matrix D = zeros(1, 2);
+						D(0, Idx) = 1.0;
+						*H = D;
+					}
+					return Vector_(1, x.vector()(Idx) - c_);
+				}
 
-		/** Equality between variables */
-		typedef NonlinearEquality2<Config, PoseKey, Point2> PoseEqualityConstraint;
-		typedef NonlinearEquality2<Config, PointKey, Point2> PointEqualityConstraint;
+			};
 
-	} // namespace simulated2D
-} // namespace gtsam
+			/** typedefs for use with simulated2D systems */
+			typedef ScalarInequalityConstraint1<Config, PoseKey, 0> PoseXInequality;
+			typedef ScalarInequalityConstraint1<Config, PoseKey, 1> PoseYInequality;
+
+		} // \namespace inequality_constraints
+
+	} // \namespace simulated2D
+} // \namespace gtsam

@@ -10,6 +10,8 @@
 #include <NonlinearFactorGraph-inl.h>
 #include <NonlinearOptimizer-inl.h>
 
+namespace eq2D = gtsam::simulated2D::equality_constraints;
+
 using namespace std;
 using namespace gtsam;
 
@@ -28,7 +30,7 @@ TEST( testNonlinearEqualityConstraint, unary_basics ) {
 	Point2 pt(1.0, 2.0);
 	simulated2D::PoseKey key(1);
 	double mu = 1000.0;
-	simulated2D::UnaryEqualityConstraint constraint(pt, key, mu);
+	eq2D::UnaryEqualityConstraint constraint(pt, key, mu);
 
 	simulated2D::Config config1;
 	config1.insert(key, pt);
@@ -51,7 +53,7 @@ TEST( testNonlinearEqualityConstraint, unary_linearization ) {
 	Point2 pt(1.0, 2.0);
 	simulated2D::PoseKey key(1);
 	double mu = 1000.0;
-	simulated2D::UnaryEqualityConstraint constraint(pt, key, mu);
+	eq2D::UnaryEqualityConstraint constraint(pt, key, mu);
 
 	simulated2D::Config config1;
 	config1.insert(key, pt);
@@ -74,8 +76,8 @@ TEST( testNonlinearEqualityConstraint, unary_simple_optimization ) {
 	Point2 truth_pt(1.0, 2.0);
 	simulated2D::PoseKey key(1);
 	double mu = 1000.0;
-	simulated2D::UnaryEqualityConstraint::shared_ptr constraint(
-			new simulated2D::UnaryEqualityConstraint(truth_pt, key, mu));
+	eq2D::UnaryEqualityConstraint::shared_ptr constraint(
+			new eq2D::UnaryEqualityConstraint(truth_pt, key, mu));
 
 	Point2 badPt(100.0, -200.0);
 	simulated2D::Prior::shared_ptr factor(
@@ -99,7 +101,7 @@ TEST( testNonlinearEqualityConstraint, odo_basics ) {
 	Point2 x1(1.0, 2.0), x2(2.0, 3.0), odom(1.0, 1.0);
 	simulated2D::PoseKey key1(1), key2(2);
 	double mu = 1000.0;
-	simulated2D::OdoEqualityConstraint constraint(odom, key1, key2, mu);
+	eq2D::OdoEqualityConstraint constraint(odom, key1, key2, mu);
 
 	simulated2D::Config config1;
 	config1.insert(key1, x1);
@@ -125,7 +127,7 @@ TEST( testNonlinearEqualityConstraint, odo_linearization ) {
 	Point2 x1(1.0, 2.0), x2(2.0, 3.0), odom(1.0, 1.0);
 	simulated2D::PoseKey key1(1), key2(2);
 	double mu = 1000.0;
-	simulated2D::OdoEqualityConstraint constraint(odom, key1, key2, mu);
+	eq2D::OdoEqualityConstraint constraint(odom, key1, key2, mu);
 
 	simulated2D::Config config1;
 	config1.insert(key1, x1);
@@ -155,8 +157,8 @@ TEST( testNonlinearEqualityConstraint, odo_simple_optimize ) {
 	simulated2D::PoseKey key1(1), key2(2);
 
 	// hard prior on x1
-	simulated2D::UnaryEqualityConstraint::shared_ptr constraint1(
-			new simulated2D::UnaryEqualityConstraint(truth_pt1, key1));
+	eq2D::UnaryEqualityConstraint::shared_ptr constraint1(
+			new eq2D::UnaryEqualityConstraint(truth_pt1, key1));
 
 	// soft prior on x2
 	Point2 badPt(100.0, -200.0);
@@ -164,8 +166,8 @@ TEST( testNonlinearEqualityConstraint, odo_simple_optimize ) {
 			new simulated2D::Prior(badPt, soft_model, key2));
 
 	// odometry constraint
-	simulated2D::OdoEqualityConstraint::shared_ptr constraint2(
-			new simulated2D::OdoEqualityConstraint(
+	eq2D::OdoEqualityConstraint::shared_ptr constraint2(
+			new eq2D::OdoEqualityConstraint(
 					gtsam::between(truth_pt1, truth_pt2), key1, key2));
 
 	shared_graph graph(new Graph());
@@ -198,8 +200,8 @@ TEST (testNonlinearEqualityConstraint, two_pose ) {
 	simulated2D::PointKey l1(1), l2(2);
 	Point2 pt_x1(1.0, 1.0),
 		   pt_x2(5.0, 6.0);
-	graph->add(simulated2D::UnaryEqualityConstraint(pt_x1, x1));
-	graph->add(simulated2D::UnaryEqualityConstraint(pt_x2, x2));
+	graph->add(eq2D::UnaryEqualityConstraint(pt_x1, x1));
+	graph->add(eq2D::UnaryEqualityConstraint(pt_x2, x2));
 
 	Point2 z1(0.0, 5.0);
 	SharedGaussian sigma(noiseModel::Isotropic::Sigma(2, 0.1));
@@ -208,7 +210,7 @@ TEST (testNonlinearEqualityConstraint, two_pose ) {
 	Point2 z2(-4.0, 0.0);
 	graph->add(simulated2D::Measurement(z2, sigma, x2,l2));
 
-	graph->add(simulated2D::PointEqualityConstraint(l1, l2));
+	graph->add(eq2D::PointEqualityConstraint(l1, l2));
 
 	shared_config initialEstimate(new simulated2D::Config());
 	initialEstimate->insert(x1, pt_x1);
@@ -237,7 +239,7 @@ TEST (testNonlinearEqualityConstraint, map_warp ) {
 
 	// constant constraint on x1
 	Point2 pose1(1.0, 1.0);
-	graph->add(simulated2D::UnaryEqualityConstraint(pose1, x1));
+	graph->add(eq2D::UnaryEqualityConstraint(pose1, x1));
 
 	SharedDiagonal sigma = noiseModel::Isotropic::Sigma(1,0.1);
 
@@ -250,7 +252,7 @@ TEST (testNonlinearEqualityConstraint, map_warp ) {
 	graph->add(simulated2D::Measurement(z2, sigma, x2, l2));
 
 	// equality constraint between l1 and l2
-	graph->add(simulated2D::PointEqualityConstraint(l1, l2));
+	graph->add(eq2D::PointEqualityConstraint(l1, l2));
 
 	// create an initial estimate
 	shared_config initialEstimate(new simulated2D::Config());

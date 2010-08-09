@@ -33,7 +33,9 @@ class NonlinearConstraint : public NonlinearFactor<Config> {
 protected:
 	typedef NonlinearConstraint<Config> This;
 	typedef NonlinearFactor<Config> Base;
-	double mu_; // gain for quadratic merit function
+
+	double mu_;  /// gain for quadratic merit function
+	size_t dim_; /// dimension of the constraint
 
 public:
 
@@ -42,13 +44,16 @@ public:
 	 * @param mu is the gain used at error evaluation (forced to be positive)
 	 */
 	NonlinearConstraint(size_t dim, double mu = 1000.0):
-		Base(noiseModel::Constrained::All(dim)), mu_(fabs(mu)) {}
+		Base(noiseModel::Constrained::All(dim)), mu_(fabs(mu)), dim_(dim) {}
 
 	/** returns the gain mu */
 	double mu() const { return mu_; }
 
 	/** Print */
 	virtual void print(const std::string& s = "") const=0;
+
+	/** dimension of the constraint (number of rows) */
+	size_t dim() const { return dim_; }
 
 	/** Check if two factors are equal */
 	virtual bool equals(const Factor<Config>& f, double tol=1e-9) const {
@@ -70,10 +75,12 @@ public:
 
 	/**
 	 * active set check, defines what type of constraint this is
-	 * By default, the constraint is always active, so it is an equality constraint
+	 *
+	 * In an inequality/bounding constraint, this active() returns true
+	 * when the constraint is *NOT* fulfilled.
 	 * @return true if the constraint is active
 	 */
-	virtual bool active(const Config& c) const { return true; }
+	virtual bool active(const Config& c) const=0;
 
 	/**
 	 * Linearizes around a given config
@@ -124,8 +131,11 @@ public:
 		return Base::equals(*p, tol) && (key_ == p->key_);
 	}
 
-	/** error function g(x) */
+	/** error function g(x), switched depending on whether the constraint is active */
 	inline Vector unwhitenedError(const Config& x) const {
+		if (!active(x)) {
+			return zero(this->dim());
+		}
 		const Key& j = key_;
 		const X& xj = x[j];
 		return evaluateError(xj);
@@ -145,9 +155,27 @@ public:
 		return GaussianFactor::shared_ptr(new GaussianFactor(this->key_, grad, g, model));
 	}
 
-	/** g(x) with optional derivative */
+	/** g(x) with optional derivative - does not depend on active */
 	virtual Vector evaluateError(const X& x, boost::optional<Matrix&> H =
 			boost::none) const = 0;
+};
+
+/**
+ * Unary Equality constraint - simply forces the value of active() to true
+ */
+template <class Config, class Key, class X>
+class NonlinearEqualityConstraint1 : public NonlinearConstraint1<Config, Key, X> {
+
+protected:
+	typedef NonlinearEqualityConstraint1<Config,Key,X> This;
+	typedef NonlinearConstraint1<Config,Key,X> Base;
+
+public:
+	NonlinearEqualityConstraint1(const Key& key, size_t dim, double mu = 1000.0)
+		: Base(key, dim, mu) {}
+
+	/** Always active, so fixed value for active() */
+	virtual bool active(const Config& c) const { return true; }
 };
 
 /**
@@ -194,8 +222,11 @@ public:
 		return Base::equals(*p, tol) && (key1_ == p->key1_) && (key2_ == p->key2_);
 	}
 
-	/** error function g(x) */
+	/** error function g(x), switched depending on whether the constraint is active */
 	inline Vector unwhitenedError(const Config& x) const {
+		if (!active(x)) {
+			return zero(this->dim());
+		}
 		const Key1& j1 = key1_;
 		const Key2& j2 = key2_;
 		const X1& xj1 = x[j1];
@@ -217,20 +248,64 @@ public:
 		return GaussianFactor::shared_ptr(new GaussianFactor(j1, grad1, j2, grad2, g, model));
 	}
 
-	/** g(x) with optional derivative2 */
+	/** g(x) with optional derivative2  - does not depend on active */
 	virtual Vector evaluateError(const X1& x1, const X2& x2,
 			boost::optional<Matrix&> H1 = boost::none,
 			boost::optional<Matrix&> H2 = boost::none) const = 0;
 };
 
 /**
+ * Binary Equality constraint - simply forces the value of active() to true
+ */
+template <class Config, class Key1, class X1, class Key2, class X2>
+class NonlinearEqualityConstraint2 : public NonlinearConstraint2<Config, Key1, X1, Key2, X2> {
+
+protected:
+	typedef NonlinearEqualityConstraint2<Config,Key1,X1,Key2,X2> This;
+	typedef NonlinearConstraint2<Config,Key1,X1,Key2,X2> Base;
+
+public:
+	NonlinearEqualityConstraint2(const Key1& key1, const Key2& key2, size_t dim, double mu = 1000.0)
+		: Base(key1, key2, dim, mu) {}
+
+	/** Always active, so fixed value for active() */
+	virtual bool active(const Config& c) const { return true; }
+};
+
+/**
+ * Simple unary equality constraint - fixes a value for a variable
+ */
+template<class Config, class Key, class X>
+class NonlinearEquality1 : public NonlinearEqualityConstraint1<Config, Key, X> {
+protected:
+	typedef NonlinearEqualityConstraint1<Config, Key, X> Base;
+
+	X value_; /// fixed value for variable
+
+public:
+
+	typedef boost::shared_ptr<NonlinearEquality1<Config, Key, X> > shared_ptr;
+
+	NonlinearEquality1(const X& value, const Key& key1, double mu = 1000.0)
+		: Base(key1, X::dim(), mu), value_(value) {}
+
+	/** g(x) with optional derivative */
+	Vector evaluateError(const X& x1, boost::optional<Matrix&> H1 = boost::none) const {
+		const size_t p = X::dim();
+		if (H1) *H1 = eye(p);
+		return logmap(value_, x1);
+	}
+};
+
+
+/**
  * Simple binary equality constraint - this constraint forces two factors to
  * be the same.  This constraint requires the underlying type to a Lie type
  */
 template<class Config, class Key, class X>
-class NonlinearEquality2 : public NonlinearConstraint2<Config, Key, X, Key, X> {
+class NonlinearEquality2 : public NonlinearEqualityConstraint2<Config, Key, X, Key, X> {
 protected:
-	typedef NonlinearConstraint2<Config, Key, X, Key, X> Base;
+	typedef NonlinearEqualityConstraint2<Config, Key, X, Key, X> Base;
 
 public:
 
@@ -247,6 +322,37 @@ public:
 		if (H1) *H1 = -eye(p);
 		if (H2) *H2 = eye(p);
 		return logmap(x1, x2);
+	}
+};
+
+/**
+ * Binary between constraint - forces between to a given value
+ * This constraint requires the underlying type to a Lie type
+ */
+template<class Config, class Key, class X>
+class BetweenConstraint : public NonlinearEqualityConstraint2<Config, Key, X, Key, X> {
+protected:
+	typedef NonlinearEqualityConstraint2<Config, Key, X, Key, X> Base;
+
+	X measured_; /// fixed between value
+
+public:
+
+	typedef boost::shared_ptr<BetweenConstraint<Config, Key, X> > shared_ptr;
+
+	BetweenConstraint(const X& measured, const Key& key1, const Key& key2, double mu = 1000.0)
+		: Base(key1, key2, X::dim(), mu), measured_(measured) {}
+
+	/** g(x) with optional derivative2 */
+	Vector evaluateError(const X& x1, const X& x2,
+			boost::optional<Matrix&> H1 = boost::none,
+			boost::optional<Matrix&> H2 = boost::none) const {
+		X hx = between(x1, x2, H1, H2);
+		return logmap(measured_, hx);
+	}
+
+	inline const X measured() const {
+		return measured_;
 	}
 };
 

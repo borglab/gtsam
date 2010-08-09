@@ -11,7 +11,7 @@ check_PROGRAMS += testNonlinearEquality testNonlinearFactor testNonlinearFactorG
 check_PROGRAMS += testNonlinearOptimizer testSubgraphPreconditioner
 check_PROGRAMS += testSymbolicBayesNet testSymbolicFactorGraph testTupleConfig
 # check_PROGRAMS += testNonlinearConstraint # disabled until examples rearranged 
-check_PROGRAMS += testNonlinearEqualityConstraint
+check_PROGRAMS += testNonlinearEqualityConstraint testNonlinearInequalityConstraint
 
 if USE_LDL
 check_PROGRAMS += testConstraintOptimizer 
