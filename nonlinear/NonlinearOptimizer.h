@@ -9,6 +9,7 @@
 #define NONLINEAROPTIMIZER_H_
 
 #include <boost/shared_ptr.hpp>
+#include <boost/make_shared.hpp>
 #include "VectorConfig.h"
 #include "NonlinearFactorGraph.h"
 #include "Factorization.h"
@@ -192,13 +193,22 @@ namespace gtsam {
 			double relativeThreshold = 1e-5, absoluteThreshold = 1e-5;
 
 			// initial optimization state is the same in both cases tested
-			shared_solver solver(new S(ord));
+			shared_solver solver(new S(ord, false));
 			NonlinearOptimizer optimizer(graph, config, solver);
 
 			// Levenberg-Marquardt
 			NonlinearOptimizer result = optimizer.levenbergMarquardt(relativeThreshold,
 					absoluteThreshold, verbosity);
 			return result.config();
+		}
+
+		/**
+		 * Static interface to LM optimization (no shared_ptr arguments) - see above
+		 */
+		inline static shared_config optimizeLM(const G& graph, const T& config,
+				verbosityLevel verbosity = SILENT) {
+			return optimizeLM(boost::make_shared<const G>(graph),
+							  boost::make_shared<const T>(config), verbosity);
 		}
 
 		/**
@@ -214,13 +224,22 @@ namespace gtsam {
 			double relativeThreshold = 1e-5, absoluteThreshold = 1e-5;
 
 			// initial optimization state is the same in both cases tested
-			shared_solver solver(new S(ord));
+			shared_solver solver(new S(ord, false));
 			NonlinearOptimizer optimizer(graph, config, solver);
 
 			// Gauss-Newton
 			NonlinearOptimizer result = optimizer.gaussNewton(relativeThreshold,
 					absoluteThreshold, verbosity);
 			return result.config();
+		}
+
+		/**
+		 * Static interface to GN optimization (no shared_ptr arguments) - see above
+		 */
+		inline static shared_config optimizeGN(const G& graph, const T& config,
+				verbosityLevel verbosity = SILENT) {
+			return optimizeGN(boost::make_shared<const G>(graph),
+							  boost::make_shared<const T>(config), verbosity);
 		}
 
 	};
