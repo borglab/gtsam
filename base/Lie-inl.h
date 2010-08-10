@@ -5,6 +5,8 @@
  *      Author: richard
  */
 
+#pragma once
+
 #include "Lie.h"
 
 #define INSTANTIATE_LIE(T) \
