@@ -28,7 +28,7 @@ check_PROGRAMS += tests/testSimulated3D
 headers += BetweenFactor.h PriorFactor.h
 
 # General constraints
-headers += BetweenConstraint.h BoundingConstraint.h
+headers += BetweenConstraint.h BoundingConstraint.h TransformConstraint.h
 
 # 2D Pose SLAM
 sources += pose2SLAM.cpp Pose2SLAMOptimizer.cpp dataset.cpp

@@ -45,6 +45,7 @@ public:
 	 */
 	NonlinearConstraint(size_t dim, double mu = 1000.0):
 		Base(noiseModel::Constrained::All(dim)), mu_(fabs(mu)), dim_(dim) {}
+	virtual ~NonlinearConstraint() {}
 
 	/** returns the gain mu */
 	double mu() const { return mu_; }
@@ -116,6 +117,7 @@ public:
 		: Base(dim, mu), key_(key) {
 		this->keys_.push_back(key);
 	}
+	virtual ~NonlinearConstraint1() {}
 
 	/* print */
 	void print(const std::string& s = "") const {
@@ -173,6 +175,7 @@ protected:
 public:
 	NonlinearEqualityConstraint1(const Key& key, size_t dim, double mu = 1000.0)
 		: Base(key, dim, mu) {}
+	virtual ~NonlinearEqualityConstraint1() {}
 
 	/** Always active, so fixed value for active() */
 	virtual bool active(const Config& c) const { return true; }
@@ -206,6 +209,7 @@ public:
 		this->keys_.push_back(key1);
 		this->keys_.push_back(key2);
 	}
+	virtual ~NonlinearConstraint2() {}
 
 	/* print */
 	void print(const std::string& s = "") const {
@@ -267,10 +271,118 @@ protected:
 public:
 	NonlinearEqualityConstraint2(const Key1& key1, const Key2& key2, size_t dim, double mu = 1000.0)
 		: Base(key1, key2, dim, mu) {}
+	virtual ~NonlinearEqualityConstraint2() {}
+
 
 	/** Always active, so fixed value for active() */
 	virtual bool active(const Config& c) const { return true; }
 };
+
+/**
+ * A ternary constraint
+ */
+template <class Config, class Key1, class X1, class Key2, class X2, class Key3, class X3>
+class NonlinearConstraint3 : public NonlinearConstraint<Config> {
+
+protected:
+	typedef NonlinearConstraint3<Config,Key1,X1,Key2,X2,Key3,X3> This;
+	typedef NonlinearConstraint<Config> Base;
+
+	/** keys for the constrained variables */
+	Key1 key1_;
+	Key2 key2_;
+	Key3 key3_;
+
+public:
+
+	/**
+	 * Basic constructor
+	 * @param key1 is the identifier for the first variable constrained
+	 * @param key2 is the identifier for the second variable constrained
+	 * @param key3 is the identifier for the second variable constrained
+	 * @param dim is the size of the constraint (p)
+	 * @param mu is the gain for the factor
+	 */
+	NonlinearConstraint3(const Key1& key1, const Key2& key2, const Key3& key3,
+			size_t dim, double mu = 1000.0) :
+			Base(dim, mu), key1_(key1), key2_(key2), key3_(key3) {
+		this->keys_.push_back(key1);
+		this->keys_.push_back(key2);
+		this->keys_.push_back(key3);
+	}
+	virtual ~NonlinearConstraint3() {}
+
+	/* print */
+	void print(const std::string& s = "") const {
+		std::cout << "NonlinearConstraint3 " << s << std::endl;
+		std::cout << "key1: " << (std::string) key1_ << std::endl;
+		std::cout << "key2: " << (std::string) key2_ << std::endl;
+		std::cout << "key3: " << (std::string) key3_ << std::endl;
+		std::cout << "mu: " << this->mu_ << std::endl;
+	}
+
+	/** Check if two factors are equal. Note type is Factor and needs cast. */
+	virtual bool equals(const Factor<Config>& f, double tol = 1e-9) const {
+		const This* p = dynamic_cast<const This*> (&f);
+		if (p == NULL) return false;
+		return Base::equals(*p, tol) && (key1_ == p->key1_) && (key2_ == p->key2_) && (key3_ == p->key3_);
+	}
+
+	/** error function g(x), switched depending on whether the constraint is active */
+	inline Vector unwhitenedError(const Config& x) const {
+		if (!active(x)) {
+			return zero(this->dim());
+		}
+		const Key1& j1 = key1_;
+		const Key2& j2 = key2_;
+		const Key3& j3 = key3_;
+		const X1& xj1 = x[j1];
+		const X2& xj2 = x[j2];
+		const X3& xj3 = x[j3];
+		return evaluateError(xj1, xj2, xj3);
+	}
+
+	/** Linearize from config */
+	boost::shared_ptr<GaussianFactor> linearize(const Config& c) const {
+		if (!active(c)) {
+			boost::shared_ptr<GaussianFactor> factor;
+			return factor;
+		}
+		const Key1& j1 = key1_; const Key2& j2 = key2_; const Key3& j3 = key3_;
+		const X1& x1 = c[j1]; const X2& x2 = c[j2]; const X3& x3 = c[j3];
+		Matrix grad1, grad2, grad3;
+		Vector g = -1.0 * evaluateError(x1, x2, x3, grad1, grad2, grad3);
+		SharedDiagonal model = noiseModel::Constrained::All(this->dim());
+		return GaussianFactor::shared_ptr(new GaussianFactor(j1, grad1, j2, grad2, j3, grad3, g, model));
+	}
+
+	/** g(x) with optional derivative3  - does not depend on active */
+	virtual Vector evaluateError(const X1& x1, const X2& x2, const X3& x3,
+			boost::optional<Matrix&> H1 = boost::none,
+			boost::optional<Matrix&> H2 = boost::none,
+			boost::optional<Matrix&> H3 = boost::none) const = 0;
+};
+
+/**
+ * Ternary Equality constraint - simply forces the value of active() to true
+ */
+template <class Config, class Key1, class X1, class Key2, class X2, class Key3, class X3>
+class NonlinearEqualityConstraint3 : public NonlinearConstraint3<Config, Key1, X1, Key2, X2, Key3, X3> {
+
+protected:
+	typedef NonlinearEqualityConstraint3<Config,Key1,X1,Key2,X2,Key3,X3> This;
+	typedef NonlinearConstraint3<Config,Key1,X1,Key2,X2,Key3,X3> Base;
+
+public:
+	NonlinearEqualityConstraint3(const Key1& key1, const Key2& key2, const Key3& key3,
+			size_t dim, double mu = 1000.0)
+		: Base(key1, key2, key3, dim, mu) {}
+	virtual ~NonlinearEqualityConstraint3() {}
+
+	/** Always active, so fixed value for active() */
+	virtual bool active(const Config& c) const { return true; }
+};
+
 
 /**
  * Simple unary equality constraint - fixes a value for a variable
@@ -288,6 +400,7 @@ public:
 
 	NonlinearEquality1(const X& value, const Key& key1, double mu = 1000.0)
 		: Base(key1, X::dim(), mu), value_(value) {}
+	virtual ~NonlinearEquality1() {}
 
 	/** g(x) with optional derivative */
 	Vector evaluateError(const X& x1, boost::optional<Matrix&> H1 = boost::none) const {
@@ -313,6 +426,7 @@ public:
 
 	NonlinearEquality2(const Key& key1, const Key& key2, double mu = 1000.0)
 		: Base(key1, key2, X::dim(), mu) {}
+	virtual ~NonlinearEquality2() {}
 
 	/** g(x) with optional derivative2 */
 	Vector evaluateError(const X& x1, const X& x2,

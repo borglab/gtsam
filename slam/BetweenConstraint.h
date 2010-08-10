@@ -6,7 +6,7 @@
 
 #pragma once
 
-#include <NonlinearConstraint.h>
+#include "NonlinearConstraint.h"
 
 namespace gtsam {
 

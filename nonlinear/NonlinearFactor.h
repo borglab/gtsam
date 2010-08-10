@@ -388,7 +388,7 @@ namespace gtsam {
 
     /** Print */
     void print(const std::string& s = "") const {
-      std::cout << "NonlinearFactor2 " << s << std::endl;
+      std::cout << "NonlinearFactor3 " << s << std::endl;
       std::cout << "key1: " << (std::string) key1_ << std::endl;
       std::cout << "key2: " << (std::string) key2_ << std::endl;
       std::cout << "key3: " << (std::string) key3_ << std::endl;
@@ -419,7 +419,7 @@ namespace gtsam {
     boost::shared_ptr<GaussianFactor> linearize(const Config& c) const {
       const X1& x1 = c[key1_];
       const X2& x2 = c[key2_];
-      const X2& x3 = c[key3_];
+      const X3& x3 = c[key3_];
       Matrix A1, A2, A3;
       Vector b = -evaluateError(x1, x2, x3, A1, A2, A3);
       // TODO pass unwhitened + noise model to Gaussian factor
