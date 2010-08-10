@@ -30,6 +30,9 @@ headers += BetweenFactor.h PriorFactor.h
 # General constraints
 headers += BetweenConstraint.h BoundingConstraint.h TransformConstraint.h
 
+# Utility factors
+headers += LinearApproxFactor.h
+
 # 2D Pose SLAM
 sources += pose2SLAM.cpp Pose2SLAMOptimizer.cpp dataset.cpp
 check_PROGRAMS += tests/testPose2Factor tests/testPose2Config tests/testPose2SLAM tests/testPose2Prior
