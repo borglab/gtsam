@@ -19,7 +19,7 @@ check_PROGRAMS += tests/testSPQRUtil
 endif
 
 # Testing
-headers += Testable.h numericalDerivative.h 
+headers += Testable.h TestableAssertions.h numericalDerivative.h 
 
 # Lie Groups
 headers += Lie.h Lie-inl.h
