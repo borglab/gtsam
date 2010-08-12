@@ -302,6 +302,35 @@ namespace gtsam {
    *
    * The interface is designed to mimic PairConfig, but for 2-6 config types.
    */
+
+  template<class C1>
+  class TupleConfig1 : public TupleConfigEnd<C1> {
+  public:
+ 	  // typedefs
+ 	  typedef C1 Config1;
+
+ 	  typedef TupleConfigEnd<C1> Base;
+ 	  typedef TupleConfig1<C1> This;
+
+ 	  TupleConfig1() {}
+ 	  TupleConfig1(const This& config);
+ 	  TupleConfig1(const Base& config);
+ 	  TupleConfig1(const Config1& cfg1);
+
+ 	  // access functions
+ 	  inline const Config1& first() const { return this->config(); }
+  };
+
+  template<class C1>
+  TupleConfig1<C1> expmap(const TupleConfig1<C1>& c, const VectorConfig& delta) {
+ 	  return c.expmap(delta);
+  }
+
+  template<class C1>
+  VectorConfig logmap(const TupleConfig1<C1>& c1, const TupleConfig1<C1>& c2) {
+ 	  return c1.logmap(c2);
+  }
+
   template<class C1, class C2>
   class TupleConfig2 : public TupleConfig<C1, TupleConfigEnd<C2> > {
   public:

@@ -1,8 +1,7 @@
-/*
- * testTupleConfig.cpp
- *
- *  Created on: Jan 13, 2010
- *      Author: richard
+/**
+ * @file testTupleConfig.cpp
+ * @author Richard Roberts
+ * @author Alex Cunningham
  */
 
 #include <CppUnitLite/TestHarness.h>
@@ -22,6 +21,8 @@
 
 using namespace gtsam;
 using namespace std;
+
+static const double tol = 1e-5;
 
 typedef TypedSymbol<Pose2, 'x'> PoseKey;
 typedef TypedSymbol<Point2, 'l'> PointKey;
@@ -210,6 +211,43 @@ typedef LieConfig<Point3Key2, Point3> Point3Config2;
 // some TupleConfig types
 typedef TupleConfig<PoseConfig, TupleConfigEnd<PointConfig> > ConfigA;
 typedef TupleConfig<PoseConfig, TupleConfig<PointConfig, TupleConfigEnd<LamConfig> > > ConfigB;
+
+typedef TupleConfig1<PoseConfig> TuplePoseConfig;
+typedef TupleConfig1<PointConfig> TuplePointConfig;
+typedef TupleConfig2<PoseConfig, PointConfig> SimpleConfig;
+
+/* ************************************************************************* */
+TEST(TupleConfig, slicing) {
+	PointKey l1(1), l2(2);
+	Point2 l1_val(1.0, 2.0), l2_val(3.0, 4.0);
+	PoseKey x1(1), x2(2);
+	Pose2 x1_val(1.0, 2.0, 0.3), x2_val(3.0, 4.0, 0.4);
+
+	PoseConfig liePoseConfig;
+	liePoseConfig.insert(x1, x1_val);
+	liePoseConfig.insert(x2, x2_val);
+
+	PointConfig liePointConfig;
+	liePointConfig.insert(l1, l1_val);
+	liePointConfig.insert(l2, l2_val);
+
+	// construct TupleConfig1 from the base config
+	TuplePoseConfig tupPoseConfig1(liePoseConfig);
+	EXPECT(assert_equal(liePoseConfig, tupPoseConfig1.first(), tol));
+
+	TuplePointConfig tupPointConfig1(liePointConfig);
+	EXPECT(assert_equal(liePointConfig, tupPointConfig1.first(), tol));
+
+//	// construct a TupleConfig2 from a TupleConfig1
+//	SimpleConfig pairConfig1(tupPoseConfig1);
+//	EXPECT(assert_equal(liePoseConfig, pairConfig1.first(), tol));
+//	EXPECT(pairConfig1.second().empty());
+//
+//	SimpleConfig pairConfig2(tupPointConfig1);
+//	EXPECT(assert_equal(liePointConfig, pairConfig2.second(), tol));
+//	EXPECT(pairConfig1.first().empty());
+
+}
 
 /* ************************************************************************* */
 TEST(TupleConfig, basic_functions) {

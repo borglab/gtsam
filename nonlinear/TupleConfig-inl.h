@@ -11,6 +11,9 @@
 #include "TupleConfig.h"
 
 // TupleConfig instantiations for N = 1-6
+#define INSTANTIATE_TUPLE_CONFIG1(Config1) \
+		template class TupleConfig1<Config1>;
+
 #define INSTANTIATE_TUPLE_CONFIG2(Config1, Config2) \
 		template class TupleConfig2<Config1, Config2>;
 
@@ -32,6 +35,20 @@ namespace gtsam {
 /* ************************************************************************* */
 /** TupleConfigN Implementations */
 /* ************************************************************************* */
+
+/* ************************************************************************* */
+/** TupleConfig 1 */
+template<class Config1>
+TupleConfig1<Config1>::TupleConfig1(const TupleConfig1<Config1>& config) :
+		  TupleConfigEnd<Config1> (config) {}
+
+template<class Config1>
+TupleConfig1<Config1>::TupleConfig1(const Config1& cfg1) :
+			  TupleConfigEnd<Config1> (cfg1) {}
+
+template<class Config1>
+TupleConfig1<Config1>::TupleConfig1(const TupleConfigEnd<Config1>& config) :
+	TupleConfigEnd<Config1>(config) {}
 
 /* ************************************************************************* */
 /** TupleConfig 2 */
