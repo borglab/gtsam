@@ -12,7 +12,8 @@ check_PROGRAMS =
 #----------------------------------------------------------------------------------------------------
 
 # Lie Groups
-headers += LieConfig.h LieConfig-inl.h TupleConfig.h TupleConfig-inl.h
+headers += LieConfig.h LieConfig-inl.h TupleConfig.h TupleConfig-inl.h 
+headers += FusionTupleConfig.h
 check_PROGRAMS += tests/testLieConfig 
 
 # Nonlinear nonlinear 

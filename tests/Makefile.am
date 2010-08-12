@@ -13,6 +13,9 @@ check_PROGRAMS += testSymbolicBayesNet testSymbolicFactorGraph testTupleConfig
 check_PROGRAMS += testNonlinearEqualityConstraint testBoundingConstraint 
 check_PROGRAMS += testTransformConstraint testLinearApproxFactor
 
+# experimental
+check_PROGRAMS += testFusionTupleConfig
+
 if USE_LDL
 check_PROGRAMS += testConstraintOptimizer 
 endif
