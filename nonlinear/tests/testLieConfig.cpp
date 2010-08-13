@@ -230,6 +230,29 @@ TEST(LieConfig, update)
 	expected.insert("v2", Vector_(1, -2.));
 	CHECK(assert_equal(expected,config0));
 }
+
+/* ************************************************************************* */
+TEST(LieConfig, dummy_initialization)
+{
+	typedef TypedSymbol<Vector, 'z'> Key;
+	typedef LieConfig<Key,Vector> Config1;
+	typedef LieConfig<string,Vector> Config2;
+
+	Config1 init1;
+	init1.insert(Key(1), Vector_(2, 1.0, 2.0));
+	init1.insert(Key(2), Vector_(2, 4.0, 3.0));
+
+	Config2 init2;
+	init2.insert("v1", Vector_(2, 1.0, 2.0));
+	init2.insert("v2", Vector_(2, 4.0, 3.0));
+
+	Config1 actual1(init2);
+	Config2 actual2(init1);
+
+	EXPECT(actual1.empty());
+	EXPECT(actual2.empty());
+}
+
 /* ************************************************************************* */
 int main() { TestResult tr; return TestRegistry::runAllTests(tr); }
 /* ************************************************************************* */

@@ -3,13 +3,15 @@
  * @author Alex Cunningham
  */
 
+#include <iostream>
+
 #include <CppUnitLite/TestHarness.h>
 
 #include <Pose2.h>
 #include <Point2.h>
 #include <Pose3.h>
 #include <Point3.h>
-#include "Key.h"
+#include <Key.h>
 #include <LieConfig-inl.h>
 
 #include <FusionTupleConfig.h>
@@ -126,8 +128,8 @@ TEST( testFusionTupleConfig, slicing ) {
 	cfg_pair.insert(l2, l2_val);
 
 	// initialize configs by slicing a larger config
-	TupPointConfig cfg_point(cfg_pair);
 	TupPoseConfig cfg_pose(cfg_pair);
+	TupPointConfig cfg_point(cfg_pair);
 
 	PointConfig expPointConfig;
 	expPointConfig.insert(l1, l1_val);
@@ -137,9 +139,19 @@ TEST( testFusionTupleConfig, slicing ) {
 	expPoseConfig.insert(x1, x1_val);
 	expPoseConfig.insert(x2, x2_val);
 
-	// verify - slicing at initialization isn't implemented
-//	EXPECT(assert_equal(expPointConfig, cfg_point.config<PointConfig>()));
-//	EXPECT(assert_equal(expPoseConfig, cfg_pose.config<PoseConfig>()));
+	// verify
+	EXPECT(assert_equal(expPointConfig, cfg_point.config<PointConfig>()));
+	EXPECT(assert_equal(expPoseConfig, cfg_pose.config<PoseConfig>()));
+}
+
+/* ************************************************************************* */
+TEST( testFusionTupleConfig, upgrading ) {
+	TupPoseConfig small;
+	small.insert(x1, x1_val);
+
+	TupPairConfig actual(small);
+	EXPECT(actual.size() == 1);
+	EXPECT(assert_equal(x1_val, actual.at(x1), tol));
 }
 
 /* ************************************************************************* */
@@ -165,29 +177,6 @@ TEST( testFusionTupleConfig, equals ) {
 	c5.insert(l1, l1_val);
 	c6.insert(l1, l1_val + Point2(1e-6, 1e-6));
 	EXPECT(assert_equal(c5, c6, 1e-5));
-}
-
-/* ************************************************************************* */
-TEST( testFusionTupleConfig, fusion_slicing ) {
-	typedef fusion::set<int, double, bool> Set1;
-	typedef fusion::set<double> Set2;
-	Set1 s1(1, 2.0, true);
-
-	// assignment
-	EXPECT(fusion::at_key<int>(s1) == 1);
-	fusion::at_key<int>(s1) = 2;
-	EXPECT(fusion::at_key<int>(s1) == 2);
-
-	// slicing: big set sliced to a small set
-	Set2 s2 = s1; // by assignment
-	EXPECT_DOUBLES_EQUAL(2.0, fusion::at_key<double>(s2), tol);
-
-	Set2 s3(s1); // by initialization
-	EXPECT_DOUBLES_EQUAL(2.0, fusion::at_key<double>(s3), tol);
-
-	// upgrading: small set initializing a big set
-//	Set2 s3(5);
-//	Set1 s4 = s3; // apparently can't do this
 }
 
 /* ************************************************************************* */

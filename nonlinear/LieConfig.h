@@ -58,6 +58,8 @@ namespace gtsam {
     LieConfig() {}
     LieConfig(const LieConfig& config) :
       values_(config.values_) {}
+    template<class J_alt, class T_alt>
+    LieConfig(const LieConfig<J_alt,T_alt>& other) {} // do nothing when initializing with wrong type
     virtual ~LieConfig() {}
 
     /** print */

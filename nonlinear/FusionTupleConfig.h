@@ -14,10 +14,10 @@
 #include <boost/fusion/include/at_key.hpp>
 #include <boost/fusion/include/has_key.hpp>
 #include <boost/fusion/include/zip.hpp>
+#include <boost/fusion/algorithm/transformation.hpp>
 #include <boost/fusion/algorithm/iteration.hpp>
 #include <boost/fusion/algorithm/query.hpp>
 #include <boost/fusion/functional/adapter/fused_function_object.hpp>
-
 
 #include "Testable.h"
 #include "LieConfig.h"
@@ -50,13 +50,11 @@ public:
 	/** direct initialization of the underlying structure */
 	FusionTupleConfig(const Configs& cfg_set) : base_tuple_(cfg_set) {}
 
-	/** initialization by slicing a larger config - BROKEN */
+	/** initialization from arbitrary other configs */
 	template<class Configs2>
 	FusionTupleConfig(const FusionTupleConfig<Configs2>& other)
-		//: base_tuple_(other.base_tuple()) // fails
+		: base_tuple_(boost::fusion::fold(other.base_tuple(), Configs(), assign_outer<Configs>()))
 	{
-//		this->base_tuple_ = other.base_tuple(); // fails
-//		Configs val = other.base_tuple(); // also fails
 	}
 
 	virtual ~FusionTupleConfig() {}
@@ -102,15 +100,16 @@ public:
 
 	/** equals */
 	bool equals(const FusionTupleConfig<Configs>& other, double tol=1e-9) const {
+		FusionTupleConfig<Configs>::equals_helper helper(tol);
 		return boost::fusion::all(
 				boost::fusion::zip(
 						boost::fusion::as_vector(base_tuple_),
 						boost::fusion::as_vector(other.base_tuple_)),
-				FusionTupleConfig<Configs>::equals_helper(tol));
+						helper);
 	}
 
 	/** direct access to the underlying fusion set - don't use this */
-	const Configs & base_tuple() const { return base_tuple_; }
+	const BaseTuple & base_tuple() const { return base_tuple_; }
 
 private:
 
@@ -155,6 +154,33 @@ private:
 	    }
 	};
 
+	/** two separate function objects for arbitrary copy construction */
+	template<typename Ret, typename Config>
+	struct assign_inner {
+		typedef Ret result_type;
+
+		Config config;
+		assign_inner(const Config& cfg) : config(cfg) {}
+
+		template<typename T>
+		result_type operator()(const T& t, const result_type& s) const {
+			result_type new_s(s);
+			T new_cfg(config);
+			if (!new_cfg.empty()) boost::fusion::at_key<T>(new_s) = new_cfg;
+			return new_s;
+		}
+	};
+
+	template<typename Ret>
+	struct assign_outer {
+		typedef Ret result_type;
+
+		template<typename T> // T is the config from the "other" config
+		Ret operator()(const T& t, const Ret& s) const {
+			assign_inner<Ret, T> helper(t);
+			return boost::fusion::fold(s, s, helper); // loop over the "self" config
+		}
+	};
 };
 
 
