@@ -7,12 +7,20 @@
 #pragma once
 
 #include <boost/fusion/container/set.hpp>
+#include <boost/fusion/container/vector.hpp>
+#include <boost/fusion/sequence/intrinsic.hpp>
 #include <boost/fusion/include/make_set.hpp>
+#include <boost/fusion/include/as_vector.hpp>
 #include <boost/fusion/include/at_key.hpp>
+#include <boost/fusion/include/has_key.hpp>
+#include <boost/fusion/include/zip.hpp>
 #include <boost/fusion/algorithm/iteration.hpp>
 #include <boost/fusion/algorithm/query.hpp>
+#include <boost/fusion/functional/adapter/fused_function_object.hpp>
 
-#include <LieConfig.h>
+
+#include "Testable.h"
+#include "LieConfig.h"
 
 namespace gtsam {
 
@@ -22,7 +30,7 @@ namespace gtsam {
  * set<Config1, Config2>
  */
 template<class Configs>
-class FusionTupleConfig {
+class FusionTupleConfig : public Testable<FusionTupleConfig<Configs> >{
 
 public:
 	/** useful types */
@@ -42,10 +50,13 @@ public:
 	/** direct initialization of the underlying structure */
 	FusionTupleConfig(const Configs& cfg_set) : base_tuple_(cfg_set) {}
 
-	/** initialization by slicing a larger config */
+	/** initialization by slicing a larger config - BROKEN */
 	template<class Configs2>
-	FusionTupleConfig(const FusionTupleConfig<Configs2>& other) {
-		// use config subinsert and fusion::foreach
+	FusionTupleConfig(const FusionTupleConfig<Configs2>& other)
+		//: base_tuple_(other.base_tuple()) // fails
+	{
+//		this->base_tuple_ = other.base_tuple(); // fails
+//		Configs val = other.base_tuple(); // also fails
 	}
 
 	virtual ~FusionTupleConfig() {}
@@ -73,14 +84,39 @@ public:
 		return boost::fusion::accumulate(base_tuple_, 0, FusionTupleConfig<Configs>::size_helper());
 	}
 
+	/** number of configs in the config */
+	size_t nrConfigs() const {
+		return boost::fusion::size(base_tuple_);
+	}
+
 	/** returns true if the config is empty */
 	bool empty() const {
 		return boost::fusion::all(base_tuple_, FusionTupleConfig<Configs>::empty_helper());
 	}
 
+	/** print */
+	void print(const std::string& s="") const {
+		std::cout << "FusionTupleConfig " << s << ":" << std::endl;
+		boost::fusion::for_each(base_tuple_, FusionTupleConfig<Configs>::print_helper());
+	}
+
+	/** equals */
+	bool equals(const FusionTupleConfig<Configs>& other, double tol=1e-9) const {
+		return boost::fusion::all(
+				boost::fusion::zip(
+						boost::fusion::as_vector(base_tuple_),
+						boost::fusion::as_vector(other.base_tuple_)),
+				FusionTupleConfig<Configs>::equals_helper(tol));
+	}
+
+	/** direct access to the underlying fusion set - don't use this */
+	const Configs & base_tuple() const { return base_tuple_; }
+
 private:
+
 	/** helper structs to make use of fusion algorithms */
-	struct size_helper {
+	struct size_helper
+	{
 	    typedef size_t result_type;
 
 	    template<typename T>
@@ -99,6 +135,25 @@ private:
 	    }
 	};
 
+	struct print_helper
+	{
+	    template<typename T>
+	    void operator()(T t) const
+	    {
+	        t.print();
+	    }
+	};
+
+	struct equals_helper
+	{
+		double tol;
+		equals_helper(double t) : tol(t) {}
+	    template<typename T>
+	    bool operator()(T t) const
+	    {
+	        return boost::fusion::at_c<0>(t).equals(boost::fusion::at_c<1>(t), tol);
+	    }
+	};
 
 };
 

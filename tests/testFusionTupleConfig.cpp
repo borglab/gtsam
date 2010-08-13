@@ -110,10 +110,86 @@ TEST( testFusionTupleConfig, basic_config ) {
 
 	EXPECT(assert_equal(expPointConfig, cfg1.config<PointConfig>()));
 	EXPECT(assert_equal(expPoseConfig, cfg1.config<PoseConfig>()));
+
+	// getting sizes of configs
+	EXPECT(cfg1A.nrConfigs() == 1);
+	EXPECT(cfg1B.nrConfigs() == 1);
+	EXPECT(cfg1.nrConfigs() == 2);
+}
+
+/* ************************************************************************* */
+TEST( testFusionTupleConfig, slicing ) {
+	TupPairConfig cfg_pair;
+	cfg_pair.insert(x1, x1_val);
+	cfg_pair.insert(x2, x2_val);
+	cfg_pair.insert(l1, l1_val);
+	cfg_pair.insert(l2, l2_val);
+
+	// initialize configs by slicing a larger config
+	TupPointConfig cfg_point(cfg_pair);
+	TupPoseConfig cfg_pose(cfg_pair);
+
+	PointConfig expPointConfig;
+	expPointConfig.insert(l1, l1_val);
+	expPointConfig.insert(l2, l2_val);
+
+	PoseConfig expPoseConfig;
+	expPoseConfig.insert(x1, x1_val);
+	expPoseConfig.insert(x2, x2_val);
+
+	// verify - slicing at initialization isn't implemented
+//	EXPECT(assert_equal(expPointConfig, cfg_point.config<PointConfig>()));
+//	EXPECT(assert_equal(expPoseConfig, cfg_pose.config<PoseConfig>()));
+}
+
+/* ************************************************************************* */
+TEST( testFusionTupleConfig, equals ) {
+	TupPairConfig c1, c2, c3, c4, c5, c6;
+	c1.insert(l1, l1_val);
+	c1.insert(l2, l2_val);
+	c1.insert(x1, x1_val);
+	c1.insert(x2, x2_val);
+	c4 = c1;
+	c2.insert(x1, x1_val);
+	c2.insert(x2, x2_val);
+
+	EXPECT(assert_equal(c1, c1, tol));
+	EXPECT(assert_equal(c4, c1, tol));
+	EXPECT(assert_equal(c4, c4, tol));
+	EXPECT(!c1.equals(c2, tol));
+	EXPECT(!c2.equals(c1, tol));
+	EXPECT(!c1.equals(c3, tol));
+	EXPECT(!c2.equals(c3, tol));
+	EXPECT(assert_equal(c3, c3));
+
+	c5.insert(l1, l1_val);
+	c6.insert(l1, l1_val + Point2(1e-6, 1e-6));
+	EXPECT(assert_equal(c5, c6, 1e-5));
+}
+
+/* ************************************************************************* */
+TEST( testFusionTupleConfig, fusion_slicing ) {
+	typedef fusion::set<int, double, bool> Set1;
+	typedef fusion::set<double> Set2;
+	Set1 s1(1, 2.0, true);
+
+	// assignment
+	EXPECT(fusion::at_key<int>(s1) == 1);
+	fusion::at_key<int>(s1) = 2;
+	EXPECT(fusion::at_key<int>(s1) == 2);
+
+	// slicing: big set sliced to a small set
+	Set2 s2 = s1; // by assignment
+	EXPECT_DOUBLES_EQUAL(2.0, fusion::at_key<double>(s2), tol);
+
+	Set2 s3(s1); // by initialization
+	EXPECT_DOUBLES_EQUAL(2.0, fusion::at_key<double>(s3), tol);
+
+	// upgrading: small set initializing a big set
+//	Set2 s3(5);
+//	Set1 s4 = s3; // apparently can't do this
 }
 
 /* ************************************************************************* */
 int main() { TestResult tr; return TestRegistry::runAllTests(tr); }
 /* ************************************************************************* */
-
-
