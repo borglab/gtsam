@@ -73,6 +73,7 @@ TEST( TupleConfig, insert_equals1 )
   CHECK(assert_equal(expected,actual));
 }
 
+/* ************************************************************************* */
 TEST( TupleConfig, insert_equals2 )
 {
   Pose2 x1(1,2,3), x2(6,7,8);

@@ -7,13 +7,18 @@
 
 #include <CppUnitLite/TestHarness.h>
 
+#define GTSAM_MAGIC_KEY
+
 #include <Pose2.h>
 #include <Point2.h>
 #include <Pose3.h>
 #include <Point3.h>
 #include <Key.h>
-#include <LieConfig-inl.h>
+#include <Vector.h>
+#include <Key.h>
+#include <VectorConfig.h>
 
+#include <LieConfig-inl.h>
 #include <FusionTupleConfig.h>
 
 using namespace boost;
@@ -38,7 +43,7 @@ typedef FusionTupleConfig<fusion::set<PoseConfig> > TupPoseConfig;
 typedef FusionTupleConfig<fusion::set<PoseConfig, PointConfig> > TupPairConfig;
 
 /* ************************************************************************* */
-TEST( testFusionTupleConfig, basic_config ) {
+TEST( testFusionTupleConfig, basic_config_operations ) {
 
 	// some initialized configs to start with
 	PoseConfig poseConfig1;
@@ -86,6 +91,12 @@ TEST( testFusionTupleConfig, basic_config ) {
 	cfg1.insert(l2, l2_val);
 	EXPECT(cfg1.size() == 4);
 
+	// exists
+	EXPECT(cfg1.exists(x1));
+	EXPECT(cfg1.exists(x2));
+	EXPECT(cfg1.exists(l1));
+	EXPECT(cfg1.exists(l2));
+
 	// retrieval of elements
 	EXPECT(assert_equal(l1_val, cfg1A.at(l1)));
 	EXPECT(assert_equal(l2_val, cfg1A.at(l2)));
@@ -117,6 +128,34 @@ TEST( testFusionTupleConfig, basic_config ) {
 	EXPECT(cfg1A.nrConfigs() == 1);
 	EXPECT(cfg1B.nrConfigs() == 1);
 	EXPECT(cfg1.nrConfigs() == 2);
+
+	// erase
+	cfg1.erase(x1);
+	EXPECT(cfg1.size() == 3);
+	EXPECT(!cfg1.exists(x1));
+	cfg1.erase(l1);
+	EXPECT(cfg1.size() == 2);
+	EXPECT(!cfg1.exists(l1));
+
+	// clear
+	cfg1.clear();
+	cfg1A.clear(); cfg1B.clear();
+	EXPECT(cfg1.size() == 0);
+	EXPECT(cfg1.empty());
+	EXPECT(cfg1A.size() == 0);
+	EXPECT(cfg1A.empty());
+	EXPECT(cfg1B.size() == 0);
+	EXPECT(cfg1B.empty());
+
+	cfg2.clear();
+	cfg2A.clear(); cfg2B.clear();
+	EXPECT(cfg2.size() == 0);
+	EXPECT(cfg2.empty());
+	EXPECT(cfg2A.size() == 0);
+	EXPECT(cfg2A.empty());
+	EXPECT(cfg2B.size() == 0);
+	EXPECT(cfg2B.empty());
+
 }
 
 /* ************************************************************************* */
@@ -177,6 +216,232 @@ TEST( testFusionTupleConfig, equals ) {
 	c5.insert(l1, l1_val);
 	c6.insert(l1, l1_val + Point2(1e-6, 1e-6));
 	EXPECT(assert_equal(c5, c6, 1e-5));
+}
+
+/* ************************************************************************* */
+TEST( testFusionTupleConfig, insert_equals1 )
+{
+	TupPairConfig expected;
+	expected.insert(PoseKey(1), x1_val);
+	expected.insert(PoseKey(2), x2_val);
+	expected.insert(PointKey(1), l1_val);
+	expected.insert(PointKey(2), l2_val);
+
+	TupPairConfig actual;
+	actual.insert(PoseKey(1), x1_val);
+	actual.insert(PoseKey(2), x2_val);
+	actual.insert(PointKey(1), l1_val);
+	actual.insert(PointKey(2), l2_val);
+
+	CHECK(assert_equal(expected,actual));
+}
+
+/* ************************************************************************* */
+TEST( testFusionTupleConfig, insert_equals2 )
+{
+	TupPairConfig config1;
+	config1.insert(PoseKey(1), x1_val);
+	config1.insert(PoseKey(2), x2_val);
+	config1.insert(PointKey(1), l1_val);
+	config1.insert(PointKey(2), l2_val);
+
+	TupPairConfig config2;
+	config2.insert(PoseKey(1), x1_val);
+	config2.insert(PoseKey(2), x2_val);
+	config2.insert(PointKey(1), l1_val);
+
+	EXPECT(!config1.equals(config2));
+
+	config2.insert(PointKey(2), Point2(9,11));
+
+	EXPECT(!config1.equals(config2));
+}
+
+/* ************************************************************************* */
+TEST( testFusionTupleConfig, insert_duplicate )
+{
+	TupPairConfig config1;
+	config1.insert(x1, x1_val); // 3
+	config1.insert(x2, x2_val); // 6
+	config1.insert(l1, l1_val); // 8
+	config1.insert(l2, l2_val); // 10
+	config1.insert(l2, l1_val); // still 10 !!!!
+
+	EXPECT(assert_equal(l2_val, config1[PointKey(2)]));
+	LONGS_EQUAL(4,config1.size());
+	LONGS_EQUAL(10,config1.dim());
+}
+
+/* ************************************************************************* */
+TEST( testFusionTupleConfig, size_dim )
+{
+	TupPairConfig config1;
+	config1.insert(PoseKey(1), x1_val);
+	config1.insert(PoseKey(2), x2_val);
+	config1.insert(PointKey(1), l1_val);
+	config1.insert(PointKey(2), l2_val);
+
+	EXPECT(config1.size() == 4);
+	EXPECT(config1.dim() == 10);
+}
+
+/* ************************************************************************* */
+TEST( testFusionTupleConfig, at)
+{
+	TupPairConfig config1;
+	config1.insert(PoseKey(1), x1_val);
+	config1.insert(PoseKey(2), x2_val);
+	config1.insert(PointKey(1), l1_val);
+	config1.insert(PointKey(2), l2_val);
+
+	EXPECT(assert_equal(x1_val, config1[PoseKey(1)]));
+	EXPECT(assert_equal(x2_val, config1[PoseKey(2)]));
+	EXPECT(assert_equal(l1_val, config1[PointKey(1)]));
+	EXPECT(assert_equal(l2_val, config1[PointKey(2)]));
+
+	CHECK_EXCEPTION(config1[PoseKey(3)], std::invalid_argument);
+	CHECK_EXCEPTION(config1[PointKey(3)], std::invalid_argument);
+}
+
+/* ************************************************************************* */
+TEST( testFusionTupleConfig, zero_expmap_logmap)
+{
+	Pose2 xA1(1,2,3), xA2(6,7,8);
+	Point2 lA1(4,5), lA2(9,10);
+
+	TupPairConfig config1;
+	config1.insert(PoseKey(1), xA1);
+	config1.insert(PoseKey(2), xA2);
+	config1.insert(PointKey(1), lA1);
+	config1.insert(PointKey(2), lA2);
+
+	VectorConfig expected_zero;
+	expected_zero.insert("x1", zero(3));
+	expected_zero.insert("x2", zero(3));
+	expected_zero.insert("l1", zero(2));
+	expected_zero.insert("l2", zero(2));
+
+	EXPECT(assert_equal(expected_zero, config1.zero()));
+
+	VectorConfig delta;
+	delta.insert("x1", Vector_(3, 1.0, 1.1, 1.2));
+	delta.insert("x2", Vector_(3, 1.3, 1.4, 1.5));
+	delta.insert("l1", Vector_(2, 1.0, 1.1));
+	delta.insert("l2", Vector_(2, 1.3, 1.4));
+
+	TupPairConfig expected;
+	expected.insert(PoseKey(1), expmap(xA1, Vector_(3, 1.0, 1.1, 1.2)));
+	expected.insert(PoseKey(2), expmap(xA2, Vector_(3, 1.3, 1.4, 1.5)));
+	expected.insert(PointKey(1), Point2(5.0, 6.1));
+	expected.insert(PointKey(2), Point2(10.3, 11.4));
+
+	TupPairConfig actual = expmap(config1, delta);
+	EXPECT(assert_equal(expected, actual));
+
+	// Check log
+	VectorConfig expected_log = delta;
+	VectorConfig actual_log = logmap(config1,actual);
+	EXPECT(assert_equal(expected_log, actual_log));
+}
+
+/* ************************************************************************* */
+TEST( testFusionTupleConfig, partial_insert) {
+	TupPairConfig init, expected;
+
+	Pose2 pose1(1.0, 2.0, 0.3), pose2(3.0, 4.0, 5.0);
+	Point2 point1(2.0, 3.0), point2(5.0, 6.0);
+
+	init.insert(x1, pose1);
+	init.insert(l1, point1);
+
+	PoseConfig cfg1;
+	cfg1.insert(x2, pose2);
+
+	init.insertSub(cfg1);
+
+	expected.insert(x1, pose1);
+	expected.insert(l1, point1);
+	expected.insert(x2, pose2);
+
+	CHECK(assert_equal(expected, init));
+}
+
+/* ************************************************************************* */
+TEST( testFusionTupleConfig, update) {
+	TupPairConfig init, superset, expected;
+
+	Pose2 pose1(1.0, 2.0, 0.3), pose2(3.0, 4.0, 5.0);
+	Point2 point1(2.0, 3.0), point2(5.0, 6.0);
+
+	init.insert(x1, pose1);
+	init.insert(l1, point1);
+
+	Pose2 pose1_(1.0, 2.0, 0.4);
+	Point2 point1_(2.0, 4.0);
+	superset.insert(x1, pose1_);
+	superset.insert(l1, point1_);
+	superset.insert(x2, pose2);
+	superset.insert(l2, point2);
+	init.update(superset);
+
+	expected.insert(x1, pose1_);
+	expected.insert(l1, point1_);
+
+	CHECK(assert_equal(expected, init));
+}
+
+/* ************************************************************************* */
+TEST( testFusionTupleConfig, update_element )
+{
+	TupPairConfig cfg;
+	PoseKey xk(1);
+	PointKey lk(1);
+
+	cfg.insert(xk, x1_val);
+	EXPECT(cfg.size() == 1);
+	EXPECT(assert_equal(x1_val, cfg.at(xk)));
+
+	cfg.update(xk, x2_val);
+	EXPECT(cfg.size() == 1);
+	EXPECT(assert_equal(x2_val, cfg.at(xk)));
+
+	cfg.insert(lk, l1_val);
+	EXPECT(cfg.size() == 2);
+	EXPECT(assert_equal(l1_val, cfg.at(lk)));
+
+	cfg.update(lk, l2_val);
+	EXPECT(cfg.size() == 2);
+	EXPECT(assert_equal(l2_val, cfg.at(lk)));
+}
+
+/* ************************************************************************* */
+TEST( testFusionTupleConfig, expmap)
+{
+	Pose2 xA1(1,2,3), xA2(6,7,8);
+	PoseKey x1k(1), x2k(2);
+	Point2 lA1(4,5), lA2(9,10);
+	PointKey l1k(1), l2k(2);
+
+	TupPairConfig config1;
+	config1.insert(x1k, xA1);
+	config1.insert(x2k, xA2);
+	config1.insert(l1k, lA1);
+	config1.insert(l2k, lA2);
+
+	VectorConfig delta;
+	delta.insert("x1", Vector_(3, 1.0, 1.1, 1.2));
+	delta.insert("x2", Vector_(3, 1.3, 1.4, 1.5));
+	delta.insert("l1", Vector_(2, 1.0, 1.1));
+	delta.insert("l2", Vector_(2, 1.3, 1.4));
+
+	TupPairConfig expected;
+	expected.insert(x1k, expmap(xA1, Vector_(3, 1.0, 1.1, 1.2)));
+	expected.insert(x2k, expmap(xA2, Vector_(3, 1.3, 1.4, 1.5)));
+	expected.insert(l1k, Point2(5.0, 6.1));
+	expected.insert(l2k, Point2(10.3, 11.4));
+
+	CHECK(assert_equal(expected, expmap(config1, delta)));
+	CHECK(assert_equal(delta, logmap(config1, expected)));
 }
 
 /* ************************************************************************* */
