@@ -445,5 +445,32 @@ TEST( testFusionTupleConfig, expmap)
 }
 
 /* ************************************************************************* */
+TEST( testFusionTupleConfig, configN)
+{
+	typedef FusionTupleConfig2<PoseConfig, PointConfig> ConfigA;
+	PointConfig expPointConfig;
+	expPointConfig.insert(l1, l1_val);
+	expPointConfig.insert(l2, l2_val);
+
+	PoseConfig expPoseConfig;
+	expPoseConfig.insert(x1, x1_val);
+	expPoseConfig.insert(x2, x2_val);
+
+	ConfigA cfg1;
+	EXPECT(cfg1.empty());
+
+	ConfigA cfg2(expPoseConfig, expPointConfig);
+
+	EXPECT(assert_equal(expPoseConfig, cfg2.config<PoseConfig>()));
+	EXPECT(assert_equal(expPointConfig, cfg2.config<PointConfig>()));
+
+	EXPECT(assert_equal(expPoseConfig, cfg2.first()));
+	EXPECT(assert_equal(expPointConfig, cfg2.second()));
+
+	ConfigA cfg3(cfg2);
+	EXPECT(assert_equal(cfg2, cfg3));
+}
+
+/* ************************************************************************* */
 int main() { TestResult tr; return TestRegistry::runAllTests(tr); }
 /* ************************************************************************* */

@@ -7,17 +7,13 @@
 #pragma once
 
 #include <boost/fusion/container/set.hpp>
-#include <boost/fusion/container/vector.hpp>
-#include <boost/fusion/sequence/intrinsic.hpp>
 #include <boost/fusion/include/make_set.hpp>
 #include <boost/fusion/include/as_vector.hpp>
 #include <boost/fusion/include/at_key.hpp>
 #include <boost/fusion/include/has_key.hpp>
 #include <boost/fusion/include/zip.hpp>
-#include <boost/fusion/algorithm/transformation.hpp>
+#include <boost/fusion/include/all.hpp>
 #include <boost/fusion/algorithm/iteration.hpp>
-#include <boost/fusion/algorithm/query.hpp>
-#include <boost/fusion/functional/adapter/fused_function_object.hpp>
 
 #include "Testable.h"
 #include "LieConfig.h"
@@ -106,6 +102,12 @@ public:
 		return config<LieConfig<Key,typename Key::Value_t> >().exists(j);
 	}
 
+	/** a variant of exists */
+	template<class Key>
+	boost::optional<typename Key::Value_t> exists_(const Key& j)  const {
+		return config<LieConfig<Key,typename Key::Value_t> >().exists_(j);
+	}
+
 	/** retrieve a point */
 	template<class Key>
 	const typename Key::Value_t & at(const Key& j) const {
@@ -166,10 +168,7 @@ public:
 	bool equals(const FusionTupleConfig<Configs>& other, double tol=1e-9) const {
 		FusionTupleConfig<Configs>::equals_helper helper(tol);
 		return boost::fusion::all(
-				boost::fusion::zip(
-						boost::fusion::as_vector(base_tuple_),
-						boost::fusion::as_vector(other.base_tuple_)),
-						helper);
+				boost::fusion::zip(base_tuple_,other.base_tuple_), helper);
 	}
 
 	/** zero: create VectorConfig of appropriate structure */
@@ -334,6 +333,57 @@ template<class Configs>
 inline VectorConfig logmap(const FusionTupleConfig<Configs>& c0, const FusionTupleConfig<Configs>& cp) {
 	  return c0.logmap(cp);
 }
+
+/**
+ * Easy-to-use versions of FusionTupleConfig
+ * These versions provide a simpler interface more like
+ * the existing TupleConfig.  Each version has a number, and
+ * takes explicit template arguments for config types.
+ */
+template<class C1>
+struct FusionTupleConfig1 : public FusionTupleConfig<boost::fusion::set<C1> > {
+	typedef FusionTupleConfig<boost::fusion::set<C1> > Base;
+	typedef FusionTupleConfig1<C1> This;
+
+	typedef C1 Config1;
+
+	FusionTupleConfig1() {}
+	FusionTupleConfig1(const C1& c1) : Base(boost::fusion::make_set(c1)) {}
+
+	const Config1& first() const { return boost::fusion::at_key<C1>(this->base_tuple_); }
+};
+
+template<class C1, class C2>
+struct FusionTupleConfig2 : public FusionTupleConfig<boost::fusion::set<C1, C2> > {
+	typedef FusionTupleConfig<boost::fusion::set<C1, C2> > Base;
+	typedef FusionTupleConfig2<C1,C2> This;
+
+	typedef C1 Config1;
+	typedef C2 Config2;
+
+	FusionTupleConfig2() {}
+	FusionTupleConfig2(const C1& c1, const C2& c2) : Base(boost::fusion::make_set(c1, c2)) {}
+
+	const Config1& first()  const { return boost::fusion::at_key<C1>(this->base_tuple_); }
+	const Config2& second() const { return boost::fusion::at_key<C2>(this->base_tuple_); }
+};
+
+template<class C1, class C2, class C3>
+struct FusionTupleConfig3 : public FusionTupleConfig<boost::fusion::set<C1, C2, C3> > {
+	typedef FusionTupleConfig<boost::fusion::set<C1, C2, C3> > Base;
+
+	typedef C1 Config1;
+	typedef C2 Config2;
+	typedef C3 Config3;
+
+	FusionTupleConfig3() {}
+	FusionTupleConfig3(const C1& c1, const C2& c2, const C3& c3)
+		: Base(boost::fusion::make_set(c1, c2, c3)) {}
+
+	const Config1& first()  const { return boost::fusion::at_key<C1>(this->base_tuple_); }
+	const Config2& second() const { return boost::fusion::at_key<C2>(this->base_tuple_); }
+	const Config3& third()  const { return boost::fusion::at_key<C3>(this->base_tuple_); }
+};
 
 
 } // \namespace gtsam
