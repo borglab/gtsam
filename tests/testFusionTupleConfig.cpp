@@ -11,14 +11,16 @@
 
 #include <Pose2.h>
 #include <Point2.h>
-#include <Pose3.h>
-#include <Point3.h>
-#include <Key.h>
-#include <Vector.h>
 #include <Key.h>
 #include <VectorConfig.h>
 
+#include "BearingRangeFactor.h"
+#include "PriorFactor.h"
+#include "BetweenFactor.h"
+
+#include <NonlinearFactorGraph-inl.h>
 #include <LieConfig-inl.h>
+#include <NonlinearOptimizer-inl.h>
 #include <FusionTupleConfig.h>
 
 using namespace boost;
@@ -469,6 +471,46 @@ TEST( testFusionTupleConfig, configN)
 
 	ConfigA cfg3(cfg2);
 	EXPECT(assert_equal(cfg2, cfg3));
+}
+
+/* ************************************************************************* */
+TEST( testFusionTupleConfig, basic_factor)
+{
+	// planar example system
+	typedef FusionTupleConfig2<PoseConfig, PointConfig> Config; // pair config
+	typedef FusionTupleConfig1<PoseConfig> TestPoseConfig;
+	typedef NonlinearFactorGraph<Config> Graph;
+	typedef NonlinearOptimizer<Graph,Config> Optimizer;
+
+	// Factors
+//	typedef PriorFactor<TestPoseConfig, PoseKey, Pose2> Prior; // fails to add to graph
+	typedef PriorFactor<Config, PoseKey, Pose2> Prior;
+	typedef BetweenFactor<Config, PoseKey, Pose2> Odometry;
+	typedef BearingRangeFactor<Config, PoseKey, PointKey> BearingRange;
+
+	PoseKey pose1k(1), pose2k(2), pose3k(3);
+	Pose2 pose1, pose2(2.0, 0.0, 0.0), pose3(4.0, 0.0, 0.0);
+	SharedDiagonal prior_model = noiseModel::Isotropic::Sigma(3, 0.1);
+	SharedDiagonal odom_model = noiseModel::Diagonal::Sigmas(Vector_(3, 0.2, 0.2, 0.1));
+
+	Graph graph;
+	graph.add(Prior(pose1k, pose1, prior_model));
+	graph.add(Odometry(pose1k, pose2k, between(pose1, pose2), odom_model));
+	graph.add(Odometry(pose2k, pose3k, between(pose2, pose3), odom_model));
+
+	Config init;
+	init.insert(pose1k, Pose2(0.2, 0.4, 0.0));
+	init.insert(pose2k, Pose2(1.8,-0.4, 0.3));
+	init.insert(pose3k, Pose2(4.1, 0.0,-0.2));
+
+	Optimizer::shared_config actual = Optimizer::optimizeLM(graph, init);
+
+	Config expected;
+	expected.insert(pose1k, pose1);
+	expected.insert(pose2k, pose2);
+	expected.insert(pose3k, pose3);
+
+	EXPECT(assert_equal(expected, *actual, tol));
 }
 
 /* ************************************************************************* */

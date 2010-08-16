@@ -348,6 +348,7 @@ struct FusionTupleConfig1 : public FusionTupleConfig<boost::fusion::set<C1> > {
 	typedef C1 Config1;
 
 	FusionTupleConfig1() {}
+	FusionTupleConfig1(const Base& c) : Base(c) {}
 	FusionTupleConfig1(const C1& c1) : Base(boost::fusion::make_set(c1)) {}
 
 	const Config1& first() const { return boost::fusion::at_key<C1>(this->base_tuple_); }
@@ -362,6 +363,7 @@ struct FusionTupleConfig2 : public FusionTupleConfig<boost::fusion::set<C1, C2> 
 	typedef C2 Config2;
 
 	FusionTupleConfig2() {}
+	FusionTupleConfig2(const Base& c) : Base(c) {}
 	FusionTupleConfig2(const C1& c1, const C2& c2) : Base(boost::fusion::make_set(c1, c2)) {}
 
 	const Config1& first()  const { return boost::fusion::at_key<C1>(this->base_tuple_); }
@@ -377,6 +379,7 @@ struct FusionTupleConfig3 : public FusionTupleConfig<boost::fusion::set<C1, C2, 
 	typedef C3 Config3;
 
 	FusionTupleConfig3() {}
+	FusionTupleConfig3(const Base& c) : Base(c) {}
 	FusionTupleConfig3(const C1& c1, const C2& c2, const C3& c3)
 		: Base(boost::fusion::make_set(c1, c2, c3)) {}
 
