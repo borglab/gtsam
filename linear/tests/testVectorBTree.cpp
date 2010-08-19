@@ -19,9 +19,9 @@ using namespace boost::assign; // bring 'operator+=()' into scope
 #include <boost/archive/text_iarchive.hpp>
 #endif //HAVE_BOOST_SERIALIZATION
 
-#include <CppUnitLite/TestHarness.h>
-#include "Matrix.h"
-#include "VectorBTree.h"
+#include <gtsam/CppUnitLite/TestHarness.h>
+#include <gtsam/base/Matrix.h>
+#include <gtsam/linear/VectorBTree.h>
 
 using namespace std;
 using namespace gtsam;

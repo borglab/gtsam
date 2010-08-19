@@ -11,8 +11,8 @@
 #pragma once
 
 #include <boost/shared_ptr.hpp>
-#include "NonlinearFactorGraph.h"
-#include "simulated2D.h"
+#include <gtsam/nonlinear/NonlinearFactorGraph.h>
+#include <gtsam/slam/simulated2D.h>
 
 namespace gtsam {
 	namespace example {

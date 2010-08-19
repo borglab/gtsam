@@ -8,9 +8,9 @@
 
 #include <boost/foreach.hpp>
 
-#include "ClusterTree-inl.h"
-#include "JunctionTree-inl.h"
-#include "GaussianJunctionTree.h"
+#include <gtsam/inference/ClusterTree-inl.h>
+#include <gtsam/inference/JunctionTree-inl.h>
+#include <gtsam/linear/GaussianJunctionTree.h>
 
 namespace gtsam {
 

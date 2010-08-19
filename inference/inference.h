@@ -7,9 +7,9 @@
 
 #pragma once
 
-#include "FactorGraph.h"
-#include "BayesNet.h"
-#include "Key.h"
+#include <gtsam/inference/FactorGraph.h>
+#include <gtsam/inference/BayesNet.h>
+#include <gtsam/inference/Key.h>
 
 namespace gtsam {
 

@@ -15,11 +15,11 @@
 #include <boost/shared_ptr.hpp>
 #include <boost/serialization/base_object.hpp>
 
-#include "Factor.h"
-#include "Vector.h"
-#include "Matrix.h"
-#include "SharedGaussian.h"
-#include "GaussianFactor.h"
+#include <gtsam/inference/Factor.h>
+#include <gtsam/base/Vector.h>
+#include <gtsam/base/Matrix.h>
+#include <gtsam/linear/SharedGaussian.h>
+#include <gtsam/linear/GaussianFactor.h>
 
 #define INSTANTIATE_NONLINEAR_FACTOR1(C,J,X) \
   template class gtsam::NonlinearFactor1<C,J,X>;

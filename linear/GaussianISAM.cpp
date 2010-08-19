@@ -4,13 +4,13 @@
  * @author  Michael Kaess
  */
 
-#include "GaussianISAM.h"
+#include <gtsam/linear/GaussianISAM.h>
 
 using namespace std;
 using namespace gtsam;
 
 // Explicitly instantiate so we don't have to include everywhere
-#include "ISAM-inl.h"
+#include <gtsam/inference/ISAM-inl.h>
 template class ISAM<GaussianConditional>;
 
 namespace gtsam {

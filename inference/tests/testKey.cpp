@@ -6,8 +6,8 @@
 #include <boost/assign/std/list.hpp> // for operator +=
 using namespace boost::assign;
 
-#include <CppUnitLite/TestHarness.h>
-#include "Key.h"
+#include <gtsam/CppUnitLite/TestHarness.h>
+#include <gtsam/inference/Key.h>
 	
 using namespace std;
 using namespace gtsam;

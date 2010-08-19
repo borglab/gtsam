@@ -16,7 +16,7 @@
 #include <boost/lexical_cast.hpp>
 #endif
 
-#include "Testable.h"
+#include <gtsam/base/Testable.h>
 
 #define ALPHA '\224'
 

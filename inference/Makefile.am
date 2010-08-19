@@ -2,6 +2,10 @@
 # GTSAM core functionality: base classes for inference, as well as symbolic and discrete
 #----------------------------------------------------------------------------------------------------
 
+# use nostdinc to turn off -I. and -I.., we do not need them because 
+# header files are qualified so they can be included in external projects.
+AUTOMAKE_OPTIONS = nostdinc
+
 headers =
 sources = 
 check_PROGRAMS = 
@@ -50,10 +54,11 @@ noinst_PROGRAMS = tests/timeSymbolMaps
 # The headers are installed in $(includedir)/gtsam: 
 #----------------------------------------------------------------------------------------------------
 headers += $(sources:.cpp=.h)
-pkginclude_HEADERS = $(headers)
+inferencedir = $(pkgincludedir)/inference
+inference_HEADERS = $(headers)
 noinst_LTLIBRARIES = libinference.la
 libinference_la_SOURCES = $(sources)
-AM_CPPFLAGS = -I$(boost) -I$(top_srcdir) -I$(top_srcdir)/colamd -I$(top_srcdir)/base 
+AM_CPPFLAGS = -I$(boost) -I$(BORG_SRCROOT)
 AM_CXXFLAGS =
 
 #----------------------------------------------------------------------------------------------------

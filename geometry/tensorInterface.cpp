@@ -5,7 +5,7 @@
  * @author: Frank Dellaert
  */
 
-#include "tensorInterface.h"
+#include <gtsam/geometry/tensorInterface.h>
 
 using namespace std;
 using namespace tensors;

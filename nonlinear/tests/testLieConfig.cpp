@@ -5,7 +5,7 @@
  *      Author: richard
  */
 
-#include <CppUnitLite/TestHarness.h>
+#include <gtsam/CppUnitLite/TestHarness.h>
 #include <stdexcept>
 #include <limits>
 #include <boost/assign/std/list.hpp> // for operator +=
@@ -13,8 +13,8 @@ using namespace boost::assign;
 
 #define GTSAM_MAGIC_KEY
 
-#include "LieConfig-inl.h"
-#include "Vector.h"
+#include <gtsam/nonlinear/LieConfig-inl.h>
+#include <gtsam/base/Vector.h>
 
 using namespace gtsam;
 using namespace std;

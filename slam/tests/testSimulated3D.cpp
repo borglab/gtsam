@@ -5,11 +5,11 @@
  **/
 
 #include <iostream>
-#include <CppUnitLite/TestHarness.h>
+#include <gtsam/CppUnitLite/TestHarness.h>
 
-#include "Pose3.h"
-#include "numericalDerivative.h"
-#include "Simulated3D.h"
+#include <gtsam/geometry/Pose3.h>
+#include <gtsam/base/numericalDerivative.h>
+#include <gtsam/slam/Simulated3D.h>
 
 using namespace gtsam;
 using namespace simulated3D;

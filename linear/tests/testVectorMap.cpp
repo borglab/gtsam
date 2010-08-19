@@ -17,9 +17,9 @@
 
 #define GTSAM_MAGIC_KEY
 
-#include <CppUnitLite/TestHarness.h>
-#include "Matrix.h"
-#include "VectorMap.h"
+#include <gtsam/CppUnitLite/TestHarness.h>
+#include <gtsam/base/Matrix.h>
+#include <gtsam/linear/VectorMap.h>
 
 using namespace std;
 using namespace gtsam;

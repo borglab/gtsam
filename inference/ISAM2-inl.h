@@ -10,13 +10,13 @@ using namespace boost::assign;
 
 #include <set>
 
-#include "NonlinearFactorGraph-inl.h"
-#include "GaussianFactor.h"
-#include "VectorConfig.h"
+#include <gtsam/nonlinear/NonlinearFactorGraph-inl.h>
+#include <gtsam/linear/GaussianFactor.h>
+#include <gtsam/linear/VectorConfig.h>
 
-#include "Conditional.h"
-#include "BayesTree-inl.h"
-#include "ISAM2.h"
+#include <gtsam/inference/Conditional.h>
+#include <gtsam/inference/BayesTree-inl.h>
+#include <gtsam/inference/ISAM2.h>
 
 namespace gtsam {
 

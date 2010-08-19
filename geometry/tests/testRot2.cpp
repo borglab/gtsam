@@ -4,9 +4,9 @@
  * @author  Frank Dellaert
  */
 
-#include <CppUnitLite/TestHarness.h>
-#include "numericalDerivative.h"
-#include "Rot2.h"
+#include <gtsam/CppUnitLite/TestHarness.h>
+#include <gtsam/base/numericalDerivative.h>
+#include <gtsam/geometry/Rot2.h>
 
 using namespace gtsam;
 

@@ -8,15 +8,15 @@
 #include <boost/foreach.hpp>
 #include <boost/tuple/tuple.hpp>
 
-#include "GaussianBayesNet.h"
-#include "VectorConfig.h"
-#include "SymbolMap.h"
+#include <gtsam/linear/GaussianBayesNet.h>
+#include <gtsam/linear/VectorConfig.h>
+#include <gtsam/inference/SymbolMap.h>
 
 using namespace std;
 using namespace gtsam;
 
 // Explicitly instantiate so we don't have to include everywhere
-#include "BayesNet-inl.h"
+#include <gtsam/inference/BayesNet-inl.h>
 template class BayesNet<GaussianConditional>;
 
 // trick from some reading group

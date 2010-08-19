@@ -11,7 +11,7 @@
 #include <stdexcept>
 #include <functional>
 #include <boost/foreach.hpp>
-#include "EliminationTree.h"
+#include <gtsam/inference/EliminationTree.h>
 
 namespace gtsam {
 

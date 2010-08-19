@@ -8,11 +8,11 @@
 
 #pragma once
 
-#include "ISAM2.h"
-#include "GaussianConditional.h"
-#include "GaussianFactor.h"
-#include "simulated2D.h"
-#include "planarSLAM.h"
+#include <gtsam/inference/ISAM2.h>
+#include <gtsam/linear/GaussianConditional.h>
+#include <gtsam/linear/GaussianFactor.h>
+#include <gtsam/slam/simulated2D.h>
+#include <gtsam/slam/planarSLAM.h>
 
 namespace gtsam {
 

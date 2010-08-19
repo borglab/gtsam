@@ -7,10 +7,10 @@
 #pragma once
 
 #include <boost/serialization/nvp.hpp>
-#include "Vector.h"
-#include "Matrix.h"
-#include "Testable.h"
-#include "Lie.h"
+#include <gtsam/base/Vector.h>
+#include <gtsam/base/Matrix.h>
+#include <gtsam/base/Testable.h>
+#include <gtsam/base/Lie.h>
 
 namespace gtsam {
 

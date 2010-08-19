@@ -2,13 +2,13 @@
  Written by Frank Dellaert, Nov 2009
  **********************************************************/
 
-#include <CppUnitLite/TestHarness.h>
+#include <gtsam/CppUnitLite/TestHarness.h>
 
 #define GTSAM_MAGIC_KEY
 
-#include "visualSLAM.h"
-#include "Point3.h"
-#include "Pose3.h"
+#include <gtsam/slam/visualSLAM.h>
+#include <gtsam/geometry/Point3.h>
+#include <gtsam/geometry/Pose3.h>
 
 using namespace std;
 using namespace gtsam;

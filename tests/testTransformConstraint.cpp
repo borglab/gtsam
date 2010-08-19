@@ -7,23 +7,23 @@
 
 #include <boost/bind.hpp>
 
-#include <CppUnitLite/TestHarness.h>
+#include <gtsam/CppUnitLite/TestHarness.h>
 
-#include <Ordering.h>
-#include <Key.h>
-#include <numericalDerivative.h>
+#include <gtsam/inference/Ordering.h>
+#include <gtsam/inference/Key.h>
+#include <gtsam/base/numericalDerivative.h>
 
-#include <Pose2.h>
-#include <Point2.h>
+#include <gtsam/geometry/Pose2.h>
+#include <gtsam/geometry/Point2.h>
 
-#include <TransformConstraint.h>
-#include <NonlinearEquality.h>
+#include <gtsam/slam/TransformConstraint.h>
+#include <gtsam/nonlinear/NonlinearEquality.h>
 
 // implementations
-#include <LieConfig-inl.h>
-#include <TupleConfig-inl.h>
-#include <NonlinearFactorGraph-inl.h>
-#include <NonlinearOptimizer-inl.h>
+#include <gtsam/nonlinear/LieConfig-inl.h>
+#include <gtsam/nonlinear/TupleConfig-inl.h>
+#include <gtsam/nonlinear/NonlinearFactorGraph-inl.h>
+#include <gtsam/nonlinear/NonlinearOptimizer-inl.h>
 
 using namespace std;
 using namespace gtsam;

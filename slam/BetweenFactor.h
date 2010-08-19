@@ -6,10 +6,10 @@
 
 #include <ostream>
 
-#include "NonlinearFactor.h"
-#include "GaussianFactor.h"
-#include "Lie.h"
-#include "Matrix.h"
+#include <gtsam/nonlinear/NonlinearFactor.h>
+#include <gtsam/linear/GaussianFactor.h>
+#include <gtsam/base/Lie.h>
+#include <gtsam/base/Matrix.h>
 
 namespace gtsam {
 

@@ -8,8 +8,8 @@
 #include <boost/assign/std/list.hpp> // for +=
 using namespace boost::assign;
 
-#include <CppUnitLite/TestHarness.h>
-#include "Errors.h"
+#include <gtsam/CppUnitLite/TestHarness.h>
+#include <gtsam/linear/Errors.h>
 
 using namespace std;
 using namespace gtsam;

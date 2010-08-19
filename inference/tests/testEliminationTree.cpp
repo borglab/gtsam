@@ -10,13 +10,13 @@
 #include <boost/assign/std/map.hpp>
 using namespace boost::assign;
 
-#include <CppUnitLite/TestHarness.h>
+#include <gtsam/CppUnitLite/TestHarness.h>
 
 #define GTSAM_MAGIC_KEY
 
-#include "SymbolicFactorGraph.h"
-#include "ClusterTree-inl.h"
-#include "EliminationTree-inl.h"
+#include <gtsam/inference/SymbolicFactorGraph.h>
+#include <gtsam/inference/ClusterTree-inl.h>
+#include <gtsam/inference/EliminationTree-inl.h>
 
 using namespace std;
 using namespace gtsam;

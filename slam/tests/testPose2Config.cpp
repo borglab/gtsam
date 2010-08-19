@@ -5,8 +5,8 @@
 
 #include <iostream>
 
-#include <CppUnitLite/TestHarness.h>
-#include "pose2SLAM.h"
+#include <gtsam/CppUnitLite/TestHarness.h>
+#include <gtsam/slam/pose2SLAM.h>
 
 using namespace std;
 using namespace gtsam;

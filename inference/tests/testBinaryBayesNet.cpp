@@ -8,7 +8,7 @@
 #include <iostream>
 #include <sstream>
 #include <map>
-#include <CppUnitLite/TestHarness.h>
+#include <gtsam/CppUnitLite/TestHarness.h>
 #include <boost/tuple/tuple.hpp>
 #include <boost/foreach.hpp>
 
@@ -22,10 +22,10 @@ using namespace boost::assign;
 
 #define GTSAM_MAGIC_KEY
 
-#include "BinaryConditional.h"
-#include "BayesNet-inl.h"
-#include "Ordering.h"
-#include "SymbolMap.h"
+#include <gtsam/inference/BinaryConditional.h>
+#include <gtsam/inference/BayesNet-inl.h>
+#include <gtsam/inference/Ordering.h>
+#include <gtsam/inference/SymbolMap.h>
 
 using namespace std;
 using namespace gtsam;

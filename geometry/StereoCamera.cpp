@@ -4,7 +4,7 @@
  * @author  Chris Beall
  */
 
-#include "StereoCamera.h"
+#include <gtsam/geometry/StereoCamera.h>
 
 using namespace std;
 using namespace gtsam;

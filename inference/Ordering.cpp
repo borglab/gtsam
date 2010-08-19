@@ -9,7 +9,7 @@
 #include <boost/foreach.hpp>
 #include <boost/tuple/tuple.hpp>
 
-#include "Ordering.h"
+#include <gtsam/inference/Ordering.h>
 
 using namespace std;
 using namespace gtsam;

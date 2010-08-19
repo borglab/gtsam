@@ -4,8 +4,8 @@
  * @author  Frank Dellaert
  */
 
-#include "simulated2DOriented.h"
-#include "TupleConfig-inl.h"
+#include <gtsam/slam/simulated2DOriented.h>
+#include <gtsam/nonlinear/TupleConfig-inl.h>
 
 namespace gtsam {
 

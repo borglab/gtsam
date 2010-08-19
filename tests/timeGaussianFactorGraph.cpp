@@ -9,9 +9,9 @@
 #include <time.h>
 #include <boost/foreach.hpp>
 #include <boost/assign/std/list.hpp> // for operator += in Ordering
-#include <CppUnitLite/TestHarness.h>
-#include "smallExample.h"
-#include "Ordering.h"
+#include <gtsam/CppUnitLite/TestHarness.h>
+#include <gtsam/slam/smallExample.h>
+#include <gtsam/inference/Ordering.h>
 
 using namespace std;
 using namespace gtsam;

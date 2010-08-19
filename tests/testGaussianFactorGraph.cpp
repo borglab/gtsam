@@ -15,18 +15,18 @@ using namespace std;
 #include <boost/assign/std/vector.hpp> // for operator +=
 using namespace boost::assign;
 
-#include <CppUnitLite/TestHarness.h>
+#include <gtsam/CppUnitLite/TestHarness.h>
 
 #define GTSAM_MAGIC_KEY
 
-#include "Matrix.h"
-#include "Ordering.h"
-#include "smallExample.h"
-#include "GaussianBayesNet.h"
-#include "numericalDerivative.h"
-#include "SymbolicFactorGraph.h"
-#include "BayesTree-inl.h"
-#include "inference-inl.h" // needed for eliminate and marginals
+#include <gtsam/base/Matrix.h>
+#include <gtsam/inference/Ordering.h>
+#include <gtsam/slam/smallExample.h>
+#include <gtsam/linear/GaussianBayesNet.h>
+#include <gtsam/base/numericalDerivative.h>
+#include <gtsam/inference/SymbolicFactorGraph.h>
+#include <gtsam/inference/BayesTree-inl.h>
+#include <gtsam/inference/inference-inl.h>
 
 
 using namespace gtsam;

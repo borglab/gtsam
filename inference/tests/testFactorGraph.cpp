@@ -12,10 +12,10 @@
 #include <boost/assign/std/set.hpp> // for operator +=
 using namespace boost::assign;
 
-#include <CppUnitLite/TestHarness.h>
+#include <gtsam/CppUnitLite/TestHarness.h>
 
 #define GTSAM_MAGIC_KEY
-#include "SymbolicFactorGraph.h"
+#include <gtsam/inference/SymbolicFactorGraph.h>
 
 using namespace std;
 using namespace gtsam;

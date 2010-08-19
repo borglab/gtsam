@@ -9,9 +9,9 @@
 #include <iostream>
 #include <boost/foreach.hpp>
 #include <boost/tuple/tuple.hpp>
-#include "SymbolicConditional.h"
-#include "SymbolicFactor.h"
-#include "SymbolMap.h"
+#include <gtsam/inference/SymbolicConditional.h>
+#include <gtsam/inference/SymbolicFactor.h>
+#include <gtsam/inference/SymbolMap.h>
 
 using namespace std;
 

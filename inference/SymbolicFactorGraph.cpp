@@ -9,10 +9,10 @@
 #include <fstream>
 #include <boost/format.hpp>
 #include <boost/foreach.hpp>
-#include "Ordering.h"
-#include "SymbolicFactorGraph.h"
-#include "SymbolicBayesNet.h"
-#include "inference-inl.h"
+#include <gtsam/inference/Ordering.h>
+#include <gtsam/inference/SymbolicFactorGraph.h>
+#include <gtsam/inference/SymbolicBayesNet.h>
+#include <gtsam/inference/inference-inl.h>
 
 using namespace std;
 

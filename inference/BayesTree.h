@@ -14,11 +14,11 @@
 #include <boost/serialization/list.hpp>
 #include <stdexcept>
 
-#include "Testable.h"
-#include "FactorGraph.h"
-#include "BayesNet.h"
-#include "Key.h"
-#include "IndexTable.h"
+#include <gtsam/base/Testable.h>
+#include <gtsam/inference/FactorGraph.h>
+#include <gtsam/inference/BayesNet.h>
+#include <gtsam/inference/Key.h>
+#include <gtsam/inference/IndexTable.h>
 
 namespace gtsam {
 

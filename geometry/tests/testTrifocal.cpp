@@ -10,11 +10,11 @@
 #include <boost/assign/std/list.hpp> // for operator +=
 using namespace boost::assign;
 
-#include <CppUnitLite/TestHarness.h>
+#include <gtsam/CppUnitLite/TestHarness.h>
 
-#include "tensors.h"
-#include "tensorInterface.h"
-#include "projectiveGeometry.h"
+#include <gtsam/geometry/tensors.h>
+#include <gtsam/geometry/tensorInterface.h>
+#include <gtsam/geometry/projectiveGeometry.h>
 
 using namespace std;
 using namespace gtsam;

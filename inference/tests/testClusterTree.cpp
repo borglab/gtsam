@@ -8,10 +8,10 @@
 #include <boost/assign/std/list.hpp> // for operator +=
 using namespace boost::assign;
 
-#include <CppUnitLite/TestHarness.h>
+#include <gtsam/CppUnitLite/TestHarness.h>
 
-#include "SymbolicFactorGraph.h"
-#include "ClusterTree-inl.h"
+#include <gtsam/inference/SymbolicFactorGraph.h>
+#include <gtsam/inference/ClusterTree-inl.h>
 
 using namespace gtsam;
 

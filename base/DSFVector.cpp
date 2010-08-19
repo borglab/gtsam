@@ -7,7 +7,7 @@
  *               As a result, the size of the forest is prefixed.
  */
 
-#include "DSFVector.h"
+#include <gtsam/base/DSFVector.h>
 
 using namespace std;
 

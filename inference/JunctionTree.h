@@ -10,9 +10,9 @@
 
 #include <set>
 #include <boost/shared_ptr.hpp>
-#include "BayesTree.h"
-#include "ClusterTree.h"
-#include "SymbolicConditional.h"
+#include <gtsam/inference/BayesTree.h>
+#include <gtsam/inference/ClusterTree.h>
+#include <gtsam/inference/SymbolicConditional.h>
 
 namespace gtsam {
 

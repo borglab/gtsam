@@ -7,7 +7,7 @@
 #include <fstream>
 #include <iostream>
 
-#include "Cal3_S2.h"
+#include <gtsam/geometry/Cal3_S2.h>
 
 namespace gtsam {
 using namespace std;

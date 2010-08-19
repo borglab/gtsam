@@ -3,6 +3,10 @@
 # provides some base Math and data structures, as well as test-related utilities
 #----------------------------------------------------------------------------------------------------
 
+# use nostdinc to turn off -I. and -I.., we do not need them because 
+# header files are qualified so they can be included in external projects.
+AUTOMAKE_OPTIONS = nostdinc
+
 headers =
 sources = 
 check_PROGRAMS = 
@@ -38,11 +42,12 @@ noinst_PROGRAMS = tests/timeMatrix
 # The headers are installed in $(includedir)/gtsam: 
 #----------------------------------------------------------------------------------------------------
 headers += $(sources:.cpp=.h)
-pkginclude_HEADERS = $(headers)
+basedir = $(pkgincludedir)/base
+base_HEADERS = $(headers)
 noinst_LTLIBRARIES = libbase.la
 libbase_la_SOURCES = $(sources)
 
-AM_CPPFLAGS = -I$(boost) -I$(top_srcdir)
+AM_CPPFLAGS = -I$(boost) -I$(BORG_SRCROOT)
 
 if USE_BLAS
 AM_CPPFLAGS += -DGT_USE_CBLAS

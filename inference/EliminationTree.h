@@ -9,8 +9,8 @@
 #pragma once
 
 #include <set>
-#include "IndexTable.h"
-#include "ClusterTree.h"
+#include <gtsam/inference/IndexTable.h>
+#include <gtsam/inference/ClusterTree.h>
 
 namespace gtsam {
 

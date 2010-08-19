@@ -2,6 +2,10 @@
 # SLAM and SFM sources
 #----------------------------------------------------------------------------------------------------
 
+# use nostdinc to turn off -I. and -I.., we do not need them because 
+# header files are qualified so they can be included in external projects.
+AUTOMAKE_OPTIONS = nostdinc
+
 headers =
 sources = 
 check_PROGRAMS = 
@@ -60,11 +64,11 @@ check_PROGRAMS += tests/testGaussianISAM2
 # The headers are installed in $(includedir)/gtsam: 
 #----------------------------------------------------------------------------------------------------
 headers += $(sources:.cpp=.h)
-pkginclude_HEADERS = $(headers)
+slamdir = $(pkgincludedir)/slam
+slam_HEADERS = $(headers)
 noinst_LTLIBRARIES = libslam.la
 libslam_la_SOURCES = $(sources)
-AM_CPPFLAGS = -I$(boost) -I$(top_srcdir) -I$(top_srcdir)/colamd -I$(top_srcdir)/base -I$(top_srcdir)/inference  
-AM_CPPFLAGS += -I$(top_srcdir)/linear -I$(top_srcdir)/nonlinear -I$(top_srcdir)/geometry 
+AM_CPPFLAGS = -I$(boost) -I$(BORG_SRCROOT)
 
 #----------------------------------------------------------------------------------------------------
 # rules to build local programs

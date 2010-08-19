@@ -12,10 +12,10 @@
 #include <boost/serialization/map.hpp>
 #include <boost/serialization/list.hpp>
 
-#include "Testable.h"
-#include "BayesNet.h"
-#include "SymbolicConditional.h"
-#include "Key.h"
+#include <gtsam/base/Testable.h>
+#include <gtsam/inference/BayesNet.h>
+#include <gtsam/inference/SymbolicConditional.h>
+#include <gtsam/inference/Key.h>
 
 namespace gtsam {
 

@@ -5,7 +5,7 @@
  */
 
 #include <boost/foreach.hpp>
-#include "BayesNetPreconditioner.h"
+#include <gtsam/linear/BayesNetPreconditioner.h>
 
 namespace gtsam {
 

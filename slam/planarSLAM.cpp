@@ -4,10 +4,10 @@
  *  @authors Frank Dellaert
  **/
 
-#include "planarSLAM.h"
-#include "NonlinearFactorGraph-inl.h"
-#include "NonlinearOptimizer-inl.h"
-#include "TupleConfig-inl.h"
+#include <gtsam/slam/planarSLAM.h>
+#include <gtsam/nonlinear/NonlinearFactorGraph-inl.h>
+#include <gtsam/nonlinear/NonlinearOptimizer-inl.h>
+#include <gtsam/nonlinear/TupleConfig-inl.h>
 
 // Use planarSLAM namespace for specific SLAM instance
 namespace gtsam {

@@ -8,7 +8,7 @@
 #include <math.h>    /* for 'fabs' */
 #include <iostream>
 #include <vector>
-#include "Matrix.h"
+#include <gtsam/base/Matrix.h>
 
 using namespace std;
 

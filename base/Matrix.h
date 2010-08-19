@@ -14,7 +14,7 @@
 #include <boost/format.hpp>
 #include <boost/numeric/ublas/matrix.hpp>
 #include <boost/tuple/tuple.hpp>
-#include "Vector.h"
+#include <gtsam/base/Vector.h>
 
 /**
  * Vector is a *global* typedef

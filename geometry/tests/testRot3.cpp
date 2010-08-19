@@ -4,11 +4,11 @@
  * @author  Alireza Fathi
  */
 
-#include <CppUnitLite/TestHarness.h>
+#include <gtsam/CppUnitLite/TestHarness.h>
 #include <boost/math/constants/constants.hpp>
-#include "numericalDerivative.h"
-#include "Point3.h"
-#include "Rot3.h"
+#include <gtsam/base/numericalDerivative.h>
+#include <gtsam/geometry/Point3.h>
+#include <gtsam/geometry/Rot3.h>
 
 using namespace gtsam;
 

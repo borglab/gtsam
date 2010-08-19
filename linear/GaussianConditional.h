@@ -15,11 +15,11 @@
 #include <boost/serialization/map.hpp>
 #include <boost/serialization/shared_ptr.hpp>
 
-#include "Conditional.h"
-#include "VectorConfig.h"
-#include "Matrix.h"
-#include "Key.h"
-#include "SymbolMap.h"
+#include <gtsam/inference/Conditional.h>
+#include <gtsam/linear/VectorConfig.h>
+#include <gtsam/base/Matrix.h>
+#include <gtsam/inference/Key.h>
+#include <gtsam/inference/SymbolMap.h>
 
 namespace gtsam {
 

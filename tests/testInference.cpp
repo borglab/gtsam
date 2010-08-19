@@ -4,13 +4,13 @@
  * @author  Frank Dellaert
  */
 
-#include <CppUnitLite/TestHarness.h>
+#include <gtsam/CppUnitLite/TestHarness.h>
 
 #define GTSAM_MAGIC_KEY
 
-#include "Ordering.h"
-#include "smallExample.h"
-#include "inference-inl.h"
+#include <gtsam/inference/Ordering.h>
+#include <gtsam/slam/smallExample.h>
+#include <gtsam/inference/inference-inl.h>
 
 using namespace std;
 using namespace gtsam;

@@ -13,15 +13,15 @@
 #include <boost/assign/std/map.hpp> // for insert
 using namespace boost::assign;
 
-#include <CppUnitLite/TestHarness.h>
+#include <gtsam/CppUnitLite/TestHarness.h>
 
 #define GTSAM_MAGIC_KEY
 
-#include "Matrix.h"
-#include "Ordering.h"
-#include "GaussianFactorGraph.h"
-#include "SharedDiagonal.h"
-#include "inference-inl.h"
+#include <gtsam/base/Matrix.h>
+#include <gtsam/inference/Ordering.h>
+#include <gtsam/linear/GaussianFactorGraph.h>
+#include <gtsam/linear/SharedDiagonal.h>
+#include <gtsam/inference/inference-inl.h>
 
 using namespace std;
 using namespace gtsam;

@@ -25,7 +25,7 @@
 #include <boost/random/normal_distribution.hpp>
 #include <boost/random/variate_generator.hpp>
 
-#include "Vector.h"
+#include <gtsam/base/Vector.h>
 
 using namespace std;
 namespace ublas = boost::numeric::ublas;

@@ -14,8 +14,8 @@
 #include <boost/shared_ptr.hpp>
 #include <boost/foreach.hpp> // TODO: make cpp file
 #include <boost/serialization/list.hpp>
-#include "Conditional.h"
-#include "Key.h"
+#include <gtsam/inference/Conditional.h>
+#include <gtsam/inference/Key.h>
 
 namespace gtsam {
 

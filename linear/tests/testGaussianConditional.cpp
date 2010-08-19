@@ -7,7 +7,7 @@
 /*STL/C++*/
 #include <iostream>
 #include <sstream>
-#include <CppUnitLite/TestHarness.h>
+#include <gtsam/CppUnitLite/TestHarness.h>
 
 #ifdef HAVE_BOOST_SERIALIZATION
 #include <boost/archive/text_oarchive.hpp>
@@ -16,8 +16,8 @@
 
 #define GTSAM_MAGIC_KEY
 
-#include "Matrix.h"
-#include "GaussianConditional.h"
+#include <gtsam/base/Matrix.h>
+#include <gtsam/linear/GaussianConditional.h>
 
 using namespace gtsam;
 

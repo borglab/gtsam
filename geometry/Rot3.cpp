@@ -6,8 +6,8 @@
  * @author  Frank Dellaert
  */
 
-#include "Rot3.h"
-#include "Lie-inl.h"
+#include <gtsam/geometry/Rot3.h>
+#include <gtsam/base/Lie-inl.h>
 
 using namespace std;
 

@@ -10,13 +10,13 @@
 #include <boost/assign/std/list.hpp> // for operator +=
 using namespace boost::assign;
 
-#include <CppUnitLite/TestHarness.h>
+#include <gtsam/CppUnitLite/TestHarness.h>
 
-#include "Testable.h"
-#include "tensors.h"
-#include "tensorInterface.h"
-#include "projectiveGeometry.h"
-#include "Pose3.h"
+#include <gtsam/base/Testable.h>
+#include <gtsam/geometry/tensors.h>
+#include <gtsam/geometry/tensorInterface.h>
+#include <gtsam/geometry/projectiveGeometry.h>
+#include <gtsam/geometry/Pose3.h>
 
 using namespace std;
 using namespace gtsam;
@@ -139,7 +139,7 @@ namespace gtsam {
 	}
 }
 
-#include "numericalDerivative.h"
+#include <gtsam/base/numericalDerivative.h>
 
 /* ************************************************************************* */
 TEST( Homography2, patchH)

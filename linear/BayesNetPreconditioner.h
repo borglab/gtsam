@@ -7,8 +7,8 @@
 #ifndef BAYESNETPRECONDITIONER_H_
 #define BAYESNETPRECONDITIONER_H_
 
-#include "GaussianFactorGraph.h"
-#include "GaussianBayesNet.h"
+#include <gtsam/linear/GaussianFactorGraph.h>
+#include <gtsam/linear/GaussianBayesNet.h>
 
 namespace gtsam {
 

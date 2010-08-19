@@ -29,12 +29,12 @@
 // we use define and not typedefs as typdefs cannot be forward declared
 #ifdef VECTORBTREE
 
-#include "VectorBTree.h"
+#include <gtsam/linear/VectorBTree.h>
 #define VectorConfig VectorBTree
 
 #else
 
-#include "VectorMap.h"
+#include <gtsam/linear/VectorMap.h>
 #define VectorConfig VectorMap
 
 #endif

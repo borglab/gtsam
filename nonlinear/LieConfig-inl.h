@@ -13,10 +13,10 @@
 #include <iostream>
 #include <stdexcept>
 
-#include "VectorConfig.h"
-#include "Lie-inl.h"
+#include <gtsam/linear/VectorConfig.h>
+#include <gtsam/base/Lie-inl.h>
 
-#include "LieConfig.h"
+#include <gtsam/nonlinear/LieConfig.h>
 
 #define INSTANTIATE_LIE_CONFIG(J,T) \
   /*INSTANTIATE_LIE(T);*/ \

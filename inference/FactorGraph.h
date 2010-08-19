@@ -16,11 +16,11 @@
 #include <boost/serialization/vector.hpp>
 #include <boost/serialization/shared_ptr.hpp>
 
-#include "Testable.h"
-#include "BayesNet.h"
-#include "graph.h"
-#include "Key.h"
-#include "SymbolMap.h"
+#include <gtsam/base/Testable.h>
+#include <gtsam/inference/BayesNet.h>
+#include <gtsam/inference/graph.h>
+#include <gtsam/inference/Key.h>
+#include <gtsam/inference/SymbolMap.h>
 
 namespace gtsam {
 

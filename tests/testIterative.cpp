@@ -7,20 +7,20 @@
 #include <boost/assign/std/list.hpp> // for operator +=
 using namespace boost::assign;
 
-#include <CppUnitLite/TestHarness.h>
+#include <gtsam/CppUnitLite/TestHarness.h>
 
 // TODO: DANGEROUS, create shared pointers
 #define GTSAM_MAGIC_GAUSSIAN 3
 #define GTSAM_MAGIC_KEY
 
-#include "Ordering.h"
-#include "VectorConfig.h"
-#include "smallExample.h"
-#include "pose2SLAM.h"
-#include "SubgraphPreconditioner.h"
-#include "FactorGraph-inl.h"
-#include "NonlinearFactorGraph-inl.h"
-#include "iterative-inl.h"
+#include <gtsam/inference/Ordering.h>
+#include <gtsam/linear/VectorConfig.h>
+#include <gtsam/slam/smallExample.h>
+#include <gtsam/slam/pose2SLAM.h>
+#include <gtsam/linear/SubgraphPreconditioner.h>
+#include <gtsam/inference/FactorGraph-inl.h>
+#include <gtsam/nonlinear/NonlinearFactorGraph-inl.h>
+#include <gtsam/linear/iterative-inl.h>
 
 using namespace std;
 using namespace gtsam;

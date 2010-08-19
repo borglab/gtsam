@@ -6,8 +6,8 @@
 
 #include <iostream>
 #include <boost/timer.hpp>
-#include "VectorBTree.h"
-#include "VectorMap.h"
+#include <gtsam/linear/VectorBTree.h>
+#include <gtsam/linear/VectorMap.h>
 
 using namespace std;
 using namespace gtsam;

@@ -7,12 +7,12 @@
  */
 
 #include <iostream>
-#include <CppUnitLite/TestHarness.h>
+#include <gtsam/CppUnitLite/TestHarness.h>
 
-#include "numericalDerivative.h"
-#include "Simulated2DConfig.h"
-#include "simulated2DOriented.h"
-#include "Simulated2DOrientedOdometry.h"
+#include <gtsam/base/numericalDerivative.h>
+#include <gtsam/slam/Simulated2DConfig.h>
+#include <gtsam/slam/simulated2DOriented.h>
+#include <gtsam/slam/Simulated2DOrientedOdometry.h>
 
 using namespace gtsam;
 using namespace std;

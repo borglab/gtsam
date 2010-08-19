@@ -5,7 +5,7 @@
 
 /** IMPORTANT NOTE: this file is only compiled when LDL is available */
 
-#include <ConstraintOptimizer.h>
+#include <gtsam/nonlinear/ConstraintOptimizer.h>
 
 using namespace std;
 using namespace gtsam;

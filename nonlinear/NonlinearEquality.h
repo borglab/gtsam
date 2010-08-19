@@ -9,8 +9,8 @@
 #include <limits>
 #include <iostream>
 
-#include "Key.h"
-#include "NonlinearFactor.h"
+#include <gtsam/inference/Key.h>
+#include <gtsam/nonlinear/NonlinearFactor.h>
 
 namespace gtsam {
 

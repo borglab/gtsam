@@ -4,9 +4,9 @@
  */
 
 #include <math.h>
-#include <CppUnitLite/TestHarness.h>
-#include "numericalDerivative.h"
-#include "Pose3.h"
+#include <gtsam/CppUnitLite/TestHarness.h>
+#include <gtsam/base/numericalDerivative.h>
+#include <gtsam/geometry/Pose3.h>
 
 using namespace std;
 using namespace gtsam;

@@ -9,10 +9,10 @@
 
 #include <string>
 #include <list>
-#include "FactorGraph.h"
-#include "SymbolicFactor.h"
-#include "SymbolicBayesNet.h"
-#include "Key.h"
+#include <gtsam/inference/FactorGraph.h>
+#include <gtsam/inference/SymbolicFactor.h>
+#include <gtsam/inference/SymbolicBayesNet.h>
+#include <gtsam/inference/Key.h>
 
 namespace gtsam {
 

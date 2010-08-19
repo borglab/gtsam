@@ -10,11 +10,11 @@
 #pragma once
 
 #include <boost/optional.hpp>
-#include "Matrix.h"
-#include "Testable.h"
-#include "Lie.h"
-#include "Point2.h"
-#include "Rot2.h"
+#include <gtsam/base/Matrix.h>
+#include <gtsam/base/Testable.h>
+#include <gtsam/base/Lie.h>
+#include <gtsam/geometry/Point2.h>
+#include <gtsam/geometry/Rot2.h>
 
 namespace gtsam {
 

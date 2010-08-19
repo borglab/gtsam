@@ -4,8 +4,8 @@
  * @author Frank Dellaert
  **/
 
-#include <CppUnitLite/TestHarness.h>
-#include "Point2.h"
+#include <gtsam/CppUnitLite/TestHarness.h>
+#include <gtsam/geometry/Point2.h>
 
 using namespace std;
 using namespace gtsam;

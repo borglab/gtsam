@@ -10,7 +10,7 @@
 #pragma once
 
 #include <stdexcept>
-#include "GaussianFactorGraph.h"
+#include <gtsam/linear/GaussianFactorGraph.h>
 
 namespace gtsam {
 

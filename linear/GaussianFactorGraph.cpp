@@ -11,12 +11,12 @@
 #include <boost/numeric/ublas/io.hpp>
 #include <boost/assign/std/list.hpp> // for operator += in Ordering
 
-#include "GaussianFactorGraph.h"
-#include "GaussianFactorSet.h"
-#include "FactorGraph-inl.h"
-#include "inference-inl.h"
-#include "iterative.h"
-#include "GaussianJunctionTree.h"
+#include <gtsam/linear/GaussianFactorGraph.h>
+#include <gtsam/linear/GaussianFactorSet.h>
+#include <gtsam/inference/FactorGraph-inl.h>
+#include <gtsam/inference/inference-inl.h>
+#include <gtsam/linear/iterative.h>
+#include <gtsam/linear/GaussianJunctionTree.h>
 
 using namespace std;
 using namespace gtsam;

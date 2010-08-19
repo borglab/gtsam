@@ -8,15 +8,15 @@
 #include <boost/assign/std/list.hpp> // for operator +=
 using namespace boost::assign;
 
-#include <CppUnitLite/TestHarness.h>
+#include <gtsam/CppUnitLite/TestHarness.h>
 
 #define GTSAM_MAGIC_KEY
 
-#include "Ordering.h"
-#include "GaussianBayesNet.h"
-#include "ISAM-inl.h"
-#include "GaussianISAM.h"
-#include "smallExample.h"
+#include <gtsam/inference/Ordering.h>
+#include <gtsam/linear/GaussianBayesNet.h>
+#include <gtsam/inference/ISAM-inl.h>
+#include <gtsam/linear/GaussianISAM.h>
+#include <gtsam/slam/smallExample.h>
 
 using namespace std;
 using namespace gtsam;

@@ -14,8 +14,8 @@
 #include <boost/assign/std/vector.hpp> // for +=
 using namespace boost::assign;
 
-#include "Ordering.h"
-#include "BayesNet.h"
+#include <gtsam/inference/Ordering.h>
+#include <gtsam/inference/BayesNet.h>
 //#include "FactorGraph-inl.h"
 //#include "Conditional.h"
 

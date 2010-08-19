@@ -6,7 +6,7 @@
 #include <iostream>
 #include <fstream>
 #include <sstream>
-#include <CppUnitLite/TestHarness.h>
+#include <gtsam/CppUnitLite/TestHarness.h>
 
 #include "utilities.h"
 #include "Module.h"

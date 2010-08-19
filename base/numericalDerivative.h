@@ -11,8 +11,8 @@
 #include <boost/function.hpp>
 #include <boost/bind.hpp>
 
-#include "Lie.h"
-#include "Matrix.h"
+#include <gtsam/base/Lie.h>
+#include <gtsam/base/Matrix.h>
 
 //#define LINEARIZE_AT_IDENTITY
 

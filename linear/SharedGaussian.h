@@ -7,7 +7,7 @@
 
 #pragma once
 
-#include "NoiseModel.h"
+#include <gtsam/linear/NoiseModel.h>
 
 namespace gtsam { // note, deliberately not in noiseModel namespace
 

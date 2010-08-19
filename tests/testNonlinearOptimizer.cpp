@@ -10,24 +10,24 @@ using namespace std;
 #include <boost/assign/std/list.hpp> // for operator +=
 using namespace boost::assign;
 
-#include <CppUnitLite/TestHarness.h>
+#include <gtsam/CppUnitLite/TestHarness.h>
 
 #include <boost/shared_ptr.hpp>
 using namespace boost;
 
 #define GTSAM_MAGIC_KEY
 
-#include "Matrix.h"
-#include "Ordering.h"
-#include "smallExample.h"
-#include "pose2SLAM.h"
-#include "GaussianFactorGraph.h"
-#include "NoiseModel.h"
+#include <gtsam/base/Matrix.h>
+#include <gtsam/inference/Ordering.h>
+#include <gtsam/slam/smallExample.h>
+#include <gtsam/slam/pose2SLAM.h>
+#include <gtsam/linear/GaussianFactorGraph.h>
+#include <gtsam/linear/NoiseModel.h>
 
 // template definitions
-#include "NonlinearFactorGraph-inl.h"
-#include "NonlinearOptimizer-inl.h"
-#include "SubgraphSolver-inl.h"
+#include <gtsam/nonlinear/NonlinearFactorGraph-inl.h>
+#include <gtsam/nonlinear/NonlinearOptimizer-inl.h>
+#include <gtsam/linear/SubgraphSolver-inl.h>
 
 using namespace gtsam;
 

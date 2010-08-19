@@ -15,8 +15,8 @@
 #include <boost/fusion/include/all.hpp>
 #include <boost/fusion/algorithm/iteration.hpp>
 
-#include "Testable.h"
-#include "LieConfig.h"
+#include <gtsam/base/Testable.h>
+#include <gtsam/nonlinear/LieConfig.h>
 
 namespace gtsam {
 
@@ -35,6 +35,117 @@ public:
 protected:
 	/** the underlying tuple storing everything */
 	Configs base_tuple_;
+
+private:
+  /** helper structs to make use of fusion algorithms */
+  struct size_helper  {
+    typedef size_t result_type;
+      template<typename T>
+      size_t operator()(const T& t, const size_t& s) const {
+          return s + t.size();
+      }
+  };
+
+  struct dim_helper {
+      typedef size_t result_type;
+      template<typename T>
+      size_t operator()(const T& t, const size_t& s) const {
+          return s + t.dim();
+      }
+  };
+
+  struct zero_helper  {
+      typedef VectorConfig result_type;
+      template<typename T>
+      result_type operator()(const T& t, const result_type& s) const {
+        result_type new_s(s);
+        new_s.insert(t.zero());
+          return new_s;
+      }
+  };
+
+  struct update_helper {
+    typedef Configs result_type;
+      template<typename T>
+      result_type operator()(const T& t, const result_type& s) const {
+        result_type new_s(s);
+        boost::fusion::at_key<T>(new_s).update(t);
+          return new_s;
+      }
+  };
+
+  struct expmap_helper {
+      typedef FusionTupleConfig<Configs> result_type;
+      VectorConfig delta;
+      expmap_helper(const VectorConfig& d) : delta(d) {}
+      template<typename T>
+      result_type operator()(const T& t, const result_type& s) const {
+        result_type new_s(s);
+        boost::fusion::at_key<T>(new_s.base_tuple_) = T(gtsam::expmap(t, delta));
+          return new_s;
+      }
+  };
+
+  struct logmap_helper {
+    typedef VectorConfig result_type;
+      template<typename T>
+      result_type operator()(const T& t, const result_type& s) const {
+        result_type new_s(s);
+        new_s.insert(gtsam::logmap(boost::fusion::at_c<0>(t), boost::fusion::at_c<1>(t)));
+          return new_s;
+      }
+  };
+
+  struct empty_helper {
+      template<typename T>
+      bool operator()(T t) const {
+          return t.empty();
+      }
+  };
+
+  struct print_helper {
+      template<typename T>
+      void operator()(T t) const {
+          t.print();
+      }
+  };
+
+  struct equals_helper {
+    double tol;
+    equals_helper(double t) : tol(t) {}
+      template<typename T>
+      bool operator()(T t) const {
+          return boost::fusion::at_c<0>(t).equals(boost::fusion::at_c<1>(t), tol);
+      }
+  };
+
+  /** two separate function objects for arbitrary copy construction */
+  template<typename Ret, typename Config>
+  struct assign_inner {
+    typedef Ret result_type;
+
+    Config config;
+    assign_inner(const Config& cfg) : config(cfg) {}
+
+    template<typename T>
+    result_type operator()(const T& t, const result_type& s) const {
+      result_type new_s(s);
+      T new_cfg(config);
+      if (!new_cfg.empty()) boost::fusion::at_key<T>(new_s) = new_cfg;
+      return new_s;
+    }
+  };
+
+  template<typename Ret>
+  struct assign_outer {
+    typedef Ret result_type;
+
+    template<typename T> // T is the config from the "other" config
+    Ret operator()(const T& t, const Ret& s) const {
+      assign_inner<Ret, T> helper(t);
+      return boost::fusion::fold(s, s, helper); // loop over the "self" config
+    }
+  };
 
 public:
 	/** create an empty config */
@@ -74,7 +185,7 @@ public:
 	void update(const FusionTupleConfig<Configs>& config) {
 		base_tuple_ = boost::fusion::accumulate(
 				config.base_tuple_,	base_tuple_,
-				FusionTupleConfig<Configs>::update_helper());
+				update_helper());
 	}
 
 	/**
@@ -127,13 +238,13 @@ public:
 	/** size of the config - sum all sizes from subconfigs */
 	size_t size() const {
 		return boost::fusion::accumulate(base_tuple_, 0,
-				FusionTupleConfig<Configs>::size_helper());
+				size_helper());
 	}
 
 	/** combined dimension of the subconfigs */
 	size_t dim() const {
 		return boost::fusion::accumulate(base_tuple_, 0,
-				FusionTupleConfig<Configs>::dim_helper());
+				dim_helper());
 	}
 
 	/** number of configs in the config */
@@ -155,18 +266,18 @@ public:
 	/** returns true if the config is empty */
 	bool empty() const {
 		return boost::fusion::all(base_tuple_,
-				FusionTupleConfig<Configs>::empty_helper());
+				empty_helper());
 	}
 
 	/** print */
 	void print(const std::string& s="") const {
 		std::cout << "FusionTupleConfig " << s << ":" << std::endl;
-		boost::fusion::for_each(base_tuple_, FusionTupleConfig<Configs>::print_helper());
+		boost::fusion::for_each(base_tuple_, print_helper());
 	}
 
 	/** equals */
 	bool equals(const FusionTupleConfig<Configs>& other, double tol=1e-9) const {
-		FusionTupleConfig<Configs>::equals_helper helper(tol);
+		equals_helper helper(tol);
 		return boost::fusion::all(
 				boost::fusion::zip(base_tuple_,other.base_tuple_), helper);
 	}
@@ -174,17 +285,17 @@ public:
 	/** zero: create VectorConfig of appropriate structure */
 	VectorConfig zero() const {
 		return boost::fusion::accumulate(base_tuple_, VectorConfig(),
-				FusionTupleConfig<Configs>::zero_helper());
+				zero_helper());
 	}
 
 	FusionTupleConfig<Configs> expmap(const VectorConfig& delta) const {
 		return boost::fusion::accumulate(base_tuple_, base_tuple_,
-				FusionTupleConfig<Configs>::expmap_helper(delta));
+				expmap_helper(delta));
 	}
 
 	VectorConfig logmap(const FusionTupleConfig<Configs>& cp) const {
 		return boost::fusion::accumulate(boost::fusion::zip(base_tuple_, cp.base_tuple_),
-				VectorConfig(), FusionTupleConfig<Configs>::logmap_helper());
+				VectorConfig(), logmap_helper());
 	}
 
 	/**
@@ -209,117 +320,6 @@ private:
 		ar & BOOST_SERIALIZATION_NVP(base_tuple_);
 	}
 
-private:
-
-	/** helper structs to make use of fusion algorithms */
-	struct size_helper	{
-		typedef size_t result_type;
-	    template<typename T>
-	    size_t operator()(const T& t, const size_t& s) const {
-	        return s + t.size();
-	    }
-	};
-
-	struct dim_helper	{
-	    typedef size_t result_type;
-	    template<typename T>
-	    size_t operator()(const T& t, const size_t& s) const {
-	        return s + t.dim();
-	    }
-	};
-
-	struct zero_helper	{
-	    typedef VectorConfig result_type;
-	    template<typename T>
-	    result_type operator()(const T& t, const result_type& s) const {
-	    	result_type new_s(s);
-	    	new_s.insert(t.zero());
-	        return new_s;
-	    }
-	};
-
-	struct update_helper {
-		typedef Configs result_type;
-	    template<typename T>
-	    result_type operator()(const T& t, const result_type& s) const {
-	    	result_type new_s(s);
-	    	boost::fusion::at_key<T>(new_s).update(t);
-	        return new_s;
-	    }
-	};
-
-	struct expmap_helper {
-	    typedef FusionTupleConfig<Configs> result_type;
-	    VectorConfig delta;
-	    expmap_helper(const VectorConfig& d) : delta(d) {}
-	    template<typename T>
-	    result_type operator()(const T& t, const result_type& s) const {
-	    	result_type new_s(s);
-	    	boost::fusion::at_key<T>(new_s.base_tuple_) = T(gtsam::expmap(t, delta));
-	        return new_s;
-	    }
-	};
-
-	struct logmap_helper {
-		typedef VectorConfig result_type;
-	    template<typename T>
-	    result_type operator()(const T& t, const result_type& s) const {
-	    	result_type new_s(s);
-	    	new_s.insert(gtsam::logmap(boost::fusion::at_c<0>(t), boost::fusion::at_c<1>(t)));
-	        return new_s;
-	    }
-	};
-
-	struct empty_helper {
-	    template<typename T>
-	    bool operator()(T t) const {
-	        return t.empty();
-	    }
-	};
-
-	struct print_helper {
-	    template<typename T>
-	    void operator()(T t) const {
-	        t.print();
-	    }
-	};
-
-	struct equals_helper {
-		double tol;
-		equals_helper(double t) : tol(t) {}
-	    template<typename T>
-	    bool operator()(T t) const {
-	        return boost::fusion::at_c<0>(t).equals(boost::fusion::at_c<1>(t), tol);
-	    }
-	};
-
-	/** two separate function objects for arbitrary copy construction */
-	template<typename Ret, typename Config>
-	struct assign_inner {
-		typedef Ret result_type;
-
-		Config config;
-		assign_inner(const Config& cfg) : config(cfg) {}
-
-		template<typename T>
-		result_type operator()(const T& t, const result_type& s) const {
-			result_type new_s(s);
-			T new_cfg(config);
-			if (!new_cfg.empty()) boost::fusion::at_key<T>(new_s) = new_cfg;
-			return new_s;
-		}
-	};
-
-	template<typename Ret>
-	struct assign_outer {
-		typedef Ret result_type;
-
-		template<typename T> // T is the config from the "other" config
-		Ret operator()(const T& t, const Ret& s) const {
-			assign_inner<Ret, T> helper(t);
-			return boost::fusion::fold(s, s, helper); // loop over the "self" config
-		}
-	};
 };
 
 /** Exmap static functions */

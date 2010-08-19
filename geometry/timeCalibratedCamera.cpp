@@ -7,7 +7,7 @@
 #include <time.h>
 #include <iostream>
 
-#include "CalibratedCamera.h"
+#include <gtsam/geometry/CalibratedCamera.h>
 
 using namespace std;
 using namespace gtsam;

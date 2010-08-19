@@ -9,15 +9,15 @@
 #include <boost/assign/std/list.hpp>
 using namespace boost::assign;
 
-#include <CppUnitLite/TestHarness.h>
+#include <gtsam/CppUnitLite/TestHarness.h>
 
 #define GTSAM_MAGIC_KEY
 
-#include "numericalDerivative.h"
-#include "Ordering.h"
-#include "smallExample.h"
-#include "SubgraphPreconditioner.h"
-#include "iterative-inl.h"
+#include <gtsam/base/numericalDerivative.h>
+#include <gtsam/inference/Ordering.h>
+#include <gtsam/slam/smallExample.h>
+#include <gtsam/linear/SubgraphPreconditioner.h>
+#include <gtsam/linear/iterative-inl.h>
 
 using namespace std;
 using namespace gtsam;

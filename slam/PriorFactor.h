@@ -5,9 +5,9 @@
 #pragma once
 
 #include <ostream>
-#include "NoiseModel.h"
-#include "NonlinearFactor.h"
-#include "Pose2.h"
+#include <gtsam/linear/NoiseModel.h>
+#include <gtsam/nonlinear/NonlinearFactor.h>
+#include <gtsam/geometry/Pose2.h>
 
 namespace gtsam {
 

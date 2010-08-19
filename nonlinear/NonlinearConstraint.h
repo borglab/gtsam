@@ -9,7 +9,7 @@
 
 #include <map>
 #include <boost/function.hpp>
-#include "NonlinearFactor.h"
+#include <gtsam/nonlinear/NonlinearFactor.h>
 
 namespace gtsam {
 

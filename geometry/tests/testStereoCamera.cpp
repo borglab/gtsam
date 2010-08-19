@@ -5,9 +5,9 @@
  * @author  Chris Beall
  */
 
-#include <CppUnitLite/TestHarness.h>
-#include <numericalDerivative.h>
-#include "StereoCamera.h"
+#include <gtsam/CppUnitLite/TestHarness.h>
+#include <gtsam/base/numericalDerivative.h>
+#include <gtsam/geometry/StereoCamera.h>
 
 using namespace std;
 using namespace gtsam;

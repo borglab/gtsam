@@ -11,8 +11,8 @@
 #include <boost/assign/std/list.hpp> // for +=
 using namespace boost::assign;
 
-#include <CppUnitLite/TestHarness.h>
-#include "BTree.h"
+#include <gtsam/CppUnitLite/TestHarness.h>
+#include <gtsam/base/BTree.h>
 
 using namespace std;
 using namespace gtsam;

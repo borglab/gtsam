@@ -10,8 +10,8 @@
 
 #include <vector>
 
-#include "Testable.h"
-#include "Vector.h"
+#include <gtsam/base/Testable.h>
+#include <gtsam/base/Vector.h>
 
 namespace gtsam {
 	

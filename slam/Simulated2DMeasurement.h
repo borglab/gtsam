@@ -7,8 +7,8 @@
 
 #pragma once
 
-#include "simulated2D.h"
-#include "Simulated2DConfig.h"
+#include <gtsam/slam/simulated2D.h>
+#include <gtsam/slam/Simulated2DConfig.h>
 
 namespace gtsam {
 

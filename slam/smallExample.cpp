@@ -14,15 +14,15 @@ using namespace std;
 
 #define GTSAM_MAGIC_KEY
 
-#include "Ordering.h"
-#include "Matrix.h"
-#include "NonlinearFactor.h"
-#include "smallExample.h"
+#include <gtsam/inference/Ordering.h>
+#include <gtsam/base/Matrix.h>
+#include <gtsam/nonlinear/NonlinearFactor.h>
+#include <gtsam/slam/smallExample.h>
 
 // template definitions
-#include "FactorGraph-inl.h"
-#include "TupleConfig-inl.h"
-#include "NonlinearFactorGraph-inl.h"
+#include <gtsam/inference/FactorGraph-inl.h>
+#include <gtsam/nonlinear/TupleConfig-inl.h>
+#include <gtsam/nonlinear/NonlinearFactorGraph-inl.h>
 
 namespace gtsam {
 namespace example {

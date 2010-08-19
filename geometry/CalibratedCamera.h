@@ -8,8 +8,8 @@
 #ifndef CalibratedCAMERA_H_
 #define CalibratedCAMERA_H_
 
-#include "Pose2.h"
-#include "Pose3.h"
+#include <gtsam/geometry/Pose2.h>
+#include <gtsam/geometry/Pose3.h>
 
 namespace gtsam {
 

@@ -7,7 +7,7 @@
  */
 
 #include <iostream>
-#include <CppUnitLite/TestHarness.h>
+#include <gtsam/CppUnitLite/TestHarness.h>
 
 #include <boost/assign/list_of.hpp>
 #include <boost/assign/std/list.hpp> // for operator +=
@@ -16,9 +16,9 @@ using namespace boost::assign;
 
 #define GTSAM_MAGIC_KEY
 
-#include "Ordering.h"
-#include "GaussianJunctionTree.h"
-#include "smallExample.h"
+#include <gtsam/inference/Ordering.h>
+#include <gtsam/linear/GaussianJunctionTree.h>
+#include <gtsam/slam/smallExample.h>
 
 using namespace std;
 using namespace gtsam;

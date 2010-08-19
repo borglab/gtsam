@@ -6,7 +6,9 @@
 ACLOCAL_AMFLAGS = -I m4
 
 # make automake install some standard but missing files
-AUTOMAKE_OPTIONS = foreign
+# also use nostdinc to turn off -I. and -I.., we do not need them because 
+# header files are qualified so they can be included in external projects.
+AUTOMAKE_OPTIONS = foreign nostdinc
 
 # All the sub-directories that need to be built
 SUBDIRS = CppUnitLite colamd spqr_mini base geometry inference linear nonlinear slam . tests wrap  
@@ -31,7 +33,12 @@ libgtsam_la_SOURCES =
 libgtsam_la_LIBADD = $(SUBLIBS)
 libgtsam_la_LDFLAGS = -version-info 0:0:0
 
-# Add these files to make dure they're in the distribution
+# Store the absolute path to the directory above gtsam for the include path,
+# saves us from having an extra 'gtsam' subdirectory.
+BORG_SRCROOT := $(shell cd $(top_srcdir)/.. && pwd)
+AM_MAKEFLAGS = "BORG_SRCROOT=$(BORG_SRCROOT)"
+
+# Add these files to make sure they're in the distribution
 noinst_HEADERS = gtsam.h
 EXTRA_DIST = autogen.sh configure.ac THANKS 
 

@@ -15,10 +15,10 @@ using namespace std;
 #include <boost/tuple/tuple.hpp>
 #include <boost/assign/std/list.hpp> // for operator += in Ordering
 
-#include "Matrix.h"
-#include "GaussianFactor.h"
-#include "GaussianConditional.h"
-#include "Ordering.h"
+#include <gtsam/base/Matrix.h>
+#include <gtsam/linear/GaussianFactor.h>
+#include <gtsam/linear/GaussianConditional.h>
+#include <gtsam/inference/Ordering.h>
 
 using namespace gtsam;
 using namespace boost::assign;

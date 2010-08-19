@@ -7,7 +7,7 @@
 #include <iostream>
 #include <boost/numeric/ublas/matrix_proxy.hpp>
 #include <boost/timer.hpp>
-#include "Matrix.h"
+#include <gtsam/base/Matrix.h>
 
 using namespace std;
 using namespace gtsam;

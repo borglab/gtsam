@@ -6,8 +6,8 @@
 
 #pragma once
 
-#include "Lie.h"
-#include "NonlinearConstraint.h"
+#include <gtsam/base/Lie.h>
+#include <gtsam/nonlinear/NonlinearConstraint.h>
 
 namespace gtsam {
 

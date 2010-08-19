@@ -4,11 +4,11 @@
  * @author Alex Cunningham
  */
 
-#include <CppUnitLite/TestHarness.h>
+#include <gtsam/CppUnitLite/TestHarness.h>
 
-#include <simulated2DConstraints.h>
-#include <NonlinearFactorGraph-inl.h>
-#include <NonlinearOptimizer-inl.h>
+#include <gtsam/slam/simulated2DConstraints.h>
+#include <gtsam/nonlinear/NonlinearFactorGraph-inl.h>
+#include <gtsam/nonlinear/NonlinearOptimizer-inl.h>
 
 namespace iq2D = gtsam::simulated2D::inequality_constraints;
 using namespace std;

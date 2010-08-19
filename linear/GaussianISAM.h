@@ -8,8 +8,8 @@
 
 #pragma once
 
-#include "ISAM.h"
-#include "GaussianConditional.h"
+#include <gtsam/inference/ISAM.h>
+#include <gtsam/linear/GaussianConditional.h>
 
 namespace gtsam {
 

@@ -3,6 +3,10 @@
 # Non-linear optimization
 #----------------------------------------------------------------------------------------------------
 
+# use nostdinc to turn off -I. and -I.., we do not need them because 
+# header files are qualified so they can be included in external projects.
+AUTOMAKE_OPTIONS = nostdinc
+
 headers =
 sources = 
 check_PROGRAMS = 
@@ -38,10 +42,11 @@ endif
 # The headers are installed in $(includedir)/gtsam: 
 #----------------------------------------------------------------------------------------------------
 headers += $(sources:.cpp=.h)
-pkginclude_HEADERS = $(headers)
+nonlineardir = $(pkgincludedir)/nonlinear
+nonlinear_HEADERS = $(headers)
 noinst_LTLIBRARIES = libnonlinear.la
 libnonlinear_la_SOURCES = $(sources)
-AM_CPPFLAGS = -I$(boost) -I$(top_srcdir) -I$(top_srcdir)/colamd -I$(top_srcdir)/base -I$(top_srcdir)/inference -I$(top_srcdir)/linear
+AM_CPPFLAGS = -I$(boost) -I$(BORG_SRCROOT)
 AM_CXXFLAGS =
 
 #----------------------------------------------------------------------------------------------------

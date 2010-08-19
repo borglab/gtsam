@@ -11,9 +11,9 @@
 
 #include <list>
 
-#include "GaussianConditional.h"
-#include "BayesNet.h"
-#include "Key.h"
+#include <gtsam/linear/GaussianConditional.h>
+#include <gtsam/inference/BayesNet.h>
+#include <gtsam/inference/Key.h>
 
 namespace gtsam {
 

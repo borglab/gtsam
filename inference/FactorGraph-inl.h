@@ -20,11 +20,11 @@
 #include <boost/tuple/tuple.hpp>
 #include <boost/format.hpp>
 #include <boost/graph/prim_minimum_spanning_tree.hpp>
-#include "ccolamd.h"
-#include "Ordering.h"
-#include "FactorGraph.h"
-#include "graph-inl.h"
-#include "DSF.h"
+#include <gtsam/colamd/ccolamd.h>
+#include <gtsam/inference/Ordering.h>
+#include <gtsam/inference/FactorGraph.h>
+#include <gtsam/inference/graph-inl.h>
+#include <gtsam/base/DSF.h>
 
 #define INSTANTIATE_FACTOR_GRAPH(F) \
   template class FactorGraph<F>; \

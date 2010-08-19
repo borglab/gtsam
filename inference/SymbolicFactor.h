@@ -12,9 +12,9 @@
 #include <string>
 #include <vector>
 #include <boost/shared_ptr.hpp>
-#include "Testable.h"
-#include "Ordering.h"
-#include "Key.h"
+#include <gtsam/base/Testable.h>
+#include <gtsam/inference/Ordering.h>
+#include <gtsam/inference/Key.h>
 
 namespace gtsam {
 

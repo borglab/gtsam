@@ -8,12 +8,12 @@
 
 #pragma once
 
-#include <numericalDerivative.h> // TODO: remove
+#include <gtsam/base/numericalDerivative.h>
 
-#include "NonlinearConstraint.h"
-#include "BetweenConstraint.h"
-#include "BoundingConstraint.h"
-#include "simulated2D.h"
+#include <gtsam/nonlinear/NonlinearConstraint.h>
+#include <gtsam/slam/BetweenConstraint.h>
+#include <gtsam/slam/BoundingConstraint.h>
+#include <gtsam/slam/simulated2D.h>
 
 // \namespace
 

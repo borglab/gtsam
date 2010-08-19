@@ -6,11 +6,11 @@
  **/
 
 #include <iostream>
-#include <CppUnitLite/TestHarness.h>
+#include <gtsam/CppUnitLite/TestHarness.h>
 
-#include "numericalDerivative.h"
-#include "simulated2D.h"
-#include "Simulated2DConfig.h"
+#include <gtsam/base/numericalDerivative.h>
+#include <gtsam/slam/simulated2D.h>
+#include <gtsam/slam/Simulated2DConfig.h>
 
 using namespace gtsam;
 using namespace std;

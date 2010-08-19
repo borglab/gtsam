@@ -8,8 +8,8 @@
 
 #pragma once
 
-#include "BearingFactor.h"
-#include "RangeFactor.h"
+#include <gtsam/slam/BearingFactor.h>
+#include <gtsam/slam/RangeFactor.h>
 
 namespace gtsam {
 

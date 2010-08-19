@@ -4,7 +4,7 @@
 * @author Alex Cunningham
 **/
 
-#include "Simulated3D.h"
+#include <gtsam/slam/Simulated3D.h>
 
 namespace gtsam {
 namespace simulated3D {

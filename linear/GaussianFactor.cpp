@@ -9,10 +9,10 @@
 #include <boost/assign/list_inserter.hpp> // for 'insert()'
 #include <boost/assign/std/list.hpp> // for operator += in Ordering
 
-#include "Matrix.h"
-#include "Ordering.h"
-#include "GaussianConditional.h"
-#include "GaussianFactor.h"
+#include <gtsam/base/Matrix.h>
+#include <gtsam/inference/Ordering.h>
+#include <gtsam/linear/GaussianConditional.h>
+#include <gtsam/linear/GaussianFactor.h>
 
 using namespace std;
 using namespace boost::assign;

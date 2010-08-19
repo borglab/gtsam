@@ -13,8 +13,8 @@
 #include <boost/serialization/list.hpp>
 #include <boost/serialization/shared_ptr.hpp>
 
-#include "Testable.h"
-#include "Key.h"
+#include <gtsam/base/Testable.h>
+#include <gtsam/inference/Key.h>
 
 namespace gtsam {
 

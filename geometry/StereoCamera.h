@@ -7,10 +7,10 @@
 #pragma once
 
 #include "boost/tuple/tuple.hpp"
-#include <Cal3_S2.h>
-#include <Pose3.h>
-#include <Lie.h>
-#include "StereoPoint2.h"
+#include <gtsam/geometry/Cal3_S2.h>
+#include <gtsam/geometry/Pose3.h>
+#include <gtsam/base/Lie.h>
+#include <gtsam/geometry/StereoPoint2.h>
 
 namespace gtsam {
 

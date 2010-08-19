@@ -12,10 +12,10 @@
 #include <map>
 #include <boost/serialization/map.hpp>
 
-#include "Testable.h"
-#include "Vector.h"
-#include "Key.h"
-#include "SymbolMap.h"
+#include <gtsam/base/Testable.h>
+#include <gtsam/base/Vector.h>
+#include <gtsam/inference/Key.h>
+#include <gtsam/inference/SymbolMap.h>
 
 namespace gtsam {
 	

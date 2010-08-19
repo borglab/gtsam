@@ -5,8 +5,8 @@
  * @author Alex Cunningham
  */
 
-#include "LieConfig.h"
-#include "VectorConfig.h"
+#include <gtsam/nonlinear/LieConfig.h>
+#include <gtsam/linear/VectorConfig.h>
 
 #pragma once
 

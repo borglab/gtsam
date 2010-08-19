@@ -5,7 +5,7 @@
  * Created on: Jul 17, 2010
  */
 
-#include "NonlinearOptimizer.h"
+#include <gtsam/nonlinear/NonlinearOptimizer.h>
 
 namespace gtsam {
 

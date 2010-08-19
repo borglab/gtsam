@@ -8,10 +8,10 @@
 
 #pragma once
 
-#include "Matrix.h"
+#include <gtsam/base/Matrix.h>
 
 #ifdef GT_USE_LAPACK
-#include <spqr_mini/spqr_subset.hpp>
+#include <gtsam/spqr_mini/spqr_subset.hpp>
 
 namespace gtsam {
 

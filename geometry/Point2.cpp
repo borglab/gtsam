@@ -4,8 +4,8 @@
  * @author  Frank Dellaert
  */
 
-#include "Point2.h"
-#include "Lie-inl.h"
+#include <gtsam/geometry/Point2.h>
+#include <gtsam/base/Lie-inl.h>
 
 using namespace std;
 

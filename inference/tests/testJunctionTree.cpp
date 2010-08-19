@@ -9,15 +9,15 @@
 #include <boost/assign/std/set.hpp> // for operator +=
 using namespace boost::assign;
 
-#include <CppUnitLite/TestHarness.h>
+#include <gtsam/CppUnitLite/TestHarness.h>
 
 #define GTSAM_MAGIC_KEY
 
-#include "Ordering.h"
-#include "SymbolicFactorGraph.h"
-#include "JunctionTree.h"
-#include "ClusterTree-inl.h"
-#include "JunctionTree-inl.h"
+#include <gtsam/inference/Ordering.h>
+#include <gtsam/inference/SymbolicFactorGraph.h>
+#include <gtsam/inference/JunctionTree.h>
+#include <gtsam/inference/ClusterTree-inl.h>
+#include <gtsam/inference/JunctionTree-inl.h>
 
 using namespace gtsam;
 

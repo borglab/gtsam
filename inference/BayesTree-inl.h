@@ -15,11 +15,11 @@
 #include <fstream>
 using namespace boost::assign;
 
-#include "Conditional.h"
-#include "BayesTree.h"
-#include "Ordering.h"
-#include "inference-inl.h"
-#include "Key.h"
+#include <gtsam/inference/Conditional.h>
+#include <gtsam/inference/BayesTree.h>
+#include <gtsam/inference/Ordering.h>
+#include <gtsam/inference/inference-inl.h>
+#include <gtsam/inference/Key.h>
 
 namespace gtsam {
 

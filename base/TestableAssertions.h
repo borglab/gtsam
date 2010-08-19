@@ -8,7 +8,7 @@
 
 #include <vector>
 #include <boost/foreach.hpp>
-#include "Testable.h"
+#include <gtsam/base/Testable.h>
 
 namespace gtsam {
 

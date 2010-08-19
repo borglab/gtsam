@@ -4,10 +4,10 @@
  **/
 
 #include <iostream>
-#include <CppUnitLite/TestHarness.h>
+#include <gtsam/CppUnitLite/TestHarness.h>
 
-#include "planarSLAM.h"
-#include "BearingRangeFactor.h"
+#include <gtsam/slam/planarSLAM.h>
+#include <gtsam/slam/BearingRangeFactor.h>
 
 using namespace std;
 using namespace gtsam;

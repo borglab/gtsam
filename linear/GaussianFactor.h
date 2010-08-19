@@ -16,13 +16,13 @@
 #include <list>
 #include <set>
 
-#include "Factor.h"
-#include "Matrix.h"
-#include "VectorConfig.h"
-#include "SharedDiagonal.h"
-#include "GaussianConditional.h" // Needed for MATLAB
-#include "GaussianBayesNet.h"
-#include "SymbolMap.h"
+#include <gtsam/inference/Factor.h>
+#include <gtsam/base/Matrix.h>
+#include <gtsam/linear/VectorConfig.h>
+#include <gtsam/linear/SharedDiagonal.h>
+#include <gtsam/linear/GaussianConditional.h>
+#include <gtsam/linear/GaussianBayesNet.h>
+#include <gtsam/inference/SymbolMap.h>
 
 namespace gtsam {
 

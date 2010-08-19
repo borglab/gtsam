@@ -6,10 +6,10 @@
  */
 #include <iostream>
 
-#include "Vector.h"
-#include "Matrix.h"
-#include "GaussianFactorGraph.h"
-#include "iterative-inl.h"
+#include <gtsam/base/Vector.h>
+#include <gtsam/base/Matrix.h>
+#include <gtsam/linear/GaussianFactorGraph.h>
+#include <gtsam/linear/iterative-inl.h>
 
 using namespace std;
 

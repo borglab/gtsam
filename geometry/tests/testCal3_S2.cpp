@@ -3,9 +3,9 @@
  * @brief Unit tests for transform derivatives
  */
 
-#include <CppUnitLite/TestHarness.h>
-#include "numericalDerivative.h"
-#include "Cal3_S2.h"
+#include <gtsam/CppUnitLite/TestHarness.h>
+#include <gtsam/base/numericalDerivative.h>
+#include <gtsam/geometry/Cal3_S2.h>
 
 using namespace gtsam;
 

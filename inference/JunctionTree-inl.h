@@ -10,9 +10,9 @@
 
 #include <boost/foreach.hpp>
 
-#include "SymbolicFactorGraph.h"
-#include "BayesTree-inl.h"
-#include "JunctionTree.h"
+#include <gtsam/inference/SymbolicFactorGraph.h>
+#include <gtsam/inference/BayesTree-inl.h>
+#include <gtsam/inference/JunctionTree.h>
 
 namespace gtsam {
 

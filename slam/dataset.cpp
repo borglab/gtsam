@@ -10,9 +10,9 @@
 #include <fstream>
 #include <sstream>
 #include <cstdlib>
-#include "graph-inl.h"
+#include <gtsam/inference/graph-inl.h>
 
-#include "dataset.h"
+#include <gtsam/slam/dataset.h>
 
 using namespace std;
 using namespace gtsam;

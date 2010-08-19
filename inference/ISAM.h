@@ -15,10 +15,10 @@
 #include <boost/serialization/list.hpp>
 #include <stdexcept>
 
-#include "Testable.h"
-#include "FactorGraph.h"
-#include "BayesNet.h"
-#include "BayesTree.h"
+#include <gtsam/base/Testable.h>
+#include <gtsam/inference/FactorGraph.h>
+#include <gtsam/inference/BayesNet.h>
+#include <gtsam/inference/BayesTree.h>
 
 namespace gtsam {
 

@@ -3,20 +3,20 @@
  * @author Alex Cunningham
  */
 
-#include <CppUnitLite/TestHarness.h>
+#include <gtsam/CppUnitLite/TestHarness.h>
 
 #define GTSAM_MAGIC_KEY
 
-#include "Key.h"
-#include "Pose2.h"
-#include "Ordering.h"
-#include "VectorConfig.h"
-#include "NonlinearEquality.h"
-#include "PriorFactor.h"
-#include "NonlinearFactorGraph.h"
-#include "NonlinearOptimizer-inl.h"
+#include <gtsam/inference/Key.h>
+#include <gtsam/geometry/Pose2.h>
+#include <gtsam/inference/Ordering.h>
+#include <gtsam/linear/VectorConfig.h>
+#include <gtsam/nonlinear/NonlinearEquality.h>
+#include <gtsam/slam/PriorFactor.h>
+#include <gtsam/nonlinear/NonlinearFactorGraph.h>
+#include <gtsam/nonlinear/NonlinearOptimizer-inl.h>
 
-#include "LieConfig-inl.h"
+#include <gtsam/nonlinear/LieConfig-inl.h>
 
 using namespace std;
 using namespace gtsam;

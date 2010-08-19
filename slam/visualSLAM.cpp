@@ -5,10 +5,10 @@
  *      Author: richard
  */
 
-#include "visualSLAM.h"
-#include "TupleConfig-inl.h"
-#include "NonlinearOptimizer-inl.h"
-#include "NonlinearFactorGraph-inl.h"
+#include <gtsam/slam/visualSLAM.h>
+#include <gtsam/nonlinear/TupleConfig-inl.h>
+#include <gtsam/nonlinear/NonlinearOptimizer-inl.h>
+#include <gtsam/nonlinear/NonlinearFactorGraph-inl.h>
 
 namespace gtsam {
 	INSTANTIATE_TUPLE_CONFIG2(visualSLAM::PoseConfig, visualSLAM::PointConfig)

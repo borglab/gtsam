@@ -5,11 +5,11 @@
  */
 
 #include <iostream>
-#include <CppUnitLite/TestHarness.h>
-#include <TestableAssertions.h> // allow assert_equal() for vectors
-#include <GaussianFactor.h>
-#include <planarSLAM.h>
-#include <LinearApproxFactor.h>
+#include <gtsam/CppUnitLite/TestHarness.h>
+#include <gtsam/base/TestableAssertions.h>
+#include <gtsam/linear/GaussianFactor.h>
+#include <gtsam/slam/planarSLAM.h>
+#include <gtsam/slam/LinearApproxFactor.h>
 
 using namespace std;
 using namespace gtsam;

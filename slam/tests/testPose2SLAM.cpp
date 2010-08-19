@@ -9,15 +9,15 @@
 using namespace boost;
 using namespace boost::assign;
 
-#include <CppUnitLite/TestHarness.h>
+#include <gtsam/CppUnitLite/TestHarness.h>
 
 #define GTSAM_MAGIC_KEY
 
-#include "NonlinearOptimizer-inl.h"
-#include "FactorGraph-inl.h"
-#include "Ordering.h"
-#include "pose2SLAM.h"
-#include "Pose2SLAMOptimizer.h"
+#include <gtsam/nonlinear/NonlinearOptimizer-inl.h>
+#include <gtsam/inference/FactorGraph-inl.h>
+#include <gtsam/inference/Ordering.h>
+#include <gtsam/slam/pose2SLAM.h>
+#include <gtsam/slam/Pose2SLAMOptimizer.h>
 
 using namespace std;
 using namespace gtsam;

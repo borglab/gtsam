@@ -9,7 +9,7 @@
 
 #include <map>
 #include <boost/foreach.hpp> // TODO should not be in header
-#include "Testable.h"
+#include <gtsam/base/Testable.h>
 
 namespace gtsam {
 

@@ -3,9 +3,9 @@
  * @author Alex Cunningham
  */
 
-#include <CppUnitLite/TestHarness.h>
+#include <gtsam/CppUnitLite/TestHarness.h>
 
-#include <FixedVector.h>
+#include <gtsam/base/FixedVector.h>
 
 using namespace gtsam;
 

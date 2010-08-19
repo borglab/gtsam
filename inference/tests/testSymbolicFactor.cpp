@@ -4,9 +4,9 @@
  * @author  Frank Dellaert
  */
 
-#include <CppUnitLite/TestHarness.h>
+#include <gtsam/CppUnitLite/TestHarness.h>
 
-#include "SymbolicFactor.h"
+#include <gtsam/inference/SymbolicFactor.h>
 
 using namespace std;
 using namespace gtsam;

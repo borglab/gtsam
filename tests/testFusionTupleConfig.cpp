@@ -5,23 +5,23 @@
 
 #include <iostream>
 
-#include <CppUnitLite/TestHarness.h>
+#include <gtsam/CppUnitLite/TestHarness.h>
 
 #define GTSAM_MAGIC_KEY
 
-#include <Pose2.h>
-#include <Point2.h>
-#include <Key.h>
-#include <VectorConfig.h>
+#include <gtsam/geometry/Pose2.h>
+#include <gtsam/geometry/Point2.h>
+#include <gtsam/inference/Key.h>
+#include <gtsam/linear/VectorConfig.h>
 
-#include "BearingRangeFactor.h"
-#include "PriorFactor.h"
-#include "BetweenFactor.h"
+#include <gtsam/slam/BearingRangeFactor.h>
+#include <gtsam/slam/PriorFactor.h>
+#include <gtsam/slam/BetweenFactor.h>
 
-#include <NonlinearFactorGraph-inl.h>
-#include <LieConfig-inl.h>
-#include <NonlinearOptimizer-inl.h>
-#include <FusionTupleConfig.h>
+#include <gtsam/nonlinear/NonlinearFactorGraph-inl.h>
+#include <gtsam/nonlinear/LieConfig-inl.h>
+#include <gtsam/nonlinear/NonlinearOptimizer-inl.h>
+#include <gtsam/nonlinear/FusionTupleConfig.h>
 
 using namespace boost;
 using namespace gtsam;

@@ -20,9 +20,9 @@
 
 #include <boost/serialization/map.hpp>
 
-#include "Vector.h"
-#include "Testable.h"
-#include "VectorConfig.h"
+#include <gtsam/base/Vector.h>
+#include <gtsam/base/Testable.h>
+#include <gtsam/linear/VectorConfig.h>
 
 namespace boost { template<class T> class optional; }
 namespace gtsam { class VectorConfig; }

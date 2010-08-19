@@ -8,7 +8,7 @@
 
 #include <boost/bind.hpp>
 #include <boost/foreach.hpp>
-#include "Errors.h"
+#include <gtsam/linear/Errors.h>
 
 using namespace std;
 

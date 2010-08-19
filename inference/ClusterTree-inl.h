@@ -10,7 +10,7 @@
 
 #include <boost/foreach.hpp>
 
-#include "ClusterTree.h"
+#include <gtsam/inference/ClusterTree.h>
 
 namespace gtsam {
 

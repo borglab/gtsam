@@ -5,5 +5,5 @@
  *      Author: dellaert
  */
 
-#include "StereoPoint2.h"
+#include <gtsam/geometry/StereoPoint2.h>
 

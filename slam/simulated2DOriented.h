@@ -8,9 +8,9 @@
 
 #pragma once
 
-#include "Pose2.h"
-#include "TupleConfig.h"
-#include "NonlinearFactor.h"
+#include <gtsam/geometry/Pose2.h>
+#include <gtsam/nonlinear/TupleConfig.h>
+#include <gtsam/nonlinear/NonlinearFactor.h>
 
 // \namespace
 

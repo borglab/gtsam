@@ -16,7 +16,7 @@
 #include <set>
 #include <map>
 #include <boost/foreach.hpp>
-#include "BTree.h"
+#include <gtsam/base/BTree.h>
 
 namespace gtsam {
 

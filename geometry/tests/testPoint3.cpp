@@ -3,8 +3,8 @@
  * @brief  Unit tests for Point3 class
  */   
 
-#include <CppUnitLite/TestHarness.h>
-#include "Point3.h"
+#include <gtsam/CppUnitLite/TestHarness.h>
+#include <gtsam/geometry/Point3.h>
 
 using namespace gtsam;
 

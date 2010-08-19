@@ -11,9 +11,9 @@
 #pragma once
 
 #include <boost/math/constants/constants.hpp>
-#include "Point3.h"
-#include "Testable.h"
-#include "Lie.h"
+#include <gtsam/geometry/Point3.h>
+#include <gtsam/base/Testable.h>
+#include <gtsam/base/Lie.h>
 
 namespace gtsam {
 

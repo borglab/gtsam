@@ -15,9 +15,9 @@
 #include <boost/foreach.hpp> // TODO: make cpp file
 #include <boost/serialization/list.hpp>
 #include <boost/serialization/vector.hpp>
-#include "Conditional.h"
-#include "Key.h"
-#include "SymbolMap.h"
+#include <gtsam/inference/Conditional.h>
+#include <gtsam/inference/Key.h>
+#include <gtsam/inference/SymbolMap.h>
 
 namespace gtsam {
 

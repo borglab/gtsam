@@ -6,9 +6,9 @@
 
 #pragma once
 
-#include <Testable.h>
+#include <gtsam/base/Testable.h>
 #include <stdarg.h>
-#include <Vector.h>
+#include <gtsam/base/Vector.h>
 
 namespace gtsam {
 

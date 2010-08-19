@@ -6,10 +6,10 @@
 
 #pragma once
 
-#include "inference.h"
-#include "FactorGraph-inl.h"
-#include "BayesNet-inl.h"
-#include "Key.h"
+#include <gtsam/inference/inference.h>
+#include <gtsam/inference/FactorGraph-inl.h>
+#include <gtsam/inference/BayesNet-inl.h>
+#include <gtsam/inference/Key.h>
 
 using namespace std;
 

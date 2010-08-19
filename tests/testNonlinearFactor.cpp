@@ -9,16 +9,16 @@
 /*STL/C++*/
 #include <iostream>
 
-#include <CppUnitLite/TestHarness.h>
+#include <gtsam/CppUnitLite/TestHarness.h>
 
 // TODO: DANGEROUS, create shared pointers
 #define GTSAM_MAGIC_GAUSSIAN 2
 #define GTSAM_MAGIC_KEY
 
-#include "Matrix.h"
-#include "smallExample.h"
-#include "simulated2D.h"
-#include "GaussianFactor.h"
+#include <gtsam/base/Matrix.h>
+#include <gtsam/slam/smallExample.h>
+#include <gtsam/slam/simulated2D.h>
+#include <gtsam/linear/GaussianFactor.h>
 
 using namespace std;
 using namespace gtsam;

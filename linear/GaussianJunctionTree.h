@@ -8,9 +8,9 @@
 
 #pragma once
 
-#include "JunctionTree.h"
-#include "GaussianConditional.h"
-#include "GaussianFactorGraph.h"
+#include <gtsam/inference/JunctionTree.h>
+#include <gtsam/linear/GaussianConditional.h>
+#include <gtsam/linear/GaussianFactorGraph.h>
 
 namespace gtsam {
 

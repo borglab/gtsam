@@ -6,8 +6,8 @@
 
 #pragma once
 
-#include "Matrix.h"
-#include "Point2.h"
+#include <gtsam/base/Matrix.h>
+#include <gtsam/geometry/Point2.h>
 #include <math.h>
 
 namespace gtsam {

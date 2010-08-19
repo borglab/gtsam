@@ -7,12 +7,12 @@
 #include <fstream>
 #include <boost/format.hpp>
 #include <boost/foreach.hpp>
-#include "Ordering.h"
-#include "Point2.h"
-#include "SymbolicFactorGraph.h"
-#include "SymbolicBayesNet.h"
-#include "inference-inl.h"
-#include "LieConfig-inl.h"
+#include <gtsam/inference/Ordering.h>
+#include <gtsam/geometry/Point2.h>
+#include <gtsam/inference/SymbolicFactorGraph.h>
+#include <gtsam/inference/SymbolicBayesNet.h>
+#include <gtsam/inference/inference-inl.h>
+#include <gtsam/nonlinear/LieConfig-inl.h>
 
 using namespace std;
 

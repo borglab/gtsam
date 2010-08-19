@@ -17,17 +17,17 @@ namespace tensors {
 } // namespace tensors
 
 // Expression templates
-#include "Tensor1Expression.h"
-#include "Tensor2Expression.h"
-#include "Tensor3Expression.h"
+#include <gtsam/geometry/Tensor1Expression.h>
+#include <gtsam/geometry/Tensor2Expression.h>
+#include <gtsam/geometry/Tensor3Expression.h>
 // Tensor4 not needed so far
-#include "Tensor5Expression.h"
+#include <gtsam/geometry/Tensor5Expression.h>
 
 // Actual tensor classes
-#include "Tensor1.h"
-#include "Tensor2.h"
-#include "Tensor3.h"
-#include "Tensor4.h"
-#include "Tensor5.h"
+#include <gtsam/geometry/Tensor1.h>
+#include <gtsam/geometry/Tensor2.h>
+#include <gtsam/geometry/Tensor3.h>
+#include <gtsam/geometry/Tensor4.h>
+#include <gtsam/geometry/Tensor5.h>
 
 

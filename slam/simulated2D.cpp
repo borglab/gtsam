@@ -4,9 +4,9 @@
  * @author  Frank Dellaert
  */
 
-#include "simulated2D.h"
-#include "LieConfig-inl.h"
-#include "TupleConfig-inl.h"
+#include <gtsam/slam/simulated2D.h>
+#include <gtsam/nonlinear/LieConfig-inl.h>
+#include <gtsam/nonlinear/TupleConfig-inl.h>
 
 namespace gtsam {
 

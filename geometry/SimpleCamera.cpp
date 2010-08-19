@@ -5,8 +5,8 @@
  *      Author: dellaert
  */
 
-#include "SimpleCamera.h"
-#include "CalibratedCamera.h"
+#include <gtsam/geometry/SimpleCamera.h>
+#include <gtsam/geometry/CalibratedCamera.h>
 
 using namespace std;
 

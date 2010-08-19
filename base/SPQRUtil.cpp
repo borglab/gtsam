@@ -7,7 +7,7 @@
  */
 
 #include <map>
-#include "SPQRUtil.h"
+#include <gtsam/base/SPQRUtil.h>
 
 using namespace std;
 

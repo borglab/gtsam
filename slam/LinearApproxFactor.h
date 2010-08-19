@@ -9,9 +9,9 @@
 #include <vector>
 #include <iostream>
 #include <boost/foreach.hpp>
-#include "NonlinearFactor.h"
-#include "VectorConfig.h"
-#include "Matrix.h"
+#include <gtsam/nonlinear/NonlinearFactor.h>
+#include <gtsam/linear/VectorConfig.h>
+#include <gtsam/base/Matrix.h>
 
 namespace gtsam {
 

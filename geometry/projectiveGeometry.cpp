@@ -6,8 +6,8 @@
  */
 
 #include <boost/foreach.hpp>
-#include "tensorInterface.h"
-#include "projectiveGeometry.h"
+#include <gtsam/geometry/tensorInterface.h>
+#include <gtsam/geometry/projectiveGeometry.h>
 
 namespace gtsam {
 

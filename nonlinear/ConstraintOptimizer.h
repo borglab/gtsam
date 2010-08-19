@@ -14,7 +14,7 @@
 #pragma once
 
 #include <boost/optional.hpp>
-#include <Matrix.h>
+#include <gtsam/base/Matrix.h>
 
 namespace gtsam {
 

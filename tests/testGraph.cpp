@@ -11,15 +11,15 @@
 #include <boost/assign/std/list.hpp> // for operator +=
 using namespace boost::assign;
 
-#include <CppUnitLite/TestHarness.h>
+#include <gtsam/CppUnitLite/TestHarness.h>
 
 // TODO: DANGEROUS, create shared pointers
 #define GTSAM_MAGIC_GAUSSIAN 3
 
-#include "pose2SLAM.h"
-#include "TupleConfig-inl.h"
-#include "graph-inl.h"
-#include "FactorGraph-inl.h"
+#include <gtsam/slam/pose2SLAM.h>
+#include <gtsam/nonlinear/TupleConfig-inl.h>
+#include <gtsam/inference/graph-inl.h>
+#include <gtsam/inference/FactorGraph-inl.h>
 
 using namespace std;
 using namespace gtsam;

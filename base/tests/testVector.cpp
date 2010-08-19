@@ -5,9 +5,9 @@
  **/
 
 #include <iostream>
-#include <CppUnitLite/TestHarness.h>
+#include <gtsam/CppUnitLite/TestHarness.h>
 #include <boost/tuple/tuple.hpp>
-#include "Vector.h"
+#include <gtsam/base/Vector.h>
 
 using namespace std;
 using namespace gtsam;

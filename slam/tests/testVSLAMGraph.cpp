@@ -7,16 +7,16 @@
  * @author  Viorela Ila
  */
 
-#include <CppUnitLite/TestHarness.h>
+#include <gtsam/CppUnitLite/TestHarness.h>
 #include <boost/shared_ptr.hpp>
 using namespace boost;
 
 #define GTSAM_MAGIC_KEY
 
-#include "NonlinearFactorGraph-inl.h"
-#include "NonlinearOptimizer-inl.h"
-#include "graph-inl.h"
-#include "visualSLAM.h"
+#include <gtsam/nonlinear/NonlinearFactorGraph-inl.h>
+#include <gtsam/nonlinear/NonlinearOptimizer-inl.h>
+#include <gtsam/inference/graph-inl.h>
+#include <gtsam/slam/visualSLAM.h>
 
 using namespace std;
 using namespace gtsam;

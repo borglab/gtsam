@@ -6,12 +6,12 @@
  **/
 
 #include <iostream>
-#include <CppUnitLite/TestHarness.h>
+#include <gtsam/CppUnitLite/TestHarness.h>
 #include <boost/tuple/tuple.hpp>
 #include <boost/foreach.hpp>
 #include <boost/numeric/ublas/matrix_proxy.hpp>
 #include <boost/numeric/ublas/io.hpp>
-#include "Matrix.h"
+#include <gtsam/base/Matrix.h>
 
 using namespace std;
 using namespace gtsam;

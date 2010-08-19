@@ -12,8 +12,8 @@
 
 #include <math.h>
 
-#include "NonlinearFactor.h"
-#include "GaussianFactorGraph.h"
+#include <gtsam/nonlinear/NonlinearFactor.h>
+#include <gtsam/linear/GaussianFactorGraph.h>
 
 namespace gtsam {
 

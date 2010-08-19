@@ -7,7 +7,7 @@
 
 #pragma once
 
-#include "Lie.h"
+#include <gtsam/base/Lie.h>
 
 #define INSTANTIATE_LIE(T) \
   template T between(const T&, const T&); \

@@ -7,7 +7,7 @@
 // STL/C++
 #include <iostream>
 #include <sstream>
-#include <CppUnitLite/TestHarness.h>
+#include <gtsam/CppUnitLite/TestHarness.h>
 #include <boost/tuple/tuple.hpp>
 #include <boost/foreach.hpp>
 
@@ -21,10 +21,10 @@ using namespace boost::assign;
 
 #define GTSAM_MAGIC_KEY
 
-#include "GaussianBayesNet.h"
-#include "BayesNet.h"
-#include "smallExample.h"
-#include "Ordering.h"
+#include <gtsam/linear/GaussianBayesNet.h>
+#include <gtsam/inference/BayesNet.h>
+#include <gtsam/slam/smallExample.h>
+#include <gtsam/inference/Ordering.h>
 
 using namespace std;
 using namespace gtsam;

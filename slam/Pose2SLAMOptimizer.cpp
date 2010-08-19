@@ -5,10 +5,10 @@
  *      Author: dellaert
  */
 
-#include "Pose2SLAMOptimizer.h"
-#include "pose2SLAM.h"
-#include "dataset.h"
-#include "SubgraphSolver-inl.h"
+#include <gtsam/slam/Pose2SLAMOptimizer.h>
+#include <gtsam/slam/pose2SLAM.h>
+#include <gtsam/slam/dataset.h>
+#include <gtsam/linear/SubgraphSolver-inl.h>
 
 using namespace std;
 namespace gtsam {

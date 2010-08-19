@@ -8,10 +8,10 @@
 
 #pragma once
 
-#include "Matrix.h"
-#include "VectorConfig.h"
-#include "NonlinearFactor.h"
-#include "Key.h"
+#include <gtsam/base/Matrix.h>
+#include <gtsam/linear/VectorConfig.h>
+#include <gtsam/nonlinear/NonlinearFactor.h>
+#include <gtsam/inference/Key.h>
 
 // \namespace
 

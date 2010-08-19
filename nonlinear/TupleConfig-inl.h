@@ -7,8 +7,8 @@
 
 #pragma once
 
-#include "LieConfig-inl.h"
-#include "TupleConfig.h"
+#include <gtsam/nonlinear/LieConfig-inl.h>
+#include <gtsam/nonlinear/TupleConfig.h>
 
 // TupleConfig instantiations for N = 1-6
 #define INSTANTIATE_TUPLE_CONFIG1(Config1) \

@@ -10,9 +10,9 @@
 
 #include <boost/foreach.hpp>
 
-#include "pose2SLAM.h"
-#include "Ordering.h"
-#include "SubgraphSolver.h"
+#include <gtsam/slam/pose2SLAM.h>
+#include <gtsam/inference/Ordering.h>
+#include <gtsam/linear/SubgraphSolver.h>
 
 namespace gtsam {
 

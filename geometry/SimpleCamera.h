@@ -8,8 +8,8 @@
 #ifndef SIMPLECAMERA_H_
 #define SIMPLECAMERA_H_
 
-#include "CalibratedCamera.h"
-#include "Cal3_S2.h"
+#include <gtsam/geometry/CalibratedCamera.h>
+#include <gtsam/geometry/Cal3_S2.h>
 
 namespace gtsam {
 

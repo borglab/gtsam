@@ -9,9 +9,9 @@
 #pragma once
 
 #include <boost/shared_ptr.hpp>
-#include "Testable.h"
-#include "Vector.h"
-#include "Matrix.h"
+#include <gtsam/base/Testable.h>
+#include <gtsam/base/Vector.h>
+#include <gtsam/base/Matrix.h>
 
 namespace gtsam {
 

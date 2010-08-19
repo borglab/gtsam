@@ -7,7 +7,7 @@
 
 #include <boost/foreach.hpp>
 #include <boost/tuple/tuple.hpp>
-#include "VectorBTree.h"
+#include <gtsam/linear/VectorBTree.h>
 
 using namespace std;
 

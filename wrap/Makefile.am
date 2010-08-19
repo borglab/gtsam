@@ -18,11 +18,11 @@ noinst_HEADERS = geometry.h utilities.h Argument.h Constructor.h Method.h Class.
 
 noinst_PROGRAMS = wrap
 wrap_SOURCES = ${common} wrap.cpp
-AM_CPPFLAGS = -I$(boost) -I$(top_srcdir) -DTOPSRCDIR="\"$(top_srcdir)\""
+AM_CPPFLAGS = -I$(boost) -I$(BORG_SRCROOT) -DTOPSRCDIR="\"$(top_srcdir)\""
 AM_CXXFLAGS = -MMD
 AM_LDFLAGS = -L../CppUnitLite -lCppUnitLite $(BOOST_LDFLAGS)
 
-TESTS = $(check_PROGRAMS)
+#TESTS = $(check_PROGRAMS)
 
 # install the headers and matlab toolbox
 install-exec-hook: all

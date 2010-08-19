@@ -4,10 +4,10 @@
  *  @authors Frank Dellaert
  **/
 
-#include "pose3SLAM.h"
-#include "LieConfig-inl.h"
-#include "NonlinearFactorGraph-inl.h"
-#include "NonlinearOptimizer-inl.h"
+#include <gtsam/slam/pose3SLAM.h>
+#include <gtsam/nonlinear/LieConfig-inl.h>
+#include <gtsam/nonlinear/NonlinearFactorGraph-inl.h>
+#include <gtsam/nonlinear/NonlinearOptimizer-inl.h>
 
 // Use pose3SLAM namespace for specific SLAM instance
 namespace gtsam {

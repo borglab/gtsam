@@ -6,18 +6,18 @@
 
 #include <boost/foreach.hpp>
 #include <boost/tuple/tuple.hpp>
-#include <CppUnitLite/TestHarness.h>
+#include <gtsam/CppUnitLite/TestHarness.h>
 
 #define GTSAM_MAGIC_KEY
 
-#include "Ordering.h"
-#include "BayesNetPreconditioner.h"
-#include "iterative-inl.h"
+#include <gtsam/inference/Ordering.h>
+#include <gtsam/linear/BayesNetPreconditioner.h>
+#include <gtsam/linear/iterative-inl.h>
 
 using namespace std;
 using namespace gtsam;
 
-#include "smallExample.h"
+#include <gtsam/slam/smallExample.h>
 using namespace example;
 
 /* ************************************************************************* */

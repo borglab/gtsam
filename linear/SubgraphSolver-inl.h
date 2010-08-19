@@ -9,11 +9,11 @@
 #pragma once
 
 #include <boost/tuple/tuple.hpp>
-#include "SubgraphSolver.h"
+#include <gtsam/linear/SubgraphSolver.h>
 
-#include "graph-inl.h"
-#include "iterative-inl.h"
-#include "FactorGraph-inl.h"
+#include <gtsam/inference/graph-inl.h>
+#include <gtsam/linear/iterative-inl.h>
+#include <gtsam/inference/FactorGraph-inl.h>
 
 using namespace std;
 

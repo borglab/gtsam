@@ -8,7 +8,7 @@
 #pragma once
 
 #include <string>
-#include "Matrix.h"
+#include <gtsam/base/Matrix.h>
 
 namespace gtsam {
 

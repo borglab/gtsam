@@ -14,10 +14,10 @@
 
 #include <boost/shared_ptr.hpp>
 
-#include "FactorGraph.h"
-#include "Errors.h"
-#include "GaussianFactor.h"
-#include "GaussianBayesNet.h" // needed for MATLAB toolbox !!
+#include <gtsam/inference/FactorGraph.h>
+#include <gtsam/linear/Errors.h>
+#include <gtsam/linear/GaussianFactor.h>
+#include <gtsam/linear/GaussianBayesNet.h>
 
 namespace gtsam {
 

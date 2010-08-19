@@ -4,12 +4,12 @@
  */
 
 #include <math.h>
-#include <CppUnitLite/TestHarness.h>
+#include <gtsam/CppUnitLite/TestHarness.h>
 #include <iostream>
-#include "numericalDerivative.h"
-#include "Pose2.h"
-#include "Point2.h"
-#include "Rot2.h"
+#include <gtsam/base/numericalDerivative.h>
+#include <gtsam/geometry/Pose2.h>
+#include <gtsam/geometry/Point2.h>
+#include <gtsam/geometry/Rot2.h>
 
 using namespace gtsam;
 using namespace std;

@@ -4,20 +4,20 @@
  * @author Alex Cunningham
  */
 
-#include <CppUnitLite/TestHarness.h>
+#include <gtsam/CppUnitLite/TestHarness.h>
 #include <stdexcept>
 
 #define GTSAM_MAGIC_KEY
 
-#include <Pose2.h>
-#include <Point2.h>
-#include <Pose3.h>
-#include <Point3.h>
+#include <gtsam/geometry/Pose2.h>
+#include <gtsam/geometry/Point2.h>
+#include <gtsam/geometry/Pose3.h>
+#include <gtsam/geometry/Point3.h>
 
-#include "Vector.h"
-#include "Key.h"
-#include "VectorConfig.h"
-#include "TupleConfig-inl.h"
+#include <gtsam/base/Vector.h>
+#include <gtsam/inference/Key.h>
+#include <gtsam/linear/VectorConfig.h>
+#include <gtsam/nonlinear/TupleConfig-inl.h>
 
 using namespace gtsam;
 using namespace std;

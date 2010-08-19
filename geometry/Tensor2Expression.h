@@ -9,7 +9,7 @@
 
 #include <stdexcept>
 #include <iostream>
-#include "tensors.h"
+#include <gtsam/geometry/tensors.h>
 
 namespace tensors {
 

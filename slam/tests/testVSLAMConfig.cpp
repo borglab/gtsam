@@ -4,12 +4,12 @@
  * @author Alex Cunningham
  */
 
-#include <CppUnitLite/TestHarness.h>
+#include <gtsam/CppUnitLite/TestHarness.h>
 
 #define GTSAM_MAGIC_KEY
 
-#include "VectorConfig.h"
-#include "visualSLAM.h"
+#include <gtsam/linear/VectorConfig.h>
+#include <gtsam/slam/visualSLAM.h>
 
 using namespace std;
 using namespace gtsam;

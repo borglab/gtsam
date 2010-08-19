@@ -7,9 +7,9 @@
 #include <math.h>
 #include <iostream>
 
-#include <CppUnitLite/TestHarness.h>
-#include "numericalDerivative.h"
-#include "SimpleCamera.h"
+#include <gtsam/CppUnitLite/TestHarness.h>
+#include <gtsam/base/numericalDerivative.h>
+#include <gtsam/geometry/SimpleCamera.h>
 
 using namespace std;
 using namespace gtsam;

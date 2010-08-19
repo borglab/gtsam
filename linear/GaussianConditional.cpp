@@ -6,8 +6,8 @@
 
 #include <string.h>
 #include <boost/numeric/ublas/vector.hpp>
-#include "Ordering.h"
-#include "GaussianConditional.h"
+#include <gtsam/inference/Ordering.h>
+#include <gtsam/linear/GaussianConditional.h>
 
 using namespace std;
 using namespace gtsam;

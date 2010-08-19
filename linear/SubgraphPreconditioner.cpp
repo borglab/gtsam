@@ -5,7 +5,7 @@
  */
 
 #include <boost/foreach.hpp>
-#include "SubgraphPreconditioner.h"
+#include <gtsam/linear/SubgraphPreconditioner.h>
 
 using namespace std;
 

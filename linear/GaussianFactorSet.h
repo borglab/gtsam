@@ -8,7 +8,7 @@
 
 #include <set>
 #include <boost/shared_ptr.hpp>
-#include "GaussianFactor.h"
+#include <gtsam/linear/GaussianFactor.h>
 
 namespace gtsam {
   

@@ -6,9 +6,9 @@
 
 #pragma once
 
-#include "GaussianFactorGraph.h"
-#include "GaussianBayesNet.h"
-#include "Ordering.h"
+#include <gtsam/linear/GaussianFactorGraph.h>
+#include <gtsam/linear/GaussianBayesNet.h>
+#include <gtsam/inference/Ordering.h>
 
 namespace gtsam {
 

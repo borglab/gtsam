@@ -9,7 +9,7 @@
 #pragma once
 
 #include <boost/shared_ptr.hpp>
-#include "Ordering.h"
+#include <gtsam/inference/Ordering.h>
 
 namespace gtsam {
 

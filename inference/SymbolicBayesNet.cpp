@@ -4,8 +4,8 @@
  * @author Frank Dellaert
  */
 
-#include "SymbolicBayesNet.h"
-#include "BayesNet-inl.h"
+#include <gtsam/inference/SymbolicBayesNet.h>
+#include <gtsam/inference/BayesNet-inl.h>
 
 using namespace std;
 

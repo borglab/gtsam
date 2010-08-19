@@ -8,7 +8,7 @@
 
 #include <boost/foreach.hpp>
 #include <boost/tuple/tuple.hpp>
-#include "VectorMap.h"
+#include <gtsam/linear/VectorMap.h>
 
 // trick from some reading group
 #define FOREACH_PAIR( KEY, VAL, COL) BOOST_FOREACH (boost::tie(KEY,VAL),COL) 

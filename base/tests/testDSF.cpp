@@ -10,9 +10,9 @@
 #include <boost/assign/std/list.hpp>
 #include <boost/assign/std/set.hpp>
 using namespace boost::assign;
-#include <CppUnitLite/TestHarness.h>
+#include <gtsam/CppUnitLite/TestHarness.h>
 
-#include "DSF.h"
+#include <gtsam/base/DSF.h>
 
 using namespace std;
 using namespace gtsam;

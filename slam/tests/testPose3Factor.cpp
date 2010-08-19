@@ -8,8 +8,8 @@
 #include <boost/assign/std/list.hpp>
 using namespace boost::assign;
 
-#include <CppUnitLite/TestHarness.h>
-#include "pose3SLAM.h"
+#include <gtsam/CppUnitLite/TestHarness.h>
+#include <gtsam/slam/pose3SLAM.h>
 
 using namespace std;
 using namespace gtsam;

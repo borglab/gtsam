@@ -3,8 +3,8 @@
  * @brief 3D Point
  */
 
-#include "Point3.h"
-#include "Lie-inl.h"
+#include <gtsam/geometry/Point3.h>
+#include <gtsam/base/Lie-inl.h>
 
 
 namespace gtsam {

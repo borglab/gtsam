@@ -12,10 +12,10 @@
 #include <boost/serialization/map.hpp>
 #include <boost/numeric/ublas/storage.hpp>
 
-#include "Testable.h"
-#include "Vector.h"
-#include "Key.h"
-#include "BTree.h"
+#include <gtsam/base/Testable.h>
+#include <gtsam/base/Vector.h>
+#include <gtsam/inference/Key.h>
+#include <gtsam/base/BTree.h>
 
 namespace gtsam {
 

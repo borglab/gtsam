@@ -2,6 +2,10 @@
 # GTSAM geometry
 #----------------------------------------------------------------------------------------------------
 
+# use nostdinc to turn off -I. and -I.., we do not need them because 
+# header files are qualified so they can be included in external projects.
+AUTOMAKE_OPTIONS = nostdinc
+
 headers =
 sources = 
 check_PROGRAMS = 
@@ -33,10 +37,11 @@ noinst_PROGRAMS = timeRot3 timeCalibratedCamera
 # The headers are installed in $(includedir)/gtsam: 
 #----------------------------------------------------------------------------------------------------
 headers += $(sources:.cpp=.h)
-pkginclude_HEADERS = $(headers)
+geometrydir = $(pkgincludedir)/geometry
+geometry_HEADERS = $(headers)
 noinst_LTLIBRARIES = libgeometry.la
 libgeometry_la_SOURCES = $(sources)
-AM_CPPFLAGS = -I$(boost) -I$(top_srcdir) -I$(top_srcdir)/base
+AM_CPPFLAGS = -I$(boost) -I$(BORG_SRCROOT)
 
 #----------------------------------------------------------------------------------------------------
 # rules to build local programs

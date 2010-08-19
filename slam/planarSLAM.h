@@ -6,13 +6,13 @@
 
 #pragma once
 
-#include "BearingRangeFactor.h"
-#include "TupleConfig.h"
-#include "NonlinearEquality.h"
-#include "PriorFactor.h"
-#include "BetweenFactor.h"
-#include "NonlinearFactorGraph.h"
-#include "NonlinearOptimizer.h"
+#include <gtsam/slam/BearingRangeFactor.h>
+#include <gtsam/nonlinear/TupleConfig.h>
+#include <gtsam/nonlinear/NonlinearEquality.h>
+#include <gtsam/slam/PriorFactor.h>
+#include <gtsam/slam/BetweenFactor.h>
+#include <gtsam/nonlinear/NonlinearFactorGraph.h>
+#include <gtsam/nonlinear/NonlinearOptimizer.h>
 
 // We use gtsam namespace for generally useful factors
 namespace gtsam {

@@ -9,10 +9,10 @@
 #define STEREOPOINT2_H_
 
 #include <iostream>
-#include <Vector.h>
-#include <Testable.h>
-#include <Lie.h>
-#include <Point2.h>
+#include <gtsam/base/Vector.h>
+#include <gtsam/base/Testable.h>
+#include <gtsam/base/Lie.h>
+#include <gtsam/geometry/Point2.h>
 
 namespace gtsam {
 

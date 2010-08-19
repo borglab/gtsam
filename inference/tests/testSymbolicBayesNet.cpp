@@ -8,13 +8,13 @@
 #include <boost/assign/std/list.hpp> // for operator +=
 using namespace boost::assign;
 
-#include <CppUnitLite/TestHarness.h>
+#include <gtsam/CppUnitLite/TestHarness.h>
 
 #define GTSAM_MAGIC_KEY
 
-#include "Ordering.h"
-#include "SymbolicBayesNet.h"
-#include "SymbolicFactorGraph.h"
+#include <gtsam/inference/Ordering.h>
+#include <gtsam/inference/SymbolicBayesNet.h>
+#include <gtsam/inference/SymbolicFactorGraph.h>
 
 using namespace std;
 using namespace gtsam;

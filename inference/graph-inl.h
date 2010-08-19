@@ -10,7 +10,7 @@
 #include <boost/foreach.hpp>
 #include <boost/graph/breadth_first_search.hpp>
 
-#include "graph.h"
+#include <gtsam/inference/graph.h>
 
 using namespace std;
 

@@ -12,7 +12,7 @@
 #include <vector>
 #include <map>
 
-#include "Key.h"
+#include <gtsam/inference/Key.h>
 
 using namespace std;
 using namespace boost;

@@ -10,9 +10,9 @@
 
 #include <boost/shared_ptr.hpp>
 #include <boost/make_shared.hpp>
-#include "VectorConfig.h"
-#include "NonlinearFactorGraph.h"
-#include "Factorization.h"
+#include <gtsam/linear/VectorConfig.h>
+#include <gtsam/nonlinear/NonlinearFactorGraph.h>
+#include <gtsam/linear/Factorization.h>
 
 namespace gtsam {
 

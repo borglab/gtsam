@@ -5,8 +5,8 @@
  **/
 
 #include <iostream>
-#include <CppUnitLite/TestHarness.h>
-#include "SPQRUtil.h"
+#include <gtsam/CppUnitLite/TestHarness.h>
+#include <gtsam/base/SPQRUtil.h>
 
 using namespace std;
 using namespace gtsam;

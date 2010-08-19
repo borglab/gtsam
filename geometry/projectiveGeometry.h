@@ -8,7 +8,7 @@
 #pragma once
 
 #include <list>
-#include "tensors.h"
+#include <gtsam/geometry/tensors.h>
 
 namespace gtsam {
 

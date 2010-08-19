@@ -11,14 +11,14 @@
 using namespace boost;
 using namespace boost::assign;
 
-#include <CppUnitLite/TestHarness.h>
+#include <gtsam/CppUnitLite/TestHarness.h>
 
 // TODO: DANGEROUS, create shared pointers
 #define GTSAM_MAGIC_GAUSSIAN 6
 #define GTSAM_MAGIC_KEY
 
-#include "pose3SLAM.h"
-#include "Ordering.h"
+#include <gtsam/slam/pose3SLAM.h>
+#include <gtsam/inference/Ordering.h>
 
 using namespace std;
 using namespace gtsam;

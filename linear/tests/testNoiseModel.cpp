@@ -6,13 +6,13 @@
  *      Author: Frank Dellaert
  */
 
-#include <CppUnitLite/TestHarness.h>
+#include <gtsam/CppUnitLite/TestHarness.h>
 
 #include <boost/foreach.hpp>
 #include <iostream>
-#include "NoiseModel.h"
-#include "SharedGaussian.h"
-#include "SharedDiagonal.h"
+#include <gtsam/linear/NoiseModel.h>
+#include <gtsam/linear/SharedGaussian.h>
+#include <gtsam/linear/SharedDiagonal.h>
 
 using namespace std;
 using namespace gtsam;

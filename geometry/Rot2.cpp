@@ -5,8 +5,8 @@
  *      Author: Frank Dellaert
  */
 
-#include "Rot2.h"
-#include "Lie-inl.h"
+#include <gtsam/geometry/Rot2.h>
+#include <gtsam/base/Lie-inl.h>
 
 using namespace std;
 

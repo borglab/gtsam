@@ -11,8 +11,8 @@
 
 #include <string>
 #include <boost/shared_ptr.hpp>
-#include "pose2SLAM.h"
-#include "graph.h"
+#include <gtsam/slam/pose2SLAM.h>
+#include <gtsam/inference/graph.h>
 
 namespace gtsam
 {

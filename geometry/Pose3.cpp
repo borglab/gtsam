@@ -4,8 +4,8 @@
  */
 
 #include <iostream>
-#include "Pose3.h"
-#include "Lie-inl.h"
+#include <gtsam/geometry/Pose3.h>
+#include <gtsam/base/Lie-inl.h>
 
 using namespace std;
 using namespace boost::numeric::ublas;

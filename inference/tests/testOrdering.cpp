@@ -6,12 +6,12 @@
 #include <boost/assign/std/list.hpp> // for operator +=
 using namespace boost::assign;
 
-#include <CppUnitLite/TestHarness.h>
+#include <gtsam/CppUnitLite/TestHarness.h>
 
 // Magically turn strings into Symbols
 #define GTSAM_MAGIC_KEY
 
-#include "Ordering.h"
+#include <gtsam/inference/Ordering.h>
 
 using namespace std;
 using namespace gtsam;

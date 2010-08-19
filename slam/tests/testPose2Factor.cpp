@@ -4,12 +4,12 @@
  *  @authors Frank Dellaert, Viorela Ila
  **/
 
-#include <CppUnitLite/TestHarness.h>
+#include <gtsam/CppUnitLite/TestHarness.h>
 
 #define GTSAM_MAGIC_KEY
 
-#include "numericalDerivative.h"
-#include "pose2SLAM.h"
+#include <gtsam/base/numericalDerivative.h>
+#include <gtsam/slam/pose2SLAM.h>
 
 using namespace std;
 using namespace gtsam;

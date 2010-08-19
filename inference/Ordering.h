@@ -9,8 +9,8 @@
 #include <list>
 #include <set>
 #include <string>
-#include "Testable.h"
-#include "Key.h"
+#include <gtsam/base/Testable.h>
+#include <gtsam/inference/Key.h>
 
 namespace gtsam {
 

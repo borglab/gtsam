@@ -13,14 +13,14 @@ using namespace std;
 #include <boost/assign/std/list.hpp>
 using namespace boost::assign;
 
-#include <CppUnitLite/TestHarness.h>
+#include <gtsam/CppUnitLite/TestHarness.h>
 
 #define GTSAM_MAGIC_KEY
 
-#include "Matrix.h"
-#include "smallExample.h"
-#include "FactorGraph-inl.h"
-#include "NonlinearFactorGraph-inl.h"
+#include <gtsam/base/Matrix.h>
+#include <gtsam/slam/smallExample.h>
+#include <gtsam/inference/FactorGraph-inl.h>
+#include <gtsam/nonlinear/NonlinearFactorGraph-inl.h>
 
 using namespace gtsam;
 using namespace example;

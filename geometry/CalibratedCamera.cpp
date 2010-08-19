@@ -5,8 +5,8 @@
  *      Author: dellaert
  */
 
-#include "Point2.h"
-#include "CalibratedCamera.h"
+#include <gtsam/geometry/Point2.h>
+#include <gtsam/geometry/CalibratedCamera.h>
 
 namespace gtsam {
 

@@ -9,13 +9,13 @@
 #include <boost/assign/std/list.hpp> // for operator +=
 using namespace boost::assign;
 
-#include <CppUnitLite/TestHarness.h>
+#include <gtsam/CppUnitLite/TestHarness.h>
 
-#include "SymbolicBayesNet.h"
-#include "SymbolicFactorGraph.h"
-#include "Ordering.h"
-#include "BayesTree-inl.h"
-#include "IndexTable.h"
+#include <gtsam/inference/SymbolicBayesNet.h>
+#include <gtsam/inference/SymbolicFactorGraph.h>
+#include <gtsam/inference/Ordering.h>
+#include <gtsam/inference/BayesTree-inl.h>
+#include <gtsam/inference/IndexTable.h>
 
 using namespace gtsam;
 

@@ -18,9 +18,9 @@
 #include <boost/random/normal_distribution.hpp>
 #include <boost/random/variate_generator.hpp>
 
-#include "NoiseModel.h"
-#include "SharedDiagonal.h"
-#include "SPQRUtil.h"
+#include <gtsam/linear/NoiseModel.h>
+#include <gtsam/linear/SharedDiagonal.h>
+#include <gtsam/base/SPQRUtil.h>
 
 namespace ublas = boost::numeric::ublas;
 typedef ublas::matrix_column<Matrix> column;

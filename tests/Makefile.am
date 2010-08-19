@@ -3,6 +3,10 @@
 # More elaborate unit tests that test functionality with slam examples
 #----------------------------------------------------------------------------------------------------
 
+# use nostdinc to turn off -I. and -I.., we do not need them because 
+# header files are qualified so they can be included in external projects.
+AUTOMAKE_OPTIONS = nostdinc
+
 check_PROGRAMS = testBayesNetPreconditioner 
 check_PROGRAMS += testGaussianBayesNet testGaussianFactor testGaussianFactorGraph 
 check_PROGRAMS += testGaussianISAM testGraph
@@ -14,7 +18,7 @@ check_PROGRAMS += testNonlinearEqualityConstraint testBoundingConstraint
 check_PROGRAMS += testTransformConstraint testLinearApproxFactor
 
 # experimental
-check_PROGRAMS += testFusionTupleConfig
+#check_PROGRAMS += testFusionTupleConfig
 
 if USE_LDL
 check_PROGRAMS += testConstraintOptimizer 
@@ -27,8 +31,7 @@ noinst_PROGRAMS = timeGaussianFactorGraph
 # rules to build unit tests
 #----------------------------------------------------------------------------------------------------
 TESTS = $(check_PROGRAMS)
-AM_CPPFLAGS = -I$(boost) -I$(top_srcdir)/colamd -I$(top_srcdir)/base -I$(top_srcdir)/geometry 
-AM_CPPFLAGS += -I$(top_srcdir) -I$(top_srcdir)/inference  -I$(top_srcdir)/linear -I$(top_srcdir)/nonlinear -I$(top_srcdir)/slam 
+AM_CPPFLAGS = -I$(boost) -I$(BORG_SRCROOT)
 AM_LDFLAGS = $(BOOST_LDFLAGS) $(boost_serialization) 
 LDADD = ../libgtsam.la ../CppUnitLite/libCppUnitLite.a  
 AM_DEFAULT_SOURCE_EXT = .cpp

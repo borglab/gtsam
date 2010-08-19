@@ -3,8 +3,8 @@
  * @brief 2D Pose
  */
 
-#include "Pose2.h"
-#include "Lie-inl.h"
+#include <gtsam/geometry/Pose2.h>
+#include <gtsam/base/Lie-inl.h>
 
 using namespace std;
 

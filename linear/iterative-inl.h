@@ -7,8 +7,8 @@
 
 #pragma once
 
-#include "GaussianFactorGraph.h"
-#include "iterative.h"
+#include <gtsam/linear/GaussianFactorGraph.h>
+#include <gtsam/linear/iterative.h>
 
 using namespace std;
 

@@ -9,10 +9,10 @@
 #define ROT2_H_
 
 #include <boost/optional.hpp>
-#include "Testable.h"
-#include "Point2.h"
-#include "Matrix.h"
-#include "Lie.h"
+#include <gtsam/base/Testable.h>
+#include <gtsam/geometry/Point2.h>
+#include <gtsam/base/Matrix.h>
+#include <gtsam/base/Lie.h>
 
 namespace gtsam {
 
