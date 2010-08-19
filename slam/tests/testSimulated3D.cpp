@@ -17,7 +17,7 @@ using namespace simulated3D;
 /* ************************************************************************* */
 TEST( simulated3D, Dprior )
 {
-	Pose3 x1(rodriguez(0, 0, 1.57), Point3(1, 5, 0));
+	Pose3 x1(Rot3::rodriguez(0, 0, 1.57), Point3(1, 5, 0));
 	Vector v = logmap(x1);
 	Matrix numerical = numericalDerivative11(prior,v);
 	Matrix computed = Dprior(v);
@@ -27,9 +27,9 @@ TEST( simulated3D, Dprior )
 /* ************************************************************************* */
 TEST( simulated3D, DOdo1 )
 {
-	Pose3 x1(rodriguez(0, 0, 1.57), Point3(1, 5, 0));
+	Pose3 x1(Rot3::rodriguez(0, 0, 1.57), Point3(1, 5, 0));
 	Vector v1 = logmap(x1);
-	Pose3 x2(rodriguez(0, 0, 0), Point3(2, 3, 0));
+	Pose3 x2(Rot3::rodriguez(0, 0, 0), Point3(2, 3, 0));
 	Vector v2 = logmap(x2);
 	Matrix numerical = numericalDerivative21(odo,v1,v2);
 	Matrix computed = Dodo1(v1,v2);
@@ -39,9 +39,9 @@ TEST( simulated3D, DOdo1 )
 /* ************************************************************************* */
 TEST( simulated3D, DOdo2 )
 {
-	Pose3 x1(rodriguez(0, 0, 1.57), Point3(1, 5, 0));
+	Pose3 x1(Rot3::rodriguez(0, 0, 1.57), Point3(1, 5, 0));
 	Vector v1 = logmap(x1);
-	Pose3 x2(rodriguez(0, 0, 0), Point3(2, 3, 0));
+	Pose3 x2(Rot3::rodriguez(0, 0, 0), Point3(2, 3, 0));
 	Vector v2 = logmap(x2);
 	Matrix numerical = numericalDerivative22(odo,v1,v2);
 	Matrix computed = Dodo2(v1,v2);

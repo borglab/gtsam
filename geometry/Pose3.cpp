@@ -89,17 +89,19 @@ namespace gtsam {
 
 #else
 
+  /* ************************************************************************* */
   /* incorrect versions for which we know how to compute derivatives */
-  template<> Pose3 expmap(const Vector& d) {
+  Pose3 Pose3::Expmap(const Vector& d) {
     Vector w = sub(d, 0,3);
     Vector u = sub(d, 3,6);
-    return Pose3(expmap<Rot3> (w), expmap<Point3> (u));
+    return Pose3(Rot3::Expmap(w), Point3::Expmap(u));
   }
 
+  /* ************************************************************************* */
   // Log map at identity - return the translation and canonical rotation
   // coordinates of a pose.
-  Vector logmap(const Pose3& p) {
-    const Vector w = logmap(p.rotation()), u = logmap(p.translation());
+  Vector Pose3::Logmap(const Pose3& p) {
+    const Vector w = Rot3::Logmap(p.rotation()), u = Point3::Logmap(p.translation());
     return concatVectors(2, &w, &u);
   }
 

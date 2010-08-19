@@ -1,37 +1,55 @@
-/*
- * Lie.h
- *
- *  Created on: Jan 5, 2010
- *      Author: Richard Roberts
+/**
+ * @file Lie.h
+ * @brief Base class and basic functions for Lie types
+ * @author Richard Roberts
+ * @author Alex Cunningham
  */
 
 #pragma once
 
 #include <string>
+
 #include <gtsam/base/Matrix.h>
 
 namespace gtsam {
 
+  /**
+   * These core global functions can be specialized by new Lie types
+   * for better performance.
+   */
+
+  /* Exponential map about identity */
   template<class T>
-  T expmap(const Vector& v);  /* Exponential map about identity */
+  T expmap(const Vector& v) { return T::Expmap(v); }
 
-  // The following functions may be overridden in your own class file
-  // with more efficient versions if possible.
+  /* Logmap (inverse exponential map) about identity */
+  template<class T>
+  Vector logmap(const T& p) { return T::Logmap(p); }
 
-  // Compute l1 s.t. l2=l1*l0
+  /** Compute l1 s.t. l2=l1*l0 */
   template<class T>
   inline T between(const T& l1, const T& l2) { return compose(inverse(l1),l2); }
 
-  // Log map centered at l0, s.t. exp(l0,log(l0,lp)) = lp
+  /** Log map centered at l0, s.t. exp(l0,log(l0,lp)) = lp */
   template<class T>
   inline Vector logmap(const T& l0, const T& lp) { return logmap(between(l0,lp)); }
 
-  /* Exponential map centered at l0, s.t. exp(t,d) = t*exp(d) */
+  /** Exponential map centered at l0, s.t. exp(t,d) = t*exp(d) */
   template<class T>
   inline T expmap(const T& t, const Vector& d) { return compose(t,expmap<T>(d)); }
 
   /**
    * Base class for Lie group type
+   * This class uses the Curiously Recurring Template design pattern to allow
+   * for static polymorphism.
+   *
+   * T is the derived Lie type, like Point2, Pose3, etc.
+   *
+   * By convention, we use capital letters to designate a static function
+   *
+   * FIXME: Need to find a way to check for actual implementations in T
+   * so that there are no recursive function calls.  This could be handled
+   * by not using the same name
    */
   template <class T>
   class Lie {
@@ -40,23 +58,65 @@ namespace gtsam {
     /**
      * Returns dimensionality of the tangent space
      */
-    size_t dim() const;
+    inline size_t dim() const {
+    	return static_cast<const T*>(this)->dim();
+    }
 
     /**
-     * Returns Exponential mapy
+     * Returns Exponential map update of T
+     * Default implementation calls global binary function
      */
     T expmap(const Vector& v) const;
 
+    /** expmap around identity */
+    static T Expmap(const Vector& v) {
+    	return T::Expmap(v);
+    }
+
     /**
      * Returns Log map
+     * Default Implementation calls global binary function
      */
     Vector logmap(const T& lp) const;
 
+    /** Logmap around identity */
+    static Vector Logmap(const T& p) {
+    	return T::Logmap(p);
+    }
+
+    /** compose with another object */
+    inline T compose(const T& p) const {
+    	return static_cast<const T*>(this)->compose(p);
+    }
+
+    /** invert the object and yield a new one */
+    inline T inverse() const {
+    	return static_cast<const T*>(this)->inverse();
+    }
+
   };
   
+  /** get the dimension of an object with a global function */
+  template<class T>
+  inline size_t dim(const T& object) {
+	  return object.dim();
+  }
+
+  /** compose two Lie types */
+  template<class T>
+  inline T compose(const T& p1, const T& p2) {
+	  return p1.compose(p2);
+  }
+
+  /** invert an object */
+  template<class T>
+  inline T inverse(const T& p) {
+	  return p.inverse();
+  }
+
   /** Call print on the object */
   template<class T>
-  inline void print_(const T& object, const std::string& s = "") {
+  inline void print(const T& object, const std::string& s = "") {
     object.print(s);
   }
 
@@ -100,11 +160,11 @@ namespace gtsam {
   inline Vector logmap(const Vector& p1,const Vector& p2) { return p2-p1;}
 
   /**
-   *  Three term approximation of the BakerÐCampbellÐHausdorff formula
+   *  Three term approximation of the Bakerï¿½Campbellï¿½Hausdorff formula
    *  In non-commutative Lie groups, when composing exp(Z) = exp(X)exp(Y)
    *  it is not true that Z = X+Y. Instead, Z can be calculated using the BCH
    *  formula: Z = X + Y + [X,Y]/2 + [X-Y,[X,Y]]/12 - [Y,[X,[X,Y]]]/24
-   *  http://en.wikipedia.org/wiki/BakerÐCampbellÐHausdorff_formula
+   *  http://en.wikipedia.org/wiki/Bakerï¿½Campbellï¿½Hausdorff_formula
    */
   template<class T>
   T BCH(const T& X, const T& Y) {

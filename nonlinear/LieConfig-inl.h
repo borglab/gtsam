@@ -32,8 +32,9 @@ namespace gtsam {
   template<class J, class T>
   void LieConfig<J,T>::print(const string &s) const {
        cout << "LieConfig " << s << ", size " << values_.size() << "\n";
-       BOOST_FOREACH(const typename Values::value_type& v, values_)
+       BOOST_FOREACH(const typename Values::value_type& v, values_) {
          gtsam::print(v.second, (string)(v.first));
+       }
      }
 
   template<class J, class T>

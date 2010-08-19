@@ -399,12 +399,12 @@ public:
 	typedef boost::shared_ptr<NonlinearEquality1<Config, Key, X> > shared_ptr;
 
 	NonlinearEquality1(const X& value, const Key& key1, double mu = 1000.0)
-		: Base(key1, X::dim(), mu), value_(value) {}
+		: Base(key1, X::dimension, mu), value_(value) {}
 	virtual ~NonlinearEquality1() {}
 
 	/** g(x) with optional derivative */
 	Vector evaluateError(const X& x1, boost::optional<Matrix&> H1 = boost::none) const {
-		const size_t p = X::dim();
+		const size_t p = X::dimension;
 		if (H1) *H1 = eye(p);
 		return logmap(value_, x1);
 	}
@@ -425,14 +425,14 @@ public:
 	typedef boost::shared_ptr<NonlinearEquality2<Config, Key, X> > shared_ptr;
 
 	NonlinearEquality2(const Key& key1, const Key& key2, double mu = 1000.0)
-		: Base(key1, key2, X::dim(), mu) {}
+		: Base(key1, key2, X::dimension, mu) {}
 	virtual ~NonlinearEquality2() {}
 
 	/** g(x) with optional derivative2 */
 	Vector evaluateError(const X& x1, const X& x2,
 			boost::optional<Matrix&> H1 = boost::none,
 			boost::optional<Matrix&> H2 = boost::none) const {
-		const size_t p = X::dim();
+		const size_t p = X::dimension;
 		if (H1) *H1 = -eye(p);
 		if (H2) *H2 = eye(p);
 		return logmap(x1, x2);

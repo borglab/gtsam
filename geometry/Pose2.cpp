@@ -68,13 +68,15 @@ namespace gtsam {
 
 #else
 
-	template<> Pose2 expmap(const Vector& v) {
-		return Pose2(v[0], v[1], v[2]);
-	}
+  /* ************************************************************************* */
+  Pose2 Pose2::Expmap(const Vector& v) {
+	  return Pose2(v[0], v[1], v[2]);
+  }
 
-	Vector logmap(const Pose2& p) {
-		return Vector_(3, p.x(), p.y(), p.theta());
-	}
+  /* ************************************************************************* */
+  Vector Pose2::Logmap(const Pose2& p) {
+	  return Vector_(3, p.x(), p.y(), p.theta());
+  }
 
 #endif
 
@@ -93,15 +95,15 @@ namespace gtsam {
 	}
 
   /* ************************************************************************* */
-  Pose2 inverse(const Pose2& pose) {
-		const Rot2& R = pose.r();
-		const Point2& t = pose.t();
-		return Pose2(inverse(R), R.unrotate(Point2(-t.x(), -t.y())));
-	}
+  Pose2 Pose2::inverse() const {
+	  const Rot2& R = r_;
+	  const Point2& t = t_;
+	  return Pose2(R.inverse(), R.unrotate(Point2(-t.x(), -t.y())));
+  }
 
-	Matrix Dinverse(const Pose2& pose) {
-		return -AdjointMap(pose);
-	}
+  Matrix Dinverse(const Pose2& pose) {
+	  return -AdjointMap(pose);
+  }
 
   /* ************************************************************************* */
   // see doc/math.lyx, SE(2) section
@@ -187,7 +189,7 @@ namespace gtsam {
   /* ************************************************************************* */
 	Rot2 bearing(const Pose2& pose, const Point2& point) {
 		Point2 d = transform_to(pose, point);
-		return relativeBearing(d);
+		return Rot2::relativeBearing(d);
 	}
 
 	Rot2 bearing(const Pose2& pose, const Point2& point,
@@ -195,7 +197,7 @@ namespace gtsam {
 		if (!H1 && !H2) return bearing(pose, point);
 		Point2 d = transform_to(pose, point, H1, H2);
 		Matrix D_result_d;
-		Rot2 result = relativeBearing(d, D_result_d);
+		Rot2 result = Rot2::relativeBearing(d, D_result_d);
 		if (H1) *H1 = D_result_d * (*H1);
 		if (H2) *H2 = D_result_d * (*H2);
 		return result;

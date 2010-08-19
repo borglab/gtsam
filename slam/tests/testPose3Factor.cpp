@@ -19,8 +19,8 @@ TEST( Pose3Factor, error )
 {
 	// Create example
 	Pose3 t1; // origin
-	Pose3 t2(rodriguez(0.1,0.2,0.3),Point3(0,1,0));
-	Pose3 z(rodriguez(0.2,0.2,0.3),Point3(0,1.1,0));;
+	Pose3 t2(Rot3::rodriguez(0.1,0.2,0.3),Point3(0,1,0));
+	Pose3 z(Rot3::rodriguez(0.2,0.2,0.3),Point3(0,1.1,0));;
 
 	// Create factor
 	SharedGaussian I6(noiseModel::Unit::Create(6));

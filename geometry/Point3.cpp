@@ -17,6 +17,8 @@ namespace gtsam {
     return (fabs(x_ - q.x()) < tol && fabs(y_ - q.y()) < tol && fabs(z_ - q.z()) < tol);
   }
 
+  /* ************************************************************************* */
+
   void Point3::print(const std::string& s) const {
     std::cout << s << "(" << x_ << ", " << y_ <<  ", " << z_ << ")" << std::endl;
   }

@@ -12,7 +12,7 @@
 
 using namespace gtsam;
 
-Rot3 R = rodriguez(0.1, 0.4, 0.2);
+Rot3 R = Rot3::rodriguez(0.1, 0.4, 0.2);
 Point3 P(0.2, 0.7, -2.0);
 double error = 1e-9, epsilon = 0.001;
 
@@ -80,7 +80,7 @@ Rot3 slow_but_correct_rodriguez(const Vector& w) {
 /* ************************************************************************* */
 TEST( Rot3, rodriguez)
 {
-	Rot3 R1 = rodriguez(epsilon, 0, 0);
+	Rot3 R1 = Rot3::rodriguez(epsilon, 0, 0);
 	Vector w = Vector_(3, epsilon, 0., 0.);
 	Rot3 R2 = slow_but_correct_rodriguez(w);
 	CHECK(assert_equal(R2,R1));
@@ -91,7 +91,7 @@ TEST( Rot3, rodriguez2)
 {
 	Vector axis = Vector_(3,0.,1.,0.); // rotation around Y
 	double angle = 3.14 / 4.0;
-	Rot3 actual = rodriguez(axis, angle);
+	Rot3 actual = Rot3::rodriguez(axis, angle);
 	Rot3 expected(0.707388, 0, 0.706825,
 			                 0, 1,        0,
 			         -0.706825, 0, 0.707388);
@@ -102,7 +102,7 @@ TEST( Rot3, rodriguez2)
 TEST( Rot3, rodriguez3)
 {
 	Vector w = Vector_(3, 0.1, 0.2, 0.3);
-	Rot3 R1 = rodriguez(w / norm_2(w), norm_2(w));
+	Rot3 R1 = Rot3::rodriguez(w / norm_2(w), norm_2(w));
 	Rot3 R2 = slow_but_correct_rodriguez(w);
 	CHECK(assert_equal(R2,R1));
 }
@@ -112,7 +112,7 @@ TEST( Rot3, rodriguez4)
 {
 	Vector axis = Vector_(3,0.,0.,1.); // rotation around Z
 	double angle = M_PI_2;
-	Rot3 actual = rodriguez(axis, angle);
+	Rot3 actual = Rot3::rodriguez(axis, angle);
 	double c=cos(angle),s=sin(angle);
 	Rot3 expected(c,-s, 0,
 			          s, c, 0,
@@ -133,43 +133,43 @@ TEST( Rot3, expmap)
 TEST(Rot3, log)
 {
 	Vector w1 = Vector_(3, 0.1, 0.0, 0.0);
-	Rot3 R1 = rodriguez(w1);
+	Rot3 R1 = Rot3::rodriguez(w1);
 	CHECK(assert_equal(w1, logmap(R1)));
 
 	Vector w2 = Vector_(3, 0.0, 0.1, 0.0);
-	Rot3 R2 = rodriguez(w2);
+	Rot3 R2 = Rot3::rodriguez(w2);
 	CHECK(assert_equal(w2, logmap(R2)));
 
 	Vector w3 = Vector_(3, 0.0, 0.0, 0.1);
-	Rot3 R3 = rodriguez(w3);
+	Rot3 R3 = Rot3::rodriguez(w3);
 	CHECK(assert_equal(w3, logmap(R3)));
 
 	Vector w = Vector_(3, 0.1, 0.4, 0.2);
-	Rot3 R = rodriguez(w);
+	Rot3 R = Rot3::rodriguez(w);
 	CHECK(assert_equal(w, logmap(R)));
 
 	Vector w5 = Vector_(3, 0.0, 0.0, 0.0);
-	Rot3 R5 = rodriguez(w5);
+	Rot3 R5 = Rot3::rodriguez(w5);
 	CHECK(assert_equal(w5, logmap(R5)));
 
 	Vector w6 = Vector_(3, boost::math::constants::pi<double>(), 0.0, 0.0);
-	Rot3 R6 = rodriguez(w6);
+	Rot3 R6 = Rot3::rodriguez(w6);
 	CHECK(assert_equal(w6, logmap(R6)));
 
 	Vector w7 = Vector_(3, 0.0, boost::math::constants::pi<double>(), 0.0);
-	Rot3 R7 = rodriguez(w7);
+	Rot3 R7 = Rot3::rodriguez(w7);
 	CHECK(assert_equal(w7, logmap(R7)));
 
 	Vector w8 = Vector_(3, 0.0, 0.0, boost::math::constants::pi<double>());
-	Rot3 R8 = rodriguez(w8);
+	Rot3 R8 = Rot3::rodriguez(w8);
 	CHECK(assert_equal(w8, logmap(R8)));
 }
 
 /* ************************************************************************* */
 TEST(Rot3, manifold)
 {
-	Rot3 gR1 = rodriguez(0.1, 0.4, 0.2);
-	Rot3 gR2 = rodriguez(0.3, 0.1, 0.7);
+	Rot3 gR1 = Rot3::rodriguez(0.1, 0.4, 0.2);
+	Rot3 gR2 = Rot3::rodriguez(0.3, 0.1, 0.7);
 	Rot3 origin;
 
 	// log behaves correctly
@@ -265,8 +265,8 @@ TEST( Rot3, unrotate)
 /* ************************************************************************* */
 TEST( Rot3, compose )
 {
-	Rot3 R1 = rodriguez(0.1, 0.2, 0.3);
-	Rot3 R2 = rodriguez(0.2, 0.3, 0.5);
+	Rot3 R1 = Rot3::rodriguez(0.1, 0.2, 0.3);
+	Rot3 R2 = Rot3::rodriguez(0.2, 0.3, 0.5);
 
 	Rot3 expected = R1 * R2;
 	Rot3 actual = compose(R1, R2);
@@ -287,7 +287,7 @@ TEST( Rot3, compose )
 
 TEST( Rot3, inverse )
 {
-	Rot3 R = rodriguez(0.1, 0.2, 0.3);
+	Rot3 R = Rot3::rodriguez(0.1, 0.2, 0.3);
 
 	Rot3 I;
 	CHECK(assert_equal(I,R*inverse(R)));
@@ -301,13 +301,13 @@ TEST( Rot3, inverse )
 /* ************************************************************************* */
 TEST( Rot3, between )
 {
-	Rot3 R = rodriguez(0.1, 0.4, 0.2);
+	Rot3 R = Rot3::rodriguez(0.1, 0.4, 0.2);
 	Rot3 origin;
 	CHECK(assert_equal(R, between(origin,R)));
 	CHECK(assert_equal(inverse(R), between(R,origin)));
 
-	Rot3 R1 = rodriguez(0.1, 0.2, 0.3);
-	Rot3 R2 = rodriguez(0.2, 0.3, 0.5);
+	Rot3 R1 = Rot3::rodriguez(0.1, 0.2, 0.3);
+	Rot3 R2 = Rot3::rodriguez(0.2, 0.3, 0.5);
 
 	Rot3 expected = inverse(R1) * R2;
 	Rot3 actual = between(R1, R2);

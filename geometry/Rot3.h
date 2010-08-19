@@ -19,6 +19,9 @@ namespace gtsam {
 
   /* 3D Rotation */
   class Rot3: Testable<Rot3>, public Lie<Rot3> {
+  public:
+	  static const size_t dimension = 3;
+
   private:
     /** we store columns ! */
     Point3 r1_, r2_, r3_;  
@@ -76,6 +79,31 @@ namespace gtsam {
     static Rot3 roll (double t) { return Rx(t);} // positive roll is to right (increasing yaw in aircraft)
     static Rot3 ypr  (double y, double p, double r) { return RzRyRx(r,p,y);}
 
+    /**
+     * Rodriguez' formula to compute an incremental rotation matrix
+     * @param   w is the rotation axis, unit length
+     * @param   theta rotation angle
+     * @return incremental rotation matrix
+     */
+    static Rot3 rodriguez(const Vector& w, double theta);
+
+    /**
+     * Rodriguez' formula to compute an incremental rotation matrix
+     * @param v a vector of incremental roll,pitch,yaw
+     * @return incremental rotation matrix
+     */
+    static Rot3 rodriguez(const Vector& v);
+
+    /**
+     * Rodriguez' formula to compute an incremental rotation matrix
+     * @param wx
+     * @param wy
+     * @param wz
+     * @return incremental rotation matrix
+     */
+    static inline Rot3 rodriguez(double wx, double wy, double wz)
+  		{ return rodriguez(Vector_(3,wx,wy,wz));}
+
     /** print */
     void print(const std::string& s="R") const { gtsam::print(matrix(), s);}
 
@@ -106,8 +134,27 @@ namespace gtsam {
      */
     Vector ypr() const;
 
-    /** get the dimension by the type */
-    static inline size_t dim() { return 3; };
+    /** dimension of the variable - used to autodetect sizes */
+    inline static size_t Dim() { return dimension; }
+
+    /** Lie requirements */
+
+    /** return DOF, dimensionality of tangent space */
+    inline size_t dim() const { return dimension; }
+
+    /** Compose two rotations */
+    inline Rot3 compose(const Rot3& R1) const { return *this * R1;}
+
+    /** Exponential map at identity - create a rotation from canonical coordinates
+     * using Rodriguez' formula
+     */
+    static Rot3 Expmap(const Vector& v)  {
+    	if(zero(v)) return Rot3();
+    	else return rodriguez(v);
+    }
+
+    // Log map at identity - return the canonical coordinates of this rotation
+    static Vector Logmap(const Rot3& R);
 
     /* Find the inverse rotation R^T s.t. inverse(R)*R = I */
     inline Rot3 inverse() const {
@@ -142,55 +189,7 @@ namespace gtsam {
     }
   };
 
-  /** Global print calls member function */
-  inline void print(const Rot3& r, std::string& s) { r.print(s); }
-  inline void print(const Rot3& r) { r.print(); }
-
-  /**
-   * Rodriguez' formula to compute an incremental rotation matrix
-   * @param   w is the rotation axis, unit length
-   * @param   theta rotation angle
-   * @return incremental rotation matrix
-   */
-  Rot3 rodriguez(const Vector& w, double theta);
-
-  /**
-   * Rodriguez' formula to compute an incremental rotation matrix
-   * @param v a vector of incremental roll,pitch,yaw
-   * @return incremental rotation matrix
-   */
-  Rot3 rodriguez(const Vector& v);
-
-  /**
-   * Rodriguez' formula to compute an incremental rotation matrix
-   * @param wx
-   * @param wy
-   * @param wz
-   * @return incremental rotation matrix
-   */
-  inline Rot3 rodriguez(double wx, double wy, double wz)
-		{ return rodriguez(Vector_(3,wx,wy,wz));}
-
-  /** return DOF, dimensionality of tangent space */
-  inline size_t dim(const Rot3&) { return 3; }
-
-  // Exponential map at identity - create a rotation from canonical coordinates
-  // using Rodriguez' formula
-  template<> inline Rot3 expmap(const Vector& v) {
-    if(zero(v)) return Rot3();
-    else return rodriguez(v);
-  }
-
-  // Log map at identity - return the canonical coordinates of this rotation
-  Vector logmap(const Rot3& R);
-
-  // Compose two rotations
-  inline Rot3 compose(const Rot3& R1, const Rot3& R2) { return R1*R2;}
-
-  // Find the inverse rotation R^T s.t. inverse(R)*R = Rot3()
-  inline Rot3 inverse(const Rot3& R) { return R.inverse();}
-
-  // and its derivative
+  // derivative of inverse rotation R^T s.t. inverse(R)*R = Rot3()
   inline Matrix Dinverse(Rot3 R) { return -R.matrix();}
 
   /**

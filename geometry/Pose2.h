@@ -22,6 +22,9 @@ namespace gtsam {
    * A 2D pose (Point2,Rot2)
    */
   class Pose2: Testable<Pose2>, public Lie<Pose2>  {
+
+  public:
+	  static const size_t dimension = 3;
   private:
     Rot2 r_;
     Point2 t_;
@@ -60,6 +63,34 @@ namespace gtsam {
     /** assert equality up to a tolerance */
     bool equals(const Pose2& pose, double tol = 1e-9) const;
 
+    inline Pose2 operator*(const Pose2& p2) const {
+    	return Pose2(r_*p2.r(), t_ + r_*p2.t());
+    }
+
+    /** dimension of the variable - used to autodetect sizes */
+    inline static size_t Dim() { return dimension; }
+
+    /** Lie requirements */
+
+    /** return DOF, dimensionality of tangent space = 3 */
+    inline size_t dim() const { return dimension; }
+
+    /** inverse of a pose */
+    Pose2 inverse() const;
+
+    /** compose with another pose */
+    inline Pose2 compose(const Pose2& p) const { return *this * p; }
+
+    /**
+     * Exponential map from se(2) to SE(2)
+     */
+    static Pose2 Expmap(const Vector& v);
+
+    /**
+     * Inverse of exponential map, from SE(2) to se(2)
+     */
+    static Vector Logmap(const Pose2& p);
+
     /** return transformation matrix */
     Matrix matrix() const;
 
@@ -71,8 +102,6 @@ namespace gtsam {
     inline const Point2& t() const { return t_; }
     inline const Rot2&   r() const { return r_; }
 
-    static inline size_t dim() { return 3; };
-
   private:
     // Serialization function
     friend class boost::serialization::access;
@@ -82,22 +111,6 @@ namespace gtsam {
 		ar & BOOST_SERIALIZATION_NVP(r_);
     }
   }; // Pose2
-
-  /** print using member print function, currently used by LieConfig */
-  inline void print(const Pose2& obj, const std::string& str = "") { obj.print(str); }
-
-  /** return DOF, dimensionality of tangent space = 3 */
-  inline size_t dim(const Pose2&) { return 3; }
-
-  /**
-   * Exponential map from se(2) to SE(2)
-   */
-  template<> Pose2 expmap(const Vector& v);
-
-  /**
-   * Inverse of exponential map, from SE(2) to se(2)
-   */
-  Vector logmap(const Pose2& p);
 
   /**
   * Calculate Adjoint map
@@ -128,15 +141,11 @@ namespace gtsam {
   /**
    * inverse transformation
    */
-  Pose2 inverse(const Pose2& pose);
   Matrix Dinverse(const Pose2& pose);
 
   /**
    * compose this transformation onto another (first p1 and then p2)
    */
-  inline Pose2 operator*(const Pose2& p1, const Pose2& p2) {
-    return Pose2(p1.r()*p2.r(), p1.t() + p1.r()*p2.t()); }
-  inline Pose2 compose(const Pose2& p1, const Pose2& p2) { return p1*p2; }
   Pose2 compose(const Pose2& p1, const Pose2& p2,
     boost::optional<Matrix&> H1,
     boost::optional<Matrix&> H2 = boost::none);

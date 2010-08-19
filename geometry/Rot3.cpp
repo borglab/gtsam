@@ -69,6 +69,35 @@ namespace gtsam {
   }
 
   /* ************************************************************************* */
+  Rot3 Rot3::rodriguez(const Vector& w, double theta) {
+  	// get components of axis \omega
+    double wx = w(0), wy=w(1), wz=w(2);
+    double wwTxx = wx*wx, wwTyy = wy*wy, wwTzz = wz*wz;
+#ifndef NDEBUG
+    double l_n = wwTxx + wwTyy + wwTzz;
+    if (fabs(l_n-1.0)>1e-9) throw domain_error("rodriguez: length of n should be 1");
+#endif
+
+    double c = cos(theta), s = sin(theta), c_1 = 1 - c;
+
+    double swx = wx * s, swy = wy * s, swz = wz * s;
+    double C00 = c_1*wwTxx, C01 = c_1*wx*wy, C02 = c_1*wx*wz;
+    double                  C11 = c_1*wwTyy, C12 = c_1*wy*wz;
+    double                                   C22 = c_1*wwTzz;
+
+    return Rot3(   c + C00, -swz + C01,  swy + C02,
+    		         swz + C01,    c + C11, -swx + C12,
+				        -swy + C02,  swx + C12,    c + C22);
+  }
+
+  /* ************************************************************************* */
+  Rot3 Rot3::rodriguez(const Vector& w) {
+    double t = norm_2(w);
+    if (t < 1e-5) return Rot3();
+    return rodriguez(w/t, t);
+  }
+
+  /* ************************************************************************* */
   bool Rot3::equals(const Rot3 & R, double tol) const {
     return equal_with_abs_tol(matrix(), R.matrix(), tol);
   }
@@ -113,7 +142,7 @@ namespace gtsam {
 
   /* ************************************************************************* */
   // Log map at identity - return the canonical coordinates of this rotation
-  inline Vector logmap(const Rot3& R) {
+  inline Vector Rot3::Logmap(const Rot3& R) {
     double tr = R.r1().x()+R.r2().y()+R.r3().z();
     if (fabs(tr-3.0) < 1e-10) {   // when theta = 0, +-2pi, +-4pi, etc.
       return zero(3);
@@ -134,35 +163,6 @@ namespace gtsam {
           R.r3().x()-R.r1().z(),
           R.r1().y()-R.r2().x());
     }
-  }
-
-  /* ************************************************************************* */
-  Rot3 rodriguez(const Vector& w, double theta) {
-  	// get components of axis \omega
-    double wx = w(0), wy=w(1), wz=w(2);
-    double wwTxx = wx*wx, wwTyy = wy*wy, wwTzz = wz*wz;
-#ifndef NDEBUG
-    double l_n = wwTxx + wwTyy + wwTzz;
-    if (fabs(l_n-1.0)>1e-9) throw domain_error("rodriguez: length of n should be 1");
-#endif
-
-    double c = cos(theta), s = sin(theta), c_1 = 1 - c;
-
-    double swx = wx * s, swy = wy * s, swz = wz * s;
-    double C00 = c_1*wwTxx, C01 = c_1*wx*wy, C02 = c_1*wx*wz;
-    double                  C11 = c_1*wwTyy, C12 = c_1*wy*wz;
-    double                                   C22 = c_1*wwTzz;
-
-    return Rot3(   c + C00, -swz + C01,  swy + C02,
-    		         swz + C01,    c + C11, -swx + C12,
-				        -swy + C02,  swx + C12,    c + C22);
-  }
-
-  /* ************************************************************************* */
-  Rot3 rodriguez(const Vector& w) {
-    double t = norm_2(w);
-    if (t < 1e-5) return Rot3();
-    return rodriguez(w/t, t);
   }
 
   /* ************************************************************************* */

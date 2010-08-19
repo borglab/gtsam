@@ -22,7 +22,8 @@ namespace gtsam {
   class Point3: Testable<Point3>, public Lie<Point3> {
   public:
 	  /// dimension of the variable - used to autodetect sizes
-	  static inline size_t dim() {return 3;}
+	  static const size_t dimension = 3;
+
   private:
     double x_, y_, z_;  
 		
@@ -37,6 +38,26 @@ namespace gtsam {
 
     /** equals with an tolerance */
     bool equals(const Point3& p, double tol = 1e-9) const;
+
+    /** dimension of the variable - used to autodetect sizes */
+    inline static size_t Dim() { return dimension; }
+
+    /** Lie requirements */
+
+    /** return DOF, dimensionality of tangent space */
+    inline size_t dim() const { return dimension; }
+
+    /** "Inverse" - negates the coordinates such that compose(p, inverse(p)) = Point3() */
+    inline Point3 inverse() const { return Point3(-x_, -y_, -z_); }
+
+    /** "Compose" - just adds coordinates of two points */
+    inline Point3 compose(const Point3& p1) const { return *this+p1; }
+
+    /** Exponential map at identity - just create a Point3 from x,y,z */
+    static inline Point3 Expmap(const Vector& v) { return Point3(v); }
+
+    /** Log map at identity - return the x,y,z of this point */
+    static inline Vector Logmap(const Point3& dp) { return Vector_(3, dp.x(), dp.y(), dp.z()); }
 
     /** return vectorized form (column-wise)*/
     Vector vector() const {
@@ -80,22 +101,7 @@ namespace gtsam {
     }
   };
 
-
-  /** Global print calls member function */
-  inline void print(const Point3& p, const std::string& s) { p.print(s); }
-  inline void print(const Point3& p) { p.print(); }
-
-  /** return DOF, dimensionality of tangent space */
-  inline size_t dim(const Point3&) { return 3; }
-
-  /** Exponential map at identity - just create a Point3 from x,y,z */
-  template<> inline Point3 expmap(const Vector& dp) { return Point3(dp); }
-
-  /** Log map at identity - return the x,y,z of this point */
-  inline Vector logmap(const Point3& dp) { return Vector_(3, dp.x(), dp.y(), dp.z()); }
-
   /** "Compose" - just adds coordinates of two points */
-  inline Point3 compose(const Point3& p1, const Point3& p0) { return p0+p1; }
   inline Matrix Dcompose1(const Point3& p1, const Point3& p0) {
     return Matrix_(3,3,
         1.0, 0.0, 0.0,
@@ -108,10 +114,6 @@ namespace gtsam {
         0.0, 1.0, 0.0,
         0.0, 0.0, 1.0);
   }
-
-  /** "Inverse" - negates the coordinates such that compose(p, inverse(p)) = Point3() */
-  inline Point3 inverse(const Point3& p) { return Point3(-p.x(), -p.y(), -p.z()); }
-
 
   /** Syntactic sugar for multiplying coordinates by a scalar s*p */
   inline Point3 operator*(double s, const Point3& p) { return p*s;}

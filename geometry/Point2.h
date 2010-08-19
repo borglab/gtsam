@@ -22,8 +22,7 @@ namespace gtsam {
   class Point2: Testable<Point2>, public Lie<Point2> {
   public:
 	  /// dimension of the variable - used to autodetect sizes
-	  static inline size_t dim() {return 2;}
-
+	  static const size_t dimension = 2;
   private:
     double x_, y_;
 		
@@ -33,11 +32,31 @@ namespace gtsam {
     Point2(double x, double y): x_(x), y_(y) {}
     Point2(const Vector& v) : x_(v(0)), y_(v(1)) {}
 
+    /** dimension of the variable - used to autodetect sizes */
+    inline static size_t Dim() { return dimension; }
+
     /** print with optional string */
     void print(const std::string& s = "") const;
 
     /** equals with an tolerance, prints out message if unequal*/
     bool equals(const Point2& q, double tol = 1e-9) const;
+
+    /** Lie requirements */
+
+    /** Size of the tangent space of the Lie type */
+    inline size_t dim() const { return dimension; }
+
+    /** "Compose", just adds the coordinates of two points. */
+    Point2 compose(const Point2& p1) const { return *this+p1; }
+
+    /** "Inverse" - negates each coordinate such that compose(p,inverse(p))=Point2() */
+    Point2 inverse() const { return Point2(-x_, -y_); }
+
+    /** Exponential map around identity - just create a Point2 from a vector */
+    static inline Point2 Expmap(const Vector& v) { return Point2(v); }
+
+    /** Log map around identity - just return the Point2 as a vector */
+    static inline Vector Logmap(const Point2& dp) { return Vector_(2, dp.x(), dp.y()); }
 
     /** get functions for x, y */
     double x() const {return x_;}
@@ -75,20 +94,7 @@ namespace gtsam {
 
   /** Lie group functions */
 
-  /** Global print calls member function */
-  inline void print(const Point2& p, const std::string& s = "Point2") { p.print(s); }
-
-  /** Dimensionality of the tangent space */
-  inline size_t dim(const Point2& obj) { return 2; }
-
-  /** Exponential map around identity - just create a Point2 from a vector */
-  template<> inline Point2 expmap(const Vector& dp) { return Point2(dp); }
-
-  /** Log map around identity - just return the Point2 as a vector */
-  inline Vector logmap(const Point2& dp) { return Vector_(2, dp.x(), dp.y()); }
-
   /** "Compose", just adds the coordinates of two points. */
-  inline Point2 compose(const Point2& p1, const Point2& p2) { return p1+p2; }
   inline Point2 compose(const Point2& p1, const Point2& p2,
       boost::optional<Matrix&> H1, boost::optional<Matrix&> H2=boost::none) {
     if(H1) *H1 = eye(2);
@@ -112,9 +118,6 @@ namespace gtsam {
     if(H2) *H2 = eye(2);
     return between(p1, p2);
   }
-
-  /** "Inverse" - negates each coordinate such that compose(p,inverse(p))=Point2() */
-  inline Point2 inverse(const Point2& p) { return Point2(-p.x(), -p.y()); }
 
   /** multiply with scalar */
   inline Point2 operator*(double s, const Point2& p) {return p*s;}

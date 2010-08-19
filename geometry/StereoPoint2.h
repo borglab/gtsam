@@ -20,6 +20,8 @@ namespace gtsam {
 	 * A 2D stereo point, v will be same for rectified images
 	 */
 	class StereoPoint2: Testable<StereoPoint2>, Lie<StereoPoint2> {
+	public:
+		static const size_t dimension = 3;
 	private:
 		double uL_, uR_, v_;
 
@@ -47,6 +49,12 @@ namespace gtsam {
 					- q.v_) < tol);
 		}
 
+	    /** dimension of the variable - used to autodetect sizes */
+	    inline static size_t Dim() { return dimension; }
+
+		/** Lie requirements */
+		inline size_t dim() const { return dimension; }
+
 		/** convert to vector */
 		Vector vector() const {
 			return Vector_(3, uL_, uR_, v_);
@@ -68,33 +76,27 @@ namespace gtsam {
 		inline Point2 point2(){
 			return Point2(uL_, v_);
 		}
+
+		/** "Compose", just adds the coordinates of two points. */
+		inline StereoPoint2 compose(const StereoPoint2& p1) const {
+			return *this + p1;
+		}
+
+		/** inverse */
+		inline StereoPoint2 inverse() const {
+			return StereoPoint2()- (*this);
+		}
+
+		/** Exponential map around identity - just create a Point2 from a vector */
+		static inline StereoPoint2 Expmap(const Vector& d) {
+			return StereoPoint2(d(0), d(1), d(2));
+		}
+
+		/** Log map around identity - just return the Point2 as a vector */
+		static inline Vector Logmap(const StereoPoint2& p) {
+			return p.vector();
+		}
 	};
-
-	/** Dimensionality of the tangent space */
-	inline size_t dim(const StereoPoint2& obj) {
-		return 3;
-	}
-
-	/** Exponential map around identity - just create a Point2 from a vector */
-	template<> inline StereoPoint2 expmap(const Vector& d) {
-		return StereoPoint2(d(0), d(1), d(2));
-	}
-
-	/** Log map around identity - just return the Point2 as a vector */
-	inline Vector logmap(const StereoPoint2& p) {
-		return p.vector();
-	}
-
-	/** "Compose", just adds the coordinates of two points. */
-	inline StereoPoint2 compose(const StereoPoint2& p1, const StereoPoint2& p0) {
-		return p0 + p1;
-	}
-
-	/** inverse */
-	inline StereoPoint2 inverse(const StereoPoint2& p) {
-		return StereoPoint2()-p;
-	}
-
 
 }
 

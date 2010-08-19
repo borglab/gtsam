@@ -18,6 +18,9 @@ namespace gtsam {
 
   /** A 3D pose (R,t) : (Rot3,Point3) */
   class Pose3 : Testable<Pose3>, public Lie<Pose3> {
+  public:
+	  static const size_t dimension = 6;
+
   private:
     Rot3 R_;
     Point3 t_;
@@ -59,21 +62,37 @@ namespace gtsam {
     /** assert equality up to a tolerance */
     bool equals(const Pose3& pose, double tol = 1e-9) const;
 
-    /** Find the inverse pose s.t. inverse(p)*p = Pose3() */
-    inline Pose3 inverse() const {
-      const Rot3 Rt(R_.inverse());
-      return Pose3(Rt, - (Rt*t_));
-    }
-
     /** Compose two poses */
     inline Pose3 operator*(const Pose3& T) const {
-      return Pose3(R_*T.R_, t_ + R_*T.t_);
+    	return Pose3(R_*T.R_, t_ + R_*T.t_);
     }
 
     Pose3 transform_to(const Pose3& pose) const;
 
-    /** get the dimension by the type */
-    inline static size_t dim() { return 6; }
+    /** dimension of the variable - used to autodetect sizes */
+    inline static size_t Dim() { return dimension; }
+
+    /** Lie requirements */
+
+    /** Dimensionality of the tangent space */
+    inline size_t dim() const { return dimension; }
+
+    /** Find the inverse pose s.t. inverse(p)*p = Pose3() */
+    inline Pose3 inverse() const {
+      Rot3 Rt = R_.inverse();
+      return Pose3(Rt, Rt*(-t_));
+    }
+
+    /** composes two poses */
+    inline Pose3 compose(const Pose3& t) const { return *this * t; }
+
+    /** Exponential map at identity - create a pose with a translation and
+     * rotation (in canonical coordinates). */
+    static Pose3 Expmap(const Vector& v);
+
+    /** Log map at identity - return the translation and canonical rotation
+     * coordinates of a pose. */
+    static Vector Logmap(const Pose3& p);
 
   private:
     /** Serialization function */
@@ -84,29 +103,6 @@ namespace gtsam {
       ar & BOOST_SERIALIZATION_NVP(t_);
     }
   }; // Pose3 class
-
-  /** global print */
-  inline void print(const Pose3& p, const std::string& s = "") { p.print(s);}
-
-  /** Dimensionality of the tangent space */
-  inline size_t dim(const Pose3&) { return 6; }
-
-  /** Compose two poses */
-  inline Pose3 compose(const Pose3& p0, const Pose3& p1) { return p0*p1;}
-
-  /** Find the inverse pose s.t. inverse(p)*p = Pose3() */
-  inline Pose3 inverse(const Pose3& p) {
-    Rot3 Rt = inverse(p.rotation());
-    return Pose3(Rt, Rt*(-p.translation()));
-  }
-
-  /** Exponential map at identity - create a pose with a translation and
-   * rotation (in canonical coordinates). */
-  template<> Pose3 expmap(const Vector& d);
-
-  /** Log map at identity - return the translation and canonical rotation
-   * coordinates of a pose. */
-  Vector logmap(const Pose3& p);
 
   /** Exponential map around another pose */
   Pose3 expmap(const Pose3& T, const Vector& d);

@@ -20,7 +20,7 @@ int main()
   // Rodriguez formula given axis angle
   long timeLog = clock();
   for(int i = 0; i < n; i++)
-  	rodriguez(v,0.001);
+  	Rot3::rodriguez(v,0.001);
   long timeLog2 = clock();
   double seconds = (double)(timeLog2-timeLog)/CLOCKS_PER_SEC;
   cout << seconds << " seconds" << endl;
@@ -29,7 +29,7 @@ int main()
   // Rodriguez formula given canonical coordinates
   timeLog = clock();
   for(int i = 0; i < n; i++)
-  	rodriguez(v);
+  	Rot3::rodriguez(v);
   timeLog2 = clock();
   seconds = (double)(timeLog2-timeLog)/CLOCKS_PER_SEC;
   cout << seconds << " seconds" << endl;

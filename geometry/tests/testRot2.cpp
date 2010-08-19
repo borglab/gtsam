@@ -95,19 +95,19 @@ TEST( Rot2, relativeBearing )
 	Matrix expectedH, actualH;
 
 	// establish relativeBearing is indeed zero
-	Rot2 actual1 = relativeBearing(l1, actualH);
+	Rot2 actual1 = Rot2::relativeBearing(l1, actualH);
 	CHECK(assert_equal(Rot2(),actual1));
 
 	// Check numerical derivative
-	expectedH = numericalDerivative11(relativeBearing, l1, 1e-5);
+	expectedH = numericalDerivative11(Rot2::relativeBearing, l1, 1e-5);
 	CHECK(assert_equal(expectedH,actualH));
 
 	// establish relativeBearing is indeed 45 degrees
-	Rot2 actual2 = relativeBearing(l2, actualH);
+	Rot2 actual2 = Rot2::relativeBearing(l2, actualH);
 	CHECK(assert_equal(Rot2::fromAngle(M_PI_4),actual2));
 
 	// Check numerical derivative
-	expectedH = numericalDerivative11(relativeBearing, l2, 1e-5);
+	expectedH = numericalDerivative11(Rot2::relativeBearing, l2, 1e-5);
 	CHECK(assert_equal(expectedH,actualH));
 }
 
