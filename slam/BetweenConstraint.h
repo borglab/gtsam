@@ -26,7 +26,7 @@ namespace gtsam {
 		typedef boost::shared_ptr<BetweenConstraint<Config, Key, X> > shared_ptr;
 
 		BetweenConstraint(const X& measured, const Key& key1, const Key& key2, double mu = 1000.0)
-			: Base(key1, key2, X::dimension, mu), measured_(measured) {}
+			: Base(key1, key2, X::Dim(), mu), measured_(measured) {}
 
 		/** g(x) with optional derivative2 */
 		Vector evaluateError(const X& x1, const X& x2,
