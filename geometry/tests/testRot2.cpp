@@ -66,7 +66,7 @@ inline Point2 rotate_(const Rot2 & R, const Point2& p) {return R.rotate(p);}
 TEST( Rot2, rotate)
 {
 	Matrix H1, H2;
-	Point2 actual = rotate(R, P, H1, H2);
+	Point2 actual = Rot2::rotate(R, P, H1, H2);
 	CHECK(assert_equal(actual,R*P));
 	Matrix numerical1 = numericalDerivative21(rotate_, R, P);
 	CHECK(assert_equal(numerical1,H1));
@@ -80,7 +80,7 @@ inline Point2 unrotate_(const Rot2 & R, const Point2& p) {return R.unrotate(p);}
 TEST( Rot2, unrotate)
 {
 	Matrix H1, H2;
-	Point2 w = R * P, actual = unrotate(R, w, H1, H2);
+	Point2 w = R * P, actual = Rot2::unrotate(R, w, H1, H2);
 	CHECK(assert_equal(actual,P));
 	Matrix numerical1 = numericalDerivative21(unrotate_, R, w);
 	CHECK(assert_equal(numerical1,H1));

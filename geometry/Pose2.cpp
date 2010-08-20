@@ -108,7 +108,7 @@ namespace gtsam {
 
   /* ************************************************************************* */
   // see doc/math.lyx, SE(2) section
-  Point2 transform_to(const Pose2& pose, const Point2& point, boost::optional<
+  Point2 Pose2::transform_to(const Pose2& pose, const Point2& point, boost::optional<
 			Matrix&> H1, boost::optional<Matrix&> H2) {
 		const Rot2& R = pose.r();
 		Point2 d = point - pose.t();
@@ -134,7 +134,7 @@ namespace gtsam {
 
   /* ************************************************************************* */
   // see doc/math.lyx, SE(2) section
-  Point2 transform_from(const Pose2& pose, const Point2& p,
+  Point2 Pose2::transform_from(const Pose2& pose, const Point2& p,
   		boost::optional<Matrix&> H1, boost::optional<Matrix&> H2) {
   	const Rot2& rot = pose.r();
 		const Point2 q = rot * p;
@@ -181,14 +181,14 @@ namespace gtsam {
 
   /* ************************************************************************* */
 	Rot2 bearing(const Pose2& pose, const Point2& point) {
-		Point2 d = transform_to(pose, point);
+		Point2 d = Pose2::transform_to(pose, point);
 		return Rot2::relativeBearing(d);
 	}
 
 	Rot2 bearing(const Pose2& pose, const Point2& point,
 			boost::optional<Matrix&> H1, boost::optional<Matrix&> H2) {
 		if (!H1 && !H2) return bearing(pose, point);
-		Point2 d = transform_to(pose, point, H1, H2);
+		Point2 d = Pose2::transform_to(pose, point, H1, H2);
 		Matrix D_result_d;
 		Rot2 result = Rot2::relativeBearing(d, D_result_d);
 		if (H1) *H1 = D_result_d * (*H1);
@@ -198,14 +198,14 @@ namespace gtsam {
 
   /* ************************************************************************* */
 	double range(const Pose2& pose, const Point2& point) {
-		Point2 d = transform_to(pose, point);
+		Point2 d = Pose2::transform_to(pose, point);
 		return d.norm();
 	}
 
 	double range(const Pose2& pose, const Point2& point,
 			boost::optional<Matrix&> H1, boost::optional<Matrix&> H2) {
 		if (!H1 && !H2) return range(pose, point);
-		Point2 d = transform_to(pose, point, H1, H2);
+		Point2 d = Pose2::transform_to(pose, point, H1, H2);
 		double x = d.x(), y = d.y(), d2 = x * x + y * y, n = sqrt(d2);
 		Matrix D_result_d = Matrix_(1, 2, x / n, y / n);
 		if (H1) *H1 = D_result_d * (*H1);

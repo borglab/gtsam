@@ -166,7 +166,7 @@ namespace gtsam {
   }
 
   /* ************************************************************************* */
-  Point3 rotate(const Rot3& R, const Point3& p,
+  Point3 Rot3::rotate(const Rot3& R, const Point3& p,
   		  boost::optional<Matrix&> H1,  boost::optional<Matrix&> H2) {
 	  if (H1) *H1 = R.matrix() * skewSymmetric(-p.x(), -p.y(), -p.z());
 	  if (H2) *H2 = R.matrix();
@@ -174,14 +174,14 @@ namespace gtsam {
   }
 
   /* ************************************************************************* */
-  Point3 unrotate(const Rot3& R, const Point3& p) {
+  Point3 Rot3::unrotate(const Rot3& R, const Point3& p) {
     const Matrix Rt(R.transpose());
     return Rt*p.vector(); // q = Rt*p
   }
 
   /* ************************************************************************* */
   // see doc/math.lyx, SO(3) section
-  Point3 unrotate(const Rot3& R, const Point3& p,
+  Point3 Rot3::unrotate(const Rot3& R, const Point3& p,
   		boost::optional<Matrix&> H1, boost::optional<Matrix&> H2) {
     const Matrix Rt(R.transpose());
     Point3 q(Rt*p.vector()); // q = Rt*p

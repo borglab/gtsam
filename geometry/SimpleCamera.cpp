@@ -27,7 +27,7 @@ namespace gtsam {
 	}
 
 	pair<Point2, bool> SimpleCamera::projectSafe(const Point3& P) const {
-		Point3 cameraPoint = transform_to(calibrated_.pose(), P);
+		Point3 cameraPoint = Pose3::transform_to(calibrated_.pose(), P);
 		Point2 intrinsic = project_to_camera(cameraPoint);
 		Point2 projection = uncalibrate(K_, intrinsic);
 		return pair<Point2, bool>(projection, cameraPoint.z() > 0);
@@ -41,7 +41,7 @@ namespace gtsam {
 	Point3 SimpleCamera::backproject(const Point2& projection, const double scale) const {
 		Point2 intrinsic = K_.calibrate(projection);
 		Point3 cameraPoint = backproject_from_camera(intrinsic, scale);
-		return transform_from(calibrated_.pose(), cameraPoint);
+		return Pose3::transform_from(calibrated_.pose(), cameraPoint);
 	}
 
 	SimpleCamera SimpleCamera::level(const Cal3_S2& K, const Pose2& pose2, double height) {

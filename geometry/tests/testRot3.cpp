@@ -207,7 +207,7 @@ public:
 };
 
 AngularVelocity bracket(const AngularVelocity& X, const AngularVelocity& Y) {
-	return cross(X, Y);
+	return AngularVelocity::cross(X, Y);
 }
 
 /* ************************************************************************* */
@@ -227,11 +227,11 @@ TEST(Rot3, BCH)
 TEST( Rot3, rotate_derivatives)
 {
 	Matrix actualDrotate1a, actualDrotate1b, actualDrotate2;
-	rotate(R, P, actualDrotate1a, actualDrotate2);
-	rotate(R.inverse(), P, actualDrotate1b, boost::none);
-	Matrix numerical1 = numericalDerivative21(rotate, R, P);
-	Matrix numerical2 = numericalDerivative21(rotate, R.inverse(), P);
-	Matrix numerical3 = numericalDerivative22(rotate, R, P);
+	Rot3::rotate(R, P, actualDrotate1a, actualDrotate2);
+	Rot3::rotate(R.inverse(), P, actualDrotate1b, boost::none);
+	Matrix numerical1 = numericalDerivative21(Rot3::rotate, R, P);
+	Matrix numerical2 = numericalDerivative21(Rot3::rotate, R.inverse(), P);
+	Matrix numerical3 = numericalDerivative22(Rot3::rotate, R, P);
 	EXPECT(assert_equal(numerical1,actualDrotate1a,error));
 	EXPECT(assert_equal(numerical2,actualDrotate1b,error));
 	EXPECT(assert_equal(numerical3,actualDrotate2, error));
@@ -242,13 +242,13 @@ TEST( Rot3, unrotate)
 {
 	Point3 w = R * P;
 	Matrix H1,H2;
-	Point3 actual = unrotate(R,w,H1,H2);
+	Point3 actual = Rot3::unrotate(R,w,H1,H2);
 	CHECK(assert_equal(P,actual));
 
-	Matrix numerical1 = numericalDerivative21(unrotate, R, w);
+	Matrix numerical1 = numericalDerivative21(Rot3::unrotate, R, w);
 	CHECK(assert_equal(numerical1,H1,error));
 
-	Matrix numerical2 = numericalDerivative22(unrotate, R, w);
+	Matrix numerical2 = numericalDerivative22(Rot3::unrotate, R, w);
 	CHECK(assert_equal(numerical2,H2,error));
 }
 

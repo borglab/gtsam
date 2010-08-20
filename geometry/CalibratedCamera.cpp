@@ -49,7 +49,7 @@ namespace gtsam {
 	}
 
 	Point2 CalibratedCamera::project(const Point3 & P) const {
-		Point3 cameraPoint = transform_to(pose_, P);
+		Point3 cameraPoint = Pose3::transform_to(pose_, P);
 		Point2 intrinsic = project_to_camera(cameraPoint);
 		return intrinsic;
 	}
@@ -67,7 +67,7 @@ namespace gtsam {
 		const Pose3& pose = camera.pose();
 		const Rot3& R = pose.rotation();
 		const Point3& r1 = R.r1(), r2 = R.r2(), r3 = R.r3();
-		Point3 q = transform_to(pose, point);
+		Point3 q = Pose3::transform_to(pose, point);
 		double X = q.x(), Y = q.y(), Z = q.z();
 		double d = 1.0 / Z, d2 = d * d, Xd2 = X*d2, Yd2 = Y*d2;
 		return Matrix_(2,6,
@@ -80,7 +80,7 @@ namespace gtsam {
 		const Pose3& pose = camera.pose();
 		const Rot3& R = pose.rotation();
 		const Point3& r1 = R.r1(), r2 = R.r2(), r3 = R.r3();
-		Point3 q = transform_to(pose, point);
+		Point3 q = Pose3::transform_to(pose, point);
 		double X = q.x(), Y = q.y(), Z = q.z();
 		double d = 1.0 / Z, d2 = d * d, Xd2 = X*d2, Yd2 = Y*d2;
 		return Matrix_(2,3,
@@ -95,7 +95,7 @@ namespace gtsam {
 		const Pose3& pose = camera.pose();
 		const Rot3& R = pose.rotation();
 		const Point3& r1 = R.r1(), r2 = R.r2(), r3 = R.r3();
-		Point3 q = transform_to(pose, point);
+		Point3 q = Pose3::transform_to(pose, point);
 		double X = q.x(), Y = q.y(), Z = q.z();
 		double d = 1.0 / Z, d2 = d * d, Xd2 = X*d2, Yd2 = Y*d2;
 		double dp11 = d*r1.x()-r3.x()*Xd2, dp12 = d*r1.y()-r3.y()*Xd2, dp13 = d*r1.z()-r3.z()*Xd2;

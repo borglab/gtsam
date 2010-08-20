@@ -219,8 +219,8 @@ TEST( Pose3, compose_inverse)
 TEST( Pose3, Dtransform_from1_a)
 {
 	Matrix actualDtransform_from1;
-	transform_from(T, P, actualDtransform_from1, boost::none);
-	Matrix numerical = numericalDerivative21(transform_from,T,P);
+	Pose3::transform_from(T, P, actualDtransform_from1, boost::none);
+	Matrix numerical = numericalDerivative21(Pose3::transform_from,T,P);
 	CHECK(assert_equal(numerical,actualDtransform_from1,1e-8));
 }
 
@@ -228,8 +228,8 @@ TEST( Pose3, Dtransform_from1_b)
 {
 	Pose3 origin;
 	Matrix actualDtransform_from1;
-	transform_from(origin, P, actualDtransform_from1, boost::none);
-	Matrix numerical = numericalDerivative21(transform_from,origin,P);
+	Pose3::transform_from(origin, P, actualDtransform_from1, boost::none);
+	Matrix numerical = numericalDerivative21(Pose3::transform_from,origin,P);
 	CHECK(assert_equal(numerical,actualDtransform_from1,1e-8));
 }
 
@@ -238,8 +238,8 @@ TEST( Pose3, Dtransform_from1_c)
 	Point3 origin;
 	Pose3 T0(R,origin);
 	Matrix actualDtransform_from1;
-	transform_from(T0, P, actualDtransform_from1, boost::none);
-	Matrix numerical = numericalDerivative21(transform_from,T0,P);
+	Pose3::transform_from(T0, P, actualDtransform_from1, boost::none);
+	Matrix numerical = numericalDerivative21(Pose3::transform_from,T0,P);
 	CHECK(assert_equal(numerical,actualDtransform_from1,1e-8));
 }
 
@@ -249,9 +249,9 @@ TEST( Pose3, Dtransform_from1_d)
 	Point3 t0(100,0,0);
 	Pose3 T0(I,t0);
 	Matrix actualDtransform_from1;
-	transform_from(T0, P, actualDtransform_from1, boost::none);
+	Pose3::transform_from(T0, P, actualDtransform_from1, boost::none);
 	//print(computed, "Dtransform_from1_d computed:");
-	Matrix numerical = numericalDerivative21(transform_from,T0,P);
+	Matrix numerical = numericalDerivative21(Pose3::transform_from,T0,P);
 	//print(numerical, "Dtransform_from1_d numerical:");
 	CHECK(assert_equal(numerical,actualDtransform_from1,1e-8));
 }
@@ -260,8 +260,8 @@ TEST( Pose3, Dtransform_from1_d)
 TEST( Pose3, Dtransform_from2)
 {
 	Matrix actualDtransform_from2;
-	transform_from(T,P, boost::none, actualDtransform_from2);
-	Matrix numerical = numericalDerivative22(transform_from,T,P);
+	Pose3::transform_from(T,P, boost::none, actualDtransform_from2);
+	Matrix numerical = numericalDerivative22(Pose3::transform_from,T,P);
 	CHECK(assert_equal(numerical,actualDtransform_from2,1e-8));
 }
 
@@ -269,8 +269,8 @@ TEST( Pose3, Dtransform_from2)
 TEST( Pose3, Dtransform_to1)
 {
 	Matrix computed;
-	transform_to(T, P, computed, boost::none);
-	Matrix numerical = numericalDerivative21(transform_to,T,P);
+	Pose3::transform_to(T, P, computed, boost::none);
+	Matrix numerical = numericalDerivative21(Pose3::transform_to,T,P);
 	CHECK(assert_equal(numerical,computed,1e-8));
 }
 
@@ -278,8 +278,8 @@ TEST( Pose3, Dtransform_to1)
 TEST( Pose3, Dtransform_to2)
 {
 	Matrix computed;
-	transform_to(T,P, boost::none, computed);
-	Matrix numerical = numericalDerivative22(transform_to,T,P);
+	Pose3::transform_to(T,P, boost::none, computed);
+	Matrix numerical = numericalDerivative22(Pose3::transform_to,T,P);
 	CHECK(assert_equal(numerical,computed,1e-8));
 }
 
@@ -287,9 +287,9 @@ TEST( Pose3, Dtransform_to2)
 TEST( Pose3, transform_to_with_derivatives)
 {
 	Matrix actH1, actH2;
-	transform_to(T,P,actH1,actH2);
-	Matrix expH1 = numericalDerivative21(transform_to, T,P),
-		   expH2 = numericalDerivative22(transform_to, T,P);
+	Pose3::transform_to(T,P,actH1,actH2);
+	Matrix expH1 = numericalDerivative21(Pose3::transform_to, T,P),
+		   expH2 = numericalDerivative22(Pose3::transform_to, T,P);
 	CHECK(assert_equal(expH1, actH1, 1e-8));
 	CHECK(assert_equal(expH2, actH2, 1e-8));
 }
@@ -298,9 +298,9 @@ TEST( Pose3, transform_to_with_derivatives)
 TEST( Pose3, transform_from_with_derivatives)
 {
 	Matrix actH1, actH2;
-	transform_from(T,P,actH1,actH2);
-	Matrix expH1 = numericalDerivative21(transform_from, T,P),
-		   expH2 = numericalDerivative22(transform_from, T,P);
+	Pose3::transform_from(T,P,actH1,actH2);
+	Matrix expH1 = numericalDerivative21(Pose3::transform_from, T,P),
+		   expH2 = numericalDerivative22(Pose3::transform_from, T,P);
 	CHECK(assert_equal(expH1, actH1, 1e-8));
 	CHECK(assert_equal(expH2, actH2, 1e-8));
 }
@@ -308,7 +308,7 @@ TEST( Pose3, transform_from_with_derivatives)
 /* ************************************************************************* */
 TEST( Pose3, transform_to_translate)
 {
-		Point3 actual = transform_to(Pose3(Rot3(), Point3(1, 2, 3)), Point3(10.,20.,30.));
+		Point3 actual = Pose3::transform_to(Pose3(Rot3(), Point3(1, 2, 3)), Point3(10.,20.,30.));
 		Point3 expected(9.,18.,27.);
 		CHECK(assert_equal(expected, actual));
 }
@@ -317,7 +317,7 @@ TEST( Pose3, transform_to_translate)
 TEST( Pose3, transform_to_rotate)
 {
 		Pose3 transform(Rot3::rodriguez(0,0,-1.570796), Point3());
-		Point3 actual = transform_to(transform, Point3(2,1,10));
+		Point3 actual = Pose3::transform_to(transform, Point3(2,1,10));
 		Point3 expected(-1,2,10);
 		CHECK(assert_equal(expected, actual, 0.001));
 }
@@ -326,7 +326,7 @@ TEST( Pose3, transform_to_rotate)
 TEST( Pose3, transform_to)
 {
 		Pose3 transform(Rot3::rodriguez(0,0,-1.570796), Point3(2,4, 0));
-		Point3 actual = transform_to(transform, Point3(3,2,10));
+		Point3 actual = Pose3::transform_to(transform, Point3(3,2,10));
 		Point3 expected(2,1,10);
 		CHECK(assert_equal(expected, actual, 0.001));
 }
@@ -334,7 +334,7 @@ TEST( Pose3, transform_to)
 /* ************************************************************************* */
 TEST( Pose3, transform_from)
 {
-		Point3 actual = transform_from(T3, Point3());
+		Point3 actual = Pose3::transform_from(T3, Point3());
 		Point3 expected = Point3(1.,2.,3.);
 		CHECK(assert_equal(expected, actual));
 }
@@ -342,7 +342,7 @@ TEST( Pose3, transform_from)
 /* ************************************************************************* */
 TEST( Pose3, transform_roundtrip)
 {
-		Point3 actual = transform_from(T3, transform_to(T3, Point3(12., -0.11,7.0)));
+		Point3 actual = Pose3::transform_from(T3, Pose3::transform_to(T3, Point3(12., -0.11,7.0)));
 		Point3 expected(12., -0.11,7.0);
 		CHECK(assert_equal(expected, actual));
 }

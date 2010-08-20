@@ -44,7 +44,9 @@ namespace gtsam {
     /** "named constructors" */
 
     /** Named constructor from angle == exponential map at identity  - theta is in radians*/
-    static Rot2 fromAngle(double theta);
+    static Rot2 fromAngle(double theta) {
+		return Rot2(cos(theta), sin(theta));
+	}
 
     /** Named constructor from angle in degrees */
     static Rot2 fromDegrees(double theta) {
@@ -134,8 +136,22 @@ namespace gtsam {
     /** rotate from world to rotated = R*p */
     Point2 rotate(const Point2& p) const;
 
+    /**
+     * rotate point from rotated coordinate frame to
+     * world = R*p
+     */
+  	static Point2 rotate(const Rot2 & R, const Point2& p, boost::optional<Matrix&> H1 =
+  			boost::none, boost::optional<Matrix&> H2 = boost::none);
+
     /** rotate from world to rotated = R'*p */
     Point2 unrotate(const Point2& p) const;
+
+    /**
+     * rotate point from world to rotated
+     * frame = R'*p
+     */
+    static Point2 unrotate(const Rot2 & R, const Point2& p, boost::optional<Matrix&> H1 =
+  			boost::none, boost::optional<Matrix&> H2 = boost::none);
 
   private:
     /** Serialization function */
@@ -148,27 +164,8 @@ namespace gtsam {
 
   }; // Rot2
 
-	/* inline named constructor implementation */
-	inline Rot2 Rot2::fromAngle(double theta) {
-		return Rot2(cos(theta), sin(theta));
-	}
-
-  // Lie group functions
-
-  /**
-   * rotate point from rotated coordinate frame to
-   * world = R*p
-   */
+  /** syntactic sugar for rotate */
   inline Point2 operator*(const Rot2& R, const Point2& p) {return R.rotate(p);}
-	Point2 rotate(const Rot2 & R, const Point2& p, boost::optional<Matrix&> H1 =
-			boost::none, boost::optional<Matrix&> H2 = boost::none);
-
-  /**
-   * rotate point from world to rotated
-   * frame = R'*p
-   */
-	Point2 unrotate(const Rot2 & R, const Point2& p, boost::optional<Matrix&> H1 =
-			boost::none, boost::optional<Matrix&> H2 = boost::none);
 
 } // gtsam
 

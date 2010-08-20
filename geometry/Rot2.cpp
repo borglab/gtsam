@@ -74,7 +74,7 @@ namespace gtsam {
 
 	/* ************************************************************************* */
   // see doc/math.lyx, SO(2) section
-	Point2 rotate(const Rot2 & R, const Point2& p, boost::optional<Matrix&> H1,
+	Point2 Rot2::rotate(const Rot2 & R, const Point2& p, boost::optional<Matrix&> H1,
 			boost::optional<Matrix&> H2) {
 		Point2 q = R * p;
 		if (H1) *H1 = Matrix_(2, 1, -q.y(), q.x());
@@ -84,7 +84,7 @@ namespace gtsam {
 
 	/* ************************************************************************* */
   // see doc/math.lyx, SO(2) section
-	Point2 unrotate(const Rot2 & R, const Point2& p,
+	Point2 Rot2::unrotate(const Rot2 & R, const Point2& p,
 			boost::optional<Matrix&> H1, boost::optional<Matrix&> H2) {
 		Point2 q = R.unrotate(p);
 		if (H1) *H1 = Matrix_(2, 1, q.y(), -q.x());  // R_{pi/2}q

@@ -94,6 +94,22 @@ namespace gtsam {
     /** return transformation matrix */
     Matrix matrix() const;
 
+    /**
+     * Return point coordinates in pose coordinate frame
+     */
+    static inline Point2 transform_to(const Pose2& pose, const Point2& point)
+  		{ return Rot2::unrotate(pose.r(), point - pose.t());}
+    static Point2 transform_to(const Pose2& pose, const Point2& point,
+  		boost::optional<Matrix&> H1, boost::optional<Matrix&> H2);
+
+    /**
+     * Return point coordinates in global frame
+     */
+    static inline Point2 transform_from(const Pose2& pose, const Point2& point)
+  		{ return Rot2::rotate(pose.r(), point) + pose.t();}
+    static Point2 transform_from(const Pose2& pose, const Point2& point,
+    	boost::optional<Matrix&> H1, boost::optional<Matrix&> H2);
+
     /** get functions for x, y, theta */
     inline double x()     const { return t_.x(); }
     inline double y()     const { return t_.y(); }
@@ -150,23 +166,9 @@ namespace gtsam {
     boost::optional<Matrix&> H1,
     boost::optional<Matrix&> H2 = boost::none);
 
-  /**
-   * Return point coordinates in pose coordinate frame
-   */
-  inline Point2 transform_to(const Pose2& pose, const Point2& point)
-		{ return unrotate(pose.r(), point - pose.t());}
-  Point2 transform_to(const Pose2& pose, const Point2& point,
-		boost::optional<Matrix&> H1, boost::optional<Matrix&> H2);
-
-  /**
-   * Return point coordinates in global frame
-   */
-  inline Point2 transform_from(const Pose2& pose, const Point2& point)
-		{ return rotate(pose.r(), point) + pose.t();}
-  Point2 transform_from(const Pose2& pose, const Point2& point,
-  	boost::optional<Matrix&> H1, boost::optional<Matrix&> H2);
+  /** syntactic sugar for transform_from */
   inline Point2 operator*(const Pose2& pose, const Point2& point)
-		{ return transform_from(pose, point);}
+		{ return Pose2::transform_from(pose, point);}
 
   /**
    * Return relative pose between p1 and p2, in p1 coordinate frame

@@ -86,6 +86,16 @@ namespace gtsam {
     /** composes two poses */
     inline Pose3 compose(const Pose3& t) const { return *this * t; }
 
+    /** receives the point in Pose coordinates and transforms it to world coordinates */
+    static Point3 transform_from(const Pose3& pose, const Point3& p);
+    static Point3 transform_from(const Pose3& pose, const Point3& p,
+  		  	boost::optional<Matrix&> H1, boost::optional<Matrix&> H2);
+
+    /** receives the point in world coordinates and transforms it to Pose coordinates */
+    static Point3 transform_to(const Pose3& pose, const Point3& p);
+    static Point3 transform_to(const Pose3& pose, const Point3& p,
+    		  	boost::optional<Matrix&> H1, boost::optional<Matrix&> H2);
+
     /** Exponential map at identity - create a pose with a translation and
      * rotation (in canonical coordinates). */
     static Pose3 Expmap(const Vector& v);
@@ -110,16 +120,8 @@ namespace gtsam {
   /** Logarithm map around another pose T1 */
   Vector logmap(const Pose3& T1, const Pose3& T2);
 
-  /** receives the point in Pose coordinates and transforms it to world coordinates */
-  Point3 transform_from(const Pose3& pose, const Point3& p);
-  inline Point3 operator*(const Pose3& pose, const Point3& p) { return transform_from(pose, p); }
-  Point3 transform_from(const Pose3& pose, const Point3& p,
-		  	boost::optional<Matrix&> H1, boost::optional<Matrix&> H2);
-
-  /** receives the point in world coordinates and transforms it to Pose coordinates */
-  Point3 transform_to(const Pose3& pose, const Point3& p);
-  Point3 transform_to(const Pose3& pose, const Point3& p,
-  		  	boost::optional<Matrix&> H1, boost::optional<Matrix&> H2);
+  /** syntactic sugar for transform */
+  inline Point3 operator*(const Pose3& pose, const Point3& p) { return Pose3::transform_from(pose, p); }
 
   /**
    * Derivatives of compose

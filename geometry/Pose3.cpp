@@ -134,17 +134,17 @@ namespace gtsam {
   /* ************************************************************************* */
   Pose3 Pose3::transform_to(const Pose3& pose) const {
 		Rot3 cRv = R_ * Rot3(gtsam::inverse(pose.R_));
-		Point3 t = gtsam::transform_to(pose, t_);
+		Point3 t = Pose3::transform_to(pose, t_);
 		return Pose3(cRv, t);
 	}
 
   /* ************************************************************************* */
-  Point3 transform_from(const Pose3& pose, const Point3& p) {
+  Point3 Pose3::transform_from(const Pose3& pose, const Point3& p) {
     return pose.rotation() * p + pose.translation();
   }
 
   /* ************************************************************************* */
-  Point3 transform_from(const Pose3& pose, const Point3& p,
+  Point3 Pose3::transform_from(const Pose3& pose, const Point3& p,
 		  boost::optional<Matrix&> H1, boost::optional<Matrix&> H2) {
 	  if (H1) {
 #ifdef CORRECT_POSE3_EXMAP
@@ -153,22 +153,22 @@ namespace gtsam {
 			*H1 = collect(2,&DR,&R);
 #else
 			Matrix DR;
-			rotate(pose.rotation(), p, DR, boost::none);
+			Rot3::rotate(pose.rotation(), p, DR, boost::none);
 			*H1 = collect(2,&DR,&I3);
 #endif
 	  }
 	  if (H2) *H2 = pose.rotation().matrix();
-	  return transform_from(pose, p);
+	  return Pose3::transform_from(pose, p);
   }
 
   /* ************************************************************************* */
-  Point3 transform_to(const Pose3& pose, const Point3& p) {
+  Point3 Pose3::transform_to(const Pose3& pose, const Point3& p) {
     Point3 sub = p - pose.translation();
-    return unrotate(pose.rotation(), sub);
+    return Rot3::unrotate(pose.rotation(), sub);
   }
 
   /* ************************************************************************* */
-  Point3 transform_to(const Pose3& pose, const Point3& p,
+  Point3 Pose3::transform_to(const Pose3& pose, const Point3& p,
     		  	boost::optional<Matrix&> H1, boost::optional<Matrix&> H2) {
 	  if (H1) { // *H1 = Dtransform_to1(pose, p);
 		Point3 q = transform_to(pose,p);
@@ -182,7 +182,7 @@ namespace gtsam {
 	  }
 
 	  if (H2) *H2 = pose.rotation().transpose();
-	  return transform_to(pose, p);
+	  return Pose3::transform_to(pose, p);
   }
 
   /* ************************************************************************* */
@@ -197,7 +197,7 @@ namespace gtsam {
 		Matrix DR_R1 = R2.transpose(), DR_t1 = Z3;
 		Matrix DR = collect(2, &DR_R1, &DR_t1);
 		Matrix Dt;
-		transform_from(p1,t2, Dt, boost::none);
+		Pose3::transform_from(p1,t2, Dt, boost::none);
 		*H1 = gtsam::stack(2, &DR, &Dt);
 #endif
 	  }
@@ -226,7 +226,7 @@ namespace gtsam {
 		const Point3& t = p.translation();
 		Matrix Rt = R.transpose();
 		Matrix DR_R1 = -R.matrix(), DR_t1 = Z3;
-		Matrix Dt_R1 = -skewSymmetric(unrotate(R,t).vector()), Dt_t1 = -Rt;
+		Matrix Dt_R1 = -skewSymmetric(Rot3::unrotate(R,t).vector()), Dt_t1 = -Rt;
 		Matrix DR = collect(2, &DR_R1, &DR_t1);
 		Matrix Dt = collect(2, &Dt_R1, &Dt_t1);
 		*H1 = gtsam::stack(2, &DR, &Dt);

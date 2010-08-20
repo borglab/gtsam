@@ -129,29 +129,25 @@ TEST( Pose2, transform_to )
 
   // actual
   Matrix actualH1, actualH2;
-  Point2 actual = transform_to(pose,point, actualH1, actualH2);
+  Point2 actual = Pose2::transform_to(pose,point, actualH1, actualH2);
   CHECK(assert_equal(expected,actual));
 
   CHECK(assert_equal(expectedH1,actualH1));
-  Matrix numericalH1 = numericalDerivative21(transform_to, pose, point, 1e-5);
+  Matrix numericalH1 = numericalDerivative21(Pose2::transform_to, pose, point, 1e-5);
   CHECK(assert_equal(numericalH1,actualH1));
 
   CHECK(assert_equal(expectedH2,actualH2));
-  Matrix numericalH2 = numericalDerivative22(transform_to, pose, point, 1e-5);
+  Matrix numericalH2 = numericalDerivative22(Pose2::transform_to, pose, point, 1e-5);
   CHECK(assert_equal(numericalH2,actualH2));
 }
 
 /* ************************************************************************* */
-Point2 transform_from_proxy(const Pose2& pose, const Point2& point) {
-	return transform_from(pose, point);
-}
-
 TEST (Pose2, transform_from)
 {
 	Pose2 pose(1., 0., M_PI_2);
 	Point2 pt(2., 1.);
 	Matrix H1, H2;
-	Point2 actual = transform_from(pose, pt, H1, H2);
+	Point2 actual = Pose2::transform_from(pose, pt, H1, H2);
 
 	Point2 expected(0., 2.);
 	CHECK(assert_equal(expected, actual));
@@ -159,11 +155,11 @@ TEST (Pose2, transform_from)
 	Matrix H1_expected = Matrix_(2, 3, 0., -1., -2., 1., 0., -1.);
 	Matrix H2_expected = Matrix_(2, 2, 0., -1., 1., 0.);
 
-	Matrix numericalH1 = numericalDerivative21(transform_from_proxy, pose, pt, 1e-5);
+	Matrix numericalH1 = numericalDerivative21(Pose2::transform_from, pose, pt, 1e-5);
 	CHECK(assert_equal(H1_expected, H1));
 	CHECK(assert_equal(H1_expected, numericalH1));
 
-	Matrix numericalH2 = numericalDerivative22(transform_from_proxy, pose, pt, 1e-5);
+	Matrix numericalH2 = numericalDerivative22(Pose2::transform_from, pose, pt, 1e-5);
 	CHECK(assert_equal(H2_expected, H2));
 	CHECK(assert_equal(H2_expected, numericalH2));
 }
@@ -197,8 +193,8 @@ TEST(Pose2, compose_a)
 
   Point2 point(sqrt(0.5), 3.0*sqrt(0.5));
   Point2 expected_point(-1.0, -1.0);
-  Point2 actual_point1 = transform_to(pose1 * pose2, point);
-  Point2 actual_point2 = transform_to(pose2, transform_to(pose1, point));
+  Point2 actual_point1 = Pose2::transform_to(pose1 * pose2, point);
+  Point2 actual_point2 = Pose2::transform_to(pose2, Pose2::transform_to(pose1, point));
   CHECK(assert_equal(expected_point, actual_point1));
   CHECK(assert_equal(expected_point, actual_point2));
 }

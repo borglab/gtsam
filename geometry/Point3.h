@@ -84,10 +84,29 @@ namespace gtsam {
       return sqrt(pow(x()-p2.x(),2.0) + pow(y()-p2.y(),2.0) + pow(z()-p2.z(),2.0));
     }
 
-    /** friends */
-    friend Point3 cross(const Point3 &p1, const Point3 &p2);
-    friend double dot(const Point3 &p1, const Point3 &p2);
-    friend double norm(const Point3 &p1);
+    /** add two points, add(p,q) is same as p+q */
+    static Point3 add (const Point3 &p, const Point3 &q);
+    static Point3 add (const Point3 &p, const Point3 &q,
+  	      boost::optional<Matrix&> H1, boost::optional<Matrix&> H2=boost::none);
+
+    /** subtract two points, sub(p,q) is same as p-q */
+    static Point3 sub (const Point3 &p, const Point3 &q);
+    static Point3 sub (const Point3 &p, const Point3 &q,
+  	      boost::optional<Matrix&> H1, boost::optional<Matrix&> H2=boost::none);
+
+    /** cross product */
+    static Point3 cross(const Point3 &p, const Point3 &q);
+
+    /** dot product */
+    static double dot(const Point3 &p, const Point3 &q);
+
+    /** dot product */
+    static double norm(const Point3 &p);
+
+//    /** friends */
+//    friend Point3 cross(const Point3 &p1, const Point3 &p2);
+//    friend double dot(const Point3 &p1, const Point3 &p2);
+//    friend double norm(const Point3 &p1);
 
   private:
     /** Serialization function */
@@ -111,22 +130,4 @@ namespace gtsam {
   /** Syntactic sugar for multiplying coordinates by a scalar s*p */
   inline Point3 operator*(double s, const Point3& p) { return p*s;}
 
-  /** add two points, add(p,q) is same as p+q */
-  Point3   add (const Point3 &p, const Point3 &q);
-  Point3   add (const Point3 &p, const Point3 &q,
-	      boost::optional<Matrix&> H1, boost::optional<Matrix&> H2=boost::none);
-
-  /** subtract two points, sub(p,q) is same as p-q */
-  Point3   sub (const Point3 &p, const Point3 &q);
-  Point3   sub (const Point3 &p, const Point3 &q,
-	      boost::optional<Matrix&> H1, boost::optional<Matrix&> H2=boost::none);
-
-  /** cross product */
-  Point3 cross(const Point3 &p, const Point3 &q); 
-
-  /** dot product */
-  double dot(const Point3 &p, const Point3 &q);
-
-  /** dot product */
-  double norm(const Point3 &p);
 }
