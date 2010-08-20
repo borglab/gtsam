@@ -175,9 +175,9 @@ TEST(Pose2, compose_a)
   Pose2 pose1(M_PI/4.0, Point2(sqrt(0.5), sqrt(0.5)));
   Pose2 pose2(M_PI/2.0, Point2(0.0, 2.0));
 
-  Pose2 actual = compose(pose1, pose2);
-  Matrix actualDcompose1 = Dcompose1(pose1, pose2);
-  Matrix actualDcompose2 = Dcompose2(pose1, pose2);
+  Matrix actualDcompose1;
+  Matrix actualDcompose2;
+  Pose2 actual = compose(pose1, pose2, actualDcompose1, actualDcompose2);
 
   Pose2 expected(3.0*M_PI/4.0, Point2(-sqrt(0.5), 3.0*sqrt(0.5)));
   CHECK(assert_equal(expected, actual));
@@ -213,9 +213,8 @@ TEST(Pose2, compose_b)
   Pose2 pose_expected(Rot2::fromAngle(M_PI/4.0), Point2(1.0, 2.0));
 
   Pose2 pose_actual_op = pose1 * pose2;
-  Pose2 pose_actual_fcn = compose(pose1, pose2);
-  Matrix actualDcompose1 = Dcompose1(pose1, pose2);
-  Matrix actualDcompose2 = Dcompose2(pose1, pose2);
+  Matrix actualDcompose1, actualDcompose2;
+  Pose2 pose_actual_fcn = compose(pose1, pose2, actualDcompose1, actualDcompose2);
 
   Matrix numericalH1 = numericalDerivative21<Pose2, Pose2, Pose2>(compose, pose1, pose2, 1e-5);
   Matrix numericalH2 = numericalDerivative22<Pose2, Pose2, Pose2>(compose, pose1, pose2, 1e-5);
@@ -236,9 +235,8 @@ TEST(Pose2, compose_c)
   Pose2 pose_expected(Rot2::fromAngle(M_PI/2.0), Point2(1.0, 2.0));
 
   Pose2 pose_actual_op = pose1 * pose2;
-  Pose2 pose_actual_fcn = compose(pose1,pose2);
-  Matrix actualDcompose1 = Dcompose1(pose1, pose2);
-  Matrix actualDcompose2 = Dcompose2(pose1, pose2);
+  Matrix actualDcompose1, actualDcompose2;
+  Pose2 pose_actual_fcn = compose(pose1,pose2, actualDcompose1, actualDcompose2);
 
   Matrix numericalH1 = numericalDerivative21<Pose2, Pose2, Pose2>(compose, pose1, pose2, 1e-5);
   Matrix numericalH2 = numericalDerivative22<Pose2, Pose2, Pose2>(compose, pose1, pose2, 1e-5);
@@ -265,7 +263,8 @@ TEST(Pose2, inverse )
 
 	// Check derivative
   Matrix numericalH = numericalDerivative11<Pose2,Pose2>(inverse, lTg, 1e-5);
-  Matrix actualDinverse = Dinverse(lTg);
+  Matrix actualDinverse;
+  inverse(lTg, actualDinverse);
   CHECK(assert_equal(numericalH,actualDinverse));
 }
 

@@ -146,26 +146,19 @@ namespace gtsam {
   /* ************************************************************************* */
   Point3 transform_from(const Pose3& pose, const Point3& p,
 		  boost::optional<Matrix&> H1, boost::optional<Matrix&> H2) {
-	  if (H1) *H1 = Dtransform_from1(pose, p);
-	  if (H2) *H2 = Dtransform_from2(pose);
-	  return transform_from(pose, p);
-  }
-
-  /* ************************************************************************* */
-  Matrix Dtransform_from1(const Pose3& pose, const Point3& p) {
+	  if (H1) {
 #ifdef CORRECT_POSE3_EXMAP
-		const Matrix R = pose.rotation().matrix();
-    Matrix DR = R*skewSymmetric(-p.x(), -p.y(), -p.z());
-    return collect(2,&DR,&R);
+			const Matrix R = pose.rotation().matrix();
+			Matrix DR = R*skewSymmetric(-p.x(), -p.y(), -p.z());
+			*H1 = collect(2,&DR,&R);
 #else
-    Matrix DR = Drotate1(pose.rotation(), p);
-    return collect(2,&DR,&I3);
+			Matrix DR;
+			rotate(pose.rotation(), p, DR, boost::none);
+			*H1 = collect(2,&DR,&I3);
 #endif
-  }
-
-  /* ************************************************************************* */
-  Matrix Dtransform_from2(const Pose3& pose) {
-    return pose.rotation().matrix();
+	  }
+	  if (H2) *H2 = pose.rotation().matrix();
+	  return transform_from(pose, p);
   }
 
   /* ************************************************************************* */
@@ -177,63 +170,58 @@ namespace gtsam {
   /* ************************************************************************* */
   Point3 transform_to(const Pose3& pose, const Point3& p,
     		  	boost::optional<Matrix&> H1, boost::optional<Matrix&> H2) {
-	  if (H1) *H1 = Dtransform_to1(pose, p);
-	  if (H2) *H2 = Dtransform_to2(pose, p);
+	  if (H1) { // *H1 = Dtransform_to1(pose, p);
+		Point3 q = transform_to(pose,p);
+		Matrix DR = skewSymmetric(q.x(), q.y(), q.z());
+#ifdef CORRECT_POSE3_EXMAP
+		*H1 =  collect(2, &DR, &_I3);
+#else
+		Matrix DT = - pose.rotation().transpose(); // negative because of sub
+		*H1 =  collect(2,&DR,&DT);
+#endif
+	  }
+
+	  if (H2) *H2 = pose.rotation().transpose();
 	  return transform_to(pose, p);
   }
 
   /* ************************************************************************* */
-  // see math.lyx, derivative of action
-  Matrix Dtransform_to1(const Pose3& pose, const Point3& p) {
-    Point3 q = transform_to(pose,p);
-    Matrix DR = skewSymmetric(q.x(), q.y(), q.z());
+  Pose3 compose(const Pose3& p1, const Pose3& p2,
+		  	boost::optional<Matrix&> H1, boost::optional<Matrix&> H2) {
+	  if (H1) {
 #ifdef CORRECT_POSE3_EXMAP
-		return collect(2, &DR, &_I3);
-#else
-    Matrix DT = - pose.rotation().transpose(); // negative because of sub
-    return collect(2,&DR,&DT);
-#endif
-    }
-
-  /* ************************************************************************* */
-  Matrix Dtransform_to2(const Pose3& pose, const Point3& p) {
-    return pose.rotation().transpose();
-  }
-
-  /* ************************************************************************* */
-  // compose = Pose3(compose(R1,R2),transform_from(p1,t2)
-  Matrix Dcompose1(const Pose3& p1, const Pose3& p2) {
-#ifdef CORRECT_POSE3_EXMAP
-		return AdjointMap(inverse(p2));
+		*H1 = AdjointMap(inverse(p2));
 #else
 		const Rot3& R2 = p2.rotation();
 		const Point3& t2 = p2.translation();
-  	Matrix DR_R1 = R2.transpose(), DR_t1 = Z3;
+		Matrix DR_R1 = R2.transpose(), DR_t1 = Z3;
 		Matrix DR = collect(2, &DR_R1, &DR_t1);
-		Matrix Dt = Dtransform_from1(p1, t2);
-		return gtsam::stack(2, &DR, &Dt);
+		Matrix Dt;
+		transform_from(p1,t2, Dt, boost::none);
+		*H1 = gtsam::stack(2, &DR, &Dt);
 #endif
-	}
-
-	Matrix Dcompose2(const Pose3& p1, const Pose3& p2) {
+	  }
+	  if (H2) {
 #ifdef CORRECT_POSE3_EXMAP
 
-		return I6;
+		*H2 = I6;
 #else
 		Matrix R1 = p1.rotation().matrix();
 		Matrix DR = collect(2, &I3, &Z3);
 		Matrix Dt = collect(2, &Z3, &R1);
-		return gtsam::stack(2, &DR, &Dt);
+		*H2 = gtsam::stack(2, &DR, &Dt);
 #endif
-	}
+	  }
+	  return p1.compose(p2);
+  }
 
   /* ************************************************************************* */
-  // inverse = Pose3(inverse(R),-unrotate(R,t));
-	// TODO: combined function will save !
-	Matrix Dinverse(const Pose3& p) {
+  Pose3 inverse(const Pose3& p, boost::optional<Matrix&> H1) {
+	  if (H1)
 #ifdef CORRECT_POSE3_EXMAP
-		return - AdjointMap(p);
+		{ *H1 = - AdjointMap(p); }
 #else
+	  {
 		const Rot3& R = p.rotation();
 		const Point3& t = p.translation();
 		Matrix Rt = R.transpose();
@@ -241,18 +229,21 @@ namespace gtsam {
 		Matrix Dt_R1 = -skewSymmetric(unrotate(R,t).vector()), Dt_t1 = -Rt;
 		Matrix DR = collect(2, &DR_R1, &DR_t1);
 		Matrix Dt = collect(2, &Dt_R1, &Dt_t1);
-		return gtsam::stack(2, &DR, &Dt);
+		*H1 = gtsam::stack(2, &DR, &Dt);
+	  }
 #endif
+	  return p.inverse();
 	}
 
   /* ************************************************************************* */
   // between = compose(p2,inverse(p1));
   Pose3 between(const Pose3& p1, const Pose3& p2, boost::optional<Matrix&> H1,
 			boost::optional<Matrix&> H2) {
-		Pose3 invp1 = inverse(p1);
-		Pose3 result = compose(invp1, p2);
-		if (H1) *H1 = Dcompose1(invp1, p2) * Dinverse(p1);
-		if (H2) *H2 = Dcompose2(invp1, p2);
+	  	Matrix invH;
+		Pose3 invp1 = inverse(p1, invH);
+		Matrix composeH1;
+		Pose3 result = compose(invp1, p2, composeH1, H2);
+		if (H1) *H1 = composeH1 * invH;
 		return result;
 	}
 

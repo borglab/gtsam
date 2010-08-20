@@ -102,17 +102,10 @@ namespace gtsam {
   };
 
   /** "Compose" - just adds coordinates of two points */
-  inline Matrix Dcompose1(const Point3& p1, const Point3& p0) {
-    return Matrix_(3,3,
-        1.0, 0.0, 0.0,
-        0.0, 1.0, 0.0,
-        0.0, 0.0, 1.0);
-  }
-  inline Matrix Dcompose2(const Point3& p1, const Point3& p0) {
-    return Matrix_(3,3,
-        1.0, 0.0, 0.0,
-        0.0, 1.0, 0.0,
-        0.0, 0.0, 1.0);
+  inline Point3 compose(const Point3& p1, const Point3& p2, boost::optional<Matrix&> H1, boost::optional<Matrix&> H2=boost::none) {
+	  if (H1) *H1 = eye(3);
+	  if (H2) *H2 = eye(3);
+	  return p1.compose(p2);
   }
 
   /** Syntactic sugar for multiplying coordinates by a scalar s*p */
@@ -120,13 +113,13 @@ namespace gtsam {
 
   /** add two points, add(p,q) is same as p+q */
   Point3   add (const Point3 &p, const Point3 &q);
-  Matrix Dadd1(const Point3 &p, const Point3 &q);
-  Matrix Dadd2(const Point3 &p, const Point3 &q);
+  Point3   add (const Point3 &p, const Point3 &q,
+	      boost::optional<Matrix&> H1, boost::optional<Matrix&> H2=boost::none);
 
   /** subtract two points, sub(p,q) is same as p-q */
   Point3   sub (const Point3 &p, const Point3 &q);
-  Matrix Dsub1(const Point3 &p, const Point3 &q);
-  Matrix Dsub2(const Point3 &p, const Point3 &q);
+  Point3   sub (const Point3 &p, const Point3 &q,
+	      boost::optional<Matrix&> H1, boost::optional<Matrix&> H2=boost::none);
 
   /** cross product */
   Point3 cross(const Point3 &p, const Point3 &q); 

@@ -166,13 +166,11 @@ namespace gtsam {
   }
 
   /* ************************************************************************* */
-  Matrix Drotate1(const Rot3& R, const Point3& p) {
-    return R.matrix() * skewSymmetric(-p.x(), -p.y(), -p.z());
-  }
-
-  /* ************************************************************************* */
-  Matrix Drotate2(const Rot3& R) {
-    return R.matrix();
+  Point3 rotate(const Rot3& R, const Point3& p,
+  		  boost::optional<Matrix&> H1,  boost::optional<Matrix&> H2) {
+	  if (H1) *H1 = R.matrix() * skewSymmetric(-p.x(), -p.y(), -p.z());
+	  if (H2) *H2 = R.matrix();
+	  return rotate(R,p);
   }
 
   /* ************************************************************************* */
@@ -193,23 +191,19 @@ namespace gtsam {
   }
 
   /* ************************************************************************* */
-  Matrix Dcompose1(const Rot3& R1, const Rot3& R2){
-    return R2.transpose();
+  Rot3 compose (const Rot3& R1, const Rot3& R2,
+	boost::optional<Matrix&> H1, boost::optional<Matrix&> H2) {
+	  if (H1) *H1 = R2.transpose();
+	  if (H2) *H2 = I3;
+	  return R1.compose(R2);
   }
 
   /* ************************************************************************* */
-  Matrix Dcompose2(const Rot3& R1, const Rot3& R2){
-  	return I3;
-  }
-
-  /* ************************************************************************* */
-  Matrix Dbetween1(const Rot3& R1, const Rot3& R2){
-  	return -(R2.transpose()*R1.matrix());
-  }
-
-  /* ************************************************************************* */
-  Matrix Dbetween2(const Rot3& R1, const Rot3& R2){
-  	return I3;
+  Rot3 between (const Rot3& R1, const Rot3& R2,
+	boost::optional<Matrix&> H1, boost::optional<Matrix&> H2) {
+	  if (H1) *H1 = -(R2.transpose()*R1.matrix());
+	  if (H2) *H2 = I3;
+	  return between(R1, R2);
   }
 
   /* ************************************************************************* */

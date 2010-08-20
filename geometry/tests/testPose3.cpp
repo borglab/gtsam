@@ -150,15 +150,16 @@ TEST(Pose3, Adjoint_compose)
 /* ************************************************************************* */
 TEST( Pose3, compose )
 {
-  Matrix actual = (T2*T2).matrix();
-  Matrix expected = T2.matrix()*T2.matrix();
-  CHECK(assert_equal(actual,expected,1e-8));
+	Matrix actual = (T2*T2).matrix();
+	Matrix expected = T2.matrix()*T2.matrix();
+	CHECK(assert_equal(actual,expected,1e-8));
+
+	Matrix actualDcompose1, actualDcompose2;
+	compose(T2, T2, actualDcompose1, actualDcompose2);
 
 	Matrix numericalH1 = numericalDerivative21<Pose3,Pose3,Pose3>(compose, T2, T2, 1e-5);
-	Matrix actualDcompose1 = Dcompose1(T2, T2);
 	CHECK(assert_equal(numericalH1,actualDcompose1,5e-5));
 
-	Matrix actualDcompose2 = Dcompose2(T2, T2);
 	Matrix numericalH2 = numericalDerivative22<Pose3,Pose3,Pose3>(compose, T2, T2, 1e-5);
 	CHECK(assert_equal(numericalH2,actualDcompose2));
 }
@@ -167,15 +168,16 @@ TEST( Pose3, compose )
 TEST( Pose3, compose2 )
 {
 	const Pose3& T1 = T;
-  Matrix actual = (T1*T2).matrix();
-  Matrix expected = T1.matrix()*T2.matrix();
-  CHECK(assert_equal(actual,expected,1e-8));
+	Matrix actual = (T1*T2).matrix();
+	Matrix expected = T1.matrix()*T2.matrix();
+	CHECK(assert_equal(actual,expected,1e-8));
+
+	Matrix actualDcompose1, actualDcompose2;
+	compose(T1, T2, actualDcompose1, actualDcompose2);
 
 	Matrix numericalH1 = numericalDerivative21<Pose3,Pose3,Pose3>(compose, T1, T2, 1e-5);
-	Matrix actualDcompose1 = Dcompose1(T1, T2);
 	CHECK(assert_equal(numericalH1,actualDcompose1,5e-5));
 
-	Matrix actualDcompose2 = Dcompose2(T1, T2);
 	Matrix numericalH2 = numericalDerivative22<Pose3,Pose3,Pose3>(compose, T1, T2, 1e-5);
 	CHECK(assert_equal(numericalH2,actualDcompose2));
 }
@@ -183,12 +185,12 @@ TEST( Pose3, compose2 )
 /* ************************************************************************* */
 TEST( Pose3, inverse)
 {
-  Matrix actual = inverse(T).matrix();
-  Matrix expected = inverse(T.matrix());
-  CHECK(assert_equal(actual,expected,1e-8));
+	Matrix actualDinverse;
+	Matrix actual = inverse(T, actualDinverse).matrix();
+	Matrix expected = inverse(T.matrix());
+	CHECK(assert_equal(actual,expected,1e-8));
 
 	Matrix numericalH = numericalDerivative11<Pose3,Pose3>(inverse, T, 1e-5);
-	Matrix actualDinverse = Dinverse(T);
 	CHECK(assert_equal(numericalH,actualDinverse));
 }
 
@@ -200,41 +202,45 @@ TEST( Pose3, inverseDerivatives2)
 	Pose3 T(R,t);
 
 	Matrix numericalH = numericalDerivative11<Pose3,Pose3>(inverse, T, 1e-5);
-	Matrix actualDinverse = Dinverse(T);
+	Matrix actualDinverse;
+	inverse(T, actualDinverse);
 	CHECK(assert_equal(numericalH,actualDinverse,5e-5));
 }
 
 /* ************************************************************************* */
 TEST( Pose3, compose_inverse)
 {
-  Matrix actual = (T*inverse(T)).matrix();
-  Matrix expected = eye(4,4);
-  CHECK(assert_equal(actual,expected,1e-8));
+	Matrix actual = (T*inverse(T)).matrix();
+	Matrix expected = eye(4,4);
+	CHECK(assert_equal(actual,expected,1e-8));
 }
 
 /* ************************************************************************* */
 TEST( Pose3, Dtransform_from1_a)
 {
-  Matrix actualDtransform_from1 = Dtransform_from1(T, P);
-  Matrix numerical = numericalDerivative21(transform_from,T,P);
-  CHECK(assert_equal(numerical,actualDtransform_from1,1e-8));
+	Matrix actualDtransform_from1;
+	transform_from(T, P, actualDtransform_from1, boost::none);
+	Matrix numerical = numericalDerivative21(transform_from,T,P);
+	CHECK(assert_equal(numerical,actualDtransform_from1,1e-8));
 }
 
 TEST( Pose3, Dtransform_from1_b)
 {
 	Pose3 origin;
-  Matrix actualDtransform_from1 = Dtransform_from1(origin, P);
-  Matrix numerical = numericalDerivative21(transform_from,origin,P);
-  CHECK(assert_equal(numerical,actualDtransform_from1,1e-8));
+	Matrix actualDtransform_from1;
+	transform_from(origin, P, actualDtransform_from1, boost::none);
+	Matrix numerical = numericalDerivative21(transform_from,origin,P);
+	CHECK(assert_equal(numerical,actualDtransform_from1,1e-8));
 }
 
 TEST( Pose3, Dtransform_from1_c)
 {
 	Point3 origin;
 	Pose3 T0(R,origin);
-  Matrix actualDtransform_from1 = Dtransform_from1(T0, P);
-  Matrix numerical = numericalDerivative21(transform_from,T0,P);
-  CHECK(assert_equal(numerical,actualDtransform_from1,1e-8));
+	Matrix actualDtransform_from1;
+	transform_from(T0, P, actualDtransform_from1, boost::none);
+	Matrix numerical = numericalDerivative21(transform_from,T0,P);
+	CHECK(assert_equal(numerical,actualDtransform_from1,1e-8));
 }
 
 TEST( Pose3, Dtransform_from1_d)
@@ -242,35 +248,39 @@ TEST( Pose3, Dtransform_from1_d)
 	Rot3 I;
 	Point3 t0(100,0,0);
 	Pose3 T0(I,t0);
-  Matrix actualDtransform_from1 = Dtransform_from1(T0, P);
-  //print(computed, "Dtransform_from1_d computed:");
-  Matrix numerical = numericalDerivative21(transform_from,T0,P);
-  //print(numerical, "Dtransform_from1_d numerical:");
-  CHECK(assert_equal(numerical,actualDtransform_from1,1e-8));
+	Matrix actualDtransform_from1;
+	transform_from(T0, P, actualDtransform_from1, boost::none);
+	//print(computed, "Dtransform_from1_d computed:");
+	Matrix numerical = numericalDerivative21(transform_from,T0,P);
+	//print(numerical, "Dtransform_from1_d numerical:");
+	CHECK(assert_equal(numerical,actualDtransform_from1,1e-8));
 }
 
 /* ************************************************************************* */
 TEST( Pose3, Dtransform_from2)
 {
-  Matrix actualDtransform_from2 = Dtransform_from2(T);
-  Matrix numerical = numericalDerivative22(transform_from,T,P);
-  CHECK(assert_equal(numerical,actualDtransform_from2,1e-8));
+	Matrix actualDtransform_from2;
+	transform_from(T,P, boost::none, actualDtransform_from2);
+	Matrix numerical = numericalDerivative22(transform_from,T,P);
+	CHECK(assert_equal(numerical,actualDtransform_from2,1e-8));
 }
 
 /* ************************************************************************* */
 TEST( Pose3, Dtransform_to1)
 {
-  Matrix computed = Dtransform_to1(T, P);
-  Matrix numerical = numericalDerivative21(transform_to,T,P);
-  CHECK(assert_equal(numerical,computed,1e-8));
+	Matrix computed;
+	transform_to(T, P, computed, boost::none);
+	Matrix numerical = numericalDerivative21(transform_to,T,P);
+	CHECK(assert_equal(numerical,computed,1e-8));
 }
 
 /* ************************************************************************* */
 TEST( Pose3, Dtransform_to2)
 {
-  Matrix computed = Dtransform_to2(T,P);
-  Matrix numerical = numericalDerivative22(transform_to,T,P);
-  CHECK(assert_equal(numerical,computed,1e-8));
+	Matrix computed;
+	transform_to(T,P, boost::none, computed);
+	Matrix numerical = numericalDerivative22(transform_to,T,P);
+	CHECK(assert_equal(numerical,computed,1e-8));
 }
 
 /* ************************************************************************* */

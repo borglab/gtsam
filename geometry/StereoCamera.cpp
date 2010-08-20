@@ -57,8 +57,8 @@ Matrix Dproject_stereo_pose(const StereoCamera& camera, const Point3& point) {
 
 	//Matrix D_intrinsic_pose = Dproject_pose(camera.calibrated_, point);
 	//**** above function call inlined
-	  Point3 cameraPoint = transform_to(camera.pose(), point);
-	  Matrix D_cameraPoint_pose = Dtransform_to1(camera.pose(), point);  // 3x6
+	  Matrix D_cameraPoint_pose;
+	  Point3 cameraPoint = transform_to(camera.pose(), point, D_cameraPoint_pose, boost::none);
 	  //cout << "D_cameraPoint_pose" << endl;
 	  //print(D_cameraPoint_pose);
 
@@ -83,8 +83,8 @@ Matrix Dproject_stereo_point(const StereoCamera& camera, const Point3& point) {
 
 	//Matrix D_intrinsic_point = Dproject_point(camera.calibrated_, point);
 	//**** above function call inlined
-	  Point3 cameraPoint = transform_to(camera.pose(), point);
-		Matrix D_cameraPoint_point = Dtransform_to2(camera.pose(), point);
+	  Matrix D_cameraPoint_point;
+	  Point3 cameraPoint = transform_to(camera.pose(), point, boost::none, D_cameraPoint_point);
 
 		//Point2 intrinsic = project_to_camera(cameraPoint);  // unused
 		Matrix D_intrinsic_cameraPoint = Dproject_to_stereo_camera1(camera, cameraPoint); // 3x3 Jacobian

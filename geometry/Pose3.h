@@ -116,27 +116,20 @@ namespace gtsam {
   Point3 transform_from(const Pose3& pose, const Point3& p,
 		  	boost::optional<Matrix&> H1, boost::optional<Matrix&> H2);
 
-  // Older transform functions
-  Matrix Dtransform_from1(const Pose3& pose, const Point3& p);
-  Matrix Dtransform_from2(const Pose3& pose); // does not depend on p !
-
   /** receives the point in world coordinates and transforms it to Pose coordinates */
   Point3 transform_to(const Pose3& pose, const Point3& p);
   Point3 transform_to(const Pose3& pose, const Point3& p,
   		  	boost::optional<Matrix&> H1, boost::optional<Matrix&> H2);
-  Matrix Dtransform_to1(const Pose3& pose, const Point3& p);
-  Matrix Dtransform_to2(const Pose3& pose, const Point3& p);
 
   /**
    * Derivatives of compose
    */
-  Matrix Dcompose1(const Pose3& p1, const Pose3& p2);
-  Matrix Dcompose2(const Pose3& p1, const Pose3& p2);
-
+  Pose3 compose(const Pose3& p1, const Pose3& p2,
+		  	boost::optional<Matrix&> H1, boost::optional<Matrix&> H2);
   /**
    * Derivative of inverse
    */
-  Matrix Dinverse(const Pose3& p);
+  Pose3 inverse(const Pose3& p, boost::optional<Matrix&> H1);
 
   /**
    * Return relative pose between p1 and p2, in p1 coordinate frame

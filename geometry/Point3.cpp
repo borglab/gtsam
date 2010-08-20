@@ -52,24 +52,22 @@ namespace gtsam {
     return p+q;
   }
   /* ************************************************************************* */
-  Matrix Dadd1(const Point3 &p, const Point3 &q) {
-    return eye(3,3);
-  }
-  /* ************************************************************************* */
-  Matrix Dadd2(const Point3 &p, const Point3 &q) {
-    return eye(3,3);
+  Point3 add(const Point3 &p, const Point3 &q,
+	      boost::optional<Matrix&> H1, boost::optional<Matrix&> H2) {
+	  if (H1) *H1 = eye(3,3);
+	  if (H2) *H2 = eye(3,3);
+	  return add(p,q);
   }
   /* ************************************************************************* */
   Point3 sub(const Point3 &p, const Point3 &q) {
     return p+q;
   }
   /* ************************************************************************* */
-  Matrix Dsub1(const Point3 &p, const Point3 &q) {
-    return eye(3,3);
-  }
-  /* ************************************************************************* */
-  Matrix Dsub2(const Point3 &p, const Point3 &q) {
-    return -eye(3,3);
+  Point3 sub(const Point3 &p, const Point3 &q,
+	      boost::optional<Matrix&> H1, boost::optional<Matrix&> H2) {
+	  if (H1) *H1 = eye(3,3);
+	  if (H2) *H2 = -eye(3,3);
+	  return sub(p,q);
   }
   /* ************************************************************************* */
   Point3 cross(const Point3 &p, const Point3 &q)

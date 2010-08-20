@@ -143,7 +143,7 @@ namespace gtsam {
     inline size_t dim() const { return dimension; }
 
     /** Compose two rotations */
-    inline Rot3 compose(const Rot3& R1) const { return *this * R1;}
+    inline Rot3 compose(const Rot3& R2) const { return *this * R2;}
 
     /** Exponential map at identity - create a rotation from canonical coordinates
      * using Rodriguez' formula
@@ -190,15 +190,18 @@ namespace gtsam {
   };
 
   // derivative of inverse rotation R^T s.t. inverse(R)*R = Rot3()
-  inline Matrix Dinverse(Rot3 R) { return -R.matrix();}
+  inline Rot3 inverse(const Rot3& R, boost::optional<Matrix&> H1) {
+	  if (H1) *H1 = -R.matrix();
+	  return R.inverse();
+  }
 
   /**
    * rotate point from rotated coordinate frame to 
    * world = R*p
    */
   inline Point3 rotate(const Rot3& R, const Point3& p) { return R*p;}
-  Matrix Drotate1(const Rot3& R, const Point3& p);
-  Matrix Drotate2(const Rot3& R); // does not depend on p !
+  Point3 rotate(const Rot3& R, const Point3& p,
+	boost::optional<Matrix&> H1,  boost::optional<Matrix&> H2);
 
   /**
    * rotate point from world to rotated 
@@ -211,16 +214,14 @@ namespace gtsam {
   /**
    * compose two rotations i.e., R=R1*R2
    */
-  //Rot3    compose (const Rot3& R1, const Rot3& R2);
-  Matrix Dcompose1(const Rot3& R1, const Rot3& R2);
-  Matrix Dcompose2(const Rot3& R1, const Rot3& R2);
+  Rot3 compose (const Rot3& R1, const Rot3& R2,
+	boost::optional<Matrix&> H1, boost::optional<Matrix&> H2);
 
   /**
    * Return relative rotation D s.t. R2=D*R1, i.e. D=R2*R1'
    */
-  //Rot3    between (const Rot3& R1, const Rot3& R2);
-  Matrix Dbetween1(const Rot3& R1, const Rot3& R2);
-  Matrix Dbetween2(const Rot3& R1, const Rot3& R2);
+  Rot3 between (const Rot3& R1, const Rot3& R2,
+	boost::optional<Matrix&> H1, boost::optional<Matrix&> H2);
 
   /**
    * [RQ] receives a 3 by 3 matrix and returns an upper triangular matrix R

@@ -101,14 +101,6 @@ namespace gtsam {
     if(H2) *H2 = eye(2);
     return compose(p1, p2);
   }
-  inline Matrix Dcompose1(const Point2& p1, const Point2& p0) {
-    return Matrix_(2,2,
-        1.0, 0.0,
-        0.0, 1.0); }
-  inline Matrix Dcompose2(const Point2& p1, const Point2& p0) {
-    return Matrix_(2,2,
-        1.0, 0.0,
-        0.0, 1.0); }
 
   /** "Between", subtracts point coordinates */
   inline Point2 between(const Point2& p1, const Point2& p2) { return p2-p1; }

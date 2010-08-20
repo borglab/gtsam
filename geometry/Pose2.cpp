@@ -101,8 +101,9 @@ namespace gtsam {
 	  return Pose2(R.inverse(), R.unrotate(Point2(-t.x(), -t.y())));
   }
 
-  Matrix Dinverse(const Pose2& pose) {
-	  return -AdjointMap(pose);
+  Pose2 inverse(const Pose2& pose, boost::optional<Matrix&> H1) {
+	  if (H1) *H1 = -AdjointMap(pose);
+	  return pose.inverse();
   }
 
   /* ************************************************************************* */
@@ -129,14 +130,6 @@ namespace gtsam {
     if(H1) *H1 = AdjointMap(inverse(p2));
     if(H2) *H2 = I3;
     return p1*p2;
-  }
-
-  Matrix Dcompose1(const Pose2& p1, const Pose2& p2) {
-		return AdjointMap(inverse(p2));
-  }
-
-  Matrix Dcompose2(const Pose2& p1, const Pose2& p2) {
-  	return I3;
   }
 
   /* ************************************************************************* */

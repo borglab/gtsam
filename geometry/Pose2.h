@@ -141,7 +141,7 @@ namespace gtsam {
   /**
    * inverse transformation
    */
-  Matrix Dinverse(const Pose2& pose);
+  Pose2 inverse(const Pose2& pose, boost::optional<Matrix&> H1);
 
   /**
    * compose this transformation onto another (first p1 and then p2)
@@ -149,8 +149,6 @@ namespace gtsam {
   Pose2 compose(const Pose2& p1, const Pose2& p2,
     boost::optional<Matrix&> H1,
     boost::optional<Matrix&> H2 = boost::none);
-  Matrix Dcompose1(const Pose2& p1, const Pose2& p2);
-  Matrix Dcompose2(const Pose2& p1, const Pose2& p2);
 
   /**
    * Return point coordinates in pose coordinate frame
