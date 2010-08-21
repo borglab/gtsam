@@ -25,7 +25,7 @@ check_PROGRAMS += testConstraintOptimizer
 endif
 
 # Timing tests
-noinst_PROGRAMS = timeGaussianFactorGraph
+noinst_PROGRAMS = timeGaussianFactorGraph timeFactorOverhead
 
 #----------------------------------------------------------------------------------------------------
 # rules to build unit tests
