@@ -26,7 +26,7 @@ endif
 headers += Testable.h TestableAssertions.h numericalDerivative.h 
 
 # Lie Groups
-headers += Lie.h Lie-inl.h
+headers += Lie.h Lie-inl.h LieVector.h
 
 # Data structures
 headers += BTree.h DSF.h

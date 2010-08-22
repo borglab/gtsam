@@ -84,29 +84,22 @@ namespace gtsam {
       return sqrt(pow(x()-p2.x(),2.0) + pow(y()-p2.y(),2.0) + pow(z()-p2.z(),2.0));
     }
 
-    /** add two points, add(p,q) is same as p+q */
-    static Point3 add (const Point3 &p, const Point3 &q);
-    static Point3 add (const Point3 &p, const Point3 &q,
-  	      boost::optional<Matrix&> H1, boost::optional<Matrix&> H2=boost::none);
+    /** add two points, add(this,q) is same as this + q */
+    Point3 add (const Point3 &q,
+  	      boost::optional<Matrix&> H1=boost::none, boost::optional<Matrix&> H2=boost::none) const;
 
-    /** subtract two points, sub(p,q) is same as p-q */
-    static Point3 sub (const Point3 &p, const Point3 &q);
-    static Point3 sub (const Point3 &p, const Point3 &q,
-  	      boost::optional<Matrix&> H1, boost::optional<Matrix&> H2=boost::none);
+    /** subtract two points, sub(this,q) is same as this - q */
+    Point3 sub (const Point3 &q,
+  	      boost::optional<Matrix&> H1=boost::none, boost::optional<Matrix&> H2=boost::none) const;
 
-    /** cross product */
-    static Point3 cross(const Point3 &p, const Point3 &q);
+    /** cross product @return this x q */
+    Point3 cross(const Point3 &q) const;
 
-    /** dot product */
-    static double dot(const Point3 &p, const Point3 &q);
+    /** dot product @return this * q*/
+    double dot(const Point3 &q) const;
 
     /** dot product */
-    static double norm(const Point3 &p);
-
-//    /** friends */
-//    friend Point3 cross(const Point3 &p1, const Point3 &p2);
-//    friend double dot(const Point3 &p1, const Point3 &p2);
-//    friend double norm(const Point3 &p1);
+    double norm() const;
 
   private:
     /** Serialization function */

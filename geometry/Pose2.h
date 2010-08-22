@@ -63,6 +63,7 @@ namespace gtsam {
     /** assert equality up to a tolerance */
     bool equals(const Pose2& pose, double tol = 1e-9) const;
 
+    /** compose syntactic sugar */
     inline Pose2 operator*(const Pose2& p2) const {
     	return Pose2(r_*p2.r(), t_ + r_*p2.t());
     }
@@ -81,6 +82,9 @@ namespace gtsam {
     /** compose with another pose */
     inline Pose2 compose(const Pose2& p) const { return *this * p; }
 
+    /** syntactic sugar for transform_from */
+    inline Point2 operator*(const Point2& point) { return transform_from(point);}
+
     /**
      * Exponential map from se(2) to SE(2)
      */
@@ -97,18 +101,53 @@ namespace gtsam {
     /**
      * Return point coordinates in pose coordinate frame
      */
-    static inline Point2 transform_to(const Pose2& pose, const Point2& point)
-  		{ return Rot2::unrotate(pose.r(), point - pose.t());}
-    static Point2 transform_to(const Pose2& pose, const Point2& point,
-  		boost::optional<Matrix&> H1, boost::optional<Matrix&> H2);
+    Point2 transform_to(const Point2& point,
+    		boost::optional<Matrix&> H1=boost::none, boost::optional<Matrix&> H2=boost::none) const;
 
     /**
      * Return point coordinates in global frame
      */
-    static inline Point2 transform_from(const Pose2& pose, const Point2& point)
-  		{ return Rot2::rotate(pose.r(), point) + pose.t();}
-    static Point2 transform_from(const Pose2& pose, const Point2& point,
-    	boost::optional<Matrix&> H1, boost::optional<Matrix&> H2);
+    Point2 transform_from(const Point2& point,
+    	boost::optional<Matrix&> H1=boost::none, boost::optional<Matrix&> H2=boost::none) const;
+
+	/**
+	 * Calculate bearing to a landmark
+	 * @param point 2D location of landmark
+	 * @return 2D rotation \in SO(2)
+	 */
+	Rot2 bearing(const Point2& point,
+			boost::optional<Matrix&> H1=boost::none, boost::optional<Matrix&> H2=boost::none) const;
+
+	/**
+	 * Calculate range to a landmark
+	 * @param point 2D location of landmark
+	 * @return range (double)
+	 */
+	double range(const Point2& point,
+			boost::optional<Matrix&> H1=boost::none, boost::optional<Matrix&> H2=boost::none) const;
+
+	/**
+	 * Calculate Adjoint map
+	 * Ad_pose is 3*3 matrix that when applied to twist xi, returns Ad_pose(xi)
+	 */
+	Matrix AdjointMap() const;
+	inline Vector Adjoint(const Vector& xi) const {
+		return AdjointMap()*xi;
+	}
+
+	/**
+	 * wedge for SE(2):
+	 * @param xi 3-dim twist (v,omega) where
+	 *  omega is angular velocity
+	 *  v (vx,vy) = 2D velocity
+	 * @return xihat, 3*3 element of Lie algebra that can be exponentiated
+	 */
+	static inline Matrix wedge(double vx, double vy, double w) {
+		return Matrix_(3,3,
+				0.,-w,  vx,
+				w,  0., vy,
+				0., 0.,  0.);
+	}
 
     /** get functions for x, y, theta */
     inline double x()     const { return t_.x(); }
@@ -128,30 +167,10 @@ namespace gtsam {
     }
   }; // Pose2
 
-  /**
-  * Calculate Adjoint map
-  * Ad_pose is 3*3 matrix that when applied to twist xi, returns Ad_pose(xi)
-  */
-  Matrix AdjointMap(const Pose2& p);
-  inline Vector Adjoint(const Pose2& p, const Vector& xi) { return AdjointMap(p)*xi;}
-
-  /**
-   * wedge for SE(2):
-   * @param xi 3-dim twist (v,omega) where
-   *  omega is angular velocity
-   *  v (vx,vy) = 2D velocity
-   * @return xihat, 3*3 element of Lie algebra that can be exponentiated
-   */
-  inline Matrix wedge(double vx, double vy, double w) {
-  	return Matrix_(3,3,
-  			 0.,-w,  vx,
-  			 w,  0., vy,
-  			 0., 0.,  0.);
-  }
-
+  /** specialization for pose2 wedge function (generic template in Lie.h) */
   template <>
   inline Matrix wedge<Pose2>(const Vector& xi) {
-  	return wedge(xi(0),xi(1),xi(2));
+  	return Pose2::wedge(xi(0),xi(1),xi(2));
   }
 
   /**
@@ -166,35 +185,11 @@ namespace gtsam {
     boost::optional<Matrix&> H1,
     boost::optional<Matrix&> H2 = boost::none);
 
-  /** syntactic sugar for transform_from */
-  inline Point2 operator*(const Pose2& pose, const Point2& point)
-		{ return Pose2::transform_from(pose, point);}
-
   /**
    * Return relative pose between p1 and p2, in p1 coordinate frame
    */
   Pose2 between(const Pose2& p1, const Pose2& p2,
   	boost::optional<Matrix&> H1, boost::optional<Matrix&> H2);
-
-	/**
-	 * Calculate bearing to a landmark
-	 * @param pose 2D pose of robot
-	 * @param point 2D location of landmark
-	 * @return 2D rotation \in SO(2)
-	 */
-	Rot2 bearing(const Pose2& pose, const Point2& point);
-	Rot2 bearing(const Pose2& pose, const Point2& point,
-			boost::optional<Matrix&> H1, boost::optional<Matrix&> H2);
-
-	/**
-	 * Calculate range to a landmark
-	 * @param pose 2D pose of robot
-	 * @param point 2D location of landmark
-	 * @return range (double)
-	 */
-	double range(const Pose2& pose, const Point2& point);
-	double range(const Pose2& pose, const Point2& point,
-			boost::optional<Matrix&> H1, boost::optional<Matrix&> H2);
 
 } // namespace gtsam
 

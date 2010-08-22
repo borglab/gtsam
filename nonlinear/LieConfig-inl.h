@@ -14,6 +14,7 @@
 #include <stdexcept>
 
 #include <gtsam/linear/VectorConfig.h>
+#include <gtsam/base/LieVector.h>
 #include <gtsam/base/Lie-inl.h>
 
 #include <gtsam/nonlinear/LieConfig.h>

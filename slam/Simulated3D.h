@@ -9,6 +9,7 @@
 #pragma once
 
 #include <gtsam/base/Matrix.h>
+#include <gtsam/base/LieVector.h>
 #include <gtsam/linear/VectorConfig.h>
 #include <gtsam/nonlinear/NonlinearFactor.h>
 #include <gtsam/inference/Key.h>

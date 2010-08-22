@@ -98,9 +98,7 @@ namespace gtsam { namespace visualSLAM {
     Vector evaluateError(const Pose3& pose, const Point3& point,
         boost::optional<Matrix&> H1, boost::optional<Matrix&> H2) const {
       SimpleCamera camera(*K_, pose);
-      if (H1) *H1=Dproject_pose(camera,point);
-      if (H2) *H2=Dproject_point(camera,point);
-      Point2 reprojectionError(project(camera, point) - z_);
+      Point2 reprojectionError(camera.project(point, H1, H2) - z_);
       return reprojectionError.vector();
     }
 

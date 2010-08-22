@@ -7,6 +7,7 @@
 #pragma once
 
 #include <gtsam/inference/Key.h>
+#include <gtsam/base/LieVector.h>
 #include <gtsam/geometry/Pose2.h>
 #include <gtsam/nonlinear/LieConfig.h>
 #include <gtsam/slam/PriorFactor.h>

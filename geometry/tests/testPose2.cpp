@@ -117,6 +117,10 @@ TEST(Pose2, logmap) {
 }
 
 /* ************************************************************************* */
+Point2 transform_to_proxy(const Pose2& pose, const Point2& point) {
+	return pose.transform_to(point);
+}
+
 TEST( Pose2, transform_to )
 {
   Pose2 pose(M_PI_2, Point2(1,2)); // robot at (1,2) looking towards y
@@ -129,25 +133,29 @@ TEST( Pose2, transform_to )
 
   // actual
   Matrix actualH1, actualH2;
-  Point2 actual = Pose2::transform_to(pose,point, actualH1, actualH2);
+  Point2 actual = pose.transform_to(point, actualH1, actualH2);
   CHECK(assert_equal(expected,actual));
 
   CHECK(assert_equal(expectedH1,actualH1));
-  Matrix numericalH1 = numericalDerivative21(Pose2::transform_to, pose, point, 1e-5);
+  Matrix numericalH1 = numericalDerivative21(transform_to_proxy, pose, point, 1e-5);
   CHECK(assert_equal(numericalH1,actualH1));
 
   CHECK(assert_equal(expectedH2,actualH2));
-  Matrix numericalH2 = numericalDerivative22(Pose2::transform_to, pose, point, 1e-5);
+  Matrix numericalH2 = numericalDerivative22(transform_to_proxy, pose, point, 1e-5);
   CHECK(assert_equal(numericalH2,actualH2));
 }
 
 /* ************************************************************************* */
+Point2 transform_from_proxy(const Pose2& pose, const Point2& point) {
+	return pose.transform_from(point);
+}
+
 TEST (Pose2, transform_from)
 {
 	Pose2 pose(1., 0., M_PI_2);
 	Point2 pt(2., 1.);
 	Matrix H1, H2;
-	Point2 actual = Pose2::transform_from(pose, pt, H1, H2);
+	Point2 actual = pose.transform_from(pt, H1, H2);
 
 	Point2 expected(0., 2.);
 	CHECK(assert_equal(expected, actual));
@@ -155,11 +163,11 @@ TEST (Pose2, transform_from)
 	Matrix H1_expected = Matrix_(2, 3, 0., -1., -2., 1., 0., -1.);
 	Matrix H2_expected = Matrix_(2, 2, 0., -1., 1., 0.);
 
-	Matrix numericalH1 = numericalDerivative21(Pose2::transform_from, pose, pt, 1e-5);
+	Matrix numericalH1 = numericalDerivative21(transform_from_proxy, pose, pt, 1e-5);
 	CHECK(assert_equal(H1_expected, H1));
 	CHECK(assert_equal(H1_expected, numericalH1));
 
-	Matrix numericalH2 = numericalDerivative22(Pose2::transform_from, pose, pt, 1e-5);
+	Matrix numericalH2 = numericalDerivative22(transform_from_proxy, pose, pt, 1e-5);
 	CHECK(assert_equal(H2_expected, H2));
 	CHECK(assert_equal(H2_expected, numericalH2));
 }
@@ -193,8 +201,8 @@ TEST(Pose2, compose_a)
 
   Point2 point(sqrt(0.5), 3.0*sqrt(0.5));
   Point2 expected_point(-1.0, -1.0);
-  Point2 actual_point1 = Pose2::transform_to(pose1 * pose2, point);
-  Point2 actual_point2 = Pose2::transform_to(pose2, Pose2::transform_to(pose1, point));
+  Point2 actual_point1 = (pose1 * pose2).transform_to(point);
+  Point2 actual_point2 = pose2.transform_to(pose1.transform_to(point));
   CHECK(assert_equal(expected_point, actual_point1));
   CHECK(assert_equal(expected_point, actual_point2));
 }
@@ -345,7 +353,7 @@ TEST( Pose2, between )
   CHECK(assert_equal(expectedH1,actualH1));
   CHECK(assert_equal(numericalH1,actualH1));
 	// Assert H1 = -AdjointMap(between(p2,p1)) as in doc/math.lyx
-  CHECK(assert_equal(-AdjointMap(between(gT2,gT1)),actualH1));
+  CHECK(assert_equal(-between(gT2,gT1).AdjointMap(),actualH1));
 
   Matrix expectedH2 = Matrix_(3,3,
        1.0, 0.0, 0.0,
@@ -395,65 +403,72 @@ Pose2 x1, x2(1, 1, 0), x3(1, 1, M_PI_4);
 Point2 l1(1, 0), l2(1, 1), l3(2, 2), l4(1, 3);
 
 /* ************************************************************************* */
+Rot2 bearing_proxy(const Pose2& pose, const Point2& pt) {
+	return pose.bearing(pt);
+}
+
 TEST( Pose2, bearing )
 {
 	Matrix expectedH1, actualH1, expectedH2, actualH2;
 
 	// establish bearing is indeed zero
-	CHECK(assert_equal(Rot2(),bearing(x1,l1)));
+	CHECK(assert_equal(Rot2(),x1.bearing(l1)));
 
 	// establish bearing is indeed 45 degrees
-	CHECK(assert_equal(Rot2::fromAngle(M_PI_4),bearing(x1,l2)));
+	CHECK(assert_equal(Rot2::fromAngle(M_PI_4),x1.bearing(l2)));
 
 	// establish bearing is indeed 45 degrees even if shifted
-	Rot2 actual23 = bearing(x2, l3, actualH1, actualH2);
+	Rot2 actual23 = x2.bearing(l3, actualH1, actualH2);
 	CHECK(assert_equal(Rot2::fromAngle(M_PI_4),actual23));
 
 	// Check numerical derivatives
-	expectedH1 = numericalDerivative21(bearing, x2, l3, 1e-5);
+	expectedH1 = numericalDerivative21(bearing_proxy, x2, l3, 1e-5);
 	CHECK(assert_equal(expectedH1,actualH1));
-	expectedH2 = numericalDerivative22(bearing, x2, l3, 1e-5);
+	expectedH2 = numericalDerivative22(bearing_proxy, x2, l3, 1e-5);
 	CHECK(assert_equal(expectedH1,actualH1));
 
 	// establish bearing is indeed 45 degrees even if rotated
-	Rot2 actual34 = bearing(x3, l4, actualH1, actualH2);
+	Rot2 actual34 = x3.bearing(l4, actualH1, actualH2);
 	CHECK(assert_equal(Rot2::fromAngle(M_PI_4),actual34));
 
 	// Check numerical derivatives
-	expectedH1 = numericalDerivative21(bearing, x3, l4, 1e-5);
-	expectedH2 = numericalDerivative22(bearing, x3, l4, 1e-5);
+	expectedH1 = numericalDerivative21(bearing_proxy, x3, l4, 1e-5);
+	expectedH2 = numericalDerivative22(bearing_proxy, x3, l4, 1e-5);
 	CHECK(assert_equal(expectedH1,actualH1));
 	CHECK(assert_equal(expectedH1,actualH1));
 }
 
 /* ************************************************************************* */
+double range_proxy(const Pose2& pose, const Point2& point) {
+	return pose.range(point);
+}
 TEST( Pose2, range )
 {
 	Matrix expectedH1, actualH1, expectedH2, actualH2;
 
 	// establish range is indeed zero
-	DOUBLES_EQUAL(1,gtsam::range(x1,l1),1e-9);
+	DOUBLES_EQUAL(1,x1.range(l1),1e-9);
 
 	// establish range is indeed 45 degrees
-	DOUBLES_EQUAL(sqrt(2),gtsam::range(x1,l2),1e-9);
+	DOUBLES_EQUAL(sqrt(2),x1.range(l2),1e-9);
 
 	// Another pair
-	double actual23 = gtsam::range(x2, l3, actualH1, actualH2);
+	double actual23 = x2.range(l3, actualH1, actualH2);
 	DOUBLES_EQUAL(sqrt(2),actual23,1e-9);
 
 	// Check numerical derivatives
-	expectedH1 = numericalDerivative21(range, x2, l3, 1e-5);
+	expectedH1 = numericalDerivative21(range_proxy, x2, l3, 1e-5);
 	CHECK(assert_equal(expectedH1,actualH1));
-	expectedH2 = numericalDerivative22(range, x2, l3, 1e-5);
+	expectedH2 = numericalDerivative22(range_proxy, x2, l3, 1e-5);
 	CHECK(assert_equal(expectedH1,actualH1));
 
 	// Another test
-	double actual34 = gtsam::range(x3, l4, actualH1, actualH2);
+	double actual34 = x3.range(l4, actualH1, actualH2);
 	DOUBLES_EQUAL(2,actual34,1e-9);
 
 	// Check numerical derivatives
-	expectedH1 = numericalDerivative21(range, x3, l4, 1e-5);
-	expectedH2 = numericalDerivative22(range, x3, l4, 1e-5);
+	expectedH1 = numericalDerivative21(range_proxy, x3, l4, 1e-5);
+	expectedH2 = numericalDerivative22(range_proxy, x3, l4, 1e-5);
 	CHECK(assert_equal(expectedH1,actualH1));
 	CHECK(assert_equal(expectedH1,actualH1));
 }

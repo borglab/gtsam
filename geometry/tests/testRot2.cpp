@@ -66,7 +66,7 @@ inline Point2 rotate_(const Rot2 & R, const Point2& p) {return R.rotate(p);}
 TEST( Rot2, rotate)
 {
 	Matrix H1, H2;
-	Point2 actual = Rot2::rotate(R, P, H1, H2);
+	Point2 actual = R.rotate(P, H1, H2);
 	CHECK(assert_equal(actual,R*P));
 	Matrix numerical1 = numericalDerivative21(rotate_, R, P);
 	CHECK(assert_equal(numerical1,H1));
@@ -76,11 +76,11 @@ TEST( Rot2, rotate)
 
 /* ************************************************************************* */
 // unrotate and derivatives
-inline Point2 unrotate_(const Rot2 & R, const Point2& p) {return R.unrotate(p);}
+inline Point2 unrotate_(const Rot2& R, const Point2& p) {return R.unrotate(p);}
 TEST( Rot2, unrotate)
 {
 	Matrix H1, H2;
-	Point2 w = R * P, actual = Rot2::unrotate(R, w, H1, H2);
+	Point2 w = R * P, actual = R.unrotate(w, H1, H2);
 	CHECK(assert_equal(actual,P));
 	Matrix numerical1 = numericalDerivative21(unrotate_, R, w);
 	CHECK(assert_equal(numerical1,H1));
@@ -89,6 +89,7 @@ TEST( Rot2, unrotate)
 }
 
 /* ************************************************************************* */
+inline Rot2 relativeBearing_(const Point2& pt) {return Rot2::relativeBearing(pt); }
 TEST( Rot2, relativeBearing )
 {
 	Point2 l1(1, 0), l2(1, 1);
@@ -99,7 +100,7 @@ TEST( Rot2, relativeBearing )
 	CHECK(assert_equal(Rot2(),actual1));
 
 	// Check numerical derivative
-	expectedH = numericalDerivative11(Rot2::relativeBearing, l1, 1e-5);
+	expectedH = numericalDerivative11(relativeBearing_, l1, 1e-5);
 	CHECK(assert_equal(expectedH,actualH));
 
 	// establish relativeBearing is indeed 45 degrees
@@ -107,7 +108,7 @@ TEST( Rot2, relativeBearing )
 	CHECK(assert_equal(Rot2::fromAngle(M_PI_4),actual2));
 
 	// Check numerical derivative
-	expectedH = numericalDerivative11(Rot2::relativeBearing, l2, 1e-5);
+	expectedH = numericalDerivative11(relativeBearing_, l2, 1e-5);
 	CHECK(assert_equal(expectedH,actualH));
 }
 

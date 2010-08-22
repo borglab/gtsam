@@ -94,6 +94,28 @@ namespace gtsam {
 		return numericalDerivative11<Y,X>(boost::bind(h, _1), x, delta);
 	}
 
+	/** pseudo-template specialization for double Y values */
+	template<class X>
+	Matrix numericalDerivative11(boost::function<double(const X&)> h, const X& x, double delta=1e-5) {
+		double hx = h(x);
+		double factor = 1.0/(2.0*delta);
+		const size_t m = 1, n = dim(x);
+		Vector d(n,0.0);
+		Matrix H = zeros(m,n);
+		for (size_t j=0;j<n;j++) {
+			d(j) +=   delta; Vector hxplus = Vector_(1, h(expmap(x,d))-hx);
+			d(j) -= 2*delta; Vector hxmin  = Vector_(1, h(expmap(x,d))-hx);
+			d(j) +=   delta; Vector dh = (hxplus-hxmin)*factor;
+			for (size_t i=0;i<m;i++) H(i,j) = dh(i);
+		}
+		return H;
+	}
+
+	template<class X>
+	Matrix numericalDerivative11(double (*h)(const X&), const X& x, double delta=1e-5) {
+		return numericalDerivative11<X>(boost::bind(h, _1), x, delta);
+	}
+
 	/**
 	 * Compute numerical derivative in argument 1 of binary function
 	 * @param h binary function yielding m-vector
@@ -121,9 +143,33 @@ namespace gtsam {
 	}
 
 	template<class Y, class X1, class X2>
-	Matrix numericalDerivative21(Y (*h)(const X1&, const X2&),
+	inline Matrix numericalDerivative21(Y (*h)(const X1&, const X2&),
 			const X1& x1, const X2& x2, double delta=1e-5) {
 		return numericalDerivative21<Y,X1,X2>(boost::bind(h, _1, _2), x1, x2, delta);
+	}
+
+	/** pseudo-partial template specialization for double return values */
+	template<class X1, class X2>
+	Matrix numericalDerivative21(boost::function<double(const X1&, const X2&)> h,
+			const X1& x1, const X2& x2, double delta=1e-5) {
+		double hx = h(x1,x2);
+		double factor = 1.0/(2.0*delta);
+		const size_t m = 1, n = dim(x1);
+		Vector d(n,0.0);
+		Matrix H = zeros(m,n);
+		for (size_t j=0;j<n;j++) {
+			d(j) +=   delta; Vector hxplus = Vector_(1, h(expmap(x1,d),x2)-hx);
+			d(j) -= 2*delta; Vector hxmin  = Vector_(1, h(expmap(x1,d),x2)-hx);
+			d(j) +=   delta; Vector dh = (hxplus-hxmin)*factor;
+			for (size_t i=0;i<m;i++) H(i,j) = dh(i);
+		}
+		return H;
+	}
+
+	template<class X1, class X2>
+	inline Matrix numericalDerivative21(double (*h)(const X1&, const X2&),
+			const X1& x1, const X2& x2, double delta=1e-5) {
+		return numericalDerivative21<X1,X2>(boost::bind(h, _1, _2), x1, x2, delta);
 	}
 
 	/**
@@ -154,10 +200,32 @@ namespace gtsam {
 		return H;
 	}
 	template<class Y, class X1, class X2>
-	Matrix numericalDerivative22
-	(Y (*h)(const X1&, const X2&),
-			const X1& x1, const X2& x2, double delta=1e-5) {
+	inline Matrix numericalDerivative22
+	(Y (*h)(const X1&, const X2&), const X1& x1, const X2& x2, double delta=1e-5) {
 		return numericalDerivative22<Y,X1,X2>(boost::bind(h, _1, _2), x1, x2, delta);
+	}
+
+	/** pseudo-specialization for double Y values */
+	template<class X1, class X2>
+	Matrix numericalDerivative22(boost::function<double(const X1&, const X2&)> h,
+			const X1& x1, const X2& x2, double delta=1e-5) {
+		double hx = h(x1,x2);
+		double factor = 1.0/(2.0*delta);
+		const size_t m = 1, n = dim(x2);
+		Vector d(n,0.0);
+		Matrix H = zeros(m,n);
+		for (size_t j=0;j<n;j++) {
+			d(j) +=   delta; Vector hxplus = Vector_(1,h(x1,expmap(x2,d))-hx);
+			d(j) -= 2*delta; Vector hxmin  = Vector_(1,h(x1,expmap(x2,d))-hx);
+			d(j) +=   delta; Vector dh = (hxplus-hxmin)*factor;
+			for (size_t i=0;i<m;i++) H(i,j) = dh(i);
+		}
+		return H;
+	}
+	template<class X1, class X2>
+	inline Matrix numericalDerivative22	(double (*h)(const X1&, const X2&),
+			const X1& x1, const X2& x2, double delta=1e-5) {
+		return numericalDerivative22<X1,X2>(boost::bind(h, _1, _2), x1, x2, delta);
 	}
 
 	/**
@@ -189,7 +257,7 @@ namespace gtsam {
 		return H;
 	}
 	template<class Y, class X1, class X2, class X3>
-	Matrix numericalDerivative31
+	inline Matrix numericalDerivative31
 	(Y (*h)(const X1&, const X2&, const X3&),
 			const X1& x1, const X2& x2, const X3& x3, double delta=1e-5) {
 		return numericalDerivative31<Y,X1,X2, X3>(boost::bind(h, _1, _2, _3), x1, x2, x3, delta);
@@ -215,7 +283,7 @@ namespace gtsam {
 		return H;
 	}
 	template<class Y, class X1, class X2, class X3>
-	Matrix numericalDerivative32
+	inline Matrix numericalDerivative32
 	(Y (*h)(const X1&, const X2&, const X3&),
 			const X1& x1, const X2& x2, const X3& x3, double delta=1e-5) {
 		return numericalDerivative32<Y,X1,X2, X3>(boost::bind(h, _1, _2, _3), x1, x2, x3, delta);
@@ -241,9 +309,88 @@ namespace gtsam {
 		return H;
 	}
 	template<class Y, class X1, class X2, class X3>
-	Matrix numericalDerivative33
+	inline Matrix numericalDerivative33
 	(Y (*h)(const X1&, const X2&, const X3&),
 			const X1& x1, const X2& x2, const X3& x3, double delta=1e-5) {
 		return numericalDerivative33<Y,X1,X2, X3>(boost::bind(h, _1, _2, _3), x1, x2, x3, delta);
 	}
+
+
+	/**
+	 * specializations for double outputs
+	 */
+	template<class X1, class X2, class X3>
+	Matrix numericalDerivative31
+	(boost::function<double(const X1&, const X2&, const X3&)> h,
+			const X1& x1, const X2& x2, const X3& x3, double delta=1e-5) {
+		double hx = h(x1,x2,x3);
+		double factor = 1.0/(2.0*delta);
+		const size_t m = 1, n = dim(x1);
+		Vector d(n,0.0);
+		Matrix H = zeros(m,n);
+		for (size_t j=0;j<n;j++) {
+			d(j) +=   delta; Vector hxplus = Vector_(1,h(expmap(x1,d),x2,x3)-hx);
+			d(j) -= 2*delta; Vector hxmin  = Vector_(1,h(expmap(x1,d),x2,x3)-hx);
+			d(j) +=   delta; Vector dh = (hxplus-hxmin)*factor;
+			for (size_t i=0;i<m;i++) H(i,j) = dh(i);
+		}
+		return H;
+	}
+	template<class X1, class X2, class X3>
+	inline Matrix numericalDerivative31
+	(double (*h)(const X1&, const X2&, const X3&),
+			const X1& x1, const X2& x2, const X3& x3, double delta=1e-5) {
+		return numericalDerivative31<X1,X2, X3>(boost::bind(h, _1, _2, _3), x1, x2, x3, delta);
+	}
+
+	// arg 2
+	template<class X1, class X2, class X3>
+	Matrix numericalDerivative32
+	(boost::function<double(const X1&, const X2&, const X3&)> h,
+			const X1& x1, const X2& x2, const X3& x3, double delta=1e-5) {
+		double hx = h(x1,x2,x3);
+		double factor = 1.0/(2.0*delta);
+		const size_t m = 1, n = dim(x2);
+		Vector d(n,0.0);
+		Matrix H = zeros(m,n);
+		for (size_t j=0;j<n;j++) {
+			d(j) +=   delta; Vector hxplus = Vector_(1,h(x1, expmap(x2,d),x3)-hx);
+			d(j) -= 2*delta; Vector hxmin  = Vector_(1,h(x1, expmap(x2,d),x3)-hx);
+			d(j) +=   delta; Vector dh = (hxplus-hxmin)*factor;
+			for (size_t i=0;i<m;i++) H(i,j) = dh(i);
+		}
+		return H;
+	}
+	template<class X1, class X2, class X3>
+	inline Matrix numericalDerivative32
+	(double (*h)(const X1&, const X2&, const X3&),
+			const X1& x1, const X2& x2, const X3& x3, double delta=1e-5) {
+		return numericalDerivative32<X1,X2, X3>(boost::bind(h, _1, _2, _3), x1, x2, x3, delta);
+	}
+
+	// arg 3
+	template<class X1, class X2, class X3>
+	Matrix numericalDerivative33
+	(boost::function<double(const X1&, const X2&, const X3&)> h,
+			const X1& x1, const X2& x2, const X3& x3, double delta=1e-5) {
+		double hx = h(x1,x2,x3);
+		double factor = 1.0/(2.0*delta);
+		const size_t m = 1, n = dim(x3);
+		Vector d(n,0.0);
+		Matrix H = zeros(m,n);
+		for (size_t j=0;j<n;j++) {
+			d(j) +=   delta; Vector hxplus = Vector_(1,h(x1, x2, expmap(x3,d))-hx);
+			d(j) -= 2*delta; Vector hxmin  = Vector_(1,h(x1, x2, expmap(x3,d))-hx);
+			d(j) +=   delta; Vector dh = (hxplus-hxmin)*factor;
+			for (size_t i=0;i<m;i++) H(i,j) = dh(i);
+		}
+		return H;
+	}
+	template<class X1, class X2, class X3>
+	inline Matrix numericalDerivative33
+	(double (*h)(const X1&, const X2&, const X3&),
+			const X1& x1, const X2& x2, const X3& x3, double delta=1e-5) {
+		return numericalDerivative33<X1,X2, X3>(boost::bind(h, _1, _2, _3), x1, x2, x3, delta);
+	}
+
 }

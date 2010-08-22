@@ -173,25 +173,25 @@ namespace gtsam {
      * rotate point from rotated coordinate frame to
      * world = R*p
      */
-    Point3 rotate(const Point3& p) const
-			{return r1_ * p.x() + r2_ * p.y() + r3_ * p.z();}
+//    Point3 rotate(const Point3& p) const
+//			{return r1_ * p.x() + r2_ * p.y() + r3_ * p.z();}
     inline Point3 operator*(const Point3& p) const { return rotate(p);}
 
     /**
      * rotate point from rotated coordinate frame to
      * world = R*p
      */
-    static inline Point3 rotate(const Rot3& R, const Point3& p) { return R*p;}
-    static Point3 rotate(const Rot3& R, const Point3& p,
-  	boost::optional<Matrix&> H1,  boost::optional<Matrix&> H2);
+//    static inline Point3 rotate(const Rot3& R, const Point3& p) { return R*p;}
+    Point3 rotate(const Point3& p,
+  	boost::optional<Matrix&> H1=boost::none,  boost::optional<Matrix&> H2=boost::none) const;
 
     /**
      * rotate point from world to rotated
      * frame = R'*p
      */
-    static Point3 unrotate(const Rot3& R, const Point3& p);
-    static Point3 unrotate(const Rot3& R, const Point3& p,
-    	boost::optional<Matrix&> H1, boost::optional<Matrix&> H2);
+//    static Point3 unrotate(const Rot3& R, const Point3& p);
+    Point3 unrotate(const Point3& p,
+    	boost::optional<Matrix&> H1=boost::none, boost::optional<Matrix&> H2=boost::none) const;
 
   private:
     /** Serialization function */

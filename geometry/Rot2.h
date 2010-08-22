@@ -57,23 +57,16 @@ namespace gtsam {
     /** Named constructor from cos(theta),sin(theta) pair, will *not* normalize! */
     static Rot2 fromCosSin(double c, double s);
 
-    /** Named constructor that behaves as atan2, i.e., y,x order (!) and normalizes */
-
 	/**
-	 * Named constructor
+	 * Named constructor with derivative
 	 * Calculate relative bearing to a landmark in local coordinate frame
 	 * @param point 2D location of landmark
 	 * @param H optional reference for Jacobian
 	 * @return 2D rotation \in SO(2)
 	 */
-	static Rot2 relativeBearing(const Point2& d);
+	static Rot2 relativeBearing(const Point2& d, boost::optional<Matrix&> H=boost::none);
 
-	/**
-	 * Named constructor with derivative
-	 * Calculate relative bearing and optional derivative
-	 */
-	static Rot2 relativeBearing(const Point2& d, boost::optional<Matrix&> H);
-
+	/** Named constructor that behaves as atan2, i.e., y,x order (!) and normalizes */
   	static Rot2 atan2(double y, double x);
 
   	/** return angle (RADIANS) */
@@ -133,25 +126,22 @@ namespace gtsam {
 			return fromCosSin(c_ * R.c_ - s_ * R.s_, s_ * R.c_ + c_ * R.s_);
 		}
 
-    /** rotate from world to rotated = R*p */
-    Point2 rotate(const Point2& p) const;
-
     /**
      * rotate point from rotated coordinate frame to
      * world = R*p
      */
-  	static Point2 rotate(const Rot2 & R, const Point2& p, boost::optional<Matrix&> H1 =
-  			boost::none, boost::optional<Matrix&> H2 = boost::none);
+  	Point2 rotate(const Point2& p, boost::optional<Matrix&> H1 =
+  			boost::none, boost::optional<Matrix&> H2 = boost::none) const;
 
-    /** rotate from world to rotated = R'*p */
-    Point2 unrotate(const Point2& p) const;
+    /** syntactic sugar for rotate */
+    inline Point2 operator*(const Point2& p) const {return rotate(p);}
 
     /**
      * rotate point from world to rotated
      * frame = R'*p
      */
-    static Point2 unrotate(const Rot2 & R, const Point2& p, boost::optional<Matrix&> H1 =
-  			boost::none, boost::optional<Matrix&> H2 = boost::none);
+    Point2 unrotate(const Point2& p, boost::optional<Matrix&> H1 =
+  			boost::none, boost::optional<Matrix&> H2 = boost::none) const;
 
   private:
     /** Serialization function */
@@ -163,9 +153,6 @@ namespace gtsam {
     }
 
   }; // Rot2
-
-  /** syntactic sugar for rotate */
-  inline Point2 operator*(const Rot2& R, const Point2& p) {return R.rotate(p);}
 
 } // gtsam
 

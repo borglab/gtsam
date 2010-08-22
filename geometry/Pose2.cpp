@@ -83,135 +83,118 @@ namespace gtsam {
   /* ************************************************************************* */
   // Calculate Adjoint map
   // Ad_pose is 3*3 matrix that when applied to twist xi, returns Ad_pose(xi)
-  Matrix AdjointMap(const Pose2& p) {
-		const Rot2 R = p.r();
-		const Point2 t = p.t();
-  	double c = R.c(), s = R.s(), x = t.x(), y = t.y();
-		return Matrix_(3,3,
-				  c,  -s,   y,
-				  s,   c,  -x,
-				0.0, 0.0, 1.0
-				);
-	}
+  Matrix Pose2::AdjointMap() const {
+	  double c = r_.c(), s = r_.s(), x = t_.x(), y = t_.y();
+	  return Matrix_(3,3,
+			  c,  -s,   y,
+			  s,   c,  -x,
+			  0.0, 0.0, 1.0
+	  );
+  }
 
   /* ************************************************************************* */
   Pose2 Pose2::inverse() const {
-	  const Rot2& R = r_;
-	  const Point2& t = t_;
-	  return Pose2(R.inverse(), R.unrotate(Point2(-t.x(), -t.y())));
+	  return Pose2(r_.inverse(), r_.unrotate(Point2(-t_.x(), -t_.y())));
   }
 
   Pose2 inverse(const Pose2& pose, boost::optional<Matrix&> H1) {
-	  if (H1) *H1 = -AdjointMap(pose);
+	  if (H1) *H1 = -pose.AdjointMap();
 	  return pose.inverse();
   }
 
   /* ************************************************************************* */
   // see doc/math.lyx, SE(2) section
-  Point2 Pose2::transform_to(const Pose2& pose, const Point2& point, boost::optional<
-			Matrix&> H1, boost::optional<Matrix&> H2) {
-		const Rot2& R = pose.r();
-		Point2 d = point - pose.t();
-		Point2 q = R.unrotate(d);
+  Point2 Pose2::transform_to(const Point2& point,
+		  boost::optional<Matrix&> H1, boost::optional<Matrix&> H2) const {
+		Point2 d = point - t_;
+		Point2 q = r_.unrotate(d);
 		if (!H1 && !H2) return q;
 		if (H1) *H1 = Matrix_(2, 3,
 					-1.0, 0.0,  q.y(),
 					0.0, -1.0, -q.x());
-		if (H2) *H2 = R.transpose();
+		if (H2) *H2 = r_.transpose();
 		return q;
 	}
 
   /* ************************************************************************* */
   // see doc/math.lyx, SE(2) section
-
   Pose2 compose(const Pose2& p1, const Pose2& p2, boost::optional<Matrix&> H1,
       boost::optional<Matrix&> H2) {
     // TODO: inline and reuse?
-    if(H1) *H1 = AdjointMap(inverse(p2));
+    if(H1) *H1 = inverse(p2).AdjointMap();
     if(H2) *H2 = I3;
     return p1*p2;
   }
 
   /* ************************************************************************* */
   // see doc/math.lyx, SE(2) section
-  Point2 Pose2::transform_from(const Pose2& pose, const Point2& p,
-  		boost::optional<Matrix&> H1, boost::optional<Matrix&> H2) {
-  	const Rot2& rot = pose.r();
-		const Point2 q = rot * p;
-  	if (H1 || H2) {
-			const Matrix R = rot.matrix();
-			const Matrix Drotate1 = Matrix_(2, 1, -q.y(), q.x());
-	  	if (H1) *H1 = collect(2, &R, &Drotate1); // [R R_{pi/2}q]
-			if (H2) *H2 = R;                         // R
-  	}
-		return q + pose.t();
+  Point2 Pose2::transform_from(const Point2& p,
+		  boost::optional<Matrix&> H1, boost::optional<Matrix&> H2) const {
+	  const Point2 q = r_ * p;
+	  if (H1 || H2) {
+		  const Matrix R = r_.matrix();
+		  const Matrix Drotate1 = Matrix_(2, 1, -q.y(), q.x());
+		  if (H1) *H1 = collect(2, &R, &Drotate1); // [R R_{pi/2}q]
+		  if (H2) *H2 = R;                         // R
+	  }
+	  return q + t_;
   }
 
   /* ************************************************************************* */
   Pose2 between(const Pose2& p1, const Pose2& p2, boost::optional<Matrix&> H1,
-			boost::optional<Matrix&> H2) {
-  	// get cosines and sines from rotation matrices
-  	const Rot2& R1 = p1.r(), R2 = p2.r();
-  	double c1=R1.c(), s1=R1.s(), c2=R2.c(), s2=R2.s();
+		  boost::optional<Matrix&> H2) {
+	  // get cosines and sines from rotation matrices
+	  const Rot2& R1 = p1.r(), R2 = p2.r();
+	  double c1=R1.c(), s1=R1.s(), c2=R2.c(), s2=R2.s();
 
-  	// Calculate delta rotation = between(R1,R2)
-		double c = c1 * c2 + s1 * s2, s = -s1 * c2 + c1 * s2;
-    Rot2 R(Rot2::atan2(s,c)); // normalizes
+	  // Calculate delta rotation = between(R1,R2)
+	  double c = c1 * c2 + s1 * s2, s = -s1 * c2 + c1 * s2;
+	  Rot2 R(Rot2::atan2(s,c)); // normalizes
 
-  	// Calculate delta translation = unrotate(R1, dt);
-		Point2 dt = p2.t() - p1.t();
-		double x = dt.x(), y = dt.y();
-		Point2 t(c1 * x + s1 * y, -s1 * x + c1 * y);
+	  // Calculate delta translation = unrotate(R1, dt);
+	  Point2 dt = p2.t() - p1.t();
+	  double x = dt.x(), y = dt.y();
+	  Point2 t(c1 * x + s1 * y, -s1 * x + c1 * y);
 
-		// FD: This is just -AdjointMap(between(p2,p1)) inlined and re-using above
-		if (H1) {
-			double dt1 = -s2 * x + c2 * y;
-			double dt2 = -c2 * x - s2 * y;
-			H1->resize(3,3);
-			double data[9] = {
-				-c,  -s,  dt1,
-				 s,  -c,  dt2,
-			 0.0, 0.0, -1.0};
-			 copy(data, data+9, H1->data().begin());
-		}
-		if (H2) *H2 = I3;
+	  // FD: This is just -AdjointMap(between(p2,p1)) inlined and re-using above
+	  if (H1) {
+		  double dt1 = -s2 * x + c2 * y;
+		  double dt2 = -c2 * x - s2 * y;
+		  H1->resize(3,3);
+		  double data[9] = {
+				  -c,  -s,  dt1,
+				  s,  -c,  dt2,
+				  0.0, 0.0, -1.0};
+		  copy(data, data+9, H1->data().begin());
+	  }
+	  if (H2) *H2 = I3;
 
-		return Pose2(R,t);
-	}
-
-  /* ************************************************************************* */
-	Rot2 bearing(const Pose2& pose, const Point2& point) {
-		Point2 d = Pose2::transform_to(pose, point);
-		return Rot2::relativeBearing(d);
-	}
-
-	Rot2 bearing(const Pose2& pose, const Point2& point,
-			boost::optional<Matrix&> H1, boost::optional<Matrix&> H2) {
-		if (!H1 && !H2) return bearing(pose, point);
-		Point2 d = Pose2::transform_to(pose, point, H1, H2);
-		Matrix D_result_d;
-		Rot2 result = Rot2::relativeBearing(d, D_result_d);
-		if (H1) *H1 = D_result_d * (*H1);
-		if (H2) *H2 = D_result_d * (*H2);
-		return result;
-	}
+	  return Pose2(R,t);
+  }
 
   /* ************************************************************************* */
-	double range(const Pose2& pose, const Point2& point) {
-		Point2 d = Pose2::transform_to(pose, point);
-		return d.norm();
-	}
+  Rot2 Pose2::bearing(const Point2& point,
+		  boost::optional<Matrix&> H1, boost::optional<Matrix&> H2) const {
+	  Point2 d = transform_to(point, H1, H2);
+	  if (!H1 && !H2) return Rot2::relativeBearing(d);
+	  Matrix D_result_d;
+	  Rot2 result = Rot2::relativeBearing(d, D_result_d);
+	  if (H1) *H1 = D_result_d * (*H1);
+	  if (H2) *H2 = D_result_d * (*H2);
+	  return result;
+  }
 
-	double range(const Pose2& pose, const Point2& point,
-			boost::optional<Matrix&> H1, boost::optional<Matrix&> H2) {
-		if (!H1 && !H2) return range(pose, point);
-		Point2 d = Pose2::transform_to(pose, point, H1, H2);
-		double x = d.x(), y = d.y(), d2 = x * x + y * y, n = sqrt(d2);
-		Matrix D_result_d = Matrix_(1, 2, x / n, y / n);
-		if (H1) *H1 = D_result_d * (*H1);
-		if (H2) *H2 = D_result_d * (*H2);
-		return n;
-	}
+  /* ************************************************************************* */
+  double Pose2::range(const Point2& point,
+		  boost::optional<Matrix&> H1, boost::optional<Matrix&> H2) const {
+	  if (!H1 && !H2) return transform_to(point).norm();
+	  Point2 d = transform_to(point, H1, H2);
+	  double x = d.x(), y = d.y(), d2 = x * x + y * y, n = sqrt(d2);
+	  Matrix D_result_d = Matrix_(1, 2, x / n, y / n);
+	  if (H1) *H1 = D_result_d * (*H1);
+	  if (H2) *H2 = D_result_d * (*H2);
+	  return n;
+  }
 
   /* ************************************************************************* */
 } // namespace gtsam

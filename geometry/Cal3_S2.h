@@ -85,11 +85,11 @@ namespace gtsam {
 
 		/**
 		 * convert intrinsic coordinates xy to image coordinates uv
+		 * with optional derivatives
 		 */
-		Point2 uncalibrate(const Point2& p) const {
-			const double x = p.x(), y = p.y();
-			return Point2(fx_ * x + s_ * y + u0_, fy_ * y + v0_);
-		}
+		Point2 uncalibrate(const Point2& p,
+				boost::optional<Matrix&> H1 = boost::none,
+				boost::optional<Matrix&> H2 = boost::none) const;
 
 		/**
 		 * convert image coordinates uv to intrinsic coordinates xy
@@ -100,7 +100,6 @@ namespace gtsam {
 		}
 
 		/** friends */
-		friend Matrix Duncalibrate2(const Cal3_S2& K, const Point2& p);
 		friend Cal3_S2 expmap(const Cal3_S2& cal, const Vector& d);
 
 	private:
@@ -132,10 +131,4 @@ namespace gtsam {
             cal.s_ + d(2), cal.u0_ + d(3), cal.v0_ + d(4));
     }
 
-	/**
-	 * convert intrinsic coordinates xy to image coordinates uv
-	 */
-	Point2 uncalibrate(const Cal3_S2& K, const Point2& p);
-	Matrix Duncalibrate1(const Cal3_S2& K, const Point2& p);
-	Matrix Duncalibrate2(const Cal3_S2& K, const Point2& p);
 }

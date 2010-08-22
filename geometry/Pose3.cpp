@@ -21,9 +21,9 @@ namespace gtsam {
   // Calculate Adjoint map
   // Ad_pose is 6*6 matrix that when applied to twist xi, returns Ad_pose(xi)
   // Experimental - unit tests of derivatives based on it do not check out yet
-  Matrix AdjointMap(const Pose3& p) {
-		const Matrix R = p.rotation().matrix();
-		const Vector t = p.translation().vector();
+  Matrix Pose3::AdjointMap() const {
+		const Matrix R = R_.matrix();
+		const Vector t = t_.vector();
 		Matrix A = skewSymmetric(t)*R;
 		Matrix DR = collect(2, &R, &Z3);
 		Matrix Dt = collect(2, &A, &R);
@@ -134,55 +134,56 @@ namespace gtsam {
   /* ************************************************************************* */
   Pose3 Pose3::transform_to(const Pose3& pose) const {
 		Rot3 cRv = R_ * Rot3(gtsam::inverse(pose.R_));
-		Point3 t = Pose3::transform_to(pose, t_);
+		Point3 t = pose.transform_to(t_);
 		return Pose3(cRv, t);
 	}
 
   /* ************************************************************************* */
-  Point3 Pose3::transform_from(const Pose3& pose, const Point3& p) {
-    return pose.rotation() * p + pose.translation();
-  }
+//  Point3 Pose3::transform_from(const Pose3& pose, const Point3& p) {
+//    return pose.rotation() * p + pose.translation();
+//  }
 
   /* ************************************************************************* */
-  Point3 Pose3::transform_from(const Pose3& pose, const Point3& p,
-		  boost::optional<Matrix&> H1, boost::optional<Matrix&> H2) {
+  Point3 Pose3::transform_from(const Point3& p,
+		  boost::optional<Matrix&> H1, boost::optional<Matrix&> H2) const {
 	  if (H1) {
 #ifdef CORRECT_POSE3_EXMAP
-			const Matrix R = pose.rotation().matrix();
+			const Matrix R = R_.matrix();
 			Matrix DR = R*skewSymmetric(-p.x(), -p.y(), -p.z());
 			*H1 = collect(2,&DR,&R);
 #else
 			Matrix DR;
-			Rot3::rotate(pose.rotation(), p, DR, boost::none);
+			R_.rotate(p, DR, boost::none);
 			*H1 = collect(2,&DR,&I3);
 #endif
 	  }
-	  if (H2) *H2 = pose.rotation().matrix();
-	  return Pose3::transform_from(pose, p);
+	  if (H2) *H2 = R_.matrix();
+	  return R_ * p + t_;
   }
 
   /* ************************************************************************* */
-  Point3 Pose3::transform_to(const Pose3& pose, const Point3& p) {
-    Point3 sub = p - pose.translation();
-    return Rot3::unrotate(pose.rotation(), sub);
-  }
+//  Point3 Pose3::transform_to(const Pose3& pose, const Point3& p) {
+//    Point3 sub = p - pose.translation();
+//    return pose.rotation().unrotate(sub);
+//  }
 
   /* ************************************************************************* */
-  Point3 Pose3::transform_to(const Pose3& pose, const Point3& p,
-    		  	boost::optional<Matrix&> H1, boost::optional<Matrix&> H2) {
+  Point3 Pose3::transform_to(const Point3& p,
+    		  	boost::optional<Matrix&> H1, boost::optional<Matrix&> H2) const {
+	  const Point3 result = R_.unrotate(p - t_);
 	  if (H1) { // *H1 = Dtransform_to1(pose, p);
-		Point3 q = transform_to(pose,p);
+		const Point3& q = result;
 		Matrix DR = skewSymmetric(q.x(), q.y(), q.z());
 #ifdef CORRECT_POSE3_EXMAP
 		*H1 =  collect(2, &DR, &_I3);
 #else
-		Matrix DT = - pose.rotation().transpose(); // negative because of sub
+		Matrix DT = - R_.transpose(); // negative because of sub
 		*H1 =  collect(2,&DR,&DT);
 #endif
 	  }
 
-	  if (H2) *H2 = pose.rotation().transpose();
-	  return Pose3::transform_to(pose, p);
+	  if (H2) *H2 = R_.transpose();
+	  return result;
   }
 
   /* ************************************************************************* */
@@ -197,7 +198,7 @@ namespace gtsam {
 		Matrix DR_R1 = R2.transpose(), DR_t1 = Z3;
 		Matrix DR = collect(2, &DR_R1, &DR_t1);
 		Matrix Dt;
-		Pose3::transform_from(p1,t2, Dt, boost::none);
+		p1.transform_from(t2, Dt, boost::none);
 		*H1 = gtsam::stack(2, &DR, &Dt);
 #endif
 	  }
@@ -226,7 +227,7 @@ namespace gtsam {
 		const Point3& t = p.translation();
 		Matrix Rt = R.transpose();
 		Matrix DR_R1 = -R.matrix(), DR_t1 = Z3;
-		Matrix Dt_R1 = -skewSymmetric(Rot3::unrotate(R,t).vector()), Dt_t1 = -Rt;
+		Matrix Dt_R1 = -skewSymmetric(R.unrotate(t).vector()), Dt_t1 = -Rt;
 		Matrix DR = collect(2, &DR_R1, &DR_t1);
 		Matrix Dt = collect(2, &Dt_R1, &Dt_t1);
 		*H1 = gtsam::stack(2, &DR, &Dt);

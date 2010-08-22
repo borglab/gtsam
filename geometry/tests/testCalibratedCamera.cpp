@@ -71,40 +71,27 @@ TEST( CalibratedCamera, project)
 }
 
 /* ************************************************************************* */
-
 TEST( CalibratedCamera, Dproject_to_camera1) {
 	Point3 pp(155,233,131);
-	Matrix test1 = Dproject_to_camera1(pp);
-	Matrix test2 = numericalDerivative11(project_to_camera, pp);
+	Matrix test1;
+	CalibratedCamera::project_to_camera(pp, test1);
+	Matrix test2 = numericalDerivative11<Point2,Point3>(
+			boost::bind(CalibratedCamera::project_to_camera, _1, boost::none), pp);
 	CHECK(assert_equal(test1, test2));
 }
 
 /* ************************************************************************* */
 Point2 project2(const Pose3& pose, const Point3& point) {
-	return project(CalibratedCamera(pose), point);
-}
-
-TEST( CalibratedCamera, Dproject_pose)
-{
-	Matrix computed = Dproject_pose(camera, point1);
-	Matrix numerical = numericalDerivative21(project2, pose1, point1);
-	CHECK(assert_equal(computed, numerical,1e-7));
-}
-
-TEST( CalibratedCamera, Dproject_point)
-{
-	Matrix computed = Dproject_point(camera, point1);
-	Matrix numerical = numericalDerivative22(project2, pose1, point1);
-	CHECK(assert_equal(computed, numerical,1e-7));
+	return CalibratedCamera(pose).project(point);
 }
 
 TEST( CalibratedCamera, Dproject_point_pose)
 {
 	Matrix Dpose, Dpoint;
-	Point2 result = Dproject_pose_point(camera, point1, Dpose, Dpoint);
+	Point2 result = camera.project(point1, Dpose, Dpoint);
 	Matrix numerical_pose  = numericalDerivative21(project2, pose1, point1);
 	Matrix numerical_point = numericalDerivative22(project2, pose1, point1);
-  CHECK(assert_equal(result, Point2(-.16,  .16) ));
+	CHECK(assert_equal(result, Point2(-.16,  .16) ));
 	CHECK(assert_equal(Dpose,  numerical_pose, 1e-7));
 	CHECK(assert_equal(Dpoint, numerical_point,1e-7));
 }

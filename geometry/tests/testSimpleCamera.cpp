@@ -76,7 +76,6 @@ TEST( SimpleCamera, backproject2)
 	Rot3 rot(1., 0., 0., 0., 0., 1., 0., -1., 0.); // a camera looking down
 	SimpleCamera camera(K, Pose3(rot, origin));
 
-
 	Point3 actual = camera.backproject(Point2(), 1.);
 	Point3 expected(0., 1., 0.);
 	pair<Point2, bool> x = camera.projectSafe(expected);
@@ -88,30 +87,16 @@ TEST( SimpleCamera, backproject2)
 
 /* ************************************************************************* */
 Point2 project2(const Pose3& pose, const Point3& point) {
-	return project(SimpleCamera(K,pose), point);
-}
-
-TEST( SimpleCamera, Dproject_pose)
-{
-	Matrix computed = Dproject_pose(camera, point1);
-	Matrix numerical = numericalDerivative21(project2, pose1, point1);
-	CHECK(assert_equal(computed, numerical,1e-7));
-}
-
-TEST( SimpleCamera, Dproject_point)
-{
-	Matrix computed = Dproject_point(camera, point1);
-	Matrix numerical = numericalDerivative22(project2, pose1, point1);
-	CHECK(assert_equal(computed, numerical,1e-7));
+	return SimpleCamera(K,pose).project(point);
 }
 
 TEST( SimpleCamera, Dproject_point_pose)
 {
 	Matrix Dpose, Dpoint;
-	Point2 result = Dproject_pose_point(camera, point1, Dpose, Dpoint);
+	Point2 result = camera.project(point1, Dpose, Dpoint);
 	Matrix numerical_pose  = numericalDerivative21(project2, pose1, point1);
 	Matrix numerical_point = numericalDerivative22(project2, pose1, point1);
-  CHECK(assert_equal(result, Point2(-100,  100) ));
+	CHECK(assert_equal(result, Point2(-100,  100) ));
 	CHECK(assert_equal(Dpose,  numerical_pose, 1e-7));
 	CHECK(assert_equal(Dpoint, numerical_point,1e-7));
 }

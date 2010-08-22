@@ -33,8 +33,9 @@ TEST( Point3, equals)
 /* ************************************************************************* */
 TEST( Point3, dot)
 {
-	CHECK(Point3::dot(Point3(0,0,0),Point3(1,1,0)) == 0);
-	CHECK(Point3::dot(Point3(1,1,1),Point3(1,1,0)) == 2);
+	Point3 origin, ones(1,1,1);
+	CHECK(origin.dot(Point3(1,1,0)) == 0);
+	CHECK(ones.dot(Point3(1,1,0)) == 2);
 }
 
 /* ************************************************************************* */

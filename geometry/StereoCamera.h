@@ -43,7 +43,17 @@ namespace gtsam {
 			return baseline_;
 		}
 
-		StereoPoint2 project(const Point3& point) const;
+		StereoPoint2 project(const Point3& point,
+				boost::optional<Matrix&> Dproject_stereo_pose = boost::none,
+				boost::optional<Matrix&> Dproject_stereo_point = boost::none) const;
+
+//		Matrix Dproject_stereo_pose(const StereoCamera& camera, const Point3& point);
+//		Matrix Dproject_stereo_point(const StereoCamera& camera, const Point3& point);
+
+	private:
+		/** utility functions */
+		Matrix Dproject_to_stereo_camera1(const Point3& P) const;
+		static Matrix Duncalibrate2(const Cal3_S2& K);
 
 	};
 
@@ -57,15 +67,5 @@ namespace gtsam {
     return StereoCamera(expmap(p0.pose(),d),p0.K(),p0.baseline());
   }
 
-	inline StereoPoint2 project(const StereoCamera& camera, const Point3& point) {
-		return camera.project(point);
-	}
-
-	Matrix Dproject_stereo_pose(const StereoCamera& camera, const Point3& point);
-	Matrix Dproject_stereo_point(const StereoCamera& camera, const Point3& point);
-
-	Matrix
-			Dproject_to_stereo_camera1(const StereoCamera& camera, const Point3& P);
-	Matrix Duncalibrate2(const Cal3_S2& K);
 
 }

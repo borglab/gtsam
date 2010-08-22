@@ -87,14 +87,15 @@ namespace gtsam {
     inline Pose3 compose(const Pose3& t) const { return *this * t; }
 
     /** receives the point in Pose coordinates and transforms it to world coordinates */
-    static Point3 transform_from(const Pose3& pose, const Point3& p);
-    static Point3 transform_from(const Pose3& pose, const Point3& p,
-  		  	boost::optional<Matrix&> H1, boost::optional<Matrix&> H2);
+    Point3 transform_from(const Point3& p,
+  		  	boost::optional<Matrix&> H1=boost::none, boost::optional<Matrix&> H2=boost::none) const;
+
+    /** syntactic sugar for transform */
+    inline Point3 operator*(const Point3& p) { return transform_from(p); }
 
     /** receives the point in world coordinates and transforms it to Pose coordinates */
-    static Point3 transform_to(const Pose3& pose, const Point3& p);
-    static Point3 transform_to(const Pose3& pose, const Point3& p,
-    		  	boost::optional<Matrix&> H1, boost::optional<Matrix&> H2);
+    Point3 transform_to(const Point3& p,
+    		  	boost::optional<Matrix&> H1=boost::none, boost::optional<Matrix&> H2=boost::none) const;
 
     /** Exponential map at identity - create a pose with a translation and
      * rotation (in canonical coordinates). */
@@ -103,6 +104,28 @@ namespace gtsam {
     /** Log map at identity - return the translation and canonical rotation
      * coordinates of a pose. */
     static Vector Logmap(const Pose3& p);
+
+    /**
+     * Calculate Adjoint map
+     * Ad_pose is 6*6 matrix that when applied to twist xi, returns Ad_pose(xi)
+     */
+    Matrix AdjointMap() const;
+    inline Vector Adjoint(const Vector& xi) const {return AdjointMap()*xi; }
+
+    /**
+     * wedge for Pose3:
+     * @param xi 6-dim twist (omega,v) where
+     *  omega = (wx,wy,wz) 3D angular velocity
+     *  v (vx,vy,vz) = 3D velocity
+     * @return xihat, 4*4 element of Lie algebra that can be exponentiated
+     */
+    static inline Matrix wedge(double wx, double wy, double wz, double vx, double vy, double vz) {
+    	return Matrix_(4,4,
+    			 0.,-wz,  wy,  vx,
+    			 wz,  0.,-wx,  vy,
+    			-wy, wx,   0., vz,
+    			 0.,  0.,  0.,  0.);
+    }
 
   private:
     /** Serialization function */
@@ -119,9 +142,6 @@ namespace gtsam {
 
   /** Logarithm map around another pose T1 */
   Vector logmap(const Pose3& T1, const Pose3& T2);
-
-  /** syntactic sugar for transform */
-  inline Point3 operator*(const Pose3& pose, const Point3& p) { return Pose3::transform_from(pose, p); }
 
   /**
    * Derivatives of compose
@@ -143,35 +163,13 @@ namespace gtsam {
   /**
    * wedge for Pose3:
    * @param xi 6-dim twist (omega,v) where
-   *  omega = (wx,wy,wz) 3D angular velocity
-   *  v (vx,vy,vz) = 3D velocity
-   * @return xihat, 4*4 element of Lie algebra that can be exponentiated
-   */
-  inline Matrix wedge(double wx, double wy, double wz, double vx, double vy, double vz) {
-  	return Matrix_(4,4,
-  			 0.,-wz,  wy,  vx,
-  			 wz,  0.,-wx,  vy,
-  			-wy, wx,   0., vz,
-  			 0.,  0.,  0.,  0.);
-  }
-
-  /**
-   * wedge for Pose3:
-   * @param xi 6-dim twist (omega,v) where
    *  omega = 3D angular velocity
    *  v = 3D velocity
    * @return xihat, 4*4 element of Lie algebra that can be exponentiated
    */
   template <>
   inline Matrix wedge<Pose3>(const Vector& xi) {
-  	return wedge(xi(0),xi(1),xi(2),xi(3),xi(4),xi(5));
+  	return Pose3::wedge(xi(0),xi(1),xi(2),xi(3),xi(4),xi(5));
   }
-
-  /**
-   * Calculate Adjoint map
-   * Ad_pose is 6*6 matrix that when applied to twist xi, returns Ad_pose(xi)
-   */
-  Matrix AdjointMap(const Pose3& p);
-  inline Vector Adjoint(const Pose3& p, const Vector& xi) {return AdjointMap(p)*xi; }
 
 } // namespace gtsam

@@ -35,7 +35,7 @@ namespace gtsam {
 		/** h(x)-z */
 		Vector evaluateError(const Pose2& pose, const Point2& point,
 				boost::optional<Matrix&> H1, boost::optional<Matrix&> H2) const {
-			double hx = gtsam::range(pose, point, H1, H2);
+			double hx = pose.range(point, H1, H2);
 			return Vector_(1, hx - z_);
 		}
 

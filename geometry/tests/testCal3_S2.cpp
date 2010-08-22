@@ -36,18 +36,19 @@ TEST( Cal3_S2, calibrate)
 }
 
 /* ************************************************************************* */
+Point2 uncalibrate_(const Cal3_S2& k, const Point2& pt) { return k.uncalibrate(pt); }
 TEST( Cal3_S2, Duncalibrate1)
 {
-	Matrix computed = Duncalibrate1(K, p);
-	Matrix numerical = numericalDerivative21(uncalibrate, K, p);
+	Matrix computed; K.uncalibrate(p, computed, boost::none);
+	Matrix numerical = numericalDerivative21(uncalibrate_, K, p);
 	CHECK(assert_equal(numerical,computed,1e-8));
 }
 
 /* ************************************************************************* */
 TEST( Cal3_S2, Duncalibrate2)
 {
-	Matrix computed = Duncalibrate2(K, p);
-	Matrix numerical = numericalDerivative22(uncalibrate, K, p);
+	Matrix computed; K.uncalibrate(p, boost::none, computed);
+	Matrix numerical = numericalDerivative22(uncalibrate_, K, p);
 	CHECK(assert_equal(numerical,computed,1e-9));
 }
 

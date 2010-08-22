@@ -48,19 +48,19 @@ public:
 				boost::optional<Matrix&> Dlocal = boost::none) const  {
 		if (Dforeign) {
 			Matrix Af;
-			Transform::transform_from(trans, foreign, boost::none, Af);
+			trans.transform_from(foreign, boost::none, Af);
 			*Dforeign = Af;
 		}
 		if (Dtrans) {
 			Matrix At;
-			Transform::transform_from(trans, foreign, At, boost::none);
+			trans.transform_from(foreign, At, boost::none);
 			*Dtrans = At;
 		}
 		if (Dlocal) {
 			Point dummy;
 			*Dlocal = -1* eye(dummy.dim());
 		}
-		return gtsam::logmap(gtsam::between<Point>(local, Transform::transform_from(trans, foreign)));
+		return gtsam::logmap(gtsam::between<Point>(local, trans.transform_from(foreign)));
 	}
 };
 } // \namespace gtsam

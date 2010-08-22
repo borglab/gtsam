@@ -37,16 +37,10 @@ namespace gtsam {
 			return K_;
 		}
 
-
 		/**
 		 * project a 3d point to the camera and also check the depth
 		 */
 		std::pair<Point2,bool> projectSafe(const Point3& P) const;
-
-		/**
-		 * project a 3d point to the camera
-		 */
-		Point2 project(const Point3& P) const;
 
 		/**
 		 * backproject a 2d point from the camera up to a given scale
@@ -60,43 +54,15 @@ namespace gtsam {
 		 */
 		static SimpleCamera level(const Cal3_S2& K, const Pose2& pose2, double height);
 
-		// Friends
-		friend Matrix Dproject_pose(const SimpleCamera& camera,  const Point3& point);
-		friend Matrix Dproject_point(const SimpleCamera& camera, const Point3& point);
-		friend Point2	Dproject_pose_point(const SimpleCamera& camera, const Point3& point,
-					Matrix& D_projection_pose, Matrix& D_projection_point);
+		/**
+		 * This function receives the camera pose and the landmark location and
+		 * returns the location the point is supposed to appear in the image
+		 */
+		Point2 project(const Point3& point,
+			    boost::optional<Matrix&> H1 = boost::none,
+			    boost::optional<Matrix&> H2 = boost::none) const;
 
 	};
-
-	/* ************************************************************************* */
-	// measurement functions and derivatives
-	/* ************************************************************************* */
-
-	/**
-	 * This function receives the camera pose and the landmark location and
-	 * returns the location the point is supposed to appear in the image
-	 * as well as the sign of the depth.
-	 */
-	std::pair<Point2, bool> projectSafe(const SimpleCamera& camera, const Point3& point);
-
-	/**
-	 * This function receives the camera pose and the landmark location and
-	 * returns the location the point is supposed to appear in the image
-	 */
-	Point2 project(const SimpleCamera& camera, const Point3& point);
-
-	/**
-	 * Derivatives of project.
-	 */
-	Matrix Dproject_pose(const SimpleCamera& camera, const Point3& point);
-	Matrix Dproject_point(const SimpleCamera& camera, const Point3& point);
-
-	/**
-	 * super-duper combined evaluation + derivatives
-	 * saves a lot of time because a lot of computation is shared
-	 */
-	Point2 Dproject_pose_point(const SimpleCamera& camera, const Point3& point,
-					Matrix& D_projection_pose, Matrix& D_projection_point);
 
 }
 

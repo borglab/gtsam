@@ -76,18 +76,19 @@ StereoCamera stereoCam(Pose3(), K, 0.5);
 Point3 p(0, 0, 5);
 
 /* ************************************************************************* */
+StereoPoint2 project_(const StereoCamera& cam, const Point3& point) { return cam.project(point); }
 TEST( StereoCamera, Dproject_stereo_pose)
 {
-	Matrix expected = numericalDerivative21<StereoPoint2,StereoCamera,Point3>(project,stereoCam, p);
-	Matrix actual = Dproject_stereo_pose(stereoCam, p);
+	Matrix expected = numericalDerivative21<StereoPoint2,StereoCamera,Point3>(project_,stereoCam, p);
+	Matrix actual; stereoCam.project(p, actual, boost::none);
 	CHECK(assert_equal(expected,actual,1e-7));
 }
 
 /* ************************************************************************* */
 TEST( StereoCamera, Dproject_stereo_point)
 {
-	Matrix expected = numericalDerivative22<StereoPoint2,StereoCamera,Point3>(project,stereoCam, p);
-	Matrix actual = Dproject_stereo_point(stereoCam, p);
+	Matrix expected = numericalDerivative22<StereoPoint2,StereoCamera,Point3>(project_,stereoCam, p);
+	Matrix actual; stereoCam.project(p, boost::none, actual);
 	CHECK(assert_equal(expected,actual,1e-8));
 }
 

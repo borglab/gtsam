@@ -44,10 +44,10 @@ namespace gtsam {
 			boost::optional<Matrix&> H12_ = H2 ? boost::optional<Matrix&>(H12) : boost::optional<Matrix&>();
 			boost::optional<Matrix&> H22_ = H2 ? boost::optional<Matrix&>(H22) : boost::optional<Matrix&>();
 
-			Rot2 y1 = gtsam::bearing(pose, point, H11_, H12_);
+			Rot2 y1 = pose.bearing(point, H11_, H12_);
 			Vector e1 = logmap(between(bearing_, y1));
 
-			double y2 = gtsam::range(pose, point, H21_, H22_);
+			double y2 = pose.range(point, H21_, H22_);
 			Vector e2 = Vector_(1, y2 - range_);
 
 			if (H1) *H1 = gtsam::stack(2, &H11, &H21);
