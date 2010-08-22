@@ -12,6 +12,7 @@
 #include <iostream>
 #include <boost/format.hpp>
 #include <boost/serialization/serialization.hpp>
+#include <boost/serialization/nvp.hpp>
 #ifdef GTSAM_MAGIC_KEY
 #include <boost/lexical_cast.hpp>
 #endif
