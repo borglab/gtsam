@@ -183,14 +183,13 @@ namespace example {
 		}
 
 		struct UnaryFactor: public gtsam::NonlinearFactor1<Config,
-		simulated2D::PoseKey, Point2> {
+		simulated2D::PoseKey> {
 
 			Point2 z_;
 
 			UnaryFactor(const Point2& z, const SharedGaussian& model,
 					const simulated2D::PoseKey& key) :
-				gtsam::NonlinearFactor1<Config, simulated2D::PoseKey,
-						Point2>(model, key), z_(z) {
+				gtsam::NonlinearFactor1<Config, simulated2D::PoseKey>(model, key), z_(z) {
 			}
 
 			Vector evaluateError(const Point2& x, boost::optional<Matrix&> A =

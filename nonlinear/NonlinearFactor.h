@@ -139,8 +139,13 @@ namespace gtsam {
 	 * the derived class implements error_vector(c) = h(x)-z \approx Ax-b
 	 * This allows a graph to have factors with measurements of mixed type.
 	 */
-	template<class Config, class Key, class X>
+	template<class Config, class Key>
 	class NonlinearFactor1: public NonlinearFactor<Config> {
+
+	public:
+
+		// typedefs for value types pulled from keys
+		typedef typename Key::Value_t X;
 
 	protected:
 
@@ -148,7 +153,7 @@ namespace gtsam {
 		Key key_;
 
 		typedef NonlinearFactor<Config> Base;
-		typedef NonlinearFactor1<Config, Key, X> This;
+		typedef NonlinearFactor1<Config, Key> This;
 
 	public:
 
@@ -237,8 +242,14 @@ namespace gtsam {
 	/**
 	 * A Gaussian nonlinear factor that takes 2 parameters
 	 */
-	template<class Config, class Key1, class X1, class Key2, class X2>
+	template<class Config, class Key1, class Key2>
 	class NonlinearFactor2: public NonlinearFactor<Config> {
+
+	  public:
+
+		// typedefs for value types pulled from keys
+		typedef typename Key1::Value_t X1;
+		typedef typename Key2::Value_t X2;
 
 	protected:
 
@@ -247,7 +258,7 @@ namespace gtsam {
 		Key2 key2_;
 
 		typedef NonlinearFactor<Config> Base;
-		typedef NonlinearFactor2<Config, Key1, X1, Key2, X2> This;
+		typedef NonlinearFactor2<Config, Key1, Key2> This;
 
 	public:
 
@@ -352,18 +363,25 @@ namespace gtsam {
   /**
    * A Gaussian nonlinear factor that takes 3 parameters
    */
-  template<class Config, class Key1, class X1, class Key2, class X2, class Key3, class X3>
+  template<class Config, class Key1, class Key2, class Key3>
   class NonlinearFactor3: public NonlinearFactor<Config> {
+
+  public:
+
+	// typedefs for value types pulled from keys
+	typedef typename Key1::Value_t X1;
+	typedef typename Key2::Value_t X2;
+	typedef typename Key3::Value_t X3;
 
   protected:
 
-    // The values of the keys. Not const to allow serialization
+	// The values of the keys. Not const to allow serialization
     Key1 key1_;
     Key2 key2_;
     Key3 key3_;
 
     typedef NonlinearFactor<Config> Base;
-    typedef NonlinearFactor3<Config, Key1, X1, Key2, X2, Key3, X3> This;
+    typedef NonlinearFactor3<Config, Key1, Key2, Key3> This;
 
   public:
 

@@ -13,7 +13,7 @@
 namespace gtsam {
 
 	using namespace planarSLAM;
-	INSTANTIATE_LIE_CONFIG(PointKey, Point2)
+	INSTANTIATE_LIE_CONFIG(PointKey)
 	INSTANTIATE_TUPLE_CONFIG2(PoseConfig, PointConfig)
 	INSTANTIATE_NONLINEAR_FACTOR_GRAPH(Config)
 	INSTANTIATE_NONLINEAR_OPTIMIZER(Graph, Config)

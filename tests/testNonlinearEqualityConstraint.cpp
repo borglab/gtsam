@@ -285,7 +285,7 @@ typedef visualSLAM::Graph VGraph;
 typedef NonlinearOptimizer<VGraph,VConfig> VOptimizer;
 
 // factors for visual slam
-typedef NonlinearEquality2<VConfig, visualSLAM::PointKey, Point3> Point3Equality;
+typedef NonlinearEquality2<VConfig, visualSLAM::PointKey> Point3Equality;
 
 /* ********************************************************************* */
 TEST (testNonlinearEqualityConstraint, stereo_constrained ) {

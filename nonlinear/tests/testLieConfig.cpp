@@ -11,34 +11,37 @@
 #include <boost/assign/std/list.hpp> // for operator +=
 using namespace boost::assign;
 
-#define GTSAM_MAGIC_KEY
-
 #include <gtsam/nonlinear/LieConfig-inl.h>
-#include <gtsam/base/Vector.h>
+#include <gtsam/base/LieVector.h>
 
 using namespace gtsam;
 using namespace std;
 static double inf = std::numeric_limits<double>::infinity();
 
+typedef TypedSymbol<Vector, 'v'> VecKey;
+typedef LieConfig<VecKey> Config;
+
+VecKey key1(1), key2(2), key3(3), key4(4);
+
 /* ************************************************************************* */
 TEST( LieConfig, equals1 )
 {
-  LieConfig<string,Vector> expected;
+  Config expected;
   Vector v = Vector_(3, 5.0, 6.0, 7.0);
-  expected.insert("a",v);
-  LieConfig<string,Vector> actual;
-  actual.insert("a",v);
+  expected.insert(key1,v);
+  Config actual;
+  actual.insert(key1,v);
   CHECK(assert_equal(expected,actual));
 }
 
 /* ************************************************************************* */
 TEST( LieConfig, equals2 )
 {
-  LieConfig<string,Vector> cfg1, cfg2;
+  Config cfg1, cfg2;
   Vector v1 = Vector_(3, 5.0, 6.0, 7.0);
   Vector v2 = Vector_(3, 5.0, 6.0, 8.0);
-  cfg1.insert("x", v1);
-  cfg2.insert("x", v2);
+  cfg1.insert(key1, v1);
+  cfg2.insert(key1, v2);
   CHECK(!cfg1.equals(cfg2));
   CHECK(!cfg2.equals(cfg1));
 }
@@ -46,11 +49,11 @@ TEST( LieConfig, equals2 )
 /* ************************************************************************* */
 TEST( LieConfig, equals_nan )
 {
-  LieConfig<string,Vector> cfg1, cfg2;
+  Config cfg1, cfg2;
   Vector v1 = Vector_(3, 5.0, 6.0, 7.0);
   Vector v2 = Vector_(3, inf, inf, inf);
-  cfg1.insert("x", v1);
-  cfg2.insert("x", v2);
+  cfg1.insert(key1, v1);
+  cfg2.insert(key1, v2);
   CHECK(!cfg1.equals(cfg2));
   CHECK(!cfg2.equals(cfg1));
 }
@@ -58,22 +61,22 @@ TEST( LieConfig, equals_nan )
 /* ************************************************************************* */
 TEST( LieConfig, insert_config )
 {
-  LieConfig<string,Vector> cfg1, cfg2, expected;
+  Config cfg1, cfg2, expected;
   Vector v1 = Vector_(3, 5.0, 6.0, 7.0);
   Vector v2 = Vector_(3, 8.0, 9.0, 1.0);
   Vector v3 = Vector_(3, 2.0, 4.0, 3.0);
   Vector v4 = Vector_(3, 8.0, 3.0, 7.0);
-  cfg1.insert("x1", v1);
-  cfg1.insert("x2", v2);
-  cfg2.insert("x2", v3);
-  cfg2.insert("x3", v4);
+  cfg1.insert(key1, v1);
+  cfg1.insert(key2, v2);
+  cfg2.insert(key2, v3);
+  cfg2.insert(key3, v4);
 
   cfg1.insert(cfg2);
 
-  expected.insert("x1", v1);
-  expected.insert("x2", v2);
-  expected.insert("x2", v3);
-  expected.insert("x3", v4);
+  expected.insert(key1, v1);
+  expected.insert(key2, v2);
+  expected.insert(key2, v3);
+  expected.insert(key3, v4);
 
   CHECK(assert_equal(cfg1, expected));
 }
@@ -81,47 +84,47 @@ TEST( LieConfig, insert_config )
 /* ************************************************************************* */
 TEST( LieConfig, update_element )
 {
-  LieConfig<string,Vector> cfg;
+  Config cfg;
   Vector v1 = Vector_(3, 5.0, 6.0, 7.0);
   Vector v2 = Vector_(3, 8.0, 9.0, 1.0);
 
-  cfg.insert("x1", v1);
+  cfg.insert(key1, v1);
   CHECK(cfg.size() == 1);
-  CHECK(assert_equal(v1, cfg.at("x1")));
+  CHECK(assert_equal(v1, cfg.at(key1)));
 
-  cfg.update("x1", v2);
+  cfg.update(key1, v2);
   CHECK(cfg.size() == 1);
-  CHECK(assert_equal(v2, cfg.at("x1")));
+  CHECK(assert_equal(v2, cfg.at(key1)));
 }
 
 /* ************************************************************************* */
 TEST(LieConfig, dim_zero)
 {
-  LieConfig<string,Vector> config0;
-  config0.insert("v1", Vector_(2, 2.0, 3.0));
-  config0.insert("v2", Vector_(3, 5.0, 6.0, 7.0));
+  Config config0;
+  config0.insert(key1, Vector_(2, 2.0, 3.0));
+  config0.insert(key2, Vector_(3, 5.0, 6.0, 7.0));
   LONGS_EQUAL(5,config0.dim());
 
   VectorConfig expected;
-  expected.insert("v1", zero(2));
-  expected.insert("v2", zero(3));
+  expected.insert(key1, zero(2));
+  expected.insert(key2, zero(3));
   CHECK(assert_equal(expected, config0.zero()));
 }
 
 /* ************************************************************************* */
 TEST(LieConfig, expmap_a)
 {
-  LieConfig<string,Vector> config0;
-  config0.insert("v1", Vector_(3, 1.0, 2.0, 3.0));
-  config0.insert("v2", Vector_(3, 5.0, 6.0, 7.0));
+  Config config0;
+  config0.insert(key1, Vector_(3, 1.0, 2.0, 3.0));
+  config0.insert(key2, Vector_(3, 5.0, 6.0, 7.0));
 
   VectorConfig increment;
-  increment.insert("v1", Vector_(3, 1.0, 1.1, 1.2));
-  increment.insert("v2", Vector_(3, 1.3, 1.4, 1.5));
+  increment.insert(key1, Vector_(3, 1.0, 1.1, 1.2));
+  increment.insert(key2, Vector_(3, 1.3, 1.4, 1.5));
 
-  LieConfig<string,Vector> expected;
-  expected.insert("v1", Vector_(3, 2.0, 3.1, 4.2));
-  expected.insert("v2", Vector_(3, 6.3, 7.4, 8.5));
+  Config expected;
+  expected.insert(key1, Vector_(3, 2.0, 3.1, 4.2));
+  expected.insert(key2, Vector_(3, 6.3, 7.4, 8.5));
 
   CHECK(assert_equal(expected, expmap(config0, increment)));
 }
@@ -129,16 +132,16 @@ TEST(LieConfig, expmap_a)
 /* ************************************************************************* */
 TEST(LieConfig, expmap_b)
 {
-  LieConfig<string,Vector> config0;
-  config0.insert("v1", Vector_(3, 1.0, 2.0, 3.0));
-  config0.insert("v2", Vector_(3, 5.0, 6.0, 7.0));
+  Config config0;
+  config0.insert(key1, Vector_(3, 1.0, 2.0, 3.0));
+  config0.insert(key2, Vector_(3, 5.0, 6.0, 7.0));
 
   VectorConfig increment;
-  increment.insert("v2", Vector_(3, 1.3, 1.4, 1.5));
+  increment.insert(key2, Vector_(3, 1.3, 1.4, 1.5));
 
-  LieConfig<string,Vector> expected;
-  expected.insert("v1", Vector_(3, 1.0, 2.0, 3.0));
-  expected.insert("v2", Vector_(3, 6.3, 7.4, 8.5));
+  Config expected;
+  expected.insert(key1, Vector_(3, 1.0, 2.0, 3.0));
+  expected.insert(key2, Vector_(3, 6.3, 7.4, 8.5));
 
   CHECK(assert_equal(expected, expmap(config0, increment)));
 }
@@ -146,17 +149,17 @@ TEST(LieConfig, expmap_b)
 /* ************************************************************************* */
 TEST(LieConfig, expmap_c)
 {
-  LieConfig<string,Vector> config0;
-  config0.insert("v1", Vector_(3, 1.0, 2.0, 3.0));
-  config0.insert("v2", Vector_(3, 5.0, 6.0, 7.0));
+  Config config0;
+  config0.insert(key1, Vector_(3, 1.0, 2.0, 3.0));
+  config0.insert(key2, Vector_(3, 5.0, 6.0, 7.0));
 
   Vector increment = Vector_(6,
       1.0, 1.1, 1.2,
       1.3, 1.4, 1.5);
 
-  LieConfig<string,Vector> expected;
-  expected.insert("v1", Vector_(3, 2.0, 3.1, 4.2));
-  expected.insert("v2", Vector_(3, 6.3, 7.4, 8.5));
+  Config expected;
+  expected.insert(key1, Vector_(3, 2.0, 3.1, 4.2));
+  expected.insert(key2, Vector_(3, 6.3, 7.4, 8.5));
 
   CHECK(assert_equal(expected, expmap(config0, increment)));
 }
@@ -164,9 +167,9 @@ TEST(LieConfig, expmap_c)
 /* ************************************************************************* */
 /*TEST(LieConfig, expmap_d)
 {
-  LieConfig<string,Vector> config0;
-  config0.insert("v1", Vector_(3, 1.0, 2.0, 3.0));
-  config0.insert("v2", Vector_(3, 5.0, 6.0, 7.0));
+  Config config0;
+  config0.insert(key1, Vector_(3, 1.0, 2.0, 3.0));
+  config0.insert(key2, Vector_(3, 5.0, 6.0, 7.0));
   //config0.print("config0");
   CHECK(equal(config0, config0));
   CHECK(config0.equals(config0));
@@ -204,30 +207,30 @@ TEST(LieConfig, expmap_c)
 /* ************************************************************************* */
 TEST(LieConfig, exists_)
 {
-	LieConfig<string,Vector> config0;
-	config0.insert("v1", Vector_(1, 1.));
-	config0.insert("v2", Vector_(1, 2.));
+	Config config0;
+	config0.insert(key1, Vector_(1, 1.));
+	config0.insert(key2, Vector_(1, 2.));
 
-	boost::optional<Vector> v = config0.exists_("v1");
+	boost::optional<Vector> v = config0.exists_(key1);
 	CHECK(assert_equal(Vector_(1, 1.),*v));
 }
 
 /* ************************************************************************* */
 TEST(LieConfig, update)
 {
-	LieConfig<string,Vector> config0;
-	config0.insert("v1", Vector_(1, 1.));
-	config0.insert("v2", Vector_(1, 2.));
+	Config config0;
+	config0.insert(key1, Vector_(1, 1.));
+	config0.insert(key2, Vector_(1, 2.));
 
-	LieConfig<string,Vector> superset;
-	superset.insert("v1", Vector_(1, -1.));
-	superset.insert("v2", Vector_(1, -2.));
-	superset.insert("v3", Vector_(1, -3.));
+	Config superset;
+	superset.insert(key1, Vector_(1, -1.));
+	superset.insert(key2, Vector_(1, -2.));
+	superset.insert(key3, Vector_(1, -3.));
 	config0.update(superset);
 
-	LieConfig<string,Vector> expected;
-	expected.insert("v1", Vector_(1, -1.));
-	expected.insert("v2", Vector_(1, -2.));
+	Config expected;
+	expected.insert(key1, Vector_(1, -1.));
+	expected.insert(key2, Vector_(1, -2.));
 	CHECK(assert_equal(expected,config0));
 }
 
@@ -235,19 +238,18 @@ TEST(LieConfig, update)
 TEST(LieConfig, dummy_initialization)
 {
 	typedef TypedSymbol<Vector, 'z'> Key;
-	typedef LieConfig<Key,Vector> Config1;
-	typedef LieConfig<string,Vector> Config2;
+	typedef LieConfig<Key> Config1;
 
 	Config1 init1;
 	init1.insert(Key(1), Vector_(2, 1.0, 2.0));
 	init1.insert(Key(2), Vector_(2, 4.0, 3.0));
 
-	Config2 init2;
-	init2.insert("v1", Vector_(2, 1.0, 2.0));
-	init2.insert("v2", Vector_(2, 4.0, 3.0));
+	Config init2;
+	init2.insert(key1, Vector_(2, 1.0, 2.0));
+	init2.insert(key2, Vector_(2, 4.0, 3.0));
 
 	Config1 actual1(init2);
-	Config2 actual2(init1);
+	Config actual2(init1);
 
 	EXPECT(actual1.empty());
 	EXPECT(actual2.empty());

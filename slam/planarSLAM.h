@@ -23,14 +23,14 @@ namespace gtsam {
 		// Keys and Config
 		typedef TypedSymbol<Pose2, 'x'> PoseKey;
 		typedef TypedSymbol<Point2, 'l'> PointKey;
-		typedef LieConfig<PoseKey, Pose2> PoseConfig;
-		typedef LieConfig<PointKey, Point2> PointConfig;
+		typedef LieConfig<PoseKey> PoseConfig;
+		typedef LieConfig<PointKey> PointConfig;
 		typedef TupleConfig2<PoseConfig, PointConfig> Config;
 
 		// Factors
-		typedef NonlinearEquality<Config, PoseKey, Pose2> Constraint;
-		typedef PriorFactor<Config, PoseKey, Pose2> Prior;
-		typedef BetweenFactor<Config, PoseKey, Pose2> Odometry;
+		typedef NonlinearEquality<Config, PoseKey> Constraint;
+		typedef PriorFactor<Config, PoseKey> Prior;
+		typedef BetweenFactor<Config, PoseKey> Odometry;
 		typedef BearingFactor<Config, PoseKey, PointKey> Bearing;
 		typedef RangeFactor<Config, PoseKey, PointKey> Range;
 		typedef BearingRangeFactor<Config, PoseKey, PointKey> BearingRange;

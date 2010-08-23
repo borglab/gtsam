@@ -15,13 +15,12 @@ namespace gtsam {
 	 * Binary factor for a range measurement
 	 */
 	template<class Config, class PoseKey, class PointKey>
-	class RangeFactor: public NonlinearFactor2<Config, PoseKey, Pose2, PointKey,
-	Point2> {
+	class RangeFactor: public NonlinearFactor2<Config, PoseKey, PointKey> {
 	private:
 
 		double z_; /** measurement */
 
-		typedef NonlinearFactor2<Config, PoseKey, Pose2, PointKey, Point2> Base;
+		typedef NonlinearFactor2<Config, PoseKey, PointKey> Base;
 
 	public:
 

@@ -30,8 +30,12 @@ namespace gtsam {
 	 *   - ALLLOW_ERROR : if we allow that there can be nonzero error, does not throw, and uses gain
 	 *   - ONLY_EXACT   : throws error at linearization if not at exact feasible point, and infinite error
 	 */
-	template<class Config, class Key, class T>
-	class NonlinearEquality: public NonlinearFactor1<Config, Key, T> {
+	template<class Config, class Key>
+	class NonlinearEquality: public NonlinearFactor1<Config, Key> {
+
+	public:
+		typedef typename Key::Value_t T;
+
 	private:
 
 		// feasible value
@@ -50,7 +54,7 @@ namespace gtsam {
 		 */
 		bool (*compare_)(const T& a, const T& b);
 
-		typedef NonlinearFactor1<Config, Key, T> Base;
+		typedef NonlinearFactor1<Config, Key> Base;
 
 		/**
 		 * Constructor - forces exact evaluation
@@ -78,8 +82,8 @@ namespace gtsam {
 
 		/** Check if two factors are equal */
 		bool equals(const Factor<Config>& f, double tol = 1e-9) const {
-			const NonlinearEquality<Config,Key,T>* p =
-					dynamic_cast<const NonlinearEquality<Config,Key,T>*> (&f);
+			const NonlinearEquality<Config,Key>* p =
+					dynamic_cast<const NonlinearEquality<Config,Key>*> (&f);
 			if (p == NULL) return false;
 			if (!Base::equals(*p)) return false;
 			return compare_(feasible_, p->feasible_);

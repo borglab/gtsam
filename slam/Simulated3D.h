@@ -21,8 +21,8 @@ namespace simulated3D {
 
 	typedef VectorConfig VectorConfig;
 
-	typedef gtsam::Symbol PoseKey;
-	typedef gtsam::Symbol PointKey;
+	typedef gtsam::TypedSymbol<Vector, 'x'> PoseKey;
+	typedef gtsam::TypedSymbol<Vector, 'l'> PointKey;
 
 	/**
 	 * Prior on a single pose
@@ -44,14 +44,13 @@ namespace simulated3D {
 	Matrix Dmea1(const Vector& x, const Vector& l);
 	Matrix Dmea2(const Vector& x, const Vector& l);
 
-	struct Point2Prior3D: public NonlinearFactor1<VectorConfig, PoseKey,
-			Vector> {
+	struct Point2Prior3D: public NonlinearFactor1<VectorConfig, PoseKey> {
 
 		Vector z_;
 
 		Point2Prior3D(const Vector& z,
 					const SharedGaussian& model, const PoseKey& j) :
-				NonlinearFactor1<VectorConfig, PoseKey, Vector> (model, j), z_(z) {
+				NonlinearFactor1<VectorConfig, PoseKey> (model, j), z_(z) {
 			}
 
 		Vector evaluateError(const Vector& x, boost::optional<Matrix&> H =
@@ -62,13 +61,13 @@ namespace simulated3D {
 	};
 
 	struct Simulated3DMeasurement: public NonlinearFactor2<VectorConfig,
-			PoseKey, Vector, PointKey, Vector> {
+			PoseKey, PointKey> {
 
 		Vector z_;
 
 		Simulated3DMeasurement(const Vector& z,
 					const SharedGaussian& model, PoseKey& j1, PointKey j2) :
-				NonlinearFactor2<VectorConfig, PoseKey, Vector, PointKey, Vector> (
+				NonlinearFactor2<VectorConfig, PoseKey, PointKey> (
 								model, j1, j2), z_(z) {
 			}
 

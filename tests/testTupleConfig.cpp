@@ -26,8 +26,8 @@ static const double tol = 1e-5;
 
 typedef TypedSymbol<Pose2, 'x'> PoseKey;
 typedef TypedSymbol<Point2, 'l'> PointKey;
-typedef LieConfig<PoseKey, Pose2> PoseConfig;
-typedef LieConfig<PointKey, Point2> PointConfig;
+typedef LieConfig<PoseKey> PoseConfig;
+typedef LieConfig<PointKey> PointConfig;
 typedef TupleConfig2<PoseConfig, PointConfig> Config;
 
 /* ************************************************************************* */
@@ -202,12 +202,12 @@ typedef TypedSymbol<Point3, 'b'> Point3Key;
 typedef TypedSymbol<Point3, 'c'> Point3Key2;
 
 // some config types
-typedef LieConfig<PoseKey, Pose2> PoseConfig;
-typedef LieConfig<PointKey, Point2> PointConfig;
-typedef LieConfig<LamKey, Vector> LamConfig;
-typedef LieConfig<Pose3Key, Pose3> Pose3Config;
-typedef LieConfig<Point3Key, Point3> Point3Config;
-typedef LieConfig<Point3Key2, Point3> Point3Config2;
+typedef LieConfig<PoseKey> PoseConfig;
+typedef LieConfig<PointKey> PointConfig;
+typedef LieConfig<LamKey> LamConfig;
+typedef LieConfig<Pose3Key> Pose3Config;
+typedef LieConfig<Point3Key> Point3Config;
+typedef LieConfig<Point3Key2> Point3Config2;
 
 // some TupleConfig types
 typedef TupleConfig<PoseConfig, TupleConfigEnd<PointConfig> > ConfigA;

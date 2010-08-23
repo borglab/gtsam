@@ -18,11 +18,6 @@
   template class Lie<T>;
 
 namespace gtsam {
-//  template<class T>
-//  size_t Lie<T>::dim() const {
-//    return gtsam::dim(*((T*)this));
-//  }
-
   /**
    * Returns Exponential mapy
    * This is for matlab wrapper

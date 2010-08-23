@@ -20,12 +20,15 @@ namespace gtsam {
 	 * The Key type is not arbitrary: we need to cast to a Symbol at linearize, so
 	 * a simple type like int will not work
 	 */
-	template<class Config, class Key, class T>
-	class PriorFactor: public NonlinearFactor1<Config, Key, T> {
+	template<class Config, class Key>
+	class PriorFactor: public NonlinearFactor1<Config, Key> {
+
+	public:
+		typedef typename Key::Value_t T;
 
 	private:
 
-		typedef NonlinearFactor1<Config, Key, T> Base;
+		typedef NonlinearFactor1<Config, Key> Base;
 
 		T prior_; /** The measurement */
 
@@ -50,8 +53,8 @@ namespace gtsam {
 
 		/** equals */
 		bool equals(const NonlinearFactor<Config>& expected, double tol) const {
-			const PriorFactor<Config, Key, T> *e = dynamic_cast<const PriorFactor<
-					Config, Key, T>*> (&expected);
+			const PriorFactor<Config, Key> *e = dynamic_cast<const PriorFactor<
+					Config, Key>*> (&expected);
 			return e != NULL && Base::equals(expected) && this->prior_.equals(
 					e->prior_, tol);
 		}

@@ -25,12 +25,15 @@ namespace gtsam {
  * This base class should be specialized to implement the cost function for
  * specific classes of landmarks
  */
-template<class Config, class PKey, class Point, class TKey, class Transform>
-class TransformConstraint : public NonlinearEqualityConstraint3<Config, PKey, Point, TKey, Transform, PKey, Point> {
+template<class Config, class PKey, class TKey>
+class TransformConstraint : public NonlinearEqualityConstraint3<Config, PKey, TKey, PKey> {
 
 public:
-	typedef NonlinearEqualityConstraint3<Config, PKey, Point, TKey, Transform, PKey, Point> Base;
-	typedef TransformConstraint<Config, PKey, Point, TKey, Transform> This;
+	typedef typename PKey::Value_t Point;
+	typedef typename TKey::Value_t Transform;
+
+	typedef NonlinearEqualityConstraint3<Config, PKey, TKey, PKey> Base;
+	typedef TransformConstraint<Config, PKey, TKey> This;
 
 	/**
 	 * General constructor with all of the keys to variables in the map

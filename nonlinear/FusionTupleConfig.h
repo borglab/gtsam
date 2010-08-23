@@ -169,7 +169,7 @@ public:
 	/** insertion  */
 	template <class Key, class Value>
 	void insert(const Key& j, const Value& x) {
-		config_<LieConfig<Key, Value> >().insert(j,x);
+		config_<LieConfig<Key> >().insert(j,x);
 	}
 
 	/** insert a full config at a time */
@@ -204,25 +204,25 @@ public:
 	 */
 	template<class Key, class Value>
 	void update(const Key& key, const Value& value) {
-		config_<LieConfig<Key,typename Key::Value_t> >().update(key,value);
+		config_<LieConfig<Key> >().update(key,value);
 	}
 
 	/** check if a given element exists */
 	template<class Key>
 	bool exists(const Key& j) const {
-		return config<LieConfig<Key,typename Key::Value_t> >().exists(j);
+		return config<LieConfig<Key> >().exists(j);
 	}
 
 	/** a variant of exists */
 	template<class Key>
 	boost::optional<typename Key::Value_t> exists_(const Key& j)  const {
-		return config<LieConfig<Key,typename Key::Value_t> >().exists_(j);
+		return config<LieConfig<Key> >().exists_(j);
 	}
 
 	/** retrieve a point */
 	template<class Key>
 	const typename Key::Value_t & at(const Key& j) const {
-		return config<LieConfig<Key, typename Key::Value_t> >().at(j);
+		return config<LieConfig<Key> >().at(j);
 	}
 
 	/** access operator */
@@ -255,7 +255,7 @@ public:
 	/** erases a specific key */
 	template<class Key>
 	void erase(const Key& j) {
-		config_<LieConfig<Key,typename Key::Value_t> >().erase(j);
+		config_<LieConfig<Key> >().erase(j);
 	}
 
 	/** clears the config */

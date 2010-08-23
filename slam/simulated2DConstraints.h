@@ -24,13 +24,13 @@ namespace gtsam {
 		namespace equality_constraints {
 
 			/** Typedefs for regular use */
-			typedef NonlinearEquality1<Config, PoseKey, Point2> UnaryEqualityConstraint;
-			typedef NonlinearEquality1<Config, PointKey, Point2> UnaryEqualityPointConstraint;
-			typedef BetweenConstraint<Config, PoseKey, Point2> OdoEqualityConstraint;
+			typedef NonlinearEquality1<Config, PoseKey> UnaryEqualityConstraint;
+			typedef NonlinearEquality1<Config, PointKey> UnaryEqualityPointConstraint;
+			typedef BetweenConstraint<Config, PoseKey> OdoEqualityConstraint;
 
 			/** Equality between variables */
-			typedef NonlinearEquality2<Config, PoseKey, Point2> PoseEqualityConstraint;
-			typedef NonlinearEquality2<Config, PointKey, Point2> PointEqualityConstraint;
+			typedef NonlinearEquality2<Config, PoseKey> PoseEqualityConstraint;
+			typedef NonlinearEquality2<Config, PointKey> PointEqualityConstraint;
 
 		} // \namespace equality_constraints
 
@@ -41,8 +41,8 @@ namespace gtsam {
 			 * Demo implementation: should be made more general using BoundingConstraint
 			 */
 			template<class Cfg, class Key, unsigned int Idx>
-			struct ScalarCoordConstraint1: public BoundingConstraint1<Cfg, Key, Point2> {
-				typedef BoundingConstraint1<Cfg, Key, Point2> Base;
+			struct ScalarCoordConstraint1: public BoundingConstraint1<Cfg, Key> {
+				typedef BoundingConstraint1<Cfg, Key> Base;
 				typedef boost::shared_ptr<ScalarCoordConstraint1<Cfg, Key, Idx> > shared_ptr;
 
 				ScalarCoordConstraint1(const Key& key, double c,
@@ -75,8 +75,8 @@ namespace gtsam {
 			 * to be less than or equal to a bound
 			 */
 			template<class Cfg, class Key>
-			struct MaxDistanceConstraint : public BoundingConstraint2<Cfg, Key, Point2, Key, Point2> {
-				typedef BoundingConstraint2<Cfg, Key, Point2, Key, Point2> Base;
+			struct MaxDistanceConstraint : public BoundingConstraint2<Cfg, Key, Key> {
+				typedef BoundingConstraint2<Cfg, Key, Key> Base;
 
 				MaxDistanceConstraint(const Key& key1, const Key& key2, double range_bound, double mu = 1000.0)
 					: Base(key1, key2, range_bound, false, mu) {}
@@ -98,8 +98,8 @@ namespace gtsam {
 			 * NOTE: this is not a convex function!  Be careful with initialization.
 			 */
 			template<class Cfg, class XKey, class PKey>
-			struct MinDistanceConstraint : public BoundingConstraint2<Cfg, XKey, Point2, PKey, Point2> {
-				typedef BoundingConstraint2<Cfg, XKey, Point2, PKey, Point2> Base;
+			struct MinDistanceConstraint : public BoundingConstraint2<Cfg, XKey, PKey> {
+				typedef BoundingConstraint2<Cfg, XKey, PKey> Base;
 
 				MinDistanceConstraint(const XKey& key1, const PKey& key2, double range_bound, double mu = 1000.0)
 					: Base(key1, key2, range_bound, true, mu) {}

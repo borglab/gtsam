@@ -24,13 +24,13 @@ namespace gtsam { namespace visualSLAM {
    */
   typedef TypedSymbol<Pose3,'x'> PoseKey;
   typedef TypedSymbol<Point3,'l'> PointKey;
-  typedef LieConfig<PoseKey, Pose3> PoseConfig;
-  typedef LieConfig<PointKey, Point3> PointConfig;
+  typedef LieConfig<PoseKey> PoseConfig;
+  typedef LieConfig<PointKey> PointConfig;
   typedef TupleConfig2<PoseConfig, PointConfig> Config;
   typedef boost::shared_ptr<Config> shared_config;
 
-  typedef NonlinearEquality<Config, PoseKey, Pose3> PoseConstraint;
-  typedef NonlinearEquality<Config, PointKey, Point3> PointConstraint;
+  typedef NonlinearEquality<Config, PoseKey> PoseConstraint;
+  typedef NonlinearEquality<Config, PointKey> PointConstraint;
 
 
   /**
@@ -38,7 +38,7 @@ namespace gtsam { namespace visualSLAM {
    * i.e. the main building block for visual SLAM.
    */
   template <class Cfg=Config, class LmK=PointKey, class PosK=PoseKey>
-  class GenericProjectionFactor : public NonlinearFactor2<Cfg, PosK, Pose3, LmK, Point3>, Testable<GenericProjectionFactor<Cfg, LmK, PosK> > {
+  class GenericProjectionFactor : public NonlinearFactor2<Cfg, PosK, LmK>, Testable<GenericProjectionFactor<Cfg, LmK, PosK> > {
   protected:
 
     // Keep a copy of measurement and calibration for I/O
@@ -48,7 +48,7 @@ namespace gtsam { namespace visualSLAM {
   public:
 
     // shorthand for base class type
-    typedef NonlinearFactor2<Cfg, PosK, Pose3, LmK, Point3> Base;
+    typedef NonlinearFactor2<Cfg, PosK, LmK> Base;
 
     // shorthand for a smart pointer to a factor
     typedef boost::shared_ptr<GenericProjectionFactor<Cfg, LmK, PosK> > shared_ptr;

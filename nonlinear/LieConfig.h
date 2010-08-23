@@ -32,11 +32,15 @@ namespace gtsam {
 	/**
 	 * Lie type configuration
 	 * Takes two template types
-	 *  J: a type to look up values in the configuration (need to be sortable)
-	 *  T: the type of values being stored in the configuration
+	 *  J: a key type to look up values in the configuration (need to be sortable)
+	 *
+	 * Key concept:
+	 *  The key will be assumed to be sortable, and must have a
+	 *  typedef called "Value_t" with the type of the value the key
+	 *  labels (example: Pose2, Point2, etc)
 	 */
-  template<class J, class T>
-  class LieConfig : public Testable<LieConfig<J, T> > {
+  template<class J>
+  class LieConfig : public Testable<LieConfig<J> > {
 
   public:
 
@@ -44,8 +48,8 @@ namespace gtsam {
      * Typedefs
      */
   	typedef J Key;
-  	typedef T Value;
-    typedef std::map<J, T> Values;
+  	typedef typename J::Value_t Value;
+    typedef std::map<J,Value> Values;
     typedef typename Values::iterator iterator;
     typedef typename Values::const_iterator const_iterator;
 
@@ -58,8 +62,8 @@ namespace gtsam {
     LieConfig() {}
     LieConfig(const LieConfig& config) :
       values_(config.values_) {}
-    template<class J_alt, class T_alt>
-    LieConfig(const LieConfig<J_alt,T_alt>& other) {} // do nothing when initializing with wrong type
+    template<class J_alt>
+    LieConfig(const LieConfig<J_alt>& other) {} // do nothing when initializing with wrong type
     virtual ~LieConfig() {}
 
     /** print */
@@ -69,16 +73,16 @@ namespace gtsam {
     bool equals(const LieConfig& expected, double tol=1e-9) const;
 
     /** Retrieve a variable by j, throws std::invalid_argument if not found */
-    const T& at(const J& j) const;
+    const Value& at(const J& j) const;
 
     /** operator[] syntax for get */
-		const T& operator[](const J& j) const { return at(j); }
+		const Value& operator[](const J& j) const { return at(j); }
 
 	  /** Check if a variable exists */
 	  bool exists(const J& i) const { return values_.find(i)!=values_.end(); }
 
 	  /** Check if a variable exists and return it if so */
-	  boost::optional<T> exists_(const J& i) const {
+	  boost::optional<Value> exists_(const J& i) const {
 	  	const_iterator it = values_.find(i);
 			if (it==values_.end()) return boost::none; else	return it->second;
 	  }
@@ -103,7 +107,7 @@ namespace gtsam {
     // imperative methods:
 
     /** Add a variable with the given j - does not replace existing values */
-    void insert(const J& j, const T& val);
+    void insert(const J& j, const Value& val);
 
     /** Add a set of variables - does note replace existing values */
     void insert(const LieConfig& cfg);
@@ -112,7 +116,7 @@ namespace gtsam {
     void update(const LieConfig& cfg);
 
     /** single element change of existing element */
-    void update(const J& j, const T& val);
+    void update(const J& j, const Value& val);
 
     /** Remove a variable from the config */
     void erase(const J& j);
@@ -150,20 +154,20 @@ namespace gtsam {
   };
 
   /** Dimensionality of the tangent space */
-  template<class J, class T>
-  inline size_t dim(const LieConfig<J,T>& c) { return c.dim(); }
+  template<class J>
+  inline size_t dim(const LieConfig<J>& c) { return c.dim(); }
 
   /** Add a delta config */
-  template<class J, class T>
-  LieConfig<J,T> expmap(const LieConfig<J,T>& c, const VectorConfig& delta);
+  template<class J>
+  LieConfig<J> expmap(const LieConfig<J>& c, const VectorConfig& delta);
 
   /** Add a delta vector, uses iterator order */
-  template<class J, class T>
-  LieConfig<J,T> expmap(const LieConfig<J,T>& c, const Vector& delta);
+  template<class J>
+  LieConfig<J> expmap(const LieConfig<J>& c, const Vector& delta);
 
   /** Get a delta config about a linearization point c0 */
-  template<class J, class T>
-  VectorConfig logmap(const LieConfig<J,T>& c0, const LieConfig<J,T>& cp);
+  template<class J>
+  VectorConfig logmap(const LieConfig<J>& c0, const LieConfig<J>& cp);
 
 }
 

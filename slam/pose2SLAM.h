@@ -23,7 +23,7 @@ namespace gtsam {
 
 		// Keys and Config
 		typedef TypedSymbol<Pose2, 'x'> Key;
-		typedef LieConfig<Key, Pose2> Config;
+		typedef LieConfig<Key> Config;
 
 		/**
 		 * Create a circle of n 2D poses tangent to circle of radius R, first pose at (R,0)
@@ -35,13 +35,13 @@ namespace gtsam {
 		Config circle(size_t n, double R);
 
 		// Factors
-		typedef PriorFactor<Config, Key, Pose2> Prior;
-		typedef BetweenFactor<Config, Key, Pose2> Constraint;
-		typedef NonlinearEquality<Config, Key, Pose2> HardConstraint;
+		typedef PriorFactor<Config, Key> Prior;
+		typedef BetweenFactor<Config, Key> Constraint;
+		typedef NonlinearEquality<Config, Key> HardConstraint;
 
 		// Graph
 		struct Graph: public NonlinearFactorGraph<Config> {
-			typedef BetweenFactor<Config, Key, Pose2> Constraint;
+			typedef BetweenFactor<Config, Key> Constraint;
 			typedef Pose2 Pose;
 			void addPrior(const Key& i, const Pose2& p, const SharedGaussian& model);
 			void addConstraint(const Key& i, const Key& j, const Pose2& z, const SharedGaussian& model);

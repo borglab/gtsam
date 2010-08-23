@@ -21,8 +21,8 @@ namespace gtsam {
 		// Simulated2D robots have no orientation, just a position
 		typedef TypedSymbol<Point2, 'x'> PoseKey;
 		typedef TypedSymbol<Point2, 'l'> PointKey;
-		typedef LieConfig<PoseKey, Point2> PoseConfig;
-		typedef LieConfig<PointKey, Point2> PointConfig;
+		typedef LieConfig<PoseKey> PoseConfig;
+		typedef LieConfig<PointKey> PointConfig;
 		typedef TupleConfig2<PoseConfig, PointConfig> Config;
 
 		/**
@@ -55,13 +55,13 @@ namespace gtsam {
 		 * Unary factor encoding a soft prior on a vector
 		 */
 		template<class Cfg = Config, class Key = PoseKey>
-		struct GenericPrior: public NonlinearFactor1<Cfg, Key, Point2> {
+		struct GenericPrior: public NonlinearFactor1<Cfg, Key> {
 			typedef boost::shared_ptr<GenericPrior<Cfg, Key> > shared_ptr;
 
 			Point2 z_;
 
 			GenericPrior(const Point2& z, const SharedGaussian& model, const Key& key) :
-				NonlinearFactor1<Cfg, Key, Point2> (model, key), z_(z) {
+				NonlinearFactor1<Cfg, Key> (model, key), z_(z) {
 			}
 
 			Vector evaluateError(const Point2& x, boost::optional<Matrix&> H =
@@ -75,14 +75,13 @@ namespace gtsam {
 		 * Binary factor simulating "odometry" between two Vectors
 		 */
 		template<class Cfg = Config, class Key = PoseKey>
-		struct GenericOdometry: public NonlinearFactor2<Cfg, Key, Point2, Key,
-				Point2> {
+		struct GenericOdometry: public NonlinearFactor2<Cfg, Key, Key> {
 			typedef boost::shared_ptr<GenericOdometry<Cfg, Key> > shared_ptr;
 			Point2 z_;
 
 			GenericOdometry(const Point2& z, const SharedGaussian& model,
 					const Key& i1, const Key& i2) :
-				NonlinearFactor2<Cfg, Key, Point2, Key, Point2> (model, i1, i2), z_(z) {
+				NonlinearFactor2<Cfg, Key, Key> (model, i1, i2), z_(z) {
 			}
 
 			Vector evaluateError(const Point2& x1, const Point2& x2, boost::optional<
@@ -96,15 +95,14 @@ namespace gtsam {
 		 * Binary factor simulating "measurement" between two Vectors
 		 */
 		template<class Cfg = Config, class XKey = PoseKey, class LKey = PointKey>
-		class GenericMeasurement: public NonlinearFactor2<Cfg, XKey, Point2, LKey,
-				Point2> {
+		class GenericMeasurement: public NonlinearFactor2<Cfg, XKey, LKey> {
 		public:
 			typedef boost::shared_ptr<GenericMeasurement<Cfg, XKey, LKey> > shared_ptr;
 			Point2 z_;
 
 			GenericMeasurement(const Point2& z, const SharedGaussian& model,
 					const XKey& i, const LKey& j) :
-				NonlinearFactor2<Cfg, XKey, Point2, LKey, Point2> (model, i, j), z_(z) {
+				NonlinearFactor2<Cfg, XKey, LKey> (model, i, j), z_(z) {
 			}
 
 			Vector evaluateError(const Point2& x1, const Point2& x2, boost::optional<

@@ -17,10 +17,11 @@ namespace gtsam {
 	 * will need to have its value function implemented to return
 	 * a scalar for comparison.
 	 */
-	template<class Cfg, class Key, class X>
-	struct BoundingConstraint1: public NonlinearConstraint1<Cfg, Key, X> {
-		typedef NonlinearConstraint1<Cfg, Key, X> Base;
-		typedef boost::shared_ptr<BoundingConstraint1<Cfg, Key, X> > shared_ptr;
+	template<class Cfg, class Key>
+	struct BoundingConstraint1: public NonlinearConstraint1<Cfg, Key> {
+		typedef typename Key::Value_t X;
+		typedef NonlinearConstraint1<Cfg, Key> Base;
+		typedef boost::shared_ptr<BoundingConstraint1<Cfg, Key> > shared_ptr;
 
 		double threshold_;
 		bool isGreaterThan_; /// flag for greater/less than
@@ -61,10 +62,13 @@ namespace gtsam {
 	 * Binary scalar inequality constraint, with a similar value() function
 	 * to implement for specific systems
 	 */
-	template<class Cfg, class Key1, class X1, class Key2, class X2>
-	struct BoundingConstraint2: public NonlinearConstraint2<Cfg, Key1, X1, Key2, X2> {
-		typedef NonlinearConstraint2<Cfg, Key1, X1, Key2, X2> Base;
-		typedef boost::shared_ptr<BoundingConstraint2<Cfg, Key1, X1, Key2, X2> > shared_ptr;
+	template<class Cfg, class Key1, class Key2>
+	struct BoundingConstraint2: public NonlinearConstraint2<Cfg, Key1, Key2> {
+		typedef typename Key1::Value_t X1;
+		typedef typename Key2::Value_t X2;
+
+		typedef NonlinearConstraint2<Cfg, Key1, Key2> Base;
+		typedef boost::shared_ptr<BoundingConstraint2<Cfg, Key1, Key2> > shared_ptr;
 
 		double threshold_;
 		bool isGreaterThan_; /// flag for greater/less than

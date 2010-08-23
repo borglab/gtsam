@@ -33,19 +33,19 @@ typedef TypedSymbol<Pose2, 'x'> PoseKey;
 typedef TypedSymbol<Point2, 'l'> PointKey;
 typedef TypedSymbol<Pose2, 'T'> TransformKey;
 
-typedef LieConfig<PoseKey, Pose2> PoseConfig;
-typedef LieConfig<PointKey, Point2> PointConfig;
-typedef LieConfig<TransformKey, Pose2> TransformConfig;
+typedef LieConfig<PoseKey> PoseConfig;
+typedef LieConfig<PointKey> PointConfig;
+typedef LieConfig<TransformKey> TransformConfig;
 
 typedef TupleConfig3< PoseConfig, PointConfig, TransformConfig > DDFConfig;
 typedef NonlinearFactorGraph<DDFConfig> DDFGraph;
 typedef NonlinearOptimizer<DDFGraph, DDFConfig> Optimizer;
 
-typedef NonlinearEquality<DDFConfig, PoseKey, Pose2> PoseConstraint;
-typedef NonlinearEquality<DDFConfig, PointKey, Point2> PointConstraint;
-typedef NonlinearEquality<DDFConfig, TransformKey, Pose2> TransformPriorConstraint;
+typedef NonlinearEquality<DDFConfig, PoseKey> PoseConstraint;
+typedef NonlinearEquality<DDFConfig, PointKey> PointConstraint;
+typedef NonlinearEquality<DDFConfig, TransformKey> TransformPriorConstraint;
 
-typedef TransformConstraint<DDFConfig, PointKey, Point2, TransformKey, Pose2> PointTransformConstraint;
+typedef TransformConstraint<DDFConfig, PointKey, TransformKey> PointTransformConstraint;
 
 PointKey lA1(1), lA2(2), lB1(3);
 TransformKey t1(1);

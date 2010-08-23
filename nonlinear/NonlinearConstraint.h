@@ -95,11 +95,14 @@ public:
 /**
  * A unary constraint that defaults to an equality constraint
  */
-template <class Config, class Key, class X>
+template <class Config, class Key>
 class NonlinearConstraint1 : public NonlinearConstraint<Config> {
 
+public:
+	typedef typename Key::Value_t X;
+
 protected:
-	typedef NonlinearConstraint1<Config,Key,X> This;
+	typedef NonlinearConstraint1<Config,Key> This;
 	typedef NonlinearConstraint<Config> Base;
 
 	/** key for the constrained variable */
@@ -165,12 +168,15 @@ public:
 /**
  * Unary Equality constraint - simply forces the value of active() to true
  */
-template <class Config, class Key, class X>
-class NonlinearEqualityConstraint1 : public NonlinearConstraint1<Config, Key, X> {
+template <class Config, class Key>
+class NonlinearEqualityConstraint1 : public NonlinearConstraint1<Config, Key> {
+
+public:
+	typedef typename Key::Value_t X;
 
 protected:
-	typedef NonlinearEqualityConstraint1<Config,Key,X> This;
-	typedef NonlinearConstraint1<Config,Key,X> Base;
+	typedef NonlinearEqualityConstraint1<Config,Key> This;
+	typedef NonlinearConstraint1<Config,Key> Base;
 
 public:
 	NonlinearEqualityConstraint1(const Key& key, size_t dim, double mu = 1000.0)
@@ -184,11 +190,15 @@ public:
 /**
  * A binary constraint with arbitrary cost and jacobian functions
  */
-template <class Config, class Key1, class X1, class Key2, class X2>
+template <class Config, class Key1, class Key2>
 class NonlinearConstraint2 : public NonlinearConstraint<Config> {
 
+public:
+	typedef typename Key1::Value_t X1;
+	typedef typename Key2::Value_t X2;
+
 protected:
-	typedef NonlinearConstraint2<Config,Key1,X1,Key2,X2> This;
+	typedef NonlinearConstraint2<Config,Key1,Key2> This;
 	typedef NonlinearConstraint<Config> Base;
 
 	/** keys for the constrained variables */
@@ -261,12 +271,16 @@ public:
 /**
  * Binary Equality constraint - simply forces the value of active() to true
  */
-template <class Config, class Key1, class X1, class Key2, class X2>
-class NonlinearEqualityConstraint2 : public NonlinearConstraint2<Config, Key1, X1, Key2, X2> {
+template <class Config, class Key1, class Key2>
+class NonlinearEqualityConstraint2 : public NonlinearConstraint2<Config, Key1, Key2> {
+
+public:
+	typedef typename Key1::Value_t X1;
+	typedef typename Key2::Value_t X2;
 
 protected:
-	typedef NonlinearEqualityConstraint2<Config,Key1,X1,Key2,X2> This;
-	typedef NonlinearConstraint2<Config,Key1,X1,Key2,X2> Base;
+	typedef NonlinearEqualityConstraint2<Config,Key1,Key2> This;
+	typedef NonlinearConstraint2<Config,Key1,Key2> Base;
 
 public:
 	NonlinearEqualityConstraint2(const Key1& key1, const Key2& key2, size_t dim, double mu = 1000.0)
@@ -281,11 +295,16 @@ public:
 /**
  * A ternary constraint
  */
-template <class Config, class Key1, class X1, class Key2, class X2, class Key3, class X3>
+template <class Config, class Key1, class Key2, class Key3>
 class NonlinearConstraint3 : public NonlinearConstraint<Config> {
 
+public:
+	typedef typename Key1::Value_t X1;
+	typedef typename Key2::Value_t X2;
+	typedef typename Key3::Value_t X3;
+
 protected:
-	typedef NonlinearConstraint3<Config,Key1,X1,Key2,X2,Key3,X3> This;
+	typedef NonlinearConstraint3<Config,Key1,Key2,Key3> This;
 	typedef NonlinearConstraint<Config> Base;
 
 	/** keys for the constrained variables */
@@ -366,12 +385,17 @@ public:
 /**
  * Ternary Equality constraint - simply forces the value of active() to true
  */
-template <class Config, class Key1, class X1, class Key2, class X2, class Key3, class X3>
-class NonlinearEqualityConstraint3 : public NonlinearConstraint3<Config, Key1, X1, Key2, X2, Key3, X3> {
+template <class Config, class Key1, class Key2, class Key3>
+class NonlinearEqualityConstraint3 : public NonlinearConstraint3<Config, Key1, Key2, Key3> {
+
+public:
+	typedef typename Key1::Value_t X1;
+	typedef typename Key2::Value_t X2;
+	typedef typename Key3::Value_t X3;
 
 protected:
-	typedef NonlinearEqualityConstraint3<Config,Key1,X1,Key2,X2,Key3,X3> This;
-	typedef NonlinearConstraint3<Config,Key1,X1,Key2,X2,Key3,X3> Base;
+	typedef NonlinearEqualityConstraint3<Config,Key1,Key2,Key3> This;
+	typedef NonlinearConstraint3<Config,Key1,Key2,Key3> Base;
 
 public:
 	NonlinearEqualityConstraint3(const Key1& key1, const Key2& key2, const Key3& key3,
@@ -387,16 +411,20 @@ public:
 /**
  * Simple unary equality constraint - fixes a value for a variable
  */
-template<class Config, class Key, class X>
-class NonlinearEquality1 : public NonlinearEqualityConstraint1<Config, Key, X> {
+template<class Config, class Key>
+class NonlinearEquality1 : public NonlinearEqualityConstraint1<Config, Key> {
+
+public:
+	typedef typename Key::Value_t X;
+
 protected:
-	typedef NonlinearEqualityConstraint1<Config, Key, X> Base;
+	typedef NonlinearEqualityConstraint1<Config, Key> Base;
 
 	X value_; /// fixed value for variable
 
 public:
 
-	typedef boost::shared_ptr<NonlinearEquality1<Config, Key, X> > shared_ptr;
+	typedef boost::shared_ptr<NonlinearEquality1<Config, Key> > shared_ptr;
 
 	NonlinearEquality1(const X& value, const Key& key1, double mu = 1000.0)
 		: Base(key1, X::Dim(), mu), value_(value) {}
@@ -415,14 +443,17 @@ public:
  * Simple binary equality constraint - this constraint forces two factors to
  * be the same.  This constraint requires the underlying type to a Lie type
  */
-template<class Config, class Key, class X>
-class NonlinearEquality2 : public NonlinearEqualityConstraint2<Config, Key, X, Key, X> {
+template<class Config, class Key>
+class NonlinearEquality2 : public NonlinearEqualityConstraint2<Config, Key, Key> {
+public:
+	typedef typename Key::Value_t X;
+
 protected:
-	typedef NonlinearEqualityConstraint2<Config, Key, X, Key, X> Base;
+	typedef NonlinearEqualityConstraint2<Config, Key, Key> Base;
 
 public:
 
-	typedef boost::shared_ptr<NonlinearEquality2<Config, Key, X> > shared_ptr;
+	typedef boost::shared_ptr<NonlinearEquality2<Config, Key> > shared_ptr;
 
 	NonlinearEquality2(const Key& key1, const Key& key2, double mu = 1000.0)
 		: Base(key1, key2, X::Dim(), mu) {}

@@ -31,8 +31,8 @@ static const double tol = 1e-5;
 
 typedef TypedSymbol<Pose2, 'x'> PoseKey;
 typedef TypedSymbol<Point2, 'l'> PointKey;
-typedef LieConfig<PoseKey, Pose2> PoseConfig;
-typedef LieConfig<PointKey, Point2> PointConfig;
+typedef LieConfig<PoseKey> PoseConfig;
+typedef LieConfig<PointKey> PointConfig;
 
 // some generic poses, points and keys
 PoseKey x1(1), x2(2);
@@ -484,8 +484,8 @@ TEST( testFusionTupleConfig, basic_factor)
 
 	// Factors
 //	typedef PriorFactor<TestPoseConfig, PoseKey, Pose2> Prior; // fails to add to graph
-	typedef PriorFactor<Config, PoseKey, Pose2> Prior;
-	typedef BetweenFactor<Config, PoseKey, Pose2> Odometry;
+	typedef PriorFactor<Config, PoseKey> Prior;
+	typedef BetweenFactor<Config, PoseKey> Odometry;
 	typedef BearingRangeFactor<Config, PoseKey, PointKey> BearingRange;
 
 	PoseKey pose1k(1), pose2k(2), pose3k(3);
