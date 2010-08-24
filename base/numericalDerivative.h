@@ -12,6 +12,7 @@
 #include <boost/bind.hpp>
 
 #include <gtsam/base/Lie.h>
+#include <gtsam/base/LieVector.h>
 #include <gtsam/base/Matrix.h>
 
 //#define LINEARIZE_AT_IDENTITY
@@ -39,6 +40,11 @@ namespace gtsam {
 	 * For additional details, see the documentation:
 	 * 		http://www.boost.org/doc/libs/1_43_0/libs/bind/bind.html
 	 */
+
+
+	/** global functions for converting to a LieVector for use with numericalDerivative */
+	LieVector makeLieVector(const Vector& v) { return LieVector(v); }
+	LieVector makeLieVectorD(double d) { return LieVector(Vector_(1, d)); }
 
 	/**
 	 * Numerically compute gradient of scalar function
@@ -89,31 +95,32 @@ namespace gtsam {
 		return H;
 	}
 
+	/** use a raw C++ function pointer */
 	template<class Y, class X>
 	Matrix numericalDerivative11(Y (*h)(const X&), const X& x, double delta=1e-5) {
 		return numericalDerivative11<Y,X>(boost::bind(h, _1), x, delta);
 	}
 
-	/** pseudo-template specialization for double Y values */
+	/** remapping for double valued functions */
 	template<class X>
 	Matrix numericalDerivative11(boost::function<double(const X&)> h, const X& x, double delta=1e-5) {
-		double hx = h(x);
-		double factor = 1.0/(2.0*delta);
-		const size_t m = 1, n = dim(x);
-		Vector d(n,0.0);
-		Matrix H = zeros(m,n);
-		for (size_t j=0;j<n;j++) {
-			d(j) +=   delta; Vector hxplus = Vector_(1, h(expmap(x,d))-hx);
-			d(j) -= 2*delta; Vector hxmin  = Vector_(1, h(expmap(x,d))-hx);
-			d(j) +=   delta; Vector dh = (hxplus-hxmin)*factor;
-			for (size_t i=0;i<m;i++) H(i,j) = dh(i);
-		}
-		return H;
+		return numericalDerivative11<LieVector, X>(boost::bind(makeLieVectorD, boost::bind(h, _1)), x, delta);
 	}
 
 	template<class X>
 	Matrix numericalDerivative11(double (*h)(const X&), const X& x, double delta=1e-5) {
-		return numericalDerivative11<X>(boost::bind(h, _1), x, delta);
+		return numericalDerivative11<LieVector, X>(boost::bind(makeLieVectorD, boost::bind(h, _1)), x, delta);
+	}
+
+	/** remapping for vector valued functions */
+	template<class X>
+	Matrix numericalDerivative11(boost::function<Vector(const X&)> h, const X& x, double delta=1e-5) {
+		return numericalDerivative11<LieVector, X>(boost::bind(makeLieVector, boost::bind(h, _1)), x, delta);
+	}
+
+	template<class X>
+	Matrix numericalDerivative11(Vector (*h)(const X&), const X& x, double delta=1e-5) {
+		return numericalDerivative11<LieVector, X>(boost::bind(makeLieVector, boost::bind(h, _1)), x, delta);
 	}
 
 	/**
@@ -142,6 +149,7 @@ namespace gtsam {
 		return H;
 	}
 
+	/** use a raw C++ function pointer */
 	template<class Y, class X1, class X2>
 	inline Matrix numericalDerivative21(Y (*h)(const X1&, const X2&),
 			const X1& x1, const X2& x2, double delta=1e-5) {
@@ -152,24 +160,30 @@ namespace gtsam {
 	template<class X1, class X2>
 	Matrix numericalDerivative21(boost::function<double(const X1&, const X2&)> h,
 			const X1& x1, const X2& x2, double delta=1e-5) {
-		double hx = h(x1,x2);
-		double factor = 1.0/(2.0*delta);
-		const size_t m = 1, n = dim(x1);
-		Vector d(n,0.0);
-		Matrix H = zeros(m,n);
-		for (size_t j=0;j<n;j++) {
-			d(j) +=   delta; Vector hxplus = Vector_(1, h(expmap(x1,d),x2)-hx);
-			d(j) -= 2*delta; Vector hxmin  = Vector_(1, h(expmap(x1,d),x2)-hx);
-			d(j) +=   delta; Vector dh = (hxplus-hxmin)*factor;
-			for (size_t i=0;i<m;i++) H(i,j) = dh(i);
-		}
-		return H;
+		return numericalDerivative21<LieVector,X1,X2>(
+				boost::bind(makeLieVectorD, boost::bind(h, _1, _2)), x1, x2, delta);
 	}
 
 	template<class X1, class X2>
-	inline Matrix numericalDerivative21(double (*h)(const X1&, const X2&),
+	Matrix numericalDerivative21(double (*h)(const X1&, const X2&),
 			const X1& x1, const X2& x2, double delta=1e-5) {
-		return numericalDerivative21<X1,X2>(boost::bind(h, _1, _2), x1, x2, delta);
+		return numericalDerivative21<LieVector,X1,X2>(
+				boost::bind(makeLieVectorD, boost::bind(h, _1, _2)), x1, x2, delta);
+	}
+
+	/** pseudo-partial template specialization for vector return values */
+	template<class X1, class X2>
+	Matrix numericalDerivative21(boost::function<Vector(const X1&, const X2&)> h,
+			const X1& x1, const X2& x2, double delta=1e-5) {
+		return numericalDerivative21<LieVector,X1,X2>(
+				boost::bind(makeLieVector, boost::bind(h, _1, _2)), x1, x2, delta);
+	}
+
+	template<class X1, class X2>
+	inline Matrix numericalDerivative21(Vector (*h)(const X1&, const X2&),
+			const X1& x1, const X2& x2, double delta=1e-5) {
+		return numericalDerivative21<LieVector,X1,X2>(
+				boost::bind(makeLieVector, boost::bind(h, _1, _2)), x1, x2, delta);
 	}
 
 	/**
@@ -199,33 +213,42 @@ namespace gtsam {
 		}
 		return H;
 	}
+
+	/** use a raw C++ function pointer */
 	template<class Y, class X1, class X2>
 	inline Matrix numericalDerivative22
 	(Y (*h)(const X1&, const X2&), const X1& x1, const X2& x2, double delta=1e-5) {
 		return numericalDerivative22<Y,X1,X2>(boost::bind(h, _1, _2), x1, x2, delta);
 	}
 
-	/** pseudo-specialization for double Y values */
+	/** pseudo-partial template specialization for double return values */
 	template<class X1, class X2>
 	Matrix numericalDerivative22(boost::function<double(const X1&, const X2&)> h,
 			const X1& x1, const X2& x2, double delta=1e-5) {
-		double hx = h(x1,x2);
-		double factor = 1.0/(2.0*delta);
-		const size_t m = 1, n = dim(x2);
-		Vector d(n,0.0);
-		Matrix H = zeros(m,n);
-		for (size_t j=0;j<n;j++) {
-			d(j) +=   delta; Vector hxplus = Vector_(1,h(x1,expmap(x2,d))-hx);
-			d(j) -= 2*delta; Vector hxmin  = Vector_(1,h(x1,expmap(x2,d))-hx);
-			d(j) +=   delta; Vector dh = (hxplus-hxmin)*factor;
-			for (size_t i=0;i<m;i++) H(i,j) = dh(i);
-		}
-		return H;
+		return numericalDerivative22<LieVector,X1,X2>(
+				boost::bind(makeLieVectorD, boost::bind(h, _1, _2)), x1, x2, delta);
 	}
+
 	template<class X1, class X2>
-	inline Matrix numericalDerivative22	(double (*h)(const X1&, const X2&),
+	inline Matrix numericalDerivative22(double (*h)(const X1&, const X2&),
 			const X1& x1, const X2& x2, double delta=1e-5) {
-		return numericalDerivative22<X1,X2>(boost::bind(h, _1, _2), x1, x2, delta);
+		return numericalDerivative22<LieVector,X1,X2>(
+				boost::bind(makeLieVectorD, boost::bind(h, _1, _2)), x1, x2, delta);
+	}
+
+	/** pseudo-partial template specialization for vector return values */
+	template<class X1, class X2>
+	Matrix numericalDerivative22(boost::function<Vector(const X1&, const X2&)> h,
+			const X1& x1, const X2& x2, double delta=1e-5) {
+		return numericalDerivative22<LieVector,X1,X2>(
+				boost::bind(makeLieVector, boost::bind(h, _1, _2)), x1, x2, delta);
+	}
+
+	template<class X1, class X2>
+	inline Matrix numericalDerivative22(Vector (*h)(const X1&, const X2&),
+			const X1& x1, const X2& x2, double delta=1e-5) {
+		return numericalDerivative22<LieVector,X1,X2>(
+				boost::bind(makeLieVector, boost::bind(h, _1, _2)), x1, x2, delta);
 	}
 
 	/**
@@ -263,7 +286,46 @@ namespace gtsam {
 		return numericalDerivative31<Y,X1,X2, X3>(boost::bind(h, _1, _2, _3), x1, x2, x3, delta);
 	}
 
-	// arg 2
+	/** pseudo-partial template specialization for double return values */
+	template<class X1, class X2, class X3>
+	Matrix numericalDerivative31(boost::function<double(const X1&, const X2&, const X3&)> h,
+			const X1& x1, const X2& x2, const X3& x3, double delta=1e-5) {
+		return numericalDerivative31<LieVector,X1,X2,X3>(
+				boost::bind(makeLieVectorD, boost::bind(h, _1, _2, _3)), x1, x2, x3, delta);
+	}
+
+	template<class X1, class X2, class X3>
+	inline Matrix numericalDerivative31(double (*h)(const X1&, const X2&, const X3&),
+			const X1& x1, const X2& x2, const X3& x3, double delta=1e-5) {
+		return numericalDerivative31<LieVector,X1,X2,X3>(
+				boost::bind(makeLieVectorD, boost::bind(h, _1, _2, _3)), x1, x2, x3, delta);
+	}
+
+	/** pseudo-partial template specialization for vector return values */
+	template<class X1, class X2, class X3>
+	Matrix numericalDerivative31(boost::function<Vector(const X1&, const X2&, const X3&)> h,
+			const X1& x1, const X2& x2, const X3& x3, double delta=1e-5) {
+		return numericalDerivative31<LieVector,X1,X2,X3>(
+				boost::bind(makeLieVector, boost::bind(h, _1, _2, _3)), x1, x2, x3, delta);
+	}
+
+	template<class X1, class X2, class X3>
+	inline Matrix numericalDerivative31(Vector (*h)(const X1&, const X2&, const X3&),
+			const X1& x1, const X2& x2, const X3& x3, double delta=1e-5) {
+		return numericalDerivative31<LieVector,X1,X2,X3>(
+				boost::bind(makeLieVector, boost::bind(h, _1, _2, _3)), x1, x2, x3, delta);
+	}
+
+	/**
+	 * Compute numerical derivative in argument 2 of ternary function
+	 * @param h ternary function yielding m-vector
+	 * @param x1 n-dimensional first argument value
+	 * @param x2 second argument value
+	 * @param x3 third argument value
+	 * @param delta increment for numerical derivative
+	 * @return m*n Jacobian computed via central differencing
+	 * All classes Y,X1,X2,X3 need dim, expmap, logmap
+	 */
 	template<class Y, class X1, class X2, class X3>
 	Matrix numericalDerivative32
 	(boost::function<Y(const X1&, const X2&, const X3&)> h,
@@ -289,7 +351,46 @@ namespace gtsam {
 		return numericalDerivative32<Y,X1,X2, X3>(boost::bind(h, _1, _2, _3), x1, x2, x3, delta);
 	}
 
-	// arg 3
+	/** pseudo-partial template specialization for double return values */
+	template<class X1, class X2, class X3>
+	Matrix numericalDerivative32(boost::function<double(const X1&, const X2&, const X3&)> h,
+			const X1& x1, const X2& x2, const X3& x3, double delta=1e-5) {
+		return numericalDerivative32<LieVector,X1,X2,X3>(
+				boost::bind(makeLieVectorD, boost::bind(h, _1, _2, _3)), x1, x2, x3, delta);
+	}
+
+	template<class X1, class X2, class X3>
+	inline Matrix numericalDerivative32(double (*h)(const X1&, const X2&, const X3&),
+			const X1& x1, const X2& x2, const X3& x3, double delta=1e-5) {
+		return numericalDerivative32<LieVector,X1,X2,X3>(
+				boost::bind(makeLieVectorD, boost::bind(h, _1, _2, _3)), x1, x2, x3, delta);
+	}
+
+	/** pseudo-partial template specialization for vector return values */
+	template<class X1, class X2, class X3>
+	Matrix numericalDerivative32(boost::function<Vector(const X1&, const X2&, const X3&)> h,
+			const X1& x1, const X2& x2, const X3& x3, double delta=1e-5) {
+		return numericalDerivative32<LieVector,X1,X2,X3>(
+				boost::bind(makeLieVector, boost::bind(h, _1, _2, _3)), x1, x2, x3, delta);
+	}
+
+	template<class X1, class X2, class X3>
+	inline Matrix numericalDerivative32(Vector (*h)(const X1&, const X2&, const X3&),
+			const X1& x1, const X2& x2, const X3& x3, double delta=1e-5) {
+		return numericalDerivative32<LieVector,X1,X2,X3>(
+				boost::bind(makeLieVector, boost::bind(h, _1, _2, _3)), x1, x2, x3, delta);
+	}
+
+	/**
+	 * Compute numerical derivative in argument 3 of ternary function
+	 * @param h ternary function yielding m-vector
+	 * @param x1 n-dimensional first argument value
+	 * @param x2 second argument value
+	 * @param x3 third argument value
+	 * @param delta increment for numerical derivative
+	 * @return m*n Jacobian computed via central differencing
+	 * All classes Y,X1,X2,X3 need dim, expmap, logmap
+	 */
 	template<class Y, class X1, class X2, class X3>
 	Matrix numericalDerivative33
 	(boost::function<Y(const X1&, const X2&, const X3&)> h,
@@ -315,82 +416,34 @@ namespace gtsam {
 		return numericalDerivative33<Y,X1,X2, X3>(boost::bind(h, _1, _2, _3), x1, x2, x3, delta);
 	}
 
-
-	/**
-	 * specializations for double outputs
-	 */
+	/** pseudo-partial template specialization for double return values */
 	template<class X1, class X2, class X3>
-	Matrix numericalDerivative31
-	(boost::function<double(const X1&, const X2&, const X3&)> h,
+	Matrix numericalDerivative33(boost::function<double(const X1&, const X2&, const X3&)> h,
 			const X1& x1, const X2& x2, const X3& x3, double delta=1e-5) {
-		double hx = h(x1,x2,x3);
-		double factor = 1.0/(2.0*delta);
-		const size_t m = 1, n = dim(x1);
-		Vector d(n,0.0);
-		Matrix H = zeros(m,n);
-		for (size_t j=0;j<n;j++) {
-			d(j) +=   delta; Vector hxplus = Vector_(1,h(expmap(x1,d),x2,x3)-hx);
-			d(j) -= 2*delta; Vector hxmin  = Vector_(1,h(expmap(x1,d),x2,x3)-hx);
-			d(j) +=   delta; Vector dh = (hxplus-hxmin)*factor;
-			for (size_t i=0;i<m;i++) H(i,j) = dh(i);
-		}
-		return H;
-	}
-	template<class X1, class X2, class X3>
-	inline Matrix numericalDerivative31
-	(double (*h)(const X1&, const X2&, const X3&),
-			const X1& x1, const X2& x2, const X3& x3, double delta=1e-5) {
-		return numericalDerivative31<X1,X2, X3>(boost::bind(h, _1, _2, _3), x1, x2, x3, delta);
+		return numericalDerivative33<LieVector,X1,X2,X3>(
+				boost::bind(makeLieVectorD, boost::bind(h, _1, _2, _3)), x1, x2, x3, delta);
 	}
 
-	// arg 2
 	template<class X1, class X2, class X3>
-	Matrix numericalDerivative32
-	(boost::function<double(const X1&, const X2&, const X3&)> h,
+	inline Matrix numericalDerivative33(double (*h)(const X1&, const X2&, const X3&),
 			const X1& x1, const X2& x2, const X3& x3, double delta=1e-5) {
-		double hx = h(x1,x2,x3);
-		double factor = 1.0/(2.0*delta);
-		const size_t m = 1, n = dim(x2);
-		Vector d(n,0.0);
-		Matrix H = zeros(m,n);
-		for (size_t j=0;j<n;j++) {
-			d(j) +=   delta; Vector hxplus = Vector_(1,h(x1, expmap(x2,d),x3)-hx);
-			d(j) -= 2*delta; Vector hxmin  = Vector_(1,h(x1, expmap(x2,d),x3)-hx);
-			d(j) +=   delta; Vector dh = (hxplus-hxmin)*factor;
-			for (size_t i=0;i<m;i++) H(i,j) = dh(i);
-		}
-		return H;
-	}
-	template<class X1, class X2, class X3>
-	inline Matrix numericalDerivative32
-	(double (*h)(const X1&, const X2&, const X3&),
-			const X1& x1, const X2& x2, const X3& x3, double delta=1e-5) {
-		return numericalDerivative32<X1,X2, X3>(boost::bind(h, _1, _2, _3), x1, x2, x3, delta);
+		return numericalDerivative33<LieVector,X1,X2,X3>(
+				boost::bind(makeLieVectorD, boost::bind(h, _1, _2, _3)), x1, x2, x3, delta);
 	}
 
-	// arg 3
+	/** pseudo-partial template specialization for vector return values */
 	template<class X1, class X2, class X3>
-	Matrix numericalDerivative33
-	(boost::function<double(const X1&, const X2&, const X3&)> h,
+	Matrix numericalDerivative33(boost::function<Vector(const X1&, const X2&, const X3&)> h,
 			const X1& x1, const X2& x2, const X3& x3, double delta=1e-5) {
-		double hx = h(x1,x2,x3);
-		double factor = 1.0/(2.0*delta);
-		const size_t m = 1, n = dim(x3);
-		Vector d(n,0.0);
-		Matrix H = zeros(m,n);
-		for (size_t j=0;j<n;j++) {
-			d(j) +=   delta; Vector hxplus = Vector_(1,h(x1, x2, expmap(x3,d))-hx);
-			d(j) -= 2*delta; Vector hxmin  = Vector_(1,h(x1, x2, expmap(x3,d))-hx);
-			d(j) +=   delta; Vector dh = (hxplus-hxmin)*factor;
-			for (size_t i=0;i<m;i++) H(i,j) = dh(i);
-		}
-		return H;
+		return numericalDerivative33<LieVector,X1,X2,X3>(
+				boost::bind(makeLieVector, boost::bind(h, _1, _2, _3)), x1, x2, x3, delta);
 	}
+
 	template<class X1, class X2, class X3>
-	inline Matrix numericalDerivative33
-	(double (*h)(const X1&, const X2&, const X3&),
+	inline Matrix numericalDerivative33(Vector (*h)(const X1&, const X2&, const X3&),
 			const X1& x1, const X2& x2, const X3& x3, double delta=1e-5) {
-		return numericalDerivative33<X1,X2, X3>(boost::bind(h, _1, _2, _3), x1, x2, x3, delta);
+		return numericalDerivative33<LieVector,X1,X2,X3>(
+				boost::bind(makeLieVector, boost::bind(h, _1, _2, _3)), x1, x2, x3, delta);
 	}
 
 }

@@ -27,6 +27,7 @@ headers += Testable.h TestableAssertions.h numericalDerivative.h
 
 # Lie Groups
 headers += Lie.h Lie-inl.h LieVector.h
+check_PROGRAMS += tests/testLieVector
 
 # Data structures
 headers += BTree.h DSF.h

@@ -8,6 +8,7 @@
 
 #define GTSAM_MAGIC_KEY
 
+#include <gtsam/base/LieVector.h>
 #include <gtsam/base/numericalDerivative.h>
 #include <gtsam/slam/pose2SLAM.h>
 
@@ -56,8 +57,8 @@ static Pose2Prior factor(1,prior, sigmas);
 /* ************************************************************************* */
 // The error |A*dx-b| approximates (h(x0+dx)-z) = -error_vector
 // Hence i.e., b = approximates z-h(x0) = error_vector(x0)
-Vector h(const Pose2& p1) {
-	return sigmas->whiten(factor.evaluateError(p1));
+LieVector h(const Pose2& p1) {
+	return LieVector(sigmas->whiten(factor.evaluateError(p1)));
 }
 
 /* ************************************************************************* */

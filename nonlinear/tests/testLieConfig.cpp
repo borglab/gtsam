@@ -18,7 +18,7 @@ using namespace gtsam;
 using namespace std;
 static double inf = std::numeric_limits<double>::infinity();
 
-typedef TypedSymbol<Vector, 'v'> VecKey;
+typedef TypedSymbol<LieVector, 'v'> VecKey;
 typedef LieConfig<VecKey> Config;
 
 VecKey key1(1), key2(2), key3(3), key4(4);
@@ -211,7 +211,7 @@ TEST(LieConfig, exists_)
 	config0.insert(key1, Vector_(1, 1.));
 	config0.insert(key2, Vector_(1, 2.));
 
-	boost::optional<Vector> v = config0.exists_(key1);
+	boost::optional<LieVector> v = config0.exists_(key1);
 	CHECK(assert_equal(Vector_(1, 1.),*v));
 }
 
@@ -237,7 +237,7 @@ TEST(LieConfig, update)
 /* ************************************************************************* */
 TEST(LieConfig, dummy_initialization)
 {
-	typedef TypedSymbol<Vector, 'z'> Key;
+	typedef TypedSymbol<LieVector, 'z'> Key;
 	typedef LieConfig<Key> Config1;
 
 	Config1 init1;

@@ -9,73 +9,72 @@
 #pragma once
 
 #include <gtsam/base/Matrix.h>
-#include <gtsam/base/LieVector.h>
+#include <gtsam/geometry/Point3.h>
 #include <gtsam/linear/VectorConfig.h>
 #include <gtsam/nonlinear/NonlinearFactor.h>
 #include <gtsam/inference/Key.h>
+#include <gtsam/nonlinear/TupleConfig.h>
 
 // \namespace
 
 namespace gtsam {
 namespace simulated3D {
 
-	typedef VectorConfig VectorConfig;
+	typedef gtsam::TypedSymbol<Point3, 'x'> PoseKey;
+	typedef gtsam::TypedSymbol<Point3, 'l'> PointKey;
 
-	typedef gtsam::TypedSymbol<Vector, 'x'> PoseKey;
-	typedef gtsam::TypedSymbol<Vector, 'l'> PointKey;
+	typedef LieConfig<PoseKey> PoseConfig;
+	typedef LieConfig<PointKey> PointConfig;
+	typedef TupleConfig2<PoseConfig, PointConfig> Config;
 
 	/**
 	 * Prior on a single pose
 	 */
-	Vector prior(const Vector& x);
-	Matrix Dprior(const Vector& x);
+	Point3 prior(const Point3& x, boost::optional<Matrix&> H = boost::none);
 
 	/**
 	 * odometry between two poses
 	 */
-	Vector odo(const Vector& x1, const Vector& x2);
-	Matrix Dodo1(const Vector& x1, const Vector& x2);
-	Matrix Dodo2(const Vector& x1, const Vector& x2);
+	Point3 odo(const Point3& x1, const Point3& x2,
+			boost::optional<Matrix&> H1 = boost::none,
+			boost::optional<Matrix&> H2 = boost::none);
 
 	/**
 	 *  measurement between landmark and pose
 	 */
-	Vector mea(const Vector& x, const Vector& l);
-	Matrix Dmea1(const Vector& x, const Vector& l);
-	Matrix Dmea2(const Vector& x, const Vector& l);
+	Point3 mea(const Point3& x, const Point3& l,
+			boost::optional<Matrix&> H1 = boost::none,
+			boost::optional<Matrix&> H2 = boost::none);
 
-	struct Point2Prior3D: public NonlinearFactor1<VectorConfig, PoseKey> {
+	struct PointPrior3D: public NonlinearFactor1<Config, PoseKey> {
 
-		Vector z_;
+		Point3 z_;
 
-		Point2Prior3D(const Vector& z,
+		PointPrior3D(const Point3& z,
 					const SharedGaussian& model, const PoseKey& j) :
-				NonlinearFactor1<VectorConfig, PoseKey> (model, j), z_(z) {
+				NonlinearFactor1<Config, PoseKey> (model, j), z_(z) {
 			}
 
-		Vector evaluateError(const Vector& x, boost::optional<Matrix&> H =
+		Vector evaluateError(const Point3& x, boost::optional<Matrix&> H =
 				boost::none) {
-			if (H) *H = Dprior(x);
-			return prior(x) - z_;
+			return (prior(x, H) - z_).vector();
 		}
 	};
 
-	struct Simulated3DMeasurement: public NonlinearFactor2<VectorConfig,
+	struct Simulated3DMeasurement: public NonlinearFactor2<Config,
 			PoseKey, PointKey> {
 
-		Vector z_;
+		Point3 z_;
 
-		Simulated3DMeasurement(const Vector& z,
+		Simulated3DMeasurement(const Point3& z,
 					const SharedGaussian& model, PoseKey& j1, PointKey j2) :
-				NonlinearFactor2<VectorConfig, PoseKey, PointKey> (
+				NonlinearFactor2<Config, PoseKey, PointKey> (
 								model, j1, j2), z_(z) {
 			}
 
-		Vector evaluateError(const Vector& x1, const Vector& x2, boost::optional<
+		Vector evaluateError(const Point3& x1, const Point3& x2, boost::optional<
 				Matrix&> H1 = boost::none, boost::optional<Matrix&> H2 = boost::none) {
-			if (H1) *H1 = Dmea1(x1, x2);
-			if (H2) *H2 = Dmea2(x1, x2);
-			return mea(x1, x2) - z_;
+			return (mea(x1, x2, H1, H2) - z_).vector();
 		}
 	};
 

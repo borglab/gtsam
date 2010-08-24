@@ -15,37 +15,34 @@ using namespace gtsam;
 using namespace simulated3D;
 
 /* ************************************************************************* */
+TEST( simulated3D, Config )
+{
+	Config actual;
+	actual.insert(PointKey(1),Point3(1,1,1));
+	actual.insert(PoseKey(2),Point3(2,2,2));
+	EXPECT(assert_equal(actual,actual,1e-9));
+}
+
+/* ************************************************************************* */
 TEST( simulated3D, Dprior )
 {
-	Pose3 x1(Rot3::rodriguez(0, 0, 1.57), Point3(1, 5, 0));
-	Vector v = logmap(x1);
-	Matrix numerical = numericalDerivative11(prior,v);
-	Matrix computed = Dprior(v);
-	CHECK(assert_equal(numerical,computed,1e-9));
+	Point3 x(1,-9, 7);
+	Matrix numerical = numericalDerivative11<Point3, Point3>(boost::bind(prior, _1, boost::none),x);
+	Matrix computed;
+	prior(x,computed);
+	EXPECT(assert_equal(numerical,computed,1e-9));
 }
 
 /* ************************************************************************* */
-TEST( simulated3D, DOdo1 )
+TEST( simulated3D, DOdo )
 {
-	Pose3 x1(Rot3::rodriguez(0, 0, 1.57), Point3(1, 5, 0));
-	Vector v1 = logmap(x1);
-	Pose3 x2(Rot3::rodriguez(0, 0, 0), Point3(2, 3, 0));
-	Vector v2 = logmap(x2);
-	Matrix numerical = numericalDerivative21(odo,v1,v2);
-	Matrix computed = Dodo1(v1,v2);
-	CHECK(assert_equal(numerical,computed,1e-9));
-}
-
-/* ************************************************************************* */
-TEST( simulated3D, DOdo2 )
-{
-	Pose3 x1(Rot3::rodriguez(0, 0, 1.57), Point3(1, 5, 0));
-	Vector v1 = logmap(x1);
-	Pose3 x2(Rot3::rodriguez(0, 0, 0), Point3(2, 3, 0));
-	Vector v2 = logmap(x2);
-	Matrix numerical = numericalDerivative22(odo,v1,v2);
-	Matrix computed = Dodo2(v1,v2);
-	CHECK(assert_equal(numerical,computed,1e-9));
+	Point3 x1(1,-9,7),x2(-5,6,7);
+	Matrix H1,H2;
+	odo(x1,x2,H1,H2);
+	Matrix A1 = numericalDerivative21<Point3, Point3, Point3>(boost::bind(odo, _1, _2, boost::none, boost::none),x1,x2);
+	EXPECT(assert_equal(A1,H1,1e-9));
+	Matrix A2 = numericalDerivative22<Point3, Point3, Point3>(boost::bind(odo, _1, _2, boost::none, boost::none),x1,x2);
+	EXPECT(assert_equal(A2,H2,1e-9));
 }
 
 

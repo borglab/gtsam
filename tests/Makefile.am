@@ -18,7 +18,7 @@ check_PROGRAMS += testNonlinearEqualityConstraint testBoundingConstraint
 check_PROGRAMS += testTransformConstraint testLinearApproxFactor
 
 # experimental
-#check_PROGRAMS += testFusionTupleConfig
+#check_PROGRAMS += testFusionTupleConfig # Doesn't work on Macs
 
 if USE_LDL
 check_PROGRAMS += testConstraintOptimizer 

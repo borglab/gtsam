@@ -439,8 +439,8 @@ TEST( Pose2, bearing )
 }
 
 /* ************************************************************************* */
-double range_proxy(const Pose2& pose, const Point2& point) {
-	return pose.range(point);
+LieVector range_proxy(const Pose2& pose, const Point2& point) {
+	return LieVector(Vector_(1, pose.range(point)));
 }
 TEST( Pose2, range )
 {

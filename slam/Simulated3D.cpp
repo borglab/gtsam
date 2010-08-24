@@ -5,54 +5,35 @@
 **/
 
 #include <gtsam/slam/Simulated3D.h>
+#include <gtsam/nonlinear/LieConfig-inl.h>
+#include <gtsam/nonlinear/TupleConfig-inl.h>
 
 namespace gtsam {
+
+using namespace simulated3D;
+INSTANTIATE_LIE_CONFIG(PointKey)
+INSTANTIATE_LIE_CONFIG(PoseKey)
+INSTANTIATE_TUPLE_CONFIG2(PoseConfig, PointConfig)
+
 namespace simulated3D {
 
-Vector prior (const Vector& x)
-{
+Point3 prior (const Point3& x, boost::optional<Matrix&> H) {
+	if (H) *H = eye(3);
 	return x;
 }
 
-Matrix Dprior(const Vector& x)
-{
-	Matrix H = eye((int) x.size());
-	return H;
-}
-
-Vector odo(const Vector& x1, const Vector& x2)
-{
+Point3 odo(const Point3& x1, const Point3& x2,
+		boost::optional<Matrix&> H1, boost::optional<Matrix&> H2) {
+	if (H1) *H1 = -1 * eye(3);
+	if (H2) *H2 = eye(3);
 	return x2 - x1;
 }
 
-Matrix Dodo1(const Vector& x1, const Vector& x2)
-{
-	Matrix H = -1 * eye((int) x1.size());
-	return H;
-}
-
-Matrix Dodo2(const Vector& x1, const Vector& x2)
-{
-	Matrix H = eye((int) x1.size());
-	return H;
-}
-
-
-Vector mea(const Vector& x,  const Vector& l)
-{
+Point3 mea(const Point3& x,  const Point3& l,
+		boost::optional<Matrix&> H1, boost::optional<Matrix&> H2) {
+	if (H1) *H1 = -1 * eye(3);
+	if (H2) *H2 = eye(3);
 	return l - x;
-}
-
-Matrix Dmea1(const Vector& x, const Vector& l)
-{
-	Matrix H = -1 * eye((int) x.size());
-	return H;
-}
-
-Matrix Dmea2(const Vector& x, const Vector& l)
-{
-	Matrix H = eye((int) x.size());
-	return H;
 }
 
 }} // namespace gtsam::simulated3D
