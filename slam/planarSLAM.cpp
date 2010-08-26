@@ -52,6 +52,12 @@ namespace gtsam {
 			push_back(factor);
 		}
 
+		void Graph::addBearingRange(const PoseKey& i, const PointKey& j, const Rot2& z1,
+				double z2, const SharedGaussian& model) {
+			sharedFactor factor(new BearingRange(i, j, z1, z2, model));
+			push_back(factor);
+		}
+
 	} // planarSLAM
 
 } // gtsam

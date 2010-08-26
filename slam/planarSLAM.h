@@ -47,6 +47,8 @@ namespace gtsam {
 					const SharedGaussian& model);
 			void addRange(const PoseKey& i, const PointKey& j, double z,
 					const SharedGaussian& model);
+			void addBearingRange(const PoseKey& i, const PointKey& j,
+					const Rot2& z1, double z2, const SharedGaussian& model);
 		};
 
 		// Optimizer

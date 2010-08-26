@@ -24,7 +24,7 @@
  * TODO: make factors independent of Config
  * TODO: get rid of excessive shared pointer stuff: mostly gone
  * TODO: make toplevel documentation
- * TODO: investigate whether we can just use ints as keys
+ * TODO: investigate whether we can just use ints as keys: will occur for linear, not nonlinear
  */
 
 using namespace std;
