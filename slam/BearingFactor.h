@@ -35,7 +35,7 @@ namespace gtsam {
 		Vector evaluateError(const Pose2& pose, const Point2& point,
 				boost::optional<Matrix&> H1, boost::optional<Matrix&> H2) const {
 			Rot2 hx = pose.bearing(point, H1, H2);
-			return logmap(between(z_, hx));
+			return Rot2::Logmap(z_.between(hx));
 		}
 
 		/** return the measured */

@@ -35,6 +35,9 @@ public:
 			T[j] = a(j);
 	}
 
+	/** dimension - TODO: is this right for anything other than 3x3? */
+	size_t dim() const {return N1 * N2;}
+
 	const double & operator()(int i, int j) const {
 		return T[j](i);
 	}

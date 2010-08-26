@@ -142,8 +142,10 @@ namespace gtsam {
     /** return DOF, dimensionality of tangent space */
     inline size_t dim() const { return dimension; }
 
-    /** Compose two rotations */
-    inline Rot3 compose(const Rot3& R2) const { return *this * R2;}
+    /** Compose two rotations i.e., R= (*this) * R2
+     */
+    Rot3 compose(const Rot3& R2,
+  	boost::optional<Matrix&> H1=boost::none, boost::optional<Matrix&> H2=boost::none) const;
 
     /** Exponential map at identity - create a rotation from canonical coordinates
      * using Rodriguez' formula
@@ -156,13 +158,25 @@ namespace gtsam {
     // Log map at identity - return the canonical coordinates of this rotation
     static Vector Logmap(const Rot3& R);
 
-    /* Find the inverse rotation R^T s.t. inverse(R)*R = I */
-    inline Rot3 inverse() const {
-      return Rot3(
-          r1_.x(), r1_.y(), r1_.z(),
-          r2_.x(), r2_.y(), r2_.z(),
-          r3_.x(), r3_.y(), r3_.z());
+    /** default implementations of binary functions */
+    inline Rot3 expmap(const Vector& v) const { return gtsam::expmap_default(*this, v); }
+    inline Vector logmap(const Rot3& p2) const { return gtsam::logmap_default(*this, p2);}
+
+    // derivative of inverse rotation R^T s.t. inverse(R)*R = Rot3()
+    inline Rot3 inverse(boost::optional<Matrix&> H1=boost::none) const {
+    	if (H1) *H1 = -matrix();
+    	return Rot3(
+    			r1_.x(), r1_.y(), r1_.z(),
+    			r2_.x(), r2_.y(), r2_.z(),
+    			r3_.x(), r3_.y(), r3_.z());
     }
+
+    /**
+     * Return relative rotation D s.t. R2=D*R1, i.e. D=R2*R1'
+     */
+    Rot3 between(const Rot3& R2,
+    		boost::optional<Matrix&> H1=boost::none,
+    		boost::optional<Matrix&> H2=boost::none) const;
 
     /** compose two rotations */
     Rot3 operator*(const Rot3& R2) const {
@@ -173,15 +187,12 @@ namespace gtsam {
      * rotate point from rotated coordinate frame to
      * world = R*p
      */
-//    Point3 rotate(const Point3& p) const
-//			{return r1_ * p.x() + r2_ * p.y() + r3_ * p.z();}
     inline Point3 operator*(const Point3& p) const { return rotate(p);}
 
     /**
      * rotate point from rotated coordinate frame to
      * world = R*p
      */
-//    static inline Point3 rotate(const Rot3& R, const Point3& p) { return R*p;}
     Point3 rotate(const Point3& p,
   	boost::optional<Matrix&> H1=boost::none,  boost::optional<Matrix&> H2=boost::none) const;
 
@@ -189,7 +200,6 @@ namespace gtsam {
      * rotate point from world to rotated
      * frame = R'*p
      */
-//    static Point3 unrotate(const Rot3& R, const Point3& p);
     Point3 unrotate(const Point3& p,
     	boost::optional<Matrix&> H1=boost::none, boost::optional<Matrix&> H2=boost::none) const;
 
@@ -204,24 +214,6 @@ namespace gtsam {
       ar & BOOST_SERIALIZATION_NVP(r3_);
     }
   };
-
-  // derivative of inverse rotation R^T s.t. inverse(R)*R = Rot3()
-  inline Rot3 inverse(const Rot3& R, boost::optional<Matrix&> H1) {
-	  if (H1) *H1 = -R.matrix();
-	  return R.inverse();
-  }
-
-  /**
-   * compose two rotations i.e., R=R1*R2
-   */
-  Rot3 compose (const Rot3& R1, const Rot3& R2,
-	boost::optional<Matrix&> H1, boost::optional<Matrix&> H2);
-
-  /**
-   * Return relative rotation D s.t. R2=D*R1, i.e. D=R2*R1'
-   */
-  Rot3 between (const Rot3& R1, const Rot3& R2,
-	boost::optional<Matrix&> H1, boost::optional<Matrix&> H2);
 
   /**
    * [RQ] receives a 3 by 3 matrix and returns an upper triangular matrix R

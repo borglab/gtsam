@@ -173,12 +173,6 @@ namespace gtsam {
 	  return r1_ * p.x() + r2_ * p.y() + r3_ * p.z();
   }
 
-//  /* ************************************************************************* */
-//  Point3 Rot3::unrotate(const Rot3& R, const Point3& p) {
-//    const Matrix Rt(R.transpose());
-//    return Rt*p.vector(); // q = Rt*p
-//  }
-
   /* ************************************************************************* */
   // see doc/math.lyx, SO(3) section
   Point3 Rot3::unrotate(const Point3& p,
@@ -191,19 +185,19 @@ namespace gtsam {
   }
 
   /* ************************************************************************* */
-  Rot3 compose (const Rot3& R1, const Rot3& R2,
-	boost::optional<Matrix&> H1, boost::optional<Matrix&> H2) {
+  Rot3 Rot3::compose (const Rot3& R2,
+	boost::optional<Matrix&> H1, boost::optional<Matrix&> H2) const {
 	  if (H1) *H1 = R2.transpose();
 	  if (H2) *H2 = I3;
-	  return R1.compose(R2);
+	  return *this * R2;
   }
 
   /* ************************************************************************* */
-  Rot3 between (const Rot3& R1, const Rot3& R2,
-	boost::optional<Matrix&> H1, boost::optional<Matrix&> H2) {
-	  if (H1) *H1 = -(R2.transpose()*R1.matrix());
+  Rot3 Rot3::between (const Rot3& R2,
+	boost::optional<Matrix&> H1, boost::optional<Matrix&> H2) const {
+	  if (H1) *H1 = -(R2.transpose()*matrix());
 	  if (H2) *H2 = I3;
-	  return between(R1, R2);
+	  return between_default(*this, R2);
   }
 
   /* ************************************************************************* */

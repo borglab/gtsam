@@ -434,7 +434,7 @@ public:
 	Vector evaluateError(const X& x1, boost::optional<Matrix&> H1 = boost::none) const {
 		const size_t p = X::Dim();
 		if (H1) *H1 = eye(p);
-		return logmap(value_, x1);
+		return value_.logmap(x1);
 	}
 };
 
@@ -466,7 +466,7 @@ public:
 		const size_t p = X::Dim();
 		if (H1) *H1 = -eye(p);
 		if (H2) *H2 = eye(p);
-		return logmap(x1, x2);
+		return x1.logmap(x2);
 	}
 };
 

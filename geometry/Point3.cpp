@@ -46,11 +46,6 @@ namespace gtsam {
   Point3 Point3::operator/(double s) const {
     return Point3(x_ / s, y_ / s, z_ / s);
   }
-
-  /* ************************************************************************* */
-//  Point3 Point3::add(const Point3 &q) const {
-//    return *this + q;
-//  }
   /* ************************************************************************* */
   Point3 Point3::add(const Point3 &q,
 	      boost::optional<Matrix&> H1, boost::optional<Matrix&> H2) const {
@@ -58,10 +53,6 @@ namespace gtsam {
 	  if (H2) *H2 = eye(3,3);
 	  return *this + q;
   }
-  /* ************************************************************************* */
-//  Point3 Point3::sub(const Point3 &q) const {
-//    return *this - q;
-//  }
   /* ************************************************************************* */
   Point3 Point3::sub(const Point3 &q,
 	      boost::optional<Matrix&> H1, boost::optional<Matrix&> H2) const {

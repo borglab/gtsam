@@ -230,7 +230,7 @@ TEST( TransformConstraint, converge_global ) {
 //	Pose2 trans(1.5, 2.5, 1.0); // larger rotation
 	Pose2 trans(1.5, 2.5, 3.1); // significant rotation
 
-	Point2 idealForeign = inverse(trans).transform_from(local);
+	Point2 idealForeign = trans.inverse().transform_from(local);
 
 	// perturb the initial estimate
 //	Point2 global = idealForeign; // Ideal - works

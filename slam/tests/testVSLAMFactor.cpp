@@ -36,29 +36,29 @@ TEST( ProjectionFactor, error )
 	Point2 z(323.,240.);
 	int cameraFrameNumber=1, landmarkNumber=1;
 	boost::shared_ptr<ProjectionFactor>
-		factor(new ProjectionFactor(z, sigma, cameraFrameNumber, landmarkNumber, sK));
+	factor(new ProjectionFactor(z, sigma, cameraFrameNumber, landmarkNumber, sK));
 
-  // For the following configuration, the factor predicts 320,240
-  Config config;
-  Rot3 R;Point3 t1(0,0,-6); Pose3 x1(R,t1); config.insert(1, x1);
-  Point3 l1;  config.insert(1, l1);
-  // Point should project to Point2(320.,240.)
-  CHECK(assert_equal(Vector_(2, -3.0, 0.0), factor->unwhitenedError(config)));
+	// For the following configuration, the factor predicts 320,240
+	Config config;
+	Rot3 R;Point3 t1(0,0,-6); Pose3 x1(R,t1); config.insert(1, x1);
+	Point3 l1;  config.insert(1, l1);
+	// Point should project to Point2(320.,240.)
+	CHECK(assert_equal(Vector_(2, -3.0, 0.0), factor->unwhitenedError(config)));
 
-  // Which yields an error of 3^2/2 = 4.5
-  DOUBLES_EQUAL(4.5,factor->error(config),1e-9);
+	// Which yields an error of 3^2/2 = 4.5
+	DOUBLES_EQUAL(4.5,factor->error(config),1e-9);
 
-  // Check linearize
-  Matrix Al1 = Matrix_(2, 3, 61.584, 0., 0., 0., 61.584, 0.);
-  Matrix Ax1 = Matrix_(2, 6, 0., -369.504, 0., -61.584, 0., 0., 369.504, 0., 0., 0., -61.584, 0.);
-  Vector b = Vector_(2,3.,0.);
-  SharedDiagonal probModel1 = noiseModel::Unit::Create(2);
-  GaussianFactor expected("l1", Al1, "x1", Ax1, b, probModel1);
-  GaussianFactor::shared_ptr actual = factor->linearize(config);
-  CHECK(assert_equal(expected,*actual,1e-3));
+	// Check linearize
+	Matrix Al1 = Matrix_(2, 3, 61.584, 0., 0., 0., 61.584, 0.);
+	Matrix Ax1 = Matrix_(2, 6, 0., -369.504, 0., -61.584, 0., 0., 369.504, 0., 0., 0., -61.584, 0.);
+	Vector b = Vector_(2,3.,0.);
+	SharedDiagonal probModel1 = noiseModel::Unit::Create(2);
+	GaussianFactor expected("l1", Al1, "x1", Ax1, b, probModel1);
+	GaussianFactor::shared_ptr actual = factor->linearize(config);
+	CHECK(assert_equal(expected,*actual,1e-3));
 
-  // linearize graph
-  Graph graph;
+	// linearize graph
+	Graph graph;
 	graph.push_back(factor);
 	GaussianFactorGraph expected_lfg;
 	expected_lfg.push_back(actual);
@@ -69,11 +69,11 @@ TEST( ProjectionFactor, error )
 	VectorConfig delta;
 	delta.insert("x1",Vector_(6, 0.,0.,0., 1.,1.,1.));
 	delta.insert("l1",Vector_(3, 1.,2.,3.));
-	Config actual_config = expmap(config, delta);
-  Config expected_config;
-  Point3 t2(1,1,-5); Pose3 x2(R,t2); expected_config.insert(1, x2);
-  Point3 l2(1,2,3); expected_config.insert(1, l2);
-  CHECK(assert_equal(expected_config,actual_config,1e-9));
+	Config actual_config = config.expmap(delta);
+	Config expected_config;
+	Point3 t2(1,1,-5); Pose3 x2(R,t2); expected_config.insert(1, x2);
+	Point3 l2(1,2,3); expected_config.insert(1, l2);
+	CHECK(assert_equal(expected_config,actual_config,1e-9));
 }
 
 /* ************************************************************************* */

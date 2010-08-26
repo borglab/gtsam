@@ -26,7 +26,8 @@ endif
 headers += Testable.h TestableAssertions.h numericalDerivative.h 
 
 # Lie Groups
-headers += Lie.h Lie-inl.h LieVector.h
+headers += Lie.h Lie-inl.h lieProxies.h
+sources += LieVector.cpp
 check_PROGRAMS += tests/testLieVector
 
 # Data structures

@@ -80,9 +80,9 @@ namespace gtsam {
 		// needed to create initial estimates (note that this will be the linearization point in the next step!)
 		const Config getLinearizationPoint() const {return thetaFuture_;}
 		// estimate based on incomplete delta (threshold!)
-		const Config calculateEstimate() const {return expmap(theta_, delta_);}
+		const Config calculateEstimate() const {return theta_.expmap(delta_);}
 		// estimate based on full delta (note that this is based on the actual current linearization point)
-		const Config calculateBestEstimate() const {return expmap(theta_, optimize2(*this, 0.));}
+		const Config calculateBestEstimate() const {return theta_.expmap(optimize2(*this, 0.));}
 
 		const std::list<Symbol>& getMarkedUnsafe() const { return marked_; }
 

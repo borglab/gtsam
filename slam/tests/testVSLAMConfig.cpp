@@ -31,7 +31,7 @@ TEST( Config, update_with_large_delta) {
 	delta.insert("x1", Vector_(6, 0.0, 0.0, 0.0, 0.1, 0.1, 0.1));
 	delta.insert("l1", Vector_(3, 0.1, 0.1, 0.1));
 	delta.insert("x2", Vector_(6, 0.0, 0.0, 0.0, 100.1, 4.1, 9.1));
-	Config actual = expmap(init, delta);
+	Config actual = init.expmap(delta);
 
 	CHECK(assert_equal(expected,actual));
 }

@@ -11,7 +11,7 @@ ACLOCAL_AMFLAGS = -I m4
 AUTOMAKE_OPTIONS = foreign nostdinc
 
 # All the sub-directories that need to be built
-SUBDIRS = CppUnitLite colamd spqr_mini base geometry inference linear nonlinear slam . tests wrap  
+SUBDIRS = CppUnitLite colamd spqr_mini base geometry inference linear nonlinear slam . tests wrap examples 
 
 # And the corresponding libraries produced
 SUBLIBS = colamd/libcolamd.la \

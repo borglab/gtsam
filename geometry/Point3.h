@@ -51,13 +51,26 @@ namespace gtsam {
     inline Point3 inverse() const { return Point3(-x_, -y_, -z_); }
 
     /** "Compose" - just adds coordinates of two points */
-    inline Point3 compose(const Point3& p1) const { return *this+p1; }
+    inline Point3 compose(const Point3& p2,
+    		boost::optional<Matrix&> H1=boost::none,
+    		boost::optional<Matrix&> H2=boost::none) const {
+  	  if (H1) *H1 = eye(3);
+  	  if (H2) *H2 = eye(3);
+  	  return *this+p2;
+    }
 
     /** Exponential map at identity - just create a Point3 from x,y,z */
     static inline Point3 Expmap(const Vector& v) { return Point3(v); }
 
     /** Log map at identity - return the x,y,z of this point */
     static inline Vector Logmap(const Point3& dp) { return Vector_(3, dp.x(), dp.y(), dp.z()); }
+
+    /** default implementations of binary functions */
+    inline Point3 expmap(const Vector& v) const { return gtsam::expmap_default(*this, v); }
+    inline Vector logmap(const Point3& p2) const { return gtsam::logmap_default(*this, p2);}
+
+    /** Between using the default implementation */
+    inline Point3 between(const Point3& p2) const { return between_default(*this, p2); }
 
     /** return vectorized form (column-wise)*/
     Vector vector() const {
@@ -112,13 +125,6 @@ namespace gtsam {
       ar & BOOST_SERIALIZATION_NVP(z_);
     }
   };
-
-  /** "Compose" - just adds coordinates of two points */
-  inline Point3 compose(const Point3& p1, const Point3& p2, boost::optional<Matrix&> H1, boost::optional<Matrix&> H2=boost::none) {
-	  if (H1) *H1 = eye(3);
-	  if (H2) *H2 = eye(3);
-	  return p1.compose(p2);
-  }
 
   /** Syntactic sugar for multiplying coordinates by a scalar s*p */
   inline Point3 operator*(double s, const Point3& p) { return p*s;}

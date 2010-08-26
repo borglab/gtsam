@@ -6,6 +6,7 @@
 #include <math.h>
 #include <gtsam/CppUnitLite/TestHarness.h>
 #include <gtsam/base/numericalDerivative.h>
+#include <gtsam/base/lieProxies.h>
 #include <gtsam/geometry/Pose3.h>
 
 using namespace std;
@@ -33,22 +34,21 @@ TEST( Pose3, expmap_a)
   Vector v(6);
   fill(v.begin(), v.end(), 0);
   v(0) = 0.3;
-  CHECK(assert_equal(expmap(id,v), Pose3(R, Point3())));
+  CHECK(assert_equal(id.expmap(v), Pose3(R, Point3())));
 #ifdef CORRECT_POSE3_EXMAP
 
   v(3)=0.2;v(4)=0.394742;v(5)=-2.08998;
 #else
   v(3)=0.2;v(4)=0.7;v(5)=-2;
 #endif
-  CHECK(assert_equal(Pose3(R, P),expmap(id,v),1e-5));
+  CHECK(assert_equal(Pose3(R, P),id.expmap(v),1e-5));
 }
 
 /* ************************************************************************* */
 TEST(Pose3, expmap_b)
 {
   Pose3 p1(Rot3(), Point3(100, 0, 0));
-  Pose3 p2 = expmap(p1, Vector_(6,
-      0.0, 0.0, 0.1,  0.0, 0.0, 0.0));
+  Pose3 p2 = p1.expmap(Vector_(6,0.0, 0.0, 0.1,  0.0, 0.0, 0.0));
   Pose3 expected(Rot3::rodriguez(0.0, 0.0, 0.1), Point3(100.0, 0.0, 0.0));
   CHECK(assert_equal(expected, p2));
 }
@@ -68,24 +68,24 @@ namespace screw {
 TEST(Pose3, expmap_c)
 {
   CHECK(assert_equal(screw::expected, expm<Pose3>(screw::xi),1e-6));
-  CHECK(assert_equal(screw::expected, expmap<Pose3>(screw::xi),1e-6));
+  CHECK(assert_equal(screw::expected, Pose3::Expmap(screw::xi),1e-6));
 }
 
 /* ************************************************************************* */
 // assert that T*exp(xi)*T^-1 is equal to exp(Ad_T(xi))
 TEST(Pose3, Adjoint)
 {
-	Pose3 expected = T * expmap<Pose3>(screw::xi) * inverse(T);
+	Pose3 expected = T * Pose3::Expmap(screw::xi) * inverse(T);
 	Vector xiprime = Adjoint(T, screw::xi);
-	CHECK(assert_equal(expected, expmap<Pose3>(xiprime), 1e-6));
+	CHECK(assert_equal(expected, Pose3::Expmap(xiprime), 1e-6));
 
-	Pose3 expected2 = T2 * expmap<Pose3>(screw::xi) * inverse(T2);
+	Pose3 expected2 = T2 * Pose3::Expmap(screw::xi) * inverse(T2);
 	Vector xiprime2 = Adjoint(T2, screw::xi);
-	CHECK(assert_equal(expected2, expmap<Pose3>(xiprime2), 1e-6));
+	CHECK(assert_equal(expected2, Pose3::Expmap(xiprime2), 1e-6));
 
-	Pose3 expected3 = T3 * expmap<Pose3>(screw::xi) * inverse(T3);
+	Pose3 expected3 = T3 * Pose3::Expmap(screw::xi) * inverse(T3);
 	Vector xiprime3 = Adjoint(T3, screw::xi);
-	CHECK(assert_equal(expected3, expmap<Pose3>(xiprime3), 1e-6));
+	CHECK(assert_equal(expected3, Pose3::Expmap(xiprime3), 1e-6));
 }
 
 /* ************************************************************************* */
@@ -100,7 +100,7 @@ Pose3 Agrawal06iros(const Vector& xi) {
 	else {
 		Matrix W = skewSymmetric(w/t);
 		Matrix A = eye(3) + ((1 - cos(t)) / t) * W + ((t - sin(t)) / t) * (W * W);
-		return Pose3(expmap<Rot3> (w), expmap<Point3> (A * v));
+		return Pose3(Rot3::Expmap (w), expmap<Point3> (A * v));
 	}
 }
 
@@ -109,7 +109,7 @@ TEST(Pose3, expmaps_galore)
 {
 	Vector xi; Pose3 actual;
 	xi = Vector_(6,0.1,0.2,0.3,0.4,0.5,0.6);
-	actual = expmap<Pose3>(xi);
+	actual = Pose3::Expmap(xi);
   CHECK(assert_equal(expm<Pose3>(xi), actual,1e-6));
   CHECK(assert_equal(Agrawal06iros(xi), actual,1e-6));
   CHECK(assert_equal(xi, logmap(actual),1e-6));
@@ -117,17 +117,17 @@ TEST(Pose3, expmaps_galore)
 	xi = Vector_(6,0.1,-0.2,0.3,-0.4,0.5,-0.6);
 	for (double theta=1.0;0.3*theta<=M_PI;theta*=2) {
 		Vector txi = xi*theta;
-		actual = expmap<Pose3>(txi);
+		actual = Pose3::Expmap(txi);
 		CHECK(assert_equal(expm<Pose3>(txi,30), actual,1e-6));
 		CHECK(assert_equal(Agrawal06iros(txi), actual,1e-6));
 		Vector log = logmap(actual);
-		CHECK(assert_equal(actual, expmap<Pose3>(log),1e-6));
+		CHECK(assert_equal(actual, Pose3::Expmap(log),1e-6));
 		CHECK(assert_equal(txi,log,1e-6)); // not true once wraps
 	}
 
   // Works with large v as well, but expm needs 10 iterations!
 	xi = Vector_(6,0.2,0.3,-0.8,100.0,120.0,-60.0);
-	actual = expmap<Pose3>(xi);
+	actual = Pose3::Expmap(xi);
   CHECK(assert_equal(expm<Pose3>(xi,10), actual,1e-5));
   CHECK(assert_equal(Agrawal06iros(xi), actual,1e-6));
   CHECK(assert_equal(xi, logmap(actual),1e-6));
@@ -140,9 +140,9 @@ TEST(Pose3, Adjoint_compose)
 	// T1*T2*exp(Adjoint(inv(T2),x) = T1*exp(x)*T2
 	const Pose3& T1 = T;
 	Vector x = Vector_(6,0.1,0.1,0.1,0.4,0.2,0.8);
-	Pose3 expected = T1 * expmap<Pose3>(x) * T2;
+	Pose3 expected = T1 * Pose3::Expmap(x) * T2;
 	Vector y = Adjoint(inverse(T2), x);
-	Pose3 actual = T1 * T2 * expmap<Pose3>(y);
+	Pose3 actual = T1 * T2 * Pose3::Expmap(y);
 	CHECK(assert_equal(expected, actual, 1e-6));
 }
 #endif // SLOW_BUT_CORRECT_EXMAP
@@ -155,12 +155,12 @@ TEST( Pose3, compose )
 	CHECK(assert_equal(actual,expected,1e-8));
 
 	Matrix actualDcompose1, actualDcompose2;
-	compose(T2, T2, actualDcompose1, actualDcompose2);
+	T2.compose(T2, actualDcompose1, actualDcompose2);
 
-	Matrix numericalH1 = numericalDerivative21<Pose3,Pose3,Pose3>(compose, T2, T2, 1e-5);
+	Matrix numericalH1 = numericalDerivative21(testing::compose<Pose3>, T2, T2, 1e-5);
 	CHECK(assert_equal(numericalH1,actualDcompose1,5e-5));
 
-	Matrix numericalH2 = numericalDerivative22<Pose3,Pose3,Pose3>(compose, T2, T2, 1e-5);
+	Matrix numericalH2 = numericalDerivative22(testing::compose<Pose3>, T2, T2, 1e-5);
 	CHECK(assert_equal(numericalH2,actualDcompose2));
 }
 
@@ -173,12 +173,12 @@ TEST( Pose3, compose2 )
 	CHECK(assert_equal(actual,expected,1e-8));
 
 	Matrix actualDcompose1, actualDcompose2;
-	compose(T1, T2, actualDcompose1, actualDcompose2);
+	T1.compose(T2, actualDcompose1, actualDcompose2);
 
-	Matrix numericalH1 = numericalDerivative21<Pose3,Pose3,Pose3>(compose, T1, T2, 1e-5);
+	Matrix numericalH1 = numericalDerivative21(testing::compose<Pose3>, T1, T2, 1e-5);
 	CHECK(assert_equal(numericalH1,actualDcompose1,5e-5));
 
-	Matrix numericalH2 = numericalDerivative22<Pose3,Pose3,Pose3>(compose, T1, T2, 1e-5);
+	Matrix numericalH2 = numericalDerivative22(testing::compose<Pose3>, T1, T2, 1e-5);
 	CHECK(assert_equal(numericalH2,actualDcompose2));
 }
 
@@ -186,11 +186,11 @@ TEST( Pose3, compose2 )
 TEST( Pose3, inverse)
 {
 	Matrix actualDinverse;
-	Matrix actual = inverse(T, actualDinverse).matrix();
+	Matrix actual = T.inverse(actualDinverse).matrix();
 	Matrix expected = inverse(T.matrix());
 	CHECK(assert_equal(actual,expected,1e-8));
 
-	Matrix numericalH = numericalDerivative11<Pose3,Pose3>(inverse, T, 1e-5);
+	Matrix numericalH = numericalDerivative11(testing::inverse<Pose3>, T, 1e-5);
 	CHECK(assert_equal(numericalH,actualDinverse));
 }
 
@@ -201,16 +201,16 @@ TEST( Pose3, inverseDerivatives2)
 	Point3 t(3.5,-8.2,4.2);
 	Pose3 T(R,t);
 
-	Matrix numericalH = numericalDerivative11<Pose3,Pose3>(inverse, T, 1e-5);
+	Matrix numericalH = numericalDerivative11(testing::inverse<Pose3>, T, 1e-5);
 	Matrix actualDinverse;
-	inverse(T, actualDinverse);
+	T.inverse(actualDinverse);
 	CHECK(assert_equal(numericalH,actualDinverse,5e-5));
 }
 
 /* ************************************************************************* */
 TEST( Pose3, compose_inverse)
 {
-	Matrix actual = (T*inverse(T)).matrix();
+	Matrix actual = (T*T.inverse()).matrix();
 	Matrix expected = eye(4,4);
 	CHECK(assert_equal(actual,expected,1e-8));
 }
@@ -408,12 +408,12 @@ TEST(Pose3, manifold)
 	Pose3 t1 = T;
 	Pose3 t2 = T3;
 	Pose3 origin;
-	Vector d12 = logmap(t1, t2);
-	CHECK(assert_equal(t2, expmap(t1,d12)));
+	Vector d12 = t1.logmap(t2);
+	CHECK(assert_equal(t2, t1.expmap(d12)));
 	// todo: richard - commented out because this tests for "compose-style" (new) expmap
 	// CHECK(assert_equal(t2, expmap(origin,d12)*t1));
-	Vector d21 = logmap(t2, t1);
-	CHECK(assert_equal(t1, expmap(t2,d21)));
+	Vector d21 = t2.logmap(t1);
+	CHECK(assert_equal(t1, t2.expmap(d21)));
 	// todo: richard - commented out because this tests for "compose-style" (new) expmap
 	// CHECK(assert_equal(t1, expmap(origin,d21)*t2));
 
@@ -427,11 +427,11 @@ TEST(Pose3, manifold)
 	// lines in canonical coordinates correspond to Abelian subgroups in SE(3)
 	 Vector d = Vector_(6,0.1,0.2,0.3,0.4,0.5,0.6);
 	// exp(-d)=inverse(exp(d))
-	 CHECK(assert_equal(expmap<Pose3>(-d),inverse(expmap<Pose3>(d))));
+	 CHECK(assert_equal(Pose3::Expmap(-d),inverse(Pose3::Expmap(d))));
 	// exp(5d)=exp(2*d+3*d)=exp(2*d)exp(3*d)=exp(3*d)exp(2*d)
-	 Pose3 T2 = expmap<Pose3>(2*d);
-	 Pose3 T3 = expmap<Pose3>(3*d);
-	 Pose3 T5 = expmap<Pose3>(5*d);
+	 Pose3 T2 = Pose3::Expmap(2*d);
+	 Pose3 T3 = Pose3::Expmap(3*d);
+	 Pose3 T5 = Pose3::Expmap(5*d);
 	 CHECK(assert_equal(T5,T2*T3));
 	 CHECK(assert_equal(T5,T3*T2));
 
@@ -441,15 +441,15 @@ TEST(Pose3, manifold)
 /* ************************************************************************* */
 TEST( Pose3, between )
 {
-	Pose3 expected = inverse(T2) * T3;
+	Pose3 expected = T2.inverse() * T3;
 	Matrix actualDBetween1,actualDBetween2;
-	Pose3 actual = between(T2, T3, actualDBetween1,actualDBetween2);
+	Pose3 actual = T2.between(T3, actualDBetween1,actualDBetween2);
 	CHECK(assert_equal(expected,actual));
 
-	Matrix numericalH1 = numericalDerivative21(between<Pose3> , T2, T3, 1e-5);
+	Matrix numericalH1 = numericalDerivative21(testing::between<Pose3> , T2, T3, 1e-5);
 	CHECK(assert_equal(numericalH1,actualDBetween1,5e-5));
 
-	Matrix numericalH2 = numericalDerivative22(between<Pose3> , T2, T3, 1e-5);
+	Matrix numericalH2 = numericalDerivative22(testing::between<Pose3> , T2, T3, 1e-5);
 	CHECK(assert_equal(numericalH2,actualDBetween2));
 }
 

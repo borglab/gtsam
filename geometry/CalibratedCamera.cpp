@@ -14,7 +14,7 @@ namespace gtsam {
 		pose_(pose) {
 	}
 
-	CalibratedCamera::CalibratedCamera(const Vector &v) : pose_(expmap<Pose3>(v)) {}
+	CalibratedCamera::CalibratedCamera(const Vector &v) : pose_(Pose3::Expmap(v)) {}
 
 	CalibratedCamera::~CalibratedCamera() {}
 

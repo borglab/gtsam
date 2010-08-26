@@ -168,7 +168,7 @@ TEST( testNonlinearEqualityConstraint, odo_simple_optimize ) {
 	// odometry constraint
 	eq2D::OdoEqualityConstraint::shared_ptr constraint2(
 			new eq2D::OdoEqualityConstraint(
-					gtsam::between(truth_pt1, truth_pt2), key1, key2));
+					truth_pt1.between(truth_pt2), key1, key2));
 
 	shared_graph graph(new Graph());
 	graph->push_back(constraint1);

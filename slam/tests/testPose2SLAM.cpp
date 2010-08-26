@@ -126,7 +126,7 @@ TEST(Pose2Graph, optimizeThreePoses) {
 	// create a Pose graph with one equality constraint and one measurement
   shared_ptr<Pose2Graph> fg(new Pose2Graph);
   fg->addHardConstraint(0, p0);
-  Pose2 delta = between(p0,p1);
+  Pose2 delta = p0.between(p1);
   fg->addConstraint(0, 1, delta, covariance);
   fg->addConstraint(1, 2, delta, covariance);
   fg->addConstraint(2, 0, delta, covariance);
@@ -134,8 +134,8 @@ TEST(Pose2Graph, optimizeThreePoses) {
   // Create initial config
   boost::shared_ptr<Pose2Config> initial(new Pose2Config());
   initial->insert(0, p0);
-  initial->insert(1, expmap(hexagon[1],Vector_(3,-0.1, 0.1,-0.1)));
-  initial->insert(2, expmap(hexagon[2],Vector_(3, 0.1,-0.1, 0.1)));
+  initial->insert(1, hexagon[1].expmap(Vector_(3,-0.1, 0.1,-0.1)));
+  initial->insert(2, hexagon[2].expmap(Vector_(3, 0.1,-0.1, 0.1)));
 
   // Choose an ordering
   shared_ptr<Ordering> ordering(new Ordering);
@@ -164,7 +164,7 @@ TEST(Pose2Graph, optimizeCircle) {
 	// create a Pose graph with one equality constraint and one measurement
   shared_ptr<Pose2Graph> fg(new Pose2Graph);
   fg->addHardConstraint(0, p0);
-  Pose2 delta = between(p0,p1);
+  Pose2 delta = p0.between(p1);
   fg->addConstraint(0, 1, delta, covariance);
   fg->addConstraint(1,2, delta, covariance);
   fg->addConstraint(2,3, delta, covariance);
@@ -175,11 +175,11 @@ TEST(Pose2Graph, optimizeCircle) {
   // Create initial config
   boost::shared_ptr<Pose2Config> initial(new Pose2Config());
   initial->insert(0, p0);
-  initial->insert(1, expmap(hexagon[1],Vector_(3,-0.1, 0.1,-0.1)));
-  initial->insert(2, expmap(hexagon[2],Vector_(3, 0.1,-0.1, 0.1)));
-  initial->insert(3, expmap(hexagon[3],Vector_(3,-0.1, 0.1,-0.1)));
-  initial->insert(4, expmap(hexagon[4],Vector_(3, 0.1,-0.1, 0.1)));
-  initial->insert(5, expmap(hexagon[5],Vector_(3,-0.1, 0.1,-0.1)));
+  initial->insert(1, hexagon[1].expmap(Vector_(3,-0.1, 0.1,-0.1)));
+  initial->insert(2, hexagon[2].expmap(Vector_(3, 0.1,-0.1, 0.1)));
+  initial->insert(3, hexagon[3].expmap(Vector_(3,-0.1, 0.1,-0.1)));
+  initial->insert(4, hexagon[4].expmap(Vector_(3, 0.1,-0.1, 0.1)));
+  initial->insert(5, hexagon[5].expmap(Vector_(3,-0.1, 0.1,-0.1)));
 
   // Choose an ordering
   shared_ptr<Ordering> ordering(new Ordering);
@@ -197,7 +197,7 @@ TEST(Pose2Graph, optimizeCircle) {
   CHECK(assert_equal(hexagon, actual));
 
   // Check loop closure
-  CHECK(assert_equal(delta,between(actual[5],actual[0])));
+  CHECK(assert_equal(delta,actual[5].between(actual[0])));
 
 //  Pose2SLAMOptimizer myOptimizer("3");
 

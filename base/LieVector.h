@@ -23,6 +23,15 @@ namespace gtsam {
 		/** initialize from a normal vector */
 		LieVector(const Vector& v) : Vector(v) {}
 
+		/** wrap a double */
+		LieVector(double d) : Vector(Vector_(1, d)) {}
+
+		/** constructor with size and initial data, row order ! */
+		LieVector(size_t m, const double* const data);
+
+		/** Specify arguments directly, as in Vector_() - always force these to be doubles */
+		LieVector(size_t m, ...);
+
 		/** get the underlying vector */
 		inline Vector vector() const {
 			return static_cast<Vector>(*this);
@@ -47,23 +56,31 @@ namespace gtsam {
 	     * Returns Exponential map update of T
 	     * Default implementation calls global binary function
 	     */
-	    LieVector expmap(const Vector& v) const { return LieVector(vector() + v); }
+	    inline LieVector expmap(const Vector& v) const { return LieVector(vector() + v); }
 
 	    /** expmap around identity */
-	    static LieVector Expmap(const Vector& v) { return LieVector(v); }
+	    static inline LieVector Expmap(const Vector& v) { return LieVector(v); }
 
 	    /**
 	     * Returns Log map
 	     * Default Implementation calls global binary function
 	     */
-	    Vector logmap(const LieVector& lp) const { return *this - lp; }
+	    inline Vector logmap(const LieVector& lp) const {
+//	    	return Logmap(between(lp)); // works
+	    	return lp.vector() - vector();
+	    }
 
 	    /** Logmap around identity - just returns with default cast back */
-	    static Vector Logmap(const LieVector& p) { return p; }
+	    static inline Vector Logmap(const LieVector& p) { return p; }
 
 	    /** compose with another object */
 	    inline LieVector compose(const LieVector& p) const {
 	    	return LieVector(vector() + p);
+	    }
+
+	    /** between operation */
+	    inline LieVector between(const LieVector& l2) const {
+	    	return LieVector(l2.vector() - vector());
 	    }
 
 	    /** invert the object and yield a new one */

@@ -39,7 +39,7 @@ namespace gtsam {
 		 * odometry between two poses, and optional derivative version
 		 */
 		inline Pose2 odo(const Pose2& x1, const Pose2& x2) {
-			return between(x1, x2);
+			return x1.between(x2);
 		}
 		Pose2 odo(const Pose2& x1, const Pose2& x2, boost::optional<Matrix&> H1 =
 				boost::none, boost::optional<Matrix&> H2 = boost::none);
@@ -58,7 +58,7 @@ namespace gtsam {
 
 			Vector evaluateError(const Pose2& x, boost::optional<Matrix&> H =
 					boost::none) const {
-				return logmap(z_, prior(x, H));
+				return z_.logmap(prior(x, H));
 			}
 
 		};
@@ -77,7 +77,7 @@ namespace gtsam {
 
 			Vector evaluateError(const Pose2& x1, const Pose2& x2, boost::optional<
 					Matrix&> H1 = boost::none, boost::optional<Matrix&> H2 = boost::none) const {
-				return logmap(z_, odo(x1, x2, H1, H2));
+				return z_.logmap(odo(x1, x2, H1, H2));
 			}
 
 		};

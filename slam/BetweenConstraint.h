@@ -35,8 +35,8 @@ namespace gtsam {
 		Vector evaluateError(const X& x1, const X& x2,
 				boost::optional<Matrix&> H1 = boost::none,
 				boost::optional<Matrix&> H2 = boost::none) const {
-			X hx = between(x1, x2, H1, H2);
-			return logmap(measured_, hx);
+			X hx = x1.between(x2, H1, H2);
+			return measured_.logmap(hx);
 		}
 
 		inline const X measured() const {

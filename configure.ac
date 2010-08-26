@@ -4,7 +4,7 @@
 AC_PREREQ(2.59)
 AC_INIT(gtsam, 0.0.0, dellaert@cc.gatech.edu)
 AM_INIT_AUTOMAKE(gtsam, 0.0.0)
-AC_OUTPUT(Makefile CppUnitLite/Makefile colamd/Makefile spqr_mini/Makefile base/Makefile inference/Makefile linear/Makefile geometry/Makefile nonlinear/Makefile slam/Makefile tests/Makefile wrap/Makefile)
+AC_OUTPUT(Makefile CppUnitLite/Makefile colamd/Makefile spqr_mini/Makefile base/Makefile inference/Makefile linear/Makefile geometry/Makefile nonlinear/Makefile slam/Makefile tests/Makefile wrap/Makefile examples/Makefile)
 AC_CONFIG_MACRO_DIR([m4])
 AC_CONFIG_HEADER([config.h])
 AC_CONFIG_SRCDIR([CppUnitLite/Test.cpp])
@@ -18,6 +18,7 @@ AC_CONFIG_SRCDIR([nonlinear/ConstraintOptimizer.cpp])
 AC_CONFIG_SRCDIR([slam/pose2SLAM.cpp])
 AC_CONFIG_SRCDIR([tests/testSQP.cpp])
 AC_CONFIG_SRCDIR([wrap/wrap.cpp])
+AC_CONFIG_SRCDIR([examples/SimpleRotation.cpp])
 
 # Check for OS
 AC_CANONICAL_HOST    # needs to be called at some point earlier

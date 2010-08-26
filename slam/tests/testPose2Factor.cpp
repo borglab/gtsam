@@ -36,7 +36,7 @@ TEST( Pose2Factor, error )
 	x0.insert(2, p2);
 
 	// Create factor
-	Pose2 z = between(p1,p2);
+	Pose2 z = p1.between(p2);
 	Pose2Factor factor(1, 2, z, covariance);
 
 	// Actual linearization
@@ -53,7 +53,7 @@ TEST( Pose2Factor, error )
 	// Check error after increasing p2
 	VectorConfig plus = delta;
 	plus.insertAdd("x2", Vector_(3, 0.1, 0.0, 0.0));
-	Pose2Config x1 = expmap(x0, plus);
+	Pose2Config x1 = x0.expmap(plus);
 	Vector error_at_plus = Vector_(3,0.1/sx,0.0,0.0); // h(x)-z = 0.1 !
 	CHECK(assert_equal(error_at_plus,factor.whitenedError(x1)));
 	CHECK(assert_equal(error_at_plus,linear->error_vector(plus)));
@@ -78,7 +78,7 @@ TEST( Pose2Factor, rhs )
 	boost::shared_ptr<GaussianFactor> linear = factor.linearize(x0);
 
 	// Check RHS
-	Pose2 hx0 = between(p1,p2);
+	Pose2 hx0 = p1.between(p2);
 	CHECK(assert_equal(Pose2(2.1, 2.1, M_PI_2),hx0));
 	Vector expected_b = Vector_(3, -0.1/sx, 0.1/sy, 0.0);
 	CHECK(assert_equal(expected_b,-factor.whitenedError(x0)));

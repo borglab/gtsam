@@ -77,14 +77,18 @@ namespace gtsam {
     /** Dimensionality of the tangent space */
     inline size_t dim() const { return dimension; }
 
-    /** Find the inverse pose s.t. inverse(p)*p = Pose3() */
-    inline Pose3 inverse() const {
-      Rot3 Rt = R_.inverse();
-      return Pose3(Rt, Rt*(-t_));
-    }
+    /**
+     * Derivative of inverse
+     */
+    Pose3 inverse(boost::optional<Matrix&> H1=boost::none) const;
 
-    /** composes two poses */
-    inline Pose3 compose(const Pose3& t) const { return *this * t; }
+    /**
+     * composes two poses (first (*this) then p2)
+     * with optional derivatives
+     */
+    Pose3 compose(const Pose3& p2,
+  		  	boost::optional<Matrix&> H1=boost::none,
+  		  	boost::optional<Matrix&> H2=boost::none) const;
 
     /** receives the point in Pose coordinates and transforms it to world coordinates */
     Point3 transform_from(const Point3& p,
@@ -104,6 +108,20 @@ namespace gtsam {
     /** Log map at identity - return the translation and canonical rotation
      * coordinates of a pose. */
     static Vector Logmap(const Pose3& p);
+
+    /** Exponential map around another pose */
+    Pose3 expmap(const Vector& d) const;
+
+    /** Logarithm map around another pose T1 */
+    Vector logmap(const Pose3& T2) const;
+
+    /**
+     * Return relative pose between p1 and p2, in p1 coordinate frame
+     * as well as optionally the derivatives
+     */
+    Pose3 between(const Pose3& p2,
+    		boost::optional<Matrix&> H1=boost::none,
+    		boost::optional<Matrix&> H2=boost::none) const;
 
     /**
      * Calculate Adjoint map
@@ -136,29 +154,6 @@ namespace gtsam {
       ar & BOOST_SERIALIZATION_NVP(t_);
     }
   }; // Pose3 class
-
-  /** Exponential map around another pose */
-  Pose3 expmap(const Pose3& T, const Vector& d);
-
-  /** Logarithm map around another pose T1 */
-  Vector logmap(const Pose3& T1, const Pose3& T2);
-
-  /**
-   * Derivatives of compose
-   */
-  Pose3 compose(const Pose3& p1, const Pose3& p2,
-		  	boost::optional<Matrix&> H1, boost::optional<Matrix&> H2);
-  /**
-   * Derivative of inverse
-   */
-  Pose3 inverse(const Pose3& p, boost::optional<Matrix&> H1);
-
-  /**
-   * Return relative pose between p1 and p2, in p1 coordinate frame
-   * as well as optionally the derivatives
-   */
-  Pose3 between(const Pose3& p1, const Pose3& p2,
-  		boost::optional<Matrix&> H1, boost::optional<Matrix&> H2);
 
   /**
    * wedge for Pose3:

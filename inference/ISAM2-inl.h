@@ -147,7 +147,7 @@ namespace gtsam {
 		//// 1 - relinearize selected variables
 
 		if (relinFromLast) {
-			theta_ = expmap(theta_, deltaMarked_);
+			theta_ = theta_.expmap(deltaMarked_);
 		}
 
 		//// 2 - Add new factors (for later relinearization)
@@ -274,7 +274,7 @@ namespace gtsam {
 			}
 
 			// not part of the formal algorithm, but needed to allow initialization of new variables outside by the user
-			thetaFuture_ = expmap(thetaFuture_, deltaMarked_);
+			thetaFuture_ = thetaFuture_.expmap(deltaMarked_);
 		}
 
 	}
@@ -366,7 +366,7 @@ namespace gtsam {
 		}
 
 		// 2. Update linearization point for marked variables: \Theta_{J}:=\Theta_{J}+\Delta_{J}.
-		theta_ = expmap(theta_, deltaMarked);
+		theta_ = theta_.expmap(deltaMarked);
 
 		// 3. Mark all cliques that involve marked variables \Theta_{J} and all their ancestors.
 

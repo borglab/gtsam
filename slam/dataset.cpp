@@ -132,7 +132,7 @@ pair<sharedPose2Graph, sharedPose2Config> load2D(const string& filename,
 			}
 
 			if (addNoise)
-				l1Xl2 = expmap(l1Xl2,(*model)->sample());
+				l1Xl2 = l1Xl2.expmap((*model)->sample());
 
 			// Insert vertices if pure odometry file
 			if (!poses->exists(id1)) poses->insert(id1, Pose2());
@@ -170,7 +170,7 @@ void save2D(const Pose2Graph& graph, const Pose2Config& config, const SharedDiag
 		boost::shared_ptr<Pose2Factor> factor = boost::dynamic_pointer_cast<Pose2Factor>(factor_);
 		if (!factor) continue;
 
-		pose = inverse(factor->measured());
+		pose = factor->measured().inverse();
 		stream << "EDGE2 " << factor->key2().index() << " " << factor->key1().index()
 				<< " " << pose.x() << " " << pose.y() << " " << pose.theta()
 				<< " " << RR(0, 0) << " " << RR(0, 1) << " " << RR(1, 1) << " " << RR(2, 2)

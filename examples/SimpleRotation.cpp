@@ -10,6 +10,7 @@
  *  @Author: Alex Cunningham
  */
 
+#include <iostream>
 #include <math.h>
 #include <gtsam/inference/Key.h>
 #include <gtsam/slam/PriorFactor.h>
@@ -43,6 +44,7 @@ int main() {
 
 	// Create a factor
 	Rot2 prior1 = Rot2::fromAngle(30 * degree);
+	prior1.print("Goal Angle");
 	SharedDiagonal model1 = noiseModel::Isotropic::Sigma(1, 1 * degree);
 	Key key1(1);
 	PriorFactor<Config, Key> factor1(key1, prior1, model1);
@@ -53,11 +55,12 @@ int main() {
 
 	// and an initial estimate
 	Config initialEstimate;
-	initialEstimate.insert(1, Rot2::fromAngle(20 * degree));
+	initialEstimate.insert(key1, Rot2::fromAngle(20 * degree));
+	initialEstimate.print("Initialization");
 
 	// create an ordering
 	Optimizer::shared_config result = Optimizer::optimizeLM(graph, initialEstimate, Optimizer::LAMBDA);
-	GTSAM_PRINT(*result);
+	result->print("Final config");
 
 	return 0;
 }

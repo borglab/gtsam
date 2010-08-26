@@ -7,6 +7,7 @@
 #include <gtsam/CppUnitLite/TestHarness.h>
 #include <boost/math/constants/constants.hpp>
 #include <gtsam/base/numericalDerivative.h>
+#include <gtsam/base/lieProxies.h>
 #include <gtsam/geometry/Point3.h>
 #include <gtsam/geometry/Rot3.h>
 
@@ -56,7 +57,7 @@ TEST( Rot3, transpose)
 {
 	Rot3 R(1, 2, 3, 4, 5, 6, 7, 8, 9);
 	Point3 r1(1, 2, 3), r2(4, 5, 6), r3(7, 8, 9);
-	CHECK(assert_equal(inverse(R),Rot3(r1,r2,r3)));
+	CHECK(assert_equal(R.inverse(),Rot3(r1,r2,r3)));
 }
 
 /* ************************************************************************* */
@@ -126,7 +127,7 @@ TEST( Rot3, expmap)
 {
 	Vector v(3);
 	fill(v.begin(), v.end(), 0);
-	CHECK(assert_equal(expmap(R,v), R));
+	CHECK(assert_equal(R.expmap(v), R));
 }
 
 /* ************************************************************************* */
@@ -134,35 +135,35 @@ TEST(Rot3, log)
 {
 	Vector w1 = Vector_(3, 0.1, 0.0, 0.0);
 	Rot3 R1 = Rot3::rodriguez(w1);
-	CHECK(assert_equal(w1, logmap(R1)));
+	CHECK(assert_equal(w1, Rot3::Logmap(R1)));
 
 	Vector w2 = Vector_(3, 0.0, 0.1, 0.0);
 	Rot3 R2 = Rot3::rodriguez(w2);
-	CHECK(assert_equal(w2, logmap(R2)));
+	CHECK(assert_equal(w2, Rot3::Logmap(R2)));
 
 	Vector w3 = Vector_(3, 0.0, 0.0, 0.1);
 	Rot3 R3 = Rot3::rodriguez(w3);
-	CHECK(assert_equal(w3, logmap(R3)));
+	CHECK(assert_equal(w3, Rot3::Logmap(R3)));
 
 	Vector w = Vector_(3, 0.1, 0.4, 0.2);
 	Rot3 R = Rot3::rodriguez(w);
-	CHECK(assert_equal(w, logmap(R)));
+	CHECK(assert_equal(w, Rot3::Logmap(R)));
 
 	Vector w5 = Vector_(3, 0.0, 0.0, 0.0);
 	Rot3 R5 = Rot3::rodriguez(w5);
-	CHECK(assert_equal(w5, logmap(R5)));
+	CHECK(assert_equal(w5, Rot3::Logmap(R5)));
 
 	Vector w6 = Vector_(3, boost::math::constants::pi<double>(), 0.0, 0.0);
 	Rot3 R6 = Rot3::rodriguez(w6);
-	CHECK(assert_equal(w6, logmap(R6)));
+	CHECK(assert_equal(w6, Rot3::Logmap(R6)));
 
 	Vector w7 = Vector_(3, 0.0, boost::math::constants::pi<double>(), 0.0);
 	Rot3 R7 = Rot3::rodriguez(w7);
-	CHECK(assert_equal(w7, logmap(R7)));
+	CHECK(assert_equal(w7, Rot3::Logmap(R7)));
 
 	Vector w8 = Vector_(3, 0.0, 0.0, boost::math::constants::pi<double>());
 	Rot3 R8 = Rot3::rodriguez(w8);
-	CHECK(assert_equal(w8, logmap(R8)));
+	CHECK(assert_equal(w8, Rot3::Logmap(R8)));
 }
 
 /* ************************************************************************* */
@@ -173,12 +174,12 @@ TEST(Rot3, manifold)
 	Rot3 origin;
 
 	// log behaves correctly
-	Vector d12 = logmap(gR1, gR2);
-	CHECK(assert_equal(gR2, expmap(gR1,d12)));
-	CHECK(assert_equal(gR2, gR1*expmap<Rot3>(d12)));
-	Vector d21 = logmap(gR2, gR1);
-	CHECK(assert_equal(gR1, expmap(gR2,d21)));
-	CHECK(assert_equal(gR1, gR2*expmap<Rot3>(d21)));
+	Vector d12 = gR1.logmap(gR2);
+	CHECK(assert_equal(gR2, gR1.expmap(d12)));
+	CHECK(assert_equal(gR2, gR1*Rot3::Expmap(d12)));
+	Vector d21 = gR2.logmap(gR1);
+	CHECK(assert_equal(gR1, gR2.expmap(d21)));
+	CHECK(assert_equal(gR1, gR2*Rot3::Expmap(d21)));
 
 	// Check that log(t1,t2)=-log(t2,t1)
 	CHECK(assert_equal(d12,-d21));
@@ -186,11 +187,11 @@ TEST(Rot3, manifold)
 	// lines in canonical coordinates correspond to Abelian subgroups in SO(3)
 	Vector d = Vector_(3, 0.1, 0.2, 0.3);
 	// exp(-d)=inverse(exp(d))
-	CHECK(assert_equal(expmap<Rot3>(-d),inverse(expmap<Rot3>(d))));
+	CHECK(assert_equal(Rot3::Expmap(-d),Rot3::Expmap(d).inverse()));
 	// exp(5d)=exp(2*d+3*d)=exp(2*d)exp(3*d)=exp(3*d)exp(2*d)
-	Rot3 R2 = expmap<Rot3> (2 * d);
-	Rot3 R3 = expmap<Rot3> (3 * d);
-	Rot3 R5 = expmap<Rot3> (5 * d);
+	Rot3 R2 = Rot3::Expmap (2 * d);
+	Rot3 R3 = Rot3::Expmap (3 * d);
+	Rot3 R5 = Rot3::Expmap (5 * d);
 	CHECK(assert_equal(R5,R2*R3));
 	CHECK(assert_equal(R5,R3*R2));
 }
@@ -216,30 +217,28 @@ TEST(Rot3, BCH)
 	// Approximate exmap by BCH formula
 	AngularVelocity w1(0.2, -0.1, 0.1);
 	AngularVelocity w2(0.01, 0.02, -0.03);
-	Rot3 R1 = expmap<Rot3> (w1.vector()), R2 = expmap<Rot3> (w2.vector());
+	Rot3 R1 = Rot3::Expmap (w1.vector()), R2 = Rot3::Expmap (w2.vector());
 	Rot3 R3 = R1 * R2;
-	Vector expected = logmap(R3);
+	Vector expected = Rot3::Logmap(R3);
 	Vector actual = BCH(w1, w2).vector();
 	CHECK(assert_equal(expected, actual,1e-5));
 }
 
 /* ************************************************************************* */
-inline Point3 rotate_(const Rot3& r, const Point3& pt) { return r.rotate(pt); }
 TEST( Rot3, rotate_derivatives)
 {
 	Matrix actualDrotate1a, actualDrotate1b, actualDrotate2;
 	R.rotate(P, actualDrotate1a, actualDrotate2);
 	R.inverse().rotate(P, actualDrotate1b, boost::none);
-	Matrix numerical1 = numericalDerivative21(rotate_, R, P);
-	Matrix numerical2 = numericalDerivative21(rotate_, R.inverse(), P);
-	Matrix numerical3 = numericalDerivative22(rotate_, R, P);
+	Matrix numerical1 = numericalDerivative21(testing::rotate<Rot3,Point3>, R, P);
+	Matrix numerical2 = numericalDerivative21(testing::rotate<Rot3,Point3>, R.inverse(), P);
+	Matrix numerical3 = numericalDerivative22(testing::rotate<Rot3,Point3>, R, P);
 	EXPECT(assert_equal(numerical1,actualDrotate1a,error));
 	EXPECT(assert_equal(numerical2,actualDrotate1b,error));
 	EXPECT(assert_equal(numerical3,actualDrotate2, error));
 }
 
 /* ************************************************************************* */
-inline Point3 unrotate_(const Rot3& r, const Point3& pt) { return r.unrotate(pt); }
 TEST( Rot3, unrotate)
 {
 	Point3 w = R * P;
@@ -247,10 +246,10 @@ TEST( Rot3, unrotate)
 	Point3 actual = R.unrotate(w,H1,H2);
 	CHECK(assert_equal(P,actual));
 
-	Matrix numerical1 = numericalDerivative21(unrotate_, R, w);
+	Matrix numerical1 = numericalDerivative21(testing::unrotate<Rot3,Point3>, R, w);
 	CHECK(assert_equal(numerical1,H1,error));
 
-	Matrix numerical2 = numericalDerivative22(unrotate_, R, w);
+	Matrix numerical2 = numericalDerivative22(testing::unrotate<Rot3,Point3>, R, w);
 	CHECK(assert_equal(numerical2,H2,error));
 }
 
@@ -262,30 +261,29 @@ TEST( Rot3, compose )
 
 	Rot3 expected = R1 * R2;
 	Matrix actualH1, actualH2;
-	Rot3 actual = compose(R1, R2, actualH1, actualH2);
+	Rot3 actual = R1.compose(R2, actualH1, actualH2);
 	CHECK(assert_equal(expected,actual));
 
-	Matrix numericalH1 = numericalDerivative21<Rot3, Rot3, Rot3> (compose, R1,
+	Matrix numericalH1 = numericalDerivative21(testing::compose<Rot3>, R1,
 			R2, 1e-5);
 	CHECK(assert_equal(numericalH1,actualH1));
 
-	Matrix numericalH2 = numericalDerivative22<Rot3, Rot3, Rot3> (compose, R1,
+	Matrix numericalH2 = numericalDerivative22(testing::compose<Rot3>, R1,
 			R2, 1e-5);
 	CHECK(assert_equal(numericalH2,actualH2));
 }
 
 /* ************************************************************************* */
-
 TEST( Rot3, inverse )
 {
 	Rot3 R = Rot3::rodriguez(0.1, 0.2, 0.3);
 
 	Rot3 I;
 	Matrix actualH;
-	CHECK(assert_equal(I,R*inverse(R, actualH)));
-	CHECK(assert_equal(I,inverse(R)*R));
+	CHECK(assert_equal(I,R*R.inverse(actualH)));
+	CHECK(assert_equal(I,R.inverse()*R));
 
-	Matrix numericalH = numericalDerivative11<Rot3, Rot3> (inverse, R, 1e-5);
+	Matrix numericalH = numericalDerivative11(testing::inverse<Rot3>, R, 1e-5);
 	CHECK(assert_equal(numericalH,actualH));
 }
 
@@ -294,21 +292,21 @@ TEST( Rot3, between )
 {
 	Rot3 R = Rot3::rodriguez(0.1, 0.4, 0.2);
 	Rot3 origin;
-	CHECK(assert_equal(R, between(origin,R)));
-	CHECK(assert_equal(inverse(R), between(R,origin)));
+	CHECK(assert_equal(R, origin.between(R)));
+	CHECK(assert_equal(R.inverse(), R.between(origin)));
 
 	Rot3 R1 = Rot3::rodriguez(0.1, 0.2, 0.3);
 	Rot3 R2 = Rot3::rodriguez(0.2, 0.3, 0.5);
 
-	Rot3 expected = inverse(R1) * R2;
+	Rot3 expected = R1.inverse() * R2;
 	Matrix actualH1, actualH2;
-	Rot3 actual = between(R1, R2, actualH1, actualH2);
+	Rot3 actual = R1.between(R2, actualH1, actualH2);
 	CHECK(assert_equal(expected,actual));
 
-	Matrix numericalH1 = numericalDerivative21(between<Rot3> , R1, R2, 1e-5);
+	Matrix numericalH1 = numericalDerivative21(testing::between<Rot3> , R1, R2, 1e-5);
 	CHECK(assert_equal(numericalH1,actualH1));
 
-	Matrix numericalH2 = numericalDerivative22(between<Rot3> , R1, R2, 1e-5);
+	Matrix numericalH2 = numericalDerivative22(testing::between<Rot3> , R1, R2, 1e-5);
 	CHECK(assert_equal(numericalH2,actualH2));
 }
 

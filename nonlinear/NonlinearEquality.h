@@ -60,7 +60,7 @@ namespace gtsam {
 		 * Constructor - forces exact evaluation
 		 */
 		NonlinearEquality(const Key& j, const T& feasible, bool (*compare)(const T&, const T&) = compare<T>) :
-			Base(noiseModel::Constrained::All(dim(feasible)), j), feasible_(feasible),
+			Base(noiseModel::Constrained::All(feasible.dim()), j), feasible_(feasible),
 			allow_error_(false), error_gain_(std::numeric_limits<double>::infinity()),
 			compare_(compare) {
 		}
@@ -69,7 +69,7 @@ namespace gtsam {
 		 * Constructor - allows inexact evaluation
 		 */
 		NonlinearEquality(const Key& j, const T& feasible, double error_gain, bool (*compare)(const T&, const T&) = compare<T>) :
-			Base(noiseModel::Constrained::All(dim(feasible)), j), feasible_(feasible),
+			Base(noiseModel::Constrained::All(feasible.dim()), j), feasible_(feasible),
 			allow_error_(true), error_gain_(error_gain),
 			compare_(compare) {
 		}
@@ -77,7 +77,7 @@ namespace gtsam {
 		void print(const std::string& s = "") const {
 			std::cout << "Constraint: " << s << " on [" << (std::string)(this->key_) << "]\n";
 			gtsam::print(feasible_,"Feasible Point");
-			std::cout << "Variable Dimension: " << dim(feasible_) << std::endl;
+			std::cout << "Variable Dimension: " << feasible_.dim() << std::endl;
 		}
 
 		/** Check if two factors are equal */
@@ -102,10 +102,10 @@ namespace gtsam {
 
 		/** error function */
 		inline Vector evaluateError(const T& xj, boost::optional<Matrix&> H = boost::none) const {
-			size_t nj = dim(feasible_);
+			size_t nj = feasible_.dim();
 			if (allow_error_) {
 				if (H) *H = eye(nj); // FIXME: this is not the right linearization for nonlinear compare
-				return logmap(xj, feasible_);
+				return xj.logmap(feasible_);
 			} else if (compare_(feasible_,xj)) {
 				if (H) *H = eye(nj);
 				return zero(nj); // set error to zero if equal

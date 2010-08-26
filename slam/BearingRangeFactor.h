@@ -44,7 +44,7 @@ namespace gtsam {
 			boost::optional<Matrix&> H22_ = H2 ? boost::optional<Matrix&>(H22) : boost::optional<Matrix&>();
 
 			Rot2 y1 = pose.bearing(point, H11_, H12_);
-			Vector e1 = logmap(between(bearing_, y1));
+			Vector e1 = Rot2::Logmap(bearing_.between(y1));
 
 			double y2 = pose.range(point, H21_, H22_);
 			Vector e2 = Vector_(1, y2 - range_);

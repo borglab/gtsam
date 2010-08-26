@@ -37,7 +37,7 @@ TEST( Pose2Config, expmap )
 
 	// Note expmap coordinates are in local coordinates, so shifting to right requires thought !!!
 	Vector delta = Vector_(12, 0.0,-0.1,0.0, -0.1,0.0,0.0, 0.0,0.1,0.0, 0.1,0.0,0.0);
-	Pose2Config actual = expmap(pose2SLAM::circle(4,1.0),delta);
+	Pose2Config actual = pose2SLAM::circle(4,1.0).expmap(delta);
 	CHECK(assert_equal(expected,actual));
 }
 

@@ -49,7 +49,7 @@ namespace gtsam {
 	/* ************************************************************************* */
 	void Pose2SLAMOptimizer::update(const Vector& x) {
 		VectorConfig X = system_->assembleConfig(x, *solver_.ordering());
-		*theta_ = expmap(*theta_, X);
+		*theta_ = theta_->expmap(X);
 		linearize();
 	}
 

@@ -96,6 +96,19 @@ namespace gtsam {
 		static inline Vector Logmap(const StereoPoint2& p) {
 			return p.vector();
 		}
+
+	    /** default implementations of binary functions */
+	    inline StereoPoint2 expmap(const Vector& v) const {
+	    	return gtsam::expmap_default(*this, v);
+	    }
+
+	    inline Vector logmap(const StereoPoint2& p2) const {
+	    	return gtsam::logmap_default(*this, p2);
+	    }
+
+	    inline StereoPoint2 between(const StereoPoint2& p2) const {
+	    	return gtsam::between_default(*this, p2);
+	    }
 	};
 
 }

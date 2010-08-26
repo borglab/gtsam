@@ -126,7 +126,7 @@ TEST(LieConfig, expmap_a)
   expected.insert(key1, Vector_(3, 2.0, 3.1, 4.2));
   expected.insert(key2, Vector_(3, 6.3, 7.4, 8.5));
 
-  CHECK(assert_equal(expected, expmap(config0, increment)));
+  CHECK(assert_equal(expected, config0.expmap(increment)));
 }
 
 /* ************************************************************************* */
@@ -143,7 +143,7 @@ TEST(LieConfig, expmap_b)
   expected.insert(key1, Vector_(3, 1.0, 2.0, 3.0));
   expected.insert(key2, Vector_(3, 6.3, 7.4, 8.5));
 
-  CHECK(assert_equal(expected, expmap(config0, increment)));
+  CHECK(assert_equal(expected, config0.expmap(increment)));
 }
 
 /* ************************************************************************* */
@@ -161,7 +161,7 @@ TEST(LieConfig, expmap_c)
   expected.insert(key1, Vector_(3, 2.0, 3.1, 4.2));
   expected.insert(key2, Vector_(3, 6.3, 7.4, 8.5));
 
-  CHECK(assert_equal(expected, expmap(config0, increment)));
+  CHECK(assert_equal(expected, config0.expmap(increment)));
 }
 
 /* ************************************************************************* */

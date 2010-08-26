@@ -38,7 +38,7 @@ TEST(Pose3Graph, optimizeCircle) {
 	// create a Pose graph with one equality constraint and one measurement
   shared_ptr<Pose3Graph> fg(new Pose3Graph);
   fg->addHardConstraint(0, gT0);
-  Pose3 _0T1 = between(gT0,gT1); // inv(gT0)*gT1
+  Pose3 _0T1 = gT0.between(gT1); // inv(gT0)*gT1
   double theta = M_PI/3.0;
   CHECK(assert_equal(Pose3(Rot3::yaw(-theta),Point3(radius*sin(theta),-radius*cos(theta),0)),_0T1));
   fg->addConstraint(0,1, _0T1, covariance);
@@ -51,11 +51,11 @@ TEST(Pose3Graph, optimizeCircle) {
   // Create initial config
   boost::shared_ptr<Pose3Config> initial(new Pose3Config());
   initial->insert(0, gT0);
-  initial->insert(1, expmap(hexagon[1],Vector_(6,-0.1, 0.1,-0.1,-0.1, 0.1,-0.1)));
-  initial->insert(2, expmap(hexagon[2],Vector_(6, 0.1,-0.1, 0.1, 0.1,-0.1, 0.1)));
-  initial->insert(3, expmap(hexagon[3],Vector_(6,-0.1, 0.1,-0.1,-0.1, 0.1,-0.1)));
-  initial->insert(4, expmap(hexagon[4],Vector_(6, 0.1,-0.1, 0.1, 0.1,-0.1, 0.1)));
-  initial->insert(5, expmap(hexagon[5],Vector_(6,-0.1, 0.1,-0.1,-0.1, 0.1,-0.1)));
+  initial->insert(1, hexagon[1].expmap(Vector_(6,-0.1, 0.1,-0.1,-0.1, 0.1,-0.1)));
+  initial->insert(2, hexagon[2].expmap(Vector_(6, 0.1,-0.1, 0.1, 0.1,-0.1, 0.1)));
+  initial->insert(3, hexagon[3].expmap(Vector_(6,-0.1, 0.1,-0.1,-0.1, 0.1,-0.1)));
+  initial->insert(4, hexagon[4].expmap(Vector_(6, 0.1,-0.1, 0.1, 0.1,-0.1, 0.1)));
+  initial->insert(5, hexagon[5].expmap(Vector_(6,-0.1, 0.1,-0.1,-0.1, 0.1,-0.1)));
 
   // Choose an ordering and optimize
   shared_ptr<Ordering> ordering(new Ordering);
@@ -73,7 +73,7 @@ TEST(Pose3Graph, optimizeCircle) {
   CHECK(assert_equal(hexagon, actual,1e-4));
 
   // Check loop closure
-  CHECK(assert_equal(_0T1,between(actual[5],actual[0]),1e-5));
+  CHECK(assert_equal(_0T1,actual[5].between(actual[0]),1e-5));
 }
 
 /* ************************************************************************* */

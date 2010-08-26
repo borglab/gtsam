@@ -16,7 +16,6 @@
 
 #include <gtsam/base/Vector.h>
 #include <gtsam/inference/Key.h>
-#include <gtsam/linear/VectorConfig.h>
 #include <gtsam/nonlinear/TupleConfig-inl.h>
 
 using namespace gtsam;
@@ -179,24 +178,24 @@ TEST(TupleConfig, zero_expmap_logmap)
   delta.insert("l2", Vector_(2, 1.3, 1.4));
 
   Config expected;
-  expected.insert(PoseKey(1), expmap(x1, Vector_(3, 1.0, 1.1, 1.2)));
-  expected.insert(PoseKey(2), expmap(x2, Vector_(3, 1.3, 1.4, 1.5)));
+  expected.insert(PoseKey(1), x1.expmap(Vector_(3, 1.0, 1.1, 1.2)));
+  expected.insert(PoseKey(2), x2.expmap(Vector_(3, 1.3, 1.4, 1.5)));
   expected.insert(PointKey(1), Point2(5.0, 6.1));
   expected.insert(PointKey(2), Point2(10.3, 11.4));
 
-  Config actual = expmap(config1, delta);
+  Config actual = config1.expmap(delta);
   CHECK(assert_equal(expected, actual));
 
   // Check log
   VectorConfig expected_log = delta;
-  VectorConfig actual_log = logmap(config1,actual);
+  VectorConfig actual_log = config1.logmap(actual);
   CHECK(assert_equal(expected_log, actual_log));
 }
 
 /* ************************************************************************* */
 
 // some key types
-typedef TypedSymbol<Vector, 'L'> LamKey;
+typedef TypedSymbol<LieVector, 'L'> LamKey;
 typedef TypedSymbol<Pose3, 'a'> Pose3Key;
 typedef TypedSymbol<Point3, 'b'> Point3Key;
 typedef TypedSymbol<Point3, 'c'> Point3Key2;
@@ -261,7 +260,7 @@ TEST(TupleConfig, basic_functions) {
 	LamKey L1(1);
 	Pose2 pose1(1.0, 2.0, 0.3);
 	Point2 point1(2.0, 3.0);
-	Vector lam1 = Vector_(1, 2.3);
+	LieVector lam1 = LieVector(2.3);
 
 	// Insert
 	configA.insert(x1, pose1);
@@ -331,7 +330,7 @@ TEST(TupleConfig, insert_config) {
 	LamKey L1(1), L2(2);
 	Pose2 pose1(1.0, 2.0, 0.3), pose2(3.0, 4.0, 5.0);
 	Point2 point1(2.0, 3.0), point2(5.0, 6.0);
-	Vector lam1 = Vector_(1, 2.3), lam2 = Vector_(1, 4.5);
+	LieVector lam1 = LieVector(2.3), lam2 = LieVector(4.5);
 
 	config1.insert(x1, pose1);
 	config1.insert(l1, point1);
@@ -438,13 +437,13 @@ TEST(TupleConfig, expmap)
 	delta.insert("l2", Vector_(2, 1.3, 1.4));
 
 	ConfigA expected;
-	expected.insert(x1k, expmap(x1, Vector_(3, 1.0, 1.1, 1.2)));
-	expected.insert(x2k, expmap(x2, Vector_(3, 1.3, 1.4, 1.5)));
+	expected.insert(x1k, x1.expmap(Vector_(3, 1.0, 1.1, 1.2)));
+	expected.insert(x2k, x2.expmap(Vector_(3, 1.3, 1.4, 1.5)));
 	expected.insert(l1k, Point2(5.0, 6.1));
 	expected.insert(l2k, Point2(10.3, 11.4));
 
-	CHECK(assert_equal(expected, expmap(config1, delta)));
-	CHECK(assert_equal(delta, logmap(config1, expected)));
+	CHECK(assert_equal(expected, config1.expmap(delta)));
+	CHECK(assert_equal(delta, config1.logmap(expected)));
 }
 
 /* ************************************************************************* */
@@ -467,13 +466,13 @@ TEST(TupleConfig, expmap_typedefs)
 	delta.insert("l1", Vector_(2, 1.0, 1.1));
 	delta.insert("l2", Vector_(2, 1.3, 1.4));
 
-	expected.insert(x1k, expmap(x1, Vector_(3, 1.0, 1.1, 1.2)));
-	expected.insert(x2k, expmap(x2, Vector_(3, 1.3, 1.4, 1.5)));
+	expected.insert(x1k, x1.expmap(Vector_(3, 1.0, 1.1, 1.2)));
+	expected.insert(x2k, x2.expmap(Vector_(3, 1.3, 1.4, 1.5)));
 	expected.insert(l1k, Point2(5.0, 6.1));
 	expected.insert(l2k, Point2(10.3, 11.4));
 
-	CHECK(assert_equal(expected, expmap(config1, delta)));
-	//CHECK(assert_equal(delta, logmap(config1, expected)));
+	CHECK(assert_equal(expected, TupleConfig2<PoseConfig, PointConfig>(config1.expmap(delta))));
+	//CHECK(assert_equal(delta, config1.logmap(expected)));
 }
 
 /* ************************************************************************* */
@@ -494,7 +493,7 @@ TEST( TupleConfig, pairconfig_style )
 	LamKey L1(1);
 	Pose2 pose1(1.0, 2.0, 0.3);
 	Point2 point1(2.0, 3.0);
-	Vector lam1 = Vector_(1, 2.3);
+	LieVector lam1 = LieVector(2.3);
 
 	PoseConfig config1; config1.insert(x1, pose1);
 	PointConfig config2; config2.insert(l1, point1);
@@ -519,7 +518,7 @@ TEST(TupleConfig, insert_config_typedef) {
 	LamKey L1(1), L2(2);
 	Pose2 pose1(1.0, 2.0, 0.3), pose2(3.0, 4.0, 5.0);
 	Point2 point1(2.0, 3.0), point2(5.0, 6.0);
-	Vector lam1 = Vector_(1, 2.3), lam2 = Vector_(1, 4.5);
+	LieVector lam1 = LieVector(2.3), lam2 = LieVector(4.5);
 
 	config1.insert(x1, pose1);
 	config1.insert(l1, point1);
@@ -550,7 +549,7 @@ TEST(TupleConfig, partial_insert) {
 	LamKey L1(1), L2(2);
 	Pose2 pose1(1.0, 2.0, 0.3), pose2(3.0, 4.0, 5.0);
 	Point2 point1(2.0, 3.0), point2(5.0, 6.0);
-	Vector lam1 = Vector_(1, 2.3), lam2 = Vector_(1, 4.5);
+	LieVector lam1 = LieVector(2.3), lam2 = LieVector(4.5);
 
 	init.insert(x1, pose1);
 	init.insert(l1, point1);

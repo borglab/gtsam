@@ -21,18 +21,6 @@ StereoCamera::StereoCamera(const Pose3& leftCamPose, const Cal3_S2& K, double ba
 	cy_ = calibration(4);
 }
 
-///* ************************************************************************* */
-//StereoPoint2 StereoCamera::project(const Point3& point) const {
-//
-//	Point3 cameraPoint = leftCamPose_.transform_to(point);
-//
-//	double d = 1.0 / cameraPoint.z();
-//	double uL = cx_ + d * fx_ *  cameraPoint.x();
-//	double uR = cx_ + d * fx_ * (cameraPoint.x() - baseline_);
-//	double v  = cy_ + d * fy_ *  cameraPoint.y();
-//	return StereoPoint2(uL,uR,v);
-//}
-
 /* ************************************************************************* */
 StereoPoint2 StereoCamera::project(const Point3& point,
 		boost::optional<Matrix&> Dproject_stereo_pose,
@@ -109,55 +97,6 @@ Matrix StereoCamera::Duncalibrate2(const Cal3_S2& K) {
 	return diag(calibration2);
 	//return Matrix_(2, 2, K.fx_, K.s_, 0.000, K.fy_);
 }
-
-///* ************************************************************************* */
-//Matrix Dproject_stereo_pose(const StereoCamera& camera, const Point3& point) {
-//	//Point2 intrinsic = project(camera.calibrated_, point);  // unused
-//
-//	//Matrix D_intrinsic_pose = Dproject_pose(camera.calibrated_, point);
-//	//**** above function call inlined
-//	  Matrix D_cameraPoint_pose;
-//	  Point3 cameraPoint = camera.pose().transform_to(point, D_cameraPoint_pose, boost::none);
-//	  //cout << "D_cameraPoint_pose" << endl;
-//	  //print(D_cameraPoint_pose);
-//
-//	  //Point2 intrinsic = project_to_camera(cameraPoint);  // unused
-//	  Matrix D_intrinsic_cameraPoint = Dproject_to_stereo_camera1(camera, cameraPoint); // 3x3 Jacobian
-//	  //cout << "myJacobian" << endl;
-//	  //print(D_intrinsic_cameraPoint);
-//
-//	  Matrix D_intrinsic_pose = D_intrinsic_cameraPoint * D_cameraPoint_pose;
-//
-//	//****
-//	//Matrix D_projection_intrinsic = Duncalibrate2(camera.K_, intrinsic);
-//	Matrix D_projection_intrinsic = Duncalibrate2(camera.K());  // 3x3
-//
-//	Matrix D_projection_pose = D_projection_intrinsic * D_intrinsic_pose;
-//	return D_projection_pose;
-//}
-
-///* ************************************************************************* */
-//Matrix Dproject_stereo_point(const StereoCamera& camera, const Point3& point) {
-//	//Point2 intrinsic = project(camera.calibrated_, point);   // unused
-//
-//	//Matrix D_intrinsic_point = Dproject_point(camera.calibrated_, point);
-//	//**** above function call inlined
-//	  Matrix D_cameraPoint_point;
-//	  Point3 cameraPoint = camera.pose().transform_to(point, boost::none, D_cameraPoint_point);
-//
-//		//Point2 intrinsic = project_to_camera(cameraPoint);  // unused
-//		Matrix D_intrinsic_cameraPoint = Dproject_to_stereo_camera1(camera, cameraPoint); // 3x3 Jacobian
-//
-//		Matrix D_intrinsic_point = D_intrinsic_cameraPoint * D_cameraPoint_point;
-//
-//	//****
-//	//Matrix D_projection_intrinsic = Duncalibrate2(camera.K_, intrinsic);
-//	Matrix D_projection_intrinsic = Duncalibrate2(camera.K());  // 3x3
-//
-//	Matrix D_projection_point = D_projection_intrinsic * D_intrinsic_point;
-//	return D_projection_point;
-//}
-
 
 // calibrated cameras
 /*

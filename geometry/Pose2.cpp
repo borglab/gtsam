@@ -46,7 +46,7 @@ namespace gtsam {
 		else {
 			Rot2 R(Rot2::fromAngle(w));
 			Point2 v_ortho = R_PI_2 * v; // points towards rot center
-			Point2 t = (v_ortho - rotate(R,v_ortho)) / w;
+			Point2 t = (v_ortho - R.rotate(v_ortho)) / w;
 			return Pose2(R, t);
 		}
 	}
@@ -60,7 +60,7 @@ namespace gtsam {
 		else {
 			double c_1 = R.c()-1.0, s = R.s();
 			double det = c_1*c_1 + s*s;
-			Point2 p = R_PI_2 * (unrotate(R, t) - t);
+			Point2 p = R_PI_2 * (R.unrotate(t) - t);
 			Point2 v = (w/det) * p;
 			return Vector_(3, v.x(), v.y(), w);
 		}
@@ -93,13 +93,9 @@ namespace gtsam {
   }
 
   /* ************************************************************************* */
-  Pose2 Pose2::inverse() const {
+  Pose2 Pose2::inverse(boost::optional<Matrix&> H1) const {
+	  if (H1) *H1 = -AdjointMap();
 	  return Pose2(r_.inverse(), r_.unrotate(Point2(-t_.x(), -t_.y())));
-  }
-
-  Pose2 inverse(const Pose2& pose, boost::optional<Matrix&> H1) {
-	  if (H1) *H1 = -pose.AdjointMap();
-	  return pose.inverse();
   }
 
   /* ************************************************************************* */
@@ -118,12 +114,12 @@ namespace gtsam {
 
   /* ************************************************************************* */
   // see doc/math.lyx, SE(2) section
-  Pose2 compose(const Pose2& p1, const Pose2& p2, boost::optional<Matrix&> H1,
-      boost::optional<Matrix&> H2) {
+  Pose2 Pose2::compose(const Pose2& p2, boost::optional<Matrix&> H1,
+      boost::optional<Matrix&> H2) const {
     // TODO: inline and reuse?
-    if(H1) *H1 = inverse(p2).AdjointMap();
+    if(H1) *H1 = p2.inverse().AdjointMap();
     if(H2) *H2 = I3;
-    return p1*p2;
+    return (*this)*p2;
   }
 
   /* ************************************************************************* */
@@ -141,10 +137,10 @@ namespace gtsam {
   }
 
   /* ************************************************************************* */
-  Pose2 between(const Pose2& p1, const Pose2& p2, boost::optional<Matrix&> H1,
-		  boost::optional<Matrix&> H2) {
+  Pose2 Pose2::between(const Pose2& p2, boost::optional<Matrix&> H1,
+		  boost::optional<Matrix&> H2) const {
 	  // get cosines and sines from rotation matrices
-	  const Rot2& R1 = p1.r(), R2 = p2.r();
+	  const Rot2& R1 = r_, R2 = p2.r();
 	  double c1=R1.c(), s1=R1.s(), c2=R2.c(), s2=R2.s();
 
 	  // Calculate delta rotation = between(R1,R2)
@@ -152,7 +148,7 @@ namespace gtsam {
 	  Rot2 R(Rot2::atan2(s,c)); // normalizes
 
 	  // Calculate delta translation = unrotate(R1, dt);
-	  Point2 dt = p2.t() - p1.t();
+	  Point2 dt = p2.t() - t_;
 	  double x = dt.x(), y = dt.y();
 	  Point2 t(c1 * x + s1 * y, -s1 * x + c1 * y);
 

@@ -43,7 +43,7 @@ TEST( Pose2Prior, error )
 
 	// Check error after increasing p2
 	VectorConfig plus = delta + VectorConfig("x1", Vector_(3, 0.1, 0.0, 0.0));
-	Pose2Config x1 = expmap(x0, plus);
+	Pose2Config x1 = x0.expmap(plus);
 	Vector error_at_plus = Vector_(3,0.1/sx,0.0,0.0); // h(x)-z = 0.1 !
 	CHECK(assert_equal(error_at_plus,factor.whitenedError(x1)));
 	CHECK(assert_equal(error_at_plus,linear->error_vector(plus)));

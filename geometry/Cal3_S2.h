@@ -99,8 +99,18 @@ namespace gtsam {
 			return Point2((1/fx_)*(u-u0_ - (s_/fy_)*(v-v0_)), (1/fy_)*(v-v0_));
 		}
 
-		/** friends */
-		friend Cal3_S2 expmap(const Cal3_S2& cal, const Vector& d);
+	    /**
+	     * return DOF, dimensionality of tangent space
+	     */
+	    inline size_t dim() const { return 5; }
+
+	    /**
+	     * Given 5-dim tangent vector, create new calibration
+	     */
+	    inline Cal3_S2 expmap(const Vector& d) const {
+	        return Cal3_S2(fx_ + d(0), fy_ + d(1),
+	            s_ + d(2), u0_ + d(3), v0_ + d(4));
+	    }
 
 	private:
 		/** Serialization function */
@@ -117,18 +127,5 @@ namespace gtsam {
 	};
 
 	typedef boost::shared_ptr<Cal3_S2> shared_ptrK;
-
-    /**
-     * return DOF, dimensionality of tangent space
-     */
-    inline size_t dim(const Cal3_S2&) { return 5; }
-
-    /**
-     * Given 5-dim tangent vector, create new calibration
-     */
-    inline Cal3_S2 expmap(const Cal3_S2& cal, const Vector& d) {
-        return Cal3_S2(cal.fx_ + d(0), cal.fy_ + d(1),
-            cal.s_ + d(2), cal.u0_ + d(3), cal.v0_ + d(4));
-    }
 
 }

@@ -112,6 +112,15 @@ namespace gtsam {
       return Vector_(1, r.theta());
     }
 
+    /** Binary expmap  */
+    inline Rot2 expmap(const Vector& v) const { return *this * Expmap(v); }
+
+    /** Binary Logmap  */
+    inline Vector logmap(const Rot2& p2) const { return Logmap(between(p2));}
+
+    /** Between using the default implementation */
+    inline Rot2 between(const Rot2& p2) const { return between_default(*this, p2); }
+
     /** return 2*2 rotation matrix */
     Matrix matrix() const;
 

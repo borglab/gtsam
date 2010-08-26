@@ -76,11 +76,18 @@ namespace gtsam {
     /** return DOF, dimensionality of tangent space = 3 */
     inline size_t dim() const { return dimension; }
 
-    /** inverse of a pose */
-    Pose2 inverse() const;
+    /**
+     * inverse transformation with derivatives
+     */
+    Pose2 inverse(boost::optional<Matrix&> H1=boost::none) const;
 
-    /** compose with another pose */
-    inline Pose2 compose(const Pose2& p) const { return *this * p; }
+    /**
+     * compose this transformation onto another (first *this and then p2)
+     * With optional derivatives
+     */
+    Pose2 compose(const Pose2& p2,
+      boost::optional<Matrix&> H1 = boost::none,
+      boost::optional<Matrix&> H2 = boost::none) const;
 
     /** syntactic sugar for transform_from */
     inline Point2 operator*(const Point2& point) { return transform_from(point);}
@@ -95,6 +102,17 @@ namespace gtsam {
      */
     static Vector Logmap(const Pose2& p);
 
+    /** default implementations of binary functions */
+    inline Pose2 expmap(const Vector& v) const { return gtsam::expmap_default(*this, v); }
+    inline Vector logmap(const Pose2& p2) const { return gtsam::logmap_default(*this, p2);}
+
+    /**
+     * Return relative pose between p1 and p2, in p1 coordinate frame
+     */
+    Pose2 between(const Pose2& p2,
+    	boost::optional<Matrix&> H1=boost::none,
+    	boost::optional<Matrix&> H2=boost::none) const;
+
     /** return transformation matrix */
     Matrix matrix() const;
 
@@ -102,13 +120,15 @@ namespace gtsam {
      * Return point coordinates in pose coordinate frame
      */
     Point2 transform_to(const Point2& point,
-    		boost::optional<Matrix&> H1=boost::none, boost::optional<Matrix&> H2=boost::none) const;
+    		boost::optional<Matrix&> H1=boost::none,
+    		boost::optional<Matrix&> H2=boost::none) const;
 
     /**
      * Return point coordinates in global frame
      */
     Point2 transform_from(const Point2& point,
-    	boost::optional<Matrix&> H1=boost::none, boost::optional<Matrix&> H2=boost::none) const;
+    	boost::optional<Matrix&> H1=boost::none,
+    	boost::optional<Matrix&> H2=boost::none) const;
 
 	/**
 	 * Calculate bearing to a landmark
@@ -116,7 +136,8 @@ namespace gtsam {
 	 * @return 2D rotation \in SO(2)
 	 */
 	Rot2 bearing(const Point2& point,
-			boost::optional<Matrix&> H1=boost::none, boost::optional<Matrix&> H2=boost::none) const;
+			boost::optional<Matrix&> H1=boost::none,
+			boost::optional<Matrix&> H2=boost::none) const;
 
 	/**
 	 * Calculate range to a landmark
@@ -124,7 +145,8 @@ namespace gtsam {
 	 * @return range (double)
 	 */
 	double range(const Point2& point,
-			boost::optional<Matrix&> H1=boost::none, boost::optional<Matrix&> H2=boost::none) const;
+			boost::optional<Matrix&> H1=boost::none,
+			boost::optional<Matrix&> H2=boost::none) const;
 
 	/**
 	 * Calculate Adjoint map
@@ -172,24 +194,6 @@ namespace gtsam {
   inline Matrix wedge<Pose2>(const Vector& xi) {
   	return Pose2::wedge(xi(0),xi(1),xi(2));
   }
-
-  /**
-   * inverse transformation
-   */
-  Pose2 inverse(const Pose2& pose, boost::optional<Matrix&> H1);
-
-  /**
-   * compose this transformation onto another (first p1 and then p2)
-   */
-  Pose2 compose(const Pose2& p1, const Pose2& p2,
-    boost::optional<Matrix&> H1,
-    boost::optional<Matrix&> H2 = boost::none);
-
-  /**
-   * Return relative pose between p1 and p2, in p1 coordinate frame
-   */
-  Pose2 between(const Pose2& p1, const Pose2& p2,
-  	boost::optional<Matrix&> H1, boost::optional<Matrix&> H2);
 
 } // namespace gtsam
 

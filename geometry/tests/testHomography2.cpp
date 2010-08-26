@@ -104,7 +104,7 @@ TEST( Homography2, EstimateReverse)
  * Assumption is Z is normal to the template, template texture in X-Y plane.
  */
 Homography2 patchH(const Pose3& tEc) {
-	Pose3 cEt = inverse(tEc);
+	Pose3 cEt = tEc.inverse();
 	Rot3 cRt = cEt.rotation();
 	Point3 r1 = cRt.column(1), r2 = cRt.column(2), t = cEt.translation();
 
@@ -128,7 +128,7 @@ Homography2 patchH(const Pose3& tEc) {
 
 /* ************************************************************************* */
 namespace gtsam {
-	size_t dim(const tensors::Tensor2<3, 3>& H) {return 9;}
+//	size_t dim(const tensors::Tensor2<3, 3>& H) {return 9;}
 	Vector toVector(const tensors::Tensor2<3, 3>& H) {
 		Index<3, 'T'> _T; // covariant 2D template
 		Index<3, 'C'> I; // contravariant 2D camera
@@ -162,7 +162,8 @@ TEST( Homography2, patchH)
 //	GTSAM_PRINT(actual(I,_T));
 	CHECK(assert_equality(expected(I,_T),actual(I,_T)));
 
-  Matrix D = numericalDerivative11<Homography2,Pose3>(patchH, gEc);
+	// FIXME: this doesn't appear to be tested, and requires that Tensor2 be a Lie object
+//  Matrix D = numericalDerivative11<Homography2,Pose3>(patchH, gEc);
 //  print(D,"D");
 }
 

@@ -76,16 +76,16 @@ namespace gtsam {
     const Value& at(const J& j) const;
 
     /** operator[] syntax for get */
-		const Value& operator[](const J& j) const { return at(j); }
+    const Value& operator[](const J& j) const { return at(j); }
 
-	  /** Check if a variable exists */
-	  bool exists(const J& i) const { return values_.find(i)!=values_.end(); }
+    /** Check if a variable exists */
+    bool exists(const J& i) const { return values_.find(i)!=values_.end(); }
 
-	  /** Check if a variable exists and return it if so */
-	  boost::optional<Value> exists_(const J& i) const {
-	  	const_iterator it = values_.find(i);
-			if (it==values_.end()) return boost::none; else	return it->second;
-	  }
+    /** Check if a variable exists and return it if so */
+    boost::optional<Value> exists_(const J& i) const {
+    	const_iterator it = values_.find(i);
+    	if (it==values_.end()) return boost::none; else	return it->second;
+    }
 
     /** The number of variables in this config */
     size_t size() const { return values_.size(); }
@@ -103,6 +103,17 @@ namespace gtsam {
     const_iterator end() const { return values_.end(); }
     iterator begin() { return values_.begin(); }
     iterator end() { return values_.end(); }
+
+    // Lie operations
+
+    /** Add a delta config to current config and returns a new config */
+    LieConfig expmap(const VectorConfig& delta) const;
+
+    /** Add a delta vector to current config and returns a new config, uses iterator order */
+    LieConfig expmap(const Vector& delta) const;
+
+    /** Get a delta config about a linearization point c0 (*this) */
+    VectorConfig logmap(const LieConfig& cp) const;
 
     // imperative methods:
 
@@ -152,22 +163,6 @@ namespace gtsam {
   	}
 
   };
-
-  /** Dimensionality of the tangent space */
-  template<class J>
-  inline size_t dim(const LieConfig<J>& c) { return c.dim(); }
-
-  /** Add a delta config */
-  template<class J>
-  LieConfig<J> expmap(const LieConfig<J>& c, const VectorConfig& delta);
-
-  /** Add a delta vector, uses iterator order */
-  template<class J>
-  LieConfig<J> expmap(const LieConfig<J>& c, const Vector& delta);
-
-  /** Get a delta config about a linearization point c0 */
-  template<class J>
-  VectorConfig logmap(const LieConfig<J>& c0, const LieConfig<J>& cp);
 
 }
 

@@ -47,8 +47,15 @@ namespace gtsam {
 				boost::optional<Matrix&> Dproject_stereo_pose = boost::none,
 				boost::optional<Matrix&> Dproject_stereo_point = boost::none) const;
 
-//		Matrix Dproject_stereo_pose(const StereoCamera& camera, const Point3& point);
-//		Matrix Dproject_stereo_point(const StereoCamera& camera, const Point3& point);
+		/** Dimensionality of the tangent space */
+		inline size_t dim() const {
+			return 6;
+		}
+
+		/** Exponential map around p0 */
+		inline StereoCamera expmap(const Vector& d) const {
+			return StereoCamera(pose().expmap(d),K(),baseline());
+		}
 
 	private:
 		/** utility functions */
@@ -56,16 +63,5 @@ namespace gtsam {
 		static Matrix Duncalibrate2(const Cal3_S2& K);
 
 	};
-
-	/** Dimensionality of the tangent space */
-	inline size_t dim(const StereoCamera& obj) {
-		return 6;
-	}
-
-  /** Exponential map around p0 */
-  template<> inline StereoCamera expmap<StereoCamera>(const StereoCamera& p0, const Vector& d) {
-    return StereoCamera(expmap(p0.pose(),d),p0.K(),p0.baseline());
-  }
-
 
 }

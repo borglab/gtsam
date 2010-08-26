@@ -46,17 +46,38 @@ namespace gtsam {
     /** Size of the tangent space of the Lie type */
     inline size_t dim() const { return dimension; }
 
-    /** "Compose", just adds the coordinates of two points. */
-    Point2 compose(const Point2& p1) const { return *this+p1; }
+    /** "Compose", just adds the coordinates of two points. With optional derivatives */
+    inline Point2 compose(const Point2& p2,
+        boost::optional<Matrix&> H1=boost::none,
+        boost::optional<Matrix&> H2=boost::none) const {
+      if(H1) *H1 = eye(2);
+      if(H2) *H2 = eye(2);
+      return *this+p2;
+    }
 
     /** "Inverse" - negates each coordinate such that compose(p,inverse(p))=Point2() */
-    Point2 inverse() const { return Point2(-x_, -y_); }
+    inline Point2 inverse() const { return Point2(-x_, -y_); }
+
+    /** Binary expmap - just adds the points */
+    inline Point2 expmap(const Vector& v) const { return *this + Point2(v); }
+
+    /** Binary Logmap - just subtracts the points */
+    inline Vector logmap(const Point2& p2) const { return Logmap(between(p2));}
 
     /** Exponential map around identity - just create a Point2 from a vector */
     static inline Point2 Expmap(const Vector& v) { return Point2(v); }
 
     /** Log map around identity - just return the Point2 as a vector */
     static inline Vector Logmap(const Point2& dp) { return Vector_(2, dp.x(), dp.y()); }
+
+    /** "Between", subtracts point coordinates */
+    inline Point2 between(const Point2& p2,
+        boost::optional<Matrix&> H1=boost::none,
+        boost::optional<Matrix&> H2=boost::none) const {
+      if(H1) *H1 = -eye(2);
+      if(H2) *H2 = eye(2);
+      return p2- (*this);
+    }
 
     /** get functions for x, y */
     double x() const {return x_;}
@@ -91,25 +112,6 @@ namespace gtsam {
       ar & BOOST_SERIALIZATION_NVP(y_);
     }
   };
-
-  /** Lie group functions */
-
-  /** "Compose", just adds the coordinates of two points. */
-  inline Point2 compose(const Point2& p1, const Point2& p2,
-      boost::optional<Matrix&> H1, boost::optional<Matrix&> H2=boost::none) {
-    if(H1) *H1 = eye(2);
-    if(H2) *H2 = eye(2);
-    return compose(p1, p2);
-  }
-
-  /** "Between", subtracts point coordinates */
-  inline Point2 between(const Point2& p1, const Point2& p2) { return p2-p1; }
-  inline Point2 between(const Point2& p1, const Point2& p2,
-      boost::optional<Matrix&> H1, boost::optional<Matrix&> H2=boost::none) {
-    if(H1) *H1 = -eye(2);
-    if(H2) *H2 = eye(2);
-    return between(p1, p2);
-  }
 
   /** multiply with scalar */
   inline Point2 operator*(double s, const Point2& p) {return p*s;}

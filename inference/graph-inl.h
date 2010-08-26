@@ -140,7 +140,7 @@ public:
 		typename Config::Key key_from = boost::get(boost::vertex_name, g, boost::source(edge, g));
 		typename Config::Key key_to = boost::get(boost::vertex_name, g, boost::target(edge, g));
 		Pose relativePose = boost::get(boost::edge_weight, g, edge);
-		config_->insert(key_to, compose((*config_)[key_from],relativePose));
+		config_->insert(key_to, (*config_)[key_from].compose(relativePose));
 	}
 
 };
@@ -190,7 +190,7 @@ boost::shared_ptr<Config> composePoses(const G& graph, const PredecessorMap<type
 		if (found1)
 			boost::put(boost::edge_weight, g, edge12, l1Xl2);
 		else if (found2)
-			boost::put(boost::edge_weight, g, edge21, inverse(l1Xl2));
+			boost::put(boost::edge_weight, g, edge21, l1Xl2.inverse());
 	}
 
 	// compose poses

@@ -63,9 +63,9 @@ namespace gtsam {
 
 		/** vector of errors */
 		Vector evaluateError(const T& p, boost::optional<Matrix&> H = boost::none) const {
-			if (H) (*H) = eye(dim(p));
+			if (H) (*H) = eye(p.dim());
 			// manifold equivalent of h(x)-z -> log(z,h(x))
-			return logmap(prior_, p);
+			return prior_.logmap(p);
 		}
 	};
 

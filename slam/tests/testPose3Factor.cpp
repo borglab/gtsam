@@ -33,7 +33,7 @@ TEST( Pose3Factor, error )
 
 	// Get error h(x)-z -> logmap(z,h(x)) = logmap(z,between(t1,t2))
 	Vector actual = factor.unwhitenedError(x);
-	Vector expected = logmap(z,between(t1,t2));
+	Vector expected = z.logmap(t1.between(t2));
 	CHECK(assert_equal(expected,actual));
 }
 

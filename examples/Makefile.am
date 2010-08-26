@@ -9,7 +9,6 @@ AUTOMAKE_OPTIONS = nostdinc
 headers =
 sources = 
 check_PROGRAMS =
-noinst_PROGRAMS =  
 
 # Examples
 noinst_PROGRAMS = SimpleRotation      # Optimizes a single nonlinear rotation variable
@@ -18,6 +17,7 @@ noinst_PROGRAMS = SimpleRotation      # Optimizes a single nonlinear rotation va
 # rules to build local programs
 #----------------------------------------------------------------------------------------------------
 AM_LDFLAGS = $(BOOST_LDFLAGS) 
+AM_CPPFLAGS = -I$(boost) -I$(BORG_SRCROOT)
 LDADD = ../libgtsam.la
 AM_DEFAULT_SOURCE_EXT = .cpp
 if USE_LDL

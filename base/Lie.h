@@ -18,102 +18,118 @@ namespace gtsam {
    * for better performance.
    */
 
-  /* Exponential map about identity */
+  /** Compute l0 s.t. l2=l1*l0 */
   template<class T>
-  T expmap(const Vector& v) { return T::Expmap(v); }
-
-  /* Logmap (inverse exponential map) about identity */
-  template<class T>
-  Vector logmap(const T& p) { return T::Logmap(p); }
-
-  /** Compute l1 s.t. l2=l1*l0 */
-  template<class T>
-  inline T between(const T& l1, const T& l2) { return compose(inverse(l1),l2); }
+  inline T between_default(const T& l1, const T& l2) { return l1.inverse().compose(l2); }
 
   /** Log map centered at l0, s.t. exp(l0,log(l0,lp)) = lp */
   template<class T>
-  inline Vector logmap(const T& l0, const T& lp) { return logmap(between(l0,lp)); }
+  inline Vector logmap_default(const T& l0, const T& lp) { return T::Logmap(l0.between(lp)); }
 
   /** Exponential map centered at l0, s.t. exp(t,d) = t*exp(d) */
   template<class T>
-  inline T expmap(const T& t, const Vector& d) { return compose(t,expmap<T>(d)); }
+  inline T expmap_default(const T& t, const Vector& d) { return t.compose(T::Expmap(d)); }
 
   /**
    * Base class for Lie group type
-   * This class uses the Curiously Recurring Template design pattern to allow
-   * for static polymorphism.
+   * This class uses the Curiously Recurring Template design pattern to allow for
+   * concept checking using a private function.
    *
    * T is the derived Lie type, like Point2, Pose3, etc.
    *
    * By convention, we use capital letters to designate a static function
-   *
-   * FIXME: Need to find a way to check for actual implementations in T
-   * so that there are no recursive function calls.  This could be handled
-   * by not using the same name
    */
   template <class T>
   class Lie {
-  public:
+  private:
 
-    /**
-     * Returns dimensionality of the tangent space
-     */
-    inline size_t dim() const {
-    	return static_cast<const T*>(this)->dim();
-    }
+	  /** concept checking function - implement the functions this demands */
+	  static void concept_check(const T& t) {
 
-    /**
-     * Returns Exponential map update of T
-     * Default implementation calls global binary function
-     */
-    T expmap(const Vector& v) const;
+		  /** assignment */
+		  T t2 = t;
 
-    /** expmap around identity */
-    static T Expmap(const Vector& v) {
-    	return T::Expmap(v);
-    }
+		  /**
+		   * Returns dimensionality of the tangent space
+		   */
+		  size_t dim_ret = t.dim();
 
-    /**
-     * Returns Log map
-     * Default Implementation calls global binary function
-     */
-    Vector logmap(const T& lp) const;
+		  /**
+		   * Returns Exponential map update of T
+		   * Default implementation calls global binary function
+		   */
+		  T expmap_ret = t.expmap(gtsam::zero(dim_ret));
 
-    /** Logmap around identity */
-    static Vector Logmap(const T& p) {
-    	return T::Logmap(p);
-    }
+		  /** expmap around identity */
+		  T expmap_identity_ret = T::Expmap(gtsam::zero(dim_ret));
 
-    /** compose with another object */
-    inline T compose(const T& p) const {
-    	return static_cast<const T*>(this)->compose(p);
-    }
+		  /**
+		   * Returns Log map
+		   * Default Implementation calls global binary function
+		   */
+		  Vector logmap_ret = t.logmap(t2);
 
-    /** invert the object and yield a new one */
-    inline T inverse() const {
-    	return static_cast<const T*>(this)->inverse();
-    }
+		  /** Logmap around identity */
+		  Vector logmap_identity_ret = T::Logmap(t);
+
+		  /** Compute l0 s.t. l2=l1*l0, where (*this) is l1 */
+		  T between_ret = t.between(t2);
+
+		  /** compose with another object */
+		  T compose_ret = t.compose(t2);
+
+		  /** invert the object and yield a new one */
+		  T inverse_ret = t.inverse();
+	  }
+
+	  /**
+	   * The necessary functions to implement for Lie are defined
+	   * below with additional details as to the interface.  The
+	   * concept checking function above will check whether or not
+	   * the function exists and throw compile-time errors.
+	   */
+
+
+	  /**
+	   * Returns dimensionality of the tangent space
+	   */
+//	  inline size_t dim() const;
+
+	  /**
+	   * Returns Exponential map update of T
+	   * A default implementation of expmap(*this, lp) is available:
+	   * expmap_default()
+	   */
+//	  T expmap(const Vector& v) const;
+
+	  /** expmap around identity */
+//	  static T Expmap(const Vector& v);
+
+	  /**
+	   * Returns Log map
+	   * A default implementation of logmap(*this, lp) is available:
+	   * logmap_default()
+	   */
+//	  Vector logmap(const T& lp) const;
+
+	  /** Logmap around identity */
+//	  static Vector Logmap(const T& p);
+
+	  /**
+	   * Compute l0 s.t. l2=l1*l0, where (*this) is l1
+	   * A default implementation of between(*this, lp) is available:
+	   * between_default()
+	   */
+//	  T between(const T& l2) const;
+
+	  /** compose with another object */
+//	  inline T compose(const T& p) const;
+
+	  /** invert the object and yield a new one */
+//	  inline T inverse() const;
 
   };
   
-  /** get the dimension of an object with a global function */
-  template<class T>
-  inline size_t dim(const T& object) {
-	  return object.dim();
-  }
-
-  /** compose two Lie types */
-  template<class T>
-  inline T compose(const T& p1, const T& p2) {
-	  return p1.compose(p2);
-  }
-
-  /** invert an object */
-  template<class T>
-  inline T inverse(const T& p) {
-	  return p.inverse();
-  }
-
   /** Call print on the object */
   template<class T>
   inline void print(const T& object, const std::string& s = "") {

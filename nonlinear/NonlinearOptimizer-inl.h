@@ -86,7 +86,7 @@ namespace gtsam {
 			delta.print("delta");
 
 		// take old config and update it
-		shared_config newConfig(new C(expmap(*config_,delta)));
+		shared_config newConfig(new C(config_->expmap(delta)));
 
 		// maybe show output
 		if (verbosity >= CONFIG)
@@ -154,7 +154,7 @@ namespace gtsam {
 			delta.print("delta");
 
 		// update config
-		shared_config newConfig(new C(expmap(*config_,delta))); // TODO: updateConfig
+		shared_config newConfig(new C(config_->expmap(delta))); // TODO: updateConfig
 //		if (verbosity >= TRYCONFIG)
 //			newConfig->print("config");
 

@@ -56,7 +56,7 @@ TEST( Pose3Config, expmap )
 			0.0,0.0,0.0,  0.1, 0.0, 0.0,
 			0.0,0.0,0.0,  0.1, 0.0, 0.0,
 			0.0,0.0,0.0,  0.1, 0.0, 0.0);
-	Pose3Config actual = expmap(pose3SLAM::circle(4,1.0),delta);
+	Pose3Config actual = pose3SLAM::circle(4,1.0).expmap(delta);
 	CHECK(assert_equal(expected,actual));
 }
 

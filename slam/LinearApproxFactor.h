@@ -70,7 +70,7 @@ public:
 		VectorConfig delta;
 		BOOST_FOREACH(const Key& key, nonlinearKeys_) {
 			X newPt = c[key], linPt = lin_points_[key];
-			Vector d = logmap(linPt, newPt);
+			Vector d = linPt.logmap(newPt);
 			delta.insert(key, d);
 		}
 

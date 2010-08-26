@@ -25,7 +25,7 @@ TEST( Rot2, constructors_and_angle)
 /* ************************************************************************* */
 TEST( Rot2, transpose)
 {
-	CHECK(assert_equal(inverse(R).matrix(),R.transpose()));
+	CHECK(assert_equal(R.inverse().matrix(),R.transpose()));
 }
 
 /* ************************************************************************* */
@@ -47,7 +47,7 @@ TEST( Rot2, equals)
 TEST( Rot2, expmap)
 {
 	Vector v = zero(1);
-	CHECK(assert_equal(expmap(R,v), R));
+	CHECK(assert_equal(R.expmap(v), R));
 }
 
 /* ************************************************************************* */
@@ -56,7 +56,7 @@ TEST(Rot2, logmap)
 	Rot2 rot0(Rot2::fromAngle(M_PI_2));
 	Rot2 rot(Rot2::fromAngle(M_PI));
 	Vector expected = Vector_(1, M_PI_2);
-	Vector actual = logmap(rot0, rot);
+	Vector actual = rot0.logmap(rot);
 	CHECK(assert_equal(expected, actual));
 }
 
