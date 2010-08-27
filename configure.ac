@@ -98,7 +98,7 @@ AC_ARG_ENABLE([ldl],
      [case "${enableval}" in
        yes) ldl=true ;;
        no)  ldl=false ;;
-       *) AC_MSG_ERROR([bad value ${enableval} for --enable-debug]) ;;
+       *) AC_MSG_ERROR([bad value ${enableval} for --enable-ldl]) ;;
      esac],[ldl=false])
 
 AM_CONDITIONAL([USE_LDL], [test x$ldl = xtrue])
@@ -113,6 +113,17 @@ AC_ARG_ENABLE([profiling],
      esac],[profiling=false])
 
 AM_CONDITIONAL([USE_PROFILING], [test x$profiling = xtrue])
+
+# enable serialization in serialization test
+AC_ARG_ENABLE([serialization],
+     [  --enable-serialization    Enable serialization with boost serialization],
+     [case "${enableval}" in
+       yes) serialization=true ;;
+       no)  serialization=false ;;
+       *) AC_MSG_ERROR([bad value ${enableval} for --enable-serialization]) ;;
+     esac],[serialization=false])
+
+AM_CONDITIONAL([ENABLE_SERIALIZATION], [test x$serialization = xtrue])
 
 # Checks for programs.
 AC_PROG_CXX
@@ -160,13 +171,13 @@ AC_ARG_WITH([boost],
 AC_SUBST([boost])
 
 # ask for boost serialization
-AC_ARG_WITH([boost_serialization],
-	     [AS_HELP_STRING([--with-boost-serialization],
-			      [(optional) use the Serialization library from boost - specify the library linking command with the full name of the library
-			        e.g. --with-boost-serialization=-lboost_serialization-gcc-mt-d-1_33_1])],
-	     [AC_DEFINE([HAVE_BOOST_SERIALIZATION], ["<boost/foreach.hpp>"], [boost serialization flag]) 
-                
-		 boost_serialization=$withval ])
-AC_SUBST([boost_serialization])
+#AC_ARG_WITH([boost_serialization],
+#	     [AS_HELP_STRING([--with-boost-serialization],
+#			      [(optional) use the Serialization library from boost - specify the library linking command with the full name of the library
+#			        e.g. --with-boost-serialization=-lboost_serialization-gcc-mt-d-1_33_1])],
+#	     [AC_DEFINE([HAVE_BOOST_SERIALIZATION], ["<boost/foreach.hpp>"], [boost serialization flag]) 
+#                
+#AC_SUBST([boost_serialization])
+
 	
 AC_OUTPUT

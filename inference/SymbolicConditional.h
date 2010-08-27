@@ -13,7 +13,8 @@
 #include <iostream>
 #include <boost/shared_ptr.hpp>
 #include <boost/foreach.hpp> // TODO: make cpp file
-#include <boost/serialization/list.hpp>
+//#include <boost/serialization/list.hpp>
+#include <boost/serialization/nvp.hpp>
 #include <gtsam/inference/Conditional.h>
 #include <gtsam/inference/Key.h>
 

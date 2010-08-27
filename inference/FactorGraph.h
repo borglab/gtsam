@@ -11,10 +11,10 @@
 #pragma once
 
 #include <boost/shared_ptr.hpp>
-#include <boost/serialization/map.hpp>
-#include <boost/serialization/list.hpp>
-#include <boost/serialization/vector.hpp>
-#include <boost/serialization/shared_ptr.hpp>
+//#include <boost/serialization/map.hpp>
+//#include <boost/serialization/list.hpp>
+//#include <boost/serialization/vector.hpp>
+//#include <boost/serialization/shared_ptr.hpp>
 
 #include <gtsam/base/Testable.h>
 #include <gtsam/inference/BayesNet.h>

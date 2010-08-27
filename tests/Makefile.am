@@ -17,6 +17,11 @@ check_PROGRAMS += testSymbolicBayesNet testSymbolicFactorGraph testTupleConfig
 check_PROGRAMS += testNonlinearEqualityConstraint testBoundingConstraint 
 check_PROGRAMS += testTransformConstraint testLinearApproxFactor
 
+# only if serialization is available
+if ENABLE_SERIALIZATION
+check_PROGRAMS += testSerialization
+endif
+
 # experimental
 #check_PROGRAMS += testFusionTupleConfig # Doesn't work on Macs
 
@@ -32,7 +37,13 @@ noinst_PROGRAMS = timeGaussianFactorGraph timeFactorOverhead
 #----------------------------------------------------------------------------------------------------
 TESTS = $(check_PROGRAMS)
 AM_CPPFLAGS = -I$(boost) -I$(BORG_SRCROOT)
-AM_LDFLAGS = $(BOOST_LDFLAGS) $(boost_serialization) 
+AM_LDFLAGS = $(BOOST_LDFLAGS) 
+
+# link to serialization library for test 
+if ENABLE_SERIALIZATION
+AM_LDFLAGS += -lboost_serialization
+endif
+
 LDADD = ../libgtsam.la ../CppUnitLite/libCppUnitLite.a  
 AM_DEFAULT_SOURCE_EXT = .cpp
 

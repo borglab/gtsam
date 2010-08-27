@@ -10,8 +10,8 @@
 
 #include <list>
 #include <boost/shared_ptr.hpp>
-#include <boost/serialization/list.hpp>
-#include <boost/serialization/shared_ptr.hpp>
+//#include <boost/serialization/list.hpp>
+//#include <boost/serialization/shared_ptr.hpp>
 
 #include <gtsam/base/Testable.h>
 #include <gtsam/inference/Key.h>

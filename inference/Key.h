@@ -11,7 +11,7 @@
 #include <list>
 #include <iostream>
 #include <boost/format.hpp>
-#include <boost/serialization/serialization.hpp>
+//#include <boost/serialization/serialization.hpp>
 #include <boost/serialization/nvp.hpp>
 #ifdef GTSAM_MAGIC_KEY
 #include <boost/lexical_cast.hpp>
@@ -273,7 +273,9 @@ namespace gtsam {
 		friend class boost::serialization::access;
 		template<class Archive>
 		void serialize(Archive & ar, const unsigned int version) {
-			ar & BOOST_SERIALIZATION_NVP(this->j_);
+			typedef TypedSymbol<T,C> Base;
+			ar & boost::serialization::make_nvp("TypedLabeledSymbol",
+					boost::serialization::base_object<Base>(*this));
 			ar & BOOST_SERIALIZATION_NVP(label_);
 		}
 	};
