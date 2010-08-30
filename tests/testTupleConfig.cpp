@@ -7,6 +7,8 @@
 #include <gtsam/CppUnitLite/TestHarness.h>
 #include <stdexcept>
 
+#include <gtsam/base/TestableAssertions.h>
+
 #define GTSAM_MAGIC_KEY
 
 #include <gtsam/geometry/Pose2.h>
@@ -410,9 +412,9 @@ TEST( TupleConfig, equals )
 
 	EXPECT(assert_equal(config1,config2));
 	EXPECT(assert_equal(config1,config1));
-	EXPECT(!config1.equals(config3));
-	EXPECT(!config1.equals(config4));
-	EXPECT(!config1.equals(config5));
+	EXPECT(assert_inequal(config1,config3));
+	EXPECT(assert_inequal(config1,config4));
+	EXPECT(assert_inequal(config1,config5));
 	EXPECT(assert_equal(config1, config6));
 }
 

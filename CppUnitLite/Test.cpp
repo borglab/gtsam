@@ -12,8 +12,8 @@ Test::Test (const SimpleString& testName)
 	TestRegistry::addTest (this);
 }
 
-Test::Test (const SimpleString& testName, const SimpleString& filename, long lineNumber)
-	: name_(testName), filename_(filename), lineNumber_(lineNumber)
+Test::Test (const SimpleString& testName, const SimpleString& filename, long lineNumber, bool safeCheck = true)
+	: name_(testName), filename_(filename), lineNumber_(lineNumber), safeCheck_(safeCheck)
 {
 	TestRegistry::addTest (this);
 }

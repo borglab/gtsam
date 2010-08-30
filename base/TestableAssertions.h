@@ -31,4 +31,17 @@ bool assert_equal(const std::vector<V>& expected, const std::vector<V>& actual, 
 	return true;
 }
 
+/**
+ * Allow for testing inequality
+ */
+template<class V>
+bool assert_inequal(const V& expected, const V& actual, double tol = 1e-9) {
+	if (!actual.equals(expected, tol))
+		return true;
+	printf("Erroneously equal:\n");
+	expected.print("expected");
+	actual.print("actual");
+	return false;
+}
+
 } // \namespace gtsam

@@ -22,7 +22,7 @@ class Test
 {
 public:
 	Test (const SimpleString& testName);
-	Test (const SimpleString& testName, const SimpleString& filename, long lineNumber);
+	Test (const SimpleString& testName, const SimpleString& filename, long lineNumber, bool safeCheck);
   virtual ~Test() {};
 
 	virtual void	run (TestResult& result) = 0;
@@ -33,6 +33,7 @@ public:
 	SimpleString    getName() const {return name_;}
 	SimpleString 	getFilename() const {return filename_;}
 	long			getLineNumber() const {return lineNumber_;}
+	bool  			safe() const {return safeCheck_;}
 
 protected:
 
@@ -43,16 +44,30 @@ protected:
 	Test			*next_;
 	SimpleString 	filename_;
 	long 			lineNumber_; /// This is the line line number of the test, rather than the a single check
+	bool 			safeCheck_;
 
 };
 
-
+/**
+ * Normal test will wrap execution in a try/catch block to catch exceptions more effectively
+ */
 #define TEST(testName, testGroup)\
   class testGroup##testName##Test : public Test \
-	{ public: testGroup##testName##Test () : Test (#testName "Test", __FILE__, __LINE__) {} \
+	{ public: testGroup##testName##Test () : Test (#testName "Test", __FILE__, __LINE__, true) {} \
             void run (TestResult& result_);} \
     testGroup##testName##Instance; \
 	void testGroup##testName##Test::run (TestResult& result_) 
+
+/**
+ * For debugging only: use TEST_UNSAFE to allow debuggers to have access to exceptions, as this
+ * will not wrap execution with a try/catch block
+ */
+#define TEST_UNSAFE(testName, testGroup)\
+  class testGroup##testName##Test : public Test \
+	{ public: testGroup##testName##Test () : Test (#testName "Test", __FILE__, __LINE__, false) {} \
+            void run (TestResult& result_);} \
+    testGroup##testName##Instance; \
+	void testGroup##testName##Test::run (TestResult& result_)
 
 /*
  * Convention for tests:
