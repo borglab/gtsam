@@ -133,152 +133,6 @@ namespace gtsam {
 	}
 
 	/* ************************************************************************* */
-	// todo: will be obsolete soon
-	template<class Conditional, class Config>
-	void ISAM2<Conditional, Config>::update_internal(const NonlinearFactorGraph<Config>& newFactors,
-			const Config& newTheta, Cliques& orphans, double wildfire_threshold, double relinearize_threshold, bool relinearize) {
-
-		//		marked_ = nonlinearFactors_.keys(); // debug only ////////////
-
-		// only relinearize if requested in previous step AND necessary (ie. at least one variable changes)
-		relinearize = true; // todo - switched off
-		bool relinFromLast = true; //marked_.size() > 0;
-
-		//// 1 - relinearize selected variables
-
-		if (relinFromLast) {
-			theta_ = theta_.expmap(deltaMarked_);
-		}
-
-		//// 2 - Add new factors (for later relinearization)
-
-		nonlinearFactors_.push_back(newFactors);
-
-		//// 3 - Initialize new variables
-
-		theta_.insert(newTheta);
-		thetaFuture_.insert(newTheta);
-
-		//// 4 - Mark affected variables as invalid
-
-		// todo - not in lyx yet: relin requires more than just removing the cliques corresponding to the variables!!!
-		// It's about factors!!!
-
-		if (relinFromLast) {
-			// mark variables that have to be removed as invalid (removeFATtop)
-			// basically calculate all the keys contained in the factors that contain any of the keys...
-			// the goal is to relinearize all variables directly affected by new factors
-			list<size_t> allAffected = getAffectedFactors(marked_);
-			set<Symbol> accumulate;
-			BOOST_FOREACH(int idx, allAffected) {
-				list<Symbol> tmp = nonlinearFactors_[idx]->keys();
-				accumulate.insert(tmp.begin(), tmp.end());
-			}
-			marked_.clear();
-			marked_.insert(marked_.begin(), accumulate.begin(), accumulate.end());
-		} // else: marked_ is empty anyways
-
-		// also mark variables that are affected by new factors as invalid
-		const list<Symbol> newKeys = newFactors.keys();
-		marked_.insert(marked_.begin(), newKeys.begin(), newKeys.end());
-		// eliminate duplicates
-		marked_.sort();
-		marked_.unique();
-
-		//// 5 - removeTop invalidate all cliques involving marked variables
-
-		// remove affected factors
-		BayesNet<GaussianConditional> affectedBayesNet;
-		this->removeTop(marked_, affectedBayesNet, orphans);
-
-		//// 6 - find factors connected to affected variables
-		//// 7 - linearize
-
-		boost::shared_ptr<GaussianFactorGraph> factors;
-
-		if (relinFromLast) {
-			// ordering provides all keys in conditionals, there cannot be others because path to root included
-			set<Symbol> affectedKeys;
-			list<Symbol> tmp = affectedBayesNet.ordering();
-			affectedKeys.insert(tmp.begin(), tmp.end());
-
-			// todo - remerge in keys of new factors
-			affectedKeys.insert(newKeys.begin(), newKeys.end());
-
-			// Save number of affected variables
-			lastAffectedVariableCount = affectedKeys.size();
-
-			factors = relinearizeAffectedFactors(affectedKeys);
-
-			// Save number of affected factors
-			lastAffectedFactorCount = factors->size();
-
-			// add the cached intermediate results from the boundary of the orphans ...
-			FactorGraph<GaussianFactor> cachedBoundary = getCachedBoundaryFactors(orphans);
-			factors->push_back(cachedBoundary);
-		} else {
-			// reuse the old factors
-			FactorGraph<GaussianFactor> tmp(affectedBayesNet);
-			factors.reset(new GaussianFactorGraph);
-			factors->push_back(tmp);
-			factors->push_back(*newFactors.linearize(theta_)); // avoid temporary ?
-		}
-
-		//// 8 - eliminate and add orphans back in
-
-		// create an ordering for the new and contaminated factors
-		// newKeys are passed in: those variables will be forced to the end in the ordering
-		set<Symbol> newKeysSet;
-		newKeysSet.insert(newKeys.begin(), newKeys.end());
-		Ordering ordering = factors->getConstrainedOrdering(newKeysSet);
-
-		// eliminate into a Bayes net
-		BayesNet<Conditional> bayesNet = _eliminate(*factors, cached_, ordering);
-
-		// Create Index from ordering
-		IndexTable<Symbol> index(ordering);
-
-		// insert conditionals back in, straight into the topless bayesTree
-		typename BayesNet<Conditional>::const_reverse_iterator rit;
-		for ( rit=bayesNet.rbegin(); rit != bayesNet.rend(); ++rit )
-			this->insert(*rit, index);
-
-		// Save number of affectedCliques
-		lastAffectedCliqueCount = this->size();
-
-		// add orphans to the bottom of the new tree
-		BOOST_FOREACH(sharedClique orphan, orphans) {
-			Symbol parentRepresentative = findParentClique(orphan->separator_, index);
-			sharedClique parent = (*this)[parentRepresentative];
-			parent->children_ += orphan;
-			orphan->parent_ = parent; // set new parent!
-		}
-
-		//// 9 - update solution
-
-		delta_ = optimize2(*this, wildfire_threshold);
-
-		//// 10 - mark variables, if significant change
-
-		marked_.clear();
-		deltaMarked_ = VectorConfig(); // clear
-		if (relinearize) { // decides about next step!!!
-
-			for (VectorConfig::const_iterator it = delta_.begin(); it!=delta_.end(); it++) {
-				Symbol key = it->first;
-				Vector v = it->second;
-				if (max(abs(v)) >= relinearize_threshold) {
-					marked_.push_back(key);
-					deltaMarked_.insert(key, v);
-				}
-			}
-
-			// not part of the formal algorithm, but needed to allow initialization of new variables outside by the user
-			thetaFuture_ = thetaFuture_.expmap(deltaMarked_);
-		}
-
-	}
-
 	template<class Conditional, class Config>
 	void ISAM2<Conditional, Config>::linear_update(const FactorGraph<GaussianFactor>& newFactors) {
 
@@ -291,7 +145,33 @@ namespace gtsam {
 		Cliques orphans;
 		BayesNet<GaussianConditional> affectedBayesNet;
 		this->removeTop(newKeys, affectedBayesNet, orphans);
-		FactorGraph<GaussianFactor> factors(affectedBayesNet);
+
+		//		FactorGraph<GaussianFactor> factors(affectedBayesNet);
+		// bug was here: we cannot reuse the original factors, because then the cached factors get messed up
+		// [all the necessary data is actually contained in the affectedBayesNet, including what was passed in from the boundaries,
+		//  so this would be correct; however, in the process we also generate new cached_ entries that will be wrong (ie. they don't
+		//  contain what would be passed up at a certain point if batch elimination was done, but that's what we need); we could choose
+		//  not to update cached_ from here, but then the new information (and potentially different variable ordering) is not reflected
+		//  in the cached_ values which again will be wrong]
+		// so instead we have to retrieve the original linearized factors AND add the cached factors from the boundary
+
+		// BEGIN OF COPIED CODE
+
+		// ordering provides all keys in conditionals, there cannot be others because path to root included
+		set<Symbol> affectedKeys;
+		list<Symbol> tmp = affectedBayesNet.ordering();
+		affectedKeys.insert(tmp.begin(), tmp.end());
+
+		FactorGraph<GaussianFactor> factors(*relinearizeAffectedFactors(affectedKeys));  // todo: no need to relinearize here, should have cached linearized factors
+
+		cout << "linear: #affected: " << affectedKeys.size() << " #factors: " << factors.size() << endl;
+
+		// add the cached intermediate results from the boundary of the orphans ...
+		FactorGraph<GaussianFactor> cachedBoundary = getCachedBoundaryFactors(orphans);
+		factors.push_back(cachedBoundary);
+
+		// END OF COPIED CODE
+
 
 		// 2. Add the new factors \Factors' into the resulting factor graph
 		factors.push_back(newFactors);
@@ -302,7 +182,8 @@ namespace gtsam {
 		// newKeys are passed in: those variables will be forced to the end in the ordering
 		set<Symbol> newKeysSet;
 		newKeysSet.insert(newKeys.begin(), newKeys.end());
-		Ordering ordering = factors.getConstrainedOrdering(newKeysSet);
+    //		Ordering ordering = factors.getConstrainedOrdering(newKeysSet);
+		Ordering ordering = factors.getOrdering(); // todo: back to constrained...
 
 		// eliminate into a Bayes net
 		BayesNet<Conditional> bayesNet = _eliminate(factors, cached_, ordering);
@@ -331,11 +212,13 @@ namespace gtsam {
 		// Output: BayesTree(this)
 	}
 
+	/* ************************************************************************* */
+	// find all variables that are directly connected by a measurement to one of the marked variables
 	template<class Conditional, class Config>
 	void ISAM2<Conditional, Config>::find_all(sharedClique clique, list<Symbol>& keys, const list<Symbol>& marked) {
 		// does the separator contain any of the variables?
 		bool found = false;
-		BOOST_FOREACH(const Symbol& key, clique->separator_) {
+		BOOST_FOREACH(const Symbol& key, clique->keys()) { // todo  clique->separator_) {
 			if (find(marked.begin(), marked.end(), key) != marked.end())
 				found = true;
 		}
@@ -348,6 +231,7 @@ namespace gtsam {
 		}
 	}
 
+	/* ************************************************************************* */
 	template<class Conditional, class Config>
 	void ISAM2<Conditional, Config>::fluid_relinearization(double relinearize_threshold) {
 
@@ -365,73 +249,77 @@ namespace gtsam {
 			}
 		}
 
-		// 2. Update linearization point for marked variables: \Theta_{J}:=\Theta_{J}+\Delta_{J}.
-		theta_ = theta_.expmap(deltaMarked);
+		if (marked.size()>0) {
 
-		// 3. Mark all cliques that involve marked variables \Theta_{J} and all their ancestors.
+			// 2. Update linearization point for marked variables: \Theta_{J}:=\Theta_{J}+\Delta_{J}.
+			theta_ = theta_.expmap(deltaMarked);
 
-		// mark all cliques that involve marked variables
-		list<Symbol> affectedSymbols(marked); // add all marked
-		find_all(this->root(), affectedSymbols, marked); // add other cliques that have the marked ones in the separator
+			// 3. Mark all cliques that involve marked variables \Theta_{J} and all their ancestors.
 
-		// 4. From the leaves to the top, if a clique is marked:
-		//    re-linearize the original factors in \Factors associated with the clique,
-		//    add the cached marginal factors from its children, and re-eliminate.
+			// mark all cliques that involve marked variables
+			list<Symbol> affectedSymbols(marked); // add all marked
+			find_all(this->root(), affectedSymbols, marked); // add other cliques that have the marked ones in the separator
+			affectedSymbols.sort(); // remove duplicates
+			affectedSymbols.unique();
 
-		// todo: for simplicity, currently simply remove the top and recreate it using the original ordering
+			// 4. From the leaves to the top, if a clique is marked:
+			//    re-linearize the original factors in \Factors associated with the clique,
+			//    add the cached marginal factors from its children, and re-eliminate.
 
-		Cliques orphans;
-		BayesNet<GaussianConditional> affectedBayesNet;
-		this->removeTop(affectedSymbols, affectedBayesNet, orphans);
-		// remember original ordering
-		Ordering original_ordering = affectedBayesNet.ordering();
+			// todo: for simplicity, currently simply remove the top and recreate it using the original ordering
 
-		boost::shared_ptr<GaussianFactorGraph> factors;
+			Cliques orphans;
+			BayesNet<GaussianConditional> affectedBayesNet;
+			this->removeTop(affectedSymbols, affectedBayesNet, orphans);
+			// remember original ordering
+			Ordering original_ordering = affectedBayesNet.ordering();
 
-		// ordering provides all keys in conditionals, there cannot be others because path to root included
-		set<Symbol> affectedKeys;
-		list<Symbol> tmp = affectedBayesNet.ordering();
-		affectedKeys.insert(tmp.begin(), tmp.end());
-		factors = relinearizeAffectedFactors(affectedKeys);
+			boost::shared_ptr<GaussianFactorGraph> factors;
 
-		// add the cached intermediate results from the boundary of the orphans ...
-		FactorGraph<GaussianFactor> cachedBoundary = getCachedBoundaryFactors(orphans);
-		factors->push_back(cachedBoundary);
+			// ordering provides all keys in conditionals, there cannot be others because path to root included
+			set<Symbol> affectedKeys;
+			list<Symbol> tmp = affectedBayesNet.ordering();
+			affectedKeys.insert(tmp.begin(), tmp.end());
 
-		// eliminate into a Bayes net
-		BayesNet<Conditional> bayesNet = _eliminate(*factors, cached_, original_ordering);
+			factors = relinearizeAffectedFactors(affectedKeys);
 
-		// Create Index from ordering
-		IndexTable<Symbol> index(original_ordering);
+			cout << "nonlinear: #marked: " << marked.size() << " #affected: " << affectedKeys.size() << " #factors: " << factors->size() << endl;
 
-		// insert conditionals back in, straight into the topless bayesTree
-		typename BayesNet<Conditional>::const_reverse_iterator rit;
-		for ( rit=bayesNet.rbegin(); rit != bayesNet.rend(); ++rit )
-			this->insert(*rit, index);
+			// add the cached intermediate results from the boundary of the orphans ...
+			FactorGraph<GaussianFactor> cachedBoundary = getCachedBoundaryFactors(orphans);
+			factors->push_back(cachedBoundary);
 
-		// add orphans to the bottom of the new tree
-		BOOST_FOREACH(sharedClique orphan, orphans) {
-			Symbol parentRepresentative = findParentClique(orphan->separator_, index);
-			sharedClique parent = (*this)[parentRepresentative];
-			parent->children_ += orphan;
-			orphan->parent_ = parent; // set new parent!
+			// todo - temporary solution
+			Ordering ordering = factors->getOrdering();
+
+			// eliminate into a Bayes net
+			BayesNet<Conditional> bayesNet = _eliminate(*factors, cached_, ordering); // todo original_ordering);
+
+			// Create Index from ordering
+			IndexTable<Symbol> index(ordering); // todo original_ordering);
+
+			// insert conditionals back in, straight into the topless bayesTree
+			typename BayesNet<Conditional>::const_reverse_iterator rit;
+			for ( rit=bayesNet.rbegin(); rit != bayesNet.rend(); ++rit )
+				this->insert(*rit, index);
+
+			// add orphans to the bottom of the new tree
+			BOOST_FOREACH(sharedClique orphan, orphans) {
+				Symbol parentRepresentative = findParentClique(orphan->separator_, index);
+				sharedClique parent = (*this)[parentRepresentative];
+				parent->children_ += orphan;
+				orphan->parent_ = parent; // set new parent!
+			}
+
+			// Output: updated Bayes tree (this), updated linearization point theta_
 		}
-
-		// Output: updated Bayes tree (this), updated linearization point theta_
-
 	}
 
+	/* ************************************************************************* */
 	template<class Conditional, class Config>
 	void ISAM2<Conditional, Config>::update(
 			const NonlinearFactorGraph<Config>& newFactors, const Config& newTheta,
 			double wildfire_threshold, double relinearize_threshold, bool relinearize) {
-
-#if 1
-		// old algorithm:
-		Cliques orphans;
-		this->update_internal(newFactors, newTheta, orphans, wildfire_threshold, relinearize_threshold, relinearize);
-
-#else
 
 		// 1. Add any new factors \Factors:=\Factors\cup\Factors'.
 		nonlinearFactors_.push_back(newFactors);
@@ -452,14 +340,12 @@ namespace gtsam {
 		if (relinearize)
 			fluid_relinearization(relinearize_threshold); // in: delta_, theta_, nonlinearFactors_, this
 
-
-		// todo: linearization point and delta_ do not fit... have to update delta again
+		// todo: not part of algorithm in paper: linearization point and delta_ do not fit... have to update delta again
 		delta_ = optimize2(*this, wildfire_threshold);
 
 		// todo: for getLinearizationPoint(), see ISAM2.h
 		thetaFuture_ = theta_;
 
-#endif
 	}
 
 /* ************************************************************************* */

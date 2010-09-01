@@ -71,9 +71,6 @@ namespace gtsam {
 		void linear_update(const FactorGraph<GaussianFactor>& newFactors);
 		void find_all(sharedClique clique, std::list<Symbol>& keys, const std::list<Symbol>& marked); // helper function
 		void fluid_relinearization(double relinearize_threshold);
-		void update_internal(const NonlinearFactorGraph<Config>& newFactors,
-				const Config& newTheta, Cliques& orphans,
-				double wildfire_threshold, double relinearize_threshold, bool relinearize);
 		void update(const NonlinearFactorGraph<Config>& newFactors, const Config& newTheta,
 				double wildfire_threshold = 0., double relinearize_threshold = 0., bool relinearize = true);
 
