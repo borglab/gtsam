@@ -34,7 +34,6 @@ namespace gtsam {
 
 		// current linearization point
 		Config theta_;
-		Config thetaFuture_; // lin point of next iteration
 
 		// for keeping all original nonlinear factors
 		NonlinearFactorGraph<Config> nonlinearFactors_;
@@ -75,7 +74,7 @@ namespace gtsam {
 				double wildfire_threshold = 0., double relinearize_threshold = 0., bool relinearize = true);
 
 		// needed to create initial estimates (note that this will be the linearization point in the next step!)
-		const Config getLinearizationPoint() const {return thetaFuture_;}
+		const Config getLinearizationPoint() const {return theta_;}
 		// estimate based on incomplete delta (threshold!)
 		const Config calculateEstimate() const {return theta_.expmap(delta_);}
 		// estimate based on full delta (note that this is based on the actual current linearization point)

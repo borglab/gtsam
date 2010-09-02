@@ -18,6 +18,83 @@ using namespace boost::assign;
 #include <gtsam/inference/BayesTree-inl.h>
 #include <gtsam/inference/ISAM2.h>
 
+
+#if 1 // timing
+#include <sys/time.h>
+
+// simple class for accumulating execution timing information by name
+class Timing {
+  class Stats {
+  public:
+    double t0;
+    double t;
+    double t_max;
+    double t_min;
+    int n;
+  };
+  map<string, Stats> stats;
+public:
+  void add_t0(string id, double t0) {
+    stats[id].t0 = t0;
+  }
+  double get_t0(string id) {
+    return stats[id].t0;
+  }
+  void add_dt(string id, double dt) {
+    Stats& s = stats[id];
+    s.t += dt;
+    s.n++;
+    if (s.n==1 || s.t_max < dt) s.t_max = dt;
+    if (s.n==1 || s.t_min > dt) s.t_min = dt;
+  }
+  void print() {
+    map<string, Stats>::iterator it;
+    for(it = stats.begin(); it!=stats.end(); it++) {
+      Stats& s = it->second;
+      printf("%s: %g (%i times, min: %g, max: %g)\n",
+             it->first.c_str(), s.t, s.n, s.t_min, s.t_max);
+    }
+  }
+  double time(string id) {
+    Stats& s = stats[id];
+    return s.t;
+  }
+};
+Timing timing;
+
+double tic() {
+  struct timeval t;
+  gettimeofday(&t, NULL);
+  return ((double)t.tv_sec + ((double)t.tv_usec)/1000000.);
+}
+
+double tic(string id) {
+  double t0 = tic();
+  timing.add_t0(id, t0);
+  return t0;
+}
+
+double toc(double t) {
+  double s = tic();
+  return (max(0., s-t));
+}
+
+double toc(string id) {
+  double dt = toc(timing.get_t0(id));
+  timing.add_dt(id, dt);
+  return dt;
+}
+
+void tictoc_print() {
+  timing.print();
+}
+#else
+void tictoc_print() {}
+double tic(string id) {return 0.;}
+double toc(string id) {return 0.;}
+#endif
+
+
 namespace gtsam {
 
 	using namespace std;
@@ -27,12 +104,16 @@ namespace gtsam {
 
 		// combine the factors of all nodes connected to the variable to be eliminated
 		// if no factors are connected to key, returns an empty factor
+		tic("eliminate_removeandcombinefactors");
 		boost::shared_ptr<GaussianFactor> joint_factor = removeAndCombineFactors(graph,key);
+		toc("eliminate_removeandcombinefactors");
 
 		// eliminate that joint factor
 		boost::shared_ptr<GaussianFactor> factor;
 		boost::shared_ptr<GaussianConditional> conditional;
+		tic("eliminate_eliminate");
 		boost::tie(conditional, factor) = joint_factor->eliminate(key);
+		toc("eliminate_eliminate");
 
 		// ADDED: remember the intermediate result to be able to later restart computation in the middle
 		cached[key] = factor;
@@ -67,7 +148,7 @@ namespace gtsam {
 	/** Create a Bayes Tree from a nonlinear factor graph */
 	template<class Conditional, class Config>
 	ISAM2<Conditional, Config>::ISAM2(const NonlinearFactorGraph<Config>& nlfg, const Ordering& ordering, const Config& config)
-	: BayesTree<Conditional>(nlfg.linearize(config)->eliminate(ordering)), theta_(config), thetaFuture_(config), nonlinearFactors_(nlfg) {
+	: BayesTree<Conditional>(nlfg.linearize(config)->eliminate(ordering)), theta_(config), nonlinearFactors_(nlfg) {
 		// todo: repeats calculation above, just to set "cached"
 		// De-referencing shared pointer can be quite expensive because creates temporary
 		_eliminate_const(*nlfg.linearize(config), cached_, ordering);
@@ -157,6 +238,7 @@ namespace gtsam {
 
 		// BEGIN OF COPIED CODE
 
+		tic("linear_lookup1");
 		// ordering provides all keys in conditionals, there cannot be others because path to root included
 		set<Symbol> affectedKeys;
 		list<Symbol> tmp = affectedBayesNet.ordering();
@@ -165,6 +247,7 @@ namespace gtsam {
 		FactorGraph<GaussianFactor> factors(*relinearizeAffectedFactors(affectedKeys));  // todo: no need to relinearize here, should have cached linearized factors
 
 		cout << "linear: #affected: " << affectedKeys.size() << " #factors: " << factors.size() << endl;
+		toc("linear_lookup1");
 
 		// add the cached intermediate results from the boundary of the orphans ...
 		FactorGraph<GaussianFactor> cachedBoundary = getCachedBoundaryFactors(orphans);
@@ -182,11 +265,12 @@ namespace gtsam {
 		// newKeys are passed in: those variables will be forced to the end in the ordering
 		set<Symbol> newKeysSet;
 		newKeysSet.insert(newKeys.begin(), newKeys.end());
-    //		Ordering ordering = factors.getConstrainedOrdering(newKeysSet);
-		Ordering ordering = factors.getOrdering(); // todo: back to constrained...
+		Ordering ordering = factors.getConstrainedOrdering(newKeysSet);
 
 		// eliminate into a Bayes net
+		tic("linear_eliminate");
 		BayesNet<Conditional> bayesNet = _eliminate(factors, cached_, ordering);
+		toc("linear_eliminate");
 
 		// Create Index from ordering
 		IndexTable<Symbol> index(ordering);
@@ -218,7 +302,7 @@ namespace gtsam {
 	void ISAM2<Conditional, Config>::find_all(sharedClique clique, list<Symbol>& keys, const list<Symbol>& marked) {
 		// does the separator contain any of the variables?
 		bool found = false;
-		BOOST_FOREACH(const Symbol& key, clique->keys()) { // todo  clique->separator_) {
+		BOOST_FOREACH(const Symbol& key, clique->separator_) {
 			if (find(marked.begin(), marked.end(), key) != marked.end())
 				found = true;
 		}
@@ -258,9 +342,11 @@ namespace gtsam {
 
 			// mark all cliques that involve marked variables
 			list<Symbol> affectedSymbols(marked); // add all marked
+			tic("nonlin-find_all");
 			find_all(this->root(), affectedSymbols, marked); // add other cliques that have the marked ones in the separator
 			affectedSymbols.sort(); // remove duplicates
 			affectedSymbols.unique();
+			toc("nonlin-find_all");
 
 			// 4. From the leaves to the top, if a clique is marked:
 			//    re-linearize the original factors in \Factors associated with the clique,
@@ -268,11 +354,14 @@ namespace gtsam {
 
 			// todo: for simplicity, currently simply remove the top and recreate it using the original ordering
 
+			tic("nonlin-mess");
 			Cliques orphans;
 			BayesNet<GaussianConditional> affectedBayesNet;
 			this->removeTop(affectedSymbols, affectedBayesNet, orphans);
 			// remember original ordering
-			Ordering original_ordering = affectedBayesNet.ordering();
+// todo			Ordering original_ordering = affectedBayesNet.ordering(); // does not yield original ordering...
+			FactorGraph<GaussianFactor> tmp_factors(affectedBayesNet); // so instead we recalculate an acceptable ordering here
+			Ordering original_ordering = tmp_factors.getOrdering(); // todo - remove multiple lines up to here
 
 			boost::shared_ptr<GaussianFactorGraph> factors;
 
@@ -280,8 +369,11 @@ namespace gtsam {
 			set<Symbol> affectedKeys;
 			list<Symbol> tmp = affectedBayesNet.ordering();
 			affectedKeys.insert(tmp.begin(), tmp.end());
+			toc("nonlin-mess");
 
+			tic("nonlin_relin");
 			factors = relinearizeAffectedFactors(affectedKeys);
+			toc("nonlin_relin");
 
 			cout << "nonlinear: #marked: " << marked.size() << " #affected: " << affectedKeys.size() << " #factors: " << factors->size() << endl;
 
@@ -289,14 +381,13 @@ namespace gtsam {
 			FactorGraph<GaussianFactor> cachedBoundary = getCachedBoundaryFactors(orphans);
 			factors->push_back(cachedBoundary);
 
-			// todo - temporary solution
-			Ordering ordering = factors->getOrdering();
-
 			// eliminate into a Bayes net
-			BayesNet<Conditional> bayesNet = _eliminate(*factors, cached_, ordering); // todo original_ordering);
+			tic("nonlin_eliminate");
+			BayesNet<Conditional> bayesNet = _eliminate(*factors, cached_, original_ordering);
+			toc("nonlin_eliminate");
 
 			// Create Index from ordering
-			IndexTable<Symbol> index(ordering); // todo original_ordering);
+			IndexTable<Symbol> index(original_ordering);
 
 			// insert conditionals back in, straight into the topless bayesTree
 			typename BayesNet<Conditional>::const_reverse_iterator rit;
@@ -321,31 +412,46 @@ namespace gtsam {
 			const NonlinearFactorGraph<Config>& newFactors, const Config& newTheta,
 			double wildfire_threshold, double relinearize_threshold, bool relinearize) {
 
+		tic("all");
+
+		tic("step1");
 		// 1. Add any new factors \Factors:=\Factors\cup\Factors'.
 		nonlinearFactors_.push_back(newFactors);
+		toc("step1");
 
+		tic("step2");
 		// 2. Initialize any new variables \Theta_{new} and add \Theta:=\Theta\cup\Theta_{new}.
 		theta_.insert(newTheta);
+		toc("step2");
 
+		tic("step3");
 		// 3. Linearize new factor
 		boost::shared_ptr<GaussianFactorGraph> linearFactors = newFactors.linearize(theta_);
+		toc("step3");
 
+		tic("step4");
 		// 4. Linear iSAM step (alg 3)
 		linear_update(*linearFactors); // in: this
+		toc("step4");
 
+		tic("step5");
 		// 5. Calculate Delta (alg 0)
 		delta_ = optimize2(*this, wildfire_threshold);
+		toc("step5");
 
+		tic("step6");
 		// 6. Iterate Algorithm 4 until no more re-linearizations occur
-		if (relinearize)
+		if (relinearize) {
 			fluid_relinearization(relinearize_threshold); // in: delta_, theta_, nonlinearFactors_, this
+		}
+		toc("step6");
 
 		// todo: not part of algorithm in paper: linearization point and delta_ do not fit... have to update delta again
-		delta_ = optimize2(*this, wildfire_threshold);
+//todo		delta_ = optimize2(*this, wildfire_threshold);
 
-		// todo: for getLinearizationPoint(), see ISAM2.h
-		thetaFuture_ = theta_;
+		toc("all");
 
+		tictoc_print();
 	}
 
 /* ************************************************************************* */
