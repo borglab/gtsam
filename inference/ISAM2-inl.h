@@ -21,75 +21,69 @@ using namespace boost::assign;
 
 #if 1 // timing
 #include <sys/time.h>
-
 // simple class for accumulating execution timing information by name
 class Timing {
-  class Stats {
-  public:
-    double t0;
-    double t;
-    double t_max;
-    double t_min;
-    int n;
-  };
-  map<string, Stats> stats;
+	class Stats {
+	public:
+		double t0;
+		double t;
+		double t_max;
+		double t_min;
+		int n;
+	};
+	map<string, Stats> stats;
 public:
-  void add_t0(string id, double t0) {
-    stats[id].t0 = t0;
-  }
-  double get_t0(string id) {
-    return stats[id].t0;
-  }
-  void add_dt(string id, double dt) {
-    Stats& s = stats[id];
-    s.t += dt;
-    s.n++;
-    if (s.n==1 || s.t_max < dt) s.t_max = dt;
-    if (s.n==1 || s.t_min > dt) s.t_min = dt;
-  }
-  void print() {
-    map<string, Stats>::iterator it;
-    for(it = stats.begin(); it!=stats.end(); it++) {
-      Stats& s = it->second;
-      printf("%s: %g (%i times, min: %g, max: %g)\n",
-             it->first.c_str(), s.t, s.n, s.t_min, s.t_max);
-    }
-  }
-  double time(string id) {
-    Stats& s = stats[id];
-    return s.t;
-  }
+	void add_t0(string id, double t0) {
+		stats[id].t0 = t0;
+	}
+	double get_t0(string id) {
+		return stats[id].t0;
+	}
+	void add_dt(string id, double dt) {
+		Stats& s = stats[id];
+		s.t += dt;
+		s.n++;
+		if (s.n==1 || s.t_max < dt) s.t_max = dt;
+		if (s.n==1 || s.t_min > dt) s.t_min = dt;
+	}
+	void print() {
+		map<string, Stats>::iterator it;
+		for(it = stats.begin(); it!=stats.end(); it++) {
+			Stats& s = it->second;
+			printf("%s: %g (%i times, min: %g, max: %g)\n",
+					it->first.c_str(), s.t, s.n, s.t_min, s.t_max);
+		}
+	}
+	double time(string id) {
+		Stats& s = stats[id];
+		return s.t;
+	}
 };
 Timing timing;
-
 double tic() {
-  struct timeval t;
-  gettimeofday(&t, NULL);
-  return ((double)t.tv_sec + ((double)t.tv_usec)/1000000.);
+	struct timeval t;
+	gettimeofday(&t, NULL);
+	return ((double)t.tv_sec + ((double)t.tv_usec)/1000000.);
 }
-
-double tic(string id) {
-  double t0 = tic();
-  timing.add_t0(id, t0);
-  return t0;
-}
-
 double toc(double t) {
-  double s = tic();
-  return (max(0., s-t));
+	double s = tic();
+	return (max(0., s-t));
 }
-
+double tic(string id) {
+	double t0 = tic();
+	timing.add_t0(id, t0);
+	return t0;
+}
 double toc(string id) {
-  double dt = toc(timing.get_t0(id));
-  timing.add_dt(id, dt);
-  return dt;
+	double dt = toc(timing.get_t0(id));
+	timing.add_dt(id, dt);
+	return dt;
 }
-
 void tictoc_print() {
-  timing.print();
+	timing.print();
 }
 #else
-void tictoc_print() {}
+	void tictoc_print() {}
 double tic(string id) {return 0.;}
 double toc(string id) {return 0.;}
 #endif
@@ -97,7 +91,7 @@ double toc(string id) {return 0.;}
 
 namespace gtsam {
 
-	using namespace std;
+  using namespace std;
 
 	// from inference-inl.h - need to additionally return the newly created factor for caching
 	boost::shared_ptr<GaussianConditional> _eliminateOne(FactorGraph<GaussianFactor>& graph, CachedFactors& cached, const Symbol& key) {
@@ -219,6 +213,22 @@ namespace gtsam {
 
 		// Input: BayesTree(this), newFactors
 
+//#define PRINT_STATS // todo: figures for paper, disable for timing
+#ifdef PRINT_STATS
+		static int counter = 0;
+		int maxClique = 0;
+		double avgClique = 0;
+		int numCliques = 0;
+		if (counter>0) { // cannot call on empty tree
+			GaussianISAM2_P::CliqueData cdata =  this->getCliqueData();
+			GaussianISAM2_P::CliqueStats cstats = cdata.getStats();
+			maxClique = cstats.maxConditionalSize;
+			avgClique = cstats.avgConditionalSize;
+			numCliques = cdata.conditionalSizes.size();
+		}
+		counter++;
+#endif
+
 		// 1. Remove top of Bayes tree and convert to a factor graph:
 		// (a) For each affected variable, remove the corresponding clique and all parents up to the root.
 		// (b) Store orphaned sub-trees \BayesTree_{O} of removed cliques.
@@ -244,9 +254,20 @@ namespace gtsam {
 		list<Symbol> tmp = affectedBayesNet.ordering();
 		affectedKeys.insert(tmp.begin(), tmp.end());
 
+		// Save number of affected variables
+		lastAffectedVariableCount = affectedKeys.size();
+
 		FactorGraph<GaussianFactor> factors(*relinearizeAffectedFactors(affectedKeys));  // todo: no need to relinearize here, should have cached linearized factors
 
-		cout << "linear: #affected: " << affectedKeys.size() << " #factors: " << factors.size() << endl;
+		// Save number of affected factors
+		lastAffectedFactorCount = factors.size();
+		// output for generating figures
+#ifdef PRINT_STATS
+		cout << "linear: #newKeys: " << newKeys.size() << " #affectedVariables: " << affectedKeys.size()
+		  << " #affectedFactors: " << factors.size() << " maxCliqueSize: " << maxClique
+		  << " avgCliqueSize: " << avgClique << " #Cliques: " << numCliques << endl;
+#endif
+
 		toc("linear_lookup1");
 
 		// add the cached intermediate results from the boundary of the orphans ...
@@ -266,6 +287,7 @@ namespace gtsam {
 		set<Symbol> newKeysSet;
 		newKeysSet.insert(newKeys.begin(), newKeys.end());
 		Ordering ordering = factors.getConstrainedOrdering(newKeysSet);
+//		Ordering ordering = factors.getOrdering();
 
 		// eliminate into a Bayes net
 		tic("linear_eliminate");
