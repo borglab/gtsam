@@ -129,6 +129,7 @@ namespace gtsam {
 		return chordalBayesNet;
 	}
 
+	// special const version used in constructor below
 	GaussianBayesNet _eliminate_const(const FactorGraph<GaussianFactor>& graph, CachedFactors& cached, const Ordering& ordering) {
 		// make a copy that can be modified locally
 		FactorGraph<GaussianFactor> graph_ignored = graph;
@@ -142,7 +143,8 @@ namespace gtsam {
 	/** Create a Bayes Tree from a nonlinear factor graph */
 	template<class Conditional, class Config>
 	ISAM2<Conditional, Config>::ISAM2(const NonlinearFactorGraph<Config>& nlfg, const Ordering& ordering, const Config& config)
-	: BayesTree<Conditional>(nlfg.linearize(config)->eliminate(ordering)), theta_(config), nonlinearFactors_(nlfg) {
+	: BayesTree<Conditional>(nlfg.linearize(config)->eliminate(ordering)),
+	  theta_(config), delta_(VectorConfig()), nonlinearFactors_(nlfg) {
 		// todo: repeats calculation above, just to set "cached"
 		// De-referencing shared pointer can be quite expensive because creates temporary
 		_eliminate_const(*nlfg.linearize(config), cached_, ordering);
@@ -213,7 +215,7 @@ namespace gtsam {
 
 		// Input: BayesTree(this), newFactors
 
-//#define PRINT_STATS // todo: figures for paper, disable for timing
+//#define PRINT_STATS // figures for paper, disable for timing
 #ifdef PRINT_STATS
 		static int counter = 0;
 		int maxClique = 0;
@@ -286,8 +288,8 @@ namespace gtsam {
 		// newKeys are passed in: those variables will be forced to the end in the ordering
 		set<Symbol> newKeysSet;
 		newKeysSet.insert(newKeys.begin(), newKeys.end());
-		Ordering ordering = factors.getConstrainedOrdering(newKeysSet);
-//		Ordering ordering = factors.getOrdering();
+		Ordering ordering = factors.getConstrainedOrdering(newKeysSet); // intelligent ordering
+//		Ordering ordering = factors.getOrdering(); // original ordering, yields in bad performance
 
 		// eliminate into a Bayes net
 		tic("linear_eliminate");

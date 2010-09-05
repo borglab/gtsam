@@ -35,18 +35,14 @@ namespace gtsam {
 		// current linearization point
 		Config theta_;
 
+		// the linear solution, an update to the estimate in theta
+		VectorConfig delta_;
+
 		// for keeping all original nonlinear factors
 		NonlinearFactorGraph<Config> nonlinearFactors_;
 
 		// cached intermediate results for restarting computation in the middle
 		CachedFactors cached_;
-
-		// the linear solution, an update to the estimate in theta
-		VectorConfig delta_;
-		VectorConfig deltaMarked_;
-
-		// variables that have been updated, requiring the corresponding factors to be relinearized
-		std::list<Symbol> marked_;
 
 	public:
 
@@ -57,36 +53,28 @@ namespace gtsam {
 		ISAM2(const NonlinearFactorGraph<Config>& fg, const Ordering& ordering, const Config& config);
 
 		/** Destructor */
-		virtual ~ISAM2() {
-		}
+		virtual ~ISAM2() {}
 
 		typedef typename BayesTree<Conditional>::sharedClique sharedClique;
 
 		typedef typename BayesTree<Conditional>::Cliques Cliques;
 
 		/**
-		 * ISAM2. (update_internal provides access to list of orphans for drawing purposes)
+		 * ISAM2.
 		 */
-		void linear_update(const FactorGraph<GaussianFactor>& newFactors);
-		void find_all(sharedClique clique, std::list<Symbol>& keys, const std::list<Symbol>& marked); // helper function
-		void fluid_relinearization(double relinearize_threshold);
 		void update(const NonlinearFactorGraph<Config>& newFactors, const Config& newTheta,
 				double wildfire_threshold = 0., double relinearize_threshold = 0., bool relinearize = true);
 
-		// needed to create initial estimates (note that this will be the linearization point in the next step!)
+		// needed to create initial estimates
 		const Config getLinearizationPoint() const {return theta_;}
+
 		// estimate based on incomplete delta (threshold!)
 		const Config calculateEstimate() const {return theta_.expmap(delta_);}
-		// estimate based on full delta (note that this is based on the actual current linearization point)
+
+		// estimate based on full delta (note that this is based on the current linearization point)
 		const Config calculateBestEstimate() const {return theta_.expmap(optimize2(*this, 0.));}
 
-		const std::list<Symbol>& getMarkedUnsafe() const { return marked_; }
-
 		const NonlinearFactorGraph<Config>& getFactorsUnsafe() const { return nonlinearFactors_; }
-
-		const Config& getThetaUnsafe() const { return theta_; }
-
-		const VectorConfig& getDeltaUnsafe() const { return delta_; }
 
 		size_t lastAffectedVariableCount;
 		size_t lastAffectedFactorCount;
@@ -97,6 +85,10 @@ namespace gtsam {
 		std::list<size_t> getAffectedFactors(const std::list<Symbol>& keys) const;
 		boost::shared_ptr<GaussianFactorGraph> relinearizeAffectedFactors(const std::set<Symbol>& affectedKeys) const;
 		FactorGraph<GaussianFactor> getCachedBoundaryFactors(Cliques& orphans);
+
+		void linear_update(const FactorGraph<GaussianFactor>& newFactors);
+		void find_all(sharedClique clique, std::list<Symbol>& keys, const std::list<Symbol>& marked); // helper function
+		void fluid_relinearization(double relinearize_threshold);
 
 	}; // ISAM2
 
