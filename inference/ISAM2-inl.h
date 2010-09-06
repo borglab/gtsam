@@ -221,12 +221,14 @@ namespace gtsam {
 		int maxClique = 0;
 		double avgClique = 0;
 		int numCliques = 0;
+		int nnzR = 0;
 		if (counter>0) { // cannot call on empty tree
 			GaussianISAM2_P::CliqueData cdata =  this->getCliqueData();
 			GaussianISAM2_P::CliqueStats cstats = cdata.getStats();
 			maxClique = cstats.maxConditionalSize;
 			avgClique = cstats.avgConditionalSize;
 			numCliques = cdata.conditionalSizes.size();
+			nnzR = calculate_nnz(this->root());
 		}
 		counter++;
 #endif
@@ -267,7 +269,7 @@ namespace gtsam {
 #ifdef PRINT_STATS
 		cout << "linear: #newKeys: " << newKeys.size() << " #affectedVariables: " << affectedKeys.size()
 		  << " #affectedFactors: " << factors.size() << " maxCliqueSize: " << maxClique
-		  << " avgCliqueSize: " << avgClique << " #Cliques: " << numCliques << endl;
+		  << " avgCliqueSize: " << avgClique << " #Cliques: " << numCliques << " nnzR: " << nnzR << endl;
 #endif
 
 		toc("linear_lookup1");

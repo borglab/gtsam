@@ -35,4 +35,7 @@ namespace gtsam {
 	// optimize the BayesTree, starting from the root
 	VectorConfig optimize2(const GaussianISAM2_P& bayesTree, double threshold = 0.);
 
+	// calculate the number of non-zero entries for the tree starting at clique (use root for complete matrix)
+	int calculate_nnz(const GaussianISAM2::sharedClique& clique);
+
 }/// namespace gtsam
