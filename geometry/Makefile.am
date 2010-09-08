@@ -29,7 +29,7 @@ sources += projectiveGeometry.cpp tensorInterface.cpp
 check_PROGRAMS += tests/testTensors tests/testHomography2 tests/testTrifocal
 
 # Timing tests
-noinst_PROGRAMS = timeRot3 timeCalibratedCamera
+noinst_PROGRAMS = tests/timeRot3 tests/timeCalibratedCamera
 
 #----------------------------------------------------------------------------------------------------
 # Create a libtool library that is not installed
