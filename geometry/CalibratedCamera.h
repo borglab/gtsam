@@ -79,6 +79,14 @@ namespace gtsam {
 		 */
 		static Point3 backproject_from_camera(const Point2& p, const double scale);
 
+private:
+	    /** Serialization function */
+	    friend class boost::serialization::access;
+	    template<class Archive>
+	    void serialize(Archive & ar, const unsigned int version) {
+	      ar & BOOST_SERIALIZATION_NVP(pose_);
+	    }
+
 	};
 }
 
