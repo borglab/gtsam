@@ -25,75 +25,76 @@
 
 namespace gtsam {
 
-	typedef SymbolMap<GaussianFactor::shared_ptr> CachedFactors;
+typedef SymbolMap<GaussianFactor::shared_ptr> CachedFactors;
 
-	template<class Conditional, class Config>
-	class ISAM2: public BayesTree<Conditional> {
+template<class Conditional, class Config>
+class ISAM2: public BayesTree<Conditional> {
 
-	protected:
+protected:
 
-		// current linearization point
-		Config theta_;
+	// current linearization point
+	Config theta_;
 
-		// the linear solution, an update to the estimate in theta
-		VectorConfig delta_;
+	// the linear solution, an update to the estimate in theta
+	VectorConfig delta_;
 
-		// for keeping all original nonlinear factors
-		NonlinearFactorGraph<Config> nonlinearFactors_;
+	// for keeping all original nonlinear factors
+	NonlinearFactorGraph<Config> nonlinearFactors_;
 
-		// cached intermediate results for restarting computation in the middle
-		CachedFactors cached_;
+	// cached intermediate results for restarting computation in the middle
+	CachedFactors cached_;
 
-	public:
+public:
 
-		/** Create an empty Bayes Tree */
-		ISAM2();
+	/** Create an empty Bayes Tree */
+	ISAM2();
 
-		/** Create a Bayes Tree from a Bayes Net */
-		ISAM2(const NonlinearFactorGraph<Config>& fg, const Ordering& ordering, const Config& config);
+	/** Create a Bayes Tree from a Bayes Net */
+	ISAM2(const NonlinearFactorGraph<Config>& fg, const Ordering& ordering, const Config& config);
 
-		/** Destructor */
-		virtual ~ISAM2() {}
+	/** Destructor */
+	virtual ~ISAM2() {}
 
-		typedef typename BayesTree<Conditional>::sharedClique sharedClique;
+	typedef typename BayesTree<Conditional>::sharedClique sharedClique;
 
-		typedef typename BayesTree<Conditional>::Cliques Cliques;
+	typedef typename BayesTree<Conditional>::Cliques Cliques;
 
-		/**
-		 * ISAM2.
-		 */
-		void update(const NonlinearFactorGraph<Config>& newFactors, const Config& newTheta,
-				double wildfire_threshold = 0., double relinearize_threshold = 0., bool relinearize = true);
+	/**
+	 * ISAM2.
+	 */
+	void update(const NonlinearFactorGraph<Config>& newFactors, const Config& newTheta,
+			double wildfire_threshold = 0., double relinearize_threshold = 0., bool relinearize = true);
 
-		// needed to create initial estimates
-		const Config getLinearizationPoint() const {return theta_;}
+	// needed to create initial estimates
+	const Config getLinearizationPoint() const {return theta_;}
 
-		// estimate based on incomplete delta (threshold!)
-		const Config calculateEstimate() const {return theta_.expmap(delta_);}
+	// estimate based on incomplete delta (threshold!)
+	const Config calculateEstimate() const {return theta_.expmap(delta_);}
 
-		// estimate based on full delta (note that this is based on the current linearization point)
-		const Config calculateBestEstimate() const {return theta_.expmap(optimize2(*this, 0.));}
+	// estimate based on full delta (note that this is based on the current linearization point)
+	const Config calculateBestEstimate() const {return theta_.expmap(optimize2(*this, 0.));}
 
-		const NonlinearFactorGraph<Config>& getFactorsUnsafe() const { return nonlinearFactors_; }
+	const NonlinearFactorGraph<Config>& getFactorsUnsafe() const { return nonlinearFactors_; }
 
-		size_t lastAffectedVariableCount;
-		size_t lastAffectedFactorCount;
-		size_t lastAffectedCliqueCount;
-		size_t lastAffectedMarkedCount;
-		size_t lastNonlinearMarkedCount;
-		size_t lastNonlinearAffectedVariableCount;
-		size_t lastNonlinearAffectedFactorCount;
+	size_t lastAffectedVariableCount;
+	size_t lastAffectedFactorCount;
+	size_t lastAffectedCliqueCount;
+	size_t lastAffectedMarkedCount;
+	size_t lastNonlinearMarkedCount;
+	size_t lastNonlinearAffectedVariableCount;
+	size_t lastNonlinearAffectedFactorCount;
 
-	private:
+private:
 
-		std::list<size_t> getAffectedFactors(const std::list<Symbol>& keys) const;
-		boost::shared_ptr<GaussianFactorGraph> relinearizeAffectedFactors(const std::set<Symbol>& affectedKeys) const;
-		FactorGraph<GaussianFactor> getCachedBoundaryFactors(Cliques& orphans);
+	std::list<size_t> getAffectedFactors(const std::list<Symbol>& keys) const;
+	boost::shared_ptr<GaussianFactorGraph> relinearizeAffectedFactors(const std::set<Symbol>& affectedKeys) const;
+	FactorGraph<GaussianFactor> getCachedBoundaryFactors(Cliques& orphans);
 
-		void linear_update(const FactorGraph<GaussianFactor>& newFactors);
-		void find_all(sharedClique clique, std::list<Symbol>& keys, const std::list<Symbol>& marked); // helper function
-		void fluid_relinearization(double relinearize_threshold);
+	void recalculate(const std::list<Symbol>& markedKeys, const FactorGraph<GaussianFactor>* newFactors = NULL);
+	void linear_update(const FactorGraph<GaussianFactor>& newFactors);
+	void find_all(sharedClique clique, std::list<Symbol>& keys, const std::list<Symbol>& marked); // helper function
+	std::list<Symbol> fluid_relinearization(double relinearize_threshold);
 
-	}; // ISAM2
+}; // ISAM2
 
 } /// namespace gtsam

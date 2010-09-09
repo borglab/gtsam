@@ -63,7 +63,7 @@ void optimize2(const GaussianISAM2::sharedClique& clique, double threshold, set<
 }
 
 /* ************************************************************************* */
-// fast version without threshold
+// fast full version without threshold
 void optimize2(const GaussianISAM2::sharedClique& clique, VectorConfig& result) {
 	// parents are assumed to already be solved and available in result
 	GaussianISAM2::Clique::const_reverse_iterator it;
