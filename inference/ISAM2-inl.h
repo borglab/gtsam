@@ -19,7 +19,7 @@ using namespace boost::assign;
 #include <gtsam/inference/ISAM2.h>
 
 
-#if 1 // timing
+#if 1 // timing - note: adds some time when applied in inner loops
 #include <sys/time.h>
 // simple class for accumulating execution timing information by name
 class Timing {
@@ -236,10 +236,10 @@ namespace gtsam {
 		// 1. Remove top of Bayes tree and convert to a factor graph:
 		// (a) For each affected variable, remove the corresponding clique and all parents up to the root.
 		// (b) Store orphaned sub-trees \BayesTree_{O} of removed cliques.
-		const list<Symbol> newKeys = newFactors.keys();
+		const list<Symbol> markedKeys = newFactors.keys();
 		Cliques orphans;
 		BayesNet<GaussianConditional> affectedBayesNet;
-		this->removeTop(newKeys, affectedBayesNet, orphans);
+		this->removeTop(markedKeys, affectedBayesNet, orphans);
 
 		//		FactorGraph<GaussianFactor> factors(affectedBayesNet);
 		// bug was here: we cannot reuse the original factors, because then the cached factors get messed up
@@ -258,16 +258,15 @@ namespace gtsam {
 		list<Symbol> tmp = affectedBayesNet.ordering();
 		affectedKeys.insert(tmp.begin(), tmp.end());
 
-		// Save number of affected variables
-		lastAffectedVariableCount = affectedKeys.size();
-
 		FactorGraph<GaussianFactor> factors(*relinearizeAffectedFactors(affectedKeys));  // todo: no need to relinearize here, should have cached linearized factors
 
-		// Save number of affected factors
+		lastAffectedMarkedCount = markedKeys.size();
+		lastAffectedVariableCount = affectedKeys.size();
 		lastAffectedFactorCount = factors.size();
-		// output for generating figures
+
 #ifdef PRINT_STATS
-		cout << "linear: #newKeys: " << newKeys.size() << " #affectedVariables: " << affectedKeys.size()
+		// output for generating figures
+		cout << "linear: #markedKeys: " << markedKeys.size() << " #affectedVariables: " << affectedKeys.size()
 		  << " #affectedFactors: " << factors.size() << " maxCliqueSize: " << maxClique
 		  << " avgCliqueSize: " << avgClique << " #Cliques: " << numCliques << " nnzR: " << nnzR << endl;
 #endif
@@ -287,10 +286,10 @@ namespace gtsam {
 		// 3. Re-order and eliminate the factor graph into a Bayes net (Algorithm [alg:eliminate]), and re-assemble into a new Bayes tree (Algorithm [alg:BayesTree])
 
 		// create an ordering for the new and contaminated factors
-		// newKeys are passed in: those variables will be forced to the end in the ordering
-		set<Symbol> newKeysSet;
-		newKeysSet.insert(newKeys.begin(), newKeys.end());
-		Ordering ordering = factors.getConstrainedOrdering(newKeysSet); // intelligent ordering
+		// markedKeys are passed in: those variables will be forced to the end in the ordering
+		set<Symbol> markedKeysSet;
+		markedKeysSet.insert(markedKeys.begin(), markedKeys.end());
+		Ordering ordering = factors.getConstrainedOrdering(markedKeysSet); // intelligent ordering
 //		Ordering ordering = factors.getOrdering(); // original ordering, yields in bad performance
 
 		// eliminate into a Bayes net
@@ -401,7 +400,11 @@ namespace gtsam {
 			factors = relinearizeAffectedFactors(affectedKeys);
 			toc("nonlin_relin");
 
-			cout << "nonlinear: #marked: " << marked.size() << " #affected: " << affectedKeys.size() << " #factors: " << factors->size() << endl;
+			lastNonlinearMarkedCount = marked.size();
+			lastNonlinearAffectedVariableCount = affectedKeys.size();
+			lastNonlinearAffectedFactorCount = factors->size();
+
+//			cout << "nonlinear: #marked: " << marked.size() << " #affected: " << affectedKeys.size() << " #factors: " << factors->size() << endl;
 
 			// add the cached intermediate results from the boundary of the orphans ...
 			FactorGraph<GaussianFactor> cachedBoundary = getCachedBoundaryFactors(orphans);
@@ -438,6 +441,14 @@ namespace gtsam {
 			const NonlinearFactorGraph<Config>& newFactors, const Config& newTheta,
 			double wildfire_threshold, double relinearize_threshold, bool relinearize) {
 
+		lastAffectedVariableCount = 0;
+		lastAffectedFactorCount = 0;
+		lastAffectedCliqueCount = 0;
+		lastAffectedMarkedCount = 0;
+		lastNonlinearMarkedCount = 0;
+		lastNonlinearAffectedVariableCount = 0;
+		lastNonlinearAffectedFactorCount = 0;
+
 		tic("all");
 
 		tic("step1");
@@ -473,7 +484,7 @@ namespace gtsam {
 		toc("step6");
 
 		// todo: not part of algorithm in paper: linearization point and delta_ do not fit... have to update delta again
-//todo		delta_ = optimize2(*this, wildfire_threshold);
+		delta_ = optimize2(*this, wildfire_threshold);
 
 		toc("all");
 

@@ -79,6 +79,10 @@ namespace gtsam {
 		size_t lastAffectedVariableCount;
 		size_t lastAffectedFactorCount;
 		size_t lastAffectedCliqueCount;
+		size_t lastAffectedMarkedCount;
+		size_t lastNonlinearMarkedCount;
+		size_t lastNonlinearAffectedVariableCount;
+		size_t lastNonlinearAffectedFactorCount;
 
 	private:
 
