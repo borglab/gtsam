@@ -3,9 +3,15 @@
  * @brief  Unit tests for Pose2 class
  */
 
-#include <math.h>
-#include <gtsam/CppUnitLite/TestHarness.h>
+#include <cmath>
 #include <iostream>
+
+#include <boost/foreach.hpp>
+#include <boost/optional.hpp>
+#include <boost/assign/std/vector.hpp> // for operator +=
+using namespace boost::assign;
+
+#include <gtsam/CppUnitLite/TestHarness.h>
 #include <gtsam/base/numericalDerivative.h>
 #include <gtsam/base/lieProxies.h>
 #include <gtsam/geometry/Pose2.h>
@@ -474,6 +480,23 @@ TEST( Pose2, range )
 	expectedH2 = numericalDerivative22(range_proxy, x3, l4, 1e-5);
 	EXPECT(assert_equal(expectedH1,actualH1));
 	EXPECT(assert_equal(expectedH2,actualH2));
+}
+
+/* ************************************************************************* */
+typedef pair<Point2,Point2> Point2Pair;
+boost::optional<Pose2> align(const vector<Point2Pair> &) {
+	return boost::none;
+}
+
+TEST(Pose2, align) {
+	vector<Point2Pair> correspondences;
+	Point2Pair p1(make_pair(Point2(0,0), Point2(10,0)));
+	Point2Pair p2(make_pair(Point2(20,20), Point2(30,20)));
+	correspondences += p1, p2;
+
+	Pose2 expected(Rot2::fromAngle(0), Point2(0,0));
+  boost::optional<Pose2> actual = align(correspondences);
+  //EXPECT(assert_equal(expected, *actual));
 }
 
 /* ************************************************************************* */
