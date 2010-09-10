@@ -215,7 +215,7 @@ void ISAM2<Conditional, Config>::recalculate(const list<Symbol>& markedKeys, con
 
 	// Input: BayesTree(this), newFactors
 
-	//#define PRINT_STATS // figures for paper, disable for timing
+//#define PRINT_STATS // figures for paper, disable for timing
 #ifdef PRINT_STATS
 	static int counter = 0;
 	int maxClique = 0;
@@ -297,7 +297,7 @@ void ISAM2<Conditional, Config>::recalculate(const list<Symbol>& markedKeys, con
 	set<Symbol> markedKeysSet;
 	markedKeysSet.insert(markedKeys.begin(), markedKeys.end());
 	Ordering ordering = factors.getConstrainedOrdering(markedKeysSet); // intelligent ordering
-	//		Ordering ordering = factors.getOrdering(); // original ordering, yields in bad performance
+	//		Ordering ordering = factors.getOrdering(); // original ordering, yields bad performance
 
 	// eliminate into a Bayes net
 	tic("eliminate");
@@ -315,7 +315,7 @@ void ISAM2<Conditional, Config>::recalculate(const list<Symbol>& markedKeys, con
 
 	// Save number of affectedCliques
 	lastAffectedCliqueCount = this->size();
-	tic("re-assemble");
+	toc("re-assemble");
 
 	// 4. Insert the orphans back into the new Bayes tree.
 
@@ -360,36 +360,35 @@ void ISAM2<Conditional, Config>::find_all(sharedClique clique, list<Symbol>& key
 
 /* ************************************************************************* */
 template<class Conditional, class Config>
-list<Symbol> ISAM2<Conditional, Config>::fluid_relinearization(double relinearize_threshold) {
+list<Symbol> ISAM2<Conditional, Config>::fluid_relinearization(double relinearize_threshold, VectorConfig& deltaMarked) {
 
 	// Input: nonlinear factors factors_, linearization point theta_, Bayes tree (this), delta_
 
 	// 1. Mark variables in \Delta above threshold \beta: J=\{\Delta_{j}\in\Delta|\Delta_{j}\geq\beta\}.
+	tic("fluid-mark");
 	list<Symbol> marked;
-	VectorConfig deltaMarked;
 	for (VectorConfig::const_iterator it = delta_.begin(); it!=delta_.end(); it++) {
-		Symbol key = it->first;
-		Vector v = it->second;
+		const Symbol& key = it->first;
+		const Vector& v = it->second;
 		if (max(abs(v)) >= relinearize_threshold) {
 			marked.push_back(key);
 			deltaMarked.insert(key, v);
 		}
 	}
+	toc("fluid-mark");
 
+	list<Symbol> affectedSymbols;
 	if (marked.size()>0) {
-
-		// 2. Update linearization point for marked variables: \Theta_{J}:=\Theta_{J}+\Delta_{J}.
-		theta_ = theta_.expmap(deltaMarked);
 
 		// 3. Mark all cliques that involve marked variables \Theta_{J} and all their ancestors.
 
 		// mark all cliques that involve marked variables
-		list<Symbol> affectedSymbols(marked); // add all marked
-		tic("nonlin-find_all");
+		affectedSymbols = marked; // add all marked
+		tic("fluid-find_all");
 		find_all(this->root(), affectedSymbols, marked); // add other cliques that have the marked ones in the separator
 		affectedSymbols.sort(); // remove duplicates
 		affectedSymbols.unique();
-		toc("nonlin-find_all");
+		toc("fluid-find_all");
 
 		// 4. From the leaves to the top, if a clique is marked:
 		//    re-linearize the original factors in \Factors associated with the clique,
@@ -397,69 +396,11 @@ list<Symbol> ISAM2<Conditional, Config>::fluid_relinearization(double relineariz
 
 		// todo: for simplicity, currently simply remove the top and recreate it using the original ordering
 		//recalculate(affectedSymbols);
-		return affectedSymbols;
-
-#if 0
-
-		tic("nonlin-mess");
-		Cliques orphans;
-		BayesNet<GaussianConditional> affectedBayesNet;
-		this->removeTop(affectedSymbols, affectedBayesNet, orphans);
-		// remember original ordering
-		// todo			Ordering original_ordering = affectedBayesNet.ordering(); // does not yield original ordering...
-		FactorGraph<GaussianFactor> tmp_factors(affectedBayesNet); // so instead we recalculate an acceptable ordering here
-		Ordering original_ordering = tmp_factors.getOrdering(); // todo - remove multiple lines up to here
-
-		boost::shared_ptr<GaussianFactorGraph> factors;
-
-		// ordering provides all keys in conditionals, there cannot be others because path to root included
-		set<Symbol> affectedKeys;
-		list<Symbol> tmp = affectedBayesNet.ordering();
-		affectedKeys.insert(tmp.begin(), tmp.end());
-		toc("nonlin-mess");
-
-		tic("nonlin_relin");
-		factors = relinearizeAffectedFactors(affectedKeys);
-		toc("nonlin_relin");
-
-		lastNonlinearMarkedCount = marked.size();
-		lastNonlinearAffectedVariableCount = affectedKeys.size();
-		lastNonlinearAffectedFactorCount = factors->size();
-
-		//			cout << "nonlinear: #marked: " << marked.size() << " #affected: " << affectedKeys.size() << " #factors: " << factors->size() << endl;
-
-		// add the cached intermediate results from the boundary of the orphans ...
-		FactorGraph<GaussianFactor> cachedBoundary = getCachedBoundaryFactors(orphans);
-		factors->push_back(cachedBoundary);
-
-		// eliminate into a Bayes net
-		tic("nonlin_eliminate");
-		BayesNet<Conditional> bayesNet = _eliminate(*factors, cached_, original_ordering);
-		toc("nonlin_eliminate");
-
-		// Create Index from ordering
-		IndexTable<Symbol> index(original_ordering);
-
-		// insert conditionals back in, straight into the topless bayesTree
-		typename BayesNet<Conditional>::const_reverse_iterator rit;
-		for ( rit=bayesNet.rbegin(); rit != bayesNet.rend(); ++rit )
-			this->insert(*rit, index);
-
-		// add orphans to the bottom of the new tree
-		BOOST_FOREACH(sharedClique orphan, orphans) {
-			Symbol parentRepresentative = findParentClique(orphan->separator_, index);
-			sharedClique parent = (*this)[parentRepresentative];
-			parent->children_ += orphan;
-			orphan->parent_ = parent; // set new parent!
-		}
-#endif
 
 		// Output: updated Bayes tree (this), updated linearization point theta_
 	}
 
-	list<Symbol> empty;
-	return empty;
-
+	return affectedSymbols;
 }
 
 /* ************************************************************************* */
@@ -489,64 +430,58 @@ void ISAM2<Conditional, Config>::update(
 	toc("step2");
 
 	tic("step3");
-	// 3. Linearize new factor
-	//		boost::shared_ptr<GaussianFactorGraph> linearFactors = newFactors.linearize(theta_);
+	// 3. Mark linear update
+	list<Symbol> markedKeys = newFactors.keys();
 	toc("step3");
 
-#if 0 // original algorithm
+//#define SEPARATE_STEPS
+#ifdef SEPARATE_STEPS // original algorithm from paper: separate relin and optimize
+	boost::shared_ptr<GaussianFactorGraph> linearFactors = newFactors.linearize(theta_);
+	recalculate(markedKeys, &(*linearFactors));
+	markedKeys.clear();
+	delta_ = optimize2(*this, wildfire_threshold);
+#endif
+
 	tic("step4");
-	// 4. Linear iSAM step (alg 3)
-	linear_update(*linearFactors); // in: this
-	toc("step4");
-
-	tic("step5");
-	// 5. Calculate Delta (alg 0)
-	delta_ = optimize2(*this, wildfire_threshold);
-	toc("step5");
-
-	tic("step6");
-	// 6. Iterate Algorithm 4 until no more re-linearizations occur
+	// 4. Mark nonlinear update (includes change in theta_)
+	VectorConfig deltaMarked;
 	if (relinearize) {
-		fluid_relinearization(relinearize_threshold); // in: delta_, theta_, nonlinearFactors_, this
-	}
-	toc("step6");
-
-	// todo: not part of algorithm in paper: linearization point and delta_ do not fit... have to update delta again
-	delta_ = optimize2(*this, wildfire_threshold);
-#else // new algorithm
-
-	tic("step4B");
-	// 4B. Mark linear update
-	list<Symbol> markedKeys = newFactors.keys();
-	toc("step4B");
-
-	tic("step5B");
-	// 5B. Mark nonlinear update
-	if (relinearize) {
-		list<Symbol> markedRelin = fluid_relinearization(relinearize_threshold); // in: delta_, theta_, nonlinearFactors_, this
-
+		list<Symbol> markedRelin = fluid_relinearization(relinearize_threshold, deltaMarked); // in: delta_, theta_, nonlinearFactors_, this
 		// merge with markedKeys
 		markedKeys.splice(markedKeys.begin(), markedRelin, markedRelin.begin(), markedRelin.end());
 		markedKeys.sort(); // remove duplicates
 		markedKeys.unique();
 	}
-	toc("step5B");
+	toc("step4");
 
-	tic("step6B");
-	// 6B. Redo top of Bayes tree
+	tic("step5");
+	// 5. Update linearization point for marked variables: \Theta_{J}:=\Theta_{J}+\Delta_{J}.
+	if (deltaMarked.size()>0) {
+		theta_ = theta_.expmap(deltaMarked);
+	}
+	toc("step5");
+
+#ifndef SEPARATE_STEPS
+	tic("step6");
+	// 6. Linearize new factors
 	boost::shared_ptr<GaussianFactorGraph> linearFactors = newFactors.linearize(theta_);
+	toc("step6");
+
+	tic("step7");
+	// 7. Redo top of Bayes tree
 	recalculate(markedKeys, &(*linearFactors));
-	toc("step6B");
-
-	tic("step7B");
-	// 7B. Solve
-	delta_ = optimize2(*this, wildfire_threshold);
-	toc("step7B");
-
+	toc("step7");
+#else
+	recalculate(markedKeys);
 #endif
-	toc("all");
 
-	tictoc_print();
+	tic("step8");
+	// 8. Solve
+	delta_ = optimize2(*this, wildfire_threshold);
+	toc("step8");
+
+	toc("all");
+	tictoc_print(); // switch on/off at top of file (#if 1/#if 0)
 }
 
 /* ************************************************************************* */

@@ -93,7 +93,7 @@ private:
 	void recalculate(const std::list<Symbol>& markedKeys, const FactorGraph<GaussianFactor>* newFactors = NULL);
 	void linear_update(const FactorGraph<GaussianFactor>& newFactors);
 	void find_all(sharedClique clique, std::list<Symbol>& keys, const std::list<Symbol>& marked); // helper function
-	std::list<Symbol> fluid_relinearization(double relinearize_threshold);
+	std::list<Symbol> fluid_relinearization(double relinearize_threshold, VectorConfig& deltaMarked);
 
 }; // ISAM2
 
