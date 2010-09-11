@@ -193,8 +193,8 @@ namespace gtsam {
 	  return n;
   }
 
+  /* ************************************************************************* */
   // Re-factor of Michael Sobers' code, in turn based on Frank Dellaert's ML code
-  // and the Applied Estimation course notes of Dr. Mark Costello
   //
   // q = Pose2::transform_from(p) = t + R*p
   //

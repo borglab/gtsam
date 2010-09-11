@@ -514,19 +514,50 @@ TEST(Pose2, align_2) {
   EXPECT(assert_equal(expected, *actual));
 }
 
-TEST(Pose2, align_3) {
+namespace align_3 {
 	Point2 t(10,10);
 	Pose2 expected(Rot2::fromAngle(2*M_PI/3), t);
-
-	vector<Point2Pair> correspondences;
 	Point2 p1(0,0), p2(10,0), p3(10,10);
 	Point2 q1 = expected.transform_from(p1), q2 = expected.transform_from(p2), q3 = expected.transform_from(p3);
+}
+
+TEST(Pose2, align_3) {
+	using namespace align_3;
+
+	vector<Point2Pair> correspondences;
 	Point2Pair pq1(make_pair(p1, q1));
 	Point2Pair pq2(make_pair(p2, q2));
 	Point2Pair pq3(make_pair(p3, q3));
 	correspondences += pq1, pq2, pq3;
 
   boost::optional<Pose2> actual = align(correspondences);
+  EXPECT(assert_equal(expected, *actual));
+}
+
+/* ************************************************************************* */
+// Prototype code to align two triangles using a rigid transform
+/* ************************************************************************* */
+struct Triangle { size_t i_,j_,k_;};
+
+boost::optional<Pose2> align(const vector<Point2>& ps, const vector<Point2>& qs,
+		const pair<Triangle, Triangle>& trianglePair) {
+	const Triangle& t1 = trianglePair.first, t2 = trianglePair.second;
+	vector<Point2Pair> correspondences;
+	correspondences += make_pair(ps[t1.i_],qs[t2.i_]), make_pair(ps[t1.j_],qs[t2.j_]), make_pair(ps[t1.k_],qs[t2.k_]);
+	return align(correspondences);
+}
+
+TEST(Pose2, align_4) {
+	using namespace align_3;
+
+	vector<Point2> ps,qs;
+	ps += p1, p2, p3;
+	qs += q3, q1, q2; // note in 3,1,2 order !
+
+	Triangle t1; t1.i_=0; t1.j_=1; t1.k_=2;
+	Triangle t2; t2.i_=1; t2.j_=2; t2.k_=0;
+
+  boost::optional<Pose2> actual = align(ps, qs, make_pair(t1,t2));
   EXPECT(assert_equal(expected, *actual));
 }
 
