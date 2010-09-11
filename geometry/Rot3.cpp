@@ -6,6 +6,7 @@
  * @author  Frank Dellaert
  */
 
+#include <boost/math/constants/constants.hpp>
 #include <gtsam/geometry/Rot3.h>
 #include <gtsam/base/Lie-inl.h>
 
