@@ -41,7 +41,7 @@ geometrydir = $(pkgincludedir)/geometry
 geometry_HEADERS = $(headers)
 noinst_LTLIBRARIES = libgeometry.la
 libgeometry_la_SOURCES = $(sources)
-AM_CPPFLAGS = -I$(boost) -I$(BORG_SRCROOT)
+AM_CPPFLAGS = -I$(boost) -I$(top_srcdir)/..
 
 #----------------------------------------------------------------------------------------------------
 # rules to build local programs

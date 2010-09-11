@@ -36,7 +36,7 @@ noinst_PROGRAMS = timeGaussianFactorGraph timeFactorOverhead
 # rules to build unit tests
 #----------------------------------------------------------------------------------------------------
 TESTS = $(check_PROGRAMS)
-AM_CPPFLAGS = -I$(boost) -I$(BORG_SRCROOT)
+AM_CPPFLAGS = -I$(boost) -I$(top_srcdir)/..
 AM_LDFLAGS = $(BOOST_LDFLAGS) 
 
 # link to serialization library for test 

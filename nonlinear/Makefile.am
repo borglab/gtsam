@@ -46,7 +46,7 @@ nonlineardir = $(pkgincludedir)/nonlinear
 nonlinear_HEADERS = $(headers)
 noinst_LTLIBRARIES = libnonlinear.la
 libnonlinear_la_SOURCES = $(sources)
-AM_CPPFLAGS = -I$(boost) -I$(BORG_SRCROOT)
+AM_CPPFLAGS = -I$(boost) -I$(top_srcdir)/..
 AM_CXXFLAGS =
 
 #----------------------------------------------------------------------------------------------------

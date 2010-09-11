@@ -58,7 +58,7 @@ inferencedir = $(pkgincludedir)/inference
 inference_HEADERS = $(headers)
 noinst_LTLIBRARIES = libinference.la
 libinference_la_SOURCES = $(sources)
-AM_CPPFLAGS = -I$(boost) -I$(BORG_SRCROOT)
+AM_CPPFLAGS = -I$(boost) -I$(top_srcdir)/..
 AM_CXXFLAGS =
 
 #----------------------------------------------------------------------------------------------------

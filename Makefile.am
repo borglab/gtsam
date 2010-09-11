@@ -35,8 +35,8 @@ libgtsam_la_LDFLAGS = -version-info 0:0:0
 
 # Store the absolute path to the directory above gtsam for the include path,
 # saves us from having an extra 'gtsam' subdirectory.
-BORG_SRCROOT := $(shell cd $(top_srcdir)/.. && pwd)
-AM_MAKEFLAGS = "BORG_SRCROOT=$(BORG_SRCROOT)"
+#BORG_SRCROOT := $(shell cd $(top_srcdir)/.. && pwd)
+#AM_MAKEFLAGS = "BORG_SRCROOT=$(BORG_SRCROOT)"
 
 # Add these files to make sure they're in the distribution
 noinst_HEADERS = gtsam.h
