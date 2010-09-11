@@ -483,20 +483,51 @@ TEST( Pose2, range )
 }
 
 /* ************************************************************************* */
-typedef pair<Point2,Point2> Point2Pair;
-boost::optional<Pose2> align(const vector<Point2Pair> &) {
-	return boost::none;
+
+TEST(Pose2, align_1) {
+	Pose2 expected(Rot2::fromAngle(0), Point2(10,10));
+
+	vector<Point2Pair> correspondences;
+	Point2Pair pq1(make_pair(Point2(0,0), Point2(10,10)));
+	Point2Pair pq2(make_pair(Point2(20,10), Point2(30,20)));
+	correspondences += pq1, pq2;
+
+  boost::optional<Pose2> actual = align(correspondences);
+  EXPECT(assert_equal(expected, *actual));
 }
 
-TEST(Pose2, align) {
-	vector<Point2Pair> correspondences;
-	Point2Pair p1(make_pair(Point2(0,0), Point2(10,0)));
-	Point2Pair p2(make_pair(Point2(20,20), Point2(30,20)));
-	correspondences += p1, p2;
+TEST(Pose2, align_2) {
+	Point2 t(20,10);
+	Rot2 R = Rot2::fromAngle(M_PI_2);
+	Pose2 expected(R, t);
 
-	Pose2 expected(Rot2::fromAngle(0), Point2(0,0));
+	vector<Point2Pair> correspondences;
+	Point2 p1(0,0), p2(10,0);
+	Point2 q1 = expected.transform_from(p1), q2 = expected.transform_from(p2);
+  EXPECT(assert_equal(Point2(20,10),q1));
+  EXPECT(assert_equal(Point2(20,20),q2));
+	Point2Pair pq1(make_pair(p1, q1));
+	Point2Pair pq2(make_pair(p2, q2));
+	correspondences += pq1, pq2;
+
   boost::optional<Pose2> actual = align(correspondences);
-  //EXPECT(assert_equal(expected, *actual));
+  EXPECT(assert_equal(expected, *actual));
+}
+
+TEST(Pose2, align_3) {
+	Point2 t(10,10);
+	Pose2 expected(Rot2::fromAngle(2*M_PI/3), t);
+
+	vector<Point2Pair> correspondences;
+	Point2 p1(0,0), p2(10,0), p3(10,10);
+	Point2 q1 = expected.transform_from(p1), q2 = expected.transform_from(p2), q3 = expected.transform_from(p3);
+	Point2Pair pq1(make_pair(p1, q1));
+	Point2Pair pq2(make_pair(p2, q2));
+	Point2Pair pq3(make_pair(p3, q3));
+	correspondences += pq1, pq2, pq3;
+
+  boost::optional<Pose2> actual = align(correspondences);
+  EXPECT(assert_equal(expected, *actual));
 }
 
 /* ************************************************************************* */

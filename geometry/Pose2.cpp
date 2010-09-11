@@ -3,6 +3,7 @@
  * @brief 2D Pose
  */
 
+#include <boost/foreach.hpp>
 #include <gtsam/geometry/Pose2.h>
 #include <gtsam/base/Lie-inl.h>
 
@@ -190,6 +191,75 @@ namespace gtsam {
 	  if (H1) *H1 = D_result_d * (*H1);
 	  if (H2) *H2 = D_result_d * (*H2);
 	  return n;
+  }
+
+  // Re-factor of Michael Sobers' code, in turn based on Frank Dellaert's ML code
+  // and the Applied Estimation course notes of Dr. Mark Costello
+  //
+  // q = Pose2::transform_from(p) = t + R*p
+  //
+  //    | qx |   cqx + | cos  -sin |   | px-cpx |    |cqx - cos*cpx + sin*cpy|    | cos  -sin |   | px |
+  //    |    | =       |           | * |        | =  |                       | +  |           | * |    |
+  //    | qy |   cqy + | sin   cos |   | py-cpy |    |cqy - sin*cpx - cos*cpy|    | sin   cos |   | py |
+  //
+  // where the cos/sin rotation matrix takes the points p-cp into the same frame as the (u,v) points
+  //
+  // This is reformulated as a linear least-squares regression problem with two parameters (cos,sin),
+  // using the (u,v) points as "measurements" of the angle that rotates the (x,y):
+  //
+  //    | dqx |   | dpx  -dpy |   | cos |       | cos |
+  //    |     | = |           | * |     | = H * |     |
+  //    | dqy |   | dpy   dpx |   | sin |       | sin |
+  //
+  // The solution is:  | cos |               | dqx |
+  //                   |     | = inv(H'H)*H'*|     |
+  //                   | sin |               | dqy |
+  //
+  // where the rotation angle is found by using atan2(sin,cos).
+  //
+  // As it turns out, H'H is symmetric:  H'H = | sum(dpx^2 + dpy^2)              0                |
+  //                                           |               0               sum(dpx^2 + dpy^2) |
+  //
+  //           | dqx |   | sum( dpx*dqx + dpy*dqy) |
+  // Also,  H'*|     | = |                         |
+  //           | dqy |   | sum(-dpy*dqx + dpx*dqy) |
+  //
+  // so that cos = sum(dpx*dqx + dpy*dqy)/D and sin = sum(-dpy*dqx + dpx*dqy)/D
+  // where D = sum(dpx^2 + dpy^2)
+  //
+  // We need to remove the centroids from the data sets for this to work.
+  //
+
+  boost::optional<Pose2> align(const vector<Point2Pair>& pairs) {
+
+  	size_t n = pairs.size();
+  	if (n<2) return boost::none; // we need at least two pairs
+
+  	// calculate centroids
+  	Point2 cp,cq;
+  	BOOST_FOREACH(const Point2Pair& pair, pairs) {
+  		cp += pair.first;
+  		cq += pair.second;
+  	}
+  	double f = 1.0/n;
+  	cp *= f; cq *= f;
+
+  	// calculate cos and sin
+  	double ct=0,st=0,D=0;
+  	BOOST_FOREACH(const Point2Pair& pair, pairs) {
+  		Point2 dq = pair.first  - cp;
+  		Point2 dp = pair.second - cq;
+  		ct +=  dp.x() * dq.x() + dp.y() * dq.y();
+  		st +=  dp.y() * dq.x() - dp.x() * dq.y(); // this works but is negative from formula above !! :-(
+  		D += dp.x()*dp.x() + dp.y()*dp.y();
+  	}
+  	ct /= D; st /= D;
+
+  	// calculate angle and translation
+  	double theta = atan2(st,ct);
+  	Rot2 R = Rot2::fromAngle(theta);
+  	Point2 t = cq - R*cp;
+  	return Pose2(R, t);
   }
 
   /* ************************************************************************* */

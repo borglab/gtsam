@@ -87,8 +87,10 @@ namespace gtsam {
     Vector vector() const { return Vector_(2, x_, y_); }
 
     /** operators */
+    inline void operator += (const Point2& q) {x_+=q.x_;y_+=q.y_;}
+    inline void operator *= (double s) {x_*=s;y_*=s;}
+    inline bool operator ==(const Point2& q) const {return x_==q.x_ && q.y_==q.y_;}
     inline Point2 operator- () const {return Point2(-x_,-y_);}
-    inline bool   operator ==(const Point2& q) const {return x_==q.x_ && q.y_==q.y_;}
     inline Point2 operator + (const Point2& q) const {return Point2(x_+q.x_,y_+q.y_);}
     inline Point2 operator - (const Point2& q) const {return Point2(x_-q.x_,y_-q.y_);}
     inline Point2 operator * (double s) const {return Point2(x_*s,y_*s);}

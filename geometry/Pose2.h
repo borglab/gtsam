@@ -195,5 +195,12 @@ namespace gtsam {
   	return Pose2::wedge(xi(0),xi(1),xi(2));
   }
 
+  /**
+   * Calculate pose between a vector of 2D point correspondences (p,q)
+   * where q = Pose2::transform_from(p) = t + R*p
+   */
+  typedef std::pair<Point2,Point2> Point2Pair;
+  boost::optional<Pose2> align(const std::vector<Point2Pair>& pairs);
+
 } // namespace gtsam
 
