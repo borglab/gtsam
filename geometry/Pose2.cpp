@@ -193,42 +193,25 @@ namespace gtsam {
 	  return n;
   }
 
-  /* ************************************************************************* */
-  // Re-factor of Michael Sobers' code, in turn based on Frank Dellaert's ML code
-  //
-  // q = Pose2::transform_from(p) = t + R*p
-  //
-  //    | qx |   cqx + | cos  -sin |   | px-cpx |    |cqx - cos*cpx + sin*cpy|    | cos  -sin |   | px |
-  //    |    | =       |           | * |        | =  |                       | +  |           | * |    |
-  //    | qy |   cqy + | sin   cos |   | py-cpy |    |cqy - sin*cpx - cos*cpy|    | sin   cos |   | py |
-  //
-  // where the cos/sin rotation matrix takes the points p-cp into the same frame as the (u,v) points
-  //
-  // This is reformulated as a linear least-squares regression problem with two parameters (cos,sin),
-  // using the (u,v) points as "measurements" of the angle that rotates the (x,y):
-  //
-  //    | dqx |   | dpx  -dpy |   | cos |       | cos |
-  //    |     | = |           | * |     | = H * |     |
-  //    | dqy |   | dpy   dpx |   | sin |       | sin |
-  //
-  // The solution is:  | cos |               | dqx |
-  //                   |     | = inv(H'H)*H'*|     |
-  //                   | sin |               | dqy |
-  //
-  // where the rotation angle is found by using atan2(sin,cos).
-  //
-  // As it turns out, H'H is symmetric:  H'H = | sum(dpx^2 + dpy^2)              0                |
-  //                                           |               0               sum(dpx^2 + dpy^2) |
-  //
-  //           | dqx |   | sum( dpx*dqx + dpy*dqy) |
-  // Also,  H'*|     | = |                         |
-  //           | dqy |   | sum(-dpy*dqx + dpx*dqy) |
-  //
-  // so that cos = sum(dpx*dqx + dpy*dqy)/D and sin = sum(-dpy*dqx + dpx*dqy)/D
-  // where D = sum(dpx^2 + dpy^2)
-  //
-  // We need to remove the centroids from the data sets for this to work.
-  //
+  /* *************************************************************************
+   * New explanation, from scan.ml
+   * It finds the angle using a linear method:
+   * q = Pose2::transform_from(p) = t + R*p
+   * We need to remove the centroids from the data to find the rotation
+   * using dp=[dpx;dpy] and q=[dqx;dqy] we have
+   *  |dqx|   |c  -s|     |dpx|     |dpx -dpy|     |c|
+   *  |   | = |     |  *  |   |  =  |        |  *  | | = H_i*cs
+   *  |dqy|   |s   c|     |dpy|     |dpy  dpx|     |s|
+   * where the Hi are the 2*2 matrices. Then we will minimize the criterion
+   * J = \sum_i norm(q_i - H_i * cs)
+   * Taking the derivative with respect to cs and setting to zero we have
+   * cs = (\sum_i H_i' * q_i)/(\sum H_i'*H_i)
+   * The hessian is diagonal and just divides by a constant, but this
+   * normalization constant is irrelevant, since we take atan2.
+   * i.e., cos ~ sum(dpx*dqx + dpy*dqy) and sin ~ sum(-dpy*dqx + dpx*dqy)
+   * The translation is then found from the centroids
+   * as they also satisfy cq = t + R*cp, hence t = cq - R*cp
+   */
 
   boost::optional<Pose2> align(const vector<Point2Pair>& pairs) {
 
@@ -245,18 +228,16 @@ namespace gtsam {
   	cp *= f; cq *= f;
 
   	// calculate cos and sin
-  	double ct=0,st=0,D=0;
+  	double c=0,s=0;
   	BOOST_FOREACH(const Point2Pair& pair, pairs) {
   		Point2 dq = pair.first  - cp;
   		Point2 dp = pair.second - cq;
-  		ct +=  dp.x() * dq.x() + dp.y() * dq.y();
-  		st +=  dp.y() * dq.x() - dp.x() * dq.y(); // this works but is negative from formula above !! :-(
-  		D += dp.x()*dp.x() + dp.y()*dp.y();
+  		c +=  dp.x() * dq.x() + dp.y() * dq.y();
+  		s +=  dp.y() * dq.x() - dp.x() * dq.y(); // this works but is negative from formula above !! :-(
   	}
-  	ct /= D; st /= D;
 
   	// calculate angle and translation
-  	double theta = atan2(st,ct);
+  	double theta = atan2(s,c);
   	Rot2 R = Rot2::fromAngle(theta);
   	Point2 t = cq - R*cp;
   	return Pose2(R, t);
