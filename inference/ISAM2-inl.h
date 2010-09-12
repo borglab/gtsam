@@ -19,7 +19,7 @@ using namespace boost::assign;
 #include <gtsam/inference/ISAM2.h>
 
 
-#if 0 // timing - note: adds some time when applied in inner loops
+#if 1 // timing - note: adds some time when applied in inner loops
 #include <sys/time.h>
 // simple class for accumulating execution timing information by name
 class Timing {
@@ -407,7 +407,7 @@ void ISAM2<Conditional, Config>::update(
 #endif
 
 	VectorConfig deltaMarked;
-	if (relinearize) { // && count%10 == 0) { // todo: every n steps
+	if (relinearize && count%10 == 0) { // todo: every n steps
 		tic("step4");
 		// 4. Mark keys in \Delta above threshold \beta: J=\{\Delta_{j}\in\Delta|\Delta_{j}\geq\beta\}.
 		list<Symbol> markedRelin;
