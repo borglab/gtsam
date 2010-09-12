@@ -72,7 +72,7 @@ public:
 	const Config calculateEstimate() const {return theta_.expmap(delta_);}
 
 	// estimate based on full delta (note that this is based on the current linearization point)
-	const Config calculateBestEstimate() const {return theta_.expmap(optimize2(*this, 0.));}
+	const Config calculateBestEstimate() const {return theta_.expmap(*optimize2(this->root()));}
 
 	const NonlinearFactorGraph<Config>& getFactorsUnsafe() const { return nonlinearFactors_; }
 
@@ -90,7 +90,7 @@ private:
 	boost::shared_ptr<GaussianFactorGraph> relinearizeAffectedFactors(const std::list<Symbol>& affectedKeys) const;
 	FactorGraph<GaussianFactor> getCachedBoundaryFactors(Cliques& orphans);
 
-	void recalculate(const std::list<Symbol>& markedKeys, const FactorGraph<GaussianFactor>* newFactors = NULL);
+	boost::shared_ptr<std::set<Symbol> > recalculate(const std::list<Symbol>& markedKeys, const FactorGraph<GaussianFactor>* newFactors = NULL);
 	void linear_update(const FactorGraph<GaussianFactor>& newFactors);
 	void find_all(sharedClique clique, std::list<Symbol>& keys, const std::list<Symbol>& marked); // helper function
 

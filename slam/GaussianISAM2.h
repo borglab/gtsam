@@ -17,20 +17,20 @@
 namespace gtsam {
 
 	typedef ISAM2<GaussianConditional, simulated2D::Config> GaussianISAM2;
-
-	// optimize the BayesTree, starting from the root
-	VectorConfig optimize2(const GaussianISAM2& bayesTree, double threshold = 0.);
-
-
-	// todo: copy'n'paste to avoid template hell
-
 	typedef ISAM2<GaussianConditional, planarSLAM::Config> GaussianISAM2_P;
 
-	// recursively optimize this conditional and all subtrees
-//	void optimize2(const GaussianISAM2_P::sharedClique& clique, VectorConfig& result);
-
 	// optimize the BayesTree, starting from the root
-	VectorConfig optimize2(const GaussianISAM2_P& bayesTree, double threshold = 0.);
+	boost::shared_ptr<VectorConfig> optimize2(const GaussianISAM2::sharedClique& root);
+
+	// optimize the BayesTree, starting from the root; "replaced" needs to contain
+	// all variables that are contained in the top of the Bayes tree that has been
+	// redone; "delta" is the current solution, an offset from the linearization
+	// point; "threshold" is the maximum change against the PREVIOUS delta for
+	// non-replaced variables that can be ignored, ie. the old delta entry is kept
+	// and recursive backsubstitution might eventually stop if none of the changed
+	// variables are contained in the subtree.
+	void optimize2(const GaussianISAM2::sharedClique& root,
+			double threshold, const std::set<Symbol>& replaced, VectorConfig& delta);
 
 	// calculate the number of non-zero entries for the tree starting at clique (use root for complete matrix)
 	int calculate_nnz(const GaussianISAM2::sharedClique& clique);

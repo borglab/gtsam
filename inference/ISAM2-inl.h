@@ -212,7 +212,7 @@ FactorGraph<GaussianFactor> ISAM2<Conditional, Config>::getCachedBoundaryFactors
 
 /* ************************************************************************* */
 template<class Conditional, class Config>
-void ISAM2<Conditional, Config>::recalculate(const list<Symbol>& markedKeys, const FactorGraph<GaussianFactor>* newFactors) {
+boost::shared_ptr<set<Symbol> > ISAM2<Conditional, Config>::recalculate(const list<Symbol>& markedKeys, const FactorGraph<GaussianFactor>* newFactors) {
 
 	// Input: BayesTree(this), newFactors
 
@@ -330,6 +330,10 @@ void ISAM2<Conditional, Config>::recalculate(const list<Symbol>& markedKeys, con
 	toc("re-orphans");
 
 	// Output: BayesTree(this)
+
+	boost::shared_ptr<set<Symbol> > affectedKeysSet(new set<Symbol>());
+	affectedKeysSet->insert(affectedKeys.begin(), affectedKeys.end());
+	return affectedKeysSet;
 }
 
 /* ************************************************************************* */
@@ -450,7 +454,7 @@ void ISAM2<Conditional, Config>::update(
 
 	tic("step8");
 	// 8. Redo top of Bayes tree
-	recalculate(markedKeys, &(*linearFactors));
+	boost::shared_ptr<set<Symbol> > replacedKeys = recalculate(markedKeys, &(*linearFactors));
 	toc("step8");
 #else
 	recalculate(markedKeys);
@@ -458,7 +462,11 @@ void ISAM2<Conditional, Config>::update(
 
 	tic("step9");
 	// 9. Solve
-	delta_ = optimize2(*this, wildfire_threshold);
+//	if (wildfire_threshold<=0.) {
+//		delta_ = *(optimize2(this->root()));
+//	} else {
+		optimize2(this->root(), wildfire_threshold, *replacedKeys, delta_); // modifies delta_
+//	}
 	toc("step9");
 
 	toc("all");
