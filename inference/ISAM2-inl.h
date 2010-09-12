@@ -19,7 +19,7 @@ using namespace boost::assign;
 #include <gtsam/inference/ISAM2.h>
 
 
-#if 1 // timing - note: adds some time when applied in inner loops
+#if 0 // timing - note: adds some time when applied in inner loops
 #include <sys/time.h>
 // simple class for accumulating execution timing information by name
 class Timing {
@@ -310,8 +310,11 @@ boost::shared_ptr<set<Symbol> > ISAM2<Conditional, Config>::recalculate(const li
 
 	// insert conditionals back in, straight into the topless bayesTree
 	typename BayesNet<Conditional>::const_reverse_iterator rit;
-	for ( rit=bayesNet->rbegin(); rit != bayesNet->rend(); ++rit )
+	for ( rit=bayesNet->rbegin(); rit != bayesNet->rend(); ++rit ) {
 		this->insert(*rit, index);
+	}
+
+	lastNnzTop = calculate_nnz(this->root());
 
 	// Save number of affectedCliques
 	lastAffectedCliqueCount = this->size();
@@ -319,7 +322,7 @@ boost::shared_ptr<set<Symbol> > ISAM2<Conditional, Config>::recalculate(const li
 
 	// 4. Insert the orphans back into the new Bayes tree.
 
-	tic("re-orphans");
+	tic("re-orphan");
 	// add orphans to the bottom of the new tree
 	BOOST_FOREACH(sharedClique orphan, orphans) {
 		Symbol parentRepresentative = findParentClique(orphan->separator_, index);
@@ -327,7 +330,7 @@ boost::shared_ptr<set<Symbol> > ISAM2<Conditional, Config>::recalculate(const li
 		parent->children_ += orphan;
 		orphan->parent_ = parent; // set new parent!
 	}
-	toc("re-orphans");
+	toc("re-orphan");
 
 	// Output: BayesTree(this)
 
@@ -375,9 +378,8 @@ void ISAM2<Conditional, Config>::update(
 	lastAffectedFactorCount = 0;
 	lastAffectedCliqueCount = 0;
 	lastAffectedMarkedCount = 0;
-	lastNonlinearMarkedCount = 0;
-	lastNonlinearAffectedVariableCount = 0;
-	lastNonlinearAffectedFactorCount = 0;
+	lastBacksubVariableCount = 0;
+	lastNnzTop = 0;
 
 	tic("all");
 
@@ -405,7 +407,7 @@ void ISAM2<Conditional, Config>::update(
 #endif
 
 	VectorConfig deltaMarked;
-	if (relinearize && count%10 == 0) { // todo: every n steps
+	if (relinearize) { // && count%10 == 0) { // todo: every n steps
 		tic("step4");
 		// 4. Mark keys in \Delta above threshold \beta: J=\{\Delta_{j}\in\Delta|\Delta_{j}\geq\beta\}.
 		list<Symbol> markedRelin;
@@ -462,11 +464,12 @@ void ISAM2<Conditional, Config>::update(
 
 	tic("step9");
 	// 9. Solve
-//	if (wildfire_threshold<=0.) {
-//		delta_ = *(optimize2(this->root()));
-//	} else {
-		optimize2(this->root(), wildfire_threshold, *replacedKeys, delta_); // modifies delta_
-//	}
+	if (wildfire_threshold<=0.) {
+		delta_ = *(optimize2(this->root()));
+		lastBacksubVariableCount = theta_.size();
+	} else {
+		lastBacksubVariableCount = optimize2(this->root(), wildfire_threshold, *replacedKeys, delta_); // modifies delta_
+	}
 	toc("step9");
 
 	toc("all");

@@ -19,7 +19,7 @@ namespace gtsam {
 
 /* ************************************************************************* */
 void optimize2(const GaussianISAM2::sharedClique& clique, double threshold,
-		set<Symbol>& changed, const set<Symbol>& replaced, VectorConfig& delta) {
+		set<Symbol>& changed, const set<Symbol>& replaced, VectorConfig& delta, int& count) {
 	// if none of the variables in this clique (frontal and separator!) changed
 	// significantly, then by the running intersection property, none of the
 	// cliques in the children need to be processed
@@ -47,6 +47,7 @@ void optimize2(const GaussianISAM2::sharedClique& clique, double threshold,
 		if (found) {
 			// Solve for that variable
 			Vector d = cg->solve(delta);
+			count++;
 			// have to process children; only if none of the variables in the
 			// clique were affected, and none of the variables in the clique
 			// had a variable in the separator that changed significantly
@@ -81,7 +82,7 @@ void optimize2(const GaussianISAM2::sharedClique& clique, double threshold,
 	}
 	if (process_children) {
 		BOOST_FOREACH(const GaussianISAM2::sharedClique& child, clique->children_) {
-			optimize2(child, threshold, changed, replaced, delta);
+			optimize2(child, threshold, changed, replaced, delta, count);
 		}
 	}
 }
@@ -112,10 +113,12 @@ boost::shared_ptr<VectorConfig> optimize2(const GaussianISAM2::sharedClique& roo
 }
 
 /* ************************************************************************* */
-void optimize2(const GaussianISAM2::sharedClique& root, double threshold, const set<Symbol>& keys, VectorConfig& delta) {
+int optimize2(const GaussianISAM2::sharedClique& root, double threshold, const set<Symbol>& keys, VectorConfig& delta) {
 	set<Symbol> changed;
+	int count = 0;
 	// starting from the root, call optimize on each conditional
-	optimize2(root, threshold, changed, keys, delta);
+	optimize2(root, threshold, changed, keys, delta, count);
+	return count;
 }
 
 /* ************************************************************************* */

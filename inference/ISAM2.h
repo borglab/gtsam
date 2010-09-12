@@ -80,9 +80,8 @@ public:
 	size_t lastAffectedFactorCount;
 	size_t lastAffectedCliqueCount;
 	size_t lastAffectedMarkedCount;
-	size_t lastNonlinearMarkedCount;
-	size_t lastNonlinearAffectedVariableCount;
-	size_t lastNonlinearAffectedFactorCount;
+	size_t lastBacksubVariableCount;
+	size_t lastNnzTop;
 
 private:
 

@@ -29,7 +29,8 @@ namespace gtsam {
 	// non-replaced variables that can be ignored, ie. the old delta entry is kept
 	// and recursive backsubstitution might eventually stop if none of the changed
 	// variables are contained in the subtree.
-	void optimize2(const GaussianISAM2::sharedClique& root,
+	// returns the number of variables that were solved for
+	int optimize2(const GaussianISAM2::sharedClique& root,
 			double threshold, const std::set<Symbol>& replaced, VectorConfig& delta);
 
 	// calculate the number of non-zero entries for the tree starting at clique (use root for complete matrix)
