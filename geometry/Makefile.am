@@ -26,7 +26,7 @@ check_PROGRAMS += tests/testStereoCamera
 headers += tensors.h Tensor1.h Tensor2.h Tensor3.h Tensor4.h Tensor5.h
 headers += Tensor1Expression.h Tensor2Expression.h Tensor3Expression.h Tensor5Expression.h
 sources += projectiveGeometry.cpp tensorInterface.cpp
-check_PROGRAMS += tests/testTensors tests/testHomography2 tests/testTrifocal
+check_PROGRAMS += tests/testTensors tests/testHomography2 tests/testTrifocal tests/testFundamental
 
 # Timing tests
 noinst_PROGRAMS = tests/timeRot3 tests/timeCalibratedCamera
