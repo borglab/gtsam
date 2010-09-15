@@ -10,6 +10,8 @@
 
 namespace gtsam {
 
+	CalibratedCamera()::CalibratedCamera() {}
+
 	CalibratedCamera::CalibratedCamera(const Pose3& pose) :
 		pose_(pose) {
 	}

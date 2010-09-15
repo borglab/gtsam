@@ -25,6 +25,7 @@ namespace gtsam {
 		Pose3 pose_; // 6DOF pose
 
 	public:
+		CalibratedCamera();
 		CalibratedCamera(const Pose3& pose);
 		CalibratedCamera(const Vector &v) ;
 		virtual ~CalibratedCamera();
