@@ -79,26 +79,26 @@ TEST( wrap, matlab_code ) {
 	// make_geometry will not compile, use make testwrap to generate real make
 	module.matlab_code("actual", "", "-O5");
 
-	CHECK(files_equal(path + "/expected/@Point2/Point2.m"  , path + "/actual/@Point2/Point2.m"  ));
-	CHECK(files_equal(path + "/expected/@Point2/x.cpp"     , path + "/actual/@Point2/x.cpp"     ));
+	CHECK(files_equal(path + "/expected/@Point2/Point2.m"  , "actual/@Point2/Point2.m"  ));
+	CHECK(files_equal(path + "/expected/@Point2/x.cpp"     , "actual/@Point2/x.cpp"     ));
 
-	CHECK(files_equal(path + "/expected/@Point3/Point3.m"  , path + "/actual/@Point3/Point3.m"  ));
-	CHECK(files_equal(path + "/expected/new_Point3_ddd.m"  , path + "/actual/new_Point3_ddd.m"  ));
-	CHECK(files_equal(path + "/expected/new_Point3_ddd.cpp", path + "/actual/new_Point3_ddd.cpp"));
-	CHECK(files_equal(path + "/expected/@Point3/norm.m"    , path + "/actual/@Point3/norm.m"    ));
-	CHECK(files_equal(path + "/expected/@Point3/norm.cpp"  , path + "/actual/@Point3/norm.cpp"  ));
+	CHECK(files_equal(path + "/expected/@Point3/Point3.m"  , "actual/@Point3/Point3.m"  ));
+	CHECK(files_equal(path + "/expected/new_Point3_ddd.m"  , "actual/new_Point3_ddd.m"  ));
+	CHECK(files_equal(path + "/expected/new_Point3_ddd.cpp", "actual/new_Point3_ddd.cpp"));
+	CHECK(files_equal(path + "/expected/@Point3/norm.m"    , "actual/@Point3/norm.m"    ));
+	CHECK(files_equal(path + "/expected/@Point3/norm.cpp"  , "actual/@Point3/norm.cpp"  ));
 
-	CHECK(files_equal(path + "/expected/new_Test_.cpp"           , path + "/actual/new_Test_.cpp"           ));
-	CHECK(files_equal(path + "/expected/@Test/Test.m"            , path + "/actual/@Test/Test.m"            ));
-	CHECK(files_equal(path + "/expected/@Test/return_string.cpp" , path + "/actual/@Test/return_string.cpp" ));
-	CHECK(files_equal(path + "/expected/@Test/return_pair.cpp"   , path + "/actual/@Test/return_pair.cpp"   ));
-	CHECK(files_equal(path + "/expected/@Test/return_field.cpp"  , path + "/actual/@Test/return_field.cpp"  ));
-	CHECK(files_equal(path + "/expected/@Test/return_TestPtr.cpp", path + "/actual/@Test/return_TestPtr.cpp"));
-	CHECK(files_equal(path + "/expected/@Test/return_ptrs.cpp"   , path + "/actual/@Test/return_ptrs.cpp"   ));
-	CHECK(files_equal(path + "/expected/@Test/print.m"           , path + "/actual/@Test/print.m"           ));
-	CHECK(files_equal(path + "/expected/@Test/print.cpp"         , path + "/actual/@Test/print.cpp"         ));
+	CHECK(files_equal(path + "/expected/new_Test_.cpp"           , "actual/new_Test_.cpp"           ));
+	CHECK(files_equal(path + "/expected/@Test/Test.m"            , "actual/@Test/Test.m"            ));
+	CHECK(files_equal(path + "/expected/@Test/return_string.cpp" , "actual/@Test/return_string.cpp" ));
+	CHECK(files_equal(path + "/expected/@Test/return_pair.cpp"   , "actual/@Test/return_pair.cpp"   ));
+	CHECK(files_equal(path + "/expected/@Test/return_field.cpp"  , "actual/@Test/return_field.cpp"  ));
+	CHECK(files_equal(path + "/expected/@Test/return_TestPtr.cpp", "actual/@Test/return_TestPtr.cpp"));
+	CHECK(files_equal(path + "/expected/@Test/return_ptrs.cpp"   , "actual/@Test/return_ptrs.cpp"   ));
+	CHECK(files_equal(path + "/expected/@Test/print.m"           , "actual/@Test/print.m"           ));
+	CHECK(files_equal(path + "/expected/@Test/print.cpp"         , "actual/@Test/print.cpp"         ));
 
-	CHECK(files_equal(path + "/expected/make_geometry.m"   , path + "/actual/make_geometry.m"   ));
+	CHECK(files_equal(path + "/expected/make_geometry.m"   , "actual/make_geometry.m"   ));
 }
 
 /* ************************************************************************* */
