@@ -19,7 +19,7 @@ using namespace boost::assign;
 #include <gtsam/inference/ISAM2.h>
 
 
-#if 1 // timing - note: adds some time when applied in inner loops
+#if 0 // timing - note: adds some time when applied in inner loops
 #include <sys/time.h>
 // simple class for accumulating execution timing information by name
 class Timing {
