@@ -17,7 +17,7 @@ AM_CPPFLAGS = -DDLONG # Compiles cholmod in double/long mode
 
 # On Mac, we compile using the BLAS/LAPACK headers in the Accelerate framework 
 if USE_ACCELERATE_MACOS
-AM_CPPFLAGS += -F Accelerate
+AM_CPPFLAGS += -I/System/Library/Frameworks/Accelerate.framework/Headers
 endif
 
 endif
