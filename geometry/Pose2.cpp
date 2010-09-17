@@ -39,7 +39,7 @@ namespace gtsam {
 
 #ifdef SLOW_BUT_CORRECT_EXPMAP
 
-	template<> Pose2 expmap(const Vector& xi) {
+	Pose2 Pose2::Expmap(const Vector& xi) {
 		Point2 v(xi(0),xi(1));
 		double w = xi(2);
 		if (fabs(w) < 1e-5)
@@ -52,7 +52,7 @@ namespace gtsam {
 		}
 	}
 
-  Vector logmap(const Pose2& p) {
+  Vector Pose2::Logmap(const Pose2& p) {
   	const Rot2& R = p.r();
   	const Point2& t = p.t();
 		double w = R.theta();
