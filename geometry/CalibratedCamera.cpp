@@ -65,5 +65,22 @@ namespace gtsam {
 		}
 		return project_to_camera(q);
 	}
+
+
+	CalibratedCamera CalibratedCamera::expmap(const Vector& d) const {
+		return CalibratedCamera(pose().expmap(d)) ;
+	}
+    Vector CalibratedCamera::logmap(const CalibratedCamera& T2) const {
+    	return pose().logmap(T2.pose()) ;
+    }
+
+	CalibratedCamera CalibratedCamera::Expmap(const Vector& v) {
+		return CalibratedCamera(Pose3::Expmap(v)) ;
+	}
+
+    Vector CalibratedCamera::Logmap(const CalibratedCamera& p) {
+    	return Pose3::Logmap(p.pose()) ;
+    }
+
 /* ************************************************************************* */
 }

@@ -43,7 +43,14 @@ namespace gtsam {
 			return CalibratedCamera( pose_.inverse() ) ;
 		}
 
-		inline static size_t dim() { return 6 ; }
+		CalibratedCamera expmap(const Vector& d) const;
+	    Vector logmap(const CalibratedCamera& T2) const;
+
+		static CalibratedCamera Expmap(const Vector& v);
+	    static Vector Logmap(const CalibratedCamera& p);
+
+		inline size_t dim() const { return 6 ; }
+		inline static size_t Dim() { return 6 ; }
 
 		/**
 		 * Create a level camera at the given 2D pose and height
