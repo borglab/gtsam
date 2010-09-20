@@ -15,9 +15,9 @@ using namespace boost::assign;
 
 #include <gtsam/base/numericalDerivative.h>
 #include <gtsam/inference/Ordering.h>
-#include <gtsam/slam/smallExample.h>
 #include <gtsam/linear/SubgraphPreconditioner.h>
 #include <gtsam/linear/iterative-inl.h>
+#include <gtsam/slam/smallExample.h>
 
 using namespace std;
 using namespace gtsam;
