@@ -37,8 +37,9 @@ namespace gtsam {
 
 		/**
 		 * Constructor
-		 * @param Rc1: the Bayes Net R1*x=c1
+		 * @param Ab1: the Graph A1*x=b1
 		 * @param Ab2: the Graph A2*x=b2
+		 * @param Rc1: the Bayes Net R1*x=c1
 		 * @param xbar: the solution to R1*x=c1
 		 */
 		SubgraphPreconditioner(sharedFG& Ab1, sharedFG& Ab2, sharedBayesNet& Rc1,	sharedConfig& xbar);
