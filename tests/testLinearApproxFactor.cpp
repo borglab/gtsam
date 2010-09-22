@@ -14,7 +14,7 @@
 using namespace std;
 using namespace gtsam;
 
-typedef LinearApproxFactor<planarSLAM::Config,planarSLAM::PointKey,Point2> ApproxFactor;
+typedef LinearApproxFactor<planarSLAM::Config,planarSLAM::PointKey> ApproxFactor;
 
 /* ************************************************************************* */
 TEST ( LinearApproxFactor, basic ) {

@@ -19,15 +19,18 @@ namespace gtsam {
  * A dummy factor that takes a linearized factor and inserts it into
  * a nonlinear graph.  This version uses exactly one type of variable.
  */
-template <class Config, class Key, class X>
+template <class Config, class Key>
 class LinearApproxFactor : public NonlinearFactor<Config> {
 
 public:
+	/** type for the variable */
+	typedef typename Key::Value_t X;
+
 	/** base type */
 	typedef NonlinearFactor<Config> Base;
 
 	/** shared pointer for convenience */
-	typedef boost::shared_ptr<LinearApproxFactor<Config,Key,X> > shared_ptr;
+	typedef boost::shared_ptr<LinearApproxFactor<Config,Key> > shared_ptr;
 
 	/** typedefs for key vectors */
 	typedef std::vector<Key> KeyVector;
