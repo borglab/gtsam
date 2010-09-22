@@ -35,7 +35,7 @@ headers += BetweenFactor.h PriorFactor.h
 headers += BetweenConstraint.h BoundingConstraint.h TransformConstraint.h
 
 # Utility factors
-headers += LinearApproxFactor.h
+headers += LinearApproxFactor.h LinearApproxFactor-inl.h
 
 # 2D Pose SLAM
 sources += pose2SLAM.cpp Pose2SLAMOptimizer.cpp dataset.cpp

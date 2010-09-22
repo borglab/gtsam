@@ -9,7 +9,7 @@
 #include <gtsam/base/TestableAssertions.h>
 #include <gtsam/linear/GaussianFactor.h>
 #include <gtsam/slam/planarSLAM.h>
-#include <gtsam/slam/LinearApproxFactor.h>
+#include <gtsam/slam/LinearApproxFactor-inl.h>
 
 using namespace std;
 using namespace gtsam;
