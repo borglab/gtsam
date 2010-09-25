@@ -94,8 +94,17 @@ namespace gtsam {
 				Stair[j] = m;
 		}
 
+
+		// YDJ: allocate buffer if m*n grows more than 2M bytes
+		const int sz = 250000; // the stack is limited to 2M, o
+		const int mn = m*n ;
+		double buf[sz] ;
+		double *a ;
+		if ( mn > sz ) a = new double [mn] ;
+		else a = buf ;
+
 		// convert from row major to column major
-		double a[m*n]; int k = 0;
+		int k = 0;
 		for(int j=0; j<n; j++)
 			for(int i=0; i<m; i++, k++)
 				a[k] = A(i,j);
@@ -125,6 +134,8 @@ namespace gtsam {
 			for(int i=0; i<j0; i++, k++)
 				A(i,j) = a[k];
 		}
+
+		if ( mn > sz ) delete [] a;
 
 		delete []Stair;
 		cholmod_l_finish(&cc);
