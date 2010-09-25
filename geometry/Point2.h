@@ -41,6 +41,17 @@ namespace gtsam {
     /** equals with an tolerance, prints out message if unequal*/
     bool equals(const Point2& q, double tol = 1e-9) const;
 
+    /** simple transform_[to|from] to allow for generic algorithms */
+    /** Return point coordinates in pose coordinate frame */
+    Point2 transform_to(const Point2& point,
+    		boost::optional<Matrix&> H1=boost::none,
+    		boost::optional<Matrix&> H2=boost::none) const;
+
+    /** Return point coordinates in global frame */
+    Point2 transform_from(const Point2& point,
+    	boost::optional<Matrix&> H1=boost::none,
+    	boost::optional<Matrix&> H2=boost::none) const;
+
     /** Lie requirements */
 
     /** Size of the tangent space of the Lie type */

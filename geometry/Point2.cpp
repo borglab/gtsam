@@ -30,5 +30,19 @@ namespace gtsam {
   }
 
   /* ************************************************************************* */
+  Point2 Point2::transform_to(const Point2& point,
+  		boost::optional<Matrix&> H1, boost::optional<Matrix&> H2) const {
+	  if (H1) *H1 = -eye(2);
+	  if (H2) *H2 = eye(2);
+	  return point - *this;
+  }
+
+  /* ************************************************************************* */
+  Point2 Point2::transform_from(const Point2& point,
+  	boost::optional<Matrix&> H1, boost::optional<Matrix&> H2) const {
+	  if (H1) *H1 = eye(2);
+	  if (H2) *H2 = eye(2);
+	  return point + *this;
+  }
 
 } // namespace gtsam

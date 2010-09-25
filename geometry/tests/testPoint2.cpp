@@ -42,8 +42,14 @@ TEST( Point2, norm)
 }
 
 /* ************************************************************************* */
-int main() {
-	TestResult tr;
-	return TestRegistry::runAllTests(tr);
+TEST( Point2, transforms ) {
+	Point2 offset(3.0, 4.0);
+	EXPECT(assert_equal(Point2(5.0, 6.0), offset.transform_from(Point2(2.0, 2.0))));
+	EXPECT(assert_equal(Point2(-1.0, -2.0), offset.transform_to(Point2(2.0, 2.0))));
+	EXPECT(assert_equal(Point2(1.0, 2.0), offset.transform_to(
+			offset.transform_from(Point2(1.0, 2.0)))));
 }
+
+/* ************************************************************************* */
+int main() { TestResult tr; return TestRegistry::runAllTests(tr); }
 /* ************************************************************************* */
