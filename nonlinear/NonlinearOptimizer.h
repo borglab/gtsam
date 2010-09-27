@@ -49,7 +49,7 @@ namespace gtsam {
 		typedef boost::shared_ptr<const S> shared_solver;
 		typedef const S solver;
 
-		enum verbosityLevel {
+		typedef enum {
 			SILENT,
 			ERROR,
 			LAMBDA,
@@ -60,13 +60,13 @@ namespace gtsam {
 			TRYDELTA,
 			LINEAR,
 			DAMPED
-		};
+		} verbosityLevel;
 
-		enum LambdaMode {
+		typedef enum {
 			FAST,
 			BOUNDED,
 			CAUTIOUS
-		};
+		} LambdaMode;
 
 	private:
 
