@@ -46,7 +46,7 @@ TEST( Point2, norm)
 
 /* ************************************************************************* */
 Point2 transform_from_proxy(const Point2& pose, const Point2& point) {
-	return pose.transform_to(point);
+	return pose.transform_from(point);
 }
 
 /* ************************************************************************* */
@@ -54,7 +54,7 @@ Point2 transform_to_proxy(const Point2& pose, const Point2& point) {
 	return pose.transform_to(point);
 }
 
-Point2 offset(3.0, 4.0), pt(5.0, 6.0);
+Point2 offset(3.0, 4.0), pt(-5.0, 6.0);
 
 /* ************************************************************************* */
 TEST( Point2, transforms ) {
