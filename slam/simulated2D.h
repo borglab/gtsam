@@ -57,14 +57,14 @@ namespace gtsam {
 		template<class Cfg = Config, class Key = PoseKey>
 		struct GenericPrior: public NonlinearFactor1<Cfg, Key> {
 			typedef boost::shared_ptr<GenericPrior<Cfg, Key> > shared_ptr;
+			typedef typename PoseKey::Value_t Point;
+			Point z_;
 
-			Point2 z_;
-
-			GenericPrior(const Point2& z, const SharedGaussian& model, const Key& key) :
+			GenericPrior(const Point& z, const SharedGaussian& model, const Key& key) :
 				NonlinearFactor1<Cfg, Key> (model, key), z_(z) {
 			}
 
-			Vector evaluateError(const Point2& x, boost::optional<Matrix&> H =
+			Vector evaluateError(const Point& x, boost::optional<Matrix&> H =
 					boost::none) const {
 				return (prior(x, H) - z_).vector();
 			}
@@ -77,14 +77,15 @@ namespace gtsam {
 		template<class Cfg = Config, class Key = PoseKey>
 		struct GenericOdometry: public NonlinearFactor2<Cfg, Key, Key> {
 			typedef boost::shared_ptr<GenericOdometry<Cfg, Key> > shared_ptr;
-			Point2 z_;
+			typedef typename PoseKey::Value_t Pose;
+			Pose z_;
 
-			GenericOdometry(const Point2& z, const SharedGaussian& model,
+			GenericOdometry(const Pose& z, const SharedGaussian& model,
 					const Key& i1, const Key& i2) :
 				NonlinearFactor2<Cfg, Key, Key> (model, i1, i2), z_(z) {
 			}
 
-			Vector evaluateError(const Point2& x1, const Point2& x2, boost::optional<
+			Vector evaluateError(const Pose& x1, const Pose& x2, boost::optional<
 					Matrix&> H1 = boost::none, boost::optional<Matrix&> H2 = boost::none) const {
 				return (odo(x1, x2, H1, H2) - z_).vector();
 			}
@@ -98,14 +99,17 @@ namespace gtsam {
 		class GenericMeasurement: public NonlinearFactor2<Cfg, XKey, LKey> {
 		public:
 			typedef boost::shared_ptr<GenericMeasurement<Cfg, XKey, LKey> > shared_ptr;
-			Point2 z_;
+			typedef typename PoseKey::Value_t Pose;
+			typedef typename PointKey::Value_t Point;
 
-			GenericMeasurement(const Point2& z, const SharedGaussian& model,
+			Point z_;
+
+			GenericMeasurement(const Point& z, const SharedGaussian& model,
 					const XKey& i, const LKey& j) :
 				NonlinearFactor2<Cfg, XKey, LKey> (model, i, j), z_(z) {
 			}
 
-			Vector evaluateError(const Point2& x1, const Point2& x2, boost::optional<
+			Vector evaluateError(const Pose& x1, const Point& x2, boost::optional<
 					Matrix&> H1 = boost::none, boost::optional<Matrix&> H2 = boost::none) const {
 				return (mea(x1, x2, H1, H2) - z_).vector();
 			}
