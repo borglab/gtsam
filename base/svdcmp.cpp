@@ -267,13 +267,21 @@ void svdcmp(double **a, int m, int n, double w[], double **v, bool sort) {
 		for (int i1 = 1; i1 <= n; i1++) {
 			for (int i2 = i1+1; i2 <= n; i2++) {
 				if (w[i1] < w[i2]) {
+					// sort S
 					double temp = w[i1];
 					w[i1] = w[i2];
 					w[i2] = temp;
+					// sort V
 					for (int j = 1; j <= n; j++) {
 						double temp1 = v[j][i1];
 						v[j][i1] = v[j][i2];
 						v[j][i2] = temp1;
+					}
+					// sort U
+					for (int j = 1; j <= m; j++) {
+					  double temp1 = a[j][i1];
+					  a[j][i1] = a[j][i2];
+						a[j][i2] = temp1;
 					}
 				}
 			}
