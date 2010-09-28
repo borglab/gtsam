@@ -1112,6 +1112,37 @@ void svd(const Matrix& A, Matrix& U, Vector& s, Matrix& V, bool sort) {
   }
 }
 
+/* ************************************************************************* */
+boost::tuple<int, double, Vector> DLT(const Matrix& A, double rank_tol) {
+
+	// Check size of A
+	int m = A.size1(), n = A.size2();
+	if (m<n) throw invalid_argument("DLT: m<n, pad A with zero rows if needed.");
+
+	// Do SVD on A
+	Matrix U, V;
+	Vector S;
+	static const bool sort = false;
+	svd(A, U, S, V, sort);
+
+	// Find rank
+	int rank = 0;
+	for (int j = 0; j < n; j++)
+		if (S(j) > rank_tol)
+			rank++;
+	// Find minimum singular value and corresponding column index
+	int min_j = n - 1;
+	double min_S = S(min_j);
+	for (int j = 0; j < n - 1; j++)
+		if (S(j) < min_S) {
+			min_j = j;
+			min_S = S(j);
+		}
+
+	// Return rank, minimum singular value, and corresponding column of V
+	return boost::tuple<int, double, Vector>(rank, min_S, column_(V, min_j));
+}
+
 #if 0
 /* ************************************************************************* */
 // TODO, would be faster with Cholesky

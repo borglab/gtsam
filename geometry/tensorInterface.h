@@ -94,10 +94,4 @@ namespace gtsam {
 		return R;
 	}
 
-	/**
-	 * Find Vector v that minimizes algebraic error A*v
-	 * Returns rank of A, minimum error, and corresponding eigenvector
-	 */
-	boost::tuple<int,double,Vector> DLT(const Matrix& A);
-
 } // namespace gtsam
