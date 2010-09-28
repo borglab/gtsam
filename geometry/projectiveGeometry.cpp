@@ -8,7 +8,7 @@
 #include <boost/foreach.hpp>
 #include <boost/numeric/ublas/matrix.hpp>
 #include <boost/numeric/ublas/matrix_proxy.hpp>
-#include <gtsam/base/matrix.h>
+#include <gtsam/base/Matrix.h>
 typedef boost::numeric::ublas::matrix_row<Matrix> Row;
 
 #include <gtsam/geometry/tensorInterface.h>
