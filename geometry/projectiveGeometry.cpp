@@ -6,6 +6,11 @@
  */
 
 #include <boost/foreach.hpp>
+#include <boost/numeric/ublas/matrix.hpp>
+#include <boost/numeric/ublas/matrix_proxy.hpp>
+#include <gtsam/base/matrix.h>
+typedef boost::numeric::ublas::matrix_row<Matrix> Row;
+
 #include <gtsam/geometry/tensorInterface.h>
 #include <gtsam/geometry/projectiveGeometry.h>
 
@@ -64,6 +69,8 @@ namespace gtsam {
 	/* ************************************************************************* */
 	Homography2 estimateHomography2(const list<Correspondence>& correspondences) {
 		// Generate entries of A matrix for linear estimation
+		size_t m = correspondences.size();
+		if (m<4) throw invalid_argument("estimateHomography2: need at least 4 correspondences");
 		Matrix A;
 		BOOST_FOREACH(const Correspondence& p, correspondences) {
 			Matrix Ap = reshape(p.first(a) * (eta(_b, _c, _d) * p.second(b)),3,9);
@@ -80,11 +87,13 @@ namespace gtsam {
 	/* ************************************************************************* */
 	FundamentalMatrix estimateFundamentalMatrix(const list<Correspondence>& correspondences) {
 		// Generate entries of A matrix for linear estimation
-		Matrix A;
-		BOOST_FOREACH(const Correspondence& p, correspondences) {
-			Matrix Ap = reshape(p.first(a) * p.second(b),1,9);
-			A = stack(2,&A,&Ap);
-		}
+		size_t m = correspondences.size();
+		if (m<8) throw invalid_argument("estimateFundamentalMatrix: need at least 8 correspondences");
+		if (m<9) m = 9; // make sure to pad with zeros in minimal case
+		Matrix A = zeros(m,9);
+		size_t i = 0;
+		BOOST_FOREACH(const Correspondence& p, correspondences)
+			Row(A,i++) = toVector(p.first(a) * p.second(b));
 
 		// Call DLT and reshape to Homography
 		int rank; double error; Vector v;
