@@ -21,9 +21,21 @@ using namespace std;
 namespace gtsam {
 
 	/* ************************************************************************* */
-	inline bool check_convergence(double relativeErrorTreshold,
-			double absoluteErrorTreshold, double currentError, double newError,
-			int verbosity) {
+	inline bool check_convergence(
+			double relativeErrorTreshold,
+			double absoluteErrorTreshold,
+			double errorThreshold,
+			double currentError, double newError, int verbosity) {
+
+		if ( verbosity >= 2 ) {
+			if ( newError <= errorThreshold )
+				cout << "errorThreshold: " << newError << " < " << errorThreshold << endl;
+			else
+				cout << "errorThreshold: " << newError << " > " << errorThreshold << endl;
+		}
+
+		if ( newError <= errorThreshold ) return true ;
+
 		// check if diverges
 		double absoluteDecrease = currentError - newError;
 		if (verbosity >= 2) {
@@ -120,8 +132,13 @@ namespace gtsam {
 		writer.write(next.error_);
 
 		// check convergence
-		bool converged = gtsam::check_convergence(relativeThreshold,
-				absoluteThreshold, error_, next.error_, verbosity);
+		bool converged = gtsam::check_convergence(
+				relativeThreshold,
+				absoluteThreshold,
+				0.0,
+				error_,
+				next.error_,
+				verbosity);
 
 				// return converged state or iterate
 		if (converged)
@@ -236,37 +253,53 @@ namespace gtsam {
 			double relativeThreshold, double absoluteThreshold,
 			verbosityLevel verbosity, int maxIterations, double lambdaFactor, LambdaMode lambdaMode) const {
 
-		if (maxIterations <= 0) return *this;
+		return levenbergMarquardt(NonLinearOptimizerPara (absoluteThreshold, relativeThreshold, absoluteThreshold,
+				maxIterations, lambdaFactor, verbosity, lambdaMode)) ;
+	}
+
+
+	template<class G, class C, class L, class S, class W>
+	NonlinearOptimizer<G, C, L, S, W> NonlinearOptimizer<G, C, L, S, W>::
+	levenbergMarquardt(const NonLinearOptimizerPara &para) const {
+
+		if (para.maxIterations_ <= 0) return *this;
 
 		// check if we're already close enough
-		if (error_ < absoluteThreshold) {
-			if (verbosity >= ERROR) cout << "Exiting, as error = " << error_
-					<< " < absoluteThreshold (" << absoluteThreshold << ")" << endl;
+		if (error_ < para.sumError_) {
+			if (para.verbosity_ >= ERROR)
+				cout << "Exiting, as error = " << error_ << " < " << para.sumError_ << endl;
 			return *this;
 		}
 
 		// do one iteration of LM
-		NonlinearOptimizer next = iterateLM(verbosity, lambdaFactor, lambdaMode);
+		NonlinearOptimizer next = iterateLM(para.verbosity_, para.lambdaFactor_, para.lambdaMode_);
 
 		// check convergence
 		// TODO: move convergence checks here and incorporate in verbosity levels
 		// TODO: build into iterations somehow as an instance variable
-		bool converged = gtsam::check_convergence(relativeThreshold,
-				absoluteThreshold, error_, next.error_, verbosity);
+		bool converged = gtsam::check_convergence(
+				para.relDecrease_,
+				para.absDecrease_,
+				para.sumError_,
+				error_,
+				next.error_,
+				para.verbosity_);
 
 		// return converged state or iterate
-		if (converged || maxIterations <= 1) {
+		if (converged || para.maxIterations_ <= 1) {
 			// maybe show output
-			if (verbosity >= CONFIG)
+			if (para.verbosity_ >= CONFIG)
 				next.config_->print("final config");
-			if (verbosity >= ERROR)
+			if (para.verbosity_ >= ERROR)
 				cout << "final error: " << next.error_ << endl;
-			if (verbosity >= LAMBDA)
+			if (para.verbosity_ >= LAMBDA)
 				cout << "final lambda = " << next.lambda_ << endl;
 			return next;
-		} else
-			return next.levenbergMarquardt(relativeThreshold, absoluteThreshold,
-					verbosity, maxIterations-1, lambdaFactor, lambdaMode);
+		} else {
+			NonLinearOptimizerPara newPara = para ;
+			newPara.maxIterations_ = newPara.maxIterations_ - 1;
+			return next.levenbergMarquardt(newPara) ;
+		}
 	}
 
 	/* ************************************************************************* */
