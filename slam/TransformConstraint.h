@@ -54,7 +54,8 @@ public:
 			Point dummy;
 			*Dlocal = -1* eye(dummy.dim());
 		}
-		return Point::Logmap(local.between(newlocal));
+		return local.logmap(newlocal);
+//		return Point::Logmap(local.between(newlocal));
 	}
 };
 } // \namespace gtsam
