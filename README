@@ -37,7 +37,6 @@ Finally, there are some local libraries built needed in the rest of the code:
   colamd			COLAMD and CCOLAMD by Tim Davis needed for re-ordering
   CppUnitLite	unit test library
   doc					documentation
-  ldl					LDL by Tim Davis (will probably go)
   m4					local M4 macros
   spqr_mini		Core frontal solver from SuiteSparse (will probably go as not LGPL)
 

@@ -388,11 +388,6 @@ Matrix RtR(const Matrix& A);
 /** Return the inverse of a S.P.D. matrix.  Inversion is done via Cholesky decomposition. */
 Matrix cholesky_inverse(const Matrix &A);
 
-/** Solve Ax=b with S.P.D. matrix using Davis' LDL code */
-#ifdef GT_USE_LDL
-Vector solve_ldl(const Matrix& A, const Vector& b);
-#endif
-
 /**
  * Numerical exponential map, naive approach, not industrial strength !!!
  * @param A matrix to exponentiate

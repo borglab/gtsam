@@ -22,13 +22,6 @@ if ENABLE_SERIALIZATION
 check_PROGRAMS += testSerialization
 endif
 
-# experimental
-#check_PROGRAMS += testFusionTupleConfig # Doesn't work on Macs
-
-if USE_LDL
-check_PROGRAMS += testConstraintOptimizer 
-endif
-
 # Timing tests
 noinst_PROGRAMS = timeGaussianFactorGraph timeFactorOverhead
 
@@ -51,3 +44,6 @@ AM_DEFAULT_SOURCE_EXT = .cpp
 %.run: % $(LDADD)
 	./$^
 
+# rule to run executable with valgrind
+%.valgrind: % $(LDADD)
+	valgrind ./$^

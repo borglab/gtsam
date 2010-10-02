@@ -50,12 +50,12 @@ TESTS = $(check_PROGRAMS)
 AM_LDFLAGS = $(BOOST_LDFLAGS) $(boost_serialization) 
 LDADD = libgeometry.la ../base/libbase.la ../CppUnitLite/libCppUnitLite.a
 AM_DEFAULT_SOURCE_EXT = .cpp
-if USE_LDL
-LDADD += libldl.la 
-endif  
 
 # rule to run an executable
 %.run: % $(LDADD)
 	./$^
 
+# rule to run executable with valgrind
+%.valgrind: % $(LDADD)
+	valgrind ./$^
 #----------------------------------------------------------------------------------------------------

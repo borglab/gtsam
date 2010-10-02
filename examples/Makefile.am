@@ -22,12 +22,12 @@ AM_LDFLAGS = $(BOOST_LDFLAGS)
 AM_CPPFLAGS = -I$(boost) -I$(top_srcdir)/..
 LDADD = ../libgtsam.la
 AM_DEFAULT_SOURCE_EXT = .cpp
-if USE_LDL
-LDADD += libldl.la 
-endif  
 
 # rule to run an executable
 %.run: % $(LDADD)
 	./$^
 
+# rule to run executable with valgrind
+%.valgrind: % $(LDADD)
+	valgrind ./$^
 #----------------------------------------------------------------------------------------------------

@@ -17,7 +17,6 @@ check_PROGRAMS =
 
 # Lie Groups
 headers += LieConfig.h LieConfig-inl.h TupleConfig.h TupleConfig-inl.h 
-headers += FusionTupleConfig.h
 check_PROGRAMS += tests/testLieConfig 
 
 # Nonlinear nonlinear 
@@ -29,12 +28,6 @@ sources += NonlinearOptimizer.cpp
 # Nonlinear constraints 
 headers += NonlinearConstraint.h 
 headers += NonlinearEquality.h
-
-# SQP
-if USE_LDL
-sources += ConstraintOptimizer.cpp
-check_PROGRAMS += tests/testConstraintOptimizer
-endif
 
 #----------------------------------------------------------------------------------------------------
 # Create a libtool library that is not installed
@@ -57,13 +50,14 @@ AM_LDFLAGS = $(BOOST_LDFLAGS) $(boost_serialization)
 LDADD = libnonlinear.la ../linear/liblinear.la ../inference/libinference.la ../base/libbase.la 
 LDADD += ../CppUnitLite/libCppUnitLite.a ../colamd/libcolamd.la 
 AM_DEFAULT_SOURCE_EXT = .cpp
-if USE_LDL
-LDADD += libldl.la 
-endif 
 
 # rule to run an executable
 %.run: % $(LDADD)
 	./$^
+
+# rule to run executable with valgrind
+%.valgrind: % $(LDADD)
+	valgrind ./$^
 
 if USE_LAPACK
 AM_CXXFLAGS += -DGT_USE_LAPACK

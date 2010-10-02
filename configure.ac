@@ -14,7 +14,7 @@ AC_CONFIG_SRCDIR([base/DSFVector.cpp])
 AC_CONFIG_SRCDIR([geometry/Cal3_S2.cpp])
 AC_CONFIG_SRCDIR([inference/SymbolicFactor.cpp])
 AC_CONFIG_SRCDIR([linear/GaussianFactor.cpp])
-AC_CONFIG_SRCDIR([nonlinear/ConstraintOptimizer.cpp])
+AC_CONFIG_SRCDIR([nonlinear/NonlinearOptimizer.cpp])
 AC_CONFIG_SRCDIR([slam/pose2SLAM.cpp])
 AC_CONFIG_SRCDIR([tests/testSQP.cpp])
 AC_CONFIG_SRCDIR([wrap/wrap.cpp])
@@ -48,9 +48,6 @@ case $host_os in
         ISMAC=false
         ;;
 esac
-
-# search for a blas implementation. Kai: this can not be easily turned off for Mac.
-# AX_BLAS(true) 
 
 # enable BLAS with general purpose script
 AC_ARG_ENABLE([blas],
@@ -92,17 +89,6 @@ AC_ARG_ENABLE([spqr],
 
 AM_CONDITIONAL([USE_SPQR], [test x$spqr = xtrue])
 
-# enable using LDL library from SuiteSparse
-AC_ARG_ENABLE([ldl],
-     [  --enable-ldl    Enable LDL library support],
-     [case "${enableval}" in
-       yes) ldl=true ;;
-       no)  ldl=false ;;
-       *) AC_MSG_ERROR([bad value ${enableval} for --enable-ldl]) ;;
-     esac],[ldl=false])
-
-AM_CONDITIONAL([USE_LDL], [test x$ldl = xtrue])
-
 # enable profiling
 AC_ARG_ENABLE([profiling],
      [  --enable-profiling    Enable profiling],
@@ -128,10 +114,6 @@ AM_CONDITIONAL([ENABLE_SERIALIZATION], [test x$serialization = xtrue])
 # Checks for programs.
 AC_PROG_CXX
 AC_PROG_CC
-# FIXME: Need to use boost macros to get serialization library linked
-#AX_BOOST_BASE([1.37.0])
-#AX_BOOST_SERIALIZATION 
-#AX_BOOST_BASE([1.33]) # does not work on windows, even after compiling & installing boost manually
 
 # Checks for libraries.
 LT_INIT
@@ -169,15 +151,5 @@ AC_ARG_WITH([boost],
                    [--with-boost has to be specified])
             ])
 AC_SUBST([boost])
-
-# ask for boost serialization
-#AC_ARG_WITH([boost_serialization],
-#	     [AS_HELP_STRING([--with-boost-serialization],
-#			      [(optional) use the Serialization library from boost - specify the library linking command with the full name of the library
-#			        e.g. --with-boost-serialization=-lboost_serialization-gcc-mt-d-1_33_1])],
-#	     [AC_DEFINE([HAVE_BOOST_SERIALIZATION], ["<boost/foreach.hpp>"], [boost serialization flag]) 
-#                
-#AC_SUBST([boost_serialization])
-
 	
 AC_OUTPUT

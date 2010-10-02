@@ -78,9 +78,6 @@ AM_DEFAULT_SOURCE_EXT = .cpp
 AM_LDFLAGS = $(BOOST_LDFLAGS) $(boost_serialization)
 LDADD = libslam.la ../geometry/libgeometry.la  ../nonlinear/libnonlinear.la ../linear/liblinear.la ../inference/libinference.la ../base/libbase.la 
 LDADD += ../CppUnitLite/libCppUnitLite.a ../colamd/libcolamd.la  
-if USE_LDL
-LDADD += libldl.la 
-endif 
 
 if USE_LAPACK
 LDADD += ../spqr_mini/libspqr_mini.la
@@ -90,3 +87,6 @@ endif
 %.run: % $(LDADD)
 	./$^
 
+# rule to run executable with valgrind
+%.valgrind: % $(LDADD)
+	valgrind ./$^

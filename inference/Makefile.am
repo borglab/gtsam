@@ -69,13 +69,14 @@ AM_LDFLAGS = $(BOOST_LDFLAGS) $(boost_serialization)
 LDADD = libinference.la ../base/libbase.la 
 LDADD += ../CppUnitLite/libCppUnitLite.a ../colamd/libcolamd.la 
 AM_DEFAULT_SOURCE_EXT = .cpp
-if USE_LDL
-LDADD += libldl.la 
-endif 
 
 # rule to run an executable
 %.run: % $(LDADD)
 	./$^
+
+# rule to run executable with valgrind
+%.valgrind: % $(LDADD)
+	valgrind ./$^
 
 if USE_LAPACK
 AM_CXXFLAGS += -DGT_USE_LAPACK
