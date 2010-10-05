@@ -133,12 +133,19 @@ namespace tensors {
 			return true;
 		}
 
-		// TODO: broken !!!! Should not treat Tensor1's separately: one scale only!
+		/** norm */
+		double norm() const {
+			double sumsqr = 0.0;
+			for (int i = 0; i < I::dim; i++)
+				for (int j = 0; j < J::dim; j++)
+					sumsqr += iter(i,j) * iter(i,j);
+			return sqrt(sumsqr);
+		}
+
 		template<class B>
 		bool equivalent(const Tensor2Expression<B, I, J> & q, double tol) const {
-			for (int j = 0; j < J::dim; j++)
-				if (!(*this)(j).equivalent(q(j), tol)) return false;
-			return true;
+			return ((*this) * (1.0 / norm())).equals(q * (1.0 / q.norm()), tol)
+			|| ((*this) * (-1.0 / norm())).equals(q * (1.0 / q.norm()), tol);
 		}
 
 		/** element access */

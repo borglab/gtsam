@@ -73,7 +73,8 @@ namespace tensors {
 
 		template<class B>
 		bool equivalent(const Tensor1Expression<B, I> & q, double tol = 1e-9) const {
-			return ((*this) * (1.0 / norm())).equals(q * (1.0 / q.norm()), tol);
+			return ((*this) * (1.0 / norm())).equals(q * (1.0 / q.norm()), tol)
+			|| ((*this) * (-1.0 / norm())).equals(q * (1.0 / q.norm()), tol);
 		}
 
 		/** Check if two expressions are equal */
