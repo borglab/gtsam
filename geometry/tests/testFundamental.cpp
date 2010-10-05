@@ -72,36 +72,36 @@ Point3h P7 = point3h(+1, +1, 3 - 1, 1);
 Point3h P8 = point3h(+1, +1, 3 + 1, 1);
 
 /* ************************************************************************* */
-//TEST( Tensors, FundamentalMatrix2)
-//{
-//	// The matrix A is rank-deficient, but as checked below this one
-//	// out of many in the zero-error subspace is a correct F for the rig
-//	double f[3][3] = {{-0, 5.06764, -0.840876}
-//	,{-4.62947, 1.25142, 1.99583e+16}
-//	,{-1.70847, -1.99583e+16, 1}
-//	};
-//	FundamentalMatrix F(f);
-//
-//	list<Point3h> points;
-//	Point3h P9 = point3h(-2,3,4,1);
-//	Point3h P10 = point3h(1,1,5,1);
-//	points += P1, P2, P3, P4, P5, P6, P7, P8, P9, P10;
-//	list<Correspondence> correspondences;
-//	BOOST_FOREACH(const Point3h& P, points) {
-//		print(P(A));
-//		Correspondence p(ML(a,A)*P(A), MR(b,A)*P(A));
-//		print(ML(a,A)*P(A));print(MR(b,A)*P(A));
-////		DOUBLES_EQUAL(0,F(a,b) * p.first(a) * p.second(b),1e-9); // checked here for cube
-//		correspondences += p;
-//	}
-//
-//	// let's check it for another arbitrary point
-//	Point2h left(ML(a,A)*P9(A)), right(MR(b,A)*P9(A));
-////	DOUBLES_EQUAL(0,F(a,b) * left(a) * right(b),1e-9);
-//
-//	FundamentalMatrix actual = estimateFundamentalMatrix(correspondences);
-//	CHECK(assert_equality(F(a,b),actual(a,b)*(1.0/actual(2,2)),0.1));
-//}
+TEST( Tensors, FundamentalMatrix2)
+{
+	// The correct fundamental matrix is given by formula 9.1 in HZ 2nd ed., p. 244
+	// F = \hat(e')P'P+
+	// and is very simple
+	double f[3][3] = {{0,0,0}
+	,{0,0,-1}
+	,{0,1,0}
+	};
+	FundamentalMatrix F(f);
+
+	// Create a list of correspondences
+	list<Point3h> points;
+	Point3h P9 = point3h(-2,3,4,1);
+	Point3h P10 = point3h(1,1,5,1);
+	points += P1, P2, P3, P4, P5, P6, P7, P8, P9, P10;
+	list<Correspondence> correspondences;
+	BOOST_FOREACH(const Point3h& P, points) {
+		Correspondence p(ML(a,A)*P(A), MR(b,A)*P(A));
+		DOUBLES_EQUAL(0,F(a,b) * p.first(a) * p.second(b),1e-9);
+		correspondences += p;
+	}
+
+	// let's check it for another arbitrary point
+	Point2h left(ML(a,A)*P9(A)), right(MR(b,A)*P9(A));
+	DOUBLES_EQUAL(0,F(a,b) * left(a) * right(b),1e-9);
+
+	FundamentalMatrix actual = estimateFundamentalMatrix(correspondences);
+	CHECK(assert_equivalent(F(a,b),actual(a,b),0.1));
+}
 
 /* ************************************************************************* */
 int main() {
