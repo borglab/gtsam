@@ -49,13 +49,14 @@ namespace gtsam {
      */
   	typedef J Key;
   	typedef typename J::Value_t Value;
-    typedef std::map<J,Value> Values;
-    typedef typename Values::iterator iterator;
-    typedef typename Values::const_iterator const_iterator;
+    typedef std::map<J,Value> KeyValueMap;
+    typedef typename KeyValueMap::value_type KeyValuePair;
+    typedef typename KeyValueMap::iterator iterator;
+    typedef typename KeyValueMap::const_iterator const_iterator;
 
   private:
 
-    Values values_;
+    KeyValueMap values_;
 
   public:
 

@@ -32,7 +32,7 @@ namespace gtsam {
   template<class J>
   void LieConfig<J>::print(const string &s) const {
        cout << "LieConfig " << s << ", size " << values_.size() << "\n";
-       BOOST_FOREACH(const typename Values::value_type& v, values_) {
+       BOOST_FOREACH(const KeyValuePair& v, values_) {
          gtsam::print(v.second, (string)(v.first));
        }
      }
@@ -41,7 +41,7 @@ namespace gtsam {
   template<class J>
   bool LieConfig<J>::equals(const LieConfig<J>& expected, double tol) const {
     if (values_.size() != expected.values_.size()) return false;
-    BOOST_FOREACH(const typename Values::value_type& v, values_) {
+    BOOST_FOREACH(const KeyValuePair& v, values_) {
     	if (!expected.exists(v.first)) return false;
       if(!gtsam::equal(v.second, expected[v.first], tol))
         return false;
@@ -61,7 +61,7 @@ namespace gtsam {
   template<class J>
   size_t LieConfig<J>::dim() const {
   	size_t n = 0;
-  	BOOST_FOREACH(const typename Values::value_type& value, values_)
+  	BOOST_FOREACH(const KeyValuePair& value, values_)
   		n += value.second.dim();
   	return n;
   }
@@ -70,7 +70,7 @@ namespace gtsam {
   template<class J>
   VectorConfig LieConfig<J>::zero() const {
   	VectorConfig z;
-  	BOOST_FOREACH(const typename Values::value_type& value, values_)
+  	BOOST_FOREACH(const KeyValuePair& value, values_)
   		z.insert(value.first,gtsam::zero(value.second.dim()));
   	return z;
   }
@@ -84,14 +84,14 @@ namespace gtsam {
   /* ************************************************************************* */
   template<class J>
   void LieConfig<J>::insert(const LieConfig<J>& cfg) {
-	  BOOST_FOREACH(const typename Values::value_type& v, cfg.values_)
+	  BOOST_FOREACH(const KeyValuePair& v, cfg.values_)
 		 insert(v.first, v.second);
   }
 
   /* ************************************************************************* */
   template<class J>
   void LieConfig<J>::update(const LieConfig<J>& cfg) {
-	  BOOST_FOREACH(const typename Values::value_type& v, values_) {
+	  BOOST_FOREACH(const KeyValuePair& v, values_) {
 	  	boost::optional<typename J::Value_t> t = cfg.exists_(v.first);
 	  	if (t) values_[v.first] = *t;
 	  }
@@ -107,7 +107,7 @@ namespace gtsam {
   template<class J>
   std::list<J> LieConfig<J>::keys() const {
 	  std::list<J> ret;
-	  BOOST_FOREACH(const typename Values::value_type& v, values_)
+	  BOOST_FOREACH(const KeyValuePair& v, values_)
 		  ret.push_back(v.first);
 	  return ret;
   }

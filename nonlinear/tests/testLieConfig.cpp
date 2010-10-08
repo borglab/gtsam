@@ -1,8 +1,6 @@
-/*
- * testLieConfig.cpp
- *
- *  Created on: Jan 5, 2010
- *      Author: richard
+/**
+ * @file testLieConfig.cpp
+ * @author Richard Roberts
  */
 
 #include <gtsam/CppUnitLite/TestHarness.h>
