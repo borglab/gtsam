@@ -21,5 +21,6 @@ namespace gtsam {
 	/** Householder tranformation, zeros below diagonal */
 	void householder_spqr(Matrix &A, long* Stair = NULL);
 
+	void householder_spqr_colmajor(boost::numeric::ublas::matrix<double, boost::numeric::ublas::column_major>& A, long *Stair);
 }
 #endif

@@ -10,27 +10,29 @@ using namespace boost::assign;
 
 #include <gtsam/CppUnitLite/TestHarness.h>
 
-#define GTSAM_MAGIC_KEY
+//#define GTSAM_MAGIC_KEY
 
-#include <gtsam/inference/Ordering.h>
-#include <gtsam/inference/SymbolicBayesNet.h>
 #include <gtsam/inference/SymbolicFactorGraph.h>
 
 using namespace std;
 using namespace gtsam;
 
-Symbol _B_('B', 0), _L_('L', 0);
-SymbolicConditional::shared_ptr
-	B(new SymbolicConditional(_B_)),
-	L(new SymbolicConditional(_L_, _B_));
+static const varid_t _L_ = 0;
+static const varid_t _A_ = 1;
+static const varid_t _B_ = 2;
+static const varid_t _C_ = 3;
+
+Conditional::shared_ptr
+	B(new Conditional(_B_)),
+	L(new Conditional(_L_, _B_));
 
 /* ************************************************************************* */
 TEST( SymbolicBayesNet, equals )
 {
-	SymbolicBayesNet f1;
+	BayesNet<Conditional> f1;
 	f1.push_back(B);
 	f1.push_back(L);
-	SymbolicBayesNet f2;
+	BayesNet<Conditional> f2;
 	f2.push_back(L);
 	f2.push_back(B);
 	CHECK(f1.equals(f1));
@@ -40,18 +42,18 @@ TEST( SymbolicBayesNet, equals )
 /* ************************************************************************* */
 TEST( SymbolicBayesNet, pop_front )
 {
-	SymbolicConditional::shared_ptr
-		A(new SymbolicConditional("A","B","C")),
-		B(new SymbolicConditional("B","C")),
-		C(new SymbolicConditional("C"));
+	Conditional::shared_ptr
+		A(new Conditional(_A_,_B_,_C_)),
+		B(new Conditional(_B_,_C_)),
+		C(new Conditional(_C_));
 
 	// Expected after pop_front
-	SymbolicBayesNet expected;
+	BayesNet<Conditional> expected;
 	expected.push_back(B);
 	expected.push_back(C);
 
 	// Actual
-	SymbolicBayesNet actual;
+	BayesNet<Conditional> actual;
 	actual.push_back(A);
 	actual.push_back(B);
 	actual.push_back(C);
@@ -63,24 +65,24 @@ TEST( SymbolicBayesNet, pop_front )
 /* ************************************************************************* */
 TEST( SymbolicBayesNet, combine )
 {
-	SymbolicConditional::shared_ptr
-		A(new SymbolicConditional("A","B","C")),
-		B(new SymbolicConditional("B","C")),
-		C(new SymbolicConditional("C"));
+	Conditional::shared_ptr
+		A(new Conditional(_A_,_B_,_C_)),
+		B(new Conditional(_B_,_C_)),
+		C(new Conditional(_C_));
 
 	// p(A|BC)
-	SymbolicBayesNet p_ABC;
+	BayesNet<Conditional> p_ABC;
 	p_ABC.push_back(A);
 
 	// P(BC)=P(B|C)P(C)
-	SymbolicBayesNet p_BC;
+	BayesNet<Conditional> p_BC;
 	p_BC.push_back(B);
 	p_BC.push_back(C);
 
 	// P(ABC) = P(A|BC) P(BC)
 	p_ABC.push_back(p_BC);
 
-	SymbolicBayesNet expected;
+	BayesNet<Conditional> expected;
 	expected.push_back(A);
 	expected.push_back(B);
 	expected.push_back(C);

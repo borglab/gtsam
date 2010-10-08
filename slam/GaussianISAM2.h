@@ -20,7 +20,7 @@ namespace gtsam {
 	typedef ISAM2<GaussianConditional, planarSLAM::Config> GaussianISAM2_P;
 
 	// optimize the BayesTree, starting from the root
-	boost::shared_ptr<VectorConfig> optimize2(const GaussianISAM2::sharedClique& root);
+	void optimize2(const GaussianISAM2::sharedClique& root, VectorConfig& delta);
 
 	// optimize the BayesTree, starting from the root; "replaced" needs to contain
 	// all variables that are contained in the top of the Bayes tree that has been
@@ -31,7 +31,7 @@ namespace gtsam {
 	// variables are contained in the subtree.
 	// returns the number of variables that were solved for
 	int optimize2(const GaussianISAM2::sharedClique& root,
-			double threshold, const std::set<Symbol>& replaced, VectorConfig& delta);
+			double threshold, const std::vector<bool>& replaced, Permuted<VectorConfig>& delta);
 
 	// calculate the number of non-zero entries for the tree starting at clique (use root for complete matrix)
 	int calculate_nnz(const GaussianISAM2::sharedClique& clique);

@@ -49,19 +49,19 @@
 /* ========================================================================== */
 
 /* turn off debugging */
-#ifndef NDEBUG
-#define NDEBUG
+#ifndef SPQR_NDEBUG
+#define SPQR_NDEBUG
 #endif
 
 /* Uncomment this line to enable debugging.  CHOLMOD will be very slow.
-#undef NDEBUG
+#undef SPQR_NDEBUG
  */
 
 #ifdef MATLAB_MEX_FILE
 #include "mex.h"
 #endif
 
-#if !defined(NPRINT) || !defined(NDEBUG)
+#if !defined(NPRINT) || !defined(SPQR_NDEBUG)
 #include <stdio.h>
 #endif
 
@@ -298,7 +298,7 @@ size_t cholmod_l_mult_size_t (size_t a, size_t k, int *ok) ;
 /* === debugging definitions ================================================ */
 /* ========================================================================== */
 
-#ifndef NDEBUG
+#ifndef SPQR_NDEBUG
 
 #include <assert.h>
 #include "cholmod.h"

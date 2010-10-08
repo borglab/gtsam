@@ -14,6 +14,7 @@
 #include <gtsam/linear/VectorConfig.h>
 #include <gtsam/base/LieVector.h>
 #include <gtsam/base/Lie-inl.h>
+#include <gtsam/nonlinear/Ordering.h>
 
 #include <gtsam/nonlinear/LieConfig.h>
 
@@ -68,10 +69,9 @@ namespace gtsam {
 
   /* ************************************************************************* */
   template<class J>
-  VectorConfig LieConfig<J>::zero() const {
-  	VectorConfig z;
-  	BOOST_FOREACH(const KeyValuePair& value, values_)
-  		z.insert(value.first,gtsam::zero(value.second.dim()));
+  VectorConfig LieConfig<J>::zero(const Ordering& ordering) const {
+  	VectorConfig z(this->dims(ordering));
+  	z.makeZero();
   	return z;
   }
 
@@ -131,55 +131,74 @@ namespace gtsam {
   /* ************************************************************************* */
   // todo: insert for every element is inefficient
   template<class J>
-  LieConfig<J> LieConfig<J>::expmap(const VectorConfig& delta) const {
+  LieConfig<J> LieConfig<J>::expmap(const VectorConfig& delta, const Ordering& ordering) const {
 		LieConfig<J> newConfig;
 		typedef pair<J,typename J::Value_t> KeyValue;
 		BOOST_FOREACH(const KeyValue& value, this->values_) {
 			const J& j = value.first;
 			const typename J::Value_t& pj = value.second;
-			Symbol jkey = (Symbol)j;
-			if (delta.contains(jkey)) {
-				const Vector& dj = delta[jkey];
-				newConfig.insert(j, pj.expmap(dj));
-			} else
-				newConfig.insert(j, pj);
+			const Vector& dj = delta[ordering[j]];
+			newConfig.insert(j, pj.expmap(dj));
 		}
 		return newConfig;
 	}
 
   /* ************************************************************************* */
-  // todo: insert for every element is inefficient
   template<class J>
-  LieConfig<J> LieConfig<J>::expmap(const Vector& delta) const {
-    if(delta.size() != dim()) {
-    	cout << "LieConfig::dim (" << dim() << ") <> delta.size (" << delta.size() << ")" << endl;
-      throw invalid_argument("Delta vector length does not match config dimensionality.");
-    }
-    LieConfig<J> newConfig;
-    int delta_offset = 0;
-		typedef pair<J,typename J::Value_t> KeyValue;
-		BOOST_FOREACH(const KeyValue& value, this->values_) {
-			const J& j = value.first;
-			const typename J::Value_t& pj = value.second;
-      int cur_dim = pj.dim();
-      newConfig.insert(j,pj.expmap(sub(delta, delta_offset, delta_offset+cur_dim)));
-      delta_offset += cur_dim;
-    }
-    return newConfig;
+  std::vector<size_t> LieConfig<J>::dims(const Ordering& ordering) const {
+    _ConfigDimensionCollector dimCollector(ordering);
+    this->apply(dimCollector);
+    return dimCollector.dimensions;
   }
+
+  /* ************************************************************************* */
+  template<class J>
+  Ordering::shared_ptr LieConfig<J>::orderingArbitrary(varid_t firstVar) const {
+    // Generate an initial key ordering in iterator order
+    _ConfigKeyOrderer keyOrderer(firstVar);
+    this->apply(keyOrderer);
+    return keyOrderer.ordering;
+  }
+
+//  /* ************************************************************************* */
+//  // todo: insert for every element is inefficient
+//  template<class J>
+//  LieConfig<J> LieConfig<J>::expmap(const Vector& delta) const {
+//    if(delta.size() != dim()) {
+//    	cout << "LieConfig::dim (" << dim() << ") <> delta.size (" << delta.size() << ")" << endl;
+//      throw invalid_argument("Delta vector length does not match config dimensionality.");
+//    }
+//    LieConfig<J> newConfig;
+//    int delta_offset = 0;
+//		typedef pair<J,typename J::Value_t> KeyValue;
+//		BOOST_FOREACH(const KeyValue& value, this->values_) {
+//			const J& j = value.first;
+//			const typename J::Value_t& pj = value.second;
+//      int cur_dim = pj.dim();
+//      newConfig.insert(j,pj.expmap(sub(delta, delta_offset, delta_offset+cur_dim)));
+//      delta_offset += cur_dim;
+//    }
+//    return newConfig;
+//  }
 
   /* ************************************************************************* */
   // todo: insert for every element is inefficient
   // todo: currently only logmaps elements in both configs
   template<class J>
-  VectorConfig LieConfig<J>::logmap(const LieConfig<J>& cp) const {
-  	VectorConfig delta;
-		typedef pair<J,typename J::Value_t> KeyValue;
-  	BOOST_FOREACH(const KeyValue& value, cp) {
-  		if(this->exists(value.first))
-  			delta.insert(value.first, this->at(value.first).logmap(value.second));
-  	}
+  inline VectorConfig LieConfig<J>::logmap(const LieConfig<J>& cp, const Ordering& ordering) const {
+  	VectorConfig delta(this->dims(ordering));
+  	logmap(cp, ordering, delta);
   	return delta;
+  }
+
+  /* ************************************************************************* */
+  template<class J>
+  void LieConfig<J>::logmap(const LieConfig<J>& cp, const Ordering& ordering, VectorConfig& delta) const {
+    typedef pair<J,typename J::Value_t> KeyValue;
+    BOOST_FOREACH(const KeyValue& value, cp) {
+      assert(this->exists(value.first));
+      delta[ordering[value.first]] = this->at(value.first).logmap(value.second);
+    }
   }
 
 }

@@ -10,7 +10,7 @@
 
 #include <boost/shared_ptr.hpp>
 #include <boost/make_shared.hpp>
-#include <gtsam/inference/Ordering.h>
+#include <gtsam/nonlinear/Ordering.h>
 #include <gtsam/linear/VectorConfig.h>
 #include <gtsam/nonlinear/NonlinearFactorGraph.h>
 #include <gtsam/linear/Factorization.h>
@@ -217,11 +217,16 @@ namespace gtsam {
 		 */
 		static shared_config optimizeLM(shared_graph graph, shared_config config,
 				verbosityLevel verbosity = SILENT) {
-			boost::shared_ptr<gtsam::Ordering> ord(new gtsam::Ordering(graph->getOrdering()));
+
+		  // Use a variable ordering from COLAMD
+		  Ordering::shared_ptr ordering;
+		  GaussianVariableIndex<>::shared_ptr variableIndex;
+		  boost::tie(ordering, variableIndex) = graph->orderingCOLAMD(*config);
+
 			double relativeThreshold = 1e-5, absoluteThreshold = 1e-5;
 
 			// initial optimization state is the same in both cases tested
-			shared_solver solver(new S(ord, false));
+			shared_solver solver(new S(ordering));
 			NonlinearOptimizer optimizer(graph, config, solver);
 
 			// Levenberg-Marquardt
@@ -248,11 +253,13 @@ namespace gtsam {
 		 */
 		static shared_config optimizeGN(shared_graph graph, shared_config config,
 				verbosityLevel verbosity = SILENT) {
-			boost::shared_ptr<gtsam::Ordering> ord(new gtsam::Ordering(graph->getOrdering()));
+      Ordering::shared_ptr ordering;
+      GaussianVariableIndex<>::shared_ptr variableIndex;
+      boost::tie(ordering, variableIndex) = graph->orderingCOLAMD(*config);
 			double relativeThreshold = 1e-5, absoluteThreshold = 1e-5;
 
 			// initial optimization state is the same in both cases tested
-			shared_solver solver(new S(ord, false));
+			shared_solver solver(new S(ordering));
 			NonlinearOptimizer optimizer(graph, config, solver);
 
 			// Gauss-Newton

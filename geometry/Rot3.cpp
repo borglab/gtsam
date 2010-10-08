@@ -143,7 +143,7 @@ namespace gtsam {
 
   /* ************************************************************************* */
   // Log map at identity - return the canonical coordinates of this rotation
-  inline Vector Rot3::Logmap(const Rot3& R) {
+  Vector Rot3::Logmap(const Rot3& R) {
     double tr = R.r1().x()+R.r2().y()+R.r3().z();
     if (fabs(tr-3.0) < 1e-10) {   // when theta = 0, +-2pi, +-4pi, etc.
       return zero(3);

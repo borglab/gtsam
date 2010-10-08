@@ -40,6 +40,7 @@ namespace gtsam {
 #ifdef SLOW_BUT_CORRECT_EXPMAP
 
 	Pose2 Pose2::Expmap(const Vector& xi) {
+	  assert(xi.size() == 3);
 		Point2 v(xi(0),xi(1));
 		double w = xi(2);
 		if (fabs(w) < 1e-5)
@@ -71,6 +72,7 @@ namespace gtsam {
 
   /* ************************************************************************* */
   Pose2 Pose2::Expmap(const Vector& v) {
+    assert(v.size() == 3);
 	  return Pose2(v[0], v[1], v[2]);
   }
 

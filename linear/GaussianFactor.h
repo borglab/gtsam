@@ -13,100 +13,149 @@
 #include <boost/tuple/tuple.hpp>
 //#include <boost/serialization/map.hpp>
 #include <boost/foreach.hpp>
+#include <boost/lambda/lambda.hpp>
+#include <boost/bind.hpp>
+#include <boost/numeric/ublas/matrix_proxy.hpp>
+#include <boost/pool/pool_alloc.hpp>
 #include <list>
 #include <set>
+#include <vector>
+#include <map>
+#include <deque>
 
-#include <gtsam/inference/Factor.h>
+#include <gtsam/base/types.h>
 #include <gtsam/base/Matrix.h>
+#include <gtsam/base/blockMatrices.h>
+#include <gtsam/inference/Factor-inl.h>
+#include <gtsam/inference/inference.h>
+#include <gtsam/inference/VariableSlots.h>
 #include <gtsam/linear/VectorConfig.h>
 #include <gtsam/linear/SharedDiagonal.h>
 #include <gtsam/linear/GaussianConditional.h>
 #include <gtsam/linear/GaussianBayesNet.h>
-#include <gtsam/inference/SymbolMap.h>
 
 namespace gtsam {
 
-	class Ordering;
+class GaussianFactorGraph;
+template<class VariableIndexStorage=VariableIndexStorage_vector> class GaussianVariableIndex;
 
-	/** A map from key to dimension, useful in various contexts */
-  typedef SymbolMap<size_t> Dimensions;
+/** A map from key to dimension, useful in various contexts */
+typedef std::map<varid_t, size_t> Dimensions;
 
 /**
  * Base Class for a linear factor.
  * GaussianFactor is non-mutable (all methods const!).
  * The factor value is exp(-0.5*||Ax-b||^2)
  */
-class GaussianFactor: boost::noncopyable, public Factor<VectorConfig> {
+class GaussianFactor: public Factor {
+
 public:
 
+  typedef GaussianConditional Conditional;
 	typedef boost::shared_ptr<GaussianFactor> shared_ptr;
-	typedef SymbolMap<Matrix>::iterator iterator;
-	typedef SymbolMap<Matrix>::const_iterator const_iterator;
+  typedef boost::numeric::ublas::matrix<double, boost::numeric::ublas::column_major> matrix_type;
+	typedef VerticalBlockView<matrix_type> ab_type;
 
 protected:
 
 	SharedDiagonal model_; // Gaussian noise model with diagonal covariance matrix
-	SymbolMap<Matrix> As_; // linear matrices
-	Vector b_; // right-hand-side
+	std::vector<size_t> firstNonzeroBlocks_;
+	matrix_type matrix_;
+	ab_type Ab_;
 
 public:
 
-	/* default constructor for I/O */
-	GaussianFactor()  {}
+	/** Copy constructor */
+	GaussianFactor(const GaussianFactor& gf);
+
+	/** default constructor for I/O */
+	GaussianFactor();
 
 	/** Construct Null factor */
 	GaussianFactor(const Vector& b_in);
 
 	/** Construct unary factor */
-	GaussianFactor(const Symbol& key1, const Matrix& A1,
+	GaussianFactor(varid_t i1, const Matrix& A1,
 			const Vector& b, const SharedDiagonal& model);
 
 	/** Construct binary factor */
-	GaussianFactor(const Symbol& key1, const Matrix& A1,
-			const Symbol& key2, const Matrix& A2,
+	GaussianFactor(varid_t i1, const Matrix& A1,
+			varid_t i2, const Matrix& A2,
 			const Vector& b, const SharedDiagonal& model);
 
 	/** Construct ternary factor */
-	GaussianFactor(const Symbol& key1, const Matrix& A1, const Symbol& key2,
-			const Matrix& A2, const Symbol& key3, const Matrix& A3,
+	GaussianFactor(varid_t i1, const Matrix& A1, varid_t i2,
+			const Matrix& A2, varid_t i3, const Matrix& A3,
 			const Vector& b, const SharedDiagonal& model);
 
 	/** Construct an n-ary factor */
-	GaussianFactor(const std::vector<std::pair<Symbol, Matrix> > &terms,
+	GaussianFactor(const std::vector<std::pair<varid_t, Matrix> > &terms,
 	    const Vector &b, const SharedDiagonal& model);
 
-	GaussianFactor(const std::list<std::pair<Symbol, Matrix> > &terms,
+	GaussianFactor(const std::list<std::pair<varid_t, Matrix> > &terms,
 	    const Vector &b, const SharedDiagonal& model);
 
 	/** Construct from Conditional Gaussian */
-	GaussianFactor(const boost::shared_ptr<GaussianConditional>& cg);
+	GaussianFactor(const GaussianConditional& cg);
 
-	/** Constructor that combines a set of factors */
-	GaussianFactor(const std::vector<shared_ptr> & factors);
+//	/** Constructor that combines a set of factors */
+//	GaussianFactor(const std::vector<shared_ptr> & factors);
 
-	// Implementing Testable virtual functions
-
+	// Implementing Testable interface
 	void print(const std::string& s = "") const;
-	bool equals(const Factor<VectorConfig>& lf, double tol = 1e-9) const;
-
-	// Implementing Factor virtual functions
+	bool equals(const GaussianFactor& lf, double tol = 1e-9) const;
 
 	Vector unweighted_error(const VectorConfig& c) const; /** (A*x-b) */
 	Vector error_vector(const VectorConfig& c) const; /** (A*x-b)/sigma */
 	double error(const VectorConfig& c) const; /**  0.5*(A*x-b)'*D*(A*x-b) */
-	std::size_t size() const { return As_.size();}
 
-	/** STL like, return the iterator pointing to the first node */
-	const_iterator const begin() const { return As_.begin();}
+	/** Check if the factor contains no information, i.e. zero rows.  This does
+	 * not necessarily mean that the factor involves no variables (to check for
+	 * involving no variables use keys().empty()).
+	 */
+	bool empty() const { return Ab_.size1() == 0;}
 
-	/** STL like, return the iterator pointing to the last node */
-	const_iterator const end() const { return As_.end();	}
+	/** Get a view of the r.h.s. vector b */
+	ab_type::const_column_type getb() const { return Ab_.column(size(), 0); }
+  ab_type::column_type getb() { return Ab_.column(size(), 0); }
 
-	/** check if empty */
-	bool empty() const { return b_.size() == 0;}
+	/** Get a view of the A matrix for the variable pointed to be the given key iterator */
+	ab_type::const_block_type getA(const_iterator variable) const { return Ab_(variable - keys_.begin());	}
+  ab_type::block_type getA(iterator variable) { return Ab_(variable - keys_.begin()); }
 
-	/** get a copy of b */
-	const Vector& get_b() const {	return b_;	}
+	/** Return the dimension of the variable pointed to by the given key iterator
+	 * todo: Remove this in favor of keeping track of dimensions with variables?
+	 */
+	size_t getDim(const_iterator variable) const { return Ab_(variable - keys_.begin()).size2(); }
+
+  /**
+   * Permutes the GaussianFactor, but for efficiency requires the permutation
+   * to already be inverted.  This acts just as a change-of-name for each
+   * variable.  The order of the variables within the factor is not changed.
+   */
+  void permuteWithInverse(const Permutation& inversePermutation);
+
+  /** Named constructor for combining a set of factors with pre-computed set of
+   * variables. */
+  template<class Storage>
+  static shared_ptr Combine(const GaussianFactorGraph& factorGraph,
+      const GaussianVariableIndex<Storage>& variableIndex, const std::vector<size_t>& factors,
+      const std::vector<varid_t>& variables, const std::vector<std::vector<size_t> >& variablePositions);
+
+  /**
+   * Named constructor for combining a set of factors with pre-computed set of
+   * variables.
+   */
+  static shared_ptr Combine(const GaussianFactorGraph& factors, const VariableSlots& variableSlots);
+
+protected:
+
+  /** Protected mutable accessor for the r.h.s. b. */
+
+  /** Internal debug check to make sure variables are sorted */
+  void checkSorted() const;
+
+public:
 
 	/** get a copy of sigmas */
 	const Vector& get_sigmas() const {	return model_->sigmas();	}
@@ -115,84 +164,16 @@ public:
 	const SharedDiagonal& get_model() const { return model_;  }
 
 	/**
-	 * get a copy of the A matrix from a specific node
-	 * O(log n)
-	 */
-	const Matrix& get_A(const Symbol& key) const {
-		return As_.at(key);
-	}
-
-	/** erase the A associated with the input key */
-	size_t erase_A(const Symbol& key) { return As_.erase(key); }
-
-	/** operator[] syntax for get */
-	inline const Matrix& operator[](const Symbol& name) const {
-		return get_A(name);
-	}
-
-	/** Check if factor involves variable with key */
-	bool involves(const Symbol& key) const {
-		const_iterator it = As_.find(key);
-		return (it != As_.end());
-	}
-
-	/**
 	 * return the number of rows from the b vector
 	 * @return a integer with the number of rows from the b vector
 	 */
-	int numberOfRows() const { return b_.size();}
-
-	/**
-	 * Find all variables
-	 * @return The set of all variable keys
-	 */
-	std::list<Symbol> keys() const;
-
-	/**
-	 * return the first key
-	 * TODO: this function should be removed and the minimum spanning tree code
-	 * modified accordingly.
-	 * @return The set of all variable keys
-	 */
-	Symbol key1() const { return As_.begin()->first; }
-
-	/**
-	 * return the first key
-   * TODO: this function should be removed and the minimum spanning tree code
-   * modified accordingly.
-	 * @return The set of all variable keys
-	 */
-	Symbol key2() const {
-		if (As_.size() < 2) throw std::invalid_argument("GaussianFactor: less than 2 keys!");
-		return (++(As_.begin()))->first;
-	}
-
-	/**
-	 * Find all variables and their dimensions
-	 * @return The set of all variable/dimension pairs
-	 */
-	Dimensions dimensions() const;
-
-	/**
-	 * Get the dimension of a particular variable
-	 * @param key is the name of the variable
-	 * @return the size of the variable
-	 */
-	size_t getDim(const Symbol& key) const;
-
-	/**
-	 * Add to separator set if this factor involves key, but don't add key itself
-	 * @param key
-	 * @param separator set to add to
-	 */
-	void tally_separator(const Symbol& key,
-			std::set<Symbol>& separator) const;
+	size_t numberOfRows() const { return Ab_.size1(); }
 
 	/** Return A*x */
 	Vector operator*(const VectorConfig& x) const;
 
-	/** Return A'*e */
-	VectorConfig operator^(const Vector& e) const;
+//	/** Return A'*e */
+//	VectorConfig operator^(const Vector& e) const;
 
 	/** x += A'*e */
 	void transposeMultiplyAdd(double alpha, const Vector& e, VectorConfig& x) const;
@@ -202,7 +183,7 @@ public:
 	 * @param ordering of variables needed for matrix column order
 	 * @param set weight to true to bake in the weights
 	 */
-	std::pair<Matrix, Vector> matrix(const Ordering& ordering, bool weight = true) const;
+	std::pair<Matrix, Vector> matrix(bool weight = true) const;
 
 	/**
 	 * Return (dense) matrix associated with factor
@@ -210,7 +191,7 @@ public:
 	 * @param ordering of variables needed for matrix column order
 	 * @param set weight to use whitening to bake in weights
 	 */
-	Matrix matrix_augmented(const Ordering& ordering, bool weight = true) const;
+	Matrix matrix_augmented(bool weight = true) const;
 
 	/**
 	 * Return vectors i, j, and s to generate an m-by-n sparse matrix
@@ -225,52 +206,12 @@ public:
 	// MUTABLE functions. FD:on the path to being eradicated
 	/* ************************************************************************* */
 
-	/** insert, copies A */
-	void insert(const Symbol& key, const Matrix& A) {
-		As_.insert(std::make_pair(key, A));
-	}
+	GaussianConditional::shared_ptr eliminateFirst();
 
-	/** set RHS, copies b */
-	void set_b(const Vector& b) {
-		this->b_ = b;
-	}
+  GaussianBayesNet::shared_ptr eliminate(varid_t nFrontals = 1);
 
-	// set A matrices for the linear factor, same as insert ?
-	inline void set_A(const Symbol& key, const Matrix &A) {
-		insert(key, A);
-	}
-
-	/**
-	 * Current Implementation: Full QR factorization
-	 * eliminate (in place!) one of the variables connected to this factor
-	 * @param key the key of the node to be eliminated
-	 * @return a new factor and a conditional gaussian on the eliminated variable
-	 */
-	std::pair<boost::shared_ptr<GaussianConditional>, shared_ptr>
-	eliminate(const Symbol& key) const;
-
-	/**
-	 * Performs elimination given an augmented matrix
-	 * @param
-	 */
-	static std::pair<GaussianBayesNet, shared_ptr>
-	eliminateMatrix(Matrix& Ab, SharedDiagonal model,
-			const Ordering& frontal, const Ordering& separator,
-			const Dimensions& dimensions);
-
-	static std::pair<GaussianConditional::shared_ptr, shared_ptr>
-	eliminateMatrix(Matrix& Ab, SharedDiagonal model,
-			const Symbol& frontal, const Ordering& separator,
-			const Dimensions& dimensions);
-
-
-	/**
-	 * Take the factor f, and append to current matrices. Not very general.
-	 * @param f linear factor graph
-	 * @param m final number of rows of f, needs to be known in advance
-	 * @param pos where to insert in the m-sized matrices
-	 */
-	void append_factor(GaussianFactor::shared_ptr f, size_t m, size_t pos);
+	friend class GaussianFactorGraph;
+	friend class Inference;
 
 }; // GaussianFactor
 

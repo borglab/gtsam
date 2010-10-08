@@ -15,17 +15,17 @@ check_PROGRAMS =
 #----------------------------------------------------------------------------------------------------
 
 # GTSAM core
-headers += Key.h SymbolMap.h Factor.h Conditional.h IndexTable.h 
-sources += Ordering.cpp 
-check_PROGRAMS += tests/testOrdering tests/testKey
+headers += SymbolMap.h Factor.h Conditional.h IndexTable.h 
 
 # Symbolic Inference
-headers += SymbolicConditional.h
-sources += SymbolicFactor.cpp SymbolicFactorGraph.cpp SymbolicBayesNet.cpp
-check_PROGRAMS += tests/testSymbolicFactor tests/testSymbolicFactorGraph tests/testSymbolicBayesNet  
+headers += SymbolicFactorGraph.h
+sources += Factor.cpp SymbolicFactorGraph.cpp
+check_PROGRAMS += tests/testSymbolicFactor tests/testSymbolicFactorGraph tests/testSymbolicBayesNet
+check_PROGRAMS += tests/testVariableIndex tests/testVariableSlots
 
 # Inference
-headers += inference.h inference-inl.h
+headers += inference-inl.h VariableSlots-inl.h
+sources += inference.cpp VariableSlots.cpp
 headers += graph.h graph-inl.h
 headers += FactorGraph.h FactorGraph-inl.h
 headers += ClusterTree.h ClusterTree-inl.h
@@ -35,18 +35,24 @@ headers += BayesNet.h BayesNet-inl.h
 headers += BayesTree.h BayesTree-inl.h
 headers += ISAM.h ISAM-inl.h
 headers += ISAM2.h ISAM2-inl.h
-check_PROGRAMS += tests/testFactorGraph tests/testClusterTree tests/testEliminationTree tests/testJunctionTree tests/testBayesTree tests/testISAM
+check_PROGRAMS += tests/testFactorGraph
+check_PROGRAMS += tests/testFactorGraph
+check_PROGRAMS += tests/testBayesTree 
+check_PROGRAMS += tests/testISAM
+check_PROGRAMS += tests/testEliminationTree
+check_PROGRAMS += tests/testClusterTree
+check_PROGRAMS += tests/testJunctionTree
 
 #----------------------------------------------------------------------------------------------------
 # discrete
 #----------------------------------------------------------------------------------------------------
 
 # Binary Inference
-headers += BinaryConditional.h
-check_PROGRAMS += tests/testBinaryBayesNet
+#headers += BinaryConditional.h
+#check_PROGRAMS += tests/testBinaryBayesNet
 
 # Timing tests
-noinst_PROGRAMS = tests/timeSymbolMaps
+#noinst_PROGRAMS = tests/timeSymbolMaps
 
 #----------------------------------------------------------------------------------------------------
 # Create a libtool library that is not installed
@@ -66,9 +72,13 @@ AM_CXXFLAGS =
 #----------------------------------------------------------------------------------------------------
 TESTS = $(check_PROGRAMS)
 AM_LDFLAGS = $(BOOST_LDFLAGS) $(boost_serialization) 
-LDADD = libinference.la ../base/libbase.la 
+LDADD = libinference.la ../base/libbase.la
 LDADD += ../CppUnitLite/libCppUnitLite.a ../colamd/libcolamd.la 
 AM_DEFAULT_SOURCE_EXT = .cpp
+
+if USE_ACCELERATE_MACOS
+AM_LDFLAGS += -Wl,/System/Library/Frameworks/Accelerate.framework/Accelerate
+endif
 
 # rule to run an executable
 %.run: % $(LDADD)

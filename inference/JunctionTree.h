@@ -9,10 +9,13 @@
 #pragma once
 
 #include <set>
+#include <vector>
+#include <list>
 #include <boost/shared_ptr.hpp>
+#include <boost/pool/pool_alloc.hpp>
 #include <gtsam/inference/BayesTree.h>
 #include <gtsam/inference/ClusterTree.h>
-#include <gtsam/inference/SymbolicConditional.h>
+#include <gtsam/inference/Conditional.h>
 
 namespace gtsam {
 
@@ -32,17 +35,23 @@ namespace gtsam {
 		typedef typename ClusterTree<FG>::Cluster Clique;
 		typedef typename Clique::shared_ptr sharedClique;
 
+		typedef class BayesTree<typename FG::factor_type::Conditional> BayesTree;
+
 		// And we will frequently refer to a symbolic Bayes tree
-		typedef BayesTree<SymbolicConditional> SymbolicBayesTree;
+		typedef gtsam::BayesTree<Conditional> SymbolicBayesTree;
 
 	private:
 		// distribute the factors along the cluster tree
-		sharedClique distributeFactors(FG& fg,
-				const SymbolicBayesTree::sharedClique clique);
+		sharedClique distributeFactors(const FG& fg,
+				const SymbolicBayesTree::sharedClique& clique);
 
-		// utility function called by eliminate
-		template<class Conditional>
-		std::pair<FG, typename BayesTree<Conditional>::sharedClique> eliminateOneClique(sharedClique fg_);
+		// distribute the factors along the cluster tree
+    sharedClique distributeFactors(const FG& fg, const std::vector<std::list<size_t,boost::fast_pool_allocator<size_t> > >& targets,
+        const SymbolicBayesTree::sharedClique& clique);
+
+		// recursive elimination function
+		std::pair<typename BayesTree::sharedClique, typename FG::sharedFactor>
+		eliminateOneClique(const boost::shared_ptr<const Clique>& clique) const;
 
 	public:
 		// constructor
@@ -50,11 +59,10 @@ namespace gtsam {
 		}
 
 		// constructor given a factor graph and the elimination ordering
-		JunctionTree(FG& fg, const Ordering& ordering);
+		JunctionTree(const FG& fg);
 
 		// eliminate the factors in the subgraphs
-		template<class Conditional>
-		typename BayesTree<Conditional>::sharedClique eliminate();
+		typename BayesTree::sharedClique eliminate() const;
 
 	}; // JunctionTree
 

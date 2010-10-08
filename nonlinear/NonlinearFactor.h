@@ -20,6 +20,7 @@
 #include <gtsam/base/Matrix.h>
 #include <gtsam/linear/SharedGaussian.h>
 #include <gtsam/linear/GaussianFactor.h>
+#include <gtsam/nonlinear/Ordering.h>
 
 #define INSTANTIATE_NONLINEAR_FACTOR1(C,J,X) \
   template class gtsam::NonlinearFactor1<C,J,X>;
@@ -37,7 +38,7 @@ namespace gtsam {
 	 * which are objects in non-linear manifolds (Lie groups).
 	 */
 	template<class Config>
-	class NonlinearFactor: public Factor<Config> {
+	class NonlinearFactor: public Testable<NonlinearFactor<Config> > {
 
 	protected:
 
@@ -47,6 +48,8 @@ namespace gtsam {
 		std::list<Symbol> keys_; /** cached keys */
 
 	public:
+
+		typedef boost::shared_ptr<NonlinearFactor<Config> > shared_ptr;
 
 		/** Default constructor for I/O only */
 		NonlinearFactor() {
@@ -67,10 +70,8 @@ namespace gtsam {
 		}
 
 		/** Check if two NonlinearFactor objects are equal */
-		bool equals(const Factor<Config>& f, double tol = 1e-9) const {
-			const This* p = dynamic_cast<const NonlinearFactor<Config>*> (&f);
-			if (p == NULL) return false;
-			return noiseModel_->equals(*p->noiseModel_, tol);
+		bool equals(const NonlinearFactor<Config>& f, double tol = 1e-9) const {
+			return noiseModel_->equals(*f.noiseModel_, tol);
 		}
 
 		/**
@@ -82,7 +83,7 @@ namespace gtsam {
 		}
 
 		/** return keys */
-		std::list<Symbol> keys() const {
+		const std::list<Symbol>& keys() const {
 			return keys_;
 		}
 
@@ -117,7 +118,13 @@ namespace gtsam {
 
 		/** linearize to a GaussianFactor */
 		virtual boost::shared_ptr<GaussianFactor>
-		linearize(const Config& c) const = 0;
+		linearize(const Config& c, const Ordering& ordering) const = 0;
+
+		/**
+		 * Create a symbolic factor using the given ordering to determine the
+		 * variable indices.
+		 */
+		virtual Factor::shared_ptr symbolic(const Ordering& ordering) const = 0;
 
 	private:
 
@@ -184,10 +191,8 @@ namespace gtsam {
 		}
 
 		/** Check if two factors are equal. Note type is Factor and needs cast. */
-		bool equals(const Factor<Config>& f, double tol = 1e-9) const {
-			const This* p = dynamic_cast<const This*> (&f);
-			if (p == NULL) return false;
-			return Base::equals(*p, tol) && (key_ == p->key_);
+		bool equals(const NonlinearFactor1<Config,Key>& f, double tol = 1e-9) const {
+			return Base::noiseModel_->equals(*f.noiseModel_, tol) && (key_ == f.key_);
 		}
 
 		/** error function h(x)-z, unwhitened !!! */
@@ -202,21 +207,30 @@ namespace gtsam {
 		 * Ax-b \approx h(x0+dx)-z = h(x0) + A*dx - z
 		 * Hence b = z - h(x0) = - error_vector(x)
 		 */
-		virtual boost::shared_ptr<GaussianFactor> linearize(const Config& x) const {
+		virtual boost::shared_ptr<GaussianFactor> linearize(const Config& x, const Ordering& ordering) const {
 			const X& xj = x[key_];
 			Matrix A;
 			Vector b = - evaluateError(xj, A);
+			varid_t var = ordering[key_];
 			// TODO pass unwhitened + noise model to Gaussian factor
 			SharedDiagonal constrained =
 					boost::shared_dynamic_cast<noiseModel::Constrained>(this->noiseModel_);
 			if (constrained.get() != NULL) {
-				return GaussianFactor::shared_ptr(new GaussianFactor(key_, A, b, constrained));
+				return GaussianFactor::shared_ptr(new GaussianFactor(var, A, b, constrained));
 			}
 			this->noiseModel_->WhitenInPlace(A);
 			this->noiseModel_->whitenInPlace(b);
-			return GaussianFactor::shared_ptr(new GaussianFactor(key_, A, b,
+			return GaussianFactor::shared_ptr(new GaussianFactor(var, A, b,
 					noiseModel::Unit::Create(b.size())));
 		}
+
+    /**
+     * Create a symbolic factor using the given ordering to determine the
+     * variable indices.
+     */
+    virtual Factor::shared_ptr symbolic(const Ordering& ordering) const {
+      return Factor::shared_ptr(new Factor(ordering[key_]));
+    }
 
 		/*
 		 *  Override this method to finish implementing a unary factor.
@@ -289,11 +303,9 @@ namespace gtsam {
 		}
 
 		/** Check if two factors are equal */
-		bool equals(const Factor<Config>& f, double tol = 1e-9) const {
-			const This* p = dynamic_cast<const This*> (&f);
-			if (p == NULL) return false;
-			return Base::equals(*p, tol) && (key1_ == p->key1_)
-					&& (key2_ == p->key2_);
+		bool equals(const NonlinearFactor2<Config,Key1,Key2>& f, double tol = 1e-9) const {
+			return Base::noiseModel_->equals(*f.noiseModel_, tol) && (key1_ == f.key1_)
+					&& (key2_ == f.key2_);
 		}
 
 		/** error function z-h(x1,x2) */
@@ -308,24 +320,41 @@ namespace gtsam {
 		 * Ax-b \approx h(x1+dx1,x2+dx2)-z = h(x1,x2) + A2*dx1 + A2*dx2 - z
 		 * Hence b = z - h(x1,x2) = - error_vector(x)
 		 */
-		boost::shared_ptr<GaussianFactor> linearize(const Config& c) const {
+		boost::shared_ptr<GaussianFactor> linearize(const Config& c, const Ordering& ordering) const {
 			const X1& x1 = c[key1_];
 			const X2& x2 = c[key2_];
 			Matrix A1, A2;
 			Vector b = -evaluateError(x1, x2, A1, A2);
+			const varid_t var1 = ordering[key1_], var2 = ordering[key2_];
 			// TODO pass unwhitened + noise model to Gaussian factor
 			SharedDiagonal constrained =
 					boost::shared_dynamic_cast<noiseModel::Constrained>(this->noiseModel_);
 			if (constrained.get() != NULL) {
-				return GaussianFactor::shared_ptr(new GaussianFactor(key1_, A1, key2_,
+				return GaussianFactor::shared_ptr(new GaussianFactor(var1, A1, var2,
 						A2, b, constrained));
 			}
 			this->noiseModel_->WhitenInPlace(A1);
 			this->noiseModel_->WhitenInPlace(A2);
 			this->noiseModel_->whitenInPlace(b);
-			return GaussianFactor::shared_ptr(new GaussianFactor(key1_, A1, key2_,
-					A2, b, noiseModel::Unit::Create(b.size())));
+			if(var1 < var2)
+			  return GaussianFactor::shared_ptr(new GaussianFactor(var1, A1, var2,
+			      A2, b, noiseModel::Unit::Create(b.size())));
+			else
+			  return GaussianFactor::shared_ptr(new GaussianFactor(var2, A2, var1,
+			      A1, b, noiseModel::Unit::Create(b.size())));
 		}
+
+		/**
+     * Create a symbolic factor using the given ordering to determine the
+     * variable indices.
+     */
+    virtual Factor::shared_ptr symbolic(const Ordering& ordering) const {
+      const varid_t var1 = ordering[key1_], var2 = ordering[key2_];
+      if(var1 < var2)
+      return Factor::shared_ptr(new Factor(var1, var2));
+      else
+        return Factor::shared_ptr(new Factor(var2, var1));
+    }
 
 		/** methods to retrieve both keys */
 		inline const Key1& key1() const {
@@ -414,11 +443,9 @@ namespace gtsam {
     }
 
     /** Check if two factors are equal */
-    bool equals(const Factor<Config>& f, double tol = 1e-9) const {
-      const This* p = dynamic_cast<const This*> (&f);
-      if (p == NULL) return false;
-      return Base::equals(*p, tol) && (key1_ == p->key1_)
-          && (key2_ == p->key2_) && (key3_ == p->key3_);
+    bool equals(const NonlinearFactor3<Config,Key1,Key2,Key3>& f, double tol = 1e-9) const {
+      return Base::noiseModel_->equals(*f.noiseModel_, tol) && (key1_ == f.key1_)
+          && (key2_ == f.key2_) && (key3_ == f.key3_);
     }
 
     /** error function z-h(x1,x2) */
@@ -434,25 +461,66 @@ namespace gtsam {
      * Ax-b \approx h(x1+dx1,x2+dx2,x3+dx3)-z = h(x1,x2,x3) + A2*dx1 + A2*dx2 + A3*dx3 - z
      * Hence b = z - h(x1,x2,x3) = - error_vector(x)
      */
-    boost::shared_ptr<GaussianFactor> linearize(const Config& c) const {
+    boost::shared_ptr<GaussianFactor> linearize(const Config& c, const Ordering& ordering) const {
       const X1& x1 = c[key1_];
       const X2& x2 = c[key2_];
       const X3& x3 = c[key3_];
       Matrix A1, A2, A3;
       Vector b = -evaluateError(x1, x2, x3, A1, A2, A3);
+      const varid_t var1 = ordering[key1_], var2 = ordering[key2_], var3 = ordering[key3_];
       // TODO pass unwhitened + noise model to Gaussian factor
       SharedDiagonal constrained =
           boost::shared_dynamic_cast<noiseModel::Constrained>(this->noiseModel_);
       if (constrained.get() != NULL) {
         return GaussianFactor::shared_ptr(
-            new GaussianFactor(key1_, A1, key2_, A2, key3_, A3, b, constrained));
+            new GaussianFactor(var1, A1, var2, A2, var3, A3, b, constrained));
       }
       this->noiseModel_->WhitenInPlace(A1);
       this->noiseModel_->WhitenInPlace(A2);
       this->noiseModel_->WhitenInPlace(A3);
       this->noiseModel_->whitenInPlace(b);
-      return GaussianFactor::shared_ptr(
-          new GaussianFactor(key1_, A1, key2_, A2, key3_, A3, b, noiseModel::Unit::Create(b.size())));
+      if(var1 < var2 && var2 < var3)
+        return GaussianFactor::shared_ptr(
+            new GaussianFactor(var1, A1, var2, A2, var3, A3, b, noiseModel::Unit::Create(b.size())));
+      else if(var2 < var1 && var1 < var3)
+        return GaussianFactor::shared_ptr(
+            new GaussianFactor(var2, A2, var1, A1, var3, A3, b, noiseModel::Unit::Create(b.size())));
+      else if(var1 < var3 && var3 < var2)
+        return GaussianFactor::shared_ptr(
+            new GaussianFactor(var1, A1, var3, A3, var2, A2, b, noiseModel::Unit::Create(b.size())));
+      else if(var2 < var3 && var3 < var1)
+        return GaussianFactor::shared_ptr(
+            new GaussianFactor(var2, A2, var3, A3, var1, A1, b, noiseModel::Unit::Create(b.size())));
+      else if(var3 < var1 && var1 < var2)
+        return GaussianFactor::shared_ptr(
+            new GaussianFactor(var3, A3, var1, A1, var2, A2, b, noiseModel::Unit::Create(b.size())));
+      else if(var3 < var2 && var2 < var1)
+        return GaussianFactor::shared_ptr(
+            new GaussianFactor(var3, A3, var2, A2, var1, A1, b, noiseModel::Unit::Create(b.size())));
+      else
+        assert(false);
+    }
+
+    /**
+     * Create a symbolic factor using the given ordering to determine the
+     * variable indices.
+     */
+    virtual Factor::shared_ptr symbolic(const Ordering& ordering) const {
+      const varid_t var1 = ordering[key1_], var2 = ordering[key2_], var3 = ordering[key3_];
+      if(var1 < var2 && var2 < var3)
+        return Factor::shared_ptr(new Factor(ordering[key1_], ordering[key2_], ordering[key3_]));
+      else if(var2 < var1 && var1 < var3)
+        return Factor::shared_ptr(new Factor(ordering[key2_], ordering[key2_], ordering[key3_]));
+      else if(var1 < var3 && var3 < var2)
+        return Factor::shared_ptr(new Factor(ordering[key1_], ordering[key3_], ordering[key2_]));
+      else if(var2 < var3 && var3 < var1)
+        return Factor::shared_ptr(new Factor(ordering[key2_], ordering[key3_], ordering[key1_]));
+      else if(var3 < var1 && var1 < var2)
+        return Factor::shared_ptr(new Factor(ordering[key3_], ordering[key1_], ordering[key2_]));
+      else if(var3 < var2 && var2 < var1)
+        return Factor::shared_ptr(new Factor(ordering[key3_], ordering[key2_], ordering[key1_]));
+      else
+        assert(false);
     }
 
     /** methods to retrieve keys */

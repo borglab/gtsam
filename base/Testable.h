@@ -24,20 +24,30 @@ namespace gtsam {
 	class Testable {
 
 	public:
-	    virtual ~Testable() {}
+//	    virtual ~Testable() {}
 
 		/**
 		 * print
 		 * @param s optional string naming the object
 		 */
-		virtual void print(const std::string& name) const = 0;
+//		virtual void print(const std::string& name) const = 0;
 
 		/**
 		 * equality up to tolerance
 		 * tricky to implement, see NonlinearFactor1 for an example
 		 * equals is not supposed to print out *anything*, just return true|false
 		 */
-		virtual bool equals(const Derived& expected, double tol) const = 0;
+//		virtual bool equals(const Derived& expected, double tol) const = 0;
+
+	private:
+	  static void concept(const Derived& d) {
+	    const Derived *const_derived = static_cast<Derived*>(&d);
+	    const_derived->print(std::string());
+	    const_derived->print();
+	    bool r;
+	    r = const_derived->equals(*const_derived, 1.0);
+	    r = const_derived->equals(*const_derived);
+	  }
 
 	}; // Testable class
 

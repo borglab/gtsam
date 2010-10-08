@@ -23,7 +23,8 @@ check_PROGRAMS += tests/testSPQRUtil
 endif
 
 # Testing
-headers += Testable.h TestableAssertions.h numericalDerivative.h 
+headers += Testable.h TestableAssertions.h numericalDerivative.h
+sources += timing.cpp 
 
 # Lie Groups
 headers += Lie.h Lie-inl.h lieProxies.h LieScalar.h
@@ -36,7 +37,7 @@ sources += DSFVector.cpp
 check_PROGRAMS += tests/testBTree tests/testDSF tests/testDSFVector
 
 # Timing tests
-noinst_PROGRAMS = tests/timeMatrix
+noinst_PROGRAMS = tests/timeMatrix tests/timeublas
 
 #----------------------------------------------------------------------------------------------------
 # Create a libtool library that is not installed
@@ -85,7 +86,7 @@ AM_LDFLAGS += -llapack
 endif
 
 if USE_ACCELERATE_MACOS
-AM_LDFLAGS += -framework Accelerate  
+AM_LDFLAGS += -Wl,/System/Library/Frameworks/Accelerate.framework/Accelerate
 endif
 
 # rule to run an executable

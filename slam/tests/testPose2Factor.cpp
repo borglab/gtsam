@@ -40,20 +40,21 @@ TEST( Pose2Factor, error )
 	Pose2Factor factor(1, 2, z, covariance);
 
 	// Actual linearization
-	boost::shared_ptr<GaussianFactor> linear = factor.linearize(x0);
+	Ordering ordering(*x0.orderingArbitrary());
+	boost::shared_ptr<GaussianFactor> linear = factor.linearize(x0, ordering);
 
 	// Check error at x0, i.e. delta = zero !
-	VectorConfig delta;
-	delta.insert("x1", zero(3));
-	delta.insert("x2", zero(3));
+	VectorConfig delta(x0.dims(ordering));
+	delta[ordering["x1"]] = zero(3);
+	delta[ordering["x2"]] = zero(3);
 	Vector error_at_zero = Vector_(3,0.0,0.0,0.0);
 	CHECK(assert_equal(error_at_zero,factor.unwhitenedError(x0)));
 	CHECK(assert_equal(-error_at_zero,linear->error_vector(delta)));
 
 	// Check error after increasing p2
 	VectorConfig plus = delta;
-	plus.insertAdd("x2", Vector_(3, 0.1, 0.0, 0.0));
-	Pose2Config x1 = x0.expmap(plus);
+	plus[ordering["x2"]] = Vector_(3, 0.1, 0.0, 0.0);
+	Pose2Config x1 = x0.expmap(plus, ordering);
 	Vector error_at_plus = Vector_(3,0.1/sx,0.0,0.0); // h(x)-z = 0.1 !
 	CHECK(assert_equal(error_at_plus,factor.whitenedError(x1)));
 	CHECK(assert_equal(error_at_plus,linear->error_vector(plus)));
@@ -75,14 +76,15 @@ TEST( Pose2Factor, rhs )
 	x0.insert(2,p2);
 
 	// Actual linearization
-	boost::shared_ptr<GaussianFactor> linear = factor.linearize(x0);
+	Ordering ordering(*x0.orderingArbitrary());
+	boost::shared_ptr<GaussianFactor> linear = factor.linearize(x0, ordering);
 
 	// Check RHS
 	Pose2 hx0 = p1.between(p2);
 	CHECK(assert_equal(Pose2(2.1, 2.1, M_PI_2),hx0));
 	Vector expected_b = Vector_(3, -0.1/sx, 0.1/sy, 0.0);
 	CHECK(assert_equal(expected_b,-factor.whitenedError(x0)));
-	CHECK(assert_equal(expected_b,linear->get_b()));
+	CHECK(assert_equal(expected_b,linear->getb()));
 }
 
 /* ************************************************************************* */
@@ -116,11 +118,12 @@ TEST( Pose2Factor, linearize )
 	Vector expected_b = Vector_(3, 0.0, 0.0, 0.0);
 
 	// expected linear factor
+	Ordering ordering(*x0.orderingArbitrary());
 	SharedDiagonal probModel1 = noiseModel::Unit::Create(3);
-	GaussianFactor expected("x1", expectedH1, "x2", expectedH2, expected_b, probModel1);
+	GaussianFactor expected(ordering["x1"], expectedH1, ordering["x2"], expectedH2, expected_b, probModel1);
 
 	// Actual linearization
-	boost::shared_ptr<GaussianFactor> actual = factor.linearize(x0);
+	boost::shared_ptr<GaussianFactor> actual = factor.linearize(x0, ordering);
 	CHECK(assert_equal(expected,*actual));
 
 	// Numerical do not work out because BetweenFactor is approximate ?

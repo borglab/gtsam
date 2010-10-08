@@ -65,8 +65,7 @@ public:
 	 * NOTE: copies to avoid actual factor getting destroyed
 	 * during elimination
 	 */
-	virtual boost::shared_ptr<GaussianFactor>
-	linearize(const Config& c) const;
+	virtual boost::shared_ptr<GaussianFactor> linearize(const Config& c) const;
 
 	/** get access to nonlinear keys */
 	KeyVector nonlinearKeys() const { return nonlinearKeys_; }
@@ -75,7 +74,7 @@ public:
 	virtual void print(const std::string& s="") const;
 
 	/** access to b vector of gaussian */
-	Vector get_b() const { return lin_factor_->get_b(); }
+	Vector get_b() const { return lin_factor_->getb(); }
 };
 
 } // \namespace gtsam

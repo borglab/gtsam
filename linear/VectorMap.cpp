@@ -18,9 +18,9 @@ using namespace std;
 namespace gtsam {
 
 /* ************************************************************************* */
-void check_size(const Symbol& key, const Vector & vj, const Vector & dj) {
+void check_size(varid_t key, const Vector & vj, const Vector & dj) {
   if (dj.size()!=vj.size()) {
-    cout << "For key \"" << (string)key << "\"" << endl;
+    cout << "For key \"" << key << "\"" << endl;
     cout << "vj.size = " << vj.size() << endl;
     cout << "dj.size = " << dj.size() << endl;
     throw(std::invalid_argument("VectorMap::+ mismatched dimensions"));
@@ -28,21 +28,21 @@ void check_size(const Symbol& key, const Vector & vj, const Vector & dj) {
 }
 
 /* ************************************************************************* */
-std::vector<Symbol> VectorMap::get_names() const {
-  std::vector<Symbol> names;
+std::vector<varid_t> VectorMap::get_names() const {
+  std::vector<varid_t> names;
   for(const_iterator it=values.begin(); it!=values.end(); it++)
     names.push_back(it->first);
   return names;
 }
 
 /* ************************************************************************* */
-VectorMap& VectorMap::insert(const Symbol& name, const Vector& v) {
+VectorMap& VectorMap::insert(varid_t name, const Vector& v) {
   values.insert(std::make_pair(name,v));
   return *this;
 }
 
 /* ************************************************************************* */
-VectorMap& VectorMap::insertAdd(const Symbol& j, const Vector& a) {
+VectorMap& VectorMap::insertAdd(varid_t j, const Vector& a) {
 	Vector& vj = values[j];
 	if (vj.size()==0) vj = a; else vj += a;
 	return *this;
@@ -69,12 +69,12 @@ size_t VectorMap::dim() const {
 }
 
 /* ************************************************************************* */
-const Vector& VectorMap::operator[](const Symbol& name) const {
+const Vector& VectorMap::operator[](varid_t name) const {
   return values.at(name);
 }
 
 /* ************************************************************************* */
-Vector& VectorMap::operator[](const Symbol& name) {
+Vector& VectorMap::operator[](varid_t name) {
   return values.at(name);
 }
 
@@ -137,7 +137,7 @@ Vector VectorMap::vector() const {
 	Vector result(dim());
 
 	size_t cur_dim = 0;
-	Symbol j; Vector vj;
+	varid_t j; Vector vj;
 	FOREACH_PAIR(j, vj, values) {
 		subInsert(result, vj, cur_dim);
 		cur_dim += vj.size();
@@ -149,7 +149,7 @@ Vector VectorMap::vector() const {
 VectorMap expmap(const VectorMap& original, const VectorMap& delta)
 {
 	VectorMap newConfig;
-	Symbol j; Vector vj; // rtodo: copying vector?
+	varid_t j; Vector vj; // rtodo: copying vector?
 	FOREACH_PAIR(j, vj, original.values) {
 		if (delta.contains(j)) {
 			const Vector& dj = delta[j];
@@ -167,7 +167,7 @@ VectorMap expmap(const VectorMap& original, const Vector& delta)
 {
 	VectorMap newConfig;
 	size_t i = 0;
-	Symbol j; Vector vj; // rtodo: copying vector?
+	varid_t j; Vector vj; // rtodo: copying vector?
 	FOREACH_PAIR(j, vj, original.values) {
 		size_t mj = vj.size();
 		Vector dj = sub(delta, i, i+mj);
@@ -182,7 +182,7 @@ void VectorMap::print(const string& name) const {
   odprintf("VectorMap %s\n", name.c_str());
   odprintf("size: %d\n", values.size());
   for (const_iterator it = begin(); it != end(); it++) {
-    odprintf("%s:", ((string)it->first).c_str());
+    odprintf("%d:", it->first);
     gtsam::print(it->second);
   }
 }

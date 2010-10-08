@@ -11,7 +11,7 @@
 #include <boost/assign/std/list.hpp> // for operator += in Ordering
 #include <gtsam/CppUnitLite/TestHarness.h>
 #include <gtsam/slam/smallExample.h>
-#include <gtsam/inference/Ordering.h>
+#include <gtsam/inference/inference-inl.h>
 
 using namespace std;
 using namespace gtsam;
@@ -21,11 +21,10 @@ using namespace boost::assign;
 /* ************************************************************************* */
 // Create a Kalman smoother for t=1:T and optimize
 double timeKalmanSmoother(int T) {
-	GaussianFactorGraph smoother = createSmoother(T);
-	Ordering ordering;
-	for (int t = 1; t <= T; t++) ordering.push_back(symbol('x',t));
+	pair<GaussianFactorGraph,Ordering> smoother_ordering = createSmoother(T);
+	GaussianFactorGraph& smoother(smoother_ordering.first);
 	clock_t start = clock();
-	smoother.optimize(ordering);
+	optimize(*Inference::Eliminate(smoother));
 	clock_t end = clock ();
 	double dif = (double)(end - start) / CLOCKS_PER_SEC;
 	return dif;
@@ -33,13 +32,14 @@ double timeKalmanSmoother(int T) {
 
 /* ************************************************************************* */
 // Create a planar factor graph and optimize
+// todo: use COLAMD ordering again (removed when linear baked-in ordering added)
 double timePlanarSmoother(int N, bool old = true) {
-	GaussianFactorGraph fg;
-	VectorConfig config;
-	boost::tie(fg,config) = planarGraph(N);
-	Ordering ordering = fg.getOrdering();
+	boost::tuple<GaussianFactorGraph, Ordering, VectorConfig> pg = planarGraph(N);
+  GaussianFactorGraph& fg(pg.get<0>());
+//  Ordering& ordering(pg.get<1>());
+//  VectorConfig& config(pg.get<2>());
 	clock_t start = clock();
-	fg.optimize(ordering, old);
+	optimize(*Inference::Eliminate(fg));
 	clock_t end = clock ();
 	double dif = (double)(end - start) / CLOCKS_PER_SEC;
 	return dif;
@@ -47,72 +47,73 @@ double timePlanarSmoother(int N, bool old = true) {
 
 /* ************************************************************************* */
 // Create a planar factor graph and eliminate
+// todo: use COLAMD ordering again (removed when linear baked-in ordering added)
 double timePlanarSmootherEliminate(int N, bool old = true) {
-	GaussianFactorGraph fg;
-	VectorConfig config;
-	boost::tie(fg,config) = planarGraph(N);
-	Ordering ordering = fg.getOrdering();
+  boost::tuple<GaussianFactorGraph, Ordering, VectorConfig> pg = planarGraph(N);
+  GaussianFactorGraph& fg(pg.get<0>());
+//  Ordering& ordering(pg.get<1>());
+//  VectorConfig& config(pg.get<2>());
 	clock_t start = clock();
-	fg.eliminate(ordering, old);
+	Inference::Eliminate(fg);
 	clock_t end = clock ();
 	double dif = (double)(end - start) / CLOCKS_PER_SEC;
 	return dif;
 }
 
-/* ************************************************************************* */
-// Create a planar factor graph and join factors until matrix formation
-// This variation uses the original join factors approach
-double timePlanarSmootherJoinAug(int N, size_t reps) {
-	GaussianFactorGraph fgBase;
-	VectorConfig config;
-	boost::tie(fgBase,config) = planarGraph(N);
-	Ordering ordering = fgBase.getOrdering();
-	Symbol key = ordering.front();
+///* ************************************************************************* */
+//// Create a planar factor graph and join factors until matrix formation
+//// This variation uses the original join factors approach
+//double timePlanarSmootherJoinAug(int N, size_t reps) {
+//	GaussianFactorGraph fgBase;
+//	VectorConfig config;
+//	boost::tie(fgBase,config) = planarGraph(N);
+//	Ordering ordering = fgBase.getOrdering();
+//	Symbol key = ordering.front();
+//
+//	clock_t start = clock();
+//
+//	for (size_t i = 0; i<reps; ++i) {
+//		// setup
+//		GaussianFactorGraph fg(fgBase);
+//
+//		// combine some factors
+//		GaussianFactor::shared_ptr joint_factor = removeAndCombineFactors(fg,key);
+//
+//		// create an internal ordering to render Ab
+//		Ordering render;
+//		render += key;
+//		BOOST_FOREACH(const Symbol& k, joint_factor->keys())
+//		if (k != key) render += k;
+//
+//		Matrix Ab = joint_factor->matrix_augmented(render,false);
+//	}
+//
+//	clock_t end = clock ();
+//	double dif = (double)(end - start) / CLOCKS_PER_SEC;
+//	return dif;
+//}
 
-	clock_t start = clock();
-
-	for (size_t i = 0; i<reps; ++i) {
-		// setup
-		GaussianFactorGraph fg(fgBase);
-
-		// combine some factors
-		GaussianFactor::shared_ptr joint_factor = removeAndCombineFactors(fg,key);
-
-		// create an internal ordering to render Ab
-		Ordering render;
-		render += key;
-		BOOST_FOREACH(const Symbol& k, joint_factor->keys())
-		if (k != key) render += k;
-
-		Matrix Ab = joint_factor->matrix_augmented(render,false);
-	}
-
-	clock_t end = clock ();
-	double dif = (double)(end - start) / CLOCKS_PER_SEC;
-	return dif;
-}
-
-/* ************************************************************************* */
-// Create a planar factor graph and join factors until matrix formation
-// This variation uses the single-allocate version to create the matrix
-double timePlanarSmootherCombined(int N, size_t reps) {
-	GaussianFactorGraph fgBase;
-	VectorConfig config;
-	boost::tie(fgBase,config) = planarGraph(N);
-	Ordering ordering = fgBase.getOrdering();
-	Symbol key = ordering.front();
-
-	clock_t start = clock();
-
-	for (size_t i = 0; i<reps; ++i) {
-		GaussianFactorGraph fg(fgBase);
-		fg.eliminateOneMatrixJoin(key);
-	}
-
-	clock_t end = clock ();
-	double dif = (double)(end - start) / CLOCKS_PER_SEC;
-	return dif;
-}
+///* ************************************************************************* */
+//// Create a planar factor graph and join factors until matrix formation
+//// This variation uses the single-allocate version to create the matrix
+//double timePlanarSmootherCombined(int N, size_t reps) {
+//	GaussianFactorGraph fgBase;
+//	VectorConfig config;
+//	boost::tie(fgBase,config) = planarGraph(N);
+//	Ordering ordering = fgBase.getOrdering();
+//	Symbol key = ordering.front();
+//
+//	clock_t start = clock();
+//
+//	for (size_t i = 0; i<reps; ++i) {
+//		GaussianFactorGraph fg(fgBase);
+//		fg.eliminateOneMatrixJoin(key);
+//	}
+//
+//	clock_t end = clock ();
+//	double dif = (double)(end - start) / CLOCKS_PER_SEC;
+//	return dif;
+//}
 
 
 /* ************************************************************************* */
@@ -191,24 +192,24 @@ TEST(timeGaussianFactorGraph, planar_eliminate_new)
 	//DOUBLES_EQUAL(5.97,time,0.1);
 }
 
-size_t reps = 1000;
-/* ************************************************************************* */
-TEST(timeGaussianFactorGraph, planar_join_old)
-{
-	cout << "Timing planar join - old" << endl;
-	double time = timePlanarSmootherJoinAug(size, reps);
-	cout << "timePlanarSmootherJoinAug " << size << " : " << time << endl;
-	//DOUBLES_EQUAL(5.97,time,0.1);
-}
-
-/* ************************************************************************* */
-TEST(timeGaussianFactorGraph, planar_join_new)
-{
-	cout << "Timing planar join - new" << endl;
-	double time = timePlanarSmootherCombined(size, reps);
-	cout << "timePlanarSmootherCombined " << size << " : " << time << endl;
-	//DOUBLES_EQUAL(5.97,time,0.1);
-}
+//size_t reps = 1000;
+///* ************************************************************************* */
+//TEST(timeGaussianFactorGraph, planar_join_old)
+//{
+//	cout << "Timing planar join - old" << endl;
+//	double time = timePlanarSmootherJoinAug(size, reps);
+//	cout << "timePlanarSmootherJoinAug " << size << " : " << time << endl;
+//	//DOUBLES_EQUAL(5.97,time,0.1);
+//}
+//
+///* ************************************************************************* */
+//TEST(timeGaussianFactorGraph, planar_join_new)
+//{
+//	cout << "Timing planar join - new" << endl;
+//	double time = timePlanarSmootherCombined(size, reps);
+//	cout << "timePlanarSmootherCombined " << size << " : " << time << endl;
+//	//DOUBLES_EQUAL(5.97,time,0.1);
+//}
 
 
 /* ************************************************************************* */

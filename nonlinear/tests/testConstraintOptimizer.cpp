@@ -14,7 +14,7 @@
 
 #include <gtsam/CppUnitLite/TestHarness.h>
 
-#include <gtsam/inference/Ordering.h>
+#include <gtsam/nonlinear/Ordering.h>
 #include <gtsam/nonlinear/ConstraintOptimizer.h>
 
 #define GTSAM_MAGIC_KEY

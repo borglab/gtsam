@@ -49,12 +49,13 @@ TEST( ProjectionFactor, error )
 	DOUBLES_EQUAL(4.5,factor->error(config),1e-9);
 
 	// Check linearize
+	Ordering ordering; ordering += "x1","l1";
+  Matrix Ax1 = Matrix_(2, 6, 0., -369.504, 0., -61.584, 0., 0., 369.504, 0., 0., 0., -61.584, 0.);
 	Matrix Al1 = Matrix_(2, 3, 61.584, 0., 0., 0., 61.584, 0.);
-	Matrix Ax1 = Matrix_(2, 6, 0., -369.504, 0., -61.584, 0., 0., 369.504, 0., 0., 0., -61.584, 0.);
 	Vector b = Vector_(2,3.,0.);
 	SharedDiagonal probModel1 = noiseModel::Unit::Create(2);
-	GaussianFactor expected("l1", Al1, "x1", Ax1, b, probModel1);
-	GaussianFactor::shared_ptr actual = factor->linearize(config);
+	GaussianFactor expected(ordering["x1"], Ax1, ordering["l1"], Al1, b, probModel1);
+	GaussianFactor::shared_ptr actual = factor->linearize(config, ordering);
 	CHECK(assert_equal(expected,*actual,1e-3));
 
 	// linearize graph
@@ -62,17 +63,17 @@ TEST( ProjectionFactor, error )
 	graph.push_back(factor);
 	GaussianFactorGraph expected_lfg;
 	expected_lfg.push_back(actual);
-	boost::shared_ptr<GaussianFactorGraph> actual_lfg = graph.linearize(config);
+	boost::shared_ptr<GaussianFactorGraph> actual_lfg = graph.linearize(config, ordering);
 	CHECK(assert_equal(expected_lfg,*actual_lfg));
 
 	// expmap on a config
-	VectorConfig delta;
-	delta.insert("x1",Vector_(6, 0.,0.,0., 1.,1.,1.));
-	delta.insert("l1",Vector_(3, 1.,2.,3.));
-	Config actual_config = config.expmap(delta);
-	Config expected_config;
-	Point3 t2(1,1,-5); Pose3 x2(R,t2); expected_config.insert(1, x2);
-	Point3 l2(1,2,3); expected_config.insert(1, l2);
+  Config expected_config;
+  Point3 t2(1,1,-5); Pose3 x2(R,t2); expected_config.insert(1, x2);
+  Point3 l2(1,2,3); expected_config.insert(1, l2);
+	VectorConfig delta(expected_config.dims(ordering));
+	delta[ordering["x1"]] = Vector_(6, 0.,0.,0., 1.,1.,1.);
+	delta[ordering["l1"]] = Vector_(3, 1.,2.,3.);
+	Config actual_config = config.expmap(delta, ordering);
 	CHECK(assert_equal(expected_config,actual_config,1e-9));
 }
 

@@ -57,7 +57,7 @@ public:
 	size_t dim() const { return dim_; }
 
 	/** Check if two factors are equal */
-	virtual bool equals(const Factor<Config>& f, double tol=1e-9) const {
+	virtual bool equals(const NonlinearFactor<Config>& f, double tol=1e-9) const {
 		const This* p = dynamic_cast<const This*> (&f);
 		if (p == NULL) return false;
 		return Base::equals(*p, tol) && (mu_ == p->mu_);
@@ -130,7 +130,7 @@ public:
 	}
 
 	/** Check if two factors are equal. Note type is Factor and needs cast. */
-	virtual bool equals(const Factor<Config>& f, double tol = 1e-9) const {
+	virtual bool equals(const NonlinearFactor<Config>& f, double tol = 1e-9) const {
 		const This* p = dynamic_cast<const This*> (&f);
 		if (p == NULL) return false;
 		return Base::equals(*p, tol) && (key_ == p->key_);
@@ -147,7 +147,7 @@ public:
 	}
 
 	/** Linearize from config */
-	boost::shared_ptr<GaussianFactor> linearize(const Config& c) const {
+	boost::shared_ptr<GaussianFactor> linearize(const Config& c, const Ordering& ordering) const {
 		if (!active(c)) {
 			boost::shared_ptr<GaussianFactor> factor;
 			return factor;
@@ -157,7 +157,7 @@ public:
 		Matrix grad;
 		Vector g = -1.0 * evaluateError(x, grad);
 		SharedDiagonal model = noiseModel::Constrained::All(this->dim());
-		return GaussianFactor::shared_ptr(new GaussianFactor(this->key_, grad, g, model));
+		return GaussianFactor::shared_ptr(new GaussianFactor(ordering[this->key_], grad, g, model));
 	}
 
 	/** g(x) with optional derivative - does not depend on active */
@@ -230,7 +230,7 @@ public:
 	}
 
 	/** Check if two factors are equal. Note type is Factor and needs cast. */
-	virtual bool equals(const Factor<Config>& f, double tol = 1e-9) const {
+	virtual bool equals(const NonlinearFactor<Config>& f, double tol = 1e-9) const {
 		const This* p = dynamic_cast<const This*> (&f);
 		if (p == NULL) return false;
 		return Base::equals(*p, tol) && (key1_ == p->key1_) && (key2_ == p->key2_);
@@ -249,7 +249,7 @@ public:
 	}
 
 	/** Linearize from config */
-	boost::shared_ptr<GaussianFactor> linearize(const Config& c) const {
+	boost::shared_ptr<GaussianFactor> linearize(const Config& c, const Ordering& ordering) const {
 		if (!active(c)) {
 			boost::shared_ptr<GaussianFactor> factor;
 			return factor;
@@ -259,7 +259,7 @@ public:
 		Matrix grad1, grad2;
 		Vector g = -1.0 * evaluateError(x1, x2, grad1, grad2);
 		SharedDiagonal model = noiseModel::Constrained::All(this->dim());
-		return GaussianFactor::shared_ptr(new GaussianFactor(j1, grad1, j2, grad2, g, model));
+		return GaussianFactor::shared_ptr(new GaussianFactor(ordering[j1], grad1, ordering[j2], grad2, g, model));
 	}
 
 	/** g(x) with optional derivative2  - does not depend on active */
@@ -341,7 +341,7 @@ public:
 	}
 
 	/** Check if two factors are equal. Note type is Factor and needs cast. */
-	virtual bool equals(const Factor<Config>& f, double tol = 1e-9) const {
+	virtual bool equals(const NonlinearFactor<Config>& f, double tol = 1e-9) const {
 		const This* p = dynamic_cast<const This*> (&f);
 		if (p == NULL) return false;
 		return Base::equals(*p, tol) && (key1_ == p->key1_) && (key2_ == p->key2_) && (key3_ == p->key3_);

@@ -16,14 +16,14 @@ check_PROGRAMS =
 #----------------------------------------------------------------------------------------------------
 
 # Lie Groups
-headers += LieConfig.h LieConfig-inl.h TupleConfig.h TupleConfig-inl.h 
+headers += Key.h LieConfig.h LieConfig-inl.h TupleConfig.h TupleConfig-inl.h 
 check_PROGRAMS += tests/testLieConfig 
 
 # Nonlinear nonlinear 
 headers += NonlinearFactorGraph.h NonlinearFactorGraph-inl.h
 headers += NonlinearOptimizer-inl.h 
 headers += NonlinearFactor.h
-sources += NonlinearOptimizer.cpp
+sources += NonlinearOptimizer.cpp Ordering.cpp
 
 # Nonlinear constraints 
 headers += NonlinearConstraint.h 
@@ -47,9 +47,13 @@ AM_CXXFLAGS =
 #----------------------------------------------------------------------------------------------------
 TESTS = $(check_PROGRAMS)
 AM_LDFLAGS = $(BOOST_LDFLAGS) $(boost_serialization) 
-LDADD = libnonlinear.la ../linear/liblinear.la ../inference/libinference.la ../base/libbase.la 
+LDADD = libnonlinear.la ../linear/liblinear.la ../inference/libinference.la ../base/libbase.la
 LDADD += ../CppUnitLite/libCppUnitLite.a ../colamd/libcolamd.la 
 AM_DEFAULT_SOURCE_EXT = .cpp
+
+if USE_ACCELERATE_MACOS
+AM_LDFLAGS += -Wl,/System/Library/Frameworks/Accelerate.framework/Accelerate
+endif
 
 # rule to run an executable
 %.run: % $(LDADD)

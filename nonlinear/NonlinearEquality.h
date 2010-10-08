@@ -9,7 +9,7 @@
 #include <limits>
 #include <iostream>
 
-#include <gtsam/inference/Key.h>
+#include <gtsam/nonlinear/Key.h>
 #include <gtsam/nonlinear/NonlinearFactor.h>
 
 namespace gtsam {
@@ -81,12 +81,9 @@ namespace gtsam {
 		}
 
 		/** Check if two factors are equal */
-		bool equals(const Factor<Config>& f, double tol = 1e-9) const {
-			const NonlinearEquality<Config,Key>* p =
-					dynamic_cast<const NonlinearEquality<Config,Key>*> (&f);
-			if (p == NULL) return false;
-			if (!Base::equals(*p)) return false;
-			return compare_(feasible_, p->feasible_);
+		bool equals(const NonlinearEquality<Config,Key>& f, double tol = 1e-9) const {
+			if (!Base::equals(f)) return false;
+			return compare_(feasible_, f.feasible_);
 		}
 
 		/** actual error function calculation */
@@ -117,13 +114,13 @@ namespace gtsam {
 		}
 
 		// Linearize is over-written, because base linearization tries to whiten
-		virtual boost::shared_ptr<GaussianFactor> linearize(const Config& x) const {
+		virtual boost::shared_ptr<GaussianFactor> linearize(const Config& x, const Ordering& ordering) const {
 			const T& xj = x[this->key_];
 			Matrix A;
 			Vector b = evaluateError(xj, A);
 			// TODO pass unwhitened + noise model to Gaussian factor
 			SharedDiagonal model = noiseModel::Constrained::All(b.size());
-			return	GaussianFactor::shared_ptr(new GaussianFactor(this->key_, A, b, model));
+			return	GaussianFactor::shared_ptr(new GaussianFactor(ordering[this->key_], A, b, model));
 		}
 
 	}; // NonlinearEquality

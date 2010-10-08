@@ -44,15 +44,15 @@ Vector LinearApproxFactor<Config,Key>::unwhitenedError(const Config& c) const {
 template <class Config, class Key>
 boost::shared_ptr<GaussianFactor>
 LinearApproxFactor<Config,Key>::linearize(const Config& c) const {
-	Vector b = lin_factor_->get_b();
-	SharedDiagonal model = lin_factor_->get_model();
-	std::vector<std::pair<Symbol, Matrix> > terms;
-	BOOST_FOREACH(Symbol key, lin_factor_->keys()) {
-		terms.push_back(std::make_pair(key, lin_factor_->get_A(key)));
-	}
+  Vector b = lin_factor_->getb();
+  SharedDiagonal model = lin_factor_->get_model();
+  std::vector<std::pair<Symbol, Matrix> > terms;
+  BOOST_FOREACH(Symbol key, lin_factor_->keys()) {
+    terms.push_back(std::make_pair(key, lin_factor_->get_A(key)));
+  }
 
-	return boost::shared_ptr<GaussianFactor>(
-			new GaussianFactor(terms, b, model));
+  return boost::shared_ptr<GaussianFactor>(
+      new GaussianFactor(terms, b, model));
 }
 
 /* ************************************************************************* */

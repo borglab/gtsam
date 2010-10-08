@@ -89,14 +89,8 @@ TEST( Graph, optimizeLM)
   initialEstimate->insert(4, landmark4);
 
   // Create an ordering of the variables
-  list<Symbol> keys;
-  keys.push_back("l1");
-  keys.push_back("l2");
-  keys.push_back("l3");
-  keys.push_back("l4");
-  keys.push_back("x1");
-  keys.push_back("x2");
-  shared_ptr<Ordering> ordering(new Ordering(keys));
+  shared_ptr<Ordering> ordering(new Ordering);
+  *ordering += "l1","l2","l3","l4","x1","x2";
 
   // Create an optimizer and check its error
   // We expect the initial to be zero because config is the ground truth
@@ -133,15 +127,8 @@ TEST( Graph, optimizeLM2)
   initialEstimate->insert(4, landmark4);
 
   // Create an ordering of the variables
-  list<Symbol> keys;
-
-  keys.push_back("l1");
-  keys.push_back("l2");
-  keys.push_back("l3");
-  keys.push_back("l4");
-  keys.push_back("x1");
-  keys.push_back("x2");
-  shared_ptr<Ordering> ordering(new Ordering(keys));
+  shared_ptr<Ordering> ordering(new Ordering);
+  *ordering += "l1","l2","l3","l4","x1","x2";
 
   // Create an optimizer and check its error
   // We expect the initial to be zero because config is the ground truth
@@ -177,7 +164,9 @@ TEST( Graph, CHECK_ORDERING)
   initialEstimate->insert(3, landmark3);
   initialEstimate->insert(4, landmark4);
 
-  shared_ptr<Ordering> ordering(new Ordering(graph->getOrdering()));
+  Ordering::shared_ptr ordering;
+  GaussianVariableIndex<>::shared_ptr varindex;
+  boost::tie(ordering,varindex) = graph->orderingCOLAMD(*initialEstimate);
 
   // Create an optimizer and check its error
   // We expect the initial to be zero because config is the ground truth

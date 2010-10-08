@@ -51,12 +51,14 @@ TEST( Pose3Config, expmap )
 
 	// Note expmap coordinates are in global coordinates with non-compose expmap
 	// so shifting to East requires little thought, different from with Pose2 !!!
-	Vector delta = Vector_(24,
+
+	Ordering ordering(*expected.orderingArbitrary());
+	VectorConfig delta(expected.dims(ordering), Vector_(24,
 			0.0,0.0,0.0,  0.1, 0.0, 0.0,
 			0.0,0.0,0.0,  0.1, 0.0, 0.0,
 			0.0,0.0,0.0,  0.1, 0.0, 0.0,
-			0.0,0.0,0.0,  0.1, 0.0, 0.0);
-	Pose3Config actual = pose3SLAM::circle(4,1.0).expmap(delta);
+			0.0,0.0,0.0,  0.1, 0.0, 0.0));
+	Pose3Config actual = pose3SLAM::circle(4,1.0).expmap(delta, ordering);
 	CHECK(assert_equal(expected,actual));
 }
 

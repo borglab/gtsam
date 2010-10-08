@@ -98,7 +98,7 @@ namespace gtsam {
 			delta.print("delta");
 
 		// take old config and update it
-		shared_config newConfig(new C(config_->expmap(delta)));
+		shared_config newConfig(new C(solver_->expmap(*config_, delta)));
 
 		// maybe show output
 		if (verbosity >= CONFIG)
@@ -161,7 +161,7 @@ namespace gtsam {
 			cout << "trying lambda = " << lambda_ << endl;
 
 		// add prior-factors
-		L damped = linear.add_priors(1.0/sqrt(lambda_));
+		L damped = linear.add_priors(1.0/sqrt(lambda_), GaussianVariableIndex<>(linear));
 		if (verbosity >= DAMPED)
 			damped.print("damped");
 
@@ -171,7 +171,7 @@ namespace gtsam {
 			delta.print("delta");
 
 		// update config
-		shared_config newConfig(new C(config_->expmap(delta))); // TODO: updateConfig
+		shared_config newConfig(new C(solver_->expmap(*config_, delta))); // TODO: updateConfig
 //		if (verbosity >= TRYCONFIG)
 //			newConfig->print("config");
 

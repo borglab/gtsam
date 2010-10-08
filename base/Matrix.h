@@ -24,6 +24,7 @@
 
 #if ! defined (MEX_H)
 typedef boost::numeric::ublas::matrix<double> Matrix;
+typedef boost::numeric::ublas::matrix<double, boost::numeric::ublas::column_major> MatrixColMajor;
 #endif
 
 namespace gtsam {
@@ -274,7 +275,9 @@ void householder(Matrix &A);
  * @return the solution x of U*x=b
  * TODO: use boost
  */
-Vector backSubstituteUpper(const Matrix& U, const Vector& b, bool unit=false);
+template<class MatrixAE, class VectorAE>
+Vector backSubstituteUpper(const boost::numeric::ublas::matrix_expression<MatrixAE>& U,
+    const boost::numeric::ublas::vector_expression<VectorAE>& b, bool unit=false);
 
 /**
  * backSubstitute x'*U=b'
@@ -284,7 +287,9 @@ Vector backSubstituteUpper(const Matrix& U, const Vector& b, bool unit=false);
  * @return the solution x of x'*U=b'
  * TODO: use boost
  */
-Vector backSubstituteUpper(const Vector& b, const Matrix& U, bool unit=false);
+template<class VectorAE, class MatrixAE>
+Vector backSubstituteUpper(const boost::numeric::ublas::vector_expression<VectorAE>& b,
+    const boost::numeric::ublas::matrix_expression<MatrixAE>& U, bool unit=false);
 
 /**
  * backSubstitute L*x=b
@@ -321,6 +326,7 @@ Matrix collect(size_t nrMatrices, ...);
  * Arguments (Matrix, Vector) scales the columns,
  * (Vector, Matrix) scales the rows
  */
+void vector_scale_inplace(const Vector& v, MatrixColMajor& A); // row
 void vector_scale_inplace(const Vector& v, Matrix& A); // row
 Matrix vector_scale(const Vector& v, const Matrix& A); // row
 Matrix vector_scale(const Matrix& A, const Vector& v); // column

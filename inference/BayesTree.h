@@ -13,12 +13,12 @@
 //#include <boost/serialization/map.hpp>
 //#include <boost/serialization/list.hpp>
 #include <stdexcept>
+#include <deque>
 
+#include <gtsam/base/types.h>
 #include <gtsam/base/Testable.h>
 #include <gtsam/inference/FactorGraph.h>
 #include <gtsam/inference/BayesNet.h>
-#include <gtsam/inference/Key.h>
-#include <gtsam/inference/IndexTable.h>
 
 namespace gtsam {
 
@@ -42,9 +42,11 @@ namespace gtsam {
 		struct Clique: public BayesNet<Conditional> {
 
 			typedef typename boost::shared_ptr<Clique> shared_ptr;
-			shared_ptr parent_;
+			typedef typename boost::weak_ptr<Clique> weak_ptr;
+			weak_ptr parent_;
 			std::list<shared_ptr> children_;
-			std::list<Symbol> separator_; /** separator keys */
+			std::list<varid_t> separator_; /** separator keys */
+			typename Conditional::FactorType::shared_ptr cachedFactor_;
 
 			friend class BayesTree<Conditional>;
 
@@ -56,7 +58,7 @@ namespace gtsam {
 			Clique(const BayesNet<Conditional>& bayesNet);
 
 			/** return keys in frontal:separator order */
-			Ordering keys() const;
+			std::vector<varid_t> keys() const;
 
 			/** print this node */
 			void print(const std::string& s = "") const;
@@ -67,10 +69,14 @@ namespace gtsam {
 			}
 
 			/** is this the root of a Bayes tree ? */
-			inline bool isRoot() const { return parent_==NULL;}
+			inline bool isRoot() const { return parent_.expired();}
 
 			/** return the const reference of children */
+			std::list<shared_ptr>& children() { return children_; }
 			const std::list<shared_ptr>& children() const { return children_; }
+
+			/** Reference the cached factor */
+			typename Conditional::FactorType::shared_ptr& cachedFactor() { return cachedFactor_; }
 
 			/** The size of subtree rooted at this clique, i.e., nr of Cliques */
 			size_t treeSize() const;
@@ -78,18 +84,28 @@ namespace gtsam {
 			/** print this node and entire subtree below it */
 			void printTree(const std::string& indent="") const;
 
-			/** return the conditional P(S|Root) on the separator given the root */
-			// TODO: create a cached version
-			template<class Factor>
-			BayesNet<Conditional> shortcut(shared_ptr root);
+			/** Permute the variables in the whole subtree rooted at this clique */
+			void permuteWithInverse(const Permutation& inversePermutation);
 
-			/** return the marginal P(C) of the clique */
-			template<class Factor>
-			FactorGraph<Factor> marginal(shared_ptr root);
+			/** Permute variables when they only appear in the separators.  In this
+			 * case the running intersection property will be used to prevent always
+			 * traversing the whole tree.  Returns whether any separator variables in
+			 * this subtree were reordered.
+			 */
+			bool permuteSeparatorWithInverse(const Permutation& inversePermutation);
 
-			/** return the joint P(C1,C2), where C1==this. TODO: not a method? */
-			template<class Factor>
-			std::pair<FactorGraph<Factor>,Ordering> joint(shared_ptr C2, shared_ptr root);
+//			/** return the conditional P(S|Root) on the separator given the root */
+//			// TODO: create a cached version
+//			template<class Factor>
+//			BayesNet<Conditional> shortcut(shared_ptr root);
+//
+//			/** return the marginal P(C) of the clique */
+//			template<class Factor>
+//			FactorGraph<Factor> marginal(shared_ptr root);
+//
+//			/** return the joint P(C1,C2), where C1==this. TODO: not a method? */
+//			template<class Factor>
+//			std::pair<FactorGraph<Factor>,Ordering> joint(shared_ptr C2, shared_ptr root);
 		};
 
 		// typedef for shared pointers to cliques
@@ -116,10 +132,10 @@ namespace gtsam {
 			CliqueStats getStats() const;
 		};
 
-	private:
+	protected:
 
 		/** Map from keys to Clique */
-		typedef SymbolMap<sharedClique> Nodes;
+		typedef std::deque<sharedClique> Nodes;
 		Nodes nodes_;
 
 		/** private helper method for saving the Tree to a text file in GraphViz format */
@@ -145,6 +161,15 @@ namespace gtsam {
 		sharedClique addClique(const sharedConditional& conditional,
 				std::list<sharedClique>& child_cliques);
 
+		/** Add a conditional to the front of a clique, i.e. a conditional whose
+		 * parents are already in the clique or its separators.  This function does
+		 * not check for this condition, it just updates the data structures.
+		 */
+		void addToCliqueFront(const sharedConditional& conditional, const sharedClique& clique);
+
+		/** Fill the nodes index for a subtree */
+		void fillNodesIndex(const sharedClique& subtree);
+
 	public:
 
 		/** Create an empty Bayes Tree */
@@ -168,7 +193,7 @@ namespace gtsam {
 		 */
 
 		/** Insert a new conditional */
-		void insert(const sharedConditional& conditional, const IndexTable<Symbol>& index);
+		void insert(const sharedConditional& conditional);
 
 		/** Insert a new clique corresponding to the given Bayes net.
 		 * It is the caller's responsibility to decide whether the given Bayes net is a valid clique,
@@ -178,6 +203,15 @@ namespace gtsam {
 				std::list<sharedClique>& children, bool isRootClique = false);
 
 		/**
+		 * Hang a new subtree off of the existing tree.  This finds the appropriate
+		 * parent clique for the subtree (which may be the root), and updates the
+		 * nodes index with the new cliques in the subtree.  None of the frontal
+		 * variables in the subtree may appear in the separators of the existing
+		 * BayesTree.
+		 */
+		void insert(const sharedClique& subtree);
+
+		/**
 		 * Querying Bayes trees
 		 */
 
@@ -185,10 +219,11 @@ namespace gtsam {
 		bool equals(const BayesTree<Conditional>& other, double tol = 1e-9) const;
 
 		/**
-		 * Find parent clique of a conditional, given an IndexTable constructed from an ordering.
-		 * It will look at all parents and return the one with the lowest index in the ordering.
+		 * Find parent clique of a conditional.  It will look at all parents and
+		 * return the one with the lowest index in the ordering.
 		 */
-		Symbol findParentClique(const std::list<Symbol>& parents, const IndexTable<Symbol>& index) const;
+		template<class Container>
+		varid_t findParentClique(const Container& parents) const;
 
 		/** number of cliques */
 		inline size_t size() const {
@@ -199,33 +234,32 @@ namespace gtsam {
 		}
 
 		/** return root clique */
-		sharedClique root() const {
-			return root_;
-		}
+		const sharedClique& root() const { return root_;	}
+		sharedClique& root() { return root_; }
 
 		/** find the clique to which key belongs */
-		sharedClique operator[](const Symbol& key) const {
+		sharedClique operator[](varid_t key) const {
 			return nodes_.at(key);
 		}
 
 		/** Gather data on all cliques */
 		CliqueData getCliqueData() const;
 
-		/** return marginal on any variable */
-		template<class Factor>
-		FactorGraph<Factor> marginal(const Symbol& key) const;
-
-		/** return marginal on any variable, as a Bayes Net */
-		template<class Factor>
-		BayesNet<Conditional> marginalBayesNet(const Symbol& key) const;
-
-		/** return joint on two variables */
-		template<class Factor>
-		FactorGraph<Factor> joint(const Symbol& key1, const Symbol& key2) const;
-
-		/** return joint on two variables as a BayesNet */
-		template<class Factor>
-		BayesNet<Conditional> jointBayesNet(const Symbol& key1, const Symbol& key2) const;
+//		/** return marginal on any variable */
+//		template<class Factor>
+//		FactorGraph<Factor> marginal(varid_t key) const;
+//
+//		/** return marginal on any variable, as a Bayes Net */
+//		template<class Factor>
+//		BayesNet<Conditional> marginalBayesNet(varid_t key) const;
+//
+//		/** return joint on two variables */
+//		template<class Factor>
+//		FactorGraph<Factor> joint(varid_t key1, varid_t key2) const;
+//
+//		/** return joint on two variables as a BayesNet */
+//		template<class Factor>
+//		BayesNet<Conditional> jointBayesNet(varid_t key1, varid_t key2) const;
 
 		/**
 		 * Read only with side effects
@@ -254,7 +288,8 @@ namespace gtsam {
 		 * Given a list of keys, turn "contaminated" part of the tree back into a factor graph.
 		 * Factors and orphans are added to the in/out arguments.
 		 */
-		void removeTop(const std::list<Symbol>& keys,	BayesNet<Conditional>& bn, Cliques& orphans);
+		template<class Container>
+		void removeTop(const Container& keys, BayesNet<Conditional>& bn, Cliques& orphans);
 
 	}; // BayesTree
 

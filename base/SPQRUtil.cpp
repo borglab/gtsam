@@ -6,10 +6,14 @@
  *  Description: the utility functions for SPQR
  */
 
-#include <map>
+#include <gtsam/base/timing.h>
 #include <gtsam/base/SPQRUtil.h>
+#include <boost/numeric/ublas/matrix.hpp>
+#include <boost/numeric/ublas/matrix_proxy.hpp>
+#include <boost/numeric/ublas/triangular.hpp>
 
 using namespace std;
+namespace ublas = boost::numeric::ublas;
 
 #ifdef GT_USE_LAPACK
 namespace gtsam {
@@ -85,34 +89,31 @@ namespace gtsam {
 
 	/* ************************************************************************* */
 	void householder_spqr(Matrix &A, long* Stair) {
+
+	  tic("householder_spqr");
+
 		long m = A.size1();
 		long n = A.size2();
 
+		bool allocedStair = false;
 		if (Stair == NULL) {
+		  allocedStair = true;
 			Stair = new long[n];
 			for(int j=0; j<n; j++)
 				Stair[j] = m;
 		}
 
-
-		// YDJ: allocate buffer if m*n grows more than 2M bytes
-		const int sz = 250000; // the stack is limited to 2M, o
-		const int mn = m*n ;
-		double buf[sz] ;
-		double *a ;
-		if ( mn > sz ) a = new double [mn] ;
-		else a = buf ;
-
+		tic("householder_spqr: row->col");
 		// convert from row major to column major
-		int k = 0;
-		for(int j=0; j<n; j++)
-			for(int i=0; i<m; i++, k++)
-				a[k] = A(i,j);
+		ublas::matrix<double, ublas::column_major> Acolwise(A);
+		double *a = Acolwise.data().begin();
+    toc("householder_spqr: row->col");
 
+    tic("householder_spqr: spqr_front");
 		long npiv = min(m,n);
 		double tol = -1;	long ntol = -1; // no tolerance is used
 		long fchunk = m < 32 ? m : 32;
-		char Rdead[npiv];
+		char Rdead[npiv];  memset(Rdead, 0, sizeof(char)*npiv);
 		double Tau[n];
 		long b = min(fchunk, min(n, m));
 		double W[b*(n+b)];
@@ -122,11 +123,32 @@ namespace gtsam {
 		cholmod_common cc;
 		cholmod_l_start(&cc);
 
+		// todo: do something with the rank
 		long rank = spqr_front<double>(m, n, npiv, tol, ntol, fchunk,
 				a, Stair, Rdead, Tau, W, &wscale, &wssq, &cc);
+    toc("householder_spqr: spqr_front");
 
+//#ifndef NDEBUG
+		for(long j=0; j<npiv; ++j)
+		  if(Rdead[j]) {
+		    cout << "In householder_spqr, aborting because some columns were found to be\n"
+		        "numerically linearly-dependent and we cannot handle this case yet." << endl;
+		    print(A, "The matrix being factored was\n");
+		    ublas::matrix_range<ublas::matrix<double,ublas::column_major> > Acolsub(
+		        ublas::project(Acolwise, ublas::range(0, min(m,n)), ublas::range(0,n)));
+		    print(Matrix(ublas::triangular_adaptor<typeof(Acolsub), ublas::upper>(Acolsub)), "and the result was\n");
+		    cout << "The following columns are \"dead\":";
+		    for(long k=0; k<npiv; ++k)
+		      if(Rdead[k]) cout << " " << k;
+		    cout << endl;
+		    exit(1);
+		  }
+//#endif
+
+    tic("householder_spqr: col->row");
 		long k0 = 0;
 		long j0;
+		int k;
 		memset(A.data().begin(), 0, m*n*sizeof(double));
 		for(long j=0; j<n; j++, k0+=m) {
 			k = k0;
@@ -135,10 +157,68 @@ namespace gtsam {
 				A(i,j) = a[k];
 		}
 
-		if ( mn > sz ) delete [] a;
+//    ublas::matrix_range<ublas::matrix<double,ublas::column_major> > Acolsub(
+//        ublas::project(Acolwise, ublas::range(0, min(m,n)), ublas::range(0,n)));
+//    ublas::matrix_range<Matrix> Asub(ublas::project(A, ublas::range(0, min(m,n)), ublas::range(0,n)));
+//		ublas::noalias(Asub) = ublas::triangular_adaptor<typeof(Acolsub), ublas::upper>(Acolsub);
 
-		delete []Stair;
+    toc("householder_spqr: col->row");
+
 		cholmod_l_finish(&cc);
+
+		if(allocedStair) delete[] Stair;
+
+		toc("householder_spqr");
+	}
+
+	void householder_spqr_colmajor(ublas::matrix<double, ublas::column_major>& A, long *Stair) {
+    tic("householder_spqr");
+
+    long m = A.size1();
+    long n = A.size2();
+
+    assert(Stair != NULL);
+
+    tic("householder_spqr: spqr_front");
+    long npiv = min(m,n);
+    double tol = -1;  long ntol = -1; // no tolerance is used
+    long fchunk = m < 32 ? m : 32;
+    char Rdead[npiv];  memset(Rdead, 0, sizeof(char)*npiv);
+    double Tau[n];
+    long b = min(fchunk, min(n, m));
+    double W[b*(n+b)];
+    double wscale = 0;
+    double wssq = 0;
+
+    cholmod_common cc;
+    cholmod_l_start(&cc);
+
+    // todo: do something with the rank
+    long rank = spqr_front<double>(m, n, npiv, tol, ntol, fchunk,
+        A.data().begin(), Stair, Rdead, Tau, W, &wscale, &wssq, &cc);
+    toc("householder_spqr: spqr_front");
+
+//#ifndef NDEBUG
+    for(long j=0; j<npiv; ++j)
+      if(Rdead[j]) {
+        cout << "In householder_spqr, aborting because some columns were found to be\n"
+            "numerically linearly-dependent and we cannot handle this case yet." << endl;
+        print(A, "The matrix being factored was\n");
+        ublas::matrix_range<ublas::matrix<double,ublas::column_major> > Acolsub(
+            ublas::project(A, ublas::range(0, min(m,n)), ublas::range(0,n)));
+        print(Matrix(ublas::triangular_adaptor<typeof(Acolsub), ublas::upper>(Acolsub)), "and the result was\n");
+        cout << "The following columns are \"dead\":";
+        for(long k=0; k<npiv; ++k)
+          if(Rdead[k]) cout << " " << k;
+        cout << endl;
+        exit(1);
+      }
+//#endif
+
+    cholmod_l_finish(&cc);
+
+    toc("householder_spqr");
+
 	}
 
 } // namespace gtsam

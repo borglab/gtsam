@@ -12,10 +12,10 @@
 
 #include <iostream>
 #include <math.h>
-#include <gtsam/inference/Key.h>
 #include <gtsam/slam/PriorFactor.h>
 #include <gtsam/geometry/Rot2.h>
 #include <gtsam/linear/NoiseModel.h>
+#include <gtsam/nonlinear/Key.h>
 #include <gtsam/nonlinear/LieConfig-inl.h>
 #include <gtsam/nonlinear/NonlinearFactorGraph-inl.h>
 #include <gtsam/nonlinear/NonlinearOptimizer-inl.h>

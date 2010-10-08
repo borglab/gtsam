@@ -7,7 +7,7 @@
 
 #include <gtsam/linear/GaussianFactorGraph.h>
 #include <gtsam/linear/SharedDiagonal.h>
-#include <gtsam/inference/Ordering.h>
+#include <gtsam/inference/inference-inl.h>
 
 #include <boost/random.hpp>
 #include <boost/timer.hpp>
@@ -20,13 +20,13 @@ static boost::variate_generator<boost::mt19937, boost::uniform_real<> > rg(boost
 
 int main(int argc, char *argv[]) {
 
-  Symbol key('x', 0);
+  varid_t key = 0;
 
   size_t vardim = 2;
   size_t blockdim = 1;
   size_t nBlocks = 2000;
 
-  size_t nTrials = 500;
+  size_t nTrials = 10;
 
   double blockbuild, blocksolve, combbuild, combsolve;
 
@@ -68,7 +68,9 @@ int main(int argc, char *argv[]) {
     cout.flush();
     timer.restart();
     for(size_t trial=0; trial<nTrials; ++trial) {
-      VectorMap soln(blockGfgs[trial].optimize(blockGfgs[trial].getOrdering()));
+//      cout << "Trial " << trial << endl;
+      GaussianBayesNet::shared_ptr gbn(Inference::Eliminate(blockGfgs[trial]));
+      VectorConfig soln(optimize(*gbn));
     }
     blocksolve = timer.elapsed();
     cout << blocksolve << " s" << endl;
@@ -111,7 +113,8 @@ int main(int argc, char *argv[]) {
     cout.flush();
     timer.restart();
     for(size_t trial=0; trial<nTrials; ++trial) {
-      VectorMap soln(combGfgs[trial].optimize(combGfgs[trial].getOrdering()));
+      GaussianBayesNet::shared_ptr gbn(Inference::Eliminate(combGfgs[trial]));
+      VectorConfig soln(optimize(*gbn));
     }
     combsolve = timer.elapsed();
     cout << combsolve << " s" << endl;
@@ -120,12 +123,12 @@ int main(int argc, char *argv[]) {
   /////////////////////////////////////////////////////////////////////////////
   // Print per-graph times
   cout << "\nPer-factor-graph times for building and solving\n";
-  cout << "Blockwise:  total " << ((blockbuild+blocksolve)/double(nTrials)) <<
-      "  build " << (blockbuild/double(nTrials)) <<
-      "  solve " << (blocksolve/double(nTrials)) << " s/graph\n";
-  cout << "Combined:   total " << ((combbuild+combsolve)/double(nTrials)) <<
-      "  build " << (combbuild/double(nTrials)) <<
-      "  solve " << (combsolve/double(nTrials)) << " s/graph\n";
+  cout << "Blockwise:  total " << (1000.0*(blockbuild+blocksolve)/double(nTrials)) <<
+      "  build " << (1000.0*blockbuild/double(nTrials)) <<
+      "  solve " << (1000.0*blocksolve/double(nTrials)) << " ms/graph\n";
+  cout << "Combined:   total " << (1000.0*(combbuild+combsolve)/double(nTrials)) <<
+      "  build " << (1000.0*combbuild/double(nTrials)) <<
+      "  solve " << (1000.0*combsolve/double(nTrials)) << " ms/graph\n";
   cout << "Fraction of time spent in overhead\n" <<
       "  total " << (((blockbuild+blocksolve)-(combbuild+combsolve)) / (blockbuild+blocksolve)) << "\n" <<
       "  build " << ((blockbuild-combbuild) / blockbuild) << "\n" <<

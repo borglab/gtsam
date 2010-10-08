@@ -29,9 +29,14 @@ endif
 
 # The following lines specify the actual shared library to be built with libtool
 lib_LTLIBRARIES = libgtsam.la
-libgtsam_la_SOURCES =
+libgtsam_la_SOURCES = 
+nodist_EXTRA_libgtsam_la_SOURCES = dummy.cxx
 libgtsam_la_LIBADD = $(SUBLIBS)
-libgtsam_la_LDFLAGS = -version-info 0:0:0
+libgtsam_la_LDFLAGS = -no-undefined -version-info 0:0:0
+
+if USE_ACCELERATE_MACOS
+libgtsam_la_LDFLAGS += -Wl,/System/Library/Frameworks/Accelerate.framework/Accelerate
+endif
 
 # Add these files to make sure they're in the distribution
 noinst_HEADERS = gtsam.h

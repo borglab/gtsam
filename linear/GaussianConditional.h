@@ -8,22 +8,20 @@
 
 #pragma once
 
-#include <map>
 #include <list>
 #include <boost/utility.hpp>
 #include <boost/shared_ptr.hpp>
-//#include <boost/serialization/map.hpp>
-//#include <boost/serialization/shared_ptr.hpp>
+#include <boost/numeric/ublas/triangular.hpp>
 
+#include <gtsam/base/types.h>
 #include <gtsam/inference/Conditional.h>
 #include <gtsam/linear/VectorConfig.h>
 #include <gtsam/base/Matrix.h>
-#include <gtsam/inference/Key.h>
-#include <gtsam/inference/SymbolMap.h>
+#include <gtsam/base/blockMatrices.h>
 
 namespace gtsam {
 
-class Ordering;
+class GaussianFactor;
 
 /**
  * A conditional Gaussian functions as the node in a Bayes network
@@ -33,20 +31,24 @@ class Ordering;
 class GaussianConditional : public Conditional {
 
 public:
-	typedef SymbolMap<Matrix> Parents;
-	typedef Parents::const_iterator const_iterator;
+  typedef GaussianFactor FactorType;
 	typedef boost::shared_ptr<GaussianConditional> shared_ptr;
+
+	/** Store the conditional matrix as upper-triangular column-major */
+	typedef boost::numeric::ublas::triangular_matrix<double, boost::numeric::ublas::upper, boost::numeric::ublas::column_major> matrix_type;
+	typedef VerticalBlockView<matrix_type> rsd_type;
+
+	typedef rsd_type::block_type r_type;
+  typedef rsd_type::const_block_type const_r_type;
+  typedef rsd_type::column_type d_type;
+  typedef rsd_type::const_column_type const_d_type;
 
 protected:
 
-	/** the triangular matrix (square root information matrix) - unit normalized */
-	Matrix R_;
-
-	/** the names and the matrices connecting to parent nodes */
-	Parents parents_;
-
-	/** the RHS vector */
-	Vector d_;
+	/** Store the conditional as one big upper-triangular wide matrix, arranged
+	 * as [ R S1 S2 ... d ].  Access these blocks using a VerticalBlockView. */
+	matrix_type matrix_;
+	rsd_type rsd_;
 
 	/** vector of standard deviations */
 	Vector sigmas_;
@@ -54,99 +56,106 @@ protected:
 public:
 
 	/** default constructor needed for serialization */
-	GaussianConditional(){}
+	GaussianConditional();
 
 	/** constructor */
-	GaussianConditional(const Symbol& key) :
-		Conditional (key) {}
+	GaussianConditional(varid_t key);
 
 	/** constructor with no parents
 	 * |Rx-d|
 	 */
-	GaussianConditional(const Symbol& key, Vector d, Matrix R, Vector sigmas);
+	GaussianConditional(varid_t key, const Vector& d, const Matrix& R, const Vector& sigmas);
 
 	/** constructor with only one parent
 	 * |Rx+Sy-d|
 	 */
-	GaussianConditional(const Symbol& key, Vector d, Matrix R,
-			const Symbol& name1, Matrix S, Vector sigmas);
+	GaussianConditional(varid_t key, const Vector& d, const Matrix& R,
+			varid_t name1, const Matrix& S, const Vector& sigmas);
 
 	/** constructor with two parents
 	 * |Rx+Sy+Tz-d|
 	 */
-	GaussianConditional(const Symbol& key, Vector d, Matrix R,
-			const Symbol& name1, Matrix S, const Symbol& name2, Matrix T, Vector sigmas);
+	GaussianConditional(varid_t key, const Vector& d, const Matrix& R,
+			varid_t name1, const Matrix& S, varid_t name2, const Matrix& T, const Vector& sigmas);
 
 	/**
 	 * constructor with number of arbitrary parents
 	 * |Rx+sum(Ai*xi)-d|
 	 */
-	GaussianConditional(const Symbol& key, const Vector& d,
-			const Matrix& R, const Parents& parents, Vector sigmas);
+	GaussianConditional(varid_t key, const Vector& d,
+			const Matrix& R, const std::list<std::pair<varid_t, Matrix> >& parents, const Vector& sigmas);
 
-	/** deconstructor */
-	virtual ~GaussianConditional() {}
+	/**
+	 * Constructor when matrices are already stored in a combined matrix, allows
+	 * for multiple frontal variables.
+	 */
+	template<typename Iterator, class Matrix>
+	GaussianConditional(Iterator firstKey, Iterator lastKey, size_t nFrontals, const VerticalBlockView<Matrix>& matrices, const Vector& sigmas);
 
 	/** print */
 	void print(const std::string& = "GaussianConditional") const;
 
 	/** equals function */
-	bool equals(const Conditional &cg, double tol = 1e-9) const;
+	bool equals(const GaussianConditional &cg, double tol = 1e-9) const;
+
+//	/** permute the variables in the conditional */
+//	void permuteWithInverse(const Permutation& inversePermutation);
+//
+//  /** Permute the variables when only separator variables need to be permuted.
+//   * Returns true if any reordered variables appeared in the separator and
+//   * false if not.
+//   */
+//  bool permuteSeparatorWithInverse(const Permutation& inversePermutation);
 
 	/** dimension of multivariate variable */
-	size_t dim() const { return R_.size2();}
-
-	/** return all parents */
-	std::list<Symbol> parents() const;
+	size_t dim() const { return rsd_.size1(); }
 
 	/** return stuff contained in GaussianConditional */
-	const Vector& get_d() const {return d_;}
-	const Matrix& get_R() const {return R_;}
+	rsd_type::const_column_type get_d() const { return rsd_.column(1+nrParents(), 0); }
+	rsd_type::const_block_type get_R() const { return rsd_(0); }
+	rsd_type::const_block_type get_S(const_iterator variable) const { return rsd_(variable-Conditional::factor_.begin()); }
 	const Vector& get_sigmas() const {return sigmas_;}
 
-	/** STL like, return the iterator pointing to the first node */
-	const_iterator const parentsBegin() const {
-		return parents_.begin();
-	}
-
-	/** STL like, return the iterator pointing to the last node */
-	const_iterator const parentsEnd() const {
-		return parents_.end();
-	}
-
-	/** find the number of parents */
-	size_t nrParents() const {
-		return parents_.size();
-	}
-
-	/** determine whether a key is among the parents */
-	size_t contains(const Symbol& key) const {
-		return parents_.count(key);
-	}
 	/**
 	 * solve a conditional Gaussian
 	 * @param x configuration in which the parents values (y,z,...) are known
 	 * @return solution x = R \ (d - Sy - Tz - ...)
 	 */
-	virtual Vector solve(const VectorConfig& x) const;
+	Vector solve(const VectorConfig& x) const;
 
-	/**
-	 * adds a parent
-	 */
-	void add(const Symbol& key, Matrix S){
-		parents_.insert(make_pair(key, S));
-	}
+  /**
+   * solve a conditional Gaussian
+   * @param x configuration in which the parents values (y,z,...) are known
+   * @return solution x = R \ (d - Sy - Tz - ...)
+   */
+  Vector solve(const Permuted<VectorConfig>& x) const;
+
+protected:
+  rsd_type::column_type get_d_() { return rsd_.column(1+nrParents(), 0); }
+  rsd_type::block_type get_R_() { return rsd_(0); }
+  rsd_type::block_type get_S_(iterator variable) { return rsd_(variable-const_cast<const Factor&>(Conditional::factor_).begin()); }
+
+  friend class GaussianFactor;
 
 private:
-	/** Serialization function */
-	friend class boost::serialization::access;
-	template<class Archive>
-	void serialize(Archive & ar, const unsigned int version) {
-		ar & boost::serialization::make_nvp("Conditional", boost::serialization::base_object<Conditional>(*this));
-		ar & BOOST_SERIALIZATION_NVP(R_);
-		ar & BOOST_SERIALIZATION_NVP(parents_);
-		ar & BOOST_SERIALIZATION_NVP(d_);
-		ar & BOOST_SERIALIZATION_NVP(sigmas_);
-	}
+//	/** Serialization function */
+//	friend class boost::serialization::access;
+//	template<class Archive>
+//	void serialize(Archive & ar, const unsigned int version) {
+//		ar & boost::serialization::make_nvp("Conditional", boost::serialization::base_object<Conditional>(*this));
+//		ar & BOOST_SERIALIZATION_NVP(R_);
+//		ar & BOOST_SERIALIZATION_NVP(parents_);
+//		ar & BOOST_SERIALIZATION_NVP(d_);
+//		ar & BOOST_SERIALIZATION_NVP(sigmas_);
+//	}
 };
+
+/* ************************************************************************* */
+template<typename Iterator, class Matrix>
+GaussianConditional::GaussianConditional(Iterator firstKey, Iterator lastKey, size_t nFrontals, const VerticalBlockView<Matrix>& matrices, const Vector& sigmas) :
+Conditional(firstKey, lastKey, nFrontals), rsd_(matrix_), sigmas_(sigmas) {
+  rsd_.assignNoalias(matrices);
+}
+
+
 }

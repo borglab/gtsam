@@ -12,41 +12,41 @@ using namespace boost::assign;
 
 #define GTSAM_MAGIC_KEY
 
-#include <gtsam/inference/Ordering.h>
 #include <gtsam/slam/smallExample.h>
-#include <gtsam/inference/SymbolicBayesNet.h>
 #include <gtsam/inference/SymbolicFactorGraph.h>
+#include <gtsam/inference/inference-inl.h>
+#include <gtsam/inference/Factor-inl.h>
+#include <gtsam/nonlinear/Ordering.h>
 
 using namespace std;
 using namespace gtsam;
 using namespace example;
 
-Symbol _B_('B', 0), _L_('L', 0);
-SymbolicConditional::shared_ptr
-	B(new SymbolicConditional(_B_)),
-	L(new SymbolicConditional(_L_, _B_));
+//Symbol _B_('B', 0), _L_('L', 0);
+//Conditional::shared_ptr
+//	B(new Conditional(_B_)),
+//	L(new Conditional(_L_, _B_));
 
 /* ************************************************************************* */
 TEST( SymbolicBayesNet, constructor )
 {
+  Ordering o; o += "x2","l1","x1";
 	// Create manually
-	SymbolicConditional::shared_ptr
-		x2(new SymbolicConditional("x2","l1", "x1")),
-		l1(new SymbolicConditional("l1","x1")),
-		x1(new SymbolicConditional("x1"));
-	SymbolicBayesNet expected;
+	Conditional::shared_ptr
+		x2(new Conditional(o["x2"],o["l1"], o["x1"])),
+		l1(new Conditional(o["l1"],o["x1"])),
+		x1(new Conditional(o["x1"]));
+	BayesNet<Conditional> expected;
 	expected.push_back(x2);
 	expected.push_back(l1);
 	expected.push_back(x1);
 
 	// Create from a factor graph
-	GaussianFactorGraph factorGraph = createGaussianFactorGraph();
+	GaussianFactorGraph factorGraph = createGaussianFactorGraph(o);
 	SymbolicFactorGraph fg(factorGraph);
 
 	// eliminate it
-	Ordering ordering;
-	ordering += "x2","l1","x1";
-  SymbolicBayesNet actual = fg.eliminate(ordering);
+  SymbolicBayesNet actual = *Inference::Eliminate(fg);
 
   CHECK(assert_equal(expected, actual));
 }

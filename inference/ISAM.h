@@ -11,8 +11,10 @@
 #include <map>
 #include <list>
 #include <vector>
+#include <deque>
 //#include <boost/serialization/map.hpp>
 //#include <boost/serialization/list.hpp>
+#include <boost/pool/pool_alloc.hpp>
 #include <stdexcept>
 
 #include <gtsam/base/Testable.h>
@@ -33,10 +35,6 @@ namespace gtsam {
 		/** Create a Bayes Tree from a Bayes Net */
 		ISAM(const BayesNet<Conditional>& bayesNet);
 
-		/** Destructor */
-		virtual ~ISAM() {
-		}
-
 		typedef typename BayesTree<Conditional>::sharedClique sharedClique;
 
 		typedef typename BayesTree<Conditional>::Cliques Cliques;
@@ -44,10 +42,10 @@ namespace gtsam {
 		/**
 		 * iSAM. (update_internal provides access to list of orphans for drawing purposes)
 		 */
-		template<class Factor>
-		void update_internal(const FactorGraph<Factor>& newFactors, Cliques& orphans);
-		template<class Factor>
-		void update(const FactorGraph<Factor>& newFactors);
+		template<class FactorGraph>
+		void update_internal(const FactorGraph& newFactors, Cliques& orphans);
+		template<class FactorGraph>
+		void update(const FactorGraph& newFactors);
 
 	}; // ISAM
 

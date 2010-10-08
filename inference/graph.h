@@ -57,13 +57,13 @@ namespace gtsam {
 	template<class Key>
 	std::list<Key> predecessorMap2Keys(const PredecessorMap<Key>& p_map);
 
-	/**
-	 * Convert the factor graph to an SDGraph
-	 * G = Graph type
-	 * F = Factor type
-	 * Key = Key type
-	 */
-	template<class G, class F, class Key> SDGraph<Key> toBoostGraph(const G& graph);
+//	/**
+//	 * Convert the factor graph to an SDGraph
+//	 * G = Graph type
+//	 * F = Factor type
+//	 * Key = Key type
+//	 */
+//  SL-NEEDED? template<class G, class F, class Key> SDGraph<Key> toBoostGraph(const G& graph);
 
 	/**
 	 * Build takes a predecessor map, and builds a directed graph corresponding to the tree.

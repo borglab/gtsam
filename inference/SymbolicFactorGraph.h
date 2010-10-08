@@ -9,76 +9,68 @@
 
 #include <string>
 #include <list>
+#include <gtsam/base/types.h>
 #include <gtsam/inference/FactorGraph.h>
-#include <gtsam/inference/SymbolicFactor.h>
-#include <gtsam/inference/SymbolicBayesNet.h>
-#include <gtsam/inference/Key.h>
+#include <gtsam/inference/Factor-inl.h>
+#include <gtsam/inference/BayesNet.h>
+#include <gtsam/inference/Conditional.h>
 
 namespace gtsam {
 
-	class SymbolicConditional;
+typedef BayesNet<Conditional> SymbolicBayesNet;
 
-	/** Symbolic Factor Graph */
-	class SymbolicFactorGraph: public FactorGraph<SymbolicFactor> {
-	public:
+/** Symbolic Factor Graph */
+class SymbolicFactorGraph: public FactorGraph<Factor> {
+public:
+  typedef SymbolicBayesNet bayesnet_type;
+  typedef VariableIndex<> variableindex_type;
 
-		/** Construct empty factor graph */
-		SymbolicFactorGraph() {}
+  /** Construct empty factor graph */
+  SymbolicFactorGraph() {}
 
-		/** Push back unary factor */
-		void push_factor(const Symbol& key) {
-			boost::shared_ptr<SymbolicFactor> factor(new SymbolicFactor(key));
-			push_back(factor);
-		}
+  /** Construct from a BayesNet */
+  SymbolicFactorGraph(const BayesNet<Conditional>& bayesNet);
 
-		/** Push back binary factor */
-		void push_factor(const Symbol& key1, const Symbol& key2) {
-			boost::shared_ptr<SymbolicFactor> factor(new SymbolicFactor(key1,key2));
-			push_back(factor);
-		}
+  /** Push back unary factor */
+  void push_factor(varid_t key);
 
-		/** Push back ternary factor */
-		void push_factor(const Symbol& key1, const Symbol& key2, const Symbol& key3) {
-			boost::shared_ptr<SymbolicFactor> factor(new SymbolicFactor(key1,key2,key3));
-			push_back(factor);
-		}
+  /** Push back binary factor */
+  void push_factor(varid_t key1, varid_t key2);
 
-		/** Push back 4-way factor */
-		void push_factor(const Symbol& key1, const Symbol& key2, const Symbol& key3, const Symbol& key4) {
-			boost::shared_ptr<SymbolicFactor> factor(new SymbolicFactor(key1,key2,key3,key4));
-			push_back(factor);
-		}
+  /** Push back ternary factor */
+  void push_factor(varid_t key1, varid_t key2, varid_t key3);
 
-		/**
-		 * Construct from a factor graph of any type
-		 */
-		template<class Factor>
-		SymbolicFactorGraph(const FactorGraph<Factor>& fg) {
-			for (size_t i = 0; i < fg.size(); i++) {
-				boost::shared_ptr<Factor> f = fg[i];
-				std::list<Symbol> keys = f->keys();
-				SymbolicFactor::shared_ptr factor(new SymbolicFactor(keys));
-				push_back(factor);
-			}
-		}
+  /** Push back 4-way factor */
+  void push_factor(varid_t key1, varid_t key2, varid_t key3, varid_t key4);
 
-  	/**
-     * Eliminate a single node yielding a conditional Gaussian
-     * Eliminates the factors from the factor graph through findAndRemoveFactors
-     * and adds a new factor on the separator to the factor graph
-     */
-    boost::shared_ptr<SymbolicConditional> eliminateOne(const Symbol& key);
+  /**
+   * Construct from a factor graph of any type
+   */
+  template<class Factor>
+  SymbolicFactorGraph(const FactorGraph<Factor>& fg);
 
-		/**
-		 * eliminate factor graph in place(!) in the given order, yielding
-		 * a chordal Bayes net
-		 */
-		SymbolicBayesNet eliminate(const Ordering& ordering);
+  /**
+   * Return the set of variables involved in the factors (computes a set
+   * union).
+   */
+  std::set<varid_t, std::less<varid_t>, boost::fast_pool_allocator<varid_t> > keys() const;
 
-		/**
-		 * Same as eliminate in the SymbolicFactorGraph case
-		 */
-		SymbolicBayesNet eliminateFrontals(const Ordering& ordering);
-	};
+  /**
+   * Same as eliminate in the SymbolicFactorGraph case
+   */
+  //		SymbolicBayesNet eliminateFrontals(const Ordering& ordering);
+};
+
+/* Template function implementation */
+template<class FactorType>
+SymbolicFactorGraph::SymbolicFactorGraph(const FactorGraph<FactorType>& fg) {
+  for (size_t i = 0; i < fg.size(); i++) {
+    if(fg[i]) {
+      Factor::shared_ptr factor(new Factor(*fg[i]));
+      push_back(factor);
+    } else
+      push_back(Factor::shared_ptr());
+  }
+}
 
 } // namespace gtsam

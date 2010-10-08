@@ -6,6 +6,7 @@
  **/
 
 #include <iostream>
+#include <vector>
 
 #include <boost/tuple/tuple.hpp>
 #include <boost/assign/std/list.hpp> // for operator +=
@@ -13,12 +14,13 @@
 #include <boost/assign/std/map.hpp> // for insert
 using namespace boost::assign;
 
+#include <gtsam/base/TestableAssertions.h>
 #include <gtsam/CppUnitLite/TestHarness.h>
 
-#define GTSAM_MAGIC_KEY
+//#define GTSAM_MAGIC_KEY
 
+#include <gtsam/base/types.h>
 #include <gtsam/base/Matrix.h>
-#include <gtsam/inference/Ordering.h>
 #include <gtsam/linear/GaussianFactorGraph.h>
 #include <gtsam/linear/SharedDiagonal.h>
 #include <gtsam/inference/inference-inl.h>
@@ -26,6 +28,9 @@ using namespace boost::assign;
 using namespace std;
 using namespace gtsam;
 using namespace boost;
+namespace ublas = boost::numeric::ublas;
+
+static const varid_t _x0_=0, _x1_=1, _x2_=2, _x3_=3, _x4_=4, _x_=5, _y_=6, _l1_=7, _l11_=8;
 
 static SharedDiagonal
 	sigma0_1 = sharedSigma(2,0.1), sigma_02 = sharedSigma(2,0.2),
@@ -36,161 +41,284 @@ TEST( GaussianFactor, constructor)
 {
 	Vector b = Vector_(3, 1., 2., 3.);
 	SharedDiagonal noise = noiseModel::Diagonal::Sigmas(Vector_(3,1.,1.,1.));
-	Symbol x0('x',0), x1('x',1);
-	std::list<std::pair<Symbol, Matrix> > terms;
-	terms.push_back(make_pair(x0, eye(2)));
-	terms.push_back(make_pair(x1, 2.*eye(2)));
+	std::list<std::pair<varid_t, Matrix> > terms;
+	terms.push_back(make_pair(_x0_, eye(3)));
+	terms.push_back(make_pair(_x1_, 2.*eye(3)));
 	GaussianFactor actual(terms, b, noise);
-	GaussianFactor expected(x0, eye(2), x1, 2.*eye(2), b, noise);
+	GaussianFactor expected(_x0_, eye(3), _x1_, 2.*eye(3), b, noise);
 	CHECK(assert_equal(expected, actual));
 }
 
 /* ************************************************************************* */
-TEST( GaussianFactor, operators )
+TEST( GaussianFactor, constructor2)
 {
-	Matrix I = eye(2);
-	Vector b = Vector_(2,0.2,-0.1);
-	GaussianFactor lf("x1", -I, "x2", I, b, sigma0_1);
+  Vector b = Vector_(3, 1., 2., 3.);
+  SharedDiagonal noise = noiseModel::Diagonal::Sigmas(Vector_(3,1.,1.,1.));
+  std::list<std::pair<varid_t, Matrix> > terms;
+  terms.push_back(make_pair(_x0_, eye(3)));
+  terms.push_back(make_pair(_x1_, 2.*eye(3)));
+  GaussianFactor actual(terms, b, noise);
 
-	VectorConfig c;
-	c.insert("x1",Vector_(2,10.,20.));
-	c.insert("x2",Vector_(2,30.,60.));
+  GaussianFactor::const_iterator key0 = actual.begin();
+  GaussianFactor::const_iterator key1 = key0 + 1;
+  CHECK(assert_equal(*key0, _x0_));
+  CHECK(assert_equal(*key1, _x1_));
 
-	// test A*x
-	Vector expectedE = Vector_(2,200.,400.), e = lf*c;
-	CHECK(assert_equal(expectedE,e));
+  Matrix actualA0 = actual.getA(key0);
+  Matrix actualA1 = actual.getA(key1);
+  Vector actualb = actual.getb();
 
-	// test A^e
-	VectorConfig expectedX;
-	expectedX.insert("x1",Vector_(2,-2000.,-4000.));
-	expectedX.insert("x2",Vector_(2, 2000., 4000.));
-	CHECK(assert_equal(expectedX,lf^e));
-
-	// test transposeMultiplyAdd
-	VectorConfig x;
-	x.insert("x1",Vector_(2, 1.,2.));
-	x.insert("x2",Vector_(2, 3.,4.));
-	VectorConfig expectedX2 = x + 0.1 * (lf^e);
-	lf.transposeMultiplyAdd(0.1,e,x);
-	CHECK(assert_equal(expectedX2,x));
+  CHECK(assert_equal(eye(3), actualA0));
+  CHECK(assert_equal(2.*eye(3), actualA1));
+  CHECK(assert_equal(b, actualb));
 }
 
 /* ************************************************************************* */
-TEST( NonlinearFactorGraph, combine2){
-	double sigma1 = 0.0957;
-	Matrix A11(2,2);
-	A11(0,0) = 1; A11(0,1) =  0;
-	A11(1,0) = 0;       A11(1,1) = 1;
-	Vector b(2);
-	b(0) = 2; b(1) = -1;
-	GaussianFactor::shared_ptr f1(new GaussianFactor("x1", A11, b*sigma1, sharedSigma(2,sigma1)));
+TEST(GaussianFactor, Combine)
+{
+  Matrix A00 = Matrix_(3,3,
+      1.0, 0.0, 0.0,
+      0.0, 1.0, 0.0,
+      0.0, 0.0, 1.0);
+  Vector b0 = Vector_(3, 0.0, 0.0, 0.0);
+  Vector s0 = Vector_(3, 0.0, 0.0, 0.0);
 
-	double sigma2 = 0.5;
-	A11(0,0) = 1; A11(0,1) =  0;
-	A11(1,0) = 0; A11(1,1) = -1;
-	b(0) = 4 ; b(1) = -5;
-	GaussianFactor::shared_ptr f2(new GaussianFactor("x1", A11, b*sigma2, sharedSigma(2,sigma2)));
+  Matrix A10 = Matrix_(3,3,
+      0.0, -2.0, -4.0,
+      2.0, 0.0,  2.0,
+      0.0, 0.0, -10.0);
+  Matrix A11 = Matrix_(3,3,
+      2.0, 0.0, 0.0,
+      0.0, 2.0, 0.0,
+      0.0, 0.0, 10.0);
+  Vector b1 = Vector_(3, 6.0, 2.0, 0.0);
+  Vector s1 = Vector_(3, 1.0, 1.0, 1.0);
 
-	double sigma3 = 0.25;
-	A11(0,0) = 1; A11(0,1) =  0;
-	A11(1,0) = 0; A11(1,1) = -1;
-	b(0) = 3 ; b(1) = -88;
-	GaussianFactor::shared_ptr f3(new GaussianFactor("x1", A11, b*sigma3, sharedSigma(2,sigma3)));
+  Matrix A20 = Matrix_(3,3,
+      1.0, 0.0, 0.0,
+      0.0, 1.0, 0.0,
+      0.0, 0.0, 1.0);
+  Vector b2 = Vector_(3, 0.0, 0.0, 0.0);
+  Vector s2 = Vector_(3, 100.0, 100.0, 100.0);
 
-	// TODO: find a real sigma value for this example
-	double sigma4 = 0.1;
-	A11(0,0) = 6; A11(0,1) =  0;
-	A11(1,0) = 0; A11(1,1) = 7;
-	b(0) = 5 ; b(1) = -6;
-	GaussianFactor::shared_ptr f4(new GaussianFactor("x1", A11*sigma4, b*sigma4, sharedSigma(2,sigma4)));
+  GaussianFactorGraph gfg;
+  gfg.add(0, A00, b0, noiseModel::Diagonal::Sigmas(s0, true));
+  gfg.add(0, A10, 1, A11, b1, noiseModel::Diagonal::Sigmas(s1, true));
+  gfg.add(0, A20, b2, noiseModel::Diagonal::Sigmas(s2, true));
 
-	vector<GaussianFactor::shared_ptr> lfg;
-	lfg.push_back(f1);
-	lfg.push_back(f2);
-	lfg.push_back(f3);
-	lfg.push_back(f4);
-	GaussianFactor combined(lfg);
+  GaussianVariableIndex<> varindex(gfg);
+  vector<size_t> factors(3); factors[0]=0; factors[1]=1; factors[2]=2;
+  vector<size_t> variables(2); variables[0]=0; variables[1]=1;
+  vector<vector<size_t> > variablePositions(3);
+  variablePositions[0].resize(1); variablePositions[0][0]=0;
+  variablePositions[1].resize(2); variablePositions[1][0]=0; variablePositions[1][1]=1;
+  variablePositions[2].resize(1); variablePositions[2][0]=0;
 
-	Vector sigmas = Vector_(8, sigma1, sigma1, sigma2, sigma2, sigma3, sigma3, sigma4, sigma4);
-	Matrix A22(8,2);
-	A22(0,0) = 1;   A22(0,1) =  0;
-	A22(1,0) = 0;   A22(1,1) = 1;
-	A22(2,0) = 1;   A22(2,1) =  0;
-	A22(3,0) = 0;   A22(3,1) = -1;
-	A22(4,0) = 1;   A22(4,1) =  0;
-	A22(5,0) = 0;   A22(5,1) = -1;
-	A22(6,0) = 0.6; A22(6,1) =  0;
-	A22(7,0) = 0;   A22(7,1) =  0.7;
-	Vector exb(8);
-	exb(0) = 2*sigma1 ; exb(1) = -1*sigma1;  exb(2) = 4*sigma2 ; exb(3) = -5*sigma2;
-	exb(4) = 3*sigma3 ; exb(5) = -88*sigma3; exb(6) = 5*sigma4 ; exb(7) = -6*sigma4;
+  GaussianFactor actual = *GaussianFactor::Combine(gfg, varindex, factors, variables, variablePositions);
 
-	vector<pair<Symbol, Matrix> > meas;
-	meas.push_back(make_pair("x1", A22));
-	GaussianFactor expected(meas, exb, sigmas);
-	CHECK(assert_equal(expected,combined));
+  Matrix zero3x3 = zeros(3,3);
+  Matrix A0 = gtsam::stack(3, &A00, &A10, &A20);
+  Matrix A1 = gtsam::stack(3, &zero3x3, &A11, &zero3x3);
+  Vector b = gtsam::concatVectors(3, &b0, &b1, &b2);
+  Vector sigmas = gtsam::concatVectors(3, &s0, &s1, &s2);
+
+  GaussianFactor expected(0, A0, 1, A1, b, noiseModel::Diagonal::Sigmas(sigmas, true));
+
+  CHECK(assert_equal(expected, actual));
 }
 
 /* ************************************************************************* */
-TEST( GaussianFactor, linearFactorN){
-	Matrix I = eye(2);
-  vector<GaussianFactor::shared_ptr> f;
-  SharedDiagonal model = sharedSigma(2,1.0);
-  f.push_back(GaussianFactor::shared_ptr(new GaussianFactor("x1", I, Vector_(2,
-			10.0, 5.0), model)));
-	f.push_back(GaussianFactor::shared_ptr(new GaussianFactor("x1", -10 * I,
-			"x2", 10 * I, Vector_(2, 1.0, -2.0), model)));
-	f.push_back(GaussianFactor::shared_ptr(new GaussianFactor("x2", -10 * I,
-			"x3", 10 * I, Vector_(2, 1.5, -1.5), model)));
-	f.push_back(GaussianFactor::shared_ptr(new GaussianFactor("x3", -10 * I,
-			"x4", 10 * I, Vector_(2, 2.0, -1.0), model)));
+TEST(GaussianFactor, Combine2)
+{
+  Matrix A01 = Matrix_(3,3,
+      1.0, 0.0, 0.0,
+      0.0, 1.0, 0.0,
+      0.0, 0.0, 1.0);
+  Vector b0 = Vector_(3, 1.5, 1.5, 1.5);
+  Vector s0 = Vector_(3, 1.6, 1.6, 1.6);
 
-  GaussianFactor combinedFactor(f);
+  Matrix A10 = Matrix_(3,3,
+      2.0, 0.0, 0.0,
+      0.0, 2.0, 0.0,
+      0.0, 0.0, 2.0);
+  Matrix A11 = Matrix_(3,3,
+      -2.0, 0.0, 0.0,
+      0.0, -2.0, 0.0,
+      0.0, 0.0, -2.0);
+  Vector b1 = Vector_(3, 2.5, 2.5, 2.5);
+  Vector s1 = Vector_(3, 2.6, 2.6, 2.6);
 
-  vector<pair<Symbol, Matrix> > combinedMeasurement;
-  combinedMeasurement.push_back(make_pair("x1", Matrix_(8,2,
-      1.0,  0.0,
-      0.0,  1.0,
-    -10.0,  0.0,
-      0.0,-10.0,
-      0.0,  0.0,
-      0.0,  0.0,
-      0.0,  0.0,
-      0.0,  0.0)));
-  combinedMeasurement.push_back(make_pair("x2", Matrix_(8,2,
-      0.0,  0.0,
-      0.0,  0.0,
-     10.0,  0.0,
-      0.0, 10.0,
-    -10.0,  0.0,
-      0.0,-10.0,
-      0.0,  0.0,
-      0.0,  0.0)));
-  combinedMeasurement.push_back(make_pair("x3", Matrix_(8,2,
-      0.0,  0.0,
-      0.0,  0.0,
-      0.0,  0.0,
-      0.0,  0.0,
-     10.0,  0.0,
-      0.0, 10.0,
-    -10.0,  0.0,
-      0.0,-10.0)));
-  combinedMeasurement.push_back(make_pair("x4", Matrix_(8,2,
-      0.0, 0.0,
-      0.0, 0.0,
-      0.0, 0.0,
-      0.0, 0.0,
-      0.0, 0.0,
-      0.0, 0.0,
-     10.0, 0.0,
-      0.0,10.0)));
-  Vector b = Vector_(8,
-      10.0, 5.0, 1.0, -2.0, 1.5, -1.5, 2.0, -1.0);
+  Matrix A21 = Matrix_(3,3,
+      3.0, 0.0, 0.0,
+      0.0, 3.0, 0.0,
+      0.0, 0.0, 3.0);
+  Vector b2 = Vector_(3, 3.5, 3.5, 3.5);
+  Vector s2 = Vector_(3, 3.6, 3.6, 3.6);
 
-  Vector sigmas = repeat(8,1.0);
-  GaussianFactor expected(combinedMeasurement, b, sigmas);
-  CHECK(assert_equal(expected,combinedFactor));
+  GaussianFactorGraph gfg;
+  gfg.add(1, A01, b0, noiseModel::Diagonal::Sigmas(s0, true));
+  gfg.add(0, A10, 1, A11, b1, noiseModel::Diagonal::Sigmas(s1, true));
+  gfg.add(1, A21, b2, noiseModel::Diagonal::Sigmas(s2, true));
+
+  GaussianFactor actual = *GaussianFactor::Combine(gfg, VariableSlots(gfg));
+
+  Matrix zero3x3 = zeros(3,3);
+  Matrix A0 = gtsam::stack(3, &A10, &zero3x3, &zero3x3);
+  Matrix A1 = gtsam::stack(3, &A11, &A01, &A21);
+  Vector b = gtsam::concatVectors(3, &b1, &b0, &b2);
+  Vector sigmas = gtsam::concatVectors(3, &s1, &s0, &s2);
+
+  GaussianFactor expected(0, A0, 1, A1, b, noiseModel::Diagonal::Sigmas(sigmas, true));
+
+  CHECK(assert_equal(expected, actual));
 }
+
+///* ************************************************************************* */
+//TEST( GaussianFactor, operators )
+//{
+//	Matrix I = eye(2);
+//	Vector b = Vector_(2,0.2,-0.1);
+//	GaussianFactor lf(_x1_, -I, _x2_, I, b, sigma0_1);
+//
+//	VectorConfig c;
+//	c.insert(_x1_,Vector_(2,10.,20.));
+//	c.insert(_x2_,Vector_(2,30.,60.));
+//
+//	// test A*x
+//	Vector expectedE = Vector_(2,200.,400.), e = lf*c;
+//	CHECK(assert_equal(expectedE,e));
+//
+//	// test A^e
+//	VectorConfig expectedX;
+//	expectedX.insert(_x1_,Vector_(2,-2000.,-4000.));
+//	expectedX.insert(_x2_,Vector_(2, 2000., 4000.));
+//	CHECK(assert_equal(expectedX,lf^e));
+//
+//	// test transposeMultiplyAdd
+//	VectorConfig x;
+//	x.insert(_x1_,Vector_(2, 1.,2.));
+//	x.insert(_x2_,Vector_(2, 3.,4.));
+//	VectorConfig expectedX2 = x + 0.1 * (lf^e);
+//	lf.transposeMultiplyAdd(0.1,e,x);
+//	CHECK(assert_equal(expectedX2,x));
+//}
+
+///* ************************************************************************* */
+//TEST( NonlinearFactorGraph, combine2){
+//	double sigma1 = 0.0957;
+//	Matrix A11(2,2);
+//	A11(0,0) = 1; A11(0,1) =  0;
+//	A11(1,0) = 0;       A11(1,1) = 1;
+//	Vector b(2);
+//	b(0) = 2; b(1) = -1;
+//	GaussianFactor::shared_ptr f1(new GaussianFactor(_x1_, A11, b*sigma1, sharedSigma(2,sigma1)));
+//
+//	double sigma2 = 0.5;
+//	A11(0,0) = 1; A11(0,1) =  0;
+//	A11(1,0) = 0; A11(1,1) = -1;
+//	b(0) = 4 ; b(1) = -5;
+//	GaussianFactor::shared_ptr f2(new GaussianFactor(_x1_, A11, b*sigma2, sharedSigma(2,sigma2)));
+//
+//	double sigma3 = 0.25;
+//	A11(0,0) = 1; A11(0,1) =  0;
+//	A11(1,0) = 0; A11(1,1) = -1;
+//	b(0) = 3 ; b(1) = -88;
+//	GaussianFactor::shared_ptr f3(new GaussianFactor(_x1_, A11, b*sigma3, sharedSigma(2,sigma3)));
+//
+//	// TODO: find a real sigma value for this example
+//	double sigma4 = 0.1;
+//	A11(0,0) = 6; A11(0,1) =  0;
+//	A11(1,0) = 0; A11(1,1) = 7;
+//	b(0) = 5 ; b(1) = -6;
+//	GaussianFactor::shared_ptr f4(new GaussianFactor(_x1_, A11*sigma4, b*sigma4, sharedSigma(2,sigma4)));
+//
+//	vector<GaussianFactor::shared_ptr> lfg;
+//	lfg.push_back(f1);
+//	lfg.push_back(f2);
+//	lfg.push_back(f3);
+//	lfg.push_back(f4);
+//	GaussianFactor combined(lfg);
+//
+//	Vector sigmas = Vector_(8, sigma1, sigma1, sigma2, sigma2, sigma3, sigma3, sigma4, sigma4);
+//	Matrix A22(8,2);
+//	A22(0,0) = 1;   A22(0,1) =  0;
+//	A22(1,0) = 0;   A22(1,1) = 1;
+//	A22(2,0) = 1;   A22(2,1) =  0;
+//	A22(3,0) = 0;   A22(3,1) = -1;
+//	A22(4,0) = 1;   A22(4,1) =  0;
+//	A22(5,0) = 0;   A22(5,1) = -1;
+//	A22(6,0) = 0.6; A22(6,1) =  0;
+//	A22(7,0) = 0;   A22(7,1) =  0.7;
+//	Vector exb(8);
+//	exb(0) = 2*sigma1 ; exb(1) = -1*sigma1;  exb(2) = 4*sigma2 ; exb(3) = -5*sigma2;
+//	exb(4) = 3*sigma3 ; exb(5) = -88*sigma3; exb(6) = 5*sigma4 ; exb(7) = -6*sigma4;
+//
+//	vector<pair<varid_t, Matrix> > meas;
+//	meas.push_back(make_pair(_x1_, A22));
+//	GaussianFactor expected(meas, exb, sigmas);
+//	CHECK(assert_equal(expected,combined));
+//}
+//
+///* ************************************************************************* */
+//TEST( GaussianFactor, linearFactorN){
+//	Matrix I = eye(2);
+//  vector<GaussianFactor::shared_ptr> f;
+//  SharedDiagonal model = sharedSigma(2,1.0);
+//  f.push_back(GaussianFactor::shared_ptr(new GaussianFactor(_x1_, I, Vector_(2,
+//			10.0, 5.0), model)));
+//	f.push_back(GaussianFactor::shared_ptr(new GaussianFactor(_x1_, -10 * I,
+//			_x2_, 10 * I, Vector_(2, 1.0, -2.0), model)));
+//	f.push_back(GaussianFactor::shared_ptr(new GaussianFactor(_x2_, -10 * I,
+//			_x3_, 10 * I, Vector_(2, 1.5, -1.5), model)));
+//	f.push_back(GaussianFactor::shared_ptr(new GaussianFactor(_x3_, -10 * I,
+//			_x4_, 10 * I, Vector_(2, 2.0, -1.0), model)));
+//
+//  GaussianFactor combinedFactor(f);
+//
+//  vector<pair<varid_t, Matrix> > combinedMeasurement;
+//  combinedMeasurement.push_back(make_pair(_x1_, Matrix_(8,2,
+//      1.0,  0.0,
+//      0.0,  1.0,
+//    -10.0,  0.0,
+//      0.0,-10.0,
+//      0.0,  0.0,
+//      0.0,  0.0,
+//      0.0,  0.0,
+//      0.0,  0.0)));
+//  combinedMeasurement.push_back(make_pair(_x2_, Matrix_(8,2,
+//      0.0,  0.0,
+//      0.0,  0.0,
+//     10.0,  0.0,
+//      0.0, 10.0,
+//    -10.0,  0.0,
+//      0.0,-10.0,
+//      0.0,  0.0,
+//      0.0,  0.0)));
+//  combinedMeasurement.push_back(make_pair(_x3_, Matrix_(8,2,
+//      0.0,  0.0,
+//      0.0,  0.0,
+//      0.0,  0.0,
+//      0.0,  0.0,
+//     10.0,  0.0,
+//      0.0, 10.0,
+//    -10.0,  0.0,
+//      0.0,-10.0)));
+//  combinedMeasurement.push_back(make_pair(_x4_, Matrix_(8,2,
+//      0.0, 0.0,
+//      0.0, 0.0,
+//      0.0, 0.0,
+//      0.0, 0.0,
+//      0.0, 0.0,
+//      0.0, 0.0,
+//     10.0, 0.0,
+//      0.0,10.0)));
+//  Vector b = Vector_(8,
+//      10.0, 5.0, 1.0, -2.0, 1.5, -1.5, 2.0, -1.0);
+//
+//  Vector sigmas = repeat(8,1.0);
+//  GaussianFactor expected(combinedMeasurement, b, sigmas);
+//  CHECK(assert_equal(expected,combinedFactor));
+//}
 
 /* ************************************************************************* */
 TEST( GaussianFactor, eliminate2 )
@@ -224,15 +352,15 @@ TEST( GaussianFactor, eliminate2 )
 	b2(2) =  0.2;
 	b2(3) = -0.1;
 
-	vector<pair<Symbol, Matrix> > meas;
-	meas.push_back(make_pair("x2", Ax2));
-	meas.push_back(make_pair("l11", Al1x1));
+	vector<pair<varid_t, Matrix> > meas;
+	meas.push_back(make_pair(_x2_, Ax2));
+	meas.push_back(make_pair(_l11_, Al1x1));
 	GaussianFactor combined(meas, b2, sigmas);
 
 	// eliminate the combined factor
 	GaussianConditional::shared_ptr actualCG;
-	GaussianFactor::shared_ptr actualLF;
-	boost::tie(actualCG,actualLF) = combined.eliminate("x2");
+	GaussianFactor::shared_ptr actualLF(new GaussianFactor(combined));
+	actualCG = actualLF->eliminateFirst();
 
 	// create expected Conditional Gaussian
 	double oldSigma = 0.0894427; // from when R was made unit
@@ -245,7 +373,7 @@ TEST( GaussianFactor, eliminate2 )
 			+0.00,-0.20,+0.00,-0.80
 	)/oldSigma;
 	Vector d = Vector_(2,0.2,-0.14)/oldSigma;
-	GaussianConditional expectedCG("x2",d,R11,"l11",S12,ones(2));
+	GaussianConditional expectedCG(_x2_,d,R11,_l11_,S12,ones(2));
 	CHECK(assert_equal(expectedCG,*actualCG,1e-4));
 
 	// the expected linear factor
@@ -256,40 +384,162 @@ TEST( GaussianFactor, eliminate2 )
 			0.00, 1.00, +0.00, -1.00
 	)/sigma;
 	Vector b1 =Vector_(2,0.0,0.894427);
-	GaussianFactor expectedLF("l11", Bl1x1, b1, repeat(2,1.0));
+	GaussianFactor expectedLF(_l11_, Bl1x1, b1, repeat(2,1.0));
 	CHECK(assert_equal(expectedLF,*actualLF,1e-3));
+}
+
+/* ************************************************************************* */
+TEST(GaussianFactor, eliminateFrontals)
+{
+  Matrix Ab = Matrix_(14,11,
+      4.,     0.,     1.,     4.,     1.,     0.,     3.,     6.,     8.,     8.,     1.,
+      9.,     2.,     0.,     1.,     6.,     3.,     9.,     6.,     6.,     9.,     4.,
+      5.,     3.,     7.,     9.,     5.,     5.,     9.,     1.,     3.,     7.,     0.,
+      5.,     6.,     5.,     7.,     9.,     4.,     0.,     1.,     1.,     3.,     5.,
+      0.,     0.,     4.,     5.,     6.,     6.,     7.,     9.,     4.,     5.,     4.,
+      0.,     0.,     9.,     4.,     8.,     6.,     2.,     1.,     4.,     1.,     6.,
+      0.,     0.,     6.,     0.,     4.,     2.,     4.,     0.,     1.,     9.,     6.,
+      0.,     0.,     6.,     6.,     4.,     4.,     5.,     5.,     5.,     8.,     6.,
+      0.,     0.,     0.,     0.,     8.,     0.,     9.,     8.,     2.,     8.,     0.,
+      0.,     0.,     0.,     0.,     0.,     9.,     4.,     6.,     3.,     2.,     0.,
+      0.,     0.,     0.,     0.,     1.,     1.,     9.,     1.,     5.,     5.,     3.,
+      0.,     0.,     0.,     0.,     1.,     1.,     3.,     3.,     2.,     0.,     5.,
+      0.,     0.,     0.,     0.,     0.,     0.,     0.,     0.,     2.,     4.,     6.,
+      0.,     0.,     0.,     0.,     0.,     0.,     0.,     0.,     6.,     3.,     4.);
+
+  list<pair<varid_t, Matrix> > terms1;
+  terms1 +=
+      make_pair(3, Matrix(ublas::project(Ab, ublas::range(0,4), ublas::range(0,2)))),
+      make_pair(5, ublas::project(Ab, ublas::range(0,4), ublas::range(2,4))),
+      make_pair(7, ublas::project(Ab, ublas::range(0,4), ublas::range(4,6))),
+      make_pair(9, ublas::project(Ab, ublas::range(0,4), ublas::range(6,8))),
+      make_pair(11, ublas::project(Ab, ublas::range(0,4), ublas::range(8,10)));
+  Vector b1 = ublas::project(ublas::column(Ab, 10), ublas::range(0,4));
+  GaussianFactor::shared_ptr factor1(new GaussianFactor(terms1, b1, sharedSigma(4, 0.5)));
+
+  list<pair<varid_t, Matrix> > terms2;
+  terms2 +=
+      make_pair(5, ublas::project(Ab, ublas::range(4,8), ublas::range(2,4))),
+      make_pair(7, ublas::project(Ab, ublas::range(4,8), ublas::range(4,6))),
+      make_pair(9, ublas::project(Ab, ublas::range(4,8), ublas::range(6,8))),
+      make_pair(11, ublas::project(Ab, ublas::range(4,8), ublas::range(8,10)));
+  Vector b2 = ublas::project(ublas::column(Ab, 10), ublas::range(4,8));
+  GaussianFactor::shared_ptr factor2(new GaussianFactor(terms2, b2, sharedSigma(4, 0.5)));
+
+  list<pair<varid_t, Matrix> > terms3;
+  terms3 +=
+      make_pair(7, ublas::project(Ab, ublas::range(8,12), ublas::range(4,6))),
+      make_pair(9, ublas::project(Ab, ublas::range(8,12), ublas::range(6,8))),
+      make_pair(11, ublas::project(Ab, ublas::range(8,12), ublas::range(8,10)));
+  Vector b3 = ublas::project(ublas::column(Ab, 10), ublas::range(8,12));
+  GaussianFactor::shared_ptr factor3(new GaussianFactor(terms3, b3, sharedSigma(4, 0.5)));
+
+  list<pair<varid_t, Matrix> > terms4;
+  terms4 +=
+      make_pair(11, ublas::project(Ab, ublas::range(12,14), ublas::range(8,10)));
+  Vector b4 = ublas::project(ublas::column(Ab, 10), ublas::range(12,14));
+  GaussianFactor::shared_ptr factor4(new GaussianFactor(terms4, b4, sharedSigma(2, 0.5)));
+
+  GaussianFactorGraph factors;
+  factors.push_back(factor1);
+  factors.push_back(factor2);
+  factors.push_back(factor3);
+  factors.push_back(factor4);
+  GaussianFactor combined(*GaussianFactor::Combine(factors, VariableSlots(factors)));
+
+  GaussianFactor actualFactor = combined;
+  GaussianBayesNet actualFragment = *actualFactor.eliminate(3);
+
+  Matrix R = 2.0*Matrix_(11,11,
+      -12.1244,  -5.1962,  -5.2786,  -8.6603, -10.5573,  -5.9385, -11.3820,  -7.2581,  -8.7427, -13.4440,  -5.3611,
+            0.,   4.6904,   5.0254,   5.5432,   5.5737,   3.0153,  -3.0153,  -3.5635,  -3.9290,  -2.7412,   2.1625,
+            0.,       0., -13.8160,  -8.7166, -10.2245,  -8.8666,  -8.7632,  -5.2544,  -6.9192, -10.5537,  -9.3250,
+            0.,       0.,       0.,   6.5033,  -1.1453,   1.3179,   2.5768,   5.5503,   3.6524,   1.3491,  -2.5676,
+            0.,       0.,       0.,       0.,  -9.6242,  -2.1148,  -9.3509, -10.5846,  -3.5366,  -6.8561,  -3.2277,
+            0.,       0.,       0.,       0.,       0.,   9.7887,   4.3551,   5.7572,   2.7876,   0.1611,   1.1769,
+            0.,       0.,       0.,       0.,       0.,       0., -11.1139,  -0.6521,  -2.1943,  -7.5529,  -0.9081,
+            0.,       0.,       0.,       0.,       0.,       0.,       0.,  -4.6479,  -1.9367,  -6.5170,  -3.7685,
+            0.,       0.,       0.,       0.,       0.,       0.,       0.,       0.,   8.2503,   3.3757,   6.8476,
+            0.,       0.,       0.,       0.,       0.,       0.,       0.,       0.,       0.,  -5.7095,  -0.0090,
+            0.,       0.,       0.,       0.,       0.,       0.,       0.,       0.,       0.,       0.,  -7.1635);
+
+  Matrix R1 = ublas::project(R, ublas::range(0,2), ublas::range(0,2));
+  list<pair<varid_t, Matrix> > cterms1;
+  cterms1 +=
+      make_pair(5, ublas::project(R, ublas::range(0,2), ublas::range(2,4))),
+      make_pair(7, ublas::project(R, ublas::range(0,2), ublas::range(4,6))),
+      make_pair(9, ublas::project(R, ublas::range(0,2), ublas::range(6,8))),
+      make_pair(11, ublas::project(R, ublas::range(0,2), ublas::range(8,10)));
+  Vector d1 = ublas::project(ublas::column(R, 10), ublas::range(0,2));
+  GaussianConditional::shared_ptr cond1(new GaussianConditional(3, d1, R1, cterms1, ones(2)));
+
+  Matrix R2 = ublas::project(R, ublas::range(2,4), ublas::range(2,4));
+  list<pair<varid_t, Matrix> > cterms2;
+  cterms2 +=
+      make_pair(7, ublas::project(R, ublas::range(2,4), ublas::range(4,6))),
+      make_pair(9, ublas::project(R, ublas::range(2,4), ublas::range(6,8))),
+      make_pair(11, ublas::project(R, ublas::range(2,4), ublas::range(8,10)));
+  Vector d2 = ublas::project(ublas::column(R, 10), ublas::range(2,4));
+  GaussianConditional::shared_ptr cond2(new GaussianConditional(5, d2, R2, cterms2, ones(2)));
+
+  Matrix R3 = ublas::project(R, ublas::range(4,6), ublas::range(4,6));
+  list<pair<varid_t, Matrix> > cterms3;
+  cterms3 +=
+      make_pair(9, ublas::project(R, ublas::range(4,6), ublas::range(6,8))),
+      make_pair(11, ublas::project(R, ublas::range(4,6), ublas::range(8,10)));
+  Vector d3 = ublas::project(ublas::column(R, 10), ublas::range(4,6));
+  GaussianConditional::shared_ptr cond3(new GaussianConditional(7, d3, R3, cterms3, ones(2)));
+
+  Matrix Ae1 = ublas::project(R, ublas::range(6,10), ublas::range(6,8));
+  Matrix Ae2 = ublas::project(R, ublas::range(6,10), ublas::range(8,10));
+  Vector be = ublas::project(ublas::column(R, 10), ublas::range(6,10));
+
+  GaussianBayesNet expectedFragment;
+  expectedFragment.push_back(cond1);
+  expectedFragment.push_back(cond2);
+  expectedFragment.push_back(cond3);
+
+  CHECK(assert_equal(expectedFragment, actualFragment, 0.001));
+  CHECK(assert_equal(size_t(2), actualFactor.keys().size()));
+  CHECK(assert_equal(varid_t(9), actualFactor.keys()[0]));
+  CHECK(assert_equal(varid_t(11), actualFactor.keys()[1]));
+  CHECK(assert_equal(Ae1, actualFactor.getA(actualFactor.begin()), 0.001));
+  CHECK(assert_equal(Ae2, actualFactor.getA(actualFactor.begin()+1), 0.001));
+  CHECK(assert_equal(be, actualFactor.getb(), 0.001));
+  CHECK(assert_equal(ones(4), actualFactor.get_sigmas(), 0.001));
 }
 
 /* ************************************************************************* */
 TEST( GaussianFactor, default_error )
 {
 	GaussianFactor f;
-	VectorConfig c;
+	vector<size_t> dims;
+	VectorConfig c(dims);
 	double actual = f.error(c);
 	CHECK(actual==0.0);
 }
 
-//* ************************************************************************* */
-TEST( GaussianFactor, eliminate_empty )
-{
-	// create an empty factor
-	GaussianFactor f;
-
-	// eliminate the empty factor
-	GaussianConditional::shared_ptr actualCG;
-	GaussianFactor::shared_ptr actualLF;
-	boost::tie(actualCG,actualLF) = f.eliminate("x2");
-
-	// expected Conditional Gaussian is just a parent-less node with P(x)=1
-	GaussianConditional expectedCG("x2");
-
-	// expected remaining factor is still empty :-)
-	GaussianFactor expectedLF;
-
-	// check if the result matches
-	CHECK(actualCG->equals(expectedCG));
-	CHECK(actualLF->equals(expectedLF));
-}
+////* ************************************************************************* */
+//TEST( GaussianFactor, eliminate_empty )
+//{
+//	// create an empty factor
+//	GaussianFactor f;
+//
+//	// eliminate the empty factor
+//	GaussianConditional::shared_ptr actualCG;
+//	GaussianFactor::shared_ptr actualLF(new GaussianFactor(f));
+//	actualCG = actualLF->eliminateFirst();
+//
+//	// expected Conditional Gaussian is just a parent-less node with P(x)=1
+//	GaussianConditional expectedCG(_x2_);
+//
+//	// expected remaining factor is still empty :-)
+//	GaussianFactor expectedLF;
+//
+//	// check if the result matches
+//	CHECK(actualCG->equals(expectedCG));
+//	CHECK(actualLF->equals(expectedLF));
+//}
 
 //* ************************************************************************* */
 TEST( GaussianFactor, empty )
@@ -307,28 +557,28 @@ void print(const list<T>& i) {
 	cout << endl;
 }
 
-/* ************************************************************************* */
-TEST( GaussianFactor, tally_separator )
-{
-	GaussianFactor f("x1", eye(2), "x2", eye(2), "l1", eye(2), ones(2), sigma0_1);
-
-	std::set<Symbol> act1, act2, act3;
-	f.tally_separator("x1",	act1);
-	f.tally_separator("x2",	act2);
-	f.tally_separator("l1",	act3);
-
-	CHECK(act1.size() == 2);
-	CHECK(act1.count("x2") == 1);
-	CHECK(act1.count("l1") == 1);
-
-	CHECK(act2.size() == 2);
-	CHECK(act2.count("x1") == 1);
-	CHECK(act2.count("l1") == 1);
-
-	CHECK(act3.size() == 2);
-	CHECK(act3.count("x1") == 1);
-	CHECK(act3.count("x2") == 1);
-}
+///* ************************************************************************* */
+//TEST( GaussianFactor, tally_separator )
+//{
+//	GaussianFactor f(_x1_, eye(2), _x2_, eye(2), _l1_, eye(2), ones(2), sigma0_1);
+//
+//	std::set<varid_t> act1, act2, act3;
+//	f.tally_separator(_x1_,	act1);
+//	f.tally_separator(_x2_,	act2);
+//	f.tally_separator(_l1_,	act3);
+//
+//	CHECK(act1.size() == 2);
+//	CHECK(act1.count(_x2_) == 1);
+//	CHECK(act1.count(_l1_) == 1);
+//
+//	CHECK(act2.size() == 2);
+//	CHECK(act2.count(_x1_) == 1);
+//	CHECK(act2.count(_l1_) == 1);
+//
+//	CHECK(act3.size() == 2);
+//	CHECK(act3.count(_x1_) == 1);
+//	CHECK(act3.count(_x2_) == 1);
+//}
 
 /* ************************************************************************* */
 TEST( GaussianFactor, CONSTRUCTOR_GaussianConditional )
@@ -340,12 +590,12 @@ TEST( GaussianFactor, CONSTRUCTOR_GaussianConditional )
 	);
 	Vector d(2); d(0) = 2.23607; d(1) = -1.56525;
 	Vector sigmas =repeat(2,0.29907);
-	GaussianConditional::shared_ptr CG(new GaussianConditional("x2",d,R11,"l11",S12,sigmas));
+	GaussianConditional::shared_ptr CG(new GaussianConditional(_x2_,d,R11,_l11_,S12,sigmas));
 
 	// Call the constructor we are testing !
-	GaussianFactor actualLF(CG);
+	GaussianFactor actualLF(*CG);
 
-	GaussianFactor expectedLF("x2",R11,"l11",S12,d, sigmas);
+	GaussianFactor expectedLF(_x2_,R11,_l11_,S12,d, sigmas);
 	CHECK(assert_equal(expectedLF,actualLF,1e-5));
 }
 
@@ -355,12 +605,13 @@ TEST( GaussianFactor, CONSTRUCTOR_GaussianConditionalConstrained )
   Matrix Ax = eye(2);
   Vector b = Vector_(2, 3.0, 5.0);
   SharedDiagonal noisemodel = noiseModel::Constrained::All(2);
-  GaussianFactor::shared_ptr expected(new GaussianFactor("x0", Ax, b, noisemodel));
+  GaussianFactor::shared_ptr expected(new GaussianFactor(_x0_, Ax, b, noisemodel));
   GaussianFactorGraph graph;
   graph.push_back(expected);
 
-  GaussianConditional::shared_ptr conditional = graph.eliminateOne("x0");
-  GaussianFactor actual(conditional);
+  GaussianVariableIndex<> index(graph);
+  GaussianConditional::shared_ptr conditional = Inference::EliminateOne(graph,index,_x0_);
+  GaussianFactor actual(*conditional);
 
   CHECK(assert_equal(*expected, actual));
 }
@@ -370,20 +621,20 @@ TEST ( GaussianFactor, constraint_eliminate1 )
 {
 	// construct a linear constraint
 	Vector v(2); v(0)=1.2; v(1)=3.4;
-	string key = "x0";
+	varid_t key = _x0_;
 	GaussianFactor lc(key, eye(2), v, constraintModel);
 
 	// eliminate it
 	GaussianConditional::shared_ptr actualCG;
-	GaussianFactor::shared_ptr actualLF;
-	boost::tie(actualCG,actualLF) = lc.eliminate("x0");
+	GaussianFactor::shared_ptr actualLF(new GaussianFactor(lc));
+	actualCG = actualLF->eliminateFirst();
 
 	// verify linear factor
 	CHECK(actualLF->size() == 0);
 
 	// verify conditional Gaussian
 	Vector sigmas = Vector_(2, 0.0, 0.0);
-	GaussianConditional expCG("x0", v, eye(2), sigmas);
+	GaussianConditional expCG(_x0_, v, eye(2), sigmas);
 	CHECK(assert_equal(expCG, *actualCG));
 }
 
@@ -404,12 +655,12 @@ TEST ( GaussianFactor, constraint_eliminate2 )
 	A2(0,0) = 1.0 ; A2(0,1) = 2.0;
 	A2(1,0) = 2.0 ; A2(1,1) = 4.0;
 
-	GaussianFactor lc("x", A1, "y", A2, b, constraintModel);
+	GaussianFactor lc(_x_, A1, _y_, A2, b, constraintModel);
 
 	// eliminate x and verify results
 	GaussianConditional::shared_ptr actualCG;
-	GaussianFactor::shared_ptr actualLF;
-	boost::tie(actualCG, actualLF) = lc.eliminate("x");
+	GaussianFactor::shared_ptr actualLF(new GaussianFactor(lc));
+	actualCG = actualLF->eliminateFirst();
 
 	// LF should be null
 	GaussianFactor expectedLF;
@@ -423,60 +674,59 @@ TEST ( GaussianFactor, constraint_eliminate2 )
 			1.0,    2.0,
 			0.0,    0.0);
 	Vector d = Vector_(2, 3.0, 0.6666);
-	GaussianConditional expectedCG("x", d, R, "y", S, zero(2));
+	GaussianConditional expectedCG(_x_, d, R, _y_, S, zero(2));
 	CHECK(assert_equal(expectedCG, *actualCG, 1e-4));
 }
 
-/* ************************************************************************* */
-TEST( GaussianFactor, erase)
-{
-	Vector b = Vector_(3, 1., 2., 3.);
-	SharedDiagonal noise = noiseModel::Diagonal::Sigmas(Vector_(3,1.,1.,1.));
-	Symbol x0('x',0), x1('x',1);
-	std::list<std::pair<Symbol, Matrix> > terms;
-	terms.push_back(make_pair(x0, eye(2)));
-	terms.push_back(make_pair(x1, 2.*eye(2)));
+///* ************************************************************************* */
+//TEST( GaussianFactor, erase)
+//{
+//	Vector b = Vector_(3, 1., 2., 3.);
+//	SharedDiagonal noise = noiseModel::Diagonal::Sigmas(Vector_(3,1.,1.,1.));
+//	std::list<std::pair<varid_t, Matrix> > terms;
+//	terms.push_back(make_pair(_x0_, eye(2)));
+//	terms.push_back(make_pair(_x1_, 2.*eye(2)));
+//
+//	GaussianFactor actual(terms, b, noise);
+//	int erased = actual.erase_A(_x0_);
+//
+//	LONGS_EQUAL(1, erased);
+//	GaussianFactor expected(_x1_, 2.*eye(2), b, noise);
+//	CHECK(assert_equal(expected, actual));
+//}
 
-	GaussianFactor actual(terms, b, noise);
-	int erased = actual.erase_A(x0);
-
-	LONGS_EQUAL(1, erased);
-	GaussianFactor expected(x1, 2.*eye(2), b, noise);
-	CHECK(assert_equal(expected, actual));
-}
-
-/* ************************************************************************* */
-TEST( GaussianFactor, eliminateMatrix)
-{
-	Matrix Ab = Matrix_(3, 4,
-			1., 2., 0., 3.,
-			0., 4., 5., 6.,
-			0., 0., 7., 8.);
-	SharedDiagonal model(Vector_(3, 0.5, 0.5, 0.5));
-	Ordering frontals; frontals += "x1", "x2";
-	Ordering separator; separator += "x3";
-	Dimensions dimensions;
-	dimensions.insert(make_pair("x1", 1));
-	dimensions.insert(make_pair("x2", 1));
-	dimensions.insert(make_pair("x3", 1));
-
-	GaussianFactor::shared_ptr factor;
-	GaussianBayesNet bn;
-	boost::tie(bn, factor) =
-			GaussianFactor::eliminateMatrix(Ab, model, frontals, separator, dimensions);
-
-	GaussianBayesNet bn_expected;
-	GaussianBayesNet::sharedConditional conditional1(new GaussianConditional("x1", Vector_(1, 6.), Matrix_(1, 1, 2.),
-			"x2", Matrix_(1, 1, 4.), "x3", Matrix_(1, 1, 0.), Vector_(1, 1.)));
-	GaussianBayesNet::sharedConditional conditional2(new GaussianConditional("x2", Vector_(1, 12.), Matrix_(1, 1, 8.),
-			"x3", Matrix_(1, 1, 10.), Vector_(1, 1.)));
-	bn_expected.push_back(conditional1);
-	bn_expected.push_back(conditional2);
-	CHECK(assert_equal(bn_expected, bn));
-
-	GaussianFactor factor_expected("x3", Matrix_(1, 1, 14.), Vector_(1, 16.), SharedDiagonal(Vector_(1, 1.)));
-	CHECK(assert_equal(factor_expected, *factor));
-}
+///* ************************************************************************* */
+//TEST( GaussianFactor, eliminateMatrix)
+//{
+//	Matrix Ab = Matrix_(3, 4,
+//			1., 2., 0., 3.,
+//			0., 4., 5., 6.,
+//			0., 0., 7., 8.);
+//	SharedDiagonal model(Vector_(3, 0.5, 0.5, 0.5));
+//	Ordering frontals; frontals += _x1_, _x2_;
+//	Ordering separator; separator += _x3_;
+//	Dimensions dimensions;
+//	dimensions.insert(make_pair(_x1_, 1));
+//	dimensions.insert(make_pair(_x2_, 1));
+//	dimensions.insert(make_pair(_x3_, 1));
+//
+//	GaussianFactor::shared_ptr factor;
+//	GaussianBayesNet bn;
+//	boost::tie(bn, factor) =
+//			GaussianFactor::eliminateMatrix(Ab, NULL, model, frontals, separator, dimensions);
+//
+//	GaussianBayesNet bn_expected;
+//	GaussianBayesNet::sharedConditional conditional1(new GaussianConditional(_x1_, Vector_(1, 6.), Matrix_(1, 1, 2.),
+//			_x2_, Matrix_(1, 1, 4.), _x3_, Matrix_(1, 1, 0.), Vector_(1, 1.)));
+//	GaussianBayesNet::sharedConditional conditional2(new GaussianConditional(_x2_, Vector_(1, 12.), Matrix_(1, 1, 8.),
+//			_x3_, Matrix_(1, 1, 10.), Vector_(1, 1.)));
+//	bn_expected.push_back(conditional1);
+//	bn_expected.push_back(conditional2);
+//	CHECK(assert_equal(bn_expected, bn));
+//
+//	GaussianFactor factor_expected(_x3_, Matrix_(1, 1, 14.), Vector_(1, 16.), SharedDiagonal(Vector_(1, 1.)));
+//	CHECK(assert_equal(factor_expected, *factor));
+//}
 
 /* ************************************************************************* */
 int main() { TestResult tr; return TestRegistry::runAllTests(tr);}

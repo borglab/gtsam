@@ -17,8 +17,8 @@ check_PROGRAMS += tests/testNoiseModel tests/testErrors
 
 # Vector Configurations
 headers += VectorConfig.h 
-sources += VectorMap.cpp VectorBTree.cpp  
-check_PROGRAMS += tests/testVectorMap tests/testVectorBTree  
+#sources += VectorMap.cpp VectorBTree.cpp  
+#check_PROGRAMS += tests/testVectorMap tests/testVectorBTree  
 
 # Gaussian Factor Graphs
 headers += GaussianFactorSet.h Factorization.h
@@ -26,15 +26,17 @@ sources += GaussianFactor.cpp GaussianFactorGraph.cpp
 sources += GaussianJunctionTree.cpp 
 sources += GaussianConditional.cpp GaussianBayesNet.cpp
 sources += GaussianISAM.cpp
-check_PROGRAMS += tests/testGaussianFactor tests/testGaussianJunctionTree tests/testGaussianConditional
+check_PROGRAMS += tests/testGaussianFactor tests/testGaussianConditional
+check_PROGRAMS += tests/testGaussianJunctionTree
 
 # Iterative Methods
-headers += iterative-inl.h SubgraphSolver.h SubgraphSolver-inl.h
-sources += iterative.cpp BayesNetPreconditioner.cpp SubgraphPreconditioner.cpp
-check_PROGRAMS += tests/testBayesNetPreconditioner
+#headers += iterative-inl.h SubgraphSolver.h SubgraphSolver-inl.h
+#sources += iterative.cpp BayesNetPreconditioner.cpp SubgraphPreconditioner.cpp
+#check_PROGRAMS += tests/testBayesNetPreconditioner
 
 # Timing tests
-noinst_PROGRAMS = tests/timeGaussianFactor tests/timeVectorConfig
+noinst_PROGRAMS = tests/timeGaussianFactor tests/timeFactorOverhead tests/timeSLAMlike
+#noinst_PROGRAMS += tests/timeVectorConfig
 
 #----------------------------------------------------------------------------------------------------
 # Create a libtool library that is not installed
@@ -54,9 +56,13 @@ AM_CXXFLAGS =
 #----------------------------------------------------------------------------------------------------
 TESTS = $(check_PROGRAMS)
 AM_LDFLAGS = $(BOOST_LDFLAGS) $(boost_serialization) 
-LDADD = liblinear.la ../inference/libinference.la ../base/libbase.la 
+LDADD = liblinear.la ../inference/libinference.la ../base/libbase.la
 LDADD += ../CppUnitLite/libCppUnitLite.a ../colamd/libcolamd.la 
 AM_DEFAULT_SOURCE_EXT = .cpp
+
+if USE_ACCELERATE_MACOS
+AM_LDFLAGS += -Wl,/System/Library/Frameworks/Accelerate.framework/Accelerate
+endif
 
 # rule to run an executable
 %.run: % $(LDADD)

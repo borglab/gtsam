@@ -25,17 +25,17 @@ namespace gtsam {
 
 	protected:
 		// back-substitute in topological sort order (parents first)
-		void btreeBackSubstitue(BayesTree<GaussianConditional>::sharedClique current, VectorConfig& config);
+		void btreeBackSubstitue(const boost::shared_ptr<const BayesTree::Clique>& current, VectorConfig& config) const;
 
 	public :
 
 		GaussianJunctionTree() : Base() {}
 
 		// constructor
-		GaussianJunctionTree(GaussianFactorGraph& fg, const Ordering& ordering) : Base(fg, ordering) {}
+		GaussianJunctionTree(const GaussianFactorGraph& fg) : Base(fg) {}
 
 		// optimize the linear graph
-		VectorConfig optimize();
+		VectorConfig optimize() const;
 	}; // GaussianJunctionTree
 
 } // namespace gtsam

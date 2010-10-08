@@ -7,7 +7,6 @@
 #include <fstream>
 #include <boost/format.hpp>
 #include <boost/foreach.hpp>
-#include <gtsam/inference/Ordering.h>
 #include <gtsam/geometry/Point2.h>
 #include <gtsam/inference/SymbolicFactorGraph.h>
 #include <gtsam/inference/SymbolicBayesNet.h>

@@ -38,7 +38,8 @@ headers += BetweenConstraint.h BoundingConstraint.h TransformConstraint.h
 headers += LinearApproxFactor.h LinearApproxFactor-inl.h
 
 # 2D Pose SLAM
-sources += pose2SLAM.cpp Pose2SLAMOptimizer.cpp dataset.cpp
+sources += pose2SLAM.cpp dataset.cpp
+#sources += Pose2SLAMOptimizer.cpp
 check_PROGRAMS += tests/testPose2Factor tests/testPose2Config tests/testPose2SLAM tests/testPose2Prior
 
 # 2D SLAM using Bearing and Range
@@ -76,8 +77,12 @@ AM_CPPFLAGS = -I$(boost) -I$(top_srcdir)/..
 TESTS = $(check_PROGRAMS)
 AM_DEFAULT_SOURCE_EXT = .cpp
 AM_LDFLAGS = $(BOOST_LDFLAGS) $(boost_serialization)
-LDADD = libslam.la ../geometry/libgeometry.la  ../nonlinear/libnonlinear.la ../linear/liblinear.la ../inference/libinference.la ../base/libbase.la 
+LDADD = libslam.la ../geometry/libgeometry.la  ../nonlinear/libnonlinear.la ../linear/liblinear.la ../inference/libinference.la ../base/libbase.la
 LDADD += ../CppUnitLite/libCppUnitLite.a ../colamd/libcolamd.la  
+
+if USE_ACCELERATE_MACOS
+AM_LDFLAGS += -Wl,/System/Library/Frameworks/Accelerate.framework/Accelerate
+endif
 
 if USE_LAPACK
 LDADD += ../spqr_mini/libspqr_mini.la

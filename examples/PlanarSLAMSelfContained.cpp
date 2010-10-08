@@ -9,7 +9,7 @@
 #include <iostream>
 
 // for all nonlinear keys
-#include <gtsam/inference/Key.h>
+#include <gtsam/nonlinear/Key.h>
 
 // for points and poses
 #include <gtsam/geometry/Point2.h>

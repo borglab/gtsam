@@ -29,6 +29,7 @@ private:
 
 	
 	Test					*tests;
+	Test          *lastTest;
 
 };
 

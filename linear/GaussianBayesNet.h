@@ -11,9 +11,11 @@
 
 #include <list>
 
+#include <boost/shared_ptr.hpp>
+
+#include <gtsam/base/types.h>
 #include <gtsam/linear/GaussianConditional.h>
 #include <gtsam/inference/BayesNet.h>
-#include <gtsam/inference/Key.h>
 
 namespace gtsam {
 
@@ -21,24 +23,29 @@ namespace gtsam {
 	typedef BayesNet<GaussianConditional> GaussianBayesNet;
 
 	/** Create a scalar Gaussian */
-	GaussianBayesNet scalarGaussian(const Symbol& key, double mu=0.0, double sigma=1.0);
+	GaussianBayesNet scalarGaussian(varid_t key, double mu=0.0, double sigma=1.0);
 
 	/** Create a simple Gaussian on a single multivariate variable */
-	GaussianBayesNet simpleGaussian(const Symbol& key, const Vector& mu, double sigma=1.0);
+	GaussianBayesNet simpleGaussian(varid_t key, const Vector& mu, double sigma=1.0);
 
 	/**
 	 * Add a conditional node with one parent
 	 * |Rx+Sy-d|
 	 */
-	void push_front(GaussianBayesNet& bn, const Symbol& key, Vector d, Matrix R,
-			const Symbol& name1, Matrix S, Vector sigmas);
+	void push_front(GaussianBayesNet& bn, varid_t key, Vector d, Matrix R,
+			varid_t name1, Matrix S, Vector sigmas);
 
 	/**
 	 * Add a conditional node with two parents
 	 * |Rx+Sy+Tz-d|
 	 */
-	void push_front(GaussianBayesNet& bn, const Symbol& key, Vector d, Matrix R,
-			const Symbol& name1, Matrix S, const Symbol& name2, Matrix T, Vector sigmas);
+	void push_front(GaussianBayesNet& bn, varid_t key, Vector d, Matrix R,
+			varid_t name1, Matrix S, varid_t name2, Matrix T, Vector sigmas);
+
+	/**
+	 * Allocate a VectorConfig for the variables in a BayesNet
+	 */
+	boost::shared_ptr<VectorConfig> allocateVectorConfig(const GaussianBayesNet& bn);
 
 	/**
 	 * optimize, i.e. return x = inv(R)*d

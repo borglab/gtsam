@@ -7,26 +7,48 @@
 #pragma once
 
 #include <vector>
+#include <iostream>
 #include <boost/foreach.hpp>
+#include <gtsam/base/types.h>
 #include <gtsam/base/Testable.h>
 
 namespace gtsam {
+
+/**
+ * Equals testing for basic types
+ */
+bool assert_equal(const varid_t& expected, const varid_t& actual, double tol = 0.0) {
+  if(expected != actual) {
+    std::cout << "Not equal:\nexpected: " << expected << "\nactual: " << actual << std::endl;
+    return false;
+  }
+  return true;
+}
 
 /**
  * Version of assert_equals to work with vectors
  */
 template<class V>
 bool assert_equal(const std::vector<V>& expected, const std::vector<V>& actual, double tol = 1e-9) {
-	if (expected.size() != actual.size()) {
-		printf("Sizes not equal:\n");
-		printf("expected size: %lu\n", expected.size());
-		printf("actual size: %lu\n", actual.size());
-		return false;
-	}
-	size_t i = 0;
-	BOOST_FOREACH(const V& a, expected) {
-		if (!assert_equal(a, expected[i++], tol))
-			return false;
+  bool match = true;
+  if (expected.size() != actual.size())
+    match = false;
+  if(match) {
+    size_t i = 0;
+    BOOST_FOREACH(const V& a, expected) {
+      if (!assert_equal(a, expected[i++], tol)) {
+        match = false;
+        break;
+      }
+    }
+  }
+	if(!match) {
+	  std::cout << "expected: ";
+	  BOOST_FOREACH(const V& a, expected) { std::cout << a << " "; }
+	  std::cout << "\nactual: ";
+	  BOOST_FOREACH(const V& a, actual) { std::cout << a << " "; }
+	  std::cout << std::endl;
+	  return false;
 	}
 	return true;
 }

@@ -30,7 +30,7 @@ namespace gtsam {
     Point2(): x_(0), y_(0) {}
     Point2(const Point2 &p) : x_(p.x_), y_(p.y_) {}
     Point2(double x, double y): x_(x), y_(y) {}
-    Point2(const Vector& v) : x_(v(0)), y_(v(1)) {}
+    Point2(const Vector& v) : x_(v(0)), y_(v(1)) { assert(v.size() == 2); }
 
     /** dimension of the variable - used to autodetect sizes */
     inline static size_t Dim() { return dimension; }

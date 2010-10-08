@@ -12,7 +12,7 @@
 #include <gtsam/geometry/Point3.h>
 #include <gtsam/linear/VectorConfig.h>
 #include <gtsam/nonlinear/NonlinearFactor.h>
-#include <gtsam/inference/Key.h>
+#include <gtsam/nonlinear/Key.h>
 #include <gtsam/nonlinear/TupleConfig.h>
 
 // \namespace

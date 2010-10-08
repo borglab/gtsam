@@ -6,12 +6,12 @@
 
 #pragma once
 
-#include <gtsam/inference/Key.h>
 #include <gtsam/base/LieVector.h>
 #include <gtsam/geometry/Pose2.h>
 #include <gtsam/nonlinear/LieConfig.h>
 #include <gtsam/slam/PriorFactor.h>
 #include <gtsam/slam/BetweenFactor.h>
+#include <gtsam/nonlinear/Key.h>
 #include <gtsam/nonlinear/NonlinearEquality.h>
 #include <gtsam/nonlinear/NonlinearFactorGraph.h>
 #include <gtsam/nonlinear/NonlinearOptimizer.h>

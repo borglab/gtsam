@@ -59,7 +59,7 @@ TEST( simulated2DOriented, constructor )
 	Config config;
 	config.insert(PoseKey(1), Pose2(1., 0., 0.2));
 	config.insert(PoseKey(2), Pose2(2., 0., 0.1));
-	boost::shared_ptr<GaussianFactor> lf = factor.linearize(config);
+	boost::shared_ptr<GaussianFactor> lf = factor.linearize(config, *config.orderingArbitrary());
 }
 
 /* ************************************************************************* */

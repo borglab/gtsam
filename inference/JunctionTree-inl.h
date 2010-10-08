@@ -8,11 +8,16 @@
 
 #pragma once
 
-#include <boost/foreach.hpp>
-
 #include <gtsam/inference/SymbolicFactorGraph.h>
 #include <gtsam/inference/BayesTree-inl.h>
 #include <gtsam/inference/JunctionTree.h>
+#include <gtsam/inference/inference-inl.h>
+#include <gtsam/inference/VariableSlots-inl.h>
+
+#include <boost/foreach.hpp>
+#include <boost/pool/pool_alloc.hpp>
+#include <boost/lambda/bind.hpp>
+#include <boost/lambda/lambda.hpp>
 
 namespace gtsam {
 
@@ -20,86 +25,170 @@ namespace gtsam {
 
 	/* ************************************************************************* */
 	template <class FG>
-	JunctionTree<FG>::JunctionTree(FG& fg, const Ordering& ordering) {
+	JunctionTree<FG>::JunctionTree(const FG& fg) {
+	  tic("JT 1  constructor");
 		// Symbolic factorization: GaussianFactorGraph -> SymbolicFactorGraph
 		// -> SymbolicBayesNet -> SymbolicBayesTree
-		SymbolicFactorGraph sfg(fg);
-		SymbolicBayesNet sbn = sfg.eliminate(ordering);
-		BayesTree<SymbolicConditional> sbt(sbn);
+		tic("JT 1.1  symbolic elimination");
+		SymbolicBayesNet::shared_ptr sbn = Inference::EliminateSymbolic(fg);
+    toc("JT 1.1  symbolic elimination");
+    tic("JT 1.2  symbolic BayesTree");
+		SymbolicBayesTree sbt(*sbn);
+		toc("JT 1.2  symbolic BayesTree");
 
-		// distribtue factors
+		// distribute factors
+    tic("JT 1.3  distributeFactors");
 		this->root_ = distributeFactors(fg, sbt.root());
+    toc("JT 1.3  distributeFactors");
+		toc("JT 1  constructor");
 	}
 
 	/* ************************************************************************* */
 	template<class FG>
 	typename JunctionTree<FG>::sharedClique JunctionTree<FG>::distributeFactors(
-			FG& fg, const BayesTree<SymbolicConditional>::sharedClique bayesClique) {
-		// create a new clique in the junction tree
-		sharedClique clique(new Clique());
-		clique->frontal_ = bayesClique->ordering();
-		clique->separator_.insert(bayesClique->separator_.begin(),
-				bayesClique->separator_.end());
+			const FG& fg, const typename SymbolicBayesTree::sharedClique& bayesClique) {
 
-		// recursively call the children
-		BOOST_FOREACH(const BayesTree<SymbolicConditional>::sharedClique bayesChild, bayesClique->children()) {
-			sharedClique child = distributeFactors(fg, bayesChild);
-			clique->children_.push_back(child);
-			child->parent_ = clique;
-		}
+	  // Build "target" index.  This is an index for each variable of the factors
+	  // that involve this variable as their *lowest-ordered* variable.  For each
+	  // factor, it is the lowest-ordered variable of that factor that pulls the
+	  // factor into elimination, after which all of the information in the
+	  // factor is contained in the eliminated factors that are passed up the
+	  // tree as elimination continues.
 
-		// collect the factors
-		typedef vector<typename FG::sharedFactor> Factors;
-		BOOST_FOREACH(const Symbol& frontal, clique->frontal_) {
-			Factors factors = fg.template findAndRemoveFactors(frontal);
-			BOOST_FOREACH(const typename FG::sharedFactor& factor_, factors)
-				clique->push_back(factor_);
-		}
+	  // Two stages - first build an array of the lowest-ordered variable in each
+	  // factor and find the last variable to be eliminated.
+	  vector<varid_t> lowestOrdered(fg.size());
+	  varid_t maxVar = 0;
+	  for(size_t i=0; i<fg.size(); ++i)
+	    if(fg[i]) {
+	      typename FG::factor_type::const_iterator min = std::min_element(fg[i]->begin(), fg[i]->end());
+	      if(min == fg[i]->end())
+	        lowestOrdered[i] = numeric_limits<varid_t>::max();
+	      else {
+	        lowestOrdered[i] = *min;
+	        maxVar = std::max(maxVar, *min);
+	      }
+	    }
 
-		return clique;
+	  // Now add each factor to the list corresponding to its lowest-ordered
+	  // variable.
+	  vector<list<size_t, boost::fast_pool_allocator<size_t> > > targets(maxVar+1);
+	  for(size_t i=0; i<lowestOrdered.size(); ++i)
+	    if(lowestOrdered[i] != numeric_limits<varid_t>::max())
+	      targets[lowestOrdered[i]].push_back(i);
+
+	  // Now call the recursive distributeFactors
+	  return distributeFactors(fg, targets, bayesClique);
+	}
+
+  /* ************************************************************************* */
+	template<class FG>
+	typename JunctionTree<FG>::sharedClique JunctionTree<FG>::distributeFactors(const FG& fg,
+	    const std::vector<std::list<size_t,boost::fast_pool_allocator<size_t> > >& targets,
+      const SymbolicBayesTree::sharedClique& bayesClique) {
+
+	  if(bayesClique) {
+	    // create a new clique in the junction tree
+	    list<varid_t> frontals = bayesClique->ordering();
+	    sharedClique clique(new Clique(frontals.begin(), frontals.end(), bayesClique->separator_.begin(), bayesClique->separator_.end()));
+
+	    // count the factors for this cluster to pre-allocate space
+	    {
+	      size_t nFactors = 0;
+	      BOOST_FOREACH(const varid_t frontal, clique->frontal) {
+	        // There may be less variables in "targets" than there really are if
+	        // some of the highest-numbered variables do not pull in any factors.
+	        if(frontal < targets.size())
+	          nFactors += targets[frontal].size(); }
+	      clique->reserve(nFactors);
+	    }
+	    // add the factors to this cluster
+	    BOOST_FOREACH(const varid_t frontal, clique->frontal) {
+	      if(frontal < targets.size()) {
+	        BOOST_FOREACH(const size_t factorI, targets[frontal]) {
+	          clique->push_back(fg[factorI]); } } }
+
+	    // recursively call the children
+	    BOOST_FOREACH(const typename SymbolicBayesTree::sharedClique bayesChild, bayesClique->children()) {
+	      sharedClique child = distributeFactors(fg, targets, bayesChild);
+	      clique->addChild(child);
+	      child->parent() = clique;
+	    }
+	    return clique;
+	  } else
+	    return sharedClique();
 	}
 
 	/* ************************************************************************* */
-	template <class FG> template <class Conditional>
-	pair<FG, typename BayesTree<Conditional>::sharedClique>
-	JunctionTree<FG>::eliminateOneClique(sharedClique current) {
+	template <class FG>
+	pair<typename JunctionTree<FG>::BayesTree::sharedClique, typename FG::sharedFactor>
+	JunctionTree<FG>::eliminateOneClique(const boost::shared_ptr<const Clique>& current) const {
 
-		typedef typename BayesTree<Conditional>::sharedClique sharedBtreeClique;
 		FG fg; // factor graph will be assembled from local factors and marginalized children
-		list<sharedBtreeClique> children;
-		fg.push_back(*current); // add the local factor graph
+		fg.reserve(current->size() + current->children().size());
+		fg.push_back(*current); // add the local factors
 
-		BOOST_FOREACH(sharedClique& child, current->children_) {
-			// receive the factors from the child and its clique point
-			FG fgChild; sharedBtreeClique childRoot;
-			boost::tie(fgChild, childRoot) = eliminateOneClique<Conditional>(child);
-
-			fg.push_back(fgChild);
-			children.push_back(childRoot);
+    // receive the factors from the child and its clique point
+    list<typename BayesTree::sharedClique> children;
+		BOOST_FOREACH(const boost::shared_ptr<const Clique>& child, current->children()) {
+		  pair<typename BayesTree::sharedClique, typename FG::sharedFactor> tree_factor(
+		      eliminateOneClique(child));
+      children.push_back(tree_factor.first);
+			fg.push_back(tree_factor.second);
 		}
 
 		// eliminate the combined factors
 		// warning: fg is being eliminated in-place and will contain marginal afterwards
-		BayesNet<Conditional> bn = fg.eliminateFrontals(current->frontal_);
+		tic("JT 2.1 VariableSlots");
+		VariableSlots variableSlots(fg);
+    toc("JT 2.1 VariableSlots");
+#ifndef NDEBUG
+    // Debug check that the keys found in the factors match the frontal and
+    // separator keys of the clique.
+    list<varid_t> allKeys;
+    allKeys.insert(allKeys.end(), current->frontal.begin(), current->frontal.end());
+    allKeys.insert(allKeys.end(), current->separator.begin(), current->separator.end());
+    vector<varid_t> varslotsKeys(variableSlots.size());
+    std::transform(variableSlots.begin(), variableSlots.end(), varslotsKeys.begin(),
+        boost::lambda::bind(&VariableSlots::iterator::value_type::first, boost::lambda::_1));
+    assert(std::equal(allKeys.begin(), allKeys.end(), varslotsKeys.begin()));
+#endif
 
+    // Now that we know which factors and variables, and where variables
+    // come from and go to, create and eliminate the new joint factor.
+    tic("JT 2.2 Combine");
+    typename FG::sharedFactor jointFactor = FG::factor_type::Combine(fg, variableSlots);
+    toc("JT 2.2 Combine");
+    tic("JT 2.3 Eliminate");
+    typename FG::bayesnet_type::shared_ptr fragment = jointFactor->eliminate(current->frontal.size());
+    toc("JT 2.3 Eliminate");
+    assert(std::equal(jointFactor->begin(), jointFactor->end(), current->separator.begin()));
+
+    tic("JT 2.4 Update tree");
 		// create a new clique corresponding the combined factors
-//		BayesTree<Conditional> bayesTree(bn, children);
-		sharedBtreeClique new_clique(new typename BayesTree<Conditional>::Clique(bn));
+		typename BayesTree::sharedClique new_clique(new typename BayesTree::Clique(*fragment));
 		new_clique->children_ = children;
 
-		BOOST_FOREACH(sharedBtreeClique& childRoot, children)
+		BOOST_FOREACH(typename BayesTree::sharedClique& childRoot, children)
 			childRoot->parent_ = new_clique;
 
-		return make_pair(fg, new_clique);
+		new_clique->cachedFactor() = jointFactor;
+    toc("JT 2.4 Update tree");
+		return make_pair(new_clique, jointFactor);
 	}
 
 	/* ************************************************************************* */
-	template <class FG> template <class Conditional>
-	typename BayesTree<Conditional>::sharedClique JunctionTree<FG>::eliminate() {
-		pair<FG, typename BayesTree<Conditional>::sharedClique> ret = this->eliminateOneClique<Conditional>(this->root());
-		if (ret.first.nrFactors() != 0)
-			throw runtime_error("JuntionTree::eliminate: elimination failed because of factors left over!");
-		return ret.second;
+	template <class FG>
+	typename JunctionTree<FG>::BayesTree::sharedClique JunctionTree<FG>::eliminate() const {
+	  if(this->root()) {
+	    tic("JT 2 eliminate");
+	    pair<typename BayesTree::sharedClique, typename FG::sharedFactor> ret = this->eliminateOneClique(this->root());
+	    if (ret.second->size() != 0)
+	      throw runtime_error("JuntionTree::eliminate: elimination failed because of factors left over!");
+	    toc("JT 2 eliminate");
+	    return ret.first;
+	  } else
+	    return typename BayesTree::sharedClique();
 	}
 
 } //namespace gtsam

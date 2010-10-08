@@ -14,6 +14,8 @@
 
 namespace gtsam {
 
+template<class> class _EliminationTreeTester;
+
 	/**
 	 * An elimination tree (see Gilbert01bit) associated with a factor graph and an ordering
 	 * is a cluster-tree where there is one node j for each variable, and the parent of each node
@@ -29,7 +31,7 @@ namespace gtsam {
 		typedef typename Node::shared_ptr sharedNode;
 
 		// we typedef the following handy list of ordered factor graphs
-		typedef std::pair<Symbol, FG> NamedGraph;
+		typedef std::pair<varid_t, FG> NamedGraph;
 		typedef std::list<NamedGraph> OrderedGraphs;
 
 	private:
@@ -45,9 +47,17 @@ namespace gtsam {
 		 * add a factor graph fragment with given frontal key into the tree. Assumes
 		 * parent node was already added (will throw exception if not).
 		 */
-		void add(const FG& fg, const Symbol& key, const IndexTable<Symbol>& indexTable);
+//		void add(const FG& fg, varid_t key);
+
+		/**
+		 * Add a pre-created node by computing its parent and children.
+		 */
+		void add(const sharedNode& node);
 
 	public:
+
+		/** Default constructor creates an empty elimination tree. */
+		EliminationTree() {}
 
 		/**
 		 * Constructor variant 1: from an ordered list of factor graphs
@@ -56,13 +66,28 @@ namespace gtsam {
 		 * This function assumes the input is correct (!) and will not check
 		 * whether the factors refer only to the correct set of variables.
 		 */
-		EliminationTree(const OrderedGraphs& orderedGraphs);
+//		EliminationTree(const OrderedGraphs& orderedGraphs);
 
 		/**
 		 * Constructor variant 2: given a factor graph and the elimination ordering
 		 */
-		EliminationTree(FG& fg, const Ordering& ordering);
+		EliminationTree(FG& fg);
+
+		friend class _EliminationTreeTester<FG>;
 
 	}; // EliminationTree
+
+	/** Class used to access private members for unit testing */
+	template<class FG>
+	struct _EliminationTreeTester {
+
+	  EliminationTree<FG>& et_;
+
+	public:
+	  _EliminationTreeTester(EliminationTree<FG>& et) : et_(et) {}
+
+	  typename EliminationTree<FG>::sharedNode& root() { return et_.ClusterTree<FG>::root_; }
+	  typename EliminationTree<FG>::Nodes& nodes() { return et_.nodes_; }
+	};
 
 } // namespace gtsam

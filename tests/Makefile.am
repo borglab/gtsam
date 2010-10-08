@@ -7,15 +7,20 @@
 # header files are qualified so they can be included in external projects.
 AUTOMAKE_OPTIONS = nostdinc
 
-check_PROGRAMS = testBayesNetPreconditioner 
-check_PROGRAMS += testGaussianBayesNet testGaussianFactor testGaussianFactorGraph 
-check_PROGRAMS += testGaussianISAM testGraph
-check_PROGRAMS += testInference testIterative testGaussianJunctionTree 
+check_PROGRAMS =
+#check_PROGRAMS = testBayesNetPreconditioner testSubgraphPreconditioner 
+check_PROGRAMS += testGaussianBayesNet testGaussianFactor testGaussianFactorGraph
+check_PROGRAMS += testGaussianISAM 
+check_PROGRAMS += testGraph
+#check_PROGRAMS += testInference
+#check_PROGRAMS += testIterative
+check_PROGRAMS += testGaussianJunctionTree 
 check_PROGRAMS += testNonlinearEquality testNonlinearFactor testNonlinearFactorGraph
-check_PROGRAMS += testNonlinearOptimizer testSubgraphPreconditioner
-check_PROGRAMS += testSymbolicBayesNet testSymbolicFactorGraph testTupleConfig
-check_PROGRAMS += testNonlinearEqualityConstraint testBoundingConstraint 
-check_PROGRAMS += testTransformConstraint testLinearApproxFactor
+check_PROGRAMS += testNonlinearOptimizer
+check_PROGRAMS += testSymbolicBayesNet testSymbolicFactorGraph
+check_PROGRAMS += testTupleConfig
+#check_PROGRAMS += testNonlinearEqualityConstraint testBoundingConstraint 
+#check_PROGRAMS += testTransformConstraint testLinearApproxFactor
 
 # only if serialization is available
 if ENABLE_SERIALIZATION
@@ -23,7 +28,7 @@ check_PROGRAMS += testSerialization
 endif
 
 # Timing tests
-noinst_PROGRAMS = timeGaussianFactorGraph timeFactorOverhead
+noinst_PROGRAMS = timeGaussianFactorGraph timeLinearOnDataset
 
 #----------------------------------------------------------------------------------------------------
 # rules to build unit tests
@@ -31,6 +36,10 @@ noinst_PROGRAMS = timeGaussianFactorGraph timeFactorOverhead
 TESTS = $(check_PROGRAMS)
 AM_CPPFLAGS = -I$(boost) -I$(top_srcdir)/..
 AM_LDFLAGS = $(BOOST_LDFLAGS) 
+
+if USE_ACCELERATE_MACOS
+AM_LDFLAGS += -Wl,/System/Library/Frameworks/Accelerate.framework/Accelerate
+endif
 
 # link to serialization library for test 
 if ENABLE_SERIALIZATION

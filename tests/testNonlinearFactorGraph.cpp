@@ -49,10 +49,9 @@ TEST( Graph, error )
 /* ************************************************************************* */
 TEST( Graph, GET_ORDERING)
 {
-  Ordering expected;
-  expected += "l1","x2","x1";
+  Ordering expected; expected += "x1","l1","x2";
   Graph nlfg = createNonlinearFactorGraph();
-  Ordering actual = nlfg.getOrdering();
+  Ordering actual = *nlfg.orderingCOLAMD(createNoisyConfig()).first;
   CHECK(assert_equal(expected,actual));
 }
 
@@ -73,8 +72,8 @@ TEST( Graph, linearize )
 {
 	Graph fg = createNonlinearFactorGraph();
 	Config initial = createNoisyConfig();
-	boost::shared_ptr<GaussianFactorGraph> linearized = fg.linearize(initial);
-	GaussianFactorGraph expected = createGaussianFactorGraph();
+	boost::shared_ptr<GaussianFactorGraph> linearized = fg.linearize(initial, *initial.orderingArbitrary());
+	GaussianFactorGraph expected = createGaussianFactorGraph(*initial.orderingArbitrary());
 	CHECK(assert_equal(expected,*linearized)); // Needs correct linearizations
 }
 

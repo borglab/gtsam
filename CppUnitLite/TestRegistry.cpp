@@ -31,12 +31,15 @@ TestRegistry& TestRegistry::instance ()
 void TestRegistry::add (Test *test) 
 {
 	if (tests == 0) {
+	  test->setNext(0);
 		tests = test;
+		lastTest = test;
 		return;
 	}
 
-	test->setNext (tests);
-	tests = test;
+	test->setNext (0);
+	lastTest->setNext(test);
+	lastTest = test;
 }
 
 

@@ -15,17 +15,18 @@
 //#include <boost/serialization/list.hpp>
 #include <stdexcept>
 
+#include <gtsam/base/types.h>
 #include <gtsam/base/Testable.h>
 #include <gtsam/inference/FactorGraph.h>
 #include <gtsam/nonlinear/NonlinearFactorGraph.h>
+#include <gtsam/nonlinear/Ordering.h>
 #include <gtsam/inference/BayesNet.h>
 #include <gtsam/inference/BayesTree.h>
-#include <gtsam/inference/Key.h>
-#include <gtsam/inference/SymbolMap.h>
+#include <gtsam/linear/GaussianFactorGraph.h>
 
 namespace gtsam {
 
-typedef SymbolMap<GaussianFactor::shared_ptr> CachedFactors;
+//typedef std::vector<GaussianFactor::shared_ptr> CachedFactors;
 
 template<class Conditional, class Config>
 class ISAM2: public BayesTree<Conditional> {
@@ -35,22 +36,40 @@ protected:
 	// current linearization point
 	Config theta_;
 
+  // VariableIndex lets us look up factors by involved variable and keeps track of dimensions
+  typedef GaussianVariableIndex<VariableIndexStorage_deque> VariableIndexType;
+  VariableIndexType variableIndex_;
+
 	// the linear solution, an update to the estimate in theta
-	VectorConfig delta_;
+	VectorConfig deltaUnpermuted_;
+
+  // The residual permutation through which the deltaUnpermuted_ is
+  // referenced.  Permuting the VectorConfig is slow, so for performance the
+  // permutation is applied at access time instead of to the VectorConfig
+  // itself.
+  Permuted<VectorConfig> delta_;
 
 	// for keeping all original nonlinear factors
 	NonlinearFactorGraph<Config> nonlinearFactors_;
 
+	// The "ordering" allows converting Symbols to varid_t (integer) keys.  We
+	// keep it up to date as we add and reorder variables.
+	Ordering ordering_;
+
 	// cached intermediate results for restarting computation in the middle
-	CachedFactors cached_;
+//	CachedFactors cached_;
+
+#ifndef NDEBUG
+	std::vector<bool> lastRelinVariables_;
+#endif
 
 public:
 
 	/** Create an empty Bayes Tree */
 	ISAM2();
 
-	/** Create a Bayes Tree from a Bayes Net */
-	ISAM2(const NonlinearFactorGraph<Config>& fg, const Ordering& ordering, const Config& config);
+//	/** Create a Bayes Tree from a Bayes Net */
+//	ISAM2(const NonlinearFactorGraph<Config>& fg, const Ordering& ordering, const Config& config);
 
 	/** Destructor */
 	virtual ~ISAM2() {}
@@ -66,15 +85,19 @@ public:
 			double wildfire_threshold = 0., double relinearize_threshold = 0., bool relinearize = true);
 
 	// needed to create initial estimates
-	const Config getLinearizationPoint() const {return theta_;}
+	const Config& getLinearizationPoint() const {return theta_;}
 
 	// estimate based on incomplete delta (threshold!)
-	const Config calculateEstimate() const {return theta_.expmap(delta_);}
+	Config calculateEstimate() const;
 
 	// estimate based on full delta (note that this is based on the current linearization point)
-	const Config calculateBestEstimate() const {return theta_.expmap(*optimize2(this->root()));}
+	Config calculateBestEstimate() const;
+
+	const Permuted<VectorConfig>& getDelta() const { return delta_; }
 
 	const NonlinearFactorGraph<Config>& getFactorsUnsafe() const { return nonlinearFactors_; }
+
+	const Ordering& getOrdering() const { return ordering_; }
 
 	size_t lastAffectedVariableCount;
 	size_t lastAffectedFactorCount;
@@ -85,13 +108,13 @@ public:
 
 private:
 
-	std::list<size_t> getAffectedFactors(const std::list<Symbol>& keys) const;
-	boost::shared_ptr<GaussianFactorGraph> relinearizeAffectedFactors(const std::list<Symbol>& affectedKeys) const;
-	FactorGraph<GaussianFactor> getCachedBoundaryFactors(Cliques& orphans);
+	std::list<size_t> getAffectedFactors(const std::list<varid_t>& keys) const;
+	boost::shared_ptr<GaussianFactorGraph> relinearizeAffectedFactors(const std::list<varid_t>& affectedKeys) const;
+	GaussianFactorGraph getCachedBoundaryFactors(Cliques& orphans);
 
-	boost::shared_ptr<std::set<Symbol> > recalculate(const std::list<Symbol>& markedKeys, const FactorGraph<GaussianFactor>* newFactors = NULL);
-	void linear_update(const FactorGraph<GaussianFactor>& newFactors);
-	void find_all(sharedClique clique, std::list<Symbol>& keys, const std::list<Symbol>& marked); // helper function
+	boost::shared_ptr<std::set<varid_t> > recalculate(const std::set<varid_t>& markedKeys, const std::vector<varid_t>& newKeys, const GaussianFactorGraph* newFactors = NULL);
+//	void linear_update(const GaussianFactorGraph& newFactors);
+	void find_all(sharedClique clique, std::set<varid_t>& keys, const std::vector<bool>& marked); // helper function
 
 }; // ISAM2
 

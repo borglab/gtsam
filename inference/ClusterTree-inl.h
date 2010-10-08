@@ -20,26 +20,39 @@ namespace gtsam {
 	 * Cluster
 	 * ************************************************************************* */
 	template<class FG>
-	ClusterTree<FG>::Cluster::Cluster(const FG& fg, const Symbol& key):FG(fg) {
+	template<class Iterator>
+	ClusterTree<FG>::Cluster::Cluster(const FG& fg, varid_t key, Iterator firstSeparator, Iterator lastSeparator) :
+	FG(fg), frontal(1, key), separator(firstSeparator, lastSeparator) {}
 
-		// push the one key as frontal
-		frontal_.push_back(key);
+  /* ************************************************************************* */
+  template<class FG>
+  template<typename FrontalIt, typename SeparatorIt>
+  ClusterTree<FG>::Cluster::Cluster(
+      const FG& fg, FrontalIt firstFrontal, FrontalIt lastFrontal, SeparatorIt firstSeparator, SeparatorIt lastSeparator) :
+      FG(fg), frontal(firstFrontal, lastFrontal), separator(firstSeparator, lastSeparator) {}
 
-		// the rest are separator keys...
-		BOOST_FOREACH(const Symbol& graphKey, fg.keys())
-			if (graphKey != key)
-				separator_.insert(graphKey);
+  /* ************************************************************************* */
+  template<class FG>
+  template<typename FrontalIt, typename SeparatorIt>
+  ClusterTree<FG>::Cluster::Cluster(
+      FrontalIt firstFrontal, FrontalIt lastFrontal, SeparatorIt firstSeparator, SeparatorIt lastSeparator) :
+      frontal(firstFrontal, lastFrontal), separator(firstSeparator, lastSeparator) {}
+
+  /* ************************************************************************* */
+	template<class FG>
+	void ClusterTree<FG>::Cluster::addChild(typename ClusterTree<FG>::Cluster::shared_ptr child) {
+	  children_.push_back(child);
 	}
 
 	/* ************************************************************************* */
 	template<class FG>
 	bool ClusterTree<FG>::Cluster::equals(const ClusterTree<FG>::Cluster& other) const {
-		if (!frontal_.equals(other.frontal_)) return false;
-		if (!separator_.equals(other.separator_)) return false;
+		if (frontal != other.frontal) return false;
+		if (separator != other.separator) return false;
 		if (children_.size() != other.children_.size()) return false;
 
-		typename vector<shared_ptr>::const_iterator it1 = children_.begin();
-		typename vector<shared_ptr>::const_iterator it2 = other.children_.begin();
+		typename list<shared_ptr>::const_iterator it1 = children_.begin();
+		typename list<shared_ptr>::const_iterator it2 = other.children_.begin();
 		for (; it1 != children_.end(); it1++, it2++)
 			if (!(*it1)->equals(**it2)) return false;
 
@@ -50,11 +63,11 @@ namespace gtsam {
 	template<class FG>
 	void ClusterTree<FG>::Cluster::print(const string& indent) const {
 		cout << indent;
-		BOOST_FOREACH(const Symbol& key, frontal_)
-						cout << (string) key << " ";
-		cout << ":";
-		BOOST_FOREACH(const Symbol& key, separator_)
-						cout << (string) key << " ";
+		BOOST_FOREACH(const varid_t key, frontal)
+						cout << key << " ";
+		cout << ": ";
+		BOOST_FOREACH(const varid_t key, separator)
+						cout << key << " ";
 		cout << endl;
 	}
 

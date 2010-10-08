@@ -8,7 +8,6 @@
 
 #define GTSAM_MAGIC_KEY
 
-#include <gtsam/inference/Ordering.h>
 #include <gtsam/slam/smallExample.h>
 #include <gtsam/inference/inference-inl.h>
 

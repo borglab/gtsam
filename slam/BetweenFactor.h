@@ -54,7 +54,7 @@ namespace gtsam {
 		bool equals(const NonlinearFactor<Config>& expected, double tol) const {
 			const BetweenFactor<Config, Key1, Key2> *e =
 					dynamic_cast<const BetweenFactor<Config, Key1, Key2>*> (&expected);
-			return e != NULL && Base::equals(expected) && this->measured_.equals(
+			return e != NULL && Base::equals(expected, tol) && this->measured_.equals(
 					e->measured_, tol);
 		}
 

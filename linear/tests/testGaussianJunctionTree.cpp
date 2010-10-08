@@ -13,23 +13,22 @@
 #include <boost/assign/std/set.hpp> // for operator +=
 using namespace boost::assign;
 
-#define GTSAM_MAGIC_KEY
-
-#include <gtsam/inference/Ordering.h>
 #include <gtsam/linear/GaussianJunctionTree.h>
 #include <gtsam/inference/BayesTree-inl.h>
 
 using namespace std;
 using namespace gtsam;
 
+static const varid_t x2=0, x1=1, x3=2, x4=3;
+
 GaussianFactorGraph createChain() {
 
 	typedef GaussianFactorGraph::sharedFactor Factor;
 	SharedDiagonal model(Vector_(1, 0.5));
-	Factor factor1(new GaussianFactor("x1", Matrix_(1,1,1.), "x2", Matrix_(1,1,1.), Vector_(1,1.),  model));
-	Factor factor2(new GaussianFactor("x2", Matrix_(1,1,1.), "x3", Matrix_(1,1,1.), Vector_(1,1.),  model));
-	Factor factor3(new GaussianFactor("x3", Matrix_(1,1,1.), "x4", Matrix_(1,1,1.), Vector_(1,1.),  model));
-	Factor factor4(new GaussianFactor("x4", Matrix_(1,1,1.), Vector_(1,1.),  model));
+	Factor factor1(new GaussianFactor(x2, Matrix_(1,1,1.), x1, Matrix_(1,1,1.), Vector_(1,1.),  model));
+	Factor factor2(new GaussianFactor(x2, Matrix_(1,1,1.), x3, Matrix_(1,1,1.), Vector_(1,1.),  model));
+	Factor factor3(new GaussianFactor(x3, Matrix_(1,1,1.), x4, Matrix_(1,1,1.), Vector_(1,1.),  model));
+	Factor factor4(new GaussianFactor(x4, Matrix_(1,1,1.), Vector_(1,1.),  model));
 
 	GaussianFactorGraph fg;
 	fg.push_back(factor1);
@@ -57,38 +56,40 @@ GaussianFactorGraph createChain() {
 TEST( GaussianJunctionTree, eliminate )
 {
 	GaussianFactorGraph fg = createChain();
-	Ordering ordering; ordering += "x2","x1","x3","x4";
-	GaussianJunctionTree junctionTree(fg, ordering);
-	BayesTree<GaussianConditional>::sharedClique rootClique = junctionTree.eliminate<GaussianConditional>();
+	GaussianJunctionTree junctionTree(fg);
+	BayesTree<GaussianConditional>::sharedClique rootClique = junctionTree.eliminate();
 
 	typedef BayesTree<GaussianConditional>::sharedConditional sharedConditional;
 	Matrix two = Matrix_(1,1,2.);
 	Matrix one = Matrix_(1,1,1.);
 	BayesTree<GaussianConditional> bayesTree_expected;
-	bayesTree_expected.insert(sharedConditional(new GaussianConditional("x4", Vector_(1,2.), two, Vector_(1,1.))), ordering);
-	bayesTree_expected.insert(sharedConditional(new GaussianConditional("x3", Vector_(1,2.), two, "x4", two, Vector_(1,1.))), ordering);
-	bayesTree_expected.insert(sharedConditional(new GaussianConditional("x1", Vector_(1,0.), one*(-1), "x3", one, Vector_(1,1.))), ordering);
-	bayesTree_expected.insert(sharedConditional(new GaussianConditional("x2", Vector_(1,2.), two, "x1", one, "x3", one, Vector_(1,1.))), ordering);
+	bayesTree_expected.insert(sharedConditional(new GaussianConditional(x4, Vector_(1,2.), two, Vector_(1,1.))));
+	bayesTree_expected.insert(sharedConditional(new GaussianConditional(x3, Vector_(1,2.), two, x4, two, Vector_(1,1.))));
+	bayesTree_expected.insert(sharedConditional(new GaussianConditional(x1, Vector_(1,0.), one*(-1), x3, one, Vector_(1,1.))));
+	bayesTree_expected.insert(sharedConditional(new GaussianConditional(x2, Vector_(1,2.), two, x1, one, x3, one, Vector_(1,1.))));
 	CHECK(assert_equal(*bayesTree_expected.root(), *rootClique));
-	CHECK(assert_equal(*(bayesTree_expected.root()->children_.front()), *(rootClique->children_.front())));
+	CHECK(assert_equal(*(bayesTree_expected.root()->children().front()), *(rootClique->children().front())));
 
 }
-
 
 /* ************************************************************************* */
 TEST( GaussianJunctionTree, optimizeMultiFrontal )
 {
 	GaussianFactorGraph fg = createChain();
-	Ordering ordering; ordering += "x2","x1","x3","x4";
-	GaussianJunctionTree tree(fg, ordering);
+	GaussianJunctionTree tree(fg);
 
 	VectorConfig actual = tree.optimize();
-	VectorConfig expected;
-	expected.insert("x1", Vector_(1, 0.));
-	expected.insert("x2", Vector_(1, 1.));
-	expected.insert("x3", Vector_(1, 0.));
-	expected.insert("x4", Vector_(1, 1.));
+	VectorConfig expected(vector<size_t>(4,1));
+	expected[x1] = Vector_(1, 0.);
+	expected[x2] = Vector_(1, 1.);
+	expected[x3] = Vector_(1, 0.);
+	expected[x4] = Vector_(1, 1.);
 	CHECK(assert_equal(expected,actual));
+}
+
+/* ************************************************************************* */
+TEST(GaussianJunctionTree, complexExample) {
+
 }
 
 /* ************************************************************************* */

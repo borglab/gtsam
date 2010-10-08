@@ -11,6 +11,9 @@
 #pragma once
 
 #include <boost/shared_ptr.hpp>
+#include <boost/tuple/tuple.hpp>
+#include <boost/optional.hpp>
+#include <gtsam/nonlinear/Ordering.h>
 #include <gtsam/nonlinear/NonlinearFactorGraph.h>
 #include <gtsam/slam/simulated2D.h>
 
@@ -44,18 +47,18 @@ namespace gtsam {
 		/**
 		 * Zero delta config
 		 */
-		VectorConfig createZeroDelta();
+		VectorConfig createZeroDelta(const Ordering& ordering);
 
 		/**
 		 * Delta config that, when added to noisyConfig, returns the ground truth
 		 */
-		VectorConfig createCorrectDelta();
+		VectorConfig createCorrectDelta(const Ordering& ordering);
 
 		/**
 		 * create a linear factor graph
 		 * The non-linear graph above evaluated at NoisyConfig
 		 */
-		GaussianFactorGraph createGaussianFactorGraph();
+		GaussianFactorGraph createGaussianFactorGraph(const Ordering& ordering);
 
 		/**
 		 * create small Chordal Bayes Net x <- y
@@ -79,7 +82,7 @@ namespace gtsam {
 		 * Create a Kalman smoother by linearizing a non-linear factor graph
 		 * @param T number of time-steps
 		 */
-		GaussianFactorGraph createSmoother(int T);
+		std::pair<GaussianFactorGraph, Ordering> createSmoother(int T, boost::optional<Ordering> ordering = boost::none);
 
 		/* ******************************************************* */
 		// Linear Constrained Examples
@@ -119,7 +122,7 @@ namespace gtsam {
 		 * -x11-x21-x31
 		 * with x11 clamped at (1,1), and others related by 2D odometry.
 		 */
-		std::pair<GaussianFactorGraph, VectorConfig> planarGraph(size_t N);
+		boost::tuple<GaussianFactorGraph, Ordering, VectorConfig> planarGraph(size_t N);
 
 		/*
 		 * Create canonical ordering for planar graph that also works for tree

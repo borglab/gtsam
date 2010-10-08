@@ -622,12 +622,12 @@
 /* ========================================================================== */
 
 /* Ensure that debugging is turned off: */
-#ifndef NDEBUG
-#define NDEBUG
+#ifndef SPQR_NDEBUG
+#define SPQR_NDEBUG
 #endif
 
 /* turn on debugging by uncommenting the following line
- #undef NDEBUG
+ #undef SPQR_NDEBUG
 */
 
 /*
@@ -672,7 +672,7 @@
 #include "matrix.h"
 #endif /* MATLAB_MEX_FILE */
 
-#if !defined (NPRINT) || !defined (NDEBUG)
+#if !defined (NPRINT) || !defined (SPQR_NDEBUG)
 #include <stdio.h>
 #endif
 
@@ -892,10 +892,10 @@ PRIVATE void order_children
 PRIVATE void detect_super_cols
 (
 
-#ifndef NDEBUG
+#ifndef SPQR_NDEBUG
     Int n_col,
     Colamd_Row Row [],
-#endif /* NDEBUG */
+#endif /* SPQR_NDEBUG */
 
     Colamd_Col Col [],
     Int A [],
@@ -932,7 +932,7 @@ PRIVATE void print_report
 /* === Debugging prototypes and definitions ================================= */
 /* ========================================================================== */
 
-#ifndef NDEBUG
+#ifndef SPQR_NDEBUG
 
 #include <assert.h>
 
@@ -997,7 +997,7 @@ PRIVATE void debug_structures
     Int n_col2
 ) ;
 
-#else /* NDEBUG */
+#else /* SPQR_NDEBUG */
 
 /* === No debugging ========================================================= */
 
@@ -1009,7 +1009,7 @@ PRIVATE void debug_structures
 
 #define ASSERT(expression)
 
-#endif /* NDEBUG */
+#endif /* SPQR_NDEBUG */
 
 /* ========================================================================== */
 /* === USER-CALLABLE ROUTINES: ============================================== */
@@ -1182,9 +1182,9 @@ PUBLIC Int SYMAMD_MAIN			/* return TRUE if OK, FALSE otherwise */
     double cknobs [COLAMD_KNOBS] ;		/* knobs for colamd */
     double default_knobs [COLAMD_KNOBS] ;	/* default knobs for colamd */
 
-#ifndef NDEBUG
+#ifndef SPQR_NDEBUG
     colamd_get_debug ("symamd") ;
-#endif /* NDEBUG */
+#endif /* SPQR_NDEBUG */
 
     /* === Check the input arguments ======================================== */
 
@@ -1495,9 +1495,9 @@ PUBLIC Int COLAMD_MAIN		/* returns TRUE if successful, FALSE otherwise*/
     Int aggressive ;		/* do aggressive absorption */
     int ok ;
 
-#ifndef NDEBUG
+#ifndef SPQR_NDEBUG
     colamd_get_debug ("colamd") ;
-#endif /* NDEBUG */
+#endif /* SPQR_NDEBUG */
 
     /* === Check the input arguments ======================================== */
 
@@ -1848,7 +1848,7 @@ PRIVATE Int init_rows_cols	/* returns TRUE if OK, or FALSE otherwise */
     {
     	DEBUG0 (("colamd: reconstructing column form, matrix jumbled\n")) ;
 
-#ifndef NDEBUG
+#ifndef SPQR_NDEBUG
 	/* make sure column lengths are correct */
 	for (col = 0 ; col < n_col ; col++)
 	{
@@ -1868,7 +1868,7 @@ PRIVATE Int init_rows_cols	/* returns TRUE if OK, or FALSE otherwise */
 	    ASSERT (p [col] == 0) ;
 	}
 	/* now p is all zero (different than when debugging is turned off) */
-#endif /* NDEBUG */
+#endif /* SPQR_NDEBUG */
 
 	/* === Compute col pointers ========================================= */
 
@@ -1948,9 +1948,9 @@ PRIVATE void init_scoring
     Int max_deg ;		/* maximum row degree */
     Int next_col ;		/* Used to add to degree list.*/
 
-#ifndef NDEBUG
+#ifndef SPQR_NDEBUG
     Int debug_count ;		/* debug only. */
-#endif /* NDEBUG */
+#endif /* SPQR_NDEBUG */
 
     /* === Extract knobs ==================================================== */
 
@@ -2105,15 +2105,15 @@ PRIVATE void init_scoring
     /* yet).  Rows may contain dead columns, but all live rows contain at */
     /* least one live column. */
 
-#ifndef NDEBUG
+#ifndef SPQR_NDEBUG
     debug_structures (n_row, n_col, Row, Col, A, n_col2) ;
-#endif /* NDEBUG */
+#endif /* SPQR_NDEBUG */
 
     /* === Initialize degree lists ========================================== */
 
-#ifndef NDEBUG
+#ifndef SPQR_NDEBUG
     debug_count = 0 ;
-#endif /* NDEBUG */
+#endif /* SPQR_NDEBUG */
 
     /* clear the hash buckets */
     for (c = 0 ; c <= n_col ; c++)
@@ -2157,19 +2157,19 @@ PRIVATE void init_scoring
 	    /* see if this score is less than current min */
 	    min_score = MIN (min_score, score) ;
 
-#ifndef NDEBUG
+#ifndef SPQR_NDEBUG
 	    debug_count++ ;
-#endif /* NDEBUG */
+#endif /* SPQR_NDEBUG */
 
 	}
     }
 
-#ifndef NDEBUG
+#ifndef SPQR_NDEBUG
     DEBUG1 (("colamd: Live cols %d out of %d, non-princ: %d\n",
 	debug_count, n_col, n_col-debug_count)) ;
     ASSERT (debug_count == n_col2) ;
     debug_deg_lists (n_row, n_col, Row, Col, head, min_score, n_col2, max_deg) ;
-#endif /* NDEBUG */
+#endif /* SPQR_NDEBUG */
 
     /* === Return number of remaining columns, and max row degree =========== */
 
@@ -2240,10 +2240,10 @@ PRIVATE Int find_ordering	/* return the number of garbage collections */
     Int next_col ;		/* Used by Dlist operations. */
     Int ngarbage ;		/* number of garbage collections performed */
 
-#ifndef NDEBUG
+#ifndef SPQR_NDEBUG
     Int debug_d ;		/* debug loop counter */
     Int debug_step = 0 ;	/* debug loop counter */
-#endif /* NDEBUG */
+#endif /* SPQR_NDEBUG */
 
     /* === Initialization and clear mark ==================================== */
 
@@ -2258,7 +2258,7 @@ PRIVATE Int find_ordering	/* return the number of garbage collections */
     for (k = 0 ; k < n_col2 ; /* 'k' is incremented below */)
     {
 
-#ifndef NDEBUG
+#ifndef SPQR_NDEBUG
 	if (debug_step % 100 == 0)
 	{
 	    DEBUG2 (("\n...       Step k: %d out of n_col2: %d\n", k, n_col2)) ;
@@ -2271,7 +2271,7 @@ PRIVATE Int find_ordering	/* return the number of garbage collections */
 	debug_deg_lists (n_row, n_col, Row, Col, head,
 		min_score, n_col2-k, max_deg) ;
 	debug_matrix (n_row, n_col, Row, Col, A) ;
-#endif /* NDEBUG */
+#endif /* SPQR_NDEBUG */
 
 	/* === Select pivot column, and order it ============================ */
 
@@ -2280,12 +2280,12 @@ PRIVATE Int find_ordering	/* return the number of garbage collections */
 	ASSERT (min_score <= n_col) ;
 	ASSERT (head [min_score] >= EMPTY) ;
 
-#ifndef NDEBUG
+#ifndef SPQR_NDEBUG
 	for (debug_d = 0 ; debug_d < min_score ; debug_d++)
 	{
 	    ASSERT (head [debug_d] == EMPTY) ;
 	}
-#endif /* NDEBUG */
+#endif /* SPQR_NDEBUG */
 
 	/* get pivot column from head of minimum degree list */
 	while (head [min_score] == EMPTY && min_score < n_col)
@@ -2327,9 +2327,9 @@ PRIVATE Int find_ordering	/* return the number of garbage collections */
 	    /* garbage collection has wiped out the Row[].shared2.mark array */
 	    tag_mark = clear_mark (0, max_mark, n_row, Row) ;
 
-#ifndef NDEBUG
+#ifndef SPQR_NDEBUG
 	    debug_matrix (n_row, n_col, Row, Col, A) ;
-#endif /* NDEBUG */
+#endif /* SPQR_NDEBUG */
 	}
 
 	/* === Compute pivot row pattern ==================================== */
@@ -2380,10 +2380,10 @@ PRIVATE Int find_ordering	/* return the number of garbage collections */
 	Col [pivot_col].shared1.thickness = pivot_col_thickness ;
 	max_deg = MAX (max_deg, pivot_row_degree) ;
 
-#ifndef NDEBUG
+#ifndef SPQR_NDEBUG
 	DEBUG3 (("check2\n")) ;
 	debug_mark (n_row, Row, tag_mark, max_mark) ;
-#endif /* NDEBUG */
+#endif /* SPQR_NDEBUG */
 
 	/* === Kill all rows used to construct pivot row ==================== */
 
@@ -2515,10 +2515,10 @@ PRIVATE Int find_ordering	/* return the number of garbage collections */
 	    }
 	}
 
-#ifndef NDEBUG
+#ifndef SPQR_NDEBUG
 	debug_deg_lists (n_row, n_col, Row, Col, head,
 		min_score, n_col2-k-pivot_row_degree, max_deg) ;
-#endif /* NDEBUG */
+#endif /* SPQR_NDEBUG */
 
 	/* === Add up set differences for each column ======================= */
 
@@ -2627,9 +2627,9 @@ PRIVATE Int find_ordering	/* return the number of garbage collections */
 
 	detect_super_cols (
 
-#ifndef NDEBUG
+#ifndef SPQR_NDEBUG
 		n_col, Row,
-#endif /* NDEBUG */
+#endif /* SPQR_NDEBUG */
 
 		Col, A, head, pivot_row_start, pivot_row_length) ;
 
@@ -2641,10 +2641,10 @@ PRIVATE Int find_ordering	/* return the number of garbage collections */
 
 	tag_mark = clear_mark (tag_mark+max_deg+1, max_mark, n_row, Row) ;
 
-#ifndef NDEBUG
+#ifndef SPQR_NDEBUG
 	DEBUG3 (("check3\n")) ;
 	debug_mark (n_row, Row, tag_mark, max_mark) ;
-#endif /* NDEBUG */
+#endif /* SPQR_NDEBUG */
 
 	/* === Finalize the new pivot row, and column scores ================ */
 
@@ -2708,10 +2708,10 @@ PRIVATE Int find_ordering	/* return the number of garbage collections */
 
 	}
 
-#ifndef NDEBUG
+#ifndef SPQR_NDEBUG
 	debug_deg_lists (n_row, n_col, Row, Col, head,
 		min_score, n_col2-k, max_deg) ;
-#endif /* NDEBUG */
+#endif /* SPQR_NDEBUG */
 
 	/* === Resurrect the new pivot row ================================== */
 
@@ -2859,11 +2859,11 @@ PRIVATE void detect_super_cols
 (
     /* === Parameters ======================================================= */
 
-#ifndef NDEBUG
+#ifndef SPQR_NDEBUG
     /* these two parameters are only needed when debugging is enabled: */
     Int n_col,			/* number of columns of A */
     Colamd_Row Row [],		/* of size n_row+1 */
-#endif /* NDEBUG */
+#endif /* SPQR_NDEBUG */
 
     Colamd_Col Col [],		/* of size n_col+1 */
     Int A [],			/* row indices of A */
@@ -3033,12 +3033,12 @@ PRIVATE Int garbage_collection  /* returns the new value of pfree */
     Int c ;			/* a column index */
     Int length ;		/* length of a row or column */
 
-#ifndef NDEBUG
+#ifndef SPQR_NDEBUG
     Int debug_rows ;
     DEBUG2 (("Defrag..\n")) ;
     for (psrc = &A[0] ; psrc < pfree ; psrc++) ASSERT (*psrc >= 0) ;
     debug_rows = 0 ;
-#endif /* NDEBUG */
+#endif /* SPQR_NDEBUG */
 
     /* === Defragment the columns =========================================== */
 
@@ -3085,9 +3085,9 @@ PRIVATE Int garbage_collection  /* returns the new value of pfree */
 	    ASSERT (ROW_IS_ALIVE (r)) ;
 	    /* flag the start of the row with the one's complement of row */
 	    *psrc = ONES_COMPLEMENT (r) ;
-#ifndef NDEBUG
+#ifndef SPQR_NDEBUG
 	    debug_rows++ ;
-#endif /* NDEBUG */
+#endif /* SPQR_NDEBUG */
 	}
     }
 
@@ -3121,9 +3121,9 @@ PRIVATE Int garbage_collection  /* returns the new value of pfree */
 	    }
 	    Row [r].length = (Int) (pdest - &A [Row [r].start]) ;
 	    ASSERT (Row [r].length > 0) ;
-#ifndef NDEBUG
+#ifndef SPQR_NDEBUG
 	    debug_rows-- ;
-#endif /* NDEBUG */
+#endif /* SPQR_NDEBUG */
 	}
     }
     /* ensure we found all the rows */
@@ -3311,7 +3311,7 @@ PRIVATE void print_report
 
 /* When debugging is disabled, the remainder of this file is ignored. */
 
-#ifndef NDEBUG
+#ifndef SPQR_NDEBUG
 
 
 /* ========================================================================== */
@@ -3608,4 +3608,4 @@ PRIVATE void colamd_get_debug
     	method, colamd_debug)) ;
 }
 
-#endif /* NDEBUG */
+#endif /* SPQR_NDEBUG */

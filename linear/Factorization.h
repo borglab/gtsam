@@ -11,6 +11,7 @@
 
 #include <stdexcept>
 #include <gtsam/linear/GaussianFactorGraph.h>
+#include <gtsam/inference/inference-inl.h>
 
 namespace gtsam {
 
@@ -22,12 +23,11 @@ namespace gtsam {
   template <class NonlinearGraph, class Config>
   class Factorization {
   private:
-  	boost::shared_ptr<const Ordering> ordering_;
-  	bool useOldEliminate_;
+  	boost::shared_ptr<Ordering> ordering_;
 
   public:
-  	Factorization(boost::shared_ptr<const Ordering> ordering, bool old=true)
-		: ordering_(ordering), useOldEliminate_(old) {
+  	Factorization(boost::shared_ptr<Ordering> ordering)
+		: ordering_(ordering) {
   		if (!ordering) throw std::invalid_argument("Factorization constructor: ordering = NULL");
   	}
 
@@ -36,14 +36,14 @@ namespace gtsam {
   	 * the resulted linear system
   	 */
   	VectorConfig optimize(GaussianFactorGraph& fg) const {
-  		return fg.optimize(*ordering_, useOldEliminate_);
+  	  return gtsam::optimize(*Inference::Eliminate(fg));
   	}
 
 		/**
 		 * linearize the non-linear graph around the current config
 		 */
   	boost::shared_ptr<GaussianFactorGraph> linearize(const NonlinearGraph& g, const Config& config) const {
-  		return g.linearize(config);
+  		return g.linearize(config, *ordering_);
   	}
 
   	/**
@@ -51,6 +51,11 @@ namespace gtsam {
   	 */
   	boost::shared_ptr<Factorization> prepareLinear(const GaussianFactorGraph& fg) const {
   		return boost::shared_ptr<Factorization>(new Factorization(*this));
+  	}
+
+  	/** expmap the Config given the stored Ordering */
+  	Config expmap(const Config& config, const VectorConfig& delta) const {
+  	  return config.expmap(delta, *ordering_);
   	}
   };
 

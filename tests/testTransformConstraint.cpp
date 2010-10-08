@@ -9,8 +9,6 @@
 
 #include <gtsam/CppUnitLite/TestHarness.h>
 
-#include <gtsam/inference/Ordering.h>
-#include <gtsam/inference/Key.h>
 #include <gtsam/base/numericalDerivative.h>
 
 #include <gtsam/geometry/Pose2.h>

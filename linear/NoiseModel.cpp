@@ -29,6 +29,7 @@ static double inf = std::numeric_limits<double>::infinity();
 using namespace std;
 
 namespace gtsam {
+
 namespace noiseModel {
 
 /* ************************************************************************* */
@@ -103,8 +104,12 @@ void Gaussian::WhitenInPlace(Matrix& H) const {
 	H = thisR() * H;
 }
 
+void Gaussian::WhitenInPlace(MatrixColMajor& H) const {
+  H = ublas::prod(thisR(), H);
+}
+
 // General QR, see also special version in Constrained
-SharedDiagonal Gaussian::QR(Matrix& Ab) const {
+SharedDiagonal Gaussian::QR(Matrix& Ab, boost::optional<vector<long>&> firstZeroRows) const {
 
 	// get size(A) and maxRank
 	// TODO: really no rank problems ?
@@ -116,14 +121,36 @@ SharedDiagonal Gaussian::QR(Matrix& Ab) const {
 
 	// Perform in-place Householder
 #ifdef GT_USE_LAPACK
-	long* Stair = MakeStairs(Ab);
-	householder_spqr(Ab, Stair);
-//		householder_spqr(Ab);
+	if(firstZeroRows)
+	  householder_spqr(Ab, &(*firstZeroRows)[0]);
+	else
+	  householder_spqr(Ab);
 #else
 	householder(Ab, maxRank);
 #endif
 
 	return Unit::Create(maxRank);
+}
+
+// General QR, see also special version in Constrained
+SharedDiagonal Gaussian::QRColumnWise(ublas::matrix<double, ublas::column_major>& Ab, vector<long>& firstZeroRows) const {
+
+  // get size(A) and maxRank
+  // TODO: really no rank problems ?
+  size_t m = Ab.size1(), n = Ab.size2()-1;
+  size_t maxRank = min(m,n);
+
+  // pre-whiten everything (cheaply if possible)
+  WhitenInPlace(Ab);
+
+  // Perform in-place Householder
+#ifdef GT_USE_LAPACK
+  householder_spqr_colmajor(Ab, &firstZeroRows[0]);
+#else
+  householder(Ab, maxRank);
+#endif
+
+  return Unit::Create(maxRank);
 }
 
 /* ************************************************************************* */
@@ -172,6 +199,11 @@ void Diagonal::WhitenInPlace(Matrix& H) const {
 	vector_scale_inplace(invsigmas_, H);
 }
 
+void Diagonal::WhitenInPlace(MatrixColMajor& H) const {
+
+  vector_scale_inplace(invsigmas_, H);
+}
+
 Vector Diagonal::sample() const {
 	Vector result(dim_);
 	for (size_t i = 0; i < dim_; i++) {
@@ -202,11 +234,15 @@ void Constrained::WhitenInPlace(Matrix& H) const {
 	throw logic_error("noiseModel::Constrained cannot Whiten");
 }
 
+void Constrained::WhitenInPlace(MatrixColMajor& H) const {
+  throw logic_error("noiseModel::Constrained cannot Whiten");
+}
+
 // Special version of QR for Constrained calls slower but smarter code
 // that deals with possibly zero sigmas
 // It is Gram-Schmidt orthogonalization rather than Householder
 // Previously Diagonal::QR
-SharedDiagonal Constrained::QR(Matrix& Ab) const {
+SharedDiagonal Constrained::QR(Matrix& Ab, boost::optional<std::vector<long>&> firstZeroRows) const {
 	bool verbose = false;
 	if (verbose) cout << "\nStarting Constrained::QR" << endl;
 
@@ -277,6 +313,13 @@ SharedDiagonal Constrained::QR(Matrix& Ab) const {
 	return mixed ? Constrained::MixedPrecisions(precisions) : Diagonal::Precisions(precisions);
 }
 
+SharedDiagonal Constrained::QRColumnWise(ublas::matrix<double, ublas::column_major>& Ab, vector<long>& firstZeroRows) const {
+  Matrix AbRowWise(Ab);
+  SharedDiagonal result = this->QR(AbRowWise, firstZeroRows);
+  Ab = AbRowWise;
+  return result;
+}
+
 /* ************************************************************************* */
 
 Isotropic::shared_ptr Isotropic::Variance(size_t dim, double variance, bool smart)  {
@@ -307,6 +350,10 @@ Matrix Isotropic::Whiten(const Matrix& H) const {
 
 void Isotropic::WhitenInPlace(Matrix& H) const {
 	H *= invsigma_;
+}
+
+void Isotropic::WhitenInPlace(MatrixColMajor& H) const {
+  H *= invsigma_;
 }
 
 // faster version

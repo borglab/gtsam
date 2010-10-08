@@ -8,8 +8,15 @@
 
 #pragma once
 
+#include <gtsam/base/types.h>
+#include <gtsam/base/Testable.h>
+
 #include <boost/shared_ptr.hpp>
-#include <gtsam/inference/Ordering.h>
+#include <boost/weak_ptr.hpp>
+
+#include <list>
+#include <vector>
+#include <iostream>
 
 namespace gtsam {
 
@@ -24,20 +31,36 @@ namespace gtsam {
 	protected:
 
 		// the class for subgraphs that also include the pointers to the parents and two children
-		struct Cluster : public FG {
-
+		class Cluster : public FG {
+		public:
 			typedef typename boost::shared_ptr<Cluster> shared_ptr;
+			typedef typename boost::weak_ptr<Cluster> weak_ptr;
 
-			Ordering frontal_;                   // the frontal variables
-			Unordered separator_;                // the separator variables
-			shared_ptr parent_;                  // the parent cluster
-			std::vector<shared_ptr> children_;   // the child clusters
+      const std::vector<varid_t> frontal;                   // the frontal variables
+      const std::vector<varid_t> separator;                // the separator variables
+
+		protected:
+
+			weak_ptr parent_;                      // the parent cluster
+			std::list<shared_ptr> children_;     // the child clusters
+			const typename FG::sharedFactor eliminated_; // the eliminated factor to pass on to the parent
+
+		public:
 
 			// Construct empty clique
 			Cluster() {}
 
 			/* Create a node with a single frontal variable */
-			Cluster(const FG& fg, const Symbol& key);
+			template<typename Iterator>
+			Cluster(const FG& fg, varid_t key, Iterator firstSeparator, Iterator lastSeparator);
+
+      /* Create a node with several frontal variables */
+      template<typename FrontalIt, typename SeparatorIt>
+      Cluster(const FG& fg, FrontalIt firstFrontal, FrontalIt lastFrontal, SeparatorIt firstSeparator, SeparatorIt lastSeparator);
+
+      /* Create a node with several frontal variables */
+      template<typename FrontalIt, typename SeparatorIt>
+      Cluster(FrontalIt firstFrontal, FrontalIt lastFrontal, SeparatorIt firstSeparator, SeparatorIt lastSeparator);
 
 			// print the object
 			void print(const std::string& indent) const;
@@ -45,6 +68,15 @@ namespace gtsam {
 
 			// check equality
 			bool equals(const Cluster& other) const;
+
+			// get or set the parent
+			weak_ptr& parent() { return parent_; }
+
+			// get a reference to the children
+			const std::list<shared_ptr>& children() const { return children_; }
+
+			// add a child
+			void addChild(shared_ptr child);
 		};
 
 		// typedef for shared pointers to clusters
@@ -63,7 +95,7 @@ namespace gtsam {
 		// print the object
 		void print(const std::string& str) const {
 			std::cout << str << std::endl;
-			if (root_.get()) root_->printTree("");
+			if (root_) root_->printTree("");
 		}
 
 		/** check equality */

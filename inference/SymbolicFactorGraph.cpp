@@ -9,9 +9,9 @@
 #include <fstream>
 #include <boost/format.hpp>
 #include <boost/foreach.hpp>
-#include <gtsam/inference/Ordering.h>
 #include <gtsam/inference/SymbolicFactorGraph.h>
-#include <gtsam/inference/SymbolicBayesNet.h>
+#include <gtsam/inference/BayesNet-inl.h>
+#include <gtsam/inference/Factor-inl.h>
 #include <gtsam/inference/inference-inl.h>
 
 using namespace std;
@@ -19,34 +19,53 @@ using namespace std;
 namespace gtsam {
 
 	// Explicitly instantiate so we don't have to include everywhere
-	template class FactorGraph<SymbolicFactor>;
+	template class FactorGraph<Factor>;
+	template class BayesNet<Conditional>;
+
+  /* ************************************************************************* */
+	SymbolicFactorGraph::SymbolicFactorGraph(const BayesNet<Conditional>& bayesNet) :
+	    FactorGraph<Factor>(bayesNet) {}
 
 	/* ************************************************************************* */
-  boost::shared_ptr<SymbolicConditional>
-  SymbolicFactorGraph::eliminateOne(const Symbol& key){
-		return gtsam::eliminateOne<SymbolicFactor,SymbolicConditional>(*this, key);
+  void SymbolicFactorGraph::push_factor(varid_t key) {
+    boost::shared_ptr<Factor> factor(new Factor(key));
+    push_back(factor);
   }
 
-	/* ************************************************************************* */
-	SymbolicBayesNet
-	SymbolicFactorGraph::eliminate(const Ordering& ordering)
-	{
-		SymbolicBayesNet bayesNet;
+  /** Push back binary factor */
+  void SymbolicFactorGraph::push_factor(varid_t key1, varid_t key2) {
+    boost::shared_ptr<Factor> factor(new Factor(key1,key2));
+    push_back(factor);
+  }
 
-		BOOST_FOREACH(const Symbol& key, ordering) {
-			SymbolicConditional::shared_ptr conditional =
-					gtsam::eliminateOne<SymbolicFactor,SymbolicConditional>(*this,key);
-			bayesNet.push_back(conditional);
-		}
-		return bayesNet;
-	}
+  /** Push back ternary factor */
+  void SymbolicFactorGraph::push_factor(varid_t key1, varid_t key2, varid_t key3) {
+    boost::shared_ptr<Factor> factor(new Factor(key1,key2,key3));
+    push_back(factor);
+  }
 
-	/* ************************************************************************* */
-	SymbolicBayesNet
-	SymbolicFactorGraph::eliminateFrontals(const Ordering& ordering)
-	{
-		return eliminate(ordering);
-	}
+  /** Push back 4-way factor */
+  void SymbolicFactorGraph::push_factor(varid_t key1, varid_t key2, varid_t key3, varid_t key4) {
+    boost::shared_ptr<Factor> factor(new Factor(key1,key2,key3,key4));
+    push_back(factor);
+  }
+
+  /* ************************************************************************* */
+  std::set<varid_t, std::less<varid_t>, boost::fast_pool_allocator<varid_t> >
+  SymbolicFactorGraph::keys() const {
+    std::set<varid_t, std::less<varid_t>, boost::fast_pool_allocator<varid_t> > keys;
+    BOOST_FOREACH(const sharedFactor& factor, *this) {
+      if(factor) keys.insert(factor->begin(), factor->end()); }
+    return keys;
+  }
+
+
+//	/* ************************************************************************* */
+//	SymbolicBayesNet
+//	SymbolicFactorGraph::eliminateFrontals(const Ordering& ordering)
+//	{
+//		return Inference::Eliminate(ordering);
+//	}
 
 	/* ************************************************************************* */
 }

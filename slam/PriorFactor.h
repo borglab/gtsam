@@ -55,7 +55,7 @@ namespace gtsam {
 		bool equals(const NonlinearFactor<Config>& expected, double tol) const {
 			const PriorFactor<Config, Key> *e = dynamic_cast<const PriorFactor<
 					Config, Key>*> (&expected);
-			return e != NULL && Base::equals(expected) && this->prior_.equals(
+			return e != NULL && Base::equals(expected, tol) && this->prior_.equals(
 					e->prior_, tol);
 		}
 

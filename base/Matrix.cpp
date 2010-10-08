@@ -38,7 +38,7 @@ extern "C" {
 #include <suitesparse/ldl.h>
 #endif
 
-#include <gtsam/base/Matrix.h>
+#include <gtsam/base/Matrix-inl.h>
 #include <gtsam/base/Vector.h>
 #include <gtsam/base/svdcmp.h>
 
@@ -46,6 +46,12 @@ using namespace std;
 namespace ublas = boost::numeric::ublas;
 
 namespace gtsam {
+
+/** Explicit instantiations of template functions for standard types */
+template Vector backSubstituteUpper<Matrix,Vector>(const boost::numeric::ublas::matrix_expression<Matrix>& U,
+    const boost::numeric::ublas::vector_expression<Vector>& b, bool unit);
+template Vector backSubstituteUpper<Vector,Matrix>(const boost::numeric::ublas::vector_expression<Vector>& b,
+    const boost::numeric::ublas::matrix_expression<Matrix>& U, bool unit);
 
 /* ************************************************************************* */
 Matrix Matrix_( size_t m, size_t n, const double* const data) {
@@ -115,17 +121,25 @@ bool equal_with_abs_tol(const Matrix& A, const Matrix& B, double tol) {
   size_t n1 = A.size2(), m1 = A.size1();
   size_t n2 = B.size2(), m2 = B.size1();
 
-  if(m1!=m2 || n1!=n2) return false;
+  bool equal = true;
 
-  for(size_t i=0; i<m1; i++)
-	  for(size_t j=0; j<n1; j++) {
+  if(m1!=m2 || n1!=n2) equal = false;
+
+  for(size_t i=0; i<m1 && equal; i++)
+	  for(size_t j=0; j<n1 && equal; j++) {
 		  if(isnan(A(i,j)) xor isnan(B(i,j)))
-			  return false;
-		  if(fabs(A(i,j) - B(i,j)) > tol)
-			  return false;
+			  equal = false;
+		  else if(fabs(A(i,j) - B(i,j)) > tol)
+			  equal = false;
 	  }
 
-  return true;
+//  if(!equal) {
+//    cout << "not equal:" << endl;
+//    print(A,"expected = ");
+//    print(B,"actual = ");
+//  }
+
+  return equal;
 }
 
 /* ************************************************************************* */
@@ -709,63 +723,63 @@ void householder(Matrix &A) {
 #endif
 #endif
 
-/* ************************************************************************* */
-Vector backSubstituteUpper(const Matrix& U, const Vector& b, bool unit) {
-	size_t n = U.size2();
-#ifndef NDEBUG
-	size_t m = U.size1();
-	if (m!=n)
-		throw invalid_argument("backSubstituteUpper: U must be square");
-#endif
+///* ************************************************************************* */
+//Vector backSubstituteUpper(const Matrix& U, const Vector& b, bool unit) {
+//	size_t n = U.size2();
+//#ifndef NDEBUG
+//	size_t m = U.size1();
+//	if (m!=n)
+//		throw invalid_argument("backSubstituteUpper: U must be square");
+//#endif
+//
+//	Vector result(n);
+//	for (size_t i = n; i > 0; i--) {
+//		double zi = b(i-1);
+//		for (size_t j = i+1; j <= n; j++)
+//			zi -= U(i-1,j-1) * result(j-1);
+//#ifndef NDEBUG
+//		if(!unit && fabs(U(i-1,i-1)) <= numeric_limits<double>::epsilon()) {
+//		  stringstream ss;
+//		  ss << "backSubstituteUpper: U is singular,\n";
+//		  print(U, "U: ", ss);
+//		  throw invalid_argument(ss.str());
+//		}
+//#endif
+//		if (!unit) zi /= U(i-1,i-1);
+//		result(i-1) = zi;
+//	}
+//
+//	return result;
+//}
 
-	Vector result(n);
-	for (size_t i = n; i > 0; i--) {
-		double zi = b(i-1);
-		for (size_t j = i+1; j <= n; j++)
-			zi -= U(i-1,j-1) * result(j-1);
-#ifndef NDEBUG
-		if(!unit && fabs(U(i-1,i-1)) <= numeric_limits<double>::epsilon()) {
-		  stringstream ss;
-		  ss << "backSubstituteUpper: U is singular,\n";
-		  print(U, "U: ", ss);
-		  throw invalid_argument(ss.str());
-		}
-#endif
-		if (!unit) zi /= U(i-1,i-1);
-		result(i-1) = zi;
-	}
-
-	return result;
-}
-
-/* ************************************************************************* */
-Vector backSubstituteUpper(const Vector& b, const Matrix& U, bool unit) {
-	size_t n = U.size2();
-#ifndef NDEBUG
-	size_t m = U.size1();
-	if (m!=n)
-		throw invalid_argument("backSubstituteUpper: U must be square");
-#endif
-
-	Vector result(n);
-	for (size_t i = 1; i <= n; i++) {
-		double zi = b(i-1);
-		for (size_t j = 1; j < i; j++)
-			zi -= U(j-1,i-1) * result(j-1);
-#ifndef NDEBUG
-		if(!unit && fabs(U(i-1,i-1)) <= numeric_limits<double>::epsilon()) {
-		  stringstream ss;
-		  ss << "backSubstituteUpper: U is singular,\n";
-		  print(U, "U: ", ss);
-		  throw invalid_argument(ss.str());
-		}
-#endif
-		if (!unit) zi /= U(i-1,i-1);
-		result(i-1) = zi;
-	}
-
-	return result;
-}
+///* ************************************************************************* */
+//Vector backSubstituteUpper(const Vector& b, const Matrix& U, bool unit) {
+//	size_t n = U.size2();
+//#ifndef NDEBUG
+//	size_t m = U.size1();
+//	if (m!=n)
+//		throw invalid_argument("backSubstituteUpper: U must be square");
+//#endif
+//
+//	Vector result(n);
+//	for (size_t i = 1; i <= n; i++) {
+//		double zi = b(i-1);
+//		for (size_t j = 1; j < i; j++)
+//			zi -= U(j-1,i-1) * result(j-1);
+//#ifndef NDEBUG
+//		if(!unit && fabs(U(i-1,i-1)) <= numeric_limits<double>::epsilon()) {
+//		  stringstream ss;
+//		  ss << "backSubstituteUpper: U is singular,\n";
+//		  print(U, "U: ", ss);
+//		  throw invalid_argument(ss.str());
+//		}
+//#endif
+//		if (!unit) zi /= U(i-1,i-1);
+//		result(i-1) = zi;
+//	}
+//
+//	return result;
+//}
 
 /* ************************************************************************* */
 Vector backSubstituteLower(const Matrix& L, const Vector& b, bool unit) {
@@ -883,6 +897,15 @@ void vector_scale_inplace(const Vector& v, Matrix& A) {
 		double *Aij = A.data().begin() + i*n;
 		for (size_t j=0; j<n; ++j, ++Aij) (*Aij) *= vi;
 	}
+}
+
+/* ************************************************************************* */
+// row scaling, in-place
+void vector_scale_inplace(const Vector& v, MatrixColMajor& A) {
+  size_t m = A.size1(); size_t n = A.size2();
+  double *Aij = A.data().begin();
+  for (size_t j=0; j<n; ++j) // loop over rows
+    for (size_t i=0; i<m; ++i, ++Aij) (*Aij) *= v(i);
 }
 
 /* ************************************************************************* */

@@ -17,7 +17,7 @@
 #include <gtsam/geometry/Point3.h>
 
 #include <gtsam/base/Vector.h>
-#include <gtsam/inference/Key.h>
+#include <gtsam/nonlinear/Key.h>
 #include <gtsam/nonlinear/TupleConfig-inl.h>
 
 using namespace gtsam;
@@ -165,19 +165,20 @@ TEST(TupleConfig, zero_expmap_logmap)
   config1.insert(PointKey(1), l1);
   config1.insert(PointKey(2), l2);
 
-  VectorConfig expected_zero;
-  expected_zero.insert("x1", zero(3));
-  expected_zero.insert("x2", zero(3));
-  expected_zero.insert("l1", zero(2));
-  expected_zero.insert("l2", zero(2));
+  Ordering o; o += "x1", "x2", "l1", "l2";
+  VectorConfig expected_zero(config1.dims(o));
+  expected_zero[o["x1"]] = zero(3);
+  expected_zero[o["x2"]] = zero(3);
+  expected_zero[o["l1"]] = zero(2);
+  expected_zero[o["l2"]] = zero(2);
 
-  CHECK(assert_equal(expected_zero, config1.zero()));
+  CHECK(assert_equal(expected_zero, config1.zero(o)));
 
-  VectorConfig delta;
-  delta.insert("x1", Vector_(3, 1.0, 1.1, 1.2));
-  delta.insert("x2", Vector_(3, 1.3, 1.4, 1.5));
-  delta.insert("l1", Vector_(2, 1.0, 1.1));
-  delta.insert("l2", Vector_(2, 1.3, 1.4));
+  VectorConfig delta(config1.dims(o));
+  delta[o["x1"]] = Vector_(3, 1.0, 1.1, 1.2);
+  delta[o["x2"]] = Vector_(3, 1.3, 1.4, 1.5);
+  delta[o["l1"]] = Vector_(2, 1.0, 1.1);
+  delta[o["l2"]] = Vector_(2, 1.3, 1.4);
 
   Config expected;
   expected.insert(PoseKey(1), x1.expmap(Vector_(3, 1.0, 1.1, 1.2)));
@@ -185,12 +186,12 @@ TEST(TupleConfig, zero_expmap_logmap)
   expected.insert(PointKey(1), Point2(5.0, 6.1));
   expected.insert(PointKey(2), Point2(10.3, 11.4));
 
-  Config actual = config1.expmap(delta);
+  Config actual = config1.expmap(delta, o);
   CHECK(assert_equal(expected, actual));
 
   // Check log
   VectorConfig expected_log = delta;
-  VectorConfig actual_log = config1.logmap(actual);
+  VectorConfig actual_log = config1.logmap(actual, o);
   CHECK(assert_equal(expected_log, actual_log));
 }
 
@@ -426,17 +427,19 @@ TEST(TupleConfig, expmap)
 	Point2 l1(4,5), l2(9,10);
 	PointKey l1k(1), l2k(2);
 
+	Ordering o; o += "x1", "x2", "l1", "l2";
+
 	ConfigA config1;
 	config1.insert(x1k, x1);
 	config1.insert(x2k, x2);
 	config1.insert(l1k, l1);
 	config1.insert(l2k, l2);
 
-	VectorConfig delta;
-	delta.insert("x1", Vector_(3, 1.0, 1.1, 1.2));
-	delta.insert("x2", Vector_(3, 1.3, 1.4, 1.5));
-	delta.insert("l1", Vector_(2, 1.0, 1.1));
-	delta.insert("l2", Vector_(2, 1.3, 1.4));
+	VectorConfig delta(config1.dims(o));
+	delta[o["x1"]] = Vector_(3, 1.0, 1.1, 1.2);
+	delta[o["x2"]] = Vector_(3, 1.3, 1.4, 1.5);
+	delta[o["l1"]] = Vector_(2, 1.0, 1.1);
+	delta[o["l2"]] = Vector_(2, 1.3, 1.4);
 
 	ConfigA expected;
 	expected.insert(x1k, x1.expmap(Vector_(3, 1.0, 1.1, 1.2)));
@@ -444,8 +447,8 @@ TEST(TupleConfig, expmap)
 	expected.insert(l1k, Point2(5.0, 6.1));
 	expected.insert(l2k, Point2(10.3, 11.4));
 
-	CHECK(assert_equal(expected, config1.expmap(delta)));
-	CHECK(assert_equal(delta, config1.logmap(expected)));
+	CHECK(assert_equal(expected, config1.expmap(delta, o)));
+	CHECK(assert_equal(delta, config1.logmap(expected, o)));
 }
 
 /* ************************************************************************* */
@@ -456,24 +459,26 @@ TEST(TupleConfig, expmap_typedefs)
 	Point2 l1(4,5), l2(9,10);
 	PointKey l1k(1), l2k(2);
 
+  Ordering o; o += "x1", "x2", "l1", "l2";
+
 	TupleConfig2<PoseConfig, PointConfig> config1, expected, actual;
 	config1.insert(x1k, x1);
 	config1.insert(x2k, x2);
 	config1.insert(l1k, l1);
 	config1.insert(l2k, l2);
 
-	VectorConfig delta;
-	delta.insert("x1", Vector_(3, 1.0, 1.1, 1.2));
-	delta.insert("x2", Vector_(3, 1.3, 1.4, 1.5));
-	delta.insert("l1", Vector_(2, 1.0, 1.1));
-	delta.insert("l2", Vector_(2, 1.3, 1.4));
+  VectorConfig delta(config1.dims(o));
+  delta[o["x1"]] = Vector_(3, 1.0, 1.1, 1.2);
+  delta[o["x2"]] = Vector_(3, 1.3, 1.4, 1.5);
+  delta[o["l1"]] = Vector_(2, 1.0, 1.1);
+  delta[o["l2"]] = Vector_(2, 1.3, 1.4);
 
 	expected.insert(x1k, x1.expmap(Vector_(3, 1.0, 1.1, 1.2)));
 	expected.insert(x2k, x2.expmap(Vector_(3, 1.3, 1.4, 1.5)));
 	expected.insert(l1k, Point2(5.0, 6.1));
 	expected.insert(l2k, Point2(10.3, 11.4));
 
-	CHECK(assert_equal(expected, TupleConfig2<PoseConfig, PointConfig>(config1.expmap(delta))));
+	CHECK(assert_equal(expected, TupleConfig2<PoseConfig, PointConfig>(config1.expmap(delta, o))));
 	//CHECK(assert_equal(delta, config1.logmap(expected)));
 }
 

@@ -603,12 +603,12 @@
 /* ========================================================================== */
 
 /* Ensure that debugging is turned off: */
-#ifndef NDEBUG
-#define NDEBUG
+#ifndef SPQR_NDEBUG
+#define SPQR_NDEBUG
 #endif
 
 /* turn on debugging by uncommenting the following line
- #undef NDEBUG
+ #undef SPQR_NDEBUG
  */
 
 /* ========================================================================== */
@@ -626,7 +626,7 @@
 #include "matrix.h"
 #endif
 
-#if !defined (NPRINT) || !defined (NDEBUG)
+#if !defined (NPRINT) || !defined (SPQR_NDEBUG)
 #include <stdio.h>
 #endif
 
@@ -818,7 +818,7 @@ typedef struct CColamd_Row_struct
 /* === Debugging prototypes and definitions ================================= */
 /* ========================================================================== */
 
-#ifndef NDEBUG
+#ifndef SPQR_NDEBUG
 
 #include <assert.h>
 
@@ -952,14 +952,14 @@ PRIVATE Int find_ordering
     CColamd_Col Col [ ],
     Int A [ ],
     Int head [ ],
-#ifndef NDEBUG
+#ifndef SPQR_NDEBUG
     Int n_col2,
 #endif
     Int max_deg,
     Int pfree,
     Int cset [ ],
     Int cset_start [ ],
-#ifndef NDEBUG
+#ifndef SPQR_NDEBUG
     Int n_cset,
 #endif
     Int cmember [ ],
@@ -976,7 +976,7 @@ PRIVATE Int find_ordering
 
 PRIVATE void detect_super_cols
 (
-#ifndef NDEBUG
+#ifndef SPQR_NDEBUG
     Int n_col,
     CColamd_Row Row [ ],
 #endif
@@ -1212,7 +1212,7 @@ PUBLIC Int CSYMAMD_MAIN		/* return TRUE if OK, FALSE otherwise */
     Int upper ;			/* TRUE if ordering triu(A)+triu(A)' */
     Int lower ;			/* TRUE if ordering tril(A)+tril(A)' */
 
-#ifndef NDEBUG
+#ifndef SPQR_NDEBUG
     ccolamd_get_debug ("csymamd") ;
 #endif
 
@@ -1595,7 +1595,7 @@ PUBLIC Int CCOLAMD_2	    /* returns TRUE if successful, FALSE otherwise */
 
     int ok ;
 
-#ifndef NDEBUG
+#ifndef SPQR_NDEBUG
     ccolamd_get_debug ("ccolamd") ;
 #endif
 
@@ -1849,11 +1849,11 @@ PUBLIC Int CCOLAMD_2	    /* returns TRUE if successful, FALSE otherwise */
     /* === Order the supercolumns =========================================== */
 
     ngarbage = find_ordering (n_row, n_col, Alen, Row, Col, A, p,
-#ifndef NDEBUG
+#ifndef SPQR_NDEBUG
 	n_col2,
 #endif
 	max_deg, 2*nnz, cset, cset_start,
-#ifndef NDEBUG
+#ifndef SPQR_NDEBUG
 	n_cset,
 #endif
 	cmember, Front_npivcol, Front_nrows, Front_ncols, Front_parent,
@@ -1958,7 +1958,7 @@ PUBLIC Int CCOLAMD_2	    /* returns TRUE if successful, FALSE otherwise */
             {
                 k = Col [col].shared2.order ;
 		cs = CMEMBER (col) ;
-#ifndef NDEBUG
+#ifndef SPQR_NDEBUG
                 dead_cols [cs]-- ;
 #endif
                 ASSERT (k >= cset_start [cs] && k < cset_start [cs+1]) ;
@@ -1970,7 +1970,7 @@ PUBLIC Int CCOLAMD_2	    /* returns TRUE if successful, FALSE otherwise */
         }
     }
 
-#ifndef NDEBUG
+#ifndef SPQR_NDEBUG
     for (i = 0 ; i < n_cset ; i++)
     {
     	ASSERT (dead_cols [i] == 0) ;
@@ -2220,7 +2220,7 @@ PRIVATE Int init_rows_cols	/* returns TRUE if OK, or FALSE otherwise */
     {
     	DEBUG1 (("ccolamd: reconstructing column form, matrix jumbled\n")) ;
 
-#ifndef NDEBUG
+#ifndef SPQR_NDEBUG
 	/* make sure column lengths are correct */
  	for (col = 0 ; col < n_col ; col++)
 	{
@@ -2337,7 +2337,7 @@ PRIVATE void init_scoring
     Int nnewlyempty_col ;	/* number of newly empty cols */
     Int ne ;
 
-#ifndef NDEBUG
+#ifndef SPQR_NDEBUG
     Int debug_count ;		/* debug only. */
 #endif
 
@@ -2535,7 +2535,7 @@ PRIVATE void init_scoring
     /* yet).  Rows may contain dead columns, but all live rows contain at */
     /* least one live column. */
 
-#ifndef NDEBUG
+#ifndef SPQR_NDEBUG
     debug_count = 0 ;
 #endif
 
@@ -2545,7 +2545,7 @@ PRIVATE void init_scoring
 	head [c] = EMPTY ;
     }
 
-#ifndef NDEBUG
+#ifndef SPQR_NDEBUG
     debug_structures (n_row, n_col, Row, Col, A, cmember, cset_start) ;
 #endif
 
@@ -2584,14 +2584,14 @@ PRIVATE Int find_ordering	/* return the number of garbage collections */
     CColamd_Col Col [ ],	/* of size n_col+1 */
     Int A [ ],			/* column form and row form of A */
     Int head [ ],		/* of size n_col+1 */
-#ifndef NDEBUG
+#ifndef SPQR_NDEBUG
     Int n_col2,			/* Remaining columns to order */
 #endif
     Int max_deg,		/* Maximum row degree */
     Int pfree,			/* index of first free slot (2*nnz on entry) */
     Int cset [ ],		/* constraint set of A */
     Int cset_start [ ],		/* pointer to the start of every cset */
-#ifndef NDEBUG
+#ifndef SPQR_NDEBUG
     Int n_cset,			/* number of csets */
 #endif
     Int cmember [ ],		/* col -> cset mapping */
@@ -2645,7 +2645,7 @@ PRIVATE Int find_ordering	/* return the number of garbage collections */
     Int colend ;		/* pointer to last column in current cset */
     Int deadcol ;		/* number of dense & null columns in a cset */
 
-#ifndef NDEBUG
+#ifndef SPQR_NDEBUG
     Int debug_d ;		/* debug loop counter */
     Int debug_step = 0 ;	/* debug loop counter */
     Int cols_thickness = 0 ;	/* the thickness of the columns in current */
@@ -2681,7 +2681,7 @@ PRIVATE Int find_ordering	/* return the number of garbage collections */
 	ASSERT (min_score <= n_col) ;
 	ASSERT (head [min_score] >= EMPTY) ;
 
-#ifndef NDEBUG
+#ifndef SPQR_NDEBUG
 	for (debug_d = 0 ; debug_d < min_score ; debug_d++)
 	{
 	    ASSERT (head [debug_d] == EMPTY) ;
@@ -2706,7 +2706,7 @@ PRIVATE Int find_ordering	/* return the number of garbage collections */
 	    	return (ngarbage) ;
 	    }
 
-#ifndef NDEBUG
+#ifndef SPQR_NDEBUG
 	    for (col = 0 ; col <= n_col ; col++)
 	    {
 	        ASSERT (head [col] == EMPTY) ;
@@ -2761,7 +2761,7 @@ PRIVATE Int find_ordering	/* return the number of garbage collections */
 		min_score = MIN (min_score, score) ;
 	    }
 
-#ifndef NDEBUG
+#ifndef SPQR_NDEBUG
 	    DEBUG1 (("degree lists initialized \n")) ;
 	    debug_deg_lists (n_row, n_col, Row, Col, head, min_score,
 		((cset_start [current_set+1]-cset_start [current_set])-deadcol),
@@ -2769,7 +2769,7 @@ PRIVATE Int find_ordering	/* return the number of garbage collections */
 #endif
 	}
 
-#ifndef NDEBUG
+#ifndef SPQR_NDEBUG
 	if (debug_step % 100 == 0)
 	{
 	    DEBUG2 (("\n...   Step k: "ID" out of n_col2: "ID"\n", k, n_col2)) ;
@@ -2829,7 +2829,7 @@ PRIVATE Int find_ordering	/* return the number of garbage collections */
 	    /* garbage collection has wiped out Row [ ].shared2.mark array */
 	    tag_mark = clear_mark (0, max_mark, n_row, Row) ;
 
-#ifndef NDEBUG
+#ifndef SPQR_NDEBUG
 	    debug_matrix (n_row, n_col, Row, Col, A) ;
 #endif
 	}
@@ -2880,7 +2880,7 @@ PRIVATE Int find_ordering	/* return the number of garbage collections */
 			pivot_row_degree += col_thickness ;
 			DEBUG4 (("\t\t\tNew live col in pivrow: "ID"\n",col)) ;
 		    }
-#ifndef NDEBUG
+#ifndef SPQR_NDEBUG
 		    if (col_thickness < 0 && COL_IS_ALIVE (col))
 		    {
 			DEBUG4 (("\t\t\tOld live col in pivrow: "ID"\n",col)) ;
@@ -2897,7 +2897,7 @@ PRIVATE Int find_ordering	/* return the number of garbage collections */
 	Col [pivot_col].shared1.thickness = pivot_col_thickness ;
 	max_deg = MAX (max_deg, pivot_row_degree) ;
 
-#ifndef NDEBUG
+#ifndef SPQR_NDEBUG
 	DEBUG3 (("check2\n")) ;
 	debug_mark (n_row, Row, tag_mark, max_mark) ;
 #endif
@@ -2998,7 +2998,7 @@ PRIVATE Int find_ordering	/* return the number of garbage collections */
 	    /* only columns in current_set will be in degree list */
 	    if (CMEMBER (col) == current_set)
 	    {
-#ifndef NDEBUG
+#ifndef SPQR_NDEBUG
 		cols_thickness += col_thickness ;
 #endif
 		cur_score = Col [col].shared2.score ;
@@ -3084,7 +3084,7 @@ PRIVATE Int find_ordering	/* return the number of garbage collections */
 	    }
 	}
 
-#ifndef NDEBUG
+#ifndef SPQR_NDEBUG
 	debug_deg_lists (n_row, n_col, Row, Col, head, min_score,
 	cset_start [current_set+1]-(k+deadcol)-(cols_thickness),
 		max_deg) ;
@@ -3154,7 +3154,7 @@ PRIVATE Int find_ordering	/* return the number of garbage collections */
 		k += Col [col].shared1.thickness ;
                 pivot_col_thickness += Col [col].shared1.thickness ;
                 /* add to column list of front */
-#ifndef NDEBUG
+#ifndef SPQR_NDEBUG
                 DEBUG1 (("Mass")) ;
                 dump_super (col, Col, n_col) ;
 #endif
@@ -3205,7 +3205,7 @@ PRIVATE Int find_ordering	/* return the number of garbage collections */
 	DEBUG3 (("** Supercolumn detection phase. **\n")) ;
 
 	detect_super_cols (
-#ifndef NDEBUG
+#ifndef SPQR_NDEBUG
 		n_col, Row,
 #endif
 		Col, A, head, pivot_row_start, pivot_row_length, cmember) ;
@@ -3216,7 +3216,7 @@ PRIVATE Int find_ordering	/* return the number of garbage collections */
 	KILL_PRINCIPAL_COL (pivot_col) ;
 
 	/* add columns to column list of front */
-#ifndef NDEBUG
+#ifndef SPQR_NDEBUG
 	DEBUG1 (("Pivot")) ;
 	dump_super (pivot_col, Col, n_col) ;
 #endif
@@ -3227,7 +3227,7 @@ PRIVATE Int find_ordering	/* return the number of garbage collections */
 
 	tag_mark = clear_mark (tag_mark+max_deg+1, max_mark, n_row, Row) ;
 
-#ifndef NDEBUG
+#ifndef SPQR_NDEBUG
 	DEBUG3 (("check3\n")) ;
 	debug_mark (n_row, Row, tag_mark, max_mark) ;
 #endif
@@ -3300,7 +3300,7 @@ PRIVATE Int find_ordering	/* return the number of garbage collections */
 	    }
 	}
 
-#ifndef NDEBUG
+#ifndef SPQR_NDEBUG
 	debug_deg_lists (n_row, n_col, Row, Col, head,
 		min_score, cset_start [current_set+1]-(k+deadcol), max_deg) ;
 #endif
@@ -3342,7 +3342,7 @@ PRIVATE Int find_ordering	/* return the number of garbage collections */
 			pivot_row, pivot_row_degree)) ;
 	}
 
-#ifndef NDEBUG
+#ifndef SPQR_NDEBUG
 	DEBUG1 (("Front "ID" : "ID" "ID" "ID" ", nfr,
 		 Front_npivcol [nfr], Front_nrows [nfr], Front_ncols [nfr])) ;
 	DEBUG1 ((" cols:[ ")) ;
@@ -3405,7 +3405,7 @@ PRIVATE void detect_super_cols
 (
     /* === Parameters ======================================================= */
 
-#ifndef NDEBUG
+#ifndef SPQR_NDEBUG
     /* these two parameters are only needed when debugging is enabled: */
     Int n_col,			/* number of columns of A */
     CColamd_Row Row [ ],	/* of size n_row+1 */
@@ -3536,7 +3536,7 @@ PRIVATE void detect_super_cols
 		ASSERT (Col [super_c].lastcol < n_col) ;
 		Col [Col [super_c].lastcol].nextcol = c ;
 		Col [super_c].lastcol = Col [c].lastcol ;
-#ifndef NDEBUG
+#ifndef SPQR_NDEBUG
 		/* dump the supercolumn */
 		DEBUG1 (("Super")) ;
 		dump_super (super_c, Col, n_col) ;
@@ -3594,7 +3594,7 @@ PRIVATE Int garbage_collection  /* returns the new value of pfree */
     Int c ;			/* a column index */
     Int length ;		/* length of a row or column */
 
-#ifndef NDEBUG
+#ifndef SPQR_NDEBUG
     Int debug_rows ;
     DEBUG2 (("Defrag..\n")) ;
     for (psrc = &A[0] ; psrc < pfree ; psrc++) ASSERT (*psrc >= 0) ;
@@ -3646,7 +3646,7 @@ PRIVATE Int garbage_collection  /* returns the new value of pfree */
 	    ASSERT (ROW_IS_ALIVE (r)) ;
 	    /* flag the start of the row with the one's complement of row */
 	    *psrc = ONES_COMPLEMENT (r) ;
-#ifndef NDEBUG
+#ifndef SPQR_NDEBUG
 	    debug_rows++ ;
 #endif
 	}
@@ -3681,7 +3681,7 @@ PRIVATE Int garbage_collection  /* returns the new value of pfree */
 		}
 	    }
 	    Row [r].length = (Int) (pdest - &A [Row [r].start]) ;
-#ifndef NDEBUG
+#ifndef SPQR_NDEBUG
 	    debug_rows-- ;
 #endif
 	}
@@ -4036,7 +4036,7 @@ GLOBAL void CCOLAMD_postorder
 	}
     }
 
-#ifndef NDEBUG
+#ifndef SPQR_NDEBUG
     {
 	Int nels, ff, nchild ;
 	DEBUG1 (("\n\n================================ ccolamd_postorder:\n"));
@@ -4075,7 +4075,7 @@ GLOBAL void CCOLAMD_postorder
 	if (Nv [i] > 0 && Child [i] != EMPTY)
 	{
 
-#ifndef NDEBUG
+#ifndef SPQR_NDEBUG
 	    Int nchild ;
 	    DEBUG1 (("Before partial sort, element "ID"\n", i)) ;
 	    nchild = 0 ;
@@ -4129,7 +4129,7 @@ GLOBAL void CCOLAMD_postorder
 		Sibling [fprev] = bigf ;
 	    }
 
-#ifndef NDEBUG
+#ifndef SPQR_NDEBUG
 	    DEBUG1 (("After partial sort, element "ID"\n", i)) ;
 	    for (f = Child [i] ; f != EMPTY ; f = Sibling [f])
 	    {
@@ -4251,7 +4251,7 @@ GLOBAL Int CCOLAMD_post_tree
 	    Order [i] = k++ ;
 	}
 
-#ifndef NDEBUG
+#ifndef SPQR_NDEBUG
 	DEBUG1 (("\nStack:")) ;
 	for (h = head ; h >= 0 ; h--)
 	{
@@ -4273,7 +4273,7 @@ GLOBAL Int CCOLAMD_post_tree
 
 /* When debugging is disabled, the remainder of this file is ignored. */
 
-#ifndef NDEBUG
+#ifndef SPQR_NDEBUG
 
 
 /* ========================================================================== */

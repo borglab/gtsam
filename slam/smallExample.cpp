@@ -9,18 +9,19 @@
 #include <iostream>
 #include <string>
 #include <boost/optional.hpp>
+#include <boost/shared_ptr.hpp>
 
 using namespace std;
 
 #define GTSAM_MAGIC_KEY
 
-#include <gtsam/inference/Ordering.h>
 #include <gtsam/base/Matrix.h>
 #include <gtsam/nonlinear/NonlinearFactor.h>
 #include <gtsam/slam/smallExample.h>
 
 // template definitions
 #include <gtsam/inference/FactorGraph-inl.h>
+#include <gtsam/nonlinear/Ordering.h>
 #include <gtsam/nonlinear/TupleConfig-inl.h>
 #include <gtsam/nonlinear/NonlinearFactorGraph-inl.h>
 
@@ -33,6 +34,9 @@ namespace example {
 	static SharedDiagonal sigma0_1 = noiseModel::Isotropic::Sigma(2,0.1);
 	static SharedDiagonal sigma0_2 = noiseModel::Isotropic::Sigma(2,0.2);
 	static SharedDiagonal constraintModel = noiseModel::Constrained::All(2);
+
+	static const varid_t _l1_=0, _x1_=1, _x2_=2;
+	static const varid_t _x_=0, _y_=1, _z_=2;
 
 	/* ************************************************************************* */
 	boost::shared_ptr<const Graph> sharedNonlinearFactorGraph() {
@@ -79,10 +83,10 @@ namespace example {
 
 	/* ************************************************************************* */
 	VectorConfig createVectorConfig() {
-		VectorConfig c;
-		c.insert("l1", Vector_(2, 0.0, -1.0));
-		c.insert("x1", Vector_(2, 0.0, 0.0));
-		c.insert("x2", Vector_(2, 1.5, 0.0));
+		VectorConfig c(vector<size_t>(3, 2));
+		c[_l1_] = Vector_(2, 0.0, -1.0);
+		c[_x1_] = Vector_(2, 0.0, 0.0);
+		c[_x2_] = Vector_(2, 1.5, 0.0);
 		return c;
 	}
 
@@ -101,25 +105,25 @@ namespace example {
 	}
 
 	/* ************************************************************************* */
-	VectorConfig createCorrectDelta() {
-		VectorConfig c;
-		c.insert("l1", Vector_(2, -0.1, 0.1));
-		c.insert("x1", Vector_(2, -0.1, -0.1));
-		c.insert("x2", Vector_(2, 0.1, -0.2));
+	VectorConfig createCorrectDelta(const Ordering& ordering) {
+		VectorConfig c(vector<size_t>(3,2));
+		c[ordering["l1"]] = Vector_(2, -0.1, 0.1);
+		c[ordering["x1"]] = Vector_(2, -0.1, -0.1);
+		c[ordering["x2"]] = Vector_(2, 0.1, -0.2);
 		return c;
 	}
 
 	/* ************************************************************************* */
-	VectorConfig createZeroDelta() {
-		VectorConfig c;
-		c.insert("l1", zero(2));
-		c.insert("x1", zero(2));
-		c.insert("x2", zero(2));
+	VectorConfig createZeroDelta(const Ordering& ordering) {
+		VectorConfig c(vector<size_t>(3,2));
+		c[ordering["l1"]] = zero(2);
+		c[ordering["x1"]] = zero(2);
+		c[ordering["x2"]] = zero(2);
 		return c;
 	}
 
 	/* ************************************************************************* */
-	GaussianFactorGraph createGaussianFactorGraph() {
+	GaussianFactorGraph createGaussianFactorGraph(const Ordering& ordering) {
 		Matrix I = eye(2);
 
 		// Create empty graph
@@ -127,17 +131,26 @@ namespace example {
 
 		SharedDiagonal unit2 = noiseModel::Unit::Create(2);
 
-		// linearized prior on x1: c["x1"]+x1=0 i.e. x1=-c["x1"]
-		fg.add("x1", 10*eye(2), -1.0*ones(2), unit2);
+		// linearized prior on x1: c[_x1_]+x1=0 i.e. x1=-c[_x1_]
+		fg.add(ordering["x1"], 10*eye(2), -1.0*ones(2), unit2);
 
 		// odometry between x1 and x2: x2-x1=[0.2;-0.1]
-		 fg.add("x1", -10*eye(2),"x2", 10*eye(2), Vector_(2, 2.0, -1.0), unit2);
+		if(ordering["x1"] < ordering["x2"])
+		  fg.add(ordering["x1"], -10*eye(2),ordering["x2"], 10*eye(2), Vector_(2, 2.0, -1.0), unit2);
+		else
+		  fg.add(ordering["x2"], 10*eye(2),ordering["x1"], -10*eye(2), Vector_(2, 2.0, -1.0), unit2);
 
-		// measurement between x1 and l1: l1-x1=[0.0;0.2]
-		fg.add("x1", -5*eye(2), "l1", 5*eye(2), Vector_(2, 0.0, 1.0), unit2);
+    // measurement between x1 and l1: l1-x1=[0.0;0.2]
+		if(ordering["x1"] < ordering["l1"])
+		  fg.add(ordering["x1"], -5*eye(2), ordering["l1"], 5*eye(2), Vector_(2, 0.0, 1.0), unit2);
+		else
+		  fg.add(ordering["l1"], 5*eye(2), ordering["x1"], -5*eye(2), Vector_(2, 0.0, 1.0), unit2);
 
 		// measurement between x2 and l1: l1-x2=[-0.2;0.3]
-		fg.add("x2", -5*eye(2), "l1", 5*eye(2), Vector_(2, -1.0, 1.5), unit2);
+		if(ordering["x2"] < ordering["l1"])
+		  fg.add(ordering["x2"], -5*eye(2), ordering["l1"], 5*eye(2), Vector_(2, -1.0, 1.5), unit2);
+		else
+		  fg.add(ordering["l1"], 5*eye(2), ordering["x2"], -5*eye(2), Vector_(2, -1.0, 1.5), unit2);
 
 		return fg;
 	}
@@ -158,8 +171,8 @@ namespace example {
 		tau(0) = 1.0;
 
 		// define nodes and specify in reverse topological sort (i.e. parents last)
-		GaussianConditional::shared_ptr Px_y(new GaussianConditional("x", d1, R11,
-				"y", S12, tau)), Py(new GaussianConditional("y", d2, R22, tau));
+		GaussianConditional::shared_ptr Px_y(new GaussianConditional(_x_, d1, R11,
+				_y_, S12, tau)), Py(new GaussianConditional(_y_, d2, R22, tau));
 		GaussianBayesNet cbn;
 		cbn.push_back(Px_y);
 		cbn.push_back(Py);
@@ -204,8 +217,7 @@ namespace example {
 
 	/* ************************************************************************* */
 	boost::shared_ptr<const Graph> sharedReallyNonlinearFactorGraph() {
-		boost::shared_ptr<Graph> fg(
-				new Graph);
+		boost::shared_ptr<Graph> fg(new Graph);
 		Vector z = Vector_(2, 1.0, 0.0);
 		double sigma = 0.1;
 		boost::shared_ptr<smallOptimize::UnaryFactor> factor(
@@ -250,32 +262,33 @@ namespace example {
 	}
 
 	/* ************************************************************************* */
-	GaussianFactorGraph createSmoother(int T) {
+	pair<GaussianFactorGraph, Ordering> createSmoother(int T, boost::optional<Ordering> ordering) {
 		Graph nlfg;
 		Config poses;
 		boost::tie(nlfg, poses) = createNonlinearSmoother(T);
 
-		return *nlfg.linearize(poses);
+		if(!ordering) ordering = *poses.orderingArbitrary();
+		return make_pair(*nlfg.linearize(poses, *ordering), *ordering);
 	}
 
 	/* ************************************************************************* */
 	GaussianFactorGraph createSimpleConstraintGraph() {
 		// create unary factor
-		// prior on "x", mean = [1,-1], sigma=0.1
+		// prior on _x_, mean = [1,-1], sigma=0.1
 		Matrix Ax = eye(2);
 		Vector b1(2);
 		b1(0) = 1.0;
 		b1(1) = -1.0;
-		GaussianFactor::shared_ptr f1(new GaussianFactor("x", Ax, b1, sigma0_1));
+		GaussianFactor::shared_ptr f1(new GaussianFactor(_x_, Ax, b1, sigma0_1));
 
 		// create binary constraint factor
-		// between "x" and "y", that is going to be the only factor on "y"
+		// between _x_ and _y_, that is going to be the only factor on _y_
 		// |1 0||x_1| + |-1  0||y_1| = |0|
 		// |0 1||x_2|   | 0 -1||y_2|   |0|
 		Matrix Ax1 = eye(2);
 		Matrix Ay1 = eye(2) * -1;
 		Vector b2 = Vector_(2, 0.0, 0.0);
-		GaussianFactor::shared_ptr f2(new GaussianFactor("x", Ax1, "y", Ay1, b2,
+		GaussianFactor::shared_ptr f2(new GaussianFactor(_x_, Ax1, _y_, Ay1, b2,
 				constraintModel));
 
 		// construct the graph
@@ -288,26 +301,26 @@ namespace example {
 
 	/* ************************************************************************* */
 	VectorConfig createSimpleConstraintConfig() {
-		VectorConfig config;
+		VectorConfig config(vector<size_t>(2,2));
 		Vector v = Vector_(2, 1.0, -1.0);
-		config.insert("x", v);
-		config.insert("y", v);
+		config[_x_] = v;
+		config[_y_] = v;
 		return config;
 	}
 
 	/* ************************************************************************* */
 	GaussianFactorGraph createSingleConstraintGraph() {
 		// create unary factor
-		// prior on "x", mean = [1,-1], sigma=0.1
+		// prior on _x_, mean = [1,-1], sigma=0.1
 		Matrix Ax = eye(2);
 		Vector b1(2);
 		b1(0) = 1.0;
 		b1(1) = -1.0;
-		//GaussianFactor::shared_ptr f1(new GaussianFactor("x", sigma0_1->Whiten(Ax), sigma0_1->whiten(b1), sigma0_1));
-		GaussianFactor::shared_ptr f1(new GaussianFactor("x", Ax, b1, sigma0_1));
+		//GaussianFactor::shared_ptr f1(new GaussianFactor(_x_, sigma0_1->Whiten(Ax), sigma0_1->whiten(b1), sigma0_1));
+		GaussianFactor::shared_ptr f1(new GaussianFactor(_x_, Ax, b1, sigma0_1));
 
 		// create binary constraint factor
-		// between "x" and "y", that is going to be the only factor on "y"
+		// between _x_ and _y_, that is going to be the only factor on _y_
 		// |1 2||x_1| + |10 0||y_1| = |1|
 		// |2 1||x_2|   |0 10||y_2|   |2|
 		Matrix Ax1(2, 2);
@@ -317,7 +330,7 @@ namespace example {
 		Ax1(1, 1) = 1.0;
 		Matrix Ay1 = eye(2) * 10;
 		Vector b2 = Vector_(2, 1.0, 2.0);
-		GaussianFactor::shared_ptr f2(new GaussianFactor("x", Ax1, "y", Ay1, b2,
+		GaussianFactor::shared_ptr f2(new GaussianFactor(_x_, Ax1, _y_, Ay1, b2,
 				constraintModel));
 
 		// construct the graph
@@ -330,9 +343,9 @@ namespace example {
 
 	/* ************************************************************************* */
 	VectorConfig createSingleConstraintConfig() {
-		VectorConfig config;
-		config.insert("x", Vector_(2, 1.0, -1.0));
-		config.insert("y", Vector_(2, 0.2, 0.1));
+		VectorConfig config(vector<size_t>(2,2));
+		config[_x_] = Vector_(2, 1.0, -1.0);
+		config[_y_] = Vector_(2, 0.2, 0.1);
 		return config;
 	}
 
@@ -341,7 +354,7 @@ namespace example {
 		// unary factor 1
 		Matrix A = eye(2);
 		Vector b = Vector_(2, -2.0, 2.0);
-		GaussianFactor::shared_ptr lf1(new GaussianFactor("x", A, b, sigma0_1));
+		GaussianFactor::shared_ptr lf1(new GaussianFactor(_x_, A, b, sigma0_1));
 
 		// constraint 1
 		Matrix A11(2, 2);
@@ -359,7 +372,7 @@ namespace example {
 		Vector b1(2);
 		b1(0) = 1.0;
 		b1(1) = 2.0;
-		GaussianFactor::shared_ptr lc1(new GaussianFactor("x", A11, "y", A12, b1,
+		GaussianFactor::shared_ptr lc1(new GaussianFactor(_x_, A11, _y_, A12, b1,
 				constraintModel));
 
 		// constraint 2
@@ -378,7 +391,7 @@ namespace example {
 		Vector b2(2);
 		b2(0) = 3.0;
 		b2(1) = 4.0;
-		GaussianFactor::shared_ptr lc2(new GaussianFactor("x", A21, "z", A22, b2,
+		GaussianFactor::shared_ptr lc2(new GaussianFactor(_x_, A21, _z_, A22, b2,
 				constraintModel));
 
 		// construct the graph
@@ -392,10 +405,10 @@ namespace example {
 
 	/* ************************************************************************* */
 	VectorConfig createMultiConstraintConfig() {
-		VectorConfig config;
-		config.insert("x", Vector_(2, -2.0, 2.0));
-		config.insert("y", Vector_(2, -0.1, 0.4));
-		config.insert("z", Vector_(2, -4.0, 5.0));
+		VectorConfig config(vector<size_t>(3,2));
+		config[_x_] = Vector_(2, -2.0, 2.0);
+		config[_y_] = Vector_(2, -0.1, 0.4);
+		config[_z_] = Vector_(2, -4.0, 5.0);
 		return config;
 	}
 
@@ -418,7 +431,7 @@ namespace example {
 	//	b(0) = 2 ; b(1) = 3;
 	//
 	//	double sigma = 0.1;
-	//	GaussianFactor::shared_ptr f2(new GaussianFactor("x0", A21/sigma,  "x1", A22/sigma, b/sigma));
+	//	GaussianFactor::shared_ptr f2(new GaussianFactor("x0", A21/sigma,  _x1_, A22/sigma, b/sigma));
 	//	graph.push_back(f2);
 	//	return graph;
 	//}
@@ -434,7 +447,7 @@ namespace example {
 	//
 	//		// odometry between x0 and x1
 	//		double sigma = 0.1;
-	//		shared f2(new Simulated2DOdometry(c["x1"] - c["x0"], sigma, "x0", "x1"));
+	//		shared f2(new Simulated2DOdometry(c[_x1_] - c["x0"], sigma, "x0", _x1_));
 	//		graph.push_back(f2); // TODO
 	//		return graph;
 	//	}
@@ -448,7 +461,7 @@ namespace example {
 	//	config.insert("x0", x0);
 	//
 	//	Vector x1(2); x1(0)=3.0; x1(1)=5.0;
-	//	config.insert("x1", x1);
+	//	config.insert(_x1_, x1);
 	//
 	//	return config;
 	//}
@@ -462,7 +475,7 @@ namespace example {
 	//	config.insert("x0", x0);
 	//
 	//	Vector x1(2); x1(0)=2.3; x1(1)=5.3;
-	//	config.insert("x1", x1);
+	//	config.insert(_x1_, x1);
 	//
 	//	return config;
 	//}
@@ -476,7 +489,7 @@ namespace example {
 	//	config.insert("x0", x0);
 	//
 	//	Vector x1(2); x1(0)= 0.7; x1(1)= -0.3;
-	//	config.insert("x1", x1);
+	//	config.insert(_x1_, x1);
 	//
 	//	return config;
 	//}
@@ -489,10 +502,10 @@ namespace example {
 	//
 	//	// add regular conditional gaussian - no parent
 	//	Matrix R = eye(2);
-	//	Vector d = c["x1"];
+	//	Vector d = c[_x1_];
 	//	double sigma = 0.1;
 	//	GaussianConditional::shared_ptr f1(new GaussianConditional(d/sigma, R/sigma));
-	//	cbn.insert("x1", f1);
+	//	cbn.insert(_x1_, f1);
 	//
 	//	// add a delta function to the cbn
 	//	ConstrainedGaussianConditional::shared_ptr f2(new ConstrainedGaussianConditional); //(c["x0"], "x0"));
@@ -508,7 +521,7 @@ namespace example {
 	}
 
 	/* ************************************************************************* */
-	pair<GaussianFactorGraph, VectorConfig> planarGraph(size_t N) {
+	boost::tuple<GaussianFactorGraph, Ordering, VectorConfig> planarGraph(size_t N) {
 
 		// create empty graph
 		NonlinearFactorGraph<Config> nlfg;
@@ -535,16 +548,17 @@ namespace example {
 
 		// Create linearization and ground xtrue config
 		Config zeros;
-		VectorConfig xtrue;
-		Point2 zero;
+    for (size_t x = 1; x <= N; x++)
+      for (size_t y = 1; y <= N; y++)
+        zeros.insert(key(x, y), Point2());
+		Ordering ordering(planarOrdering(N));
+		VectorConfig xtrue(zeros.dims(ordering));
 		for (size_t x = 1; x <= N; x++)
-			for (size_t y = 1; y <= N; y++) {
-				zeros.insert(key(x, y), zero);
-				xtrue.insert((Symbol)key(x, y), Point2(x,y).vector());
-			}
+			for (size_t y = 1; y <= N; y++)
+				xtrue[ordering[key(x, y)]] = Point2(x,y).vector();
 
 		// linearize around zero
-		return make_pair(*nlfg.linearize(zeros), xtrue);
+		return boost::make_tuple(*nlfg.linearize(zeros, ordering), ordering, xtrue);
 	}
 
 	/* ************************************************************************* */

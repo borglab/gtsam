@@ -5,9 +5,7 @@
 
 #include <gtsam/CppUnitLite/TestHarness.h>
 
-#include <gtsam/inference/Key.h>
 #include <gtsam/geometry/Pose2.h>
-#include <gtsam/inference/Ordering.h>
 #include <gtsam/slam/PriorFactor.h>
 #include <gtsam/nonlinear/NonlinearEquality.h>
 #include <gtsam/nonlinear/NonlinearFactorGraph.h>
@@ -40,8 +38,8 @@ TEST ( NonlinearEquality, linearization ) {
 
 	// check linearize
 	SharedDiagonal constraintModel = noiseModel::Constrained::All(3);
-	GaussianFactor expLF(key, eye(3), zero(3), constraintModel);
-	GaussianFactor::shared_ptr actualLF = nle->linearize(linearize);
+	GaussianFactor expLF(0, eye(3), zero(3), constraintModel);
+	GaussianFactor::shared_ptr actualLF = nle->linearize(linearize, *linearize.orderingArbitrary());
 	EXPECT(assert_equal(*actualLF, expLF));
 }
 
@@ -56,7 +54,7 @@ TEST ( NonlinearEquality, linearization_pose ) {
 	// create a nonlinear equality constraint
 	shared_poseNLE nle(new PoseNLE(key, value));
 
-	GaussianFactor::shared_ptr actualLF = nle->linearize(config);
+	GaussianFactor::shared_ptr actualLF = nle->linearize(config, *config.orderingArbitrary());
 	EXPECT(true);
 }
 
@@ -71,7 +69,7 @@ TEST ( NonlinearEquality, linearization_fail ) {
 	shared_poseNLE nle(new PoseNLE(key, value));
 
 	// check linearize to ensure that it fails for bad linearization points
-	CHECK_EXCEPTION(nle->linearize(bad_linearize), std::invalid_argument);
+	CHECK_EXCEPTION(nle->linearize(bad_linearize, *bad_linearize.orderingArbitrary()), std::invalid_argument);
 }
 
 /* ********************************************************************** */
@@ -87,7 +85,7 @@ TEST ( NonlinearEquality, linearization_fail_pose ) {
 	shared_poseNLE nle(new PoseNLE(key, value));
 
 	// check linearize to ensure that it fails for bad linearization points
-	CHECK_EXCEPTION(nle->linearize(bad_linearize), std::invalid_argument);
+	CHECK_EXCEPTION(nle->linearize(bad_linearize, *bad_linearize.orderingArbitrary()), std::invalid_argument);
 }
 
 /* ********************************************************************** */
@@ -103,7 +101,7 @@ TEST ( NonlinearEquality, linearization_fail_pose_origin ) {
 	shared_poseNLE nle(new PoseNLE(key, value));
 
 	// check linearize to ensure that it fails for bad linearization points
-	CHECK_EXCEPTION(nle->linearize(bad_linearize), std::invalid_argument);
+	CHECK_EXCEPTION(nle->linearize(bad_linearize, *bad_linearize.orderingArbitrary()), std::invalid_argument);
 }
 
 /* ************************************************************************* */
@@ -161,11 +159,11 @@ TEST ( NonlinearEquality, allow_error_pose ) {
 	DOUBLES_EQUAL(500.0, actError, 1e-9);
 
 	// check linearization
-	GaussianFactor::shared_ptr actLinFactor = nle.linearize(config);
+	GaussianFactor::shared_ptr actLinFactor = nle.linearize(config, *config.orderingArbitrary());
 	Matrix A1 = eye(3,3);
 	Vector b = expVec;
 	SharedDiagonal model = noiseModel::Constrained::All(3);
-	GaussianFactor::shared_ptr expLinFactor(new GaussianFactor(key1, A1, b, model));
+	GaussianFactor::shared_ptr expLinFactor(new GaussianFactor(0, A1, b, model));
 	EXPECT(assert_equal(*expLinFactor, *actLinFactor, 1e-5));
 }
 

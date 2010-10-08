@@ -12,15 +12,15 @@ using namespace boost::assign;
 
 #define GTSAM_MAGIC_KEY
 
-#include <gtsam/inference/SymbolicBayesNet.h>
+#include <gtsam/inference/BayesNet.h>
+#include <gtsam/inference/Conditional.h>
 #include <gtsam/inference/SymbolicFactorGraph.h>
-#include <gtsam/inference/Ordering.h>
 #include <gtsam/inference/ISAM-inl.h>
 
 using namespace std;
 using namespace gtsam;
 
-typedef ISAM<SymbolicConditional> SymbolicISAM;
+typedef ISAM<Conditional> SymbolicISAM;
 
 /* ************************************************************************* */
 // Some numbers that should be consistent among all smoother tests

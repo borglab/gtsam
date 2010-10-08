@@ -23,12 +23,14 @@ using namespace boost::assign;
 
 #include <gtsam/linear/GaussianBayesNet.h>
 #include <gtsam/inference/BayesNet.h>
+#include <gtsam/inference/inference-inl.h>
 #include <gtsam/slam/smallExample.h>
-#include <gtsam/inference/Ordering.h>
 
 using namespace std;
 using namespace gtsam;
 using namespace example;
+
+static const varid_t _x_=0, _y_=1, _z_=2;
 
 /* ************************************************************************* */
 TEST( GaussianBayesNet, constructor )
@@ -45,12 +47,12 @@ TEST( GaussianBayesNet, constructor )
   sigmas(0) = 1.;
 
   // define nodes and specify in reverse topological sort (i.e. parents last)
-  GaussianConditional x("x",d1,R11,"y",S12, sigmas), y("y",d2,R22, sigmas);
+  GaussianConditional x(_x_,d1,R11,_y_,S12, sigmas), y(_y_,d2,R22, sigmas);
 
   // check small example which uses constructor
   GaussianBayesNet cbn = createSmallGaussianBayesNet();
-  CHECK( x.equals(*cbn["x"]) );
-  CHECK( y.equals(*cbn["y"]) );
+  CHECK( x.equals(*cbn[_x_]) );
+  CHECK( y.equals(*cbn[_y_]) );
 }
 
 /* ************************************************************************* */
@@ -78,9 +80,9 @@ TEST( GaussianBayesNet, optimize )
   GaussianBayesNet cbn = createSmallGaussianBayesNet();
   VectorConfig actual = optimize(cbn);
 
-  VectorConfig expected;
-  expected.insert("x",Vector_(1,4.));
-  expected.insert("y",Vector_(1,5.));
+  VectorConfig expected(vector<size_t>(2,1));
+  expected[_x_] = Vector_(1,4.);
+  expected[_y_] = Vector_(1,5.);
 
   CHECK(assert_equal(expected,actual));
 }
@@ -93,22 +95,21 @@ TEST( GaussianBayesNet, optimize2 )
 	GaussianFactorGraph fg;
 	SharedDiagonal noise = noiseModel::Unit::Create(1);
 
-	fg.add("y", eye(1), 2*ones(1), noise);
+	fg.add(_y_, eye(1), 2*ones(1), noise);
 
-	fg.add("x", eye(1),"y", -eye(1), -ones(1), noise);
+	fg.add(_x_, eye(1),_y_, -eye(1), -ones(1), noise);
 
-	fg.add("y", eye(1),"z", -eye(1), -ones(1), noise);
+	fg.add(_y_, eye(1),_z_, -eye(1), -ones(1), noise);
 
-	fg.add("z", eye(1),"x", -eye(1), 2*ones(1), noise);
+	fg.add(_x_, -eye(1), _z_, eye(1), 2*ones(1), noise);
 
-	Ordering ordering; ordering += "x", "y", "z";
-	GaussianBayesNet cbn = fg.eliminate(ordering);
+	GaussianBayesNet cbn = *Inference::Eliminate(fg);
   VectorConfig actual = optimize(cbn);
 
-  VectorConfig expected;
-  expected.insert("x",Vector_(1,1.));
-  expected.insert("y",Vector_(1,2.));
-  expected.insert("z",Vector_(1,3.));
+  VectorConfig expected(vector<size_t>(3,1));
+  expected[_x_] = Vector_(1,1.);
+  expected[_y_] = Vector_(1,2.);
+  expected[_z_] = Vector_(1,3.);
 
   CHECK(assert_equal(expected,actual));
 }
@@ -121,11 +122,11 @@ TEST( GaussianBayesNet, backSubstitute )
 	// 3     1   3
   GaussianBayesNet cbn = createSmallGaussianBayesNet();
 
-  VectorConfig y, x;
-  y.insert("x",Vector_(1,2.));
-  y.insert("y",Vector_(1,3.));
-  x.insert("x",Vector_(1,-1.));
-  x.insert("y",Vector_(1, 3.));
+  VectorConfig y(vector<size_t>(2,1)), x(vector<size_t>(2,1));
+  y[_x_] = Vector_(1,2.);
+  y[_y_] = Vector_(1,3.);
+  x[_x_] = Vector_(1,-1.);
+  x[_y_] = Vector_(1, 3.);
 
   // test functional version
   VectorConfig actual = backSubstitute(cbn,y);
@@ -161,8 +162,8 @@ TEST( GaussianBayesNet, rhs_with_sigmas )
 	tau(0) = 0.25;
 
 	// define nodes and specify in reverse topological sort (i.e. parents last)
-	GaussianConditional::shared_ptr Px_y(new GaussianConditional("x", d1, R11,
-			"y", S12, tau)), Py(new GaussianConditional("y", d2, R22, tau));
+	GaussianConditional::shared_ptr Px_y(new GaussianConditional(_x_, d1, R11,
+			_y_, S12, tau)), Py(new GaussianConditional(_y_, d2, R22, tau));
 	GaussianBayesNet cbn;
 	cbn.push_back(Px_y);
 	cbn.push_back(Py);
@@ -181,11 +182,11 @@ TEST( GaussianBayesNet, backSubstituteTranspose )
 	// 5   1 1  3
   GaussianBayesNet cbn = createSmallGaussianBayesNet();
 
-  VectorConfig x, y;
-  x.insert("x",Vector_(1,2.));
-  x.insert("y",Vector_(1,5.));
-  y.insert("x",Vector_(1,2.));
-  y.insert("y",Vector_(1,3.));
+  VectorConfig y(vector<size_t>(2,1)), x(vector<size_t>(2,1));
+  x[_x_] = Vector_(1,2.);
+  x[_y_] = Vector_(1,5.);
+  y[_x_] = Vector_(1,2.);
+  y[_y_] = Vector_(1,3.);
 
   // test functional version
   VectorConfig actual = backSubstituteTranspose(cbn,x);

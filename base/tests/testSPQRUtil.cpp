@@ -101,6 +101,7 @@ TEST(SPQRUtil, houseHolder_spqr2)
 	Matrix A1 = Matrix_(4, 7, data);
 	long* Stair = MakeStairs(A1);
 	householder_spqr(A1, Stair);
+	delete[] Stair;
 	CHECK(assert_equal(expected1, A1, 1e-3));
 }
 
@@ -180,6 +181,7 @@ TEST(SPQRUtil, houseHolder_spqr4)
 
   Matrix actualRstair = A;
   householder_spqr(actualRstair, Stair);
+  delete[] Stair;
 
   CHECK(assert_equal(expectedR, actualR, 1e-3));
   CHECK(assert_equal(expectedR, actualRstair, 1e-3));

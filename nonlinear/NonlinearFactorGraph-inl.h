@@ -12,6 +12,7 @@
 #include <gtsam/linear/GaussianFactorGraph.h>
 #include <gtsam/nonlinear/NonlinearFactorGraph.h>
 #include <gtsam/inference/FactorGraph-inl.h>
+#include <gtsam/inference/inference-inl.h>
 
 #define INSTANTIATE_NONLINEAR_FACTOR_GRAPH(C) \
   INSTANTIATE_FACTOR_GRAPH(NonlinearFactor<C>); \
@@ -20,6 +21,12 @@
 using namespace std;
 
 namespace gtsam {
+
+/* ************************************************************************* */
+template<class Config>
+void NonlinearFactorGraph<Config>::print(const std::string& str) const {
+  Base::print(str);
+}
 
 	/* ************************************************************************* */
 	template<class Config>
@@ -40,17 +47,68 @@ namespace gtsam {
 		return total_error;
 	}
 
+  /* ************************************************************************* */
+  template<class Config>
+	pair<Ordering::shared_ptr, GaussianVariableIndex<>::shared_ptr>
+  NonlinearFactorGraph<Config>::orderingCOLAMD(const Config& config) const {
+
+    // Create symbolic graph and initial (iterator) ordering
+	  FactorGraph<Factor>::shared_ptr symbolic;
+	  Ordering::shared_ptr ordering;
+	  boost::tie(symbolic,ordering) = this->symbolic(config);
+
+	  // Compute the VariableIndex (column-wise index)
+	  VariableIndex<> variableIndex(*symbolic);
+
+	  // Compute a fill-reducing ordering with COLAMD
+	  Permutation::shared_ptr colamdPerm(Inference::PermutationCOLAMD(variableIndex));
+
+	  // Permute the Ordering and VariableIndex with the COLAMD ordering
+	  ordering->permuteWithInverse(*colamdPerm->inverse());
+	  variableIndex.permute(*colamdPerm);
+
+	  // Build a variable dimensions array to upgrade to a GaussianVariableIndex
+	  GaussianVariableIndex<>::shared_ptr gaussianVarIndex(new GaussianVariableIndex<>(variableIndex, config.dims(*ordering)));
+
+	  // Return the Ordering and VariableIndex to be re-used during linearization
+	  // and elimination
+	  return make_pair(ordering, gaussianVarIndex);
+	}
+
+  /* ************************************************************************* */
+  template<class Config>
+  SymbolicFactorGraph::shared_ptr NonlinearFactorGraph<Config>::symbolic(
+      const Config& config, const Ordering& ordering) const {
+    // Generate the symbolic factor graph
+    SymbolicFactorGraph::shared_ptr symbolicfg(new FactorGraph<Factor>);
+    symbolicfg->reserve(this->size());
+    BOOST_FOREACH(const sharedFactor& factor, this->factors_) {
+      symbolicfg->push_back(factor->symbolic(ordering));
+    }
+    return symbolicfg;
+  }
+
+  /* ************************************************************************* */
+	template<class Config>
+	pair<SymbolicFactorGraph::shared_ptr, Ordering::shared_ptr>
+	NonlinearFactorGraph<Config>::symbolic(const Config& config) const {
+	  // Generate an initial key ordering in iterator order
+    Ordering::shared_ptr ordering(config.orderingArbitrary());
+    return make_pair(symbolic(config, *ordering), ordering);
+	}
+
 	/* ************************************************************************* */
 	template<class Config>
 	boost::shared_ptr<GaussianFactorGraph> NonlinearFactorGraph<Config>::linearize(
-			const Config& config) const{
+			const Config& config, const Ordering& ordering) const {
 
 		// create an empty linear FG
-		boost::shared_ptr<GaussianFactorGraph> linearFG(new GaussianFactorGraph);
+		GaussianFactorGraph::shared_ptr linearFG(new GaussianFactorGraph);
+		linearFG->reserve(this->size());
 
 		// linearize all factors
 		BOOST_FOREACH(const sharedFactor& factor, this->factors_) {
-			boost::shared_ptr<GaussianFactor> lf = factor->linearize(config);
+			boost::shared_ptr<GaussianFactor> lf = factor->linearize(config, ordering);
 			if (lf)	linearFG->push_back(lf);
 		}
 

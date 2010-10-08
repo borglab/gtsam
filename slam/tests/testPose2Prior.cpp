@@ -32,18 +32,23 @@ TEST( Pose2Prior, error )
 	Pose2Prior factor(1, p1, sigmas);
 
 	// Actual linearization
-	boost::shared_ptr<GaussianFactor> linear = factor.linearize(x0);
+	Ordering ordering(*x0.orderingArbitrary());
+	boost::shared_ptr<GaussianFactor> linear = factor.linearize(x0, ordering);
 
 	// Check error at x0, i.e. delta = zero !
-	VectorConfig delta;
-	delta.insert("x1", zero(3));
+	VectorConfig delta(x0.dims(ordering));
+	delta.makeZero();
+	delta[ordering["x1"]] = zero(3);
 	Vector error_at_zero = Vector_(3,0.0,0.0,0.0);
 	CHECK(assert_equal(error_at_zero,factor.whitenedError(x0)));
 	CHECK(assert_equal(-error_at_zero,linear->error_vector(delta)));
 
 	// Check error after increasing p2
-	VectorConfig plus = delta + VectorConfig("x1", Vector_(3, 0.1, 0.0, 0.0));
-	Pose2Config x1 = x0.expmap(plus);
+	VectorConfig addition(x0.dims(ordering));
+	addition.makeZero();
+	addition[ordering["x1"]] = Vector_(3, 0.1, 0.0, 0.0);
+	VectorConfig plus = delta + addition;
+	Pose2Config x1 = x0.expmap(plus, ordering);
 	Vector error_at_plus = Vector_(3,0.1/sx,0.0,0.0); // h(x)-z = 0.1 !
 	CHECK(assert_equal(error_at_plus,factor.whitenedError(x1)));
 	CHECK(assert_equal(error_at_plus,linear->error_vector(plus)));
@@ -69,11 +74,12 @@ TEST( Pose2Prior, linearize )
 	x0.insert(1,prior);
 
 	// Actual linearization
-	boost::shared_ptr<GaussianFactor> actual = factor.linearize(x0);
+	Ordering ordering(*x0.orderingArbitrary());
+	boost::shared_ptr<GaussianFactor> actual = factor.linearize(x0, ordering);
 
 	// Test with numerical derivative
 	Matrix numericalH = numericalDerivative11(h, prior, 1e-5);
-	CHECK(assert_equal(numericalH,actual->get_A("x1")));
+	CHECK(assert_equal(numericalH,actual->getA(actual->find(ordering["x1"]))));
 }
 
 /* ************************************************************************* */

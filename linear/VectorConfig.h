@@ -1,41 +1,206 @@
 /**
  * @file    VectorConfig.h
  * @brief   Factor Graph Configuration
- * @author Frank Dellaert
+ * @author  Richard Roberts
  */
 
 #pragma once
 
-/*
- * There are two interchangeable implementations of VectorConfig.
- *
- * VectorMap uses a straightforward stl::map of Vectors. It has O(log n)
- * insert and access, and is fairly fast at both. However, it has high overhead
- * for arithmetic operations such as +, scale, axpy etc...
- *
- * VectorBTree uses a functional BTree as a way to access SubVectors
- * in an ordinary Vector. Inserting is O(n) and much slower, but accessing,
- * is O(log n) and might be a bit slower than VectorMap. Arithmetic operations
- * are blindingly fast, however. The cost is it is not as KISS as VectorMap.
- *
- * Access to vectors is now exclusively via operator[]
- * Vector access in VectorMap is via a Vector reference
- * Vector access in VectorBtree is via the SubVector type (see Vector.h)
- *
- * Feb 16 2010: FD: I made VectorMap the default, because I decided to try
- * and speed up conjugate gradients by using Sparse FactorGraphs all the way.
- */
+#include <gtsam/base/Testable.h>
+#include <gtsam/base/Vector.h>
+#include <gtsam/base/types.h>
 
-// we use define and not typedefs as typdefs cannot be forward declared
-#ifdef VECTORBTREE
+#include <boost/foreach.hpp>
+#include <boost/numeric/ublas/vector_proxy.hpp>
+#include <boost/numeric/ublas/io.hpp>
+#include <boost/shared_ptr.hpp>
 
-#include <gtsam/linear/VectorBTree.h>
-#define VectorConfig VectorBTree
+#include <vector>
 
-#else
+namespace gtsam {
 
-#include <gtsam/linear/VectorMap.h>
-#define VectorConfig VectorMap
+class VectorConfig : public Testable<VectorConfig> {
+protected:
+  Vector values_;
+  std::vector<size_t> varStarts_;
 
-#endif
+public:
+  template<class C> class _impl_iterator;  // Forward declaration of iterator implementation
+  typedef boost::shared_ptr<VectorConfig> shared_ptr;
+  typedef _impl_iterator<VectorConfig> iterator;
+  typedef _impl_iterator<const VectorConfig> const_iterator;
+  typedef boost::numeric::ublas::vector_range<Vector> value_reference_type;
+  typedef boost::numeric::ublas::vector_range<const Vector> const_value_reference_type;
+  typedef boost::numeric::ublas::vector_range<Vector> mapped_type;
+  typedef boost::numeric::ublas::vector_range<const Vector> const_mapped_type;
 
+//  /**
+//   * Constructor requires an existing GaussianVariableIndex to get variable
+//   * dimensions.
+//   */
+//  VectorConfig(const GaussianVariableIndex& variableIndex);
+
+  /**
+   * Default constructor creates an empty VectorConfig.  reserve(...) must be
+   * called to allocate space before any values can be added.  This prevents
+   * slow reallocation of space at runtime.
+   */
+  VectorConfig() : varStarts_(1,0) {}
+
+  /** Construct from a container of variable dimensions (in variable order). */
+  template<class Container>
+  VectorConfig(const Container& dimensions);
+
+  /** Construct from a container of variable dimensions in variable order and
+   * a combined Vector of all of the variables in order.
+   */
+  VectorConfig(const std::vector<size_t>& dimensions, const Vector& values);
+
+  /** Element access */
+  mapped_type operator[](varid_t variable);
+  const_mapped_type operator[](varid_t variable) const;
+
+  /** Number of elements */
+  varid_t size() const { return varStarts_.size()-1; }
+
+  /** Total dimensionality used (could be smaller than what has been allocated
+   * with reserve(...) ).
+   */
+  size_t dim() const { return varStarts_.back(); }
+
+  /** Total dimensions capacity allocated */
+  size_t dimCapacity() const { return values_.size(); }
+
+  /** Iterator access */
+  iterator begin() { return _impl_iterator<VectorConfig>(*this, 0); }
+  const_iterator begin() const { return _impl_iterator<const VectorConfig>(*this, 0); }
+  iterator end() { return _impl_iterator<VectorConfig>(*this, varStarts_.size()-1); }
+  const_iterator end() const { return _impl_iterator<const VectorConfig>(*this, varStarts_.size()-1); }
+
+  /** Reserve space for a total number of variables and dimensionality */
+  void reserve(varid_t nVars, size_t totalDims) { values_.resize(std::max(totalDims, values_.size())); varStarts_.reserve(nVars+1); }
+
+  /**
+   * Append a variable using the next variable ID, and return that ID.  Space
+   * must have been allocated ahead of time using reserve(...).
+   */
+  varid_t push_back_preallocated(const Vector& vector) {
+    varid_t var = varStarts_.size()-1;
+    varStarts_.push_back(varStarts_.back()+vector.size());
+    this->operator[](var) = vector;  // This will assert that values_ has enough allocated space.
+    return var;
+  }
+
+  /** Set all elements to zero */
+  void makeZero() { boost::numeric::ublas::noalias(values_) = boost::numeric::ublas::zero_vector<double>(values_.size()); }
+
+  /** print required by Testable for unit testing */
+  void print(const std::string& str = "VectorConfig: ") const {
+    std::cout << str << ": " << varStarts_.size()-1 << " elements\n";
+    for(varid_t var=0; var<size(); ++var) {
+      std::cout << "  " << var << " " << operator[](var) << "\n";
+    }
+    std::cout.flush();
+  }
+
+  /** equals required by Testable for unit testing */
+  bool equals(const VectorConfig& expected, double tol=1e-9) const {
+    if(size() != expected.size()) return false;
+    // iterate over all elements
+    for(varid_t var=0; var<size(); ++var)
+      if(!equal_with_abs_tol(expected[var],operator[](var),tol))
+        return false;
+    return true;
+  }
+
+  /** + operator simply adds Vectors.  This checks for structural equivalence
+   * when NDEBUG is not defined.
+   */
+  VectorConfig operator+(const VectorConfig& c) const {
+    assert(varStarts_ == c.varStarts_);
+    VectorConfig result;
+    result.varStarts_ = varStarts_;
+    result.values_ = boost::numeric::ublas::project(values_, boost::numeric::ublas::range(0, varStarts_.back())) +
+        boost::numeric::ublas::project(c.values_, boost::numeric::ublas::range(0, c.varStarts_.back()));
+    return result;
+  }
+
+  /**
+   * Iterator (handles both iterator and const_iterator depending on whether
+   * the template type is const.
+   */
+  template<class C>
+  class _impl_iterator {
+  protected:
+    C& config_;
+    varid_t curVariable_;
+
+    _impl_iterator(C& config, varid_t curVariable) : config_(config), curVariable_(curVariable) {}
+    void checkCompat(const _impl_iterator<C>& r) { assert(&config_ == &r.config_); }
+    friend class VectorConfig;
+
+  public:
+    typedef typename const_selector<C, VectorConfig, VectorConfig::mapped_type, VectorConfig::const_mapped_type>::type value_type;
+    _impl_iterator<C>& operator++() { ++curVariable_; return *this; }
+    _impl_iterator<C>& operator--() { --curVariable_; return *this; }
+    _impl_iterator<C>& operator++(int) { throw std::runtime_error("Use prefix ++ operator"); }
+    _impl_iterator<C>& operator--(int) { throw std::runtime_error("Use prefix -- operator"); }
+    _impl_iterator<C>& operator+=(ptrdiff_t step) { curVariable_ += step; return *this; }
+    _impl_iterator<C>& operator-=(ptrdiff_t step) { curVariable_ += step; return *this; }
+    ptrdiff_t operator-(const _impl_iterator<C>& r) { checkCompat(r); return curVariable_ - r.curVariable_; }
+    bool operator==(const _impl_iterator<C>& r) { checkCompat(r); return curVariable_ == r.curVariable_; }
+    bool operator!=(const _impl_iterator<C>& r) { checkCompat(r); return curVariable_ != r.curVariable_; }
+    value_type operator*() { return config_[curVariable_]; }
+  };
+
+protected:
+  void checkVariable(varid_t variable) const { assert(variable < varStarts_.size()-1); }
+};
+
+
+//inline VectorConfig::VectorConfig(const GaussianVariableIndex& variableIndex) : varStarts_(variableIndex.size()+1) {
+//  size_t varStart = 0;
+//  varStarts_[0] = 0;
+//  for(varid_t var=0; var<variableIndex.size(); ++var) {
+//    varStart += variableIndex.dim(var);
+//    varStarts_[var+1] = varStart;
+//  }
+//  values_.resize(varStarts_.back(), false);
+//}
+
+template<class Container>
+inline VectorConfig::VectorConfig(const Container& dimensions) : varStarts_(dimensions.size()+1) {
+  varStarts_[0] = 0;
+  size_t varStart = 0;
+  varid_t var = 0;
+  BOOST_FOREACH(size_t dim, dimensions) {
+    varStarts_[++var] = (varStart += dim);
+  }
+  values_.resize(varStarts_.back(), false);
+}
+
+inline VectorConfig::VectorConfig(const std::vector<size_t>& dimensions, const Vector& values) :
+    values_(values), varStarts_(dimensions.size()+1) {
+  varStarts_[0] = 0;
+  size_t varStart = 0;
+  varid_t var = 0;
+  BOOST_FOREACH(size_t dim, dimensions) {
+    varStarts_[++var] = (varStart += dim);
+  }
+  assert(varStarts_.back() == values.size());
+}
+
+inline VectorConfig::mapped_type VectorConfig::operator[](varid_t variable) {
+  checkVariable(variable);
+  return boost::numeric::ublas::project(values_,
+      boost::numeric::ublas::range(varStarts_[variable], varStarts_[variable+1]));
+}
+
+inline VectorConfig::const_mapped_type VectorConfig::operator[](varid_t variable) const {
+  checkVariable(variable);
+  return boost::numeric::ublas::project(values_,
+      boost::numeric::ublas::range(varStarts_[variable], varStarts_[variable+1]));
+}
+
+
+}

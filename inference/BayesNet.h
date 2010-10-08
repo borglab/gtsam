@@ -10,15 +10,15 @@
 
 #include <list>
 #include <boost/shared_ptr.hpp>
+#include <boost/serialization/nvp.hpp>
 //#include <boost/serialization/list.hpp>
 //#include <boost/serialization/shared_ptr.hpp>
 
+#include <gtsam/base/types.h>
 #include <gtsam/base/Testable.h>
-#include <gtsam/inference/Key.h>
+#include <gtsam/inference/Permutation.h>
 
 namespace gtsam {
-
-	class Ordering;
 
 	/**
 	 * Bayes network
@@ -31,10 +31,15 @@ namespace gtsam {
 
 	public:
 
+	  typedef typename boost::shared_ptr<BayesNet<Conditional> > shared_ptr;
+
 		/** We store shared pointers to Conditional densities */
 		typedef typename boost::shared_ptr<Conditional> sharedConditional;
+		typedef typename boost::shared_ptr<const Conditional> const_sharedConditional;
 		typedef typename std::list<sharedConditional> Conditionals;
 
+    typedef typename Conditionals::const_iterator iterator;
+    typedef typename Conditionals::const_reverse_iterator reverse_iterator;
 		typedef typename Conditionals::const_iterator const_iterator;
 		typedef typename Conditionals::const_reverse_iterator const_reverse_iterator;
 
@@ -77,19 +82,31 @@ namespace gtsam {
 		 */
 		inline void pop_front() {conditionals_.pop_front();}
 
+		/** Permute the variables in the BayesNet */
+		void permuteWithInverse(const Permutation& inversePermutation);
+
+		/** Permute the variables when only separator variables need to be permuted.
+	   * Returns true if any reordered variables appeared in the separator and
+	   * false if not.
+	   */
+		bool permuteSeparatorWithInverse(const Permutation& inversePermutation);
+
 		/** size is the number of nodes */
 		inline size_t size() const {
 			return conditionals_.size();
 		}
 
 		/** return keys in reverse topological sort order, i.e., elimination order */
-		Ordering ordering() const;
+		std::list<varid_t> ordering() const;
 
 		/** SLOW O(n) random access to Conditional by key */
-		sharedConditional operator[](const Symbol& key) const;
+		sharedConditional operator[](varid_t key) const;
 
 		/** return last node in ordering */
-		inline sharedConditional back() { return conditionals_.back(); }
+		inline sharedConditional& back() { return conditionals_.back(); }
+
+		/** return last node in ordering */
+		boost::shared_ptr<const Conditional> back() const { return conditionals_.back(); }
 
 		/** return iterators. FD: breaks encapsulation? */
 		inline const_iterator const begin() const {return conditionals_.begin();}

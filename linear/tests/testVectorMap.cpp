@@ -24,7 +24,8 @@
 using namespace std;
 using namespace gtsam;
 
-static Symbol l1('l',1), x1('x',1), x2('x',2);
+static const varid_t l1=0, x1=1, x2=2;
+static const varid_t _a_=3, _x_=4, _y_=5, _g_=6, _p_=7;
 
 /* ************************************************************************* */
 VectorMap smallVectorMap() {
@@ -40,11 +41,11 @@ TEST( VectorMap, equals1 )
  {
    VectorMap expected;
    Vector v = Vector_(3, 5.0, 6.0, 7.0);
-   expected.insert("a",v);
+   expected.insert(_a_,v);
    VectorMap actual;
-   actual.insert("a",v);
+   actual.insert(_a_,v);
    CHECK(assert_equal(expected,actual));
-   CHECK(assert_equal(expected["a"],actual.get("a")))
+   CHECK(assert_equal(expected[_a_],actual.get(_a_)))
 }
 
 /* ************************************************************************* */
@@ -53,8 +54,8 @@ TEST( VectorMap, equals2 )
    VectorMap cfg1, cfg2;
    Vector v1 = Vector_(3, 5.0, 6.0, 7.0);
    Vector v2 = Vector_(3, 5.0, 6.0, 8.0);
-   cfg1.insert("x", v1);
-   cfg2.insert("x", v2);
+   cfg1.insert(_x_, v1);
+   cfg2.insert(_x_, v2);
    CHECK(!cfg1.equals(cfg2));
    CHECK(!cfg2.equals(cfg1));
  }
@@ -78,8 +79,8 @@ TEST( VectorMap, equals_nan )
    VectorMap cfg1, cfg2;
    Vector v1 = Vector_(3, 5.0, 6.0, 7.0);
    Vector v2 = Vector_(3, inf, inf, inf);
-   cfg1.insert("x", v1);
-   cfg2.insert("x", v2);
+   cfg1.insert(_x_, v1);
+   cfg2.insert(_x_, v2);
    CHECK(!cfg1.equals(cfg2));
    CHECK(!cfg2.equals(cfg1));
  }
@@ -89,9 +90,9 @@ TEST( VectorMap, contains)
 {
   VectorMap fg;
   Vector v = Vector_(3, 5.0, 6.0, 7.0);
-  fg.insert("a", v);
-  CHECK(fg.contains("a"));
-  CHECK(!fg.contains("g"));
+  fg.insert(_a_, v);
+  CHECK(fg.contains(_a_));
+  CHECK(!fg.contains(_g_));
 }
 
 /* ************************************************************************* */
@@ -107,16 +108,16 @@ TEST( VectorMap, plus)
 {
   VectorMap c;
   Vector vx = Vector_(3, 5.0, 6.0, 7.0), vy = Vector_(2, 8.0, 9.0);
-  c += VectorMap("x",vx);
-  c += VectorMap("y",vy);
+  c += VectorMap(_x_,vx);
+  c += VectorMap(_y_,vy);
 
   VectorMap delta;
   Vector dx = Vector_(3, 1.0, 1.0, 1.0), dy = Vector_(2, -1.0, -1.0);
-  delta.insert("x", dx).insert("y",dy);
+  delta.insert(_x_, dx).insert(_y_,dy);
 
   VectorMap expected;
   Vector wx = Vector_(3, 6.0, 7.0, 8.0), wy = Vector_(2, 7.0, 8.0);
-  expected.insert("x", wx).insert("y",wy);
+  expected.insert(_x_, wx).insert(_y_,wy);
 
   // functional
   VectorMap actual = expmap(c,delta);
@@ -126,14 +127,14 @@ TEST( VectorMap, plus)
 /* ************************************************************************* */
 TEST( VectorMap, scale) {
 	VectorMap cfg;
-	cfg.insert("x", Vector_(2, 1.0, 2.0));
-	cfg.insert("y", Vector_(2,-1.0,-2.0));
+	cfg.insert(_x_, Vector_(2, 1.0, 2.0));
+	cfg.insert(_y_, Vector_(2,-1.0,-2.0));
 
 	VectorMap actual = cfg.scale(2.0);
 
 	VectorMap expected;
-	expected.insert("x", Vector_(2, 2.0, 4.0));
-	expected.insert("y", Vector_(2,-2.0,-4.0));
+	expected.insert(_x_, Vector_(2, 2.0, 4.0));
+	expected.insert(_y_, Vector_(2,-2.0,-4.0));
 
 	CHECK(assert_equal(actual, expected));
 }
@@ -141,12 +142,12 @@ TEST( VectorMap, scale) {
 /* ************************************************************************* */
 TEST( VectorMap, axpy) {
   VectorMap x,y,expected;
-  x += VectorMap("x",Vector_(3, 1.0, 1.0, 1.0));
-  x += VectorMap("y",Vector_(2, -1.0, -1.0));
-  y += VectorMap("x",Vector_(3, 5.0, 6.0, 7.0));
-  y += VectorMap("y",Vector_(2, 8.0, 9.0));
-  expected += VectorMap("x",Vector_(3, 15.0, 16.0, 17.0));
-  expected += VectorMap("y",Vector_(2, -2.0, -1.0));
+  x += VectorMap(_x_,Vector_(3, 1.0, 1.0, 1.0));
+  x += VectorMap(_y_,Vector_(2, -1.0, -1.0));
+  y += VectorMap(_x_,Vector_(3, 5.0, 6.0, 7.0));
+  y += VectorMap(_y_,Vector_(2, 8.0, 9.0));
+  expected += VectorMap(_x_,Vector_(3, 15.0, 16.0, 17.0));
+  expected += VectorMap(_y_,Vector_(2, -2.0, -1.0));
   axpy(10,x,y);
   CHECK(assert_equal(expected,y));
 }
@@ -154,10 +155,10 @@ TEST( VectorMap, axpy) {
 /* ************************************************************************* */
 TEST( VectorMap, scal) {
   VectorMap x,expected;
-  x += VectorMap("x",Vector_(3, 1.0, 2.0, 3.0));
-  x += VectorMap("y",Vector_(2, 4.0, 5.0));
-  expected += VectorMap("x",Vector_(3, 10.0, 20.0, 30.0));
-  expected += VectorMap("y",Vector_(2, 40.0, 50.0));
+  x += VectorMap(_x_,Vector_(3, 1.0, 2.0, 3.0));
+  x += VectorMap(_y_,Vector_(2, 4.0, 5.0));
+  expected += VectorMap(_x_,Vector_(3, 10.0, 20.0, 30.0));
+  expected += VectorMap(_y_,Vector_(2, 40.0, 50.0));
   scal(10,x);
   CHECK(assert_equal(expected,x));
 }
@@ -167,16 +168,16 @@ TEST( VectorMap, update_with_large_delta) {
 	// this test ensures that if the update for delta is larger than
 	// the size of the config, it only updates existing variables
 	VectorMap init, delta;
-	init.insert("x", Vector_(2, 1.0, 2.0));
-	init.insert("y", Vector_(2, 3.0, 4.0));
-	delta.insert("x", Vector_(2, 0.1, 0.1));
-	delta.insert("y", Vector_(2, 0.1, 0.1));
-	delta.insert("p", Vector_(2, 0.1, 0.1));
+	init.insert(_x_, Vector_(2, 1.0, 2.0));
+	init.insert(_y_, Vector_(2, 3.0, 4.0));
+	delta.insert(_x_, Vector_(2, 0.1, 0.1));
+	delta.insert(_y_, Vector_(2, 0.1, 0.1));
+	delta.insert(_p_, Vector_(2, 0.1, 0.1));
 
 	VectorMap actual = expmap(init,delta);
 	VectorMap expected;
-	expected.insert("x", Vector_(2, 1.1, 2.1));
-	expected.insert("y", Vector_(2, 3.1, 4.1));
+	expected.insert(_x_, Vector_(2, 1.1, 2.1));
+	expected.insert(_y_, Vector_(2, 3.1, 4.1));
 
 	CHECK(assert_equal(actual, expected));
 }
@@ -195,20 +196,20 @@ TEST( VectorMap, dim) {
 
 /* ************************************************************************* */
 TEST( VectorMap, operators) {
-	VectorMap c; c.insert("x", Vector_(2, 1.1, 2.2));
-	VectorMap expected1; expected1.insert("x", Vector_(2, 2.2, 4.4));
+	VectorMap c; c.insert(_x_, Vector_(2, 1.1, 2.2));
+	VectorMap expected1; expected1.insert(_x_, Vector_(2, 2.2, 4.4));
 	CHECK(assert_equal(expected1,c*2));
 	CHECK(assert_equal(expected1,c+c));
-	VectorMap expected2; expected2.insert("x", Vector_(2, 0.0, 0.0));
+	VectorMap expected2; expected2.insert(_x_, Vector_(2, 0.0, 0.0));
 	CHECK(assert_equal(expected2,c-c));
 }
 
 /* ************************************************************************* */
 TEST( VectorMap, getReference) {
-	VectorMap c; c.insert("x", Vector_(2, 1.1, 2.2));
-	Vector& cx = c["x"];
+	VectorMap c; c.insert(_x_, Vector_(2, 1.1, 2.2));
+	Vector& cx = c[_x_];
 	cx = cx*2.0;
-	VectorMap expected; expected.insert("x", Vector_(2, 2.2, 4.4));
+	VectorMap expected; expected.insert(_x_, Vector_(2, 2.2, 4.4));
 	CHECK(assert_equal(expected,c));
 }
 

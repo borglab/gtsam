@@ -8,6 +8,7 @@
 #pragma once
 
 #include <gtsam/base/Matrix.h>
+#include <gtsam/linear/VectorConfig.h>
 
 namespace gtsam {
 
@@ -102,7 +103,6 @@ namespace gtsam {
 			double epsilon_abs = 1e-5, size_t maxIterations = 0);
 
 	class GaussianFactorGraph;
-	class VectorConfig;
 
 	/**
 	 * Method of steepest gradients, Gaussian Factor Graph version

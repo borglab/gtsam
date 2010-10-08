@@ -27,11 +27,15 @@ TEST( Config, update_with_large_delta) {
 	expected.insert(1, Pose3(Rot3(), Point3(0.1, 0.1, 0.1)));
 	expected.insert(1, Point3(1.1, 2.1, 3.1));
 
-	VectorConfig delta;
-	delta.insert("x1", Vector_(6, 0.0, 0.0, 0.0, 0.1, 0.1, 0.1));
-	delta.insert("l1", Vector_(3, 0.1, 0.1, 0.1));
-	delta.insert("x2", Vector_(6, 0.0, 0.0, 0.0, 100.1, 4.1, 9.1));
-	Config actual = init.expmap(delta);
+	Ordering largeOrdering;
+	Config largeConfig = init;
+	largeConfig.insert(2, Pose3());
+	largeOrdering += "x1","l1","x2";
+	VectorConfig delta(largeConfig.dims(largeOrdering));
+	delta[largeOrdering["x1"]] = Vector_(6, 0.0, 0.0, 0.0, 0.1, 0.1, 0.1);
+	delta[largeOrdering["l1"]] = Vector_(3, 0.1, 0.1, 0.1);
+	delta[largeOrdering["x2"]] = Vector_(6, 0.0, 0.0, 0.0, 100.1, 4.1, 9.1);
+	Config actual = init.expmap(delta, largeOrdering);
 
 	CHECK(assert_equal(expected,actual));
 }

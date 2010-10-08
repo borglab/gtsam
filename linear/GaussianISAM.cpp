@@ -22,7 +22,7 @@ void optimize(const GaussianISAM::sharedClique& clique, VectorConfig& result) {
 	for (it = clique->rbegin(); it!=clique->rend(); it++) {
 		GaussianConditional::shared_ptr cg = *it;
     Vector x = cg->solve(result); // Solve for that variable
-    result.insert(cg->key(), x);   // store result in partial solution
+    result[cg->key()] = x;   // store result in partial solution
   }
 	BOOST_FOREACH(const GaussianISAM::sharedClique& child, clique->children_) {
 //	list<GaussianISAM::Clique::shared_ptr>::const_iterator child;
@@ -33,7 +33,7 @@ void optimize(const GaussianISAM::sharedClique& clique, VectorConfig& result) {
 
 /* ************************************************************************* */
 VectorConfig optimize(const GaussianISAM& bayesTree) {
-	VectorConfig result;
+	VectorConfig result(bayesTree.dims_);
 	// starting from the root, call optimize on each conditional
 	optimize(bayesTree.root(), result);
 	return result;

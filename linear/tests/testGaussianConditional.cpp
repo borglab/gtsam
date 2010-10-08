@@ -4,22 +4,81 @@
  *  @author Christian Potthast
  **/
 
-/*STL/C++*/
-#include <iostream>
-#include <sstream>
 #include <gtsam/CppUnitLite/TestHarness.h>
+#include <gtsam/base/TestableAssertions.h>
 
 #ifdef HAVE_BOOST_SERIALIZATION
 #include <boost/archive/text_oarchive.hpp>
 #include <boost/archive/text_iarchive.hpp>
 #endif //HAVE_BOOST_SERIALIZATION
 
-#define GTSAM_MAGIC_KEY
+//#define GTSAM_MAGIC_KEY
 
 #include <gtsam/base/Matrix.h>
 #include <gtsam/linear/GaussianConditional.h>
 
+#include <iostream>
+#include <sstream>
+#include <vector>
+#include <boost/assign/std/list.hpp>
+
 using namespace gtsam;
+using namespace std;
+using namespace boost::assign;
+
+static const varid_t _x_=0, _x1_=1, _l1_=2;
+
+/* ************************************************************************* */
+TEST(GaussianConditional, constructor)
+{
+  Matrix R = Matrix_(2,2,
+      -12.1244,  -5.1962,
+            0.,   4.6904);
+  Matrix S1 = Matrix_(2,2,
+      -5.2786,  -8.6603,
+      5.0254,   5.5432);
+  Matrix S2 = Matrix_(2,2,
+      -10.5573,  -5.9385,
+      5.5737,   3.0153);
+  Matrix S3 = Matrix_(2,2,
+      -11.3820,  -7.2581,
+      -3.0153,  -3.5635);
+
+  Vector d = Vector_(2, 1.0, 2.0);
+  Vector s = Vector_(2, 3.0, 4.0);
+
+  list<pair<varid_t, Matrix> > terms;
+  terms +=
+      make_pair(3, S1),
+      make_pair(5, S2),
+      make_pair(7, S3);
+
+  GaussianConditional actual(1, d, R, terms, s);
+
+  GaussianConditional::const_iterator it = actual.beginFrontals();
+  CHECK(assert_equal(varid_t(1), *it));
+  CHECK(assert_equal(R, actual.get_R()));
+  ++ it;
+  CHECK(it == actual.endFrontals());
+
+  it = actual.beginParents();
+  CHECK(assert_equal(varid_t(3), *it));
+  CHECK(assert_equal(S1, actual.get_S(it)));
+
+  ++ it;
+  CHECK(assert_equal(varid_t(5), *it));
+  CHECK(assert_equal(S2, actual.get_S(it)));
+
+  ++ it;
+  CHECK(assert_equal(varid_t(7), *it));
+  CHECK(assert_equal(S3, actual.get_S(it)));
+
+  ++it;
+  CHECK(it == actual.endParents());
+
+  CHECK(assert_equal(d, actual.get_d()));
+  CHECK(assert_equal(s, actual.get_sigmas()));
+}
 
 /* ************************************************************************* */
 /* unit test for equals                                                     */
@@ -47,8 +106,8 @@ TEST( GaussianConditional, equals )
   d(0) = 0.2; d(1) = 0.5;
   
   GaussianConditional 
-    expected("x",d, R, "x1", A1, "l1", A2, tau),
-    actual("x",d, R, "x1", A1, "l1", A2, tau);
+    expected(_x_,d, R, _x1_, A1, _l1_, A2, tau),
+    actual(_x_,d, R, _x1_, A1, _l1_, A2, tau);
   
   CHECK( expected.equals(actual) );
   
@@ -78,7 +137,7 @@ TEST( GaussianConditional, solve )
   
   Vector tau = ones(2);
 
-  GaussianConditional cg("x",d, R, "x1", A1, "l1", A2, tau);
+  GaussianConditional cg(_x_,d, R, _x1_, A1, _l1_, A2, tau);
   
   Vector sx1(2);
   sx1(0) = 1.0; sx1(1) = 1.0;
@@ -86,9 +145,9 @@ TEST( GaussianConditional, solve )
   Vector sl1(2);
   sl1(0) = 1.0; sl1(1) = 1.0;
   
-  VectorConfig solution;
-  solution.insert("x1", sx1);
-  solution.insert("l1", sl1);
+  VectorConfig solution(vector<size_t>(3, 2));
+  solution[_x1_] = sx1;
+  solution[_l1_] = sl1;
   
   Vector result = cg.solve(solution);
 
@@ -118,7 +177,7 @@ TEST( GaussianConditional, serialize )
 	 Vector d(2);
 	 d(0) = 0.2; d(1) = 0.5;
 
-	 GaussianConditional cg("x2", d, R, "x1", A1, "l1", A2);
+	 GaussianConditional cg(_x2_, d, R, _x1_, A1, _l1_, A2);
 
 	 //serialize the CG
 	 std::ostringstream in_archive_stream;

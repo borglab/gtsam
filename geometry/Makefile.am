@@ -51,6 +51,10 @@ AM_LDFLAGS = $(BOOST_LDFLAGS) $(boost_serialization)
 LDADD = libgeometry.la ../base/libbase.la ../CppUnitLite/libCppUnitLite.a
 AM_DEFAULT_SOURCE_EXT = .cpp
 
+if USE_ACCELERATE_MACOS
+AM_LDFLAGS += -Wl,/System/Library/Frameworks/Accelerate.framework/Accelerate
+endif
+
 # rule to run an executable
 %.run: % $(LDADD)
 	./$^

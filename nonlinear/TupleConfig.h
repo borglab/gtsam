@@ -14,15 +14,17 @@ namespace gtsam {
 
  /**
    *  TupleConfigs are a structure to manage heterogenous LieConfigs, so as to
-   *  enable different types of variables/keys to be used simultaneously.  The
-   *  interface is designed to mimic that of a single LieConfig.
+   *  enable different types of variables/keys to be used simultaneously.  We
+   *  do this with recursive templates (instead of blind pointer casting) to
+   *  reduce run-time overhead and keep static type checking.  The interface
+   *  mimics that of a single LieConfig.
    *
    *  This uses a recursive structure of config pairs to form a lisp-like
    *  list, with a special case (TupleConfigEnd) that contains only one config
    *  at the end.  Because this recursion is done at compile time, there is no
    *  runtime performance hit to using this structure.
    *
-   *  For an easier to use approach, there are TupleConfigN classes, which wrap
+   *  For an easy interface, there are TupleConfigN classes, which wrap
    *  the recursive TupleConfigs together as a single class, so you can have
    *  mixed-type classes from 2-6 types.  Note that a TupleConfig2 is equivalent
    *  to the previously used PairConfig.
@@ -57,8 +59,6 @@ namespace gtsam {
 	  TupleConfig(const Config1& cfg1, const Config2& cfg2) :
 		  first_(cfg1), second_(cfg2) {}
 
-	  virtual ~TupleConfig() {}
-
 	  /** Print */
 	  void print(const std::string& s = "") const {
 			first_.print(s);
@@ -79,7 +79,7 @@ namespace gtsam {
 	   */
 	  template<class Key, class Value>
 	  void insert(const Key& key, const Value& value) {second_.insert(key, value);}
-	  void insert(const int& key, const Value1& value) {first_.insert(Key1(key), value);}
+	  void insert(int key, const Value1& value) {first_.insert(Key1(key), value);}
 	  void insert(const Key1& key, const Value1& value) {first_.insert(key, value);}
 
 	  /**
@@ -156,10 +156,10 @@ namespace gtsam {
 	  const Config2& rest() const { return second_; }
 
 	  /** zero: create VectorConfig of appropriate structure */
-	  VectorConfig zero() const {
-		  VectorConfig z1 = first_.zero(), z2 = second_.zero();
-		  z2.insert(z1);
-		  return z2;
+	  VectorConfig zero(const Ordering& ordering) const {
+		  VectorConfig z(this->dims(ordering));
+		  z.makeZero();
+		  return z;
 	  }
 
 	  /** @return number of key/value pairs stored */
@@ -171,16 +171,58 @@ namespace gtsam {
 	  /** @return The dimensionality of the tangent space */
 	  size_t dim() const { return first_.dim() + second_.dim(); }
 
+	  /** Create an array of variable dimensions using the given ordering */
+	  std::vector<size_t> dims(const Ordering& ordering) const {
+	    _ConfigDimensionCollector dimCollector(ordering);
+	    this->apply(dimCollector);
+	    return dimCollector.dimensions;
+	  }
+
+    /**
+     * Generate a default ordering, simply in key sort order.  To instead
+     * create a fill-reducing ordering, use
+     * NonlinearFactorGraph::orderingCOLAMD().  Alternatively, you may permute
+     * this ordering yourself (as orderingCOLAMD() does internally).
+     */
+    Ordering::shared_ptr orderingArbitrary(varid_t firstVar = 0) const {
+      // Generate an initial key ordering in iterator order
+      _ConfigKeyOrderer keyOrderer(firstVar);
+      this->apply(keyOrderer);
+      return keyOrderer.ordering;
+    }
+
 	  /** Expmap */
-	  TupleConfig<Config1, Config2> expmap(const VectorConfig& delta) const {
-	        return TupleConfig(first_.expmap(delta), second_.expmap(delta));
+	  TupleConfig<Config1, Config2> expmap(const VectorConfig& delta, const Ordering& ordering) const {
+	    return TupleConfig(first_.expmap(delta, ordering), second_.expmap(delta, ordering));
 	  }
 
 	  /** logmap each element */
-	  VectorConfig logmap(const TupleConfig<Config1, Config2>& cp) const {
-		  VectorConfig ret(first_.logmap(cp.first_));
-		  ret.insert(second_.logmap(cp.second_));
-		  return ret;
+	  VectorConfig logmap(const TupleConfig<Config1, Config2>& cp, const Ordering& ordering) const {
+		  VectorConfig delta(this->dims(ordering));
+		  logmap(cp, ordering, delta);
+		  return delta;
+	  }
+
+    /** logmap each element */
+    void logmap(const TupleConfig<Config1, Config2>& cp, const Ordering& ordering, VectorConfig& delta) const {
+      first_.logmap(cp.first_, ordering, delta);
+      second_.logmap(cp.second_, ordering, delta);
+    }
+
+	  /**
+	   * Apply a class with an application operator() to a const_iterator over
+	   * every <key,value> pair.  The operator must be able to handle such an
+	   * iterator for every type in the Config, (i.e. through templating).
+	   */
+    template<typename A>
+    void apply(A& operation) {
+      first_.apply(operation);
+      second_.apply(operation);
+    }
+	  template<typename A>
+	  void apply(A& operation) const {
+	    first_.apply(operation);
+	    second_.apply(operation);
 	  }
 
   private:
@@ -220,8 +262,6 @@ namespace gtsam {
 	  TupleConfigEnd(const Config& cfg) :
 		  first_(cfg) {}
 
-	  virtual ~TupleConfigEnd() {}
-
 	  void print(const std::string& s = "") const {
 			first_.print();
 	  }
@@ -231,7 +271,7 @@ namespace gtsam {
 	  }
 
 	  void insert(const Key1& key, const Value1& value) {first_.insert(key, value); }
-	  void insert(const int& key, const Value1& value) {first_.insert(Key1(key), value);}
+	  void insert(int key, const Value1& value) {first_.insert(Key1(key), value);}
 
 	  void insert(const TupleConfigEnd<Config>& config) {first_.insert(config.first_); }
 
@@ -257,8 +297,9 @@ namespace gtsam {
 
 	  const Value1& at(const Key1& j) const { return first_.at(j); }
 
-	  VectorConfig zero() const {
-		  VectorConfig z = first_.zero();
+	  VectorConfig zero(const Ordering& ordering) const {
+		  VectorConfig z(this->dims(ordering));
+		  z.makeZero();
 		  return z;
 	  }
 
@@ -266,14 +307,33 @@ namespace gtsam {
 
 	  size_t dim() const { return first_.dim(); }
 
-	  TupleConfigEnd<Config> expmap(const VectorConfig& delta) const {
-	        return TupleConfigEnd(first_.expmap(delta));
+	  TupleConfigEnd<Config> expmap(const VectorConfig& delta, const Ordering& ordering) const {
+	        return TupleConfigEnd(first_.expmap(delta, ordering));
 	  }
 
-	  VectorConfig logmap(const TupleConfigEnd<Config>& cp) const {
-		  VectorConfig ret(first_.logmap(cp.first_));
-		  return ret;
-	  }
+    VectorConfig logmap(const TupleConfigEnd<Config>& cp, const Ordering& ordering) const {
+      VectorConfig delta(this->dims(ordering));
+      logmap(cp, ordering, delta);
+      return delta;
+    }
+
+    void logmap(const TupleConfigEnd<Config>& cp, const Ordering& ordering, VectorConfig& delta) const {
+      first_.logmap(cp.first_, ordering, delta);
+    }
+
+    /**
+     * Apply a class with an application operator() to a const_iterator over
+     * every <key,value> pair.  The operator must be able to handle such an
+     * iterator for every type in the Config, (i.e. through templating).
+     */
+    template<typename A>
+    void apply(A& operation) {
+      first_.apply(operation);
+    }
+    template<typename A>
+    void apply(A& operation) const {
+      first_.apply(operation);
+    }
 
   private:
 	  friend class boost::serialization::access;

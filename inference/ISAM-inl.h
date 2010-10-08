@@ -27,55 +27,37 @@ namespace gtsam {
 
 	/* ************************************************************************* */
 	template<class Conditional>
-	template<class Factor>
-	void ISAM<Conditional>::update_internal(const FactorGraph<Factor>& newFactors, Cliques& orphans) {
+	template<class FactorGraph>
+	void ISAM<Conditional>::update_internal(const FactorGraph& newFactors, Cliques& orphans) {
 
 		// Remove the contaminated part of the Bayes tree
 		BayesNet<Conditional> bn;
 		removeTop(newFactors.keys(), bn, orphans);
-		FactorGraph<Factor> factors(bn);
+		FactorGraph factors(bn);
 
 		// add the factors themselves
 		factors.push_back(newFactors);
 
-		// create an ordering for the new and contaminated factors
-		Ordering ordering;
-#ifndef SORT_KEYS
-			ordering = factors.getOrdering();
-#else
-			list<Symbol> keys = factors.keys();
-			keys.sort(); // todo: correct sorting order?
-			ordering = keys;
-#endif
-
-		// Create Index from ordering
-		IndexTable<Symbol> index(ordering);
-
 		// eliminate into a Bayes net
-		BayesNet<Conditional> bayesNet = eliminate<Factor, Conditional>(factors,ordering);
+		typename BayesNet<Conditional>::shared_ptr bayesNet = Inference::Eliminate(factors);
 
 		// insert conditionals back in, straight into the topless bayesTree
 		typename BayesNet<Conditional>::const_reverse_iterator rit;
-		for ( rit=bayesNet.rbegin(); rit != bayesNet.rend(); ++rit )
-			this->insert(*rit, index);
+		for ( rit=bayesNet->rbegin(); rit != bayesNet->rend(); ++rit )
+			this->insert(*rit);
 
 		// add orphans to the bottom of the new tree
 		BOOST_FOREACH(sharedClique orphan, orphans) {
-
-			Symbol parentRepresentative = findParentClique(orphan->separator_, index);
-			sharedClique parent = (*this)[parentRepresentative];
-
-			parent->children_ += orphan;
-			orphan->parent_ = parent; // set new parent!
+		  this->insert(orphan);
 		}
 
 	}
 
 	template<class Conditional>
-	template<class Factor>
-	void ISAM<Conditional>::update(const FactorGraph<Factor>& newFactors) {
+	template<class FactorGraph>
+	void ISAM<Conditional>::update(const FactorGraph& newFactors) {
 		Cliques orphans;
-		this->update_internal<Factor>(newFactors, orphans);
+		this->update_internal(newFactors, orphans);
 	}
 
 }
