@@ -1,10 +1,8 @@
-/*
- * LieConfig.h
+/**
+ * @file LieConfig.h
+ * @Author: Richard Roberts
  *
- *  Created on: Jan 5, 2010
- *  @Author: Richard Roberts
- *
- *  A templated config for Lie-group elements
+ * @brief A templated config for Lie-group elements
  *
  *  Detailed story:
  *  A configuration is a map from keys to values. It is used to specify the value of a bunch
