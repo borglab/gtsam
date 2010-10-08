@@ -1,4 +1,4 @@
-/*
+/**
  * GaussianJunctionTree.cpp
  * Created on: Jul 12, 2010
  * @author Kai Ni
@@ -34,7 +34,7 @@ namespace gtsam {
 		}
 
 		// solve the bayes nets in the child nodes
-		BOOST_FOREACH(const typename BayesTree::sharedClique& child, current->children()) {
+		BOOST_FOREACH(const BayesTree::sharedClique& child, current->children()) {
 			btreeBackSubstitue(child, config);
 		}
 	}

@@ -6,6 +6,7 @@
  */
 #pragma once
 
+#include <stdio.h>
 #include <string>
 
 // simple class for accumulating execution timing information by name

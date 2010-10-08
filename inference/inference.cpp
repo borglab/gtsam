@@ -18,8 +18,8 @@ Inference::EliminateOneSymbolic(FactorGraph<Factor>& factorGraph, VariableIndex<
   tic("EliminateOne");
 
   // Get the factors involving the eliminated variable
-  typename VariableIndex<>::mapped_type& varIndexEntry(variableIndex[var]);
-  typedef typename VariableIndex<>::mapped_factor_type mapped_factor_type;
+  VariableIndex<>::mapped_type& varIndexEntry(variableIndex[var]);
+  typedef VariableIndex<>::mapped_factor_type mapped_factor_type;
 
   if(!varIndexEntry.empty()) {
 

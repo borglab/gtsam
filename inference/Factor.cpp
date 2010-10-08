@@ -47,7 +47,7 @@ Conditional::shared_ptr Factor::eliminateFirst() {
 boost::shared_ptr<BayesNet<Conditional> > Factor::eliminate(varid_t nFrontals) {
   assert(keys_.size() >= nFrontals);
   checkSorted();
-  typename BayesNet<Conditional>::shared_ptr fragment(new BayesNet<Conditional>());
+  BayesNet<Conditional>::shared_ptr fragment(new BayesNet<Conditional>());
   const_iterator nextFrontal = this->begin();
   for(varid_t n = 0; n < nFrontals; ++n, ++nextFrontal)
     fragment->push_back(Conditional::shared_ptr(new Conditional(nextFrontal, const_iterator(this->end()), 1)));
