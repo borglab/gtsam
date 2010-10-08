@@ -1,5 +1,5 @@
 /**
- * @file SLAMSelfContained.cpp
+ * @file PlanarSLAMSelfContained.cpp
  * @brief Simple robotics example from tutorial Figure 1.1 (left), with all typedefs
  * internal to this script.
  * @author Alex Cunningham

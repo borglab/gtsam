@@ -8,9 +8,6 @@
 #include <cmath>
 #include <iostream>
 
-// This is should probably be pulled in elsewhere
-#include <gtsam/inference/Ordering.h>
-
 // pull in the planar SLAM domain with all typedefs and helper functions defined
 #include <gtsam/slam/planarSLAM.h>
 
