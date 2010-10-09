@@ -138,17 +138,17 @@ namespace gtsam {
 
 	  /** a variant of exists */
 	  template<class Key>
-	  boost::optional<typename Key::Value_t> exists_(const Key& j)  const { return second_.exists_(j); }
+	  boost::optional<typename Key::Value> exists_(const Key& j)  const { return second_.exists_(j); }
 	  boost::optional<Value1>                exists_(const Key1& j) const { return first_.exists_(j); }
 
 	  /** access operator */
 	  template<class Key>
-	  const typename Key::Value_t & operator[](const Key& j) const { return second_[j]; }
+	  const typename Key::Value & operator[](const Key& j) const { return second_[j]; }
 	  const Value1& operator[](const Key1& j) const { return first_[j]; }
 
 	  /** at access function */
 	  template<class Key>
-	  const typename Key::Value_t & at(const Key& j) const { return second_.at(j); }
+	  const typename Key::Value & at(const Key& j) const { return second_.at(j); }
 	  const Value1& at(const Key1& j) const { return first_.at(j); }
 
 	  /** direct config access */

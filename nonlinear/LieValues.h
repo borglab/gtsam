@@ -34,7 +34,7 @@ namespace gtsam {
 	 *
 	 * Key concept:
 	 *  The key will be assumed to be sortable, and must have a
-	 *  typedef called "Value_t" with the type of the value the key
+	 *  typedef called "Value" with the type of the value the key
 	 *  labels (example: Pose2, Point2, etc)
 	 */
   template<class J>
@@ -46,7 +46,7 @@ namespace gtsam {
      * Typedefs
      */
   	typedef J Key;
-  	typedef typename J::Value_t Value;
+  	typedef typename J::Value Value;
     typedef std::map<J,Value, std::less<J>, boost::fast_pool_allocator<std::pair<const J,Value> > > KeyValueMap;
     typedef typename KeyValueMap::value_type KeyValuePair;
     typedef typename KeyValueMap::iterator iterator;

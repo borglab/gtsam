@@ -19,7 +19,7 @@ namespace gtsam {
 	 */
 	template<class Cfg, class Key>
 	struct BoundingConstraint1: public NonlinearConstraint1<Cfg, Key> {
-		typedef typename Key::Value_t X;
+		typedef typename Key::Value X;
 		typedef NonlinearConstraint1<Cfg, Key> Base;
 		typedef boost::shared_ptr<BoundingConstraint1<Cfg, Key> > shared_ptr;
 
@@ -64,8 +64,8 @@ namespace gtsam {
 	 */
 	template<class Cfg, class Key1, class Key2>
 	struct BoundingConstraint2: public NonlinearConstraint2<Cfg, Key1, Key2> {
-		typedef typename Key1::Value_t X1;
-		typedef typename Key2::Value_t X2;
+		typedef typename Key1::Value X1;
+		typedef typename Key2::Value X2;
 
 		typedef NonlinearConstraint2<Cfg, Key1, Key2> Base;
 		typedef boost::shared_ptr<BoundingConstraint2<Cfg, Key1, Key2> > shared_ptr;

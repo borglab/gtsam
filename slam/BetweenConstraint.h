@@ -17,7 +17,7 @@ namespace gtsam {
 	template<class Values, class Key>
 	class BetweenConstraint : public NonlinearEqualityConstraint2<Values, Key, Key> {
 	public:
-		typedef typename Key::Value_t X;
+		typedef typename Key::Value X;
 
 	protected:
 		typedef NonlinearEqualityConstraint2<Values, Key, Key> Base;

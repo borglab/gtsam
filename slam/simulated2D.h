@@ -57,7 +57,7 @@ namespace gtsam {
 		template<class Cfg = Values, class Key = PoseKey>
 		struct GenericPrior: public NonlinearFactor1<Cfg, Key> {
 			typedef boost::shared_ptr<GenericPrior<Cfg, Key> > shared_ptr;
-			typedef typename Key::Value_t Pose;
+			typedef typename Key::Value Pose;
 			Pose z_;
 
 			GenericPrior(const Pose& z, const SharedGaussian& model, const Key& key) :
@@ -77,7 +77,7 @@ namespace gtsam {
 		template<class Cfg = Values, class Key = PoseKey>
 		struct GenericOdometry: public NonlinearFactor2<Cfg, Key, Key> {
 			typedef boost::shared_ptr<GenericOdometry<Cfg, Key> > shared_ptr;
-			typedef typename Key::Value_t Pose;
+			typedef typename Key::Value Pose;
 			Pose z_;
 
 			GenericOdometry(const Pose& z, const SharedGaussian& model,
@@ -99,8 +99,8 @@ namespace gtsam {
 		class GenericMeasurement: public NonlinearFactor2<Cfg, XKey, LKey> {
 		public:
 			typedef boost::shared_ptr<GenericMeasurement<Cfg, XKey, LKey> > shared_ptr;
-			typedef typename XKey::Value_t Pose;
-			typedef typename LKey::Value_t Point;
+			typedef typename XKey::Value Pose;
+			typedef typename LKey::Value Point;
 
 			Point z_;
 

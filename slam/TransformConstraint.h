@@ -29,8 +29,8 @@ template<class Values, class PKey, class TKey>
 class TransformConstraint : public NonlinearEqualityConstraint3<Values, PKey, TKey, PKey> {
 
 public:
-	typedef typename PKey::Value_t Point;
-	typedef typename TKey::Value_t Transform;
+	typedef typename PKey::Value Point;
+	typedef typename TKey::Value Transform;
 
 	typedef NonlinearEqualityConstraint3<Values, PKey, TKey, PKey> Base;
 	typedef TransformConstraint<Values, PKey, TKey> This;

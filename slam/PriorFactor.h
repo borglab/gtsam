@@ -24,7 +24,7 @@ namespace gtsam {
 	class PriorFactor: public NonlinearFactor1<Values, Key> {
 
 	public:
-		typedef typename Key::Value_t T;
+		typedef typename Key::Value T;
 
 	private:
 

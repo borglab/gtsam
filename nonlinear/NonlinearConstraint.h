@@ -99,7 +99,7 @@ template <class Values, class Key>
 class NonlinearConstraint1 : public NonlinearConstraint<Values> {
 
 public:
-	typedef typename Key::Value_t X;
+	typedef typename Key::Value X;
 
 protected:
 	typedef NonlinearConstraint1<Values,Key> This;
@@ -172,7 +172,7 @@ template <class Values, class Key>
 class NonlinearEqualityConstraint1 : public NonlinearConstraint1<Values, Key> {
 
 public:
-	typedef typename Key::Value_t X;
+	typedef typename Key::Value X;
 
 protected:
 	typedef NonlinearEqualityConstraint1<Values,Key> This;
@@ -194,8 +194,8 @@ template <class Values, class Key1, class Key2>
 class NonlinearConstraint2 : public NonlinearConstraint<Values> {
 
 public:
-	typedef typename Key1::Value_t X1;
-	typedef typename Key2::Value_t X2;
+	typedef typename Key1::Value X1;
+	typedef typename Key2::Value X2;
 
 protected:
 	typedef NonlinearConstraint2<Values,Key1,Key2> This;
@@ -275,8 +275,8 @@ template <class Values, class Key1, class Key2>
 class NonlinearEqualityConstraint2 : public NonlinearConstraint2<Values, Key1, Key2> {
 
 public:
-	typedef typename Key1::Value_t X1;
-	typedef typename Key2::Value_t X2;
+	typedef typename Key1::Value X1;
+	typedef typename Key2::Value X2;
 
 protected:
 	typedef NonlinearEqualityConstraint2<Values,Key1,Key2> This;
@@ -299,9 +299,9 @@ template <class Values, class Key1, class Key2, class Key3>
 class NonlinearConstraint3 : public NonlinearConstraint<Values> {
 
 public:
-	typedef typename Key1::Value_t X1;
-	typedef typename Key2::Value_t X2;
-	typedef typename Key3::Value_t X3;
+	typedef typename Key1::Value X1;
+	typedef typename Key2::Value X2;
+	typedef typename Key3::Value X3;
 
 protected:
 	typedef NonlinearConstraint3<Values,Key1,Key2,Key3> This;
@@ -389,9 +389,9 @@ template <class Values, class Key1, class Key2, class Key3>
 class NonlinearEqualityConstraint3 : public NonlinearConstraint3<Values, Key1, Key2, Key3> {
 
 public:
-	typedef typename Key1::Value_t X1;
-	typedef typename Key2::Value_t X2;
-	typedef typename Key3::Value_t X3;
+	typedef typename Key1::Value X1;
+	typedef typename Key2::Value X2;
+	typedef typename Key3::Value X3;
 
 protected:
 	typedef NonlinearEqualityConstraint3<Values,Key1,Key2,Key3> This;
@@ -415,7 +415,7 @@ template<class Values, class Key>
 class NonlinearEquality1 : public NonlinearEqualityConstraint1<Values, Key> {
 
 public:
-	typedef typename Key::Value_t X;
+	typedef typename Key::Value X;
 
 protected:
 	typedef NonlinearEqualityConstraint1<Values, Key> Base;
@@ -446,7 +446,7 @@ public:
 template<class Values, class Key>
 class NonlinearEquality2 : public NonlinearEqualityConstraint2<Values, Key, Key> {
 public:
-	typedef typename Key::Value_t X;
+	typedef typename Key::Value X;
 
 protected:
 	typedef NonlinearEqualityConstraint2<Values, Key, Key> Base;

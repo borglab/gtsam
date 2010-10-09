@@ -52,7 +52,7 @@ namespace gtsam {
 
   /* ************************************************************************* */
   template<class J>
-  const typename J::Value_t& LieValues<J>::at(const J& j) const {
+  const typename J::Value& LieValues<J>::at(const J& j) const {
     const_iterator it = values_.find(j);
     if (it == values_.end()) throw std::invalid_argument("invalid j: " + (string)j);
     else return it->second;
@@ -77,7 +77,7 @@ namespace gtsam {
 
   /* ************************************************************************* */
   template<class J>
-  void LieValues<J>::insert(const J& name, const typename J::Value_t& val) {
+  void LieValues<J>::insert(const J& name, const typename J::Value& val) {
     values_.insert(make_pair(name, val));
   }
 
@@ -92,14 +92,14 @@ namespace gtsam {
   template<class J>
   void LieValues<J>::update(const LieValues<J>& cfg) {
 	  BOOST_FOREACH(const KeyValuePair& v, values_) {
-	  	boost::optional<typename J::Value_t> t = cfg.exists_(v.first);
+	  	boost::optional<typename J::Value> t = cfg.exists_(v.first);
 	  	if (t) values_[v.first] = *t;
 	  }
   }
 
   /* ************************************************************************* */
   template<class J>
-  void LieValues<J>::update(const J& j, const typename J::Value_t& val) {
+  void LieValues<J>::update(const J& j, const typename J::Value& val) {
 	  	values_[j] = val;
   }
 
@@ -133,10 +133,10 @@ namespace gtsam {
   template<class J>
   LieValues<J> LieValues<J>::expmap(const VectorValues& delta, const Ordering& ordering) const {
 		LieValues<J> newValues;
-		typedef pair<J,typename J::Value_t> KeyValue;
+		typedef pair<J,typename J::Value> KeyValue;
 		BOOST_FOREACH(const KeyValue& value, this->values_) {
 			const J& j = value.first;
-			const typename J::Value_t& pj = value.second;
+			const typename J::Value& pj = value.second;
 			const Vector& dj = delta[ordering[j]];
 			newValues.insert(j, pj.expmap(dj));
 		}
@@ -170,10 +170,10 @@ namespace gtsam {
 //    }
 //    LieValues<J> newValues;
 //    int delta_offset = 0;
-//		typedef pair<J,typename J::Value_t> KeyValue;
+//		typedef pair<J,typename J::Value> KeyValue;
 //		BOOST_FOREACH(const KeyValue& value, this->values_) {
 //			const J& j = value.first;
-//			const typename J::Value_t& pj = value.second;
+//			const typename J::Value& pj = value.second;
 //      int cur_dim = pj.dim();
 //      newValues.insert(j,pj.expmap(sub(delta, delta_offset, delta_offset+cur_dim)));
 //      delta_offset += cur_dim;
@@ -194,7 +194,7 @@ namespace gtsam {
   /* ************************************************************************* */
   template<class J>
   void LieValues<J>::logmap(const LieValues<J>& cp, const Ordering& ordering, VectorValues& delta) const {
-    typedef pair<J,typename J::Value_t> KeyValue;
+    typedef pair<J,typename J::Value> KeyValue;
     BOOST_FOREACH(const KeyValue& value, cp) {
       assert(this->exists(value.first));
       delta[ordering[value.first]] = this->at(value.first).logmap(value.second);

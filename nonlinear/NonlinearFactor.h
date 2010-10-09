@@ -152,7 +152,7 @@ namespace gtsam {
 	public:
 
 		// typedefs for value types pulled from keys
-		typedef typename Key::Value_t X;
+		typedef typename Key::Value X;
 
 	protected:
 
@@ -262,8 +262,8 @@ namespace gtsam {
 	  public:
 
 		// typedefs for value types pulled from keys
-		typedef typename Key1::Value_t X1;
-		typedef typename Key2::Value_t X2;
+		typedef typename Key1::Value X1;
+		typedef typename Key2::Value X2;
 
 	protected:
 
@@ -398,9 +398,9 @@ namespace gtsam {
   public:
 
 	// typedefs for value types pulled from keys
-	typedef typename Key1::Value_t X1;
-	typedef typename Key2::Value_t X2;
-	typedef typename Key3::Value_t X3;
+	typedef typename Key1::Value X1;
+	typedef typename Key2::Value X2;
+	typedef typename Key3::Value X3;
 
   protected:
 

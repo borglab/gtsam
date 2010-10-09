@@ -22,7 +22,7 @@ class LinearApproxFactor : public NonlinearFactor<Values> {
 
 public:
 	/** type for the variable */
-	typedef typename Key::Value_t X;
+	typedef typename Key::Value X;
 
 	/** base type */
 	typedef NonlinearFactor<Values> Base;

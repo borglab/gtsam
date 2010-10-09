@@ -23,7 +23,7 @@ namespace gtsam {
 	class BetweenFactor: public NonlinearFactor2<Values, Key1, Key2> {
 
 	public:
-		typedef typename Key1::Value_t T;
+		typedef typename Key1::Value T;
 
 	private:
 

@@ -36,7 +36,7 @@ namespace gtsam {
 	public:
 
 		// typedefs
-		typedef T Value_t;
+		typedef T Value;
 
 		// Constructors:
 
