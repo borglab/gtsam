@@ -15,10 +15,9 @@ check_PROGRAMS =
 #----------------------------------------------------------------------------------------------------
 
 # GTSAM core
-headers += SymbolMap.h Factor.h Conditional.h IndexTable.h 
+headers += SymbolMap.h Factor-inl.h Conditional.h IndexTable.h 
 
 # Symbolic Inference
-headers += SymbolicFactorGraph.h
 sources += Factor.cpp SymbolicFactorGraph.cpp
 check_PROGRAMS += tests/testSymbolicFactor tests/testSymbolicFactorGraph tests/testSymbolicBayesNet
 check_PROGRAMS += tests/testVariableIndex tests/testVariableSlots
