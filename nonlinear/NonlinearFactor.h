@@ -33,23 +33,23 @@ namespace gtsam {
 	 * Nonlinear factor which assumes zero-mean Gaussian noise on the
 	 * on a measurement predicted by a non-linear function h.
 	 *
-	 * Templated on a configuration type. The configurations are typically
+	 * Templated on a values structure type. The values structures are typically
 	 * more general than just vectors, e.g., Rot3 or Pose3,
 	 * which are objects in non-linear manifolds (Lie groups).
 	 */
-	template<class Config>
-	class NonlinearFactor: public Testable<NonlinearFactor<Config> > {
+	template<class Values>
+	class NonlinearFactor: public Testable<NonlinearFactor<Values> > {
 
 	protected:
 
-		typedef NonlinearFactor<Config> This;
+		typedef NonlinearFactor<Values> This;
 
 		SharedGaussian noiseModel_; /** Noise model */
 		std::list<Symbol> keys_; /** cached keys */
 
 	public:
 
-		typedef boost::shared_ptr<NonlinearFactor<Config> > shared_ptr;
+		typedef boost::shared_ptr<NonlinearFactor<Values> > shared_ptr;
 
 		/** Default constructor for I/O only */
 		NonlinearFactor() {
@@ -70,7 +70,7 @@ namespace gtsam {
 		}
 
 		/** Check if two NonlinearFactor objects are equal */
-		bool equals(const NonlinearFactor<Config>& f, double tol = 1e-9) const {
+		bool equals(const NonlinearFactor<Values>& f, double tol = 1e-9) const {
 			return noiseModel_->equals(*f.noiseModel_, tol);
 		}
 
@@ -78,7 +78,7 @@ namespace gtsam {
 		 * calculate the error of the factor
 		 * Override for systems with unusual noise models
 		 */
-		virtual double error(const Config& c) const {
+		virtual double error(const Values& c) const {
 			return 0.5 * noiseModel_->Mahalanobis(unwhitenedError(c));
 		}
 
@@ -109,16 +109,16 @@ namespace gtsam {
 		}
 
 		/** Vector of errors, unwhitened ! */
-		virtual Vector unwhitenedError(const Config& c) const = 0;
+		virtual Vector unwhitenedError(const Values& c) const = 0;
 
 		/** Vector of errors, whitened ! */
-		Vector whitenedError(const Config& c) const {
+		Vector whitenedError(const Values& c) const {
 			return noiseModel_->whiten(unwhitenedError(c));
 		}
 
 		/** linearize to a GaussianFactor */
 		virtual boost::shared_ptr<GaussianFactor>
-		linearize(const Config& c, const Ordering& ordering) const = 0;
+		linearize(const Values& c, const Ordering& ordering) const = 0;
 
 		/**
 		 * Create a symbolic factor using the given ordering to determine the
@@ -141,13 +141,13 @@ namespace gtsam {
 	/**
 	 * A Gaussian nonlinear factor that takes 1 parameter
 	 * implementing the density P(z|x) \propto exp -0.5*|z-h(x)|^2_C
-	 * Templated on the parameter type X and the configuration Config
+	 * Templated on the parameter type X and the values structure Values
 	 * There is no return type specified for h(x). Instead, we require
 	 * the derived class implements error_vector(c) = h(x)-z \approx Ax-b
 	 * This allows a graph to have factors with measurements of mixed type.
 	 */
-	template<class Config, class Key>
-	class NonlinearFactor1: public NonlinearFactor<Config> {
+	template<class Values, class Key>
+	class NonlinearFactor1: public NonlinearFactor<Values> {
 
 	public:
 
@@ -159,8 +159,8 @@ namespace gtsam {
 		// The value of the key. Not const to allow serialization
 		Key key_;
 
-		typedef NonlinearFactor<Config> Base;
-		typedef NonlinearFactor1<Config, Key> This;
+		typedef NonlinearFactor<Values> Base;
+		typedef NonlinearFactor1<Values, Key> This;
 
 	public:
 
@@ -175,7 +175,7 @@ namespace gtsam {
 		/**
 		 *  Constructor
 		 *  @param z measurement
-		 *  @param key by which to look up X value in Config
+		 *  @param key by which to look up X value in Values
 		 */
 		NonlinearFactor1(const SharedGaussian& noiseModel,
 				const Key& key1) :
@@ -191,12 +191,12 @@ namespace gtsam {
 		}
 
 		/** Check if two factors are equal. Note type is Factor and needs cast. */
-		bool equals(const NonlinearFactor1<Config,Key>& f, double tol = 1e-9) const {
+		bool equals(const NonlinearFactor1<Values,Key>& f, double tol = 1e-9) const {
 			return Base::noiseModel_->equals(*f.noiseModel_, tol) && (key_ == f.key_);
 		}
 
 		/** error function h(x)-z, unwhitened !!! */
-		inline Vector unwhitenedError(const Config& x) const {
+		inline Vector unwhitenedError(const Values& x) const {
 			const Key& j = key_;
 			const X& xj = x[j];
 			return evaluateError(xj);
@@ -207,7 +207,7 @@ namespace gtsam {
 		 * Ax-b \approx h(x0+dx)-z = h(x0) + A*dx - z
 		 * Hence b = z - h(x0) = - error_vector(x)
 		 */
-		virtual boost::shared_ptr<GaussianFactor> linearize(const Config& x, const Ordering& ordering) const {
+		virtual boost::shared_ptr<GaussianFactor> linearize(const Values& x, const Ordering& ordering) const {
 			const X& xj = x[key_];
 			Matrix A;
 			Vector b = - evaluateError(xj, A);
@@ -256,8 +256,8 @@ namespace gtsam {
 	/**
 	 * A Gaussian nonlinear factor that takes 2 parameters
 	 */
-	template<class Config, class Key1, class Key2>
-	class NonlinearFactor2: public NonlinearFactor<Config> {
+	template<class Values, class Key1, class Key2>
+	class NonlinearFactor2: public NonlinearFactor<Values> {
 
 	  public:
 
@@ -271,8 +271,8 @@ namespace gtsam {
 		Key1 key1_;
 		Key2 key2_;
 
-		typedef NonlinearFactor<Config> Base;
-		typedef NonlinearFactor2<Config, Key1, Key2> This;
+		typedef NonlinearFactor<Values> Base;
+		typedef NonlinearFactor2<Values, Key1, Key2> This;
 
 	public:
 
@@ -303,13 +303,13 @@ namespace gtsam {
 		}
 
 		/** Check if two factors are equal */
-		bool equals(const NonlinearFactor2<Config,Key1,Key2>& f, double tol = 1e-9) const {
+		bool equals(const NonlinearFactor2<Values,Key1,Key2>& f, double tol = 1e-9) const {
 			return Base::noiseModel_->equals(*f.noiseModel_, tol) && (key1_ == f.key1_)
 					&& (key2_ == f.key2_);
 		}
 
 		/** error function z-h(x1,x2) */
-		inline Vector unwhitenedError(const Config& x) const {
+		inline Vector unwhitenedError(const Values& x) const {
 			const X1& x1 = x[key1_];
 			const X2& x2 = x[key2_];
 			return evaluateError(x1, x2);
@@ -320,7 +320,7 @@ namespace gtsam {
 		 * Ax-b \approx h(x1+dx1,x2+dx2)-z = h(x1,x2) + A2*dx1 + A2*dx2 - z
 		 * Hence b = z - h(x1,x2) = - error_vector(x)
 		 */
-		boost::shared_ptr<GaussianFactor> linearize(const Config& c, const Ordering& ordering) const {
+		boost::shared_ptr<GaussianFactor> linearize(const Values& c, const Ordering& ordering) const {
 			const X1& x1 = c[key1_];
 			const X2& x2 = c[key2_];
 			Matrix A1, A2;
@@ -392,8 +392,8 @@ namespace gtsam {
   /**
    * A Gaussian nonlinear factor that takes 3 parameters
    */
-  template<class Config, class Key1, class Key2, class Key3>
-  class NonlinearFactor3: public NonlinearFactor<Config> {
+  template<class Values, class Key1, class Key2, class Key3>
+  class NonlinearFactor3: public NonlinearFactor<Values> {
 
   public:
 
@@ -409,8 +409,8 @@ namespace gtsam {
     Key2 key2_;
     Key3 key3_;
 
-    typedef NonlinearFactor<Config> Base;
-    typedef NonlinearFactor3<Config, Key1, Key2, Key3> This;
+    typedef NonlinearFactor<Values> Base;
+    typedef NonlinearFactor3<Values, Key1, Key2, Key3> This;
 
   public:
 
@@ -443,13 +443,13 @@ namespace gtsam {
     }
 
     /** Check if two factors are equal */
-    bool equals(const NonlinearFactor3<Config,Key1,Key2,Key3>& f, double tol = 1e-9) const {
+    bool equals(const NonlinearFactor3<Values,Key1,Key2,Key3>& f, double tol = 1e-9) const {
       return Base::noiseModel_->equals(*f.noiseModel_, tol) && (key1_ == f.key1_)
           && (key2_ == f.key2_) && (key3_ == f.key3_);
     }
 
     /** error function z-h(x1,x2) */
-    inline Vector unwhitenedError(const Config& x) const {
+    inline Vector unwhitenedError(const Values& x) const {
       const X1& x1 = x[key1_];
       const X2& x2 = x[key2_];
       const X3& x3 = x[key3_];
@@ -461,7 +461,7 @@ namespace gtsam {
      * Ax-b \approx h(x1+dx1,x2+dx2,x3+dx3)-z = h(x1,x2,x3) + A2*dx1 + A2*dx2 + A3*dx3 - z
      * Hence b = z - h(x1,x2,x3) = - error_vector(x)
      */
-    boost::shared_ptr<GaussianFactor> linearize(const Config& c, const Ordering& ordering) const {
+    boost::shared_ptr<GaussianFactor> linearize(const Values& c, const Ordering& ordering) const {
       const X1& x1 = c[key1_];
       const X2& x2 = c[key2_];
       const X3& x3 = c[key3_];

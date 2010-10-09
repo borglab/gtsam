@@ -17,9 +17,9 @@
 namespace gtsam {
 
 	class Point2;
-	typedef LieValues<Symbol, Point2> SymbolicConfig;
+	typedef LieValues<Symbol, Point2> SymbolicValues;
 
 	// save graph to the graphviz format
-	void saveGraph(const SymbolicFactorGraph& fg, const SymbolicConfig& config, const std::string& s);
+	void saveGraph(const SymbolicFactorGraph& fg, const SymbolicValues& config, const std::string& s);
 
 } // namespace gtsam

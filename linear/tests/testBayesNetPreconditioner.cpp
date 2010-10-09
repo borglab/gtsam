@@ -40,23 +40,23 @@ TEST( BayesNetPreconditioner, operators )
 	BayesNetPreconditioner P(dummy,bn);
 
 	// inv(R1)*d should equal solution [1;-2;1]
-	VectorConfig D;
+	VectorValues D;
 	D.insert("x", d);
 	D.insert("y", Vector_(1, 1.0 / 0.1)); // corrected by sigma
-	VectorConfig expected1;
+	VectorValues expected1;
 	expected1.insert("x", Vector_(2, 1.0, -2.0));
 	expected1.insert("y", Vector_(1, 1.0));
-	VectorConfig actual1 = P.backSubstitute(D);
+	VectorValues actual1 = P.backSubstitute(D);
 	CHECK(assert_equal(expected1,actual1));
 
 	// inv(R1')*ones should equal ?
-	VectorConfig ones;
+	VectorValues ones;
 	ones.insert("x", Vector_(2, 1.0, 1.0));
 	ones.insert("y", Vector_(1, 1.0));
-	VectorConfig expected2;
+	VectorValues expected2;
 	expected2.insert("x", Vector_(2, 0.1, -0.1));
 	expected2.insert("y", Vector_(1, 0.0));
-	VectorConfig actual2 = P.backSubstituteTranspose(ones);
+	VectorValues actual2 = P.backSubstituteTranspose(ones);
 	CHECK(assert_equal(expected2,actual2));
 }
 

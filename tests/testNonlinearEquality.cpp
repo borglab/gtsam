@@ -17,20 +17,20 @@ using namespace std;
 using namespace gtsam;
 
 typedef TypedSymbol<Pose2, 'x'> PoseKey;
-typedef LieValues<PoseKey> PoseConfig;
-typedef PriorFactor<PoseConfig, PoseKey> PosePrior;
-typedef NonlinearEquality<PoseConfig, PoseKey> PoseNLE;
+typedef LieValues<PoseKey> PoseValues;
+typedef PriorFactor<PoseValues, PoseKey> PosePrior;
+typedef NonlinearEquality<PoseValues, PoseKey> PoseNLE;
 typedef boost::shared_ptr<PoseNLE> shared_poseNLE;
 
-typedef NonlinearFactorGraph<PoseConfig> PoseGraph;
-typedef NonlinearOptimizer<PoseGraph,PoseConfig> PoseOptimizer;
+typedef NonlinearFactorGraph<PoseValues> PoseGraph;
+typedef NonlinearOptimizer<PoseGraph,PoseValues> PoseOptimizer;
 
 PoseKey key(1);
 
 /* ************************************************************************* */
 TEST ( NonlinearEquality, linearization ) {
 	Pose2 value = Pose2(2.1, 1.0, 2.0);
-	PoseConfig linearize;
+	PoseValues linearize;
 	linearize.insert(key, value);
 
 	// create a nonlinear equality constraint
@@ -48,7 +48,7 @@ TEST ( NonlinearEquality, linearization_pose ) {
 
 	PoseKey key(1);
 	Pose2 value;
-	PoseConfig config;
+	PoseValues config;
 	config.insert(key, value);
 
 	// create a nonlinear equality constraint
@@ -62,7 +62,7 @@ TEST ( NonlinearEquality, linearization_pose ) {
 TEST ( NonlinearEquality, linearization_fail ) {
 	Pose2 value = Pose2(2.1, 1.0, 2.0);
 	Pose2 wrong = Pose2(2.1, 3.0, 4.0);
-	PoseConfig bad_linearize;
+	PoseValues bad_linearize;
 	bad_linearize.insert(key, wrong);
 
 	// create a nonlinear equality constraint
@@ -78,7 +78,7 @@ TEST ( NonlinearEquality, linearization_fail_pose ) {
 	PoseKey key(1);
 	Pose2 value(2.0, 1.0, 2.0),
 		  wrong(2.0, 3.0, 4.0);
-	PoseConfig bad_linearize;
+	PoseValues bad_linearize;
 	bad_linearize.insert(key, wrong);
 
 	// create a nonlinear equality constraint
@@ -94,7 +94,7 @@ TEST ( NonlinearEquality, linearization_fail_pose_origin ) {
 	PoseKey key(1);
 	Pose2 value,
 		  wrong(2.0, 3.0, 4.0);
-	PoseConfig bad_linearize;
+	PoseValues bad_linearize;
 	bad_linearize.insert(key, wrong);
 
 	// create a nonlinear equality constraint
@@ -108,7 +108,7 @@ TEST ( NonlinearEquality, linearization_fail_pose_origin ) {
 TEST ( NonlinearEquality, error ) {
 	Pose2 value = Pose2(2.1, 1.0, 2.0);
 	Pose2 wrong = Pose2(2.1, 3.0, 4.0);
-	PoseConfig feasible, bad_linearize;
+	PoseValues feasible, bad_linearize;
 	feasible.insert(key, value);
 	bad_linearize.insert(key, wrong);
 
@@ -153,7 +153,7 @@ TEST ( NonlinearEquality, allow_error_pose ) {
 	EXPECT(assert_equal(expVec, actVec, 1e-5));
 
 	// the actual error should have a gain on it
-	PoseConfig config;
+	PoseValues config;
 	config.insert(key1, badPoint1);
 	double actError = nle.error(config);
 	DOUBLES_EQUAL(500.0, actError, 1e-9);
@@ -180,7 +180,7 @@ TEST ( NonlinearEquality, allow_error_optimize ) {
 
 	// initialize away from the ideal
 	Pose2 initPose(0.0, 2.0, 3.0);
-	boost::shared_ptr<PoseConfig> init(new PoseConfig());
+	boost::shared_ptr<PoseValues> init(new PoseValues());
 	init->insert(key1, initPose);
 
 	// optimize
@@ -192,7 +192,7 @@ TEST ( NonlinearEquality, allow_error_optimize ) {
 	PoseOptimizer result = optimizer.levenbergMarquardt(relThresh, absThresh, PoseOptimizer::SILENT);
 
 	// verify
-	PoseConfig expected;
+	PoseValues expected;
 	expected.insert(key1, feasible1);
 	EXPECT(assert_equal(expected, *result.config()));
 }
@@ -205,7 +205,7 @@ TEST ( NonlinearEquality, allow_error_optimize_with_factors ) {
 	Pose2 feasible1(1.0, 2.0, 3.0);
 
 	// initialize away from the ideal
-	boost::shared_ptr<PoseConfig> init(new PoseConfig());
+	boost::shared_ptr<PoseValues> init(new PoseValues());
 	Pose2 initPose(0.0, 2.0, 3.0);
 	init->insert(key1, initPose);
 
@@ -229,7 +229,7 @@ TEST ( NonlinearEquality, allow_error_optimize_with_factors ) {
 	PoseOptimizer result = optimizer.levenbergMarquardt(relThresh, absThresh, PoseOptimizer::SILENT);
 
 	// verify
-	PoseConfig expected;
+	PoseValues expected;
 	expected.insert(key1, feasible1);
 	EXPECT(assert_equal(expected, *result.config()));
 }

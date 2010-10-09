@@ -20,7 +20,7 @@ using namespace gtsam;
 #define LINESIZE 81920
 
 typedef boost::shared_ptr<Pose2Graph> sharedPose2Graph;
-typedef boost::shared_ptr<Pose2Config> sharedPose2Config;
+typedef boost::shared_ptr<Pose2Values> sharedPose2Values;
 
 namespace gtsam {
 
@@ -68,13 +68,13 @@ pair<string, boost::optional<SharedDiagonal> > dataset(const string& dataset,  c
 
 /* ************************************************************************* */
 
-pair<sharedPose2Graph, sharedPose2Config> load2D(
+pair<sharedPose2Graph, sharedPose2Values> load2D(
 		pair<string, boost::optional<SharedDiagonal> > dataset,
 		int maxID, bool addNoise, bool smart) {
 	return load2D(dataset.first, dataset.second, maxID, addNoise, smart);
 }
 
-pair<sharedPose2Graph, sharedPose2Config> load2D(const string& filename,
+pair<sharedPose2Graph, sharedPose2Values> load2D(const string& filename,
 		boost::optional<SharedDiagonal> model, int maxID, bool addNoise, bool smart) {
 	cout << "Will try to read " << filename << endl;
 	ifstream is(filename.c_str());
@@ -83,7 +83,7 @@ pair<sharedPose2Graph, sharedPose2Config> load2D(const string& filename,
 		exit(-1);
 	}
 
-	sharedPose2Config poses(new Pose2Config);
+	sharedPose2Values poses(new Pose2Values);
 	sharedPose2Graph graph(new Pose2Graph);
 
 	string tag;
@@ -151,14 +151,14 @@ pair<sharedPose2Graph, sharedPose2Config> load2D(const string& filename,
 }
 
 /* ************************************************************************* */
-void save2D(const Pose2Graph& graph, const Pose2Config& config, const SharedDiagonal model,
+void save2D(const Pose2Graph& graph, const Pose2Values& config, const SharedDiagonal model,
 		const string& filename) {
-	typedef Pose2Config::Key Key;
+	typedef Pose2Values::Key Key;
 
 	fstream stream(filename.c_str(), fstream::out);
 
 	// save poses
-	Pose2Config::Key key;
+	Pose2Values::Key key;
 	Pose2 pose;
 	BOOST_FOREACH(boost::tie(key, pose), config)
 		stream << "VERTEX2 " << key.index() << " " <<  pose.x() << " " << pose.y() << " " << pose.theta() << endl;
@@ -166,7 +166,7 @@ void save2D(const Pose2Graph& graph, const Pose2Config& config, const SharedDiag
 	// save edges
 	Matrix R = model->R();
 	Matrix RR = prod(trans(R),R);
-	BOOST_FOREACH(boost::shared_ptr<NonlinearFactor<Pose2Config> > factor_, graph) {
+	BOOST_FOREACH(boost::shared_ptr<NonlinearFactor<Pose2Values> > factor_, graph) {
 		boost::shared_ptr<Pose2Factor> factor = boost::dynamic_pointer_cast<Pose2Factor>(factor_);
 		if (!factor) continue;
 

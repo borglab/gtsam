@@ -20,25 +20,25 @@ namespace gtsam {
 	// Use planarSLAM namespace for specific SLAM instance
 	namespace planarSLAM {
 
-		// Keys and Config
+		// Keys and Values
 		typedef TypedSymbol<Pose2, 'x'> PoseKey;
 		typedef TypedSymbol<Point2, 'l'> PointKey;
-		typedef LieValues<PoseKey> PoseConfig;
-		typedef LieValues<PointKey> PointConfig;
-		typedef TupleValues2<PoseConfig, PointConfig> Config;
+		typedef LieValues<PoseKey> PoseValues;
+		typedef LieValues<PointKey> PointValues;
+		typedef TupleValues2<PoseValues, PointValues> Values;
 
 		// Factors
-		typedef NonlinearEquality<Config, PoseKey> Constraint;
-		typedef PriorFactor<Config, PoseKey> Prior;
-		typedef BetweenFactor<Config, PoseKey> Odometry;
-		typedef BearingFactor<Config, PoseKey, PointKey> Bearing;
-		typedef RangeFactor<Config, PoseKey, PointKey> Range;
-		typedef BearingRangeFactor<Config, PoseKey, PointKey> BearingRange;
+		typedef NonlinearEquality<Values, PoseKey> Constraint;
+		typedef PriorFactor<Values, PoseKey> Prior;
+		typedef BetweenFactor<Values, PoseKey> Odometry;
+		typedef BearingFactor<Values, PoseKey, PointKey> Bearing;
+		typedef RangeFactor<Values, PoseKey, PointKey> Range;
+		typedef BearingRangeFactor<Values, PoseKey, PointKey> BearingRange;
 
 		// Graph
-		struct Graph: public NonlinearFactorGraph<Config> {
+		struct Graph: public NonlinearFactorGraph<Values> {
 			Graph(){}
-			Graph(const NonlinearFactorGraph<Config>& graph);
+			Graph(const NonlinearFactorGraph<Values>& graph);
 			void addPrior(const PoseKey& i, const Pose2& p, const SharedGaussian& model);
 			void addPoseConstraint(const PoseKey& i, const Pose2& p);
 			void addOdometry(const PoseKey& i, const PoseKey& j, const Pose2& z,
@@ -52,7 +52,7 @@ namespace gtsam {
 		};
 
 		// Optimizer
-		typedef NonlinearOptimizer<Graph, Config> Optimizer;
+		typedef NonlinearOptimizer<Graph, Values> Optimizer;
 
 	} // planarSLAM
 

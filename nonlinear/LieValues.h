@@ -5,8 +5,8 @@
  * @brief A templated config for Lie-group elements
  *
  *  Detailed story:
- *  A configuration is a map from keys to values. It is used to specify the value of a bunch
- *  of variables in a factor graph. A LieValues is a configuration which can hold variables that
+ *  A values structure is a map from keys to values. It is used to specify the value of a bunch
+ *  of variables in a factor graph. A LieValues is a values structure which can hold variables that
  *  are elements of Lie groups, not just vectors. It then, as a whole, implements a aggregate type
  *  which is also a Lie group, and hence supports operations dim, expmap, and logmap.
  */
@@ -23,14 +23,14 @@
 #include <gtsam/nonlinear/Ordering.h>
 
 namespace boost { template<class T> class optional; }
-namespace gtsam { class VectorConfig; class Ordering; }
+namespace gtsam { class VectorValues; class Ordering; }
 
 namespace gtsam {
 
 	/**
-	 * Lie type configuration
+	 * Lie type values structure
 	 * Takes two template types
-	 *  J: a key type to look up values in the configuration (need to be sortable)
+	 *  J: a key type to look up values in the values structure (need to be sortable)
 	 *
 	 * Key concept:
 	 *  The key will be assumed to be sortable, and must have a
@@ -95,8 +95,8 @@ namespace gtsam {
     /** The dimensionality of the tangent space */
     size_t dim() const;
 
-    /** Get a zero VectorConfig of the correct structure */
-    VectorConfig zero(const Ordering& ordering) const;
+    /** Get a zero VectorValues of the correct structure */
+    VectorValues zero(const Ordering& ordering) const;
 
     const_iterator begin() const { return values_.begin(); }
     const_iterator end() const { return values_.end(); }
@@ -106,16 +106,16 @@ namespace gtsam {
     // Lie operations
 
     /** Add a delta config to current config and returns a new config */
-    LieValues expmap(const VectorConfig& delta, const Ordering& ordering) const;
+    LieValues expmap(const VectorValues& delta, const Ordering& ordering) const;
 
 //    /** Add a delta vector to current config and returns a new config, uses iterator order */
 //    LieValues expmap(const Vector& delta) const;
 
     /** Get a delta config about a linearization point c0 (*this) */
-    VectorConfig logmap(const LieValues& cp, const Ordering& ordering) const;
+    VectorValues logmap(const LieValues& cp, const Ordering& ordering) const;
 
     /** Get a delta config about a linearization point c0 (*this) */
-    void logmap(const LieValues& cp, const Ordering& ordering, VectorConfig& delta) const;
+    void logmap(const LieValues& cp, const Ordering& ordering, VectorValues& delta) const;
 
     // imperative methods:
 
@@ -159,7 +159,7 @@ namespace gtsam {
     /**
      * Apply a class with an application operator() to a const_iterator over
      * every <key,value> pair.  The operator must be able to handle such an
-     * iterator for every type in the Config, (i.e. through templating).
+     * iterator for every type in the Values, (i.e. through templating).
      */
     template<typename A>
     void apply(A& operation) {
@@ -193,10 +193,10 @@ namespace gtsam {
 
   };
 
-  struct _ConfigDimensionCollector {
+  struct _ValuesDimensionCollector {
     const Ordering& ordering;
     std::vector<size_t> dimensions;
-    _ConfigDimensionCollector(const Ordering& _ordering) : ordering(_ordering), dimensions(_ordering.nVars()) {}
+    _ValuesDimensionCollector(const Ordering& _ordering) : ordering(_ordering), dimensions(_ordering.nVars()) {}
     template<typename I> void operator()(const I& key_value) {
       varid_t var = ordering[key_value->first];
       assert(var < dimensions.size());
@@ -205,10 +205,10 @@ namespace gtsam {
   };
 
   /* ************************************************************************* */
-  struct _ConfigKeyOrderer {
+  struct _ValuesKeyOrderer {
     varid_t var;
     Ordering::shared_ptr ordering;
-    _ConfigKeyOrderer(varid_t firstVar) : var(firstVar), ordering(new Ordering) {}
+    _ValuesKeyOrderer(varid_t firstVar) : var(firstVar), ordering(new Ordering) {}
     template<typename I> void operator()(const I& key_value) {
       ordering->insert(key_value->first, var);
       ++ var;

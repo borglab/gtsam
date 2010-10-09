@@ -15,20 +15,20 @@ namespace gtsam {
 	 * A class for a soft prior on any Lie type
 	 * It takes three template parameters:
 	 *   T is the Lie group type for which the prior is define
-	 *   Key (typically TypedSymbol) is used to look up T's in a Config
-	 *   Config where the T's are stored, typically LieValues<Key,T> or a TupleValues<...>
+	 *   Key (typically TypedSymbol) is used to look up T's in a Values
+	 *   Values where the T's are stored, typically LieValues<Key,T> or a TupleValues<...>
 	 * The Key type is not arbitrary: we need to cast to a Symbol at linearize, so
 	 * a simple type like int will not work
 	 */
-	template<class Config, class Key>
-	class PriorFactor: public NonlinearFactor1<Config, Key> {
+	template<class Values, class Key>
+	class PriorFactor: public NonlinearFactor1<Values, Key> {
 
 	public:
 		typedef typename Key::Value_t T;
 
 	private:
 
-		typedef NonlinearFactor1<Config, Key> Base;
+		typedef NonlinearFactor1<Values, Key> Base;
 
 		T prior_; /** The measurement */
 
@@ -52,9 +52,9 @@ namespace gtsam {
 		}
 
 		/** equals */
-		bool equals(const NonlinearFactor<Config>& expected, double tol) const {
-			const PriorFactor<Config, Key> *e = dynamic_cast<const PriorFactor<
-					Config, Key>*> (&expected);
+		bool equals(const NonlinearFactor<Values>& expected, double tol) const {
+			const PriorFactor<Values, Key> *e = dynamic_cast<const PriorFactor<
+					Values, Key>*> (&expected);
 			return e != NULL && Base::equals(expected, tol) && this->prior_.equals(
 					e->prior_, tol);
 		}

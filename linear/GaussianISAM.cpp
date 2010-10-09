@@ -16,7 +16,7 @@ template class ISAM<GaussianConditional>;
 namespace gtsam {
 
 /* ************************************************************************* */
-void optimize(const GaussianISAM::sharedClique& clique, VectorConfig& result) {
+void optimize(const GaussianISAM::sharedClique& clique, VectorValues& result) {
 	// parents are assumed to already be solved and available in result
 	GaussianISAM::Clique::const_reverse_iterator it;
 	for (it = clique->rbegin(); it!=clique->rend(); it++) {
@@ -32,8 +32,8 @@ void optimize(const GaussianISAM::sharedClique& clique, VectorConfig& result) {
 }
 
 /* ************************************************************************* */
-VectorConfig optimize(const GaussianISAM& bayesTree) {
-	VectorConfig result(bayesTree.dims_);
+VectorValues optimize(const GaussianISAM& bayesTree) {
+	VectorValues result(bayesTree.dims_);
 	// starting from the root, call optimize on each conditional
 	optimize(bayesTree.root(), result);
 	return result;

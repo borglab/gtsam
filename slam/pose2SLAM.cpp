@@ -14,14 +14,14 @@ namespace gtsam {
 
 	using namespace pose2SLAM;
 	INSTANTIATE_LIE_CONFIG(Key)
-	INSTANTIATE_NONLINEAR_FACTOR_GRAPH(Config)
-	INSTANTIATE_NONLINEAR_OPTIMIZER(Graph, Config)
+	INSTANTIATE_NONLINEAR_FACTOR_GRAPH(Values)
+	INSTANTIATE_NONLINEAR_OPTIMIZER(Graph, Values)
 
 	namespace pose2SLAM {
 
 		/* ************************************************************************* */
-		Config circle(size_t n, double R) {
-			Config x;
+		Values circle(size_t n, double R) {
+			Values x;
 			double theta = 0, dtheta = 2 * M_PI / n;
 			for (size_t i = 0; i < n; i++, theta += dtheta)
 				x.insert(i, Pose2(cos(theta), sin(theta), M_PI_2 + theta));

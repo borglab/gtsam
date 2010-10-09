@@ -31,7 +31,7 @@ class Conditional;
  * conflicts with efficiency as well, esp. in the case of incomplete
  * QR factorization. A solution is still being sought.
  *
- * A Factor is templated on a Config, for example VectorConfig is a configuration of
+ * A Factor is templated on a Values, for example VectorValues is a values structure of
  * labeled vectors. This way, we can have factors that might be defined on discrete
  * variables, continuous ones, or a combination of both. It is up to the config to
  * provide the appropriate values at the appropriate time.

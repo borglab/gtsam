@@ -70,7 +70,7 @@ int main(int argc, char *argv[]) {
     for(size_t trial=0; trial<nTrials; ++trial) {
 //      cout << "Trial " << trial << endl;
       GaussianBayesNet::shared_ptr gbn(Inference::Eliminate(blockGfgs[trial]));
-      VectorConfig soln(optimize(*gbn));
+      VectorValues soln(optimize(*gbn));
     }
     blocksolve = timer.elapsed();
     cout << blocksolve << " s" << endl;
@@ -114,7 +114,7 @@ int main(int argc, char *argv[]) {
     timer.restart();
     for(size_t trial=0; trial<nTrials; ++trial) {
       GaussianBayesNet::shared_ptr gbn(Inference::Eliminate(combGfgs[trial]));
-      VectorConfig soln(optimize(*gbn));
+      VectorValues soln(optimize(*gbn));
     }
     combsolve = timer.elapsed();
     cout << combsolve << " s" << endl;

@@ -76,8 +76,8 @@ namespace gtsam {
 	/**
 	 * Compose the poses by following the chain specified by the spanning tree
 	 */
-	template<class G, class Factor, class Pose, class Config>
-	boost::shared_ptr<Config>
-		composePoses(const G& graph, const PredecessorMap<typename Config::Key>& tree, const Pose& rootPose);
+	template<class G, class Factor, class Pose, class Values>
+	boost::shared_ptr<Values>
+		composePoses(const G& graph, const PredecessorMap<typename Values::Key>& tree, const Pose& rootPose);
 
 } // namespace gtsam

@@ -78,9 +78,9 @@ TEST( GaussianBayesNet, matrix )
 TEST( GaussianBayesNet, optimize )
 {
   GaussianBayesNet cbn = createSmallGaussianBayesNet();
-  VectorConfig actual = optimize(cbn);
+  VectorValues actual = optimize(cbn);
 
-  VectorConfig expected(vector<size_t>(2,1));
+  VectorValues expected(vector<size_t>(2,1));
   expected[_x_] = Vector_(1,4.);
   expected[_y_] = Vector_(1,5.);
 
@@ -104,9 +104,9 @@ TEST( GaussianBayesNet, optimize2 )
 	fg.add(_x_, -eye(1), _z_, eye(1), 2*ones(1), noise);
 
 	GaussianBayesNet cbn = *Inference::Eliminate(fg);
-  VectorConfig actual = optimize(cbn);
+  VectorValues actual = optimize(cbn);
 
-  VectorConfig expected(vector<size_t>(3,1));
+  VectorValues expected(vector<size_t>(3,1));
   expected[_x_] = Vector_(1,1.);
   expected[_y_] = Vector_(1,2.);
   expected[_z_] = Vector_(1,3.);
@@ -122,14 +122,14 @@ TEST( GaussianBayesNet, backSubstitute )
 	// 3     1   3
   GaussianBayesNet cbn = createSmallGaussianBayesNet();
 
-  VectorConfig y(vector<size_t>(2,1)), x(vector<size_t>(2,1));
+  VectorValues y(vector<size_t>(2,1)), x(vector<size_t>(2,1));
   y[_x_] = Vector_(1,2.);
   y[_y_] = Vector_(1,3.);
   x[_x_] = Vector_(1,-1.);
   x[_y_] = Vector_(1, 3.);
 
   // test functional version
-  VectorConfig actual = backSubstitute(cbn,y);
+  VectorValues actual = backSubstitute(cbn,y);
   CHECK(assert_equal(x,actual));
 
   // test imperative version
@@ -144,9 +144,9 @@ TEST( GaussianBayesNet, rhs )
 	// 2 = 1 1  -1
 	// 3     1   3
   GaussianBayesNet cbn = createSmallGaussianBayesNet();
-	VectorConfig expected = gtsam::optimize(cbn);
-	VectorConfig d = rhs(cbn);
-	VectorConfig actual = backSubstitute(cbn, d);
+	VectorValues expected = gtsam::optimize(cbn);
+	VectorValues d = rhs(cbn);
+	VectorValues actual = backSubstitute(cbn, d);
 	CHECK(assert_equal(expected, actual));
 }
 
@@ -168,9 +168,9 @@ TEST( GaussianBayesNet, rhs_with_sigmas )
 	cbn.push_back(Px_y);
 	cbn.push_back(Py);
 
-	VectorConfig expected = gtsam::optimize(cbn);
-	VectorConfig d = rhs(cbn);
-	VectorConfig actual = backSubstitute(cbn, d);
+	VectorValues expected = gtsam::optimize(cbn);
+	VectorValues d = rhs(cbn);
+	VectorValues actual = backSubstitute(cbn, d);
 	CHECK(assert_equal(expected, actual));
 }
 
@@ -182,14 +182,14 @@ TEST( GaussianBayesNet, backSubstituteTranspose )
 	// 5   1 1  3
   GaussianBayesNet cbn = createSmallGaussianBayesNet();
 
-  VectorConfig y(vector<size_t>(2,1)), x(vector<size_t>(2,1));
+  VectorValues y(vector<size_t>(2,1)), x(vector<size_t>(2,1));
   x[_x_] = Vector_(1,2.);
   x[_y_] = Vector_(1,5.);
   y[_x_] = Vector_(1,2.);
   y[_y_] = Vector_(1,3.);
 
   // test functional version
-  VectorConfig actual = backSubstituteTranspose(cbn,x);
+  VectorValues actual = backSubstituteTranspose(cbn,x);
   CHECK(assert_equal(y,actual));
 }
 

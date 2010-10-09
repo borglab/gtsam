@@ -62,7 +62,7 @@ TEST( BinaryBayesNet, constructor )
 
 	// single parent conditional for x
 	vector<double> cpt;
-	cpt += 0.3, 0.6 ; // array index corresponds to binary parent configuration
+	cpt += 0.3, 0.6 ; // array index corresponds to binary parent values structure
 	boost::shared_ptr<BinaryConditional> px_y(new BinaryConditional("x","y",cpt));
 	DOUBLES_EQUAL(0.7,px_y->probability(config),0.01);
 

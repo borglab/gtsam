@@ -1,5 +1,5 @@
 /*
- * Simulated2DConfig.h
+ * Simulated2DValues.h
  *
  * Re-created on Feb 22, 2010 for compatibility with MATLAB
  * Author: Frank Dellaert
@@ -11,11 +11,11 @@
 
 namespace gtsam {
 
-	class Simulated2DConfig: public simulated2D::Config {
+	class Simulated2DValues: public simulated2D::Values {
 	public:
 		typedef boost::shared_ptr<Point2> sharedPoint;
 
-		Simulated2DConfig() {
+		Simulated2DValues() {
 		}
 
 		void insertPose(const simulated2D::PoseKey& i, const Point2& p) {

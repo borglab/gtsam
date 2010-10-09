@@ -15,7 +15,7 @@ using namespace boost::assign;
 #include <gtsam/base/timing.h>
 #include <gtsam/nonlinear/NonlinearFactorGraph-inl.h>
 #include <gtsam/linear/GaussianFactor.h>
-#include <gtsam/linear/VectorConfig.h>
+#include <gtsam/linear/VectorValues.h>
 #include <gtsam/linear/GaussianJunctionTree.h>
 
 #include <gtsam/inference/Conditional.h>
@@ -33,12 +33,12 @@ using namespace std;
 static const bool disableReordering = false;
 
 /** Create an empty Bayes Tree */
-template<class Conditional, class Config>
-ISAM2<Conditional, Config>::ISAM2() : BayesTree<Conditional>(), delta_(Permutation(), deltaUnpermuted_) {}
+template<class Conditional, class Values>
+ISAM2<Conditional, Values>::ISAM2() : BayesTree<Conditional>(), delta_(Permutation(), deltaUnpermuted_) {}
 
 /** Create a Bayes Tree from a nonlinear factor graph */
-//template<class Conditional, class Config>
-//ISAM2<Conditional, Config>::ISAM2(const NonlinearFactorGraph<Config>& nlfg, const Ordering& ordering, const Config& config) :
+//template<class Conditional, class Values>
+//ISAM2<Conditional, Values>::ISAM2(const NonlinearFactorGraph<Values>& nlfg, const Ordering& ordering, const Values& config) :
 //BayesTree<Conditional>(nlfg.linearize(config)->eliminate(ordering)), theta_(config),
 //variableIndex_(nlfg.symbolic(config, ordering), config.dims(ordering)), deltaUnpermuted_(variableIndex_.dims()),
 //delta_(Permutation::Identity(variableIndex_.size())), nonlinearFactors_(nlfg), ordering_(ordering) {
@@ -48,14 +48,14 @@ ISAM2<Conditional, Config>::ISAM2() : BayesTree<Conditional>(), delta_(Permutati
 //}
 
 /* ************************************************************************* */
-template<class Conditional, class Config>
-list<size_t> ISAM2<Conditional, Config>::getAffectedFactors(const list<varid_t>& keys) const {
+template<class Conditional, class Values>
+list<size_t> ISAM2<Conditional, Values>::getAffectedFactors(const list<varid_t>& keys) const {
   static const bool debug = false;
   if(debug) cout << "Getting affected factors for ";
   if(debug) { BOOST_FOREACH(const varid_t key, keys) { cout << key << " "; } }
   if(debug) cout << endl;
 
-  FactorGraph<NonlinearFactor<Config> > allAffected;
+  FactorGraph<NonlinearFactor<Values> > allAffected;
   list<size_t> indices;
   BOOST_FOREACH(const varid_t key, keys) {
 //    const list<size_t> l = nonlinearFactors_.factors(key);
@@ -77,15 +77,15 @@ list<size_t> ISAM2<Conditional, Config>::getAffectedFactors(const list<varid_t>&
 /* ************************************************************************* */
 // retrieve all factors that ONLY contain the affected variables
 // (note that the remaining stuff is summarized in the cached factors)
-template<class Conditional, class Config>
-boost::shared_ptr<GaussianFactorGraph> ISAM2<Conditional, Config>::relinearizeAffectedFactors
+template<class Conditional, class Values>
+boost::shared_ptr<GaussianFactorGraph> ISAM2<Conditional, Values>::relinearizeAffectedFactors
 (const list<varid_t>& affectedKeys) const {
 
   tic("8.2.2.1 getAffectedFactors");
   list<size_t> candidates = getAffectedFactors(affectedKeys);
   toc("8.2.2.1 getAffectedFactors");
 
-  NonlinearFactorGraph<Config> nonlinearAffectedFactors;
+  NonlinearFactorGraph<Values> nonlinearAffectedFactors;
 
   tic("8.2.2.2 affectedKeysSet");
   // for fast lookup below
@@ -113,8 +113,8 @@ boost::shared_ptr<GaussianFactorGraph> ISAM2<Conditional, Config>::relinearizeAf
 
 /* ************************************************************************* */
 // find intermediate (linearized) factors from cache that are passed into the affected area
-template<class Conditional, class Config>
-GaussianFactorGraph ISAM2<Conditional, Config>::getCachedBoundaryFactors(Cliques& orphans) {
+template<class Conditional, class Values>
+GaussianFactorGraph ISAM2<Conditional, Values>::getCachedBoundaryFactors(Cliques& orphans) {
 
   static const bool debug = false;
 
@@ -139,8 +139,8 @@ GaussianFactorGraph ISAM2<Conditional, Config>::getCachedBoundaryFactors(Cliques
 }
 
 /* ************************************************************************* */
-template<class Conditional,class Config>
-void reinsertCache(const typename ISAM2<Conditional,Config>::sharedClique& root, vector<GaussianFactor::shared_ptr>& cache, const Permutation& selector, const Permutation& selectorInverse) {
+template<class Conditional,class Values>
+void reinsertCache(const typename ISAM2<Conditional,Values>::sharedClique& root, vector<GaussianFactor::shared_ptr>& cache, const Permutation& selector, const Permutation& selectorInverse) {
   static const bool debug = false;
   if(root) {
     if(root->size() > 0) {
@@ -162,15 +162,15 @@ void reinsertCache(const typename ISAM2<Conditional,Config>::sharedClique& root,
       assert(!root->cachedFactor());
       root->cachedFactor() = cachedFactor;
     }
-    typedef ISAM2<Conditional,Config> This;
+    typedef ISAM2<Conditional,Values> This;
     BOOST_FOREACH(typename This::sharedClique& child, root->children()) {
-      reinsertCache<Conditional,Config>(child, cache, selector, selectorInverse);
+      reinsertCache<Conditional,Values>(child, cache, selector, selectorInverse);
     }
   }
 }
 
-template<class Conditional, class Config>
-boost::shared_ptr<set<varid_t> > ISAM2<Conditional, Config>::recalculate(const set<varid_t>& markedKeys, const vector<varid_t>& newKeys, const GaussianFactorGraph* newFactors) {
+template<class Conditional, class Values>
+boost::shared_ptr<set<varid_t> > ISAM2<Conditional, Values>::recalculate(const set<varid_t>& markedKeys, const vector<varid_t>& newKeys, const GaussianFactorGraph* newFactors) {
 
   static const bool debug = false;
   static const bool useMultiFrontal = true;
@@ -522,7 +522,7 @@ boost::shared_ptr<set<varid_t> > ISAM2<Conditional, Config>::recalculate(const s
     if(bayesNet->size() == 0)
       assert(newlyCached.size() == 0);
     else
-      reinsertCache<Conditional,Config>(this->root(), newlyCached, affectedKeysSelector, affectedKeysSelectorInverse);
+      reinsertCache<Conditional,Values>(this->root(), newlyCached, affectedKeysSelector, affectedKeysSelectorInverse);
     toc("8.7.3 re-assemble: insert cache");
 
     lastNnzTop = 0; //calculate_nnz(this->root());
@@ -563,16 +563,16 @@ boost::shared_ptr<set<varid_t> > ISAM2<Conditional, Config>::recalculate(const s
 }
 
 ///* ************************************************************************* */
-//template<class Conditional, class Config>
-//void ISAM2<Conditional, Config>::linear_update(const GaussianFactorGraph& newFactors) {
+//template<class Conditional, class Values>
+//void ISAM2<Conditional, Values>::linear_update(const GaussianFactorGraph& newFactors) {
 //  const list<varid_t> markedKeys = newFactors.keys();
 //  recalculate(markedKeys, &newFactors);
 //}
 
 /* ************************************************************************* */
 // find all variables that are directly connected by a measurement to one of the marked variables
-template<class Conditional, class Config>
-void ISAM2<Conditional, Config>::find_all(sharedClique clique, set<varid_t>& keys, const vector<bool>& markedMask) {
+template<class Conditional, class Values>
+void ISAM2<Conditional, Values>::find_all(sharedClique clique, set<varid_t>& keys, const vector<bool>& markedMask) {
   // does the separator contain any of the variables?
   bool found = false;
   BOOST_FOREACH(const varid_t& key, clique->separator_) {
@@ -591,10 +591,10 @@ void ISAM2<Conditional, Config>::find_all(sharedClique clique, set<varid_t>& key
 
 /* ************************************************************************* */
 struct _SelectiveExpmap {
-  const Permuted<VectorConfig>& delta;
+  const Permuted<VectorValues>& delta;
   const Ordering& ordering;
   const vector<bool>& mask;
-  _SelectiveExpmap(const Permuted<VectorConfig>& _delta, const Ordering& _ordering, const vector<bool>& _mask) :
+  _SelectiveExpmap(const Permuted<VectorValues>& _delta, const Ordering& _ordering, const vector<bool>& _mask) :
     delta(_delta), ordering(_ordering), mask(_mask) {}
   template<typename I>
   void operator()(I it_x) {
@@ -604,10 +604,10 @@ struct _SelectiveExpmap {
 };
 #ifndef NDEBUG
 struct _SelectiveExpmapAndClear {
-  Permuted<VectorConfig>& delta;
+  Permuted<VectorValues>& delta;
   const Ordering& ordering;
   const vector<bool>& mask;
-  _SelectiveExpmapAndClear(Permuted<VectorConfig>& _delta, const Ordering& _ordering, const vector<bool>& _mask) :
+  _SelectiveExpmapAndClear(Permuted<VectorValues>& _delta, const Ordering& _ordering, const vector<bool>& _mask) :
     delta(_delta), ordering(_ordering), mask(_mask) {}
   template<typename I>
   void operator()(I it_x) {
@@ -627,8 +627,8 @@ struct _SelectiveExpmapAndClear {
 #endif
 struct _VariableAdder {
   Ordering& ordering;
-  Permuted<VectorConfig>& vconfig;
-  _VariableAdder(Ordering& _ordering, Permuted<VectorConfig>& _vconfig) : ordering(_ordering), vconfig(_vconfig) {}
+  Permuted<VectorValues>& vconfig;
+  _VariableAdder(Ordering& _ordering, Permuted<VectorValues>& _vconfig) : ordering(_ordering), vconfig(_vconfig) {}
   template<typename I>
   void operator()(I xIt) {
     static const bool debug = false;
@@ -638,9 +638,9 @@ struct _VariableAdder {
     if(debug) cout << "Adding variable " << (string)xIt->first << " with order " << var << endl;
   }
 };
-template<class Conditional, class Config>
-void ISAM2<Conditional, Config>::update(
-    const NonlinearFactorGraph<Config>& newFactors, const Config& newTheta,
+template<class Conditional, class Values>
+void ISAM2<Conditional, Values>::update(
+    const NonlinearFactorGraph<Values>& newFactors, const Values& newTheta,
     double wildfire_threshold, double relinearize_threshold, bool relinearize) {
 
   static const bool debug = false;
@@ -690,7 +690,7 @@ void ISAM2<Conditional, Config>::update(
   // 3. Mark linear update
   set<varid_t> markedKeys;
   vector<varid_t> newKeys; newKeys.reserve(newFactors.size() * 6);
-  BOOST_FOREACH(const typename NonlinearFactor<Config>::shared_ptr& factor, newFactors) {
+  BOOST_FOREACH(const typename NonlinearFactor<Values>::shared_ptr& factor, newFactors) {
     BOOST_FOREACH(const Symbol& key, factor->keys()) {
       markedKeys.insert(ordering_[key]);
       newKeys.push_back(ordering_[key]);
@@ -798,7 +798,7 @@ void ISAM2<Conditional, Config>::update(
   tic("9 step9");
   // 9. Solve
   if (wildfire_threshold<=0.) {
-    VectorConfig newDelta(variableIndex_.dims());
+    VectorValues newDelta(variableIndex_.dims());
     optimize2(this->root(), newDelta);
     assert(newDelta.size() == delta_.size());
     delta_.permutation() = Permutation::Identity(delta_.size());
@@ -807,7 +807,7 @@ void ISAM2<Conditional, Config>::update(
 
 //    GaussianFactorGraph linearfull = *nonlinearFactors_.linearize(theta_, ordering_);
 //    GaussianBayesNet gbn = *Inference::Eliminate(linearfull);
-//    VectorConfig deltafull = optimize(gbn);
+//    VectorValues deltafull = optimize(gbn);
 //    assert(assert_equal(deltafull, newDelta, 1e-3));
 
   } else {
@@ -822,9 +822,9 @@ void ISAM2<Conditional, Config>::update(
 }
 
 /* ************************************************************************* */
-template<class Conditional, class Config>
-Config ISAM2<Conditional, Config>::calculateEstimate() const {
-  Config ret(theta_);
+template<class Conditional, class Values>
+Values ISAM2<Conditional, Values>::calculateEstimate() const {
+  Values ret(theta_);
   vector<bool> mask(ordering_.nVars(), true);
   _SelectiveExpmap selectiveExpmap(delta_, ordering_, mask);
   ret.apply(selectiveExpmap);
@@ -832,9 +832,9 @@ Config ISAM2<Conditional, Config>::calculateEstimate() const {
 }
 
 /* ************************************************************************* */
-template<class Conditional, class Config>
-Config ISAM2<Conditional, Config>::calculateBestEstimate() const {
-  VectorConfig delta(variableIndex_.dims());
+template<class Conditional, class Values>
+Values ISAM2<Conditional, Values>::calculateBestEstimate() const {
+  VectorValues delta(variableIndex_.dims());
   optimize2(this->root(), delta);
   return theta_.expmap(delta, ordering_);
 }

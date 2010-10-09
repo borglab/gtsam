@@ -13,9 +13,9 @@ namespace gtsam {
 	using namespace simulated2D;
 //	INSTANTIATE_LIE_CONFIG(PointKey)
 	INSTANTIATE_LIE_CONFIG(PoseKey)
-	INSTANTIATE_TUPLE_CONFIG2(PoseConfig, PointConfig)
-//	INSTANTIATE_NONLINEAR_FACTOR_GRAPH(Config)
-//	INSTANTIATE_NONLINEAR_OPTIMIZER(Graph, Config)
+	INSTANTIATE_TUPLE_CONFIG2(PoseValues, PointValues)
+//	INSTANTIATE_NONLINEAR_FACTOR_GRAPH(Values)
+//	INSTANTIATE_NONLINEAR_OPTIMIZER(Graph, Values)
 
 	namespace simulated2D {
 

@@ -58,7 +58,7 @@ TEST( Pose2Graph, linearization )
 	// Choose a linearization point
 	Pose2 p1(1.1,2,M_PI_2); // robot at (1.1,2) looking towards y (ground truth is at 1,2, see testPose2)
 	Pose2 p2(-1,4.1,M_PI);  // robot at (-1,4) looking at negative (ground truth is at 4.1,2)
-	Pose2Config config;
+	Pose2Values config;
 	config.insert(1,p1);
 	config.insert(2,p2);
 	// Linearize
@@ -94,14 +94,14 @@ TEST(Pose2Graph, optimize) {
   fg->addConstraint(0, 1, Pose2(1,2,M_PI_2), covariance);
 
   // Create initial config
-  boost::shared_ptr<Pose2Config> initial(new Pose2Config());
+  boost::shared_ptr<Pose2Values> initial(new Pose2Values());
   initial->insert(0, Pose2(0,0,0));
   initial->insert(1, Pose2(0,0,0));
 
   // Choose an ordering and optimize
   shared_ptr<Ordering> ordering(new Ordering);
   *ordering += "x0","x1";
-  typedef NonlinearOptimizer<Pose2Graph, Pose2Config> Optimizer;
+  typedef NonlinearOptimizer<Pose2Graph, Pose2Values> Optimizer;
 	Optimizer::shared_solver solver(new Optimizer::solver(ordering));
   Optimizer optimizer0(fg, initial, solver);
   Optimizer::verbosityLevel verbosity = Optimizer::SILENT;
@@ -109,7 +109,7 @@ TEST(Pose2Graph, optimize) {
   Optimizer optimizer = optimizer0.levenbergMarquardt(1e-15, 1e-15, verbosity);
 
   // Check with expected config
-  Pose2Config expected;
+  Pose2Values expected;
   expected.insert(0, Pose2(0,0,0));
   expected.insert(1, Pose2(1,2,M_PI_2));
   CHECK(assert_equal(expected, *optimizer.config()));
@@ -120,7 +120,7 @@ TEST(Pose2Graph, optimize) {
 TEST(Pose2Graph, optimizeThreePoses) {
 
 	// Create a hexagon of poses
-	Pose2Config hexagon = pose2SLAM::circle(3,1.0);
+	Pose2Values hexagon = pose2SLAM::circle(3,1.0);
   Pose2 p0 = hexagon[0], p1 = hexagon[1];
 
 	// create a Pose graph with one equality constraint and one measurement
@@ -132,7 +132,7 @@ TEST(Pose2Graph, optimizeThreePoses) {
   fg->addConstraint(2, 0, delta, covariance);
 
   // Create initial config
-  boost::shared_ptr<Pose2Config> initial(new Pose2Config());
+  boost::shared_ptr<Pose2Values> initial(new Pose2Values());
   initial->insert(0, p0);
   initial->insert(1, hexagon[1].expmap(Vector_(3,-0.1, 0.1,-0.1)));
   initial->insert(2, hexagon[2].expmap(Vector_(3, 0.1,-0.1, 0.1)));
@@ -147,7 +147,7 @@ TEST(Pose2Graph, optimizeThreePoses) {
   pose2SLAM::Optimizer::verbosityLevel verbosity = pose2SLAM::Optimizer::SILENT;
   pose2SLAM::Optimizer optimizer = optimizer0.levenbergMarquardt(1e-15, 1e-15, verbosity);
 
-  Pose2Config actual = *optimizer.config();
+  Pose2Values actual = *optimizer.config();
 
   // Check with ground truth
   CHECK(assert_equal(hexagon, actual));
@@ -158,7 +158,7 @@ TEST(Pose2Graph, optimizeThreePoses) {
 TEST(Pose2Graph, optimizeCircle) {
 
 	// Create a hexagon of poses
-	Pose2Config hexagon = pose2SLAM::circle(6,1.0);
+	Pose2Values hexagon = pose2SLAM::circle(6,1.0);
   Pose2 p0 = hexagon[0], p1 = hexagon[1];
 
 	// create a Pose graph with one equality constraint and one measurement
@@ -173,7 +173,7 @@ TEST(Pose2Graph, optimizeCircle) {
   fg->addConstraint(5, 0, delta, covariance);
 
   // Create initial config
-  boost::shared_ptr<Pose2Config> initial(new Pose2Config());
+  boost::shared_ptr<Pose2Values> initial(new Pose2Values());
   initial->insert(0, p0);
   initial->insert(1, hexagon[1].expmap(Vector_(3,-0.1, 0.1,-0.1)));
   initial->insert(2, hexagon[2].expmap(Vector_(3, 0.1,-0.1, 0.1)));
@@ -191,7 +191,7 @@ TEST(Pose2Graph, optimizeCircle) {
   pose2SLAM::Optimizer::verbosityLevel verbosity = pose2SLAM::Optimizer::SILENT;
   pose2SLAM::Optimizer optimizer = optimizer0.levenbergMarquardt(1e-15, 1e-15, verbosity);
 
-  Pose2Config actual = *optimizer.config();
+  Pose2Values actual = *optimizer.config();
 
   // Check with ground truth
   CHECK(assert_equal(hexagon, actual));
@@ -225,7 +225,7 @@ TEST(Pose2Graph, optimizeCircle) {
 //
 //  myOptimizer.update(x);
 //
-//  Pose2Config expected;
+//  Pose2Values expected;
 //  expected.insert(0, Pose2(0.,0.,0.));
 //  expected.insert(1, Pose2(1.,0.,0.));
 //  expected.insert(2, Pose2(2.,0.,0.));

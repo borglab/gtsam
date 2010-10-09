@@ -27,9 +27,9 @@ static const double tol = 1e-5;
 
 typedef TypedSymbol<Pose2, 'x'> PoseKey;
 typedef TypedSymbol<Point2, 'l'> PointKey;
-typedef LieValues<PoseKey> PoseConfig;
-typedef LieValues<PointKey> PointConfig;
-typedef TupleValues2<PoseConfig, PointConfig> Config;
+typedef LieValues<PoseKey> PoseValues;
+typedef LieValues<PointKey> PointValues;
+typedef TupleValues2<PoseValues, PointValues> Values;
 
 /* ************************************************************************* */
 TEST( TupleValues, constructors )
@@ -37,14 +37,14 @@ TEST( TupleValues, constructors )
 	Pose2 x1(1,2,3), x2(6,7,8);
 	Point2 l1(4,5), l2(9,10);
 
-	Config::Config1 cfg1;
+	Values::Values1 cfg1;
 	cfg1.insert(PoseKey(1), x1);
 	cfg1.insert(PoseKey(2), x2);
-	Config::Config2 cfg2;
+	Values::Values2 cfg2;
 	cfg2.insert(PointKey(1), l1);
 	cfg2.insert(PointKey(2), l2);
 
-	Config actual(cfg1, cfg2), expected;
+	Values actual(cfg1, cfg2), expected;
 	expected.insert(PoseKey(1), x1);
 	expected.insert(PoseKey(2), x2);
 	expected.insert(PointKey(1), l1);
@@ -59,13 +59,13 @@ TEST( TupleValues, insert_equals1 )
 	Pose2 x1(1,2,3), x2(6,7,8);
 	Point2 l1(4,5), l2(9,10);
 
-  Config expected;
+  Values expected;
   expected.insert(PoseKey(1), x1);
   expected.insert(PoseKey(2), x2);
   expected.insert(PointKey(1), l1);
   expected.insert(PointKey(2), l2);
 
-  Config actual;
+  Values actual;
   actual.insert(PoseKey(1), x1);
   actual.insert(PoseKey(2), x2);
   actual.insert(PointKey(1), l1);
@@ -80,13 +80,13 @@ TEST( TupleValues, insert_equals2 )
   Pose2 x1(1,2,3), x2(6,7,8);
   Point2 l1(4,5), l2(9,10);
 
-  Config config1;
+  Values config1;
   config1.insert(PoseKey(1), x1);
   config1.insert(PoseKey(2), x2);
   config1.insert(PointKey(1), l1);
   config1.insert(PointKey(2), l2);
 
-  Config config2;
+  Values config2;
   config2.insert(PoseKey(1), x1);
   config2.insert(PoseKey(2), x2);
   config2.insert(PointKey(1), l1);
@@ -104,7 +104,7 @@ TEST( TupleValues, insert_duplicate )
   Pose2 x1(1,2,3), x2(6,7,8);
   Point2 l1(4,5), l2(9,10);
 
-  Config config1;
+  Values config1;
   config1.insert(1, x1); // 3
   config1.insert(2, x2); // 6
   config1.insert(1, l1); // 8
@@ -122,7 +122,7 @@ TEST( TupleValues, size_dim )
   Pose2 x1(1,2,3), x2(6,7,8);
   Point2 l1(4,5), l2(9,10);
 
-  Config config1;
+  Values config1;
   config1.insert(PoseKey(1), x1);
   config1.insert(PoseKey(2), x2);
   config1.insert(PointKey(1), l1);
@@ -138,7 +138,7 @@ TEST(TupleValues, at)
   Pose2 x1(1,2,3), x2(6,7,8);
   Point2 l1(4,5), l2(9,10);
 
-  Config config1;
+  Values config1;
   config1.insert(PoseKey(1), x1);
   config1.insert(PoseKey(2), x2);
   config1.insert(PointKey(1), l1);
@@ -159,14 +159,14 @@ TEST(TupleValues, zero_expmap_logmap)
   Pose2 x1(1,2,3), x2(6,7,8);
   Point2 l1(4,5), l2(9,10);
 
-  Config config1;
+  Values config1;
   config1.insert(PoseKey(1), x1);
   config1.insert(PoseKey(2), x2);
   config1.insert(PointKey(1), l1);
   config1.insert(PointKey(2), l2);
 
   Ordering o; o += "x1", "x2", "l1", "l2";
-  VectorConfig expected_zero(config1.dims(o));
+  VectorValues expected_zero(config1.dims(o));
   expected_zero[o["x1"]] = zero(3);
   expected_zero[o["x2"]] = zero(3);
   expected_zero[o["l1"]] = zero(2);
@@ -174,24 +174,24 @@ TEST(TupleValues, zero_expmap_logmap)
 
   CHECK(assert_equal(expected_zero, config1.zero(o)));
 
-  VectorConfig delta(config1.dims(o));
+  VectorValues delta(config1.dims(o));
   delta[o["x1"]] = Vector_(3, 1.0, 1.1, 1.2);
   delta[o["x2"]] = Vector_(3, 1.3, 1.4, 1.5);
   delta[o["l1"]] = Vector_(2, 1.0, 1.1);
   delta[o["l2"]] = Vector_(2, 1.3, 1.4);
 
-  Config expected;
+  Values expected;
   expected.insert(PoseKey(1), x1.expmap(Vector_(3, 1.0, 1.1, 1.2)));
   expected.insert(PoseKey(2), x2.expmap(Vector_(3, 1.3, 1.4, 1.5)));
   expected.insert(PointKey(1), Point2(5.0, 6.1));
   expected.insert(PointKey(2), Point2(10.3, 11.4));
 
-  Config actual = config1.expmap(delta, o);
+  Values actual = config1.expmap(delta, o);
   CHECK(assert_equal(expected, actual));
 
   // Check log
-  VectorConfig expected_log = delta;
-  VectorConfig actual_log = config1.logmap(actual, o);
+  VectorValues expected_log = delta;
+  VectorValues actual_log = config1.logmap(actual, o);
   CHECK(assert_equal(expected_log, actual_log));
 }
 
@@ -204,20 +204,20 @@ typedef TypedSymbol<Point3, 'b'> Point3Key;
 typedef TypedSymbol<Point3, 'c'> Point3Key2;
 
 // some config types
-typedef LieValues<PoseKey> PoseConfig;
-typedef LieValues<PointKey> PointConfig;
-typedef LieValues<LamKey> LamConfig;
-typedef LieValues<Pose3Key> Pose3Config;
-typedef LieValues<Point3Key> Point3Config;
-typedef LieValues<Point3Key2> Point3Config2;
+typedef LieValues<PoseKey> PoseValues;
+typedef LieValues<PointKey> PointValues;
+typedef LieValues<LamKey> LamValues;
+typedef LieValues<Pose3Key> Pose3Values;
+typedef LieValues<Point3Key> Point3Values;
+typedef LieValues<Point3Key2> Point3Values2;
 
 // some TupleValues types
-typedef TupleValues<PoseConfig, TupleValuesEnd<PointConfig> > ConfigA;
-typedef TupleValues<PoseConfig, TupleValues<PointConfig, TupleValuesEnd<LamConfig> > > ConfigB;
+typedef TupleValues<PoseValues, TupleValuesEnd<PointValues> > ValuesA;
+typedef TupleValues<PoseValues, TupleValues<PointValues, TupleValuesEnd<LamValues> > > ValuesB;
 
-typedef TupleValues1<PoseConfig> TuplePoseConfig;
-typedef TupleValues1<PointConfig> TuplePointConfig;
-typedef TupleValues2<PoseConfig, PointConfig> SimpleConfig;
+typedef TupleValues1<PoseValues> TuplePoseValues;
+typedef TupleValues1<PointValues> TuplePointValues;
+typedef TupleValues2<PoseValues, PointValues> SimpleValues;
 
 /* ************************************************************************* */
 TEST(TupleValues, slicing) {
@@ -226,37 +226,37 @@ TEST(TupleValues, slicing) {
 	PoseKey x1(1), x2(2);
 	Pose2 x1_val(1.0, 2.0, 0.3), x2_val(3.0, 4.0, 0.4);
 
-	PoseConfig liePoseConfig;
-	liePoseConfig.insert(x1, x1_val);
-	liePoseConfig.insert(x2, x2_val);
+	PoseValues liePoseValues;
+	liePoseValues.insert(x1, x1_val);
+	liePoseValues.insert(x2, x2_val);
 
-	PointConfig liePointConfig;
-	liePointConfig.insert(l1, l1_val);
-	liePointConfig.insert(l2, l2_val);
+	PointValues liePointValues;
+	liePointValues.insert(l1, l1_val);
+	liePointValues.insert(l2, l2_val);
 
 	// construct TupleValues1 from the base config
-	TuplePoseConfig tupPoseConfig1(liePoseConfig);
-	EXPECT(assert_equal(liePoseConfig, tupPoseConfig1.first(), tol));
+	TuplePoseValues tupPoseValues1(liePoseValues);
+	EXPECT(assert_equal(liePoseValues, tupPoseValues1.first(), tol));
 
-	TuplePointConfig tupPointConfig1(liePointConfig);
-	EXPECT(assert_equal(liePointConfig, tupPointConfig1.first(), tol));
+	TuplePointValues tupPointValues1(liePointValues);
+	EXPECT(assert_equal(liePointValues, tupPointValues1.first(), tol));
 
 //	// construct a TupleValues2 from a TupleValues1
-//	SimpleConfig pairConfig1(tupPoseConfig1);
-//	EXPECT(assert_equal(liePoseConfig, pairConfig1.first(), tol));
-//	EXPECT(pairConfig1.second().empty());
+//	SimpleValues pairValues1(tupPoseValues1);
+//	EXPECT(assert_equal(liePoseValues, pairValues1.first(), tol));
+//	EXPECT(pairValues1.second().empty());
 //
-//	SimpleConfig pairConfig2(tupPointConfig1);
-//	EXPECT(assert_equal(liePointConfig, pairConfig2.second(), tol));
-//	EXPECT(pairConfig1.first().empty());
+//	SimpleValues pairValues2(tupPointValues1);
+//	EXPECT(assert_equal(liePointValues, pairValues2.second(), tol));
+//	EXPECT(pairValues1.first().empty());
 
 }
 
 /* ************************************************************************* */
 TEST(TupleValues, basic_functions) {
 	// create some tuple configs
-	ConfigA configA;
-	ConfigB configB;
+	ValuesA configA;
+	ValuesB configB;
 
 	PoseKey x1(1);
 	PointKey l1(1);
@@ -326,7 +326,7 @@ TEST(TupleValues, basic_functions) {
 
 /* ************************************************************************* */
 TEST(TupleValues, insert_config) {
-	ConfigB config1, config2, expected;
+	ValuesB config1, config2, expected;
 
 	PoseKey x1(1), x2(2);
 	PointKey l1(1), l2(2);
@@ -358,7 +358,7 @@ TEST(TupleValues, insert_config) {
 /* ************************************************************************* */
 TEST( TupleValues, update_element )
 {
-	TupleValues2<PoseConfig, PointConfig> cfg;
+	TupleValues2<PoseValues, PointValues> cfg;
 	Pose2 x1(2.0, 1.0, 2.0), x2(3.0, 4.0, 5.0);
 	Point2 l1(1.0, 2.0), l2(3.0, 4.0);
 	PoseKey xk(1);
@@ -389,7 +389,7 @@ TEST( TupleValues, equals )
 	Point2 l1(4,5), l2(9,10);
 	PointKey l1k(1), l2k(2);
 
-	ConfigA config1, config2, config3, config4, config5;
+	ValuesA config1, config2, config3, config4, config5;
 
 	config1.insert(x1k, x1);
 	config1.insert(x2k, x2);
@@ -409,7 +409,7 @@ TEST( TupleValues, equals )
 	config4.insert(l1k, l1);
 	config4.insert(l2k, l2);
 
-	ConfigA config6(config1);
+	ValuesA config6(config1);
 
 	EXPECT(assert_equal(config1,config2));
 	EXPECT(assert_equal(config1,config1));
@@ -429,19 +429,19 @@ TEST(TupleValues, expmap)
 
 	Ordering o; o += "x1", "x2", "l1", "l2";
 
-	ConfigA config1;
+	ValuesA config1;
 	config1.insert(x1k, x1);
 	config1.insert(x2k, x2);
 	config1.insert(l1k, l1);
 	config1.insert(l2k, l2);
 
-	VectorConfig delta(config1.dims(o));
+	VectorValues delta(config1.dims(o));
 	delta[o["x1"]] = Vector_(3, 1.0, 1.1, 1.2);
 	delta[o["x2"]] = Vector_(3, 1.3, 1.4, 1.5);
 	delta[o["l1"]] = Vector_(2, 1.0, 1.1);
 	delta[o["l2"]] = Vector_(2, 1.3, 1.4);
 
-	ConfigA expected;
+	ValuesA expected;
 	expected.insert(x1k, x1.expmap(Vector_(3, 1.0, 1.1, 1.2)));
 	expected.insert(x2k, x2.expmap(Vector_(3, 1.3, 1.4, 1.5)));
 	expected.insert(l1k, Point2(5.0, 6.1));
@@ -461,13 +461,13 @@ TEST(TupleValues, expmap_typedefs)
 
   Ordering o; o += "x1", "x2", "l1", "l2";
 
-	TupleValues2<PoseConfig, PointConfig> config1, expected, actual;
+	TupleValues2<PoseValues, PointValues> config1, expected, actual;
 	config1.insert(x1k, x1);
 	config1.insert(x2k, x2);
 	config1.insert(l1k, l1);
 	config1.insert(l2k, l2);
 
-  VectorConfig delta(config1.dims(o));
+  VectorValues delta(config1.dims(o));
   delta[o["x1"]] = Vector_(3, 1.0, 1.1, 1.2);
   delta[o["x2"]] = Vector_(3, 1.3, 1.4, 1.5);
   delta[o["l1"]] = Vector_(2, 1.0, 1.1);
@@ -478,18 +478,18 @@ TEST(TupleValues, expmap_typedefs)
 	expected.insert(l1k, Point2(5.0, 6.1));
 	expected.insert(l2k, Point2(10.3, 11.4));
 
-	CHECK(assert_equal(expected, TupleValues2<PoseConfig, PointConfig>(config1.expmap(delta, o))));
+	CHECK(assert_equal(expected, TupleValues2<PoseValues, PointValues>(config1.expmap(delta, o))));
 	//CHECK(assert_equal(delta, config1.logmap(expected)));
 }
 
 /* ************************************************************************* */
 TEST(TupleValues, typedefs)
 {
-	TupleValues2<PoseConfig, PointConfig> config1;
-	TupleValues3<PoseConfig, PointConfig, LamConfig> config2;
-	TupleValues4<PoseConfig, PointConfig, LamConfig, Point3Config> config3;
-	TupleValues5<PoseConfig, PointConfig, LamConfig, Point3Config, Pose3Config> config4;
-	TupleValues6<PoseConfig, PointConfig, LamConfig, Point3Config, Pose3Config, Point3Config2> config5;
+	TupleValues2<PoseValues, PointValues> config1;
+	TupleValues3<PoseValues, PointValues, LamValues> config2;
+	TupleValues4<PoseValues, PointValues, LamValues, Point3Values> config3;
+	TupleValues5<PoseValues, PointValues, LamValues, Point3Values, Pose3Values> config4;
+	TupleValues6<PoseValues, PointValues, LamValues, Point3Values, Pose3Values, Point3Values2> config5;
 }
 
 /* ************************************************************************* */
@@ -502,12 +502,12 @@ TEST( TupleValues, pairconfig_style )
 	Point2 point1(2.0, 3.0);
 	LieVector lam1 = LieVector(2.3);
 
-	PoseConfig config1; config1.insert(x1, pose1);
-	PointConfig config2; config2.insert(l1, point1);
-	LamConfig config3; config3.insert(L1, lam1);
+	PoseValues config1; config1.insert(x1, pose1);
+	PointValues config2; config2.insert(l1, point1);
+	LamValues config3; config3.insert(L1, lam1);
 
 	// Constructor
-	TupleValues3<PoseConfig, PointConfig, LamConfig> config(config1, config2, config3);
+	TupleValues3<PoseValues, PointValues, LamValues> config(config1, config2, config3);
 
 	// access
 	CHECK(assert_equal(config1, config.first()));
@@ -518,7 +518,7 @@ TEST( TupleValues, pairconfig_style )
 /* ************************************************************************* */
 TEST(TupleValues, insert_config_typedef) {
 
-	TupleValues4<PoseConfig, PointConfig, LamConfig, Point3Config> config1, config2, expected;
+	TupleValues4<PoseValues, PointValues, LamValues, Point3Values> config1, config2, expected;
 
 	PoseKey x1(1), x2(2);
 	PointKey l1(1), l2(2);
@@ -549,7 +549,7 @@ TEST(TupleValues, insert_config_typedef) {
 
 /* ************************************************************************* */
 TEST(TupleValues, partial_insert) {
-	TupleValues3<PoseConfig, PointConfig, LamConfig> init, expected;
+	TupleValues3<PoseValues, PointValues, LamValues> init, expected;
 
 	PoseKey x1(1), x2(2);
 	PointKey l1(1), l2(2);
@@ -562,7 +562,7 @@ TEST(TupleValues, partial_insert) {
 	init.insert(l1, point1);
 	init.insert(L1, lam1);
 
-	PoseConfig cfg1;
+	PoseValues cfg1;
 	cfg1.insert(x2, pose2);
 
 	init.insertSub(cfg1);
@@ -577,7 +577,7 @@ TEST(TupleValues, partial_insert) {
 
 /* ************************************************************************* */
 TEST(TupleValues, update) {
-	TupleValues3<PoseConfig, PointConfig, LamConfig> init, superset, expected;
+	TupleValues3<PoseValues, PointValues, LamValues> init, superset, expected;
 
 	PoseKey x1(1), x2(2);
 	PointKey l1(1), l2(2);

@@ -160,7 +160,7 @@ bool GaussianConditional::equals(const GaussianConditional &c, double tol) const
 //}
 
 /* ************************************************************************* */
-Vector GaussianConditional::solve(const VectorConfig& x) const {
+Vector GaussianConditional::solve(const VectorValues& x) const {
   static const bool debug = false;
   if(debug) print("Solving conditional ");
 	Vector rhs(get_d());
@@ -179,7 +179,7 @@ Vector GaussianConditional::solve(const VectorConfig& x) const {
 }
 
 /* ************************************************************************* */
-Vector GaussianConditional::solve(const Permuted<VectorConfig>& x) const {
+Vector GaussianConditional::solve(const Permuted<VectorValues>& x) const {
   Vector rhs(get_d());
   for (const_iterator parent = beginParents(); parent != endParents(); ++parent) {
     ublas::axpy_prod(-get_S(parent), x[*parent], rhs, false);

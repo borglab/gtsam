@@ -51,15 +51,15 @@ namespace gtsam {
 	}
 
 	/* ************************************************************************* */
-	VectorConfig steepestDescent(const GaussianFactorGraph& fg,
-			const VectorConfig& x, bool verbose, double epsilon, double epsilon_abs, size_t maxIterations) {
-		return conjugateGradients<GaussianFactorGraph, VectorConfig, Errors> (fg,
+	VectorValues steepestDescent(const GaussianFactorGraph& fg,
+			const VectorValues& x, bool verbose, double epsilon, double epsilon_abs, size_t maxIterations) {
+		return conjugateGradients<GaussianFactorGraph, VectorValues, Errors> (fg,
 				x, verbose, epsilon, epsilon_abs, maxIterations, true);
 	}
 
-	VectorConfig conjugateGradientDescent(const GaussianFactorGraph& fg,
-			const VectorConfig& x, bool verbose, double epsilon, double epsilon_abs, size_t maxIterations) {
-		return conjugateGradients<GaussianFactorGraph, VectorConfig, Errors> (fg,
+	VectorValues conjugateGradientDescent(const GaussianFactorGraph& fg,
+			const VectorValues& x, bool verbose, double epsilon, double epsilon_abs, size_t maxIterations) {
+		return conjugateGradients<GaussianFactorGraph, VectorValues, Errors> (fg,
 				x, verbose, epsilon, epsilon_abs, maxIterations);
 	}
 

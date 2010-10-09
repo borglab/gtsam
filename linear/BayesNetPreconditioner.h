@@ -34,33 +34,33 @@ namespace gtsam {
 				const GaussianBayesNet& Rd);
 
 		// R*x = y by solving x=inv(R)*y
-		VectorConfig backSubstitute(const VectorConfig& y) const;
+		VectorValues backSubstitute(const VectorValues& y) const;
 
 		// gy=inv(L)*gx by solving L*gy=gx.
-		VectorConfig backSubstituteTranspose(const VectorConfig& gx) const;
+		VectorValues backSubstituteTranspose(const VectorValues& gx) const;
 
 		/* x = inv(R)*y */
-		inline VectorConfig x(const VectorConfig& y) const {
+		inline VectorValues x(const VectorValues& y) const {
 			return backSubstitute(y);
 		}
 
 		/* error, given y */
-		double error(const VectorConfig& y) const;
+		double error(const VectorValues& y) const;
 
 		/** gradient */
-		VectorConfig gradient(const VectorConfig& y) const;
+		VectorValues gradient(const VectorValues& y) const;
 
 		/** Apply operator A */
-		Errors operator*(const VectorConfig& y) const;
+		Errors operator*(const VectorValues& y) const;
 
 		/** In-place version that overwrites e */
-		void multiplyInPlace(const VectorConfig& y, Errors& e) const;
+		void multiplyInPlace(const VectorValues& y, Errors& e) const;
 
 		/** Apply operator A' */
-		VectorConfig operator^(const Errors& e) const;
+		VectorValues operator^(const Errors& e) const;
 
 		/** BLAS level 2 equivalent y += alpha*inv(R')*A'*e */
-		void transposeMultiplyAdd(double alpha, const Errors& e, VectorConfig& y) const;
+		void transposeMultiplyAdd(double alpha, const Errors& e, VectorValues& y) const;
 	};
 
 } // namespace gtsam

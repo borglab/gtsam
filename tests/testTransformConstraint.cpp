@@ -31,19 +31,19 @@ typedef TypedSymbol<Pose2, 'x'> PoseKey;
 typedef TypedSymbol<Point2, 'l'> PointKey;
 typedef TypedSymbol<Pose2, 'T'> TransformKey;
 
-typedef LieValues<PoseKey> PoseConfig;
-typedef LieValues<PointKey> PointConfig;
-typedef LieValues<TransformKey> TransformConfig;
+typedef LieValues<PoseKey> PoseValues;
+typedef LieValues<PointKey> PointValues;
+typedef LieValues<TransformKey> TransformValues;
 
-typedef TupleValues3< PoseConfig, PointConfig, TransformConfig > DDFConfig;
-typedef NonlinearFactorGraph<DDFConfig> DDFGraph;
-typedef NonlinearOptimizer<DDFGraph, DDFConfig> Optimizer;
+typedef TupleValues3< PoseValues, PointValues, TransformValues > DDFValues;
+typedef NonlinearFactorGraph<DDFValues> DDFGraph;
+typedef NonlinearOptimizer<DDFGraph, DDFValues> Optimizer;
 
-typedef NonlinearEquality<DDFConfig, PoseKey> PoseConstraint;
-typedef NonlinearEquality<DDFConfig, PointKey> PointConstraint;
-typedef NonlinearEquality<DDFConfig, TransformKey> TransformPriorConstraint;
+typedef NonlinearEquality<DDFValues, PoseKey> PoseConstraint;
+typedef NonlinearEquality<DDFValues, PointKey> PointConstraint;
+typedef NonlinearEquality<DDFValues, TransformKey> TransformPriorConstraint;
 
-typedef TransformConstraint<DDFConfig, PointKey, TransformKey> PointTransformConstraint;
+typedef TransformConstraint<DDFValues, PointKey, TransformKey> PointTransformConstraint;
 
 PointKey lA1(1), lA2(2), lB1(3);
 TransformKey t1(1);
@@ -160,7 +160,7 @@ TEST( TransformConstraint, converge_trans ) {
 	graph.add(PointConstraint(globalK2, global2, error_gain));
 
 	// create initial estimate
-	DDFConfig init;
+	DDFValues init;
 	init.insert(localK1, local1);
 	init.insert(localK2, local2);
 	init.insert(globalK1, global1);
@@ -168,9 +168,9 @@ TEST( TransformConstraint, converge_trans ) {
 	init.insert(transK, trans);
 
 	// optimize
-	Optimizer::shared_config actual = Optimizer::optimizeLM(graph, init);
+	Optimizer::shared_values actual = Optimizer::optimizeLM(graph, init);
 
-	DDFConfig expected;
+	DDFValues expected;
 	expected.insert(localK1, local1);
 	expected.insert(localK2, local2);
 	expected.insert(globalK1, global1);
@@ -208,13 +208,13 @@ TEST( TransformConstraint, converge_local ) {
 	graph.add(TransformPriorConstraint(transK, trans, error_gain));
 
 	// create initial estimate
-	DDFConfig init;
+	DDFValues init;
 	init.insert(localK, local);
 	init.insert(globalK, global);
 	init.insert(transK, trans);
 
 	// optimize
-	Optimizer::shared_config actual = Optimizer::optimizeLM(graph, init);
+	Optimizer::shared_values actual = Optimizer::optimizeLM(graph, init);
 
 	CHECK(assert_equal(idealLocal, actual->at(localK), 1e-5));
 }
@@ -246,13 +246,13 @@ TEST( TransformConstraint, converge_global ) {
 	graph.add(TransformPriorConstraint(transK, trans, error_gain));
 
 	// create initial estimate
-	DDFConfig init;
+	DDFValues init;
 	init.insert(localK, local);
 	init.insert(globalK, global);
 	init.insert(transK, trans);
 
 	// optimize
-	Optimizer::shared_config actual = Optimizer::optimizeLM(graph, init);
+	Optimizer::shared_values actual = Optimizer::optimizeLM(graph, init);
 
 	// verify
 	CHECK(assert_equal(idealForeign, actual->at(globalK), 1e-5));

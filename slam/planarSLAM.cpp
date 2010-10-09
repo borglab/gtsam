@@ -14,14 +14,14 @@ namespace gtsam {
 
 	using namespace planarSLAM;
 	INSTANTIATE_LIE_CONFIG(PointKey)
-	INSTANTIATE_TUPLE_CONFIG2(PoseConfig, PointConfig)
-	INSTANTIATE_NONLINEAR_FACTOR_GRAPH(Config)
-	INSTANTIATE_NONLINEAR_OPTIMIZER(Graph, Config)
+	INSTANTIATE_TUPLE_CONFIG2(PoseValues, PointValues)
+	INSTANTIATE_NONLINEAR_FACTOR_GRAPH(Values)
+	INSTANTIATE_NONLINEAR_OPTIMIZER(Graph, Values)
 
 	namespace planarSLAM {
 
-		Graph::Graph(const NonlinearFactorGraph<Config>& graph) :
-				NonlinearFactorGraph<Config>(graph) {}
+		Graph::Graph(const NonlinearFactorGraph<Values>& graph) :
+				NonlinearFactorGraph<Values>(graph) {}
 
 		void Graph::addPrior(const PoseKey& i, const Pose2& p,
 				const SharedGaussian& model) {

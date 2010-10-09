@@ -8,12 +8,12 @@
 #pragma once
 
 #include <gtsam/slam/simulated2D.h>
-#include <gtsam/slam/Simulated2DConfig.h>
+#include <gtsam/slam/Simulated2DValues.h>
 
 namespace gtsam {
 
 	/** Create a prior on a pose Point2 with key 'x1' etc... */
-	typedef simulated2D::GenericPrior<Simulated2DConfig, simulated2D::PoseKey> Simulated2DPosePrior;
+	typedef simulated2D::GenericPrior<Simulated2DValues, simulated2D::PoseKey> Simulated2DPosePrior;
 
 }
 

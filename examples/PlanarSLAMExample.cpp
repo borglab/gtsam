@@ -65,7 +65,7 @@ int main(int argc, char** argv) {
 	graph.print("Full Graph");
 
 	// initialize to noisy points
-	Config initialEstimate;
+	Values initialEstimate;
 	initialEstimate.insert(x1, Pose2(0.5, 0.0, 0.2));
 	initialEstimate.insert(x2, Pose2(2.3, 0.1,-0.2));
 	initialEstimate.insert(x3, Pose2(4.1, 0.1, 0.1));
@@ -75,7 +75,7 @@ int main(int argc, char** argv) {
 	initialEstimate.print("Initial Estimate");
 
 	// optimize using Levenburg-Marquadt optimization with an ordering from colamd
-	Optimizer::shared_config result = Optimizer::optimizeLM(graph, initialEstimate);
+	Optimizer::shared_values result = Optimizer::optimizeLM(graph, initialEstimate);
 
 	result->print("Final Result");
 

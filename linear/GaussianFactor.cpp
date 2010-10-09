@@ -249,7 +249,7 @@ void GaussianFactor::permuteWithInverse(const Permutation& inversePermutation) {
 }
 
 /* ************************************************************************* */
-Vector GaussianFactor::unweighted_error(const VectorConfig& c) const {
+Vector GaussianFactor::unweighted_error(const VectorValues& c) const {
   Vector e = -getb();
   if (empty()) return e;
   for(size_t pos=0; pos<keys_.size(); ++pos)
@@ -258,13 +258,13 @@ Vector GaussianFactor::unweighted_error(const VectorConfig& c) const {
 }
 
 /* ************************************************************************* */
-Vector GaussianFactor::error_vector(const VectorConfig& c) const {
+Vector GaussianFactor::error_vector(const VectorValues& c) const {
 	if (empty()) return model_->whiten(-getb());
 	return model_->whiten(unweighted_error(c));
 }
 
 /* ************************************************************************* */
-double GaussianFactor::error(const VectorConfig& c) const {
+double GaussianFactor::error(const VectorValues& c) const {
   if (empty()) return 0;
   Vector weighted = error_vector(c);
   return 0.5 * inner_prod(weighted,weighted);
@@ -287,7 +287,7 @@ double GaussianFactor::error(const VectorConfig& c) const {
 //}
 
 /* ************************************************************************* */
-Vector GaussianFactor::operator*(const VectorConfig& x) const {
+Vector GaussianFactor::operator*(const VectorValues& x) const {
 	Vector Ax = zero(Ab_.size1());
   if (empty()) return Ax;
 
@@ -301,10 +301,10 @@ Vector GaussianFactor::operator*(const VectorConfig& x) const {
 }
 
 ///* ************************************************************************* */
-//VectorConfig GaussianFactor::operator^(const Vector& e) const {
+//VectorValues GaussianFactor::operator^(const Vector& e) const {
 //  Vector E = model_->whiten(e);
-//	VectorConfig x;
-//  // Just iterate over all A matrices and insert Ai^e into VectorConfig
+//	VectorValues x;
+//  // Just iterate over all A matrices and insert Ai^e into VectorValues
 //  for(size_t pos=0; pos<keys_.size(); ++pos)
 //    x.insert(keys_[pos], ARange(pos)^E);
 ////  BOOST_FOREACH(const NamedMatrix& jA, As_)
@@ -314,9 +314,9 @@ Vector GaussianFactor::operator*(const VectorConfig& x) const {
 
 /* ************************************************************************* */
 void GaussianFactor::transposeMultiplyAdd(double alpha, const Vector& e,
-		VectorConfig& x) const {
+		VectorValues& x) const {
 	Vector E = alpha * model_->whiten(e);
-	// Just iterate over all A matrices and insert Ai^e into VectorConfig
+	// Just iterate over all A matrices and insert Ai^e into VectorValues
   for(size_t pos=0; pos<keys_.size(); ++pos)
     gtsam::transposeMultiplyAdd(1.0, Ab_(pos), E, x[keys_[pos]]);
 //	BOOST_FOREACH(const NamedMatrix& jA, As_)

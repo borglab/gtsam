@@ -121,7 +121,7 @@ bool equalsXML(const T& input = T()) {
 #include <gtsam/geometry/Rot3.h>
 #include <gtsam/geometry/Cal3_S2.h>
 
-//#include <gtsam/linear/VectorConfig.h>
+//#include <gtsam/linear/VectorValues.h>
 //#include <gtsam/linear/GaussianConditional.h>
 //#include <gtsam/inference/SymbolicConditional.h>
 
@@ -155,14 +155,14 @@ TEST (Serialization, xml_geometry) {
 /* ************************************************************************* */
 TEST (Serialization, text_linear) {
 	// NOT WORKING:
-//	EXPECT(equalsObj<VectorConfig>());
+//	EXPECT(equalsObj<VectorValues>());
 //	EXPECT(equalsObj<GaussianConditional>());
 }
 
 /* ************************************************************************* */
 TEST (Serialization, xml_linear) {
 	// NOT WORKING:
-//	EXPECT(equalsXML<VectorConfig>());
+//	EXPECT(equalsXML<VectorValues>());
 //	EXPECT(equalsXML<GaussianConditional>());
 }
 
@@ -170,14 +170,14 @@ TEST (Serialization, xml_linear) {
 TEST (Serialization, text_planar) {
 	EXPECT(equalsObj<gtsam::planarSLAM::PoseKey>(gtsam::planarSLAM::PoseKey(2)));
 	EXPECT(equalsObj<gtsam::planarSLAM::PointKey>(gtsam::planarSLAM::PointKey(2)));
-	EXPECT(equalsObj<gtsam::planarSLAM::Config>());
+	EXPECT(equalsObj<gtsam::planarSLAM::Values>());
 }
 
 /* ************************************************************************* */
 TEST (Serialization, xml_planar) {
 	EXPECT(equalsXML<gtsam::planarSLAM::PoseKey>(gtsam::planarSLAM::PoseKey(2)));
 	EXPECT(equalsXML<gtsam::planarSLAM::PointKey>(gtsam::planarSLAM::PointKey(2)));
-	EXPECT(equalsXML<gtsam::planarSLAM::Config>());
+	EXPECT(equalsXML<gtsam::planarSLAM::Values>());
 }
 
 /* ************************************************************************* */

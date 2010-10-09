@@ -28,29 +28,29 @@ namespace gtsam {
 
 //typedef std::vector<GaussianFactor::shared_ptr> CachedFactors;
 
-template<class Conditional, class Config>
+template<class Conditional, class Values>
 class ISAM2: public BayesTree<Conditional> {
 
 protected:
 
 	// current linearization point
-	Config theta_;
+	Values theta_;
 
   // VariableIndex lets us look up factors by involved variable and keeps track of dimensions
   typedef GaussianVariableIndex<VariableIndexStorage_deque> VariableIndexType;
   VariableIndexType variableIndex_;
 
 	// the linear solution, an update to the estimate in theta
-	VectorConfig deltaUnpermuted_;
+	VectorValues deltaUnpermuted_;
 
   // The residual permutation through which the deltaUnpermuted_ is
-  // referenced.  Permuting the VectorConfig is slow, so for performance the
-  // permutation is applied at access time instead of to the VectorConfig
+  // referenced.  Permuting the VectorValues is slow, so for performance the
+  // permutation is applied at access time instead of to the VectorValues
   // itself.
-  Permuted<VectorConfig> delta_;
+  Permuted<VectorValues> delta_;
 
 	// for keeping all original nonlinear factors
-	NonlinearFactorGraph<Config> nonlinearFactors_;
+	NonlinearFactorGraph<Values> nonlinearFactors_;
 
 	// The "ordering" allows converting Symbols to varid_t (integer) keys.  We
 	// keep it up to date as we add and reorder variables.
@@ -69,7 +69,7 @@ public:
 	ISAM2();
 
 //	/** Create a Bayes Tree from a Bayes Net */
-//	ISAM2(const NonlinearFactorGraph<Config>& fg, const Ordering& ordering, const Config& config);
+//	ISAM2(const NonlinearFactorGraph<Values>& fg, const Ordering& ordering, const Values& config);
 
 	/** Destructor */
 	virtual ~ISAM2() {}
@@ -81,21 +81,21 @@ public:
 	/**
 	 * ISAM2.
 	 */
-	void update(const NonlinearFactorGraph<Config>& newFactors, const Config& newTheta,
+	void update(const NonlinearFactorGraph<Values>& newFactors, const Values& newTheta,
 			double wildfire_threshold = 0., double relinearize_threshold = 0., bool relinearize = true);
 
 	// needed to create initial estimates
-	const Config& getLinearizationPoint() const {return theta_;}
+	const Values& getLinearizationPoint() const {return theta_;}
 
 	// estimate based on incomplete delta (threshold!)
-	Config calculateEstimate() const;
+	Values calculateEstimate() const;
 
 	// estimate based on full delta (note that this is based on the current linearization point)
-	Config calculateBestEstimate() const;
+	Values calculateBestEstimate() const;
 
-	const Permuted<VectorConfig>& getDelta() const { return delta_; }
+	const Permuted<VectorValues>& getDelta() const { return delta_; }
 
-	const NonlinearFactorGraph<Config>& getFactorsUnsafe() const { return nonlinearFactors_; }
+	const NonlinearFactorGraph<Values>& getFactorsUnsafe() const { return nonlinearFactors_; }
 
 	const Ordering& getOrdering() const { return ordering_; }
 

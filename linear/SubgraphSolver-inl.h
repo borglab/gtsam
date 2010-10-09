@@ -20,14 +20,14 @@ using namespace std;
 namespace gtsam {
 
 	/* ************************************************************************* */
-	template<class Graph, class Config>
-	SubgraphSolver<Graph, Config>::SubgraphSolver(const Graph& G, const Config& theta0) {
+	template<class Graph, class Values>
+	SubgraphSolver<Graph, Values>::SubgraphSolver(const Graph& G, const Values& theta0) {
 		initialize(G,theta0);
 	}
 
 	/* ************************************************************************* */
-	template<class Graph, class Config>
-	void SubgraphSolver<Graph, Config>::initialize(const Graph& G, const Config& theta0) {
+	template<class Graph, class Values>
+	void SubgraphSolver<Graph, Values>::initialize(const Graph& G, const Values& theta0) {
 
 		// generate spanning tree
 		PredecessorMap<Key> tree = G.template findMinimumSpanningTree<Key, Constraint>();
@@ -46,21 +46,21 @@ namespace gtsam {
 
 		// compose the approximate solution
 		Key root = keys.back();
-		theta_bar_ = composePoses<Graph, Constraint, Pose, Config> (T_, tree, theta0[root]);
+		theta_bar_ = composePoses<Graph, Constraint, Pose, Values> (T_, tree, theta0[root]);
 	}
 
 	/* ************************************************************************* */
-	template<class Graph, class Config>
-	boost::shared_ptr<SubgraphPreconditioner> SubgraphSolver<Graph, Config>::linearize(const Graph& G, const Config& theta_bar) const {
+	template<class Graph, class Values>
+	boost::shared_ptr<SubgraphPreconditioner> SubgraphSolver<Graph, Values>::linearize(const Graph& G, const Values& theta_bar) const {
 		SubgraphPreconditioner::sharedFG Ab1 = T_.linearize(theta_bar);
 		SubgraphPreconditioner::sharedFG Ab2 = C_.linearize(theta_bar);
 #ifdef TIMING
 		SubgraphPreconditioner::sharedBayesNet Rc1;
-		SubgraphPreconditioner::sharedConfig xbar;
+		SubgraphPreconditioner::sharedValues xbar;
 #else
 		GaussianFactorGraph sacrificialAb1 = *Ab1; // duplicate !!!!!
 		SubgraphPreconditioner::sharedBayesNet Rc1 = sacrificialAb1.eliminate_(*ordering_);
-		SubgraphPreconditioner::sharedConfig xbar = gtsam::optimize_(*Rc1);
+		SubgraphPreconditioner::sharedValues xbar = gtsam::optimize_(*Rc1);
 #endif
 		// TODO: there does not seem to be a good reason to have Ab1_
 		// It seems only be used to provide an ordering for creating sparse matrices
@@ -68,14 +68,14 @@ namespace gtsam {
 	}
 
 	/* ************************************************************************* */
-	template<class Graph, class Config>
-	VectorConfig SubgraphSolver<Graph, Config>::optimize(SubgraphPreconditioner& system) const {
-		VectorConfig zeros = system.zero();
+	template<class Graph, class Values>
+	VectorValues SubgraphSolver<Graph, Values>::optimize(SubgraphPreconditioner& system) const {
+		VectorValues zeros = system.zero();
 
 		// Solve the subgraph PCG
-		VectorConfig ybar = conjugateGradients<SubgraphPreconditioner, VectorConfig,
+		VectorValues ybar = conjugateGradients<SubgraphPreconditioner, VectorValues,
 				Errors> (system, zeros, verbose_, epsilon_, epsilon_abs_, maxIterations_);
-		VectorConfig xbar = system.x(ybar);
+		VectorValues xbar = system.x(ybar);
 		return xbar;
 	}
 

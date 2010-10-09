@@ -1,6 +1,6 @@
 /**
  * @file    VectorBTree.h
- * @brief   Factor Graph Configuration
+ * @brief   Factor Graph Valuesuration
  * @author Frank Dellaert
  */
 
@@ -19,7 +19,7 @@
 
 namespace gtsam {
 
-	/** Factor Graph Configuration */
+	/** Factor Graph Valuesuration */
 	class VectorBTree: public Testable<VectorBTree> {
 
 	private:
@@ -74,7 +74,7 @@ public:
 		/** equals, for unit testing */
 		bool equals(const VectorBTree& expected, double tol = 1e-9) const;
 
-		/** Insert a value into the configuration with a given index: O(n) */
+		/** Insert a value into the values structure with a given index: O(n) */
 		VectorBTree& insert(const Symbol& j, const Vector& v);
 
 		/** Insert or add a value with given index: O(n) if does not exist */

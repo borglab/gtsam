@@ -14,8 +14,8 @@
 namespace gtsam {
 
 /* ************************************************************************* */
-template <class Config, class Key>
-LinearApproxFactor<Config,Key>::LinearApproxFactor(GaussianFactor::shared_ptr lin_factor, const Config& lin_points)
+template <class Values, class Key>
+LinearApproxFactor<Values,Key>::LinearApproxFactor(GaussianFactor::shared_ptr lin_factor, const Values& lin_points)
 : Base(noiseModel::Unit::Create(lin_factor->get_model()->dim())),
   lin_factor_(lin_factor), lin_points_(lin_points)
   {
@@ -27,10 +27,10 @@ LinearApproxFactor<Config,Key>::LinearApproxFactor(GaussianFactor::shared_ptr li
   }
 
 /* ************************************************************************* */
-template <class Config, class Key>
-Vector LinearApproxFactor<Config,Key>::unwhitenedError(const Config& c) const {
+template <class Values, class Key>
+Vector LinearApproxFactor<Values,Key>::unwhitenedError(const Values& c) const {
 	// extract the points in the new config
-	VectorConfig delta;
+	VectorValues delta;
 	BOOST_FOREACH(const Key& key, nonlinearKeys_) {
 		X newPt = c[key], linPt = lin_points_[key];
 		Vector d = linPt.logmap(newPt);
@@ -41,9 +41,9 @@ Vector LinearApproxFactor<Config,Key>::unwhitenedError(const Config& c) const {
 }
 
 /* ************************************************************************* */
-template <class Config, class Key>
+template <class Values, class Key>
 boost::shared_ptr<GaussianFactor>
-LinearApproxFactor<Config,Key>::linearize(const Config& c) const {
+LinearApproxFactor<Values,Key>::linearize(const Values& c) const {
   Vector b = lin_factor_->getb();
   SharedDiagonal model = lin_factor_->get_model();
   std::vector<std::pair<Symbol, Matrix> > terms;
@@ -56,9 +56,9 @@ LinearApproxFactor<Config,Key>::linearize(const Config& c) const {
 }
 
 /* ************************************************************************* */
-template <class Config, class Key>
-void LinearApproxFactor<Config,Key>::print(const std::string& s) const {
-	LinearApproxFactor<Config,Key>::Base::print(s);
+template <class Values, class Key>
+void LinearApproxFactor<Values,Key>::print(const std::string& s) const {
+	LinearApproxFactor<Values,Key>::Base::print(s);
 	lin_factor_->print();
 }
 

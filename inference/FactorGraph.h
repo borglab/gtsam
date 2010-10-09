@@ -29,7 +29,7 @@ namespace gtsam {
 	 * A factor graph is a bipartite graph with factor nodes connected to variable nodes.
 	 * In this class, however, only factor nodes are kept around.
 	 * 
-	 * Templated on the type of factors and configuration.
+	 * Templated on the type of factors and values structure.
 	 */
 	template<class Factor>
 	class FactorGraph: public Testable<FactorGraph<Factor> > {

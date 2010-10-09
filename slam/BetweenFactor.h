@@ -15,19 +15,19 @@ namespace gtsam {
 
 	/**
 	 * A class for a measurement predicted by "between(config[key1],config[key2])"
-	 * T is the Lie group type, Config where the T's are gotten from
+	 * T is the Lie group type, Values where the T's are gotten from
 	 *
 	 * FIXME: This should only need one key type, as we can't have different types
 	 */
-	template<class Config, class Key1, class Key2 = Key1>
-	class BetweenFactor: public NonlinearFactor2<Config, Key1, Key2> {
+	template<class Values, class Key1, class Key2 = Key1>
+	class BetweenFactor: public NonlinearFactor2<Values, Key1, Key2> {
 
 	public:
 		typedef typename Key1::Value_t T;
 
 	private:
 
-		typedef NonlinearFactor2<Config, Key1, Key2> Base;
+		typedef NonlinearFactor2<Values, Key1, Key2> Base;
 
 		T measured_; /** The measurement */
 
@@ -51,9 +51,9 @@ namespace gtsam {
 		}
 
 		/** equals */
-		bool equals(const NonlinearFactor<Config>& expected, double tol) const {
-			const BetweenFactor<Config, Key1, Key2> *e =
-					dynamic_cast<const BetweenFactor<Config, Key1, Key2>*> (&expected);
+		bool equals(const NonlinearFactor<Values>& expected, double tol) const {
+			const BetweenFactor<Values, Key1, Key2> *e =
+					dynamic_cast<const BetweenFactor<Values, Key1, Key2>*> (&expected);
 			return e != NULL && Base::equals(expected, tol) && this->measured_.equals(
 					e->measured_, tol);
 		}

@@ -16,15 +16,15 @@ namespace gtsam {
 	/**
 	 * Binary factor for a bearing measurement
 	 */
-	template<class Config, class PoseKey, class PointKey>
-	class BearingRangeFactor: public NonlinearFactor2<Config, PoseKey, PointKey> {
+	template<class Values, class PoseKey, class PointKey>
+	class BearingRangeFactor: public NonlinearFactor2<Values, PoseKey, PointKey> {
 	private:
 
 		// the measurement
 		Rot2 bearing_;
 		double range_;
 
-		typedef NonlinearFactor2<Config, PoseKey, PointKey> Base;
+		typedef NonlinearFactor2<Values, PoseKey, PointKey> Base;
 
 	public:
 

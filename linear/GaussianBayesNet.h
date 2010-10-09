@@ -43,30 +43,30 @@ namespace gtsam {
 			varid_t name1, Matrix S, varid_t name2, Matrix T, Vector sigmas);
 
 	/**
-	 * Allocate a VectorConfig for the variables in a BayesNet
+	 * Allocate a VectorValues for the variables in a BayesNet
 	 */
-	boost::shared_ptr<VectorConfig> allocateVectorConfig(const GaussianBayesNet& bn);
+	boost::shared_ptr<VectorValues> allocateVectorValues(const GaussianBayesNet& bn);
 
 	/**
 	 * optimize, i.e. return x = inv(R)*d
 	 */
-	VectorConfig optimize(const GaussianBayesNet&);
+	VectorValues optimize(const GaussianBayesNet&);
 
 	/**
 	 * shared pointer version
 	 */
-	boost::shared_ptr<VectorConfig> optimize_(const GaussianBayesNet& bn);
+	boost::shared_ptr<VectorValues> optimize_(const GaussianBayesNet& bn);
 
 	/*
 	 * Backsubstitute
 	 * (R*x)./sigmas = y by solving x=inv(R)*(y.*sigmas)
 	 */
-	VectorConfig backSubstitute(const GaussianBayesNet& bn, const VectorConfig& y);
+	VectorValues backSubstitute(const GaussianBayesNet& bn, const VectorValues& y);
 
 	/*
 	 * Backsubstitute in place, y is replaced with solution
 	 */
-	void backSubstituteInPlace(const GaussianBayesNet& bn, VectorConfig& y);
+	void backSubstituteInPlace(const GaussianBayesNet& bn, VectorValues& y);
 
 	/*
 	 * Transpose Backsubstitute
@@ -74,7 +74,7 @@ namespace gtsam {
 	 * gy=inv(R'*inv(Sigma))*gx
 	 * gz'*R'=gx', gy = gz.*sigmas
 	 */
-	VectorConfig backSubstituteTranspose(const GaussianBayesNet& bn, const VectorConfig& gx);
+	VectorValues backSubstituteTranspose(const GaussianBayesNet& bn, const VectorValues& gx);
 
 	/**
 	 * Return (dense) upper-triangular matrix representation
@@ -82,9 +82,9 @@ namespace gtsam {
 	std::pair<Matrix, Vector> matrix(const GaussianBayesNet&);
 
   /**
-   * Return RHS d as a VectorConfig
+   * Return RHS d as a VectorValues
    * Such that backSubstitute(bn,d) = optimize(bn)
    */
-  VectorConfig rhs(const GaussianBayesNet&);
+  VectorValues rhs(const GaussianBayesNet&);
 
 } /// namespace gtsam

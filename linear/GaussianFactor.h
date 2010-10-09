@@ -29,7 +29,7 @@
 #include <gtsam/inference/Factor-inl.h>
 #include <gtsam/inference/inference.h>
 #include <gtsam/inference/VariableSlots.h>
-#include <gtsam/linear/VectorConfig.h>
+#include <gtsam/linear/VectorValues.h>
 #include <gtsam/linear/SharedDiagonal.h>
 #include <gtsam/linear/GaussianConditional.h>
 #include <gtsam/linear/GaussianBayesNet.h>
@@ -105,9 +105,9 @@ public:
 	void print(const std::string& s = "") const;
 	bool equals(const GaussianFactor& lf, double tol = 1e-9) const;
 
-	Vector unweighted_error(const VectorConfig& c) const; /** (A*x-b) */
-	Vector error_vector(const VectorConfig& c) const; /** (A*x-b)/sigma */
-	double error(const VectorConfig& c) const; /**  0.5*(A*x-b)'*D*(A*x-b) */
+	Vector unweighted_error(const VectorValues& c) const; /** (A*x-b) */
+	Vector error_vector(const VectorValues& c) const; /** (A*x-b)/sigma */
+	double error(const VectorValues& c) const; /**  0.5*(A*x-b)'*D*(A*x-b) */
 
 	/** Check if the factor contains no information, i.e. zero rows.  This does
 	 * not necessarily mean that the factor involves no variables (to check for
@@ -170,13 +170,13 @@ public:
 	size_t numberOfRows() const { return Ab_.size1(); }
 
 	/** Return A*x */
-	Vector operator*(const VectorConfig& x) const;
+	Vector operator*(const VectorValues& x) const;
 
 //	/** Return A'*e */
-//	VectorConfig operator^(const Vector& e) const;
+//	VectorValues operator^(const Vector& e) const;
 
 	/** x += A'*e */
-	void transposeMultiplyAdd(double alpha, const Vector& e, VectorConfig& x) const;
+	void transposeMultiplyAdd(double alpha, const Vector& e, VectorValues& x) const;
 
 	/**
 	 * Return (dense) matrix associated with factor

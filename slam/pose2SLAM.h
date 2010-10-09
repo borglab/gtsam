@@ -21,9 +21,9 @@ namespace gtsam {
 	// Use pose2SLAM namespace for specific SLAM instance
 	namespace pose2SLAM {
 
-		// Keys and Config
+		// Keys and Values
 		typedef TypedSymbol<Pose2, 'x'> Key;
-		typedef LieValues<Key> Config;
+		typedef LieValues<Key> Values;
 
 		/**
 		 * Create a circle of n 2D poses tangent to circle of radius R, first pose at (R,0)
@@ -32,16 +32,16 @@ namespace gtsam {
 		 * @param c character to use for keys
 		 * @return circle of n 2D poses
 		 */
-		Config circle(size_t n, double R);
+		Values circle(size_t n, double R);
 
 		// Factors
-		typedef PriorFactor<Config, Key> Prior;
-		typedef BetweenFactor<Config, Key> Constraint;
-		typedef NonlinearEquality<Config, Key> HardConstraint;
+		typedef PriorFactor<Values, Key> Prior;
+		typedef BetweenFactor<Values, Key> Constraint;
+		typedef NonlinearEquality<Values, Key> HardConstraint;
 
 		// Graph
-		struct Graph: public NonlinearFactorGraph<Config> {
-			typedef BetweenFactor<Config, Key> Constraint;
+		struct Graph: public NonlinearFactorGraph<Values> {
+			typedef BetweenFactor<Values, Key> Constraint;
 			typedef Pose2 Pose;
 			void addPrior(const Key& i, const Pose2& p, const SharedGaussian& model);
 			void addConstraint(const Key& i, const Key& j, const Pose2& z, const SharedGaussian& model);
@@ -49,14 +49,14 @@ namespace gtsam {
 		};
 
 		// Optimizer
-		typedef NonlinearOptimizer<Graph, Config> Optimizer;
+		typedef NonlinearOptimizer<Graph, Values> Optimizer;
 
 	} // pose2SLAM
 
 	/**
 	 * Backwards compatibility
 	 */
-	typedef pose2SLAM::Config Pose2Config;
+	typedef pose2SLAM::Values Pose2Values;
 	typedef pose2SLAM::Prior Pose2Prior;
 	typedef pose2SLAM::Constraint Pose2Factor;
 	typedef pose2SLAM::Graph Pose2Graph;

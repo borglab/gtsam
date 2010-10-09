@@ -1,6 +1,6 @@
 /**
  * @file   testVectorBTree.cpp
- * @brief  Unit tests for Factor Graph Configuration
+ * @brief  Unit tests for Factor Graph Values
  * @author Frank Dellaert
  **/
 
@@ -283,7 +283,7 @@ TEST( VectorBTree, serialize)
     cout << "VectorBTree: Running Serialization Test" << endl;
     
     //create an VectorBTree
-    VectorBTree fg = createConfig();
+    VectorBTree fg = createValues();
     
     //serialize the config
     std::ostringstream in_archive_stream;

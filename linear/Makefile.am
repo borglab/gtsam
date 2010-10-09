@@ -16,7 +16,7 @@ sources += NoiseModel.cpp Errors.cpp
 check_PROGRAMS += tests/testNoiseModel tests/testErrors
 
 # Vector Configurations
-headers += VectorConfig.h 
+headers += VectorValues.h 
 #sources += VectorMap.cpp VectorBTree.cpp  
 #check_PROGRAMS += tests/testVectorMap tests/testVectorBTree  
 
@@ -36,7 +36,7 @@ check_PROGRAMS += tests/testGaussianJunctionTree
 
 # Timing tests
 noinst_PROGRAMS = tests/timeGaussianFactor tests/timeFactorOverhead tests/timeSLAMlike
-#noinst_PROGRAMS += tests/timeVectorConfig
+#noinst_PROGRAMS += tests/timeVectorValues
 
 #----------------------------------------------------------------------------------------------------
 # Create a libtool library that is not installed

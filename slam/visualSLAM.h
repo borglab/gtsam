@@ -24,20 +24,20 @@ namespace gtsam { namespace visualSLAM {
    */
   typedef TypedSymbol<Pose3,'x'> PoseKey;
   typedef TypedSymbol<Point3,'l'> PointKey;
-  typedef LieValues<PoseKey> PoseConfig;
-  typedef LieValues<PointKey> PointConfig;
-  typedef TupleValues2<PoseConfig, PointConfig> Config;
-  typedef boost::shared_ptr<Config> shared_config;
+  typedef LieValues<PoseKey> PoseValues;
+  typedef LieValues<PointKey> PointValues;
+  typedef TupleValues2<PoseValues, PointValues> Values;
+  typedef boost::shared_ptr<Values> shared_values;
 
-  typedef NonlinearEquality<Config, PoseKey> PoseConstraint;
-  typedef NonlinearEquality<Config, PointKey> PointConstraint;
+  typedef NonlinearEquality<Values, PoseKey> PoseConstraint;
+  typedef NonlinearEquality<Values, PointKey> PointConstraint;
 
 
   /**
    * Non-linear factor for a constraint derived from a 2D measurement,
    * i.e. the main building block for visual SLAM.
    */
-  template <class Cfg=Config, class LmK=PointKey, class PosK=PoseKey>
+  template <class Cfg=Values, class LmK=PointKey, class PosK=PoseKey>
   class GenericProjectionFactor : public NonlinearFactor2<Cfg, PosK, LmK>, Testable<GenericProjectionFactor<Cfg, LmK, PosK> > {
   protected:
 
@@ -115,12 +115,12 @@ namespace gtsam { namespace visualSLAM {
   };
 
   // Typedef for general use
-  typedef GenericProjectionFactor<Config, PointKey, PoseKey> ProjectionFactor;
+  typedef GenericProjectionFactor<Values, PointKey, PoseKey> ProjectionFactor;
 
   /**
 	 * Non-linear factor graph for vanilla visual SLAM
 	 */
-	class Graph: public NonlinearFactorGraph<Config> {
+	class Graph: public NonlinearFactorGraph<Values> {
 
 	public:
 
@@ -132,12 +132,12 @@ namespace gtsam { namespace visualSLAM {
 
 		/** print out graph */
 		void print(const std::string& s = "") const {
-			NonlinearFactorGraph<Config>::print(s);
+			NonlinearFactorGraph<Values>::print(s);
 		}
 
 		/** equals */
 		bool equals(const Graph& p, double tol = 1e-9) const {
-			return NonlinearFactorGraph<Config>::equals(p, tol);
+			return NonlinearFactorGraph<Values>::equals(p, tol);
 		}
 
 		/**
@@ -152,7 +152,7 @@ namespace gtsam { namespace visualSLAM {
 		}
 
 		/**
-		 *  Add a constraint on a pose (for now, *must* be satisfied in any Config)
+		 *  Add a constraint on a pose (for now, *must* be satisfied in any Values)
 		 *  @param j index of camera
 		 *  @param p to which pose to constrain it to
 		 */
@@ -162,7 +162,7 @@ namespace gtsam { namespace visualSLAM {
 		}
 
 		/**
-		 *  Add a constraint on a point (for now, *must* be satisfied in any Config)
+		 *  Add a constraint on a point (for now, *must* be satisfied in any Values)
 		 *  @param j index of landmark
 		 *  @param p to which point to constrain it to
 		 */

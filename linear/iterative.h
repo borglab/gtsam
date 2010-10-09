@@ -8,7 +8,7 @@
 #pragma once
 
 #include <gtsam/base/Matrix.h>
-#include <gtsam/linear/VectorConfig.h>
+#include <gtsam/linear/VectorValues.h>
 
 namespace gtsam {
 
@@ -107,15 +107,15 @@ namespace gtsam {
 	/**
 	 * Method of steepest gradients, Gaussian Factor Graph version
 	 * */
-	VectorConfig steepestDescent(const GaussianFactorGraph& fg,
-			const VectorConfig& x, bool verbose = false, double epsilon = 1e-3,
+	VectorValues steepestDescent(const GaussianFactorGraph& fg,
+			const VectorValues& x, bool verbose = false, double epsilon = 1e-3,
 			double epsilon_abs = 1e-5, size_t maxIterations = 0);
 
 	/**
 	 * Method of conjugate gradients (CG), Gaussian Factor Graph version
 	 * */
-	VectorConfig conjugateGradientDescent(const GaussianFactorGraph& fg,
-			const VectorConfig& x, bool verbose = false, double epsilon = 1e-3,
+	VectorValues conjugateGradientDescent(const GaussianFactorGraph& fg,
+			const VectorValues& x, bool verbose = false, double epsilon = 1e-3,
 			double epsilon_abs = 1e-5, size_t maxIterations = 0);
 
 } // namespace gtsam

@@ -1,5 +1,5 @@
 /**
- * @file    testVectorConfig.cpp
+ * @file    testVectorValues.cpp
  * @brief   
  * @author  Richard Roberts
  * @created Sep 16, 2010
@@ -7,7 +7,7 @@
 
 #include <vector>
 
-#include <gtsam/linear/VectorConfig.h>
+#include <gtsam/linear/VectorValues.h>
 #include <gtsam/inference/Permutation.h>
 
 #include <gtsam/CppUnitLite/TestHarness.h>
@@ -15,13 +15,13 @@
 using namespace gtsam;
 using namespace std;
 
-TEST(VectorConfig, standard) {
+TEST(VectorValues, standard) {
   Vector v1 = Vector_(3, 1.0,2.0,3.0);
   Vector v2 = Vector_(2, 4.0,5.0);
   Vector v3 = Vector_(4, 6.0,7.0,8.0,9.0);
 
   vector<size_t> dims(3); dims[0]=3; dims[1]=2; dims[2]=4;
-  VectorConfig combined(dims);
+  VectorValues combined(dims);
   combined[0] = v1;
   combined[1] = v2;
   combined[2] = v3;
@@ -30,7 +30,7 @@ TEST(VectorConfig, standard) {
   CHECK(assert_equal(combined[1], v2))
   CHECK(assert_equal(combined[2], v3))
 
-  VectorConfig incremental;
+  VectorValues incremental;
   incremental.reserve(3, 9);
   incremental.push_back_preallocated(v1);
   incremental.push_back_preallocated(v2);
@@ -41,13 +41,13 @@ TEST(VectorConfig, standard) {
   CHECK(assert_equal(incremental[2], v3))
 }
 
-TEST(VectorConfig, permuted_combined) {
+TEST(VectorValues, permuted_combined) {
   Vector v1 = Vector_(3, 1.0,2.0,3.0);
   Vector v2 = Vector_(2, 4.0,5.0);
   Vector v3 = Vector_(4, 6.0,7.0,8.0,9.0);
 
   vector<size_t> dims(3); dims[0]=3; dims[1]=2; dims[2]=4;
-  VectorConfig combined(dims);
+  VectorValues combined(dims);
   combined[0] = v1;
   combined[1] = v2;
   combined[2] = v3;
@@ -62,7 +62,7 @@ TEST(VectorConfig, permuted_combined) {
   perm2[1] = 2;
   perm2[2] = 0;
 
-  Permuted<VectorConfig> permuted1(combined);
+  Permuted<VectorValues> permuted1(combined);
   CHECK(assert_equal(v1, permuted1[0]))
   CHECK(assert_equal(v2, permuted1[1]))
   CHECK(assert_equal(v3, permuted1[2]))
@@ -77,7 +77,7 @@ TEST(VectorConfig, permuted_combined) {
   CHECK(assert_equal(v2, permuted1[2]))
   CHECK(assert_equal(v3, permuted1[0]))
 
-  Permuted<VectorConfig> permuted2(perm1, combined);
+  Permuted<VectorValues> permuted2(perm1, combined);
   CHECK(assert_equal(v1, permuted2[2]))
   CHECK(assert_equal(v2, permuted2[0]))
   CHECK(assert_equal(v3, permuted2[1]))
@@ -89,12 +89,12 @@ TEST(VectorConfig, permuted_combined) {
 
 }
 
-TEST(VectorConfig, permuted_incremental) {
+TEST(VectorValues, permuted_incremental) {
   Vector v1 = Vector_(3, 1.0,2.0,3.0);
   Vector v2 = Vector_(2, 4.0,5.0);
   Vector v3 = Vector_(4, 6.0,7.0,8.0,9.0);
 
-  VectorConfig incremental;
+  VectorValues incremental;
   incremental.reserve(3, 9);
   incremental.push_back_preallocated(v1);
   incremental.push_back_preallocated(v2);
@@ -110,7 +110,7 @@ TEST(VectorConfig, permuted_incremental) {
   perm2[1] = 2;
   perm2[2] = 0;
 
-  Permuted<VectorConfig> permuted1(incremental);
+  Permuted<VectorValues> permuted1(incremental);
   CHECK(assert_equal(v1, permuted1[0]))
   CHECK(assert_equal(v2, permuted1[1]))
   CHECK(assert_equal(v3, permuted1[2]))
@@ -125,7 +125,7 @@ TEST(VectorConfig, permuted_incremental) {
   CHECK(assert_equal(v2, permuted1[2]))
   CHECK(assert_equal(v3, permuted1[0]))
 
-  Permuted<VectorConfig> permuted2(perm1, incremental);
+  Permuted<VectorValues> permuted2(perm1, incremental);
   CHECK(assert_equal(v1, permuted2[2]))
   CHECK(assert_equal(v2, permuted2[0]))
   CHECK(assert_equal(v3, permuted2[1]))

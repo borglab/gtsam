@@ -20,32 +20,32 @@
 namespace gtsam {
 
 	/**
-	 * A non-linear factor graph is templated on a configuration, but the factor type
-	 * is fixed as a NonlinearFactor. The configurations are typically (in SAM) more general
+	 * A non-linear factor graph is templated on a values structure, but the factor type
+	 * is fixed as a NonlinearFactor. The values structures are typically (in SAM) more general
 	 * than just vectors, e.g., Rot3 or Pose3, which are objects in non-linear manifolds.
 	 * Linearizing the non-linear factor graph creates a linear factor graph on the 
 	 * tangent vector space at the linearization point. Because the tangent space is a true
-	 * vector space, the config type will be an VectorConfig in that linearized factor graph.
+	 * vector space, the config type will be an VectorValues in that linearized factor graph.
 	 */
-	template<class Config>
-	class NonlinearFactorGraph: public FactorGraph<NonlinearFactor<Config> > {
+	template<class Values>
+	class NonlinearFactorGraph: public FactorGraph<NonlinearFactor<Values> > {
 
 	public:
 
-	  typedef FactorGraph<NonlinearFactor<Config> > Base;
-		typedef typename boost::shared_ptr<NonlinearFactor<Config> > sharedFactor;
+	  typedef FactorGraph<NonlinearFactor<Values> > Base;
+		typedef typename boost::shared_ptr<NonlinearFactor<Values> > sharedFactor;
 
     /** print just calls base class */
     void print(const std::string& str = "NonlinearFactorGraph: ") const;
 
 		/** unnormalized error */
-		double error(const Config& c) const;
+		double error(const Values& c) const;
 
 		/** all individual errors */
-		Vector unwhitenedError(const Config& c) const;
+		Vector unwhitenedError(const Values& c) const;
 
 		/** Unnormalized probability. O(n) */
-		double probPrime(const Config& c) const {
+		double probPrime(const Values& c) const {
 			return exp(-0.5 * error(c));
 		}
 
@@ -57,7 +57,7 @@ namespace gtsam {
 		/**
 		 * Create a symbolic factor graph using an existing ordering
 		 */
-		SymbolicFactorGraph::shared_ptr symbolic(const Config& config, const Ordering& ordering) const;
+		SymbolicFactorGraph::shared_ptr symbolic(const Values& config, const Ordering& ordering) const;
 
 		/**
 		 * Create a symbolic factor graph and initial variable ordering that can
@@ -66,7 +66,7 @@ namespace gtsam {
 		 * ordering is found.
 		 */
 		std::pair<SymbolicFactorGraph::shared_ptr, Ordering::shared_ptr>
-		symbolic(const Config& config) const;
+		symbolic(const Values& config) const;
 
     /**
      * Compute a fill-reducing ordering using COLAMD.  This returns the
@@ -74,13 +74,13 @@ namespace gtsam {
      * computation.
      */
 		std::pair<Ordering::shared_ptr, GaussianVariableIndex<>::shared_ptr>
-		orderingCOLAMD(const Config& config) const;
+		orderingCOLAMD(const Values& config) const;
 
 		/**
 		 * linearize a nonlinear factor graph
 		 */
 		boost::shared_ptr<GaussianFactorGraph>
-				linearize(const Config& config, const Ordering& ordering) const;
+				linearize(const Values& config, const Ordering& ordering) const;
 
 	};
 

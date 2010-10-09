@@ -22,7 +22,7 @@ using namespace std;
 using namespace gtsam;
 using namespace gtsam::visualSLAM;
 using namespace boost;
-typedef NonlinearOptimizer<Graph,Config> Optimizer;
+typedef NonlinearOptimizer<Graph,Values> Optimizer;
 static SharedGaussian sigma(noiseModel::Unit::Create(1));
 
 /* ************************************************************************* */
@@ -79,8 +79,8 @@ TEST( Graph, optimizeLM)
   graph->addPointConstraint(2, landmark2);
   graph->addPointConstraint(3, landmark3);
 
-  // Create an initial configuration corresponding to the ground truth
-  boost::shared_ptr<Config> initialEstimate(new Config);
+  // Create an initial values structure corresponding to the ground truth
+  boost::shared_ptr<Values> initialEstimate(new Values);
   initialEstimate->insert(1, camera1);
   initialEstimate->insert(2, camera2);
   initialEstimate->insert(1, landmark1);
@@ -117,8 +117,8 @@ TEST( Graph, optimizeLM2)
   graph->addPoseConstraint(1, camera1);
   graph->addPoseConstraint(2, camera2);
 
-  // Create an initial configuration corresponding to the ground truth
-  boost::shared_ptr<Config> initialEstimate(new Config);
+  // Create an initial values structure corresponding to the ground truth
+  boost::shared_ptr<Values> initialEstimate(new Values);
   initialEstimate->insert(1, camera1);
   initialEstimate->insert(2, camera2);
   initialEstimate->insert(1, landmark1);
@@ -155,8 +155,8 @@ TEST( Graph, CHECK_ORDERING)
   graph->addPoseConstraint(1, camera1);
   graph->addPoseConstraint(2, camera2);
 
-  // Create an initial configuration corresponding to the ground truth
-  boost::shared_ptr<Config> initialEstimate(new Config);
+  // Create an initial values structure corresponding to the ground truth
+  boost::shared_ptr<Values> initialEstimate(new Values);
   initialEstimate->insert(1, camera1);
   initialEstimate->insert(2, camera2);
   initialEstimate->insert(1, landmark1);

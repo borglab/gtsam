@@ -15,9 +15,9 @@ using namespace gtsam;
 using namespace simulated3D;
 
 /* ************************************************************************* */
-TEST( simulated3D, Config )
+TEST( simulated3D, Values )
 {
-	Config actual;
+	Values actual;
 	actual.insert(PointKey(1),Point3(1,1,1));
 	actual.insert(PoseKey(2),Point3(2,2,2));
 	EXPECT(assert_equal(actual,actual,1e-9));

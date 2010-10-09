@@ -28,7 +28,7 @@ TEST( SubgraphPreconditioner, planarGraph )
 {
 	// Check planar graph construction
 	GaussianFactorGraph A;
-	VectorConfig xtrue;
+	VectorValues xtrue;
 	boost::tie(A, xtrue) = planarGraph(3);
 	LONGS_EQUAL(13,A.size());
 	LONGS_EQUAL(9,xtrue.size());
@@ -41,7 +41,7 @@ TEST( SubgraphPreconditioner, planarGraph )
 
 	// Check that xtrue is optimal
 	GaussianBayesNet R1 = A.eliminate(ordering);
-	VectorConfig actual = optimize(R1);
+	VectorValues actual = optimize(R1);
 	CHECK(assert_equal(xtrue,actual));
 }
 
@@ -50,7 +50,7 @@ TEST( SubgraphPreconditioner, splitOffPlanarTree )
 {
 	// Build a planar graph
 	GaussianFactorGraph A;
-	VectorConfig xtrue;
+	VectorValues xtrue;
 	boost::tie(A, xtrue) = planarGraph(3);
 
 	// Get the spanning tree and constraints, and check their sizes
@@ -62,7 +62,7 @@ TEST( SubgraphPreconditioner, splitOffPlanarTree )
 	// Check that the tree can be solved to give the ground xtrue
 	Ordering ordering = planarOrdering(3);
 	GaussianBayesNet R1 = T.eliminate(ordering);
-	VectorConfig xbar = optimize(R1);
+	VectorValues xbar = optimize(R1);
 	CHECK(assert_equal(xtrue,xbar));
 }
 
@@ -71,7 +71,7 @@ TEST( SubgraphPreconditioner, system )
 {
 	// Build a planar graph
 	GaussianFactorGraph Ab;
-	VectorConfig xtrue;
+	VectorValues xtrue;
 	size_t N = 3;
 	boost::tie(Ab, xtrue) = planarGraph(N); // A*x-b
 
@@ -84,23 +84,23 @@ TEST( SubgraphPreconditioner, system )
 	// Eliminate the spanning tree to build a prior
 	Ordering ordering = planarOrdering(N);
 	SubgraphPreconditioner::sharedBayesNet Rc1 = Ab1_.eliminate_(ordering); // R1*x-c1
-	SubgraphPreconditioner::sharedConfig xbar = optimize_(*Rc1); // xbar = inv(R1)*c1
+	SubgraphPreconditioner::sharedValues xbar = optimize_(*Rc1); // xbar = inv(R1)*c1
 
 	// Create Subgraph-preconditioned system
 	SubgraphPreconditioner system(Ab1, Ab2, Rc1, xbar);
 
 	// Create zero config
-	VectorConfig zeros = VectorConfig::zero(*xbar);
+	VectorValues zeros = VectorValues::zero(*xbar);
 
 	// Set up y0 as all zeros
-	VectorConfig y0 = zeros;
+	VectorValues y0 = zeros;
 
 	// y1 = perturbed y0
-	VectorConfig y1 = zeros;
+	VectorValues y1 = zeros;
 	y1["x2003"] = Vector_(2, 1.0, -1.0);
 
 	// Check corresponding x  values
-	VectorConfig expected_x1 = xtrue, x1 = system.x(y1);
+	VectorValues expected_x1 = xtrue, x1 = system.x(y1);
 	expected_x1["x2003"] = Vector_(2, 2.01, 2.99);
 	expected_x1["x3003"] = Vector_(2, 3.01, 2.99);
 	CHECK(assert_equal(xtrue, system.x(y0)));
@@ -113,8 +113,8 @@ TEST( SubgraphPreconditioner, system )
 	DOUBLES_EQUAL(3,system.error(y1),1e-9);
 
 	// Test gradient in x
-	VectorConfig expected_gx0 = zeros;
-	VectorConfig expected_gx1 = zeros;
+	VectorValues expected_gx0 = zeros;
+	VectorValues expected_gx1 = zeros;
 	CHECK(assert_equal(expected_gx0,Ab.gradient(xtrue)));
 	expected_gx1["x1003"] = Vector_(2, -100., 100.);
 	expected_gx1["x2002"] = Vector_(2, -100., 100.);
@@ -124,8 +124,8 @@ TEST( SubgraphPreconditioner, system )
 	CHECK(assert_equal(expected_gx1,Ab.gradient(x1)));
 
 	// Test gradient in y
-	VectorConfig expected_gy0 = zeros;
-	VectorConfig expected_gy1 = zeros;
+	VectorValues expected_gy0 = zeros;
+	VectorValues expected_gy1 = zeros;
 	expected_gy1["x1003"] = Vector_(2, 2., -2.);
 	expected_gy1["x2002"] = Vector_(2, -2., 2.);
 	expected_gy1["x2003"] = Vector_(2, 3., -3.);
@@ -136,7 +136,7 @@ TEST( SubgraphPreconditioner, system )
 
 	// Check it numerically for good measure
 	// TODO use boost::bind(&SubgraphPreconditioner::error,&system,_1)
-//	Vector numerical_g1 = numericalGradient<VectorConfig> (error, y1, 0.001);
+//	Vector numerical_g1 = numericalGradient<VectorValues> (error, y1, 0.001);
 //	Vector expected_g1 = Vector_(18, 0., 0., 0., 0., 2., -2., 0., 0., -2., 2.,
 //			3., -3., 0., 0., -1., 1., 1., -1.);
 //	CHECK(assert_equal(expected_g1,numerical_g1));
@@ -147,7 +147,7 @@ TEST( SubgraphPreconditioner, conjugateGradients )
 {
 	// Build a planar graph
 	GaussianFactorGraph Ab;
-	VectorConfig xtrue;
+	VectorValues xtrue;
 	size_t N = 3;
 	boost::tie(Ab, xtrue) = planarGraph(N); // A*x-b
 
@@ -160,28 +160,28 @@ TEST( SubgraphPreconditioner, conjugateGradients )
 	// Eliminate the spanning tree to build a prior
 	Ordering ordering = planarOrdering(N);
 	SubgraphPreconditioner::sharedBayesNet Rc1 = Ab1_.eliminate_(ordering); // R1*x-c1
-	SubgraphPreconditioner::sharedConfig xbar = optimize_(*Rc1); // xbar = inv(R1)*c1
+	SubgraphPreconditioner::sharedValues xbar = optimize_(*Rc1); // xbar = inv(R1)*c1
 
 	// Create Subgraph-preconditioned system
 	SubgraphPreconditioner system(Ab1, Ab2, Rc1, xbar);
 
 	// Create zero config y0 and perturbed config y1
-	VectorConfig y0 = VectorConfig::zero(*xbar);
+	VectorValues y0 = VectorValues::zero(*xbar);
 
-	VectorConfig y1 = y0;
+	VectorValues y1 = y0;
 	y1["x2003"] = Vector_(2, 1.0, -1.0);
-	VectorConfig x1 = system.x(y1);
+	VectorValues x1 = system.x(y1);
 
 	// Solve for the remaining constraints using PCG
 	bool verbose = false;
 	double epsilon = 1e-3;
 	size_t maxIterations = 100;
-	VectorConfig actual = gtsam::conjugateGradients<SubgraphPreconditioner,
-			VectorConfig, Errors>(system, y1, verbose, epsilon, epsilon, maxIterations);
+	VectorValues actual = gtsam::conjugateGradients<SubgraphPreconditioner,
+			VectorValues, Errors>(system, y1, verbose, epsilon, epsilon, maxIterations);
 	CHECK(assert_equal(y0,actual));
 
 	// Compare with non preconditioned version:
-	VectorConfig actual2 = conjugateGradientDescent(Ab, x1, verbose, epsilon,
+	VectorValues actual2 = conjugateGradientDescent(Ab, x1, verbose, epsilon,
 			epsilon, maxIterations);
 	CHECK(assert_equal(xtrue,actual2,1e-4));
 }

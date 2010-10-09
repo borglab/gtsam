@@ -17,17 +17,17 @@ using namespace std;
 static double inf = std::numeric_limits<double>::infinity();
 
 typedef TypedSymbol<LieVector, 'v'> VecKey;
-typedef LieValues<VecKey> Config;
+typedef LieValues<VecKey> Values;
 
 VecKey key1(1), key2(2), key3(3), key4(4);
 
 /* ************************************************************************* */
 TEST( LieValues, equals1 )
 {
-  Config expected;
+  Values expected;
   Vector v = Vector_(3, 5.0, 6.0, 7.0);
   expected.insert(key1,v);
-  Config actual;
+  Values actual;
   actual.insert(key1,v);
   CHECK(assert_equal(expected,actual));
 }
@@ -35,7 +35,7 @@ TEST( LieValues, equals1 )
 /* ************************************************************************* */
 TEST( LieValues, equals2 )
 {
-  Config cfg1, cfg2;
+  Values cfg1, cfg2;
   Vector v1 = Vector_(3, 5.0, 6.0, 7.0);
   Vector v2 = Vector_(3, 5.0, 6.0, 8.0);
   cfg1.insert(key1, v1);
@@ -47,7 +47,7 @@ TEST( LieValues, equals2 )
 /* ************************************************************************* */
 TEST( LieValues, equals_nan )
 {
-  Config cfg1, cfg2;
+  Values cfg1, cfg2;
   Vector v1 = Vector_(3, 5.0, 6.0, 7.0);
   Vector v2 = Vector_(3, inf, inf, inf);
   cfg1.insert(key1, v1);
@@ -59,7 +59,7 @@ TEST( LieValues, equals_nan )
 /* ************************************************************************* */
 TEST( LieValues, insert_config )
 {
-  Config cfg1, cfg2, expected;
+  Values cfg1, cfg2, expected;
   Vector v1 = Vector_(3, 5.0, 6.0, 7.0);
   Vector v2 = Vector_(3, 8.0, 9.0, 1.0);
   Vector v3 = Vector_(3, 2.0, 4.0, 3.0);
@@ -82,7 +82,7 @@ TEST( LieValues, insert_config )
 /* ************************************************************************* */
 TEST( LieValues, update_element )
 {
-  Config cfg;
+  Values cfg;
   Vector v1 = Vector_(3, 5.0, 6.0, 7.0);
   Vector v2 = Vector_(3, 8.0, 9.0, 1.0);
 
@@ -98,12 +98,12 @@ TEST( LieValues, update_element )
 ///* ************************************************************************* */
 //TEST(LieValues, dim_zero)
 //{
-//  Config config0;
+//  Values config0;
 //  config0.insert(key1, Vector_(2, 2.0, 3.0));
 //  config0.insert(key2, Vector_(3, 5.0, 6.0, 7.0));
 //  LONGS_EQUAL(5,config0.dim());
 //
-//  VectorConfig expected;
+//  VectorValues expected;
 //  expected.insert(key1, zero(2));
 //  expected.insert(key2, zero(3));
 //  CHECK(assert_equal(expected, config0.zero()));
@@ -112,16 +112,16 @@ TEST( LieValues, update_element )
 /* ************************************************************************* */
 TEST(LieValues, expmap_a)
 {
-  Config config0;
+  Values config0;
   config0.insert(key1, Vector_(3, 1.0, 2.0, 3.0));
   config0.insert(key2, Vector_(3, 5.0, 6.0, 7.0));
 
   Ordering ordering(*config0.orderingArbitrary());
-  VectorConfig increment(config0.dims(ordering));
+  VectorValues increment(config0.dims(ordering));
   increment[ordering[key1]] = Vector_(3, 1.0, 1.1, 1.2);
   increment[ordering[key2]] = Vector_(3, 1.3, 1.4, 1.5);
 
-  Config expected;
+  Values expected;
   expected.insert(key1, Vector_(3, 2.0, 3.1, 4.2));
   expected.insert(key2, Vector_(3, 6.3, 7.4, 8.5));
 
@@ -131,15 +131,15 @@ TEST(LieValues, expmap_a)
 ///* ************************************************************************* */
 //TEST(LieValues, expmap_b)
 //{
-//  Config config0;
+//  Values config0;
 //  config0.insert(key1, Vector_(3, 1.0, 2.0, 3.0));
 //  config0.insert(key2, Vector_(3, 5.0, 6.0, 7.0));
 //
 //  Ordering ordering(*config0.orderingArbitrary());
-//  VectorConfig increment(config0.dims(ordering));
+//  VectorValues increment(config0.dims(ordering));
 //  increment[ordering[key2]] = Vector_(3, 1.3, 1.4, 1.5);
 //
-//  Config expected;
+//  Values expected;
 //  expected.insert(key1, Vector_(3, 1.0, 2.0, 3.0));
 //  expected.insert(key2, Vector_(3, 6.3, 7.4, 8.5));
 //
@@ -149,7 +149,7 @@ TEST(LieValues, expmap_a)
 ///* ************************************************************************* */
 //TEST(LieValues, expmap_c)
 //{
-//  Config config0;
+//  Values config0;
 //  config0.insert(key1, Vector_(3, 1.0, 2.0, 3.0));
 //  config0.insert(key2, Vector_(3, 5.0, 6.0, 7.0));
 //
@@ -157,7 +157,7 @@ TEST(LieValues, expmap_a)
 //      1.0, 1.1, 1.2,
 //      1.3, 1.4, 1.5);
 //
-//  Config expected;
+//  Values expected;
 //  expected.insert(key1, Vector_(3, 2.0, 3.1, 4.2));
 //  expected.insert(key2, Vector_(3, 6.3, 7.4, 8.5));
 //
@@ -167,7 +167,7 @@ TEST(LieValues, expmap_a)
 /* ************************************************************************* */
 /*TEST(LieValues, expmap_d)
 {
-  Config config0;
+  Values config0;
   config0.insert(key1, Vector_(3, 1.0, 2.0, 3.0));
   config0.insert(key2, Vector_(3, 5.0, 6.0, 7.0));
   //config0.print("config0");
@@ -207,7 +207,7 @@ TEST(LieValues, expmap_a)
 /* ************************************************************************* */
 TEST(LieValues, exists_)
 {
-	Config config0;
+	Values config0;
 	config0.insert(key1, Vector_(1, 1.));
 	config0.insert(key2, Vector_(1, 2.));
 
@@ -218,17 +218,17 @@ TEST(LieValues, exists_)
 /* ************************************************************************* */
 TEST(LieValues, update)
 {
-	Config config0;
+	Values config0;
 	config0.insert(key1, Vector_(1, 1.));
 	config0.insert(key2, Vector_(1, 2.));
 
-	Config superset;
+	Values superset;
 	superset.insert(key1, Vector_(1, -1.));
 	superset.insert(key2, Vector_(1, -2.));
 	superset.insert(key3, Vector_(1, -3.));
 	config0.update(superset);
 
-	Config expected;
+	Values expected;
 	expected.insert(key1, Vector_(1, -1.));
 	expected.insert(key2, Vector_(1, -2.));
 	CHECK(assert_equal(expected,config0));
@@ -238,18 +238,18 @@ TEST(LieValues, update)
 TEST(LieValues, dummy_initialization)
 {
 	typedef TypedSymbol<LieVector, 'z'> Key;
-	typedef LieValues<Key> Config1;
+	typedef LieValues<Key> Values1;
 
-	Config1 init1;
+	Values1 init1;
 	init1.insert(Key(1), Vector_(2, 1.0, 2.0));
 	init1.insert(Key(2), Vector_(2, 4.0, 3.0));
 
-	Config init2;
+	Values init2;
 	init2.insert(key1, Vector_(2, 1.0, 2.0));
 	init2.insert(key2, Vector_(2, 4.0, 3.0));
 
-	Config1 actual1(init2);
-	Config actual2(init1);
+	Values1 actual1(init2);
+	Values actual2(init1);
 
 	EXPECT(actual1.empty());
 	EXPECT(actual2.empty());

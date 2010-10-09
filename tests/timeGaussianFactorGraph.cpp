@@ -34,10 +34,10 @@ double timeKalmanSmoother(int T) {
 // Create a planar factor graph and optimize
 // todo: use COLAMD ordering again (removed when linear baked-in ordering added)
 double timePlanarSmoother(int N, bool old = true) {
-	boost::tuple<GaussianFactorGraph, Ordering, VectorConfig> pg = planarGraph(N);
+	boost::tuple<GaussianFactorGraph, Ordering, VectorValues> pg = planarGraph(N);
   GaussianFactorGraph& fg(pg.get<0>());
 //  Ordering& ordering(pg.get<1>());
-//  VectorConfig& config(pg.get<2>());
+//  VectorValues& config(pg.get<2>());
 	clock_t start = clock();
 	optimize(*Inference::Eliminate(fg));
 	clock_t end = clock ();
@@ -49,10 +49,10 @@ double timePlanarSmoother(int N, bool old = true) {
 // Create a planar factor graph and eliminate
 // todo: use COLAMD ordering again (removed when linear baked-in ordering added)
 double timePlanarSmootherEliminate(int N, bool old = true) {
-  boost::tuple<GaussianFactorGraph, Ordering, VectorConfig> pg = planarGraph(N);
+  boost::tuple<GaussianFactorGraph, Ordering, VectorValues> pg = planarGraph(N);
   GaussianFactorGraph& fg(pg.get<0>());
 //  Ordering& ordering(pg.get<1>());
-//  VectorConfig& config(pg.get<2>());
+//  VectorValues& config(pg.get<2>());
 	clock_t start = clock();
 	Inference::Eliminate(fg);
 	clock_t end = clock ();
@@ -65,7 +65,7 @@ double timePlanarSmootherEliminate(int N, bool old = true) {
 //// This variation uses the original join factors approach
 //double timePlanarSmootherJoinAug(int N, size_t reps) {
 //	GaussianFactorGraph fgBase;
-//	VectorConfig config;
+//	VectorValues config;
 //	boost::tie(fgBase,config) = planarGraph(N);
 //	Ordering ordering = fgBase.getOrdering();
 //	Symbol key = ordering.front();
@@ -98,7 +98,7 @@ double timePlanarSmootherEliminate(int N, bool old = true) {
 //// This variation uses the single-allocate version to create the matrix
 //double timePlanarSmootherCombined(int N, size_t reps) {
 //	GaussianFactorGraph fgBase;
-//	VectorConfig config;
+//	VectorValues config;
 //	boost::tie(fgBase,config) = planarGraph(N);
 //	Ordering ordering = fgBase.getOrdering();
 //	Symbol key = ordering.front();

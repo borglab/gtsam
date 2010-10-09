@@ -1,7 +1,7 @@
 /**
- * @file    VectorConfig.cpp
- * @brief   Factor Graph Configuration
- * @brief   VectorConfig
+ * @file    VectorValues.cpp
+ * @brief   Factor Graph Values
+ * @brief   VectorValues
  * @author Frank Dellaert
  */
 
@@ -14,7 +14,7 @@ using namespace std;
 namespace gtsam {
 
 	/* ************************************************************************* */
-	// Check if two VectorConfigs are compatible, throw exception if not
+	// Check if two VectorValuess are compatible, throw exception if not
 	static void check_compatible(const string& s, const VectorBTree& a,
 			const VectorBTree& b) {
 		if (!a.compatible(b))

@@ -21,7 +21,7 @@
 #include <gtsam/nonlinear/NonlinearOptimizer-inl.h>
 
 /*
- * TODO: make factors independent of Config
+ * TODO: make factors independent of Values
  * TODO: get rid of excessive shared pointer stuff: mostly gone
  * TODO: make toplevel documentation
  * TODO: investigate whether we can just use ints as keys: will occur for linear, not nonlinear
@@ -31,10 +31,10 @@ using namespace std;
 using namespace gtsam;
 
 typedef TypedSymbol<Rot2, 'x'> Key;
-typedef LieValues<Key> Config;
-typedef NonlinearFactorGraph<Config> Graph;
-typedef Factorization<Graph,Config> Solver;
-typedef NonlinearOptimizer<Graph,Config> Optimizer;
+typedef LieValues<Key> Values;
+typedef NonlinearFactorGraph<Values> Graph;
+typedef Factorization<Graph,Values> Solver;
+typedef NonlinearOptimizer<Graph,Values> Optimizer;
 
 const double degree = M_PI / 180;
 
@@ -47,19 +47,19 @@ int main() {
 	prior1.print("Goal Angle");
 	SharedDiagonal model1 = noiseModel::Isotropic::Sigma(1, 1 * degree);
 	Key key1(1);
-	PriorFactor<Config, Key> factor1(key1, prior1, model1);
+	PriorFactor<Values, Key> factor1(key1, prior1, model1);
 
 	// Create a factor graph
 	Graph graph;
 	graph.add(factor1);
 
 	// and an initial estimate
-	Config initialEstimate;
+	Values initialEstimate;
 	initialEstimate.insert(key1, Rot2::fromAngle(20 * degree));
 	initialEstimate.print("Initialization");
 
 	// create an ordering
-	Optimizer::shared_config result = Optimizer::optimizeLM(graph, initialEstimate, Optimizer::LAMBDA);
+	Optimizer::shared_values result = Optimizer::optimizeLM(graph, initialEstimate, Optimizer::LAMBDA);
 	result->print("Final config");
 
 	return 0;

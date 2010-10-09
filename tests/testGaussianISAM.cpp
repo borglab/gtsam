@@ -54,9 +54,9 @@ TEST( ISAM, iSAM_smoother )
 	CHECK(assert_equal(expected, actual));
 
 	// obtain solution
-	VectorConfig e(vector<size_t>(7,2)); // expected solution
+	VectorValues e(vector<size_t>(7,2)); // expected solution
 	e.makeZero();
-	VectorConfig optimized = optimize(actual); // actual solution
+	VectorValues optimized = optimize(actual); // actual solution
 	CHECK(assert_equal(e, optimized));
 }
 
@@ -168,10 +168,10 @@ C6           x1 : x2
 //	// eliminate using a "nested dissection" ordering
 //	GaussianBayesNet chordalBayesNet = smoother.eliminate(ordering);
 //
-//	VectorConfig expectedSolution;
+//	VectorValues expectedSolution;
 //	BOOST_FOREACH(string key, ordering)
 //	expectedSolution.insert(key,zero(2));
-//	VectorConfig actualSolution = optimize(chordalBayesNet);
+//	VectorValues actualSolution = optimize(chordalBayesNet);
 //	CHECK(assert_equal(expectedSolution,actualSolution,tol));
 //
 //	// Create the Bayes tree

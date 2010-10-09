@@ -22,7 +22,7 @@ int main(int argc, char *argv[]) {
   else
     datasetname = "intel";
 
-  pair<shared_ptr<Pose2Graph>, shared_ptr<Pose2Config> > data = load2D(dataset(datasetname));
+  pair<shared_ptr<Pose2Graph>, shared_ptr<Pose2Values> > data = load2D(dataset(datasetname));
 
   tic("Z 1 order");
   Ordering::shared_ptr ordering(data.first->orderingCOLAMD(*data.second).first);
@@ -36,7 +36,7 @@ int main(int argc, char *argv[]) {
 
     tic("Z 3 solve");
     GaussianJunctionTree gjt(*gfg);
-    VectorConfig soln(gjt.optimize());
+    VectorValues soln(gjt.optimize());
     toc("Z 3 solve");
 
     tictoc_print();

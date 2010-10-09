@@ -14,19 +14,19 @@ namespace gtsam {
 	 * Binary between constraint - forces between to a given value
 	 * This constraint requires the underlying type to a Lie type
 	 */
-	template<class Config, class Key>
-	class BetweenConstraint : public NonlinearEqualityConstraint2<Config, Key, Key> {
+	template<class Values, class Key>
+	class BetweenConstraint : public NonlinearEqualityConstraint2<Values, Key, Key> {
 	public:
 		typedef typename Key::Value_t X;
 
 	protected:
-		typedef NonlinearEqualityConstraint2<Config, Key, Key> Base;
+		typedef NonlinearEqualityConstraint2<Values, Key, Key> Base;
 
 		X measured_; /// fixed between value
 
 	public:
 
-		typedef boost::shared_ptr<BetweenConstraint<Config, Key> > shared_ptr;
+		typedef boost::shared_ptr<BetweenConstraint<Values, Key> > shared_ptr;
 
 		BetweenConstraint(const X& measured, const Key& key1, const Key& key2, double mu = 1000.0)
 			: Base(key1, key2, X::Dim(), mu), measured_(measured) {}

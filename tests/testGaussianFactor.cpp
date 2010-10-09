@@ -161,7 +161,7 @@ TEST( GaussianFactor, error )
 	GaussianFactor::shared_ptr lf = fg[0];
 
 	// check the error of the first factor with noisy config
-	VectorConfig cfg = createZeroDelta(ordering);
+	VectorValues cfg = createZeroDelta(ordering);
 
 	// calculate the error from the factor "f1"
 	// note the error is the same as in testNonlinearFactor

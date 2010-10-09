@@ -49,7 +49,7 @@ TEST( GaussianFactorGraph, error )
 {
   Ordering ordering; ordering += "x1","x2","l1";
   GaussianFactorGraph fg = createGaussianFactorGraph(ordering);
-  VectorConfig cfg = createZeroDelta(ordering);
+  VectorValues cfg = createZeroDelta(ordering);
 
   // note the error is the same as in testNonlinearFactorGraph as a
   // zero delta config in the linear graph is equivalent to noisy in
@@ -476,10 +476,10 @@ TEST( GaussianFactorGraph, optimize )
 	GaussianFactorGraph fg = createGaussianFactorGraph(ord);
 
 	// optimize the graph
-	VectorConfig actual = optimize(*Inference::Eliminate(fg));
+	VectorValues actual = optimize(*Inference::Eliminate(fg));
 
 	// verify
-	VectorConfig expected = createCorrectDelta(ord);
+	VectorValues expected = createCorrectDelta(ord);
 
   CHECK(assert_equal(expected,actual));
 }
@@ -494,10 +494,10 @@ TEST( GaussianFactorGraph, optimize )
 //	GaussianFactorGraph fg = createGaussianFactorGraph(ord);
 //
 //	// optimize the graph
-//	VectorConfig actual = fg.optimizeMultiFrontals(ord);
+//	VectorValues actual = fg.optimizeMultiFrontals(ord);
 //
 //	// verify
-//	VectorConfig expected = createCorrectDelta();
+//	VectorValues expected = createCorrectDelta();
 //
 //  CHECK(assert_equal(expected,actual));
 //}
@@ -635,7 +635,7 @@ TEST(GaussianFactorGraph, createSmoother)
 //}
 
 /* ************************************************************************* */
-double error(const VectorConfig& x) {
+double error(const VectorValues& x) {
   // create an ordering
   Ordering ord; ord += "x2","l1","x1";
 
@@ -649,7 +649,7 @@ double error(const VectorConfig& x) {
 //	GaussianFactorGraph fg = createGaussianFactorGraph();
 //
 //	// Construct expected gradient
-//	VectorConfig expected;
+//	VectorValues expected;
 //
 //  // 2*f(x) = 100*(x1+c["x1"])^2 + 100*(x2-x1-[0.2;-0.1])^2 + 25*(l1-x1-[0.0;0.2])^2 + 25*(l1-x2-[-0.2;0.3])^2
 //	// worked out: df/dx1 = 100*[0.1;0.1] + 100*[0.2;-0.1]) + 25*[0.0;0.2] = [10+20;10-10+5] = [30;5]
@@ -658,20 +658,20 @@ double error(const VectorConfig& x) {
 //  expected.insert("x2",Vector_(2,-25.0, 17.5));
 //
 //	// Check the gradient at delta=0
-//  VectorConfig zero = createZeroDelta();
-//	VectorConfig actual = fg.gradient(zero);
+//  VectorValues zero = createZeroDelta();
+//	VectorValues actual = fg.gradient(zero);
 //	CHECK(assert_equal(expected,actual));
 //
 //	// Check it numerically for good measure
-//	Vector numerical_g = numericalGradient<VectorConfig>(error,zero,0.001);
+//	Vector numerical_g = numericalGradient<VectorValues>(error,zero,0.001);
 //	CHECK(assert_equal(Vector_(6,5.0,-12.5,30.0,5.0,-25.0,17.5),numerical_g));
 //
 //	// Check the gradient at the solution (should be zero)
 //	Ordering ord;
 //  ord += "x2","l1","x1";
 //	GaussianFactorGraph fg2 = createGaussianFactorGraph();
-//  VectorConfig solution = fg2.optimize(ord); // destructive
-//	VectorConfig actual2 = fg.gradient(solution);
+//  VectorValues solution = fg2.optimize(ord); // destructive
+//	VectorValues actual2 = fg.gradient(solution);
 //	CHECK(assert_equal(zero,actual2));
 //}
 
@@ -682,7 +682,7 @@ TEST( GaussianFactorGraph, multiplication )
   Ordering ord; ord += "x2","l1","x1";
 
 	GaussianFactorGraph A = createGaussianFactorGraph(ord);
-  VectorConfig x = createCorrectDelta(ord);
+  VectorValues x = createCorrectDelta(ord);
   Errors actual = A * x;
   Errors expected;
   expected += Vector_(2,-1.0,-1.0);
@@ -705,7 +705,7 @@ TEST( GaussianFactorGraph, multiplication )
 //  e += Vector_(2, 0.0,-5.0);
 //  e += Vector_(2,-7.5,-5.0);
 //
-//  VectorConfig expected = createZeroDelta(ord), actual = A ^ e;
+//  VectorValues expected = createZeroDelta(ord), actual = A ^ e;
 //  expected[ord["l1"]] = Vector_(2, -37.5,-50.0);
 //  expected[ord["x1"]] = Vector_(2,-150.0, 25.0);
 //  expected[ord["x2"]] = Vector_(2, 187.5, 25.0);
@@ -770,10 +770,10 @@ TEST( GaussianFactorGraph, constrained_simple )
 	GaussianFactorGraph fg = createSimpleConstraintGraph();
 
 	// eliminate and solve
-	VectorConfig actual = optimize(*Inference::Eliminate(fg));
+	VectorValues actual = optimize(*Inference::Eliminate(fg));
 
 	// verify
-	VectorConfig expected = createSimpleConstraintConfig();
+	VectorValues expected = createSimpleConstraintValues();
 	CHECK(assert_equal(expected, actual));
 }
 
@@ -784,10 +784,10 @@ TEST( GaussianFactorGraph, constrained_single )
 	GaussianFactorGraph fg = createSingleConstraintGraph();
 
 	// eliminate and solve
-	VectorConfig actual = optimize(*Inference::Eliminate(fg));
+	VectorValues actual = optimize(*Inference::Eliminate(fg));
 
 	// verify
-	VectorConfig expected = createSingleConstraintConfig();
+	VectorValues expected = createSingleConstraintValues();
 	CHECK(assert_equal(expected, actual));
 }
 
@@ -800,10 +800,10 @@ TEST( GaussianFactorGraph, constrained_single )
 //	// eliminate and solve
 //	Ordering ord;
 //	ord += "y", "x";
-//	VectorConfig actual = fg.optimize(ord);
+//	VectorValues actual = fg.optimize(ord);
 //
 //	// verify
-//	VectorConfig expected = createSingleConstraintConfig();
+//	VectorValues expected = createSingleConstraintValues();
 //	CHECK(assert_equal(expected, actual));
 //}
 
@@ -814,10 +814,10 @@ TEST( GaussianFactorGraph, constrained_multi1 )
 	GaussianFactorGraph fg = createMultiConstraintGraph();
 
 	// eliminate and solve
-  VectorConfig actual = optimize(*Inference::Eliminate(fg));
+  VectorValues actual = optimize(*Inference::Eliminate(fg));
 
 	// verify
-	VectorConfig expected = createMultiConstraintConfig();
+	VectorValues expected = createMultiConstraintValues();
 	CHECK(assert_equal(expected, actual));
 }
 
@@ -830,10 +830,10 @@ TEST( GaussianFactorGraph, constrained_multi1 )
 //	// eliminate and solve
 //	Ordering ord;
 //	ord += "z", "x", "y";
-//	VectorConfig actual = fg.optimize(ord);
+//	VectorValues actual = fg.optimize(ord);
 //
 //	// verify
-//	VectorConfig expected = createMultiConstraintConfig();
+//	VectorValues expected = createMultiConstraintValues();
 //	CHECK(assert_equal(expected, actual));
 //}
 

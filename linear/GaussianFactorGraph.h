@@ -5,10 +5,6 @@
  * @author  Christian Potthast
  * @author  Alireza Fathi
  */ 
-
-// $Id: GaussianFactorGraph.h,v 1.24 2009/08/14 20:48:51 acunning Exp $
-
-// \callgraph
  
 #pragma once
 
@@ -24,7 +20,7 @@ namespace gtsam {
   /**
    * A Linear Factor Graph is a factor graph where all factors are Gaussian, i.e.
    *   Factor == GaussianFactor
-   *   VectorConfig = A configuration of vectors
+   *   VectorValues = A values structure of vectors
    * Most of the time, linear factor graphs arise by linearizing a non-linear factor graph.
    */
   class GaussianFactorGraph : public FactorGraph<GaussianFactor> {
@@ -86,38 +82,38 @@ namespace gtsam {
     void permuteWithInverse(const Permutation& inversePermutation);
 
 		/** return A*x-b */
-		Errors errors(const VectorConfig& x) const;
+		Errors errors(const VectorValues& x) const;
 
 		/** shared pointer version */
-		boost::shared_ptr<Errors> errors_(const VectorConfig& x) const;
+		boost::shared_ptr<Errors> errors_(const VectorValues& x) const;
 
 			/** unnormalized error */
-		double error(const VectorConfig& x) const;
+		double error(const VectorValues& x) const;
 
 		/** return A*x */
-		Errors operator*(const VectorConfig& x) const;
+		Errors operator*(const VectorValues& x) const;
 
 		/* In-place version e <- A*x that overwrites e. */
-		void multiplyInPlace(const VectorConfig& x, Errors& e) const;
+		void multiplyInPlace(const VectorValues& x, Errors& e) const;
 
 		/* In-place version e <- A*x that takes an iterator. */
-		void multiplyInPlace(const VectorConfig& x, const Errors::iterator& e) const;
+		void multiplyInPlace(const VectorValues& x, const Errors::iterator& e) const;
 
 //		/** return A^e */
-//		VectorConfig operator^(const Errors& e) const;
+//		VectorValues operator^(const Errors& e) const;
 
 		/** x += alpha*A'*e */
-		void transposeMultiplyAdd(double alpha, const Errors& e, VectorConfig& x) const;
+		void transposeMultiplyAdd(double alpha, const Errors& e, VectorValues& x) const;
 
 //  	/**
 //  	 * Calculate Gradient of A^(A*x-b) for a given config
-//  	 * @param x: VectorConfig specifying where to calculate gradient
-//  	 * @return gradient, as a VectorConfig as well
+//  	 * @param x: VectorValues specifying where to calculate gradient
+//  	 * @return gradient, as a VectorValues as well
 //  	 */
-//  	VectorConfig gradient(const VectorConfig& x) const;
+//  	VectorValues gradient(const VectorValues& x) const;
 
 		/** Unnormalized probability. O(n) */
-		double probPrime(const VectorConfig& c) const {
+		double probPrime(const VectorValues& c) const {
 			return exp(-0.5 * error(c));
 		}
 
@@ -145,19 +141,19 @@ namespace gtsam {
 //     * @param enableJoinFactor uses the older joint factor combine process when true,
 //     *    and when false uses the newer single matrix combine
 //     */
-//    VectorConfig optimize(const Ordering& ordering, bool enableJoinFactor = true);
+//    VectorValues optimize(const Ordering& ordering, bool enableJoinFactor = true);
 
 //    /**
 //     * optimize a linear factor graph using a multi-frontal solver
 //     * @param ordering fg in order
 //     */
-//    VectorConfig optimizeMultiFrontals(const Ordering& ordering);
+//    VectorValues optimizeMultiFrontals(const Ordering& ordering);
 
 //    /**
 //     * shared pointer versions for MATLAB
 //     */
 //    boost::shared_ptr<GaussianBayesNet> eliminate_(const Ordering&);
-//    boost::shared_ptr<VectorConfig> optimize_(const Ordering&);
+//    boost::shared_ptr<VectorValues> optimize_(const Ordering&);
 
     /**
      * static function that combines two factor graphs
@@ -207,7 +203,7 @@ namespace gtsam {
 //     * @param v: the source vector
 //     * @param ordeirng: the ordering corresponding to the vector
 //     */
-//    VectorConfig assembleConfig(const Vector& v, const Ordering& ordering) const;
+//    VectorValues assembleValues(const Vector& v, const Ordering& ordering) const;
 //
 //    /**
 //     * get the 1-based starting column indices for all variables
@@ -237,32 +233,32 @@ namespace gtsam {
 
 //  	/**
 //		 * Find solution using gradient descent
-//		 * @param x0: VectorConfig specifying initial estimate
+//		 * @param x0: VectorValues specifying initial estimate
 //		 * @return solution
 //		 */
-//		VectorConfig steepestDescent(const VectorConfig& x0, bool verbose = false,
+//		VectorValues steepestDescent(const VectorValues& x0, bool verbose = false,
 //				double epsilon = 1e-3, size_t maxIterations = 0) const;
 //
 //		/**
 //		 * shared pointer versions for MATLAB
 //		 */
-//		boost::shared_ptr<VectorConfig>
-//		steepestDescent_(const VectorConfig& x0, bool verbose = false,
+//		boost::shared_ptr<VectorValues>
+//		steepestDescent_(const VectorValues& x0, bool verbose = false,
 //				double epsilon = 1e-3, size_t maxIterations = 0) const;
 //
 //		/**
 //		 * Find solution using conjugate gradient descent
-//		 * @param x0: VectorConfig specifying initial estimate
+//		 * @param x0: VectorValues specifying initial estimate
 //		 * @return solution
 //		 */
-//		VectorConfig conjugateGradientDescent(const VectorConfig& x0, bool verbose =
+//		VectorValues conjugateGradientDescent(const VectorValues& x0, bool verbose =
 //				false, double epsilon = 1e-3, size_t maxIterations = 0) const;
 //
 //		/**
 //		 * shared pointer versions for MATLAB
 //		 */
-//		boost::shared_ptr<VectorConfig> conjugateGradientDescent_(
-//				const VectorConfig& x0, bool verbose = false, double epsilon = 1e-3,
+//		boost::shared_ptr<VectorValues> conjugateGradientDescent_(
+//				const VectorValues& x0, bool verbose = false, double epsilon = 1e-3,
 //				size_t maxIterations = 0) const;
   };
 

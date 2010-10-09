@@ -78,7 +78,7 @@ TEST( Graph, composePoses )
 	graph.addConstraint(2,3, p23, cov);
 	graph.addConstraint(4,3, p43, cov);
 
-	PredecessorMap<Pose2Config::Key> tree;
+	PredecessorMap<Pose2Values::Key> tree;
 	tree.insert(1,2);
 	tree.insert(2,2);
 	tree.insert(3,2);
@@ -86,10 +86,10 @@ TEST( Graph, composePoses )
 
 	Pose2 rootPose = p2;
 
-	boost::shared_ptr<Pose2Config> actual = composePoses<Pose2Graph, Pose2Factor,
-			Pose2, Pose2Config> (graph, tree, rootPose);
+	boost::shared_ptr<Pose2Values> actual = composePoses<Pose2Graph, Pose2Factor,
+			Pose2, Pose2Values> (graph, tree, rootPose);
 
-	Pose2Config expected;
+	Pose2Values expected;
 	expected.insert(1, p1);
 	expected.insert(2, p2);
 	expected.insert(3, p3);

@@ -28,7 +28,7 @@ using namespace std;
 namespace gtsam {
 namespace example {
 
-	typedef boost::shared_ptr<NonlinearFactor<Config> > shared;
+	typedef boost::shared_ptr<NonlinearFactor<Values> > shared;
 
 	static SharedDiagonal sigma1_0 = noiseModel::Isotropic::Sigma(2,1.0);
 	static SharedDiagonal sigma0_1 = noiseModel::Isotropic::Sigma(2,0.1);
@@ -73,8 +73,8 @@ namespace example {
 	}
 
 	/* ************************************************************************* */
-	Config createConfig() {
-		Config c;
+	Values createValues() {
+		Values c;
 		c.insert(simulated2D::PoseKey(1), Point2(0.0, 0.0));
 		c.insert(simulated2D::PoseKey(2), Point2(1.5, 0.0));
 		c.insert(simulated2D::PointKey(1), Point2(0.0, -1.0));
@@ -82,8 +82,8 @@ namespace example {
 	}
 
 	/* ************************************************************************* */
-	VectorConfig createVectorConfig() {
-		VectorConfig c(vector<size_t>(3, 2));
+	VectorValues createVectorValues() {
+		VectorValues c(vector<size_t>(3, 2));
 		c[_l1_] = Vector_(2, 0.0, -1.0);
 		c[_x1_] = Vector_(2, 0.0, 0.0);
 		c[_x2_] = Vector_(2, 1.5, 0.0);
@@ -91,8 +91,8 @@ namespace example {
 	}
 
 	/* ************************************************************************* */
-	boost::shared_ptr<const Config> sharedNoisyConfig() {
-		boost::shared_ptr<Config> c(new Config);
+	boost::shared_ptr<const Values> sharedNoisyValues() {
+		boost::shared_ptr<Values> c(new Values);
 		c->insert(simulated2D::PoseKey(1), Point2(0.1, 0.1));
 		c->insert(simulated2D::PoseKey(2), Point2(1.4, 0.2));
 		c->insert(simulated2D::PointKey(1), Point2(0.1, -1.1));
@@ -100,13 +100,13 @@ namespace example {
 	}
 
 	/* ************************************************************************* */
-	Config createNoisyConfig() {
-		return *sharedNoisyConfig();
+	Values createNoisyValues() {
+		return *sharedNoisyValues();
 	}
 
 	/* ************************************************************************* */
-	VectorConfig createCorrectDelta(const Ordering& ordering) {
-		VectorConfig c(vector<size_t>(3,2));
+	VectorValues createCorrectDelta(const Ordering& ordering) {
+		VectorValues c(vector<size_t>(3,2));
 		c[ordering["l1"]] = Vector_(2, -0.1, 0.1);
 		c[ordering["x1"]] = Vector_(2, -0.1, -0.1);
 		c[ordering["x2"]] = Vector_(2, 0.1, -0.2);
@@ -114,8 +114,8 @@ namespace example {
 	}
 
 	/* ************************************************************************* */
-	VectorConfig createZeroDelta(const Ordering& ordering) {
-		VectorConfig c(vector<size_t>(3,2));
+	VectorValues createZeroDelta(const Ordering& ordering) {
+		VectorValues c(vector<size_t>(3,2));
 		c[ordering["l1"]] = zero(2);
 		c[ordering["x1"]] = zero(2);
 		c[ordering["x2"]] = zero(2);
@@ -195,14 +195,14 @@ namespace example {
 					 0.0, cos(v.y()));
 		}
 
-		struct UnaryFactor: public gtsam::NonlinearFactor1<Config,
+		struct UnaryFactor: public gtsam::NonlinearFactor1<Values,
 		simulated2D::PoseKey> {
 
 			Point2 z_;
 
 			UnaryFactor(const Point2& z, const SharedGaussian& model,
 					const simulated2D::PoseKey& key) :
-				gtsam::NonlinearFactor1<Config, simulated2D::PoseKey>(model, key), z_(z) {
+				gtsam::NonlinearFactor1<Values, simulated2D::PoseKey>(model, key), z_(z) {
 			}
 
 			Vector evaluateError(const Point2& x, boost::optional<Matrix&> A =
@@ -231,11 +231,11 @@ namespace example {
 	}
 
 	/* ************************************************************************* */
-	pair<Graph, Config> createNonlinearSmoother(int T) {
+	pair<Graph, Values> createNonlinearSmoother(int T) {
 
 		// Create
 		Graph nlfg;
-		Config poses;
+		Values poses;
 
 		// prior on x1
 		Point2 x1(1.0, 0.0);
@@ -264,7 +264,7 @@ namespace example {
 	/* ************************************************************************* */
 	pair<GaussianFactorGraph, Ordering> createSmoother(int T, boost::optional<Ordering> ordering) {
 		Graph nlfg;
-		Config poses;
+		Values poses;
 		boost::tie(nlfg, poses) = createNonlinearSmoother(T);
 
 		if(!ordering) ordering = *poses.orderingArbitrary();
@@ -300,8 +300,8 @@ namespace example {
 	}
 
 	/* ************************************************************************* */
-	VectorConfig createSimpleConstraintConfig() {
-		VectorConfig config(vector<size_t>(2,2));
+	VectorValues createSimpleConstraintValues() {
+		VectorValues config(vector<size_t>(2,2));
 		Vector v = Vector_(2, 1.0, -1.0);
 		config[_x_] = v;
 		config[_y_] = v;
@@ -342,8 +342,8 @@ namespace example {
 	}
 
 	/* ************************************************************************* */
-	VectorConfig createSingleConstraintConfig() {
-		VectorConfig config(vector<size_t>(2,2));
+	VectorValues createSingleConstraintValues() {
+		VectorValues config(vector<size_t>(2,2));
 		config[_x_] = Vector_(2, 1.0, -1.0);
 		config[_y_] = Vector_(2, 0.2, 0.1);
 		return config;
@@ -404,8 +404,8 @@ namespace example {
 	}
 
 	/* ************************************************************************* */
-	VectorConfig createMultiConstraintConfig() {
-		VectorConfig config(vector<size_t>(3,2));
+	VectorValues createMultiConstraintValues() {
+		VectorValues config(vector<size_t>(3,2));
 		config[_x_] = Vector_(2, -2.0, 2.0);
 		config[_y_] = Vector_(2, -0.1, 0.4);
 		config[_z_] = Vector_(2, -4.0, 5.0);
@@ -437,9 +437,9 @@ namespace example {
 	//}
 
 	/* ************************************************************************* */
-	//	ConstrainedNonlinearFactorGraph<NonlinearFactor<VectorConfig> , VectorConfig> createConstrainedNonlinearFactorGraph() {
-	//		ConstrainedNonlinearFactorGraph<NonlinearFactor<VectorConfig> , VectorConfig> graph;
-	//		VectorConfig c = createConstrainedConfig();
+	//	ConstrainedNonlinearFactorGraph<NonlinearFactor<VectorValues> , VectorValues> createConstrainedNonlinearFactorGraph() {
+	//		ConstrainedNonlinearFactorGraph<NonlinearFactor<VectorValues> , VectorValues> graph;
+	//		VectorValues c = createConstrainedValues();
 	//
 	//		// equality constraint for initial pose
 	//		GaussianFactor::shared_ptr f1(new GaussianFactor(c["x0"], "x0"));
@@ -453,9 +453,9 @@ namespace example {
 	//	}
 
 	/* ************************************************************************* */
-	//VectorConfig createConstrainedConfig()
+	//VectorValues createConstrainedValues()
 	//{
-	//	VectorConfig config;
+	//	VectorValues config;
 	//
 	//	Vector x0(2); x0(0)=1.0; x0(1)=2.0;
 	//	config.insert("x0", x0);
@@ -467,9 +467,9 @@ namespace example {
 	//}
 
 	/* ************************************************************************* */
-	//VectorConfig createConstrainedLinConfig()
+	//VectorValues createConstrainedLinValues()
 	//{
-	//	VectorConfig config;
+	//	VectorValues config;
 	//
 	//	Vector x0(2); x0(0)=1.0; x0(1)=2.0; // value doesn't actually matter
 	//	config.insert("x0", x0);
@@ -481,9 +481,9 @@ namespace example {
 	//}
 
 	/* ************************************************************************* */
-	//VectorConfig createConstrainedCorrectDelta()
+	//VectorValues createConstrainedCorrectDelta()
 	//{
-	//	VectorConfig config;
+	//	VectorValues config;
 	//
 	//	Vector x0(2); x0(0)=0.; x0(1)=0.;
 	//	config.insert("x0", x0);
@@ -498,7 +498,7 @@ namespace example {
 	//ConstrainedGaussianBayesNet createConstrainedGaussianBayesNet()
 	//{
 	//	ConstrainedGaussianBayesNet cbn;
-	//	VectorConfig c = createConstrainedConfig();
+	//	VectorValues c = createConstrainedValues();
 	//
 	//	// add regular conditional gaussian - no parent
 	//	Matrix R = eye(2);
@@ -521,10 +521,10 @@ namespace example {
 	}
 
 	/* ************************************************************************* */
-	boost::tuple<GaussianFactorGraph, Ordering, VectorConfig> planarGraph(size_t N) {
+	boost::tuple<GaussianFactorGraph, Ordering, VectorValues> planarGraph(size_t N) {
 
 		// create empty graph
-		NonlinearFactorGraph<Config> nlfg;
+		NonlinearFactorGraph<Values> nlfg;
 
 		// Create almost hard constraint on x11, sigma=0 will work for PCG not for normal
 		shared constraint(new simulated2D::Prior(Point2(1.0, 1.0), sharedSigma(2,1e-3), key(1,1)));
@@ -547,12 +547,12 @@ namespace example {
 			}
 
 		// Create linearization and ground xtrue config
-		Config zeros;
+		Values zeros;
     for (size_t x = 1; x <= N; x++)
       for (size_t y = 1; y <= N; y++)
         zeros.insert(key(x, y), Point2());
 		Ordering ordering(planarOrdering(N));
-		VectorConfig xtrue(zeros.dims(ordering));
+		VectorValues xtrue(zeros.dims(ordering));
 		for (size_t x = 1; x <= N; x++)
 			for (size_t y = 1; y <= N; y++)
 				xtrue[ordering[key(x, y)]] = Point2(x,y).vector();

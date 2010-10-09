@@ -24,13 +24,13 @@ namespace gtsam {
 	public:
 		typedef boost::shared_ptr<const GaussianBayesNet> sharedBayesNet;
 		typedef boost::shared_ptr<const GaussianFactorGraph> sharedFG;
-		typedef boost::shared_ptr<const VectorConfig> sharedConfig;
+		typedef boost::shared_ptr<const VectorValues> sharedValues;
 		typedef boost::shared_ptr<const Errors> sharedErrors;
 
 	private:
 		sharedFG Ab1_, Ab2_;
 		sharedBayesNet Rc1_;
-		sharedConfig xbar_;
+		sharedValues xbar_;
 		sharedErrors b2bar_; /** b2 - A2*xbar */
 
 	public:
@@ -42,7 +42,7 @@ namespace gtsam {
 		 * @param Rc1: the Bayes Net R1*x=c1
 		 * @param xbar: the solution to R1*x=c1
 		 */
-		SubgraphPreconditioner(sharedFG& Ab1, sharedFG& Ab2, sharedBayesNet& Rc1,	sharedConfig& xbar);
+		SubgraphPreconditioner(sharedFG& Ab1, sharedFG& Ab2, sharedBayesNet& Rc1,	sharedValues& xbar);
 
 		std::pair<Matrix,Vector> Ab1(const Ordering& ordering) const { return Ab1_->matrix(ordering); }
 		std::pair<Matrix,Vector> Ab2(const Ordering& ordering) const { return Ab2_->matrix(ordering); }
@@ -50,34 +50,34 @@ namespace gtsam {
 		Matrix A2(const Ordering& ordering) const { return Ab2_->sparse(Ab1_->columnIndices(ordering)); }
 		Vector b1() const { return Ab1_->rhsVector(); }
 		Vector b2() const { return Ab2_->rhsVector(); }
-		VectorConfig assembleConfig(const Vector& v, const Ordering& ordering) const { return Ab1_->assembleConfig(v, ordering); }
+		VectorValues assembleValues(const Vector& v, const Ordering& ordering) const { return Ab1_->assembleValues(v, ordering); }
 
 		/* x = xbar + inv(R1)*y */
-		VectorConfig x(const VectorConfig& y) const;
+		VectorValues x(const VectorValues& y) const;
 
-		/* A zero VectorConfig with the structure of xbar */
-		VectorConfig zero() const { return VectorConfig::zero(*xbar_);}
+		/* A zero VectorValues with the structure of xbar */
+		VectorValues zero() const { return VectorValues::zero(*xbar_);}
 
 		/* error, given y */
-		double error(const VectorConfig& y) const;
+		double error(const VectorValues& y) const;
 
 		/** gradient = y + inv(R1')*A2'*(A2*inv(R1)*y-b2bar) */
-		VectorConfig gradient(const VectorConfig& y) const;
+		VectorValues gradient(const VectorValues& y) const;
 
 		/** Apply operator A */
-		Errors operator*(const VectorConfig& y) const;
+		Errors operator*(const VectorValues& y) const;
 
 		/** Apply operator A in place: needs e allocated already */
-		void multiplyInPlace(const VectorConfig& y, Errors& e) const;
+		void multiplyInPlace(const VectorValues& y, Errors& e) const;
 
 			/** Apply operator A' */
-		VectorConfig operator^(const Errors& e) const;
+		VectorValues operator^(const Errors& e) const;
 
 		/**
 		 * Add A'*e to y
 		 *  y += alpha*A'*[e1;e2] = [alpha*e1; alpha*inv(R1')*A2'*e2]
 		 */
-		void transposeMultiplyAdd(double alpha, const Errors& e, VectorConfig& y) const;
+		void transposeMultiplyAdd(double alpha, const Errors& e, VectorValues& y) const;
 
 		/**
 		 * Add constraint part of the error only, used in both calls above
@@ -85,7 +85,7 @@ namespace gtsam {
 		 * Takes a range indicating e2 !!!!
 		 */
 		void transposeMultiplyAdd2(double alpha, Errors::const_iterator begin,
-				Errors::const_iterator end, VectorConfig& y) const;
+				Errors::const_iterator end, VectorValues& y) const;
 
 			/** print the object */
 		void print(const std::string& s = "SubgraphPreconditioner") const;

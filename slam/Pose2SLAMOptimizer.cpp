@@ -48,7 +48,7 @@ namespace gtsam {
 
 	/* ************************************************************************* */
 	void Pose2SLAMOptimizer::update(const Vector& x) {
-		VectorConfig X = system_->assembleConfig(x, *solver_.ordering());
+		VectorValues X = system_->assembleValues(x, *solver_.ordering());
 		*theta_ = theta_->expmap(X);
 		linearize();
 	}
@@ -61,7 +61,7 @@ namespace gtsam {
 
 	/* ************************************************************************* */
 	Vector Pose2SLAMOptimizer::optimize() const {
-		VectorConfig X = solver_.optimize(*system_);
+		VectorValues X = solver_.optimize(*system_);
 		std::list<Vector> vs;
 		BOOST_FOREACH(const Symbol& key, *solver_.ordering())
 			vs.push_back(X[key]);

@@ -63,7 +63,7 @@ namespace gtsam {
 	/* ************************************************************************* */
 	template<class G, class C, class L, class S, class W>
 	NonlinearOptimizer<G, C, L, S, W>::NonlinearOptimizer(shared_graph graph,
-			shared_config config, shared_solver solver, double lambda) :
+			shared_values config, shared_solver solver, double lambda) :
 		graph_(graph), config_(config), lambda_(lambda), solver_(solver) {
 		if (!graph) throw std::invalid_argument(
 				"NonlinearOptimizer constructor: graph = NULL");
@@ -78,7 +78,7 @@ namespace gtsam {
 	// linearize and optimize
 	/* ************************************************************************* */
 	template<class G, class C, class L, class S, class W>
-	VectorConfig NonlinearOptimizer<G, C, L, S, W>::linearizeAndOptimizeForDelta() const {
+	VectorValues NonlinearOptimizer<G, C, L, S, W>::linearizeAndOptimizeForDelta() const {
 		boost::shared_ptr<L> linearized = solver_->linearize(*graph_, *config_);
 		NonlinearOptimizer prepared(graph_, config_, solver_->prepareLinear(*linearized), error_, lambda_);
 		return prepared.solver_->optimize(*linearized);
@@ -91,20 +91,20 @@ namespace gtsam {
 	NonlinearOptimizer<G, C, L, S, W> NonlinearOptimizer<G, C, L, S, W>::iterate(
 			verbosityLevel verbosity) const {
 		// linearize and optimize
-		VectorConfig delta = linearizeAndOptimizeForDelta();
+		VectorValues delta = linearizeAndOptimizeForDelta();
 
 		// maybe show output
 		if (verbosity >= DELTA)
 			delta.print("delta");
 
 		// take old config and update it
-		shared_config newConfig(new C(solver_->expmap(*config_, delta)));
+		shared_values newValues(new C(solver_->expmap(*config_, delta)));
 
 		// maybe show output
 		if (verbosity >= CONFIG)
-			newConfig->print("newConfig");
+			newValues->print("newValues");
 
-		NonlinearOptimizer newOptimizer = NonlinearOptimizer(graph_, newConfig, solver_, lambda_);
+		NonlinearOptimizer newOptimizer = NonlinearOptimizer(graph_, newValues, solver_, lambda_);
 
 		if (verbosity >= ERROR)
 			cout << "error: " << newOptimizer.error_ << endl;
@@ -166,17 +166,17 @@ namespace gtsam {
 			damped.print("damped");
 
 		// solve
-		VectorConfig delta = solver_->optimize(damped);
+		VectorValues delta = solver_->optimize(damped);
 		if (verbosity >= TRYDELTA)
 			delta.print("delta");
 
 		// update config
-		shared_config newConfig(new C(solver_->expmap(*config_, delta))); // TODO: updateConfig
+		shared_values newValues(new C(solver_->expmap(*config_, delta))); // TODO: updateValues
 //		if (verbosity >= TRYCONFIG)
-//			newConfig->print("config");
+//			newValues->print("config");
 
 		// create new optimization state with more adventurous lambda
-		NonlinearOptimizer next(graph_, newConfig, solver_, lambda_ / factor);
+		NonlinearOptimizer next(graph_, newValues, solver_, lambda_ / factor);
 		if (verbosity >= TRYLAMBDA) cout << "next error = " << next.error_ << endl;
 
 		if(lambdaMode >= CAUTIOUS) {
@@ -188,7 +188,7 @@ namespace gtsam {
 			// If we're cautious, see if the current lambda is better
 			// todo:  include stopping criterion here?
 			if(lambdaMode == CAUTIOUS) {
-				NonlinearOptimizer sameLambda(graph_, newConfig, solver_, lambda_);
+				NonlinearOptimizer sameLambda(graph_, newValues, solver_, lambda_);
 				if(sameLambda.error_ <= next.error_)
 					return sameLambda;
 			}
@@ -201,7 +201,7 @@ namespace gtsam {
 
 			// A more adventerous lambda was worse.  If we're cautious, try the same lambda.
 			if(lambdaMode == CAUTIOUS) {
-				NonlinearOptimizer sameLambda(graph_, newConfig, solver_, lambda_);
+				NonlinearOptimizer sameLambda(graph_, newValues, solver_, lambda_);
 				if(sameLambda.error_ <= error_)
 					return sameLambda;
 			}
@@ -212,7 +212,7 @@ namespace gtsam {
 
 			// TODO: can we avoid copying the config ?
 			if(lambdaMode >= BOUNDED && lambda_ >= 1.0e5) {
-				return NonlinearOptimizer(graph_, newConfig, solver_, lambda_);;
+				return NonlinearOptimizer(graph_, newValues, solver_, lambda_);;
 			} else {
 				NonlinearOptimizer cautious(graph_, config_, solver_, lambda_ * factor);
 				return cautious.try_lambda(linear, verbosity, factor, lambdaMode);

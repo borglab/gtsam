@@ -43,7 +43,7 @@ TEST (NonlinearConstraint, problem1_cholesky ) {
 	Symbol x1("x1"), y1("y1"), L1("L1");
 
 	// state structure: [x y \lambda]
-	VectorConfig init, state;
+	VectorValues init, state;
 	init.insert(x1, Vector_(1, 1.0));
 	init.insert(y1, Vector_(1, 1.0));
 	init.insert(L1, Vector_(1, 1.0));
@@ -106,18 +106,18 @@ TEST (NonlinearConstraint, problem1_cholesky ) {
 		// solve
 		Ordering ord;
 		ord += x1, y1, L1;
-		VectorConfig delta = fg.optimize(ord).scale(-1.0);
+		VectorValues delta = fg.optimize(ord).scale(-1.0);
 		if (verbose) delta.print("Delta");
 
 		// update initial estimate
-		VectorConfig newState = expmap(state, delta);
+		VectorValues newState = expmap(state, delta);
 		state = newState;
 
 		if (verbose) state.print("Updated State");
 	}
 
 	// verify that it converges to the nearest optimal point
-	VectorConfig expected;
+	VectorValues expected;
 	expected.insert(L1, Vector_(1, -1.0));
 	expected.insert(x1, Vector_(1, 2.12));
 	expected.insert(y1, Vector_(1, -0.5));

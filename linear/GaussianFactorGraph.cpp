@@ -51,7 +51,7 @@ void GaussianFactorGraph::permuteWithInverse(const Permutation& inversePermutati
 }
 
 /* ************************************************************************* */
-double GaussianFactorGraph::error(const VectorConfig& x) const {
+double GaussianFactorGraph::error(const VectorValues& x) const {
 	double total_error = 0.;
 	BOOST_FOREACH(sharedFactor factor,factors_)
 		total_error += factor->error(x);
@@ -59,12 +59,12 @@ double GaussianFactorGraph::error(const VectorConfig& x) const {
 }
 
 /* ************************************************************************* */
-Errors GaussianFactorGraph::errors(const VectorConfig& x) const {
+Errors GaussianFactorGraph::errors(const VectorValues& x) const {
 	return *errors_(x);
 }
 
 /* ************************************************************************* */
-boost::shared_ptr<Errors> GaussianFactorGraph::errors_(const VectorConfig& x) const {
+boost::shared_ptr<Errors> GaussianFactorGraph::errors_(const VectorValues& x) const {
 	boost::shared_ptr<Errors> e(new Errors);
 	BOOST_FOREACH(const sharedFactor& factor,factors_)
 		e->push_back(factor->error_vector(x));
@@ -72,7 +72,7 @@ boost::shared_ptr<Errors> GaussianFactorGraph::errors_(const VectorConfig& x) co
 }
 
 /* ************************************************************************* */
-Errors GaussianFactorGraph::operator*(const VectorConfig& x) const {
+Errors GaussianFactorGraph::operator*(const VectorValues& x) const {
 	Errors e;
 	BOOST_FOREACH(const sharedFactor& Ai,factors_)
 		e.push_back((*Ai)*x);
@@ -80,12 +80,12 @@ Errors GaussianFactorGraph::operator*(const VectorConfig& x) const {
 }
 
 /* ************************************************************************* */
-void GaussianFactorGraph::multiplyInPlace(const VectorConfig& x, Errors& e) const {
+void GaussianFactorGraph::multiplyInPlace(const VectorValues& x, Errors& e) const {
 	multiplyInPlace(x,e.begin());
 }
 
 /* ************************************************************************* */
-void GaussianFactorGraph::multiplyInPlace(const VectorConfig& x,
+void GaussianFactorGraph::multiplyInPlace(const VectorValues& x,
 		const Errors::iterator& e) const {
 	Errors::iterator ei = e;
 	BOOST_FOREACH(const sharedFactor& Ai,factors_) {
@@ -95,12 +95,12 @@ void GaussianFactorGraph::multiplyInPlace(const VectorConfig& x,
 }
 
 ///* ************************************************************************* */
-//VectorConfig GaussianFactorGraph::operator^(const Errors& e) const {
-//	VectorConfig x;
+//VectorValues GaussianFactorGraph::operator^(const Errors& e) const {
+//	VectorValues x;
 //	// For each factor add the gradient contribution
 //	Errors::const_iterator it = e.begin();
 //	BOOST_FOREACH(const sharedFactor& Ai,factors_) {
-//		VectorConfig xi = (*Ai)^(*(it++));
+//		VectorValues xi = (*Ai)^(*(it++));
 //		x.insertAdd(xi);
 //	}
 //	return x;
@@ -109,7 +109,7 @@ void GaussianFactorGraph::multiplyInPlace(const VectorConfig& x,
 /* ************************************************************************* */
 // x += alpha*A'*e
 void GaussianFactorGraph::transposeMultiplyAdd(double alpha, const Errors& e,
-		VectorConfig& x) const {
+		VectorValues& x) const {
 	// For each factor add the gradient contribution
 	Errors::const_iterator ei = e.begin();
 	BOOST_FOREACH(const sharedFactor& Ai,factors_)
@@ -117,9 +117,9 @@ void GaussianFactorGraph::transposeMultiplyAdd(double alpha, const Errors& e,
 }
 
 ///* ************************************************************************* */
-//VectorConfig GaussianFactorGraph::gradient(const VectorConfig& x) const {
+//VectorValues GaussianFactorGraph::gradient(const VectorValues& x) const {
 //	// It is crucial for performance to make a zero-valued clone of x
-//	VectorConfig g = VectorConfig::zero(x);
+//	VectorValues g = VectorValues::zero(x);
 //	transposeMultiplyAdd(1.0, errors(x), g);
 //	return g;
 //}
@@ -279,23 +279,23 @@ void GaussianFactorGraph::transposeMultiplyAdd(double alpha, const Errors& e,
 
 
 ///* ************************************************************************* */
-//VectorConfig GaussianFactorGraph::optimize(const Ordering& ordering, bool old)
+//VectorValues GaussianFactorGraph::optimize(const Ordering& ordering, bool old)
 //{
 //	// eliminate all nodes in the given ordering -> chordal Bayes net
 //	GaussianBayesNet chordalBayesNet = eliminate(ordering, old);
 //
-//	// calculate new configuration (using backsubstitution)
-//	VectorConfig delta = ::optimize(chordalBayesNet);
+//	// calculate new values structure (using backsubstitution)
+//	VectorValues delta = ::optimize(chordalBayesNet);
 //	return delta;
 //}
 //
 ///* ************************************************************************* */
-//VectorConfig GaussianFactorGraph::optimizeMultiFrontals(const Ordering& ordering)
+//VectorValues GaussianFactorGraph::optimizeMultiFrontals(const Ordering& ordering)
 //{
 //	GaussianJunctionTree junctionTree(*this, ordering);
 //
-//	// calculate new configuration (using backsubstitution)
-//	VectorConfig delta = junctionTree.optimize();
+//	// calculate new values structure (using backsubstitution)
+//	VectorValues delta = junctionTree.optimize();
 //	return delta;
 //}
 
@@ -312,9 +312,9 @@ void GaussianFactorGraph::transposeMultiplyAdd(double alpha, const Errors& e,
 //}
 //
 ///* ************************************************************************* */
-//boost::shared_ptr<VectorConfig>
+//boost::shared_ptr<VectorValues>
 //GaussianFactorGraph::optimize_(const Ordering& ordering) {
-//	return boost::shared_ptr<VectorConfig>(new VectorConfig(optimize(ordering)));
+//	return boost::shared_ptr<VectorValues>(new VectorValues(optimize(ordering)));
 //}
 
 /* ************************************************************************* */
@@ -402,9 +402,9 @@ GaussianFactorGraph GaussianFactorGraph::add_priors(double sigma, const Gaussian
 //}
 
 ///* ************************************************************************* */
-//VectorConfig GaussianFactorGraph::assembleConfig(const Vector& vs, const Ordering& ordering) const {
+//VectorValues GaussianFactorGraph::assembleValues(const Vector& vs, const Ordering& ordering) const {
 //	Dimensions dims = dimensions();
-//	VectorConfig config;
+//	VectorValues config;
 //	Vector::const_iterator itSrc = vs.begin();
 //	Vector::iterator itDst;
 //	BOOST_FOREACH(varid_t key, ordering){
@@ -415,7 +415,7 @@ GaussianFactorGraph GaussianFactorGraph::add_priors(double sigma, const Gaussian
 //		config.insert(key, v);
 //	}
 //	if (itSrc != vs.end())
-//		throw runtime_error("assembleConfig: input vector and ordering are not compatible with the graph");
+//		throw runtime_error("assembleValues: input vector and ordering are not compatible with the graph");
 //	return config;
 //}
 //
@@ -508,30 +508,30 @@ GaussianFactorGraph GaussianFactorGraph::add_priors(double sigma, const Gaussian
 //}
 
 ///* ************************************************************************* */
-//VectorConfig GaussianFactorGraph::steepestDescent(const VectorConfig& x0,
+//VectorValues GaussianFactorGraph::steepestDescent(const VectorValues& x0,
 //		bool verbose, double epsilon, size_t maxIterations) const {
 //	return gtsam::steepestDescent(*this, x0, verbose, epsilon, maxIterations);
 //}
 //
 ///* ************************************************************************* */
-//boost::shared_ptr<VectorConfig> GaussianFactorGraph::steepestDescent_(
-//		const VectorConfig& x0, bool verbose, double epsilon, size_t maxIterations) const {
-//	return boost::shared_ptr<VectorConfig>(new VectorConfig(
+//boost::shared_ptr<VectorValues> GaussianFactorGraph::steepestDescent_(
+//		const VectorValues& x0, bool verbose, double epsilon, size_t maxIterations) const {
+//	return boost::shared_ptr<VectorValues>(new VectorValues(
 //			gtsam::conjugateGradientDescent(*this, x0, verbose, epsilon,
 //					maxIterations)));
 //}
 //
 ///* ************************************************************************* */
-//VectorConfig GaussianFactorGraph::conjugateGradientDescent(
-//		const VectorConfig& x0, bool verbose, double epsilon, size_t maxIterations) const {
+//VectorValues GaussianFactorGraph::conjugateGradientDescent(
+//		const VectorValues& x0, bool verbose, double epsilon, size_t maxIterations) const {
 //	return gtsam::conjugateGradientDescent(*this, x0, verbose, epsilon,
 //			maxIterations);
 //}
 //
 ///* ************************************************************************* */
-//boost::shared_ptr<VectorConfig> GaussianFactorGraph::conjugateGradientDescent_(
-//		const VectorConfig& x0, bool verbose, double epsilon, size_t maxIterations) const {
-//	return boost::shared_ptr<VectorConfig>(new VectorConfig(
+//boost::shared_ptr<VectorValues> GaussianFactorGraph::conjugateGradientDescent_(
+//		const VectorValues& x0, bool verbose, double epsilon, size_t maxIterations) const {
+//	return boost::shared_ptr<VectorValues>(new VectorValues(
 //			gtsam::conjugateGradientDescent(*this, x0, verbose, epsilon,
 //					maxIterations)));
 //}

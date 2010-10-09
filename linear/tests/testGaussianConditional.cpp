@@ -145,7 +145,7 @@ TEST( GaussianConditional, solve )
   Vector sl1(2);
   sl1(0) = 1.0; sl1(1) = 1.0;
   
-  VectorConfig solution(vector<size_t>(3, 2));
+  VectorValues solution(vector<size_t>(3, 2));
   solution[_x1_] = sx1;
   solution[_l1_] = sl1;
   

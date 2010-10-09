@@ -18,7 +18,7 @@ namespace gtsam {
 
 	/**
 	 * Optimizer class for use in MATLAB
-	 * Keeps a Pose2Config estimate
+	 * Keeps a Pose2Values estimate
 	 * Returns all relevant matrices so MATLAB can optimize :-)
 	 */
 	class Pose2SLAMOptimizer {
@@ -28,10 +28,10 @@ namespace gtsam {
 		boost::shared_ptr<Pose2Graph> graph_;
 
 		/** Current non-linear estimate */
-		boost::shared_ptr<Pose2Config> theta_;
+		boost::shared_ptr<Pose2Values> theta_;
 
 		/** Non-linear solver */
-		typedef SubgraphSolver<Pose2Graph, Pose2Config> SPCG_Solver;
+		typedef SubgraphSolver<Pose2Graph, Pose2Values> SPCG_Solver;
 		SPCG_Solver solver_;
 
 		/** Linear Solver */
@@ -65,7 +65,7 @@ namespace gtsam {
 		/**
 		 * return the current linearization point
 		 */
-		boost::shared_ptr<const Pose2Config> theta() const {
+		boost::shared_ptr<const Pose2Values> theta() const {
 			return theta_;
 		}
 

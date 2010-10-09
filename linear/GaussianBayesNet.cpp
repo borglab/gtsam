@@ -10,7 +10,7 @@
 
 #include <gtsam/base/Matrix-inl.h>
 #include <gtsam/linear/GaussianBayesNet.h>
-#include <gtsam/linear/VectorConfig.h>
+#include <gtsam/linear/VectorValues.h>
 
 using namespace std;
 using namespace gtsam;
@@ -59,25 +59,25 @@ void push_front(GaussianBayesNet& bn, varid_t key, Vector d, Matrix R,
 }
 
 /* ************************************************************************* */
-boost::shared_ptr<VectorConfig> allocateVectorConfig(const GaussianBayesNet& bn) {
+boost::shared_ptr<VectorValues> allocateVectorValues(const GaussianBayesNet& bn) {
   vector<size_t> dimensions(bn.size());
   varid_t var = 0;
   BOOST_FOREACH(const boost::shared_ptr<const GaussianConditional> conditional, bn) {
     dimensions[var++] = conditional->get_R().size1();
   }
-  return boost::shared_ptr<VectorConfig>(new VectorConfig(dimensions));
+  return boost::shared_ptr<VectorValues>(new VectorValues(dimensions));
 }
 
 /* ************************************************************************* */
-VectorConfig optimize(const GaussianBayesNet& bn)
+VectorValues optimize(const GaussianBayesNet& bn)
 {
   return *optimize_(bn);
 }
 
 /* ************************************************************************* */
-boost::shared_ptr<VectorConfig> optimize_(const GaussianBayesNet& bn)
+boost::shared_ptr<VectorValues> optimize_(const GaussianBayesNet& bn)
 {
-	boost::shared_ptr<VectorConfig> result(allocateVectorConfig(bn));
+	boost::shared_ptr<VectorValues> result(allocateVectorValues(bn));
 
   /** solve each node in turn in topological sort order (parents first)*/
 	BOOST_REVERSE_FOREACH(GaussianConditional::shared_ptr cg, bn) {
@@ -88,16 +88,16 @@ boost::shared_ptr<VectorConfig> optimize_(const GaussianBayesNet& bn)
 }
 
 /* ************************************************************************* */
-VectorConfig backSubstitute(const GaussianBayesNet& bn, const VectorConfig& y) {
-	VectorConfig x(y);
+VectorValues backSubstitute(const GaussianBayesNet& bn, const VectorValues& y) {
+	VectorValues x(y);
 	backSubstituteInPlace(bn,x);
 	return x;
 }
 
 /* ************************************************************************* */
 // (R*x)./sigmas = y by solving x=inv(R)*(y.*sigmas)
-void backSubstituteInPlace(const GaussianBayesNet& bn, VectorConfig& y) {
-	VectorConfig& x = y;
+void backSubstituteInPlace(const GaussianBayesNet& bn, VectorValues& y) {
+	VectorValues& x = y;
 	/** solve each node in turn in topological sort order (parents first)*/
 	BOOST_REVERSE_FOREACH(const boost::shared_ptr<const GaussianConditional> cg, bn) {
 		// i^th part of R*x=y, x=inv(R)*y
@@ -116,12 +116,12 @@ void backSubstituteInPlace(const GaussianBayesNet& bn, VectorConfig& y) {
 // gy=inv(L)*gx by solving L*gy=gx.
 // gy=inv(R'*inv(Sigma))*gx
 // gz'*R'=gx', gy = gz.*sigmas
-VectorConfig backSubstituteTranspose(const GaussianBayesNet& bn,
-		const VectorConfig& gx) {
+VectorValues backSubstituteTranspose(const GaussianBayesNet& bn,
+		const VectorValues& gx) {
 
 	// Initialize gy from gx
 	// TODO: used to insert zeros if gx did not have an entry for a variable in bn
-	VectorConfig gy = gx;
+	VectorValues gy = gx;
 
 	// we loop from first-eliminated to last-eliminated
 	// i^th part of L*gy=gx is done block-column by block-column of L
@@ -195,8 +195,8 @@ pair<Matrix,Vector> matrix(const GaussianBayesNet& bn)  {
 }
 
 /* ************************************************************************* */
-VectorConfig rhs(const GaussianBayesNet& bn) {
-	boost::shared_ptr<VectorConfig> result(allocateVectorConfig(bn));
+VectorValues rhs(const GaussianBayesNet& bn) {
+	boost::shared_ptr<VectorValues> result(allocateVectorValues(bn));
   BOOST_FOREACH(boost::shared_ptr<const GaussianConditional> cg,bn) {
   	varid_t key = cg->key();
   	// get sigmas

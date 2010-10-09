@@ -79,10 +79,10 @@ TEST( GaussianJunctionTree, optimizeMultiFrontal )
 
 	// optimize the graph
 	GaussianJunctionTree tree(fg);
-	VectorConfig actual = tree.optimize();
+	VectorValues actual = tree.optimize();
 
 	// verify
-	VectorConfig expected(GaussianVariableIndex<>(fg).dims()); // expected solution
+	VectorValues expected(GaussianVariableIndex<>(fg).dims()); // expected solution
 	Vector v = Vector_(2, 0., 0.);
 	for (int i=1; i<=7; i++)
 		expected[ordering[Symbol('x',i)]] = v;
@@ -94,16 +94,16 @@ TEST( GaussianJunctionTree, optimizeMultiFrontal2)
 {
 	// create a graph
 	Graph nlfg = createNonlinearFactorGraph();
-	Config noisy = createNoisyConfig();
+	Values noisy = createNoisyValues();
   Ordering ordering; ordering += "x1","x2","l1";
 	GaussianFactorGraph fg = *nlfg.linearize(noisy, ordering);
 
 	// optimize the graph
 	GaussianJunctionTree tree(fg);
-	VectorConfig actual = tree.optimize();
+	VectorValues actual = tree.optimize();
 
 	// verify
-	VectorConfig expected = createCorrectDelta(ordering); // expected solution
+	VectorValues expected = createCorrectDelta(ordering); // expected solution
   CHECK(assert_equal(expected,actual));
 }
 
@@ -112,7 +112,7 @@ TEST(GaussianJunctionTree, slamlike) {
   typedef planarSLAM::PoseKey PoseKey;
   typedef planarSLAM::PointKey PointKey;
 
-  planarSLAM::Config init;
+  planarSLAM::Values init;
   planarSLAM::Graph newfactors;
   planarSLAM::Graph fullgraph;
   SharedDiagonal odoNoise = sharedSigmas(Vector_(3, 0.1, 0.1, M_PI/100.0));
@@ -162,12 +162,12 @@ TEST(GaussianJunctionTree, slamlike) {
   GaussianFactorGraph linearized = *fullgraph.linearize(init, ordering);
 
   GaussianJunctionTree gjt(linearized);
-  VectorConfig deltaactual = gjt.optimize();
-  planarSLAM::Config actual = init.expmap(deltaactual, ordering);
+  VectorValues deltaactual = gjt.optimize();
+  planarSLAM::Values actual = init.expmap(deltaactual, ordering);
 
   GaussianBayesNet gbn = *Inference::Eliminate(linearized);
-  VectorConfig delta = optimize(gbn);
-  planarSLAM::Config expected = init.expmap(delta, ordering);
+  VectorValues delta = optimize(gbn);
+  planarSLAM::Values expected = init.expmap(delta, ordering);
 
   CHECK(assert_equal(expected, actual));
 

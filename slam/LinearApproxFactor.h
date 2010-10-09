@@ -8,7 +8,7 @@
 
 #include <vector>
 #include <gtsam/nonlinear/NonlinearFactor.h>
-#include <gtsam/linear/VectorConfig.h>
+#include <gtsam/linear/VectorValues.h>
 #include <gtsam/base/Matrix.h>
 
 namespace gtsam {
@@ -17,18 +17,18 @@ namespace gtsam {
  * A dummy factor that takes a linearized factor and inserts it into
  * a nonlinear graph.  This version uses exactly one type of variable.
  */
-template <class Config, class Key>
-class LinearApproxFactor : public NonlinearFactor<Config> {
+template <class Values, class Key>
+class LinearApproxFactor : public NonlinearFactor<Values> {
 
 public:
 	/** type for the variable */
 	typedef typename Key::Value_t X;
 
 	/** base type */
-	typedef NonlinearFactor<Config> Base;
+	typedef NonlinearFactor<Values> Base;
 
 	/** shared pointer for convenience */
-	typedef boost::shared_ptr<LinearApproxFactor<Config,Key> > shared_ptr;
+	typedef boost::shared_ptr<LinearApproxFactor<Values,Key> > shared_ptr;
 
 	/** typedefs for key vectors */
 	typedef std::vector<Key> KeyVector;
@@ -38,7 +38,7 @@ protected:
 	GaussianFactor::shared_ptr lin_factor_;
 
 	/** linearization points for error calculation */
-	Config lin_points_;
+	Values lin_points_;
 
 	/** keep keys for the factor */
 	KeyVector nonlinearKeys_;
@@ -46,18 +46,18 @@ protected:
 	/**
 	 * use this for derived classes with keys that don't copy easily
 	 */
-	LinearApproxFactor(size_t dim, const Config& lin_points)
+	LinearApproxFactor(size_t dim, const Values& lin_points)
 		: Base(noiseModel::Unit::Create(dim)), lin_points_(lin_points) {}
 
 public:
 
 	/** use this constructor when starting with nonlinear keys */
-	LinearApproxFactor(GaussianFactor::shared_ptr lin_factor, const Config& lin_points);
+	LinearApproxFactor(GaussianFactor::shared_ptr lin_factor, const Values& lin_points);
 
 	virtual ~LinearApproxFactor() {}
 
 	/** Vector of errors, unwhitened ! */
-	virtual Vector unwhitenedError(const Config& c) const;
+	virtual Vector unwhitenedError(const Values& c) const;
 
 	/**
 	 * linearize to a GaussianFactor
@@ -65,7 +65,7 @@ public:
 	 * NOTE: copies to avoid actual factor getting destroyed
 	 * during elimination
 	 */
-	virtual boost::shared_ptr<GaussianFactor> linearize(const Config& c) const;
+	virtual boost::shared_ptr<GaussianFactor> linearize(const Values& c) const;
 
 	/** get access to nonlinear keys */
 	KeyVector nonlinearKeys() const { return nonlinearKeys_; }

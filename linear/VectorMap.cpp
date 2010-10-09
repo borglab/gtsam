@@ -1,6 +1,6 @@
 /**
  * @file    VectorMap.cpp
- * @brief   Factor Graph Configuration
+ * @brief   Factor Graph Values
  * @brief   VectorMap
  * @author  Carlos Nieto
  * @author  Christian Potthast
@@ -148,33 +148,33 @@ Vector VectorMap::vector() const {
 /* ************************************************************************* */
 VectorMap expmap(const VectorMap& original, const VectorMap& delta)
 {
-	VectorMap newConfig;
+	VectorMap newValues;
 	varid_t j; Vector vj; // rtodo: copying vector?
 	FOREACH_PAIR(j, vj, original.values) {
 		if (delta.contains(j)) {
 			const Vector& dj = delta[j];
 			check_size(j,vj,dj);
-			newConfig.insert(j, vj + dj);
+			newValues.insert(j, vj + dj);
 		} else {
-			newConfig.insert(j, vj);
+			newValues.insert(j, vj);
 		}
 	}
-	return newConfig;
+	return newValues;
 }
 
 /* ************************************************************************* */
 VectorMap expmap(const VectorMap& original, const Vector& delta)
 {
-	VectorMap newConfig;
+	VectorMap newValues;
 	size_t i = 0;
 	varid_t j; Vector vj; // rtodo: copying vector?
 	FOREACH_PAIR(j, vj, original.values) {
 		size_t mj = vj.size();
 		Vector dj = sub(delta, i, i+mj);
-		newConfig.insert(j, vj + dj);
+		newValues.insert(j, vj + dj);
 		i += mj;
 	}
-	return newConfig;
+	return newValues;
 }
 
 /* ************************************************************************* */

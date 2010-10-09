@@ -20,8 +20,8 @@
 namespace gtsam {
 	namespace example {
 
-		typedef simulated2D::Config Config;
-		typedef NonlinearFactorGraph<Config> Graph;
+		typedef simulated2D::Values Values;
+		typedef NonlinearFactorGraph<Values> Graph;
 
 		/**
 		 * Create small example for non-linear factor graph
@@ -30,33 +30,33 @@ namespace gtsam {
 		Graph createNonlinearFactorGraph();
 
 		/**
-		 * Create configuration to go with it
-		 * The ground truth configuration for the example above
+		 * Create values structure to go with it
+		 * The ground truth values structure for the example above
 		 */
-		Config createConfig();
+		Values createValues();
 
-		/** Vector Config equivalent */
-		VectorConfig createVectorConfig();
+		/** Vector Values equivalent */
+		VectorValues createVectorValues();
 
 		/**
-		 * create a noisy configuration for a nonlinear factor graph
+		 * create a noisy values structure for a nonlinear factor graph
 		 */
-		boost::shared_ptr<const Config> sharedNoisyConfig();
-		Config createNoisyConfig();
+		boost::shared_ptr<const Values> sharedNoisyValues();
+		Values createNoisyValues();
 
 		/**
 		 * Zero delta config
 		 */
-		VectorConfig createZeroDelta(const Ordering& ordering);
+		VectorValues createZeroDelta(const Ordering& ordering);
 
 		/**
-		 * Delta config that, when added to noisyConfig, returns the ground truth
+		 * Delta config that, when added to noisyValues, returns the ground truth
 		 */
-		VectorConfig createCorrectDelta(const Ordering& ordering);
+		VectorValues createCorrectDelta(const Ordering& ordering);
 
 		/**
 		 * create a linear factor graph
-		 * The non-linear graph above evaluated at NoisyConfig
+		 * The non-linear graph above evaluated at NoisyValues
 		 */
 		GaussianFactorGraph createGaussianFactorGraph(const Ordering& ordering);
 
@@ -76,7 +76,7 @@ namespace gtsam {
 		 * Create a full nonlinear smoother
 		 * @param T number of time-steps
 		 */
-		std::pair<Graph, Config> createNonlinearSmoother(int T);
+		std::pair<Graph, Values> createNonlinearSmoother(int T);
 
 		/**
 		 * Create a Kalman smoother by linearizing a non-linear factor graph
@@ -93,21 +93,21 @@ namespace gtsam {
 		 * one binary equality constraint that sets x = y
 		 */
 		GaussianFactorGraph createSimpleConstraintGraph();
-		VectorConfig createSimpleConstraintConfig();
+		VectorValues createSimpleConstraintValues();
 
 		/**
 		 * Creates a simple constrained graph with one linear factor and
 		 * one binary constraint.
 		 */
 		GaussianFactorGraph createSingleConstraintGraph();
-		VectorConfig createSingleConstraintConfig();
+		VectorValues createSingleConstraintValues();
 
 		/**
 		 * Creates a constrained graph with a linear factor and two
 		 * binary constraints that share a node
 		 */
 		GaussianFactorGraph createMultiConstraintGraph();
-		VectorConfig createMultiConstraintConfig();
+		VectorValues createMultiConstraintValues();
 
 		/* ******************************************************* */
 		// Planar graph with easy subtree for SubgraphPreconditioner
@@ -122,7 +122,7 @@ namespace gtsam {
 		 * -x11-x21-x31
 		 * with x11 clamped at (1,1), and others related by 2D odometry.
 		 */
-		boost::tuple<GaussianFactorGraph, Ordering, VectorConfig> planarGraph(size_t N);
+		boost::tuple<GaussianFactorGraph, Ordering, VectorValues> planarGraph(size_t N);
 
 		/*
 		 * Create canonical ordering for planar graph that also works for tree

@@ -10,7 +10,7 @@
 #include <gtsam/CppUnitLite/TestHarness.h>
 
 #include <gtsam/base/numericalDerivative.h>
-#include <gtsam/slam/Simulated2DConfig.h>
+#include <gtsam/slam/Simulated2DValues.h>
 #include <gtsam/slam/simulated2DOriented.h>
 #include <gtsam/slam/Simulated2DOrientedOdometry.h>
 
@@ -19,9 +19,9 @@ using namespace std;
 using namespace simulated2DOriented;
 
 /* ************************************************************************* */
-TEST( simulated2DOriented, Simulated2DConfig )
+TEST( simulated2DOriented, Simulated2DValues )
 {
-	Simulated2DConfig actual;
+	Simulated2DValues actual;
 	actual.insertPose(1,Point2(1,1));
 	actual.insertPoint(2,Point2(2,2));
   CHECK(assert_equal(actual,actual,1e-9));
@@ -56,7 +56,7 @@ TEST( simulated2DOriented, constructor )
 	SharedDiagonal model(Vector_(3, 1., 1., 1.));
 	Simulated2DOrientedOdometry factor(measurement, model, PoseKey(1), PoseKey(2));
 
-	Config config;
+	Values config;
 	config.insert(PoseKey(1), Pose2(1., 0., 0.2));
 	config.insert(PoseKey(2), Pose2(2., 0., 0.1));
 	boost::shared_ptr<GaussianFactor> lf = factor.linearize(config, *config.orderingArbitrary());

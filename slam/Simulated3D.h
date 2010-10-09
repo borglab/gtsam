@@ -10,7 +10,7 @@
 
 #include <gtsam/base/Matrix.h>
 #include <gtsam/geometry/Point3.h>
-#include <gtsam/linear/VectorConfig.h>
+#include <gtsam/linear/VectorValues.h>
 #include <gtsam/nonlinear/NonlinearFactor.h>
 #include <gtsam/nonlinear/Key.h>
 #include <gtsam/nonlinear/TupleValues.h>
@@ -23,9 +23,9 @@ namespace simulated3D {
 	typedef gtsam::TypedSymbol<Point3, 'x'> PoseKey;
 	typedef gtsam::TypedSymbol<Point3, 'l'> PointKey;
 
-	typedef LieValues<PoseKey> PoseConfig;
-	typedef LieValues<PointKey> PointConfig;
-	typedef TupleValues2<PoseConfig, PointConfig> Config;
+	typedef LieValues<PoseKey> PoseValues;
+	typedef LieValues<PointKey> PointValues;
+	typedef TupleValues2<PoseValues, PointValues> Values;
 
 	/**
 	 * Prior on a single pose
@@ -46,13 +46,13 @@ namespace simulated3D {
 			boost::optional<Matrix&> H1 = boost::none,
 			boost::optional<Matrix&> H2 = boost::none);
 
-	struct PointPrior3D: public NonlinearFactor1<Config, PoseKey> {
+	struct PointPrior3D: public NonlinearFactor1<Values, PoseKey> {
 
 		Point3 z_;
 
 		PointPrior3D(const Point3& z,
 					const SharedGaussian& model, const PoseKey& j) :
-				NonlinearFactor1<Config, PoseKey> (model, j), z_(z) {
+				NonlinearFactor1<Values, PoseKey> (model, j), z_(z) {
 			}
 
 		Vector evaluateError(const Point3& x, boost::optional<Matrix&> H =
@@ -61,14 +61,14 @@ namespace simulated3D {
 		}
 	};
 
-	struct Simulated3DMeasurement: public NonlinearFactor2<Config,
+	struct Simulated3DMeasurement: public NonlinearFactor2<Values,
 			PoseKey, PointKey> {
 
 		Point3 z_;
 
 		Simulated3DMeasurement(const Point3& z,
 					const SharedGaussian& model, PoseKey& j1, PointKey j2) :
-				NonlinearFactor2<Config, PoseKey, PointKey> (
+				NonlinearFactor2<Values, PoseKey, PointKey> (
 								model, j1, j2), z_(z) {
 			}
 

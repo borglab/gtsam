@@ -10,16 +10,16 @@
 
 #include <gtsam/base/numericalDerivative.h>
 #include <gtsam/slam/simulated2D.h>
-#include <gtsam/slam/Simulated2DConfig.h>
+#include <gtsam/slam/Simulated2DValues.h>
 
 using namespace gtsam;
 using namespace std;
 using namespace simulated2D;
 
 /* ************************************************************************* */
-TEST( simulated2D, Simulated2DConfig )
+TEST( simulated2D, Simulated2DValues )
 {
-	Simulated2DConfig actual;
+	Simulated2DValues actual;
 	actual.insertPose(1,Point2(1,1));
 	actual.insertPoint(2,Point2(2,2));
   CHECK(assert_equal(actual,actual,1e-9));

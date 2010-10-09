@@ -29,7 +29,7 @@ TEST( planarSLAM, BearingFactor )
 	planarSLAM::Bearing factor(2, 3, z, sigma);
 
 	// create config
-	planarSLAM::Config c;
+	planarSLAM::Values c;
 	c.insert(2, x2);
 	c.insert(3, l3);
 
@@ -46,7 +46,7 @@ TEST( planarSLAM, RangeFactor )
 	planarSLAM::Range factor(2, 3, z, sigma);
 
 	// create config
-	planarSLAM::Config c;
+	planarSLAM::Values c;
 	c.insert(2, x2);
 	c.insert(3, l3);
 
@@ -64,7 +64,7 @@ TEST( planarSLAM, BearingRangeFactor )
 	planarSLAM::BearingRange factor(2, 3, r, b, sigma2);
 
 	// create config
-	planarSLAM::Config c;
+	planarSLAM::Values c;
 	c.insert(2, x2);
 	c.insert(3, l3);
 
@@ -77,7 +77,7 @@ TEST( planarSLAM, BearingRangeFactor )
 TEST( planarSLAM, constructor )
 {
 	// create config
-	planarSLAM::Config c;
+	planarSLAM::Values c;
 	c.insert(2, x2);
 	c.insert(3, x3);
 	c.insert(3, l3);

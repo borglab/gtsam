@@ -79,7 +79,7 @@ namespace gtsam {
 	class TypedLabeledSymbol;
 
 	/**
-	 * Character and index key used in VectorConfig, GaussianFactorGraph,
+	 * Character and index key used in VectorValues, GaussianFactorGraph,
 	 * GaussianFactor, etc.  These keys are generated at runtime from TypedSymbol
 	 * keys when linearizing a nonlinear factor graph.  This key is not type
 	 * safe, so cannot be used with any Nonlinear* classes.

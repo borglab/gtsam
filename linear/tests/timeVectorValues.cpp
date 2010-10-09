@@ -1,6 +1,6 @@
 /*
- * @file timeVectorConfig.cpp
- * @brief Performs timing and profiling for VectorConfig operations
+ * @file timeVectorValues.cpp
+ * @brief Performs timing and profiling for VectorValues operations
  * @author Frank Dellaert
  */
 

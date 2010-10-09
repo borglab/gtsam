@@ -78,8 +78,8 @@ TEST( GaussianJunctionTree, optimizeMultiFrontal )
 	GaussianFactorGraph fg = createChain();
 	GaussianJunctionTree tree(fg);
 
-	VectorConfig actual = tree.optimize();
-	VectorConfig expected(vector<size_t>(4,1));
+	VectorValues actual = tree.optimize();
+	VectorValues expected(vector<size_t>(4,1));
 	expected[x1] = Vector_(1, 0.);
 	expected[x2] = Vector_(1, 1.);
 	expected[x3] = Vector_(1, 0.);

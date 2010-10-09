@@ -28,18 +28,18 @@ const double tol = 1e-4;
 //TEST( ISAM2, solving )
 //{
 //	Graph nlfg = createNonlinearFactorGraph();
-//	Config noisy = createNoisyConfig();
+//	Values noisy = createNoisyValues();
 //	Ordering ordering;
 //	ordering += symbol('x', 1);
 //	ordering += symbol('x', 2);
 //	ordering += symbol('l', 1);
 //	// FIXME: commented out due due to compile error in ISAM - this should be fixed
 ////	GaussianISAM2 btree(nlfg, ordering, noisy);
-////	VectorConfig actualDelta = optimize2(btree);
-////	VectorConfig delta = createCorrectDelta();
+////	VectorValues actualDelta = optimize2(btree);
+////	VectorValues delta = createCorrectDelta();
 ////	CHECK(assert_equal(delta, actualDelta, 0.01));
-////	Config actualSolution = noisy.expmap(actualDelta);
-////	Config solution = createConfig();
+////	Values actualSolution = noisy.expmap(actualDelta);
+////	Values solution = createValues();
 ////	CHECK(assert_equal(solution, actualSolution, tol));
 //}
 //
@@ -48,12 +48,12 @@ const double tol = 1e-4;
 //{
 //	// Create smoother with 7 nodes
 //	Graph smoother;
-//	Config poses;
+//	Values poses;
 //	boost::tie(smoother, poses) = createNonlinearSmoother(7);
 //
 //	// run ISAM2 for every factor
 //	GaussianISAM2 actual;
-//	BOOST_FOREACH(boost::shared_ptr<NonlinearFactor<Config> > factor, smoother) {
+//	BOOST_FOREACH(boost::shared_ptr<NonlinearFactor<Values> > factor, smoother) {
 //		Graph factorGraph;
 //		factorGraph.push_back(factor);
 //		actual.update(factorGraph, poses);
@@ -68,12 +68,12 @@ const double tol = 1e-4;
 //	CHECK(assert_equal(expected, actual));
 //
 //	// obtain solution
-//	VectorConfig e; // expected solution
+//	VectorValues e; // expected solution
 //	Vector v = Vector_(2, 0., 0.);
 //	// FIXME: commented out due due to compile error in ISAM - this should be fixed
 ////	for (int i=1; i<=7; i++)
 ////		e.insert(symbol('x', i), v);
-////	VectorConfig optimized = optimize2(actual); // actual solution
+////	VectorValues optimized = optimize2(actual); // actual solution
 ////	CHECK(assert_equal(e, optimized));
 //}
 //
@@ -82,7 +82,7 @@ const double tol = 1e-4;
 //{
 //	// Create smoother with 7 nodes
 //	Graph smoother;
-//	Config poses;
+//	Values poses;
 //	boost::tie(smoother, poses) = createNonlinearSmoother(7);
 //
 //	// Create initial tree from first 4 timestamps in reverse order !
@@ -111,8 +111,8 @@ TEST(ISAM2, slamlike_solution)
   typedef planarSLAM::PointKey PointKey;
 
   double wildfire = -1.0;
-  planarSLAM::Config init;
-  planarSLAM::Config fullinit;
+  planarSLAM::Values init;
+  planarSLAM::Values fullinit;
   GaussianISAM2_P isam;
   planarSLAM::Graph newfactors;
   planarSLAM::Graph fullgraph;
@@ -184,15 +184,15 @@ TEST(ISAM2, slamlike_solution)
 //  isam.update(newfactors, init, wildfire, 0.0, true);
 
   // Compare solutions
-  planarSLAM::Config actual = isam.calculateEstimate();
+  planarSLAM::Values actual = isam.calculateEstimate();
   Ordering ordering = isam.getOrdering(); // *fullgraph.orderingCOLAMD(fullinit).first;
   GaussianFactorGraph linearized = *fullgraph.linearize(fullinit, ordering);
 //  linearized.print("Expected linearized: ");
   GaussianBayesNet gbn = *Inference::Eliminate(linearized);
 //  gbn.print("Expected bayesnet: ");
-  VectorConfig delta = optimize(gbn);
-  planarSLAM::Config expected = fullinit.expmap(delta, ordering);
-//  planarSLAM::Config expected = *NonlinearOptimizer<planarSLAM::Graph, planarSLAM::Config>::optimizeLM(fullgraph, fullinit);
+  VectorValues delta = optimize(gbn);
+  planarSLAM::Values expected = fullinit.expmap(delta, ordering);
+//  planarSLAM::Values expected = *NonlinearOptimizer<planarSLAM::Graph, planarSLAM::Values>::optimizeLM(fullgraph, fullinit);
 
   CHECK(assert_equal(expected, actual));
 }

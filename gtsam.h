@@ -23,10 +23,10 @@ class SymbolicFactor{
 	void print(string s) const;
 };
 
-class VectorConfig {
-  VectorConfig();
+class VectorValues {
+  VectorValues();
   void print(string s) const;
-  bool equals(const VectorConfig& expected, double tol) const;
+  bool equals(const VectorValues& expected, double tol) const;
   void insert(string name, Vector val);
   Vector get(string name) const;
   bool contains(string name) const;
@@ -57,7 +57,7 @@ class GaussianFactor {
   bool empty() const;
   Vector get_b() const;
   Matrix get_A(string key) const;
-  double error(const VectorConfig& c) const;
+  double error(const VectorValues& c) const;
   bool involves(string key) const;
   pair<Matrix,Vector> matrix(const Ordering& ordering) const;
   pair<GaussianConditional*,GaussianFactor*> eliminate(string key) const;
@@ -91,7 +91,7 @@ class GaussianConditional {
   void print(string s) const;
   bool equals(const GaussianConditional &cg, double tol) const;
   void add(string key, Matrix S);
-  Vector solve(const VectorConfig& x);
+  Vector solve(const VectorValues& x);
 };
 
 class GaussianBayesNet {
@@ -109,17 +109,17 @@ class GaussianFactorGraph {
 
   size_t size() const;
   void push_back(GaussianFactor* ptr_f);
-  double error(const VectorConfig& c) const;
-  double probPrime(const VectorConfig& c) const;
+  double error(const VectorValues& c) const;
+  double probPrime(const VectorValues& c) const;
   void combine(const GaussianFactorGraph& lfg);
 
   GaussianConditional* eliminateOne(string key);
   GaussianBayesNet* eliminate_(const Ordering& ordering);
-  VectorConfig* optimize_(const Ordering& ordering);
+  VectorValues* optimize_(const Ordering& ordering);
   pair<Matrix,Vector> matrix(const Ordering& ordering) const;
   Matrix sparse(const Ordering& ordering) const;
-  VectorConfig* steepestDescent_(const VectorConfig& x0) const;
-  VectorConfig* conjugateGradientDescent_(const VectorConfig& x0) const;
+  VectorValues* steepestDescent_(const VectorValues& x0) const;
+  VectorValues* conjugateGradientDescent_(const VectorValues& x0) const;
 };
 
 class Point2 {
@@ -159,8 +159,8 @@ class Pose2 {
   Rot2 r() const;
 };
 
-class Simulated2DConfig {
-	Simulated2DConfig();
+class Simulated2DValues {
+	Simulated2DValues();
   void print(string s) const;
 	void insertPose(int i, const Point2& p);
 	void insertPoint(int j, const Point2& p);
@@ -170,8 +170,8 @@ class Simulated2DConfig {
 	Point2* point(int j);
 };
 
-class Simulated2DOrientedConfig {
-	Simulated2DOrientedConfig();
+class Simulated2DOrientedValues {
+	Simulated2DOrientedValues();
   void print(string s) const;
 	void insertPose(int i, const Pose2& p);
 	void insertPoint(int j, const Point2& p);
@@ -184,43 +184,43 @@ class Simulated2DOrientedConfig {
 class Simulated2DPosePrior {
 	Simulated2DPosePrior(Point2& mu, const SharedDiagonal& model, int i);
   void print(string s) const;
-	GaussianFactor* linearize(const Simulated2DConfig& config) const;
-  double error(const Simulated2DConfig& c) const;
+	GaussianFactor* linearize(const Simulated2DValues& config) const;
+  double error(const Simulated2DValues& c) const;
 };
 
 class Simulated2DOrientedPosePrior {
 	Simulated2DOrientedPosePrior(Pose2& mu, const SharedDiagonal& model, int i);
   void print(string s) const;
-	GaussianFactor* linearize(const Simulated2DOrientedConfig& config) const;
-  double error(const Simulated2DOrientedConfig& c) const;
+	GaussianFactor* linearize(const Simulated2DOrientedValues& config) const;
+  double error(const Simulated2DOrientedValues& c) const;
 };
 
 class Simulated2DPointPrior {
 	Simulated2DPointPrior(Point2& mu, const SharedDiagonal& model, int i);
   void print(string s) const;
-	GaussianFactor* linearize(const Simulated2DConfig& config) const;
-  double error(const Simulated2DConfig& c) const;
+	GaussianFactor* linearize(const Simulated2DValues& config) const;
+  double error(const Simulated2DValues& c) const;
 };
 
 class Simulated2DOdometry {
   Simulated2DOdometry(Point2& mu, const SharedDiagonal& model, int i1, int i2);
   void print(string s) const;
-	GaussianFactor* linearize(const Simulated2DConfig& config) const;
-  double error(const Simulated2DConfig& c) const;
+	GaussianFactor* linearize(const Simulated2DValues& config) const;
+  double error(const Simulated2DValues& c) const;
 };
 
 class Simulated2DOrientedOdometry {
 	Simulated2DOrientedOdometry(Pose2& mu, const SharedDiagonal& model, int i1, int i2);
   void print(string s) const;
-	GaussianFactor* linearize(const Simulated2DOrientedConfig& config) const;
-  double error(const Simulated2DOrientedConfig& c) const;
+	GaussianFactor* linearize(const Simulated2DOrientedValues& config) const;
+  double error(const Simulated2DOrientedValues& c) const;
 };
 
 class Simulated2DMeasurement {
   Simulated2DMeasurement(Point2& mu, const SharedDiagonal& model, int i, int j);
   void print(string s) const;
-	GaussianFactor* linearize(const Simulated2DConfig& config) const;
-  double error(const Simulated2DConfig& c) const;
+	GaussianFactor* linearize(const Simulated2DValues& config) const;
+  double error(const Simulated2DValues& c) const;
 };
 
 class Pose2SLAMOptimizer {

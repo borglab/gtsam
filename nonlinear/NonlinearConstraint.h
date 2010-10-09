@@ -27,12 +27,12 @@ namespace gtsam {
  * on the constraint function that should be made high enough to be
  * significant
  */
-template <class Config>
-class NonlinearConstraint : public NonlinearFactor<Config> {
+template <class Values>
+class NonlinearConstraint : public NonlinearFactor<Values> {
 
 protected:
-	typedef NonlinearConstraint<Config> This;
-	typedef NonlinearFactor<Config> Base;
+	typedef NonlinearConstraint<Values> This;
+	typedef NonlinearFactor<Values> Base;
 
 	double mu_;  /// gain for quadratic merit function
 	size_t dim_; /// dimension of the constraint
@@ -57,14 +57,14 @@ public:
 	size_t dim() const { return dim_; }
 
 	/** Check if two factors are equal */
-	virtual bool equals(const NonlinearFactor<Config>& f, double tol=1e-9) const {
+	virtual bool equals(const NonlinearFactor<Values>& f, double tol=1e-9) const {
 		const This* p = dynamic_cast<const This*> (&f);
 		if (p == NULL) return false;
 		return Base::equals(*p, tol) && (mu_ == p->mu_);
 	}
 
 	/** error function - returns the quadratic merit function */
-	virtual double error(const Config& c) const  {
+	virtual double error(const Values& c) const  {
 		const Vector error_vector = unwhitenedError(c);
 		if (active(c))
 			return mu_ * inner_prod(error_vector, error_vector);
@@ -72,7 +72,7 @@ public:
 	}
 
 	/** Raw error vector function g(x) */
-	virtual Vector unwhitenedError(const Config& c) const = 0;
+	virtual Vector unwhitenedError(const Values& c) const = 0;
 
 	/**
 	 * active set check, defines what type of constraint this is
@@ -81,29 +81,29 @@ public:
 	 * when the constraint is *NOT* fulfilled.
 	 * @return true if the constraint is active
 	 */
-	virtual bool active(const Config& c) const=0;
+	virtual bool active(const Values& c) const=0;
 
 	/**
 	 * Linearizes around a given config
-	 * @param config is the configuration
+	 * @param config is the values structure
 	 * @return a combined linear factor containing both the constraint and the constraint factor
 	 */
-	virtual boost::shared_ptr<GaussianFactor> linearize(const Config& c) const=0;
+	virtual boost::shared_ptr<GaussianFactor> linearize(const Values& c) const=0;
 };
 
 
 /**
  * A unary constraint that defaults to an equality constraint
  */
-template <class Config, class Key>
-class NonlinearConstraint1 : public NonlinearConstraint<Config> {
+template <class Values, class Key>
+class NonlinearConstraint1 : public NonlinearConstraint<Values> {
 
 public:
 	typedef typename Key::Value_t X;
 
 protected:
-	typedef NonlinearConstraint1<Config,Key> This;
-	typedef NonlinearConstraint<Config> Base;
+	typedef NonlinearConstraint1<Values,Key> This;
+	typedef NonlinearConstraint<Values> Base;
 
 	/** key for the constrained variable */
 	Key key_;
@@ -130,14 +130,14 @@ public:
 	}
 
 	/** Check if two factors are equal. Note type is Factor and needs cast. */
-	virtual bool equals(const NonlinearFactor<Config>& f, double tol = 1e-9) const {
+	virtual bool equals(const NonlinearFactor<Values>& f, double tol = 1e-9) const {
 		const This* p = dynamic_cast<const This*> (&f);
 		if (p == NULL) return false;
 		return Base::equals(*p, tol) && (key_ == p->key_);
 	}
 
 	/** error function g(x), switched depending on whether the constraint is active */
-	inline Vector unwhitenedError(const Config& x) const {
+	inline Vector unwhitenedError(const Values& x) const {
 		if (!active(x)) {
 			return zero(this->dim());
 		}
@@ -147,7 +147,7 @@ public:
 	}
 
 	/** Linearize from config */
-	boost::shared_ptr<GaussianFactor> linearize(const Config& c, const Ordering& ordering) const {
+	boost::shared_ptr<GaussianFactor> linearize(const Values& c, const Ordering& ordering) const {
 		if (!active(c)) {
 			boost::shared_ptr<GaussianFactor> factor;
 			return factor;
@@ -168,15 +168,15 @@ public:
 /**
  * Unary Equality constraint - simply forces the value of active() to true
  */
-template <class Config, class Key>
-class NonlinearEqualityConstraint1 : public NonlinearConstraint1<Config, Key> {
+template <class Values, class Key>
+class NonlinearEqualityConstraint1 : public NonlinearConstraint1<Values, Key> {
 
 public:
 	typedef typename Key::Value_t X;
 
 protected:
-	typedef NonlinearEqualityConstraint1<Config,Key> This;
-	typedef NonlinearConstraint1<Config,Key> Base;
+	typedef NonlinearEqualityConstraint1<Values,Key> This;
+	typedef NonlinearConstraint1<Values,Key> Base;
 
 public:
 	NonlinearEqualityConstraint1(const Key& key, size_t dim, double mu = 1000.0)
@@ -184,22 +184,22 @@ public:
 	virtual ~NonlinearEqualityConstraint1() {}
 
 	/** Always active, so fixed value for active() */
-	virtual bool active(const Config& c) const { return true; }
+	virtual bool active(const Values& c) const { return true; }
 };
 
 /**
  * A binary constraint with arbitrary cost and jacobian functions
  */
-template <class Config, class Key1, class Key2>
-class NonlinearConstraint2 : public NonlinearConstraint<Config> {
+template <class Values, class Key1, class Key2>
+class NonlinearConstraint2 : public NonlinearConstraint<Values> {
 
 public:
 	typedef typename Key1::Value_t X1;
 	typedef typename Key2::Value_t X2;
 
 protected:
-	typedef NonlinearConstraint2<Config,Key1,Key2> This;
-	typedef NonlinearConstraint<Config> Base;
+	typedef NonlinearConstraint2<Values,Key1,Key2> This;
+	typedef NonlinearConstraint<Values> Base;
 
 	/** keys for the constrained variables */
 	Key1 key1_;
@@ -230,14 +230,14 @@ public:
 	}
 
 	/** Check if two factors are equal. Note type is Factor and needs cast. */
-	virtual bool equals(const NonlinearFactor<Config>& f, double tol = 1e-9) const {
+	virtual bool equals(const NonlinearFactor<Values>& f, double tol = 1e-9) const {
 		const This* p = dynamic_cast<const This*> (&f);
 		if (p == NULL) return false;
 		return Base::equals(*p, tol) && (key1_ == p->key1_) && (key2_ == p->key2_);
 	}
 
 	/** error function g(x), switched depending on whether the constraint is active */
-	inline Vector unwhitenedError(const Config& x) const {
+	inline Vector unwhitenedError(const Values& x) const {
 		if (!active(x)) {
 			return zero(this->dim());
 		}
@@ -249,7 +249,7 @@ public:
 	}
 
 	/** Linearize from config */
-	boost::shared_ptr<GaussianFactor> linearize(const Config& c, const Ordering& ordering) const {
+	boost::shared_ptr<GaussianFactor> linearize(const Values& c, const Ordering& ordering) const {
 		if (!active(c)) {
 			boost::shared_ptr<GaussianFactor> factor;
 			return factor;
@@ -271,16 +271,16 @@ public:
 /**
  * Binary Equality constraint - simply forces the value of active() to true
  */
-template <class Config, class Key1, class Key2>
-class NonlinearEqualityConstraint2 : public NonlinearConstraint2<Config, Key1, Key2> {
+template <class Values, class Key1, class Key2>
+class NonlinearEqualityConstraint2 : public NonlinearConstraint2<Values, Key1, Key2> {
 
 public:
 	typedef typename Key1::Value_t X1;
 	typedef typename Key2::Value_t X2;
 
 protected:
-	typedef NonlinearEqualityConstraint2<Config,Key1,Key2> This;
-	typedef NonlinearConstraint2<Config,Key1,Key2> Base;
+	typedef NonlinearEqualityConstraint2<Values,Key1,Key2> This;
+	typedef NonlinearConstraint2<Values,Key1,Key2> Base;
 
 public:
 	NonlinearEqualityConstraint2(const Key1& key1, const Key2& key2, size_t dim, double mu = 1000.0)
@@ -289,14 +289,14 @@ public:
 
 
 	/** Always active, so fixed value for active() */
-	virtual bool active(const Config& c) const { return true; }
+	virtual bool active(const Values& c) const { return true; }
 };
 
 /**
  * A ternary constraint
  */
-template <class Config, class Key1, class Key2, class Key3>
-class NonlinearConstraint3 : public NonlinearConstraint<Config> {
+template <class Values, class Key1, class Key2, class Key3>
+class NonlinearConstraint3 : public NonlinearConstraint<Values> {
 
 public:
 	typedef typename Key1::Value_t X1;
@@ -304,8 +304,8 @@ public:
 	typedef typename Key3::Value_t X3;
 
 protected:
-	typedef NonlinearConstraint3<Config,Key1,Key2,Key3> This;
-	typedef NonlinearConstraint<Config> Base;
+	typedef NonlinearConstraint3<Values,Key1,Key2,Key3> This;
+	typedef NonlinearConstraint<Values> Base;
 
 	/** keys for the constrained variables */
 	Key1 key1_;
@@ -341,14 +341,14 @@ public:
 	}
 
 	/** Check if two factors are equal. Note type is Factor and needs cast. */
-	virtual bool equals(const NonlinearFactor<Config>& f, double tol = 1e-9) const {
+	virtual bool equals(const NonlinearFactor<Values>& f, double tol = 1e-9) const {
 		const This* p = dynamic_cast<const This*> (&f);
 		if (p == NULL) return false;
 		return Base::equals(*p, tol) && (key1_ == p->key1_) && (key2_ == p->key2_) && (key3_ == p->key3_);
 	}
 
 	/** error function g(x), switched depending on whether the constraint is active */
-	inline Vector unwhitenedError(const Config& x) const {
+	inline Vector unwhitenedError(const Values& x) const {
 		if (!active(x)) {
 			return zero(this->dim());
 		}
@@ -362,7 +362,7 @@ public:
 	}
 
 	/** Linearize from config */
-	boost::shared_ptr<GaussianFactor> linearize(const Config& c) const {
+	boost::shared_ptr<GaussianFactor> linearize(const Values& c) const {
 		if (!active(c)) {
 			boost::shared_ptr<GaussianFactor> factor;
 			return factor;
@@ -385,8 +385,8 @@ public:
 /**
  * Ternary Equality constraint - simply forces the value of active() to true
  */
-template <class Config, class Key1, class Key2, class Key3>
-class NonlinearEqualityConstraint3 : public NonlinearConstraint3<Config, Key1, Key2, Key3> {
+template <class Values, class Key1, class Key2, class Key3>
+class NonlinearEqualityConstraint3 : public NonlinearConstraint3<Values, Key1, Key2, Key3> {
 
 public:
 	typedef typename Key1::Value_t X1;
@@ -394,8 +394,8 @@ public:
 	typedef typename Key3::Value_t X3;
 
 protected:
-	typedef NonlinearEqualityConstraint3<Config,Key1,Key2,Key3> This;
-	typedef NonlinearConstraint3<Config,Key1,Key2,Key3> Base;
+	typedef NonlinearEqualityConstraint3<Values,Key1,Key2,Key3> This;
+	typedef NonlinearConstraint3<Values,Key1,Key2,Key3> Base;
 
 public:
 	NonlinearEqualityConstraint3(const Key1& key1, const Key2& key2, const Key3& key3,
@@ -404,27 +404,27 @@ public:
 	virtual ~NonlinearEqualityConstraint3() {}
 
 	/** Always active, so fixed value for active() */
-	virtual bool active(const Config& c) const { return true; }
+	virtual bool active(const Values& c) const { return true; }
 };
 
 
 /**
  * Simple unary equality constraint - fixes a value for a variable
  */
-template<class Config, class Key>
-class NonlinearEquality1 : public NonlinearEqualityConstraint1<Config, Key> {
+template<class Values, class Key>
+class NonlinearEquality1 : public NonlinearEqualityConstraint1<Values, Key> {
 
 public:
 	typedef typename Key::Value_t X;
 
 protected:
-	typedef NonlinearEqualityConstraint1<Config, Key> Base;
+	typedef NonlinearEqualityConstraint1<Values, Key> Base;
 
 	X value_; /// fixed value for variable
 
 public:
 
-	typedef boost::shared_ptr<NonlinearEquality1<Config, Key> > shared_ptr;
+	typedef boost::shared_ptr<NonlinearEquality1<Values, Key> > shared_ptr;
 
 	NonlinearEquality1(const X& value, const Key& key1, double mu = 1000.0)
 		: Base(key1, X::Dim(), mu), value_(value) {}
@@ -443,17 +443,17 @@ public:
  * Simple binary equality constraint - this constraint forces two factors to
  * be the same.  This constraint requires the underlying type to a Lie type
  */
-template<class Config, class Key>
-class NonlinearEquality2 : public NonlinearEqualityConstraint2<Config, Key, Key> {
+template<class Values, class Key>
+class NonlinearEquality2 : public NonlinearEqualityConstraint2<Values, Key, Key> {
 public:
 	typedef typename Key::Value_t X;
 
 protected:
-	typedef NonlinearEqualityConstraint2<Config, Key, Key> Base;
+	typedef NonlinearEqualityConstraint2<Values, Key, Key> Base;
 
 public:
 
-	typedef boost::shared_ptr<NonlinearEquality2<Config, Key> > shared_ptr;
+	typedef boost::shared_ptr<NonlinearEquality2<Values, Key> > shared_ptr;
 
 	NonlinearEquality2(const Key& key1, const Key& key2, double mu = 1000.0)
 		: Base(key1, key2, X::Dim(), mu) {}

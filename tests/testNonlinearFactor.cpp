@@ -1,7 +1,7 @@
 /**
  *  @file  testNonlinearFactor.cpp
  *  @brief Unit tests for Non-Linear Factor, 
- *  create a non linear factor graph and a configuration for it and
+ *  create a non linear factor graph and a values structure for it and
  *  calculate the error for the factor.
  *  @author Christian Potthast
  **/
@@ -25,7 +25,7 @@ using namespace std;
 using namespace gtsam;
 using namespace example;
 
-typedef boost::shared_ptr<NonlinearFactor<VectorConfig> > shared_nlf;
+typedef boost::shared_ptr<NonlinearFactor<VectorValues> > shared_nlf;
 
 /* ************************************************************************* */
 TEST( NonlinearFactor, equals )
@@ -66,8 +66,8 @@ TEST( NonlinearFactor, NonlinearFactor )
   // create a non linear factor graph
   Graph fg = createNonlinearFactorGraph();
 
-  // create a configuration for the non linear factor graph
-  Config cfg = createNoisyConfig();
+  // create a values structure for the non linear factor graph
+  Values cfg = createNoisyValues();
 
   // get the factor "f1" from the factor graph
   Graph::sharedFactor factor = fg[0];
@@ -89,7 +89,7 @@ TEST( NonlinearFactor, NonlinearFactor )
 /* ************************************************************************* */
 TEST( NonlinearFactor, linearize_f1 )
 {
-  Config c = createNoisyConfig();
+  Values c = createNoisyValues();
 
   // Grab a non-linear factor
   Graph nfg = createNonlinearFactorGraph();
@@ -111,7 +111,7 @@ TEST( NonlinearFactor, linearize_f1 )
 /* ************************************************************************* */
 TEST( NonlinearFactor, linearize_f2 )
 {
-  Config c = createNoisyConfig();
+  Values c = createNoisyValues();
 
   // Grab a non-linear factor
   Graph nfg = createNonlinearFactorGraph();
@@ -134,7 +134,7 @@ TEST( NonlinearFactor, linearize_f3 )
   Graph::sharedFactor nlf = nfg[2];
 
   // We linearize at noisy config from SmallExample
-  Config c = createNoisyConfig();
+  Values c = createNoisyValues();
   GaussianFactor::shared_ptr actual = nlf->linearize(c, *c.orderingArbitrary());
 
   GaussianFactorGraph lfg = createGaussianFactorGraph(*c.orderingArbitrary());
@@ -151,7 +151,7 @@ TEST( NonlinearFactor, linearize_f4 )
   Graph::sharedFactor nlf = nfg[3];
 
   // We linearize at noisy config from SmallExample
-  Config c = createNoisyConfig();
+  Values c = createNoisyValues();
   GaussianFactor::shared_ptr actual = nlf->linearize(c, *c.orderingArbitrary());
 
   GaussianFactorGraph lfg = createGaussianFactorGraph(*c.orderingArbitrary());
@@ -166,8 +166,8 @@ TEST( NonlinearFactor, size )
 	// create a non linear factor graph
 	Graph fg = createNonlinearFactorGraph();
 	
-	// create a configuration for the non linear factor graph
-	Config cfg = createNoisyConfig();
+	// create a values structure for the non linear factor graph
+	Values cfg = createNoisyValues();
 	
 	// get some factors from the graph
 	Graph::sharedFactor factor1 = fg[0], factor2 = fg[1],
@@ -187,7 +187,7 @@ TEST( NonlinearFactor, linearize_constraint1 )
 	Point2 mu(1., -1.);
 	Graph::sharedFactor f0(new simulated2D::Prior(mu, constraint, 1));
 
-	Config config;
+	Values config;
 	config.insert(simulated2D::PoseKey(1), Point2(1.0, 2.0));
 	GaussianFactor::shared_ptr actual = f0->linearize(config, *config.orderingArbitrary());
 
@@ -207,7 +207,7 @@ TEST( NonlinearFactor, linearize_constraint2 )
 	Point2 z3(1.,-1.);
 	simulated2D::Measurement f0(z3, constraint, 1,1);
 
-	Config config;
+	Values config;
 	config.insert(simulated2D::PoseKey(1), Point2(1.0, 2.0));
 	config.insert(simulated2D::PointKey(1), Point2(5.0, 4.0));
 	GaussianFactor::shared_ptr actual = f0.linearize(config, *config.orderingArbitrary());

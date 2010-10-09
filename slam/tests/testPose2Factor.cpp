@@ -31,7 +31,7 @@ TEST( Pose2Factor, error )
 	// Choose a linearization point
 	Pose2 p1; // robot at origin
 	Pose2 p2(1, 0, 0); // robot at (1,0)
-	Pose2Config x0;
+	Pose2Values x0;
 	x0.insert(1, p1);
 	x0.insert(2, p2);
 
@@ -44,7 +44,7 @@ TEST( Pose2Factor, error )
 	boost::shared_ptr<GaussianFactor> linear = factor.linearize(x0, ordering);
 
 	// Check error at x0, i.e. delta = zero !
-	VectorConfig delta(x0.dims(ordering));
+	VectorValues delta(x0.dims(ordering));
 	delta[ordering["x1"]] = zero(3);
 	delta[ordering["x2"]] = zero(3);
 	Vector error_at_zero = Vector_(3,0.0,0.0,0.0);
@@ -52,9 +52,9 @@ TEST( Pose2Factor, error )
 	CHECK(assert_equal(-error_at_zero,linear->error_vector(delta)));
 
 	// Check error after increasing p2
-	VectorConfig plus = delta;
+	VectorValues plus = delta;
 	plus[ordering["x2"]] = Vector_(3, 0.1, 0.0, 0.0);
-	Pose2Config x1 = x0.expmap(plus, ordering);
+	Pose2Values x1 = x0.expmap(plus, ordering);
 	Vector error_at_plus = Vector_(3,0.1/sx,0.0,0.0); // h(x)-z = 0.1 !
 	CHECK(assert_equal(error_at_plus,factor.whitenedError(x1)));
 	CHECK(assert_equal(error_at_plus,linear->error_vector(plus)));
@@ -71,7 +71,7 @@ TEST( Pose2Factor, rhs )
 	// Choose a linearization point
 	Pose2 p1(1.1,2,M_PI_2); // robot at (1.1,2) looking towards y (ground truth is at 1,2, see testPose2)
 	Pose2 p2(-1,4.1,M_PI);  // robot at (-1,4.1) looking at negative (ground truth is at -1,4)
-	Pose2Config x0;
+	Pose2Values x0;
 	x0.insert(1,p1);
 	x0.insert(2,p2);
 
@@ -100,7 +100,7 @@ TEST( Pose2Factor, linearize )
 	// Choose a linearization point at ground truth
 	Pose2 p1(1,2,M_PI_2);
 	Pose2 p2(-1,4,M_PI);
-	Pose2Config x0;
+	Pose2Values x0;
 	x0.insert(1,p1);
 	x0.insert(2,p2);
 

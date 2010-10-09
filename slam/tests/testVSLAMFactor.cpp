@@ -38,8 +38,8 @@ TEST( ProjectionFactor, error )
 	boost::shared_ptr<ProjectionFactor>
 	factor(new ProjectionFactor(z, sigma, cameraFrameNumber, landmarkNumber, sK));
 
-	// For the following configuration, the factor predicts 320,240
-	Config config;
+	// For the following values structure, the factor predicts 320,240
+	Values config;
 	Rot3 R;Point3 t1(0,0,-6); Pose3 x1(R,t1); config.insert(1, x1);
 	Point3 l1;  config.insert(1, l1);
 	// Point should project to Point2(320.,240.)
@@ -67,13 +67,13 @@ TEST( ProjectionFactor, error )
 	CHECK(assert_equal(expected_lfg,*actual_lfg));
 
 	// expmap on a config
-  Config expected_config;
+  Values expected_config;
   Point3 t2(1,1,-5); Pose3 x2(R,t2); expected_config.insert(1, x2);
   Point3 l2(1,2,3); expected_config.insert(1, l2);
-	VectorConfig delta(expected_config.dims(ordering));
+	VectorValues delta(expected_config.dims(ordering));
 	delta[ordering["x1"]] = Vector_(6, 0.,0.,0., 1.,1.,1.);
 	delta[ordering["l1"]] = Vector_(3, 1.,2.,3.);
-	Config actual_config = config.expmap(delta, ordering);
+	Values actual_config = config.expmap(delta, ordering);
 	CHECK(assert_equal(expected_config,actual_config,1e-9));
 }
 

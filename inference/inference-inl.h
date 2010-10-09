@@ -438,7 +438,7 @@ Permutation::shared_ptr Inference::PermutationCOLAMD(const VariableIndexType& va
 //		if(factor->keys().size() != 1 || factor->keys().front() != key)
 //			throw runtime_error("Didn't get the right marginal!");
 //
-//		VectorConfig mean_cfg(marginal.optimize(Ordering(key)));
+//		VectorValues mean_cfg(marginal.optimize(Ordering(key)));
 //		Matrix A(factor->get_A(key));
 //
 //		return make_pair(mean_cfg[key], inverse(prod(trans(A), A)));

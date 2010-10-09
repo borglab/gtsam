@@ -27,7 +27,7 @@ TEST( Pose3Factor, error )
 	Pose3Factor factor(1,2, z, I6);
 
 	// Create config
-	Pose3Config x;
+	Pose3Values x;
 	x.insert(1,t1);
 	x.insert(2,t2);
 

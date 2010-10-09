@@ -13,7 +13,7 @@ namespace gtsam {
 /**
  * A constraint between two landmarks in separate maps
  * Templated on:
- *   Config    : The overall config
+ *   Values    : The overall config
  *	 PKey      : Key of landmark being constrained
  *	 Point     : Type of landmark
  *	 TKey      : Key of transform used
@@ -25,15 +25,15 @@ namespace gtsam {
  * This base class should be specialized to implement the cost function for
  * specific classes of landmarks
  */
-template<class Config, class PKey, class TKey>
-class TransformConstraint : public NonlinearEqualityConstraint3<Config, PKey, TKey, PKey> {
+template<class Values, class PKey, class TKey>
+class TransformConstraint : public NonlinearEqualityConstraint3<Values, PKey, TKey, PKey> {
 
 public:
 	typedef typename PKey::Value_t Point;
 	typedef typename TKey::Value_t Transform;
 
-	typedef NonlinearEqualityConstraint3<Config, PKey, TKey, PKey> Base;
-	typedef TransformConstraint<Config, PKey, TKey> This;
+	typedef NonlinearEqualityConstraint3<Values, PKey, TKey, PKey> Base;
+	typedef TransformConstraint<Values, PKey, TKey> This;
 
 	/**
 	 * General constructor with all of the keys to variables in the map

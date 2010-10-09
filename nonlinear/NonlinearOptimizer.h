@@ -11,7 +11,7 @@
 #include <boost/shared_ptr.hpp>
 #include <boost/make_shared.hpp>
 #include <gtsam/nonlinear/Ordering.h>
-#include <gtsam/linear/VectorConfig.h>
+#include <gtsam/linear/VectorValues.h>
 #include <gtsam/nonlinear/NonlinearFactorGraph.h>
 #include <gtsam/linear/Factorization.h>
 
@@ -29,13 +29,13 @@ namespace gtsam {
 	 * and then one of the optimization routines is called. These recursively iterate
 	 * until convergence. All methods are functional and return a new state.
 	 *
-	 * The class is parameterized by the Graph type $G$, Config class type $T$,
+	 * The class is parameterized by the Graph type $G$, Values class type $T$,
 	 * linear system class $L$ and the non linear solver type $S$.
-	 * the config type is in order to be able to optimize over non-vector configurations.
+	 * the config type is in order to be able to optimize over non-vector values structures.
 	 * To use in code, include <gtsam/NonlinearOptimizer-inl.h> in your cpp file
 	 *
-	 * For example, in a 2D case, $G$ can be Pose2Graph, $T$ can be Pose2Config,
-	 * $L$ can be GaussianFactorGraph and $S$ can be Factorization<Pose2Graph, Pose2Config>.
+	 * For example, in a 2D case, $G$ can be Pose2Graph, $T$ can be Pose2Values,
+	 * $L$ can be GaussianFactorGraph and $S$ can be Factorization<Pose2Graph, Pose2Values>.
 	 * The solver class has two main functions: linearize and optimize. The first one
 	 * linearizes the nonlinear cost function around the current estimate, and the second
 	 * one optimizes the linearized system using various methods.
@@ -45,7 +45,7 @@ namespace gtsam {
 	public:
 
 		// For performance reasons in recursion, we store configs in a shared_ptr
-		typedef boost::shared_ptr<const T> shared_config;
+		typedef boost::shared_ptr<const T> shared_values;
 		typedef boost::shared_ptr<const G> shared_graph;
 		typedef boost::shared_ptr<const S> shared_solver;
 		typedef const S solver;
@@ -99,9 +99,9 @@ namespace gtsam {
 		// These normally do not change
 		const shared_graph graph_;
 
-		// keep a configuration and its error
+		// keep a values structure and its error
 		// These typically change once per iteration (in a functional way)
-		const shared_config config_;
+		const shared_values config_;
 		double error_; // TODO FD: no more const because in constructor I need to set it after checking :-(
 
 		// keep current lambda for use within LM only
@@ -120,13 +120,13 @@ namespace gtsam {
 		/**
 		 * Constructor that evaluates new error
 		 */
-		NonlinearOptimizer(shared_graph graph, shared_config config, shared_solver solver,
+		NonlinearOptimizer(shared_graph graph, shared_values config, shared_solver solver,
 				const double lambda = 1e-5);
 
 		/**
 		 * Constructor that does not do any computation
 		 */
-		NonlinearOptimizer(shared_graph graph, shared_config config, shared_solver solver,
+		NonlinearOptimizer(shared_graph graph, shared_values config, shared_solver solver,
 				const double error, const double lambda): graph_(graph), config_(config),
 			  error_(error), lambda_(lambda), solver_(solver) {}
 
@@ -154,15 +154,15 @@ namespace gtsam {
 		/**
 		 * Return the config
 		 */
-		shared_config config() const{
+		shared_values config() const{
 			return config_;
 		}
 
 		/**
 		 *  linearize and optimize
-		 *  This returns an VectorConfig, i.e., vectors in tangent space of T
+		 *  This returns an VectorValues, i.e., vectors in tangent space of T
 		 */
-		VectorConfig linearizeAndOptimizeForDelta() const;
+		VectorValues linearizeAndOptimizeForDelta() const;
 
 		/**
 		 * Do one Gauss-Newton iteration and return next state
@@ -213,9 +213,9 @@ namespace gtsam {
 		 * @param graph 	   Nonlinear factor graph to optimize
 		 * @param config       Initial config
 		 * @param verbosity    Integer specifying how much output to provide
-		 * @return 			   an optimized configuration
+		 * @return 			   an optimized values structure
 		 */
-		static shared_config optimizeLM(shared_graph graph, shared_config config,
+		static shared_values optimizeLM(shared_graph graph, shared_values config,
 				verbosityLevel verbosity = SILENT) {
 
 		  // Use a variable ordering from COLAMD
@@ -238,7 +238,7 @@ namespace gtsam {
 		/**
 		 * Static interface to LM optimization (no shared_ptr arguments) - see above
 		 */
-		inline static shared_config optimizeLM(const G& graph, const T& config,
+		inline static shared_values optimizeLM(const G& graph, const T& config,
 				verbosityLevel verbosity = SILENT) {
 			return optimizeLM(boost::make_shared<const G>(graph),
 							  boost::make_shared<const T>(config), verbosity);
@@ -249,9 +249,9 @@ namespace gtsam {
 		 * @param graph 	   Nonlinear factor graph to optimize
 		 * @param config       Initial config
 		 * @param verbosity    Integer specifying how much output to provide
-		 * @return 			   an optimized configuration
+		 * @return 			   an optimized values structure
 		 */
-		static shared_config optimizeGN(shared_graph graph, shared_config config,
+		static shared_values optimizeGN(shared_graph graph, shared_values config,
 				verbosityLevel verbosity = SILENT) {
       Ordering::shared_ptr ordering;
       GaussianVariableIndex<>::shared_ptr variableIndex;
@@ -271,7 +271,7 @@ namespace gtsam {
 		/**
 		 * Static interface to GN optimization (no shared_ptr arguments) - see above
 		 */
-		inline static shared_config optimizeGN(const G& graph, const T& config,
+		inline static shared_values optimizeGN(const G& graph, const T& config,
 				verbosityLevel verbosity = SILENT) {
 			return optimizeGN(boost::make_shared<const G>(graph),
 							  boost::make_shared<const T>(config), verbosity);

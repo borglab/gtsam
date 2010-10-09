@@ -1,6 +1,6 @@
 /**
  * @file   testVectorMap.cpp
- * @brief  Unit tests for Factor Graph Configuration
+ * @brief  Unit tests for Factor Graph Values
  * @author Carlos Nieto
  **/
 
@@ -221,7 +221,7 @@ TEST( VectorMap, serialize)
     cout << "VectorMap: Running Serialization Test" << endl;
     
     //create an VectorMap
-    VectorMap fg = createConfig();
+    VectorMap fg = createValues();
     
     //serialize the config
     std::ostringstream in_archive_stream;

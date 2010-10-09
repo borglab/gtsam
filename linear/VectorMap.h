@@ -1,6 +1,6 @@
 /**
  * @file    VectorMap.h
- * @brief   Factor Graph Configuration
+ * @brief   Factor Graph Valuesuration
  * @author  Carlos Nieto
  * @author  Christian Potthast
  */
@@ -18,7 +18,7 @@
 
 namespace gtsam {
 
-  /** Factor Graph Configuration */
+  /** Factor Graph Valuesuration */
   class VectorMap : public Testable<VectorMap> {
 
   protected:
@@ -41,7 +41,7 @@ namespace gtsam {
     /** convert into a single large vector */
     Vector vector() const;
 
-    /** Insert a value into the configuration with a given index */
+    /** Insert a value into the values structure with a given index */
     VectorMap& insert(varid_t name, const Vector& v);
 
     /** Insert or add a value with given index */

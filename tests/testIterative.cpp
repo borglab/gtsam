@@ -14,7 +14,7 @@ using namespace boost::assign;
 #define GTSAM_MAGIC_KEY
 
 #include <gtsam/inference/Ordering.h>
-#include <gtsam/linear/VectorConfig.h>
+#include <gtsam/linear/VectorValues.h>
 #include <gtsam/slam/smallExample.h>
 #include <gtsam/slam/pose2SLAM.h>
 #include <gtsam/linear/SubgraphPreconditioner.h>
@@ -35,12 +35,12 @@ TEST( Iterative, steepestDescent )
 	Ordering ord;
 	ord += "l1", "x1", "x2";
 	GaussianFactorGraph fg = createGaussianFactorGraph();
-	VectorConfig expected = fg.optimize(ord); // destructive
+	VectorValues expected = fg.optimize(ord); // destructive
 
 	// Do gradient descent
 	GaussianFactorGraph fg2 = createGaussianFactorGraph();
-	VectorConfig zero = createZeroDelta();
-	VectorConfig actual = steepestDescent(fg2, zero, verbose);
+	VectorValues zero = createZeroDelta();
+	VectorValues actual = steepestDescent(fg2, zero, verbose);
 	CHECK(assert_equal(expected,actual,1e-2));
 }
 
@@ -51,7 +51,7 @@ TEST( Iterative, conjugateGradientDescent )
 	Ordering ord;
 	ord += "l1", "x1", "x2";
 	GaussianFactorGraph fg = createGaussianFactorGraph();
-	VectorConfig expected = fg.optimize(ord); // destructive
+	VectorValues expected = fg.optimize(ord); // destructive
 
 	// create graph and get matrices
 	GaussianFactorGraph fg2 = createGaussianFactorGraph();
@@ -71,21 +71,21 @@ TEST( Iterative, conjugateGradientDescent )
 	CHECK(assert_equal(expectedX,actualX2,1e-9));
 
 	// Do conjugate gradient descent on factor graph
-	VectorConfig zero = createZeroDelta();
-	VectorConfig actual = conjugateGradientDescent(fg2, zero, verbose);
+	VectorValues zero = createZeroDelta();
+	VectorValues actual = conjugateGradientDescent(fg2, zero, verbose);
 	CHECK(assert_equal(expected,actual,1e-2));
 
 	// Test method
-	VectorConfig actual2 = fg2.conjugateGradientDescent(zero, verbose);
+	VectorValues actual2 = fg2.conjugateGradientDescent(zero, verbose);
 	CHECK(assert_equal(expected,actual2,1e-2));
 }
 
 /* ************************************************************************* */
 /*TEST( Iterative, conjugateGradientDescent_hard_constraint )
 {
-	typedef Pose2Config::Key Key;
+	typedef Pose2Values::Key Key;
 
-	Pose2Config config;
+	Pose2Values config;
 	config.insert(1, Pose2(0.,0.,0.));
 	config.insert(2, Pose2(1.5,0.,0.));
 
@@ -94,14 +94,14 @@ TEST( Iterative, conjugateGradientDescent )
 	graph.push_back(Pose2Graph::sharedFactor(new Pose2Factor(Key(1), Key(2), Pose2(1.,0.,0.), cov)));
 	graph.addHardConstraint(1, config[1]);
 
-	VectorConfig zeros;
+	VectorValues zeros;
 	zeros.insert("x1",zero(3));
 	zeros.insert("x2",zero(3));
 
 	GaussianFactorGraph fg = graph.linearize(config);
-	VectorConfig actual = conjugateGradientDescent(fg, zeros, true, 1e-3, 1e-5, 10);
+	VectorValues actual = conjugateGradientDescent(fg, zeros, true, 1e-3, 1e-5, 10);
 
-	VectorConfig expected;
+	VectorValues expected;
 	expected.insert("x1", zero(3));
 	expected.insert("x2", Vector_(-0.5,0.,0.));
 	CHECK(assert_equal(expected, actual));
@@ -110,7 +110,7 @@ TEST( Iterative, conjugateGradientDescent )
 /* ************************************************************************* */
 TEST( Iterative, conjugateGradientDescent_soft_constraint )
 {
-	Pose2Config config;
+	Pose2Values config;
 	config.insert(1, Pose2(0.,0.,0.));
 	config.insert(2, Pose2(1.5,0.,0.));
 
@@ -118,14 +118,14 @@ TEST( Iterative, conjugateGradientDescent_soft_constraint )
 	graph.addPrior(1, Pose2(0.,0.,0.), noiseModel::Isotropic::Sigma(3, 1e-10));
 	graph.addConstraint(1,2, Pose2(1.,0.,0.), noiseModel::Isotropic::Sigma(3, 1));
 
-	VectorConfig zeros;
+	VectorValues zeros;
 	zeros.insert("x1",zero(3));
 	zeros.insert("x2",zero(3));
 
 	boost::shared_ptr<GaussianFactorGraph> fg = graph.linearize(config);
-	VectorConfig actual = conjugateGradientDescent(*fg, zeros, verbose, 1e-3, 1e-5, 100);
+	VectorValues actual = conjugateGradientDescent(*fg, zeros, verbose, 1e-3, 1e-5, 100);
 
-	VectorConfig expected;
+	VectorValues expected;
 	expected.insert("x1", zero(3));
 	expected.insert("x2", Vector_(3,-0.5,0.,0.));
 	CHECK(assert_equal(expected, actual));
@@ -134,9 +134,9 @@ TEST( Iterative, conjugateGradientDescent_soft_constraint )
 /* ************************************************************************* */
 TEST( Iterative, subgraphPCG )
 {
-	typedef Pose2Config::Key Key;
+	typedef Pose2Values::Key Key;
 
-	Pose2Config theta_bar;
+	Pose2Values theta_bar;
 	theta_bar.insert(1, Pose2(0.,0.,0.));
 	theta_bar.insert(2, Pose2(1.5,0.,0.));
 
@@ -161,17 +161,17 @@ TEST( Iterative, subgraphPCG )
 	SubgraphPreconditioner::sharedFG Ab1 = T.linearize(theta_bar);
 	SubgraphPreconditioner::sharedFG Ab2 = C.linearize(theta_bar);
 	SubgraphPreconditioner::sharedBayesNet Rc1 = Ab1_->eliminate_(ordering);
-	SubgraphPreconditioner::sharedConfig xbar = optimize_(*Rc1);
+	SubgraphPreconditioner::sharedValues xbar = optimize_(*Rc1);
 	SubgraphPreconditioner system(Ab1, Ab2, Rc1, xbar);
 
-	VectorConfig zeros = VectorConfig::zero(*xbar);
+	VectorValues zeros = VectorValues::zero(*xbar);
 
 	// Solve the subgraph PCG
-	VectorConfig ybar = conjugateGradients<SubgraphPreconditioner, VectorConfig,
+	VectorValues ybar = conjugateGradients<SubgraphPreconditioner, VectorValues,
 			Errors> (system, zeros, verbose, 1e-5, 1e-5, 100);
-	VectorConfig actual = system.x(ybar);
+	VectorValues actual = system.x(ybar);
 
-	VectorConfig expected;
+	VectorValues expected;
 	expected.insert("x1", zero(3));
 	expected.insert("x2", Vector_(3, -0.5, 0., 0.));
 	CHECK(assert_equal(expected, actual));

@@ -24,13 +24,13 @@ namespace gtsam {
 		namespace equality_constraints {
 
 			/** Typedefs for regular use */
-			typedef NonlinearEquality1<Config, PoseKey> UnaryEqualityConstraint;
-			typedef NonlinearEquality1<Config, PointKey> UnaryEqualityPointConstraint;
-			typedef BetweenConstraint<Config, PoseKey> OdoEqualityConstraint;
+			typedef NonlinearEquality1<Values, PoseKey> UnaryEqualityConstraint;
+			typedef NonlinearEquality1<Values, PointKey> UnaryEqualityPointConstraint;
+			typedef BetweenConstraint<Values, PoseKey> OdoEqualityConstraint;
 
 			/** Equality between variables */
-			typedef NonlinearEquality2<Config, PoseKey> PoseEqualityConstraint;
-			typedef NonlinearEquality2<Config, PointKey> PointEqualityConstraint;
+			typedef NonlinearEquality2<Values, PoseKey> PoseEqualityConstraint;
+			typedef NonlinearEquality2<Values, PointKey> PointEqualityConstraint;
 
 		} // \namespace equality_constraints
 
@@ -65,8 +65,8 @@ namespace gtsam {
 			};
 
 			/** typedefs for use with simulated2D systems */
-			typedef ScalarCoordConstraint1<Config, PoseKey, 0> PoseXInequality;
-			typedef ScalarCoordConstraint1<Config, PoseKey, 1> PoseYInequality;
+			typedef ScalarCoordConstraint1<Values, PoseKey, 0> PoseXInequality;
+			typedef ScalarCoordConstraint1<Values, PoseKey, 1> PoseYInequality;
 
 			double range(const Point2& a, const Point2& b) { return a.dist(b); }
 
@@ -91,7 +91,7 @@ namespace gtsam {
 				}
 			};
 
-			typedef MaxDistanceConstraint<Config, PoseKey> PoseMaxDistConstraint;
+			typedef MaxDistanceConstraint<Values, PoseKey> PoseMaxDistConstraint;
 
 			/**
 			 * Binary inequality constraint forcing a minimum range
@@ -114,7 +114,7 @@ namespace gtsam {
 				}
 			};
 
-			typedef MinDistanceConstraint<Config, PoseKey, PointKey> LandmarkAvoid;
+			typedef MinDistanceConstraint<Values, PoseKey, PointKey> LandmarkAvoid;
 
 
 		} // \namespace inequality_constraints

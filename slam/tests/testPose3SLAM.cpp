@@ -31,7 +31,7 @@ TEST(Pose3Graph, optimizeCircle) {
 
 	// Create a hexagon of poses
 	double radius = 10;
-	Pose3Config hexagon = pose3SLAM::circle(6,radius);
+	Pose3Values hexagon = pose3SLAM::circle(6,radius);
   Pose3 gT0 = hexagon[0], gT1 = hexagon[1];
 
 	// create a Pose graph with one equality constraint and one measurement
@@ -48,7 +48,7 @@ TEST(Pose3Graph, optimizeCircle) {
   fg->addConstraint(5,0, _0T1, covariance);
 
   // Create initial config
-  boost::shared_ptr<Pose3Config> initial(new Pose3Config());
+  boost::shared_ptr<Pose3Values> initial(new Pose3Values());
   initial->insert(0, gT0);
   initial->insert(1, hexagon[1].expmap(Vector_(6,-0.1, 0.1,-0.1,-0.1, 0.1,-0.1)));
   initial->insert(2, hexagon[2].expmap(Vector_(6, 0.1,-0.1, 0.1, 0.1,-0.1, 0.1)));
@@ -59,14 +59,14 @@ TEST(Pose3Graph, optimizeCircle) {
   // Choose an ordering and optimize
   shared_ptr<Ordering> ordering(new Ordering);
   *ordering += "x0","x1","x2","x3","x4","x5";
-  typedef NonlinearOptimizer<Pose3Graph, Pose3Config> Optimizer;
+  typedef NonlinearOptimizer<Pose3Graph, Pose3Values> Optimizer;
 	Optimizer::shared_solver solver(new Optimizer::solver(ordering));
   Optimizer optimizer0(fg, initial, solver);
   Optimizer::verbosityLevel verbosity = Optimizer::SILENT;
 //  Optimizer::verbosityLevel verbosity = Optimizer::ERROR;
   Optimizer optimizer = optimizer0.levenbergMarquardt(1e-15, 1e-15, verbosity);
 
-  Pose3Config actual = *optimizer.config();
+  Pose3Values actual = *optimizer.config();
 
   // Check with ground truth
   CHECK(assert_equal(hexagon, actual,1e-4));

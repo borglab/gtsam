@@ -1,6 +1,6 @@
 /**
  * @file    Errors.cpp
- * @brief   Factor Graph Configuration
+ * @brief   Factor Graph Values
  * @brief   Errors
  * @author  Carlos Nieto
  * @author  Christian Potthast

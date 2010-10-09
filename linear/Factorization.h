@@ -20,7 +20,7 @@ namespace gtsam {
   /**
    * A linear system solver using factorization
    */
-  template <class NonlinearGraph, class Config>
+  template <class NonlinearGraph, class Values>
   class Factorization {
   private:
   	boost::shared_ptr<Ordering> ordering_;
@@ -35,14 +35,14 @@ namespace gtsam {
   	 * solve for the optimal displacement in the tangent space, and then solve
   	 * the resulted linear system
   	 */
-  	VectorConfig optimize(GaussianFactorGraph& fg) const {
+  	VectorValues optimize(GaussianFactorGraph& fg) const {
   	  return gtsam::optimize(*Inference::Eliminate(fg));
   	}
 
 		/**
 		 * linearize the non-linear graph around the current config
 		 */
-  	boost::shared_ptr<GaussianFactorGraph> linearize(const NonlinearGraph& g, const Config& config) const {
+  	boost::shared_ptr<GaussianFactorGraph> linearize(const NonlinearGraph& g, const Values& config) const {
   		return g.linearize(config, *ordering_);
   	}
 
@@ -53,8 +53,8 @@ namespace gtsam {
   		return boost::shared_ptr<Factorization>(new Factorization(*this));
   	}
 
-  	/** expmap the Config given the stored Ordering */
-  	Config expmap(const Config& config, const VectorConfig& delta) const {
+  	/** expmap the Values given the stored Ordering */
+  	Values expmap(const Values& config, const VectorValues& delta) const {
   	  return config.expmap(delta, *ordering_);
   	}
   };

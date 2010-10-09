@@ -32,19 +32,19 @@ using namespace gtsam;
 
 const double tol = 1e-5;
 
-typedef NonlinearOptimizer<example::Graph,example::Config> Optimizer;
+typedef NonlinearOptimizer<example::Graph,example::Values> Optimizer;
 
 /* ************************************************************************* */
 TEST( NonlinearOptimizer, linearizeAndOptimizeForDelta )
 {
 	shared_ptr<example::Graph> fg(new example::Graph(
 			example::createNonlinearFactorGraph()));
-	Optimizer::shared_config initial = example::sharedNoisyConfig();
+	Optimizer::shared_values initial = example::sharedNoisyValues();
 
-	// Expected configuration is the difference between the noisy config
+	// Expected values structure is the difference between the noisy config
 	// and the ground-truth config. One step only because it's linear !
   Ordering ord1; ord1 += "x2","l1","x1";
-	VectorConfig expected(initial->dims(ord1));
+	VectorValues expected(initial->dims(ord1));
 	Vector dl1(2);
 	dl1(0) = -0.1;
 	dl1(1) = 0.1;
@@ -64,7 +64,7 @@ TEST( NonlinearOptimizer, linearizeAndOptimizeForDelta )
 	solver = Optimizer::shared_solver(new Optimizer::solver(Ordering::shared_ptr(new Ordering(ord1))));
 	Optimizer optimizer1(fg, initial, solver);
 
-	VectorConfig actual1 = optimizer1.linearizeAndOptimizeForDelta();
+	VectorValues actual1 = optimizer1.linearizeAndOptimizeForDelta();
 	CHECK(assert_equal(actual1,expected));
 
 // SL-FIX	// Check another
@@ -73,7 +73,7 @@ TEST( NonlinearOptimizer, linearizeAndOptimizeForDelta )
 //	solver = Optimizer::shared_solver(new Optimizer::solver(ord2));
 //	Optimizer optimizer2(fg, initial, solver);
 //
-//	VectorConfig actual2 = optimizer2.linearizeAndOptimizeForDelta();
+//	VectorValues actual2 = optimizer2.linearizeAndOptimizeForDelta();
 //	CHECK(assert_equal(actual2,expected));
 //
 //	// And yet another...
@@ -82,7 +82,7 @@ TEST( NonlinearOptimizer, linearizeAndOptimizeForDelta )
 //	solver = Optimizer::shared_solver(new Optimizer::solver(ord3));
 //	Optimizer optimizer3(fg, initial, solver);
 //
-//	VectorConfig actual3 = optimizer3.linearizeAndOptimizeForDelta();
+//	VectorValues actual3 = optimizer3.linearizeAndOptimizeForDelta();
 //	CHECK(assert_equal(actual3,expected));
 //
 //	// More...
@@ -91,7 +91,7 @@ TEST( NonlinearOptimizer, linearizeAndOptimizeForDelta )
 //	solver = Optimizer::shared_solver(new Optimizer::solver(ord4));
 //	Optimizer optimizer4(fg, initial, solver);
 //
-//	VectorConfig actual4 = optimizer4.linearizeAndOptimizeForDelta();
+//	VectorValues actual4 = optimizer4.linearizeAndOptimizeForDelta();
 //	CHECK(assert_equal(actual4,expected));
 }
 
@@ -104,7 +104,7 @@ TEST( NonlinearOptimizer, iterateLM )
 
 	// config far from minimum
 	Point2 x0(3,0);
-	boost::shared_ptr<example::Config> config(new example::Config);
+	boost::shared_ptr<example::Values> config(new example::Values);
 	config->insert(simulated2D::PoseKey(1), x0);
 
 	// ordering
@@ -141,13 +141,13 @@ TEST( NonlinearOptimizer, optimize )
 
 	// test error at minimum
 	Point2 xstar(0,0);
-	example::Config cstar;
+	example::Values cstar;
 	cstar.insert(simulated2D::PoseKey(1), xstar);
 	DOUBLES_EQUAL(0.0,fg->error(cstar),0.0);
 
 	// test error at initial = [(1-cos(3))^2 + (sin(3))^2]*50 =
 	Point2 x0(3,3);
-	boost::shared_ptr<example::Config> c0(new example::Config);
+	boost::shared_ptr<example::Values> c0(new example::Values);
 	c0->insert(simulated2D::PoseKey(1), x0);
 	DOUBLES_EQUAL(199.0,fg->error(*c0),1e-3);
 
@@ -179,10 +179,10 @@ TEST( NonlinearOptimizer, SimpleLMOptimizer )
 			example::createReallyNonlinearFactorGraph()));
 
 	Point2 x0(3,3);
-	boost::shared_ptr<example::Config> c0(new example::Config);
+	boost::shared_ptr<example::Values> c0(new example::Values);
 	c0->insert(simulated2D::PoseKey(1), x0);
 
-	Optimizer::shared_config actual = Optimizer::optimizeLM(fg, c0);
+	Optimizer::shared_values actual = Optimizer::optimizeLM(fg, c0);
 	DOUBLES_EQUAL(0,fg->error(*actual),tol);
 }
 
@@ -192,10 +192,10 @@ TEST( NonlinearOptimizer, SimpleLMOptimizer_noshared )
 	example::Graph fg = example::createReallyNonlinearFactorGraph();
 
 	Point2 x0(3,3);
-	example::Config c0;
+	example::Values c0;
 	c0.insert(simulated2D::PoseKey(1), x0);
 
-	Optimizer::shared_config actual = Optimizer::optimizeLM(fg, c0);
+	Optimizer::shared_values actual = Optimizer::optimizeLM(fg, c0);
 	DOUBLES_EQUAL(0,fg.error(*actual),tol);
 }
 
@@ -206,10 +206,10 @@ TEST( NonlinearOptimizer, SimpleGNOptimizer )
 			example::createReallyNonlinearFactorGraph()));
 
 	Point2 x0(3,3);
-	boost::shared_ptr<example::Config> c0(new example::Config);
+	boost::shared_ptr<example::Values> c0(new example::Values);
 	c0->insert(simulated2D::PoseKey(1), x0);
 
-	Optimizer::shared_config actual = Optimizer::optimizeGN(fg, c0);
+	Optimizer::shared_values actual = Optimizer::optimizeGN(fg, c0);
 	DOUBLES_EQUAL(0,fg->error(*actual),tol);
 }
 
@@ -219,19 +219,19 @@ TEST( NonlinearOptimizer, SimpleGNOptimizer_noshared )
 	example::Graph fg = example::createReallyNonlinearFactorGraph();
 
 	Point2 x0(3,3);
-	example::Config c0;
+	example::Values c0;
 	c0.insert(simulated2D::PoseKey(1), x0);
 
-	Optimizer::shared_config actual = Optimizer::optimizeGN(fg, c0);
+	Optimizer::shared_values actual = Optimizer::optimizeGN(fg, c0);
 	DOUBLES_EQUAL(0,fg.error(*actual),tol);
 }
 
 /* ************************************************************************* */
 TEST( NonlinearOptimizer, Factorization )
 {
-	typedef NonlinearOptimizer<Pose2Graph, Pose2Config, GaussianFactorGraph, Factorization<Pose2Graph, Pose2Config> > Optimizer;
+	typedef NonlinearOptimizer<Pose2Graph, Pose2Values, GaussianFactorGraph, Factorization<Pose2Graph, Pose2Values> > Optimizer;
 
-	boost::shared_ptr<Pose2Config> config(new Pose2Config);
+	boost::shared_ptr<Pose2Values> config(new Pose2Values);
 	config->insert(1, Pose2(0.,0.,0.));
 	config->insert(2, Pose2(1.5,0.,0.));
 
@@ -240,14 +240,14 @@ TEST( NonlinearOptimizer, Factorization )
 	graph->addConstraint(1,2, Pose2(1.,0.,0.), noiseModel::Isotropic::Sigma(3, 1));
 
 	boost::shared_ptr<Ordering> ordering(new Ordering);
-	ordering->push_back(Pose2Config::Key(1));
-	ordering->push_back(Pose2Config::Key(2));
-	Optimizer::shared_solver solver(new Factorization<Pose2Graph, Pose2Config>(ordering));
+	ordering->push_back(Pose2Values::Key(1));
+	ordering->push_back(Pose2Values::Key(2));
+	Optimizer::shared_solver solver(new Factorization<Pose2Graph, Pose2Values>(ordering));
 
 	Optimizer optimizer(graph, config, solver);
 	Optimizer optimized = optimizer.iterateLM();
 
-	Pose2Config expected;
+	Pose2Values expected;
 	expected.insert(1, Pose2(0.,0.,0.));
 	expected.insert(2, Pose2(1.,0.,0.));
 	CHECK(assert_equal(expected, *optimized.config(), 1e-5));
@@ -257,8 +257,8 @@ TEST( NonlinearOptimizer, Factorization )
 // SL-FIX TEST( NonlinearOptimizer, SubgraphSolver )
 //{
 //	using namespace pose2SLAM;
-//	typedef SubgraphSolver<Graph, Config> Solver;
-//	typedef NonlinearOptimizer<Graph, Config, SubgraphPreconditioner, Solver> Optimizer;
+//	typedef SubgraphSolver<Graph, Values> Solver;
+//	typedef NonlinearOptimizer<Graph, Values, SubgraphPreconditioner, Solver> Optimizer;
 //
 //	// Create a graph
 //	boost::shared_ptr<Graph> graph(new Graph);
@@ -266,13 +266,13 @@ TEST( NonlinearOptimizer, Factorization )
 //	graph->addConstraint(1, 2, Pose2(1., 0., 0.), noiseModel::Isotropic::Sigma(3, 1));
 //
 //	// Create an initial config
-//	boost::shared_ptr<Config> config(new Config);
+//	boost::shared_ptr<Values> config(new Values);
 //	config->insert(1, Pose2(0., 0., 0.));
 //	config->insert(2, Pose2(1.5, 0., 0.));
 //
 //	// Create solver and optimizer
 //	Optimizer::shared_solver solver
-//		(new SubgraphSolver<Graph, Config> (*graph, *config));
+//		(new SubgraphSolver<Graph, Values> (*graph, *config));
 //	Optimizer optimizer(graph, config, solver);
 //
 //	// Optimize !!!!
@@ -282,7 +282,7 @@ TEST( NonlinearOptimizer, Factorization )
 //			absoluteThreshold, Optimizer::SILENT);
 //
 //	// Check solution
-//	Config expected;
+//	Values expected;
 //	expected.insert(1, Pose2(0., 0., 0.));
 //	expected.insert(2, Pose2(1., 0., 0.));
 //	CHECK(assert_equal(expected, *optimized.config(), 1e-5));
@@ -293,9 +293,9 @@ TEST( NonlinearOptimizer, Factorization )
 //{
 //	shared_ptr<example::Graph> fg(new example::Graph(
 //			example::createNonlinearFactorGraph()));
-//	Optimizer::shared_config initial = example::sharedNoisyConfig();
+//	Optimizer::shared_values initial = example::sharedNoisyValues();
 //
-//	Config expected;
+//	Values expected;
 //	expected.insert(simulated2D::PoseKey(1), Point2(0.0, 0.0));
 //	expected.insert(simulated2D::PoseKey(2), Point2(1.5, 0.0));
 //	expected.insert(simulated2D::PointKey(1), Point2(0.0, -1.0));
@@ -308,7 +308,7 @@ TEST( NonlinearOptimizer, Factorization )
 //	solver = Optimizer::shared_solver(new Optimizer::solver(ord1));
 //	Optimizer optimizer1(fg, initial, solver);
 //
-//	Config actual = optimizer1.levenbergMarquardt();
+//	Values actual = optimizer1.levenbergMarquardt();
 //	CHECK(assert_equal(actual,expected));
 //}
 

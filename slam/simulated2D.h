@@ -21,9 +21,9 @@ namespace gtsam {
 		// Simulated2D robots have no orientation, just a position
 		typedef TypedSymbol<Point2, 'x'> PoseKey;
 		typedef TypedSymbol<Point2, 'l'> PointKey;
-		typedef LieValues<PoseKey> PoseConfig;
-		typedef LieValues<PointKey> PointConfig;
-		typedef TupleValues2<PoseConfig, PointConfig> Config;
+		typedef LieValues<PoseKey> PoseValues;
+		typedef LieValues<PointKey> PointValues;
+		typedef TupleValues2<PoseValues, PointValues> Values;
 
 		/**
 		 * Prior on a single pose, and optional derivative version
@@ -54,7 +54,7 @@ namespace gtsam {
 		/**
 		 * Unary factor encoding a soft prior on a vector
 		 */
-		template<class Cfg = Config, class Key = PoseKey>
+		template<class Cfg = Values, class Key = PoseKey>
 		struct GenericPrior: public NonlinearFactor1<Cfg, Key> {
 			typedef boost::shared_ptr<GenericPrior<Cfg, Key> > shared_ptr;
 			typedef typename Key::Value_t Pose;
@@ -74,7 +74,7 @@ namespace gtsam {
 		/**
 		 * Binary factor simulating "odometry" between two Vectors
 		 */
-		template<class Cfg = Config, class Key = PoseKey>
+		template<class Cfg = Values, class Key = PoseKey>
 		struct GenericOdometry: public NonlinearFactor2<Cfg, Key, Key> {
 			typedef boost::shared_ptr<GenericOdometry<Cfg, Key> > shared_ptr;
 			typedef typename Key::Value_t Pose;
@@ -95,7 +95,7 @@ namespace gtsam {
 		/**
 		 * Binary factor simulating "measurement" between two Vectors
 		 */
-		template<class Cfg = Config, class XKey = PoseKey, class LKey = PointKey>
+		template<class Cfg = Values, class XKey = PoseKey, class LKey = PointKey>
 		class GenericMeasurement: public NonlinearFactor2<Cfg, XKey, LKey> {
 		public:
 			typedef boost::shared_ptr<GenericMeasurement<Cfg, XKey, LKey> > shared_ptr;
@@ -117,9 +117,9 @@ namespace gtsam {
 		};
 
 		/** Typedefs for regular use */
-		typedef GenericPrior<Config, PoseKey> Prior;
-		typedef GenericOdometry<Config, PoseKey> Odometry;
-		typedef GenericMeasurement<Config, PoseKey, PointKey> Measurement;
+		typedef GenericPrior<Values, PoseKey> Prior;
+		typedef GenericOdometry<Values, PoseKey> Odometry;
+		typedef GenericMeasurement<Values, PoseKey, PointKey> Measurement;
 
 	} // namespace simulated2D
 } // namespace gtsam

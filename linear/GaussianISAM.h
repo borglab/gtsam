@@ -56,14 +56,14 @@ public:
     dims_.clear();
   }
 
-  friend VectorConfig optimize(const GaussianISAM&);
+  friend VectorValues optimize(const GaussianISAM&);
 
 };
 
 	// recursively optimize this conditional and all subtrees
-	void optimize(const GaussianISAM::sharedClique& clique, VectorConfig& result);
+	void optimize(const GaussianISAM::sharedClique& clique, VectorValues& result);
 
 	// optimize the BayesTree, starting from the root
-	VectorConfig optimize(const GaussianISAM& bayesTree);
+	VectorValues optimize(const GaussianISAM& bayesTree);
 
 }/// namespace gtsam

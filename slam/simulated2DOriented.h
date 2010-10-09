@@ -21,9 +21,9 @@ namespace gtsam {
 		// The types that take an oriented pose2 rather than point2
 		typedef TypedSymbol<Point2, 'l'> PointKey;
 		typedef TypedSymbol<Pose2,  'x'> PoseKey;
-		typedef LieValues<PoseKey> PoseConfig;
-		typedef LieValues<PointKey> PointConfig;
-		typedef TupleValues2<PoseConfig, PointConfig> Config;
+		typedef LieValues<PoseKey> PoseValues;
+		typedef LieValues<PointKey> PointValues;
+		typedef TupleValues2<PoseValues, PointValues> Values;
 
 		//TODO:: point prior is not implemented right now
 
@@ -47,7 +47,7 @@ namespace gtsam {
 		/**
 		 * Unary factor encoding a soft prior on a vector
 		 */
-		template<class Cfg = Config, class Key = PoseKey>
+		template<class Cfg = Values, class Key = PoseKey>
 		struct GenericPosePrior: public NonlinearFactor1<Cfg, Key> {
 
 			Pose2 z_;
@@ -66,7 +66,7 @@ namespace gtsam {
 		/**
 		 * Binary factor simulating "odometry" between two Vectors
 		 */
-		template<class Cfg = Config, class Key = PoseKey>
+		template<class Cfg = Values, class Key = PoseKey>
 		struct GenericOdometry: public NonlinearFactor2<Cfg, Key, Key> {
 			Pose2 z_;
 
@@ -82,7 +82,7 @@ namespace gtsam {
 
 		};
 
-		typedef GenericOdometry<Config, PoseKey> Odometry;
+		typedef GenericOdometry<Values, PoseKey> Odometry;
 
 	} // namespace simulated2DOriented
 } // namespace gtsam

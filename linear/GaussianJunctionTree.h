@@ -25,7 +25,7 @@ namespace gtsam {
 
 	protected:
 		// back-substitute in topological sort order (parents first)
-		void btreeBackSubstitute(const boost::shared_ptr<const BayesTree::Clique>& current, VectorConfig& config) const;
+		void btreeBackSubstitute(const boost::shared_ptr<const BayesTree::Clique>& current, VectorValues& config) const;
 
 	public :
 
@@ -35,7 +35,7 @@ namespace gtsam {
 		GaussianJunctionTree(const GaussianFactorGraph& fg) : Base(fg) {}
 
 		// optimize the linear graph
-		VectorConfig optimize() const;
+		VectorValues optimize() const;
 	}; // GaussianJunctionTree
 
 } // namespace gtsam

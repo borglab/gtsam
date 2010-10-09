@@ -12,15 +12,15 @@ using namespace gtsam;
 // Explicitly instantiate so we don't have to include everywhere
 #include <gtsam/inference/ISAM2-inl.h>
 
-template class ISAM2<GaussianConditional, simulated2D::Config>;
-template class ISAM2<GaussianConditional, planarSLAM::Config>;
+template class ISAM2<GaussianConditional, simulated2D::Values>;
+template class ISAM2<GaussianConditional, planarSLAM::Values>;
 
 
 namespace gtsam {
 
 /* ************************************************************************* */
 void optimize2(const GaussianISAM2::sharedClique& clique, double threshold,
-		vector<bool>& changed, const vector<bool>& replaced, Permuted<VectorConfig>& delta, int& count) {
+		vector<bool>& changed, const vector<bool>& replaced, Permuted<VectorValues>& delta, int& count) {
 	// if none of the variables in this clique (frontal and separator!) changed
 	// significantly, then by the running intersection property, none of the
 	// cliques in the children need to be processed
@@ -60,7 +60,7 @@ void optimize2(const GaussianISAM2::sharedClique& clique, double threshold,
 			if (!redo) {
 				// change is measured against the previous delta!
 //				if (delta.contains(cg->key())) {
-			  const VectorConfig::mapped_type d_old(delta[cg->key()]);
+			  const VectorValues::mapped_type d_old(delta[cg->key()]);
 			  assert(d_old.size() == d.size());
 			  for(size_t i=0; i<d_old.size(); ++i) {
 			    if(fabs(d(i) - d_old(i)) >= threshold) {
@@ -97,7 +97,7 @@ void optimize2(const GaussianISAM2::sharedClique& clique, double threshold,
 
 /* ************************************************************************* */
 // fast full version without threshold
-void optimize2(const GaussianISAM2::sharedClique& clique, VectorConfig& delta) {
+void optimize2(const GaussianISAM2::sharedClique& clique, VectorValues& delta) {
 	// parents are assumed to already be solved and available in result
 	GaussianISAM2::Clique::const_reverse_iterator it;
 	for (it = clique->rbegin(); it!=clique->rend(); it++) {
@@ -112,8 +112,8 @@ void optimize2(const GaussianISAM2::sharedClique& clique, VectorConfig& delta) {
 }
 
 ///* ************************************************************************* */
-//boost::shared_ptr<VectorConfig> optimize2(const GaussianISAM2::sharedClique& root) {
-//	boost::shared_ptr<VectorConfig> delta(new VectorConfig());
+//boost::shared_ptr<VectorValues> optimize2(const GaussianISAM2::sharedClique& root) {
+//	boost::shared_ptr<VectorValues> delta(new VectorValues());
 //	set<Symbol> changed;
 //	// starting from the root, call optimize on each conditional
 //	optimize2(root, delta);
@@ -121,7 +121,7 @@ void optimize2(const GaussianISAM2::sharedClique& clique, VectorConfig& delta) {
 //}
 
 /* ************************************************************************* */
-int optimize2(const GaussianISAM2::sharedClique& root, double threshold, const vector<bool>& keys, Permuted<VectorConfig>& delta) {
+int optimize2(const GaussianISAM2::sharedClique& root, double threshold, const vector<bool>& keys, Permuted<VectorValues>& delta) {
 	vector<bool> changed(keys.size(), false);
 	int count = 0;
 	// starting from the root, call optimize on each conditional

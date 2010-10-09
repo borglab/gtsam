@@ -15,7 +15,7 @@
 
 #include <gtsam/base/types.h>
 #include <gtsam/inference/Conditional.h>
-#include <gtsam/linear/VectorConfig.h>
+#include <gtsam/linear/VectorValues.h>
 #include <gtsam/base/Matrix.h>
 #include <gtsam/base/blockMatrices.h>
 
@@ -118,17 +118,17 @@ public:
 
 	/**
 	 * solve a conditional Gaussian
-	 * @param x configuration in which the parents values (y,z,...) are known
+	 * @param x values structure in which the parents values (y,z,...) are known
 	 * @return solution x = R \ (d - Sy - Tz - ...)
 	 */
-	Vector solve(const VectorConfig& x) const;
+	Vector solve(const VectorValues& x) const;
 
   /**
    * solve a conditional Gaussian
-   * @param x configuration in which the parents values (y,z,...) are known
+   * @param x values structure in which the parents values (y,z,...) are known
    * @return solution x = R \ (d - Sy - Tz - ...)
    */
-  Vector solve(const Permuted<VectorConfig>& x) const;
+  Vector solve(const Permuted<VectorValues>& x) const;
 
 protected:
   rsd_type::column_type get_d_() { return rsd_.column(1+nrParents(), 0); }

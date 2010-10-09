@@ -23,14 +23,14 @@ using namespace std;
 namespace gtsam {
 
 /* ************************************************************************* */
-template<class Config>
-void NonlinearFactorGraph<Config>::print(const std::string& str) const {
+template<class Values>
+void NonlinearFactorGraph<Values>::print(const std::string& str) const {
   Base::print(str);
 }
 
 	/* ************************************************************************* */
-	template<class Config>
-	Vector NonlinearFactorGraph<Config>::unwhitenedError(const Config& c) const {
+	template<class Values>
+	Vector NonlinearFactorGraph<Values>::unwhitenedError(const Values& c) const {
 		list<Vector> errors;
 		BOOST_FOREACH(const sharedFactor& factor, this->factors_)
 			errors.push_back(factor->unwhitenedError(c));
@@ -38,8 +38,8 @@ void NonlinearFactorGraph<Config>::print(const std::string& str) const {
 	}
 
 	/* ************************************************************************* */
-	template<class Config>
-	double NonlinearFactorGraph<Config>::error(const Config& c) const {
+	template<class Values>
+	double NonlinearFactorGraph<Values>::error(const Values& c) const {
 		double total_error = 0.;
 		// iterate over all the factors_ to accumulate the log probabilities
 		BOOST_FOREACH(const sharedFactor& factor, this->factors_)
@@ -48,9 +48,9 @@ void NonlinearFactorGraph<Config>::print(const std::string& str) const {
 	}
 
   /* ************************************************************************* */
-  template<class Config>
+  template<class Values>
 	pair<Ordering::shared_ptr, GaussianVariableIndex<>::shared_ptr>
-  NonlinearFactorGraph<Config>::orderingCOLAMD(const Config& config) const {
+  NonlinearFactorGraph<Values>::orderingCOLAMD(const Values& config) const {
 
     // Create symbolic graph and initial (iterator) ordering
 	  FactorGraph<Factor>::shared_ptr symbolic;
@@ -76,9 +76,9 @@ void NonlinearFactorGraph<Config>::print(const std::string& str) const {
 	}
 
   /* ************************************************************************* */
-  template<class Config>
-  SymbolicFactorGraph::shared_ptr NonlinearFactorGraph<Config>::symbolic(
-      const Config& config, const Ordering& ordering) const {
+  template<class Values>
+  SymbolicFactorGraph::shared_ptr NonlinearFactorGraph<Values>::symbolic(
+      const Values& config, const Ordering& ordering) const {
     // Generate the symbolic factor graph
     SymbolicFactorGraph::shared_ptr symbolicfg(new FactorGraph<Factor>);
     symbolicfg->reserve(this->size());
@@ -89,18 +89,18 @@ void NonlinearFactorGraph<Config>::print(const std::string& str) const {
   }
 
   /* ************************************************************************* */
-	template<class Config>
+	template<class Values>
 	pair<SymbolicFactorGraph::shared_ptr, Ordering::shared_ptr>
-	NonlinearFactorGraph<Config>::symbolic(const Config& config) const {
+	NonlinearFactorGraph<Values>::symbolic(const Values& config) const {
 	  // Generate an initial key ordering in iterator order
     Ordering::shared_ptr ordering(config.orderingArbitrary());
     return make_pair(symbolic(config, *ordering), ordering);
 	}
 
 	/* ************************************************************************* */
-	template<class Config>
-	boost::shared_ptr<GaussianFactorGraph> NonlinearFactorGraph<Config>::linearize(
-			const Config& config, const Ordering& ordering) const {
+	template<class Values>
+	boost::shared_ptr<GaussianFactorGraph> NonlinearFactorGraph<Values>::linearize(
+			const Values& config, const Ordering& ordering) const {
 
 		// create an empty linear FG
 		GaussianFactorGraph::shared_ptr linearFG(new GaussianFactorGraph);

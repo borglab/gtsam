@@ -8,7 +8,7 @@
 #pragma once
 
 #include <gtsam/slam/simulated2D.h>
-#include <gtsam/slam/Simulated2DConfig.h>
+#include <gtsam/slam/Simulated2DValues.h>
 
 namespace gtsam {
 

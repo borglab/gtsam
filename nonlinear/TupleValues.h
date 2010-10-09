@@ -6,7 +6,7 @@
  */
 
 #include <gtsam/nonlinear/LieValues.h>
-#include <gtsam/linear/VectorConfig.h>
+#include <gtsam/linear/VectorValues.h>
 
 #pragma once
 
@@ -27,7 +27,7 @@ namespace gtsam {
    *  For an easy interface, there are TupleValuesN classes, which wrap
    *  the recursive TupleValuess together as a single class, so you can have
    *  mixed-type classes from 2-6 types.  Note that a TupleValues2 is equivalent
-   *  to the previously used PairConfig.
+   *  to the previously used PairValues.
    *
    *  Design and extension note:
    *  To implement a recursively templated data structure, note that most operations
@@ -35,28 +35,28 @@ namespace gtsam {
    *  for the arguments to be passed to the next config, while the specialized one
    *  operates on the "first" config. TupleValuesEnd contains only the specialized version.
    */
-  template<class Config1, class Config2>
-  class TupleValues : public Testable<TupleValues<Config1, Config2> > {
+  template<class Values1, class Values2>
+  class TupleValues : public Testable<TupleValues<Values1, Values2> > {
 
   protected:
 	  // Data for internal configs
-	  Config1 first_;	/// Arbitrary config
-	  Config2 second_;	/// A TupleValues or TupleValuesEnd, which wraps an arbitrary config
+	  Values1 first_;	/// Arbitrary config
+	  Values2 second_;	/// A TupleValues or TupleValuesEnd, which wraps an arbitrary config
 
   public:
 	  // typedefs for config subtypes
-	  typedef class Config1::Key Key1;
-	  typedef class Config1::Value Value1;
+	  typedef class Values1::Key Key1;
+	  typedef class Values1::Value Value1;
 
 	  /** default constructor */
 	  TupleValues() {}
 
 	  /** Copy constructor */
-	  TupleValues(const TupleValues<Config1, Config2>& config) :
+	  TupleValues(const TupleValues<Values1, Values2>& config) :
 		  first_(config.first_), second_(config.second_) {}
 
 	  /** Construct from configs */
-	  TupleValues(const Config1& cfg1, const Config2& cfg2) :
+	  TupleValues(const Values1& cfg1, const Values2& cfg2) :
 		  first_(cfg1), second_(cfg2) {}
 
 	  /** Print */
@@ -66,7 +66,7 @@ namespace gtsam {
 	  }
 
 	  /** Equality with tolerance for keys and values */
-	  bool equals(const TupleValues<Config1, Config2>& c, double tol=1e-9) const {
+	  bool equals(const TupleValues<Values1, Values2>& c, double tol=1e-9) const {
 		  return first_.equals(c.first_, tol) && second_.equals(c.second_, tol);
 	  }
 
@@ -90,7 +90,7 @@ namespace gtsam {
 	   */
 	  template<class Cfg1, class Cfg2>
 	  void insert(const TupleValues<Cfg1, Cfg2>& config) { second_.insert(config); }
-	  void insert(const TupleValues<Config1, Config2>& config) {
+	  void insert(const TupleValues<Values1, Values2>& config) {
 		  first_.insert(config.first_);
 		  second_.insert(config.second_);
 	  }
@@ -101,7 +101,7 @@ namespace gtsam {
 	   */
 	  template<class Cfg1, class Cfg2>
 	  void update(const TupleValues<Cfg1, Cfg2>& config) { second_.update(config); }
-	  void update(const TupleValues<Config1, Config2>& config) {
+	  void update(const TupleValues<Values1, Values2>& config) {
 	  	first_.update(config.first_);
 	  	second_.update(config.second_);
 	  }
@@ -121,7 +121,7 @@ namespace gtsam {
 	   */
 	  template<class Cfg>
 	  void insertSub(const Cfg& config) { second_.insertSub(config); }
-	  void insertSub(const Config1& config) { first_.insert(config);  }
+	  void insertSub(const Values1& config) { first_.insert(config);  }
 
 	  /** erase an element by key */
 	  template<class Key>
@@ -152,12 +152,12 @@ namespace gtsam {
 	  const Value1& at(const Key1& j) const { return first_.at(j); }
 
 	  /** direct config access */
-	  const Config1& config() const { return first_; }
-	  const Config2& rest() const { return second_; }
+	  const Values1& config() const { return first_; }
+	  const Values2& rest() const { return second_; }
 
-	  /** zero: create VectorConfig of appropriate structure */
-	  VectorConfig zero(const Ordering& ordering) const {
-		  VectorConfig z(this->dims(ordering));
+	  /** zero: create VectorValues of appropriate structure */
+	  VectorValues zero(const Ordering& ordering) const {
+		  VectorValues z(this->dims(ordering));
 		  z.makeZero();
 		  return z;
 	  }
@@ -173,7 +173,7 @@ namespace gtsam {
 
 	  /** Create an array of variable dimensions using the given ordering */
 	  std::vector<size_t> dims(const Ordering& ordering) const {
-	    _ConfigDimensionCollector dimCollector(ordering);
+	    _ValuesDimensionCollector dimCollector(ordering);
 	    this->apply(dimCollector);
 	    return dimCollector.dimensions;
 	  }
@@ -186,25 +186,25 @@ namespace gtsam {
      */
     Ordering::shared_ptr orderingArbitrary(varid_t firstVar = 0) const {
       // Generate an initial key ordering in iterator order
-      _ConfigKeyOrderer keyOrderer(firstVar);
+      _ValuesKeyOrderer keyOrderer(firstVar);
       this->apply(keyOrderer);
       return keyOrderer.ordering;
     }
 
 	  /** Expmap */
-	  TupleValues<Config1, Config2> expmap(const VectorConfig& delta, const Ordering& ordering) const {
+	  TupleValues<Values1, Values2> expmap(const VectorValues& delta, const Ordering& ordering) const {
 	    return TupleValues(first_.expmap(delta, ordering), second_.expmap(delta, ordering));
 	  }
 
 	  /** logmap each element */
-	  VectorConfig logmap(const TupleValues<Config1, Config2>& cp, const Ordering& ordering) const {
-		  VectorConfig delta(this->dims(ordering));
+	  VectorValues logmap(const TupleValues<Values1, Values2>& cp, const Ordering& ordering) const {
+		  VectorValues delta(this->dims(ordering));
 		  logmap(cp, ordering, delta);
 		  return delta;
 	  }
 
     /** logmap each element */
-    void logmap(const TupleValues<Config1, Config2>& cp, const Ordering& ordering, VectorConfig& delta) const {
+    void logmap(const TupleValues<Values1, Values2>& cp, const Ordering& ordering, VectorValues& delta) const {
       first_.logmap(cp.first_, ordering, delta);
       second_.logmap(cp.second_, ordering, delta);
     }
@@ -212,7 +212,7 @@ namespace gtsam {
 	  /**
 	   * Apply a class with an application operator() to a const_iterator over
 	   * every <key,value> pair.  The operator must be able to handle such an
-	   * iterator for every type in the Config, (i.e. through templating).
+	   * iterator for every type in the Values, (i.e. through templating).
 	   */
     template<typename A>
     void apply(A& operation) {
@@ -242,48 +242,48 @@ namespace gtsam {
    * Do not use this class directly - it should only be used as a part
    * of a recursive structure
    */
-  template<class Config>
-  class TupleValuesEnd : public Testable<TupleValuesEnd<Config> > {
+  template<class Values>
+  class TupleValuesEnd : public Testable<TupleValuesEnd<Values> > {
 
   protected:
 	  // Data for internal configs
-	  Config first_;
+	  Values first_;
 
   public:
 	  // typedefs
-	  typedef class Config::Key Key1;
-	  typedef class Config::Value Value1;
+	  typedef class Values::Key Key1;
+	  typedef class Values::Value Value1;
 
 	  TupleValuesEnd() {}
 
-	  TupleValuesEnd(const TupleValuesEnd<Config>& config) :
+	  TupleValuesEnd(const TupleValuesEnd<Values>& config) :
 		  first_(config.first_) {}
 
-	  TupleValuesEnd(const Config& cfg) :
+	  TupleValuesEnd(const Values& cfg) :
 		  first_(cfg) {}
 
 	  void print(const std::string& s = "") const {
 			first_.print();
 	  }
 
-	  bool equals(const TupleValuesEnd<Config>& c, double tol=1e-9) const {
+	  bool equals(const TupleValuesEnd<Values>& c, double tol=1e-9) const {
 		  return first_.equals(c.first_, tol);
 	  }
 
 	  void insert(const Key1& key, const Value1& value) {first_.insert(key, value); }
 	  void insert(int key, const Value1& value) {first_.insert(Key1(key), value);}
 
-	  void insert(const TupleValuesEnd<Config>& config) {first_.insert(config.first_); }
+	  void insert(const TupleValuesEnd<Values>& config) {first_.insert(config.first_); }
 
-	  void update(const TupleValuesEnd<Config>& config) {first_.update(config.first_); }
+	  void update(const TupleValuesEnd<Values>& config) {first_.update(config.first_); }
 
 	  void update(const Key1& key, const Value1& value) { first_.update(key, value); }
 
-	  void insertSub(const Config& config) {first_.insert(config); }
+	  void insertSub(const Values& config) {first_.insert(config); }
 
 	  const Value1& operator[](const Key1& j) const { return first_[j]; }
 
-	  const Config& config() const { return first_; }
+	  const Values& config() const { return first_; }
 
 	  void erase(const Key1& j) { first_.erase(j); }
 
@@ -297,8 +297,8 @@ namespace gtsam {
 
 	  const Value1& at(const Key1& j) const { return first_.at(j); }
 
-	  VectorConfig zero(const Ordering& ordering) const {
-		  VectorConfig z(this->dims(ordering));
+	  VectorValues zero(const Ordering& ordering) const {
+		  VectorValues z(this->dims(ordering));
 		  z.makeZero();
 		  return z;
 	  }
@@ -307,24 +307,24 @@ namespace gtsam {
 
 	  size_t dim() const { return first_.dim(); }
 
-	  TupleValuesEnd<Config> expmap(const VectorConfig& delta, const Ordering& ordering) const {
+	  TupleValuesEnd<Values> expmap(const VectorValues& delta, const Ordering& ordering) const {
 	        return TupleValuesEnd(first_.expmap(delta, ordering));
 	  }
 
-    VectorConfig logmap(const TupleValuesEnd<Config>& cp, const Ordering& ordering) const {
-      VectorConfig delta(this->dims(ordering));
+    VectorValues logmap(const TupleValuesEnd<Values>& cp, const Ordering& ordering) const {
+      VectorValues delta(this->dims(ordering));
       logmap(cp, ordering, delta);
       return delta;
     }
 
-    void logmap(const TupleValuesEnd<Config>& cp, const Ordering& ordering, VectorConfig& delta) const {
+    void logmap(const TupleValuesEnd<Values>& cp, const Ordering& ordering, VectorValues& delta) const {
       first_.logmap(cp.first_, ordering, delta);
     }
 
     /**
      * Apply a class with an application operator() to a const_iterator over
      * every <key,value> pair.  The operator must be able to handle such an
-     * iterator for every type in the Config, (i.e. through templating).
+     * iterator for every type in the Values, (i.e. through templating).
      */
     template<typename A>
     void apply(A& operation) {
@@ -348,14 +348,14 @@ namespace gtsam {
    * recursively, as they are TupleValuess, and are primarily a short form of the config
    * structure to make use of the TupleValuess easier.
    *
-   * The interface is designed to mimic PairConfig, but for 2-6 config types.
+   * The interface is designed to mimic PairValues, but for 2-6 config types.
    */
 
   template<class C1>
   class TupleValues1 : public TupleValuesEnd<C1> {
   public:
  	  // typedefs
- 	  typedef C1 Config1;
+ 	  typedef C1 Values1;
 
  	  typedef TupleValuesEnd<C1> Base;
  	  typedef TupleValues1<C1> This;
@@ -363,18 +363,18 @@ namespace gtsam {
  	  TupleValues1() {}
  	  TupleValues1(const This& config);
  	  TupleValues1(const Base& config);
- 	  TupleValues1(const Config1& cfg1);
+ 	  TupleValues1(const Values1& cfg1);
 
  	  // access functions
- 	  inline const Config1& first() const { return this->config(); }
+ 	  inline const Values1& first() const { return this->config(); }
   };
 
   template<class C1, class C2>
   class TupleValues2 : public TupleValues<C1, TupleValuesEnd<C2> > {
   public:
 	  // typedefs
-	  typedef C1 Config1;
-	  typedef C2 Config2;
+	  typedef C1 Values1;
+	  typedef C2 Values2;
 
 	  typedef TupleValues<C1, TupleValuesEnd<C2> > Base;
 	  typedef TupleValues2<C1, C2> This;
@@ -382,40 +382,40 @@ namespace gtsam {
 	  TupleValues2() {}
 	  TupleValues2(const This& config);
 	  TupleValues2(const Base& config);
-	  TupleValues2(const Config1& cfg1, const Config2& cfg2);
+	  TupleValues2(const Values1& cfg1, const Values2& cfg2);
 
 	  // access functions
-	  inline const Config1& first() const { return this->config(); }
-	  inline const Config2& second() const { return this->rest().config(); }
+	  inline const Values1& first() const { return this->config(); }
+	  inline const Values2& second() const { return this->rest().config(); }
   };
 
   template<class C1, class C2, class C3>
   class TupleValues3 : public TupleValues<C1, TupleValues<C2, TupleValuesEnd<C3> > > {
   public:
 	  // typedefs
-	  typedef C1 Config1;
-	  typedef C2 Config2;
-	  typedef C3 Config3;
+	  typedef C1 Values1;
+	  typedef C2 Values2;
+	  typedef C3 Values3;
 
 	  TupleValues3() {}
 	  TupleValues3(const TupleValues<C1, TupleValues<C2, TupleValuesEnd<C3> > >& config);
 	  TupleValues3(const TupleValues3<C1, C2, C3>& config);
-	  TupleValues3(const Config1& cfg1, const Config2& cfg2, const Config3& cfg3);
+	  TupleValues3(const Values1& cfg1, const Values2& cfg2, const Values3& cfg3);
 
 	  // access functions
-	  inline const Config1& first() const { return this->config(); }
-	  inline const Config2& second() const { return this->rest().config(); }
-	  inline const Config3& third() const { return this->rest().rest().config(); }
+	  inline const Values1& first() const { return this->config(); }
+	  inline const Values2& second() const { return this->rest().config(); }
+	  inline const Values3& third() const { return this->rest().rest().config(); }
   };
 
   template<class C1, class C2, class C3, class C4>
   class TupleValues4 : public TupleValues<C1, TupleValues<C2,TupleValues<C3, TupleValuesEnd<C4> > > > {
   public:
 	  // typedefs
-	  typedef C1 Config1;
-	  typedef C2 Config2;
-	  typedef C3 Config3;
-	  typedef C4 Config4;
+	  typedef C1 Values1;
+	  typedef C2 Values2;
+	  typedef C3 Values3;
+	  typedef C4 Values4;
 
 	  typedef TupleValues<C1, TupleValues<C2,TupleValues<C3, TupleValuesEnd<C4> > > > Base;
 	  typedef TupleValues4<C1, C2, C3, C4> This;
@@ -423,62 +423,62 @@ namespace gtsam {
 	  TupleValues4() {}
 	  TupleValues4(const This& config);
 	  TupleValues4(const Base& config);
-	  TupleValues4(const Config1& cfg1, const Config2& cfg2, const Config3& cfg3,const Config4& cfg4);
+	  TupleValues4(const Values1& cfg1, const Values2& cfg2, const Values3& cfg3,const Values4& cfg4);
 
 	  // access functions
-	  inline const Config1& first() const { return this->config(); }
-	  inline const Config2& second() const { return this->rest().config(); }
-	  inline const Config3& third() const { return this->rest().rest().config(); }
-	  inline const Config4& fourth() const { return this->rest().rest().rest().config(); }
+	  inline const Values1& first() const { return this->config(); }
+	  inline const Values2& second() const { return this->rest().config(); }
+	  inline const Values3& third() const { return this->rest().rest().config(); }
+	  inline const Values4& fourth() const { return this->rest().rest().rest().config(); }
   };
 
   template<class C1, class C2, class C3, class C4, class C5>
   class TupleValues5 : public TupleValues<C1, TupleValues<C2, TupleValues<C3, TupleValues<C4, TupleValuesEnd<C5> > > > > {
   public:
 	  // typedefs
-	  typedef C1 Config1;
-	  typedef C2 Config2;
-	  typedef C3 Config3;
-	  typedef C4 Config4;
-	  typedef C5 Config5;
+	  typedef C1 Values1;
+	  typedef C2 Values2;
+	  typedef C3 Values3;
+	  typedef C4 Values4;
+	  typedef C5 Values5;
 
 	  TupleValues5() {}
 	  TupleValues5(const TupleValues5<C1, C2, C3, C4, C5>& config);
 	  TupleValues5(const TupleValues<C1, TupleValues<C2, TupleValues<C3, TupleValues<C4, TupleValuesEnd<C5> > > > >& config);
-	  TupleValues5(const Config1& cfg1, const Config2& cfg2, const Config3& cfg3,
-				   const Config4& cfg4, const Config5& cfg5);
+	  TupleValues5(const Values1& cfg1, const Values2& cfg2, const Values3& cfg3,
+				   const Values4& cfg4, const Values5& cfg5);
 
 	  // access functions
-	  inline const Config1& first() const { return this->config(); }
-	  inline const Config2& second() const { return this->rest().config(); }
-	  inline const Config3& third() const { return this->rest().rest().config(); }
-	  inline const Config4& fourth() const { return this->rest().rest().rest().config(); }
-	  inline const Config5& fifth() const { return this->rest().rest().rest().rest().config(); }
+	  inline const Values1& first() const { return this->config(); }
+	  inline const Values2& second() const { return this->rest().config(); }
+	  inline const Values3& third() const { return this->rest().rest().config(); }
+	  inline const Values4& fourth() const { return this->rest().rest().rest().config(); }
+	  inline const Values5& fifth() const { return this->rest().rest().rest().rest().config(); }
   };
 
   template<class C1, class C2, class C3, class C4, class C5, class C6>
   class TupleValues6 : public TupleValues<C1, TupleValues<C2, TupleValues<C3, TupleValues<C4, TupleValues<C5, TupleValuesEnd<C6> > > > > > {
   public:
 	  // typedefs
-	  typedef C1 Config1;
-	  typedef C2 Config2;
-	  typedef C3 Config3;
-	  typedef C4 Config4;
-	  typedef C5 Config5;
-	  typedef C6 Config6;
+	  typedef C1 Values1;
+	  typedef C2 Values2;
+	  typedef C3 Values3;
+	  typedef C4 Values4;
+	  typedef C5 Values5;
+	  typedef C6 Values6;
 
 	  TupleValues6() {}
 	  TupleValues6(const TupleValues6<C1, C2, C3, C4, C5, C6>& config);
 	  TupleValues6(const TupleValues<C1, TupleValues<C2, TupleValues<C3, TupleValues<C4, TupleValues<C5, TupleValuesEnd<C6> > > > > >& config);
-	  TupleValues6(const Config1& cfg1, const Config2& cfg2, const Config3& cfg3,
-				   const Config4& cfg4, const Config5& cfg5, const Config6& cfg6);
+	  TupleValues6(const Values1& cfg1, const Values2& cfg2, const Values3& cfg3,
+				   const Values4& cfg4, const Values5& cfg5, const Values6& cfg6);
 	  // access functions
-	  inline const Config1& first() const { return this->config(); }
-	  inline const Config2& second() const { return this->rest().config(); }
-	  inline const Config3& third() const { return this->rest().rest().config(); }
-	  inline const Config4& fourth() const { return this->rest().rest().rest().config(); }
-	  inline const Config5& fifth() const { return this->rest().rest().rest().rest().config(); }
-	  inline const Config6& sixth() const { return this->rest().rest().rest().rest().rest().config(); }
+	  inline const Values1& first() const { return this->config(); }
+	  inline const Values2& second() const { return this->rest().config(); }
+	  inline const Values3& third() const { return this->rest().rest().config(); }
+	  inline const Values4& fourth() const { return this->rest().rest().rest().config(); }
+	  inline const Values5& fifth() const { return this->rest().rest().rest().rest().config(); }
+	  inline const Values6& sixth() const { return this->rest().rest().rest().rest().rest().config(); }
   };
 
 }

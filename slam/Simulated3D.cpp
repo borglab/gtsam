@@ -13,7 +13,7 @@ namespace gtsam {
 using namespace simulated3D;
 INSTANTIATE_LIE_CONFIG(PointKey)
 INSTANTIATE_LIE_CONFIG(PoseKey)
-INSTANTIATE_TUPLE_CONFIG2(PoseConfig, PointConfig)
+INSTANTIATE_TUPLE_CONFIG2(PoseValues, PointValues)
 
 namespace simulated3D {
 
