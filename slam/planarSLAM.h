@@ -7,7 +7,7 @@
 #pragma once
 
 #include <gtsam/slam/BearingRangeFactor.h>
-#include <gtsam/nonlinear/TupleConfig.h>
+#include <gtsam/nonlinear/TupleValues.h>
 #include <gtsam/nonlinear/NonlinearEquality.h>
 #include <gtsam/slam/PriorFactor.h>
 #include <gtsam/slam/BetweenFactor.h>
@@ -23,9 +23,9 @@ namespace gtsam {
 		// Keys and Config
 		typedef TypedSymbol<Pose2, 'x'> PoseKey;
 		typedef TypedSymbol<Point2, 'l'> PointKey;
-		typedef LieConfig<PoseKey> PoseConfig;
-		typedef LieConfig<PointKey> PointConfig;
-		typedef TupleConfig2<PoseConfig, PointConfig> Config;
+		typedef LieValues<PoseKey> PoseConfig;
+		typedef LieValues<PointKey> PointConfig;
+		typedef TupleValues2<PoseConfig, PointConfig> Config;
 
 		// Factors
 		typedef NonlinearEquality<Config, PoseKey> Constraint;

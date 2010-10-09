@@ -16,7 +16,7 @@
 #include <gtsam/geometry/Rot2.h>
 #include <gtsam/linear/NoiseModel.h>
 #include <gtsam/nonlinear/Key.h>
-#include <gtsam/nonlinear/LieConfig-inl.h>
+#include <gtsam/nonlinear/LieValues-inl.h>
 #include <gtsam/nonlinear/NonlinearFactorGraph-inl.h>
 #include <gtsam/nonlinear/NonlinearOptimizer-inl.h>
 
@@ -31,7 +31,7 @@ using namespace std;
 using namespace gtsam;
 
 typedef TypedSymbol<Rot2, 'x'> Key;
-typedef LieConfig<Key> Config;
+typedef LieValues<Key> Config;
 typedef NonlinearFactorGraph<Config> Graph;
 typedef Factorization<Graph,Config> Solver;
 typedef NonlinearOptimizer<Graph,Config> Optimizer;

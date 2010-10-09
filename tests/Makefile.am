@@ -18,7 +18,7 @@ check_PROGRAMS += testGaussianJunctionTree
 check_PROGRAMS += testNonlinearEquality testNonlinearFactor testNonlinearFactorGraph
 check_PROGRAMS += testNonlinearOptimizer
 check_PROGRAMS += testSymbolicBayesNet testSymbolicFactorGraph
-check_PROGRAMS += testTupleConfig
+check_PROGRAMS += testTupleValues
 #check_PROGRAMS += testNonlinearEqualityConstraint testBoundingConstraint 
 #check_PROGRAMS += testTransformConstraint testLinearApproxFactor
 

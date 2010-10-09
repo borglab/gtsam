@@ -11,7 +11,7 @@
 #include <gtsam/inference/SymbolicFactorGraph.h>
 #include <gtsam/inference/SymbolicBayesNet.h>
 #include <gtsam/inference/inference-inl.h>
-#include <gtsam/nonlinear/LieConfig-inl.h>
+#include <gtsam/nonlinear/LieValues-inl.h>
 
 using namespace std;
 

@@ -16,7 +16,7 @@ namespace gtsam {
 	 * It takes three template parameters:
 	 *   T is the Lie group type for which the prior is define
 	 *   Key (typically TypedSymbol) is used to look up T's in a Config
-	 *   Config where the T's are stored, typically LieConfig<Key,T> or a TupleConfig<...>
+	 *   Config where the T's are stored, typically LieValues<Key,T> or a TupleValues<...>
 	 * The Key type is not arbitrary: we need to cast to a Symbol at linearize, so
 	 * a simple type like int will not work
 	 */

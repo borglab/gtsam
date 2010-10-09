@@ -5,8 +5,8 @@
  */
 
 #include <gtsam/slam/simulated2D.h>
-#include <gtsam/nonlinear/LieConfig-inl.h>
-#include <gtsam/nonlinear/TupleConfig-inl.h>
+#include <gtsam/nonlinear/LieValues-inl.h>
+#include <gtsam/nonlinear/TupleValues-inl.h>
 
 namespace gtsam {
 

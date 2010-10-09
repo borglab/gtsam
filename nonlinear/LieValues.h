@@ -1,12 +1,12 @@
 /**
- * @file LieConfig.h
+ * @file LieValues.h
  * @Author: Richard Roberts
  *
  * @brief A templated config for Lie-group elements
  *
  *  Detailed story:
  *  A configuration is a map from keys to values. It is used to specify the value of a bunch
- *  of variables in a factor graph. A LieConfig is a configuration which can hold variables that
+ *  of variables in a factor graph. A LieValues is a configuration which can hold variables that
  *  are elements of Lie groups, not just vectors. It then, as a whole, implements a aggregate type
  *  which is also a Lie group, and hence supports operations dim, expmap, and logmap.
  */
@@ -17,8 +17,6 @@
 #include <set>
 
 #include <boost/pool/pool_alloc.hpp>
-
-//#include <boost/serialization/map.hpp>
 
 #include <gtsam/base/Vector.h>
 #include <gtsam/base/Testable.h>
@@ -40,7 +38,7 @@ namespace gtsam {
 	 *  labels (example: Pose2, Point2, etc)
 	 */
   template<class J>
-  class LieConfig : public Testable<LieConfig<J> > {
+  class LieValues : public Testable<LieValues<J> > {
 
   public:
 
@@ -60,18 +58,18 @@ namespace gtsam {
 
   public:
 
-    LieConfig() {}
-    LieConfig(const LieConfig& config) :
+    LieValues() {}
+    LieValues(const LieValues& config) :
       values_(config.values_) {}
     template<class J_alt>
-    LieConfig(const LieConfig<J_alt>& other) {} // do nothing when initializing with wrong type
-    virtual ~LieConfig() {}
+    LieValues(const LieValues<J_alt>& other) {} // do nothing when initializing with wrong type
+    virtual ~LieValues() {}
 
     /** print */
     void print(const std::string &s="") const;
 
     /** Test whether configs are identical in keys and values */
-    bool equals(const LieConfig& expected, double tol=1e-9) const;
+    bool equals(const LieValues& expected, double tol=1e-9) const;
 
     /** Retrieve a variable by j, throws std::invalid_argument if not found */
     const Value& at(const J& j) const;
@@ -108,16 +106,16 @@ namespace gtsam {
     // Lie operations
 
     /** Add a delta config to current config and returns a new config */
-    LieConfig expmap(const VectorConfig& delta, const Ordering& ordering) const;
+    LieValues expmap(const VectorConfig& delta, const Ordering& ordering) const;
 
 //    /** Add a delta vector to current config and returns a new config, uses iterator order */
-//    LieConfig expmap(const Vector& delta) const;
+//    LieValues expmap(const Vector& delta) const;
 
     /** Get a delta config about a linearization point c0 (*this) */
-    VectorConfig logmap(const LieConfig& cp, const Ordering& ordering) const;
+    VectorConfig logmap(const LieValues& cp, const Ordering& ordering) const;
 
     /** Get a delta config about a linearization point c0 (*this) */
-    void logmap(const LieConfig& cp, const Ordering& ordering, VectorConfig& delta) const;
+    void logmap(const LieValues& cp, const Ordering& ordering, VectorConfig& delta) const;
 
     // imperative methods:
 
@@ -125,10 +123,10 @@ namespace gtsam {
     void insert(const J& j, const Value& val);
 
     /** Add a set of variables - does note replace existing values */
-    void insert(const LieConfig& cfg);
+    void insert(const LieValues& cfg);
 
     /** update the current available values without adding new ones */
-    void update(const LieConfig& cfg);
+    void update(const LieValues& cfg);
 
     /** single element change of existing element */
     void update(const J& j, const Value& val);
@@ -148,7 +146,7 @@ namespace gtsam {
     std::list<J> keys() const;
 
     /** Replace all keys and variables */
-    LieConfig& operator=(const LieConfig& rhs) {
+    LieValues& operator=(const LieValues& rhs) {
       values_ = rhs.values_;
       return (*this);
     }

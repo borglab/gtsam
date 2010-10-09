@@ -7,7 +7,7 @@
 #pragma once
 
 #include <gtsam/geometry/Pose3.h>
-#include <gtsam/nonlinear/LieConfig.h>
+#include <gtsam/nonlinear/LieValues.h>
 #include <gtsam/slam/PriorFactor.h>
 #include <gtsam/slam/BetweenFactor.h>
 #include <gtsam/nonlinear/Key.h>
@@ -22,7 +22,7 @@ namespace gtsam {
 
 		// Keys and Config
 		typedef TypedSymbol<Pose3, 'x'> Key;
-		typedef LieConfig<Key> Config;
+		typedef LieValues<Key> Config;
 
 		/**
 		 * Create a circle of n 3D poses tangent to circle of radius R, first pose at (R,0)

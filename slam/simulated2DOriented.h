@@ -9,7 +9,7 @@
 #pragma once
 
 #include <gtsam/geometry/Pose2.h>
-#include <gtsam/nonlinear/TupleConfig.h>
+#include <gtsam/nonlinear/TupleValues.h>
 #include <gtsam/nonlinear/NonlinearFactor.h>
 
 // \namespace
@@ -21,9 +21,9 @@ namespace gtsam {
 		// The types that take an oriented pose2 rather than point2
 		typedef TypedSymbol<Point2, 'l'> PointKey;
 		typedef TypedSymbol<Pose2,  'x'> PoseKey;
-		typedef LieConfig<PoseKey> PoseConfig;
-		typedef LieConfig<PointKey> PointConfig;
-		typedef TupleConfig2<PoseConfig, PointConfig> Config;
+		typedef LieValues<PoseKey> PoseConfig;
+		typedef LieValues<PointKey> PointConfig;
+		typedef TupleValues2<PoseConfig, PointConfig> Config;
 
 		//TODO:: point prior is not implemented right now
 

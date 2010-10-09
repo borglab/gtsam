@@ -5,7 +5,7 @@
  **/
 
 #include <gtsam/slam/pose2SLAM.h>
-#include <gtsam/nonlinear/LieConfig-inl.h>
+#include <gtsam/nonlinear/LieValues-inl.h>
 #include <gtsam/nonlinear/NonlinearFactorGraph-inl.h>
 #include <gtsam/nonlinear/NonlinearOptimizer-inl.h>
 

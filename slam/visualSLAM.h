@@ -14,7 +14,7 @@
 #include <gtsam/geometry/SimpleCamera.h>
 #include <gtsam/nonlinear/Key.h>
 #include <gtsam/nonlinear/NonlinearFactorGraph.h>
-#include <gtsam/nonlinear/TupleConfig.h>
+#include <gtsam/nonlinear/TupleValues.h>
 #include <gtsam/nonlinear/NonlinearEquality.h>
 
 namespace gtsam { namespace visualSLAM {
@@ -24,9 +24,9 @@ namespace gtsam { namespace visualSLAM {
    */
   typedef TypedSymbol<Pose3,'x'> PoseKey;
   typedef TypedSymbol<Point3,'l'> PointKey;
-  typedef LieConfig<PoseKey> PoseConfig;
-  typedef LieConfig<PointKey> PointConfig;
-  typedef TupleConfig2<PoseConfig, PointConfig> Config;
+  typedef LieValues<PoseKey> PoseConfig;
+  typedef LieValues<PointKey> PointConfig;
+  typedef TupleValues2<PoseConfig, PointConfig> Config;
   typedef boost::shared_ptr<Config> shared_config;
 
   typedef NonlinearEquality<Config, PoseKey> PoseConstraint;

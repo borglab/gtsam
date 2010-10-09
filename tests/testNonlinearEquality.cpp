@@ -11,13 +11,13 @@
 #include <gtsam/nonlinear/NonlinearFactorGraph.h>
 #include <gtsam/nonlinear/NonlinearOptimizer-inl.h>
 
-#include <gtsam/nonlinear/LieConfig-inl.h>
+#include <gtsam/nonlinear/LieValues-inl.h>
 
 using namespace std;
 using namespace gtsam;
 
 typedef TypedSymbol<Pose2, 'x'> PoseKey;
-typedef LieConfig<PoseKey> PoseConfig;
+typedef LieValues<PoseKey> PoseConfig;
 typedef PriorFactor<PoseConfig, PoseKey> PosePrior;
 typedef NonlinearEquality<PoseConfig, PoseKey> PoseNLE;
 typedef boost::shared_ptr<PoseNLE> shared_poseNLE;

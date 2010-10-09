@@ -9,7 +9,7 @@
 #pragma once
 
 #include <gtsam/geometry/Point2.h>
-#include <gtsam/nonlinear/TupleConfig.h>
+#include <gtsam/nonlinear/TupleValues.h>
 #include <gtsam/nonlinear/NonlinearFactor.h>
 
 // \namespace
@@ -21,9 +21,9 @@ namespace gtsam {
 		// Simulated2D robots have no orientation, just a position
 		typedef TypedSymbol<Point2, 'x'> PoseKey;
 		typedef TypedSymbol<Point2, 'l'> PointKey;
-		typedef LieConfig<PoseKey> PoseConfig;
-		typedef LieConfig<PointKey> PointConfig;
-		typedef TupleConfig2<PoseConfig, PointConfig> Config;
+		typedef LieValues<PoseKey> PoseConfig;
+		typedef LieValues<PointKey> PointConfig;
+		typedef TupleValues2<PoseConfig, PointConfig> Config;
 
 		/**
 		 * Prior on a single pose, and optional derivative version

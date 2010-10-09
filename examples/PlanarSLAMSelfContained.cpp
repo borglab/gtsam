@@ -24,16 +24,16 @@
 #include <gtsam/slam/BearingRangeFactor.h>
 
 // implementations for structures - needed if self-contained, and these should be included last
-#include <gtsam/nonlinear/TupleConfig-inl.h>
+#include <gtsam/nonlinear/TupleValues-inl.h>
 #include <gtsam/nonlinear/NonlinearFactorGraph-inl.h>
 #include <gtsam/nonlinear/NonlinearOptimizer-inl.h>
 
 // Main typedefs
 typedef gtsam::TypedSymbol<gtsam::Pose2, 'x'> PoseKey;       // Key for poses, with type included
 typedef gtsam::TypedSymbol<gtsam::Point2,'l'> PointKey;      // Key for points, with type included
-typedef gtsam::LieConfig<PoseKey> PoseConfig;                // config type for poses
-typedef gtsam::LieConfig<PointKey> PointConfig;              // config type for points
-typedef gtsam::TupleConfig2<PoseConfig, PointConfig> Config; // main config with two variable classes
+typedef gtsam::LieValues<PoseKey> PoseConfig;                // config type for poses
+typedef gtsam::LieValues<PointKey> PointConfig;              // config type for points
+typedef gtsam::TupleValues2<PoseConfig, PointConfig> Config; // main config with two variable classes
 typedef gtsam::NonlinearFactorGraph<Config> Graph;			 // graph structure
 typedef gtsam::NonlinearOptimizer<Graph,Config> Optimizer;   // optimization engine for this domain
 

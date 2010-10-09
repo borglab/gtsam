@@ -18,8 +18,8 @@
 #include <gtsam/nonlinear/NonlinearEquality.h>
 
 // implementations
-#include <gtsam/nonlinear/LieConfig-inl.h>
-#include <gtsam/nonlinear/TupleConfig-inl.h>
+#include <gtsam/nonlinear/LieValues-inl.h>
+#include <gtsam/nonlinear/TupleValues-inl.h>
 #include <gtsam/nonlinear/NonlinearFactorGraph-inl.h>
 #include <gtsam/nonlinear/NonlinearOptimizer-inl.h>
 
@@ -31,11 +31,11 @@ typedef TypedSymbol<Pose2, 'x'> PoseKey;
 typedef TypedSymbol<Point2, 'l'> PointKey;
 typedef TypedSymbol<Pose2, 'T'> TransformKey;
 
-typedef LieConfig<PoseKey> PoseConfig;
-typedef LieConfig<PointKey> PointConfig;
-typedef LieConfig<TransformKey> TransformConfig;
+typedef LieValues<PoseKey> PoseConfig;
+typedef LieValues<PointKey> PointConfig;
+typedef LieValues<TransformKey> TransformConfig;
 
-typedef TupleConfig3< PoseConfig, PointConfig, TransformConfig > DDFConfig;
+typedef TupleValues3< PoseConfig, PointConfig, TransformConfig > DDFConfig;
 typedef NonlinearFactorGraph<DDFConfig> DDFGraph;
 typedef NonlinearOptimizer<DDFGraph, DDFConfig> Optimizer;
 

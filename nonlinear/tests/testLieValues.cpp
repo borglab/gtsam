@@ -1,5 +1,5 @@
 /**
- * @file testLieConfig.cpp
+ * @file testLieValues.cpp
  * @author Richard Roberts
  */
 
@@ -9,7 +9,7 @@
 #include <boost/assign/std/list.hpp> // for operator +=
 using namespace boost::assign;
 
-#include <gtsam/nonlinear/LieConfig-inl.h>
+#include <gtsam/nonlinear/LieValues-inl.h>
 #include <gtsam/base/LieVector.h>
 
 using namespace gtsam;
@@ -17,12 +17,12 @@ using namespace std;
 static double inf = std::numeric_limits<double>::infinity();
 
 typedef TypedSymbol<LieVector, 'v'> VecKey;
-typedef LieConfig<VecKey> Config;
+typedef LieValues<VecKey> Config;
 
 VecKey key1(1), key2(2), key3(3), key4(4);
 
 /* ************************************************************************* */
-TEST( LieConfig, equals1 )
+TEST( LieValues, equals1 )
 {
   Config expected;
   Vector v = Vector_(3, 5.0, 6.0, 7.0);
@@ -33,7 +33,7 @@ TEST( LieConfig, equals1 )
 }
 
 /* ************************************************************************* */
-TEST( LieConfig, equals2 )
+TEST( LieValues, equals2 )
 {
   Config cfg1, cfg2;
   Vector v1 = Vector_(3, 5.0, 6.0, 7.0);
@@ -45,7 +45,7 @@ TEST( LieConfig, equals2 )
 }
 
 /* ************************************************************************* */
-TEST( LieConfig, equals_nan )
+TEST( LieValues, equals_nan )
 {
   Config cfg1, cfg2;
   Vector v1 = Vector_(3, 5.0, 6.0, 7.0);
@@ -57,7 +57,7 @@ TEST( LieConfig, equals_nan )
 }
 
 /* ************************************************************************* */
-TEST( LieConfig, insert_config )
+TEST( LieValues, insert_config )
 {
   Config cfg1, cfg2, expected;
   Vector v1 = Vector_(3, 5.0, 6.0, 7.0);
@@ -80,7 +80,7 @@ TEST( LieConfig, insert_config )
 }
 
 /* ************************************************************************* */
-TEST( LieConfig, update_element )
+TEST( LieValues, update_element )
 {
   Config cfg;
   Vector v1 = Vector_(3, 5.0, 6.0, 7.0);
@@ -96,7 +96,7 @@ TEST( LieConfig, update_element )
 }
 
 ///* ************************************************************************* */
-//TEST(LieConfig, dim_zero)
+//TEST(LieValues, dim_zero)
 //{
 //  Config config0;
 //  config0.insert(key1, Vector_(2, 2.0, 3.0));
@@ -110,7 +110,7 @@ TEST( LieConfig, update_element )
 //}
 
 /* ************************************************************************* */
-TEST(LieConfig, expmap_a)
+TEST(LieValues, expmap_a)
 {
   Config config0;
   config0.insert(key1, Vector_(3, 1.0, 2.0, 3.0));
@@ -129,7 +129,7 @@ TEST(LieConfig, expmap_a)
 }
 
 ///* ************************************************************************* */
-//TEST(LieConfig, expmap_b)
+//TEST(LieValues, expmap_b)
 //{
 //  Config config0;
 //  config0.insert(key1, Vector_(3, 1.0, 2.0, 3.0));
@@ -147,7 +147,7 @@ TEST(LieConfig, expmap_a)
 //}
 
 ///* ************************************************************************* */
-//TEST(LieConfig, expmap_c)
+//TEST(LieValues, expmap_c)
 //{
 //  Config config0;
 //  config0.insert(key1, Vector_(3, 1.0, 2.0, 3.0));
@@ -165,7 +165,7 @@ TEST(LieConfig, expmap_a)
 //}
 
 /* ************************************************************************* */
-/*TEST(LieConfig, expmap_d)
+/*TEST(LieValues, expmap_d)
 {
   Config config0;
   config0.insert(key1, Vector_(3, 1.0, 2.0, 3.0));
@@ -174,7 +174,7 @@ TEST(LieConfig, expmap_a)
   CHECK(equal(config0, config0));
   CHECK(config0.equals(config0));
 
-  LieConfig<string,Pose2> poseconfig;
+  LieValues<string,Pose2> poseconfig;
   poseconfig.insert("p1", Pose2(1,2,3));
   poseconfig.insert("p2", Pose2(0.3, 0.4, 0.5));
   //poseconfig.print("poseconfig");
@@ -183,10 +183,10 @@ TEST(LieConfig, expmap_a)
 }*/
 
 /* ************************************************************************* */
-/*TEST(LieConfig, extract_keys)
+/*TEST(LieValues, extract_keys)
 {
 	typedef TypedSymbol<Pose2, 'x'> PoseKey;
-	LieConfig<PoseKey, Pose2> config;
+	LieValues<PoseKey, Pose2> config;
 
 	config.insert(PoseKey(1), Pose2());
 	config.insert(PoseKey(2), Pose2());
@@ -205,7 +205,7 @@ TEST(LieConfig, expmap_a)
 }*/
 
 /* ************************************************************************* */
-TEST(LieConfig, exists_)
+TEST(LieValues, exists_)
 {
 	Config config0;
 	config0.insert(key1, Vector_(1, 1.));
@@ -216,7 +216,7 @@ TEST(LieConfig, exists_)
 }
 
 /* ************************************************************************* */
-TEST(LieConfig, update)
+TEST(LieValues, update)
 {
 	Config config0;
 	config0.insert(key1, Vector_(1, 1.));
@@ -235,10 +235,10 @@ TEST(LieConfig, update)
 }
 
 /* ************************************************************************* */
-TEST(LieConfig, dummy_initialization)
+TEST(LieValues, dummy_initialization)
 {
 	typedef TypedSymbol<LieVector, 'z'> Key;
-	typedef LieConfig<Key> Config1;
+	typedef LieValues<Key> Config1;
 
 	Config1 init1;
 	init1.insert(Key(1), Vector_(2, 1.0, 2.0));

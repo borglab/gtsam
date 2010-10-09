@@ -5,7 +5,7 @@
  */
 
 #include <gtsam/slam/simulated2DOriented.h>
-#include <gtsam/nonlinear/TupleConfig-inl.h>
+#include <gtsam/nonlinear/TupleValues-inl.h>
 
 namespace gtsam {
 

@@ -1,11 +1,11 @@
 /**
- * @file TupleConfig.h
+ * @file TupleValues.h
  * @author Richard Roberts
  * @author Manohar Paluri
  * @author Alex Cunningham
  */
 
-#include <gtsam/nonlinear/LieConfig.h>
+#include <gtsam/nonlinear/LieValues.h>
 #include <gtsam/linear/VectorConfig.h>
 
 #pragma once
@@ -13,35 +13,35 @@
 namespace gtsam {
 
  /**
-   *  TupleConfigs are a structure to manage heterogenous LieConfigs, so as to
+   *  TupleValuess are a structure to manage heterogenous LieValuess, so as to
    *  enable different types of variables/keys to be used simultaneously.  We
    *  do this with recursive templates (instead of blind pointer casting) to
    *  reduce run-time overhead and keep static type checking.  The interface
-   *  mimics that of a single LieConfig.
+   *  mimics that of a single LieValues.
    *
    *  This uses a recursive structure of config pairs to form a lisp-like
-   *  list, with a special case (TupleConfigEnd) that contains only one config
+   *  list, with a special case (TupleValuesEnd) that contains only one config
    *  at the end.  Because this recursion is done at compile time, there is no
    *  runtime performance hit to using this structure.
    *
-   *  For an easy interface, there are TupleConfigN classes, which wrap
-   *  the recursive TupleConfigs together as a single class, so you can have
-   *  mixed-type classes from 2-6 types.  Note that a TupleConfig2 is equivalent
+   *  For an easy interface, there are TupleValuesN classes, which wrap
+   *  the recursive TupleValuess together as a single class, so you can have
+   *  mixed-type classes from 2-6 types.  Note that a TupleValues2 is equivalent
    *  to the previously used PairConfig.
    *
    *  Design and extension note:
    *  To implement a recursively templated data structure, note that most operations
    *  have two versions: one with templates and one without.  The templated one allows
    *  for the arguments to be passed to the next config, while the specialized one
-   *  operates on the "first" config. TupleConfigEnd contains only the specialized version.
+   *  operates on the "first" config. TupleValuesEnd contains only the specialized version.
    */
   template<class Config1, class Config2>
-  class TupleConfig : public Testable<TupleConfig<Config1, Config2> > {
+  class TupleValues : public Testable<TupleValues<Config1, Config2> > {
 
   protected:
 	  // Data for internal configs
 	  Config1 first_;	/// Arbitrary config
-	  Config2 second_;	/// A TupleConfig or TupleConfigEnd, which wraps an arbitrary config
+	  Config2 second_;	/// A TupleValues or TupleValuesEnd, which wraps an arbitrary config
 
   public:
 	  // typedefs for config subtypes
@@ -49,14 +49,14 @@ namespace gtsam {
 	  typedef class Config1::Value Value1;
 
 	  /** default constructor */
-	  TupleConfig() {}
+	  TupleValues() {}
 
 	  /** Copy constructor */
-	  TupleConfig(const TupleConfig<Config1, Config2>& config) :
+	  TupleValues(const TupleValues<Config1, Config2>& config) :
 		  first_(config.first_), second_(config.second_) {}
 
 	  /** Construct from configs */
-	  TupleConfig(const Config1& cfg1, const Config2& cfg2) :
+	  TupleValues(const Config1& cfg1, const Config2& cfg2) :
 		  first_(cfg1), second_(cfg2) {}
 
 	  /** Print */
@@ -66,7 +66,7 @@ namespace gtsam {
 	  }
 
 	  /** Equality with tolerance for keys and values */
-	  bool equals(const TupleConfig<Config1, Config2>& c, double tol=1e-9) const {
+	  bool equals(const TupleValues<Config1, Config2>& c, double tol=1e-9) const {
 		  return first_.equals(c.first_, tol) && second_.equals(c.second_, tol);
 	  }
 
@@ -89,8 +89,8 @@ namespace gtsam {
 	   * @param config is a full config to add
 	   */
 	  template<class Cfg1, class Cfg2>
-	  void insert(const TupleConfig<Cfg1, Cfg2>& config) { second_.insert(config); }
-	  void insert(const TupleConfig<Config1, Config2>& config) {
+	  void insert(const TupleValues<Cfg1, Cfg2>& config) { second_.insert(config); }
+	  void insert(const TupleValues<Config1, Config2>& config) {
 		  first_.insert(config.first_);
 		  second_.insert(config.second_);
 	  }
@@ -100,8 +100,8 @@ namespace gtsam {
 	   * @param config is a config to add
 	   */
 	  template<class Cfg1, class Cfg2>
-	  void update(const TupleConfig<Cfg1, Cfg2>& config) { second_.update(config); }
-	  void update(const TupleConfig<Config1, Config2>& config) {
+	  void update(const TupleValues<Cfg1, Cfg2>& config) { second_.update(config); }
+	  void update(const TupleValues<Config1, Config2>& config) {
 	  	first_.update(config.first_);
 	  	second_.update(config.second_);
 	  }
@@ -192,19 +192,19 @@ namespace gtsam {
     }
 
 	  /** Expmap */
-	  TupleConfig<Config1, Config2> expmap(const VectorConfig& delta, const Ordering& ordering) const {
-	    return TupleConfig(first_.expmap(delta, ordering), second_.expmap(delta, ordering));
+	  TupleValues<Config1, Config2> expmap(const VectorConfig& delta, const Ordering& ordering) const {
+	    return TupleValues(first_.expmap(delta, ordering), second_.expmap(delta, ordering));
 	  }
 
 	  /** logmap each element */
-	  VectorConfig logmap(const TupleConfig<Config1, Config2>& cp, const Ordering& ordering) const {
+	  VectorConfig logmap(const TupleValues<Config1, Config2>& cp, const Ordering& ordering) const {
 		  VectorConfig delta(this->dims(ordering));
 		  logmap(cp, ordering, delta);
 		  return delta;
 	  }
 
     /** logmap each element */
-    void logmap(const TupleConfig<Config1, Config2>& cp, const Ordering& ordering, VectorConfig& delta) const {
+    void logmap(const TupleValues<Config1, Config2>& cp, const Ordering& ordering, VectorConfig& delta) const {
       first_.logmap(cp.first_, ordering, delta);
       second_.logmap(cp.second_, ordering, delta);
     }
@@ -237,13 +237,13 @@ namespace gtsam {
   };
 
   /**
-   * End of a recursive TupleConfig - contains only one config
+   * End of a recursive TupleValues - contains only one config
    *
    * Do not use this class directly - it should only be used as a part
    * of a recursive structure
    */
   template<class Config>
-  class TupleConfigEnd : public Testable<TupleConfigEnd<Config> > {
+  class TupleValuesEnd : public Testable<TupleValuesEnd<Config> > {
 
   protected:
 	  // Data for internal configs
@@ -254,28 +254,28 @@ namespace gtsam {
 	  typedef class Config::Key Key1;
 	  typedef class Config::Value Value1;
 
-	  TupleConfigEnd() {}
+	  TupleValuesEnd() {}
 
-	  TupleConfigEnd(const TupleConfigEnd<Config>& config) :
+	  TupleValuesEnd(const TupleValuesEnd<Config>& config) :
 		  first_(config.first_) {}
 
-	  TupleConfigEnd(const Config& cfg) :
+	  TupleValuesEnd(const Config& cfg) :
 		  first_(cfg) {}
 
 	  void print(const std::string& s = "") const {
 			first_.print();
 	  }
 
-	  bool equals(const TupleConfigEnd<Config>& c, double tol=1e-9) const {
+	  bool equals(const TupleValuesEnd<Config>& c, double tol=1e-9) const {
 		  return first_.equals(c.first_, tol);
 	  }
 
 	  void insert(const Key1& key, const Value1& value) {first_.insert(key, value); }
 	  void insert(int key, const Value1& value) {first_.insert(Key1(key), value);}
 
-	  void insert(const TupleConfigEnd<Config>& config) {first_.insert(config.first_); }
+	  void insert(const TupleValuesEnd<Config>& config) {first_.insert(config.first_); }
 
-	  void update(const TupleConfigEnd<Config>& config) {first_.update(config.first_); }
+	  void update(const TupleValuesEnd<Config>& config) {first_.update(config.first_); }
 
 	  void update(const Key1& key, const Value1& value) { first_.update(key, value); }
 
@@ -307,17 +307,17 @@ namespace gtsam {
 
 	  size_t dim() const { return first_.dim(); }
 
-	  TupleConfigEnd<Config> expmap(const VectorConfig& delta, const Ordering& ordering) const {
-	        return TupleConfigEnd(first_.expmap(delta, ordering));
+	  TupleValuesEnd<Config> expmap(const VectorConfig& delta, const Ordering& ordering) const {
+	        return TupleValuesEnd(first_.expmap(delta, ordering));
 	  }
 
-    VectorConfig logmap(const TupleConfigEnd<Config>& cp, const Ordering& ordering) const {
+    VectorConfig logmap(const TupleValuesEnd<Config>& cp, const Ordering& ordering) const {
       VectorConfig delta(this->dims(ordering));
       logmap(cp, ordering, delta);
       return delta;
     }
 
-    void logmap(const TupleConfigEnd<Config>& cp, const Ordering& ordering, VectorConfig& delta) const {
+    void logmap(const TupleValuesEnd<Config>& cp, const Ordering& ordering, VectorConfig& delta) const {
       first_.logmap(cp.first_, ordering, delta);
     }
 
@@ -345,44 +345,44 @@ namespace gtsam {
 
   /**
    * Wrapper classes to act as containers for configs.  Note that these can be cascaded
-   * recursively, as they are TupleConfigs, and are primarily a short form of the config
-   * structure to make use of the TupleConfigs easier.
+   * recursively, as they are TupleValuess, and are primarily a short form of the config
+   * structure to make use of the TupleValuess easier.
    *
    * The interface is designed to mimic PairConfig, but for 2-6 config types.
    */
 
   template<class C1>
-  class TupleConfig1 : public TupleConfigEnd<C1> {
+  class TupleValues1 : public TupleValuesEnd<C1> {
   public:
  	  // typedefs
  	  typedef C1 Config1;
 
- 	  typedef TupleConfigEnd<C1> Base;
- 	  typedef TupleConfig1<C1> This;
+ 	  typedef TupleValuesEnd<C1> Base;
+ 	  typedef TupleValues1<C1> This;
 
- 	  TupleConfig1() {}
- 	  TupleConfig1(const This& config);
- 	  TupleConfig1(const Base& config);
- 	  TupleConfig1(const Config1& cfg1);
+ 	  TupleValues1() {}
+ 	  TupleValues1(const This& config);
+ 	  TupleValues1(const Base& config);
+ 	  TupleValues1(const Config1& cfg1);
 
  	  // access functions
  	  inline const Config1& first() const { return this->config(); }
   };
 
   template<class C1, class C2>
-  class TupleConfig2 : public TupleConfig<C1, TupleConfigEnd<C2> > {
+  class TupleValues2 : public TupleValues<C1, TupleValuesEnd<C2> > {
   public:
 	  // typedefs
 	  typedef C1 Config1;
 	  typedef C2 Config2;
 
-	  typedef TupleConfig<C1, TupleConfigEnd<C2> > Base;
-	  typedef TupleConfig2<C1, C2> This;
+	  typedef TupleValues<C1, TupleValuesEnd<C2> > Base;
+	  typedef TupleValues2<C1, C2> This;
 
-	  TupleConfig2() {}
-	  TupleConfig2(const This& config);
-	  TupleConfig2(const Base& config);
-	  TupleConfig2(const Config1& cfg1, const Config2& cfg2);
+	  TupleValues2() {}
+	  TupleValues2(const This& config);
+	  TupleValues2(const Base& config);
+	  TupleValues2(const Config1& cfg1, const Config2& cfg2);
 
 	  // access functions
 	  inline const Config1& first() const { return this->config(); }
@@ -390,17 +390,17 @@ namespace gtsam {
   };
 
   template<class C1, class C2, class C3>
-  class TupleConfig3 : public TupleConfig<C1, TupleConfig<C2, TupleConfigEnd<C3> > > {
+  class TupleValues3 : public TupleValues<C1, TupleValues<C2, TupleValuesEnd<C3> > > {
   public:
 	  // typedefs
 	  typedef C1 Config1;
 	  typedef C2 Config2;
 	  typedef C3 Config3;
 
-	  TupleConfig3() {}
-	  TupleConfig3(const TupleConfig<C1, TupleConfig<C2, TupleConfigEnd<C3> > >& config);
-	  TupleConfig3(const TupleConfig3<C1, C2, C3>& config);
-	  TupleConfig3(const Config1& cfg1, const Config2& cfg2, const Config3& cfg3);
+	  TupleValues3() {}
+	  TupleValues3(const TupleValues<C1, TupleValues<C2, TupleValuesEnd<C3> > >& config);
+	  TupleValues3(const TupleValues3<C1, C2, C3>& config);
+	  TupleValues3(const Config1& cfg1, const Config2& cfg2, const Config3& cfg3);
 
 	  // access functions
 	  inline const Config1& first() const { return this->config(); }
@@ -409,7 +409,7 @@ namespace gtsam {
   };
 
   template<class C1, class C2, class C3, class C4>
-  class TupleConfig4 : public TupleConfig<C1, TupleConfig<C2,TupleConfig<C3, TupleConfigEnd<C4> > > > {
+  class TupleValues4 : public TupleValues<C1, TupleValues<C2,TupleValues<C3, TupleValuesEnd<C4> > > > {
   public:
 	  // typedefs
 	  typedef C1 Config1;
@@ -417,13 +417,13 @@ namespace gtsam {
 	  typedef C3 Config3;
 	  typedef C4 Config4;
 
-	  typedef TupleConfig<C1, TupleConfig<C2,TupleConfig<C3, TupleConfigEnd<C4> > > > Base;
-	  typedef TupleConfig4<C1, C2, C3, C4> This;
+	  typedef TupleValues<C1, TupleValues<C2,TupleValues<C3, TupleValuesEnd<C4> > > > Base;
+	  typedef TupleValues4<C1, C2, C3, C4> This;
 
-	  TupleConfig4() {}
-	  TupleConfig4(const This& config);
-	  TupleConfig4(const Base& config);
-	  TupleConfig4(const Config1& cfg1, const Config2& cfg2, const Config3& cfg3,const Config4& cfg4);
+	  TupleValues4() {}
+	  TupleValues4(const This& config);
+	  TupleValues4(const Base& config);
+	  TupleValues4(const Config1& cfg1, const Config2& cfg2, const Config3& cfg3,const Config4& cfg4);
 
 	  // access functions
 	  inline const Config1& first() const { return this->config(); }
@@ -433,7 +433,7 @@ namespace gtsam {
   };
 
   template<class C1, class C2, class C3, class C4, class C5>
-  class TupleConfig5 : public TupleConfig<C1, TupleConfig<C2, TupleConfig<C3, TupleConfig<C4, TupleConfigEnd<C5> > > > > {
+  class TupleValues5 : public TupleValues<C1, TupleValues<C2, TupleValues<C3, TupleValues<C4, TupleValuesEnd<C5> > > > > {
   public:
 	  // typedefs
 	  typedef C1 Config1;
@@ -442,10 +442,10 @@ namespace gtsam {
 	  typedef C4 Config4;
 	  typedef C5 Config5;
 
-	  TupleConfig5() {}
-	  TupleConfig5(const TupleConfig5<C1, C2, C3, C4, C5>& config);
-	  TupleConfig5(const TupleConfig<C1, TupleConfig<C2, TupleConfig<C3, TupleConfig<C4, TupleConfigEnd<C5> > > > >& config);
-	  TupleConfig5(const Config1& cfg1, const Config2& cfg2, const Config3& cfg3,
+	  TupleValues5() {}
+	  TupleValues5(const TupleValues5<C1, C2, C3, C4, C5>& config);
+	  TupleValues5(const TupleValues<C1, TupleValues<C2, TupleValues<C3, TupleValues<C4, TupleValuesEnd<C5> > > > >& config);
+	  TupleValues5(const Config1& cfg1, const Config2& cfg2, const Config3& cfg3,
 				   const Config4& cfg4, const Config5& cfg5);
 
 	  // access functions
@@ -457,7 +457,7 @@ namespace gtsam {
   };
 
   template<class C1, class C2, class C3, class C4, class C5, class C6>
-  class TupleConfig6 : public TupleConfig<C1, TupleConfig<C2, TupleConfig<C3, TupleConfig<C4, TupleConfig<C5, TupleConfigEnd<C6> > > > > > {
+  class TupleValues6 : public TupleValues<C1, TupleValues<C2, TupleValues<C3, TupleValues<C4, TupleValues<C5, TupleValuesEnd<C6> > > > > > {
   public:
 	  // typedefs
 	  typedef C1 Config1;
@@ -467,10 +467,10 @@ namespace gtsam {
 	  typedef C5 Config5;
 	  typedef C6 Config6;
 
-	  TupleConfig6() {}
-	  TupleConfig6(const TupleConfig6<C1, C2, C3, C4, C5, C6>& config);
-	  TupleConfig6(const TupleConfig<C1, TupleConfig<C2, TupleConfig<C3, TupleConfig<C4, TupleConfig<C5, TupleConfigEnd<C6> > > > > >& config);
-	  TupleConfig6(const Config1& cfg1, const Config2& cfg2, const Config3& cfg3,
+	  TupleValues6() {}
+	  TupleValues6(const TupleValues6<C1, C2, C3, C4, C5, C6>& config);
+	  TupleValues6(const TupleValues<C1, TupleValues<C2, TupleValues<C3, TupleValues<C4, TupleValues<C5, TupleValuesEnd<C6> > > > > >& config);
+	  TupleValues6(const Config1& cfg1, const Config2& cfg2, const Config3& cfg3,
 				   const Config4& cfg4, const Config5& cfg5, const Config6& cfg6);
 	  // access functions
 	  inline const Config1& first() const { return this->config(); }

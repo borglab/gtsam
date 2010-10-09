@@ -13,7 +13,7 @@
 #include <gtsam/linear/VectorConfig.h>
 #include <gtsam/nonlinear/NonlinearFactor.h>
 #include <gtsam/nonlinear/Key.h>
-#include <gtsam/nonlinear/TupleConfig.h>
+#include <gtsam/nonlinear/TupleValues.h>
 
 // \namespace
 
@@ -23,9 +23,9 @@ namespace simulated3D {
 	typedef gtsam::TypedSymbol<Point3, 'x'> PoseKey;
 	typedef gtsam::TypedSymbol<Point3, 'l'> PointKey;
 
-	typedef LieConfig<PoseKey> PoseConfig;
-	typedef LieConfig<PointKey> PointConfig;
-	typedef TupleConfig2<PoseConfig, PointConfig> Config;
+	typedef LieValues<PoseKey> PoseConfig;
+	typedef LieValues<PointKey> PointConfig;
+	typedef TupleValues2<PoseConfig, PointConfig> Config;
 
 	/**
 	 * Prior on a single pose

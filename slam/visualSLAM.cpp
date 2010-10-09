@@ -6,7 +6,7 @@
  */
 
 #include <gtsam/slam/visualSLAM.h>
-#include <gtsam/nonlinear/TupleConfig-inl.h>
+#include <gtsam/nonlinear/TupleValues-inl.h>
 #include <gtsam/nonlinear/NonlinearOptimizer-inl.h>
 #include <gtsam/nonlinear/NonlinearFactorGraph-inl.h>
 
