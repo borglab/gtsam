@@ -1,4 +1,4 @@
-/*
+/**
  * GaussianJunctionTree.h
  * Created on: Jul 12, 2010
  * @author Kai Ni
@@ -25,7 +25,7 @@ namespace gtsam {
 
 	protected:
 		// back-substitute in topological sort order (parents first)
-		void btreeBackSubstitue(const boost::shared_ptr<const BayesTree::Clique>& current, VectorConfig& config) const;
+		void btreeBackSubstitute(const boost::shared_ptr<const BayesTree::Clique>& current, VectorConfig& config) const;
 
 	public :
 
