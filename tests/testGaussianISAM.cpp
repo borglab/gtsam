@@ -93,51 +93,50 @@ C3     x4 : x5
 C4       x3 : x4
 C5         x2 : x3
 C6           x1 : x2
-/* ************************************************************************* */
-// SL-FIX TEST( BayesTree, linear_smoother_shortcuts )
-//{
-//	// Create smoother with 7 nodes
-//	GaussianFactorGraph smoother = createSmoother(7);
-//	Ordering ordering;
-//	for (int t = 1; t <= 7; t++)
-//		ordering.push_back(symbol('x', t));
-//
-//	// eliminate using the "natural" ordering
-//	GaussianBayesNet chordalBayesNet = smoother.eliminate(ordering);
-//
-//	// Create the Bayes tree
-//	GaussianISAM bayesTree(chordalBayesNet);
-//	LONGS_EQUAL(6,bayesTree.size());
-//
-//	// Check the conditional P(Root|Root)
-//	GaussianBayesNet empty;
-//	GaussianISAM::sharedClique R = bayesTree.root();
-//	GaussianBayesNet actual1 = R->shortcut<GaussianFactor>(R);
-//	CHECK(assert_equal(empty,actual1,tol));
-//
-//	// Check the conditional P(C2|Root)
-//	GaussianISAM::sharedClique C2 = bayesTree["x5"];
-//	GaussianBayesNet actual2 = C2->shortcut<GaussianFactor>(R);
-//	CHECK(assert_equal(empty,actual2,tol));
-//
-//	// Check the conditional P(C3|Root)
-//	double sigma3 = 0.61808;
-//	Matrix A56 = Matrix_(2,2,-0.382022,0.,0.,-0.382022);
-//	GaussianBayesNet expected3;
-//	push_front(expected3,"x5", zero(2), eye(2)/sigma3, "x6", A56/sigma3, ones(2));
-//	GaussianISAM::sharedClique C3 = bayesTree["x4"];
-//	GaussianBayesNet actual3 = C3->shortcut<GaussianFactor>(R);
-//	CHECK(assert_equal(expected3,actual3,tol));
-//
-//	// Check the conditional P(C4|Root)
-//	double sigma4 = 0.661968;
-//	Matrix A46 = Matrix_(2,2,-0.146067,0.,0.,-0.146067);
-//	GaussianBayesNet expected4;
-//	push_front(expected4,"x4", zero(2), eye(2)/sigma4, "x6", A46/sigma4, ones(2));
-//	GaussianISAM::sharedClique C4 = bayesTree["x3"];
-//	GaussianBayesNet actual4 = C4->shortcut<GaussianFactor>(R);
-//	CHECK(assert_equal(expected4,actual4,tol));
-//}
+**************************************************************************** */
+TEST( BayesTree, linear_smoother_shortcuts )
+{
+	// Create smoother with 7 nodes
+  Ordering ordering;
+	GaussianFactorGraph smoother;
+	boost::tie(smoother, ordering) = createSmoother(7);
+
+	// eliminate using the "natural" ordering
+	GaussianBayesNet chordalBayesNet = *Inference::Eliminate(smoother);
+
+	// Create the Bayes tree
+	GaussianISAM bayesTree(chordalBayesNet);
+	LONGS_EQUAL(6,bayesTree.size());
+
+	// Check the conditional P(Root|Root)
+	GaussianBayesNet empty;
+	GaussianISAM::sharedClique R = bayesTree.root();
+	GaussianBayesNet actual1 = R->shortcut<GaussianFactorGraph>(R);
+	CHECK(assert_equal(empty,actual1,tol));
+
+	// Check the conditional P(C2|Root)
+	GaussianISAM::sharedClique C2 = bayesTree[ordering["x5"]];
+	GaussianBayesNet actual2 = C2->shortcut<GaussianFactorGraph>(R);
+	CHECK(assert_equal(empty,actual2,tol));
+
+	// Check the conditional P(C3|Root)
+	double sigma3 = 0.61808;
+	Matrix A56 = Matrix_(2,2,-0.382022,0.,0.,-0.382022);
+	GaussianBayesNet expected3;
+	push_front(expected3,ordering["x5"], zero(2), eye(2)/sigma3, ordering["x6"], A56/sigma3, ones(2));
+	GaussianISAM::sharedClique C3 = bayesTree[ordering["x4"]];
+	GaussianBayesNet actual3 = C3->shortcut<GaussianFactorGraph>(R);
+	CHECK(assert_equal(expected3,actual3,tol));
+
+	// Check the conditional P(C4|Root)
+	double sigma4 = 0.661968;
+	Matrix A46 = Matrix_(2,2,-0.146067,0.,0.,-0.146067);
+	GaussianBayesNet expected4;
+	push_front(expected4, ordering["x4"], zero(2), eye(2)/sigma4, ordering["x6"], A46/sigma4, ones(2));
+	GaussianISAM::sharedClique C4 = bayesTree[ordering["x3"]];
+	GaussianBayesNet actual4 = C4->shortcut<GaussianFactorGraph>(R);
+	CHECK(assert_equal(expected4,actual4,tol));
+}
 
 /* ************************************************************************* *
  Bayes tree for smoother with "nested dissection" ordering:
@@ -157,7 +156,7 @@ C6           x1 : x2
 	 C3		    x1 : x2
 	 C4		  x7 : x6
 
-/* ************************************************************************* */
+************************************************************************* */
 // SL-FIX TEST( BayesTree, balanced_smoother_marginals )
 //{
 //	// Create smoother with 7 nodes
@@ -208,35 +207,35 @@ C6           x1 : x2
 //}
 
 /* ************************************************************************* */
-// SL-FIX TEST( BayesTree, balanced_smoother_shortcuts )
-//{
-//	// Create smoother with 7 nodes
-//	GaussianFactorGraph smoother = createSmoother(7);
-//	Ordering ordering;
-//	ordering += "x1","x3","x5","x7","x2","x6","x4";
-//
-//	// Create the Bayes tree
-//	GaussianBayesNet chordalBayesNet = smoother.eliminate(ordering);
-//	GaussianISAM bayesTree(chordalBayesNet);
-//
-//	// Check the conditional P(Root|Root)
-//	GaussianBayesNet empty;
-//	GaussianISAM::sharedClique R = bayesTree.root();
-//	GaussianBayesNet actual1 = R->shortcut<GaussianFactor>(R);
-//	CHECK(assert_equal(empty,actual1,tol));
-//
-//	// Check the conditional P(C2|Root)
-//	GaussianISAM::sharedClique C2 = bayesTree["x3"];
-//	GaussianBayesNet actual2 = C2->shortcut<GaussianFactor>(R);
-//	CHECK(assert_equal(empty,actual2,tol));
-//
-//	// Check the conditional P(C3|Root), which should be equal to P(x2|x4)
-//	GaussianConditional::shared_ptr p_x2_x4 = chordalBayesNet["x2"];
-//	GaussianBayesNet expected3; expected3.push_back(p_x2_x4);
-//	GaussianISAM::sharedClique C3 = bayesTree["x1"];
-//	GaussianBayesNet actual3 = C3->shortcut<GaussianFactor>(R);
-//	CHECK(assert_equal(expected3,actual3,tol));
-//}
+TEST( BayesTree, balanced_smoother_shortcuts )
+{
+	// Create smoother with 7 nodes
+  Ordering ordering;
+  ordering += "x1","x3","x5","x7","x2","x6","x4";
+	GaussianFactorGraph smoother = createSmoother(7, ordering).first;
+
+	// Create the Bayes tree
+	GaussianBayesNet chordalBayesNet = *Inference::Eliminate(smoother);
+	GaussianISAM bayesTree(chordalBayesNet);
+
+	// Check the conditional P(Root|Root)
+	GaussianBayesNet empty;
+	GaussianISAM::sharedClique R = bayesTree.root();
+	GaussianBayesNet actual1 = R->shortcut<GaussianFactorGraph>(R);
+	CHECK(assert_equal(empty,actual1,tol));
+
+	// Check the conditional P(C2|Root)
+	GaussianISAM::sharedClique C2 = bayesTree[ordering["x3"]];
+	GaussianBayesNet actual2 = C2->shortcut<GaussianFactorGraph>(R);
+	CHECK(assert_equal(empty,actual2,tol));
+
+	// Check the conditional P(C3|Root), which should be equal to P(x2|x4)
+	GaussianConditional::shared_ptr p_x2_x4 = chordalBayesNet[ordering["x2"]];
+	GaussianBayesNet expected3; expected3.push_back(p_x2_x4);
+	GaussianISAM::sharedClique C3 = bayesTree[ordering["x1"]];
+	GaussianBayesNet actual3 = C3->shortcut<GaussianFactorGraph>(R);
+	CHECK(assert_equal(expected3,actual3,tol));
+}
 
 /* ************************************************************************* */
 // SL-FIX TEST( BayesTree, balanced_smoother_clique_marginals )

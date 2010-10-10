@@ -10,7 +10,7 @@
 #include <gtsam/base/types.h>
 
 #include <vector>
-#include <iostream>
+#include <string>
 #include <boost/shared_ptr.hpp>
 
 namespace gtsam {
@@ -80,6 +80,12 @@ public:
    * Return an identity permutation.
    */
   static Permutation Identity(varid_t nVars);
+
+  /**
+   * Create a permutation that pulls the given variables to the front while
+   * pushing the rest to the back.
+   */
+  static Permutation PullToFront(const std::vector<varid_t>& toFront, size_t size);
 
   iterator begin() { return rangeIndices_.begin(); }
   const_iterator begin() const { return rangeIndices_.begin(); }
@@ -179,53 +185,5 @@ public:
   const Permutation& permutation() const { return permutation_; }
 };
 
-
-/* ************************************************************************* */
-inline Permutation Permutation::Identity(varid_t nVars) {
-  Permutation ret(nVars);
-  for(varid_t i=0; i<nVars; ++i)
-    ret[i] = i;
-  return ret;
-}
-
-/* ************************************************************************* */
-inline Permutation::shared_ptr Permutation::permute(const Permutation& permutation) const {
-  const size_t nVars = permutation.size();
-  Permutation::shared_ptr result(new Permutation(nVars));
-  for(size_t j=0; j<nVars; ++j) {
-    assert(permutation[j] < rangeIndices_.size());
-    (*result)[j] = operator[](permutation[j]);
-  }
-  return result;
-}
-
-/* ************************************************************************* */
-inline Permutation::shared_ptr Permutation::partialPermutation(
-    const Permutation& selector, const Permutation& partialPermutation) const {
-  assert(selector.size() == partialPermutation.size());
-  Permutation::shared_ptr result(new Permutation(*this));
-
-  for(varid_t subsetPos=0; subsetPos<selector.size(); ++subsetPos)
-    (*result)[selector[subsetPos]] = (*this)[selector[partialPermutation[subsetPos]]];
-
-  return result;
-}
-
-/* ************************************************************************* */
-inline Permutation::shared_ptr Permutation::inverse() const {
-  Permutation::shared_ptr result(new Permutation(this->size()));
-  for(varid_t i=0; i<this->size(); ++i) {
-    assert((*this)[i] < this->size());
-    (*result)[(*this)[i]] = i;
-  }
-  return result;
-}
-
-/* ************************************************************************* */
-inline void Permutation::print(const std::string& str) const {
-  std::cout << str;
-  BOOST_FOREACH(varid_t s, rangeIndices_) { std::cout << s << " "; }
-  std::cout << std::endl;
-}
 
 }

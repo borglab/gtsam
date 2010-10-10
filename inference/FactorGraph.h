@@ -188,8 +188,8 @@ namespace gtsam {
    * @param const &fg2 Linear factor graph
    * @return a new combined factor graph
    */
-	template<class Factor>
-	FactorGraph<Factor> combine(const FactorGraph<Factor>& fg1, const FactorGraph<Factor>& fg2);
+	template<class FactorGraph>
+	FactorGraph combine(const FactorGraph& fg1, const FactorGraph& fg2);
 
 //  /**
 //   * Extract and combine all the factors that involve a given node
@@ -214,7 +214,10 @@ namespace gtsam {
   FactorGraph<Factor>::FactorGraph(const Derived& factorGraph) {
     factors_.reserve(factorGraph.size());
     BOOST_FOREACH(const typename Derived::sharedFactor& factor, factorGraph) {
-      this->push_back(factor);
+      if(factor)
+        this->push_back(sharedFactor(new Factor(*factor)));
+      else
+        this->push_back(sharedFactor());
     }
   }
 

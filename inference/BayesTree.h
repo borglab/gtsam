@@ -94,11 +94,11 @@ namespace gtsam {
 			 */
 			bool permuteSeparatorWithInverse(const Permutation& inversePermutation);
 
-//			/** return the conditional P(S|Root) on the separator given the root */
-//			// TODO: create a cached version
-//			template<class Factor>
-//			BayesNet<Conditional> shortcut(shared_ptr root);
-//
+			/** return the conditional P(S|Root) on the separator given the root */
+			// TODO: create a cached version
+			template<class FactorGraph>
+			BayesNet<Conditional> shortcut(shared_ptr root);
+
 //			/** return the marginal P(C) of the clique */
 //			template<class Factor>
 //			FactorGraph<Factor> marginal(shared_ptr root);

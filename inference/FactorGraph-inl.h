@@ -359,11 +359,10 @@ namespace gtsam {
 //	}
 
 	/* ************************************************************************* */
-	template<class Factor>
-	FactorGraph<Factor> combine(const FactorGraph<Factor>& fg1,
-			const FactorGraph<Factor>& fg2) {
+	template<class FactorGraph>
+	FactorGraph combine(const FactorGraph& fg1, const FactorGraph& fg2) {
 		// create new linear factor graph equal to the first one
-		FactorGraph<Factor> fg = fg1;
+		FactorGraph fg = fg1;
 
 		// add the second factors_ in the graph
 		fg.push_back(fg2);

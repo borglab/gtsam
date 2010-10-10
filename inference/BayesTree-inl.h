@@ -16,6 +16,7 @@
 #include <boost/format.hpp>
 #include <boost/lambda/lambda.hpp>
 #include <boost/iterator/transform_iterator.hpp>
+#include <boost/pool/pool_alloc.hpp>
 #include <fstream>
 using namespace boost::assign;
 namespace lam = boost::lambda;
@@ -248,67 +249,85 @@ namespace gtsam {
 		return stats;
 	}
 
-//	/* ************************************************************************* */
-//	// The shortcut density is a conditional P(S|R) of the separator of this
-//	// clique on the root. We can compute it recursively from the parent shortcut
-//	// P(Sp|R) as \int P(Fp|Sp) P(Sp|R), where Fp are the frontal nodes in p
-//	// TODO, why do we actually return a shared pointer, why does eliminate?
-//	/* ************************************************************************* */
-//	template<class Conditional>
-//	template<class Factor>
-//	BayesNet<Conditional>
-//	BayesTree<Conditional>::Clique::shortcut(shared_ptr R) {
-//		// A first base case is when this clique or its parent is the root,
-//		// in which case we return an empty Bayes net.
-//
-//		if (R.get()==this || parent_==R) {
-//			BayesNet<Conditional> empty;
-//			return empty;
-//		}
-//
-//		// The parent clique has a Conditional for each frontal node in Fp
-//		// so we can obtain P(Fp|Sp) in factor graph form
-//		FactorGraph<Factor> p_Fp_Sp(*parent_);
-//
-//		// If not the base case, obtain the parent shortcut P(Sp|R) as factors
-//		FactorGraph<Factor> p_Sp_R(parent_->shortcut<Factor>(R));
-//
-//		// now combine P(Cp|R) = P(Fp|Sp) * P(Sp|R)
-//		FactorGraph<Factor> p_Cp_R = combine(p_Fp_Sp, p_Sp_R);
-//
-//		// Eliminate into a Bayes net with ordering designed to integrate out
-//		// any variables not in *our* separator. Variables to integrate out must be
-//		// eliminated first hence the desired ordering is [Cp\S S].
-//		// However, an added wrinkle is that Cp might overlap with the root.
-//		// Keys corresponding to the root should not be added to the ordering at all.
-//
-//		// Get the key list Cp=Fp+Sp, which will form the basis for the integrands
-//		Ordering integrands = parent_->keys();
-//
-//		// Start ordering with the separator
-//		Ordering ordering = separator_;
-//
-//		// remove any variables in the root, after this integrands = Cp\R, ordering = S\R
-//		BOOST_FOREACH(varid_t key, R->ordering()) {
-//			integrands.remove(key);
-//			ordering.remove(key);
-//		}
-//
-//		// remove any variables in the separator, after this integrands = Cp\R\S
-//		BOOST_FOREACH(varid_t key, separator_) integrands.remove(key);
-//
-//		// form the ordering as [Cp\R\S S\R]
-//		BOOST_REVERSE_FOREACH(varid_t key, integrands) ordering.push_front(key);
-//
-//		// eliminate to get marginal
-//		BayesNet<Conditional> p_S_R = eliminate<Factor,Conditional>(p_Cp_R,ordering);
-//
-//		// remove all integrands
-//		BOOST_FOREACH(varid_t key, integrands) p_S_R.pop_front();
-//
-//		// return the parent shortcut P(Sp|R)
-//		return p_S_R;
-//	}
+	/* ************************************************************************* */
+	// The shortcut density is a conditional P(S|R) of the separator of this
+	// clique on the root. We can compute it recursively from the parent shortcut
+	// P(Sp|R) as \int P(Fp|Sp) P(Sp|R), where Fp are the frontal nodes in p
+	// TODO, why do we actually return a shared pointer, why does eliminate?
+	/* ************************************************************************* */
+	template<class Conditional>
+	template<class FactorGraph>
+	BayesNet<Conditional>
+	BayesTree<Conditional>::Clique::shortcut(shared_ptr R) {
+		// A first base case is when this clique or its parent is the root,
+		// in which case we return an empty Bayes net.
+
+	  sharedClique parent(parent_.lock());
+
+		if (R.get()==this || parent==R) {
+			BayesNet<Conditional> empty;
+			return empty;
+		}
+
+		// The parent clique has a Conditional for each frontal node in Fp
+		// so we can obtain P(Fp|Sp) in factor graph form
+		FactorGraph p_Fp_Sp(*parent);
+
+		// If not the base case, obtain the parent shortcut P(Sp|R) as factors
+		FactorGraph p_Sp_R(parent->shortcut<FactorGraph>(R));
+
+		// now combine P(Cp|R) = P(Fp|Sp) * P(Sp|R)
+		FactorGraph p_Cp_R = combine(p_Fp_Sp, p_Sp_R);
+
+		// Eliminate into a Bayes net with ordering designed to integrate out
+		// any variables not in *our* separator. Variables to integrate out must be
+		// eliminated first hence the desired ordering is [Cp\S S].
+		// However, an added wrinkle is that Cp might overlap with the root.
+		// Keys corresponding to the root should not be added to the ordering at all.
+
+		typedef set<varid_t, std::less<varid_t>, boost::fast_pool_allocator<varid_t> > FastJSet;
+
+		// Get the key list Cp=Fp+Sp, which will form the basis for the integrands
+		vector<varid_t> parentKeys(parent->keys());
+		FastJSet integrands(parentKeys.begin(), parentKeys.end());
+
+		// Start ordering with the separator
+		FastJSet separator(separator_.begin(), separator_.end());
+
+		// remove any variables in the root, after this integrands = Cp\R, ordering = S\R
+		BOOST_FOREACH(varid_t key, R->ordering()) {
+			integrands.erase(key);
+			separator.erase(key);
+		}
+
+		// remove any variables in the separator, after this integrands = Cp\R\S
+		BOOST_FOREACH(varid_t key, separator_) integrands.erase(key);
+
+		// form the ordering as [Cp\R\S S\R]
+		vector<varid_t> ordering; ordering.reserve(integrands.size() + separator.size());
+		BOOST_FOREACH(varid_t key, integrands) ordering.push_back(key);
+		BOOST_FOREACH(varid_t key, separator) ordering.push_back(key);
+
+		// eliminate to get marginal
+		typename FactorGraph::variableindex_type varIndex(p_Cp_R);
+		Permutation toFront = Permutation::PullToFront(ordering, varIndex.size());
+		Permutation::shared_ptr toFrontInverse(toFront.inverse());
+		BOOST_FOREACH(const typename FactorGraph::sharedFactor& factor, p_Cp_R) {
+		  factor->permuteWithInverse(*toFrontInverse);
+		}
+		varIndex.permute(toFront);
+		BayesNet<Conditional> p_S_R = *Inference::EliminateUntil(p_Cp_R, ordering.size(), varIndex);
+
+		// remove all integrands
+		for(varid_t j=0; j<integrands.size(); ++j)
+		  p_S_R.pop_front();
+
+		// Undo the permutation on the shortcut
+		p_S_R.permuteWithInverse(toFront);
+
+		// return the parent shortcut P(Sp|R)
+		return p_S_R;
+	}
 
 //	/* ************************************************************************* */
 //	// P(C) = \int_R P(F|S) P(S|R) P(R)

@@ -24,9 +24,8 @@ check_PROGRAMS += tests/testVariableIndex tests/testVariableSlots
 
 # Inference
 headers += inference-inl.h VariableSlots-inl.h
-sources += inference.cpp VariableSlots.cpp
+sources += inference.cpp VariableSlots.cpp Permutation.cpp
 headers += graph.h graph-inl.h
-headers += Permutation.h
 headers += VariableIndex.h
 headers += FactorGraph.h FactorGraph-inl.h
 headers += ClusterTree.h ClusterTree-inl.h
