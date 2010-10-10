@@ -171,8 +171,8 @@ namespace example {
 		tau(0) = 1.0;
 
 		// define nodes and specify in reverse topological sort (i.e. parents last)
-		GaussianConditional::shared_ptr Px_y(new GaussianConditional(_x_, d1, R11,
-				_y_, S12, tau)), Py(new GaussianConditional(_y_, d2, R22, tau));
+		GaussianConditional::shared_ptr Px_y(new GaussianConditional(_x_, d1, R11, _y_, S12, tau));
+		GaussianConditional::shared_ptr Py(new GaussianConditional(_y_, d2, R22, tau));
 		GaussianBayesNet cbn;
 		cbn.push_back(Px_y);
 		cbn.push_back(Py);

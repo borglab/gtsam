@@ -86,6 +86,17 @@ class Conditional;
     EliminateOneSymbolic(FactorGraph<Factor>& factorGraph, VariableIndex<>& variableIndex, varid_t var);
 
     /**
+     * Eliminate all variables except the specified ones.  Internally this
+     * permutes these variables to the end of the ordering, eliminates all
+     * other variables, and then undoes the permutation.  This is
+     * inefficient if multiple marginals are needed - in that case use the
+     * BayesTree which supports efficiently computing marginals for multiple
+     * variables.
+     */
+    template<class FactorGraph, class VarContainer>
+    static typename FactorGraph::bayesnet_type::shared_ptr Marginal(const FactorGraph& factorGraph, const VarContainer& variables);
+
+    /**
      * Compute a permutation (variable ordering) using colamd
      */
     template<class VariableIndexType>

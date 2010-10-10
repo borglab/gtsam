@@ -23,15 +23,17 @@ using namespace example;
 /* ************************************************************************* */
 TEST(GaussianFactorGraph, createSmoother)
 {
-	GaussianFactorGraph fg2 = createSmoother(3);
+	GaussianFactorGraph fg2;
+	Ordering ordering;
+	boost::tie(fg2,ordering) = createSmoother(3);
 	LONGS_EQUAL(5,fg2.size());
 
 	// eliminate
-	Ordering ordering;
-	GaussianBayesNet bayesNet = fg2.eliminate(ordering);
-	FactorGraph<GaussianFactor> p_x3 = marginalize<GaussianFactor,GaussianConditional>(bayesNet, Ordering("x3"));
-	FactorGraph<GaussianFactor> p_x1 = marginalize<GaussianFactor,GaussianConditional>(bayesNet, Ordering("x1"));
-	CHECK(assert_equal(p_x1,p_x3)); // should be the same because of symmetry
+	list<varid_t> x3var; x3var.push_back(ordering["x3"]);
+  list<varid_t> x1var; x1var.push_back(ordering["x1"]);
+	GaussianBayesNet p_x3 = *Inference::Marginal(fg2, x3var);
+	GaussianBayesNet p_x1 = *Inference::Marginal(fg2, x1var);
+	CHECK(assert_equal(*p_x1.back(),*p_x3.front())); // should be the same because of symmetry
 }
 
 /* ************************************************************************* */
@@ -39,14 +41,11 @@ TEST( Inference, marginals )
 {
 	// create and marginalize a small Bayes net on "x"
   GaussianBayesNet cbn = createSmallGaussianBayesNet();
-  Ordering keys("x");
-  FactorGraph<GaussianFactor> fg = marginalize<GaussianFactor, GaussianConditional>(cbn,keys);
-
-  // turn into Bayes net to test easily
-  BayesNet<GaussianConditional> actual = eliminate<GaussianFactor,GaussianConditional>(fg,keys);
+  list<varid_t> xvar; xvar.push_back(0);
+  GaussianBayesNet actual = *Inference::Marginal(GaussianFactorGraph(cbn), xvar);
 
   // expected is just scalar Gaussian on x
-  GaussianBayesNet expected = scalarGaussian("x", 4, sqrt(2));
+  GaussianBayesNet expected = scalarGaussian(0, 4, sqrt(2));
   CHECK(assert_equal(expected,actual));
 }
 

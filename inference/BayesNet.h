@@ -102,8 +102,14 @@ namespace gtsam {
 		/** SLOW O(n) random access to Conditional by key */
 		sharedConditional operator[](varid_t key) const;
 
+    /** return last node in ordering */
+    sharedConditional& front() { return conditionals_.front(); }
+
+    /** return last node in ordering */
+    boost::shared_ptr<const Conditional> front() const { return conditionals_.front(); }
+
 		/** return last node in ordering */
-		inline sharedConditional& back() { return conditionals_.back(); }
+		sharedConditional& back() { return conditionals_.back(); }
 
 		/** return last node in ordering */
 		boost::shared_ptr<const Conditional> back() const { return conditionals_.back(); }

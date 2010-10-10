@@ -277,6 +277,41 @@ Inference::EliminateOne(FactorGraph& factorGraph, typename FactorGraph::variable
 }
 
 /* ************************************************************************* */
+template<class FactorGraph, class VarContainer>
+typename FactorGraph::bayesnet_type::shared_ptr Inference::Marginal(const FactorGraph& factorGraph, const VarContainer& variables) {
+
+  // Compute a COLAMD permutation with the marginal variables constrained to the end
+  typename FactorGraph::variableindex_type varIndex(factorGraph);
+  Permutation::shared_ptr permutation(Inference::PermutationCOLAMD(varIndex, variables));
+  Permutation::shared_ptr permutationInverse(permutation->inverse());
+
+  // Copy and permute the factors
+  varIndex.permute(*permutation);
+  FactorGraph eliminationGraph; eliminationGraph.reserve(factorGraph.size());
+  BOOST_FOREACH(const typename FactorGraph::sharedFactor& factor, factorGraph) {
+    typename FactorGraph::sharedFactor permFactor(new typename FactorGraph::factor_type(*factor));
+    permFactor->permuteWithInverse(*permutationInverse);
+    eliminationGraph.push_back(permFactor);
+  }
+
+  // Eliminate all variables
+  typename FactorGraph::bayesnet_type::shared_ptr bn(Inference::Eliminate(eliminationGraph, varIndex));
+
+  // The last conditionals in the eliminated BayesNet contain the marginal for
+  // the variables we want.
+  typename FactorGraph::bayesnet_type::shared_ptr marginal(new typename FactorGraph::bayesnet_type());
+  typename FactorGraph::bayesnet_type::const_reverse_iterator conditional = bn->rbegin();
+  for(varid_t j=0; j<variables.size(); ++j, ++conditional) {
+    marginal->push_front(*conditional);
+    assert(std::find(variables.begin(), variables.end(), (*permutation)[(*conditional)->key()]) != variables.end());
+  }
+
+  // Undo the permutation
+  marginal->permuteWithInverse(*permutation);
+  return marginal;
+}
+
+/* ************************************************************************* */
 template<class VariableIndexType, typename ConstraintContainer>
 Permutation::shared_ptr Inference::PermutationCOLAMD(const VariableIndexType& variableIndex, const ConstraintContainer& constrainLast) {
   size_t nEntries = variableIndex.nEntries(), nFactors = variableIndex.nFactors(), nVars = variableIndex.size();
