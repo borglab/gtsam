@@ -17,6 +17,7 @@ check_PROGRAMS += tests/testNoiseModel tests/testErrors
 
 # Vector Configurations
 headers += VectorValues.h 
+check_PROGRAMS += tests/testVectorValues
 #sources += VectorMap.cpp VectorBTree.cpp  
 #check_PROGRAMS += tests/testVectorMap tests/testVectorBTree  
 

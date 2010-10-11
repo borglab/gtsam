@@ -15,6 +15,7 @@
 using namespace gtsam;
 using namespace std;
 
+/* ************************************************************************* */
 TEST(VectorValues, standard) {
   Vector v1 = Vector_(3, 1.0,2.0,3.0);
   Vector v2 = Vector_(2, 4.0,5.0);
@@ -41,6 +42,7 @@ TEST(VectorValues, standard) {
   CHECK(assert_equal(incremental[2], v3))
 }
 
+/* ************************************************************************* */
 TEST(VectorValues, permuted_combined) {
   Vector v1 = Vector_(3, 1.0,2.0,3.0);
   Vector v2 = Vector_(2, 4.0,5.0);
@@ -89,6 +91,7 @@ TEST(VectorValues, permuted_combined) {
 
 }
 
+/* ************************************************************************* */
 TEST(VectorValues, permuted_incremental) {
   Vector v1 = Vector_(3, 1.0,2.0,3.0);
   Vector v2 = Vector_(2, 4.0,5.0);
@@ -139,6 +142,6 @@ TEST(VectorValues, permuted_incremental) {
 
 /* ************************************************************************* */
 int main() {
-  TestResult tr;
-  return TestRegistry::runAllTests(tr);
+  TestResult tr; return TestRegistry::runAllTests(tr);
 }
+/* ************************************************************************* */
