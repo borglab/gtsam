@@ -1,4 +1,4 @@
-/*
+/**
  * @file testLinearApproxFactor.cpp
  * @brief tests for dummy factor that contains a linear factor
  * @author Alex Cunningham
@@ -26,17 +26,23 @@ TEST ( LinearApproxFactor, basic ) {
 	Ordering ordering;
 	ordering.push_back(key1);
 	planarSLAM::Values lin_points;
+	planarSLAM::PointKey PKey(1);
+	Point2 point(1.0, 2.0);
+	lin_points.insert(PKey, point);
 	ApproxFactor f1(lin_factor, ordering, lin_points);
 
 	EXPECT(f1.size() == 1);
-	ApproxFactor::KeyVector expKeyVec;
-	expKeyVec.push_back(planarSLAM::PointKey(key1.index()));
+	EXPECT(assert_equal(key1, f1.keys().front()));
+	EXPECT(assert_equal(b, f1.get_b()));
 
-	planarSLAM::Values config; // doesn't really need to have any data
+	planarSLAM::Values config;
+	config.insert(PKey, Point2(2.0, 3.0));
 	GaussianFactor::shared_ptr actual = f1.linearize(config, ordering);
 
+	EXPECT(assert_equal(Vector_(2, -0.2, -0.2), f1.unwhitenedError(config)));
+
 	// Check the linearization
-	CHECK(assert_equal(*lin_factor, *actual));
+	EXPECT(assert_equal(*lin_factor, *actual));
 }
 
 /* ************************************************************************* */

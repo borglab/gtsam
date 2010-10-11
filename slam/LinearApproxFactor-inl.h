@@ -42,14 +42,16 @@ LinearApproxFactor<Values,Key>::LinearApproxFactor(
 template <class Values, class Key>
 Vector LinearApproxFactor<Values,Key>::unwhitenedError(const Values& c) const {
 	// extract the points in the new config
-	VectorValues delta;
-	//	BOOST_FOREACH(const Key& key, nonlinearKeys_) {
-	//		X newPt = c[key], linPt = lin_points_[key];
-	//		Vector d = linPt.logmap(newPt);
-	//		delta.insert(key, d);
-	//	}
+	Vector ret = - b_;
 
-	return zero(b_.size()); //FIXME: PLACEHOLDER!
+	BOOST_FOREACH(const Key& key, nonlinearKeys_) {
+		X newPt = c[key], linPt = lin_points_[key];
+		Vector d = linPt.logmap(newPt);
+		const Matrix& A = matrices_.at(Symbol(key));
+		ret += prod(A, d);
+	}
+
+	return ret;
 }
 
 /* ************************************************************************* */
