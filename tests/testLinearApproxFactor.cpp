@@ -22,7 +22,7 @@ TEST ( LinearApproxFactor, basic ) {
 	Matrix A1 = eye(2);
 	Vector b = repeat(2, 1.2);
 	SharedDiagonal model = noiseModel::Unit::Create(2);
-	GaussianFactor::shared_ptr lin_factor(new GaussianFactor(key1, A1, b, model));
+	GaussianFactor::shared_ptr lin_factor(new GaussianFactor(1, A1, b, model));
 	planarSLAM::Values lin_points;
 	ApproxFactor f1(lin_factor, lin_points);
 
@@ -32,7 +32,9 @@ TEST ( LinearApproxFactor, basic ) {
 	EXPECT(assert_equal(expKeyVec, f1.nonlinearKeys()));
 
 	planarSLAM::Values config; // doesn't really need to have any data
-	GaussianFactor::shared_ptr actual = f1.linearize(config);
+	Ordering ordering;
+	ordering.push_back(key1);
+	GaussianFactor::shared_ptr actual = f1.linearize(config, ordering);
 
 	// Check the linearization
 	CHECK(assert_equal(*lin_factor, *actual));

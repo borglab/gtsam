@@ -88,7 +88,7 @@ public:
 	 * @param config is the values structure
 	 * @return a combined linear factor containing both the constraint and the constraint factor
 	 */
-	virtual boost::shared_ptr<GaussianFactor> linearize(const Values& c) const=0;
+	virtual boost::shared_ptr<GaussianFactor> linearize(const Values& c, const Ordering& ordering) const=0;
 };
 
 
@@ -147,22 +147,30 @@ public:
 	}
 
 	/** Linearize from config */
-	boost::shared_ptr<GaussianFactor> linearize(const Values& c, const Ordering& ordering) const {
-		if (!active(c)) {
+	boost::shared_ptr<GaussianFactor> linearize(const Values& x, const Ordering& ordering) const {
+		if (!active(x)) {
 			boost::shared_ptr<GaussianFactor> factor;
 			return factor;
 		}
-		const Key& j = key_;
-		const X& x = c[j];
-		Matrix grad;
-		Vector g = -1.0 * evaluateError(x, grad);
+		const X& xj = x[key_];
+		Matrix A;
+		Vector b = - evaluateError(xj, A);
+		varid_t var = ordering[key_];
 		SharedDiagonal model = noiseModel::Constrained::All(this->dim());
-		return GaussianFactor::shared_ptr(new GaussianFactor(ordering[this->key_], grad, g, model));
+		return GaussianFactor::shared_ptr(new GaussianFactor(var, A, b, model));
 	}
 
 	/** g(x) with optional derivative - does not depend on active */
 	virtual Vector evaluateError(const X& x, boost::optional<Matrix&> H =
 			boost::none) const = 0;
+
+	/**
+	 * Create a symbolic factor using the given ordering to determine the
+	 * variable indices.
+	 */
+	virtual Factor::shared_ptr symbolic(const Ordering& ordering) const {
+		return Factor::shared_ptr(new Factor(ordering[key_]));
+	}
 };
 
 /**
@@ -259,13 +267,29 @@ public:
 		Matrix grad1, grad2;
 		Vector g = -1.0 * evaluateError(x1, x2, grad1, grad2);
 		SharedDiagonal model = noiseModel::Constrained::All(this->dim());
-		return GaussianFactor::shared_ptr(new GaussianFactor(ordering[j1], grad1, ordering[j2], grad2, g, model));
+		varid_t var1 = ordering[j1], var2 = ordering[j2];
+		if (var1 < var2)
+			GaussianFactor::shared_ptr(new GaussianFactor(var1, grad1, var2, grad2, g, model));
+		else
+			GaussianFactor::shared_ptr(new GaussianFactor(var2, grad2, var1, grad1, g, model));
 	}
 
 	/** g(x) with optional derivative2  - does not depend on active */
 	virtual Vector evaluateError(const X1& x1, const X2& x2,
 			boost::optional<Matrix&> H1 = boost::none,
 			boost::optional<Matrix&> H2 = boost::none) const = 0;
+
+	/**
+	 * Create a symbolic factor using the given ordering to determine the
+	 * variable indices.
+	 */
+	virtual Factor::shared_ptr symbolic(const Ordering& ordering) const {
+		const varid_t var1 = ordering[key1_], var2 = ordering[key2_];
+		if(var1 < var2)
+			return Factor::shared_ptr(new Factor(var1, var2));
+		else
+			return Factor::shared_ptr(new Factor(var2, var1));
+	}
 };
 
 /**
@@ -362,17 +386,37 @@ public:
 	}
 
 	/** Linearize from config */
-	boost::shared_ptr<GaussianFactor> linearize(const Values& c) const {
+	boost::shared_ptr<GaussianFactor> linearize(const Values& c, const Ordering& ordering) const {
 		if (!active(c)) {
 			boost::shared_ptr<GaussianFactor> factor;
 			return factor;
 		}
 		const Key1& j1 = key1_; const Key2& j2 = key2_; const Key3& j3 = key3_;
 		const X1& x1 = c[j1]; const X2& x2 = c[j2]; const X3& x3 = c[j3];
-		Matrix grad1, grad2, grad3;
-		Vector g = -1.0 * evaluateError(x1, x2, x3, grad1, grad2, grad3);
+		Matrix A1, A2, A3;
+		Vector b = -1.0 * evaluateError(x1, x2, x3, A1, A2, A3);
 		SharedDiagonal model = noiseModel::Constrained::All(this->dim());
-		return GaussianFactor::shared_ptr(new GaussianFactor(j1, grad1, j2, grad2, j3, grad3, g, model));
+		varid_t var1 = ordering[j1], var2 = ordering[j2], var3 = ordering[j3];
+
+		// perform sorting
+		if(var1 < var2 && var2 < var3)
+			return GaussianFactor::shared_ptr(
+					new GaussianFactor(var1, A1, var2, A2, var3, A3, b, model));
+		else if(var2 < var1 && var1 < var3)
+			return GaussianFactor::shared_ptr(
+					new GaussianFactor(var2, A2, var1, A1, var3, A3, b, model));
+		else if(var1 < var3 && var3 < var2)
+			return GaussianFactor::shared_ptr(
+					new GaussianFactor(var1, A1, var3, A3, var2, A2, b, model));
+		else if(var2 < var3 && var3 < var1)
+			return GaussianFactor::shared_ptr(
+					new GaussianFactor(var2, A2, var3, A3, var1, A1, b, model));
+		else if(var3 < var1 && var1 < var2)
+			return GaussianFactor::shared_ptr(
+					new GaussianFactor(var3, A3, var1, A1, var2, A2, b, model));
+		else
+			return GaussianFactor::shared_ptr(
+					new GaussianFactor(var3, A3, var2, A2, var1, A1, b, model));
 	}
 
 	/** g(x) with optional derivative3  - does not depend on active */
@@ -380,6 +424,26 @@ public:
 			boost::optional<Matrix&> H1 = boost::none,
 			boost::optional<Matrix&> H2 = boost::none,
 			boost::optional<Matrix&> H3 = boost::none) const = 0;
+
+    /**
+     * Create a symbolic factor using the given ordering to determine the
+     * variable indices.
+     */
+    virtual Factor::shared_ptr symbolic(const Ordering& ordering) const {
+      const varid_t var1 = ordering[key1_], var2 = ordering[key2_], var3 = ordering[key3_];
+      if(var1 < var2 && var2 < var3)
+        return Factor::shared_ptr(new Factor(ordering[key1_], ordering[key2_], ordering[key3_]));
+      else if(var2 < var1 && var1 < var3)
+        return Factor::shared_ptr(new Factor(ordering[key2_], ordering[key2_], ordering[key3_]));
+      else if(var1 < var3 && var3 < var2)
+        return Factor::shared_ptr(new Factor(ordering[key1_], ordering[key3_], ordering[key2_]));
+      else if(var2 < var3 && var3 < var1)
+        return Factor::shared_ptr(new Factor(ordering[key2_], ordering[key3_], ordering[key1_]));
+      else if(var3 < var1 && var1 < var2)
+        return Factor::shared_ptr(new Factor(ordering[key3_], ordering[key1_], ordering[key2_]));
+      else
+        return Factor::shared_ptr(new Factor(ordering[key3_], ordering[key2_], ordering[key1_]));
+    }
 };
 
 /**

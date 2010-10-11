@@ -22,10 +22,13 @@
 #include <gtsam/linear/GaussianFactor.h>
 #include <gtsam/nonlinear/Ordering.h>
 
-#define INSTANTIATE_NONLINEAR_FACTOR1(C,J,X) \
-  template class gtsam::NonlinearFactor1<C,J,X>;
-#define INSTANTIATE_NONLINEAR_FACTOR2(C,J1,X1,J2,X2) \
-    template class gtsam::NonlinearFactor2<C,J1,X1,J2,X2>;
+// FIXME: is this necessary? These don't even fit the right format
+#define INSTANTIATE_NONLINEAR_FACTOR1(C,J) \
+  template class gtsam::NonlinearFactor1<C,J>;
+#define INSTANTIATE_NONLINEAR_FACTOR2(C,J1,J2) \
+    template class gtsam::NonlinearFactor2<C,J1,J2>;
+#define INSTANTIATE_NONLINEAR_FACTOR3(C,J1,J2,J3) \
+    template class gtsam::NonlinearFactor3<C,J1,J2,J3>;
 
 namespace gtsam {
 

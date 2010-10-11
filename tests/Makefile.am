@@ -19,8 +19,10 @@ check_PROGRAMS += testNonlinearEquality testNonlinearFactor testNonlinearFactorG
 check_PROGRAMS += testNonlinearOptimizer
 check_PROGRAMS += testSymbolicBayesNet testSymbolicFactorGraph
 check_PROGRAMS += testTupleValues
-#check_PROGRAMS += testNonlinearEqualityConstraint testBoundingConstraint 
-#check_PROGRAMS += testTransformConstraint testLinearApproxFactor
+#check_PROGRAMS += testNonlinearEqualityConstraint 
+#check_PROGRAMS += testBoundingConstraint 
+check_PROGRAMS += testTransformConstraint 
+#check_PROGRAMS += testLinearApproxFactor
 
 # only if serialization is available
 if ENABLE_SERIALIZATION
