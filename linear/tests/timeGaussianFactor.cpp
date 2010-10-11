@@ -22,7 +22,7 @@ using namespace std;
 using namespace gtsam;
 using namespace boost::assign;
 
-static const varid_t _x1_=1, _x2_=2, _l1_=3;
+static const Index _x1_=1, _x2_=2, _l1_=3;
 
 /*
  * Alex's Machine

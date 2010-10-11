@@ -153,7 +153,7 @@ namespace gtsam {
 
   /* ************************************************************************* */
   template<class J>
-  Ordering::shared_ptr LieValues<J>::orderingArbitrary(varid_t firstVar) const {
+  Ordering::shared_ptr LieValues<J>::orderingArbitrary(Index firstVar) const {
     // Generate an initial key ordering in iterator order
     _ValuesKeyOrderer keyOrderer(firstVar);
     this->apply(keyOrderer);

@@ -39,7 +39,7 @@ class Conditional;
 class Factor : public Testable<Factor> {
 protected:
 
-  std::vector<varid_t> keys_;
+  std::vector<Index> keys_;
   ValueWithDefault<bool,true> permuted_;
 
   /** Internal check to make sure keys are sorted (invariant during elimination).
@@ -50,8 +50,8 @@ public:
 
   typedef gtsam::Conditional Conditional;
   typedef boost::shared_ptr<Factor> shared_ptr;
-  typedef std::vector<varid_t>::iterator iterator;
-  typedef std::vector<varid_t>::const_iterator const_iterator;
+  typedef std::vector<Index>::iterator iterator;
+  typedef std::vector<Index>::const_iterator const_iterator;
 
   /** Copy constructor */
   Factor(const Factor& f);
@@ -66,19 +66,19 @@ public:
   Factor() : permuted_(false) {}
 
   /** Construct unary factor */
-  Factor(varid_t key) : keys_(1), permuted_(false) {
+  Factor(Index key) : keys_(1), permuted_(false) {
     keys_[0] = key; checkSorted(); }
 
   /** Construct binary factor */
-  Factor(varid_t key1, varid_t key2) : keys_(2), permuted_(false) {
+  Factor(Index key1, Index key2) : keys_(2), permuted_(false) {
     keys_[0] = key1; keys_[1] = key2; checkSorted(); }
 
   /** Construct ternary factor */
-  Factor(varid_t key1, varid_t key2, varid_t key3) : keys_(3), permuted_(false) {
+  Factor(Index key1, Index key2, Index key3) : keys_(3), permuted_(false) {
     keys_[0] = key1; keys_[1] = key2; keys_[2] = key3; checkSorted(); }
 
   /** Construct 4-way factor */
-  Factor(varid_t key1, varid_t key2, varid_t key3, varid_t key4) : keys_(4), permuted_(false) {
+  Factor(Index key1, Index key2, Index key3, Index key4) : keys_(4), permuted_(false) {
     keys_[0] = key1; keys_[1] = key2; keys_[2] = key3; keys_[3] = key4; checkSorted(); }
 
   /** Named constructor for combining a set of factors with pre-computed set of
@@ -87,11 +87,11 @@ public:
   template<class FactorGraphType, class VariableIndexStorage>
   static shared_ptr Combine(const FactorGraphType& factorGraph,
       const VariableIndex<VariableIndexStorage>& variableIndex, const std::vector<size_t>& factors,
-      const std::vector<varid_t>& variables, const std::vector<std::vector<size_t> >& variablePositions);
+      const std::vector<Index>& variables, const std::vector<std::vector<size_t> >& variablePositions);
 
   /** Create a combined joint factor (new style for EliminationTree). */
   template<class MapAllocator>
-  static shared_ptr Combine(const FactorGraph<Factor>& factors, const std::map<varid_t, std::vector<varid_t>, std::less<varid_t>, MapAllocator>& variableSlots);
+  static shared_ptr Combine(const FactorGraph<Factor>& factors, const std::map<Index, std::vector<Index>, std::less<Index>, MapAllocator>& variableSlots);
 
   /**
    * eliminate the first variable involved in this factor
@@ -102,7 +102,7 @@ public:
   /**
    * eliminate the first nFrontals frontal variables.
    */
-  boost::shared_ptr<BayesNet<Conditional> > eliminate(varid_t nFrontals = 1);
+  boost::shared_ptr<BayesNet<Conditional> > eliminate(Index nFrontals = 1);
 
   /**
    * Permutes the GaussianFactor, but for efficiency requires the permutation
@@ -119,13 +119,13 @@ public:
   iterator end() { return keys_.end(); }
 
   /** First key*/
-  varid_t front() const { return keys_.front(); }
+  Index front() const { return keys_.front(); }
 
   /** Last key */
-  varid_t back() const { return keys_.back(); }
+  Index back() const { return keys_.back(); }
 
   /** find */
-  const_iterator find(varid_t key) const { return std::find(begin(), end(), key); }
+  const_iterator find(Index key) const { return std::find(begin(), end(), key); }
 
   /** print */
   void print(const std::string& s = "Factor") const;
@@ -136,7 +136,7 @@ public:
   /**
    * return keys in order as created
    */
-  const std::vector<varid_t>& keys() const { return keys_; }
+  const std::vector<Index>& keys() const { return keys_; }
 
   /**
    * @return the number of nodes the factor connects

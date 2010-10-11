@@ -41,7 +41,7 @@ bool Ordering::equals(const Ordering& rhs, double tol) const {
 /* ************************************************************************* */
 void Unordered::print(const string& s) const {
   cout << s << " (" << size() << "):";
-  BOOST_FOREACH(varid_t key, *this)
+  BOOST_FOREACH(Index key, *this)
     cout << " " << key;
   cout << endl;
 }

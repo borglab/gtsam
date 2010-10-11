@@ -52,7 +52,7 @@ protected:
 	// for keeping all original nonlinear factors
 	NonlinearFactorGraph<Values> nonlinearFactors_;
 
-	// The "ordering" allows converting Symbols to varid_t (integer) keys.  We
+	// The "ordering" allows converting Symbols to Index (integer) keys.  We
 	// keep it up to date as we add and reorder variables.
 	Ordering ordering_;
 
@@ -108,13 +108,13 @@ public:
 
 private:
 
-	std::list<size_t> getAffectedFactors(const std::list<varid_t>& keys) const;
-	boost::shared_ptr<GaussianFactorGraph> relinearizeAffectedFactors(const std::list<varid_t>& affectedKeys) const;
+	std::list<size_t> getAffectedFactors(const std::list<Index>& keys) const;
+	boost::shared_ptr<GaussianFactorGraph> relinearizeAffectedFactors(const std::list<Index>& affectedKeys) const;
 	GaussianFactorGraph getCachedBoundaryFactors(Cliques& orphans);
 
-	boost::shared_ptr<std::set<varid_t> > recalculate(const std::set<varid_t>& markedKeys, const std::vector<varid_t>& newKeys, const GaussianFactorGraph* newFactors = NULL);
+	boost::shared_ptr<std::set<Index> > recalculate(const std::set<Index>& markedKeys, const std::vector<Index>& newKeys, const GaussianFactorGraph* newFactors = NULL);
 //	void linear_update(const GaussianFactorGraph& newFactors);
-	void find_all(sharedClique clique, std::set<varid_t>& keys, const std::vector<bool>& marked); // helper function
+	void find_all(sharedClique clique, std::set<Index>& keys, const std::vector<bool>& marked); // helper function
 
 }; // ISAM2
 

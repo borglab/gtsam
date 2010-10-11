@@ -48,7 +48,7 @@ BayesNet<Conditional>::shared_ptr Inference::EliminateSymbolic(const FactorGraph
 
   // Eliminate variables one-by-one, updating the eliminated factor graph and
   // the variable index.
-  for(varid_t var = 0; var < variableIndex.size(); ++var) {
+  for(Index var = 0; var < variableIndex.size(); ++var) {
     Conditional::shared_ptr conditional(EliminateOneSymbolic(eliminationGraph, variableIndex, var));
     if(conditional) // Will be NULL if the variable did not appear in the factor graph.
       bayesnet->push_back(conditional);
@@ -68,7 +68,7 @@ Inference::Eliminate(FactorGraph& factorGraph, typename FactorGraph::variableind
 /* ************************************************************************* */
 template<class FactorGraph>
 inline typename FactorGraph::bayesnet_type::shared_ptr
-Inference::EliminateUntil(const FactorGraph& factorGraph, varid_t bound) {
+Inference::EliminateUntil(const FactorGraph& factorGraph, Index bound) {
 
   // Create a copy of the factor graph to eliminate in-place
   FactorGraph eliminationGraph(factorGraph);
@@ -80,13 +80,13 @@ Inference::EliminateUntil(const FactorGraph& factorGraph, varid_t bound) {
 /* ************************************************************************* */
 template<class FactorGraph>
 typename FactorGraph::bayesnet_type::shared_ptr
-Inference::EliminateUntil(FactorGraph& factorGraph, varid_t bound, typename FactorGraph::variableindex_type& variableIndex) {
+Inference::EliminateUntil(FactorGraph& factorGraph, Index bound, typename FactorGraph::variableindex_type& variableIndex) {
 
   typename FactorGraph::bayesnet_type::shared_ptr bayesnet(new typename FactorGraph::bayesnet_type);
 
   // Eliminate variables one-by-one, updating the eliminated factor graph and
   // the variable index.
-  for(varid_t var = 0; var < bound; ++var) {
+  for(Index var = 0; var < bound; ++var) {
     typename FactorGraph::bayesnet_type::sharedConditional conditional(EliminateOne(factorGraph, variableIndex, var));
     if(conditional) // Will be NULL if the variable did not appear in the factor graph.
       bayesnet->push_back(conditional);
@@ -98,7 +98,7 @@ Inference::EliminateUntil(FactorGraph& factorGraph, varid_t bound, typename Fact
 /* ************************************************************************* */
 template<class FactorGraph>
 typename FactorGraph::bayesnet_type::sharedConditional
-Inference::EliminateOne(FactorGraph& factorGraph, typename FactorGraph::variableindex_type& variableIndex, varid_t var) {
+Inference::EliminateOne(FactorGraph& factorGraph, typename FactorGraph::variableindex_type& variableIndex, Index var) {
 
   /* This function performs symbolic elimination of a variable, comprising
    * combining involved factors (analogous to "assembly" in SPQR) followed by
@@ -150,14 +150,14 @@ Inference::EliminateOne(FactorGraph& factorGraph, typename FactorGraph::variable
     // key has been added yet, but the positions stored in the variableIndex are
     // from the unsorted positions and will be fixed later.
     tic("EliminateOne: Find involved vars");
-    map<varid_t, size_t, std::less<varid_t>, boost::fast_pool_allocator<pair<const varid_t,size_t> > > involvedKeys; // Variable and original order as discovered
+    map<Index, size_t, std::less<Index>, boost::fast_pool_allocator<pair<const Index,size_t> > > involvedKeys; // Variable and original order as discovered
     BOOST_FOREACH(size_t removedFactorI, removedFactors) {
       if(debug) cout << removedFactorI << " is involved" << endl;
       // If the factor has not previously been removed
       if(removedFactorI < factorGraph.size() && factorGraph[removedFactorI]) {
         // Loop over the variables involved in the removed factor to update the
         // variable index and joint factor positions of each variable.
-        BOOST_FOREACH(varid_t involvedVariable, factorGraph[removedFactorI]->keys()) {
+        BOOST_FOREACH(Index involvedVariable, factorGraph[removedFactorI]->keys()) {
           // Mark the new joint factor as involving each variable in the removed factor.
           assert(!variableIndex[involvedVariable].empty());
           if(variableIndex[involvedVariable].back().factorIndex != jointFactorIndex) {
@@ -182,11 +182,11 @@ Inference::EliminateOne(FactorGraph& factorGraph, typename FactorGraph::variable
     if(debug) cout << "Sorted keys:";
     tic("EliminateOne: Sort involved vars");
     vector<size_t> varposPermutation(involvedKeys.size(), numeric_limits<size_t>::max());
-    vector<varid_t> sortedKeys(involvedKeys.size());
+    vector<Index> sortedKeys(involvedKeys.size());
     {
       size_t sortedVarpos = 0;
-      const map<varid_t, size_t, std::less<varid_t>, boost::fast_pool_allocator<pair<const varid_t,size_t> > >& involvedKeysC(involvedKeys);
-      for(map<varid_t, size_t, std::less<varid_t>, boost::fast_pool_allocator<pair<const varid_t,size_t> > >::const_iterator key_pos=involvedKeysC.begin(); key_pos!=involvedKeysC.end(); ++key_pos) {
+      const map<Index, size_t, std::less<Index>, boost::fast_pool_allocator<pair<const Index,size_t> > >& involvedKeysC(involvedKeys);
+      for(map<Index, size_t, std::less<Index>, boost::fast_pool_allocator<pair<const Index,size_t> > >::const_iterator key_pos=involvedKeysC.begin(); key_pos!=involvedKeysC.end(); ++key_pos) {
         sortedKeys[sortedVarpos] = key_pos->first;
         assert(varposPermutation[key_pos->second] == numeric_limits<size_t>::max());
         varposPermutation[key_pos->second] = sortedVarpos;
@@ -203,7 +203,7 @@ Inference::EliminateOne(FactorGraph& factorGraph, typename FactorGraph::variable
     // Fix the variable positions in the variableIndex
     tic("EliminateOne: Fix varIndex");
     for(size_t sortedPos=0; sortedPos<sortedKeys.size(); ++sortedPos) {
-      varid_t var = sortedKeys[sortedPos];
+      Index var = sortedKeys[sortedPos];
       assert(!variableIndex[var].empty());
       assert(variableIndex[var].back().factorIndex == jointFactorIndex);
       assert(sortedPos == varposPermutation[variableIndex[var].back().variablePosition]);
@@ -232,7 +232,7 @@ Inference::EliminateOne(FactorGraph& factorGraph, typename FactorGraph::variable
 
         // Loop over the variables involved in the removed factor to update the
         // variable index and joint factor positions of each variable.
-        BOOST_FOREACH(varid_t involvedVariable, factorGraph[removedFactorI]->keys()) {
+        BOOST_FOREACH(Index involvedVariable, factorGraph[removedFactorI]->keys()) {
           // Mark the new joint factor as involving each variable in the removed factor
           assert(!variableIndex[involvedVariable].empty());
           assert(variableIndex[involvedVariable].back().factorIndex == jointFactorIndex);
@@ -301,7 +301,7 @@ typename FactorGraph::bayesnet_type::shared_ptr Inference::Marginal(const Factor
   // the variables we want.
   typename FactorGraph::bayesnet_type::shared_ptr marginal(new typename FactorGraph::bayesnet_type());
   typename FactorGraph::bayesnet_type::const_reverse_iterator conditional = bn->rbegin();
-  for(varid_t j=0; j<variables.size(); ++j, ++conditional) {
+  for(Index j=0; j<variables.size(); ++j, ++conditional) {
     marginal->push_front(*conditional);
     assert(std::find(variables.begin(), variables.end(), (*permutation)[(*conditional)->key()]) != variables.end());
   }
@@ -325,7 +325,7 @@ Permutation::shared_ptr Inference::PermutationCOLAMD(const VariableIndexType& va
 
   p[0] = 0;
   int count = 0;
-  for(varid_t var = 0; var < variableIndex.size(); ++var) {
+  for(Index var = 0; var < variableIndex.size(); ++var) {
     const typename VariableIndexType::mapped_type& column(variableIndex[var]);
     size_t lastFactorId = numeric_limits<size_t>::max();
     BOOST_FOREACH(const typename VariableIndexType::mapped_factor_type& factor_pos, column) {
@@ -341,7 +341,7 @@ Permutation::shared_ptr Inference::PermutationCOLAMD(const VariableIndexType& va
   // If at least some variables are not constrained to be last, constrain the
   // ones that should be constrained.
   if(constrainLast.size() < variableIndex.size()) {
-    BOOST_FOREACH(varid_t var, constrainLast) {
+    BOOST_FOREACH(Index var, constrainLast) {
       assert(var < nVars);
       cmember[var] = 1;
     }
@@ -366,7 +366,7 @@ Permutation::shared_ptr Inference::PermutationCOLAMD(const VariableIndexType& va
 
   // Convert elimination ordering in p to an ordering
   Permutation::shared_ptr permutation(new Permutation(nVars));
-  for (varid_t j = 0; j < nVars; j++) {
+  for (Index j = 0; j < nVars; j++) {
     permutation->operator[](j) = p[j];
     if(debug) cout << "COLAMD:  " << j << "->" << p[j] << endl;
   }
@@ -381,7 +381,7 @@ Permutation::shared_ptr Inference::PermutationCOLAMD(const VariableIndexType& va
 //	/* eliminate one node from the factor graph                           */
 //	/* ************************************************************************* */
 //	template<class Factor,class Conditional>
-//	boost::shared_ptr<Conditional> eliminateOne(FactorGraph<Factor>& graph, varid_t key) {
+//	boost::shared_ptr<Conditional> eliminateOne(FactorGraph<Factor>& graph, Index key) {
 //
 //		// combine the factors of all nodes connected to the variable to be eliminated
 //		// if no factors are connected to key, returns an empty factor
@@ -409,7 +409,7 @@ Permutation::shared_ptr Inference::PermutationCOLAMD(const VariableIndexType& va
 //	{
 //		BayesNet<Conditional> bayesNet; // empty
 //
-//		BOOST_FOREACH(varid_t key, ordering) {
+//		BOOST_FOREACH(Index key, ordering) {
 //			boost::shared_ptr<Conditional> cg = eliminateOne<Factor,Conditional>(factorGraph,key);
 //			bayesNet.push_back(cg);
 //		}
@@ -426,7 +426,7 @@ Permutation::shared_ptr Inference::PermutationCOLAMD(const VariableIndexType& va
 //
 //		// Get the keys of all variables and remove all keys we want the marginal for
 //		Ordering ord = bn.ordering();
-//		BOOST_FOREACH(varid_t key, keys) ord.remove(key); // TODO: O(n*k), faster possible?
+//		BOOST_FOREACH(Index key, keys) ord.remove(key); // TODO: O(n*k), faster possible?
 //
 //		// eliminate partially,
 //		BayesNet<Conditional> conditional = eliminate<Factor,Conditional>(factorGraph,ord);

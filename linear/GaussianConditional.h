@@ -59,31 +59,31 @@ public:
 	GaussianConditional();
 
 	/** constructor */
-	GaussianConditional(varid_t key);
+	GaussianConditional(Index key);
 
 	/** constructor with no parents
 	 * |Rx-d|
 	 */
-	GaussianConditional(varid_t key, const Vector& d, const Matrix& R, const Vector& sigmas);
+	GaussianConditional(Index key, const Vector& d, const Matrix& R, const Vector& sigmas);
 
 	/** constructor with only one parent
 	 * |Rx+Sy-d|
 	 */
-	GaussianConditional(varid_t key, const Vector& d, const Matrix& R,
-			varid_t name1, const Matrix& S, const Vector& sigmas);
+	GaussianConditional(Index key, const Vector& d, const Matrix& R,
+			Index name1, const Matrix& S, const Vector& sigmas);
 
 	/** constructor with two parents
 	 * |Rx+Sy+Tz-d|
 	 */
-	GaussianConditional(varid_t key, const Vector& d, const Matrix& R,
-			varid_t name1, const Matrix& S, varid_t name2, const Matrix& T, const Vector& sigmas);
+	GaussianConditional(Index key, const Vector& d, const Matrix& R,
+			Index name1, const Matrix& S, Index name2, const Matrix& T, const Vector& sigmas);
 
 	/**
 	 * constructor with number of arbitrary parents
 	 * |Rx+sum(Ai*xi)-d|
 	 */
-	GaussianConditional(varid_t key, const Vector& d,
-			const Matrix& R, const std::list<std::pair<varid_t, Matrix> >& parents, const Vector& sigmas);
+	GaussianConditional(Index key, const Vector& d,
+			const Matrix& R, const std::list<std::pair<Index, Matrix> >& parents, const Vector& sigmas);
 
 	/**
 	 * Constructor when matrices are already stored in a combined matrix, allows

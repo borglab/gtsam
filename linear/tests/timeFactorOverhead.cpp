@@ -20,7 +20,7 @@ static boost::variate_generator<boost::mt19937, boost::uniform_real<> > rg(boost
 
 int main(int argc, char *argv[]) {
 
-  varid_t key = 0;
+  Index key = 0;
 
   size_t vardim = 2;
   size_t blockdim = 1;

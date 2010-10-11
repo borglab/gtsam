@@ -33,7 +33,7 @@ typedef BayesTree<Conditional> SymbolicBayesTree;
  ****************************************************************************/
 TEST( JunctionTree, constructor )
 {
-  const varid_t x2=0, x1=1, x3=2, x4=3;
+  const Index x2=0, x1=1, x3=2, x4=3;
 	SymbolicFactorGraph fg;
 	fg.push_factor(x2,x1);
 	fg.push_factor(x2,x3);
@@ -41,10 +41,10 @@ TEST( JunctionTree, constructor )
 
 	SymbolicJunctionTree actual(fg);
 
-	vector<varid_t> frontal1; frontal1 += x3, x4;
-	vector<varid_t> frontal2; frontal2 += x2, x1;
-	vector<varid_t> sep1;
-	vector<varid_t> sep2; sep2 += x3;
+	vector<Index> frontal1; frontal1 += x3, x4;
+	vector<Index> frontal2; frontal2 += x2, x1;
+	vector<Index> sep1;
+	vector<Index> sep2; sep2 += x3;
 	CHECK(assert_equal(frontal1, actual.root()->frontal));
 	CHECK(assert_equal(sep1,     actual.root()->separator));
 	LONGS_EQUAL(1,               actual.root()->size());
@@ -63,7 +63,7 @@ TEST( JunctionTree, constructor )
  ****************************************************************************/
 TEST( JunctionTree, eliminate)
 {
-  const varid_t x2=0, x1=1, x3=2, x4=3;
+  const Index x2=0, x1=1, x3=2, x4=3;
   SymbolicFactorGraph fg;
   fg.push_factor(x2,x1);
   fg.push_factor(x2,x3);

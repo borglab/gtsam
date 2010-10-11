@@ -58,7 +58,7 @@ class Conditional;
 	   */
     template<class FactorGraph>
     static typename FactorGraph::bayesnet_type::shared_ptr
-    EliminateUntil(const FactorGraph& factorGraph, varid_t bound);
+    EliminateUntil(const FactorGraph& factorGraph, Index bound);
 
     /**
      * Partially eliminate a factor graph, up to but not including the given
@@ -67,7 +67,7 @@ class Conditional;
      */
     template<class FactorGraph>
     static typename FactorGraph::bayesnet_type::shared_ptr
-    EliminateUntil(FactorGraph& factorGraph, varid_t bound, typename FactorGraph::variableindex_type& variableIndex);
+    EliminateUntil(FactorGraph& factorGraph, Index bound, typename FactorGraph::variableindex_type& variableIndex);
 
 	  /**
 	   * Eliminate a single variable, updating an existing factor graph and
@@ -75,7 +75,7 @@ class Conditional;
 	   */
     template<class FactorGraph>
     static typename FactorGraph::bayesnet_type::sharedConditional
-    EliminateOne(FactorGraph& factorGraph, typename FactorGraph::variableindex_type& variableIndex, varid_t var);
+    EliminateOne(FactorGraph& factorGraph, typename FactorGraph::variableindex_type& variableIndex, Index var);
 
     /**
      * Eliminate a single variable, updating an existing factor graph and
@@ -83,7 +83,7 @@ class Conditional;
      * symbolic factor graphs.
      */
     static boost::shared_ptr<Conditional>
-    EliminateOneSymbolic(FactorGraph<Factor>& factorGraph, VariableIndex<>& variableIndex, varid_t var);
+    EliminateOneSymbolic(FactorGraph<Factor>& factorGraph, VariableIndex<>& variableIndex, Index var);
 
     /**
      * Eliminate all variables except the specified ones.  Internally this
@@ -100,7 +100,7 @@ class Conditional;
      * Compute a permutation (variable ordering) using colamd
      */
     template<class VariableIndexType>
-    static boost::shared_ptr<Permutation> PermutationCOLAMD(const VariableIndexType& variableIndex) { return PermutationCOLAMD(variableIndex, std::vector<varid_t>()); }
+    static boost::shared_ptr<Permutation> PermutationCOLAMD(const VariableIndexType& variableIndex) { return PermutationCOLAMD(variableIndex, std::vector<Index>()); }
     template<class VariableIndexType, typename ConstraintContainer>
     static boost::shared_ptr<Permutation> PermutationCOLAMD(const VariableIndexType& variableIndex, const ConstraintContainer& constrainLast);
 
@@ -125,7 +125,7 @@ class Conditional;
 //   */
 //	template<class Factor, class Conditional>
 //	boost::shared_ptr<Conditional>
-//	eliminateOne(FactorGraph<Factor>& factorGraph, varid_t key);
+//	eliminateOne(FactorGraph<Factor>& factorGraph, Index key);
 //
 //	/**
 //	 * eliminate factor graph using the given (not necessarily complete)

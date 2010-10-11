@@ -75,8 +75,8 @@ namespace gtsam {
 
 	/* ************************************************************************* */
 	template<class Conditional>
-	list<varid_t> BayesNet<Conditional>::ordering() const {
-		list<varid_t> ord;
+	list<Index> BayesNet<Conditional>::ordering() const {
+		list<Index> ord;
 		BOOST_FOREACH(sharedConditional conditional,conditionals_)
 		   ord.push_back(conditional->key());
 		return ord;
@@ -88,8 +88,8 @@ namespace gtsam {
 		ofstream of(s.c_str());
 		of<< "digraph G{\n";
 		BOOST_FOREACH(const_sharedConditional conditional,conditionals_) {
-			varid_t child = conditional->key();
-			BOOST_FOREACH(varid_t parent, conditional->parents()) {
+			Index child = conditional->key();
+			BOOST_FOREACH(Index parent, conditional->parents()) {
 				of << parent << "->" << child << endl;
 			}
 		}
@@ -101,7 +101,7 @@ namespace gtsam {
 
 	template<class Conditional>
 	typename BayesNet<Conditional>::sharedConditional
-	BayesNet<Conditional>::operator[](varid_t key) const {
+	BayesNet<Conditional>::operator[](Index key) const {
 		const_iterator it = find_if(conditionals_.begin(), conditionals_.end(), boost::lambda::bind(&Conditional::key, *boost::lambda::_1) == key);
 		if (it == conditionals_.end()) throw(invalid_argument((boost::format(
 						"BayesNet::operator['%1%']: not found") % key).str()));

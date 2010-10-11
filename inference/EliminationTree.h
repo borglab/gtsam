@@ -31,7 +31,7 @@ template<class> class _EliminationTreeTester;
 		typedef typename Node::shared_ptr sharedNode;
 
 		// we typedef the following handy list of ordered factor graphs
-		typedef std::pair<varid_t, FG> NamedGraph;
+		typedef std::pair<Index, FG> NamedGraph;
 		typedef std::list<NamedGraph> OrderedGraphs;
 
 	private:
@@ -47,7 +47,7 @@ template<class> class _EliminationTreeTester;
 		 * add a factor graph fragment with given frontal key into the tree. Assumes
 		 * parent node was already added (will throw exception if not).
 		 */
-//		void add(const FG& fg, varid_t key);
+//		void add(const FG& fg, Index key);
 
 		/**
 		 * Add a pre-created node by computing its parent and children.

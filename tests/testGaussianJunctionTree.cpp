@@ -43,14 +43,14 @@ TEST( GaussianJunctionTree, constructor2 )
 	// create an ordering
 	GaussianJunctionTree actual(fg);
 
-	vector<varid_t> frontal1; frontal1 += ordering["x5"], ordering["x6"], ordering["x4"];
-	vector<varid_t> frontal2; frontal2 += ordering["x3"], ordering["x2"];
-	vector<varid_t> frontal3; frontal3 += ordering["x1"];
-	vector<varid_t> frontal4; frontal4 += ordering["x7"];
-	vector<varid_t> sep1;
-	vector<varid_t> sep2; sep2 += ordering["x4"];
-	vector<varid_t> sep3; sep3 += ordering["x2"];
-	vector<varid_t> sep4; sep4 += ordering["x6"];
+	vector<Index> frontal1; frontal1 += ordering["x5"], ordering["x6"], ordering["x4"];
+	vector<Index> frontal2; frontal2 += ordering["x3"], ordering["x2"];
+	vector<Index> frontal3; frontal3 += ordering["x1"];
+	vector<Index> frontal4; frontal4 += ordering["x7"];
+	vector<Index> sep1;
+	vector<Index> sep2; sep2 += ordering["x4"];
+	vector<Index> sep3; sep3 += ordering["x2"];
+	vector<Index> sep4; sep4 += ordering["x6"];
 	CHECK(assert_equal(frontal1, actual.root()->frontal));
 	CHECK(assert_equal(sep1,     actual.root()->separator));
 	LONGS_EQUAL(5,               actual.root()->size());

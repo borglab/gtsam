@@ -34,12 +34,12 @@ class Inference;
  */
 class Permutation {
 protected:
-  std::vector<varid_t> rangeIndices_;
+  std::vector<Index> rangeIndices_;
 
 public:
   typedef boost::shared_ptr<Permutation> shared_ptr;
-  typedef std::vector<varid_t>::const_iterator const_iterator;
-  typedef std::vector<varid_t>::iterator iterator;
+  typedef std::vector<Index>::const_iterator const_iterator;
+  typedef std::vector<Index>::iterator iterator;
 
   /**
    * Create an empty permutation.  This cannot do anything, but you can later
@@ -51,20 +51,20 @@ public:
    * Create an uninitialized permutation.  You must assign all values using the
    * square bracket [] operator or they will be undefined!
    */
-  Permutation(varid_t nVars) : rangeIndices_(nVars) {}
+  Permutation(Index nVars) : rangeIndices_(nVars) {}
 
   /**
    * Permute the given variable, i.e. determine it's new index after the
    * permutation.
    */
-  varid_t operator[](varid_t variable) const { check(variable); return rangeIndices_[variable]; }
-  varid_t& operator[](varid_t variable) { check(variable); return rangeIndices_[variable]; }
+  Index operator[](Index variable) const { check(variable); return rangeIndices_[variable]; }
+  Index& operator[](Index variable) { check(variable); return rangeIndices_[variable]; }
 
   /**
    * The number of variables in the range of this permutation, i.e. the output
    * space.
    */
-  varid_t size() const { return rangeIndices_.size(); }
+  Index size() const { return rangeIndices_.size(); }
 
   /** Whether the permutation contains any entries */
   bool empty() const { return rangeIndices_.empty(); }
@@ -79,19 +79,19 @@ public:
   /**
    * Return an identity permutation.
    */
-  static Permutation Identity(varid_t nVars);
+  static Permutation Identity(Index nVars);
 
   /**
    * Create a permutation that pulls the given variables to the front while
    * pushing the rest to the back.
    */
-  static Permutation PullToFront(const std::vector<varid_t>& toFront, size_t size);
+  static Permutation PullToFront(const std::vector<Index>& toFront, size_t size);
 
   /**
    * Create a permutation that pulls the given variables to the front while
    * pushing the rest to the back.
    */
-  static Permutation PushToBack(const std::vector<varid_t>& toBack, size_t size);
+  static Permutation PushToBack(const std::vector<Index>& toBack, size_t size);
 
   iterator begin() { return rangeIndices_.begin(); }
   const_iterator begin() const { return rangeIndices_.begin(); }
@@ -136,7 +136,7 @@ public:
   Permutation::shared_ptr inverse() const;
 
 protected:
-  void check(varid_t variable) const { assert(variable < rangeIndices_.size()); }
+  void check(Index variable) const { assert(variable < rangeIndices_.size()); }
 
   friend class Inference;
 };

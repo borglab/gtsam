@@ -30,7 +30,7 @@ using namespace gtsam;
 using namespace boost;
 namespace ublas = boost::numeric::ublas;
 
-static const varid_t _x0_=0, _x1_=1, _x2_=2, _x3_=3, _x4_=4, _x_=5, _y_=6, _l1_=7, _l11_=8;
+static const Index _x0_=0, _x1_=1, _x2_=2, _x3_=3, _x4_=4, _x_=5, _y_=6, _l1_=7, _l11_=8;
 
 static SharedDiagonal
 	sigma0_1 = sharedSigma(2,0.1), sigma_02 = sharedSigma(2,0.2),
@@ -41,7 +41,7 @@ TEST( GaussianFactor, constructor)
 {
 	Vector b = Vector_(3, 1., 2., 3.);
 	SharedDiagonal noise = noiseModel::Diagonal::Sigmas(Vector_(3,1.,1.,1.));
-	std::list<std::pair<varid_t, Matrix> > terms;
+	std::list<std::pair<Index, Matrix> > terms;
 	terms.push_back(make_pair(_x0_, eye(3)));
 	terms.push_back(make_pair(_x1_, 2.*eye(3)));
 	GaussianFactor actual(terms, b, noise);
@@ -54,7 +54,7 @@ TEST( GaussianFactor, constructor2)
 {
   Vector b = Vector_(3, 1., 2., 3.);
   SharedDiagonal noise = noiseModel::Diagonal::Sigmas(Vector_(3,1.,1.,1.));
-  std::list<std::pair<varid_t, Matrix> > terms;
+  std::list<std::pair<Index, Matrix> > terms;
   terms.push_back(make_pair(_x0_, eye(3)));
   terms.push_back(make_pair(_x1_, 2.*eye(3)));
   GaussianFactor actual(terms, b, noise);
@@ -253,7 +253,7 @@ TEST(GaussianFactor, Combine2)
 //	exb(0) = 2*sigma1 ; exb(1) = -1*sigma1;  exb(2) = 4*sigma2 ; exb(3) = -5*sigma2;
 //	exb(4) = 3*sigma3 ; exb(5) = -88*sigma3; exb(6) = 5*sigma4 ; exb(7) = -6*sigma4;
 //
-//	vector<pair<varid_t, Matrix> > meas;
+//	vector<pair<Index, Matrix> > meas;
 //	meas.push_back(make_pair(_x1_, A22));
 //	GaussianFactor expected(meas, exb, sigmas);
 //	CHECK(assert_equal(expected,combined));
@@ -275,7 +275,7 @@ TEST(GaussianFactor, Combine2)
 //
 //  GaussianFactor combinedFactor(f);
 //
-//  vector<pair<varid_t, Matrix> > combinedMeasurement;
+//  vector<pair<Index, Matrix> > combinedMeasurement;
 //  combinedMeasurement.push_back(make_pair(_x1_, Matrix_(8,2,
 //      1.0,  0.0,
 //      0.0,  1.0,
@@ -352,7 +352,7 @@ TEST( GaussianFactor, eliminate2 )
 	b2(2) =  0.2;
 	b2(3) = -0.1;
 
-	vector<pair<varid_t, Matrix> > meas;
+	vector<pair<Index, Matrix> > meas;
 	meas.push_back(make_pair(_x2_, Ax2));
 	meas.push_back(make_pair(_l11_, Al1x1));
 	GaussianFactor combined(meas, b2, sigmas);
@@ -407,7 +407,7 @@ TEST(GaussianFactor, eliminateFrontals)
       0.,     0.,     0.,     0.,     0.,     0.,     0.,     0.,     2.,     4.,     6.,
       0.,     0.,     0.,     0.,     0.,     0.,     0.,     0.,     6.,     3.,     4.);
 
-  list<pair<varid_t, Matrix> > terms1;
+  list<pair<Index, Matrix> > terms1;
   terms1 +=
       make_pair(3, Matrix(ublas::project(Ab, ublas::range(0,4), ublas::range(0,2)))),
       make_pair(5, ublas::project(Ab, ublas::range(0,4), ublas::range(2,4))),
@@ -417,7 +417,7 @@ TEST(GaussianFactor, eliminateFrontals)
   Vector b1 = ublas::project(ublas::column(Ab, 10), ublas::range(0,4));
   GaussianFactor::shared_ptr factor1(new GaussianFactor(terms1, b1, sharedSigma(4, 0.5)));
 
-  list<pair<varid_t, Matrix> > terms2;
+  list<pair<Index, Matrix> > terms2;
   terms2 +=
       make_pair(5, ublas::project(Ab, ublas::range(4,8), ublas::range(2,4))),
       make_pair(7, ublas::project(Ab, ublas::range(4,8), ublas::range(4,6))),
@@ -426,7 +426,7 @@ TEST(GaussianFactor, eliminateFrontals)
   Vector b2 = ublas::project(ublas::column(Ab, 10), ublas::range(4,8));
   GaussianFactor::shared_ptr factor2(new GaussianFactor(terms2, b2, sharedSigma(4, 0.5)));
 
-  list<pair<varid_t, Matrix> > terms3;
+  list<pair<Index, Matrix> > terms3;
   terms3 +=
       make_pair(7, ublas::project(Ab, ublas::range(8,12), ublas::range(4,6))),
       make_pair(9, ublas::project(Ab, ublas::range(8,12), ublas::range(6,8))),
@@ -434,7 +434,7 @@ TEST(GaussianFactor, eliminateFrontals)
   Vector b3 = ublas::project(ublas::column(Ab, 10), ublas::range(8,12));
   GaussianFactor::shared_ptr factor3(new GaussianFactor(terms3, b3, sharedSigma(4, 0.5)));
 
-  list<pair<varid_t, Matrix> > terms4;
+  list<pair<Index, Matrix> > terms4;
   terms4 +=
       make_pair(11, ublas::project(Ab, ublas::range(12,14), ublas::range(8,10)));
   Vector b4 = ublas::project(ublas::column(Ab, 10), ublas::range(12,14));
@@ -464,7 +464,7 @@ TEST(GaussianFactor, eliminateFrontals)
             0.,       0.,       0.,       0.,       0.,       0.,       0.,       0.,       0.,       0.,  -7.1635);
 
   Matrix R1 = ublas::project(R, ublas::range(0,2), ublas::range(0,2));
-  list<pair<varid_t, Matrix> > cterms1;
+  list<pair<Index, Matrix> > cterms1;
   cterms1 +=
       make_pair(5, ublas::project(R, ublas::range(0,2), ublas::range(2,4))),
       make_pair(7, ublas::project(R, ublas::range(0,2), ublas::range(4,6))),
@@ -474,7 +474,7 @@ TEST(GaussianFactor, eliminateFrontals)
   GaussianConditional::shared_ptr cond1(new GaussianConditional(3, d1, R1, cterms1, ones(2)));
 
   Matrix R2 = ublas::project(R, ublas::range(2,4), ublas::range(2,4));
-  list<pair<varid_t, Matrix> > cterms2;
+  list<pair<Index, Matrix> > cterms2;
   cterms2 +=
       make_pair(7, ublas::project(R, ublas::range(2,4), ublas::range(4,6))),
       make_pair(9, ublas::project(R, ublas::range(2,4), ublas::range(6,8))),
@@ -483,7 +483,7 @@ TEST(GaussianFactor, eliminateFrontals)
   GaussianConditional::shared_ptr cond2(new GaussianConditional(5, d2, R2, cterms2, ones(2)));
 
   Matrix R3 = ublas::project(R, ublas::range(4,6), ublas::range(4,6));
-  list<pair<varid_t, Matrix> > cterms3;
+  list<pair<Index, Matrix> > cterms3;
   cterms3 +=
       make_pair(9, ublas::project(R, ublas::range(4,6), ublas::range(6,8))),
       make_pair(11, ublas::project(R, ublas::range(4,6), ublas::range(8,10)));
@@ -501,8 +501,8 @@ TEST(GaussianFactor, eliminateFrontals)
 
   CHECK(assert_equal(expectedFragment, actualFragment, 0.001));
   CHECK(assert_equal(size_t(2), actualFactor.keys().size()));
-  CHECK(assert_equal(varid_t(9), actualFactor.keys()[0]));
-  CHECK(assert_equal(varid_t(11), actualFactor.keys()[1]));
+  CHECK(assert_equal(Index(9), actualFactor.keys()[0]));
+  CHECK(assert_equal(Index(11), actualFactor.keys()[1]));
   CHECK(assert_equal(Ae1, actualFactor.getA(actualFactor.begin()), 0.001));
   CHECK(assert_equal(Ae2, actualFactor.getA(actualFactor.begin()+1), 0.001));
   CHECK(assert_equal(be, actualFactor.getb(), 0.001));
@@ -562,7 +562,7 @@ void print(const list<T>& i) {
 //{
 //	GaussianFactor f(_x1_, eye(2), _x2_, eye(2), _l1_, eye(2), ones(2), sigma0_1);
 //
-//	std::set<varid_t> act1, act2, act3;
+//	std::set<Index> act1, act2, act3;
 //	f.tally_separator(_x1_,	act1);
 //	f.tally_separator(_x2_,	act2);
 //	f.tally_separator(_l1_,	act3);
@@ -621,7 +621,7 @@ TEST ( GaussianFactor, constraint_eliminate1 )
 {
 	// construct a linear constraint
 	Vector v(2); v(0)=1.2; v(1)=3.4;
-	varid_t key = _x0_;
+	Index key = _x0_;
 	GaussianFactor lc(key, eye(2), v, constraintModel);
 
 	// eliminate it
@@ -683,7 +683,7 @@ TEST ( GaussianFactor, constraint_eliminate2 )
 //{
 //	Vector b = Vector_(3, 1., 2., 3.);
 //	SharedDiagonal noise = noiseModel::Diagonal::Sigmas(Vector_(3,1.,1.,1.));
-//	std::list<std::pair<varid_t, Matrix> > terms;
+//	std::list<std::pair<Index, Matrix> > terms;
 //	terms.push_back(make_pair(_x0_, eye(2)));
 //	terms.push_back(make_pair(_x1_, 2.*eye(2)));
 //

@@ -22,10 +22,10 @@ namespace gtsam {
 GaussianConditional::GaussianConditional() : rsd_(matrix_) {}
 
 /* ************************************************************************* */
-GaussianConditional::GaussianConditional(varid_t key) : Conditional(key), rsd_(matrix_) {}
+GaussianConditional::GaussianConditional(Index key) : Conditional(key), rsd_(matrix_) {}
 
 /* ************************************************************************* */
-GaussianConditional::GaussianConditional(varid_t key,const Vector& d, const Matrix& R, const Vector& sigmas) :
+GaussianConditional::GaussianConditional(Index key,const Vector& d, const Matrix& R, const Vector& sigmas) :
 	    Conditional(key), rsd_(matrix_), sigmas_(sigmas) {
   assert(R.size1() <= R.size2());
   size_t dims[] = { R.size2(), 1 };
@@ -35,8 +35,8 @@ GaussianConditional::GaussianConditional(varid_t key,const Vector& d, const Matr
 }
 
 /* ************************************************************************* */
-GaussianConditional::GaussianConditional(varid_t key, const Vector& d, const Matrix& R,
-    varid_t name1, const Matrix& S, const Vector& sigmas) :
+GaussianConditional::GaussianConditional(Index key, const Vector& d, const Matrix& R,
+    Index name1, const Matrix& S, const Vector& sigmas) :
     Conditional(key,name1), rsd_(matrix_), sigmas_(sigmas) {
   assert(R.size1() <= R.size2());
   size_t dims[] = { R.size2(), S.size2(), 1 };
@@ -47,8 +47,8 @@ GaussianConditional::GaussianConditional(varid_t key, const Vector& d, const Mat
 }
 
 /* ************************************************************************* */
-GaussianConditional::GaussianConditional(varid_t key, const Vector& d, const Matrix& R,
-		varid_t name1, const Matrix& S, varid_t name2, const Matrix& T, const Vector& sigmas) :
+GaussianConditional::GaussianConditional(Index key, const Vector& d, const Matrix& R,
+		Index name1, const Matrix& S, Index name2, const Matrix& T, const Vector& sigmas) :
 		Conditional(key,name1,name2), rsd_(matrix_), sigmas_(sigmas) {
   assert(R.size1() <= R.size2());
   size_t dims[] = { R.size2(), S.size2(), T.size2(), 1 };
@@ -60,7 +60,7 @@ GaussianConditional::GaussianConditional(varid_t key, const Vector& d, const Mat
 }
 
 /* ************************************************************************* */
-GaussianConditional::GaussianConditional(varid_t key, const Vector& d, const Matrix& R, const list<pair<varid_t, Matrix> >& parents, const Vector& sigmas) :
+GaussianConditional::GaussianConditional(Index key, const Vector& d, const Matrix& R, const list<pair<Index, Matrix> >& parents, const Vector& sigmas) :
     rsd_(matrix_), sigmas_(sigmas) {
   assert(R.size1() <= R.size2());
   Conditional::nFrontal_ = 1;
@@ -69,7 +69,7 @@ GaussianConditional::GaussianConditional(varid_t key, const Vector& d, const Mat
   dims[0] = R.size2();
   Conditional::factor_.keys_[0] = key;
   size_t j=1;
-  for(std::list<std::pair<varid_t, Matrix> >::const_iterator parent=parents.begin(); parent!=parents.end(); ++parent) {
+  for(std::list<std::pair<Index, Matrix> >::const_iterator parent=parents.begin(); parent!=parents.end(); ++parent) {
     Conditional::factor_.keys_[j] = parent->first;
     dims[j] = parent->second.size2();
     ++ j;
@@ -78,7 +78,7 @@ GaussianConditional::GaussianConditional(varid_t key, const Vector& d, const Mat
   rsd_.copyStructureFrom(rsd_type(matrix_, dims, dims+1+parents.size()+1, d.size()));
   ublas::noalias(rsd_(0)) = ublas::triangular_adaptor<const Matrix, ublas::upper>(R);
   j = 1;
-  for(std::list<std::pair<varid_t, Matrix> >::const_iterator parent=parents.begin(); parent!=parents.end(); ++parent) {
+  for(std::list<std::pair<Index, Matrix> >::const_iterator parent=parents.begin(); parent!=parents.end(); ++parent) {
     ublas::noalias(rsd_(j)) = parent->second;
     ++ j;
   }

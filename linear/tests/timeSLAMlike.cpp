@@ -21,7 +21,7 @@ using namespace boost::lambda;
 
 static boost::variate_generator<boost::mt19937, boost::uniform_real<> > rg(boost::mt19937(), boost::uniform_real<>(0.0, 1.0));
 
-bool _pair_compare(const pair<varid_t, Matrix>& a1, const pair<varid_t, Matrix>& a2) { return a1.first < a2.first; }
+bool _pair_compare(const pair<Index, Matrix>& a1, const pair<Index, Matrix>& a2) { return a1.first < a2.first; }
 
 int main(int argc, char *argv[]) {
 
@@ -58,14 +58,14 @@ int main(int argc, char *argv[]) {
       SharedDiagonal noise = sharedSigma(blockdim, 1.0);
       for(size_t c=0; c<nVars; ++c) {
         for(size_t d=0; d<blocksPerVar; ++d) {
-          vector<pair<varid_t, Matrix> > terms; terms.reserve(varsPerBlock);
+          vector<pair<Index, Matrix> > terms; terms.reserve(varsPerBlock);
           if(c == 0 && d == 0)
             // If it's the first factor, just make a prior
             terms.push_back(make_pair(0, eye(vardim)));
           else if(c != 0) {
             // Generate a random Gaussian factor
             for(size_t h=0; h<varsPerBlock; ++h) {
-              varid_t var;
+              Index var;
               // If it's the first factor for this variable, make it "odometry"
               if(d == 0 && h == 0)
                 var = c-1;
@@ -76,7 +76,7 @@ int main(int argc, char *argv[]) {
                 do
                   var = c + ri();
                 while(var < 0 || var > nVars-1 || find_if(terms.begin(), terms.end(),
-                    boost::bind(&pair<varid_t, Matrix>::first, boost::lambda::_1) == var) != terms.end());
+                    boost::bind(&pair<Index, Matrix>::first, boost::lambda::_1) == var) != terms.end());
               Matrix A(blockdim, vardim);
               for(size_t j=0; j<blockdim; ++j)
                 for(size_t k=0; k<vardim; ++k)

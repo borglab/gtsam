@@ -32,8 +32,8 @@ VariableSlots::VariableSlots(const FG& factorGraph) {
   size_t jointFactorPos = 0;
   BOOST_FOREACH(const typename FG::sharedFactor& factor, factorGraph) {
     assert(factor);
-    varid_t factorVarSlot = 0;
-    BOOST_FOREACH(const varid_t involvedVariable, *factor) {
+    Index factorVarSlot = 0;
+    BOOST_FOREACH(const Index involvedVariable, *factor) {
       // Set the slot in this factor for this variable.  If the
       // variable was not already discovered, create an array for it
       // that we'll fill with the slot indices for each factor that
@@ -41,9 +41,9 @@ VariableSlots::VariableSlots(const FG& factorGraph) {
       // the array entry for each factor that will indicate the factor
       // does not involve the variable.
       iterator thisVarSlots; bool inserted;
-      boost::tie(thisVarSlots, inserted) = this->insert(make_pair(involvedVariable, vector<varid_t>()));
+      boost::tie(thisVarSlots, inserted) = this->insert(make_pair(involvedVariable, vector<Index>()));
       if(inserted)
-        thisVarSlots->second.resize(factorGraph.size(), numeric_limits<varid_t>::max());
+        thisVarSlots->second.resize(factorGraph.size(), numeric_limits<Index>::max());
       thisVarSlots->second[jointFactorPos] = factorVarSlot;
       if(debug) cout << "  var " << involvedVariable << " rowblock " << jointFactorPos << " comes from factor's slot " << factorVarSlot << endl;
       ++ factorVarSlot;

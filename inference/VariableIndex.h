@@ -63,11 +63,11 @@ public:
   VariableIndex() : index_(indexUnpermuted_), nFactors_(0), nEntries_(0) {}
   template<class FactorGraph> VariableIndex(const FactorGraph& factorGraph);
 
-  varid_t size() const { return index_.size(); }
+  Index size() const { return index_.size(); }
   size_t nFactors() const { return nFactors_; }
   size_t nEntries() const { return nEntries_; }
-  const mapped_type& operator[](varid_t variable) const { checkVar(variable); return index_[variable]; }
-  mapped_type& operator[](varid_t variable) { checkVar(variable); return index_[variable]; }
+  const mapped_type& operator[](Index variable) const { checkVar(variable); return index_[variable]; }
+  mapped_type& operator[](Index variable) { checkVar(variable); return index_[variable]; }
   void permute(const Permutation& permutation);
 //  template<class Derived> void augment(const Derived& varIndex);
   template<class FactorGraph> void augment(const FactorGraph& factorGraph);
@@ -78,12 +78,12 @@ public:
 
 protected:
   VariableIndex(size_t nVars) : indexUnpermuted_(nVars), index_(indexUnpermuted_), nFactors_(0), nEntries_(0) {}
-  void checkVar(varid_t variable) const { assert(variable < index_.size()); }
+  void checkVar(Index variable) const { assert(variable < index_.size()); }
 
-  factor_iterator factorsBegin(varid_t variable) { checkVar(variable); return index_[variable].begin(); }
-  const_factor_iterator factorsBegin(varid_t variable) const { checkVar(variable); return index_[variable].begin(); }
-  factor_iterator factorsEnd(varid_t variable) { checkVar(variable); return index_[variable].end(); }
-  const_factor_iterator factorsEnd(varid_t variable) const { checkVar(variable); return index_[variable].end(); }
+  factor_iterator factorsBegin(Index variable) { checkVar(variable); return index_[variable].begin(); }
+  const_factor_iterator factorsBegin(Index variable) const { checkVar(variable); return index_[variable].begin(); }
+  factor_iterator factorsEnd(Index variable) { checkVar(variable); return index_[variable].end(); }
+  const_factor_iterator factorsEnd(Index variable) const { checkVar(variable); return index_[variable].end(); }
 
   friend class Inference;
 };
@@ -94,14 +94,14 @@ void VariableIndex<Storage>::permute(const Permutation& permutation) {
 #ifndef NDEBUG
   // Assert that the permutation does not leave behind any non-empty variables,
   // otherwise the nFactors and nEntries counts would be incorrect.
-  for(varid_t j=0; j<this->index_.size(); ++j)
+  for(Index j=0; j<this->index_.size(); ++j)
     if(find(permutation.begin(), permutation.end(), j) == permutation.end())
       assert(this->operator[](j).empty());
 #endif
   index_.permute(permutation);
 //  storage_type original(this->index_.size());
 //  this->index_.swap(original);
-//  for(varid_t j=0; j<permutation.size(); ++j)
+//  for(Index j=0; j<permutation.size(); ++j)
 //    this->index_[j].swap(original[permutation[j]]);
 }
 
@@ -115,10 +115,10 @@ VariableIndex<Storage>::VariableIndex(const FactorGraph& factorGraph) :
   // if block we assume at least one factor.
   if(factorGraph.size() > 0) {
     // Find highest-numbered variable
-    varid_t maxVar = 0;
+    Index maxVar = 0;
     BOOST_FOREACH(const typename FactorGraph::sharedFactor& factor, factorGraph) {
       if(factor) {
-        BOOST_FOREACH(const varid_t key, factor->keys()) {
+        BOOST_FOREACH(const Index key, factor->keys()) {
           if(key > maxVar)
             maxVar = key;
         }
@@ -132,8 +132,8 @@ VariableIndex<Storage>::VariableIndex(const FactorGraph& factorGraph) :
     // Build index mapping from variable id to factor index
     for(size_t fi=0; fi<factorGraph.size(); ++fi)
       if(factorGraph[fi]) {
-        varid_t fvari = 0;
-        BOOST_FOREACH(const varid_t key, factorGraph[fi]->keys()) {
+        Index fvari = 0;
+        BOOST_FOREACH(const Index key, factorGraph[fi]->keys()) {
           index_[key].push_back(mapped_factor_type(fi, fvari));
           ++ fvari;
           ++ nEntries_;
@@ -149,12 +149,12 @@ VariableIndex<Storage>::VariableIndex(const FactorGraph& factorGraph) :
 //void VariableIndex<Storage>::augment(const Derived& varIndex) {
 //  nFactors_ = std::max(nFactors_, varIndex.nFactors());
 //  nEntries_ = nEntries_ + varIndex.nEntries();
-//  varid_t originalSize = index_.size();
+//  Index originalSize = index_.size();
 //  index_.container().resize(std::max(index_.size(), varIndex.size()));
 //  index_.permutation().resize(index_.container().size());
-//  for(varid_t var=originalSize; var<index_.permutation().size(); ++var)
+//  for(Index var=originalSize; var<index_.permutation().size(); ++var)
 //    index_.permutation()[var] = var;
-//  for(varid_t var=0; var<varIndex.size(); ++var)
+//  for(Index var=0; var<varIndex.size(); ++var)
 //    index_[var].insert(index_[var].begin(), varIndex[var].begin(), varIndex[var].end());
 //}
 
@@ -166,10 +166,10 @@ void VariableIndex<Storage>::augment(const FactorGraph& factorGraph) {
   // if block we assume at least one factor.
   if(factorGraph.size() > 0) {
     // Find highest-numbered variable
-    varid_t maxVar = 0;
+    Index maxVar = 0;
     BOOST_FOREACH(const typename FactorGraph::sharedFactor& factor, factorGraph) {
       if(factor) {
-        BOOST_FOREACH(const varid_t key, factor->keys()) {
+        BOOST_FOREACH(const Index key, factor->keys()) {
           if(key > maxVar)
             maxVar = key;
         }
@@ -177,18 +177,18 @@ void VariableIndex<Storage>::augment(const FactorGraph& factorGraph) {
     }
 
     // Allocate index
-    varid_t originalSize = index_.size();
+    Index originalSize = index_.size();
     index_.container().resize(std::max(index_.size(), maxVar+1));
     index_.permutation().resize(index_.container().size());
-    for(varid_t var=originalSize; var<index_.permutation().size(); ++var)
+    for(Index var=originalSize; var<index_.permutation().size(); ++var)
       index_.permutation()[var] = var;
 
     // Augment index mapping from variable id to factor index
     size_t orignFactors = nFactors_;
     for(size_t fi=0; fi<factorGraph.size(); ++fi)
       if(factorGraph[fi]) {
-        varid_t fvari = 0;
-        BOOST_FOREACH(const varid_t key, factorGraph[fi]->keys()) {
+        Index fvari = 0;
+        BOOST_FOREACH(const Index key, factorGraph[fi]->keys()) {
           index_[key].push_back(mapped_factor_type(orignFactors + fi, fvari));
           ++ fvari;
           ++ nEntries_;
@@ -225,7 +225,7 @@ bool VariableIndex<Storage>::equals(const Derived& other, double tol) const {
 template<class Storage>
 void VariableIndex<Storage>::print(const std::string& str) const {
   std::cout << str;
-  varid_t var = 0;
+  Index var = 0;
   BOOST_FOREACH(const mapped_type& variable, index_.container()) {
     Permutation::const_iterator rvar = find(index_.permutation().begin(), index_.permutation().end(), var);
     assert(rvar != index_.permutation().end());

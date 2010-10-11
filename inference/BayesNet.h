@@ -97,10 +97,10 @@ namespace gtsam {
 		}
 
 		/** return keys in reverse topological sort order, i.e., elimination order */
-		std::list<varid_t> ordering() const;
+		std::list<Index> ordering() const;
 
 		/** SLOW O(n) random access to Conditional by key */
-		sharedConditional operator[](varid_t key) const;
+		sharedConditional operator[](Index key) const;
 
     /** return last node in ordering */
     sharedConditional& front() { return conditionals_.front(); }

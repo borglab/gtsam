@@ -24,8 +24,8 @@
 using namespace std;
 using namespace gtsam;
 
-static const varid_t l1=0, x1=1, x2=2;
-static const varid_t _a_=3, _x_=4, _y_=5, _g_=6, _p_=7;
+static const Index l1=0, x1=1, x2=2;
+static const Index _a_=3, _x_=4, _y_=5, _g_=6, _p_=7;
 
 /* ************************************************************************* */
 VectorMap smallVectorMap() {

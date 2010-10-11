@@ -18,9 +18,9 @@ using namespace boost::assign;
 using namespace std;
 using namespace gtsam;
 
-static const varid_t vx2=0;
-static const varid_t vx1=1;
-static const varid_t vl1=2;
+static const Index vx2=0;
+static const Index vx1=1;
+static const Index vl1=2;
 
 /* ************************************************************************* */
 TEST( SymbolicFactorGraph, eliminate2 )

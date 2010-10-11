@@ -40,7 +40,7 @@ class GaussianFactorGraph;
 template<class VariableIndexStorage=VariableIndexStorage_vector> class GaussianVariableIndex;
 
 /** A map from key to dimension, useful in various contexts */
-typedef std::map<varid_t, size_t> Dimensions;
+typedef std::map<Index, size_t> Dimensions;
 
 /**
  * Base Class for a linear factor.
@@ -75,24 +75,24 @@ public:
 	GaussianFactor(const Vector& b_in);
 
 	/** Construct unary factor */
-	GaussianFactor(varid_t i1, const Matrix& A1,
+	GaussianFactor(Index i1, const Matrix& A1,
 			const Vector& b, const SharedDiagonal& model);
 
 	/** Construct binary factor */
-	GaussianFactor(varid_t i1, const Matrix& A1,
-			varid_t i2, const Matrix& A2,
+	GaussianFactor(Index i1, const Matrix& A1,
+			Index i2, const Matrix& A2,
 			const Vector& b, const SharedDiagonal& model);
 
 	/** Construct ternary factor */
-	GaussianFactor(varid_t i1, const Matrix& A1, varid_t i2,
-			const Matrix& A2, varid_t i3, const Matrix& A3,
+	GaussianFactor(Index i1, const Matrix& A1, Index i2,
+			const Matrix& A2, Index i3, const Matrix& A3,
 			const Vector& b, const SharedDiagonal& model);
 
 	/** Construct an n-ary factor */
-	GaussianFactor(const std::vector<std::pair<varid_t, Matrix> > &terms,
+	GaussianFactor(const std::vector<std::pair<Index, Matrix> > &terms,
 	    const Vector &b, const SharedDiagonal& model);
 
-	GaussianFactor(const std::list<std::pair<varid_t, Matrix> > &terms,
+	GaussianFactor(const std::list<std::pair<Index, Matrix> > &terms,
 	    const Vector &b, const SharedDiagonal& model);
 
 	/** Construct from Conditional Gaussian */
@@ -140,7 +140,7 @@ public:
   template<class Storage>
   static shared_ptr Combine(const GaussianFactorGraph& factorGraph,
       const GaussianVariableIndex<Storage>& variableIndex, const std::vector<size_t>& factors,
-      const std::vector<varid_t>& variables, const std::vector<std::vector<size_t> >& variablePositions);
+      const std::vector<Index>& variables, const std::vector<std::vector<size_t> >& variablePositions);
 
   /**
    * Named constructor for combining a set of factors with pre-computed set of
@@ -208,7 +208,7 @@ public:
 
 	GaussianConditional::shared_ptr eliminateFirst();
 
-  GaussianBayesNet::shared_ptr eliminate(varid_t nFrontals = 1);
+  GaussianBayesNet::shared_ptr eliminate(Index nFrontals = 1);
 
 	friend class GaussianFactorGraph;
 	friend class Inference;

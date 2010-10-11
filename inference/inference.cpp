@@ -13,7 +13,7 @@ namespace gtsam {
 
 /* ************************************************************************* */
 Conditional::shared_ptr
-Inference::EliminateOneSymbolic(FactorGraph<Factor>& factorGraph, VariableIndex<>& variableIndex, varid_t var) {
+Inference::EliminateOneSymbolic(FactorGraph<Factor>& factorGraph, VariableIndex<>& variableIndex, Index var) {
 
   tic("EliminateOne");
 
@@ -42,7 +42,7 @@ Inference::EliminateOneSymbolic(FactorGraph<Factor>& factorGraph, VariableIndex<
     // key has been added yet, but the positions stored in the variableIndex are
     // from the unsorted positions and will be fixed later.
     tic("EliminateOne: Find involved vars");
-    typedef set<varid_t, std::less<varid_t>, boost::fast_pool_allocator<varid_t> > InvolvedKeys;
+    typedef set<Index, std::less<Index>, boost::fast_pool_allocator<Index> > InvolvedKeys;
     InvolvedKeys involvedKeys;
     BOOST_FOREACH(size_t removedFactorI, removedFactors) {
       if(debug) cout << removedFactorI << " is involved" << endl;
@@ -50,7 +50,7 @@ Inference::EliminateOneSymbolic(FactorGraph<Factor>& factorGraph, VariableIndex<
       if(removedFactorI < factorGraph.size() && factorGraph[removedFactorI]) {
         // Loop over the variables involved in the removed factor to update the
         // variable index and joint factor positions of each variable.
-        BOOST_FOREACH(varid_t involvedVariable, factorGraph[removedFactorI]->keys()) {
+        BOOST_FOREACH(Index involvedVariable, factorGraph[removedFactorI]->keys()) {
           if(debug) cout << "  pulls in variable " << involvedVariable << endl;
           // Mark the new joint factor as involving each variable in the removed factor.
           assert(!variableIndex[involvedVariable].empty());

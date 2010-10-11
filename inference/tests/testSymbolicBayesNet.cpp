@@ -17,10 +17,10 @@ using namespace boost::assign;
 using namespace std;
 using namespace gtsam;
 
-static const varid_t _L_ = 0;
-static const varid_t _A_ = 1;
-static const varid_t _B_ = 2;
-static const varid_t _C_ = 3;
+static const Index _L_ = 0;
+static const Index _A_ = 1;
+static const Index _B_ = 2;
+static const Index _C_ = 3;
 
 Conditional::shared_ptr
 	B(new Conditional(_B_)),

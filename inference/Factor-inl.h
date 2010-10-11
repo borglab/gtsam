@@ -23,7 +23,7 @@ namespace gtsam {
 //  keys_.resize(c->parents().size()+1);
 //  keys_[0] = c->key();
 //  size_t j = 1;
-//  BOOST_FOREACH(const varid_t parent, c->parents()) {
+//  BOOST_FOREACH(const Index parent, c->parents()) {
 //    keys_[j++] = parent;
 //  }
 //  checkSorted();
@@ -41,19 +41,19 @@ template<class KeyIterator> Factor::Factor(KeyIterator beginKey, KeyIterator end
 template<class FactorGraphType, class VariableIndexStorage>
 Factor::shared_ptr Factor::Combine(const FactorGraphType& factorGraph,
     const VariableIndex<VariableIndexStorage>& variableIndex, const std::vector<size_t>& factors,
-    const std::vector<varid_t>& variables, const std::vector<std::vector<size_t> >& variablePositions) {
+    const std::vector<Index>& variables, const std::vector<std::vector<size_t> >& variablePositions) {
 
   return shared_ptr(boost::make_shared<Factor>(variables.begin(), variables.end()));
 }
 
 /* ************************************************************************* */
 template<class MapAllocator>
-Factor::shared_ptr Factor::Combine(const FactorGraph<Factor>& factors, const std::map<varid_t, std::vector<varid_t>, std::less<varid_t>, MapAllocator>& variableSlots) {
-  typedef const std::map<varid_t, std::vector<varid_t>, std::less<varid_t>, MapAllocator> VariableSlots;
+Factor::shared_ptr Factor::Combine(const FactorGraph<Factor>& factors, const std::map<Index, std::vector<Index>, std::less<Index>, MapAllocator>& variableSlots) {
+  typedef const std::map<Index, std::vector<Index>, std::less<Index>, MapAllocator> VariableSlots;
   typedef typeof(boost::lambda::bind(&VariableSlots::value_type::first, boost::lambda::_1)) FirstGetter;
   typedef boost::transform_iterator<
       FirstGetter, typename VariableSlots::const_iterator,
-      varid_t, varid_t> IndexIterator;
+      Index, Index> IndexIterator;
   FirstGetter firstGetter(boost::lambda::bind(&VariableSlots::value_type::first, boost::lambda::_1));
   IndexIterator keysBegin(variableSlots.begin(), firstGetter);
   IndexIterator keysEnd(variableSlots.end(), firstGetter);

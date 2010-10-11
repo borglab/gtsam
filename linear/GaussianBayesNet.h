@@ -23,24 +23,24 @@ namespace gtsam {
 	typedef BayesNet<GaussianConditional> GaussianBayesNet;
 
 	/** Create a scalar Gaussian */
-	GaussianBayesNet scalarGaussian(varid_t key, double mu=0.0, double sigma=1.0);
+	GaussianBayesNet scalarGaussian(Index key, double mu=0.0, double sigma=1.0);
 
 	/** Create a simple Gaussian on a single multivariate variable */
-	GaussianBayesNet simpleGaussian(varid_t key, const Vector& mu, double sigma=1.0);
+	GaussianBayesNet simpleGaussian(Index key, const Vector& mu, double sigma=1.0);
 
 	/**
 	 * Add a conditional node with one parent
 	 * |Rx+Sy-d|
 	 */
-	void push_front(GaussianBayesNet& bn, varid_t key, Vector d, Matrix R,
-			varid_t name1, Matrix S, Vector sigmas);
+	void push_front(GaussianBayesNet& bn, Index key, Vector d, Matrix R,
+			Index name1, Matrix S, Vector sigmas);
 
 	/**
 	 * Add a conditional node with two parents
 	 * |Rx+Sy+Tz-d|
 	 */
-	void push_front(GaussianBayesNet& bn, varid_t key, Vector d, Matrix R,
-			varid_t name1, Matrix S, varid_t name2, Matrix T, Vector sigmas);
+	void push_front(GaussianBayesNet& bn, Index key, Vector d, Matrix R,
+			Index name1, Matrix S, Index name2, Matrix T, Vector sigmas);
 
 	/**
 	 * Allocate a VectorValues for the variables in a BayesNet

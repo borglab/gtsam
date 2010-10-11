@@ -214,7 +214,7 @@ namespace gtsam {
 			const X& xj = x[key_];
 			Matrix A;
 			Vector b = - evaluateError(xj, A);
-			varid_t var = ordering[key_];
+			Index var = ordering[key_];
 			// TODO pass unwhitened + noise model to Gaussian factor
 			SharedDiagonal constrained =
 					boost::shared_dynamic_cast<noiseModel::Constrained>(this->noiseModel_);
@@ -328,7 +328,7 @@ namespace gtsam {
 			const X2& x2 = c[key2_];
 			Matrix A1, A2;
 			Vector b = -evaluateError(x1, x2, A1, A2);
-			const varid_t var1 = ordering[key1_], var2 = ordering[key2_];
+			const Index var1 = ordering[key1_], var2 = ordering[key2_];
 			// TODO pass unwhitened + noise model to Gaussian factor
 			SharedDiagonal constrained =
 					boost::shared_dynamic_cast<noiseModel::Constrained>(this->noiseModel_);
@@ -352,7 +352,7 @@ namespace gtsam {
      * variable indices.
      */
     virtual Factor::shared_ptr symbolic(const Ordering& ordering) const {
-      const varid_t var1 = ordering[key1_], var2 = ordering[key2_];
+      const Index var1 = ordering[key1_], var2 = ordering[key2_];
       if(var1 < var2)
       return Factor::shared_ptr(new Factor(var1, var2));
       else
@@ -470,7 +470,7 @@ namespace gtsam {
       const X3& x3 = c[key3_];
       Matrix A1, A2, A3;
       Vector b = -evaluateError(x1, x2, x3, A1, A2, A3);
-      const varid_t var1 = ordering[key1_], var2 = ordering[key2_], var3 = ordering[key3_];
+      const Index var1 = ordering[key1_], var2 = ordering[key2_], var3 = ordering[key3_];
       // TODO pass unwhitened + noise model to Gaussian factor
       SharedDiagonal constrained =
           boost::shared_dynamic_cast<noiseModel::Constrained>(this->noiseModel_);
@@ -509,7 +509,7 @@ namespace gtsam {
      * variable indices.
      */
     virtual Factor::shared_ptr symbolic(const Ordering& ordering) const {
-      const varid_t var1 = ordering[key1_], var2 = ordering[key2_], var3 = ordering[key3_];
+      const Index var1 = ordering[key1_], var2 = ordering[key2_], var3 = ordering[key3_];
       if(var1 < var2 && var2 < var3)
         return Factor::shared_ptr(new Factor(ordering[key1_], ordering[key2_], ordering[key3_]));
       else if(var2 < var1 && var1 < var3)

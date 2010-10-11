@@ -27,33 +27,33 @@ namespace gtsam {
 	    FactorGraph<Factor>(bayesNet) {}
 
 	/* ************************************************************************* */
-  void SymbolicFactorGraph::push_factor(varid_t key) {
+  void SymbolicFactorGraph::push_factor(Index key) {
     boost::shared_ptr<Factor> factor(new Factor(key));
     push_back(factor);
   }
 
   /** Push back binary factor */
-  void SymbolicFactorGraph::push_factor(varid_t key1, varid_t key2) {
+  void SymbolicFactorGraph::push_factor(Index key1, Index key2) {
     boost::shared_ptr<Factor> factor(new Factor(key1,key2));
     push_back(factor);
   }
 
   /** Push back ternary factor */
-  void SymbolicFactorGraph::push_factor(varid_t key1, varid_t key2, varid_t key3) {
+  void SymbolicFactorGraph::push_factor(Index key1, Index key2, Index key3) {
     boost::shared_ptr<Factor> factor(new Factor(key1,key2,key3));
     push_back(factor);
   }
 
   /** Push back 4-way factor */
-  void SymbolicFactorGraph::push_factor(varid_t key1, varid_t key2, varid_t key3, varid_t key4) {
+  void SymbolicFactorGraph::push_factor(Index key1, Index key2, Index key3, Index key4) {
     boost::shared_ptr<Factor> factor(new Factor(key1,key2,key3,key4));
     push_back(factor);
   }
 
   /* ************************************************************************* */
-  std::set<varid_t, std::less<varid_t>, boost::fast_pool_allocator<varid_t> >
+  std::set<Index, std::less<Index>, boost::fast_pool_allocator<Index> >
   SymbolicFactorGraph::keys() const {
-    std::set<varid_t, std::less<varid_t>, boost::fast_pool_allocator<varid_t> > keys;
+    std::set<Index, std::less<Index>, boost::fast_pool_allocator<Index> > keys;
     BOOST_FOREACH(const sharedFactor& factor, *this) {
       if(factor) keys.insert(factor->begin(), factor->end()); }
     return keys;

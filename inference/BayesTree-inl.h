@@ -76,8 +76,8 @@ namespace gtsam {
 
 	/* ************************************************************************* */
 	template<class Conditional>
-	vector<varid_t> BayesTree<Conditional>::Clique::keys() const {
-	  vector<varid_t> keys;
+	vector<Index> BayesTree<Conditional>::Clique::keys() const {
+	  vector<Index> keys;
 	  keys.reserve(this->size() + separator_.size());
 	  BOOST_FOREACH(const sharedConditional conditional, *this) {
 	    keys.push_back(conditional->key());
@@ -92,7 +92,7 @@ namespace gtsam {
 			cout << s << "Clique ";
 			BOOST_FOREACH(const sharedConditional& conditional, this->conditionals_) { cout << conditional->key() << " "; }
 			cout << "| ";
-			BOOST_FOREACH(const varid_t sep, separator_) { cout << sep << " "; }
+			BOOST_FOREACH(const Index sep, separator_) { cout << sep << " "; }
 			cout << "\n";
 			BOOST_FOREACH(const sharedConditional& conditional, this->conditionals_) {
 				conditional->print("  " + s + "conditional");
@@ -100,7 +100,7 @@ namespace gtsam {
 			}
 //			if (!separator_.empty()) {
 //				cout << " :";
-//				BOOST_FOREACH(varid_t key, separator_)
+//				BOOST_FOREACH(Index key, separator_)
 //					cout << " " << key;
 //			}
 //			cout << endl;
@@ -127,7 +127,7 @@ namespace gtsam {
   template<class Conditional>
   void BayesTree<Conditional>::Clique::permuteWithInverse(const Permutation& inversePermutation) {
     BayesNet<Conditional>::permuteWithInverse(inversePermutation);
-    BOOST_FOREACH(varid_t& separatorKey, separator_) { separatorKey = inversePermutation[separatorKey]; }
+    BOOST_FOREACH(Index& separatorKey, separator_) { separatorKey = inversePermutation[separatorKey]; }
     if(cachedFactor_) cachedFactor_->permuteWithInverse(inversePermutation);
     BOOST_FOREACH(const shared_ptr& child, children_) {
       child->permuteWithInverse(inversePermutation);
@@ -140,14 +140,14 @@ namespace gtsam {
     bool changed = BayesNet<Conditional>::permuteSeparatorWithInverse(inversePermutation);
 #ifndef NDEBUG
     if(!changed) {
-      BOOST_FOREACH(varid_t& separatorKey, separator_) { assert(separatorKey == inversePermutation[separatorKey]); }
+      BOOST_FOREACH(Index& separatorKey, separator_) { assert(separatorKey == inversePermutation[separatorKey]); }
       BOOST_FOREACH(const shared_ptr& child, children_) {
         assert(child->permuteSeparatorWithInverse(inversePermutation) == false);
       }
     }
 #endif
     if(changed) {
-      BOOST_FOREACH(varid_t& separatorKey, separator_) { separatorKey = inversePermutation[separatorKey]; }
+      BOOST_FOREACH(Index& separatorKey, separator_) { separatorKey = inversePermutation[separatorKey]; }
       if(cachedFactor_) cachedFactor_->permuteWithInverse(inversePermutation);
       BOOST_FOREACH(const shared_ptr& child, children_) {
         (void)child->permuteSeparatorWithInverse(inversePermutation);
@@ -208,7 +208,7 @@ namespace gtsam {
 		}
 
 		first = true;
-		BOOST_FOREACH(varid_t sep, clique->separator_) {
+		BOOST_FOREACH(Index sep, clique->separator_) {
 			if(!first) parent += ","; first = false;
 			parent += (boost::format("%1%")%sep).str();
 		}
@@ -285,28 +285,28 @@ namespace gtsam {
 		// However, an added wrinkle is that Cp might overlap with the root.
 		// Keys corresponding to the root should not be added to the ordering at all.
 
-		typedef set<varid_t, std::less<varid_t>, boost::fast_pool_allocator<varid_t> > FastJSet;
+		typedef set<Index, std::less<Index>, boost::fast_pool_allocator<Index> > FastJSet;
 
 		// Get the key list Cp=Fp+Sp, which will form the basis for the integrands
-		vector<varid_t> parentKeys(parent->keys());
+		vector<Index> parentKeys(parent->keys());
 		FastJSet integrands(parentKeys.begin(), parentKeys.end());
 
 		// Start ordering with the separator
 		FastJSet separator(separator_.begin(), separator_.end());
 
 		// remove any variables in the root, after this integrands = Cp\R, ordering = S\R
-		BOOST_FOREACH(varid_t key, R->ordering()) {
+		BOOST_FOREACH(Index key, R->ordering()) {
 			integrands.erase(key);
 			separator.erase(key);
 		}
 
 		// remove any variables in the separator, after this integrands = Cp\R\S
-		BOOST_FOREACH(varid_t key, separator_) integrands.erase(key);
+		BOOST_FOREACH(Index key, separator_) integrands.erase(key);
 
 		// form the ordering as [Cp\R\S S\R]
-		vector<varid_t> ordering; ordering.reserve(integrands.size() + separator.size());
-		BOOST_FOREACH(varid_t key, integrands) ordering.push_back(key);
-		BOOST_FOREACH(varid_t key, separator) ordering.push_back(key);
+		vector<Index> ordering; ordering.reserve(integrands.size() + separator.size());
+		BOOST_FOREACH(Index key, integrands) ordering.push_back(key);
+		BOOST_FOREACH(Index key, separator) ordering.push_back(key);
 
 		// eliminate to get marginal
 		typename FactorGraph::variableindex_type varIndex(p_Cp_R);
@@ -319,7 +319,7 @@ namespace gtsam {
 		BayesNet<Conditional> p_S_R = *Inference::EliminateUntil(p_Cp_R, ordering.size(), varIndex);
 
 		// remove all integrands
-		for(varid_t j=0; j<integrands.size(); ++j)
+		for(Index j=0; j<integrands.size(); ++j)
 		  p_S_R.pop_front();
 
 		// Undo the permutation on the shortcut
@@ -370,7 +370,7 @@ namespace gtsam {
 //
 //		// Find the keys of both C1 and C2
 //		Ordering keys12 = keys();
-//		BOOST_FOREACH(varid_t key,C2->keys()) keys12.push_back(key);
+//		BOOST_FOREACH(Index key,C2->keys()) keys12.push_back(key);
 //		keys12.unique();
 //
 //		// Calculate the marginal
@@ -396,7 +396,7 @@ namespace gtsam {
 	typename BayesTree<Conditional>::sharedClique BayesTree<Conditional>::addClique(
 	    const sharedConditional& conditional, sharedClique parent_clique) {
 		sharedClique new_clique(new Clique(conditional));
-		varid_t key = conditional->key();
+		Index key = conditional->key();
 		nodes_.resize(std::max(key+1, nodes_.size()));
 		nodes_[key] = new_clique;
 		if (parent_clique != NULL) {
@@ -411,7 +411,7 @@ namespace gtsam {
 	typename BayesTree<Conditional>::sharedClique BayesTree<Conditional>::addClique(
 	    const sharedConditional& conditional, list<sharedClique>& child_cliques) {
 		sharedClique new_clique(new Clique(conditional));
-    varid_t key = conditional->key();
+    Index key = conditional->key();
     nodes_.resize(max(key+1, nodes_.size()));
     nodes_[key] = new_clique;
 		new_clique->children_ = child_cliques;
@@ -428,7 +428,7 @@ namespace gtsam {
 	  // Debug check to make sure the conditional variable is ordered lower than
 	  // its parents and that all of its parents are present either in this
 	  // clique or its separator.
-	  BOOST_FOREACH(varid_t parent, conditional->parents()) {
+	  BOOST_FOREACH(Index parent, conditional->parents()) {
 	    assert(parent > conditional->key());
 	    bool hasParent = false;
 	    const Clique& cliquer(*clique);
@@ -446,7 +446,7 @@ namespace gtsam {
 #endif
 	  if(debug) conditional->print("Adding conditional ");
 	  if(debug) clique->print("To clique ");
-	  varid_t key = conditional->key();
+	  Index key = conditional->key();
 	  nodes_.resize(std::max(key+1, nodes_.size()));
 	  nodes_[key] = clique;
 	  clique->push_front(conditional);
@@ -466,7 +466,7 @@ namespace gtsam {
 		BOOST_FOREACH(sharedClique child, clique->children_)
 	  	child->parent_ = typename BayesTree<Conditional>::Clique::weak_ptr();
 
-	  BOOST_FOREACH(varid_t key, clique->separator_) {
+	  BOOST_FOREACH(Index key, clique->separator_) {
 			nodes_[key].reset();
 	  }
 	  const Clique& cliquer(*clique);
@@ -547,14 +547,14 @@ namespace gtsam {
 	/* ************************************************************************* */
 	template<class Conditional>
 	template<class Container>
-	inline varid_t BayesTree<Conditional>::findParentClique(const Container& parents) const {
+	inline Index BayesTree<Conditional>::findParentClique(const Container& parents) const {
 	  typename Container::const_iterator lowestOrderedParent = min_element(parents.begin(), parents.end());
 	  assert(lowestOrderedParent != parents.end());
 	  return *lowestOrderedParent;
 
-//		boost::optional<varid_t> parentCliqueRepresentative;
+//		boost::optional<Index> parentCliqueRepresentative;
 //		boost::optional<size_t> lowest;
-//		BOOST_FOREACH(varid_t p, parents) {
+//		BOOST_FOREACH(Index p, parents) {
 //			size_t i = index(p);
 //			if (!lowest || i<*lowest) {
 //				lowest.reset(i);
@@ -586,7 +586,7 @@ namespace gtsam {
 
 		// otherwise, find the parent clique by using the index data structure
 		// to find the lowest-ordered parent
-		varid_t parentRepresentative = findParentClique(parents);
+		Index parentRepresentative = findParentClique(parents);
 		if(debug) cout << "First-eliminated parent is " << parentRepresentative << endl;
 		sharedClique parent_clique = (*this)[parentRepresentative];
 		if(debug) parent_clique->print("Parent clique is ");
@@ -597,7 +597,7 @@ namespace gtsam {
 #ifndef NDEBUG
 		  // Debug check that the parent keys of the new conditional match the keys
 		  // currently in the clique.
-//		  list<varid_t>::const_iterator parent = parents.begin();
+//		  list<Index>::const_iterator parent = parents.begin();
 //		  typename Clique::const_iterator cond = parent_clique->begin();
 //		  while(parent != parents.end()) {
 //		    assert(cond != parent_clique->end());
@@ -663,7 +663,7 @@ namespace gtsam {
 	      assert(!root_);
 	      root_ = subtree;
 	    } else {
-	      varid_t parentRepresentative = findParentClique(subtree->separator_);
+	      Index parentRepresentative = findParentClique(subtree->separator_);
 	      sharedClique parent = (*this)[parentRepresentative];
 	      parent->children_ += subtree;
 	      subtree->parent_ = parent; // set new parent!
@@ -682,7 +682,7 @@ namespace gtsam {
 	template<class Conditional>
 	template<class FactorGraph>
 	FactorGraph
-	BayesTree<Conditional>::marginal(varid_t key) const {
+	BayesTree<Conditional>::marginal(Index key) const {
 
 		// get clique containing key
 		sharedClique clique = (*this)[key];
@@ -692,7 +692,7 @@ namespace gtsam {
 
 		// Reorder so that only the requested key is not eliminated
 		typename FactorGraph::variableindex_type varIndex(cliqueMarginal);
-		vector<varid_t> keyAsVector(1); keyAsVector[0] = key;
+		vector<Index> keyAsVector(1); keyAsVector[0] = key;
 		Permutation toBack(Permutation::PushToBack(keyAsVector, varIndex.size()));
 		Permutation::shared_ptr toBackInverse(toBack.inverse());
 		varIndex.permute(toBack);
@@ -713,7 +713,7 @@ namespace gtsam {
 	template<class Conditional>
 	template<class FactorGraph>
 	BayesNet<Conditional>
-	BayesTree<Conditional>::marginalBayesNet(varid_t key) const {
+	BayesTree<Conditional>::marginalBayesNet(Index key) const {
 
 		// calculate marginal as a factor graph
 	  FactorGraph fg = this->marginal<FactorGraph>(key);
@@ -728,7 +728,7 @@ namespace gtsam {
 //	template<class Conditional>
 //	template<class Factor>
 //	FactorGraph<Factor>
-//	BayesTree<Conditional>::joint(varid_t key1, varid_t key2) const {
+//	BayesTree<Conditional>::joint(Index key1, Index key2) const {
 //
 //		// get clique C1 and C2
 //		sharedClique C1 = (*this)[key1], C2 = (*this)[key2];
@@ -752,7 +752,7 @@ namespace gtsam {
 //	template<class Conditional>
 //	template<class Factor>
 //	BayesNet<Conditional>
-//	BayesTree<Conditional>::jointBayesNet(varid_t key1, varid_t key2) const {
+//	BayesTree<Conditional>::jointBayesNet(Index key1, Index key2) const {
 //
 //		// calculate marginal as a factor graph
 //	  FactorGraph<Factor> fg = this->joint<Factor>(key1,key2);
@@ -803,7 +803,7 @@ namespace gtsam {
   		BayesNet<Conditional>& bn, typename BayesTree<Conditional>::Cliques& orphans) {
 
 		// process each key of the new factor
-	  BOOST_FOREACH(const varid_t& key, keys) {
+	  BOOST_FOREACH(const Index& key, keys) {
 
 	    // get the clique
 	    if(key < nodes_.size()) {

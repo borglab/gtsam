@@ -52,7 +52,7 @@ public:
   VectorValues(const Container& dimensions);
 
   /** Construct to hold nVars vectors of varDim dimension each. */
-  VectorValues(varid_t nVars, size_t varDim);
+  VectorValues(Index nVars, size_t varDim);
 
   /** Construct from a container of variable dimensions in variable order and
    * a combined Vector of all of the variables in order.
@@ -60,11 +60,11 @@ public:
   VectorValues(const std::vector<size_t>& dimensions, const Vector& values);
 
   /** Element access */
-  mapped_type operator[](varid_t variable);
-  const_mapped_type operator[](varid_t variable) const;
+  mapped_type operator[](Index variable);
+  const_mapped_type operator[](Index variable) const;
 
   /** Number of elements */
-  varid_t size() const { return varStarts_.size()-1; }
+  Index size() const { return varStarts_.size()-1; }
 
   /** Total dimensionality used (could be smaller than what has been allocated
    * with reserve(...) ).
@@ -81,14 +81,14 @@ public:
   const_iterator end() const { return _impl_iterator<const VectorValues>(*this, varStarts_.size()-1); }
 
   /** Reserve space for a total number of variables and dimensionality */
-  void reserve(varid_t nVars, size_t totalDims) { values_.resize(std::max(totalDims, values_.size())); varStarts_.reserve(nVars+1); }
+  void reserve(Index nVars, size_t totalDims) { values_.resize(std::max(totalDims, values_.size())); varStarts_.reserve(nVars+1); }
 
   /**
    * Append a variable using the next variable ID, and return that ID.  Space
    * must have been allocated ahead of time using reserve(...).
    */
-  varid_t push_back_preallocated(const Vector& vector) {
-    varid_t var = varStarts_.size()-1;
+  Index push_back_preallocated(const Vector& vector) {
+    Index var = varStarts_.size()-1;
     varStarts_.push_back(varStarts_.back()+vector.size());
     this->operator[](var) = vector;  // This will assert that values_ has enough allocated space.
     return var;
@@ -100,7 +100,7 @@ public:
   /** print required by Testable for unit testing */
   void print(const std::string& str = "VectorValues: ") const {
     std::cout << str << ": " << varStarts_.size()-1 << " elements\n";
-    for(varid_t var=0; var<size(); ++var) {
+    for(Index var=0; var<size(); ++var) {
       std::cout << "  " << var << " " << operator[](var) << "\n";
     }
     std::cout.flush();
@@ -110,7 +110,7 @@ public:
   bool equals(const VectorValues& expected, double tol=1e-9) const {
     if(size() != expected.size()) return false;
     // iterate over all elements
-    for(varid_t var=0; var<size(); ++var)
+    for(Index var=0; var<size(); ++var)
       if(!equal_with_abs_tol(expected[var],operator[](var),tol))
         return false;
     return true;
@@ -136,9 +136,9 @@ public:
   class _impl_iterator {
   protected:
     C& config_;
-    varid_t curVariable_;
+    Index curVariable_;
 
-    _impl_iterator(C& config, varid_t curVariable) : config_(config), curVariable_(curVariable) {}
+    _impl_iterator(C& config, Index curVariable) : config_(config), curVariable_(curVariable) {}
     void checkCompat(const _impl_iterator<C>& r) { assert(&config_ == &r.config_); }
     friend class VectorValues;
 
@@ -157,14 +157,14 @@ public:
   };
 
 protected:
-  void checkVariable(varid_t variable) const { assert(variable < varStarts_.size()-1); }
+  void checkVariable(Index variable) const { assert(variable < varStarts_.size()-1); }
 };
 
 
 //inline VectorValues::VectorValues(const GaussianVariableIndex& variableIndex) : varStarts_(variableIndex.size()+1) {
 //  size_t varStart = 0;
 //  varStarts_[0] = 0;
-//  for(varid_t var=0; var<variableIndex.size(); ++var) {
+//  for(Index var=0; var<variableIndex.size(); ++var) {
 //    varStart += variableIndex.dim(var);
 //    varStarts_[var+1] = varStart;
 //  }
@@ -175,17 +175,17 @@ template<class Container>
 inline VectorValues::VectorValues(const Container& dimensions) : varStarts_(dimensions.size()+1) {
   varStarts_[0] = 0;
   size_t varStart = 0;
-  varid_t var = 0;
+  Index var = 0;
   BOOST_FOREACH(size_t dim, dimensions) {
     varStarts_[++var] = (varStart += dim);
   }
   values_.resize(varStarts_.back(), false);
 }
 
-inline VectorValues::VectorValues(varid_t nVars, size_t varDim) : varStarts_(nVars+1) {
+inline VectorValues::VectorValues(Index nVars, size_t varDim) : varStarts_(nVars+1) {
   varStarts_[0] = 0;
   size_t varStart = 0;
-  for(varid_t j=1; j<=nVars; ++j)
+  for(Index j=1; j<=nVars; ++j)
     varStarts_[j] = (varStart += varDim);
   values_.resize(varStarts_.back(), false);
 }
@@ -194,20 +194,20 @@ inline VectorValues::VectorValues(const std::vector<size_t>& dimensions, const V
     values_(values), varStarts_(dimensions.size()+1) {
   varStarts_[0] = 0;
   size_t varStart = 0;
-  varid_t var = 0;
+  Index var = 0;
   BOOST_FOREACH(size_t dim, dimensions) {
     varStarts_[++var] = (varStart += dim);
   }
   assert(varStarts_.back() == values.size());
 }
 
-inline VectorValues::mapped_type VectorValues::operator[](varid_t variable) {
+inline VectorValues::mapped_type VectorValues::operator[](Index variable) {
   checkVariable(variable);
   return boost::numeric::ublas::project(values_,
       boost::numeric::ublas::range(varStarts_[variable], varStarts_[variable+1]));
 }
 
-inline VectorValues::const_mapped_type VectorValues::operator[](varid_t variable) const {
+inline VectorValues::const_mapped_type VectorValues::operator[](Index variable) const {
   checkVariable(variable);
   return boost::numeric::ublas::project(values_,
       boost::numeric::ublas::range(varStarts_[variable], varStarts_[variable+1]));

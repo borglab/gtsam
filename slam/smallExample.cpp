@@ -35,8 +35,8 @@ namespace example {
 	static SharedDiagonal sigma0_2 = noiseModel::Isotropic::Sigma(2,0.2);
 	static SharedDiagonal constraintModel = noiseModel::Constrained::All(2);
 
-	static const varid_t _l1_=0, _x1_=1, _x2_=2;
-	static const varid_t _x_=0, _y_=1, _z_=2;
+	static const Index _l1_=0, _x1_=1, _x2_=2;
+	static const Index _x_=0, _y_=1, _z_=2;
 
 	/* ************************************************************************* */
 	boost::shared_ptr<const Graph> sharedNonlinearFactorGraph() {

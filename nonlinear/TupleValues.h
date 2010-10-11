@@ -184,7 +184,7 @@ namespace gtsam {
      * NonlinearFactorGraph::orderingCOLAMD().  Alternatively, you may permute
      * this ordering yourself (as orderingCOLAMD() does internally).
      */
-    Ordering::shared_ptr orderingArbitrary(varid_t firstVar = 0) const {
+    Ordering::shared_ptr orderingArbitrary(Index firstVar = 0) const {
       // Generate an initial key ordering in iterator order
       _ValuesKeyOrderer keyOrderer(firstVar);
       this->apply(keyOrderer);

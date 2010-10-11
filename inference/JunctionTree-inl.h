@@ -57,13 +57,13 @@ namespace gtsam {
 
 	  // Two stages - first build an array of the lowest-ordered variable in each
 	  // factor and find the last variable to be eliminated.
-	  vector<varid_t> lowestOrdered(fg.size());
-	  varid_t maxVar = 0;
+	  vector<Index> lowestOrdered(fg.size());
+	  Index maxVar = 0;
 	  for(size_t i=0; i<fg.size(); ++i)
 	    if(fg[i]) {
 	      typename FG::factor_type::const_iterator min = std::min_element(fg[i]->begin(), fg[i]->end());
 	      if(min == fg[i]->end())
-	        lowestOrdered[i] = numeric_limits<varid_t>::max();
+	        lowestOrdered[i] = numeric_limits<Index>::max();
 	      else {
 	        lowestOrdered[i] = *min;
 	        maxVar = std::max(maxVar, *min);
@@ -74,7 +74,7 @@ namespace gtsam {
 	  // variable.
 	  vector<list<size_t, boost::fast_pool_allocator<size_t> > > targets(maxVar+1);
 	  for(size_t i=0; i<lowestOrdered.size(); ++i)
-	    if(lowestOrdered[i] != numeric_limits<varid_t>::max())
+	    if(lowestOrdered[i] != numeric_limits<Index>::max())
 	      targets[lowestOrdered[i]].push_back(i);
 
 	  // Now call the recursive distributeFactors
@@ -89,13 +89,13 @@ namespace gtsam {
 
 	  if(bayesClique) {
 	    // create a new clique in the junction tree
-	    list<varid_t> frontals = bayesClique->ordering();
+	    list<Index> frontals = bayesClique->ordering();
 	    sharedClique clique(new Clique(frontals.begin(), frontals.end(), bayesClique->separator_.begin(), bayesClique->separator_.end()));
 
 	    // count the factors for this cluster to pre-allocate space
 	    {
 	      size_t nFactors = 0;
-	      BOOST_FOREACH(const varid_t frontal, clique->frontal) {
+	      BOOST_FOREACH(const Index frontal, clique->frontal) {
 	        // There may be less variables in "targets" than there really are if
 	        // some of the highest-numbered variables do not pull in any factors.
 	        if(frontal < targets.size())
@@ -103,7 +103,7 @@ namespace gtsam {
 	      clique->reserve(nFactors);
 	    }
 	    // add the factors to this cluster
-	    BOOST_FOREACH(const varid_t frontal, clique->frontal) {
+	    BOOST_FOREACH(const Index frontal, clique->frontal) {
 	      if(frontal < targets.size()) {
 	        BOOST_FOREACH(const size_t factorI, targets[frontal]) {
 	          clique->push_back(fg[factorI]); } } }
@@ -145,10 +145,10 @@ namespace gtsam {
 #ifndef NDEBUG
     // Debug check that the keys found in the factors match the frontal and
     // separator keys of the clique.
-    list<varid_t> allKeys;
+    list<Index> allKeys;
     allKeys.insert(allKeys.end(), current->frontal.begin(), current->frontal.end());
     allKeys.insert(allKeys.end(), current->separator.begin(), current->separator.end());
-    vector<varid_t> varslotsKeys(variableSlots.size());
+    vector<Index> varslotsKeys(variableSlots.size());
     std::transform(variableSlots.begin(), variableSlots.end(), varslotsKeys.begin(),
         boost::lambda::bind(&VariableSlots::iterator::value_type::first, boost::lambda::_1));
     assert(std::equal(allKeys.begin(), allKeys.end(), varslotsKeys.begin()));

@@ -25,7 +25,7 @@ Factor::Factor(const Factor& f) : keys_(f.keys_), permuted_(f.permuted_) {}
 /* ************************************************************************* */
 void Factor::print(const std::string& s) const {
   cout << s << " ";
-  BOOST_FOREACH(varid_t key, keys_) cout << " " << key;
+  BOOST_FOREACH(Index key, keys_) cout << " " << key;
   cout << endl;
 }
 
@@ -38,18 +38,18 @@ bool Factor::equals(const Factor& other, double tol) const {
 Conditional::shared_ptr Factor::eliminateFirst() {
   assert(!keys_.empty());
   checkSorted();
-  varid_t eliminated = keys_.front();
+  Index eliminated = keys_.front();
   keys_.erase(keys_.begin());
   return Conditional::shared_ptr(new Conditional(eliminated, keys_));
 }
 
 /* ************************************************************************* */
-boost::shared_ptr<BayesNet<Conditional> > Factor::eliminate(varid_t nFrontals) {
+boost::shared_ptr<BayesNet<Conditional> > Factor::eliminate(Index nFrontals) {
   assert(keys_.size() >= nFrontals);
   checkSorted();
   BayesNet<Conditional>::shared_ptr fragment(new BayesNet<Conditional>());
   const_iterator nextFrontal = this->begin();
-  for(varid_t n = 0; n < nFrontals; ++n, ++nextFrontal)
+  for(Index n = 0; n < nFrontals; ++n, ++nextFrontal)
     fragment->push_back(Conditional::shared_ptr(new Conditional(nextFrontal, const_iterator(this->end()), 1)));
   if(nFrontals > 0)
     keys_.assign(fragment->back()->beginParents(), fragment->back()->endParents());
@@ -59,7 +59,7 @@ boost::shared_ptr<BayesNet<Conditional> > Factor::eliminate(varid_t nFrontals) {
 /* ************************************************************************* */
 void Factor::permuteWithInverse(const Permutation& inversePermutation) {
   this->permuted_.value = true;
-  BOOST_FOREACH(varid_t& key, keys_) { key = inversePermutation[key]; }
+  BOOST_FOREACH(Index& key, keys_) { key = inversePermutation[key]; }
 }
 
 }

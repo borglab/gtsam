@@ -11,7 +11,7 @@ namespace tensors {
 
 	/** index */
 	template<int Dim, char C> struct Index {
-		enum { dim = Dim };
+		static const int dim = Dim;
 	};
 
 } // namespace tensors

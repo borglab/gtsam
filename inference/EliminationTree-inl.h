@@ -19,7 +19,7 @@ namespace gtsam {
 
 	/* ************************************************************************* */
 //	template<class FG>
-//	void EliminationTree<FG>::add(const FG& fg, varid_t j) {
+//	void EliminationTree<FG>::add(const FG& fg, Index j) {
 //		sharedNode node(new Node(fg, j));
 //		add(node);
 //	}
@@ -29,7 +29,7 @@ namespace gtsam {
   void EliminationTree<FG>::add(const sharedNode& node) {
 
     assert(node->frontal.size() == 1);
-    varid_t j = node->frontal.front();
+    Index j = node->frontal.front();
 
     // Make a node and put it in the nodes_ array:
     nodes_[j] = node;
@@ -41,7 +41,7 @@ namespace gtsam {
     else {
       // find parent by iterating over all separator keys, and taking the lowest
       // one in the ordering. That is the index of the parent clique.
-      vector<varid_t>::const_iterator parentIndex = min_element(node->separator.begin(), node->separator.end());
+      vector<Index>::const_iterator parentIndex = min_element(node->separator.begin(), node->separator.end());
       assert(parentIndex != node->separator.end());
       // attach to parent
       sharedNode& parent = nodes_[*parentIndex];
@@ -86,7 +86,7 @@ namespace gtsam {
 	    // Build clusters
 	    {
 	      // Find highest-numbered variable
-	      varid_t maxVar = 0;
+	      Index maxVar = 0;
 	      BOOST_FOREACH(const typename FG::sharedFactor& factor, fg) {
 	        if(factor) {
 	          typename FG::factor_type::const_iterator maxj = std::max_element(factor->begin(), factor->end());
@@ -116,7 +116,7 @@ namespace gtsam {
 	    // Loop over all variables and get factors that are connected
 	    OrderedGraphs graphs;
 	    Nodes nodesToAdd; nodesToAdd.reserve(columnIndex.size());
-	    for(varid_t j=0; j<columnIndex.size(); ++j) {
+	    for(Index j=0; j<columnIndex.size(); ++j) {
 
 	      if(debug) cout << "Eliminating " << j << endl;
 
@@ -138,8 +138,8 @@ namespace gtsam {
 	        // this is stored as a vector of slot numbers, stored in order of the
 	        // removed factors.  The slot number is the max integer value if the
 	        // factor does not involve that variable.
-	        typedef map<varid_t, vector<varid_t> > VariableSlots;
-	        map<varid_t, vector<varid_t> > variableSlots;
+	        typedef map<Index, vector<Index> > VariableSlots;
+	        map<Index, vector<Index> > variableSlots;
 	        FG removedFactors; removedFactors.reserve(involvedFactors.size());
 	        size_t jointFactorPos = 0;
 	        BOOST_FOREACH(const size_t factorI, involvedFactors) {
@@ -150,8 +150,8 @@ namespace gtsam {
 	          removedFactors.push_back(fg[factorI]);
 	          fg.remove(factorI);
 
-	          varid_t factorVarSlot = 0;
-	          BOOST_FOREACH(const varid_t involvedVariable, removedFactor.keys()) {
+	          Index factorVarSlot = 0;
+	          BOOST_FOREACH(const Index involvedVariable, removedFactor.keys()) {
 
 	            // Set the slot in this factor for this variable.  If the
 	            // variable was not already discovered, create an array for it
@@ -159,10 +159,10 @@ namespace gtsam {
 	            // we're combining.  Initially we put the max integer value in
 	            // the array entry for each factor that will indicate the factor
 	            // does not involve the variable.
-	            static vector<varid_t> empty;
+	            static vector<Index> empty;
 	            VariableSlots::iterator thisVarSlots = variableSlots.insert(make_pair(involvedVariable,empty)).first;
 	            if(thisVarSlots->second.empty())
-	              thisVarSlots->second.resize(involvedFactors.size(), numeric_limits<varid_t>::max());
+	              thisVarSlots->second.resize(involvedFactors.size(), numeric_limits<Index>::max());
 	            thisVarSlots->second[jointFactorPos] = factorVarSlot;
 	            if(debug) cout << "  var " << involvedVariable << " rowblock " << jointFactorPos << " comes from factor " << factorI << " slot " << factorVarSlot << endl;
 

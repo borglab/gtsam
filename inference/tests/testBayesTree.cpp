@@ -23,7 +23,7 @@ typedef BayesTree<Conditional> SymbolicBayesTree;
 
 ///* ************************************************************************* */
 //// SLAM example from RSS sqrtSAM paper
-static const varid_t _x3_=0, _x2_=1, _x1_=2, _l2_=3, _l1_=4;
+static const Index _x3_=0, _x2_=1, _x1_=2, _l2_=3, _l1_=4;
 //Conditional::shared_ptr
 //		x3(new Conditional(_x3_)),
 //		x2(new Conditional(_x2_,_x3_)),
@@ -46,7 +46,7 @@ static const varid_t _x3_=0, _x2_=1, _x1_=2, _l2_=3, _l1_=4;
 
 /* ************************************************************************* */
 // Conditionals for ASIA example from the tutorial with A and D evidence
-static const varid_t _X_=0, _T_=1, _S_=2, _E_=3, _L_=4, _B_=5;
+static const Index _X_=0, _T_=1, _S_=2, _E_=3, _L_=4, _B_=5;
 Conditional::shared_ptr
 	B(new Conditional(_B_)),
 	L(new Conditional(_L_, _B_)),
@@ -102,13 +102,13 @@ TEST( BayesTree, constructor )
 //	Ordering ordering; ordering += _X_, _T_, _S_, _E_, _L_, _B_;
 //	IndexTable<Symbol> index(ordering);
 
-	list<varid_t> parents1; parents1 += _E_, _L_;
+	list<Index> parents1; parents1 += _E_, _L_;
 	CHECK(assert_equal(_E_, bayesTree.findParentClique(parents1)));
 
-	list<varid_t> parents2; parents2 += _L_, _E_;
+	list<Index> parents2; parents2 += _L_, _E_;
 	CHECK(assert_equal(_E_, bayesTree.findParentClique(parents2)));
 
-	list<varid_t> parents3; parents3 += _L_, _B_;
+	list<Index> parents3; parents3 += _L_, _B_;
 	CHECK(assert_equal(_L_, bayesTree.findParentClique(parents3)));
 }
 
@@ -133,7 +133,7 @@ Bayes Tree for testing conversion to a forest of orphans needed for incremental.
 /* ************************************************************************* */
 TEST( BayesTree, removePath )
 {
-  const varid_t _A_=5, _B_=4, _C_=3, _D_=2, _E_=1, _F_=0;
+  const Index _A_=5, _B_=4, _C_=3, _D_=2, _E_=1, _F_=0;
 	Conditional::shared_ptr
 			A(new Conditional(_A_)),
 			B(new Conditional(_B_, _A_)),
@@ -236,7 +236,7 @@ TEST( BayesTree, removeTop )
 	// Remove the contaminated part of the Bayes tree
 	BayesNet<Conditional> bn;
 	SymbolicBayesTree::Cliques orphans;
-	list<varid_t> keys; keys += _B_,_S_;
+	list<Index> keys; keys += _B_,_S_;
 	bayesTree.removeTop(keys, bn, orphans);
 	SymbolicFactorGraph factors(bn);
 
@@ -277,7 +277,7 @@ TEST( BayesTree, removeTop2 )
 	// Remove the contaminated part of the Bayes tree
 	BayesNet<Conditional> bn;
 	SymbolicBayesTree::Cliques orphans;
-  list<varid_t> keys; keys += _B_,_S_;
+  list<Index> keys; keys += _B_,_S_;
 	bayesTree.removeTop(keys, bn, orphans);
 	SymbolicFactorGraph factors(bn);
 
@@ -296,7 +296,7 @@ TEST( BayesTree, removeTop2 )
 /* ************************************************************************* */
 TEST( BayesTree, removeTop3 )
 {
-  const varid_t _x4_=5, _l5_=6;
+  const Index _x4_=5, _l5_=6;
 	// simple test case that failed after COLAMD was fixed/activated
 	Conditional::shared_ptr
 	X(new Conditional(_l5_)),
@@ -313,7 +313,7 @@ TEST( BayesTree, removeTop3 )
 	bayesTree.insert(C);
 
 	// remove all
-	list<varid_t> keys;
+	list<Index> keys;
 	keys += _l5_, _x2_, _x3_, _x4_;
 	BayesNet<Conditional> bn;
 	SymbolicBayesTree::Cliques orphans;
@@ -331,7 +331,7 @@ TEST( BayesTree, removeTop3 )
 TEST( BayesTree, insert )
 {
 	// construct bayes tree by split the graph along the separator x3 - x4
-	const varid_t _x1_=0, _x2_=1, _x6_=2, _x5_=3, _x3_=4, _x4_=5;
+	const Index _x1_=0, _x2_=1, _x6_=2, _x5_=3, _x3_=4, _x4_=5;
 	SymbolicFactorGraph fg1, fg2, fg3;
 	fg1.push_factor(_x3_, _x4_);
 	fg2.push_factor(_x1_, _x2_);

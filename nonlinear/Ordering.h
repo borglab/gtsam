@@ -21,51 +21,51 @@ namespace gtsam {
 
 class Ordering : Testable<Ordering> {
 protected:
-  typedef boost::fast_pool_allocator<std::pair<const Symbol, varid_t> > Allocator;
-  typedef std::map<Symbol, varid_t, std::less<Symbol>, Allocator> Map;
+  typedef boost::fast_pool_allocator<std::pair<const Symbol, Index> > Allocator;
+  typedef std::map<Symbol, Index, std::less<Symbol>, Allocator> Map;
   Map order_;
-  varid_t nVars_;
+  Index nVars_;
 
 public:
 
   typedef boost::shared_ptr<Ordering> shared_ptr;
 
-  typedef std::pair<const Symbol, varid_t> value_type;
+  typedef std::pair<const Symbol, Index> value_type;
   typedef Map::iterator iterator;
   typedef Map::const_iterator const_iterator;
 
   Ordering() : nVars_(0) {}
 
   /** One greater than the maximum ordering index. */
-  varid_t nVars() const { return nVars_; }
+  Index nVars() const { return nVars_; }
 
   /** The number of variables in this ordering. */
-  varid_t size() const { return order_.size(); }
+  Index size() const { return order_.size(); }
 
   iterator begin() { return order_.begin(); }
   const_iterator begin() const { return order_.begin(); }
   iterator end() { return order_.end(); }
   const_iterator end() const { return order_.end(); }
 
-  varid_t& at(const Symbol& key) { return operator[](key); }
-  varid_t at(const Symbol& key) const { return operator[](key); }
-  varid_t& operator[](const Symbol& key) {
+  Index& at(const Symbol& key) { return operator[](key); }
+  Index at(const Symbol& key) const { return operator[](key); }
+  Index& operator[](const Symbol& key) {
     iterator i=order_.find(key); assert(i != order_.end()); return i->second; }
-  varid_t operator[](const Symbol& key) const {
+  Index operator[](const Symbol& key) const {
     const_iterator i=order_.find(key); assert(i != order_.end()); return i->second; }
 
   iterator insert(const value_type& key_order) {
     std::pair<iterator,bool> it_ok(tryInsert(key_order));
     assert(it_ok.second);
     return it_ok.first; }
-  iterator insert(const Symbol& key, varid_t order) { return insert(std::make_pair(key,order)); }
+  iterator insert(const Symbol& key, Index order) { return insert(std::make_pair(key,order)); }
   std::pair<iterator,bool> tryInsert(const value_type& key_order) {
     std::pair<iterator,bool> it_ok(order_.insert(key_order));
     if(key_order.second+1 > nVars_)  nVars_ = key_order.second+1;
     return it_ok; }
-  std::pair<iterator,bool> tryInsert(const Symbol& key, varid_t order) { return tryInsert(std::make_pair(key,order)); }
+  std::pair<iterator,bool> tryInsert(const Symbol& key, Index order) { return tryInsert(std::make_pair(key,order)); }
 
-  varid_t push_back(const Symbol& key) { return insert(std::make_pair(key, nVars_))->second; }
+  Index push_back(const Symbol& key) { return insert(std::make_pair(key, nVars_))->second; }
 
   /**
    * += operator allows statements like 'ordering += x0,x1,x2,x3;', which are
@@ -95,19 +95,19 @@ public:
  * @class Unordered
  * @brief a set of unordered indice
  */
-class Unordered: public std::set<varid_t>, public Testable<Unordered> {
+class Unordered: public std::set<Index>, public Testable<Unordered> {
 public:
   /** Default constructor creates empty ordering */
   Unordered() { }
 
   /** Create from a single symbol */
-  Unordered(varid_t key) { insert(key); }
+  Unordered(Index key) { insert(key); }
 
   /** Copy constructor */
-  Unordered(const std::set<varid_t>& keys_in) : std::set<varid_t>(keys_in) {}
+  Unordered(const std::set<Index>& keys_in) : std::set<Index>(keys_in) {}
 
   /** whether a key exists */
-  bool exists(const varid_t& key) { return find(key) != end(); }
+  bool exists(const Index& key) { return find(key) != end(); }
 
   // Testable
   void print(const std::string& s = "Unordered") const;

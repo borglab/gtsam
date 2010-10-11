@@ -23,29 +23,29 @@ namespace gtsam {
 
   protected:
     /** Map from string indices to values */
-    std::map<varid_t,Vector> values;
+    std::map<Index,Vector> values;
 
   public:
-    typedef std::map<varid_t,Vector>::iterator iterator;
-    typedef std::map<varid_t,Vector>::const_iterator const_iterator;
+    typedef std::map<Index,Vector>::iterator iterator;
+    typedef std::map<Index,Vector>::const_iterator const_iterator;
 
     VectorMap() {}
     VectorMap(const VectorMap& cfg_in): values(cfg_in.values) {}
-    VectorMap(varid_t j, const Vector& a) { insert(j,a); }
+    VectorMap(Index j, const Vector& a) { insert(j,a); }
     
     virtual ~VectorMap() {}
 
     /** return all the nodes in the graph **/
-    std::vector<varid_t> get_names() const;
+    std::vector<Index> get_names() const;
 
     /** convert into a single large vector */
     Vector vector() const;
 
     /** Insert a value into the values structure with a given index */
-    VectorMap& insert(varid_t name, const Vector& v);
+    VectorMap& insert(Index name, const Vector& v);
 
     /** Insert or add a value with given index */
-    VectorMap& insertAdd(varid_t j, const Vector& v);
+    VectorMap& insertAdd(Index j, const Vector& v);
 
     /** Insert a config into another config */
     void insert(const VectorMap& config);
@@ -59,15 +59,15 @@ namespace gtsam {
     iterator end()   {return values.end();}
 
     /** Vector access in VectorMap is via a Vector reference */
-    Vector& operator[](varid_t j);
-    const Vector& operator[](varid_t j) const;
+    Vector& operator[](Index j);
+    const Vector& operator[](Index j) const;
 
     /** [set] and [get] provided for access via MATLAB */
-    inline Vector& get(varid_t j) { return (*this)[j];}
-    void set(varid_t j, const Vector& v) { (*this)[j] = v; }
-    inline const Vector& get(varid_t j) const { return (*this)[j];}
+    inline Vector& get(Index j) { return (*this)[j];}
+    void set(Index j, const Vector& v) { (*this)[j] = v; }
+    inline const Vector& get(Index j) const { return (*this)[j];}
 
-    bool contains(varid_t name) const {
+    bool contains(Index name) const {
       const_iterator it = values.find(name);
       return (it!=values.end());
     }

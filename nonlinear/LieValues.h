@@ -181,7 +181,7 @@ namespace gtsam {
      * NonlinearFactorGraph::orderingCOLAMD().  Alternatively, you may permute
      * this ordering yourself (as orderingCOLAMD() does internally).
      */
-    Ordering::shared_ptr orderingArbitrary(varid_t firstVar = 0) const;
+    Ordering::shared_ptr orderingArbitrary(Index firstVar = 0) const;
 
   private:
   	/** Serialization function */
@@ -198,7 +198,7 @@ namespace gtsam {
     std::vector<size_t> dimensions;
     _ValuesDimensionCollector(const Ordering& _ordering) : ordering(_ordering), dimensions(_ordering.nVars()) {}
     template<typename I> void operator()(const I& key_value) {
-      varid_t var = ordering[key_value->first];
+      Index var = ordering[key_value->first];
       assert(var < dimensions.size());
       dimensions[var] = key_value->second.dim();
     }
@@ -206,9 +206,9 @@ namespace gtsam {
 
   /* ************************************************************************* */
   struct _ValuesKeyOrderer {
-    varid_t var;
+    Index var;
     Ordering::shared_ptr ordering;
-    _ValuesKeyOrderer(varid_t firstVar) : var(firstVar), ordering(new Ordering) {}
+    _ValuesKeyOrderer(Index firstVar) : var(firstVar), ordering(new Ordering) {}
     template<typename I> void operator()(const I& key_value) {
       ordering->insert(key_value->first, var);
       ++ var;

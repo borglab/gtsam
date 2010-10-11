@@ -46,28 +46,28 @@ namespace gtsam {
   	}
 
   	/** Add a unary factor */
-    inline void add(varid_t key1, const Matrix& A1,
+    inline void add(Index key1, const Matrix& A1,
   			const Vector& b, const SharedDiagonal& model) {
     	push_back(sharedFactor(new GaussianFactor(key1,A1,b,model)));
   	}
 
   	/** Add a binary factor */
-    inline void add(varid_t key1, const Matrix& A1,
-  			varid_t key2, const Matrix& A2,
+    inline void add(Index key1, const Matrix& A1,
+  			Index key2, const Matrix& A2,
   			const Vector& b, const SharedDiagonal& model) {
     	push_back(sharedFactor(new GaussianFactor(key1,A1,key2,A2,b,model)));
   	}
 
   	/** Add a ternary factor */
-    inline void add(varid_t key1, const Matrix& A1,
-  			varid_t key2, const Matrix& A2,
-  			varid_t key3, const Matrix& A3,
+    inline void add(Index key1, const Matrix& A1,
+  			Index key2, const Matrix& A2,
+  			Index key3, const Matrix& A3,
   			const Vector& b, const SharedDiagonal& model) {
     	push_back(sharedFactor(new GaussianFactor(key1,A1,key2,A2,key3,A3,b,model)));
   	}
 
   	/** Add an n-ary factor */
-    inline void add(const std::vector<std::pair<varid_t, Matrix> > &terms,
+    inline void add(const std::vector<std::pair<Index, Matrix> > &terms,
   	    const Vector &b, const SharedDiagonal& model) {
     	push_back(sharedFactor(new GaussianFactor(terms,b,model)));
   	}
@@ -76,7 +76,7 @@ namespace gtsam {
      * Return the set of variables involved in the factors (computes a set
      * union).
      */
-    std::set<varid_t, std::less<varid_t>, boost::fast_pool_allocator<varid_t> > keys() const;
+    std::set<Index, std::less<Index>, boost::fast_pool_allocator<Index> > keys() const;
 
     /** Permute the variables in the factors */
     void permuteWithInverse(const Permutation& inversePermutation);
@@ -121,13 +121,13 @@ namespace gtsam {
 //     * find the separator, i.e. all the nodes that have at least one
 //     * common factor with the given node. FD: not used AFAIK.
 //     */
-//    std::set<varid_t> find_separator(varid_t key) const;
+//    std::set<Index> find_separator(Index key) const;
 
 //    /**
 //     * Peforms a supposedly-faster (fewer matrix copy) version of elimination
 //     * CURRENTLY IN TESTING
 //     */
-//    GaussianConditional::shared_ptr eliminateOneMatrixJoin(varid_t key);
+//    GaussianConditional::shared_ptr eliminateOneMatrixJoin(Index key);
 //
 //
 //    /**
@@ -297,7 +297,7 @@ namespace gtsam {
     GaussianVariableIndex(const VariableIndex<VariableIndexStorage>& variableIndex, const storage_type& dimensions);
 
     const storage_type& dims() const { return dims_; }
-    size_t dim(varid_t variable) const { Base::checkVar(variable); return dims_[variable]; }
+    size_t dim(Index variable) const { Base::checkVar(variable); return dims_[variable]; }
 
     /** Permute */
     void permute(const Permutation& permutation);
@@ -336,7 +336,7 @@ namespace gtsam {
   void GaussianVariableIndex<Storage>::fillDims(const GaussianFactorGraph& factorGraph) {
     // Store dimensions of each variable
     assert(dims_.size() == Base::index_.size());
-    for(varid_t var=0; var<Base::index_.size(); ++var)
+    for(Index var=0; var<Base::index_.size(); ++var)
       if(!Base::index_[var].empty()) {
         size_t factorIndex = Base::operator [](var).front().factorIndex;
         size_t variablePosition = Base::operator [](var).front().variablePosition;
@@ -352,7 +352,7 @@ namespace gtsam {
     VariableIndex<Storage>::permute(permutation);
     storage_type original(this->dims_.size());
     this->dims_.swap(original);
-    for(varid_t j=0; j<permutation.size(); ++j)
+    for(Index j=0; j<permutation.size(); ++j)
       this->dims_[j] = original[permutation[j]];
   }
 
@@ -371,7 +371,7 @@ namespace gtsam {
           dims_[*var] = factor->getDim(var);
       }
     }
-//    for(varid_t var=0; var<dims_.size(); ++var) {
+//    for(Index var=0; var<dims_.size(); ++var) {
 //#ifndef NDEBUG
 //      if(var >= varIndex.dims_.size() || varIndex.dims_[var] == 0)
 //        assert(dims_[var] != 0);

@@ -35,9 +35,9 @@ GaussianFactorGraph::GaussianFactorGraph(const GaussianBayesNet& CBN) :
 }
 
 /* ************************************************************************* */
-std::set<varid_t, std::less<varid_t>, boost::fast_pool_allocator<varid_t> >
+std::set<Index, std::less<Index>, boost::fast_pool_allocator<Index> >
 GaussianFactorGraph::keys() const {
-  std::set<varid_t, std::less<varid_t>, boost::fast_pool_allocator<varid_t> > keys;
+  std::set<Index, std::less<Index>, boost::fast_pool_allocator<Index> > keys;
   BOOST_FOREACH(const sharedFactor& factor, *this) {
     if(factor) keys.insert(factor->begin(), factor->end()); }
   return keys;
@@ -125,9 +125,9 @@ void GaussianFactorGraph::transposeMultiplyAdd(double alpha, const Errors& e,
 //}
 
 ///* ************************************************************************* */
-//set<varid_t> GaussianFactorGraph::find_separator(varid_t key) const
+//set<Index> GaussianFactorGraph::find_separator(Index key) const
 //{
-//	set<varid_t> separator;
+//	set<Index> separator;
 //	BOOST_FOREACH(const sharedFactor& factor,factors_)
 //		factor->tally_separator(key,separator);
 //
@@ -148,7 +148,7 @@ void GaussianFactorGraph::transposeMultiplyAdd(double alpha, const Errors& e,
 //	}
 //
 //	// find the number of columns
-//	BOOST_FOREACH(varid_t key, order) {
+//	BOOST_FOREACH(Index key, order) {
 //		n += dimensions.at(key);
 //	}
 //
@@ -165,7 +165,7 @@ void GaussianFactorGraph::transposeMultiplyAdd(double alpha, const Errors& e,
 //	BOOST_FOREACH(GaussianFactor::shared_ptr factor, factors) {
 //		// loop through ordering
 //		size_t cur_n = 0;
-//		BOOST_FOREACH(varid_t key, order) {
+//		BOOST_FOREACH(Index key, order) {
 //			// copy over matrix if it exists
 //			if (factor->involves(key)) {
 //				insertSub(Ab, factor->get_A(key), cur_m, cur_n);
@@ -205,24 +205,24 @@ void GaussianFactorGraph::transposeMultiplyAdd(double alpha, const Errors& e,
 
 ///* ************************************************************************* */
 //GaussianConditional::shared_ptr
-//GaussianFactorGraph::eliminateOneMatrixJoin(varid_t key) {
+//GaussianFactorGraph::eliminateOneMatrixJoin(Index key) {
 //	// find and remove all factors connected to key
 //	vector<GaussianFactor::shared_ptr> factors = findAndRemoveFactors(key);
 //
 //	// Collect all dimensions as well as the set of separator keys
-//	set<varid_t> separator;
+//	set<Index> separator;
 //	Dimensions dimensions;
 //	BOOST_FOREACH(const sharedFactor& factor, factors) {
 //		Dimensions factor_dim = factor->dimensions();
 //		dimensions.insert(factor_dim.begin(), factor_dim.end());
-//		BOOST_FOREACH(varid_t k, factor->keys())
+//		BOOST_FOREACH(Index k, factor->keys())
 //			if (!k == key)
 //				separator.insert(k);
 //	}
 //
 //	// add the keys to the rendering
 //	Ordering render; render += key;
-//	BOOST_FOREACH(varid_t k, separator)
+//	BOOST_FOREACH(Index k, separator)
 //			if (k != key) render += k;
 //
 //	// combine the factors to get a noisemodel and a combined matrix
@@ -253,8 +253,8 @@ void GaussianFactorGraph::transposeMultiplyAdd(double alpha, const Errors& e,
 //
 //	// collect separator
 //	Ordering separator;
-//	set<varid_t> frontal_set(frontals.begin(), frontals.end());
-//	BOOST_FOREACH(varid_t key, this->keys()) {
+//	set<Index> frontal_set(frontals.begin(), frontals.end());
+//	BOOST_FOREACH(Index key, this->keys()) {
 //		if (frontal_set.find(key) == frontal_set.end())
 //			separator.push_back(key);
 //	}
@@ -304,7 +304,7 @@ void GaussianFactorGraph::transposeMultiplyAdd(double alpha, const Errors& e,
 //GaussianFactorGraph::eliminate_(const Ordering& ordering)
 //{
 //	boost::shared_ptr<GaussianBayesNet> chordalBayesNet(new GaussianBayesNet); // empty
-//	BOOST_FOREACH(varid_t key, ordering) {
+//	BOOST_FOREACH(Index key, ordering) {
 //		GaussianConditional::shared_ptr cg = eliminateOne(key);
 //		chordalBayesNet->push_back(cg);
 //	}
@@ -345,7 +345,7 @@ GaussianFactorGraph GaussianFactorGraph::combine2(const GaussianFactorGraph& lfg
 //	Dimensions result;
 //	BOOST_FOREACH(const sharedFactor& factor,factors_) {
 //		Dimensions vs = factor->dimensions();
-//		varid_t key; size_t dim;
+//		Index key; size_t dim;
 //		FOREACH_PAIR(key,dim,vs) result.insert(make_pair(key,dim));
 //	}
 //	return result;
@@ -359,7 +359,7 @@ GaussianFactorGraph GaussianFactorGraph::add_priors(double sigma, const Gaussian
 
 	// for each of the variables, add a prior
 
-	for(varid_t var=0; var<variableIndex.size(); ++var) {
+	for(Index var=0; var<variableIndex.size(); ++var) {
 	  const GaussianVariableIndex<>::mapped_factor_type& factor_pos(variableIndex[var].front());
 	  const GaussianFactor& factor(*operator[](factor_pos.factorIndex));
 	  size_t dim = factor.getDim(factor.begin() + factor_pos.variablePosition);
@@ -407,7 +407,7 @@ GaussianFactorGraph GaussianFactorGraph::add_priors(double sigma, const Gaussian
 //	VectorValues config;
 //	Vector::const_iterator itSrc = vs.begin();
 //	Vector::iterator itDst;
-//	BOOST_FOREACH(varid_t key, ordering){
+//	BOOST_FOREACH(Index key, ordering){
 //		int dim = dims.find(key)->second;
 //		Vector v(dim);
 //		for (itDst=v.begin(); itDst!=v.end(); itDst++, itSrc++)
@@ -428,7 +428,7 @@ GaussianFactorGraph GaussianFactorGraph::add_priors(double sigma, const Gaussian
 //	// Find the starting index and dimensions for all variables given the order
 //	size_t j = 1;
 //	Dimensions result;
-//	BOOST_FOREACH(varid_t key, ordering) {
+//	BOOST_FOREACH(Index key, ordering) {
 //		// associate key with first column index
 //		result.insert(make_pair(key,j));
 //		// find dimension for this key

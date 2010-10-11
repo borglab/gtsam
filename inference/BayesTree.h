@@ -45,7 +45,7 @@ namespace gtsam {
 			typedef typename boost::weak_ptr<Clique> weak_ptr;
 			weak_ptr parent_;
 			std::list<shared_ptr> children_;
-			std::list<varid_t> separator_; /** separator keys */
+			std::list<Index> separator_; /** separator keys */
 			typename Conditional::FactorType::shared_ptr cachedFactor_;
 
 			friend class BayesTree<Conditional>;
@@ -58,7 +58,7 @@ namespace gtsam {
 			Clique(const BayesNet<Conditional>& bayesNet);
 
 			/** return keys in frontal:separator order */
-			std::vector<varid_t> keys() const;
+			std::vector<Index> keys() const;
 
 			/** print this node */
 			void print(const std::string& s = "") const;
@@ -223,7 +223,7 @@ namespace gtsam {
 		 * return the one with the lowest index in the ordering.
 		 */
 		template<class Container>
-		varid_t findParentClique(const Container& parents) const;
+		Index findParentClique(const Container& parents) const;
 
 		/** number of cliques */
 		inline size_t size() const {
@@ -238,7 +238,7 @@ namespace gtsam {
 		sharedClique& root() { return root_; }
 
 		/** find the clique to which key belongs */
-		sharedClique operator[](varid_t key) const {
+		sharedClique operator[](Index key) const {
 			return nodes_.at(key);
 		}
 
@@ -247,19 +247,19 @@ namespace gtsam {
 
 		/** return marginal on any variable */
 		template<class FactorGraph>
-		FactorGraph marginal(varid_t key) const;
+		FactorGraph marginal(Index key) const;
 
 		/** return marginal on any variable, as a Bayes Net */
 		template<class FactorGraph>
-		BayesNet<Conditional> marginalBayesNet(varid_t key) const;
+		BayesNet<Conditional> marginalBayesNet(Index key) const;
 
 //		/** return joint on two variables */
 //		template<class Factor>
-//		FactorGraph<Factor> joint(varid_t key1, varid_t key2) const;
+//		FactorGraph<Factor> joint(Index key1, Index key2) const;
 //
 //		/** return joint on two variables as a BayesNet */
 //		template<class Factor>
-//		BayesNet<Conditional> jointBayesNet(varid_t key1, varid_t key2) const;
+//		BayesNet<Conditional> jointBayesNet(Index key1, Index key2) const;
 
 		/**
 		 * Read only with side effects

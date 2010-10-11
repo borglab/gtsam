@@ -61,7 +61,7 @@ GaussianFactor::GaussianFactor(const Vector& b_in) : firstNonzeroBlocks_(b_in.si
 }
 
 /* ************************************************************************* */
-GaussianFactor::GaussianFactor(varid_t i1, const Matrix& A1,
+GaussianFactor::GaussianFactor(Index i1, const Matrix& A1,
     const Vector& b, const SharedDiagonal& model) :
 		Factor(i1), model_(model), firstNonzeroBlocks_(b.size(), 0), Ab_(matrix_) {
   size_t dims[] = { A1.size2(), 1};
@@ -71,7 +71,7 @@ GaussianFactor::GaussianFactor(varid_t i1, const Matrix& A1,
 }
 
 /* ************************************************************************* */
-GaussianFactor::GaussianFactor(varid_t i1, const Matrix& A1, varid_t i2, const Matrix& A2,
+GaussianFactor::GaussianFactor(Index i1, const Matrix& A1, Index i2, const Matrix& A2,
 		const Vector& b, const SharedDiagonal& model) :
 		Factor(i1,i2), model_(model), firstNonzeroBlocks_(b.size(), 0), Ab_(matrix_) {
   size_t dims[] = { A1.size2(), A2.size2(), 1};
@@ -82,8 +82,8 @@ GaussianFactor::GaussianFactor(varid_t i1, const Matrix& A1, varid_t i2, const M
 }
 
 /* ************************************************************************* */
-GaussianFactor::GaussianFactor(varid_t i1, const Matrix& A1, varid_t i2, const Matrix& A2,
-    varid_t i3, const Matrix& A3,	const Vector& b, const SharedDiagonal& model) :
+GaussianFactor::GaussianFactor(Index i1, const Matrix& A1, Index i2, const Matrix& A2,
+    Index i3, const Matrix& A3,	const Vector& b, const SharedDiagonal& model) :
     Factor(i1,i2,i3), model_(model), firstNonzeroBlocks_(b.size(), 0), Ab_(matrix_) {
   size_t dims[] = { A1.size2(), A2.size2(), A3.size2(), 1};
   Ab_.copyStructureFrom(ab_type(matrix_, dims, dims+4, b.size()));
@@ -94,7 +94,7 @@ GaussianFactor::GaussianFactor(varid_t i1, const Matrix& A1, varid_t i2, const M
 }
 
 /* ************************************************************************* */
-GaussianFactor::GaussianFactor(const std::vector<std::pair<varid_t, Matrix> > &terms,
+GaussianFactor::GaussianFactor(const std::vector<std::pair<Index, Matrix> > &terms,
     const Vector &b, const SharedDiagonal& model) :
     model_(model), firstNonzeroBlocks_(b.size(), 0), Ab_(matrix_) {
   keys_.resize(terms.size());
@@ -113,13 +113,13 @@ GaussianFactor::GaussianFactor(const std::vector<std::pair<varid_t, Matrix> > &t
 }
 
 /* ************************************************************************* */
-GaussianFactor::GaussianFactor(const std::list<std::pair<varid_t, Matrix> > &terms,
+GaussianFactor::GaussianFactor(const std::list<std::pair<Index, Matrix> > &terms,
     const Vector &b, const SharedDiagonal& model) :
     model_(model), firstNonzeroBlocks_(b.size(), 0), Ab_(matrix_) {
   keys_.resize(terms.size());
   size_t dims[terms.size()+1];
   size_t j=0;
-  for(std::list<std::pair<varid_t, Matrix> >::const_iterator term=terms.begin(); term!=terms.end(); ++term) {
+  for(std::list<std::pair<Index, Matrix> >::const_iterator term=terms.begin(); term!=terms.end(); ++term) {
     keys_[j] = term->first;
     dims[j] = term->second.size2();
     ++ j;
@@ -128,7 +128,7 @@ GaussianFactor::GaussianFactor(const std::list<std::pair<varid_t, Matrix> > &ter
   firstNonzeroBlocks_.resize(b.size(), 0);
   Ab_.copyStructureFrom(ab_type(matrix_, dims, dims+terms.size()+1, b.size()));
   j = 0;
-  for(std::list<std::pair<varid_t, Matrix> >::const_iterator term=terms.begin(); term!=terms.end(); ++term) {
+  for(std::list<std::pair<Index, Matrix> >::const_iterator term=terms.begin(); term!=terms.end(); ++term) {
     Ab_(j) = term->second;
     ++ j;
   }
@@ -201,7 +201,7 @@ void GaussianFactor::print(const string& s) const {
   cout << s << "\n";
   if (empty()) {
     cout << " empty, keys: ";
-    BOOST_FOREACH(const varid_t key, keys_) { cout << key << " "; }
+    BOOST_FOREACH(const Index key, keys_) { cout << key << " "; }
     cout << endl;
   } else {
   	for(const_iterator key=begin(); key!=end(); ++key)
@@ -212,7 +212,7 @@ void GaussianFactor::print(const string& s) const {
 }
 
 ///* ************************************************************************* */
-//size_t GaussianFactor::getDim(varid_t key) const {
+//size_t GaussianFactor::getDim(Index key) const {
 //	const_iterator it = findA(key);
 //	if (it != end())
 //		return it->second.size2();
@@ -242,7 +242,7 @@ bool GaussianFactor::equals(const GaussianFactor& f, double tol) const {
 /* ************************************************************************* */
 void GaussianFactor::permuteWithInverse(const Permutation& inversePermutation) {
   this->permuted_.value = true;
-  BOOST_FOREACH(varid_t& key, keys_) { key = inversePermutation[key]; }
+  BOOST_FOREACH(Index& key, keys_) { key = inversePermutation[key]; }
   // Since we're permuting the variables, ensure that entire rows from this
   // factor are copied when Combine is called
   BOOST_FOREACH(size_t& varpos, firstNonzeroBlocks_) { varpos = 0; }
@@ -274,12 +274,12 @@ double GaussianFactor::error(const VectorValues& c) const {
 //Dimensions GaussianFactor::dimensions() const {
 //  Dimensions result;
 //  BOOST_FOREACH(const NamedMatrix& jA, As_)
-//		result.insert(std::pair<varid_t,size_t>(jA.first,jA.second.size2()));
+//		result.insert(std::pair<Index,size_t>(jA.first,jA.second.size2()));
 //  return result;
 //}
 //
 ///* ************************************************************************* */
-//void GaussianFactor::tally_separator(varid_t key, set<varid_t>& separator) const {
+//void GaussianFactor::tally_separator(Index key, set<Index>& separator) const {
 //  if(involves(key)) {
 //    BOOST_FOREACH(const NamedMatrix& jA, As_)
 //      if(jA.first != key) separator.insert(jA.first);
@@ -336,7 +336,7 @@ pair<Matrix,Vector> GaussianFactor::matrix(bool weight) const {
 Matrix GaussianFactor::matrix_augmented(bool weight) const {
 //	// get pointers to the matrices
 //	vector<const Matrix *> matrices;
-//	BOOST_FOREACH(varid_t j, ordering) {
+//	BOOST_FOREACH(Index j, ordering) {
 //		const Matrix& Aj = get_A(j);
 //		matrices.push_back(&Aj);
 //	}
@@ -386,7 +386,7 @@ GaussianFactor::sparse(const Dimensions& columnIndices) const {
 //
 //	// iterate over all matrices from the factor f
 //	BOOST_FOREACH(const NamedMatrix& p, f->As_) {
-//		varid_t key = p.first;
+//		Index key = p.first;
 //		const Matrix& Aj = p.second;
 //
 //		// find the corresponding matrix among As
@@ -657,13 +657,13 @@ struct _RowSource {
 };
 
 /* Explicit instantiations for storage types */
-template GaussianFactor::shared_ptr GaussianFactor::Combine(const GaussianFactorGraph&, const GaussianVariableIndex<VariableIndexStorage_vector>&, const vector<size_t>&, const vector<varid_t>&, const std::vector<std::vector<size_t> >&);
-template GaussianFactor::shared_ptr GaussianFactor::Combine(const GaussianFactorGraph&, const GaussianVariableIndex<VariableIndexStorage_deque>&, const vector<size_t>&, const vector<varid_t>&, const std::vector<std::vector<size_t> >&);
+template GaussianFactor::shared_ptr GaussianFactor::Combine(const GaussianFactorGraph&, const GaussianVariableIndex<VariableIndexStorage_vector>&, const vector<size_t>&, const vector<Index>&, const std::vector<std::vector<size_t> >&);
+template GaussianFactor::shared_ptr GaussianFactor::Combine(const GaussianFactorGraph&, const GaussianVariableIndex<VariableIndexStorage_deque>&, const vector<size_t>&, const vector<Index>&, const std::vector<std::vector<size_t> >&);
 
 template<class Storage>
 GaussianFactor::shared_ptr GaussianFactor::Combine(const GaussianFactorGraph& factorGraph,
     const GaussianVariableIndex<Storage>& variableIndex, const vector<size_t>& factors,
-    const vector<varid_t>& variables, const std::vector<std::vector<size_t> >& variablePositions) {
+    const vector<Index>& variables, const std::vector<std::vector<size_t> >& variablePositions) {
 
   shared_ptr ret(boost::make_shared<GaussianFactor>());
   static const bool verbose = false;
@@ -691,7 +691,7 @@ GaussianFactor::shared_ptr GaussianFactor::Combine(const GaussianFactorGraph& fa
   size_t n = 0;
   {
     size_t j=0;
-    BOOST_FOREACH(const varid_t& var, variables) {
+    BOOST_FOREACH(const Index& var, variables) {
       if(debug) cout << "Have variable " << var << endl;
       dims[j] = variableIndex.dim(var);
       n += dims[j];
@@ -726,7 +726,7 @@ GaussianFactor::shared_ptr GaussianFactor::Combine(const GaussianFactorGraph& fa
     size_t factorRowI = 0;
     assert(factor.firstNonzeroBlocks_.size() == factor.numberOfRows());
     BOOST_FOREACH(const size_t factorFirstNonzeroVarpos, factor.firstNonzeroBlocks_) {
-      varid_t firstNonzeroVar;
+      Index firstNonzeroVar;
       if(factor.permuted_.value == true)
         firstNonzeroVar = *std::min_element(factor.keys_.begin(), factor.keys_.end());
       else
@@ -772,11 +772,11 @@ GaussianFactor::shared_ptr GaussianFactor::Combine(const GaussianFactorGraph& fa
 
     // Copy the row of A variable by variable, starting at the first nonzero
     // variable.
-    std::vector<varid_t>::const_iterator keyit = factor.keys_.begin() + factorFirstNonzeroVarpos;
+    std::vector<Index>::const_iterator keyit = factor.keys_.begin() + factorFirstNonzeroVarpos;
     std::vector<size_t>::const_iterator varposIt = variablePositions[factorI].begin() + factorFirstNonzeroVarpos;
     ret->firstNonzeroBlocks_[row] = *varposIt;
     if(debug) cout << "  copying starting at varpos " << *varposIt << " (variable " << variables[*varposIt] << ")" << endl;
-    std::vector<varid_t>::const_iterator keyitend = factor.keys_.end();
+    std::vector<Index>::const_iterator keyitend = factor.keys_.end();
     while(keyit != keyitend) {
       const size_t varpos = *varposIt;
       // If the factor is permuted, the varpos's in the joint factor could be
@@ -827,14 +827,14 @@ boost::tuple<vector<size_t>, size_t, size_t> countDims(const std::vector<Gaussia
   size_t m = 0;
   size_t n = 0;
   {
-    varid_t jointVarpos = 0;
+    Index jointVarpos = 0;
     BOOST_FOREACH(const VariableSlots::value_type& slots, variableSlots) {
 
       assert(slots.second.size() == factors.size());
 
-      varid_t sourceFactorI = 0;
-      BOOST_FOREACH(const varid_t sourceVarpos, slots.second) {
-        if(sourceVarpos < numeric_limits<varid_t>::max()) {
+      Index sourceFactorI = 0;
+      BOOST_FOREACH(const Index sourceVarpos, slots.second) {
+        if(sourceVarpos < numeric_limits<Index>::max()) {
           const GaussianFactor& sourceFactor = *factors[sourceFactorI];
           size_t vardim = sourceFactor.getDim(sourceFactor.begin() + sourceVarpos);
 #ifndef NDEBUG
@@ -888,7 +888,7 @@ GaussianFactor::shared_ptr GaussianFactor::Combine(const GaussianFactorGraph& fa
   for(size_t sourceFactorI = 0; sourceFactorI < factors.size(); ++sourceFactorI) {
     const GaussianFactor& sourceFactor(*factors[sourceFactorI]);
     for(size_t sourceFactorRow = 0; sourceFactorRow < sourceFactor.numberOfRows(); ++sourceFactorRow) {
-      varid_t firstNonzeroVar;
+      Index firstNonzeroVar;
       if(sourceFactor.permuted_.value)
         firstNonzeroVar = *std::min_element(sourceFactor.begin(), sourceFactor.end());
       else
@@ -914,12 +914,12 @@ GaussianFactor::shared_ptr GaussianFactor::Combine(const GaussianFactorGraph& fa
 
   // Copy rows
   tic("Combine 4: copy rows");
-  varid_t combinedSlot = 0;
+  Index combinedSlot = 0;
   BOOST_FOREACH(const VariableSlots::value_type& varslot, variableSlots) {
     for(size_t row = 0; row < m; ++row) {
-      const varid_t sourceSlot = varslot.second[rowSources[row].factorI];
+      const Index sourceSlot = varslot.second[rowSources[row].factorI];
       ab_type::block_type combinedBlock(combined->Ab_(combinedSlot));
-      if(sourceSlot != numeric_limits<varid_t>::max()) {
+      if(sourceSlot != numeric_limits<Index>::max()) {
         const GaussianFactor& source(*factors[rowSources[row].factorI]);
         const size_t sourceRow = rowSources[row].factorRowI;
         assert(!source.permuted_.value || source.firstNonzeroBlocks_[sourceRow] == 0);
@@ -937,7 +937,7 @@ GaussianFactor::shared_ptr GaussianFactor::Combine(const GaussianFactorGraph& fa
 
   // Copy rhs (b), sigma, and firstNonzeroBlocks
   tic("Combine 5: copy vectors");
-  varid_t firstNonzeroSlot = 0;
+  Index firstNonzeroSlot = 0;
   for(size_t row = 0; row < m; ++row) {
     const GaussianFactor& source(*factors[rowSources[row].factorI]);
     const size_t sourceRow = rowSources[row].factorRowI;
@@ -1021,7 +1021,7 @@ GaussianFactor::shared_ptr GaussianFactor::Combine(const GaussianFactorGraph& fa
 //			conditional->add(*itFrontal2, sub(Ab, n0, n1, j, j+dim));
 //			j+=dim;
 //		}
-//		BOOST_FOREACH(varid_t cur_key, separators) {
+//		BOOST_FOREACH(Index cur_key, separators) {
 //			size_t dim = dimensions.at(cur_key);
 //			conditional->add(cur_key, sub(Ab, n0, n1, j, j+dim));
 //			j+=dim;
@@ -1043,7 +1043,7 @@ GaussianFactor::shared_ptr GaussianFactor::Combine(const GaussianFactorGraph& fa
 //	// extract the new factor
 //	GaussianFactor::shared_ptr factor(new GaussianFactor);
 //	size_t j = n1;
-//	BOOST_FOREACH(varid_t cur_key, separators) {
+//	BOOST_FOREACH(Index cur_key, separators) {
 //		size_t dim = dimensions.at(cur_key); // TODO avoid find !
 //		factor->insert(cur_key, sub(Ab, n1, maxRank, j, j+dim)); // TODO: handle zeros properly
 //		j+=dim;
@@ -1066,7 +1066,7 @@ GaussianFactor::shared_ptr GaussianFactor::Combine(const GaussianFactorGraph& fa
 ///* ************************************************************************* */
 //pair<GaussianConditional::shared_ptr, GaussianFactor::shared_ptr>
 //GaussianFactor::eliminateMatrix(Matrix& Ab, SharedDiagonal model,
-//		        varid_t frontal, const Ordering& separator,
+//		        Index frontal, const Ordering& separator,
 //		        const Dimensions& dimensions) {
 //	Ordering frontals; frontals += frontal;
 //	pair<GaussianBayesNet, shared_ptr> ret =
@@ -1075,7 +1075,7 @@ GaussianFactor::shared_ptr GaussianFactor::Combine(const GaussianFactorGraph& fa
 //}
 ///* ************************************************************************* */
 //pair<GaussianConditional::shared_ptr, GaussianFactor::shared_ptr>
-//GaussianFactor::eliminate(varid_t key) const
+//GaussianFactor::eliminate(Index key) const
 //{
 //	// if this factor does not involve key, we exit with empty CG and LF
 //	const_iterator it = findA(key);
@@ -1089,7 +1089,7 @@ GaussianFactor::shared_ptr GaussianFactor::Combine(const GaussianFactorGraph& fa
 //	// create an internal ordering that eliminates key first
 //	Ordering ordering;
 //	ordering += key;
-//	BOOST_FOREACH(varid_t k, keys())
+//	BOOST_FOREACH(Index k, keys())
 //		if (k != key) ordering += k;
 //
 //	// extract [A b] from the combined linear factor (ensure that x is leading)

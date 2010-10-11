@@ -36,8 +36,8 @@ namespace gtsam {
 			typedef typename boost::shared_ptr<Cluster> shared_ptr;
 			typedef typename boost::weak_ptr<Cluster> weak_ptr;
 
-      const std::vector<varid_t> frontal;                   // the frontal variables
-      const std::vector<varid_t> separator;                // the separator variables
+      const std::vector<Index> frontal;                   // the frontal variables
+      const std::vector<Index> separator;                // the separator variables
 
 		protected:
 
@@ -52,7 +52,7 @@ namespace gtsam {
 
 			/* Create a node with a single frontal variable */
 			template<typename Iterator>
-			Cluster(const FG& fg, varid_t key, Iterator firstSeparator, Iterator lastSeparator);
+			Cluster(const FG& fg, Index key, Iterator firstSeparator, Iterator lastSeparator);
 
       /* Create a node with several frontal variables */
       template<typename FrontalIt, typename SeparatorIt>

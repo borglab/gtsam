@@ -17,7 +17,7 @@ using namespace boost::assign;
 
 /* ************************************************************************* */
 TEST(SymbolicFactor, eliminate) {
-  vector<varid_t> keys; keys += 2, 3, 4, 6, 7, 9, 10, 11;
+  vector<Index> keys; keys += 2, 3, 4, 6, 7, 9, 10, 11;
   Factor actual(keys.begin(), keys.end());
   BayesNet<Conditional> fragment = *actual.eliminate(3);
 

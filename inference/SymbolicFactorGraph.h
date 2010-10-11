@@ -32,16 +32,16 @@ public:
   SymbolicFactorGraph(const BayesNet<Conditional>& bayesNet);
 
   /** Push back unary factor */
-  void push_factor(varid_t key);
+  void push_factor(Index key);
 
   /** Push back binary factor */
-  void push_factor(varid_t key1, varid_t key2);
+  void push_factor(Index key1, Index key2);
 
   /** Push back ternary factor */
-  void push_factor(varid_t key1, varid_t key2, varid_t key3);
+  void push_factor(Index key1, Index key2, Index key3);
 
   /** Push back 4-way factor */
-  void push_factor(varid_t key1, varid_t key2, varid_t key3, varid_t key4);
+  void push_factor(Index key1, Index key2, Index key3, Index key4);
 
   /**
    * Construct from a factor graph of any type
@@ -53,7 +53,7 @@ public:
    * Return the set of variables involved in the factors (computes a set
    * union).
    */
-  std::set<varid_t, std::less<varid_t>, boost::fast_pool_allocator<varid_t> > keys() const;
+  std::set<Index, std::less<Index>, boost::fast_pool_allocator<Index> > keys() const;
 
   /**
    * Same as eliminate in the SymbolicFactorGraph case

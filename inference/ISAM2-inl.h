@@ -49,15 +49,15 @@ ISAM2<Conditional, Values>::ISAM2() : BayesTree<Conditional>(), delta_(Permutati
 
 /* ************************************************************************* */
 template<class Conditional, class Values>
-list<size_t> ISAM2<Conditional, Values>::getAffectedFactors(const list<varid_t>& keys) const {
+list<size_t> ISAM2<Conditional, Values>::getAffectedFactors(const list<Index>& keys) const {
   static const bool debug = false;
   if(debug) cout << "Getting affected factors for ";
-  if(debug) { BOOST_FOREACH(const varid_t key, keys) { cout << key << " "; } }
+  if(debug) { BOOST_FOREACH(const Index key, keys) { cout << key << " "; } }
   if(debug) cout << endl;
 
   FactorGraph<NonlinearFactor<Values> > allAffected;
   list<size_t> indices;
-  BOOST_FOREACH(const varid_t key, keys) {
+  BOOST_FOREACH(const Index key, keys) {
 //    const list<size_t> l = nonlinearFactors_.factors(key);
 //    indices.insert(indices.begin(), l.begin(), l.end());
     const VariableIndexType::mapped_type& factors(variableIndex_[key]);
@@ -79,7 +79,7 @@ list<size_t> ISAM2<Conditional, Values>::getAffectedFactors(const list<varid_t>&
 // (note that the remaining stuff is summarized in the cached factors)
 template<class Conditional, class Values>
 boost::shared_ptr<GaussianFactorGraph> ISAM2<Conditional, Values>::relinearizeAffectedFactors
-(const list<varid_t>& affectedKeys) const {
+(const list<Index>& affectedKeys) const {
 
   tic("8.2.2.1 getAffectedFactors");
   list<size_t> candidates = getAffectedFactors(affectedKeys);
@@ -89,7 +89,7 @@ boost::shared_ptr<GaussianFactorGraph> ISAM2<Conditional, Values>::relinearizeAf
 
   tic("8.2.2.2 affectedKeysSet");
   // for fast lookup below
-  set<varid_t> affectedKeysSet;
+  set<Index> affectedKeysSet;
   affectedKeysSet.insert(affectedKeys.begin(), affectedKeys.end());
   toc("8.2.2.2 affectedKeysSet");
 
@@ -97,7 +97,7 @@ boost::shared_ptr<GaussianFactorGraph> ISAM2<Conditional, Values>::relinearizeAf
   BOOST_FOREACH(size_t idx, candidates) {
     bool inside = true;
     BOOST_FOREACH(const Symbol& key, nonlinearFactors_[idx]->keys()) {
-      varid_t var = ordering_[key];
+      Index var = ordering_[key];
       if (affectedKeysSet.find(var) == affectedKeysSet.end()) {
         inside = false;
         break;
@@ -122,12 +122,12 @@ GaussianFactorGraph ISAM2<Conditional, Values>::getCachedBoundaryFactors(Cliques
 
   BOOST_FOREACH(sharedClique orphan, orphans) {
     // find the last variable that was eliminated
-    varid_t key = orphan->ordering().back();
+    Index key = orphan->ordering().back();
 #ifndef NDEBUG
 //    typename BayesNet<Conditional>::const_iterator it = orphan->end();
 //    const Conditional& lastConditional = **(--it);
 //    typename Conditional::const_iterator keyit = lastConditional.endParents();
-//    const varid_t lastKey = *(--keyit);
+//    const Index lastKey = *(--keyit);
 //    assert(key == lastKey);
 #endif
     // retrieve the cached factor and add to boundary
@@ -170,7 +170,7 @@ void reinsertCache(const typename ISAM2<Conditional,Values>::sharedClique& root,
 }
 
 template<class Conditional, class Values>
-boost::shared_ptr<set<varid_t> > ISAM2<Conditional, Values>::recalculate(const set<varid_t>& markedKeys, const vector<varid_t>& newKeys, const GaussianFactorGraph* newFactors) {
+boost::shared_ptr<set<Index> > ISAM2<Conditional, Values>::recalculate(const set<Index>& markedKeys, const vector<Index>& newKeys, const GaussianFactorGraph* newFactors) {
 
   static const bool debug = false;
   static const bool useMultiFrontal = true;
@@ -198,7 +198,7 @@ boost::shared_ptr<set<varid_t> > ISAM2<Conditional, Values>::recalculate(const s
 //  if(debug) newFactors->print("Recalculating factors: ");
   if(debug) {
     cout << "markedKeys: ";
-    BOOST_FOREACH(const varid_t key, markedKeys) { cout << key << " "; }
+    BOOST_FOREACH(const Index key, markedKeys) { cout << key << " "; }
     cout << endl;
   }
 
@@ -228,17 +228,17 @@ boost::shared_ptr<set<varid_t> > ISAM2<Conditional, Values>::recalculate(const s
   tic("8.2 re-lookup");
   // ordering provides all keys in conditionals, there cannot be others because path to root included
   tic("8.2.1 re-lookup: affectedKeys");
-  list<varid_t> affectedKeys = affectedBayesNet.ordering();
+  list<Index> affectedKeys = affectedBayesNet.ordering();
   toc("8.2.1 re-lookup: affectedKeys");
 //#ifndef NDEBUG
-//  varid_t lastKey;
-//  for(list<varid_t>::const_iterator key=affectedKeys.begin(); key!=affectedKeys.end(); ++key) {
+//  Index lastKey;
+//  for(list<Index>::const_iterator key=affectedKeys.begin(); key!=affectedKeys.end(); ++key) {
 //    if(key != affectedKeys.begin())
 //      assert(*key > lastKey);
 //    lastKey = *key;
 //  }
 //#endif
-  list<varid_t> affectedAndNewKeys;
+  list<Index> affectedAndNewKeys;
   affectedAndNewKeys.insert(affectedAndNewKeys.end(), affectedKeys.begin(), affectedKeys.end());
   affectedAndNewKeys.insert(affectedAndNewKeys.end(), newKeys.begin(), newKeys.end());
   tic("8.2.2 re-lookup: relinearizeAffected");
@@ -250,7 +250,7 @@ boost::shared_ptr<set<varid_t> > ISAM2<Conditional, Values>::recalculate(const s
   // The relinearized variables should not appear anywhere in the orphans
   BOOST_FOREACH(boost::shared_ptr<const typename BayesTree<Conditional>::Clique> clique, orphans) {
     BOOST_FOREACH(const typename GaussianConditional::shared_ptr& cond, *clique) {
-      BOOST_FOREACH(const varid_t key, cond->keys()) {
+      BOOST_FOREACH(const Index key, cond->keys()) {
         assert(lastRelinVariables_[key] == false);
       }
     }
@@ -259,7 +259,7 @@ boost::shared_ptr<set<varid_t> > ISAM2<Conditional, Values>::recalculate(const s
 #endif
 
 //  if(debug) factors.print("Affected factors: ");
-  if(debug) { cout << "Affected keys: "; BOOST_FOREACH(const varid_t key, affectedKeys) { cout << key << " "; } cout << endl; }
+  if(debug) { cout << "Affected keys: "; BOOST_FOREACH(const Index key, affectedKeys) { cout << key << " "; } cout << endl; }
 
   lastAffectedMarkedCount = markedKeys.size();
   lastAffectedVariableCount = affectedKeys.size();
@@ -275,7 +275,7 @@ boost::shared_ptr<set<varid_t> > ISAM2<Conditional, Values>::recalculate(const s
   toc("8.2 re-lookup");
 
 //#ifndef NDEBUG
-//  for(varid_t var=0; var<cached_.size(); ++var) {
+//  for(Index var=0; var<cached_.size(); ++var) {
 //    if(find(affectedKeys.begin(), affectedKeys.end(), var) == affectedKeys.end() ||
 //        lastRelinVariables_[var] == true) {
 //      assert(!cached_[var] || find(cached_[var]->begin(), cached_[var]->end(), var) == cached_[var]->end());
@@ -292,7 +292,7 @@ boost::shared_ptr<set<varid_t> > ISAM2<Conditional, Values>::recalculate(const s
   BOOST_FOREACH(const GaussianFactor::shared_ptr& cached, cachedBoundary) {
 #ifndef NDEBUG
 #ifndef SEPARATE_STEPS
-    BOOST_FOREACH(const varid_t key, *cached) {
+    BOOST_FOREACH(const Index key, *cached) {
       assert(lastRelinVariables_[key] == false);
     }
 #endif
@@ -331,13 +331,13 @@ boost::shared_ptr<set<varid_t> > ISAM2<Conditional, Values>::recalculate(const s
   tic("8.5.1 re-order: select affected variables");
   // create a partial reordering for the new and contaminated factors
   // markedKeys are passed in: those variables will be forced to the end in the ordering
-  boost::shared_ptr<set<varid_t> > affectedKeysSet(new set<varid_t>(markedKeys));
+  boost::shared_ptr<set<Index> > affectedKeysSet(new set<Index>(markedKeys));
   affectedKeysSet->insert(affectedKeys.begin(), affectedKeys.end());
 //#ifndef NDEBUG
 //  // All affected keys should be contiguous and at the end of the elimination order
-//  for(set<varid_t>::const_iterator key=affectedKeysSet->begin(); key!=affectedKeysSet->end(); ++key) {
+//  for(set<Index>::const_iterator key=affectedKeysSet->begin(); key!=affectedKeysSet->end(); ++key) {
 //    if(key != affectedKeysSet->begin()) {
-//      set<varid_t>::const_iterator prev = key; --prev;
+//      set<Index>::const_iterator prev = key; --prev;
 //      assert(*prev == *key - 1);
 //    }
 //  }
@@ -348,7 +348,7 @@ boost::shared_ptr<set<varid_t> > ISAM2<Conditional, Values>::recalculate(const s
   // Debug check that all variables involved in the factors to be re-eliminated
   // are in affectedKeys, since we will use it to select a subset of variables.
   BOOST_FOREACH(const GaussianFactor::shared_ptr& factor, factors) {
-    BOOST_FOREACH(varid_t key, factor->keys()) {
+    BOOST_FOREACH(Index key, factor->keys()) {
       assert(find(affectedKeysSet->begin(), affectedKeysSet->end(), key) != affectedKeysSet->end());
     }
   }
@@ -357,9 +357,9 @@ boost::shared_ptr<set<varid_t> > ISAM2<Conditional, Values>::recalculate(const s
   Permutation affectedKeysSelectorInverse(affectedKeysSet->size() > 0 ? *(--affectedKeysSet->end())+1 : 0 /*ordering_.nVars()*/); // And its inverse
 #ifndef NDEBUG
   // If debugging, fill with invalid values that will trip asserts if dereferenced
-  std::fill(affectedKeysSelectorInverse.begin(), affectedKeysSelectorInverse.end(), numeric_limits<varid_t>::max());
+  std::fill(affectedKeysSelectorInverse.begin(), affectedKeysSelectorInverse.end(), numeric_limits<Index>::max());
 #endif
-  { varid_t position=0; BOOST_FOREACH(varid_t var, *affectedKeysSet) {
+  { Index position=0; BOOST_FOREACH(Index var, *affectedKeysSet) {
     affectedKeysSelector[position] = var;
     affectedKeysSelectorInverse[var] = position;
     ++ position; } }
@@ -384,28 +384,28 @@ boost::shared_ptr<set<varid_t> > ISAM2<Conditional, Values>::recalculate(const s
 #ifdef PRESORT_ALPHA
   Permutation alphaOrder(affectedKeysSet->size());
   vector<Symbol> orderedKeys; orderedKeys.reserve(ordering_.size());
-  varid_t alphaVar = 0;
+  Index alphaVar = 0;
   BOOST_FOREACH(const Ordering::value_type& key_order, ordering_) {
     Permutation::const_iterator selected = find(affectedKeysSelector.begin(), affectedKeysSelector.end(), key_order.second);
     if(selected != affectedKeysSelector.end()) {
-      varid_t selectedVar = selected - affectedKeysSelector.begin();
+      Index selectedVar = selected - affectedKeysSelector.begin();
       alphaOrder[alphaVar] = selectedVar;
       ++ alphaVar;
     }
   }
   assert(alphaVar == affectedKeysSet->size());
-  vector<varid_t> markedKeysSelected; markedKeysSelected.reserve(markedKeys.size());
-  BOOST_FOREACH(varid_t var, markedKeys) { markedKeysSelected.push_back(alphaOrder[affectedKeysSelectorInverse[var]]); }
+  vector<Index> markedKeysSelected; markedKeysSelected.reserve(markedKeys.size());
+  BOOST_FOREACH(Index var, markedKeys) { markedKeysSelected.push_back(alphaOrder[affectedKeysSelectorInverse[var]]); }
   GaussianVariableIndex<> origAffectedFactorsIndex(affectedFactorsIndex);
   affectedFactorsIndex.permute(alphaOrder);
   Permutation::shared_ptr affectedColamd(Inference::PermutationCOLAMD(affectedFactorsIndex, markedKeysSelected));
   affectedFactorsIndex.permute(*alphaOrder.inverse());
   affectedColamd = alphaOrder.permute(*affectedColamd);
 #else
-//  vector<varid_t> markedKeysSelected; markedKeysSelected.reserve(markedKeys.size());
-//  BOOST_FOREACH(varid_t var, markedKeys) { markedKeysSelected.push_back(affectedKeysSelectorInverse[var]); }
-  vector<varid_t> newKeysSelected; newKeysSelected.reserve(newKeys.size());
-  BOOST_FOREACH(varid_t var, newKeys) { newKeysSelected.push_back(affectedKeysSelectorInverse[var]); }
+//  vector<Index> markedKeysSelected; markedKeysSelected.reserve(markedKeys.size());
+//  BOOST_FOREACH(Index var, markedKeys) { markedKeysSelected.push_back(affectedKeysSelectorInverse[var]); }
+  vector<Index> newKeysSelected; newKeysSelected.reserve(newKeys.size());
+  BOOST_FOREACH(Index var, newKeys) { newKeysSelected.push_back(affectedKeysSelectorInverse[var]); }
   Permutation::shared_ptr affectedColamd(Inference::PermutationCOLAMD(affectedFactorsIndex, newKeysSelected));
   if(disableReordering) {
     affectedColamd.reset(new Permutation(Permutation::Identity(affectedKeysSelector.size())));
@@ -487,7 +487,7 @@ boost::shared_ptr<set<varid_t> > ISAM2<Conditional, Values>::recalculate(const s
     tic("8.6 eliminate");
     boost::shared_ptr<GaussianBayesNet> bayesNet(new GaussianBayesNet());
     vector<GaussianFactor::shared_ptr> newlyCached(affectedKeysSelector.size());
-    for(varid_t var=0; var<affectedKeysSelector.size(); ++var) {
+    for(Index var=0; var<affectedKeysSelector.size(); ++var) {
       GaussianConditional::shared_ptr conditional = Inference::EliminateOne(factors, affectedFactorsIndex, var);
       //    assert(partialReordering[affectedKeysSelector[var]] == affectedKeysSelectorInverse[affectedColamd[var]]);
       //    assert(reorderedSelectorInverse[var] == partialReordering[affectedKeysSelector[var]]);
@@ -547,7 +547,7 @@ boost::shared_ptr<set<varid_t> > ISAM2<Conditional, Values>::recalculate(const s
     // will be sorted correctly according to the new elimination order after
     // applying the permutation, so findParentClique, which looks for the
     // lowest-ordered parent, will still work.
-    varid_t parentRepresentative = findParentClique(orphan->separator_);
+    Index parentRepresentative = findParentClique(orphan->separator_);
     sharedClique parent = (*this)[parentRepresentative];
     parent->children_ += orphan;
     orphan->parent_ = parent; // set new parent!
@@ -557,7 +557,7 @@ boost::shared_ptr<set<varid_t> > ISAM2<Conditional, Values>::recalculate(const s
 
   // Output: BayesTree(this)
 
-//  boost::shared_ptr<set<varid_t> > affectedKeysSet(new set<varid_t>());
+//  boost::shared_ptr<set<Index> > affectedKeysSet(new set<Index>());
 //  affectedKeysSet->insert(affectedKeys.begin(), affectedKeys.end());
   return affectedKeysSet;
 }
@@ -565,17 +565,17 @@ boost::shared_ptr<set<varid_t> > ISAM2<Conditional, Values>::recalculate(const s
 ///* ************************************************************************* */
 //template<class Conditional, class Values>
 //void ISAM2<Conditional, Values>::linear_update(const GaussianFactorGraph& newFactors) {
-//  const list<varid_t> markedKeys = newFactors.keys();
+//  const list<Index> markedKeys = newFactors.keys();
 //  recalculate(markedKeys, &newFactors);
 //}
 
 /* ************************************************************************* */
 // find all variables that are directly connected by a measurement to one of the marked variables
 template<class Conditional, class Values>
-void ISAM2<Conditional, Values>::find_all(sharedClique clique, set<varid_t>& keys, const vector<bool>& markedMask) {
+void ISAM2<Conditional, Values>::find_all(sharedClique clique, set<Index>& keys, const vector<bool>& markedMask) {
   // does the separator contain any of the variables?
   bool found = false;
-  BOOST_FOREACH(const varid_t& key, clique->separator_) {
+  BOOST_FOREACH(const Index& key, clique->separator_) {
     if (markedMask[key])
       found = true;
   }
@@ -598,7 +598,7 @@ struct _SelectiveExpmap {
     delta(_delta), ordering(_ordering), mask(_mask) {}
   template<typename I>
   void operator()(I it_x) {
-    varid_t var = ordering[it_x->first];
+    Index var = ordering[it_x->first];
     assert(delta[var].size() == it_x->second.dim());
     if(mask[var]) it_x->second = it_x->second.expmap(delta[var]); }
 };
@@ -611,7 +611,7 @@ struct _SelectiveExpmapAndClear {
     delta(_delta), ordering(_ordering), mask(_mask) {}
   template<typename I>
   void operator()(I it_x) {
-    varid_t var = ordering[it_x->first];
+    Index var = ordering[it_x->first];
     assert(delta[var].size() == it_x->second.dim());
     BOOST_FOREACH(double v, delta[var]) assert(isfinite(v));
     if(disableReordering) {
@@ -632,7 +632,7 @@ struct _VariableAdder {
   template<typename I>
   void operator()(I xIt) {
     static const bool debug = false;
-    varid_t var = vconfig->push_back_preallocated(zero(xIt->second.dim()));
+    Index var = vconfig->push_back_preallocated(zero(xIt->second.dim()));
     vconfig.permutation()[var] = var;
     ordering.insert(xIt->first, var);
     if(debug) cout << "Adding variable " << (string)xIt->first << " with order " << var << endl;
@@ -668,7 +668,7 @@ void ISAM2<Conditional, Values>::update(
   theta_.insert(newTheta);
   if(debug) newTheta.print("The new variables are: ");
   // Add the new keys onto the ordering, add zeros to the delta for the new variables
-  vector<varid_t> dims(newTheta.dims(*newTheta.orderingArbitrary(ordering_.nVars())));
+  vector<Index> dims(newTheta.dims(*newTheta.orderingArbitrary(ordering_.nVars())));
   if(debug) cout << "New variables have total dimensionality " << accumulate(dims.begin(), dims.end(), 0) << endl;
   delta_.container().reserve(delta_->size() + newTheta.size(), delta_->dim() + accumulate(dims.begin(), dims.end(), 0));
   delta_.permutation().resize(delta_->size() + newTheta.size());
@@ -688,15 +688,15 @@ void ISAM2<Conditional, Values>::update(
 
   tic("3 step3");
   // 3. Mark linear update
-  set<varid_t> markedKeys;
-  vector<varid_t> newKeys; newKeys.reserve(newFactors.size() * 6);
+  set<Index> markedKeys;
+  vector<Index> newKeys; newKeys.reserve(newFactors.size() * 6);
   BOOST_FOREACH(const typename NonlinearFactor<Values>::shared_ptr& factor, newFactors) {
     BOOST_FOREACH(const Symbol& key, factor->keys()) {
       markedKeys.insert(ordering_[key]);
       newKeys.push_back(ordering_[key]);
     }
   }
-//  list<varid_t> markedKeys = newFactors.keys();
+//  list<Index> markedKeys = newFactors.keys();
   toc("3 step3");
 
 #ifdef SEPARATE_STEPS // original algorithm from paper: separate relin and optimize
@@ -705,7 +705,7 @@ void ISAM2<Conditional, Values>::update(
   boost::shared_ptr<GaussianFactorGraph> linearFactors = newFactors.linearize(theta_, ordering_);
   variableIndex_.augment(*linearFactors);
 
-  boost::shared_ptr<set<varid_t> > replacedKeys_todo = recalculate(markedKeys, newKeys, &(*linearFactors));
+  boost::shared_ptr<set<Index> > replacedKeys_todo = recalculate(markedKeys, newKeys, &(*linearFactors));
   markedKeys.clear();
   vector<bool> none(variableIndex_.size(), false);
   optimize2(this->root(), wildfire_threshold, none, delta_);
@@ -716,7 +716,7 @@ void ISAM2<Conditional, Values>::update(
   if (relinearize && count%10 == 0) { // todo: every n steps
     tic("4 step4");
     // 4. Mark keys in \Delta above threshold \beta: J=\{\Delta_{j}\in\Delta|\Delta_{j}\geq\beta\}.
-    for(varid_t var=0; var<delta_.size(); ++var) {
+    for(Index var=0; var<delta_.size(); ++var) {
       if (max(abs(delta_[var])) >= relinearize_threshold) {
         markedRelinMask[var] = true;
         markedKeys.insert(var);
@@ -742,7 +742,7 @@ void ISAM2<Conditional, Values>::update(
     //markedKeys.splice(markedKeys.begin(), affectedKeys, affectedKeys.begin(), affectedKeys.end());
     //markedKeys.sort(); // remove duplicates
     //markedKeys.unique();
-//    BOOST_FOREACH(const varid_t var, affectedKeys) {
+//    BOOST_FOREACH(const Index var, affectedKeys) {
 //      markedKeys.push_back(var);
 //    }
     toc("5 step5");
@@ -788,11 +788,11 @@ void ISAM2<Conditional, Values>::update(
 
   tic("8 step8");
   // 8. Redo top of Bayes tree
-  boost::shared_ptr<set<varid_t> > replacedKeys = recalculate(markedKeys, newKeys, &(*linearFactors));
+  boost::shared_ptr<set<Index> > replacedKeys = recalculate(markedKeys, newKeys, &(*linearFactors));
   toc("8 step8");
 #else
-  vector<varid_t> empty;
-  boost::shared_ptr<set<varid_t> > replacedKeys = recalculate(markedKeys, empty);
+  vector<Index> empty;
+  boost::shared_ptr<set<Index> > replacedKeys = recalculate(markedKeys, empty);
 #endif
 
   tic("9 step9");
@@ -812,7 +812,7 @@ void ISAM2<Conditional, Values>::update(
 
   } else {
     vector<bool> replacedKeysMask(variableIndex_.size(), false);
-    BOOST_FOREACH(const varid_t var, *replacedKeys) { replacedKeysMask[var] = true; }
+    BOOST_FOREACH(const Index var, *replacedKeys) { replacedKeysMask[var] = true; }
     lastBacksubVariableCount = optimize2(this->root(), wildfire_threshold, replacedKeysMask, delta_); // modifies delta_
   }
   toc("9 step9");

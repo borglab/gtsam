@@ -105,8 +105,8 @@ namespace gtsam {
 //	 * @param columns map from keys to a sparse column of non-zero row indices
 //	 * @param lastKeys set of keys that should appear last in the ordering
 //	 * ************************************************************************* */
-//	static void colamd(int n_col, int n_row, int nrNonZeros, const map<varid_t, vector<int> >& columns,
-//	    Ordering& ordering, const set<varid_t>& lastKeys) {
+//	static void colamd(int n_col, int n_row, int nrNonZeros, const map<Index, vector<int> >& columns,
+//	    Ordering& ordering, const set<Index>& lastKeys) {
 //
 //		// Convert to compressed column major format colamd wants it in (== MATLAB format!)
 //		int Alen = ccolamd_recommended(nrNonZeros, n_row, n_col); /* colamd arg 3: size of the array A */
@@ -117,11 +117,11 @@ namespace gtsam {
 //		p[0] = 0;
 //		int j = 1;
 //		int count = 0;
-//		typedef map<varid_t, vector<int> >::const_iterator iterator;
+//		typedef map<Index, vector<int> >::const_iterator iterator;
 //		bool front_exists = false;
-//		vector<varid_t> initialOrder;
+//		vector<Index> initialOrder;
 //		for (iterator it = columns.begin(); it != columns.end(); it++) {
-//			varid_t key = it->first;
+//			Index key = it->first;
 //			const vector<int>& column = it->second;
 //			initialOrder.push_back(key);
 //			BOOST_FOREACH(int i, column)
@@ -159,12 +159,12 @@ namespace gtsam {
 //	/* ************************************************************************* */
 //	template<class Factor>
 //	void FactorGraph<Factor>::getOrdering(Ordering& ordering,
-//			const set<varid_t>& lastKeys,
-//			boost::optional<const set<varid_t>&> scope) const {
+//			const set<Index>& lastKeys,
+//			boost::optional<const set<Index>&> scope) const {
 //
 //		// A factor graph is really laid out in row-major format, each factor a row
 //		// Below, we compute a symbolic matrix stored in sparse columns.
-//		map<varid_t, vector<int> > columns; // map from keys to a sparse column of non-zero row indices
+//		map<Index, vector<int> > columns; // map from keys to a sparse column of non-zero row indices
 //		int nrNonZeros = 0; // number of non-zero entries
 //		int n_row = 0; /* colamd arg 1: number of rows in A */
 //
@@ -173,9 +173,9 @@ namespace gtsam {
 //		bool hasInterested = scope.is_initialized();
 //		BOOST_FOREACH(const sharedFactor& factor, factors_) {
 //				if (factor == NULL) continue;
-//				const vector<varid_t>& keys(factor->keys());
+//				const vector<Index>& keys(factor->keys());
 //				inserted = false;
-//				BOOST_FOREACH(varid_t key, keys) {
+//				BOOST_FOREACH(Index key, keys) {
 //						if (!hasInterested || scope->find(key) != scope->end()) {
 //							columns[key].push_back(n_row);
 //							nrNonZeros++;
@@ -192,7 +192,7 @@ namespace gtsam {
 //	template<class Factor>
 //	Ordering FactorGraph<Factor>::getOrdering() const {
 //		Ordering ordering;
-//		set<varid_t> lastKeys;
+//		set<Index> lastKeys;
 //		getOrdering(ordering, lastKeys);
 //		return ordering;
 //	}
@@ -201,16 +201,16 @@ namespace gtsam {
 //	template<class Factor>
 //	boost::shared_ptr<Ordering> FactorGraph<Factor>::getOrdering_() const {
 //		boost::shared_ptr<Ordering> ordering(new Ordering);
-//		set<varid_t> lastKeys;
+//		set<Index> lastKeys;
 //		getOrdering(*ordering, lastKeys);
 //		return ordering;
 //	}
 //
 //	/* ************************************************************************* */
 //	template<class Factor>
-//	Ordering FactorGraph<Factor>::getOrdering(const set<varid_t>& scope) const {
+//	Ordering FactorGraph<Factor>::getOrdering(const set<Index>& scope) const {
 //		Ordering ordering;
-//		set<varid_t> lastKeys;
+//		set<Index> lastKeys;
 //		getOrdering(ordering, lastKeys, scope);
 //		return ordering;
 //	}
@@ -218,7 +218,7 @@ namespace gtsam {
 //	/* ************************************************************************* */
 //	template<class Factor>
 //	Ordering FactorGraph<Factor>::getConstrainedOrdering(
-//			const set<varid_t>& lastKeys) const {
+//			const set<Index>& lastKeys) const {
 //		Ordering ordering;
 //		getOrdering(ordering, lastKeys);
 //		return ordering;
@@ -323,14 +323,14 @@ namespace gtsam {
 
 //	/* ************************************************************************* */
 //	template<class Factor>
-//	std::pair<FactorGraph<Factor> , set<varid_t> > FactorGraph<Factor>::removeSingletons() {
+//	std::pair<FactorGraph<Factor> , set<Index> > FactorGraph<Factor>::removeSingletons() {
 //		FactorGraph<Factor> singletonGraph;
-//		set<varid_t> singletons;
+//		set<Index> singletons;
 //
 //		while (true) {
 //			// find all the singleton variables
 //			Ordering new_singletons;
-//			varid_t key;
+//			Index key;
 //			list<size_t> indices;
 //			BOOST_FOREACH(boost::tie(key, indices), indices_)
 //						{
@@ -348,7 +348,7 @@ namespace gtsam {
 //						}
 //			singletons.insert(new_singletons.begin(), new_singletons.end());
 //
-//			BOOST_FOREACH(const varid_t& singleton, new_singletons)
+//			BOOST_FOREACH(const Index& singleton, new_singletons)
 //							findAndRemoveFactors(singleton);
 //
 //			// exit when there are no more singletons
@@ -372,7 +372,7 @@ namespace gtsam {
 
 //	/* ************************************************************************* */
 //	template<class Factor> boost::shared_ptr<Factor> removeAndCombineFactors(
-//			FactorGraph<Factor>& factorGraph, const varid_t& key) {
+//			FactorGraph<Factor>& factorGraph, const Index& key) {
 //
 //		// find and remove the factors associated with key
 //		vector<boost::shared_ptr<Factor> > found = factorGraph.findAndRemoveFactors(key);

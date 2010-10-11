@@ -27,7 +27,7 @@ void VariableSlots::print(const std::string& str) const {
     for(size_t i=0; i<this->begin()->second.size(); ++i) {
       cout << "    \t";
       BOOST_FOREACH(const value_type& slot, *this) {
-        if(slot.second[i] == numeric_limits<varid_t>::max())
+        if(slot.second[i] == numeric_limits<Index>::max())
           cout << "x" << "\t";
         else
           cout << slot.second[i] << "\t";

@@ -21,7 +21,7 @@ namespace gtsam {
 	 * ************************************************************************* */
 	template<class FG>
 	template<class Iterator>
-	ClusterTree<FG>::Cluster::Cluster(const FG& fg, varid_t key, Iterator firstSeparator, Iterator lastSeparator) :
+	ClusterTree<FG>::Cluster::Cluster(const FG& fg, Index key, Iterator firstSeparator, Iterator lastSeparator) :
 	FG(fg), frontal(1, key), separator(firstSeparator, lastSeparator) {}
 
   /* ************************************************************************* */
@@ -63,10 +63,10 @@ namespace gtsam {
 	template<class FG>
 	void ClusterTree<FG>::Cluster::print(const string& indent) const {
 		cout << indent;
-		BOOST_FOREACH(const varid_t key, frontal)
+		BOOST_FOREACH(const Index key, frontal)
 						cout << key << " ";
 		cout << ": ";
-		BOOST_FOREACH(const varid_t key, separator)
+		BOOST_FOREACH(const Index key, separator)
 						cout << key << " ";
 		cout << endl;
 	}

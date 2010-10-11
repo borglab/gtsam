@@ -19,7 +19,7 @@ using namespace boost::assign;
 using namespace std;
 using namespace gtsam;
 
-static const varid_t x2=0, x1=1, x3=2, x4=3;
+static const Index x2=0, x1=1, x3=2, x4=3;
 
 GaussianFactorGraph createChain() {
 

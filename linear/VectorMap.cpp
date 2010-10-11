@@ -18,7 +18,7 @@ using namespace std;
 namespace gtsam {
 
 /* ************************************************************************* */
-void check_size(varid_t key, const Vector & vj, const Vector & dj) {
+void check_size(Index key, const Vector & vj, const Vector & dj) {
   if (dj.size()!=vj.size()) {
     cout << "For key \"" << key << "\"" << endl;
     cout << "vj.size = " << vj.size() << endl;
@@ -28,21 +28,21 @@ void check_size(varid_t key, const Vector & vj, const Vector & dj) {
 }
 
 /* ************************************************************************* */
-std::vector<varid_t> VectorMap::get_names() const {
-  std::vector<varid_t> names;
+std::vector<Index> VectorMap::get_names() const {
+  std::vector<Index> names;
   for(const_iterator it=values.begin(); it!=values.end(); it++)
     names.push_back(it->first);
   return names;
 }
 
 /* ************************************************************************* */
-VectorMap& VectorMap::insert(varid_t name, const Vector& v) {
+VectorMap& VectorMap::insert(Index name, const Vector& v) {
   values.insert(std::make_pair(name,v));
   return *this;
 }
 
 /* ************************************************************************* */
-VectorMap& VectorMap::insertAdd(varid_t j, const Vector& a) {
+VectorMap& VectorMap::insertAdd(Index j, const Vector& a) {
 	Vector& vj = values[j];
 	if (vj.size()==0) vj = a; else vj += a;
 	return *this;
@@ -69,12 +69,12 @@ size_t VectorMap::dim() const {
 }
 
 /* ************************************************************************* */
-const Vector& VectorMap::operator[](varid_t name) const {
+const Vector& VectorMap::operator[](Index name) const {
   return values.at(name);
 }
 
 /* ************************************************************************* */
-Vector& VectorMap::operator[](varid_t name) {
+Vector& VectorMap::operator[](Index name) {
   return values.at(name);
 }
 
@@ -137,7 +137,7 @@ Vector VectorMap::vector() const {
 	Vector result(dim());
 
 	size_t cur_dim = 0;
-	varid_t j; Vector vj;
+	Index j; Vector vj;
 	FOREACH_PAIR(j, vj, values) {
 		subInsert(result, vj, cur_dim);
 		cur_dim += vj.size();
@@ -149,7 +149,7 @@ Vector VectorMap::vector() const {
 VectorMap expmap(const VectorMap& original, const VectorMap& delta)
 {
 	VectorMap newValues;
-	varid_t j; Vector vj; // rtodo: copying vector?
+	Index j; Vector vj; // rtodo: copying vector?
 	FOREACH_PAIR(j, vj, original.values) {
 		if (delta.contains(j)) {
 			const Vector& dj = delta[j];
@@ -167,7 +167,7 @@ VectorMap expmap(const VectorMap& original, const Vector& delta)
 {
 	VectorMap newValues;
 	size_t i = 0;
-	varid_t j; Vector vj; // rtodo: copying vector?
+	Index j; Vector vj; // rtodo: copying vector?
 	FOREACH_PAIR(j, vj, original.values) {
 		size_t mj = vj.size();
 		Vector dj = sub(delta, i, i+mj);

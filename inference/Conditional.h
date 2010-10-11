@@ -56,19 +56,19 @@ public:
   Conditional(){}
 
   /** No parents */
-  Conditional(varid_t key) : factor_(key), nFrontal_(1) {}
+  Conditional(Index key) : factor_(key), nFrontal_(1) {}
 
   /** Single parent */
-  Conditional(varid_t key, varid_t parent) : factor_(key, parent), nFrontal_(1) {}
+  Conditional(Index key, Index parent) : factor_(key, parent), nFrontal_(1) {}
 
   /** Two parents */
-  Conditional(varid_t key, varid_t parent1, varid_t parent2) : factor_(key, parent1, parent2), nFrontal_(1) {}
+  Conditional(Index key, Index parent1, Index parent2) : factor_(key, parent1, parent2), nFrontal_(1) {}
 
   /** Three parents */
-  Conditional(varid_t key, varid_t parent1, varid_t parent2, varid_t parent3) : factor_(key, parent1, parent2, parent3), nFrontal_(1) {}
+  Conditional(Index key, Index parent1, Index parent2, Index parent3) : factor_(key, parent1, parent2, parent3), nFrontal_(1) {}
 
   /** Constructor from a frontal variable and a vector of parents */
-  Conditional(varid_t key, const std::vector<varid_t>& parents) : nFrontal_(1) {
+  Conditional(Index key, const std::vector<Index>& parents) : nFrontal_(1) {
     factor_.keys_.resize(1+parents.size());
     *(beginFrontals()) = key;
     std::copy(parents.begin(), parents.end(), beginParents()); }
@@ -78,7 +78,7 @@ public:
   Conditional(Iterator firstKey, Iterator lastKey, size_t nFrontals) : factor_(firstKey, lastKey), nFrontal_(nFrontals) {}
 
 	/** Special accessor when there is only one frontal variable. */
-	varid_t key() const { assert(nFrontal_==1); return factor_.keys_[0]; }
+	Index key() const { assert(nFrontal_==1); return factor_.keys_[0]; }
 
   /**
    * Permutes the Conditional, but for efficiency requires the permutation
@@ -93,11 +93,11 @@ public:
    */
   bool permuteSeparatorWithInverse(const Permutation& inversePermutation) {
 #ifndef NDEBUG
-    BOOST_FOREACH(varid_t key, frontals()) { assert(key == inversePermutation[key]); }
+    BOOST_FOREACH(Index key, frontals()) { assert(key == inversePermutation[key]); }
 #endif
     bool parentChanged = false;
-    BOOST_FOREACH(varid_t& parent, parents()) {
-      varid_t newParent = inversePermutation[parent];
+    BOOST_FOREACH(Index& parent, parents()) {
+      Index newParent = inversePermutation[parent];
       if(parent != newParent) {
         parentChanged = true;
         parent = newParent;
@@ -107,7 +107,7 @@ public:
   }
 
   /** return a const reference to all keys */
-  const std::vector<varid_t>& keys() const { return factor_.keys(); }
+  const std::vector<Index>& keys() const { return factor_.keys(); }
 
   /** return a view of the frontal keys */
   Frontals frontals() const {
@@ -126,9 +126,9 @@ public:
   /** print */
   void print(const std::string& s = "Conditional") const {
     std::cout << s << " P(";
-    BOOST_FOREACH(varid_t key, frontals()) std::cout << " " << key;
+    BOOST_FOREACH(Index key, frontals()) std::cout << " " << key;
     if (nrParents()>0) std::cout << " |";
-    BOOST_FOREACH(varid_t parent, parents()) std::cout << " " << parent;
+    BOOST_FOREACH(Index parent, parents()) std::cout << " " << parent;
     std::cout << ")" << std::endl;
   }
 

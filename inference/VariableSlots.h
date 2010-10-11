@@ -24,7 +24,7 @@ namespace gtsam {
  * interleaved.
  *
  * VariableSlots describes the 2D block structure of the combined factor.  It
- * is essentially a map<varid_t, vector<size_t> >.  The varid_t is the real
+ * is essentially a map<Index, vector<size_t> >.  The Index is the real
  * variable index of the combined factor slot.  The vector<size_t> tells, for
  * each row-block (factor), which column-block (variable slot) from the
  * component factor appears in this block of the combined factor.
@@ -41,8 +41,8 @@ namespace gtsam {
  */
 
 // Internal-use-only typedef for the VariableSlots map base class because this is such a long type name
-typedef std::map<varid_t, std::vector<varid_t>, std::less<varid_t>,
-    boost::fast_pool_allocator<std::pair<const varid_t, std::vector<varid_t> > > > _VariableSlots_map;
+typedef std::map<Index, std::vector<Index>, std::less<Index>,
+    boost::fast_pool_allocator<std::pair<const Index, std::vector<Index> > > > _VariableSlots_map;
 
 class VariableSlots : public _VariableSlots_map, public Testable<VariableSlots> {
 

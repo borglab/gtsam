@@ -26,7 +26,7 @@ using namespace gtsam;
 using namespace std;
 using namespace boost::assign;
 
-static const varid_t _x_=0, _x1_=1, _l1_=2;
+static const Index _x_=0, _x1_=1, _l1_=2;
 
 /* ************************************************************************* */
 TEST(GaussianConditional, constructor)
@@ -47,7 +47,7 @@ TEST(GaussianConditional, constructor)
   Vector d = Vector_(2, 1.0, 2.0);
   Vector s = Vector_(2, 3.0, 4.0);
 
-  list<pair<varid_t, Matrix> > terms;
+  list<pair<Index, Matrix> > terms;
   terms +=
       make_pair(3, S1),
       make_pair(5, S2),
@@ -56,21 +56,21 @@ TEST(GaussianConditional, constructor)
   GaussianConditional actual(1, d, R, terms, s);
 
   GaussianConditional::const_iterator it = actual.beginFrontals();
-  CHECK(assert_equal(varid_t(1), *it));
+  CHECK(assert_equal(Index(1), *it));
   CHECK(assert_equal(R, actual.get_R()));
   ++ it;
   CHECK(it == actual.endFrontals());
 
   it = actual.beginParents();
-  CHECK(assert_equal(varid_t(3), *it));
+  CHECK(assert_equal(Index(3), *it));
   CHECK(assert_equal(S1, actual.get_S(it)));
 
   ++ it;
-  CHECK(assert_equal(varid_t(5), *it));
+  CHECK(assert_equal(Index(5), *it));
   CHECK(assert_equal(S2, actual.get_S(it)));
 
   ++ it;
-  CHECK(assert_equal(varid_t(7), *it));
+  CHECK(assert_equal(Index(7), *it));
   CHECK(assert_equal(S3, actual.get_S(it)));
 
   ++it;

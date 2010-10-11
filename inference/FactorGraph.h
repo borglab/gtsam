@@ -49,8 +49,8 @@ namespace gtsam {
 //		 * Return an ordering in first argument, potentially using a set of
 //		 * keys that need to appear last, and potentially restricting scope
 //		 */
-//		void getOrdering(Ordering& ordering, const std::set<varid_t>& lastKeys,
-//				boost::optional<const std::set<varid_t>&> scope = boost::none) const;
+//		void getOrdering(Ordering& ordering, const std::set<Index>& lastKeys,
+//				boost::optional<const std::set<Index>&> scope = boost::none) const;
 
 	public:
 
@@ -117,8 +117,8 @@ namespace gtsam {
 //		 */
 //		Ordering getOrdering() const;
 //		boost::shared_ptr<Ordering> getOrdering_() const;
-//		Ordering getOrdering(const std::set<varid_t>& scope) const;
-//		Ordering getConstrainedOrdering(const std::set<varid_t>& lastKeys) const;
+//		Ordering getOrdering(const std::set<Index>& scope) const;
+//		Ordering getConstrainedOrdering(const std::set<Index>& lastKeys) const;
 
 //		/**
 //		 * find the minimum spanning tree using boost graph library
@@ -167,10 +167,10 @@ namespace gtsam {
 //     * from the factor graph
 //     * @param key the key for the given node
 //     */
-//    std::vector<sharedFactor> findAndRemoveFactors(varid_t key);
+//    std::vector<sharedFactor> findAndRemoveFactors(Index key);
 //
 //		/** remove singleton variables and the related factors */
-//		std::pair<FactorGraph<Factor>, std::set<varid_t> > removeSingletons();
+//		std::pair<FactorGraph<Factor>, std::set<Index> > removeSingletons();
 
 	private:
 
@@ -198,7 +198,7 @@ namespace gtsam {
 //   * @return the combined linear factor
 //   */
 //	template<class Factor> boost::shared_ptr<Factor>
-//		removeAndCombineFactors(FactorGraph<Factor>& factorGraph, const varid_t& key);
+//		removeAndCombineFactors(FactorGraph<Factor>& factorGraph, const Index& key);
 
 
 	/**

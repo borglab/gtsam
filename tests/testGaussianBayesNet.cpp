@@ -30,7 +30,7 @@ using namespace std;
 using namespace gtsam;
 using namespace example;
 
-static const varid_t _x_=0, _y_=1, _z_=2;
+static const Index _x_=0, _y_=1, _z_=2;
 
 /* ************************************************************************* */
 TEST( GaussianBayesNet, constructor )

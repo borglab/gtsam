@@ -22,7 +22,7 @@ LinearApproxFactor<Values,Key>::LinearApproxFactor(
 {
 	BOOST_FOREACH(const Ordering::Map::value_type& p, ordering) {
 		Symbol key = p.first;
-		varid_t var = p.second;
+		Index var = p.second;
 
 		// check if actually in factor
 		Factor::const_iterator it = lin_factor->find(var);
@@ -60,13 +60,13 @@ boost::shared_ptr<GaussianFactor>
 LinearApproxFactor<Values,Key>::linearize(const Values& c, const Ordering& ordering) const {
 
 	// sort by varid - only known at linearization time
-	typedef std::map<varid_t, Matrix> VarMatrixMap;
+	typedef std::map<Index, Matrix> VarMatrixMap;
 	VarMatrixMap sorting_terms;
 	BOOST_FOREACH(const SymbolMatrixMap::value_type& p, matrices_)
 		sorting_terms.insert(std::make_pair(ordering[p.first], p.second));
 
 	// move into terms
-	std::vector<std::pair<varid_t, Matrix> > terms;
+	std::vector<std::pair<Index, Matrix> > terms;
 	BOOST_FOREACH(const VarMatrixMap::value_type& p, sorting_terms)
 		terms.push_back(p);
 
@@ -77,7 +77,7 @@ LinearApproxFactor<Values,Key>::linearize(const Values& c, const Ordering& order
 template <class Values, class Key>
 Factor::shared_ptr
 LinearApproxFactor<Values,Key>::symbolic(const Ordering& ordering) const {
-	std::vector<varid_t> key_ids(this->keys_.size());
+	std::vector<Index> key_ids(this->keys_.size());
 	size_t i=0;
 	BOOST_FOREACH(const Symbol& key, this->keys_)
 	key_ids[i++] = ordering[key];

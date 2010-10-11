@@ -15,15 +15,15 @@ using namespace std;
 namespace gtsam {
 
 /* ************************************************************************* */
-Permutation Permutation::Identity(varid_t nVars) {
+Permutation Permutation::Identity(Index nVars) {
   Permutation ret(nVars);
-  for(varid_t i=0; i<nVars; ++i)
+  for(Index i=0; i<nVars; ++i)
     ret[i] = i;
   return ret;
 }
 
 /* ************************************************************************* */
-Permutation Permutation::PullToFront(const vector<varid_t>& toFront, size_t size) {
+Permutation Permutation::PullToFront(const vector<Index>& toFront, size_t size) {
 
   Permutation ret(size);
 
@@ -32,14 +32,14 @@ Permutation Permutation::PullToFront(const vector<varid_t>& toFront, size_t size
 
   // Put the pulled variables at the front of the permutation and set up the
   // pulled flags.
-  for(varid_t j=0; j<toFront.size(); ++j) {
+  for(Index j=0; j<toFront.size(); ++j) {
     ret[j] = toFront[j];
     pulled[toFront[j]] = true;
   }
 
   // Fill in the rest of the variables
-  varid_t nextVar = toFront.size();
-  for(varid_t j=0; j<size; ++j)
+  Index nextVar = toFront.size();
+  for(Index j=0; j<size; ++j)
     if(!pulled[j])
       ret[nextVar++] = j;
   assert(nextVar == size);
@@ -48,7 +48,7 @@ Permutation Permutation::PullToFront(const vector<varid_t>& toFront, size_t size
 }
 
 /* ************************************************************************* */
-Permutation Permutation::PushToBack(const std::vector<varid_t>& toBack, size_t size) {
+Permutation Permutation::PushToBack(const std::vector<Index>& toBack, size_t size) {
 
   Permutation ret(size);
 
@@ -57,8 +57,8 @@ Permutation Permutation::PushToBack(const std::vector<varid_t>& toBack, size_t s
 
   // Put the pushed variables at the back of the permutation and set up the
   // pushed flags;
-  varid_t nextVar = size - toBack.size();
-  for(varid_t j=0; j<toBack.size(); ++j) {
+  Index nextVar = size - toBack.size();
+  for(Index j=0; j<toBack.size(); ++j) {
     ret[nextVar++] = toBack[j];
     pushed[toBack[j]] = true;
   }
@@ -66,7 +66,7 @@ Permutation Permutation::PushToBack(const std::vector<varid_t>& toBack, size_t s
 
   // Fill in the rest of the variables
   nextVar = 0;
-  for(varid_t j=0; j<size; ++j)
+  for(Index j=0; j<size; ++j)
     if(!pushed[j])
       ret[nextVar++] = j;
   assert(nextVar == size - toBack.size());
@@ -91,7 +91,7 @@ Permutation::shared_ptr Permutation::partialPermutation(
   assert(selector.size() == partialPermutation.size());
   Permutation::shared_ptr result(new Permutation(*this));
 
-  for(varid_t subsetPos=0; subsetPos<selector.size(); ++subsetPos)
+  for(Index subsetPos=0; subsetPos<selector.size(); ++subsetPos)
     (*result)[selector[subsetPos]] = (*this)[selector[partialPermutation[subsetPos]]];
 
   return result;
@@ -100,7 +100,7 @@ Permutation::shared_ptr Permutation::partialPermutation(
 /* ************************************************************************* */
 Permutation::shared_ptr Permutation::inverse() const {
   Permutation::shared_ptr result(new Permutation(this->size()));
-  for(varid_t i=0; i<this->size(); ++i) {
+  for(Index i=0; i<this->size(); ++i) {
     assert((*this)[i] < this->size());
     (*result)[(*this)[i]] = i;
   }
@@ -110,7 +110,7 @@ Permutation::shared_ptr Permutation::inverse() const {
 /* ************************************************************************* */
 void Permutation::print(const std::string& str) const {
   std::cout << str;
-  BOOST_FOREACH(varid_t s, rangeIndices_) { std::cout << s << " "; }
+  BOOST_FOREACH(Index s, rangeIndices_) { std::cout << s << " "; }
   std::cout << std::endl;
 }
 

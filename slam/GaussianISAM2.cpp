@@ -39,7 +39,7 @@ void optimize2(const GaussianISAM2::sharedClique& clique, double threshold,
 		bool found = true;
 		if (!redo && cg->nrParents()>0) {
 			found = false;
-			BOOST_FOREACH(const varid_t& key, cg->parents()) {
+			BOOST_FOREACH(const Index& key, cg->parents()) {
 				if (changed[key]) {
 					found = true;
 				}
