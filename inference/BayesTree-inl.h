@@ -329,27 +329,27 @@ namespace gtsam {
 		return p_S_R;
 	}
 
-//	/* ************************************************************************* */
-//	// P(C) = \int_R P(F|S) P(S|R) P(R)
-//	// TODO: Maybe we should integrate given parent marginal P(Cp),
-//	// \int(Cp\S) P(F|S)P(S|Cp)P(Cp)
-//	// Because the root clique could be very big.
-//	/* ************************************************************************* */
-//	template<class Conditional>
-//	template<class Factor>
-//	FactorGraph<Factor>
-//	BayesTree<Conditional>::Clique::marginal(shared_ptr R) {
-//		// If we are the root, just return this root
-//		if (R.get()==this) return *R;
-//
-//		// Combine P(F|S), P(S|R), and P(R)
-//		BayesNet<Conditional> p_FSR = this->shortcut<Factor>(R);
-//		p_FSR.push_front(*this);
-//		p_FSR.push_back(*R);
-//
-//		// Find marginal on the keys we are interested in
-//		return marginalize<Factor,Conditional>(p_FSR,keys());
-//	}
+	/* ************************************************************************* */
+	// P(C) = \int_R P(F|S) P(S|R) P(R)
+	// TODO: Maybe we should integrate given parent marginal P(Cp),
+	// \int(Cp\S) P(F|S)P(S|Cp)P(Cp)
+	// Because the root clique could be very big.
+	/* ************************************************************************* */
+	template<class Conditional>
+	template<class FactorGraph>
+	FactorGraph
+	BayesTree<Conditional>::Clique::marginal(shared_ptr R) {
+		// If we are the root, just return this root
+		if (R.get()==this) return *R;
+
+		// Combine P(F|S), P(S|R), and P(R)
+		BayesNet<Conditional> p_FSR = this->shortcut<FactorGraph>(R);
+		p_FSR.push_front(*this);
+		p_FSR.push_back(*R);
+
+		// Find marginal on the keys we are interested in
+		return FactorGraph(*Inference::Marginal(FactorGraph(p_FSR), keys()));
+	}
 
 //	/* ************************************************************************* */
 //	// P(C1,C2) = \int_R P(F1|S1) P(S1|R) P(F2|S1) P(S2|R) P(R)
@@ -676,41 +676,51 @@ namespace gtsam {
 	  }
 	}
 
-//	/* ************************************************************************* */
-//	// First finds clique marginal then marginalizes that
-//	/* ************************************************************************* */
-//	template<class Conditional>
-//	template<class Factor>
-//	FactorGraph<Factor>
-//	BayesTree<Conditional>::marginal(varid_t key) const {
-//
-//		// get clique containing key
-//		sharedClique clique = (*this)[key];
-//
-//		// calculate or retrieve its marginal
-//		FactorGraph<Factor> cliqueMarginal = clique->marginal<Factor>(root_);
-//
-//		// create an ordering where only the requested key is not eliminated
-//		vector<varid_t> ord = clique->keys();
-//		ord.remove(key);
-//
-//		// partially eliminate, remaining factor graph is requested marginal
-//		eliminate<Factor,Conditional>(cliqueMarginal,ord);
-//		return cliqueMarginal;
-//	}
+	/* ************************************************************************* */
+	// First finds clique marginal then marginalizes that
+	/* ************************************************************************* */
+	template<class Conditional>
+	template<class FactorGraph>
+	FactorGraph
+	BayesTree<Conditional>::marginal(varid_t key) const {
 
-//	/* ************************************************************************* */
-//	template<class Conditional>
-//	template<class Factor>
-//	BayesNet<Conditional>
-//	BayesTree<Conditional>::marginalBayesNet(varid_t key) const {
-//
-//		// calculate marginal as a factor graph
-//	  FactorGraph<Factor> fg = this->marginal<Factor>(key);
-//
-//		// eliminate further to Bayes net
-//		return eliminate<Factor,Conditional>(fg,Ordering(key));
-//	}
+		// get clique containing key
+		sharedClique clique = (*this)[key];
+
+		// calculate or retrieve its marginal
+		FactorGraph cliqueMarginal = clique->marginal<FactorGraph>(root_);
+
+		// Reorder so that only the requested key is not eliminated
+		typename FactorGraph::variableindex_type varIndex(cliqueMarginal);
+		vector<varid_t> keyAsVector(1); keyAsVector[0] = key;
+		Permutation toBack(Permutation::PushToBack(keyAsVector, varIndex.size()));
+		Permutation::shared_ptr toBackInverse(toBack.inverse());
+		varIndex.permute(toBack);
+		BOOST_FOREACH(const typename FactorGraph::sharedFactor& factor, cliqueMarginal) {
+		  factor->permuteWithInverse(*toBackInverse);
+		}
+
+		// partially eliminate, remaining factor graph is requested marginal
+		Inference::EliminateUntil(cliqueMarginal, varIndex.size()-1, varIndex);
+    BOOST_FOREACH(const typename FactorGraph::sharedFactor& factor, cliqueMarginal) {
+      if(factor)
+        factor->permuteWithInverse(toBack);
+    }
+		return cliqueMarginal;
+	}
+
+	/* ************************************************************************* */
+	template<class Conditional>
+	template<class FactorGraph>
+	BayesNet<Conditional>
+	BayesTree<Conditional>::marginalBayesNet(varid_t key) const {
+
+		// calculate marginal as a factor graph
+	  FactorGraph fg = this->marginal<FactorGraph>(key);
+
+		// eliminate further to Bayes net
+		return *Inference::Eliminate(fg);
+	}
 
 //	/* ************************************************************************* */
 //	// Find two cliques, their joint, then marginalizes

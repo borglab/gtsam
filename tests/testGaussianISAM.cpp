@@ -157,54 +157,53 @@ TEST( BayesTree, linear_smoother_shortcuts )
 	 C4		  x7 : x6
 
 ************************************************************************* */
-// SL-FIX TEST( BayesTree, balanced_smoother_marginals )
-//{
-//	// Create smoother with 7 nodes
-//	GaussianFactorGraph smoother = createSmoother(7);
-//	Ordering ordering;
-//	ordering += "x1","x3","x5","x7","x2","x6","x4";
-//
-//	// eliminate using a "nested dissection" ordering
-//	GaussianBayesNet chordalBayesNet = smoother.eliminate(ordering);
-//
-//	VectorValues expectedSolution;
-//	BOOST_FOREACH(string key, ordering)
-//	expectedSolution.insert(key,zero(2));
-//	VectorValues actualSolution = optimize(chordalBayesNet);
-//	CHECK(assert_equal(expectedSolution,actualSolution,tol));
-//
-//	// Create the Bayes tree
-//	GaussianISAM bayesTree(chordalBayesNet);
-//	LONGS_EQUAL(4,bayesTree.size());
-//
-//	double tol=1e-5;
-//
-//	// Check marginal on x1
-//	GaussianBayesNet expected1 = simpleGaussian("x1", zero(2), sigmax1);
-//	GaussianBayesNet actual1 = bayesTree.marginalBayesNet<GaussianFactor>("x1");
-//	CHECK(assert_equal(expected1,actual1,tol));
-//
-//	// Check marginal on x2
-//	double sigx2 = 0.68712938; // FIXME: this should be corrected analytically
-//	GaussianBayesNet expected2 = simpleGaussian("x2", zero(2), sigx2);
-//	GaussianBayesNet actual2 = bayesTree.marginalBayesNet<GaussianFactor>("x2");
-//	CHECK(assert_equal(expected2,actual2,tol)); // FAILS
-//
-//	// Check marginal on x3
-//	GaussianBayesNet expected3 = simpleGaussian("x3", zero(2), sigmax3);
-//	GaussianBayesNet actual3 = bayesTree.marginalBayesNet<GaussianFactor>("x3");
-//	CHECK(assert_equal(expected3,actual3,tol));
-//
-//	// Check marginal on x4
-//	GaussianBayesNet expected4 = simpleGaussian("x4", zero(2), sigmax4);
-//	GaussianBayesNet actual4 = bayesTree.marginalBayesNet<GaussianFactor>("x4");
-//	CHECK(assert_equal(expected4,actual4,tol));
-//
-//	// Check marginal on x7 (should be equal to x1)
-//	GaussianBayesNet expected7 = simpleGaussian("x7", zero(2), sigmax7);
-//	GaussianBayesNet actual7 = bayesTree.marginalBayesNet<GaussianFactor>("x7");
-//	CHECK(assert_equal(expected7,actual7,tol));
-//}
+TEST( BayesTree, balanced_smoother_marginals )
+{
+  // Create smoother with 7 nodes
+  Ordering ordering;
+  ordering += "x1","x3","x5","x7","x2","x6","x4";
+  GaussianFactorGraph smoother = createSmoother(7, ordering).first;
+
+  // Create the Bayes tree
+  GaussianBayesNet chordalBayesNet = *Inference::Eliminate(smoother);
+
+	VectorValues expectedSolution(7, 2);
+	expectedSolution.makeZero();
+	VectorValues actualSolution = optimize(chordalBayesNet);
+	CHECK(assert_equal(expectedSolution,actualSolution,tol));
+
+	// Create the Bayes tree
+	GaussianISAM bayesTree(chordalBayesNet);
+	LONGS_EQUAL(4,bayesTree.size());
+
+	double tol=1e-5;
+
+	// Check marginal on x1
+	GaussianBayesNet expected1 = simpleGaussian(ordering["x1"], zero(2), sigmax1);
+	GaussianBayesNet actual1 = bayesTree.marginalBayesNet<GaussianFactorGraph>(ordering["x1"]);
+	CHECK(assert_equal(expected1,actual1,tol));
+
+	// Check marginal on x2
+	double sigx2 = 0.68712938; // FIXME: this should be corrected analytically
+	GaussianBayesNet expected2 = simpleGaussian(ordering["x2"], zero(2), sigx2);
+	GaussianBayesNet actual2 = bayesTree.marginalBayesNet<GaussianFactorGraph>(ordering["x2"]);
+	CHECK(assert_equal(expected2,actual2,tol)); // FAILS
+
+	// Check marginal on x3
+	GaussianBayesNet expected3 = simpleGaussian(ordering["x3"], zero(2), sigmax3);
+	GaussianBayesNet actual3 = bayesTree.marginalBayesNet<GaussianFactorGraph>(ordering["x3"]);
+	CHECK(assert_equal(expected3,actual3,tol));
+
+	// Check marginal on x4
+	GaussianBayesNet expected4 = simpleGaussian(ordering["x4"], zero(2), sigmax4);
+	GaussianBayesNet actual4 = bayesTree.marginalBayesNet<GaussianFactorGraph>(ordering["x4"]);
+	CHECK(assert_equal(expected4,actual4,tol));
+
+	// Check marginal on x7 (should be equal to x1)
+	GaussianBayesNet expected7 = simpleGaussian(ordering["x7"], zero(2), sigmax7);
+	GaussianBayesNet actual7 = bayesTree.marginalBayesNet<GaussianFactorGraph>(ordering["x7"]);
+	CHECK(assert_equal(expected7,actual7,tol));
+}
 
 /* ************************************************************************* */
 TEST( BayesTree, balanced_smoother_shortcuts )
@@ -238,26 +237,33 @@ TEST( BayesTree, balanced_smoother_shortcuts )
 }
 
 /* ************************************************************************* */
-// SL-FIX TEST( BayesTree, balanced_smoother_clique_marginals )
-//{
-//	// Create smoother with 7 nodes
-//	GaussianFactorGraph smoother = createSmoother(7);
-//	Ordering ordering;
-//	ordering += "x1","x3","x5","x7","x2","x6","x4";
-//
-//	// Create the Bayes tree
-//	GaussianBayesNet chordalBayesNet = smoother.eliminate(ordering);
-//	GaussianISAM bayesTree(chordalBayesNet);
-//
-//	// Check the clique marginal P(C3)
-//	double sigmax2_alt = 1/1.45533; // THIS NEEDS TO BE CHECKED!
-//	GaussianBayesNet expected = simpleGaussian("x2",zero(2),sigmax2_alt);
-//	push_front(expected,"x1", zero(2), eye(2)*sqrt(2), "x2", -eye(2)*sqrt(2)/2, ones(2));
-//	GaussianISAM::sharedClique R = bayesTree.root(), C3 = bayesTree["x1"];
-//	FactorGraph<GaussianFactor> marginal = C3->marginal<GaussianFactor>(R);
-//	GaussianBayesNet actual = eliminate<GaussianFactor,GaussianConditional>(marginal,C3->keys());
-//	CHECK(assert_equal(expected,actual,tol));
-//}
+TEST( BayesTree, balanced_smoother_clique_marginals )
+{
+  // Create smoother with 7 nodes
+  Ordering ordering;
+  ordering += "x1","x3","x5","x7","x2","x6","x4";
+  GaussianFactorGraph smoother = createSmoother(7, ordering).first;
+
+  // Create the Bayes tree
+  GaussianBayesNet chordalBayesNet = *Inference::Eliminate(smoother);
+  GaussianISAM bayesTree(chordalBayesNet);
+
+	// Check the clique marginal P(C3)
+	double sigmax2_alt = 1/1.45533; // THIS NEEDS TO BE CHECKED!
+	GaussianBayesNet expected = simpleGaussian(ordering["x2"],zero(2),sigmax2_alt);
+	push_front(expected,ordering["x1"], zero(2), eye(2)*sqrt(2), ordering["x2"], -eye(2)*sqrt(2)/2, ones(2));
+	GaussianISAM::sharedClique R = bayesTree.root(), C3 = bayesTree[ordering["x1"]];
+	GaussianFactorGraph marginal = C3->marginal<GaussianFactorGraph>(R);
+	GaussianVariableIndex<> varIndex(marginal);
+	Permutation toFront(Permutation::PullToFront(C3->keys(), varIndex.size()));
+	Permutation toFrontInverse(*toFront.inverse());
+	varIndex.permute(toFront);
+	BOOST_FOREACH(const GaussianFactor::shared_ptr& factor, marginal) {
+	  factor->permuteWithInverse(toFrontInverse); }
+	GaussianBayesNet actual = *Inference::EliminateUntil(marginal, C3->keys().size(), varIndex);
+	actual.permuteWithInverse(toFront);
+	CHECK(assert_equal(expected,actual,tol));
+}
 
 /* ************************************************************************* */
 // SL-FIX TEST( BayesTree, balanced_smoother_joint )

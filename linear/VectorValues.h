@@ -51,6 +51,9 @@ public:
   template<class Container>
   VectorValues(const Container& dimensions);
 
+  /** Construct to hold nVars vectors of varDim dimension each. */
+  VectorValues(varid_t nVars, size_t varDim);
+
   /** Construct from a container of variable dimensions in variable order and
    * a combined Vector of all of the variables in order.
    */
@@ -176,6 +179,14 @@ inline VectorValues::VectorValues(const Container& dimensions) : varStarts_(dime
   BOOST_FOREACH(size_t dim, dimensions) {
     varStarts_[++var] = (varStart += dim);
   }
+  values_.resize(varStarts_.back(), false);
+}
+
+inline VectorValues::VectorValues(varid_t nVars, size_t varDim) : varStarts_(nVars+1) {
+  varStarts_[0] = 0;
+  size_t varStart = 0;
+  for(varid_t j=1; j<=nVars; ++j)
+    varStarts_[j] = (varStart += varDim);
   values_.resize(varStarts_.back(), false);
 }
 

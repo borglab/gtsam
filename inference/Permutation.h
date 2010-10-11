@@ -87,6 +87,12 @@ public:
    */
   static Permutation PullToFront(const std::vector<varid_t>& toFront, size_t size);
 
+  /**
+   * Create a permutation that pulls the given variables to the front while
+   * pushing the rest to the back.
+   */
+  static Permutation PushToBack(const std::vector<varid_t>& toBack, size_t size);
+
   iterator begin() { return rangeIndices_.begin(); }
   const_iterator begin() const { return rangeIndices_.begin(); }
   iterator end() { return rangeIndices_.end(); }

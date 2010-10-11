@@ -99,10 +99,10 @@ namespace gtsam {
 			template<class FactorGraph>
 			BayesNet<Conditional> shortcut(shared_ptr root);
 
-//			/** return the marginal P(C) of the clique */
-//			template<class Factor>
-//			FactorGraph<Factor> marginal(shared_ptr root);
-//
+			/** return the marginal P(C) of the clique */
+			template<class FactorGraph>
+			FactorGraph marginal(shared_ptr root);
+
 //			/** return the joint P(C1,C2), where C1==this. TODO: not a method? */
 //			template<class Factor>
 //			std::pair<FactorGraph<Factor>,Ordering> joint(shared_ptr C2, shared_ptr root);
@@ -245,14 +245,14 @@ namespace gtsam {
 		/** Gather data on all cliques */
 		CliqueData getCliqueData() const;
 
-//		/** return marginal on any variable */
-//		template<class Factor>
-//		FactorGraph<Factor> marginal(varid_t key) const;
-//
-//		/** return marginal on any variable, as a Bayes Net */
-//		template<class Factor>
-//		BayesNet<Conditional> marginalBayesNet(varid_t key) const;
-//
+		/** return marginal on any variable */
+		template<class FactorGraph>
+		FactorGraph marginal(varid_t key) const;
+
+		/** return marginal on any variable, as a Bayes Net */
+		template<class FactorGraph>
+		BayesNet<Conditional> marginalBayesNet(varid_t key) const;
+
 //		/** return joint on two variables */
 //		template<class Factor>
 //		FactorGraph<Factor> joint(varid_t key1, varid_t key2) const;

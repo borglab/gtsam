@@ -30,17 +30,46 @@ Permutation Permutation::PullToFront(const vector<varid_t>& toFront, size_t size
   // Mask of which variables have been pulled, used to reorder
   vector<bool> pulled(size, false);
 
+  // Put the pulled variables at the front of the permutation and set up the
+  // pulled flags.
   for(varid_t j=0; j<toFront.size(); ++j) {
     ret[j] = toFront[j];
     pulled[toFront[j]] = true;
-    assert(toFront[j] < size);
   }
 
+  // Fill in the rest of the variables
   varid_t nextVar = toFront.size();
   for(varid_t j=0; j<size; ++j)
     if(!pulled[j])
       ret[nextVar++] = j;
   assert(nextVar == size);
+
+  return ret;
+}
+
+/* ************************************************************************* */
+Permutation Permutation::PushToBack(const std::vector<varid_t>& toBack, size_t size) {
+
+  Permutation ret(size);
+
+  // Mask of which variables have been pushed, used to reorder
+  vector<bool> pushed(size, false);
+
+  // Put the pushed variables at the back of the permutation and set up the
+  // pushed flags;
+  varid_t nextVar = size - toBack.size();
+  for(varid_t j=0; j<toBack.size(); ++j) {
+    ret[nextVar++] = toBack[j];
+    pushed[toBack[j]] = true;
+  }
+  assert(nextVar == size);
+
+  // Fill in the rest of the variables
+  nextVar = 0;
+  for(varid_t j=0; j<size; ++j)
+    if(!pushed[j])
+      ret[nextVar++] = j;
+  assert(nextVar == size - toBack.size());
 
   return ret;
 }
