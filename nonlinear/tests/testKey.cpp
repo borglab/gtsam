@@ -7,7 +7,7 @@
 using namespace boost::assign;
 
 #include <gtsam/CppUnitLite/TestHarness.h>
-#include <gtsam/inference/Key.h>
+#include <gtsam/nonlinear/Key.h>
 	
 using namespace std;
 using namespace gtsam;

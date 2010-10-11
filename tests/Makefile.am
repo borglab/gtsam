@@ -22,7 +22,7 @@ check_PROGRAMS += testTupleValues
 #check_PROGRAMS += testNonlinearEqualityConstraint 
 #check_PROGRAMS += testBoundingConstraint 
 check_PROGRAMS += testTransformConstraint 
-#check_PROGRAMS += testLinearApproxFactor
+check_PROGRAMS += testLinearApproxFactor
 
 # only if serialization is available
 if ENABLE_SERIALIZATION

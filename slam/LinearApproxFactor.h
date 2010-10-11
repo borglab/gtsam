@@ -1,4 +1,4 @@
-/*
+/**
  * @file LinearApproxFactor.h
  * @brief A dummy factor that allows a linear factor to act as a nonlinear factor
  * @author Alex Cunningham
@@ -8,8 +8,6 @@
 
 #include <vector>
 #include <gtsam/nonlinear/NonlinearFactor.h>
-#include <gtsam/linear/VectorValues.h>
-#include <gtsam/base/Matrix.h>
 
 namespace gtsam {
 
@@ -35,7 +33,12 @@ public:
 
 protected:
 	/** hold onto the factor itself */
-	GaussianFactor::shared_ptr lin_factor_;
+//	GaussianFactor::shared_ptr lin_factor_;
+	// store components of a linear factor that can be reordered
+	typedef std::map<Symbol, Matrix> SymbolMatrixMap;
+	SymbolMatrixMap matrices_;
+	Vector b_;
+	SharedDiagonal model_;
 
 	/** linearization points for error calculation */
 	Values lin_points_;
@@ -51,8 +54,14 @@ protected:
 
 public:
 
-	/** use this constructor when starting with nonlinear keys */
-	LinearApproxFactor(GaussianFactor::shared_ptr lin_factor, const Values& lin_points);
+	/**
+	 * use this constructor when starting with nonlinear keys
+	 *
+	 * Note that you need to have the ordering used to construct the factor
+	 * initially in order to find the actual keys
+	 */
+	LinearApproxFactor(GaussianFactor::shared_ptr lin_factor,
+			const Ordering& ordering, const Values& lin_points);
 
 	virtual ~LinearApproxFactor() {}
 
@@ -61,11 +70,17 @@ public:
 
 	/**
 	 * linearize to a GaussianFactor
-	 * Just returns a copy of the existing factor
-	 * NOTE: copies to avoid actual factor getting destroyed
-	 * during elimination
+	 * Reconstructs the linear factor from components to ensure that
+	 * the ordering is correct
 	 */
-	virtual boost::shared_ptr<GaussianFactor> linearize(const Values& c) const;
+	virtual boost::shared_ptr<GaussianFactor> linearize(
+			const Values& c, const Ordering& ordering) const;
+
+    /**
+     * Create a symbolic factor using the given ordering to determine the
+     * variable indices.
+     */
+    Factor::shared_ptr symbolic(const Ordering& ordering) const;
 
 	/** get access to nonlinear keys */
 	KeyVector nonlinearKeys() const { return nonlinearKeys_; }
@@ -74,7 +89,7 @@ public:
 	virtual void print(const std::string& s="") const;
 
 	/** access to b vector of gaussian */
-	Vector get_b() const { return lin_factor_->getb(); }
+	Vector get_b() const { return b_; }
 };
 
 } // \namespace gtsam
