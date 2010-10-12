@@ -90,7 +90,7 @@ public:
 	 * for multiple frontal variables.
 	 */
 	template<typename Iterator, class Matrix>
-	GaussianConditional(Iterator firstKey, Iterator lastKey, size_t nFrontals, const VerticalBlockView<Matrix>& matrices, const Vector& sigmas);
+	GaussianConditional(Iterator firstKey, Iterator lastKey, size_t nrFrontals, const VerticalBlockView<Matrix>& matrices, const Vector& sigmas);
 
 	/** print */
 	void print(const std::string& = "GaussianConditional") const;
@@ -151,11 +151,16 @@ private:
 };
 
 /* ************************************************************************* */
-template<typename Iterator, class Matrix>
-GaussianConditional::GaussianConditional(Iterator firstKey, Iterator lastKey, size_t nFrontals, const VerticalBlockView<Matrix>& matrices, const Vector& sigmas) :
-Conditional(firstKey, lastKey, nFrontals), rsd_(matrix_), sigmas_(sigmas) {
-  rsd_.assignNoalias(matrices);
-}
+	template<typename Iterator, class Matrix>
+	GaussianConditional::GaussianConditional(Iterator firstKey, Iterator lastKey,
+			size_t nrFrontals, const VerticalBlockView<Matrix>& matrices,
+			const Vector& sigmas) :
+		rsd_(matrix_), sigmas_(sigmas) {
+  	nrFrontals_ = nrFrontals;
+		std::copy(firstKey, lastKey, back_inserter(factor_.keys_));
+		rsd_.assignNoalias(matrices);
+	}
 
+	/* ************************************************************************* */
 
 }

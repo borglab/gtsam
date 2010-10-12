@@ -63,7 +63,7 @@ GaussianConditional::GaussianConditional(Index key, const Vector& d, const Matri
 GaussianConditional::GaussianConditional(Index key, const Vector& d, const Matrix& R, const list<pair<Index, Matrix> >& parents, const Vector& sigmas) :
     rsd_(matrix_), sigmas_(sigmas) {
   assert(R.size1() <= R.size2());
-  Conditional::nFrontal_ = 1;
+  Conditional::nrFrontals_ = 1;
   Conditional::factor_.keys_.resize(1+parents.size());
   size_t dims[1+parents.size()+1];
   dims[0] = R.size2();

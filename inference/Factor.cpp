@@ -44,14 +44,14 @@ Conditional::shared_ptr Factor::eliminateFirst() {
 }
 
 /* ************************************************************************* */
-boost::shared_ptr<BayesNet<Conditional> > Factor::eliminate(Index nFrontals) {
-  assert(keys_.size() >= nFrontals);
+boost::shared_ptr<BayesNet<Conditional> > Factor::eliminate(size_t nrFrontals) {
+  assert(keys_.size() >= nrFrontals);
   checkSorted();
   BayesNet<Conditional>::shared_ptr fragment(new BayesNet<Conditional>());
   const_iterator nextFrontal = this->begin();
-  for(Index n = 0; n < nFrontals; ++n, ++nextFrontal)
-    fragment->push_back(Conditional::shared_ptr(new Conditional(nextFrontal, const_iterator(this->end()), 1)));
-  if(nFrontals > 0)
+  for(Index n = 0; n < nrFrontals; ++n, ++nextFrontal)
+    fragment->push_back(Conditional::fromRange(nextFrontal, const_iterator(this->end()), 1));
+  if(nrFrontals > 0)
     keys_.assign(fragment->back()->beginParents(), fragment->back()->endParents());
   return fragment;
 }

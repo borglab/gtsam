@@ -208,7 +208,7 @@ public:
 
 	GaussianConditional::shared_ptr eliminateFirst();
 
-  GaussianBayesNet::shared_ptr eliminate(Index nFrontals = 1);
+  GaussianBayesNet::shared_ptr eliminate(size_t nrFrontals = 1);
 
 	friend class GaussianFactorGraph;
 	friend class Inference;

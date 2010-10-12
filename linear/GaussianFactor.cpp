@@ -524,11 +524,11 @@ GaussianConditional::shared_ptr GaussianFactor::eliminateFirst() {
 }
 
 /* ************************************************************************* */
-GaussianBayesNet::shared_ptr GaussianFactor::eliminate(size_t nFrontals) {
+GaussianBayesNet::shared_ptr GaussianFactor::eliminate(size_t nrFrontals) {
 
   assert(Ab_.rowStart() == 0 && Ab_.rowEnd() == matrix_.size1() && Ab_.firstBlock() == 0);
   assert(!permuted_.value);
-  assert(keys_.size() >= nFrontals);
+  assert(keys_.size() >= nrFrontals);
   checkSorted();
 
   static const bool debug = false;
@@ -582,7 +582,7 @@ GaussianBayesNet::shared_ptr GaussianFactor::eliminate(size_t nFrontals) {
 
   if(debug) gtsam::print(matrix_, "QR result: ");
 
-  size_t frontalDim = Ab_.range(0,nFrontals).size2();
+  size_t frontalDim = Ab_.range(0,nrFrontals).size2();
 
   // Check for singular factor
   if(noiseModel->dim() < frontalDim) {
@@ -594,7 +594,7 @@ GaussianBayesNet::shared_ptr GaussianFactor::eliminate(size_t nFrontals) {
   // Extract conditionals
   tic("eliminate: cond Rd");
   GaussianBayesNet::shared_ptr conditionals(new GaussianBayesNet());
-  for(size_t j=0; j<nFrontals; ++j) {
+  for(size_t j=0; j<nrFrontals; ++j) {
     // Temporarily restrict the matrix view to the conditional blocks of the
     // eliminated Ab matrix to create the GaussianConditional from it.
     size_t varDim = Ab_(0).size2();
@@ -612,7 +612,7 @@ GaussianBayesNet::shared_ptr GaussianFactor::eliminate(size_t nFrontals) {
   tic("eliminate: remaining factor");
   // Take lower-right block of Ab to get the new factor
   Ab_.rowEnd() = noiseModel->dim();
-  keys_.assign(keys_.begin() + nFrontals, keys_.end());
+  keys_.assign(keys_.begin() + nrFrontals, keys_.end());
   // Set sigmas with the right model
   if (noiseModel->isConstrained())
     model_ = noiseModel::Constrained::MixedSigmas(sub(noiseModel->sigmas(), frontalDim, noiseModel->dim()));

@@ -100,9 +100,9 @@ public:
   boost::shared_ptr<Conditional> eliminateFirst();
 
   /**
-   * eliminate the first nFrontals frontal variables.
+   * eliminate the first nrFrontals frontal variables.
    */
-  boost::shared_ptr<BayesNet<Conditional> > eliminate(Index nFrontals = 1);
+  boost::shared_ptr<BayesNet<Conditional> > eliminate(size_t nrFrontals = 1);
 
   /**
    * Permutes the GaussianFactor, but for efficiency requires the permutation

@@ -38,7 +38,7 @@ protected:
   Factor factor_;
 
   /** The first nFrontal variables are frontal and the rest are parents. */
-  size_t nFrontal_;
+  size_t nrFrontals_;
 
   ValueWithDefault<bool, true> permuted_;
 
@@ -56,36 +56,79 @@ public:
   Conditional(){}
 
   /** No parents */
-  Conditional(Index key) : factor_(key), nFrontal_(1) {}
+  Conditional(Index key) : factor_(key), nrFrontals_(1) {}
 
   /** Single parent */
-  Conditional(Index key, Index parent) : factor_(key, parent), nFrontal_(1) {}
+  Conditional(Index key, Index parent) : factor_(key, parent), nrFrontals_(1) {}
 
   /** Two parents */
-  Conditional(Index key, Index parent1, Index parent2) : factor_(key, parent1, parent2), nFrontal_(1) {}
+  Conditional(Index key, Index parent1, Index parent2) : factor_(key, parent1, parent2), nrFrontals_(1) {}
 
   /** Three parents */
-  Conditional(Index key, Index parent1, Index parent2, Index parent3) : factor_(key, parent1, parent2, parent3), nFrontal_(1) {}
+  Conditional(Index key, Index parent1, Index parent2, Index parent3) : factor_(key, parent1, parent2, parent3), nrFrontals_(1) {}
 
   /** Constructor from a frontal variable and a vector of parents */
-  Conditional(Index key, const std::vector<Index>& parents) : nFrontal_(1) {
-    factor_.keys_.resize(1+parents.size());
-    *(beginFrontals()) = key;
-    std::copy(parents.begin(), parents.end(), beginParents()); }
+  Conditional(Index key, const std::vector<Index>& parents) : nrFrontals_(1) {
+			factor_.keys_.resize(1 + parents.size());
+			*(beginFrontals()) = key;
+			std::copy(parents.begin(), parents.end(), beginParents());
+		}
 
-  /** Constructor from any number of frontal variables and parents */
+  /** Named constructor from any number of frontal variables and parents */
   template<typename Iterator>
-  Conditional(Iterator firstKey, Iterator lastKey, size_t nFrontals) : factor_(firstKey, lastKey), nFrontal_(nFrontals) {}
+  static shared_ptr fromRange(Iterator firstKey, Iterator lastKey, size_t nrFrontals) {
+  	shared_ptr conditional(new Conditional);
+  	conditional->nrFrontals_ = nrFrontals;
+		std::copy(firstKey, lastKey, back_inserter(conditional->factor_.keys_));
+		return conditional;
+  }
+
+  /** check equality */
+  bool equals(const Conditional& c, double tol = 1e-9) const {
+    return nrFrontals_ == c.nrFrontals_ && factor_.equals(c.factor_, tol); }
+
+	/** return the number of frontals */
+	size_t nrFrontals() const { return nrFrontals_; }
+
+	/** return the number of parents */
+	size_t nrParents() const { return factor_.keys_.size() - nrFrontals_; }
 
 	/** Special accessor when there is only one frontal variable. */
-	Index key() const { assert(nFrontal_==1); return factor_.keys_[0]; }
+	Index key() const { assert(nrFrontals_==1); return factor_.keys_[0]; }
 
-  /**
-   * Permutes the Conditional, but for efficiency requires the permutation
-   * to already be inverted.
-   */
-  void permuteWithInverse(const Permutation& inversePermutation) {
-    factor_.permuteWithInverse(inversePermutation); }
+  /** return a const reference to all keys */
+  const std::vector<Index>& keys() const { return factor_.keys(); }
+
+  /** Iterators over frontal and parent variables. */
+  const_iterator beginFrontals() const { return factor_.keys_.begin(); }
+  const_iterator endFrontals() const { return factor_.keys_.begin()+nrFrontals_; }
+  const_iterator beginParents() const { return factor_.keys_.begin()+nrFrontals_; }
+  const_iterator endParents() const { return factor_.keys_.end(); }
+
+  /** Mutable iterators and accessors */
+  iterator beginFrontals() { return factor_.keys_.begin(); }
+  iterator endFrontals() { return factor_.keys_.begin()+nrFrontals_; }
+  iterator beginParents() { return factor_.keys_.begin()+nrFrontals_; }
+  iterator endParents() { return factor_.keys_.end(); }
+  boost::iterator_range<iterator> frontals() { return boost::make_iterator_range(beginFrontals(), endFrontals()); }
+  boost::iterator_range<iterator> parents() { return boost::make_iterator_range(beginParents(), endParents()); }
+
+  /** return a view of the frontal keys */
+  Frontals frontals() const {
+    return boost::make_iterator_range(beginFrontals(), endFrontals()); }
+
+	/** return a view of the parent keys */
+	Parents parents() const {
+	  return boost::make_iterator_range(beginParents(), endParents()); }
+
+  /** print */
+  void print(const std::string& s = "Conditional") const {
+    std::cout << s << " P(";
+    BOOST_FOREACH(Index key, frontals()) std::cout << " " << key;
+    if (nrParents()>0) std::cout << " |";
+    BOOST_FOREACH(Index parent, parents()) std::cout << " " << parent;
+    std::cout << ")" << std::endl;
+  }
 
   /** Permute the variables when only separator variables need to be permuted.
    * Returns true if any reordered variables appeared in the separator and
@@ -106,49 +149,12 @@ public:
     return parentChanged;
   }
 
-  /** return a const reference to all keys */
-  const std::vector<Index>& keys() const { return factor_.keys(); }
-
-  /** return a view of the frontal keys */
-  Frontals frontals() const {
-    return boost::make_iterator_range(beginFrontals(), endFrontals()); }
-
-	/** return a view of the parent keys */
-	Parents parents() const {
-	  return boost::make_iterator_range(beginParents(), endParents()); }
-
-	/** return the number of frontals */
-	size_t nrFrontals() const { return nFrontal_; }
-
-	/** return the number of parents */
-	size_t nrParents() const { return factor_.keys_.size() - nFrontal_; }
-
-  /** print */
-  void print(const std::string& s = "Conditional") const {
-    std::cout << s << " P(";
-    BOOST_FOREACH(Index key, frontals()) std::cout << " " << key;
-    if (nrParents()>0) std::cout << " |";
-    BOOST_FOREACH(Index parent, parents()) std::cout << " " << parent;
-    std::cout << ")" << std::endl;
-  }
-
-  /** check equality */
-  bool equals(const Conditional& c, double tol = 1e-9) const {
-    return nFrontal_ == c.nFrontal_ && factor_.equals(c.factor_, tol); }
-
-  /** Iterators over frontal and parent variables. */
-  const_iterator beginFrontals() const { return factor_.keys_.begin(); }
-  const_iterator endFrontals() const { return factor_.keys_.begin()+nFrontal_; }
-  const_iterator beginParents() const { return factor_.keys_.begin()+nFrontal_; }
-  const_iterator endParents() const { return factor_.keys_.end(); }
-
-  /** Mutable iterators and accessors */
-  iterator beginFrontals() { return factor_.keys_.begin(); }
-  iterator endFrontals() { return factor_.keys_.begin()+nFrontal_; }
-  iterator beginParents() { return factor_.keys_.begin()+nFrontal_; }
-  iterator endParents() { return factor_.keys_.end(); }
-  boost::iterator_range<iterator> frontals() { return boost::make_iterator_range(beginFrontals(), endFrontals()); }
-  boost::iterator_range<iterator> parents() { return boost::make_iterator_range(beginParents(), endParents()); }
+  /**
+   * Permutes the Conditional, but for efficiency requires the permutation
+   * to already be inverted.
+   */
+  void permuteWithInverse(const Permutation& inversePermutation) {
+    factor_.permuteWithInverse(inversePermutation); }
 
 protected:
   /** Debugging invariant that the keys should be in order, including that the
@@ -164,7 +170,7 @@ private:
 	template<class Archive>
 	void serialize(Archive & ar, const unsigned int version) {
 		ar & BOOST_SERIALIZATION_NVP(factor_);
-    ar & BOOST_SERIALIZATION_NVP(nFrontal_);
+    ar & BOOST_SERIALIZATION_NVP(nrFrontals_);
 	}
 };
 
