@@ -19,8 +19,8 @@ headers += SymbolMap.h Factor-inl.h Conditional.h IndexTable.h
 
 # Symbolic Inference
 sources += Factor.cpp SymbolicFactorGraph.cpp
-check_PROGRAMS += tests/testSymbolicFactor tests/testSymbolicFactorGraph tests/testSymbolicBayesNet
-check_PROGRAMS += tests/testVariableIndex tests/testVariableSlots
+check_PROGRAMS += tests/testSymbolicFactor tests/testSymbolicFactorGraph tests/testConditional
+check_PROGRAMS += tests/testSymbolicBayesNet tests/testVariableIndex tests/testVariableSlots
 
 # Inference
 headers += inference-inl.h VariableSlots-inl.h
