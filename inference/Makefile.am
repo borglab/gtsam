@@ -34,7 +34,6 @@ headers += EliminationTree.h EliminationTree-inl.h
 headers += BayesNet.h BayesNet-inl.h
 headers += BayesTree.h BayesTree-inl.h
 headers += ISAM.h ISAM-inl.h
-headers += ISAM2.h ISAM2-inl.h
 check_PROGRAMS += tests/testFactorGraph
 check_PROGRAMS += tests/testFactorGraph
 check_PROGRAMS += tests/testBayesTree 

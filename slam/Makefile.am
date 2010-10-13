@@ -55,10 +55,6 @@ check_PROGRAMS += tests/testPose3Factor tests/testPose3Values tests/testPose3SLA
 sources += visualSLAM.cpp
 check_PROGRAMS += tests/testVSLAMFactor tests/testVSLAMGraph tests/testVSLAMValues
 
-# GaussianISAM2 is fairly SLAM-specific
-sources += GaussianISAM2.cpp
-check_PROGRAMS += tests/testGaussianISAM2
-
 #----------------------------------------------------------------------------------------------------
 # Create a libtool library that is not installed
 # It will be packaged in the toplevel libgtsam.la as specfied in ../Makefile.am 
