@@ -94,7 +94,7 @@ class Conditional;
      * variables.
      */
     template<class FactorGraph, class VarContainer>
-    static typename FactorGraph::bayesnet_type::shared_ptr Marginal(const FactorGraph& factorGraph, const VarContainer& variables);
+    static FactorGraph Marginal(const FactorGraph& factorGraph, const VarContainer& variables);
 
     /**
      * Compute a permutation (variable ordering) using colamd

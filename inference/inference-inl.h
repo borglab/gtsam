@@ -278,7 +278,7 @@ Inference::EliminateOne(FactorGraph& factorGraph, typename FactorGraph::variable
 
 /* ************************************************************************* */
 template<class FactorGraph, class VarContainer>
-typename FactorGraph::bayesnet_type::shared_ptr Inference::Marginal(const FactorGraph& factorGraph, const VarContainer& variables) {
+FactorGraph Inference::Marginal(const FactorGraph& factorGraph, const VarContainer& variables) {
 
   // Compute a COLAMD permutation with the marginal variables constrained to the end
   typename FactorGraph::variableindex_type varIndex(factorGraph);
@@ -298,16 +298,18 @@ typename FactorGraph::bayesnet_type::shared_ptr Inference::Marginal(const Factor
   typename FactorGraph::bayesnet_type::shared_ptr bn(Inference::Eliminate(eliminationGraph, varIndex));
 
   // The last conditionals in the eliminated BayesNet contain the marginal for
-  // the variables we want.
-  typename FactorGraph::bayesnet_type::shared_ptr marginal(new typename FactorGraph::bayesnet_type());
+  // the variables we want.  Undo the permutation as we add the marginal
+  // factors.
+  FactorGraph marginal; marginal.reserve(variables.size());
   typename FactorGraph::bayesnet_type::const_reverse_iterator conditional = bn->rbegin();
   for(Index j=0; j<variables.size(); ++j, ++conditional) {
-    marginal->push_front(*conditional);
+    typename FactorGraph::sharedFactor factor(new typename FactorGraph::factor_type(**conditional));
+    factor->permuteWithInverse(*permutation);
+    marginal.push_back(factor);
     assert(std::find(variables.begin(), variables.end(), (*permutation)[(*conditional)->key()]) != variables.end());
   }
 
   // Undo the permutation
-  marginal->permuteWithInverse(*permutation);
   return marginal;
 }
 

@@ -348,7 +348,7 @@ namespace gtsam {
 		p_FSR.push_back(*R);
 
 		// Find marginal on the keys we are interested in
-		return FactorGraph(*Inference::Marginal(FactorGraph(p_FSR), keys()));
+		return Inference::Marginal(FactorGraph(p_FSR), keys());
 	}
 
 //	/* ************************************************************************* */
