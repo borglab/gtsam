@@ -714,11 +714,11 @@ TEST(GaussianFactor, permuteWithInverse)
 
   // todo: fix this!!!  VariableIndex should not hold slots
   for(Index j=0; j<actualIndex.size(); ++j) {
-    BOOST_FOREACH(typename GaussianVariableIndex<>::mapped_factor_type& factor_pos, actualIndex[j]) {
+    BOOST_FOREACH( GaussianVariableIndex<>::mapped_factor_type& factor_pos, actualIndex[j]) {
       factor_pos.variablePosition = numeric_limits<Index>::max(); }
   }
   for(Index j=0; j<expectedIndex.size(); ++j) {
-    BOOST_FOREACH(typename GaussianVariableIndex<>::mapped_factor_type& factor_pos, expectedIndex[j]) {
+    BOOST_FOREACH( GaussianVariableIndex<>::mapped_factor_type& factor_pos, expectedIndex[j]) {
       factor_pos.variablePosition = numeric_limits<Index>::max(); }
   }
   CHECK(assert_equal(expectedIndex, actualIndex));
