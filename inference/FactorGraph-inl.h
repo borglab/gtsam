@@ -34,17 +34,6 @@ using namespace std;
 
 namespace gtsam {
 
-	/* ************************************************************************* */
-	template<class Factor>
-	template<class Conditional>
-	FactorGraph<Factor>::FactorGraph(const BayesNet<Conditional>& bayesNet) {
-		typename BayesNet<Conditional>::const_iterator it = bayesNet.begin();
-		for (; it != bayesNet.end(); it++) {
-			sharedFactor factor(new Factor(**it));
-			push_back(factor);
-		}
-	}
-
 //  /* ************************************************************************* */
 //  template<class Conditional>
 //  FactorGraph::FactorGraph(const BayesNet<Conditional>& bayesNet, const Inference::Permutation& permutation) {

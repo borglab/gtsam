@@ -64,13 +64,13 @@ GaussianConditional::GaussianConditional(Index key, const Vector& d, const Matri
     rsd_(matrix_), sigmas_(sigmas) {
   assert(R.size1() <= R.size2());
   Conditional::nrFrontals_ = 1;
-  Conditional::factor_.keys_.resize(1+parents.size());
+  keys_.resize(1+parents.size());
   size_t dims[1+parents.size()+1];
   dims[0] = R.size2();
-  Conditional::factor_.keys_[0] = key;
+  keys_[0] = key;
   size_t j=1;
   for(std::list<std::pair<Index, Matrix> >::const_iterator parent=parents.begin(); parent!=parents.end(); ++parent) {
-    Conditional::factor_.keys_[j] = parent->first;
+    keys_[j] = parent->first;
     dims[j] = parent->second.size2();
     ++ j;
   }

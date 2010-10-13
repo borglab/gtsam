@@ -358,11 +358,8 @@ GaussianFactorGraph GaussianFactorGraph::add_priors(double sigma, const Gaussian
 	GaussianFactorGraph result = *this;
 
 	// for each of the variables, add a prior
-
 	for(Index var=0; var<variableIndex.size(); ++var) {
-	  const GaussianVariableIndex<>::mapped_factor_type& factor_pos(variableIndex[var].front());
-	  const GaussianFactor& factor(*operator[](factor_pos.factorIndex));
-	  size_t dim = factor.getDim(factor.begin() + factor_pos.variablePosition);
+	  size_t dim = variableIndex.dim(var);
 		Matrix A = eye(dim);
 		Vector b = zero(dim);
 		SharedDiagonal model = noiseModel::Isotropic::Sigma(dim,sigma);

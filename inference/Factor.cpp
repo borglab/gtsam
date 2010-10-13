@@ -20,7 +20,10 @@ using namespace boost::lambda;
 namespace gtsam {
 
 /* ************************************************************************* */
-Factor::Factor(const Factor& f) : keys_(f.keys_), permuted_(f.permuted_) {}
+Factor::Factor(const Factor& f) : keys_(f.keys_) {}
+
+/* ************************************************************************* */
+Factor::Factor(const Conditional& c) : keys_(c.keys()) {}
 
 /* ************************************************************************* */
 void Factor::print(const std::string& s) const {
@@ -37,7 +40,7 @@ bool Factor::equals(const Factor& other, double tol) const {
 /* ************************************************************************* */
 Conditional::shared_ptr Factor::eliminateFirst() {
   assert(!keys_.empty());
-  checkSorted();
+  assertInvariants();
   Index eliminated = keys_.front();
   keys_.erase(keys_.begin());
   return Conditional::shared_ptr(new Conditional(eliminated, keys_));
@@ -46,7 +49,7 @@ Conditional::shared_ptr Factor::eliminateFirst() {
 /* ************************************************************************* */
 boost::shared_ptr<BayesNet<Conditional> > Factor::eliminate(size_t nrFrontals) {
   assert(keys_.size() >= nrFrontals);
-  checkSorted();
+  assertInvariants();
   BayesNet<Conditional>::shared_ptr fragment(new BayesNet<Conditional>());
   const_iterator nextFrontal = this->begin();
   for(Index n = 0; n < nrFrontals; ++n, ++nextFrontal)
@@ -58,7 +61,6 @@ boost::shared_ptr<BayesNet<Conditional> > Factor::eliminate(size_t nrFrontals) {
 
 /* ************************************************************************* */
 void Factor::permuteWithInverse(const Permutation& inversePermutation) {
-  this->permuted_.value = true;
   BOOST_FOREACH(Index& key, keys_) { key = inversePermutation[key]; }
 }
 

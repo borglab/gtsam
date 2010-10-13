@@ -220,32 +220,31 @@ typedef vector<boost::optional<Index> > optionalIndices;
  */
 optionalIndices buildETree(const StructA& structA) {
 
-	// todo: get n
-	size_t n = 5;
-	optionalIndices parent(n);
+  // todo: get n
+  size_t n = 5;
+  optionalIndices parent(n);
 
-	// todo: get m
-	size_t m = 5;
-	optionalIndices prev_col(m);
+  // todo: get m
+  size_t m = 5;
+  optionalIndices prev_col(m);
 
-	// for column j \in 1 to n do
-	for (Index j = 0; j < n; j++) {
-		// for row i \in Struct[A*j] do
-		BOOST_FOREACH(RowIndex i, structA[j])
-					{
-						if (prev_col[i]) {
-							Index k = *(prev_col[i]);
-							// find root r of the current tree that contains k
-							Index r = k;
-							while (parent[r])
-								r = *parent[r];
-							if (r != j) parent[r].reset(j);
-						}
-						prev_col[i].reset(j);
-					}
-	}
+  // for column j \in 1 to n do
+  for (Index j = 0; j < n; j++) {
+    // for row i \in Struct[A*j] do
+    BOOST_FOREACH(RowIndex i, structA[j]) {
+      if (prev_col[i]) {
+        Index k = *(prev_col[i]);
+        // find root r of the current tree that contains k
+        Index r = k;
+        while (parent[r])
+          r = *parent[r];
+        if (r != j) parent[r].reset(j);
+      }
+      prev_col[i].reset(j);
+    }
+  }
 
-	return parent;
+  return parent;
 }
 
 /**

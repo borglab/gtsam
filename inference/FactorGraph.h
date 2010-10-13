@@ -63,13 +63,9 @@ namespace gtsam {
 		template<class Conditional>
 		FactorGraph(const BayesNet<Conditional>& bayesNet);
 
-//    /** convert from Bayes net while permuting at the same time */
-//    template<class Conditional>
-//    FactorGraph(const BayesNet<Conditional>& bayesNet, const Inference::Permutation& permutation);
-
 		/** convert from a derived type */
-		template<class Derived>
-		FactorGraph(const Derived& factorGraph);
+		template<class DerivedFactor>
+		FactorGraph(const FactorGraph<DerivedFactor>& factorGraph);
 
 		/** Add a factor */
 		template<class DerivedFactor>
@@ -210,14 +206,24 @@ namespace gtsam {
 
   /* ************************************************************************* */
   template<class Factor>
-  template<class Derived>
-  FactorGraph<Factor>::FactorGraph(const Derived& factorGraph) {
+  template<class DerivedFactor>
+  FactorGraph<Factor>::FactorGraph(const FactorGraph<DerivedFactor>& factorGraph) {
     factors_.reserve(factorGraph.size());
-    BOOST_FOREACH(const typename Derived::sharedFactor& factor, factorGraph) {
+    BOOST_FOREACH(const typename DerivedFactor::shared_ptr& factor, factorGraph) {
       if(factor)
         this->push_back(sharedFactor(new Factor(*factor)));
       else
         this->push_back(sharedFactor());
+    }
+  }
+
+  /* ************************************************************************* */
+  template<class Factor>
+  template<class Conditional>
+  FactorGraph<Factor>::FactorGraph(const BayesNet<Conditional>& bayesNet) {
+    factors_.reserve(bayesNet.size());
+    BOOST_FOREACH(const typename Conditional::shared_ptr& cond, bayesNet) {
+      this->push_back(sharedFactor(new Factor(*cond)));
     }
   }
 

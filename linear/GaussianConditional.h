@@ -113,7 +113,7 @@ public:
 	/** return stuff contained in GaussianConditional */
 	rsd_type::const_column_type get_d() const { return rsd_.column(1+nrParents(), 0); }
 	rsd_type::const_block_type get_R() const { return rsd_(0); }
-	rsd_type::const_block_type get_S(const_iterator variable) const { return rsd_(variable-Conditional::factor_.begin()); }
+	rsd_type::const_block_type get_S(const_iterator variable) const { return rsd_(variable - this->begin()); }
 	const Vector& get_sigmas() const {return sigmas_;}
 
 	/**
@@ -133,7 +133,7 @@ public:
 protected:
   rsd_type::column_type get_d_() { return rsd_.column(1+nrParents(), 0); }
   rsd_type::block_type get_R_() { return rsd_(0); }
-  rsd_type::block_type get_S_(iterator variable) { return rsd_(variable-const_cast<const Factor&>(Conditional::factor_).begin()); }
+  rsd_type::block_type get_S_(iterator variable) { return rsd_(variable - this->begin()); }
 
   friend class GaussianFactor;
 
@@ -157,7 +157,7 @@ private:
 			const Vector& sigmas) :
 		rsd_(matrix_), sigmas_(sigmas) {
   	nrFrontals_ = nrFrontals;
-		std::copy(firstKey, lastKey, back_inserter(factor_.keys_));
+		std::copy(firstKey, lastKey, back_inserter(keys_));
 		rsd_.assignNoalias(matrices);
 	}
 

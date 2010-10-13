@@ -59,6 +59,11 @@ public:
    */
   VectorValues(const std::vector<size_t>& dimensions, const Vector& values);
 
+  /** Named constructor to create a VectorValues that matches the structure of
+   * the specified VectorValues, but do not initialize the new values.
+   */
+  static VectorValues SameStructure(const VectorValues& otherValues);
+
   /** Element access */
   mapped_type operator[](Index variable);
   const_mapped_type operator[](Index variable) const;
@@ -199,6 +204,13 @@ inline VectorValues::VectorValues(const std::vector<size_t>& dimensions, const V
     varStarts_[++var] = (varStart += dim);
   }
   assert(varStarts_.back() == values.size());
+}
+
+inline VectorValues VectorValues::SameStructure(const VectorValues& otherValues) {
+  VectorValues ret;
+  ret.varStarts_ = otherValues.varStarts_;
+  ret.values_.resize(ret.varStarts_.back(), false);
+  return ret;
 }
 
 inline VectorValues::mapped_type VectorValues::operator[](Index variable) {

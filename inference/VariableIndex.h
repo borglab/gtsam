@@ -212,9 +212,13 @@ void VariableIndex<Storage>::rebaseFactors(ptrdiff_t baseIndexChange) {
 template<class Storage>
 template<class Derived>
 bool VariableIndex<Storage>::equals(const Derived& other, double tol) const {
-  if(this->nEntries_ == other.nEntries_ && this->nFactors_ == other.nFactors_ && this->index_.size() == other.index_.size()) {
-    for(size_t var=0; var<this->index_.size(); ++var)
-      if(this->index_[var] != other.index_[var])
+  if(this->nEntries_ == other.nEntries_ && this->nFactors_ == other.nFactors_) {
+    for(size_t var=0; var < std::max(this->index_.size(), other.index_.size()); ++var)
+      if(var >= this->index_.size() || var >= other.index_.size()) {
+        if(!((var >= this->index_.size() && other.index_[var].empty()) ||
+            (var >= other.index_.size() && this->index_[var].empty())))
+          return false;
+      } else if(this->index_[var] != other.index_[var])
         return false;
   } else
     return false;
@@ -229,7 +233,7 @@ void VariableIndex<Storage>::print(const std::string& str) const {
   BOOST_FOREACH(const mapped_type& variable, index_.container()) {
     Permutation::const_iterator rvar = find(index_.permutation().begin(), index_.permutation().end(), var);
     assert(rvar != index_.permutation().end());
-    std::cout << "var " << *rvar << ":";
+    std::cout << "var " << (rvar-index_.permutation().begin()) << ":";
     BOOST_FOREACH(const mapped_factor_type& factor, variable) {
       std::cout << " " << factor.factorIndex << "-" << factor.variablePosition;
     }

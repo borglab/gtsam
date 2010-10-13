@@ -32,15 +32,10 @@ using namespace boost::lambda;
 namespace gtsam {
 
 /* ************************************************************************* */
-inline void GaussianFactor::checkSorted() const {
+inline void GaussianFactor::assertInvariants() const {
 #ifndef NDEBUG
-  // Make sure variables are sorted
-  assert(keys_.size()+1 == Ab_.nBlocks());
-  for(size_t varpos=0; varpos<keys_.size(); ++varpos) {
-    if(varpos > 0) {
-      assert(keys_[varpos] > keys_[varpos-1]);
-    }
-  }
+  Factor::assertInvariants();
+  assert((keys_.size() == 0 && Ab_.size1() == 0 && Ab_.nBlocks() == 0) || keys_.size()+1 == Ab_.nBlocks());
 #endif
 }
 
@@ -48,16 +43,18 @@ inline void GaussianFactor::checkSorted() const {
 GaussianFactor::GaussianFactor(const GaussianFactor& gf) :
     Factor(gf), model_(gf.model_), firstNonzeroBlocks_(gf.firstNonzeroBlocks_), Ab_(matrix_) {
   Ab_.assignNoalias(gf.Ab_);
+  assertInvariants();
 }
 
 /* ************************************************************************* */
-GaussianFactor::GaussianFactor() : Ab_(matrix_) {}
+GaussianFactor::GaussianFactor() : Ab_(matrix_) { assertInvariants(); }
 
 /* ************************************************************************* */
 GaussianFactor::GaussianFactor(const Vector& b_in) : firstNonzeroBlocks_(b_in.size(), 0), Ab_(matrix_) {
   size_t dims[] = { 1 };
   Ab_.copyStructureFrom(ab_type(matrix_, dims, dims+1, b_in.size()));
   getb() = b_in;
+  assertInvariants();
 }
 
 /* ************************************************************************* */
@@ -68,6 +65,7 @@ GaussianFactor::GaussianFactor(Index i1, const Matrix& A1,
   Ab_.copyStructureFrom(ab_type(matrix_, dims, dims+2, b.size()));
 	Ab_(0) = A1;
 	getb() = b;
+	assertInvariants();
 }
 
 /* ************************************************************************* */
@@ -79,6 +77,7 @@ GaussianFactor::GaussianFactor(Index i1, const Matrix& A1, Index i2, const Matri
   Ab_(0) = A1;
   Ab_(1) = A2;
   getb() = b;
+  assertInvariants();
 }
 
 /* ************************************************************************* */
@@ -91,6 +90,7 @@ GaussianFactor::GaussianFactor(Index i1, const Matrix& A1, Index i2, const Matri
   Ab_(1) = A2;
   Ab_(2) = A3;
   getb() = b;
+  assertInvariants();
 }
 
 /* ************************************************************************* */
@@ -108,8 +108,7 @@ GaussianFactor::GaussianFactor(const std::vector<std::pair<Index, Matrix> > &ter
   for(size_t j=0; j<terms.size(); ++j)
     Ab_(j) = terms[j].second;
   getb() = b;
-  Factor::permuted_ = false;
-  checkSorted();
+  assertInvariants();
 }
 
 /* ************************************************************************* */
@@ -133,8 +132,7 @@ GaussianFactor::GaussianFactor(const std::list<std::pair<Index, Matrix> > &terms
     ++ j;
   }
   getb() = b;
-  Factor::permuted_ = false;
-  checkSorted();
+  assertInvariants();
 }
 
 /* ************************************************************************* */
@@ -142,59 +140,8 @@ GaussianFactor::GaussianFactor(const GaussianConditional& cg) : Factor(cg), mode
   Ab_.assignNoalias(cg.rsd_);
   // todo SL: make firstNonzeroCols triangular?
   firstNonzeroBlocks_.resize(cg.get_d().size(), 0);	// set sigmas from precisions
+  assertInvariants();
 }
-
-///* ************************************************************************* */
-//GaussianFactor::GaussianFactor(const vector<shared_ptr> & factors)
-//{
-//	bool verbose = false;
-//	if (verbose) cout << "GaussianFactor::GaussianFactor (factors)" << endl;
-//
-//	// Create RHS and sigmas of right size by adding together row counts
-//  size_t m = 0;
-//  BOOST_FOREACH(const shared_ptr& factor, factors) m += factor->numberOfRows();
-//  b_ = Vector(m);
-//  Vector sigmas(m);
-//
-//  size_t pos = 0; // save last position inserted into the new rhs vector
-//
-//  // iterate over all factors
-//  bool constrained = false;
-//  BOOST_FOREACH(const shared_ptr& factor, factors){
-//  	if (verbose) factor->print();
-//    // number of rows for factor f
-//    const size_t mf = factor->numberOfRows();
-//
-//    // copy the rhs vector from factor to b
-//    const Vector bf = factor->get_b();
-//    for (size_t i=0; i<mf; i++) b_(pos+i) = bf(i);
-//
-//    // copy the model_
-//    for (size_t i=0; i<mf; i++) sigmas(pos+i) = factor->model_->sigma(i);
-//
-//    // update the matrices
-//    append_factor(factor,m,pos);
-//
-//    // check if there are constraints
-//    if (verbose) factor->model_->print("Checking for zeros");
-//    if (!constrained && factor->model_->isConstrained()) {
-//    	constrained = true;
-//    	if (verbose) cout << "Found a constraint!" << endl;
-//    }
-//
-//    pos += mf;
-//  }
-//
-//  if (verbose) cout << "GaussianFactor::GaussianFactor done" << endl;
-//
-//  if (constrained) {
-//	  model_ = noiseModel::Constrained::MixedSigmas(sigmas);
-//	  if (verbose) model_->print("Just created Constraint ^");
-//  } else {
-//	  model_ = noiseModel::Diagonal::Sigmas(sigmas);
-//	  if (verbose) model_->print("Just created Diagonal");
-//  }
-//}
 
 /* ************************************************************************* */
 void GaussianFactor::print(const string& s) const {
@@ -210,15 +157,6 @@ void GaussianFactor::print(const string& s) const {
     model_->print("model");
   }
 }
-
-///* ************************************************************************* */
-//size_t GaussianFactor::getDim(Index key) const {
-//	const_iterator it = findA(key);
-//	if (it != end())
-//		return it->second.size2();
-//	else
-//		return 0;
-//}
 
 /* ************************************************************************* */
 // Check if two linear factors are equal
@@ -241,11 +179,39 @@ bool GaussianFactor::equals(const GaussianFactor& f, double tol) const {
 
 /* ************************************************************************* */
 void GaussianFactor::permuteWithInverse(const Permutation& inversePermutation) {
-  this->permuted_.value = true;
-  BOOST_FOREACH(Index& key, keys_) { key = inversePermutation[key]; }
+
+  // Build a map from the new variable indices to the old slot positions.
+  typedef map<size_t, size_t, std::less<size_t>, boost::fast_pool_allocator<std::pair<const size_t, size_t> > > SourceSlots;
+  SourceSlots sourceSlots;
+  for(size_t j=0; j<keys_.size(); ++j)
+    sourceSlots.insert(make_pair(inversePermutation[keys_[j]], j));
+
+  // Build a vector of variable dimensions in the new order
+  vector<size_t> dimensions(keys_.size() + 1);
+  size_t j = 0;
+  BOOST_FOREACH(const SourceSlots::value_type& sourceSlot, sourceSlots) {
+    dimensions[j++] = Ab_(sourceSlot.second).size2();
+  }
+  assert(j == keys_.size());
+  dimensions.back() = 1;
+
+  // Copy the variables and matrix into the new order
+  vector<Index> oldKeys(keys_.size());
+  keys_.swap(oldKeys);
+  matrix_type oldMatrix;
+  ab_type oldAb(oldMatrix, dimensions.begin(), dimensions.end(), Ab_.size1());
+  Ab_.swap(oldAb);
+  j = 0;
+  BOOST_FOREACH(const SourceSlots::value_type& sourceSlot, sourceSlots) {
+    keys_[j] = sourceSlot.first;
+    ublas::noalias(Ab_(j++)) = oldAb(sourceSlot.second);
+  }
+  ublas::noalias(Ab_(j)) = oldAb(j);
+
   // Since we're permuting the variables, ensure that entire rows from this
   // factor are copied when Combine is called
   BOOST_FOREACH(size_t& varpos, firstNonzeroBlocks_) { varpos = 0; }
+  assertInvariants();
 }
 
 /* ************************************************************************* */
@@ -334,21 +300,6 @@ pair<Matrix,Vector> GaussianFactor::matrix(bool weight) const {
 
 /* ************************************************************************* */
 Matrix GaussianFactor::matrix_augmented(bool weight) const {
-//	// get pointers to the matrices
-//	vector<const Matrix *> matrices;
-//	BOOST_FOREACH(Index j, ordering) {
-//		const Matrix& Aj = get_A(j);
-//		matrices.push_back(&Aj);
-//	}
-//
-//	// load b into a matrix
-//	size_t rows = b_.size();
-//	Matrix B_mat(rows, 1);
-//	memcpy(B_mat.data().begin(), b_.data().begin(), rows*sizeof(double));
-//	matrices.push_back(&B_mat);
-
-	// divide in sigma so error is indeed 0.5*|Ax-b|
-//	Matrix Ab = collect(matrices);
 	if (weight) { Matrix Ab(Ab_.range(0,Ab_.nBlocks())); model_->WhitenInPlace(Ab); return Ab; }
 	else return Ab_.range(0, Ab_.nBlocks());
 }
@@ -381,40 +332,12 @@ GaussianFactor::sparse(const Dimensions& columnIndices) const {
 	return boost::tuple<list<int>, list<int>, list<double> >(I,J,S);
 }
 
-///* ************************************************************************* */
-//void GaussianFactor::append_factor(GaussianFactor::shared_ptr f, size_t m, size_t pos) {
-//
-//	// iterate over all matrices from the factor f
-//	BOOST_FOREACH(const NamedMatrix& p, f->As_) {
-//		Index key = p.first;
-//		const Matrix& Aj = p.second;
-//
-//		// find the corresponding matrix among As
-//		iterator mine = findA(key);
-//		const bool exists = (mine != end());
-//
-//		// find rows and columns
-//		const size_t n = Aj.size2();
-//
-//		// use existing or create new matrix
-//		if (exists)
-//		  copy(Aj.data().begin(), Aj.data().end(), (mine->second).data().begin()+pos*n);
-//		else {
-//			Matrix Z = zeros(m, n);
-//			copy(Aj.data().begin(), Aj.data().end(), Z.data().begin()+pos*n);
-//			insert(key, Z);
-//		}
-//
-//	} // FOREACH
-//}
-
 /* ************************************************************************* */
 GaussianConditional::shared_ptr GaussianFactor::eliminateFirst() {
 
   assert(Ab_.rowStart() == 0 && Ab_.rowEnd() == matrix_.size1() && Ab_.firstBlock() == 0);
-  assert(!permuted_.value);
   assert(!keys_.empty());
-  checkSorted();
+  assertInvariants();
 
   static const bool debug = false;
 
@@ -514,11 +437,11 @@ GaussianConditional::shared_ptr GaussianFactor::eliminateFirst() {
   }
   toc("eliminateFirst: rowstarts");
 
-  checkSorted();
-
   if(debug) print("Eliminated factor: ");
 
   toc("eliminateFirst");
+
+  assertInvariants();
 
   return conditional;
 }
@@ -527,9 +450,8 @@ GaussianConditional::shared_ptr GaussianFactor::eliminateFirst() {
 GaussianBayesNet::shared_ptr GaussianFactor::eliminate(size_t nrFrontals) {
 
   assert(Ab_.rowStart() == 0 && Ab_.rowEnd() == matrix_.size1() && Ab_.firstBlock() == 0);
-  assert(!permuted_.value);
   assert(keys_.size() >= nrFrontals);
-  checkSorted();
+  assertInvariants();
 
   static const bool debug = false;
 
@@ -635,11 +557,11 @@ GaussianBayesNet::shared_ptr GaussianFactor::eliminate(size_t nrFrontals) {
   }
   toc("eliminate: rowstarts");
 
-  checkSorted();
-
   if(debug) print("Eliminated factor: ");
 
   toc("eliminate");
+
+  assertInvariants();
 
   return conditionals;
 
@@ -727,10 +649,7 @@ GaussianFactor::shared_ptr GaussianFactor::Combine(const GaussianFactorGraph& fa
     assert(factor.firstNonzeroBlocks_.size() == factor.numberOfRows());
     BOOST_FOREACH(const size_t factorFirstNonzeroVarpos, factor.firstNonzeroBlocks_) {
       Index firstNonzeroVar;
-      if(factor.permuted_.value == true)
-        firstNonzeroVar = *std::min_element(factor.keys_.begin(), factor.keys_.end());
-      else
-        firstNonzeroVar = factor.keys_[factorFirstNonzeroVarpos];
+      firstNonzeroVar = factor.keys_[factorFirstNonzeroVarpos];
       rowSources.push_back(_RowSource(firstNonzeroVar, factorI, factorRowI));
       ++ factorRowI;
     }
@@ -779,10 +698,6 @@ GaussianFactor::shared_ptr GaussianFactor::Combine(const GaussianFactorGraph& fa
     std::vector<Index>::const_iterator keyitend = factor.keys_.end();
     while(keyit != keyitend) {
       const size_t varpos = *varposIt;
-      // If the factor is permuted, the varpos's in the joint factor could be
-      // out of order.
-      if(factor.permuted_.value == true && varpos < ret->firstNonzeroBlocks_[row])
-        ret->firstNonzeroBlocks_[row] = varpos;
       assert(variables[varpos] == *keyit);
       ab_type::block_type retBlock(ret->Ab_(varpos));
       const ab_type::const_block_type factorBlock(factor.getA(keyit));
@@ -811,7 +726,7 @@ GaussianFactor::shared_ptr GaussianFactor::Combine(const GaussianFactorGraph& fa
 
   if(debug) ret->print("Combined factor: ");
 
-  ret->checkSorted();
+  ret->assertInvariants();
 
   return ret;
 }
@@ -889,10 +804,7 @@ GaussianFactor::shared_ptr GaussianFactor::Combine(const GaussianFactorGraph& fa
     const GaussianFactor& sourceFactor(*factors[sourceFactorI]);
     for(size_t sourceFactorRow = 0; sourceFactorRow < sourceFactor.numberOfRows(); ++sourceFactorRow) {
       Index firstNonzeroVar;
-      if(sourceFactor.permuted_.value)
-        firstNonzeroVar = *std::min_element(sourceFactor.begin(), sourceFactor.end());
-      else
-        firstNonzeroVar = sourceFactor.keys_[sourceFactor.firstNonzeroBlocks_[sourceFactorRow]];
+      firstNonzeroVar = sourceFactor.keys_[sourceFactor.firstNonzeroBlocks_[sourceFactorRow]];
       rowSources.push_back(_RowSource(firstNonzeroVar, sourceFactorI, sourceFactorRow));
     }
     if(sourceFactor.model_->isConstrained()) anyConstrained = true;
@@ -922,7 +834,6 @@ GaussianFactor::shared_ptr GaussianFactor::Combine(const GaussianFactorGraph& fa
       if(sourceSlot != numeric_limits<Index>::max()) {
         const GaussianFactor& source(*factors[rowSources[row].factorI]);
         const size_t sourceRow = rowSources[row].factorRowI;
-        assert(!source.permuted_.value || source.firstNonzeroBlocks_[sourceRow] == 0);
         if(source.firstNonzeroBlocks_[sourceRow] <= sourceSlot) {
           const ab_type::const_block_type sourceBlock(source.Ab_(sourceSlot));
           ublas::noalias(ublas::row(combinedBlock, row)) = ublas::row(sourceBlock, sourceRow);
@@ -955,159 +866,9 @@ GaussianFactor::shared_ptr GaussianFactor::Combine(const GaussianFactorGraph& fa
   else combined->model_ = noiseModel::Diagonal::Sigmas(sigmas);
   toc("Combine 6: noise model");
 
-  combined->checkSorted();
+  combined->assertInvariants();
 
   return combined;
 }
 
-
-///* ************************************************************************* */
-//static GaussianFactor::shared_ptr
-//GaussianFactor::Combine(const GaussianFactorGraph& factorGraph, const std::vector<size_t>& factors) {
-//
-//  // Determine row count
-//  size_t m = 0;
-//  BOOST_FOREACH(const size_t& factor, factors) {
-//    m += factorGraph[factor]->numberOfRows();
-//  }
-//
-//}
-
-///* ************************************************************************* */
-///* Note, in place !!!!
-// * Do incomplete QR factorization for the first n columns
-// * We will do QR on all matrices and on RHS
-// * Then take first n rows and make a GaussianConditional,
-// * and last rows to make a new joint linear factor on separator
-// */
-///* ************************************************************************* */
-//
-//pair<GaussianBayesNet, GaussianFactor::shared_ptr>
-//GaussianFactor::eliminateMatrix(Matrix& Ab, SharedDiagonal model,
-//		        const Ordering& frontals, const Ordering& separators,
-//		        const Dimensions& dimensions) {
-//	bool verbose = false;
-//
-//	// Use in-place QR on dense Ab appropriate to NoiseModel
-//	if (verbose) model->print("Before QR");
-//	SharedDiagonal noiseModel = model->QR(Ab);
-//	if (verbose) model->print("After QR");
-//
-//	// get dimensions of the eliminated variable
-//	// TODO: this is another map find that should be avoided !
-//	size_t n1 = dimensions.at(frontals.front()), n = Ab.size2() - 1;
-//
-//	// Get alias to augmented RHS d
-//	ublas::matrix_column<Matrix> d(Ab,n);
-//
-//	// extract the conditionals
-//	GaussianBayesNet bn;
-//	size_t n0 = 0;
-//	Ordering::const_iterator itFrontal1 = frontals.begin(), itFrontal2;
-//	for(; itFrontal1!=frontals.end(); itFrontal1++) {
-//		n1 = n0 + dimensions.at(*itFrontal1);
-//		// create base conditional Gaussian
-//		GaussianConditional::shared_ptr conditional(new GaussianConditional(*itFrontal1,
-//				sub(d,  n0, n1),                   // form d vector
-//				sub(Ab, n0, n1, n0, n1),           // form R matrix
-//				sub(noiseModel->sigmas(),n0,n1))); // get standard deviations
-//
-//		// add parents to the conditional
-//		itFrontal2 = itFrontal1;
-//		itFrontal2 ++;
-//		size_t j = n1;
-//		for (; itFrontal2!=frontals.end(); itFrontal2++) {
-//			size_t dim = dimensions.at(*itFrontal2);
-//			conditional->add(*itFrontal2, sub(Ab, n0, n1, j, j+dim));
-//			j+=dim;
-//		}
-//		BOOST_FOREACH(Index cur_key, separators) {
-//			size_t dim = dimensions.at(cur_key);
-//			conditional->add(cur_key, sub(Ab, n0, n1, j, j+dim));
-//			j+=dim;
-//		}
-//		n0 = n1;
-//		bn.push_back(conditional);
-//	}
-//
-//	// if m<n1, this factor cannot be eliminated
-//	size_t maxRank = noiseModel->dim();
-//	if (maxRank<n1) {
-//		cout << "Perhaps your factor graph is singular." << endl;
-//		cout << "Here are the keys involved in the factor now being eliminated:" << endl;
-//		separators.print("Keys");
-//		cout << "The first key, '" << frontals.front() << "', corresponds to the variable being eliminated" << endl;
-//		throw(domain_error("GaussianFactor::eliminate: fewer constraints than unknowns"));
-//	}
-//
-//	// extract the new factor
-//	GaussianFactor::shared_ptr factor(new GaussianFactor);
-//	size_t j = n1;
-//	BOOST_FOREACH(Index cur_key, separators) {
-//		size_t dim = dimensions.at(cur_key); // TODO avoid find !
-//		factor->insert(cur_key, sub(Ab, n1, maxRank, j, j+dim)); // TODO: handle zeros properly
-//		j+=dim;
-//	}
-//
-//	// Set sigmas
-//	// set the right model here
-//	if (noiseModel->isConstrained())
-//		factor->model_ = noiseModel::Constrained::MixedSigmas(sub(noiseModel->sigmas(),n1,maxRank));
-//	else
-//		factor->model_ = noiseModel::Diagonal::Sigmas(sub(noiseModel->sigmas(),n1,maxRank));
-//
-//	// extract ds vector for the new b
-//	factor->set_b(sub(d, n1, maxRank));
-//
-//	return make_pair(bn, factor);
-//
-//}
-//
-///* ************************************************************************* */
-//pair<GaussianConditional::shared_ptr, GaussianFactor::shared_ptr>
-//GaussianFactor::eliminateMatrix(Matrix& Ab, SharedDiagonal model,
-//		        Index frontal, const Ordering& separator,
-//		        const Dimensions& dimensions) {
-//	Ordering frontals; frontals += frontal;
-//	pair<GaussianBayesNet, shared_ptr> ret =
-//			eliminateMatrix(Ab, model, frontals, separator, dimensions);
-//	return make_pair(*ret.first.begin(), ret.second);
-//}
-///* ************************************************************************* */
-//pair<GaussianConditional::shared_ptr, GaussianFactor::shared_ptr>
-//GaussianFactor::eliminate(Index key) const
-//{
-//	// if this factor does not involve key, we exit with empty CG and LF
-//	const_iterator it = findA(key);
-//	if (it==end()) {
-//		// Conditional Gaussian is just a parent-less node with P(x)=1
-//		GaussianFactor::shared_ptr lf(new GaussianFactor);
-//		GaussianConditional::shared_ptr cg(new GaussianConditional(key));
-//		return make_pair(cg,lf);
-//	}
-//
-//	// create an internal ordering that eliminates key first
-//	Ordering ordering;
-//	ordering += key;
-//	BOOST_FOREACH(Index k, keys())
-//		if (k != key) ordering += k;
-//
-//	// extract [A b] from the combined linear factor (ensure that x is leading)
-//	Matrix Ab = matrix_augmented(ordering,false);
-//
-//	// TODO: this is where to split
-//	ordering.pop_front();
-//	return eliminateMatrix(Ab, model_, key, ordering, dimensions());
-//}
-
-/* ************************************************************************* */
-
-	string symbol(char c, int index) {
-		stringstream ss;
-		ss << c << index;
-		return ss.str();
-	}
-
 }
-/* ************************************************************************* */
-;

@@ -678,6 +678,52 @@ TEST ( GaussianFactor, constraint_eliminate2 )
 	CHECK(assert_equal(expectedCG, *actualCG, 1e-4));
 }
 
+/* ************************************************************************* */
+TEST(GaussianFactor, permuteWithInverse)
+{
+  Matrix A1 = Matrix_(2,2,
+      1.0, 2.0,
+      3.0, 4.0);
+  Matrix A2 = Matrix_(2,1,
+      5.0,
+      6.0);
+  Matrix A3 = Matrix_(2,3,
+      7.0, 8.0, 9.0,
+      10.0, 11.0, 12.0);
+  Vector b = Vector_(2, 13.0, 14.0);
+
+  Permutation inversePermutation(6);
+  inversePermutation[0] = 5;
+  inversePermutation[1] = 4;
+  inversePermutation[2] = 3;
+  inversePermutation[3] = 2;
+  inversePermutation[4] = 1;
+  inversePermutation[5] = 0;
+
+  GaussianFactor actual(1, A1, 3, A2, 5, A3, b, sharedSigma(2, 1.0));
+  GaussianFactorGraph actualFG; actualFG.push_back(GaussianFactor::shared_ptr(new GaussianFactor(actual)));
+  GaussianVariableIndex<> actualIndex(actualFG);
+  actual.permuteWithInverse(inversePermutation);
+  actualIndex.permute(*inversePermutation.inverse());
+
+  GaussianFactor expected(0, A3, 2, A2, 4, A1, b, sharedSigma(2, 1.0));
+  GaussianFactorGraph expectedFG; expectedFG.push_back(GaussianFactor::shared_ptr(new GaussianFactor(expected)));
+  GaussianVariableIndex<> expectedIndex(expectedFG);
+
+  CHECK(assert_equal(expected, actual));
+
+  // todo: fix this!!!  VariableIndex should not hold slots
+  for(Index j=0; j<actualIndex.size(); ++j) {
+    BOOST_FOREACH(typename GaussianVariableIndex<>::mapped_factor_type& factor_pos, actualIndex[j]) {
+      factor_pos.variablePosition = numeric_limits<Index>::max(); }
+  }
+  for(Index j=0; j<expectedIndex.size(); ++j) {
+    BOOST_FOREACH(typename GaussianVariableIndex<>::mapped_factor_type& factor_pos, expectedIndex[j]) {
+      factor_pos.variablePosition = numeric_limits<Index>::max(); }
+  }
+  CHECK(assert_equal(expectedIndex, actualIndex));
+}
+
 ///* ************************************************************************* */
 //TEST( GaussianFactor, erase)
 //{
@@ -727,6 +773,7 @@ TEST ( GaussianFactor, constraint_eliminate2 )
 //	GaussianFactor factor_expected(_x3_, Matrix_(1, 1, 14.), Vector_(1, 16.), SharedDiagonal(Vector_(1, 1.)));
 //	CHECK(assert_equal(factor_expected, *factor));
 //}
+
 
 /* ************************************************************************* */
 int main() { TestResult tr; return TestRegistry::runAllTests(tr);}

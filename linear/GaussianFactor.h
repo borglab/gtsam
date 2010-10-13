@@ -153,7 +153,7 @@ protected:
   /** Protected mutable accessor for the r.h.s. b. */
 
   /** Internal debug check to make sure variables are sorted */
-  void checkSorted() const;
+  void assertInvariants() const;
 
 public:
 
@@ -215,14 +215,5 @@ public:
 
 }; // GaussianFactor
 
-/* ************************************************************************* */
-
-/**
- * creates a C++ string a la "x3", "m768"
- * @param c the base character
- * @param index the integer to be added
- * @return a C++ string
- */
-std::string symbol(char c, int index);
 
 } // namespace gtsam

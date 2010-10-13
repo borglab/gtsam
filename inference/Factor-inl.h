@@ -30,12 +30,8 @@ namespace gtsam {
 //}
 
 /* ************************************************************************* */
-template<class Derived> Factor::Factor(const Derived& c) : keys_(c.keys()), permuted_(c.permuted_) {
-}
-
-/* ************************************************************************* */
 template<class KeyIterator> Factor::Factor(KeyIterator beginKey, KeyIterator endKey) :
-    keys_(beginKey, endKey) { checkSorted(); }
+    keys_(beginKey, endKey) { assertInvariants(); }
 
 /* ************************************************************************* */
 template<class FactorGraphType, class VariableIndexStorage>
@@ -43,7 +39,7 @@ Factor::shared_ptr Factor::Combine(const FactorGraphType& factorGraph,
     const VariableIndex<VariableIndexStorage>& variableIndex, const std::vector<size_t>& factors,
     const std::vector<Index>& variables, const std::vector<std::vector<size_t> >& variablePositions) {
 
-  return shared_ptr(boost::make_shared<Factor>(variables.begin(), variables.end()));
+  return shared_ptr(new Factor(variables.begin(), variables.end()));
 }
 
 /* ************************************************************************* */

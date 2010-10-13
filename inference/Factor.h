@@ -40,11 +40,10 @@ class Factor : public Testable<Factor> {
 protected:
 
   std::vector<Index> keys_;
-  ValueWithDefault<bool,true> permuted_;
 
-  /** Internal check to make sure keys are sorted (invariant during elimination).
+  /** Internal check to make sure keys are sorted.
    * If NDEBUG is defined, this is empty and optimized out. */
-  void checkSorted() const;
+  void assertInvariants() const;
 
 public:
 
@@ -57,29 +56,29 @@ public:
   Factor(const Factor& f);
 
   /** Construct from derived type */
-  template<class Derived> Factor(const Derived& c);
+  Factor(const Conditional& c);
 
   /** Constructor from a collection of keys */
   template<class KeyIterator> Factor(KeyIterator beginKey, KeyIterator endKey);
 
   /** Default constructor for I/O */
-  Factor() : permuted_(false) {}
+  Factor() {}
 
   /** Construct unary factor */
-  Factor(Index key) : keys_(1), permuted_(false) {
-    keys_[0] = key; checkSorted(); }
+  Factor(Index key) : keys_(1) {
+    keys_[0] = key; assertInvariants(); }
 
   /** Construct binary factor */
-  Factor(Index key1, Index key2) : keys_(2), permuted_(false) {
-    keys_[0] = key1; keys_[1] = key2; checkSorted(); }
+  Factor(Index key1, Index key2) : keys_(2) {
+    keys_[0] = key1; keys_[1] = key2; assertInvariants(); }
 
   /** Construct ternary factor */
-  Factor(Index key1, Index key2, Index key3) : keys_(3), permuted_(false) {
-    keys_[0] = key1; keys_[1] = key2; keys_[2] = key3; checkSorted(); }
+  Factor(Index key1, Index key2, Index key3) : keys_(3) {
+    keys_[0] = key1; keys_[1] = key2; keys_[2] = key3; assertInvariants(); }
 
   /** Construct 4-way factor */
-  Factor(Index key1, Index key2, Index key3, Index key4) : keys_(4), permuted_(false) {
-    keys_[0] = key1; keys_[1] = key2; keys_[2] = key3; keys_[3] = key4; checkSorted(); }
+  Factor(Index key1, Index key2, Index key3, Index key4) : keys_(4) {
+    keys_[0] = key1; keys_[1] = key2; keys_[2] = key3; keys_[3] = key4; assertInvariants(); }
 
   /** Named constructor for combining a set of factors with pre-computed set of
    * variables.  (Old style - will be removed when scalar elimination is
@@ -158,10 +157,11 @@ protected:
 };
 
 /* ************************************************************************* */
-inline void Factor::checkSorted() const {
+inline void Factor::assertInvariants() const {
 #ifndef NDEBUG
-  for(size_t pos=1; pos<keys_.size(); ++pos)
-    assert(keys_[pos-1] < keys_[pos]);
+  std::set<Index> uniqueSorted(keys_.begin(), keys_.end());
+  assert(uniqueSorted.size() == keys_.size());
+  assert(std::equal(uniqueSorted.begin(), uniqueSorted.end(), keys_.begin()));
 #endif
 }
 

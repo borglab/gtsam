@@ -103,9 +103,9 @@ public:
   template<typename Iterator>
   VerticalBlockView(matrix_type& matrix, Iterator firstBlockDim, Iterator lastBlockDim, size_t matrixNewHeight);
 
-  size_t size1() const { checkInvariants(); return rowEnd_ - rowStart_; }
-  size_t size2() const { checkInvariants(); return variableColOffsets_.back() - variableColOffsets_[blockStart_]; }
-  size_t nBlocks() const { checkInvariants(); return variableColOffsets_.size() - 1 - blockStart_; }
+  size_t size1() const { assertInvariants(); return rowEnd_ - rowStart_; }
+  size_t size2() const { assertInvariants(); return variableColOffsets_.back() - variableColOffsets_[blockStart_]; }
+  size_t nBlocks() const { assertInvariants(); return variableColOffsets_.size() - 1 - blockStart_; }
 
   block_type operator()(size_t block) {
     return range(block, block+1);
@@ -116,7 +116,7 @@ public:
   }
 
   block_type range(size_t startBlock, size_t endBlock) {
-    checkInvariants();
+    assertInvariants();
     size_t actualStartBlock = startBlock + blockStart_;
     size_t actualEndBlock = endBlock + blockStart_;
     checkBlock(actualStartBlock);
@@ -127,7 +127,7 @@ public:
   }
 
   const_block_type range(size_t startBlock, size_t endBlock) const {
-    checkInvariants();
+    assertInvariants();
     size_t actualStartBlock = startBlock + blockStart_;
     size_t actualEndBlock = endBlock + blockStart_;
     checkBlock(actualStartBlock);
@@ -138,7 +138,7 @@ public:
   }
 
   column_type column(size_t block, size_t columnOffset) {
-    checkInvariants();
+    assertInvariants();
     size_t actualBlock = block + blockStart_;
     checkBlock(actualBlock);
     assert(variableColOffsets_[actualBlock] + columnOffset < matrix_.size2());
@@ -147,7 +147,7 @@ public:
   }
 
   const_column_type column(size_t block, size_t columnOffset) const {
-    checkInvariants();
+    assertInvariants();
     size_t actualBlock = block + blockStart_;
     checkBlock(actualBlock);
     assert(variableColOffsets_[actualBlock] + columnOffset < matrix_.size2());
@@ -156,7 +156,7 @@ public:
   }
 
   size_t offset(size_t block) const {
-    checkInvariants();
+    assertInvariants();
     size_t actualBlock = block + blockStart_;
     checkBlock(actualBlock);
     return variableColOffsets_[actualBlock] - variableColOffsets_[blockStart_];
@@ -184,8 +184,13 @@ public:
   template<class RhsMatrix>
   VerticalBlockView<Matrix>& assignNoalias(const VerticalBlockView<RhsMatrix>& rhs);
 
+  /** Swap the contents of the underlying matrix and the block information with
+   * another VerticalBlockView.
+   */
+  void swap(VerticalBlockView<Matrix>& other);
+
 protected:
-  void checkInvariants() const {
+  void assertInvariants() const {
     assert(matrix_.size2() == variableColOffsets_.back());
     assert(blockStart_ < variableColOffsets_.size());
     assert(rowStart_ <= matrix_.size1());
@@ -214,30 +219,34 @@ protected:
   friend class VerticalBlockView<Matrix>;
 };
 
+/* ************************************************************************* */
 template<class Matrix>
 VerticalBlockView<Matrix>::VerticalBlockView(matrix_type& matrix) :
 matrix_(matrix), rowStart_(0), rowEnd_(matrix_.size1()), blockStart_(0) {
   fillOffsets((size_t*)0, (size_t*)0);
-  checkInvariants();
+  assertInvariants();
 }
 
+/* ************************************************************************* */
 template<class Matrix>
 template<typename Iterator>
 VerticalBlockView<Matrix>::VerticalBlockView(matrix_type& matrix, Iterator firstBlockDim, Iterator lastBlockDim) :
 matrix_(matrix), rowStart_(0), rowEnd_(matrix_.size1()), blockStart_(0) {
   fillOffsets(firstBlockDim, lastBlockDim);
-  checkInvariants();
+  assertInvariants();
 }
 
+/* ************************************************************************* */
 template<class Matrix>
 template<typename Iterator>
 VerticalBlockView<Matrix>::VerticalBlockView(matrix_type& matrix, Iterator firstBlockDim, Iterator lastBlockDim, size_t matrixNewHeight) :
 matrix_(matrix), rowStart_(0), rowEnd_(matrixNewHeight), blockStart_(0) {
   fillOffsets(firstBlockDim, lastBlockDim);
   matrix_.resize(matrixNewHeight, variableColOffsets_.back(), false);
-  checkInvariants();
+  assertInvariants();
 }
 
+/* ************************************************************************* */
 template<class Matrix>
 template<class RhsMatrix>
 void VerticalBlockView<Matrix>::copyStructureFrom(const VerticalBlockView<RhsMatrix>& rhs) {
@@ -257,15 +266,28 @@ void VerticalBlockView<Matrix>::copyStructureFrom(const VerticalBlockView<RhsMat
   rowStart_ = 0;
   rowEnd_ = matrix_.size1();
   blockStart_ = 0;
-  checkInvariants();
+  assertInvariants();
 }
 
+/* ************************************************************************* */
 template<class Matrix>
 template<class RhsMatrix>
 VerticalBlockView<Matrix>& VerticalBlockView<Matrix>::assignNoalias(const VerticalBlockView<RhsMatrix>& rhs) {
   copyStructureFrom(rhs);
   boost::numeric::ublas::noalias(matrix_) = rhs.range(0, rhs.nBlocks());
   return *this;
+}
+
+/* ************************************************************************* */
+template<class Matrix>
+void VerticalBlockView<Matrix>::swap(VerticalBlockView<Matrix>& other) {
+  matrix_.swap(other.matrix_);
+  variableColOffsets_.swap(other.variableColOffsets_);
+  std::swap(rowStart_, other.rowStart_);
+  std::swap(rowEnd_, other.rowEnd_);
+  std::swap(blockStart_, other.blockStart_);
+  assertInvariants();
+  other.assertInvariants();
 }
 
 

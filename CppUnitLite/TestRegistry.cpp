@@ -8,6 +8,8 @@
 #include "TestRegistry.h"
 #include "SimpleString.h"
 
+//#include <iostream>
+//using namespace std;
 
 void TestRegistry::addTest (Test *test) 
 {
@@ -50,6 +52,7 @@ int TestRegistry::run (TestResult& result)
 	for (Test *test = tests; test != 0; test = test->getNext ()) {
 		if (test->safe()) {
 			try {
+//			  cout << test->getName().asCharString() << ", " << test->getFilename().asCharString() << ":" << test->getLineNumber() << endl;
 				test->run (result);
 			} catch (std::exception& e) {
 				// catch standard exceptions and derivatives
