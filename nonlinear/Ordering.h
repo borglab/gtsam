@@ -9,10 +9,13 @@
 
 #include <map>
 
+
+
 #include <gtsam/base/Testable.h>
 #include <gtsam/nonlinear/Key.h>
 #include <gtsam/inference/inference.h>
 
+#include <boost/foreach.hpp>
 #include <boost/shared_ptr.hpp>
 #include <boost/assign/list_inserter.hpp>
 #include <boost/pool/pool_alloc.hpp>
@@ -35,6 +38,10 @@ public:
   typedef Map::const_iterator const_iterator;
 
   Ordering() : nVars_(0) {}
+  Ordering(const std::list<Symbol> & L):nVars_(0) {
+	  int i = 0;
+	  BOOST_FOREACH( const Symbol& s, L) insert(s, i++) ;
+  }
 
   /** One greater than the maximum ordering index. */
   Index nVars() const { return nVars_; }
