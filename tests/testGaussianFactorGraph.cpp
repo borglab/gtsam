@@ -743,7 +743,6 @@ TEST( GaussianFactorGraph, elimination )
 	fg.add(ord["x2"], Ap, b, sigma);
 
 	// Eliminate
-	cout << "TEST GaussianFactorGraph elimination" << endl;
 	GaussianBayesNet bayesNet = *Inference::Eliminate(fg);
 
 	// Check sigma

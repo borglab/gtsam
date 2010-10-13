@@ -30,7 +30,7 @@ headers += VariableIndex.h
 headers += FactorGraph.h FactorGraph-inl.h
 headers += ClusterTree.h ClusterTree-inl.h
 headers += JunctionTree.h JunctionTree-inl.h
-headers += EliminationTree.h EliminationTree-inl.h
+#headers += EliminationTree.h EliminationTree-inl.h
 headers += BayesNet.h BayesNet-inl.h
 headers += BayesTree.h BayesTree-inl.h
 headers += ISAM.h ISAM-inl.h
@@ -38,7 +38,7 @@ check_PROGRAMS += tests/testFactorGraph
 check_PROGRAMS += tests/testFactorGraph
 check_PROGRAMS += tests/testBayesTree 
 check_PROGRAMS += tests/testISAM
-check_PROGRAMS += tests/testEliminationTree
+#check_PROGRAMS += tests/testEliminationTree
 check_PROGRAMS += tests/testClusterTree
 check_PROGRAMS += tests/testJunctionTree
 
