@@ -46,6 +46,7 @@ public:
    * slow reallocation of space at runtime.
    */
   VectorValues() : varStarts_(1,0) {}
+  VectorValues(const VectorValues &V) : values_(V.values_), varStarts_(V.varStarts_) {}
 
   /** Construct from a container of variable dimensions (in variable order). */
   template<class Container>
@@ -75,6 +76,10 @@ public:
    * with reserve(...) ).
    */
   size_t dim() const { return varStarts_.back(); }
+
+  /* dot product */
+  double dot(const VectorValues& V) const { return gtsam::dot(this->values_, V.values_) ; }
+
 
   /** Total dimensions capacity allocated */
   size_t dimCapacity() const { return values_.size(); }
@@ -163,6 +168,13 @@ public:
 
 protected:
   void checkVariable(Index variable) const { assert(variable < varStarts_.size()-1); }
+
+
+public:
+  friend double dot(const VectorValues& V1, const VectorValues& V2) { return gtsam::dot(V1.values_, V2.values_) ; }
+  friend void scal(double alpha, VectorValues& x) {	gtsam::scal(alpha, x.values_) ; }
+  friend void axpy(double alpha, const VectorValues& x, VectorValues& y) { gtsam::axpy(alpha, x.values_, y.values_) ; }
+
 };
 
 

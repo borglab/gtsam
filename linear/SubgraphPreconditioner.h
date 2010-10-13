@@ -8,7 +8,7 @@
 
 #include <gtsam/linear/GaussianFactorGraph.h>
 #include <gtsam/linear/GaussianBayesNet.h>
-#include <gtsam/inference/Ordering.h>
+#include <gtsam/nonlinear/Ordering.h>
 
 namespace gtsam {
 
@@ -56,7 +56,11 @@ namespace gtsam {
 		VectorValues x(const VectorValues& y) const;
 
 		/* A zero VectorValues with the structure of xbar */
-		VectorValues zero() const { return VectorValues::zero(*xbar_);}
+		VectorValues zero() const {
+			VectorValues V(*xbar_) ;
+			V.makeZero();
+			return V ;
+		}
 
 		/* error, given y */
 		double error(const VectorValues& y) const;

@@ -32,8 +32,8 @@ namespace gtsam {
 			k = 0;
 			verbose = verb;
 			steepest = steep;
-			maxIterations = (maxIt > 0) ? maxIt : dim(x) * (steepest ? 10 : 1);
-			reset = (size_t) (sqrt(dim(x)) + 0.5); // when to reset
+			maxIterations = (maxIt > 0) ? maxIt : x.dim() * (steepest ? 10 : 1);
+			reset = (size_t) (sqrt(x.dim()) + 0.5); // when to reset
 
 			// Start with g0 = A'*(A*x0-b), d0 = - g0
 			// i.e., first step is in direction of negative gradient
@@ -41,7 +41,7 @@ namespace gtsam {
 			d = g; // instead of negating gradient, alpha will be negated
 
 			// init gamma and calculate threshold
-			gamma = dot(g, g);
+			gamma = dot(g,g) ;
 			threshold = ::max(epsilon_abs, epsilon * epsilon * gamma);
 
 			// Allocate and calculate A*d for first iteration
