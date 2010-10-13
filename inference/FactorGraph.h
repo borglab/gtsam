@@ -116,18 +116,18 @@ namespace gtsam {
 //		Ordering getOrdering(const std::set<Index>& scope) const;
 //		Ordering getConstrainedOrdering(const std::set<Index>& lastKeys) const;
 
-//		/**
-//		 * find the minimum spanning tree using boost graph library
-//		 */
-//		template<class Key, class Factor2> PredecessorMap<Key>
-// SL-NEEDED?				findMinimumSpanningTree() const;
-//
-//		/**
-//		 * Split the graph into two parts: one corresponds to the given spanning tree,
-//		 * and the other corresponds to the rest of the factors
-//		 */
-// SL-NEEDED?		template<class Key, class Factor2> void split(const PredecessorMap<Key>& tree,
-//				FactorGraph<Factor>& Ab1, FactorGraph<Factor>& Ab2) const;
+		/**
+		 * find the minimum spanning tree using boost graph library
+		 */
+		template<class Key, class Factor2>
+		PredecessorMap<Key> findMinimumSpanningTree() const;
+
+		/**
+		 * Split the graph into two parts: one corresponds to the given spanning tree,
+		 * and the other corresponds to the rest of the factors
+		 */
+		template<class Key, class Factor2>
+		void split(const PredecessorMap<Key>& tree, FactorGraph<Factor>& Ab1, FactorGraph<Factor>& Ab2) const;
 
 //		/**
 //		 * find the minimum spanning tree using DSF

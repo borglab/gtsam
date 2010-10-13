@@ -48,46 +48,47 @@ list<Key> predecessorMap2Keys(const PredecessorMap<Key>& p_map) {
 	return keys;
 }
 
-///* ************************************************************************* */
-//template<class G, class F, class Key>
-// SL-NEEDED? SDGraph<Key> toBoostGraph(const G& graph) {
-//	// convert the factor graph to boost graph
-//	SDGraph<Key> g;
-//	typedef typename boost::graph_traits<SDGraph<Key> >::vertex_descriptor BoostVertex;
-//	map<Key, BoostVertex> key2vertex;
-//	BoostVertex v1, v2;
-//	typename G::const_iterator itFactor;
-//	for(itFactor=graph.begin(); itFactor!=graph.end(); itFactor++) {
-//		if ((*itFactor)->keys().size() > 2)
-//			throw(invalid_argument("toBoostGraph: only support factors with at most two keys"));
-//
-//		if ((*itFactor)->keys().size() == 1)
-//			continue;
-//
-//		boost::shared_ptr<F> factor = boost::dynamic_pointer_cast<F>(*itFactor);
-//		if (!factor) continue;
-//
-//		Key key1 = factor->key1();
-//		Key key2 = factor->key2();
-//
-//		if (key2vertex.find(key1) == key2vertex.end()) {
-//				 v1 = add_vertex(key1, g);
-//				 key2vertex.insert(make_pair(key1, v1));
-//			 } else
-//				 v1 = key2vertex[key1];
-//
-//		if (key2vertex.find(key2) == key2vertex.end()) {
-//			 v2 = add_vertex(key2, g);
-//			 key2vertex.insert(make_pair(key2, v2));
-//		 } else
-//			 v2 = key2vertex[key2];
-//
-//		boost::property<boost::edge_weight_t, double> edge_property(1.0);  // assume constant edge weight here
-//		boost::add_edge(v1, v2, edge_property, g);
-//	}
-//
-//	return g;
-//}
+/* ************************************************************************* */
+template<class G, class F, class Key>
+SDGraph<Key> toBoostGraph(const G& graph) {
+	// convert the factor graph to boost graph
+	SDGraph<Key> g;
+	typedef typename boost::graph_traits<SDGraph<Key> >::vertex_descriptor BoostVertex;
+	map<Key, BoostVertex> key2vertex;
+	BoostVertex v1, v2;
+	typename G::const_iterator itFactor;
+
+	for(itFactor=graph.begin(); itFactor!=graph.end(); itFactor++) {
+		if ((*itFactor)->keys().size() > 2)
+			throw(invalid_argument("toBoostGraph: only support factors with at most two keys"));
+
+		if ((*itFactor)->keys().size() == 1)
+			continue;
+
+		boost::shared_ptr<F> factor = boost::dynamic_pointer_cast<F>(*itFactor);
+		if (!factor) continue;
+
+		Key key1 = factor->key1();
+		Key key2 = factor->key2();
+
+		if (key2vertex.find(key1) == key2vertex.end()) {
+				 v1 = add_vertex(key1, g);
+				 key2vertex.insert(make_pair(key1, v1));
+			 } else
+				 v1 = key2vertex[key1];
+
+		if (key2vertex.find(key2) == key2vertex.end()) {
+			 v2 = add_vertex(key2, g);
+			 key2vertex.insert(make_pair(key2, v2));
+		 } else
+			 v2 = key2vertex[key2];
+
+		boost::property<boost::edge_weight_t, double> edge_property(1.0);  // assume constant edge weight here
+		boost::add_edge(v1, v2, edge_property, g);
+	}
+
+	return g;
+}
 
 /* ************************************************************************* */
 template<class G, class V, class Key>
