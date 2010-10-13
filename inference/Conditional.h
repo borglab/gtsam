@@ -53,7 +53,7 @@ public:
   typedef boost::iterator_range<const_iterator> Parents;
 
   /** Empty Constructor to make serialization possible */
-  Conditional(){}
+  Conditional() : nrFrontals_(0) {}
 
   /** No parents */
   Conditional(Index key) : factor_(key), nrFrontals_(1) {}
