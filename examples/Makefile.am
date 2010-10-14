@@ -13,6 +13,7 @@ check_PROGRAMS =
 # Examples
 noinst_PROGRAMS  = SimpleRotation      # Optimizes a single nonlinear rotation variable
 noinst_PROGRAMS += PlanarSLAMExample   # Solves SLAM example from tutorial by using planarSLAM
+noinst_PROGRAMS += Pose2SLAMExample    # Solves SLAM example from tutorial by using planarSLAM
 noinst_PROGRAMS += PlanarSLAMSelfContained   # Solves SLAM example from tutorial with all typedefs in the script
 
 #----------------------------------------------------------------------------------------------------
