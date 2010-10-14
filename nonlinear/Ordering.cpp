@@ -16,6 +16,13 @@ using namespace std;
 namespace gtsam {
 
 /* ************************************************************************* */
+Ordering::Ordering(const std::list<Symbol> & L):nVars_(0) {
+	int i = 0;
+	BOOST_FOREACH( const Symbol& s, L )
+	  insert(s, i++) ;
+}
+
+/* ************************************************************************* */
 void Ordering::permuteWithInverse(const Permutation& inversePermutation) {
   BOOST_FOREACH(Ordering::value_type& key_order, *this) {
     key_order.second = inversePermutation[key_order.second];

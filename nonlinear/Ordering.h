@@ -38,10 +38,7 @@ public:
   typedef Map::const_iterator const_iterator;
 
   Ordering() : nVars_(0) {}
-  Ordering(const std::list<Symbol> & L):nVars_(0) {
-	  int i = 0;
-	  BOOST_FOREACH( const Symbol& s, L) insert(s, i++) ;
-  }
+  Ordering(const std::list<Symbol> & L) ;
 
   /** One greater than the maximum ordering index. */
   Index nVars() const { return nVars_; }
