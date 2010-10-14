@@ -63,16 +63,16 @@ inferencedir = $(pkgincludedir)/inference
 inference_HEADERS = $(headers)
 noinst_LTLIBRARIES = libinference.la
 libinference_la_SOURCES = $(sources)
-AM_CPPFLAGS = -I$(boost) -I$(top_srcdir)/..
+AM_CPPFLAGS = -I$(boost) -I$(SparseInc) -I$(top_srcdir)/..
 AM_CXXFLAGS =
 
 #----------------------------------------------------------------------------------------------------
 # rules to build local programs
 #----------------------------------------------------------------------------------------------------
 TESTS = $(check_PROGRAMS)
-AM_LDFLAGS = $(BOOST_LDFLAGS) $(boost_serialization) 
+AM_LDFLAGS = $(BOOST_LDFLAGS) $(boost_serialization) -L$(SparseLib) -lcolamd -lccolamd
 LDADD = libinference.la ../base/libbase.la
-LDADD += ../CppUnitLite/libCppUnitLite.a ../colamd/libcolamd.la 
+LDADD += ../CppUnitLite/libCppUnitLite.a
 AM_DEFAULT_SOURCE_EXT = .cpp
 
 if USE_ACCELERATE_MACOS
@@ -89,6 +89,5 @@ endif
 
 if USE_LAPACK
 AM_CXXFLAGS += -DGT_USE_LAPACK
-LDADD += ../spqr_mini/libspqr_mini.la
 endif
 

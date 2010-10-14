@@ -20,7 +20,7 @@ noinst_PROGRAMS += PlanarSLAMSelfContained   # Solves SLAM example from tutorial
 # rules to build local programs
 #----------------------------------------------------------------------------------------------------
 AM_LDFLAGS = $(BOOST_LDFLAGS) 
-AM_CPPFLAGS = -I$(boost) -I$(top_srcdir)/..
+AM_CPPFLAGS = -I$(boost) -I$(SparseInc) -I$(top_srcdir)/..
 LDADD = ../libgtsam.la
 AM_DEFAULT_SOURCE_EXT = .cpp
 

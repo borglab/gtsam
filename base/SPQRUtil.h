@@ -11,7 +11,10 @@
 #include <gtsam/base/Matrix.h>
 
 #ifdef GT_USE_LAPACK
-#include <gtsam/spqr_mini/spqr_subset.hpp>
+extern "C" {
+#include <cholmod.h>
+}
+#include <spqr.hpp>
 
 namespace gtsam {
 

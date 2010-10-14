@@ -39,16 +39,16 @@ nonlineardir = $(pkgincludedir)/nonlinear
 nonlinear_HEADERS = $(headers)
 noinst_LTLIBRARIES = libnonlinear.la
 libnonlinear_la_SOURCES = $(sources)
-AM_CPPFLAGS = -I$(boost) -I$(top_srcdir)/..
+AM_CPPFLAGS = -I$(boost) -I$(SparseInc) -I$(top_srcdir)/..
 AM_CXXFLAGS =
 
 #----------------------------------------------------------------------------------------------------
 # rules to build local programs
 #----------------------------------------------------------------------------------------------------
 TESTS = $(check_PROGRAMS)
-AM_LDFLAGS = $(BOOST_LDFLAGS) $(boost_serialization) 
+AM_LDFLAGS = $(BOOST_LDFLAGS) $(boost_serialization) -L$(SparseLib) -lcolamd -lccolamd
 LDADD = libnonlinear.la ../linear/liblinear.la ../inference/libinference.la ../base/libbase.la
-LDADD += ../CppUnitLite/libCppUnitLite.a ../colamd/libcolamd.la 
+LDADD += ../CppUnitLite/libCppUnitLite.a
 AM_DEFAULT_SOURCE_EXT = .cpp
 
 if USE_ACCELERATE_MACOS
@@ -65,6 +65,5 @@ endif
 
 if USE_LAPACK
 AM_CXXFLAGS += -DGT_USE_LAPACK
-LDADD += ../spqr_mini/libspqr_mini.la
 endif
 

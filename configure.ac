@@ -4,12 +4,10 @@
 AC_PREREQ(2.59)
 AC_INIT(gtsam, 0.0.0, dellaert@cc.gatech.edu)
 AM_INIT_AUTOMAKE(gtsam, 0.0.0)
-AC_OUTPUT(Makefile CppUnitLite/Makefile colamd/Makefile spqr_mini/Makefile base/Makefile inference/Makefile linear/Makefile geometry/Makefile nonlinear/Makefile slam/Makefile tests/Makefile wrap/Makefile examples/Makefile)
+AC_OUTPUT(Makefile CppUnitLite/Makefile base/Makefile inference/Makefile linear/Makefile geometry/Makefile nonlinear/Makefile slam/Makefile tests/Makefile wrap/Makefile examples/Makefile)
 AC_CONFIG_MACRO_DIR([m4])
 AC_CONFIG_HEADER([config.h])
 AC_CONFIG_SRCDIR([CppUnitLite/Test.cpp])
-AC_CONFIG_SRCDIR([colamd/colamd.c])
-AC_CONFIG_SRCDIR([spqr_mini/spqr_front.cpp])
 AC_CONFIG_SRCDIR([base/DSFVector.cpp])
 AC_CONFIG_SRCDIR([geometry/Cal3_S2.cpp])
 AC_CONFIG_SRCDIR([inference/SymbolicFactorGraph.cpp])
@@ -151,5 +149,25 @@ AC_ARG_WITH([boost],
                    [--with-boost has to be specified])
             ])
 AC_SUBST([boost])
+
+# ask for sparse library include directory
+AC_ARG_WITH([sparse-inc],
+            [AS_HELP_STRING([--with-sparse-inc],
+              [specify the sparse library include directory (mandatory)])],
+            [SparseInc=$withval],
+            [AC_MSG_FAILURE(
+                   [--with-sparse-inc has to be specified])
+            ])
+AC_SUBST([SparseInc])
+
+# ask for sparse library lib directory
+AC_ARG_WITH([sparse-lib],
+            [AS_HELP_STRING([--with-sparse-lib],
+              [specify the sparse library lib directory (mandatory)])],
+            [SparseLib=$withval],
+            [AC_MSG_FAILURE(
+                   [--with-sparse-lib has to be specified])
+            ])
+AC_SUBST([SparseLib])
 	
 AC_OUTPUT

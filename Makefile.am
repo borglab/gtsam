@@ -11,15 +11,14 @@ ACLOCAL_AMFLAGS = -I m4
 AUTOMAKE_OPTIONS = foreign nostdinc
 
 # All the sub-directories that need to be built
-SUBDIRS = CppUnitLite colamd spqr_mini base geometry inference linear nonlinear slam . tests wrap examples 
+SUBDIRS = CppUnitLite base geometry inference linear nonlinear slam . tests wrap examples 
 
 # And the corresponding libraries produced
-SUBLIBS = colamd/libcolamd.la \
-          base/libbase.la geometry/libgeometry.la inference/libinference.la \
+SUBLIBS = base/libbase.la geometry/libgeometry.la inference/libinference.la \
           linear/liblinear.la nonlinear/libnonlinear.la slam/libslam.la
 
 if USE_LAPACK
-SUBLIBS += spqr_mini/libspqr_mini.la
+SUBLIBS += -L$(SparseLib) -lcholmod -lspqr
 endif
 
 # TODO: UFconfig, CCOLAMD, and LDL automake magic without adding or touching any file
@@ -31,7 +30,7 @@ endif
 lib_LTLIBRARIES = libgtsam.la
 libgtsam_la_SOURCES = 
 nodist_EXTRA_libgtsam_la_SOURCES = dummy.cxx
-libgtsam_la_LIBADD = $(SUBLIBS)
+libgtsam_la_LIBADD = $(SUBLIBS) -L$(SparseLib) -lcolamd -lccolamd
 libgtsam_la_LDFLAGS = -no-undefined -version-info 0:0:0
 
 if USE_ACCELERATE_MACOS

@@ -65,23 +65,19 @@ slamdir = $(pkgincludedir)/slam
 slam_HEADERS = $(headers)
 noinst_LTLIBRARIES = libslam.la
 libslam_la_SOURCES = $(sources)
-AM_CPPFLAGS = -I$(boost) -I$(top_srcdir)/..
+AM_CPPFLAGS = -I$(boost) -I$(SparseInc) -I$(top_srcdir)/..
 
 #----------------------------------------------------------------------------------------------------
 # rules to build local programs
 #----------------------------------------------------------------------------------------------------
 TESTS = $(check_PROGRAMS)
 AM_DEFAULT_SOURCE_EXT = .cpp
-AM_LDFLAGS = $(BOOST_LDFLAGS) $(boost_serialization)
+AM_LDFLAGS = $(BOOST_LDFLAGS) $(boost_serialization) -L$(SparseLib) -lcolamd -lccolamd
 LDADD = libslam.la ../geometry/libgeometry.la  ../nonlinear/libnonlinear.la ../linear/liblinear.la ../inference/libinference.la ../base/libbase.la
-LDADD += ../CppUnitLite/libCppUnitLite.a ../colamd/libcolamd.la  
+LDADD += ../CppUnitLite/libCppUnitLite.a
 
 if USE_ACCELERATE_MACOS
 AM_LDFLAGS += -Wl,/System/Library/Frameworks/Accelerate.framework/Accelerate
-endif
-
-if USE_LAPACK
-LDADD += ../spqr_mini/libspqr_mini.la
 endif
 
 # rule to run an executable

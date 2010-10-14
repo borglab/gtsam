@@ -11,7 +11,7 @@
 #define GTSAM_SYMBOL_BINARY
 #define GTSAM_SYMBOL_SPECIAL
 
-#include <gtsam/inference/Key.h>
+#include <gtsam/nonlinear/Key.h>
 
 #include <map>
 #include <boost/unordered_map.hpp>
