@@ -53,7 +53,7 @@ boost::shared_ptr<BayesNet<Conditional> > Factor::eliminate(size_t nrFrontals) {
   BayesNet<Conditional>::shared_ptr fragment(new BayesNet<Conditional>());
   const_iterator nextFrontal = this->begin();
   for(Index n = 0; n < nrFrontals; ++n, ++nextFrontal)
-    fragment->push_back(Conditional::fromRange(nextFrontal, const_iterator(this->end()), 1));
+    fragment->push_back(Conditional::FromRange(nextFrontal, const_iterator(this->end()), 1));
   if(nrFrontals > 0)
     keys_.assign(fragment->back()->beginParents(), fragment->back()->endParents());
   return fragment;

@@ -22,9 +22,9 @@ TEST(SymbolicFactor, eliminate) {
   BayesNet<Conditional> fragment = *actual.eliminate(3);
 
   Factor expected(keys.begin()+3, keys.end());
-  Conditional::shared_ptr expected0 = Conditional::fromRange(keys.begin(), keys.end(), 1);
-  Conditional::shared_ptr expected1 = Conditional::fromRange(keys.begin()+1, keys.end(), 1);
-  Conditional::shared_ptr expected2 = Conditional::fromRange(keys.begin()+2, keys.end(), 1);
+  Conditional::shared_ptr expected0 = Conditional::FromRange(keys.begin(), keys.end(), 1);
+  Conditional::shared_ptr expected1 = Conditional::FromRange(keys.begin()+1, keys.end(), 1);
+  Conditional::shared_ptr expected2 = Conditional::FromRange(keys.begin()+2, keys.end(), 1);
 
   CHECK(assert_equal(fragment.size(), size_t(3)));
   CHECK(assert_equal(expected, actual));

@@ -61,18 +61,27 @@ public:
 
   /** Constructor from a frontal variable and a vector of parents */
   Conditional(Index key, const std::vector<Index>& parents) : nrFrontals_(1) {
-			keys_.resize(1 + parents.size());
-			*(beginFrontals()) = key;
-			std::copy(parents.begin(), parents.end(), beginParents());
-		}
+    keys_.resize(1 + parents.size());
+    *(beginFrontals()) = key;
+    std::copy(parents.begin(), parents.end(), beginParents());
+  }
+
+  /** Constructor from a frontal variable and an iterator range of parents */
+  template<typename Iterator>
+  static Conditional::shared_ptr FromRange(Index key, Iterator firstParent, Iterator lastParent) : nrFrontals_(1) {
+    Conditional::shared_ptr conditional(new Conditional);
+    conditional->keys_.push_back(key);
+    std::copy(firstKey, lastKey, back_inserter(conditional->keys_));
+    return ret;
+  }
 
   /** Named constructor from any number of frontal variables and parents */
   template<typename Iterator>
-  static shared_ptr fromRange(Iterator firstKey, Iterator lastKey, size_t nrFrontals) {
-  	shared_ptr conditional(new Conditional);
-  	conditional->nrFrontals_ = nrFrontals;
-		std::copy(firstKey, lastKey, back_inserter(conditional->keys_));
-		return conditional;
+  static Conditional::shared_ptr FromRange(Iterator firstKey, Iterator lastKey, size_t nrFrontals) {
+    Conditional::shared_ptr conditional(new Conditional);
+    conditional->nrFrontals_ = nrFrontals;
+    std::copy(firstKey, lastKey, back_inserter(conditional->keys_));
+    return conditional;
   }
 
   /** check equality */
