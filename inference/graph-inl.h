@@ -206,4 +206,60 @@ boost::shared_ptr<Values> composePoses(const G& graph, const PredecessorMap<type
 
 /* ************************************************************************* */
 
+/* ************************************************************************* */
+template<class G, class Key, class Factor2>
+PredecessorMap<Key> findMinimumSpanningTree(const G& fg) {
+
+	SDGraph<Key> g = gtsam::toBoostGraph<G, Factor2, Key>(fg);
+
+	// find minimum spanning tree
+	vector<typename SDGraph<Key>::Vertex> p_map(boost::num_vertices(g));
+	prim_minimum_spanning_tree(g, &p_map[0]);
+
+	// convert edge to string pairs
+	PredecessorMap<Key> tree;
+	typename SDGraph<Key>::vertex_iterator itVertex = boost::vertices(g).first;
+	typename vector<typename SDGraph<Key>::Vertex>::iterator vi;
+	for (vi = p_map.begin(); vi != p_map.end(); itVertex++, vi++) {
+		Key key = boost::get(boost::vertex_name, g, *itVertex);
+		Key parent = boost::get(boost::vertex_name, g, *vi);
+		tree.insert(key, parent);
+	}
+
+	return tree;
+}
+
+/* ************************************************************************* */
+template<class G, class Key, class Factor2>
+void split(const G& g, const PredecessorMap<Key>& tree, G& Ab1, G& Ab2) {
+
+	typedef typename G::sharedFactor F ;
+
+	BOOST_FOREACH(const F& factor, g.factors_)
+	{
+		if (factor->keys().size() > 2)
+			throw(invalid_argument("split: only support factors with at most two keys"));
+
+		if (factor->keys().size() == 1) {
+			Ab1.push_back(factor);
+			continue;
+		}
+
+		boost::shared_ptr<Factor2> factor2 = boost::dynamic_pointer_cast<
+				Factor2>(factor);
+		if (!factor2) continue;
+
+		Key key1 = factor2->key1();
+		Key key2 = factor2->key2();
+		// if the tree contains the key
+		if ((tree.find(key1) != tree.end() &&
+			 tree.find(key1)->second.compare(key2) == 0) ||
+			  (tree.find(key2) != tree.end() &&
+			   tree.find(key2)->second.compare(key1)== 0) )
+			Ab1.push_back(factor2);
+		else
+			Ab2.push_back(factor2);
+	}
+}
+
 }

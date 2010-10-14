@@ -80,4 +80,19 @@ namespace gtsam {
 	boost::shared_ptr<Values>
 		composePoses(const G& graph, const PredecessorMap<typename Values::Key>& tree, const Pose& rootPose);
 
+
+	/**
+	 * find the minimum spanning tree using boost graph library
+	 */
+	template<class G, class Key, class Factor2>
+	PredecessorMap<Key> findMinimumSpanningTree(const G& g) ;
+
+	/**
+	 * Split the graph into two parts: one corresponds to the given spanning tree,
+	 * and the other corresponds to the rest of the factors
+	 */
+	template<class G, class Key, class Factor2>
+	void split(const G& g, const PredecessorMap<Key>& tree, G& Ab1, G& Ab2) ;
+
+
 } // namespace gtsam
