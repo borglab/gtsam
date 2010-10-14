@@ -235,7 +235,7 @@ void split(const G& g, const PredecessorMap<Key>& tree, G& Ab1, G& Ab2) {
 
 	typedef typename G::sharedFactor F ;
 
-	BOOST_FOREACH(const F& factor, g.factors_)
+	BOOST_FOREACH(const F& factor, g)
 	{
 		if (factor->keys().size() > 2)
 			throw(invalid_argument("split: only support factors with at most two keys"));
