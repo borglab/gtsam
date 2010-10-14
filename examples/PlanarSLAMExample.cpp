@@ -74,7 +74,7 @@ int main(int argc, char** argv) {
 
 	initialEstimate.print("Initial Estimate");
 
-	// optimize using Levenburg-Marquadt optimization with an ordering from colamd
+	// optimize using Levenberg-Marquardt optimization with an ordering from colamd
 	Optimizer::shared_values result = Optimizer::optimizeLM(graph, initialEstimate);
 
 	result->print("Final Result");
