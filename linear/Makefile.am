@@ -56,7 +56,7 @@ AM_CXXFLAGS =
 # rules to build local programs
 #----------------------------------------------------------------------------------------------------
 TESTS = $(check_PROGRAMS)
-AM_LDFLAGS = $(BOOST_LDFLAGS) $(boost_serialization) -L$(SparseLib) -lcolamd -lccolamd
+AM_LDFLAGS = $(BOOST_LDFLAGS) $(boost_serialization) -L$(SparseLib) -lccolamd
 LDADD = liblinear.la ../inference/libinference.la ../base/libbase.la
 LDADD += ../CppUnitLite/libCppUnitLite.a
 AM_DEFAULT_SOURCE_EXT = .cpp
