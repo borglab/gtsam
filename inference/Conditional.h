@@ -68,11 +68,12 @@ public:
 
   /** Constructor from a frontal variable and an iterator range of parents */
   template<typename Iterator>
-  static Conditional::shared_ptr FromRange(Index key, Iterator firstParent, Iterator lastParent) : nrFrontals_(1) {
+  static Conditional::shared_ptr FromRange(Index key, Iterator firstParent, Iterator lastParent) {
     Conditional::shared_ptr conditional(new Conditional);
+    conditional->nrFrontals_ = 1;
     conditional->keys_.push_back(key);
-    std::copy(firstKey, lastKey, back_inserter(conditional->keys_));
-    return ret;
+    std::copy(firstParent, lastParent, back_inserter(conditional->keys_));
+    return conditional;
   }
 
   /** Named constructor from any number of frontal variables and parents */

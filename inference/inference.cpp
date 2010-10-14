@@ -72,7 +72,7 @@ Inference::EliminateOneSymbolic(FactorGraph<Factor>& factorGraph, VariableIndex<
 
     // Join the factors and eliminate the variable from the joint factor
     tic("EliminateOne: Combine");
-    Conditional::shared_ptr conditional = Conditional::fromRange(involvedKeys.begin(), involvedKeys.end(), 1);
+    Conditional::shared_ptr conditional = Conditional::FromRange(involvedKeys.begin(), involvedKeys.end(), 1);
     Factor::shared_ptr eliminated(new Factor(conditional->beginParents(), conditional->endParents()));
     toc("EliminateOne: Combine");
 
