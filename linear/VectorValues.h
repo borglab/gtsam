@@ -145,9 +145,16 @@ public:
     VectorValues result;
     result.varStarts_ = varStarts_;
     result.values_ = boost::numeric::ublas::project(values_, boost::numeric::ublas::range(0, varStarts_.back())) +
-        boost::numeric::ublas::project(c.values_, boost::numeric::ublas::range(0, c.varStarts_.back()));
+    				 boost::numeric::ublas::project(c.values_, boost::numeric::ublas::range(0, c.varStarts_.back()));
     return result;
   }
+
+  void operator+=(const VectorValues& c) {
+    assert(varStarts_ == c.varStarts_);
+    this->values_ = boost::numeric::ublas::project(this->values_, boost::numeric::ublas::range(0, varStarts_.back())) +
+    				boost::numeric::ublas::project(c.values_, boost::numeric::ublas::range(0, c.varStarts_.back()));
+  }
+
 
   /**
    * Iterator (handles both iterator and const_iterator depending on whether
@@ -177,11 +184,18 @@ public:
     value_type operator*() { return config_[curVariable_]; }
   };
 
+  static VectorValues zero(const VectorValues& x) {
+  	VectorValues cloned(x);
+  	cloned.makeZero();
+  	return cloned;
+  }
+
 protected:
   void checkVariable(Index variable) const { assert(variable < varStarts_.size()-1); }
 
 
 public:
+  friend size_t dim(const VectorValues& V) { return V.varStarts_.back(); }
   friend double dot(const VectorValues& V1, const VectorValues& V2) { return gtsam::dot(V1.values_, V2.values_) ; }
   friend void scal(double alpha, VectorValues& x) {	gtsam::scal(alpha, x.values_) ; }
   friend void axpy(double alpha, const VectorValues& x, VectorValues& y) { gtsam::axpy(alpha, x.values_, y.values_) ; }

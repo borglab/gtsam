@@ -23,6 +23,7 @@
 
 #include <gtsam/base/Testable.h>
 #include <gtsam/base/Vector.h>
+#include <gtsam/linear/VectorValues.h>
 
 namespace gtsam {
 	
@@ -31,14 +32,23 @@ namespace gtsam {
 
   public:
 
+    Errors() ;
+
+	/** break V into pieces according to its start indices */
+	Errors(const VectorValues &V) ;
+
   	/** print */
     void print(const std::string& s = "Errors") const;
 
     /** equals, for unit testing */
     bool equals(const Errors& expected, double tol=1e-9) const;
 
+    /** Addition */
+    Errors operator+(const Errors& b) const;
+
     /** subtraction */
     Errors operator-(const Errors& b) const;
+
 
   }; // Errors
 

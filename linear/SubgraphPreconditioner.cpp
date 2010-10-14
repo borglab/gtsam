@@ -44,13 +44,22 @@ namespace gtsam {
 	/* ************************************************************************* */
 	double SubgraphPreconditioner::error(const VectorValues& y) const {
 
-		Errors e;
+//		Errors e;
+//
+//		// Use BayesNet order to add y contributions in order
+//		BOOST_FOREACH(GaussianConditional::shared_ptr cg, *Rc1_) {
+//			const Symbol& j = cg->key();
+//			e.push_back(y[j]); // append y
+//		}
+//
+//		// Add A2 contribution
+//		VectorValues x = this->x(y);
+//		Errors e2 = Ab2_->errors(x);
+//		e.splice(e.end(), e2);
+//
+//		return 0.5 * dot(e, e);
 
-		// Use BayesNet order to add y contributions in order
-		BOOST_FOREACH(GaussianConditional::shared_ptr cg, *Rc1_) {
-			const Symbol& j = cg->key();
-			e.push_back(y[j]); // append y
-		}
+		Errors e(y);
 
 		// Add A2 contribution
 		VectorValues x = this->x(y);
@@ -75,13 +84,15 @@ namespace gtsam {
 	// Apply operator A, A*y = [I;A2*inv(R1)]*y = [y; A2*inv(R1)*y]
 	Errors SubgraphPreconditioner::operator*(const VectorValues& y) const {
 
-		Errors e;
+//		Errors e;
+//
+//		// Use BayesNet order to add y contributions in order
+//		BOOST_FOREACH(GaussianConditional::shared_ptr cg, *Rc1_) {
+//			const Symbol& j = cg->key();
+//			e.push_back(y[j]); // append y
+//		}
 
-		// Use BayesNet order to add y contributions in order
-		BOOST_FOREACH(GaussianConditional::shared_ptr cg, *Rc1_) {
-			const Symbol& j = cg->key();
-			e.push_back(y[j]); // append y
-		}
+		Errors e(y);
 
 		// Add A2 contribution
 		VectorValues x = y; // TODO avoid ?
@@ -96,13 +107,23 @@ namespace gtsam {
 	// In-place version that overwrites e
 	void SubgraphPreconditioner::multiplyInPlace(const VectorValues& y, Errors& e) const {
 
-		Errors::iterator ei = e.begin();
+//		Errors::iterator ei = e.begin();
+//
+//		// Use BayesNet order to add y contributions in order
+//		BOOST_FOREACH(GaussianConditional::shared_ptr cg, *Rc1_) {
+//			const Symbol& j = cg->key();
+//			*ei = y[j]; // append y
+//			ei++;
+//		}
+//
+//		// Add A2 contribution
+//		VectorValues x = y; // TODO avoid ?
+//		gtsam::backSubstituteInPlace(*Rc1_, x); // x=inv(R1)*y
+//		Ab2_->multiplyInPlace(x,ei); // use iterator version
 
-		// Use BayesNet order to add y contributions in order
-		BOOST_FOREACH(GaussianConditional::shared_ptr cg, *Rc1_) {
-			const Symbol& j = cg->key();
-			*ei = y[j]; // append y
-			ei++;
+		Errors::iterator ei = e.begin();
+		for ( int i = 0 ; i < y.size() ; ++i, ++ei ) {
+			*ei = y[i];
 		}
 
 		// Add A2 contribution

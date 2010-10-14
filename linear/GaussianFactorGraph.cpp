@@ -127,13 +127,13 @@ void GaussianFactorGraph::transposeMultiplyAdd(double alpha, const Errors& e,
 		Ai->transposeMultiplyAdd(alpha,*(ei++),x);
 }
 
-///* ************************************************************************* */
-//VectorValues GaussianFactorGraph::gradient(const VectorValues& x) const {
-//	// It is crucial for performance to make a zero-valued clone of x
-//	VectorValues g = VectorValues::zero(x);
-//	transposeMultiplyAdd(1.0, errors(x), g);
-//	return g;
-//}
+/* ************************************************************************* */
+VectorValues GaussianFactorGraph::gradient(const VectorValues& x) const {
+	// It is crucial for performance to make a zero-valued clone of x
+	VectorValues g = VectorValues::zero(x);
+	transposeMultiplyAdd(1.0, errors(x), g);
+	return g;
+}
 
 ///* ************************************************************************* */
 //set<Index> GaussianFactorGraph::find_separator(Index key) const

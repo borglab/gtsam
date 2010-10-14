@@ -26,6 +26,18 @@ using namespace std;
 namespace gtsam {
 
 /* ************************************************************************* */
+Errors::Errors(){}
+
+/* ************************************************************************* */
+Errors::Errors(const VectorValues &V) {
+	this->resize(V.size()) ;
+	int i = 0 ;
+	BOOST_FOREACH( Vector &e, *this) {
+		e = V[i++];
+	}
+}
+
+/* ************************************************************************* */
 void Errors::print(const std::string& s) const {
   odprintf("%s:\n", s.c_str());
   BOOST_FOREACH(const Vector& v, *this)
@@ -46,6 +58,21 @@ bool Errors::equals(const Errors& expected, double tol) const {
 	return equal(begin(),end(),expected.begin(),equalsVector(tol));
 	// TODO: use boost::bind(&equal_with_abs_tol,_1, _2,tol)
 }
+
+/* ************************************************************************* */
+Errors Errors::operator+(const Errors& b) const {
+#ifndef NDEBUG
+	size_t m = size();
+	if (b.size()!=m)
+    throw(std::invalid_argument("Errors::operator+: incompatible sizes"));
+#endif
+	Errors result;
+	Errors::const_iterator it = b.begin();
+    BOOST_FOREACH(const Vector& ai, *this)
+		result.push_back(ai + *(it++));
+	return result;
+}
+
 
 /* ************************************************************************* */
 Errors Errors::operator-(const Errors& b) const {

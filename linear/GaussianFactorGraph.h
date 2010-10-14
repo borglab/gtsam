@@ -116,12 +116,12 @@ namespace gtsam {
 		/** x += alpha*A'*e */
 		void transposeMultiplyAdd(double alpha, const Errors& e, VectorValues& x) const;
 
-//  	/**
-//  	 * Calculate Gradient of A^(A*x-b) for a given config
-//  	 * @param x: VectorValues specifying where to calculate gradient
-//  	 * @return gradient, as a VectorValues as well
-//  	 */
-//  	VectorValues gradient(const VectorValues& x) const;
+		/**
+		 * Calculate Gradient of A^(A*x-b) for a given config
+		 * @param x: VectorValues specifying where to calculate gradient
+		 * @return gradient, as a VectorValues as well
+		 */
+		VectorValues gradient(const VectorValues& x) const;
 
 		/** Unnormalized probability. O(n) */
 		double probPrime(const VectorValues& c) const {
