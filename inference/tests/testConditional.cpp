@@ -66,11 +66,11 @@ TEST( Conditional, fourParents )
 }
 
 /* ************************************************************************* */
-TEST( Conditional, fromRange )
+TEST( Conditional, FromRange )
 {
 	list<Index> keys;
 	keys += 1,2,3,4,5;
-  Conditional::shared_ptr c0 = Conditional::fromRange(keys.begin(),keys.end(),2);
+  Conditional::shared_ptr c0 = Conditional::FromRange(keys.begin(),keys.end(),2);
   LONGS_EQUAL(2,c0->nrFrontals())
   LONGS_EQUAL(3,c0->nrParents())
 }
