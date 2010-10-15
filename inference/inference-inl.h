@@ -17,21 +17,22 @@
 
 #pragma once
 
-#include <gtsam/base/timing.h>
-#include <gtsam/inference/inference.h>
-#include <gtsam/inference/FactorGraph-inl.h>
-#include <gtsam/inference/BayesNet-inl.h>
-
-#include <ccolamd.h>
+#include <limits>
+#include <map>
+#include <stdexcept>
 
 #include <boost/foreach.hpp>
 #include <boost/format.hpp>
 #include <boost/lambda/bind.hpp>
 #include <boost/lambda/lambda.hpp>
 #include <boost/pool/pool_alloc.hpp>
-#include <limits>
-#include <map>
-#include <stdexcept>
+
+#include <SuiteSparse/ccolamd.h>
+
+#include <gtsam/base/timing.h>
+#include <gtsam/inference/inference.h>
+#include <gtsam/inference/FactorGraph-inl.h>
+#include <gtsam/inference/BayesNet-inl.h>
 
 using namespace std;
 
