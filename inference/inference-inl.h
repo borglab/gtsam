@@ -27,7 +27,7 @@
 #include <boost/lambda/lambda.hpp>
 #include <boost/pool/pool_alloc.hpp>
 
-#include <SuiteSparse/ccolamd.h>
+#include <ccolamd.h>
 
 #include <gtsam/base/timing.h>
 #include <gtsam/inference/inference.h>
