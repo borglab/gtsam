@@ -27,10 +27,11 @@
 #include <gtsam/nonlinear/NonlinearFactorGraph.h>
 #include <gtsam/nonlinear/TupleValues.h>
 #include <gtsam/nonlinear/NonlinearEquality.h>
+#include <gtsam/slam/PriorFactor.h>
 
 namespace gtsam { namespace visualSLAM {
 
-  /**
+	/**
    * Typedefs that make up the visualSLAM namespace.
    */
   typedef TypedSymbol<Pose3,'x'> PoseKey;
@@ -42,6 +43,8 @@ namespace gtsam { namespace visualSLAM {
 
   typedef NonlinearEquality<Values, PoseKey> PoseConstraint;
   typedef NonlinearEquality<Values, PointKey> PointConstraint;
+	typedef PriorFactor<Values, PoseKey> PosePrior;
+
 
 
   /**
@@ -181,6 +184,18 @@ namespace gtsam { namespace visualSLAM {
 			boost::shared_ptr<PointConstraint> factor(new PointConstraint(j, p));
 			push_back(factor);
 		}
+
+		/**
+		 *  Add a prior on a pose
+		 *  @param j index of camera
+		 *  @param p to which pose to constrain it to
+		 *  @param model uncertainty model of this prior
+		 */
+		void addPosePrior(int j, const Pose3& p = Pose3(), const SharedGaussian& model = noiseModel::Unit::Create(1)) {
+			boost::shared_ptr<PosePrior> factor(new PosePrior(j, p, model));
+			push_back(factor);
+		}
+
 
 	}; // Graph
 

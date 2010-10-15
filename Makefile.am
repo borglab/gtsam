@@ -11,7 +11,7 @@ ACLOCAL_AMFLAGS = -I m4
 AUTOMAKE_OPTIONS = foreign nostdinc
 
 # All the sub-directories that need to be built
-SUBDIRS = CppUnitLite base geometry inference linear nonlinear slam . tests wrap examples 
+SUBDIRS = CppUnitLite base geometry inference linear nonlinear slam . tests wrap examples
 
 # And the corresponding libraries produced
 SUBLIBS = base/libbase.la geometry/libgeometry.la inference/libinference.la \
