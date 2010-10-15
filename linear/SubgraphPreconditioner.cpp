@@ -64,9 +64,8 @@ namespace gtsam {
 		// Add A2 contribution
 		VectorValues x = this->x(y);
 		Errors e2 = Ab2_->errors(x);
-		e.splice(e.end(), e2);
 
-		return 0.5 * dot(e, e);
+		return 0.5 * (dot(e, e) + dot(e2,e2));
 	}
 
 	/* ************************************************************************* */
@@ -136,19 +135,26 @@ namespace gtsam {
 	// Apply operator A', A'*e = [I inv(R1')*A2']*e = e1 + inv(R1')*A2'*e2
 	VectorValues SubgraphPreconditioner::operator^(const Errors& e) const {
 
-		VectorValues y;
+//		VectorValues y;
+//
+//		// Use BayesNet order to remove y contributions in order
+//		Errors::const_iterator it = e.begin();
+//		BOOST_FOREACH(GaussianConditional::shared_ptr cg, *Rc1_) {
+//			const Symbol& j = cg->key();
+//			const Vector& ej = *(it++);
+//			y.insert(j,ej);
+//		}
+//
+//		// get A2 part
+//		transposeMultiplyAdd2(1.0,it,e.end(),y);
+//
+//		return y;
 
-		// Use BayesNet order to remove y contributions in order
 		Errors::const_iterator it = e.begin();
-		BOOST_FOREACH(GaussianConditional::shared_ptr cg, *Rc1_) {
-			const Symbol& j = cg->key();
-			const Vector& ej = *(it++);
-			y.insert(j,ej);
-		}
-
-		// get A2 part
+		VectorValues y = zero();
+		for ( int i = 0 ; i < y.size() ; ++i, ++it )
+			y[i] = *it ;
 		transposeMultiplyAdd2(1.0,it,e.end(),y);
-
 		return y;
 	}
 
@@ -157,15 +163,22 @@ namespace gtsam {
 	void SubgraphPreconditioner::transposeMultiplyAdd
 		(double alpha, const Errors& e, VectorValues& y) const {
 
-		// Use BayesNet order to remove y contributions in order
-		Errors::const_iterator it = e.begin();
-		BOOST_FOREACH(GaussianConditional::shared_ptr cg, *Rc1_) {
-			const Symbol& j = cg->key();
-			const Vector& ej = *(it++);
-			axpy(alpha,ej,y[j]);
-		}
+//		// Use BayesNet order to remove y contributions in order
+//		Errors::const_iterator it = e.begin();
+//		BOOST_FOREACH(GaussianConditional::shared_ptr cg, *Rc1_) {
+//			const Symbol& j = cg->key();
+//			const Vector& ej = *(it++);
+//			axpy(alpha,ej,y[j]);
+//		}
+//
+//		// get A2 part
+//		transposeMultiplyAdd2(alpha,it,e.end(),y);
 
-		// get A2 part
+		Errors::const_iterator it = e.begin();
+		for ( int i = 0 ; i < y.size() ; ++i, ++it ) {
+			const Vector& ei = *it;
+			axpy(alpha,ei,y[i]) ;
+		}
 		transposeMultiplyAdd2(alpha,it,e.end(),y);
 	}
 

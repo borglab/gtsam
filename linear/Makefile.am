@@ -31,6 +31,8 @@ check_PROGRAMS += tests/testGaussianFactor tests/testGaussianConditional
 check_PROGRAMS += tests/testGaussianJunctionTree
 
 # Iterative Methods
+headers += iterative-inl.h
+sources += iterative.cpp SubgraphPreconditioner.cpp
 #headers += iterative-inl.h SubgraphSolver.h SubgraphSolver-inl.h
 #sources += iterative.cpp BayesNetPreconditioner.cpp SubgraphPreconditioner.cpp
 #check_PROGRAMS += tests/testBayesNetPreconditioner
