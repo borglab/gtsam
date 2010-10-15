@@ -62,7 +62,7 @@ TEST( Graph, GET_ORDERING)
 {
   Ordering expected; expected += "x1","l1","x2";
   Graph nlfg = createNonlinearFactorGraph();
-  Ordering actual = *nlfg.orderingCOLAMD(createNoisyValues()).first;
+  Ordering actual = *nlfg.orderingCOLAMD(createNoisyValues());
   CHECK(assert_equal(expected,actual));
 }
 

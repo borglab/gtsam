@@ -175,9 +175,7 @@ TEST( Graph, CHECK_ORDERING)
   initialEstimate->insert(3, landmark3);
   initialEstimate->insert(4, landmark4);
 
-  Ordering::shared_ptr ordering;
-  GaussianVariableIndex<>::shared_ptr varindex;
-  boost::tie(ordering,varindex) = graph->orderingCOLAMD(*initialEstimate);
+  Ordering::shared_ptr ordering = graph->orderingCOLAMD(*initialEstimate);
 
   // Create an optimizer and check its error
   // We expect the initial to be zero because config is the ground truth

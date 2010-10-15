@@ -84,8 +84,7 @@ namespace gtsam {
      * ordering and a VariableIndex, which can later be re-used to save
      * computation.
      */
-		std::pair<Ordering::shared_ptr, GaussianVariableIndex<>::shared_ptr>
-		orderingCOLAMD(const Values& config) const;
+		Ordering::shared_ptr orderingCOLAMD(const Values& config) const;
 
 		/**
 		 * linearize a nonlinear factor graph

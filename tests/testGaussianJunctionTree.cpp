@@ -169,7 +169,7 @@ TEST(GaussianJunctionTree, slamlike) {
   ++ i;
 
   // Compare solutions
-  Ordering ordering = *fullgraph.orderingCOLAMD(init).first;
+  Ordering ordering = *fullgraph.orderingCOLAMD(init);
   GaussianFactorGraph linearized = *fullgraph.linearize(init, ordering);
 
   GaussianJunctionTree gjt(linearized);

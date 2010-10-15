@@ -37,7 +37,7 @@ using namespace boost::assign;
 #include <gtsam/inference/SymbolicFactorGraph.h>
 //#include <gtsam/inference/BayesTree-inl.h>
 #include <gtsam/inference/inference-inl.h>
-
+#include <gtsam/inference/EliminationTree-inl.h>
 
 using namespace gtsam;
 using namespace example;
@@ -313,6 +313,9 @@ TEST( GaussianFactorGraph, eliminateAll )
 	GaussianFactorGraph fg1 = createGaussianFactorGraph(ordering);
 	GaussianBayesNet actual = *Inference::Eliminate(fg1);
 	CHECK(assert_equal(expected,actual,tol));
+
+  GaussianBayesNet actualET = *EliminationTree<GaussianFactorGraph>::Create(fg1)->eliminate();
+  CHECK(assert_equal(expected,actualET,tol));
 }
 
 ///* ************************************************************************* */
@@ -488,11 +491,13 @@ TEST( GaussianFactorGraph, optimize )
 
 	// optimize the graph
 	VectorValues actual = optimize(*Inference::Eliminate(fg));
+	VectorValues actualET = optimize(*EliminationTree<GaussianFactorGraph>::Create(fg)->eliminate());
 
 	// verify
 	VectorValues expected = createCorrectDelta(ord);
 
   CHECK(assert_equal(expected,actual));
+  CHECK(assert_equal(expected,actualET));
 }
 
 ///* ************************************************************************* */
@@ -781,10 +786,12 @@ TEST( GaussianFactorGraph, constrained_simple )
 
 	// eliminate and solve
 	VectorValues actual = optimize(*Inference::Eliminate(fg));
+	VectorValues actualET = optimize(*EliminationTree<GaussianFactorGraph>::Create(fg)->eliminate());
 
 	// verify
 	VectorValues expected = createSimpleConstraintValues();
 	CHECK(assert_equal(expected, actual));
+	CHECK(assert_equal(expected, actualET));
 }
 
 /* ************************************************************************* */

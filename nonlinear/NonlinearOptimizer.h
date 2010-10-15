@@ -230,9 +230,7 @@ namespace gtsam {
 				verbosityLevel verbosity = SILENT) {
 
 		  // Use a variable ordering from COLAMD
-		  Ordering::shared_ptr ordering;
-		  GaussianVariableIndex<>::shared_ptr variableIndex;
-		  boost::tie(ordering, variableIndex) = graph->orderingCOLAMD(*config);
+		  Ordering::shared_ptr ordering = graph->orderingCOLAMD(*config);
 
 			double relativeThreshold = 1e-5, absoluteThreshold = 1e-5;
 
@@ -264,9 +262,7 @@ namespace gtsam {
 		 */
 		static shared_values optimizeGN(shared_graph graph, shared_values config,
 				verbosityLevel verbosity = SILENT) {
-      Ordering::shared_ptr ordering;
-      GaussianVariableIndex<>::shared_ptr variableIndex;
-      boost::tie(ordering, variableIndex) = graph->orderingCOLAMD(*config);
+      Ordering::shared_ptr ordering = graph->orderingCOLAMD(*config);
 			double relativeThreshold = 1e-5, absoluteThreshold = 1e-5;
 
 			// initial optimization state is the same in both cases tested

@@ -85,6 +85,10 @@ namespace gtsam {
 		/** push back many factors */
 		void push_back(const FactorGraph<Factor>& factors);
 
+		/** push back many factors with an iterator */
+		template<typename Iterator>
+		void push_back(Iterator firstFactor, Iterator lastFactor);
+
 		/** ------------------ Querying Factor Graphs ---------------------------- */
 
 		/** print out graph */
@@ -249,6 +253,14 @@ namespace gtsam {
 #endif
   }
 
+  /* ************************************************************************* */
+  template<class Factor>
+  template<typename Iterator>
+  void FactorGraph<Factor>::push_back(Iterator firstFactor, Iterator lastFactor) {
+    Iterator factor = firstFactor;
+    while(factor != lastFactor)
+      this->push_back(*(factor++));
+  }
 
 } // namespace gtsam
 

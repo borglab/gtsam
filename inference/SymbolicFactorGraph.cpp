@@ -24,6 +24,7 @@
 #include <gtsam/inference/BayesNet-inl.h>
 #include <gtsam/inference/Factor-inl.h>
 #include <gtsam/inference/inference-inl.h>
+#include <gtsam/inference/EliminationTree-inl.h>
 
 using namespace std;
 
@@ -32,6 +33,7 @@ namespace gtsam {
 	// Explicitly instantiate so we don't have to include everywhere
 	template class FactorGraph<Factor>;
 	template class BayesNet<Conditional>;
+	template class EliminationTree<SymbolicFactorGraph>;
 
   /* ************************************************************************* */
 	SymbolicFactorGraph::SymbolicFactorGraph(const BayesNet<Conditional>& bayesNet) :

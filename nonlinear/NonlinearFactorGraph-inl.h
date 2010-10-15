@@ -60,8 +60,7 @@ void NonlinearFactorGraph<Values>::print(const std::string& str) const {
 
   /* ************************************************************************* */
   template<class Values>
-	pair<Ordering::shared_ptr, GaussianVariableIndex<>::shared_ptr>
-  NonlinearFactorGraph<Values>::orderingCOLAMD(const Values& config) const {
+	Ordering::shared_ptr NonlinearFactorGraph<Values>::orderingCOLAMD(const Values& config) const {
 
     // Create symbolic graph and initial (iterator) ordering
 	  FactorGraph<Factor>::shared_ptr symbolic;
@@ -76,14 +75,12 @@ void NonlinearFactorGraph<Values>::print(const std::string& str) const {
 
 	  // Permute the Ordering and VariableIndex with the COLAMD ordering
 	  ordering->permuteWithInverse(*colamdPerm->inverse());
-	  variableIndex.permute(*colamdPerm);
-
-	  // Build a variable dimensions array to upgrade to a GaussianVariableIndex
-	  GaussianVariableIndex<>::shared_ptr gaussianVarIndex(new GaussianVariableIndex<>(variableIndex, config.dims(*ordering)));
+//	  variableIndex.permute(*colamdPerm);
+	  // SL-FIX: fix permutation
 
 	  // Return the Ordering and VariableIndex to be re-used during linearization
 	  // and elimination
-	  return make_pair(ordering, gaussianVarIndex);
+	  return ordering;
 	}
 
   /* ************************************************************************* */

@@ -80,7 +80,6 @@ public:
   const mapped_type& operator[](Index variable) const { checkVar(variable); return index_[variable]; }
   mapped_type& operator[](Index variable) { checkVar(variable); return index_[variable]; }
   void permute(const Permutation& permutation);
-//  template<class Derived> void augment(const Derived& varIndex);
   template<class FactorGraph> void augment(const FactorGraph& factorGraph);
   void rebaseFactors(ptrdiff_t baseIndexChange);
 
@@ -153,21 +152,6 @@ VariableIndex<Storage>::VariableIndex(const FactorGraph& factorGraph) :
       }
   }
 }
-
-///* ************************************************************************* */
-//template<class Storage>
-//template<class Derived>
-//void VariableIndex<Storage>::augment(const Derived& varIndex) {
-//  nFactors_ = std::max(nFactors_, varIndex.nFactors());
-//  nEntries_ = nEntries_ + varIndex.nEntries();
-//  Index originalSize = index_.size();
-//  index_.container().resize(std::max(index_.size(), varIndex.size()));
-//  index_.permutation().resize(index_.container().size());
-//  for(Index var=originalSize; var<index_.permutation().size(); ++var)
-//    index_.permutation()[var] = var;
-//  for(Index var=0; var<varIndex.size(); ++var)
-//    index_[var].insert(index_[var].begin(), varIndex[var].begin(), varIndex[var].end());
-//}
 
 /* ************************************************************************* */
 template<class Storage>

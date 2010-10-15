@@ -71,7 +71,7 @@ int main(int argc, char** argv) {
 
 	/* 4.2.1 Alternatively, you can go through the process step by step
 	 * Choose an ordering */
-	Ordering::shared_ptr ordering = graph->orderingCOLAMD(*initialEstimate).first;
+	Ordering::shared_ptr ordering = graph->orderingCOLAMD(*initialEstimate);
 
   /* 4.2.2 set up solver and optimize */
 	Optimizer::shared_solver solver(new Optimizer::solver(ordering));
