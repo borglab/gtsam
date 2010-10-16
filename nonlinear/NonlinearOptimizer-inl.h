@@ -100,24 +100,24 @@ namespace gtsam {
 	/* ************************************************************************* */
 	template<class G, class C, class L, class S, class W>
 	NonlinearOptimizer<G, C, L, S, W> NonlinearOptimizer<G, C, L, S, W>::iterate(
-			verbosityLevel verbosity) const {
+			Parameters::verbosityLevel verbosity) const {
 		// linearize and optimize
 		VectorValues delta = linearizeAndOptimizeForDelta();
 
 		// maybe show output
-		if (verbosity >= DELTA)
+		if (verbosity >= Parameters::DELTA)
 			delta.print("delta");
 
 		// take old config and update it
 		shared_values newValues(new C(solver_->expmap(*config_, delta)));
 
 		// maybe show output
-		if (verbosity >= CONFIG)
+		if (verbosity >= Parameters::CONFIG)
 			newValues->print("newValues");
 
 		NonlinearOptimizer newOptimizer = NonlinearOptimizer(graph_, newValues, solver_, lambda_);
 
-		if (verbosity >= ERROR)
+		if (verbosity >= Parameters::ERROR)
 			cout << "error: " << newOptimizer.error_ << endl;
 
 		return newOptimizer;
@@ -127,12 +127,12 @@ namespace gtsam {
 	template<class G, class C, class L, class S, class W>
 	NonlinearOptimizer<G, C, L, S, W> NonlinearOptimizer<G, C, L, S, W>::gaussNewton(
 			double relativeThreshold, double absoluteThreshold,
-			verbosityLevel verbosity, int maxIterations) const {
+			Parameters::verbosityLevel verbosity, int maxIterations) const {
 		static W writer(error_);
 
 		// check if we're already close enough
 		if (error_ < absoluteThreshold) {
-			if (verbosity >= ERROR) cout << "Exiting, as error = " << error_
+			if (verbosity >= Parameters::ERROR) cout << "Exiting, as error = " << error_
 					<< " < absoluteThreshold (" << absoluteThreshold << ")" << endl;
 			return *this;
 		}
@@ -166,19 +166,19 @@ namespace gtsam {
 	/* ************************************************************************* */
 	template<class G, class C, class L, class S, class W>
 	NonlinearOptimizer<G, C, L, S, W> NonlinearOptimizer<G, C, L, S, W>::try_lambda(
-			const L& linear, verbosityLevel verbosity, double factor, LambdaMode lambdaMode) const {
+			const L& linear, Parameters::verbosityLevel verbosity, double factor, Parameters::LambdaMode lambdaMode) const {
 
-		if (verbosity >= TRYLAMBDA)
+		if (verbosity >= Parameters::TRYLAMBDA)
 			cout << "trying lambda = " << lambda_ << endl;
 
 		// add prior-factors
 		L damped = linear.add_priors(1.0/sqrt(lambda_), GaussianVariableIndex<>(linear));
-		if (verbosity >= DAMPED)
+		if (verbosity >= Parameters::DAMPED)
 			damped.print("damped");
 
 		// solve
 		VectorValues delta = solver_->optimize(damped);
-		if (verbosity >= TRYDELTA)
+		if (verbosity >= Parameters::TRYDELTA)
 			delta.print("delta");
 
 		// update config
@@ -188,9 +188,9 @@ namespace gtsam {
 
 		// create new optimization state with more adventurous lambda
 		NonlinearOptimizer next(graph_, newValues, solver_, lambda_ / factor);
-		if (verbosity >= TRYLAMBDA) cout << "next error = " << next.error_ << endl;
+		if (verbosity >= Parameters::TRYLAMBDA) cout << "next error = " << next.error_ << endl;
 
-		if(lambdaMode >= CAUTIOUS) {
+		if(lambdaMode >= Parameters::CAUTIOUS) {
 			throw runtime_error("CAUTIOUS mode not working yet, please use BOUNDED.");
 		}
 
@@ -198,7 +198,7 @@ namespace gtsam {
 
 			// If we're cautious, see if the current lambda is better
 			// todo:  include stopping criterion here?
-			if(lambdaMode == CAUTIOUS) {
+			if(lambdaMode == Parameters::CAUTIOUS) {
 				NonlinearOptimizer sameLambda(graph_, newValues, solver_, lambda_);
 				if(sameLambda.error_ <= next.error_)
 					return sameLambda;
@@ -211,7 +211,7 @@ namespace gtsam {
 		else {
 
 			// A more adventerous lambda was worse.  If we're cautious, try the same lambda.
-			if(lambdaMode == CAUTIOUS) {
+			if(lambdaMode == Parameters::CAUTIOUS) {
 				NonlinearOptimizer sameLambda(graph_, newValues, solver_, lambda_);
 				if(sameLambda.error_ <= error_)
 					return sameLambda;
@@ -222,7 +222,7 @@ namespace gtsam {
 			// and keep the same config.
 
 			// TODO: can we avoid copying the config ?
-			if(lambdaMode >= BOUNDED && lambda_ >= 1.0e5) {
+			if(lambdaMode >= Parameters::BOUNDED && lambda_ >= 1.0e5) {
 				return NonlinearOptimizer(graph_, newValues, solver_, lambda_);;
 			} else {
 				NonlinearOptimizer cautious(graph_, config_, solver_, lambda_ * factor);
@@ -237,24 +237,24 @@ namespace gtsam {
 	/* ************************************************************************* */
 	template<class G, class C, class L, class S, class W>
 	NonlinearOptimizer<G, C, L, S, W> NonlinearOptimizer<G, C, L, S, W>::iterateLM(
-			verbosityLevel verbosity, double lambdaFactor, LambdaMode lambdaMode) const {
+			Parameters::verbosityLevel verbosity, double lambdaFactor, Parameters::LambdaMode lambdaMode) const {
 
 		// maybe show output
-		if (verbosity >= CONFIG)
+		if (verbosity >= Parameters::CONFIG)
 			config_->print("config");
-		if (verbosity >= ERROR)
+		if (verbosity >= Parameters::ERROR)
 			cout << "error: " << error_ << endl;
-		if (verbosity >= LAMBDA)
+		if (verbosity >= Parameters::LAMBDA)
 			cout << "lambda = " << lambda_ << endl;
 
 		// linearize all factors once
 		boost::shared_ptr<L> linear = solver_->linearize(*graph_, *config_);
 		NonlinearOptimizer prepared(graph_, config_, solver_->prepareLinear(*linear), error_, lambda_);
-		if (verbosity >= LINEAR)
+		if (verbosity >= Parameters::LINEAR)
 			linear->print("linear");
 
 		// try lambda steps with successively larger lambda until we achieve descent
-		if (verbosity >= LAMBDA) cout << "Trying Lambda for the first time" << endl;
+		if (verbosity >= Parameters::LAMBDA) cout << "Trying Lambda for the first time" << endl;
 		return prepared.try_lambda(*linear, verbosity, lambdaFactor, lambdaMode);
 	}
 
@@ -262,22 +262,22 @@ namespace gtsam {
 	template<class G, class C, class L, class S, class W>
 	NonlinearOptimizer<G, C, L, S, W> NonlinearOptimizer<G, C, L, S, W>::levenbergMarquardt(
 			double relativeThreshold, double absoluteThreshold,
-			verbosityLevel verbosity, int maxIterations, double lambdaFactor, LambdaMode lambdaMode) const {
+			Parameters::verbosityLevel verbosity, int maxIterations, double lambdaFactor, Parameters::LambdaMode lambdaMode) const {
 
-		return levenbergMarquardt(NonLinearOptimizerPara (absoluteThreshold, relativeThreshold, absoluteThreshold,
+		return levenbergMarquardt(NonLinearOptimizerParameters (absoluteThreshold, relativeThreshold, absoluteThreshold,
 				maxIterations, lambdaFactor, verbosity, lambdaMode)) ;
 	}
 
 
 	template<class G, class C, class L, class S, class W>
 	NonlinearOptimizer<G, C, L, S, W> NonlinearOptimizer<G, C, L, S, W>::
-	levenbergMarquardt(const NonLinearOptimizerPara &para) const {
+	levenbergMarquardt(const NonLinearOptimizerParameters &para) const {
 
 		if (para.maxIterations_ <= 0) return *this;
 
 		// check if we're already close enough
 		if (error_ < para.sumError_) {
-			if (para.verbosity_ >= ERROR)
+			if (para.verbosity_ >= Parameters::ERROR)
 				cout << "Exiting, as error = " << error_ << " < " << para.sumError_ << endl;
 			return *this;
 		}
@@ -299,15 +299,15 @@ namespace gtsam {
 		// return converged state or iterate
 		if (converged || para.maxIterations_ <= 1) {
 			// maybe show output
-			if (para.verbosity_ >= CONFIG)
+			if (para.verbosity_ >= Parameters::CONFIG)
 				next.config_->print("final config");
-			if (para.verbosity_ >= ERROR)
+			if (para.verbosity_ >= Parameters::ERROR)
 				cout << "final error: " << next.error_ << endl;
-			if (para.verbosity_ >= LAMBDA)
+			if (para.verbosity_ >= Parameters::LAMBDA)
 				cout << "final lambda = " << next.lambda_ << endl;
 			return next;
 		} else {
-			NonLinearOptimizerPara newPara = para ;
+			NonLinearOptimizerParameters newPara = para ;
 			newPara.maxIterations_ = newPara.maxIterations_ - 1;
 			return next.levenbergMarquardt(newPara) ;
 		}

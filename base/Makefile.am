@@ -50,14 +50,10 @@ base_HEADERS = $(headers)
 noinst_LTLIBRARIES = libbase.la
 libbase_la_SOURCES = $(sources)
 
-AM_CPPFLAGS = -I$(boost) -I$(SparseInc) -I$(top_srcdir)/..
+AM_CPPFLAGS = -I$(boost) -I$(CCOLAMDInc) -I$(DenseQRInc) -I$(top_srcdir)/..
 
 if USE_BLAS
 AM_CPPFLAGS += -DGT_USE_CBLAS
-endif
-
-if USE_LAPACK
-AM_CPPFLAGS += -DGT_USE_LAPACK
 endif
 
 # On Mac, we compile using the BLAS/LAPACK headers in the Accelerate framework 
@@ -70,7 +66,7 @@ endif
 #----------------------------------------------------------------------------------------------------
 TESTS = $(check_PROGRAMS)
 AM_DEFAULT_SOURCE_EXT = .cpp
-AM_LDFLAGS = $(BOOST_LDFLAGS) $(boost_serialization) 
+AM_LDFLAGS = $(BOOST_LDFLAGS) $(boost_serialization) -L$(CCOLAMDLib) -lccolamd
 LDADD = libbase.la ../CppUnitLite/libCppUnitLite.a
 
 if USE_BLAS_LINUX
@@ -78,7 +74,8 @@ AM_LDFLAGS += -lcblas -latlas
 endif
 
 if USE_LAPACK
-AM_LDFLAGS += -L$(SparseLib) -lcholmod -lspqr
+AM_CPPFLAGS += -DGT_USE_LAPACK
+AM_LDFLAGS += -L$(DenseQRLib) -lDenseQR
 endif
 
 if USE_LAPACK_LINUX

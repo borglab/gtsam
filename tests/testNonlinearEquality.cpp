@@ -200,7 +200,7 @@ TEST ( NonlinearEquality, allow_error_optimize ) {
 	PoseOptimizer::shared_solver solver(new PoseOptimizer::solver(ord));
 	PoseOptimizer optimizer(graph, init, solver);
 	double relThresh = 1e-5, absThresh = 1e-5;
-	PoseOptimizer result = optimizer.levenbergMarquardt(relThresh, absThresh, PoseOptimizer::SILENT);
+	PoseOptimizer result = optimizer.levenbergMarquardt(relThresh, absThresh, PoseOptimizer::Parameters::SILENT);
 
 	// verify
 	PoseValues expected;
@@ -237,7 +237,7 @@ TEST ( NonlinearEquality, allow_error_optimize_with_factors ) {
 	PoseOptimizer::shared_solver solver(new PoseOptimizer::solver(ord));
 	PoseOptimizer optimizer(graph, init, solver);
 	double relThresh = 1e-5, absThresh = 1e-5;
-	PoseOptimizer result = optimizer.levenbergMarquardt(relThresh, absThresh, PoseOptimizer::SILENT);
+	PoseOptimizer result = optimizer.levenbergMarquardt(relThresh, absThresh, PoseOptimizer::Parameters::SILENT);
 
 	// verify
 	PoseValues expected;

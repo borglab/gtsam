@@ -179,7 +179,7 @@ TEST( NonlinearOptimizer, optimize )
 
 	// Levenberg-Marquardt
 	Optimizer actual2 = optimizer.levenbergMarquardt(relativeThreshold,
-			absoluteThreshold, Optimizer::SILENT);
+			absoluteThreshold, Optimizer::Parameters::SILENT);
 	DOUBLES_EQUAL(0,fg->error(*(actual2.config())),tol);
 }
 

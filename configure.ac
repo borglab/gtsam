@@ -150,24 +150,45 @@ AC_ARG_WITH([boost],
             ])
 AC_SUBST([boost])
 
-# ask for sparse library include directory
-AC_ARG_WITH([sparse-inc],
-            [AS_HELP_STRING([--with-sparse-inc],
-              [specify the sparse library include directory (mandatory)])],
-            [SparseInc=$withval],
+# ask for ccolamd library include directory
+AC_ARG_WITH([ccolamd-inc],
+            [AS_HELP_STRING([--with-ccolamd-inc],
+              [specify the CCOLAMD library include directory (mandatory)])],
+            [CCOLAMDInc=$withval],
             [AC_MSG_FAILURE(
-                   [--with-sparse-inc has to be specified])
+                   [--with-ccolamd-inc has to be specified])
             ])
-AC_SUBST([SparseInc])
+AC_SUBST([CCOLAMDInc])
 
 # ask for sparse library lib directory
-AC_ARG_WITH([sparse-lib],
-            [AS_HELP_STRING([--with-sparse-lib],
-              [specify the sparse library lib directory (mandatory)])],
-            [SparseLib=$withval],
+AC_ARG_WITH([ccolamd-lib],
+            [AS_HELP_STRING([--with-ccolamd-lib],
+              [specify the CCOLAMD library lib directory (mandatory)])],
+            [CCOLAMDLib=$withval],
             [AC_MSG_FAILURE(
-                   [--with-sparse-lib has to be specified])
+                   [--with-ccolamd-lib has to be specified])
             ])
-AC_SUBST([SparseLib])
-	
+AC_SUBST([CCOLAMDLib])
+
+# ask for DenseQR library include directory
+AC_ARG_WITH([denseqr-inc],
+            [AS_HELP_STRING([--with-denseqr-inc],
+              [specify the DenseQR library include directory (mandatory)])],
+            [DenseQRInc=$withval],
+            [AC_MSG_FAILURE(
+                   [--with-denseqr-inc has to be specified])
+            ])
+AC_SUBST([DenseQRInc])
+
+# ask for DenseQR library lib directory
+AC_ARG_WITH([denseqr-lib],
+            [AS_HELP_STRING([--with-denseqr-lib],
+              [specify the DenseQR library lib directory (mandatory)])],
+            [DenseQRLib=$withval],
+            [AC_MSG_FAILURE(
+                   [--with-denseqr-lib has to be specified])
+            ])
+AC_SUBST([DenseQRLib])
+
+
 AC_OUTPUT

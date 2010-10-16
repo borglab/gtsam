@@ -70,7 +70,7 @@ int main() {
 	initialEstimate.print("Initialization");
 
 	// create an ordering
-	Optimizer::shared_values result = Optimizer::optimizeLM(graph, initialEstimate, Optimizer::LAMBDA);
+	Optimizer::shared_values result = Optimizer::optimizeLM(graph, initialEstimate, Optimizer::Parameters::LAMBDA);
 	result->print("Final config");
 
 	return 0;

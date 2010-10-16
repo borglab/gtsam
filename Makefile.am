@@ -18,7 +18,7 @@ SUBLIBS = base/libbase.la geometry/libgeometry.la inference/libinference.la \
           linear/liblinear.la nonlinear/libnonlinear.la slam/libslam.la
 
 if USE_LAPACK
-SUBLIBS += -L$(SparseLib) -lcholmod -lspqr
+SUBLIBS += -L$(DenseQRLib) -lDenseQR
 endif
 
 # TODO: UFconfig, CCOLAMD, and LDL automake magic without adding or touching any file
@@ -30,7 +30,7 @@ endif
 lib_LTLIBRARIES = libgtsam.la
 libgtsam_la_SOURCES = 
 nodist_EXTRA_libgtsam_la_SOURCES = dummy.cxx
-libgtsam_la_LIBADD = $(SUBLIBS) -L$(SparseLib) -lccolamd
+libgtsam_la_LIBADD = $(SUBLIBS) -L$(CCOLAMDLib) -lccolamd
 libgtsam_la_LDFLAGS = -no-undefined -version-info 0:0:0
 
 if USE_ACCELERATE_MACOS

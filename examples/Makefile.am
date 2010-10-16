@@ -15,12 +15,12 @@ noinst_PROGRAMS  = SimpleRotation      # Optimizes a single nonlinear rotation v
 noinst_PROGRAMS += PlanarSLAMExample   # Solves SLAM example from tutorial by using planarSLAM
 noinst_PROGRAMS += Pose2SLAMExample    # Solves SLAM example from tutorial by using planarSLAM
 noinst_PROGRAMS += PlanarSLAMSelfContained   # Solves SLAM example from tutorial with all typedefs in the script
-SUBDIRS = vSLAMexample
+#SUBDIRS = vSLAMexample # does not compile....
 #----------------------------------------------------------------------------------------------------
 # rules to build local programs
 #----------------------------------------------------------------------------------------------------
 AM_LDFLAGS = $(BOOST_LDFLAGS) 
-AM_CPPFLAGS = -I$(boost) -I$(SparseInc) -I$(top_srcdir)/..
+AM_CPPFLAGS = -I$(boost) -I$(CCOLAMDInc) -I$(top_srcdir)/..
 LDADD = ../libgtsam.la
 AM_DEFAULT_SOURCE_EXT = .cpp
 

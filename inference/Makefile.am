@@ -63,14 +63,14 @@ inferencedir = $(pkgincludedir)/inference
 inference_HEADERS = $(headers)
 noinst_LTLIBRARIES = libinference.la
 libinference_la_SOURCES = $(sources)
-AM_CPPFLAGS = -I$(boost) -I$(SparseInc) -I$(top_srcdir)/..
+AM_CPPFLAGS = -I$(boost) -I$(CCOLAMDInc) -I$(top_srcdir)/..
 AM_CXXFLAGS =
 
 #----------------------------------------------------------------------------------------------------
 # rules to build local programs
 #----------------------------------------------------------------------------------------------------
 TESTS = $(check_PROGRAMS)
-AM_LDFLAGS = $(BOOST_LDFLAGS) $(boost_serialization) -L$(SparseLib) -lccolamd
+AM_LDFLAGS = $(BOOST_LDFLAGS) $(boost_serialization)
 LDADD = libinference.la ../base/libbase.la
 LDADD += ../CppUnitLite/libCppUnitLite.a
 AM_DEFAULT_SOURCE_EXT = .cpp

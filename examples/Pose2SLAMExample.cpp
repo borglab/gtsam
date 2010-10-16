@@ -77,7 +77,7 @@ int main(int argc, char** argv) {
 	Optimizer::shared_solver solver(new Optimizer::solver(ordering));
 
   Optimizer optimizer(graph, initialEstimate, solver);
-  Optimizer::verbosityLevel verbosity = pose2SLAM::Optimizer::SILENT;
+  Optimizer::Parameters::verbosityLevel verbosity = pose2SLAM::Optimizer::Parameters::SILENT;
   Optimizer optimizer0 = optimizer.levenbergMarquardt(1e-15, 1e-15, verbosity);
 
 	Values result2 = *optimizer0.config();

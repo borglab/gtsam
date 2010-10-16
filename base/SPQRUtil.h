@@ -22,10 +22,7 @@
 #include <gtsam/base/Matrix.h>
 
 #ifdef GT_USE_LAPACK
-extern "C" {
-#include <cholmod.h>
-}
-#include <spqr.hpp>
+#include <spqr_subset.hpp>
 
 namespace gtsam {
 

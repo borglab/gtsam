@@ -25,6 +25,7 @@
 #include <gtsam/linear/VectorValues.h>
 #include <gtsam/nonlinear/NonlinearFactorGraph.h>
 #include <gtsam/linear/Factorization.h>
+#include <gtsam/nonlinear/NonlinearOptimizationParameters.h>
 
 namespace gtsam {
 
@@ -41,17 +42,28 @@ namespace gtsam {
 	 * until convergence. All methods are functional and return a new state.
 	 *
 	 * The class is parameterized by the Graph type $G$, Values class type $T$,
-	 * linear system class $L$ and the non linear solver type $S$.
-	 * the config type is in order to be able to optimize over non-vector values structures.
-	 * To use in code, include <gtsam/NonlinearOptimizer-inl.h> in your cpp file
+	 * linear system class $L$, the non linear solver type $S$, and the writer type $W$
+	 *
+	 * The values class type $T$ is in order to be able to optimize over non-vector values structures.
+	 *
+	 * A nonlinear system solver $S$
+   * Concept NonLinearSolver<G,T,L> implements
+   *   linearize: G * T -> L
+   *   solve : L -> T
+	 *
+	 * The writer $W$ generates output to disk or the screen.
 	 *
 	 * For example, in a 2D case, $G$ can be Pose2Graph, $T$ can be Pose2Values,
 	 * $L$ can be GaussianFactorGraph and $S$ can be Factorization<Pose2Graph, Pose2Values>.
 	 * The solver class has two main functions: linearize and optimize. The first one
 	 * linearizes the nonlinear cost function around the current estimate, and the second
 	 * one optimizes the linearized system using various methods.
+	 *
+	 * To use the optimizer in code, include <gtsam/NonlinearOptimizer-inl.h> in your cpp file
+	 *
+	 *
 	 */
-	template<class G, class T, class L = GaussianFactorGraph, class S = Factorization<G, T>, class Writer = NullOptimizerWriter>
+	template<class G, class T, class L = GaussianFactorGraph, class S = Factorization<G, T>, class W = NullOptimizerWriter>
 	class NonlinearOptimizer {
 	public:
 
@@ -60,49 +72,7 @@ namespace gtsam {
 		typedef boost::shared_ptr<const G> shared_graph;
 		typedef boost::shared_ptr<const S> shared_solver;
 		typedef const S solver;
-
-		typedef enum {
-			SILENT,
-			ERROR,
-			LAMBDA,
-			TRYLAMBDA,
-			CONFIG,
-			DELTA,
-			TRYCONFIG,
-			TRYDELTA,
-			LINEAR,
-			DAMPED
-		} verbosityLevel;
-
-		typedef enum {
-			FAST,
-			BOUNDED,
-			CAUTIOUS
-		} LambdaMode;
-
-		// a container for all related parameters
-		struct NonLinearOptimizerPara {
-		public:
-			double absDecrease_; /* threshold for the absolute decrease per iteration */
-			double relDecrease_; /* threshold for the relative decrease per iteration */
-			double sumError_; /* threshold for the sum of error */
-			int maxIterations_ ;
-			double lambdaFactor_ ;
-			verbosityLevel verbosity_;
-			LambdaMode lambdaMode_;
-
-		public:
-
-			NonLinearOptimizerPara(): absDecrease_(1), relDecrease_(1e-3), sumError_(0.0),
-				maxIterations_(100), lambdaFactor_(10.0), verbosity_(ERROR), lambdaMode_(BOUNDED){}
-
-			NonLinearOptimizerPara(double absDecrease, double relDecrease, double sumError,
-					int iIters = 100, double lambdaFactor = 10, verbosityLevel v = ERROR, LambdaMode lambdaMode = BOUNDED)
-			:absDecrease_(absDecrease), relDecrease_(relDecrease), sumError_(sumError),
-			 maxIterations_(iIters), lambdaFactor_(lambdaFactor), verbosity_(v), lambdaMode_(lambdaMode){}
-
-		};
-
+		typedef NonLinearOptimizerParameters Parameters;
 
 	private:
 
@@ -124,7 +94,7 @@ namespace gtsam {
 
 		// Recursively try to do tempered Gauss-Newton steps until we succeed
 		NonlinearOptimizer try_lambda(const L& linear,
-				verbosityLevel verbosity, double factor, LambdaMode lambdaMode) const;
+				Parameters::verbosityLevel verbosity, double factor, Parameters::LambdaMode lambdaMode) const;
 
 	public:
 
@@ -178,7 +148,7 @@ namespace gtsam {
 		/**
 		 * Do one Gauss-Newton iteration and return next state
 		 */
-		NonlinearOptimizer iterate(verbosityLevel verbosity = SILENT) const;
+		NonlinearOptimizer iterate(Parameters::verbosityLevel verbosity = Parameters::SILENT) const;
 
 		/**
 		 * Optimize a solution for a non linear factor graph
@@ -188,13 +158,13 @@ namespace gtsam {
 		 */
 		NonlinearOptimizer
 		gaussNewton(double relativeThreshold, double absoluteThreshold,
-				verbosityLevel verbosity = SILENT, int maxIterations = 100) const;
+				Parameters::verbosityLevel verbosity = Parameters::SILENT, int maxIterations = 100) const;
 
 		/**
 		 * One iteration of Levenberg Marquardt
 		 */
-		NonlinearOptimizer iterateLM(verbosityLevel verbosity = SILENT,
-				double lambdaFactor = 10, LambdaMode lambdaMode = BOUNDED) const;
+		NonlinearOptimizer iterateLM(Parameters::verbosityLevel verbosity = Parameters::SILENT,
+				double lambdaFactor = 10, Parameters::LambdaMode lambdaMode = Parameters::BOUNDED) const;
 
 		/**
 		 * Optimize using Levenberg-Marquardt. Really Levenberg's
@@ -212,12 +182,12 @@ namespace gtsam {
 		 */
 		NonlinearOptimizer
 		levenbergMarquardt(double relativeThreshold, double absoluteThreshold,
-				verbosityLevel verbosity = SILENT, int maxIterations = 100,
-				double lambdaFactor = 10, LambdaMode lambdaMode = BOUNDED) const;
+				Parameters::verbosityLevel verbosity = Parameters::SILENT, int maxIterations = 100,
+				double lambdaFactor = 10, Parameters::LambdaMode lambdaMode = Parameters::BOUNDED) const;
 
 
 		NonlinearOptimizer
-		levenbergMarquardt(const NonLinearOptimizerPara &para) const;
+		levenbergMarquardt(const NonLinearOptimizerParameters &para) const;
 
 		/**
 		 * Static interface to LM optimization using default ordering and thresholds
@@ -227,7 +197,7 @@ namespace gtsam {
 		 * @return 			   an optimized values structure
 		 */
 		static shared_values optimizeLM(shared_graph graph, shared_values config,
-				verbosityLevel verbosity = SILENT) {
+				Parameters::verbosityLevel verbosity = Parameters::SILENT) {
 
 		  // Use a variable ordering from COLAMD
 		  Ordering::shared_ptr ordering = graph->orderingCOLAMD(*config);
@@ -248,7 +218,7 @@ namespace gtsam {
 		 * Static interface to LM optimization (no shared_ptr arguments) - see above
 		 */
 		inline static shared_values optimizeLM(const G& graph, const T& config,
-				verbosityLevel verbosity = SILENT) {
+				Parameters::verbosityLevel verbosity = Parameters::SILENT) {
 			return optimizeLM(boost::make_shared<const G>(graph),
 							  boost::make_shared<const T>(config), verbosity);
 		}
@@ -261,7 +231,7 @@ namespace gtsam {
 		 * @return 			   an optimized values structure
 		 */
 		static shared_values optimizeGN(shared_graph graph, shared_values config,
-				verbosityLevel verbosity = SILENT) {
+				Parameters::verbosityLevel verbosity = Parameters::SILENT) {
       Ordering::shared_ptr ordering = graph->orderingCOLAMD(*config);
 			double relativeThreshold = 1e-5, absoluteThreshold = 1e-5;
 
@@ -279,7 +249,7 @@ namespace gtsam {
 		 * Static interface to GN optimization (no shared_ptr arguments) - see above
 		 */
 		inline static shared_values optimizeGN(const G& graph, const T& config,
-				verbosityLevel verbosity = SILENT) {
+				Parameters::verbosityLevel verbosity = Parameters::SILENT) {
 			return optimizeGN(boost::make_shared<const G>(graph),
 							  boost::make_shared<const T>(config), verbosity);
 		}

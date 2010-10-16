@@ -115,7 +115,7 @@ TEST(Pose2Graph, optimize) {
   typedef NonlinearOptimizer<Pose2Graph, Pose2Values> Optimizer;
 	Optimizer::shared_solver solver(new Optimizer::solver(ordering));
   Optimizer optimizer0(fg, initial, solver);
-  Optimizer::verbosityLevel verbosity = Optimizer::SILENT;
+  Optimizer::Parameters::verbosityLevel verbosity = Optimizer::Parameters::SILENT;
   //Optimizer::verbosityLevel verbosity = Optimizer::ERROR;
   Optimizer optimizer = optimizer0.levenbergMarquardt(1e-15, 1e-15, verbosity);
 
@@ -155,7 +155,7 @@ TEST(Pose2Graph, optimizeThreePoses) {
   // optimize
   pose2SLAM::Optimizer::shared_solver solver(new pose2SLAM::Optimizer::solver(ordering));
   pose2SLAM::Optimizer optimizer0(fg, initial, solver);
-  pose2SLAM::Optimizer::verbosityLevel verbosity = pose2SLAM::Optimizer::SILENT;
+  pose2SLAM::Optimizer::Parameters::verbosityLevel verbosity = pose2SLAM::Optimizer::Parameters::SILENT;
   pose2SLAM::Optimizer optimizer = optimizer0.levenbergMarquardt(1e-15, 1e-15, verbosity);
 
   Pose2Values actual = *optimizer.config();
@@ -199,7 +199,7 @@ TEST(Pose2Graph, optimizeCircle) {
   // optimize
   pose2SLAM::Optimizer::shared_solver solver(new pose2SLAM::Optimizer::solver(ordering));
   pose2SLAM::Optimizer optimizer0(fg, initial, solver);
-  pose2SLAM::Optimizer::verbosityLevel verbosity = pose2SLAM::Optimizer::SILENT;
+  pose2SLAM::Optimizer::Parameters::verbosityLevel verbosity = pose2SLAM::Optimizer::Parameters::SILENT;
   pose2SLAM::Optimizer optimizer = optimizer0.levenbergMarquardt(1e-15, 1e-15, verbosity);
 
   Pose2Values actual = *optimizer.config();
