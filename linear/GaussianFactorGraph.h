@@ -52,25 +52,25 @@ namespace gtsam {
     GaussianFactorGraph(const GaussianBayesNet& CBN);
 
   	/** Add a null factor */
-    inline void add(const Vector& b) {
+    void add(const Vector& b) {
     	push_back(sharedFactor(new GaussianFactor(b)));
   	}
 
   	/** Add a unary factor */
-    inline void add(Index key1, const Matrix& A1,
+    void add(Index key1, const Matrix& A1,
   			const Vector& b, const SharedDiagonal& model) {
     	push_back(sharedFactor(new GaussianFactor(key1,A1,b,model)));
   	}
 
   	/** Add a binary factor */
-    inline void add(Index key1, const Matrix& A1,
+    void add(Index key1, const Matrix& A1,
   			Index key2, const Matrix& A2,
   			const Vector& b, const SharedDiagonal& model) {
     	push_back(sharedFactor(new GaussianFactor(key1,A1,key2,A2,b,model)));
   	}
 
   	/** Add a ternary factor */
-    inline void add(Index key1, const Matrix& A1,
+    void add(Index key1, const Matrix& A1,
   			Index key2, const Matrix& A2,
   			Index key3, const Matrix& A3,
   			const Vector& b, const SharedDiagonal& model) {
@@ -78,7 +78,7 @@ namespace gtsam {
   	}
 
   	/** Add an n-ary factor */
-    inline void add(const std::vector<std::pair<Index, Matrix> > &terms,
+    void add(const std::vector<std::pair<Index, Matrix> > &terms,
   	    const Vector &b, const SharedDiagonal& model) {
     	push_back(sharedFactor(new GaussianFactor(terms,b,model)));
   	}
@@ -87,7 +87,8 @@ namespace gtsam {
      * Return the set of variables involved in the factors (computes a set
      * union).
      */
-    std::set<Index, std::less<Index>, boost::fast_pool_allocator<Index> > keys() const;
+    typedef std::set<Index, std::less<Index>, boost::fast_pool_allocator<Index> > Keys;
+    Keys keys() const;
 
     /** Permute the variables in the factors */
     void permuteWithInverse(const Permutation& inversePermutation);
@@ -128,44 +129,6 @@ namespace gtsam {
 			return exp(-0.5 * error(c));
 		}
 
-//    /**
-//     * find the separator, i.e. all the nodes that have at least one
-//     * common factor with the given node. FD: not used AFAIK.
-//     */
-//    std::set<Index> find_separator(Index key) const;
-
-//    /**
-//     * Peforms a supposedly-faster (fewer matrix copy) version of elimination
-//     * CURRENTLY IN TESTING
-//     */
-//    GaussianConditional::shared_ptr eliminateOneMatrixJoin(Index key);
-//
-//
-//    /**
-//     * Eliminate multiple variables at once, mostly used to eliminate frontal variables
-//     */
-//    GaussianBayesNet eliminateFrontals(const Ordering& frontals);
-
-//    /**
-//     * optimize a linear factor graph
-//     * @param ordering fg in order
-//     * @param enableJoinFactor uses the older joint factor combine process when true,
-//     *    and when false uses the newer single matrix combine
-//     */
-//    VectorValues optimize(const Ordering& ordering, bool enableJoinFactor = true);
-
-//    /**
-//     * optimize a linear factor graph using a multi-frontal solver
-//     * @param ordering fg in order
-//     */
-//    VectorValues optimizeMultiFrontals(const Ordering& ordering);
-
-//    /**
-//     * shared pointer versions for MATLAB
-//     */
-//    boost::shared_ptr<GaussianBayesNet> eliminate_(const Ordering&);
-//    boost::shared_ptr<VectorValues> optimize_(const Ordering&);
-
     /**
      * static function that combines two factor graphs
      * @param const &lfg1 Linear factor graph
@@ -181,11 +144,6 @@ namespace gtsam {
      */
     void combine(const GaussianFactorGraph &lfg);
 
-//    /**
-//     * Find all variables and their dimensions
-//     * @return The set of all variable/dimension pairs
-//     */
-//    Dimensions dimensions() const;
 
     /**
      * Add zero-mean i.i.d. Gaussian prior terms to each variable
@@ -193,84 +151,6 @@ namespace gtsam {
      */
     GaussianFactorGraph add_priors(double sigma, const GaussianVariableIndex<>& variableIndex) const;
 
-//    /**
-//     * Return RHS (b./sigmas) as Errors class
-//     */
-//    Errors rhs() const;
-//
-//    /**
-//     * Return RHS (b./sigmas) as Vector
-//     */
-//    Vector rhsVector() const;
-//
-//    /**
-//     * Return (dense) matrix associated with factor graph
-//     * @param ordering of variables needed for matrix column order
-//     */
-//    std::pair<Matrix,Vector> matrix (const Ordering& ordering) const;
-
-//    /**
-//     * split the source vector w.r.t. the given ordering and assemble a vector config
-//     * @param v: the source vector
-//     * @param ordeirng: the ordering corresponding to the vector
-//     */
-//    VectorValues assembleValues(const Vector& v, const Ordering& ordering) const;
-//
-//    /**
-//     * get the 1-based starting column indices for all variables
-//     * @param ordering of variables needed for matrix column order
-//     * @return The set of all variable/index pairs
-//     */
-//    std::pair<Dimensions, size_t> columnIndices_(const Ordering& ordering) const;
-//    Dimensions columnIndices(const Ordering& ordering) const;
-//
-//    /**
-//     * return the size of corresponding A matrix
-//     */
-//    std::pair<std::size_t, std::size_t> sizeOfA() const;
-
-//  	/**
-//  	 * Return 3*nzmax matrix where the rows correspond to the vectors i, j, and s
-//  	 * to generate an m-by-n sparse matrix, which can be given to MATLAB's sparse function.
-//  	 * The standard deviations are baked into A and b
-//  	 * @param ordering of variables needed for matrix column order
-//  	 */
-//  	Matrix sparse(const Ordering& ordering) const;
-//
-//  	/**
-//  	 * Version that takes column indices rather than ordering
-//  	 */
-//  	Matrix sparse(const Dimensions& indices) const;
-
-//  	/**
-//		 * Find solution using gradient descent
-//		 * @param x0: VectorValues specifying initial estimate
-//		 * @return solution
-//		 */
-//		VectorValues steepestDescent(const VectorValues& x0, bool verbose = false,
-//				double epsilon = 1e-3, size_t maxIterations = 0) const;
-//
-//		/**
-//		 * shared pointer versions for MATLAB
-//		 */
-//		boost::shared_ptr<VectorValues>
-//		steepestDescent_(const VectorValues& x0, bool verbose = false,
-//				double epsilon = 1e-3, size_t maxIterations = 0) const;
-//
-//		/**
-//		 * Find solution using conjugate gradient descent
-//		 * @param x0: VectorValues specifying initial estimate
-//		 * @return solution
-//		 */
-//		VectorValues conjugateGradientDescent(const VectorValues& x0, bool verbose =
-//				false, double epsilon = 1e-3, size_t maxIterations = 0) const;
-//
-//		/**
-//		 * shared pointer versions for MATLAB
-//		 */
-//		boost::shared_ptr<VectorValues> conjugateGradientDescent_(
-//				const VectorValues& x0, bool verbose = false, double epsilon = 1e-3,
-//				size_t maxIterations = 0) const;
   };
 
 

@@ -40,7 +40,7 @@
 
 #define INSTANTIATE_FACTOR_GRAPH(F) \
   template class FactorGraph<F>; \
-  template FactorGraph<F> combine(const FactorGraph<F>&, const FactorGraph<F>&);
+  template FactorGraph<F> combine(const FactorGraph<F>&, const FactorGraph<F>&)
 
 using namespace std;
 
