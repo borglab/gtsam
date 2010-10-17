@@ -153,7 +153,7 @@ AC_SUBST([boost])
 # ask for ccolamd library include directory
 AC_ARG_WITH([ccolamd-inc],
             [AS_HELP_STRING([--with-ccolamd-inc],
-              [specify the CCOLAMD library include directory (mandatory)])],
+              [specify the CCOLAMD library include directory (defaults to /HOME/include/ccolamd)])],
             [CCOLAMDInc=$withval],
             [CCOLAMDInc=${HOME}/include/ccolamd])
 AC_SUBST([CCOLAMDInc])
@@ -161,7 +161,7 @@ AC_SUBST([CCOLAMDInc])
 # ask for sparse library lib directory
 AC_ARG_WITH([ccolamd-lib],
             [AS_HELP_STRING([--with-ccolamd-lib],
-              [specify the CCOLAMD library lib directory (mandatory)])],
+              [specify the CCOLAMD library lib directory (defaults to /HOME/lib)])],
             [CCOLAMDLib=$withval],
             [CCOLAMDLib=${HOME}/lib])
 AC_SUBST([CCOLAMDLib])
@@ -169,7 +169,7 @@ AC_SUBST([CCOLAMDLib])
 # ask for DenseQR library include directory
 AC_ARG_WITH([denseqr-inc],
             [AS_HELP_STRING([--with-denseqr-inc],
-              [specify the DenseQR library include directory (mandatory)])],
+              [specify the DenseQR library include directory (defaults to /HOME/include/DenseQR)])],
             [DenseQRInc=$withval],
             [DenseQRInc=${HOME}/include/DenseQR])
 AC_SUBST([DenseQRInc])
@@ -177,7 +177,7 @@ AC_SUBST([DenseQRInc])
 # ask for DenseQR library lib directory
 AC_ARG_WITH([denseqr-lib],
             [AS_HELP_STRING([--with-denseqr-lib],
-              [specify the DenseQR library lib directory (mandatory)])],
+              [specify the DenseQR library lib directory (defaults to /HOME/lib)])],
             [DenseQRLib=$withval],
             [DenseQRLib=${HOME}/lib])
 AC_SUBST([DenseQRLib])
