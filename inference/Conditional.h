@@ -48,7 +48,7 @@ protected:
 public:
 
   /** convenience typename for a shared pointer to this class */
-  typedef gtsam::Factor FactorType;
+  typedef gtsam::Factor Factor;
   typedef boost::shared_ptr<Conditional> shared_ptr;
   typedef Factor::iterator iterator;
   typedef Factor::const_iterator const_iterator;

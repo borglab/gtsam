@@ -19,15 +19,13 @@
 
 #pragma once
 
-#include <list>
-#include <boost/shared_ptr.hpp>
-#include <boost/serialization/nvp.hpp>
-//#include <boost/serialization/list.hpp>
-//#include <boost/serialization/shared_ptr.hpp>
-
 #include <gtsam/base/types.h>
 #include <gtsam/base/Testable.h>
 #include <gtsam/inference/Permutation.h>
+
+#include <list>
+#include <boost/shared_ptr.hpp>
+#include <boost/serialization/nvp.hpp>
 
 namespace gtsam {
 
@@ -37,16 +35,16 @@ namespace gtsam {
 	 * corresponding to what is used for the "Conditional" template argument:
 	 * a SymbolicConditional, ConditionalProbabilityTable, or a GaussianConditional
 	 */
-	template<class Conditional>
-	class BayesNet: public Testable<BayesNet<Conditional> > {
+	template<class CONDITIONAL>
+	class BayesNet: public Testable<BayesNet<CONDITIONAL> > {
 
 	public:
 
-	  typedef typename boost::shared_ptr<BayesNet<Conditional> > shared_ptr;
+	  typedef typename boost::shared_ptr<BayesNet<CONDITIONAL> > shared_ptr;
 
 		/** We store shared pointers to Conditional densities */
-		typedef typename boost::shared_ptr<Conditional> sharedConditional;
-		typedef typename boost::shared_ptr<const Conditional> const_sharedConditional;
+		typedef typename boost::shared_ptr<CONDITIONAL> sharedConditional;
+		typedef typename boost::shared_ptr<const CONDITIONAL> const_sharedConditional;
 		typedef typename std::list<sharedConditional> Conditionals;
 
     typedef typename Conditionals::const_iterator iterator;
@@ -82,10 +80,10 @@ namespace gtsam {
 		}
 
 		// push_back an entire Bayes net */
-		void push_back(const BayesNet<Conditional> bn);
+		void push_back(const BayesNet<CONDITIONAL> bn);
 
 		// push_front an entire Bayes net */
-		void push_front(const BayesNet<Conditional> bn);
+		void push_front(const BayesNet<CONDITIONAL> bn);
 
 		/**
 		 * pop_front: remove node at the bottom, used in marginalization
@@ -117,13 +115,13 @@ namespace gtsam {
     sharedConditional& front() { return conditionals_.front(); }
 
     /** return last node in ordering */
-    boost::shared_ptr<const Conditional> front() const { return conditionals_.front(); }
+    boost::shared_ptr<const CONDITIONAL> front() const { return conditionals_.front(); }
 
 		/** return last node in ordering */
 		sharedConditional& back() { return conditionals_.back(); }
 
 		/** return last node in ordering */
-		boost::shared_ptr<const Conditional> back() const { return conditionals_.back(); }
+		boost::shared_ptr<const CONDITIONAL> back() const { return conditionals_.back(); }
 
 		/** return iterators. FD: breaks encapsulation? */
 		inline const_iterator const begin() const {return conditionals_.begin();}

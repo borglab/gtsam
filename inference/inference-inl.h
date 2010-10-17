@@ -33,6 +33,7 @@
 #include <gtsam/inference/inference.h>
 #include <gtsam/inference/FactorGraph-inl.h>
 #include <gtsam/inference/BayesNet-inl.h>
+#include <gtsam/inference/Conditional.h>
 
 using namespace std;
 
