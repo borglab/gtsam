@@ -51,8 +51,8 @@ class Conditional;
      * variables in order starting from 0.  Special fast version for symbolic
      * elimination.
      */
-	  template<class Factor>
-    static BayesNet<Conditional>::shared_ptr EliminateSymbolic(const FactorGraph<Factor>& factorGraph);
+	  template<class FACTOR>
+    static BayesNet<Conditional>::shared_ptr EliminateSymbolic(const FactorGraph<FACTOR>& factorGraph);
 
 	  /**
 	   * Eliminate a factor graph in its natural ordering, i.e. eliminating

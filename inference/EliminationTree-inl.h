@@ -42,7 +42,7 @@ EliminationTree<FACTORGRAPH>::eliminate_() const {
   }
 
   // eliminate the joint factor and add the conditional to the bayes net
-  typename FACTORGRAPH::sharedFactor jointFactor(FACTORGRAPH::factor_type::Combine(factors, VariableSlots(factors)));
+  typename FACTORGRAPH::sharedFactor jointFactor(FACTORGRAPH::Factor::Combine(factors, VariableSlots(factors)));
   bayesNet.push_back(jointFactor->eliminateFirst());
 
   return EliminationResult(bayesNet, jointFactor);

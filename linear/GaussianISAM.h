@@ -45,7 +45,7 @@ public:
 
     // update dimensions
     BOOST_FOREACH(const typename FactorGraph::sharedFactor& factor, newFactors) {
-      for(typename FactorGraph::factor_type::const_iterator key = factor->begin(); key != factor->end(); ++key) {
+      for(typename FactorGraph::Factor::const_iterator key = factor->begin(); key != factor->end(); ++key) {
         if(*key >= dims_.size())
           dims_.resize(*key + 1);
         if(dims_[*key] == 0)

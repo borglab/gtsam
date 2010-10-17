@@ -25,7 +25,7 @@ class EliminationTree: public Testable<EliminationTree<FACTORGRAPH> > {
 
 public:
 
-  typedef boost::shared_ptr<typename FACTORGRAPH::factor_type> sharedFactor;
+  typedef boost::shared_ptr<typename FACTORGRAPH::Factor> sharedFactor;
   typedef boost::shared_ptr<EliminationTree<FACTORGRAPH> > shared_ptr;
   typedef FACTORGRAPH FactorGraph;
 

@@ -57,8 +57,8 @@ public:
   /**
    * Construct from a factor graph of any type
    */
-  template<class Factor>
-  SymbolicFactorGraph(const FactorGraph<Factor>& fg);
+  template<class FACTOR>
+  SymbolicFactorGraph(const FactorGraph<FACTOR>& fg);
 
   /**
    * Return the set of variables involved in the factors (computes a set
@@ -73,8 +73,8 @@ public:
 };
 
 /* Template function implementation */
-template<class FactorType>
-SymbolicFactorGraph::SymbolicFactorGraph(const FactorGraph<FactorType>& fg) {
+template<class FACTOR>
+SymbolicFactorGraph::SymbolicFactorGraph(const FactorGraph<FACTOR>& fg) {
   for (size_t i = 0; i < fg.size(); i++) {
     if(fg[i]) {
       Factor::shared_ptr factor(new Factor(*fg[i]));

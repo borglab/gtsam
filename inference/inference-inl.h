@@ -50,8 +50,8 @@ inline typename FactorGraph::bayesnet_type::shared_ptr Inference::Eliminate(cons
 }
 
 /* ************************************************************************* */
-template<class Factor>
-BayesNet<Conditional>::shared_ptr Inference::EliminateSymbolic(const FactorGraph<Factor>& factorGraph) {
+template<class FACTOR>
+BayesNet<Conditional>::shared_ptr Inference::EliminateSymbolic(const FactorGraph<FACTOR>& factorGraph) {
 
   // Create a copy of the factor graph to eliminate in-place
   FactorGraph<gtsam::Factor> eliminationGraph(factorGraph);
@@ -261,7 +261,7 @@ Inference::EliminateOne(FactorGraph& factorGraph, typename FactorGraph::variable
 
     // Join the factors and eliminate the variable from the joint factor
     tic("EliminateOne: Combine");
-    typename FactorGraph::sharedFactor jointFactor(FactorGraph::factor_type::Combine(factorGraph, variableIndex, removedFactorIdxs, sortedKeys, jointFactorPositions));
+    typename FactorGraph::sharedFactor jointFactor(FactorGraph::Factor::Combine(factorGraph, variableIndex, removedFactorIdxs, sortedKeys, jointFactorPositions));
     toc("EliminateOne: Combine");
 
     // Remove the original factors
@@ -302,7 +302,7 @@ FactorGraph Inference::Marginal(const FactorGraph& factorGraph, const VarContain
   varIndex.permute(*permutation);
   FactorGraph eliminationGraph; eliminationGraph.reserve(factorGraph.size());
   BOOST_FOREACH(const typename FactorGraph::sharedFactor& factor, factorGraph) {
-    typename FactorGraph::sharedFactor permFactor(new typename FactorGraph::factor_type(*factor));
+    typename FactorGraph::sharedFactor permFactor(new typename FactorGraph::Factor(*factor));
     permFactor->permuteWithInverse(*permutationInverse);
     eliminationGraph.push_back(permFactor);
   }
@@ -316,7 +316,7 @@ FactorGraph Inference::Marginal(const FactorGraph& factorGraph, const VarContain
   FactorGraph marginal; marginal.reserve(variables.size());
   typename FactorGraph::bayesnet_type::const_reverse_iterator conditional = bn->rbegin();
   for(Index j=0; j<variables.size(); ++j, ++conditional) {
-    typename FactorGraph::sharedFactor factor(new typename FactorGraph::factor_type(**conditional));
+    typename FactorGraph::sharedFactor factor(new typename FactorGraph::Factor(**conditional));
     factor->permuteWithInverse(*permutation);
     marginal.push_back(factor);
     assert(std::find(variables.begin(), variables.end(), (*permutation)[(*conditional)->key()]) != variables.end());
