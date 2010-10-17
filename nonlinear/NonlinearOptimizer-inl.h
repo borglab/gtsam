@@ -264,14 +264,14 @@ namespace gtsam {
 			double relativeThreshold, double absoluteThreshold,
 			Parameters::verbosityLevel verbosity, int maxIterations, double lambdaFactor, Parameters::LambdaMode lambdaMode) const {
 
-		return levenbergMarquardt(NonLinearOptimizerParameters (absoluteThreshold, relativeThreshold, absoluteThreshold,
+		return levenbergMarquardt(NonlinearOptimizationParameters (absoluteThreshold, relativeThreshold, absoluteThreshold,
 				maxIterations, lambdaFactor, verbosity, lambdaMode)) ;
 	}
 
 
 	template<class G, class C, class L, class S, class W>
 	NonlinearOptimizer<G, C, L, S, W> NonlinearOptimizer<G, C, L, S, W>::
-	levenbergMarquardt(const NonLinearOptimizerParameters &para) const {
+	levenbergMarquardt(const NonlinearOptimizationParameters &para) const {
 
 		if (para.maxIterations_ <= 0) return *this;
 
@@ -307,7 +307,7 @@ namespace gtsam {
 				cout << "final lambda = " << next.lambda_ << endl;
 			return next;
 		} else {
-			NonLinearOptimizerParameters newPara = para ;
+			NonlinearOptimizationParameters newPara = para ;
 			newPara.maxIterations_ = newPara.maxIterations_ - 1;
 			return next.levenbergMarquardt(newPara) ;
 		}

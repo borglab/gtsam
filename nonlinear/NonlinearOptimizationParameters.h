@@ -11,7 +11,7 @@
 namespace gtsam {
 
 	// a container for all related parameters
-	struct NonLinearOptimizerParameters {
+	struct NonlinearOptimizationParameters {
 		typedef enum {
 			SILENT,
 			ERROR,
@@ -39,10 +39,10 @@ namespace gtsam {
 		verbosityLevel verbosity_;
 		LambdaMode lambdaMode_;
 
-		NonLinearOptimizerParameters(): absDecrease_(1), relDecrease_(1e-3), sumError_(0.0),
+		NonlinearOptimizationParameters(): absDecrease_(1), relDecrease_(1e-3), sumError_(0.0),
 		maxIterations_(100), lambdaFactor_(10.0), verbosity_(ERROR), lambdaMode_(BOUNDED){}
 
-		NonLinearOptimizerParameters(double absDecrease, double relDecrease, double sumError,
+		NonlinearOptimizationParameters(double absDecrease, double relDecrease, double sumError,
 				int iIters = 100, double lambdaFactor = 10, verbosityLevel v = ERROR, LambdaMode lambdaMode = BOUNDED)
 		:absDecrease_(absDecrease), relDecrease_(relDecrease), sumError_(sumError),
 		 maxIterations_(iIters), lambdaFactor_(lambdaFactor), verbosity_(v), lambdaMode_(lambdaMode){}

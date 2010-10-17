@@ -29,8 +29,7 @@
 #include <gtsam/nonlinear/Key.h>
 #include <gtsam/nonlinear/LieValues-inl.h>
 #include <gtsam/nonlinear/NonlinearFactorGraph-inl.h>
-#include <gtsam/nonlinear/NonlinearOptimizer-inl.h>
-
+#include <gtsam/nonlinear/NonlinearOptimization-inl.h>
 /*
  * TODO: make factors independent of Values
  * TODO: get rid of excessive shared pointer stuff: mostly gone
@@ -70,8 +69,10 @@ int main() {
 	initialEstimate.print("Initialization");
 
 	// create an ordering
-	Optimizer::shared_values result = Optimizer::optimizeLM(graph, initialEstimate, Optimizer::Parameters::LAMBDA);
-	result->print("Final config");
+	Optimizer::Parameters parameters;
+	parameters.verbosity_ = Optimizer::Parameters::LAMBDA;
+	Values result = optimize<Graph, Values>(graph, initialEstimate, parameters);
+	result.print("Final config");
 
 	return 0;
 }

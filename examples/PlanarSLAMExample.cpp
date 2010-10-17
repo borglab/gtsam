@@ -21,6 +21,7 @@
 
 // pull in the planar SLAM domain with all typedefs and helper functions defined
 #include <gtsam/slam/planarSLAM.h>
+#include <gtsam/nonlinear/NonlinearOptimization-inl.h>
 
 using namespace std;
 using namespace gtsam;
@@ -86,9 +87,8 @@ int main(int argc, char** argv) {
 	initialEstimate.print("Initial Estimate");
 
 	// optimize using Levenberg-Marquardt optimization with an ordering from colamd
-	Optimizer::shared_values result = Optimizer::optimizeLM(graph, initialEstimate);
-
-	result->print("Final Result");
+	Values result = optimize<Graph, Values>(graph, initialEstimate);
+	result.print("Final Result");
 
 	return 0;
 }

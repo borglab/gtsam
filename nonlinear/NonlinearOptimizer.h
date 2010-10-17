@@ -72,7 +72,7 @@ namespace gtsam {
 		typedef boost::shared_ptr<const G> shared_graph;
 		typedef boost::shared_ptr<const S> shared_solver;
 		typedef const S solver;
-		typedef NonLinearOptimizerParameters Parameters;
+		typedef NonlinearOptimizationParameters Parameters;
 
 	private:
 
@@ -187,7 +187,7 @@ namespace gtsam {
 
 
 		NonlinearOptimizer
-		levenbergMarquardt(const NonLinearOptimizerParameters &para) const;
+		levenbergMarquardt(const NonlinearOptimizationParameters &para) const;
 
 		/**
 		 * Static interface to LM optimization using default ordering and thresholds

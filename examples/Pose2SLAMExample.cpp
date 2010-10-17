@@ -22,6 +22,7 @@
 
 // pull in the Pose2 SLAM domain with all typedefs and helper functions defined
 #include <gtsam/slam/pose2SLAM.h>
+#include <gtsam/nonlinear/NonlinearOptimization-inl.h>
 
 using namespace std;
 using namespace gtsam;
@@ -66,8 +67,8 @@ int main(int argc, char** argv) {
 
 	/* 4.1 Single Step:
 	* optimize using Levenberg-Marquardt optimization with an ordering from colamd */
-  Optimizer::shared_values result = Optimizer::optimizeLM(*graph, *initialEstimate);
-  result->print("Final Result");
+  Values result = optimize<Graph, Values>(*graph, *initialEstimate);
+  result.print("Final Result");
 
 	/* 4.2.1 Alternatively, you can go through the process step by step
 	 * Choose an ordering */
