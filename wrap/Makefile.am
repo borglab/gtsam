@@ -9,7 +9,7 @@ interfacePath = $(top_srcdir)
 moduleName = gtsam
 toolboxpath = ../toolbox
 nameSpace = "gtsam"
-mexFlags = "-I${boost} -I${prefix}/include -I${prefix}/include/gtsam -L${exec_prefix}/lib -lgtsam"
+mexFlags = "${BOOST_CPPFLAGS} -I${prefix}/include -I${prefix}/include/gtsam -L${exec_prefix}/lib -lgtsam"
 all:
 	./wrap ${interfacePath} ${moduleName} ${toolboxpath} ${nameSpace} ${mexFlags}
 
@@ -18,9 +18,9 @@ noinst_HEADERS = geometry.h utilities.h Argument.h Constructor.h Method.h Class.
 
 noinst_PROGRAMS = wrap
 wrap_SOURCES = ${common} wrap.cpp
-AM_CPPFLAGS = -I$(boost) -I$(top_srcdir)/.. -DTOPSRCDIR="\"$(top_srcdir)\""
+AM_CPPFLAGS = -I$(top_srcdir)/.. -DTOPSRCDIR="\"$(top_srcdir)\""
 AM_CXXFLAGS = -MMD
-AM_LDFLAGS = -L../CppUnitLite -lCppUnitLite $(BOOST_LDFLAGS)
+AM_LDFLAGS = -L../CppUnitLite -lCppUnitLite
 
 TESTS = $(check_PROGRAMS)
 

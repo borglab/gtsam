@@ -38,14 +38,14 @@ nonlineardir = $(pkgincludedir)/nonlinear
 nonlinear_HEADERS = $(headers)
 noinst_LTLIBRARIES = libnonlinear.la
 libnonlinear_la_SOURCES = $(sources)
-AM_CPPFLAGS = -I$(boost) -I$(CCOLAMDInc) -I$(top_srcdir)/..
+AM_CPPFLAGS = -I$(CCOLAMDInc) -I$(top_srcdir)/..
 AM_CXXFLAGS =
 
 #----------------------------------------------------------------------------------------------------
 # rules to build local programs
 #----------------------------------------------------------------------------------------------------
 TESTS = $(check_PROGRAMS)
-AM_LDFLAGS = $(BOOST_LDFLAGS) $(boost_serialization)
+AM_LDFLAGS = $(boost_serialization)
 LDADD = libnonlinear.la ../linear/liblinear.la ../inference/libinference.la ../base/libbase.la
 LDADD += ../CppUnitLite/libCppUnitLite.a
 AM_DEFAULT_SOURCE_EXT = .cpp

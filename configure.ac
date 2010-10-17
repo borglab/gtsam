@@ -130,6 +130,9 @@ AC_TYPE_SIZE_T
 AC_FUNC_ERROR_AT_LINE
 AC_CHECK_FUNCS([pow sqrt])
 
+# Check for boost
+AX_BOOST_BASE([1.40])
+
 # ask for toolbox directory
 AC_ARG_WITH([toolbox],
             [AS_HELP_STRING([--with-toolbox],
@@ -141,14 +144,14 @@ AC_ARG_WITH([toolbox],
 AC_SUBST([toolbox])
 
 # ask for boost directory
-AC_ARG_WITH([boost],
-            [AS_HELP_STRING([--with-boost],
-              [specify the boost directory for installation (mandatory)])],
-            [boost=$withval],
-            [AC_MSG_FAILURE(
-                   [--with-boost has to be specified])
-            ])
-AC_SUBST([boost])
+#AC_ARG_WITH([boost],
+#            [AS_HELP_STRING([--with-boost],
+#              [specify the boost directory for installation (mandatory)])],
+#            [boost=$withval],
+#            [AC_MSG_FAILURE(
+#                   [--with-boost has to be specified])
+#            ])
+#AC_SUBST([boost])
 
 # ask for ccolamd library include directory
 AC_ARG_WITH([ccolamd-inc],

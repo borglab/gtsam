@@ -50,7 +50,7 @@ base_HEADERS = $(headers)
 noinst_LTLIBRARIES = libbase.la
 libbase_la_SOURCES = $(sources)
 
-AM_CPPFLAGS = -I$(boost) -I$(CCOLAMDInc) -I$(DenseQRInc) -I$(top_srcdir)/..
+AM_CPPFLAGS = -I$(CCOLAMDInc) -I$(DenseQRInc) -I$(top_srcdir)/..
 
 if USE_BLAS
 AM_CPPFLAGS += -DGT_USE_CBLAS
@@ -66,7 +66,7 @@ endif
 #----------------------------------------------------------------------------------------------------
 TESTS = $(check_PROGRAMS)
 AM_DEFAULT_SOURCE_EXT = .cpp
-AM_LDFLAGS = $(BOOST_LDFLAGS) $(boost_serialization) -L$(CCOLAMDLib) -lccolamd
+AM_LDFLAGS = $(boost_serialization) -L$(CCOLAMDLib) -lccolamd
 LDADD = libbase.la ../CppUnitLite/libCppUnitLite.a
 
 if USE_BLAS_LINUX

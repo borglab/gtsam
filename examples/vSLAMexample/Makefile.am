@@ -17,8 +17,7 @@ vSLAMexample_SOURCES = vSLAMexample.cpp Feature2D.cpp landmarkUtils.cpp
 #----------------------------------------------------------------------------------------------------
 # rules to build local programs
 #----------------------------------------------------------------------------------------------------
-AM_LDFLAGS = $(BOOST_LDFLAGS) 
-AM_CPPFLAGS = -I$(boost) -I$(SparseInc) -I$(top_srcdir)/..
+AM_CPPFLAGS = -I$(SparseInc) -I$(top_srcdir)/..
 LDADD = ../../libgtsam.la
 AM_DEFAULT_SOURCE_EXT = .cpp
 

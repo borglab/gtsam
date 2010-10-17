@@ -32,8 +32,8 @@ noinst_PROGRAMS = timeGaussianFactorGraph timeLinearOnDataset
 # rules to build unit tests
 #----------------------------------------------------------------------------------------------------
 TESTS = $(check_PROGRAMS)
-AM_CPPFLAGS = -I$(boost) -I$(CCOLAMDInc) -I$(top_srcdir)/..
-AM_LDFLAGS = $(BOOST_LDFLAGS) 
+AM_LDFLAGS =
+AM_CPPFLAGS = -I$(CCOLAMDInc) -I$(top_srcdir)/..
 
 if USE_ACCELERATE_MACOS
 AM_LDFLAGS += -Wl,/System/Library/Frameworks/Accelerate.framework/Accelerate
