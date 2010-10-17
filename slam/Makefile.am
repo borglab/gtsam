@@ -31,12 +31,6 @@ check_PROGRAMS += tests/testSimulated3D
 # Pose SLAM headers
 headers += BetweenFactor.h PriorFactor.h
 
-# General constraints
-headers += BetweenConstraint.h BoundingConstraint.h TransformConstraint.h
-
-# Utility factors
-headers += LinearApproxFactor.h LinearApproxFactor-inl.h
-
 # 2D Pose SLAM
 sources += pose2SLAM.cpp dataset.cpp
 #sources += Pose2SLAMOptimizer.cpp

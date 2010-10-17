@@ -26,7 +26,6 @@ headers += NonlinearFactor.h
 sources += NonlinearOptimizer.cpp Ordering.cpp
 
 # Nonlinear constraints 
-headers += NonlinearConstraint.h 
 headers += NonlinearEquality.h
 
 #----------------------------------------------------------------------------------------------------
