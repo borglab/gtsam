@@ -59,14 +59,15 @@ slamdir = $(pkgincludedir)/slam
 slam_HEADERS = $(headers)
 noinst_LTLIBRARIES = libslam.la
 libslam_la_SOURCES = $(sources)
-AM_CPPFLAGS = -I$(CCOLAMDInc) -I$(top_srcdir)/..
+AM_CPPFLAGS = $(BOOST_CPPFLAGS) -I$(CCOLAMDInc) -I$(top_srcdir)/..
+AM_LDFLAGS = $(BOOST_LDFLAGS)
 
 #----------------------------------------------------------------------------------------------------
 # rules to build local programs
 #----------------------------------------------------------------------------------------------------
 TESTS = $(check_PROGRAMS)
 AM_DEFAULT_SOURCE_EXT = .cpp
-AM_LDFLAGS = $(boost_serialization) -L$(CCOLAMDLib) -lccolamd
+AM_LDFLAGS += $(boost_serialization) -L$(CCOLAMDLib) -lccolamd
 LDADD = libslam.la ../geometry/libgeometry.la  ../nonlinear/libnonlinear.la ../linear/liblinear.la ../inference/libinference.la ../base/libbase.la
 LDADD += ../CppUnitLite/libCppUnitLite.a
 

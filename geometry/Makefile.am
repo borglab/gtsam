@@ -41,13 +41,14 @@ geometrydir = $(pkgincludedir)/geometry
 geometry_HEADERS = $(headers)
 noinst_LTLIBRARIES = libgeometry.la
 libgeometry_la_SOURCES = $(sources)
-AM_CPPFLAGS = -I$(top_srcdir)/..
+AM_CPPFLAGS = $(BOOST_CPPFLAGS) -I$(top_srcdir)/..
+AM_LDFLAGS = $(BOOST_LDFLAGS)
 
 #----------------------------------------------------------------------------------------------------
 # rules to build local programs
 #----------------------------------------------------------------------------------------------------
 TESTS = $(check_PROGRAMS)
-AM_LDFLAGS = $(boost_serialization) 
+AM_LDFLAGS += $(boost_serialization) 
 LDADD = libgeometry.la ../base/libbase.la ../CppUnitLite/libCppUnitLite.a
 AM_DEFAULT_SOURCE_EXT = .cpp
 
