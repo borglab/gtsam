@@ -15,6 +15,7 @@ noinst_PROGRAMS  = SimpleRotation      # Optimizes a single nonlinear rotation v
 noinst_PROGRAMS += PlanarSLAMExample   # Solves SLAM example from tutorial by using planarSLAM
 noinst_PROGRAMS += Pose2SLAMExample    # Solves SLAM example from tutorial by using planarSLAM
 noinst_PROGRAMS += PlanarSLAMSelfContained   # Solves SLAM example from tutorial with all typedefs in the script
+noinst_PROGRAMS += Pose2SLAMwSPCG      # Solves a simple SLAM example with SPCG solver
 #SUBDIRS = vSLAMexample # does not compile....
 #----------------------------------------------------------------------------------------------------
 # rules to build local programs

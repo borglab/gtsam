@@ -44,9 +44,8 @@ namespace gtsam {
 
 		// split the graph
 		if (verbose_) cout << "generating spanning tree and split the graph ...";
-		// G.template split<Key, Constraint>(tree, T_, C_);
 		gtsam::split<Graph,Key,Constraint>(G, tree, T_, C_) ;
-		if (verbose_) cout << T_.size() << " and " << C_.size() << " factors" << endl;
+		if (verbose_) cout << ",with " << T_.size() << " and " << C_.size() << " factors" << endl;
 
 		// make the ordering
 		list<Key> keys = predecessorMap2Keys(tree);

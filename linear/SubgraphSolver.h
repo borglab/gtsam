@@ -40,8 +40,8 @@ namespace gtsam {
 
 		// TODO not hardcode
 		static const size_t maxIterations_=100;
-		static const bool verbose_=false;
 		static const double epsilon_=1e-4, epsilon_abs_=1e-5;
+		static const bool verbose_=true;
 
 		/* the ordering derived from the spanning tree */
 		boost::shared_ptr<Ordering> ordering_;
