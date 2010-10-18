@@ -172,7 +172,7 @@ namespace gtsam {
 			cout << "trying lambda = " << lambda_ << endl;
 
 		// add prior-factors
-		L damped = linear.add_priors(1.0/sqrt(lambda_), GaussianVariableIndex<>(linear));
+		L damped = linear.add_priors(1.0/sqrt(lambda_));
 		if (verbosity >= Parameters::DAMPED)
 			damped.print("damped");
 
