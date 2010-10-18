@@ -63,6 +63,12 @@ namespace gtsam {
 //		Vector b2() const { return Ab2_->rhsVector(); }
 //		VectorValues assembleValues(const Vector& v, const Ordering& ordering) const { return Ab1_->assembleValues(v, ordering); }
 
+	    /**
+	     * Add zero-mean i.i.d. Gaussian prior terms to each variable
+	     * @param sigma Standard deviation of Gaussian
+	     */
+	    SubgraphPreconditioner add_priors(double sigma) const;
+
 		/* x = xbar + inv(R1)*y */
 		VectorValues x(const VectorValues& y) const;
 

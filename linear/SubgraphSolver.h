@@ -19,8 +19,8 @@
 
 #include <gtsam/linear/GaussianFactorGraph.h>
 #include <gtsam/linear/GaussianBayesNet.h>
-#include <gtsam/inference/Ordering.h>
 #include <gtsam/linear/SubgraphPreconditioner.h>
+#include <gtsam/nonlinear/Ordering.h>
 
 namespace gtsam {
 
@@ -67,20 +67,27 @@ namespace gtsam {
 		 */
 		boost::shared_ptr<SubgraphPreconditioner> linearize(const Graph& G, const Values& theta_bar) const;
 
-  	/**
-  	 * solve for the optimal displacement in the tangent space, and then solve
-  	 * the resulted linear system
-  	 */
-  	VectorValues optimize(SubgraphPreconditioner& system) const;
 
-  	boost::shared_ptr<SubgraphSolver> prepareLinear(const SubgraphPreconditioner& fg) const {
-  		return boost::shared_ptr<SubgraphSolver>(new SubgraphSolver(*this));
-  	}
+		/**
+		 * solve for the optimal displacement in the tangent space, and then solve
+		 * the resulted linear system
+		 */
+		VectorValues optimize(SubgraphPreconditioner& system) const;
+
+		boost::shared_ptr<SubgraphSolver> prepareLinear(const SubgraphPreconditioner& fg) const {
+			return boost::shared_ptr<SubgraphSolver>(new SubgraphSolver(*this));
+		}
+
+
+	  	/** expmap the Values given the stored Ordering */
+	  	Values expmap(const Values& config, const VectorValues& delta) const {
+	  	  return config.expmap(delta, *ordering_);
+	  	}
 	};
 
 	template<class Graph, class Values> const size_t SubgraphSolver<Graph,Values>::maxIterations_;
 	template<class Graph, class Values> const bool SubgraphSolver<Graph,Values>::verbose_;
 	template<class Graph, class Values> const double SubgraphSolver<Graph,Values>::epsilon_;
-	template<class Graph, class Values> const double	SubgraphSolver<Graph,Values>::epsilon_abs_;
+	template<class Graph, class Values> const double SubgraphSolver<Graph,Values>::epsilon_abs_;
 
 } // nsamespace gtsam

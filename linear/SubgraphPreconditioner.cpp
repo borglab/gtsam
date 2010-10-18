@@ -41,30 +41,31 @@ namespace gtsam {
 		return x;
 	}
 
+    SubgraphPreconditioner SubgraphPreconditioner::add_priors(double sigma) const {
+    	SubgraphPreconditioner result = *this ;
+    	result.Ab2_ = sharedFG(new GaussianFactorGraph(Ab2_->add_priors(sigma))) ;
+    	return result ;
+    }
+
 	/* ************************************************************************* */
 	double SubgraphPreconditioner::error(const VectorValues& y) const {
 
 //		Errors e;
-//
 //		// Use BayesNet order to add y contributions in order
 //		BOOST_FOREACH(GaussianConditional::shared_ptr cg, *Rc1_) {
 //			const Symbol& j = cg->key();
 //			e.push_back(y[j]); // append y
 //		}
-//
 //		// Add A2 contribution
 //		VectorValues x = this->x(y);
 //		Errors e2 = Ab2_->errors(x);
 //		e.splice(e.end(), e2);
-//
 //		return 0.5 * dot(e, e);
 
-		Errors e(y);
 
-		// Add A2 contribution
+		Errors e(y);
 		VectorValues x = this->x(y);
 		Errors e2 = Ab2_->errors(x);
-
 		return 0.5 * (dot(e, e) + dot(e2,e2));
 	}
 
@@ -107,21 +108,19 @@ namespace gtsam {
 	void SubgraphPreconditioner::multiplyInPlace(const VectorValues& y, Errors& e) const {
 
 //		Errors::iterator ei = e.begin();
-//
 //		// Use BayesNet order to add y contributions in order
 //		BOOST_FOREACH(GaussianConditional::shared_ptr cg, *Rc1_) {
 //			const Symbol& j = cg->key();
 //			*ei = y[j]; // append y
 //			ei++;
 //		}
-//
 //		// Add A2 contribution
 //		VectorValues x = y; // TODO avoid ?
 //		gtsam::backSubstituteInPlace(*Rc1_, x); // x=inv(R1)*y
 //		Ab2_->multiplyInPlace(x,ei); // use iterator version
 
 		Errors::iterator ei = e.begin();
-		for ( int i = 0 ; i < y.size() ; ++i, ++ei ) {
+		for ( Index i = 0 ; i < y.size() ; ++i, ++ei ) {
 			*ei = y[i];
 		}
 
@@ -152,7 +151,7 @@ namespace gtsam {
 
 		Errors::const_iterator it = e.begin();
 		VectorValues y = zero();
-		for ( int i = 0 ; i < y.size() ; ++i, ++it )
+		for ( Index i = 0 ; i < y.size() ; ++i, ++it )
 			y[i] = *it ;
 		transposeMultiplyAdd2(1.0,it,e.end(),y);
 		return y;
@@ -170,12 +169,11 @@ namespace gtsam {
 //			const Vector& ej = *(it++);
 //			axpy(alpha,ej,y[j]);
 //		}
-//
 //		// get A2 part
 //		transposeMultiplyAdd2(alpha,it,e.end(),y);
 
 		Errors::const_iterator it = e.begin();
-		for ( int i = 0 ; i < y.size() ; ++i, ++it ) {
+		for ( Index i = 0 ; i < y.size() ; ++i, ++it ) {
 			const Vector& ei = *it;
 			axpy(alpha,ei,y[i]) ;
 		}
