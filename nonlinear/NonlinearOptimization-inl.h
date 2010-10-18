@@ -56,6 +56,14 @@ namespace gtsam {
 	}
 
 	/**
+	 * The multifrontal solver
+	 */
+	template<class G, class T>
+	T	optimizeSPCG(const G& graph, const T& initialEstimate, const NonlinearOptimizationParameters& parameters) {
+		throw runtime_error("optimizeSPCG: not implemented");
+	}
+
+	/**
 	 * optimization that returns the values
 	 */
 	template<class G, class T>
@@ -66,7 +74,10 @@ namespace gtsam {
 			return optimizeElimination<G,T>(graph, initialEstimate, parameters);
 		case MULTIFRONTAL:
 			return optimizeMultiFrontal<G,T>(graph, initialEstimate, parameters);
+		case SPCG:
+			return optimizeSPCG<G,T>(graph, initialEstimate, parameters) ;
 		}
+		throw runtime_error("optimizeSPCG: undefined solver");
 	}
 
 } //namespace gtsam
