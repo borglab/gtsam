@@ -150,6 +150,8 @@ namespace gtsam {
      * @param sigma Standard deviation of Gaussian
      */
     GaussianFactorGraph add_priors(double sigma, const GaussianVariableIndex<>& variableIndex) const;
+    GaussianFactorGraph add_priors(double sigma) const;
+
 
   };
 

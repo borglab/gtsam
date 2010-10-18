@@ -174,4 +174,8 @@ GaussianFactorGraph GaussianFactorGraph::add_priors(double sigma, const Gaussian
 	return result;
 }
 
+GaussianFactorGraph GaussianFactorGraph::add_priors(double sigma) const {
+	return add_priors(sigma, GaussianVariableIndex<>(*this)) ;
+}
+
 } // namespace gtsam
