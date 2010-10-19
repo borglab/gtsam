@@ -35,38 +35,38 @@ namespace gtsam {
 
 	/**
 	 * Bayes tree
-	 * Templated on the Conditional class, the type of node in the underlying Bayes chain.
+	 * Templated on the CONDITIONAL class, the type of node in the underlying Bayes chain.
 	 * This could be a ConditionalProbabilityTable, a GaussianConditional, or a SymbolicConditional
 	 */
-	template<class Conditional>
-	class BayesTree: public Testable<BayesTree<Conditional> > {
+	template<class CONDITIONAL>
+	class BayesTree: public Testable<BayesTree<CONDITIONAL> > {
 
 	public:
 
-		typedef boost::shared_ptr<Conditional> sharedConditional;
-		typedef boost::shared_ptr<BayesNet<Conditional> > sharedBayesNet;
+		typedef boost::shared_ptr<CONDITIONAL> sharedConditional;
+		typedef boost::shared_ptr<BayesNet<CONDITIONAL> > sharedBayesNet;
 
 		/** A Clique in the tree is an incomplete Bayes net: the variables
 		 * in the Bayes net are the frontal nodes, and the variables conditioned
 		 * on is the separator. We also have pointers up and down the tree.
 		 */
-		struct Clique: public BayesNet<Conditional> {
+		struct Clique: public BayesNet<CONDITIONAL> {
 
 			typedef typename boost::shared_ptr<Clique> shared_ptr;
 			typedef typename boost::weak_ptr<Clique> weak_ptr;
 			weak_ptr parent_;
 			std::list<shared_ptr> children_;
 			std::list<Index> separator_; /** separator keys */
-			typename Conditional::Factor::shared_ptr cachedFactor_;
+			typename CONDITIONAL::Factor::shared_ptr cachedFactor_;
 
-			friend class BayesTree<Conditional>;
+			friend class BayesTree<CONDITIONAL>;
 
 			//* Constructor */
 			Clique();
 
 			Clique(const sharedConditional& conditional);
 
-			Clique(const BayesNet<Conditional>& bayesNet);
+			Clique(const BayesNet<CONDITIONAL>& bayesNet);
 
 			/** return keys in frontal:separator order */
 			std::vector<Index> keys() const;
@@ -87,7 +87,7 @@ namespace gtsam {
 			const std::list<shared_ptr>& children() const { return children_; }
 
 			/** Reference the cached factor */
-			typename Conditional::Factor::shared_ptr& cachedFactor() { return cachedFactor_; }
+			typename CONDITIONAL::Factor::shared_ptr& cachedFactor() { return cachedFactor_; }
 
 			/** The size of subtree rooted at this clique, i.e., nr of Cliques */
 			size_t treeSize() const;
@@ -108,7 +108,7 @@ namespace gtsam {
 			/** return the conditional P(S|Root) on the separator given the root */
 			// TODO: create a cached version
 			template<class FactorGraph>
-			BayesNet<Conditional> shortcut(shared_ptr root);
+			BayesNet<CONDITIONAL> shortcut(shared_ptr root);
 
 			/** return the marginal P(C) of the clique */
 			template<class FactorGraph>
@@ -187,13 +187,13 @@ namespace gtsam {
 		BayesTree();
 
 		/** Create a Bayes Tree from a Bayes Net */
-		BayesTree(const BayesNet<Conditional>& bayesNet);
+		BayesTree(const BayesNet<CONDITIONAL>& bayesNet);
 
 		/**
 		 * Create a Bayes Tree from a Bayes Net and some subtrees. The Bayes net corresponds to the
 		 * new root clique and the subtrees are connected to the root clique.
 		 */
-		BayesTree(const BayesNet<Conditional>& bayesNet, std::list<BayesTree<Conditional> > subtrees);
+		BayesTree(const BayesNet<CONDITIONAL>& bayesNet, std::list<BayesTree<CONDITIONAL> > subtrees);
 
 		/** Destructor */
 		virtual ~BayesTree() {
@@ -210,7 +210,7 @@ namespace gtsam {
 		 * It is the caller's responsibility to decide whether the given Bayes net is a valid clique,
 		 * i.e. all the variables (frontal and separator) are connected
 		 */
-		sharedClique insert(const BayesNet<Conditional>& bayesNet,
+		sharedClique insert(const BayesNet<CONDITIONAL>& bayesNet,
 				std::list<sharedClique>& children, bool isRootClique = false);
 
 		/**
@@ -227,7 +227,7 @@ namespace gtsam {
 		 */
 
 		/** check equality */
-		bool equals(const BayesTree<Conditional>& other, double tol = 1e-9) const;
+		bool equals(const BayesTree<CONDITIONAL>& other, double tol = 1e-9) const;
 
 		/**
 		 * Find parent clique of a conditional.  It will look at all parents and
@@ -262,7 +262,7 @@ namespace gtsam {
 
 		/** return marginal on any variable, as a Bayes Net */
 		template<class FactorGraph>
-		BayesNet<Conditional> marginalBayesNet(Index key) const;
+		BayesNet<CONDITIONAL> marginalBayesNet(Index key) const;
 
 //		/** return joint on two variables */
 //		template<class Factor>
@@ -270,7 +270,7 @@ namespace gtsam {
 //
 //		/** return joint on two variables as a BayesNet */
 //		template<class Factor>
-//		BayesNet<Conditional> jointBayesNet(Index key1, Index key2) const;
+//		BayesNet<CONDITIONAL> jointBayesNet(Index key1, Index key2) const;
 
 		/**
 		 * Read only with side effects
@@ -293,14 +293,14 @@ namespace gtsam {
 		 * Remove path from clique to root and return that path as factors
 		 * plus a list of orphaned subtree roots. Used in removeTop below.
 		 */
-		void removePath(sharedClique clique, BayesNet<Conditional>& bn, Cliques& orphans);
+		void removePath(sharedClique clique, BayesNet<CONDITIONAL>& bn, Cliques& orphans);
 
 		/**
 		 * Given a list of keys, turn "contaminated" part of the tree back into a factor graph.
 		 * Factors and orphans are added to the in/out arguments.
 		 */
 		template<class Container>
-		void removeTop(const Container& keys, BayesNet<Conditional>& bn, Cliques& orphans);
+		void removeTop(const Container& keys, BayesNet<CONDITIONAL>& bn, Cliques& orphans);
 
 	}; // BayesTree
 
