@@ -7,6 +7,23 @@ Copyright (C) 1994, 1995, 1996, 1999, 2000, 2001, 2002, 2004, 2005,
 This file is free documentation; the Free Software Foundation gives
 unlimited permission to copy, distribute and modify it.
 
+Third-Party Library Installation
+==================
+
+GTSAM uses CCOLAMD to get a good elimination ordering for the linear solving.
+CCOLAMD can be downloaded from Tim Davis's website:
+http://www.cise.ufl.edu/research/sparse/ccolamd/
+The package should be installed to the default C++ search path. To link properly
+with the installed library, pass the following argument to ./configure (described
+in the next section):
+--with-ccolamd-lib=YOURPATH_TO_LIBCCOLAMD
+
+For interneal usage of people **at Georgia Tech**, check out the "CCOLAMD" project
+from the SVN server, and run "make install". The library will be installed
+in $HOME/lib/ and $HOME/include/CCOLAMD by default. No additional configure argument
+is needed for configure in this case.
+
+
 Basic Installation
 ==================
 
