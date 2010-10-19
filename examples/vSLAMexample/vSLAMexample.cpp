@@ -24,7 +24,6 @@ using namespace std;
 using namespace gtsam;
 using namespace gtsam::visualSLAM;
 using namespace boost;
-typedef NonlinearOptimizer<Graph,Values> Optimizer;
 
 /* ************************************************************************* */
 #define CALIB_FILE      "Data/calib.txt"

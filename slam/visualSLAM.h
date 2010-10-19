@@ -19,14 +19,13 @@
 #pragma once
 
 #include <gtsam/geometry/Pose3.h>
-#include <gtsam/geometry/Point3.h>
-#include <gtsam/geometry/Cal3_S2.h>
 #include <gtsam/geometry/Point2.h>
 #include <gtsam/geometry/SimpleCamera.h>
 #include <gtsam/nonlinear/Key.h>
 #include <gtsam/nonlinear/NonlinearFactorGraph.h>
 #include <gtsam/nonlinear/TupleValues.h>
 #include <gtsam/nonlinear/NonlinearEquality.h>
+#include <gtsam/nonlinear/NonlinearOptimizer.h>
 #include <gtsam/slam/PriorFactor.h>
 
 namespace gtsam { namespace visualSLAM {
@@ -198,5 +197,8 @@ namespace gtsam { namespace visualSLAM {
 
 
 	}; // Graph
+
+	// Optimizer
+	typedef NonlinearOptimizer<Graph, Values> Optimizer;
 
 } } // namespaces
