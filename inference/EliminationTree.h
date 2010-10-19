@@ -12,22 +12,24 @@
 #include <boost/pool/pool_alloc.hpp>
 
 #include <gtsam/inference/VariableIndex.h>
+#include <gtsam/inference/BayesNet.h>
 
 class EliminationTreeTester; // for unit tests, see testEliminationTree
 
 namespace gtsam {
 
 /**
- * An elimination tree is a tree of factors
+ * An elimination tree is a data structure used intermediately during
+ * elimination, and it can be used to save work between multiple eliminations.
  */
-template<class FACTORGRAPH>
-class EliminationTree: public Testable<EliminationTree<FACTORGRAPH> > {
+template<class FACTOR>
+class EliminationTree: public Testable<EliminationTree<FACTOR> > {
 
 public:
 
-  typedef boost::shared_ptr<typename FACTORGRAPH::Factor> sharedFactor;
-  typedef boost::shared_ptr<EliminationTree<FACTORGRAPH> > shared_ptr;
-  typedef FACTORGRAPH FactorGraph;
+  typedef typename FACTOR::shared_ptr sharedFactor;
+  typedef boost::shared_ptr<EliminationTree<FACTOR> > shared_ptr;
+  typedef gtsam::BayesNet<typename FACTOR::Conditional> BayesNet;
 
 private:
 
@@ -38,7 +40,7 @@ private:
   Factors factors_; /** factors associated with root */
   SubTrees subTrees_; /** sub-trees */
 
-  typedef std::pair<typename FACTORGRAPH::bayesnet_type, typename FACTORGRAPH::sharedFactor> EliminationResult;
+  typedef std::pair<BayesNet, sharedFactor> EliminationResult;
 
   /** default constructor, private, as you should use Create below */
   EliminationTree(Index key = 0) : key_(key) {}
@@ -66,6 +68,7 @@ private:
 public:
 
   /** Named constructor to build the elimination tree of a factor graph */
+  template<class FACTORGRAPH>
   static shared_ptr Create(const FACTORGRAPH& factorGraph);
 
   /** Print the tree to cout */
@@ -75,7 +78,7 @@ public:
   bool equals(const EliminationTree& other, double tol = 1e-9) const;
 
   /** Eliminate the factors to a Bayes Net */
-  typename FACTORGRAPH::bayesnet_type::shared_ptr eliminate() const;
+  typename BayesNet::shared_ptr eliminate() const;
 };
 
 }

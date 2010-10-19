@@ -26,7 +26,7 @@
 #include <boost/pool/pool_alloc.hpp>
 #include <gtsam/inference/BayesTree.h>
 #include <gtsam/inference/ClusterTree.h>
-#include <gtsam/inference/Conditional.h>
+#include <gtsam/inference/IndexConditional.h>
 
 namespace gtsam {
 
@@ -49,7 +49,7 @@ namespace gtsam {
 		typedef class BayesTree<typename FG::Factor::Conditional> BayesTree;
 
 		// And we will frequently refer to a symbolic Bayes tree
-		typedef gtsam::BayesTree<Conditional> SymbolicBayesTree;
+		typedef gtsam::BayesTree<IndexConditional> SymbolicBayesTree;
 
 	private:
 		// distribute the factors along the cluster tree

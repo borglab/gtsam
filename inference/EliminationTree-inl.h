@@ -7,6 +7,7 @@
 
 #include <gtsam/inference/EliminationTree.h>
 #include <gtsam/inference/VariableSlots-inl.h>
+#include <gtsam/inference/FactorGraph-inl.h>
 
 #include <boost/foreach.hpp>
 #include <boost/lambda/lambda.hpp>
@@ -19,16 +20,16 @@ using namespace std;
 namespace gtsam {
 
 /* ************************************************************************* */
-template<class FACTORGRAPH>
-typename EliminationTree<FACTORGRAPH>::EliminationResult
-EliminationTree<FACTORGRAPH>::eliminate_() const {
+template<class FACTOR>
+typename EliminationTree<FACTOR>::EliminationResult
+EliminationTree<FACTOR>::eliminate_() const {
 
-  typename FACTORGRAPH::bayesnet_type bayesNet;
+  BayesNet bayesNet;
 
   set<Index, std::less<Index>, boost::fast_pool_allocator<Index> > separator;
 
   // Create the list of factors to be eliminated
-  FACTORGRAPH factors;
+  FactorGraph<FACTOR> factors;
   factors.reserve(this->factors_.size() + this->subTrees_.size());
 
   // add all factors associated with root
@@ -42,15 +43,15 @@ EliminationTree<FACTORGRAPH>::eliminate_() const {
   }
 
   // eliminate the joint factor and add the conditional to the bayes net
-  typename FACTORGRAPH::sharedFactor jointFactor(FACTORGRAPH::Factor::Combine(factors, VariableSlots(factors)));
+  sharedFactor jointFactor(FACTOR::Combine(factors, VariableSlots(factors)));
   bayesNet.push_back(jointFactor->eliminateFirst());
 
   return EliminationResult(bayesNet, jointFactor);
 }
 
 /* ************************************************************************* */
-template<class FACTORGRAPH>
-vector<Index> EliminationTree<FACTORGRAPH>::ComputeParents(const VariableIndex<>& structure) {
+template<class FACTOR>
+vector<Index> EliminationTree<FACTOR>::ComputeParents(const VariableIndex<>& structure) {
 
   // Number of factors and variables
   const size_t m = structure.nFactors();
@@ -83,9 +84,10 @@ vector<Index> EliminationTree<FACTORGRAPH>::ComputeParents(const VariableIndex<>
 }
 
 /* ************************************************************************* */
+template<class FACTOR>
 template<class FACTORGRAPH>
-typename EliminationTree<FACTORGRAPH>::shared_ptr
-EliminationTree<FACTORGRAPH>::Create(const FACTORGRAPH& factorGraph) {
+typename EliminationTree<FACTOR>::shared_ptr
+EliminationTree<FACTOR>::Create(const FACTORGRAPH& factorGraph) {
 
   // Create column structure
   VariableIndex<> varIndex(factorGraph);
@@ -108,7 +110,10 @@ EliminationTree<FACTORGRAPH>::Create(const FACTORGRAPH& factorGraph) {
   }
 
   // Hang factors in right places
-  BOOST_FOREACH(const sharedFactor& factor, factorGraph) {
+  BOOST_FOREACH(const typename FACTORGRAPH::sharedFactor& derivedFactor, factorGraph) {
+    // Here we static_cast to the factor type of this EliminationTree.  This
+    // allows performing symbolic elimination on, for example, GaussianFactors.
+    sharedFactor factor(boost::shared_static_cast<FACTOR>(derivedFactor));
     Index j = factor->front();
     trees[j]->add(factor);
   }
@@ -148,12 +153,13 @@ bool EliminationTree<FACTORGRAPH>::equals(const EliminationTree<FACTORGRAPH>& ex
 }
 
 /* ************************************************************************* */
-template<class FACTORGRAPH>
-typename FACTORGRAPH::bayesnet_type::shared_ptr EliminationTree<FACTORGRAPH>::eliminate() const {
+template<class FACTOR>
+typename EliminationTree<FACTOR>::BayesNet::shared_ptr
+EliminationTree<FACTOR>::eliminate() const {
 
   // call recursive routine
   EliminationResult result = eliminate_();
-  return typename FACTORGRAPH::bayesnet_type::shared_ptr(new typename FACTORGRAPH::bayesnet_type(result.first));
+  return typename BayesNet::shared_ptr(new BayesNet(result.first));
 }
 
 }

@@ -29,9 +29,6 @@
 
 namespace gtsam {
 
-class Factor;
-class Conditional;
-
 	class Inference {
 	private:
 	  /* Static members only, private constructor */
@@ -51,8 +48,8 @@ class Conditional;
      * variables in order starting from 0.  Special fast version for symbolic
      * elimination.
      */
-	  template<class FACTOR>
-    static BayesNet<Conditional>::shared_ptr EliminateSymbolic(const FactorGraph<FACTOR>& factorGraph);
+//	  template<class FACTOR>
+//    static BayesNet<Conditional>::shared_ptr EliminateSymbolic(const FactorGraph<FACTOR>& factorGraph);
 
 	  /**
 	   * Eliminate a factor graph in its natural ordering, i.e. eliminating
@@ -93,8 +90,8 @@ class Conditional;
      * variable index.  This is a specialized faster version for purely
      * symbolic factor graphs.
      */
-    static boost::shared_ptr<Conditional>
-    EliminateOneSymbolic(FactorGraph<Factor>& factorGraph, VariableIndex<>& variableIndex, Index var);
+//    static boost::shared_ptr<Conditional>
+//    EliminateOneSymbolic(FactorGraph<Factor>& factorGraph, VariableIndex<>& variableIndex, Index var);
 
     /**
      * Eliminate all variables except the specified ones.  Internally this

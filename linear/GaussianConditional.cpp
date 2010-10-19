@@ -33,11 +33,11 @@ namespace gtsam {
 GaussianConditional::GaussianConditional() : rsd_(matrix_) {}
 
 /* ************************************************************************* */
-GaussianConditional::GaussianConditional(Index key) : Conditional(key), rsd_(matrix_) {}
+GaussianConditional::GaussianConditional(Index key) : IndexConditional(key), rsd_(matrix_) {}
 
 /* ************************************************************************* */
 GaussianConditional::GaussianConditional(Index key,const Vector& d, const Matrix& R, const Vector& sigmas) :
-	    Conditional(key), rsd_(matrix_), sigmas_(sigmas) {
+	    IndexConditional(key), rsd_(matrix_), sigmas_(sigmas) {
   assert(R.size1() <= R.size2());
   size_t dims[] = { R.size2(), 1 };
   rsd_.copyStructureFrom(rsd_type(matrix_, dims, dims+2, d.size()));
@@ -48,7 +48,7 @@ GaussianConditional::GaussianConditional(Index key,const Vector& d, const Matrix
 /* ************************************************************************* */
 GaussianConditional::GaussianConditional(Index key, const Vector& d, const Matrix& R,
     Index name1, const Matrix& S, const Vector& sigmas) :
-    Conditional(key,name1), rsd_(matrix_), sigmas_(sigmas) {
+    IndexConditional(key,name1), rsd_(matrix_), sigmas_(sigmas) {
   assert(R.size1() <= R.size2());
   size_t dims[] = { R.size2(), S.size2(), 1 };
   rsd_.copyStructureFrom(rsd_type(matrix_, dims, dims+3, d.size()));
@@ -60,7 +60,7 @@ GaussianConditional::GaussianConditional(Index key, const Vector& d, const Matri
 /* ************************************************************************* */
 GaussianConditional::GaussianConditional(Index key, const Vector& d, const Matrix& R,
 		Index name1, const Matrix& S, Index name2, const Matrix& T, const Vector& sigmas) :
-		Conditional(key,name1,name2), rsd_(matrix_), sigmas_(sigmas) {
+		IndexConditional(key,name1,name2), rsd_(matrix_), sigmas_(sigmas) {
   assert(R.size1() <= R.size2());
   size_t dims[] = { R.size2(), S.size2(), T.size2(), 1 };
   rsd_.copyStructureFrom(rsd_type(matrix_, dims, dims+4, d.size()));
@@ -74,7 +74,7 @@ GaussianConditional::GaussianConditional(Index key, const Vector& d, const Matri
 GaussianConditional::GaussianConditional(Index key, const Vector& d, const Matrix& R, const list<pair<Index, Matrix> >& parents, const Vector& sigmas) :
     rsd_(matrix_), sigmas_(sigmas) {
   assert(R.size1() <= R.size2());
-  Conditional::nrFrontals_ = 1;
+  IndexConditional::nrFrontals_ = 1;
   keys_.resize(1+parents.size());
   size_t dims[1+parents.size()+1];
   dims[0] = R.size2();

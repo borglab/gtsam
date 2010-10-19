@@ -38,7 +38,8 @@ namespace gtsam {
  * kept in pointer containers. To be safe, you should make them
  * immutable, i.e., practicing functional programming.
  */
-class Conditional: public Factor, boost::noncopyable, public Testable<Conditional> {
+template<typename KEY>
+class ConditionalBase: public gtsam::FactorBase<KEY>, boost::noncopyable, public Testable<ConditionalBase<KEY> > {
 
 protected:
 
@@ -47,40 +48,41 @@ protected:
 
 public:
 
-  /** convenience typename for a shared pointer to this class */
-  typedef gtsam::Factor Factor;
-  typedef boost::shared_ptr<Conditional> shared_ptr;
-  typedef Factor::iterator iterator;
-  typedef Factor::const_iterator const_iterator;
+  typedef KEY Key;
+  typedef ConditionalBase<Key> This;
+  typedef gtsam::FactorBase<Key> Factor;
+  typedef boost::shared_ptr<This> shared_ptr;
+  typedef typename Factor::iterator iterator;
+  typedef typename Factor::const_iterator const_iterator;
   typedef boost::iterator_range<const_iterator> Frontals;
   typedef boost::iterator_range<const_iterator> Parents;
 
   /** Empty Constructor to make serialization possible */
-  Conditional() : nrFrontals_(0) {}
+  ConditionalBase() : nrFrontals_(0) {}
 
   /** No parents */
-  Conditional(Index key) : Factor(key), nrFrontals_(1) {}
+  ConditionalBase(Key key) : Factor(key), nrFrontals_(1) {}
 
   /** Single parent */
-  Conditional(Index key, Index parent) : Factor(key, parent), nrFrontals_(1) {}
+  ConditionalBase(Key key, Key parent) : Factor(key, parent), nrFrontals_(1) {}
 
   /** Two parents */
-  Conditional(Index key, Index parent1, Index parent2) : Factor(key, parent1, parent2), nrFrontals_(1) {}
+  ConditionalBase(Key key, Key parent1, Key parent2) : Factor(key, parent1, parent2), nrFrontals_(1) {}
 
   /** Three parents */
-  Conditional(Index key, Index parent1, Index parent2, Index parent3) : Factor(key, parent1, parent2, parent3), nrFrontals_(1) {}
+  ConditionalBase(Key key, Key parent1, Key parent2, Key parent3) : Factor(key, parent1, parent2, parent3), nrFrontals_(1) {}
 
   /** Constructor from a frontal variable and a vector of parents */
-  Conditional(Index key, const std::vector<Index>& parents) : nrFrontals_(1) {
-    keys_.resize(1 + parents.size());
+  ConditionalBase(Key key, const std::vector<Key>& parents) : nrFrontals_(1) {
+    Factor::keys_.resize(1 + parents.size());
     *(beginFrontals()) = key;
     std::copy(parents.begin(), parents.end(), beginParents());
   }
 
   /** Constructor from a frontal variable and an iterator range of parents */
-  template<typename Iterator>
-  static Conditional::shared_ptr FromRange(Index key, Iterator firstParent, Iterator lastParent) {
-    Conditional::shared_ptr conditional(new Conditional);
+  template<class DERIVED, typename ITERATOR>
+  static typename DERIVED::shared_ptr FromRange(Key key, ITERATOR firstParent, ITERATOR lastParent) {
+    typename DERIVED::shared_ptr conditional(new DERIVED);
     conditional->nrFrontals_ = 1;
     conditional->keys_.push_back(key);
     std::copy(firstParent, lastParent, back_inserter(conditional->keys_));
@@ -88,38 +90,39 @@ public:
   }
 
   /** Named constructor from any number of frontal variables and parents */
-  template<typename Iterator>
-  static Conditional::shared_ptr FromRange(Iterator firstKey, Iterator lastKey, size_t nrFrontals) {
-    Conditional::shared_ptr conditional(new Conditional);
+  template<typename DERIVED, typename ITERATOR>
+  static typename DERIVED::shared_ptr FromRange(ITERATOR firstKey, ITERATOR lastKey, size_t nrFrontals) {
+    typename DERIVED::shared_ptr conditional(new DERIVED);
     conditional->nrFrontals_ = nrFrontals;
     std::copy(firstKey, lastKey, back_inserter(conditional->keys_));
     return conditional;
   }
 
   /** check equality */
-  bool equals(const Conditional& c, double tol = 1e-9) const {
+  template<class DERIVED>
+  bool equals(const DERIVED& c, double tol = 1e-9) const {
     return nrFrontals_ == c.nrFrontals_ && Factor::equals(c, tol); }
 
 	/** return the number of frontals */
 	size_t nrFrontals() const { return nrFrontals_; }
 
 	/** return the number of parents */
-	size_t nrParents() const { return keys_.size() - nrFrontals_; }
+	size_t nrParents() const { return Factor::keys_.size() - nrFrontals_; }
 
 	/** Special accessor when there is only one frontal variable. */
-	Index key() const { assert(nrFrontals_==1); return keys_[0]; }
+	Key key() const { assert(nrFrontals_==1); return Factor::keys_[0]; }
 
   /** Iterators over frontal and parent variables. */
-  const_iterator beginFrontals() const { return keys_.begin(); }
-  const_iterator endFrontals() const { return keys_.begin()+nrFrontals_; }
-  const_iterator beginParents() const { return keys_.begin()+nrFrontals_; }
-  const_iterator endParents() const { return keys_.end(); }
+  const_iterator beginFrontals() const { return Factor::keys_.begin(); }
+  const_iterator endFrontals() const { return Factor::keys_.begin()+nrFrontals_; }
+  const_iterator beginParents() const { return Factor::keys_.begin()+nrFrontals_; }
+  const_iterator endParents() const { return Factor::keys_.end(); }
 
   /** Mutable iterators and accessors */
-  iterator beginFrontals() { return keys_.begin(); }
-  iterator endFrontals() { return keys_.begin()+nrFrontals_; }
-  iterator beginParents() { return keys_.begin()+nrFrontals_; }
-  iterator endParents() { return keys_.end(); }
+  iterator beginFrontals() { return Factor::keys_.begin(); }
+  iterator endFrontals() { return Factor::keys_.begin()+nrFrontals_; }
+  iterator beginParents() { return Factor::keys_.begin()+nrFrontals_; }
+  iterator endParents() { return Factor::keys_.end(); }
   boost::iterator_range<iterator> frontals() { return boost::make_iterator_range(beginFrontals(), endFrontals()); }
   boost::iterator_range<iterator> parents() { return boost::make_iterator_range(beginParents(), endParents()); }
 
@@ -134,9 +137,9 @@ public:
   /** print */
   void print(const std::string& s = "Conditional") const {
     std::cout << s << " P(";
-    BOOST_FOREACH(Index key, frontals()) std::cout << " " << key;
+    BOOST_FOREACH(Key key, frontals()) std::cout << " " << key;
     if (nrParents()>0) std::cout << " |";
-    BOOST_FOREACH(Index parent, parents()) std::cout << " " << parent;
+    BOOST_FOREACH(Key parent, parents()) std::cout << " " << parent;
     std::cout << ")" << std::endl;
   }
 
@@ -146,11 +149,11 @@ public:
    */
   bool permuteSeparatorWithInverse(const Permutation& inversePermutation) {
 #ifndef NDEBUG
-    BOOST_FOREACH(Index key, frontals()) { assert(key == inversePermutation[key]); }
+    BOOST_FOREACH(Key key, frontals()) { assert(key == inversePermutation[key]); }
 #endif
     bool parentChanged = false;
-    BOOST_FOREACH(Index& parent, parents()) {
-      Index newParent = inversePermutation[parent];
+    BOOST_FOREACH(Key& parent, parents()) {
+      Key newParent = inversePermutation[parent];
       if(parent != newParent) {
         parentChanged = true;
         parent = newParent;
@@ -166,8 +169,8 @@ public:
   void permuteWithInverse(const Permutation& inversePermutation) {
     // The permutation may not move the separators into the frontals
 #ifndef NDEBUG
-    BOOST_FOREACH(const Index frontal, this->frontals()) {
-      BOOST_FOREACH(const Index separator, this->parents()) {
+    BOOST_FOREACH(const Key frontal, this->frontals()) {
+      BOOST_FOREACH(const Key separator, this->parents()) {
         assert(inversePermutation[frontal] < inversePermutation[separator]);
       }
     }
@@ -180,8 +183,6 @@ protected:
    * conditioned variable is numbered lower than the parents.
    */
   void assertInvariants() const;
-
-  friend class Factor;
 
 private:
 	/** Serialization function */

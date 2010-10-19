@@ -24,14 +24,14 @@ using namespace boost::assign;
 #define GTSAM_MAGIC_KEY
 
 #include <gtsam/inference/BayesNet.h>
-#include <gtsam/inference/Conditional.h>
+#include <gtsam/inference/IndexConditional.h>
 #include <gtsam/inference/SymbolicFactorGraph.h>
 #include <gtsam/inference/ISAM-inl.h>
 
 using namespace std;
 using namespace gtsam;
 
-typedef ISAM<Conditional> SymbolicISAM;
+typedef ISAM<IndexConditional> SymbolicISAM;
 
 /* ************************************************************************* */
 // Some numbers that should be consistent among all smoother tests

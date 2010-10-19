@@ -23,7 +23,7 @@
 #include <vector>
 #include <map>
 
-#include <gtsam/inference/Key.h>
+#include <gtsam/nonlinear/Key.h>
 
 using namespace std;
 using namespace boost;

@@ -51,25 +51,25 @@ inline typename FactorGraph::bayesnet_type::shared_ptr Inference::Eliminate(cons
 }
 
 /* ************************************************************************* */
-template<class FACTOR>
-BayesNet<Conditional>::shared_ptr Inference::EliminateSymbolic(const FactorGraph<FACTOR>& factorGraph) {
-
-  // Create a copy of the factor graph to eliminate in-place
-  FactorGraph<gtsam::Factor> eliminationGraph(factorGraph);
-  VariableIndex<> variableIndex(eliminationGraph);
-
-  typename BayesNet<Conditional>::shared_ptr bayesnet(new BayesNet<Conditional>());
-
-  // Eliminate variables one-by-one, updating the eliminated factor graph and
-  // the variable index.
-  for(Index var = 0; var < variableIndex.size(); ++var) {
-    Conditional::shared_ptr conditional(EliminateOneSymbolic(eliminationGraph, variableIndex, var));
-    if(conditional) // Will be NULL if the variable did not appear in the factor graph.
-      bayesnet->push_back(conditional);
-  }
-
-  return bayesnet;
-}
+//template<class FACTOR>
+//BayesNet<Conditional>::shared_ptr Inference::EliminateSymbolic(const FactorGraph<FACTOR>& factorGraph) {
+//
+//  // Create a copy of the factor graph to eliminate in-place
+//  FactorGraph<gtsam::Factor> eliminationGraph(factorGraph);
+//  VariableIndex<> variableIndex(eliminationGraph);
+//
+//  typename BayesNet<Conditional>::shared_ptr bayesnet(new BayesNet<Conditional>());
+//
+//  // Eliminate variables one-by-one, updating the eliminated factor graph and
+//  // the variable index.
+//  for(Index var = 0; var < variableIndex.size(); ++var) {
+//    Conditional::shared_ptr conditional(EliminateOneSymbolic(eliminationGraph, variableIndex, var));
+//    if(conditional) // Will be NULL if the variable did not appear in the factor graph.
+//      bayesnet->push_back(conditional);
+//  }
+//
+//  return bayesnet;
+//}
 
 /* ************************************************************************* */
 template<class FactorGraph>
@@ -262,7 +262,9 @@ Inference::EliminateOne(FactorGraph& factorGraph, typename FactorGraph::variable
 
     // Join the factors and eliminate the variable from the joint factor
     tic("EliminateOne: Combine");
-    typename FactorGraph::sharedFactor jointFactor(FactorGraph::Factor::Combine(factorGraph, variableIndex, removedFactorIdxs, sortedKeys, jointFactorPositions));
+    typename FactorGraph::sharedFactor jointFactor(
+        FactorGraph::Factor::Combine(
+            factorGraph, variableIndex, removedFactorIdxs, sortedKeys, jointFactorPositions));
     toc("EliminateOne: Combine");
 
     // Remove the original factors

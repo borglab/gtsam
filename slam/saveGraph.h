@@ -21,7 +21,7 @@
 #include <gtsam/inference/FactorGraph.h>
 #include <gtsam/inference/SymbolicFactor.h>
 #include <gtsam/inference/SymbolicBayesNet.h>
-#include <gtsam/inference/Key.h>
+#include <gtsam/nonlinear/Key.h>
 #include <gtsam/geometry/Point2.h>
 #include <gtsam/nonlinear/LieValues.h>
 

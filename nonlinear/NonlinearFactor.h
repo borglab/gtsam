@@ -26,7 +26,7 @@
 #include <boost/shared_ptr.hpp>
 #include <boost/serialization/base_object.hpp>
 
-#include <gtsam/inference/Factor.h>
+#include <gtsam/inference/IndexFactor.h>
 #include <gtsam/base/Vector.h>
 #include <gtsam/base/Matrix.h>
 #include <gtsam/linear/SharedGaussian.h>
@@ -138,7 +138,7 @@ namespace gtsam {
 		 * Create a symbolic factor using the given ordering to determine the
 		 * variable indices.
 		 */
-		virtual Factor::shared_ptr symbolic(const Ordering& ordering) const = 0;
+		virtual IndexFactor::shared_ptr symbolic(const Ordering& ordering) const = 0;
 
 	private:
 
@@ -204,7 +204,7 @@ namespace gtsam {
 			Base::print("parent");
 		}
 
-		/** Check if two factors are equal. Note type is Factor and needs cast. */
+		/** Check if two factors are equal. Note type is IndexFactor and needs cast. */
 		bool equals(const NonlinearFactor1<Values,Key>& f, double tol = 1e-9) const {
 			return Base::noiseModel_->equals(*f.noiseModel_, tol) && (key_ == f.key_);
 		}
@@ -242,8 +242,8 @@ namespace gtsam {
      * Create a symbolic factor using the given ordering to determine the
      * variable indices.
      */
-    virtual Factor::shared_ptr symbolic(const Ordering& ordering) const {
-      return Factor::shared_ptr(new Factor(ordering[key_]));
+    virtual IndexFactor::shared_ptr symbolic(const Ordering& ordering) const {
+      return IndexFactor::shared_ptr(new IndexFactor(ordering[key_]));
     }
 
 		/*
@@ -362,12 +362,12 @@ namespace gtsam {
      * Create a symbolic factor using the given ordering to determine the
      * variable indices.
      */
-    virtual Factor::shared_ptr symbolic(const Ordering& ordering) const {
+    virtual IndexFactor::shared_ptr symbolic(const Ordering& ordering) const {
       const Index var1 = ordering[key1_], var2 = ordering[key2_];
       if(var1 < var2)
-      return Factor::shared_ptr(new Factor(var1, var2));
+      return IndexFactor::shared_ptr(new IndexFactor(var1, var2));
       else
-        return Factor::shared_ptr(new Factor(var2, var1));
+        return IndexFactor::shared_ptr(new IndexFactor(var2, var1));
     }
 
 		/** methods to retrieve both keys */
@@ -519,20 +519,20 @@ namespace gtsam {
      * Create a symbolic factor using the given ordering to determine the
      * variable indices.
      */
-    virtual Factor::shared_ptr symbolic(const Ordering& ordering) const {
+    virtual IndexFactor::shared_ptr symbolic(const Ordering& ordering) const {
       const Index var1 = ordering[key1_], var2 = ordering[key2_], var3 = ordering[key3_];
       if(var1 < var2 && var2 < var3)
-        return Factor::shared_ptr(new Factor(ordering[key1_], ordering[key2_], ordering[key3_]));
+        return IndexFactor::shared_ptr(new IndexFactor(ordering[key1_], ordering[key2_], ordering[key3_]));
       else if(var2 < var1 && var1 < var3)
-        return Factor::shared_ptr(new Factor(ordering[key2_], ordering[key2_], ordering[key3_]));
+        return IndexFactor::shared_ptr(new IndexFactor(ordering[key2_], ordering[key2_], ordering[key3_]));
       else if(var1 < var3 && var3 < var2)
-        return Factor::shared_ptr(new Factor(ordering[key1_], ordering[key3_], ordering[key2_]));
+        return IndexFactor::shared_ptr(new IndexFactor(ordering[key1_], ordering[key3_], ordering[key2_]));
       else if(var2 < var3 && var3 < var1)
-        return Factor::shared_ptr(new Factor(ordering[key2_], ordering[key3_], ordering[key1_]));
+        return IndexFactor::shared_ptr(new IndexFactor(ordering[key2_], ordering[key3_], ordering[key1_]));
       else if(var3 < var1 && var1 < var2)
-        return Factor::shared_ptr(new Factor(ordering[key3_], ordering[key1_], ordering[key2_]));
+        return IndexFactor::shared_ptr(new IndexFactor(ordering[key3_], ordering[key1_], ordering[key2_]));
       else if(var3 < var2 && var2 < var1)
-        return Factor::shared_ptr(new Factor(ordering[key3_], ordering[key2_], ordering[key1_]));
+        return IndexFactor::shared_ptr(new IndexFactor(ordering[key3_], ordering[key2_], ordering[key1_]));
       else
         assert(false);
     }

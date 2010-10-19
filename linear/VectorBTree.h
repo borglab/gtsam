@@ -25,7 +25,7 @@
 
 #include <gtsam/base/Testable.h>
 #include <gtsam/base/Vector.h>
-#include <gtsam/inference/Key.h>
+#include <gtsam/nonlinear/Key.h>
 #include <gtsam/base/BTree.h>
 
 namespace gtsam {

@@ -27,11 +27,12 @@
 #include <boost/serialization/nvp.hpp>
 #include <gtsam/base/types.h>
 #include <gtsam/base/Testable.h>
+#include <gtsam/base/FastMap.h>
 #include <gtsam/inference/inference.h>
 
 namespace gtsam {
 
-class Conditional;
+template<class KEY> class ConditionalBase;
 
 /**
  * A simple factor class to use in a factor graph.
@@ -47,10 +48,21 @@ class Conditional;
  * variables, continuous ones, or a combination of both. It is up to the config to
  * provide the appropriate values at the appropriate time.
  */
-class Factor : public Testable<Factor> {
+template<typename KEY>
+class FactorBase : public Testable<FactorBase<KEY> > {
+
+public:
+
+  typedef KEY Key;
+  typedef FactorBase<Key> This;
+  typedef gtsam::ConditionalBase<Key> Conditional;
+  typedef boost::shared_ptr<FactorBase> shared_ptr;
+  typedef std::vector<Index>::iterator iterator;
+  typedef std::vector<Index>::const_iterator const_iterator;
+
 protected:
 
-  std::vector<Index> keys_;
+  std::vector<Key> keys_;
 
   /** Internal check to make sure keys are sorted.
    * If NDEBUG is defined, this is empty and optimized out. */
@@ -58,61 +70,60 @@ protected:
 
 public:
 
-  typedef gtsam::Conditional Conditional;
-  typedef boost::shared_ptr<Factor> shared_ptr;
-  typedef std::vector<Index>::iterator iterator;
-  typedef std::vector<Index>::const_iterator const_iterator;
-
   /** Copy constructor */
-  Factor(const Factor& f);
+  FactorBase(const This& f);
 
   /** Construct from derived type */
-  Factor(const Conditional& c);
+  FactorBase(const Conditional& c);
 
   /** Constructor from a collection of keys */
-  template<class KeyIterator> Factor(KeyIterator beginKey, KeyIterator endKey);
+  template<class KeyIterator> FactorBase(KeyIterator beginKey, KeyIterator endKey) :
+        keys_(beginKey, endKey) { assertInvariants(); }
 
   /** Default constructor for I/O */
-  Factor() {}
+  FactorBase() {}
 
   /** Construct unary factor */
-  Factor(Index key) : keys_(1) {
+  FactorBase(Key key) : keys_(1) {
     keys_[0] = key; assertInvariants(); }
 
   /** Construct binary factor */
-  Factor(Index key1, Index key2) : keys_(2) {
+  FactorBase(Key key1, Key key2) : keys_(2) {
     keys_[0] = key1; keys_[1] = key2; assertInvariants(); }
 
   /** Construct ternary factor */
-  Factor(Index key1, Index key2, Index key3) : keys_(3) {
+  FactorBase(Key key1, Key key2, Key key3) : keys_(3) {
     keys_[0] = key1; keys_[1] = key2; keys_[2] = key3; assertInvariants(); }
 
   /** Construct 4-way factor */
-  Factor(Index key1, Index key2, Index key3, Index key4) : keys_(4) {
+  FactorBase(Key key1, Key key2, Key key3, Key key4) : keys_(4) {
     keys_[0] = key1; keys_[1] = key2; keys_[2] = key3; keys_[3] = key4; assertInvariants(); }
 
   /** Named constructor for combining a set of factors with pre-computed set of
    * variables.  (Old style - will be removed when scalar elimination is
    * removed in favor of the EliminationTree). */
-  template<class FactorGraphType, class VariableIndexStorage>
-  static shared_ptr Combine(const FactorGraphType& factorGraph,
+  template<class DERIVED, class FactorGraphType, class VariableIndexStorage>
+  static typename DERIVED::shared_ptr Combine(const FactorGraphType& factorGraph,
       const VariableIndex<VariableIndexStorage>& variableIndex, const std::vector<size_t>& factors,
-      const std::vector<Index>& variables, const std::vector<std::vector<size_t> >& variablePositions);
+      const std::vector<KEY>& variables, const std::vector<std::vector<size_t> >& variablePositions) {
+    return typename DERIVED::shared_ptr(new DERIVED(variables.begin(), variables.end())); }
 
   /** Create a combined joint factor (new style for EliminationTree). */
-  template<class MapAllocator>
-  static shared_ptr Combine(const FactorGraph<Factor>& factors, const std::map<Index, std::vector<Index>, std::less<Index>, MapAllocator>& variableSlots);
+  template<class DERIVED>
+  static typename DERIVED::shared_ptr Combine(const FactorGraph<DERIVED>& factors, const FastMap<Key, std::vector<Key> >& variableSlots);
 
   /**
    * eliminate the first variable involved in this factor
    * @return a conditional on the eliminated variable
    */
-  boost::shared_ptr<Conditional> eliminateFirst();
+  template<class CONDITIONAL>
+  typename CONDITIONAL::shared_ptr eliminateFirst();
 
   /**
    * eliminate the first nrFrontals frontal variables.
    */
-  boost::shared_ptr<BayesNet<Conditional> > eliminate(size_t nrFrontals = 1);
+  template<class CONDITIONAL>
+  typename BayesNet<CONDITIONAL>::shared_ptr eliminate(size_t nrFrontals = 1);
 
   /**
    * Permutes the GaussianFactor, but for efficiency requires the permutation
@@ -129,24 +140,25 @@ public:
   iterator end() { return keys_.end(); }
 
   /** First key*/
-  Index front() const { return keys_.front(); }
+  Key front() const { return keys_.front(); }
 
   /** Last key */
-  Index back() const { return keys_.back(); }
+  Key back() const { return keys_.back(); }
 
   /** find */
-  const_iterator find(Index key) const { return std::find(begin(), end(), key); }
+  const_iterator find(Key key) const { return std::find(begin(), end(), key); }
 
   /** print */
   void print(const std::string& s = "Factor") const;
 
   /** check equality */
-  bool equals(const Factor& other, double tol = 1e-9) const;
+//  template<class DERIVED>
+  bool equals(const This& other, double tol = 1e-9) const;
 
   /**
    * return keys in order as created
    */
-  const std::vector<Index>& keys() const { return keys_; }
+  const std::vector<Key>& keys() const { return keys_; }
 
   /**
    * @return the number of nodes the factor connects
@@ -155,10 +167,6 @@ public:
 
 protected:
 
-  /** Conditional makes internal use of a Factor for storage */
-  friend class gtsam::Conditional;
-  friend class GaussianConditional;
-
   /** Serialization function */
   friend class boost::serialization::access;
   template<class Archive>
@@ -166,14 +174,5 @@ protected:
     ar & BOOST_SERIALIZATION_NVP(keys_);
   }
 };
-
-/* ************************************************************************* */
-inline void Factor::assertInvariants() const {
-#ifndef NDEBUG
-  std::set<Index> uniqueSorted(keys_.begin(), keys_.end());
-  assert(uniqueSorted.size() == keys_.size());
-  assert(std::equal(uniqueSorted.begin(), uniqueSorted.end(), keys_.begin()));
-#endif
-}
 
 }

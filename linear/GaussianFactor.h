@@ -37,9 +37,10 @@
 #include <gtsam/base/types.h>
 #include <gtsam/base/Matrix.h>
 #include <gtsam/base/blockMatrices.h>
-#include <gtsam/inference/Factor-inl.h>
+#include <gtsam/inference/IndexFactor.h>
 #include <gtsam/inference/inference.h>
 #include <gtsam/inference/VariableSlots.h>
+#include <gtsam/inference/FactorGraph.h>
 #include <gtsam/linear/VectorValues.h>
 #include <gtsam/linear/SharedDiagonal.h>
 #include <gtsam/linear/GaussianConditional.h>
@@ -58,7 +59,7 @@ typedef std::map<Index, size_t> Dimensions;
  * GaussianFactor is non-mutable (all methods const!).
  * The factor value is exp(-0.5*||Ax-b||^2)
  */
-class GaussianFactor: public Factor {
+class GaussianFactor: public IndexFactor {
 
 public:
 
@@ -149,7 +150,7 @@ public:
   /** Named constructor for combining a set of factors with pre-computed set of
    * variables. */
   template<class Storage>
-  static shared_ptr Combine(const GaussianFactorGraph& factorGraph,
+  static shared_ptr Combine(const FactorGraph<GaussianFactor>& factorGraph,
       const GaussianVariableIndex<Storage>& variableIndex, const std::vector<size_t>& factors,
       const std::vector<Index>& variables, const std::vector<std::vector<size_t> >& variablePositions);
 
@@ -157,7 +158,7 @@ public:
    * Named constructor for combining a set of factors with pre-computed set of
    * variables.
    */
-  static shared_ptr Combine(const GaussianFactorGraph& factors, const VariableSlots& variableSlots);
+  static shared_ptr Combine(const FactorGraph<GaussianFactor>& factors, const VariableSlots& variableSlots);
 
 protected:
 

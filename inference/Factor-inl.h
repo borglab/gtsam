@@ -25,46 +25,89 @@
 #include <boost/iterator/transform_iterator.hpp>
 #include <boost/lambda/bind.hpp>
 #include <boost/lambda/lambda.hpp>
+#include <iostream>
 
 namespace gtsam {
 
-///* ************************************************************************* */
-//template<class ConditionalType>
-//Factor::Factor(const boost::shared_ptr<ConditionalType>& c) {
-//  keys_.resize(c->parents().size()+1);
-//  keys_[0] = c->key();
-//  size_t j = 1;
-//  BOOST_FOREACH(const Index parent, c->parents()) {
-//    keys_[j++] = parent;
-//  }
-//  checkSorted();
-//}
+/* ************************************************************************* */
+template<typename KEY>
+FactorBase<KEY>::FactorBase(const FactorBase<KEY>& f) : keys_(f.keys_) {}
 
 /* ************************************************************************* */
-template<class KeyIterator> Factor::Factor(KeyIterator beginKey, KeyIterator endKey) :
-    keys_(beginKey, endKey) { assertInvariants(); }
+template<typename KEY>
+FactorBase<KEY>::FactorBase(const Conditional& c) : keys_(c.keys()) {}
 
 /* ************************************************************************* */
-template<class FactorGraphType, class VariableIndexStorage>
-Factor::shared_ptr Factor::Combine(const FactorGraphType& factorGraph,
-    const VariableIndex<VariableIndexStorage>& variableIndex, const std::vector<size_t>& factors,
-    const std::vector<Index>& variables, const std::vector<std::vector<size_t> >& variablePositions) {
-
-  return shared_ptr(new Factor(variables.begin(), variables.end()));
+template<typename KEY>
+void FactorBase<KEY>::assertInvariants() const {
+#ifndef NDEBUG
+  std::set<Index> uniqueSorted(keys_.begin(), keys_.end());
+  assert(uniqueSorted.size() == keys_.size());
+  assert(std::equal(uniqueSorted.begin(), uniqueSorted.end(), keys_.begin()));
+#endif
 }
 
 /* ************************************************************************* */
-template<class MapAllocator>
-Factor::shared_ptr Factor::Combine(const FactorGraph<Factor>& factors, const std::map<Index, std::vector<Index>, std::less<Index>, MapAllocator>& variableSlots) {
-  typedef const std::map<Index, std::vector<Index>, std::less<Index>, MapAllocator> VariableSlots;
+template<typename KEY>
+void FactorBase<KEY>::print(const std::string& s) const {
+  std::cout << s << " ";
+  BOOST_FOREACH(KEY key, keys_) std::cout << " " << key;
+  std::cout << std::endl;
+}
+
+/* ************************************************************************* */
+template<typename KEY>
+//template<class DERIVED>
+bool FactorBase<KEY>::equals(const This& other, double tol) const {
+  return keys_ == other.keys_;
+}
+
+/* ************************************************************************* */
+template<typename KEY>
+template<class DERIVED>
+typename DERIVED::shared_ptr FactorBase<KEY>::Combine(const FactorGraph<DERIVED>& factors, const FastMap<Key, std::vector<Key> >& variableSlots) {
+  typedef const FastMap<Key, std::vector<Key> > VariableSlots;
   typedef typeof(boost::lambda::bind(&VariableSlots::value_type::first, boost::lambda::_1)) FirstGetter;
   typedef boost::transform_iterator<
       FirstGetter, typename VariableSlots::const_iterator,
-      Index, Index> IndexIterator;
+      KEY, KEY> IndexIterator;
   FirstGetter firstGetter(boost::lambda::bind(&VariableSlots::value_type::first, boost::lambda::_1));
   IndexIterator keysBegin(variableSlots.begin(), firstGetter);
   IndexIterator keysEnd(variableSlots.end(), firstGetter);
-  return shared_ptr(new Factor(keysBegin, keysEnd));
+  return typename DERIVED::shared_ptr(new DERIVED(keysBegin, keysEnd));
+}
+
+/* ************************************************************************* */
+template<typename KEY>
+template<class CONDITIONAL>
+typename CONDITIONAL::shared_ptr FactorBase<KEY>::eliminateFirst() {
+  assert(!keys_.empty());
+  assertInvariants();
+  KEY eliminated = keys_.front();
+  keys_.erase(keys_.begin());
+  return typename CONDITIONAL::shared_ptr(new CONDITIONAL(eliminated, keys_));
+}
+
+/* ************************************************************************* */
+template<typename KEY>
+template<class CONDITIONAL>
+typename BayesNet<CONDITIONAL>::shared_ptr FactorBase<KEY>::eliminate(size_t nrFrontals) {
+  assert(keys_.size() >= nrFrontals);
+  assertInvariants();
+  typename BayesNet<CONDITIONAL>::shared_ptr fragment(new BayesNet<CONDITIONAL>());
+  const_iterator nextFrontal = this->begin();
+  for(KEY n = 0; n < nrFrontals; ++n, ++nextFrontal)
+    fragment->push_back(CONDITIONAL::FromRange(
+        nextFrontal, const_iterator(this->end()), 1));
+  if(nrFrontals > 0)
+    keys_.assign(fragment->back()->beginParents(), fragment->back()->endParents());
+  return fragment;
+}
+
+/* ************************************************************************* */
+template<typename KEY>
+void FactorBase<KEY>::permuteWithInverse(const Permutation& inversePermutation) {
+  BOOST_FOREACH(KEY& key, keys_) { key = inversePermutation[key]; }
 }
 
 }

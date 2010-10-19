@@ -11,7 +11,7 @@
 
 /**
  * @file    testSymbolicFactorGraph.cpp
- * @brief   Unit tests for a symbolic Factor Graph
+ * @brief   Unit tests for a symbolic IndexFactor Graph
  * @author  Frank Dellaert
  */
 
@@ -22,7 +22,7 @@ using namespace boost::assign;
 
 #include <gtsam/inference/SymbolicFactorGraph.h>
 #include <gtsam/inference/BayesNet-inl.h>
-#include <gtsam/inference/Factor-inl.h>
+#include <gtsam/inference/IndexFactor.h>
 #include <gtsam/inference/FactorGraph-inl.h>
 #include <gtsam/inference/inference-inl.h>
 
@@ -43,7 +43,7 @@ TEST( SymbolicFactorGraph, EliminateOne )
 	VariableIndex<> variableIndex(fg);
 	Inference::EliminateOne(fg, variableIndex, vx2);
 	SymbolicFactorGraph expected;
-	expected.push_back(boost::shared_ptr<Factor>());
+	expected.push_back(boost::shared_ptr<IndexFactor>());
 	expected.push_factor(vx1);
 
 	CHECK(assert_equal(expected, fg));
@@ -59,11 +59,11 @@ TEST( SymbolicFactorGraph, constructFromBayesNet )
 	expected.push_factor(vx1);
 
 	// create Bayes Net
-	Conditional::shared_ptr x2(new Conditional(vx2, vx1, vl1));
-	Conditional::shared_ptr l1(new Conditional(vx1, vl1));
-	Conditional::shared_ptr x1(new Conditional(vx1));
+	IndexConditional::shared_ptr x2(new IndexConditional(vx2, vx1, vl1));
+	IndexConditional::shared_ptr l1(new IndexConditional(vx1, vl1));
+	IndexConditional::shared_ptr x1(new IndexConditional(vx1));
 
-	BayesNet<Conditional> bayesNet;
+	BayesNet<IndexConditional> bayesNet;
 	bayesNet.push_back(x2);
 	bayesNet.push_back(l1);
 	bayesNet.push_back(x1);
@@ -109,7 +109,7 @@ TEST( SymbolicFactorGraph, push_back )
 //
 //public:
 //
-//	typedef boost::shared_ptr<Factor> sharedFactor;
+//	typedef boost::shared_ptr<IndexFactor> sharedFactor;
 //	typedef boost::shared_ptr<ETree> shared_ptr;
 //
 //private:
@@ -118,7 +118,7 @@ TEST( SymbolicFactorGraph, push_back )
 //	list<sharedFactor> factors_; /** factors associated with root */
 //	list<shared_ptr> subTrees_; /** sub-trees */
 //
-//	typedef pair<SymbolicBayesNet, Factor> Result;
+//	typedef pair<SymbolicBayesNet, IndexFactor> Result;
 //
 //	/**
 //	 * Recursive routine that eliminates the factors arranged in an elimination tree
@@ -146,11 +146,11 @@ TEST( SymbolicFactorGraph, push_back )
 //	  // Make the conditional from the key and separator, and insert it in Bayes net
 //	  vector<Index> parents;
 //	  std::copy(separator.begin(), separator.end(), back_inserter(parents));
-//	  Conditional::shared_ptr conditional(new Conditional(key_, parents));
+//	  IndexConditional::shared_ptr conditional(new IndexConditional(key_, parents));
 //	  bn.push_back(conditional);
 //
 //	  // now create the new factor from separator to return to caller
-//	  Factor newFactor(separator.begin(), separator.end());
+//	  IndexFactor newFactor(separator.begin(), separator.end());
 //	  return Result(bn, newFactor);
 //	}
 //
@@ -366,11 +366,11 @@ TEST( SymbolicFactorGraph, push_back )
 //TEST( SymbolicFactorGraph, eliminate )
 //{
 //	// create expected Chordal bayes Net
-//	Conditional::shared_ptr c0(new Conditional(0, 1, 2));
-//	Conditional::shared_ptr c1(new Conditional(1, 2, 4));
-//	Conditional::shared_ptr c2(new Conditional(2, 4));
-//	Conditional::shared_ptr c3(new Conditional(3, 4));
-//	Conditional::shared_ptr c4(new Conditional(4));
+//	IndexConditional::shared_ptr c0(new IndexConditional(0, 1, 2));
+//	IndexConditional::shared_ptr c1(new IndexConditional(1, 2, 4));
+//	IndexConditional::shared_ptr c2(new IndexConditional(2, 4));
+//	IndexConditional::shared_ptr c3(new IndexConditional(3, 4));
+//	IndexConditional::shared_ptr c4(new IndexConditional(4));
 //
 //	SymbolicBayesNet expected;
 //	expected.push_back(c3);

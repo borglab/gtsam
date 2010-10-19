@@ -25,7 +25,7 @@
 #include <boost/numeric/ublas/triangular.hpp>
 
 #include <gtsam/base/types.h>
-#include <gtsam/inference/Conditional.h>
+#include <gtsam/inference/IndexConditional.h>
 #include <gtsam/linear/VectorValues.h>
 #include <gtsam/base/Matrix.h>
 #include <gtsam/base/blockMatrices.h>
@@ -39,10 +39,10 @@ class GaussianFactor;
  * It has a set of parents y,z, etc. and implements a probability density on x.
  * The negative log-probability is given by || Rx - (d - Sy - Tz - ...)||^2
  */
-class GaussianConditional : public Conditional {
+class GaussianConditional : public IndexConditional {
 
 public:
-  typedef GaussianFactor FactorType;
+  typedef GaussianFactor Factor;
 	typedef boost::shared_ptr<GaussianConditional> shared_ptr;
 
 	/** Store the conditional matrix as upper-triangular column-major */

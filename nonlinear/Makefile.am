@@ -16,14 +16,16 @@ check_PROGRAMS =
 #----------------------------------------------------------------------------------------------------
 
 # Lie Groups
-headers += Key.h LieValues.h LieValues-inl.h TupleValues.h TupleValues-inl.h 
-check_PROGRAMS += tests/testLieValues tests/testKey
+headers += LieValues.h LieValues-inl.h TupleValues.h TupleValues-inl.h 
+check_PROGRAMS += tests/testLieValues
 
-# Nonlinear nonlinear 
+# Nonlinear nonlinear
+headers += Key.h 
 headers += NonlinearFactorGraph.h NonlinearFactorGraph-inl.h
 headers += NonlinearOptimizer-inl.h NonlinearOptimization.h NonlinearOptimization-inl.h NonlinearOptimizationParameters.h
 headers += NonlinearFactor.h
 sources += NonlinearOptimizer.cpp Ordering.cpp
+check_PROGRAMS += tests/testKey
 
 # Nonlinear constraints 
 headers += NonlinearEquality.h

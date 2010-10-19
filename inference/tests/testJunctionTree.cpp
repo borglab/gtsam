@@ -30,12 +30,12 @@ using namespace boost::assign;
 #include <gtsam/inference/JunctionTree.h>
 #include <gtsam/inference/ClusterTree-inl.h>
 #include <gtsam/inference/JunctionTree-inl.h>
-#include <gtsam/inference/Factor-inl.h>
+#include <gtsam/inference/IndexFactor.h>
 
 using namespace gtsam;
 
 typedef JunctionTree<SymbolicFactorGraph> SymbolicJunctionTree;
-typedef BayesTree<Conditional> SymbolicBayesTree;
+typedef BayesTree<IndexConditional> SymbolicBayesTree;
 
 /* ************************************************************************* *
  * x1 - x2 - x3 - x4
@@ -83,7 +83,7 @@ TEST( JunctionTree, eliminate)
   SymbolicJunctionTree jt(fg);
   SymbolicBayesTree::sharedClique actual = jt.eliminate();
 
-  BayesNet<Conditional> bn = *Inference::Eliminate(fg);
+  BayesNet<IndexConditional> bn = *Inference::Eliminate(fg);
   SymbolicBayesTree expected(bn);
 
 //  cout << "BT from JT:\n";

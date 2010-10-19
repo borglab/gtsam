@@ -11,7 +11,7 @@
 
 /**
  *  @file   testFactorgraph.cpp
- *  @brief  Unit tests for Factor Graphs
+ *  @brief  Unit tests for IndexFactor Graphs
  *  @author Christian Potthast
  **/
 

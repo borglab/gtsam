@@ -45,14 +45,14 @@ namespace gtsam {
 /* ************************************************************************* */
 inline void GaussianFactor::assertInvariants() const {
 #ifndef NDEBUG
-  Factor::assertInvariants();
+  IndexFactor::assertInvariants();
   assert((keys_.size() == 0 && Ab_.size1() == 0 && Ab_.nBlocks() == 0) || keys_.size()+1 == Ab_.nBlocks());
 #endif
 }
 
 /* ************************************************************************* */
 GaussianFactor::GaussianFactor(const GaussianFactor& gf) :
-    Factor(gf), model_(gf.model_), firstNonzeroBlocks_(gf.firstNonzeroBlocks_), Ab_(matrix_) {
+    IndexFactor(gf), model_(gf.model_), firstNonzeroBlocks_(gf.firstNonzeroBlocks_), Ab_(matrix_) {
   Ab_.assignNoalias(gf.Ab_);
   assertInvariants();
 }
@@ -71,7 +71,7 @@ GaussianFactor::GaussianFactor(const Vector& b_in) : firstNonzeroBlocks_(b_in.si
 /* ************************************************************************* */
 GaussianFactor::GaussianFactor(Index i1, const Matrix& A1,
     const Vector& b, const SharedDiagonal& model) :
-		Factor(i1), model_(model), firstNonzeroBlocks_(b.size(), 0), Ab_(matrix_) {
+		IndexFactor(i1), model_(model), firstNonzeroBlocks_(b.size(), 0), Ab_(matrix_) {
   size_t dims[] = { A1.size2(), 1};
   Ab_.copyStructureFrom(ab_type(matrix_, dims, dims+2, b.size()));
 	Ab_(0) = A1;
@@ -82,7 +82,7 @@ GaussianFactor::GaussianFactor(Index i1, const Matrix& A1,
 /* ************************************************************************* */
 GaussianFactor::GaussianFactor(Index i1, const Matrix& A1, Index i2, const Matrix& A2,
 		const Vector& b, const SharedDiagonal& model) :
-		Factor(i1,i2), model_(model), firstNonzeroBlocks_(b.size(), 0), Ab_(matrix_) {
+		IndexFactor(i1,i2), model_(model), firstNonzeroBlocks_(b.size(), 0), Ab_(matrix_) {
   size_t dims[] = { A1.size2(), A2.size2(), 1};
   Ab_.copyStructureFrom(ab_type(matrix_, dims, dims+3, b.size()));
   Ab_(0) = A1;
@@ -94,7 +94,7 @@ GaussianFactor::GaussianFactor(Index i1, const Matrix& A1, Index i2, const Matri
 /* ************************************************************************* */
 GaussianFactor::GaussianFactor(Index i1, const Matrix& A1, Index i2, const Matrix& A2,
     Index i3, const Matrix& A3,	const Vector& b, const SharedDiagonal& model) :
-    Factor(i1,i2,i3), model_(model), firstNonzeroBlocks_(b.size(), 0), Ab_(matrix_) {
+    IndexFactor(i1,i2,i3), model_(model), firstNonzeroBlocks_(b.size(), 0), Ab_(matrix_) {
   size_t dims[] = { A1.size2(), A2.size2(), A3.size2(), 1};
   Ab_.copyStructureFrom(ab_type(matrix_, dims, dims+4, b.size()));
   Ab_(0) = A1;
@@ -147,7 +147,7 @@ GaussianFactor::GaussianFactor(const std::list<std::pair<Index, Matrix> > &terms
 }
 
 /* ************************************************************************* */
-GaussianFactor::GaussianFactor(const GaussianConditional& cg) : Factor(cg), model_(noiseModel::Diagonal::Sigmas(cg.get_sigmas(), true)), Ab_(matrix_) {
+GaussianFactor::GaussianFactor(const GaussianConditional& cg) : IndexFactor(cg), model_(noiseModel::Diagonal::Sigmas(cg.get_sigmas(), true)), Ab_(matrix_) {
   Ab_.assignNoalias(cg.rsd_);
   // todo SL: make firstNonzeroCols triangular?
   firstNonzeroBlocks_.resize(cg.get_d().size(), 0);	// set sigmas from precisions
@@ -590,11 +590,11 @@ struct _RowSource {
 };
 
 /* Explicit instantiations for storage types */
-template GaussianFactor::shared_ptr GaussianFactor::Combine(const GaussianFactorGraph&, const GaussianVariableIndex<VariableIndexStorage_vector>&, const vector<size_t>&, const vector<Index>&, const std::vector<std::vector<size_t> >&);
-template GaussianFactor::shared_ptr GaussianFactor::Combine(const GaussianFactorGraph&, const GaussianVariableIndex<VariableIndexStorage_deque>&, const vector<size_t>&, const vector<Index>&, const std::vector<std::vector<size_t> >&);
+template GaussianFactor::shared_ptr GaussianFactor::Combine(const FactorGraph<GaussianFactor>&, const GaussianVariableIndex<VariableIndexStorage_vector>&, const vector<size_t>&, const vector<Index>&, const std::vector<std::vector<size_t> >&);
+template GaussianFactor::shared_ptr GaussianFactor::Combine(const FactorGraph<GaussianFactor>&, const GaussianVariableIndex<VariableIndexStorage_deque>&, const vector<size_t>&, const vector<Index>&, const std::vector<std::vector<size_t> >&);
 
 template<class Storage>
-GaussianFactor::shared_ptr GaussianFactor::Combine(const GaussianFactorGraph& factorGraph,
+GaussianFactor::shared_ptr GaussianFactor::Combine(const FactorGraph<GaussianFactor>& factorGraph,
     const GaussianVariableIndex<Storage>& variableIndex, const vector<size_t>& factors,
     const vector<Index>& variables, const std::vector<std::vector<size_t> >& variablePositions) {
 
@@ -786,7 +786,7 @@ boost::tuple<vector<size_t>, size_t, size_t> countDims(const std::vector<Gaussia
   return boost::make_tuple(varDims, m, n);
 }
 
-GaussianFactor::shared_ptr GaussianFactor::Combine(const GaussianFactorGraph& factors, const VariableSlots& variableSlots) {
+GaussianFactor::shared_ptr GaussianFactor::Combine(const FactorGraph<GaussianFactor>& factors, const VariableSlots& variableSlots) {
 
   static const bool verbose = false;
   static const bool debug = false;

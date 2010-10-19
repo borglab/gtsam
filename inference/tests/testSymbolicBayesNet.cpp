@@ -33,17 +33,17 @@ static const Index _A_ = 1;
 static const Index _B_ = 2;
 static const Index _C_ = 3;
 
-Conditional::shared_ptr
-	B(new Conditional(_B_)),
-	L(new Conditional(_L_, _B_));
+IndexConditional::shared_ptr
+	B(new IndexConditional(_B_)),
+	L(new IndexConditional(_L_, _B_));
 
 /* ************************************************************************* */
 TEST( SymbolicBayesNet, equals )
 {
-	BayesNet<Conditional> f1;
+	BayesNet<IndexConditional> f1;
 	f1.push_back(B);
 	f1.push_back(L);
-	BayesNet<Conditional> f2;
+	BayesNet<IndexConditional> f2;
 	f2.push_back(L);
 	f2.push_back(B);
 	CHECK(f1.equals(f1));
@@ -53,18 +53,18 @@ TEST( SymbolicBayesNet, equals )
 /* ************************************************************************* */
 TEST( SymbolicBayesNet, pop_front )
 {
-	Conditional::shared_ptr
-		A(new Conditional(_A_,_B_,_C_)),
-		B(new Conditional(_B_,_C_)),
-		C(new Conditional(_C_));
+	IndexConditional::shared_ptr
+		A(new IndexConditional(_A_,_B_,_C_)),
+		B(new IndexConditional(_B_,_C_)),
+		C(new IndexConditional(_C_));
 
 	// Expected after pop_front
-	BayesNet<Conditional> expected;
+	BayesNet<IndexConditional> expected;
 	expected.push_back(B);
 	expected.push_back(C);
 
 	// Actual
-	BayesNet<Conditional> actual;
+	BayesNet<IndexConditional> actual;
 	actual.push_back(A);
 	actual.push_back(B);
 	actual.push_back(C);
@@ -76,24 +76,24 @@ TEST( SymbolicBayesNet, pop_front )
 /* ************************************************************************* */
 TEST( SymbolicBayesNet, combine )
 {
-	Conditional::shared_ptr
-		A(new Conditional(_A_,_B_,_C_)),
-		B(new Conditional(_B_,_C_)),
-		C(new Conditional(_C_));
+	IndexConditional::shared_ptr
+		A(new IndexConditional(_A_,_B_,_C_)),
+		B(new IndexConditional(_B_,_C_)),
+		C(new IndexConditional(_C_));
 
 	// p(A|BC)
-	BayesNet<Conditional> p_ABC;
+	BayesNet<IndexConditional> p_ABC;
 	p_ABC.push_back(A);
 
 	// P(BC)=P(B|C)P(C)
-	BayesNet<Conditional> p_BC;
+	BayesNet<IndexConditional> p_BC;
 	p_BC.push_back(B);
 	p_BC.push_back(C);
 
 	// P(ABC) = P(A|BC) P(BC)
 	p_ABC.push_back(p_BC);
 
-	BayesNet<Conditional> expected;
+	BayesNet<IndexConditional> expected;
 	expected.push_back(A);
 	expected.push_back(B);
 	expected.push_back(C);

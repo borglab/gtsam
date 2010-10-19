@@ -8,13 +8,13 @@
 #include <gtsam/CppUnitLite/TestHarness.h>
 #include <gtsam/base/TestableAssertions.h>
 
-#include <gtsam/inference/EliminationTree.h>
+#include <gtsam/inference/EliminationTree-inl.h>
 #include <gtsam/inference/SymbolicFactorGraph.h>
 
 using namespace gtsam;
 using namespace std;
 
-typedef EliminationTree<SymbolicFactorGraph> SymbolicEliminationTree;
+typedef EliminationTree<IndexFactor> SymbolicEliminationTree;
 
 struct EliminationTreeTester {
   // build hardcoded tree
@@ -69,11 +69,11 @@ TEST(EliminationTree, Create)
 TEST(EliminationTree, eliminate )
 {
   // create expected Chordal bayes Net
-  Conditional::shared_ptr c0(new Conditional(0, 1, 2));
-  Conditional::shared_ptr c1(new Conditional(1, 2, 4));
-  Conditional::shared_ptr c2(new Conditional(2, 4));
-  Conditional::shared_ptr c3(new Conditional(3, 4));
-  Conditional::shared_ptr c4(new Conditional(4));
+  IndexConditional::shared_ptr c0(new IndexConditional(0, 1, 2));
+  IndexConditional::shared_ptr c1(new IndexConditional(1, 2, 4));
+  IndexConditional::shared_ptr c2(new IndexConditional(2, 4));
+  IndexConditional::shared_ptr c3(new IndexConditional(3, 4));
+  IndexConditional::shared_ptr c4(new IndexConditional(4));
 
   SymbolicBayesNet expected;
   expected.push_back(c3);

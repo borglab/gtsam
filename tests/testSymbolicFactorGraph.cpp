@@ -24,7 +24,6 @@ using namespace boost::assign;
 
 #include <gtsam/slam/smallExample.h>
 #include <gtsam/inference/SymbolicFactorGraph.h>
-#include <gtsam/inference/Factor-inl.h>
 #include <gtsam/inference/BayesNet-inl.h>
 #include <gtsam/inference/FactorGraph-inl.h>
 #include <gtsam/inference/inference-inl.h>
@@ -117,10 +116,10 @@ TEST( SymbolicFactorGraph, eliminateOne )
 
 	// eliminate
 	VariableIndex<> varindex(fg);
-	Conditional::shared_ptr actual = Inference::EliminateOne(fg, varindex, o["x1"]);
+	IndexConditional::shared_ptr actual = Inference::EliminateOne(fg, varindex, o["x1"]);
 
-  // create expected symbolic Conditional
-  Conditional expected(o["x1"],o["l1"],o["x2"]);
+  // create expected symbolic IndexConditional
+  IndexConditional expected(o["x1"],o["l1"],o["x2"]);
 
   CHECK(assert_equal(expected,*actual));
 }
@@ -131,9 +130,9 @@ TEST( SymbolicFactorGraph, eliminate )
   Ordering o; o += "x2","l1","x1";
 
   // create expected Chordal bayes Net
-  Conditional::shared_ptr x2(new Conditional(o["x2"], o["l1"], o["x1"]));
-  Conditional::shared_ptr l1(new Conditional(o["l1"], o["x1"]));
-  Conditional::shared_ptr x1(new Conditional(o["x1"]));
+  IndexConditional::shared_ptr x2(new IndexConditional(o["x2"], o["l1"], o["x1"]));
+  IndexConditional::shared_ptr l1(new IndexConditional(o["l1"], o["x1"]));
+  IndexConditional::shared_ptr x1(new IndexConditional(o["x1"]));
 
   SymbolicBayesNet expected;
   expected.push_back(x2);

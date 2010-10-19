@@ -22,16 +22,16 @@
 #include <list>
 #include <gtsam/base/types.h>
 #include <gtsam/inference/FactorGraph.h>
-#include <gtsam/inference/Factor-inl.h>
+#include <gtsam/inference/IndexFactor.h>
 #include <gtsam/inference/BayesNet.h>
-#include <gtsam/inference/Conditional.h>
+#include <gtsam/inference/IndexConditional.h>
 
 namespace gtsam {
 
-typedef BayesNet<Conditional> SymbolicBayesNet;
+typedef BayesNet<IndexConditional> SymbolicBayesNet;
 
-/** Symbolic Factor Graph */
-class SymbolicFactorGraph: public FactorGraph<Factor> {
+/** Symbolic IndexFactor Graph */
+class SymbolicFactorGraph: public FactorGraph<IndexFactor> {
 public:
   typedef SymbolicBayesNet bayesnet_type;
   typedef VariableIndex<> variableindex_type;
@@ -40,7 +40,7 @@ public:
   SymbolicFactorGraph() {}
 
   /** Construct from a BayesNet */
-  SymbolicFactorGraph(const BayesNet<Conditional>& bayesNet);
+  SymbolicFactorGraph(const BayesNet<IndexConditional>& bayesNet);
 
   /** Push back unary factor */
   void push_factor(Index key);
@@ -77,10 +77,10 @@ template<class FACTOR>
 SymbolicFactorGraph::SymbolicFactorGraph(const FactorGraph<FACTOR>& fg) {
   for (size_t i = 0; i < fg.size(); i++) {
     if(fg[i]) {
-      Factor::shared_ptr factor(new Factor(*fg[i]));
+      IndexFactor::shared_ptr factor(new IndexFactor(*fg[i]));
       push_back(factor);
     } else
-      push_back(Factor::shared_ptr());
+      push_back(IndexFactor::shared_ptr());
   }
 }
 

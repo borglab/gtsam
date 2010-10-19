@@ -63,7 +63,7 @@ void NonlinearFactorGraph<Values>::print(const std::string& str) const {
 	Ordering::shared_ptr NonlinearFactorGraph<Values>::orderingCOLAMD(const Values& config) const {
 
     // Create symbolic graph and initial (iterator) ordering
-	  FactorGraph<Factor>::shared_ptr symbolic;
+	  SymbolicFactorGraph::shared_ptr symbolic;
 	  Ordering::shared_ptr ordering;
 	  boost::tie(symbolic,ordering) = this->symbolic(config);
 
@@ -88,7 +88,7 @@ void NonlinearFactorGraph<Values>::print(const std::string& str) const {
   SymbolicFactorGraph::shared_ptr NonlinearFactorGraph<Values>::symbolic(
       const Values& config, const Ordering& ordering) const {
     // Generate the symbolic factor graph
-    SymbolicFactorGraph::shared_ptr symbolicfg(new FactorGraph<Factor>);
+    SymbolicFactorGraph::shared_ptr symbolicfg(new SymbolicFactorGraph);
     symbolicfg->reserve(this->size());
     BOOST_FOREACH(const sharedFactor& factor, this->factors_) {
       symbolicfg->push_back(factor->symbolic(ordering));

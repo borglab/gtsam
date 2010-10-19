@@ -20,11 +20,11 @@
 
 #include <gtsam/base/types.h>
 #include <gtsam/base/Testable.h>
+#include <gtsam/base/FastMap.h>
 
 #include <map>
 #include <vector>
 #include <string>
-#include <boost/pool/pool_alloc.hpp>
 
 namespace gtsam {
 
@@ -51,15 +51,11 @@ namespace gtsam {
  * is not performed by this class.
  */
 
-// Internal-use-only typedef for the VariableSlots map base class because this is such a long type name
-typedef std::map<Index, std::vector<Index>, std::less<Index>,
-    boost::fast_pool_allocator<std::pair<const Index, std::vector<Index> > > > _VariableSlots_map;
-
-class VariableSlots : public _VariableSlots_map, public Testable<VariableSlots> {
+class VariableSlots : public FastMap<Index, std::vector<Index> >, public Testable<VariableSlots> {
 
 public:
 
-  typedef _VariableSlots_map Base;
+  typedef FastMap<Index, std::vector<Index> > Base;
 
   /**
    * Constructor from a set of factors to be combined.  Sorts the variables

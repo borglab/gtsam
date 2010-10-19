@@ -314,7 +314,7 @@ TEST( GaussianFactorGraph, eliminateAll )
 	GaussianBayesNet actual = *Inference::Eliminate(fg1);
 	CHECK(assert_equal(expected,actual,tol));
 
-  GaussianBayesNet actualET = *EliminationTree<GaussianFactorGraph>::Create(fg1)->eliminate();
+  GaussianBayesNet actualET = *EliminationTree<GaussianFactor>::Create(fg1)->eliminate();
   CHECK(assert_equal(expected,actualET,tol));
 }
 
@@ -463,7 +463,7 @@ TEST( GaussianFactorGraph, CONSTRUCTOR_GaussianBayesNet )
 TEST( GaussianFactorGraph, getOrdering)
 {
   Ordering original; original += "l1","x1","x2";
-  FactorGraph<Factor> symbolic(createGaussianFactorGraph(original));
+  FactorGraph<IndexFactor> symbolic(createGaussianFactorGraph(original));
   Permutation perm(*Inference::PermutationCOLAMD(VariableIndex<>(symbolic)));
   Ordering actual = original; actual.permuteWithInverse((*perm.inverse()));
   Ordering expected; expected += "l1","x2","x1";
@@ -491,7 +491,7 @@ TEST( GaussianFactorGraph, optimize )
 
 	// optimize the graph
 	VectorValues actual = optimize(*Inference::Eliminate(fg));
-	VectorValues actualET = optimize(*EliminationTree<GaussianFactorGraph>::Create(fg)->eliminate());
+	VectorValues actualET = optimize(*EliminationTree<GaussianFactor>::Create(fg)->eliminate());
 
 	// verify
 	VectorValues expected = createCorrectDelta(ord);
@@ -786,7 +786,7 @@ TEST( GaussianFactorGraph, constrained_simple )
 
 	// eliminate and solve
 	VectorValues actual = optimize(*Inference::Eliminate(fg));
-	VectorValues actualET = optimize(*EliminationTree<GaussianFactorGraph>::Create(fg)->eliminate());
+	VectorValues actualET = optimize(*EliminationTree<GaussianFactor>::Create(fg)->eliminate());
 
 	// verify
 	VectorValues expected = createSimpleConstraintValues();
