@@ -41,11 +41,11 @@ namespace gtsam {
 	 *   - ALLLOW_ERROR : if we allow that there can be nonzero error, does not throw, and uses gain
 	 *   - ONLY_EXACT   : throws error at linearization if not at exact feasible point, and infinite error
 	 */
-	template<class Values, class Key>
-	class NonlinearEquality: public NonlinearFactor1<Values, Key> {
+	template<class VALUES, class KEY>
+	class NonlinearEquality: public NonlinearFactor1<VALUES, KEY> {
 
 	public:
-		typedef typename Key::Value T;
+		typedef typename KEY::Value T;
 
 	private:
 
@@ -65,12 +65,12 @@ namespace gtsam {
 		 */
 		bool (*compare_)(const T& a, const T& b);
 
-		typedef NonlinearFactor1<Values, Key> Base;
+		typedef NonlinearFactor1<VALUES, KEY> Base;
 
 		/**
 		 * Constructor - forces exact evaluation
 		 */
-		NonlinearEquality(const Key& j, const T& feasible, bool (*compare)(const T&, const T&) = compare<T>) :
+		NonlinearEquality(const KEY& j, const T& feasible, bool (*compare)(const T&, const T&) = compare<T>) :
 			Base(noiseModel::Constrained::All(feasible.dim()), j), feasible_(feasible),
 			allow_error_(false), error_gain_(std::numeric_limits<double>::infinity()),
 			compare_(compare) {
@@ -79,7 +79,7 @@ namespace gtsam {
 		/**
 		 * Constructor - allows inexact evaluation
 		 */
-		NonlinearEquality(const Key& j, const T& feasible, double error_gain, bool (*compare)(const T&, const T&) = compare<T>) :
+		NonlinearEquality(const KEY& j, const T& feasible, double error_gain, bool (*compare)(const T&, const T&) = compare<T>) :
 			Base(noiseModel::Constrained::All(feasible.dim()), j), feasible_(feasible),
 			allow_error_(true), error_gain_(error_gain),
 			compare_(compare) {
@@ -92,13 +92,13 @@ namespace gtsam {
 		}
 
 		/** Check if two factors are equal */
-		bool equals(const NonlinearEquality<Values,Key>& f, double tol = 1e-9) const {
+		bool equals(const NonlinearEquality<VALUES,KEY>& f, double tol = 1e-9) const {
 			if (!Base::equals(f)) return false;
 			return compare_(feasible_, f.feasible_);
 		}
 
 		/** actual error function calculation */
-		virtual double error(const Values& c) const {
+		virtual double error(const VALUES& c) const {
 			const T& xj = c[this->key_];
 			Vector e = this->unwhitenedError(c);
 			if (allow_error_ || !compare_(xj, feasible_)) {
@@ -125,7 +125,7 @@ namespace gtsam {
 		}
 
 		// Linearize is over-written, because base linearization tries to whiten
-		virtual boost::shared_ptr<GaussianFactor> linearize(const Values& x, const Ordering& ordering) const {
+		virtual boost::shared_ptr<GaussianFactor> linearize(const VALUES& x, const Ordering& ordering) const {
 			const T& xj = x[this->key_];
 			Matrix A;
 			Vector b = evaluateError(xj, A);

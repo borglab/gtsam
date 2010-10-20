@@ -38,25 +38,25 @@ namespace gtsam {
 	 * tangent vector space at the linearization point. Because the tangent space is a true
 	 * vector space, the config type will be an VectorValues in that linearized factor graph.
 	 */
-	template<class Values>
-	class NonlinearFactorGraph: public FactorGraph<NonlinearFactor<Values> > {
+	template<class VALUES>
+	class NonlinearFactorGraph: public FactorGraph<NonlinearFactor<VALUES> > {
 
 	public:
 
-	  typedef FactorGraph<NonlinearFactor<Values> > Base;
-		typedef typename boost::shared_ptr<NonlinearFactor<Values> > sharedFactor;
+	  typedef FactorGraph<NonlinearFactor<VALUES> > Base;
+		typedef typename boost::shared_ptr<NonlinearFactor<VALUES> > sharedFactor;
 
     /** print just calls base class */
     void print(const std::string& str = "NonlinearFactorGraph: ") const;
 
 		/** unnormalized error */
-		double error(const Values& c) const;
+		double error(const VALUES& c) const;
 
 		/** all individual errors */
-		Vector unwhitenedError(const Values& c) const;
+		Vector unwhitenedError(const VALUES& c) const;
 
 		/** Unnormalized probability. O(n) */
-		double probPrime(const Values& c) const {
+		double probPrime(const VALUES& c) const {
 			return exp(-0.5 * error(c));
 		}
 
@@ -68,7 +68,7 @@ namespace gtsam {
 		/**
 		 * Create a symbolic factor graph using an existing ordering
 		 */
-		SymbolicFactorGraph::shared_ptr symbolic(const Values& config, const Ordering& ordering) const;
+		SymbolicFactorGraph::shared_ptr symbolic(const VALUES& config, const Ordering& ordering) const;
 
 		/**
 		 * Create a symbolic factor graph and initial variable ordering that can
@@ -77,20 +77,20 @@ namespace gtsam {
 		 * ordering is found.
 		 */
 		std::pair<SymbolicFactorGraph::shared_ptr, Ordering::shared_ptr>
-		symbolic(const Values& config) const;
+		symbolic(const VALUES& config) const;
 
     /**
      * Compute a fill-reducing ordering using COLAMD.  This returns the
      * ordering and a VariableIndex, which can later be re-used to save
      * computation.
      */
-		Ordering::shared_ptr orderingCOLAMD(const Values& config) const;
+		Ordering::shared_ptr orderingCOLAMD(const VALUES& config) const;
 
 		/**
 		 * linearize a nonlinear factor graph
 		 */
 		boost::shared_ptr<GaussianFactorGraph>
-				linearize(const Values& config, const Ordering& ordering) const;
+				linearize(const VALUES& config, const Ordering& ordering) const;
 
 	};
 

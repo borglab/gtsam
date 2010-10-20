@@ -31,7 +31,7 @@ namespace gtsam {
   /**
    * A linear system solver using factorization
    */
-  template <class NonlinearGraph, class Values>
+  template <class NONLINEARGRAPH, class VALUES>
   class Factorization {
   private:
   	boost::shared_ptr<Ordering> ordering_;
@@ -53,7 +53,7 @@ namespace gtsam {
 		/**
 		 * linearize the non-linear graph around the current config
 		 */
-  	boost::shared_ptr<GaussianFactorGraph> linearize(const NonlinearGraph& g, const Values& config) const {
+  	boost::shared_ptr<GaussianFactorGraph> linearize(const NONLINEARGRAPH& g, const VALUES& config) const {
   		return g.linearize(config, *ordering_);
   	}
 
@@ -65,7 +65,7 @@ namespace gtsam {
   	}
 
   	/** expmap the Values given the stored Ordering */
-  	Values expmap(const Values& config, const VectorValues& delta) const {
+  	VALUES expmap(const VALUES& config, const VectorValues& delta) const {
   	  return config.expmap(delta, *ordering_);
   	}
   };

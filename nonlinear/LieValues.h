@@ -72,8 +72,8 @@ namespace gtsam {
     LieValues() {}
     LieValues(const LieValues& config) :
       values_(config.values_) {}
-    template<class J_alt>
-    LieValues(const LieValues<J_alt>& other) {} // do nothing when initializing with wrong type
+    template<class J_ALT>
+    LieValues(const LieValues<J_ALT>& other) {} // do nothing when initializing with wrong type
     virtual ~LieValues() {}
 
     /** print */
@@ -197,8 +197,8 @@ namespace gtsam {
   private:
   	/** Serialization function */
   	friend class boost::serialization::access;
-  	template<class Archive>
-  	void serialize(Archive & ar, const unsigned int version) {
+  	template<class ARCHIVE>
+  	void serialize(ARCHIVE & ar, const unsigned int version) {
   		ar & BOOST_SERIALIZATION_NVP(values_);
   	}
 

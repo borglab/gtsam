@@ -60,8 +60,8 @@ public:
   VectorValues(const VectorValues &V) : values_(V.values_), varStarts_(V.varStarts_) {}
 
   /** Construct from a container of variable dimensions (in variable order). */
-  template<class Container>
-  VectorValues(const Container& dimensions);
+  template<class CONTAINER>
+  VectorValues(const CONTAINER& dimensions);
 
   /** Construct to hold nVars vectors of varDim dimension each. */
   VectorValues(Index nVars, size_t varDim);
@@ -213,8 +213,8 @@ public:
 //  values_.resize(varStarts_.back(), false);
 //}
 
-template<class Container>
-inline VectorValues::VectorValues(const Container& dimensions) : varStarts_(dimensions.size()+1) {
+template<class CONTAINER>
+inline VectorValues::VectorValues(const CONTAINER& dimensions) : varStarts_(dimensions.size()+1) {
   varStarts_[0] = 0;
   size_t varStart = 0;
   Index var = 0;

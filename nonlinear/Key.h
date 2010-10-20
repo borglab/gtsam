@@ -79,8 +79,8 @@ namespace gtsam {
 
 		/** Serialization function */
 		friend class boost::serialization::access;
-		template<class Archive>
-		void serialize(Archive & ar, const unsigned int version) {
+		template<class ARCHIVE>
+		void serialize(ARCHIVE & ar, const unsigned int version) {
 			ar & BOOST_SERIALIZATION_NVP(j_);
 		}
 	};
@@ -171,8 +171,8 @@ namespace gtsam {
 
     /** Serialization function */
     friend class boost::serialization::access;
-    template<class Archive>
-    void serialize(Archive & ar, const unsigned int version) {
+    template<class ARCHIVE>
+    void serialize(ARCHIVE & ar, const unsigned int version) {
       ar & BOOST_SERIALIZATION_NVP(c_);
       ar & BOOST_SERIALIZATION_NVP(j_);
     }
@@ -180,13 +180,13 @@ namespace gtsam {
 
 	// Conversion utilities
 
-	template<class Key> Symbol key2symbol(Key key) {
+	template<class KEY> Symbol key2symbol(KEY key) {
 		return Symbol(key);
 	}
 
-	template<class Key> std::list<Symbol> keys2symbols(std::list<Key> keys) {
+	template<class KEY> std::list<Symbol> keys2symbols(std::list<KEY> keys) {
 		std::list<Symbol> symbols;
-		std::transform(keys.begin(), keys.end(), std::back_inserter(symbols), key2symbol<Key> );
+		std::transform(keys.begin(), keys.end(), std::back_inserter(symbols), key2symbol<KEY> );
 		return symbols;
 	}
 
@@ -281,8 +281,8 @@ namespace gtsam {
 
 		/** Serialization function */
 		friend class boost::serialization::access;
-		template<class Archive>
-		void serialize(Archive & ar, const unsigned int version) {
+		template<class ARCHIVE>
+		void serialize(ARCHIVE & ar, const unsigned int version) {
 			typedef TypedSymbol<T,C> Base;
 			ar & boost::serialization::make_nvp("TypedLabeledSymbol",
 					boost::serialization::base_object<Base>(*this));

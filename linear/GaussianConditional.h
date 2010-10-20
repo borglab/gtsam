@@ -100,8 +100,8 @@ public:
 	 * Constructor when matrices are already stored in a combined matrix, allows
 	 * for multiple frontal variables.
 	 */
-	template<typename Iterator, class Matrix>
-	GaussianConditional(Iterator firstKey, Iterator lastKey, size_t nrFrontals, const VerticalBlockView<Matrix>& matrices, const Vector& sigmas);
+	template<typename ITERATOR, class MATRIX>
+	GaussianConditional(ITERATOR firstKey, ITERATOR lastKey, size_t nrFrontals, const VerticalBlockView<MATRIX>& matrices, const Vector& sigmas);
 
 	/** print */
 	void print(const std::string& = "GaussianConditional") const;
@@ -162,9 +162,9 @@ private:
 };
 
 /* ************************************************************************* */
-	template<typename Iterator, class Matrix>
-	GaussianConditional::GaussianConditional(Iterator firstKey, Iterator lastKey,
-			size_t nrFrontals, const VerticalBlockView<Matrix>& matrices,
+	template<typename ITERATOR, class MATRIX>
+	GaussianConditional::GaussianConditional(ITERATOR firstKey, ITERATOR lastKey,
+			size_t nrFrontals, const VerticalBlockView<MATRIX>& matrices,
 			const Vector& sigmas) :
 		rsd_(matrix_), sigmas_(sigmas) {
   	nrFrontals_ = nrFrontals;

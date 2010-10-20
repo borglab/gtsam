@@ -157,11 +157,11 @@ namespace gtsam {
 
 
   /* ************************************************************************* */
-  template<class VariableIndexStorage>
-  class GaussianVariableIndex : public VariableIndex<VariableIndexStorage> {
+  template<class VARIABLEINDEXSTORAGE>
+  class GaussianVariableIndex : public VariableIndex<VARIABLEINDEXSTORAGE> {
   public:
-    typedef VariableIndex<VariableIndexStorage> Base;
-    typedef typename VariableIndexStorage::template type_factory<size_t>::type storage_type;
+    typedef VariableIndex<VARIABLEINDEXSTORAGE> Base;
+    typedef typename VARIABLEINDEXSTORAGE::template type_factory<size_t>::type storage_type;
 
     storage_type dims_;
 
@@ -181,13 +181,13 @@ namespace gtsam {
      * Constructor to "upgrade" from the base class without recomputing the
      * column index, i.e. just fills the dims_ array.
      */
-    GaussianVariableIndex(const VariableIndex<VariableIndexStorage>& variableIndex, const GaussianFactorGraph& factorGraph);
+    GaussianVariableIndex(const VariableIndex<VARIABLEINDEXSTORAGE>& variableIndex, const GaussianFactorGraph& factorGraph);
 
     /**
      * Another constructor to upgrade from the base class using an existing
      * array of variable dimensions.
      */
-    GaussianVariableIndex(const VariableIndex<VariableIndexStorage>& variableIndex, const storage_type& dimensions);
+    GaussianVariableIndex(const VariableIndex<VARIABLEINDEXSTORAGE>& variableIndex, const storage_type& dimensions);
 
     const storage_type& dims() const { return dims_; }
     size_t dim(Index variable) const { Base::checkVar(variable); return dims_[variable]; }
@@ -205,28 +205,28 @@ namespace gtsam {
 
 
   /* ************************************************************************* */
-  template<class Storage>
-  GaussianVariableIndex<Storage>::GaussianVariableIndex(const GaussianFactorGraph& factorGraph) :
+  template<class STORAGE>
+  GaussianVariableIndex<STORAGE>::GaussianVariableIndex(const GaussianFactorGraph& factorGraph) :
   Base(factorGraph), dims_(Base::index_.size()) {
     fillDims(factorGraph); }
 
   /* ************************************************************************* */
-  template<class Storage>
-  GaussianVariableIndex<Storage>::GaussianVariableIndex(
-      const VariableIndex<Storage>& variableIndex, const GaussianFactorGraph& factorGraph) :
+  template<class STORAGE>
+  GaussianVariableIndex<STORAGE>::GaussianVariableIndex(
+      const VariableIndex<STORAGE>& variableIndex, const GaussianFactorGraph& factorGraph) :
       Base(variableIndex), dims_(Base::index_.size()) {
     fillDims(factorGraph); }
 
   /* ************************************************************************* */
-  template<class Storage>
-  GaussianVariableIndex<Storage>::GaussianVariableIndex(
-      const VariableIndex<Storage>& variableIndex, const storage_type& dimensions) :
+  template<class STORAGE>
+  GaussianVariableIndex<STORAGE>::GaussianVariableIndex(
+      const VariableIndex<STORAGE>& variableIndex, const storage_type& dimensions) :
       Base(variableIndex), dims_(dimensions) {
     assert(Base::index_.size() == dims_.size()); }
 
   /* ************************************************************************* */
-  template<class Storage>
-  void GaussianVariableIndex<Storage>::fillDims(const GaussianFactorGraph& factorGraph) {
+  template<class STORAGE>
+  void GaussianVariableIndex<STORAGE>::fillDims(const GaussianFactorGraph& factorGraph) {
     // Store dimensions of each variable
     assert(dims_.size() == Base::index_.size());
     for(Index var=0; var<Base::index_.size(); ++var)
@@ -240,9 +240,9 @@ namespace gtsam {
   }
 
   /* ************************************************************************* */
-  template<class Storage>
-  void GaussianVariableIndex<Storage>::permute(const Permutation& permutation) {
-    VariableIndex<Storage>::permute(permutation);
+  template<class STORAGE>
+  void GaussianVariableIndex<STORAGE>::permute(const Permutation& permutation) {
+    VariableIndex<STORAGE>::permute(permutation);
     storage_type original(this->dims_.size());
     this->dims_.swap(original);
     for(Index j=0; j<permutation.size(); ++j)
@@ -250,8 +250,8 @@ namespace gtsam {
   }
 
   /* ************************************************************************* */
-  template<class Storage>
-  void GaussianVariableIndex<Storage>::augment(const GaussianFactorGraph& factorGraph) {
+  template<class STORAGE>
+  void GaussianVariableIndex<STORAGE>::augment(const GaussianFactorGraph& factorGraph) {
     Base::augment(factorGraph);
     dims_.resize(Base::index_.size(), 0);
     BOOST_FOREACH(boost::shared_ptr<const GaussianFactor> factor, factorGraph) {
@@ -283,9 +283,9 @@ namespace gtsam {
 //	 * @param ordering of variables needed for matrix column order
 //	 * @return the augmented matrix and a noise model
 //	 */
-//	template <class Factors>
+//	template <class FACTORS>
 //	std::pair<Matrix, SharedDiagonal> combineFactorsAndCreateMatrix(
-//			const Factors& factors,
+//			const FACTORS& factors,
 //			const Ordering& order, const Dimensions& dimensions);
 
 } // namespace gtsam

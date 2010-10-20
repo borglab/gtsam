@@ -51,19 +51,19 @@ namespace gtsam {
 	 * more general than just vectors, e.g., Rot3 or Pose3,
 	 * which are objects in non-linear manifolds (Lie groups).
 	 */
-	template<class Values>
-	class NonlinearFactor: public Testable<NonlinearFactor<Values> > {
+	template<class VALUES>
+	class NonlinearFactor: public Testable<NonlinearFactor<VALUES> > {
 
 	protected:
 
-		typedef NonlinearFactor<Values> This;
+		typedef NonlinearFactor<VALUES> This;
 
 		SharedGaussian noiseModel_; /** Noise model */
 		std::list<Symbol> keys_; /** cached keys */
 
 	public:
 
-		typedef boost::shared_ptr<NonlinearFactor<Values> > shared_ptr;
+		typedef boost::shared_ptr<NonlinearFactor<VALUES> > shared_ptr;
 
 		/** Default constructor for I/O only */
 		NonlinearFactor() {
@@ -84,7 +84,7 @@ namespace gtsam {
 		}
 
 		/** Check if two NonlinearFactor objects are equal */
-		bool equals(const NonlinearFactor<Values>& f, double tol = 1e-9) const {
+		bool equals(const NonlinearFactor<VALUES>& f, double tol = 1e-9) const {
 			return noiseModel_->equals(*f.noiseModel_, tol);
 		}
 
@@ -92,7 +92,7 @@ namespace gtsam {
 		 * calculate the error of the factor
 		 * Override for systems with unusual noise models
 		 */
-		virtual double error(const Values& c) const {
+		virtual double error(const VALUES& c) const {
 			return 0.5 * noiseModel_->Mahalanobis(unwhitenedError(c));
 		}
 
@@ -123,16 +123,16 @@ namespace gtsam {
 		}
 
 		/** Vector of errors, unwhitened ! */
-		virtual Vector unwhitenedError(const Values& c) const = 0;
+		virtual Vector unwhitenedError(const VALUES& c) const = 0;
 
 		/** Vector of errors, whitened ! */
-		Vector whitenedError(const Values& c) const {
+		Vector whitenedError(const VALUES& c) const {
 			return noiseModel_->whiten(unwhitenedError(c));
 		}
 
 		/** linearize to a GaussianFactor */
 		virtual boost::shared_ptr<GaussianFactor>
-		linearize(const Values& c, const Ordering& ordering) const = 0;
+		linearize(const VALUES& c, const Ordering& ordering) const = 0;
 
 		/**
 		 * Create a symbolic factor using the given ordering to determine the
@@ -144,8 +144,8 @@ namespace gtsam {
 
 		/** Serialization function */
 		friend class boost::serialization::access;
-		template<class Archive>
-		void serialize(Archive & ar, const unsigned int version) {
+		template<class ARCHIVE>
+		void serialize(ARCHIVE & ar, const unsigned int version) {
 			// TODO NoiseModel
 		}
 
@@ -160,21 +160,21 @@ namespace gtsam {
 	 * the derived class implements error_vector(c) = h(x)-z \approx Ax-b
 	 * This allows a graph to have factors with measurements of mixed type.
 	 */
-	template<class Values, class Key>
-	class NonlinearFactor1: public NonlinearFactor<Values> {
+	template<class VALUES, class KEY>
+	class NonlinearFactor1: public NonlinearFactor<VALUES> {
 
 	public:
 
 		// typedefs for value types pulled from keys
-		typedef typename Key::Value X;
+		typedef typename KEY::Value X;
 
 	protected:
 
 		// The value of the key. Not const to allow serialization
-		Key key_;
+		KEY key_;
 
-		typedef NonlinearFactor<Values> Base;
-		typedef NonlinearFactor1<Values, Key> This;
+		typedef NonlinearFactor<VALUES> Base;
+		typedef NonlinearFactor1<VALUES, KEY> This;
 
 	public:
 
@@ -182,7 +182,7 @@ namespace gtsam {
 		NonlinearFactor1() {
 		}
 
-		inline const Key& key() const {
+		inline const KEY& key() const {
 			return key_;
 		}
 
@@ -192,7 +192,7 @@ namespace gtsam {
 		 *  @param key by which to look up X value in Values
 		 */
 		NonlinearFactor1(const SharedGaussian& noiseModel,
-				const Key& key1) :
+				const KEY& key1) :
 			Base(noiseModel), key_(key1) {
 			this->keys_.push_back(key_);
 		}
@@ -205,13 +205,13 @@ namespace gtsam {
 		}
 
 		/** Check if two factors are equal. Note type is IndexFactor and needs cast. */
-		bool equals(const NonlinearFactor1<Values,Key>& f, double tol = 1e-9) const {
+		bool equals(const NonlinearFactor1<VALUES,KEY>& f, double tol = 1e-9) const {
 			return Base::noiseModel_->equals(*f.noiseModel_, tol) && (key_ == f.key_);
 		}
 
 		/** error function h(x)-z, unwhitened !!! */
-		inline Vector unwhitenedError(const Values& x) const {
-			const Key& j = key_;
+		inline Vector unwhitenedError(const VALUES& x) const {
+			const KEY& j = key_;
 			const X& xj = x[j];
 			return evaluateError(xj);
 		}
@@ -221,7 +221,7 @@ namespace gtsam {
 		 * Ax-b \approx h(x0+dx)-z = h(x0) + A*dx - z
 		 * Hence b = z - h(x0) = - error_vector(x)
 		 */
-		virtual boost::shared_ptr<GaussianFactor> linearize(const Values& x, const Ordering& ordering) const {
+		virtual boost::shared_ptr<GaussianFactor> linearize(const VALUES& x, const Ordering& ordering) const {
 			const X& xj = x[key_];
 			Matrix A;
 			Vector b = - evaluateError(xj, A);
@@ -258,8 +258,8 @@ namespace gtsam {
 
 		/** Serialization function */
 		friend class boost::serialization::access;
-		template<class Archive>
-		void serialize(Archive & ar, const unsigned int version) {
+		template<class ARCHIVE>
+		void serialize(ARCHIVE & ar, const unsigned int version) {
 			ar & boost::serialization::make_nvp("NonlinearFactor",
 					boost::serialization::base_object<NonlinearFactor>(*this));
 			ar & BOOST_SERIALIZATION_NVP(key_);
@@ -270,23 +270,23 @@ namespace gtsam {
 	/**
 	 * A Gaussian nonlinear factor that takes 2 parameters
 	 */
-	template<class Values, class Key1, class Key2>
-	class NonlinearFactor2: public NonlinearFactor<Values> {
+	template<class VALUES, class KEY1, class KEY2>
+	class NonlinearFactor2: public NonlinearFactor<VALUES> {
 
 	  public:
 
 		// typedefs for value types pulled from keys
-		typedef typename Key1::Value X1;
-		typedef typename Key2::Value X2;
+		typedef typename KEY1::Value X1;
+		typedef typename KEY2::Value X2;
 
 	protected:
 
 		// The values of the keys. Not const to allow serialization
-		Key1 key1_;
-		Key2 key2_;
+		KEY1 key1_;
+		KEY2 key2_;
 
-		typedef NonlinearFactor<Values> Base;
-		typedef NonlinearFactor2<Values, Key1, Key2> This;
+		typedef NonlinearFactor<VALUES> Base;
+		typedef NonlinearFactor2<VALUES, KEY1, KEY2> This;
 
 	public:
 
@@ -301,8 +301,8 @@ namespace gtsam {
 		 * @param j1 key of the first variable
 		 * @param j2 key of the second variable
 		 */
-		NonlinearFactor2(const SharedGaussian& noiseModel, Key1 j1,
-				Key2 j2) :
+		NonlinearFactor2(const SharedGaussian& noiseModel, KEY1 j1,
+				KEY2 j2) :
 			Base(noiseModel), key1_(j1), key2_(j2) {
 			this->keys_.push_back(key1_);
 			this->keys_.push_back(key2_);
@@ -317,13 +317,13 @@ namespace gtsam {
 		}
 
 		/** Check if two factors are equal */
-		bool equals(const NonlinearFactor2<Values,Key1,Key2>& f, double tol = 1e-9) const {
+		bool equals(const NonlinearFactor2<VALUES,KEY1,KEY2>& f, double tol = 1e-9) const {
 			return Base::noiseModel_->equals(*f.noiseModel_, tol) && (key1_ == f.key1_)
 					&& (key2_ == f.key2_);
 		}
 
 		/** error function z-h(x1,x2) */
-		inline Vector unwhitenedError(const Values& x) const {
+		inline Vector unwhitenedError(const VALUES& x) const {
 			const X1& x1 = x[key1_];
 			const X2& x2 = x[key2_];
 			return evaluateError(x1, x2);
@@ -334,7 +334,7 @@ namespace gtsam {
 		 * Ax-b \approx h(x1+dx1,x2+dx2)-z = h(x1,x2) + A2*dx1 + A2*dx2 - z
 		 * Hence b = z - h(x1,x2) = - error_vector(x)
 		 */
-		boost::shared_ptr<GaussianFactor> linearize(const Values& c, const Ordering& ordering) const {
+		boost::shared_ptr<GaussianFactor> linearize(const VALUES& c, const Ordering& ordering) const {
 			const X1& x1 = c[key1_];
 			const X2& x2 = c[key2_];
 			Matrix A1, A2;
@@ -371,10 +371,10 @@ namespace gtsam {
     }
 
 		/** methods to retrieve both keys */
-		inline const Key1& key1() const {
+		inline const KEY1& key1() const {
 			return key1_;
 		}
-		inline const Key2& key2() const {
+		inline const KEY2& key2() const {
 			return key2_;
 		}
 
@@ -391,8 +391,8 @@ namespace gtsam {
 
 		/** Serialization function */
 		friend class boost::serialization::access;
-		template<class Archive>
-		void serialize(Archive & ar, const unsigned int version) {
+		template<class ARCHIVE>
+		void serialize(ARCHIVE & ar, const unsigned int version) {
 			ar & boost::serialization::make_nvp("NonlinearFactor",
 					boost::serialization::base_object<NonlinearFactor>(*this));
 			ar & BOOST_SERIALIZATION_NVP(key1_);
@@ -406,25 +406,25 @@ namespace gtsam {
   /**
    * A Gaussian nonlinear factor that takes 3 parameters
    */
-  template<class Values, class Key1, class Key2, class Key3>
-  class NonlinearFactor3: public NonlinearFactor<Values> {
+  template<class VALUES, class KEY1, class KEY2, class KEY3>
+  class NonlinearFactor3: public NonlinearFactor<VALUES> {
 
   public:
 
 	// typedefs for value types pulled from keys
-	typedef typename Key1::Value X1;
-	typedef typename Key2::Value X2;
-	typedef typename Key3::Value X3;
+	typedef typename KEY1::Value X1;
+	typedef typename KEY2::Value X2;
+	typedef typename KEY3::Value X3;
 
   protected:
 
 	// The values of the keys. Not const to allow serialization
-    Key1 key1_;
-    Key2 key2_;
-    Key3 key3_;
+    KEY1 key1_;
+    KEY2 key2_;
+    KEY3 key3_;
 
-    typedef NonlinearFactor<Values> Base;
-    typedef NonlinearFactor3<Values, Key1, Key2, Key3> This;
+    typedef NonlinearFactor<VALUES> Base;
+    typedef NonlinearFactor3<VALUES, KEY1, KEY2, KEY3> This;
 
   public:
 
@@ -440,7 +440,7 @@ namespace gtsam {
      * @param j2 key of the second variable
      * @param j3 key of the third variable
      */
-    NonlinearFactor3(const SharedGaussian& noiseModel, Key1 j1, Key2 j2, Key3 j3) :
+    NonlinearFactor3(const SharedGaussian& noiseModel, KEY1 j1, KEY2 j2, KEY3 j3) :
       Base(noiseModel), key1_(j1), key2_(j2), key3_(j3) {
       this->keys_.push_back(key1_);
       this->keys_.push_back(key2_);
@@ -457,13 +457,13 @@ namespace gtsam {
     }
 
     /** Check if two factors are equal */
-    bool equals(const NonlinearFactor3<Values,Key1,Key2,Key3>& f, double tol = 1e-9) const {
+    bool equals(const NonlinearFactor3<VALUES,KEY1,KEY2,KEY3>& f, double tol = 1e-9) const {
       return Base::noiseModel_->equals(*f.noiseModel_, tol) && (key1_ == f.key1_)
           && (key2_ == f.key2_) && (key3_ == f.key3_);
     }
 
     /** error function z-h(x1,x2) */
-    inline Vector unwhitenedError(const Values& x) const {
+    inline Vector unwhitenedError(const VALUES& x) const {
       const X1& x1 = x[key1_];
       const X2& x2 = x[key2_];
       const X3& x3 = x[key3_];
@@ -475,7 +475,7 @@ namespace gtsam {
      * Ax-b \approx h(x1+dx1,x2+dx2,x3+dx3)-z = h(x1,x2,x3) + A2*dx1 + A2*dx2 + A3*dx3 - z
      * Hence b = z - h(x1,x2,x3) = - error_vector(x)
      */
-    boost::shared_ptr<GaussianFactor> linearize(const Values& c, const Ordering& ordering) const {
+    boost::shared_ptr<GaussianFactor> linearize(const VALUES& c, const Ordering& ordering) const {
       const X1& x1 = c[key1_];
       const X2& x2 = c[key2_];
       const X3& x3 = c[key3_];
@@ -538,13 +538,13 @@ namespace gtsam {
     }
 
     /** methods to retrieve keys */
-    inline const Key1& key1() const {
+    inline const KEY1& key1() const {
       return key1_;
     }
-    inline const Key2& key2() const {
+    inline const KEY2& key2() const {
       return key2_;
     }
-    inline const Key3& key3() const {
+    inline const KEY3& key3() const {
       return key3_;
     }
 
@@ -563,8 +563,8 @@ namespace gtsam {
 
     /** Serialization function */
     friend class boost::serialization::access;
-    template<class Archive>
-    void serialize(Archive & ar, const unsigned int version) {
+    template<class ARCHIVE>
+    void serialize(ARCHIVE & ar, const unsigned int version) {
       ar & boost::serialization::make_nvp("NonlinearFactor",
           boost::serialization::base_object<NonlinearFactor>(*this));
       ar & BOOST_SERIALIZATION_NVP(key1_);

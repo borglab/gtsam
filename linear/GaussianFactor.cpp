@@ -593,9 +593,9 @@ struct _RowSource {
 template GaussianFactor::shared_ptr GaussianFactor::Combine(const FactorGraph<GaussianFactor>&, const GaussianVariableIndex<VariableIndexStorage_vector>&, const vector<size_t>&, const vector<Index>&, const std::vector<std::vector<size_t> >&);
 template GaussianFactor::shared_ptr GaussianFactor::Combine(const FactorGraph<GaussianFactor>&, const GaussianVariableIndex<VariableIndexStorage_deque>&, const vector<size_t>&, const vector<Index>&, const std::vector<std::vector<size_t> >&);
 
-template<class Storage>
+template<class STORAGE>
 GaussianFactor::shared_ptr GaussianFactor::Combine(const FactorGraph<GaussianFactor>& factorGraph,
-    const GaussianVariableIndex<Storage>& variableIndex, const vector<size_t>& factors,
+    const GaussianVariableIndex<STORAGE>& variableIndex, const vector<size_t>& factors,
     const vector<Index>& variables, const std::vector<std::vector<size_t> >& variablePositions) {
 
   shared_ptr ret(boost::make_shared<GaussianFactor>());

@@ -38,14 +38,14 @@ public:
   GaussianISAM(const GaussianBayesNet& bayesNet) : ISAM<GaussianConditional>(bayesNet) {}
 
   /** Override update_internal to also keep track of variable dimensions. */
-  template<class FactorGraph>
-  void update_internal(const FactorGraph& newFactors, Cliques& orphans) {
+  template<class FACTORGRAPH>
+  void update_internal(const FACTORGRAPH& newFactors, Cliques& orphans) {
 
     ISAM<GaussianConditional>::update_internal(newFactors, orphans);
 
     // update dimensions
-    BOOST_FOREACH(const typename FactorGraph::sharedFactor& factor, newFactors) {
-      for(typename FactorGraph::Factor::const_iterator key = factor->begin(); key != factor->end(); ++key) {
+    BOOST_FOREACH(const typename FACTORGRAPH::sharedFactor& factor, newFactors) {
+      for(typename FACTORGRAPH::Factor::const_iterator key = factor->begin(); key != factor->end(); ++key) {
         if(*key >= dims_.size())
           dims_.resize(*key + 1);
         if(dims_[*key] == 0)
@@ -56,8 +56,8 @@ public:
     }
   }
 
-  template<class FactorGraph>
-  void update(const FactorGraph& newFactors) {
+  template<class FACTORGRAPH>
+  void update(const FACTORGRAPH& newFactors) {
     Cliques orphans;
     this->update_internal(newFactors, orphans);
   }
