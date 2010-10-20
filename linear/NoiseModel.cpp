@@ -31,7 +31,7 @@
 
 #include <gtsam/linear/NoiseModel.h>
 #include <gtsam/linear/SharedDiagonal.h>
-#include <gtsam/base/SPQRUtil.h>
+#include <gtsam/base/DenseQRUtil.h>
 
 namespace ublas = boost::numeric::ublas;
 typedef ublas::matrix_column<Matrix> column;
@@ -133,9 +133,9 @@ SharedDiagonal Gaussian::QR(Matrix& Ab, boost::optional<vector<long>&> firstZero
 	// Perform in-place Householder
 #ifdef GT_USE_LAPACK
 	if(firstZeroRows)
-	  householder_spqr(Ab, &(*firstZeroRows)[0]);
+	  householder_denseqr(Ab, &(*firstZeroRows)[0]);
 	else
-	  householder_spqr(Ab);
+	  householder_denseqr(Ab);
 #else
 	householder(Ab, maxRank);
 #endif
@@ -156,7 +156,7 @@ SharedDiagonal Gaussian::QRColumnWise(ublas::matrix<double, ublas::column_major>
 
   // Perform in-place Householder
 #ifdef GT_USE_LAPACK
-  householder_spqr_colmajor(Ab, &firstZeroRows[0]);
+  householder_denseqr_colmajor(Ab, &firstZeroRows[0]);
 #else
   householder(Ab, maxRank);
 #endif

@@ -17,7 +17,7 @@
 
 #include <iostream>
 #include <gtsam/CppUnitLite/TestHarness.h>
-#include <gtsam/base/SPQRUtil.h>
+#include <gtsam/base/DenseQRUtil.h>
 
 using namespace std;
 using namespace gtsam;
@@ -77,7 +77,7 @@ TEST(SPQRUtil, MakeStair2)
 }
 
 /* ************************************************************************* */
-TEST(SPQRUtil, houseHolder_spqr)
+TEST(SPQRUtil, houseHolder_denseqr)
 {
 	double data[] = { -5, 0, 5, 0, 0, 0, -1,
 										00,-5, 0, 5, 0, 0, 1.5,
@@ -91,12 +91,12 @@ TEST(SPQRUtil, houseHolder_spqr)
 										0, 0, 0, 4.4721, 0, -4.4721, 0.894 };
 	Matrix expected1 = Matrix_(4, 7, data1);
 	Matrix A1 = Matrix_(4, 7, data);
-	householder_spqr(A1);
+	householder_denseqr(A1);
 	CHECK(assert_equal(expected1, A1, 1e-3));
 }
 
 /* ************************************************************************* */
-TEST(SPQRUtil, houseHolder_spqr2)
+TEST(SPQRUtil, houseHolder_denseqr2)
 {
 	double data[] = { -5, 0, 5, 0, 0, 0, -1,
 										00,-5, 0, 5, 0, 0, 1.5,
@@ -111,13 +111,13 @@ TEST(SPQRUtil, houseHolder_spqr2)
 	Matrix expected1 = Matrix_(4, 7, data1);
 	Matrix A1 = Matrix_(4, 7, data);
 	long* Stair = MakeStairs(A1);
-	householder_spqr(A1, Stair);
+	householder_denseqr(A1, Stair);
 	delete[] Stair;
 	CHECK(assert_equal(expected1, A1, 1e-3));
 }
 
 /* ************************************************************************* */
-TEST(SPQRUtil, houseHolder_spqr3)
+TEST(SPQRUtil, houseHolder_denseqr3)
 {
 	double data[] = { 1, 1, 9,
 										1, 0, 5};
@@ -127,11 +127,11 @@ TEST(SPQRUtil, houseHolder_spqr3)
 			 	 	 	 	 	 	 	 0,	-1/sqrt(2), -4/sqrt(2)};
 	Matrix expected1 = Matrix_(2, 3, data1);
 	Matrix A1 = Matrix_(2, 3, data);
-	householder_spqr(A1);
+	householder_denseqr(A1);
 	CHECK(assert_equal(expected1, A1, 1e-3));
 }
 /* ************************************************************************* */
-TEST(SPQRUtil, houseHolder_spqr4)
+TEST(SPQRUtil, houseHolder_denseqr4)
 {
   Matrix A = Matrix_(15, 34,
       -5.48351,  23.2337, -45.2073,  6.33455,-0.342553,-0.897005,  7.91126,  3.20237, -2.49219, -2.44189,-0.977376, -1.61127, -3.68421,-1.28059,  -2.83303,  2.45949, 0.218835, -0.71239,-0.169314,-0.131355,  2.04233,        0.0,        0.0,        0.0,        0.0,        0.0,       0.0,         0.0,        0.0,        0.0,        0.0,        0.0,        0.0,-0.0782689,
@@ -185,13 +185,13 @@ TEST(SPQRUtil, houseHolder_spqr4)
              0.0,        0.0,        0.0,        0.0,        0.0,        0.0,        0.0,        0.0,        0.0,        0.0,        0.0,        0.0,        0.0,       0.0,         0.0,        0.0,        0.0,        0.0,        0.0,        0.0,        0.0,        0.0,        0.0,  1.86199,  8.53755, -19.6873, 20.8838,   6.09985, -12.3691, -28.4341,  7.05672,  3.02888, 0.594889,-0.214789);
 
   Matrix actualR = A;
-  householder_spqr(actualR);
+  householder_denseqr(actualR);
 
   long* Stair = MakeStairs(A);
   CHECK(assert_equal(expectedA, A));
 
   Matrix actualRstair = A;
-  householder_spqr(actualRstair, Stair);
+  householder_denseqr(actualRstair, Stair);
   delete[] Stair;
 
   CHECK(assert_equal(expectedR, actualR, 1e-3));

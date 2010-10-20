@@ -17,10 +17,6 @@ SUBDIRS = CppUnitLite base geometry inference linear nonlinear slam . tests wrap
 SUBLIBS = base/libbase.la geometry/libgeometry.la inference/libinference.la \
           linear/liblinear.la nonlinear/libnonlinear.la slam/libslam.la
 
-if USE_LAPACK
-SUBLIBS += -L$(DenseQRLib) -lDenseQR
-endif
-
 # TODO: UFconfig, CCOLAMD, and LDL automake magic without adding or touching any file
 # in those directories as to not invalidate the LGPL license
 # See some possibilities in

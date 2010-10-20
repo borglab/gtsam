@@ -10,15 +10,15 @@
  * -------------------------------------------------------------------------- */
 
 /*
- * SPQRUtil.cpp
+ * DenseQRUtil.cpp
  *
  *   Created on: Jul 1, 2010
  *       Author: nikai
- *  Description: the utility functions for SPQR
+ *  Description: the utility functions for DenseQR
  */
 
 #include <gtsam/base/timing.h>
-#include <gtsam/base/SPQRUtil.h>
+#include <gtsam/base/DenseQRUtil.h>
 #include <boost/numeric/ublas/matrix.hpp>
 #include <boost/numeric/ublas/matrix_proxy.hpp>
 #include <boost/numeric/ublas/triangular.hpp>
@@ -99,9 +99,9 @@ namespace gtsam {
 	}
 
 	/* ************************************************************************* */
-	void householder_spqr(Matrix &A, long* Stair) {
+	void householder_denseqr(Matrix &A, long* Stair) {
 
-	  tic("householder_spqr");
+	  tic("householder_denseqr");
 
 		long m = A.size1();
 		long n = A.size2();
@@ -114,13 +114,13 @@ namespace gtsam {
 				Stair[j] = m;
 		}
 
-		tic("householder_spqr: row->col");
+		tic("householder_denseqr: row->col");
 		// convert from row major to column major
 		ublas::matrix<double, ublas::column_major> Acolwise(A);
 		double *a = Acolwise.data().begin();
-    toc("householder_spqr: row->col");
+    toc("householder_denseqr: row->col");
 
-    tic("householder_spqr: spqr_front");
+    tic("householder_denseqr: denseqr_front");
 		long npiv = min(m,n);
 		double tol = -1;	long ntol = -1; // no tolerance is used
 		long fchunk = m < 32 ? m : 32;
@@ -131,18 +131,18 @@ namespace gtsam {
 		double wscale = 0;
 		double wssq = 0;
 
-		cholmod_common cc;
-		cholmod_l_start(&cc);
+//		cholmod_common cc;
+//		cholmod_l_start(&cc);
 
 		// todo: do something with the rank
-		long rank = spqr_front<double>(m, n, npiv, tol, ntol, fchunk,
-				a, Stair, Rdead, Tau, W, &wscale, &wssq, &cc);
-    toc("householder_spqr: spqr_front");
+		long rank = DenseQR(m, n, npiv, tol, ntol, fchunk,
+				a, Stair, Rdead, Tau, W, &wscale, &wssq);
+    toc("householder_denseqr: denseqr_front");
 
 //#ifndef NDEBUG
 		for(long j=0; j<npiv; ++j)
 		  if(Rdead[j]) {
-		    cout << "In householder_spqr, aborting because some columns were found to be\n"
+		    cout << "In householder_denseqr, aborting because some columns were found to be\n"
 		        "numerically linearly-dependent and we cannot handle this case yet." << endl;
 		    print(A, "The matrix being factored was\n");
 		    ublas::matrix_range<ublas::matrix<double,ublas::column_major> > Acolsub(
@@ -156,7 +156,7 @@ namespace gtsam {
 		  }
 //#endif
 
-    tic("householder_spqr: col->row");
+    tic("householder_denseqr: col->row");
 		long k0 = 0;
 		long j0;
 		int k;
@@ -173,24 +173,24 @@ namespace gtsam {
 //    ublas::matrix_range<Matrix> Asub(ublas::project(A, ublas::range(0, min(m,n)), ublas::range(0,n)));
 //		ublas::noalias(Asub) = ublas::triangular_adaptor<typeof(Acolsub), ublas::upper>(Acolsub);
 
-    toc("householder_spqr: col->row");
+    toc("householder_denseqr: col->row");
 
-		cholmod_l_finish(&cc);
+//		cholmod_l_finish(&cc);
 
 		if(allocedStair) delete[] Stair;
 
-		toc("householder_spqr");
+		toc("householder_denseqr");
 	}
 
-	void householder_spqr_colmajor(ublas::matrix<double, ublas::column_major>& A, long *Stair) {
-    tic("householder_spqr");
+	void householder_denseqr_colmajor(ublas::matrix<double, ublas::column_major>& A, long *Stair) {
+    tic("householder_denseqr");
 
     long m = A.size1();
     long n = A.size2();
 
     assert(Stair != NULL);
 
-    tic("householder_spqr: spqr_front");
+    tic("householder_denseqr: denseqr_front");
     long npiv = min(m,n);
     double tol = -1;  long ntol = -1; // no tolerance is used
     long fchunk = m < 32 ? m : 32;
@@ -201,18 +201,18 @@ namespace gtsam {
     double wscale = 0;
     double wssq = 0;
 
-    cholmod_common cc;
-    cholmod_l_start(&cc);
+//    cholmod_common cc;
+//    cholmod_l_start(&cc);
 
     // todo: do something with the rank
-    long rank = spqr_front<double>(m, n, npiv, tol, ntol, fchunk,
-        A.data().begin(), Stair, Rdead, Tau, W, &wscale, &wssq, &cc);
-    toc("householder_spqr: spqr_front");
+    long rank = DenseQR(m, n, npiv, tol, ntol, fchunk,
+        A.data().begin(), Stair, Rdead, Tau, W, &wscale, &wssq);
+    toc("householder_denseqr: denseqr_front");
 
 //#ifndef NDEBUG
     for(long j=0; j<npiv; ++j)
       if(Rdead[j]) {
-        cout << "In householder_spqr, aborting because some columns were found to be\n"
+        cout << "In householder_denseqr, aborting because some columns were found to be\n"
             "numerically linearly-dependent and we cannot handle this case yet." << endl;
         print(A, "The matrix being factored was\n");
         ublas::matrix_range<ublas::matrix<double,ublas::column_major> > Acolsub(
@@ -226,9 +226,9 @@ namespace gtsam {
       }
 //#endif
 
-    cholmod_l_finish(&cc);
+//    cholmod_l_finish(&cc);
 
-    toc("householder_spqr");
+    toc("householder_denseqr");
 
 	}
 

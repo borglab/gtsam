@@ -18,8 +18,8 @@ sources += Vector.cpp svdcmp.cpp Matrix.cpp
 check_PROGRAMS += tests/testFixedVector tests/testVector tests/testMatrix 
 
 if USE_LAPACK
-sources += SPQRUtil.cpp
-check_PROGRAMS += tests/testSPQRUtil
+sources += DenseQR.cpp DenseQRUtil.cpp
+check_PROGRAMS += tests/testDenseQRUtil
 endif
 
 # Testing
@@ -50,7 +50,7 @@ base_HEADERS = $(headers)
 noinst_LTLIBRARIES = libbase.la
 libbase_la_SOURCES = $(sources)
 
-AM_CPPFLAGS = $(BOOST_CPPFLAGS) -I$(CCOLAMDInc) -I$(DenseQRInc) -I$(top_srcdir)/..
+AM_CPPFLAGS = $(BOOST_CPPFLAGS) -I$(CCOLAMDInc) -I$(top_srcdir)/..
 AM_LDFLAGS = $(BOOST_LDFLAGS)
 
 if USE_BLAS
@@ -76,7 +76,6 @@ endif
 
 if USE_LAPACK
 AM_CPPFLAGS += -DGT_USE_LAPACK
-AM_LDFLAGS += -L$(DenseQRLib) -lDenseQR
 endif
 
 if USE_LAPACK_LINUX

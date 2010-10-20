@@ -51,7 +51,7 @@ lineardir = $(pkgincludedir)/linear
 linear_HEADERS = $(headers)
 noinst_LTLIBRARIES = liblinear.la
 liblinear_la_SOURCES = $(sources)
-AM_CPPFLAGS = $(BOOST_CPPFLAGS) -I$(CCOLAMDInc) -I$(DenseQRInc) -I$(top_srcdir)/..
+AM_CPPFLAGS = $(BOOST_CPPFLAGS) -I$(CCOLAMDInc) -I$(top_srcdir)/..
 AM_LDFLAGS = $(BOOST_LDFLAGS)
 AM_CXXFLAGS =
 
@@ -78,6 +78,5 @@ endif
 
 if USE_LAPACK
 AM_CXXFLAGS += -DGT_USE_LAPACK
-AM_LDFLAGS += -L$(DenseQRLib) -lDenseQR
 endif
 

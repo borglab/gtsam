@@ -169,21 +169,4 @@ AC_ARG_WITH([ccolamd-lib],
             [CCOLAMDLib=${HOME}/lib])
 AC_SUBST([CCOLAMDLib])
 
-# ask for DenseQR library include directory
-AC_ARG_WITH([denseqr-inc],
-            [AS_HELP_STRING([--with-denseqr-inc],
-              [specify the DenseQR library include directory (defaults to /HOME/include/DenseQR)])],
-            [DenseQRInc=$withval],
-            [DenseQRInc=${HOME}/include/DenseQR])
-AC_SUBST([DenseQRInc])
-
-# ask for DenseQR library lib directory
-AC_ARG_WITH([denseqr-lib],
-            [AS_HELP_STRING([--with-denseqr-lib],
-              [specify the DenseQR library lib directory (defaults to /HOME/lib)])],
-            [DenseQRLib=$withval],
-            [DenseQRLib=${HOME}/lib])
-AC_SUBST([DenseQRLib])
-
-
 AC_OUTPUT
