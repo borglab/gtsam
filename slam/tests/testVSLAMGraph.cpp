@@ -33,7 +33,7 @@ using namespace std;
 using namespace gtsam;
 using namespace gtsam::visualSLAM;
 using namespace boost;
-typedef NonlinearOptimizer<Graph,Values> Optimizer;
+
 static SharedGaussian sigma(noiseModel::Unit::Create(1));
 
 /* ************************************************************************* */
