@@ -63,8 +63,8 @@ All Rights Reserved
 
 7.  Linked Libraries.
 
-The Program contains no portions nor any derivatives of the external libraries COLAMD, CCOLAMD and SuiteSparceQR.  However, the Program is designed to work with these libraries by being compiled or linked with them as provided in the GNU Lesser General Public License v. 2.1, sections 5 and 6.  These libraries, and their use, are subject to the GNU Lesser General Public License v. 2.1.  A copy of the GNU Lesser General Public License v. 2.1 is distributed with the Program.  The libraries COLAMD, CCOLAMD and SuiteSparceQR are copyrighted as provided in their copyright notice, reproduced below:
+The Program contains no portions nor any derivatives of the external library CCOLAMD.  However, the Program is designed to work with these libraries by being compiled or linked with them as provided in the GNU Lesser General Public License v. 2.1, sections 5 and 6.  These libraries, and their use, are subject to the GNU Lesser General Public License v. 2.1.  A copy of the GNU Lesser General Public License v. 2.1 is distributed with the Program.  The library CCOLAMD is copyrighted as provided in its copyright notice, reproduced below:
 
-CCOLAMD, COLAMD and SuiteSparceQR are Copyright (C), Univ. of Florida, Author(s) Timothy A. Davis, Sivasankaran Rajamanickam, and Sefan Larimore
+COLAMD is Copyright (C), Univ. of Florida, Author(s) Timothy A. Davis, Sivasankaran Rajamanickam, and Sefan Larimore
 See LPGL for the version 2.1 of the GNU Lesser General Public License
 http://www.cise.ufl.edu/reesarch/sparce
