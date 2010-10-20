@@ -6,9 +6,9 @@ using namespace gtsam;
 using namespace std;
 
 /* ************************************************************************* */
-bool readLandMarks(const char* landmarkFile, std::map<int, Point3>& landmarks)
-{
-    ifstream file(landmarkFile);
+std::map<int, Point3> readLandMarks(const std::string& landmarkFile)
+{	
+		ifstream file(landmarkFile.c_str());
     if (!file) {
         cout << "Cannot read landmark file: " << landmarkFile << endl;
         exit(0);
@@ -16,6 +16,7 @@ bool readLandMarks(const char* landmarkFile, std::map<int, Point3>& landmarks)
 
     int num;
     file >> num;
+		std::map<int, Point3> landmarks;
     landmarks.clear();
     for (int i = 0; i<num; i++)
     {
@@ -26,7 +27,7 @@ bool readLandMarks(const char* landmarkFile, std::map<int, Point3>& landmarks)
     }
 
     file.close();
-    return true;
+		return landmarks;
 }
 
 /* ************************************************************************* */
@@ -66,17 +67,36 @@ gtsam::Pose3 readPose(const char* Fn)
     return pose;
 }
 /* ************************************************************************* */
-gtsam::Pose3 readPose(const char* poseFn_pre, const char* poseFn_suf, int poseId)
+std::map<int, gtsam::Pose3> readPoses(const std::string& baseFolder, const std::string& posesFn)
 {
-    char poseFn[128];
-    sprintf(poseFn, "%s%d%s", poseFn_pre, poseId, poseFn_suf);
-    return readPose(poseFn);
+		ifstream posesFile((baseFolder+posesFn).c_str());
+		if (!posesFile)
+		{
+				cout << "Cannot read all pose file: " << posesFn << endl;
+				exit(0);
+		}
+		int numPoses;
+		posesFile >> numPoses;
+		map<int, Pose3> poses;
+		for (int i = 0; i<numPoses; i++)
+		{
+				int poseId;
+				posesFile >> poseId;
+
+				string poseFileName;
+				posesFile >> poseFileName;
+
+				Pose3 pose = readPose((baseFolder+poseFileName).c_str());
+				poses[poseId] = pose;
+		}
+
+		return poses;
 }
 
 /* ************************************************************************* */
-gtsam::Cal3_S2 readCalibData(const char* calibFn)
+gtsam::shared_ptrK readCalibData(const std::string& calibFn)
 {
-    ifstream calibFile(calibFn);
+		ifstream calibFile(calibFn.c_str());
     if (!calibFile)
     {
         cout << "Cannot read calib file: " << calibFn << endl;
@@ -87,11 +107,10 @@ gtsam::Cal3_S2 readCalibData(const char* calibFn)
     calibFile >> imX >> imY >> fx >> fy >> ox >> oy;
     calibFile.close();
 
-    Cal3_S2 K(fx, fy, 0, ox, oy);   // skew factor = 0
-    return K;
+		return shared_ptrK(new Cal3_S2(fx, fy, 0, ox, oy));   // skew factor = 0
 }
 /* ************************************************************************* */
-std::vector<Feature2D> readFeatures(const char* filename)
+std::vector<Feature2D> readFeatures(int pose_id, const char* filename)
 {
     ifstream file(filename);
     if (!file)
@@ -106,18 +125,39 @@ std::vector<Feature2D> readFeatures(const char* filename)
     std::vector<Feature2D> vFeatures_;
     for (size_t i = 0; i < numFeatures; i++)
     {
-        int id; double x, y;
-        file >> id >> x >> y;
-        vFeatures_.push_back(Feature2D(id, Point2(x, y)));
+				int landmark_id; double x, y;
+				file >> landmark_id >> x >> y;
+				vFeatures_.push_back(Feature2D(pose_id, landmark_id, Point2(x, y)));
     }
 
     file.close();
     return vFeatures_;
 }
 /* ************************************************************************* */
-std::vector<Feature2D> readFeatures(const char* featFn_pre, const char* featFn_suf, int imageId)
-{
-    char featFn[128];
-    sprintf(featFn, "%s%d%s", featFn_pre, imageId, featFn_suf);
-    return readFeatures(featFn);
+std::vector<Feature2D> readAllMeasurements(const std::string& baseFolder, const std::string& measurementsFn)
+{;
+		ifstream measurementsFile((baseFolder+measurementsFn).c_str());
+		if (!measurementsFile)
+		{
+				cout << "Cannot read all pose file: " << measurementsFn << endl;
+				exit(0);
+		}
+		int numPoses;
+		measurementsFile >> numPoses;
+
+		vector<Feature2D> allFeatures;
+		allFeatures.clear();
+
+		for (int i = 0; i<numPoses; i++)
+		{
+				int poseId;
+				measurementsFile >> poseId;
+
+				string featureFileName;
+				measurementsFile >> featureFileName;
+				vector<Feature2D> features = readFeatures(poseId, (baseFolder+featureFileName).c_str());
+				allFeatures.insert( allFeatures.end(), features.begin(), features.end() );
+		}
+
+		return allFeatures;
 }

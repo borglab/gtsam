@@ -1,0 +1,12 @@
+10
+1 ttpy10.pose
+2 ttpy20.pose
+3 ttpy30.pose
+4 ttpy40.pose
+5 ttpy50.pose
+6 ttpy60.pose
+7 ttpy70.pose
+8 ttpy80.pose
+9 ttpy90.pose
+10 ttpy100.pose
+

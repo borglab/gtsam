@@ -5,7 +5,6 @@
  * @author  Duy-Nguyen
  */
 
-#include <gtsam/CppUnitLite/TestHarness.h>
 #include <boost/shared_ptr.hpp>
 using namespace boost;
 
@@ -26,39 +25,62 @@ using namespace gtsam::visualSLAM;
 using namespace boost;
 
 /* ************************************************************************* */
-#define CALIB_FILE      "Data/calib.txt"
-#define LANDMARKS_FILE  "Data/landmarks.txt"
+#define CALIB_FILE					"calib.txt"
+#define LANDMARKS_FILE			"landmarks.txt"
+#define POSES_FILE					"poses.txt"
+#define MEASUREMENTS_FILE		"measurements.txt"
 
-#define POSEFN_PREFIX   "Data/ttpy"
-#define POSEFN_SUFFIX   ".pose"
-#define FEATFN_PREFIX   "Data/ttpy"
-#define FEATFN_SUFFIX   ".feat"
+// Base data folder
+string g_dataFolder;
 
-#define NUM_IMAGES 10
-const int ImageIds[NUM_IMAGES] = {10,20,30,40,50,60,70,80,90,100};
+// Store groundtruth values, read from files
+shared_ptrK g_calib;
+map<int, Point3> g_landmarks;				// map: <landmark_id, landmark_position>
+map<int, Pose3> g_poses;						// map: <camera_id, pose>
+std::vector<Feature2D> g_measurements;		// Feature2D: {camera_id, landmark_id, 2d feature_position}
 
-// Store groundtruth values
-map<int, Point3> g_landmarks;
-vector<Pose3> g_poses;
+// Noise models
+SharedGaussian measurementSigma(noiseModel::Isotropic::Sigma(2, 5.0f));
+
+/* ************************************************************************* */
+/**
+	* Read all data: calibration file, landmarks, poses, and all features measurements
+	* Data is stored in global variables.
+	*/
+void readAllData()
+{
+		g_calib = readCalibData(g_dataFolder + CALIB_FILE);
+
+		// Read groundtruth landmarks' positions. These will be used later as intial estimates for landmark nodes.
+		g_landmarks = readLandMarks(g_dataFolder + LANDMARKS_FILE);
+
+		// Read groundtruth camera poses. These will be used later as intial estimates for pose nodes.
+		g_poses = readPoses(g_dataFolder, POSES_FILE);
+
+		// Read all 2d measurements. Those will become factors linking their associating pose and the corresponding landmark.
+		g_measurements = readAllMeasurements(g_dataFolder, MEASUREMENTS_FILE);
+}
 
 /* ************************************************************************* */
 /**
   * Setup vSLAM graph
-  * by adding and associating 2D features (measurements) detected in each image
+	* by adding and linking 2D features (measurements) detected in each captured image
   * with their corresponding landmarks.
   */
-Graph setupGraph()
+Graph setupGraph(std::vector<Feature2D>& measurements, SharedGaussian measurementSigma, shared_ptrK calib)
 {
-    Graph g;
-    shared_ptrK sK(new Cal3_S2(readCalibData(CALIB_FILE)));
-    sK->print("Calibration: ");
-		SharedGaussian sigma(noiseModel::Isotropic::Sigma(2,5.0f));
+    Graph g;    
 
-    for (size_t i= 0; i<NUM_IMAGES; i++)
+		cout << "Built graph: " << endl;
+		for (size_t i= 0; i<measurements.size(); i++)
     {
-        std::vector<Feature2D> features = readFeatures(FEATFN_PREFIX, FEATFN_SUFFIX, ImageIds[i]);
-        for (size_t j = 0; j<features.size(); j++)
-            g.addMeasurement(features[j].m_p, sigma, i, features[j].m_id, sK);
+				measurements[i].print();
+
+				g.addMeasurement(measurements[i].m_p,
+												 measurementSigma,
+												 measurements[i].m_idCamera,
+												 measurements[i].m_idLandmark,
+												 calib);
     }
 
     return g;
@@ -66,69 +88,62 @@ Graph setupGraph()
 
 /* ************************************************************************* */
 /**
-  * Read initial values.
-  * Note: These are ground-truth values, but we just use them as initial estimates.
+	* Create a structure of initial estimates for all nodes (landmarks and poses) in the graph.
+	* The returned Values structure contains all initial values for all nodes.
   */
-Values initializeValues()
+Values initialize(std::map<int, Point3> landmarks, std::map<int, Pose3> poses)
 {
     Values initValues;
 
     // Initialize landmarks 3D positions.
-    for (map<int, Point3>::iterator lmit = g_landmarks.begin(); lmit != g_landmarks.end(); lmit++)
+		for (map<int, Point3>::iterator lmit = landmarks.begin(); lmit != landmarks.end(); lmit++)
         initValues.insert( lmit->first, lmit->second );
 
     // Initialize camera poses.
-    for (int i = 0; i<NUM_IMAGES; i++)
-        initValues.insert(i, g_poses[i]);
+		for (map<int, Pose3>::iterator poseit = poses.begin(); poseit != poses.end(); poseit++)
+				initValues.insert( poseit->first, poseit->second);
 
     return initValues;
 }
 
 /* ************************************************************************* */
-int main()
+int main(int argc, char* argv[])
 {
-    shared_ptr<Graph> graph(new Graph(setupGraph()));
+		if (argc <2)
+		{
+				cout << "Usage: vSLAMexample <DataFolder>" << endl << endl;
+				cout << "\tPlease specify <DataFolder>, which contains calibration file, initial landmarks, initial poses, and feature data." << endl;
+				cout << "\tSample folder is in $gtsam_source_folder$/examples/vSLAMexample/Data" << endl << endl;
+				cout << "Example usage: vSLAMexample '$gtsam_source_folder$/examples/vSLAMexample/Data'" << endl;
+				exit(0);
+		}
 
-    // Read groundtruth landmarks' positions and poses. These will also be used later as intial estimates.
-    readLandMarks(LANDMARKS_FILE, g_landmarks);
-    for (int i = 0; i<NUM_IMAGES; i++)
-    {
-        Pose3 pose = readPose(POSEFN_PREFIX, POSEFN_SUFFIX, ImageIds[i]) ;
-        g_poses.push_back( pose );
-    }
+		g_dataFolder = string(argv[1]);
+		readAllData();
 
-    // Create an initial Values structure using groundtruth as the initial estimates
-    boost::shared_ptr<Values> initialValues(new Values(initializeValues()));
+		// Create a graph using the 2D measurements (features) and calibration data
+		shared_ptr<Graph> graph(new Graph(setupGraph(g_measurements, measurementSigma, g_calib)));
+
+		// Create an initial Values structure using groundtruth values as the initial estimates
+		boost::shared_ptr<Values> initialEstimates(new Values(initialize(g_landmarks, g_poses)));
+		cout << "*******************************************************" << endl;
+		initialEstimates->print("INITIAL ESTIMATES: ");
 
     // Add hard constraint on the first pose, used as fixed prior.
-		graph->addPoseConstraint(0, g_poses[0]);
+		graph->addPoseConstraint(g_poses.begin()->first, g_poses.begin()->second);
 
-    // Create an ordering of the variables
-    shared_ptr<Ordering> ordering(new Ordering);
-    char name[4];
-    for (size_t i = 0; i<g_landmarks.size(); i++)
-    {
-        sprintf(name, "l%d", i);    // "li"
-        *ordering += name;
-    }
+		// Add prior factor for all poses in the graph
+//		for (map<int, Pose3>::iterator poseit = g_poses.begin(); poseit != g_poses.end(); poseit++)
+//				graph->addPosePrior(poseit->first, poseit->second, noiseModel::Unit::Create(10));
 
-    for (size_t i = 0; i<NUM_IMAGES; i++)
-    {
-        sprintf(name, "x%d", i);    // "xj"
-        *ordering += name;
-    }
+		// Optimize the graph
+		cout << "*******************************************************" << endl;
+		Optimizer::Parameters::verbosityLevel verborsity = Optimizer::Parameters::DAMPED;
+		Optimizer::shared_values result = Optimizer::optimizeLM( graph, initialEstimates, verborsity );
 
-    // Create an optimizer and check its error
-    // We expect the initial to be zero because Values is the ground truth
-        Optimizer::shared_solver solver(new Optimizer::solver(ordering));
-    Optimizer optimizer(graph, initialValues, solver);
-    cout << "Initial error: " << optimizer.error() << endl;
-    optimizer.config()->print("Initial estimates: ");
-
-    // Optimize the graph.
-		Optimizer::verbosityLevel verborsity = Optimizer::ERROR;
-		Optimizer optimResult = optimizer.levenbergMarquardt(1e-5, 1e-5, verborsity);
-    optimResult.config()->print("After optimization: ");
+		// Print final results
+		cout << "*******************************************************" << endl;
+		result->print("FINAL RESULTS: ");
 
 }
 /* ************************************************************************* */

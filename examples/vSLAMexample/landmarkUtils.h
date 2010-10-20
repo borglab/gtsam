@@ -9,15 +9,15 @@
 #include "gtsam/geometry/Cal3_S2.h"
 
 
-bool readLandMarks(const char* landmarkFile, std::map<int, gtsam::Point3>& landmarks);
+std::map<int, gtsam::Point3> readLandMarks(const std::string& landmarkFile);
 
 gtsam::Pose3 readPose(const char* poseFn);
-gtsam::Pose3 readPose(const char* poseFn_pre, const char* poseFn_suf, int poseId);
+std::map<int, gtsam::Pose3> readPoses(const std::string& baseFolder, const std::string& posesFN);
 
-gtsam::Cal3_S2 readCalibData(const char* calibFn);
+gtsam::shared_ptrK readCalibData(const std::string& calibFn);
 
-std::vector<Feature2D> readFeatures(const char* filename);
-std::vector<Feature2D> readFeatures(const char* featFn_pre, const char* featFn_suf, int imageId);
+std::vector<Feature2D> readFeatureFile(const char* filename);
+std::vector<Feature2D> readAllMeasurements(const std::string& baseFolder, const std::string& measurementsFn);
 
 
 #endif // LANDMARKUTILS_H
