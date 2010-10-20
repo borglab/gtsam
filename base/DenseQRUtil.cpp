@@ -17,6 +17,8 @@
  *  Description: the utility functions for DenseQR
  */
 
+#include <cstring>
+
 #include <gtsam/base/timing.h>
 #include <gtsam/base/DenseQRUtil.h>
 #include <boost/numeric/ublas/matrix.hpp>
