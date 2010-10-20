@@ -63,9 +63,9 @@ public:
   static shared_ptr
   Combine(const FactorGraph<This>& factors, const FastMap<Index, std::vector<Index> >& variableSlots);
 
-  template<class FactorGraphType, class VariableIndexStorage>
-  static shared_ptr Combine(const FactorGraphType& factorGraph,
-      const VariableIndex<VariableIndexStorage>& variableIndex, const std::vector<size_t>& factors,
+  template<class FACTORGRAPHTYPE, class VARIABLEINDEXSTORAGE>
+  static shared_ptr Combine(const FACTORGRAPHTYPE& factorGraph,
+      const VariableIndex<VARIABLEINDEXSTORAGE>& variableIndex, const std::vector<size_t>& factors,
       const std::vector<Index>& variables, const std::vector<std::vector<size_t> >& variablePositions) {
     return Base::Combine<This>(factorGraph, variableIndex, factors, variables, variablePositions); }
 

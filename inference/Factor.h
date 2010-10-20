@@ -77,7 +77,7 @@ public:
   FactorBase(const Conditional& c);
 
   /** Constructor from a collection of keys */
-  template<class KeyIterator> FactorBase(KeyIterator beginKey, KeyIterator endKey) :
+  template<class KEYITERATOR> FactorBase(KEYITERATOR beginKey, KEYITERATOR endKey) :
         keys_(beginKey, endKey) { assertInvariants(); }
 
   /** Default constructor for I/O */
@@ -102,9 +102,9 @@ public:
   /** Named constructor for combining a set of factors with pre-computed set of
    * variables.  (Old style - will be removed when scalar elimination is
    * removed in favor of the EliminationTree). */
-  template<class DERIVED, class FactorGraphType, class VariableIndexStorage>
-  static typename DERIVED::shared_ptr Combine(const FactorGraphType& factorGraph,
-      const VariableIndex<VariableIndexStorage>& variableIndex, const std::vector<size_t>& factors,
+  template<class DERIVED, class FACTORGRAPHTYPE, class VARIABLEINDEXSTORAGE>
+  static typename DERIVED::shared_ptr Combine(const FACTORGRAPHTYPE& factorGraph,
+      const VariableIndex<VARIABLEINDEXSTORAGE>& variableIndex, const std::vector<size_t>& factors,
       const std::vector<KEY>& variables, const std::vector<std::vector<size_t> >& variablePositions) {
     return typename DERIVED::shared_ptr(new DERIVED(variables.begin(), variables.end())); }
 

@@ -66,12 +66,12 @@ namespace gtsam {
 			Cluster(const FG& fg, Index key, Iterator firstSeparator, Iterator lastSeparator);
 
       /* Create a node with several frontal variables */
-      template<typename FrontalIt, typename SeparatorIt>
-      Cluster(const FG& fg, FrontalIt firstFrontal, FrontalIt lastFrontal, SeparatorIt firstSeparator, SeparatorIt lastSeparator);
+      template<typename FRONTALIT, typename SEPARATORIT>
+      Cluster(const FG& fg, FRONTALIT firstFrontal, FRONTALIT lastFrontal, SEPARATORIT firstSeparator, SEPARATORIT lastSeparator);
 
       /* Create a node with several frontal variables */
-      template<typename FrontalIt, typename SeparatorIt>
-      Cluster(FrontalIt firstFrontal, FrontalIt lastFrontal, SeparatorIt firstSeparator, SeparatorIt lastSeparator);
+      template<typename FRONTALIT, typename SEPARATORIT>
+      Cluster(FRONTALIT firstFrontal, FRONTALIT lastFrontal, SEPARATORIT firstSeparator, SEPARATORIT lastSeparator);
 
 			// print the object
 			void print(const std::string& indent) const;

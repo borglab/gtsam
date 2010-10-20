@@ -40,8 +40,8 @@ namespace gtsam {
 	   * Eliminate a factor graph in its natural ordering, i.e. eliminating
 	   * variables in order starting from 0.
 	   */
-	  template<class FactorGraph>
-	  static typename FactorGraph::bayesnet_type::shared_ptr Eliminate(const FactorGraph& factorGraph);
+	  template<class FACTORGRAPH>
+	  static typename FACTORGRAPH::bayesnet_type::shared_ptr Eliminate(const FACTORGRAPH& factorGraph);
 
     /**
      * Eliminate a factor graph in its natural ordering, i.e. eliminating
@@ -56,34 +56,34 @@ namespace gtsam {
 	   * variables in order starting from 0.  Uses an existing
 	   * variable index instead of building one from scratch.
 	   */
-	  template<class FactorGraph>
-	  static typename FactorGraph::bayesnet_type::shared_ptr Eliminate(
-	      FactorGraph& factorGraph, typename FactorGraph::variableindex_type& variableIndex);
+	  template<class FACTORGRAPH>
+	  static typename FACTORGRAPH::bayesnet_type::shared_ptr Eliminate(
+	      FACTORGRAPH& factorGraph, typename FACTORGRAPH::variableindex_type& variableIndex);
 
 	  /**
 	   * Partially eliminate a factor graph, up to but not including the given
 	   * variable.
 	   */
-    template<class FactorGraph>
-    static typename FactorGraph::bayesnet_type::shared_ptr
-    EliminateUntil(const FactorGraph& factorGraph, Index bound);
+    template<class FACTORGRAPH>
+    static typename FACTORGRAPH::bayesnet_type::shared_ptr
+    EliminateUntil(const FACTORGRAPH& factorGraph, Index bound);
 
     /**
      * Partially eliminate a factor graph, up to but not including the given
      * variable.  Use an existing variable index instead of building one from
      * scratch.
      */
-    template<class FactorGraph>
-    static typename FactorGraph::bayesnet_type::shared_ptr
-    EliminateUntil(FactorGraph& factorGraph, Index bound, typename FactorGraph::variableindex_type& variableIndex);
+    template<class FACTORGRAPH>
+    static typename FACTORGRAPH::bayesnet_type::shared_ptr
+    EliminateUntil(FACTORGRAPH& factorGraph, Index bound, typename FACTORGRAPH::variableindex_type& variableIndex);
 
 	  /**
 	   * Eliminate a single variable, updating an existing factor graph and
 	   * variable index.
 	   */
-    template<class FactorGraph>
-    static typename FactorGraph::bayesnet_type::sharedConditional
-    EliminateOne(FactorGraph& factorGraph, typename FactorGraph::variableindex_type& variableIndex, Index var);
+    template<class FACTORGRAPH>
+    static typename FACTORGRAPH::bayesnet_type::sharedConditional
+    EliminateOne(FACTORGRAPH& factorGraph, typename FACTORGRAPH::variableindex_type& variableIndex, Index var);
 
     /**
      * Eliminate a single variable, updating an existing factor graph and
@@ -101,24 +101,24 @@ namespace gtsam {
      * BayesTree which supports efficiently computing marginals for multiple
      * variables.
      */
-    template<class FactorGraph, class VarContainer>
-    static FactorGraph Marginal(const FactorGraph& factorGraph, const VarContainer& variables);
+    template<class FACTORGRAPH, class VARCONTAINER>
+    static FACTORGRAPH Marginal(const FACTORGRAPH& factorGraph, const VARCONTAINER& variables);
 
     /**
      * Compute a permutation (variable ordering) using colamd
      */
-    template<class VariableIndexType>
-    static boost::shared_ptr<Permutation> PermutationCOLAMD(const VariableIndexType& variableIndex) { return PermutationCOLAMD(variableIndex, std::vector<Index>()); }
-    template<class VariableIndexType, typename ConstraintContainer>
-    static boost::shared_ptr<Permutation> PermutationCOLAMD(const VariableIndexType& variableIndex, const ConstraintContainer& constrainLast);
+    template<class VARIABLEINDEXTYPE>
+    static boost::shared_ptr<Permutation> PermutationCOLAMD(const VARIABLEINDEXTYPE& variableIndex) { return PermutationCOLAMD(variableIndex, std::vector<Index>()); }
+    template<class VARIABLEINDEXTYPE, typename CONSTRAINTCONTAINER>
+    static boost::shared_ptr<Permutation> PermutationCOLAMD(const VARIABLEINDEXTYPE& variableIndex, const CONSTRAINTCONTAINER& constrainLast);
 
 //    /**
 //     * Join several factors into one.  This involves determining the set of
 //     * shared variables and the correct variable positions in the new joint
 //     * factor.
 //     */
-//    template<class FactorGraph, typename InputIterator>
-//    static typename FactorGraph::shared_factor Combine(const FactorGraph& factorGraph,
+//    template<class FACTORGRAPH, typename InputIterator>
+//    static typename FACTORGRAPH::shared_factor Combine(const FACTORGRAPH& factorGraph,
 //        InputIterator indicesBegin, InputIterator indicesEnd);
 
 

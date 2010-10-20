@@ -266,7 +266,7 @@ namespace gtsam {
 	// TODO, why do we actually return a shared pointer, why does eliminate?
 	/* ************************************************************************* */
 	template<class CONDITIONAL>
-	template<class FactorGraph>
+	template<class FACTORGRAPH>
 	BayesNet<CONDITIONAL>
 	BayesTree<CONDITIONAL>::Clique::shortcut(shared_ptr R) {
 		// A first base case is when this clique or its parent is the root,
@@ -281,13 +281,13 @@ namespace gtsam {
 
 		// The parent clique has a CONDITIONAL for each frontal node in Fp
 		// so we can obtain P(Fp|Sp) in factor graph form
-		FactorGraph p_Fp_Sp(*parent);
+		FACTORGRAPH p_Fp_Sp(*parent);
 
 		// If not the base case, obtain the parent shortcut P(Sp|R) as factors
-		FactorGraph p_Sp_R(parent->shortcut<FactorGraph>(R));
+		FACTORGRAPH p_Sp_R(parent->shortcut<FACTORGRAPH>(R));
 
 		// now combine P(Cp|R) = P(Fp|Sp) * P(Sp|R)
-		FactorGraph p_Cp_R = combine(p_Fp_Sp, p_Sp_R);
+		FACTORGRAPH p_Cp_R = combine(p_Fp_Sp, p_Sp_R);
 
 		// Eliminate into a Bayes net with ordering designed to integrate out
 		// any variables not in *our* separator. Variables to integrate out must be
@@ -319,10 +319,10 @@ namespace gtsam {
 		BOOST_FOREACH(Index key, separator) ordering.push_back(key);
 
 		// eliminate to get marginal
-		typename FactorGraph::variableindex_type varIndex(p_Cp_R);
+		typename FACTORGRAPH::variableindex_type varIndex(p_Cp_R);
 		Permutation toFront = Permutation::PullToFront(ordering, varIndex.size());
 		Permutation::shared_ptr toFrontInverse(toFront.inverse());
-		BOOST_FOREACH(const typename FactorGraph::sharedFactor& factor, p_Cp_R) {
+		BOOST_FOREACH(const typename FACTORGRAPH::sharedFactor& factor, p_Cp_R) {
 		  factor->permuteWithInverse(*toFrontInverse);
 		}
 		varIndex.permute(toFront);
@@ -346,19 +346,18 @@ namespace gtsam {
 	// Because the root clique could be very big.
 	/* ************************************************************************* */
 	template<class CONDITIONAL>
-	template<class FactorGraph>
-	FactorGraph
-	BayesTree<CONDITIONAL>::Clique::marginal(shared_ptr R) {
+	template<class FACTORGRAPH> 
+	FACTORGRAPH BayesTree<CONDITIONAL>::Clique::marginal(shared_ptr R) {
 		// If we are the root, just return this root
 		if (R.get()==this) return *R;
 
 		// Combine P(F|S), P(S|R), and P(R)
-		BayesNet<CONDITIONAL> p_FSR = this->shortcut<FactorGraph>(R);
+		BayesNet<CONDITIONAL> p_FSR = this->shortcut<FACTORGRAPH>(R);
 		p_FSR.push_front(*this);
 		p_FSR.push_back(*R);
 
 		// Find marginal on the keys we are interested in
-		return Inference::Marginal(FactorGraph(p_FSR), keys());
+		return Inference::Marginal(FACTORGRAPH(p_FSR), keys());
 	}
 
 //	/* ************************************************************************* */
@@ -556,9 +555,9 @@ namespace gtsam {
 
 	/* ************************************************************************* */
 	template<class CONDITIONAL>
-	template<class Container>
-	inline Index BayesTree<CONDITIONAL>::findParentClique(const Container& parents) const {
-	  typename Container::const_iterator lowestOrderedParent = min_element(parents.begin(), parents.end());
+	template<class CONTAINER>
+	inline Index BayesTree<CONDITIONAL>::findParentClique(const CONTAINER& parents) const {
+	  typename CONTAINER::const_iterator lowestOrderedParent = min_element(parents.begin(), parents.end());
 	  assert(lowestOrderedParent != parents.end());
 	  return *lowestOrderedParent;
 
@@ -690,29 +689,28 @@ namespace gtsam {
 	// First finds clique marginal then marginalizes that
 	/* ************************************************************************* */
 	template<class CONDITIONAL>
-	template<class FactorGraph>
-	FactorGraph
-	BayesTree<CONDITIONAL>::marginal(Index key) const {
+	template<class FACTORGRAPH>
+	FACTORGRAPH BayesTree<CONDITIONAL>::marginal(Index key) const {
 
 		// get clique containing key
 		sharedClique clique = (*this)[key];
 
 		// calculate or retrieve its marginal
-		FactorGraph cliqueMarginal = clique->marginal<FactorGraph>(root_);
+		FACTORGRAPH cliqueMarginal = clique->marginal<FACTORGRAPH>(root_);
 
 		// Reorder so that only the requested key is not eliminated
-		typename FactorGraph::variableindex_type varIndex(cliqueMarginal);
+		typename FACTORGRAPH::variableindex_type varIndex(cliqueMarginal);
 		vector<Index> keyAsVector(1); keyAsVector[0] = key;
 		Permutation toBack(Permutation::PushToBack(keyAsVector, varIndex.size()));
 		Permutation::shared_ptr toBackInverse(toBack.inverse());
 		varIndex.permute(toBack);
-		BOOST_FOREACH(const typename FactorGraph::sharedFactor& factor, cliqueMarginal) {
+		BOOST_FOREACH(const typename FACTORGRAPH::sharedFactor& factor, cliqueMarginal) {
 		  factor->permuteWithInverse(*toBackInverse);
 		}
 
 		// partially eliminate, remaining factor graph is requested marginal
 		Inference::EliminateUntil(cliqueMarginal, varIndex.size()-1, varIndex);
-    BOOST_FOREACH(const typename FactorGraph::sharedFactor& factor, cliqueMarginal) {
+    BOOST_FOREACH(const typename FACTORGRAPH::sharedFactor& factor, cliqueMarginal) {
       if(factor)
         factor->permuteWithInverse(toBack);
     }
@@ -721,12 +719,11 @@ namespace gtsam {
 
 	/* ************************************************************************* */
 	template<class CONDITIONAL>
-	template<class FactorGraph>
-	BayesNet<CONDITIONAL>
-	BayesTree<CONDITIONAL>::marginalBayesNet(Index key) const {
+	template<class FACTORGRAPH>
+	BayesNet<CONDITIONAL> BayesTree<CONDITIONAL>::marginalBayesNet(Index key) const {
 
 		// calculate marginal as a factor graph
-	  FactorGraph fg = this->marginal<FactorGraph>(key);
+	  FACTORGRAPH fg = this->marginal<FACTORGRAPH>(key);
 
 		// eliminate further to Bayes net
 		return *Inference::Eliminate(fg);
@@ -808,8 +805,8 @@ namespace gtsam {
 
 	/* ************************************************************************* */
 	template<class CONDITIONAL>
-  template<class Container>
-  void BayesTree<CONDITIONAL>::removeTop(const Container& keys,
+  template<class CONTAINER>
+  void BayesTree<CONDITIONAL>::removeTop(const CONTAINER& keys,
   		BayesNet<CONDITIONAL>& bn, typename BayesTree<CONDITIONAL>::Cliques& orphans) {
 
 		// process each key of the new factor

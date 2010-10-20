@@ -107,12 +107,12 @@ namespace gtsam {
 
 			/** return the conditional P(S|Root) on the separator given the root */
 			// TODO: create a cached version
-			template<class FactorGraph>
+			template<class FACTORGRAPH>
 			BayesNet<CONDITIONAL> shortcut(shared_ptr root);
 
 			/** return the marginal P(C) of the clique */
-			template<class FactorGraph>
-			FactorGraph marginal(shared_ptr root);
+			template<class FACTORGRAPH>
+			FACTORGRAPH marginal(shared_ptr root);
 
 //			/** return the joint P(C1,C2), where C1==this. TODO: not a method? */
 //			template<class Factor>
@@ -233,8 +233,8 @@ namespace gtsam {
 		 * Find parent clique of a conditional.  It will look at all parents and
 		 * return the one with the lowest index in the ordering.
 		 */
-		template<class Container>
-		Index findParentClique(const Container& parents) const;
+		template<class CONTAINER>
+		Index findParentClique(const CONTAINER& parents) const;
 
 		/** number of cliques */
 		inline size_t size() const {
@@ -257,11 +257,11 @@ namespace gtsam {
 		CliqueData getCliqueData() const;
 
 		/** return marginal on any variable */
-		template<class FactorGraph>
-		FactorGraph marginal(Index key) const;
+		template<class FACTORGRAPH>
+		FACTORGRAPH marginal(Index key) const;
 
 		/** return marginal on any variable, as a Bayes Net */
-		template<class FactorGraph>
+		template<class FACTORGRAPH>
 		BayesNet<CONDITIONAL> marginalBayesNet(Index key) const;
 
 //		/** return joint on two variables */
@@ -299,8 +299,8 @@ namespace gtsam {
 		 * Given a list of keys, turn "contaminated" part of the tree back into a factor graph.
 		 * Factors and orphans are added to the in/out arguments.
 		 */
-		template<class Container>
-		void removeTop(const Container& keys, BayesNet<CONDITIONAL>& bn, Cliques& orphans);
+		template<class CONTAINER>
+		void removeTop(const CONTAINER& keys, BayesNet<CONDITIONAL>& bn, Cliques& orphans);
 
 	}; // BayesTree
 

@@ -53,7 +53,7 @@ struct _mapped_factor_type {
   _mapped_factor_type(size_t _factorIndex, size_t _variablePosition) : factorIndex(_factorIndex), variablePosition(_variablePosition) {}
   bool operator==(const _mapped_factor_type& o) const { return factorIndex == o.factorIndex && variablePosition == o.variablePosition; }
 };
-template<class VariableIndexStorage=VariableIndexStorage_vector>
+template<class VARIABLEINDEXSTORAGE=VariableIndexStorage_vector>
 class VariableIndex {
 public:
 
@@ -64,7 +64,7 @@ public:
   typedef typename mapped_type::const_iterator const_factor_iterator;
 
 protected:
-  typedef typename VariableIndexStorage::template type_factory<mapped_type>::type storage_type;
+  typedef typename VARIABLEINDEXSTORAGE::template type_factory<mapped_type>::type storage_type;
   storage_type indexUnpermuted_;
   Permuted<storage_type, typename storage_type::value_type&> index_;
   size_t nFactors_;

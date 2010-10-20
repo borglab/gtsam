@@ -40,12 +40,12 @@ using namespace std;
 namespace gtsam {
 
 /* ************************************************************************* */
-template<class FactorGraph>
-inline typename FactorGraph::bayesnet_type::shared_ptr Inference::Eliminate(const FactorGraph& factorGraph) {
+template<class FACTORGRAPH>
+inline typename FACTORGRAPH::bayesnet_type::shared_ptr Inference::Eliminate(const FACTORGRAPH& factorGraph) {
 
   // Create a copy of the factor graph to eliminate in-place
-  FactorGraph eliminationGraph(factorGraph);
-  typename FactorGraph::variableindex_type variableIndex(eliminationGraph);
+  FACTORGRAPH eliminationGraph(factorGraph);
+  typename FACTORGRAPH::variableindex_type variableIndex(eliminationGraph);
 
   return Eliminate(eliminationGraph, variableIndex);
 }
@@ -72,36 +72,36 @@ inline typename FactorGraph::bayesnet_type::shared_ptr Inference::Eliminate(cons
 //}
 
 /* ************************************************************************* */
-template<class FactorGraph>
-inline typename FactorGraph::bayesnet_type::shared_ptr
-Inference::Eliminate(FactorGraph& factorGraph, typename FactorGraph::variableindex_type& variableIndex) {
+template<class FACTORGRAPH>
+inline typename FACTORGRAPH::bayesnet_type::shared_ptr
+Inference::Eliminate(FACTORGRAPH& factorGraph, typename FACTORGRAPH::variableindex_type& variableIndex) {
 
   return EliminateUntil(factorGraph, variableIndex.size(), variableIndex);
 }
 
 /* ************************************************************************* */
-template<class FactorGraph>
-inline typename FactorGraph::bayesnet_type::shared_ptr
-Inference::EliminateUntil(const FactorGraph& factorGraph, Index bound) {
+template<class FACTORGRAPH>
+inline typename FACTORGRAPH::bayesnet_type::shared_ptr
+Inference::EliminateUntil(const FACTORGRAPH& factorGraph, Index bound) {
 
   // Create a copy of the factor graph to eliminate in-place
-  FactorGraph eliminationGraph(factorGraph);
-  typename FactorGraph::variableindex_type variableIndex(eliminationGraph);
+  FACTORGRAPH eliminationGraph(factorGraph);
+  typename FACTORGRAPH::variableindex_type variableIndex(eliminationGraph);
 
   return EliminateUntil(eliminationGraph, bound, variableIndex);
 }
 
 /* ************************************************************************* */
-template<class FactorGraph>
-typename FactorGraph::bayesnet_type::shared_ptr
-Inference::EliminateUntil(FactorGraph& factorGraph, Index bound, typename FactorGraph::variableindex_type& variableIndex) {
+template<class FACTORGRAPH>
+typename FACTORGRAPH::bayesnet_type::shared_ptr
+Inference::EliminateUntil(FACTORGRAPH& factorGraph, Index bound, typename FACTORGRAPH::variableindex_type& variableIndex) {
 
-  typename FactorGraph::bayesnet_type::shared_ptr bayesnet(new typename FactorGraph::bayesnet_type);
+  typename FACTORGRAPH::bayesnet_type::shared_ptr bayesnet(new typename FACTORGRAPH::bayesnet_type);
 
   // Eliminate variables one-by-one, updating the eliminated factor graph and
   // the variable index.
   for(Index var = 0; var < bound; ++var) {
-    typename FactorGraph::bayesnet_type::sharedConditional conditional(EliminateOne(factorGraph, variableIndex, var));
+    typename FACTORGRAPH::bayesnet_type::sharedConditional conditional(EliminateOne(factorGraph, variableIndex, var));
     if(conditional) // Will be NULL if the variable did not appear in the factor graph.
       bayesnet->push_back(conditional);
   }
@@ -110,9 +110,9 @@ Inference::EliminateUntil(FactorGraph& factorGraph, Index bound, typename Factor
 }
 
 /* ************************************************************************* */
-template<class FactorGraph>
-typename FactorGraph::bayesnet_type::sharedConditional
-Inference::EliminateOne(FactorGraph& factorGraph, typename FactorGraph::variableindex_type& variableIndex, Index var) {
+template<class FACTORGRAPH>
+typename FACTORGRAPH::bayesnet_type::sharedConditional
+Inference::EliminateOne(FACTORGRAPH& factorGraph, typename FACTORGRAPH::variableindex_type& variableIndex, Index var) {
 
   /* This function performs symbolic elimination of a variable, comprising
    * combining involved factors (analogous to "assembly" in SPQR) followed by
@@ -140,14 +140,14 @@ Inference::EliminateOne(FactorGraph& factorGraph, typename FactorGraph::variable
   tic("EliminateOne");
 
   // Get the factors involving the eliminated variable
-  typename FactorGraph::variableindex_type::mapped_type& varIndexEntry(variableIndex[var]);
-  typedef typename FactorGraph::variableindex_type::mapped_factor_type mapped_factor_type;
+  typename FACTORGRAPH::variableindex_type::mapped_type& varIndexEntry(variableIndex[var]);
+  typedef typename FACTORGRAPH::variableindex_type::mapped_factor_type mapped_factor_type;
 
   if(!varIndexEntry.empty()) {
 
     vector<size_t> removedFactors(varIndexEntry.size());
     transform(varIndexEntry.begin(), varIndexEntry.end(), removedFactors.begin(),
-        boost::lambda::bind(&FactorGraph::variableindex_type::mapped_factor_type::factorIndex, boost::lambda::_1));
+        boost::lambda::bind(&FACTORGRAPH::variableindex_type::mapped_factor_type::factorIndex, boost::lambda::_1));
 
     // The new joint factor will be the last one in the factor graph
     size_t jointFactorIndex = factorGraph.size();
@@ -262,8 +262,8 @@ Inference::EliminateOne(FactorGraph& factorGraph, typename FactorGraph::variable
 
     // Join the factors and eliminate the variable from the joint factor
     tic("EliminateOne: Combine");
-    typename FactorGraph::sharedFactor jointFactor(
-        FactorGraph::Factor::Combine(
+    typename FACTORGRAPH::sharedFactor jointFactor(
+        FACTORGRAPH::Factor::Combine(
             factorGraph, variableIndex, removedFactorIdxs, sortedKeys, jointFactorPositions));
     toc("EliminateOne: Combine");
 
@@ -273,7 +273,7 @@ Inference::EliminateOne(FactorGraph& factorGraph, typename FactorGraph::variable
         factorGraph.remove(removedFactorI);
     }
 
-    typename FactorGraph::bayesnet_type::sharedConditional conditional;
+    typename FACTORGRAPH::bayesnet_type::sharedConditional conditional;
     tic("EliminateOne: eliminateFirst");
     conditional = jointFactor->eliminateFirst();   // Eliminate the first variable in-place
     toc("EliminateOne: eliminateFirst");
@@ -288,38 +288,38 @@ Inference::EliminateOne(FactorGraph& factorGraph, typename FactorGraph::variable
 
   } else { // varIndexEntry.empty()
     toc("EliminateOne");
-    return typename FactorGraph::bayesnet_type::sharedConditional();
+    return typename FACTORGRAPH::bayesnet_type::sharedConditional();
   }
 }
 
 /* ************************************************************************* */
-template<class FactorGraph, class VarContainer>
-FactorGraph Inference::Marginal(const FactorGraph& factorGraph, const VarContainer& variables) {
+template<class FACTORGRAPH, class VARCONTAINER>
+FACTORGRAPH Inference::Marginal(const FACTORGRAPH& factorGraph, const VARCONTAINER& variables) {
 
   // Compute a COLAMD permutation with the marginal variables constrained to the end
-  typename FactorGraph::variableindex_type varIndex(factorGraph);
+  typename FACTORGRAPH::variableindex_type varIndex(factorGraph);
   Permutation::shared_ptr permutation(Inference::PermutationCOLAMD(varIndex, variables));
   Permutation::shared_ptr permutationInverse(permutation->inverse());
 
   // Copy and permute the factors
   varIndex.permute(*permutation);
-  FactorGraph eliminationGraph; eliminationGraph.reserve(factorGraph.size());
-  BOOST_FOREACH(const typename FactorGraph::sharedFactor& factor, factorGraph) {
-    typename FactorGraph::sharedFactor permFactor(new typename FactorGraph::Factor(*factor));
+  FACTORGRAPH eliminationGraph; eliminationGraph.reserve(factorGraph.size());
+  BOOST_FOREACH(const typename FACTORGRAPH::sharedFactor& factor, factorGraph) {
+    typename FACTORGRAPH::sharedFactor permFactor(new typename FACTORGRAPH::Factor(*factor));
     permFactor->permuteWithInverse(*permutationInverse);
     eliminationGraph.push_back(permFactor);
   }
 
   // Eliminate all variables
-  typename FactorGraph::bayesnet_type::shared_ptr bn(Inference::Eliminate(eliminationGraph, varIndex));
+  typename FACTORGRAPH::bayesnet_type::shared_ptr bn(Inference::Eliminate(eliminationGraph, varIndex));
 
   // The last conditionals in the eliminated BayesNet contain the marginal for
   // the variables we want.  Undo the permutation as we add the marginal
   // factors.
-  FactorGraph marginal; marginal.reserve(variables.size());
-  typename FactorGraph::bayesnet_type::const_reverse_iterator conditional = bn->rbegin();
+  FACTORGRAPH marginal; marginal.reserve(variables.size());
+  typename FACTORGRAPH::bayesnet_type::const_reverse_iterator conditional = bn->rbegin();
   for(Index j=0; j<variables.size(); ++j, ++conditional) {
-    typename FactorGraph::sharedFactor factor(new typename FactorGraph::Factor(**conditional));
+    typename FACTORGRAPH::sharedFactor factor(new typename FACTORGRAPH::Factor(**conditional));
     factor->permuteWithInverse(*permutation);
     marginal.push_back(factor);
     assert(std::find(variables.begin(), variables.end(), (*permutation)[(*conditional)->key()]) != variables.end());
@@ -330,8 +330,8 @@ FactorGraph Inference::Marginal(const FactorGraph& factorGraph, const VarContain
 }
 
 /* ************************************************************************* */
-template<class VariableIndexType, typename ConstraintContainer>
-Permutation::shared_ptr Inference::PermutationCOLAMD(const VariableIndexType& variableIndex, const ConstraintContainer& constrainLast) {
+template<class VARIABLEINDEXTYPE, typename CONSTRAINTCONTAINER>
+Permutation::shared_ptr Inference::PermutationCOLAMD(const VARIABLEINDEXTYPE& variableIndex, const CONSTRAINTCONTAINER& constrainLast) {
   size_t nEntries = variableIndex.nEntries(), nFactors = variableIndex.nFactors(), nVars = variableIndex.size();
   // Convert to compressed column major format colamd wants it in (== MATLAB format!)
   int Alen = ccolamd_recommended(nEntries, nFactors, nVars); /* colamd arg 3: size of the array A */
@@ -344,9 +344,9 @@ Permutation::shared_ptr Inference::PermutationCOLAMD(const VariableIndexType& va
   p[0] = 0;
   int count = 0;
   for(Index var = 0; var < variableIndex.size(); ++var) {
-    const typename VariableIndexType::mapped_type& column(variableIndex[var]);
+    const typename VARIABLEINDEXTYPE::mapped_type& column(variableIndex[var]);
     size_t lastFactorId = numeric_limits<size_t>::max();
-    BOOST_FOREACH(const typename VariableIndexType::mapped_factor_type& factor_pos, column) {
+    BOOST_FOREACH(const typename VARIABLEINDEXTYPE::mapped_factor_type& factor_pos, column) {
       if(lastFactorId != numeric_limits<size_t>::max())
         assert(factor_pos.factorIndex > lastFactorId);
       A[count++] = factor_pos.factorIndex; // copy sparse column

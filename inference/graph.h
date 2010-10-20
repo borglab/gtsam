@@ -33,19 +33,19 @@ namespace gtsam {
 	/**
 	 * SDGraph is undirected graph with variable keys and double edge weights
 	 */
-	template<class Key>
+	template<class KEY>
 	class SDGraph: public boost::adjacency_list<boost::vecS, boost::vecS, boost::undirectedS,
-	boost::property<boost::vertex_name_t, Key>, boost::property<
+	boost::property<boost::vertex_name_t, KEY>, boost::property<
 	boost::edge_weight_t, double> > {
 	public:
-		typedef typename boost::graph_traits<SDGraph<Key> >::vertex_descriptor Vertex;
+		typedef typename boost::graph_traits<SDGraph<KEY> >::vertex_descriptor Vertex;
 	};
 
-	template<class Key>
+	template<class KEY>
 	class SGraph : public boost::adjacency_list<boost::vecS, boost::vecS, boost::directedS,
-			boost::property<boost::vertex_name_t, Key> > {
+			boost::property<boost::vertex_name_t, KEY> > {
 	public:
-		typedef typename boost::graph_traits<SGraph<Key> >::vertex_descriptor Vertex;
+		typedef typename boost::graph_traits<SGraph<KEY> >::vertex_descriptor Vertex;
 	};
 
 	//typedef boost::graph_traits<SGraph>::vertex_descriptor SVertex;
@@ -53,20 +53,20 @@ namespace gtsam {
 	/**
 	 * Map from variable key to parent key
 	 */
-	template<class Key>
-	class PredecessorMap: public std::map<Key, Key> {
+	template<class KEY>
+	class PredecessorMap: public std::map<KEY, KEY> {
 	public:
 		/** convenience insert so we can pass ints for TypedSymbol keys */
-		inline void insert(const Key& key, const Key& parent) {
-			std::map<Key, Key>::insert(std::make_pair(key, parent));
+		inline void insert(const KEY& key, const KEY& parent) {
+			std::map<KEY, KEY>::insert(std::make_pair(key, parent));
 		}
 	};
 
 	/**
 	 * Generate a list of keys from a spanning tree represented by its predecessor map
 	 */
-	template<class Key>
-	std::list<Key> predecessorMap2Keys(const PredecessorMap<Key>& p_map);
+	template<class KEY>
+	std::list<KEY> predecessorMap2Keys(const PredecessorMap<KEY>& p_map);
 
 	/**
 	 * Convert the factor graph to an SDGraph
@@ -74,36 +74,36 @@ namespace gtsam {
 	 * F = Factor type
 	 * Key = Key type
 	 */
-    template<class G, class F, class Key> SDGraph<Key> toBoostGraph(const G& graph);
+    template<class G, class F, class KEY> SDGraph<KEY> toBoostGraph(const G& graph);
 
 	/**
 	 * Build takes a predecessor map, and builds a directed graph corresponding to the tree.
 	 * G = Graph type
 	 * V = Vertex type
 	 */
-	template<class G, class V, class Key>
-	boost::tuple<G, V, std::map<Key,V> >	predecessorMap2Graph(const PredecessorMap<Key>& p_map);
+	template<class G, class V, class KEY>
+	boost::tuple<G, V, std::map<KEY,V> >	predecessorMap2Graph(const PredecessorMap<KEY>& p_map);
 
 	/**
 	 * Compose the poses by following the chain specified by the spanning tree
 	 */
-	template<class G, class Factor, class Pose, class Values>
-	boost::shared_ptr<Values>
-		composePoses(const G& graph, const PredecessorMap<typename Values::Key>& tree, const Pose& rootPose);
+	template<class G, class Factor, class POSE, class VALUES>
+	boost::shared_ptr<VALUES>
+		composePoses(const G& graph, const PredecessorMap<typename VALUES::Key>& tree, const POSE& rootPose);
 
 
 	/**
 	 * find the minimum spanning tree using boost graph library
 	 */
-	template<class G, class Key, class Factor2>
-	PredecessorMap<Key> findMinimumSpanningTree(const G& g) ;
+	template<class G, class KEY, class FACTOR2>
+	PredecessorMap<KEY> findMinimumSpanningTree(const G& g) ;
 
 	/**
 	 * Split the graph into two parts: one corresponds to the given spanning tree,
 	 * and the other corresponds to the rest of the factors
 	 */
-	template<class G, class Key, class Factor2>
-	void split(const G& g, const PredecessorMap<Key>& tree, G& Ab1, G& Ab2) ;
+	template<class G, class KEY, class FACTOR2>
+	void split(const G& g, const PredecessorMap<KEY>& tree, G& Ab1, G& Ab2) ;
 
 
 } // namespace gtsam

@@ -35,8 +35,8 @@
 
 namespace gtsam {
 
-	template<class Conditional>
-	class ISAM: public BayesTree<Conditional> {
+	template<class CONDITIONAL>
+	class ISAM: public BayesTree<CONDITIONAL> {
 
 	public:
 
@@ -44,19 +44,19 @@ namespace gtsam {
 		ISAM();
 
 		/** Create a Bayes Tree from a Bayes Net */
-		ISAM(const BayesNet<Conditional>& bayesNet);
+		ISAM(const BayesNet<CONDITIONAL>& bayesNet);
 
-		typedef typename BayesTree<Conditional>::sharedClique sharedClique;
+		typedef typename BayesTree<CONDITIONAL>::sharedClique sharedClique;
 
-		typedef typename BayesTree<Conditional>::Cliques Cliques;
+		typedef typename BayesTree<CONDITIONAL>::Cliques Cliques;
 
 		/**
 		 * iSAM. (update_internal provides access to list of orphans for drawing purposes)
 		 */
-		template<class FactorGraph>
-		void update_internal(const FactorGraph& newFactors, Cliques& orphans);
-		template<class FactorGraph>
-		void update(const FactorGraph& newFactors);
+		template<class FACTORGRAPH>
+		void update_internal(const FACTORGRAPH& newFactors, Cliques& orphans);
+		template<class FACTORGRAPH>
+		void update(const FACTORGRAPH& newFactors);
 
 	}; // ISAM
 

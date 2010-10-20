@@ -156,22 +156,22 @@ protected:
 /**
  * Definition of Permuted class, see above comment for details.
  */
-template<typename Container, typename ValueType = typename Container::value_reference_type>
+template<typename CONTAINER, typename VALUETYPE = typename CONTAINER::value_reference_type>
 class Permuted {
   Permutation permutation_;
-  Container& container_;
+  CONTAINER& container_;
 public:
-  typedef ValueType value_type;
+  typedef VALUETYPE value_type;
 
   /** Construct as a permuted view on the Container.  The permutation is copied
    * but only a reference to the container is stored.
    */
-  Permuted(const Permutation& permutation, Container& container) : permutation_(permutation), container_(container) {}
+  Permuted(const Permutation& permutation, CONTAINER& container) : permutation_(permutation), container_(container) {}
 
   /** Construct as a view on the Container with an identity permutation.  Only
    * a reference to the container is stored.
    */
-  Permuted(Container& container) : permutation_(Permutation::Identity(container.size())), container_(container) {}
+  Permuted(CONTAINER& container) : permutation_(Permutation::Identity(container.size())), container_(container) {}
 
   /** Access the container through the permutation */
   value_type operator[](size_t index) const { return container_[permutation_[index]]; }
@@ -183,19 +183,19 @@ public:
   void permute(const Permutation& permutation) { assert(permutation.size() == this->size()); permutation_ = *permutation_.permute(permutation); }
 
   /** Access the underlying container */
-  Container* operator->() { return &container_; }
+  CONTAINER* operator->() { return &container_; }
 
   /** Access the underlying container (const version) */
-  const Container* operator->() const { return &container_; }
+  const CONTAINER* operator->() const { return &container_; }
 
   /** Size of the underlying container */
   size_t size() const { return container_.size(); }
 
   /** Access to the underlying container */
-  Container& container() { return container_; }
+  CONTAINER& container() { return container_; }
 
   /** Access to the underlying container (const version) */
-  const Container& container() const { return container_; }
+  const CONTAINER& container() const { return container_; }
 
   /** Access the underlying permutation */
   Permutation& permutation() { return permutation_; }

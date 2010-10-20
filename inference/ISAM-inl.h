@@ -28,32 +28,32 @@ namespace gtsam {
 	using namespace std;
 
 	/** Create an empty Bayes Tree */
-	template<class Conditional>
-	ISAM<Conditional>::ISAM() : BayesTree<Conditional>() {}
+	template<class CONDITIONAL>
+	ISAM<CONDITIONAL>::ISAM() : BayesTree<CONDITIONAL>() {}
 
 	/** Create a Bayes Tree from a Bayes Net */
-	template<class Conditional>
-	ISAM<Conditional>::ISAM(const BayesNet<Conditional>& bayesNet) :
-	  BayesTree<Conditional>(bayesNet) {}
+	template<class CONDITIONAL>
+	ISAM<CONDITIONAL>::ISAM(const BayesNet<CONDITIONAL>& bayesNet) :
+	  BayesTree<CONDITIONAL>(bayesNet) {}
 
 	/* ************************************************************************* */
-	template<class Conditional>
-	template<class FactorGraph>
-	void ISAM<Conditional>::update_internal(const FactorGraph& newFactors, Cliques& orphans) {
+	template<class CONDITIONAL>
+	template<class FACTORGRAPH>
+	void ISAM<CONDITIONAL>::update_internal(const FACTORGRAPH& newFactors, Cliques& orphans) {
 
 		// Remove the contaminated part of the Bayes tree
-		BayesNet<Conditional> bn;
+		BayesNet<CONDITIONAL> bn;
 		removeTop(newFactors.keys(), bn, orphans);
-		FactorGraph factors(bn);
+		FACTORGRAPH factors(bn);
 
 		// add the factors themselves
 		factors.push_back(newFactors);
 
 		// eliminate into a Bayes net
-		typename BayesNet<Conditional>::shared_ptr bayesNet = Inference::Eliminate(factors);
+		typename BayesNet<CONDITIONAL>::shared_ptr bayesNet = Inference::Eliminate(factors);
 
 		// insert conditionals back in, straight into the topless bayesTree
-		typename BayesNet<Conditional>::const_reverse_iterator rit;
+		typename BayesNet<CONDITIONAL>::const_reverse_iterator rit;
 		for ( rit=bayesNet->rbegin(); rit != bayesNet->rend(); ++rit )
 			this->insert(*rit);
 
@@ -64,9 +64,9 @@ namespace gtsam {
 
 	}
 
-	template<class Conditional>
-	template<class FactorGraph>
-	void ISAM<Conditional>::update(const FactorGraph& newFactors) {
+	template<class CONDITIONAL>
+	template<class FACTORGRAPH>
+	void ISAM<CONDITIONAL>::update(const FACTORGRAPH& newFactors) {
 		Cliques orphans;
 		this->update_internal(newFactors, orphans);
 	}

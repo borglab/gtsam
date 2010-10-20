@@ -61,23 +61,23 @@ namespace gtsam {
 		FactorGraph() {}
 
 		/** convert from Bayes net */
-		template<class Conditional>
-		FactorGraph(const BayesNet<Conditional>& bayesNet);
+		template<class CONDITIONAL>
+		FactorGraph(const BayesNet<CONDITIONAL>& bayesNet);
 
 		/** convert from a derived type */
-		template<class DerivedFactor>
-		FactorGraph(const FactorGraph<DerivedFactor>& factorGraph);
+		template<class DERIVEDFACTOR>
+		FactorGraph(const FactorGraph<DERIVEDFACTOR>& factorGraph);
 
 		/** Add a factor */
-		template<class DerivedFactor>
-		void push_back(const boost::shared_ptr<DerivedFactor>& factor);
+		template<class DERIVEDFACTOR>
+		void push_back(const boost::shared_ptr<DERIVEDFACTOR>& factor);
 
 		/** push back many factors */
 		void push_back(const FactorGraph<FACTOR>& factors);
 
 		/** push back many factors with an iterator */
-		template<typename Iterator>
-		void push_back(Iterator firstFactor, Iterator lastFactor);
+		template<typename ITERATOR>
+		void push_back(ITERATOR firstFactor, ITERATOR lastFactor);
 
 		/** ------------------ Querying Factor Graphs ---------------------------- */
 
@@ -131,8 +131,8 @@ namespace gtsam {
 
 		/** Serialization function */
 		friend class boost::serialization::access;
-		template<class Archive>
-		void serialize(Archive & ar, const unsigned int version) {
+		template<class ARCHIVE>
+		void serialize(ARCHIVE & ar, const unsigned int version) {
 			ar & BOOST_SERIALIZATION_NVP(factors_);
 		}
 	}; // FactorGraph
@@ -143,8 +143,8 @@ namespace gtsam {
    * @param const &fg2 Linear factor graph
    * @return a new combined factor graph
    */
-	template<class FactorGraph>
-	FactorGraph combine(const FactorGraph& fg1, const FactorGraph& fg2);
+	template<class FACTORGRAPH>
+	FACTORGRAPH combine(const FACTORGRAPH& fg1, const FACTORGRAPH& fg2);
 
 	/**
 	 * These functions are defined here because they are templated on an
@@ -155,10 +155,10 @@ namespace gtsam {
 
   /* ************************************************************************* */
   template<class FACTOR>
-  template<class DerivedFactor>
-  FactorGraph<FACTOR>::FactorGraph(const FactorGraph<DerivedFactor>& factorGraph) {
+  template<class DERIVEDFACTOR>
+  FactorGraph<FACTOR>::FactorGraph(const FactorGraph<DERIVEDFACTOR>& factorGraph) {
     factors_.reserve(factorGraph.size());
-    BOOST_FOREACH(const typename DerivedFactor::shared_ptr& factor, factorGraph) {
+    BOOST_FOREACH(const typename DERIVEDFACTOR::shared_ptr& factor, factorGraph) {
       if(factor)
         this->push_back(sharedFactor(new FACTOR(*factor)));
       else
@@ -168,18 +168,18 @@ namespace gtsam {
 
   /* ************************************************************************* */
   template<class FACTOR>
-  template<class Conditional>
-  FactorGraph<FACTOR>::FactorGraph(const BayesNet<Conditional>& bayesNet) {
+  template<class CONDITIONAL>
+  FactorGraph<FACTOR>::FactorGraph(const BayesNet<CONDITIONAL>& bayesNet) {
     factors_.reserve(bayesNet.size());
-    BOOST_FOREACH(const typename Conditional::shared_ptr& cond, bayesNet) {
+    BOOST_FOREACH(const typename CONDITIONAL::shared_ptr& cond, bayesNet) {
       this->push_back(sharedFactor(new FACTOR(*cond)));
     }
   }
 
   /* ************************************************************************* */
   template<class FACTOR>
-  template<class DerivedFactor>
-  inline void FactorGraph<FACTOR>::push_back(const boost::shared_ptr<DerivedFactor>& factor) {
+  template<class DERIVEDFACTOR>
+  inline void FactorGraph<FACTOR>::push_back(const boost::shared_ptr<DERIVEDFACTOR>& factor) {
 #ifndef NDEBUG
     factors_.push_back(boost::dynamic_pointer_cast<FACTOR>(factor)); // add the actual factor
 #else
@@ -189,9 +189,9 @@ namespace gtsam {
 
   /* ************************************************************************* */
   template<class FACTOR>
-  template<typename Iterator>
-  void FactorGraph<FACTOR>::push_back(Iterator firstFactor, Iterator lastFactor) {
-    Iterator factor = firstFactor;
+  template<typename ITERATOR>
+  void FactorGraph<FACTOR>::push_back(ITERATOR firstFactor, ITERATOR lastFactor) {
+    ITERATOR factor = firstFactor;
     while(factor != lastFactor)
       this->push_back(*(factor++));
   }

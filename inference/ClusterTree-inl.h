@@ -37,16 +37,16 @@ namespace gtsam {
 
   /* ************************************************************************* */
   template<class FG>
-  template<typename FrontalIt, typename SeparatorIt>
+  template<typename FRONTALIT, typename SEPARATORIT>
   ClusterTree<FG>::Cluster::Cluster(
-      const FG& fg, FrontalIt firstFrontal, FrontalIt lastFrontal, SeparatorIt firstSeparator, SeparatorIt lastSeparator) :
+      const FG& fg, FRONTALIT firstFrontal, FRONTALIT lastFrontal, SEPARATORIT firstSeparator, SEPARATORIT lastSeparator) :
       FG(fg), frontal(firstFrontal, lastFrontal), separator(firstSeparator, lastSeparator) {}
 
   /* ************************************************************************* */
   template<class FG>
-  template<typename FrontalIt, typename SeparatorIt>
+  template<typename FRONTALIT, typename SEPARATORIT>
   ClusterTree<FG>::Cluster::Cluster(
-      FrontalIt firstFrontal, FrontalIt lastFrontal, SeparatorIt firstSeparator, SeparatorIt lastSeparator) :
+      FRONTALIT firstFrontal, FRONTALIT lastFrontal, SEPARATORIT firstSeparator, SEPARATORIT lastSeparator) :
       frontal(firstFrontal, lastFrontal), separator(firstSeparator, lastSeparator) {}
 
   /* ************************************************************************* */
