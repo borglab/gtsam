@@ -46,28 +46,28 @@ namespace gtsam {
    *  for the arguments to be passed to the next config, while the specialized one
    *  operates on the "first" config. TupleValuesEnd contains only the specialized version.
    */
-  template<class Values1, class Values2>
-  class TupleValues : public Testable<TupleValues<Values1, Values2> > {
+  template<class VALUES1, class VALUES2>
+  class TupleValues : public Testable<TupleValues<VALUES1, VALUES2> > {
 
   protected:
 	  // Data for internal configs
-	  Values1 first_;	/// Arbitrary config
-	  Values2 second_;	/// A TupleValues or TupleValuesEnd, which wraps an arbitrary config
+	  VALUES1 first_;	/// Arbitrary config
+	  VALUES2 second_;	/// A TupleValues or TupleValuesEnd, which wraps an arbitrary config
 
   public:
 	  // typedefs for config subtypes
-	  typedef class Values1::Key Key1;
-	  typedef class Values1::Value Value1;
+	  typedef class VALUES1::Key Key1;
+	  typedef class VALUES1::Value Value1;
 
 	  /** default constructor */
 	  TupleValues() {}
 
 	  /** Copy constructor */
-	  TupleValues(const TupleValues<Values1, Values2>& config) :
+	  TupleValues(const TupleValues<VALUES1, VALUES2>& config) :
 		  first_(config.first_), second_(config.second_) {}
 
 	  /** Construct from configs */
-	  TupleValues(const Values1& cfg1, const Values2& cfg2) :
+	  TupleValues(const VALUES1& cfg1, const VALUES2& cfg2) :
 		  first_(cfg1), second_(cfg2) {}
 
 	  /** Print */
@@ -77,7 +77,7 @@ namespace gtsam {
 	  }
 
 	  /** Equality with tolerance for keys and values */
-	  bool equals(const TupleValues<Values1, Values2>& c, double tol=1e-9) const {
+	  bool equals(const TupleValues<VALUES1, VALUES2>& c, double tol=1e-9) const {
 		  return first_.equals(c.first_, tol) && second_.equals(c.second_, tol);
 	  }
 
@@ -88,8 +88,8 @@ namespace gtsam {
 	   * @param key is the key - can be an int (second version) if the can can be initialized from an int
 	   * @param value is the value to insert
 	   */
-	  template<class Key, class Value>
-	  void insert(const Key& key, const Value& value) {second_.insert(key, value);}
+	  template<class KEY, class VALUE>
+	  void insert(const KEY& key, const VALUE& value) {second_.insert(key, value);}
 	  void insert(int key, const Value1& value) {first_.insert(Key1(key), value);}
 	  void insert(const Key1& key, const Value1& value) {first_.insert(key, value);}
 
@@ -99,9 +99,9 @@ namespace gtsam {
 	   * Use update() to allow for changing existing values.
 	   * @param config is a full config to add
 	   */
-	  template<class Cfg1, class Cfg2>
-	  void insert(const TupleValues<Cfg1, Cfg2>& config) { second_.insert(config); }
-	  void insert(const TupleValues<Values1, Values2>& config) {
+	  template<class CFG1, class CFG2>
+	  void insert(const TupleValues<CFG1, CFG2>& config) { second_.insert(config); }
+	  void insert(const TupleValues<VALUES1, VALUES2>& config) {
 		  first_.insert(config.first_);
 		  second_.insert(config.second_);
 	  }
@@ -110,9 +110,9 @@ namespace gtsam {
 	   * Update function for whole configs - this will change existing values
 	   * @param config is a config to add
 	   */
-	  template<class Cfg1, class Cfg2>
-	  void update(const TupleValues<Cfg1, Cfg2>& config) { second_.update(config); }
-	  void update(const TupleValues<Values1, Values2>& config) {
+	  template<class CFG1, class CFG2>
+	  void update(const TupleValues<CFG1, CFG2>& config) { second_.update(config); }
+	  void update(const TupleValues<VALUES1, VALUES2>& config) {
 	  	first_.update(config.first_);
 	  	second_.update(config.second_);
 	  }
@@ -122,49 +122,49 @@ namespace gtsam {
 	   * @param key is the variable identifier
 	   * @param value is the variable value to update
 	   */
-	  template<class Key, class Value>
-	  void update(const Key& key, const Value& value) { second_.update(key, value); }
+	  template<class KEY, class VALUE>
+	  void update(const KEY& key, const VALUE& value) { second_.update(key, value); }
 	  void update(const Key1& key, const Value1& value) { first_.update(key, value); }
 
 	  /**
 	   * Insert a subconfig
 	   * @param config is the config to insert
 	   */
-	  template<class Cfg>
-	  void insertSub(const Cfg& config) { second_.insertSub(config); }
-	  void insertSub(const Values1& config) { first_.insert(config);  }
+	  template<class CFG>
+	  void insertSub(const CFG& config) { second_.insertSub(config); }
+	  void insertSub(const VALUES1& config) { first_.insert(config);  }
 
 	  /** erase an element by key */
-	  template<class Key>
-	  void erase(const Key& j)  { second_.erase(j); }
+	  template<class KEY>
+	  void erase(const KEY& j)  { second_.erase(j); }
 	  void erase(const Key1& j)  { first_.erase(j); }
 
 	  /** clears the config */
 	  void clear() { first_.clear(); second_.clear(); }
 
 	  /** determine whether an element exists */
-	  template<class Key>
-	  bool exists(const Key& j) const { return second_.exists(j); }
+	  template<class KEY>
+	  bool exists(const KEY& j) const { return second_.exists(j); }
 	  bool exists(const Key1& j) const { return first_.exists(j); }
 
 	  /** a variant of exists */
-	  template<class Key>
-	  boost::optional<typename Key::Value> exists_(const Key& j)  const { return second_.exists_(j); }
+	  template<class KEY>
+	  boost::optional<typename KEY::Value> exists_(const KEY& j)  const { return second_.exists_(j); }
 	  boost::optional<Value1>                exists_(const Key1& j) const { return first_.exists_(j); }
 
 	  /** access operator */
-	  template<class Key>
-	  const typename Key::Value & operator[](const Key& j) const { return second_[j]; }
+	  template<class KEY>
+	  const typename KEY::Value & operator[](const KEY& j) const { return second_[j]; }
 	  const Value1& operator[](const Key1& j) const { return first_[j]; }
 
 	  /** at access function */
-	  template<class Key>
-	  const typename Key::Value & at(const Key& j) const { return second_.at(j); }
+	  template<class KEY>
+	  const typename KEY::Value & at(const KEY& j) const { return second_.at(j); }
 	  const Value1& at(const Key1& j) const { return first_.at(j); }
 
 	  /** direct config access */
-	  const Values1& config() const { return first_; }
-	  const Values2& rest() const { return second_; }
+	  const VALUES1& config() const { return first_; }
+	  const VALUES2& rest() const { return second_; }
 
 	  /** zero: create VectorValues of appropriate structure */
 	  VectorValues zero(const Ordering& ordering) const {
@@ -203,19 +203,19 @@ namespace gtsam {
     }
 
 	  /** Expmap */
-	  TupleValues<Values1, Values2> expmap(const VectorValues& delta, const Ordering& ordering) const {
+	  TupleValues<VALUES1, VALUES2> expmap(const VectorValues& delta, const Ordering& ordering) const {
 	    return TupleValues(first_.expmap(delta, ordering), second_.expmap(delta, ordering));
 	  }
 
 	  /** logmap each element */
-	  VectorValues logmap(const TupleValues<Values1, Values2>& cp, const Ordering& ordering) const {
+	  VectorValues logmap(const TupleValues<VALUES1, VALUES2>& cp, const Ordering& ordering) const {
 		  VectorValues delta(this->dims(ordering));
 		  logmap(cp, ordering, delta);
 		  return delta;
 	  }
 
     /** logmap each element */
-    void logmap(const TupleValues<Values1, Values2>& cp, const Ordering& ordering, VectorValues& delta) const {
+    void logmap(const TupleValues<VALUES1, VALUES2>& cp, const Ordering& ordering, VectorValues& delta) const {
       first_.logmap(cp.first_, ordering, delta);
       second_.logmap(cp.second_, ordering, delta);
     }
@@ -239,8 +239,8 @@ namespace gtsam {
   private:
 	  /** Serialization function */
 	  friend class boost::serialization::access;
-	  template<class Archive>
-	  void serialize(Archive & ar, const unsigned int version) {
+	  template<class ARCHIVE>
+	  void serialize(ARCHIVE & ar, const unsigned int version) {
 		  ar & BOOST_SERIALIZATION_NVP(first_);
 		  ar & BOOST_SERIALIZATION_NVP(second_);
 	  }
@@ -253,48 +253,48 @@ namespace gtsam {
    * Do not use this class directly - it should only be used as a part
    * of a recursive structure
    */
-  template<class Values>
-  class TupleValuesEnd : public Testable<TupleValuesEnd<Values> > {
+  template<class VALUES>
+  class TupleValuesEnd : public Testable<TupleValuesEnd<VALUES> > {
 
   protected:
 	  // Data for internal configs
-	  Values first_;
+	  VALUES first_;
 
   public:
 	  // typedefs
-	  typedef class Values::Key Key1;
-	  typedef class Values::Value Value1;
+	  typedef class VALUES::Key Key1;
+	  typedef class VALUES::Value Value1;
 
 	  TupleValuesEnd() {}
 
-	  TupleValuesEnd(const TupleValuesEnd<Values>& config) :
+	  TupleValuesEnd(const TupleValuesEnd<VALUES>& config) :
 		  first_(config.first_) {}
 
-	  TupleValuesEnd(const Values& cfg) :
+	  TupleValuesEnd(const VALUES& cfg) :
 		  first_(cfg) {}
 
 	  void print(const std::string& s = "") const {
 			first_.print();
 	  }
 
-	  bool equals(const TupleValuesEnd<Values>& c, double tol=1e-9) const {
+	  bool equals(const TupleValuesEnd<VALUES>& c, double tol=1e-9) const {
 		  return first_.equals(c.first_, tol);
 	  }
 
 	  void insert(const Key1& key, const Value1& value) {first_.insert(key, value); }
 	  void insert(int key, const Value1& value) {first_.insert(Key1(key), value);}
 
-	  void insert(const TupleValuesEnd<Values>& config) {first_.insert(config.first_); }
+	  void insert(const TupleValuesEnd<VALUES>& config) {first_.insert(config.first_); }
 
-	  void update(const TupleValuesEnd<Values>& config) {first_.update(config.first_); }
+	  void update(const TupleValuesEnd<VALUES>& config) {first_.update(config.first_); }
 
 	  void update(const Key1& key, const Value1& value) { first_.update(key, value); }
 
-	  void insertSub(const Values& config) {first_.insert(config); }
+	  void insertSub(const VALUES& config) {first_.insert(config); }
 
 	  const Value1& operator[](const Key1& j) const { return first_[j]; }
 
-	  const Values& config() const { return first_; }
+	  const VALUES& config() const { return first_; }
 
 	  void erase(const Key1& j) { first_.erase(j); }
 
@@ -318,17 +318,17 @@ namespace gtsam {
 
 	  size_t dim() const { return first_.dim(); }
 
-	  TupleValuesEnd<Values> expmap(const VectorValues& delta, const Ordering& ordering) const {
+	  TupleValuesEnd<VALUES> expmap(const VectorValues& delta, const Ordering& ordering) const {
 	        return TupleValuesEnd(first_.expmap(delta, ordering));
 	  }
 
-    VectorValues logmap(const TupleValuesEnd<Values>& cp, const Ordering& ordering) const {
+    VectorValues logmap(const TupleValuesEnd<VALUES>& cp, const Ordering& ordering) const {
       VectorValues delta(this->dims(ordering));
       logmap(cp, ordering, delta);
       return delta;
     }
 
-    void logmap(const TupleValuesEnd<Values>& cp, const Ordering& ordering, VectorValues& delta) const {
+    void logmap(const TupleValuesEnd<VALUES>& cp, const Ordering& ordering, VectorValues& delta) const {
       first_.logmap(cp.first_, ordering, delta);
     }
 
@@ -348,8 +348,8 @@ namespace gtsam {
 
   private:
 	  friend class boost::serialization::access;
-	  template<class Archive>
-	  void serialize(Archive & ar, const unsigned int version) {
+	  template<class ARCHIVE>
+	  void serialize(ARCHIVE & ar, const unsigned int version) {
 		  ar & BOOST_SERIALIZATION_NVP(first_);
 	  }
   };
