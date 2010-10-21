@@ -643,6 +643,32 @@ static vector<size_t> columnDimensions(
 	return dims;
 }
 
+// To do this, we merge-sort the rows so that the column indices of the first structural
+// non-zero in each row increase monotonically.
+vector<_RowSource> computeRowPermutation(size_t m, const vector<size_t>& factorIndices,
+		const FactorGraph<GaussianFactor>& factorGraph) {
+	vector<_RowSource> rowSources;
+	rowSources.reserve(m);
+	size_t i1 = 0;
+	BOOST_FOREACH(const size_t i2, factorIndices) {
+		const GaussianFactor& factor(*factorGraph[i2]);
+		size_t factorRowI = 0;
+		assert(factor.get_firstNonzeroBlocks().size() == factor.numberOfRows());
+		BOOST_FOREACH(const size_t factorFirstNonzeroVarpos, factor.get_firstNonzeroBlocks()) {
+			Index firstNonzeroVar;
+			firstNonzeroVar = factor.keys()[factorFirstNonzeroVarpos];
+			rowSources.push_back(_RowSource(firstNonzeroVar, i1, factorRowI));
+			++ factorRowI;
+		}
+		assert(factorRowI == factor.numberOfRows());
+		++ i1;
+	}
+	assert(rowSources.size() == m);
+	assert(i1 == factorIndices.size());
+	sort(rowSources.begin(), rowSources.end());
+	return rowSources;
+}
+
 template<class STORAGE>
 GaussianFactor::shared_ptr GaussianFactor::Combine(const FactorGraph<GaussianFactor>& factorGraph,
     const GaussianVariableIndex<STORAGE>& variableIndex, const vector<size_t>& factorIndices,
@@ -674,29 +700,9 @@ GaussianFactor::shared_ptr GaussianFactor::Combine(const FactorGraph<GaussianFac
   combinedFactor->keys_.insert(combinedFactor->keys_.end(), variables.begin(), variables.end());
   toc("Combine: set up empty");
 
-  // Compute a row permutation that maintains a staircase pattern in the new
-  // combined factor.  To do this, we merge-sort the rows so that the column
-  // indices of the first structural non-zero in each row increase monotonically.
+  // Compute a row permutation that maintains a staircase pattern in the new combined factor.
   tic("Combine: sort rows");
-  vector<_RowSource> rowSources;
-  rowSources.reserve(m);
-  size_t i1 = 0;
-  BOOST_FOREACH(const size_t i2, factorIndices) {
-    const GaussianFactor& factor(*factorGraph[i2]);
-    size_t factorRowI = 0;
-    assert(factor.firstNonzeroBlocks_.size() == factor.numberOfRows());
-    BOOST_FOREACH(const size_t factorFirstNonzeroVarpos, factor.firstNonzeroBlocks_) {
-      Index firstNonzeroVar;
-      firstNonzeroVar = factor.keys_[factorFirstNonzeroVarpos];
-      rowSources.push_back(_RowSource(firstNonzeroVar, i1, factorRowI));
-      ++ factorRowI;
-    }
-    assert(factorRowI == factor.numberOfRows());
-    ++ i1;
-  }
-  assert(rowSources.size() == m);
-  assert(i1 == factorIndices.size());
-  sort(rowSources.begin(), rowSources.end());
+  vector<_RowSource> rowSources = computeRowPermutation(m, factorIndices, factorGraph);
   toc("Combine: sort rows");
 
   // Fill in the rows of the new factor in sorted order.  Fill in the array of

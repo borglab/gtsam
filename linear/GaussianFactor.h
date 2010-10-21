@@ -175,6 +175,9 @@ public:
 	/** get a copy of model */
 	const SharedDiagonal& get_model() const { return model_;  }
 
+	/** get the indices list */
+	const std::vector<size_t>& get_firstNonzeroBlocks() const { return firstNonzeroBlocks_; }
+
 	bool isConstrained() const {return model_->isConstrained();}
 
 	/**
