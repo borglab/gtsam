@@ -669,6 +669,27 @@ vector<_RowSource> computeRowPermutation(size_t m, const vector<size_t>& factorI
 	return rowSources;
 }
 
+void copyMatrices(boost::shared_ptr<GaussianFactor> combinedFactor, size_t row,
+		const GaussianFactor& factor, const std::vector<std::vector<size_t> >& variablePositions,
+		const size_t factorRow, const size_t factorI, const vector<Index>& variables) {
+	const static bool debug = false;
+    const size_t factorFirstNonzeroVarpos = factor.get_firstNonzeroBlocks()[factorRow];
+	std::vector<Index>::const_iterator keyit = factor.keys().begin() + factorFirstNonzeroVarpos;
+	std::vector<size_t>::const_iterator varposIt = variablePositions[factorI].begin() + factorFirstNonzeroVarpos;
+	combinedFactor->set_firstNonzeroBlocks(row, *varposIt);
+	if(debug) cout << "  copying starting at varpos " << *varposIt << " (variable " << variables[*varposIt] << ")" << endl;
+	std::vector<Index>::const_iterator keyitend = factor.keys().end();
+	while(keyit != keyitend) {
+		const size_t varpos = *varposIt;
+		assert(variables[varpos] == *keyit);
+		GaussianFactor::ab_type::block_type retBlock(combinedFactor->getAb(varpos));
+		const GaussianFactor::ab_type::const_block_type factorBlock(factor.getA(keyit));
+		ublas::noalias(ublas::row(retBlock, row)) = ublas::row(factorBlock, factorRow);
+		++ keyit;
+		++ varposIt;
+	}
+}
+
 template<class STORAGE>
 GaussianFactor::shared_ptr GaussianFactor::Combine(const FactorGraph<GaussianFactor>& factorGraph,
     const GaussianVariableIndex<STORAGE>& variableIndex, const vector<size_t>& factorIndices,
@@ -722,7 +743,6 @@ GaussianFactor::shared_ptr GaussianFactor::Combine(const FactorGraph<GaussianFac
     const size_t factorI = rowSource.factorI;
     const GaussianFactor& factor(*factorGraph[factorIndices[factorI]]);
     const size_t factorRow = rowSource.factorRowI;
-    const size_t factorFirstNonzeroVarpos = factor.firstNonzeroBlocks_[factorRow];
 
     if(debug)
       cout << "Combined row " << row << " is from row " << factorRow << " of factor " << factorIndices[factorI] << endl;
@@ -731,22 +751,9 @@ GaussianFactor::shared_ptr GaussianFactor::Combine(const FactorGraph<GaussianFac
     combinedFactor->getb()(row) = factor.getb()(factorRow);
     sigmas(row) = factor.get_sigmas()(factorRow);
 
-    // Copy the row of A variable by variable, starting at the first nonzero
-    // variable.
-    std::vector<Index>::const_iterator keyit = factor.keys_.begin() + factorFirstNonzeroVarpos;
-    std::vector<size_t>::const_iterator varposIt = variablePositions[factorI].begin() + factorFirstNonzeroVarpos;
-    combinedFactor->firstNonzeroBlocks_[row] = *varposIt;
-    if(debug) cout << "  copying starting at varpos " << *varposIt << " (variable " << variables[*varposIt] << ")" << endl;
-    std::vector<Index>::const_iterator keyitend = factor.keys_.end();
-    while(keyit != keyitend) {
-      const size_t varpos = *varposIt;
-      assert(variables[varpos] == *keyit);
-      ab_type::block_type retBlock(combinedFactor->Ab_(varpos));
-      const ab_type::const_block_type factorBlock(factor.getA(keyit));
-      ublas::noalias(ublas::row(retBlock, row)) = ublas::row(factorBlock, factorRow);
-      ++ keyit;
-      ++ varposIt;
-    }
+    // Copy the row of A variable by variable, starting at the first nonzero variable.
+    copyMatrices(combinedFactor, row, factor, variablePositions, factorRow, factorI, variables);
+
 #ifndef NDEBUG
     // Debug check, make sure the first column of nonzeros increases monotonically
     if(row != 0)

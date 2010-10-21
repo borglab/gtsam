@@ -134,6 +134,8 @@ public:
 	/** Get a view of the A matrix for the variable pointed to be the given key iterator */
 	ab_type::const_block_type getA(const_iterator variable) const { return Ab_(variable - keys_.begin());	}
   ab_type::block_type getA(iterator variable) { return Ab_(variable - keys_.begin()); }
+  ab_type::block_type getAb(size_t block) { return Ab_(block); }
+
 
 	/** Return the dimension of the variable pointed to by the given key iterator
 	 * todo: Remove this in favor of keeping track of dimensions with variables?
@@ -226,6 +228,8 @@ public:
 	GaussianConditional::shared_ptr eliminateFirst();
 
   GaussianBayesNet::shared_ptr eliminate(size_t nrFrontals = 1);
+
+  void set_firstNonzeroBlocks(size_t row, size_t varpos) { firstNonzeroBlocks_[row] = varpos; }
 
 	friend class GaussianFactorGraph;
 	friend class Inference;
