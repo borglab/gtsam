@@ -45,16 +45,14 @@ void ISAMLoop<Values>::update(const Factors& newFactors, const Values& initialVa
         }
     }
 
-    ordering_.print();
-    newFactors.linearize(linPoint_, ordering_);
-    cout << "Don linearize!" << endl;
-
     boost::shared_ptr<GaussianFactorGraph> linearizedNewFactors(newFactors.linearize(linPoint_, ordering_));
 
     cout << "After linearize: " << endl;
     BOOST_FOREACH(GaussianFactorGraph::sharedFactor f, *linearizedNewFactors) {
       f->print("Linearized factor: ");
     }
+
+    cout << "Update ISAM: " << endl;
     isam.update(*linearizedNewFactors);
   }
 }

@@ -118,7 +118,7 @@ int main(int argc, char* argv[])
         exit(0);
     }
 
-    g_dataFolder = string(argv[1]);
+    g_dataFolder = string(argv[1]) + "/";
     readAllData();
 
     // Create a graph using the 2D measurements (features) and the calibration data

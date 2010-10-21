@@ -69,7 +69,7 @@ gtsam::Pose3 readPose(const char* Fn)
 /* ************************************************************************* */
 std::map<int, gtsam::Pose3> readPoses(const std::string& baseFolder, const std::string& posesFn)
 {
-    ifstream posesFile((baseFolder+"/"+posesFn).c_str());
+    ifstream posesFile((baseFolder+posesFn).c_str());
     if (!posesFile)
     {
         cout << "Cannot read all pose file: " << posesFn << endl;
@@ -86,7 +86,7 @@ std::map<int, gtsam::Pose3> readPoses(const std::string& baseFolder, const std::
         string poseFileName;
         posesFile >> poseFileName;
 
-        Pose3 pose = readPose((baseFolder+"/"+poseFileName).c_str());
+        Pose3 pose = readPose((baseFolder+poseFileName).c_str());
         poses[poseId] = pose;
     }
 
@@ -136,10 +136,10 @@ std::vector<Feature2D> readFeatures(int pose_id, const char* filename)
 /* ************************************************************************* */
 std::vector<Feature2D> readAllMeasurements(const std::string& baseFolder, const std::string& measurementsFn)
 {
-    ifstream measurementsFile((baseFolder+"/"+measurementsFn).c_str());
+    ifstream measurementsFile((baseFolder+measurementsFn).c_str());
     if (!measurementsFile)
     {
-        cout << "Cannot read all pose file: " << measurementsFn << endl;
+        cout << "Cannot read all pose file: " << baseFolder+measurementsFn << endl;
         exit(0);
     }
     int numPoses;
@@ -155,7 +155,7 @@ std::vector<Feature2D> readAllMeasurements(const std::string& baseFolder, const 
 
         string featureFileName;
         measurementsFile >> featureFileName;
-        vector<Feature2D> features = readFeatures(poseId, (baseFolder+"/"+featureFileName).c_str());
+        vector<Feature2D> features = readFeatures(poseId, (baseFolder+featureFileName).c_str());
         allFeatures.insert( allFeatures.end(), features.begin(), features.end() );
     }
 
@@ -191,7 +191,7 @@ std::vector<std::vector<Feature2D> > readAllMeasurementsISAM(const std::string& 
     ifstream measurementsFile((baseFolder+measurementsFn).c_str());
     if (!measurementsFile)
     {
-        cout << "Cannot read all pose file: " << measurementsFn << endl;
+        cout << "Cannot read all pose file: " << baseFolder+measurementsFn << endl;
         exit(0);
     }
     int numPoses;

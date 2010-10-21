@@ -30,10 +30,10 @@ using namespace gtsam::visualSLAM;
 using namespace boost;
 
 /* ************************************************************************* */
-#define CALIB_FILE          "/calib.txt"
-#define LANDMARKS_FILE      "/landmarks.txt"
-#define POSES_FILE          "/posesISAM.txt"
-#define MEASUREMENTS_FILE    "/measurementsISAM.txt"
+#define CALIB_FILE          "calib.txt"
+#define LANDMARKS_FILE      "landmarks.txt"
+#define POSES_FILE          "posesISAM.txt"
+#define MEASUREMENTS_FILE    "measurementsISAM.txt"
 
 // Base data folder
 string g_dataFolder;
@@ -78,8 +78,8 @@ void createNewFactors(shared_ptr<Graph>& newFactors, boost::shared_ptr<Values>& 
                       int pose_id, Pose3& pose,
                       std::vector<Feature2D>& measurements, SharedGaussian measurementSigma, shared_ptrK calib)
 {
+    // Create a graph of newFactors with new measurements
     newFactors = shared_ptr<Graph>(new Graph());
-
     for (size_t i= 0; i<measurements.size(); i++)
     {
         newFactors->addMeasurement(measurements[i].m_p,
@@ -89,10 +89,21 @@ void createNewFactors(shared_ptr<Graph>& newFactors, boost::shared_ptr<Values>& 
                          calib);
     }
 
+    // ... we need priors on the new pose and all new landmarks
     newFactors->addPosePrior(pose_id, pose, poseSigma);
+    for (size_t i= 0; i<measurements.size(); i++)
+    {
+      newFactors->addPointPrior(measurements[i].m_idLandmark, g_landmarks[measurements[i].m_idLandmark]);
+    }
 
+
+    // Create initial values for all nodes in the newFactors
     initialValues = shared_ptr<Values>(new Values());
     initialValues->insert(pose_id, pose);
+    for (size_t i= 0; i<measurements.size(); i++)
+    {
+      initialValues->insert( measurements[i].m_idLandmark, g_landmarks[measurements[i].m_idLandmark] );
+    }
 }
 
 
@@ -109,6 +120,7 @@ int main(int argc, char* argv[])
     }
 
     g_dataFolder = string(argv[1]);
+    g_dataFolder += "/";
     readAllData();
 
     ISAMLoop<Values> isam(3);
@@ -121,12 +133,13 @@ int main(int argc, char* argv[])
                          i, g_poses[i],
                          g_measurements[i], measurementSigma, g_calib);
 
-        cout << "Add prior pose and measurements of camera " << i << endl;
-        newFactors->print();
-        initialValues->print();
+//        cout << "Add prior pose and measurements of camera " << i << endl;
+//        newFactors->print();
+//        initialValues->print();
 
         isam.update(*newFactors, *initialValues);
         Values currentEstimate = isam.estimate();
+        cout << "****************************************************" << endl;
         currentEstimate.print("Current estimate: ");
     }
 

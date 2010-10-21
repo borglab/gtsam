@@ -30,7 +30,7 @@
 
 namespace gtsam { namespace visualSLAM {
 
-	/**
+  /**
    * Typedefs that make up the visualSLAM namespace.
    */
   typedef TypedSymbol<Pose3,'x'> PoseKey;
@@ -42,7 +42,9 @@ namespace gtsam { namespace visualSLAM {
 
   typedef NonlinearEquality<Values, PoseKey> PoseConstraint;
   typedef NonlinearEquality<Values, PointKey> PointConstraint;
-	typedef PriorFactor<Values, PoseKey> PosePrior;
+  typedef PriorFactor<Values, PoseKey> PosePrior;
+  typedef PriorFactor<Values, PointKey> PointPrior;
+
 
 
 
@@ -80,10 +82,10 @@ namespace gtsam { namespace visualSLAM {
      * @param K the constant calibration
      */
     GenericProjectionFactor(const Point2& z,
-					const SharedGaussian& model, POSK j_pose,
-					LMK j_landmark, const shared_ptrK& K) :
-						Base(model, j_pose, j_landmark), z_(z), K_(K) {
-			}
+          const SharedGaussian& model, POSK j_pose,
+          LMK j_landmark, const shared_ptrK& K) :
+            Base(model, j_pose, j_landmark), z_(z), K_(K) {
+      }
 
     /**
      * print
@@ -126,74 +128,83 @@ namespace gtsam { namespace visualSLAM {
   typedef GenericProjectionFactor<Values, PointKey, PoseKey> ProjectionFactor;
 
   /**
-	 * Non-linear factor graph for vanilla visual SLAM
-	 */
-	class Graph: public NonlinearFactorGraph<Values> {
+   * Non-linear factor graph for vanilla visual SLAM
+   */
+  class Graph: public NonlinearFactorGraph<Values> {
 
-	public:
+  public:
 
-		typedef boost::shared_ptr<Graph> shared_graph;
+    typedef boost::shared_ptr<Graph> shared_graph;
 
-		/** default constructor is empty graph */
-		Graph() {
-		}
+    /** default constructor is empty graph */
+    Graph() {
+    }
 
-		/** print out graph */
-		void print(const std::string& s = "") const {
-			NonlinearFactorGraph<Values>::print(s);
-		}
+    /** print out graph */
+    void print(const std::string& s = "") const {
+      NonlinearFactorGraph<Values>::print(s);
+    }
 
-		/** equals */
-		bool equals(const Graph& p, double tol = 1e-9) const {
-			return NonlinearFactorGraph<Values>::equals(p, tol);
-		}
+    /** equals */
+    bool equals(const Graph& p, double tol = 1e-9) const {
+      return NonlinearFactorGraph<Values>::equals(p, tol);
+    }
 
-		/**
-		 *  Add a measurement
-		 *  @param j index of camera
-		 *  @param p to which pose to constrain it to
-		 */
-		void addMeasurement(const Point2& z, const SharedGaussian& model,
-				PoseKey i, PointKey j, const shared_ptrK& K) {
-			boost::shared_ptr<ProjectionFactor> factor(new ProjectionFactor(z, model, i, j, K));
-			push_back(factor);
-		}
+    /**
+     *  Add a measurement
+     *  @param j index of camera
+     *  @param p to which pose to constrain it to
+     */
+    void addMeasurement(const Point2& z, const SharedGaussian& model,
+        PoseKey i, PointKey j, const shared_ptrK& K) {
+      boost::shared_ptr<ProjectionFactor> factor(new ProjectionFactor(z, model, i, j, K));
+      push_back(factor);
+    }
 
-		/**
-		 *  Add a constraint on a pose (for now, *must* be satisfied in any Values)
-		 *  @param j index of camera
-		 *  @param p to which pose to constrain it to
-		 */
-		void addPoseConstraint(int j, const Pose3& p = Pose3()) {
-			boost::shared_ptr<PoseConstraint> factor(new PoseConstraint(j, p));
-			push_back(factor);
-		}
+    /**
+     *  Add a constraint on a pose (for now, *must* be satisfied in any Values)
+     *  @param j index of camera
+     *  @param p to which pose to constrain it to
+     */
+    void addPoseConstraint(int j, const Pose3& p = Pose3()) {
+      boost::shared_ptr<PoseConstraint> factor(new PoseConstraint(j, p));
+      push_back(factor);
+    }
 
-		/**
-		 *  Add a constraint on a point (for now, *must* be satisfied in any Values)
-		 *  @param j index of landmark
-		 *  @param p to which point to constrain it to
-		 */
-		void addPointConstraint(int j, const Point3& p = Point3()) {
-			boost::shared_ptr<PointConstraint> factor(new PointConstraint(j, p));
-			push_back(factor);
-		}
+    /**
+     *  Add a constraint on a point (for now, *must* be satisfied in any Values)
+     *  @param j index of landmark
+     *  @param p to which point to constrain it to
+     */
+    void addPointConstraint(int j, const Point3& p = Point3()) {
+      boost::shared_ptr<PointConstraint> factor(new PointConstraint(j, p));
+      push_back(factor);
+    }
 
-		/**
-		 *  Add a prior on a pose
-		 *  @param j index of camera
-		 *  @param p to which pose to constrain it to
-		 *  @param model uncertainty model of this prior
-		 */
-		void addPosePrior(int j, const Pose3& p = Pose3(), const SharedGaussian& model = noiseModel::Unit::Create(1)) {
-			boost::shared_ptr<PosePrior> factor(new PosePrior(j, p, model));
-			push_back(factor);
-		}
+    /**
+     *  Add a prior on a pose
+     *  @param j index of camera
+     *  @param p to which pose to constrain it to
+     *  @param model uncertainty model of this prior
+     */
+    void addPosePrior(int j, const Pose3& p = Pose3(), const SharedGaussian& model = noiseModel::Unit::Create(1)) {
+      boost::shared_ptr<PosePrior> factor(new PosePrior(j, p, model));
+      push_back(factor);
+    }
 
+    /**
+     *  Add a prior on a landmark
+     *  @param j index of landmark
+     *  @param model uncertainty model of this prior
+     */
+    void addPointPrior(int j, const Point3& p = Point3(), const SharedGaussian& model = noiseModel::Unit::Create(1)) {
+      boost::shared_ptr<PointPrior> factor(new PointPrior(j, p, model));
+      push_back(factor);
+    }
 
-	}; // Graph
+  }; // Graph
 
-	// Optimizer
-	typedef NonlinearOptimizer<Graph, Values> Optimizer;
+  // Optimizer
+  typedef NonlinearOptimizer<Graph, Values> Optimizer;
 
 } } // namespaces
