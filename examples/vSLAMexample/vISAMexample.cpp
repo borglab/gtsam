@@ -1,0 +1,136 @@
+/**
+ * @file    vSLAMexample.cpp
+ * @brief   An vSLAM example for synthesis sequence
+ * single camera
+ * @author  Duy-Nguyen
+ */
+
+#include <boost/shared_ptr.hpp>
+using namespace boost;
+
+#define GTSAM_MAGIC_KEY
+
+#include <gtsam/nonlinear/NonlinearFactorGraph-inl.h>
+#include <gtsam/nonlinear/NonlinearOptimizer-inl.h>
+#include <gtsam/inference/graph-inl.h>
+#include <gtsam/slam/visualSLAM.h>
+#include <gtsam/slam/PriorFactor.h>
+
+#include <gtsam/inference/ISAM-inl.h>
+#include <gtsam/linear/GaussianISAM.h>
+#include "ISAMLoop.h"
+#include "ISAMLoop-inl.h"
+
+#include "vSLAMutils.h"
+#include "Feature2D.h"
+
+using namespace std;
+using namespace gtsam;
+using namespace gtsam::visualSLAM;
+using namespace boost;
+
+/* ************************************************************************* */
+#define CALIB_FILE          "/calib.txt"
+#define LANDMARKS_FILE      "/landmarks.txt"
+#define POSES_FILE          "/posesISAM.txt"
+#define MEASUREMENTS_FILE    "/measurementsISAM.txt"
+
+// Base data folder
+string g_dataFolder;
+
+// Store groundtruth values, read from files
+shared_ptrK g_calib;
+map<int, Point3> g_landmarks;        // map: <landmark_id, landmark_position>
+std::vector<Pose3> g_poses;            // map: <camera_id, pose>
+std::vector<std::vector<Feature2D> > g_measurements;    // map: <camera_id, detected_features> -- where: Feature2D: {camera_id, landmark_id, 2d feature_position}
+
+// Noise models
+SharedGaussian measurementSigma(noiseModel::Isotropic::Sigma(2, 5.0f));
+SharedGaussian poseSigma(noiseModel::Unit::Create(1));
+
+
+/* ************************************************************************* */
+/**
+  * Read all data: calibration file, landmarks, poses, and all features measurements
+  * Data is stored in global variables.
+  */
+void readAllData()
+{
+    g_calib = readCalibData(g_dataFolder + CALIB_FILE);
+
+    // Read groundtruth landmarks' positions. These will be used later as intial estimates for landmark nodes.
+    g_landmarks = readLandMarks(g_dataFolder + LANDMARKS_FILE);
+
+    // Read groundtruth camera poses. These will be used later as intial estimates for pose nodes.
+    g_poses = readPosesISAM(g_dataFolder, POSES_FILE);
+
+    // Read all 2d measurements. Those will become factors linking their associating pose and the corresponding landmark.
+    g_measurements = readAllMeasurementsISAM(g_dataFolder, MEASUREMENTS_FILE);
+}
+
+/* ************************************************************************* */
+/**
+  * Setup vSLAM graph
+  * by adding and linking 2D features (measurements) detected in each captured image
+  * with their corresponding landmarks.
+  */
+void createNewFactors(shared_ptr<Graph>& newFactors, boost::shared_ptr<Values>& initialValues,
+                      int pose_id, Pose3& pose,
+                      std::vector<Feature2D>& measurements, SharedGaussian measurementSigma, shared_ptrK calib)
+{
+    newFactors = shared_ptr<Graph>(new Graph());
+
+    for (size_t i= 0; i<measurements.size(); i++)
+    {
+        newFactors->addMeasurement(measurements[i].m_p,
+                         measurementSigma,
+                         pose_id,
+                         measurements[i].m_idLandmark,
+                         calib);
+    }
+
+    newFactors->addPosePrior(pose_id, pose, poseSigma);
+
+    initialValues = shared_ptr<Values>(new Values());
+    initialValues->insert(pose_id, pose);
+}
+
+
+/* ************************************************************************* */
+int main(int argc, char* argv[])
+{
+    if (argc <2)
+    {
+        cout << "Usage: vISAMexample <DataFolder>" << endl << endl;
+        cout << "\tPlease specify <DataFolder>, which contains calibration file, initial landmarks, initial poses, and feature data." << endl;
+        cout << "\tSample folder is in $gtsam_source_folder$/examples/vSLAMexample/Data/" << endl << endl;
+        cout << "Example usage: vISAMexample '$gtsam_source_folder$/examples/vSLAMexample/Data/'" << endl;
+        exit(0);
+    }
+
+    g_dataFolder = string(argv[1]);
+    readAllData();
+
+    ISAMLoop<Values> isam(3);
+
+    for (size_t i = 0; i<g_measurements.size(); i++)
+    {
+        shared_ptr<Graph> newFactors;
+        shared_ptr<Values> initialValues;
+        createNewFactors(newFactors, initialValues,
+                         i, g_poses[i],
+                         g_measurements[i], measurementSigma, g_calib);
+
+        cout << "Add prior pose and measurements of camera " << i << endl;
+        newFactors->print();
+        initialValues->print();
+
+        isam.update(*newFactors, *initialValues);
+        Values currentEstimate = isam.estimate();
+        currentEstimate.print("Current estimate: ");
+    }
+
+}
+/* ************************************************************************* */
+
+
