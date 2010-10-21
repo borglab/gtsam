@@ -16,7 +16,7 @@ SymbolicSequentialSolver::SymbolicSequentialSolver(const FactorGraph<IndexFactor
     Base(factorGraph) {}
 
 /* ************************************************************************* */
-typename BayesNet<IndexConditional>::shared_ptr SymbolicSequentialSolver::eliminate() const {
+BayesNet<IndexConditional>::shared_ptr SymbolicSequentialSolver::eliminate() const {
   return Base::eliminate();
 }
 

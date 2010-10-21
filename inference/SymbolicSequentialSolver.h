@@ -26,7 +26,7 @@ public:
    * Eliminate the factor graph sequentially.  Uses a column elimination tree
    * to recursively eliminate.
    */
-  typename BayesNet<IndexConditional>::shared_ptr eliminate() const;
+  BayesNet<IndexConditional>::shared_ptr eliminate() const;
 
   /**
    * Compute the marginal Gaussian density over a variable, by integrating out
