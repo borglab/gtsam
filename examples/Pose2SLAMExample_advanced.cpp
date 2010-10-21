@@ -34,7 +34,6 @@ int main(int argc, char** argv) {
 	Key x1(1), x2(2), x3(3);
 
 	/* 1. create graph container and add factors to it */
-	//Graph graph;
 	shared_ptr<Graph> graph(new Graph);
 
 	/* 2.a add prior  */
@@ -51,39 +50,29 @@ int main(int argc, char** argv) {
 	Pose2 odom_measurement(2.0, 0.0, 0.0); // create a measurement for both factors (the same in this case)
 	graph->addConstraint(x1, x2, odom_measurement, odom_model);
 	graph->addConstraint(x2, x3, odom_measurement, odom_model);
-
-	graph->print("Full Graph");
+	graph->print("full graph");
 
   /* 3. Create the data structure to hold the initial estinmate to the solution
    * initialize to noisy points */
-	shared_ptr<Values> initialEstimate(new Values);
-	initialEstimate->insert(x1, Pose2(0.5, 0.0, 0.2));
-	initialEstimate->insert(x2, Pose2(2.3, 0.1,-0.2));
-	initialEstimate->insert(x3, Pose2(4.1, 0.1, 0.1));
+	shared_ptr<Values> initial(new Values);
+	initial->insert(x1, Pose2(0.5, 0.0, 0.2));
+	initial->insert(x2, Pose2(2.3, 0.1,-0.2));
+	initial->insert(x3, Pose2(4.1, 0.1, 0.1));
+	initial->print("initial estimate");
 
-	initialEstimate->print("Initial Estimate");
-
-	/* There are several ways to solve the graph. */
-
-	/* 4.1 Single Step:
-	* optimize using Levenberg-Marquardt optimization with an ordering from colamd */
-  Values result = optimize<Graph, Values>(*graph, *initialEstimate);
-  result.print("Final Result");
 
 	/* 4.2.1 Alternatively, you can go through the process step by step
 	 * Choose an ordering */
-	Ordering::shared_ptr ordering = graph->orderingCOLAMD(*initialEstimate);
+	Ordering::shared_ptr ordering = graph->orderingCOLAMD(*initial);
 
-  /* 4.2.2 set up solver and optimize */
+	/* 4.2.2 set up solver and optimize */
 	Optimizer::shared_solver solver(new Optimizer::solver(ordering));
+	Optimizer optimizer(graph, initial, solver);
+	Optimizer::Parameters::verbosityLevel verbosity = pose2SLAM::Optimizer::Parameters::SILENT;
+	Optimizer optimizer_result = optimizer.levenbergMarquardt(1e-15, 1e-15, verbosity);
 
-  Optimizer optimizer(graph, initialEstimate, solver);
-  Optimizer::Parameters::verbosityLevel verbosity = pose2SLAM::Optimizer::Parameters::SILENT;
-  Optimizer optimizer0 = optimizer.levenbergMarquardt(1e-15, 1e-15, verbosity);
-
-	Values result2 = *optimizer0.config();
-  result2.print("Final Result 2");
-
+	Values result = *optimizer_result.config();
+	result.print("final result");
 	return 0;
 }
 

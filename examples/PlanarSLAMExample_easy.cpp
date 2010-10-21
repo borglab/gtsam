@@ -74,7 +74,7 @@ int main(int argc, char** argv) {
 	graph.addBearingRange(x2, l1, bearing21, range21, meas_model);
 	graph.addBearingRange(x3, l2, bearing32, range32, meas_model);
 
-	graph.print("Full Graph");
+	graph.print("full graph");
 
 	// initialize to noisy points
 	Values initialEstimate;
@@ -84,11 +84,11 @@ int main(int argc, char** argv) {
 	initialEstimate.insert(l1, Point2(1.8, 2.1));
 	initialEstimate.insert(l2, Point2(4.1, 1.8));
 
-	initialEstimate.print("Initial Estimate");
+	initialEstimate.print("initial estimate");
 
 	// optimize using Levenberg-Marquardt optimization with an ordering from colamd
 	Values result = optimize<Graph, Values>(graph, initialEstimate);
-	result.print("Final Result");
+	result.print("final result");
 
 	return 0;
 }

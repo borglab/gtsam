@@ -110,19 +110,19 @@ int main(int argc, char** argv) {
 	graph.print("Full Graph");
 
 	// initialize to noisy points
-	Values initialEstimate;
-	initialEstimate.insert(x1, Pose2(0.5, 0.0, 0.2));
-	initialEstimate.insert(x2, Pose2(2.3, 0.1,-0.2));
-	initialEstimate.insert(x3, Pose2(4.1, 0.1, 0.1));
-	initialEstimate.insert(l1, Point2(1.8, 2.1));
-	initialEstimate.insert(l2, Point2(4.1, 1.8));
+	Values initial;
+	initial.insert(x1, Pose2(0.5, 0.0, 0.2));
+	initial.insert(x2, Pose2(2.3, 0.1,-0.2));
+	initial.insert(x3, Pose2(4.1, 0.1, 0.1));
+	initial.insert(l1, Point2(1.8, 2.1));
+	initial.insert(l2, Point2(4.1, 1.8));
 
-	initialEstimate.print("Initial Estimate");
+	initial.print("initial estimate");
 
 	// optimize using Levenburg-Marquadt optimization with an ordering from colamd
-	Optimizer::shared_values result = Optimizer::optimizeLM(graph, initialEstimate);
+	Optimizer::shared_values result = Optimizer::optimizeLM(graph, initial);
 
-	result->print("Final Result");
+	result->print("final result");
 
 	return 0;
 }

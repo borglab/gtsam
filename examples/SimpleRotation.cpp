@@ -54,7 +54,7 @@ int main() {
 
 	// Create a factor
 	Rot2 prior1 = Rot2::fromAngle(30 * degree);
-	prior1.print("Goal Angle");
+	prior1.print("goal angle");
 	SharedDiagonal model1 = noiseModel::Isotropic::Sigma(1, 1 * degree);
 	Key key1(1);
 	PriorFactor<Values, Key> factor1(key1, prior1, model1);
@@ -62,17 +62,15 @@ int main() {
 	// Create a factor graph
 	Graph graph;
 	graph.add(factor1);
+	graph.print("full graph") ;
 
 	// and an initial estimate
-	Values initialEstimate;
-	initialEstimate.insert(key1, Rot2::fromAngle(20 * degree));
-	initialEstimate.print("Initialization");
+	Values initial;
+	initial.insert(key1, Rot2::fromAngle(20 * degree));
+	initial.print("initial estimate");
 
-	// create an ordering
-	Optimizer::Parameters parameters;
-	parameters.verbosity_ = Optimizer::Parameters::LAMBDA;
-	Values result = optimize<Graph, Values>(graph, initialEstimate, parameters);
-	result.print("Final config");
+	Values result = optimize<Graph, Values>(graph, initial);
+	result.print("final result");
 
 	return 0;
 }
