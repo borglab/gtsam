@@ -13,6 +13,7 @@
 
 #include <gtsam/inference/VariableIndex.h>
 #include <gtsam/inference/BayesNet.h>
+#include <gtsam/inference/FactorGraph.h>
 
 class EliminationTreeTester; // for unit tests, see testEliminationTree
 
@@ -35,12 +36,11 @@ private:
 
   typedef std::list<sharedFactor, boost::fast_pool_allocator<sharedFactor> > Factors;
   typedef std::list<shared_ptr, boost::fast_pool_allocator<shared_ptr> > SubTrees;
+  typedef std::vector<typename FACTOR::Conditional::shared_ptr> Conditionals;
 
   Index key_; /** index associated with root */
   Factors factors_; /** factors associated with root */
   SubTrees subTrees_; /** sub-trees */
-
-  typedef std::pair<BayesNet, sharedFactor> EliminationResult;
 
   /** default constructor, private, as you should use Create below */
   EliminationTree(Index key = 0) : key_(key) {}
@@ -60,16 +60,23 @@ private:
   /**
    * Recursive routine that eliminates the factors arranged in an elimination tree
    */
-  EliminationResult eliminate_() const;
+  sharedFactor eliminate_(Conditionals& conditionals) const;
 
   // Allow access to constructor and add methods for testing purposes
   friend class ::EliminationTreeTester;
 
 public:
 
+  /**
+   * Named constructor to build the elimination tree of a factor graph using
+   * pre-computed column structure.
+   */
+  template<class DERIVEDFACTOR>
+  static shared_ptr Create(const FactorGraph<DERIVEDFACTOR>& factorGraph, const VariableIndex<>& structure);
+
   /** Named constructor to build the elimination tree of a factor graph */
-  template<class FACTORGRAPH>
-  static shared_ptr Create(const FACTORGRAPH& factorGraph);
+  template<class DERIVEDFACTOR>
+  static shared_ptr Create(const FactorGraph<DERIVEDFACTOR>& factorGraph);
 
   /** Print the tree to cout */
   void print(const std::string& name = "EliminationTree: ") const;

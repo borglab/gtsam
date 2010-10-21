@@ -9,12 +9,10 @@
 #include <gtsam/base/TestableAssertions.h>
 
 #include <gtsam/inference/EliminationTree-inl.h>
-#include <gtsam/inference/SymbolicFactorGraph.h>
+#include <gtsam/inference/SymbolicSequentialSolver.h>
 
 using namespace gtsam;
 using namespace std;
-
-typedef EliminationTree<IndexFactor> SymbolicEliminationTree;
 
 struct EliminationTreeTester {
   // build hardcoded tree
@@ -76,10 +74,10 @@ TEST(EliminationTree, eliminate )
   IndexConditional::shared_ptr c4(new IndexConditional(4));
 
   SymbolicBayesNet expected;
-  expected.push_back(c3);
   expected.push_back(c0);
   expected.push_back(c1);
   expected.push_back(c2);
+  expected.push_back(c3);
   expected.push_back(c4);
 
   // Create factor graph
@@ -91,7 +89,7 @@ TEST(EliminationTree, eliminate )
   fg.push_factor(3, 4);
 
   // eliminate
-  SymbolicBayesNet actual = *SymbolicEliminationTree::Create(fg)->eliminate();
+  SymbolicBayesNet actual = *SymbolicSequentialSolver(fg).eliminate();
 
   CHECK(assert_equal(expected,actual));
 }

@@ -18,7 +18,7 @@ check_PROGRAMS =
 headers += Factor.h Factor-inl.h Conditional.h 
 
 # Symbolic Inference
-sources += SymbolicFactorGraph.cpp
+sources += SymbolicFactorGraph.cpp SymbolicSequentialSolver.cpp
 check_PROGRAMS += tests/testSymbolicFactor tests/testSymbolicFactorGraph tests/testConditional
 check_PROGRAMS += tests/testSymbolicBayesNet tests/testVariableIndex tests/testVariableSlots
 

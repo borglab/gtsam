@@ -19,6 +19,7 @@
 #include <gtsam/linear/GaussianFactorGraph.h>
 #include <gtsam/linear/SharedDiagonal.h>
 #include <gtsam/inference/inference-inl.h>
+#include <gtsam/inference/EliminationTree-inl.h>
 
 #include <boost/random.hpp>
 #include <boost/timer.hpp>
@@ -26,6 +27,8 @@
 
 using namespace gtsam;
 using namespace std;
+
+typedef EliminationTree<GaussianFactor> GaussianEliminationTree;
 
 static boost::variate_generator<boost::mt19937, boost::uniform_real<> > rg(boost::mt19937(), boost::uniform_real<>(0.0, 1.0));
 
@@ -80,7 +83,7 @@ int main(int argc, char *argv[]) {
     timer.restart();
     for(size_t trial=0; trial<nTrials; ++trial) {
 //      cout << "Trial " << trial << endl;
-      GaussianBayesNet::shared_ptr gbn(Inference::Eliminate(blockGfgs[trial]));
+      GaussianBayesNet::shared_ptr gbn(GaussianEliminationTree::Create(blockGfgs[trial])->eliminate());
       VectorValues soln(optimize(*gbn));
     }
     blocksolve = timer.elapsed();
@@ -124,7 +127,7 @@ int main(int argc, char *argv[]) {
     cout.flush();
     timer.restart();
     for(size_t trial=0; trial<nTrials; ++trial) {
-      GaussianBayesNet::shared_ptr gbn(Inference::Eliminate(combGfgs[trial]));
+      GaussianBayesNet::shared_ptr gbn(GaussianEliminationTree::Create(combGfgs[trial])->eliminate());
       VectorValues soln(optimize(*gbn));
     }
     combsolve = timer.elapsed();

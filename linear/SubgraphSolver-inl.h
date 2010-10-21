@@ -24,6 +24,7 @@
 #include <gtsam/linear/iterative-inl.h>
 #include <gtsam/inference/graph-inl.h>
 #include <gtsam/inference/FactorGraph-inl.h>
+#include <gtsam/inference/EliminationTree-inl.h>
 
 using namespace std;
 
@@ -69,7 +70,7 @@ namespace gtsam {
 		SubgraphPreconditioner::sharedValues xbar;
 #else
 		GaussianFactorGraph sacrificialAb1 = *Ab1; // duplicate !!!!!
-		SubgraphPreconditioner::sharedBayesNet Rc1 = Inference::Eliminate(sacrificialAb1) ;
+		SubgraphPreconditioner::sharedBayesNet Rc1 = EliminationTree<GaussianFactor>::Create(sacrificialAb1)->eliminate();
 		SubgraphPreconditioner::sharedValues xbar = gtsam::optimize_(*Rc1);
 #endif
 		// TODO: there does not seem to be a good reason to have Ab1_

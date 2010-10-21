@@ -24,6 +24,7 @@ using namespace boost::assign;
 #include <gtsam/inference/Conditional.h>
 #include <gtsam/inference/ISAM.h>
 #include <gtsam/inference/BayesTree-inl.h>
+#include <gtsam/inference/GenericSequentialSolver-inl.h>
 
 namespace gtsam {
 
@@ -52,7 +53,7 @@ namespace gtsam {
 		factors.push_back(newFactors);
 
 		// eliminate into a Bayes net
-		typename BayesNet<CONDITIONAL>::shared_ptr bayesNet = Inference::Eliminate(factors);
+		typename BayesNet<CONDITIONAL>::shared_ptr bayesNet = GenericSequentialSolver<typename CONDITIONAL::Factor>(factors).eliminate();
 
 		// insert conditionals back in, straight into the topless bayesTree
 		typename BayesNet<CONDITIONAL>::const_reverse_iterator rit;

@@ -32,8 +32,10 @@
 using namespace boost::assign;
 namespace lam = boost::lambda;
 
+#include <gtsam/base/FastSet.h>
 #include <gtsam/inference/BayesTree.h>
 #include <gtsam/inference/inference-inl.h>
+#include <gtsam/inference/GenericSequentialSolver.h>
 
 namespace gtsam {
 
@@ -266,9 +268,11 @@ namespace gtsam {
 	// TODO, why do we actually return a shared pointer, why does eliminate?
 	/* ************************************************************************* */
 	template<class CONDITIONAL>
-	template<class FACTORGRAPH>
 	BayesNet<CONDITIONAL>
 	BayesTree<CONDITIONAL>::Clique::shortcut(shared_ptr R) {
+
+	  static const bool debug = false;
+
 		// A first base case is when this clique or its parent is the root,
 		// in which case we return an empty Bayes net.
 
@@ -279,15 +283,21 @@ namespace gtsam {
 			return empty;
 		}
 
+		// The root conditional
+		FactorGraph<typename CONDITIONAL::Factor> p_R(*R);
+
 		// The parent clique has a CONDITIONAL for each frontal node in Fp
 		// so we can obtain P(Fp|Sp) in factor graph form
-		FACTORGRAPH p_Fp_Sp(*parent);
+		FactorGraph<typename CONDITIONAL::Factor> p_Fp_Sp(*parent);
 
 		// If not the base case, obtain the parent shortcut P(Sp|R) as factors
-		FACTORGRAPH p_Sp_R(parent->shortcut<FACTORGRAPH>(R));
+		FactorGraph<typename CONDITIONAL::Factor> p_Sp_R(parent->shortcut(R));
 
 		// now combine P(Cp|R) = P(Fp|Sp) * P(Sp|R)
-		FACTORGRAPH p_Cp_R = combine(p_Fp_Sp, p_Sp_R);
+		FactorGraph<typename CONDITIONAL::Factor> p_Cp_R;
+		p_Cp_R.push_back(p_R);
+		p_Cp_R.push_back(p_Fp_Sp);
+		p_Cp_R.push_back(p_Sp_R);
 
 		// Eliminate into a Bayes net with ordering designed to integrate out
 		// any variables not in *our* separator. Variables to integrate out must be
@@ -295,45 +305,48 @@ namespace gtsam {
 		// However, an added wrinkle is that Cp might overlap with the root.
 		// Keys corresponding to the root should not be added to the ordering at all.
 
-		typedef set<Index, std::less<Index>, boost::fast_pool_allocator<Index> > FastJSet;
-
-		// Get the key list Cp=Fp+Sp, which will form the basis for the integrands
-		vector<Index> parentKeys(parent->keys());
-		FastJSet integrands(parentKeys.begin(), parentKeys.end());
-
-		// Start ordering with the separator
-		FastJSet separator(separator_.begin(), separator_.end());
-
-		// remove any variables in the root, after this integrands = Cp\R, ordering = S\R
-		BOOST_FOREACH(Index key, R->ordering()) {
-			integrands.erase(key);
-			separator.erase(key);
+		if(debug) {
+		  p_R.print("p_R: ");
+		  p_Fp_Sp.print("p_Fp_Sp: ");
+		  p_Sp_R.print("p_Sp_R: ");
 		}
 
-		// remove any variables in the separator, after this integrands = Cp\R\S
-		BOOST_FOREACH(Index key, separator_) integrands.erase(key);
-
-		// form the ordering as [Cp\R\S S\R]
-		vector<Index> ordering; ordering.reserve(integrands.size() + separator.size());
-		BOOST_FOREACH(Index key, integrands) ordering.push_back(key);
-		BOOST_FOREACH(Index key, separator) ordering.push_back(key);
-
-		// eliminate to get marginal
-		typename FACTORGRAPH::variableindex_type varIndex(p_Cp_R);
-		Permutation toFront = Permutation::PullToFront(ordering, varIndex.size());
-		Permutation::shared_ptr toFrontInverse(toFront.inverse());
-		BOOST_FOREACH(const typename FACTORGRAPH::sharedFactor& factor, p_Cp_R) {
-		  factor->permuteWithInverse(*toFrontInverse);
+		// We want to factor into a conditional of the clique variables given the
+		// root and the marginal on the root, integrating out all other variables.
+		// The integrands include any parents of this clique and the variables of
+		// the parent clique.
+		vector<Index> variablesAtBack;
+		variablesAtBack.reserve(this->size() + R->size());
+		BOOST_FOREACH(const Index separatorIndex, this->separator_) {
+		  variablesAtBack.push_back(separatorIndex);
+		  if(debug) cout << "At back (this): " << separatorIndex << endl;
 		}
-		varIndex.permute(toFront);
-		BayesNet<CONDITIONAL> p_S_R = *Inference::EliminateUntil(p_Cp_R, ordering.size(), varIndex);
+		BOOST_FOREACH(const sharedConditional& conditional, *R) {
+		  variablesAtBack.push_back(conditional->key());
+		  if(debug) cout << "At back (root): " << conditional->key() << endl;
+		}
 
-		// remove all integrands
-		for(Index j=0; j<integrands.size(); ++j)
-		  p_S_R.pop_front();
+		Permutation toBack = Permutation::PushToBack(variablesAtBack, R->back()->key() + 1);
+    Permutation::shared_ptr toBackInverse(toBack.inverse());
+    BOOST_FOREACH(const typename CONDITIONAL::Factor::shared_ptr& factor, p_Cp_R) {
+      factor->permuteWithInverse(*toBackInverse); }
+		typename BayesNet<CONDITIONAL>::shared_ptr eliminated(EliminationTree<typename CONDITIONAL::Factor>::Create(p_Cp_R)->eliminate());
+
+		// take only the conditionals for p(S|R)
+		BayesNet<CONDITIONAL> p_S_R;
+		typename BayesNet<CONDITIONAL>::const_reverse_iterator conditional = eliminated->rbegin();
+		BOOST_FOREACH(const sharedConditional& c, *R) {
+		  (void)c; ++conditional; }
+		BOOST_FOREACH(const Index c, this->separator_) {
+		  if(debug)
+		    (*conditional)->print("Taking C|R conditional: ");
+		  (void)c; p_S_R.push_front(*(conditional++)); }
+
+//		for(Index j=0; j<integrands.size(); ++j)
+//		  p_S_R.pop_front();
 
 		// Undo the permutation on the shortcut
-		p_S_R.permuteWithInverse(toFront);
+		p_S_R.permuteWithInverse(toBack);
 
 		// return the parent shortcut P(Sp|R)
 		return p_S_R;
@@ -346,18 +359,19 @@ namespace gtsam {
 	// Because the root clique could be very big.
 	/* ************************************************************************* */
 	template<class CONDITIONAL>
-	template<class FACTORGRAPH> 
-	FACTORGRAPH BayesTree<CONDITIONAL>::Clique::marginal(shared_ptr R) {
+	FactorGraph<typename CONDITIONAL::Factor> BayesTree<CONDITIONAL>::Clique::marginal(shared_ptr R) {
 		// If we are the root, just return this root
 		if (R.get()==this) return *R;
 
 		// Combine P(F|S), P(S|R), and P(R)
-		BayesNet<CONDITIONAL> p_FSR = this->shortcut<FACTORGRAPH>(R);
+		BayesNet<CONDITIONAL> p_FSR = this->shortcut(R);
 		p_FSR.push_front(*this);
 		p_FSR.push_back(*R);
 
 		// Find marginal on the keys we are interested in
-		return Inference::Marginal(FACTORGRAPH(p_FSR), keys());
+		FactorGraph<typename CONDITIONAL::Factor> p_FSRfg(p_FSR);
+
+		return *GenericSequentialSolver<typename CONDITIONAL::Factor>(p_FSR).joint(keys());
 	}
 
 //	/* ************************************************************************* */
@@ -689,44 +703,46 @@ namespace gtsam {
 	// First finds clique marginal then marginalizes that
 	/* ************************************************************************* */
 	template<class CONDITIONAL>
-	template<class FACTORGRAPH>
-	FACTORGRAPH BayesTree<CONDITIONAL>::marginal(Index key) const {
+	typename CONDITIONAL::Factor::shared_ptr BayesTree<CONDITIONAL>::marginal(Index key) const {
 
 		// get clique containing key
 		sharedClique clique = (*this)[key];
 
 		// calculate or retrieve its marginal
-		FACTORGRAPH cliqueMarginal = clique->marginal<FACTORGRAPH>(root_);
+		FactorGraph<typename CONDITIONAL::Factor> cliqueMarginal = clique->marginal(root_);
 
-		// Reorder so that only the requested key is not eliminated
-		typename FACTORGRAPH::variableindex_type varIndex(cliqueMarginal);
-		vector<Index> keyAsVector(1); keyAsVector[0] = key;
-		Permutation toBack(Permutation::PushToBack(keyAsVector, varIndex.size()));
-		Permutation::shared_ptr toBackInverse(toBack.inverse());
-		varIndex.permute(toBack);
-		BOOST_FOREACH(const typename FACTORGRAPH::sharedFactor& factor, cliqueMarginal) {
-		  factor->permuteWithInverse(*toBackInverse);
-		}
+		return GenericSequentialSolver<typename CONDITIONAL::Factor>(cliqueMarginal).marginal(key);
 
-		// partially eliminate, remaining factor graph is requested marginal
-		Inference::EliminateUntil(cliqueMarginal, varIndex.size()-1, varIndex);
-    BOOST_FOREACH(const typename FACTORGRAPH::sharedFactor& factor, cliqueMarginal) {
-      if(factor)
-        factor->permuteWithInverse(toBack);
-    }
-		return cliqueMarginal;
+//		// Reorder so that only the requested key is not eliminated
+//		typename FACTORGRAPH::variableindex_type varIndex(cliqueMarginal);
+//		vector<Index> keyAsVector(1); keyAsVector[0] = key;
+//		Permutation toBack(Permutation::PushToBack(keyAsVector, varIndex.size()));
+//		Permutation::shared_ptr toBackInverse(toBack.inverse());
+//		varIndex.permute(toBack);
+//		BOOST_FOREACH(const typename FACTORGRAPH::sharedFactor& factor, cliqueMarginal) {
+//		  factor->permuteWithInverse(*toBackInverse);
+//		}
+//
+//		// partially eliminate, remaining factor graph is requested marginal
+//		SymbolicSequentialSolver::EliminateUntil(cliqueMarginal, varIndex.size()-1, varIndex);
+//    BOOST_FOREACH(const typename FACTORGRAPH::sharedFactor& factor, cliqueMarginal) {
+//      if(factor)
+//        factor->permuteWithInverse(toBack);
+//    }
+//		return cliqueMarginal;
 	}
 
 	/* ************************************************************************* */
 	template<class CONDITIONAL>
-	template<class FACTORGRAPH>
-	BayesNet<CONDITIONAL> BayesTree<CONDITIONAL>::marginalBayesNet(Index key) const {
+	typename BayesNet<CONDITIONAL>::shared_ptr BayesTree<CONDITIONAL>::marginalBayesNet(Index key) const {
 
 		// calculate marginal as a factor graph
-	  FACTORGRAPH fg = this->marginal<FACTORGRAPH>(key);
+	  typename FactorGraph<typename CONDITIONAL::Factor>::shared_ptr fg(
+	      new FactorGraph<typename CONDITIONAL::Factor>());
+	  fg->push_back(this->marginal(key));
 
 		// eliminate further to Bayes net
-		return *Inference::Eliminate(fg);
+		return GenericSequentialSolver<typename CONDITIONAL::Factor>(*fg).eliminate();
 	}
 
 //	/* ************************************************************************* */

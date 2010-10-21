@@ -20,7 +20,7 @@
 #define GTSAM_MAGIC_KEY
 
 #include <gtsam/slam/smallExample.h>
-#include <gtsam/inference/inference-inl.h>
+#include <gtsam/linear/GaussianSequentialSolver.h>
 
 using namespace std;
 using namespace gtsam;
@@ -40,10 +40,10 @@ TEST(GaussianFactorGraph, createSmoother)
 	LONGS_EQUAL(5,fg2.size());
 
 	// eliminate
-	list<Index> x3var; x3var.push_back(ordering["x3"]);
-  list<Index> x1var; x1var.push_back(ordering["x1"]);
-	GaussianBayesNet p_x3 = *Inference::Eliminate(Inference::Marginal(fg2, x3var));
-	GaussianBayesNet p_x1 = *Inference::Eliminate(Inference::Marginal(fg2, x1var));
+	vector<Index> x3var; x3var.push_back(ordering["x3"]);
+	vector<Index> x1var; x1var.push_back(ordering["x1"]);
+	GaussianBayesNet p_x3 = *GaussianSequentialSolver(*GaussianSequentialSolver(fg2).joint(x3var)).eliminate();
+	GaussianBayesNet p_x1 = *GaussianSequentialSolver(*GaussianSequentialSolver(fg2).joint(x1var)).eliminate();
 	CHECK(assert_equal(*p_x1.back(),*p_x3.front())); // should be the same because of symmetry
 }
 
@@ -52,8 +52,8 @@ TEST( Inference, marginals )
 {
 	// create and marginalize a small Bayes net on "x"
   GaussianBayesNet cbn = createSmallGaussianBayesNet();
-  list<Index> xvar; xvar.push_back(0);
-  GaussianBayesNet actual = *Inference::Eliminate(Inference::Marginal(GaussianFactorGraph(cbn), xvar));
+  vector<Index> xvar; xvar.push_back(0);
+  GaussianBayesNet actual = *GaussianSequentialSolver(*GaussianSequentialSolver(GaussianFactorGraph(cbn)).joint(xvar)).eliminate();
 
   // expected is just scalar Gaussian on x
   GaussianBayesNet expected = scalarGaussian(0, 4, sqrt(2));

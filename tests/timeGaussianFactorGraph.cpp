@@ -22,7 +22,7 @@
 #include <boost/assign/std/list.hpp> // for operator += in Ordering
 #include <gtsam/CppUnitLite/TestHarness.h>
 #include <gtsam/slam/smallExample.h>
-#include <gtsam/inference/inference-inl.h>
+#include <gtsam/linear/GaussianSequentialSolver.h>
 
 using namespace std;
 using namespace gtsam;
@@ -35,7 +35,7 @@ double timeKalmanSmoother(int T) {
 	pair<GaussianFactorGraph,Ordering> smoother_ordering = createSmoother(T);
 	GaussianFactorGraph& smoother(smoother_ordering.first);
 	clock_t start = clock();
-	optimize(*Inference::Eliminate(smoother));
+	GaussianSequentialSolver(smoother).optimize();
 	clock_t end = clock ();
 	double dif = (double)(end - start) / CLOCKS_PER_SEC;
 	return dif;
@@ -50,7 +50,7 @@ double timePlanarSmoother(int N, bool old = true) {
 //  Ordering& ordering(pg.get<1>());
 //  VectorValues& config(pg.get<2>());
 	clock_t start = clock();
-	optimize(*Inference::Eliminate(fg));
+	GaussianSequentialSolver(fg).optimize();
 	clock_t end = clock ();
 	double dif = (double)(end - start) / CLOCKS_PER_SEC;
 	return dif;
@@ -65,7 +65,7 @@ double timePlanarSmootherEliminate(int N, bool old = true) {
 //  Ordering& ordering(pg.get<1>());
 //  VectorValues& config(pg.get<2>());
 	clock_t start = clock();
-	Inference::Eliminate(fg);
+	GaussianSequentialSolver(fg).eliminate();
 	clock_t end = clock ();
 	double dif = (double)(end - start) / CLOCKS_PER_SEC;
 	return dif;

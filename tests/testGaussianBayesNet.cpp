@@ -34,7 +34,7 @@ using namespace boost::assign;
 
 #include <gtsam/linear/GaussianBayesNet.h>
 #include <gtsam/inference/BayesNet.h>
-#include <gtsam/inference/inference-inl.h>
+#include <gtsam/linear/GaussianSequentialSolver.h>
 #include <gtsam/slam/smallExample.h>
 
 using namespace std;
@@ -114,8 +114,7 @@ TEST( GaussianBayesNet, optimize2 )
 
 	fg.add(_x_, -eye(1), _z_, eye(1), 2*ones(1), noise);
 
-	GaussianBayesNet cbn = *Inference::Eliminate(fg);
-  VectorValues actual = optimize(cbn);
+  VectorValues actual = *GaussianSequentialSolver(fg).optimize();
 
   VectorValues expected(vector<size_t>(3,1));
   expected[_x_] = Vector_(1,1.);

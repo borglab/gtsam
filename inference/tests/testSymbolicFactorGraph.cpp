@@ -24,7 +24,7 @@ using namespace boost::assign;
 #include <gtsam/inference/BayesNet-inl.h>
 #include <gtsam/inference/IndexFactor.h>
 #include <gtsam/inference/FactorGraph-inl.h>
-#include <gtsam/inference/inference-inl.h>
+#include <gtsam/inference/SymbolicSequentialSolver.h>
 
 using namespace std;
 using namespace gtsam;
@@ -33,21 +33,20 @@ static const Index vx2 = 0;
 static const Index vx1 = 1;
 static const Index vl1 = 2;
 
-/* ************************************************************************* */
-TEST( SymbolicFactorGraph, EliminateOne )
-{
-	// create a test graph
-	SymbolicFactorGraph fg;
-	fg.push_factor(vx2, vx1);
-
-	VariableIndex<> variableIndex(fg);
-	Inference::EliminateOne(fg, variableIndex, vx2);
-	SymbolicFactorGraph expected;
-	expected.push_back(boost::shared_ptr<IndexFactor>());
-	expected.push_factor(vx1);
-
-	CHECK(assert_equal(expected, fg));
-}
+///* ************************************************************************* */
+//TEST( SymbolicFactorGraph, EliminateOne )
+//{
+//	// create a test graph
+//	SymbolicFactorGraph fg;
+//	fg.push_factor(vx2, vx1);
+//
+//	SymbolicSequentialSolver::EliminateUntil(fg, vx2+1);
+//	SymbolicFactorGraph expected;
+//	expected.push_back(boost::shared_ptr<IndexFactor>());
+//	expected.push_factor(vx1);
+//
+//	CHECK(assert_equal(expected, fg));
+//}
 
 /* ************************************************************************* */
 TEST( SymbolicFactorGraph, constructFromBayesNet )

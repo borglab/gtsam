@@ -31,6 +31,7 @@ using namespace boost::assign;
 
 #include <gtsam/nonlinear/Ordering.h>
 #include <gtsam/linear/GaussianJunctionTree.h>
+#include <gtsam/linear/GaussianSequentialSolver.h>
 #include <gtsam/slam/smallExample.h>
 #include <gtsam/slam/planarSLAM.h>
 
@@ -69,15 +70,15 @@ TEST( GaussianJunctionTree, constructor2 )
   list<GaussianJunctionTree::sharedClique>::const_iterator child1it = child0it; ++child1it;
   GaussianJunctionTree::sharedClique child0 = *child0it;
   GaussianJunctionTree::sharedClique child1 = *child1it;
-	CHECK(assert_equal(frontal2, child1->frontal));
-	CHECK(assert_equal(sep2,     child1->separator));
-	LONGS_EQUAL(4,               child1->size());
-	CHECK(assert_equal(frontal3, child1->children().front()->frontal));
-	CHECK(assert_equal(sep3,     child1->children().front()->separator));
-	LONGS_EQUAL(2,               child1->children().front()->size());
-	CHECK(assert_equal(frontal4, child0->frontal));
-	CHECK(assert_equal(sep4,     child0->separator));
-	LONGS_EQUAL(2,               child0->size());
+	CHECK(assert_equal(frontal2, child0->frontal));
+	CHECK(assert_equal(sep2,     child0->separator));
+	LONGS_EQUAL(4,               child0->size());
+	CHECK(assert_equal(frontal3, child0->children().front()->frontal));
+	CHECK(assert_equal(sep3,     child0->children().front()->separator));
+	LONGS_EQUAL(2,               child0->children().front()->size());
+	CHECK(assert_equal(frontal4, child1->frontal));
+	CHECK(assert_equal(sep4,     child1->separator));
+	LONGS_EQUAL(2,               child1->size());
 }
 
 /* ************************************************************************* */
@@ -176,7 +177,7 @@ TEST(GaussianJunctionTree, slamlike) {
   VectorValues deltaactual = gjt.optimize();
   planarSLAM::Values actual = init.expmap(deltaactual, ordering);
 
-  GaussianBayesNet gbn = *Inference::Eliminate(linearized);
+  GaussianBayesNet gbn = *GaussianSequentialSolver(linearized).eliminate();
   VectorValues delta = optimize(gbn);
   planarSLAM::Values expected = init.expmap(delta, ordering);
 

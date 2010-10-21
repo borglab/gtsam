@@ -25,6 +25,7 @@
 #include <deque>
 #include <iostream>
 #include <boost/shared_ptr.hpp>
+#include <boost/foreach.hpp>
 
 namespace gtsam {
 
@@ -72,6 +73,7 @@ protected:
 
 public:
   VariableIndex() : index_(indexUnpermuted_), nFactors_(0), nEntries_(0) {}
+  template<class FactorGraph> VariableIndex(const FactorGraph& factorGraph, Index nVariables);
   template<class FactorGraph> VariableIndex(const FactorGraph& factorGraph);
 
   Index size() const { return index_.size(); }
@@ -89,6 +91,8 @@ public:
 protected:
   VariableIndex(size_t nVars) : indexUnpermuted_(nVars), index_(indexUnpermuted_), nFactors_(0), nEntries_(0) {}
   void checkVar(Index variable) const { assert(variable < index_.size()); }
+
+  template<class FactorGraph> void fill(const FactorGraph& factorGraph);
 
   factor_iterator factorsBegin(Index variable) { checkVar(variable); return index_[variable].begin(); }
   const_factor_iterator factorsBegin(Index variable) const { checkVar(variable); return index_[variable].begin(); }
@@ -118,6 +122,27 @@ void VariableIndex<Storage>::permute(const Permutation& permutation) {
 /* ************************************************************************* */
 template<class Storage>
 template<class FactorGraph>
+void VariableIndex<Storage>::fill(const FactorGraph& factorGraph) {
+
+  // Build index mapping from variable id to factor index
+  for(size_t fi=0; fi<factorGraph.size(); ++fi)
+    if(factorGraph[fi]) {
+      Index fvari = 0;
+      BOOST_FOREACH(const Index key, factorGraph[fi]->keys()) {
+        if(key < index_.size()) {
+          index_[key].push_back(mapped_factor_type(fi, fvari));
+          ++ fvari;
+          ++ nEntries_;
+        }
+      }
+      ++ nFactors_;
+    }
+
+}
+
+/* ************************************************************************* */
+template<class Storage>
+template<class FactorGraph>
 VariableIndex<Storage>::VariableIndex(const FactorGraph& factorGraph) :
     index_(indexUnpermuted_), nFactors_(0), nEntries_(0) {
 
@@ -135,22 +160,21 @@ VariableIndex<Storage>::VariableIndex(const FactorGraph& factorGraph) :
       }
     }
 
-    // Allocate index
+    // Allocate array
     index_.container().resize(maxVar+1);
     index_.permutation() = Permutation::Identity(maxVar+1);
 
-    // Build index mapping from variable id to factor index
-    for(size_t fi=0; fi<factorGraph.size(); ++fi)
-      if(factorGraph[fi]) {
-        Index fvari = 0;
-        BOOST_FOREACH(const Index key, factorGraph[fi]->keys()) {
-          index_[key].push_back(mapped_factor_type(fi, fvari));
-          ++ fvari;
-          ++ nEntries_;
-        }
-        ++ nFactors_;
-      }
+    fill(factorGraph);
   }
+
+}
+
+/* ************************************************************************* */
+template<class Storage>
+template<class FactorGraph>
+VariableIndex<Storage>::VariableIndex(const FactorGraph& factorGraph, Index nVariables) :
+    indexUnpermuted_(nVariables), index_(indexUnpermuted_), nFactors_(0), nEntries_(0) {
+  fill(factorGraph);
 }
 
 /* ************************************************************************* */

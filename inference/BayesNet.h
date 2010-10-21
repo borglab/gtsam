@@ -94,7 +94,8 @@ namespace gtsam {
 		/** Permute the variables in the BayesNet */
 		void permuteWithInverse(const Permutation& inversePermutation);
 
-		/** Permute the variables when only separator variables need to be permuted.
+		/**
+		 * Permute the variables when only separator variables need to be permuted.
 	   * Returns true if any reordered variables appeared in the separator and
 	   * false if not.
 	   */

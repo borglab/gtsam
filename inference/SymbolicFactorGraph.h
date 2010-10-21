@@ -25,10 +25,12 @@
 #include <gtsam/inference/IndexFactor.h>
 #include <gtsam/inference/BayesNet.h>
 #include <gtsam/inference/IndexConditional.h>
+#include <gtsam/inference/EliminationTree.h>
 
 namespace gtsam {
 
 typedef BayesNet<IndexConditional> SymbolicBayesNet;
+typedef EliminationTree<IndexFactor> SymbolicEliminationTree;
 
 /** Symbolic IndexFactor Graph */
 class SymbolicFactorGraph: public FactorGraph<IndexFactor> {

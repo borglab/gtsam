@@ -35,22 +35,22 @@ int main(int argc, char *argv[]) {
 
   pair<shared_ptr<Pose2Graph>, shared_ptr<Pose2Values> > data = load2D(dataset(datasetname));
 
-  tic("Z 1 order");
+  tic_("Z 1 order");
   Ordering::shared_ptr ordering(data.first->orderingCOLAMD(*data.second));
-  toc("Z 1 order");
+  toc_("Z 1 order");
 
-  tic("Z 2 linearize");
+  tic_("Z 2 linearize");
   GaussianFactorGraph::shared_ptr gfg(data.first->linearize(*data.second, *ordering));
-  toc("Z 2 linearize");
+  toc_("Z 2 linearize");
 
   for(size_t trial = 0; trial < 100; ++trial) {
 
-    tic("Z 3 solve");
+    tic_("Z 3 solve");
     GaussianJunctionTree gjt(*gfg);
     VectorValues soln(gjt.optimize());
-    toc("Z 3 solve");
+    toc_("Z 3 solve");
 
-    tictoc_print();
+    tictoc_print_();
   }
 
   return 0;

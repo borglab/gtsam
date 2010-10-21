@@ -160,7 +160,7 @@ namespace gtsam {
     factors_.reserve(factorGraph.size());
     BOOST_FOREACH(const typename DERIVEDFACTOR::shared_ptr& factor, factorGraph) {
       if(factor)
-        this->push_back(sharedFactor(new FACTOR(*factor)));
+        this->push_back(factor);
       else
         this->push_back(sharedFactor());
     }

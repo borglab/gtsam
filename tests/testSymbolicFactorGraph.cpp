@@ -26,7 +26,7 @@ using namespace boost::assign;
 #include <gtsam/inference/SymbolicFactorGraph.h>
 #include <gtsam/inference/BayesNet-inl.h>
 #include <gtsam/inference/FactorGraph-inl.h>
-#include <gtsam/inference/inference-inl.h>
+#include <gtsam/inference/SymbolicSequentialSolver.h>
 #include <gtsam/nonlinear/Ordering.h>
 
 using namespace std;
@@ -106,23 +106,22 @@ TEST( SymbolicFactorGraph, symbolicFactorGraph )
 //  CHECK(assert_equal(expected,*actual));
 //}
 
-/* ************************************************************************* */
-TEST( SymbolicFactorGraph, eliminateOne )
-{
-  Ordering o; o += "x1","l1","x2";
-	// create a test graph
-	GaussianFactorGraph factorGraph = createGaussianFactorGraph(o);
-	SymbolicFactorGraph fg(factorGraph);
-
-	// eliminate
-	VariableIndex<> varindex(fg);
-	IndexConditional::shared_ptr actual = Inference::EliminateOne(fg, varindex, o["x1"]);
-
-  // create expected symbolic IndexConditional
-  IndexConditional expected(o["x1"],o["l1"],o["x2"]);
-
-  CHECK(assert_equal(expected,*actual));
-}
+///* ************************************************************************* */
+//TEST( SymbolicFactorGraph, eliminateOne )
+//{
+//  Ordering o; o += "x1","l1","x2";
+//	// create a test graph
+//	GaussianFactorGraph factorGraph = createGaussianFactorGraph(o);
+//	SymbolicFactorGraph fg(factorGraph);
+//
+//	// eliminate
+//	IndexConditional::shared_ptr actual = GaussianSequentialSolver::EliminateUntil(fg, o["x1"]+1);
+//
+//  // create expected symbolic IndexConditional
+//  IndexConditional expected(o["x1"],o["l1"],o["x2"]);
+//
+//  CHECK(assert_equal(expected,*actual));
+//}
 
 /* ************************************************************************* */
 TEST( SymbolicFactorGraph, eliminate )
@@ -144,7 +143,7 @@ TEST( SymbolicFactorGraph, eliminate )
 	SymbolicFactorGraph fg(factorGraph);
 
 	// eliminate it
-  SymbolicBayesNet actual = *Inference::Eliminate(fg);
+  SymbolicBayesNet actual = *SymbolicSequentialSolver(fg).eliminate();
 
   CHECK(assert_equal(expected,actual));
 }

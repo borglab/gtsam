@@ -67,7 +67,7 @@ endif
 #----------------------------------------------------------------------------------------------------
 TESTS = $(check_PROGRAMS)
 AM_DEFAULT_SOURCE_EXT = .cpp
-AM_LDFLAGS = $(boost_serialization) -L$(CCOLAMDLib) -lccolamd
+AM_LDFLAGS += $(boost_serialization) -L$(CCOLAMDLib) -lccolamd
 LDADD = libbase.la ../CppUnitLite/libCppUnitLite.a
 
 if USE_BLAS_LINUX

@@ -107,12 +107,10 @@ namespace gtsam {
 
 			/** return the conditional P(S|Root) on the separator given the root */
 			// TODO: create a cached version
-			template<class FACTORGRAPH>
 			BayesNet<CONDITIONAL> shortcut(shared_ptr root);
 
 			/** return the marginal P(C) of the clique */
-			template<class FACTORGRAPH>
-			FACTORGRAPH marginal(shared_ptr root);
+			FactorGraph<typename CONDITIONAL::Factor> marginal(shared_ptr root);
 
 //			/** return the joint P(C1,C2), where C1==this. TODO: not a method? */
 //			template<class Factor>
@@ -257,12 +255,10 @@ namespace gtsam {
 		CliqueData getCliqueData() const;
 
 		/** return marginal on any variable */
-		template<class FACTORGRAPH>
-		FACTORGRAPH marginal(Index key) const;
+		typename CONDITIONAL::Factor::shared_ptr marginal(Index key) const;
 
 		/** return marginal on any variable, as a Bayes Net */
-		template<class FACTORGRAPH>
-		BayesNet<CONDITIONAL> marginalBayesNet(Index key) const;
+		typename BayesNet<CONDITIONAL>::shared_ptr marginalBayesNet(Index key) const;
 
 //		/** return joint on two variables */
 //		template<class Factor>

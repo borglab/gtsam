@@ -21,11 +21,10 @@ namespace gtsam {
 
 /* ************************************************************************* */
 template<class FACTOR>
-typename EliminationTree<FACTOR>::EliminationResult
-EliminationTree<FACTOR>::eliminate_() const {
+typename EliminationTree<FACTOR>::sharedFactor
+EliminationTree<FACTOR>::eliminate_(Conditionals& conditionals) const {
 
-  // Create the Bayes net, which will be returned to the parent. Initially empty...
-	BayesNet bayesNet;
+  set<Index, std::less<Index>, boost::fast_pool_allocator<Index> > separator;
 
   // Create the list of factors to be eliminated, initially empty, and reserve space
   FactorGraph<FACTOR> factors;
@@ -36,19 +35,14 @@ EliminationTree<FACTOR>::eliminate_() const {
 
   // for all subtrees, eliminate into Bayes net and a separator factor, added to [factors]
   BOOST_FOREACH(const shared_ptr& child, subTrees_) {
-    EliminationResult result = child->eliminate_();
-    bayesNet.push_back(result.first); // Bayes net fragment added to Bayes net
-    factors.push_back(result.second); // Separator factor added to [factors]
-  }
+    factors.push_back(child->eliminate_(conditionals)); }
 
   // Combine all factors (from this node and from subtrees) into a joint factor
   sharedFactor jointFactor(FACTOR::Combine(factors, VariableSlots(factors)));
+  assert(jointFactor->front() == this->key_);
+  conditionals[this->key_] = jointFactor->eliminateFirst();
 
-  // Eliminate the resulting joint factor and add the conditional to the bayes net
-  // What remains in the jointFactor will be passed to our parent node
-  bayesNet.push_back(jointFactor->eliminateFirst());
-
-  return EliminationResult(bayesNet, jointFactor);
+  return jointFactor;
 }
 
 /* ************************************************************************* */
@@ -87,18 +81,15 @@ vector<Index> EliminationTree<FACTOR>::ComputeParents(const VariableIndex<>& str
 
 /* ************************************************************************* */
 template<class FACTOR>
-template<class FACTORGRAPH>
+template<class DERIVEDFACTOR>
 typename EliminationTree<FACTOR>::shared_ptr
-EliminationTree<FACTOR>::Create(const FACTORGRAPH& factorGraph) {
-
-  // Create column structure
-  VariableIndex<> varIndex(factorGraph);
+EliminationTree<FACTOR>::Create(const FactorGraph<DERIVEDFACTOR>& factorGraph, const VariableIndex<>& structure) {
 
   // Compute the tree structure
-  vector<Index> parents(ComputeParents(varIndex));
+  vector<Index> parents(ComputeParents(structure));
 
   // Number of variables
-  const size_t n = varIndex.size();
+  const size_t n = structure.size();
 
   static const Index none = numeric_limits<Index>::max();
 
@@ -112,7 +103,7 @@ EliminationTree<FACTOR>::Create(const FACTORGRAPH& factorGraph) {
   }
 
   // Hang factors in right places
-  BOOST_FOREACH(const typename FACTORGRAPH::sharedFactor& derivedFactor, factorGraph) {
+  BOOST_FOREACH(const typename DERIVEDFACTOR::shared_ptr& derivedFactor, factorGraph) {
     // Here we static_cast to the factor type of this EliminationTree.  This
     // allows performing symbolic elimination on, for example, GaussianFactors.
     sharedFactor factor(boost::shared_static_cast<FACTOR>(derivedFactor));
@@ -127,6 +118,14 @@ EliminationTree<FACTOR>::Create(const FACTORGRAPH& factorGraph) {
 #endif
 
   return trees.back();
+}
+
+/* ************************************************************************* */
+template<class FACTOR>
+template<class DERIVEDFACTOR>
+typename EliminationTree<FACTOR>::shared_ptr
+EliminationTree<FACTOR>::Create(const FactorGraph<DERIVEDFACTOR>& factorGraph) {
+  return Create(factorGraph, VariableIndex<>(factorGraph));
 }
 
 /* ************************************************************************* */
@@ -160,8 +159,16 @@ typename EliminationTree<FACTOR>::BayesNet::shared_ptr
 EliminationTree<FACTOR>::eliminate() const {
 
   // call recursive routine
-  EliminationResult result = eliminate_();
-  return typename BayesNet::shared_ptr(new BayesNet(result.first));
+  Conditionals conditionals(this->key_ + 1);
+  (void)eliminate_(conditionals);
+
+  // Add conditionals to BayesNet
+  typename BayesNet::shared_ptr bayesNet(new BayesNet);
+  BOOST_FOREACH(const typename BayesNet::sharedConditional& conditional, conditionals) {
+    if(conditional)
+      bayesNet->push_back(conditional);
+  }
+  return bayesNet;
 }
 
 }

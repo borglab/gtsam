@@ -51,6 +51,12 @@ namespace gtsam {
      */
     GaussianFactorGraph(const GaussianBayesNet& CBN);
 
+    /** Constructor from a factor graph of GaussianFactor or a derived type */
+    template<class DERIVEDFACTOR>
+    GaussianFactorGraph(const FactorGraph<DERIVEDFACTOR>& fg) {
+      push_back(fg);
+    }
+
   	/** Add a null factor */
     void add(const Vector& b) {
     	push_back(sharedFactor(new GaussianFactor(b)));

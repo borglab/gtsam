@@ -25,7 +25,7 @@ using namespace boost::assign;
 
 #include <gtsam/slam/smallExample.h>
 #include <gtsam/inference/SymbolicFactorGraph.h>
-#include <gtsam/inference/inference-inl.h>
+#include <gtsam/inference/SymbolicSequentialSolver.h>
 #include <gtsam/nonlinear/Ordering.h>
 
 using namespace std;
@@ -56,7 +56,7 @@ TEST( SymbolicBayesNet, constructor )
 	SymbolicFactorGraph fg(factorGraph);
 
 	// eliminate it
-  SymbolicBayesNet actual = *Inference::Eliminate(fg);
+  SymbolicBayesNet actual = *SymbolicSequentialSolver(fg).eliminate();
 
   CHECK(assert_equal(expected, actual));
 }

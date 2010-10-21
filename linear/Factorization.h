@@ -22,6 +22,7 @@
 
 #include <stdexcept>
 #include <gtsam/linear/GaussianFactorGraph.h>
+#include <gtsam/linear/GaussianSequentialSolver.h>
 #include <gtsam/inference/inference-inl.h>
 
 namespace gtsam {
@@ -47,7 +48,7 @@ namespace gtsam {
   	 * the resulted linear system
   	 */
   	VectorValues optimize(GaussianFactorGraph& fg) const {
-  	  return gtsam::optimize(*Inference::Eliminate(fg));
+  	  return *GaussianSequentialSolver(fg).optimize();
   	}
 
 		/**

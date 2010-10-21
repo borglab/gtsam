@@ -24,7 +24,7 @@
 #include <gtsam/inference/JunctionTree.h>
 #include <gtsam/inference/inference-inl.h>
 #include <gtsam/inference/VariableSlots-inl.h>
-#include <gtsam/inference/EliminationTree-inl.h>
+#include <gtsam/inference/SymbolicSequentialSolver.h>
 
 #include <boost/foreach.hpp>
 #include <boost/pool/pool_alloc.hpp>
@@ -42,7 +42,7 @@ namespace gtsam {
 		// Symbolic factorization: GaussianFactorGraph -> SymbolicFactorGraph
 		// -> SymbolicBayesNet -> SymbolicBayesTree
 		tic("JT 1.1  symbolic elimination");
-		SymbolicBayesNet::shared_ptr sbn = EliminationTree<IndexFactor>::Create(fg)->eliminate();
+		SymbolicBayesNet::shared_ptr sbn = SymbolicSequentialSolver(fg).eliminate();
 //		SymbolicFactorGraph sfg(fg);
 //		SymbolicBayesNet::shared_ptr sbn_orig = Inference::Eliminate(sfg);
 //		assert(assert_equal(*sbn, *sbn_orig));

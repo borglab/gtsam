@@ -83,7 +83,7 @@ TEST( JunctionTree, eliminate)
   SymbolicJunctionTree jt(fg);
   SymbolicBayesTree::sharedClique actual = jt.eliminate();
 
-  BayesNet<IndexConditional> bn = *Inference::Eliminate(fg);
+  BayesNet<IndexConditional> bn(*SymbolicSequentialSolver(fg).eliminate());
   SymbolicBayesTree expected(bn);
 
 //  cout << "BT from JT:\n";

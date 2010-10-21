@@ -36,74 +36,6 @@ namespace gtsam {
 
 	public:
 
-	  /**
-	   * Eliminate a factor graph in its natural ordering, i.e. eliminating
-	   * variables in order starting from 0.
-	   */
-	  template<class FACTORGRAPH>
-	  static typename FACTORGRAPH::bayesnet_type::shared_ptr Eliminate(const FACTORGRAPH& factorGraph);
-
-    /**
-     * Eliminate a factor graph in its natural ordering, i.e. eliminating
-     * variables in order starting from 0.  Special fast version for symbolic
-     * elimination.
-     */
-//	  template<class FACTOR>
-//    static BayesNet<Conditional>::shared_ptr EliminateSymbolic(const FactorGraph<FACTOR>& factorGraph);
-
-	  /**
-	   * Eliminate a factor graph in its natural ordering, i.e. eliminating
-	   * variables in order starting from 0.  Uses an existing
-	   * variable index instead of building one from scratch.
-	   */
-	  template<class FACTORGRAPH>
-	  static typename FACTORGRAPH::bayesnet_type::shared_ptr Eliminate(
-	      FACTORGRAPH& factorGraph, typename FACTORGRAPH::variableindex_type& variableIndex);
-
-	  /**
-	   * Partially eliminate a factor graph, up to but not including the given
-	   * variable.
-	   */
-    template<class FACTORGRAPH>
-    static typename FACTORGRAPH::bayesnet_type::shared_ptr
-    EliminateUntil(const FACTORGRAPH& factorGraph, Index bound);
-
-    /**
-     * Partially eliminate a factor graph, up to but not including the given
-     * variable.  Use an existing variable index instead of building one from
-     * scratch.
-     */
-    template<class FACTORGRAPH>
-    static typename FACTORGRAPH::bayesnet_type::shared_ptr
-    EliminateUntil(FACTORGRAPH& factorGraph, Index bound, typename FACTORGRAPH::variableindex_type& variableIndex);
-
-	  /**
-	   * Eliminate a single variable, updating an existing factor graph and
-	   * variable index.
-	   */
-    template<class FACTORGRAPH>
-    static typename FACTORGRAPH::bayesnet_type::sharedConditional
-    EliminateOne(FACTORGRAPH& factorGraph, typename FACTORGRAPH::variableindex_type& variableIndex, Index var);
-
-    /**
-     * Eliminate a single variable, updating an existing factor graph and
-     * variable index.  This is a specialized faster version for purely
-     * symbolic factor graphs.
-     */
-//    static boost::shared_ptr<Conditional>
-//    EliminateOneSymbolic(FactorGraph<Factor>& factorGraph, VariableIndex<>& variableIndex, Index var);
-
-    /**
-     * Eliminate all variables except the specified ones.  Internally this
-     * permutes these variables to the end of the ordering, eliminates all
-     * other variables, and then undoes the permutation.  This is
-     * inefficient if multiple marginals are needed - in that case use the
-     * BayesTree which supports efficiently computing marginals for multiple
-     * variables.
-     */
-    template<class FACTORGRAPH, class VARCONTAINER>
-    static FACTORGRAPH Marginal(const FACTORGRAPH& factorGraph, const VARCONTAINER& variables);
-
     /**
      * Compute a permutation (variable ordering) using colamd
      */
@@ -111,16 +43,6 @@ namespace gtsam {
     static boost::shared_ptr<Permutation> PermutationCOLAMD(const VARIABLEINDEXTYPE& variableIndex) { return PermutationCOLAMD(variableIndex, std::vector<Index>()); }
     template<class VARIABLEINDEXTYPE, typename CONSTRAINTCONTAINER>
     static boost::shared_ptr<Permutation> PermutationCOLAMD(const VARIABLEINDEXTYPE& variableIndex, const CONSTRAINTCONTAINER& constrainLast);
-
-//    /**
-//     * Join several factors into one.  This involves determining the set of
-//     * shared variables and the correct variable positions in the new joint
-//     * factor.
-//     */
-//    template<class FACTORGRAPH, typename InputIterator>
-//    static typename FACTORGRAPH::shared_factor Combine(const FACTORGRAPH& factorGraph,
-//        InputIterator indicesBegin, InputIterator indicesEnd);
-
 
 	};
 
