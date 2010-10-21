@@ -328,7 +328,7 @@ namespace gtsam {
 		public:
 
 			// traits for playing nice with STL
-			typedef ptrdiff_t difference_type; // correct ?
+			typedef ptrdiff_t difference_type;
 			typedef std::forward_iterator_tag iterator_category;
 			typedef std::pair<KEY, VALUE> value_type;
 			typedef const value_type* pointer;
@@ -386,7 +386,7 @@ namespace gtsam {
 
 		}; // const_iterator
 
-		// hack to make BTree work with BOOST_FOREACH
+		// to make BTree work with BOOST_FOREACH
 		// We do *not* want a non-const iterator
 		typedef const_iterator iterator;
 

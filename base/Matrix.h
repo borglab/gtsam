@@ -213,8 +213,6 @@ void insertColumn(Matrix& A, const Vector& col, size_t i, size_t j);
  */
 Vector row_(const Matrix& A, size_t j);
 
-
-
 /**
  * solve AX=B via in-place Lu factorization and backsubstitution
  * After calling, A contains LU, B the solved RHS vectors
