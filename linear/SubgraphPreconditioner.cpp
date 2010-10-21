@@ -50,17 +50,6 @@ namespace gtsam {
 	/* ************************************************************************* */
 	double SubgraphPreconditioner::error(const VectorValues& y) const {
 
-//		Errors e;
-//		// Use BayesNet order to add y contributions in order
-//		BOOST_FOREACH(GaussianConditional::shared_ptr cg, *Rc1_) {
-//			const Symbol& j = cg->key();
-//			e.push_back(y[j]); // append y
-//		}
-//		// Add A2 contribution
-//		VectorValues x = this->x(y);
-//		Errors e2 = Ab2_->errors(x);
-//		e.splice(e.end(), e2);
-//		return 0.5 * dot(e, e);
 
 
 		Errors e(y);
@@ -84,14 +73,6 @@ namespace gtsam {
 	// Apply operator A, A*y = [I;A2*inv(R1)]*y = [y; A2*inv(R1)*y]
 	Errors SubgraphPreconditioner::operator*(const VectorValues& y) const {
 
-//		Errors e;
-//
-//		// Use BayesNet order to add y contributions in order
-//		BOOST_FOREACH(GaussianConditional::shared_ptr cg, *Rc1_) {
-//			const Symbol& j = cg->key();
-//			e.push_back(y[j]); // append y
-//		}
-
 		Errors e(y);
 
 		// Add A2 contribution
@@ -107,17 +88,6 @@ namespace gtsam {
 	// In-place version that overwrites e
 	void SubgraphPreconditioner::multiplyInPlace(const VectorValues& y, Errors& e) const {
 
-//		Errors::iterator ei = e.begin();
-//		// Use BayesNet order to add y contributions in order
-//		BOOST_FOREACH(GaussianConditional::shared_ptr cg, *Rc1_) {
-//			const Symbol& j = cg->key();
-//			*ei = y[j]; // append y
-//			ei++;
-//		}
-//		// Add A2 contribution
-//		VectorValues x = y; // TODO avoid ?
-//		gtsam::backSubstituteInPlace(*Rc1_, x); // x=inv(R1)*y
-//		Ab2_->multiplyInPlace(x,ei); // use iterator version
 
 		Errors::iterator ei = e.begin();
 		for ( Index i = 0 ; i < y.size() ; ++i, ++ei ) {
@@ -134,20 +104,6 @@ namespace gtsam {
 	// Apply operator A', A'*e = [I inv(R1')*A2']*e = e1 + inv(R1')*A2'*e2
 	VectorValues SubgraphPreconditioner::operator^(const Errors& e) const {
 
-//		VectorValues y;
-//
-//		// Use BayesNet order to remove y contributions in order
-//		Errors::const_iterator it = e.begin();
-//		BOOST_FOREACH(GaussianConditional::shared_ptr cg, *Rc1_) {
-//			const Symbol& j = cg->key();
-//			const Vector& ej = *(it++);
-//			y.insert(j,ej);
-//		}
-//
-//		// get A2 part
-//		transposeMultiplyAdd2(1.0,it,e.end(),y);
-//
-//		return y;
 
 		Errors::const_iterator it = e.begin();
 		VectorValues y = zero();
@@ -162,15 +118,6 @@ namespace gtsam {
 	void SubgraphPreconditioner::transposeMultiplyAdd
 		(double alpha, const Errors& e, VectorValues& y) const {
 
-//		// Use BayesNet order to remove y contributions in order
-//		Errors::const_iterator it = e.begin();
-//		BOOST_FOREACH(GaussianConditional::shared_ptr cg, *Rc1_) {
-//			const Symbol& j = cg->key();
-//			const Vector& ej = *(it++);
-//			axpy(alpha,ej,y[j]);
-//		}
-//		// get A2 part
-//		transposeMultiplyAdd2(alpha,it,e.end(),y);
 
 		Errors::const_iterator it = e.begin();
 		for ( Index i = 0 ; i < y.size() ; ++i, ++it ) {
@@ -191,10 +138,6 @@ namespace gtsam {
 		while (it != end)
 		e2.push_back(*(it++));
 
-		// Old code:
-		// VectorValues x = *Ab2_ ^ e2; // x = A2'*e2
-		// y += alpha * gtsam::backSubstituteTranspose(*Rc1_, x); // inv(R1')*x;
-		// New Code:
 		VectorValues x = VectorValues::zero(y); // x = 0
 		Ab2_->transposeMultiplyAdd(1.0,e2,x);   // x += A2'*e2
 		axpy(alpha, gtsam::backSubstituteTranspose(*Rc1_, x), y); // y += alpha*inv(R1')*x

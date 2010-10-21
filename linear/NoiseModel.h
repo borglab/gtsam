@@ -190,9 +190,6 @@ namespace gtsam {
 		}; // Gaussian
 
 
-		// FD: does not work, ambiguous overload :-(
-		// inline Vector operator*(const Gaussian& R, const Vector& v) {return R.whiten(v);}
-
 		/**
 		 * A diagonal noise model implements a diagonal covariance matrix, with the
 		 * elements of the diagonal specified in a Vector.  This class has no public

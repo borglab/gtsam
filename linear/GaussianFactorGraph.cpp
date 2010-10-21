@@ -26,7 +26,7 @@
 #include <gtsam/inference/FactorGraph-inl.h>
 #include <gtsam/inference/inference-inl.h>
 #include <gtsam/linear/iterative.h>
-//#include <gtsam/linear/GaussianJunctionTree.h>
+
 
 using namespace std;
 using namespace gtsam;
@@ -104,17 +104,6 @@ void GaussianFactorGraph::multiplyInPlace(const VectorValues& x,
 	}
 }
 
-///* ************************************************************************* */
-//VectorValues GaussianFactorGraph::operator^(const Errors& e) const {
-//	VectorValues x;
-//	// For each factor add the gradient contribution
-//	Errors::const_iterator it = e.begin();
-//	BOOST_FOREACH(const sharedFactor& Ai,factors_) {
-//		VectorValues xi = (*Ai)^(*(it++));
-//		x.insertAdd(xi);
-//	}
-//	return x;
-//}
 
 /* ************************************************************************* */
 // x += alpha*A'*e

@@ -36,8 +36,6 @@ void optimize(const GaussianISAM::sharedClique& clique, VectorValues& result) {
     result[cg->key()] = x;   // store result in partial solution
   }
 	BOOST_FOREACH(const GaussianISAM::sharedClique& child, clique->children_) {
-//	list<GaussianISAM::Clique::shared_ptr>::const_iterator child;
-//	for (child = clique->children_.begin(); child != clique->children_.end(); child++) {
 		optimize(child, result);
 	}
 }

@@ -117,9 +117,6 @@ namespace gtsam {
 		/* In-place version e <- A*x that takes an iterator. */
 		void multiplyInPlace(const VectorValues& x, const Errors::iterator& e) const;
 
-//		/** return A^e */
-//		VectorValues operator^(const Errors& e) const;
-
 		/** x += alpha*A'*e */
 		void transposeMultiplyAdd(double alpha, const Errors& e, VectorValues& x) const;
 
@@ -270,28 +267,7 @@ namespace gtsam {
           dims_[*var] = factor->getDim(var);
       }
     }
-//    for(Index var=0; var<dims_.size(); ++var) {
-//#ifndef NDEBUG
-//      if(var >= varIndex.dims_.size() || varIndex.dims_[var] == 0)
-//        assert(dims_[var] != 0);
-//      else if(varIndex.dims_[var] != 0 && dims_[var] != 0)
-//        assert(dims_[var] == varIndex.dims_[var]);
-//#endif
-//      if(dims_[var] == 0)
-//        dims_[var] = varIndex.dims_[var];
-//    }
   }
 
-//	/**
-//	 * Returns the augmented matrix version of a set of factors
-//	 * with the corresponding noiseModel
-//	 * @param factors is the set of factors to combine
-//	 * @param ordering of variables needed for matrix column order
-//	 * @return the augmented matrix and a noise model
-//	 */
-//	template <class FACTORS>
-//	std::pair<Matrix, SharedDiagonal> combineFactorsAndCreateMatrix(
-//			const FACTORS& factors,
-//			const Ordering& order, const Dimensions& dimensions);
 
 } // namespace gtsam

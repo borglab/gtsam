@@ -45,11 +45,6 @@ public:
   typedef boost::numeric::ublas::vector_range<Vector> mapped_type;
   typedef boost::numeric::ublas::vector_range<const Vector> const_mapped_type;
 
-//  /**
-//   * Constructor requires an existing GaussianVariableIndex to get variable
-//   * dimensions.
-//   */
-//  VectorValues(const GaussianVariableIndex& variableIndex);
 
   /**
    * Default constructor creates an empty VectorValues.  reserve(...) must be
@@ -203,15 +198,6 @@ public:
 };
 
 
-//inline VectorValues::VectorValues(const GaussianVariableIndex& variableIndex) : varStarts_(variableIndex.size()+1) {
-//  size_t varStart = 0;
-//  varStarts_[0] = 0;
-//  for(Index var=0; var<variableIndex.size(); ++var) {
-//    varStart += variableIndex.dim(var);
-//    varStarts_[var+1] = varStart;
-//  }
-//  values_.resize(varStarts_.back(), false);
-//}
 
 template<class CONTAINER>
 inline VectorValues::VectorValues(const CONTAINER& dimensions) : varStarts_(dimensions.size()+1) {

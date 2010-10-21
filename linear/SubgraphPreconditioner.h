@@ -55,13 +55,6 @@ namespace gtsam {
 		 */
 		SubgraphPreconditioner(sharedFG& Ab1, sharedFG& Ab2, sharedBayesNet& Rc1,	sharedValues& xbar);
 
-//		std::pair<Matrix,Vector> Ab1(const Ordering& ordering) const { return Ab1_->matrix(ordering); }
-//		std::pair<Matrix,Vector> Ab2(const Ordering& ordering) const { return Ab2_->matrix(ordering); }
-//		Matrix A1(const Ordering& ordering) const { return Ab1_->sparse(ordering); }
-//		Matrix A2(const Ordering& ordering) const { return Ab2_->sparse(Ab1_->columnIndices(ordering)); }
-//		Vector b1() const { return Ab1_->rhsVector(); }
-//		Vector b2() const { return Ab2_->rhsVector(); }
-//		VectorValues assembleValues(const Vector& v, const Ordering& ordering) const { return Ab1_->assembleValues(v, ordering); }
 
 	    /**
 	     * Add zero-mean i.i.d. Gaussian prior terms to each variable
