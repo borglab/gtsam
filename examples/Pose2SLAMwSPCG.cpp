@@ -24,6 +24,7 @@
 #include <gtsam/inference/FactorGraph-inl.h>
 #include <gtsam/linear/SubgraphSolver-inl.h>
 #include <gtsam/nonlinear/NonlinearOptimizer-inl.h>
+#include <gtsam/nonlinear/NonlinearOptimization-inl.h>
 #include <gtsam/slam/pose2SLAM.h>
 
 using namespace std;
@@ -45,25 +46,28 @@ void generateData() ;
 /* ************************************************************************* */
 int main(void) {
 
+	const bool bNewInterface = true ;
 	const SharedGaussian sigma(noiseModel::Unit::Create(0.1));
 
 	// generate measurement and initial configuration
 	generateData() ;
 
-	cout << "Initialize .... " << endl;
-	SPCGOptimizer::shared_solver solver(new SPCGOptimizer::solver(*G, initial)) ;
-	sharedValue SV(new Values(initial)) ;
-	SPCGOptimizer optimizer(G, SV, solver) ;
+	if ( bNewInterface == true ) {
+		result = optimizeSPCG(*G, initial, NonlinearOptimizationParameters());
+	}
+	else {
+		cout << "Initialize .... " << endl;
+		SPCGOptimizer::shared_solver solver(new SPCGOptimizer::solver(*G, initial)) ;
+		sharedValue SV(new Values(initial)) ;
+		SPCGOptimizer optimizer(G, SV, solver) ;
+		cout << "before optimization, sum of error is " << optimizer.error() << endl;
+		cout << "Optimize .... " << endl;
+		NonlinearOptimizationParameters parameter;
+		SPCGOptimizer optimizer2 = optimizer.levenbergMarquardt(parameter);
+		cout << "after optimization, sum of error is " << optimizer2.error() << endl;
+		result = *optimizer2.config() ;
+	}
 
-	cout << "before optimization, sum of error is " << optimizer.error() << endl;
-
-	cout << "Optimize .... " << endl;
-	NonlinearOptimizationParameters parameter;
-	SPCGOptimizer optimizer2 = optimizer.levenbergMarquardt(parameter);
-
-	cout << "after optimization, sum of error is " << optimizer2.error() << endl;
-
-	result = *optimizer2.config() ;
 	result.print("result") ;
 
 	return 0 ;

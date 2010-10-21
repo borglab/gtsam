@@ -20,6 +20,7 @@
 #pragma once
 
 #include <gtsam/linear/Factorization.h>
+#include <gtsam/linear/SubgraphSolver-inl.h>
 #include <gtsam/nonlinear/NonlinearOptimizer-inl.h>
 #include <gtsam/nonlinear/NonlinearOptimization.h>
 
@@ -60,7 +61,18 @@ namespace gtsam {
 	 */
 	template<class G, class T>
 	T	optimizeSPCG(const G& graph, const T& initialEstimate, const NonlinearOptimizationParameters& parameters) {
-		throw runtime_error("optimizeSPCG: not implemented");
+
+		// initial optimization state is the same in both cases tested
+		typedef NonlinearOptimizer<G, T, SubgraphPreconditioner, SubgraphSolver<G,T> > SPCGOptimizer;
+		typename SPCGOptimizer::shared_solver solver(new SubgraphSolver<G,T>(graph, initialEstimate));
+		SPCGOptimizer optimizer(
+				boost::make_shared<const G>(graph),
+				boost::make_shared<const T>(initialEstimate),
+				solver);
+
+		// Levenberg-Marquardt
+		SPCGOptimizer result = optimizer.levenbergMarquardt(parameters);
+		return *result.config();
 	}
 
 	/**
@@ -75,9 +87,11 @@ namespace gtsam {
 		case MULTIFRONTAL:
 			return optimizeMultiFrontal<G,T>(graph, initialEstimate, parameters);
 		case SPCG:
-			return optimizeSPCG<G,T>(graph, initialEstimate, parameters) ;
+			throw runtime_error("optimize: SPCG not supported yet due to the specific pose constraint");
+//			return optimizeSPCG<G,T>(graph, initialEstimate, parameters) ;
+			break;
 		}
-		throw runtime_error("optimizeSPCG: undefined solver");
+		throw runtime_error("optimize: undefined solver");
 	}
 
 } //namespace gtsam
