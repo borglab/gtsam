@@ -20,7 +20,7 @@ The code is organized according to the following directory structure:
   slam				SLAM and visual SLAM application code
   
 All of the above contain code and tests, and build local shared libraries that are then
-bundled in a top-level shared library libgtsam.la. After his is built, you can also run
+bundled in a top-level shared library libgtsam.la. After this is built, you can also run
 the more involved tests that test the entire library:  
   
   tests				more involved tests that depend on slam
@@ -38,78 +38,74 @@ Finally, there are some local libraries built needed in the rest of the code:
   CppUnitLite	unit test library
   doc					documentation
   m4					local M4 macros
-  spqr_mini		Core frontal solver from SuiteSparse (will probably go as not LGPL)
-
 
 Boost Dependencies:
 ------------------
 The GTSAM library is based on the 'Boost C++ Libraries' which can be
 found here: http://www.boost.org/. 
 Donwload the lates version and extract Boost in any place. To this
-place the compiler will be linking.
+place the compiler will be linking. 
 
 - On Linux BOOST can also be installed with a packaged manager.
-- On Mac OS Mac Port can be used.
+- On Mac OS Mac Ports can be used.
 
 For example the Boost path could be '/opt/local/include/' on a typical
 Mac system, where you should be able to find one of the header files:
 /opt/local/include/boost/config.hpp 
 
-If your boost files are on a different place change the path according
+If your boost files are in a different place change the path according
 to your path.
 
 The path to the Boost files can be set as an environmental variable in
-the startup scrip. For a Bash shell the startup file is ~/.bashrc
+the startup script. For a Bash shell the startup file is ~/.bashrc
 put the following command in this file:
 export BOOST_DIR=/opt/local/include/ 
 
 Installation:
 -------------
 To finally install the library go into the directory where you unpacked the 
-GTSAM library, run the command below for example:
-$] ./configure --with-toolbox=$HOME/toolbox/ --with-boost=/opt/local/include/
+GTSAM library. We recommend you do an out-of-source build, as described in the
+next section. However, this is not required:
+
+Standard Build:
+---------------
+
+run the command below to configure the library:
+
+$] ./configure --with-toolbox=$HOME/toolbox/ 
 
 where the path after --with-toolbox should point to the directory you want to have the gtsam
-matlab scripts installed in.
+matlab scripts installed in. You have to set it to an existing directory. 
+After successful installation there will be a gtsam directory with all Matlab GTSAM Toolbox files.
 
-This command will configure the makefile for compiling the GTSAM library.
+The configure script will attempt to find the Boost C++ library on your system. If you installed
+ Boost in a non-standard place, you have to to specify an additional flag to the configure script:
 
-The 'toolbox' flag sets the path where you want to install the GTSAM Matlab Toolbox.
-You have to set it to an existing directory. After successful installation there
-will be a gtsam directory with all Matlab GTSAM Toolbox files.
+$] ./configure --with-toolbox=$HOME/toolbox/ --with-boost=/path/to/boost/include/
 
-The 'boost' flag sets the path where you installed or copied the BOOST C++ Library.
-The path has to be set to the top boost directory. In this directory there are a bunch
-of folders (e.g. boost, doc, libs ....).
-Set the path to this folder.
-  
-
-After configure you makefile you have to compile the library
+After configuring your makefile you have to compile the library
 Type:
 $] make
 $] make install
 
-Parallel Build
-----------------
-
+Out-of-source build:
+--------------------
 The above will put object files and executables in the source directories. If you like, it is 
 very easy to configure the libraries to put all these in a parallel build tree so they do not 
 clutter the source tree. To do this, instead of running configure in the gtsam directory itself, 
-run it in sub-directory of choice, e.g.:
+run it in sub-directory of choice, e.g., starting out in the main GTSAM folder:
 
 $] mkdir build
 $] cd build
-$] ../configure --with-toolbox=$HOME/toolbox/ --with-boost=/opt/local/include/
+$] ../configure --with-toolbox=$HOME/toolbox/
 $] make install
 
 Built-in Unit Tests:
 ----------------
 There is one more optional step in which you can invoke the unit tests included in the gtsam libraries. 
 $] make check
-By verifying all the test results are positive, you can make sure that the functionalities of the gtsam
+By verifying all the test results are positive, you can make sure that the functionalities of the GTSAM
 libraries are correct.
-
-The toolbox directory flag is where you want to compile the GTSAM Matlab toolbox.
 
 Compile Matlab Toolbox:
 -----------------------
