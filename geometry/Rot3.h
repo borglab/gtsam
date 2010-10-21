@@ -160,7 +160,7 @@ namespace gtsam {
     /** Exponential map at identity - create a rotation from canonical coordinates
      * using Rodriguez' formula
      */
-    static Rot3 Expmap(const Vector& v)  {
+		static Rot3 Expmap(const Vector& v)  {
     	if(zero(v)) return Rot3();
     	else return rodriguez(v);
     }

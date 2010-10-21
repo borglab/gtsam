@@ -276,11 +276,11 @@ TEST( Rot3, compose )
 	CHECK(assert_equal(expected,actual));
 
 	Matrix numericalH1 = numericalDerivative21(testing::compose<Rot3>, R1,
-			R2, 1e-5);
+			R2, 1e-4);
 	CHECK(assert_equal(numericalH1,actualH1));
 
 	Matrix numericalH2 = numericalDerivative22(testing::compose<Rot3>, R1,
-			R2, 1e-5);
+			R2, 1e-4);
 	CHECK(assert_equal(numericalH2,actualH2));
 }
 
@@ -294,7 +294,7 @@ TEST( Rot3, inverse )
 	CHECK(assert_equal(I,R*R.inverse(actualH)));
 	CHECK(assert_equal(I,R.inverse()*R));
 
-	Matrix numericalH = numericalDerivative11(testing::inverse<Rot3>, R, 1e-5);
+	Matrix numericalH = numericalDerivative11(testing::inverse<Rot3>, R, 1e-4);
 	CHECK(assert_equal(numericalH,actualH));
 }
 
@@ -314,10 +314,10 @@ TEST( Rot3, between )
 	Rot3 actual = R1.between(R2, actualH1, actualH2);
 	CHECK(assert_equal(expected,actual));
 
-	Matrix numericalH1 = numericalDerivative21(testing::between<Rot3> , R1, R2, 1e-5);
+	Matrix numericalH1 = numericalDerivative21(testing::between<Rot3> , R1, R2, 1e-4);
 	CHECK(assert_equal(numericalH1,actualH1));
 
-	Matrix numericalH2 = numericalDerivative22(testing::between<Rot3> , R1, R2, 1e-5);
+	Matrix numericalH2 = numericalDerivative22(testing::between<Rot3> , R1, R2, 1e-4);
 	CHECK(assert_equal(numericalH2,actualH2));
 }
 

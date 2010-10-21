@@ -168,10 +168,10 @@ TEST( Pose3, compose )
 	Matrix actualDcompose1, actualDcompose2;
 	T2.compose(T2, actualDcompose1, actualDcompose2);
 
-	Matrix numericalH1 = numericalDerivative21(testing::compose<Pose3>, T2, T2, 1e-5);
+	Matrix numericalH1 = numericalDerivative21(testing::compose<Pose3>, T2, T2, 1e-4);
 	CHECK(assert_equal(numericalH1,actualDcompose1,5e-5));
 
-	Matrix numericalH2 = numericalDerivative22(testing::compose<Pose3>, T2, T2, 1e-5);
+	Matrix numericalH2 = numericalDerivative22(testing::compose<Pose3>, T2, T2, 1e-4);
 	CHECK(assert_equal(numericalH2,actualDcompose2));
 }
 
@@ -186,10 +186,10 @@ TEST( Pose3, compose2 )
 	Matrix actualDcompose1, actualDcompose2;
 	T1.compose(T2, actualDcompose1, actualDcompose2);
 
-	Matrix numericalH1 = numericalDerivative21(testing::compose<Pose3>, T1, T2, 1e-5);
+	Matrix numericalH1 = numericalDerivative21(testing::compose<Pose3>, T1, T2, 1e-4);
 	CHECK(assert_equal(numericalH1,actualDcompose1,5e-5));
 
-	Matrix numericalH2 = numericalDerivative22(testing::compose<Pose3>, T1, T2, 1e-5);
+	Matrix numericalH2 = numericalDerivative22(testing::compose<Pose3>, T1, T2, 1e-4);
 	CHECK(assert_equal(numericalH2,actualDcompose2));
 }
 
@@ -457,10 +457,10 @@ TEST( Pose3, between )
 	Pose3 actual = T2.between(T3, actualDBetween1,actualDBetween2);
 	CHECK(assert_equal(expected,actual));
 
-	Matrix numericalH1 = numericalDerivative21(testing::between<Pose3> , T2, T3, 1e-5);
+	Matrix numericalH1 = numericalDerivative21(testing::between<Pose3> , T2, T3, 1e-4);
 	CHECK(assert_equal(numericalH1,actualDBetween1,5e-5));
 
-	Matrix numericalH2 = numericalDerivative22(testing::between<Pose3> , T2, T3, 1e-5);
+	Matrix numericalH2 = numericalDerivative22(testing::between<Pose3> , T2, T3, 1e-4);
 	CHECK(assert_equal(numericalH2,actualDBetween2));
 }
 

@@ -199,7 +199,7 @@ namespace gtsam {
   /* ************************************************************************* */
   Rot3 Rot3::compose (const Rot3& R2,
 	boost::optional<Matrix&> H1, boost::optional<Matrix&> H2) const {
-	  if (H1) *H1 = R2.transpose();
+		if (H1) *H1 = R2.transpose();
 	  if (H2) *H2 = I3;
 	  return *this * R2;
   }
