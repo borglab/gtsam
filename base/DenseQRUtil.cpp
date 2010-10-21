@@ -133,15 +133,13 @@ namespace gtsam {
 		double wscale = 0;
 		double wssq = 0;
 
-//		cholmod_common cc;
-//		cholmod_l_start(&cc);
 
 		// todo: do something with the rank
 		long rank = DenseQR(m, n, npiv, tol, ntol, fchunk,
 				a, Stair, Rdead, Tau, W, &wscale, &wssq);
     toc("householder_denseqr: denseqr_front");
 
-//#ifndef NDEBUG
+
 		for(long j=0; j<npiv; ++j)
 		  if(Rdead[j]) {
 		    cout << "In householder_denseqr, aborting because some columns were found to be\n"
@@ -156,7 +154,6 @@ namespace gtsam {
 		    cout << endl;
 		    exit(1);
 		  }
-//#endif
 
     tic("householder_denseqr: col->row");
 		long k0 = 0;
@@ -170,14 +167,11 @@ namespace gtsam {
 				A(i,j) = a[k];
 		}
 
-//    ublas::matrix_range<ublas::matrix<double,ublas::column_major> > Acolsub(
-//        ublas::project(Acolwise, ublas::range(0, min(m,n)), ublas::range(0,n)));
-//    ublas::matrix_range<Matrix> Asub(ublas::project(A, ublas::range(0, min(m,n)), ublas::range(0,n)));
-//		ublas::noalias(Asub) = ublas::triangular_adaptor<typeof(Acolsub), ublas::upper>(Acolsub);
+
 
     toc("householder_denseqr: col->row");
 
-//		cholmod_l_finish(&cc);
+
 
 		if(allocedStair) delete[] Stair;
 
@@ -203,15 +197,12 @@ namespace gtsam {
     double wscale = 0;
     double wssq = 0;
 
-//    cholmod_common cc;
-//    cholmod_l_start(&cc);
 
     // todo: do something with the rank
     long rank = DenseQR(m, n, npiv, tol, ntol, fchunk,
         A.data().begin(), Stair, Rdead, Tau, W, &wscale, &wssq);
     toc("householder_denseqr: denseqr_front");
 
-//#ifndef NDEBUG
     for(long j=0; j<npiv; ++j)
       if(Rdead[j]) {
         cout << "In householder_denseqr, aborting because some columns were found to be\n"
@@ -226,9 +217,7 @@ namespace gtsam {
         cout << endl;
         exit(1);
       }
-//#endif
 
-//    cholmod_l_finish(&cc);
 
     toc("householder_denseqr");
 

@@ -213,8 +213,7 @@ void insertColumn(Matrix& A, const Vector& col, size_t i, size_t j);
  */
 Vector row_(const Matrix& A, size_t j);
 
-// left multiply with scalar
-//inline Matrix operator*(double s, const Matrix& A) { return A*s;}
+
 
 /**
  * solve AX=B via in-place Lu factorization and backsubstitution

@@ -38,8 +38,8 @@ public:
   typedef std::set<VALUE, std::less<VALUE>, boost::fast_pool_allocator<VALUE> > Base;
 
   /** Constructor from a range, passes through to base class */
-  template<typename InputIterator>
-  FastSet(InputIterator first, InputIterator last) : Base(first, last) {}
+  template<typename INPUTITERATOR>
+  FastSet(INPUTITERATOR first, INPUTITERATOR last) : Base(first, last) {}
 
   /** Copy constructor from another FastMap */
   FastSet(const FastSet<VALUE>& x) : Base(x) {}

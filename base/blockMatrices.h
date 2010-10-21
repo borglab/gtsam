@@ -29,15 +29,15 @@ namespace gtsam {
  * reference to the range.  The stored range stores a reference to the original
  * matrix.
  */
-template<class Matrix>
-class BlockColumn : public boost::numeric::ublas::vector_expression<BlockColumn<Matrix> > {
+template<class MATRIX>
+class BlockColumn : public boost::numeric::ublas::vector_expression<BlockColumn<MATRIX> > {
 protected:
-  typedef boost::numeric::ublas::matrix_range<Matrix> Range;
+  typedef boost::numeric::ublas::matrix_range<MATRIX> Range;
   typedef boost::numeric::ublas::matrix_column<Range> Base;
   Range range_;
   Base base_;
 public:
-  typedef BlockColumn<Matrix> Self;
+  typedef BlockColumn<MATRIX> Self;
   typedef typename Base::matrix_type matrix_type;
   typedef typename Base::size_type size_type;
   typedef typename Base::difference_type difference_type;
@@ -50,7 +50,7 @@ public:
   typedef typename Base::iterator iterator;
   typedef typename Base::const_iterator const_iterator;
 
-  BlockColumn(const boost::numeric::ublas::matrix_range<Matrix>& block, size_t column) :
+  BlockColumn(const boost::numeric::ublas::matrix_range<MATRIX>& block, size_t column) :
     range_(block), base_(range_, column) {}
   BlockColumn(const BlockColumn& rhs) :
     range_(rhs.range_), base_(rhs.base_) {}
@@ -83,14 +83,14 @@ public:
  * This class also has three parameters that can be changed after construction
  * that change the
  */
-template<class Matrix>
+template<class MATRIX>
 class VerticalBlockView {
 public:
-  typedef Matrix matrix_type;
-  typedef typename boost::numeric::ublas::matrix_range<Matrix> block_type;
-  typedef typename boost::numeric::ublas::matrix_range<const Matrix> const_block_type;
-  typedef BlockColumn<Matrix> column_type;
-  typedef BlockColumn<const Matrix> const_column_type;
+  typedef MATRIX matrix_type;
+  typedef typename boost::numeric::ublas::matrix_range<MATRIX> block_type;
+  typedef typename boost::numeric::ublas::matrix_range<const MATRIX> const_block_type;
+  typedef BlockColumn<MATRIX> column_type;
+  typedef BlockColumn<const MATRIX> const_column_type;
 
 protected:
   matrix_type& matrix_;
@@ -104,20 +104,30 @@ public:
   VerticalBlockView(matrix_type& matrix);
 
   /** Construct from iterators over the sizes of each vertical block */
-  template<typename Iterator>
-  VerticalBlockView(matrix_type& matrix, Iterator firstBlockDim, Iterator lastBlockDim);
+  template<typename ITERATOR>
+  VerticalBlockView(matrix_type& matrix, ITERATOR firstBlockDim, ITERATOR lastBlockDim);
 
   /** Construct from a vector of the sizes of each vertical block, resize the
    * matrix so that its height is matrixNewHeight and its width fits the given
    * block dimensions.
    */
-  template<typename Iterator>
-  VerticalBlockView(matrix_type& matrix, Iterator firstBlockDim, Iterator lastBlockDim, size_t matrixNewHeight);
-
+  template<typename ITERATOR>
+  VerticalBlockView(matrix_type& matrix, ITERATOR firstBlockDim, ITERATOR lastBlockDim, size_t matrixNewHeight);
+  
+  /** Row size 
+   */
   size_t size1() const { assertInvariants(); return rowEnd_ - rowStart_; }
+  
+  /** Column size
+   */ 
   size_t size2() const { assertInvariants(); return variableColOffsets_.back() - variableColOffsets_[blockStart_]; }
+  
+  
+  /** Block count
+   */
   size_t nBlocks() const { assertInvariants(); return variableColOffsets_.size() - 1 - blockStart_; }
 
+  
   block_type operator()(size_t block) {
     return range(block, block+1);
   }
@@ -183,8 +193,8 @@ public:
   /** Copy the block structure and resize the underlying matrix, but do not
    * copy the matrix data.
    */
-  template<class RhsMatrix>
-  void copyStructureFrom(const VerticalBlockView<RhsMatrix>& rhs);
+  template<class RHSMATRIX>
+  void copyStructureFrom(const VerticalBlockView<RHSMATRIX>& rhs);
 
   /** Copy the block struture and matrix data, resizing the underlying matrix
    * in the process.  This can deal with assigning between different types of
@@ -192,13 +202,13 @@ public:
    * To avoid creating a temporary matrix this assumes no aliasing, i.e. that
    * no part of the underlying matrices refer to the same memory!
    */
-  template<class RhsMatrix>
-  VerticalBlockView<Matrix>& assignNoalias(const VerticalBlockView<RhsMatrix>& rhs);
+  template<class RHSMATRIX>
+  VerticalBlockView<MATRIX>& assignNoalias(const VerticalBlockView<RHSMATRIX>& rhs);
 
   /** Swap the contents of the underlying matrix and the block information with
    * another VerticalBlockView.
    */
-  void swap(VerticalBlockView<Matrix>& other);
+  void swap(VerticalBlockView<MATRIX>& other);
 
 protected:
   void assertInvariants() const {
@@ -215,42 +225,42 @@ protected:
     assert(variableColOffsets_[block] < matrix_.size2() && variableColOffsets_[block+1] <= matrix_.size2());
   }
 
-  template<typename Iterator>
-  void fillOffsets(Iterator firstBlockDim, Iterator lastBlockDim) {
+  template<typename ITERATOR>
+  void fillOffsets(ITERATOR firstBlockDim, ITERATOR lastBlockDim) {
     variableColOffsets_.resize((lastBlockDim-firstBlockDim)+1);
     variableColOffsets_[0] = 0;
     size_t j=0;
-    for(Iterator dim=firstBlockDim; dim!=lastBlockDim; ++dim) {
+    for(ITERATOR dim=firstBlockDim; dim!=lastBlockDim; ++dim) {
       variableColOffsets_[j+1] = variableColOffsets_[j] + *dim;
       ++ j;
     }
   }
 
-  template<class RhsMatrix>
-  friend class VerticalBlockView<Matrix>;
+  template<class RHSMATRIX>
+  friend class VerticalBlockView<MATRIX>;
 };
 
 /* ************************************************************************* */
-template<class Matrix>
-VerticalBlockView<Matrix>::VerticalBlockView(matrix_type& matrix) :
+template<class MATRIX>
+VerticalBlockView<MATRIX>::VerticalBlockView(matrix_type& matrix) :
 matrix_(matrix), rowStart_(0), rowEnd_(matrix_.size1()), blockStart_(0) {
   fillOffsets((size_t*)0, (size_t*)0);
   assertInvariants();
 }
 
 /* ************************************************************************* */
-template<class Matrix>
-template<typename Iterator>
-VerticalBlockView<Matrix>::VerticalBlockView(matrix_type& matrix, Iterator firstBlockDim, Iterator lastBlockDim) :
+template<class MATRIX>
+template<typename ITERATOR>
+VerticalBlockView<MATRIX>::VerticalBlockView(matrix_type& matrix, ITERATOR firstBlockDim, ITERATOR lastBlockDim) :
 matrix_(matrix), rowStart_(0), rowEnd_(matrix_.size1()), blockStart_(0) {
   fillOffsets(firstBlockDim, lastBlockDim);
   assertInvariants();
 }
 
 /* ************************************************************************* */
-template<class Matrix>
-template<typename Iterator>
-VerticalBlockView<Matrix>::VerticalBlockView(matrix_type& matrix, Iterator firstBlockDim, Iterator lastBlockDim, size_t matrixNewHeight) :
+template<class MATRIX>
+template<typename ITERATOR>
+VerticalBlockView<MATRIX>::VerticalBlockView(matrix_type& matrix, ITERATOR firstBlockDim, ITERATOR lastBlockDim, size_t matrixNewHeight) :
 matrix_(matrix), rowStart_(0), rowEnd_(matrixNewHeight), blockStart_(0) {
   fillOffsets(firstBlockDim, lastBlockDim);
   matrix_.resize(matrixNewHeight, variableColOffsets_.back(), false);
@@ -258,9 +268,9 @@ matrix_(matrix), rowStart_(0), rowEnd_(matrixNewHeight), blockStart_(0) {
 }
 
 /* ************************************************************************* */
-template<class Matrix>
-template<class RhsMatrix>
-void VerticalBlockView<Matrix>::copyStructureFrom(const VerticalBlockView<RhsMatrix>& rhs) {
+template<class MATRIX>
+template<class RHSMATRIX>
+void VerticalBlockView<MATRIX>::copyStructureFrom(const VerticalBlockView<RHSMATRIX>& rhs) {
   matrix_.resize(rhs.rowEnd() - rhs.rowStart(), rhs.range(0, rhs.nBlocks()).size2(), false);
   if(rhs.blockStart_ == 0)
     variableColOffsets_ = rhs.variableColOffsets_;
@@ -281,17 +291,17 @@ void VerticalBlockView<Matrix>::copyStructureFrom(const VerticalBlockView<RhsMat
 }
 
 /* ************************************************************************* */
-template<class Matrix>
-template<class RhsMatrix>
-VerticalBlockView<Matrix>& VerticalBlockView<Matrix>::assignNoalias(const VerticalBlockView<RhsMatrix>& rhs) {
+template<class MATRIX>
+template<class RHSMATRIX>
+VerticalBlockView<MATRIX>& VerticalBlockView<MATRIX>::assignNoalias(const VerticalBlockView<RHSMATRIX>& rhs) {
   copyStructureFrom(rhs);
   boost::numeric::ublas::noalias(matrix_) = rhs.range(0, rhs.nBlocks());
   return *this;
 }
 
 /* ************************************************************************* */
-template<class Matrix>
-void VerticalBlockView<Matrix>::swap(VerticalBlockView<Matrix>& other) {
+template<class MATRIX>
+void VerticalBlockView<MATRIX>::swap(VerticalBlockView<MATRIX>& other) {
   matrix_.swap(other.matrix_);
   variableColOffsets_.swap(other.variableColOffsets_);
   std::swap(rowStart_, other.rowStart_);

@@ -31,15 +31,15 @@
 
 namespace gtsam {
 
-	template <class Key>
-	class DSF : protected BTree<Key, Key> {
+	template <class KEY>
+	class DSF : protected BTree<KEY, KEY> {
 
 	public:
-		typedef Key Label; // label can be different from key, but for now they are same
-		typedef DSF<Key> Self;
-		typedef std::set<Key> Set;
-		typedef BTree<Key, Label> Tree;
-		typedef std::pair<Key, Label> KeyLabel;
+		typedef KEY Label; // label can be different from key, but for now they are same
+		typedef DSF<KEY> Self;
+		typedef std::set<KEY> Set;
+		typedef BTree<KEY, Label> Tree;
+		typedef std::pair<KEY, Label> KeyLabel;
 
 		// constructor
 		DSF() : Tree() { }
@@ -48,29 +48,29 @@ namespace gtsam {
 		DSF(const Tree& tree) : Tree(tree) {}
 
 		// constructor with a list of unconnected keys
-		DSF(const std::list<Key>& keys) : Tree() { BOOST_FOREACH(const Key& key, keys) *this = this->add(key, key); }
+		DSF(const std::list<KEY>& keys) : Tree() { BOOST_FOREACH(const KEY& key, keys) *this = this->add(key, key); }
 
 		// create a new singleton, does nothing if already exists
-		Self makeSet(const Key& key) const { if (mem(key)) return *this; else return this->add(key, key); }
+		Self makeSet(const KEY& key) const { if (mem(key)) return *this; else return this->add(key, key); }
 
 		// find the label of the set in which {key} lives
-		Label findSet(const Key& key) const {
-			Key parent = this->find(key);
+		Label findSet(const KEY& key) const {
+			KEY parent = this->find(key);
 			return parent == key ? key : findSet(parent); }
 
 		// return a new DSF where x and y are in the same set. Kai: the caml implementation is not const, and I followed
-		Self makeUnion(const Key& key1, const Key& key2) { return this->add(findSet_(key2), findSet_(key1));	}
+		Self makeUnion(const KEY& key1, const KEY& key2) { return this->add(findSet_(key2), findSet_(key1));	}
 
 		// the in-place version of makeUnion
-		void makeUnionInPlace(const Key& key1, const Key& key2) { *this = this->add(findSet_(key2), findSet_(key1)); }
+		void makeUnionInPlace(const KEY& key1, const KEY& key2) { *this = this->add(findSet_(key2), findSet_(key1)); }
 
 		// create a new singleton with two connected keys
-		Self makePair(const Key& key1, const Key& key2) const { return makeSet(key1).makeSet(key2).makeUnion(key1, key2); }
+		Self makePair(const KEY& key1, const KEY& key2) const { return makeSet(key1).makeSet(key2).makeUnion(key1, key2); }
 
 		// create a new singleton with a list of fully connected keys
-		Self makeList(const std::list<Key>& keys) const {
+		Self makeList(const std::list<KEY>& keys) const {
 			Self t = *this;
-			BOOST_FOREACH(const Key& key, keys)
+			BOOST_FOREACH(const KEY& key, keys)
 				t = t.makePair(key, keys.front());
 			return t;
 		}
@@ -84,7 +84,7 @@ namespace gtsam {
 		}
 
 		// maps f over all keys, must be invertible
-		DSF map(boost::function<Key(const Key&)> func) const {
+		DSF map(boost::function<KEY(const KEY&)> func) const {
 			DSF t;
 			BOOST_FOREACH(const KeyLabel& pair, (Tree)*this)
 				t = t.add(func(pair.first), func(pair.second));
@@ -111,9 +111,9 @@ namespace gtsam {
 		}
 
 		// return a partition of the given elements {keys}
-		std::map<Label, Set> partition(const std::list<Key>& keys) const {
+		std::map<Label, Set> partition(const std::list<KEY>& keys) const {
 			std::map<Label, Set> partitions;
-			BOOST_FOREACH(const Key& key, keys)
+			BOOST_FOREACH(const KEY& key, keys)
 				partitions[findSet(key)].insert(key);
 			return partitions;
 		}
@@ -147,12 +147,12 @@ namespace gtsam {
 		 * same as findSet except with path compression: After we have traversed the path to
 		 * the root, each parent pointer is made to directly point to it
 		 */
-		Key findSet_(const Key& key) {
-			Key parent = this->find(key);
+		KEY findSet_(const KEY& key) {
+			KEY parent = this->find(key);
 			if (parent == key)
 				return parent;
 			else {
-				Key label = findSet_(parent);
+				KEY label = findSet_(parent);
 				*this = this->add(key, label);
 				return label;
 			}

@@ -26,12 +26,12 @@ namespace gtsam {
 	/**
 	 *  @brief Binary tree
 	 */
-	template<class Key, class Value>
+	template<class KEY, class VALUE>
 	class BTree {
 
 	public:
 
-		typedef std::pair<Key, Value> value_type;
+		typedef std::pair<KEY, VALUE> value_type;
 
 	private:
 
@@ -63,8 +63,8 @@ namespace gtsam {
 				keyValue_(keyValue), left(l), right(r) {
 			}
 
-			inline const Key& key() const { return keyValue_.first;}
-			inline const Value& value() const { return keyValue_.second;}
+			inline const KEY& key() const { return keyValue_.first;}
+			inline const VALUE& value() const { return keyValue_.second;}
 
 		}; // Node
 
@@ -74,8 +74,8 @@ namespace gtsam {
 		sharedNode root_;
 
 		inline const value_type& keyValue() const { return root_->keyValue_;}
-		inline const Key&        key()      const { return root_->key();    }
-		inline const Value&      value()    const { return root_->value();  }
+		inline const KEY&        key()      const { return root_->key();    }
+		inline const VALUE&      value()    const { return root_->value();  }
 		inline const BTree&      left()     const { return root_->left;     }
 		inline const BTree&      right()    const { return root_->right;    }
 
@@ -133,7 +133,7 @@ namespace gtsam {
 		/** add a key-value pair */
 		BTree add(const value_type& xd) const {
 			if (empty()) return BTree(xd);
-			const Key& x = xd.first;
+			const KEY& x = xd.first;
 			if (x == key())
 				return BTree(left(), xd, right());
 			else if (x < key())
@@ -143,12 +143,12 @@ namespace gtsam {
 		}
 
 		/** add a key-value pair */
-		BTree add(const Key& x, const Value& d) const {
+		BTree add(const KEY& x, const VALUE& d) const {
 			return add(make_pair(x, d));
 		}
 
 		/** member predicate */
-		bool mem(const Key& x) const {
+		bool mem(const KEY& x) const {
 			if (!root_) return false;
 			if (x == key()) return true;
 			if (x < key())
@@ -202,7 +202,7 @@ namespace gtsam {
 		}
 
 		/** remove a key-value pair */
-		BTree remove(const Key& x) const {
+		BTree remove(const KEY& x) const {
 			if (!root_) return BTree();
 			if (x == key())
 				return merge(left(), right());
@@ -227,22 +227,22 @@ namespace gtsam {
 		 *  find a value given a key, throws exception when not found
 		 *  Optimized non-recursive version as [find] is crucial for speed
 		 */
-		const Value& find(const Key& k) const {
+		const VALUE& find(const KEY& k) const {
 			const Node* node = root_.get();
 			while (node) {
-				const Key& key = node->key();
+				const KEY& key = node->key();
 				if      (k < key) node = node->left.root_.get();
 				else if (key < k) node = node->right.root_.get();
-				else /* (key() == k) */ return node->value();
+				else return node->value();
 			}
-			//throw std::invalid_argument("BTree::find: key '" + (std::string) k + "' not found");
+			
 			throw std::invalid_argument("BTree::find: key not found");
 		}
 
 		/** print in-order */
 		void print(const std::string& s = "") const {
 			if (empty()) return;
-			Key k = key();
+			KEY k = key();
 			std::stringstream ss;
 			ss << height();
 			k.print(s + ss.str() + " ");
@@ -251,7 +251,7 @@ namespace gtsam {
 		}
 
 		/** iterate over tree */
-		void iter(boost::function<void(const Key&, const Value&)> f) const {
+		void iter(boost::function<void(const KEY&, const VALUE&)> f) const {
 			if (!root_) return;
 			left().iter(f);
 			f(key(), value());
@@ -259,11 +259,11 @@ namespace gtsam {
 		}
 
 		/** map key-values in tree over function f that computes a new value */
-		template<class To>
-		BTree<Key, To> map(boost::function<To(const Key&, const Value&)> f) const {
-			if (empty()) return BTree<Key, To> ();
-			std::pair<Key, To> xd(key(), f(key(), value()));
-			return BTree<Key, To> (left().map(f), xd, right().map(f));
+		template<class TO>
+		BTree<KEY, TO> map(boost::function<TO(const KEY&, const VALUE&)> f) const {
+			if (empty()) return BTree<KEY, TO> ();
+			std::pair<KEY, TO> xd(key(), f(key(), value()));
+			return BTree<KEY, TO> (left().map(f), xd, right().map(f));
 		}
 
 		/**
@@ -272,12 +272,12 @@ namespace gtsam {
 		 * and [d1 ... dN] are the associated data.
 		 * The associated values are passed to [f] in reverse sort order
 		 */
-		template<class Acc>
-		Acc fold(boost::function<Acc(const Key&, const Value&, const Acc&)> f,
-				const Acc& a) const {
+		template<class ACC>
+		ACC fold(boost::function<ACC(const KEY&, const VALUE&, const ACC&)> f,
+				const ACC& a) const {
 			if (!root_) return a;
-			Acc ar = right().fold(f, a); // fold over right subtree
-			Acc am = f(key(), value(), ar); // apply f with current value
+			ACC ar = right().fold(f, a); // fold over right subtree
+			ACC am = f(key(), value(), ar); // apply f with current value
 			return left().fold(f, am); // fold over left subtree
 		}
 
@@ -330,7 +330,7 @@ namespace gtsam {
 			// traits for playing nice with STL
 			typedef ptrdiff_t difference_type; // correct ?
 			typedef std::forward_iterator_tag iterator_category;
-			typedef std::pair<Key, Value> value_type;
+			typedef std::pair<KEY, VALUE> value_type;
 			typedef const value_type* pointer;
 			typedef const value_type& reference;
 

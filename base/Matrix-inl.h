@@ -33,11 +33,11 @@ using namespace std;
  * @param b an RHS vector
  * @return the solution x of U*x=b
  */
-template<class MatrixAE, class VectorAE>
-Vector backSubstituteUpper(const boost::numeric::ublas::matrix_expression<MatrixAE>& _U,
-    const boost::numeric::ublas::vector_expression<VectorAE>& _b, bool unit=false) {
-  const MatrixAE& U((const MatrixAE&)_U);
-  const VectorAE& b((const VectorAE&)_b);
+template<class MATRIXAE, class VECTORAE>
+Vector backSubstituteUpper(const boost::numeric::ublas::matrix_expression<MATRIXAE>& _U,
+    const boost::numeric::ublas::vector_expression<VECTORAE>& _b, bool unit=false) {
+  const MATRIXAE& U((const MATRIXAE&)_U);
+  const VECTORAE& b((const VECTORAE&)_b);
   size_t n = U.size2();
 #ifndef NDEBUG
   size_t m = U.size1();
@@ -74,11 +74,11 @@ Vector backSubstituteUpper(const boost::numeric::ublas::matrix_expression<Matrix
  * @return the solution x of x'*U=b'
  * TODO: use boost
  */
-template<class VectorAE, class MatrixAE>
-Vector backSubstituteUpper(const boost::numeric::ublas::vector_expression<VectorAE>& _b,
-    const boost::numeric::ublas::matrix_expression<MatrixAE>& _U, bool unit=false) {
-  const VectorAE& b((const VectorAE&)_b);
-  const MatrixAE& U((const MatrixAE&)_U);
+template<class VECTORAE, class MATRIXAE>
+Vector backSubstituteUpper(const boost::numeric::ublas::vector_expression<VECTORAE>& _b,
+    const boost::numeric::ublas::matrix_expression<MATRIXAE>& _U, bool unit=false) {
+  const VECTORAE& b((const VECTORAE&)_b);
+  const MATRIXAE& U((const MATRIXAE&)_U);
   size_t n = U.size2();
 #ifndef NDEBUG
   size_t m = U.size1();

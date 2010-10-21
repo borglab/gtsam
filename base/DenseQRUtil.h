@@ -32,6 +32,7 @@ namespace gtsam {
 	/** Householder tranformation, zeros below diagonal */
 	void householder_denseqr(Matrix &A, long* Stair = NULL);
 
+    /** Householder tranformation in column mafor form */ 
 	void householder_denseqr_colmajor(boost::numeric::ublas::matrix<double, boost::numeric::ublas::column_major>& A, long *Stair);
 }
 #endif

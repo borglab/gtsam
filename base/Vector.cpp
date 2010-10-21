@@ -65,7 +65,7 @@ namespace gtsam {
   }
 
   /* ************************************************************************* */
-  // copy and paste from above, as two functions can not be easily merged
+ 
   void odprintf(const char *format, ...)
   {
     char    buf[4096], *p = buf;

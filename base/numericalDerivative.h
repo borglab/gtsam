@@ -26,7 +26,7 @@
 #include <gtsam/base/LieVector.h>
 #include <gtsam/base/Matrix.h>
 
-//#define LINEARIZE_AT_IDENTITY
+
 
 namespace gtsam {
 

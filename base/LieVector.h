@@ -77,7 +77,6 @@ namespace gtsam {
 	     * Default Implementation calls global binary function
 	     */
 	    inline Vector logmap(const LieVector& lp) const {
-//	    	return Logmap(between(lp)); // works
 	    	return lp.vector() - vector();
 	    }
 

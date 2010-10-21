@@ -144,11 +144,7 @@ bool equal_with_abs_tol(const Matrix& A, const Matrix& B, double tol) {
 			  equal = false;
 	  }
 
-//  if(!equal) {
-//    cout << "not equal:" << endl;
-//    print(A,"expected = ");
-//    print(B,"actual = ");
-//  }
+
 
   return equal;
 }
@@ -202,8 +198,7 @@ bool linear_dependent(const Matrix& A, const Matrix& B, double tol) {
 void multiplyAdd(double alpha, const Matrix& A, const Vector& x, Vector& e) {
 #if defined GT_USE_CBLAS
 
-	// uncomment and run tests to verify blas is enabled
-//	throw runtime_error("You are in multiplyAdd!");
+	
 
 	// get sizes
 	const size_t m = A.size1(), n = A.size2();
@@ -221,8 +216,7 @@ void multiplyAdd(double alpha, const Matrix& A, const Vector& x, Vector& e) {
 	cblas_dgemv(CblasRowMajor, CblasNoTrans, m, n, alpha, Aptr, ida, Xptr, incx, beta, Eptr, incy);
 
 #else
-//	throw runtime_error("You are in multiplyAdd / unoptimized!");
-	// ublas e += prod(A,x) is terribly slow
+
   size_t m = A.size1(), n = A.size2();
 	double * ei = e.data().begin();
 	const double * aij = A.data().begin();
@@ -236,7 +230,7 @@ void multiplyAdd(double alpha, const Matrix& A, const Vector& x, Vector& e) {
 
 /* ************************************************************************* */
 void multiplyAdd(const Matrix& A, const Vector& x, Vector& e) {
-	// ublas e += prod(A,x) is terribly slow
+	
 #ifdef GT_USE_CBLAS
 	multiplyAdd(1.0, A, x, e);
 #else
@@ -280,7 +274,7 @@ void transposeMultiplyAdd(double alpha, const Matrix& A, const Vector& e, Vector
 	cblas_dgemv(CblasRowMajor, CblasTrans, m, n, alpha, Aptr, ida, Eptr, incx, beta, Xptr, incy);
 
 #else
-	// ublas x += prod(trans(A),e) is terribly slow
+	
 	// TODO: use BLAS
   size_t m = A.size1(), n = A.size2();
 	double * xj = x.data().begin();
@@ -295,7 +289,7 @@ void transposeMultiplyAdd(double alpha, const Matrix& A, const Vector& e, Vector
 
 /* ************************************************************************* */
 void transposeMultiplyAdd(const Matrix& A, const Vector& e, Vector& x) {
-	// ublas x += prod(trans(A),e) is terribly slow
+	
 #ifdef GT_USE_CBLAS
 	transposeMultiplyAdd(1.0, A, e, x);
 #else
@@ -312,7 +306,7 @@ void transposeMultiplyAdd(const Matrix& A, const Vector& e, Vector& x) {
 
 /* ************************************************************************* */
 void transposeMultiplyAdd(double alpha, const Matrix& A, const Vector& e, SubVector x) {
-	// ublas x += prod(trans(A),e) is terribly slow
+	
 	// TODO: use BLAS
 	size_t m = A.size1(), n = A.size2();
 	for (size_t j = 0; j < n; j++) {
@@ -336,8 +330,7 @@ Vector Vector_(const Matrix& A)
 
 /* ************************************************************************* */
 Vector column_(const Matrix& A, size_t j) {
-//	if (j>=A.size2())
-//		throw invalid_argument("Column index out of bounds!");
+
 
 	return column(A,j); // real boost version
 }
@@ -376,8 +369,7 @@ void save(const Matrix& A, const string &s, const string& filename) {
 
 /* ************************************************************************* */
 Matrix sub(const Matrix& A, size_t i1, size_t i2, size_t j1, size_t j2) {
-  // using ublas is slower:
-  // Matrix B = Matrix(ublas::project(A,ublas::range(i1,i2+1),ublas::range(j1,j2+1)));
+  
   size_t m=i2-i1, n=j2-j1;
   Matrix B(m,n);
   for (size_t i=i1,k=0;i<i2;i++,k++)
@@ -489,14 +481,14 @@ pair<Matrix,Matrix> qr(const Matrix& A) {
 /* ************************************************************************* */
 inline void householder_update_manual(Matrix &A, size_t j, double beta, const Vector& vjm) {
 	const size_t m = A.size1(), n = A.size2();
-	// w = beta*transpose(A(j:m,:))*v(j:m)
+	
 	Vector w(n);
 	for( size_t c = 0; c < n; c++) {
 		w(c) = 0.0;
 		// dangerous as relies on row-major scheme
 		const double *a = &A(j,c), * const v = &vjm(0);
 		for( size_t r=j, s=0 ; r < m ; r++, s++, a+=n )
-			// w(c) += A(r,c) * vjm(r-j)
+			
 			w(c) += (*a) * v[s];
 		w(c) *= beta;
 	}
@@ -506,7 +498,7 @@ inline void householder_update_manual(Matrix &A, size_t j, double beta, const Ve
 		double wc = w(c);
 		double *a = &A(j,c); const double * const v =&vjm(0);
 		for( size_t r=j, s=0 ; r < m ; r++, s++, a+=n )
-			// A(r,c) -= vjm(r-j) * wjn(c-j);
+			
 			(*a) -= v[s] * wc;
 	}
 }
@@ -517,55 +509,7 @@ void householder_update(Matrix &A, size_t j, double beta, const Vector& vjm) {
 	// CBLAS version not working, using manual approach
 	householder_update_manual(A,j,beta,vjm);
 
-//	// straight atlas version
-//	const size_t m = A.size1(), n = A.size2();
-//	const size_t mj = m-j;
-//
-//	// find pointers to the data
-//	const double * vptr = vjm.data().begin(); // mj long
-//	double * Aptr = A.data().begin() + n*j; // mj x n - note that this starts at row j
-//
-//	// first step: get w = beta*trans(A(j:m,:))*vjm
-//	Vector w = zero(n);
-//	double * wptr = w.data().begin();
-//
-//	// DEBUG: create a duplicate version of the problem to solve simultaneously
-//	Matrix aA(A); Vector avjm(vjm);
-//
-//	// execute w generation
-//	cblas_dgemv(CblasRowMajor, CblasTrans, mj, n, beta, Aptr, n, vptr, 1, 0.0, wptr, 1);
-//
-//	// Execute w generation with alternate code
-//	Vector aw(n);
-//	for( size_t c = 0; c < n; c++) {
-//		aw(c) = 0.0;
-//		// dangerous as relies on row-major scheme
-//		const double *a = &aA(j,c), * const v = &avjm(0);
-//		for( size_t r=j, s=0 ; r < m ; r++, s++, a+=n )
-//			// w(c) += A(r,c) * vjm(r-j)
-//			aw(c) += (*a) * v[s];
-//		aw(c) *= beta;
-//	}
-//
-//	print(w,  "CBLAS w    ");
-//	print(aw, "Alternate w");
-//
-//	// second step: rank 1 update A(j:m,:) = v(j:m)*w' + A(j:m,:)
-//	cblas_dger(CblasRowMajor, mj, n, 1.0, vptr, 1, wptr, 1, Aptr, n); // not correct
-//
-//	// Execute second step using alternate code
-//	// rank 1 update A(j:m,:) -= v(j:m)*w'
-//	for( size_t c = 0 ; c < n; c++) {
-//		double wc = aw(c);
-//		double *a = &aA(j,c);
-//		const double * const v =&avjm(0);
-//		for( size_t r=j, s=0 ; r < m ; r++, s++, a+=n )
-//			// A(r,c) -= vjm(r-j) * wjn(c-j);
-//			(*a) -= v[s] * wc;
-//	}
-//
-//	// copy in alternate results, which should be correct
-//	A = aA;
+
 
 #else
 	householder_update_manual(A,j,beta,vjm);
@@ -584,7 +528,7 @@ inline void updateAb_manual(Matrix& A, Vector& b, size_t j, const Vector& a,
 		b(i) -= ai * d;
 		double *Aij = A.data().begin() + i * n + j + 1;
 		const double *rptr = r.data().begin() + j + 1;
-		// A(i,j+1:end) -= ai*r(j+1:end)
+		
 		for (size_t j2 = j + 1; j2 < n; j2++, Aij++, rptr++)
 			*Aij -= ai * (*rptr);
 	}
@@ -618,12 +562,10 @@ weighted_eliminate(Matrix& A, Vector& b, const Vector& sigmas) {
 	for (size_t j=0; j<n; ++j) {
 		// extract the first column of A
 		Vector a(column_(A, j)); // ublas::matrix_column is slower !
-		//print(a,"a");
-
+		
 		// Calculate weighted pseudo-inverse and corresponding precision
 		double precision = weightedPseudoinverse(a, weights, pseudo);
-//		cout << precision << endl;
-//		print(pseudo,"pseudo");
+
 
 		// if precision is zero, no information on this column
 		if (precision < 1e-8) continue;
@@ -735,64 +677,7 @@ void householder(Matrix &A) {
 #endif
 
 ///* ************************************************************************* */
-//Vector backSubstituteUpper(const Matrix& U, const Vector& b, bool unit) {
-//	size_t n = U.size2();
-//#ifndef NDEBUG
-//	size_t m = U.size1();
-//	if (m!=n)
-//		throw invalid_argument("backSubstituteUpper: U must be square");
-//#endif
-//
-//	Vector result(n);
-//	for (size_t i = n; i > 0; i--) {
-//		double zi = b(i-1);
-//		for (size_t j = i+1; j <= n; j++)
-//			zi -= U(i-1,j-1) * result(j-1);
-//#ifndef NDEBUG
-//		if(!unit && fabs(U(i-1,i-1)) <= numeric_limits<double>::epsilon()) {
-//		  stringstream ss;
-//		  ss << "backSubstituteUpper: U is singular,\n";
-//		  print(U, "U: ", ss);
-//		  throw invalid_argument(ss.str());
-//		}
-//#endif
-//		if (!unit) zi /= U(i-1,i-1);
-//		result(i-1) = zi;
-//	}
-//
-//	return result;
-//}
 
-///* ************************************************************************* */
-//Vector backSubstituteUpper(const Vector& b, const Matrix& U, bool unit) {
-//	size_t n = U.size2();
-//#ifndef NDEBUG
-//	size_t m = U.size1();
-//	if (m!=n)
-//		throw invalid_argument("backSubstituteUpper: U must be square");
-//#endif
-//
-//	Vector result(n);
-//	for (size_t i = 1; i <= n; i++) {
-//		double zi = b(i-1);
-//		for (size_t j = 1; j < i; j++)
-//			zi -= U(j-1,i-1) * result(j-1);
-//#ifndef NDEBUG
-//		if(!unit && fabs(U(i-1,i-1)) <= numeric_limits<double>::epsilon()) {
-//		  stringstream ss;
-//		  ss << "backSubstituteUpper: U is singular,\n";
-//		  print(U, "U: ", ss);
-//		  throw invalid_argument(ss.str());
-//		}
-//#endif
-//		if (!unit) zi /= U(i-1,i-1);
-//		result(i-1) = zi;
-//	}
-//
-//	return result;
-//}
-
-/* ************************************************************************* */
 Vector backSubstituteLower(const Matrix& L, const Vector& b, bool unit) {
 	size_t n = L.size2();
 #ifndef NDEBUG
