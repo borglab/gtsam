@@ -11,9 +11,13 @@ sources =
 check_PROGRAMS =
 
 # Examples
-noinst_PROGRAMS = vSLAMexample
-vSLAMexample_includedir = .
-vSLAMexample_SOURCES = vSLAMexample.cpp Feature2D.cpp landmarkUtils.cpp
+noinst_PROGRAMS = vSFMexample
+vSFMexample_includedir = .
+vSFMexample_SOURCES = vSFMexample.cpp Feature2D.cpp vSLAMutils.cpp
+
+noinst_PROGRAMS += vISAMexample
+vISAMexample_includedir = .
+vISAMexample_SOURCES = vISAMexample.cpp Feature2D.cpp vSLAMutils.cpp
 #----------------------------------------------------------------------------------------------------
 # rules to build local programs
 #----------------------------------------------------------------------------------------------------
