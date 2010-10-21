@@ -50,8 +50,8 @@ namespace gtsam { namespace visualSLAM {
    * Non-linear factor for a constraint derived from a 2D measurement,
    * i.e. the main building block for visual SLAM.
    */
-  template <class Cfg=Values, class LmK=PointKey, class PosK=PoseKey>
-  class GenericProjectionFactor : public NonlinearFactor2<Cfg, PosK, LmK>, Testable<GenericProjectionFactor<Cfg, LmK, PosK> > {
+  template <class CFG=Values, class LMK=PointKey, class POSK=PoseKey>
+  class GenericProjectionFactor : public NonlinearFactor2<CFG, POSK, LMK>, Testable<GenericProjectionFactor<CFG, LMK, POSK> > {
   protected:
 
     // Keep a copy of measurement and calibration for I/O
@@ -61,10 +61,10 @@ namespace gtsam { namespace visualSLAM {
   public:
 
     // shorthand for base class type
-    typedef NonlinearFactor2<Cfg, PosK, LmK> Base;
+    typedef NonlinearFactor2<CFG, POSK, LMK> Base;
 
     // shorthand for a smart pointer to a factor
-    typedef boost::shared_ptr<GenericProjectionFactor<Cfg, LmK, PosK> > shared_ptr;
+    typedef boost::shared_ptr<GenericProjectionFactor<CFG, LMK, POSK> > shared_ptr;
 
     /**
      * Default constructor
@@ -80,8 +80,8 @@ namespace gtsam { namespace visualSLAM {
      * @param K the constant calibration
      */
     GenericProjectionFactor(const Point2& z,
-					const SharedGaussian& model, PosK j_pose,
-					LmK j_landmark, const shared_ptrK& K) :
+					const SharedGaussian& model, POSK j_pose,
+					LMK j_landmark, const shared_ptrK& K) :
 						Base(model, j_pose, j_landmark), z_(z), K_(K) {
 			}
 
@@ -97,15 +97,12 @@ namespace gtsam { namespace visualSLAM {
     /**
      * equals
      */
-    bool equals(const GenericProjectionFactor<Cfg, LmK, PosK>& p, double tol = 1e-9) const {
+    bool equals(const GenericProjectionFactor<CFG, LMK, POSK>& p, double tol = 1e-9) const {
         return Base::equals(p, tol) && this->z_.equals(p.z_, tol)
                   && this->K_->equals(*p.K_, tol);
     }
 
-    //    /** h(x) */
-    //    Point2 predict(const Pose3& pose, const Point3& point) const {
-    //      return SimpleCamera(*K_, pose).project(point);
-    //    }
+  
 
     /** h(x)-z */
     Vector evaluateError(const Pose3& pose, const Point3& point,
@@ -118,10 +115,8 @@ namespace gtsam { namespace visualSLAM {
   private:
     /** Serialization function */
     friend class boost::serialization::access;
-    template<class Archive>
-    void serialize(Archive & ar, const unsigned int version) {
-      //ar & BOOST_SERIALIZATION_NVP(key1_);
-      //ar & BOOST_SERIALIZATION_NVP(key2_);
+    template<class ARCHIVE>
+    void serialize(ARCHIVE & ar, const unsigned int version) {
       ar & BOOST_SERIALIZATION_NVP(z_);
       ar & BOOST_SERIALIZATION_NVP(K_);
     }

@@ -88,7 +88,7 @@ namespace gtsam {
 			return optimizeMultiFrontal<G,T>(graph, initialEstimate, parameters);
 		case SPCG:
 			throw runtime_error("optimize: SPCG not supported yet due to the specific pose constraint");
-//			return optimizeSPCG<G,T>(graph, initialEstimate, parameters) ;
+
 			break;
 		}
 		throw runtime_error("optimize: undefined solver");

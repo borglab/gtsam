@@ -239,7 +239,7 @@ namespace gtsam {
 	NonlinearOptimizer<G, C, L, S, W> NonlinearOptimizer<G, C, L, S, W>::iterateLM(
 			Parameters::verbosityLevel verbosity, double lambdaFactor, Parameters::LambdaMode lambdaMode) const {
 
-		// maybe show output
+		// show output
 		if (verbosity >= Parameters::CONFIG)
 			config_->print("config");
 		if (verbosity >= Parameters::ERROR)

@@ -75,7 +75,7 @@ void NonlinearFactorGraph<VALUES>::print(const std::string& str) const {
 
 	  // Permute the Ordering and VariableIndex with the COLAMD ordering
 	  ordering->permuteWithInverse(*colamdPerm->inverse());
-//	  variableIndex.permute(*colamdPerm);
+      // variableIndex.permute(*colamdPerm);
 	  // SL-FIX: fix permutation
 
 	  // Return the Ordering and VariableIndex to be re-used during linearization
