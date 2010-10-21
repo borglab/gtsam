@@ -60,7 +60,7 @@ namespace gtsam {
 	 * The multifrontal solver
 	 */
 	template<class G, class T>
-	T	optimizeSPCG(const G& graph, const T& initialEstimate, const NonlinearOptimizationParameters& parameters) {
+	T	optimizeSPCG(const G& graph, const T& initialEstimate, const NonlinearOptimizationParameters& parameters = NonlinearOptimizationParameters()) {
 
 		// initial optimization state is the same in both cases tested
 		typedef NonlinearOptimizer<G, T, SubgraphPreconditioner, SubgraphSolver<G,T> > SPCGOptimizer;
