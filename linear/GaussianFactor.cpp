@@ -595,27 +595,26 @@ template GaussianFactor::shared_ptr GaussianFactor::Combine(const FactorGraph<Ga
 
 template<class STORAGE>
 GaussianFactor::shared_ptr GaussianFactor::Combine(const FactorGraph<GaussianFactor>& factorGraph,
-    const GaussianVariableIndex<STORAGE>& variableIndex, const vector<size_t>& factors,
+    const GaussianVariableIndex<STORAGE>& variableIndex, const vector<size_t>& factorIndices,
     const vector<Index>& variables, const std::vector<std::vector<size_t> >& variablePositions) {
 
-  shared_ptr ret(boost::make_shared<GaussianFactor>());
+  // Debugging flags
   static const bool verbose = false;
   static const bool debug = false;
   if (verbose) std::cout << "GaussianFactor::GaussianFactor (factors)" << std::endl;
-
-  assert(factors.size() == variablePositions.size());
+  assert(factorIndices.size() == variablePositions.size());
 
   // Determine row and column counts and check if any noise models are constrained
   tic("Combine: count sizes");
   size_t m = 0;
   bool constrained = false;
-  BOOST_FOREACH(const size_t factor, factors) {
-    assert(factorGraph[factor] != NULL);
-    assert(!factorGraph[factor]->keys_.empty());
-    m += factorGraph[factor]->numberOfRows();
-    if(debug) cout << "Combining factor " << factor << endl;
-    if(debug) factorGraph[factor]->print("  :");
-    if (!constrained && factorGraph[factor]->model_->isConstrained()) {
+  BOOST_FOREACH(const size_t i, factorIndices) {
+    assert(factorGraph[i] != NULL);
+    assert(!factorGraph[i]->keys_.empty());
+    m += factorGraph[i]->numberOfRows();
+    if(debug) cout << "Combining factor " << i << endl;
+    if(debug) factorGraph[i]->print("  :");
+    if (!constrained && factorGraph[i]->model_->isConstrained()) {
       constrained = true;
       if (debug) std::cout << "Found a constraint!" << std::endl;
     }
@@ -634,50 +633,49 @@ GaussianFactor::shared_ptr GaussianFactor::Combine(const FactorGraph<GaussianFac
   }
   toc("Combine: count sizes");
 
+	// Allocate return value, the combined factor, the augmented Ab matrix and other arrays
   tic("Combine: set up empty");
-  // Allocate augmented Ab matrix and other arrays
-  ret->Ab_.copyStructureFrom(ab_type(ret->matrix_, dims, dims+variables.size()+1, m));
-  ublas::noalias(ret->matrix_) = ublas::zero_matrix<double>(ret->matrix_.size1(), ret->matrix_.size2());
-  ret->firstNonzeroBlocks_.resize(m);
+  shared_ptr combinedFactor(boost::make_shared<GaussianFactor>());
+  combinedFactor->Ab_.copyStructureFrom(ab_type(combinedFactor->matrix_, dims, dims+variables.size()+1, m));
+  ublas::noalias(combinedFactor->matrix_) = ublas::zero_matrix<double>(combinedFactor->matrix_.size1(), combinedFactor->matrix_.size2());
+  combinedFactor->firstNonzeroBlocks_.resize(m);
   Vector sigmas(m);
 
   // Copy keys
-  ret->keys_.reserve(variables.size());
-  ret->keys_.insert(ret->keys_.end(), variables.begin(), variables.end());
+  combinedFactor->keys_.reserve(variables.size());
+  combinedFactor->keys_.insert(combinedFactor->keys_.end(), variables.begin(), variables.end());
   toc("Combine: set up empty");
 
   // Compute a row permutation that maintains a staircase pattern in the new
   // combined factor.  To do this, we merge-sort the rows so that the column
-  // indices of the first structural non-zero in each row increases
-  // monotonically.
+  // indices of the first structural non-zero in each row increase monotonically.
   tic("Combine: sort rows");
   vector<_RowSource> rowSources;
   rowSources.reserve(m);
-  size_t factorI = 0;
-  BOOST_FOREACH(const size_t factorII, factors) {
+  size_t i1 = 0;
+  BOOST_FOREACH(const size_t factorII, factorIndices) {
     const GaussianFactor& factor(*factorGraph[factorII]);
     size_t factorRowI = 0;
     assert(factor.firstNonzeroBlocks_.size() == factor.numberOfRows());
     BOOST_FOREACH(const size_t factorFirstNonzeroVarpos, factor.firstNonzeroBlocks_) {
       Index firstNonzeroVar;
       firstNonzeroVar = factor.keys_[factorFirstNonzeroVarpos];
-      rowSources.push_back(_RowSource(firstNonzeroVar, factorI, factorRowI));
+      rowSources.push_back(_RowSource(firstNonzeroVar, i1, factorRowI));
       ++ factorRowI;
     }
     assert(factorRowI == factor.numberOfRows());
-    ++ factorI;
+    ++ i1;
   }
   assert(rowSources.size() == m);
-  assert(factorI == factors.size());
+  assert(i1 == factorIndices.size());
   sort(rowSources.begin(), rowSources.end());
   toc("Combine: sort rows");
 
   // Fill in the rows of the new factor in sorted order.  Fill in the array of
-  // the left-most nonzero for each row and the first structural zero in each
-  // column.
+  // the left-most nonzero for each row and the first structural zero in each column.
   // todo SL: smarter ignoring of zero factor variables (store first possible like above)
 
-  if(debug) gtsam::print(ret->matrix_, "matrix_ before copying rows: ");
+  if(debug) gtsam::print(combinedFactor->matrix_, "matrix_ before copying rows: ");
 
   tic("Combine: copy rows");
 #ifndef NDEBUG
@@ -688,29 +686,28 @@ GaussianFactor::shared_ptr GaussianFactor::Combine(const FactorGraph<GaussianFac
     const _RowSource& rowSource = rowSources[row];
     assert(rowSource.factorI < factorGraph.size());
     const size_t factorI = rowSource.factorI;
-    const GaussianFactor& factor(*factorGraph[factors[factorI]]);
+    const GaussianFactor& factor(*factorGraph[factorIndices[factorI]]);
     const size_t factorRow = rowSource.factorRowI;
     const size_t factorFirstNonzeroVarpos = factor.firstNonzeroBlocks_[factorRow];
 
-    if(debug) {
-      cout << "Combined row " << row << " is from row " << factorRow << " of factor " << factors[factorI] << endl;
-    }
+    if(debug)
+      cout << "Combined row " << row << " is from row " << factorRow << " of factor " << factorIndices[factorI] << endl;
 
     // Copy rhs b and sigma
-    ret->getb()(row) = factor.getb()(factorRow);
+    combinedFactor->getb()(row) = factor.getb()(factorRow);
     sigmas(row) = factor.get_sigmas()(factorRow);
 
     // Copy the row of A variable by variable, starting at the first nonzero
     // variable.
     std::vector<Index>::const_iterator keyit = factor.keys_.begin() + factorFirstNonzeroVarpos;
     std::vector<size_t>::const_iterator varposIt = variablePositions[factorI].begin() + factorFirstNonzeroVarpos;
-    ret->firstNonzeroBlocks_[row] = *varposIt;
+    combinedFactor->firstNonzeroBlocks_[row] = *varposIt;
     if(debug) cout << "  copying starting at varpos " << *varposIt << " (variable " << variables[*varposIt] << ")" << endl;
     std::vector<Index>::const_iterator keyitend = factor.keys_.end();
     while(keyit != keyitend) {
       const size_t varpos = *varposIt;
       assert(variables[varpos] == *keyit);
-      ab_type::block_type retBlock(ret->Ab_(varpos));
+      ab_type::block_type retBlock(combinedFactor->Ab_(varpos));
       const ab_type::const_block_type factorBlock(factor.getA(keyit));
       ublas::noalias(ublas::row(retBlock, row)) = ublas::row(factorBlock, factorRow);
       ++ keyit;
@@ -719,8 +716,8 @@ GaussianFactor::shared_ptr GaussianFactor::Combine(const FactorGraph<GaussianFac
 #ifndef NDEBUG
     // Debug check, make sure the first column of nonzeros increases monotonically
     if(row != 0)
-      assert(ret->firstNonzeroBlocks_[row] >= lastRowFirstVarpos);
-    lastRowFirstVarpos = ret->firstNonzeroBlocks_[row];
+      assert(combinedFactor->firstNonzeroBlocks_[row] >= lastRowFirstVarpos);
+    lastRowFirstVarpos = combinedFactor->firstNonzeroBlocks_[row];
 #endif
   }
   toc("Combine: copy rows");
@@ -728,18 +725,18 @@ GaussianFactor::shared_ptr GaussianFactor::Combine(const FactorGraph<GaussianFac
   if (verbose) std::cout << "GaussianFactor::GaussianFactor done" << std::endl;
 
   if (constrained) {
-    ret->model_ = noiseModel::Constrained::MixedSigmas(sigmas);
-    if (verbose) ret->model_->print("Just created Constraint ^");
+    combinedFactor->model_ = noiseModel::Constrained::MixedSigmas(sigmas);
+    if (verbose) combinedFactor->model_->print("Just created Constraint ^");
   } else {
-    ret->model_ = noiseModel::Diagonal::Sigmas(sigmas);
-    if (verbose) ret->model_->print("Just created Diagonal");
+    combinedFactor->model_ = noiseModel::Diagonal::Sigmas(sigmas);
+    if (verbose) combinedFactor->model_->print("Just created Diagonal");
   }
 
-  if(debug) ret->print("Combined factor: ");
+  if(debug) combinedFactor->print("Combined factor: ");
 
-  ret->assertInvariants();
+  combinedFactor->assertInvariants();
 
-  return ret;
+  return combinedFactor;
 }
 
 /* ************************************************************************* */

@@ -24,26 +24,28 @@ template<class FACTOR>
 typename EliminationTree<FACTOR>::EliminationResult
 EliminationTree<FACTOR>::eliminate_() const {
 
-  BayesNet bayesNet;
+  // Create the Bayes net, which will be returned to the parent. Initially empty...
+	BayesNet bayesNet;
 
-  set<Index, std::less<Index>, boost::fast_pool_allocator<Index> > separator;
-
-  // Create the list of factors to be eliminated
+  // Create the list of factors to be eliminated, initially empty, and reserve space
   FactorGraph<FACTOR> factors;
   factors.reserve(this->factors_.size() + this->subTrees_.size());
 
-  // add all factors associated with root
+  // Add all factors associated with the current node
   factors.push_back(this->factors_.begin(), this->factors_.end());
 
-  // for all children, eliminate into Bayes net and add the eliminated factors
+  // for all subtrees, eliminate into Bayes net and a separator factor, added to [factors]
   BOOST_FOREACH(const shared_ptr& child, subTrees_) {
     EliminationResult result = child->eliminate_();
-    bayesNet.push_back(result.first);
-    factors.push_back(result.second);
+    bayesNet.push_back(result.first); // Bayes net fragment added to Bayes net
+    factors.push_back(result.second); // Separator factor added to [factors]
   }
 
-  // eliminate the joint factor and add the conditional to the bayes net
+  // Combine all factors (from this node and from subtrees) into a joint factor
   sharedFactor jointFactor(FACTOR::Combine(factors, VariableSlots(factors)));
+
+  // Eliminate the resulting joint factor and add the conditional to the bayes net
+  // What remains in the jointFactor will be passed to our parent node
   bayesNet.push_back(jointFactor->eliminateFirst());
 
   return EliminationResult(bayesNet, jointFactor);
