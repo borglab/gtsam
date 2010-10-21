@@ -175,6 +175,8 @@ public:
 	/** get a copy of model */
 	const SharedDiagonal& get_model() const { return model_;  }
 
+	bool isConstrained() const {return model_->isConstrained();}
+
 	/**
 	 * return the number of rows from the b vector
 	 * @return a integer with the number of rows from the b vector

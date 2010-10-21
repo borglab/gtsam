@@ -593,6 +593,56 @@ struct _RowSource {
 template GaussianFactor::shared_ptr GaussianFactor::Combine(const FactorGraph<GaussianFactor>&, const GaussianVariableIndex<VariableIndexStorage_vector>&, const vector<size_t>&, const vector<Index>&, const std::vector<std::vector<size_t> >&);
 template GaussianFactor::shared_ptr GaussianFactor::Combine(const FactorGraph<GaussianFactor>&, const GaussianVariableIndex<VariableIndexStorage_deque>&, const vector<size_t>&, const vector<Index>&, const std::vector<std::vector<size_t> >&);
 
+// Utility function to determine row count and check if any noise models are constrained
+// TODO: would be nicer if this function was split and are factorgraph methods
+static std::pair<size_t,bool> rowCount(const FactorGraph<GaussianFactor>& factorGraph,
+		const vector<size_t>& factorIndices)
+{
+	static const bool debug = false;
+	tic("Combine: count sizes");
+	size_t m = 0;
+	bool constrained = false;
+	BOOST_FOREACH(const size_t i, factorIndices)
+	{
+		assert(factorGraph[i] != NULL);
+		assert(!factorGraph[i]->keys().empty());
+		m += factorGraph[i]->numberOfRows();
+		if (debug) cout << "Combining factor " << i << endl;
+		if (debug) factorGraph[i]->print("  :");
+		if (!constrained && factorGraph[i]->isConstrained()) {
+			constrained = true;
+			if (debug) std::cout << "Found a constraint!" << std::endl;
+		}
+	}
+	toc("Combine: count sizes");
+	return make_pair(m,constrained);
+}
+
+// Determine row and column counts and check if any noise models are constrained
+template<class STORAGE>
+static vector<size_t> columnDimensions(
+		const GaussianVariableIndex<STORAGE>& variableIndex,
+		const vector<Index>& variables)
+{
+	tic("Combine: count dims");
+	static const bool debug = false;
+	vector<size_t> dims(variables.size() + 1);
+	size_t n = 0;
+	{
+		size_t j = 0;
+		BOOST_FOREACH(const Index& var, variables)
+		{
+			if (debug) cout << "Have variable " << var << endl;
+			dims[j] = variableIndex.dim(var);
+			n += dims[j];
+			++j;
+		}
+		dims[j] = 1;
+	}
+	toc("Combine: count dims");
+	return dims;
+}
+
 template<class STORAGE>
 GaussianFactor::shared_ptr GaussianFactor::Combine(const FactorGraph<GaussianFactor>& factorGraph,
     const GaussianVariableIndex<STORAGE>& variableIndex, const vector<size_t>& factorIndices,
@@ -604,39 +654,17 @@ GaussianFactor::shared_ptr GaussianFactor::Combine(const FactorGraph<GaussianFac
   if (verbose) std::cout << "GaussianFactor::GaussianFactor (factors)" << std::endl;
   assert(factorIndices.size() == variablePositions.size());
 
-  // Determine row and column counts and check if any noise models are constrained
-  tic("Combine: count sizes");
-  size_t m = 0;
-  bool constrained = false;
-  BOOST_FOREACH(const size_t i, factorIndices) {
-    assert(factorGraph[i] != NULL);
-    assert(!factorGraph[i]->keys_.empty());
-    m += factorGraph[i]->numberOfRows();
-    if(debug) cout << "Combining factor " << i << endl;
-    if(debug) factorGraph[i]->print("  :");
-    if (!constrained && factorGraph[i]->model_->isConstrained()) {
-      constrained = true;
-      if (debug) std::cout << "Found a constraint!" << std::endl;
-    }
-  }
-  size_t dims[variables.size()+1];
-  size_t n = 0;
-  {
-    size_t j=0;
-    BOOST_FOREACH(const Index& var, variables) {
-      if(debug) cout << "Have variable " << var << endl;
-      dims[j] = variableIndex.dim(var);
-      n += dims[j];
-      ++ j;
-    }
-    dims[j] = 1;
-  }
-  toc("Combine: count sizes");
+  // Determine row count and check if any noise models are constrained
+  size_t m; bool constrained;
+  boost::tie(m,constrained) = rowCount(factorGraph,factorIndices);
+
+  // Determine column dimensions
+  vector<size_t> dims = columnDimensions(variableIndex,variables);
 
 	// Allocate return value, the combined factor, the augmented Ab matrix and other arrays
   tic("Combine: set up empty");
   shared_ptr combinedFactor(boost::make_shared<GaussianFactor>());
-  combinedFactor->Ab_.copyStructureFrom(ab_type(combinedFactor->matrix_, dims, dims+variables.size()+1, m));
+  combinedFactor->Ab_.copyStructureFrom(ab_type(combinedFactor->matrix_, dims.begin(), dims.end(), m));
   ublas::noalias(combinedFactor->matrix_) = ublas::zero_matrix<double>(combinedFactor->matrix_.size1(), combinedFactor->matrix_.size2());
   combinedFactor->firstNonzeroBlocks_.resize(m);
   Vector sigmas(m);
@@ -653,8 +681,8 @@ GaussianFactor::shared_ptr GaussianFactor::Combine(const FactorGraph<GaussianFac
   vector<_RowSource> rowSources;
   rowSources.reserve(m);
   size_t i1 = 0;
-  BOOST_FOREACH(const size_t factorII, factorIndices) {
-    const GaussianFactor& factor(*factorGraph[factorII]);
+  BOOST_FOREACH(const size_t i2, factorIndices) {
+    const GaussianFactor& factor(*factorGraph[i2]);
     size_t factorRowI = 0;
     assert(factor.firstNonzeroBlocks_.size() == factor.numberOfRows());
     BOOST_FOREACH(const size_t factorFirstNonzeroVarpos, factor.firstNonzeroBlocks_) {
@@ -679,7 +707,7 @@ GaussianFactor::shared_ptr GaussianFactor::Combine(const FactorGraph<GaussianFac
 
   tic("Combine: copy rows");
 #ifndef NDEBUG
-  size_t lastRowFirstVarpos;
+  size_t lastRowFirstVarpos = 0;
 #endif
   for(size_t row=0; row<m; ++row) {
 
