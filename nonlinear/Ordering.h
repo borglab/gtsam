@@ -76,7 +76,8 @@ public:
   iterator insert(const Symbol& key, Index order) { return insert(std::make_pair(key,order)); }
   std::pair<iterator,bool> tryInsert(const value_type& key_order) {
     std::pair<iterator,bool> it_ok(order_.insert(key_order));
-    if(key_order.second+1 > nVars_)  nVars_ = key_order.second+1;
+    if(it_ok.second == true && key_order.second+1 > nVars_)
+      nVars_ = key_order.second+1;
     return it_ok; }
   std::pair<iterator,bool> tryInsert(const Symbol& key, Index order) { return tryInsert(std::make_pair(key,order)); }
 
