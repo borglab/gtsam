@@ -121,7 +121,7 @@ int main(int argc, char* argv[])
 		g_dataFolder = string(argv[1]);
 		readAllData();
 
-		// Create a graph using the 2D measurements (features) and calibration data
+		// Create a graph using the 2D measurements (features) and the calibration data
 		shared_ptr<Graph> graph(new Graph(setupGraph(g_measurements, measurementSigma, g_calib)));
 
 		// Create an initial Values structure using groundtruth values as the initial estimates
@@ -129,17 +129,15 @@ int main(int argc, char* argv[])
 		cout << "*******************************************************" << endl;
 		initialEstimates->print("INITIAL ESTIMATES: ");
 
-    // Add hard constraint on the first pose, used as fixed prior.
-		graph->addPoseConstraint(g_poses.begin()->first, g_poses.begin()->second);
-
 		// Add prior factor for all poses in the graph
-//		for (map<int, Pose3>::iterator poseit = g_poses.begin(); poseit != g_poses.end(); poseit++)
-//				graph->addPosePrior(poseit->first, poseit->second, noiseModel::Unit::Create(10));
+		map<int, Pose3>::iterator poseit = g_poses.begin();
+		for (; poseit != g_poses.end(); poseit++)
+				graph->addPosePrior(poseit->first, poseit->second, noiseModel::Unit::Create(1));
 
 		// Optimize the graph
 		cout << "*******************************************************" << endl;
 		Optimizer::Parameters::verbosityLevel verborsity = Optimizer::Parameters::DAMPED;
-		Optimizer::shared_values result = Optimizer::optimizeLM( graph, initialEstimates, verborsity );
+		Optimizer::shared_values result = Optimizer::optimizeGN( graph, initialEstimates, verborsity );
 
 		// Print final results
 		cout << "*******************************************************" << endl;
