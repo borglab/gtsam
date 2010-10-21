@@ -46,17 +46,7 @@ pair<string, boost::optional<SharedDiagonal> > dataset(const string& dataset,  c
 	if (path.empty()) path = string(getenv("HOME")) + "/";
 	if (set.empty()) set = string(getenv("DATASET"));
 
-	/*if (set == "intel") return make_pair(path + "data/iSAM/Laser/intel.graph", null_model);
-	if (set == "intel-gfs") return make_pair(path + "data/iSAM/Laser/intel.gfs.graph", null_model);
-	if (set == "Killian-gfs") return make_pair(path + "data/iSAM/Laser/Killian.gfs.graph", null_model);
-	if (set == "Killian") return make_pair(path + "data/iSAM/Laser/Killian.graph", small);
-	if (set == "Killian-noised") return make_pair(path + "data/iSAM/Laser/Killian-noised.graph", null_model);
-	if (set == "3") return make_pair(path + "borg/toro/data/2D/w3-odom.graph", identity);
-	if (set == "100") return make_pair(path + "borg/toro/data/2D/w100-odom.graph", identity);
-	if (set == "10K") return make_pair(path + "borg/toro/data/2D/w10000-odom.graph", identity);
-	if (set == "olson") return make_pair(path + "data/iSAM/ISAM2/olson06icra.txt", null_model);
-	if (set == "victoria") return make_pair(path + "data/iSAM/ISAM2/victoria_park.txt", null_model);
-	if (set == "beijing") return make_pair(path + "data/BeijingData/beijingData_trips.log", null_model);*/
+	
 
 	if (set == "intel") return make_pair(path + "borg/CitySLAM/data/Intel/intel.graph", null_model);
 	if (set == "intel-gfs") return make_pair(path + "borg/CitySLAM/data/Intel/intel.gfs.graph", null_model);

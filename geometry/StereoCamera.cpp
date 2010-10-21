@@ -46,13 +46,11 @@ StereoPoint2 StereoCamera::project(const Point3& point,
 		//**** above function call inlined
 		  Matrix D_cameraPoint_pose;
 		  Point3 cameraPoint = pose().transform_to(point, D_cameraPoint_pose, boost::none);
-		  //cout << "D_cameraPoint_pose" << endl;
-		  //print(D_cameraPoint_pose);
+		  
 
 		  //Point2 intrinsic = project_to_camera(cameraPoint);  // unused
 		  Matrix D_intrinsic_cameraPoint = Dproject_to_stereo_camera1(cameraPoint); // 3x3 Jacobian
-		  //cout << "myJacobian" << endl;
-		  //print(D_intrinsic_cameraPoint);
+		
 
 		  Matrix D_intrinsic_pose = D_intrinsic_cameraPoint * D_cameraPoint_pose;
 
@@ -106,32 +104,8 @@ Matrix StereoCamera::Duncalibrate2(const Cal3_S2& K) {
 	calibration2(1) = calibration(0);
 	calibration2(2) = calibration(1);
 	return diag(calibration2);
-	//return Matrix_(2, 2, K.fx_, K.s_, 0.000, K.fy_);
+	
 }
 
-// calibrated cameras
-/*
-Matrix Dproject_pose(const CalibratedCamera& camera, const Point3& point) {
-		Point3 cameraPoint = transform_to(camera.pose(), point);
-		Matrix D_cameraPoint_pose = Dtransform_to1(camera.pose(), point);
-
-		Point2 intrinsic = project_to_camera(cameraPoint);
-		Matrix D_intrinsic_cameraPoint = Dproject_to_camera1(cameraPoint);
-
-		Matrix D_intrinsic_pose = D_intrinsic_cameraPoint * D_cameraPoint_pose;
-		return D_intrinsic_pose;
-	}
-
-Matrix Dproject_point(const CalibratedCamera& camera, const Point3& point) {
-		Point3 cameraPoint = transform_to(camera.pose(), point);
-		Matrix D_cameraPoint_point = Dtransform_to2(camera.pose());
-
-		Point2 intrinsic = project_to_camera(cameraPoint);
-		Matrix D_intrinsic_cameraPoint = Dproject_to_camera1(cameraPoint);
-
-		Matrix D_intrinsic_point = D_intrinsic_cameraPoint * D_cameraPoint_point;
-		return D_intrinsic_point;
-	}
-	*/
 
 }

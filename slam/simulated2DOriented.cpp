@@ -21,9 +21,7 @@
 namespace gtsam {
 
 	using namespace simulated2DOriented;
-//	INSTANTIATE_LIE_CONFIG(PointKey)
-//	INSTANTIATE_NONLINEAR_FACTOR_GRAPH(Values)
-//	INSTANTIATE_NONLINEAR_OPTIMIZER(Graph, Values)
+
 
 	namespace simulated2DOriented {
 

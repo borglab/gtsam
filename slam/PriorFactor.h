@@ -31,15 +31,15 @@ namespace gtsam {
 	 * The Key type is not arbitrary: we need to cast to a Symbol at linearize, so
 	 * a simple type like int will not work
 	 */
-	template<class Values, class Key>
-	class PriorFactor: public NonlinearFactor1<Values, Key> {
+	template<class VALUES, class KEY>
+	class PriorFactor: public NonlinearFactor1<VALUES, KEY> {
 
 	public:
-		typedef typename Key::Value T;
+		typedef typename KEY::Value T;
 
 	private:
 
-		typedef NonlinearFactor1<Values, Key> Base;
+		typedef NonlinearFactor1<VALUES, KEY> Base;
 
 		T prior_; /** The measurement */
 
@@ -49,7 +49,7 @@ namespace gtsam {
 		typedef typename boost::shared_ptr<PriorFactor> shared_ptr;
 
 		/** Constructor */
-		PriorFactor(const Key& key, const T& prior,
+		PriorFactor(const KEY& key, const T& prior,
 				const SharedGaussian& model) :
 			Base(model, key), prior_(prior) {
 		}
@@ -63,9 +63,9 @@ namespace gtsam {
 		}
 
 		/** equals */
-		bool equals(const NonlinearFactor<Values>& expected, double tol) const {
-			const PriorFactor<Values, Key> *e = dynamic_cast<const PriorFactor<
-					Values, Key>*> (&expected);
+		bool equals(const NonlinearFactor<VALUES>& expected, double tol) const {
+			const PriorFactor<VALUES, KEY> *e = dynamic_cast<const PriorFactor<
+					VALUES, KEY>*> (&expected);
 			return e != NULL && Base::equals(expected, tol) && this->prior_.equals(
 					e->prior_, tol);
 		}

@@ -58,13 +58,13 @@ namespace gtsam {
 		/**
 		 * Unary factor encoding a soft prior on a vector
 		 */
-		template<class Cfg = Values, class Key = PoseKey>
-		struct GenericPosePrior: public NonlinearFactor1<Cfg, Key> {
+		template<class CFG = Values, class Key = PoseKey>
+		struct GenericPosePrior: public NonlinearFactor1<CFG, Key> {
 
 			Pose2 z_;
 
 			GenericPosePrior(const Pose2& z, const SharedGaussian& model, const Key& key) :
-				NonlinearFactor1<Cfg, Key> (model, key), z_(z) {
+				NonlinearFactor1<CFG, Key> (model, key), z_(z) {
 			}
 
 			Vector evaluateError(const Pose2& x, boost::optional<Matrix&> H =
@@ -77,13 +77,13 @@ namespace gtsam {
 		/**
 		 * Binary factor simulating "odometry" between two Vectors
 		 */
-		template<class Cfg = Values, class Key = PoseKey>
-		struct GenericOdometry: public NonlinearFactor2<Cfg, Key, Key> {
+		template<class CFG = Values, class KEY = PoseKey>
+		struct GenericOdometry: public NonlinearFactor2<CFG, KEY, KEY> {
 			Pose2 z_;
 
 			GenericOdometry(const Pose2& z, const SharedGaussian& model,
-					const Key& i1, const Key& i2) :
-				NonlinearFactor2<Cfg, Key, Key> (model, i1, i2), z_(z) {
+					const KEY& i1, const KEY& i2) :
+				NonlinearFactor2<CFG, KEY, KEY> (model, i1, i2), z_(z) {
 			}
 
 			Vector evaluateError(const Pose2& x1, const Pose2& x2, boost::optional<

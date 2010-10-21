@@ -216,8 +216,8 @@ namespace gtsam {
   private:
     /** Serialization function */
     friend class boost::serialization::access;
-    template<class Archive>
-    void serialize(Archive & ar, const unsigned int version)
+    template<class ARCHIVE>
+    void serialize(ARCHIVE & ar, const unsigned int version)
     {
       ar & BOOST_SERIALIZATION_NVP(r1_);
       ar & BOOST_SERIALIZATION_NVP(r2_);

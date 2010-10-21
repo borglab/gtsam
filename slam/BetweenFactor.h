@@ -30,15 +30,15 @@ namespace gtsam {
 	 *
 	 * FIXME: This should only need one key type, as we can't have different types
 	 */
-	template<class Values, class Key1, class Key2 = Key1>
-	class BetweenFactor: public NonlinearFactor2<Values, Key1, Key2> {
+	template<class VALUES, class KEY1, class KEY2 = KEY1>
+	class BetweenFactor: public NonlinearFactor2<VALUES, KEY1, KEY2> {
 
 	public:
-		typedef typename Key1::Value T;
+		typedef typename KEY1::Value T;
 
 	private:
 
-		typedef NonlinearFactor2<Values, Key1, Key2> Base;
+		typedef NonlinearFactor2<VALUES, KEY1, KEY2> Base;
 
 		T measured_; /** The measurement */
 
@@ -48,7 +48,7 @@ namespace gtsam {
 		typedef typename boost::shared_ptr<BetweenFactor> shared_ptr;
 
 		/** Constructor */
-		BetweenFactor(const Key1& key1, const Key2& key2, const T& measured,
+		BetweenFactor(const KEY1& key1, const KEY2& key2, const T& measured,
 				const SharedGaussian& model) :
 			Base(model, key1, key2), measured_(measured) {
 		}
@@ -62,9 +62,9 @@ namespace gtsam {
 		}
 
 		/** equals */
-		bool equals(const NonlinearFactor<Values>& expected, double tol) const {
-			const BetweenFactor<Values, Key1, Key2> *e =
-					dynamic_cast<const BetweenFactor<Values, Key1, Key2>*> (&expected);
+		bool equals(const NonlinearFactor<VALUES>& expected, double tol) const {
+			const BetweenFactor<VALUES, KEY1, KEY2> *e =
+					dynamic_cast<const BetweenFactor<VALUES, KEY1, KEY2>*> (&expected);
 			return e != NULL && Base::equals(expected, tol) && this->measured_.equals(
 					e->measured_, tol);
 		}

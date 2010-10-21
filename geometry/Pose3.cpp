@@ -171,7 +171,7 @@ namespace gtsam {
   Point3 Pose3::transform_to(const Point3& p,
     		  	boost::optional<Matrix&> H1, boost::optional<Matrix&> H2) const {
 	  const Point3 result = R_.unrotate(p - t_);
-	  if (H1) { // *H1 = Dtransform_to1(pose, p);
+	  if (H1) { 
 		const Point3& q = result;
 		Matrix DR = skewSymmetric(q.x(), q.y(), q.z());
 #ifdef CORRECT_POSE3_EXMAP
