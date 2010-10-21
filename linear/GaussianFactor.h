@@ -22,7 +22,6 @@
 
 #include <boost/shared_ptr.hpp>
 #include <boost/tuple/tuple.hpp>
-//#include <boost/serialization/map.hpp>
 #include <boost/foreach.hpp>
 #include <boost/lambda/lambda.hpp>
 #include <boost/bind.hpp>
@@ -110,8 +109,6 @@ public:
 	/** Construct from Conditional Gaussian */
 	GaussianFactor(const GaussianConditional& cg);
 
-//	/** Constructor that combines a set of factors */
-//	GaussianFactor(const std::vector<shared_ptr> & factors);
 
 	// Implementing Testable interface
 	void print(const std::string& s = "") const;
@@ -191,8 +188,6 @@ public:
 	/** Return A*x */
 	Vector operator*(const VectorValues& x) const;
 
-//	/** Return A'*e */
-//	VectorValues operator^(const Vector& e) const;
 
 	/** x += A'*e */
 	void transposeMultiplyAdd(double alpha, const Vector& e, VectorValues& x) const;

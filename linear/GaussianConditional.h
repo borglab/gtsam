@@ -109,15 +109,6 @@ public:
 	/** equals function */
 	bool equals(const GaussianConditional &cg, double tol = 1e-9) const;
 
-//	/** permute the variables in the conditional */
-//	void permuteWithInverse(const Permutation& inversePermutation);
-//
-//  /** Permute the variables when only separator variables need to be permuted.
-//   * Returns true if any reordered variables appeared in the separator and
-//   * false if not.
-//   */
-//  bool permuteSeparatorWithInverse(const Permutation& inversePermutation);
-
 	/** dimension of multivariate variable */
 	size_t dim() const { return rsd_.size1(); }
 

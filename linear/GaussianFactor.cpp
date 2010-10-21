@@ -36,7 +36,7 @@
 #include <gtsam/linear/GaussianFactorGraph.h>
 
 using namespace std;
-//using namespace boost::assign;
+
 namespace ublas = boost::numeric::ublas;
 using namespace boost::lambda;
 
@@ -247,21 +247,6 @@ double GaussianFactor::error(const VectorValues& c) const {
   return 0.5 * inner_prod(weighted,weighted);
 }
 
-///* ************************************************************************* */
-//Dimensions GaussianFactor::dimensions() const {
-//  Dimensions result;
-//  BOOST_FOREACH(const NamedMatrix& jA, As_)
-//		result.insert(std::pair<Index,size_t>(jA.first,jA.second.size2()));
-//  return result;
-//}
-//
-///* ************************************************************************* */
-//void GaussianFactor::tally_separator(Index key, set<Index>& separator) const {
-//  if(involves(key)) {
-//    BOOST_FOREACH(const NamedMatrix& jA, As_)
-//      if(jA.first != key) separator.insert(jA.first);
-//  }
-//}
 
 /* ************************************************************************* */
 Vector GaussianFactor::operator*(const VectorValues& x) const {
@@ -271,23 +256,10 @@ Vector GaussianFactor::operator*(const VectorValues& x) const {
   // Just iterate over all A matrices and multiply in correct config part
   for(size_t pos=0; pos<keys_.size(); ++pos)
     Ax += ublas::prod(Ab_(pos), x[keys_[pos]]);
-//  BOOST_FOREACH(const NamedMatrix& jA, As_)
-//    Ax += (jA.second * x[jA.first]);
 
   return model_->whiten(Ax);
 }
 
-///* ************************************************************************* */
-//VectorValues GaussianFactor::operator^(const Vector& e) const {
-//  Vector E = model_->whiten(e);
-//	VectorValues x;
-//  // Just iterate over all A matrices and insert Ai^e into VectorValues
-//  for(size_t pos=0; pos<keys_.size(); ++pos)
-//    x.insert(keys_[pos], ARange(pos)^E);
-////  BOOST_FOREACH(const NamedMatrix& jA, As_)
-////    x.insert(jA.first,jA.second^E);
-//	return x;
-//}
 
 /* ************************************************************************* */
 void GaussianFactor::transposeMultiplyAdd(double alpha, const Vector& e,
@@ -296,8 +268,6 @@ void GaussianFactor::transposeMultiplyAdd(double alpha, const Vector& e,
 	// Just iterate over all A matrices and insert Ai^e into VectorValues
   for(size_t pos=0; pos<keys_.size(); ++pos)
     gtsam::transposeMultiplyAdd(1.0, Ab_(pos), E, x[keys_[pos]]);
-//	BOOST_FOREACH(const NamedMatrix& jA, As_)
-//		gtsam::transposeMultiplyAdd(1.0, jA.second, E, x[jA.first]);
 }
 
 /* ************************************************************************* */  
@@ -392,8 +362,7 @@ GaussianConditional::shared_ptr GaussianFactor::eliminateFirst() {
     for(size_t j=0; j<matrix_.size2(); ++j)
       for(size_t i=j+1; i<noiseModel->dim(); ++i)
         matrix_(i,j) = 0.0;
-//    ublas::triangular_adaptor<matrix_type, ublas::strict_lower> AbLower(Ab_);
-//    fill(AbLower.begin1(), AbLower.end1(), 0.0);
+
   }
 
   if(debug) gtsam::print(matrix_, "QR result: ");
@@ -509,8 +478,6 @@ GaussianBayesNet::shared_ptr GaussianFactor::eliminate(size_t nrFrontals) {
     for(size_t j=0; j<matrix_.size2(); ++j)
       for(size_t i=j+1; i<noiseModel->dim(); ++i)
         matrix_(i,j) = 0.0;
-//    ublas::triangular_adaptor<matrix_type, ublas::strict_lower> AbLower(Ab_);
-//    fill(AbLower.begin1(), AbLower.end1(), 0.0);
   }
 
   if(debug) gtsam::print(matrix_, "QR result: ");

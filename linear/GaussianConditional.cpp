@@ -139,36 +139,7 @@ bool GaussianConditional::equals(const GaussianConditional &c, double tol) const
 	return true;
 }
 
-///* ************************************************************************* */
-//void GaussianConditional::permuteWithInverse(const Permutation& inversePermutation) {
-//  Conditional::permuteWithInverse(inversePermutation);
-//  BOOST_FOREACH(Parents::value_type& parent, parents_) {
-//    parent.first = inversePermutation[parent.first];
-//  }
-//#ifndef NDEBUG
-//  const_iterator parent = parents_.begin();
-//  Conditional::const_iterator baseParent = Conditional::parents_.begin();
-//  while(parent != parents_.end())
-//    assert((parent++)->first == *(baseParent++));
-//  assert(baseParent == Conditional::parents_.end());
-//#endif
-//}
-//
-///* ************************************************************************* */
-//bool GaussianConditional::permuteSeparatorWithInverse(const Permutation& inversePermutation) {
-//  bool separatorChanged = Conditional::permuteSeparatorWithInverse(inversePermutation);
-//  BOOST_FOREACH(Parents::value_type& parent, parents_) {
-//    parent.first = inversePermutation[parent.first];
-//  }
-//#ifndef NDEBUG
-//  const_iterator parent = parents_.begin();
-//  Conditional::const_iterator baseParent = Conditional::parents_.begin();
-//  while(parent != parents_.end())
-//    assert((parent++)->first == *(baseParent++));
-//  assert(baseParent == Conditional::parents_.end());
-//#endif
-//  return separatorChanged;
-//}
+
 
 /* ************************************************************************* */
 Vector GaussianConditional::solve(const VectorValues& x) const {
@@ -177,7 +148,7 @@ Vector GaussianConditional::solve(const VectorValues& x) const {
 	Vector rhs(get_d());
 	for (const_iterator parent = beginParents(); parent != endParents(); ++parent) {
     ublas::axpy_prod(-get_S(parent), x[*parent], rhs, false);
-//		multiplyAdd(-1.0, get_S(parent), x[*parent], rhs);
+
 	}
 	if(debug) gtsam::print(get_R(), "Calling backSubstituteUpper on ");
 	if(debug) gtsam::print(rhs, "rhs: ");
@@ -194,7 +165,7 @@ Vector GaussianConditional::solve(const Permuted<VectorValues>& x) const {
   Vector rhs(get_d());
   for (const_iterator parent = beginParents(); parent != endParents(); ++parent) {
     ublas::axpy_prod(-get_S(parent), x[*parent], rhs, false);
-//    multiplyAdd(-1.0, get_S(parent), x[*parent], rhs);
+
   }
   return backSubstituteUpper(get_R(), rhs, false);
 }
