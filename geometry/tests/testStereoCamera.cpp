@@ -34,7 +34,6 @@ TEST( StereoCamera, operators)
 /* ************************************************************************* */
 TEST( StereoCamera, project)
 {
-	double uL, uR, v;
 	// create a Stereo camera at the origin with focal length 1500, baseline 0.5m
 	// and principal point 320, 240 (for a hypothetical 640x480 sensor)
 	Cal3_S2 K(1500, 1500, 0, 320, 240);
@@ -67,8 +66,6 @@ TEST( StereoCamera, project)
 	StereoCamera stereoCam4(camPose4, K, 0.5);
 	StereoPoint2 result4 = stereoCam4.project(p4);
 	CHECK(assert_equal(StereoPoint2(320.0+300.0,320.0+150.0,240.0+300),result4));
-
-	// cout << "(uL,uR,v): ("<<result4(0)<<","<<result4(1)<<","<<result4(2)<<")" << endl;
 }
 
 /* ************************************************************************* */
