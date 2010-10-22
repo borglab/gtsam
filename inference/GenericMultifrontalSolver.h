@@ -20,14 +20,8 @@ class GenericMultifrontalSolver {
 
 protected:
 
-  // Store the original factors for computing marginals
-  FactorGraph<FACTOR> factors_;
-
-  // Column structure of the factor graph
-  VariableIndex<> structure_;
-
   // Elimination tree that performs elimination.
-  typename JunctionTree<FactorGraph<FACTOR> >::shared_ptr eliminationTree_;
+  typename JunctionTree<FactorGraph<FACTOR> >::shared_ptr junctionTree_;
 
 public:
 
@@ -41,7 +35,7 @@ public:
    * Eliminate the factor graph sequentially.  Uses a column elimination tree
    * to recursively eliminate.
    */
-  typename BayesNet<typename FACTOR::Conditional>::shared_ptr eliminate() const;
+  typename BayesTree<typename FACTOR::Conditional>::shared_ptr eliminate() const;
 
   /**
    * Compute the marginal Gaussian density over a variable, by integrating out

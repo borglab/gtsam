@@ -23,6 +23,8 @@
 #include <gtsam/linear/GaussianConditional.h>
 #include <gtsam/linear/GaussianFactorGraph.h>
 
+#include <boost/shared_ptr.hpp>
+
 namespace gtsam {
 
 	/* ************************************************************************* */
@@ -31,6 +33,7 @@ namespace gtsam {
 	 */
 	class GaussianJunctionTree: public JunctionTree<GaussianFactorGraph> {
 	public:
+	  typedef boost::shared_ptr<GaussianJunctionTree> shared_ptr;
 		typedef JunctionTree<GaussianFactorGraph> Base;
 		typedef Base::sharedClique sharedClique;
 

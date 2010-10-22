@@ -22,7 +22,7 @@ check_PROGRAMS += tests/testVectorValues
 #check_PROGRAMS += tests/testVectorMap tests/testVectorBTree  
 
 # Solvers
-sources += GaussianSequentialSolver.cpp
+sources += GaussianSequentialSolver.cpp GaussianMultifrontalSolver.cpp
 
 # Gaussian Factor Graphs
 headers += GaussianFactorSet.h Factorization.h

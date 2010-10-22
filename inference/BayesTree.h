@@ -43,6 +43,7 @@ namespace gtsam {
 
 	public:
 
+	  typedef boost::shared_ptr<BayesTree<CONDITIONAL> > shared_ptr;
 		typedef boost::shared_ptr<CONDITIONAL> sharedConditional;
 		typedef boost::shared_ptr<BayesNet<CONDITIONAL> > sharedBayesNet;
 
