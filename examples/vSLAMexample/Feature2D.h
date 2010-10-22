@@ -12,9 +12,9 @@ public:
     int m_idLandmark;       // id of the 3D landmark that it is associated with
 public:
     Feature2D(int idCamera, int idLandmark, gtsam::Point2 p)
-            :m_idCamera(idCamera),
-            m_idLandmark(idLandmark),
-            m_p(p)
+            :m_p(p),
+            m_idCamera(idCamera),
+            m_idLandmark(idLandmark)
     {};
 
     void print(const std::string& s = "") const

@@ -123,7 +123,7 @@ std::vector<Feature2D> readFeatures(int pose_id, const char* filename)
     file >> numFeatures ;
 
     std::vector<Feature2D> vFeatures_;
-    for (size_t i = 0; i < numFeatures; i++)
+    for (int i = 0; i < numFeatures; i++)
     {
         int landmark_id; double x, y;
         file >> landmark_id >> x >> y;
