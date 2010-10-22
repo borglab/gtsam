@@ -41,8 +41,8 @@ string g_dataFolder;
 // Store groundtruth values, read from files
 shared_ptrK g_calib;
 map<int, Point3> g_landmarks;        // map: <landmark_id, landmark_position>
-std::vector<Pose3> g_poses;            // map: <camera_id, pose>
-std::vector<std::vector<Feature2D> > g_measurements;    // map: <camera_id, detected_features> -- where: Feature2D: {camera_id, landmark_id, 2d feature_position}
+std::vector<Pose3> g_poses;          // prior camera poses at each frame
+std::vector<std::vector<Feature2D> > g_measurements;    // feature sets detected at each frame
 
 // Noise models
 SharedGaussian measurementSigma(noiseModel::Isotropic::Sigma(2, 5.0f));
@@ -52,13 +52,13 @@ SharedGaussian poseSigma(noiseModel::Unit::Create(1));
 /* ************************************************************************* */
 /**
   * Read all data: calibration file, landmarks, poses, and all features measurements
-  * Data is stored in global variables.
+  * Data is stored in global variables, which are used later to simulate incremental updates.
   */
-void readAllData()
+void readAllDataISAM()
 {
     g_calib = readCalibData(g_dataFolder + CALIB_FILE);
 
-    // Read groundtruth landmarks' positions. These will be used later as intial estimates for landmark nodes.
+    // Read groundtruth landmarks' positions. These will be used later as intial estimates and priors for landmark nodes.
     g_landmarks = readLandMarks(g_dataFolder + LANDMARKS_FILE);
 
     // Read groundtruth camera poses. These will be used later as intial estimates for pose nodes.
@@ -70,9 +70,7 @@ void readAllData()
 
 /* ************************************************************************* */
 /**
-  * Setup vSLAM graph
-  * by adding and linking 2D features (measurements) detected in each captured image
-  * with their corresponding landmarks.
+  * Setup newFactors and initialValues for each new pose and set of measurements at each frame.
   */
 void createNewFactors(shared_ptr<Graph>& newFactors, boost::shared_ptr<Values>& initialValues,
                       int pose_id, Pose3& pose,
@@ -119,23 +117,22 @@ int main(int argc, char* argv[])
         exit(0);
     }
 
-    g_dataFolder = string(argv[1]);
-    g_dataFolder += "/";
-    readAllData();
+    g_dataFolder = string(argv[1]) + "/";
+    readAllDataISAM();
 
-    ISAMLoop<Values> isam(3);
+    // Create an ISAMLoop which will be relinearized and reordered after every "relinearizeInterval" updates
+    int relinearizeInterval = 3;
+    ISAMLoop<Values> isam(relinearizeInterval);
 
+    // At each frame i with new camera pose and new set of measurements associated with it,
+    // create a graph of new factors and update ISAM
     for (size_t i = 0; i<g_measurements.size(); i++)
-    {
+    { 
         shared_ptr<Graph> newFactors;
         shared_ptr<Values> initialValues;
         createNewFactors(newFactors, initialValues,
                          i, g_poses[i],
                          g_measurements[i], measurementSigma, g_calib);
-
-//        cout << "Add prior pose and measurements of camera " << i << endl;
-//        newFactors->print();
-//        initialValues->print();
 
         isam.update(*newFactors, *initialValues);
         Values currentEstimate = isam.estimate();

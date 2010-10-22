@@ -18,7 +18,7 @@ noinst_PROGRAMS += Pose2SLAMExample_easy 			# Solves SLAM example from tutorial 
 noinst_PROGRAMS += Pose2SLAMExample_advanced		# Solves SLAM example from tutorial by using Pose2SLAM and advanced optimization interface
 #noinst_PROGRAMS += Pose2SLAMwSPCG_easy      		# Solves a simple Pose2 SLAM example with advanced SPCG solver
 #noinst_PROGRAMS += Pose2SLAMwSPCG_advanced  		# Solves a simple Pose2 SLAM example with easy SPCG solver
-SUBDIRS = vSLAMexample # does not compile....
+#SUBDIRS = vSLAMexample # does not compile....
 #----------------------------------------------------------------------------------------------------
 # rules to build local programs
 #----------------------------------------------------------------------------------------------------

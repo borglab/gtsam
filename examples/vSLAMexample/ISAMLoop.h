@@ -50,7 +50,6 @@ public:
 
   /** Return the current solution estimate */
   Values estimate();
-  Values calculateEstimate() { return estimate(); }
 
   /** Return the current linearization point */
   const Values& getLinearizationPoint() { return linPoint_; }

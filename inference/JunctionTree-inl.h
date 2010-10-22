@@ -25,6 +25,7 @@
 #include <gtsam/inference/inference-inl.h>
 #include <gtsam/inference/VariableSlots-inl.h>
 #include <gtsam/inference/SymbolicSequentialSolver.h>
+#include <gtsam/inference/ClusterTree-inl.h>
 
 #include <boost/foreach.hpp>
 #include <boost/pool/pool_alloc.hpp>

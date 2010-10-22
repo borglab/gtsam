@@ -28,51 +28,51 @@ using namespace boost::assign;
 
 namespace gtsam {
 
-	using namespace std;
+  using namespace std;
 
-	/** Create an empty Bayes Tree */
-	template<class CONDITIONAL>
-	ISAM<CONDITIONAL>::ISAM() : BayesTree<CONDITIONAL>() {}
+  /** Create an empty Bayes Tree */
+  template<class CONDITIONAL>
+  ISAM<CONDITIONAL>::ISAM() : BayesTree<CONDITIONAL>() {}
 
-	/** Create a Bayes Tree from a Bayes Net */
-	template<class CONDITIONAL>
-	ISAM<CONDITIONAL>::ISAM(const BayesNet<CONDITIONAL>& bayesNet) :
-	  BayesTree<CONDITIONAL>(bayesNet) {}
+  /** Create a Bayes Tree from a Bayes Net */
+  template<class CONDITIONAL>
+  ISAM<CONDITIONAL>::ISAM(const BayesNet<CONDITIONAL>& bayesNet) :
+    BayesTree<CONDITIONAL>(bayesNet) {}
 
-	/* ************************************************************************* */
-	template<class CONDITIONAL>
-	template<class FACTORGRAPH>
-	void ISAM<CONDITIONAL>::update_internal(const FACTORGRAPH& newFactors, Cliques& orphans) {
+  /* ************************************************************************* */
+  template<class CONDITIONAL>
+  template<class FACTORGRAPH>
+  void ISAM<CONDITIONAL>::update_internal(const FACTORGRAPH& newFactors, Cliques& orphans) {
 
-		// Remove the contaminated part of the Bayes tree
-		BayesNet<CONDITIONAL> bn;
-		removeTop(newFactors.keys(), bn, orphans);
-		FACTORGRAPH factors(bn);
+    // Remove the contaminated part of the Bayes tree
+    BayesNet<CONDITIONAL> bn;
+    removeTop(newFactors.keys(), bn, orphans);
+    FACTORGRAPH factors(bn);
 
-		// add the factors themselves
-		factors.push_back(newFactors);
+    // add the factors themselves
+    factors.push_back(newFactors);
 
-		// eliminate into a Bayes net
-		typename BayesNet<CONDITIONAL>::shared_ptr bayesNet = GenericSequentialSolver<typename CONDITIONAL::Factor>(factors).eliminate();
+    // eliminate into a Bayes net
+    typename BayesNet<CONDITIONAL>::shared_ptr bayesNet = GenericSequentialSolver<typename CONDITIONAL::Factor>(factors).eliminate();
 
-		// insert conditionals back in, straight into the topless bayesTree
-		typename BayesNet<CONDITIONAL>::const_reverse_iterator rit;
-		for ( rit=bayesNet->rbegin(); rit != bayesNet->rend(); ++rit )
-			this->insert(*rit);
+    // insert conditionals back in, straight into the topless bayesTree
+    typename BayesNet<CONDITIONAL>::const_reverse_iterator rit;
+    for ( rit=bayesNet->rbegin(); rit != bayesNet->rend(); ++rit )
+      this->insert(*rit);
 
-		// add orphans to the bottom of the new tree
-		BOOST_FOREACH(sharedClique orphan, orphans) {
-		  this->insert(orphan);
-		}
+    // add orphans to the bottom of the new tree
+    BOOST_FOREACH(sharedClique orphan, orphans) {
+      this->insert(orphan);
+    }
 
-	}
+  }
 
-	template<class CONDITIONAL>
-	template<class FACTORGRAPH>
-	void ISAM<CONDITIONAL>::update(const FACTORGRAPH& newFactors) {
-		Cliques orphans;
-		this->update_internal(newFactors, orphans);
-	}
+  template<class CONDITIONAL>
+  template<class FACTORGRAPH>
+  void ISAM<CONDITIONAL>::update(const FACTORGRAPH& newFactors) {
+    Cliques orphans;
+    this->update_internal(newFactors, orphans);
+  }
 
 }
 /// namespace gtsam
