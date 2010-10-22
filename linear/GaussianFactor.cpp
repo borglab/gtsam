@@ -63,7 +63,7 @@ GaussianFactor::GaussianFactor() : Ab_(matrix_) { assertInvariants(); }
 /* ************************************************************************* */
 GaussianFactor::GaussianFactor(const Vector& b_in) : firstNonzeroBlocks_(b_in.size(), 0), Ab_(matrix_) {
   size_t dims[] = { 1 };
-  Ab_.copyStructureFrom(ab_type(matrix_, dims, dims+1, b_in.size()));
+  Ab_.copyStructureFrom(BlockAb(matrix_, dims, dims+1, b_in.size()));
   getb() = b_in;
   assertInvariants();
 }
@@ -73,7 +73,7 @@ GaussianFactor::GaussianFactor(Index i1, const Matrix& A1,
     const Vector& b, const SharedDiagonal& model) :
 		IndexFactor(i1), model_(model), firstNonzeroBlocks_(b.size(), 0), Ab_(matrix_) {
   size_t dims[] = { A1.size2(), 1};
-  Ab_.copyStructureFrom(ab_type(matrix_, dims, dims+2, b.size()));
+  Ab_.copyStructureFrom(BlockAb(matrix_, dims, dims+2, b.size()));
 	Ab_(0) = A1;
 	getb() = b;
 	assertInvariants();
@@ -84,7 +84,7 @@ GaussianFactor::GaussianFactor(Index i1, const Matrix& A1, Index i2, const Matri
 		const Vector& b, const SharedDiagonal& model) :
 		IndexFactor(i1,i2), model_(model), firstNonzeroBlocks_(b.size(), 0), Ab_(matrix_) {
   size_t dims[] = { A1.size2(), A2.size2(), 1};
-  Ab_.copyStructureFrom(ab_type(matrix_, dims, dims+3, b.size()));
+  Ab_.copyStructureFrom(BlockAb(matrix_, dims, dims+3, b.size()));
   Ab_(0) = A1;
   Ab_(1) = A2;
   getb() = b;
@@ -96,7 +96,7 @@ GaussianFactor::GaussianFactor(Index i1, const Matrix& A1, Index i2, const Matri
     Index i3, const Matrix& A3,	const Vector& b, const SharedDiagonal& model) :
     IndexFactor(i1,i2,i3), model_(model), firstNonzeroBlocks_(b.size(), 0), Ab_(matrix_) {
   size_t dims[] = { A1.size2(), A2.size2(), A3.size2(), 1};
-  Ab_.copyStructureFrom(ab_type(matrix_, dims, dims+4, b.size()));
+  Ab_.copyStructureFrom(BlockAb(matrix_, dims, dims+4, b.size()));
   Ab_(0) = A1;
   Ab_(1) = A2;
   Ab_(2) = A3;
@@ -115,7 +115,7 @@ GaussianFactor::GaussianFactor(const std::vector<std::pair<Index, Matrix> > &ter
     dims[j] = terms[j].second.size2();
 	}
   dims[terms.size()] = 1;
-  Ab_.copyStructureFrom(ab_type(matrix_, dims, dims+terms.size()+1, b.size()));
+  Ab_.copyStructureFrom(BlockAb(matrix_, dims, dims+terms.size()+1, b.size()));
   for(size_t j=0; j<terms.size(); ++j)
     Ab_(j) = terms[j].second;
   getb() = b;
@@ -136,7 +136,7 @@ GaussianFactor::GaussianFactor(const std::list<std::pair<Index, Matrix> > &terms
   }
   dims[j] = 1;
   firstNonzeroBlocks_.resize(b.size(), 0);
-  Ab_.copyStructureFrom(ab_type(matrix_, dims, dims+terms.size()+1, b.size()));
+  Ab_.copyStructureFrom(BlockAb(matrix_, dims, dims+terms.size()+1, b.size()));
   j = 0;
   for(std::list<std::pair<Index, Matrix> >::const_iterator term=terms.begin(); term!=terms.end(); ++term) {
     Ab_(j) = term->second;
@@ -178,8 +178,8 @@ bool GaussianFactor::equals(const GaussianFactor& f, double tol) const {
 
   assert(Ab_.size1() == f.Ab_.size1() && Ab_.size2() == f.Ab_.size2());
 
-  ab_type::const_block_type Ab1(Ab_.range(0, Ab_.nBlocks()));
-  ab_type::const_block_type Ab2(f.Ab_.range(0, f.Ab_.nBlocks()));
+  constABlock Ab1(Ab_.range(0, Ab_.nBlocks()));
+  constABlock Ab2(f.Ab_.range(0, f.Ab_.nBlocks()));
   for(size_t row=0; row<Ab1.size1(); ++row)
     if(!equal_with_abs_tol(ublas::row(Ab1, row), ublas::row(Ab2, row), tol) &&
         !equal_with_abs_tol(-ublas::row(Ab1, row), ublas::row(Ab2, row), tol))
@@ -209,8 +209,8 @@ void GaussianFactor::permuteWithInverse(const Permutation& inversePermutation) {
   // Copy the variables and matrix into the new order
   vector<Index> oldKeys(keys_.size());
   keys_.swap(oldKeys);
-  matrix_type oldMatrix;
-  ab_type oldAb(oldMatrix, dimensions.begin(), dimensions.end(), Ab_.size1());
+  AbMatrix oldMatrix;
+  BlockAb oldAb(oldMatrix, dimensions.begin(), dimensions.end(), Ab_.size1());
   Ab_.swap(oldAb);
   j = 0;
   BOOST_FOREACH(const SourceSlots::value_type& sourceSlot, sourceSlots) {
@@ -295,7 +295,7 @@ GaussianFactor::sparse(const Dimensions& columnIndices) const {
 
 	// iterate over all matrices in the factor
   for(size_t pos=0; pos<keys_.size(); ++pos) {
-    ab_type::const_block_type A(Ab_(pos));
+    constABlock A(Ab_(pos));
 		// find first column index for this key
 		int column_start = columnIndices.at(keys_[pos]);
 		for (size_t i = 0; i < A.size1(); i++) {
@@ -556,200 +556,9 @@ struct _RowSource {
   bool operator<(const _RowSource& o) const { return firstNonzeroVar < o.firstNonzeroVar; }
 };
 
-///* Explicit instantiations for storage types */
-//template GaussianFactor::shared_ptr GaussianFactor::Combine(const FactorGraph<GaussianFactor>&, const GaussianVariableIndex<VariableIndexStorage_vector>&, const vector<size_t>&, const vector<Index>&, const std::vector<std::vector<size_t> >&);
-//template GaussianFactor::shared_ptr GaussianFactor::Combine(const FactorGraph<GaussianFactor>&, const GaussianVariableIndex<VariableIndexStorage_deque>&, const vector<size_t>&, const vector<Index>&, const std::vector<std::vector<size_t> >&);
-//
-//// Utility function to determine row count and check if any noise models are constrained
-//// TODO: would be nicer if this function was split and are factorgraph methods
-//static std::pair<size_t,bool> rowCount(const FactorGraph<GaussianFactor>& factorGraph,
-//		const vector<size_t>& factorIndices)
-//{
-//	static const bool debug = false;
-//	tic("Combine: count sizes");
-//	size_t m = 0;
-//	bool constrained = false;
-//	BOOST_FOREACH(const size_t i, factorIndices)
-//	{
-//		assert(factorGraph[i] != NULL);
-//		assert(!factorGraph[i]->keys().empty());
-//		m += factorGraph[i]->numberOfRows();
-//		if (debug) cout << "Combining factor " << i << endl;
-//		if (debug) factorGraph[i]->print("  :");
-//		if (!constrained && factorGraph[i]->isConstrained()) {
-//			constrained = true;
-//			if (debug) std::cout << "Found a constraint!" << std::endl;
-//		}
-//	}
-//	toc("Combine: count sizes");
-//	return make_pair(m,constrained);
-//}
-//
-//// Determine row and column counts and check if any noise models are constrained
-//template<class STORAGE>
-//static vector<size_t> columnDimensions(
-//		const GaussianVariableIndex<STORAGE>& variableIndex,
-//		const vector<Index>& variables)
-//{
-//	tic("Combine: count dims");
-//	static const bool debug = false;
-//	vector<size_t> dims(variables.size() + 1);
-//	size_t n = 0;
-//	{
-//		size_t j = 0;
-//		BOOST_FOREACH(const Index& var, variables)
-//		{
-//			if (debug) cout << "Have variable " << var << endl;
-//			dims[j] = variableIndex.dim(var);
-//			n += dims[j];
-//			++j;
-//		}
-//		dims[j] = 1;
-//	}
-//	toc("Combine: count dims");
-//	return dims;
-//}
-//
-//// To do this, we merge-sort the rows so that the column indices of the first structural
-//// non-zero in each row increase monotonically.
-//vector<_RowSource> computeRowPermutation(size_t m, const vector<size_t>& factorIndices,
-//		const FactorGraph<GaussianFactor>& factorGraph) {
-//	vector<_RowSource> rowSources;
-//	rowSources.reserve(m);
-//	size_t i1 = 0;
-//	BOOST_FOREACH(const size_t i2, factorIndices) {
-//		const GaussianFactor& factor(*factorGraph[i2]);
-//		size_t factorRowI = 0;
-//		assert(factor.get_firstNonzeroBlocks().size() == factor.numberOfRows());
-//		BOOST_FOREACH(const size_t factorFirstNonzeroVarpos, factor.get_firstNonzeroBlocks()) {
-//			Index firstNonzeroVar;
-//			firstNonzeroVar = factor.keys()[factorFirstNonzeroVarpos];
-//			rowSources.push_back(_RowSource(firstNonzeroVar, i1, factorRowI));
-//			++ factorRowI;
-//		}
-//		assert(factorRowI == factor.numberOfRows());
-//		++ i1;
-//	}
-//	assert(rowSources.size() == m);
-//	assert(i1 == factorIndices.size());
-//	sort(rowSources.begin(), rowSources.end());
-//	return rowSources;
-//}
-//
-//void copyMatrices(boost::shared_ptr<GaussianFactor> combinedFactor, size_t row,
-//		const GaussianFactor& factor, const std::vector<std::vector<size_t> >& variablePositions,
-//		const size_t factorRow, const size_t factorI, const vector<Index>& variables) {
-//	const static bool debug = false;
-//    const size_t factorFirstNonzeroVarpos = factor.get_firstNonzeroBlocks()[factorRow];
-//	std::vector<Index>::const_iterator keyit = factor.keys().begin() + factorFirstNonzeroVarpos;
-//	std::vector<size_t>::const_iterator varposIt = variablePositions[factorI].begin() + factorFirstNonzeroVarpos;
-//	combinedFactor->set_firstNonzeroBlocks(row, *varposIt);
-//	if(debug) cout << "  copying starting at varpos " << *varposIt << " (variable " << variables[*varposIt] << ")" << endl;
-//	std::vector<Index>::const_iterator keyitend = factor.keys().end();
-//	while(keyit != keyitend) {
-//		const size_t varpos = *varposIt;
-//		assert(variables[varpos] == *keyit);
-//		GaussianFactor::ab_type::block_type retBlock(combinedFactor->getAb(varpos));
-//		const GaussianFactor::ab_type::const_block_type factorBlock(factor.getA(keyit));
-//		ublas::noalias(ublas::row(retBlock, row)) = ublas::row(factorBlock, factorRow);
-//		++ keyit;
-//		++ varposIt;
-//	}
-//}
-//
-//template<class STORAGE>
-//GaussianFactor::shared_ptr GaussianFactor::Combine(const FactorGraph<GaussianFactor>& factorGraph,
-//    const GaussianVariableIndex<STORAGE>& variableIndex, const vector<size_t>& factorIndices,
-//    const vector<Index>& variables, const std::vector<std::vector<size_t> >& variablePositions) {
-//
-//  // Debugging flags
-//  static const bool verbose = false;
-//  static const bool debug = false;
-//  if (verbose) std::cout << "GaussianFactor::GaussianFactor (factors)" << std::endl;
-//  assert(factorIndices.size() == variablePositions.size());
-//
-//  // Determine row count and check if any noise models are constrained
-//  size_t m; bool constrained;
-//  boost::tie(m,constrained) = rowCount(factorGraph,factorIndices);
-//
-//  // Determine column dimensions
-//  vector<size_t> dims = columnDimensions(variableIndex,variables);
-//
-//	// Allocate return value, the combined factor, the augmented Ab matrix and other arrays
-//  tic("Combine: set up empty");
-//  shared_ptr combinedFactor(boost::make_shared<GaussianFactor>());
-//  combinedFactor->Ab_.copyStructureFrom(ab_type(combinedFactor->matrix_, dims.begin(), dims.end(), m));
-//  ublas::noalias(combinedFactor->matrix_) = ublas::zero_matrix<double>(combinedFactor->matrix_.size1(), combinedFactor->matrix_.size2());
-//  combinedFactor->firstNonzeroBlocks_.resize(m);
-//  Vector sigmas(m);
-//
-//  // Copy keys
-//  combinedFactor->keys_.reserve(variables.size());
-//  combinedFactor->keys_.insert(combinedFactor->keys_.end(), variables.begin(), variables.end());
-//  toc("Combine: set up empty");
-//
-//  // Compute a row permutation that maintains a staircase pattern in the new combined factor.
-//  tic("Combine: sort rows");
-//  vector<_RowSource> rowSources = computeRowPermutation(m, factorIndices, factorGraph);
-//  toc("Combine: sort rows");
-//
-//  // Fill in the rows of the new factor in sorted order.  Fill in the array of
-//  // the left-most nonzero for each row and the first structural zero in each column.
-//  // todo SL: smarter ignoring of zero factor variables (store first possible like above)
-//
-//  if(debug) gtsam::print(combinedFactor->matrix_, "matrix_ before copying rows: ");
-//
-//  tic("Combine: copy rows");
-//#ifndef NDEBUG
-//  size_t lastRowFirstVarpos = 0;
-//#endif
-//  for(size_t row=0; row<m; ++row) {
-//
-//    const _RowSource& rowSource = rowSources[row];
-//    assert(rowSource.factorI < factorGraph.size());
-//    const size_t factorI = rowSource.factorI;
-//    const GaussianFactor& factor(*factorGraph[factorIndices[factorI]]);
-//    const size_t factorRow = rowSource.factorRowI;
-//
-//    if(debug)
-//      cout << "Combined row " << row << " is from row " << factorRow << " of factor " << factorIndices[factorI] << endl;
-//
-//    // Copy rhs b and sigma
-//    combinedFactor->getb()(row) = factor.getb()(factorRow);
-//    sigmas(row) = factor.get_sigmas()(factorRow);
-//
-//    // Copy the row of A variable by variable, starting at the first nonzero variable.
-//    copyMatrices(combinedFactor, row, factor, variablePositions, factorRow, factorI, variables);
-//
-//#ifndef NDEBUG
-//    // Debug check, make sure the first column of nonzeros increases monotonically
-//    if(row != 0)
-//      assert(combinedFactor->firstNonzeroBlocks_[row] >= lastRowFirstVarpos);
-//    lastRowFirstVarpos = combinedFactor->firstNonzeroBlocks_[row];
-//#endif
-//  }
-//  toc("Combine: copy rows");
-//
-//  if (verbose) std::cout << "GaussianFactor::GaussianFactor done" << std::endl;
-//
-//  if (constrained) {
-//    combinedFactor->model_ = noiseModel::Constrained::MixedSigmas(sigmas);
-//    if (verbose) combinedFactor->model_->print("Just created Constraint ^");
-//  } else {
-//    combinedFactor->model_ = noiseModel::Diagonal::Sigmas(sigmas);
-//    if (verbose) combinedFactor->model_->print("Just created Diagonal");
-//  }
-//
-//  if(debug) combinedFactor->print("Combined factor: ");
-//
-//  combinedFactor->assertInvariants();
-//
-//  return combinedFactor;
-//}
-
 /* ************************************************************************* */
 // Helper functions for Combine
-boost::tuple<vector<size_t>, size_t, size_t> countDims(const std::vector<GaussianFactor::shared_ptr>& factors, const VariableSlots& variableSlots) {
+static boost::tuple<vector<size_t>, size_t, size_t> countDims(const std::vector<GaussianFactor::shared_ptr>& factors, const VariableSlots& variableSlots) {
 #ifndef NDEBUG
   vector<size_t> varDims(variableSlots.size(), numeric_limits<size_t>::max());
 #else
@@ -791,6 +600,7 @@ boost::tuple<vector<size_t>, size_t, size_t> countDims(const std::vector<Gaussia
   return boost::make_tuple(varDims, m, n);
 }
 
+/* ************************************************************************* */
 GaussianFactor::shared_ptr GaussianFactor::Combine(const FactorGraph<GaussianFactor>& factors, const VariableSlots& variableSlots) {
 
   static const bool verbose = false;
@@ -835,7 +645,7 @@ GaussianFactor::shared_ptr GaussianFactor::Combine(const FactorGraph<GaussianFac
   combined->keys_.resize(variableSlots.size());
   std::transform(variableSlots.begin(), variableSlots.end(), combined->keys_.begin(), bind(&VariableSlots::const_iterator::value_type::first, boost::lambda::_1));
   varDims.push_back(1);
-  combined->Ab_.copyStructureFrom(ab_type(combined->matrix_, varDims.begin(), varDims.end(), m));
+  combined->Ab_.copyStructureFrom(BlockAb(combined->matrix_, varDims.begin(), varDims.end(), m));
   combined->firstNonzeroBlocks_.resize(m);
   Vector sigmas(m);
   toc("Combine 3: allocate");
@@ -846,12 +656,12 @@ GaussianFactor::shared_ptr GaussianFactor::Combine(const FactorGraph<GaussianFac
   BOOST_FOREACH(const VariableSlots::value_type& varslot, variableSlots) {
     for(size_t row = 0; row < m; ++row) {
       const Index sourceSlot = varslot.second[rowSources[row].factorI];
-      ab_type::block_type combinedBlock(combined->Ab_(combinedSlot));
+      ABlock combinedBlock(combined->Ab_(combinedSlot));
       if(sourceSlot != numeric_limits<Index>::max()) {
         const GaussianFactor& source(*factors[rowSources[row].factorI]);
         const size_t sourceRow = rowSources[row].factorRowI;
         if(source.firstNonzeroBlocks_[sourceRow] <= sourceSlot) {
-          const ab_type::const_block_type sourceBlock(source.Ab_(sourceSlot));
+          const constABlock sourceBlock(source.Ab_(sourceSlot));
           ublas::noalias(ublas::row(combinedBlock, row)) = ublas::row(sourceBlock, sourceRow);
         } else
           ublas::noalias(ublas::row(combinedBlock, row)) = ublas::zero_vector<double>(combinedBlock.size2());

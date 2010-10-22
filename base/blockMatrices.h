@@ -86,14 +86,14 @@ public:
 template<class MATRIX>
 class VerticalBlockView {
 public:
-  typedef MATRIX matrix_type;
-  typedef typename boost::numeric::ublas::matrix_range<MATRIX> block_type;
-  typedef typename boost::numeric::ublas::matrix_range<const MATRIX> const_block_type;
-  typedef BlockColumn<MATRIX> column_type;
-  typedef BlockColumn<const MATRIX> const_column_type;
+  typedef MATRIX FullMatrix;
+  typedef typename boost::numeric::ublas::matrix_range<MATRIX> Block;
+  typedef typename boost::numeric::ublas::matrix_range<const MATRIX> constBlock;
+  typedef BlockColumn<MATRIX> Column;
+  typedef BlockColumn<const MATRIX> constColumn;
 
 protected:
-  matrix_type& matrix_;
+  FullMatrix& matrix_;
   std::vector<size_t> variableColOffsets_;
   size_t rowStart_;
   size_t rowEnd_;
@@ -101,18 +101,18 @@ protected:
 
 public:
   /** Construct from an empty matrix (asserts that the matrix is empty) */
-  VerticalBlockView(matrix_type& matrix);
+  VerticalBlockView(FullMatrix& matrix);
 
   /** Construct from iterators over the sizes of each vertical block */
   template<typename ITERATOR>
-  VerticalBlockView(matrix_type& matrix, ITERATOR firstBlockDim, ITERATOR lastBlockDim);
+  VerticalBlockView(FullMatrix& matrix, ITERATOR firstBlockDim, ITERATOR lastBlockDim);
 
   /** Construct from a vector of the sizes of each vertical block, resize the
    * matrix so that its height is matrixNewHeight and its width fits the given
    * block dimensions.
    */
   template<typename ITERATOR>
-  VerticalBlockView(matrix_type& matrix, ITERATOR firstBlockDim, ITERATOR lastBlockDim, size_t matrixNewHeight);
+  VerticalBlockView(FullMatrix& matrix, ITERATOR firstBlockDim, ITERATOR lastBlockDim, size_t matrixNewHeight);
   
   /** Row size 
    */
@@ -128,52 +128,52 @@ public:
   size_t nBlocks() const { assertInvariants(); return variableColOffsets_.size() - 1 - blockStart_; }
 
   
-  block_type operator()(size_t block) {
+  Block operator()(size_t block) {
     return range(block, block+1);
   }
 
-  const_block_type operator()(size_t block) const {
+  constBlock operator()(size_t block) const {
     return range(block, block+1);
   }
 
-  block_type range(size_t startBlock, size_t endBlock) {
+  Block range(size_t startBlock, size_t endBlock) {
     assertInvariants();
     size_t actualStartBlock = startBlock + blockStart_;
     size_t actualEndBlock = endBlock + blockStart_;
     checkBlock(actualStartBlock);
     assert(actualEndBlock < variableColOffsets_.size());
-    return block_type(matrix_,
+    return Block(matrix_,
         boost::numeric::ublas::range(rowStart_, rowEnd_),
         boost::numeric::ublas::range(variableColOffsets_[actualStartBlock], variableColOffsets_[actualEndBlock]));
   }
 
-  const_block_type range(size_t startBlock, size_t endBlock) const {
+  constBlock range(size_t startBlock, size_t endBlock) const {
     assertInvariants();
     size_t actualStartBlock = startBlock + blockStart_;
     size_t actualEndBlock = endBlock + blockStart_;
     checkBlock(actualStartBlock);
     assert(actualEndBlock < variableColOffsets_.size());
-    return const_block_type(matrix_,
+    return constBlock(matrix_,
         boost::numeric::ublas::range(rowStart_, rowEnd_),
         boost::numeric::ublas::range(variableColOffsets_[actualStartBlock], variableColOffsets_[actualEndBlock]));
   }
 
-  column_type column(size_t block, size_t columnOffset) {
+  Column column(size_t block, size_t columnOffset) {
     assertInvariants();
     size_t actualBlock = block + blockStart_;
     checkBlock(actualBlock);
     assert(variableColOffsets_[actualBlock] + columnOffset < matrix_.size2());
-    block_type blockMat(operator()(block));
-    return column_type(blockMat, columnOffset);
+    Block blockMat(operator()(block));
+    return Column(blockMat, columnOffset);
   }
 
-  const_column_type column(size_t block, size_t columnOffset) const {
+  constColumn column(size_t block, size_t columnOffset) const {
     assertInvariants();
     size_t actualBlock = block + blockStart_;
     checkBlock(actualBlock);
     assert(variableColOffsets_[actualBlock] + columnOffset < matrix_.size2());
-    const_block_type blockMat(operator()(block));
-    return const_column_type(blockMat, columnOffset);
+    constBlock blockMat(operator()(block));
+    return constColumn(blockMat, columnOffset);
   }
 
   size_t offset(size_t block) const {
@@ -242,7 +242,7 @@ protected:
 
 /* ************************************************************************* */
 template<class MATRIX>
-VerticalBlockView<MATRIX>::VerticalBlockView(matrix_type& matrix) :
+VerticalBlockView<MATRIX>::VerticalBlockView(FullMatrix& matrix) :
 matrix_(matrix), rowStart_(0), rowEnd_(matrix_.size1()), blockStart_(0) {
   fillOffsets((size_t*)0, (size_t*)0);
   assertInvariants();
@@ -251,7 +251,7 @@ matrix_(matrix), rowStart_(0), rowEnd_(matrix_.size1()), blockStart_(0) {
 /* ************************************************************************* */
 template<class MATRIX>
 template<typename ITERATOR>
-VerticalBlockView<MATRIX>::VerticalBlockView(matrix_type& matrix, ITERATOR firstBlockDim, ITERATOR lastBlockDim) :
+VerticalBlockView<MATRIX>::VerticalBlockView(FullMatrix& matrix, ITERATOR firstBlockDim, ITERATOR lastBlockDim) :
 matrix_(matrix), rowStart_(0), rowEnd_(matrix_.size1()), blockStart_(0) {
   fillOffsets(firstBlockDim, lastBlockDim);
   assertInvariants();
@@ -260,7 +260,7 @@ matrix_(matrix), rowStart_(0), rowEnd_(matrix_.size1()), blockStart_(0) {
 /* ************************************************************************* */
 template<class MATRIX>
 template<typename ITERATOR>
-VerticalBlockView<MATRIX>::VerticalBlockView(matrix_type& matrix, ITERATOR firstBlockDim, ITERATOR lastBlockDim, size_t matrixNewHeight) :
+VerticalBlockView<MATRIX>::VerticalBlockView(FullMatrix& matrix, ITERATOR firstBlockDim, ITERATOR lastBlockDim, size_t matrixNewHeight) :
 matrix_(matrix), rowStart_(0), rowEnd_(matrixNewHeight), blockStart_(0) {
   fillOffsets(firstBlockDim, lastBlockDim);
   matrix_.resize(matrixNewHeight, variableColOffsets_.back(), false);

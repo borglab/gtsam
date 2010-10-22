@@ -38,7 +38,6 @@ namespace gtsam {
   public:
 
     typedef boost::shared_ptr<GaussianFactorGraph> shared_ptr;
-    typedef GaussianBayesNet bayesnet_type;
 
     /**
      * Default constructor 

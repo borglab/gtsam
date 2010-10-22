@@ -59,19 +59,24 @@ typedef std::map<Index, size_t> Dimensions;
  */
 class GaussianFactor: public IndexFactor {
 
+protected:
+
+  typedef boost::numeric::ublas::matrix<double, boost::numeric::ublas::column_major> AbMatrix;
+	typedef VerticalBlockView<AbMatrix> BlockAb;
+
 public:
 
   typedef GaussianConditional Conditional;
 	typedef boost::shared_ptr<GaussianFactor> shared_ptr;
-  typedef boost::numeric::ublas::matrix<double, boost::numeric::ublas::column_major> matrix_type;
-	typedef VerticalBlockView<matrix_type> ab_type;
-
-protected:
+	typedef BlockAb::Block ABlock;
+	typedef BlockAb::constBlock constABlock;
+	typedef BlockAb::Column BVector;
+	typedef BlockAb::constColumn constBVector;
 
 	SharedDiagonal model_; // Gaussian noise model with diagonal covariance matrix
 	std::vector<size_t> firstNonzeroBlocks_;
-	matrix_type matrix_;
-	ab_type Ab_;
+	AbMatrix matrix_;
+	BlockAb Ab_;
 
 public:
 
@@ -124,14 +129,15 @@ public:
 	bool empty() const { return Ab_.size1() == 0;}
 
 	/** Get a view of the r.h.s. vector b */
-	ab_type::const_column_type getb() const { return Ab_.column(size(), 0); }
-  ab_type::column_type getb() { return Ab_.column(size(), 0); }
+	constBVector getb() const { return Ab_.column(size(), 0); }
 
 	/** Get a view of the A matrix for the variable pointed to be the given key iterator */
-	ab_type::const_block_type getA(const_iterator variable) const { return Ab_(variable - keys_.begin());	}
-  ab_type::block_type getA(iterator variable) { return Ab_(variable - keys_.begin()); }
-  ab_type::block_type getAb(size_t block) { return Ab_(block); }
+	constABlock getA(const_iterator variable) const { return Ab_(variable - keys_.begin());	}
 
+  BVector getb() { return Ab_.column(size(), 0); }
+
+  ABlock getA(iterator variable) { return Ab_(variable - keys_.begin()); }
+  ABlock getAb(size_t block) { return Ab_(block); }
 
 	/** Return the dimension of the variable pointed to by the given key iterator
 	 * todo: Remove this in favor of keeping track of dimensions with variables?
@@ -160,8 +166,6 @@ public:
 
 protected:
 
-  /** Protected mutable accessor for the r.h.s. b. */
-
   /** Internal debug check to make sure variables are sorted */
   void assertInvariants() const;
 
@@ -176,6 +180,7 @@ public:
 	/** get the indices list */
 	const std::vector<size_t>& get_firstNonzeroBlocks() const { return firstNonzeroBlocks_; }
 
+	/** whether the noise model of this factor is constrained (i.e. contains any sigmas of 0.0) */
 	bool isConstrained() const {return model_->isConstrained();}
 
 	/**

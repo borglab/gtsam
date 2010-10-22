@@ -176,7 +176,7 @@ namespace gtsam {
     typename FG::sharedFactor jointFactor = FG::Factor::Combine(fg, variableSlots);
     toc("JT 2.2 Combine");
     tic("JT 2.3 Eliminate");
-    typename FG::bayesnet_type::shared_ptr fragment = jointFactor->eliminate(current->frontal.size());
+    typename BayesNet<typename FG::Factor::Conditional>::shared_ptr fragment = jointFactor->eliminate(current->frontal.size());
     toc("JT 2.3 Eliminate");
     assert(std::equal(jointFactor->begin(), jointFactor->end(), current->separator.begin()));
 

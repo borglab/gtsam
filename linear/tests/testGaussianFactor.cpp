@@ -68,7 +68,7 @@ TEST( GaussianFactor, constructor2)
   std::list<std::pair<Index, Matrix> > terms;
   terms.push_back(make_pair(_x0_, eye(3)));
   terms.push_back(make_pair(_x1_, 2.*eye(3)));
-  GaussianFactor actual(terms, b, noise);
+  const GaussianFactor actual(terms, b, noise);
 
   GaussianFactor::const_iterator key0 = actual.begin();
   GaussianFactor::const_iterator key1 = key0 + 1;

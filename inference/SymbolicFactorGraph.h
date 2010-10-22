@@ -34,8 +34,8 @@ typedef EliminationTree<IndexFactor> SymbolicEliminationTree;
 
 /** Symbolic IndexFactor Graph */
 class SymbolicFactorGraph: public FactorGraph<IndexFactor> {
+
 public:
-  typedef SymbolicBayesNet bayesnet_type;
 
   /** Construct empty factor graph */
   SymbolicFactorGraph() {}

@@ -46,19 +46,19 @@ public:
 	typedef boost::shared_ptr<GaussianConditional> shared_ptr;
 
 	/** Store the conditional matrix as upper-triangular column-major */
-	typedef boost::numeric::ublas::triangular_matrix<double, boost::numeric::ublas::upper, boost::numeric::ublas::column_major> matrix_type;
-	typedef VerticalBlockView<matrix_type> rsd_type;
+	typedef boost::numeric::ublas::triangular_matrix<double, boost::numeric::ublas::upper, boost::numeric::ublas::column_major> AbMatrix;
+	typedef VerticalBlockView<AbMatrix> rsd_type;
 
-	typedef rsd_type::block_type r_type;
-  typedef rsd_type::const_block_type const_r_type;
-  typedef rsd_type::column_type d_type;
-  typedef rsd_type::const_column_type const_d_type;
+	typedef rsd_type::Block r_type;
+  typedef rsd_type::constBlock const_r_type;
+  typedef rsd_type::Column d_type;
+  typedef rsd_type::constColumn const_d_type;
 
 protected:
 
 	/** Store the conditional as one big upper-triangular wide matrix, arranged
 	 * as [ R S1 S2 ... d ].  Access these blocks using a VerticalBlockView. */
-	matrix_type matrix_;
+	AbMatrix matrix_;
 	rsd_type rsd_;
 
 	/** vector of standard deviations */
@@ -113,9 +113,9 @@ public:
 	size_t dim() const { return rsd_.size1(); }
 
 	/** return stuff contained in GaussianConditional */
-	rsd_type::const_column_type get_d() const { return rsd_.column(1+nrParents(), 0); }
-	rsd_type::const_block_type get_R() const { return rsd_(0); }
-	rsd_type::const_block_type get_S(const_iterator variable) const { return rsd_(variable - this->begin()); }
+	rsd_type::constColumn get_d() const { return rsd_.column(1+nrParents(), 0); }
+	rsd_type::constBlock get_R() const { return rsd_(0); }
+	rsd_type::constBlock get_S(const_iterator variable) const { return rsd_(variable - this->begin()); }
 	const Vector& get_sigmas() const {return sigmas_;}
 
 	/**
@@ -133,9 +133,9 @@ public:
   Vector solve(const Permuted<VectorValues>& x) const;
 
 protected:
-  rsd_type::column_type get_d_() { return rsd_.column(1+nrParents(), 0); }
-  rsd_type::block_type get_R_() { return rsd_(0); }
-  rsd_type::block_type get_S_(iterator variable) { return rsd_(variable - this->begin()); }
+  rsd_type::Column get_d_() { return rsd_.column(1+nrParents(), 0); }
+  rsd_type::Block get_R_() { return rsd_(0); }
+  rsd_type::Block get_S_(iterator variable) { return rsd_(variable - this->begin()); }
 
   friend class GaussianFactor;
 
