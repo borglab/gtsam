@@ -81,11 +81,12 @@ Permutation::shared_ptr Inference::PermutationCOLAMD(const VARIABLEINDEXTYPE& va
     for(size_t i=0; i<nVars+1; ++i)
       cout << "p[" << i << "] = " << p[i] << endl;
 
-  //double* knobs = NULL; /* colamd arg 6: parameters (uses defaults if NULL) */
-  double knobs[CCOLAMD_KNOBS];
-  ccolamd_set_defaults(knobs);
-  knobs[CCOLAMD_DENSE_ROW]=-1;
-  knobs[CCOLAMD_DENSE_COL]=-1;
+  double* knobs = NULL; /* colamd arg 6: parameters (uses defaults if NULL) */
+//  double knobs[CCOLAMD_KNOBS];
+//  ccolamd_set_defaults(knobs);
+//  knobs[CCOLAMD_DENSE_ROW]=-1;
+//  knobs[CCOLAMD_DENSE_COL]=-1;
+
   int stats[CCOLAMD_STATS]; /* colamd arg 7: colamd output statistics and error codes */
 
   // call colamd, result will be in p
@@ -95,6 +96,8 @@ Permutation::shared_ptr Inference::PermutationCOLAMD(const VARIABLEINDEXTYPE& va
     throw runtime_error((boost::format("ccolamd failed with return value %1%")%rv).str());
   delete[] A; // delete symbolic A
   delete[] cmember;
+
+//  ccolamd_report(stats);
 
   // Convert elimination ordering in p to an ordering
   Permutation::shared_ptr permutation(new Permutation(nVars));
