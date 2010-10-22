@@ -16,7 +16,7 @@ GaussianMultifrontalSolver::GaussianMultifrontalSolver(const FactorGraph<Gaussia
     junctionTree_(new GaussianJunctionTree(factorGraph)) {}
 
 /* ************************************************************************* */
-typename BayesTree<GaussianConditional>::sharedClique GaussianMultifrontalSolver::eliminate() const {
+BayesTree<GaussianConditional>::sharedClique GaussianMultifrontalSolver::eliminate() const {
   return junctionTree_->eliminate();
 }
 

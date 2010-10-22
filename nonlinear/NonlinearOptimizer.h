@@ -63,15 +63,16 @@ namespace gtsam {
 	 *
 	 *
 	 */
-	template<class G, class T, class L = GaussianFactorGraph, class S = Factorization<G, T>, class W = NullOptimizerWriter>
+	template<class G, class T, class L = GaussianFactorGraph, class GS = GaussianSequentialSolver, class W = NullOptimizerWriter>
 	class NonlinearOptimizer {
 	public:
 
 		// For performance reasons in recursion, we store configs in a shared_ptr
 		typedef boost::shared_ptr<const T> shared_values;
 		typedef boost::shared_ptr<const G> shared_graph;
-		typedef boost::shared_ptr<const S> shared_solver;
-		typedef const S solver;
+		typedef boost::shared_ptr<Ordering> shared_ordering;
+		//typedef boost::shared_ptr<const GS> shared_solver;
+		//typedef const GS solver;
 		typedef NonlinearOptimizationParameters Parameters;
 
 	private:
@@ -85,12 +86,13 @@ namespace gtsam {
 		const shared_values config_;
 		double error_; // TODO FD: no more const because in constructor I need to set it after checking :-(
 
+		const shared_ordering ordering_;
+		// the linear system solver
+		//const shared_solver solver_;
+
 		// keep current lambda for use within LM only
 		// TODO: red flag, should we have an LM class ?
 		const double lambda_;
-
-		// the linear system solver
-		const shared_solver solver_;
 
 		// Recursively try to do tempered Gauss-Newton steps until we succeed
 		NonlinearOptimizer try_lambda(const L& linear,
@@ -101,22 +103,22 @@ namespace gtsam {
 		/**
 		 * Constructor that evaluates new error
 		 */
-		NonlinearOptimizer(shared_graph graph, shared_values config, shared_solver solver,
+		NonlinearOptimizer(shared_graph graph, shared_values config, shared_ordering ordering,
 				const double lambda = 1e-5);
 
 		/**
 		 * Constructor that does not do any computation
 		 */
-		NonlinearOptimizer(shared_graph graph, shared_values config, shared_solver solver,
+		NonlinearOptimizer(shared_graph graph, shared_values config, shared_ordering ordering,
 				const double error, const double lambda): graph_(graph), config_(config),
-			  error_(error), lambda_(lambda), solver_(solver) {}
+			  error_(error), ordering_(ordering), lambda_(lambda) {}
 
 		/**
 		 * Copy constructor
 		 */
-		NonlinearOptimizer(const NonlinearOptimizer<G, T, L, S> &optimizer) :
+		NonlinearOptimizer(const NonlinearOptimizer<G, T, L, GS> &optimizer) :
 		  graph_(optimizer.graph_), config_(optimizer.config_),
-		  error_(optimizer.error_), lambda_(optimizer.lambda_), solver_(optimizer.solver_) {}
+		  error_(optimizer.error_), ordering_(optimizer.ordering_), lambda_(optimizer.lambda_) {}
 
 		/**
 		 * Return current error
@@ -205,8 +207,8 @@ namespace gtsam {
 			double relativeThreshold = 1e-5, absoluteThreshold = 1e-5;
 
 			// initial optimization state is the same in both cases tested
-			shared_solver solver(new S(ordering));
-			NonlinearOptimizer optimizer(graph, config, solver);
+			GS solver(*graph->linearize(*config, *ordering));
+			NonlinearOptimizer optimizer(graph, config, ordering);
 
 			// Levenberg-Marquardt
 			NonlinearOptimizer result = optimizer.levenbergMarquardt(relativeThreshold,
@@ -236,8 +238,8 @@ namespace gtsam {
 			double relativeThreshold = 1e-5, absoluteThreshold = 1e-5;
 
 			// initial optimization state is the same in both cases tested
-			shared_solver solver(new S(ordering));
-			NonlinearOptimizer optimizer(graph, config, solver);
+			GS solver(*graph->linearize(*config, *ordering));
+			NonlinearOptimizer optimizer(graph, config, ordering);
 
 			// Gauss-Newton
 			NonlinearOptimizer result = optimizer.gaussNewton(relativeThreshold,

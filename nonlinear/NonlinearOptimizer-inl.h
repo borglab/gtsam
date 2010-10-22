@@ -74,14 +74,14 @@ namespace gtsam {
 	/* ************************************************************************* */
 	template<class G, class C, class L, class S, class W>
 	NonlinearOptimizer<G, C, L, S, W>::NonlinearOptimizer(shared_graph graph,
-			shared_values config, shared_solver solver, double lambda) :
-		graph_(graph), config_(config), lambda_(lambda), solver_(solver) {
+			shared_values config, shared_ordering ordering, double lambda) :
+		graph_(graph), config_(config), ordering_(ordering), lambda_(lambda) {
 		if (!graph) throw std::invalid_argument(
 				"NonlinearOptimizer constructor: graph = NULL");
 		if (!config) throw std::invalid_argument(
 				"NonlinearOptimizer constructor: config = NULL");
-		if (!solver) throw std::invalid_argument(
-				"NonlinearOptimizer constructor: solver = NULL");
+		if (!ordering) throw std::invalid_argument(
+				"NonlinearOptimizer constructor: ordering = NULL");
 		error_ = graph->error(*config);
 	}
 
@@ -90,9 +90,9 @@ namespace gtsam {
 	/* ************************************************************************* */
 	template<class G, class C, class L, class S, class W>
 	VectorValues NonlinearOptimizer<G, C, L, S, W>::linearizeAndOptimizeForDelta() const {
-		boost::shared_ptr<L> linearized = solver_->linearize(*graph_, *config_);
-		NonlinearOptimizer prepared(graph_, config_, solver_->prepareLinear(*linearized), error_, lambda_);
-		return prepared.solver_->optimize(*linearized);
+		boost::shared_ptr<L> linearized = graph_->linearize(*config_, *ordering_);
+		NonlinearOptimizer prepared(graph_, config_, ordering_, error_, lambda_);
+		return *S(*linearized).optimize();
 	}
 
 	/* ************************************************************************* */
@@ -109,13 +109,13 @@ namespace gtsam {
 			delta.print("delta");
 
 		// take old config and update it
-		shared_values newValues(new C(solver_->expmap(*config_, delta)));
+		shared_values newValues(new C(config_->expmap(delta, *ordering_)));
 
 		// maybe show output
 		if (verbosity >= Parameters::CONFIG)
 			newValues->print("newValues");
 
-		NonlinearOptimizer newOptimizer = NonlinearOptimizer(graph_, newValues, solver_, lambda_);
+		NonlinearOptimizer newOptimizer = NonlinearOptimizer(graph_, newValues, ordering_, lambda_);
 
 		if (verbosity >= Parameters::ERROR)
 			cout << "error: " << newOptimizer.error_ << endl;
@@ -177,17 +177,17 @@ namespace gtsam {
 			damped.print("damped");
 
 		// solve
-		VectorValues delta = solver_->optimize(damped);
+		VectorValues delta = *S(damped).optimize();
 		if (verbosity >= Parameters::TRYDELTA)
 			delta.print("delta");
 
 		// update config
-		shared_values newValues(new C(solver_->expmap(*config_, delta))); // TODO: updateValues
+		shared_values newValues(new C(config_->expmap(delta, *ordering_))); // TODO: updateValues
 //		if (verbosity >= TRYCONFIG)
 //			newValues->print("config");
 
 		// create new optimization state with more adventurous lambda
-		NonlinearOptimizer next(graph_, newValues, solver_, lambda_ / factor);
+		NonlinearOptimizer next(graph_, newValues, ordering_, lambda_ / factor);
 		if (verbosity >= Parameters::TRYLAMBDA) cout << "next error = " << next.error_ << endl;
 
 		if(lambdaMode >= Parameters::CAUTIOUS) {
@@ -199,7 +199,7 @@ namespace gtsam {
 			// If we're cautious, see if the current lambda is better
 			// todo:  include stopping criterion here?
 			if(lambdaMode == Parameters::CAUTIOUS) {
-				NonlinearOptimizer sameLambda(graph_, newValues, solver_, lambda_);
+				NonlinearOptimizer sameLambda(graph_, newValues, ordering_, lambda_);
 				if(sameLambda.error_ <= next.error_)
 					return sameLambda;
 			}
@@ -212,7 +212,7 @@ namespace gtsam {
 
 			// A more adventerous lambda was worse.  If we're cautious, try the same lambda.
 			if(lambdaMode == Parameters::CAUTIOUS) {
-				NonlinearOptimizer sameLambda(graph_, newValues, solver_, lambda_);
+				NonlinearOptimizer sameLambda(graph_, newValues, ordering_, lambda_);
 				if(sameLambda.error_ <= error_)
 					return sameLambda;
 			}
@@ -223,9 +223,9 @@ namespace gtsam {
 
 			// TODO: can we avoid copying the config ?
 			if(lambdaMode >= Parameters::BOUNDED && lambda_ >= 1.0e5) {
-				return NonlinearOptimizer(graph_, newValues, solver_, lambda_);;
+				return NonlinearOptimizer(graph_, newValues, ordering_, lambda_);;
 			} else {
-				NonlinearOptimizer cautious(graph_, config_, solver_, lambda_ * factor);
+				NonlinearOptimizer cautious(graph_, config_, ordering_, lambda_ * factor);
 				return cautious.try_lambda(linear, verbosity, factor, lambdaMode);
 			}
 
@@ -248,8 +248,8 @@ namespace gtsam {
 			cout << "lambda = " << lambda_ << endl;
 
 		// linearize all factors once
-		boost::shared_ptr<L> linear = solver_->linearize(*graph_, *config_);
-		NonlinearOptimizer prepared(graph_, config_, solver_->prepareLinear(*linear), error_, lambda_);
+		boost::shared_ptr<L> linear = graph_->linearize(*config_, *ordering_);
+		NonlinearOptimizer prepared(graph_, config_, ordering_, error_, lambda_);
 		if (verbosity >= Parameters::LINEAR)
 			linear->print("linear");
 

@@ -19,7 +19,8 @@
 
 #pragma once
 
-#include <gtsam/linear/Factorization.h>
+#include <gtsam/linear/GaussianSequentialSolver.h>
+#include <gtsam/linear/GaussianMultifrontalSolver.h>
 #include <gtsam/linear/SubgraphSolver-inl.h>
 #include <gtsam/nonlinear/NonlinearOptimizer-inl.h>
 #include <gtsam/nonlinear/NonlinearOptimization.h>
@@ -38,10 +39,9 @@ namespace gtsam {
 	  Ordering::shared_ptr ordering = graph.orderingCOLAMD(initialEstimate);
 
 		// initial optimization state is the same in both cases tested
-	  typedef NonlinearOptimizer<G, T> Optimizer;
-	  typename Optimizer::shared_solver solver(new Factorization<G, T>(ordering));
+	  typedef NonlinearOptimizer<G, T, GaussianFactorGraph, GaussianSequentialSolver> Optimizer;
 	  Optimizer optimizer(boost::make_shared<const G>(graph),
-	  		boost::make_shared<const T>(initialEstimate), solver);
+	  		boost::make_shared<const T>(initialEstimate), ordering);
 
 		// Levenberg-Marquardt
 	  Optimizer result = optimizer.levenbergMarquardt(parameters);
@@ -53,27 +53,38 @@ namespace gtsam {
 	 */
 	template<class G, class T>
 	T	optimizeMultiFrontal(const G& graph, const T& initialEstimate, const NonlinearOptimizationParameters& parameters) {
-		throw runtime_error("optimizeMultiFrontal: not implemented");
-	}
 
-	/**
-	 * The multifrontal solver
-	 */
-	template<class G, class T>
-	T	optimizeSPCG(const G& graph, const T& initialEstimate, const NonlinearOptimizationParameters& parameters = NonlinearOptimizationParameters()) {
+		// Use a variable ordering from COLAMD
+	  Ordering::shared_ptr ordering = graph.orderingCOLAMD(initialEstimate);
 
 		// initial optimization state is the same in both cases tested
-		typedef NonlinearOptimizer<G, T, SubgraphPreconditioner, SubgraphSolver<G,T> > SPCGOptimizer;
-		typename SPCGOptimizer::shared_solver solver(new SubgraphSolver<G,T>(graph, initialEstimate));
-		SPCGOptimizer optimizer(
-				boost::make_shared<const G>(graph),
-				boost::make_shared<const T>(initialEstimate),
-				solver);
+	  typedef NonlinearOptimizer<G, T, GaussianFactorGraph, GaussianMultifrontalSolver> Optimizer;
+	  Optimizer optimizer(boost::make_shared<const G>(graph),
+	  		boost::make_shared<const T>(initialEstimate), ordering);
 
 		// Levenberg-Marquardt
-		SPCGOptimizer result = optimizer.levenbergMarquardt(parameters);
+	  Optimizer result = optimizer.levenbergMarquardt(parameters);
 		return *result.config();
 	}
+
+//	/**
+//	 * The multifrontal solver
+//	 */
+//	template<class G, class T>
+//	T	optimizeSPCG(const G& graph, const T& initialEstimate, const NonlinearOptimizationParameters& parameters = NonlinearOptimizationParameters()) {
+//
+//		// initial optimization state is the same in both cases tested
+//		typedef NonlinearOptimizer<G, T, SubgraphPreconditioner, SubgraphSolver<G,T> > SPCGOptimizer;
+//		typename SPCGOptimizer::shared_solver solver(new SubgraphSolver<G,T>(graph, initialEstimate));
+//		SPCGOptimizer optimizer(
+//				boost::make_shared<const G>(graph),
+//				boost::make_shared<const T>(initialEstimate),
+//				solver);
+//
+//		// Levenberg-Marquardt
+//		SPCGOptimizer result = optimizer.levenbergMarquardt(parameters);
+//		return *result.config();
+//	}
 
 	/**
 	 * optimization that returns the values

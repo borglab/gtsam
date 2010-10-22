@@ -31,7 +31,6 @@
 
 #include <gtsam/linear/NoiseModel.h>
 #include <gtsam/linear/SharedDiagonal.h>
-#include <gtsam/base/DenseQRUtil.h>
 
 namespace ublas = boost::numeric::ublas;
 typedef ublas::matrix_column<Matrix> column;
@@ -220,23 +219,28 @@ SharedDiagonal Gaussian::QR(Matrix& Ab, boost::optional<std::vector<long>&> firs
 
 // General QR, see also special version in Constrained
 SharedDiagonal Gaussian::QRColumnWise(ublas::matrix<double, ublas::column_major>& Ab, vector<long>& firstZeroRows) const {
-
-  // get size(A) and maxRank
-  // TODO: really no rank problems ?
-  size_t m = Ab.size1(), n = Ab.size2()-1;
-  size_t maxRank = min(m,n);
-
-  // pre-whiten everything (cheaply if possible)
-  WhitenInPlace(Ab);
-
-  // Perform in-place Householder
-#ifdef GT_USE_LAPACK
-  householder_denseqr_colmajor(Ab, &firstZeroRows[0]);
-#else
-  householder(Ab, maxRank);
-#endif
-
-  return Unit::Create(maxRank);
+	Matrix Abresult(Ab);
+	gtsam::print(Abresult, "Abresult before = ");
+	SharedDiagonal result = QR(Abresult, firstZeroRows);
+	gtsam::print(Abresult, "Abresult after = ");
+	Ab = Abresult;
+	return result;
+//  // get size(A) and maxRank
+//  // TODO: really no rank problems ?
+//  size_t m = Ab.size1(), n = Ab.size2()-1;
+//  size_t maxRank = min(m,n);
+//
+//  // pre-whiten everything (cheaply if possible)
+//  WhitenInPlace(Ab);
+//
+//  // Perform in-place Householder
+//#ifdef GT_USE_LAPACK
+//  householder_denseqr_colmajor(Ab, &firstZeroRows[0]);
+//#else
+//  householder(Ab, maxRank);
+//#endif
+//
+//  return Unit::Create(maxRank);
 }
 
 /* ************************************************************************* */
@@ -400,10 +404,14 @@ SharedDiagonal Constrained::QR(Matrix& Ab, boost::optional<std::vector<long>&> f
 }
 
 SharedDiagonal Constrained::QRColumnWise(ublas::matrix<double, ublas::column_major>& Ab, vector<long>& firstZeroRows) const {
-  Matrix AbRowWise(Ab);
-  SharedDiagonal result = this->QR(AbRowWise, firstZeroRows);
-  Ab = AbRowWise;
-  return result;
+//  Matrix AbRowWise(Ab);
+//  SharedDiagonal result = this->QR(AbRowWise, firstZeroRows);
+//  Ab = AbRowWise;
+//  return result;
+	Matrix Abresult(Ab);
+	SharedDiagonal result = QR(Abresult, firstZeroRows);
+	Ab = Abresult;
+	return result;
 }
 
 /* ************************************************************************* */

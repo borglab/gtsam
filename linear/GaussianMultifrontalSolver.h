@@ -56,7 +56,7 @@ public:
    * Eliminate the factor graph sequentially.  Uses a column elimination tree
    * to recursively eliminate.
    */
-  typename BayesTree<GaussianConditional>::sharedClique eliminate() const;
+  BayesTree<GaussianConditional>::sharedClique eliminate() const;
 
   /**
    * Compute the least-squares solution of the GaussianFactorGraph.  This

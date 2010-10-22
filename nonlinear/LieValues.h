@@ -119,7 +119,6 @@ namespace gtsam {
     /** Add a delta config to current config and returns a new config */
     LieValues expmap(const VectorValues& delta, const Ordering& ordering) const;
 
-
     /** Get a delta config about a linearization point c0 (*this) */
     VectorValues logmap(const LieValues& cp, const Ordering& ordering) const;
 

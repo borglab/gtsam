@@ -66,8 +66,7 @@ int main(int argc, char** argv) {
 	Ordering::shared_ptr ordering = graph->orderingCOLAMD(*initial);
 
 	/* 4.2.2 set up solver and optimize */
-	Optimizer::shared_solver solver(new Optimizer::solver(ordering));
-	Optimizer optimizer(graph, initial, solver);
+	Optimizer optimizer(graph, initial, ordering);
 	Optimizer::Parameters::verbosityLevel verbosity = pose2SLAM::Optimizer::Parameters::SILENT;
 	Optimizer optimizer_result = optimizer.levenbergMarquardt(1e-15, 1e-15, verbosity);
 
