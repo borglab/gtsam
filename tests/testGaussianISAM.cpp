@@ -278,66 +278,66 @@ TEST( BayesTree, balanced_smoother_shortcuts )
 //}
 
 /* ************************************************************************* */
-// SL-FIX TEST( BayesTree, balanced_smoother_joint )
-//{
-//	// Create smoother with 7 nodes
-//	GaussianFactorGraph smoother = createSmoother(7);
-//	Ordering ordering;
-//	ordering += "x1","x3","x5","x7","x2","x6","x4";
-//
-//	// Create the Bayes tree, expected to look like:
-//	//	 x5 x6 x4
-//	//	   x3 x2 : x4
-//	//	     x1 : x2
-//	//	   x7 : x6
-//	GaussianBayesNet chordalBayesNet = smoother.eliminate(ordering);
-//	GaussianISAM bayesTree(chordalBayesNet);
-//
-//	// Conditional density elements reused by both tests
-//	const Vector sigma = ones(2);
-//	const Matrix I = eye(2), A = -0.00429185*I;
-//
-//	// Check the joint density P(x1,x7) factored as P(x1|x7)P(x7)
-//	GaussianBayesNet expected1;
-//	// Why does the sign get flipped on the prior?
-//	GaussianConditional::shared_ptr
-//		parent1(new GaussianConditional("x7", zero(2), -1*I/sigmax7, ones(2)));
-//	expected1.push_front(parent1);
-//	push_front(expected1,"x1", zero(2), I/sigmax7, "x7", A/sigmax7, sigma);
-//	GaussianBayesNet actual1 = bayesTree.jointBayesNet<GaussianFactor>("x1","x7");
-//	CHECK(assert_equal(expected1,actual1,tol));
-//
+TEST( BayesTree, balanced_smoother_joint )
+{
+	// Create smoother with 7 nodes
+	Ordering ordering;
+	ordering += "x1","x3","x5","x7","x2","x6","x4";
+	GaussianFactorGraph smoother = createSmoother(7, ordering).first;
+
+	// Create the Bayes tree, expected to look like:
+	//	 x5 x6 x4
+	//	   x3 x2 : x4
+	//	     x1 : x2
+	//	   x7 : x6
+	GaussianBayesNet chordalBayesNet = *GaussianSequentialSolver(smoother).eliminate();
+	GaussianISAM bayesTree(chordalBayesNet);
+
+	// Conditional density elements reused by both tests
+	const Vector sigma = ones(2);
+	const Matrix I = eye(2), A = -0.00429185*I;
+
+	// Check the joint density P(x1,x7) factored as P(x1|x7)P(x7)
+	GaussianBayesNet expected1;
+	// Why does the sign get flipped on the prior?
+	GaussianConditional::shared_ptr
+		parent1(new GaussianConditional(ordering["x7"], zero(2), -1*I/sigmax7, ones(2)));
+	expected1.push_front(parent1);
+	push_front(expected1,ordering["x1"], zero(2), I/sigmax7, ordering["x7"], A/sigmax7, sigma);
+	GaussianBayesNet actual1 = *bayesTree.jointBayesNet(ordering["x1"],ordering["x7"]);
+	CHECK(assert_equal(expected1,actual1,tol));
+
 //	// Check the joint density P(x7,x1) factored as P(x7|x1)P(x1)
 //	GaussianBayesNet expected2;
 //	GaussianConditional::shared_ptr
-//			parent2(new GaussianConditional("x1", zero(2), -1*I/sigmax1, ones(2)));
+//			parent2(new GaussianConditional(ordering["x1"], zero(2), -1*I/sigmax1, ones(2)));
 //		expected2.push_front(parent2);
-//	push_front(expected2,"x7", zero(2), I/sigmax1, "x1", A/sigmax1, sigma);
-//	GaussianBayesNet actual2 = bayesTree.jointBayesNet<GaussianFactor>("x7","x1");
+//	push_front(expected2,ordering["x7"], zero(2), I/sigmax1, ordering["x1"], A/sigmax1, sigma);
+//	GaussianBayesNet actual2 = *bayesTree.jointBayesNet(ordering["x7"],ordering["x1"]);
 //	CHECK(assert_equal(expected2,actual2,tol));
-//
-//	// Check the joint density P(x1,x4), i.e. with a root variable
-//	GaussianBayesNet expected3;
-//	GaussianConditional::shared_ptr
-//			parent3(new GaussianConditional("x4", zero(2), I/sigmax4, ones(2)));
-//		expected3.push_front(parent3);
-//	double sig14 = 0.784465;
-//	Matrix A14 = -0.0769231*I;
-//	push_front(expected3,"x1", zero(2), I/sig14, "x4", A14/sig14, sigma);
-//	GaussianBayesNet actual3 = bayesTree.jointBayesNet<GaussianFactor>("x1","x4");
-//	CHECK(assert_equal(expected3,actual3,tol));
-//
+
+	// Check the joint density P(x1,x4), i.e. with a root variable
+	GaussianBayesNet expected3;
+	GaussianConditional::shared_ptr
+			parent3(new GaussianConditional(ordering["x4"], zero(2), I/sigmax4, ones(2)));
+		expected3.push_front(parent3);
+	double sig14 = 0.784465;
+	Matrix A14 = -0.0769231*I;
+	push_front(expected3,ordering["x1"], zero(2), I/sig14, ordering["x4"], A14/sig14, sigma);
+	GaussianBayesNet actual3 = *bayesTree.jointBayesNet(ordering["x1"],ordering["x4"]);
+	CHECK(assert_equal(expected3,actual3,tol));
+
 //	// Check the joint density P(x4,x1), i.e. with a root variable, factored the other way
 //	GaussianBayesNet expected4;
 //	GaussianConditional::shared_ptr
-//			parent4(new GaussianConditional("x1", zero(2), -1.0*I/sigmax1, ones(2)));
+//			parent4(new GaussianConditional(ordering["x1"], zero(2), -1.0*I/sigmax1, ones(2)));
 //		expected4.push_front(parent4);
 //	double sig41 = 0.668096;
 //	Matrix A41 = -0.055794*I;
-//	push_front(expected4,"x4", zero(2), I/sig41, "x1", A41/sig41, sigma);
-//	GaussianBayesNet actual4 = bayesTree.jointBayesNet<GaussianFactor>("x4","x1");
+//	push_front(expected4,ordering["x4"], zero(2), I/sig41, ordering["x1"], A41/sig41, sigma);
+//	GaussianBayesNet actual4 = *bayesTree.jointBayesNet(ordering["x4"],ordering["x1"]);
 //	CHECK(assert_equal(expected4,actual4,tol));
-//}
+}
 
 /* ************************************************************************* */
 int main() { TestResult tr; return TestRegistry::runAllTests(tr);}

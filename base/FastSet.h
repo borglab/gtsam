@@ -31,7 +31,7 @@ namespace gtsam {
  * percent.
  */
 template<typename VALUE>
-class FastSet: public std::set<VALUE, std::less<VALUE>, boost::fast_pool_allocator<VALUE> > {
+class FastSet : public std::set<VALUE, std::less<VALUE>, boost::fast_pool_allocator<VALUE> > {
 
 public:
 

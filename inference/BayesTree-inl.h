@@ -108,14 +108,7 @@ namespace gtsam {
 			cout << "\n";
 			BOOST_FOREACH(const sharedConditional& conditional, this->conditionals_) {
 				conditional->print("  " + s + "conditional");
-//				cout << " " << conditional->key();
 			}
-//			if (!separator_.empty()) {
-//				cout << " :";
-//				BOOST_FOREACH(Index key, separator_)
-//					cout << " " << key;
-//			}
-//			cout << endl;
 		}
 
 	/* ************************************************************************* */
@@ -345,11 +338,11 @@ namespace gtsam {
 //		for(Index j=0; j<integrands.size(); ++j)
 //		  p_S_R.pop_front();
 
-		// Undo the permutation on the shortcut
+		// Undo the permutation
 		p_S_R.permuteWithInverse(toBack);
 
 		// return the parent shortcut P(Sp|R)
-		return p_S_R;
+		return *GenericSequentialSolver<typename CONDITIONAL::Factor>(p_S_R).eliminate();
 	}
 
 	/* ************************************************************************* */
@@ -374,31 +367,33 @@ namespace gtsam {
 		return *GenericSequentialSolver<typename CONDITIONAL::Factor>(p_FSR).joint(keys());
 	}
 
-//	/* ************************************************************************* */
-//	// P(C1,C2) = \int_R P(F1|S1) P(S1|R) P(F2|S1) P(S2|R) P(R)
-//	/* ************************************************************************* */
-//	template<class CONDITIONAL>
-//	template<class Factor>
-//	pair<FactorGraph<Factor>, Ordering>
-//	BayesTree<CONDITIONAL>::Clique::joint(shared_ptr C2, shared_ptr R) {
-//		// For now, assume neither is the root
-//
-//		// Combine P(F1|S1), P(S1|R), P(F2|S2), P(S2|R), and P(R)
-//		sharedBayesNet bn(new BayesNet<CONDITIONAL>);
-//		if (!isRoot())     bn->push_back(*this);                   // P(F1|S1)
-//		if (!isRoot())     bn->push_back(shortcut<Factor>(R));     // P(S1|R)
-//		if (!C2->isRoot()) bn->push_back(*C2);                     // P(F2|S2)
-//		if (!C2->isRoot()) bn->push_back(C2->shortcut<Factor>(R)); // P(S2|R)
-//		bn->push_back(*R);                                         // P(R)
-//
-//		// Find the keys of both C1 and C2
-//		Ordering keys12 = keys();
-//		BOOST_FOREACH(Index key,C2->keys()) keys12.push_back(key);
-//		keys12.unique();
-//
-//		// Calculate the marginal
-//		return make_pair(marginalize<Factor,CONDITIONAL>(*bn,keys12), keys12);
-//	}
+	/* ************************************************************************* */
+	// P(C1,C2) = \int_R P(F1|S1) P(S1|R) P(F2|S1) P(S2|R) P(R)
+	/* ************************************************************************* */
+	template<class CONDITIONAL>
+	FactorGraph<typename CONDITIONAL::Factor>	BayesTree<CONDITIONAL>::Clique::joint(shared_ptr C2, shared_ptr R) {
+		// For now, assume neither is the root
+
+		// Combine P(F1|S1), P(S1|R), P(F2|S2), P(S2|R), and P(R)
+		FactorGraph<typename CONDITIONAL::Factor> joint;
+		if (!isRoot())     joint.push_back(*this);           // P(F1|S1)
+		if (!isRoot())     joint.push_back(shortcut(R));     // P(S1|R)
+		if (!C2->isRoot()) joint.push_back(*C2);             // P(F2|S2)
+		if (!C2->isRoot()) joint.push_back(C2->shortcut(R)); // P(S2|R)
+		joint.push_back(*R);                                 // P(R)
+
+		// Find the keys of both C1 and C2
+		vector<Index> keys1(keys());
+		vector<Index> keys2(C2->keys());
+		FastSet<Index> keys12;
+		keys12.insert(keys1.begin(), keys1.end());
+		keys12.insert(keys2.begin(), keys2.end());
+
+		// Calculate the marginal
+		vector<Index> keys12vector; keys12vector.reserve(keys12.size());
+		keys12vector.insert(keys12vector.begin(), keys12.begin(), keys12.end());
+		return *GenericSequentialSolver<typename CONDITIONAL::Factor>(joint).joint(keys12vector);
+	}
 
 	/* ************************************************************************* */
 	template<class CONDITIONAL>
@@ -693,7 +688,7 @@ namespace gtsam {
 	    }
 
 	    // Now fill in the nodes index
-	    if(subtree->back()->key() > (nodes_.size() - 1))
+	    if(nodes_.size() == 0 || subtree->back()->key() > (nodes_.size() - 1))
 	      nodes_.resize(subtree->back()->key() + 1);
 	    fillNodesIndex(subtree);
 	  }
@@ -712,79 +707,45 @@ namespace gtsam {
 		FactorGraph<typename CONDITIONAL::Factor> cliqueMarginal = clique->marginal(root_);
 
 		return GenericSequentialSolver<typename CONDITIONAL::Factor>(cliqueMarginal).marginal(key);
-
-//		// Reorder so that only the requested key is not eliminated
-//		typename FACTORGRAPH::variableindex_type varIndex(cliqueMarginal);
-//		vector<Index> keyAsVector(1); keyAsVector[0] = key;
-//		Permutation toBack(Permutation::PushToBack(keyAsVector, varIndex.size()));
-//		Permutation::shared_ptr toBackInverse(toBack.inverse());
-//		varIndex.permute(toBack);
-//		BOOST_FOREACH(const typename FACTORGRAPH::sharedFactor& factor, cliqueMarginal) {
-//		  factor->permuteWithInverse(*toBackInverse);
-//		}
-//
-//		// partially eliminate, remaining factor graph is requested marginal
-//		SymbolicSequentialSolver::EliminateUntil(cliqueMarginal, varIndex.size()-1, varIndex);
-//    BOOST_FOREACH(const typename FACTORGRAPH::sharedFactor& factor, cliqueMarginal) {
-//      if(factor)
-//        factor->permuteWithInverse(toBack);
-//    }
-//		return cliqueMarginal;
 	}
 
 	/* ************************************************************************* */
 	template<class CONDITIONAL>
 	typename BayesNet<CONDITIONAL>::shared_ptr BayesTree<CONDITIONAL>::marginalBayesNet(Index key) const {
 
-		// calculate marginal as a factor graph
-	  typename FactorGraph<typename CONDITIONAL::Factor>::shared_ptr fg(
-	      new FactorGraph<typename CONDITIONAL::Factor>());
-	  fg->push_back(this->marginal(key));
+	  // calculate marginal as a factor graph
+	  FactorGraph<typename CONDITIONAL::Factor> fg;
+	  fg.push_back(this->marginal(key));
 
-		// eliminate further to Bayes net
-		return GenericSequentialSolver<typename CONDITIONAL::Factor>(*fg).eliminate();
+		// eliminate factor graph marginal to a Bayes net
+		return GenericSequentialSolver<typename CONDITIONAL::Factor>(fg).eliminate();
 	}
 
-//	/* ************************************************************************* */
-//	// Find two cliques, their joint, then marginalizes
-//	/* ************************************************************************* */
-//	template<class CONDITIONAL>
-//	template<class Factor>
-//	FactorGraph<Factor>
-//	BayesTree<CONDITIONAL>::joint(Index key1, Index key2) const {
-//
-//		// get clique C1 and C2
-//		sharedClique C1 = (*this)[key1], C2 = (*this)[key2];
-//
-//		// calculate joint
-//		Ordering ord;
-//		FactorGraph<Factor> p_C1C2;
-//		boost::tie(p_C1C2,ord) = C1->joint<Factor>(C2,root_);
-//
-//		// create an ordering where both requested keys are not eliminated
-//		ord.remove(key1);
-//		ord.remove(key2);
-//
-//		// partially eliminate, remaining factor graph is requested joint
-//		// TODO, make eliminate functional
-//		eliminate<Factor,CONDITIONAL>(p_C1C2,ord);
-//		return p_C1C2;
-//	}
+	/* ************************************************************************* */
+	// Find two cliques, their joint, then marginalizes
+	/* ************************************************************************* */
+	template<class CONDITIONAL>
+	typename FactorGraph<typename CONDITIONAL::Factor>::shared_ptr
+	BayesTree<CONDITIONAL>::joint(Index key1, Index key2) const {
 
-//	/* ************************************************************************* */
-//	template<class CONDITIONAL>
-//	template<class Factor>
-//	BayesNet<CONDITIONAL>
-//	BayesTree<CONDITIONAL>::jointBayesNet(Index key1, Index key2) const {
-//
-//		// calculate marginal as a factor graph
-//	  FactorGraph<Factor> fg = this->joint<Factor>(key1,key2);
-//
-//		// eliminate further to Bayes net
-//		Ordering ordering;
-//		ordering += key1, key2;
-//		return eliminate<Factor,CONDITIONAL>(fg,ordering);
-//	}
+		// get clique C1 and C2
+		sharedClique C1 = (*this)[key1], C2 = (*this)[key2];
+
+		// calculate joint
+		FactorGraph<typename CONDITIONAL::Factor> p_C1C2(C1->joint(C2, root_));
+
+		// eliminate remaining factor graph to get requested joint
+		vector<Index> key12(2); key12[0] = key1; key12[1] = key2;
+		return GenericSequentialSolver<typename CONDITIONAL::Factor>(p_C1C2).joint(key12);
+	}
+
+	/* ************************************************************************* */
+	template<class CONDITIONAL>
+	typename BayesNet<CONDITIONAL>::shared_ptr BayesTree<CONDITIONAL>::jointBayesNet(Index key1, Index key2) const {
+
+    // eliminate factor graph marginal to a Bayes net
+    return GenericSequentialSolver<typename CONDITIONAL::Factor>(*this->joint(key1, key2)).eliminate();
+	}
 
 	/* ************************************************************************* */
 	template<class CONDITIONAL>

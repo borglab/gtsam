@@ -26,6 +26,8 @@
 
 #include <boost/foreach.hpp>
 
+using namespace std;
+
 namespace gtsam {
 
 /* ************************************************************************* */
@@ -40,6 +42,23 @@ GenericMultifrontalSolver<FACTOR, JUNCTIONTREE>::eliminate() const {
   typename JUNCTIONTREE::BayesTree::shared_ptr bayesTree(new typename JUNCTIONTREE::BayesTree);
   bayesTree->insert(junctionTree_.eliminate());
   return bayesTree;
+}
+
+/* ************************************************************************* */
+template<class FACTOR, class JUNCTIONTREE>
+typename FactorGraph<FACTOR>::shared_ptr
+GenericMultifrontalSolver<FACTOR, JUNCTIONTREE>::joint(const std::vector<Index>& js) const {
+
+  // We currently have code written only for computing the
+
+  if(js.size() != 2)
+    throw domain_error(
+        "*MultifrontalSolver::joint(js) currently can only compute joint marginals\n"
+        "for exactly two variables.  You can call marginal to compute the\n"
+        "marginal for one variable.  *SequentialSolver::joint(js) can compute the\n"
+        "joint marginal over any number of variables, so use that if necessary.\n");
+
+  return eliminate()->joint(js[0], js[1]);
 }
 
 /* ************************************************************************* */

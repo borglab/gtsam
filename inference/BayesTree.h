@@ -113,9 +113,8 @@ namespace gtsam {
 			/** return the marginal P(C) of the clique */
 			FactorGraph<typename CONDITIONAL::Factor> marginal(shared_ptr root);
 
-//			/** return the joint P(C1,C2), where C1==this. TODO: not a method? */
-//			template<class Factor>
-//			std::pair<FactorGraph<Factor>,Ordering> joint(shared_ptr C2, shared_ptr root);
+			/** return the joint P(C1,C2), where C1==this. TODO: not a method? */
+			FactorGraph<typename CONDITIONAL::Factor> joint(shared_ptr C2, shared_ptr root);
 		};
 
 		// typedef for shared pointers to cliques
@@ -261,13 +260,11 @@ namespace gtsam {
 		/** return marginal on any variable, as a Bayes Net */
 		typename BayesNet<CONDITIONAL>::shared_ptr marginalBayesNet(Index key) const;
 
-//		/** return joint on two variables */
-//		template<class Factor>
-//		FactorGraph<Factor> joint(Index key1, Index key2) const;
-//
-//		/** return joint on two variables as a BayesNet */
-//		template<class Factor>
-//		BayesNet<CONDITIONAL> jointBayesNet(Index key1, Index key2) const;
+		/** return joint on two variables */
+		typename FactorGraph<typename CONDITIONAL::Factor>::shared_ptr joint(Index key1, Index key2) const;
+
+		/** return joint on two variables as a BayesNet */
+		typename BayesNet<CONDITIONAL>::shared_ptr jointBayesNet(Index key1, Index key2) const;
 
 		/**
 		 * Read only with side effects
