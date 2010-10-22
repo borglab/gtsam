@@ -35,8 +35,8 @@ FactorGraph:
 	A factor graph contains a set of variables to solve for (i.e., robot poses,
 	landmark poses, etc.) and a set of constraints between these variables, which 
 	make up factors.  
-Config: 
-	A configuration is a single object containing labeled values for all of the 
+Values: 
+	Values is a single object containing labeled values for all of the 
 	variables.  Currently, all variables are labeled with strings, but the type 
 	or organization of the variables can change
 Factors:
