@@ -26,6 +26,8 @@
 #include <gtsam/nonlinear/NonlinearEquality.h>
 #include <gtsam/nonlinear/NonlinearFactorGraph.h>
 #include <gtsam/nonlinear/NonlinearOptimizer.h>
+#include <gtsam/linear/GaussianSequentialSolver.h>
+#include <gtsam/linear/GaussianMultifrontalSolver.h>
 
 namespace gtsam {
 
@@ -60,7 +62,8 @@ namespace gtsam {
 		};
 
 		// Optimizer
-		typedef NonlinearOptimizer<Graph, Values> Optimizer;
+		typedef NonlinearOptimizer<Graph, Values, GaussianFactorGraph, GaussianSequentialSolver> OptimizerSequential;
+    typedef NonlinearOptimizer<Graph, Values, GaussianFactorGraph, GaussianMultifrontalSolver> Optimizer;
 
 	} // pose2SLAM
 

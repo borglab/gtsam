@@ -220,9 +220,7 @@ SharedDiagonal Gaussian::QR(Matrix& Ab, boost::optional<std::vector<long>&> firs
 // General QR, see also special version in Constrained
 SharedDiagonal Gaussian::QRColumnWise(ublas::matrix<double, ublas::column_major>& Ab, vector<long>& firstZeroRows) const {
 	Matrix Abresult(Ab);
-	gtsam::print(Abresult, "Abresult before = ");
 	SharedDiagonal result = QR(Abresult, firstZeroRows);
-	gtsam::print(Abresult, "Abresult after = ");
 	Ab = Abresult;
 	return result;
 //  // get size(A) and maxRank

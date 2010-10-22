@@ -38,6 +38,7 @@
 #include <gtsam/nonlinear/TupleValues-inl.h>
 #include <gtsam/nonlinear/NonlinearFactorGraph-inl.h>
 #include <gtsam/nonlinear/NonlinearOptimizer-inl.h>
+#include <gtsam/linear/GaussianMultifrontalSolver.h>
 
 // Main typedefs
 typedef gtsam::TypedSymbol<gtsam::Pose2, 'x'> PoseKey;       // Key for poses, with type included
@@ -46,7 +47,8 @@ typedef gtsam::LieValues<PoseKey> PoseValues;                // config type for 
 typedef gtsam::LieValues<PointKey> PointValues;              // config type for points
 typedef gtsam::TupleValues2<PoseValues, PointValues> Values; // main config with two variable classes
 typedef gtsam::NonlinearFactorGraph<Values> Graph;			 // graph structure
-typedef gtsam::NonlinearOptimizer<Graph,Values> Optimizer;   // optimization engine for this domain
+typedef gtsam::NonlinearOptimizer<Graph,Values,gtsam::GaussianFactorGraph,gtsam::GaussianSequentialSolver> OptimizerSeqential;   // optimization engine for this domain
+typedef gtsam::NonlinearOptimizer<Graph,Values,gtsam::GaussianFactorGraph,gtsam::GaussianMultifrontalSolver> OptimizerMultifrontal;   // optimization engine for this domain
 
 using namespace std;
 using namespace gtsam;
@@ -120,9 +122,14 @@ int main(int argc, char** argv) {
 	initial.print("initial estimate");
 
 	// optimize using Levenburg-Marquadt optimization with an ordering from colamd
-	Optimizer::shared_values result = Optimizer::optimizeLM(graph, initial);
 
-	result->print("final result");
+	// first using sequential elimination
+	OptimizerSeqential::shared_values resultSequential = OptimizerSeqential::optimizeLM(graph, initial);
+	resultSequential->print("final result (solved with a sequential solver)");
+
+	// then using multifrontal
+  OptimizerMultifrontal::shared_values resultMultifrontal = OptimizerMultifrontal::optimizeLM(graph, initial);
+  resultMultifrontal->print("final result (solved with a multifrontal solver)");
 
 	return 0;
 }
