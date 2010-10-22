@@ -74,13 +74,13 @@ namespace gtsam {
 	/* ************************************************************************* */
 	template<class G, class C, class L, class S, class W>
 	NonlinearOptimizer<G, C, L, S, W>::NonlinearOptimizer(shared_graph graph,
-			shared_values config, shared_ordering ordering, double lambda) :
-			graph_(graph), config_(config), error_(graph->error(*config)),
-			ordering_(ordering), lambda_(lambda), dimensions_(new vector<size_t>(config->dims(*ordering))) {
+			shared_values values, shared_ordering ordering, double lambda) :
+			graph_(graph), values_(values), error_(graph->error(*values)),
+			ordering_(ordering), lambda_(lambda), dimensions_(new vector<size_t>(values->dims(*ordering))) {
 		if (!graph) throw std::invalid_argument(
 				"NonlinearOptimizer constructor: graph = NULL");
-		if (!config) throw std::invalid_argument(
-				"NonlinearOptimizer constructor: config = NULL");
+		if (!values) throw std::invalid_argument(
+				"NonlinearOptimizer constructor: values = NULL");
 		if (!ordering) throw std::invalid_argument(
 				"NonlinearOptimizer constructor: ordering = NULL");
 	}
@@ -90,8 +90,8 @@ namespace gtsam {
 	/* ************************************************************************* */
 	template<class G, class C, class L, class S, class W>
 	VectorValues NonlinearOptimizer<G, C, L, S, W>::linearizeAndOptimizeForDelta() const {
-		boost::shared_ptr<L> linearized = graph_->linearize(*config_, *ordering_);
-//		NonlinearOptimizer prepared(graph_, config_, ordering_, error_, lambda_);
+		boost::shared_ptr<L> linearized = graph_->linearize(*values_, *ordering_);
+//		NonlinearOptimizer prepared(graph_, values_, ordering_, error_, lambda_);
 		return *S(*linearized).optimize();
 	}
 
@@ -108,11 +108,11 @@ namespace gtsam {
 		if (verbosity >= Parameters::DELTA)
 			delta.print("delta");
 
-		// take old config and update it
-		shared_values newValues(new C(config_->expmap(delta, *ordering_)));
+		// take old values and update it
+		shared_values newValues(new C(values_->expmap(delta, *ordering_)));
 
 		// maybe show output
-		if (verbosity >= Parameters::CONFIG)
+		if (verbosity >= Parameters::VALUES)
 			newValues->print("newValues");
 
 		NonlinearOptimizer newOptimizer = newValues_(newValues);
@@ -181,10 +181,10 @@ namespace gtsam {
 		if (verbosity >= Parameters::TRYDELTA)
 			delta.print("delta");
 
-		// update config
-		shared_values newValues(new C(config_->expmap(delta, *ordering_))); // TODO: updateValues
-//		if (verbosity >= TRYCONFIG)
-//			newValues->print("config");
+		// update values
+		shared_values newValues(new C(values_->expmap(delta, *ordering_))); // TODO: updateValues
+//		if (verbosity >= TRYvalues)
+//			newValues->print("values");
 
 		// create new optimization state with more adventurous lambda
 		NonlinearOptimizer next(newValuesNewLambda_(newValues, lambda_ / factor));
@@ -219,9 +219,9 @@ namespace gtsam {
 
 			// Either we're not cautious, or the same lambda was worse than the current error.
 			// The more adventerous lambda was worse too, so make lambda more conservative
-			// and keep the same config.
+			// and keep the same values.
 
-			// TODO: can we avoid copying the config ?
+			// TODO: can we avoid copying the values ?
 			if(lambdaMode >= Parameters::BOUNDED && lambda_ >= 1.0e5) {
 				return NonlinearOptimizer(newValues_(newValues));
 			} else {
@@ -240,15 +240,15 @@ namespace gtsam {
 			Parameters::verbosityLevel verbosity, double lambdaFactor, Parameters::LambdaMode lambdaMode) const {
 
 		// show output
-		if (verbosity >= Parameters::CONFIG)
-			config_->print("config");
+		if (verbosity >= Parameters::VALUES)
+			values_->print("values");
 		if (verbosity >= Parameters::ERROR)
 			cout << "error: " << error_ << endl;
 		if (verbosity >= Parameters::LAMBDA)
 			cout << "lambda = " << lambda_ << endl;
 
 		// linearize all factors once
-		boost::shared_ptr<L> linear = graph_->linearize(*config_, *ordering_);
+		boost::shared_ptr<L> linear = graph_->linearize(*values_, *ordering_);
 		if (verbosity >= Parameters::LINEAR)
 			linear->print("linear");
 
@@ -298,8 +298,8 @@ namespace gtsam {
 		// return converged state or iterate
 		if (converged || para.maxIterations_ <= 1) {
 			// maybe show output
-			if (para.verbosity_ >= Parameters::CONFIG)
-				next.config_->print("final config");
+			if (para.verbosity_ >= Parameters::VALUES)
+				next.values_->print("final values");
 			if (para.verbosity_ >= Parameters::ERROR)
 				cout << "final error: " << next.error_ << endl;
 			if (para.verbosity_ >= Parameters::LAMBDA)

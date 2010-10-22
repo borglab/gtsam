@@ -204,7 +204,7 @@ TEST ( NonlinearEquality, allow_error_optimize ) {
 	// verify
 	PoseValues expected;
 	expected.insert(key1, feasible1);
-	EXPECT(assert_equal(expected, *result.config()));
+	EXPECT(assert_equal(expected, *result.values()));
 }
 
 /* ************************************************************************* */
@@ -240,7 +240,7 @@ TEST ( NonlinearEquality, allow_error_optimize_with_factors ) {
 	// verify
 	PoseValues expected;
 	expected.insert(key1, feasible1);
-	EXPECT(assert_equal(expected, *result.config()));
+	EXPECT(assert_equal(expected, *result.values()));
 }
 
 /* ************************************************************************* */

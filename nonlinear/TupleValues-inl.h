@@ -50,22 +50,22 @@ namespace gtsam {
 /* ************************************************************************* */
 /** TupleValues 1 */
 template<class VALUES1>
-TupleValues1<VALUES1>::TupleValues1(const TupleValues1<VALUES1>& config) :
-		  TupleValuesEnd<VALUES1> (config) {}
+TupleValues1<VALUES1>::TupleValues1(const TupleValues1<VALUES1>& values) :
+		  TupleValuesEnd<VALUES1> (values) {}
 
 template<class VALUES1>
 TupleValues1<VALUES1>::TupleValues1(const VALUES1& cfg1) :
 			  TupleValuesEnd<VALUES1> (cfg1) {}
 
 template<class VALUES1>
-TupleValues1<VALUES1>::TupleValues1(const TupleValuesEnd<VALUES1>& config) :
-	TupleValuesEnd<VALUES1>(config) {}
+TupleValues1<VALUES1>::TupleValues1(const TupleValuesEnd<VALUES1>& values) :
+	TupleValuesEnd<VALUES1>(values) {}
 
 /* ************************************************************************* */
 /** TupleValues 2 */
 template<class VALUES1, class VALUES2>
-TupleValues2<VALUES1, VALUES2>::TupleValues2(const TupleValues2<VALUES1, VALUES2>& config) :
-		  TupleValues<VALUES1, TupleValuesEnd<VALUES2> >(config) {}
+TupleValues2<VALUES1, VALUES2>::TupleValues2(const TupleValues2<VALUES1, VALUES2>& values) :
+		  TupleValues<VALUES1, TupleValuesEnd<VALUES2> >(values) {}
 
 template<class VALUES1, class VALUES2>
 TupleValues2<VALUES1, VALUES2>::TupleValues2(const VALUES1& cfg1, const VALUES2& cfg2) :
@@ -73,15 +73,15 @@ TupleValues2<VALUES1, VALUES2>::TupleValues2(const VALUES1& cfg1, const VALUES2&
 					  cfg1, TupleValuesEnd<VALUES2>(cfg2)) {}
 
 template<class VALUES1, class VALUES2>
-TupleValues2<VALUES1, VALUES2>::TupleValues2(const TupleValues<VALUES1, TupleValuesEnd<VALUES2> >& config) :
-	TupleValues<VALUES1, TupleValuesEnd<VALUES2> >(config) {}
+TupleValues2<VALUES1, VALUES2>::TupleValues2(const TupleValues<VALUES1, TupleValuesEnd<VALUES2> >& values) :
+	TupleValues<VALUES1, TupleValuesEnd<VALUES2> >(values) {}
 
 /* ************************************************************************* */
 /** TupleValues 3 */
 template<class VALUES1, class VALUES2, class VALUES3>
 TupleValues3<VALUES1, VALUES2, VALUES3>::TupleValues3(
-		const TupleValues3<VALUES1, VALUES2, VALUES3>& config) :
-		  TupleValues<VALUES1, TupleValues<VALUES2, TupleValuesEnd<VALUES3> > >(config) {}
+		const TupleValues3<VALUES1, VALUES2, VALUES3>& values) :
+		  TupleValues<VALUES1, TupleValues<VALUES2, TupleValuesEnd<VALUES3> > >(values) {}
 
 template<class VALUES1, class VALUES2, class VALUES3>
 TupleValues3<VALUES1, VALUES2, VALUES3>::TupleValues3(
@@ -92,16 +92,16 @@ TupleValues3<VALUES1, VALUES2, VALUES3>::TupleValues3(
 
 template<class VALUES1, class VALUES2, class VALUES3>
 TupleValues3<VALUES1, VALUES2, VALUES3>::TupleValues3(
-		const TupleValues<VALUES1, TupleValues<VALUES2, TupleValuesEnd<VALUES3> > >& config) :
-		  TupleValues<VALUES1, TupleValues<VALUES2, TupleValuesEnd<VALUES3> > >(config) {}
+		const TupleValues<VALUES1, TupleValues<VALUES2, TupleValuesEnd<VALUES3> > >& values) :
+		  TupleValues<VALUES1, TupleValues<VALUES2, TupleValuesEnd<VALUES3> > >(values) {}
 
 /* ************************************************************************* */
 /** TupleValues 4 */
 template<class VALUES1, class VALUES2, class VALUES3, class VALUES4>
 TupleValues4<VALUES1, VALUES2, VALUES3, VALUES4>::TupleValues4(
-		const TupleValues4<VALUES1, VALUES2, VALUES3, VALUES4>& config) :
+		const TupleValues4<VALUES1, VALUES2, VALUES3, VALUES4>& values) :
 	TupleValues<VALUES1, TupleValues<VALUES2,
-		TupleValues<VALUES3, TupleValuesEnd<VALUES4> > > >(config) {}
+		TupleValues<VALUES3, TupleValuesEnd<VALUES4> > > >(values) {}
 
 template<class VALUES1, class VALUES2, class VALUES3, class VALUES4>
 TupleValues4<VALUES1, VALUES2, VALUES3, VALUES4>::TupleValues4(
@@ -116,17 +116,17 @@ TupleValues4<VALUES1, VALUES2, VALUES3, VALUES4>::TupleValues4(
 template<class VALUES1, class VALUES2, class VALUES3, class VALUES4>
 TupleValues4<VALUES1, VALUES2, VALUES3, VALUES4>::TupleValues4(
 		const TupleValues<VALUES1, TupleValues<VALUES2,
-				TupleValues<VALUES3, TupleValuesEnd<VALUES4> > > >& config) :
+				TupleValues<VALUES3, TupleValuesEnd<VALUES4> > > >& values) :
 	TupleValues<VALUES1, TupleValues<VALUES2,TupleValues<VALUES3,
-		TupleValuesEnd<VALUES4> > > >(config) {}
+		TupleValuesEnd<VALUES4> > > >(values) {}
 
 /* ************************************************************************* */
 /** TupleValues 5 */
 template<class VALUES1, class VALUES2, class VALUES3, class VALUES4, class VALUES5>
 TupleValues5<VALUES1, VALUES2, VALUES3, VALUES4, VALUES5>::TupleValues5(
-		const TupleValues5<VALUES1, VALUES2, VALUES3, VALUES4, VALUES5>& config) :
+		const TupleValues5<VALUES1, VALUES2, VALUES3, VALUES4, VALUES5>& values) :
 		  TupleValues<VALUES1, TupleValues<VALUES2, TupleValues<VALUES3,
-			  TupleValues<VALUES4, TupleValuesEnd<VALUES5> > > > >(config) {}
+			  TupleValues<VALUES4, TupleValuesEnd<VALUES5> > > > >(values) {}
 
 template<class VALUES1, class VALUES2, class VALUES3, class VALUES4, class VALUES5>
 TupleValues5<VALUES1, VALUES2, VALUES3, VALUES4, VALUES5>::TupleValues5(
@@ -144,9 +144,9 @@ TupleValues5<VALUES1, VALUES2, VALUES3, VALUES4, VALUES5>::TupleValues5(
 template<class VALUES1, class VALUES2, class VALUES3, class VALUES4, class VALUES5>
 TupleValues5<VALUES1, VALUES2, VALUES3, VALUES4, VALUES5>::TupleValues5(
 		const TupleValues<VALUES1, TupleValues<VALUES2, TupleValues<VALUES3,
-			  TupleValues<VALUES4, TupleValuesEnd<VALUES5> > > > >& config) :
+			  TupleValues<VALUES4, TupleValuesEnd<VALUES5> > > > >& values) :
 	TupleValues<VALUES1, TupleValues<VALUES2, TupleValues<VALUES3,
-	TupleValues<VALUES4, TupleValuesEnd<VALUES5> > > > >(config) {}
+	TupleValues<VALUES4, TupleValuesEnd<VALUES5> > > > >(values) {}
 
 /* ************************************************************************* */
 /** TupleValues 6 */
@@ -154,10 +154,10 @@ template<class VALUES1, class VALUES2, class VALUES3,
 		 class VALUES4, class VALUES5, class VALUES6>
 TupleValues6<VALUES1, VALUES2, VALUES3, VALUES4, VALUES5, VALUES6>::TupleValues6(
 		const TupleValues6<VALUES1, VALUES2, VALUES3,
-						   VALUES4, VALUES5, VALUES6>& config) :
+						   VALUES4, VALUES5, VALUES6>& values) :
 			  TupleValues<VALUES1, TupleValues<VALUES2, TupleValues<VALUES3,
 			  TupleValues<VALUES4, TupleValues<VALUES5,
-			  TupleValuesEnd<VALUES6> > > > > >(config) {}
+			  TupleValuesEnd<VALUES6> > > > > >(values) {}
 
 template<class VALUES1, class VALUES2, class VALUES3,
 		 class VALUES4, class VALUES5, class VALUES6>
@@ -180,9 +180,9 @@ template<class VALUES1, class VALUES2, class VALUES3,
 TupleValues6<VALUES1, VALUES2, VALUES3, VALUES4, VALUES5, VALUES6>::TupleValues6(
 		const TupleValues<VALUES1, TupleValues<VALUES2, TupleValues<VALUES3,
 		      TupleValues<VALUES4, TupleValues<VALUES5,
-		      TupleValuesEnd<VALUES6> > > > > >& config) :
+		      TupleValuesEnd<VALUES6> > > > > >& values) :
 	TupleValues<VALUES1, TupleValues<VALUES2, TupleValues<VALUES3,
 	TupleValues<VALUES4, TupleValues<VALUES5,
-	TupleValuesEnd<VALUES6> > > > > >(config) {}
+	TupleValuesEnd<VALUES6> > > > > >(values) {}
 
 }

@@ -70,7 +70,7 @@ int main(int argc, char** argv) {
 	Optimizer::Parameters::verbosityLevel verbosity = pose2SLAM::Optimizer::Parameters::SILENT;
 	Optimizer optimizer_result = optimizer.levenbergMarquardt(1e-15, 1e-15, verbosity);
 
-	Values result = *optimizer_result.config();
+	Values result = *optimizer_result.values();
 	result.print("final result");
 	return 0;
 }

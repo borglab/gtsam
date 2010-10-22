@@ -137,7 +137,7 @@ TEST( NonlinearOptimizer, iterateLM )
 	}
 	delete(pointer);
 
-	CHECK(assert_equal(*iterated1.config(), *iterated2.config(), 1e-9));
+	CHECK(assert_equal(*iterated1.values(), *iterated2.values(), 1e-9));
 }
 
 /* ************************************************************************* */
@@ -170,12 +170,12 @@ TEST( NonlinearOptimizer, optimize )
 	// Gauss-Newton
 	Optimizer actual1 = optimizer.gaussNewton(relativeThreshold,
 			absoluteThreshold);
-	DOUBLES_EQUAL(0,fg->error(*(actual1.config())),tol);
+	DOUBLES_EQUAL(0,fg->error(*(actual1.values())),tol);
 
 	// Levenberg-Marquardt
 	Optimizer actual2 = optimizer.levenbergMarquardt(relativeThreshold,
 			absoluteThreshold, Optimizer::Parameters::SILENT);
-	DOUBLES_EQUAL(0,fg->error(*(actual2.config())),tol);
+	DOUBLES_EQUAL(0,fg->error(*(actual2.values())),tol);
 }
 
 /* ************************************************************************* */
@@ -255,7 +255,7 @@ TEST( NonlinearOptimizer, Factorization )
 	Pose2Values expected;
 	expected.insert(1, Pose2(0.,0.,0.));
 	expected.insert(2, Pose2(1.,0.,0.));
-	CHECK(assert_equal(expected, *optimized.config(), 1e-5));
+	CHECK(assert_equal(expected, *optimized.values(), 1e-5));
 }
 
 ///* ************************************************************************* */
@@ -290,7 +290,7 @@ TEST( NonlinearOptimizer, Factorization )
 //	Values expected;
 //	expected.insert(1, Pose2(0., 0., 0.));
 //	expected.insert(2, Pose2(1., 0., 0.));
-//	CHECK(assert_equal(expected, *optimized.config(), 1e-5));
+//	CHECK(assert_equal(expected, *optimized.values(), 1e-5));
 //}
 
 /* ************************************************************************* */

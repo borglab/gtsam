@@ -122,7 +122,7 @@ TEST(Pose2Graph, optimize) {
   Pose2Values expected;
   expected.insert(0, Pose2(0,0,0));
   expected.insert(1, Pose2(1,2,M_PI_2));
-  CHECK(assert_equal(expected, *optimizer.config()));
+  CHECK(assert_equal(expected, *optimizer.values()));
 }
 
 /* ************************************************************************* */
@@ -156,7 +156,7 @@ TEST(Pose2Graph, optimizeThreePoses) {
   pose2SLAM::Optimizer::Parameters::verbosityLevel verbosity = pose2SLAM::Optimizer::Parameters::SILENT;
   pose2SLAM::Optimizer optimizer = optimizer0.levenbergMarquardt(1e-15, 1e-15, verbosity);
 
-  Pose2Values actual = *optimizer.config();
+  Pose2Values actual = *optimizer.values();
 
   // Check with ground truth
   CHECK(assert_equal(hexagon, actual));
@@ -199,7 +199,7 @@ TEST(Pose2Graph, optimizeCircle) {
   pose2SLAM::Optimizer::Parameters::verbosityLevel verbosity = pose2SLAM::Optimizer::Parameters::SILENT;
   pose2SLAM::Optimizer optimizer = optimizer0.levenbergMarquardt(1e-15, 1e-15, verbosity);
 
-  Pose2Values actual = *optimizer.config();
+  Pose2Values actual = *optimizer.values();
 
   // Check with ground truth
   CHECK(assert_equal(hexagon, actual));

@@ -76,7 +76,7 @@ TEST(Pose3Graph, optimizeCircle) {
 //  Optimizer::verbosityLevel verbosity = Optimizer::ERROR;
   Optimizer optimizer = optimizer0.levenbergMarquardt(1e-15, 1e-15, verbosity);
 
-  Pose3Values actual = *optimizer.config();
+  Pose3Values actual = *optimizer.values();
 
   // Check with ground truth
   CHECK(assert_equal(hexagon, actual,1e-4));

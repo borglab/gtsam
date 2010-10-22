@@ -17,7 +17,7 @@ namespace gtsam {
 			ERROR,
 			LAMBDA,
 			TRYLAMBDA,
-			CONFIG,
+			VALUES,
 			DELTA,
 			TRYCONFIG,
 			TRYDELTA,

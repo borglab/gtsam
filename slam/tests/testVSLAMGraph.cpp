@@ -114,7 +114,7 @@ TEST( Graph, optimizeLM)
   DOUBLES_EQUAL(0.0, optimizer.error(), 1e-9);
 
   // check if correct
-  CHECK(assert_equal(*initialEstimate,*(afterOneIteration.config())));
+  CHECK(assert_equal(*initialEstimate,*(afterOneIteration.values())));
 }
 
 
@@ -151,7 +151,7 @@ TEST( Graph, optimizeLM2)
   DOUBLES_EQUAL(0.0, optimizer.error(), 1e-9);
 
   // check if correct
-  CHECK(assert_equal(*initialEstimate,*(afterOneIteration.config())));
+  CHECK(assert_equal(*initialEstimate,*(afterOneIteration.values())));
 }
 
 
@@ -186,7 +186,7 @@ TEST( Graph, CHECK_ORDERING)
   DOUBLES_EQUAL(0.0, optimizer.error(), 1e-9);
 
   // check if correct
-  CHECK(assert_equal(*initialEstimate,*(afterOneIteration.config())));
+  CHECK(assert_equal(*initialEstimate,*(afterOneIteration.values())));
 }
 
 /* ************************************************************************* */

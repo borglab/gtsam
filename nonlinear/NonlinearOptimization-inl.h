@@ -45,7 +45,7 @@ namespace gtsam {
 
 		// Levenberg-Marquardt
 	  Optimizer result = optimizer.levenbergMarquardt(parameters);
-		return *result.config();
+		return *result.values();
 	}
 
 	/**
@@ -64,7 +64,7 @@ namespace gtsam {
 
 		// Levenberg-Marquardt
 	  Optimizer result = optimizer.levenbergMarquardt(parameters);
-		return *result.config();
+		return *result.values();
 	}
 
 //	/**
@@ -83,7 +83,7 @@ namespace gtsam {
 //
 //		// Levenberg-Marquardt
 //		SPCGOptimizer result = optimizer.levenbergMarquardt(parameters);
-//		return *result.config();
+//		return *result.values();
 //	}
 
 	/**

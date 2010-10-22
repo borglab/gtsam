@@ -52,7 +52,7 @@ int main(void) {
 	SPCGOptimizer optimizer2 = optimizer.levenbergMarquardt(parameter);
 	cout << "after optimization, sum of error is " << optimizer2.error() << endl;
 
-	result = *optimizer2.config() ;
+	result = *optimizer2.values() ;
 	result.print("final result") ;
 
 	return 0 ;

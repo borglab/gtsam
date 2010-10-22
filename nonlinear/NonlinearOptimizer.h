@@ -84,7 +84,7 @@ namespace gtsam {
 
 		// keep a values structure and its error
 		// These typically change once per iteration (in a functional way)
-		const shared_values config_;
+		const shared_values values_;
 		const double error_;
 
 		const shared_ordering ordering_;
@@ -106,12 +106,12 @@ namespace gtsam {
      * Constructor that does not do any computation
      */
     NonlinearOptimizer(shared_graph graph, shared_values config, shared_ordering ordering,
-        const double error, const double lambda, shared_dimensions dimensions): graph_(graph), config_(config),
+        const double error, const double lambda, shared_dimensions dimensions): graph_(graph), values_(config),
         error_(error), ordering_(ordering), lambda_(lambda), dimensions_(dimensions) {}
 
     /** Create a new NonlinearOptimizer with a different lambda */
     This newLambda_(double newLambda) const {
-      return NonlinearOptimizer(graph_, config_, ordering_, error_, newLambda, dimensions_); }
+      return NonlinearOptimizer(graph_, values_, ordering_, error_, newLambda, dimensions_); }
 
     This newValues_(shared_values newValues) const {
       return NonlinearOptimizer(graph_, newValues, ordering_, graph_->error(*newValues), lambda_, dimensions_); }
@@ -131,7 +131,7 @@ namespace gtsam {
 		 * Copy constructor
 		 */
 		NonlinearOptimizer(const NonlinearOptimizer<G, T, L, GS> &optimizer) :
-		  graph_(optimizer.graph_), config_(optimizer.config_), error_(optimizer.error_),
+		  graph_(optimizer.graph_), values_(optimizer.values_), error_(optimizer.error_),
 		  ordering_(optimizer.ordering_), lambda_(optimizer.lambda_), dimensions_(optimizer.dimensions_) {}
 
 		/**
@@ -149,10 +149,10 @@ namespace gtsam {
 		}
 
 		/**
-		 * Return the config
+		 * Return the values
 		 */
-		shared_values config() const{
-			return config_;
+		shared_values values() const{
+			return values_;
 		}
 
 		/**
@@ -227,7 +227,7 @@ namespace gtsam {
 			// Levenberg-Marquardt
 			NonlinearOptimizer result = optimizer.levenbergMarquardt(relativeThreshold,
 					absoluteThreshold, verbosity);
-			return result.config();
+			return result.values();
 		}
 
 		/**
@@ -258,7 +258,7 @@ namespace gtsam {
 			// Gauss-Newton
 			NonlinearOptimizer result = optimizer.gaussNewton(relativeThreshold,
 					absoluteThreshold, verbosity);
-			return result.config();
+			return result.values();
 		}
 
 		/**
