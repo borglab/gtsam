@@ -23,6 +23,8 @@
 #include <boost/numeric/ublas/matrix_proxy.hpp>
 #include <boost/numeric/ublas/triangular.hpp>
 
+#include <string.h> // for memcpy and memset
+
 using namespace std;
 namespace ublas = boost::numeric::ublas;
 

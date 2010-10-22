@@ -271,7 +271,6 @@ void householder(Matrix& A, size_t k);
  * @return nothing: in place !!!
  */
 void householder(Matrix& A);
-#endif
 
 /**
  * Householder tranformation directly on a column-major matrix.  Does not zero
@@ -281,6 +280,7 @@ void householder(Matrix& A);
  * lots of hacks, at least)
  */
 void householderColMajor(MatrixColMajor& A);
+#endif
 #endif
 
 /**

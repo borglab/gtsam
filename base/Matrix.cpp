@@ -669,7 +669,6 @@ void householder(Matrix &A) {
 			A(i,j) = a[k];
 	}
 }
-#endif
 
 void householderColMajor(MatrixColMajor &A) {
   __CLPK_integer m = A.size1();
@@ -685,6 +684,7 @@ void householderColMajor(MatrixColMajor &A) {
   double work[lwork];
   dgeqrf_(&m, &n, A.data().begin(), &m, tau, work, &lwork, &info);
 }
+#endif
 #endif
 
 ///* ************************************************************************* */
