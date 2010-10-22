@@ -35,8 +35,8 @@ namespace gtsam {
 	 * all the linear solver types
 	 */
 	enum LinearSolver{
-		ELIMINATION,      // Elimination
-		MULTIFRONTAL,      // Multi-frontal
+		SEQUENTIAL,      // Sequential elimination
+		MULTIFRONTAL,      // Multi-frontal elimination
 		SPCG,			  // Subgraph Preconditioned Conjugate Gradient
 	};
 
@@ -46,7 +46,7 @@ namespace gtsam {
 	 */
 	template<class G, class T>
 	T optimize(const G& graph, const T& initialEstimate, const NonlinearOptimizationParameters& parameters = NonlinearOptimizationParameters(),
-			const enum LinearSolver& solver = ELIMINATION);
+			const enum LinearSolver& solver = SEQUENTIAL);
 
 }
 

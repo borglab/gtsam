@@ -33,7 +33,7 @@ namespace gtsam {
 	 * The Elimination solver
 	 */
 	template<class G, class T>
-	T	optimizeElimination(const G& graph, const T& initialEstimate, const NonlinearOptimizationParameters& parameters) {
+	T	optimizeSequential(const G& graph, const T& initialEstimate, const NonlinearOptimizationParameters& parameters) {
 
 		// Use a variable ordering from COLAMD
 	  Ordering::shared_ptr ordering = graph.orderingCOLAMD(initialEstimate);
@@ -68,7 +68,7 @@ namespace gtsam {
 	}
 
 //	/**
-//	 * The multifrontal solver
+//	 * The sparse preconditioned conjucate gradient solver
 //	 */
 //	template<class G, class T>
 //	T	optimizeSPCG(const G& graph, const T& initialEstimate, const NonlinearOptimizationParameters& parameters = NonlinearOptimizationParameters()) {
@@ -93,8 +93,8 @@ namespace gtsam {
 	T optimize(const G& graph, const T& initialEstimate, const NonlinearOptimizationParameters& parameters,
 			const enum LinearSolver& solver) {
 		switch (solver) {
-		case ELIMINATION:
-			return optimizeElimination<G,T>(graph, initialEstimate, parameters);
+		case SEQUENTIAL:
+			return optimizeSequential<G,T>(graph, initialEstimate, parameters);
 		case MULTIFRONTAL:
 			return optimizeMultiFrontal<G,T>(graph, initialEstimate, parameters);
 		case SPCG:
