@@ -328,10 +328,10 @@ GaussianConditional::shared_ptr GaussianFactor::eliminateFirst() {
 
   tic("eliminateFirst: stairs");
   // Translate the left-most nonzero column indices into top-most zero row indices
-  vector<long> firstZeroRows(Ab_.size2());
+  vector<int> firstZeroRows(Ab_.size2());
   {
     size_t lastNonzeroRow = 0;
-    vector<long>::iterator firstZeroRowsIt = firstZeroRows.begin();
+    vector<int>::iterator firstZeroRowsIt = firstZeroRows.begin();
     for(size_t var=0; var<keys().size(); ++var) {
       while(lastNonzeroRow < this->numberOfRows() && firstNonzeroBlocks_[lastNonzeroRow] <= var)
         ++ lastNonzeroRow;
@@ -441,10 +441,10 @@ GaussianBayesNet::shared_ptr GaussianFactor::eliminate(size_t nrFrontals) {
 
   tic("eliminate: stairs");
   // Translate the left-most nonzero column indices into top-most zero row indices
-  vector<long> firstZeroRows(Ab_.size2());
+  vector<int> firstZeroRows(Ab_.size2());
   {
     size_t lastNonzeroRow = 0;
-    vector<long>::iterator firstZeroRowsIt = firstZeroRows.begin();
+    vector<int>::iterator firstZeroRowsIt = firstZeroRows.begin();
     for(size_t var=0; var<keys().size(); ++var) {
       while(lastNonzeroRow < this->numberOfRows() && firstNonzeroBlocks_[lastNonzeroRow] <= var)
         ++ lastNonzeroRow;

@@ -31,6 +31,7 @@
 
 #include <gtsam/linear/NoiseModel.h>
 #include <gtsam/linear/SharedDiagonal.h>
+#include <gtsam/base/DenseQRUtil.h>
 
 namespace ublas = boost::numeric::ublas;
 typedef ublas::matrix_column<Matrix> column;
@@ -119,7 +120,7 @@ void Gaussian::WhitenInPlace(MatrixColMajor& H) const {
 }
 
 // General QR, see also special version in Constrained
-/*SharedDiagonal Gaussian::QR(Matrix& Ab, boost::optional<vector<long>&> firstZeroRows) const {
+SharedDiagonal Gaussian::QR(Matrix& Ab, boost::optional<vector<int>&> firstZeroRows) const {
 
 	// get size(A) and maxRank
 	// TODO: really no rank problems ?
@@ -132,21 +133,21 @@ void Gaussian::WhitenInPlace(MatrixColMajor& H) const {
 	// Perform in-place Householder
 #ifdef GT_USE_LAPACK
 	if(firstZeroRows)
-	  householder_denseqr(Ab, &(*firstZeroRows)[0]);
+		householder_denseqr(Ab, &(*firstZeroRows)[0]);
 	else
-	  householder_denseqr(Ab);
+		householder_denseqr(Ab);
 #else
-householder(Ab, maxRank);
+	householder(Ab, maxRank);
 #endif
 
-return Unit::Create(maxRank);
-}*/
+	return Unit::Create(maxRank);
+}
 
 // Special version of QR for Constrained calls slower but smarter code
 // that deals with possibly zero sigmas
 // It is Gram-Schmidt orthogonalization rather than Householder
 // Previously Diagonal::QR
-SharedDiagonal Gaussian::QR(Matrix& Ab, boost::optional<std::vector<long>&> firstZeroRows) const {
+/*SharedDiagonal Gaussian::QR(Matrix& Ab, boost::optional<std::vector<long>&> firstZeroRows) const {
 
 	WhitenInPlace(Ab);
 	// get size(A) and maxRank
@@ -214,31 +215,31 @@ SharedDiagonal Gaussian::QR(Matrix& Ab, boost::optional<std::vector<long>&> firs
 	}
 
 	return Unit::Create(maxRank);
-}
+}*/
 
 
 // General QR, see also special version in Constrained
-SharedDiagonal Gaussian::QRColumnWise(ublas::matrix<double, ublas::column_major>& Ab, vector<long>& firstZeroRows) const {
-	WhitenInPlace(Ab);
-	householderColMajor(Ab);
-	size_t maxRank = min(Ab.size1(), Ab.size2()-1);
-	return Unit::Create(maxRank);
-//  // get size(A) and maxRank
-//  // TODO: really no rank problems ?
-//  size_t m = Ab.size1(), n = Ab.size2()-1;
-//  size_t maxRank = min(m,n);
-//
-//  // pre-whiten everything (cheaply if possible)
-//  WhitenInPlace(Ab);
-//
-//  // Perform in-place Householder
-//#ifdef GT_USE_LAPACK
-//  householder_denseqr_colmajor(Ab, &firstZeroRows[0]);
-//#else
-//  householder(Ab, maxRank);
-//#endif
-//
-//  return Unit::Create(maxRank);
+SharedDiagonal Gaussian::QRColumnWise(ublas::matrix<double, ublas::column_major>& Ab, vector<int>& firstZeroRows) const {
+//	WhitenInPlace(Ab);
+//	householderColMajor(Ab);
+//	size_t maxRank = min(Ab.size1(), Ab.size2()-1);
+//	return Unit::Create(maxRank);
+  // get size(A) and maxRank
+  // TODO: really no rank problems ?
+  size_t m = Ab.size1(), n = Ab.size2()-1;
+  size_t maxRank = min(m,n);
+
+  // pre-whiten everything (cheaply if possible)
+  WhitenInPlace(Ab);
+
+  // Perform in-place Householder
+#ifdef GT_USE_LAPACK
+  householder_denseqr_colmajor(Ab, &firstZeroRows[0]);
+#else
+  householder(Ab, maxRank);
+#endif
+
+  return Unit::Create(maxRank);
 }
 
 /* ************************************************************************* */
@@ -330,7 +331,7 @@ void Constrained::WhitenInPlace(MatrixColMajor& H) const {
 // that deals with possibly zero sigmas
 // It is Gram-Schmidt orthogonalization rather than Householder
 // Previously Diagonal::QR
-SharedDiagonal Constrained::QR(Matrix& Ab, boost::optional<std::vector<long>&> firstZeroRows) const {
+SharedDiagonal Constrained::QR(Matrix& Ab, boost::optional<std::vector<int>&> firstZeroRows) const {
 	bool verbose = false;
 	if (verbose) cout << "\nStarting Constrained::QR" << endl;
 
@@ -401,7 +402,7 @@ SharedDiagonal Constrained::QR(Matrix& Ab, boost::optional<std::vector<long>&> f
 	return mixed ? Constrained::MixedPrecisions(precisions) : Diagonal::Precisions(precisions);
 }
 
-SharedDiagonal Constrained::QRColumnWise(ublas::matrix<double, ublas::column_major>& Ab, vector<long>& firstZeroRows) const {
+SharedDiagonal Constrained::QRColumnWise(ublas::matrix<double, ublas::column_major>& Ab, vector<int>& firstZeroRows) const {
   Matrix AbRowWise(Ab);
   SharedDiagonal result = this->QR(AbRowWise, firstZeroRows);
   Ab = AbRowWise;

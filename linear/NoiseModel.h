@@ -169,13 +169,13 @@ namespace gtsam {
 			 * @param Ab is the m*(n+1) augmented system matrix [A b]
 			 * @return in-place QR factorization [R d]. Below-diagonal is undefined !!!!!
 			 */
-			virtual SharedDiagonal QR(Matrix& Ab, boost::optional<std::vector<long>&> firstZeroRows = boost::none) const;
+			virtual SharedDiagonal QR(Matrix& Ab, boost::optional<std::vector<int>&> firstZeroRows = boost::none) const;
 
 			/**
 			 * Version for column-wise matrices
 			 */
 			virtual SharedDiagonal QRColumnWise(boost::numeric::ublas::matrix<double, boost::numeric::ublas::column_major>& Ab,
-			    std::vector<long>& firstZeroRows) const;
+			    std::vector<int>& firstZeroRows) const;
 
 			/**
 			 * Return R itself, but note that Whiten(H) is cheaper than R*H
@@ -321,13 +321,13 @@ namespace gtsam {
 			/**
 			 * Apply QR factorization to the system [A b], taking into account constraints
 			 */
-			virtual SharedDiagonal QR(Matrix& Ab, boost::optional<std::vector<long>&> firstZeroRows = boost::none) const;
+			virtual SharedDiagonal QR(Matrix& Ab, boost::optional<std::vector<int>&> firstZeroRows = boost::none) const;
 
       /**
        * Version for column-wise matrices
        */
       virtual SharedDiagonal QRColumnWise(boost::numeric::ublas::matrix<double, boost::numeric::ublas::column_major>& Ab,
-          std::vector<long>& firstZeroRows) const;
+          std::vector<int>& firstZeroRows) const;
 
 			/**
 			 * Check constrained is always true
