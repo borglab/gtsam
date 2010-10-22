@@ -42,8 +42,8 @@ public:
 
   typedef boost::shared_ptr<VariableIndex> shared_ptr;
   typedef FastList<size_t> Factors;
-  typedef typename Factors::iterator Factor_iterator;
-  typedef typename Factors::const_iterator Factor_const_iterator;
+  typedef Factors::iterator Factor_iterator;
+  typedef Factors::const_iterator Factor_const_iterator;
 
 protected:
   std::vector<Factors> indexUnpermuted_;
