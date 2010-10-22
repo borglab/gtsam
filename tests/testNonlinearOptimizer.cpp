@@ -69,11 +69,8 @@ TEST( NonlinearOptimizer, linearizeAndOptimizeForDelta )
 	dx2(1) = -0.2;
 	expected[ord1["x2"]] = dx2;
 
-	Optimizer::shared_solver solver;
-
 	// Check one ordering
-	solver = Optimizer::shared_solver(new Optimizer::solver(Ordering::shared_ptr(new Ordering(ord1))));
-	Optimizer optimizer1(fg, initial, solver);
+	Optimizer optimizer1(fg, initial, Optimizer::shared_ordering(new Ordering(ord1)));
 
 	VectorValues actual1 = optimizer1.linearizeAndOptimizeForDelta();
 	CHECK(assert_equal(actual1,expected));
@@ -123,8 +120,7 @@ TEST( NonlinearOptimizer, iterateLM )
 	ord->push_back("x1");
 
 	// create initial optimization state, with lambda=0
-	Optimizer::shared_solver solver(new Optimizer::solver(ord));
-	Optimizer optimizer(fg, config, solver, 0.);
+	Optimizer optimizer(fg, config, ord, 0.);
 
 	// normal iterate
 	Optimizer iterated1 = optimizer.iterate();
@@ -169,8 +165,7 @@ TEST( NonlinearOptimizer, optimize )
 	double absoluteThreshold = 1e-5;
 
 	// initial optimization state is the same in both cases tested
-	Optimizer::shared_solver solver(new Optimizer::solver(ord));
-	Optimizer optimizer(fg, c0, solver);
+	Optimizer optimizer(fg, c0, ord);
 
 	// Gauss-Newton
 	Optimizer actual1 = optimizer.gaussNewton(relativeThreshold,
@@ -240,7 +235,7 @@ TEST( NonlinearOptimizer, SimpleGNOptimizer_noshared )
 /* ************************************************************************* */
 TEST( NonlinearOptimizer, Factorization )
 {
-	typedef NonlinearOptimizer<Pose2Graph, Pose2Values, GaussianFactorGraph, Factorization<Pose2Graph, Pose2Values> > Optimizer;
+	typedef NonlinearOptimizer<Pose2Graph, Pose2Values, GaussianFactorGraph, GaussianSequentialSolver > Optimizer;
 
 	boost::shared_ptr<Pose2Values> config(new Pose2Values);
 	config->insert(1, Pose2(0.,0.,0.));
@@ -253,9 +248,8 @@ TEST( NonlinearOptimizer, Factorization )
 	boost::shared_ptr<Ordering> ordering(new Ordering);
 	ordering->push_back(Pose2Values::Key(1));
 	ordering->push_back(Pose2Values::Key(2));
-	Optimizer::shared_solver solver(new Factorization<Pose2Graph, Pose2Values>(ordering));
 
-	Optimizer optimizer(graph, config, solver);
+	Optimizer optimizer(graph, config, ordering);
 	Optimizer optimized = optimizer.iterateLM();
 
 	Pose2Values expected;

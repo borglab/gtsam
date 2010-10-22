@@ -219,10 +219,10 @@ SharedDiagonal Gaussian::QR(Matrix& Ab, boost::optional<std::vector<long>&> firs
 
 // General QR, see also special version in Constrained
 SharedDiagonal Gaussian::QRColumnWise(ublas::matrix<double, ublas::column_major>& Ab, vector<long>& firstZeroRows) const {
-	Matrix Abresult(Ab);
-	SharedDiagonal result = QR(Abresult, firstZeroRows);
-	Ab = Abresult;
-	return result;
+	WhitenInPlace(Ab);
+	householderColMajor(Ab);
+	size_t maxRank = min(Ab.size1(), Ab.size2()-1);
+	return Unit::Create(maxRank);
 //  // get size(A) and maxRank
 //  // TODO: really no rank problems ?
 //  size_t m = Ab.size1(), n = Ab.size2()-1;
@@ -402,14 +402,10 @@ SharedDiagonal Constrained::QR(Matrix& Ab, boost::optional<std::vector<long>&> f
 }
 
 SharedDiagonal Constrained::QRColumnWise(ublas::matrix<double, ublas::column_major>& Ab, vector<long>& firstZeroRows) const {
-//  Matrix AbRowWise(Ab);
-//  SharedDiagonal result = this->QR(AbRowWise, firstZeroRows);
-//  Ab = AbRowWise;
-//  return result;
-	Matrix Abresult(Ab);
-	SharedDiagonal result = QR(Abresult, firstZeroRows);
-	Ab = Abresult;
-	return result;
+  Matrix AbRowWise(Ab);
+  SharedDiagonal result = this->QR(AbRowWise, firstZeroRows);
+  Ab = AbRowWise;
+  return result;
 }
 
 /* ************************************************************************* */

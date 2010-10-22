@@ -23,8 +23,8 @@
 #include <boost/make_shared.hpp>
 #include <gtsam/nonlinear/Ordering.h>
 #include <gtsam/linear/VectorValues.h>
+#include <gtsam/linear/GaussianMultifrontalSolver.h>
 #include <gtsam/nonlinear/NonlinearFactorGraph.h>
-#include <gtsam/linear/Factorization.h>
 #include <gtsam/nonlinear/NonlinearOptimizationParameters.h>
 
 namespace gtsam {
@@ -63,7 +63,7 @@ namespace gtsam {
 	 *
 	 *
 	 */
-	template<class G, class T, class L = GaussianFactorGraph, class GS = GaussianSequentialSolver, class W = NullOptimizerWriter>
+	template<class G, class T, class L = GaussianFactorGraph, class GS = GaussianMultifrontalSolver, class W = NullOptimizerWriter>
 	class NonlinearOptimizer {
 	public:
 

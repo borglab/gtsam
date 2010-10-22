@@ -27,8 +27,9 @@
 
 namespace gtsam {
 
-	// explicit template instantiation
-	template class JunctionTree<GaussianFactorGraph>;
+  // explicit template instantiation
+  template class JunctionTree<GaussianFactorGraph>;
+  template class ClusterTree<GaussianFactorGraph>;
 
 	using namespace std;
 

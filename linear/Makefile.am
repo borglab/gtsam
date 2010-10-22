@@ -25,7 +25,7 @@ check_PROGRAMS += tests/testVectorValues
 sources += GaussianSequentialSolver.cpp GaussianMultifrontalSolver.cpp
 
 # Gaussian Factor Graphs
-headers += GaussianFactorSet.h Factorization.h
+headers += GaussianFactorSet.h
 sources += GaussianFactor.cpp GaussianFactorGraph.cpp
 sources += GaussianJunctionTree.cpp 
 sources += GaussianConditional.cpp GaussianBayesNet.cpp

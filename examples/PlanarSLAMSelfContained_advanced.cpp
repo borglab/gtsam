@@ -38,6 +38,7 @@
 #include <gtsam/nonlinear/TupleValues-inl.h>
 #include <gtsam/nonlinear/NonlinearFactorGraph-inl.h>
 #include <gtsam/nonlinear/NonlinearOptimizer-inl.h>
+#include <gtsam/linear/GaussianSequentialSolver.h>
 #include <gtsam/linear/GaussianMultifrontalSolver.h>
 
 // Main typedefs

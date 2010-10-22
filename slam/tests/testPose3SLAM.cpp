@@ -71,8 +71,7 @@ TEST(Pose3Graph, optimizeCircle) {
   shared_ptr<Ordering> ordering(new Ordering);
   *ordering += "x0","x1","x2","x3","x4","x5";
   typedef NonlinearOptimizer<Pose3Graph, Pose3Values> Optimizer;
-	Optimizer::shared_solver solver(new Optimizer::solver(ordering));
-  Optimizer optimizer0(fg, initial, solver);
+  Optimizer optimizer0(fg, initial, ordering);
   Optimizer::Parameters::verbosityLevel verbosity = Optimizer::Parameters::SILENT;
 //  Optimizer::verbosityLevel verbosity = Optimizer::ERROR;
   Optimizer optimizer = optimizer0.levenbergMarquardt(1e-15, 1e-15, verbosity);

@@ -674,6 +674,21 @@ void householder(Matrix &A) {
 	}
 }
 #endif
+
+void householderColMajor(MatrixColMajor &A) {
+  __CLPK_integer m = A.size1();
+  __CLPK_integer n = A.size2();
+
+  double tau[n];
+  double work_optimal_size;
+  __CLPK_integer lwork = -1;
+  __CLPK_integer info;
+
+  dgeqrf_(&m, &n, A.data().begin(), &m, tau, &work_optimal_size, &lwork, &info);
+  lwork = (__CLPK_integer)work_optimal_size;
+  double work[lwork];
+  dgeqrf_(&m, &n, A.data().begin(), &m, tau, work, &lwork, &info);
+}
 #endif
 
 ///* ************************************************************************* */

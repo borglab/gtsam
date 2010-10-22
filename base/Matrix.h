@@ -264,15 +264,21 @@ void householder_(Matrix& A, size_t k);
  */
 void householder(Matrix& A, size_t k);
 
-/**
- * Householder tranformation, zeros below diagonal
- * @param k number of columns to zero out below diagonal
- * @return nothing: in place !!!
- */
 #ifdef GT_USE_LAPACK
 #ifdef YA_BLAS
-void householder(Matrix &A);
+/**
+ * Householder tranformation, zeros below diagonal
+ * @return nothing: in place !!!
+ */
+void householder(Matrix& A);
 #endif
+
+/**
+ * Householder tranformation directly on a column-major matrix.  Does not zero
+ * below the diagonal, so it will contain Householder vectors.
+ * @return nothing: in place !!!
+ */
+void householderColMajor(MatrixColMajor& A);
 #endif
 
 /**

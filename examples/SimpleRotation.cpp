@@ -43,7 +43,6 @@ using namespace gtsam;
 typedef TypedSymbol<Rot2, 'x'> Key;
 typedef LieValues<Key> Values;
 typedef NonlinearFactorGraph<Values> Graph;
-typedef Factorization<Graph,Values> Solver;
 typedef NonlinearOptimizer<Graph,Values> Optimizer;
 
 const double degree = M_PI / 180;
