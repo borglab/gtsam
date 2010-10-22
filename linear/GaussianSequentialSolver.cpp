@@ -27,6 +27,18 @@ GaussianSequentialSolver::GaussianSequentialSolver(const FactorGraph<GaussianFac
     Base(factorGraph) {}
 
 /* ************************************************************************* */
+GaussianSequentialSolver::shared_ptr GaussianSequentialSolver::Create(const FactorGraph<GaussianFactor>& factorGraph) {
+  return shared_ptr(new GaussianSequentialSolver(factorGraph));
+}
+
+/* ************************************************************************* */
+GaussianSequentialSolver::shared_ptr GaussianSequentialSolver::update(const FactorGraph<GaussianFactor>& factorGraph) const {
+  // We do not yet have code written to update the elimination tree, so we just
+  // create a new solver.
+  return Create(factorGraph);
+}
+
+/* ************************************************************************* */
 GaussianBayesNet::shared_ptr GaussianSequentialSolver::eliminate() const {
   return Base::eliminate();
 }

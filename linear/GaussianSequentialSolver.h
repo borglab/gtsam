@@ -45,7 +45,7 @@ namespace gtsam {
  * starting point to learn about these algorithms and our implementation.
  * Additionally, the first step of MFQR is symbolic sequential elimination.
  *
- * The EliminationTree recursively produces a BayesNet<GaussianFactor>,
+ * The EliminationTree recursively produces a BayesNet<GaussianConditional>,
  * typedef'ed in linear/GaussianBayesNet, on which this class calls
  * optimize(...) to perform back-substitution.
  */
@@ -54,6 +54,7 @@ class GaussianSequentialSolver : GenericSequentialSolver<GaussianFactor> {
 protected:
 
   typedef GenericSequentialSolver<GaussianFactor> Base;
+  typedef boost::shared_ptr<const GaussianSequentialSolver> shared_ptr;
 
 public:
 
@@ -62,6 +63,21 @@ public:
    * tree, which already does some of the symbolic work of elimination.
    */
   GaussianSequentialSolver(const FactorGraph<GaussianFactor>& factorGraph);
+
+  /**
+   * Named constructor to return a shared_ptr.  This builds the elimination
+   * tree, which already does some of the symbolic work of elimination.
+   */
+  static shared_ptr Create(const FactorGraph<GaussianFactor>& factorGraph);
+
+  /**
+   * Return a new solver that solves the given factor graph, which must have
+   * the *same structure* as the one this solver solves.  For some solvers this
+   * is more efficient than constructing the solver from scratch.  This can be
+   * used in cases where the numerical values of the linear problem change,
+   * e.g. during iterative nonlinear optimization.
+   */
+  shared_ptr update(const FactorGraph<GaussianFactor>& factorGraph) const;
 
   /**
    * Eliminate the factor graph sequentially.  Uses a column elimination tree

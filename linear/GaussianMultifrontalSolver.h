@@ -29,9 +29,9 @@
 
 namespace gtsam {
 
-/** This solver uses sequential variable elimination to solve a
- * GaussianFactorGraph, i.e. a sparse linear system.  Underlying this is a
- * column elimination tree (inference/EliminationTree), see Gilbert 2001 BIT.
+/** This solver uses multifrontal elimination to solve a GaussianFactorGraph,
+ * i.e. a sparse linear system.  Underlying this is a junction tree, which is
+ * eliminated into a Bayes tree.
  *
  * The elimination ordering is "baked in" to the variable indices at this
  * stage, i.e. elimination proceeds in order from '0'.  A fill-reducing
@@ -40,21 +40,15 @@ namespace gtsam {
  * existing GaussianFactorGraph into a COLAMD ordering instead, this is done
  * when computing marginals).
  *
- * This is not the most efficient algorithm we provide, most efficient is the
- * MultifrontalSolver, which performs Multi-frontal QR factorization.  However,
- * sequential variable elimination is easier to understand so this is a good
- * starting point to learn about these algorithms and our implementation.
- * Additionally, the first step of MFQR is symbolic sequential elimination.
- *
- * The EliminationTree recursively produces a BayesNet<GaussianFactor>,
- * typedef'ed in linear/GaussianBayesNet, on which this class calls
- * optimize(...) to perform back-substitution.
+ * The JunctionTree recursively produces a BayesTree<GaussianConditional>,
+ * on which this class calls optimize(...) to perform back-substitution.
  */
 class GaussianMultifrontalSolver : GenericMultifrontalSolver<GaussianFactor, GaussianJunctionTree> {
 
 protected:
 
   typedef GenericMultifrontalSolver<GaussianFactor, GaussianJunctionTree> Base;
+  typedef boost::shared_ptr<const GaussianMultifrontalSolver> shared_ptr;
 
 public:
 
@@ -63,6 +57,21 @@ public:
    * tree, which already does some of the symbolic work of elimination.
    */
   GaussianMultifrontalSolver(const FactorGraph<GaussianFactor>& factorGraph);
+
+  /**
+   * Named constructor that returns a shared_ptr.  This builds the junction
+   * tree, which already does some of the symbolic work of elimination.
+   */
+  static shared_ptr Create(const FactorGraph<GaussianFactor>& factorGraph);
+
+  /**
+   * Return a new solver that solves the given factor graph, which must have
+   * the *same structure* as the one this solver solves.  For some solvers this
+   * is more efficient than constructing the solver from scratch.  This can be
+   * used in cases where the numerical values of the linear problem change,
+   * e.g. during iterative nonlinear optimization.
+   */
+  shared_ptr update(const FactorGraph<GaussianFactor>& factorGraph) const;
 
   /**
    * Eliminate the factor graph sequentially.  Uses a column elimination tree

@@ -27,6 +27,20 @@ GaussianMultifrontalSolver::GaussianMultifrontalSolver(const FactorGraph<Gaussia
     Base(factorGraph) {}
 
 /* ************************************************************************* */
+GaussianMultifrontalSolver::shared_ptr
+GaussianMultifrontalSolver::Create(const FactorGraph<GaussianFactor>& factorGraph) {
+  return shared_ptr(new GaussianMultifrontalSolver(factorGraph));
+}
+
+/* ************************************************************************* */
+GaussianMultifrontalSolver::shared_ptr
+GaussianMultifrontalSolver::update(const FactorGraph<GaussianFactor>& factorGraph) const {
+  // We do not yet have code written to update the junction tree, so we just
+  // create a new solver.
+  return Create(factorGraph);
+}
+
+/* ************************************************************************* */
 BayesTree<GaussianConditional>::shared_ptr GaussianMultifrontalSolver::eliminate() const {
   return Base::eliminate();
 }

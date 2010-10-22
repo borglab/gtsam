@@ -102,7 +102,14 @@ namespace gtsam {
 	NonlinearOptimizer<G, C, L, S, W> NonlinearOptimizer<G, C, L, S, W>::iterate(
 			Parameters::verbosityLevel verbosity) const {
 		// linearize and optimize
-		VectorValues delta = linearizeAndOptimizeForDelta();
+
+    boost::shared_ptr<L> linearized = graph_->linearize(*values_, *ordering_);
+	  shared_solver newSolver = solver_;
+	  if(newSolver)
+	    newSolver = newSolver->update(*linearized);
+	  else
+	    newSolver.reset(new S(*linearized));
+		VectorValues delta = *newSolver->optimize();
 
 		// maybe show output
 		if (verbosity >= Parameters::DELTA)
@@ -115,7 +122,7 @@ namespace gtsam {
 		if (verbosity >= Parameters::VALUES)
 			newValues->print("newValues");
 
-		NonlinearOptimizer newOptimizer = newValues_(newValues);
+		NonlinearOptimizer newOptimizer = newValuesSolver_(newValues, newSolver);
 
 		if (verbosity >= Parameters::ERROR)
 			cout << "error: " << newOptimizer.error_ << endl;
@@ -177,7 +184,12 @@ namespace gtsam {
 			damped.print("damped");
 
 		// solve
-		VectorValues delta = *S(damped).optimize();
+		shared_solver newSolver = solver_;
+		if(newSolver)
+		  newSolver = newSolver->update(damped);
+		else
+		  newSolver.reset(new S(damped));
+		VectorValues delta = *newSolver->optimize();
 		if (verbosity >= Parameters::TRYDELTA)
 			delta.print("delta");
 
@@ -187,7 +199,7 @@ namespace gtsam {
 //			newValues->print("values");
 
 		// create new optimization state with more adventurous lambda
-		NonlinearOptimizer next(newValuesNewLambda_(newValues, lambda_ / factor));
+		NonlinearOptimizer next(newValuesSolverLambda_(newValues, newSolver, lambda_ / factor));
 		if (verbosity >= Parameters::TRYLAMBDA) cout << "next error = " << next.error_ << endl;
 
 		if(lambdaMode >= Parameters::CAUTIOUS) {
@@ -199,7 +211,7 @@ namespace gtsam {
 			// If we're cautious, see if the current lambda is better
 			// todo:  include stopping criterion here?
 			if(lambdaMode == Parameters::CAUTIOUS) {
-				NonlinearOptimizer sameLambda(newValues_(newValues));
+				NonlinearOptimizer sameLambda(newValuesSolver_(newValues, newSolver));
 				if(sameLambda.error_ <= next.error_)
 					return sameLambda;
 			}
@@ -212,7 +224,7 @@ namespace gtsam {
 
 			// A more adventerous lambda was worse.  If we're cautious, try the same lambda.
 			if(lambdaMode == Parameters::CAUTIOUS) {
-				NonlinearOptimizer sameLambda(newValues_(newValues));
+				NonlinearOptimizer sameLambda(newValuesSolver_(newValues, newSolver));
 				if(sameLambda.error_ <= error_)
 					return sameLambda;
 			}
@@ -223,7 +235,7 @@ namespace gtsam {
 
 			// TODO: can we avoid copying the values ?
 			if(lambdaMode >= Parameters::BOUNDED && lambda_ >= 1.0e5) {
-				return NonlinearOptimizer(newValues_(newValues));
+				return NonlinearOptimizer(newValuesSolver_(newValues, newSolver));
 			} else {
 				NonlinearOptimizer cautious(newLambda_(lambda_ * factor));
 				return cautious.try_lambda(linear, verbosity, factor, lambdaMode);
