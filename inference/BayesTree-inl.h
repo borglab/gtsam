@@ -342,7 +342,7 @@ namespace gtsam {
 		p_S_R.permuteWithInverse(toBack);
 
 		// return the parent shortcut P(Sp|R)
-		return *GenericSequentialSolver<typename CONDITIONAL::Factor>(p_S_R).eliminate();
+		return p_S_R;
 	}
 
 	/* ************************************************************************* */

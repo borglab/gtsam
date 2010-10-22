@@ -23,11 +23,13 @@ using namespace boost::assign;
 
 #define GTSAM_MAGIC_KEY
 
+#include <gtsam/geometry/Rot2.h>
 #include <gtsam/nonlinear/Ordering.h>
 #include <gtsam/linear/GaussianBayesNet.h>
 #include <gtsam/inference/ISAM-inl.h>
 #include <gtsam/linear/GaussianISAM.h>
 #include <gtsam/linear/GaussianSequentialSolver.h>
+#include <gtsam/linear/GaussianMultifrontalSolver.h>
 #include <gtsam/slam/smallExample.h>
 
 using namespace std;
@@ -337,6 +339,23 @@ TEST( BayesTree, balanced_smoother_joint )
 //	push_front(expected4,ordering["x4"], zero(2), I/sig41, ordering["x1"], A41/sig41, sigma);
 //	GaussianBayesNet actual4 = *bayesTree.jointBayesNet(ordering["x4"],ordering["x1"]);
 //	CHECK(assert_equal(expected4,actual4,tol));
+}
+
+/* ************************************************************************* */
+TEST(BayesTree, simpleMarginal)
+{
+  GaussianFactorGraph gfg;
+
+  Matrix A12 = Rot2::fromDegrees(45.0).matrix();
+
+  gfg.add(0, eye(2), zero(2), sharedSigma(2, 1.0));
+  gfg.add(0, -eye(2), 1, eye(2), ones(2), sharedSigma(2, 1.0));
+  gfg.add(1, -eye(2), 2, A12, ones(2), sharedSigma(2, 1.0));
+
+  Matrix expected(GaussianSequentialSolver(gfg).marginalStandard(2).second);
+  Matrix actual(GaussianMultifrontalSolver(gfg).marginalStandard(2).second);
+
+  CHECK(assert_equal(expected, actual));
 }
 
 /* ************************************************************************* */
