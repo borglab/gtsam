@@ -122,7 +122,7 @@ int main(int argc, char** argv) {
 
 	initial.print("initial estimate");
 
-	// optimize using Levenburg-Marquadt optimization with an ordering from colamd
+	// optimize using Levenberg-Marquardt optimization with an ordering from colamd
 
 	// first using sequential elimination
 	OptimizerSeqential::shared_values resultSequential = OptimizerSeqential::optimizeLM(graph, initial);

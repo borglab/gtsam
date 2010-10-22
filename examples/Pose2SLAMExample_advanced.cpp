@@ -76,11 +76,12 @@ int main(int argc, char** argv) {
 	Values result = *optimizer_result.values();
 	result.print("final result");
 
-	Vector mean; Matrix covariance;
-	boost::tie( mean, covariance)  = optimizer_result.marginalStandard(x1);
+	/* Get covariances */
+	Matrix covariance1  = optimizer_result.marginalStandard(x1);
+	Matrix covariance2  = optimizer_result.marginalStandard(x2);
 
-	print(mean, "Mean");
-	print(covariance, "Covariance");
+	print(covariance1, "Covariance1");
+	print(covariance2, "Covariance2");
 
 	return 0;
 }

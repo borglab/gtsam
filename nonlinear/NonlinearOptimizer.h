@@ -161,8 +161,8 @@ namespace gtsam {
 		/**
 		 * Return mean and covariance on a single variable
 		 */
-		std::pair<Vector, Matrix> marginalStandard(Symbol j) const {
-			return solver_->marginalStandard((*ordering_)[j]);
+		Matrix marginalStandard(Symbol j) const {
+			return solver_->marginalStandard((*ordering_)[j]).second;
 		}
 
 		/**
