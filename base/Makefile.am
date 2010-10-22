@@ -18,7 +18,6 @@ sources += Vector.cpp svdcmp.cpp Matrix.cpp
 check_PROGRAMS += tests/testFixedVector tests/testVector tests/testMatrix 
 
 if USE_LAPACK
-sources += DenseQR.cpp DenseQRUtil.cpp
 check_PROGRAMS += tests/testDenseQRUtil
 endif
 

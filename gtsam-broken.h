@@ -21,13 +21,8 @@ class GaussianFactor {
 			Matrix A3,
 			Vector b_in,
 			const SharedDiagonal& model);
-	void print(string s) const;
-	bool equals(const GaussianFactor& lf, double tol) const;
-	bool empty() const;
-	Vector get_b() const;
-	Matrix get_A(string key) const;
-	double error(const VectorValues& c) const;
 	bool involves(string key) const;
+	Matrix getA(string key) const;
 	pair<Matrix,Vector> matrix(const Ordering& ordering) const;
 	pair<GaussianConditional*,GaussianFactor*> eliminate(string key) const;
 };

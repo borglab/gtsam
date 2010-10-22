@@ -17,9 +17,18 @@ class Ordering {
 
 class VectorValues {
   VectorValues();
+  VectorValues(size_t nVars, size_t varDim);
   void print(string s) const;
   bool equals(const VectorValues& expected, double tol) const;
   size_t size() const;
+};
+
+class GaussianFactor {
+	void print(string s) const;
+	bool equals(const GaussianFactor& lf, double tol) const;
+	bool empty() const;
+	Vector getb() const;
+	double error(const VectorValues& c) const;
 };
 
 class GaussianFactorSet {

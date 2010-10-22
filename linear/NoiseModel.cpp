@@ -120,7 +120,7 @@ void Gaussian::WhitenInPlace(MatrixColMajor& H) const {
 }
 
 // General QR, see also special version in Constrained
-SharedDiagonal Gaussian::QR(Matrix& Ab, boost::optional<vector<long>&> firstZeroRows) const {
+/*SharedDiagonal Gaussian::QR(Matrix& Ab, boost::optional<vector<long>&> firstZeroRows) const {
 
 	// get size(A) and maxRank
 	// TODO: really no rank problems ?
@@ -137,11 +137,86 @@ SharedDiagonal Gaussian::QR(Matrix& Ab, boost::optional<vector<long>&> firstZero
 	else
 	  householder_denseqr(Ab);
 #else
-	householder(Ab, maxRank);
+householder(Ab, maxRank);
 #endif
+
+return Unit::Create(maxRank);
+}*/
+
+// Special version of QR for Constrained calls slower but smarter code
+// that deals with possibly zero sigmas
+// It is Gram-Schmidt orthogonalization rather than Householder
+// Previously Diagonal::QR
+SharedDiagonal Gaussian::QR(Matrix& Ab, boost::optional<std::vector<long>&> firstZeroRows) const {
+
+	WhitenInPlace(Ab);
+	// get size(A) and maxRank
+	size_t m = Ab.size1(), n = Ab.size2()-1;
+	size_t maxRank = min(m,n);
+
+	// create storage for [R d]
+	typedef boost::tuple<size_t, Vector, double> Triple;
+	list<Triple> Rd;
+
+	Vector pseudo(m); // allocate storage for pseudo-inverse
+	Vector weights = ones(m); // calculate weights once
+
+	// We loop over all columns, because the columns that can be eliminated
+	// are not necessarily contiguous. For each one, estimate the corresponding
+	// scalar variable x as d-rS, with S the separator (remaining columns).
+	// Then update A and b by substituting x with d-rS, zero-ing out x's column.
+	for (size_t j=0; j<n; ++j) {
+		// extract the first column of A
+		// ublas::matrix_column is slower ! TODO Really, why ????
+		//  AGC: if you use column() you will automatically call ublas, use
+		//      column_() to actually use the one in our library
+		Vector a(column(Ab, j));
+
+		// Calculate weighted pseudo-inverse and corresponding precision
+		double precision = weightedPseudoinverse(a, weights, pseudo);
+
+		// If precision is zero, no information on this column
+		// This is actually not limited to constraints, could happen in Gaussian::QR
+		// In that case, we're probably hosed. TODO: make sure Householder is rank-revealing
+		if (precision < 1e-8) continue;
+
+		// create solution [r d], rhs is automatically r(n)
+		Vector rd(n+1); // uninitialized !
+		rd(j)=1.0; // put 1 on diagonal
+		for (size_t j2=j+1; j2<n+1; ++j2) // and fill in remainder with dot-products
+			rd(j2) = inner_prod(pseudo, ublas::matrix_column<Matrix>(Ab, j2));
+
+		// construct solution (r, d, sigma)
+		Rd.push_back(boost::make_tuple(j, rd, precision));
+
+		// exit after rank exhausted
+		if (Rd.size()>=maxRank) break;
+
+		// update Ab, expensive, using outer product
+		updateAb(Ab, j, a, rd);
+	}
+
+	// Create storage for precisions
+	Vector precisions(Rd.size());
+
+	// Write back result in Ab, imperative as we are
+	// TODO: test that is correct if a column was skipped !!!!
+	size_t i = 0; // start with first row
+	bool mixed = false;
+	BOOST_FOREACH(const Triple& t, Rd) {
+		const size_t& j  = t.get<0>();
+		const Vector& rd = t.get<1>();
+		precisions(i)    = t.get<2>();
+		if (precisions(i)==inf) mixed = true;
+		for (size_t j2=0; j2<j; ++j2) Ab(i,j2) = 0.0; // fill in zeros below diagonal anway
+		for (size_t j2=j; j2<n+1; ++j2) // copy the j-the row TODO memcpy
+			Ab(i,j2) = rd(j2);
+		i+=1;
+	}
 
 	return Unit::Create(maxRank);
 }
+
 
 // General QR, see also special version in Constrained
 SharedDiagonal Gaussian::QRColumnWise(ublas::matrix<double, ublas::column_major>& Ab, vector<long>& firstZeroRows) const {
