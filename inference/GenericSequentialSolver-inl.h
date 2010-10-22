@@ -1,3 +1,14 @@
+/* ----------------------------------------------------------------------------
+
+ * GTSAM Copyright 2010, Georgia Tech Research Corporation,
+ * Atlanta, Georgia 30332-0415
+ * All Rights Reserved
+ * Authors: Frank Dellaert, et al. (see THANKS for the full author list)
+
+ * See LICENSE for the license information
+
+ * -------------------------------------------------------------------------- */
+
 /**
  * @file    GenericSequentialSolver.cpp
  * @brief   
@@ -8,7 +19,7 @@
 #pragma once
 
 #include <gtsam/inference/GenericSequentialSolver.h>
-#include <gtsam/inference/Factor-inl.h>
+#include <gtsam/inference/FactorBase-inl.h>
 #include <gtsam/inference/EliminationTree-inl.h>
 #include <gtsam/inference/BayesNet-inl.h>
 #include <gtsam/inference/inference-inl.h>

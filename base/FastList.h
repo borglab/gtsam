@@ -10,15 +10,15 @@
  * -------------------------------------------------------------------------- */
 
 /**
- * @file    FastSet.h
- * @brief   A thin wrapper around std::set that uses boost's fast_pool_allocator.
+ * @file    FastList.h
+ * @brief   A thin wrapper around std::list that uses boost's fast_pool_allocator.
  * @author  Richard Roberts
- * @created Oct 17, 2010
+ * @created Oct 22, 2010
  */
 
 #pragma once
 
-#include <map>
+#include <list>
 #include <boost/pool/pool_alloc.hpp>
 
 namespace gtsam {
@@ -31,24 +31,24 @@ namespace gtsam {
  * percent.
  */
 template<typename VALUE>
-class FastSet: public std::set<VALUE, std::less<VALUE>, boost::fast_pool_allocator<VALUE> > {
+class FastList: public std::list<VALUE, boost::fast_pool_allocator<VALUE> > {
 
 public:
 
-  typedef std::set<VALUE, std::less<VALUE>, boost::fast_pool_allocator<VALUE> > Base;
+  typedef std::list<VALUE, boost::fast_pool_allocator<VALUE> > Base;
 
   /** Default constructor */
-  FastSet() {}
+  FastList() {}
 
   /** Constructor from a range, passes through to base class */
   template<typename INPUTITERATOR>
-  FastSet(INPUTITERATOR first, INPUTITERATOR last) : Base(first, last) {}
+  FastList(INPUTITERATOR first, INPUTITERATOR last) : Base(first, last) {}
 
-  /** Copy constructor from another FastSet */
-  FastSet(const FastSet<VALUE>& x) : Base(x) {}
+  /** Copy constructor from another FastList */
+  FastList(const FastList<VALUE>& x) : Base(x) {}
 
   /** Copy constructor from the base map class */
-  FastSet(const Base& x) : Base(x) {}
+  FastList(const Base& x) : Base(x) {}
 
 };
 

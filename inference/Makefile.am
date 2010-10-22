@@ -15,19 +15,19 @@ check_PROGRAMS =
 #----------------------------------------------------------------------------------------------------
 
 # GTSAM core
-headers += Factor.h Factor-inl.h Conditional.h 
+headers += FactorBase.h FactorBase-inl.h ConditionalBase.h 
 
 # Symbolic Inference
-sources += SymbolicFactorGraph.cpp SymbolicSequentialSolver.cpp
+sources += SymbolicFactorGraph.cpp SymbolicMultifrontalSolver.cpp SymbolicSequentialSolver.cpp
 check_PROGRAMS += tests/testSymbolicFactor tests/testSymbolicFactorGraph tests/testConditional
 check_PROGRAMS += tests/testSymbolicBayesNet tests/testVariableIndex tests/testVariableSlots
 
 # Inference
+headers += GenericMultifrontalSolver.h GenericMultifrontalSolver-inl.h GenericSequentialSolver.h GenericSequentialSolver-inl.h
 headers += inference-inl.h VariableSlots-inl.h
-sources += inference.cpp VariableSlots.cpp Permutation.cpp
+sources += inference.cpp VariableSlots.cpp Permutation.cpp VariableIndex.cpp
 sources += IndexFactor.cpp IndexConditional.cpp
 headers += graph.h graph-inl.h
-headers += VariableIndex.h
 headers += FactorGraph.h FactorGraph-inl.h
 headers += ClusterTree.h ClusterTree-inl.h
 headers += JunctionTree.h JunctionTree-inl.h

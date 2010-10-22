@@ -146,25 +146,21 @@ GaussianFactorGraph GaussianFactorGraph::combine2(const GaussianFactorGraph& lfg
 }
 
 /* ************************************************************************* */  
-GaussianFactorGraph GaussianFactorGraph::add_priors(double sigma, const GaussianVariableIndex<>& variableIndex) const {
+GaussianFactorGraph GaussianFactorGraph::add_priors(double sigma, const vector<size_t>& dimensions) const {
 
 	// start with this factor graph
 	GaussianFactorGraph result = *this;
 
 	// for each of the variables, add a prior
-	for(Index var=0; var<variableIndex.size(); ++var) {
-	  size_t dim = variableIndex.dim(var);
+	for(Index j=0; j<dimensions.size(); ++j) {
+	  size_t dim = dimensions[j];
 		Matrix A = eye(dim);
 		Vector b = zero(dim);
 		SharedDiagonal model = noiseModel::Isotropic::Sigma(dim,sigma);
-		sharedFactor prior(new GaussianFactor(var,A,b, model));
+		sharedFactor prior(new GaussianFactor(j, A, b, model));
 		result.push_back(prior);
 	}
 	return result;
-}
-
-GaussianFactorGraph GaussianFactorGraph::add_priors(double sigma) const {
-	return add_priors(sigma, GaussianVariableIndex<>(*this)) ;
 }
 
 } // namespace gtsam

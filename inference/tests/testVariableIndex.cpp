@@ -39,8 +39,8 @@ TEST(VariableIndex, augment) {
 
   SymbolicFactorGraph fgCombined; fgCombined.push_back(fg1); fgCombined.push_back(fg2);
 
-  VariableIndex<> expected(fgCombined);
-  VariableIndex<> actual(fg1);
+  VariableIndex expected(fgCombined);
+  VariableIndex actual(fg1);
   actual.augment(fg2);
 
   CHECK(assert_equal(expected, actual));

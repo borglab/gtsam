@@ -47,7 +47,7 @@ EliminationTree<FACTOR>::eliminate_(Conditionals& conditionals) const {
 
 /* ************************************************************************* */
 template<class FACTOR>
-vector<Index> EliminationTree<FACTOR>::ComputeParents(const VariableIndex<>& structure) {
+vector<Index> EliminationTree<FACTOR>::ComputeParents(const VariableIndex& structure) {
 
   // Number of factors and variables
   const size_t m = structure.nFactors();
@@ -62,8 +62,7 @@ vector<Index> EliminationTree<FACTOR>::ComputeParents(const VariableIndex<>& str
   // for column j \in 1 to n do
   for (Index j = 0; j < n; j++) {
     // for row i \in Struct[A*j] do
-    BOOST_FOREACH(typename VariableIndex<>::mapped_factor_type i_pos, structure[j]) {
-      const size_t i = i_pos.factorIndex;
+    BOOST_FOREACH(const size_t i, structure[j]) {
       if (prevCol[i] != none) {
         Index k = prevCol[i];
         // find root r of the current tree that contains k
@@ -83,7 +82,7 @@ vector<Index> EliminationTree<FACTOR>::ComputeParents(const VariableIndex<>& str
 template<class FACTOR>
 template<class DERIVEDFACTOR>
 typename EliminationTree<FACTOR>::shared_ptr
-EliminationTree<FACTOR>::Create(const FactorGraph<DERIVEDFACTOR>& factorGraph, const VariableIndex<>& structure) {
+EliminationTree<FACTOR>::Create(const FactorGraph<DERIVEDFACTOR>& factorGraph, const VariableIndex& structure) {
 
   // Compute the tree structure
   vector<Index> parents(ComputeParents(structure));
@@ -125,7 +124,7 @@ template<class FACTOR>
 template<class DERIVEDFACTOR>
 typename EliminationTree<FACTOR>::shared_ptr
 EliminationTree<FACTOR>::Create(const FactorGraph<DERIVEDFACTOR>& factorGraph) {
-  return Create(factorGraph, VariableIndex<>(factorGraph));
+  return Create(factorGraph, VariableIndex(factorGraph));
 }
 
 /* ************************************************************************* */

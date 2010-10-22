@@ -55,7 +55,7 @@ private:
    * Static internal function to build a vector of parent pointers using the
    * algorithm of Gilbert et al., 2001, BIT.
    */
-  static std::vector<Index> ComputeParents(const VariableIndex<>& structure);
+  static std::vector<Index> ComputeParents(const VariableIndex& structure);
 
   /**
    * Recursive routine that eliminates the factors arranged in an elimination tree
@@ -72,7 +72,7 @@ public:
    * pre-computed column structure.
    */
   template<class DERIVEDFACTOR>
-  static shared_ptr Create(const FactorGraph<DERIVEDFACTOR>& factorGraph, const VariableIndex<>& structure);
+  static shared_ptr Create(const FactorGraph<DERIVEDFACTOR>& factorGraph, const VariableIndex& structure);
 
   /** Named constructor to build the elimination tree of a factor graph */
   template<class DERIVEDFACTOR>

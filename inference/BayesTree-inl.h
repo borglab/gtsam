@@ -19,6 +19,11 @@
 
 #pragma once
 
+#include <gtsam/base/FastSet.h>
+#include <gtsam/inference/BayesTree.h>
+#include <gtsam/inference/inference-inl.h>
+#include <gtsam/inference/GenericSequentialSolver-inl.h>
+
 #include <iostream>
 #include <algorithm>
 
@@ -31,11 +36,6 @@
 #include <fstream>
 using namespace boost::assign;
 namespace lam = boost::lambda;
-
-#include <gtsam/base/FastSet.h>
-#include <gtsam/inference/BayesTree.h>
-#include <gtsam/inference/inference-inl.h>
-#include <gtsam/inference/GenericSequentialSolver-inl.h>
 
 namespace gtsam {
 

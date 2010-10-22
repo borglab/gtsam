@@ -41,11 +41,11 @@ namespace gtsam {
 		return x;
 	}
 
-    SubgraphPreconditioner SubgraphPreconditioner::add_priors(double sigma) const {
-    	SubgraphPreconditioner result = *this ;
-    	result.Ab2_ = sharedFG(new GaussianFactorGraph(Ab2_->add_priors(sigma))) ;
-    	return result ;
-    }
+//    SubgraphPreconditioner SubgraphPreconditioner::add_priors(double sigma) const {
+//    	SubgraphPreconditioner result = *this ;
+//    	result.Ab2_ = sharedFG(new GaussianFactorGraph(Ab2_->add_priors(sigma))) ;
+//    	return result ;
+//    }
 
 	/* ************************************************************************* */
 	double SubgraphPreconditioner::error(const VectorValues& y) const {

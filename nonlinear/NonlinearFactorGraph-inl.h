@@ -68,7 +68,7 @@ void NonlinearFactorGraph<VALUES>::print(const std::string& str) const {
 	  boost::tie(symbolic,ordering) = this->symbolic(config);
 
 	  // Compute the VariableIndex (column-wise index)
-	  VariableIndex<> variableIndex(*symbolic);
+	  VariableIndex variableIndex(*symbolic);
 
 	  // Compute a fill-reducing ordering with COLAMD
 	  Permutation::shared_ptr colamdPerm(Inference::PermutationCOLAMD(variableIndex));

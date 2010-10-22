@@ -26,7 +26,7 @@
 #include <boost/serialization/nvp.hpp>
 #include <gtsam/base/types.h>
 #include <gtsam/base/Testable.h>
-#include <gtsam/inference/Factor.h>
+#include <gtsam/inference/FactorBase.h>
 #include <gtsam/inference/Permutation.h>
 
 namespace gtsam {

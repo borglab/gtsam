@@ -39,7 +39,6 @@ namespace gtsam {
 
     typedef boost::shared_ptr<GaussianFactorGraph> shared_ptr;
     typedef GaussianBayesNet bayesnet_type;
-    typedef GaussianVariableIndex<> variableindex_type;
 
     /**
      * Default constructor 
@@ -152,122 +151,8 @@ namespace gtsam {
      * Add zero-mean i.i.d. Gaussian prior terms to each variable
      * @param sigma Standard deviation of Gaussian
      */
-    GaussianFactorGraph add_priors(double sigma, const GaussianVariableIndex<>& variableIndex) const;
-    GaussianFactorGraph add_priors(double sigma) const;
-
+    GaussianFactorGraph add_priors(double sigma, const std::vector<size_t>& dimensions) const;
 
   };
-
-
-  /* ************************************************************************* */
-  template<class VARIABLEINDEXSTORAGE>
-  class GaussianVariableIndex : public VariableIndex<VARIABLEINDEXSTORAGE> {
-  public:
-    typedef VariableIndex<VARIABLEINDEXSTORAGE> Base;
-    typedef typename VARIABLEINDEXSTORAGE::template type_factory<size_t>::type storage_type;
-
-    storage_type dims_;
-
-  public:
-    typedef boost::shared_ptr<GaussianVariableIndex> shared_ptr;
-
-    /** Construct an empty GaussianVariableIndex */
-    GaussianVariableIndex() {}
-
-    /**
-     * Constructor from a GaussianFactorGraph, lets the base class build the
-     * column-wise index then fills the dims_ array.
-     */
-    GaussianVariableIndex(const GaussianFactorGraph& factorGraph);
-
-    /**
-     * Constructor to "upgrade" from the base class without recomputing the
-     * column index, i.e. just fills the dims_ array.
-     */
-    GaussianVariableIndex(const VariableIndex<VARIABLEINDEXSTORAGE>& variableIndex, const GaussianFactorGraph& factorGraph);
-
-    /**
-     * Another constructor to upgrade from the base class using an existing
-     * array of variable dimensions.
-     */
-    GaussianVariableIndex(const VariableIndex<VARIABLEINDEXSTORAGE>& variableIndex, const storage_type& dimensions);
-
-    const storage_type& dims() const { return dims_; }
-    size_t dim(Index variable) const { Base::checkVar(variable); return dims_[variable]; }
-
-    /** Permute */
-    void permute(const Permutation& permutation);
-
-    /** Augment this variable index with the contents of another one */
-    void augment(const GaussianFactorGraph& factorGraph);
-
-  protected:
-    GaussianVariableIndex(size_t nVars) : Base(nVars), dims_(nVars) {}
-    void fillDims(const GaussianFactorGraph& factorGraph);
-  };
-
-
-  /* ************************************************************************* */
-  template<class STORAGE>
-  GaussianVariableIndex<STORAGE>::GaussianVariableIndex(const GaussianFactorGraph& factorGraph) :
-  Base(factorGraph), dims_(Base::index_.size()) {
-    fillDims(factorGraph); }
-
-  /* ************************************************************************* */
-  template<class STORAGE>
-  GaussianVariableIndex<STORAGE>::GaussianVariableIndex(
-      const VariableIndex<STORAGE>& variableIndex, const GaussianFactorGraph& factorGraph) :
-      Base(variableIndex), dims_(Base::index_.size()) {
-    fillDims(factorGraph); }
-
-  /* ************************************************************************* */
-  template<class STORAGE>
-  GaussianVariableIndex<STORAGE>::GaussianVariableIndex(
-      const VariableIndex<STORAGE>& variableIndex, const storage_type& dimensions) :
-      Base(variableIndex), dims_(dimensions) {
-    assert(Base::index_.size() == dims_.size()); }
-
-  /* ************************************************************************* */
-  template<class STORAGE>
-  void GaussianVariableIndex<STORAGE>::fillDims(const GaussianFactorGraph& factorGraph) {
-    // Store dimensions of each variable
-    assert(dims_.size() == Base::index_.size());
-    for(Index var=0; var<Base::index_.size(); ++var)
-      if(!Base::index_[var].empty()) {
-        size_t factorIndex = Base::operator [](var).front().factorIndex;
-        size_t variablePosition = Base::operator [](var).front().variablePosition;
-        boost::shared_ptr<const GaussianFactor> factor(factorGraph[factorIndex]);
-        dims_[var] = factor->getDim(factor->begin() + variablePosition);
-      } else
-        dims_[var] = 0;
-  }
-
-  /* ************************************************************************* */
-  template<class STORAGE>
-  void GaussianVariableIndex<STORAGE>::permute(const Permutation& permutation) {
-    VariableIndex<STORAGE>::permute(permutation);
-    storage_type original(this->dims_.size());
-    this->dims_.swap(original);
-    for(Index j=0; j<permutation.size(); ++j)
-      this->dims_[j] = original[permutation[j]];
-  }
-
-  /* ************************************************************************* */
-  template<class STORAGE>
-  void GaussianVariableIndex<STORAGE>::augment(const GaussianFactorGraph& factorGraph) {
-    Base::augment(factorGraph);
-    dims_.resize(Base::index_.size(), 0);
-    BOOST_FOREACH(boost::shared_ptr<const GaussianFactor> factor, factorGraph) {
-      for(GaussianFactor::const_iterator var=factor->begin(); var!=factor->end(); ++var) {
-#ifndef NDEBUG
-        if(dims_[*var] != 0)
-          assert(dims_[*var] == factor->getDim(var));
-#endif
-        if(dims_[*var] == 0)
-          dims_[*var] = factor->getDim(var);
-      }
-    }
-  }
-
 
 } // namespace gtsam

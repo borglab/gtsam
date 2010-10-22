@@ -75,14 +75,14 @@ namespace gtsam {
 	template<class G, class C, class L, class S, class W>
 	NonlinearOptimizer<G, C, L, S, W>::NonlinearOptimizer(shared_graph graph,
 			shared_values config, shared_ordering ordering, double lambda) :
-		graph_(graph), config_(config), ordering_(ordering), lambda_(lambda) {
+			graph_(graph), config_(config), error_(graph->error(*config)),
+			ordering_(ordering), lambda_(lambda), dimensions_(new vector<size_t>(config->dims(*ordering))) {
 		if (!graph) throw std::invalid_argument(
 				"NonlinearOptimizer constructor: graph = NULL");
 		if (!config) throw std::invalid_argument(
 				"NonlinearOptimizer constructor: config = NULL");
 		if (!ordering) throw std::invalid_argument(
 				"NonlinearOptimizer constructor: ordering = NULL");
-		error_ = graph->error(*config);
 	}
 
 	/* ************************************************************************* */
@@ -91,7 +91,7 @@ namespace gtsam {
 	template<class G, class C, class L, class S, class W>
 	VectorValues NonlinearOptimizer<G, C, L, S, W>::linearizeAndOptimizeForDelta() const {
 		boost::shared_ptr<L> linearized = graph_->linearize(*config_, *ordering_);
-		NonlinearOptimizer prepared(graph_, config_, ordering_, error_, lambda_);
+//		NonlinearOptimizer prepared(graph_, config_, ordering_, error_, lambda_);
 		return *S(*linearized).optimize();
 	}
 
@@ -115,7 +115,7 @@ namespace gtsam {
 		if (verbosity >= Parameters::CONFIG)
 			newValues->print("newValues");
 
-		NonlinearOptimizer newOptimizer = NonlinearOptimizer(graph_, newValues, ordering_, lambda_);
+		NonlinearOptimizer newOptimizer = newValues_(newValues);
 
 		if (verbosity >= Parameters::ERROR)
 			cout << "error: " << newOptimizer.error_ << endl;
@@ -172,7 +172,7 @@ namespace gtsam {
 			cout << "trying lambda = " << lambda_ << endl;
 
 		// add prior-factors
-		L damped = linear.add_priors(1.0/sqrt(lambda_));
+		L damped = linear.add_priors(1.0/sqrt(lambda_), *dimensions_);
 		if (verbosity >= Parameters::DAMPED)
 			damped.print("damped");
 
@@ -187,7 +187,7 @@ namespace gtsam {
 //			newValues->print("config");
 
 		// create new optimization state with more adventurous lambda
-		NonlinearOptimizer next(graph_, newValues, ordering_, lambda_ / factor);
+		NonlinearOptimizer next(newValuesNewLambda_(newValues, lambda_ / factor));
 		if (verbosity >= Parameters::TRYLAMBDA) cout << "next error = " << next.error_ << endl;
 
 		if(lambdaMode >= Parameters::CAUTIOUS) {
@@ -199,7 +199,7 @@ namespace gtsam {
 			// If we're cautious, see if the current lambda is better
 			// todo:  include stopping criterion here?
 			if(lambdaMode == Parameters::CAUTIOUS) {
-				NonlinearOptimizer sameLambda(graph_, newValues, ordering_, lambda_);
+				NonlinearOptimizer sameLambda(newValues_(newValues));
 				if(sameLambda.error_ <= next.error_)
 					return sameLambda;
 			}
@@ -212,7 +212,7 @@ namespace gtsam {
 
 			// A more adventerous lambda was worse.  If we're cautious, try the same lambda.
 			if(lambdaMode == Parameters::CAUTIOUS) {
-				NonlinearOptimizer sameLambda(graph_, newValues, ordering_, lambda_);
+				NonlinearOptimizer sameLambda(newValues_(newValues));
 				if(sameLambda.error_ <= error_)
 					return sameLambda;
 			}
@@ -223,9 +223,9 @@ namespace gtsam {
 
 			// TODO: can we avoid copying the config ?
 			if(lambdaMode >= Parameters::BOUNDED && lambda_ >= 1.0e5) {
-				return NonlinearOptimizer(graph_, newValues, ordering_, lambda_);;
+				return NonlinearOptimizer(newValues_(newValues));
 			} else {
-				NonlinearOptimizer cautious(graph_, config_, ordering_, lambda_ * factor);
+				NonlinearOptimizer cautious(newLambda_(lambda_ * factor));
 				return cautious.try_lambda(linear, verbosity, factor, lambdaMode);
 			}
 
@@ -249,13 +249,12 @@ namespace gtsam {
 
 		// linearize all factors once
 		boost::shared_ptr<L> linear = graph_->linearize(*config_, *ordering_);
-		NonlinearOptimizer prepared(graph_, config_, ordering_, error_, lambda_);
 		if (verbosity >= Parameters::LINEAR)
 			linear->print("linear");
 
 		// try lambda steps with successively larger lambda until we achieve descent
 		if (verbosity >= Parameters::LAMBDA) cout << "Trying Lambda for the first time" << endl;
-		return prepared.try_lambda(*linear, verbosity, lambdaFactor, lambdaMode);
+		return try_lambda(*linear, verbosity, lambdaFactor, lambdaMode);
 	}
 
 	/* ************************************************************************* */

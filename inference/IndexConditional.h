@@ -18,7 +18,7 @@
 
 #pragma once
 
-#include <gtsam/inference/Conditional.h>
+#include <gtsam/inference/ConditionalBase.h>
 #include <gtsam/inference/IndexFactor.h>
 
 namespace gtsam {

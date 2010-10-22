@@ -21,7 +21,7 @@
 #include <boost/assign/std/list.hpp> // for operator +=
 using namespace boost::assign;
 
-#include <gtsam/inference/Conditional.h>
+#include <gtsam/inference/ConditionalBase.h>
 #include <gtsam/inference/ISAM.h>
 #include <gtsam/inference/BayesTree-inl.h>
 #include <gtsam/inference/GenericSequentialSolver-inl.h>

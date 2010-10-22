@@ -344,7 +344,7 @@ TEST( GaussianFactorGraph, add_priors )
 {
   Ordering ordering; ordering += "l1","x1","x2";
   GaussianFactorGraph fg = createGaussianFactorGraph(ordering);
-  GaussianFactorGraph actual = fg.add_priors(3, GaussianVariableIndex<>(fg));
+  GaussianFactorGraph actual = fg.add_priors(3, vector<size_t>(3,2));
   GaussianFactorGraph expected = createGaussianFactorGraph(ordering);
   Matrix A = eye(2);
   Vector b = zero(2);
@@ -460,7 +460,7 @@ TEST( GaussianFactorGraph, getOrdering)
 {
   Ordering original; original += "l1","x1","x2";
   FactorGraph<IndexFactor> symbolic(createGaussianFactorGraph(original));
-  Permutation perm(*Inference::PermutationCOLAMD(VariableIndex<>(symbolic)));
+  Permutation perm(*Inference::PermutationCOLAMD(VariableIndex(symbolic)));
   Ordering actual = original; actual.permuteWithInverse((*perm.inverse()));
   Ordering expected; expected += "l1","x2","x1";
   CHECK(assert_equal(expected,actual));

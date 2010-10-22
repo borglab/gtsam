@@ -18,7 +18,7 @@
 
 #pragma once
 
-#include <gtsam/inference/Factor.h>
+#include <gtsam/inference/FactorBase.h>
 
 #include <boost/foreach.hpp>
 #include <boost/make_shared.hpp>

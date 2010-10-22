@@ -1,3 +1,14 @@
+/* ----------------------------------------------------------------------------
+
+ * GTSAM Copyright 2010, Georgia Tech Research Corporation,
+ * Atlanta, Georgia 30332-0415
+ * All Rights Reserved
+ * Authors: Frank Dellaert, et al. (see THANKS for the full author list)
+
+ * See LICENSE for the license information
+
+ * -------------------------------------------------------------------------- */
+
 /**
  * @file    GaussianMultifrontalSolver.cpp
  * @brief   
@@ -13,23 +24,21 @@ namespace gtsam {
 
 /* ************************************************************************* */
 GaussianMultifrontalSolver::GaussianMultifrontalSolver(const FactorGraph<GaussianFactor>& factorGraph) :
-    junctionTree_(new GaussianJunctionTree(factorGraph)) {}
+    Base(factorGraph) {}
 
 /* ************************************************************************* */
-BayesTree<GaussianConditional>::sharedClique GaussianMultifrontalSolver::eliminate() const {
-  return junctionTree_->eliminate();
+BayesTree<GaussianConditional>::shared_ptr GaussianMultifrontalSolver::eliminate() const {
+  return Base::eliminate();
 }
 
 /* ************************************************************************* */
 VectorValues::shared_ptr GaussianMultifrontalSolver::optimize() const {
-  return VectorValues::shared_ptr(new VectorValues(junctionTree_->optimize()));
+  return VectorValues::shared_ptr(new VectorValues(junctionTree_.optimize()));
 }
 
 /* ************************************************************************* */
 GaussianFactor::shared_ptr GaussianMultifrontalSolver::marginal(Index j) const {
-  BayesTree<GaussianConditional> bayesTree;
-  bayesTree.insert(junctionTree_->eliminate());
-  return bayesTree.marginal(j);
+  return Base::marginal(j);
 }
 
 }

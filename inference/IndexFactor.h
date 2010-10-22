@@ -19,7 +19,7 @@
 #pragma once
 
 #include <gtsam/inference/IndexConditional.h>
-#include <gtsam/inference/Factor.h>
+#include <gtsam/inference/FactorBase.h>
 
 namespace gtsam {
 
@@ -62,12 +62,6 @@ public:
   /** Create a combined joint factor (new style for EliminationTree). */
   static shared_ptr
   Combine(const FactorGraph<This>& factors, const FastMap<Index, std::vector<Index> >& variableSlots);
-
-  template<class FACTORGRAPHTYPE, class VARIABLEINDEXSTORAGE>
-  static shared_ptr Combine(const FACTORGRAPHTYPE& factorGraph,
-      const VariableIndex<VARIABLEINDEXSTORAGE>& variableIndex, const std::vector<size_t>& factors,
-      const std::vector<Index>& variables, const std::vector<std::vector<size_t> >& variablePositions) {
-    return Base::Combine<This>(factorGraph, variableIndex, factors, variables, variablePositions); }
 
   /**
    * eliminate the first variable involved in this factor

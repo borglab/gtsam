@@ -16,7 +16,7 @@
  * @created Oct 17, 2010
  */
 
-#include <gtsam/inference/Factor-inl.h>
+#include <gtsam/inference/FactorBase-inl.h>
 #include <gtsam/inference/IndexFactor.h>
 
 namespace gtsam {

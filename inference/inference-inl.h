@@ -33,7 +33,7 @@
 #include <gtsam/inference/inference.h>
 #include <gtsam/inference/FactorGraph-inl.h>
 #include <gtsam/inference/BayesNet-inl.h>
-#include <gtsam/inference/Conditional.h>
+#include <gtsam/inference/ConditionalBase.h>
 
 using namespace std;
 
@@ -54,13 +54,13 @@ Permutation::shared_ptr Inference::PermutationCOLAMD(const VARIABLEINDEXTYPE& va
   p[0] = 0;
   int count = 0;
   for(Index var = 0; var < variableIndex.size(); ++var) {
-    const typename VARIABLEINDEXTYPE::mapped_type& column(variableIndex[var]);
+    const typename VARIABLEINDEXTYPE::Factors& column(variableIndex[var]);
     size_t lastFactorId = numeric_limits<size_t>::max();
-    BOOST_FOREACH(const typename VARIABLEINDEXTYPE::mapped_factor_type& factor_pos, column) {
+    BOOST_FOREACH(const size_t& factorIndex, column) {
       if(lastFactorId != numeric_limits<size_t>::max())
-        assert(factor_pos.factorIndex > lastFactorId);
-      A[count++] = factor_pos.factorIndex; // copy sparse column
-      if(debug) cout << "A[" << count-1 << "] = " << factor_pos.factorIndex << endl;
+        assert(factorIndex > lastFactorId);
+      A[count++] = factorIndex; // copy sparse column
+      if(debug) cout << "A[" << count-1 << "] = " << factorIndex << endl;
     }
     p[var+1] = count; // column j (base 1) goes from A[j-1] to A[j]-1
     cmember[var] = 0;

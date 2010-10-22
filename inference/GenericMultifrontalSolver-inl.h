@@ -1,3 +1,14 @@
+/* ----------------------------------------------------------------------------
+
+ * GTSAM Copyright 2010, Georgia Tech Research Corporation,
+ * Atlanta, Georgia 30332-0415
+ * All Rights Reserved
+ * Authors: Frank Dellaert, et al. (see THANKS for the full author list)
+
+ * See LICENSE for the license information
+
+ * -------------------------------------------------------------------------- */
+
 /**
  * @file    GenericMultifrontalSolver-inl.h
  * @brief   
@@ -8,7 +19,7 @@
 #pragma once
 
 #include <gtsam/inference/GenericMultifrontalSolver.h>
-#include <gtsam/inference/Factor-inl.h>
+#include <gtsam/inference/FactorBase-inl.h>
 #include <gtsam/inference/JunctionTree-inl.h>
 #include <gtsam/inference/BayesNet-inl.h>
 #include <gtsam/inference/inference-inl.h>
@@ -18,19 +29,22 @@
 namespace gtsam {
 
 /* ************************************************************************* */
-template<class FACTOR>
-GenericMultifrontalSolver<FACTOR>::GenericMultifrontalSolver(const FactorGraph<FACTOR>& factorGraph) :
-    junctionTree_(new JunctionTree<FactorGraph<FACTOR> >(factorGraph)) {}
+template<class FACTOR, class JUNCTIONTREE>
+GenericMultifrontalSolver<FACTOR, JUNCTIONTREE>::GenericMultifrontalSolver(const FactorGraph<FACTOR>& factorGraph) :
+    junctionTree_(factorGraph) {}
 
 /* ************************************************************************* */
-template<class FACTOR>
-typename BayesTree<typename FACTOR::Conditional>::shared_ptr GenericMultifrontalSolver<FACTOR>::eliminate() const {
-  return junctionTree_->eliminate();
+template<class FACTOR, class JUNCTIONTREE>
+typename JUNCTIONTREE::BayesTree::shared_ptr
+GenericMultifrontalSolver<FACTOR, JUNCTIONTREE>::eliminate() const {
+  typename JUNCTIONTREE::BayesTree::shared_ptr bayesTree(new typename JUNCTIONTREE::BayesTree);
+  bayesTree->insert(junctionTree_.eliminate());
+  return bayesTree;
 }
 
 /* ************************************************************************* */
-template<class FACTOR>
-typename FACTOR::shared_ptr GenericMultifrontalSolver<FACTOR>::marginal(Index j) const {
+template<class FACTOR, class JUNCTIONTREE>
+typename FACTOR::shared_ptr GenericMultifrontalSolver<FACTOR, JUNCTIONTREE>::marginal(Index j) const {
   return eliminate()->marginal(j);
 }
 

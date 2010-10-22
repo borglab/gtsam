@@ -1,3 +1,14 @@
+/* ----------------------------------------------------------------------------
+
+ * GTSAM Copyright 2010, Georgia Tech Research Corporation,
+ * Atlanta, Georgia 30332-0415
+ * All Rights Reserved
+ * Authors: Frank Dellaert, et al. (see THANKS for the full author list)
+
+ * See LICENSE for the license information
+
+ * -------------------------------------------------------------------------- */
+
 /**
  * @file    GenericSequentialSolver.h
  * @brief   
@@ -24,7 +35,7 @@ protected:
   FactorGraph<FACTOR> factors_;
 
   // Column structure of the factor graph
-  VariableIndex<> structure_;
+  VariableIndex structure_;
 
   // Elimination tree that performs elimination.
   typename EliminationTree<FACTOR>::shared_ptr eliminationTree_;

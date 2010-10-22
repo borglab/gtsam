@@ -99,15 +99,6 @@ public:
   FactorBase(Key key1, Key key2, Key key3, Key key4) : keys_(4) {
     keys_[0] = key1; keys_[1] = key2; keys_[2] = key3; keys_[3] = key4; assertInvariants(); }
 
-  /** Named constructor for combining a set of factors with pre-computed set of
-   * variables.  (Old style - will be removed when scalar elimination is
-   * removed in favor of the EliminationTree). */
-  template<class DERIVED, class FACTORGRAPHTYPE, class VARIABLEINDEXSTORAGE>
-  static typename DERIVED::shared_ptr Combine(const FACTORGRAPHTYPE& factorGraph,
-      const VariableIndex<VARIABLEINDEXSTORAGE>& variableIndex, const std::vector<size_t>& factors,
-      const std::vector<KEY>& variables, const std::vector<std::vector<size_t> >& variablePositions) {
-    return typename DERIVED::shared_ptr(new DERIVED(variables.begin(), variables.end())); }
-
   /** Create a combined joint factor (new style for EliminationTree). */
   template<class DERIVED>
   static typename DERIVED::shared_ptr Combine(const FactorGraph<DERIVED>& factors, const FastMap<Key, std::vector<Key> >& variableSlots);

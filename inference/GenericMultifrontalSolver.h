@@ -1,3 +1,14 @@
+/* ----------------------------------------------------------------------------
+
+ * GTSAM Copyright 2010, Georgia Tech Research Corporation,
+ * Atlanta, Georgia 30332-0415
+ * All Rights Reserved
+ * Authors: Frank Dellaert, et al. (see THANKS for the full author list)
+
+ * See LICENSE for the license information
+
+ * -------------------------------------------------------------------------- */
+
 /**
  * @file    GenericMultifrontalSolver.h
  * @brief   
@@ -15,13 +26,13 @@
 
 namespace gtsam {
 
-template<class FACTOR>
+template<class FACTOR, class JUNCTIONTREE>
 class GenericMultifrontalSolver {
 
 protected:
 
-  // Elimination tree that performs elimination.
-  typename JunctionTree<FactorGraph<FACTOR> >::shared_ptr junctionTree_;
+  // Junction tree that performs elimination.
+  JUNCTIONTREE junctionTree_;
 
 public:
 
@@ -35,7 +46,7 @@ public:
    * Eliminate the factor graph sequentially.  Uses a column elimination tree
    * to recursively eliminate.
    */
-  typename BayesTree<typename FACTOR::Conditional>::shared_ptr eliminate() const;
+  typename JUNCTIONTREE::BayesTree::shared_ptr eliminate() const;
 
   /**
    * Compute the marginal Gaussian density over a variable, by integrating out

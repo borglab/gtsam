@@ -266,7 +266,7 @@ TEST( BayesTree, balanced_smoother_shortcuts )
 //	push_front(expected,ordering["x1"], zero(2), eye(2)*sqrt(2), ordering["x2"], -eye(2)*sqrt(2)/2, ones(2));
 //	GaussianISAM::sharedClique R = bayesTree.root(), C3 = bayesTree[ordering["x1"]];
 //	GaussianFactorGraph marginal = C3->marginal(R);
-//	GaussianVariableIndex<> varIndex(marginal);
+//	GaussianVariableIndex varIndex(marginal);
 //	Permutation toFront(Permutation::PullToFront(C3->keys(), varIndex.size()));
 //	Permutation toFrontInverse(*toFront.inverse());
 //	varIndex.permute(toFront);

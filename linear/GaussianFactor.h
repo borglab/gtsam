@@ -48,7 +48,6 @@
 namespace gtsam {
 
 class GaussianFactorGraph;
-template<class VARIABLEINDEXSTORAGE=VariableIndexStorage_vector> class GaussianVariableIndex;
 
 /** A map from key to dimension, useful in various contexts */
 typedef std::map<Index, size_t> Dimensions;
@@ -146,13 +145,13 @@ public:
    */
   void permuteWithInverse(const Permutation& inversePermutation);
 
-  /**
-   * Named constructor for combining a set of factors with pre-computed set of variables.
-   */
-  template<class STORAGE>
-  static shared_ptr Combine(const FactorGraph<GaussianFactor>& factorGraph,
-      const GaussianVariableIndex<STORAGE>& variableIndex, const std::vector<size_t>& factorIndices,
-      const std::vector<Index>& variables, const std::vector<std::vector<size_t> >& variablePositions);
+//  /**
+//   * Named constructor for combining a set of factors with pre-computed set of variables.
+//   */
+//  template<class STORAGE>
+//  static shared_ptr Combine(const FactorGraph<GaussianFactor>& factorGraph,
+//      const GaussianVariableIndex<STORAGE>& variableIndex, const std::vector<size_t>& factorIndices,
+//      const std::vector<Index>& variables, const std::vector<std::vector<size_t> >& variablePositions);
 
   /**
    * Named constructor for combining a set of factors with pre-computed set of variables.

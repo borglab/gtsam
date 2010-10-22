@@ -70,12 +70,13 @@ namespace gtsam {
 		// For performance reasons in recursion, we store configs in a shared_ptr
 		typedef boost::shared_ptr<const T> shared_values;
 		typedef boost::shared_ptr<const G> shared_graph;
-		typedef boost::shared_ptr<Ordering> shared_ordering;
-		//typedef boost::shared_ptr<const GS> shared_solver;
-		//typedef const GS solver;
+		typedef boost::shared_ptr<const Ordering> shared_ordering;
 		typedef NonlinearOptimizationParameters Parameters;
 
 	private:
+
+		typedef NonlinearOptimizer<G, T, L, GS> This;
+		typedef boost::shared_ptr<const std::vector<size_t> > shared_dimensions;
 
 		// keep a reference to const version of the graph
 		// These normally do not change
@@ -84,7 +85,7 @@ namespace gtsam {
 		// keep a values structure and its error
 		// These typically change once per iteration (in a functional way)
 		const shared_values config_;
-		double error_; // TODO FD: no more const because in constructor I need to set it after checking :-(
+		const double error_;
 
 		const shared_ordering ordering_;
 		// the linear system solver
@@ -94,9 +95,29 @@ namespace gtsam {
 		// TODO: red flag, should we have an LM class ?
 		const double lambda_;
 
+		// The dimensions of each linearized variable
+		const shared_dimensions dimensions_;
+
 		// Recursively try to do tempered Gauss-Newton steps until we succeed
 		NonlinearOptimizer try_lambda(const L& linear,
 				Parameters::verbosityLevel verbosity, double factor, Parameters::LambdaMode lambdaMode) const;
+
+    /**
+     * Constructor that does not do any computation
+     */
+    NonlinearOptimizer(shared_graph graph, shared_values config, shared_ordering ordering,
+        const double error, const double lambda, shared_dimensions dimensions): graph_(graph), config_(config),
+        error_(error), ordering_(ordering), lambda_(lambda), dimensions_(dimensions) {}
+
+    /** Create a new NonlinearOptimizer with a different lambda */
+    This newLambda_(double newLambda) const {
+      return NonlinearOptimizer(graph_, config_, ordering_, error_, newLambda, dimensions_); }
+
+    This newValues_(shared_values newValues) const {
+      return NonlinearOptimizer(graph_, newValues, ordering_, graph_->error(*newValues), lambda_, dimensions_); }
+
+    This newValuesNewLambda_(shared_values newValues, double newLambda) const {
+      return NonlinearOptimizer(graph_, newValues, ordering_, graph_->error(*newValues), newLambda, dimensions_); }
 
 	public:
 
@@ -107,18 +128,11 @@ namespace gtsam {
 				const double lambda = 1e-5);
 
 		/**
-		 * Constructor that does not do any computation
-		 */
-		NonlinearOptimizer(shared_graph graph, shared_values config, shared_ordering ordering,
-				const double error, const double lambda): graph_(graph), config_(config),
-			  error_(error), ordering_(ordering), lambda_(lambda) {}
-
-		/**
 		 * Copy constructor
 		 */
 		NonlinearOptimizer(const NonlinearOptimizer<G, T, L, GS> &optimizer) :
-		  graph_(optimizer.graph_), config_(optimizer.config_),
-		  error_(optimizer.error_), ordering_(optimizer.ordering_), lambda_(optimizer.lambda_) {}
+		  graph_(optimizer.graph_), config_(optimizer.config_), error_(optimizer.error_),
+		  ordering_(optimizer.ordering_), lambda_(optimizer.lambda_), dimensions_(optimizer.dimensions_) {}
 
 		/**
 		 * Return current error

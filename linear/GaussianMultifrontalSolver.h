@@ -1,3 +1,14 @@
+/* ----------------------------------------------------------------------------
+
+ * GTSAM Copyright 2010, Georgia Tech Research Corporation,
+ * Atlanta, Georgia 30332-0415
+ * All Rights Reserved
+ * Authors: Frank Dellaert, et al. (see THANKS for the full author list)
+
+ * See LICENSE for the license information
+
+ * -------------------------------------------------------------------------- */
+
 /**
  * @file    GaussianMultifrontalSolver.h
  * @brief   
@@ -7,6 +18,7 @@
 
 #pragma once
 
+#include <gtsam/inference/GenericMultifrontalSolver.h>
 #include <gtsam/linear/GaussianJunctionTree.h>
 #include <gtsam/linear/GaussianBayesNet.h>
 #include <gtsam/linear/GaussianFactorGraph.h>
@@ -38,11 +50,11 @@ namespace gtsam {
  * typedef'ed in linear/GaussianBayesNet, on which this class calls
  * optimize(...) to perform back-substitution.
  */
-class GaussianMultifrontalSolver {
+class GaussianMultifrontalSolver : GenericMultifrontalSolver<GaussianFactor, GaussianJunctionTree> {
 
 protected:
 
-  GaussianJunctionTree::shared_ptr junctionTree_;
+  typedef GenericMultifrontalSolver<GaussianFactor, GaussianJunctionTree> Base;
 
 public:
 
@@ -56,7 +68,7 @@ public:
    * Eliminate the factor graph sequentially.  Uses a column elimination tree
    * to recursively eliminate.
    */
-  BayesTree<GaussianConditional>::sharedClique eliminate() const;
+  BayesTree<GaussianConditional>::shared_ptr eliminate() const;
 
   /**
    * Compute the least-squares solution of the GaussianFactorGraph.  This

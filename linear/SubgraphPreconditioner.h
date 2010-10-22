@@ -60,7 +60,7 @@ namespace gtsam {
 	     * Add zero-mean i.i.d. Gaussian prior terms to each variable
 	     * @param sigma Standard deviation of Gaussian
 	     */
-	    SubgraphPreconditioner add_priors(double sigma) const;
+//	    SubgraphPreconditioner add_priors(double sigma) const;
 
 		/* x = xbar + inv(R1)*y */
 		VectorValues x(const VectorValues& y) const;

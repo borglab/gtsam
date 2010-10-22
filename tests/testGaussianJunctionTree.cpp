@@ -94,7 +94,7 @@ TEST( GaussianJunctionTree, optimizeMultiFrontal )
 	VectorValues actual = tree.optimize();
 
 	// verify
-	VectorValues expected(GaussianVariableIndex<>(fg).dims()); // expected solution
+	VectorValues expected(vector<size_t>(7,2)); // expected solution
 	Vector v = Vector_(2, 0., 0.);
 	for (int i=1; i<=7; i++)
 		expected[ordering[Symbol('x',i)]] = v;
