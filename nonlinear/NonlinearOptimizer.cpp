@@ -11,7 +11,7 @@
 
 /**
  * NonlinearOptimizer.cpp
- * @brief: Dummy c++ file to have *something* in lin-nonlinear if USE_LDL not defined.
+ * @brief: Dummy c++ file to have *something* in lin-nonlinear .
  * @Author: Frank Dellaert
  * Created on: Jul 17, 2010
  */

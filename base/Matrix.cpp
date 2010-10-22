@@ -45,10 +45,6 @@ extern "C" {
 #include <boost/numeric/ublas/vector_proxy.hpp>
 #include <boost/tuple/tuple.hpp>
 
-#ifdef GT_USE_LDL
-#include <suitesparse/ldl.h>
-#endif
-
 #include <gtsam/base/Matrix-inl.h>
 #include <gtsam/base/Vector.h>
 #include <gtsam/base/svdcmp.h>

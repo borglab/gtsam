@@ -277,6 +277,8 @@ void householder(Matrix& A);
  * Householder tranformation directly on a column-major matrix.  Does not zero
  * below the diagonal, so it will contain Householder vectors.
  * @return nothing: in place !!!
+ * FIXME: this uses the LAPACK QR function, so it cannot be used on Ubuntu (without
+ * lots of hacks, at least)
  */
 void householderColMajor(MatrixColMajor& A);
 #endif
