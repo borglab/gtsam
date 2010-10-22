@@ -22,6 +22,7 @@
 #include <gtsam/linear/GaussianBayesNet.h>
 #include <gtsam/linear/GaussianFactorGraph.h>
 #include <gtsam/linear/VectorValues.h>
+#include <gtsam/linear/GaussianConditional.h>
 
 #include <utility>
 #include <vector>
@@ -107,7 +108,7 @@ public:
    * returns a GaussianConditional, this function back-substitutes the R factor
    * to obtain the mean, then computes \Sigma = (R^T * R)^-1.
    */
-//  std::pair<Vector, Matrix> marginalStandard(Index j) const;
+  std::pair<Vector, Matrix> marginalStandard(Index j) const;
 
   /**
    * Compute the marginal joint over a set of variables, by integrating out

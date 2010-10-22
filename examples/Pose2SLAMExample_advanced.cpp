@@ -24,6 +24,9 @@
 #include <gtsam/slam/pose2SLAM.h>
 #include <gtsam/nonlinear/NonlinearOptimization-inl.h>
 
+#include <gtsam/base/Vector.h>
+#include <gtsam/base/Matrix.h>
+
 using namespace std;
 using namespace gtsam;
 using namespace boost;
@@ -52,7 +55,7 @@ int main(int argc, char** argv) {
 	graph->addConstraint(x2, x3, odom_measurement, odom_model);
 	graph->print("full graph");
 
-  /* 3. Create the data structure to hold the initial estinmate to the solution
+  /* 3. Create the data structure to hold the initial estimate to the solution
    * initialize to noisy points */
 	shared_ptr<Values> initial(new Values);
 	initial->insert(x1, Pose2(0.5, 0.0, 0.2));
@@ -72,6 +75,13 @@ int main(int argc, char** argv) {
 
 	Values result = *optimizer_result.values();
 	result.print("final result");
+
+	Vector mean; Matrix covariance;
+	boost::tie( mean, covariance)  = optimizer_result.marginalStandard(x1);
+
+	print(mean, "Mean");
+	print(covariance, "Covariance");
+
 	return 0;
 }
 

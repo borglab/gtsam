@@ -159,6 +159,13 @@ namespace gtsam {
 		}
 
 		/**
+		 * Return mean and covariance on a single variable
+		 */
+		std::pair<Vector, Matrix> marginalStandard(Symbol j) const {
+			return solver_->marginalStandard((*ordering_)[j]);
+		}
+
+		/**
 		 *  linearize and optimize
 		 *  This returns an VectorValues, i.e., vectors in tangent space of T
 		 */

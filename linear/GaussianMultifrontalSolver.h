@@ -101,7 +101,7 @@ public:
    * returns a GaussianConditional, this function back-substitutes the R factor
    * to obtain the mean, then computes \Sigma = (R^T * R)^-1.
    */
-//  std::pair<Vector, Matrix> marginalStandard(Index j) const;
+   std::pair<Vector, Matrix> marginalStandard(Index j) const;
 
 };
 
