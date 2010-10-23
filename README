@@ -67,11 +67,10 @@ After debugging, GTSAM will run much faster when compiled with NDEBUG defined,
 so that debug checks are disabled.
 
 Another useful debugging symbol is _GLIBCXX_DEBUG, which enables debug checks
-and safe containers in the standard C++ library.  We suggest testing your code
-with this symbol defined, as it will make problems much easier to find.
+and safe containers in the standard C++ library and makes problems much easier
+to find.
 NOTE:  The native Snow Leopard g++ compiler/library contains a bug that makes
-it impossible to use this symbol.  The MacPorts g++ compilers work fine with it
-though.
+it impossible to use _GLIBCXX_DEBUG.  MacPorts g++ compilers do work with it though.
 
 4)
 Putting the above together, here are some sample ./configure commands for
