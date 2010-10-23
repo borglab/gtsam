@@ -18,8 +18,8 @@
 
 #include <gtsam/linear/GaussianFactorGraph.h>
 #include <gtsam/linear/SharedDiagonal.h>
-#include <gtsam/inference/inference-inl.h>
-#include <gtsam/inference/EliminationTree-inl.h>
+#include <gtsam/linear/GaussianSequentialSolver.h>
+#include <gtsam/linear/GaussianMultifrontalSolver.h>
 
 #include <boost/random.hpp>
 #include <boost/timer.hpp>
@@ -119,8 +119,7 @@ int main(int argc, char *argv[]) {
     timer.restart();
     for(size_t trial=0; trial<nTrials; ++trial) {
 //      cout << "Trial " << trial << endl;
-      GaussianBayesNet::shared_ptr gbn(GaussianEliminationTree::Create(blockGfgs[trial])->eliminate());
-      VectorValues soln(optimize(*gbn));
+    	VectorValues soln(*GaussianMultifrontalSolver(blockGfgs[trial]).optimize());
     }
     blocksolve = timer.elapsed();
     cout << blocksolve << " s" << endl;

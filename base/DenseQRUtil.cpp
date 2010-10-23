@@ -163,7 +163,6 @@ namespace gtsam {
     double W[b*(n+b)];
     DenseQR(m, n, npiv, A.data().begin(), Stair, W);
     toc("householder_denseqr: denseqr_front");
-
 	}
 
 } // namespace gtsam
