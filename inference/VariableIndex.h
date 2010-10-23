@@ -32,10 +32,12 @@ namespace gtsam {
 class Inference;
 
 /**
- * The VariableIndex class stores the information necessary to perform
- * elimination, including an index of factors involving each variable and
- * the structure of the intermediate joint factors that develop during
- * elimination.  This maps variables to collections of factor indices.
+ * The VariableIndex class computes and stores the block column structure of a
+ * factor graph.  The factor graph stores a collection of factors, each of 
+ * which involves a set of variables.  In contrast, the VariableIndex is built
+ * from a factor graph prior to elimination, and stores the list of factors
+ * that involve each variable.  This information is stored as a vector of
+ * lists of factor indices.
  */
 class VariableIndex {
 public:
@@ -47,25 +49,61 @@ public:
 
 protected:
   std::vector<Factors> indexUnpermuted_;
-  Permuted<std::vector<Factors>, Factors&> index_;
-  size_t nFactors_;
-  size_t nEntries_; // Sum of involved variable counts of each factor
+  Permuted<std::vector<Factors>, Factors&> index_; // Permuted view of indexUnpermuted.
+  size_t nFactors_; // Number of factors in the original factor graph.
+  size_t nEntries_; // Sum of involved variable counts of each factor.
 
 public:
+  /** Default constructor, creates an empty VariableIndex */
   VariableIndex() : index_(indexUnpermuted_), nFactors_(0), nEntries_(0) {}
+
+  /**
+   * Create a VariableIndex that computes and stores the block column structure
+   * of a factor graph.  This constructor is used when the number of variables
+   * is known beforehand.
+   */
   template<class FactorGraph> VariableIndex(const FactorGraph& factorGraph, Index nVariables);
+
+  /**
+   * Create a VariableIndex that computes and stores the block column structure
+   * of a factor graph.
+   */
   template<class FactorGraph> VariableIndex(const FactorGraph& factorGraph);
 
+  /**
+   * The number of variable entries.  This is one greater than the variable
+   * with the highest index.
+   */
   Index size() const { return index_.size(); }
-  size_t nFactors() const { return nFactors_; }
-  size_t nEntries() const { return nEntries_; }
-  const Factors& operator[](Index variable) const { checkVar(variable); return index_[variable]; }
-  Factors& operator[](Index variable) { checkVar(variable); return index_[variable]; }
-  void permute(const Permutation& permutation);
-  template<class FactorGraph> void augment(const FactorGraph& factorGraph);
-  void rebaseFactors(ptrdiff_t baseIndexChange);
 
+  /** The number of factors in the original factor graph */
+  size_t nFactors() const { return nFactors_; }
+
+  /** The number of nonzero blocks, i.e. the number of variable-factor entries */
+  size_t nEntries() const { return nEntries_; }
+
+  /** Access a list of factors by variable */
+  const Factors& operator[](Index variable) const { checkVar(variable); return index_[variable]; }
+
+  /** Access a list of factors by variable */
+  Factors& operator[](Index variable) { checkVar(variable); return index_[variable]; }
+
+  /**
+   * Apply a variable permutation.  Does not rearrange data, just permutes
+   * future lookups by variable.
+   */
+  void permute(const Permutation& permutation);
+
+  /**
+   * Augment the variable index with new factors.  This can be used when
+   * solving problems incrementally.
+   */
+  template<class FactorGraph> void augment(const FactorGraph& factorGraph);
+
+  /** Test for equality (for unit tests and debug assertions). */
   bool equals(const VariableIndex& other, double tol=0.0) const;
+
+  /** Print the variable index (for unit tests and debugging). */
   void print(const std::string& str = "VariableIndex: ") const;
 
 protected:

@@ -33,15 +33,6 @@ void VariableIndex::permute(const Permutation& permutation) {
 }
 
 /* ************************************************************************* */
-void VariableIndex::rebaseFactors(ptrdiff_t baseIndexChange) {
-  BOOST_FOREACH(Factors& factors, index_.container()) {
-    BOOST_FOREACH(size_t& factor, factors) {
-      factor += baseIndexChange;
-    }
-  }
-}
-
-/* ************************************************************************* */
 bool VariableIndex::equals(const VariableIndex& other, double tol) const {
   if(this->nEntries_ == other.nEntries_ && this->nFactors_ == other.nFactors_) {
     for(size_t var=0; var < std::max(this->index_.size(), other.index_.size()); ++var)
