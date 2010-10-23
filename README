@@ -28,7 +28,7 @@ the more involved tests that test the entire library:
 Furthermore the MATLAB wrapper generator code is run as well
 
   wrap				MATLAB wrapper generation code
-	gtsam.h			interface file for which wrappers will be generated
+  gtsam.h			interface file for which wrappers will be generated
   toolbox			MATLAB proxy classes and wrappers generated
   matlab			examples and tests of the above  		
 
@@ -39,54 +39,63 @@ Finally, there are some local libraries built needed in the rest of the code:
   doc					documentation
   m4					local M4 macros
 
-Boost Dependencies:
-------------------
-The GTSAM library is based on the 'Boost C++ Libraries' which can be
-found here: http://www.boost.org/. 
-Donwload the lates version and extract Boost in any place. To this
-place the compiler will be linking. 
 
-- On Linux BOOST can also be installed with a packaged manager.
-- On Mac OS Mac Ports can be used.
+Important Installation Notes Specific to GTSAM
+----------------------------------------------
 
-For example the Boost path could be '/opt/local/include/' on a typical
-Mac system, where you should be able to find one of the header files:
-/opt/local/include/boost/config.hpp 
+1)
+GTSAM requires the following libraries to be installed on your system:
+ - BOOST version 1.40 or greater (install through Linux repositories or MacPorts)
+ - BLAS, ATLAS, and LAPACK (libblas, libatlas, and liblapack in Debian/Ubuntu
+                            repositories, on Mac these should already installed
+                            with the OS)
 
-If your boost files are in a different place change the path according
-to your path.
+2)
+GTSAM uses CCOLAMD to find good variable elimination orders.  You can download
+it from Tim Davis's website:  http://www.cise.ufl.edu/research/sparse/ccolamd/
+Then, pass the following arguments (paths are just examples) to ./configure:
+--with-ccolamd-inc=/usr/local/include
+--with-ccolamd-lib=/usr/local/lib
 
-The path to the Boost files can be set as an environmental variable in
-the startup script. For a Bash shell the startup file is ~/.bashrc
-put the following command in this file:
-export BOOST_DIR=/opt/local/include/ 
+3)
+GTSAM makes extensive use of debug assertions, even for checking input of
+the functions you will call.  These assertions are disabled when NDEBUG is
+defined.  Thus, we strongly recommend compiling GTSAM and your own code without
+this symbol during debugging.
 
-Installation:
--------------
-To finally install the library go into the directory where you unpacked the 
-GTSAM library. We recommend you do an out-of-source build, as described in the
-next section. However, this is not required:
+After debugging, GTSAM will run much faster when compiled with NDEBUG defined,
+so that debug checks are disabled.
 
-Standard Build:
----------------
+Another useful debugging symbol is _GLIBCXX_DEBUG, which enables debug checks
+and safe containers in the standard C++ library.  We suggest testing your code
+with this symbol defined, as it will make problems much easier to find.
+NOTE:  The native Snow Leopard g++ compiler/library contains a bug that makes
+it impossible to use this symbol.  The MacPorts g++ compilers work fine with it
+though.
 
-run the command below to configure the library:
+4)
+Putting the above together, here are some sample ./configure commands for
+compiling gtsam:
 
-$] ./configure --with-toolbox=$HOME/toolbox/ 
+For Debugging (native Snow Leopard g++ compiler):
+./configure CXXFLAGS="-fno-inline -g -Wall" \
+    LDFLAGS="-fno-inline -g -Wall" --enable-blas --enable-lapack \
+    --with-toolbox=$HOME/toolbox/
 
-where the path after --with-toolbox should point to the directory you want to have the gtsam
-matlab scripts installed in. You have to set it to an existing directory. 
-After successful installation there will be a gtsam directory with all Matlab GTSAM Toolbox files.
+For Debugging (Linux or MacPorts g++ compilers):
+./configure CXXFLAGS="-fno-inline -g -Wall -D_GLIBCXX_DEBUG" \
+    LDFLAGS="-fno-inline -g -Wall" --enable-blas --enable-lapack \
+    --with-toolbox=$HOME/toolbox/
 
-The configure script will attempt to find the Boost C++ library on your system. If you installed
- Boost in a non-standard place, you have to to specify an additional flag to the configure script:
+For Performance:
+./configure CXXFLAGS="-DNDEBUG -O3" LDFLAGS="-O3" --enable-blas \
+    --enable-lapack --with-toolbox=$HOME/toolbox/
 
-$] ./configure --with-toolbox=$HOME/toolbox/ --with-boost=/path/to/boost/include/
+After that (this would be for an in-source build, see next for out-of-source):
+$ make
+$ make check (optional, runs unit tests)
+$ make install
 
-After configuring your makefile you have to compile the library
-Type:
-$] make
-$] make install
 
 Out-of-source build:
 --------------------
@@ -97,15 +106,17 @@ run it in sub-directory of choice, e.g., starting out in the main GTSAM folder:
 
 $] mkdir build
 $] cd build
-$] ../configure --with-toolbox=$HOME/toolbox/
+$] ../configure ..... (command as above)
 $] make install
 
+
 Built-in Unit Tests:
-----------------
+--------------------
 There is one more optional step in which you can invoke the unit tests included in the gtsam libraries. 
 $] make check
 By verifying all the test results are positive, you can make sure that the functionalities of the GTSAM
 libraries are correct.
+
 
 Compile Matlab Toolbox:
 -----------------------
@@ -114,6 +125,7 @@ Compile Matlab Toolbox:
    GTSAM Matlab Toolbox
 3) Change your current directory to the GTSAM Matlab Toolbox
 4) Type 'make_gtsam' at the Command Window
+
 
 Run Matlab Unit Tests:
 -----------------------
