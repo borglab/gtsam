@@ -130,6 +130,13 @@ namespace gtsam {
 		NonlinearOptimizer(shared_graph graph, shared_values values, shared_ordering ordering,
 				const double lambda = 1e-5);
 
+		NonlinearOptimizer(shared_graph graph,
+						   shared_values values,
+						   shared_ordering ordering,
+						   shared_solver solver,
+						   const double lambda = 1e-5);
+
+
 		/**
 		 * Copy constructor
 		 */

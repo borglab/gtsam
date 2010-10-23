@@ -163,4 +163,34 @@ GaussianFactorGraph GaussianFactorGraph::add_priors(double sigma, const vector<s
 	return result;
 }
 
+bool GaussianFactorGraph::split(const std::map<Index, Index> &M, GaussianFactorGraph &Ab1, GaussianFactorGraph &Ab2) const {
+
+	typedef sharedFactor F ;
+
+	Ab1 = GaussianFactorGraph();
+	Ab2 = GaussianFactorGraph();
+
+	BOOST_FOREACH(const F& factor, *this) {
+
+		if (factor->keys().size() > 2)
+			throw(invalid_argument("split: only support factors with at most two keys"));
+		if (factor->keys().size() == 1) {
+			Ab1.push_back(factor);
+			Ab2.push_back(factor);
+			continue;
+		}
+		Index key1 = factor->keys_[0];
+		Index key2 = factor->keys_[1];
+
+		if ((M.find(key1) != M.end() && M.find(key1)->second == key2) ||
+			(M.find(key2) != M.end() && M.find(key2)->second == key1))
+			Ab1.push_back(factor);
+		else
+			Ab2.push_back(factor);
+	}
+
+	return true ;
+}
+
+
 } // namespace gtsam

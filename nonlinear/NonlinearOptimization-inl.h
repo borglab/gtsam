@@ -67,24 +67,27 @@ namespace gtsam {
 		return *result.values();
 	}
 
-//	/**
-//	 * The sparse preconditioned conjucate gradient solver
-//	 */
-//	template<class G, class T>
-//	T	optimizeSPCG(const G& graph, const T& initialEstimate, const NonlinearOptimizationParameters& parameters = NonlinearOptimizationParameters()) {
-//
-//		// initial optimization state is the same in both cases tested
-//		typedef NonlinearOptimizer<G, T, SubgraphPreconditioner, SubgraphSolver<G,T> > SPCGOptimizer;
-//		typename SPCGOptimizer::shared_solver solver(new SubgraphSolver<G,T>(graph, initialEstimate));
-//		SPCGOptimizer optimizer(
-//				boost::make_shared<const G>(graph),
-//				boost::make_shared<const T>(initialEstimate),
-//				solver);
-//
-//		// Levenberg-Marquardt
-//		SPCGOptimizer result = optimizer.levenbergMarquardt(parameters);
-//		return *result.values();
-//	}
+	/**
+	 * The sparse preconditioned conjucate gradient solver
+	 */
+	template<class G, class T>
+	T	optimizeSPCG(const G& graph, const T& initialEstimate, const NonlinearOptimizationParameters& parameters = NonlinearOptimizationParameters()) {
+
+		// initial optimization state is the same in both cases tested
+		typedef SubgraphSolver<G,GaussianFactorGraph,T> Solver;
+		typedef boost::shared_ptr<Solver> shared_Solver;
+		typedef NonlinearOptimizer<G, T, GaussianFactorGraph, Solver> SPCGOptimizer;
+		shared_Solver solver = boost::make_shared<Solver>(graph, initialEstimate);
+		SPCGOptimizer optimizer(
+				boost::make_shared<const G>(graph),
+				boost::make_shared<const T>(initialEstimate),
+				solver->ordering(),
+				solver);
+
+		// Levenberg-Marquardt
+		SPCGOptimizer result = optimizer.levenbergMarquardt(parameters);
+		return *result.values();
+	}
 
 	/**
 	 * optimization that returns the values

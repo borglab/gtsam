@@ -25,9 +25,16 @@ using namespace std;
 using namespace gtsam;
 using namespace pose2SLAM;
 
-typedef boost::shared_ptr<Graph> sharedGraph;
-typedef boost::shared_ptr<Values> sharedValue;
-typedef NonlinearOptimizer<Graph, Values, SubgraphPreconditioner, SubgraphSolver<Graph,Values> > SPCGOptimizer;
+typedef boost::shared_ptr<Graph> sharedGraph ;
+typedef boost::shared_ptr<Values> sharedValue ;
+//typedef NonlinearOptimizer<Graph, Values, SubgraphPreconditioner, SubgraphSolver<Graph,Values> > SPCGOptimizer;
+
+
+typedef SubgraphSolver<Graph, GaussianFactorGraph, Values> Solver;
+
+typedef boost::shared_ptr<Solver> sharedSolver ;
+
+typedef NonlinearOptimizer<Graph, Values, GaussianFactorGraph, Solver> SPCGOptimizer;
 
 sharedGraph graph;
 sharedValue initial;
@@ -44,8 +51,8 @@ int main(void) {
 	graph->print("full graph") ;
 	initial->print("initial estimate") ;
 
-	SPCGOptimizer::shared_solver solver(new SPCGOptimizer::solver(*graph, *initial)) ;
-	SPCGOptimizer optimizer(graph, initial, solver) ;
+	sharedSolver solver(new Solver(*graph, *initial)) ;
+	SPCGOptimizer optimizer(graph, initial, solver->ordering(), solver) ;
 
 	cout << "before optimization, sum of error is " << optimizer.error() << endl;
 	NonlinearOptimizationParameters parameter;
