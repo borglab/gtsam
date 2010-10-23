@@ -46,7 +46,7 @@ namespace gtsam {
 	 */
 	template<class G, class T>
 	T optimize(const G& graph, const T& initialEstimate, const NonlinearOptimizationParameters& parameters = NonlinearOptimizationParameters(),
-			const enum LinearSolver& solver = SEQUENTIAL);
+			const enum LinearSolver& solver = MULTIFRONTAL);
 
 }
 
