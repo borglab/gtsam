@@ -226,8 +226,8 @@ TEST( Tensor5, Outer32)
 	double data[3][3] = { { 0, 0, 3 }, { 0, 8, -125 }, { -3, 125, 1 } };
 	FundamentalMatrix F(data);
 
-	Index<3, 'd'> d, _d;
-	Index<3, 'e'> e, _e;
+	//Index<3, 'd'> d, _d;
+	//Index<3, 'e'> e, _e;
 	//print(T(_a,b,c)*F(_d,_e));
 }
 
