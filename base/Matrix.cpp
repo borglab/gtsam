@@ -915,80 +915,6 @@ Matrix cholesky_inverse(const Matrix &A)
 }
 
 
-/* ************************************************************************* */
-/** SVD                                                                      */
-/* ************************************************************************* */
-
-// version with in place modification of A
-void svd(Matrix& A, Vector& s, Matrix& V, bool sort) {
-
-  const size_t m=A.size1(), n=A.size2();
-  if( m < n )
-	 throw invalid_argument("in-place svd calls NRC which needs matrix A with m>n");
-
-  double * q = new double[n]; // singular values
-
-  // create NRC matrices, u is in place
-  V = Matrix(n,n);
-  double **u = createNRC(A), **v = createNRC(V);
-
-  // perform SVD
-  // need to pass pointer - 1 in NRC routines so u[1][1] is first element !
-  svdcmp(u-1,m,n,q-1,v-1, sort);
-	
-  // copy singular values back
-  s.resize(n);
-  copy(q,q+n,s.begin());
-
-  delete[] v;
-  delete[] q; //switched to array delete
-  delete[] u;
-}
-
-/* ************************************************************************* */
-void svd(const Matrix& A, Matrix& U, Vector& s, Matrix& V, bool sort) {
-  const size_t m=A.size1(), n=A.size2();
-  if( m < n ) {
-	  V = trans(A);
-	  svd(V,s,U,sort); // A'=V*diag(s)*U'
-  }
-  else{
-	  U = A;      // copy
-	  svd(U,s,V,sort); // call in-place version
-  }
-}
-
-/* ************************************************************************* */
-boost::tuple<int, double, Vector> DLT(const Matrix& A, double rank_tol) {
-
-	// Check size of A
-	int m = A.size1(), n = A.size2();
-	if (m<n) throw invalid_argument("DLT: m<n, pad A with zero rows if needed.");
-
-	// Do SVD on A
-	Matrix U, V;
-	Vector S;
-	static const bool sort = false;
-	svd(A, U, S, V, sort);
-
-	// Find rank
-	int rank = 0;
-	for (int j = 0; j < n; j++)
-		if (S(j) > rank_tol)
-			rank++;
-	// Find minimum singular value and corresponding column index
-	int min_j = n - 1;
-	double min_S = S(min_j);
-	for (int j = 0; j < n - 1; j++)
-		if (S(j) < min_S) {
-			min_j = j;
-			min_S = S(j);
-		}
-
-	// Return rank, minimum singular value, and corresponding column of V
-	return boost::tuple<int, double, Vector>(rank, min_S, column_(V, min_j));
-}
-
 #if 0
 /* ************************************************************************* */
 // TODO, would be faster with Cholesky
@@ -1023,22 +949,6 @@ Matrix inverse_square_root(const Matrix& A) {
 	return inv;
 }
 
-/* ************************************************************************* */
-Matrix square_root_positive(const Matrix& A) {
-  size_t m = A.size2(), n = A.size1();
-  if (m!=n)
-    throw invalid_argument("inverse_square_root: A must be square");
-
-  // Perform SVD, TODO: symmetric SVD?
-  Matrix U,V;
-  Vector S;
-  svd(A,U,S,V,false);
-
-  // invert and sqrt diagonal of S
-  // We also arbitrarily choose sign to make result have positive signs
-  for(size_t i = 0; i<m; i++) S(i) = - pow(S(i),0.5);
-  return vector_scale(S, V); // V*S;
-}
 
 /* ************************************************************************* */
 Matrix expm(const Matrix& A, size_t K) {

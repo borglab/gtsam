@@ -88,27 +88,6 @@ TEST( Homography2, TestCase)
 }
 
 /* ************************************************************************* */
-TEST( Homography2, Estimate)
-{
-	list<Correspondence> correspondences;
-	correspondences += p1, p2, p3, p4;
-	Homography2 estimatedH = estimateHomography2(correspondences);
-	CHECK(assert_equivalent(H(_a,b),estimatedH(_a,b)));
-}
-
-/* ************************************************************************* */
-TEST( Homography2, EstimateReverse)
-{
-	double h[3][3] = { { 1, 0, -4 }, { 0, 1, -5 }, { 0, 0, 1 } };
-	Homography2 reverse(h);
-
-	list<Correspondence> correspondences;
-	correspondences += p1.swap(), p2.swap(), p3.swap(), p4.swap();
-	Homography2 estimatedH = estimateHomography2(correspondences);
-	CHECK(assert_equality(reverse(_a,b),estimatedH(_a,b)*(1.0/estimatedH(2,2))));
-}
-
-/* ************************************************************************* */
 /**
  * Computes the homography H(I,_T) from template to image
  * given the pose tEc of the camera in the template coordinate frame.

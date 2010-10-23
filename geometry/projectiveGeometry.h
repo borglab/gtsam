@@ -50,22 +50,8 @@ namespace gtsam {
 	/** 2D-2D Homography */
 	typedef tensors::Tensor2<3, 3> Homography2;
 
-	/**
-	 * Estimate homography from point correspondences
-	 * Result is H(_a,b) s.t. p.second(b) = H(_a,b) * p.first(a) for all p
-	 */
-	Homography2 estimateHomography2(
-			const std::list<Correspondence>& correspondences);
-
 	/** Fundamental Matrix */
 	typedef tensors::Tensor2<3, 3> FundamentalMatrix;
-
-	/**
-	 * Estimate fundamental matrix from point correspondences
-	 * Result is F(_a,_b) s.t. H(_a,_b) * p.first(a) * p.second(b) == 0 for all p
-	 */
-	FundamentalMatrix estimateFundamentalMatrix(
-			const std::list<Correspondence>& correspondences);
 
 	/** Triplet of points */
 	struct Triplet {
@@ -83,12 +69,6 @@ namespace gtsam {
 
 	/** Trifocal Tensor */
 	typedef tensors::Tensor3<3, 3, 3> TrifocalTensor;
-
-	/**
-	 * Estimate trifocal Tensor from point triplets
-	 * Result is T(_a,b,c)
-	 */
-	TrifocalTensor estimateTrifocalTensor(const std::list<Triplet>& triplets);
 
 	/** 3D Point */
 	typedef tensors::Tensor1<4> Point3h;

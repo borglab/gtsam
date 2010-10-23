@@ -63,56 +63,6 @@ TEST( Tensors, FundamentalMatrix)
 	CHECK(l2(a)*p(a) == 0); // p is on line l2
 }
 
-/* ************************************************************************* */
-// Stereo setup, -1,1
-/* ************************************************************************* */
-// t points towards origin
-double left__[4][3] = { { 1, 0, 0 }, { 0, 1, 0 }, { 0, 0, 1 }, { +1, 0, 0 } };
-double right_[4][3] = { { 1, 0, 0 }, { 0, 1, 0 }, { 0, 0, 1 }, { -1, 0, 0 } };
-//double right_[4][3] = { { cos(0.1), -sin(0.1), 0 }, { sin(0.1), cos(0.1), 0 }, { 0, 0, 1 }, { -1, 0, 0 } };
-ProjectiveCamera ML(left__), MR(right_);
-
-// Cube
-Point3h P1 = point3h(-1, -1, 3 - 1, 1);
-Point3h P2 = point3h(-1, -1, 3 + 1, 1);
-Point3h P3 = point3h(-1, +1, 3 - 1, 1);
-Point3h P4 = point3h(-1, +1, 3 + 1, 1);
-Point3h P5 = point3h(+1, -1, 3 - 1, 1);
-Point3h P6 = point3h(+1, -1, 3 + 1, 1);
-Point3h P7 = point3h(+1, +1, 3 - 1, 1);
-Point3h P8 = point3h(+1, +1, 3 + 1, 1);
-
-/* ************************************************************************* */
-TEST( Tensors, FundamentalMatrix2)
-{
-	// The correct fundamental matrix is given by formula 9.1 in HZ 2nd ed., p. 244
-	// F = \hat(e')P'P+
-	// and is very simple
-	double f[3][3] = {{0,0,0}
-	,{0,0,-1}
-	,{0,1,0}
-	};
-	FundamentalMatrix F(f);
-
-	// Create a list of correspondences
-	list<Point3h> points;
-	Point3h P9 = point3h(-2,3,4,1);
-	Point3h P10 = point3h(1,1,5,1);
-	points += P1, P2, P3, P4, P5, P6, P7, P8, P9, P10;
-	list<Correspondence> correspondences;
-	BOOST_FOREACH(const Point3h& P, points) {
-		Correspondence p(ML(a,A)*P(A), MR(b,A)*P(A));
-		DOUBLES_EQUAL(0,F(a,b) * p.first(a) * p.second(b),1e-9);
-		correspondences += p;
-	}
-
-	// let's check it for another arbitrary point
-	Point2h left(ML(a,A)*P9(A)), right(MR(b,A)*P9(A));
-	DOUBLES_EQUAL(0,F(a,b) * left(a) * right(b),1e-9);
-
-	FundamentalMatrix actual = estimateFundamentalMatrix(correspondences);
-	CHECK(assert_equivalent(F(a,b),actual(a,b),0.1));
-}
 
 /* ************************************************************************* */
 int main() {

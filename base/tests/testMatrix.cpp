@@ -730,106 +730,6 @@ TEST( matrix, row_major_access )
 }
 
 /* ************************************************************************* */
-TEST( matrix, svd1 )
-{
-	double data[] = { 2, 1, 0 };
-	Vector v(3);
-	copy(data, data + 3, v.begin());
-	Matrix U1 = eye(4, 3), S1 = diag(v), V1 = eye(3, 3), A = (U1 * S1)
-			* Matrix(trans(V1));
-	Matrix U, V;
-	Vector s;
-	svd(A, U, s, V);
-	Matrix S = diag(s);
-	EQUALITY(U*S*Matrix(trans(V)),A);
-	EQUALITY(S,S1);
-}
-
-/* ************************************************************************* */
-/// Sample A matrix for SVD
-static double sampleData[] ={0,-2, 0,0, 3,0};
-static Matrix sampleA = Matrix_(3, 2, sampleData);
-static Matrix sampleAt = trans(sampleA);
-
-/* ************************************************************************* */
-TEST( matrix, svd2 )
-{
-	Matrix U, V;
-	Vector s;
-
-	Matrix expectedU = Matrix_(3, 2, 0.,1.,0.,0.,-1.,0.);
-	Vector expected_s = Vector_(2, 3.,2.);
-	Matrix expectedV = Matrix_(2, 2, -1.,0.,0.,-1.);
-
-	svd(sampleA, U, s, V);
-
-	EQUALITY(expectedU,U);
-	CHECK(equal_with_abs_tol(expected_s,s,1e-9));
-	EQUALITY(expectedV,V);
-}
-
-/* ************************************************************************* */
-TEST( matrix, svd3 )
-{
-	Matrix U, V;
-	Vector s;
-
-	Matrix expectedU = Matrix_(2, 2, -1.,0.,0.,-1.);
-	Vector expected_s = Vector_(2, 3.0,2.0);
-	Matrix expectedV = Matrix_(3, 2, 0.,1.,0.,0.,-1.,0.);
-
-	svd(sampleAt, U, s, V);
-	Matrix S = diag(s);
-	Matrix t = prod(U,S);
-	Matrix Vt = trans(V);
-
-	EQUALITY(sampleAt, prod(t,Vt));
-	EQUALITY(expectedU,U);
-	CHECK(equal_with_abs_tol(expected_s,s,1e-9));
-	EQUALITY(expectedV,V);
-}
-
-/* ************************************************************************* */
-/// Homography matrix for points
-//Point2h(0, 0, 1), Point2h(4, 5, 1);
-//Point2h(1, 0, 1), Point2h(5, 5, 1);
-//Point2h(1, 1, 1), Point2h(5, 6, 1);
-//Point2h(0, 1, 1), Point2h(4, 6, 1);
-static double homography_data[] = {0,0,0,-4,-5,-1,0,0,0,
-				4,5,1,0,0,0,0,0,0,
-				0,0,0,0,0,0,0,0,0,
-				0,0,0,-5,-5,-1,0,0,0,
-				5,5,1,0,0,0,-5,-5,-1,
-				0,0,0,5,5,1,0,0,0,
-				0,0,0,-5,-6,-1,5,6,1,
-				5,6,1,0,0,0,-5,-6,-1,
-			   -5,-6,-1,5,6,1,0,0,0,
-				0,0,0,-4,-6,-1,4,6,1,
-				4,6,1,0,0,0,0,0,0,
-			   -4,-6,-1,0,0,0,0,0,0};
-static Matrix homographyA = Matrix_(12, 9, homography_data);
-
-/* ************************************************************************* */
-TEST( matrix, svd_sort )
-{
-	Matrix U1, U2, V1, V2;
-	Vector s1, s2;
-	svd(homographyA, U1, s1, V1);
-	for(int i = 0 ; i < 8 ; i++)
-		CHECK(s1[i]>=s1[i+1]); // Check if singular values are sorted
-
-	svd(homographyA, U2, s2, V2, false);
-	CHECK(s1[8]==s2[7]); // Check if swapping is done
-	CHECK(s1[7]==s2[8]);
-	Vector v17 = column_(V1, 7);
-	Vector v18 = column_(V1, 8);
-	Vector v27 = column_(V2, 7);
-	Vector v28 = column_(V2, 8);
-	CHECK(v17==v28); // Check if vectors are also swapped correctly
-	CHECK(v18==v27); // Check if vectors are also swapped correctly
-}
-
-/* ************************************************************************* */
 // update A, b
 // A' \define A_{S}-ar and b'\define b-ad
 // __attribute__ ((noinline))	// uncomment to prevent inlining when profiling
@@ -937,19 +837,6 @@ TEST( matrix, LLt )
 					0.016485031422565, -0.012072546984405, -0.006621889326331, 0.014405837566082, 0.300462176944247);
 
 	EQUALITY(expected, LLt(M));
-}
-
-/* ************************************************************************* */
-TEST( matrix, square_root_positive )
-{
-	Matrix cov = Matrix_(3, 3, 4.0, 0.0, 0.0, 0.0, 4.0, 0.0, 0.0, 0.0, 100.0);
-
-	Matrix expected = Matrix_(3, 3, 2.0, 0.0, 0.0, 0.0, 2.0, 0.0, 0.0, 0.0,
-			10.0);
-
-	Matrix actual = square_root_positive(cov);
-	CHECK(assert_equal(expected, actual));
-	CHECK(assert_equal(cov, prod(trans(actual),actual)));
 }
 
 /* ************************************************************************* */

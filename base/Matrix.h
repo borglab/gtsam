@@ -360,46 +360,8 @@ Matrix vector_scale(const Matrix& A, const Vector& v); // column
 Matrix skewSymmetric(double wx, double wy, double wz);
 inline Matrix skewSymmetric(const Vector& w) { return skewSymmetric(w(0),w(1),w(2));}
 
-/**
- * SVD computes economy SVD A=U*S*V'
- * @param A an m*n matrix
- * @param U output argument: rotation matrix
- * @param S output argument: vector of singular values, sorted by default, pass false as last argument to avoid sorting!!!
- * @param V output argument: rotation matrix
- * @param sort boolean flag to sort singular values and V
- * if m > n then U*S*V' = (m*n)*(n*n)*(n*n) (the m-n columns of U are of no use)
- * if m < n then U*S*V' = (m*m)*(m*m)*(m*n) (the n-m columns of V are of no use)
- * Careful! The dimensions above reflect V', not V, which is n*m if m<n.
- * U is a basis in R^m, V is a basis in R^n
- * You can just pass empty matrices U,V, and vector S, they will be re-allocated.
- */ 
-void svd(const Matrix& A, Matrix& U, Vector& S, Matrix& V, bool sort=true);
-
-/*
- * In place SVD, will throw an exception when m < n
- * @param A an m*n matrix is modified to contain U
- * @param S output argument: vector of singular values, sorted by default, pass false as last argument to avoid sorting!!!
- * @param V output argument: rotation matrix
- * @param sort boolean flag to sort singular values and V
- * if m > n then U*S*V' = (m*n)*(n*n)*(n*n) (the m-n columns of U are of no use)
- * You can just pass empty matrix V and vector S, they will be re-allocated.
- */
-void svd(Matrix& A, Vector& S, Matrix& V, bool sort=true);
-
-/**
- * Direct linear transform algorithm that calls svd
- * to find a vector v that minimizes the algebraic error A*v
- * @param A of size m*n, where m>=n (pad with zero rows if not!)
- * Returns rank of A, minimum error (singular value),
- * and corresponding eigenvector (column of V, with A=U*S*V')
- */
-boost::tuple<int,double,Vector> DLT(const Matrix& A, double rank_tol=1e-9);
-
 /** Use SVD to calculate inverse square root of a matrix */
 Matrix inverse_square_root(const Matrix& A);
-
-/** Use SVD to calculate the positive square root of a matrix */
-Matrix square_root_positive(const Matrix& A);
 
 /** Calculate the LL^t decomposition of a S.P.D matrix */
 Matrix LLt(const Matrix& A);

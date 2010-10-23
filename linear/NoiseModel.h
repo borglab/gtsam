@@ -125,13 +125,6 @@ namespace gtsam {
 			 */
 			static shared_ptr Covariance(const Matrix& covariance, bool smart=false);
 
-			/**
-			 * A Gaussian noise model created by specifying an information matrix.
-			 */
-			static shared_ptr Information(const Matrix& Q)  {
-				return shared_ptr(new Gaussian(Q.size1(),square_root_positive(Q)));
-			}
-
 			virtual void print(const std::string& name) const;
 			virtual bool equals(const Base& expected, double tol) const;
 			virtual Vector whiten(const Vector& v) const;

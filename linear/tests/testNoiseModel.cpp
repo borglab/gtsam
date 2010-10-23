@@ -55,7 +55,7 @@ TEST(NoiseModel, constructors)
 	vector<Gaussian::shared_ptr> m;
 	m.push_back(Gaussian::SqrtInformation(R));
 	m.push_back(Gaussian::Covariance(Sigma));
-	m.push_back(Gaussian::Information(Q));
+	//m.push_back(Gaussian::Information(Q));
 	m.push_back(Diagonal::Sigmas(Vector_(3, sigma, sigma, sigma)));
 	m.push_back(Diagonal::Variances(Vector_(3, var, var, var)));
 	m.push_back(Diagonal::Precisions(Vector_(3, prc, prc, prc)));

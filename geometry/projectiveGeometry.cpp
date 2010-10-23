@@ -77,61 +77,6 @@ namespace gtsam {
 		return data;
 	}
 
-	/* ************************************************************************* */
-	Homography2 estimateHomography2(const list<Correspondence>& correspondences) {
-		// Generate entries of A matrix for linear estimation
-		size_t m = correspondences.size();
-		if (m<4) throw invalid_argument("estimateHomography2: need at least 4 correspondences");
-		Matrix A;
-		BOOST_FOREACH(const Correspondence& p, correspondences) {
-			Matrix Ap = reshape(p.first(a) * (eta(_b, _c, _d) * p.second(b)),3,9);
-			A = stack(2,&A,&Ap);
-		}
-
-		// Call DLT and reshape to Homography
-		int rank; double error; Vector v;
-		boost::tie(rank, error, v) = DLT(A);
-		if (rank < 8) throw invalid_argument("estimateHomography2: not enough data");
-		return reshape2<3, 3> (v);
-	}
-
-	/* ************************************************************************* */
-	FundamentalMatrix estimateFundamentalMatrix(const list<Correspondence>& correspondences) {
-		// Generate entries of A matrix for linear estimation
-		size_t m = correspondences.size();
-		if (m<8) throw invalid_argument("estimateFundamentalMatrix: need at least 8 correspondences");
-		if (m<9) m = 9; // make sure to pad with zeros in minimal case
-		Matrix A = zeros(m,9);
-		size_t i = 0;
-		BOOST_FOREACH(const Correspondence& p, correspondences)
-			Row(A,i++) = toVector(p.first(a) * p.second(b));
-
-		// Call DLT and reshape to Homography
-		int rank; double error; Vector v;
-		boost::tie(rank, error, v) = DLT(A);
-		if (rank < 8) throw invalid_argument("estimateFundamentalMatrix: not enough data");
-		return reshape2<3, 3> (v);
-	}
-
-	/* ************************************************************************* */
-	TrifocalTensor estimateTrifocalTensor(const list<Triplet>& triplets) {
-		// Generate entries of A matrix for linear estimation
-		Matrix A;
-		BOOST_FOREACH(const Triplet& p, triplets) {
-			Tensor3<3,3,3> T3 = p.first(a)* (eta(_d,_b,_e) * p.second(d));
-			Tensor2<3,3> T2 = eta(_f,_c,_g) * p.third(f);
-			// Take outer product of rank 3 and rank 2, then swap indices 3,4 for reshape
-			// We get a rank 5 tensor T5(a,_b,_c,_e,_g), where _e and _g index the rows...
-			Matrix Ap = reshape((T3(a,_b,_e) * T2(_c,_g)).swap34(), 9, 27);
-			A = stack(2,&A,&Ap);
-		}
-
-		// Call DLT and reshape to Homography
-		int rank; double error; Vector v;
-		boost::tie(rank, error, v) = DLT(A);
-		if (rank < 26) throw invalid_argument("estimateTrifocalTensor: not enough data");
-		return reshape3<3,3,3>(v);
-	}
 
 	/* ************************************************************************* */
 
