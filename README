@@ -78,17 +78,14 @@ compiling gtsam:
 
 For Debugging (native Snow Leopard g++ compiler):
 ./configure CXXFLAGS="-fno-inline -g -Wall" \
-    LDFLAGS="-fno-inline -g -Wall" --enable-blas --enable-lapack \
-    --with-toolbox=$HOME/toolbox/
+    LDFLAGS="-fno-inline -g -Wall" --with-toolbox=$HOME/toolbox/
 
 For Debugging (Linux or MacPorts g++ compilers):
 ./configure CXXFLAGS="-fno-inline -g -Wall -D_GLIBCXX_DEBUG" \
-    LDFLAGS="-fno-inline -g -Wall" --enable-blas --enable-lapack \
-    --with-toolbox=$HOME/toolbox/
+    LDFLAGS="-fno-inline -g -Wall" --with-toolbox=$HOME/toolbox/
 
 For Performance:
-./configure CXXFLAGS="-DNDEBUG -O3" LDFLAGS="-O3" --enable-blas \
-    --enable-lapack --with-toolbox=$HOME/toolbox/
+./configure CXXFLAGS="-DNDEBUG -O3" LDFLAGS="-O3" --with-toolbox=$HOME/toolbox/
 
 After that (this would be for an in-source build, see next for out-of-source):
 $ make
