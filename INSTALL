@@ -7,21 +7,49 @@ Copyright (C) 1994, 1995, 1996, 1999, 2000, 2001, 2002, 2004, 2005,
 This file is free documentation; the Free Software Foundation gives
 unlimited permission to copy, distribute and modify it.
 
-Third-Party Library Installation
+Important Notes Specific to GTSAM
 ==================
 
-GTSAM uses CCOLAMD to get a good elimination ordering for the linear solving.
-CCOLAMD can be downloaded from Tim Davis's website:
-http://www.cise.ufl.edu/research/sparse/ccolamd/
-The package should be installed to the default C++ search path. To link properly
-with the installed library, pass the following argument to ./configure (described
-in the next section):
---with-ccolamd-lib=YOURPATH_TO_LIBCCOLAMD
+1)
+GTSAM uses CCOLAMD to find good variable elimination orders.  You can download
+it from Tim Davis's website:  http://www.cise.ufl.edu/research/sparse/ccolamd/
+Then, pass the following arguments (paths are just examples) to ./configure:
+--with-ccolamd-inc=/usr/local/include
+--with-ccolamd-lib=/usr/local/lib
 
-For interneal usage of people **at Georgia Tech**, check out the "CCOLAMD" project
-from the SVN server, and run "make install". The library will be installed
-in $HOME/lib/ and $HOME/include/CCOLAMD by default. No additional configure argument
-is needed for configure in this case.
+2)
+GTSAM makes extensive use of debug assertions, even for checking input of
+the functions you will call.  These assertions are disabled when NDEBUG is
+defined.  Thus, we strongly recommend compiling GTSAM and your own code without
+this symbol during debugging.
+
+After debugging, GTSAM will run much faster when compiled with NDEBUG defined,
+so that debug checks are disabled.
+
+Another useful debugging symbol is _GLIBCXX_DEBUG, which enables debug checks
+and safe containers in the standard C++ library.  We suggest testing your code
+with this symbol defined, as it will make problems much easier to find.
+NOTE:  The native Snow Leopard g++ compiler/library contains a bug that makes
+it impossible to use this symbol.  The MacPorts g++ compilers work fine with it
+though.
+
+3)
+Putting the above together, here are some sample ./configure commands for
+compiling gtsam:
+
+For Debugging (native Snow Leopard g++ compiler):
+./configure CXXFLAGS="-fno-inline -g -Wall" \
+    LDFLAGS="-fno-inline -g -Wall" --enable-blas --enable-lapack \
+    --with-toolbox=$HOME/toolbox/
+
+For Debugging (Linux or MacPorts g++ compilers):
+./configure CXXFLAGS="-fno-inline -g -Wall -D_GLIBCXX_DEBUG" \
+    LDFLAGS="-fno-inline -g -Wall" --enable-blas --enable-lapack \
+    --with-toolbox=$HOME/toolbox/
+
+For Performance:
+../configure CXXFLAGS="-DNDEBUG -O3" LDFLAGS="-O3" --enable-blas \
+    --enable-lapack --with-toolbox=$HOME/toolbox/
 
 
 Basic Installation
