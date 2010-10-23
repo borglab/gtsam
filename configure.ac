@@ -2,8 +2,8 @@
 # Process this file with autoconf to produce a configure script.
 
 AC_PREREQ(2.59)
-AC_INIT(gtsam, 0.0.0, dellaert@cc.gatech.edu)
-AM_INIT_AUTOMAKE(gtsam, 0.0.0)
+AC_INIT(gtsam, 0.9.0, dellaert@cc.gatech.edu)
+AM_INIT_AUTOMAKE(gtsam, 0.9.0)
 AC_OUTPUT(Makefile CppUnitLite/Makefile base/Makefile inference/Makefile linear/Makefile geometry/Makefile nonlinear/Makefile slam/Makefile tests/Makefile wrap/Makefile examples/Makefile examples/vSLAMexample/Makefile)
 AC_CONFIG_MACRO_DIR([m4])
 AC_CONFIG_HEADER([config.h])
