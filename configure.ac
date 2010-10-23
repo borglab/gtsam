@@ -54,7 +54,7 @@ AC_ARG_ENABLE([blas],
        yes) blas=true ;;
        no)  blas=false ;;
        *) AC_MSG_ERROR([bad value ${enableval} for --enable-blas]) ;;
-     esac],[blas=false])
+     esac],[blas=true])
 ak
 AM_CONDITIONAL([USE_BLAS], test x$blas = xtrue)
 AM_CONDITIONAL([USE_BLAS_MACOS], [test x$blas = xtrue && test x$ISMAC = xtrue])
@@ -67,7 +67,7 @@ AC_ARG_ENABLE([lapack],
        yes) lapack=true ;;
        no)  lapack=false ;;
        *) AC_MSG_ERROR([bad value ${enableval} for --enable-lapack]) ;;
-     esac],[lapack=false])
+     esac],[lapack=true])
 
 AM_CONDITIONAL([USE_LAPACK], test x$lapack = xtrue)
 AM_CONDITIONAL([USE_LAPACK_MACOS], [test x$lapack = xtrue && test x$ISMAC = xtrue])
