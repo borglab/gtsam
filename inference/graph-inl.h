@@ -20,6 +20,7 @@
 #include <stdexcept>
 #include <boost/foreach.hpp>
 #include <boost/graph/breadth_first_search.hpp>
+#include <boost/graph/prim_minimum_spanning_tree.hpp>
 
 #include <gtsam/inference/graph.h>
 
