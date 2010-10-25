@@ -16,10 +16,9 @@
 
 #include <boost/shared_ptr.hpp>
 
-#include <gtsam/inference/graph-inl.h>
-#include <gtsam/inference/FactorGraph-inl.h>
-#include <gtsam/nonlinear/NonlinearOptimization-inl.h>
 #include <gtsam/slam/pose2SLAM.h>
+#include <gtsam/nonlinear/NonlinearOptimization-inl.h>
+
 
 using namespace std;
 using namespace gtsam;
@@ -28,8 +27,6 @@ using namespace pose2SLAM;
 Graph graph;
 Values initial;
 Values result;
-
-
 
 /* ************************************************************************* */
 int main(void) {

@@ -15,11 +15,9 @@
 
 #include <boost/shared_ptr.hpp>
 
-#include <gtsam/inference/graph-inl.h>
-#include <gtsam/inference/FactorGraph-inl.h>
+#include <gtsam/slam/pose2SLAM.h>
 #include <gtsam/linear/SubgraphSolver-inl.h>
 #include <gtsam/nonlinear/NonlinearOptimizer-inl.h>
-#include <gtsam/slam/pose2SLAM.h>
 
 using namespace std;
 using namespace gtsam;
@@ -31,9 +29,7 @@ typedef boost::shared_ptr<Values> sharedValue ;
 
 
 typedef SubgraphSolver<Graph, GaussianFactorGraph, Values> Solver;
-
 typedef boost::shared_ptr<Solver> sharedSolver ;
-
 typedef NonlinearOptimizer<Graph, Values, GaussianFactorGraph, Solver> SPCGOptimizer;
 
 sharedGraph graph;
