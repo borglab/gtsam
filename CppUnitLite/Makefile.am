@@ -10,3 +10,4 @@ headers += $(sources:.cpp=.h)
 CppUnitLitedir = $(pkgincludedir)/CppUnitLite
 noinst_LIBRARIES = libCppUnitLite.a
 libCppUnitLite_a_SOURCES = $(sources)
+noinst_HEADERS = $(headers)

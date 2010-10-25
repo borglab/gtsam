@@ -14,5 +14,4 @@ AUTOMAKE_OPTIONS = foreign nostdinc
 SUBDIRS = CppUnitLite gtsam tests examples
 
 # Add these files to make sure they're in the distribution
-EXTRA_DIST = autogen.sh configure.ac THANKS 
-
+EXTRA_DIST = autogen.sh configure.ac COPYING INSTALL LGPL LICENSE README THANKS USAGE
