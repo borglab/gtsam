@@ -20,6 +20,7 @@
 
 #include <gtsam/base/Matrix.h>
 #include <gtsam/linear/VectorValues.h>
+#include <gtsam/linear/IterativeSolver.h>
 
 namespace gtsam {
 
@@ -87,46 +88,35 @@ namespace gtsam {
 	/**
 	 * Method of steepest gradients, System version
 	 */
-	Vector steepestDescent(const System& Ab, const Vector& x, bool verbose =
-			false, double epsilon = 1e-3, double epsilon_abs = 1e-5, size_t maxIterations = 0);
+	Vector steepestDescent(const System& Ab, const Vector& x,const IterativeSolver::sharedParameters parameters);
 
 	/**
 	 * Method of conjugate gradients (CG), System version
 	 */
-	Vector conjugateGradientDescent(const System& Ab, const Vector& x,
-			bool verbose = false, double epsilon = 1e-3, double epsilon_abs = 1e-5,
-			size_t maxIterations = 0);
+	Vector conjugateGradientDescent(const System& Ab, const Vector& x, const IterativeSolver::sharedParameters parameters);
 
 	/** convenience calls using matrices, will create System class internally: */
 
 	/**
 	 * Method of steepest gradients, Matrix version
 	 */
-	Vector steepestDescent(const Matrix& A, const Vector& b, const Vector& x,
-			bool verbose = false, double epsilon = 1e-3, double epsilon_abs = 1e-5,
-			size_t maxIterations = 0);
+	Vector steepestDescent(const Matrix& A, const Vector& b, const Vector& x,const IterativeSolver::sharedParameters parameters);
 
 	/**
 	 * Method of conjugate gradients (CG), Matrix version
 	 */
-	Vector conjugateGradientDescent(const Matrix& A, const Vector& b,
-			const Vector& x, bool verbose = false, double epsilon = 1e-3,
-			double epsilon_abs = 1e-5, size_t maxIterations = 0);
+	Vector conjugateGradientDescent(const Matrix& A, const Vector& b, const Vector& x,const IterativeSolver::sharedParameters parameters);
 
 	class GaussianFactorGraph;
 
 	/**
 	 * Method of steepest gradients, Gaussian Factor Graph version
 	 * */
-	VectorValues steepestDescent(const GaussianFactorGraph& fg,
-			const VectorValues& x, bool verbose = false, double epsilon = 1e-3,
-			double epsilon_abs = 1e-5, size_t maxIterations = 0);
+	VectorValues steepestDescent(const GaussianFactorGraph& fg, const VectorValues& x, const IterativeSolver::sharedParameters parameters);
 
 	/**
 	 * Method of conjugate gradients (CG), Gaussian Factor Graph version
 	 * */
-	VectorValues conjugateGradientDescent(const GaussianFactorGraph& fg,
-			const VectorValues& x, bool verbose = false, double epsilon = 1e-3,
-			double epsilon_abs = 1e-5, size_t maxIterations = 0);
+	VectorValues conjugateGradientDescent(const GaussianFactorGraph& fg, const VectorValues& x, const IterativeSolver::sharedParameters parameters);
 
 } // namespace gtsam

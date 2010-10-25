@@ -18,6 +18,8 @@
 
 #pragma once
 
+#include <gtsam/linear/IterativeOptimizationParameters.h>
+#include <gtsam/linear/IterativeSolver.h>
 #include <gtsam/linear/GaussianFactorGraph.h>
 #include <gtsam/linear/iterative.h>
 
@@ -30,21 +32,21 @@ namespace gtsam {
 	template<class S, class V, class E>
 	struct CGState {
 
-		bool steepest, verbose;
-		double gamma, threshold;
-		size_t k, maxIterations, reset;
+		typedef IterativeSolver::Parameters Parameters;
+		typedef IterativeSolver::sharedParameters sharedParameters;
+
+		const sharedParameters parameters_;
+
+		int k;
+		bool steepest;
 		V g, d;
+		double gamma, threshold;
 		E Ad;
 
 		/* ************************************************************************* */
 		// Constructor
-		CGState(const S& Ab, const V& x, bool verb, double epsilon,
-				double epsilon_abs, size_t maxIt, bool steep) {
-			k = 0;
-			verbose = verb;
-			steepest = steep;
-			maxIterations = (maxIt > 0) ? maxIt : dim(x) * (steepest ? 10 : 1);
-			reset = (size_t) (sqrt(dim(x)) + 0.5); // when to reset
+		CGState(const S& Ab, const V& x, const sharedParameters parameters, bool steep):
+		parameters_(parameters),k(0),steepest(steep) {
 
 			// Start with g0 = A'*(A*x0-b), d0 = - g0
 			// i.e., first step is in direction of negative gradient
@@ -53,10 +55,10 @@ namespace gtsam {
 
 			// init gamma and calculate threshold
 			gamma = dot(g,g) ;
-			threshold = ::max(epsilon_abs, epsilon * epsilon * gamma);
+			threshold = ::max(parameters->epsilon_abs(), parameters->epsilon() * parameters->epsilon() * gamma);
 
 			// Allocate and calculate A*d for first iteration
-			if (gamma > epsilon) Ad = Ab * d;
+			if (gamma > parameters->epsilon_abs()) Ad = Ab * d;
 		}
 
 		/* ************************************************************************* */
@@ -82,34 +84,32 @@ namespace gtsam {
 		/* ************************************************************************* */
 		// take a step, return true if converged
 		bool step(const S& Ab, V& x) {
-			k += 1; // increase iteration number
+			if ((++k) >= parameters_->maxIterations()) return true;
 
+			//---------------------------------->
 			double alpha = takeOptimalStep(x);
 
-			if (k >= maxIterations) return true; //---------------------------------->
-
 			// update gradient (or re-calculate at reset time)
-			if (k % reset == 0)
-				g = Ab.gradient(x);
-			else
-				// axpy(alpha, Ab ^ Ad, g);  // g += alpha*(Ab^Ad)
-				Ab.transposeMultiplyAdd(alpha, Ad, g);
+			if (k % parameters_->reset() == 0) g = Ab.gradient(x);
+			// axpy(alpha, Ab ^ Ad, g);  // g += alpha*(Ab^Ad)
+			else Ab.transposeMultiplyAdd(alpha, Ad, g);
 
 			// check for convergence
 			double new_gamma = dot(g, g);
-			if (verbose) cout << "iteration " << k << ": alpha = " << alpha
-					<< ", dotg = " << new_gamma << endl;
-			if (new_gamma < threshold) return true; //---------------------------------->
+			if (parameters_->verbosity())
+				cout << "iteration " << k << ": alpha = " << alpha
+				     << ", dotg = " << new_gamma << endl;
+			if (new_gamma < threshold) return true;
 
 			// calculate new search direction
-			if (steepest)
-				d = g;
+			if (steepest) d = g;
 			else {
 				double beta = new_gamma / gamma;
 				// d = g + d*beta;
 				scal(beta, d);
 				axpy(1.0, g, d);
 			}
+
 			gamma = new_gamma;
 
 			// In-place recalculation Ad <- A*d to avoid re-allocating Ad
@@ -123,23 +123,25 @@ namespace gtsam {
 	// conjugate gradient method.
 	// S: linear system, V: step vector, E: errors
 	template<class S, class V, class E>
-	V conjugateGradients(const S& Ab, V x, bool verbose, double epsilon,
-			double epsilon_abs, size_t maxIterations, bool steepest = false) {
+	V conjugateGradients(
+			const S& Ab, V x,
+			const IterativeSolver::sharedParameters parameters,
+			bool steepest = false) {
 
-		CGState<S, V, E> state(Ab, x, verbose, epsilon, epsilon_abs, maxIterations,steepest);
-		if (verbose) cout << "CG: epsilon = " << epsilon << ", maxIterations = "
-				<< state.maxIterations << ", ||g0||^2 = " << state.gamma
-				<< ", threshold = " << state.threshold << endl;
+		CGState<S, V, E> state(Ab, x, parameters, steepest);
+		if (parameters->verbosity())
+			cout << "CG: epsilon = " << parameters->epsilon()
+				 << ", maxIterations = " << parameters->maxIterations()
+				 << ", ||g0||^2 = " << state.gamma
+				 << ", threshold = " << state.threshold << endl;
 
-		if (state.gamma < state.threshold) {
-			if (verbose) cout << "||g0||^2 < threshold, exiting immediately !" << endl;
+		if ( state.gamma < state.threshold ) {
+			if (parameters->verbosity()) cout << "||g0||^2 < threshold, exiting immediately !" << endl;
 			return x;
 		}
 
 		// loop maxIterations times
-		while (!state.step(Ab, x))
-			;
-
+		while (!state.step(Ab, x)) {}
 		return x;
 	}
 

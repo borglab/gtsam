@@ -16,7 +16,10 @@
  * @author  Christian Potthast
  */
 
+#include <vector>
+
 #include <boost/foreach.hpp>
+#include <boost/make_shared.hpp>
 #include <boost/tuple/tuple.hpp>
 #include <boost/numeric/ublas/lu.hpp>
 #include <boost/numeric/ublas/io.hpp>
@@ -165,12 +168,12 @@ GaussianFactorGraph GaussianFactorGraph::add_priors(double sigma, const vector<s
 
 bool GaussianFactorGraph::split(const std::map<Index, Index> &M, GaussianFactorGraph &Ab1, GaussianFactorGraph &Ab2) const {
 
-	typedef sharedFactor F ;
+	//typedef sharedFactor F ;
 
 	Ab1 = GaussianFactorGraph();
 	Ab2 = GaussianFactorGraph();
 
-	BOOST_FOREACH(const F& factor, *this) {
+	BOOST_FOREACH(const sharedFactor& factor, factors_) {
 
 		if (factor->keys().size() > 2)
 			throw(invalid_argument("split: only support factors with at most two keys"));
@@ -190,6 +193,19 @@ bool GaussianFactorGraph::split(const std::map<Index, Index> &M, GaussianFactorG
 	}
 
 	return true ;
+}
+
+boost::shared_ptr<VectorValues> GaussianFactorGraph::allocateVectorVavlues() const {
+	std::vector<size_t> dimensions(size()) ;
+	BOOST_FOREACH( const sharedFactor& factor, factors_) {
+		Index i = 0 ;
+		BOOST_FOREACH( const Index& idx, factor->keys_) {
+			dimensions[idx] = factor->Ab_(i).size2() ;
+			i++;
+		}
+	}
+
+	return boost::make_shared<VectorValues>(dimensions) ;
 }
 
 

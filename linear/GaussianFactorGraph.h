@@ -158,6 +158,7 @@ namespace gtsam {
 	 * M keeps the vertex indices of edges of A1. The others belong to A2.
 	 */
 	bool split(const std::map<Index, Index> &M, GaussianFactorGraph &A1, GaussianFactorGraph &A2) const ;
+	boost::shared_ptr<VectorValues> allocateVectorVavlues() const ;
 
   };
 
