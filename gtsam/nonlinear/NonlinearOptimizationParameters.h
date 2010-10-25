@@ -47,7 +47,7 @@ namespace gtsam {
 		typedef boost::shared_ptr<NonlinearOptimizationParameters> sharedThis ;
 
 
-		NonlinearOptimizationParameters(): absDecrease_(1), relDecrease_(1e-3), sumError_(0.0),
+		NonlinearOptimizationParameters(): absDecrease_(1e-6), relDecrease_(1e-6), sumError_(0.0),
 		maxIterations_(100), lambda_(1e-5), lambdaFactor_(10.0), verbosity_(ERROR), lambdaMode_(BOUNDED){}
 
 		NonlinearOptimizationParameters(double absDecrease, double relDecrease, double sumError,

@@ -310,7 +310,7 @@ namespace gtsam {
 
 		static shared_values optimizeLM(shared_graph graph,
 										shared_values values,
-										Parameters::verbosityLevel verbosity = Parameters::SILENT)
+										Parameters::verbosityLevel verbosity)
 		{
 			Parameters def ;
 			shared_parameters parameters = def.newVerbosity_(verbosity);
@@ -322,7 +322,7 @@ namespace gtsam {
 
 		static shared_values optimizeLM(const G& graph,
 										const T& values,
-										const Parameters parameters) {
+										const Parameters parameters = Parameters()) {
 			return optimizeLM(boost::make_shared<const G>(graph),
 							  boost::make_shared<const T>(values),
 							  boost::make_shared<Parameters>(parameters));
@@ -330,7 +330,7 @@ namespace gtsam {
 
 		static shared_values optimizeLM(const G& graph,
 										const T& values,
-										Parameters::verbosityLevel verbosity = Parameters::SILENT) {
+										Parameters::verbosityLevel verbosity) {
 			return optimizeLM(boost::make_shared<const G>(graph),
 							  boost::make_shared<const T>(values),
 							  verbosity);
@@ -347,7 +347,7 @@ namespace gtsam {
 		// suggested interface
 		static shared_values optimizeGN(shared_graph graph,
 										shared_values values,
-										shared_parameters parameters) {
+										shared_parameters parameters = boost::make_shared<Parameters>()) {
 
 			Ordering::shared_ptr ordering = graph->orderingCOLAMD(*values);
 			// initial optimization state is the same in both cases tested
@@ -361,7 +361,7 @@ namespace gtsam {
 		// backward compatible
 		static shared_values optimizeGN(shared_graph graph,
 										shared_values values,
-										Parameters::verbosityLevel verbosity = Parameters::SILENT) {
+										Parameters::verbosityLevel verbosity) {
 			Parameters def ;
 			shared_parameters parameters = def.newVerbosity_(verbosity);
 			return optimizeGN(graph, values, parameters);
@@ -379,7 +379,7 @@ namespace gtsam {
 		}
 
 		// backward compatible
-		static shared_values optimizeGN(const G& graph, const T& values, Parameters::verbosityLevel verbosity = Parameters::SILENT) {
+		static shared_values optimizeGN(const G& graph, const T& values, Parameters::verbosityLevel verbosity) {
 			return optimizeGN(boost::make_shared<const G>(graph),
 							  boost::make_shared<const T>(values),
 							  verbosity);
