@@ -44,7 +44,7 @@ typename BayesNet<typename FACTOR::Conditional>::shared_ptr GenericSequentialSol
 
 /* ************************************************************************* */
 template<class FACTOR>
-typename FactorGraph<FACTOR>::shared_ptr GenericSequentialSolver<FACTOR>::joint(const std::vector<Index>& js) const {
+typename FactorGraph<FACTOR>::shared_ptr GenericSequentialSolver<FACTOR>::jointFactorGraph(const std::vector<Index>& js) const {
 
   // Compute a COLAMD permutation with the marginal variable constrained to the end.
   Permutation::shared_ptr permutation(Inference::PermutationCOLAMD(structure_, js));
@@ -84,12 +84,12 @@ typename FactorGraph<FACTOR>::shared_ptr GenericSequentialSolver<FACTOR>::joint(
 
 /* ************************************************************************* */
 template<class FACTOR>
-typename FACTOR::shared_ptr GenericSequentialSolver<FACTOR>::marginal(Index j) const {
+typename FACTOR::shared_ptr GenericSequentialSolver<FACTOR>::marginalFactor(Index j) const {
   // Create a container for the one variable index
   vector<Index> js(1); js[0] = j;
 
   // Call joint and return the only factor in the factor graph it returns
-  return (*this->joint(js))[0];
+  return (*this->jointFactorGraph(js))[0];
 }
 
 }

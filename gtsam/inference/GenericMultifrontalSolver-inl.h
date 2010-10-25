@@ -47,7 +47,7 @@ GenericMultifrontalSolver<FACTOR, JUNCTIONTREE>::eliminate() const {
 /* ************************************************************************* */
 template<class FACTOR, class JUNCTIONTREE>
 typename FactorGraph<FACTOR>::shared_ptr
-GenericMultifrontalSolver<FACTOR, JUNCTIONTREE>::joint(const std::vector<Index>& js) const {
+GenericMultifrontalSolver<FACTOR, JUNCTIONTREE>::jointFactorGraph(const std::vector<Index>& js) const {
 
   // We currently have code written only for computing the
 
@@ -63,7 +63,7 @@ GenericMultifrontalSolver<FACTOR, JUNCTIONTREE>::joint(const std::vector<Index>&
 
 /* ************************************************************************* */
 template<class FACTOR, class JUNCTIONTREE>
-typename FACTOR::shared_ptr GenericMultifrontalSolver<FACTOR, JUNCTIONTREE>::marginal(Index j) const {
+typename FACTOR::shared_ptr GenericMultifrontalSolver<FACTOR, JUNCTIONTREE>::marginalFactor(Index j) const {
   return eliminate()->marginal(j);
 }
 

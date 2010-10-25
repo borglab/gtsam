@@ -87,12 +87,19 @@ public:
   VectorValues::shared_ptr optimize() const;
 
   /**
+   * Compute the marginal joint over a set of variables, by integrating out
+   * all of the other variables.  This function returns the result as a factor
+   * graph.
+   */
+  GaussianFactorGraph::shared_ptr jointFactorGraph(const std::vector<Index>& js) const;
+
+  /**
    * Compute the marginal Gaussian density over a variable, by integrating out
    * all of the other variables.  This function returns the result as an upper-
    * triangular R factor and right-hand-side, i.e. a GaussianConditional with
    * R*x = d.  To get a mean and covariance matrix, use marginalStandard(...)
    */
-  GaussianFactor::shared_ptr marginal(Index j) const;
+  GaussianFactor::shared_ptr marginalFactor(Index j) const;
 
   /**
    * Compute the marginal Gaussian density over a variable, by integrating out
@@ -101,7 +108,7 @@ public:
    * returns a GaussianConditional, this function back-substitutes the R factor
    * to obtain the mean, then computes \Sigma = (R^T * R)^-1.
    */
-   std::pair<Vector, Matrix> marginalStandard(Index j) const;
+   std::pair<Vector, Matrix> marginalCovariance(Index j) const;
 
 };
 

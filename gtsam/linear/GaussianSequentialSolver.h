@@ -99,7 +99,7 @@ public:
    * triangular R factor and right-hand-side, i.e. a GaussianConditional with
    * R*x = d.  To get a mean and covariance matrix, use marginalStandard(...)
    */
-  GaussianFactor::shared_ptr marginal(Index j) const;
+  GaussianFactor::shared_ptr marginalFactor(Index j) const;
 
   /**
    * Compute the marginal Gaussian density over a variable, by integrating out
@@ -108,7 +108,7 @@ public:
    * returns a GaussianConditional, this function back-substitutes the R factor
    * to obtain the mean, then computes \Sigma = (R^T * R)^-1.
    */
-  std::pair<Vector, Matrix> marginalStandard(Index j) const;
+  std::pair<Vector, Matrix> marginalCovariance(Index j) const;
 
   /**
    * Compute the marginal joint over a set of variables, by integrating out
@@ -116,18 +116,8 @@ public:
    * triangular R factor and right-hand-side, i.e. a GaussianBayesNet with
    * R*x = d.  To get a mean and covariance matrix, use jointStandard(...)
    */
-  GaussianFactorGraph::shared_ptr joint(const std::vector<Index>& js) const;
+  GaussianFactorGraph::shared_ptr jointFactorGraph(const std::vector<Index>& js) const;
 
-  /**
-   * Compute the marginal joint over a set of variables, by integrating out
-   * all of the other variables.  This function returns the result as a mean
-   * vector and covariance matrix.  The variables will be ordered in the
-   * return values as they are ordered in the 'js' argument, not as they are
-   * ordered in the original factor graph.  Compared to jointCanonical, which
-   * returns a GaussianBayesNet, this function back-substitutes the BayesNet to
-   * obtain the mean, then computes \Sigma = (R^T * R)^-1.
-   */
-//  std::pair<Vector, Matrix> jointStandard(const std::vector<Index>& js) const;
 };
 
 }

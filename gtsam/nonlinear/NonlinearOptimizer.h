@@ -209,8 +209,8 @@ namespace gtsam {
 		/**
 		 * Return mean and covariance on a single variable
 		 */
-		Matrix marginalStandard(Symbol j) const {
-			return solver_->marginalStandard((*ordering_)[j]).second;
+		Matrix marginalCovariance(Symbol j) const {
+			return solver_->marginalCovariance((*ordering_)[j]).second;
 		}
 
 		/**

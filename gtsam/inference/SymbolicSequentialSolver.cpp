@@ -24,18 +24,4 @@ namespace gtsam {
 // An explicit instantiation to be compiled into the library
 template class GenericSequentialSolver<IndexFactor>;
 
-///* ************************************************************************* */
-//SymbolicSequentialSolver::SymbolicSequentialSolver(const FactorGraph<IndexFactor>& factorGraph) :
-//    Base(factorGraph) {}
-//
-///* ************************************************************************* */
-//BayesNet<IndexConditional>::shared_ptr SymbolicSequentialSolver::eliminate() const {
-//  return Base::eliminate();
-//}
-//
-///* ************************************************************************* */
-//SymbolicFactorGraph::shared_ptr SymbolicSequentialSolver::joint(const std::vector<Index>& js) const {
-//  return Base::joint(js);
-//}
-
 }

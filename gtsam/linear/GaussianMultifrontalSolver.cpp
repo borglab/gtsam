@@ -55,13 +55,18 @@ VectorValues::shared_ptr GaussianMultifrontalSolver::optimize() const {
 }
 
 /* ************************************************************************* */
-GaussianFactor::shared_ptr GaussianMultifrontalSolver::marginal(Index j) const {
-  return Base::marginal(j);
+GaussianFactorGraph::shared_ptr GaussianMultifrontalSolver::jointFactorGraph(const std::vector<Index>& js) const {
+  return GaussianFactorGraph::shared_ptr(new GaussianFactorGraph(*Base::jointFactorGraph(js)));
 }
 
 /* ************************************************************************* */
-std::pair<Vector, Matrix> GaussianMultifrontalSolver::marginalStandard(Index j) const {
-  GaussianConditional::shared_ptr conditional = Base::marginal(j)->eliminateFirst();
+GaussianFactor::shared_ptr GaussianMultifrontalSolver::marginalFactor(Index j) const {
+  return Base::marginalFactor(j);
+}
+
+/* ************************************************************************* */
+std::pair<Vector, Matrix> GaussianMultifrontalSolver::marginalCovariance(Index j) const {
+  GaussianConditional::shared_ptr conditional = Base::marginalFactor(j)->eliminateFirst();
   Matrix R = conditional->get_R();
   return make_pair(conditional->get_d(), inverse(ublas::prod(ublas::trans(R), R)));
 }

@@ -364,7 +364,7 @@ namespace gtsam {
 		// Find marginal on the keys we are interested in
 		FactorGraph<typename CONDITIONAL::Factor> p_FSRfg(p_FSR);
 
-		return *GenericSequentialSolver<typename CONDITIONAL::Factor>(p_FSR).joint(keys());
+		return *GenericSequentialSolver<typename CONDITIONAL::Factor>(p_FSR).jointFactorGraph(keys());
 	}
 
 	/* ************************************************************************* */
@@ -392,7 +392,7 @@ namespace gtsam {
 		// Calculate the marginal
 		vector<Index> keys12vector; keys12vector.reserve(keys12.size());
 		keys12vector.insert(keys12vector.begin(), keys12.begin(), keys12.end());
-		return *GenericSequentialSolver<typename CONDITIONAL::Factor>(joint).joint(keys12vector);
+		return *GenericSequentialSolver<typename CONDITIONAL::Factor>(joint).jointFactorGraph(keys12vector);
 	}
 
 	/* ************************************************************************* */
@@ -706,7 +706,7 @@ namespace gtsam {
 		// calculate or retrieve its marginal
 		FactorGraph<typename CONDITIONAL::Factor> cliqueMarginal = clique->marginal(root_);
 
-		return GenericSequentialSolver<typename CONDITIONAL::Factor>(cliqueMarginal).marginal(key);
+		return GenericSequentialSolver<typename CONDITIONAL::Factor>(cliqueMarginal).marginalFactor(key);
 	}
 
 	/* ************************************************************************* */
@@ -736,7 +736,7 @@ namespace gtsam {
 
 		// eliminate remaining factor graph to get requested joint
 		vector<Index> key12(2); key12[0] = key1; key12[1] = key2;
-		return GenericSequentialSolver<typename CONDITIONAL::Factor>(p_C1C2).joint(key12);
+		return GenericSequentialSolver<typename CONDITIONAL::Factor>(p_C1C2).jointFactorGraph(key12);
 	}
 
 	/* ************************************************************************* */

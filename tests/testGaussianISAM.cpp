@@ -352,8 +352,8 @@ TEST(BayesTree, simpleMarginal)
   gfg.add(0, -eye(2), 1, eye(2), ones(2), sharedSigma(2, 1.0));
   gfg.add(1, -eye(2), 2, A12, ones(2), sharedSigma(2, 1.0));
 
-  Matrix expected(GaussianSequentialSolver(gfg).marginalStandard(2).second);
-  Matrix actual(GaussianMultifrontalSolver(gfg).marginalStandard(2).second);
+  Matrix expected(GaussianSequentialSolver(gfg).marginalCovariance(2).second);
+  Matrix actual(GaussianMultifrontalSolver(gfg).marginalCovariance(2).second);
 
   CHECK(assert_equal(expected, actual));
 }

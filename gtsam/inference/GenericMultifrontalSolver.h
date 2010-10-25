@@ -53,13 +53,13 @@ public:
    * all of the other variables.  This function returns the result as a factor
    * graph.
    */
-  typename FactorGraph<FACTOR>::shared_ptr joint(const std::vector<Index>& js) const;
+  typename FactorGraph<FACTOR>::shared_ptr jointFactorGraph(const std::vector<Index>& js) const;
 
   /**
-   * Compute the marginal Gaussian density over a variable, by integrating out
+   * Compute the marginal density over a variable, by integrating out
    * all of the other variables.  This function returns the result as a factor.
    */
-  typename FACTOR::shared_ptr marginal(Index j) const;
+  typename FACTOR::shared_ptr marginalFactor(Index j) const;
 
 };
 
