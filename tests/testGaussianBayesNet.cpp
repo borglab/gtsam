@@ -18,7 +18,7 @@
 // STL/C++
 #include <iostream>
 #include <sstream>
-#include <gtsam/CppUnitLite/TestHarness.h>
+#include <CppUnitLite/TestHarness.h>
 #include <boost/tuple/tuple.hpp>
 #include <boost/foreach.hpp>
 

@@ -33,7 +33,7 @@ noinst_PROGRAMS = timeGaussianFactorGraph timeLinearOnDataset
 #----------------------------------------------------------------------------------------------------
 TESTS = $(check_PROGRAMS)
 AM_LDFLAGS = $(BOOST_LDFLAGS)
-AM_CPPFLAGS = $(BOOST_CPPFLAGS) -I$(CCOLAMDInc) -I$(top_srcdir)/..
+AM_CPPFLAGS = $(BOOST_CPPFLAGS) -I$(CCOLAMDInc) -I$(top_srcdir)
 
 if USE_ACCELERATE_MACOS
 AM_LDFLAGS += -Wl,/System/Library/Frameworks/Accelerate.framework/Accelerate
@@ -44,7 +44,7 @@ if ENABLE_SERIALIZATION
 AM_LDFLAGS += -lboost_serialization
 endif
 
-LDADD = ../libgtsam.la ../CppUnitLite/libCppUnitLite.a  
+LDADD = ../gtsam/libgtsam.la ../CppUnitLite/libCppUnitLite.a  
 AM_DEFAULT_SOURCE_EXT = .cpp
 
 # rule to run an executable

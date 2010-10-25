@@ -20,7 +20,7 @@
 /*STL/C++*/
 #include <iostream>
 
-#include <gtsam/CppUnitLite/TestHarness.h>
+#include <CppUnitLite/TestHarness.h>
 
 // TODO: DANGEROUS, create shared pointers
 #define GTSAM_MAGIC_GAUSSIAN 2

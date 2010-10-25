@@ -23,7 +23,7 @@ vISAMexample_SOURCES = vISAMexample.cpp Feature2D.cpp vSLAMutils.cpp
 #----------------------------------------------------------------------------------------------------
 AM_CPPFLAGS = $(BOOST_CPPFLAGS) -I$(CCOLAMDInc) -I$(top_srcdir)/..
 AM_LDFLAGS = $(BOOST_LDFLAGS)
-LDADD = ../../libgtsam.la
+LDADD = ../../gtsam/libgtsam.la
 AM_DEFAULT_SOURCE_EXT = .cpp
 
 

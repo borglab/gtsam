@@ -15,7 +15,7 @@
  * @author Alex Cunningham
  */
 
-#include <gtsam/CppUnitLite/TestHarness.h>
+#include <CppUnitLite/TestHarness.h>
 #include <stdexcept>
 
 #include <gtsam/base/TestableAssertions.h>

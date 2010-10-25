@@ -4,18 +4,16 @@
 AC_PREREQ(2.59)
 AC_INIT(gtsam, 0.9.0, dellaert@cc.gatech.edu)
 AM_INIT_AUTOMAKE(gtsam, 0.9.0)
-AC_OUTPUT(Makefile CppUnitLite/Makefile base/Makefile inference/Makefile linear/Makefile geometry/Makefile nonlinear/Makefile slam/Makefile tests/Makefile wrap/Makefile examples/Makefile examples/vSLAMexample/Makefile)
 AC_CONFIG_MACRO_DIR([m4])
 AC_CONFIG_HEADER([config.h])
 AC_CONFIG_SRCDIR([CppUnitLite/Test.cpp])
-AC_CONFIG_SRCDIR([base/DSFVector.cpp])
-AC_CONFIG_SRCDIR([geometry/Cal3_S2.cpp])
-AC_CONFIG_SRCDIR([inference/SymbolicFactorGraph.cpp])
-AC_CONFIG_SRCDIR([linear/GaussianFactor.cpp])
-AC_CONFIG_SRCDIR([nonlinear/NonlinearOptimizer.cpp])
-AC_CONFIG_SRCDIR([slam/pose2SLAM.cpp])
+AC_CONFIG_SRCDIR([gtsam/base/DSFVector.cpp])
+AC_CONFIG_SRCDIR([gtsam/geometry/Cal3_S2.cpp])
+AC_CONFIG_SRCDIR([gtsam/inference/SymbolicFactorGraph.cpp])
+AC_CONFIG_SRCDIR([gtsam/linear/GaussianFactor.cpp])
+AC_CONFIG_SRCDIR([gtsam/nonlinear/NonlinearOptimizer.cpp])
+AC_CONFIG_SRCDIR([gtsam/slam/pose2SLAM.cpp])
 AC_CONFIG_SRCDIR([tests/testSQP.cpp])
-AC_CONFIG_SRCDIR([wrap/wrap.cpp])
 AC_CONFIG_SRCDIR([examples/SimpleRotation.cpp])
 
 # Check for OS
@@ -169,4 +167,13 @@ AC_ARG_WITH([ccolamd-lib],
             [CCOLAMDLib=${HOME}/lib])
 AC_SUBST([CCOLAMDLib])
 
+# For now we require blas, atlas, and lapack
+#AM_COND_IF([test x$ISMAC = xtrue],
+#    [LINALG_CPPFLAGS="-I/System/Library/Frameworks/vecLib.framework/Headers ${CCOLAMDInc} -DGT_USE_LAPACK"],
+#    [LINALG_CPPFLAGS="${CCOLAMDInc} -DGT_USE_LAPACK"])
+#AM_COND_IF([test x$ISMAC = xtrue],
+#    [LINALG_LDFLAGS="-Wl,/System/Library/Frameworks/Accelerate.framework/Accelerate ${CCOLAMDLib}"],
+#    [LINALG_LDFLAGS="-lcblas -latlas -llapack ${CCOLAMDLib}"])
+
+AC_CONFIG_FILES([CppUnitLite/Makefile gtsam/base/Makefile gtsam/geometry/Makefile gtsam/inference/Makefile gtsam/linear/Makefile gtsam/nonlinear/Makefile gtsam/slam/Makefile gtsam/Makefile tests/Makefile examples/Makefile Makefile])
 AC_OUTPUT

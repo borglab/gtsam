@@ -14,7 +14,7 @@
  * @author Alex Cunningham
  */
 
-#include <gtsam/CppUnitLite/TestHarness.h>
+#include <CppUnitLite/TestHarness.h>
 
 #include <gtsam/geometry/Pose2.h>
 #include <gtsam/slam/PriorFactor.h>

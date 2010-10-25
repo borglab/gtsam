@@ -18,7 +18,7 @@ noinst_HEADERS = geometry.h utilities.h Argument.h Constructor.h Method.h Class.
 
 noinst_PROGRAMS = wrap
 wrap_SOURCES = ${common} wrap.cpp
-AM_CPPFLAGS = $(BOOST_CPPFLAGS) -I$(top_srcdir)/.. -DTOPSRCDIR="\"$(top_srcdir)\""
+AM_CPPFLAGS = $(BOOST_CPPFLAGS) -I$(top_srcdir) -DTOPSRCDIR="\"$(top_srcdir)\""
 AM_CXXFLAGS = -MMD
 AM_LDFLAGS = $(BOOST_LDFLAGS) -L../CppUnitLite -lCppUnitLite
 

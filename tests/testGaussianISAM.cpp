@@ -19,7 +19,7 @@
 #include <boost/assign/std/list.hpp> // for operator +=
 using namespace boost::assign;
 
-#include <gtsam/CppUnitLite/TestHarness.h>
+#include <CppUnitLite/TestHarness.h>
 
 #define GTSAM_MAGIC_KEY
 

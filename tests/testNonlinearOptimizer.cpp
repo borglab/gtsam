@@ -21,7 +21,7 @@ using namespace std;
 #include <boost/assign/std/list.hpp> // for operator +=
 using namespace boost::assign;
 
-#include <gtsam/CppUnitLite/TestHarness.h>
+#include <CppUnitLite/TestHarness.h>
 
 #include <boost/shared_ptr.hpp>
 using namespace boost;

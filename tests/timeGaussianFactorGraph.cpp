@@ -20,7 +20,7 @@
 #include <time.h>
 #include <boost/foreach.hpp>
 #include <boost/assign/std/list.hpp> // for operator += in Ordering
-#include <gtsam/CppUnitLite/TestHarness.h>
+#include <CppUnitLite/TestHarness.h>
 #include <gtsam/slam/smallExample.h>
 #include <gtsam/linear/GaussianSequentialSolver.h>
 

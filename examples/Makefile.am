@@ -22,9 +22,9 @@ noinst_PROGRAMS += Pose2SLAMwSPCG_advanced  		# Solves a simple Pose2 SLAM examp
 #----------------------------------------------------------------------------------------------------
 # rules to build local programs
 #----------------------------------------------------------------------------------------------------
-AM_CPPFLAGS = $(BOOST_CPPFLAGS) -I$(CCOLAMDInc) -I$(top_srcdir)/..
+AM_CPPFLAGS = $(BOOST_CPPFLAGS) -I$(CCOLAMDInc) -I$(top_srcdir)
 AM_LDFLAGS = $(BOOST_LDFLAGS)
-LDADD = ../libgtsam.la
+LDADD = ../gtsam/libgtsam.la
 AM_DEFAULT_SOURCE_EXT = .cpp
 
 # rule to run an executable

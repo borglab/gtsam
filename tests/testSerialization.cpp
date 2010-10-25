@@ -138,7 +138,7 @@ bool equalsXML(const T& input = T()) {
 
 #include <gtsam/slam/planarSLAM.h>
 
-#include <gtsam/CppUnitLite/TestHarness.h>
+#include <CppUnitLite/TestHarness.h>
 
 using namespace std;
 using namespace gtsam;

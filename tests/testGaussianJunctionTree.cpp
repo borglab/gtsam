@@ -18,7 +18,7 @@
  */
 
 #include <iostream>
-#include <gtsam/CppUnitLite/TestHarness.h>
+#include <CppUnitLite/TestHarness.h>
 #include <gtsam/base/TestableAssertions.h>
 
 #include <boost/assign/list_of.hpp>
