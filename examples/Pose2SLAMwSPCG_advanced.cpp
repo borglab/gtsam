@@ -40,36 +40,11 @@ sharedGraph graph;
 sharedValue initial;
 Values result;
 
-void generateData() ;
-
 /* ************************************************************************* */
 int main(void) {
 
+	/* generate synthetic data */
 	const SharedGaussian sigma(noiseModel::Unit::Create(0.1));
-	generateData() ;
-
-	graph->print("full graph") ;
-	initial->print("initial estimate") ;
-
-	sharedSolver solver(new Solver(*graph, *initial)) ;
-	SPCGOptimizer optimizer(graph, initial, solver->ordering(), solver) ;
-
-	cout << "before optimization, sum of error is " << optimizer.error() << endl;
-	NonlinearOptimizationParameters parameter;
-	SPCGOptimizer optimizer2 = optimizer.levenbergMarquardt(parameter);
-	cout << "after optimization, sum of error is " << optimizer2.error() << endl;
-
-	result = *optimizer2.values() ;
-	result.print("final result") ;
-
-	return 0 ;
-}
-
-void generateData() {
-
-	// noise model
-	const SharedGaussian sigma(noiseModel::Unit::Create(0.1));
-
 	Key x1(1), x2(2), x3(3), x4(4), x5(5), x6(6), x7(7), x8(8), x9(9);
 
 	graph = boost::make_shared<Graph>() ;
@@ -102,4 +77,23 @@ void generateData() {
 	initial->insert(x7, Pose2(4.0, 0.1, 0.03 ));
 	initial->insert(x8, Pose2(3.9, 2.1, 0.01));
 	initial->insert(x9, Pose2(4.1, 3.9,-0.01));
+	/* done with generating data */
+
+
+	graph->print("full graph") ;
+	initial->print("initial estimate") ;
+
+	sharedSolver solver(new Solver(*graph, *initial)) ;
+	SPCGOptimizer optimizer(graph, initial, solver->ordering(), solver) ;
+
+	cout << "before optimization, sum of error is " << optimizer.error() << endl;
+	NonlinearOptimizationParameters parameter;
+	SPCGOptimizer optimizer2 = optimizer.levenbergMarquardt(parameter);
+	cout << "after optimization, sum of error is " << optimizer2.error() << endl;
+
+	result = *optimizer2.values() ;
+	result.print("final result") ;
+
+	return 0 ;
 }
+

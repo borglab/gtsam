@@ -29,24 +29,13 @@ Graph graph;
 Values initial;
 Values result;
 
-void generateData() ;
+
 
 /* ************************************************************************* */
 int main(void) {
 
-	generateData() ;
-	graph.print("full graph") ;
-	initial.print("initial estimate");
-	result = optimizeSPCG(graph, initial);
-	result.print("final result") ;
-	return 0 ;
-}
-
-void generateData() {
-
-	// noise model
+	/* generate synthetic data */
 	const SharedGaussian sigma(noiseModel::Unit::Create(0.1));
-
 	Key x1(1), x2(2), x3(3), x4(4), x5(5), x6(6), x7(7), x8(8), x9(9);
 
 	// create a 3 by 3 grid
@@ -76,4 +65,13 @@ void generateData() {
 	initial.insert(x7, Pose2(4.0, 0.1, 0.03 ));
 	initial.insert(x8, Pose2(3.9, 2.1, 0.01));
 	initial.insert(x9, Pose2(4.1, 3.9,-0.01));
+	/* done */
+
+
+	graph.print("full graph") ;
+	initial.print("initial estimate");
+	result = optimizeSPCG(graph, initial);
+	result.print("final result") ;
+	return 0 ;
 }
+
