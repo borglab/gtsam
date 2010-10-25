@@ -73,6 +73,7 @@ namespace gtsam {
 		typedef boost::shared_ptr<const Ordering> shared_ordering;
 		typedef boost::shared_ptr<const GS> shared_solver;
 		typedef NonlinearOptimizationParameters Parameters;
+		typedef boost::shared_ptr<const Parameters> shared_parameters ;
 
 	private:
 
@@ -94,76 +95,116 @@ namespace gtsam {
 		// the linear system solver
 		const shared_solver solver_;
 
-		// keep current lambda for use within LM only
-		// TODO: red flag, should we have an LM class ?
-		const double lambda_;
+		const shared_parameters parameters_;
+
+//		// keep current lambda for use within LM only
+//		// TODO: red flag, should we have an LM class ?
+//		const double lambda_;
 
 		// The dimensions of each linearized variable
 		const shared_dimensions dimensions_;
 
 		// Recursively try to do tempered Gauss-Newton steps until we succeed
-		NonlinearOptimizer try_lambda(const L& linear,
-				Parameters::verbosityLevel verbosity, double factor, Parameters::LambdaMode lambdaMode) const;
+//		NonlinearOptimizer try_lambda(const L& linear,
+//				Parameters::verbosityLevel verbosity, double factor, Parameters::LambdaMode lambdaMode) const;
+		NonlinearOptimizer try_lambda(const L& linear) const;
 
     /**
      * Constructor that does not do any computation
      */
-    NonlinearOptimizer(shared_graph graph, shared_values values, const double error, shared_ordering ordering,
-        shared_solver solver, const double lambda, shared_dimensions dimensions): graph_(graph), values_(values),
-        error_(error), ordering_(ordering), solver_(solver), lambda_(lambda), dimensions_(dimensions) {}
+//    NonlinearOptimizer(shared_graph graph, shared_values values, const double error, shared_ordering ordering,
+//        shared_solver solver, const double lambda, shared_dimensions dimensions): graph_(graph), values_(values),
+//        error_(error), ordering_(ordering), solver_(solver), lambda_(lambda), dimensions_(dimensions) {}
+
+	NonlinearOptimizer(shared_graph graph, shared_values values, const double error, shared_ordering ordering,
+		shared_solver solver, shared_parameters parameters, shared_dimensions dimensions): graph_(graph), values_(values),
+		error_(error), ordering_(ordering), solver_(solver), parameters_(parameters), dimensions_(dimensions) {}
+
+    /** Create a new NonlinearOptimizer with a different lambda */
+//    This newLambda_(double newLambda) const {
+//      return NonlinearOptimizer(graph_, values_, error_, ordering_, solver_, newLambda, dimensions_); }
+//
+//    This newValuesSolver_(shared_values newValues, shared_solver newSolver) const {
+//      return NonlinearOptimizer(graph_, newValues, graph_->error(*newValues), ordering_, newSolver, lambda_, dimensions_); }
+//
+//    This newValuesSolverLambda_(shared_values newValues, shared_solver newSolver, double newLambda) const {
+//      return NonlinearOptimizer(graph_, newValues, graph_->error(*newValues), ordering_, newSolver, newLambda, dimensions_); }
 
     /** Create a new NonlinearOptimizer with a different lambda */
     This newLambda_(double newLambda) const {
-      return NonlinearOptimizer(graph_, values_, error_, ordering_, solver_, newLambda, dimensions_); }
+      return NonlinearOptimizer(graph_, values_, error_, ordering_, solver_, parameters_->newLambda_(newLambda), dimensions_); }
 
     This newValuesSolver_(shared_values newValues, shared_solver newSolver) const {
-      return NonlinearOptimizer(graph_, newValues, graph_->error(*newValues), ordering_, newSolver, lambda_, dimensions_); }
+      return NonlinearOptimizer(graph_, newValues, graph_->error(*newValues), ordering_, newSolver, parameters_, dimensions_); }
 
     This newValuesSolverLambda_(shared_values newValues, shared_solver newSolver, double newLambda) const {
-      return NonlinearOptimizer(graph_, newValues, graph_->error(*newValues), ordering_, newSolver, newLambda, dimensions_); }
+      return NonlinearOptimizer(graph_, newValues, graph_->error(*newValues), ordering_, newSolver, parameters_->newLambda_(newLambda), dimensions_); }
+
+    This newVerbosity_(Parameters::verbosityLevel verbosity) const {
+      return NonlinearOptimizer(graph_, values_, error_, ordering_, solver_, parameters_->newVerbosity_(verbosity), dimensions_); }
+
+    This newParameters_(shared_parameters parameters) const {
+      return NonlinearOptimizer(graph_, values_, error_, ordering_, solver_, parameters, dimensions_); }
+
+    This newMaxIterations_(int maxIterations) const {
+      return NonlinearOptimizer(graph_, values_, error_, ordering_, solver_, parameters_->newMaxIterations_(maxIterations), dimensions_); }
+
 
 	public:
-
 		/**
 		 * Constructor that evaluates new error
 		 */
-		NonlinearOptimizer(shared_graph graph, shared_values values, shared_ordering ordering,
-				const double lambda = 1e-5);
 
+    	// backward compatibility
+		NonlinearOptimizer(shared_graph graph,
+						   shared_values values,
+						   shared_ordering ordering,
+						   const double lambda);
+		// backward compatibility
 		NonlinearOptimizer(shared_graph graph,
 						   shared_values values,
 						   shared_ordering ordering,
 						   shared_solver solver,
-						   const double lambda = 1e-5);
+						   const double lambda);
 
+		// suggested constructors
+		NonlinearOptimizer(shared_graph graph,
+						   shared_values values,
+						   shared_ordering ordering,
+						   shared_parameters parameters = boost::make_shared<Parameters>());
+
+		// suggested constructors
+		NonlinearOptimizer(shared_graph graph,
+						   shared_values values,
+						   shared_ordering ordering,
+						   shared_solver solver,
+						   shared_parameters parameters = boost::make_shared<Parameters>());
 
 		/**
 		 * Copy constructor
 		 */
+//		NonlinearOptimizer(const NonlinearOptimizer<G, T, L, GS> &optimizer) :
+//		  graph_(optimizer.graph_), values_(optimizer.values_), error_(optimizer.error_),
+//		  ordering_(optimizer.ordering_), solver_(optimizer.solver_), lambda_(optimizer.lambda_), dimensions_(optimizer.dimensions_) {}
+
 		NonlinearOptimizer(const NonlinearOptimizer<G, T, L, GS> &optimizer) :
 		  graph_(optimizer.graph_), values_(optimizer.values_), error_(optimizer.error_),
-		  ordering_(optimizer.ordering_), solver_(optimizer.solver_), lambda_(optimizer.lambda_), dimensions_(optimizer.dimensions_) {}
+		  ordering_(optimizer.ordering_), solver_(optimizer.solver_), parameters_(optimizer.parameters_), dimensions_(optimizer.dimensions_) {}
 
 		/**
 		 * Return current error
 		 */
-		double error() const {
-			return error_;
-		}
+		double error() const { return error_; }
 
 		/**
 		 * Return current lambda
 		 */
-		double lambda() const {
-			return lambda_;
-		}
+		double lambda() const {	return parameters_->lambda_; }
 
 		/**
 		 * Return the values
 		 */
-		shared_values values() const{
-			return values_;
-		}
+		shared_values values() const{ return values_; }
 
 		/**
 		 * Return mean and covariance on a single variable
@@ -181,7 +222,12 @@ namespace gtsam {
 		/**
 		 * Do one Gauss-Newton iteration and return next state
 		 */
-		NonlinearOptimizer iterate(Parameters::verbosityLevel verbosity = Parameters::SILENT) const;
+
+		// suggested interface
+		NonlinearOptimizer iterate() const;
+
+		// backward compatible
+		NonlinearOptimizer iterate(Parameters::verbosityLevel verbosity) const;
 
 		/**
 		 * Optimize a solution for a non linear factor graph
@@ -189,6 +235,11 @@ namespace gtsam {
 		 * @param absoluteTreshold
 		 * @param verbosity Integer specifying how much output to provide
 		 */
+
+		// suggested interface
+		NonlinearOptimizer gaussNewton() const;
+
+		// backward compatible
 		NonlinearOptimizer
 		gaussNewton(double relativeThreshold, double absoluteThreshold,
 				Parameters::verbosityLevel verbosity = Parameters::SILENT, int maxIterations = 100) const;
@@ -196,7 +247,12 @@ namespace gtsam {
 		/**
 		 * One iteration of Levenberg Marquardt
 		 */
-		NonlinearOptimizer iterateLM(Parameters::verbosityLevel verbosity = Parameters::SILENT,
+
+		// suggested interface
+		NonlinearOptimizer iterateLM() const;
+
+		// backward compatible
+		NonlinearOptimizer iterateLM(Parameters::verbosityLevel verbosity,
 				double lambdaFactor = 10, Parameters::LambdaMode lambdaMode = Parameters::BOUNDED) const;
 
 		/**
@@ -213,12 +269,20 @@ namespace gtsam {
 		 * @param verbosity    Integer specifying how much output to provide
 		 * @param lambdaFactor Factor by which to decrease/increase lambda
 		 */
+
+		// suggested interface
+		NonlinearOptimizer levenbergMarquardt() const;
+
+		// backward compatible
 		NonlinearOptimizer
-		levenbergMarquardt(double relativeThreshold, double absoluteThreshold,
-				Parameters::verbosityLevel verbosity = Parameters::SILENT, int maxIterations = 100,
-				double lambdaFactor = 10, Parameters::LambdaMode lambdaMode = Parameters::BOUNDED) const;
+		levenbergMarquardt(double relativeThreshold,
+						   double absoluteThreshold,
+						   Parameters::verbosityLevel verbosity = Parameters::SILENT,
+						   int maxIterations = 100,
+						   double lambdaFactor = 10,
+						   Parameters::LambdaMode lambdaMode = Parameters::BOUNDED) const;
 
-
+		// backward compatible
 		NonlinearOptimizer
 		levenbergMarquardt(const NonlinearOptimizationParameters &para) const;
 
@@ -229,31 +293,47 @@ namespace gtsam {
 		 * @param verbosity    Integer specifying how much output to provide
 		 * @return 			   an optimized values structure
 		 */
-		static shared_values optimizeLM(shared_graph graph, shared_values values,
-				Parameters::verbosityLevel verbosity = Parameters::SILENT) {
 
-		  // Use a variable ordering from COLAMD
-		  Ordering::shared_ptr ordering = graph->orderingCOLAMD(*values);
+		static shared_values optimizeLM(shared_graph graph,
+										shared_values values,
+										shared_parameters parameters = boost::make_shared<Parameters>()) {
 
-			double relativeThreshold = 1e-5, absoluteThreshold = 1e-5;
-
+			// Use a variable ordering from COLAMD
+			Ordering::shared_ptr ordering = graph->orderingCOLAMD(*values);
 			// initial optimization state is the same in both cases tested
 			GS solver(*graph->linearize(*values, *ordering));
-			NonlinearOptimizer optimizer(graph, values, ordering);
 
-			// Levenberg-Marquardt
-			NonlinearOptimizer result = optimizer.levenbergMarquardt(relativeThreshold,
-					absoluteThreshold, verbosity);
+			NonlinearOptimizer optimizer(graph, values, ordering, parameters);
+			NonlinearOptimizer result = optimizer.levenbergMarquardt();
 			return result.values();
 		}
 
+		static shared_values optimizeLM(shared_graph graph,
+										shared_values values,
+										Parameters::verbosityLevel verbosity = Parameters::SILENT)
+		{
+			Parameters def ;
+			shared_parameters parameters = def.newVerbosity_(verbosity);
+			return optimizeLM(graph, values, parameters);
+		}
 		/**
 		 * Static interface to LM optimization (no shared_ptr arguments) - see above
 		 */
-		inline static shared_values optimizeLM(const G& graph, const T& values,
-				Parameters::verbosityLevel verbosity = Parameters::SILENT) {
+
+		static shared_values optimizeLM(const G& graph,
+										const T& values,
+										const Parameters parameters) {
 			return optimizeLM(boost::make_shared<const G>(graph),
-							  boost::make_shared<const T>(values), verbosity);
+							  boost::make_shared<const T>(values),
+							  boost::make_shared<Parameters>(parameters));
+		}
+
+		static shared_values optimizeLM(const G& graph,
+										const T& values,
+										Parameters::verbosityLevel verbosity = Parameters::SILENT) {
+			return optimizeLM(boost::make_shared<const G>(graph),
+							  boost::make_shared<const T>(values),
+							  verbosity);
 		}
 
 		/**
@@ -263,28 +343,46 @@ namespace gtsam {
 		 * @param verbosity    Integer specifying how much output to provide
 		 * @return 			   an optimized values structure
 		 */
-		static shared_values optimizeGN(shared_graph graph, shared_values values,
-				Parameters::verbosityLevel verbosity = Parameters::SILENT) {
-      Ordering::shared_ptr ordering = graph->orderingCOLAMD(*values);
-			double relativeThreshold = 1e-5, absoluteThreshold = 1e-5;
 
+		// suggested interface
+		static shared_values optimizeGN(shared_graph graph,
+										shared_values values,
+										shared_parameters parameters) {
+
+			Ordering::shared_ptr ordering = graph->orderingCOLAMD(*values);
 			// initial optimization state is the same in both cases tested
 			GS solver(*graph->linearize(*values, *ordering));
-			NonlinearOptimizer optimizer(graph, values, ordering);
 
-			// Gauss-Newton
-			NonlinearOptimizer result = optimizer.gaussNewton(relativeThreshold,
-					absoluteThreshold, verbosity);
+			NonlinearOptimizer optimizer(graph, values, ordering, parameters);
+			NonlinearOptimizer result = optimizer.gaussNewton();
 			return result.values();
+		}
+
+		// backward compatible
+		static shared_values optimizeGN(shared_graph graph,
+										shared_values values,
+										Parameters::verbosityLevel verbosity = Parameters::SILENT) {
+			Parameters def ;
+			shared_parameters parameters = def.newVerbosity_(verbosity);
+			return optimizeGN(graph, values, parameters);
 		}
 
 		/**
 		 * Static interface to GN optimization (no shared_ptr arguments) - see above
 		 */
-		inline static shared_values optimizeGN(const G& graph, const T& values,
-				Parameters::verbosityLevel verbosity = Parameters::SILENT) {
+
+		// suggested interface
+		static shared_values optimizeGN(const G& graph, const T& values, const Parameters parameters = Parameters()) {
 			return optimizeGN(boost::make_shared<const G>(graph),
-							  boost::make_shared<const T>(values), verbosity);
+							  boost::make_shared<const T>(values),
+							  boost::make_shared<Parameters>(parameters));
+		}
+
+		// backward compatible
+		static shared_values optimizeGN(const G& graph, const T& values, Parameters::verbosityLevel verbosity = Parameters::SILENT) {
+			return optimizeGN(boost::make_shared<const G>(graph),
+							  boost::make_shared<const T>(values),
+							  verbosity);
 		}
 
 	};
@@ -298,6 +396,9 @@ namespace gtsam {
 			double errorThreshold,
 			double currentError, double newError, int verbosity);
 
+	bool check_convergence (
+			const NonlinearOptimizationParameters &parameters,
+			double currentError, double newError);
 
 } // gtsam
 
