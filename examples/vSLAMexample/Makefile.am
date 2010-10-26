@@ -16,6 +16,17 @@ vSFMexample_SOURCES = vSFMexample.cpp Feature2D.cpp vSLAMutils.cpp
 
 noinst_PROGRAMS += vISAMexample
 vISAMexample_SOURCES = vISAMexample.cpp Feature2D.cpp vSLAMutils.cpp
+
+headers += ISAMLoop.h ISAMLoop-inl.h
+
+headers += $(sources:.cpp=.h)
+
+noinst_HEADERS = $(headers)
+
+EXTRA_DIST = Data
+dist-hook:
+	rm -rf $(distdir)/Data/.svn
+
 #----------------------------------------------------------------------------------------------------
 # rules to build local programs
 #----------------------------------------------------------------------------------------------------
