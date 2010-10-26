@@ -18,8 +18,7 @@ noinst_PROGRAMS += vISAMexample
 vISAMexample_SOURCES = vISAMexample.cpp Feature2D.cpp vSLAMutils.cpp
 
 headers += ISAMLoop.h ISAMLoop-inl.h
-
-headers += $(sources:.cpp=.h)
+headers += Feature2D.h vSLAMutils.h
 
 noinst_HEADERS = $(headers)
 
