@@ -47,7 +47,6 @@ extern "C" {
 
 #include <gtsam/base/Matrix-inl.h>
 #include <gtsam/base/Vector.h>
-#include <gtsam/base/svdcmp.h>
 
 using namespace std;
 namespace ublas = boost::numeric::ublas;

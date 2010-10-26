@@ -14,7 +14,7 @@ check_PROGRAMS =
 # base Math
 
 headers += FixedVector.h types.h blockMatrices.h Matrix-inl.h
-sources += Vector.cpp svdcmp.cpp Matrix.cpp
+sources += Vector.cpp Matrix.cpp
 check_PROGRAMS += tests/testFixedVector tests/testVector tests/testMatrix 
 
 if USE_LAPACK
