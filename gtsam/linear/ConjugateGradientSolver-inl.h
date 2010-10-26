@@ -7,4 +7,4 @@
 
 #pragma once
 
-#include <gtsam/ConjugateGradientSolver.h>
+#include <gtsam/linear/ConjugateGradientSolver.h>
