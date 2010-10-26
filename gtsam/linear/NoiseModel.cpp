@@ -271,7 +271,7 @@ Diagonal::shared_ptr Diagonal::Sigmas(const Vector& sigmas, bool smart) {
 }
 
 void Diagonal::print(const string& name) const {
-	gtsam::print(sigmas_, "Diagonal sigmas " + name);
+	gtsam::print(sigmas_, name + ": diagonal sigmas");
 }
 
 Vector Diagonal::whiten(const Vector& v) const {
@@ -309,7 +309,7 @@ Vector Diagonal::sample() const {
 /* ************************************************************************* */
 
 void Constrained::print(const std::string& name) const {
-	gtsam::print(sigmas_, "Constrained sigmas " + name);
+	gtsam::print(sigmas_, name + ": constrained sigmas");
 }
 
 Vector Constrained::whiten(const Vector& v) const {
@@ -419,7 +419,7 @@ Isotropic::shared_ptr Isotropic::Variance(size_t dim, double variance, bool smar
 }
 
 void Isotropic::print(const string& name) const {
-	cout << "Isotropic sigma " << name << " " << sigma_ << endl;
+	cout << name << ": isotropic sigma " << " " << sigma_ << endl;
 }
 
 double Isotropic::Mahalanobis(const Vector& v) const {
@@ -460,7 +460,7 @@ Vector Isotropic::sample() const {
 
 /* ************************************************************************* */
 void Unit::print(const std::string& name) const {
-	cout << "Unit (" << dim_ << ") " << name << endl;
+	cout << name << ": unit (" << dim_ << ") " << endl;
 }
 
 /* ************************************************************************* */

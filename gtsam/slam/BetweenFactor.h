@@ -56,17 +56,16 @@ namespace gtsam {
 		/** implement functions needed for Testable */
 
 		/** print */
-		void print(const std::string& s) const {
+		virtual void print(const std::string& s) const {
 			Base::print(s);
 			measured_.print("measured");
 		}
 
 		/** equals */
-		bool equals(const NonlinearFactor<VALUES>& expected, double tol) const {
+		virtual bool equals(const NonlinearFactor<VALUES>& expected, double tol) const {
 			const BetweenFactor<VALUES, KEY1, KEY2> *e =
 					dynamic_cast<const BetweenFactor<VALUES, KEY1, KEY2>*> (&expected);
-			return e != NULL && Base::equals(expected, tol) && this->measured_.equals(
-					e->measured_, tol);
+			return e != NULL && Base::equals(*e, tol) && this->measured_.equals(e->measured_, tol);
 		}
 
 		/** implement functions needed to derive from Factor */

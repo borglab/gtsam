@@ -78,13 +78,13 @@ namespace gtsam {
 		}
 
 		/** print */
-		void print(const std::string& s = "") const {
-			std::cout << "NonlinearFactor " << s << std::endl;
-			noiseModel_->print("noise model");
+		virtual void print(const std::string& s = "") const {
+			std::cout << s << ": NonlinearFactor\n";
+			noiseModel_->print("  noise model");
 		}
 
 		/** Check if two NonlinearFactor objects are equal */
-		bool equals(const NonlinearFactor<VALUES>& f, double tol = 1e-9) const {
+		virtual bool equals(const NonlinearFactor<VALUES>& f, double tol = 1e-9) const {
 			return noiseModel_->equals(*f.noiseModel_, tol);
 		}
 
@@ -198,14 +198,14 @@ namespace gtsam {
 		}
 
 		/* print */
-		void print(const std::string& s = "") const {
-			std::cout << "NonlinearFactor1 " << s << std::endl;
-			std::cout << "key: " << (std::string) key_ << std::endl;
-			Base::print("parent");
+		virtual void print(const std::string& s = "") const {
+			std::cout << s << ": NonlinearFactor1\n";
+			std::cout << "  key: " << (std::string) key_ << std::endl;
+			this->noiseModel_->print("  noise model: ");
 		}
 
 		/** Check if two factors are equal. Note type is IndexFactor and needs cast. */
-		bool equals(const NonlinearFactor1<VALUES,KEY>& f, double tol = 1e-9) const {
+		virtual bool equals(const NonlinearFactor1<VALUES,KEY>& f, double tol = 1e-9) const {
 			return Base::noiseModel_->equals(*f.noiseModel_, tol) && (key_ == f.key_);
 		}
 
@@ -309,15 +309,15 @@ namespace gtsam {
 		}
 
 		/** Print */
-		void print(const std::string& s = "") const {
-			std::cout << "NonlinearFactor2 " << s << std::endl;
-			std::cout << "key1: " << (std::string) key1_ << std::endl;
-			std::cout << "key2: " << (std::string) key2_ << std::endl;
-			Base::print("parent");
+		virtual void print(const std::string& s = "") const {
+			std::cout << s << ": NonlinearFactor2\n";
+			std::cout << "  key1: " << (std::string) key1_ << "\n";
+			std::cout << "  key2: " << (std::string) key2_ << "\n";
+			this->noiseModel_->print("  noise model: ");
 		}
 
 		/** Check if two factors are equal */
-		bool equals(const NonlinearFactor2<VALUES,KEY1,KEY2>& f, double tol = 1e-9) const {
+		virtual bool equals(const NonlinearFactor2<VALUES,KEY1,KEY2>& f, double tol = 1e-9) const {
 			return Base::noiseModel_->equals(*f.noiseModel_, tol) && (key1_ == f.key1_)
 					&& (key2_ == f.key2_);
 		}
@@ -448,16 +448,16 @@ namespace gtsam {
     }
 
     /** Print */
-    void print(const std::string& s = "") const {
-      std::cout << "NonlinearFactor3 " << s << std::endl;
-      std::cout << "key1: " << (std::string) key1_ << std::endl;
-      std::cout << "key2: " << (std::string) key2_ << std::endl;
-      std::cout << "key3: " << (std::string) key3_ << std::endl;
-      Base::print("parent");
+    virtual void print(const std::string& s = "") const {
+      std::cout << s << ": NonlinearFactor3\n";
+      std::cout << "  key1: " << (std::string) key1_ << "\n";
+      std::cout << "  key2: " << (std::string) key2_ << "\n";
+      std::cout << "  key3: " << (std::string) key3_ << "\n";
+      this->noiseModel_->print("  noise model: ");
     }
 
     /** Check if two factors are equal */
-    bool equals(const NonlinearFactor3<VALUES,KEY1,KEY2,KEY3>& f, double tol = 1e-9) const {
+    virtual bool equals(const NonlinearFactor3<VALUES,KEY1,KEY2,KEY3>& f, double tol = 1e-9) const {
       return Base::noiseModel_->equals(*f.noiseModel_, tol) && (key1_ == f.key1_)
           && (key2_ == f.key2_) && (key3_ == f.key3_);
     }

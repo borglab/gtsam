@@ -57,17 +57,16 @@ namespace gtsam {
 		/** implement functions needed for Testable */
 
 		/** print */
-		void print(const std::string& s) const {
+		virtual void print(const std::string& s) const {
 			Base::print(s);
 			prior_.print("prior");
 		}
 
 		/** equals */
-		bool equals(const NonlinearFactor<VALUES>& expected, double tol) const {
+		virtual bool equals(const NonlinearFactor<VALUES>& expected, double tol) const {
 			const PriorFactor<VALUES, KEY> *e = dynamic_cast<const PriorFactor<
 					VALUES, KEY>*> (&expected);
-			return e != NULL && Base::equals(expected, tol) && this->prior_.equals(
-					e->prior_, tol);
+			return e != NULL && Base::equals(*e, tol) && this->prior_.equals(e->prior_, tol);
 		}
 
 		/** implement functions needed to derive from Factor */

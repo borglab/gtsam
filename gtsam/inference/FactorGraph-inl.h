@@ -61,7 +61,7 @@ namespace gtsam {
 		printf("size: %d\n", (int) size());
 		for (size_t i = 0; i < factors_.size(); i++) {
 			stringstream ss;
-			ss << "factor " << i << ":";
+			ss << "factor " << i;
 			if (factors_[i] != NULL) factors_[i]->print(ss.str());
 		}
 	}
