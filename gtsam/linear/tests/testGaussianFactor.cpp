@@ -57,7 +57,7 @@ TEST( GaussianFactor, constructor)
 	terms.push_back(make_pair(_x1_, 2.*eye(3)));
 	GaussianFactor actual(terms, b, noise);
 	GaussianFactor expected(_x0_, eye(3), _x1_, 2.*eye(3), b, noise);
-	CHECK(assert_equal(expected, actual));
+	EXPECT(assert_equal(expected, actual));
 }
 
 /* ************************************************************************* */
@@ -72,16 +72,16 @@ TEST( GaussianFactor, constructor2)
 
   GaussianFactor::const_iterator key0 = actual.begin();
   GaussianFactor::const_iterator key1 = key0 + 1;
-  CHECK(assert_equal(*key0, _x0_));
-  CHECK(assert_equal(*key1, _x1_));
+  EXPECT(assert_equal(*key0, _x0_));
+  EXPECT(assert_equal(*key1, _x1_));
 
   Matrix actualA0 = actual.getA(key0);
   Matrix actualA1 = actual.getA(key1);
   Vector actualb = actual.getb();
 
-  CHECK(assert_equal(eye(3), actualA0));
-  CHECK(assert_equal(2.*eye(3), actualA1));
-  CHECK(assert_equal(b, actualb));
+  EXPECT(assert_equal(eye(3), actualA0));
+  EXPECT(assert_equal(2.*eye(3), actualA1));
+  EXPECT(assert_equal(b, actualb));
 }
 
 ///* ************************************************************************* */
@@ -135,7 +135,7 @@ TEST( GaussianFactor, constructor2)
 //
 //  GaussianFactor expected(0, A0, 1, A1, b, noiseModel::Diagonal::Sigmas(sigmas, true));
 //
-//  CHECK(assert_equal(expected, actual));
+//  EXPECT(assert_equal(expected, actual));
 //}
 
 /* ************************************************************************* */
@@ -181,7 +181,7 @@ TEST(GaussianFactor, Combine2)
 
   GaussianFactor expected(0, A0, 1, A1, b, noiseModel::Diagonal::Sigmas(sigmas, true));
 
-  CHECK(assert_equal(expected, actual));
+  EXPECT(assert_equal(expected, actual));
 }
 
 ///* ************************************************************************* */
@@ -197,13 +197,13 @@ TEST(GaussianFactor, Combine2)
 //
 //	// test A*x
 //	Vector expectedE = Vector_(2,200.,400.), e = lf*c;
-//	CHECK(assert_equal(expectedE,e));
+//	EXPECT(assert_equal(expectedE,e));
 //
 //	// test A^e
 //	VectorValues expectedX;
 //	expectedX.insert(_x1_,Vector_(2,-2000.,-4000.));
 //	expectedX.insert(_x2_,Vector_(2, 2000., 4000.));
-//	CHECK(assert_equal(expectedX,lf^e));
+//	EXPECT(assert_equal(expectedX,lf^e));
 //
 //	// test transposeMultiplyAdd
 //	VectorValues x;
@@ -211,7 +211,7 @@ TEST(GaussianFactor, Combine2)
 //	x.insert(_x2_,Vector_(2, 3.,4.));
 //	VectorValues expectedX2 = x + 0.1 * (lf^e);
 //	lf.transposeMultiplyAdd(0.1,e,x);
-//	CHECK(assert_equal(expectedX2,x));
+//	EXPECT(assert_equal(expectedX2,x));
 //}
 
 ///* ************************************************************************* */
@@ -267,7 +267,7 @@ TEST(GaussianFactor, Combine2)
 //	vector<pair<Index, Matrix> > meas;
 //	meas.push_back(make_pair(_x1_, A22));
 //	GaussianFactor expected(meas, exb, sigmas);
-//	CHECK(assert_equal(expected,combined));
+//	EXPECT(assert_equal(expected,combined));
 //}
 //
 ///* ************************************************************************* */
@@ -328,7 +328,7 @@ TEST(GaussianFactor, Combine2)
 //
 //  Vector sigmas = repeat(8,1.0);
 //  GaussianFactor expected(combinedMeasurement, b, sigmas);
-//  CHECK(assert_equal(expected,combinedFactor));
+//  EXPECT(assert_equal(expected,combinedFactor));
 //}
 
 /* ************************************************************************* */
@@ -385,7 +385,7 @@ TEST( GaussianFactor, eliminate2 )
 	)/oldSigma;
 	Vector d = Vector_(2,0.2,-0.14)/oldSigma;
 	GaussianConditional expectedCG(_x2_,d,R11,_l11_,S12,ones(2));
-	CHECK(assert_equal(expectedCG,*actualCG,1e-4));
+	EXPECT(assert_equal(expectedCG,*actualCG,1e-4));
 
 	// the expected linear factor
 	double sigma = 0.2236;
@@ -396,7 +396,7 @@ TEST( GaussianFactor, eliminate2 )
 	)/sigma;
 	Vector b1 =Vector_(2,0.0,0.894427);
 	GaussianFactor expectedLF(_l11_, Bl1x1, b1, repeat(2,1.0));
-	CHECK(assert_equal(expectedLF,*actualLF,1e-3));
+	EXPECT(assert_equal(expectedLF,*actualLF,1e-3));
 }
 
 /* ************************************************************************* */
@@ -510,14 +510,14 @@ TEST(GaussianFactor, eliminateFrontals)
   expectedFragment.push_back(cond2);
   expectedFragment.push_back(cond3);
 
-  CHECK(assert_equal(expectedFragment, actualFragment, 0.001));
-  CHECK(assert_equal(size_t(2), actualFactor.keys().size()));
-  CHECK(assert_equal(Index(9), actualFactor.keys()[0]));
-  CHECK(assert_equal(Index(11), actualFactor.keys()[1]));
-  CHECK(assert_equal(Ae1, actualFactor.getA(actualFactor.begin()), 0.001));
-  CHECK(assert_equal(Ae2, actualFactor.getA(actualFactor.begin()+1), 0.001));
-  CHECK(assert_equal(be, actualFactor.getb(), 0.001));
-  CHECK(assert_equal(ones(4), actualFactor.get_sigmas(), 0.001));
+  EXPECT(assert_equal(expectedFragment, actualFragment, 0.001));
+  EXPECT(assert_equal(size_t(2), actualFactor.keys().size()));
+  EXPECT(assert_equal(Index(9), actualFactor.keys()[0]));
+  EXPECT(assert_equal(Index(11), actualFactor.keys()[1]));
+  EXPECT(assert_equal(Ae1, actualFactor.getA(actualFactor.begin()), 0.001));	// FAILS with lapack disabled
+  EXPECT(assert_equal(Ae2, actualFactor.getA(actualFactor.begin()+1), 0.001));	// FAILS with lapack disabled
+  EXPECT(assert_equal(be, actualFactor.getb(), 0.001));							// FAILS with lapack disabled
+  EXPECT(assert_equal(ones(4), actualFactor.get_sigmas(), 0.001));
 }
 
 /* ************************************************************************* */
@@ -527,7 +527,7 @@ TEST( GaussianFactor, default_error )
 	vector<size_t> dims;
 	VectorValues c(dims);
 	double actual = f.error(c);
-	CHECK(actual==0.0);
+	EXPECT(actual==0.0);
 }
 
 ////* ************************************************************************* */
@@ -548,8 +548,8 @@ TEST( GaussianFactor, default_error )
 //	GaussianFactor expectedLF;
 //
 //	// check if the result matches
-//	CHECK(actualCG->equals(expectedCG));
-//	CHECK(actualLF->equals(expectedLF));
+//	EXPECT(actualCG->equals(expectedCG));
+//	EXPECT(actualLF->equals(expectedLF));
 //}
 
 //* ************************************************************************* */
@@ -557,7 +557,7 @@ TEST( GaussianFactor, empty )
 {
 	// create an empty factor
 	GaussianFactor f;
-	CHECK(f.empty()==true);
+	EXPECT(f.empty()==true);
 }
 
 /* ************************************************************************* */
@@ -578,17 +578,17 @@ void print(const list<T>& i) {
 //	f.tally_separator(_x2_,	act2);
 //	f.tally_separator(_l1_,	act3);
 //
-//	CHECK(act1.size() == 2);
-//	CHECK(act1.count(_x2_) == 1);
-//	CHECK(act1.count(_l1_) == 1);
+//	EXPECT(act1.size() == 2);
+//	EXPECT(act1.count(_x2_) == 1);
+//	EXPECT(act1.count(_l1_) == 1);
 //
-//	CHECK(act2.size() == 2);
-//	CHECK(act2.count(_x1_) == 1);
-//	CHECK(act2.count(_l1_) == 1);
+//	EXPECT(act2.size() == 2);
+//	EXPECT(act2.count(_x1_) == 1);
+//	EXPECT(act2.count(_l1_) == 1);
 //
-//	CHECK(act3.size() == 2);
-//	CHECK(act3.count(_x1_) == 1);
-//	CHECK(act3.count(_x2_) == 1);
+//	EXPECT(act3.size() == 2);
+//	EXPECT(act3.count(_x1_) == 1);
+//	EXPECT(act3.count(_x2_) == 1);
 //}
 
 /* ************************************************************************* */
@@ -607,7 +607,7 @@ TEST( GaussianFactor, CONSTRUCTOR_GaussianConditional )
 	GaussianFactor actualLF(*CG);
 
 	GaussianFactor expectedLF(_x2_,R11,_l11_,S12,d, sigmas);
-	CHECK(assert_equal(expectedLF,actualLF,1e-5));
+	EXPECT(assert_equal(expectedLF,actualLF,1e-5));
 }
 
 ///* ************************************************************************* */
@@ -623,7 +623,7 @@ TEST( GaussianFactor, CONSTRUCTOR_GaussianConditional )
 //  GaussianConditional::shared_ptr conditional = GaussianSequentialSolver::EliminateUntil(graph,_x0_+1);
 //  GaussianFactor actual(*conditional);
 //
-//  CHECK(assert_equal(*expected, actual));
+//  EXPECT(assert_equal(*expected, actual));
 //}
 
 /* ************************************************************************* */
@@ -640,12 +640,12 @@ TEST ( GaussianFactor, constraint_eliminate1 )
 	actualCG = actualLF->eliminateFirst();
 
 	// verify linear factor
-	CHECK(actualLF->size() == 0);
+	EXPECT(actualLF->size() == 0);
 
 	// verify conditional Gaussian
 	Vector sigmas = Vector_(2, 0.0, 0.0);
 	GaussianConditional expCG(_x0_, v, eye(2), sigmas);
-	CHECK(assert_equal(expCG, *actualCG));
+	EXPECT(assert_equal(expCG, *actualCG));
 }
 
 /* ************************************************************************* */
@@ -674,7 +674,7 @@ TEST ( GaussianFactor, constraint_eliminate2 )
 
 	// LF should be null
 	GaussianFactor expectedLF;
-	CHECK(assert_equal(*actualLF, expectedLF));
+	EXPECT(assert_equal(*actualLF, expectedLF));
 
 	// verify CG
 	Matrix R = Matrix_(2, 2,
@@ -685,7 +685,7 @@ TEST ( GaussianFactor, constraint_eliminate2 )
 			0.0,    0.0);
 	Vector d = Vector_(2, 3.0, 0.6666);
 	GaussianConditional expectedCG(_x_, d, R, _y_, S, zero(2));
-	CHECK(assert_equal(expectedCG, *actualCG, 1e-4));
+	EXPECT(assert_equal(expectedCG, *actualCG, 1e-4));
 }
 
 /* ************************************************************************* */
@@ -720,7 +720,7 @@ TEST(GaussianFactor, permuteWithInverse)
   GaussianFactorGraph expectedFG; expectedFG.push_back(GaussianFactor::shared_ptr(new GaussianFactor(expected)));
 //  GaussianVariableIndex expectedIndex(expectedFG);
 
-  CHECK(assert_equal(expected, actual));
+  EXPECT(assert_equal(expected, actual));
 
 //  // todo: fix this!!!  VariableIndex should not hold slots
 //  for(Index j=0; j<actualIndex.size(); ++j) {
@@ -731,7 +731,7 @@ TEST(GaussianFactor, permuteWithInverse)
 //    BOOST_FOREACH( GaussianVariableIndex::mapped_factor_type& factor_pos, expectedIndex[j]) {
 //      factor_pos.variablePosition = numeric_limits<Index>::max(); }
 //  }
-//  CHECK(assert_equal(expectedIndex, actualIndex));
+//  EXPECT(assert_equal(expectedIndex, actualIndex));
 }
 
 ///* ************************************************************************* */
@@ -748,7 +748,7 @@ TEST(GaussianFactor, permuteWithInverse)
 //
 //	LONGS_EQUAL(1, erased);
 //	GaussianFactor expected(_x1_, 2.*eye(2), b, noise);
-//	CHECK(assert_equal(expected, actual));
+//	EXPECT(assert_equal(expected, actual));
 //}
 
 ///* ************************************************************************* */
@@ -778,10 +778,10 @@ TEST(GaussianFactor, permuteWithInverse)
 //			_x3_, Matrix_(1, 1, 10.), Vector_(1, 1.)));
 //	bn_expected.push_back(conditional1);
 //	bn_expected.push_back(conditional2);
-//	CHECK(assert_equal(bn_expected, bn));
+//	EXPECT(assert_equal(bn_expected, bn));
 //
 //	GaussianFactor factor_expected(_x3_, Matrix_(1, 1, 14.), Vector_(1, 16.), SharedDiagonal(Vector_(1, 1.)));
-//	CHECK(assert_equal(factor_expected, *factor));
+//	EXPECT(assert_equal(factor_expected, *factor));
 //}
 
 
