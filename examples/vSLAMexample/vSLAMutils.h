@@ -1,5 +1,21 @@
-#ifndef LANDMARKUTILS_H
-#define LANDMARKUTILS_H
+/* ----------------------------------------------------------------------------
+
+ * GTSAM Copyright 2010, Georgia Tech Research Corporation,
+ * Atlanta, Georgia 30332-0415
+ * All Rights Reserved
+ * Authors: Frank Dellaert, et al. (see THANKS for the full author list)
+
+ * See LICENSE for the license information
+
+ * -------------------------------------------------------------------------- */
+
+/**
+ * @file Feature2D.cpp
+ * @brief
+ * @author Duy-Nguyen
+ */
+
+#pragma once
 
 #include <map>
 #include <vector>
@@ -21,7 +37,3 @@ gtsam::shared_ptrK readCalibData(const std::string& calibFn);
 std::vector<Feature2D> readFeatureFile(const char* filename);
 std::vector<Feature2D> readAllMeasurements(const std::string& baseFolder, const std::string& measurementsFn);
 std::vector< std::vector<Feature2D> > readAllMeasurementsISAM(const std::string& baseFolder, const std::string& measurementsFn);
-
-
-
-#endif // LANDMARKUTILS_H

@@ -1,3 +1,14 @@
+/* ----------------------------------------------------------------------------
+
+ * GTSAM Copyright 2010, Georgia Tech Research Corporation,
+ * Atlanta, Georgia 30332-0415
+ * All Rights Reserved
+ * Authors: Frank Dellaert, et al. (see THANKS for the full author list)
+
+ * See LICENSE for the license information
+
+ * -------------------------------------------------------------------------- */
+
 /*
  * ISAMLoop.cpp
  *
@@ -22,29 +33,29 @@ void ISAMLoop<Values>::update(const Factors& newFactors, const Values& initialVa
 
   if(newFactors.size() > 0) {
 
-      // Reorder and relinearize every reorderInterval updates
-      if(reorderInterval_ > 0 && ++reorderCounter_ >= reorderInterval_) {
-        reorder_relinearize();
-        reorderCounter_ = 0;
+    // Reorder and relinearize every reorderInterval updates
+    if(reorderInterval_ > 0 && ++reorderCounter_ >= reorderInterval_) {
+      reorder_relinearize();
+      reorderCounter_ = 0;
+    }
+
+    factors_.push_back(newFactors);
+
+    // Linearize new factors and insert them
+    // TODO: optimize for whole config?
+    linPoint_.insert(initialValues);
+
+    // Augment ordering
+    BOOST_FOREACH(const typename Factors::sharedFactor& factor, newFactors) {
+      BOOST_FOREACH(const Symbol& key, factor->keys()) {
+        ordering_.tryInsert(key, ordering_.nVars());
       }
+    }
 
-      factors_.push_back(newFactors);
+    boost::shared_ptr<GaussianFactorGraph> linearizedNewFactors(newFactors.linearize(linPoint_, ordering_));
 
-      // Linearize new factors and insert them
-      // TODO: optimize for whole config?
-      linPoint_.insert(initialValues);
-
-      // Augment ordering
-      BOOST_FOREACH(const typename Factors::sharedFactor& factor, newFactors) {
-          BOOST_FOREACH(const Symbol& key, factor->keys()) {
-            ordering_.tryInsert(key, ordering_.nVars());
-          }
-      }
-
-      boost::shared_ptr<GaussianFactorGraph> linearizedNewFactors(newFactors.linearize(linPoint_, ordering_));
-
-      // Update ISAM
-      isam.update(*linearizedNewFactors);
+    // Update ISAM
+    isam.update(*linearizedNewFactors);
   }
 }
 
