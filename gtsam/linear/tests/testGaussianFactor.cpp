@@ -514,9 +514,9 @@ TEST(GaussianFactor, eliminateFrontals)
   EXPECT(assert_equal(size_t(2), actualFactor.keys().size()));
   EXPECT(assert_equal(Index(9), actualFactor.keys()[0]));
   EXPECT(assert_equal(Index(11), actualFactor.keys()[1]));
-  EXPECT(assert_equal(Ae1, actualFactor.getA(actualFactor.begin()), 0.001));	// FAILS with lapack disabled
-  EXPECT(assert_equal(Ae2, actualFactor.getA(actualFactor.begin()+1), 0.001));	// FAILS with lapack disabled
-  EXPECT(assert_equal(be, actualFactor.getb(), 0.001));							// FAILS with lapack disabled
+  EXPECT(assert_equal(Ae1, actualFactor.getA(actualFactor.begin()), 0.001));
+  EXPECT(assert_equal(Ae2, actualFactor.getA(actualFactor.begin()+1), 0.001));
+  EXPECT(assert_equal(be, actualFactor.getb(), 0.001));
   EXPECT(assert_equal(ones(4), actualFactor.get_sigmas(), 0.001));
 }
 
