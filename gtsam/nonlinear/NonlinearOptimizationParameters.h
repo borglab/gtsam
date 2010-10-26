@@ -48,10 +48,10 @@ namespace gtsam {
 
 
 		NonlinearOptimizationParameters(): absDecrease_(1e-6), relDecrease_(1e-6), sumError_(0.0),
-		maxIterations_(100), lambda_(1e-5), lambdaFactor_(10.0), verbosity_(ERROR), lambdaMode_(BOUNDED){}
+		maxIterations_(100), lambda_(1e-5), lambdaFactor_(10.0), verbosity_(SILENT), lambdaMode_(BOUNDED){}
 
 		NonlinearOptimizationParameters(double absDecrease, double relDecrease, double sumError,
-				int iIters = 100, double lambda = 1e-5, double lambdaFactor = 10, verbosityLevel v = ERROR, LambdaMode lambdaMode = BOUNDED)
+				int iIters = 100, double lambda = 1e-5, double lambdaFactor = 10, verbosityLevel v = SILENT, LambdaMode lambdaMode = BOUNDED)
 		:absDecrease_(absDecrease), relDecrease_(relDecrease), sumError_(sumError),
 		 maxIterations_(iIters), lambda_(lambda), lambdaFactor_(lambdaFactor), verbosity_(v), lambdaMode_(lambdaMode){}
 
