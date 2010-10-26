@@ -11,15 +11,36 @@ namespace gtsam {
 
 	// a container for all related parameters
 	struct IterativeOptimizationParameters {
+
+	public:
+
 		typedef enum {
 			SILENT,
 			ERROR,
 		} verbosityLevel;
 
+	protected:
+		int maxIterations_;
+		int reset_ ; // number of iterations before reset, for cg and gmres
+		double epsilon_; // relative error
+		double epsilon_abs_; // absolute error
+		verbosityLevel verbosity_;
+
+	public:
 		IterativeOptimizationParameters():
 			maxIterations_(100),
 			reset_(101),
-			epsilon_(1e-5),epsilon_abs_(1e-5),verbosity_(SILENT) {}
+			epsilon_(1e-5),
+			epsilon_abs_(1e-5),
+			verbosity_(SILENT) {}
+
+		IterativeOptimizationParameters(const IterativeOptimizationParameters &parameters):
+			maxIterations_(parameters.maxIterations_),
+			reset_(parameters.reset_),
+			epsilon_(parameters.epsilon_),
+			epsilon_abs_(parameters.epsilon_abs_),
+			verbosity_(parameters.verbosity_) {}
+
 
 		IterativeOptimizationParameters
 		(int maxIterations, double epsilon, double epsilon_abs, verbosityLevel verbosity=SILENT, int reset=-1):
@@ -34,11 +55,5 @@ namespace gtsam {
 		double epsilon_abs() const { return epsilon_abs_ ; }
 		verbosityLevel verbosity() const { return verbosity_ ; }
 
-	protected:
-		int maxIterations_;
-		int reset_ ; // number of iterations before reset, for cg and gmres
-		double epsilon_; // relative error
-		double epsilon_abs_; // absolute error
-		verbosityLevel verbosity_;
 	};
 }

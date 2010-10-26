@@ -30,6 +30,9 @@ public:
 	IterativeSolver(const IterativeSolver &solver):
 		parameters_(solver.parameters_) {}
 
+	IterativeSolver(const IterativeOptimizationParameters &parameters):
+		parameters_(new IterativeOptimizationParameters(parameters)) {}
+
 	IterativeSolver(const sharedParameters parameters):
 		parameters_(parameters) {}
 };

@@ -20,19 +20,27 @@ namespace gtsam {
 	class ConjugateGradientSolver : public IterativeSolver {
 
 	protected:
-		const LINEAR *ptr_;
 
+		typedef boost::shared_ptr<GRAPH> sharedGRAPH ;
+		typedef boost::shared_ptr<LINEAR> sharedLINEAR ;
+		typedef boost::shared_ptr<VALUES> sharedVALUES ;
 		typedef boost::shared_ptr<VectorValues> sharedVectorValues ;
+
+		const LINEAR *ptr_;
 		sharedVectorValues zeros_;
 
 	public:
 
 		typedef boost::shared_ptr<const ConjugateGradientSolver> shared_ptr ;
 
-		ConjugateGradientSolver(const GRAPH &graph, const VALUES &initial, const Ordering &ordering, const sharedParameters parameters):
+//		ConjugateGradientSolver(const GRAPH &graph, const VALUES &initial, const Ordering &ordering, const sharedParameters parameters):
+//			IterativeSolver(parameters), ptr_(0), zeros_(boost::make_shared<VectorValues>(initial.zero(ordering))) {}
+
+		ConjugateGradientSolver(const GRAPH &graph, const VALUES &initial, const Ordering &ordering, const Parameters &parameters  = Parameters()):
 			IterativeSolver(parameters), ptr_(0), zeros_(boost::make_shared<VectorValues>(initial.zero(ordering))) {}
 
 		ConjugateGradientSolver(const LINEAR &GFG) {
+			std::cout << "[ConjugateGradientSolver] Unexpected usage.." << std::endl;
 			throw std::runtime_error("SubgraphSolver: gaussian factor graph initialization not supported");
 	  	}
 
