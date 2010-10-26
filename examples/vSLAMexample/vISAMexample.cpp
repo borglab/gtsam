@@ -10,10 +10,10 @@
  * -------------------------------------------------------------------------- */
 
 /**
- * @file    vSLAMexample.cpp
- * @brief   An vSLAM example for synthesis sequence
+ * @file    vISAMexample.cpp
+ * @brief   An ISAM example for synthesis sequence
  * single camera
- * @author  Duy-Nguyen
+ * @author  Duy-Nguyen Ta
  */
 
 #include <boost/shared_ptr.hpp>
@@ -141,7 +141,7 @@ int main(int argc, char* argv[]) {
     currentEstimate.print("Current estimate: ");
   }
 
-  return 0;
+  return 1;
 }
 /* ************************************************************************* */
 

@@ -12,7 +12,7 @@
 /**
  * @file Feature2D.cpp
  * @brief
- * @author Duy-Nguyen
+ * @author Duy-Nguyen Ta
  */
 
 #pragma once

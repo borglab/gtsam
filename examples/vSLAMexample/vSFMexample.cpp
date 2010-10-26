@@ -10,10 +10,10 @@
  * -------------------------------------------------------------------------- */
 
 /**
- * @file    vSLAMexample.cpp
- * @brief   An vSLAM example for synthesis sequence
+ * @file    vSFMexample.cpp
+ * @brief   An vSFM example for synthesis sequence
  * single camera
- * @author  Duy-Nguyen
+ * @author  Duy-Nguyen Ta
  */
 
 #include <boost/shared_ptr.hpp>

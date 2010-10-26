@@ -12,7 +12,7 @@
 /**
  * @file VSLAMutils.cpp
  * @brief
- * @author Duy-Nguyen
+ * @author Duy-Nguyen Ta
  */
 
 #include "vSLAMutils.h"
