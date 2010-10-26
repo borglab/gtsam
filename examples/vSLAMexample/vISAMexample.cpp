@@ -115,7 +115,7 @@ int main(int argc, char* argv[]) {
   if (argc < 2) {
     cout << "Usage: vISAMexample <DataFolder>" << endl << endl;
     cout << "\tPlease specify <DataFolder>, which contains calibration file, initial\n"
-      "landmarks, initial poses, and feature data." << endl;
+      "\tlandmarks, initial poses, and feature data." << endl;
     cout << "\tSample folder is in $gtsam_source_folder$/examples/vSLAMexample/Data/" << endl << endl;
     cout << "Example usage: vISAMexample '$gtsam_source_folder$/examples/vSLAMexample/Data/'" << endl;
     exit(0);
