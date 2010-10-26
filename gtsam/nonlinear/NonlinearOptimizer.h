@@ -301,7 +301,7 @@ namespace gtsam {
 			// Use a variable ordering from COLAMD
 			Ordering::shared_ptr ordering = graph->orderingCOLAMD(*values);
 			// initial optimization state is the same in both cases tested
-			GS solver(*graph->linearize(*values, *ordering));
+			//GS solver(*graph->linearize(*values, *ordering));
 
 			NonlinearOptimizer optimizer(graph, values, ordering, parameters);
 			NonlinearOptimizer result = optimizer.levenbergMarquardt();
