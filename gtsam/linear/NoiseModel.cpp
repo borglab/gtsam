@@ -236,7 +236,9 @@ SharedDiagonal Gaussian::QRColumnWise(ublas::matrix<double, ublas::column_major>
 #ifdef GT_USE_LAPACK
   householder_denseqr_colmajor(Ab, &firstZeroRows[0]);
 #else
-  householder(Ab, maxRank);
+  Matrix Ab_rowWise = Ab;
+  householder(Ab_rowWise, maxRank);
+  Ab = Ab_rowWise; // FIXME: this is a really silly way of doing this
 #endif
 
   return Unit::Create(maxRank);
