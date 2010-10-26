@@ -175,5 +175,5 @@ AC_SUBST([CCOLAMDLib])
 #    [LINALG_LDFLAGS="-Wl,/System/Library/Frameworks/Accelerate.framework/Accelerate ${CCOLAMDLib}"],
 #    [LINALG_LDFLAGS="-lcblas -latlas -llapack ${CCOLAMDLib}"])
 
-AC_CONFIG_FILES([CppUnitLite/Makefile gtsam/base/Makefile gtsam/geometry/Makefile gtsam/inference/Makefile gtsam/linear/Makefile gtsam/nonlinear/Makefile gtsam/slam/Makefile gtsam/Makefile tests/Makefile examples/Makefile Makefile])
+AC_CONFIG_FILES([CppUnitLite/Makefile gtsam/base/Makefile gtsam/geometry/Makefile gtsam/inference/Makefile gtsam/linear/Makefile gtsam/nonlinear/Makefile gtsam/slam/Makefile gtsam/Makefile tests/Makefile examples/Makefile examples/vSLAMexample/Makefile Makefile])
 AC_OUTPUT

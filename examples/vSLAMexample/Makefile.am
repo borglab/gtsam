@@ -12,16 +12,14 @@ check_PROGRAMS =
 
 # Examples
 noinst_PROGRAMS = vSFMexample
-vSFMexample_includedir = .
 vSFMexample_SOURCES = vSFMexample.cpp Feature2D.cpp vSLAMutils.cpp
 
 noinst_PROGRAMS += vISAMexample
-vISAMexample_includedir = .
 vISAMexample_SOURCES = vISAMexample.cpp Feature2D.cpp vSLAMutils.cpp
 #----------------------------------------------------------------------------------------------------
 # rules to build local programs
 #----------------------------------------------------------------------------------------------------
-AM_CPPFLAGS = $(BOOST_CPPFLAGS) -I$(CCOLAMDInc) -I$(top_srcdir)/..
+AM_CPPFLAGS = $(BOOST_CPPFLAGS) -I$(CCOLAMDInc) -I$(top_srcdir)
 AM_LDFLAGS = $(BOOST_LDFLAGS)
 LDADD = ../../gtsam/libgtsam.la
 AM_DEFAULT_SOURCE_EXT = .cpp
