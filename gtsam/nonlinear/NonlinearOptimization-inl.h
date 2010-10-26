@@ -81,7 +81,7 @@ namespace gtsam {
 		typedef NonlinearOptimizer<G, T, GaussianFactorGraph, Solver> Optimizer;
 
 		Ordering::shared_ptr ordering = initialEstimate.orderingArbitrary() ;
-		sharedSolver solver = boost::make_shared<Solver>(graph, initialEstimate, *ordering, boost::make_shared<IterativeOptimizationParameters>());
+		sharedSolver solver = boost::make_shared<Solver>(graph, initialEstimate, *ordering, IterativeOptimizationParameters());
 		Optimizer optimizer(
 				boost::make_shared<const G>(graph),
 				boost::make_shared<const T>(initialEstimate),
@@ -105,7 +105,7 @@ namespace gtsam {
 		typedef SubgraphSolver<G,GaussianFactorGraph,T> Solver;
 		typedef boost::shared_ptr<Solver> shared_Solver;
 		typedef NonlinearOptimizer<G, T, GaussianFactorGraph, Solver> SPCGOptimizer;
-		shared_Solver solver = boost::make_shared<Solver>(graph, initialEstimate);
+		shared_Solver solver = boost::make_shared<Solver>(graph, initialEstimate, IterativeOptimizationParameters());
 		SPCGOptimizer optimizer(
 				boost::make_shared<const G>(graph),
 				boost::make_shared<const T>(initialEstimate),

@@ -33,10 +33,7 @@ namespace gtsam {
 
 		typedef boost::shared_ptr<const ConjugateGradientSolver> shared_ptr ;
 
-//		ConjugateGradientSolver(const GRAPH &graph, const VALUES &initial, const Ordering &ordering, const sharedParameters parameters):
-//			IterativeSolver(parameters), ptr_(0), zeros_(boost::make_shared<VectorValues>(initial.zero(ordering))) {}
-
-		ConjugateGradientSolver(const GRAPH &graph, const VALUES &initial, const Ordering &ordering, const Parameters &parameters  = Parameters()):
+		ConjugateGradientSolver(const GRAPH &graph, const VALUES &initial, const Ordering &ordering, const Parameters &parameters = Parameters()):
 			IterativeSolver(parameters), ptr_(0), zeros_(boost::make_shared<VectorValues>(initial.zero(ordering))) {}
 
 		ConjugateGradientSolver(const LINEAR &GFG) {
@@ -53,7 +50,6 @@ namespace gtsam {
 		}
 
 		VectorValues::shared_ptr optimize() const {
-			//boost::shared_ptr<VectorValues> zeros (ptr_->allocateVectorVavlues());
 			VectorValues x = conjugateGradientDescent(*ptr_, *zeros_, parameters_);
 			return boost::make_shared<VectorValues>(x) ;
 		}

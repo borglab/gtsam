@@ -75,13 +75,10 @@ namespace gtsam {
 		VectorValues::shared_ptr optimize() const ;
 		shared_ordering ordering() const { return ordering_; }
 
-
 	protected:
-
 		void initialize(const GRAPH& G, const VALUES& theta0);
 
 	private:
-
 	  	SubgraphSolver():IterativeSolver(){}
 	};
 

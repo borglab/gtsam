@@ -37,12 +37,12 @@ SubgraphSolver<GRAPH,LINEAR,VALUES>::update(const LINEAR &graph) const {
 	graph.split(pairs_, *Ab1, *Ab2) ;
 	if (parameters_->verbosity()) cout << ",with " << Ab1->size() << " and " << Ab2->size() << " factors" << endl;
 
-	//		// Add a HardConstra	int to the root, otherwise the root will be singular
-	//		Key root = keys.back();
-	//		T_.addHardConstraint(root, theta0[root]);
+	//	// Add a HardConstraint to the root, otherwise the root will be singular
+	//	Key root = keys.back();
+	//	T_.addHardConstraint(root, theta0[root]);
 	//
-	//		// compose the approximate solution
-	//		theta_bar_ = composePoses<GRAPH, Constraint, Pose, Values> (T_, tree, theta0[root]);
+	//	// compose the approximate solution
+	//	theta_bar_ = composePoses<GRAPH, Constraint, Pose, Values> (T_, tree, theta0[root]);
 
 	LINEAR sacrificialAb1 = *Ab1; // duplicate !!!!!
 	SubgraphPreconditioner::sharedBayesNet Rc1 = EliminationTree<GaussianFactor>::Create(sacrificialAb1)->eliminate();
