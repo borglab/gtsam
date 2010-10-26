@@ -2,8 +2,8 @@
 # Process this file with autoconf to produce a configure script.
 
 AC_PREREQ(2.59)
-AC_INIT(gtsam, 0.9.0, dellaert@cc.gatech.edu)
-AM_INIT_AUTOMAKE(gtsam, 0.9.0)
+AC_INIT(gtsam, 0.9.1, dellaert@cc.gatech.edu)
+AM_INIT_AUTOMAKE(gtsam, 0.9.1)
 AC_CONFIG_MACRO_DIR([m4])
 AC_CONFIG_HEADER([config.h])
 AC_CONFIG_SRCDIR([CppUnitLite/Test.cpp])
