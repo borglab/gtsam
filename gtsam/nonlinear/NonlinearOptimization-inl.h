@@ -93,6 +93,27 @@ namespace gtsam {
 		return *result.values();
 	}
 
+	template<class G, class T, class PC>
+	T optimizePCG(const G& graph,
+				  const T& initialEstimate,
+				  const NonlinearOptimizationParameters& parameters = NonlinearOptimizationParameters()) {
+
+		typedef PreconditionedConjugateGradientSolver<G,GaussianFactorGraph,T,PC> Solver;
+		typedef boost::shared_ptr<Solver> sharedSolver;
+		typedef NonlinearOptimizer<G, T, GaussianFactorGraph, Solver> Optimizer;
+
+		Ordering::shared_ptr ordering = initialEstimate.orderingArbitrary() ;
+		sharedSolver solver = boost::make_shared<Solver>(graph, initialEstimate, *ordering, IterativeOptimizationParameters());
+		Optimizer optimizer(
+				boost::make_shared<const G>(graph),
+				boost::make_shared<const T>(initialEstimate),
+				ordering,
+				solver);
+
+		// Levenberg-Marquardt
+		Optimizer result = optimizer.levenbergMarquardt(parameters);
+		return *result.values();
+	}
 
 
 	/**

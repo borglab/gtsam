@@ -400,6 +400,17 @@ void insertColumn(Matrix& A, const Vector& col, size_t i, size_t j) {
 }
 
 /* ************************************************************************* */
+
+Vector columnNormSquare(const MatrixColMajor &A) {
+	Vector v (A.size2()) ;
+	for ( size_t i = 0 ; i < A.size2() ; ++i ) {
+		ublas::matrix_column<const MatrixColMajor> mc (A, i);
+		v[i] = dot(mc, mc) ;
+	}
+	return v ;
+}
+
+/* ************************************************************************* */
 void solve(Matrix& A, Matrix& B)
 {
 	typedef ublas::permutation_matrix<std::size_t> pmatrix;

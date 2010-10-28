@@ -194,7 +194,23 @@ public:
   friend double dot(const VectorValues& V1, const VectorValues& V2) { return gtsam::dot(V1.values_, V2.values_) ; }
   friend void scal(double alpha, VectorValues& x) {	gtsam::scal(alpha, x.values_) ; }
   friend void axpy(double alpha, const VectorValues& x, VectorValues& y) { gtsam::axpy(alpha, x.values_, y.values_) ; }
+  friend void sqrt(VectorValues &x) { Vector y = gtsam::esqrt(x.values_); x.values_ = y; }
+  friend void ediv(const VectorValues& numerator, const VectorValues& denominator, VectorValues &result) {
+	  Vector v = gtsam::ediv(numerator.values_, denominator.values_);
+	  result.values_ = v ;
+  }
 
+  // check whether there's a zero in the vector
+  friend bool anyZero(const VectorValues& x, double tol=1e-5) {
+	  bool flag = false ;
+	  BOOST_FOREACH(const double &v, x.values_) {
+		  if ( v < tol && v > -tol) {
+			  flag = true ;
+			  break;
+		  }
+	  }
+	  return flag;
+  }
 };
 
 

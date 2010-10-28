@@ -32,7 +32,7 @@ namespace gtsam {
 			reset_(101),
 			epsilon_(1e-5),
 			epsilon_abs_(1e-5),
-			verbosity_(SILENT) {}
+			verbosity_(ERROR) {}
 
 		IterativeOptimizationParameters(const IterativeOptimizationParameters &parameters):
 			maxIterations_(parameters.maxIterations_),
@@ -43,7 +43,7 @@ namespace gtsam {
 
 
 		IterativeOptimizationParameters
-		(int maxIterations, double epsilon, double epsilon_abs, verbosityLevel verbosity=SILENT, int reset=-1):
+		(int maxIterations, double epsilon, double epsilon_abs, verbosityLevel verbosity=ERROR, int reset=-1):
 		maxIterations_(maxIterations), reset_(reset),
 		epsilon_(epsilon), epsilon_abs_(epsilon_abs), verbosity_(verbosity) {
 			if (reset_==-1) reset_ = maxIterations_ + 1 ;

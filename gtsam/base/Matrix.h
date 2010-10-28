@@ -205,6 +205,8 @@ Vector column_(const Matrix& A, size_t j);
 void insertColumn(Matrix& A, const Vector& col, size_t j);
 void insertColumn(Matrix& A, const Vector& col, size_t i, size_t j);
 
+Vector columnNormSquare(const MatrixColMajor &A) ;
+
 /**
  * extracts a row from a matrix
  * @param matrix to extract row from

@@ -152,14 +152,22 @@ namespace gtsam {
      */
     GaussianFactorGraph add_priors(double sigma, const std::vector<size_t>& dimensions) const;
 
-
 	/**
 	 * Split a Gaussian factor graph into two, according to M
 	 * M keeps the vertex indices of edges of A1. The others belong to A2.
 	 */
 	bool split(const std::map<Index, Index> &M, GaussianFactorGraph &A1, GaussianFactorGraph &A2) const ;
-	boost::shared_ptr<VectorValues> allocateVectorVavlues() const ;
 
+	// allocate a vectorvalues of b's structure
+	VectorValues allocateVectorValuesb() const ;
+
+	/* get the diagonal of A^ A, used to build jacobi preconditioner */
+	bool getDiagonalOfHessian(VectorValues &values) const ;
+
+	void residual(const VectorValues &x, VectorValues &r) const ;
+	void multiply(const VectorValues &x, VectorValues &r) const ;
+	void transposeMultiply(const VectorValues &r, VectorValues &x) const ;
+	void getb(VectorValues &b) const ;
   };
 
 } // namespace gtsam

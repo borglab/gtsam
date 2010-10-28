@@ -195,18 +195,73 @@ bool GaussianFactorGraph::split(const std::map<Index, Index> &M, GaussianFactorG
 	return true ;
 }
 
-boost::shared_ptr<VectorValues> GaussianFactorGraph::allocateVectorVavlues() const {
+VectorValues GaussianFactorGraph::allocateVectorValuesb() const {
 	std::vector<size_t> dimensions(size()) ;
+	Index i = 0 ;
+	BOOST_FOREACH( const sharedFactor& factor, factors_) {
+		dimensions[i] = factor->numberOfRows() ;
+		i++;
+	}
+
+	return VectorValues(dimensions) ;
+}
+
+
+bool GaussianFactorGraph::getDiagonalOfHessian(VectorValues &values) const {
+
+	values.makeZero() ;
+
 	BOOST_FOREACH( const sharedFactor& factor, factors_) {
 		Index i = 0 ;
 		BOOST_FOREACH( const Index& idx, factor->keys_) {
-			dimensions[idx] = factor->Ab_(i).size2() ;
-			i++;
+			Vector v = columnNormSquare(factor->Ab_(i)) ;
+			values[idx] += v;
 		}
 	}
-
-	return boost::make_shared<VectorValues>(dimensions) ;
+	return true ;
 }
 
+void GaussianFactorGraph::residual(const VectorValues &x, VectorValues &r) const {
+
+	getb(r) ;
+	VectorValues Ax = VectorValues::SameStructure(r) ;
+	multiply(x,Ax) ;
+	axpy(-1.0,Ax,r) ;
+}
+
+void GaussianFactorGraph::multiply(const VectorValues &x, VectorValues &r) const {
+
+	r.makeZero() ;
+	Index i = 0 ;
+	BOOST_FOREACH(const sharedFactor& factor, factors_) {
+		Index j = 0 ;
+		BOOST_FOREACH( const Index& idx, factor->keys_ ) {
+			r[i] += prod(factor->Ab_(j), x[idx]) ;
+			++j ;
+		}
+		++i ;
+	}
+}
+
+void GaussianFactorGraph::transposeMultiply(const VectorValues &r, VectorValues &x) const {
+	x.makeZero() ;
+	Index i = 0 ;
+	BOOST_FOREACH(const sharedFactor& factor, factors_) {
+		Index j = 0 ;
+		BOOST_FOREACH( const Index& idx, factor->keys_ ) {
+			x[idx] += prod(trans(factor->Ab_(j)), r[i]) ;
+			++j ;
+		}
+		++i ;
+	}
+}
+
+void GaussianFactorGraph::getb(VectorValues &b) const {
+	Index i = 0 ;
+	BOOST_FOREACH( const sharedFactor& factor, factors_) {
+		b[i] = factor->getb() ;
+		i++;
+	}
+}
 
 } // namespace gtsam

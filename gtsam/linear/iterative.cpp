@@ -20,6 +20,8 @@
 #include <gtsam/base/Vector.h>
 #include <gtsam/base/Matrix.h>
 #include <gtsam/linear/GaussianFactorGraph.h>
+#include <gtsam/linear/IterativeSolver.h>
+#include <gtsam/linear/Preconditioner.h>
 #include <gtsam/linear/IterativeOptimizationParameters.h>
 #include <gtsam/linear/iterative-inl.h>
 
@@ -36,73 +38,33 @@ namespace gtsam {
 
 	/* ************************************************************************* */
 
-	Vector steepestDescent(const System& Ab, const Vector& x, const IterativeSolver::sharedParameters parameters) {
+	Vector steepestDescent(const System& Ab, const Vector& x, const IterativeSolver::Parameters & parameters) {
 		return conjugateGradients<System, Vector, Vector> (Ab, x, parameters, true);
 	}
 
-	Vector conjugateGradientDescent(const System& Ab, const Vector& x, const IterativeSolver::sharedParameters parameters) {
+	Vector conjugateGradientDescent(const System& Ab, const Vector& x, const IterativeSolver::Parameters & parameters) {
 		return conjugateGradients<System, Vector, Vector> (Ab, x, parameters);
 	}
 
 	/* ************************************************************************* */
-	Vector steepestDescent(const Matrix& A, const Vector& b, const Vector& x, const IterativeSolver::sharedParameters parameters) {
+	Vector steepestDescent(const Matrix& A, const Vector& b, const Vector& x, const IterativeSolver::Parameters & parameters) {
 		System Ab(A, b);
 		return conjugateGradients<System, Vector, Vector> (Ab, x, parameters, true);
 	}
 
-	Vector conjugateGradientDescent(const Matrix& A, const Vector& b, const Vector& x, const IterativeSolver::sharedParameters parameters) {
+	Vector conjugateGradientDescent(const Matrix& A, const Vector& b, const Vector& x, const IterativeSolver::Parameters & parameters) {
 		System Ab(A, b);
 		return conjugateGradients<System, Vector, Vector> (Ab, x, parameters);
 	}
 
 	/* ************************************************************************* */
-	VectorValues steepestDescent(const GaussianFactorGraph& fg, const VectorValues& x, const IterativeSolver::sharedParameters parameters) {
+	VectorValues steepestDescent(const GaussianFactorGraph& fg, const VectorValues& x, const IterativeSolver::Parameters & parameters) {
 		return conjugateGradients<GaussianFactorGraph, VectorValues, Errors> (fg, x, parameters, true);
 	}
 
-	VectorValues conjugateGradientDescent(const GaussianFactorGraph& fg, const VectorValues& x, const IterativeSolver::sharedParameters parameters) {
+	VectorValues conjugateGradientDescent(const GaussianFactorGraph& fg, const VectorValues& x, const IterativeSolver::Parameters & parameters) {
 		return conjugateGradients<GaussianFactorGraph, VectorValues, Errors> (fg, x, parameters);
 	}
-
-//	Vector steepestDescent(const System& Ab, const Vector& x, bool verbose,
-//			double epsilon, double epsilon_abs, size_t maxIterations) {
-//		return conjugateGradients<System, Vector, Vector> (Ab, x, verbose, epsilon,
-//				epsilon_abs, maxIterations, true);
-//	}
-//
-//	Vector conjugateGradientDescent(const System& Ab, const Vector& x,
-//			bool verbose, double epsilon, double epsilon_abs, size_t maxIterations) {
-//		return conjugateGradients<System, Vector, Vector> (Ab, x, verbose, epsilon,
-//				epsilon_abs, maxIterations);
-//	}
-//
-//	/* ************************************************************************* */
-//	Vector steepestDescent(const Matrix& A, const Vector& b, const Vector& x,
-//			bool verbose, double epsilon, double epsilon_abs, size_t maxIterations) {
-//		System Ab(A, b);
-//		return conjugateGradients<System, Vector, Vector> (Ab, x, verbose, epsilon,
-//				epsilon_abs, maxIterations, true);
-//	}
-//
-//	Vector conjugateGradientDescent(const Matrix& A, const Vector& b,
-//			const Vector& x, bool verbose, double epsilon, double epsilon_abs, size_t maxIterations) {
-//		System Ab(A, b);
-//		return conjugateGradients<System, Vector, Vector> (Ab, x, verbose, epsilon,
-//				epsilon_abs, maxIterations);
-//	}
-//
-//	/* ************************************************************************* */
-//	VectorValues steepestDescent(const GaussianFactorGraph& fg,
-//			const VectorValues& x, bool verbose, double epsilon, double epsilon_abs, size_t maxIterations) {
-//		return conjugateGradients<GaussianFactorGraph, VectorValues, Errors> (fg,
-//				x, verbose, epsilon, epsilon_abs, maxIterations, true);
-//	}
-//
-//	VectorValues conjugateGradientDescent(const GaussianFactorGraph& fg,
-//			const VectorValues& x, bool verbose, double epsilon, double epsilon_abs, size_t maxIterations) {
-//		return conjugateGradients<GaussianFactorGraph, VectorValues, Errors> (fg,
-//				x, verbose, epsilon, epsilon_abs, maxIterations);
-//	}
 
 	/* ************************************************************************* */
 

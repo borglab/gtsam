@@ -357,7 +357,8 @@ namespace gtsam {
 	template<class G, class C, class L, class S, class W>
 	NonlinearOptimizer<G, C, L, S, W> NonlinearOptimizer<G, C, L, S, W>::
 	levenbergMarquardt(const NonlinearOptimizationParameters &parameters) const {
-		return newParameters_(boost::make_shared<Parameters>(parameters)).levenbergMarquardt() ;
+		boost::shared_ptr<NonlinearOptimizationParameters> ptr (new NonlinearOptimizationParameters(parameters)) ;
+		return newParameters_(ptr).levenbergMarquardt() ;
 	}
 
 	/* ************************************************************************* */

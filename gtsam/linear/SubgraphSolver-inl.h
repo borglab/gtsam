@@ -58,7 +58,7 @@ VectorValues::shared_ptr SubgraphSolver<GRAPH,LINEAR,VALUES>::optimize() const {
 	// preconditioned conjugate gradient
 	VectorValues zeros = pc_->zero();
 	VectorValues ybar = conjugateGradients<SubgraphPreconditioner, VectorValues, Errors>
-		(*pc_, zeros, parameters_);
+		(*pc_, zeros, *parameters_);
 
 	boost::shared_ptr<VectorValues> xbar = boost::make_shared<VectorValues>() ;
 	*xbar = pc_->x(ybar);

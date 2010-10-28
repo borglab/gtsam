@@ -16,6 +16,7 @@ noinst_PROGRAMS += PlanarSLAMExample_easy			# Solves SLAM example from tutorial 
 noinst_PROGRAMS += PlanarSLAMSelfContained_advanced	# Solves SLAM example from tutorial with all typedefs in the script
 noinst_PROGRAMS += Pose2SLAMExample_easy 			# Solves SLAM example from tutorial by using Pose2SLAM and easy optimization interface
 noinst_PROGRAMS += Pose2SLAMExample_advanced		# Solves SLAM example from tutorial by using Pose2SLAM and advanced optimization interface
+noinst_PROGRAMS += Pose2SLAMwCG				  		# Solves a simple Pose2 SLAM example with easy CG solver
 noinst_PROGRAMS += Pose2SLAMwSPCG_easy      		# Solves a simple Pose2 SLAM example with advanced SPCG solver
 noinst_PROGRAMS += Pose2SLAMwSPCG_advanced  		# Solves a simple Pose2 SLAM example with easy SPCG solver
 SUBDIRS = vSLAMexample # visual SLAM examples with 3D point landmarks and 6D camera poses
