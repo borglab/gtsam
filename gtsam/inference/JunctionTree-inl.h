@@ -23,7 +23,7 @@
 #include <gtsam/inference/BayesTree-inl.h>
 #include <gtsam/inference/JunctionTree.h>
 #include <gtsam/inference/inference-inl.h>
-#include <gtsam/inference/VariableSlots-inl.h>
+#include <gtsam/inference/VariableSlots.h>
 #include <gtsam/inference/SymbolicSequentialSolver.h>
 #include <gtsam/inference/ClusterTree-inl.h>
 

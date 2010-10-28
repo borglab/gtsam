@@ -6,7 +6,7 @@
  */
 
 #include <gtsam/inference/EliminationTree.h>
-#include <gtsam/inference/VariableSlots-inl.h>
+#include <gtsam/inference/VariableSlots.h>
 #include <gtsam/inference/FactorGraph-inl.h>
 
 #include <boost/foreach.hpp>
