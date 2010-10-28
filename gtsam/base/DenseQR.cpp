@@ -13,6 +13,8 @@
 
 #include "DenseQR.h"
 
+//#define DEBUG_MEMORY
+
 // all the lapack functions we need here
 extern "C" {
 void dlarft_ (char *direct, char *storev, int *n, int *k, double *V, int *ldv, double *Tau, double *T, int *ldt) ;
@@ -88,10 +90,15 @@ namespace gtsam {
 			stairStartLast = stairStart;
 			stairs[col] = stairStart = max(numGoodHHs + 1, stairs[col]);
 			numZeros += numPendingHHs * (stairStart - stairStartLast);
-			if (numPendingHHs >= minSizeBlock &&
-					numZeros > max(16, ((numPendingHHs * (numPendingHHs + 1)) / 2 + numPendingHHs * (stairStart - row1stHH - numPendingHHs)) / 2))
+			if (numPendingHHs >= minSizeBlock && colPendingHHEnd < n &&
+					numZeros > max(16, ((numPendingHHs * (numPendingHHs + 1)) / 2 + numPendingHHs * (stairStart - row1stHH - numPendingHHs)) / 2)) {
+#ifdef DEBUG_MEMORY
+				if (row1stHH >= m) throw std::runtime_error("DenseQR: row1stHH >= m");
+				if (colPendingHHEnd >= n) throw std::runtime_error("DenseQR: colPendingHHEnd >= n");
+#endif
 					dlarftb_wrap(stairStartLast - row1stHH, n - colPendingHHEnd, numPendingHHs, m, m,
 							vectorHH, tau, &A[row1stHH+colPendingHHEnd*m], workspace, &numPendingHHs, &numZeros);
+			}
 
 			// compute Householder for the current column
 			int n_ = stairStart - numGoodHHs;
@@ -100,6 +107,9 @@ namespace gtsam {
 			if (!numPendingHHs) {
 				row1stHH = numGoodHHs;
 				vectorHH = &A[row1stHH+col*m];
+#ifdef DEBUG_MEMORY
+				if (row1stHH+col*m >= m*n) throw std::runtime_error("DenseQR: row1stHH+col*m >= m*n");
+#endif
 				colPendingHHEnd = NotEnoughLeft(m - row1stHH, n - col, sizeBlock) ? n : min(n, col + sizeBlock); // if not enough work left, go to unblocked mode
 			}
 			numPendingHHs++;
@@ -115,9 +125,14 @@ namespace gtsam {
 				numGoodHHs++;
 			}
 
-			if (numGoodHHs == m || col + 1 == colPendingHHEnd)
-				dlarftb_wrap(stairStart - row1stHH, n - colPendingHHEnd, numPendingHHs, m, m, vectorHH, tau, &A[row1stHH+colPendingHHEnd*m], workspace,
-						&numPendingHHs, &numZeros);
+			if ((numGoodHHs == m || col + 1 == colPendingHHEnd) && colPendingHHEnd < n) {
+#ifdef DEBUG_MEMORY
+				if (row1stHH >= m) throw std::runtime_error("DenseQR: row1stHH >= m");
+				if (colPendingHHEnd >= n) throw std::runtime_error("DenseQR: colPendingHHEnd >= n");
+#endif
+				dlarftb_wrap(stairStart - row1stHH, n - colPendingHHEnd, numPendingHHs, m, m,
+						vectorHH, tau, &A[row1stHH+colPendingHHEnd*m], workspace, &numPendingHHs, &numZeros);
+			}
 		}
 	}
 
