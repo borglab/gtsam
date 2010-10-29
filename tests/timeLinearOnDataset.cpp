@@ -38,10 +38,12 @@ int main(int argc, char *argv[]) {
   tic_("Z 1 order");
   Ordering::shared_ptr ordering(data.first->orderingCOLAMD(*data.second));
   toc_("Z 1 order");
+  tictoc_print_();
 
   tic_("Z 2 linearize");
   GaussianFactorGraph::shared_ptr gfg(data.first->linearize(*data.second, *ordering));
   toc_("Z 2 linearize");
+  tictoc_print_();
 
   for(size_t trial = 0; trial < 100; ++trial) {
 
