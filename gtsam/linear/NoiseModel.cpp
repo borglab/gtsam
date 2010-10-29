@@ -122,6 +122,8 @@ void Gaussian::WhitenInPlace(MatrixColMajor& H) const {
 // General QR, see also special version in Constrained
 SharedDiagonal Gaussian::QR(Matrix& Ab, boost::optional<vector<int>&> firstZeroRows) const {
 
+  assert(false);
+
 	// get size(A) and maxRank
 	// TODO: really no rank problems ?
 	size_t m = Ab.size1(), n = Ab.size2()-1;
@@ -234,7 +236,13 @@ SharedDiagonal Gaussian::QRColumnWise(ublas::matrix<double, ublas::column_major>
 
   // Perform in-place Householder
 #ifdef GT_USE_LAPACK
+#ifdef USE_LAPACK_QR
+  assert(firstZeroRows);
+  householderColMajor(Ab);
+#elif USE_DAVIS_QR
+#else
   householder_denseqr_colmajor(Ab, &firstZeroRows[0]);
+#endif
 #else
   Matrix Ab_rowWise = Ab;
   householder(Ab_rowWise, maxRank);

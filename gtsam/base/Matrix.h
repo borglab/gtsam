@@ -267,7 +267,7 @@ void householder_(Matrix& A, size_t k);
 void householder(Matrix& A, size_t k);
 
 #ifdef GT_USE_LAPACK
-#ifdef YA_BLAS
+#ifdef USE_LAPACK_QR
 /**
  * Householder tranformation, zeros below diagonal
  * @return nothing: in place !!!

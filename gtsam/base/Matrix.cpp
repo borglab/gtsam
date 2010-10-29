@@ -649,7 +649,7 @@ void householder(Matrix &A, size_t k) {
 /** in-place householder                                                     */
 /* ************************************************************************* */
 #ifdef GT_USE_LAPACK
-#ifdef YA_BLAS
+#ifdef USE_LAPACK_QR
 void householder(Matrix &A) {
 	__CLPK_integer m = A.size1();
 	__CLPK_integer n = A.size2();
