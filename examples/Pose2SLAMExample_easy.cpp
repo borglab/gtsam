@@ -22,7 +22,6 @@ int main(int argc, char** argv) {
 	Key x1(1), x2(2), x3(3);
 
 	/* 1. create graph container and add factors to it */
-	//Graph graph;
 	Graph graph ;
 
 	/* 2.a add prior  */

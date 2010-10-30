@@ -20,8 +20,7 @@
 
 #include <gtsam/base/Matrix.h>
 #include <gtsam/linear/VectorValues.h>
-#include <gtsam/linear/IterativeSolver.h>
-#include <gtsam/linear/Preconditioner.h>
+#include <gtsam/linear/IterativeOptimizationParameters.h>
 
 namespace gtsam {
 
@@ -92,7 +91,7 @@ namespace gtsam {
 	Vector steepestDescent(
 			const System& Ab,
 			const Vector& x,
-			const IterativeSolver::Parameters & parameters);
+			const IterativeOptimizationParameters & parameters);
 
 	/**
 	 * Method of conjugate gradients (CG), System version
@@ -100,7 +99,7 @@ namespace gtsam {
 	Vector conjugateGradientDescent(
 			const System& Ab,
 			const Vector& x,
-			const IterativeSolver::Parameters & parameters);
+			const IterativeOptimizationParameters & parameters);
 
 	/** convenience calls using matrices, will create System class internally: */
 
@@ -111,7 +110,7 @@ namespace gtsam {
 			const Matrix& A,
 			const Vector& b,
 			const Vector& x,
-			const IterativeSolver::Parameters & parameters);
+			const IterativeOptimizationParameters & parameters);
 
 	/**
 	 * Method of conjugate gradients (CG), Matrix version
@@ -120,7 +119,7 @@ namespace gtsam {
 			const Matrix& A,
 			const Vector& b,
 			const Vector& x,
-			const IterativeSolver::Parameters & parameters);
+			const IterativeOptimizationParameters & parameters);
 
 	class GaussianFactorGraph;
 
@@ -130,7 +129,7 @@ namespace gtsam {
 	VectorValues steepestDescent(
 			const GaussianFactorGraph& fg,
 			const VectorValues& x,
-			const IterativeSolver::Parameters & parameters);
+			const IterativeOptimizationParameters & parameters);
 
 	/**
 	 * Method of conjugate gradients (CG), Gaussian Factor Graph version
@@ -138,7 +137,7 @@ namespace gtsam {
 	VectorValues conjugateGradientDescent(
 			const GaussianFactorGraph& fg,
 			const VectorValues& x,
-			const IterativeSolver::Parameters & parameters);
+			const IterativeOptimizationParameters & parameters);
 
 
 } // namespace gtsam

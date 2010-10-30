@@ -37,10 +37,8 @@ namespace gtsam {
 	enum LinearSolver{
 		SEQUENTIAL,      // Sequential elimination
 		MULTIFRONTAL,      // Multi-frontal elimination
-		CG,				  // vanilla conjugate gradient
 		SPCG,			  // Subgraph Preconditioned Conjugate Gradient
 	};
-
 
 	/**
 	 * optimization that returns the values

@@ -19,11 +19,8 @@
 #pragma once
 
 #include <boost/shared_ptr.hpp>
-#include <boost/make_shared.hpp>
 
 #include <gtsam/linear/IterativeOptimizationParameters.h>
-#include <gtsam/linear/IterativeSolver.h>
-#include <gtsam/linear/GaussianFactorGraph.h>
 #include <gtsam/linear/iterative.h>
 
 using namespace std;
@@ -35,7 +32,7 @@ namespace gtsam {
 	template<class S, class V, class E>
 	struct CGState {
 
-		typedef IterativeSolver::Parameters Parameters;
+		typedef IterativeOptimizationParameters Parameters;
 		const Parameters &parameters_;
 
 		int k;
@@ -127,7 +124,7 @@ namespace gtsam {
 	V conjugateGradients(
 			const S& Ab,
 			V x,
-			const IterativeSolver::Parameters &parameters,
+			const IterativeOptimizationParameters &parameters,
 			bool steepest = false) {
 
 		CGState<S, V, E> state(Ab, x, parameters, steepest);
@@ -148,116 +145,6 @@ namespace gtsam {
 		while (!state.step(Ab, x)) {}
 		return x;
 	}
-
-	/* ************************************************************************* */
-	// state for PCG method
-	template<class LINEAR, class PC, class V>
-	class PCGState {
-
-	public:
-		typedef IterativeSolver::Parameters Parameters;
-		typedef V Values;
-		typedef boost::shared_ptr<Values> sharedValues;
-
-	protected:
-		const LINEAR &Ab_;
-		const PC &pc_ ;
-		V x_ ;
-		const Parameters &parameters_;
-		bool steepest_;
-
-	public:
-		/* ************************************************************************* */
-		// Constructor
-		PCGState(const LINEAR& Ab, const PC &pc, const V &x0, const Parameters &parameters, bool steep):
-			Ab_(Ab), pc_(pc), x_(x0), parameters_(parameters),steepest_(steep) {}
-
-		V run() {
-
-			// refer to Bjorck pp. 294
-			V r = Ab_.allocateVectorValuesb() ;
-			V q = V::SameStructure(r) ;
-
-			V p = V::SameStructure(x_) ;
-			V s = V::SameStructure(x_) ;
-			V t = V::SameStructure(x_) ;
-			V tmp = V::SameStructure(x_) ;
-
-			// initial PCG
-			Ab_.residual(x_, r) ;
-			Ab_.transposeMultiply(r, tmp) ;
-			pc_.solveTranspose(tmp, s) ;
-			p = s ;
-
-			double gamma = dot(s,s), new_gamma = 0.0, alpha = 0.0, beta = 0.0 ;
-
-			const double threshold =
-					::max(parameters_.epsilon_abs(),
-					      parameters_.epsilon() * parameters_.epsilon() * gamma);
-
-			const int iMaxIterations = parameters_.maxIterations();
-			const int iReset = parameters_.reset() ;
-
-			if (parameters_.verbosity())
-				cout << "PCG: epsilon = " << parameters_.epsilon()
-					 << ", maxIterations = " << parameters_.maxIterations()
-					 << ", ||g0||^2 = " << gamma
-					 << ", threshold = " << threshold << endl;
-
-			for ( int k = 0 ; k < iMaxIterations ; ++k ) {
-
-				if ( gamma < threshold ) break ;
-
-				if ( k % iReset == 0) {
-					Ab_.residual(x_, r) ;
-					Ab_.transposeMultiply(r, tmp) ;
-					pc_.solveTranspose(tmp, s) ;
-					p = s ;
-					gamma = dot(s,s) ;
-				}
-
-
-				pc_.solve(p, t) ;
-				Ab_.multiply(t, q) ;
-				alpha = gamma / dot(q,q) ;
-				axpy( alpha, t, x_) ;
-				axpy(-alpha, q, r) ;
-				Ab_.transposeMultiply(r, tmp) ;
-				pc_.solveTranspose(tmp, s) ;
-				new_gamma = dot(s,s) ;
-
-				if (parameters_.verbosity())
-					cout << "iteration " << k
-					     << ": alpha = " << alpha
-					     << ", dotg = " << new_gamma << endl;
-
-				beta = new_gamma / gamma ;
-				scal(beta,p) ;
-				axpy(1.0,s,p) ;
-				gamma = new_gamma ;
-			}
-
-			return x_ ;
-		} // function
-
-	private:
-		PCGState(){}
-
-	}; // PCGState Class
-
-	/* ************************************************************************* */
-	template<class LINEAR, class PC, class V>
-	V preconditionedConjugateGradientDescent(
-			const LINEAR& Ab,
-			const PC& pc,
-			V x,
-			const IterativeSolver::Parameters &parameters,
-			bool steepest = false) {
-
-		PCGState<LINEAR, PC, V> state(Ab, pc, x, parameters, steepest);
-		return state.run() ;
-	}
-
 /* ************************************************************************* */
 
 } // namespace gtsam

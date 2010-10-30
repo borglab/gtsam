@@ -23,7 +23,6 @@
 
 #include <gtsam/linear/GaussianSequentialSolver.h>
 #include <gtsam/linear/GaussianMultifrontalSolver.h>
-#include <gtsam/linear/ConjugateGradientSolver.h>
 #include <gtsam/linear/SubgraphSolver-inl.h>
 #include <gtsam/nonlinear/NonlinearOptimizer-inl.h>
 #include <gtsam/nonlinear/NonlinearOptimization.h>
@@ -71,52 +70,6 @@ namespace gtsam {
 	}
 
 	/**
-	 * The cg solver
-	 */
-	template<class G, class T>
-	T optimizeCG(const G& graph, const T& initialEstimate, const NonlinearOptimizationParameters& parameters = NonlinearOptimizationParameters()) {
-
-		typedef ConjugateGradientSolver<G,GaussianFactorGraph,T> Solver;
-		typedef boost::shared_ptr<Solver> sharedSolver;
-		typedef NonlinearOptimizer<G, T, GaussianFactorGraph, Solver> Optimizer;
-
-		Ordering::shared_ptr ordering = initialEstimate.orderingArbitrary() ;
-		sharedSolver solver = boost::make_shared<Solver>(graph, initialEstimate, *ordering, IterativeOptimizationParameters());
-		Optimizer optimizer(
-				boost::make_shared<const G>(graph),
-				boost::make_shared<const T>(initialEstimate),
-				ordering,
-				solver);
-
-		// Levenberg-Marquardt
-		Optimizer result = optimizer.levenbergMarquardt(parameters);
-		return *result.values();
-	}
-
-	template<class G, class T, class PC>
-	T optimizePCG(const G& graph,
-				  const T& initialEstimate,
-				  const NonlinearOptimizationParameters& parameters = NonlinearOptimizationParameters()) {
-
-		typedef PreconditionedConjugateGradientSolver<G,GaussianFactorGraph,T,PC> Solver;
-		typedef boost::shared_ptr<Solver> sharedSolver;
-		typedef NonlinearOptimizer<G, T, GaussianFactorGraph, Solver> Optimizer;
-
-		Ordering::shared_ptr ordering = initialEstimate.orderingArbitrary() ;
-		sharedSolver solver = boost::make_shared<Solver>(graph, initialEstimate, *ordering, IterativeOptimizationParameters());
-		Optimizer optimizer(
-				boost::make_shared<const G>(graph),
-				boost::make_shared<const T>(initialEstimate),
-				ordering,
-				solver);
-
-		// Levenberg-Marquardt
-		Optimizer result = optimizer.levenbergMarquardt(parameters);
-		return *result.values();
-	}
-
-
-	/**
 	 * The sparse preconditioned conjucate gradient solver
 	 */
 	template<class G, class T>
@@ -149,8 +102,6 @@ namespace gtsam {
 			return optimizeSequential<G,T>(graph, initialEstimate, parameters);
 		case MULTIFRONTAL:
 			return optimizeMultiFrontal<G,T>(graph, initialEstimate, parameters);
-		case CG:
-			return optimizeCG<G,T>(graph, initialEstimate, parameters);
 		case SPCG:
 			throw runtime_error("optimize: SPCG not supported yet due to the specific pose constraint");
 		}
