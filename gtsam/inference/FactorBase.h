@@ -25,6 +25,7 @@
 #include <map>
 #include <boost/utility.hpp> // for noncopyable
 #include <boost/serialization/nvp.hpp>
+#include <boost/foreach.hpp>
 #include <gtsam/base/types.h>
 #include <gtsam/base/Testable.h>
 #include <gtsam/base/FastMap.h>
@@ -98,6 +99,12 @@ public:
   /** Construct 4-way factor */
   FactorBase(Key key1, Key key2, Key key3, Key key4) : keys_(4) {
     keys_[0] = key1; keys_[1] = key2; keys_[2] = key3; keys_[3] = key4; assertInvariants(); }
+
+  /** Construct n-way factor */
+  FactorBase(std::set<Key> keys) {
+  	BOOST_FOREACH(const Key& key, keys)
+  			keys_.push_back(key);
+  	assertInvariants(); }
 
   /** Create a combined joint factor (new style for EliminationTree). */
   template<class DERIVED>

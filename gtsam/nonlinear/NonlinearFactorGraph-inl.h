@@ -58,6 +58,17 @@ void NonlinearFactorGraph<VALUES>::print(const std::string& str) const {
 		return total_error;
 	}
 
+	/* ************************************************************************* */
+	/* ************************************************************************* */
+	template<class VALUES>
+	std::set<Symbol> NonlinearFactorGraph<VALUES>::keys() const {
+		std::set<Symbol> keys;
+		BOOST_FOREACH(const sharedFactor& factor, this->factors_)
+			keys.insert(factor->begin(), factor->end());
+		return keys;
+	}
+
+
   /* ************************************************************************* */
   template<class VALUES>
 	Ordering::shared_ptr NonlinearFactorGraph<VALUES>::orderingCOLAMD(const VALUES& config) const {

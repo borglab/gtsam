@@ -49,6 +49,9 @@ namespace gtsam {
     /** print just calls base class */
     void print(const std::string& str = "NonlinearFactorGraph: ") const;
 
+    /** return keys in some random order */
+    std::set<Symbol> keys() const;
+
 		/** unnormalized error */
 		double error(const VALUES& c) const;
 
@@ -91,6 +94,7 @@ namespace gtsam {
 		 */
 		boost::shared_ptr<GaussianFactorGraph>
 				linearize(const VALUES& config, const Ordering& ordering) const;
+
 
 	};
 

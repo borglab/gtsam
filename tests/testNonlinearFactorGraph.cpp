@@ -22,6 +22,7 @@
 using namespace std;
 
 #include <boost/assign/std/list.hpp>
+#include <boost/assign/std/set.hpp>
 using namespace boost::assign;
 
 #include <CppUnitLite/TestHarness.h>
@@ -55,6 +56,18 @@ TEST( Graph, error )
 	Values c2 = createNoisyValues();
 	double actual2 = fg.error(c2);
 	DOUBLES_EQUAL( 5.625, actual2, 1e-9 );
+}
+
+/* ************************************************************************* */
+TEST( Graph, keys )
+{
+	Graph fg = createNonlinearFactorGraph();
+	set<Symbol> actual = fg.keys();
+	LONGS_EQUAL(3, actual.size());
+	set<Symbol>::const_iterator it = actual.begin();
+	CHECK(assert_equal(Symbol('l', 1), *(it++)));
+	CHECK(assert_equal(Symbol('x', 1), *(it++)));
+	CHECK(assert_equal(Symbol('x', 2), *(it++)));
 }
 
 /* ************************************************************************* */

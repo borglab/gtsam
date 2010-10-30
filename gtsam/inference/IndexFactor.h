@@ -59,6 +59,9 @@ public:
   /** Construct 4-way factor */
   IndexFactor(Index j1, Index j2, Index j3, Index j4) : Base(j1, j2, j3, j4) {}
 
+  /** Construct n-way factor */
+  IndexFactor(std::set<Index> js) : Base(js) {}
+
   /** Create a combined joint factor (new style for EliminationTree). */
   static shared_ptr
   Combine(const FactorGraph<This>& factors, const FastMap<Index, std::vector<Index> >& variableSlots);
