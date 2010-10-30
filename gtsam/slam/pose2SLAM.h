@@ -63,7 +63,7 @@ namespace gtsam {
 
 		// Optimizer
 		typedef NonlinearOptimizer<Graph, Values, GaussianFactorGraph, GaussianSequentialSolver> OptimizerSequential;
-    typedef NonlinearOptimizer<Graph, Values, GaussianFactorGraph, GaussianMultifrontalSolver> Optimizer;
+        typedef NonlinearOptimizer<Graph, Values, GaussianFactorGraph, GaussianMultifrontalSolver> Optimizer;
 
 	} // pose2SLAM
 
