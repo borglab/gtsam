@@ -46,6 +46,17 @@ namespace gtsam {
   }
 
 	/* ************************************************************************* */
+  // check Inf in the input matrix
+  void CheckInf(int m, int n, double *A, const char* msg) {
+    bool hasNaN = false;
+    for(int i=0; i<m; i++) {
+			for(int j=0; j<n; j++)
+        if (isinf(A[j*m+i]))
+          throw std::invalid_argument(msg);
+		}
+  }
+
+	/* ************************************************************************* */
   // remove NaN in the input matrix
   void RemoveNaN(int m, int n, double *A) {
     bool hasNaN = false;
@@ -63,6 +74,18 @@ namespace gtsam {
     for(int i=0; i<m; i++) {
 			for(int j=0; j<n; j++)
         if (isnan(A[j*m+i]))
+          return true;
+		}
+    return false;
+  }
+
+	/* ************************************************************************* */
+  // check Inf in the input matrix
+  bool HasInf(int m, int n, double *A) {
+    bool hasNaN = false;
+    for(int i=0; i<m; i++) {
+			for(int j=0; j<n; j++)
+        if (isinf(A[j*m+i]))
           return true;
 		}
     return false;
@@ -113,6 +136,7 @@ namespace gtsam {
 
     // WriteInput(m, n, numPivotColumns, A, stairs);
     // CheckNaN(m, n, A, "DenseQR: the input matrix has NaN");
+    // CheckInf(m, n, A, "DenseQR: the input matrix has Inf");
 
 		if (A == NULL)         throw std::invalid_argument("DenseQR: A == NULL!");
 		if (stairs == NULL)    throw std::invalid_argument("DenseQR: stairs == NULL!");
@@ -141,7 +165,8 @@ namespace gtsam {
 
 			// if there is a enough large staircase change, apply Householder
 			stairStartLast = stairStart;
-			stairs[col] = stairStart = max(numGoodHHs + 1, stairs[col]);
+			stairStart = max(numGoodHHs + 1, stairs[col]);
+      stairs[col] = stairStart;
 			numZeros += numPendingHHs * (stairStart - stairStartLast);
 			if (numPendingHHs >= minSizeBlock && colPendingHHEnd < n &&
 					numZeros > max(16, ((numPendingHHs * (numPendingHHs + 1)) / 2 + numPendingHHs * (stairStart - row1stHH - numPendingHHs)) / 2)) {
@@ -155,12 +180,12 @@ namespace gtsam {
 
 			// compute Householder for the current column
 			int n_ = stairStart - numGoodHHs;
-			double *X = &A[numGoodHHs+col*m];
+			double *X = A + numGoodHHs + col*m;
 			dlarfg_(&n_, X, X + 1, &one, &tau);
       Tau[col] = tau;
 			if (!numPendingHHs) {
 				row1stHH = numGoodHHs;
-				vectorHH = &A[row1stHH+col*m];
+				vectorHH = A + row1stHH + col*m;
         colPendingHHStart = col;
 #ifdef DEBUG_MEMORY
 				if (row1stHH+col*m >= m*n) throw std::runtime_error("DenseQR: row1stHH+col*m >= m*n");
@@ -177,8 +202,8 @@ namespace gtsam {
 				*A1 = 1 ;
 				dlarf_ (&left, &m1, &n1, A1, &one, &tau, C1, &m, workspace) ;
 				*A1 = v0;
-				numGoodHHs++;
 			}
+			numGoodHHs++;
 
 			if ((numGoodHHs == m || col + 1 == colPendingHHEnd) && colPendingHHEnd < n) {
 #ifdef DEBUG_MEMORY
@@ -191,6 +216,7 @@ namespace gtsam {
 		}
 
     // CheckNaN(m, n, A, "DenseQR: the output matrix has NaN");
-	}
+    // CheckInf(m, n, A, "DenseQR: the input matrix has Inf");
 
+	}
 } // namespace gtsam
