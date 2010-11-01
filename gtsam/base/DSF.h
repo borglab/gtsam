@@ -50,6 +50,9 @@ namespace gtsam {
 		// constructor with a list of unconnected keys
 		DSF(const std::list<KEY>& keys) : Tree() { BOOST_FOREACH(const KEY& key, keys) *this = this->add(key, key); }
 
+		// constructor with a set of unconnected keys
+		DSF(const std::set<KEY>& keys) : Tree() { BOOST_FOREACH(const KEY& key, keys) *this = this->add(key, key); }
+
 		// create a new singleton, does nothing if already exists
 		Self makeSet(const KEY& key) const { if (mem(key)) return *this; else return this->add(key, key); }
 

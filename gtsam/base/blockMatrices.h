@@ -93,11 +93,13 @@ public:
   typedef BlockColumn<const MATRIX> constColumn;
 
 protected:
-  FullMatrix& matrix_;
-  std::vector<size_t> variableColOffsets_;
-  size_t rowStart_;
-  size_t rowEnd_;
-  size_t blockStart_;
+  FullMatrix& matrix_; // the reference to the original matrix
+  std::vector<size_t> variableColOffsets_; // the starting columns of each block (0-based)
+
+  // for elimination, represent
+  size_t rowStart_; // 0 initially
+  size_t rowEnd_; // the number of row - 1, initially
+  size_t blockStart_; // 0 initially
 
 public:
   /** Construct from an empty matrix (asserts that the matrix is empty) */

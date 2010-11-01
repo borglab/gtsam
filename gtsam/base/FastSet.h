@@ -18,7 +18,7 @@
 
 #pragma once
 
-#include <map>
+#include <set>
 #include <boost/pool/pool_alloc.hpp>
 
 namespace gtsam {

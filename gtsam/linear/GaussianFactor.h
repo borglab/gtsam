@@ -75,8 +75,8 @@ public:
 
 	SharedDiagonal model_; // Gaussian noise model with diagonal covariance matrix
 	std::vector<size_t> firstNonzeroBlocks_;
-	AbMatrix matrix_;
-	BlockAb Ab_;
+	AbMatrix matrix_; // the full matrix correponding to the factor
+	BlockAb Ab_; // the block view of the full matrix
 
 public:
 
