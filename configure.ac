@@ -132,14 +132,14 @@ AC_CHECK_FUNCS([pow sqrt])
 AX_BOOST_BASE([1.40])
 
 # ask for toolbox directory
-AC_ARG_WITH([toolbox],
-            [AS_HELP_STRING([--with-toolbox],
-              [specify the matlab toolbox directory for installation (mandatory)])],
-            [toolbox=$withval],
-            [AC_MSG_FAILURE(
-                   [--with-toolbox has to be specified])
-            ])
-AC_SUBST([toolbox])
+#AC_ARG_WITH([toolbox],
+#            [AS_HELP_STRING([--with-toolbox],
+#              [specify the matlab toolbox directory for installation (mandatory)])],
+#            [toolbox=$withval],
+#            [AC_MSG_FAILURE(
+#                   [--with-toolbox has to be specified])
+#            ])
+#AC_SUBST([toolbox])
 
 # ask for boost directory
 #AC_ARG_WITH([boost],
