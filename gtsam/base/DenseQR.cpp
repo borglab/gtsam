@@ -14,7 +14,7 @@
 
 #include "DenseQR.h"
 
-#define DEBUG_MEMORY
+//#define DEBUG_MEMORY
 
 // all the lapack functions we need here
 extern "C" {
