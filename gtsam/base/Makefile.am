@@ -50,16 +50,18 @@ base_HEADERS = $(headers)
 noinst_LTLIBRARIES = libbase.la
 libbase_la_SOURCES = $(sources)
 
-AM_CPPFLAGS = $(BOOST_CPPFLAGS) -I$(CCOLAMDInc) -I$(top_srcdir)
-AM_LDFLAGS = $(BOOST_LDFLAGS)
-
-if USE_BLAS
-AM_CPPFLAGS += -DGT_USE_CBLAS
-endif
+AM_CPPFLAGS =
 
 # On Mac, we compile using the BLAS/LAPACK headers in the Accelerate framework 
 if USE_ACCELERATE_MACOS
 AM_CPPFLAGS += -I/System/Library/Frameworks/vecLib.framework/Headers
+endif
+
+AM_CPPFLAGS += $(BOOST_CPPFLAGS) -I$(CCOLAMDInc) -I$(top_srcdir)
+AM_LDFLAGS = $(BOOST_LDFLAGS)
+
+if USE_BLAS
+AM_CPPFLAGS += -DGT_USE_CBLAS
 endif
 
 #----------------------------------------------------------------------------------------------------
