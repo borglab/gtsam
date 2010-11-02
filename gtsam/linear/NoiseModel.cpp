@@ -235,7 +235,6 @@ SharedDiagonal Gaussian::QRColumnWise(ublas::matrix<double, ublas::column_major>
   // Perform in-place Householder
 #ifdef GT_USE_LAPACK
 #ifdef USE_LAPACK_QR
-  assert(firstZeroRows);
   householderColMajor(Ab);
 #elif USE_DAVIS_QR
 #else
