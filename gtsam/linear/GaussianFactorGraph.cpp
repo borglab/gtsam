@@ -264,4 +264,10 @@ void GaussianFactorGraph::getb(VectorValues &b) const {
 	}
 }
 
+VectorValues GaussianFactorGraph::getb() const {
+  VectorValues b = allocateVectorValuesb() ;
+  getb(b) ;
+  return b ;
+}
+
 } // namespace gtsam

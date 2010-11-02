@@ -55,6 +55,12 @@ namespace gtsam {
       push_back(fg);
     }
 
+	/* dummy constructor, to be compatible with conjugate gradient solver */
+    template<class DERIVEDFACTOR>
+    GaussianFactorGraph(const FactorGraph<DERIVEDFACTOR>& fg, const VectorValues &x0) {
+      push_back(fg);
+    }
+
   	/** Add a null factor */
     void add(const Vector& b) {
     	push_back(sharedFactor(new GaussianFactor(b)));
@@ -168,6 +174,7 @@ namespace gtsam {
 	void multiply(const VectorValues &x, VectorValues &r) const ;
 	void transposeMultiply(const VectorValues &r, VectorValues &x) const ;
 	void getb(VectorValues &b) const ;
+	VectorValues getb() const ;
   };
 
 } // namespace gtsam
