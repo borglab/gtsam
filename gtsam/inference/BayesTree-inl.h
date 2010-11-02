@@ -133,7 +133,6 @@ namespace gtsam {
   void BayesTree<CONDITIONAL>::Clique::permuteWithInverse(const Permutation& inversePermutation) {
     BayesNet<CONDITIONAL>::permuteWithInverse(inversePermutation);
     BOOST_FOREACH(Index& separatorKey, separator_) { separatorKey = inversePermutation[separatorKey]; }
-    if(cachedFactor_) cachedFactor_->permuteWithInverse(inversePermutation);
     BOOST_FOREACH(const shared_ptr& child, children_) {
       child->permuteWithInverse(inversePermutation);
     }
@@ -153,7 +152,6 @@ namespace gtsam {
 #endif
     if(changed) {
       BOOST_FOREACH(Index& separatorKey, separator_) { separatorKey = inversePermutation[separatorKey]; }
-      if(cachedFactor_) cachedFactor_->permuteWithInverse(inversePermutation);
       BOOST_FOREACH(const shared_ptr& child, children_) {
         (void)child->permuteSeparatorWithInverse(inversePermutation);
       }

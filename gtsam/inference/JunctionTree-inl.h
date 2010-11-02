@@ -188,7 +188,6 @@ namespace gtsam {
 		BOOST_FOREACH(typename BayesTree::sharedClique& childRoot, children)
 			childRoot->parent_ = new_clique;
 
-		new_clique->cachedFactor() = jointFactor;
     toc("JT 2.4 Update tree");
 		return make_pair(new_clique, jointFactor);
 	}
