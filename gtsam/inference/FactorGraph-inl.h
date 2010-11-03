@@ -32,8 +32,6 @@
 #include <boost/format.hpp>
 #include <boost/graph/prim_minimum_spanning_tree.hpp>
 
-#include <ccolamd.h>
-
 #include <gtsam/inference/FactorGraph.h>
 #include <gtsam/inference/graph-inl.h>
 #include <gtsam/base/DSF.h>
