@@ -87,16 +87,16 @@ inline double tic_() {
   return ((double)t.tv_sec + ((double)t.tv_usec)/1000000.);
 }
 inline double toc_(double t) {
-  double s = tic();
+  double s = tic_();
   return (std::max(0., s-t));
 }
 inline double tic_(const std::string& id) {
-  double t0 = tic();
+  double t0 = tic_();
   timing.add_t0(id, t0);
   return t0;
 }
 inline double toc_(const std::string& id) {
-  double dt = toc(timing.get_t0(id));
+  double dt = toc_(timing.get_t0(id));
   timing.add_dt(id, dt);
   return dt;
 }
