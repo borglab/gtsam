@@ -10,7 +10,7 @@
  * -------------------------------------------------------------------------- */
 
 /**
- * @file    timeLinearOnDataset.cpp
+ * @file    timeSequentialOnDataset.cpp
  * @brief   
  * @author  Richard Roberts
  * @created Oct 7, 2010
@@ -19,7 +19,7 @@
 #include <gtsam/base/timing.h>
 #include <gtsam/slam/dataset.h>
 #include <gtsam/linear/GaussianFactorGraph.h>
-#include <gtsam/linear/GaussianJunctionTree.h>
+#include <gtsam/linear/GaussianSequentialSolver.h>
 
 using namespace std;
 using namespace gtsam;
@@ -48,8 +48,7 @@ int main(int argc, char *argv[]) {
   for(size_t trial = 0; trial < 100; ++trial) {
 
     tic_("Z 3 solve");
-    GaussianJunctionTree gjt(*gfg);
-    VectorValues soln(gjt.optimize());
+    VectorValues soln(*GaussianSequentialSolver(*gfg).optimize());
     toc_("Z 3 solve");
 
     tictoc_print_();

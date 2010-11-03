@@ -26,7 +26,7 @@ check_PROGRAMS += testSerialization
 endif
 
 # Timing tests
-noinst_PROGRAMS = timeGaussianFactorGraph timeLinearOnDataset
+noinst_PROGRAMS = timeGaussianFactorGraph timeSequentialOnDataset timeMultifrontalOnDataset
 
 #----------------------------------------------------------------------------------------------------
 # rules to build unit tests
