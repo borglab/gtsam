@@ -45,7 +45,7 @@ int main(int argc, char *argv[]) {
   toc_("Z 2 linearize");
   tictoc_print_();
 
-  for(size_t trial = 0; trial < 100; ++trial) {
+  for(size_t trial = 0; trial < 10; ++trial) {
 
     tic_("Z 3 solve");
     VectorValues soln(*GaussianSequentialSolver(*gfg).optimize());

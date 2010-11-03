@@ -150,19 +150,17 @@ namespace gtsam {
 	}
 
 	void householder_denseqr_colmajor(ublas::matrix<double, ublas::column_major>& A, int *Stair) {
-    tic("householder_denseqr");
-
     int m = A.size1();
     int n = A.size2();
 
     assert(Stair != NULL);
 
-    tic("householder_denseqr: denseqr_front");
+    tic("householder_denseqr");
     int npiv = min(m,n);
 		int b = min(min(m,n),32);
     double W[b*(n+b)];
     DenseQR(m, n, npiv, A.data().begin(), Stair, W);
-    toc("householder_denseqr: denseqr_front");
+    toc("householder_denseqr");
 	}
 
 } // namespace gtsam
