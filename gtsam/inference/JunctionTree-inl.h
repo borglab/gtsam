@@ -19,6 +19,7 @@
 
 #pragma once
 
+#include <gtsam/base/timing.h>
 #include <gtsam/inference/SymbolicFactorGraph.h>
 #include <gtsam/inference/BayesTree-inl.h>
 #include <gtsam/inference/JunctionTree.h>

@@ -34,15 +34,21 @@ namespace gtsam {
 	  /* Static members only, private constructor */
 	  Inference() {}
 
+	  // Internal version that actually calls colamd after the constraint set is created in the right format
+    static Permutation::shared_ptr PermutationCOLAMD_(const VariableIndex& variableIndex, std::vector<int>& cmember);
+
 	public:
 
     /**
      * Compute a permutation (variable ordering) using colamd
      */
-    template<class VARIABLEINDEXTYPE>
-    static boost::shared_ptr<Permutation> PermutationCOLAMD(const VARIABLEINDEXTYPE& variableIndex) { return PermutationCOLAMD(variableIndex, std::vector<Index>()); }
-    template<class VARIABLEINDEXTYPE, typename CONSTRAINTCONTAINER>
-    static boost::shared_ptr<Permutation> PermutationCOLAMD(const VARIABLEINDEXTYPE& variableIndex, const CONSTRAINTCONTAINER& constrainLast);
+    static Permutation::shared_ptr PermutationCOLAMD(const VariableIndex& variableIndex);
+
+    /**
+     * Compute a permutation (variable ordering) using constrained colamd
+     */
+    template<typename CONSTRAINED>
+    static Permutation::shared_ptr PermutationCOLAMD(const VariableIndex& variableIndex, const CONSTRAINED& constrainLast);
 
 	};
 
