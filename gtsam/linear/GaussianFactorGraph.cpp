@@ -215,6 +215,7 @@ bool GaussianFactorGraph::getDiagonalOfHessian(VectorValues &values) const {
 		BOOST_FOREACH( const Index& idx, factor->keys_) {
 			Vector v = columnNormSquare(factor->Ab_(i)) ;
 			values[idx] += v;
+			++i ;
 		}
 	}
 	return true ;
