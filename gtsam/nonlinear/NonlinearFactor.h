@@ -229,9 +229,8 @@ namespace gtsam {
 			// TODO pass unwhitened + noise model to Gaussian factor
 			SharedDiagonal constrained =
 					boost::shared_dynamic_cast<noiseModel::Constrained>(this->noiseModel_);
-			if (constrained.get() != NULL) {
+			if (constrained.get() != NULL)
 				return GaussianFactor::shared_ptr(new GaussianFactor(var, A, b, constrained));
-			}
 			this->noiseModel_->WhitenInPlace(A);
 			this->noiseModel_->whitenInPlace(b);
 			return GaussianFactor::shared_ptr(new GaussianFactor(var, A, b,
@@ -365,7 +364,7 @@ namespace gtsam {
     virtual IndexFactor::shared_ptr symbolic(const Ordering& ordering) const {
       const Index var1 = ordering[key1_], var2 = ordering[key2_];
       if(var1 < var2)
-      return IndexFactor::shared_ptr(new IndexFactor(var1, var2));
+        return IndexFactor::shared_ptr(new IndexFactor(var1, var2));
       else
         return IndexFactor::shared_ptr(new IndexFactor(var2, var1));
     }
@@ -511,8 +510,10 @@ namespace gtsam {
       else if(var3 < var2 && var2 < var1)
         return GaussianFactor::shared_ptr(
             new GaussianFactor(var3, A3, var2, A2, var1, A1, b, noiseModel::Unit::Create(b.size())));
-      else
+      else {
         assert(false);
+        return GaussianFactor::shared_ptr();
+      }
     }
 
     /**
@@ -533,8 +534,10 @@ namespace gtsam {
         return IndexFactor::shared_ptr(new IndexFactor(ordering[key3_], ordering[key1_], ordering[key2_]));
       else if(var3 < var2 && var2 < var1)
         return IndexFactor::shared_ptr(new IndexFactor(ordering[key3_], ordering[key2_], ordering[key1_]));
-      else
+      else {
         assert(false);
+        return GaussianFactor::shared_ptr();
+      }
     }
 
     /** methods to retrieve keys */
