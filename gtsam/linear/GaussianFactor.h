@@ -137,7 +137,6 @@ public:
   BVector getb() { return Ab_.column(size(), 0); }
 
   ABlock getA(iterator variable) { return Ab_(variable - keys_.begin()); }
-  ABlock getAb(size_t block) { return Ab_(block); }
 
 	/** Return the dimension of the variable pointed to by the given key iterator
 	 * todo: Remove this in favor of keeping track of dimensions with variables?
