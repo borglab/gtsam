@@ -24,7 +24,7 @@
 namespace gtsam {
 
 	using namespace pose2SLAM;
-	INSTANTIATE_LIE_CONFIG(Key)
+	INSTANTIATE_LIE_VALUES(Key)
 	INSTANTIATE_NONLINEAR_FACTOR_GRAPH(Values)
 	INSTANTIATE_NONLINEAR_OPTIMIZER(Graph, Values)
 	template class NonlinearOptimizer<Graph, Values, GaussianFactorGraph, GaussianSequentialSolver>;

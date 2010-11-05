@@ -22,22 +22,22 @@
 #include <gtsam/nonlinear/TupleValues.h>
 
 // TupleValues instantiations for N = 1-6
-#define INSTANTIATE_TUPLE_CONFIG1(Values1) \
+#define INSTANTIATE_TUPLE_VALUES1(Values1) \
 		template class TupleValues1<Values1>;
 
-#define INSTANTIATE_TUPLE_CONFIG2(Values1, Values2) \
+#define INSTANTIATE_TUPLE_VALUES2(Values1, Values2) \
 		template class TupleValues2<Values1, Values2>;
 
-#define INSTANTIATE_TUPLE_CONFIG3(Values1, Values2, Values3) \
+#define INSTANTIATE_TUPLE_VALUES3(Values1, Values2, Values3) \
 		template class TupleValues3<Values1, Values2, Values3>;
 
-#define INSTANTIATE_TUPLE_CONFIG4(Values1, Values2, Values3, Values4) \
+#define INSTANTIATE_TUPLE_VALUES4(Values1, Values2, Values3, Values4) \
 		template class TupleValues4<Values1, Values2, Values3, Values4>;
 
-#define INSTANTIATE_TUPLE_CONFIG5(Values1, Values2, Values3, Values4, Values5) \
+#define INSTANTIATE_TUPLE_VALUES5(Values1, Values2, Values3, Values4, Values5) \
 		template class TupleValues5<Values1, Values2, Values3, Values4, Values5>;
 
-#define INSTANTIATE_TUPLE_CONFIG6(Values1, Values2, Values3, Values4, Values5, Values6) \
+#define INSTANTIATE_TUPLE_VALUES6(Values1, Values2, Values3, Values4, Values5, Values6) \
 		template class TupleValues6<Values1, Values2, Values3, Values4, Values5, Values6>;
 
 

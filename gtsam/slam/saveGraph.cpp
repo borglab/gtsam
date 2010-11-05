@@ -28,7 +28,7 @@ using namespace std;
 
 namespace gtsam {
 
-	INSTANTIATE_LIE_CONFIG(Symbol, Point2)
+	INSTANTIATE_LIE_VALUES(Symbol, Point2)
 
 	/* ************************************************************************* */
 	void saveGraph(const SymbolicFactorGraph& fg, const SymbolicValues& config, const std::string& s) {

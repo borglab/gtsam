@@ -29,7 +29,7 @@
 
 #include <gtsam/nonlinear/LieValues.h>
 
-#define INSTANTIATE_LIE_CONFIG(J) \
+#define INSTANTIATE_LIE_VALUES(J) \
   /*INSTANTIATE_LIE(T);*/ \
   /*template LieValues<J> expmap(const LieValues<J>&, const VectorValues&);*/ \
   /*template LieValues<J> expmap(const LieValues<J>&, const Vector&);*/ \
