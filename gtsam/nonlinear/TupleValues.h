@@ -227,14 +227,14 @@ namespace gtsam {
 	   */
     template<typename A>
     void apply(A& operation) {
-      first_.apply(operation);
-      second_.apply(operation);
+    	first_.apply(operation);
+    	second_.apply(operation);
     }
-	  template<typename A>
-	  void apply(A& operation) const {
-	    first_.apply(operation);
-	    second_.apply(operation);
-	  }
+    template<typename A>
+    void apply(A& operation) const {
+    	first_.apply(operation);
+    	second_.apply(operation);
+    }
 
   private:
 	  /** Serialization function */
@@ -344,6 +344,19 @@ namespace gtsam {
     template<typename A>
     void apply(A& operation) const {
       first_.apply(operation);
+    }
+
+    /**
+     * Generate a default ordering, simply in key sort order.  To instead
+     * create a fill-reducing ordering, use
+     * NonlinearFactorGraph::orderingCOLAMD().  Alternatively, you may permute
+     * this ordering yourself (as orderingCOLAMD() does internally).
+     */
+    Ordering::shared_ptr orderingArbitrary(Index firstVar = 0) const {
+      // Generate an initial key ordering in iterator order
+      _ValuesKeyOrderer keyOrderer(firstVar);
+      this->apply(keyOrderer);
+      return keyOrderer.ordering;
     }
 
   private:

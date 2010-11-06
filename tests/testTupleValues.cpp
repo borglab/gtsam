@@ -91,22 +91,22 @@ TEST( TupleValues, insert_equals2 )
   Pose2 x1(1,2,3), x2(6,7,8);
   Point2 l1(4,5), l2(9,10);
 
-  Values config1;
-  config1.insert(PoseKey(1), x1);
-  config1.insert(PoseKey(2), x2);
-  config1.insert(PointKey(1), l1);
-  config1.insert(PointKey(2), l2);
+  Values values1;
+  values1.insert(PoseKey(1), x1);
+  values1.insert(PoseKey(2), x2);
+  values1.insert(PointKey(1), l1);
+  values1.insert(PointKey(2), l2);
 
-  Values config2;
-  config2.insert(PoseKey(1), x1);
-  config2.insert(PoseKey(2), x2);
-  config2.insert(PointKey(1), l1);
+  Values values2;
+  values2.insert(PoseKey(1), x1);
+  values2.insert(PoseKey(2), x2);
+  values2.insert(PointKey(1), l1);
 
-  CHECK(!config1.equals(config2));
+  CHECK(!values1.equals(values2));
 
-  config2.insert(2, Point2(9,11));
+  values2.insert(2, Point2(9,11));
 
-  CHECK(!config1.equals(config2));
+  CHECK(!values1.equals(values2));
 }
 
 /* ************************************************************************* */
@@ -115,16 +115,16 @@ TEST( TupleValues, insert_duplicate )
   Pose2 x1(1,2,3), x2(6,7,8);
   Point2 l1(4,5), l2(9,10);
 
-  Values config1;
-  config1.insert(1, x1); // 3
-  config1.insert(2, x2); // 6
-  config1.insert(1, l1); // 8
-  config1.insert(2, l2); // 10
-  config1.insert(2, l1); // still 10 !!!!
+  Values values1;
+  values1.insert(1, x1); // 3
+  values1.insert(2, x2); // 6
+  values1.insert(1, l1); // 8
+  values1.insert(2, l2); // 10
+  values1.insert(2, l1); // still 10 !!!!
 
-  CHECK(assert_equal(l2, config1[PointKey(2)]));
-  LONGS_EQUAL(4,config1.size());
-  LONGS_EQUAL(10,config1.dim());
+  CHECK(assert_equal(l2, values1[PointKey(2)]));
+  LONGS_EQUAL(4,values1.size());
+  LONGS_EQUAL(10,values1.dim());
 }
 
 /* ************************************************************************* */
@@ -133,14 +133,14 @@ TEST( TupleValues, size_dim )
   Pose2 x1(1,2,3), x2(6,7,8);
   Point2 l1(4,5), l2(9,10);
 
-  Values config1;
-  config1.insert(PoseKey(1), x1);
-  config1.insert(PoseKey(2), x2);
-  config1.insert(PointKey(1), l1);
-  config1.insert(PointKey(2), l2);
+  Values values1;
+  values1.insert(PoseKey(1), x1);
+  values1.insert(PoseKey(2), x2);
+  values1.insert(PointKey(1), l1);
+  values1.insert(PointKey(2), l2);
 
-  EXPECT(config1.size() == 4);
-  EXPECT(config1.dim() == 10);
+  EXPECT(values1.size() == 4);
+  EXPECT(values1.dim() == 10);
 }
 
 /* ************************************************************************* */
@@ -149,19 +149,19 @@ TEST(TupleValues, at)
   Pose2 x1(1,2,3), x2(6,7,8);
   Point2 l1(4,5), l2(9,10);
 
-  Values config1;
-  config1.insert(PoseKey(1), x1);
-  config1.insert(PoseKey(2), x2);
-  config1.insert(PointKey(1), l1);
-  config1.insert(PointKey(2), l2);
+  Values values1;
+  values1.insert(PoseKey(1), x1);
+  values1.insert(PoseKey(2), x2);
+  values1.insert(PointKey(1), l1);
+  values1.insert(PointKey(2), l2);
 
-  EXPECT(assert_equal(x1, config1[PoseKey(1)]));
-  EXPECT(assert_equal(x2, config1[PoseKey(2)]));
-  EXPECT(assert_equal(l1, config1[PointKey(1)]));
-  EXPECT(assert_equal(l2, config1[PointKey(2)]));
+  EXPECT(assert_equal(x1, values1[PoseKey(1)]));
+  EXPECT(assert_equal(x2, values1[PoseKey(2)]));
+  EXPECT(assert_equal(l1, values1[PointKey(1)]));
+  EXPECT(assert_equal(l2, values1[PointKey(2)]));
 
-  CHECK_EXCEPTION(config1[PoseKey(3)], std::invalid_argument);
-  CHECK_EXCEPTION(config1[PointKey(3)], std::invalid_argument);
+  CHECK_EXCEPTION(values1[PoseKey(3)], std::invalid_argument);
+  CHECK_EXCEPTION(values1[PointKey(3)], std::invalid_argument);
 }
 
 /* ************************************************************************* */
@@ -170,22 +170,22 @@ TEST(TupleValues, zero_expmap_logmap)
   Pose2 x1(1,2,3), x2(6,7,8);
   Point2 l1(4,5), l2(9,10);
 
-  Values config1;
-  config1.insert(PoseKey(1), x1);
-  config1.insert(PoseKey(2), x2);
-  config1.insert(PointKey(1), l1);
-  config1.insert(PointKey(2), l2);
+  Values values1;
+  values1.insert(PoseKey(1), x1);
+  values1.insert(PoseKey(2), x2);
+  values1.insert(PointKey(1), l1);
+  values1.insert(PointKey(2), l2);
 
   Ordering o; o += "x1", "x2", "l1", "l2";
-  VectorValues expected_zero(config1.dims(o));
+  VectorValues expected_zero(values1.dims(o));
   expected_zero[o["x1"]] = zero(3);
   expected_zero[o["x2"]] = zero(3);
   expected_zero[o["l1"]] = zero(2);
   expected_zero[o["l2"]] = zero(2);
 
-  CHECK(assert_equal(expected_zero, config1.zero(o)));
+  CHECK(assert_equal(expected_zero, values1.zero(o)));
 
-  VectorValues delta(config1.dims(o));
+  VectorValues delta(values1.dims(o));
   delta[o["x1"]] = Vector_(3, 1.0, 1.1, 1.2);
   delta[o["x2"]] = Vector_(3, 1.3, 1.4, 1.5);
   delta[o["l1"]] = Vector_(2, 1.0, 1.1);
@@ -197,12 +197,12 @@ TEST(TupleValues, zero_expmap_logmap)
   expected.insert(PointKey(1), Point2(5.0, 6.1));
   expected.insert(PointKey(2), Point2(10.3, 11.4));
 
-  Values actual = config1.expmap(delta, o);
+  Values actual = values1.expmap(delta, o);
   CHECK(assert_equal(expected, actual));
 
   // Check log
   VectorValues expected_log = delta;
-  VectorValues actual_log = config1.logmap(actual, o);
+  VectorValues actual_log = values1.logmap(actual, o);
   CHECK(assert_equal(expected_log, actual_log));
 }
 
@@ -214,7 +214,7 @@ typedef TypedSymbol<Pose3, 'a'> Pose3Key;
 typedef TypedSymbol<Point3, 'b'> Point3Key;
 typedef TypedSymbol<Point3, 'c'> Point3Key2;
 
-// some config types
+// some values types
 typedef LieValues<PoseKey> PoseValues;
 typedef LieValues<PointKey> PointValues;
 typedef LieValues<LamKey> LamValues;
@@ -245,7 +245,7 @@ TEST(TupleValues, slicing) {
 	liePointValues.insert(l1, l1_val);
 	liePointValues.insert(l2, l2_val);
 
-	// construct TupleValues1 from the base config
+	// construct TupleValues1 from the base values
 	TuplePoseValues tupPoseValues1(liePoseValues);
 	EXPECT(assert_equal(liePoseValues, tupPoseValues1.first(), tol));
 
@@ -265,9 +265,9 @@ TEST(TupleValues, slicing) {
 
 /* ************************************************************************* */
 TEST(TupleValues, basic_functions) {
-	// create some tuple configs
-	ValuesA configA;
-	ValuesB configB;
+	// create some tuple values
+	ValuesA valuesA;
+	ValuesB valuesB;
 
 	PoseKey x1(1);
 	PointKey l1(1);
@@ -277,67 +277,67 @@ TEST(TupleValues, basic_functions) {
 	LieVector lam1 = LieVector(2.3);
 
 	// Insert
-	configA.insert(x1, pose1);
-	configA.insert(l1, point1);
+	valuesA.insert(x1, pose1);
+	valuesA.insert(l1, point1);
 
-	configB.insert(x1, pose1);
-	configB.insert(l1, point1);
-	configB.insert(L1, lam1);
+	valuesB.insert(x1, pose1);
+	valuesB.insert(l1, point1);
+	valuesB.insert(L1, lam1);
 
 	// bracket operator
-	EXPECT(assert_equal(configA[x1], pose1));
-	EXPECT(assert_equal(configA[l1], point1));
-	EXPECT(assert_equal(configB[x1], pose1));
-	EXPECT(assert_equal(configB[l1], point1));
-	EXPECT(assert_equal(configB[L1], lam1));
+	EXPECT(assert_equal(valuesA[x1], pose1));
+	EXPECT(assert_equal(valuesA[l1], point1));
+	EXPECT(assert_equal(valuesB[x1], pose1));
+	EXPECT(assert_equal(valuesB[l1], point1));
+	EXPECT(assert_equal(valuesB[L1], lam1));
 
 	// exists
-	EXPECT(configA.exists(x1));
-	EXPECT(configA.exists(l1));
-	EXPECT(configB.exists(x1));
-	EXPECT(configB.exists(l1));
-	EXPECT(configB.exists(L1));
+	EXPECT(valuesA.exists(x1));
+	EXPECT(valuesA.exists(l1));
+	EXPECT(valuesB.exists(x1));
+	EXPECT(valuesB.exists(l1));
+	EXPECT(valuesB.exists(L1));
 
 	// at
-	EXPECT(assert_equal(configA.at(x1), pose1));
-	EXPECT(assert_equal(configA.at(l1), point1));
-	EXPECT(assert_equal(configB.at(x1), pose1));
-	EXPECT(assert_equal(configB.at(l1), point1));
-	EXPECT(assert_equal(configB.at(L1), lam1));
+	EXPECT(assert_equal(valuesA.at(x1), pose1));
+	EXPECT(assert_equal(valuesA.at(l1), point1));
+	EXPECT(assert_equal(valuesB.at(x1), pose1));
+	EXPECT(assert_equal(valuesB.at(l1), point1));
+	EXPECT(assert_equal(valuesB.at(L1), lam1));
 
 	// size
-	EXPECT(configA.size() == 2);
-	EXPECT(configB.size() == 3);
+	EXPECT(valuesA.size() == 2);
+	EXPECT(valuesB.size() == 3);
 
 	// dim
-	EXPECT(configA.dim() == 5);
-	EXPECT(configB.dim() == 6);
+	EXPECT(valuesA.dim() == 5);
+	EXPECT(valuesB.dim() == 6);
 
 	// erase
-	configA.erase(x1);
-	CHECK(!configA.exists(x1));
-	CHECK(configA.size() == 1);
-	configA.erase(l1);
-	CHECK(!configA.exists(l1));
-	CHECK(configA.size() == 0);
-	configB.erase(L1);
-	CHECK(!configB.exists(L1));
-	CHECK(configB.size() == 2);
+	valuesA.erase(x1);
+	CHECK(!valuesA.exists(x1));
+	CHECK(valuesA.size() == 1);
+	valuesA.erase(l1);
+	CHECK(!valuesA.exists(l1));
+	CHECK(valuesA.size() == 0);
+	valuesB.erase(L1);
+	CHECK(!valuesB.exists(L1));
+	CHECK(valuesB.size() == 2);
 
 	// clear
-	configA.clear();
-	EXPECT(configA.size() == 0);
-	configB.clear();
-	EXPECT(configB.size() == 0);
+	valuesA.clear();
+	EXPECT(valuesA.size() == 0);
+	valuesB.clear();
+	EXPECT(valuesB.size() == 0);
 
 	// empty
-	EXPECT(configA.empty());
-	EXPECT(configB.empty());
+	EXPECT(valuesA.empty());
+	EXPECT(valuesB.empty());
 }
 
 /* ************************************************************************* */
-TEST(TupleValues, insert_config) {
-	ValuesB config1, config2, expected;
+TEST(TupleValues, insert_values) {
+	ValuesB values1, values2, expected;
 
 	PoseKey x1(1), x2(2);
 	PointKey l1(1), l2(2);
@@ -346,15 +346,15 @@ TEST(TupleValues, insert_config) {
 	Point2 point1(2.0, 3.0), point2(5.0, 6.0);
 	LieVector lam1 = LieVector(2.3), lam2 = LieVector(4.5);
 
-	config1.insert(x1, pose1);
-	config1.insert(l1, point1);
-	config1.insert(L1, lam1);
+	values1.insert(x1, pose1);
+	values1.insert(l1, point1);
+	values1.insert(L1, lam1);
 
-	config2.insert(x2, pose2);
-	config2.insert(l2, point2);
-	config2.insert(L2, lam2);
+	values2.insert(x2, pose2);
+	values2.insert(l2, point2);
+	values2.insert(L2, lam2);
 
-	config1.insert(config2);
+	values1.insert(values2);
 
 	expected.insert(x1, pose1);
 	expected.insert(l1, point1);
@@ -363,7 +363,7 @@ TEST(TupleValues, insert_config) {
 	expected.insert(l2, point2);
 	expected.insert(L2, lam2);
 
-	CHECK(assert_equal(expected, config1));
+	CHECK(assert_equal(expected, values1));
 }
 
 /* ************************************************************************* */
@@ -400,34 +400,34 @@ TEST( TupleValues, equals )
 	Point2 l1(4,5), l2(9,10);
 	PointKey l1k(1), l2k(2);
 
-	ValuesA config1, config2, config3, config4, config5;
+	ValuesA values1, values2, values3, values4, values5;
 
-	config1.insert(x1k, x1);
-	config1.insert(x2k, x2);
-	config1.insert(l1k, l1);
-	config1.insert(l2k, l2);
+	values1.insert(x1k, x1);
+	values1.insert(x2k, x2);
+	values1.insert(l1k, l1);
+	values1.insert(l2k, l2);
 
-	config2.insert(x1k, x1);
-	config2.insert(x2k, x2);
-	config2.insert(l1k, l1);
-	config2.insert(l2k, l2);
+	values2.insert(x1k, x1);
+	values2.insert(x2k, x2);
+	values2.insert(l1k, l1);
+	values2.insert(l2k, l2);
 
-	config3.insert(x2k, x2);
-	config3.insert(l1k, l1);
+	values3.insert(x2k, x2);
+	values3.insert(l1k, l1);
 
-	config4.insert(x1k, x1);
-	config4.insert(x2k, x2_alt);
-	config4.insert(l1k, l1);
-	config4.insert(l2k, l2);
+	values4.insert(x1k, x1);
+	values4.insert(x2k, x2_alt);
+	values4.insert(l1k, l1);
+	values4.insert(l2k, l2);
 
-	ValuesA config6(config1);
+	ValuesA values6(values1);
 
-	EXPECT(assert_equal(config1,config2));
-	EXPECT(assert_equal(config1,config1));
-	EXPECT(assert_inequal(config1,config3));
-	EXPECT(assert_inequal(config1,config4));
-	EXPECT(assert_inequal(config1,config5));
-	EXPECT(assert_equal(config1, config6));
+	EXPECT(assert_equal(values1,values2));
+	EXPECT(assert_equal(values1,values1));
+	EXPECT(assert_inequal(values1,values3));
+	EXPECT(assert_inequal(values1,values4));
+	EXPECT(assert_inequal(values1,values5));
+	EXPECT(assert_equal(values1, values6));
 }
 
 /* ************************************************************************* */
@@ -440,13 +440,13 @@ TEST(TupleValues, expmap)
 
 	Ordering o; o += "x1", "x2", "l1", "l2";
 
-	ValuesA config1;
-	config1.insert(x1k, x1);
-	config1.insert(x2k, x2);
-	config1.insert(l1k, l1);
-	config1.insert(l2k, l2);
+	ValuesA values1;
+	values1.insert(x1k, x1);
+	values1.insert(x2k, x2);
+	values1.insert(l1k, l1);
+	values1.insert(l2k, l2);
 
-	VectorValues delta(config1.dims(o));
+	VectorValues delta(values1.dims(o));
 	delta[o["x1"]] = Vector_(3, 1.0, 1.1, 1.2);
 	delta[o["x2"]] = Vector_(3, 1.3, 1.4, 1.5);
 	delta[o["l1"]] = Vector_(2, 1.0, 1.1);
@@ -458,8 +458,8 @@ TEST(TupleValues, expmap)
 	expected.insert(l1k, Point2(5.0, 6.1));
 	expected.insert(l2k, Point2(10.3, 11.4));
 
-	CHECK(assert_equal(expected, config1.expmap(delta, o)));
-	CHECK(assert_equal(delta, config1.logmap(expected, o)));
+	CHECK(assert_equal(expected, values1.expmap(delta, o)));
+	CHECK(assert_equal(delta, values1.logmap(expected, o)));
 }
 
 /* ************************************************************************* */
@@ -472,13 +472,13 @@ TEST(TupleValues, expmap_typedefs)
 
   Ordering o; o += "x1", "x2", "l1", "l2";
 
-	TupleValues2<PoseValues, PointValues> config1, expected, actual;
-	config1.insert(x1k, x1);
-	config1.insert(x2k, x2);
-	config1.insert(l1k, l1);
-	config1.insert(l2k, l2);
+	TupleValues2<PoseValues, PointValues> values1, expected, actual;
+	values1.insert(x1k, x1);
+	values1.insert(x2k, x2);
+	values1.insert(l1k, l1);
+	values1.insert(l2k, l2);
 
-  VectorValues delta(config1.dims(o));
+  VectorValues delta(values1.dims(o));
   delta[o["x1"]] = Vector_(3, 1.0, 1.1, 1.2);
   delta[o["x2"]] = Vector_(3, 1.3, 1.4, 1.5);
   delta[o["l1"]] = Vector_(2, 1.0, 1.1);
@@ -489,22 +489,22 @@ TEST(TupleValues, expmap_typedefs)
 	expected.insert(l1k, Point2(5.0, 6.1));
 	expected.insert(l2k, Point2(10.3, 11.4));
 
-	CHECK(assert_equal(expected, TupleValues2<PoseValues, PointValues>(config1.expmap(delta, o))));
-	//CHECK(assert_equal(delta, config1.logmap(expected)));
+	CHECK(assert_equal(expected, TupleValues2<PoseValues, PointValues>(values1.expmap(delta, o))));
+	//CHECK(assert_equal(delta, values1.logmap(expected)));
 }
 
 /* ************************************************************************* */
 TEST(TupleValues, typedefs)
 {
-	TupleValues2<PoseValues, PointValues> config1;
-	TupleValues3<PoseValues, PointValues, LamValues> config2;
-	TupleValues4<PoseValues, PointValues, LamValues, Point3Values> config3;
-	TupleValues5<PoseValues, PointValues, LamValues, Point3Values, Pose3Values> config4;
-	TupleValues6<PoseValues, PointValues, LamValues, Point3Values, Pose3Values, Point3Values2> config5;
+	TupleValues2<PoseValues, PointValues> values1;
+	TupleValues3<PoseValues, PointValues, LamValues> values2;
+	TupleValues4<PoseValues, PointValues, LamValues, Point3Values> values3;
+	TupleValues5<PoseValues, PointValues, LamValues, Point3Values, Pose3Values> values4;
+	TupleValues6<PoseValues, PointValues, LamValues, Point3Values, Pose3Values, Point3Values2> values5;
 }
 
 /* ************************************************************************* */
-TEST( TupleValues, pairconfig_style )
+TEST( TupleValues, pairvalues_style )
 {
 	PoseKey x1(1);
 	PointKey l1(1);
@@ -513,23 +513,23 @@ TEST( TupleValues, pairconfig_style )
 	Point2 point1(2.0, 3.0);
 	LieVector lam1 = LieVector(2.3);
 
-	PoseValues config1; config1.insert(x1, pose1);
-	PointValues config2; config2.insert(l1, point1);
-	LamValues config3; config3.insert(L1, lam1);
+	PoseValues values1; values1.insert(x1, pose1);
+	PointValues values2; values2.insert(l1, point1);
+	LamValues values3; values3.insert(L1, lam1);
 
 	// Constructor
-	TupleValues3<PoseValues, PointValues, LamValues> config(config1, config2, config3);
+	TupleValues3<PoseValues, PointValues, LamValues> values(values1, values2, values3);
 
 	// access
-	CHECK(assert_equal(config1, config.first()));
-	CHECK(assert_equal(config2, config.second()));
-	CHECK(assert_equal(config3, config.third()));
+	CHECK(assert_equal(values1, values.first()));
+	CHECK(assert_equal(values2, values.second()));
+	CHECK(assert_equal(values3, values.third()));
 }
 
 /* ************************************************************************* */
-TEST(TupleValues, insert_config_typedef) {
+TEST(TupleValues, insert_values_typedef) {
 
-	TupleValues4<PoseValues, PointValues, LamValues, Point3Values> config1, config2, expected;
+	TupleValues4<PoseValues, PointValues, LamValues, Point3Values> values1, values2, expected;
 
 	PoseKey x1(1), x2(2);
 	PointKey l1(1), l2(2);
@@ -538,15 +538,15 @@ TEST(TupleValues, insert_config_typedef) {
 	Point2 point1(2.0, 3.0), point2(5.0, 6.0);
 	LieVector lam1 = LieVector(2.3), lam2 = LieVector(4.5);
 
-	config1.insert(x1, pose1);
-	config1.insert(l1, point1);
-	config1.insert(L1, lam1);
+	values1.insert(x1, pose1);
+	values1.insert(l1, point1);
+	values1.insert(L1, lam1);
 
-	config2.insert(x2, pose2);
-	config2.insert(l2, point2);
-	config2.insert(L2, lam2);
+	values2.insert(x2, pose2);
+	values2.insert(l2, point2);
+	values2.insert(L2, lam2);
 
-	config1.insert(config2);
+	values1.insert(values2);
 
 	expected.insert(x1, pose1);
 	expected.insert(l1, point1);
@@ -555,7 +555,7 @@ TEST(TupleValues, insert_config_typedef) {
 	expected.insert(l2, point2);
 	expected.insert(L2, lam2);
 
-	CHECK(assert_equal(expected, config1));
+	CHECK(assert_equal(expected, values1));
 }
 
 /* ************************************************************************* */
@@ -613,6 +613,17 @@ TEST(TupleValues, update) {
 	CHECK(assert_equal(expected, init));
 }
 
+/* ************************************************************************* */
+TEST(TupleValues, arbitrary_ordering ) {
+	TupleValues1<PoseValues> values;
+	PoseKey x1(1), x2(2);
+	Pose2 pose1(1.0, 2.0, 0.3), pose2(3.0, 4.0, 5.0);
+	values.insert(x1, pose1);
+	values.insert(x2, pose2);
+	Ordering::shared_ptr actual = values.orderingArbitrary();
+	Ordering expected; expected += x1, x2;
+	EXPECT(assert_equal(expected, *actual));
+}
 
 /* ************************************************************************* */
 int main() { TestResult tr; return TestRegistry::runAllTests(tr); }
