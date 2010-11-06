@@ -31,7 +31,6 @@ extern "C" {
 #ifdef GT_USE_LAPACK
 extern "C" {
 #include <cblas.h>
-#include <clapack.h>
 }
 #endif
 
