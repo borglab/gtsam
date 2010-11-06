@@ -22,7 +22,6 @@
 extern "C" {
 
 #include <cblas.h>
-#include <clapack.h>
 
 /* Subroutine */ int dpotrf_(char *uplo, int *n, double *a, int *lda,
     int *info);

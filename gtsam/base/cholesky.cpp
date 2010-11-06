@@ -76,12 +76,13 @@ void choleskyFactorUnderdetermined(MatrixColMajor& Ab) {
 
   // Compute the values of R from F'F
   int info = lapack_dpotrf('U', rank, &R(0,0), Ab.size1());
-  if(info != 0)
+  if(info != 0) {
     if(info < 0)
       throw std::domain_error(boost::str(boost::format(
           "Bad input to choleskyFactorUnderdetermined, dpotrf returned %d.\n")%info));
     else
       throw std::domain_error("The matrix passed into choleskyFactorUnderdetermined is numerically rank-deficient");
+  }
 
   // Compute S = inv(R') * F' * G, i.e. solve S when R'S = F'G
   cblas_dtrsm(CblasColMajor, CblasLeft, CblasUpper, CblasTrans, CblasNonUnit, S.size1(), S.size2(), 1.0, &R(0,0), m, &S(0,0), m);
