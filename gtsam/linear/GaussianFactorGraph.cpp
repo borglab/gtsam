@@ -180,8 +180,8 @@ bool GaussianFactorGraph::split(const std::map<Index, Index> &M, GaussianFactorG
 			Ab2.push_back(factor);
 			continue;
 		}
-		Index key1 = factor->keys_[0];
-		Index key2 = factor->keys_[1];
+		Index key1 = factor->keys()[0];
+		Index key2 = factor->keys()[1];
 
 		if ((M.find(key1) != M.end() && M.find(key1)->second == key2) ||
 			(M.find(key2) != M.end() && M.find(key2)->second == key1))
@@ -210,11 +210,9 @@ bool GaussianFactorGraph::getDiagonalOfHessian(VectorValues &values) const {
 	values.makeZero() ;
 
 	BOOST_FOREACH( const sharedFactor& factor, factors_) {
-		Index i = 0 ;
-		BOOST_FOREACH( const Index& idx, factor->keys_) {
-			Vector v = columnNormSquare(factor->Ab_(i)) ;
-			values[idx] += v;
-			++i ;
+		for(GaussianFactor::const_iterator j = factor->begin(); j != factor->end(); ++j) {
+			Vector v = columnNormSquare(factor->getA(j));
+			values[*j] += v;
 		}
 	}
 	return true ;
@@ -233,10 +231,8 @@ void GaussianFactorGraph::multiply(const VectorValues &x, VectorValues &r) const
 	r.makeZero() ;
 	Index i = 0 ;
 	BOOST_FOREACH(const sharedFactor& factor, factors_) {
-		Index j = 0 ;
-		BOOST_FOREACH( const Index& idx, factor->keys_ ) {
-			r[i] += prod(factor->Ab_(j), x[idx]) ;
-			++j ;
+    for(GaussianFactor::const_iterator j = factor->begin(); j != factor->end(); ++j) {
+			r[i] += prod(factor->getA(j), x[*j]);
 		}
 		++i ;
 	}
@@ -246,10 +242,8 @@ void GaussianFactorGraph::transposeMultiply(const VectorValues &r, VectorValues 
 	x.makeZero() ;
 	Index i = 0 ;
 	BOOST_FOREACH(const sharedFactor& factor, factors_) {
-		Index j = 0 ;
-		BOOST_FOREACH( const Index& idx, factor->keys_ ) {
-			x[idx] += prod(trans(factor->Ab_(j)), r[i]) ;
-			++j ;
+    for(GaussianFactor::const_iterator j = factor->begin(); j != factor->end(); ++j) {
+			x[*j] += prod(trans(factor->getA(j)), r[i]) ;
 		}
 		++i ;
 	}

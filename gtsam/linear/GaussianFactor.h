@@ -65,7 +65,6 @@ protected:
 	typedef VerticalBlockView<AbMatrix> BlockAb;
 
 public:
-
   typedef GaussianConditional Conditional;
 	typedef boost::shared_ptr<GaussianFactor> shared_ptr;
 	typedef BlockAb::Block ABlock;
@@ -73,6 +72,7 @@ public:
 	typedef BlockAb::Column BVector;
 	typedef BlockAb::constColumn constBVector;
 
+protected:
 	SharedDiagonal model_; // Gaussian noise model with diagonal covariance matrix
 	std::vector<size_t> firstNonzeroBlocks_;
 	AbMatrix matrix_; // the full matrix correponding to the factor
@@ -228,9 +228,6 @@ public:
   GaussianBayesNet::shared_ptr eliminate(size_t nrFrontals = 1);
 
   void set_firstNonzeroBlocks(size_t row, size_t varpos) { firstNonzeroBlocks_[row] = varpos; }
-
-	friend class GaussianFactorGraph;
-	friend class Inference;
 
 }; // GaussianFactor
 
