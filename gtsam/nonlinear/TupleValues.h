@@ -346,6 +346,13 @@ namespace gtsam {
       first_.apply(operation);
     }
 
+    /** Create an array of variable dimensions using the given ordering */
+    std::vector<size_t> dims(const Ordering& ordering) const {
+    	_ValuesDimensionCollector dimCollector(ordering);
+    	this->apply(dimCollector);
+    	return dimCollector.dimensions;
+    }
+
     /**
      * Generate a default ordering, simply in key sort order.  To instead
      * create a fill-reducing ordering, use
