@@ -293,9 +293,9 @@ void householderColMajor(MatrixColMajor& A);
  * @return the solution x of U*x=b
  * TODO: use boost
  */
-template<class MatrixAE, class VectorAE>
-Vector backSubstituteUpper(const boost::numeric::ublas::matrix_expression<MatrixAE>& U,
-    const boost::numeric::ublas::vector_expression<VectorAE>& b, bool unit=false);
+template<class MATRIX, class VECTOR>
+Vector backSubstituteUpper(const boost::numeric::ublas::matrix_expression<MATRIX>& U,
+    const boost::numeric::ublas::vector_expression<VECTOR>& b, bool unit=false);
 
 /**
  * backSubstitute x'*U=b'
@@ -305,9 +305,9 @@ Vector backSubstituteUpper(const boost::numeric::ublas::matrix_expression<Matrix
  * @return the solution x of x'*U=b'
  * TODO: use boost
  */
-template<class VectorAE, class MatrixAE>
-Vector backSubstituteUpper(const boost::numeric::ublas::vector_expression<VectorAE>& b,
-    const boost::numeric::ublas::matrix_expression<MatrixAE>& U, bool unit=false);
+template<class VECTOR, class MATRIX>
+Vector backSubstituteUpper(const boost::numeric::ublas::vector_expression<VECTOR>& b,
+    const boost::numeric::ublas::matrix_expression<MATRIX>& U, bool unit=false);
 
 /**
  * backSubstitute L*x=b
