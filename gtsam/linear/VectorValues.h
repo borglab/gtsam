@@ -33,7 +33,7 @@ namespace gtsam {
 class VectorValues : public Testable<VectorValues> {
 protected:
   Vector values_;
-  std::vector<size_t> varStarts_;
+  std::vector<size_t> varStarts_; // start at 0 with size nVars + 1
 
 public:
   template<class C> class _impl_iterator;  // Forward declaration of iterator implementation
@@ -65,6 +65,9 @@ public:
    * a combined Vector of all of the variables in order.
    */
   VectorValues(const std::vector<size_t>& dimensions, const Vector& values);
+
+  /** Construct forom the variable dimensions in varaible order and a double array that contains actual values */
+  VectorValues(const std::vector<size_t>& dimensions, const double* values);
 
   /** Named constructor to create a VectorValues that matches the structure of
    * the specified VectorValues, but do not initialize the new values.
@@ -257,6 +260,17 @@ inline VectorValues::VectorValues(const std::vector<size_t>& dimensions, const V
     varStarts_[++var] = (varStart += dim);
   }
   assert(varStarts_.back() == values.size());
+}
+
+inline VectorValues::VectorValues(const std::vector<size_t>& dimensions, const double* values) :
+		varStarts_(dimensions.size()+1) {
+	varStarts_[0] = 0;
+	size_t varStart = 0;
+	Index var = 0;
+	BOOST_FOREACH(size_t dim, dimensions) {
+		varStarts_[++var] = (varStart += dim);
+	}
+	values_ = Vector_(varStart, values);
 }
 
 inline VectorValues VectorValues::SameStructure(const VectorValues& otherValues) {

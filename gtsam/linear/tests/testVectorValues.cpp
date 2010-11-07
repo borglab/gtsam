@@ -27,6 +27,21 @@ using namespace gtsam;
 using namespace std;
 
 /* ************************************************************************* */
+TEST(VectorValues, constructor) {
+	vector<size_t> dims;
+	dims.push_back(1);
+	dims.push_back(2);
+	dims.push_back(2);
+	double v[] = {1., 2., 3., 4., 5.};
+
+	VectorValues actual(dims, v);
+	LONGS_EQUAL(3, actual.size());
+	DOUBLES_EQUAL(1., *actual.ptr(0), 1e-15);
+	DOUBLES_EQUAL(2., *actual.ptr(1), 1e-15);
+	DOUBLES_EQUAL(4., *actual.ptr(2), 1e-15);
+}
+
+/* ************************************************************************* */
 TEST(VectorValues, standard) {
   Vector v1 = Vector_(3, 1.0,2.0,3.0);
   Vector v2 = Vector_(2, 4.0,5.0);
