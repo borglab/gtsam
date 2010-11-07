@@ -128,6 +128,17 @@ public:
 	 */
 	bool empty() const { return Ab_.size1() == 0;}
 
+	/**
+	 * return the number of rows in the corresponding linear system
+	 */
+	size_t size1() const { return Ab_.size1(); }
+
+	/**
+	 * return the number of columns in the corresponding linear system
+	 */
+	size_t size2() const { return Ab_.size2(); }
+
+
 	/** Get a view of the r.h.s. vector b */
 	constBVector getb() const { return Ab_.column(size(), 0); }
 
