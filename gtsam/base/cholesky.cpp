@@ -41,16 +41,17 @@ void cholesky_inplace(MatrixColMajor& I) {
   // 00058 *                positive definite, and the factorization could not be
   // 00059 *                completed.
   int info = lapack_dpotrf('U', I.size1(), &I(0,0), I.size1());
-  if(info != 0)
+  if(info != 0) {
     if(info < 0)
       throw std::domain_error(boost::str(boost::format(
           "Bad input to cholesky_inplace, dpotrf returned %d.\n")%info));
     else
       throw std::domain_error("The matrix passed into cholesky_inplace is rank-deficient");
+  }
 }
 
 /* ************************************************************************* */
-void choleskyFactorUnderdetermined(MatrixColMajor& Ab) {
+size_t choleskyFactorUnderdetermined(MatrixColMajor& Ab) {
 
   size_t m = Ab.size1();
   size_t n = Ab.size2();
@@ -61,31 +62,39 @@ void choleskyFactorUnderdetermined(MatrixColMajor& Ab) {
   // header file comment.
   size_t rank = std::min(m,n);
 
-  // F is the first 'rank' columns of Ab, G is the remaining columns
-  ublas::matrix_range<MatrixColMajor> F(ublas::project(Ab, ublas::range(0,m), ublas::range(0,rank)));
-  ublas::matrix_range<MatrixColMajor> G(ublas::project(Ab, ublas::range(0,m), ublas::range(rank,n)));
+  if(rank > 0) {
 
-  ublas::matrix_range<MatrixColMajor> R(ublas::project(Ab, ublas::range(0,rank), ublas::range(0,rank)));
-  ublas::matrix_range<MatrixColMajor> S(ublas::project(Ab, ublas::range(0,rank), ublas::range(rank,n)));
+    // F is the first 'rank' columns of Ab, G is the remaining columns
+    ublas::matrix_range<MatrixColMajor> F(ublas::project(Ab, ublas::range(0,m), ublas::range(0,rank)));
+    ublas::matrix_range<MatrixColMajor> G(ublas::project(Ab, ublas::range(0,m), ublas::range(rank,n)));
 
-  // First compute F' * G (ublas makes a copy here to avoid aliasing)
-  S = ublas::prod(ublas::trans(F), G);
+    ublas::matrix_range<MatrixColMajor> R(ublas::project(Ab, ublas::range(0,rank), ublas::range(0,rank)));
+    ublas::matrix_range<MatrixColMajor> S(ublas::project(Ab, ublas::range(0,rank), ublas::range(rank,n)));
 
-  // ublas makes a copy to avoid aliasing on this assignment
-  R = ublas::prod(ublas::trans(F), F);
+    // First compute F' * G (ublas makes a copy here to avoid aliasing)
+    if(S.size2() > 0)
+      S = ublas::prod(ublas::trans(F), G);
 
-  // Compute the values of R from F'F
-  int info = lapack_dpotrf('U', rank, &R(0,0), Ab.size1());
-  if(info != 0) {
-    if(info < 0)
-      throw std::domain_error(boost::str(boost::format(
-          "Bad input to choleskyFactorUnderdetermined, dpotrf returned %d.\n")%info));
-    else
-      throw std::domain_error("The matrix passed into choleskyFactorUnderdetermined is numerically rank-deficient");
-  }
+    // ublas makes a copy to avoid aliasing on this assignment
+    R = ublas::prod(ublas::trans(F), F);
 
-  // Compute S = inv(R') * F' * G, i.e. solve S when R'S = F'G
-  cblas_dtrsm(CblasColMajor, CblasLeft, CblasUpper, CblasTrans, CblasNonUnit, S.size1(), S.size2(), 1.0, &R(0,0), m, &S(0,0), m);
+    // Compute the values of R from F'F
+    int info = lapack_dpotrf('U', rank, &R(0,0), Ab.size1());
+    if(info != 0) {
+      if(info < 0)
+        throw std::domain_error(boost::str(boost::format(
+            "Bad input to choleskyFactorUnderdetermined, dpotrf returned %d.\n")%info));
+      else
+        throw std::domain_error("The matrix passed into choleskyFactorUnderdetermined is numerically rank-deficient");
+    }
+
+    // Compute S = inv(R') * F' * G, i.e. solve S when R'S = F'G
+    if(S.size2() > 0)
+      cblas_dtrsm(CblasColMajor, CblasLeft, CblasUpper, CblasTrans, CblasNonUnit, S.size1(), S.size2(), 1.0, &R(0,0), m, &S(0,0), m);
+
+    return rank;
+  } else
+    return 0;
 }
 
 }

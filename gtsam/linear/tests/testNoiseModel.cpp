@@ -1,6 +1,6 @@
 /* ----------------------------------------------------------------------------
 
- * GTSAM Copyright 2010, Georgia Tech Research Corporation, 
+ * GTSAM Copyright 2010, Georgia Tech Research Corporation,
  * Atlanta, Georgia 30332-0415
  * All Rights Reserved
  * Authors: Frank Dellaert, et al. (see THANKS for the full author list)
@@ -17,10 +17,13 @@
  *      Author: Frank Dellaert
  */
 
-#include <CppUnitLite/TestHarness.h>
 
-#include <boost/foreach.hpp>
 #include <iostream>
+#include <boost/foreach.hpp>
+#include <boost/assign/std/vector.hpp>
+using namespace boost::assign;
+
+#include <CppUnitLite/TestHarness.h>
 #include <gtsam/linear/NoiseModel.h>
 #include <gtsam/linear/SharedGaussian.h>
 #include <gtsam/linear/SharedDiagonal.h>
@@ -146,35 +149,42 @@ TEST(NoiseModel, ConstrainedAll )
 }
 
 /* ************************************************************************* */
+namespace exampleQR {
+  // create a matrix to eliminate
+  Matrix Ab = Matrix_(4, 6+1,
+      -1.,  0.,  1.,  0.,  0.,  0., -0.2,
+      0., -1.,  0.,  1.,  0.,  0.,  0.3,
+      1.,  0.,  0.,  0., -1.,  0.,  0.2,
+      0.,  1.,  0.,  0.,  0., -1., -0.1);
+  Vector sigmas = Vector_(4, 0.2, 0.2, 0.1, 0.1);
+
+  // the matrix AB yields the following factorized version:
+	Matrix Rd = Matrix_(4, 6+1,
+			11.1803,   0.0,   -2.23607, 0.0,    -8.94427, 0.0,     2.23607,
+			0.0,   11.1803,    0.0,    -2.23607, 0.0,    -8.94427,-1.56525,
+			0.0,       0.0,    4.47214, 0.0,    -4.47214, 0.0,     0.0,
+			0.0,       0.0,   0.0,     4.47214, 0.0,    -4.47214, 0.894427);
+
+	SharedDiagonal diagonal = noiseModel::Diagonal::Sigmas(sigmas);
+}
+
 TEST( NoiseModel, QR )
 {
-	// create a matrix to eliminate
-	Matrix Ab1 = Matrix_(4, 6+1,
-		   -1.,  0.,  1.,  0.,  0.,  0., -0.2,
-			0., -1.,  0.,  1.,  0.,  0.,  0.3,
-			1.,  0.,  0.,  0., -1.,  0.,  0.2,
-			0.,  1.,  0.,  0.,  0., -1., -0.1);
-	Matrix Ab2 = Ab1; // otherwise overwritten !
-	Vector sigmas = Vector_(4, 0.2, 0.2, 0.1, 0.1);
+  Matrix Ab1 = exampleQR::Ab;
+	Matrix Ab2 = exampleQR::Ab; // otherwise overwritten !
 
 	// Expected result
 	Vector expectedSigmas = Vector_(4, 0.0894427, 0.0894427, 0.223607, 0.223607);
 	SharedDiagonal expectedModel = noiseModel::Diagonal::Sigmas(expectedSigmas);
 
 	// Call Gaussian version
-	SharedDiagonal diagonal = noiseModel::Diagonal::Sigmas(sigmas);
-	SharedDiagonal actual1 = diagonal->QR(Ab1);
+	SharedDiagonal actual1 = exampleQR::diagonal->QR(Ab1);
 	SharedDiagonal expected = noiseModel::Unit::Create(4);
 	CHECK(assert_equal(*expected,*actual1));
-	Matrix expectedRd1 = Matrix_(4, 6+1,
-			11.1803,   0.0,   -2.23607, 0.0,    -8.94427, 0.0,     2.23607,
-			0.0,   11.1803,    0.0,    -2.23607, 0.0,    -8.94427,-1.56525,
-			0.0,       0.0,    4.47214, 0.0,    -4.47214, 0.0,     0.0,
-			0.0,       0.0,   0.0,     4.47214, 0.0,    -4.47214, 0.894427);
-	CHECK(linear_dependent(expectedRd1,Ab1,1e-4)); // Ab was modified in place !!!
+	CHECK(linear_dependent(exampleQR::Rd,Ab1,1e-4)); // Ab was modified in place !!!
 
 	// Call Constrained version
-	SharedDiagonal constrained = noiseModel::Constrained::MixedSigmas(sigmas);
+	SharedDiagonal constrained = noiseModel::Constrained::MixedSigmas(exampleQR::sigmas);
 	SharedDiagonal actual2 = constrained->QR(Ab2);
 	SharedDiagonal expectedModel2 = noiseModel::Diagonal::Sigmas(expectedSigmas);
 	CHECK(assert_equal(*expectedModel2,*actual2));
@@ -185,6 +195,37 @@ TEST( NoiseModel, QR )
 			0.,  0.,  0.,   1.,  0., -1.,  0.2);
 	CHECK(linear_dependent(expectedRd2,Ab2,1e-6)); // Ab was modified in place !!!
 }
+
+///* ************************************************************************* */
+//TEST( NoiseModel, QRColumnWise )
+//{
+//     // Call Gaussian version
+//     MatrixColMajor Ab = exampleQR::Ab; // otherwise overwritten !
+//     vector<int> firstZeroRows;
+//     firstZeroRows += 0,1,2,3,4,5; // FD: no idea as not documented :-(
+//     SharedDiagonal actual = exampleQR::diagonal->QRColumnWise(Ab,firstZeroRows);
+//     SharedDiagonal expected = noiseModel::Unit::Create(4);
+//     CHECK(assert_equal(*expected,*actual));
+//     Matrix AbResized = sub(Ab, 0, actual->dim(), 0, Ab.size2());
+//     print(exampleQR::Rd, "Rd: ");
+//     print(Ab, "Ab: ");
+//     print(AbResized, "AbResized: ");
+//     CHECK(linear_dependent(exampleQR::Rd,AbResized,1e-4)); // Ab was modified in place !!!
+//}
+//
+///* ************************************************************************* */
+//TEST(NoiseModel, Cholesky)
+//{
+//     MatrixColMajor Ab = exampleQR::Ab; // otherwise overwritten !
+//     SharedDiagonal actual = exampleQR::diagonal->Cholesky(Ab);
+//     SharedDiagonal expected = noiseModel::Unit::Create(4);
+//     EXPECT(assert_equal(*expected,*actual));
+//     Matrix AbResized = sub(Ab, 0, actual->dim(), 0, Ab.size2());
+//     print(exampleQR::Rd, "Rd: ");
+//     print(Ab, "Ab: ");
+//     print(AbResized, "AbResized: ");
+//     EXPECT(linear_dependent(exampleQR::Rd,AbResized,1e-4)); // Ab was modified in place !!!
+//}
 
 /* ************************************************************************* */
 TEST(NoiseModel, QRNan )

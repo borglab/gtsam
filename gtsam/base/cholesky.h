@@ -39,8 +39,10 @@ void cholesky_inplace(MatrixColMajor& I);
  *
  * Note that this operates on the "canonical" A matrix, not the symmetric
  * information matrix like plain Cholesky.
+ *
+ * This function returns the rank of the factor.
  */
-void choleskyFactorUnderdetermined(MatrixColMajor& Ab);
+size_t choleskyFactorUnderdetermined(MatrixColMajor& Ab);
 
 }
 

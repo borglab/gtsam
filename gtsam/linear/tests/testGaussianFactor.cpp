@@ -369,9 +369,11 @@ TEST( GaussianFactor, eliminate2 )
 	GaussianFactor combined(meas, b2, sigmas);
 
 	// eliminate the combined factor
-	GaussianConditional::shared_ptr actualCG;
-	GaussianFactor::shared_ptr actualLF(new GaussianFactor(combined));
-	actualCG = actualLF->eliminateFirst();
+	GaussianConditional::shared_ptr actualCG_QR, actualCG_Chol;
+	GaussianFactor::shared_ptr actualLF_QR(new GaussianFactor(combined));
+  GaussianFactor::shared_ptr actualLF_Chol(new GaussianFactor(combined));
+	actualCG_QR = actualLF_QR->eliminateFirst(GaussianFactor::SOLVE_QR);
+  actualCG_Chol = actualLF_Chol->eliminateFirst(GaussianFactor::SOLVE_CHOLESKY);
 
 	// create expected Conditional Gaussian
 	double oldSigma = 0.0894427; // from when R was made unit
@@ -385,7 +387,8 @@ TEST( GaussianFactor, eliminate2 )
 	)/oldSigma;
 	Vector d = Vector_(2,0.2,-0.14)/oldSigma;
 	GaussianConditional expectedCG(_x2_,d,R11,_l11_,S12,ones(2));
-	EXPECT(assert_equal(expectedCG,*actualCG,1e-4));
+	EXPECT(assert_equal(expectedCG,*actualCG_QR,1e-4));
+  EXPECT(assert_equal(expectedCG,*actualCG_Chol,1e-4));
 
 	// the expected linear factor
 	double sigma = 0.2236;
@@ -394,13 +397,14 @@ TEST( GaussianFactor, eliminate2 )
 			1.00, 0.00, -1.00,  0.00,
 			0.00, 1.00, +0.00, -1.00
 	)/sigma;
-	Vector b1 =Vector_(2,0.0,0.894427);
+	Vector b1 = Vector_(2,0.0,0.894427);
 	GaussianFactor expectedLF(_l11_, Bl1x1, b1, repeat(2,1.0));
-	EXPECT(assert_equal(expectedLF,*actualLF,1e-3));
+	EXPECT(assert_equal(expectedLF,*actualLF_QR,1e-3));
+  EXPECT(assert_equal(expectedLF,*actualLF_Chol,1e-3));
 }
 
 /* ************************************************************************* */
-TEST(GaussianFactor, eliminateFrontals)
+TEST_UNSAFE(GaussianFactor, eliminateFrontals)
 {
   Matrix Ab = Matrix_(14,11,
       4.,     0.,     1.,     4.,     1.,     0.,     3.,     6.,     8.,     8.,     1.,
@@ -458,8 +462,10 @@ TEST(GaussianFactor, eliminateFrontals)
   factors.push_back(factor4);
   GaussianFactor combined(*GaussianFactor::Combine(factors, VariableSlots(factors)));
 
-  GaussianFactor actualFactor = combined;
-  GaussianBayesNet actualFragment = *actualFactor.eliminate(3);
+  GaussianFactor actualFactor_QR = combined;
+  GaussianFactor actualFactor_Chol = combined;
+  GaussianBayesNet actualFragment_QR = *actualFactor_QR.eliminate(3, GaussianFactor::SOLVE_QR);
+  GaussianBayesNet actualFragment_Chol = *actualFactor_Chol.eliminate(3, GaussianFactor::SOLVE_CHOLESKY);
 
   Matrix R = 2.0*Matrix_(11,11,
       -12.1244,  -5.1962,  -5.2786,  -8.6603, -10.5573,  -5.9385, -11.3820,  -7.2581,  -8.7427, -13.4440,  -5.3611,
@@ -510,14 +516,22 @@ TEST(GaussianFactor, eliminateFrontals)
   expectedFragment.push_back(cond2);
   expectedFragment.push_back(cond3);
 
-  EXPECT(assert_equal(expectedFragment, actualFragment, 0.001));
-  EXPECT(assert_equal(size_t(2), actualFactor.keys().size()));
-  EXPECT(assert_equal(Index(9), actualFactor.keys()[0]));
-  EXPECT(assert_equal(Index(11), actualFactor.keys()[1]));
-  EXPECT(assert_equal(Ae1, actualFactor.getA(actualFactor.begin()), 0.001));
-  EXPECT(assert_equal(Ae2, actualFactor.getA(actualFactor.begin()+1), 0.001));
-  EXPECT(assert_equal(be, actualFactor.getb(), 0.001));
-  EXPECT(assert_equal(ones(4), actualFactor.get_sigmas(), 0.001));
+  EXPECT(assert_equal(expectedFragment, actualFragment_QR, 0.001));
+  EXPECT(assert_equal(size_t(2), actualFactor_QR.keys().size()));
+  EXPECT(assert_equal(Index(9), actualFactor_QR.keys()[0]));
+  EXPECT(assert_equal(Index(11), actualFactor_QR.keys()[1]));
+  EXPECT(assert_equal(Ae1, actualFactor_QR.getA(actualFactor_QR.begin()), 0.001));
+  EXPECT(assert_equal(Ae2, actualFactor_QR.getA(actualFactor_QR.begin()+1), 0.001));
+  EXPECT(assert_equal(be, actualFactor_QR.getb(), 0.001));
+  EXPECT(assert_equal(ones(4), actualFactor_QR.get_sigmas(), 0.001));
+//  EXPECT(assert_equal(expectedFragment, actualFragment_Chol, 0.001));
+//  EXPECT(assert_equal(size_t(2), actualFactor_Chol.keys().size()));
+//  EXPECT(assert_equal(Index(9), actualFactor_Chol.keys()[0]));
+//  EXPECT(assert_equal(Index(11), actualFactor_Chol.keys()[1]));
+//  EXPECT(linear_dependent(Ae1, actualFactor_Chol.getA(actualFactor_Chol.begin()), 0.001));
+//  EXPECT(linear_dependent(Ae2, actualFactor_Chol.getA(actualFactor_Chol.begin()+1), 0.001));
+//  EXPECT(linear_dependent(-be, actualFactor_Chol.getb(), 0.001));
+//  EXPECT(assert_equal(ones(4), actualFactor_Chol.get_sigmas(), 0.001));
 }
 
 /* ************************************************************************* */

@@ -29,6 +29,7 @@
 #include <boost/random/normal_distribution.hpp>
 #include <boost/random/variate_generator.hpp>
 
+#include <gtsam/base/cholesky.h>
 #include <gtsam/linear/NoiseModel.h>
 #include <gtsam/linear/SharedDiagonal.h>
 #include <gtsam/base/DenseQRUtil.h>
@@ -219,11 +220,7 @@ SharedDiagonal Gaussian::QR(Matrix& Ab, boost::optional<vector<int>&> firstZeroR
 
 
 // General QR, see also special version in Constrained
-SharedDiagonal Gaussian::QRColumnWise(ublas::matrix<double, ublas::column_major>& Ab, vector<int>& firstZeroRows) const {
-//	WhitenInPlace(Ab);
-//	householderColMajor(Ab);
-//	size_t maxRank = min(Ab.size1(), Ab.size2()-1);
-//	return Unit::Create(maxRank);
+SharedDiagonal Gaussian::QRColumnWise(MatrixColMajor& Ab, vector<int>& firstZeroRows) const {
   // get size(A) and maxRank
   // TODO: really no rank problems ?
   size_t m = Ab.size1(), n = Ab.size2()-1;
@@ -245,6 +242,22 @@ SharedDiagonal Gaussian::QRColumnWise(ublas::matrix<double, ublas::column_major>
   householder(Ab_rowWise, maxRank);
   Ab = Ab_rowWise; // FIXME: this is a really silly way of doing this
 #endif
+
+  return Unit::Create(maxRank);
+}
+
+/* ************************************************************************* */
+SharedDiagonal Gaussian::Cholesky(MatrixColMajor& Ab) const {
+  // get size(A) and maxRank
+  // TODO: really no rank problems ?
+  size_t m = Ab.size1(), n = Ab.size2()-1;
+  size_t maxRank = min(m,n);
+
+  // pre-whiten everything (cheaply if possible)
+  WhitenInPlace(Ab);
+
+  // Use Cholesky to factor Ab
+  choleskyFactorUnderdetermined(Ab);
 
   return Unit::Create(maxRank);
 }

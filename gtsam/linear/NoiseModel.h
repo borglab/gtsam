@@ -167,8 +167,12 @@ namespace gtsam {
 			/**
 			 * Version for column-wise matrices
 			 */
-			virtual SharedDiagonal QRColumnWise(boost::numeric::ublas::matrix<double, boost::numeric::ublas::column_major>& Ab,
-			    std::vector<int>& firstZeroRows) const;
+			virtual SharedDiagonal QRColumnWise(MatrixColMajor& Ab, std::vector<int>& firstZeroRows) const;
+
+			/**
+			 * Cholesky factorization
+			 */
+			virtual SharedDiagonal Cholesky(MatrixColMajor& Ab) const;
 
 			/**
 			 * Return R itself, but note that Whiten(H) is cheaper than R*H

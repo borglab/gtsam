@@ -314,7 +314,7 @@ GaussianFactor::sparse(const Dimensions& columnIndices) const {
 }
 
 /* ************************************************************************* */
-GaussianConditional::shared_ptr GaussianFactor::eliminateFirst() {
+GaussianConditional::shared_ptr GaussianFactor::eliminateFirst(SolveMethod solveMethod) {
 
   assert(Ab_.rowStart() == 0 && Ab_.rowEnd() == matrix_.size1() && Ab_.firstBlock() == 0);
   assert(!keys_.empty());
@@ -353,16 +353,23 @@ GaussianConditional::shared_ptr GaussianFactor::eliminateFirst() {
 
   if(debug) gtsam::print(matrix_, "Augmented Ab: ");
 
-  // Use in-place QR on dense Ab appropriate to NoiseModel
-  tic("eliminateFirst: QR");
-  SharedDiagonal noiseModel = model_->QRColumnWise(matrix_, firstZeroRows);
-  toc("eliminateFirst: QR");
+  // Use in-place QR or Cholesky on dense Ab appropriate to NoiseModel
+  SharedDiagonal noiseModel;
+  if(solveMethod == SOLVE_QR || model_->isConstrained()) {
+    tic("eliminateFirst: QR");
+    noiseModel = model_->QRColumnWise(matrix_, firstZeroRows);
+    toc("eliminateFirst: QR");
+  } else if(solveMethod == SOLVE_CHOLESKY) {
+    tic("eliminateFirst: Cholesky");
+    noiseModel = model_->Cholesky(matrix_);
+    toc("eliminateFirst: Cholesky");
+  } else
+    assert(false);
 
   if(matrix_.size1() > 0) {
     for(size_t j=0; j<matrix_.size2(); ++j)
       for(size_t i=j+1; i<noiseModel->dim(); ++i)
         matrix_(i,j) = 0.0;
-
   }
 
   if(debug) gtsam::print(matrix_, "QR result: ");
@@ -427,7 +434,7 @@ GaussianConditional::shared_ptr GaussianFactor::eliminateFirst() {
 }
 
 /* ************************************************************************* */
-GaussianBayesNet::shared_ptr GaussianFactor::eliminate(size_t nrFrontals) {
+GaussianBayesNet::shared_ptr GaussianFactor::eliminate(size_t nrFrontals, SolveMethod solveMethod) {
 
   assert(Ab_.rowStart() == 0 && Ab_.rowEnd() == matrix_.size1() && Ab_.firstBlock() == 0);
   assert(keys_.size() >= nrFrontals);
@@ -466,10 +473,18 @@ GaussianBayesNet::shared_ptr GaussianFactor::eliminate(size_t nrFrontals) {
 
   if(debug) gtsam::print(matrix_, "Augmented Ab: ");
 
-  // Use in-place QR on dense Ab appropriate to NoiseModel
-  tic("eliminate: QR");
-  SharedDiagonal noiseModel = model_->QRColumnWise(matrix_, firstZeroRows);
-  toc("eliminate: QR");
+  // Use in-place QR or Cholesky on dense Ab appropriate to NoiseModel
+  SharedDiagonal noiseModel;
+  if(solveMethod == SOLVE_QR || model_->isConstrained()) {
+    tic("eliminateFirst: QR");
+    noiseModel = model_->QRColumnWise(matrix_, firstZeroRows);
+    toc("eliminateFirst: QR");
+  } else if(solveMethod == SOLVE_CHOLESKY) {
+    tic("eliminateFirst: Cholesky");
+    noiseModel = model_->Cholesky(matrix_);
+    toc("eliminateFirst: Cholesky");
+  } else
+    assert(false);
 
   // Zero the lower-left triangle.  todo: not all of these entries actually
   // need to be zeroed if we are careful to start copying rows after the last
@@ -518,8 +533,8 @@ GaussianBayesNet::shared_ptr GaussianFactor::eliminate(size_t nrFrontals) {
     model_ = noiseModel::Constrained::MixedSigmas(sub(noiseModel->sigmas(), frontalDim, noiseModel->dim()));
   else
     model_ = noiseModel::Diagonal::Sigmas(sub(noiseModel->sigmas(), frontalDim, noiseModel->dim()));
-  assert(Ab_.size1() <= Ab_.size2()-1);
   if(debug) this->print("Eliminated factor: ");
+  assert(Ab_.size1() <= Ab_.size2()-1);
   toc("eliminate: remaining factor");
 
   // todo SL: deal with "dead" pivot columns!!!
