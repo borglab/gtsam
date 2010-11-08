@@ -20,6 +20,7 @@
 
 #include <iostream>
 #include <boost/foreach.hpp>
+#include <boost/numeric/ublas/triangular.hpp>
 #include <boost/assign/std/vector.hpp>
 using namespace boost::assign;
 
@@ -31,6 +32,7 @@ using namespace boost::assign;
 using namespace std;
 using namespace gtsam;
 using namespace noiseModel;
+namespace ublas = boost::numeric::ublas;
 
 static double sigma = 2, s_1=1.0/sigma, var = sigma*sigma, prc = 1.0/var;
 static Matrix R = Matrix_(3, 3,
@@ -196,7 +198,7 @@ TEST( NoiseModel, QR )
 	CHECK(linear_dependent(expectedRd2,Ab2,1e-6)); // Ab was modified in place !!!
 }
 
-///* ************************************************************************* */
+/* ************************************************************************* */
 //TEST( NoiseModel, QRColumnWise )
 //{
 //     // Call Gaussian version
@@ -206,26 +208,24 @@ TEST( NoiseModel, QR )
 //     SharedDiagonal actual = exampleQR::diagonal->QRColumnWise(Ab,firstZeroRows);
 //     SharedDiagonal expected = noiseModel::Unit::Create(4);
 //     CHECK(assert_equal(*expected,*actual));
-//     Matrix AbResized = sub(Ab, 0, actual->dim(), 0, Ab.size2());
+//     Matrix AbResized = ublas::triangular_adaptor<MatrixColMajor, ublas::upper>(Ab);
 //     print(exampleQR::Rd, "Rd: ");
 //     print(Ab, "Ab: ");
 //     print(AbResized, "AbResized: ");
 //     CHECK(linear_dependent(exampleQR::Rd,AbResized,1e-4)); // Ab was modified in place !!!
 //}
-//
-///* ************************************************************************* */
-//TEST(NoiseModel, Cholesky)
-//{
-//     MatrixColMajor Ab = exampleQR::Ab; // otherwise overwritten !
-//     SharedDiagonal actual = exampleQR::diagonal->Cholesky(Ab);
-//     SharedDiagonal expected = noiseModel::Unit::Create(4);
-//     EXPECT(assert_equal(*expected,*actual));
-//     Matrix AbResized = sub(Ab, 0, actual->dim(), 0, Ab.size2());
-//     print(exampleQR::Rd, "Rd: ");
-//     print(Ab, "Ab: ");
-//     print(AbResized, "AbResized: ");
-//     EXPECT(linear_dependent(exampleQR::Rd,AbResized,1e-4)); // Ab was modified in place !!!
-//}
+
+/* ************************************************************************* */
+TEST(NoiseModel, Cholesky)
+{
+     MatrixColMajor Ab = exampleQR::Ab; // otherwise overwritten !
+     SharedDiagonal actual = exampleQR::diagonal->Cholesky(Ab);
+     SharedDiagonal expected = noiseModel::Unit::Create(4);
+     EXPECT(assert_equal(*expected,*actual));
+     // Ab was modified in place !!!
+     Matrix actualRd = ublas::triangular_adaptor<MatrixColMajor, ublas::upper>(Ab);
+     EXPECT(linear_dependent(exampleQR::Rd,actualRd,1e-4));
+}
 
 /* ************************************************************************* */
 TEST(NoiseModel, QRNan )
