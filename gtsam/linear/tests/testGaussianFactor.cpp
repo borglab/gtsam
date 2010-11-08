@@ -406,6 +406,7 @@ TEST( GaussianFactor, eliminate2 )
 /* ************************************************************************* */
 TEST_UNSAFE(GaussianFactor, eliminateFrontals)
 {
+	// Augmented Ab test case for whole factor graph
   Matrix Ab = Matrix_(14,11,
       4.,     0.,     1.,     4.,     1.,     0.,     3.,     6.,     8.,     8.,     1.,
       9.,     2.,     0.,     1.,     6.,     3.,     9.,     6.,     6.,     9.,     4.,
@@ -422,6 +423,7 @@ TEST_UNSAFE(GaussianFactor, eliminateFrontals)
       0.,     0.,     0.,     0.,     0.,     0.,     0.,     0.,     2.,     4.,     6.,
       0.,     0.,     0.,     0.,     0.,     0.,     0.,     0.,     6.,     3.,     4.);
 
+  // Create first factor (from pieces of Ab)
   list<pair<Index, Matrix> > terms1;
   terms1 +=
       make_pair(3, Matrix(ublas::project(Ab, ublas::range(0,4), ublas::range(0,2)))),
@@ -432,6 +434,7 @@ TEST_UNSAFE(GaussianFactor, eliminateFrontals)
   Vector b1 = ublas::project(ublas::column(Ab, 10), ublas::range(0,4));
   GaussianFactor::shared_ptr factor1(new GaussianFactor(terms1, b1, sharedSigma(4, 0.5)));
 
+  // Create second factor
   list<pair<Index, Matrix> > terms2;
   terms2 +=
       make_pair(5, ublas::project(Ab, ublas::range(4,8), ublas::range(2,4))),
@@ -441,6 +444,7 @@ TEST_UNSAFE(GaussianFactor, eliminateFrontals)
   Vector b2 = ublas::project(ublas::column(Ab, 10), ublas::range(4,8));
   GaussianFactor::shared_ptr factor2(new GaussianFactor(terms2, b2, sharedSigma(4, 0.5)));
 
+  // Create third factor
   list<pair<Index, Matrix> > terms3;
   terms3 +=
       make_pair(7, ublas::project(Ab, ublas::range(8,12), ublas::range(4,6))),
@@ -449,24 +453,28 @@ TEST_UNSAFE(GaussianFactor, eliminateFrontals)
   Vector b3 = ublas::project(ublas::column(Ab, 10), ublas::range(8,12));
   GaussianFactor::shared_ptr factor3(new GaussianFactor(terms3, b3, sharedSigma(4, 0.5)));
 
+  // Create fourth factor
   list<pair<Index, Matrix> > terms4;
   terms4 +=
       make_pair(11, ublas::project(Ab, ublas::range(12,14), ublas::range(8,10)));
   Vector b4 = ublas::project(ublas::column(Ab, 10), ublas::range(12,14));
   GaussianFactor::shared_ptr factor4(new GaussianFactor(terms4, b4, sharedSigma(2, 0.5)));
 
+  // Create factor graph
   GaussianFactorGraph factors;
   factors.push_back(factor1);
   factors.push_back(factor2);
   factors.push_back(factor3);
   factors.push_back(factor4);
+
+  // Create combined factor
   GaussianFactor combined(*GaussianFactor::Combine(factors, VariableSlots(factors)));
 
+  // Copies factors as they will be eliminated in place
   GaussianFactor actualFactor_QR = combined;
   GaussianFactor actualFactor_Chol = combined;
-  GaussianBayesNet actualFragment_QR = *actualFactor_QR.eliminate(3, GaussianFactor::SOLVE_QR);
-  GaussianBayesNet actualFragment_Chol = *actualFactor_Chol.eliminate(3, GaussianFactor::SOLVE_CHOLESKY);
 
+  // Expected augmented matrix, both GaussianConditional (first 6 rows) and remaining factor (next 4 rows)
   Matrix R = 2.0*Matrix_(11,11,
       -12.1244,  -5.1962,  -5.2786,  -8.6603, -10.5573,  -5.9385, -11.3820,  -7.2581,  -8.7427, -13.4440,  -5.3611,
             0.,   4.6904,   5.0254,   5.5432,   5.5737,   3.0153,  -3.0153,  -3.5635,  -3.9290,  -2.7412,   2.1625,
@@ -480,6 +488,7 @@ TEST_UNSAFE(GaussianFactor, eliminateFrontals)
             0.,       0.,       0.,       0.,       0.,       0.,       0.,       0.,       0.,  -5.7095,  -0.0090,
             0.,       0.,       0.,       0.,       0.,       0.,       0.,       0.,       0.,       0.,  -7.1635);
 
+  // Expected conditional on first variable from first 2 rows of R
   Matrix R1 = ublas::project(R, ublas::range(0,2), ublas::range(0,2));
   list<pair<Index, Matrix> > cterms1;
   cterms1 +=
@@ -490,6 +499,7 @@ TEST_UNSAFE(GaussianFactor, eliminateFrontals)
   Vector d1 = ublas::project(ublas::column(R, 10), ublas::range(0,2));
   GaussianConditional::shared_ptr cond1(new GaussianConditional(3, d1, R1, cterms1, ones(2)));
 
+  // Expected conditional on second variable from next 2 rows of R
   Matrix R2 = ublas::project(R, ublas::range(2,4), ublas::range(2,4));
   list<pair<Index, Matrix> > cterms2;
   cterms2 +=
@@ -499,6 +509,7 @@ TEST_UNSAFE(GaussianFactor, eliminateFrontals)
   Vector d2 = ublas::project(ublas::column(R, 10), ublas::range(2,4));
   GaussianConditional::shared_ptr cond2(new GaussianConditional(5, d2, R2, cterms2, ones(2)));
 
+  // Expected conditional on third variable from next 2 rows of R
   Matrix R3 = ublas::project(R, ublas::range(4,6), ublas::range(4,6));
   list<pair<Index, Matrix> > cterms3;
   cterms3 +=
@@ -507,15 +518,19 @@ TEST_UNSAFE(GaussianFactor, eliminateFrontals)
   Vector d3 = ublas::project(ublas::column(R, 10), ublas::range(4,6));
   GaussianConditional::shared_ptr cond3(new GaussianConditional(7, d3, R3, cterms3, ones(2)));
 
-  Matrix Ae1 = ublas::project(R, ublas::range(6,10), ublas::range(6,8));
-  Matrix Ae2 = ublas::project(R, ublas::range(6,10), ublas::range(8,10));
-  Vector be = ublas::project(ublas::column(R, 10), ublas::range(6,10));
-
+  // Create expected Bayes net fragment from three conditionals above
   GaussianBayesNet expectedFragment;
   expectedFragment.push_back(cond1);
   expectedFragment.push_back(cond2);
   expectedFragment.push_back(cond3);
 
+  // Get expected matrices for remaining factor
+  Matrix Ae1 = ublas::project(R, ublas::range(6,10), ublas::range(6,8));
+  Matrix Ae2 = ublas::project(R, ublas::range(6,10), ublas::range(8,10));
+  Vector be = ublas::project(ublas::column(R, 10), ublas::range(6,10));
+
+  // Eliminate (3 frontal variables, 6 scalar columns) using QR !!!!
+  GaussianBayesNet actualFragment_QR = *actualFactor_QR.eliminate(3, GaussianFactor::SOLVE_QR);
   EXPECT(assert_equal(expectedFragment, actualFragment_QR, 0.001));
   EXPECT(assert_equal(size_t(2), actualFactor_QR.keys().size()));
   EXPECT(assert_equal(Index(9), actualFactor_QR.keys()[0]));
@@ -524,13 +539,16 @@ TEST_UNSAFE(GaussianFactor, eliminateFrontals)
   EXPECT(assert_equal(Ae2, actualFactor_QR.getA(actualFactor_QR.begin()+1), 0.001));
   EXPECT(assert_equal(be, actualFactor_QR.getb(), 0.001));
   EXPECT(assert_equal(ones(4), actualFactor_QR.get_sigmas(), 0.001));
+
+  // Eliminate (3 frontal variables, 6 scalar columns) using Cholesky !!!!
+//  GaussianBayesNet actualFragment_Chol = *actualFactor_Chol.eliminate(3, GaussianFactor::SOLVE_CHOLESKY);
 //  EXPECT(assert_equal(expectedFragment, actualFragment_Chol, 0.001));
 //  EXPECT(assert_equal(size_t(2), actualFactor_Chol.keys().size()));
 //  EXPECT(assert_equal(Index(9), actualFactor_Chol.keys()[0]));
 //  EXPECT(assert_equal(Index(11), actualFactor_Chol.keys()[1]));
-//  EXPECT(linear_dependent(Ae1, actualFactor_Chol.getA(actualFactor_Chol.begin()), 0.001));
+//  EXPECT(assert_equal(Ae1, actualFactor_Chol.getA(actualFactor_Chol.begin()), 0.001)); ////
 //  EXPECT(linear_dependent(Ae2, actualFactor_Chol.getA(actualFactor_Chol.begin()+1), 0.001));
-//  EXPECT(linear_dependent(-be, actualFactor_Chol.getb(), 0.001));
+//  EXPECT(assert_equal(be, actualFactor_Chol.getb(), 0.001)); ////
 //  EXPECT(assert_equal(ones(4), actualFactor_Chol.get_sigmas(), 0.001));
 }
 
