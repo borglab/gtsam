@@ -12,8 +12,8 @@ check_PROGRAMS =
 
 # Noise Model
 headers += SharedGaussian.h SharedDiagonal.h 
-sources += NoiseModel.cpp Errors.cpp
-check_PROGRAMS += tests/testNoiseModel tests/testErrors
+sources += NoiseModel.cpp Errors.cpp Sampler.cpp
+check_PROGRAMS += tests/testNoiseModel tests/testErrors tests/testSampler
 
 # Vector Configurations
 headers += VectorValues.h 
