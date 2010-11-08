@@ -101,6 +101,8 @@ public:
 
   double *ptr(Index idx = 0) { return values_.data().begin() + varStarts_[idx] ; }
   const double *ptr(Index idx = 0) const { return values_.data().begin() + varStarts_[idx] ; }
+  const Vector& values() const { return values_ ; }
+  Vector& values() { return values_ ; }
 
   /* return the dimension spec of this vector*/
   template <typename T>
