@@ -85,7 +85,8 @@ size_t choleskyFactorUnderdetermined(MatrixColMajor& Ab) {
         throw std::domain_error(boost::str(boost::format(
             "Bad input to choleskyFactorUnderdetermined, dpotrf returned %d.\n")%info));
       else
-        throw std::domain_error("The matrix passed into choleskyFactorUnderdetermined is numerically rank-deficient");
+        throw std::domain_error(boost::str(boost::format(
+            "The matrix passed into choleskyFactorUnderdetermined is numerically rank-deficient, dpotrf returned rank=%d, expected rank was %d.\n")%info%rank));
     }
 
     // Compute S = inv(R') * F' * G, i.e. solve S when R'S = F'G
