@@ -86,16 +86,16 @@ namespace gtsam {
 
 		// keep a values structure and its error
 		// These typically change once per iteration (in a functional way)
-		const shared_values values_;
-		const double error_;
+		shared_values values_;
+		double error_;
 
 		// the variable ordering
 		const shared_ordering ordering_;
 
 		// the linear system solver
-		const shared_solver solver_;
+		shared_solver solver_;
 
-		const shared_parameters parameters_;
+		shared_parameters parameters_;
 
 //		// keep current lambda for use within LM only
 //		// TODO: red flag, should we have an LM class ?
@@ -107,7 +107,7 @@ namespace gtsam {
 		// Recursively try to do tempered Gauss-Newton steps until we succeed
 //		NonlinearOptimizer try_lambda(const L& linear,
 //				Parameters::verbosityLevel verbosity, double factor, Parameters::LambdaMode lambdaMode) const;
-		NonlinearOptimizer try_lambda(const L& linear) const;
+		NonlinearOptimizer try_lambda(L& linear);
 
     /**
      * Constructor that does not do any computation
@@ -139,6 +139,10 @@ namespace gtsam {
 
     This newValuesSolverLambda_(shared_values newValues, shared_solver newSolver, double newLambda) const {
       return NonlinearOptimizer(graph_, newValues, graph_->error(*newValues), ordering_, newSolver, parameters_->newLambda_(newLambda), dimensions_); }
+
+    This newValuesErrorLambda_(shared_values newValues, double newError, double newLambda) const {
+         return NonlinearOptimizer(graph_, newValues, newError, ordering_, solver_, parameters_->newLambda_(newLambda), dimensions_); }
+
 
     This newVerbosity_(Parameters::verbosityLevel verbosity) const {
       return NonlinearOptimizer(graph_, values_, error_, ordering_, solver_, parameters_->newVerbosity_(verbosity), dimensions_); }
@@ -249,7 +253,7 @@ namespace gtsam {
 		 */
 
 		// suggested interface
-		NonlinearOptimizer iterateLM() const;
+		NonlinearOptimizer iterateLM();
 
 		// backward compatible
 		NonlinearOptimizer iterateLM(Parameters::verbosityLevel verbosity,
@@ -271,7 +275,7 @@ namespace gtsam {
 		 */
 
 		// suggested interface
-		NonlinearOptimizer levenbergMarquardt() const;
+		NonlinearOptimizer levenbergMarquardt();
 
 		// backward compatible
 		NonlinearOptimizer

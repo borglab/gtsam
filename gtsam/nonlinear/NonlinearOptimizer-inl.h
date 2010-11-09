@@ -185,76 +185,72 @@ namespace gtsam {
 	}
 
 	/* ************************************************************************* */
-	// Recursively try to do tempered Gauss-Newton steps until we succeed.
+	// Iteratively try to do tempered Gauss-Newton steps until we succeed.
 	// Form damped system with given lambda, and return a new, more optimistic
-	// optimizer if error decreased or recurse with a larger lambda if not.
+	// optimizer if error decreased or iterate with a larger lambda if not.
 	// TODO: in theory we can't infinitely recurse, but maybe we should put a max.
 	/* ************************************************************************* */
 	template<class G, class C, class L, class S, class W>
-	NonlinearOptimizer<G, C, L, S, W> NonlinearOptimizer<G, C, L, S, W>::try_lambda(const L& linear) const {
+	NonlinearOptimizer<G, C, L, S, W> NonlinearOptimizer<G, C, L, S, W>::try_lambda(L& linear) {
 
 		const Parameters::verbosityLevel verbosity = parameters_->verbosity_ ;
-		const double lambda = parameters_->lambda_ ;
+		double lambda = parameters_->lambda_ ;
 		const Parameters::LambdaMode lambdaMode = parameters_->lambdaMode_ ;
 		const double factor = parameters_->lambdaFactor_ ;
 
-		if (verbosity >= Parameters::TRYLAMBDA) cout << "trying lambda = " << lambda << endl;
-
-		// add prior-factors
-		L damped = linear.add_priors(1.0/sqrt(lambda), *dimensions_);
-		if (verbosity >= Parameters::DAMPED) damped.print("damped");
-
-		// solve
-		shared_solver newSolver = solver_;
-
-		if(newSolver) newSolver = newSolver->update(damped);
-		else newSolver.reset(new S(damped));
-
-		VectorValues delta = *newSolver->optimize();
-		if (verbosity >= Parameters::TRYDELTA) delta.print("delta");
-
-		// update values
-		shared_values newValues(new C(values_->expmap(delta, *ordering_))); // TODO: updateValues
-
-		// create new optimization state with more adventurous lambda
-		NonlinearOptimizer next(newValuesSolverLambda_(newValues, newSolver, lambda / factor));
-		if (verbosity >= Parameters::TRYLAMBDA) cout << "next error = " << next.error_ << endl;
-
 		if( lambdaMode >= Parameters::CAUTIOUS) throw runtime_error("CAUTIOUS mode not working yet, please use BOUNDED.");
 
-		if( next.error_ <= error_ ) {
-			// If we're cautious, see if the current lambda is better
-			// todo:  include stopping criterion here?
-			if( lambdaMode == Parameters::CAUTIOUS ) {
-				NonlinearOptimizer sameLambda(newValuesSolver_(newValues, newSolver));
-				if(sameLambda.error_ <= next.error_) return sameLambda;
-			}
+		bool first_iteration = true;
+		double next_error = error_;
 
-			// Either we're not cautious, or we are but the adventerous lambda is better than the same one.
-			return next;
+		shared_values next_values;
 
-		} else if (lambda > 1e+10) // if lambda gets too big, something is broken
-			throw runtime_error("Lambda has grown too large!");
-		else {
-			// A more adventerous lambda was worse.  If we're cautious, try the same lambda.
-			if(lambdaMode == Parameters::CAUTIOUS) {
-				NonlinearOptimizer sameLambda(newValuesSolver_(newValues, newSolver));
-				if(sameLambda.error_ <= error_) return sameLambda;
-			}
+		while(true) {
+		  if (verbosity >= Parameters::TRYLAMBDA) cout << "trying lambda = " << lambda << endl;
 
-			// Either we're not cautious, or the same lambda was worse than the current error.
-			// The more adventerous lambda was worse too, so make lambda more conservative
-			// and keep the same values.
+		  // add prior-factors
+		  L damped = linear.add_priors(1.0/sqrt(lambda), *dimensions_);
+		  if (verbosity >= Parameters::DAMPED) damped.print("damped");
 
-			// TODO: can we avoid copying the values ?
-			if(lambdaMode >= Parameters::BOUNDED && lambda >= 1.0e5) {
-				return NonlinearOptimizer(newValuesSolver_(newValues, newSolver));
-			} else {
-				NonlinearOptimizer cautious(newLambda_(lambda * factor));
-				return cautious.try_lambda(linear);
-			}
-		}
+		  // solve
+		  if(solver_) solver_ = solver_->update(damped);
+		  else solver_.reset(new S(damped));
 
+		  VectorValues delta = *solver_->optimize();
+		  if (verbosity >= Parameters::TRYDELTA) delta.print("delta");
+
+		  // update values
+		  shared_values newValues(new C(values_->expmap(delta, *ordering_))); // TODO: updateValues
+
+		  // create new optimization state with more adventurous lambda
+		  //NonlinearOptimizer next(newValuesSolverLambda_(newValues, newSolver, lambda / factor));
+		  double error = graph_->error(*newValues);
+
+		  if (verbosity >= Parameters::TRYLAMBDA) cout << "next error = " << error << endl;
+
+		  if(first_iteration || error <= error_) {
+			  next_values = newValues;
+			  first_iteration = false;
+		  }
+
+		  if( error <= error_ ) {
+		  	next_error = error;
+			  lambda /= factor;
+		  	break;
+		  }
+		  else {
+		  	// Either we're not cautious, or the same lambda was worse than the current error.
+		  	// The more adventurous lambda was worse too, so make lambda more conservative
+		  	// and keep the same values.
+		  	if(lambdaMode >= Parameters::BOUNDED && lambda >= 1.0e5) {
+		  		break;
+		  	} else {
+		  		lambda *= factor;
+		  	}
+		  }
+		} // end while
+
+		return newValuesErrorLambda_(next_values, next_error, lambda);
 	}
 
 	/* ************************************************************************* */
@@ -262,7 +258,7 @@ namespace gtsam {
 	/* ************************************************************************* */
 
 	template<class G, class C, class L, class S, class W>
-	NonlinearOptimizer<G, C, L, S, W> NonlinearOptimizer<G, C, L, S, W>::iterateLM() const {
+	NonlinearOptimizer<G, C, L, S, W> NonlinearOptimizer<G, C, L, S, W>::iterateLM(){
 
 		const Parameters::verbosityLevel verbosity = parameters_->verbosity_ ;
 		const double lambda = parameters_->lambda_ ;
@@ -301,11 +297,10 @@ namespace gtsam {
 	/* ************************************************************************* */
 
 	template<class G, class C, class L, class S, class W>
-	NonlinearOptimizer<G, C, L, S, W> NonlinearOptimizer<G, C, L, S, W>::levenbergMarquardt() const {
+	NonlinearOptimizer<G, C, L, S, W> NonlinearOptimizer<G, C, L, S, W>::levenbergMarquardt() {
 
-		const int maxIterations = parameters_->maxIterations_ ;
-		if ( maxIterations <= 0) return *this;
-
+		int maxIterations = parameters_->maxIterations_ ;
+		bool converged = false;
 		const Parameters::verbosityLevel verbosity = parameters_->verbosity_ ;
 
 		// check if we're already close enough
@@ -315,23 +310,28 @@ namespace gtsam {
 			return *this;
 		}
 
-		// do one iteration of LM
-		NonlinearOptimizer next = iterateLM();
+		while (true) {
+			double previous_error = error_;
+			// do one iteration of LM
+			NonlinearOptimizer next = iterateLM();
+			error_ = next.error_;
+			values_ = next.values_;
+			parameters_ = next.parameters_;
 
-		// check convergence
-		// TODO: move convergence checks here and incorporate in verbosity levels
-		// TODO: build into iterations somehow as an instance variable
-		bool converged = gtsam::check_convergence(*parameters_, error_, next.error_);
+			// check convergence
+			// TODO: move convergence checks here and incorporate in verbosity levels
+			// TODO: build into iterations somehow as an instance variable
+			converged = gtsam::check_convergence(*parameters_, previous_error, error_);
 
-		// return converged state or iterate
-		if ( converged || maxIterations <= 1 ) {
-			if (verbosity >= Parameters::VALUES) next.values_->print("final values");
-			if (verbosity >= Parameters::ERROR) cout << "final error: " << next.error_ << endl;
-			if (verbosity >= Parameters::LAMBDA) cout << "final lambda = " << next.lambda() << endl;
-			return next;
-		} else {
-			return next.newMaxIterations_(maxIterations - 1).levenbergMarquardt() ;
+			if(maxIterations <= 0 || converged == true) {
+				if (verbosity >= Parameters::VALUES) values_->print("final values");
+				if (verbosity >= Parameters::ERROR) cout << "final error: " << error_ << endl;
+				if (verbosity >= Parameters::LAMBDA) cout << "final lambda = " << lambda() << endl;
+				return *this;
+			}
+			maxIterations--;
 		}
+
 	}
 
 	template<class G, class C, class L, class S, class W>
