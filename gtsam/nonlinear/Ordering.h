@@ -81,6 +81,8 @@ public:
     return it_ok; }
   std::pair<iterator,bool> tryInsert(const Symbol& key, Index order) { return tryInsert(std::make_pair(key,order)); }
 
+  bool exists(const Symbol& key) const { return order_.count(key); }
+
   Index push_back(const Symbol& key) { return insert(std::make_pair(key, nVars_))->second; }
 
   /**
