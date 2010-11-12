@@ -72,6 +72,12 @@ class GeneralCameraT {
 					cameraPoint.z() > 0);
 		}
 
+		Point3 backproject(const Point2& projection, const double scale) const {
+			Point2 intrinsic = calibration_.calibrate(projection);
+			Point3 cameraPoint = CalibratedCamera::backproject_from_camera(intrinsic, scale);
+			return calibrated_.pose().transform_from(cameraPoint);
+		}
+
 		/**
 		 * project a 3d point to the camera
 		 * P is point in camera coordinate
