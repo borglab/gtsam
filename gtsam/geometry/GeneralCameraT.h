@@ -32,9 +32,8 @@
 #include <gtsam/geometry/Cal3_S2.h>
 
 
-#include <gtsam/sfm/Cal3Dummy.h>
-#include <gtsam/sfm/Cal3Bundler.h>
-#include <gtsam/sfm/Cal3DS2.h>
+#include <gtsam/geometry/Cal3Bundler.h>
+#include <gtsam/geometry/Cal3DS2.h>
 
 namespace gtsam {
 

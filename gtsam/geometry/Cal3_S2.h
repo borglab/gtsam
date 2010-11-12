@@ -114,6 +114,7 @@ namespace gtsam {
 	     * return DOF, dimensionality of tangent space
 	     */
 	    inline size_t dim() const { return 5; }
+	  	static size_t Dim() { return 5; }
 
 	    /**
 	     * Given 5-dim tangent vector, create new calibration
@@ -121,6 +122,13 @@ namespace gtsam {
 	    inline Cal3_S2 expmap(const Vector& d) const {
 	        return Cal3_S2(fx_ + d(0), fy_ + d(1),
 	            s_ + d(2), u0_ + d(3), v0_ + d(4));
+	    }
+
+	    /**
+	     * logmap for the calibration
+	     */
+	    Vector logmap(const Cal3_S2& T2) const {
+	    	return vector() - T2.vector();
 	    }
 
 	private:
