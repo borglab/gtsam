@@ -404,7 +404,7 @@ TEST( GaussianFactor, eliminate2 )
 }
 
 /* ************************************************************************* */
-TEST_UNSAFE(GaussianFactor, eliminateFrontals)
+TEST(GaussianFactor, eliminateFrontals)
 {
 	// Augmented Ab test case for whole factor graph
   Matrix Ab = Matrix_(14,11,
