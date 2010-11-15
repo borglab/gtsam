@@ -114,6 +114,14 @@ TEST(DSFVector, set2) {
 }
 
 /* ************************************************************************* */
+TEST(DSFVector, isSingleton) {
+	DSFVector dsf(3);
+	dsf.makeUnionInPlace(0,1);
+	CHECK(!dsf.isSingleton(0));
+	CHECK(!dsf.isSingleton(1));
+	CHECK( dsf.isSingleton(2));
+}
+/* ************************************************************************* */
 int main() { TestResult tr; return TestRegistry::runAllTests(tr);}
 /* ************************************************************************* */
 
