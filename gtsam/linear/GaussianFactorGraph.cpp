@@ -146,24 +146,6 @@ GaussianFactorGraph GaussianFactorGraph::combine2(const GaussianFactorGraph& lfg
 	return fg;
 }
 
-/* ************************************************************************* */  
-GaussianFactorGraph GaussianFactorGraph::add_priors(double sigma, const vector<size_t>& dimensions) const {
-
-	// start with this factor graph
-	GaussianFactorGraph result = *this;
-
-	// for each of the variables, add a prior
-	for(Index j=0; j<dimensions.size(); ++j) {
-	  size_t dim = dimensions[j];
-		Matrix A = eye(dim);
-		Vector b = zero(dim);
-		SharedDiagonal model = noiseModel::Isotropic::Sigma(dim,sigma);
-		sharedFactor prior(new GaussianFactor(j, A, b, model));
-		result.push_back(prior);
-	}
-	return result;
-}
-
 bool GaussianFactorGraph::split(const std::map<Index, Index> &M, GaussianFactorGraph &Ab1, GaussianFactorGraph &Ab2) const {
 
 	//typedef sharedFactor F ;

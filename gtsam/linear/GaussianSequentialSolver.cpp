@@ -31,15 +31,23 @@ GaussianSequentialSolver::GaussianSequentialSolver(const FactorGraph<GaussianFac
     Base(factorGraph) {}
 
 /* ************************************************************************* */
-GaussianSequentialSolver::shared_ptr GaussianSequentialSolver::Create(const FactorGraph<GaussianFactor>& factorGraph) {
-  return shared_ptr(new GaussianSequentialSolver(factorGraph));
+GaussianSequentialSolver::GaussianSequentialSolver(const FactorGraph<GaussianFactor>::shared_ptr& factorGraph) :
+    Base(factorGraph) {}
+
+/* ************************************************************************* */
+GaussianSequentialSolver::GaussianSequentialSolver(const FactorGraph<GaussianFactor>::shared_ptr& factorGraph,
+    const VariableIndex::shared_ptr& variableIndex) :
+    Base(factorGraph, variableIndex) {}
+
+/* ************************************************************************* */
+GaussianSequentialSolver::shared_ptr GaussianSequentialSolver::Create(
+    const FactorGraph<GaussianFactor>::shared_ptr& factorGraph, const VariableIndex::shared_ptr& variableIndex) {
+  return shared_ptr(new GaussianSequentialSolver(factorGraph, variableIndex));
 }
 
 /* ************************************************************************* */
-GaussianSequentialSolver::shared_ptr GaussianSequentialSolver::update(const FactorGraph<GaussianFactor>& factorGraph) const {
-  // We do not yet have code written to update the elimination tree, so we just
-  // create a new solver.
-  return Create(factorGraph);
+void GaussianSequentialSolver::replaceFactors(const FactorGraph<GaussianFactor>::shared_ptr& factorGraph) {
+  Base::replaceFactors(factorGraph);
 }
 
 /* ************************************************************************* */
@@ -52,7 +60,7 @@ VectorValues::shared_ptr GaussianSequentialSolver::optimize() const {
 
   static const bool debug = false;
 
-  if(debug) this->factors_.print("GaussianSequentialSolver, eliminating ");
+  if(debug) this->factors_->print("GaussianSequentialSolver, eliminating ");
   if(debug) this->eliminationTree_->print("GaussianSequentialSolver, elimination tree ");
 
   // Eliminate using the elimination tree

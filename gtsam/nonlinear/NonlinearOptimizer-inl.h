@@ -115,7 +115,7 @@ namespace gtsam {
 	    boost::shared_ptr<L> linearized = graph_->linearize(*values_, *ordering_);
 		shared_solver newSolver = solver_;
 
-		if(newSolver) newSolver = newSolver->update(*linearized);
+		if(newSolver) newSolver->replaceFactors(linearized);
 		else newSolver.reset(new S(*linearized));
 
 		VectorValues delta = *newSolver->optimize();
@@ -209,11 +209,24 @@ namespace gtsam {
 		  if (verbosity >= Parameters::TRYLAMBDA) cout << "trying lambda = " << lambda << endl;
 
 		  // add prior-factors
-		  L damped = linear.add_priors(1.0/sqrt(lambda), *dimensions_);
-		  if (verbosity >= Parameters::DAMPED) damped.print("damped");
+		  typename L::shared_ptr damped(new L(linear));
+		  {
+		    double sigma = 1.0 / sqrt(lambda);
+		    damped->reserve(damped->size() + dimensions_->size());
+		    // for each of the variables, add a prior
+		    for(Index j=0; j<dimensions_->size(); ++j) {
+		      size_t dim = (*dimensions_)[j];
+		      Matrix A = eye(dim);
+		      Vector b = zero(dim);
+		      SharedDiagonal model = noiseModel::Isotropic::Sigma(dim,sigma);
+		      GaussianFactor::shared_ptr prior(new GaussianFactor(j, A, b, model));
+		      damped->push_back(prior);
+		    }
+		  }
+		  if (verbosity >= Parameters::DAMPED) damped->print("damped");
 
 		  // solve
-		  if(solver_) solver_ = solver_->update(damped);
+		  if(solver_) solver_->replaceFactors(damped);
 		  else solver_.reset(new S(damped));
 
 		  VectorValues delta = *solver_->optimize();

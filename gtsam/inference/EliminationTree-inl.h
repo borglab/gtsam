@@ -4,6 +4,7 @@
  * @author  Frank Dellaert
  * @created Oct 13, 2010
  */
+#pragma once
 
 #include <gtsam/base/timing.h>
 #include <gtsam/inference/EliminationTree.h>

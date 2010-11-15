@@ -151,13 +151,6 @@ namespace gtsam {
      */
     void combine(const GaussianFactorGraph &lfg);
 
-
-    /**
-     * Add zero-mean i.i.d. Gaussian prior terms to each variable
-     * @param sigma Standard deviation of Gaussian
-     */
-    GaussianFactorGraph add_priors(double sigma, const std::vector<size_t>& dimensions) const;
-
 	/**
 	 * Split a Gaussian factor graph into two, according to M
 	 * M keeps the vertex indices of edges of A1. The others belong to A2.

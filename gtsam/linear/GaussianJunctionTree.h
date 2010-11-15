@@ -43,10 +43,14 @@ namespace gtsam {
 
 	public :
 
+		/** Default constructor */
 		GaussianJunctionTree() : Base() {}
 
-		// constructor
+		/** Constructor from a factor graph.  Builds a VariableIndex. */
 		GaussianJunctionTree(const GaussianFactorGraph& fg) : Base(fg) {}
+
+    /** Construct from a factor graph and a pre-computed variable index. */
+    GaussianJunctionTree(const GaussianFactorGraph& fg, const VariableIndex& variableIndex) : Base(fg, variableIndex) {}
 
 		// optimize the linear graph
 		VectorValues optimize() const;

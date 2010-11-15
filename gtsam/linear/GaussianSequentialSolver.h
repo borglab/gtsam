@@ -61,15 +61,28 @@ public:
 
   /**
    * Construct the solver for a factor graph.  This builds the elimination
-   * tree, which already does some of the symbolic work of elimination.
+   * tree, which already does some of the work of elimination.
    */
   GaussianSequentialSolver(const FactorGraph<GaussianFactor>& factorGraph);
+
+  /**
+   * Construct the solver for a factor graph.  This builds the elimination
+   * tree, which already does some of the work of elimination.
+   */
+  GaussianSequentialSolver(const FactorGraph<GaussianFactor>::shared_ptr& factorGraph);
+
+  /**
+   * Construct the solver with a shared pointer to a factor graph and to a
+   * VariableIndex.  The solver will store these pointers, so this constructor
+   * is the fastest.
+   */
+  GaussianSequentialSolver(const FactorGraph<GaussianFactor>::shared_ptr& factorGraph, const VariableIndex::shared_ptr& variableIndex);
 
   /**
    * Named constructor to return a shared_ptr.  This builds the elimination
    * tree, which already does some of the symbolic work of elimination.
    */
-  static shared_ptr Create(const FactorGraph<GaussianFactor>& factorGraph);
+  static shared_ptr Create(const FactorGraph<GaussianFactor>::shared_ptr& factorGraph, const VariableIndex::shared_ptr& variableIndex);
 
   /**
    * Return a new solver that solves the given factor graph, which must have
@@ -78,7 +91,7 @@ public:
    * used in cases where the numerical values of the linear problem change,
    * e.g. during iterative nonlinear optimization.
    */
-  shared_ptr update(const FactorGraph<GaussianFactor>& factorGraph) const;
+  void replaceFactors(const FactorGraph<GaussianFactor>::shared_ptr& factorGraph);
 
   /**
    * Eliminate the factor graph sequentially.  Uses a column elimination tree

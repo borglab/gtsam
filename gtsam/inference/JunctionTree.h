@@ -48,6 +48,8 @@ namespace gtsam {
 
 		typedef class BayesTree<typename FG::Factor::Conditional> BayesTree;
 
+		typedef boost::shared_ptr<JunctionTree<FG> > shared_ptr;
+
 		// And we will frequently refer to a symbolic Bayes tree
 		typedef gtsam::BayesTree<IndexConditional> SymbolicBayesTree;
 
@@ -64,13 +66,18 @@ namespace gtsam {
 		std::pair<typename BayesTree::sharedClique, typename FG::sharedFactor>
 		eliminateOneClique(const boost::shared_ptr<const Clique>& clique) const;
 
-	public:
-		// constructor
-		JunctionTree() {
-		}
+		// internal constructor
+		void construct(const FG& fg, const VariableIndex& variableIndex);
 
-		// constructor given a factor graph and the elimination ordering
+	public:
+		/** Default constructor */
+		JunctionTree() {}
+
+		/** Construct from a factor graph.  Computes a variable index. */
 		JunctionTree(const FG& fg);
+
+		/** Construct from a factor graph and a pre-computed variable index. */
+		JunctionTree(const FG& fg, const VariableIndex& variableIndex);
 
 		// eliminate the factors in the subgraphs
 		typename BayesTree::sharedClique eliminate() const;

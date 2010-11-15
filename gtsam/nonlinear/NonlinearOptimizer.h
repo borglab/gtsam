@@ -71,7 +71,7 @@ namespace gtsam {
 		typedef boost::shared_ptr<const T> shared_values;
 		typedef boost::shared_ptr<const G> shared_graph;
 		typedef boost::shared_ptr<const Ordering> shared_ordering;
-		typedef boost::shared_ptr<const GS> shared_solver;
+		typedef boost::shared_ptr<GS> shared_solver;
 		typedef NonlinearOptimizationParameters Parameters;
 		typedef boost::shared_ptr<const Parameters> shared_parameters ;
 

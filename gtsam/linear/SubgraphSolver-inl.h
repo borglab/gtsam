@@ -27,14 +27,13 @@ using namespace std;
 namespace gtsam {
 
 template<class GRAPH, class LINEAR, class VALUES>
-typename SubgraphSolver<GRAPH,LINEAR,VALUES>::shared_ptr
-SubgraphSolver<GRAPH,LINEAR,VALUES>::update(const LINEAR &graph) const {
+void SubgraphSolver<GRAPH,LINEAR,VALUES>::replaceFactors(const typename LINEAR::shared_ptr &graph) {
 
 	shared_linear Ab1 = boost::make_shared<LINEAR>(),
 				  Ab2 = boost::make_shared<LINEAR>();
 
 	if (parameters_->verbosity()) cout << "split the graph ...";
-	graph.split(pairs_, *Ab1, *Ab2) ;
+	graph->split(pairs_, *Ab1, *Ab2) ;
 	if (parameters_->verbosity()) cout << ",with " << Ab1->size() << " and " << Ab2->size() << " factors" << endl;
 
 	//	// Add a HardConstraint to the root, otherwise the root will be singular
@@ -48,8 +47,7 @@ SubgraphSolver<GRAPH,LINEAR,VALUES>::update(const LINEAR &graph) const {
 	SubgraphPreconditioner::sharedBayesNet Rc1 = EliminationTree<GaussianFactor>::Create(sacrificialAb1)->eliminate();
 	SubgraphPreconditioner::sharedValues xbar = gtsam::optimize_(*Rc1);
 
-	shared_preconditioner pc = boost::make_shared<SubgraphPreconditioner>(Ab1,Ab2,Rc1,xbar);
-	return boost::make_shared<SubgraphSolver>(ordering_, pairs_, pc, parameters_) ;
+	pc_ = boost::make_shared<SubgraphPreconditioner>(Ab1,Ab2,Rc1,xbar);
 }
 
 template<class GRAPH, class LINEAR, class VALUES>

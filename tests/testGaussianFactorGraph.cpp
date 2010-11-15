@@ -339,21 +339,21 @@ TEST( GaussianFactorGraph, eliminateAll )
 //	CHECK(assert_equal(expected,actual,tol));
 //}
 
-/* ************************************************************************* */
-TEST( GaussianFactorGraph, add_priors )
-{
-  Ordering ordering; ordering += "l1","x1","x2";
-  GaussianFactorGraph fg = createGaussianFactorGraph(ordering);
-  GaussianFactorGraph actual = fg.add_priors(3, vector<size_t>(3,2));
-  GaussianFactorGraph expected = createGaussianFactorGraph(ordering);
-  Matrix A = eye(2);
-  Vector b = zero(2);
-  SharedDiagonal sigma = sharedSigma(2,3.0);
-  expected.push_back(GaussianFactor::shared_ptr(new GaussianFactor(ordering["l1"],A,b,sigma)));
-  expected.push_back(GaussianFactor::shared_ptr(new GaussianFactor(ordering["x1"],A,b,sigma)));
-  expected.push_back(GaussianFactor::shared_ptr(new GaussianFactor(ordering["x2"],A,b,sigma)));
-  CHECK(assert_equal(expected,actual));
-}
+///* ************************************************************************* */
+//TEST( GaussianFactorGraph, add_priors )
+//{
+//  Ordering ordering; ordering += "l1","x1","x2";
+//  GaussianFactorGraph fg = createGaussianFactorGraph(ordering);
+//  GaussianFactorGraph actual = fg.add_priors(3, vector<size_t>(3,2));
+//  GaussianFactorGraph expected = createGaussianFactorGraph(ordering);
+//  Matrix A = eye(2);
+//  Vector b = zero(2);
+//  SharedDiagonal sigma = sharedSigma(2,3.0);
+//  expected.push_back(GaussianFactor::shared_ptr(new GaussianFactor(ordering["l1"],A,b,sigma)));
+//  expected.push_back(GaussianFactor::shared_ptr(new GaussianFactor(ordering["x1"],A,b,sigma)));
+//  expected.push_back(GaussianFactor::shared_ptr(new GaussianFactor(ordering["x2"],A,b,sigma)));
+//  CHECK(assert_equal(expected,actual));
+//}
 
 /* ************************************************************************* */
 TEST( GaussianFactorGraph, copying )

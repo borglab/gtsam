@@ -31,6 +31,7 @@ using namespace boost::assign;
 #include <gtsam/inference/ClusterTree-inl.h>
 #include <gtsam/inference/JunctionTree-inl.h>
 #include <gtsam/inference/IndexFactor.h>
+#include <gtsam/inference/SymbolicSequentialSolver.h>
 
 using namespace gtsam;
 

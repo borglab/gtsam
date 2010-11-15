@@ -33,14 +33,31 @@ namespace gtsam {
 /* ************************************************************************* */
 template<class FACTOR, class JUNCTIONTREE>
 GenericMultifrontalSolver<FACTOR, JUNCTIONTREE>::GenericMultifrontalSolver(const FactorGraph<FACTOR>& factorGraph) :
-    junctionTree_(factorGraph) {}
+    structure_(new VariableIndex(factorGraph)), junctionTree_(new JUNCTIONTREE(factorGraph, *structure_)) {}
+
+/* ************************************************************************* */
+template<class FACTOR, class JUNCTIONTREE>
+GenericMultifrontalSolver<FACTOR, JUNCTIONTREE>::GenericMultifrontalSolver(const typename FactorGraph<FACTOR>::shared_ptr& factorGraph) :
+    structure_(new VariableIndex(*factorGraph)), junctionTree_(new JUNCTIONTREE(*factorGraph, *structure_)) {}
+
+/* ************************************************************************* */
+template<class FACTOR, class JUNCTIONTREE>
+GenericMultifrontalSolver<FACTOR, JUNCTIONTREE>::GenericMultifrontalSolver(
+    const typename FactorGraph<FACTOR>::shared_ptr& factorGraph, const VariableIndex::shared_ptr& variableIndex) :
+    structure_(variableIndex), junctionTree_(new JUNCTIONTREE(*factorGraph, *structure_)) {}
+
+/* ************************************************************************* */
+template<class FACTOR, class JUNCTIONTREE>
+void GenericMultifrontalSolver<FACTOR, JUNCTIONTREE>::replaceFactors(const typename FactorGraph<FACTOR>::shared_ptr& factorGraph) {
+  junctionTree_.reset(new JUNCTIONTREE(*factorGraph, *structure_));
+}
 
 /* ************************************************************************* */
 template<class FACTOR, class JUNCTIONTREE>
 typename JUNCTIONTREE::BayesTree::shared_ptr
 GenericMultifrontalSolver<FACTOR, JUNCTIONTREE>::eliminate() const {
   typename JUNCTIONTREE::BayesTree::shared_ptr bayesTree(new typename JUNCTIONTREE::BayesTree);
-  bayesTree->insert(junctionTree_.eliminate());
+  bayesTree->insert(junctionTree_->eliminate());
   return bayesTree;
 }
 

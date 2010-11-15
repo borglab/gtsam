@@ -31,17 +31,23 @@ GaussianMultifrontalSolver::GaussianMultifrontalSolver(const FactorGraph<Gaussia
     Base(factorGraph) {}
 
 /* ************************************************************************* */
-GaussianMultifrontalSolver::shared_ptr
-GaussianMultifrontalSolver::Create(const FactorGraph<GaussianFactor>& factorGraph) {
-  return shared_ptr(new GaussianMultifrontalSolver(factorGraph));
-}
+GaussianMultifrontalSolver::GaussianMultifrontalSolver(const FactorGraph<GaussianFactor>::shared_ptr& factorGraph) :
+    Base(factorGraph) {}
+
+/* ************************************************************************* */
+GaussianMultifrontalSolver::GaussianMultifrontalSolver(const FactorGraph<GaussianFactor>::shared_ptr& factorGraph, const VariableIndex::shared_ptr& variableIndex) :
+    Base(factorGraph, variableIndex) {}
 
 /* ************************************************************************* */
 GaussianMultifrontalSolver::shared_ptr
-GaussianMultifrontalSolver::update(const FactorGraph<GaussianFactor>& factorGraph) const {
-  // We do not yet have code written to update the junction tree, so we just
-  // create a new solver.
-  return Create(factorGraph);
+GaussianMultifrontalSolver::Create(const FactorGraph<GaussianFactor>::shared_ptr& factorGraph,
+    const VariableIndex::shared_ptr& variableIndex) {
+  return shared_ptr(new GaussianMultifrontalSolver(factorGraph, variableIndex));
+}
+
+/* ************************************************************************* */
+void GaussianMultifrontalSolver::replaceFactors(const FactorGraph<GaussianFactor>::shared_ptr& factorGraph) {
+  Base::replaceFactors(factorGraph);
 }
 
 /* ************************************************************************* */
@@ -51,7 +57,7 @@ BayesTree<GaussianConditional>::shared_ptr GaussianMultifrontalSolver::eliminate
 
 /* ************************************************************************* */
 VectorValues::shared_ptr GaussianMultifrontalSolver::optimize() const {
-  return VectorValues::shared_ptr(new VectorValues(junctionTree_.optimize()));
+  return VectorValues::shared_ptr(new VectorValues(junctionTree_->optimize()));
 }
 
 /* ************************************************************************* */

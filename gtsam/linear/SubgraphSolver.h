@@ -57,7 +57,7 @@ namespace gtsam {
 		SubgraphSolver(const GRAPH& G, const VALUES& theta0, const Parameters &parameters = Parameters()):
 			IterativeSolver(parameters){ initialize(G,theta0); }
 
-	  	SubgraphSolver(const LINEAR &GFG) {
+	  	SubgraphSolver(const typename LINEAR::shared_ptr& GFG) {
 			std::cout << "[SubgraphSolver] Unexpected usage.." << std::endl;
 			throw std::runtime_error("SubgraphSolver: gaussian factor graph initialization not supported");
 	  	}
@@ -71,7 +71,7 @@ namespace gtsam {
 	  				   sharedParameters parameters = boost::make_shared<Parameters>()) :
 	  		IterativeSolver(parameters), ordering_(ordering), pairs_(pairs), pc_(pc) {}
 
-		shared_ptr update(const LINEAR &graph) const ;
+		void replaceFactors(const typename LINEAR::shared_ptr &graph);
 		VectorValues::shared_ptr optimize() const ;
 		shared_ordering ordering() const { return ordering_; }
 

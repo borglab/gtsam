@@ -31,16 +31,39 @@ class GenericMultifrontalSolver {
 
 protected:
 
+  // Column structure of the factor graph
+  VariableIndex::shared_ptr structure_;
+
   // Junction tree that performs elimination.
-  JUNCTIONTREE junctionTree_;
+  typename JUNCTIONTREE::shared_ptr junctionTree_;
 
 public:
 
   /**
-   * Construct the solver for a factor graph.  This builds the elimination
-   * tree, which already does some of the symbolic work of elimination.
+   * Construct the solver for a factor graph.  This builds the junction
+   * tree, which already does some of the work of elimination.
    */
   GenericMultifrontalSolver(const FactorGraph<FACTOR>& factorGraph);
+
+  /**
+   * Construct the solver for a factor graph.  This builds the junction
+   * tree, which already does some of the work of elimination.
+   */
+  GenericMultifrontalSolver(const typename FactorGraph<FACTOR>::shared_ptr& factorGraph);
+
+  /**
+   * Construct the solver with a shared pointer to a factor graph and to a
+   * VariableIndex.  The solver will store these pointers, so this constructor
+   * is the fastest.
+   */
+  GenericMultifrontalSolver(const typename FactorGraph<FACTOR>::shared_ptr& factorGraph, const VariableIndex::shared_ptr& variableIndex);
+
+  /**
+   * Replace the factor graph with a new one having the same structure.  The
+   * This function can be used if the numerical part of the factors changes,
+   * such as during relinearization or adjusting of noise models.
+   */
+  void replaceFactors(const typename FactorGraph<FACTOR>::shared_ptr& factorGraph);
 
   /**
    * Eliminate the factor graph sequentially.  Uses a column elimination tree
