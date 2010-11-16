@@ -151,23 +151,18 @@ namespace gtsam {
      */
     void combine(const GaussianFactorGraph &lfg);
 
-	/**
-	 * Split a Gaussian factor graph into two, according to M
-	 * M keeps the vertex indices of edges of A1. The others belong to A2.
-	 */
-	bool split(const std::map<Index, Index> &M, GaussianFactorGraph &A1, GaussianFactorGraph &A2) const ;
-
-	// allocate a vectorvalues of b's structure
-	VectorValues allocateVectorValuesb() const ;
-
-	/* get the diagonal of A^ A, used to build jacobi preconditioner */
-	bool getDiagonalOfHessian(VectorValues &values) const ;
-
+    // matrix-vector operations
 	void residual(const VectorValues &x, VectorValues &r) const ;
 	void multiply(const VectorValues &x, VectorValues &r) const ;
 	void transposeMultiply(const VectorValues &r, VectorValues &x) const ;
+
+	// get b
 	void getb(VectorValues &b) const ;
 	VectorValues getb() const ;
+
+    // allocate a vectorvalues of b's structure
+    VectorValues allocateVectorValuesb() const ;
+
   };
 
 } // namespace gtsam

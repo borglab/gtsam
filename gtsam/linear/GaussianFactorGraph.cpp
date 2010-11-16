@@ -146,60 +146,6 @@ GaussianFactorGraph GaussianFactorGraph::combine2(const GaussianFactorGraph& lfg
 	return fg;
 }
 
-bool GaussianFactorGraph::split(const std::map<Index, Index> &M, GaussianFactorGraph &Ab1, GaussianFactorGraph &Ab2) const {
-
-	//typedef sharedFactor F ;
-
-	Ab1 = GaussianFactorGraph();
-	Ab2 = GaussianFactorGraph();
-
-	BOOST_FOREACH(const sharedFactor& factor, factors_) {
-
-		if (factor->keys().size() > 2)
-			throw(invalid_argument("split: only support factors with at most two keys"));
-		if (factor->keys().size() == 1) {
-			Ab1.push_back(factor);
-			Ab2.push_back(factor);
-			continue;
-		}
-		Index key1 = factor->keys()[0];
-		Index key2 = factor->keys()[1];
-
-		if ((M.find(key1) != M.end() && M.find(key1)->second == key2) ||
-			(M.find(key2) != M.end() && M.find(key2)->second == key1))
-			Ab1.push_back(factor);
-		else
-			Ab2.push_back(factor);
-	}
-
-	return true ;
-}
-
-VectorValues GaussianFactorGraph::allocateVectorValuesb() const {
-	std::vector<size_t> dimensions(size()) ;
-	Index i = 0 ;
-	BOOST_FOREACH( const sharedFactor& factor, factors_) {
-		dimensions[i] = factor->numberOfRows() ;
-		i++;
-	}
-
-	return VectorValues(dimensions) ;
-}
-
-
-bool GaussianFactorGraph::getDiagonalOfHessian(VectorValues &values) const {
-
-	values.makeZero() ;
-
-	BOOST_FOREACH( const sharedFactor& factor, factors_) {
-		for(GaussianFactor::const_iterator j = factor->begin(); j != factor->end(); ++j) {
-			Vector v = columnNormSquare(factor->getA(j));
-			values[*j] += v;
-		}
-	}
-	return true ;
-}
-
 void GaussianFactorGraph::residual(const VectorValues &x, VectorValues &r) const {
 
 	getb(r) ;
@@ -229,6 +175,17 @@ void GaussianFactorGraph::transposeMultiply(const VectorValues &r, VectorValues 
 		}
 		++i ;
 	}
+}
+
+VectorValues GaussianFactorGraph::allocateVectorValuesb() const {
+    std::vector<size_t> dimensions(size()) ;
+    Index i = 0 ;
+    BOOST_FOREACH( const sharedFactor& factor, factors_) {
+        dimensions[i] = factor->numberOfRows() ;
+        i++;
+    }
+
+    return VectorValues(dimensions) ;
 }
 
 void GaussianFactorGraph::getb(VectorValues &b) const {
