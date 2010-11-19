@@ -30,7 +30,7 @@ void TestResult::testsStarted ()
 void TestResult::addFailure (const Failure& failure) 
 {
 	if (failure.lineNumber < 0) // allow for no line number
-		fprintf (stdout, "%s%s%s%s%ld%s%s\n",
+		fprintf (stdout, "%s%s%s%s\n",
 				"Failure: \"",
 				failure.message.asCharString (),
 				"\" in ",

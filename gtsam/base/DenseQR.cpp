@@ -48,7 +48,6 @@ namespace gtsam {
 	/* ************************************************************************* */
   // check NaN in the input matrix
   void CheckNaN(int m, int n, double *A, const char* msg) {
-    bool hasNaN = false;
     for(int i=0; i<m; i++) {
 			for(int j=0; j<n; j++)
         if (isnan(A[j*m+i]))
@@ -59,7 +58,6 @@ namespace gtsam {
 	/* ************************************************************************* */
   // check Inf in the input matrix
   void CheckInf(int m, int n, double *A, const char* msg) {
-    bool hasNaN = false;
     for(int i=0; i<m; i++) {
 			for(int j=0; j<n; j++)
         if (isinf(A[j*m+i]))
@@ -70,7 +68,6 @@ namespace gtsam {
 	/* ************************************************************************* */
   // remove NaN in the input matrix
   void RemoveNaN(int m, int n, double *A) {
-    bool hasNaN = false;
     for(int i=0; i<m; i++) {
 			for(int j=0; j<n; j++)
         if (isnan(A[j*m+i])) 
@@ -81,7 +78,6 @@ namespace gtsam {
 	/* ************************************************************************* */
   // check NaN in the input matrix
   bool HasNaN(int m, int n, double *A) {
-    bool hasNaN = false;
     for(int i=0; i<m; i++) {
 			for(int j=0; j<n; j++)
         if (isnan(A[j*m+i]))
@@ -93,7 +89,6 @@ namespace gtsam {
 	/* ************************************************************************* */
   // check Inf in the input matrix
   bool HasInf(int m, int n, double *A) {
-    bool hasNaN = false;
     for(int i=0; i<m; i++) {
 			for(int j=0; j<n; j++)
         if (isinf(A[j*m+i]))

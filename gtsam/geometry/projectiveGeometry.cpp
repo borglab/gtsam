@@ -30,15 +30,6 @@ namespace gtsam {
 	using namespace std;
 	using namespace tensors;
 
-	static Eta3 eta;
-	static Index<3, 'a'> a, _a;
-	static Index<3, 'b'> b, _b;
-	static Index<3, 'c'> c, _c;
-	static Index<3, 'd'> d, _d;
-	static Index<3, 'd'> e, _e;
-	static Index<3, 'f'> f, _f;
-	static Index<3, 'g'> g, _g;
-
 	/* ************************************************************************* */
 	Point2h point2h(double x, double y, double w) {
 		double data[3];
