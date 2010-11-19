@@ -53,6 +53,8 @@ void cholesky_inplace(MatrixColMajor& I) {
 /* ************************************************************************* */
 size_t choleskyFactorUnderdetermined(MatrixColMajor& Ab) {
 
+  bool debug = false;
+
   size_t m = Ab.size1();
   size_t n = Ab.size2();
 
@@ -60,13 +62,18 @@ size_t choleskyFactorUnderdetermined(MatrixColMajor& Ab) {
   // factorization of A'A.  If m < n, A'A is rank-deficient this function
   // instead computes the upper-trapazoidal factor [ R S ], as described in the
   // header file comment.
-  size_t rank = std::min(m,n);
+  size_t rank = std::min(m,n-1);
 
   if(rank > 0) {
 
     // F is the first 'rank' columns of Ab, G is the remaining columns
     ublas::matrix_range<MatrixColMajor> F(ublas::project(Ab, ublas::range(0,m), ublas::range(0,rank)));
     ublas::matrix_range<MatrixColMajor> G(ublas::project(Ab, ublas::range(0,m), ublas::range(rank,n)));
+
+    if(debug) {
+      print(F, "F: ");
+      print(G, "G: ");
+    }
 
     ublas::matrix_range<MatrixColMajor> R(ublas::project(Ab, ublas::range(0,rank), ublas::range(0,rank)));
     ublas::matrix_range<MatrixColMajor> S(ublas::project(Ab, ublas::range(0,rank), ublas::range(rank,n)));
@@ -86,12 +93,17 @@ size_t choleskyFactorUnderdetermined(MatrixColMajor& Ab) {
             "Bad input to choleskyFactorUnderdetermined, dpotrf returned %d.\n")%info));
       else
         throw std::domain_error(boost::str(boost::format(
-            "The matrix passed into choleskyFactorUnderdetermined is numerically rank-deficient, dpotrf returned rank=%d, expected rank was %d.\n")%info%rank));
+            "The matrix passed into choleskyFactorUnderdetermined is numerically rank-deficient, dpotrf returned rank=%d, expected rank was %d.\n")%(info-1)%rank));
     }
 
     // Compute S = inv(R') * F' * G, i.e. solve S when R'S = F'G
     if(S.size2() > 0)
       cblas_dtrsm(CblasColMajor, CblasLeft, CblasUpper, CblasTrans, CblasNonUnit, S.size1(), S.size2(), 1.0, &R(0,0), m, &S(0,0), m);
+
+    if(debug) {
+      print(R, "R: ");
+      print(S, "S: ");
+    }
 
     return rank;
   } else
