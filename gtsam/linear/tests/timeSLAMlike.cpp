@@ -41,12 +41,12 @@ int main(int argc, char *argv[]) {
 
   size_t vardim = 3;
   size_t blockdim = 3;
-  size_t nVars = 2000;
+  size_t nVars = 500;
   size_t blocksPerVar = 5;
   size_t varsPerBlock = 2;
   size_t varSpread = 10;
 
-  size_t nTrials = 100;
+  size_t nTrials = 10;
 
   double blockbuild, blocksolve;
 
