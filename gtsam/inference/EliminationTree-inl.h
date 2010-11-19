@@ -26,6 +26,10 @@ template<class FACTOR>
 typename EliminationTree<FACTOR>::sharedFactor
 EliminationTree<FACTOR>::eliminate_(Conditionals& conditionals) const {
 
+  static const bool debug = false;
+
+  if(debug) cout << "ETree: eliminating " << this->key_ << endl;
+
   set<Index, std::less<Index>, boost::fast_pool_allocator<Index> > separator;
 
   // Create the list of factors to be eliminated, initially empty, and reserve space
@@ -86,6 +90,8 @@ template<class DERIVEDFACTOR>
 typename EliminationTree<FACTOR>::shared_ptr
 EliminationTree<FACTOR>::Create(const FactorGraph<DERIVEDFACTOR>& factorGraph, const VariableIndex& structure) {
 
+  static const bool debug = false;
+
   tic("ET 1: Create");
 
   tic("ET 1.1: ComputeParents");
@@ -127,6 +133,9 @@ EliminationTree<FACTOR>::Create(const FactorGraph<DERIVEDFACTOR>& factorGraph, c
   for(typename vector<shared_ptr>::const_iterator tree=trees.begin(); tree!=trees.end()-1; ++tree)
     assert((*tree) != shared_ptr());
 #endif
+
+  if(debug)
+    trees.back()->print("ETree: ");
 
   return trees.back();
 }
