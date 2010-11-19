@@ -35,6 +35,9 @@ int main(int argc, char *argv[]) {
 
   pair<shared_ptr<Pose2Graph>, shared_ptr<Pose2Values> > data = load2D(dataset(datasetname));
 
+  // Add a prior on the first pose
+  data.first->addPrior(0, Pose2(), sharedSigma(Pose2::Dim(), 0.0005));
+
   tic_("Z 1 order");
   Ordering::shared_ptr ordering(data.first->orderingCOLAMD(*data.second));
   toc_("Z 1 order");
