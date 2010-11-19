@@ -353,18 +353,40 @@ GaussianConditional::shared_ptr GaussianFactor::eliminateFirst(SolveMethod solve
 
   if(debug) gtsam::print(matrix_, "Augmented Ab: ");
 
+  size_t firstVarDim = Ab_(0).size2();
+
   // Use in-place QR or Cholesky on dense Ab appropriate to NoiseModel
   SharedDiagonal noiseModel;
-  if(solveMethod == SOLVE_QR || model_->isConstrained()) {
-    tic("eliminateFirst: QR");
+  if(!debug) {
+    if(solveMethod == SOLVE_QR || model_->isConstrained()) {
+      tic("eliminateFirst: QR");
+      noiseModel = model_->QRColumnWise(matrix_, firstZeroRows);
+      toc("eliminateFirst: QR");
+    } else if(solveMethod == SOLVE_CHOLESKY) {
+      tic("eliminateFirst: Cholesky");
+      noiseModel = model_->Cholesky(matrix_);
+      toc("eliminateFirst: Cholesky");
+    } else
+      assert(false);
+  } else {
+    // In debug mode, compare outputs of Cholesky and QR
+    MatrixColMajor matrixCopy = matrix_;
+    SharedDiagonal noiseModelDup = model_->Cholesky(matrixCopy);
     noiseModel = model_->QRColumnWise(matrix_, firstZeroRows);
-    toc("eliminateFirst: QR");
-  } else if(solveMethod == SOLVE_CHOLESKY) {
-    tic("eliminateFirst: Cholesky");
-    noiseModel = model_->Cholesky(matrix_);
-    toc("eliminateFirst: Cholesky");
-  } else
-    assert(false);
+
+    matrixCopy = ublas::triangular_adaptor<MatrixColMajor, ublas::upper>(matrixCopy);
+    matrix_ = ublas::triangular_adaptor<MatrixColMajor, ublas::upper>(matrix_);
+
+    assert(linear_dependent(
+        Matrix(
+            ublas::project(ublas::triangular_adaptor<MatrixColMajor, ublas::upper>(matrix_),
+                ublas::range(0,noiseModel->dim()), ublas::range(0,matrix_.size2()))),
+        Matrix(
+            ublas::project(ublas::triangular_adaptor<MatrixColMajor, ublas::upper>(matrixCopy),
+                ublas::range(0,noiseModel->dim()), ublas::range(0,matrix_.size2()))),
+        1e-2));
+    assert(assert_equal(*noiseModel, *noiseModelDup, 1e-2));
+  }
 
   if(matrix_.size1() > 0) {
     for(size_t j=0; j<matrix_.size2(); ++j)
@@ -373,8 +395,6 @@ GaussianConditional::shared_ptr GaussianFactor::eliminateFirst(SolveMethod solve
   }
 
   if(debug) gtsam::print(matrix_, "QR result: ");
-
-  size_t firstVarDim = Ab_(0).size2();
 
   // Check for singular factor
   if(noiseModel->dim() < firstVarDim) {
@@ -421,6 +441,10 @@ GaussianConditional::shared_ptr GaussianFactor::eliminateFirst(SolveMethod solve
       ++ varpos;
     firstNonzeroBlocks_[row] = varpos;
     if(debug) cout << "firstNonzeroVars_[" << row << "] = " << firstNonzeroBlocks_[row] << endl;
+//    if(debug && varpos < size()) {
+//      ABlock block(Ab_(varpos));
+//      assert(!gtsam::equal_with_abs_tol(ublas::row(block, row), zero(block.size2()), 1e-5));
+//    }
   }
   toc("eliminateFirst: rowstarts");
 
@@ -473,6 +497,8 @@ GaussianBayesNet::shared_ptr GaussianFactor::eliminate(size_t nrFrontals, SolveM
 
   if(debug) gtsam::print(matrix_, "Augmented Ab: ");
 
+  size_t frontalDim = Ab_.range(0,nrFrontals).size2();
+
   // Use in-place QR or Cholesky on dense Ab appropriate to NoiseModel
   SharedDiagonal noiseModel;
   if(solveMethod == SOLVE_QR || model_->isConstrained()) {
@@ -496,8 +522,6 @@ GaussianBayesNet::shared_ptr GaussianFactor::eliminate(size_t nrFrontals, SolveM
   }
 
   if(debug) gtsam::print(matrix_, "QR result: ");
-
-  size_t frontalDim = Ab_.range(0,nrFrontals).size2();
 
   // Check for singular factor
   if(noiseModel->dim() < frontalDim) {
@@ -621,6 +645,8 @@ GaussianFactor::shared_ptr GaussianFactor::Combine(const FactorGraph<GaussianFac
   static const bool verbose = false;
   static const bool debug = false;
   if (verbose) std::cout << "GaussianFactor::GaussianFactor (factors)" << std::endl;
+
+  if(debug) factors.print("Combining factors: ");
 
   if(debug) variableSlots.print();
 

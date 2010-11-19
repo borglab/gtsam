@@ -257,7 +257,8 @@ SharedDiagonal Gaussian::Cholesky(MatrixColMajor& Ab) const {
   WhitenInPlace(Ab);
 
   // Use Cholesky to factor Ab
-  choleskyFactorUnderdetermined(Ab);
+  size_t rank = choleskyFactorUnderdetermined(Ab);
+  assert(rank == maxRank);
 
   return Unit::Create(maxRank);
 }
