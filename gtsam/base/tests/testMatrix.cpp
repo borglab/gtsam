@@ -882,7 +882,7 @@ TEST( matrix, linear_dependent3 )
 {
 	Matrix A = Matrix_(2, 3, 0.0, 2.0, 3.0, 4.0, 5.0, 6.0);
 	Matrix B = Matrix_(2, 3, 0.0, -2.0, -3.0, 8.1, 10.0, 12.0);
-	CHECK(!linear_dependent(A, B));
+	CHECK(linear_independent(A, B));
 }
 
 /* ************************************************************************* */

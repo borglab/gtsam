@@ -175,17 +175,49 @@ bool assert_equal(const std::list<Matrix>& As, const std::list<Matrix>& Bs, doub
 }
 
 /* ************************************************************************* */
-bool linear_dependent(const Matrix& A, const Matrix& B, double tol) {
+static bool is_linear_dependent(const Matrix& A, const Matrix& B, double tol) {
+  // This local static function is used by linear_independent and
+  // linear_dependent just below.
   size_t n1 = A.size2(), m1 = A.size1();
   size_t n2 = B.size2(), m2 = B.size1();
 
-  if(m1!=m2 || n1!=n2) return false;
+  bool dependent = true;
+  if(m1!=m2 || n1!=n2) dependent = false;
 
-  for(size_t i=0; i<m1; i++) {
-  	if (!gtsam::linear_dependent(row_(A,i), row_(B,i), tol))
-  		return false;
+  for(size_t i=0; dependent && i<m1; i++) {
+    if (!gtsam::linear_dependent(row_(A,i), row_(B,i), tol))
+      dependent = false;
   }
-  return true;
+
+  return dependent;
+}
+
+/* ************************************************************************* */
+bool linear_independent(const Matrix& A, const Matrix& B, double tol) {
+  if(!is_linear_dependent(A, B, tol))
+    return true;
+  else {
+    cout << "not linearly dependent:" << endl;
+    print(A,"A = ");
+    print(B,"B = ");
+    if(A.size1()!=B.size1() || A.size2()!=B.size2())
+      cout << A.size1() << "x" << A.size2() << " != " << B.size1() << "x" << B.size2() << endl;
+    return false;
+  }
+}
+
+/* ************************************************************************* */
+bool linear_dependent(const Matrix& A, const Matrix& B, double tol) {
+  if(is_linear_dependent(A, B, tol))
+    return true;
+  else {
+    cout << "not linearly dependent:" << endl;
+    print(A,"A = ");
+    print(B,"B = ");
+    if(A.size1()!=B.size1() || A.size2()!=B.size2())
+      cout << A.size1() << "x" << A.size2() << " != " << B.size1() << "x" << B.size2() << endl;
+    return false;
+  }
 }
 
 /* ************************************************************************* */
