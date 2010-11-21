@@ -43,10 +43,10 @@ namespace gtsam {
 		// initial optimization state is the same in both cases tested
 	  typedef NonlinearOptimizer<G, T, GaussianFactorGraph, GaussianSequentialSolver> Optimizer;
 	  Optimizer optimizer(boost::make_shared<const G>(graph),
-	  		boost::make_shared<const T>(initialEstimate), ordering);
+	  		boost::make_shared<const T>(initialEstimate), ordering, boost::make_shared<NonlinearOptimizationParameters>(parameters));
 
 		// Levenberg-Marquardt
-	  Optimizer result = optimizer.levenbergMarquardt(parameters);
+	  Optimizer result = optimizer.levenbergMarquardt();
 		return *result.values();
 	}
 
@@ -62,10 +62,10 @@ namespace gtsam {
 		// initial optimization state is the same in both cases tested
 	  typedef NonlinearOptimizer<G, T, GaussianFactorGraph, GaussianMultifrontalSolver> Optimizer;
 	  Optimizer optimizer(boost::make_shared<const G>(graph),
-	  		boost::make_shared<const T>(initialEstimate), ordering);
+	  		boost::make_shared<const T>(initialEstimate), ordering, boost::make_shared<NonlinearOptimizationParameters>(parameters));
 
 		// Levenberg-Marquardt
-	  Optimizer result = optimizer.levenbergMarquardt(parameters);
+	  Optimizer result = optimizer.levenbergMarquardt();
 		return *result.values();
 	}
 
@@ -84,10 +84,11 @@ namespace gtsam {
 				boost::make_shared<const G>(graph),
 				boost::make_shared<const T>(initialEstimate),
 				solver->ordering(),
-				solver);
+				solver,
+				boost::make_shared<NonlinearOptimizationParameters>(parameters));
 
 		// Levenberg-Marquardt
-		SPCGOptimizer result = optimizer.levenbergMarquardt(parameters);
+		SPCGOptimizer result = optimizer.levenbergMarquardt();
 		return *result.values();
 	}
 

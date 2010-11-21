@@ -120,7 +120,7 @@ TEST( NonlinearOptimizer, iterateLM )
 	ord->push_back("x1");
 
 	// create initial optimization state, with lambda=0
-	Optimizer optimizer(fg, config, ord, 0.);
+	Optimizer optimizer(fg, config, ord, NonlinearOptimizationParameters::newLambda(0.));
 
 	// normal iterate
 	Optimizer iterated1 = optimizer.iterate();
@@ -161,20 +161,19 @@ TEST( NonlinearOptimizer, optimize )
 	// optimize parameters
 	shared_ptr<Ordering> ord(new Ordering());
 	ord->push_back("x1");
-	double relativeThreshold = 1e-5;
-	double absoluteThreshold = 1e-5;
 
 	// initial optimization state is the same in both cases tested
-	Optimizer optimizer(fg, c0, ord);
+	boost::shared_ptr<NonlinearOptimizationParameters> params = boost::make_shared<NonlinearOptimizationParameters>();
+	params->relDecrease_ = 1e-5;
+	params->absDecrease_ = 1e-5;
+	Optimizer optimizer(fg, c0, ord, params);
 
 	// Gauss-Newton
-	Optimizer actual1 = optimizer.gaussNewton(relativeThreshold,
-			absoluteThreshold);
+	Optimizer actual1 = optimizer.gaussNewton();
 	DOUBLES_EQUAL(0,fg->error(*(actual1.values())),tol);
 
 	// Levenberg-Marquardt
-	Optimizer actual2 = optimizer.levenbergMarquardt(relativeThreshold,
-			absoluteThreshold, Optimizer::Parameters::SILENT);
+	Optimizer actual2 = optimizer.levenbergMarquardt();
 	DOUBLES_EQUAL(0,fg->error(*(actual2.values())),tol);
 }
 

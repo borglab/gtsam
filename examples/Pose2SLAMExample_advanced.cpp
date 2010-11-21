@@ -69,9 +69,9 @@ int main(int argc, char** argv) {
 	Ordering::shared_ptr ordering = graph->orderingCOLAMD(*initial);
 
 	/* 4.2.2 set up solver and optimize */
-	Optimizer optimizer(graph, initial, ordering);
-	Optimizer::Parameters::verbosityLevel verbosity = pose2SLAM::Optimizer::Parameters::SILENT;
-	Optimizer optimizer_result = optimizer.levenbergMarquardt(1e-15, 1e-15, verbosity);
+  NonlinearOptimizationParameters::sharedThis params = NonlinearOptimizationParameters::newDrecreaseThresholds(1e-15, 1e-15);
+	Optimizer optimizer(graph, initial, ordering, params);
+	Optimizer optimizer_result = optimizer.levenbergMarquardt();
 
 	Values result = *optimizer_result.values();
 	result.print("final result");

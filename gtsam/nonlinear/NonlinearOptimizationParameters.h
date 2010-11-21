@@ -65,20 +65,20 @@ namespace gtsam {
 			verbosity_(parameters.verbosity_), lambdaMode_(parameters.lambdaMode_){}
 
 
-		sharedThis newVerbosity_(verbosityLevel verbosity) const {
-			sharedThis ptr (boost::make_shared<NonlinearOptimizationParameters>(*this)) ;
+		static sharedThis newVerbosity_(verbosityLevel verbosity) {
+			sharedThis ptr (boost::make_shared<NonlinearOptimizationParameters>()) ;
 			ptr->verbosity_ = verbosity ;
 			return ptr ;
 		}
 
-		sharedThis newLambda_(double lambda) const {
-			sharedThis ptr (boost::make_shared<NonlinearOptimizationParameters>(*this)) ;
+		static sharedThis newLambda_(double lambda) {
+			sharedThis ptr (boost::make_shared<NonlinearOptimizationParameters>()) ;
 			ptr->lambda_ = lambda ;
 			return ptr ;
 		}
 
-		sharedThis newMaxIterations_(int maxIterations) const {
-			sharedThis ptr (boost::make_shared<NonlinearOptimizationParameters>(*this)) ;
+		static sharedThis newMaxIterations_(int maxIterations) {
+			sharedThis ptr (boost::make_shared<NonlinearOptimizationParameters>()) ;
 			ptr->maxIterations_ = maxIterations ;
 			return ptr ;
 		}
@@ -89,11 +89,11 @@ namespace gtsam {
 			return ptr ;
 		}
 
-
-
-
-
-
-
+		static sharedThis newDrecreaseThresholds(double absDecrease, double relDecrease) {
+			sharedThis ptr (boost::make_shared<NonlinearOptimizationParameters>());
+			ptr->absDecrease_ = absDecrease;
+			ptr->relDecrease_ = relDecrease;
+			return ptr ;
+		}
 	};
 }

@@ -71,8 +71,12 @@ TEST( StereoFactor, singlePoint)
 
 	typedef gtsam::NonlinearOptimizer<Graph,Values,gtsam::GaussianFactorGraph,gtsam::GaussianMultifrontalSolver> Optimizer;   // optimization engine for this domain
 
-	NonlinearOptimizationParameters parameters(1.0, 1e-3, 0,
-			100, 1.0, 10, NonlinearOptimizationParameters::SILENT, NonlinearOptimizationParameters::BOUNDED);
+	double absoluteThreshold = 1e-9;
+	double relativeThreshold = 1e-5;
+	int maxIterations = 100;
+	NonlinearOptimizationParameters::verbosityLevel verbose = NonlinearOptimizationParameters::SILENT;
+	NonlinearOptimizationParameters parameters(absoluteThreshold, relativeThreshold, 0,
+			maxIterations, 1.0, 10, verbose, NonlinearOptimizationParameters::BOUNDED);
 
 	Optimizer optimizer(graph, values, ordering, make_shared<NonlinearOptimizationParameters>(parameters));
 
@@ -84,7 +88,7 @@ TEST( StereoFactor, singlePoint)
 	DOUBLES_EQUAL(0.0, afterOneIteration.error(), 1e-9);
 
 	// Complete solution
-	Optimizer final = optimizer.gaussNewton(1E-9, 1E-5);
+	Optimizer final = optimizer.gaussNewton();
 
 	DOUBLES_EQUAL(0.0, final.error(), 1e-6);
 }

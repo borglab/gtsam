@@ -36,34 +36,6 @@ namespace gtsam {
 	/* ************************************************************************* */
 	template<class G, class C, class L, class S, class W>
 	NonlinearOptimizer<G, C, L, S, W>::NonlinearOptimizer(shared_graph graph,
-			shared_values values, shared_ordering ordering, double lambda) :
-			graph_(graph), values_(values), error_(graph->error(*values)), ordering_(ordering),
-			parameters_(Parameters::newLambda(lambda)), dimensions_(new vector<size_t>(values->dims(*ordering))) {
-		if (!graph) throw std::invalid_argument(
-				"NonlinearOptimizer constructor: graph = NULL");
-		if (!values) throw std::invalid_argument(
-				"NonlinearOptimizer constructor: values = NULL");
-		if (!ordering) throw std::invalid_argument(
-				"NonlinearOptimizer constructor: ordering = NULL");
-	}
-
-	template<class G, class C, class L, class S, class W>
-	NonlinearOptimizer<G, C, L, S, W>::NonlinearOptimizer(
-			shared_graph graph,	shared_values values, shared_ordering ordering, shared_solver solver, const double lambda):
-			graph_(graph), values_(values), error_(graph->error(*values)), ordering_(ordering), solver_(solver),
-			parameters_(Parameters::newLambda(lambda)), dimensions_(new vector<size_t>(values->dims(*ordering))) {
-		if (!graph) throw std::invalid_argument(
-				"NonlinearOptimizer constructor: graph = NULL");
-		if (!values) throw std::invalid_argument(
-				"NonlinearOptimizer constructor: values = NULL");
-		if (!ordering) throw std::invalid_argument(
-				"NonlinearOptimizer constructor: ordering = NULL");
-		if (!solver) throw std::invalid_argument(
-				"NonlinearOptimizer constructor: solver = NULL");
-	}
-
-	template<class G, class C, class L, class S, class W>
-	NonlinearOptimizer<G, C, L, S, W>::NonlinearOptimizer(shared_graph graph,
 			shared_values values, shared_ordering ordering, shared_parameters parameters) :
 			graph_(graph), values_(values), error_(graph->error(*values)),
 			ordering_(ordering), parameters_(parameters), dimensions_(new vector<size_t>(values->dims(*ordering))) {
@@ -135,12 +107,6 @@ namespace gtsam {
 		return newOptimizer;
 	}
 
-	template<class G, class C, class L, class S, class W>
-	NonlinearOptimizer<G, C, L, S, W> NonlinearOptimizer<G, C, L, S, W>::iterate(
-			Parameters::verbosityLevel verbosity) const {
-		return this->newVerbosity_(verbosity).iterate();
-	}
-
 	/* ************************************************************************* */
 
 	template<class G, class C, class L, class S, class W>
@@ -165,23 +131,6 @@ namespace gtsam {
 		// return converged state or iterate
 		if (converged) return next;
 		else return next.gaussNewton();
-	}
-
-	template<class G, class C, class L, class S, class W>
-	NonlinearOptimizer<G, C, L, S, W> NonlinearOptimizer<G, C, L, S, W>::gaussNewton(
-			double relativeThreshold,
-			double absoluteThreshold,
-			Parameters::verbosityLevel verbosity,
-			int maxIterations) const {
-
-		Parameters def ;
-		def.relDecrease_ = relativeThreshold ;
-		def.absDecrease_ = absoluteThreshold ;
-		def.verbosity_ = verbosity ;
-		def.maxIterations_ = maxIterations ;
-
-		shared_parameters ptr(boost::make_shared<NonlinearOptimizationParameters>(def)) ;
-		return newParameters_(ptr).gaussNewton() ;
 	}
 
 	/* ************************************************************************* */
@@ -292,21 +241,6 @@ namespace gtsam {
 		return try_lambda(*linear);
 	}
 
-
-	template<class G, class C, class L, class S, class W>
-	NonlinearOptimizer<G, C, L, S, W> NonlinearOptimizer<G, C, L, S, W>::iterateLM(
-		Parameters::verbosityLevel verbosity,
-		double lambdaFactor,
-		Parameters::LambdaMode lambdaMode) const {
-
-		NonlinearOptimizationParameters def(*parameters_) ;
-		def.verbosity_ = verbosity ;
-		def.lambdaFactor_ = lambdaFactor ;
-		def.lambdaMode_ = lambdaMode ;
-		shared_parameters ptr(boost::make_shared<Parameters>(def)) ;
-		return newParameters_(ptr).iterateLM();
-	}
-
 	/* ************************************************************************* */
 
 	template<class G, class C, class L, class S, class W>
@@ -344,36 +278,7 @@ namespace gtsam {
 			}
 			maxIterations--;
 		}
-
 	}
-
-	template<class G, class C, class L, class S, class W>
-	NonlinearOptimizer<G, C, L, S, W> NonlinearOptimizer<G, C, L, S, W>::levenbergMarquardt(
-			double relativeThreshold,
-			double absoluteThreshold,
-			Parameters::verbosityLevel verbosity,
-			int maxIterations,
-			double lambdaFactor,
-			Parameters::LambdaMode lambdaMode) const {
-
-		NonlinearOptimizationParameters def;
-		def.relDecrease_ = relativeThreshold ;
-		def.absDecrease_ = absoluteThreshold ;
-		def.verbosity_ = verbosity ;
-		def.maxIterations_ = maxIterations ;
-		def.lambdaFactor_ = lambdaFactor ;
-		def.lambdaMode_ = lambdaMode ;
-		shared_parameters ptr = boost::make_shared<Parameters>(def) ;
-		return newParameters_(ptr).levenbergMarquardt() ;
-	}
-
-	template<class G, class C, class L, class S, class W>
-	NonlinearOptimizer<G, C, L, S, W> NonlinearOptimizer<G, C, L, S, W>::
-	levenbergMarquardt(const NonlinearOptimizationParameters &parameters) const {
-		boost::shared_ptr<NonlinearOptimizationParameters> ptr (new NonlinearOptimizationParameters(parameters)) ;
-		return newParameters_(ptr).levenbergMarquardt() ;
-	}
-
 	/* ************************************************************************* */
 
 }

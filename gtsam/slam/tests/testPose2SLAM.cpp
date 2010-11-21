@@ -113,10 +113,10 @@ TEST(Pose2Graph, optimize) {
   shared_ptr<Ordering> ordering(new Ordering);
   *ordering += "x0","x1";
   typedef NonlinearOptimizer<Pose2Graph, Pose2Values> Optimizer;
-  Optimizer optimizer0(fg, initial, ordering);
-  Optimizer::Parameters::verbosityLevel verbosity = Optimizer::Parameters::SILENT;
-  //Optimizer::verbosityLevel verbosity = Optimizer::ERROR;
-  Optimizer optimizer = optimizer0.levenbergMarquardt(1e-15, 1e-15, verbosity);
+
+  NonlinearOptimizationParameters::sharedThis params = NonlinearOptimizationParameters::newDrecreaseThresholds(1e-15, 1e-15);
+  Optimizer optimizer0(fg, initial, ordering, params);
+  Optimizer optimizer = optimizer0.levenbergMarquardt();
 
   // Check with expected config
   Pose2Values expected;
@@ -152,9 +152,9 @@ TEST(Pose2Graph, optimizeThreePoses) {
   *ordering += "x0","x1","x2";
 
   // optimize
-  pose2SLAM::Optimizer optimizer0(fg, initial, ordering);
-  pose2SLAM::Optimizer::Parameters::verbosityLevel verbosity = pose2SLAM::Optimizer::Parameters::SILENT;
-  pose2SLAM::Optimizer optimizer = optimizer0.levenbergMarquardt(1e-15, 1e-15, verbosity);
+  NonlinearOptimizationParameters::sharedThis params = NonlinearOptimizationParameters::newDrecreaseThresholds(1e-15, 1e-15);
+  pose2SLAM::Optimizer optimizer0(fg, initial, ordering, params);
+  pose2SLAM::Optimizer optimizer = optimizer0.levenbergMarquardt();
 
   Pose2Values actual = *optimizer.values();
 
@@ -195,9 +195,9 @@ TEST(Pose2Graph, optimizeCircle) {
   *ordering += "x0","x1","x2","x3","x4","x5";
 
   // optimize
-  pose2SLAM::Optimizer optimizer0(fg, initial, ordering);
-  pose2SLAM::Optimizer::Parameters::verbosityLevel verbosity = pose2SLAM::Optimizer::Parameters::SILENT;
-  pose2SLAM::Optimizer optimizer = optimizer0.levenbergMarquardt(1e-15, 1e-15, verbosity);
+  NonlinearOptimizationParameters::sharedThis params = NonlinearOptimizationParameters::newDrecreaseThresholds(1e-15, 1e-15);
+  pose2SLAM::Optimizer optimizer0(fg, initial, ordering, params);
+  pose2SLAM::Optimizer optimizer = optimizer0.levenbergMarquardt();
 
   Pose2Values actual = *optimizer.values();
 

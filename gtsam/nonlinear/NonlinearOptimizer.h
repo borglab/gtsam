@@ -159,18 +159,6 @@ namespace gtsam {
 		 * Constructor that evaluates new error
 		 */
 
-    	// backward compatibility
-		NonlinearOptimizer(shared_graph graph,
-						   shared_values values,
-						   shared_ordering ordering,
-						   const double lambda);
-		// backward compatibility
-		NonlinearOptimizer(shared_graph graph,
-						   shared_values values,
-						   shared_ordering ordering,
-						   shared_solver solver,
-						   const double lambda);
-
 		// suggested constructors
 		NonlinearOptimizer(shared_graph graph,
 						   shared_values values,
@@ -230,9 +218,6 @@ namespace gtsam {
 		// suggested interface
 		NonlinearOptimizer iterate() const;
 
-		// backward compatible
-		NonlinearOptimizer iterate(Parameters::verbosityLevel verbosity) const;
-
 		/**
 		 * Optimize a solution for a non linear factor graph
 		 * @param relativeTreshold
@@ -243,21 +228,12 @@ namespace gtsam {
 		// suggested interface
 		NonlinearOptimizer gaussNewton() const;
 
-		// backward compatible
-		NonlinearOptimizer
-		gaussNewton(double relativeThreshold, double absoluteThreshold,
-				Parameters::verbosityLevel verbosity = Parameters::SILENT, int maxIterations = 100) const;
-
 		/**
 		 * One iteration of Levenberg Marquardt
 		 */
 
 		// suggested interface
 		NonlinearOptimizer iterateLM();
-
-		// backward compatible
-		NonlinearOptimizer iterateLM(Parameters::verbosityLevel verbosity,
-				double lambdaFactor = 10, Parameters::LambdaMode lambdaMode = Parameters::BOUNDED) const;
 
 		/**
 		 * Optimize using Levenberg-Marquardt. Really Levenberg's
@@ -276,19 +252,6 @@ namespace gtsam {
 
 		// suggested interface
 		NonlinearOptimizer levenbergMarquardt();
-
-		// backward compatible
-		NonlinearOptimizer
-		levenbergMarquardt(double relativeThreshold,
-						   double absoluteThreshold,
-						   Parameters::verbosityLevel verbosity = Parameters::SILENT,
-						   int maxIterations = 100,
-						   double lambdaFactor = 10,
-						   Parameters::LambdaMode lambdaMode = Parameters::BOUNDED) const;
-
-		// backward compatible
-		NonlinearOptimizer
-		levenbergMarquardt(const NonlinearOptimizationParameters &para) const;
 
 		/**
 		 * Static interface to LM optimization using default ordering and thresholds
@@ -362,15 +325,6 @@ namespace gtsam {
 			return result.values();
 		}
 
-		// backward compatible
-		static shared_values optimizeGN(shared_graph graph,
-										shared_values values,
-										Parameters::verbosityLevel verbosity) {
-			Parameters def ;
-			shared_parameters parameters = def.newVerbosity_(verbosity);
-			return optimizeGN(graph, values, parameters);
-		}
-
 		/**
 		 * Static interface to GN optimization (no shared_ptr arguments) - see above
 		 */
@@ -381,14 +335,6 @@ namespace gtsam {
 							  boost::make_shared<const T>(values),
 							  boost::make_shared<Parameters>(parameters));
 		}
-
-		// backward compatible
-		static shared_values optimizeGN(const G& graph, const T& values, Parameters::verbosityLevel verbosity) {
-			return optimizeGN(boost::make_shared<const G>(graph),
-							  boost::make_shared<const T>(values),
-							  verbosity);
-		}
-
 	};
 
 	/**

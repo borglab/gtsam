@@ -83,8 +83,7 @@ int main(void) {
 	SPCGOptimizer optimizer(graph, initial, solver->ordering(), solver) ;
 
 	cout << "before optimization, sum of error is " << optimizer.error() << endl;
-	NonlinearOptimizationParameters parameter;
-	SPCGOptimizer optimizer2 = optimizer.levenbergMarquardt(parameter);
+	SPCGOptimizer optimizer2 = optimizer.levenbergMarquardt();
 	cout << "after optimization, sum of error is " << optimizer2.error() << endl;
 
 	result = *optimizer2.values() ;
