@@ -46,12 +46,6 @@ public:
   GenericMultifrontalSolver(const FactorGraph<FACTOR>& factorGraph);
 
   /**
-   * Construct the solver for a factor graph.  This builds the junction
-   * tree, which already does some of the work of elimination.
-   */
-  GenericMultifrontalSolver(const typename FactorGraph<FACTOR>::shared_ptr& factorGraph);
-
-  /**
    * Construct the solver with a shared pointer to a factor graph and to a
    * VariableIndex.  The solver will store these pointers, so this constructor
    * is the fastest.

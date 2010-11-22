@@ -176,7 +176,7 @@ namespace gtsam {
 
 		  // solve
 		  if(solver_) solver_->replaceFactors(damped);
-		  else solver_.reset(new S(damped));
+		  else solver_.reset(new S(*damped));
 
 		  VectorValues delta = *solver_->optimize();
 		  if (verbosity >= Parameters::TRYDELTA) delta.print("delta");

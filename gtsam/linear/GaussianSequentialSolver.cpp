@@ -31,10 +31,6 @@ GaussianSequentialSolver::GaussianSequentialSolver(const FactorGraph<GaussianFac
     Base(factorGraph) {}
 
 /* ************************************************************************* */
-GaussianSequentialSolver::GaussianSequentialSolver(const FactorGraph<GaussianFactor>::shared_ptr& factorGraph) :
-    Base(factorGraph) {}
-
-/* ************************************************************************* */
 GaussianSequentialSolver::GaussianSequentialSolver(const FactorGraph<GaussianFactor>::shared_ptr& factorGraph,
     const VariableIndex::shared_ptr& variableIndex) :
     Base(factorGraph, variableIndex) {}

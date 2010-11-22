@@ -36,12 +36,6 @@ GenericSequentialSolver<FACTOR>::GenericSequentialSolver(const FactorGraph<FACTO
 
 /* ************************************************************************* */
 template<class FACTOR>
-GenericSequentialSolver<FACTOR>::GenericSequentialSolver(const typename FactorGraph<FACTOR>::shared_ptr& factorGraph) :
-    factors_(factorGraph), structure_(new VariableIndex(*factorGraph)),
-    eliminationTree_(EliminationTree<FACTOR>::Create(*factors_, *structure_)) {}
-
-/* ************************************************************************* */
-template<class FACTOR>
 GenericSequentialSolver<FACTOR>::GenericSequentialSolver(const typename FactorGraph<FACTOR>::shared_ptr& factorGraph,
     const VariableIndex::shared_ptr& variableIndex) :
     factors_(factorGraph), structure_(variableIndex),

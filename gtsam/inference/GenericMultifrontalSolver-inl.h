@@ -37,11 +37,6 @@ GenericMultifrontalSolver<FACTOR, JUNCTIONTREE>::GenericMultifrontalSolver(const
 
 /* ************************************************************************* */
 template<class FACTOR, class JUNCTIONTREE>
-GenericMultifrontalSolver<FACTOR, JUNCTIONTREE>::GenericMultifrontalSolver(const typename FactorGraph<FACTOR>::shared_ptr& factorGraph) :
-    structure_(new VariableIndex(*factorGraph)), junctionTree_(new JUNCTIONTREE(*factorGraph, *structure_)) {}
-
-/* ************************************************************************* */
-template<class FACTOR, class JUNCTIONTREE>
 GenericMultifrontalSolver<FACTOR, JUNCTIONTREE>::GenericMultifrontalSolver(
     const typename FactorGraph<FACTOR>::shared_ptr& factorGraph, const VariableIndex::shared_ptr& variableIndex) :
     structure_(variableIndex), junctionTree_(new JUNCTIONTREE(*factorGraph, *structure_)) {}

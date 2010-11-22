@@ -66,12 +66,6 @@ public:
   GaussianSequentialSolver(const FactorGraph<GaussianFactor>& factorGraph);
 
   /**
-   * Construct the solver for a factor graph.  This builds the elimination
-   * tree, which already does some of the work of elimination.
-   */
-  GaussianSequentialSolver(const FactorGraph<GaussianFactor>::shared_ptr& factorGraph);
-
-  /**
    * Construct the solver with a shared pointer to a factor graph and to a
    * VariableIndex.  The solver will store these pointers, so this constructor
    * is the fastest.

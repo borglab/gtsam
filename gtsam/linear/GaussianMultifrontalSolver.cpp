@@ -31,10 +31,6 @@ GaussianMultifrontalSolver::GaussianMultifrontalSolver(const FactorGraph<Gaussia
     Base(factorGraph) {}
 
 /* ************************************************************************* */
-GaussianMultifrontalSolver::GaussianMultifrontalSolver(const FactorGraph<GaussianFactor>::shared_ptr& factorGraph) :
-    Base(factorGraph) {}
-
-/* ************************************************************************* */
 GaussianMultifrontalSolver::GaussianMultifrontalSolver(const FactorGraph<GaussianFactor>::shared_ptr& factorGraph, const VariableIndex::shared_ptr& variableIndex) :
     Base(factorGraph, variableIndex) {}
 
