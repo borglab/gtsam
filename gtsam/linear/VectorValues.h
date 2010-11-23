@@ -104,7 +104,7 @@ public:
   const Vector& values() const { return values_ ; }
   Vector& values() { return values_ ; }
 
-  /* return the dimension spec of this vector*/
+  /* return the dimension spec of this vector, i.e. the dimension of each variable */
   template <typename T>
   std::vector<T> getDimSpec() const {
     const Index n = this->size() ;
@@ -113,6 +113,11 @@ public:
       spec[i] = varStarts_[i+1] - varStarts_[i] ;
     }
     return spec;
+  }
+
+  /* get varStart */
+  std::vector<size_t> getVarStart() const {
+    return varStarts_ ;
   }
 
   /** Reserve space for a total number of variables and dimensionality */
