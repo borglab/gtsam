@@ -151,6 +151,10 @@ namespace gtsam {
 
     ABlock getA(iterator variable) { return Ab_(variable - keys_.begin()); }
 
+    // direct indexing
+    constABlock getA(size_t idx) const { return Ab_(idx); }
+    ABlock getA(size_t idx) { return Ab_(idx); }
+
     /** Return the dimension of the variable pointed to by the given key iterator
      * todo: Remove this in favor of keeping track of dimensions with variables?
      */
