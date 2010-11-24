@@ -121,16 +121,14 @@ namespace gtsam {
 		error_(error), ordering_(ordering), solver_(solver), parameters_(parameters), dimensions_(dimensions) {}
 
     /** Create a new NonlinearOptimizer with a different lambda */
-//    This newLambda_(double newLambda) const {
-//      return NonlinearOptimizer(graph_, values_, error_, ordering_, solver_, newLambda, dimensions_); }
-//
-//    This newValuesSolver_(shared_values newValues, shared_solver newSolver) const {
-//      return NonlinearOptimizer(graph_, newValues, graph_->error(*newValues), ordering_, newSolver, lambda_, dimensions_); }
-//
-//    This newValuesSolverLambda_(shared_values newValues, shared_solver newSolver, double newLambda) const {
-//      return NonlinearOptimizer(graph_, newValues, graph_->error(*newValues), ordering_, newSolver, newLambda, dimensions_); }
+    This newValuesSolver_(shared_values newValues, shared_solver newSolver) const {
+      return NonlinearOptimizer(graph_, newValues, graph_->error(*newValues), ordering_, newSolver, parameters_, dimensions_); }
 
-    /** Create a new NonlinearOptimizer with a different lambda */
+    This newValuesErrorLambda_(shared_values newValues, double newError, double newLambda) const {
+      return NonlinearOptimizer(graph_, newValues, newError, ordering_, solver_, parameters_->newLambda_(newLambda), dimensions_); }
+
+
+	/*
     This newLambda_(double newLambda) const {
       return NonlinearOptimizer(graph_, values_, error_, ordering_, solver_, parameters_->newLambda_(newLambda), dimensions_); }
 
@@ -152,7 +150,7 @@ namespace gtsam {
 
     This newMaxIterations_(int maxIterations) const {
       return NonlinearOptimizer(graph_, values_, error_, ordering_, solver_, parameters_->newMaxIterations_(maxIterations), dimensions_); }
-
+    */
 
 	public:
 		/**
@@ -279,9 +277,7 @@ namespace gtsam {
 										shared_values values,
 										Parameters::verbosityLevel verbosity)
 		{
-			Parameters def ;
-			shared_parameters parameters = def.newVerbosity_(verbosity);
-			return optimizeLM(graph, values, parameters);
+			return optimizeLM(graph, values, Parameters::newVerbosity(verbosity));
 		}
 		/**
 		 * Static interface to LM optimization (no shared_ptr arguments) - see above

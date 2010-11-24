@@ -146,7 +146,7 @@ int main(int argc, char* argv[]) {
 
   // Optimize the graph
   cout << "*******************************************************" << endl;
-  NonlinearOptimizationParameters::sharedThis params = NonlinearOptimizationParameters::newVerbosity_(Optimizer::Parameters::DAMPED);
+  NonlinearOptimizationParameters::sharedThis params = NonlinearOptimizationParameters::newVerbosity(Optimizer::Parameters::DAMPED);
   Optimizer::shared_values result = Optimizer::optimizeGN(graph, initialEstimates, params);
 
   // Print final results

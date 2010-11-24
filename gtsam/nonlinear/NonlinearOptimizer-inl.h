@@ -185,7 +185,6 @@ namespace gtsam {
 		  shared_values newValues(new C(values_->expmap(delta, *ordering_))); // TODO: updateValues
 
 		  // create new optimization state with more adventurous lambda
-		  //NonlinearOptimizer next(newValuesSolverLambda_(newValues, newSolver, lambda / factor));
 		  double error = graph_->error(*newValues);
 
 		  if (verbosity >= Parameters::TRYLAMBDA) cout << "next error = " << error << endl;

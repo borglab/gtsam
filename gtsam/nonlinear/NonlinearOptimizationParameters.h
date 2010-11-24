@@ -65,19 +65,24 @@ namespace gtsam {
 			verbosity_(parameters.verbosity_), lambdaMode_(parameters.lambdaMode_){}
 
 
-		static sharedThis newVerbosity_(verbosityLevel verbosity) {
+		/* a copy of old instance except some parameters */
+        sharedThis newLambda_(double lambda) const {
+            sharedThis ptr (boost::make_shared<NonlinearOptimizationParameters>(*this)) ;
+            ptr->lambda_ = lambda ;
+            return ptr ;
+        }
+
+
+
+        // static
+        /* new instance with default parameters except some partially assigned parameters */
+		static sharedThis newVerbosity(verbosityLevel verbosity) {
 			sharedThis ptr (boost::make_shared<NonlinearOptimizationParameters>()) ;
 			ptr->verbosity_ = verbosity ;
 			return ptr ;
 		}
 
-		static sharedThis newLambda_(double lambda) {
-			sharedThis ptr (boost::make_shared<NonlinearOptimizationParameters>()) ;
-			ptr->lambda_ = lambda ;
-			return ptr ;
-		}
-
-		static sharedThis newMaxIterations_(int maxIterations) {
+		static sharedThis newMaxIterations(int maxIterations) {
 			sharedThis ptr (boost::make_shared<NonlinearOptimizationParameters>()) ;
 			ptr->maxIterations_ = maxIterations ;
 			return ptr ;
