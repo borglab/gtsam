@@ -18,8 +18,10 @@
  */
 
 #include <iostream>
+#include <boost/make_shared.hpp>
 #include <boost/assign/std/list.hpp>
 #include <boost/assign/std/set.hpp>
+#include <boost/assign/std/vector.hpp>
 using namespace boost::assign;
 #include <CppUnitLite/TestHarness.h>
 
@@ -39,6 +41,15 @@ TEST(DSFVectorVector, makeUnionInPlace) {
 	DSFVector dsf(3);
 	dsf.makeUnionInPlace(0,2);
 	CHECK(dsf.findSet(0) == dsf.findSet(2));
+}
+
+/* ************************************************************************* */
+TEST(DSFVectorVector, makeUnionInPlace2) {
+	boost::shared_ptr<DSFVector::V> v = boost::make_shared<DSFVector::V>(5);
+	std::vector<size_t> keys; keys += 1, 3;
+	DSFVector dsf(v, keys);
+	dsf.makeUnionInPlace(1,3);
+	CHECK(dsf.findSet(1) == dsf.findSet(3));
 }
 
 /* ************************************************************************* */
@@ -68,6 +79,17 @@ TEST(DSFVector, sets) {
 }
 
 /* ************************************************************************* */
+TEST(DSFVector, arrays) {
+	DSFVector dsf(2);
+	dsf.makeUnionInPlace(0,1);
+	map<size_t, vector<size_t> > arrays = dsf.arrays();
+	LONGS_EQUAL(1, arrays.size());
+
+	vector<size_t> expected; expected += 0, 1;
+	CHECK(expected == arrays[dsf.findSet(0)]);
+}
+
+/* ************************************************************************* */
 TEST(DSFVector, sets2) {
 	DSFVector dsf(3);
 	dsf.makeUnionInPlace(0,1);
@@ -80,6 +102,18 @@ TEST(DSFVector, sets2) {
 }
 
 /* ************************************************************************* */
+TEST(DSFVector, arrays2) {
+	DSFVector dsf(3);
+	dsf.makeUnionInPlace(0,1);
+	dsf.makeUnionInPlace(1,2);
+	map<size_t, vector<size_t> > arrays = dsf.arrays();
+	LONGS_EQUAL(1, arrays.size());
+
+	vector<size_t> expected; expected += 0, 1, 2;
+	CHECK(expected == arrays[dsf.findSet(0)]);
+}
+
+/* ************************************************************************* */
 TEST(DSFVector, sets3) {
 	DSFVector dsf(3);
 	dsf.makeUnionInPlace(0,1);
@@ -88,6 +122,17 @@ TEST(DSFVector, sets3) {
 
 	set<size_t> expected; expected += 0, 1;
 	CHECK(expected == sets[dsf.findSet(0)]);
+}
+
+/* ************************************************************************* */
+TEST(DSFVector, arrays3) {
+	DSFVector dsf(3);
+	dsf.makeUnionInPlace(0,1);
+	map<size_t, vector<size_t> > arrays = dsf.arrays();
+	LONGS_EQUAL(2, arrays.size());
+
+	vector<size_t> expected; expected += 0, 1;
+	CHECK(expected == arrays[dsf.findSet(0)]);
 }
 
 /* ************************************************************************* */

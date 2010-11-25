@@ -23,23 +23,41 @@
 #include <vector>
 #include <map>
 #include <set>
+#include <boost/shared_ptr.hpp>
 
 namespace gtsam {
 
 	/**
 	 * A fast impelementation of disjoint set forests that uses vector as underly data structure.
 	 */
-	class DSFVector : protected std::vector<std::size_t> {
-	private:
+	class DSFVector {
 
 	public:
+		typedef std::vector<size_t> V;
 		typedef size_t Label;
+		typedef std::vector<size_t>::const_iterator const_iterator;
+		typedef std::vector<size_t>::iterator iterator;
 
-		// constructor
-		DSFVector(const std::size_t numNodes);
+	private:
+		boost::shared_ptr<V> v_; // could use existing memory to improve the efficiency
+		std::vector<size_t> keys_;
+
+	public:
+		// constructor that allocate a new memory
+		DSFVector(const size_t numNodes);
+
+		// constructor that uses the existing memory
+		DSFVector(const boost::shared_ptr<V>& v_in, const std::vector<size_t>& keys);
 
 		// find the label of the set in which {key} lives
-		Label findSet(const size_t& key) const;
+		inline Label findSet(size_t key) const {
+			size_t parent = (*v_)[key];
+			while (parent != key) {
+				key = parent;
+				parent = (*v_)[key];
+			}
+			return parent;
+		}
 
 		// find whether there is one and only one occurrence for the given {label}
 		bool isSingleton(const Label& label) const;
@@ -49,9 +67,10 @@ namespace gtsam {
 
 		// return all sets, i.e. a partition of all elements
 		std::map<Label, std::set<size_t> > sets() const;
+		std::map<Label, std::vector<size_t> > arrays() const;
 
 		// the in-place version of makeUnion
-		void makeUnionInPlace(const std::size_t& i1, const std::size_t& i2);
+		void makeUnionInPlace(const size_t& i1, const size_t& i2);
 
 	};
 

@@ -18,6 +18,8 @@
  *               As a result, the size of the forest is prefixed.
  */
 
+#include <boost/make_shared.hpp>
+#include <boost/foreach.hpp>
 #include <gtsam/base/DSFVector.h>
 
 using namespace std;
@@ -26,23 +28,27 @@ namespace gtsam {
 
 	/* ************************************************************************* */
 	DSFVector::DSFVector (const size_t numNodes) {
-		resize(numNodes);
+		v_ = boost::make_shared<V>(numNodes);
 		int index = 0;
-		for(iterator it = begin(); it!=end(); it++, index++)
+		keys_.reserve(numNodes);
+		for(V::iterator it = v_->begin(); it!=v_->end(); it++, index++) {
 			*it = index;
+			keys_.push_back(index);
+		}
 	}
 
 	/* ************************************************************************* */
-	DSFVector::Label DSFVector::findSet(const size_t& key) const {
-		size_t parent = at(key);
-		return parent == key ? key : findSet(parent);
+	DSFVector::DSFVector(const boost::shared_ptr<V>& v_in, const std::vector<size_t>& keys) : keys_(keys) {
+		v_ = v_in;
+		BOOST_FOREACH(const size_t key, keys)
+			(*v_)[key] = key;
 	}
 
 	/* ************************************************************************* */
 	bool DSFVector::isSingleton(const Label& label) const {
 		bool result = false;
-		std::vector<size_t>::const_iterator it = begin();
-		for (; it != end(); ++it) {
+		V::const_iterator it = keys_.begin();
+		for (; it != keys_.end(); ++it) {
 			if(findSet(*it) == label) {
 				if (!result) // find the first occurrence
 					result = true;
@@ -56,11 +62,10 @@ namespace gtsam {
 	/* ************************************************************************* */
 	std::set<size_t> DSFVector::set(const Label& label) const {
 		std::set<size_t> set;
-		size_t key = 0;
-		std::vector<size_t>::const_iterator it = begin();
-		for (; it != end(); it++, key++) {
+		V::const_iterator it = keys_.begin();
+		for (; it != keys_.end(); it++) {
 			if (findSet(*it) == label)
-				set.insert(key);
+				set.insert(*it);
 		}
 		return set;
 	}
@@ -68,17 +73,26 @@ namespace gtsam {
 	/* ************************************************************************* */
 	std::map<DSFVector::Label, std::set<size_t> > DSFVector::sets() const {
 		std::map<Label, std::set<size_t> > sets;
-		size_t key = 0;
-		std::vector<size_t>::const_iterator it = begin();
-		for (; it != end(); it++, key++) {
-			sets[findSet(*it)].insert(key);
+		V::const_iterator it = keys_.begin();
+		for (; it != keys_.end(); it++) {
+			sets[findSet(*it)].insert(*it);
 		}
 		return sets;
 	}
 
 	/* ************************************************************************* */
+	std::map<DSFVector::Label, std::vector<size_t> > DSFVector::arrays() const {
+		std::map<Label, std::vector<size_t> > arrays;
+		V::const_iterator it = keys_.begin();
+		for (; it != keys_.end(); it++) {
+			arrays[findSet(*it)].push_back(*it);
+		}
+		return arrays;
+	}
+
+	/* ************************************************************************* */
 	void DSFVector::makeUnionInPlace(const size_t& i1, const size_t& i2)  {
-		at(findSet(i2)) = findSet(i1);
+		(*v_)[findSet(i2)] = findSet(i1);
 	}
 
 } // namespace
