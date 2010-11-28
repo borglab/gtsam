@@ -219,9 +219,17 @@ public:
   friend void scal(double alpha, VectorValues& x) {	gtsam::scal(alpha, x.values_) ; }
   friend void axpy(double alpha, const VectorValues& x, VectorValues& y) { gtsam::axpy(alpha, x.values_, y.values_) ; }
   friend void sqrt(VectorValues &x) { Vector y = gtsam::esqrt(x.values_); x.values_ = y; }
+
   friend void ediv(const VectorValues& numerator, const VectorValues& denominator, VectorValues &result) {
-	  Vector v = gtsam::ediv(numerator.values_, denominator.values_);
-	  result.values_ = v ;
+    assert(numerator.dim() == denominator.dim() && denominator.dim() == result.dim()) ;
+    const size_t sz = result.dim();
+    for ( size_t i = 0 ; i < sz ; ++i ) result.values_[i] = numerator.values_[i]/denominator.values_[i] ;
+  }
+
+  friend void edivInPlace(VectorValues& x, const VectorValues& y) {
+    assert(x.dim() == y.dim());
+    const size_t sz = x.dim();
+    for ( size_t i = 0 ; i < sz ; ++i ) x.values_[i] /= y.values_[i] ;
   }
 
   // check whether there's a zero in the vector
