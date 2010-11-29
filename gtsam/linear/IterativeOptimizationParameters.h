@@ -17,10 +17,12 @@ namespace gtsam {
 
 	public:
 
-		typedef enum {
-			SILENT,
-			ERROR,
-		} verbosityLevel;
+	  typedef boost::shared_ptr<IterativeOptimizationParameters> shared_ptr ;
+
+      typedef enum {
+          SILENT,
+          ERROR,
+      } verbosityLevel;
 
 	public:
 		int maxIterations_;
@@ -29,12 +31,15 @@ namespace gtsam {
 		double epsilon_abs_; // absolute error
 		verbosityLevel verbosity_;
 
-        // specialize for some solvers
+        // specialize for spcg solver
 		typedef size_t Index;
 		typedef std::vector<Index> Spec ;
 		typedef boost::shared_ptr<Spec> sharedSpec ;
         sharedSpec reduce_spec_ ;
         sharedSpec skeleton_spec_ ;
+
+        // specialize for spcg solver 2
+
 
 	public:
 		IterativeOptimizationParameters():
