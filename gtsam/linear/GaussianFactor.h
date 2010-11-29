@@ -151,10 +151,6 @@ namespace gtsam {
 
     ABlock getA(iterator variable) { return Ab_(variable - keys_.begin()); }
 
-    // direct indexing
-    constABlock getA(size_t idx) const { return Ab_(idx); }
-    ABlock getA(size_t idx) { return Ab_(idx); }
-
     /** Return the dimension of the variable pointed to by the given key iterator
      * todo: Remove this in favor of keeping track of dimensions with variables?
      */
@@ -171,6 +167,13 @@ namespace gtsam {
      * Named constructor for combining a set of factors with pre-computed set of variables.
      */
     static shared_ptr Combine(const FactorGraph<GaussianFactor>& factors, const VariableSlots& variableSlots);
+
+    /**
+     * Combine and eliminate several factors.
+     */
+//    static std::pair<GaussianBayesNet::shared_ptr, shared_ptr> CombineAndEliminate(
+//        const FactorGraph<GaussianFactor>& factors, const VariableSlots& variableSlots,
+//        size_t nrFrontals=1, SolveMethod solveMethod = SOLVE_QR);
 
   protected:
 

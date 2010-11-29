@@ -89,7 +89,6 @@ public:
   /* dot product */
   double dot(const VectorValues& V) const { return gtsam::dot(this->values_, V.values_) ; }
 
-
   /** Total dimensions capacity allocated */
   size_t dimCapacity() const { return values_.size(); }
 
@@ -99,26 +98,11 @@ public:
   iterator end() { return _impl_iterator<VectorValues>(*this, varStarts_.size()-1); }
   const_iterator end() const { return _impl_iterator<const VectorValues>(*this, varStarts_.size()-1); }
 
-  double *ptr(Index idx = 0) { return values_.data().begin() + varStarts_[idx] ; }
-  const double *ptr(Index idx = 0) const { return values_.data().begin() + varStarts_[idx] ; }
-  const Vector& values() const { return values_ ; }
-  Vector& values() { return values_ ; }
+  /** Reference the entire solution vector (const version). */
+  const Vector& vector() const { return values_; }
 
-  /* return the dimension spec of this vector, i.e. the dimension of each variable */
-  template <typename T>
-  std::vector<T> getDimSpec() const {
-    const Index n = this->size() ;
-    std::vector<T> spec(n) ;
-    for ( Index i = 0 ; i < n ; ++i ) {
-      spec[i] = varStarts_[i+1] - varStarts_[i] ;
-    }
-    return spec;
-  }
-
-  /* get varStart */
-  std::vector<size_t> getVarStart() const {
-    return varStarts_ ;
-  }
+  /** Reference the entire solution vector. */
+  Vector& vector() { return values_; }
 
   /** Reserve space for a total number of variables and dimensionality */
   void reserve(Index nVars, size_t totalDims) { values_.resize(std::max(totalDims, values_.size())); varStarts_.reserve(nVars+1); }

@@ -36,9 +36,9 @@ TEST(VectorValues, constructor) {
 
 	VectorValues actual(dims, v);
 	LONGS_EQUAL(3, actual.size());
-	DOUBLES_EQUAL(1., *actual.ptr(0), 1e-15);
-	DOUBLES_EQUAL(2., *actual.ptr(1), 1e-15);
-	DOUBLES_EQUAL(4., *actual.ptr(2), 1e-15);
+	DOUBLES_EQUAL(1., actual[0][0], 1e-15);
+	DOUBLES_EQUAL(2., actual[1][0], 1e-15);
+	DOUBLES_EQUAL(4., actual[2][0], 1e-15);
 }
 
 /* ************************************************************************* */
