@@ -355,38 +355,26 @@ GaussianConditional::shared_ptr GaussianFactor::eliminateFirst(SolveMethod solve
 
   size_t firstVarDim = Ab_(0).size2();
 
+  // Cholesky currently does not work with a constrained noise model
+  SolveMethod correctedSolveMethod;
+  if(model_->isConstrained())
+    correctedSolveMethod = SOLVE_QR;
+  else
+    correctedSolveMethod = solveMethod;
+
   // Use in-place QR or Cholesky on dense Ab appropriate to NoiseModel
   SharedDiagonal noiseModel;
-  if(!debug) {
-    if(solveMethod == SOLVE_QR || model_->isConstrained()) {
-      tic("eliminateFirst: QR");
-      noiseModel = model_->QRColumnWise(matrix_, firstZeroRows);
-      toc("eliminateFirst: QR");
-    } else if(solveMethod == SOLVE_CHOLESKY) {
-      tic("eliminateFirst: Cholesky");
-      noiseModel = model_->Cholesky(matrix_);
-      toc("eliminateFirst: Cholesky");
-    } else
-      assert(false);
-  } else {
-    // In debug mode, compare outputs of Cholesky and QR
-    MatrixColMajor matrixCopy = matrix_;
-    SharedDiagonal noiseModelDup = model_->Cholesky(matrixCopy);
+  if(correctedSolveMethod == SOLVE_QR) {
+    tic("eliminateFirst: QR");
     noiseModel = model_->QRColumnWise(matrix_, firstZeroRows);
-
-    matrixCopy = ublas::triangular_adaptor<MatrixColMajor, ublas::upper>(matrixCopy);
-    matrix_ = ublas::triangular_adaptor<MatrixColMajor, ublas::upper>(matrix_);
-
-    assert(linear_dependent(
-        Matrix(
-            ublas::project(ublas::triangular_adaptor<MatrixColMajor, ublas::upper>(matrix_),
-                ublas::range(0,noiseModel->dim()), ublas::range(0,matrix_.size2()))),
-        Matrix(
-            ublas::project(ublas::triangular_adaptor<MatrixColMajor, ublas::upper>(matrixCopy),
-                ublas::range(0,noiseModel->dim()), ublas::range(0,matrix_.size2()))),
-        1e-2));
-    assert(assert_equal(*noiseModel, *noiseModelDup, 1e-2));
-  }
+    toc("eliminateFirst: QR");
+  } else if(correctedSolveMethod == SOLVE_CHOLESKY) {
+    tic("eliminateFirst: Cholesky");
+    noiseModel = model_->Cholesky(matrix_, firstVarDim);
+    Ab_.rowEnd() = noiseModel->dim();
+    toc("eliminateFirst: Cholesky");
+  } else
+    assert(false);
 
   if(matrix_.size1() > 0) {
     for(size_t j=0; j<matrix_.size2(); ++j)
@@ -429,7 +417,7 @@ GaussianConditional::shared_ptr GaussianFactor::eliminateFirst(SolveMethod solve
     model_ = noiseModel::Constrained::MixedSigmas(sub(noiseModel->sigmas(), firstVarDim, noiseModel->dim()));
   else
     model_ = noiseModel::Diagonal::Sigmas(sub(noiseModel->sigmas(), firstVarDim, noiseModel->dim()));
-  assert(Ab_.size1() <= Ab_.size2()-1);
+  if(correctedSolveMethod == SOLVE_QR) assert(Ab_.size1() <= Ab_.size2()-1);
   toc("eliminateFirst: remaining factor");
 
   // todo SL: deal with "dead" pivot columns!!!
@@ -441,10 +429,10 @@ GaussianConditional::shared_ptr GaussianFactor::eliminateFirst(SolveMethod solve
       ++ varpos;
     firstNonzeroBlocks_[row] = varpos;
     if(debug) cout << "firstNonzeroVars_[" << row << "] = " << firstNonzeroBlocks_[row] << endl;
-//    if(debug && varpos < size()) {
-//      ABlock block(Ab_(varpos));
-//      assert(!gtsam::equal_with_abs_tol(ublas::row(block, row), zero(block.size2()), 1e-5));
-//    }
+    //    if(debug && varpos < size()) {
+    //      ABlock block(Ab_(varpos));
+    //      assert(!gtsam::equal_with_abs_tol(ublas::row(block, row), zero(block.size2()), 1e-5));
+    //    }
   }
   toc("eliminateFirst: rowstarts");
 
@@ -468,6 +456,7 @@ GaussianBayesNet::shared_ptr GaussianFactor::eliminate(size_t nrFrontals, SolveM
 
   tic("eliminate");
 
+  if(debug) cout << "Eliminating " << nrFrontals << " frontal variables" << endl;
   if(debug) this->print("Eliminating GaussianFactor: ");
 
   tic("eliminate: stairs");
@@ -499,15 +488,25 @@ GaussianBayesNet::shared_ptr GaussianFactor::eliminate(size_t nrFrontals, SolveM
 
   size_t frontalDim = Ab_.range(0,nrFrontals).size2();
 
+  if(debug) cout << "frontalDim = " << frontalDim << endl;
+
+  // Cholesky currently does not work with a constrained noise model
+  SolveMethod correctedSolveMethod;
+  if(model_->isConstrained())
+    correctedSolveMethod = SOLVE_QR;
+  else
+    correctedSolveMethod = solveMethod;
+
   // Use in-place QR or Cholesky on dense Ab appropriate to NoiseModel
   SharedDiagonal noiseModel;
-  if(solveMethod == SOLVE_QR || model_->isConstrained()) {
+  if(correctedSolveMethod == SOLVE_QR) {
     tic("eliminateFirst: QR");
     noiseModel = model_->QRColumnWise(matrix_, firstZeroRows);
     toc("eliminateFirst: QR");
-  } else if(solveMethod == SOLVE_CHOLESKY) {
+  } else if(correctedSolveMethod == SOLVE_CHOLESKY) {
     tic("eliminateFirst: Cholesky");
-    noiseModel = model_->Cholesky(matrix_);
+    noiseModel = model_->Cholesky(matrix_, frontalDim);
+    Ab_.rowEnd() = noiseModel->dim();
     toc("eliminateFirst: Cholesky");
   } else
     assert(false);
@@ -558,7 +557,7 @@ GaussianBayesNet::shared_ptr GaussianFactor::eliminate(size_t nrFrontals, SolveM
   else
     model_ = noiseModel::Diagonal::Sigmas(sub(noiseModel->sigmas(), frontalDim, noiseModel->dim()));
   if(debug) this->print("Eliminated factor: ");
-  assert(Ab_.size1() <= Ab_.size2()-1);
+  if(correctedSolveMethod == SOLVE_QR) assert(Ab_.size1() <= Ab_.size2()-1);
   toc("eliminate: remaining factor");
 
   // todo SL: deal with "dead" pivot columns!!!

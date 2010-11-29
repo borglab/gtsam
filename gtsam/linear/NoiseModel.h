@@ -172,7 +172,7 @@ namespace gtsam {
 			/**
 			 * Cholesky factorization
 			 */
-			virtual SharedDiagonal Cholesky(MatrixColMajor& Ab) const;
+			virtual SharedDiagonal Cholesky(MatrixColMajor& Ab, size_t nFrontals) const;
 
 			/**
 			 * Return R itself, but note that Whiten(H) is cheaper than R*H

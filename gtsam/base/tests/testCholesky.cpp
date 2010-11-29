@@ -60,7 +60,7 @@ TEST(cholesky, choleskyFactorUnderdetermined) {
          0.0,       0.0,    0.3332,   -0.2273,   -0.4825,   -0.4652,    0.0660);
 
   MatrixColMajor actualColmaj = Ab;
-  choleskyFactorUnderdetermined(actualColmaj);
+  choleskyFactorUnderdetermined(actualColmaj, 3);
   Matrix actual = ublas::triangular_adaptor<MatrixColMajor, ublas::upper>(actualColmaj);
 
   CHECK(assert_equal(expected, actual, 1e-3));

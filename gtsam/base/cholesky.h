@@ -42,7 +42,23 @@ void cholesky_inplace(MatrixColMajor& I);
  *
  * This function returns the rank of the factor.
  */
-size_t choleskyFactorUnderdetermined(MatrixColMajor& Ab);
+size_t choleskyFactorUnderdetermined(MatrixColMajor& Ab, size_t nFrontal);
+
+/**
+ * "Careful" Cholesky computes the positive square-root of a positive symmetric
+ * semi-definite matrix (i.e. that may be rank-deficient).  Unlike standard
+ * Cholesky, the square-root factor may have all-zero rows for free variables.
+ *
+ * Additionally, this function returns the index of the row after the last
+ * non-zero row in the computed factor, so that it may be truncated to an
+ * upper-trapazoidal matrix.
+ *
+ * Note that this returned index is the rank of the matrix if and only if all
+ * of the zero-rows of the factor occur after any non-zero rows.  This is
+ * (always?) the case during elimination of a fully-constrained least-squares
+ * problem.
+ */
+size_t choleskyCareful(MatrixColMajor& ATA);
 
 }
 

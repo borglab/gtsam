@@ -21,6 +21,7 @@
 #include <iostream>
 #include <boost/foreach.hpp>
 #include <boost/numeric/ublas/triangular.hpp>
+#include <boost/numeric/ublas/matrix_proxy.hpp>
 #include <boost/assign/std/vector.hpp>
 using namespace boost::assign;
 
@@ -218,13 +219,15 @@ TEST( NoiseModel, QR )
 /* ************************************************************************* */
 TEST(NoiseModel, Cholesky)
 {
-     MatrixColMajor Ab = exampleQR::Ab; // otherwise overwritten !
-     SharedDiagonal actual = exampleQR::diagonal->Cholesky(Ab);
-     SharedDiagonal expected = noiseModel::Unit::Create(4);
-     EXPECT(assert_equal(*expected,*actual));
-     // Ab was modified in place !!!
-     Matrix actualRd = ublas::triangular_adaptor<MatrixColMajor, ublas::upper>(Ab);
-     EXPECT(linear_dependent(exampleQR::Rd,actualRd,1e-4));
+  SharedDiagonal expected = noiseModel::Unit::Create(4);
+  MatrixColMajor Ab = exampleQR::Ab; // otherwise overwritten !
+  SharedDiagonal actual = exampleQR::diagonal->Cholesky(Ab, 4);
+  EXPECT(assert_equal(*expected,*actual));
+  // Ab was modified in place !!!
+  Matrix actualRd =
+      ublas::project(ublas::triangular_adaptor<MatrixColMajor, ublas::upper>(Ab),
+          ublas::range(0,actual->dim()), ublas::range(0, Ab.size2()));
+  EXPECT(linear_dependent(exampleQR::Rd,actualRd,1e-4));
 }
 
 /* ************************************************************************* */

@@ -23,14 +23,23 @@ extern "C" {
 
 #include <cblas.h>
 
-/* Subroutine */ int dpotrf_(char *uplo, int *n, double *a, int *lda,
-    int *info);
+  /* FORTRAN subroutine */
+  int dpotrf_(char *uplo, int *n, double *a, int *lda, int *info);
 
-inline int lapack_dpotrf(char uplo, int n, double* a, int lda) {
-  int info;
-  dpotrf_(&uplo, &n, a, &lda, &info);
-  return info;
-}
+  /* C wrapper */
+  inline int lapack_dpotrf(char uplo, int n, double* a, int lda) {
+    int info;
+    dpotrf_(&uplo, &n, a, &lda, &info);
+    return info;
+  }
+
+  int dpotf2_(char *uplo, int *n, double *a, int *lda, int *info);
+
+  inline int lapack_dpotf2(char uplo, int n, double* a, int lda) {
+    int info;
+    dpotf2_(&uplo, &n, a, &lda, &info);
+    return info;
+  }
 
 }
 

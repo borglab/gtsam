@@ -247,20 +247,26 @@ SharedDiagonal Gaussian::QRColumnWise(MatrixColMajor& Ab, vector<int>& firstZero
 }
 
 /* ************************************************************************* */
-SharedDiagonal Gaussian::Cholesky(MatrixColMajor& Ab) const {
+SharedDiagonal Gaussian::Cholesky(MatrixColMajor& Ab, size_t nFrontals) const {
   // get size(A) and maxRank
   // TODO: really no rank problems ?
-  size_t m = Ab.size1(), n = Ab.size2()-1;
-  size_t maxRank = min(m,n);
 
   // pre-whiten everything (cheaply if possible)
   WhitenInPlace(Ab);
 
-  // Use Cholesky to factor Ab
-  size_t rank = choleskyFactorUnderdetermined(Ab);
-  assert(rank == maxRank);
+  // Form A'*A (todo: this is probably less efficient than possible)
+  Ab = ublas::trans(Ab) * Ab;
 
-  return Unit::Create(maxRank);
+  // Use Cholesky to factor Ab
+  size_t maxrank = choleskyCareful(Ab);
+
+  // Due to numerical error the rank could appear to be more than the number
+  // of variables.  The important part is that it does not includes the
+  // augmented b column.
+  if(maxrank == Ab.size2())
+    -- maxrank;
+
+  return Unit::Create(maxrank);
 }
 
 /* ************************************************************************* */
