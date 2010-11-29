@@ -29,6 +29,7 @@
 #include <boost/random/normal_distribution.hpp>
 #include <boost/random/variate_generator.hpp>
 
+#include <gtsam/base/timing.h>
 #include <gtsam/base/cholesky.h>
 #include <gtsam/linear/NoiseModel.h>
 #include <gtsam/linear/SharedDiagonal.h>
@@ -252,13 +253,19 @@ SharedDiagonal Gaussian::Cholesky(MatrixColMajor& Ab, size_t nFrontals) const {
   // TODO: really no rank problems ?
 
   // pre-whiten everything (cheaply if possible)
+  tic("Cholesky: 1 whiten");
   WhitenInPlace(Ab);
+  toc("Cholesky: 1 whiten");
 
   // Form A'*A (todo: this is probably less efficient than possible)
-  Ab = ublas::trans(Ab) * Ab;
+  tic("Cholesky: 2 A' * A");
+  Ab = ublas::prod(ublas::trans(Ab), Ab);
+  toc("Cholesky: 2 A' * A");
 
   // Use Cholesky to factor Ab
+  tic("Cholesky: 3 careful");
   size_t maxrank = choleskyCareful(Ab);
+  toc("Cholesky: 3 careful");
 
   // Due to numerical error the rank could appear to be more than the number
   // of variables.  The important part is that it does not includes the
