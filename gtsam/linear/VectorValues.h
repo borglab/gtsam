@@ -291,5 +291,22 @@ inline VectorValues::const_mapped_type VectorValues::operator[](Index variable) 
       boost::numeric::ublas::range(varStarts_[variable], varStarts_[variable+1]));
 }
 
+struct DimSpec: public std::vector<size_t> {
+
+  typedef std::vector<size_t> Base ;
+  typedef boost::shared_ptr<DimSpec> shared_ptr;
+
+  DimSpec ():Base() {}
+  DimSpec (size_t n):Base(n) {}
+  DimSpec (size_t n, size_t init) : Base(n,init) {}
+  DimSpec (const VectorValues &V) : Base(V.size()) {
+    const size_t n = V.size() ;
+    for ( size_t i = 0 ; i < n ; ++i ) {
+      (*this)[i] = V[i].size() ;
+    }
+  }
+} ;
+
+
 
 }
