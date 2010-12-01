@@ -9,20 +9,22 @@
 
 #include <vector>
 #include <boost/shared_ptr.hpp>
+#include <gtsam/linear/VectorValues.h>
 
 namespace gtsam {
+
 
 	// a container for all related parameters
 	struct IterativeOptimizationParameters {
 
 	public:
 
-	  typedef boost::shared_ptr<IterativeOptimizationParameters> shared_ptr ;
+  typedef boost::shared_ptr<IterativeOptimizationParameters> shared_ptr ;
 
-      typedef enum {
-          SILENT,
-          ERROR,
-      } verbosityLevel;
+  typedef enum {
+      SILENT,
+      ERROR,
+  } verbosityLevel;
 
 	public:
 		int maxIterations_;
@@ -31,15 +33,12 @@ namespace gtsam {
 		double epsilon_abs_; // absolute error
 		verbosityLevel verbosity_;
 
-        // specialize for spcg solver
-		typedef size_t Index;
-		typedef std::vector<Index> Spec ;
-		typedef boost::shared_ptr<Spec> sharedSpec ;
-        sharedSpec reduce_spec_ ;
-        sharedSpec skeleton_spec_ ;
-
-        // specialize for spcg solver 2
-
+    // specialize for spcg solver
+//		typedef size_t Index;
+//		typedef std::vector<Index> Spec ;
+//		typedef boost::shared_ptr<Spec> sharedSpec ;
+		DimSpec::shared_ptr reduce_spec_ ;
+		DimSpec::shared_ptr skeleton_spec_ ;
 
 	public:
 		IterativeOptimizationParameters():
