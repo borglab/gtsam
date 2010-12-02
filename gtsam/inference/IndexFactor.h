@@ -62,6 +62,12 @@ public:
   /** Construct n-way factor */
   IndexFactor(std::set<Index> js) : Base(js) {}
 
+  /**
+   * Combine and eliminate several factors.
+   */
+  static std::pair<typename BayesNet<Conditional>::shared_ptr, shared_ptr> CombineAndEliminate(
+      const FactorGraph<This>& factors, size_t nrFrontals=1);
+
   /** Create a combined joint factor (new style for EliminationTree). */
   static shared_ptr
   Combine(const FactorGraph<This>& factors, const FastMap<Index, std::vector<Index> >& variableSlots);

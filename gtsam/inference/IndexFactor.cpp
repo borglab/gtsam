@@ -18,12 +18,23 @@
 
 #include <gtsam/inference/FactorBase-inl.h>
 #include <gtsam/inference/IndexFactor.h>
+#include <gtsam/inference/VariableSlots.h>
+
+using namespace std;
 
 namespace gtsam {
 
 template class FactorBase<Index>;
 
 IndexFactor::IndexFactor(const IndexConditional& c) : Base(static_cast<const Base>(c)) {}
+
+pair<typename BayesNet<IndexConditional>::shared_ptr, IndexFactor::shared_ptr> IndexFactor::CombineAndEliminate(
+    const FactorGraph<This>& factors, size_t nrFrontals) {
+  pair<typename BayesNet<Conditional>::shared_ptr, shared_ptr> result;
+  result.second = Combine(factors, VariableSlots(factors));
+  result.first = result.second->eliminate(nrFrontals);
+  return result;
+}
 
 IndexFactor::shared_ptr IndexFactor::Combine(
     const FactorGraph<This>& factors, const FastMap<Index, std::vector<Index> >& variableSlots) {

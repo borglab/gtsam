@@ -16,6 +16,14 @@
  * @author  Christian Potthast
  */
 
+#include <gtsam/base/timing.h>
+#include <gtsam/base/Matrix.h>
+#include <gtsam/base/FastMap.h>
+#include <gtsam/base/cholesky.h>
+#include <gtsam/linear/GaussianConditional.h>
+#include <gtsam/linear/GaussianFactor.h>
+#include <gtsam/linear/GaussianFactorGraph.h>
+
 #include <boost/foreach.hpp>
 #include <boost/format.hpp>
 #include <boost/make_shared.hpp>
@@ -28,12 +36,9 @@
 #include <boost/numeric/ublas/io.hpp>
 #include <boost/numeric/ublas/matrix_proxy.hpp>
 #include <boost/numeric/ublas/vector_proxy.hpp>
+#include <boost/numeric/ublas/blas.hpp>
 
-#include <gtsam/base/timing.h>
-#include <gtsam/base/Matrix.h>
-#include <gtsam/linear/GaussianConditional.h>
-#include <gtsam/linear/GaussianFactor.h>
-#include <gtsam/linear/GaussianFactorGraph.h>
+#include <sstream>
 
 using namespace std;
 
@@ -311,6 +316,291 @@ GaussianFactor::sparse(const Dimensions& columnIndices) const {
 
 	// return the result
 	return boost::tuple<list<int>, list<int>, list<double> >(I,J,S);
+}
+
+/* ************************************************************************* */
+GaussianFactor GaussianFactor::whiten() const {
+  GaussianFactor result(*this);
+  result.model_->WhitenInPlace(result.matrix_);
+  result.model_ = noiseModel::Unit::Create(result.model_->dim());
+  return result;
+}
+
+/* ************************************************************************* */
+struct SlotEntry {
+  size_t slot;
+  size_t dimension;
+  SlotEntry(size_t _slot, size_t _dimension) : slot(_slot), dimension(_dimension) {}
+};
+
+typedef FastMap<Index, SlotEntry> Scatter;
+
+/* ************************************************************************* */
+static FastMap<Index, SlotEntry> findScatterAndDims(const FactorGraph<GaussianFactor>& factors) {
+
+  static const bool debug = false;
+
+  // The "scatter" is a map from global variable indices to slot indices in the
+  // union of involved variables.  We also include the dimensionality of the
+  // variable.
+
+  Scatter scatter;
+
+  // First do the set union.
+  BOOST_FOREACH(const GaussianFactor::shared_ptr& factor, factors) {
+    for(GaussianFactor::const_iterator variable = factor->begin(); variable != factor->end(); ++variable) {
+      scatter.insert(make_pair(*variable, SlotEntry(0, factor->getDim(variable))));
+    }
+  }
+
+  // Next fill in the slot indices (we can only get these after doing the set
+  // union.
+  size_t slot = 0;
+  BOOST_FOREACH(Scatter::value_type& var_slot, scatter) {
+    var_slot.second.slot = (slot ++);
+    if(debug)
+      cout << "scatter[" << var_slot.first << "] = (slot " << var_slot.second.slot << ", dim " << var_slot.second.dimension << ")" << endl;
+  }
+
+  return scatter;
+}
+
+/* ************************************************************************* */
+static MatrixColMajor formAbTAb(const FactorGraph<GaussianFactor>& factors, const Scatter& scatter) {
+
+  static const bool debug = false;
+
+  tic("CombineAndEliminate: 3.1 varStarts");
+  // Determine scalar indices of each variable
+  vector<size_t> varStarts;
+  varStarts.reserve(scatter.size() + 2);
+  varStarts.push_back(0);
+  BOOST_FOREACH(const Scatter::value_type& var_slot, scatter) {
+    varStarts.push_back(varStarts.back() + var_slot.second.dimension);
+  }
+  // This is for the r.h.s. vector
+  varStarts.push_back(varStarts.back() + 1);
+  toc("CombineAndEliminate: 3.1 varStarts");
+
+  // Allocate and zero matrix for Ab' * Ab
+  MatrixColMajor ATA(ublas::zero_matrix<double>(varStarts.back(), varStarts.back()));
+
+  tic("CombineAndEliminate: 3.2 updates");
+  // Do blockwise low-rank updates to Ab' * Ab for each factor.  Here, we
+  // only update the upper triangle because this is all that Cholesky uses.
+  BOOST_FOREACH(const GaussianFactor::shared_ptr& factor, factors) {
+
+    // Whiten the factor first so it has a unit diagonal noise model
+    GaussianFactor whitenedFactor(factor->whiten());
+
+    if(debug) whitenedFactor.print("whitened factor: ");
+
+    for(GaussianFactor::const_iterator var2 = whitenedFactor.begin(); var2 != whitenedFactor.end(); ++var2) {
+      assert(scatter.find(*var2) != scatter.end());
+      size_t vj = scatter.find(*var2)->second.slot;
+      for(GaussianFactor::const_iterator var1 = whitenedFactor.begin(); var1 <= var2; ++var1) {
+        assert(scatter.find(*var1) != scatter.end());
+        size_t vi = scatter.find(*var1)->second.slot;
+        if(debug) cout << "Updating block " << vi << ", " << vj << endl;
+        if(debug) cout << "Updating (" << varStarts[vi] << ":" << varStarts[vi+1] << ", " <<
+            varStarts[vj] << ":" << varStarts[vj+1] << ") from A" << *var1 << "' * A" << *var2 << endl;
+        ublas::project(ATA,
+            ublas::range(varStarts[vi], varStarts[vi+1]), ublas::range(varStarts[vj], varStarts[vj+1])) +=
+                ublas::prod(ublas::trans(whitenedFactor.getA(var1)), whitenedFactor.getA(var2));
+      }
+    }
+
+    // Update r.h.s. vector
+    size_t vj = scatter.size();
+    for(GaussianFactor::const_iterator var1 = whitenedFactor.begin(); var1 < whitenedFactor.end(); ++var1) {
+      assert(scatter.find(*var1) != scatter.end());
+      size_t vi = scatter.find(*var1)->second.slot;
+      if(debug) cout << "Updating block " << vi << ", " << vj << endl;
+      if(debug) cout << "Updating (" << varStarts[vi] << ":" << varStarts[vi+1] << ", " <<
+          varStarts[vj] << ":" << varStarts[vj+1] << ") from A" << *var1 << "' * b" << endl;
+      ublas::matrix_column<MatrixColMajor> col(ATA, varStarts[vj]);
+      ublas::subrange(col, varStarts[vi], varStarts[vi+1]) +=
+          ublas::prod(ublas::trans(whitenedFactor.getA(var1)), whitenedFactor.getb());
+    }
+
+    size_t vi = scatter.size();
+    if(debug) cout << "Updating block " << vi << ", " << vj << endl;
+    if(debug) cout << "Updating (" << varStarts[vi] << ":" << varStarts[vi+1] << ", " <<
+        varStarts[vj] << ":" << varStarts[vj+1] << ") from b" << "' * b" << endl;
+    ATA(varStarts[vi], varStarts[vj]) += ublas::inner_prod(whitenedFactor.getb(), whitenedFactor.getb());
+  }
+  toc("CombineAndEliminate: 3.2 updates");
+
+  return ATA;
+}
+
+GaussianBayesNet::shared_ptr GaussianFactor::splitEliminatedFactor(size_t nrFrontals, const vector<Index>& keys) {
+
+  static const bool debug = false;
+
+  const size_t maxrank = Ab_.size1();
+
+  // Check for rank-deficiency that would prevent back-substitution
+  if(maxrank < Ab_.range(0, nrFrontals).size2()) {
+    stringstream ss;
+    ss << "Problem is rank-deficient, discovered while eliminating frontal variables";
+    for(size_t i=0; i<nrFrontals; ++i)
+      ss << " " << keys[i];
+    throw invalid_argument(ss.str());
+  }
+
+  if(debug) gtsam::print(Matrix(Ab_.range(0, Ab_.nBlocks())), "remaining Ab: ");
+
+  // Extract conditionals
+  tic("CombineAndEliminate: 5.1 cond Rd");
+  GaussianBayesNet::shared_ptr conditionals(new GaussianBayesNet());
+  for(size_t j=0; j<nrFrontals; ++j) {
+    // Temporarily restrict the matrix view to the conditional blocks of the
+    // eliminated Ab_ matrix to create the GaussianConditional from it.
+    size_t varDim = Ab_(0).size2();
+    Ab_.rowEnd() = Ab_.rowStart() + varDim;
+
+    // Zero the entries below the diagonal (this relies on the matrix being
+    // column-major).
+    {
+      ABlock remainingMatrix(Ab_.range(0, Ab_.nBlocks()));
+      if(remainingMatrix.size1() > 1)
+        for(size_t j = 0; j < remainingMatrix.size1() - 1; ++j)
+          memset(&remainingMatrix(j+1, j), 0, sizeof(remainingMatrix(0,0)) * (remainingMatrix.size1() - j - 1));
+    }
+
+    const ublas::scalar_vector<double> sigmas(varDim, 1.0);
+    conditionals->push_back(boost::make_shared<Conditional>(keys.begin()+j, keys.end(), 1, Ab_, sigmas));
+    if(debug) conditionals->back()->print("Extracted conditional: ");
+    Ab_.rowStart() += varDim;
+    Ab_.firstBlock() += 1;
+    if(debug) cout << "rowStart = " << Ab_.rowStart() << ", rowEnd = " << Ab_.rowEnd() << endl;
+  }
+  toc("CombineAndEliminate: 5.1 cond Rd");
+
+  // Take lower-right block of Ab_ to get the new factor
+  tic("CombineAndEliminate: 5.2 remaining factor");
+  Ab_.rowEnd() = maxrank;
+
+  // Assign the keys
+  keys_.assign(keys.begin() + nrFrontals, keys.end());
+
+  // Zero the entries below the diagonal (this relies on the matrix being
+  // column-major).
+  {
+    ABlock remainingMatrix(Ab_.range(0, Ab_.nBlocks()));
+    if(remainingMatrix.size1() > 1)
+      for(size_t j = 0; j < remainingMatrix.size1() - 1; ++j)
+        memset(&remainingMatrix(j+1, j), 0, sizeof(remainingMatrix(0,0)) * (remainingMatrix.size1() - j - 1));
+  }
+
+  // Make a unit diagonal noise model
+  model_ = noiseModel::Unit::Create(Ab_.size1());
+  if(debug) this->print("Eliminated factor: ");
+  toc("CombineAndEliminate: 5.2 remaining factor");
+
+  // todo SL: deal with "dead" pivot columns!!!
+  tic("CombineAndEliminate: 5.3 rowstarts");
+  size_t varpos = 0;
+  firstNonzeroBlocks_.resize(numberOfRows());
+  for(size_t row=0; row<numberOfRows(); ++row) {
+    if(debug) cout << "row " << row << " varpos " << varpos << " Ab_.offset(varpos)=" << Ab_.offset(varpos) << " Ab_.offset(varpos+1)=" << Ab_.offset(varpos+1) << endl;
+    while(varpos < keys_.size() && Ab_.offset(varpos+1) <= row)
+      ++ varpos;
+    firstNonzeroBlocks_[row] = varpos;
+    if(debug) cout << "firstNonzeroVars_[" << row << "] = " << firstNonzeroBlocks_[row] << endl;
+  }
+  toc("CombineAndEliminate: 5.3 rowstarts");
+
+  return conditionals;
+}
+
+/* ************************************************************************* */
+pair<GaussianBayesNet::shared_ptr, GaussianFactor::shared_ptr> GaussianFactor::CombineAndEliminate(
+        const FactorGraph<GaussianFactor>& factors, size_t nrFrontals, SolveMethod solveMethod) {
+
+  static const bool debug = false;
+
+  SolveMethod correctedSolveMethod = solveMethod;
+
+  // Check for constrained noise models
+  if(correctedSolveMethod != SOLVE_QR) {
+    BOOST_FOREACH(const shared_ptr& factor, factors) {
+      if(factor->model_->isConstrained()) {
+        correctedSolveMethod = SOLVE_QR;
+        break;
+      }
+    }
+  }
+
+  if(correctedSolveMethod == SOLVE_QR) {
+    shared_ptr jointFactor(Combine(factors, VariableSlots(factors)));
+    GaussianBayesNet::shared_ptr gbn(jointFactor->eliminate(nrFrontals, SOLVE_QR));
+    return make_pair(gbn, jointFactor);
+  } else if(correctedSolveMethod == SOLVE_CHOLESKY) {
+
+    // Find the scatter and variable dimensions
+    tic("CombineAndEliminate: 1 find scatter");
+    Scatter scatter(findScatterAndDims(factors));
+    toc("CombineAndEliminate: 1 find scatter");
+
+    // Pull out keys and dimensions
+    tic("CombineAndEliminate: 2 keys");
+    vector<Index> keys(scatter.size());
+    vector<size_t> dimensions(scatter.size() + 1);
+    BOOST_FOREACH(const Scatter::value_type& var_slot, scatter) {
+      keys[var_slot.second.slot] = var_slot.first;
+      dimensions[var_slot.second.slot] = var_slot.second.dimension;
+    }
+    // This is for the r.h.s. vector
+    dimensions.back() = 1;
+    toc("CombineAndEliminate: 2 keys");
+
+    // Form Ab' * Ab
+    tic("CombineAndEliminate: 3 Ab'*Ab");
+    MatrixColMajor ATA(formAbTAb(factors, scatter));
+    if(debug) gtsam::print(ATA, "Ab' * Ab: ");
+    toc("CombineAndEliminate: 3 Ab'*Ab");
+
+    // Do Cholesky, note that after this, the lower triangle still contains
+    // some untouched non-zeros that should be zero.  We zero them while
+    // extracting submatrices next.
+    tic("CombineAndEliminate: 4 Cholesky careful");
+    size_t maxrank = choleskyCareful(ATA);
+    if(maxrank > ATA.size2() - 1)
+      maxrank = ATA.size2() - 1;
+    if(debug) {
+      gtsam::print(ATA, "chol(Ab' * Ab): ");
+      cout << "maxrank = " << maxrank << endl;
+    }
+    toc("CombineAndEliminate: 4 Cholesky careful");
+
+    // Create the remaining factor and swap in the matrix and block structure.
+    // We declare a reference Ab to the block matrix in the remaining factor to
+    // refer to below.
+    GaussianFactor::shared_ptr remainingFactor(new GaussianFactor());
+    BlockAb& Ab(remainingFactor->Ab_);
+    {
+      BlockAb newAb(ATA, dimensions.begin(), dimensions.end());
+      newAb.rowEnd() = maxrank;
+      newAb.swap(Ab);
+    }
+
+    // Extract conditionals and fill in details of the remaining factor
+    tic("CombineAndEliminate: 5 Split");
+    GaussianBayesNet::shared_ptr conditionals(remainingFactor->splitEliminatedFactor(nrFrontals, keys));
+    if(debug) {
+      conditionals->print("Extracted conditionals: ");
+      remainingFactor->print("Eliminated factor: ");
+    }
+    toc("CombineAndEliminate: 5 Split");
+
+    return make_pair(conditionals, remainingFactor);
+
+  } else {
+    assert(false);
+    return make_pair(GaussianBayesNet::shared_ptr(), shared_ptr());
+  }
 }
 
 /* ************************************************************************* */

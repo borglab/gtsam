@@ -163,41 +163,26 @@ namespace gtsam {
 
     // eliminate the combined factors
     // warning: fg is being eliminated in-place and will contain marginal afterwards
-    tic("JT 2.1 VariableSlots");
-    VariableSlots variableSlots(fg);
-    toc("JT 2.1 VariableSlots");
-#ifndef NDEBUG
-    // Debug check that the keys found in the factors match the frontal and
-    // separator keys of the clique.
-    list<Index> allKeys;
-    allKeys.insert(allKeys.end(), current->frontal.begin(), current->frontal.end());
-    allKeys.insert(allKeys.end(), current->separator.begin(), current->separator.end());
-    vector<Index> varslotsKeys(variableSlots.size());
-    std::transform(variableSlots.begin(), variableSlots.end(), varslotsKeys.begin(),
-        boost::lambda::bind(&VariableSlots::iterator::value_type::first, boost::lambda::_1));
-    assert(std::equal(allKeys.begin(), allKeys.end(), varslotsKeys.begin()));
-#endif
 
     // Now that we know which factors and variables, and where variables
     // come from and go to, create and eliminate the new joint factor.
-    tic("JT 2.2 Combine");
-    typename FG::sharedFactor jointFactor = FG::Factor::Combine(fg, variableSlots);
-    toc("JT 2.2 Combine");
-    tic("JT 2.3 Eliminate");
-    typename BayesNet<typename FG::Factor::Conditional>::shared_ptr fragment = jointFactor->eliminate(current->frontal.size());
-    toc("JT 2.3 Eliminate");
-    assert(std::equal(jointFactor->begin(), jointFactor->end(), current->separator.begin()));
+    tic("JT 2.2 CombineAndEliminate");
+    pair<typename BayesNet<typename FG::Factor::Conditional>::shared_ptr, typename FG::sharedFactor> eliminated(
+        FG::Factor::CombineAndEliminate(fg, current->frontal.size()));
+    toc("JT 2.2 CombineAndEliminate");
+
+    assert(std::equal(eliminated.second->begin(), eliminated.second->end(), current->separator.begin()));
 
     tic("JT 2.4 Update tree");
     // create a new clique corresponding the combined factors
-    typename BayesTree::sharedClique new_clique(new typename BayesTree::Clique(*fragment));
+    typename BayesTree::sharedClique new_clique(new typename BayesTree::Clique(*eliminated.first));
     new_clique->children_ = children;
 
     BOOST_FOREACH(typename BayesTree::sharedClique& childRoot, children)
     childRoot->parent_ = new_clique;
 
     toc("JT 2.4 Update tree");
-    return make_pair(new_clique, jointFactor);
+    return make_pair(new_clique, eliminated.second);
   }
 
   /* ************************************************************************* */

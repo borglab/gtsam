@@ -184,6 +184,55 @@ TEST(GaussianFactor, Combine2)
   EXPECT(assert_equal(expected, actual));
 }
 
+/* ************************************************************************* */
+TEST(GaussianFactor, CombineAndEliminate)
+{
+  Matrix A01 = Matrix_(3,3,
+      1.0, 0.0, 0.0,
+      0.0, 1.0, 0.0,
+      0.0, 0.0, 1.0);
+  Vector b0 = Vector_(3, 1.5, 1.5, 1.5);
+  Vector s0 = Vector_(3, 1.6, 1.6, 1.6);
+
+  Matrix A10 = Matrix_(3,3,
+      2.0, 0.0, 0.0,
+      0.0, 2.0, 0.0,
+      0.0, 0.0, 2.0);
+  Matrix A11 = Matrix_(3,3,
+      -2.0, 0.0, 0.0,
+      0.0, -2.0, 0.0,
+      0.0, 0.0, -2.0);
+  Vector b1 = Vector_(3, 2.5, 2.5, 2.5);
+  Vector s1 = Vector_(3, 2.6, 2.6, 2.6);
+
+  Matrix A21 = Matrix_(3,3,
+      3.0, 0.0, 0.0,
+      0.0, 3.0, 0.0,
+      0.0, 0.0, 3.0);
+  Vector b2 = Vector_(3, 3.5, 3.5, 3.5);
+  Vector s2 = Vector_(3, 3.6, 3.6, 3.6);
+
+  GaussianFactorGraph gfg;
+  gfg.add(1, A01, b0, noiseModel::Diagonal::Sigmas(s0, true));
+  gfg.add(0, A10, 1, A11, b1, noiseModel::Diagonal::Sigmas(s1, true));
+  gfg.add(1, A21, b2, noiseModel::Diagonal::Sigmas(s2, true));
+
+  Matrix zero3x3 = zeros(3,3);
+  Matrix A0 = gtsam::stack(3, &A10, &zero3x3, &zero3x3);
+  Matrix A1 = gtsam::stack(3, &A11, &A01, &A21);
+  Vector b = gtsam::concatVectors(3, &b1, &b0, &b2);
+  Vector sigmas = gtsam::concatVectors(3, &s1, &s0, &s2);
+
+  GaussianFactor expectedFactor(0, A0, 1, A1, b, noiseModel::Diagonal::Sigmas(sigmas, true));
+  GaussianBayesNet expectedBN(*expectedFactor.eliminate(1, GaussianFactor::SOLVE_QR));
+
+  pair<GaussianBayesNet::shared_ptr, GaussianFactor::shared_ptr> actual(
+      GaussianFactor::CombineAndEliminate(gfg, 1, GaussianFactor::SOLVE_CHOLESKY));
+
+  EXPECT(assert_equal(expectedBN, *actual.first));
+  EXPECT(assert_equal(expectedFactor, *actual.second));
+}
+
 ///* ************************************************************************* */
 //TEST( GaussianFactor, operators )
 //{

@@ -44,11 +44,11 @@ EliminationTree<FACTOR>::eliminate_(Conditionals& conditionals) const {
     factors.push_back(child->eliminate_(conditionals)); }
 
   // Combine all factors (from this node and from subtrees) into a joint factor
-  sharedFactor jointFactor(FACTOR::Combine(factors, VariableSlots(factors)));
-  assert(jointFactor->front() == this->key_);
-  conditionals[this->key_] = jointFactor->eliminateFirst();
+  pair<typename BayesNet::shared_ptr, typename FACTOR::shared_ptr> eliminated(
+      FACTOR::CombineAndEliminate(factors, 1));
+  conditionals[this->key_] = eliminated.first->front();
 
-  return jointFactor;
+  return eliminated.second;
 }
 
 /* ************************************************************************* */

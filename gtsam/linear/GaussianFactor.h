@@ -77,7 +77,7 @@ namespace gtsam {
   protected:
     SharedDiagonal model_; // Gaussian noise model with diagonal covariance matrix
     std::vector<size_t> firstNonzeroBlocks_;
-    AbMatrix matrix_; // the full matrix correponding to the factor
+    AbMatrix matrix_; // the full matrix corresponding to the factor
     BlockAb Ab_; // the block view of the full matrix
 
   public:
@@ -164,6 +164,13 @@ namespace gtsam {
     void permuteWithInverse(const Permutation& inversePermutation);
 
     /**
+     * Whiten the matrix and r.h.s. so that the noise model is unit diagonal.
+     * This throws an exception if the noise model cannot whiten, e.g. if it is
+     * constrained.
+     */
+    GaussianFactor whiten() const;
+
+    /**
      * Named constructor for combining a set of factors with pre-computed set of variables.
      */
     static shared_ptr Combine(const FactorGraph<GaussianFactor>& factors, const VariableSlots& variableSlots);
@@ -171,14 +178,18 @@ namespace gtsam {
     /**
      * Combine and eliminate several factors.
      */
-//    static std::pair<GaussianBayesNet::shared_ptr, shared_ptr> CombineAndEliminate(
-//        const FactorGraph<GaussianFactor>& factors, const VariableSlots& variableSlots,
-//        size_t nrFrontals=1, SolveMethod solveMethod = SOLVE_QR);
+    static std::pair<GaussianBayesNet::shared_ptr, shared_ptr> CombineAndEliminate(
+        const FactorGraph<GaussianFactor>& factors, size_t nrFrontals=1, SolveMethod solveMethod = SOLVE_QR);
 
   protected:
 
     /** Internal debug check to make sure variables are sorted */
     void assertInvariants() const;
+
+    /** Internal helper function to extract conditionals from a factor that was
+     * just numerically eliminated.
+     */
+    GaussianBayesNet::shared_ptr splitEliminatedFactor(size_t nrFrontals, const std::vector<Index>& keys);
 
   public:
 
