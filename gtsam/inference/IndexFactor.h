@@ -65,7 +65,7 @@ public:
   /**
    * Combine and eliminate several factors.
    */
-  static std::pair<typename BayesNet<Conditional>::shared_ptr, shared_ptr> CombineAndEliminate(
+  static std::pair<BayesNet<Conditional>::shared_ptr, shared_ptr> CombineAndEliminate(
       const FactorGraph<This>& factors, size_t nrFrontals=1);
 
   /** Create a combined joint factor (new style for EliminationTree). */

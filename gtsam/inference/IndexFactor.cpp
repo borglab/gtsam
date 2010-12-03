@@ -28,9 +28,9 @@ template class FactorBase<Index>;
 
 IndexFactor::IndexFactor(const IndexConditional& c) : Base(static_cast<const Base>(c)) {}
 
-pair<typename BayesNet<IndexConditional>::shared_ptr, IndexFactor::shared_ptr> IndexFactor::CombineAndEliminate(
+pair<BayesNet<IndexConditional>::shared_ptr, IndexFactor::shared_ptr> IndexFactor::CombineAndEliminate(
     const FactorGraph<This>& factors, size_t nrFrontals) {
-  pair<typename BayesNet<Conditional>::shared_ptr, shared_ptr> result;
+  pair<BayesNet<Conditional>::shared_ptr, shared_ptr> result;
   result.second = Combine(factors, VariableSlots(factors));
   result.first = result.second->eliminate(nrFrontals);
   return result;
