@@ -37,7 +37,7 @@ namespace gtsam {
 	template<class G, class C, class L, class S, class W>
 	NonlinearOptimizer<G, C, L, S, W>::NonlinearOptimizer(shared_graph graph,
 			shared_values values, shared_ordering ordering, shared_parameters parameters) :
-			graph_(graph), values_(values), error_(graph->error(*values)),
+			graph_(graph), values_(values), iterations_(0), error_(graph->error(*values)),
 			ordering_(ordering), parameters_(parameters), dimensions_(new vector<size_t>(values->dims(*ordering))) {
 		if (!graph) throw std::invalid_argument(
 				"NonlinearOptimizer constructor: graph = NULL");
@@ -54,7 +54,7 @@ namespace gtsam {
 			shared_ordering ordering,
 			shared_solver solver,
 			shared_parameters parameters):
-			graph_(graph), values_(values), error_(graph->error(*values)), ordering_(ordering), solver_(solver),
+			graph_(graph), values_(values), iterations_(0), error_(graph->error(*values)), ordering_(ordering), solver_(solver),
 			parameters_(parameters), dimensions_(new vector<size_t>(values->dims(*ordering))) {
 		if (!graph) throw std::invalid_argument(
 				"NonlinearOptimizer constructor: graph = NULL");
@@ -245,7 +245,7 @@ namespace gtsam {
 	template<class G, class C, class L, class S, class W>
 	NonlinearOptimizer<G, C, L, S, W> NonlinearOptimizer<G, C, L, S, W>::levenbergMarquardt() {
 
-		int maxIterations = parameters_->maxIterations_ ;
+		iterations_ = 0;
 		bool converged = false;
 		const Parameters::verbosityLevel verbosity = parameters_->verbosity_ ;
 
@@ -256,6 +256,7 @@ namespace gtsam {
 			return *this;
 		}
 
+		iterations_ = 1;
 		while (true) {
 			double previous_error = error_;
 			// do one iteration of LM
@@ -269,13 +270,13 @@ namespace gtsam {
 			// TODO: build into iterations somehow as an instance variable
 			converged = gtsam::check_convergence(*parameters_, previous_error, error_);
 
-			if(maxIterations <= 0 || converged == true) {
+			if(iterations_ >= parameters_->maxIterations_ || converged == true) {
 				if (verbosity >= Parameters::VALUES) values_->print("final values");
 				if (verbosity >= Parameters::ERROR) cout << "final error: " << error_ << endl;
 				if (verbosity >= Parameters::LAMBDA) cout << "final lambda = " << lambda() << endl;
 				return *this;
 			}
-			maxIterations--;
+			iterations_++;
 		}
 	}
 	/* ************************************************************************* */

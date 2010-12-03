@@ -97,6 +97,9 @@ namespace gtsam {
 
 		shared_parameters parameters_;
 
+		// for performance track
+		size_t iterations_;
+
 //		// keep current lambda for use within LM only
 //		// TODO: red flag, should we have an LM class ?
 //		const double lambda_;
@@ -178,7 +181,7 @@ namespace gtsam {
 //		  ordering_(optimizer.ordering_), solver_(optimizer.solver_), lambda_(optimizer.lambda_), dimensions_(optimizer.dimensions_) {}
 
 		NonlinearOptimizer(const NonlinearOptimizer<G, T, L, GS> &optimizer) :
-		  graph_(optimizer.graph_), values_(optimizer.values_), error_(optimizer.error_),
+		  graph_(optimizer.graph_), values_(optimizer.values_), iterations_(0), error_(optimizer.error_),
 		  ordering_(optimizer.ordering_), solver_(optimizer.solver_), parameters_(optimizer.parameters_), dimensions_(optimizer.dimensions_) {}
 
 		/**
@@ -195,6 +198,11 @@ namespace gtsam {
 		 * Return the values
 		 */
 		shared_values values() const{ return values_; }
+
+		/**
+		 * Return the itertions
+		 */
+		size_t iterations() const { return iterations_; }
 
 		/**
 		 * Return mean and covariance on a single variable
