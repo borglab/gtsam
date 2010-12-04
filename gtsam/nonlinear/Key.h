@@ -355,14 +355,5 @@ private:
   }
 };
 
-struct SymbolSpec: public std::vector<Symbol> {
-public:
-  typedef std::vector<Symbol> Base;
-  typedef boost::shared_ptr<SymbolSpec> shared_ptr;
-  SymbolSpec(const size_t n) :
-    Base(n) {
-  }
-};
-
 } // namespace gtsam
 
