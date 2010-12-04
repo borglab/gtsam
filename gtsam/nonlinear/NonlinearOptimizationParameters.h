@@ -15,6 +15,12 @@ namespace gtsam {
 
 	// a container for all related parameters
 	struct NonlinearOptimizationParameters {
+
+    typedef boost::shared_ptr<NonlinearOptimizationParameters> shared_ptr ;
+    typedef NonlinearOptimizationParameters This;
+    typedef boost::shared_ptr<NonlinearOptimizationParameters> sharedThis ;
+
+
 		typedef enum {
 			SILENT,
 			ERROR,
@@ -42,10 +48,6 @@ namespace gtsam {
 		double lambdaFactor_ ;
 		verbosityLevel verbosity_;
 		LambdaMode lambdaMode_;
-
-		typedef NonlinearOptimizationParameters This;
-		typedef boost::shared_ptr<NonlinearOptimizationParameters> sharedThis ;
-
 
 		NonlinearOptimizationParameters(): absDecrease_(1e-6), relDecrease_(1e-6), sumError_(0.0),
 		maxIterations_(100), lambda_(1e-5), lambdaFactor_(10.0), verbosity_(SILENT), lambdaMode_(BOUNDED){}
