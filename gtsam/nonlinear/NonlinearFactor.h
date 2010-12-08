@@ -572,6 +572,7 @@ namespace gtsam {
           boost::serialization::base_object<NonlinearFactor>(*this));
       ar & BOOST_SERIALIZATION_NVP(key1_);
       ar & BOOST_SERIALIZATION_NVP(key2_);
+      ar & BOOST_SERIALIZATION_NVP(key3_);
     }
 
   };
