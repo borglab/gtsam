@@ -20,11 +20,15 @@
 
 using namespace gtsam;
 
+const double tol=1e-9;
+
 /* ************************************************************************* */
 TEST( testLieScalar, construction ) {
 	double d = 2.;
 	LieScalar lie1(d), lie2(d);
 
+	EXPECT_DOUBLES_EQUAL(2., lie1.value(),tol);
+	EXPECT_DOUBLES_EQUAL(2., lie2.value(),tol);
 	EXPECT(lie1.dim() == 1);
 	EXPECT(assert_equal(lie1, lie2));
 }

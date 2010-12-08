@@ -33,6 +33,9 @@ namespace gtsam {
 		/** wrap a double */
 		LieScalar(double d) : d_(d) {}
 
+		/** access the underlying value */
+		double value() const { return d_; }
+
 		/** print @param s optional string naming the object */
 		inline void print(const std::string& name="") const {
 	    std::cout << name << ": " << d_ << std::endl;
@@ -45,8 +48,10 @@ namespace gtsam {
 
 		/**
 		 * Returns dimensionality of the tangent space
+		 * with member and static versions
 		 */
 		inline size_t dim() const { return 1; }
+		inline static size_t Dim() { return 1; }
 
 		/**
 		 * Returns Exponential map update of T
