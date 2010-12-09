@@ -22,7 +22,6 @@
 #include <gtsam/inference/FactorBase-inl.h>
 #include <gtsam/inference/EliminationTree-inl.h>
 #include <gtsam/inference/BayesNet-inl.h>
-#include <gtsam/inference/inference-inl.h>
 
 #include <boost/foreach.hpp>
 

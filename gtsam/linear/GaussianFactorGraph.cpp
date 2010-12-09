@@ -26,7 +26,6 @@
 
 #include <gtsam/linear/GaussianFactorGraph.h>
 #include <gtsam/inference/FactorGraph-inl.h>
-#include <gtsam/inference/inference-inl.h>
 #include <gtsam/linear/iterative.h>
 
 

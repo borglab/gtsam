@@ -21,7 +21,7 @@
 
 #include <gtsam/base/FastSet.h>
 #include <gtsam/inference/BayesTree.h>
-#include <gtsam/inference/inference-inl.h>
+#include <gtsam/inference/inference.h>
 #include <gtsam/inference/GenericSequentialSolver-inl.h>
 
 #include <iostream>

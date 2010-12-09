@@ -47,8 +47,6 @@
 
 namespace gtsam {
 
-  class GaussianFactorGraph;
-
   /** A map from key to dimension, useful in various contexts */
   typedef std::map<Index, size_t> Dimensions;
 

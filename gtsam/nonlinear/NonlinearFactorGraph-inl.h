@@ -23,7 +23,7 @@
 #include <gtsam/linear/GaussianFactorGraph.h>
 #include <gtsam/nonlinear/NonlinearFactorGraph.h>
 #include <gtsam/inference/FactorGraph-inl.h>
-#include <gtsam/inference/inference-inl.h>
+#include <gtsam/inference/inference.h>
 
 #define INSTANTIATE_NONLINEAR_FACTOR_GRAPH(C) \
   INSTANTIATE_FACTOR_GRAPH(NonlinearFactor<C>); \

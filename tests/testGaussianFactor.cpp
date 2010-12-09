@@ -30,7 +30,6 @@ using namespace boost::assign;
 
 #include <gtsam/base/Matrix.h>
 #include <gtsam/linear/GaussianConditional.h>
-#include <gtsam/inference/inference-inl.h>
 #include <gtsam/slam/smallExample.h>
 #include <gtsam/nonlinear/Ordering.h>
 

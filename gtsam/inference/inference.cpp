@@ -15,13 +15,17 @@
  * @author Frank Dellaert, Richard Roberts
  */
 
-#include <gtsam/inference/inference-inl.h>
+#include <gtsam/inference/inference.h>
 #include <gtsam/inference/SymbolicFactorGraph.h>
 
 #include <boost/format.hpp>
 #include <stdexcept>
+#include <iostream>
+#include <vector>
 
 #include <ccolamd.h>
+
+using namespace std;
 
 namespace gtsam {
 
@@ -73,7 +77,10 @@ Permutation::shared_ptr Inference::PermutationCOLAMD_(const VariableIndex& varia
   // Convert elimination ordering in p to an ordering
   Permutation::shared_ptr permutation(new Permutation(nVars));
   for (Index j = 0; j < nVars; j++) {
-    permutation->operator[](j) = p[j];
+//    if(p[j] == -1)
+//      permutation->operator[](j) = j;
+//    else
+      permutation->operator[](j) = p[j];
     if(debug) cout << "COLAMD:  " << j << "->" << p[j] << endl;
   }
   if(debug) cout << "COLAMD:  p[" << nVars << "] = " << p[nVars] << endl;

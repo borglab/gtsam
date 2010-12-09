@@ -23,7 +23,6 @@
 #include <gtsam/inference/SymbolicFactorGraph.h>
 #include <gtsam/inference/BayesNet-inl.h>
 #include <gtsam/inference/IndexFactor.h>
-#include <gtsam/inference/inference-inl.h>
 #include <gtsam/inference/EliminationTree-inl.h>
 
 using namespace std;

@@ -18,7 +18,6 @@
 
 #include <gtsam/linear/GaussianFactorGraph.h>
 #include <gtsam/linear/SharedDiagonal.h>
-#include <gtsam/inference/inference-inl.h>
 #include <gtsam/inference/EliminationTree-inl.h>
 
 #include <boost/random.hpp>

@@ -24,7 +24,6 @@ check_PROGRAMS += tests/testSymbolicBayesNet tests/testVariableIndex tests/testV
 
 # Inference
 headers += GenericMultifrontalSolver.h GenericMultifrontalSolver-inl.h GenericSequentialSolver.h GenericSequentialSolver-inl.h
-headers += inference-inl.h
 sources += inference.cpp VariableSlots.cpp Permutation.cpp VariableIndex.cpp
 sources += IndexFactor.cpp IndexConditional.cpp
 headers += graph.h graph-inl.h
@@ -35,6 +34,7 @@ headers += EliminationTree.h EliminationTree-inl.h
 headers += BayesNet.h BayesNet-inl.h
 headers += BayesTree.h BayesTree-inl.h
 headers += ISAM.h ISAM-inl.h
+check_PROGRAMS += tests/testInference
 check_PROGRAMS += tests/testFactorGraph
 check_PROGRAMS += tests/testFactorGraph
 check_PROGRAMS += tests/testBayesTree 
