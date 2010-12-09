@@ -181,8 +181,9 @@ namespace gtsam {
 //		  ordering_(optimizer.ordering_), solver_(optimizer.solver_), lambda_(optimizer.lambda_), dimensions_(optimizer.dimensions_) {}
 
 		NonlinearOptimizer(const NonlinearOptimizer<G, T, L, GS> &optimizer) :
-		  graph_(optimizer.graph_), values_(optimizer.values_), iterations_(0), error_(optimizer.error_),
-		  ordering_(optimizer.ordering_), solver_(optimizer.solver_), parameters_(optimizer.parameters_), dimensions_(optimizer.dimensions_) {}
+		  graph_(optimizer.graph_), values_(optimizer.values_), error_(optimizer.error_),
+		  ordering_(optimizer.ordering_), solver_(optimizer.solver_),
+		  parameters_(optimizer.parameters_), iterations_(0), dimensions_(optimizer.dimensions_) {}
 
 		/**
 		 * Return current error

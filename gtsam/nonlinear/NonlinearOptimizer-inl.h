@@ -37,8 +37,8 @@ namespace gtsam {
 	template<class G, class C, class L, class S, class W>
 	NonlinearOptimizer<G, C, L, S, W>::NonlinearOptimizer(shared_graph graph,
 			shared_values values, shared_ordering ordering, shared_parameters parameters) :
-			graph_(graph), values_(values), iterations_(0), error_(graph->error(*values)),
-			ordering_(ordering), parameters_(parameters), dimensions_(new vector<size_t>(values->dims(*ordering))) {
+			graph_(graph), values_(values), error_(graph->error(*values)), ordering_(ordering),
+			parameters_(parameters), iterations_(0), dimensions_(new vector<size_t>(values->dims(*ordering))) {
 		if (!graph) throw std::invalid_argument(
 				"NonlinearOptimizer constructor: graph = NULL");
 		if (!values) throw std::invalid_argument(
@@ -54,8 +54,8 @@ namespace gtsam {
 			shared_ordering ordering,
 			shared_solver solver,
 			shared_parameters parameters):
-			graph_(graph), values_(values), iterations_(0), error_(graph->error(*values)), ordering_(ordering), solver_(solver),
-			parameters_(parameters), dimensions_(new vector<size_t>(values->dims(*ordering))) {
+			graph_(graph), values_(values), error_(graph->error(*values)), ordering_(ordering), solver_(solver),
+			parameters_(parameters), iterations_(0), dimensions_(new vector<size_t>(values->dims(*ordering))) {
 		if (!graph) throw std::invalid_argument(
 				"NonlinearOptimizer constructor: graph = NULL");
 		if (!values) throw std::invalid_argument(

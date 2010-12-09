@@ -43,7 +43,7 @@ namespace gtsam {
 		double absDecrease_; /* threshold for the absolute decrease per iteration */
 		double relDecrease_; /* threshold for the relative decrease per iteration */
 		double sumError_; /* threshold for the sum of error */
-		int maxIterations_ ;
+		size_t maxIterations_ ;
 		double lambda_ ;
 		double lambdaFactor_ ;
 		verbosityLevel verbosity_;
