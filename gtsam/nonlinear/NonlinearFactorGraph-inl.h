@@ -80,6 +80,8 @@ void NonlinearFactorGraph<VALUES>::print(const std::string& str) const {
 
 	  // Compute the VariableIndex (column-wise index)
 	  VariableIndex variableIndex(*symbolic);
+	  if(config.size() != variableIndex.size())
+	  	throw std::runtime_error("orderingCOLAMD: some variables in the graph are not constrained!");
 
 	  // Compute a fill-reducing ordering with COLAMD
 	  Permutation::shared_ptr colamdPerm(Inference::PermutationCOLAMD(variableIndex));
