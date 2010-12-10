@@ -79,7 +79,7 @@ void NonlinearFactorGraph<VALUES>::print(const std::string& str) const {
 	  boost::tie(symbolic,ordering) = this->symbolic(config);
 
 	  // Compute the VariableIndex (column-wise index)
-	  VariableIndex variableIndex(*symbolic);
+	  VariableIndex variableIndex(*symbolic, ordering->size());
 	  if(config.size() != variableIndex.size())
 	  	throw std::runtime_error("orderingCOLAMD: some variables in the graph are not constrained!");
 
