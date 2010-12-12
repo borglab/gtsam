@@ -37,7 +37,7 @@ TEST(Inference, UnobservedVariables) {
 
   Permutation::shared_ptr colamd(Inference::PermutationCOLAMD(variableIndex));
 
-  colamd->print("colamd: ");
+  //colamd->print("colamd: ");
 }
 
 /* ************************************************************************* */
