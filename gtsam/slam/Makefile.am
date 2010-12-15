@@ -46,6 +46,7 @@ sources += pose3SLAM.cpp
 check_PROGRAMS += tests/testPose3Factor tests/testPose3Values tests/testPose3SLAM 
 
 # Visual SLAM
+headers += GeneralSFMFactor.h
 sources += visualSLAM.cpp
 check_PROGRAMS += tests/testVSLAMFactor tests/testVSLAMGraph tests/testVSLAMValues
 
