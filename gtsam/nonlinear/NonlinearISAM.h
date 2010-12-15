@@ -23,6 +23,7 @@
 #include <gtsam/nonlinear/NonlinearFactorGraph.h>
 #include <gtsam/linear/GaussianISAM.h>
 
+namespace gtsam {
 /**
  * Wrapper class to manage ISAM in a nonlinear context
  */
@@ -30,55 +31,57 @@ template<class Values>
 class NonlinearISAM {
 public:
 
-  typedef gtsam::NonlinearFactorGraph<Values> Factors;
+	typedef gtsam::NonlinearFactorGraph<Values> Factors;
 
 protected:
 
-  /** The internal iSAM object */
-  gtsam::GaussianISAM isam_;
+	/** The internal iSAM object */
+	gtsam::GaussianISAM isam_;
 
-  /** The current linearization point */
-  Values linPoint_;
+	/** The current linearization point */
+	Values linPoint_;
 
-  /** The ordering */
-  gtsam::Ordering ordering_;
+	/** The ordering */
+	gtsam::Ordering ordering_;
 
-  /** The original factors, used when relinearizing */
-  Factors factors_;
+	/** The original factors, used when relinearizing */
+	Factors factors_;
 
-  /** The reordering interval and counter */
-  int reorderInterval_;
-  int reorderCounter_;
+	/** The reordering interval and counter */
+	int reorderInterval_;
+	int reorderCounter_;
 
 public:
 
-  /** default constructor will disable periodic reordering */
-  NonlinearISAM() : reorderInterval_(0), reorderCounter_(0) {}
+	/** default constructor will disable periodic reordering */
+	NonlinearISAM() : reorderInterval_(0), reorderCounter_(0) {}
 
-  /** Periodically reorder and relinearize */
-  NonlinearISAM(int reorderInterval) : reorderInterval_(reorderInterval), reorderCounter_(0) {}
+	/** Periodically reorder and relinearize */
+	NonlinearISAM(int reorderInterval) : reorderInterval_(reorderInterval), reorderCounter_(0) {}
 
-  /** Add new factors along with their initial linearization points */
-  void update(const Factors& newFactors, const Values& initialValues);
+	/** Add new factors along with their initial linearization points */
+	void update(const Factors& newFactors, const Values& initialValues);
 
-  /** Return the current solution estimate */
-  Values estimate();
+	/** Return the current solution estimate */
+	Values estimate();
 
-  /** Relinearization and reordering of variables */
-  void reorder_relinearize();
+	/** Relinearization and reordering of variables */
+	void reorder_relinearize();
 
-  // access
+	// access
 
-  /** Return the current linearization point */
-  const Values& getLinearizationPoint() { return linPoint_; }
+	/** Return the current linearization point */
+	const Values& getLinearizationPoint() { return linPoint_; }
 
-  /** Get the ordering */
-  const gtsam::Ordering& getOrdering() const { return ordering_; }
+	/** Get the ordering */
+	const gtsam::Ordering& getOrdering() const { return ordering_; }
 
-  /** get underlying nonlinear graph */
-  const Factors& getFactorsUnsafe() { return factors_; }
+	/** get underlying nonlinear graph */
+	const Factors& getFactorsUnsafe() { return factors_; }
 
-  /** get counters */
-  int reorderInterval() const { return reorderInterval_; }
-  int reorderCounter() const { return reorderCounter_; }
+	/** get counters */
+	int reorderInterval() const { return reorderInterval_; }
+	int reorderCounter() const { return reorderCounter_; }
 };
+
+} // \namespace gtsam
