@@ -71,13 +71,13 @@ public:
 	// access
 
 	/** Return the current linearization point */
-	const Values& getLinearizationPoint() { return linPoint_; }
+	const Values& getLinearizationPoint() const { return linPoint_; }
 
 	/** Get the ordering */
 	const gtsam::Ordering& getOrdering() const { return ordering_; }
 
 	/** get underlying nonlinear graph */
-	const Factors& getFactorsUnsafe() { return factors_; }
+	const Factors& getFactorsUnsafe() const { return factors_; }
 
 	/** get counters */
 	int reorderInterval() const { return reorderInterval_; }
