@@ -10,7 +10,7 @@
  * -------------------------------------------------------------------------- */
 
 /*
- * ISAMLoop.h
+ * NonlinearISAM.h
  *
  *  Created on: Jan 19, 2010
  *      Author: Viorela Ila and Richard Roberts
@@ -23,18 +23,19 @@
 #include <gtsam/nonlinear/NonlinearFactorGraph.h>
 #include <gtsam/linear/GaussianISAM.h>
 
-
+/**
+ * Wrapper class to manage ISAM in a nonlinear context
+ */
 template<class Values>
-class ISAMLoop {
+class NonlinearISAM {
 public:
 
   typedef gtsam::NonlinearFactorGraph<Values> Factors;
 
-public:
-//protected:
+protected:
 
   /** The internal iSAM object */
-  gtsam::GaussianISAM isam;
+  gtsam::GaussianISAM isam_;
 
   /** The current linearization point */
   Values linPoint_;
@@ -49,12 +50,13 @@ public:
   int reorderInterval_;
   int reorderCounter_;
 
-
 public:
-  ISAMLoop() : reorderInterval_(0), reorderCounter_(0) {}
+
+  /** default constructor will disable periodic reordering */
+  NonlinearISAM() : reorderInterval_(0), reorderCounter_(0) {}
 
   /** Periodically reorder and relinearize */
-  ISAMLoop(int reorderInterval) : reorderInterval_(reorderInterval), reorderCounter_(0) {}
+  NonlinearISAM(int reorderInterval) : reorderInterval_(reorderInterval), reorderCounter_(0) {}
 
   /** Add new factors along with their initial linearization points */
   void update(const Factors& newFactors, const Values& initialValues);
@@ -62,17 +64,21 @@ public:
   /** Return the current solution estimate */
   Values estimate();
 
+  /** Relinearization and reordering of variables */
+  void reorder_relinearize();
+
+  // access
+
   /** Return the current linearization point */
   const Values& getLinearizationPoint() { return linPoint_; }
 
   /** Get the ordering */
   const gtsam::Ordering& getOrdering() const { return ordering_; }
 
+  /** get underlying nonlinear graph */
   const Factors& getFactorsUnsafe() { return factors_; }
 
-  /**
-   * Relinearization and reordering of variables
-   */
-  void reorder_relinearize();
-
+  /** get counters */
+  int reorderInterval() const { return reorderInterval_; }
+  int reorderCounter() const { return reorderCounter_; }
 };

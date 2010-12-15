@@ -26,11 +26,9 @@ using namespace boost;
 #include <gtsam/inference/graph-inl.h>
 #include <gtsam/slam/visualSLAM.h>
 #include <gtsam/slam/PriorFactor.h>
-
 #include <gtsam/inference/ISAM-inl.h>
 #include <gtsam/linear/GaussianISAM.h>
-#include "ISAMLoop.h"
-#include "ISAMLoop-inl.h"
+#include <gtsam/nonlinear/NonlinearISAM-inl.h>
 
 #include "vSLAMutils.h"
 #include "Feature2D.h"
@@ -124,9 +122,9 @@ int main(int argc, char* argv[]) {
   g_dataFolder = string(argv[1]) + "/";
   readAllDataISAM();
 
-  // Create an ISAMLoop which will be relinearized and reordered after every "relinearizeInterval" updates
+  // Create an NonlinearISAM which will be relinearized and reordered after every "relinearizeInterval" updates
   int relinearizeInterval = 3;
-  ISAMLoop<Values> isam(relinearizeInterval);
+  NonlinearISAM<Values> isam(relinearizeInterval);
 
   // At each frame i with new camera pose and new set of measurements associated with it,
   // create a graph of new factors and update ISAM

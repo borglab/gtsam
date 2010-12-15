@@ -10,7 +10,7 @@
  * -------------------------------------------------------------------------- */
 
 /*
- * ISAMLoop.cpp
+ * NonlinearISAM-inl.h
  *
  *  Created on: Jan 19, 2010
  *      Author: Viorela Ila and Richard Roberts
@@ -21,15 +21,14 @@
 #include <gtsam/linear/GaussianFactorGraph.h>
 #include <gtsam/inference/ISAM-inl.h>
 #include <gtsam/nonlinear/Ordering.h>
+#include <gtsam/nonlinear/NonlinearISAM.h>
 #include <boost/foreach.hpp>
-
-#include "ISAMLoop.h"
 
 using namespace gtsam;
 
 /* ************************************************************************* */
 template<class Values>
-void ISAMLoop<Values>::update(const Factors& newFactors, const Values& initialValues) {
+void NonlinearISAM<Values>::update(const Factors& newFactors, const Values& initialValues) {
 
   if(newFactors.size() > 0) {
 
@@ -55,20 +54,20 @@ void ISAMLoop<Values>::update(const Factors& newFactors, const Values& initialVa
     boost::shared_ptr<GaussianFactorGraph> linearizedNewFactors(newFactors.linearize(linPoint_, ordering_));
 
     // Update ISAM
-    isam.update(*linearizedNewFactors);
+    isam_.update(*linearizedNewFactors);
   }
 }
 
 /* ************************************************************************* */
 template<class Values>
-void ISAMLoop<Values>::reorder_relinearize() {
+void NonlinearISAM<Values>::reorder_relinearize() {
 
-  cout << "Reordering, relinearizing..." << endl;
+//  cout << "Reordering, relinearizing..." << endl;
 
   // Obtain the new linearization point
   const Values newLinPoint = estimate();
 
-  isam.clear();
+  isam_.clear();
 
   // Compute an ordering
   ordering_ = *factors_.orderingCOLAMD(newLinPoint);
@@ -77,7 +76,7 @@ void ISAMLoop<Values>::reorder_relinearize() {
   boost::shared_ptr<GaussianFactorGraph> gfg(factors_.linearize(newLinPoint, ordering_));
 
   // Just recreate the whole BayesTree
-  isam.update(*gfg);
+  isam_.update(*gfg);
 
   // Update linearization point
   linPoint_ = newLinPoint;
@@ -85,9 +84,9 @@ void ISAMLoop<Values>::reorder_relinearize() {
 
 /* ************************************************************************* */
 template<class Values>
-Values ISAMLoop<Values>::estimate() {
-  if(isam.size() > 0)
-    return linPoint_.expmap(optimize(isam), ordering_);
+Values NonlinearISAM<Values>::estimate() {
+  if(isam_.size() > 0)
+    return linPoint_.expmap(optimize(isam_), ordering_);
   else
     return linPoint_;
 }
