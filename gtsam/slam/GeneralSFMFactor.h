@@ -71,6 +71,11 @@ namespace gtsam {
 			return q.vector() ;
 		}
 
+		/** return the measured */
+		inline const Point2 measured() const {
+			return z_;
+		}
+
 	private:
 		/** Serialization function */
 		friend class boost::serialization::access;
