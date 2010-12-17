@@ -49,8 +49,8 @@ TEST ( NonlinearEquality, linearization ) {
 
 	// check linearize
 	SharedDiagonal constraintModel = noiseModel::Constrained::All(3);
-	JacobianFactor expLF(0, eye(3), zero(3), constraintModel);
-	JacobianFactor::shared_ptr actualLF = nle->linearize(linearize, *linearize.orderingArbitrary());
+	GaussianFactor expLF(0, eye(3), zero(3), constraintModel);
+	GaussianFactor::shared_ptr actualLF = nle->linearize(linearize, *linearize.orderingArbitrary());
 	EXPECT(assert_equal(*actualLF, expLF));
 }
 
@@ -174,7 +174,7 @@ TEST ( NonlinearEquality, allow_error_pose ) {
 	Matrix A1 = eye(3,3);
 	Vector b = expVec;
 	SharedDiagonal model = noiseModel::Constrained::All(3);
-	GaussianFactor::shared_ptr expLinFactor(new JacobianFactor(0, A1, b, model));
+	GaussianFactor::shared_ptr expLinFactor(new GaussianFactor(0, A1, b, model));
 	EXPECT(assert_equal(*expLinFactor, *actLinFactor, 1e-5));
 }
 

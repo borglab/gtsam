@@ -11,7 +11,7 @@
 
 /**
  * @file    timeGaussianFactor.cpp
- * @brief   time JacobianFactor.eliminate
+ * @brief   time GaussianFactor.eliminate
  * @author  Alireza Fathi
  */
 
@@ -27,10 +27,8 @@ using namespace std;
 #include <boost/assign/std/list.hpp> // for operator += in Ordering
 
 #include <gtsam/base/Matrix.h>
-#include <gtsam/linear/JacobianFactor.h>
-#include <gtsam/linear/JacobianFactor.h>
+#include <gtsam/linear/GaussianFactor.h>
 #include <gtsam/linear/GaussianConditional.h>
-#include <gtsam/linear/SharedDiagonal.h>
 
 using namespace gtsam;
 using namespace boost::assign;
@@ -103,14 +101,14 @@ int main()
   b2(7) = -1;
   
   // time eliminate
-  JacobianFactor combined(_x2_, Ax2,  _l1_, Al1, _x1_, Ax1, b2, sharedSigma(8,1));
+  GaussianFactor combined(_x2_, Ax2,  _l1_, Al1, _x1_, Ax1, b2,sharedSigma(8,1));
   long timeLog = clock();
   int n = 1000000;
   GaussianConditional::shared_ptr conditional;
-  JacobianFactor::shared_ptr factor;
+  GaussianFactor::shared_ptr factor;
 
   for(int i = 0; i < n; i++)
-    conditional = JacobianFactor(combined).eliminateFirst();
+    conditional = GaussianFactor(combined).eliminateFirst();
 
   long timeLog2 = clock();
   double seconds = (double)(timeLog2-timeLog)/CLOCKS_PER_SEC;

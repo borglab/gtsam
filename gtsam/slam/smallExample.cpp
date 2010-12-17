@@ -134,7 +134,7 @@ namespace example {
 	}
 
 	/* ************************************************************************* */
-	FactorGraph<JacobianFactor> createGaussianFactorGraph(const Ordering& ordering) {
+	GaussianFactorGraph createGaussianFactorGraph(const Ordering& ordering) {
 		Matrix I = eye(2);
 
 		// Create empty graph
@@ -273,7 +273,7 @@ namespace example {
 	}
 
 	/* ************************************************************************* */
-	pair<FactorGraph<JacobianFactor>, Ordering> createSmoother(int T, boost::optional<Ordering> ordering) {
+	pair<GaussianFactorGraph, Ordering> createSmoother(int T, boost::optional<Ordering> ordering) {
 		Graph nlfg;
 		Values poses;
 		boost::tie(nlfg, poses) = createNonlinearSmoother(T);
@@ -283,14 +283,14 @@ namespace example {
 	}
 
 	/* ************************************************************************* */
-	FactorGraph<JacobianFactor> createSimpleConstraintGraph() {
+	GaussianFactorGraph createSimpleConstraintGraph() {
 		// create unary factor
 		// prior on _x_, mean = [1,-1], sigma=0.1
 		Matrix Ax = eye(2);
 		Vector b1(2);
 		b1(0) = 1.0;
 		b1(1) = -1.0;
-		GaussianFactor::shared_ptr f1(new JacobianFactor(_x_, Ax, b1, sigma0_1));
+		GaussianFactor::shared_ptr f1(new GaussianFactor(_x_, Ax, b1, sigma0_1));
 
 		// create binary constraint factor
 		// between _x_ and _y_, that is going to be the only factor on _y_
@@ -299,11 +299,11 @@ namespace example {
 		Matrix Ax1 = eye(2);
 		Matrix Ay1 = eye(2) * -1;
 		Vector b2 = Vector_(2, 0.0, 0.0);
-		GaussianFactor::shared_ptr f2(new JacobianFactor(_x_, Ax1, _y_, Ay1, b2,
+		GaussianFactor::shared_ptr f2(new GaussianFactor(_x_, Ax1, _y_, Ay1, b2,
 				constraintModel));
 
 		// construct the graph
-		FactorGraph<JacobianFactor> fg;
+		GaussianFactorGraph fg;
 		fg.push_back(f1);
 		fg.push_back(f2);
 
@@ -320,15 +320,15 @@ namespace example {
 	}
 
 	/* ************************************************************************* */
-	FactorGraph<JacobianFactor> createSingleConstraintGraph() {
+	GaussianFactorGraph createSingleConstraintGraph() {
 		// create unary factor
 		// prior on _x_, mean = [1,-1], sigma=0.1
 		Matrix Ax = eye(2);
 		Vector b1(2);
 		b1(0) = 1.0;
 		b1(1) = -1.0;
-		//GaussianFactor::shared_ptr f1(new JacobianFactor(_x_, sigma0_1->Whiten(Ax), sigma0_1->whiten(b1), sigma0_1));
-		GaussianFactor::shared_ptr f1(new JacobianFactor(_x_, Ax, b1, sigma0_1));
+		//GaussianFactor::shared_ptr f1(new GaussianFactor(_x_, sigma0_1->Whiten(Ax), sigma0_1->whiten(b1), sigma0_1));
+		GaussianFactor::shared_ptr f1(new GaussianFactor(_x_, Ax, b1, sigma0_1));
 
 		// create binary constraint factor
 		// between _x_ and _y_, that is going to be the only factor on _y_
@@ -341,11 +341,11 @@ namespace example {
 		Ax1(1, 1) = 1.0;
 		Matrix Ay1 = eye(2) * 10;
 		Vector b2 = Vector_(2, 1.0, 2.0);
-		GaussianFactor::shared_ptr f2(new JacobianFactor(_x_, Ax1, _y_, Ay1, b2,
+		GaussianFactor::shared_ptr f2(new GaussianFactor(_x_, Ax1, _y_, Ay1, b2,
 				constraintModel));
 
 		// construct the graph
-		FactorGraph<JacobianFactor> fg;
+		GaussianFactorGraph fg;
 		fg.push_back(f1);
 		fg.push_back(f2);
 
@@ -361,11 +361,11 @@ namespace example {
 	}
 
 	/* ************************************************************************* */
-	FactorGraph<JacobianFactor> createMultiConstraintGraph() {
+	GaussianFactorGraph createMultiConstraintGraph() {
 		// unary factor 1
 		Matrix A = eye(2);
 		Vector b = Vector_(2, -2.0, 2.0);
-		GaussianFactor::shared_ptr lf1(new JacobianFactor(_x_, A, b, sigma0_1));
+		GaussianFactor::shared_ptr lf1(new GaussianFactor(_x_, A, b, sigma0_1));
 
 		// constraint 1
 		Matrix A11(2, 2);
@@ -383,7 +383,7 @@ namespace example {
 		Vector b1(2);
 		b1(0) = 1.0;
 		b1(1) = 2.0;
-		GaussianFactor::shared_ptr lc1(new JacobianFactor(_x_, A11, _y_, A12, b1,
+		GaussianFactor::shared_ptr lc1(new GaussianFactor(_x_, A11, _y_, A12, b1,
 				constraintModel));
 
 		// constraint 2
@@ -402,11 +402,11 @@ namespace example {
 		Vector b2(2);
 		b2(0) = 3.0;
 		b2(1) = 4.0;
-		GaussianFactor::shared_ptr lc2(new JacobianFactor(_x_, A21, _z_, A22, b2,
+		GaussianFactor::shared_ptr lc2(new GaussianFactor(_x_, A21, _z_, A22, b2,
 				constraintModel));
 
 		// construct the graph
-		FactorGraph<JacobianFactor> fg;
+		GaussianFactorGraph fg;
 		fg.push_back(lf1);
 		fg.push_back(lc1);
 		fg.push_back(lc2);
@@ -431,7 +431,7 @@ namespace example {
 	}
 
 	/* ************************************************************************* */
-	boost::tuple<FactorGraph<JacobianFactor>, Ordering, VectorValues> planarGraph(size_t N) {
+	boost::tuple<GaussianFactorGraph, Ordering, VectorValues> planarGraph(size_t N) {
 
 		// create empty graph
 		NonlinearFactorGraph<Values> nlfg;
@@ -481,9 +481,9 @@ namespace example {
 	}
 
 	/* ************************************************************************* */
-	pair<FactorGraph<JacobianFactor>, FactorGraph<JacobianFactor> > splitOffPlanarTree(size_t N,
-			const FactorGraph<JacobianFactor>& original) {
-		FactorGraph<JacobianFactor> T, C;
+	pair<GaussianFactorGraph, GaussianFactorGraph> splitOffPlanarTree(size_t N,
+			const GaussianFactorGraph& original) {
+		GaussianFactorGraph T, C;
 
 		// Add the x11 constraint to the tree
 		T.push_back(original[0]);

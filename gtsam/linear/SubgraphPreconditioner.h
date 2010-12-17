@@ -17,7 +17,7 @@
 
 #pragma once
 
-#include <gtsam/linear/JacobianFactor.h>
+#include <gtsam/linear/GaussianFactorGraph.h>
 #include <gtsam/linear/GaussianBayesNet.h>
 #include <gtsam/nonlinear/Ordering.h>
 
@@ -34,7 +34,7 @@ namespace gtsam {
 
 	public:
 		typedef boost::shared_ptr<const GaussianBayesNet> sharedBayesNet;
-		typedef boost::shared_ptr<const FactorGraph<JacobianFactor> > sharedFG;
+		typedef boost::shared_ptr<const GaussianFactorGraph> sharedFG;
 		typedef boost::shared_ptr<const VectorValues> sharedValues;
 		typedef boost::shared_ptr<const Errors> sharedErrors;
 
@@ -56,14 +56,6 @@ namespace gtsam {
 		 */
 		SubgraphPreconditioner(const sharedFG& Ab1, const sharedFG& Ab2, const sharedBayesNet& Rc1,	const sharedValues& xbar);
 
-		/** Access Ab1 */
-		const sharedFG& Ab1() const { return Ab1_; }
-
-		/** Access Ab2 */
-		const sharedFG& Ab2() const { return Ab2_; }
-
-		/** Access Rc1 */
-		const sharedBayesNet& Rc1() const { return Rc1_; }
 
 	    /**
 	     * Add zero-mean i.i.d. Gaussian prior terms to each variable
@@ -81,6 +73,27 @@ namespace gtsam {
 			return V ;
 		}
 
+		/* error, given y */
+		double error(const VectorValues& y) const;
+
+		/** gradient = y + inv(R1')*A2'*(A2*inv(R1)*y-b2bar) */
+		VectorValues gradient(const VectorValues& y) const;
+
+		/** Apply operator A */
+		Errors operator*(const VectorValues& y) const;
+
+		/** Apply operator A in place: needs e allocated already */
+		void multiplyInPlace(const VectorValues& y, Errors& e) const;
+
+			/** Apply operator A' */
+		VectorValues operator^(const Errors& e) const;
+
+		/**
+		 * Add A'*e to y
+		 *  y += alpha*A'*[e1;e2] = [alpha*e1; alpha*inv(R1')*A2'*e2]
+		 */
+		void transposeMultiplyAdd(double alpha, const Errors& e, VectorValues& y) const;
+
 		/**
 		 * Add constraint part of the error only, used in both calls above
 		 * y += alpha*inv(R1')*A2'*e2
@@ -92,26 +105,5 @@ namespace gtsam {
 			/** print the object */
 		void print(const std::string& s = "SubgraphPreconditioner") const;
 	};
-
-  /* error, given y */
-  double error(const SubgraphPreconditioner& sp, const VectorValues& y);
-
-  /** gradient = y + inv(R1')*A2'*(A2*inv(R1)*y-b2bar) */
-  VectorValues gradient(const SubgraphPreconditioner& sp, const VectorValues& y);
-
-  /** Apply operator A */
-  Errors operator*(const SubgraphPreconditioner& sp, const VectorValues& y);
-
-  /** Apply operator A in place: needs e allocated already */
-  void multiplyInPlace(const SubgraphPreconditioner& sp, const VectorValues& y, Errors& e);
-
-    /** Apply operator A' */
-  VectorValues operator^(const SubgraphPreconditioner& sp, const Errors& e);
-
-  /**
-   * Add A'*e to y
-   *  y += alpha*A'*[e1;e2] = [alpha*e1; alpha*inv(R1')*A2'*e2]
-   */
-  void transposeMultiplyAdd(const SubgraphPreconditioner& sp, double alpha, const Errors& e, VectorValues& y);
 
 } // namespace gtsam

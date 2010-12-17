@@ -71,7 +71,7 @@ namespace gtsam {
 	/* ************************************************************************* */
 	template<class G, class C, class L, class S, class W>
 	VectorValues NonlinearOptimizer<G, C, L, S, W>::linearizeAndOptimizeForDelta() const {
-		boost::shared_ptr<L> linearized = graph_->linearize(*values_, *ordering_)->template dynamicCastFactors<L>();
+		boost::shared_ptr<L> linearized = graph_->linearize(*values_, *ordering_);
 //		NonlinearOptimizer prepared(graph_, values_, ordering_, error_, lambda_);
 		return *S(*linearized).optimize();
 	}
@@ -84,7 +84,7 @@ namespace gtsam {
 	NonlinearOptimizer<G, C, L, S, W> NonlinearOptimizer<G, C, L, S, W>::iterate() const {
 
 		Parameters::verbosityLevel verbosity = parameters_->verbosity_ ;
-	    boost::shared_ptr<L> linearized = graph_->linearize(*values_, *ordering_)->template dynamicCastFactors<L>();
+	    boost::shared_ptr<L> linearized = graph_->linearize(*values_, *ordering_);
 		shared_solver newSolver = solver_;
 
 		if(newSolver) newSolver->replaceFactors(linearized);
@@ -168,7 +168,7 @@ namespace gtsam {
 		      Matrix A = eye(dim);
 		      Vector b = zero(dim);
 		      SharedDiagonal model = noiseModel::Isotropic::Sigma(dim,sigma);
-		      GaussianFactor::shared_ptr prior(new JacobianFactor(j, A, b, model));
+		      GaussianFactor::shared_ptr prior(new GaussianFactor(j, A, b, model));
 		      damped->push_back(prior);
 		    }
 		  }
@@ -230,7 +230,7 @@ namespace gtsam {
 		if (verbosity >= Parameters::LAMBDA) cout << "lambda = " << lambda << endl;
 
 		// linearize all factors once
-		boost::shared_ptr<L> linear = graph_->linearize(*values_, *ordering_)->template dynamicCastFactors<L>();
+		boost::shared_ptr<L> linear = graph_->linearize(*values_, *ordering_);
 
 		if (verbosity >= Parameters::LINEAR) linear->print("linear");
 

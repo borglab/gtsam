@@ -31,7 +31,7 @@ using namespace gtsam;
 using namespace std;
 using namespace boost::lambda;
 
-typedef EliminationTree<JacobianFactor> GaussianEliminationTree;
+typedef EliminationTree<GaussianFactor> GaussianEliminationTree;
 
 static boost::variate_generator<boost::mt19937, boost::uniform_real<> > rg(boost::mt19937(), boost::uniform_real<>(0.0, 1.0));
 
@@ -103,7 +103,7 @@ int main(int argc, char *argv[]) {
           for(size_t j=0; j<blockdim; ++j)
             b(j) = rg();
           if(!terms.empty())
-            blockGfgs[trial].push_back(JacobianFactor::shared_ptr(new JacobianFactor(terms, b, noise)));
+            blockGfgs[trial].push_back(GaussianFactor::shared_ptr(new GaussianFactor(terms, b, noise)));
         }
       }
 

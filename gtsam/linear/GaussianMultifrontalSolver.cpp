@@ -68,9 +68,7 @@ GaussianFactor::shared_ptr GaussianMultifrontalSolver::marginalFactor(Index j) c
 
 /* ************************************************************************* */
 std::pair<Vector, Matrix> GaussianMultifrontalSolver::marginalCovariance(Index j) const {
-  FactorGraph<GaussianFactor> fg;
-  fg.push_back(Base::marginalFactor(j));
-  GaussianConditional::shared_ptr conditional = GaussianFactor::CombineAndEliminate(fg,1).first->front();
+  GaussianConditional::shared_ptr conditional = Base::marginalFactor(j)->eliminateFirst();
   Matrix R = conditional->get_R();
   return make_pair(conditional->get_d(), inverse(ublas::prod(ublas::trans(R), R)));
 }

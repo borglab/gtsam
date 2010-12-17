@@ -18,6 +18,7 @@
 
 #pragma once
 
+#include <gtsam/inference/IndexConditional.h>
 #include <gtsam/inference/FactorBase.h>
 
 namespace gtsam {
@@ -59,7 +60,7 @@ public:
   IndexFactor(Index j1, Index j2, Index j3, Index j4) : Base(j1, j2, j3, j4) {}
 
   /** Construct n-way factor */
-  IndexFactor(const std::set<Index>& js) : Base(js) {}
+  IndexFactor(std::set<Index> js) : Base(js) {}
 
   /**
    * Combine and eliminate several factors.

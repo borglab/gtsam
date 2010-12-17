@@ -58,13 +58,13 @@ TEST( GaussianFactorGraph, equals ){
 TEST( GaussianFactorGraph, error )
 {
   Ordering ordering; ordering += "x1","x2","l1";
-  FactorGraph<JacobianFactor> fg = createGaussianFactorGraph(ordering);
+  GaussianFactorGraph fg = createGaussianFactorGraph(ordering);
   VectorValues cfg = createZeroDelta(ordering);
 
   // note the error is the same as in testNonlinearFactorGraph as a
   // zero delta config in the linear graph is equivalent to noisy in
   // non-linear, which is really linear under the hood
-  double actual = gaussianError(fg, cfg);
+  double actual = fg.error(cfg);
   DOUBLES_EQUAL( 5.625, actual, 1e-9 );
 }
 
@@ -349,9 +349,9 @@ TEST( GaussianFactorGraph, eliminateAll )
 //  Matrix A = eye(2);
 //  Vector b = zero(2);
 //  SharedDiagonal sigma = sharedSigma(2,3.0);
-//  expected.push_back(GaussianFactor::shared_ptr(new JacobianFactor(ordering["l1"],A,b,sigma)));
-//  expected.push_back(GaussianFactor::shared_ptr(new JacobianFactor(ordering["x1"],A,b,sigma)));
-//  expected.push_back(GaussianFactor::shared_ptr(new JacobianFactor(ordering["x2"],A,b,sigma)));
+//  expected.push_back(GaussianFactor::shared_ptr(new GaussianFactor(ordering["l1"],A,b,sigma)));
+//  expected.push_back(GaussianFactor::shared_ptr(new GaussianFactor(ordering["x1"],A,b,sigma)));
+//  expected.push_back(GaussianFactor::shared_ptr(new GaussianFactor(ordering["x2"],A,b,sigma)));
 //  CHECK(assert_equal(expected,actual));
 //}
 
@@ -650,7 +650,7 @@ double error(const VectorValues& x) {
   Ordering ord; ord += "x2","l1","x1";
 
 	GaussianFactorGraph fg = createGaussianFactorGraph(ord);
-	return gaussianError(fg,x);
+	return fg.error(x);
 }
 
 ///* ************************************************************************* */
@@ -899,13 +899,13 @@ TEST(GaussianFactorGraph, replace)
   Ordering ord; ord += "x1","x2","x3","x4","x5","x6";
 	SharedDiagonal noise(sharedSigma(3, 1.0));
 
-	GaussianFactorGraph::sharedFactor f1(new JacobianFactor(
+	GaussianFactorGraph::sharedFactor f1(new GaussianFactor(
 	    ord["x1"], eye(3,3), ord["x2"], eye(3,3), zero(3), noise));
-	GaussianFactorGraph::sharedFactor f2(new JacobianFactor(
+	GaussianFactorGraph::sharedFactor f2(new GaussianFactor(
 	    ord["x2"], eye(3,3), ord["x3"], eye(3,3), zero(3), noise));
-	GaussianFactorGraph::sharedFactor f3(new JacobianFactor(
+	GaussianFactorGraph::sharedFactor f3(new GaussianFactor(
 	    ord["x3"], eye(3,3), ord["x4"], eye(3,3), zero(3), noise));
-	GaussianFactorGraph::sharedFactor f4(new JacobianFactor(
+	GaussianFactorGraph::sharedFactor f4(new GaussianFactor(
 	    ord["x5"], eye(3,3), ord["x6"], eye(3,3), zero(3), noise));
 
 	GaussianFactorGraph actual;
@@ -970,9 +970,9 @@ TEST(GaussianFactorGraph, replace)
 //	typedef GaussianFactorGraph::sharedFactor Factor;
 //	SharedDiagonal model(Vector_(1, 0.5));
 //	GaussianFactorGraph fg;
-//	Factor factor1(new JacobianFactor("x1", Matrix_(1,1,1.), "x2", Matrix_(1,1,1.), Vector_(1,1.),  model));
-//	Factor factor2(new JacobianFactor("x2", Matrix_(1,1,1.), "x3", Matrix_(1,1,1.), Vector_(1,1.),  model));
-//	Factor factor3(new JacobianFactor("x3", Matrix_(1,1,1.), "x3", Matrix_(1,1,1.), Vector_(1,1.),  model));
+//	Factor factor1(new GaussianFactor("x1", Matrix_(1,1,1.), "x2", Matrix_(1,1,1.), Vector_(1,1.),  model));
+//	Factor factor2(new GaussianFactor("x2", Matrix_(1,1,1.), "x3", Matrix_(1,1,1.), Vector_(1,1.),  model));
+//	Factor factor3(new GaussianFactor("x3", Matrix_(1,1,1.), "x3", Matrix_(1,1,1.), Vector_(1,1.),  model));
 //	fg.push_back(factor1);
 //	fg.push_back(factor2);
 //	fg.push_back(factor3);
@@ -989,7 +989,7 @@ TEST(GaussianFactorGraph, replace)
 //	bn_expected.push_back(conditional2);
 //	CHECK(assert_equal(bn_expected, bn));
 //
-//	GaussianFactorGraph::sharedFactor factor_expected(new JacobianFactor("x3", Matrix_(1, 1, 2.), Vector_(1, 2.), SharedDiagonal(Vector_(1, 1.))));
+//	GaussianFactorGraph::sharedFactor factor_expected(new GaussianFactor("x3", Matrix_(1, 1, 2.), Vector_(1, 2.), SharedDiagonal(Vector_(1, 1.))));
 //	GaussianFactorGraph fg_expected;
 //	fg_expected.push_back(factor_expected);
 //	CHECK(assert_equal(fg_expected, fg));

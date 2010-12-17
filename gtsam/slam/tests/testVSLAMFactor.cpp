@@ -17,7 +17,6 @@
 
 #define GTSAM_MAGIC_KEY
 
-#include <gtsam/inference/FactorGraph-inl.h>
 #include <gtsam/slam/visualSLAM.h>
 #include <gtsam/geometry/Point3.h>
 #include <gtsam/geometry/Pose3.h>
@@ -66,16 +65,16 @@ TEST( ProjectionFactor, error )
 	Matrix Al1 = Matrix_(2, 3, 61.584, 0., 0., 0., 61.584, 0.);
 	Vector b = Vector_(2,3.,0.);
 	SharedDiagonal probModel1 = noiseModel::Unit::Create(2);
-	JacobianFactor expected(ordering["x1"], Ax1, ordering["l1"], Al1, b, probModel1);
-	JacobianFactor::shared_ptr actual = factor->linearize(config, ordering);
+	GaussianFactor expected(ordering["x1"], Ax1, ordering["l1"], Al1, b, probModel1);
+	GaussianFactor::shared_ptr actual = factor->linearize(config, ordering);
 	CHECK(assert_equal(expected,*actual,1e-3));
 
 	// linearize graph
 	Graph graph;
 	graph.push_back(factor);
-	FactorGraph<JacobianFactor> expected_lfg;
+	GaussianFactorGraph expected_lfg;
 	expected_lfg.push_back(actual);
-	boost::shared_ptr<FactorGraph<JacobianFactor> > actual_lfg = graph.linearize(config, ordering);
+	boost::shared_ptr<GaussianFactorGraph> actual_lfg = graph.linearize(config, ordering);
 	CHECK(assert_equal(expected_lfg,*actual_lfg));
 
 	// expmap on a config

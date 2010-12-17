@@ -52,7 +52,7 @@ TEST( Pose2Factor, error )
 
 	// Actual linearization
 	Ordering ordering(*x0.orderingArbitrary());
-	boost::shared_ptr<JacobianFactor> linear = factor.linearize(x0, ordering);
+	boost::shared_ptr<GaussianFactor> linear = factor.linearize(x0, ordering);
 
 	// Check error at x0, i.e. delta = zero !
 	VectorValues delta(x0.dims(ordering));
@@ -60,7 +60,7 @@ TEST( Pose2Factor, error )
 	delta[ordering["x2"]] = zero(3);
 	Vector error_at_zero = Vector_(3,0.0,0.0,0.0);
 	CHECK(assert_equal(error_at_zero,factor.unwhitenedError(x0)));
-	CHECK(assert_equal(-error_at_zero, linear->error_vector(delta)));
+	CHECK(assert_equal(-error_at_zero,linear->error_vector(delta)));
 
 	// Check error after increasing p2
 	VectorValues plus = delta;
@@ -88,7 +88,7 @@ TEST( Pose2Factor, rhs )
 
 	// Actual linearization
 	Ordering ordering(*x0.orderingArbitrary());
-	boost::shared_ptr<JacobianFactor> linear = factor.linearize(x0, ordering);
+	boost::shared_ptr<GaussianFactor> linear = factor.linearize(x0, ordering);
 
 	// Check RHS
 	Pose2 hx0 = p1.between(p2);
@@ -131,10 +131,10 @@ TEST( Pose2Factor, linearize )
 	// expected linear factor
 	Ordering ordering(*x0.orderingArbitrary());
 	SharedDiagonal probModel1 = noiseModel::Unit::Create(3);
-	JacobianFactor expected(ordering["x1"], expectedH1, ordering["x2"], expectedH2, expected_b, probModel1);
+	GaussianFactor expected(ordering["x1"], expectedH1, ordering["x2"], expectedH2, expected_b, probModel1);
 
 	// Actual linearization
-	boost::shared_ptr<JacobianFactor> actual = factor.linearize(x0, ordering);
+	boost::shared_ptr<GaussianFactor> actual = factor.linearize(x0, ordering);
 	CHECK(assert_equal(expected,*actual));
 
 	// Numerical do not work out because BetweenFactor is approximate ?

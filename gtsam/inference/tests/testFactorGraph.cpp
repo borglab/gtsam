@@ -27,7 +27,6 @@ using namespace boost::assign;
 
 #define GTSAM_MAGIC_KEY
 #include <gtsam/inference/SymbolicFactorGraph.h>
-#include <gtsam/inference/FactorGraph-inl.h>
 
 using namespace std;
 using namespace gtsam;
@@ -92,11 +91,6 @@ typedef boost::shared_ptr<SymbolicFactorGraph> shared;
 //	singletonGraph_excepted.push_factor("x2", "x3");
 //	CHECK(singletonGraph_excepted.equals(singletonGraph));
 //}
-
-TEST(FactorGraph, dynamic_factor_cast) {
-  FactorGraph<IndexFactor> fg;
-  fg.dynamicCastFactors<FactorGraph<IndexFactor> >();
-}
 
 
 /* ************************************************************************* */

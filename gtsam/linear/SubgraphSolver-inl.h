@@ -20,10 +20,10 @@
 #include <gtsam/linear/GaussianFactor.h>
 #include <gtsam/linear/GaussianFactorGraph.h>
 #include <gtsam/linear/GaussianBayesNet.h>
-#include <gtsam/linear/JacobianFactor.h>
 #include <gtsam/nonlinear/Key.h>
 #include <gtsam/linear/iterative-inl.h>
 #include <gtsam/inference/EliminationTree-inl.h>
+
 
 using namespace std;
 
@@ -62,11 +62,12 @@ bool split(const std::map<Index, Index> &M,
 }
 
 
+
 template<class GRAPH, class LINEAR, class VALUES>
 void SubgraphSolver<GRAPH,LINEAR,VALUES>::replaceFactors(const typename LINEAR::shared_ptr &graph) {
 
-	GaussianFactorGraph::shared_ptr Ab1 = boost::make_shared<GaussianFactorGraph>();
-	GaussianFactorGraph::shared_ptr Ab2 = boost::make_shared<GaussianFactorGraph>();
+	shared_linear Ab1 = boost::make_shared<LINEAR>(),
+				  Ab2 = boost::make_shared<LINEAR>();
 
 	if (parameters_->verbosity()) cout << "split the graph ...";
 	split(pairs_, *graph, *Ab1, *Ab2) ;
@@ -83,8 +84,7 @@ void SubgraphSolver<GRAPH,LINEAR,VALUES>::replaceFactors(const typename LINEAR::
 	SubgraphPreconditioner::sharedBayesNet Rc1 = EliminationTree<GaussianFactor>::Create(sacrificialAb1)->eliminate();
 	SubgraphPreconditioner::sharedValues xbar = gtsam::optimize_(*Rc1);
 
-	pc_ = boost::make_shared<SubgraphPreconditioner>(
-	    Ab1->dynamicCastFactors<FactorGraph<JacobianFactor> >(), Ab2->dynamicCastFactors<FactorGraph<JacobianFactor> >(),Rc1,xbar);
+	pc_ = boost::make_shared<SubgraphPreconditioner>(Ab1,Ab2,Rc1,xbar);
 }
 
 template<class GRAPH, class LINEAR, class VALUES>

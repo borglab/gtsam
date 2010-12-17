@@ -25,12 +25,11 @@ check_PROGRAMS += tests/testVectorValues
 sources += GaussianSequentialSolver.cpp GaussianMultifrontalSolver.cpp
 
 # Gaussian Factor Graphs
-sources += JacobianFactor.cpp HessianFactor.cpp
 sources += GaussianFactor.cpp GaussianFactorGraph.cpp
 sources += GaussianJunctionTree.cpp 
 sources += GaussianConditional.cpp GaussianBayesNet.cpp
 sources += GaussianISAM.cpp
-check_PROGRAMS += tests/testHessianFactor tests/testGaussianFactor tests/testGaussianConditional
+check_PROGRAMS += tests/testGaussianFactor tests/testGaussianConditional
 check_PROGRAMS += tests/testGaussianJunctionTree
 
 # Iterative Methods

@@ -39,20 +39,19 @@ namespace gtsam {
   /* ************************************************************************* */
   template <class FG>
   void JunctionTree<FG>::construct(const FG& fg, const VariableIndex& variableIndex) {
-    tic(1, "JT symbolic ET");
-    const typename EliminationTree<IndexFactor>::shared_ptr symETree(EliminationTree<IndexFactor>::Create(fg, variableIndex));
-    toc(1, "JT symbolic ET");
-    tic(2, "JT symbolic eliminate");
-    SymbolicBayesNet::shared_ptr sbn = symETree->eliminate();
-    toc(2, "JT symbolic eliminate");
-    tic(3, "symbolic BayesTree");
+    tic("JT 1  constructor");
+    tic("JT 1.1  symbolic elimination");
+    SymbolicBayesNet::shared_ptr sbn = EliminationTree<IndexFactor>::Create(fg, variableIndex)->eliminate();
+    toc("JT 1.1  symbolic elimination");
+    tic("JT 1.2  symbolic BayesTree");
     SymbolicBayesTree sbt(*sbn);
-    toc(3, "symbolic BayesTree");
+    toc("JT 1.2  symbolic BayesTree");
 
     // distribute factors
-    tic(4, "distributeFactors");
+    tic("JT 1.3  distributeFactors");
     this->root_ = distributeFactors(fg, sbt.root());
-    toc(4, "distributeFactors");
+    toc("JT 1.3  distributeFactors");
+    toc("JT 1  constructor");
   }
 
   /* ************************************************************************* */
@@ -96,7 +95,7 @@ namespace gtsam {
 
     // Now add each factor to the list corresponding to its lowest-ordered
     // variable.
-    vector<FastList<size_t> > targets(maxVar+1);
+    vector<list<size_t, boost::fast_pool_allocator<size_t> > > targets(maxVar+1);
     for(size_t i=0; i<lowestOrdered.size(); ++i)
       if(lowestOrdered[i] != numeric_limits<Index>::max())
         targets[lowestOrdered[i]].push_back(i);
@@ -108,7 +107,7 @@ namespace gtsam {
   /* ************************************************************************* */
   template<class FG>
   typename JunctionTree<FG>::sharedClique JunctionTree<FG>::distributeFactors(const FG& fg,
-      const std::vector<FastList<size_t> >& targets,
+      const std::vector<std::list<size_t,boost::fast_pool_allocator<size_t> > >& targets,
       const SymbolicBayesTree::sharedClique& bayesClique) {
 
     if(bayesClique) {
@@ -166,23 +165,22 @@ namespace gtsam {
 
     // Now that we know which factors and variables, and where variables
     // come from and go to, create and eliminate the new joint factor.
-    tic(2, "CombineAndEliminate");
+    tic("JT 2.2 CombineAndEliminate");
     pair<typename BayesNet<typename FG::Factor::Conditional>::shared_ptr, typename FG::sharedFactor> eliminated(
         FG::Factor::CombineAndEliminate(fg, current->frontal.size()));
-    toc(2, "CombineAndEliminate");
+    toc("JT 2.2 CombineAndEliminate");
 
     assert(std::equal(eliminated.second->begin(), eliminated.second->end(), current->separator.begin()));
 
-    tic(3, "Update tree");
+    tic("JT 2.4 Update tree");
     // create a new clique corresponding the combined factors
     typename BayesTree::sharedClique new_clique(new typename BayesTree::Clique(*eliminated.first));
     new_clique->children_ = children;
 
-    BOOST_FOREACH(typename BayesTree::sharedClique& childRoot, children) {
-      childRoot->parent_ = new_clique;
-    }
-    toc(3, "Update tree");
+    BOOST_FOREACH(typename BayesTree::sharedClique& childRoot, children)
+    childRoot->parent_ = new_clique;
 
+    toc("JT 2.4 Update tree");
     return make_pair(new_clique, eliminated.second);
   }
 
@@ -190,9 +188,11 @@ namespace gtsam {
   template <class FG>
   typename JunctionTree<FG>::BayesTree::sharedClique JunctionTree<FG>::eliminate() const {
     if(this->root()) {
+      tic("JT 2 eliminate");
       pair<typename BayesTree::sharedClique, typename FG::sharedFactor> ret = this->eliminateOneClique(this->root());
       if (ret.second->size() != 0)
         throw runtime_error("JuntionTree::eliminate: elimination failed because of factors left over!");
+      toc("JT 2 eliminate");
       return ret.first;
     } else
       return typename BayesTree::sharedClique();

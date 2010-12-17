@@ -96,8 +96,8 @@ TEST( Graph, linearize )
 {
 	Graph fg = createNonlinearFactorGraph();
 	Values initial = createNoisyValues();
-	boost::shared_ptr<FactorGraph<JacobianFactor> > linearized = fg.linearize(initial, *initial.orderingArbitrary());
-	FactorGraph<JacobianFactor> expected = createGaussianFactorGraph(*initial.orderingArbitrary());
+	boost::shared_ptr<GaussianFactorGraph> linearized = fg.linearize(initial, *initial.orderingArbitrary());
+	GaussianFactorGraph expected = createGaussianFactorGraph(*initial.orderingArbitrary());
 	CHECK(assert_equal(expected,*linearized)); // Needs correct linearizations
 }
 

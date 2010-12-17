@@ -48,7 +48,7 @@ namespace gtsam {
 
 			// Start with g0 = A'*(A*x0-b), d0 = - g0
 			// i.e., first step is in direction of negative gradient
-			g = gradient(Ab,x);
+			g = Ab.gradient(x);
 			d = g; // instead of negating gradient, alpha will be negated
 
 			// init gamma and calculate threshold
@@ -88,9 +88,9 @@ namespace gtsam {
 			double alpha = takeOptimalStep(x);
 
 			// update gradient (or re-calculate at reset time)
-			if (k % parameters_.reset() == 0) g = gradient(Ab,x);
+			if (k % parameters_.reset() == 0) g = Ab.gradient(x);
 			// axpy(alpha, Ab ^ Ad, g);  // g += alpha*(Ab^Ad)
-			else transposeMultiplyAdd(Ab, alpha, Ad, g);
+			else Ab.transposeMultiplyAdd(alpha, Ad, g);
 
 			// check for convergence
 			double new_gamma = dot(g, g);
@@ -111,7 +111,7 @@ namespace gtsam {
 			gamma = new_gamma;
 
 			// In-place recalculation Ad <- A*d to avoid re-allocating Ad
-			multiplyInPlace(Ab, d, Ad);
+			Ab.multiplyInPlace(d, Ad);
 			return false;
 		}
 

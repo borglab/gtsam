@@ -85,7 +85,7 @@ namespace gtsam {
 		void print(const std::string& s = "FactorGraph") const;
 
 		/** Check equality */
-		bool equals(const FactorGraph<FACTOR>& fg, double tol = 1e-9) const;
+		bool equals(const FactorGraph& fg, double tol = 1e-9) const;
 
 		/** const cast to the underlying vector of factors */
 		operator const std::vector<sharedFactor>&() const { return factors_; }
@@ -108,39 +108,6 @@ namespace gtsam {
 
 		/** return the number valid factors */
 		size_t nrFactors() const;
-
-		/** dynamic_cast the factor pointers down or up the class hierarchy */
-		template<class RELATED>
-		typename RELATED::shared_ptr dynamicCastFactors() const {
-		  typename RELATED::shared_ptr ret(new RELATED);
-		  ret->reserve(this->size());
-		  BOOST_FOREACH(const sharedFactor& factor, *this) {
-		    typename RELATED::Factor::shared_ptr castedFactor(boost::dynamic_pointer_cast<typename RELATED::Factor>(factor));
-		    if(castedFactor)
-		      ret->push_back(castedFactor);
-		    else
-		      throw std::invalid_argument("In FactorGraph<FACTOR>::dynamic_factor_cast(), dynamic_cast failed, meaning an invalid cast was requested.");
-		  }
-		  return ret;
-		}
-
-		/**
-		 * dynamic_cast factor pointers if possible, otherwise convert with a
-		 * constructor of the target type.
-		 */
-		template<class TARGET>
-		typename TARGET::shared_ptr convertCastFactors() const {
-      typename TARGET::shared_ptr ret(new TARGET);
-      ret->reserve(this->size());
-      BOOST_FOREACH(const sharedFactor& factor, *this) {
-        typename TARGET::Factor::shared_ptr castedFactor(boost::dynamic_pointer_cast<typename TARGET::Factor>(factor));
-        if(castedFactor)
-          ret->push_back(castedFactor);
-        else
-          ret->push_back(typename TARGET::Factor::shared_ptr(new typename TARGET::Factor(*factor)));
-      }
-      return ret;
-    }
 
 		/** ----------------- Modifying Factor Graphs ---------------------------- */
 
@@ -205,7 +172,7 @@ namespace gtsam {
   FactorGraph<FACTOR>::FactorGraph(const BayesNet<CONDITIONAL>& bayesNet) {
     factors_.reserve(bayesNet.size());
     BOOST_FOREACH(const typename CONDITIONAL::shared_ptr& cond, bayesNet) {
-      this->push_back(cond->toFactor());
+      this->push_back(sharedFactor(new FACTOR(*cond)));
     }
   }
 

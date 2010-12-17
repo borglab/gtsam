@@ -124,8 +124,6 @@ void Gaussian::WhitenInPlace(MatrixColMajor& H) const {
 // General QR, see also special version in Constrained
 SharedDiagonal Gaussian::QR(Matrix& Ab, boost::optional<vector<int>&> firstZeroRows) const {
 
-  static const bool debug = false;
-
 	// get size(A) and maxRank
 	// TODO: really no rank problems ?
 	size_t m = Ab.size1(), n = Ab.size2()-1;
@@ -133,8 +131,6 @@ SharedDiagonal Gaussian::QR(Matrix& Ab, boost::optional<vector<int>&> firstZeroR
 
 	// pre-whiten everything (cheaply if possible)
 	WhitenInPlace(Ab);
-
-	if(debug) gtsam::print(Ab, "Whitened Ab: ");
 
 	// Perform in-place Householder
 #ifdef GT_USE_LAPACK
@@ -226,9 +222,6 @@ SharedDiagonal Gaussian::QR(Matrix& Ab, boost::optional<vector<int>&> firstZeroR
 
 // General QR, see also special version in Constrained
 SharedDiagonal Gaussian::QRColumnWise(MatrixColMajor& Ab, vector<int>& firstZeroRows) const {
-
-  static const bool debug = false;
-
   // get size(A) and maxRank
   // TODO: really no rank problems ?
   size_t m = Ab.size1(), n = Ab.size2()-1;
@@ -236,8 +229,6 @@ SharedDiagonal Gaussian::QRColumnWise(MatrixColMajor& Ab, vector<int>& firstZero
 
   // pre-whiten everything (cheaply if possible)
   WhitenInPlace(Ab);
-
-  if(debug) gtsam::print(Ab, "Whitened Ab: ");
 
   // Perform in-place Householder
 #ifdef GT_USE_LAPACK

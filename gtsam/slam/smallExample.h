@@ -69,7 +69,7 @@ namespace gtsam {
 		 * create a linear factor graph
 		 * The non-linear graph above evaluated at NoisyValues
 		 */
-		FactorGraph<JacobianFactor> createGaussianFactorGraph(const Ordering& ordering);
+		GaussianFactorGraph createGaussianFactorGraph(const Ordering& ordering);
 
 		/**
 		 * create small Chordal Bayes Net x <- y
@@ -93,7 +93,7 @@ namespace gtsam {
 		 * Create a Kalman smoother by linearizing a non-linear factor graph
 		 * @param T number of time-steps
 		 */
-		std::pair<FactorGraph<JacobianFactor>, Ordering> createSmoother(int T, boost::optional<Ordering> ordering = boost::none);
+		std::pair<GaussianFactorGraph, Ordering> createSmoother(int T, boost::optional<Ordering> ordering = boost::none);
 
 		/* ******************************************************* */
 		// Linear Constrained Examples
@@ -103,21 +103,21 @@ namespace gtsam {
 		 * Creates a simple constrained graph with one linear factor and
 		 * one binary equality constraint that sets x = y
 		 */
-		FactorGraph<JacobianFactor> createSimpleConstraintGraph();
+		GaussianFactorGraph createSimpleConstraintGraph();
 		VectorValues createSimpleConstraintValues();
 
 		/**
 		 * Creates a simple constrained graph with one linear factor and
 		 * one binary constraint.
 		 */
-		FactorGraph<JacobianFactor> createSingleConstraintGraph();
+		GaussianFactorGraph createSingleConstraintGraph();
 		VectorValues createSingleConstraintValues();
 
 		/**
 		 * Creates a constrained graph with a linear factor and two
 		 * binary constraints that share a node
 		 */
-		FactorGraph<JacobianFactor> createMultiConstraintGraph();
+		GaussianFactorGraph createMultiConstraintGraph();
 		VectorValues createMultiConstraintValues();
 
 		/* ******************************************************* */
@@ -133,7 +133,7 @@ namespace gtsam {
 		 * -x11-x21-x31
 		 * with x11 clamped at (1,1), and others related by 2D odometry.
 		 */
-		boost::tuple<FactorGraph<JacobianFactor>, Ordering, VectorValues> planarGraph(size_t N);
+		boost::tuple<GaussianFactorGraph, Ordering, VectorValues> planarGraph(size_t N);
 
 		/*
 		 * Create canonical ordering for planar graph that also works for tree
@@ -150,8 +150,8 @@ namespace gtsam {
 		 *   |
 		 * -x11-x21-x31
 		 */
-		std::pair<FactorGraph<JacobianFactor>, FactorGraph<JacobianFactor> > splitOffPlanarTree(
-				size_t N, const FactorGraph<JacobianFactor>& original);
+		std::pair<GaussianFactorGraph, GaussianFactorGraph> splitOffPlanarTree(
+				size_t N, const GaussianFactorGraph& original);
 
 	} // example
 } // gtsam

@@ -72,8 +72,6 @@ public:
   const_iterator end() const { return base_.end(); }
 };
 
-template<class MATRIX> class SymmetricBlockView;
-
 /**
  * This class stores a *reference* to a matrix and allows it to be accessed as
  * a collection of vertical blocks.  It also provides for accessing individual
@@ -83,13 +81,7 @@ template<class MATRIX> class SymmetricBlockView;
  * is consistent with the given block dimensions.
  *
  * This class also has three parameters that can be changed after construction
- * that change the apparent view of the matrix.  firstBlock() determines the
- * block that has index 0 for all operations (except for re-setting
- * firstBlock()).  rowStart() determines the apparent first row of the matrix
- * for all operations (except for setting rowStart() and rowEnd()).  rowEnd()
- * determines the apparent *exclusive* last row for all operations.  To include
- * all rows, rowEnd() should be set to the number of rows in the matrix (i.e.
- * one after the last true row index).
+ * that change the
  */
 template<class MATRIX>
 class VerticalBlockView {
@@ -101,58 +93,29 @@ public:
   typedef BlockColumn<const MATRIX> constColumn;
 
 protected:
-  FullMatrix& matrix_; // the reference to the full matrix
+  FullMatrix& matrix_; // the reference to the original matrix
   std::vector<size_t> variableColOffsets_; // the starting columns of each block (0-based)
 
-  // Changes apparent matrix view, see main class comment.
+  // for elimination, represent
   size_t rowStart_; // 0 initially
   size_t rowEnd_; // the number of row - 1, initially
   size_t blockStart_; // 0 initially
 
 public:
   /** Construct from an empty matrix (asserts that the matrix is empty) */
-  VerticalBlockView(FullMatrix& matrix) :
-    matrix_(matrix), rowStart_(0), rowEnd_(matrix_.size1()), blockStart_(0) {
-    fillOffsets((size_t*)0, (size_t*)0);
-    assertInvariants();
-  }
-
-  /**
-   * Construct from a non-empty matrix and copy the block structure from
-   * another block view. */
-  template<class RHS>
-  VerticalBlockView(FullMatrix& matrix, const RHS& rhs) :
-    matrix_(matrix) {
-    if(matrix_.size1() != rhs.size1() || matrix_.size2() != rhs.size2())
-      throw std::invalid_argument(
-          "In VerticalBlockView<>(FullMatrix& matrix, const RHS& rhs), matrix and rhs must\n"
-          "already be of the same size.  If not, construct the VerticalBlockView from an\n"
-          "empty matrix and then use copyStructureFrom(const RHS& rhs) to resize the matrix\n"
-          "and set up the block structure.");
-    copyStructureFrom(rhs);
-    assertInvariants();
-  }
+  VerticalBlockView(FullMatrix& matrix);
 
   /** Construct from iterators over the sizes of each vertical block */
   template<typename ITERATOR>
-  VerticalBlockView(FullMatrix& matrix, ITERATOR firstBlockDim, ITERATOR lastBlockDim) :
-  matrix_(matrix), rowStart_(0), rowEnd_(matrix_.size1()), blockStart_(0) {
-    fillOffsets(firstBlockDim, lastBlockDim);
-    assertInvariants();
-  }
+  VerticalBlockView(FullMatrix& matrix, ITERATOR firstBlockDim, ITERATOR lastBlockDim);
 
   /** Construct from a vector of the sizes of each vertical block, resize the
    * matrix so that its height is matrixNewHeight and its width fits the given
    * block dimensions.
    */
   template<typename ITERATOR>
-  VerticalBlockView(FullMatrix& matrix, ITERATOR firstBlockDim, ITERATOR lastBlockDim, size_t matrixNewHeight) :
-  matrix_(matrix), rowStart_(0), rowEnd_(matrixNewHeight), blockStart_(0) {
-    fillOffsets(firstBlockDim, lastBlockDim);
-    matrix_.resize(matrixNewHeight, variableColOffsets_.back(), false);
-    assertInvariants();
-  }
-
+  VerticalBlockView(FullMatrix& matrix, ITERATOR firstBlockDim, ITERATOR lastBlockDim, size_t matrixNewHeight);
+  
   /** Row size 
    */
   size_t size1() const { assertInvariants(); return rowEnd_ - rowStart_; }
@@ -197,19 +160,11 @@ public:
         boost::numeric::ublas::range(variableColOffsets_[actualStartBlock], variableColOffsets_[actualEndBlock]));
   }
 
-  Block full() {
-    return range(0,nBlocks());
-  }
-
-  constBlock full() const {
-    return range(0,nBlocks());
-  }
-
   Column column(size_t block, size_t columnOffset) {
     assertInvariants();
     size_t actualBlock = block + blockStart_;
     checkBlock(actualBlock);
-    assert(variableColOffsets_[actualBlock] + columnOffset < variableColOffsets_[actualBlock+1]);
+    assert(variableColOffsets_[actualBlock] + columnOffset < matrix_.size2());
     Block blockMat(operator()(block));
     return Column(blockMat, columnOffset);
   }
@@ -238,65 +193,24 @@ public:
   size_t firstBlock() const { return blockStart_; }
 
   /** Copy the block structure and resize the underlying matrix, but do not
-   * copy the matrix data.  If blockStart(), rowStart(), and/or rowEnd() have
-   * been modified, this copies the structure of the corresponding matrix view.
-   * In the destination VerticalBlockView, blockStart() and rowStart() will
-   * thus be 0, rowEnd() will be size2() of the source VerticalBlockView, and
-   * the underlying matrix will be the size of the view of the source matrix.
+   * copy the matrix data.
    */
-  template<class RHS>
-  void copyStructureFrom(const RHS& rhs) {
-    if(matrix_.size1() != rhs.size1() || matrix_.size2() != rhs.size2())
-      matrix_.resize(rhs.size1(), rhs.size2(), false);
-    if(rhs.blockStart_ == 0)
-      variableColOffsets_ = rhs.variableColOffsets_;
-    else {
-      variableColOffsets_.resize(rhs.nBlocks() + 1);
-      variableColOffsets_[0] = 0;
-      size_t j=0;
-      assert(rhs.variableColOffsets_.begin()+rhs.blockStart_ < rhs.variableColOffsets_.end()-1);
-      for(std::vector<size_t>::const_iterator off=rhs.variableColOffsets_.begin()+rhs.blockStart_; off!=rhs.variableColOffsets_.end()-1; ++off) {
-        variableColOffsets_[j+1] = variableColOffsets_[j] + (*(off+1) - *off);
-        ++ j;
-      }
-    }
-    rowStart_ = 0;
-    rowEnd_ = matrix_.size1();
-    blockStart_ = 0;
-    assertInvariants();
-  }
+  template<class RHSMATRIX>
+  void copyStructureFrom(const VerticalBlockView<RHSMATRIX>& rhs);
 
   /** Copy the block struture and matrix data, resizing the underlying matrix
    * in the process.  This can deal with assigning between different types of
    * underlying matrices, as long as the matrices themselves are assignable.
    * To avoid creating a temporary matrix this assumes no aliasing, i.e. that
    * no part of the underlying matrices refer to the same memory!
-   *
-   * If blockStart(), rowStart(), and/or rowEnd() have been modified, this
-   * copies the structure of the corresponding matrix view.  In the destination
-   * VerticalBlockView, blockStart() and rowStart() will thus be 0, rowEnd()
-   * will be size2() of the source VerticalBlockView, and the underlying matrix
-   * will be the size of the view of the source matrix.
    */
-  template<class RHS>
-  VerticalBlockView<MATRIX>& assignNoalias(const RHS& rhs) {
-    copyStructureFrom(rhs);
-    boost::numeric::ublas::noalias(matrix_) = rhs.full();
-    return *this;
-  }
+  template<class RHSMATRIX>
+  VerticalBlockView<MATRIX>& assignNoalias(const VerticalBlockView<RHSMATRIX>& rhs);
 
   /** Swap the contents of the underlying matrix and the block information with
    * another VerticalBlockView.
    */
-  void swap(VerticalBlockView<MATRIX>& other) {
-    matrix_.swap(other.matrix_);
-    variableColOffsets_.swap(other.variableColOffsets_);
-    std::swap(rowStart_, other.rowStart_);
-    std::swap(rowEnd_, other.rowEnd_);
-    std::swap(blockStart_, other.blockStart_);
-    assertInvariants();
-    other.assertInvariants();
-  }
+  void swap(VerticalBlockView<MATRIX>& other);
 
 protected:
   void assertInvariants() const {
@@ -324,254 +238,80 @@ protected:
     }
   }
 
-  template<class OTHER> friend class SymmetricBlockView;
-  template<class RELATED> friend class VerticalBlockView;
+  template<class RHSMATRIX>
+  friend class VerticalBlockView<MATRIX>;
 };
 
-
-/**
- * This class stores a *reference* to a matrix and allows it to be accessed as
- * a collection of blocks.  It also provides for accessing individual
- * columns from those blocks.  When constructed or resized, the caller must
- * provide the dimensions of the blocks, as well as an underlying matrix
- * storage object.  This class will resize the underlying matrix such that it
- * is consistent with the given block dimensions.
- *
- * This class uses a symmetric block structure.  The underlying matrix does not
- * necessarily need to be symmetric.
- *
- * This class also has a parameter that can be changed after construction to
- * change the apparent matrix view.  firstBlock() determines the block that
- * appears to have index 0 for all operations (except re-setting firstBlock()).
- */
+/* ************************************************************************* */
 template<class MATRIX>
-class SymmetricBlockView {
-public:
-  typedef MATRIX FullMatrix;
-  typedef typename boost::numeric::ublas::matrix_range<MATRIX> Block;
-  typedef typename boost::numeric::ublas::matrix_range<const MATRIX> constBlock;
-  typedef BlockColumn<MATRIX> Column;
-  typedef BlockColumn<const MATRIX> constColumn;
+VerticalBlockView<MATRIX>::VerticalBlockView(FullMatrix& matrix) :
+matrix_(matrix), rowStart_(0), rowEnd_(matrix_.size1()), blockStart_(0) {
+  fillOffsets((size_t*)0, (size_t*)0);
+  assertInvariants();
+}
 
-protected:
-  FullMatrix& matrix_; // the reference to the full matrix
-  std::vector<size_t> variableColOffsets_; // the starting columns of each block (0-based)
+/* ************************************************************************* */
+template<class MATRIX>
+template<typename ITERATOR>
+VerticalBlockView<MATRIX>::VerticalBlockView(FullMatrix& matrix, ITERATOR firstBlockDim, ITERATOR lastBlockDim) :
+matrix_(matrix), rowStart_(0), rowEnd_(matrix_.size1()), blockStart_(0) {
+  fillOffsets(firstBlockDim, lastBlockDim);
+  assertInvariants();
+}
 
-  // Changes apparent matrix view, see main class comment.
-  size_t blockStart_; // 0 initially
+/* ************************************************************************* */
+template<class MATRIX>
+template<typename ITERATOR>
+VerticalBlockView<MATRIX>::VerticalBlockView(FullMatrix& matrix, ITERATOR firstBlockDim, ITERATOR lastBlockDim, size_t matrixNewHeight) :
+matrix_(matrix), rowStart_(0), rowEnd_(matrixNewHeight), blockStart_(0) {
+  fillOffsets(firstBlockDim, lastBlockDim);
+  matrix_.resize(matrixNewHeight, variableColOffsets_.back(), false);
+  assertInvariants();
+}
 
-public:
-  /** Construct from an empty matrix (asserts that the matrix is empty) */
-  SymmetricBlockView(FullMatrix& matrix) :
-    matrix_(matrix), blockStart_(0) {
-    fillOffsets((size_t*)0, (size_t*)0);
-    assertInvariants();
-  }
-
-  /** Construct from iterators over the sizes of each block */
-  template<typename ITERATOR>
-  SymmetricBlockView(FullMatrix& matrix, ITERATOR firstBlockDim, ITERATOR lastBlockDim) :
-  matrix_(matrix), blockStart_(0) {
-    fillOffsets(firstBlockDim, lastBlockDim);
-    assertInvariants();
-  }
-
-  /**
-   * Modify the size and structure of the underlying matrix and this block
-   * view.  If 'preserve' is true, the underlying matrix data will be copied if
-   * the matrix size changes, otherwise the new data will be uninitialized.
-   */
-  template<typename ITERATOR>
-  void resize(ITERATOR firstBlockDim, ITERATOR lastBlockDim, bool preserve) {
-    blockStart_ = 0;
-    fillOffsets(firstBlockDim, lastBlockDim);
-    matrix_.resize(variableColOffsets_.back(), variableColOffsets_.back(), preserve);
-  }
-
-  /** Row size
-   */
-  size_t size1() const { assertInvariants(); return variableColOffsets_.back() - variableColOffsets_[blockStart_]; }
-
-  /** Column size
-   */
-  size_t size2() const { return size1(); }
-
-
-  /** Block count
-   */
-  size_t nBlocks() const { assertInvariants(); return variableColOffsets_.size() - 1 - blockStart_; }
-
-
-  Block operator()(size_t i_block, size_t j_block) {
-    return range(i_block, i_block+1, j_block, j_block+1);
-  }
-
-  constBlock operator()(size_t i_block, size_t j_block) const {
-    return range(i_block, i_block+1, j_block, j_block+1);
-  }
-
-  Block range(size_t i_startBlock, size_t i_endBlock, size_t j_startBlock, size_t j_endBlock) {
-    assertInvariants();
-    size_t i_actualStartBlock = i_startBlock + blockStart_;
-    size_t i_actualEndBlock = i_endBlock + blockStart_;
-    size_t j_actualStartBlock = j_startBlock + blockStart_;
-    size_t j_actualEndBlock = j_endBlock + blockStart_;
-    checkBlock(i_actualStartBlock);
-    checkBlock(j_actualStartBlock);
-    assert(i_actualEndBlock < variableColOffsets_.size());
-    assert(j_actualEndBlock < variableColOffsets_.size());
-    return Block(matrix_,
-        boost::numeric::ublas::range(variableColOffsets_[i_actualStartBlock], variableColOffsets_[i_actualEndBlock]),
-        boost::numeric::ublas::range(variableColOffsets_[j_actualStartBlock], variableColOffsets_[j_actualEndBlock]));
-  }
-
-  constBlock range(size_t i_startBlock, size_t i_endBlock, size_t j_startBlock, size_t j_endBlock) const {
-    assertInvariants();
-    size_t i_actualStartBlock = i_startBlock + blockStart_;
-    size_t i_actualEndBlock = i_endBlock + blockStart_;
-    size_t j_actualStartBlock = j_startBlock + blockStart_;
-    size_t j_actualEndBlock = j_endBlock + blockStart_;
-    checkBlock(i_actualStartBlock);
-    checkBlock(j_actualStartBlock);
-    assert(i_actualEndBlock < variableColOffsets_.size());
-    assert(j_actualEndBlock < variableColOffsets_.size());
-    return constBlock(matrix_,
-        boost::numeric::ublas::range(variableColOffsets_[i_actualStartBlock], variableColOffsets_[i_actualEndBlock]),
-        boost::numeric::ublas::range(variableColOffsets_[j_actualStartBlock], variableColOffsets_[j_actualEndBlock]));
-  }
-
-  Block full() {
-    return range(0,nBlocks(), 0,nBlocks());
-  }
-
-  constBlock full() const {
-    return range(0,nBlocks(), 0,nBlocks());
-  }
-
-  Column column(size_t i_block, size_t j_block, size_t columnOffset) {
-    assertInvariants();
-    size_t j_actualBlock = j_block + blockStart_;
-    assert(variableColOffsets_[j_actualBlock] + columnOffset < variableColOffsets_[j_actualBlock+1]);
-    Block blockMat(operator()(i_block, j_block));
-    return Column(blockMat, columnOffset);
-  }
-
-  constColumn column(size_t i_block, size_t j_block, size_t columnOffset) const {
-    assertInvariants();
-    size_t j_actualBlock = j_block + blockStart_;
-    assert(variableColOffsets_[j_actualBlock] + columnOffset < variableColOffsets_[j_actualBlock+1]);
-    constBlock blockMat(operator()(i_block, j_block));
-    return constColumn(blockMat, columnOffset);
-  }
-
-  Column rangeColumn(size_t i_startBlock, size_t i_endBlock, size_t j_block, size_t columnOffset) {
-    assertInvariants();
-    size_t j_actualBlock = j_block + blockStart_;
-    assert(variableColOffsets_[j_actualBlock] + columnOffset < variableColOffsets_[j_actualBlock+1]);
-    Block blockMat(this->range(i_startBlock, i_endBlock, j_block));
-    return Column(blockMat, columnOffset);
-  }
-
-  constColumn rangeColumn(size_t i_startBlock, size_t i_endBlock, size_t j_block, size_t columnOffset) const {
-    assertInvariants();
-    size_t j_actualBlock = j_block + blockStart_;
-    assert(variableColOffsets_[j_actualBlock] + columnOffset < variableColOffsets_[j_actualBlock+1]);
-    constBlock blockMat(this->range(i_startBlock, i_endBlock, j_block, j_block+1));
-    return constColumn(blockMat, columnOffset);
-  }
-
-  size_t offset(size_t block) const {
-    assertInvariants();
-    size_t actualBlock = block + blockStart_;
-    checkBlock(actualBlock);
-    return variableColOffsets_[actualBlock] - variableColOffsets_[blockStart_];
-  }
-
-  size_t& blockStart() { return blockStart_; }
-  size_t blockStart() const { return blockStart_; }
-
-  /** Copy the block structure and resize the underlying matrix, but do not
-   * copy the matrix data.  If blockStart() has been modified, this copies the
-   * structure of the corresponding matrix view.  In the destination
-   * SymmetricBlockView, startBlock() will thus be 0 and the underlying matrix
-   * will be the size of the view of the source matrix.
-   */
-  template<class RHS>
-  void copyStructureFrom(const RHS& rhs) {
-    matrix_.resize(rhs.size2(), rhs.size2(), false);
-    if(rhs.blockStart_ == 0)
-      variableColOffsets_ = rhs.variableColOffsets_;
-    else {
-      variableColOffsets_.resize(rhs.nBlocks() + 1);
-      variableColOffsets_[0] = 0;
-      size_t j=0;
-      assert(rhs.variableColOffsets_.begin()+rhs.blockStart_ < rhs.variableColOffsets_.end()-1);
-      for(std::vector<size_t>::const_iterator off=rhs.variableColOffsets_.begin()+rhs.blockStart_; off!=rhs.variableColOffsets_.end()-1; ++off) {
-        variableColOffsets_[j+1] = variableColOffsets_[j] + (*(off+1) - *off);
-        ++ j;
-      }
-    }
-    blockStart_ = 0;
-    assertInvariants();
-  }
-
-  /** Copy the block struture and matrix data, resizing the underlying matrix
-   * in the process.  This can deal with assigning between different types of
-   * underlying matrices, as long as the matrices themselves are assignable.
-   * To avoid creating a temporary matrix this assumes no aliasing, i.e. that
-   * no part of the underlying matrices refer to the same memory!
-   *
-   * If blockStart() has been modified, this copies the structure of the
-   * corresponding matrix view.  In the destination SymmetricBlockView,
-   * startBlock() will thus be 0 and the underlying matrix will be the size
-   * of the view of the source matrix.
-   */
-  template<class RHSMATRIX>
-  SymmetricBlockView<MATRIX>& assignNoalias(const SymmetricBlockView<RHSMATRIX>& rhs) {
-    copyStructureFrom(rhs);
-    boost::numeric::ublas::noalias(matrix_) = rhs.range(0, rhs.nBlocks(), 0, rhs.nBlocks());
-    return *this;
-  }
-
-  /** Swap the contents of the underlying matrix and the block information with
-   * another VerticalBlockView.
-   */
-  void swap(SymmetricBlockView<MATRIX>& other) {
-    matrix_.swap(other.matrix_);
-    variableColOffsets_.swap(other.variableColOffsets_);
-    std::swap(blockStart_, other.blockStart_);
-    assertInvariants();
-    other.assertInvariants();
-  }
-
-protected:
-  void assertInvariants() const {
-    assert(matrix_.size1() == matrix_.size2());
-    assert(matrix_.size2() == variableColOffsets_.back());
-    assert(blockStart_ < variableColOffsets_.size());
-  }
-
-  void checkBlock(size_t block) const {
-    assert(matrix_.size1() == matrix_.size2());
-    assert(matrix_.size2() == variableColOffsets_.back());
-    assert(block < variableColOffsets_.size()-1);
-    assert(variableColOffsets_[block] < matrix_.size2() && variableColOffsets_[block+1] <= matrix_.size2());
-  }
-
-  template<typename ITERATOR>
-  void fillOffsets(ITERATOR firstBlockDim, ITERATOR lastBlockDim) {
-    variableColOffsets_.resize((lastBlockDim-firstBlockDim)+1);
+/* ************************************************************************* */
+template<class MATRIX>
+template<class RHSMATRIX>
+void VerticalBlockView<MATRIX>::copyStructureFrom(const VerticalBlockView<RHSMATRIX>& rhs) {
+  matrix_.resize(rhs.rowEnd() - rhs.rowStart(), rhs.range(0, rhs.nBlocks()).size2(), false);
+  if(rhs.blockStart_ == 0)
+    variableColOffsets_ = rhs.variableColOffsets_;
+  else {
+    variableColOffsets_.resize(rhs.nBlocks() + 1);
     variableColOffsets_[0] = 0;
     size_t j=0;
-    for(ITERATOR dim=firstBlockDim; dim!=lastBlockDim; ++dim) {
-      variableColOffsets_[j+1] = variableColOffsets_[j] + *dim;
+    assert(rhs.variableColOffsets_.begin()+rhs.blockStart_ < rhs.variableColOffsets_.end()-1);
+    for(std::vector<size_t>::const_iterator off=rhs.variableColOffsets_.begin()+rhs.blockStart_; off!=rhs.variableColOffsets_.end()-1; ++off) {
+      variableColOffsets_[j+1] = variableColOffsets_[j] + (*(off+1) - *off);
       ++ j;
     }
   }
+  rowStart_ = 0;
+  rowEnd_ = matrix_.size1();
+  blockStart_ = 0;
+  assertInvariants();
+}
 
-  template<class RELATED> friend class SymmetricBlockView;
-  template<class OTHER> friend class VerticalBlockView;
-};
+/* ************************************************************************* */
+template<class MATRIX>
+template<class RHSMATRIX>
+VerticalBlockView<MATRIX>& VerticalBlockView<MATRIX>::assignNoalias(const VerticalBlockView<RHSMATRIX>& rhs) {
+  copyStructureFrom(rhs);
+  boost::numeric::ublas::noalias(matrix_) = rhs.range(0, rhs.nBlocks());
+  return *this;
+}
+
+/* ************************************************************************* */
+template<class MATRIX>
+void VerticalBlockView<MATRIX>::swap(VerticalBlockView<MATRIX>& other) {
+  matrix_.swap(other.matrix_);
+  variableColOffsets_.swap(other.variableColOffsets_);
+  std::swap(rowStart_, other.rowStart_);
+  std::swap(rowEnd_, other.rowEnd_);
+  std::swap(blockStart_, other.blockStart_);
+  assertInvariants();
+  other.assertInvariants();
+}
 
 
 }

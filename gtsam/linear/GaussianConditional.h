@@ -119,12 +119,6 @@ public:
 	const Vector& get_sigmas() const {return sigmas_;}
 
 	/**
-	 * Copy to a Factor (this creates a JacobianFactor and returns it as its
-	 * base class GaussianFactor.
-	 */
-	boost::shared_ptr<GaussianFactor> toFactor() const;
-
-	/**
 	 * solve a conditional Gaussian
 	 * @param x values structure in which the parents values (y,z,...) are known
 	 * @return solution x = R \ (d - Sy - Tz - ...)
@@ -143,7 +137,7 @@ protected:
   rsd_type::Block get_R_() { return rsd_(0); }
   rsd_type::Block get_S_(iterator variable) { return rsd_(variable - this->begin()); }
 
-  friend class JacobianFactor;
+  friend class GaussianFactor;
 
 private:
 //	/** Serialization function */
