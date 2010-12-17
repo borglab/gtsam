@@ -17,6 +17,8 @@
 
 #include <boost/foreach.hpp>
 #include <gtsam/linear/SubgraphPreconditioner.h>
+#include <gtsam/linear/JacobianFactor.h>
+#include <gtsam/inference/FactorGraph-inl.h>
 
 using namespace std;
 
@@ -25,7 +27,7 @@ namespace gtsam {
 	/* ************************************************************************* */
 	SubgraphPreconditioner::SubgraphPreconditioner(const sharedFG& Ab1, const sharedFG& Ab2,
 			const sharedBayesNet& Rc1, const sharedValues& xbar) :
-		Ab1_(Ab1), Ab2_(Ab2), Rc1_(Rc1), xbar_(xbar), b2bar_(Ab2_->errors_(*xbar)) {
+		Ab1_(Ab1), Ab2_(Ab2), Rc1_(Rc1), xbar_(xbar), b2bar_(gaussianErrors_(*Ab2_,*xbar)) {
 	}
 
 	/* ************************************************************************* */
@@ -48,35 +50,35 @@ namespace gtsam {
 //    }
 
 	/* ************************************************************************* */
-	double SubgraphPreconditioner::error(const VectorValues& y) const {
+	double error(const SubgraphPreconditioner& sp, const VectorValues& y) {
 
 		Errors e(y);
-		VectorValues x = this->x(y);
-		Errors e2 = Ab2_->errors(x);
+		VectorValues x = sp.x(y);
+		Errors e2 = gaussianErrors(*sp.Ab2(),x);
 		return 0.5 * (dot(e, e) + dot(e2,e2));
 	}
 
 	/* ************************************************************************* */
 	// gradient is y + inv(R1')*A2'*(A2*inv(R1)*y-b2bar),
-	VectorValues SubgraphPreconditioner::gradient(const VectorValues& y) const {
-		VectorValues x = this->x(y); // x = inv(R1)*y
-		Errors e2 = Ab2_->errors(x);
+	VectorValues gradient(const SubgraphPreconditioner& sp, const VectorValues& y) {
+		VectorValues x = sp.x(y); // x = inv(R1)*y
+		Errors e2 = gaussianErrors(*sp.Ab2(),x);
 		VectorValues gx2 = VectorValues::zero(y);
-		Ab2_->transposeMultiplyAdd(1.0,e2,gx2); // A2'*e2;
-		VectorValues gy2 = gtsam::backSubstituteTranspose(*Rc1_, gx2); // inv(R1')*gx2
+		gtsam::transposeMultiplyAdd(*sp.Ab2(),1.0,e2,gx2); // A2'*e2;
+		VectorValues gy2 = gtsam::backSubstituteTranspose(*sp.Rc1(), gx2); // inv(R1')*gx2
 		return y + gy2;
 	}
 
 	/* ************************************************************************* */
 	// Apply operator A, A*y = [I;A2*inv(R1)]*y = [y; A2*inv(R1)*y]
-	Errors SubgraphPreconditioner::operator*(const VectorValues& y) const {
+	Errors operator*(const SubgraphPreconditioner& sp, const VectorValues& y) {
 
 		Errors e(y);
 
 		// Add A2 contribution
 		VectorValues x = y; // TODO avoid ?
-		gtsam::backSubstituteInPlace(*Rc1_, x); // x=inv(R1)*y
-		Errors e2 = *Ab2_ * x; // A2*x
+		gtsam::backSubstituteInPlace(*sp.Rc1(), x); // x=inv(R1)*y
+		Errors e2 = *sp.Ab2() * x; // A2*x
 		e.splice(e.end(), e2);
 
 		return e;
@@ -84,7 +86,7 @@ namespace gtsam {
 
 	/* ************************************************************************* */
 	// In-place version that overwrites e
-	void SubgraphPreconditioner::multiplyInPlace(const VectorValues& y, Errors& e) const {
+	void multiplyInPlace(const SubgraphPreconditioner& sp, const VectorValues& y, Errors& e) {
 
 
 		Errors::iterator ei = e.begin();
@@ -94,27 +96,26 @@ namespace gtsam {
 
 		// Add A2 contribution
 		VectorValues x = y; // TODO avoid ?
-		gtsam::backSubstituteInPlace(*Rc1_, x); // x=inv(R1)*y
-		Ab2_->multiplyInPlace(x,ei); // use iterator version
+		gtsam::backSubstituteInPlace(*sp.Rc1(), x); // x=inv(R1)*y
+		gtsam::multiplyInPlace(*sp.Ab2(),x,ei); // use iterator version
 	}
 
 	/* ************************************************************************* */
 	// Apply operator A', A'*e = [I inv(R1')*A2']*e = e1 + inv(R1')*A2'*e2
-	VectorValues SubgraphPreconditioner::operator^(const Errors& e) const {
-
+	VectorValues operator^(const SubgraphPreconditioner& sp, const Errors& e) {
 
 		Errors::const_iterator it = e.begin();
-		VectorValues y = zero();
+		VectorValues y = sp.zero();
 		for ( Index i = 0 ; i < y.size() ; ++i, ++it )
 			y[i] = *it ;
-		transposeMultiplyAdd2(1.0,it,e.end(),y);
+		sp.transposeMultiplyAdd2(1.0,it,e.end(),y);
 		return y;
 	}
 
 	/* ************************************************************************* */
 	// y += alpha*A'*e
-	void SubgraphPreconditioner::transposeMultiplyAdd
-		(double alpha, const Errors& e, VectorValues& y) const {
+	void transposeMultiplyAdd
+		(const SubgraphPreconditioner& sp, double alpha, const Errors& e, VectorValues& y) {
 
 
 		Errors::const_iterator it = e.begin();
@@ -122,7 +123,7 @@ namespace gtsam {
 			const Vector& ei = *it;
 			axpy(alpha,ei,y[i]) ;
 		}
-		transposeMultiplyAdd2(alpha,it,e.end(),y);
+		sp.transposeMultiplyAdd2(alpha,it,e.end(),y);
 	}
 
 	/* ************************************************************************* */
@@ -137,7 +138,7 @@ namespace gtsam {
 		e2.push_back(*(it++));
 
 		VectorValues x = VectorValues::zero(y); // x = 0
-		Ab2_->transposeMultiplyAdd(1.0,e2,x);   // x += A2'*e2
+		gtsam::transposeMultiplyAdd(*Ab2_,1.0,e2,x);   // x += A2'*e2
 		axpy(alpha, gtsam::backSubstituteTranspose(*Rc1_, x), y); // y += alpha*inv(R1')*x
 	}
 

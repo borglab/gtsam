@@ -120,16 +120,16 @@ void NonlinearFactorGraph<VALUES>::print(const std::string& str) const {
 
 	/* ************************************************************************* */
 	template<class VALUES>
-	boost::shared_ptr<GaussianFactorGraph> NonlinearFactorGraph<VALUES>::linearize(
+	typename FactorGraph<JacobianFactor>::shared_ptr NonlinearFactorGraph<VALUES>::linearize(
 			const VALUES& config, const Ordering& ordering) const {
 
 		// create an empty linear FG
-		GaussianFactorGraph::shared_ptr linearFG(new GaussianFactorGraph);
+		typename FactorGraph<JacobianFactor>::shared_ptr linearFG(new FactorGraph<JacobianFactor>);
 		linearFG->reserve(this->size());
 
 		// linearize all factors
 		BOOST_FOREACH(const sharedFactor& factor, this->factors_) {
-			boost::shared_ptr<GaussianFactor> lf = factor->linearize(config, ordering);
+		  JacobianFactor::shared_ptr lf = factor->linearize(config, ordering);
 			if (lf)	linearFG->push_back(lf);
 		}
 

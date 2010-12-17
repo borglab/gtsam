@@ -49,13 +49,13 @@ TEST( GaussianFactor, linearFactor )
 
   Matrix I = eye(2);
 	Vector b = Vector_(2, 2.0, -1.0);
-	GaussianFactor expected(ordering["x1"], -10*I,ordering["x2"], 10*I, b, noiseModel::Unit::Create(2));
+	JacobianFactor expected(ordering["x1"], -10*I,ordering["x2"], 10*I, b, noiseModel::Unit::Create(2));
 
 	// create a small linear factor graph
-	GaussianFactorGraph fg = createGaussianFactorGraph(ordering);
+	FactorGraph<JacobianFactor> fg = createGaussianFactorGraph(ordering);
 
 	// get the factor "f2" from the factor graph
-	GaussianFactor::shared_ptr lf = fg[1];
+	JacobianFactor::shared_ptr lf = fg[1];
 
 	// check if the two factors are the same
 	CHECK(assert_equal(expected,*lf));
@@ -225,7 +225,7 @@ TEST( GaussianFactor, matrix )
 {
 	// create a small linear factor graph
   Ordering ordering; ordering += "x1","x2","l1";
-  GaussianFactorGraph fg = createGaussianFactorGraph(ordering);
+  FactorGraph<JacobianFactor> fg = createGaussianFactorGraph(ordering);
 
 	// get the factor "f2" from the factor graph
 	//GaussianFactor::shared_ptr lf = fg[1]; // NOTE: using the older version
@@ -234,7 +234,7 @@ TEST( GaussianFactor, matrix )
   // render with a given ordering
   Ordering ord;
   ord += "x1","x2";
-	GaussianFactor::shared_ptr lf(new GaussianFactor(ord["x1"], -I, ord["x2"], I, b2, sigma0_1));
+	JacobianFactor::shared_ptr lf(new JacobianFactor(ord["x1"], -I, ord["x2"], I, b2, sigma0_1));
 
 	// Test whitened version
 	Matrix A_act1; Vector b_act1;
@@ -273,7 +273,7 @@ TEST( GaussianFactor, matrix_aug )
 {
 	// create a small linear factor graph
   Ordering ordering; ordering += "x1","x2","l1";
-  GaussianFactorGraph fg = createGaussianFactorGraph(ordering);
+  FactorGraph<JacobianFactor> fg = createGaussianFactorGraph(ordering);
 
 	// get the factor "f2" from the factor graph
 	//GaussianFactor::shared_ptr lf = fg[1];
@@ -282,7 +282,7 @@ TEST( GaussianFactor, matrix_aug )
   // render with a given ordering
   Ordering ord;
   ord += "x1","x2";
-	GaussianFactor::shared_ptr lf(new GaussianFactor(ord["x1"], -I, ord["x2"], I, b2, sigma0_1));
+	JacobianFactor::shared_ptr lf(new JacobianFactor(ord["x1"], -I, ord["x2"], I, b2, sigma0_1));
 
 
 	// Test unwhitened version

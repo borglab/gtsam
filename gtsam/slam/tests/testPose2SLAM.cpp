@@ -74,11 +74,11 @@ TEST( Pose2Graph, linearization )
 	config.insert(2,p2);
 	// Linearize
 	Ordering ordering(*config.orderingArbitrary());
-	boost::shared_ptr<GaussianFactorGraph> lfg_linearized = graph.linearize(config, ordering);
+	boost::shared_ptr<FactorGraph<JacobianFactor> > lfg_linearized = graph.linearize(config, ordering);
 	//lfg_linearized->print("lfg_actual");
 
 	// the expected linear factor
-	GaussianFactorGraph lfg_expected;
+	FactorGraph<JacobianFactor> lfg_expected;
 	Matrix A1 = Matrix_(3,3,
 	    0.0,-2.0, -4.2,
 	    2.0, 0.0, -4.2,
@@ -91,7 +91,7 @@ TEST( Pose2Graph, linearization )
 
 	Vector b = Vector_(3,-0.1/sx,0.1/sy,0.0);
 	SharedDiagonal probModel1 = noiseModel::Unit::Create(3);
-	lfg_expected.add(ordering["x1"], A1, ordering["x2"], A2, b, probModel1);
+	lfg_expected.push_back(JacobianFactor::shared_ptr(new JacobianFactor(ordering["x1"], A1, ordering["x2"], A2, b, probModel1)));
 
 	CHECK(assert_equal(lfg_expected, *lfg_linearized));
 }

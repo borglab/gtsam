@@ -36,10 +36,10 @@ GaussianFactorGraph createChain() {
 
 	typedef GaussianFactorGraph::sharedFactor Factor;
 	SharedDiagonal model(Vector_(1, 0.5));
-	Factor factor1(new GaussianFactor(x2, Matrix_(1,1,1.), x1, Matrix_(1,1,1.), Vector_(1,1.),  model));
-	Factor factor2(new GaussianFactor(x2, Matrix_(1,1,1.), x3, Matrix_(1,1,1.), Vector_(1,1.),  model));
-	Factor factor3(new GaussianFactor(x3, Matrix_(1,1,1.), x4, Matrix_(1,1,1.), Vector_(1,1.),  model));
-	Factor factor4(new GaussianFactor(x4, Matrix_(1,1,1.), Vector_(1,1.),  model));
+	Factor factor1(new JacobianFactor(x2, Matrix_(1,1,1.), x1, Matrix_(1,1,1.), Vector_(1,1.),  model));
+	Factor factor2(new JacobianFactor(x2, Matrix_(1,1,1.), x3, Matrix_(1,1,1.), Vector_(1,1.),  model));
+	Factor factor3(new JacobianFactor(x3, Matrix_(1,1,1.), x4, Matrix_(1,1,1.), Vector_(1,1.),  model));
+	Factor factor4(new JacobianFactor(x4, Matrix_(1,1,1.), Vector_(1,1.),  model));
 
 	GaussianFactorGraph fg;
 	fg.push_back(factor1);

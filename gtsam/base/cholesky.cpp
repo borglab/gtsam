@@ -18,6 +18,7 @@
 
 #include <gtsam/base/cholesky.h>
 #include <gtsam/base/lapack.h>
+#include <gtsam/base/timing.h>
 
 #include <boost/numeric/ublas/matrix_proxy.hpp>
 #include <boost/numeric/ublas/blas.hpp>
@@ -225,7 +226,50 @@ size_t choleskyCareful(MatrixColMajor& ATA) {
   }
 
   return maxrank;
+}
 
+/* ************************************************************************* */
+void choleskyPartial(MatrixColMajor& ABC, size_t nFrontal) {
+
+  static const bool debug = false;
+
+  assert(ABC.size1() == ABC.size2());
+  assert(nFrontal <= ABC.size1());
+
+  const size_t n = ABC.size1();
+
+  // Compute Cholesky factorization of A, overwrites A.
+  tic(1, "dpotrf");
+  int info = lapack_dpotrf('U', nFrontal, &ABC(0,0), n);
+  if(info != 0) {
+    if(info < 0)
+      throw std::domain_error(boost::str(boost::format(
+          "Bad input to choleskyFactorUnderdetermined, dpotrf returned %d.\n")%info));
+    else
+      throw std::domain_error(boost::str(boost::format(
+          "The matrix passed into choleskyFactorUnderdetermined is numerically rank-deficient, dpotrf returned rank=%d, expected rank was %d.\n")%(info-1)%nFrontal));
+  }
+  toc(1, "dpotrf");
+
+  // Views of R, S, and L submatrices.
+  ublas::matrix_range<MatrixColMajor> R(ublas::project(ABC, ublas::range(0,nFrontal), ublas::range(0,nFrontal)));
+  ublas::matrix_range<MatrixColMajor> S(ublas::project(ABC, ublas::range(0,nFrontal), ublas::range(nFrontal,n)));
+  ublas::matrix_range<MatrixColMajor> L(ublas::project(ABC, ublas::range(nFrontal,n), ublas::range(nFrontal,n)));
+
+  // Compute S = inv(R') * B
+  tic(2, "compute S");
+  if(S.size2() > 0)
+    cblas_dtrsm(CblasColMajor, CblasLeft, CblasUpper, CblasTrans, CblasNonUnit, S.size1(), S.size2(), 1.0, &R(0,0), n, &S(0,0), n);
+  if(debug) gtsam::print(S, "S: ");
+  toc(2, "compute S");
+
+  // Compute L = C - S' * S
+  tic(3, "compute L");
+  if(debug) gtsam::print(L, "C: ");
+  if(L.size2() > 0)
+    cblas_dsyrk(CblasColMajor, CblasUpper, CblasTrans, L.size1(), S.size1(), -1.0, &S(0,0), n, 1.0, &L(0,0), n);
+  if(debug) gtsam::print(L, "L: ");
+  toc(3, "compute L");
 }
 
 }

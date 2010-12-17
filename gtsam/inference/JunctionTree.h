@@ -23,7 +23,7 @@
 #include <vector>
 #include <list>
 #include <boost/shared_ptr.hpp>
-#include <boost/pool/pool_alloc.hpp>
+#include <gtsam/base/FastList.h>
 #include <gtsam/inference/BayesTree.h>
 #include <gtsam/inference/ClusterTree.h>
 #include <gtsam/inference/IndexConditional.h>
@@ -59,7 +59,7 @@ namespace gtsam {
 				const SymbolicBayesTree::sharedClique& clique);
 
 		// distribute the factors along the cluster tree
-    sharedClique distributeFactors(const FG& fg, const std::vector<std::list<size_t,boost::fast_pool_allocator<size_t> > >& targets,
+    sharedClique distributeFactors(const FG& fg, const std::vector<FastList<size_t> >& targets,
         const SymbolicBayesTree::sharedClique& clique);
 
 		// recursive elimination function

@@ -51,7 +51,8 @@ void NonlinearISAM<Values>::update(const Factors& newFactors, const Values& init
       }
     }
 
-    boost::shared_ptr<GaussianFactorGraph> linearizedNewFactors(newFactors.linearize(linPoint_, ordering_));
+    boost::shared_ptr<GaussianFactorGraph> linearizedNewFactors(
+        newFactors.linearize(linPoint_, ordering_)->template dynamicCastFactors<GaussianFactorGraph>());
 
     // Update ISAM
     isam_.update(*linearizedNewFactors);
@@ -73,7 +74,8 @@ void NonlinearISAM<Values>::reorder_relinearize() {
   ordering_ = *factors_.orderingCOLAMD(newLinPoint);
 
   // Create a linear factor graph at the new linearization point
-  boost::shared_ptr<GaussianFactorGraph> gfg(factors_.linearize(newLinPoint, ordering_));
+  boost::shared_ptr<GaussianFactorGraph> gfg(
+      factors_.linearize(newLinPoint, ordering_)->template dynamicCastFactors<GaussianFactorGraph>());
 
   // Just recreate the whole BayesTree
   isam_.update(*gfg);

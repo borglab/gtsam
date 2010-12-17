@@ -54,29 +54,15 @@ namespace gtsam {
 			A_(A), b_(b) {
 		}
 
-		/** gradient of objective function 0.5*|Ax-b_|^2 at x = A_'*(Ax-b_) */
-		Vector gradient(const Vector& x) const {
-			return A_ ^ (A_ * x - b_);
-		}
+		/** Access A matrix */
+		const Matrix& A() const { return A_; }
 
-		/** Apply operator A */
-		inline Vector operator*(const Vector& x) const {
-			return A_ * x;
-		}
-
-		/** Apply operator A in place */
-		inline void multiplyInPlace(const Vector& x, Vector& e) const {
-			e = A_ * x;
-		}
+		/** Access b vector */
+		const Vector& b() const { return b_; }
 
 		/** Apply operator A'*e */
-		inline Vector operator^(const Vector& e) const {
+		Vector operator^(const Vector& e) const {
 			return A_ ^ e;
-		}
-
-		/** x += alpha* A'*e */
-		inline void transposeMultiplyAdd(double alpha, const Vector& e, Vector& x) const {
-			gtsam::transposeMultiplyAdd(alpha,A_,e,x);
 		}
 
 		/**
@@ -84,6 +70,26 @@ namespace gtsam {
 		 */
 		void print (const std::string& s = "System") const;
 	};
+
+  /** gradient of objective function 0.5*|Ax-b_|^2 at x = A_'*(Ax-b_) */
+  inline Vector gradient(const System& system, const Vector& x) {
+    return system.A() ^ (system.A() * x - system.b());
+  }
+
+  /** Apply operator A */
+  inline Vector operator*(const System& system, const Vector& x) {
+    return system.A() * x;
+  }
+
+  /** Apply operator A in place */
+  inline void multiplyInPlace(const System& system, const Vector& x, Vector& e) {
+    e = system.A() * x;
+  }
+
+  /** x += alpha* A'*e */
+  inline void transposeMultiplyAdd(const System& system, double alpha, const Vector& e, Vector& x) {
+    transposeMultiplyAdd(alpha,system.A(),e,x);
+  }
 
 	/**
 	 * Method of steepest gradients, System version

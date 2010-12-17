@@ -22,6 +22,8 @@
 #include <boost/lambda/bind.hpp>
 
 #include <gtsam/linear/GaussianConditional.h>
+#include <gtsam/linear/GaussianFactor.h>
+#include <gtsam/linear/JacobianFactor.h>
 #include <gtsam/base/Matrix-inl.h>
 
 using namespace std;
@@ -139,7 +141,10 @@ bool GaussianConditional::equals(const GaussianConditional &c, double tol) const
 	return true;
 }
 
-
+/* ************************************************************************* */
+GaussianFactor::shared_ptr GaussianConditional::toFactor() const {
+  return GaussianFactor::shared_ptr(new JacobianFactor(*this));
+}
 
 /* ************************************************************************* */
 Vector GaussianConditional::solve(const VectorValues& x) const {
