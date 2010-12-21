@@ -19,12 +19,12 @@
 
 #define GTSAM_MAGIC_KEY
 
-#include <gtsam/slam/smallExample.h>
 #include <gtsam/linear/GaussianSequentialSolver.h>
+#include <gtsam/slam/smallExample.h>
+#include <gtsam/slam/planarSLAM.h>
 
 using namespace std;
 using namespace gtsam;
-using namespace example;
 
 /* ************************************************************************* */
 // The tests below test the *generic* inference algorithms. Some of these have
@@ -34,6 +34,7 @@ using namespace example;
 /* ************************************************************************* */
 TEST(GaussianFactorGraph, createSmoother)
 {
+  using namespace example;
 	GaussianFactorGraph fg2;
 	Ordering ordering;
 	boost::tie(fg2,ordering) = createSmoother(3);
@@ -50,6 +51,7 @@ TEST(GaussianFactorGraph, createSmoother)
 /* ************************************************************************* */
 TEST( Inference, marginals )
 {
+  using namespace example;
 	// create and marginalize a small Bayes net on "x"
   GaussianBayesNet cbn = createSmallGaussianBayesNet();
   vector<Index> xvar; xvar.push_back(0);
@@ -58,6 +60,34 @@ TEST( Inference, marginals )
   // expected is just scalar Gaussian on x
   GaussianBayesNet expected = scalarGaussian(0, 4, sqrt(2));
   CHECK(assert_equal(expected,actual));
+}
+
+/* ************************************************************************* */
+TEST( Inference, marginals2)
+{
+  using namespace gtsam::planarSLAM;
+
+  Graph fg;
+  SharedDiagonal poseModel(sharedSigma(3, 0.1));
+  SharedDiagonal pointModel(sharedSigma(3, 0.1));
+
+  fg.addPrior(PoseKey(0), Pose2(), poseModel);
+  fg.addOdometry(PoseKey(0), PoseKey(1), Pose2(1.0,0.0,0.0), poseModel);
+  fg.addOdometry(PoseKey(1), PoseKey(2), Pose2(1.0,0.0,0.0), poseModel);
+  fg.addBearingRange(PoseKey(0), PointKey(0), Rot2(), 1.0, pointModel);
+  fg.addBearingRange(PoseKey(1), PointKey(0), Rot2(), 1.0, pointModel);
+  fg.addBearingRange(PoseKey(2), PointKey(0), Rot2(), 1.0, pointModel);
+
+  Values init;
+  init.insert(PoseKey(0), Pose2(0.0,0.0,0.0));
+  init.insert(PoseKey(1), Pose2(1.0,0.0,0.0));
+  init.insert(PoseKey(2), Pose2(2.0,0.0,0.0));
+  init.insert(PointKey(0), Point2(1.0,1.0));
+
+  Ordering ordering(*fg.orderingCOLAMD(init));
+  GaussianFactorGraph::shared_ptr gfg(fg.linearize(init, ordering));
+  GaussianMultifrontalSolver solver(*gfg);
+  solver.marginalFactor(ordering[PointKey(0)]);
 }
 
 /* ************************************************************************* */

@@ -36,7 +36,7 @@ namespace gtsam {
  * The elimination ordering is "baked in" to the variable indices at this
  * stage, i.e. elimination proceeds in order from '0'.  A fill-reducing
  * ordering is computed symbolically from the NonlinearFactorGraph, on the
- * nonlinear side of gtsam.  (To be precise, it is possible to permute an
+ * nonlinear side of gtsam.  (It is actually also possible to permute an
  * existing GaussianFactorGraph into a COLAMD ordering instead, this is done
  * when computing marginals).
  *

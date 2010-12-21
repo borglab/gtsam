@@ -19,6 +19,8 @@
 #include <gtsam/inference/Permutation.h>
 
 #include <iostream>
+#include <sstream>
+#include <stdexcept>
 #include <boost/foreach.hpp>
 
 using namespace std;
@@ -34,7 +36,7 @@ Permutation Permutation::Identity(Index nVars) {
 }
 
 /* ************************************************************************* */
-Permutation Permutation::PullToFront(const vector<Index>& toFront, size_t size) {
+Permutation Permutation::PullToFront(const vector<Index>& toFront, size_t size, bool filterDuplicates) {
 
   Permutation ret(size);
 
@@ -43,13 +45,24 @@ Permutation Permutation::PullToFront(const vector<Index>& toFront, size_t size) 
 
   // Put the pulled variables at the front of the permutation and set up the
   // pulled flags.
+  size_t toFrontUniqueSize;
   for(Index j=0; j<toFront.size(); ++j) {
-    ret[j] = toFront[j];
-    pulled[toFront[j]] = true;
+    if(!pulled[toFront[j]]) {
+      ret[j] = toFront[j];
+      pulled[toFront[j]] = true;
+      ++ toFrontUniqueSize;
+    } else if(!filterDuplicates) {
+      stringstream ss;
+      ss << "Duplicate variable given as input to Permutation::PullToFront:\n";
+      ss << "    toFront:";
+      BOOST_FOREACH(Index i, toFront) { ss << " " << i; }
+      ss << ", size = " << size << endl;
+      throw invalid_argument(ss.str());
+    }
   }
 
   // Fill in the rest of the variables
-  Index nextVar = toFront.size();
+  Index nextVar = toFrontUniqueSize;
   for(Index j=0; j<size; ++j)
     if(!pulled[j])
       ret[nextVar++] = j;
@@ -59,7 +72,7 @@ Permutation Permutation::PullToFront(const vector<Index>& toFront, size_t size) 
 }
 
 /* ************************************************************************* */
-Permutation Permutation::PushToBack(const std::vector<Index>& toBack, size_t size) {
+Permutation Permutation::PushToBack(const std::vector<Index>& toBack, size_t size, bool filterDuplicates) {
 
   Permutation ret(size);
 
@@ -68,19 +81,34 @@ Permutation Permutation::PushToBack(const std::vector<Index>& toBack, size_t siz
 
   // Put the pushed variables at the back of the permutation and set up the
   // pushed flags;
-  Index nextVar = size - toBack.size();
-  for(Index j=0; j<toBack.size(); ++j) {
-    ret[nextVar++] = toBack[j];
-    pushed[toBack[j]] = true;
+  Index nextVar = size;
+  size_t toBackUniqueSize = 0;
+  if(toBack.size() > 0) {
+    Index j = toBack.size();
+    do {
+      -- j;
+      if(!pushed[toBack[j]]) {
+        ret[--nextVar] = toBack[j];
+        pushed[toBack[j]] = true;
+        ++ toBackUniqueSize;
+      } else if(!filterDuplicates) {
+        stringstream ss;
+        ss << "Duplicate variable given as input to Permutation::PushToBack:\n";
+        ss << "    toBack:";
+        BOOST_FOREACH(Index i, toBack) { ss << " " << i; }
+        ss << ", size = " << size << endl;
+        throw invalid_argument(ss.str());
+      }
+    } while(j > 0);
   }
-  assert(nextVar == size);
+  assert(nextVar == size - toBackUniqueSize);
 
   // Fill in the rest of the variables
   nextVar = 0;
   for(Index j=0; j<size; ++j)
     if(!pushed[j])
       ret[nextVar++] = j;
-  assert(nextVar == size - toBack.size());
+  assert(nextVar == size - toBackUniqueSize);
 
   return ret;
 }

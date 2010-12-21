@@ -306,37 +306,45 @@ namespace gtsam {
 		// root and the marginal on the root, integrating out all other variables.
 		// The integrands include any parents of this clique and the variables of
 		// the parent clique.
-		vector<Index> variablesAtBack;
-		variablesAtBack.reserve(this->size() + R->size());
+		FastSet<Index> variablesAtBack;
+		FastSet<Index> separator;
+		size_t uniqueRootVariables = 0;
 		BOOST_FOREACH(const Index separatorIndex, this->separator_) {
-		  variablesAtBack.push_back(separatorIndex);
+		  variablesAtBack.insert(separatorIndex);
+		  separator.insert(separatorIndex);
 		  if(debug) cout << "At back (this): " << separatorIndex << endl;
 		}
 		BOOST_FOREACH(const sharedConditional& conditional, *R) {
-		  variablesAtBack.push_back(conditional->key());
+		  if(variablesAtBack.insert(conditional->key()).second)
+		    ++ uniqueRootVariables;
 		  if(debug) cout << "At back (root): " << conditional->key() << endl;
 		}
 
-		Permutation toBack = Permutation::PushToBack(variablesAtBack, R->back()->key() + 1);
+		Permutation toBack = Permutation::PushToBack(
+		    vector<Index>(variablesAtBack.begin(), variablesAtBack.end()),
+		    R->back()->key() + 1);
     Permutation::shared_ptr toBackInverse(toBack.inverse());
     BOOST_FOREACH(const typename CONDITIONAL::Factor::shared_ptr& factor, p_Cp_R) {
       factor->permuteWithInverse(*toBackInverse); }
 		typename BayesNet<CONDITIONAL>::shared_ptr eliminated(EliminationTree<typename CONDITIONAL::Factor>::Create(p_Cp_R)->eliminate());
 
-		// take only the conditionals for p(S|R)
+		// Take only the conditionals for p(S|R).  We check for each variable being
+		// in the separator set because if some separator variables overlap with
+		// root variables, we cannot rely on the number of root variables, and also
+		// want to include those variables in the conditional.
 		BayesNet<CONDITIONAL> p_S_R;
-		typename BayesNet<CONDITIONAL>::const_reverse_iterator conditional = eliminated->rbegin();
-		BOOST_FOREACH(const sharedConditional& c, *R) {
-		  (void)c; ++conditional; }
-		BOOST_FOREACH(const Index c, this->separator_) {
-		  if(debug)
-		    (*conditional)->print("Taking C|R conditional: ");
-		  (void)c; p_S_R.push_front(*(conditional++)); }
-
-//		for(Index j=0; j<integrands.size(); ++j)
-//		  p_S_R.pop_front();
+		BOOST_REVERSE_FOREACH(typename CONDITIONAL::shared_ptr conditional, *eliminated) {
+		  if(separator.find(toBack[conditional->key()]) != separator.end()) {
+		    if(debug)
+		      conditional->print("Taking C|R conditional: ");
+		    p_S_R.push_front(conditional);
+		  }
+		  if(p_S_R.size() == separator.size())
+		    break;
+		}
 
 		// Undo the permutation
+		if(debug) toBack.print("toBack: ");
 		p_S_R.permuteWithInverse(toBack);
 
 		// return the parent shortcut P(Sp|R)

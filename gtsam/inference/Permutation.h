@@ -96,13 +96,13 @@ public:
    * Create a permutation that pulls the given variables to the front while
    * pushing the rest to the back.
    */
-  static Permutation PullToFront(const std::vector<Index>& toFront, size_t size);
+  static Permutation PullToFront(const std::vector<Index>& toFront, size_t size, bool filterDuplicates = false);
 
   /**
    * Create a permutation that pulls the given variables to the front while
    * pushing the rest to the back.
    */
-  static Permutation PushToBack(const std::vector<Index>& toBack, size_t size);
+  static Permutation PushToBack(const std::vector<Index>& toBack, size_t size, bool filterDuplicates = false);
 
   iterator begin() { return rangeIndices_.begin(); }
   const_iterator begin() const { return rangeIndices_.begin(); }

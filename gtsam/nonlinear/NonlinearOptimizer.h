@@ -206,6 +206,16 @@ namespace gtsam {
 		size_t iterations() const { return iterations_; }
 
 		/**
+		 * Return the solver
+		 */
+		shared_solver solver() const { return solver_; }
+
+		/**
+		 * Return the ordering
+		 */
+		shared_ordering ordering() const { return ordering_; }
+
+		/**
 		 * Return mean and covariance on a single variable
 		 */
 		std::pair<Vector,Matrix> marginalCovariance(Symbol j) const {
