@@ -79,6 +79,18 @@ class GeneralCameraT {
 		}
 
 		/**
+		 * project function that does not merge the Jacobians of calibration and pose
+		 */
+		Point2 project(const Point3& P, Matrix& H1_pose, Matrix& H1_k, Matrix& H2_pt) const {
+			Matrix tmp;
+			Point2 intrinsic = calibrated_.project(P, H1_pose, H2_pt);
+			Point2 projection = calibration_.uncalibrate(intrinsic, H1_k, tmp);
+			H1_pose = tmp * H1_pose;
+			H2_pt = tmp * H2_pt;
+			return projection;
+		}
+
+		/**
 		 * project a 3d point to the camera
 		 * P is point in camera coordinate
 		 * H1 is respect to pose + calibration
@@ -93,12 +105,10 @@ class GeneralCameraT {
 				return calibration_.uncalibrate(intrinsic) ;
 			}
 
-			Matrix I1, I2, J1, J2 ;
-			Point2 intrinsic = calibrated_.project(P, I1, I2);
-			Point2 projection = calibration_.uncalibrate(intrinsic, J1, J2);
-
-			if ( H1 ) { Matrix T = prod(J2,I1); *H1 = collect(2, &T, &J1) ; }
-			if ( H2 ) *H2 = prod(J2, I2) ;
+			Matrix H1_k, H1_pose, H2_pt;
+			Point2 projection = project(P, H1_k, H1_pose, H2_pt);
+			if ( H1 ) *H1 = collect(2, &H1_pose, &H1_k);
+			if ( H2 ) *H2 = H2_pt;
 
 			return projection;
 		}
