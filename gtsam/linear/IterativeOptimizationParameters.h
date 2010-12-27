@@ -30,13 +30,14 @@ public:
   double epsilon_; // relative error
   double epsilon_abs_; // absolute error
   verbosityLevel verbosity_;
-  DimSpec::shared_ptr reduce_spec_;
+  size_t nReduce_ ;
   DimSpec::shared_ptr skeleton_spec_;
+  bool est_cond_ ;
 
 public:
   IterativeOptimizationParameters() :
     maxIterations_(100), reset_(101), epsilon_(1e-5), epsilon_abs_(1e-5),
-        verbosity_(ERROR), reduce_spec_(), skeleton_spec_() {
+        verbosity_(ERROR), nReduce_(0), skeleton_spec_(), est_cond_(false) {
   }
 
   IterativeOptimizationParameters(
@@ -44,14 +45,18 @@ public:
     maxIterations_(parameters.maxIterations_), reset_(parameters.reset_),
         epsilon_(parameters.epsilon_), epsilon_abs_(parameters.epsilon_abs_),
         verbosity_(parameters.verbosity_),
-        reduce_spec_(parameters.reduce_spec_), skeleton_spec_(
-            parameters.skeleton_spec_) {
+        nReduce_(parameters.nReduce_),
+        skeleton_spec_(parameters.skeleton_spec_),
+        est_cond_(parameters.est_cond_){
   }
 
   IterativeOptimizationParameters(int maxIterations, double epsilon,
-      double epsilon_abs, verbosityLevel verbosity = ERROR, int reset = -1) :
+      double epsilon_abs, verbosityLevel verbosity = ERROR, int reset = -1, bool est_cond=false) :
     maxIterations_(maxIterations), reset_(reset), epsilon_(epsilon),
-        epsilon_abs_(epsilon_abs), verbosity_(verbosity) {
+        epsilon_abs_(epsilon_abs), verbosity_(verbosity),
+        nReduce_(0),
+        skeleton_spec_(),
+        est_cond_(est_cond) {
     if (reset_ == -1)
       reset_ = maxIterations_ + 1;
   }
@@ -70,6 +75,9 @@ public:
   }
   verbosityLevel verbosity() const {
     return verbosity_;
+  }
+  bool est_cond() const {
+    return est_cond_ ;
   }
 };
 }
