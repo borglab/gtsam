@@ -95,7 +95,8 @@ namespace gtsam {
 		const_iterator end()   const { return factors_.end();  }
 
 		/** Get a specific factor by index */
-		sharedFactor operator[](size_t i) const { assert(i<factors_.size()); return factors_[i]; }
+		const sharedFactor operator[](size_t i) const { assert(i<factors_.size()); return factors_[i]; }
+		sharedFactor& operator[](size_t i) { assert(i<factors_.size()); return factors_[i]; }
 
     /** Get the first factor */
     sharedFactor front() const { return factors_.front(); }
@@ -119,7 +120,13 @@ namespace gtsam {
 		 * Reserve space for the specified number of factors if you know in
 		 * advance how many there will be (works like std::vector::reserve).
 		 */
+
 		void reserve(size_t size) { factors_.reserve(size); }
+
+		/**
+		 * resize the factor graph
+		 */
+    void resize(size_t size) { factors_.resize(size); }
 
 		/** delete factor without re-arranging indexes by inserting a NULL pointer */
 		inline void remove(size_t i) { factors_[i].reset();}
