@@ -29,6 +29,7 @@ using namespace std;
 using namespace gtsam;
 
 typedef Cal3_S2Camera GeneralCamera;
+//typedef Cal3BundlerCamera GeneralCamera;
 typedef TypedSymbol<GeneralCamera, 'x'> CameraKey;
 typedef TypedSymbol<Point3, 'l'> PointKey;
 typedef LieValues<CameraKey> CameraConfig;
@@ -36,6 +37,7 @@ typedef LieValues<PointKey> PointConfig;
 typedef TupleValues2<CameraConfig, PointConfig> Values;
 typedef GeneralSFMFactor<Values, CameraKey, PointKey> Projection;
 typedef NonlinearEquality<Values, CameraKey> CameraConstraint;
+typedef NonlinearEquality<Values, PointKey> Point3Constraint;
 
 class Graph: public NonlinearFactorGraph<Values> {
 public:
@@ -47,6 +49,12 @@ public:
 		boost::shared_ptr<CameraConstraint> factor(new CameraConstraint(j, p));
 		push_back(factor);
 	}
+
+  void addPoint3Constraint(int j, const Point3& p) {
+    boost::shared_ptr<Point3Constraint> factor(new Point3Constraint(j, p));
+    push_back(factor);
+  }
+
 };
 
 double getGaussian()
@@ -66,11 +74,7 @@ double getGaussian()
 
 typedef NonlinearOptimizer<Graph,Values> Optimizer;
 
-// make cube
-static Point3
-	x000(-1, -1, -1), x001(-1, -1, +1), x010(-1, +1, -1), x011(-1, +1, +1),
-	x100(-1, -1, -1), x101(-1, -1, +1), x110(-1, +1, -1), x111(-1, +1, +1);
-
+const SharedGaussian sigma1(noiseModel::Unit::Create(1));
 
 /* ************************************************************************* */
 TEST( GeneralSFMFactor, equals )
@@ -90,14 +94,11 @@ TEST( GeneralSFMFactor, equals )
 
 /* ************************************************************************* */
 TEST( GeneralSFMFactor, error ) {
-
 	Point2 z(3.,0.);
 	const int cameraFrameNumber=1, landmarkNumber=1;
 	const SharedGaussian sigma(noiseModel::Unit::Create(1));
-
 	boost::shared_ptr<Projection>
 	factor(new Projection(z, sigma, cameraFrameNumber, landmarkNumber));
-
 	// For the following configuration, the factor predicts 320,240
 	Values values;
 	Rot3 R;
@@ -108,64 +109,304 @@ TEST( GeneralSFMFactor, error ) {
 	CHECK(assert_equal(Vector_(2, -3.0, 0.0), factor->unwhitenedError(values)));
 }
 
-/* ************************************************************************* */
-TEST( GeneralSFMFactor, optimize ) {
-	const SharedGaussian sigma1(noiseModel::Unit::Create(1));
-	const double z = 5;
-	vector<Point3> L ;
-	L.push_back(Point3 (-1.0,-1.0, z));
-	L.push_back(Point3 (-1.0, 1.0, z));
-	L.push_back(Point3 ( 1.0, 1.0, z));
-	L.push_back(Point3 ( 1.0,-1.0, z));
-	L.push_back(Point3 (-1.0,-1.0, 2*z));
-	L.push_back(Point3 (-1.0, 1.0, 2*z));
-	L.push_back(Point3 ( 1.0, 1.0, 2*z));
-	L.push_back(Point3 ( 1.0,-1.0, 2*z));
 
-	vector<GeneralCamera> X ;
-	X.push_back(GeneralCamera(Pose3()));
-	X.push_back(GeneralCamera(Pose3(eye(3),Point3(0.0,0.0,-z))));
+static const double baseline = 5.0 ;
+
+vector<Point3> genPoint3() {
+  const double z = 5;
+  vector<Point3> L ;
+  L.push_back(Point3 (-1.0,-1.0, z));
+  L.push_back(Point3 (-1.0, 1.0, z));
+  L.push_back(Point3 ( 1.0, 1.0, z));
+  L.push_back(Point3 ( 1.0,-1.0, z));
+  L.push_back(Point3 (-1.5,-1.5, 1.5*z));
+  L.push_back(Point3 (-1.5, 1.5, 1.5*z));
+  L.push_back(Point3 ( 1.5, 1.5, 1.5*z));
+  L.push_back(Point3 ( 1.5,-1.5, 1.5*z));
+  L.push_back(Point3 (-2.0,-2.0, 2*z));
+  L.push_back(Point3 (-2.0, 2.0, 2*z));
+  L.push_back(Point3 ( 2.0, 2.0, 2*z));
+  L.push_back(Point3 ( 2.0,-2.0, 2*z));
+  return L ;
+}
+
+vector<GeneralCamera> genCameraDefaultCalibration() {
+  vector<GeneralCamera> X ;
+  X.push_back(GeneralCamera(Pose3(eye(3),Point3(-baseline/2.0, 0.0, 0.0))));
+  X.push_back(GeneralCamera(Pose3(eye(3),Point3( baseline/2.0, 0.0, 0.0))));
+  return X ;
+}
+
+vector<GeneralCamera> genCameraVariableCalibration() {
+  const Cal3_S2 K(640,480,0.01,320,240);
+  vector<GeneralCamera> X ;
+  X.push_back(GeneralCamera(Pose3(eye(3),Point3(-baseline/2.0, 0.0, 0.0)), K));
+  X.push_back(GeneralCamera(Pose3(eye(3),Point3( baseline/2.0, 0.0, 0.0)), K));
+  return X ;
+}
+
+shared_ptr<Ordering> getOrdering(const vector<GeneralCamera>& X, const vector<Point3>& L) {
+  list<Symbol> keys;
+  for ( size_t i = 0 ; i < L.size() ; ++i ) keys.push_back(Symbol('l', i)) ;
+  for ( size_t i = 0 ; i < X.size() ; ++i ) keys.push_back(Symbol('x', i)) ;
+  shared_ptr<Ordering> ordering(new Ordering(keys));
+  return ordering ;
+}
+
+
+/* ************************************************************************* */
+TEST( GeneralSFMFactor, optimize_defaultK ) {
+
+  vector<Point3> L = genPoint3();
+  vector<GeneralCamera> X = genCameraDefaultCalibration();
 
 	// add measurement with noise
 	shared_ptr<Graph> graph(new Graph());
 	for ( size_t j = 0 ; j < X.size() ; ++j) {
 		for ( size_t i = 0 ; i < L.size() ; ++i) {
 			Point2 pt = X[j].project(L[i]) ;
-			//Point2 q(pt.x()+0.1*getGaussian(), pt.y()+0.1*getGaussian()) ;
 			graph->addMeasurement(j, i, pt, sigma1);
 		}
 	}
 
+	const size_t nMeasurements = X.size()*L.size() ;
+
 	// add initial
-	const double noise = 1.0;
+	const double noise = baseline*0.1;
 	boost::shared_ptr<Values> values(new Values);
-	for ( int i = 0 ; i < X.size() ; ++i )
-	  values->insert(i, X[i]) ;
+	for ( size_t i = 0 ; i < X.size() ; ++i )
+	  values->insert((int)i, X[i]) ;
 
 	for ( size_t i = 0 ; i < L.size() ; ++i ) {
 		Point3 pt(L[i].x()+noise*getGaussian(),
 		          L[i].y()+noise*getGaussian(),
 		          L[i].z()+noise*getGaussian());
-
-		//if (i == 0) pt = Point3(pt.x()+10, pt.y(), pt.z()) ;
 		values->insert(i, pt) ;
 	}
 
 	graph->addCameraConstraint(0, X[0]);
 
 	// Create an ordering of the variables
-	list<Symbol> keys;
-	for ( size_t i = 0 ; i < L.size() ; ++i ) keys.push_back(Symbol('l', i)) ;
-	for ( size_t i = 0 ; i < X.size() ; ++i ) keys.push_back(Symbol('x', i)) ;
-	shared_ptr<Ordering> ordering(new Ordering(keys));
-
-  NonlinearOptimizationParameters::sharedThis params = NonlinearOptimizationParameters::newDrecreaseThresholds(1e-7, 1e-7);
+  shared_ptr<Ordering> ordering = getOrdering(X,L);
+	//graph->print("graph") ; values->print("values") ;
+  NonlinearOptimizationParameters::sharedThis params (
+      new NonlinearOptimizationParameters(1e-7, 1e-7, 0.0, 100, 1e-5, 10, NonlinearOptimizationParameters::SILENT));
 	Optimizer optimizer(graph, values, ordering, params);
+  cout << "optimize_defaultK::" << endl ;
 	cout << "before optimization, error is " << optimizer.error() << endl;
 	Optimizer optimizer2 = optimizer.levenbergMarquardt();
 	cout << "after optimization, error is " << optimizer2.error() << endl;
-	CHECK(optimizer2.error() < 1e-1);
+	//optimizer2.values()->print("optimized") ;
+	CHECK(optimizer2.error() < 0.5 * 1e-1 * nMeasurements);
 }
+
+
+
+/* ************************************************************************* */
+TEST( GeneralSFMFactor, optimize_varK_SingleMeasurementError ) {
+  vector<Point3> L = genPoint3();
+  vector<GeneralCamera> X = genCameraVariableCalibration();
+  // add measurement with noise
+  shared_ptr<Graph> graph(new Graph());
+  for ( size_t j = 0 ; j < X.size() ; ++j) {
+    for ( size_t i = 0 ; i < L.size() ; ++i) {
+      Point2 pt = X[j].project(L[i]) ;
+      graph->addMeasurement(j, i, pt, sigma1);
+    }
+  }
+
+  const size_t nMeasurements = X.size()*L.size() ;
+
+  // add initial
+  const double noise = baseline*0.1;
+  boost::shared_ptr<Values> values(new Values);
+  for ( size_t i = 0 ; i < X.size() ; ++i )
+    values->insert((int)i, X[i]) ;
+
+  // add noise only to the first landmark
+  for ( size_t i = 0 ; i < L.size() ; ++i ) {
+    if ( i == 0 ) {
+      Point3 pt(L[i].x()+noise*getGaussian(),
+                L[i].y()+noise*getGaussian(),
+                L[i].z()+noise*getGaussian());
+      values->insert(i, pt) ;
+    }
+    else {
+      values->insert(i, L[i]) ;
+    }
+  }
+
+  graph->addCameraConstraint(0, X[0]);
+  const double reproj_error = 0.5 ;
+
+  shared_ptr<Ordering> ordering = getOrdering(X,L);
+  NonlinearOptimizationParameters::sharedThis params (
+      new NonlinearOptimizationParameters(1e-7, 1e-7, 0.0, 100, 1e-5, 10, NonlinearOptimizationParameters::SILENT));
+  Optimizer optimizer(graph, values, ordering, params);
+  cout << "optimize_varK_SingleMeasurementError::" << endl ;
+  cout << "before optimization, error is " << optimizer.error() << endl;
+  Optimizer optimizer2 = optimizer.levenbergMarquardt();
+  cout << "after optimization, error is " << optimizer2.error() << endl;
+  CHECK(optimizer2.error() < 0.5 * reproj_error * nMeasurements);
+}
+
+TEST( GeneralSFMFactor, optimize_varK_FixCameras ) {
+
+  vector<Point3> L = genPoint3();
+  vector<GeneralCamera> X = genCameraVariableCalibration();
+
+  // add measurement with noise
+  const double noise = baseline*0.1;
+  shared_ptr<Graph> graph(new Graph());
+  for ( size_t j = 0 ; j < X.size() ; ++j) {
+    for ( size_t i = 0 ; i < L.size() ; ++i) {
+      Point2 pt = X[j].project(L[i]) ;
+      graph->addMeasurement(j, i, pt, sigma1);
+    }
+  }
+
+  const size_t nMeasurements = L.size()*X.size();
+
+  boost::shared_ptr<Values> values(new Values);
+  for ( size_t i = 0 ; i < X.size() ; ++i )
+    values->insert((int)i, X[i]) ;
+
+  for ( size_t i = 0 ; i < L.size() ; ++i ) {
+    Point3 pt(L[i].x()+noise*getGaussian(),
+              L[i].y()+noise*getGaussian(),
+              L[i].z()+noise*getGaussian());
+    //Point3 pt(L[i].x(), L[i].y(), L[i].z());
+    values->insert(i, pt) ;
+  }
+
+  for ( size_t i = 0 ; i < X.size() ; ++i )
+    graph->addCameraConstraint(i, X[i]);
+
+  const double reproj_error = 1e-5 ;
+
+  shared_ptr<Ordering> ordering = getOrdering(X,L);
+  NonlinearOptimizationParameters::sharedThis params (
+      new NonlinearOptimizationParameters(1e-7, 1e-7, 0.0, 100, 1e-3, 10, NonlinearOptimizationParameters::SILENT));
+  Optimizer optimizer(graph, values, ordering, params);
+
+  cout << "optimize_varK_FixCameras::" << endl ;
+  cout << "before optimization, error is " << optimizer.error() << endl;
+  Optimizer optimizer2 = optimizer.levenbergMarquardt();
+  cout << "after optimization, error is " << optimizer2.error() << endl;
+  CHECK(optimizer2.error() < 0.5 * reproj_error * nMeasurements);
+}
+
+
+TEST( GeneralSFMFactor, optimize_varK_FixLandmarks ) {
+
+  vector<Point3> L = genPoint3();
+  vector<GeneralCamera> X = genCameraVariableCalibration();
+
+  // add measurement with noise
+  shared_ptr<Graph> graph(new Graph());
+  for ( size_t j = 0 ; j < X.size() ; ++j) {
+    for ( size_t i = 0 ; i < L.size() ; ++i) {
+      Point2 pt = X[j].project(L[i]) ;
+      graph->addMeasurement(j, i, pt, sigma1);
+    }
+  }
+
+  const size_t nMeasurements = L.size()*X.size();
+
+  boost::shared_ptr<Values> values(new Values);
+  for ( size_t i = 0 ; i < X.size() ; ++i ) {
+    const double
+      rot_noise = 1e-5,
+      trans_noise = 1e-3,
+      focal_noise = 1,
+      skew_noise = 1e-5,
+      distort_noise = 1e-5 ;
+    if ( i == 0 ) {
+      values->insert((int)i, X[i]) ;
+    }
+    else {
+
+      Vector delta = Vector_(11,
+          rot_noise, rot_noise, rot_noise, trans_noise, trans_noise, trans_noise,
+          focal_noise, focal_noise, skew_noise, distort_noise, distort_noise) ;
+//          pose_noise*getGaussian(), pose_noise*getGaussian(), pose_noise*getGaussian(), // rotation
+//          pose_noise*getGaussian(), pose_noise*getGaussian(), pose_noise*getGaussian(), // translation
+//          calib_noise*getGaussian(), calib_noise*getGaussian(), calib_noise*getGaussian(), calib_noise*getGaussian(), calib_noise*getGaussian()); // K)
+      values->insert((int)i, X[i].expmap(delta)) ;
+    }
+  }
+
+  for ( size_t i = 0 ; i < L.size() ; ++i ) {
+    values->insert(i, L[i]) ;
+  }
+
+  // fix X0 and all landmarks, allow only the X[1] to move
+  graph->addCameraConstraint(0, X[0]);
+  for ( size_t i = 0 ; i < L.size() ; ++i )
+    graph->addPoint3Constraint(i, L[i]);
+
+  const double reproj_error = 1e-5 ;
+
+  shared_ptr<Ordering> ordering = getOrdering(X,L);
+  NonlinearOptimizationParameters::sharedThis params (
+      new NonlinearOptimizationParameters(1e-7, 1e-7, 0.0, 100, 1e-3, 10, NonlinearOptimizationParameters::SILENT));
+//      new NonlinearOptimizationParameters(1e-7, 1e-7, 0.0, 100, 1e-3, 10, NonlinearOptimizationParameters::TRYDELTA));
+  Optimizer optimizer(graph, values, ordering, params);
+
+  cout << "optimize_varK_FixLandmarks::" << endl ;
+  cout << "before optimization, error is " << optimizer.error() << endl;
+  Optimizer optimizer2 = optimizer.levenbergMarquardt();
+  cout << "after optimization, error is " << optimizer2.error() << endl;
+  // CHECK(optimizer2.error() < 0.5 * reproj_error * nMeasurements);
+  CHECK(1);
+}
+
+/* ************************************************************************* */
+TEST( GeneralSFMFactor, optimize_varK_BA ) {
+  vector<Point3> L = genPoint3();
+  vector<GeneralCamera> X = genCameraVariableCalibration();
+
+  // add measurement with noise
+  shared_ptr<Graph> graph(new Graph());
+  for ( size_t j = 0 ; j < X.size() ; ++j) {
+    for ( size_t i = 0 ; i < L.size() ; ++i) {
+      Point2 pt = X[j].project(L[i]) ;
+      graph->addMeasurement(j, i, pt, sigma1);
+    }
+  }
+
+  const size_t nMeasurements = X.size()*L.size() ;
+
+  // add initial
+  const double noise = baseline*0.1;
+  boost::shared_ptr<Values> values(new Values);
+  for ( size_t i = 0 ; i < X.size() ; ++i )
+    values->insert((int)i, X[i]) ;
+
+  // add noise only to the first landmark
+  for ( size_t i = 0 ; i < L.size() ; ++i ) {
+    Point3 pt(L[i].x()+noise*getGaussian(),
+              L[i].y()+noise*getGaussian(),
+              L[i].z()+noise*getGaussian());
+    values->insert(i, pt) ;
+  }
+
+  graph->addCameraConstraint(0, X[0]);
+  const double reproj_error = 0.5 ;
+
+  shared_ptr<Ordering> ordering = getOrdering(X,L);
+  NonlinearOptimizationParameters::sharedThis params (
+      new NonlinearOptimizationParameters(1e-7, 1e-7, 0.0, 100, 1e-5, 10, NonlinearOptimizationParameters::SILENT));
+  Optimizer optimizer(graph, values, ordering, params);
+
+  cout << "optimize_varK_BA::" << endl ;
+  cout << "before optimization, error is " << optimizer.error() << endl;
+  Optimizer optimizer2 = optimizer.levenbergMarquardt();
+  cout << "after optimization, error is " << optimizer2.error() << endl;
+  //CHECK(optimizer2.error() < 0.5 * reproj_error * nMeasurements);
+  CHECK(1);
+}
+
 
 /* ************************************************************************* */
 int main() { TestResult tr; return TestRegistry::runAllTests(tr); }

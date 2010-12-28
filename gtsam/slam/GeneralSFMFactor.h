@@ -8,6 +8,9 @@
 
 #pragma once
 
+#include <gtsam/base/Testable.h>
+#include <gtsam/nonlinear/NonlinearFactor.h>
+
 
 namespace gtsam {
 
@@ -16,8 +19,7 @@ namespace gtsam {
 	 */
 	template <class Cfg, class CamK, class LmK>
 	class GeneralSFMFactor:
-	public NonlinearFactor2<Cfg, CamK, LmK> ,
-		   Testable<GeneralSFMFactor<Cfg, CamK, LmK> > {
+	public NonlinearFactor2<Cfg, CamK, LmK> {
 	protected:
 		Point2 z_;
 
