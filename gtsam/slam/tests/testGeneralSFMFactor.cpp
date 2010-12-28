@@ -319,19 +319,19 @@ TEST( GeneralSFMFactor, optimize_varK_FixLandmarks ) {
       rot_noise = 1e-5,
       trans_noise = 1e-3,
       focal_noise = 1,
-      skew_noise = 1e-5,
-      distort_noise = 1e-5 ;
+      skew_noise = 1e-5;
     if ( i == 0 ) {
       values->insert((int)i, X[i]) ;
     }
     else {
 
       Vector delta = Vector_(11,
-          rot_noise, rot_noise, rot_noise, trans_noise, trans_noise, trans_noise,
-          focal_noise, focal_noise, skew_noise, distort_noise, distort_noise) ;
-//          pose_noise*getGaussian(), pose_noise*getGaussian(), pose_noise*getGaussian(), // rotation
-//          pose_noise*getGaussian(), pose_noise*getGaussian(), pose_noise*getGaussian(), // translation
-//          calib_noise*getGaussian(), calib_noise*getGaussian(), calib_noise*getGaussian(), calib_noise*getGaussian(), calib_noise*getGaussian()); // K)
+          rot_noise, rot_noise, rot_noise, // rotation
+          trans_noise, trans_noise, trans_noise, // translation
+          focal_noise, focal_noise, // f_x, f_y
+          skew_noise, // s
+          trans_noise, trans_noise // ux, uy
+          ) ;
       values->insert((int)i, X[i].expmap(delta)) ;
     }
   }
