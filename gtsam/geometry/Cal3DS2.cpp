@@ -102,10 +102,14 @@ Matrix Cal3DS2::D2d_calibration(const Point2& p) const {
 	const double r2 = r*r ;
 	const double fx = fx_, fy = fy_, s = s_ ;
 	const double g = (1+k1_*r+k2_*r2) ;
+  const double dx = 2*k3_*xy + k4_*(r+2*xx) ;
+  const double dy = 2*k4_*xy + k3_*(r+2*yy) ;
+	const double pnx = g*x + dx;
+	const double pny = g*y + dy;
 
 	return Matrix_(2, 9,
-	g*x, 0.0, g*y, 1.0, 0.0, fx*x*r + s*y*r, fx*x*r2 + s*y*r2, fx*2*xy + s*(r+2*yy), fx*(r+2*xx) + s*(2*xy),
-	0.0, g*y, 0.0, 0.0, 1.0, fy*y*r 		 , fy*y*r2         , fy*(r+2*yy)         , fy*(2*xy)	);
+	pnx, 0.0, pny, 1.0, 0.0, fx*x*r + s*y*r, fx*x*r2 + s*y*r2, fx*2*xy + s*(r+2*yy), fx*(r+2*xx) + s*(2*xy),
+	0.0, pny, 0.0, 0.0, 1.0, fy*y*r 		 , fy*y*r2         , fy*(r+2*yy)         , fy*(2*xy)	);
 }
 
 Cal3DS2 Cal3DS2::expmap(const Vector& d) const { return Cal3DS2(vector() + d) ; }

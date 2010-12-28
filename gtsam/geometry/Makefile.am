@@ -17,7 +17,7 @@ check_PROGRAMS += tests/testPoint2 tests/testRot2 tests/testPose2 tests/testPoin
 # Cameras
 headers += GeneralCameraT.h
 sources += Cal3_S2.cpp Cal3DS2.cpp Cal3Bundler.cpp CalibratedCamera.cpp SimpleCamera.cpp
-check_PROGRAMS += tests/testCal3_S2 tests/testCalibratedCamera tests/testSimpleCamera
+check_PROGRAMS += tests/testCal3DS2 tests/testCal3_S2 tests/testCal3Bundler tests/testCalibratedCamera tests/testSimpleCamera
 
 # Stereo
 sources += StereoPoint2.cpp StereoCamera.cpp

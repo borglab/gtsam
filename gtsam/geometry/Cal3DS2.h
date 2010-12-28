@@ -18,8 +18,6 @@
 
 
 #pragma once
-#ifndef CAL3DS2_H_
-#define CAL3DS2_H_
 
 #include <gtsam/base/Vector.h>
 #include <gtsam/base/Matrix.h>
@@ -38,6 +36,7 @@ namespace gtsam {
 		// r = Pn.x^2 + Pn.y^2
 		// \hat{pn} = (1 + k1*r + k2*r^2 ) pn + [ 2*k3 pn.x pn.y + k4 (r + 2 Pn.x^2) ;
 		//										  k3 (r + 2 Pn.y^2) + 2*k4 pn.x pn.y  ]
+		// pi = K*pn
 
 	public:
 		// Default Constructor with only unit focal length
@@ -92,4 +91,3 @@ namespace gtsam {
 	};
 }
 
-#endif /* CAL3DS2_H_ */
