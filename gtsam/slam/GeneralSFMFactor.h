@@ -67,8 +67,9 @@ namespace gtsam {
 				boost::optional<Matrix&> H1=boost::none,
 				boost::optional<Matrix&> H2=boost::none) const {
 
-			Point2 q(camera.project(point,H1,H2) - z_);
-			return q.vector() ;
+			Vector error = z_.logmap(camera.project(point,H1,H2));
+//			gtsam::print(error, "error");
+			return error;
 		}
 
 		/** return the measured */

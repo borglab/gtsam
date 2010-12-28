@@ -48,7 +48,7 @@ check_PROGRAMS += tests/testPose3Factor tests/testPose3Values tests/testPose3SLA
 # Visual SLAM
 headers += GeneralSFMFactor.h
 sources += visualSLAM.cpp
-check_PROGRAMS += tests/testVSLAMFactor tests/testVSLAMGraph tests/testVSLAMValues
+check_PROGRAMS += tests/testVSLAMFactor tests/testVSLAMGraph tests/testVSLAMValues tests/testGeneralSFMFactor
 
 # StereoFactor
 headers += StereoFactor.h

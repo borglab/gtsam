@@ -17,8 +17,6 @@
  */
 
 #pragma once
-#ifndef GENERALCAMERAT_H_
-#define GENERALCAMERAT_H_
 
 #include <boost/numeric/ublas/vector_proxy.hpp>
 #include <boost/numeric/ublas/matrix_proxy.hpp>
@@ -125,9 +123,9 @@ class GeneralCameraT {
 		}
 
 		GeneralCameraT expmap(const Vector &v) const {
-			return GeneralCameraT(
-					calibrated_.expmap(subrange(v,0,Camera::Dim())),
-					calibration_.expmap(subrange(v,Camera::Dim(),Camera::Dim()+Calibration::Dim())));
+			Vector v1 = subrange(v,0,Camera::Dim());
+			Vector v2 = subrange(v,Camera::Dim(),Camera::Dim()+Calibration::Dim());
+			return GeneralCameraT(calibrated_.expmap(v1),	calibration_.expmap(v2));
 		}
 
 		Vector logmap(const GeneralCameraT &C) const {
@@ -221,5 +219,3 @@ typedef GeneralCameraT<CalibratedCamera,Cal3DS2> Cal3DS2Camera;
 typedef GeneralCameraT<CalibratedCamera,Cal3_S2> Cal3_S2Camera;
 
 }
-
-#endif
