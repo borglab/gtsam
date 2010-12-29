@@ -190,7 +190,7 @@ TEST( GeneralSFMFactor, optimize_defaultK ) {
   shared_ptr<Ordering> ordering = getOrdering(X,L);
 	//graph->print("graph") ; values->print("values") ;
   NonlinearOptimizationParameters::sharedThis params (
-      new NonlinearOptimizationParameters(1e-7, 1e-7, 0.0, 100, 1e-5, 10, NonlinearOptimizationParameters::SILENT));
+      new NonlinearOptimizationParameters(1e-5, 1e-5, 0.0, 100, 1e-5, 10, NonlinearOptimizationParameters::SILENT));
 	Optimizer optimizer(graph, values, ordering, params);
   cout << "optimize_defaultK::" << endl ;
 	cout << "before optimization, error is " << optimizer.error() << endl;
@@ -241,7 +241,7 @@ TEST( GeneralSFMFactor, optimize_varK_SingleMeasurementError ) {
 
   shared_ptr<Ordering> ordering = getOrdering(X,L);
   NonlinearOptimizationParameters::sharedThis params (
-      new NonlinearOptimizationParameters(1e-7, 1e-7, 0.0, 100, 1e-5, 10, NonlinearOptimizationParameters::SILENT));
+      new NonlinearOptimizationParameters(1e-5, 1e-5, 0.0, 100, 1e-5, 10, NonlinearOptimizationParameters::SILENT));
   Optimizer optimizer(graph, values, ordering, params);
   cout << "optimize_varK_SingleMeasurementError::" << endl ;
   cout << "before optimization, error is " << optimizer.error() << endl;
@@ -286,7 +286,7 @@ TEST( GeneralSFMFactor, optimize_varK_FixCameras ) {
 
   shared_ptr<Ordering> ordering = getOrdering(X,L);
   NonlinearOptimizationParameters::sharedThis params (
-      new NonlinearOptimizationParameters(1e-7, 1e-7, 0.0, 100, 1e-3, 10, NonlinearOptimizationParameters::SILENT));
+      new NonlinearOptimizationParameters(1e-5, 1e-5, 0.0, 100, 1e-3, 10, NonlinearOptimizationParameters::SILENT));
   Optimizer optimizer(graph, values, ordering, params);
 
   cout << "optimize_varK_FixCameras::" << endl ;
@@ -349,16 +349,15 @@ TEST( GeneralSFMFactor, optimize_varK_FixLandmarks ) {
 
   shared_ptr<Ordering> ordering = getOrdering(X,L);
   NonlinearOptimizationParameters::sharedThis params (
-      new NonlinearOptimizationParameters(1e-7, 1e-7, 0.0, 100, 1e-3, 10, NonlinearOptimizationParameters::SILENT));
-//      new NonlinearOptimizationParameters(1e-7, 1e-7, 0.0, 100, 1e-3, 10, NonlinearOptimizationParameters::TRYDELTA));
+      new NonlinearOptimizationParameters(1e-5, 1e-5, 0.0, 100, 1e-3, 10, NonlinearOptimizationParameters::SILENT));
+//      new NonlinearOptimizationParameters(1e-7, 1e-7, 0.0, 100, 1e-5, 10, NonlinearOptimizationParameters::TRYDELTA));
   Optimizer optimizer(graph, values, ordering, params);
 
   cout << "optimize_varK_FixLandmarks::" << endl ;
   cout << "before optimization, error is " << optimizer.error() << endl;
   Optimizer optimizer2 = optimizer.levenbergMarquardt();
   cout << "after optimization, error is " << optimizer2.error() << endl;
-  // CHECK(optimizer2.error() < 0.5 * reproj_error * nMeasurements);
-  CHECK(1);
+  CHECK(optimizer2.error() < 0.5 * reproj_error * nMeasurements);
 }
 
 /* ************************************************************************* */
@@ -396,15 +395,14 @@ TEST( GeneralSFMFactor, optimize_varK_BA ) {
 
   shared_ptr<Ordering> ordering = getOrdering(X,L);
   NonlinearOptimizationParameters::sharedThis params (
-      new NonlinearOptimizationParameters(1e-7, 1e-7, 0.0, 100, 1e-5, 10, NonlinearOptimizationParameters::SILENT));
+      new NonlinearOptimizationParameters(1e-5, 1e-5, 0.0, 100, 1e-5, 10, NonlinearOptimizationParameters::ERROR));
   Optimizer optimizer(graph, values, ordering, params);
 
   cout << "optimize_varK_BA::" << endl ;
   cout << "before optimization, error is " << optimizer.error() << endl;
   Optimizer optimizer2 = optimizer.levenbergMarquardt();
   cout << "after optimization, error is " << optimizer2.error() << endl;
-  //CHECK(optimizer2.error() < 0.5 * reproj_error * nMeasurements);
-  CHECK(1);
+  CHECK(optimizer2.error() < 0.5 * reproj_error * nMeasurements);
 }
 
 

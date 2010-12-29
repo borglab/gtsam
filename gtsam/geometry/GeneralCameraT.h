@@ -104,7 +104,7 @@ class GeneralCameraT {
 			}
 
 			Matrix H1_k, H1_pose, H2_pt;
-			Point2 projection = project(P, H1_k, H1_pose, H2_pt);
+			Point2 projection = project(P, H1_pose, H1_k, H2_pt);
 			if ( H1 ) *H1 = collect(2, &H1_pose, &H1_k);
 			if ( H2 ) *H2 = H2_pt;
 
