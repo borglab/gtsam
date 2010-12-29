@@ -192,12 +192,12 @@ TEST( GeneralSFMFactor, optimize_defaultK ) {
   NonlinearOptimizationParameters::sharedThis params (
       new NonlinearOptimizationParameters(1e-5, 1e-5, 0.0, 100, 1e-5, 10, NonlinearOptimizationParameters::SILENT));
 	Optimizer optimizer(graph, values, ordering, params);
-  cout << "optimize_defaultK::" << endl ;
-	cout << "before optimization, error is " << optimizer.error() << endl;
+  //cout << "optimize_defaultK::" << endl ;
+	//cout << "before optimization, error is " << optimizer.error() << endl;
 	Optimizer optimizer2 = optimizer.levenbergMarquardt();
-	cout << "after optimization, error is " << optimizer2.error() << endl;
+	//cout << "after optimization, error is " << optimizer2.error() << endl;
 	//optimizer2.values()->print("optimized") ;
-	CHECK(optimizer2.error() < 0.5 * 1e-1 * nMeasurements);
+	CHECK(optimizer2.error() < 0.5 * 1e-5 * nMeasurements);
 }
 
 
@@ -237,16 +237,16 @@ TEST( GeneralSFMFactor, optimize_varK_SingleMeasurementError ) {
   }
 
   graph->addCameraConstraint(0, X[0]);
-  const double reproj_error = 0.5 ;
+  const double reproj_error = 1e-5;
 
   shared_ptr<Ordering> ordering = getOrdering(X,L);
   NonlinearOptimizationParameters::sharedThis params (
       new NonlinearOptimizationParameters(1e-5, 1e-5, 0.0, 100, 1e-5, 10, NonlinearOptimizationParameters::SILENT));
   Optimizer optimizer(graph, values, ordering, params);
-  cout << "optimize_varK_SingleMeasurementError::" << endl ;
-  cout << "before optimization, error is " << optimizer.error() << endl;
+  //cout << "optimize_varK_SingleMeasurementError::" << endl ;
+  //cout << "before optimization, error is " << optimizer.error() << endl;
   Optimizer optimizer2 = optimizer.levenbergMarquardt();
-  cout << "after optimization, error is " << optimizer2.error() << endl;
+  //cout << "after optimization, error is " << optimizer2.error() << endl;
   CHECK(optimizer2.error() < 0.5 * reproj_error * nMeasurements);
 }
 
@@ -289,10 +289,10 @@ TEST( GeneralSFMFactor, optimize_varK_FixCameras ) {
       new NonlinearOptimizationParameters(1e-5, 1e-5, 0.0, 100, 1e-3, 10, NonlinearOptimizationParameters::SILENT));
   Optimizer optimizer(graph, values, ordering, params);
 
-  cout << "optimize_varK_FixCameras::" << endl ;
-  cout << "before optimization, error is " << optimizer.error() << endl;
+  //cout << "optimize_varK_FixCameras::" << endl ;
+  //cout << "before optimization, error is " << optimizer.error() << endl;
   Optimizer optimizer2 = optimizer.levenbergMarquardt();
-  cout << "after optimization, error is " << optimizer2.error() << endl;
+  //cout << "after optimization, error is " << optimizer2.error() << endl;
   CHECK(optimizer2.error() < 0.5 * reproj_error * nMeasurements);
 }
 
@@ -353,10 +353,10 @@ TEST( GeneralSFMFactor, optimize_varK_FixLandmarks ) {
 //      new NonlinearOptimizationParameters(1e-7, 1e-7, 0.0, 100, 1e-5, 10, NonlinearOptimizationParameters::TRYDELTA));
   Optimizer optimizer(graph, values, ordering, params);
 
-  cout << "optimize_varK_FixLandmarks::" << endl ;
-  cout << "before optimization, error is " << optimizer.error() << endl;
+  //cout << "optimize_varK_FixLandmarks::" << endl ;
+  //cout << "before optimization, error is " << optimizer.error() << endl;
   Optimizer optimizer2 = optimizer.levenbergMarquardt();
-  cout << "after optimization, error is " << optimizer2.error() << endl;
+  //cout << "after optimization, error is " << optimizer2.error() << endl;
   CHECK(optimizer2.error() < 0.5 * reproj_error * nMeasurements);
 }
 
@@ -391,17 +391,17 @@ TEST( GeneralSFMFactor, optimize_varK_BA ) {
   }
 
   graph->addCameraConstraint(0, X[0]);
-  const double reproj_error = 0.5 ;
+  const double reproj_error = 1e-5 ;
 
   shared_ptr<Ordering> ordering = getOrdering(X,L);
   NonlinearOptimizationParameters::sharedThis params (
-      new NonlinearOptimizationParameters(1e-5, 1e-5, 0.0, 100, 1e-5, 10, NonlinearOptimizationParameters::ERROR));
+      new NonlinearOptimizationParameters(1e-5, 1e-5, 0.0, 100, 1e-5, 10, NonlinearOptimizationParameters::SILENT));
   Optimizer optimizer(graph, values, ordering, params);
 
-  cout << "optimize_varK_BA::" << endl ;
-  cout << "before optimization, error is " << optimizer.error() << endl;
+  //cout << "optimize_varK_BA::" << endl ;
+  //cout << "before optimization, error is " << optimizer.error() << endl;
   Optimizer optimizer2 = optimizer.levenbergMarquardt();
-  cout << "after optimization, error is " << optimizer2.error() << endl;
+  //cout << "after optimization, error is " << optimizer2.error() << endl;
   CHECK(optimizer2.error() < 0.5 * reproj_error * nMeasurements);
 }
 
