@@ -35,6 +35,18 @@ TESTS = $(check_PROGRAMS)
 AM_LDFLAGS = $(BOOST_LDFLAGS)
 AM_CPPFLAGS = $(BOOST_CPPFLAGS) -I$(CCOLAMDInc) -I$(top_srcdir)
 
+if USE_BLAS_LINUX
+AM_LDFLAGS += -lcblas -latlas  
+endif
+
+if USE_LAPACK
+AM_CPPFLAGS += -DGT_USE_LAPACK
+endif
+
+if USE_LAPACK_LINUX
+AM_LDFLAGS += -llapack
+endif
+
 if USE_ACCELERATE_MACOS
 AM_LDFLAGS += -Wl,/System/Library/Frameworks/Accelerate.framework/Accelerate
 endif

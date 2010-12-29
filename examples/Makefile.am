@@ -27,6 +27,22 @@ AM_LDFLAGS = $(BOOST_LDFLAGS)
 LDADD = ../gtsam/libgtsam.la
 AM_DEFAULT_SOURCE_EXT = .cpp
 
+if USE_BLAS_LINUX
+AM_LDFLAGS += -lcblas -latlas  
+endif
+
+if USE_LAPACK
+AM_CPPFLAGS += -DGT_USE_LAPACK
+endif
+
+if USE_LAPACK_LINUX
+AM_LDFLAGS += -llapack
+endif
+
+if USE_ACCELERATE_MACOS
+AM_LDFLAGS += -Wl,/System/Library/Frameworks/Accelerate.framework/Accelerate
+endif
+
 # rule to run an executable
 %.run: % $(LDADD)
 	./$^
