@@ -149,10 +149,9 @@ namespace gtsam {
 
 		if( lambdaMode >= Parameters::CAUTIOUS) throw runtime_error("CAUTIOUS mode not working yet, please use BOUNDED.");
 
-		bool first_iteration = true;
 		double next_error = error_;
 
-		shared_values next_values;
+		shared_values next_values = values_;
 
 		while(true) {
 		  if (verbosity >= Parameters::TRYLAMBDA) cout << "trying lambda = " << lambda << endl;
@@ -189,12 +188,8 @@ namespace gtsam {
 
 		  if (verbosity >= Parameters::TRYLAMBDA) cout << "next error = " << error << endl;
 
-		  if(first_iteration || error <= error_) {
-			  next_values = newValues;
-			  first_iteration = false;
-		  }
-
 		  if( error <= error_ ) {
+		  	next_values = newValues;
 		  	next_error = error;
 			  lambda /= factor;
 		  	break;
