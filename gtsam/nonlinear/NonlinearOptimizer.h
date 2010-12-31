@@ -216,6 +216,11 @@ namespace gtsam {
 		shared_ordering ordering() const { return ordering_; }
 
 		/**
+		 * Return the parameters
+		 */
+		shared_parameters parameters() const { return parameters_; }
+
+		/**
 		 * Return mean and covariance on a single variable
 		 */
 		std::pair<Vector,Matrix> marginalCovariance(Symbol j) const {
