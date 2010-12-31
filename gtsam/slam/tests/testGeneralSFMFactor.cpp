@@ -395,7 +395,7 @@ TEST( GeneralSFMFactor, optimize_varK_BA ) {
 
   shared_ptr<Ordering> ordering = getOrdering(X,L);
   NonlinearOptimizationParameters::sharedThis params (
-      new NonlinearOptimizationParameters(1e-5, 1e-5, 0.0, 100, 1e-5, 10, NonlinearOptimizationParameters::SILENT));
+      new NonlinearOptimizationParameters(1e-2, 1e-2, 0.0, 100, 1e-5, 10, NonlinearOptimizationParameters::SILENT));
   Optimizer optimizer(graph, values, ordering, params);
 
   //cout << "optimize_varK_BA::" << endl ;
