@@ -107,11 +107,6 @@ namespace gtsam {
 		// The dimensions of each linearized variable
 		const shared_dimensions dimensions_;
 
-		// Recursively try to do tempered Gauss-Newton steps until we succeed
-//		NonlinearOptimizer try_lambda(const L& linear,
-//				Parameters::verbosityLevel verbosity, double factor, Parameters::LambdaMode lambdaMode) const;
-		NonlinearOptimizer try_lambda(L& linear);
-
     /**
      * Constructor that does not do any computation
      */
@@ -249,6 +244,9 @@ namespace gtsam {
 
 		// suggested interface
 		NonlinearOptimizer gaussNewton() const;
+
+    /** Recursively try to do tempered Gauss-Newton steps until we succeed */
+    NonlinearOptimizer try_lambda(const L& linear);
 
 		/**
 		 * One iteration of Levenberg Marquardt

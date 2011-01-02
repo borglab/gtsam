@@ -140,7 +140,7 @@ namespace gtsam {
 	// TODO: in theory we can't infinitely recurse, but maybe we should put a max.
 	/* ************************************************************************* */
 	template<class G, class C, class L, class S, class W>
-	NonlinearOptimizer<G, C, L, S, W> NonlinearOptimizer<G, C, L, S, W>::try_lambda(L& linear) {
+	NonlinearOptimizer<G, C, L, S, W> NonlinearOptimizer<G, C, L, S, W>::try_lambda(const L& linear) {
 
 		const Parameters::verbosityLevel verbosity = parameters_->verbosity_ ;
 		double lambda = parameters_->lambda_ ;
