@@ -44,7 +44,8 @@ namespace gtsam {
 	public:
 
 	  typedef FactorGraph<NonlinearFactor<VALUES> > Base;
-		typedef typename boost::shared_ptr<NonlinearFactor<VALUES> > sharedFactor;
+	  typedef boost::shared_ptr<NonlinearFactorGraph<VALUES> > shared_ptr;
+		typedef boost::shared_ptr<NonlinearFactor<VALUES> > sharedFactor;
 
     /** print just calls base class */
     void print(const std::string& str = "NonlinearFactorGraph: ") const;
