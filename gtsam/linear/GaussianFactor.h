@@ -191,11 +191,14 @@ namespace gtsam {
 
   public:
 
-    /** get a copy of sigmas */
-    const Vector& get_sigmas() const {	return model_->sigmas();	}
+    /** access the sigmas */
+    const Vector& get_sigmas() const { return model_->sigmas(); }
 
-    /** get a copy of model */
-    const SharedDiagonal& get_model() const { return model_;  }
+    /** access the noise model */
+    const SharedDiagonal& get_model() const { return model_; }
+
+    /** access the noise model (non-const version) */
+    SharedDiagonal& get_model() { return model_; }
 
     /** get the indices list */
     const std::vector<size_t>& get_firstNonzeroBlocks() const { return firstNonzeroBlocks_; }
