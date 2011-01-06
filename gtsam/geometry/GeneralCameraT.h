@@ -61,8 +61,8 @@ class GeneralCameraT {
 
 		std::pair<Point2,bool> projectSafe(
 				const Point3& P,
-				boost::optional<Matrix&> H1,
-				boost::optional<Matrix&> H2) const {
+				boost::optional<Matrix&> H1 = boost::none,
+				boost::optional<Matrix&> H2 = boost::none) const {
 
 			Point3 cameraPoint = calibrated_.pose().transform_to(P);
 			return std::pair<Point2, bool>(
