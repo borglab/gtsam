@@ -156,6 +156,15 @@ namespace gtsam {
     			 0.,  0.,  0.,  0.);
     }
 
+	/**
+	 * Calculate range to a landmark
+	 * @param point 3D location of landmark
+	 * @return range (double)
+	 */
+	double range(const Point3& point,
+			boost::optional<Matrix&> H1=boost::none,
+			boost::optional<Matrix&> H2=boost::none) const;
+
   private:
     /** Serialization function */
     friend class boost::serialization::access;

@@ -245,7 +245,18 @@ namespace gtsam {
 		Pose3 result = invp1.compose(p2, composeH1, H2);
 		if (H1) *H1 = composeH1 * invH;
 		return result;
-	}
+  }
 
   /* ************************************************************************* */
+  double Pose3::range(const Point3& point,
+		  boost::optional<Matrix&> H1,
+		  boost::optional<Matrix&> H2) const {
+	  if (!H1 && !H2) return transform_to(point).norm();
+	  Point3 d = transform_to(point, H1, H2);
+	  double x = d.x(), y = d.y(), d2 = x * x + y * y, n = sqrt(d2);
+	  Matrix D_result_d = Matrix_(1, 2, x / n, y / n);
+	  if (H1) *H1 = D_result_d * (*H1);
+	  if (H2) *H2 = D_result_d * (*H2);
+	  return n;
+  }
 } // namespace gtsam

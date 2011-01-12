@@ -465,5 +465,45 @@ TEST( Pose3, between )
 }
 
 /* ************************************************************************* */
+// some shared test values - pulled from equivalent test in Pose2
+Point3 l1(1, 0, 0), l2(1, 1, 0), l3(2, 2, 0), l4(1, 3, 0);
+Pose3 x1, x2(Rot3::ypr(0.0, 0.0, 0.0), l2), x3(Rot3::ypr(M_PI_4, 0.0, 0.0), l2);
+
+/* ************************************************************************* */
+LieVector range_proxy(const Pose3& pose, const Point3& point) {
+	return LieVector(pose.range(point));
+}
+TEST( Pose3, range )
+{
+	Matrix expectedH1, actualH1, expectedH2, actualH2;
+
+	// establish range is indeed zero
+	EXPECT_DOUBLES_EQUAL(1,x1.range(l1),1e-9);
+
+	// establish range is indeed sqrt2
+	EXPECT_DOUBLES_EQUAL(sqrt(2),x1.range(l2),1e-9);
+
+	// Another pair
+	double actual23 = x2.range(l3, actualH1, actualH2);
+	EXPECT_DOUBLES_EQUAL(sqrt(2),actual23,1e-9);
+
+	// Check numerical derivatives
+	expectedH1 = numericalDerivative21(range_proxy, x2, l3, 1e-5);
+	expectedH2 = numericalDerivative22(range_proxy, x2, l3, 1e-5);
+	EXPECT(assert_equal(expectedH1,actualH1));
+	EXPECT(assert_equal(expectedH2,actualH2));
+
+	// Another test
+	double actual34 = x3.range(l4, actualH1, actualH2);
+	EXPECT_DOUBLES_EQUAL(2,actual34,1e-9);
+
+	// Check numerical derivatives
+	expectedH1 = numericalDerivative21(range_proxy, x3, l4, 1e-5);
+	expectedH2 = numericalDerivative22(range_proxy, x3, l4, 1e-5);
+	EXPECT(assert_equal(expectedH1,actualH1));
+	EXPECT(assert_equal(expectedH2,actualH2));
+}
+
+/* ************************************************************************* */
 int main(){ TestResult tr; return TestRegistry::runAllTests(tr);}
 /* ************************************************************************* */
