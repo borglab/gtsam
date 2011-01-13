@@ -28,6 +28,7 @@ static Rot3 R = Rot3::rodriguez(0.3,0,0);
 static Pose3 T(R,Point3(3.5,-8.2,4.2));
 static Pose3 T2(Rot3::rodriguez(0.3,0.2,0.1),Point3(3.5,-8.2,4.2));
 static Pose3 T3(Rot3::rodriguez(-90, 0, 0), Point3(1, 2, 3));
+const double tol=1e-5;
 
 /* ************************************************************************* */
 TEST( Pose3, equals)
@@ -502,6 +503,17 @@ TEST( Pose3, range )
 	expectedH2 = numericalDerivative22(range_proxy, x3, l4, 1e-5);
 	EXPECT(assert_equal(expectedH1,actualH1));
 	EXPECT(assert_equal(expectedH2,actualH2));
+}
+
+/* ************************************************************************* */
+TEST( Pose3, unicycle )
+{
+	// velocity in X should be X in inertial frame, rather than global frame
+	Vector x_step = delta(6,3,1.0);
+	EXPECT(assert_equal(Pose3(Rot3::ypr(0,0,0), l1), x1.expmap(x_step), tol));
+	EXPECT(assert_equal(Pose3(Rot3::ypr(0,0,0), Point3(2,1,0)), x2.expmap(x_step), tol));
+	// FAILS: moves in global X, not inertial X
+//	EXPECT(assert_equal(Pose3(Rot3::ypr(M_PI_4,0,0), Point3(3,2,0)), x3.expmap(sqrt(2) * x_step), tol));
 }
 
 /* ************************************************************************* */
