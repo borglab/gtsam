@@ -466,7 +466,7 @@ TEST( Pose3, between )
 
 /* ************************************************************************* */
 // some shared test values - pulled from equivalent test in Pose2
-Point3 l1(1, 0, 0), l2(1, 1, 0), l3(2, 2, 0), l4(1, 3, 0);
+Point3 l1(1, 0, 0), l2(1, 1, 0), l3(2, 2, 0), l4(1, 4,-4);
 Pose3 x1, x2(Rot3::ypr(0.0, 0.0, 0.0), l2), x3(Rot3::ypr(M_PI_4, 0.0, 0.0), l2);
 
 /* ************************************************************************* */
@@ -495,7 +495,7 @@ TEST( Pose3, range )
 
 	// Another test
 	double actual34 = x3.range(l4, actualH1, actualH2);
-	EXPECT_DOUBLES_EQUAL(2,actual34,1e-9);
+	EXPECT_DOUBLES_EQUAL(5,actual34,1e-9);
 
 	// Check numerical derivatives
 	expectedH1 = numericalDerivative21(range_proxy, x3, l4, 1e-5);

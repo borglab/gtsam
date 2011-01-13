@@ -253,8 +253,9 @@ namespace gtsam {
 		  boost::optional<Matrix&> H2) const {
 	  if (!H1 && !H2) return transform_to(point).norm();
 	  Point3 d = transform_to(point, H1, H2);
-	  double x = d.x(), y = d.y(), d2 = x * x + y * y, n = sqrt(d2);
-	  Matrix D_result_d = Matrix_(1, 2, x / n, y / n);
+	  double x = d.x(), y = d.y(), z = d.z(),
+			 d2 = x * x + y * y + z * z, n = sqrt(d2);
+	  Matrix D_result_d = Matrix_(1, 3, x / n, y / n, z / n);
 	  if (H1) *H1 = D_result_d * (*H1);
 	  if (H2) *H2 = D_result_d * (*H2);
 	  return n;
