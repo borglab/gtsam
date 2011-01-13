@@ -170,6 +170,7 @@ public:
   }
 
   friend class AutoTimer;
+  friend void toc_(size_t id);
   friend void toc_(size_t id, const std::string& label);
 };
 
@@ -179,17 +180,25 @@ inline void tic_(size_t id, const std::string& label) {
   node->tic();
 }
 
-inline void toc_(size_t id, const std::string& label) {
+inline void toc_(size_t id) {
   boost::shared_ptr<TimingOutline> current(timingCurrent.lock());
+  assert(current->parent_.lock()->children_[id] == current);
   current->toc();
   timingCurrent = current->parent_;
 }
 
+inline void toc_(size_t id, const std::string& label) {
+  assert(label == timingCurrent.lock()->label_);
+  toc_(id);
+}
+
 #ifdef ENABLE_TIMING
 inline void tic(size_t id, const std::string& label) { tic_(id, label); }
+inline void toc(size_t id) { toc_(id); }
 inline void toc(size_t id, const std::string& label) { toc_(id, label); }
 #else
 inline void tic(size_t id, const std::string& label) {}
+inline void toc(size_t id) {}
 inline void toc(size_t id, const std::string& label) {}
 #endif
 
@@ -198,8 +207,8 @@ class Timing;
 extern Timing timing;
 extern std::string timingPrefix;
 
-double tic();
-double toc(double t);
+double _tic();
+double _toc(double t);
 double tic(const std::string& id);
 double toc(const std::string& id);
 void ticPush(const std::string& id);
@@ -207,8 +216,8 @@ void ticPop(const std::string& id);
 void tictoc_print();
 
 /** These underscore versions work evening when ENABLE_TIMING is not defined */
-double tic_();
-double toc_(double t);
+double _tic_();
+double _toc_(double t);
 double tic_(const std::string& id);
 double toc_(const std::string& id);
 void ticPush_(const std::string& id);
@@ -257,23 +266,23 @@ public:
   }
 };
 
-inline double tic_() {
+inline double _tic_() {
   struct timeval t;
   gettimeofday(&t, NULL);
   return ((double)t.tv_sec + ((double)t.tv_usec)/1000000.);
 }
-inline double toc_(double t) {
-  double s = tic_();
+inline double _toc_(double t) {
+  double s = _tic_();
   return (std::max(0., s-t));
 }
 inline double tic_(const std::string& id) {
-  double t0 = tic_();
+  double t0 = _tic_();
   timing.add_t0(timingPrefix + " " + id, t0);
   return t0;
 }
 inline double toc_(const std::string& id) {
   std::string comb(timingPrefix + " " + id);
-  double dt = toc_(timing.get_t0(comb));
+  double dt = _toc_(timing.get_t0(comb));
   timing.add_dt(comb, dt);
   return dt;
 }
@@ -299,16 +308,16 @@ inline void tictoc_print_() {
 }
 
 #ifdef ENABLE_TIMING
-inline double tic() { return tic_(); }
-inline double toc(double t) { return toc_(t); }
+inline double _tic() { return _tic_(); }
+inline double _toc(double t) { return _toc_(t); }
 inline double tic(const std::string& id) { return tic_(id); }
 inline double toc(const std::string& id) { return toc_(id); }
 inline void ticPush(const std::string& prefix, const std::string& id) { ticPush_(prefix, id); }
 inline void ticPop(const std::string& prefix, const std::string& id) { ticPop_(prefix, id); }
 inline void tictoc_print() { tictoc_print_(); }
 #else
-inline double tic() {return 0.;}
-inline double toc(double t) {return 0.;}
+inline double _tic() {return 0.;}
+inline double _toc(double t) {return 0.;}
 inline double tic(const std::string& id) {return 0.;}
 inline double toc(const std::string& id) {return 0.;}
 inline void ticPush(const std::string& prefix, const std::string& id) {}
