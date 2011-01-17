@@ -525,7 +525,7 @@ namespace gtsam {
       if(var1 < var2 && var2 < var3)
         return IndexFactor::shared_ptr(new IndexFactor(ordering[key1_], ordering[key2_], ordering[key3_]));
       else if(var2 < var1 && var1 < var3)
-        return IndexFactor::shared_ptr(new IndexFactor(ordering[key2_], ordering[key2_], ordering[key3_]));
+        return IndexFactor::shared_ptr(new IndexFactor(ordering[key2_], ordering[key1_], ordering[key3_]));
       else if(var1 < var3 && var3 < var2)
         return IndexFactor::shared_ptr(new IndexFactor(ordering[key1_], ordering[key3_], ordering[key2_]));
       else if(var2 < var3 && var3 < var1)
