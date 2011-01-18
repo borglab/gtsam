@@ -148,8 +148,11 @@ namespace gtsam {
 		BOOST_FOREACH(const KeyValue& value, this->values_) {
 			const J& j = value.first;
 			const typename J::Value& pj = value.second;
-			const Vector& dj = delta[ordering[j]];
-			newValues.insert(j, pj.expmap(dj));
+			Index index;
+			if(ordering.tryAt(j,index)) {
+			  newValues.insert(j, pj.expmap(delta[index]));
+			} else
+			  newValues.insert(j, pj);
 		}
 		return newValues;
 	}

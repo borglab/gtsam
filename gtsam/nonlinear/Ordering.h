@@ -64,6 +64,14 @@ public:
 
   Index& at(const Symbol& key) { return operator[](key); }
   Index at(const Symbol& key) const { return operator[](key); }
+  bool tryAt(const Symbol& key, Index& index) const {
+    const_iterator i = order_.find(key);
+    if(i != order_.end()) {
+      index = i->second;
+      return true;
+    } else
+      return false;
+  }
   Index& operator[](const Symbol& key) {
     iterator i=order_.find(key); assert(i != order_.end()); return i->second; }
   Index operator[](const Symbol& key) const {

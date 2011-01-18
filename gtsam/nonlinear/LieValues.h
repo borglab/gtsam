@@ -206,9 +206,11 @@ namespace gtsam {
     std::vector<size_t> dimensions;
     _ValuesDimensionCollector(const Ordering& _ordering) : ordering(_ordering), dimensions(_ordering.nVars()) {}
     template<typename I> void operator()(const I& key_value) {
-      Index var = ordering[key_value->first];
-      assert(var < dimensions.size());
-      dimensions[var] = key_value->second.dim();
+      Index var;
+      if(ordering.tryAt(key_value->first, var)) {
+        assert(var < dimensions.size());
+        dimensions[var] = key_value->second.dim();
+      }
     }
   };
 
