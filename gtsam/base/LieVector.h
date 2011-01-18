@@ -89,7 +89,11 @@ namespace gtsam {
 	    }
 
 	    /** between operation */
-	    inline LieVector between(const LieVector& l2) const {
+	    inline LieVector between(const LieVector& l2,
+	        boost::optional<Matrix&> H1=boost::none,
+	        boost::optional<Matrix&> H2=boost::none) const {
+	      if(H1) *H1 = -eye(dim());
+	      if(H2) *H2 = eye(l2.dim());
 	    	return LieVector(l2.vector() - vector());
 	    }
 
