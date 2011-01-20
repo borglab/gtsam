@@ -155,12 +155,12 @@ namespace gtsam {
 
     assert(Stair != NULL);
 
-    tic("householder_denseqr");
+    tic(1, "householder_denseqr");
     int npiv = min(m,n);
 		int b = min(min(m,n),32);
     double W[b*(n+b)];
     DenseQR(m, n, npiv, A.data().begin(), Stair, W);
-    toc("householder_denseqr");
+    toc(1, "householder_denseqr");
 	}
 
 } // namespace gtsam

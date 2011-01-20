@@ -37,7 +37,7 @@ sources += DSFVector.cpp
 check_PROGRAMS += tests/testBTree tests/testDSF tests/testDSFVector
 
 # Timing tests
-noinst_PROGRAMS = tests/timeMatrix tests/timeublas tests/timeVirtual
+noinst_PROGRAMS = tests/timeMatrix tests/timeublas tests/timeVirtual tests/timeTest
 
 #----------------------------------------------------------------------------------------------------
 # Create a libtool library that is not installed

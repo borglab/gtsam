@@ -31,6 +31,8 @@
 #include <gtsam/base/Matrix.h>
 #include <gtsam/linear/SharedGaussian.h>
 #include <gtsam/linear/GaussianFactor.h>
+#include <gtsam/linear/JacobianFactor.h>
+
 #include <gtsam/nonlinear/Ordering.h>
 
 // FIXME: is this necessary? These don't even fit the right format
@@ -131,7 +133,7 @@ namespace gtsam {
 		}
 
 		/** linearize to a GaussianFactor */
-		virtual boost::shared_ptr<GaussianFactor>
+		virtual boost::shared_ptr<JacobianFactor>
 		linearize(const VALUES& c, const Ordering& ordering) const = 0;
 
 		/**
@@ -221,7 +223,7 @@ namespace gtsam {
 		 * Ax-b \approx h(x0+dx)-z = h(x0) + A*dx - z
 		 * Hence b = z - h(x0) = - error_vector(x)
 		 */
-		virtual boost::shared_ptr<GaussianFactor> linearize(const VALUES& x, const Ordering& ordering) const {
+		virtual boost::shared_ptr<JacobianFactor> linearize(const VALUES& x, const Ordering& ordering) const {
 			const X& xj = x[key_];
 			Matrix A;
 			Vector b = - evaluateError(xj, A);
@@ -230,10 +232,10 @@ namespace gtsam {
 			SharedDiagonal constrained =
 					boost::shared_dynamic_cast<noiseModel::Constrained>(this->noiseModel_);
 			if (constrained.get() != NULL)
-				return GaussianFactor::shared_ptr(new GaussianFactor(var, A, b, constrained));
+				return JacobianFactor::shared_ptr(new JacobianFactor(var, A, b, constrained));
 			this->noiseModel_->WhitenInPlace(A);
 			this->noiseModel_->whitenInPlace(b);
-			return GaussianFactor::shared_ptr(new GaussianFactor(var, A, b,
+			return JacobianFactor::shared_ptr(new JacobianFactor(var, A, b,
 					noiseModel::Unit::Create(b.size())));
 		}
 
@@ -333,7 +335,7 @@ namespace gtsam {
 		 * Ax-b \approx h(x1+dx1,x2+dx2)-z = h(x1,x2) + A2*dx1 + A2*dx2 - z
 		 * Hence b = z - h(x1,x2) = - error_vector(x)
 		 */
-		boost::shared_ptr<GaussianFactor> linearize(const VALUES& c, const Ordering& ordering) const {
+		boost::shared_ptr<JacobianFactor> linearize(const VALUES& c, const Ordering& ordering) const {
 			const X1& x1 = c[key1_];
 			const X2& x2 = c[key2_];
 			Matrix A1, A2;
@@ -343,17 +345,17 @@ namespace gtsam {
 			SharedDiagonal constrained =
 					boost::shared_dynamic_cast<noiseModel::Constrained>(this->noiseModel_);
 			if (constrained.get() != NULL) {
-				return GaussianFactor::shared_ptr(new GaussianFactor(var1, A1, var2,
+				return JacobianFactor::shared_ptr(new JacobianFactor(var1, A1, var2,
 						A2, b, constrained));
 			}
 			this->noiseModel_->WhitenInPlace(A1);
 			this->noiseModel_->WhitenInPlace(A2);
 			this->noiseModel_->whitenInPlace(b);
 			if(var1 < var2)
-			  return GaussianFactor::shared_ptr(new GaussianFactor(var1, A1, var2,
+			  return JacobianFactor::shared_ptr(new JacobianFactor(var1, A1, var2,
 			      A2, b, noiseModel::Unit::Create(b.size())));
 			else
-			  return GaussianFactor::shared_ptr(new GaussianFactor(var2, A2, var1,
+			  return JacobianFactor::shared_ptr(new JacobianFactor(var2, A2, var1,
 			      A1, b, noiseModel::Unit::Create(b.size())));
 		}
 
@@ -474,7 +476,7 @@ namespace gtsam {
      * Ax-b \approx h(x1+dx1,x2+dx2,x3+dx3)-z = h(x1,x2,x3) + A2*dx1 + A2*dx2 + A3*dx3 - z
      * Hence b = z - h(x1,x2,x3) = - error_vector(x)
      */
-    boost::shared_ptr<GaussianFactor> linearize(const VALUES& c, const Ordering& ordering) const {
+    boost::shared_ptr<JacobianFactor> linearize(const VALUES& c, const Ordering& ordering) const {
       const X1& x1 = c[key1_];
       const X2& x2 = c[key2_];
       const X3& x3 = c[key3_];
@@ -485,34 +487,34 @@ namespace gtsam {
       SharedDiagonal constrained =
           boost::shared_dynamic_cast<noiseModel::Constrained>(this->noiseModel_);
       if (constrained.get() != NULL) {
-        return GaussianFactor::shared_ptr(
-            new GaussianFactor(var1, A1, var2, A2, var3, A3, b, constrained));
+        return JacobianFactor::shared_ptr(
+            new JacobianFactor(var1, A1, var2, A2, var3, A3, b, constrained));
       }
       this->noiseModel_->WhitenInPlace(A1);
       this->noiseModel_->WhitenInPlace(A2);
       this->noiseModel_->WhitenInPlace(A3);
       this->noiseModel_->whitenInPlace(b);
       if(var1 < var2 && var2 < var3)
-        return GaussianFactor::shared_ptr(
-            new GaussianFactor(var1, A1, var2, A2, var3, A3, b, noiseModel::Unit::Create(b.size())));
+        return JacobianFactor::shared_ptr(
+            new JacobianFactor(var1, A1, var2, A2, var3, A3, b, noiseModel::Unit::Create(b.size())));
       else if(var2 < var1 && var1 < var3)
-        return GaussianFactor::shared_ptr(
-            new GaussianFactor(var2, A2, var1, A1, var3, A3, b, noiseModel::Unit::Create(b.size())));
+        return JacobianFactor::shared_ptr(
+            new JacobianFactor(var2, A2, var1, A1, var3, A3, b, noiseModel::Unit::Create(b.size())));
       else if(var1 < var3 && var3 < var2)
-        return GaussianFactor::shared_ptr(
-            new GaussianFactor(var1, A1, var3, A3, var2, A2, b, noiseModel::Unit::Create(b.size())));
+        return JacobianFactor::shared_ptr(
+            new JacobianFactor(var1, A1, var3, A3, var2, A2, b, noiseModel::Unit::Create(b.size())));
       else if(var2 < var3 && var3 < var1)
-        return GaussianFactor::shared_ptr(
-            new GaussianFactor(var2, A2, var3, A3, var1, A1, b, noiseModel::Unit::Create(b.size())));
+        return JacobianFactor::shared_ptr(
+            new JacobianFactor(var2, A2, var3, A3, var1, A1, b, noiseModel::Unit::Create(b.size())));
       else if(var3 < var1 && var1 < var2)
-        return GaussianFactor::shared_ptr(
-            new GaussianFactor(var3, A3, var1, A1, var2, A2, b, noiseModel::Unit::Create(b.size())));
+        return JacobianFactor::shared_ptr(
+            new JacobianFactor(var3, A3, var1, A1, var2, A2, b, noiseModel::Unit::Create(b.size())));
       else if(var3 < var2 && var2 < var1)
-        return GaussianFactor::shared_ptr(
-            new GaussianFactor(var3, A3, var2, A2, var1, A1, b, noiseModel::Unit::Create(b.size())));
+        return JacobianFactor::shared_ptr(
+            new JacobianFactor(var3, A3, var2, A2, var1, A1, b, noiseModel::Unit::Create(b.size())));
       else {
         assert(false);
-        return GaussianFactor::shared_ptr();
+        return JacobianFactor::shared_ptr();
       }
     }
 

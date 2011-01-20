@@ -13,42 +13,24 @@
  * @file    GaussianFactor.h
  * @brief   Linear Factor....A Gaussian
  * @brief   linearFactor
- * @author  Christian Potthast
+ * @author  Richard Roberts, Christian Potthast
  */
 
 // \callgraph
 
 #pragma once
 
-#include <boost/shared_ptr.hpp>
-#include <boost/tuple/tuple.hpp>
-#include <boost/foreach.hpp>
-#include <boost/lambda/lambda.hpp>
-#include <boost/bind.hpp>
-#include <boost/numeric/ublas/matrix_proxy.hpp>
-#include <boost/pool/pool_alloc.hpp>
-#include <list>
-#include <set>
-#include <vector>
-#include <map>
-#include <deque>
-
-#include <gtsam/base/types.h>
-#include <gtsam/base/Matrix.h>
-#include <gtsam/base/blockMatrices.h>
-#include <gtsam/inference/IndexFactor.h>
-#include <gtsam/inference/inference.h>
-#include <gtsam/inference/VariableSlots.h>
 #include <gtsam/inference/FactorGraph.h>
-#include <gtsam/linear/VectorValues.h>
-#include <gtsam/linear/SharedDiagonal.h>
-#include <gtsam/linear/GaussianConditional.h>
 #include <gtsam/linear/GaussianBayesNet.h>
+#include <gtsam/linear/Errors.h>
+
+#include <string>
+#include <utility>
 
 namespace gtsam {
 
-  /** A map from key to dimension, useful in various contexts */
-  typedef std::map<Index, size_t> Dimensions;
+  class VectorValues;
+  class Permutation;
 
   /**
    * Base Class for a linear factor.
@@ -59,201 +41,92 @@ namespace gtsam {
 
   protected:
 
-    typedef boost::numeric::ublas::matrix<double, boost::numeric::ublas::column_major> AbMatrix;
-    typedef VerticalBlockView<AbMatrix> BlockAb;
-
-  public:
-    typedef GaussianConditional Conditional;
-    typedef boost::shared_ptr<GaussianFactor> shared_ptr;
-    typedef BlockAb::Block ABlock;
-    typedef BlockAb::constBlock constABlock;
-    typedef BlockAb::Column BVector;
-    typedef BlockAb::constColumn constBVector;
-
-    enum SolveMethod { SOLVE_QR, SOLVE_CHOLESKY };
-
-  protected:
-    SharedDiagonal model_; // Gaussian noise model with diagonal covariance matrix
-    std::vector<size_t> firstNonzeroBlocks_;
-    AbMatrix matrix_; // the full matrix corresponding to the factor
-    BlockAb Ab_; // the block view of the full matrix
-
-  public:
-
     /** Copy constructor */
-    GaussianFactor(const GaussianFactor& gf);
+    GaussianFactor(const This& f) : IndexFactor(f) {}
 
-    /** default constructor for I/O */
-    GaussianFactor();
+    /** Construct from derived type */
+    GaussianFactor(const GaussianConditional& c) : IndexFactor(c) {}
 
-    /** Construct Null factor */
-    GaussianFactor(const Vector& b_in);
+    /** Constructor from a collection of keys */
+    template<class KeyIterator> GaussianFactor(KeyIterator beginKey, KeyIterator endKey) :
+        Base(beginKey, endKey) {}
+
+    /** Default constructor for I/O */
+    GaussianFactor() {}
 
     /** Construct unary factor */
-    GaussianFactor(Index i1, const Matrix& A1,
-        const Vector& b, const SharedDiagonal& model);
+    GaussianFactor(Index j) : IndexFactor(j) {}
 
     /** Construct binary factor */
-    GaussianFactor(Index i1, const Matrix& A1,
-        Index i2, const Matrix& A2,
-        const Vector& b, const SharedDiagonal& model);
+    GaussianFactor(Index j1, Index j2) : IndexFactor(j1, j2) {}
 
     /** Construct ternary factor */
-    GaussianFactor(Index i1, const Matrix& A1, Index i2,
-        const Matrix& A2, Index i3, const Matrix& A3,
-        const Vector& b, const SharedDiagonal& model);
+    GaussianFactor(Index j1, Index j2, Index j3) : IndexFactor(j1, j2, j3) {}
 
-    /** Construct an n-ary factor */
-    GaussianFactor(const std::vector<std::pair<Index, Matrix> > &terms,
-        const Vector &b, const SharedDiagonal& model);
+    /** Construct 4-way factor */
+    GaussianFactor(Index j1, Index j2, Index j3, Index j4) : IndexFactor(j1, j2, j3, j4) {}
 
-    GaussianFactor(const std::list<std::pair<Index, Matrix> > &terms,
-        const Vector &b, const SharedDiagonal& model);
+    /** Construct n-way factor */
+    GaussianFactor(const std::set<Index>& js) : IndexFactor(js) {}
 
-    /** Construct from Conditional Gaussian */
-    GaussianFactor(const GaussianConditional& cg);
 
+  public:
+
+    enum SolveMethod { SOLVE_QR, SOLVE_PREFER_CHOLESKY };
+
+    typedef GaussianConditional Conditional;
+    typedef boost::shared_ptr<GaussianFactor> shared_ptr;
 
     // Implementing Testable interface
-    void print(const std::string& s = "") const;
-    bool equals(const GaussianFactor& lf, double tol = 1e-9) const;
+    virtual void print(const std::string& s = "") const = 0;
+    virtual bool equals(const GaussianFactor& lf, double tol = 1e-9) const = 0;
 
-    Vector unweighted_error(const VectorValues& c) const; /** (A*x-b) */
-    Vector error_vector(const VectorValues& c) const; /** (A*x-b)/sigma */
-    double error(const VectorValues& c) const; /**  0.5*(A*x-b)'*D*(A*x-b) */
+    virtual double error(const VectorValues& c) const = 0; /**  0.5*(A*x-b)'*D*(A*x-b) */
 
-    /** Check if the factor contains no information, i.e. zero rows.  This does
-     * not necessarily mean that the factor involves no variables (to check for
-     * involving no variables use keys().empty()).
-     */
-    bool empty() const { return Ab_.size1() == 0;}
-
-    /**
-     * return the number of rows in the corresponding linear system
-     */
-    size_t size1() const { return Ab_.size1(); }
-
-    /**
-     * return the number of columns in the corresponding linear system
-     */
-    size_t size2() const { return Ab_.size2(); }
-
-
-    /** Get a view of the r.h.s. vector b */
-    constBVector getb() const { return Ab_.column(size(), 0); }
-
-    /** Get a view of the A matrix for the variable pointed to be the given key iterator */
-    constABlock getA(const_iterator variable) const { return Ab_(variable - keys_.begin());	}
-
-    BVector getb() { return Ab_.column(size(), 0); }
-
-    ABlock getA(iterator variable) { return Ab_(variable - keys_.begin()); }
-
-    /** Return the dimension of the variable pointed to by the given key iterator
-     * todo: Remove this in favor of keeping track of dimensions with variables?
-     */
-    size_t getDim(const_iterator variable) const { return Ab_(variable - keys_.begin()).size2(); }
+    /** Return the dimension of the variable pointed to by the given key iterator */
+    virtual size_t getDim(const_iterator variable) const = 0;
 
     /**
      * Permutes the GaussianFactor, but for efficiency requires the permutation
      * to already be inverted.  This acts just as a change-of-name for each
      * variable.  The order of the variables within the factor is not changed.
      */
-    void permuteWithInverse(const Permutation& inversePermutation);
-
-    /**
-     * Whiten the matrix and r.h.s. so that the noise model is unit diagonal.
-     * This throws an exception if the noise model cannot whiten, e.g. if it is
-     * constrained.
-     */
-    GaussianFactor whiten() const;
-
-    /**
-     * Named constructor for combining a set of factors with pre-computed set of variables.
-     */
-    static shared_ptr Combine(const FactorGraph<GaussianFactor>& factors, const VariableSlots& variableSlots);
+    virtual void permuteWithInverse(const Permutation& inversePermutation) = 0;
 
     /**
      * Combine and eliminate several factors.
      */
     static std::pair<GaussianBayesNet::shared_ptr, shared_ptr> CombineAndEliminate(
-        const FactorGraph<GaussianFactor>& factors, size_t nrFrontals=1, SolveMethod solveMethod = SOLVE_QR);
-
-  protected:
-
-    /** Internal debug check to make sure variables are sorted */
-    void assertInvariants() const;
-
-    /** Internal helper function to extract conditionals from a factor that was
-     * just numerically eliminated.
-     */
-    GaussianBayesNet::shared_ptr splitEliminatedFactor(size_t nrFrontals, const std::vector<Index>& keys);
-
-  public:
-
-    /** access the sigmas */
-    const Vector& get_sigmas() const { return model_->sigmas(); }
-
-    /** access the noise model */
-    const SharedDiagonal& get_model() const { return model_; }
-
-    /** access the noise model (non-const version) */
-    SharedDiagonal& get_model() { return model_; }
-
-    /** get the indices list */
-    const std::vector<size_t>& get_firstNonzeroBlocks() const { return firstNonzeroBlocks_; }
-
-    /** whether the noise model of this factor is constrained (i.e. contains any sigmas of 0.0) */
-    bool isConstrained() const {return model_->isConstrained();}
-
-    /**
-     * return the number of rows from the b vector
-     * @return a integer with the number of rows from the b vector
-     */
-    size_t numberOfRows() const { return Ab_.size1(); }
-
-    /** Return A*x */
-    Vector operator*(const VectorValues& x) const;
-
-
-    /** x += A'*e */
-    void transposeMultiplyAdd(double alpha, const Vector& e, VectorValues& x) const;
-
-    /**
-     * Return (dense) matrix associated with factor
-     * @param ordering of variables needed for matrix column order
-     * @param set weight to true to bake in the weights
-     */
-    std::pair<Matrix, Vector> matrix(bool weight = true) const;
-
-    /**
-     * Return (dense) matrix associated with factor
-     * The returned system is an augmented matrix: [A b]
-     * @param ordering of variables needed for matrix column order
-     * @param set weight to use whitening to bake in weights
-     */
-    Matrix matrix_augmented(bool weight = true) const;
-
-    /**
-     * Return vectors i, j, and s to generate an m-by-n sparse matrix
-     * such that S(i(k),j(k)) = s(k), which can be given to MATLAB's sparse.
-     * As above, the standard deviations are baked into A and b
-     * @param first column index for each variable
-     */
-    boost::tuple<std::list<int>, std::list<int>, std::list<double> >
-    sparse(const Dimensions& columnIndices) const;
-
-    /* ************************************************************************* */
-    // MUTABLE functions. FD:on the path to being eradicated
-    /* ************************************************************************* */
-
-    GaussianConditional::shared_ptr eliminateFirst(SolveMethod solveMethod = SOLVE_QR);
-
-    GaussianBayesNet::shared_ptr eliminate(size_t nrFrontals = 1, SolveMethod solveMethod = SOLVE_QR);
-
-    void set_firstNonzeroBlocks(size_t row, size_t varpos) { firstNonzeroBlocks_[row] = varpos; }
+        const FactorGraph<GaussianFactor>& factors, size_t nrFrontals=1, SolveMethod solveMethod=SOLVE_PREFER_CHOLESKY);
 
   }; // GaussianFactor
+
+
+  /** unnormalized error */
+  template<class FACTOR>
+  double gaussianError(const FactorGraph<FACTOR>& fg, const VectorValues& x) {
+    double total_error = 0.;
+    BOOST_FOREACH(const typename FACTOR::shared_ptr& factor, fg) {
+      total_error += factor->error(x);
+    }
+    return total_error;
+  }
+
+  /** return A*x-b */
+  template<class FACTOR>
+  Errors gaussianErrors(const FactorGraph<FACTOR>& fg, const VectorValues& x) {
+    return *gaussianErrors_(fg, x);
+  }
+
+  /** shared pointer version */
+  template<class FACTOR>
+  boost::shared_ptr<Errors> gaussianErrors_(const FactorGraph<FACTOR>& fg, const VectorValues& x) {
+    boost::shared_ptr<Errors> e(new Errors);
+    BOOST_FOREACH(const typename FACTOR::shared_ptr& factor, fg) {
+      e->push_back(factor->error_vector(x));
+    }
+    return e;
+  }
 
 
 } // namespace gtsam

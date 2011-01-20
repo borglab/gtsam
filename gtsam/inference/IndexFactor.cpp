@@ -18,6 +18,7 @@
 
 #include <gtsam/inference/FactorBase-inl.h>
 #include <gtsam/inference/IndexFactor.h>
+#include <gtsam/inference/IndexConditional.h>
 #include <gtsam/inference/VariableSlots.h>
 
 using namespace std;

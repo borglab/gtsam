@@ -7,6 +7,7 @@
 #pragma once
 
 #include <gtsam/base/timing.h>
+#include <gtsam/base/FastSet.h>
 #include <gtsam/inference/EliminationTree.h>
 #include <gtsam/inference/VariableSlots.h>
 #include <gtsam/inference/FactorGraph-inl.h>
@@ -30,7 +31,7 @@ EliminationTree<FACTOR>::eliminate_(Conditionals& conditionals) const {
 
   if(debug) cout << "ETree: eliminating " << this->key_ << endl;
 
-  set<Index, std::less<Index>, boost::fast_pool_allocator<Index> > separator;
+  FastSet<Index> separator;
 
   // Create the list of factors to be eliminated, initially empty, and reserve space
   FactorGraph<FACTOR> factors;
@@ -92,12 +93,10 @@ EliminationTree<FACTOR>::Create(const FactorGraph<DERIVEDFACTOR>& factorGraph, c
 
   static const bool debug = false;
 
-  tic("ET 1: Create");
-
-  tic("ET 1.1: ComputeParents");
+  tic(1, "ET ComputeParents");
   // Compute the tree structure
   vector<Index> parents(ComputeParents(structure));
-  toc("ET 1.1: ComputeParents");
+  toc(1, "ET ComputeParents");
 
   // Number of variables
   const size_t n = structure.size();
@@ -105,7 +104,7 @@ EliminationTree<FACTOR>::Create(const FactorGraph<DERIVEDFACTOR>& factorGraph, c
   static const Index none = numeric_limits<Index>::max();
 
   // Create tree structure
-  tic("ET 1.2: assemble tree");
+  tic(2, "assemble tree");
   vector<shared_ptr> trees(n);
   for (Index k = 1; k <= n; k++) {
     Index j = n - k;
@@ -113,10 +112,10 @@ EliminationTree<FACTOR>::Create(const FactorGraph<DERIVEDFACTOR>& factorGraph, c
     if (parents[j] != none)
       trees[parents[j]]->add(trees[j]);
   }
-  toc("ET 1.2: assemble tree");
+  toc(2, "assemble tree");
 
   // Hang factors in right places
-  tic("ET 1.3: hang factors");
+  tic(3, "hang factors");
   BOOST_FOREACH(const typename DERIVEDFACTOR::shared_ptr& derivedFactor, factorGraph) {
     // Here we static_cast to the factor type of this EliminationTree.  This
     // allows performing symbolic elimination on, for example, GaussianFactors.
@@ -124,9 +123,7 @@ EliminationTree<FACTOR>::Create(const FactorGraph<DERIVEDFACTOR>& factorGraph, c
     Index j = factor->front();
     trees[j]->add(factor);
   }
-  toc("ET 1.3: hang factors");
-
-  toc("ET 1: Create");
+  toc(3, "hang factors");
 
   // Assert that all other nodes have parents, i.e. that this is not a forest.
 #ifndef NDEBUG
@@ -147,9 +144,9 @@ typename EliminationTree<FACTOR>::shared_ptr
 EliminationTree<FACTOR>::Create(const FactorGraph<DERIVEDFACTOR>& factorGraph) {
 
   // Build variable index
-  tic("ET 0: variable index");
+  tic(0, "ET Create, variable index");
   const VariableIndex variableIndex(factorGraph);
-  toc("ET 0: variable index");
+  toc(0, "ET Create, variable index");
 
   // Build elimination tree
   return Create(factorGraph, variableIndex);
@@ -185,24 +182,20 @@ template<class FACTOR>
 typename EliminationTree<FACTOR>::BayesNet::shared_ptr
 EliminationTree<FACTOR>::eliminate() const {
 
-  tic("ET 2: eliminate");
-
   // call recursive routine
-  tic("ET 2.1: recursive eliminate");
+  tic(1, "ET recursive eliminate");
   Conditionals conditionals(this->key_ + 1);
   (void)eliminate_(conditionals);
-  toc("ET 2.1: recursive eliminate");
+  toc(1, "ET recursive eliminate");
 
   // Add conditionals to BayesNet
-  tic("ET 2.1: assemble BayesNet");
+  tic(2, "assemble BayesNet");
   typename BayesNet::shared_ptr bayesNet(new BayesNet);
   BOOST_FOREACH(const typename BayesNet::sharedConditional& conditional, conditionals) {
     if(conditional)
       bayesNet->push_back(conditional);
   }
-  toc("ET 2.1: assemble BayesNet");
-
-  toc("ET 2: eliminate");
+  toc(2, "assemble BayesNet");
 
   return bayesNet;
 }

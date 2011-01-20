@@ -35,6 +35,9 @@ using namespace boost::assign;
 #include <gtsam/linear/GaussianFactorGraph.h>
 #include <gtsam/linear/SharedDiagonal.h>
 #include <gtsam/linear/GaussianSequentialSolver.h>
+#include <gtsam/linear/JacobianFactor.h>
+#include <gtsam/linear/HessianFactor.h>
+#include <gtsam/inference/VariableSlots.h>
 
 using namespace std;
 using namespace gtsam;
@@ -48,30 +51,30 @@ static SharedDiagonal
 	constraintModel = noiseModel::Constrained::All(2);
 
 /* ************************************************************************* */
-TEST( GaussianFactor, constructor)
+TEST(GaussianFactor, constructor)
 {
 	Vector b = Vector_(3, 1., 2., 3.);
 	SharedDiagonal noise = noiseModel::Diagonal::Sigmas(Vector_(3,1.,1.,1.));
 	std::list<std::pair<Index, Matrix> > terms;
 	terms.push_back(make_pair(_x0_, eye(3)));
 	terms.push_back(make_pair(_x1_, 2.*eye(3)));
-	GaussianFactor actual(terms, b, noise);
-	GaussianFactor expected(_x0_, eye(3), _x1_, 2.*eye(3), b, noise);
+	JacobianFactor actual(terms, b, noise);
+	JacobianFactor expected(_x0_, eye(3), _x1_, 2.*eye(3), b, noise);
 	EXPECT(assert_equal(expected, actual));
 }
 
 /* ************************************************************************* */
-TEST( GaussianFactor, constructor2)
+TEST(GaussianFactor, constructor2)
 {
   Vector b = Vector_(3, 1., 2., 3.);
   SharedDiagonal noise = noiseModel::Diagonal::Sigmas(Vector_(3,1.,1.,1.));
   std::list<std::pair<Index, Matrix> > terms;
   terms.push_back(make_pair(_x0_, eye(3)));
   terms.push_back(make_pair(_x1_, 2.*eye(3)));
-  const GaussianFactor actual(terms, b, noise);
+  const JacobianFactor actual(terms, b, noise);
 
-  GaussianFactor::const_iterator key0 = actual.begin();
-  GaussianFactor::const_iterator key1 = key0 + 1;
+  JacobianFactor::const_iterator key0 = actual.begin();
+  JacobianFactor::const_iterator key1 = key0 + 1;
   EXPECT(assert_equal(*key0, _x0_));
   EXPECT(assert_equal(*key1, _x1_));
 
@@ -125,7 +128,7 @@ TEST( GaussianFactor, constructor2)
 //  variablePositions[1].resize(2); variablePositions[1][0]=0; variablePositions[1][1]=1;
 //  variablePositions[2].resize(1); variablePositions[2][0]=0;
 //
-//  GaussianFactor actual = *GaussianFactor::Combine(gfg, varindex, factors, variables, variablePositions);
+//  JacobianFactor actual = *JacobianFactor::Combine(gfg, varindex, factors, variables, variablePositions);
 //
 //  Matrix zero3x3 = zeros(3,3);
 //  Matrix A0 = gtsam::stack(3, &A00, &A10, &A20);
@@ -133,7 +136,7 @@ TEST( GaussianFactor, constructor2)
 //  Vector b = gtsam::concatVectors(3, &b0, &b1, &b2);
 //  Vector sigmas = gtsam::concatVectors(3, &s0, &s1, &s2);
 //
-//  GaussianFactor expected(0, A0, 1, A1, b, noiseModel::Diagonal::Sigmas(sigmas, true));
+//  JacobianFactor expected(0, A0, 1, A1, b, noiseModel::Diagonal::Sigmas(sigmas, true));
 //
 //  EXPECT(assert_equal(expected, actual));
 //}
@@ -171,7 +174,7 @@ TEST(GaussianFactor, Combine2)
   gfg.add(0, A10, 1, A11, b1, noiseModel::Diagonal::Sigmas(s1, true));
   gfg.add(1, A21, b2, noiseModel::Diagonal::Sigmas(s2, true));
 
-  GaussianFactor actual = *GaussianFactor::Combine(gfg, VariableSlots(gfg));
+  JacobianFactor actual = *JacobianFactor::Combine(gfg, VariableSlots(gfg));
 
   Matrix zero3x3 = zeros(3,3);
   Matrix A0 = gtsam::stack(3, &A10, &zero3x3, &zero3x3);
@@ -179,13 +182,13 @@ TEST(GaussianFactor, Combine2)
   Vector b = gtsam::concatVectors(3, &b1, &b0, &b2);
   Vector sigmas = gtsam::concatVectors(3, &s1, &s0, &s2);
 
-  GaussianFactor expected(0, A0, 1, A1, b, noiseModel::Diagonal::Sigmas(sigmas, true));
+  JacobianFactor expected(0, A0, 1, A1, b, noiseModel::Diagonal::Sigmas(sigmas, true));
 
   EXPECT(assert_equal(expected, actual));
 }
 
 /* ************************************************************************* */
-TEST(GaussianFactor, CombineAndEliminate)
+TEST_UNSAFE(GaussianFactor, CombineAndEliminate)
 {
   Matrix A01 = Matrix_(3,3,
       1.0, 0.0, 0.0,
@@ -223,22 +226,22 @@ TEST(GaussianFactor, CombineAndEliminate)
   Vector b = gtsam::concatVectors(3, &b1, &b0, &b2);
   Vector sigmas = gtsam::concatVectors(3, &s1, &s0, &s2);
 
-  GaussianFactor expectedFactor(0, A0, 1, A1, b, noiseModel::Diagonal::Sigmas(sigmas, true));
-  GaussianBayesNet expectedBN(*expectedFactor.eliminate(1, GaussianFactor::SOLVE_QR));
+  JacobianFactor expectedFactor(0, A0, 1, A1, b, noiseModel::Diagonal::Sigmas(sigmas, true));
+  GaussianBayesNet expectedBN(*expectedFactor.eliminate(1));
 
-  pair<GaussianBayesNet::shared_ptr, GaussianFactor::shared_ptr> actual(
-      GaussianFactor::CombineAndEliminate(gfg, 1, GaussianFactor::SOLVE_CHOLESKY));
+  pair<GaussianBayesNet::shared_ptr, JacobianFactor::shared_ptr> actualQR(JacobianFactor::CombineAndEliminate(
+      *gfg.dynamicCastFactors<FactorGraph<JacobianFactor> >(), 1));
 
-  EXPECT(assert_equal(expectedBN, *actual.first));
-  EXPECT(assert_equal(expectedFactor, *actual.second));
+  EXPECT(assert_equal(expectedBN, *actualQR.first));
+  EXPECT(assert_equal(expectedFactor, *actualQR.second));
 }
 
 ///* ************************************************************************* */
-//TEST( GaussianFactor, operators )
+//TEST(GaussianFactor, operators )
 //{
 //	Matrix I = eye(2);
 //	Vector b = Vector_(2,0.2,-0.1);
-//	GaussianFactor lf(_x1_, -I, _x2_, I, b, sigma0_1);
+//	JacobianFactor lf(_x1_, -I, _x2_, I, b, sigma0_1);
 //
 //	VectorValues c;
 //	c.insert(_x1_,Vector_(2,10.,20.));
@@ -271,33 +274,33 @@ TEST(GaussianFactor, CombineAndEliminate)
 //	A11(1,0) = 0;       A11(1,1) = 1;
 //	Vector b(2);
 //	b(0) = 2; b(1) = -1;
-//	GaussianFactor::shared_ptr f1(new GaussianFactor(_x1_, A11, b*sigma1, sharedSigma(2,sigma1)));
+//	JacobianFactor::shared_ptr f1(new JacobianFactor(_x1_, A11, b*sigma1, sharedSigma(2,sigma1)));
 //
 //	double sigma2 = 0.5;
 //	A11(0,0) = 1; A11(0,1) =  0;
 //	A11(1,0) = 0; A11(1,1) = -1;
 //	b(0) = 4 ; b(1) = -5;
-//	GaussianFactor::shared_ptr f2(new GaussianFactor(_x1_, A11, b*sigma2, sharedSigma(2,sigma2)));
+//	JacobianFactor::shared_ptr f2(new JacobianFactor(_x1_, A11, b*sigma2, sharedSigma(2,sigma2)));
 //
 //	double sigma3 = 0.25;
 //	A11(0,0) = 1; A11(0,1) =  0;
 //	A11(1,0) = 0; A11(1,1) = -1;
 //	b(0) = 3 ; b(1) = -88;
-//	GaussianFactor::shared_ptr f3(new GaussianFactor(_x1_, A11, b*sigma3, sharedSigma(2,sigma3)));
+//	JacobianFactor::shared_ptr f3(new JacobianFactor(_x1_, A11, b*sigma3, sharedSigma(2,sigma3)));
 //
 //	// TODO: find a real sigma value for this example
 //	double sigma4 = 0.1;
 //	A11(0,0) = 6; A11(0,1) =  0;
 //	A11(1,0) = 0; A11(1,1) = 7;
 //	b(0) = 5 ; b(1) = -6;
-//	GaussianFactor::shared_ptr f4(new GaussianFactor(_x1_, A11*sigma4, b*sigma4, sharedSigma(2,sigma4)));
+//	JacobianFactor::shared_ptr f4(new JacobianFactor(_x1_, A11*sigma4, b*sigma4, sharedSigma(2,sigma4)));
 //
-//	vector<GaussianFactor::shared_ptr> lfg;
+//	vector<JacobianFactor::shared_ptr> lfg;
 //	lfg.push_back(f1);
 //	lfg.push_back(f2);
 //	lfg.push_back(f3);
 //	lfg.push_back(f4);
-//	GaussianFactor combined(lfg);
+//	JacobianFactor combined(lfg);
 //
 //	Vector sigmas = Vector_(8, sigma1, sigma1, sigma2, sigma2, sigma3, sigma3, sigma4, sigma4);
 //	Matrix A22(8,2);
@@ -315,25 +318,25 @@ TEST(GaussianFactor, CombineAndEliminate)
 //
 //	vector<pair<Index, Matrix> > meas;
 //	meas.push_back(make_pair(_x1_, A22));
-//	GaussianFactor expected(meas, exb, sigmas);
+//	JacobianFactor expected(meas, exb, sigmas);
 //	EXPECT(assert_equal(expected,combined));
 //}
 //
 ///* ************************************************************************* */
-//TEST( GaussianFactor, linearFactorN){
+//TEST(GaussianFactor, linearFactorN){
 //	Matrix I = eye(2);
-//  vector<GaussianFactor::shared_ptr> f;
+//  vector<JacobianFactor::shared_ptr> f;
 //  SharedDiagonal model = sharedSigma(2,1.0);
-//  f.push_back(GaussianFactor::shared_ptr(new GaussianFactor(_x1_, I, Vector_(2,
+//  f.push_back(JacobianFactor::shared_ptr(new JacobianFactor(_x1_, I, Vector_(2,
 //			10.0, 5.0), model)));
-//	f.push_back(GaussianFactor::shared_ptr(new GaussianFactor(_x1_, -10 * I,
+//	f.push_back(JacobianFactor::shared_ptr(new JacobianFactor(_x1_, -10 * I,
 //			_x2_, 10 * I, Vector_(2, 1.0, -2.0), model)));
-//	f.push_back(GaussianFactor::shared_ptr(new GaussianFactor(_x2_, -10 * I,
+//	f.push_back(JacobianFactor::shared_ptr(new JacobianFactor(_x2_, -10 * I,
 //			_x3_, 10 * I, Vector_(2, 1.5, -1.5), model)));
-//	f.push_back(GaussianFactor::shared_ptr(new GaussianFactor(_x3_, -10 * I,
+//	f.push_back(JacobianFactor::shared_ptr(new JacobianFactor(_x3_, -10 * I,
 //			_x4_, 10 * I, Vector_(2, 2.0, -1.0), model)));
 //
-//  GaussianFactor combinedFactor(f);
+//  JacobianFactor combinedFactor(f);
 //
 //  vector<pair<Index, Matrix> > combinedMeasurement;
 //  combinedMeasurement.push_back(make_pair(_x1_, Matrix_(8,2,
@@ -376,12 +379,12 @@ TEST(GaussianFactor, CombineAndEliminate)
 //      10.0, 5.0, 1.0, -2.0, 1.5, -1.5, 2.0, -1.0);
 //
 //  Vector sigmas = repeat(8,1.0);
-//  GaussianFactor expected(combinedMeasurement, b, sigmas);
+//  JacobianFactor expected(combinedMeasurement, b, sigmas);
 //  EXPECT(assert_equal(expected,combinedFactor));
 //}
 
 /* ************************************************************************* */
-TEST( GaussianFactor, eliminate2 )
+TEST(GaussianFactor, eliminate2 )
 {
 	// sigmas
 	double sigma1 = 0.2;
@@ -415,14 +418,12 @@ TEST( GaussianFactor, eliminate2 )
 	vector<pair<Index, Matrix> > meas;
 	meas.push_back(make_pair(_x2_, Ax2));
 	meas.push_back(make_pair(_l11_, Al1x1));
-	GaussianFactor combined(meas, b2, sigmas);
+	JacobianFactor combined(meas, b2, sigmas);
 
 	// eliminate the combined factor
-	GaussianConditional::shared_ptr actualCG_QR, actualCG_Chol;
-	GaussianFactor::shared_ptr actualLF_QR(new GaussianFactor(combined));
-  GaussianFactor::shared_ptr actualLF_Chol(new GaussianFactor(combined));
-	actualCG_QR = actualLF_QR->eliminateFirst(GaussianFactor::SOLVE_QR);
-  actualCG_Chol = actualLF_Chol->eliminateFirst(GaussianFactor::SOLVE_CHOLESKY);
+	GaussianConditional::shared_ptr actualCG_QR;
+	JacobianFactor::shared_ptr actualLF_QR(new JacobianFactor(combined));
+	actualCG_QR = actualLF_QR->eliminateFirst();
 
 	// create expected Conditional Gaussian
 	double oldSigma = 0.0894427; // from when R was made unit
@@ -437,7 +438,6 @@ TEST( GaussianFactor, eliminate2 )
 	Vector d = Vector_(2,0.2,-0.14)/oldSigma;
 	GaussianConditional expectedCG(_x2_,d,R11,_l11_,S12,ones(2));
 	EXPECT(assert_equal(expectedCG,*actualCG_QR,1e-4));
-  EXPECT(assert_equal(expectedCG,*actualCG_Chol,1e-4));
 
 	// the expected linear factor
 	double sigma = 0.2236;
@@ -447,9 +447,8 @@ TEST( GaussianFactor, eliminate2 )
 			0.00, 1.00, +0.00, -1.00
 	)/sigma;
 	Vector b1 = Vector_(2,0.0,0.894427);
-	GaussianFactor expectedLF(_l11_, Bl1x1, b1, repeat(2,1.0));
+	JacobianFactor expectedLF(_l11_, Bl1x1, b1, repeat(2,1.0));
 	EXPECT(assert_equal(expectedLF,*actualLF_QR,1e-3));
-  EXPECT(assert_equal(expectedLF,*actualLF_Chol,1e-3));
 }
 
 /* ************************************************************************* */
@@ -481,7 +480,7 @@ TEST(GaussianFactor, eliminateFrontals)
       make_pair(9, ublas::project(Ab, ublas::range(0,4), ublas::range(6,8))),
       make_pair(11, ublas::project(Ab, ublas::range(0,4), ublas::range(8,10)));
   Vector b1 = ublas::project(ublas::column(Ab, 10), ublas::range(0,4));
-  GaussianFactor::shared_ptr factor1(new GaussianFactor(terms1, b1, sharedSigma(4, 0.5)));
+  JacobianFactor::shared_ptr factor1(new JacobianFactor(terms1, b1, sharedSigma(4, 0.5)));
 
   // Create second factor
   list<pair<Index, Matrix> > terms2;
@@ -491,7 +490,7 @@ TEST(GaussianFactor, eliminateFrontals)
       make_pair(9, ublas::project(Ab, ublas::range(4,8), ublas::range(6,8))),
       make_pair(11, ublas::project(Ab, ublas::range(4,8), ublas::range(8,10)));
   Vector b2 = ublas::project(ublas::column(Ab, 10), ublas::range(4,8));
-  GaussianFactor::shared_ptr factor2(new GaussianFactor(terms2, b2, sharedSigma(4, 0.5)));
+  JacobianFactor::shared_ptr factor2(new JacobianFactor(terms2, b2, sharedSigma(4, 0.5)));
 
   // Create third factor
   list<pair<Index, Matrix> > terms3;
@@ -500,14 +499,14 @@ TEST(GaussianFactor, eliminateFrontals)
       make_pair(9, ublas::project(Ab, ublas::range(8,12), ublas::range(6,8))),
       make_pair(11, ublas::project(Ab, ublas::range(8,12), ublas::range(8,10)));
   Vector b3 = ublas::project(ublas::column(Ab, 10), ublas::range(8,12));
-  GaussianFactor::shared_ptr factor3(new GaussianFactor(terms3, b3, sharedSigma(4, 0.5)));
+  JacobianFactor::shared_ptr factor3(new JacobianFactor(terms3, b3, sharedSigma(4, 0.5)));
 
   // Create fourth factor
   list<pair<Index, Matrix> > terms4;
   terms4 +=
       make_pair(11, ublas::project(Ab, ublas::range(12,14), ublas::range(8,10)));
   Vector b4 = ublas::project(ublas::column(Ab, 10), ublas::range(12,14));
-  GaussianFactor::shared_ptr factor4(new GaussianFactor(terms4, b4, sharedSigma(2, 0.5)));
+  JacobianFactor::shared_ptr factor4(new JacobianFactor(terms4, b4, sharedSigma(2, 0.5)));
 
   // Create factor graph
   GaussianFactorGraph factors;
@@ -517,11 +516,11 @@ TEST(GaussianFactor, eliminateFrontals)
   factors.push_back(factor4);
 
   // Create combined factor
-  GaussianFactor combined(*GaussianFactor::Combine(factors, VariableSlots(factors)));
+  JacobianFactor combined(*JacobianFactor::Combine(factors, VariableSlots(factors)));
 
   // Copies factors as they will be eliminated in place
-  GaussianFactor actualFactor_QR = combined;
-  GaussianFactor actualFactor_Chol = combined;
+  JacobianFactor actualFactor_QR = combined;
+  JacobianFactor actualFactor_Chol = combined;
 
   // Expected augmented matrix, both GaussianConditional (first 6 rows) and remaining factor (next 4 rows)
   Matrix R = 2.0*Matrix_(11,11,
@@ -579,7 +578,7 @@ TEST(GaussianFactor, eliminateFrontals)
   Vector be = ublas::project(ublas::column(R, 10), ublas::range(6,10));
 
   // Eliminate (3 frontal variables, 6 scalar columns) using QR !!!!
-  GaussianBayesNet actualFragment_QR = *actualFactor_QR.eliminate(3, GaussianFactor::SOLVE_QR);
+  GaussianBayesNet actualFragment_QR = *actualFactor_QR.eliminate(3);
   EXPECT(assert_equal(expectedFragment, actualFragment_QR, 0.001));
   EXPECT(assert_equal(size_t(2), actualFactor_QR.keys().size()));
   EXPECT(assert_equal(Index(9), actualFactor_QR.keys()[0]));
@@ -587,10 +586,10 @@ TEST(GaussianFactor, eliminateFrontals)
   EXPECT(assert_equal(Ae1, actualFactor_QR.getA(actualFactor_QR.begin()), 0.001));
   EXPECT(assert_equal(Ae2, actualFactor_QR.getA(actualFactor_QR.begin()+1), 0.001));
   EXPECT(assert_equal(be, actualFactor_QR.getb(), 0.001));
-  EXPECT(assert_equal(ones(4), actualFactor_QR.get_sigmas(), 0.001));
+  EXPECT(assert_equal(ones(4), actualFactor_QR.get_model()->sigmas(), 0.001));
 
   // Eliminate (3 frontal variables, 6 scalar columns) using Cholesky !!!!
-//  GaussianBayesNet actualFragment_Chol = *actualFactor_Chol.eliminate(3, GaussianFactor::SOLVE_CHOLESKY);
+//  GaussianBayesNet actualFragment_Chol = *actualFactor_Chol.eliminate(3, JacobianFactor::SOLVE_CHOLESKY);
 //  EXPECT(assert_equal(expectedFragment, actualFragment_Chol, 0.001));
 //  EXPECT(assert_equal(size_t(2), actualFactor_Chol.keys().size()));
 //  EXPECT(assert_equal(Index(9), actualFactor_Chol.keys()[0]));
@@ -602,9 +601,9 @@ TEST(GaussianFactor, eliminateFrontals)
 }
 
 /* ************************************************************************* */
-TEST( GaussianFactor, default_error )
+TEST(GaussianFactor, default_error )
 {
-	GaussianFactor f;
+	JacobianFactor f;
 	vector<size_t> dims;
 	VectorValues c(dims);
 	double actual = f.error(c);
@@ -612,21 +611,21 @@ TEST( GaussianFactor, default_error )
 }
 
 ////* ************************************************************************* */
-//TEST( GaussianFactor, eliminate_empty )
+//TEST(GaussianFactor, eliminate_empty )
 //{
 //	// create an empty factor
-//	GaussianFactor f;
+//	JacobianFactor f;
 //
 //	// eliminate the empty factor
 //	GaussianConditional::shared_ptr actualCG;
-//	GaussianFactor::shared_ptr actualLF(new GaussianFactor(f));
+//	JacobianFactor::shared_ptr actualLF(new JacobianFactor(f));
 //	actualCG = actualLF->eliminateFirst();
 //
 //	// expected Conditional Gaussian is just a parent-less node with P(x)=1
 //	GaussianConditional expectedCG(_x2_);
 //
 //	// expected remaining factor is still empty :-)
-//	GaussianFactor expectedLF;
+//	JacobianFactor expectedLF;
 //
 //	// check if the result matches
 //	EXPECT(actualCG->equals(expectedCG));
@@ -634,10 +633,10 @@ TEST( GaussianFactor, default_error )
 //}
 
 //* ************************************************************************* */
-TEST( GaussianFactor, empty )
+TEST(GaussianFactor, empty )
 {
 	// create an empty factor
-	GaussianFactor f;
+	JacobianFactor f;
 	EXPECT(f.empty()==true);
 }
 
@@ -650,9 +649,9 @@ void print(const list<T>& i) {
 }
 
 ///* ************************************************************************* */
-//TEST( GaussianFactor, tally_separator )
+//TEST(GaussianFactor, tally_separator )
 //{
-//	GaussianFactor f(_x1_, eye(2), _x2_, eye(2), _l1_, eye(2), ones(2), sigma0_1);
+//	JacobianFactor f(_x1_, eye(2), _x2_, eye(2), _l1_, eye(2), ones(2), sigma0_1);
 //
 //	std::set<Index> act1, act2, act3;
 //	f.tally_separator(_x1_,	act1);
@@ -673,7 +672,7 @@ void print(const list<T>& i) {
 //}
 
 /* ************************************************************************* */
-TEST( GaussianFactor, CONSTRUCTOR_GaussianConditional )
+TEST(GaussianFactor, CONSTRUCTOR_GaussianConditional )
 {
 	Matrix R11 = eye(2);
 	Matrix S12 = Matrix_(2,2,
@@ -685,39 +684,39 @@ TEST( GaussianFactor, CONSTRUCTOR_GaussianConditional )
 	GaussianConditional::shared_ptr CG(new GaussianConditional(_x2_,d,R11,_l11_,S12,sigmas));
 
 	// Call the constructor we are testing !
-	GaussianFactor actualLF(*CG);
+	JacobianFactor actualLF(*CG);
 
-	GaussianFactor expectedLF(_x2_,R11,_l11_,S12,d, sigmas);
+	JacobianFactor expectedLF(_x2_,R11,_l11_,S12,d, sigmas);
 	EXPECT(assert_equal(expectedLF,actualLF,1e-5));
 }
 
 ///* ************************************************************************* */
-//TEST( GaussianFactor, CONSTRUCTOR_GaussianConditionalConstrained )
+//TEST(GaussianFactor, CONSTRUCTOR_GaussianConditionalConstrained )
 //{
 //  Matrix Ax = eye(2);
 //  Vector b = Vector_(2, 3.0, 5.0);
 //  SharedDiagonal noisemodel = noiseModel::Constrained::All(2);
-//  GaussianFactor::shared_ptr expected(new GaussianFactor(_x0_, Ax, b, noisemodel));
+//  JacobianFactor::shared_ptr expected(new JacobianFactor(_x0_, Ax, b, noisemodel));
 //  GaussianFactorGraph graph;
 //  graph.push_back(expected);
 //
 //  GaussianConditional::shared_ptr conditional = GaussianSequentialSolver::EliminateUntil(graph,_x0_+1);
-//  GaussianFactor actual(*conditional);
+//  JacobianFactor actual(*conditional);
 //
 //  EXPECT(assert_equal(*expected, actual));
 //}
 
 /* ************************************************************************* */
-TEST ( GaussianFactor, constraint_eliminate1 )
+TEST ( JacobianFactor, constraint_eliminate1 )
 {
 	// construct a linear constraint
 	Vector v(2); v(0)=1.2; v(1)=3.4;
 	Index key = _x0_;
-	GaussianFactor lc(key, eye(2), v, constraintModel);
+	JacobianFactor lc(key, eye(2), v, constraintModel);
 
 	// eliminate it
 	GaussianConditional::shared_ptr actualCG;
-	GaussianFactor::shared_ptr actualLF(new GaussianFactor(lc));
+	JacobianFactor::shared_ptr actualLF(new JacobianFactor(lc));
 	actualCG = actualLF->eliminateFirst();
 
 	// verify linear factor
@@ -730,7 +729,7 @@ TEST ( GaussianFactor, constraint_eliminate1 )
 }
 
 /* ************************************************************************* */
-TEST ( GaussianFactor, constraint_eliminate2 )
+TEST ( JacobianFactor, constraint_eliminate2 )
 {
 	// Construct a linear constraint
 	// RHS
@@ -746,15 +745,15 @@ TEST ( GaussianFactor, constraint_eliminate2 )
 	A2(0,0) = 1.0 ; A2(0,1) = 2.0;
 	A2(1,0) = 2.0 ; A2(1,1) = 4.0;
 
-	GaussianFactor lc(_x_, A1, _y_, A2, b, constraintModel);
+	JacobianFactor lc(_x_, A1, _y_, A2, b, constraintModel);
 
 	// eliminate x and verify results
 	GaussianConditional::shared_ptr actualCG;
-	GaussianFactor::shared_ptr actualLF(new GaussianFactor(lc));
+	JacobianFactor::shared_ptr actualLF(new JacobianFactor(lc));
 	actualCG = actualLF->eliminateFirst();
 
 	// LF should be null
-	GaussianFactor expectedLF;
+	JacobianFactor expectedLF;
 	EXPECT(assert_equal(*actualLF, expectedLF));
 
 	// verify CG
@@ -791,14 +790,14 @@ TEST(GaussianFactor, permuteWithInverse)
   inversePermutation[4] = 1;
   inversePermutation[5] = 0;
 
-  GaussianFactor actual(1, A1, 3, A2, 5, A3, b, sharedSigma(2, 1.0));
-  GaussianFactorGraph actualFG; actualFG.push_back(GaussianFactor::shared_ptr(new GaussianFactor(actual)));
+  JacobianFactor actual(1, A1, 3, A2, 5, A3, b, sharedSigma(2, 1.0));
+  GaussianFactorGraph actualFG; actualFG.push_back(JacobianFactor::shared_ptr(new JacobianFactor(actual)));
   VariableIndex actualIndex(actualFG);
   actual.permuteWithInverse(inversePermutation);
 //  actualIndex.permute(*inversePermutation.inverse());
 
-  GaussianFactor expected(0, A3, 2, A2, 4, A1, b, sharedSigma(2, 1.0));
-  GaussianFactorGraph expectedFG; expectedFG.push_back(GaussianFactor::shared_ptr(new GaussianFactor(expected)));
+  JacobianFactor expected(0, A3, 2, A2, 4, A1, b, sharedSigma(2, 1.0));
+  GaussianFactorGraph expectedFG; expectedFG.push_back(JacobianFactor::shared_ptr(new JacobianFactor(expected)));
 //  GaussianVariableIndex expectedIndex(expectedFG);
 
   EXPECT(assert_equal(expected, actual));
@@ -816,7 +815,7 @@ TEST(GaussianFactor, permuteWithInverse)
 }
 
 ///* ************************************************************************* */
-//TEST( GaussianFactor, erase)
+//TEST(GaussianFactor, erase)
 //{
 //	Vector b = Vector_(3, 1., 2., 3.);
 //	SharedDiagonal noise = noiseModel::Diagonal::Sigmas(Vector_(3,1.,1.,1.));
@@ -824,16 +823,16 @@ TEST(GaussianFactor, permuteWithInverse)
 //	terms.push_back(make_pair(_x0_, eye(2)));
 //	terms.push_back(make_pair(_x1_, 2.*eye(2)));
 //
-//	GaussianFactor actual(terms, b, noise);
+//	JacobianFactor actual(terms, b, noise);
 //	int erased = actual.erase_A(_x0_);
 //
 //	LONGS_EQUAL(1, erased);
-//	GaussianFactor expected(_x1_, 2.*eye(2), b, noise);
+//	JacobianFactor expected(_x1_, 2.*eye(2), b, noise);
 //	EXPECT(assert_equal(expected, actual));
 //}
 
 ///* ************************************************************************* */
-//TEST( GaussianFactor, eliminateMatrix)
+//TEST(GaussianFactor, eliminateMatrix)
 //{
 //	Matrix Ab = Matrix_(3, 4,
 //			1., 2., 0., 3.,
@@ -847,10 +846,10 @@ TEST(GaussianFactor, permuteWithInverse)
 //	dimensions.insert(make_pair(_x2_, 1));
 //	dimensions.insert(make_pair(_x3_, 1));
 //
-//	GaussianFactor::shared_ptr factor;
+//	JacobianFactor::shared_ptr factor;
 //	GaussianBayesNet bn;
 //	boost::tie(bn, factor) =
-//			GaussianFactor::eliminateMatrix(Ab, NULL, model, frontals, separator, dimensions);
+//			JacobianFactor::eliminateMatrix(Ab, NULL, model, frontals, separator, dimensions);
 //
 //	GaussianBayesNet bn_expected;
 //	GaussianBayesNet::sharedConditional conditional1(new GaussianConditional(_x1_, Vector_(1, 6.), Matrix_(1, 1, 2.),
@@ -861,7 +860,7 @@ TEST(GaussianFactor, permuteWithInverse)
 //	bn_expected.push_back(conditional2);
 //	EXPECT(assert_equal(bn_expected, bn));
 //
-//	GaussianFactor factor_expected(_x3_, Matrix_(1, 1, 14.), Vector_(1, 16.), SharedDiagonal(Vector_(1, 1.)));
+//	JacobianFactor factor_expected(_x3_, Matrix_(1, 1, 14.), Vector_(1, 16.), SharedDiagonal(Vector_(1, 1.)));
 //	EXPECT(assert_equal(factor_expected, *factor));
 //}
 

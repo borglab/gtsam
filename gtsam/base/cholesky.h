@@ -60,5 +60,15 @@ size_t choleskyFactorUnderdetermined(MatrixColMajor& Ab, size_t nFrontal);
  */
 size_t choleskyCareful(MatrixColMajor& ATA);
 
+/**
+ * Partial Cholesky computes a factor [R S  such that [R' 0  [R S  = [A  B
+ *                                     0 L]            S' I]  0 L]    B' C].
+ * The input to this function is the matrix ABC = [A  B], and the parameter
+ *                                                [B' C]
+ * nFrontal determines the split between A, B, and C, with A being of size
+ * nFrontal x nFrontal.
+ */
+void choleskyPartial(MatrixColMajor& ABC, size_t nFrontal);
+
 }
 

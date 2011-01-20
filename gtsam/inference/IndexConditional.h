@@ -23,8 +23,6 @@
 
 namespace gtsam {
 
-class IndexFactor;
-
 class IndexConditional : public ConditionalBase<Index> {
 
 public:
@@ -61,6 +59,9 @@ public:
   template<typename ITERATOR>
   static shared_ptr FromRange(ITERATOR firstKey, ITERATOR lastKey, size_t nrFrontals) {
     return Base::FromRange<This>(firstKey, lastKey, nrFrontals); }
+
+  /** Convert to a factor */
+  IndexFactor::shared_ptr toFactor() const { return IndexFactor::shared_ptr(new IndexFactor(*this)); }
 
 };
 

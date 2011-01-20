@@ -24,7 +24,9 @@
 #include <gtsam/inference/FactorGraph.h>
 #include <gtsam/linear/Errors.h>
 #include <gtsam/linear/GaussianFactor.h>
+#include <gtsam/linear/JacobianFactor.h>
 #include <gtsam/linear/GaussianBayesNet.h>
+#include <gtsam/linear/SharedDiagonal.h>
 
 namespace gtsam {
 
@@ -55,28 +57,22 @@ namespace gtsam {
       push_back(fg);
     }
 
-    /* dummy constructor, to be compatible with conjugate gradient solver */
-    template<class DERIVEDFACTOR>
-    GaussianFactorGraph(const FactorGraph<DERIVEDFACTOR>& fg, const VectorValues &x0) {
-      push_back(fg);
-    }
-
     /** Add a null factor */
     void add(const Vector& b) {
-      push_back(sharedFactor(new GaussianFactor(b)));
+      push_back(sharedFactor(new JacobianFactor(b)));
     }
 
     /** Add a unary factor */
     void add(Index key1, const Matrix& A1,
         const Vector& b, const SharedDiagonal& model) {
-      push_back(sharedFactor(new GaussianFactor(key1,A1,b,model)));
+      push_back(sharedFactor(new JacobianFactor(key1,A1,b,model)));
     }
 
     /** Add a binary factor */
     void add(Index key1, const Matrix& A1,
         Index key2, const Matrix& A2,
         const Vector& b, const SharedDiagonal& model) {
-      push_back(sharedFactor(new GaussianFactor(key1,A1,key2,A2,b,model)));
+      push_back(sharedFactor(new JacobianFactor(key1,A1,key2,A2,b,model)));
     }
 
     /** Add a ternary factor */
@@ -84,13 +80,13 @@ namespace gtsam {
         Index key2, const Matrix& A2,
         Index key3, const Matrix& A3,
         const Vector& b, const SharedDiagonal& model) {
-      push_back(sharedFactor(new GaussianFactor(key1,A1,key2,A2,key3,A3,b,model)));
+      push_back(sharedFactor(new JacobianFactor(key1,A1,key2,A2,key3,A3,b,model)));
     }
 
     /** Add an n-ary factor */
     void add(const std::vector<std::pair<Index, Matrix> > &terms,
         const Vector &b, const SharedDiagonal& model) {
-      push_back(sharedFactor(new GaussianFactor(terms,b,model)));
+      push_back(sharedFactor(new JacobianFactor(terms,b,model)));
     }
 
     /**
@@ -103,37 +99,9 @@ namespace gtsam {
     /** Permute the variables in the factors */
     void permuteWithInverse(const Permutation& inversePermutation);
 
-    /** return A*x-b */
-    Errors errors(const VectorValues& x) const;
-
-    /** shared pointer version */
-    boost::shared_ptr<Errors> errors_(const VectorValues& x) const;
-
-    /** unnormalized error */
-    double error(const VectorValues& x) const;
-
-    /** return A*x */
-    Errors operator*(const VectorValues& x) const;
-
-    /* In-place version e <- A*x that overwrites e. */
-    void multiplyInPlace(const VectorValues& x, Errors& e) const;
-
-    /* In-place version e <- A*x that takes an iterator. */
-    void multiplyInPlace(const VectorValues& x, const Errors::iterator& e) const;
-
-    /** x += alpha*A'*e */
-    void transposeMultiplyAdd(double alpha, const Errors& e, VectorValues& x) const;
-
-    /**
-     * Calculate Gradient of A^(A*x-b) for a given config
-     * @param x: VectorValues specifying where to calculate gradient
-     * @return gradient, as a VectorValues as well
-     */
-    VectorValues gradient(const VectorValues& x) const;
-
     /** Unnormalized probability. O(n) */
     double probPrime(const VectorValues& c) const {
-      return exp(-0.5 * error(c));
+      return exp(-0.5 * gaussianError(*this, c));
     }
 
     /**
@@ -151,17 +119,12 @@ namespace gtsam {
      */
     void combine(const GaussianFactorGraph &lfg);
 
-    // matrix-vector operations
-    void residual(const VectorValues &x, VectorValues &r) const ;
-    void multiply(const VectorValues &x, VectorValues &r) const ;
-    void transposeMultiply(const VectorValues &r, VectorValues &x) const ;
-
     // get b
-    void getb(VectorValues &b) const ;
-    VectorValues getb() const ;
-
-    // allocate a vectorvalues of b's structure
-    VectorValues allocateVectorValuesb() const ;
+//    void getb(VectorValues &b) const ;
+//    VectorValues getb() const ;
+//
+//    // allocate a vectorvalues of b's structure
+//    VectorValues allocateVectorValuesb() const ;
 
   };
 

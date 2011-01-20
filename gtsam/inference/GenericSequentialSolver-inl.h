@@ -87,7 +87,7 @@ typename FactorGraph<FACTOR>::shared_ptr GenericSequentialSolver<FACTOR>::jointF
   joint->reserve(js.size());
   typename BayesNet<typename FACTOR::Conditional>::const_reverse_iterator conditional = bayesNet->rbegin();
   for(size_t i = 0; i < js.size(); ++i) {
-    joint->push_back(typename FACTOR::shared_ptr(new FACTOR(**(conditional++)))); }
+    joint->push_back((*(conditional++))->toFactor()); }
 
   // Undo the permutation on the eliminated joint marginal factors
   BOOST_FOREACH(const typename FACTOR::shared_ptr& factor, *joint) {

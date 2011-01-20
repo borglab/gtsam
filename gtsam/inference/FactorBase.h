@@ -101,7 +101,7 @@ public:
     keys_[0] = key1; keys_[1] = key2; keys_[2] = key3; keys_[3] = key4; assertInvariants(); }
 
   /** Construct n-way factor */
-  FactorBase(std::set<Key> keys) {
+  FactorBase(const std::set<Key>& keys) {
   	BOOST_FOREACH(const Key& key, keys)
   			keys_.push_back(key);
   	assertInvariants(); }
@@ -124,7 +124,7 @@ public:
   typename BayesNet<CONDITIONAL>::shared_ptr eliminate(size_t nrFrontals = 1);
 
   /**
-   * Permutes the GaussianFactor, but for efficiency requires the permutation
+   * Permutes the factor, but for efficiency requires the permutation
    * to already be inverted.
    */
   void permuteWithInverse(const Permutation& inversePermutation);

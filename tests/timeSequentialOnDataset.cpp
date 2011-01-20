@@ -38,21 +38,26 @@ int main(int argc, char *argv[]) {
   // Add a prior on the first pose
   data.first->addPrior(0, Pose2(), sharedSigma(Pose2::Dim(), 0.0005));
 
-  tic_("Z 1 order");
+  tic_(1, "order");
   Ordering::shared_ptr ordering(data.first->orderingCOLAMD(*data.second));
-  toc_("Z 1 order");
+  toc_(1, "order");
   tictoc_print_();
 
-  tic_("Z 2 linearize");
-  GaussianFactorGraph::shared_ptr gfg(data.first->linearize(*data.second, *ordering));
-  toc_("Z 2 linearize");
+  tic_(2, "linearize");
+  GaussianFactorGraph::shared_ptr gfg(data.first->linearize(*data.second, *ordering)->dynamicCastFactors<GaussianFactorGraph>());
+  toc_(2, "linearize");
   tictoc_print_();
 
   for(size_t trial = 0; trial < 10; ++trial) {
 
-    tic_("Z 3 solve");
-    VectorValues soln(*GaussianSequentialSolver(*gfg).optimize());
-    toc_("Z 3 solve");
+    tic_(3, "solve");
+    tic(1, "construct solver");
+    GaussianSequentialSolver solver(*gfg);
+    toc(1, "construct solver");
+    tic(2, "optimize");
+    VectorValues soln(*solver.optimize());
+    toc(2, "optimize");
+    toc_(3, "solve");
 
     tictoc_print_();
   }
