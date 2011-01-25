@@ -49,6 +49,10 @@ EliminationTree<FACTOR>::eliminate_(Conditionals& conditionals) const {
       FACTOR::CombineAndEliminate(factors, 1));
   conditionals[this->key_] = eliminated.first->front();
 
+  if(debug) cout << "Eliminated " << this->key_ << " to get:\n";
+  if(debug) eliminated.first->front()->print("Conditional: ");
+  if(debug) eliminated.second->print("Factor: ");
+
   return eliminated.second;
 }
 
@@ -117,10 +121,10 @@ EliminationTree<FACTOR>::Create(const FactorGraph<DERIVEDFACTOR>& factorGraph, c
   // Hang factors in right places
   tic(3, "hang factors");
   BOOST_FOREACH(const typename DERIVEDFACTOR::shared_ptr& derivedFactor, factorGraph) {
-    // Here we static_cast to the factor type of this EliminationTree.  This
+    // Here we upwards-cast to the factor type of this EliminationTree.  This
     // allows performing symbolic elimination on, for example, GaussianFactors.
-    sharedFactor factor(boost::shared_static_cast<FACTOR>(derivedFactor));
-    Index j = factor->front();
+    sharedFactor factor(derivedFactor);
+    Index j = *std::min_element(factor->begin(), factor->end());
     trees[j]->add(factor);
   }
   toc(3, "hang factors");
