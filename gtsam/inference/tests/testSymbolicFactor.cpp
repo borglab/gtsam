@@ -19,8 +19,10 @@
 #include <gtsam/base/TestableAssertions.h>
 #include <gtsam/inference/IndexFactor.h>
 #include <gtsam/inference/IndexConditional.h>
+#include <gtsam/inference/SymbolicFactorGraph.h>
 
 #include <boost/assign/std/vector.hpp>
+#include <boost/tuple/tuple.hpp>
 
 using namespace std;
 using namespace gtsam;
@@ -43,6 +45,37 @@ TEST(SymbolicFactor, eliminate) {
   CHECK(assert_equal(**fragmentCond++, *expected0));
   CHECK(assert_equal(**fragmentCond++, *expected1));
   CHECK(assert_equal(**fragmentCond++, *expected2));
+}
+
+/* ************************************************************************* */
+TEST(SymbolicFactor, CombineAndEliminate) {
+  SymbolicFactorGraph factors;
+  factors.push_factor(2,4,6);
+  factors.push_factor(1,2,5);
+  factors.push_factor(0,3);
+
+  IndexFactor expected_factor(4,5,6);
+  BayesNet<IndexConditional> expected_bn;
+  vector<Index> parents;
+
+  parents.clear(); parents += 1,2,3,4,5,6;
+  expected_bn.push_back(IndexConditional::shared_ptr(new IndexConditional(0, parents)));
+
+  parents.clear(); parents += 2,3,4,5,6;
+  expected_bn.push_back(IndexConditional::shared_ptr(new IndexConditional(1, parents)));
+
+  parents.clear(); parents += 3,4,5,6;
+  expected_bn.push_back(IndexConditional::shared_ptr(new IndexConditional(2, parents)));
+
+  parents.clear(); parents += 4,5,6;
+  expected_bn.push_back(IndexConditional::shared_ptr(new IndexConditional(3, parents)));
+
+  BayesNet<IndexConditional>::shared_ptr actual_bn;
+  IndexFactor::shared_ptr actual_factor;
+  boost::tie(actual_bn, actual_factor) = IndexFactor::CombineAndEliminate(factors, 4);
+
+  CHECK(assert_equal(expected_bn, *actual_bn));
+  CHECK(assert_equal(expected_factor, *actual_factor));
 }
 
 /* ************************************************************************* */
