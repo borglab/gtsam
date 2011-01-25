@@ -16,6 +16,7 @@
  * @created Oct 17, 2010
  */
 
+#include <gtsam/base/FastSet.h>
 #include <gtsam/inference/FactorBase-inl.h>
 #include <gtsam/inference/IndexFactor.h>
 #include <gtsam/inference/IndexConditional.h>
@@ -31,9 +32,22 @@ IndexFactor::IndexFactor(const IndexConditional& c) : Base(static_cast<const Bas
 
 pair<BayesNet<IndexConditional>::shared_ptr, IndexFactor::shared_ptr> IndexFactor::CombineAndEliminate(
     const FactorGraph<This>& factors, size_t nrFrontals) {
+
+  FastSet<Index> variables;
+  BOOST_FOREACH(const shared_ptr& factor, factors) {
+    BOOST_FOREACH(Index var, *factor) {
+      variables.insert(var); } }
+
+  if(variables.size() < 1)
+    throw invalid_argument("IndexFactor::CombineAndEliminate called on factors with zero total variables.");
+
   pair<BayesNet<Conditional>::shared_ptr, shared_ptr> result;
-  result.second = Combine(factors, VariableSlots(factors));
-  result.first = result.second->eliminate(nrFrontals);
+  result.first.reset(new BayesNet<IndexConditional>());
+  typename FastSet<Index>::const_iterator var;
+  for(var = variables.begin(); result.first->size() < nrFrontals; ++var)
+    result.first->push_back(IndexConditional::FromRange(var, variables.end(), 1));
+  result.second.reset(new IndexFactor(var, variables.end()));
+
   return result;
 }
 
