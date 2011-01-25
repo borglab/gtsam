@@ -68,9 +68,11 @@ Permutation::shared_ptr Inference::PermutationCOLAMD_(const VariableIndex& varia
 
   // call colamd, result will be in p
   /* returns (1) if successful, (0) otherwise*/
-  int rv = ccolamd(nFactors, nVars, Alen, &A[0], &p[0], knobs, stats, &cmember[0]);
-  if(rv != 1)
-    throw runtime_error((boost::format("ccolamd failed with return value %1%")%rv).str());
+  if(nVars > 0) {
+    int rv = ccolamd(nFactors, nVars, Alen, &A[0], &p[0], knobs, stats, &cmember[0]);
+    if(rv != 1)
+      throw runtime_error((boost::format("ccolamd failed with return value %1%")%rv).str());
+  }
 
   //  ccolamd_report(stats);
 
