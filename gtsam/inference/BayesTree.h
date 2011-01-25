@@ -58,6 +58,7 @@ namespace gtsam {
 			weak_ptr parent_;
 			std::list<shared_ptr> children_;
 			std::list<Index> separator_; /** separator keys */
+	    typename CONDITIONAL::Factor::shared_ptr cachedFactor_;
 
 			friend class BayesTree<CONDITIONAL>;
 
@@ -88,6 +89,9 @@ namespace gtsam {
 
 			/** The size of subtree rooted at this clique, i.e., nr of Cliques */
 			size_t treeSize() const;
+
+			/** Access the cached factor (this is a hack) */
+			typename CONDITIONAL::Factor::shared_ptr& cachedFactor() { return cachedFactor_; }
 
 			/** print this node and entire subtree below it */
 			void printTree(const std::string& indent="") const;

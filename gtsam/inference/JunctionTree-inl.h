@@ -146,7 +146,7 @@ namespace gtsam {
   /* ************************************************************************* */
   template <class FG>
   pair<typename JunctionTree<FG>::BayesTree::sharedClique, typename FG::sharedFactor>
-  JunctionTree<FG>::eliminateOneClique(const boost::shared_ptr<const Clique>& current) const {
+  JunctionTree<FG>::eliminateOneClique(const boost::shared_ptr<const Clique>& current, bool cache) const {
 
     FG fg; // factor graph will be assembled from local factors and marginalized children
     fg.reserve(current->size() + current->children().size());
@@ -156,7 +156,7 @@ namespace gtsam {
     list<typename BayesTree::sharedClique> children;
     BOOST_FOREACH(const boost::shared_ptr<const Clique>& child, current->children()) {
       pair<typename BayesTree::sharedClique, typename FG::sharedFactor> tree_factor(
-          eliminateOneClique(child));
+          eliminateOneClique(child, cache));
       children.push_back(tree_factor.first);
       fg.push_back(tree_factor.second);
     }
@@ -181,6 +181,8 @@ namespace gtsam {
     BOOST_FOREACH(typename BayesTree::sharedClique& childRoot, children) {
       childRoot->parent_ = new_clique;
     }
+    if(cache)
+      new_clique->cachedFactor() = eliminated.second;
     toc(3, "Update tree");
 
     return make_pair(new_clique, eliminated.second);
@@ -188,9 +190,9 @@ namespace gtsam {
 
   /* ************************************************************************* */
   template <class FG>
-  typename JunctionTree<FG>::BayesTree::sharedClique JunctionTree<FG>::eliminate() const {
+  typename JunctionTree<FG>::BayesTree::sharedClique JunctionTree<FG>::eliminate(bool cache) const {
     if(this->root()) {
-      pair<typename BayesTree::sharedClique, typename FG::sharedFactor> ret = this->eliminateOneClique(this->root());
+      pair<typename BayesTree::sharedClique, typename FG::sharedFactor> ret = this->eliminateOneClique(this->root(), cache);
       if (ret.second->size() != 0)
         throw runtime_error("JuntionTree::eliminate: elimination failed because of factors left over!");
       return ret.first;

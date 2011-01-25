@@ -133,6 +133,7 @@ namespace gtsam {
   void BayesTree<CONDITIONAL>::Clique::permuteWithInverse(const Permutation& inversePermutation) {
     BayesNet<CONDITIONAL>::permuteWithInverse(inversePermutation);
     BOOST_FOREACH(Index& separatorKey, separator_) { separatorKey = inversePermutation[separatorKey]; }
+    if(cachedFactor_) cachedFactor_->permuteWithInverse(inversePermutation);
     BOOST_FOREACH(const shared_ptr& child, children_) {
       child->permuteWithInverse(inversePermutation);
     }
@@ -152,6 +153,7 @@ namespace gtsam {
 #endif
     if(changed) {
       BOOST_FOREACH(Index& separatorKey, separator_) { separatorKey = inversePermutation[separatorKey]; }
+      if(cachedFactor_) cachedFactor_->permuteWithInverse(inversePermutation);
       BOOST_FOREACH(const shared_ptr& child, children_) {
         (void)child->permuteSeparatorWithInverse(inversePermutation);
       }
@@ -611,7 +613,7 @@ namespace gtsam {
 		// otherwise, find the parent clique by using the index data structure
 		// to find the lowest-ordered parent
 		Index parentRepresentative = findParentClique(parents);
-		if(debug) cout << "First-eliminated parent is " << parentRepresentative << endl;
+		if(debug) cout << "First-eliminated parent is " << parentRepresentative << ", have " << nodes_.size() << " nodes." << endl;
 		sharedClique parent_clique = (*this)[parentRepresentative];
 		if(debug) parent_clique->print("Parent clique is ");
 
