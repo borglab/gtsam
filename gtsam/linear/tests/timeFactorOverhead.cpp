@@ -27,7 +27,7 @@
 using namespace gtsam;
 using namespace std;
 
-typedef EliminationTree<JacobianFactor> GaussianEliminationTree;
+typedef EliminationTree<GaussianFactor> GaussianEliminationTree;
 
 static boost::variate_generator<boost::mt19937, boost::uniform_real<> > rg(boost::mt19937(), boost::uniform_real<>(0.0, 1.0));
 
