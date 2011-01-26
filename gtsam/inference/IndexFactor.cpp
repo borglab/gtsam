@@ -43,7 +43,7 @@ pair<BayesNet<IndexConditional>::shared_ptr, IndexFactor::shared_ptr> IndexFacto
 
   pair<BayesNet<Conditional>::shared_ptr, shared_ptr> result;
   result.first.reset(new BayesNet<IndexConditional>());
-  typename FastSet<Index>::const_iterator var;
+  FastSet<Index>::const_iterator var;
   for(var = variables.begin(); result.first->size() < nrFrontals; ++var)
     result.first->push_back(IndexConditional::FromRange(var, variables.end(), 1));
   result.second.reset(new IndexFactor(var, variables.end()));
