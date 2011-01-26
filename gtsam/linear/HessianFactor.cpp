@@ -61,8 +61,8 @@ namespace gtsam {
   /* ************************************************************************* */
   HessianFactor::HessianFactor(const Vector& b_in) : info_(matrix_) {
     JacobianFactor jf(b_in);
-    ublas::noalias(matrix_) = ublas::prod(ublas::trans(jf.matrix_), jf.matrix_);
     info_.copyStructureFrom(jf.Ab_);
+    ublas::noalias(matrix_) = ublas::prod(ublas::trans(jf.matrix_), jf.matrix_);
   }
 
   /* ************************************************************************* */
@@ -70,8 +70,8 @@ namespace gtsam {
       const Vector& b, const SharedDiagonal& model) :
       GaussianFactor(i1), info_(matrix_) {
     JacobianFactor jf(i1, A1, b, model);
-    ublas::noalias(matrix_) = ublas::prod(ublas::trans(jf.matrix_), jf.matrix_);
     info_.copyStructureFrom(jf.Ab_);
+    ublas::noalias(matrix_) = ublas::prod(ublas::trans(jf.matrix_), jf.matrix_);
   }
 
   /* ************************************************************************* */
@@ -79,8 +79,8 @@ namespace gtsam {
       const Vector& b, const SharedDiagonal& model) :
       GaussianFactor(i1,i2), info_(matrix_) {
     JacobianFactor jf(i1, A1, i2, A2, b, model);
-    ublas::noalias(matrix_) = ublas::prod(ublas::trans(jf.matrix_), jf.matrix_);
     info_.copyStructureFrom(jf.Ab_);
+    ublas::noalias(matrix_) = ublas::prod(ublas::trans(jf.matrix_), jf.matrix_);
   }
 
   /* ************************************************************************* */
@@ -88,8 +88,8 @@ namespace gtsam {
       Index i3, const Matrix& A3, const Vector& b, const SharedDiagonal& model) :
       GaussianFactor(i1,i2,i3), info_(matrix_) {
     JacobianFactor jf(i1, A1, i2, A2, i3, A3, b, model);
-    ublas::noalias(matrix_) = ublas::prod(ublas::trans(jf.matrix_), jf.matrix_);
     info_.copyStructureFrom(jf.Ab_);
+    ublas::noalias(matrix_) = ublas::prod(ublas::trans(jf.matrix_), jf.matrix_);
   }
 
   /* ************************************************************************* */
@@ -97,8 +97,8 @@ namespace gtsam {
       const Vector &b, const SharedDiagonal& model) : info_(matrix_) {
     JacobianFactor jf(terms, b, model);
     keys_ = jf.keys_;
-    ublas::noalias(matrix_) = ublas::prod(ublas::trans(jf.matrix_), jf.matrix_);
     info_.copyStructureFrom(jf.Ab_);
+    ublas::noalias(matrix_) = ublas::prod(ublas::trans(jf.matrix_), jf.matrix_);
   }
 
   /* ************************************************************************* */
@@ -106,16 +106,16 @@ namespace gtsam {
       const Vector &b, const SharedDiagonal& model) : info_(matrix_) {
     JacobianFactor jf(terms, b, model);
     keys_ = jf.keys_;
-    ublas::noalias(matrix_) = ublas::prod(ublas::trans(jf.matrix_), jf.matrix_);
     info_.copyStructureFrom(jf.Ab_);
+    ublas::noalias(matrix_) = ublas::prod(ublas::trans(jf.matrix_), jf.matrix_);
   }
 
   /* ************************************************************************* */
   HessianFactor::HessianFactor(const GaussianConditional& cg) : GaussianFactor(cg), info_(matrix_) {
     JacobianFactor jf(cg);
+    info_.copyStructureFrom(jf.Ab_);
     ublas::noalias(ublas::symmetric_adaptor<MatrixColMajor,ublas::upper>(matrix_)) =
         ublas::prod(ublas::trans(jf.matrix_), jf.matrix_);
-    info_.copyStructureFrom(jf.Ab_);
   }
 
   /* ************************************************************************* */
@@ -126,8 +126,8 @@ namespace gtsam {
     if(dynamic_cast<const JacobianFactor*>(&gf)) {
       const JacobianFactor& jf(static_cast<const JacobianFactor&>(gf));
       JacobianFactor whitened(jf.whiten());
-      matrix_ = ublas::prod(ublas::trans(whitened.matrix_), whitened.matrix_);
       info_.copyStructureFrom(whitened.Ab_);
+      matrix_ = ublas::prod(ublas::trans(whitened.matrix_), whitened.matrix_);
     } else if(dynamic_cast<const HessianFactor*>(&gf)) {
       const HessianFactor& hf(static_cast<const HessianFactor&>(gf));
       info_.assignNoalias(hf.info_);
@@ -289,9 +289,22 @@ void HessianFactor::updateATA(const HessianFactor& update, const Scatter& scatte
     size_t slot2 = (j2 == update.size()) ? this->info_.nBlocks()-1 : slots[j2];
     for(size_t j1=0; j1<=j2; ++j1) {
       size_t slot1 = (j1 == update.size()) ? this->info_.nBlocks()-1 : slots[j1];
-      if(debug)
-        cout << "Updating (" << slot1 << "," << slot2 << ") from (" << j1 << "," << j2 << ")" << endl;
-      ublas::noalias(this->info_(slot1, slot2)) += update.info_(j1,j2);
+      if(slot2 > slot1) {
+        if(debug)
+          cout << "Updating (" << slot1 << "," << slot2 << ") from (" << j1 << "," << j2 << ")" << endl;
+        ublas::noalias(this->info_(slot1, slot2)) += update.info_(j1,j2);
+      } else if(slot1 > slot2) {
+        if(debug)
+          cout << "Updating (" << slot2 << "," << slot1 << ") from (" << j1 << "," << j2 << ")" << endl;
+        ublas::noalias(this->info_(slot2, slot1)) += ublas::trans(update.info_(j1,j2));
+      } else {
+        if(debug)
+          cout << "Updating (" << slot1 << "," << slot2 << ") from (" << j1 << "," << j2 << ")" << endl;
+        Block thisBlock(this->info_(slot2, slot1));
+        constBlock updateBlock(update.info_(j1,j2));
+        ublas::noalias(ublas::symmetric_adaptor<Block,ublas::upper>(thisBlock)) +=
+            ublas::symmetric_adaptor<constBlock,ublas::upper>(updateBlock);
+      }
     }
   }
   toc(2, "update");

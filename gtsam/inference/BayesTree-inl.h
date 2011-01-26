@@ -41,15 +41,31 @@ namespace gtsam {
 
 	using namespace std;
 
+  /* ************************************************************************* */
+  template<class CONDITIONAL>
+  void BayesTree<CONDITIONAL>::Clique::assertInvariants() const {
+#ifndef NDEBUG
+    // We rely on the keys being sorted
+    typename BayesNet<CONDITIONAL>::const_iterator cond = this->begin();
+    if(cond != this->end()) {
+      Index lastKey = (*cond)->key();
+      ++cond;
+      for(; cond != this->end(); ++cond)
+        assert(lastKey < (*cond)->key());
+    }
+#endif
+  }
+
 	/* ************************************************************************* */
 	template<class CONDITIONAL>
-	BayesTree<CONDITIONAL>::Clique::Clique() {}
+	BayesTree<CONDITIONAL>::Clique::Clique() { assertInvariants(); }
 
 	/* ************************************************************************* */
 	template<class CONDITIONAL>
 	BayesTree<CONDITIONAL>::Clique::Clique(const sharedConditional& conditional) {
 		separator_.assign(conditional->parents().begin(), conditional->parents().end());
 		this->push_back(conditional);
+		assertInvariants();
 	}
 
 	/* ************************************************************************* */
@@ -84,6 +100,7 @@ namespace gtsam {
 //	    separator_.assign((*bayesNet.rbegin())->parents().begin(), (*bayesNet.rbegin())->parents().end());
 	    separator_.assign((*bayesNet.rbegin())->beginParents(), (*bayesNet.rbegin())->endParents());
 	  }
+    assertInvariants();
 	}
 
 	/* ************************************************************************* */
@@ -137,6 +154,7 @@ namespace gtsam {
     BOOST_FOREACH(const shared_ptr& child, children_) {
       child->permuteWithInverse(inversePermutation);
     }
+    assertInvariants();
   }
 
   /* ************************************************************************* */
@@ -158,6 +176,7 @@ namespace gtsam {
         (void)child->permuteSeparatorWithInverse(inversePermutation);
       }
     }
+    assertInvariants();
     return changed;
   }
 
@@ -350,6 +369,7 @@ namespace gtsam {
 		p_S_R.permuteWithInverse(toBack);
 
 		// return the parent shortcut P(Sp|R)
+    assertInvariants();
 		return p_S_R;
 	}
 
@@ -372,6 +392,7 @@ namespace gtsam {
 		// Find marginal on the keys we are interested in
 		FactorGraph<typename CONDITIONAL::Factor> p_FSRfg(p_FSR);
 
+    assertInvariants();
 		return *GenericSequentialSolver<typename CONDITIONAL::Factor>(p_FSR).jointFactorGraph(keys());
 	}
 
@@ -400,6 +421,7 @@ namespace gtsam {
 		// Calculate the marginal
 		vector<Index> keys12vector; keys12vector.reserve(keys12.size());
 		keys12vector.insert(keys12vector.begin(), keys12.begin(), keys12.end());
+    assertInvariants();
 		return *GenericSequentialSolver<typename CONDITIONAL::Factor>(joint).jointFactorGraph(keys12vector);
 	}
 
@@ -429,6 +451,7 @@ namespace gtsam {
 			new_clique->parent_ = parent_clique;
 			parent_clique->children_.push_back(new_clique);
 		}
+    new_clique->assertInvariants();
 		return new_clique;
 	}
 
@@ -443,6 +466,7 @@ namespace gtsam {
 		new_clique->children_ = child_cliques;
 		BOOST_FOREACH(sharedClique& child, child_cliques)
 			child->parent_ = new_clique;
+		new_clique->assertInvariants();
 		return new_clique;
 	}
 
@@ -477,6 +501,7 @@ namespace gtsam {
 	  nodes_[key] = clique;
 	  clique->push_front(conditional);
 	  if(debug) clique->print("Expanded clique is ");
+	  clique->assertInvariants();
 	}
 
 	/* ************************************************************************* */

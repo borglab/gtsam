@@ -53,6 +53,10 @@ namespace gtsam {
 		 */
 		struct Clique: public BayesNet<CONDITIONAL> {
 
+		protected:
+		  void assertInvariants() const;
+
+		public:
 			typedef typename boost::shared_ptr<Clique> shared_ptr;
 			typedef typename boost::weak_ptr<Clique> weak_ptr;
 			weak_ptr parent_;

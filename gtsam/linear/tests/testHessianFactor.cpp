@@ -206,5 +206,84 @@ TEST(GaussianFactor, eliminate2 )
 }
 
 /* ************************************************************************* */
+TEST_UNSAFE(GaussianFactor, eliminateUnsorted) {
+  JacobianFactor::shared_ptr factor1(
+      new JacobianFactor(0,
+                         Matrix_(3,3,
+                                 44.7214,     0.0,       0.0,
+                                 0.0,     44.7214,       0.0,
+                                 0.0,         0.0,   44.7214),
+                         1,
+                         Matrix_(3,3,
+                                 -0.179168,    -44.721,  0.717294,
+                                 44.721, -0.179168,  -44.9138,
+                                 0.0,         0.0,  -44.7214),
+                         Vector_(3, 1.98916e-17, -4.96503e-15, -7.75792e-17),
+                         noiseModel::Unit::Create(3)));
+  HessianFactor::shared_ptr unsorted_factor2(
+      new HessianFactor(0,
+                        Matrix_(6,3,
+                                25.8367,    0.1211,    0.0593,
+                                    0.0,   23.4099,   30.8733,
+                                    0.0,       0.0,   25.8729,
+                                    0.0,       0.0,       0.0,
+                                    0.0,       0.0,       0.0,
+                                    0.0,       0.0,       0.0),
+                        1,
+                        Matrix_(6,3,
+                                25.7429,   -1.6897,    0.4587,
+                                 1.6400,   23.3095,   -8.4816,
+                                 0.0034,    0.0509,  -25.7855,
+                                 0.9997,   -0.0002,    0.0824,
+                                    0.0,    0.9973,    0.9517,
+                                    0.0,       0.0,    0.9973),
+                        Vector_(6, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0),
+                        noiseModel::Unit::Create(6)));
+  Permutation permutation(2);
+  permutation[0] = 1;
+  permutation[1] = 0;
+  unsorted_factor2->permuteWithInverse(permutation);
+
+  HessianFactor::shared_ptr sorted_factor2(
+      new HessianFactor(0,
+                        Matrix_(6,3,
+                                25.7429,   -1.6897,    0.4587,
+                                 1.6400,   23.3095,   -8.4816,
+                                 0.0034,    0.0509,  -25.7855,
+                                 0.9997,   -0.0002,    0.0824,
+                                    0.0,    0.9973,    0.9517,
+                                    0.0,       0.0,    0.9973),
+                        1,
+                        Matrix_(6,3,
+                                25.8367,    0.1211,    0.0593,
+                                    0.0,   23.4099,   30.8733,
+                                    0.0,       0.0,   25.8729,
+                                    0.0,       0.0,       0.0,
+                                    0.0,       0.0,       0.0,
+                                    0.0,       0.0,       0.0),
+                        Vector_(6, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0),
+                        noiseModel::Unit::Create(6)));
+
+  GaussianFactorGraph sortedGraph;
+//  sortedGraph.push_back(factor1);
+  sortedGraph.push_back(sorted_factor2);
+
+  GaussianFactorGraph unsortedGraph;
+//  unsortedGraph.push_back(factor1);
+  unsortedGraph.push_back(unsorted_factor2);
+
+  GaussianBayesNet::shared_ptr expected_bn;
+  GaussianFactor::shared_ptr expected_factor;
+  boost::tie(expected_bn, expected_factor) = GaussianFactor::CombineAndEliminate(sortedGraph, 1, GaussianFactor::SOLVE_PREFER_CHOLESKY);
+
+  GaussianBayesNet::shared_ptr actual_bn;
+  GaussianFactor::shared_ptr actual_factor;
+  boost::tie(actual_bn, actual_factor) = GaussianFactor::CombineAndEliminate(unsortedGraph, 1, GaussianFactor::SOLVE_PREFER_CHOLESKY);
+
+  CHECK(assert_equal(*expected_bn, *actual_bn, 1e-10));
+  CHECK(assert_equal(*expected_factor, *actual_factor, 1e-10));
+}
+
+/* ************************************************************************* */
 int main() { TestResult tr; return TestRegistry::runAllTests(tr);}
 /* ************************************************************************* */
