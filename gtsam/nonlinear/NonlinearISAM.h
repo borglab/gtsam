@@ -53,11 +53,14 @@ protected:
 
 public:
 
-	/** default constructor will disable periodic reordering */
-	NonlinearISAM() : reorderInterval_(0), reorderCounter_(0) {}
-
-	/** Periodically reorder and relinearize */
-	NonlinearISAM(int reorderInterval) : reorderInterval_(reorderInterval), reorderCounter_(0) {}
+	/**
+	 * Periodically reorder and relinearize
+	 * @param reorderInterval is the number of updates between reorderings,
+	 * 	0 never reorders (and is dangerous for memory consumption)
+	 *  1 (default) reorders every time, in worse case is batch every update
+	 *  typical values are 50 or 100
+	 */
+	NonlinearISAM(int reorderInterval = 1) : reorderInterval_(reorderInterval), reorderCounter_(0) {}
 
 	/** Add new factors along with their initial linearization points */
 	void update(const Factors& newFactors, const Values& initialValues);
@@ -69,6 +72,9 @@ public:
 	void reorder_relinearize();
 
 	// access
+
+	/** access the underlying bayes tree */
+	const GaussianISAM& bayesTree() const { return isam_; }
 
 	/** Return the current linearization point */
 	const Values& getLinearizationPoint() const { return linPoint_; }

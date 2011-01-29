@@ -45,11 +45,10 @@ void NonlinearISAM<Values>::update(const Factors& newFactors, const Values& init
     linPoint_.insert(initialValues);
 
     // Augment ordering
-    BOOST_FOREACH(const typename Factors::sharedFactor& factor, newFactors) {
-      BOOST_FOREACH(const Symbol& key, factor->keys()) {
-        ordering_.tryInsert(key, ordering_.nVars());
-      }
-    }
+    // FIXME: should just loop over new values
+    BOOST_FOREACH(const typename Factors::sharedFactor& factor, newFactors)
+      BOOST_FOREACH(const Symbol& key, factor->keys())
+        ordering_.tryInsert(key, ordering_.nVars()); // will do nothing if already present
 
     boost::shared_ptr<GaussianFactorGraph> linearizedNewFactors(
         newFactors.linearize(linPoint_, ordering_)->template dynamicCastFactors<GaussianFactorGraph>());

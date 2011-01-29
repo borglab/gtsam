@@ -19,7 +19,7 @@ const double tol=1e-5;
 /* ************************************************************************* */
 TEST(testNonlinearISAM, markov_chain ) {
 	int reorder_interval = 2;
-	PlanarISAM isam(reorder_interval);
+	PlanarISAM isam(reorder_interval); // create an ISAM object
 
 	SharedDiagonal model = noiseModel::Diagonal::Sigmas(Vector_(3, 3.0, 3.0, 0.5));
 	Sampler sampler(model, 42u);

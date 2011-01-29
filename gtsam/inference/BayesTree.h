@@ -43,13 +43,14 @@ namespace gtsam {
 
 	public:
 
-	  typedef boost::shared_ptr<BayesTree<CONDITIONAL> > shared_ptr;
+	    typedef boost::shared_ptr<BayesTree<CONDITIONAL> > shared_ptr;
 		typedef boost::shared_ptr<CONDITIONAL> sharedConditional;
 		typedef boost::shared_ptr<BayesNet<CONDITIONAL> > sharedBayesNet;
 
-		/** A Clique in the tree is an incomplete Bayes net: the variables
+		/**
+		 * A Clique in the tree is an incomplete Bayes net: the variables
 		 * in the Bayes net are the frontal nodes, and the variables conditioned
-		 * on is the separator. We also have pointers up and down the tree.
+		 * on are the separator. We also have pointers up and down the tree.
 		 */
 		struct Clique: public BayesNet<CONDITIONAL> {
 
@@ -62,7 +63,7 @@ namespace gtsam {
 			weak_ptr parent_;
 			std::list<shared_ptr> children_;
 			std::list<Index> separator_; /** separator keys */
-	    typename CONDITIONAL::Factor::shared_ptr cachedFactor_;
+			typename CONDITIONAL::Factor::shared_ptr cachedFactor_;
 
 			friend class BayesTree<CONDITIONAL>;
 
@@ -119,7 +120,8 @@ namespace gtsam {
 
 			/** return the joint P(C1,C2), where C1==this. TODO: not a method? */
 			FactorGraph<typename CONDITIONAL::Factor> joint(shared_ptr C2, shared_ptr root);
-		};
+
+		}; // \struct Clique
 
 		// typedef for shared pointers to cliques
 		typedef boost::shared_ptr<Clique> sharedClique;
@@ -174,7 +176,8 @@ namespace gtsam {
 		sharedClique addClique(const sharedConditional& conditional,
 				std::list<sharedClique>& child_cliques);
 
-		/** Add a conditional to the front of a clique, i.e. a conditional whose
+		/**
+		 * Add a conditional to the front of a clique, i.e. a conditional whose
 		 * parents are already in the clique or its separators.  This function does
 		 * not check for this condition, it just updates the data structures.
 		 */
@@ -198,8 +201,7 @@ namespace gtsam {
 		BayesTree(const BayesNet<CONDITIONAL>& bayesNet, std::list<BayesTree<CONDITIONAL> > subtrees);
 
 		/** Destructor */
-		virtual ~BayesTree() {
-		}
+		virtual ~BayesTree() {}
 
 		/**
 		 * Constructing Bayes trees
@@ -208,7 +210,8 @@ namespace gtsam {
 		/** Insert a new conditional */
 		void insert(const sharedConditional& conditional);
 
-		/** Insert a new clique corresponding to the given Bayes net.
+		/**
+		 * Insert a new clique corresponding to the given Bayes net.
 		 * It is the caller's responsibility to decide whether the given Bayes net is a valid clique,
 		 * i.e. all the variables (frontal and separator) are connected
 		 */

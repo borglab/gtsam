@@ -118,15 +118,16 @@ namespace gtsam {
 	/* ************************************************************************* */
 	template<class CONDITIONAL>
 	void BayesTree<CONDITIONAL>::Clique::print(const string& s) const {
-			cout << s << "Clique ";
-			BOOST_FOREACH(const sharedConditional& conditional, this->conditionals_) { cout << conditional->key() << " "; }
-			cout << "| ";
-			BOOST_FOREACH(const Index sep, separator_) { cout << sep << " "; }
-			cout << "\n";
-			BOOST_FOREACH(const sharedConditional& conditional, this->conditionals_) {
-				conditional->print("  " + s + "conditional");
-			}
-		}
+		cout << s << "Clique ";
+		BOOST_FOREACH(const sharedConditional& conditional, this->conditionals_)
+			cout << conditional->key() << " ";
+		cout << "| ";
+		BOOST_FOREACH(const Index sep, separator_)
+			cout << sep << " ";
+		cout << "\n";
+		BOOST_FOREACH(const sharedConditional& conditional, this->conditionals_)
+			conditional->print("  " + s + "conditional");
+	}
 
 	/* ************************************************************************* */
 	template<class CONDITIONAL>

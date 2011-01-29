@@ -33,6 +33,9 @@
 
 namespace gtsam {
 
+/**
+ * An ordering is a map from symbols (non-typed keys) to integer indices
+ */
 class Ordering : Testable<Ordering> {
 protected:
   typedef boost::fast_pool_allocator<std::pair<const Symbol, Index> > Allocator;
@@ -62,6 +65,8 @@ public:
   iterator end() { return order_.end(); }
   const_iterator end() const { return order_.end(); }
 
+  // access to integer indices
+
   Index& at(const Symbol& key) { return operator[](key); }
   Index at(const Symbol& key) const { return operator[](key); }
   bool tryAt(const Symbol& key, Index& index) const {
@@ -77,17 +82,28 @@ public:
   Index operator[](const Symbol& key) const {
     const_iterator i=order_.find(key); assert(i != order_.end()); return i->second; }
 
-  iterator insert(const value_type& key_order) {
-    std::pair<iterator,bool> it_ok(tryInsert(key_order));
-    assert(it_ok.second);
-    return it_ok.first; }
-  iterator insert(const Symbol& key, Index order) { return insert(std::make_pair(key,order)); }
+  // adding symbols
+
+  /**
+   * Attempts to insert a symbol/order pair with same semantics as stl::Map::insert(),
+   * i.e., returns a pair of iterator and success (false if already present)
+   */
   std::pair<iterator,bool> tryInsert(const value_type& key_order) {
-    std::pair<iterator,bool> it_ok(order_.insert(key_order));
-    if(it_ok.second == true && key_order.second+1 > nVars_)
-      nVars_ = key_order.second+1;
-    return it_ok; }
+  	std::pair<iterator,bool> it_ok(order_.insert(key_order));
+  	if(it_ok.second == true && key_order.second+1 > nVars_)
+  		nVars_ = key_order.second+1;
+  	return it_ok;
+  }
   std::pair<iterator,bool> tryInsert(const Symbol& key, Index order) { return tryInsert(std::make_pair(key,order)); }
+
+  /** Try insert, but will fail if the key is already present */
+  iterator insert(const value_type& key_order) {
+  	std::pair<iterator,bool> it_ok(tryInsert(key_order));
+  	assert(it_ok.second);
+  	return it_ok.first;
+  }
+  iterator insert(const Symbol& key, Index order) { return insert(std::make_pair(key,order)); }
+
 
   bool exists(const Symbol& key) const { return order_.count(key); }
 
