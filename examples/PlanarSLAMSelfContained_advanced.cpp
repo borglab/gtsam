@@ -69,14 +69,14 @@ int main(int argc, char** argv) {
 	PointKey l1(1), l2(2);
 
 	// create graph container and add factors to it
-	Graph graph;
+	Graph::shared_ptr graph(new Graph);
 
 	/* add prior  */
 	// gaussian for prior
 	SharedDiagonal prior_model = noiseModel::Diagonal::Sigmas(Vector_(3, 0.3, 0.3, 0.1));
 	Pose2 prior_measurement(0.0, 0.0, 0.0); // prior at origin
 	PriorFactor<Values, PoseKey> posePrior(x1, prior_measurement, prior_model); // create the factor
-	graph.add(posePrior);  // add the factor to the graph
+	graph->add(posePrior);  // add the factor to the graph
 
 	/* add odometry */
 	// general noisemodel for odometry
@@ -85,8 +85,8 @@ int main(int argc, char** argv) {
 	// create between factors to represent odometry
 	BetweenFactor<Values,PoseKey> odom12(x1, x2, odom_measurement, odom_model);
 	BetweenFactor<Values,PoseKey> odom23(x2, x3, odom_measurement, odom_model);
-	graph.add(odom12); // add both to graph
-	graph.add(odom23);
+	graph->add(odom12); // add both to graph
+	graph->add(odom23);
 
 	/* add measurements */
 	// general noisemodel for measurements
@@ -106,31 +106,41 @@ int main(int argc, char** argv) {
 	BearingRangeFactor<Values, PoseKey, PointKey> meas32(x3, l2, bearing32, range32, meas_model);
 
 	// add the factors
-	graph.add(meas11);
-	graph.add(meas21);
-	graph.add(meas32);
+	graph->add(meas11);
+	graph->add(meas21);
+	graph->add(meas32);
 
-	graph.print("Full Graph");
+	graph->print("Full Graph");
 
 	// initialize to noisy points
-	Values initial;
-	initial.insert(x1, Pose2(0.5, 0.0, 0.2));
-	initial.insert(x2, Pose2(2.3, 0.1,-0.2));
-	initial.insert(x3, Pose2(4.1, 0.1, 0.1));
-	initial.insert(l1, Point2(1.8, 2.1));
-	initial.insert(l2, Point2(4.1, 1.8));
+	boost::shared_ptr<Values> initial(new Values);
+	initial->insert(x1, Pose2(0.5, 0.0, 0.2));
+	initial->insert(x2, Pose2(2.3, 0.1,-0.2));
+	initial->insert(x3, Pose2(4.1, 0.1, 0.1));
+	initial->insert(l1, Point2(1.8, 2.1));
+	initial->insert(l2, Point2(4.1, 1.8));
 
-	initial.print("initial estimate");
+	initial->print("initial estimate");
 
 	// optimize using Levenberg-Marquardt optimization with an ordering from colamd
 
 	// first using sequential elimination
-	OptimizerSeqential::shared_values resultSequential = OptimizerSeqential::optimizeLM(graph, initial);
+	OptimizerSeqential::shared_values resultSequential = OptimizerSeqential::optimizeLM(*graph, *initial);
 	resultSequential->print("final result (solved with a sequential solver)");
 
-	// then using multifrontal
-  OptimizerMultifrontal::shared_values resultMultifrontal = OptimizerMultifrontal::optimizeLM(graph, initial);
-  resultMultifrontal->print("final result (solved with a multifrontal solver)");
+	// then using multifrontal, advanced interface
+	// Note how we create an optimizer, call LM, then we get access to covariances
+	Ordering::shared_ptr ordering = graph->orderingCOLAMD(*initial);
+  OptimizerMultifrontal optimizerMF(graph, initial, ordering);
+  OptimizerMultifrontal resultMF = optimizerMF.levenbergMarquardt();
+  resultMF.values()->print("final result (solved with a multifrontal solver)");
+
+  // Print marginals covariances for all variables
+  print(resultMF.marginalCovariance(x1).second, "x1 covariance");
+  print(resultMF.marginalCovariance(x2).second, "x2 covariance");
+  print(resultMF.marginalCovariance(x3).second, "x3 covariance");
+  print(resultMF.marginalCovariance(l1).second, "l1 covariance");
+  print(resultMF.marginalCovariance(l2).second, "l2 covariance");
 
 	return 0;
 }

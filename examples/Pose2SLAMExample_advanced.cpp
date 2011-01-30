@@ -63,7 +63,6 @@ int main(int argc, char** argv) {
 	initial->insert(x3, Pose2(4.1, 0.1, 0.1));
 	initial->print("initial estimate");
 
-
 	/* 4.2.1 Alternatively, you can go through the process step by step
 	 * Choose an ordering */
 	Ordering::shared_ptr ordering = graph->orderingCOLAMD(*initial);
