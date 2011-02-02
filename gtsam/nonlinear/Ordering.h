@@ -109,6 +109,9 @@ public:
 
   Index push_back(const Symbol& key) { return insert(std::make_pair(key, nVars_))->second; }
 
+  /** remove the last symbol/index pair from the ordering */
+  value_type pop_back();
+
   /**
    * += operator allows statements like 'ordering += x0,x1,x2,x3;', which are
    * very useful for unit tests.  This functionality is courtesy of

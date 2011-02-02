@@ -43,6 +43,23 @@ TEST(testNonlinearISAM, markov_chain ) {
 		PoseKey key1(i-1), key2(i);
 		new_factors.addOdometry(key1, key2, z, model);
 		Values new_init;
+
+		// perform a check on changing orderings
+		if (i == 5) {
+			Ordering ordering = isam.getOrdering();
+
+			// swap last two elements
+			Symbol last = ordering.pop_back().first;
+			Symbol secondLast = ordering.pop_back().first;
+			ordering.push_back(last);
+			ordering.push_back(secondLast);
+			isam.setOrdering(ordering);
+
+			Ordering expected; expected += PoseKey(0), PoseKey(1), PoseKey(2), PoseKey(4), PoseKey(3);
+			EXPECT(assert_equal(expected, isam.getOrdering()));
+		}
+
+
 		cur_pose = cur_pose.compose(z);
 		new_init.insert(key2, cur_pose.expmap(sampler.sample()));
 		expected.insert(key2, cur_pose);

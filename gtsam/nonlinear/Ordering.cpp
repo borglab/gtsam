@@ -57,6 +57,20 @@ bool Ordering::equals(const Ordering& rhs, double tol) const {
 }
 
 /* ************************************************************************* */
+Ordering::value_type Ordering::pop_back() {
+	// FIXME: is there a way of doing this without searching over the entire structure?
+	for (iterator it=begin(); it!=end(); ++it) {
+		if (it->second == nVars_ - 1) {
+			value_type result = *it;
+			order_.erase(it);
+			--nVars_;
+			return result;
+		}
+	}
+	return value_type();
+}
+
+/* ************************************************************************* */
 void Unordered::print(const string& s) const {
   cout << s << " (" << size() << "):";
   BOOST_FOREACH(Index key, *this)
