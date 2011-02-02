@@ -126,6 +126,14 @@ namespace gtsam {
     /** Logarithm map around another pose T1 */
     Vector logmap(const Pose3& T2) const;
 
+    /** non-approximated versions of Expmap/Logmap */
+  	static Pose3 ExpmapFull(const Vector& xi);
+    static Vector LogmapFull(const Pose3& p);
+
+    /** non-approximated versions of expmap/logmap */
+    inline Pose3 expmapFull(const Vector& v) const { return compose(Pose3::ExpmapFull(v)); }
+    inline Vector logmapFull(const Pose3& p2) const { return Pose3::LogmapFull(between(p2));}
+
     /**
      * Return relative pose between p1 and p2, in p1 coordinate frame
      * as well as optionally the derivatives

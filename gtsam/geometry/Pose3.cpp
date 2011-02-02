@@ -53,11 +53,8 @@ namespace gtsam {
   }
 
   /* ************************************************************************* */
-
-#ifdef CORRECT_POSE3_EXMAP
-
   /** Modified from Murray94book version (which assumes w and v normalized?) */
-  template<> Pose3 expmap(const Vector& xi) {
+  Pose3 Pose3::ExpmapFull(const Vector& xi) {
 
   	// get angular velocity omega and translational velocity v from twist xi
   	Point3 w(xi(0),xi(1),xi(2)), v(xi(3),xi(4),xi(5));
@@ -77,8 +74,9 @@ namespace gtsam {
 		}
   }
 
-  Vector logmap(const Pose3& p) {
-    Vector w = logmap(p.rotation()), T = p.translation().vector();
+  /* ************************************************************************* */
+  Vector Pose3::LogmapFull(const Pose3& p) {
+    Vector w = Rot3::Logmap(p.rotation()), T = p.translation().vector();
   	double t = norm_2(w);
 		if (t < 1e-5)
 	    return concatVectors(2, &w, &T);
@@ -90,12 +88,27 @@ namespace gtsam {
 		}
   }
 
-  Pose3 expmap(const Pose3& T, const Vector& d) {
-    return compose(T,Pose3::Expmap(d));
+#ifdef CORRECT_POSE3_EXMAP
+  /* ************************************************************************* */
+  // Changes default to use the full verions of expmap/logmap
+  /* ************************************************************************* */
+  Pose3 Expmap(const Vector& xi) {
+  	return Pose3::ExpmapFull(xi);
   }
 
+  /* ************************************************************************* */
+  Vector Logmap(const Pose3& p) {
+  	return Pose3::LogmapFull(p);
+  }
+
+  /* ************************************************************************* */
+  Pose3 expmap(const Vector& d) {
+  	return expmapFull(d);
+  }
+
+  /* ************************************************************************* */
   Vector logmap(const Pose3& T1, const Pose3& T2) {
-    return Pose3::logmap(between(T1,T2));
+  	return logmapFull(T2);
   }
 
 #else

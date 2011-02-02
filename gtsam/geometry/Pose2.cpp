@@ -47,10 +47,7 @@ namespace gtsam {
   }
 
   /* ************************************************************************* */
-
-#ifdef SLOW_BUT_CORRECT_EXPMAP
-
-	Pose2 Pose2::Expmap(const Vector& xi) {
+	Pose2 Pose2::ExpmapFull(const Vector& xi) {
 	  assert(xi.size() == 3);
 		Point2 v(xi(0),xi(1));
 		double w = xi(2);
@@ -64,7 +61,8 @@ namespace gtsam {
 		}
 	}
 
-  Vector Pose2::Logmap(const Pose2& p) {
+	/* ************************************************************************* */
+  Vector Pose2::LogmapFull(const Pose2& p) {
   	const Rot2& R = p.r();
   	const Point2& t = p.t();
 		double w = R.theta();
@@ -77,6 +75,20 @@ namespace gtsam {
 			Point2 v = (w/det) * p;
 			return Vector_(3, v.x(), v.y(), w);
 		}
+  }
+
+  /* ************************************************************************* */
+#ifdef SLOW_BUT_CORRECT_EXPMAP
+  /* ************************************************************************* */
+  // Changes default to use the full verions of expmap/logmap
+  /* ************************************************************************* */
+	Pose2 Pose2::Expmap(const Vector& xi) {
+	  return ExpmapFull(xi);
+	}
+
+	/* ************************************************************************* */
+  Vector Pose2::Logmap(const Pose2& p) {
+  	return LogmapFull(p);
   }
 
 #else

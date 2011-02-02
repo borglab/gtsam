@@ -36,7 +36,6 @@ using namespace std;
 
 /* ************************************************************************* */
 TEST(Pose2, constructors) {
-  //cout << "constructors" << endl;
   Point2 p;
   Pose2 pose(0,p);
   Pose2 origin;
@@ -47,7 +46,6 @@ TEST(Pose2, constructors) {
 
 /* ************************************************************************* */
 TEST(Pose2, manifold) {
-  //cout << "manifold" << endl;
 	Pose2 t1(M_PI_2, Point2(1, 2));
 	Pose2 t2(M_PI_2+0.018, Point2(1.015, 2.01));
 	Pose2 origin;
@@ -61,7 +59,6 @@ TEST(Pose2, manifold) {
 
 /* ************************************************************************* */
 TEST(Pose2, expmap) {
-  //cout << "expmap" << endl;
   Pose2 pose(M_PI_2, Point2(1, 2));
 #ifdef SLOW_BUT_CORRECT_EXPMAP
   Pose2 expected(1.00811, 2.01528, 2.5608);
@@ -69,6 +66,14 @@ TEST(Pose2, expmap) {
   Pose2 expected(M_PI_2+0.99, Point2(1.015, 2.01));
 #endif
   Pose2 actual = pose.expmap(Vector_(3, 0.01, -0.015, 0.99));
+  EXPECT(assert_equal(expected, actual, 1e-5));
+}
+
+/* ************************************************************************* */
+TEST(Pose2, expmap_full) {
+  Pose2 pose(M_PI_2, Point2(1, 2));
+  Pose2 expected(1.00811, 2.01528, 2.5608);
+  Pose2 actual = pose.expmapFull(Vector_(3, 0.01, -0.015, 0.99));
   EXPECT(assert_equal(expected, actual, 1e-5));
 }
 
@@ -90,7 +95,6 @@ TEST(Pose2, expmap2) {
 
 /* ************************************************************************* */
 TEST(Pose2, expmap0) {
-  //cout << "expmap0" << endl;
   Pose2 pose(M_PI_2, Point2(1, 2));
 #ifdef SLOW_BUT_CORRECT_EXPMAP
   Pose2 expected(1.01491, 2.01013, 1.5888);
@@ -98,6 +102,14 @@ TEST(Pose2, expmap0) {
   Pose2 expected(M_PI_2+0.018, Point2(1.015, 2.01));
 #endif
   Pose2 actual = pose * Pose2::Expmap(Vector_(3, 0.01, -0.015, 0.018));
+  EXPECT(assert_equal(expected, actual, 1e-5));
+}
+
+/* ************************************************************************* */
+TEST(Pose2, expmap0_full) {
+  Pose2 pose(M_PI_2, Point2(1, 2));
+  Pose2 expected(1.01491, 2.01013, 1.5888);
+  Pose2 actual = pose * Pose2::ExpmapFull(Vector_(3, 0.01, -0.015, 0.018));
   EXPECT(assert_equal(expected, actual, 1e-5));
 }
 
@@ -121,8 +133,20 @@ TEST(Pose3, expmap_c)
 #endif
 
 /* ************************************************************************* */
+TEST(Pose3, expmap_c_full)
+{
+  double w=0.3;
+	Vector xi = Vector_(3, 0.0, w, w);
+	Rot2 expectedR = Rot2::fromAngle(w);
+	Point2 expectedT(-0.0446635, 0.29552);
+	Pose2 expected(expectedR, expectedT);
+  EXPECT(assert_equal(expected, expm<Pose2>(xi),1e-6));
+  EXPECT(assert_equal(expected, Pose2::ExpmapFull(xi),1e-6));
+  EXPECT(assert_equal(xi, Pose2::LogmapFull(expected),1e-6));
+}
+
+/* ************************************************************************* */
 TEST(Pose2, logmap) {
-  //cout << "logmap" << endl;
   Pose2 pose0(M_PI_2, Point2(1, 2));
   Pose2 pose(M_PI_2+0.018, Point2(1.015, 2.01));
 #ifdef SLOW_BUT_CORRECT_EXPMAP
@@ -131,6 +155,15 @@ TEST(Pose2, logmap) {
   Vector expected = Vector_(3, 0.01, -0.015, 0.018);
 #endif
   Vector actual = pose0.logmap(pose);
+  EXPECT(assert_equal(expected, actual, 1e-5));
+}
+
+/* ************************************************************************* */
+TEST(Pose2, logmap_full) {
+  Pose2 pose0(M_PI_2, Point2(1, 2));
+  Pose2 pose(M_PI_2+0.018, Point2(1.015, 2.01));
+  Vector expected = Vector_(3, 0.00986473, -0.0150896, 0.018);
+  Vector actual = pose0.logmapFull(pose);
   EXPECT(assert_equal(expected, actual, 1e-5));
 }
 
@@ -193,7 +226,6 @@ TEST (Pose2, transform_from)
 /* ************************************************************************* */
 TEST(Pose2, compose_a)
 {
-  //cout << "compose_a" << endl;
   Pose2 pose1(M_PI/4.0, Point2(sqrt(0.5), sqrt(0.5)));
   Pose2 pose2(M_PI/2.0, Point2(0.0, 2.0));
 
@@ -228,7 +260,6 @@ TEST(Pose2, compose_a)
 /* ************************************************************************* */
 TEST(Pose2, compose_b)
 {
-  //cout << "compose_b" << endl;
   Pose2 pose1(Rot2::fromAngle(M_PI/10.0), Point2(.75, .5));
   Pose2 pose2(Rot2::fromAngle(M_PI/4.0-M_PI/10.0), Point2(0.701289620636, 1.34933052585));
 
@@ -250,7 +281,6 @@ TEST(Pose2, compose_b)
 /* ************************************************************************* */
 TEST(Pose2, compose_c)
 {
-  //cout << "compose_c" << endl;
   Pose2 pose1(Rot2::fromAngle(M_PI/4.0), Point2(1.0, 1.0));
   Pose2 pose2(Rot2::fromAngle(M_PI/4.0), Point2(sqrt(.5), sqrt(.5)));
 

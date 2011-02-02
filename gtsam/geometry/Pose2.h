@@ -113,9 +113,17 @@ namespace gtsam {
      */
     static Vector Logmap(const Pose2& p);
 
+    /** non-approximated versions of Expmap/Logmap */
+  	static Pose2 ExpmapFull(const Vector& xi);
+    static Vector LogmapFull(const Pose2& p);
+
     /** default implementations of binary functions */
     inline Pose2 expmap(const Vector& v) const { return gtsam::expmap_default(*this, v); }
     inline Vector logmap(const Pose2& p2) const { return gtsam::logmap_default(*this, p2);}
+
+    /** non-approximated versions of expmap/logmap */
+    inline Pose2 expmapFull(const Vector& v) const { return compose(ExpmapFull(v)); }
+    inline Vector logmapFull(const Pose2& p2) const { return LogmapFull(between(p2));}
 
     /**
      * Return relative pose between p1 and p2, in p1 coordinate frame

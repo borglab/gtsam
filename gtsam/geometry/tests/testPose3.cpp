@@ -57,6 +57,18 @@ TEST( Pose3, expmap_a)
 }
 
 /* ************************************************************************* */
+TEST( Pose3, expmap_a_full)
+{
+  Pose3 id;
+  Vector v(6);
+  fill(v.begin(), v.end(), 0);
+  v(0) = 0.3;
+  CHECK(assert_equal(id.expmap(v), Pose3(R, Point3())));
+  v(3)=0.2;v(4)=0.394742;v(5)=-2.08998;
+  CHECK(assert_equal(Pose3(R, P),id.expmapFull(v),1e-5));
+}
+
+/* ************************************************************************* */
 TEST(Pose3, expmap_b)
 {
   Pose3 p1(Rot3(), Point3(100, 0, 0));
@@ -64,8 +76,6 @@ TEST(Pose3, expmap_b)
   Pose3 expected(Rot3::rodriguez(0.0, 0.0, 0.1), Point3(100.0, 0.0, 0.0));
   CHECK(assert_equal(expected, p2));
 }
-
-#ifdef CORRECT_POSE3_EXMAP
 
 /* ************************************************************************* */
 // test case for screw motion in the plane
@@ -77,6 +87,8 @@ namespace screw {
 	Pose3 expected(expectedR, expectedT);
 }
 
+#ifdef CORRECT_POSE3_EXMAP
+/* ************************************************************************* */
 TEST(Pose3, expmap_c)
 {
   CHECK(assert_equal(screw::expected, expm<Pose3>(screw::xi),1e-6));
@@ -158,6 +170,88 @@ TEST(Pose3, Adjoint_compose)
 	CHECK(assert_equal(expected, actual, 1e-6));
 }
 #endif // SLOW_BUT_CORRECT_EXMAP
+
+/* ************************************************************************* */
+TEST(Pose3, expmap_c_full)
+{
+  CHECK(assert_equal(screw::expected, expm<Pose3>(screw::xi),1e-6));
+  CHECK(assert_equal(screw::expected, Pose3::ExpmapFull(screw::xi),1e-6));
+}
+
+/* ************************************************************************* */
+// assert that T*exp(xi)*T^-1 is equal to exp(Ad_T(xi))
+TEST(Pose3, Adjoint_full)
+{
+	Pose3 expected = T * Pose3::ExpmapFull(screw::xi) * T.inverse();
+	Vector xiprime = T.Adjoint(screw::xi);
+	CHECK(assert_equal(expected, Pose3::ExpmapFull(xiprime), 1e-6));
+
+	Pose3 expected2 = T2 * Pose3::ExpmapFull(screw::xi) * T2.inverse();
+	Vector xiprime2 = T2.Adjoint(screw::xi);
+	CHECK(assert_equal(expected2, Pose3::ExpmapFull(xiprime2), 1e-6));
+
+	Pose3 expected3 = T3 * Pose3::ExpmapFull(screw::xi) * T3.inverse();
+	Vector xiprime3 = T3.Adjoint(screw::xi);
+	CHECK(assert_equal(expected3, Pose3::ExpmapFull(xiprime3), 1e-6));
+}
+
+/* ************************************************************************* */
+/** Agrawal06iros version */
+using namespace boost::numeric::ublas;
+Pose3 Agrawal06iros(const Vector& xi) {
+	Vector w = vector_range<const Vector>(xi, range(0,3));
+	Vector v = vector_range<const Vector>(xi, range(3,6));
+	double t = norm_2(w);
+	if (t < 1e-5)
+		return Pose3(Rot3(), Point3::Expmap(v));
+	else {
+		Matrix W = skewSymmetric(w/t);
+		Matrix A = eye(3) + ((1 - cos(t)) / t) * W + ((t - sin(t)) / t) * (W * W);
+		return Pose3(Rot3::Expmap (w), Point3::Expmap(A * v));
+	}
+}
+
+/* ************************************************************************* */
+TEST(Pose3, expmaps_galore_full)
+{
+	Vector xi; Pose3 actual;
+	xi = Vector_(6,0.1,0.2,0.3,0.4,0.5,0.6);
+	actual = Pose3::ExpmapFull(xi);
+  CHECK(assert_equal(expm<Pose3>(xi), actual,1e-6));
+  CHECK(assert_equal(Agrawal06iros(xi), actual,1e-6));
+  CHECK(assert_equal(xi, Pose3::LogmapFull(actual),1e-6));
+
+	xi = Vector_(6,0.1,-0.2,0.3,-0.4,0.5,-0.6);
+	for (double theta=1.0;0.3*theta<=M_PI;theta*=2) {
+		Vector txi = xi*theta;
+		actual = Pose3::ExpmapFull(txi);
+		CHECK(assert_equal(expm<Pose3>(txi,30), actual,1e-6));
+		CHECK(assert_equal(Agrawal06iros(txi), actual,1e-6));
+		Vector log = Pose3::LogmapFull(actual);
+		CHECK(assert_equal(actual, Pose3::ExpmapFull(log),1e-6));
+		CHECK(assert_equal(txi,log,1e-6)); // not true once wraps
+	}
+
+  // Works with large v as well, but expm needs 10 iterations!
+	xi = Vector_(6,0.2,0.3,-0.8,100.0,120.0,-60.0);
+	actual = Pose3::ExpmapFull(xi);
+  CHECK(assert_equal(expm<Pose3>(xi,10), actual,1e-5));
+  CHECK(assert_equal(Agrawal06iros(xi), actual,1e-6));
+  CHECK(assert_equal(xi, Pose3::LogmapFull(actual),1e-6));
+}
+
+/* ************************************************************************* */
+TEST(Pose3, Adjoint_compose_full)
+{
+	// To debug derivatives of compose, assert that
+	// T1*T2*exp(Adjoint(inv(T2),x) = T1*exp(x)*T2
+	const Pose3& T1 = T;
+	Vector x = Vector_(6,0.1,0.1,0.1,0.4,0.2,0.8);
+	Pose3 expected = T1 * Pose3::ExpmapFull(x) * T2;
+	Vector y = T2.inverse().Adjoint(x);
+	Pose3 actual = T1 * T2 * Pose3::ExpmapFull(y);
+	CHECK(assert_equal(expected, actual, 1e-6));
+}
 
 /* ************************************************************************* */
 TEST( Pose3, compose )
@@ -510,10 +604,9 @@ TEST( Pose3, unicycle )
 {
 	// velocity in X should be X in inertial frame, rather than global frame
 	Vector x_step = delta(6,3,1.0);
-	EXPECT(assert_equal(Pose3(Rot3::ypr(0,0,0), l1), x1.expmap(x_step), tol));
-	EXPECT(assert_equal(Pose3(Rot3::ypr(0,0,0), Point3(2,1,0)), x2.expmap(x_step), tol));
-	// FAILS: moves in global X, not inertial X
-//	EXPECT(assert_equal(Pose3(Rot3::ypr(M_PI_4,0,0), Point3(3,2,0)), x3.expmap(sqrt(2) * x_step), tol));
+	EXPECT(assert_equal(Pose3(Rot3::ypr(0,0,0), l1), x1.expmapFull(x_step), tol));
+	EXPECT(assert_equal(Pose3(Rot3::ypr(0,0,0), Point3(2,1,0)), x2.expmapFull(x_step), tol));
+	EXPECT(assert_equal(Pose3(Rot3::ypr(M_PI_4,0,0), Point3(2,2,0)), x3.expmapFull(sqrt(2) * x_step), tol));
 }
 
 /* ************************************************************************* */
