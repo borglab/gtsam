@@ -63,9 +63,21 @@ TEST( Pose3, expmap_a_full)
   Vector v(6);
   fill(v.begin(), v.end(), 0);
   v(0) = 0.3;
-  CHECK(assert_equal(id.expmap(v), Pose3(R, Point3())));
+  CHECK(assert_equal(id.expmapFull(v), Pose3(R, Point3())));
   v(3)=0.2;v(4)=0.394742;v(5)=-2.08998;
   CHECK(assert_equal(Pose3(R, P),id.expmapFull(v),1e-5));
+}
+
+/* ************************************************************************* */
+TEST( Pose3, expmap_a_full2)
+{
+  Pose3 id;
+  Vector v(6);
+  fill(v.begin(), v.end(), 0);
+  v(0) = 0.3;
+  CHECK(assert_equal(expmapFull<Pose3>(id,v), Pose3(R, Point3())));
+  v(3)=0.2;v(4)=0.394742;v(5)=-2.08998;
+  CHECK(assert_equal(Pose3(R, P),expmapFull<Pose3>(id,v),1e-5));
 }
 
 /* ************************************************************************* */

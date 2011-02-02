@@ -78,6 +78,14 @@ TEST(Pose2, expmap_full) {
 }
 
 /* ************************************************************************* */
+TEST(Pose2, expmap_full2) {
+  Pose2 pose(M_PI_2, Point2(1, 2));
+  Pose2 expected(1.00811, 2.01528, 2.5608);
+  Pose2 actual = expmapFull<Pose2>(pose, Vector_(3, 0.01, -0.015, 0.99));
+  EXPECT(assert_equal(expected, actual, 1e-5));
+}
+
+/* ************************************************************************* */
 TEST(Pose2, expmap2) {
   // do an actual series exponential map
 	// see e.g. http://www.cis.upenn.edu/~cis610/cis610lie1.ps
@@ -110,6 +118,14 @@ TEST(Pose2, expmap0_full) {
   Pose2 pose(M_PI_2, Point2(1, 2));
   Pose2 expected(1.01491, 2.01013, 1.5888);
   Pose2 actual = pose * Pose2::ExpmapFull(Vector_(3, 0.01, -0.015, 0.018));
+  EXPECT(assert_equal(expected, actual, 1e-5));
+}
+
+/* ************************************************************************* */
+TEST(Pose2, expmap0_full2) {
+  Pose2 pose(M_PI_2, Point2(1, 2));
+  Pose2 expected(1.01491, 2.01013, 1.5888);
+  Pose2 actual = pose * ExpmapFull<Pose2>(Vector_(3, 0.01, -0.015, 0.018));
   EXPECT(assert_equal(expected, actual, 1e-5));
 }
 

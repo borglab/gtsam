@@ -222,5 +222,23 @@ namespace gtsam {
   typedef std::pair<Point2,Point2> Point2Pair;
   boost::optional<Pose2> align(const std::vector<Point2Pair>& pairs);
 
+  /**
+   * Specializations for access to full expmap/logmap in templated functions
+   *
+   * NOTE: apparently, these *must* be indicated as inline to prevent compile error
+   */
+
+  /** unary versions */
+	template<>
+	inline Pose2 ExpmapFull<Pose2>(const Vector& xi) { return Pose2::ExpmapFull(xi); }
+	template<>
+	inline Vector LogmapFull<Pose2>(const Pose2& p) { return Pose2::LogmapFull(p); }
+
+  /** binary versions */
+	template<>
+  inline Pose2 expmapFull<Pose2>(const Pose2& t, const Vector& v) { return t.expmapFull(v); }
+	template<>
+	inline Vector logmapFull<Pose2>(const Pose2& t, const Pose2& p2) { return t.logmapFull(p2); }
+
 } // namespace gtsam
 

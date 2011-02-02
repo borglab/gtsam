@@ -183,4 +183,25 @@ namespace gtsam {
 		return expm(xhat,K);
 	}
 
+	/**
+	 * function wrappers for full versions of expmap/logmap
+	 * these will default simple types to using the existing expmap/logmap,
+	 * but more complex ones can be specialized to use improved versions
+	 *
+	 * TODO: replace this approach with a naming scheme that doesn't call
+	 * non-expmap operations "expmap" - use same approach, but with "update"
+	 */
+
+  /** unary versions */
+	template<class T>
+	T ExpmapFull(const Vector& xi) { return T::Expmap(xi); }
+	template<class T>
+  Vector LogmapFull(const T& p) { return T::Logmap(p); }
+
+  /** binary versions */
+	template<class T>
+  T expmapFull(const T& t, const Vector& v) { return t.expmap(v); }
+	template<class T>
+  Vector logmapFull(const T& t, const T& p2) { return t.logmap(p2); }
+
 } // namespace gtsam

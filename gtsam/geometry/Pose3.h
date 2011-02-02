@@ -195,4 +195,22 @@ namespace gtsam {
   	return Pose3::wedge(xi(0),xi(1),xi(2),xi(3),xi(4),xi(5));
   }
 
+  /**
+   * Specializations for access to full expmap/logmap in templated functions
+   *
+   * NOTE: apparently, these *must* be indicated as inline to prevent compile error
+   */
+
+  /** unary versions */
+	template<>
+	inline Pose3 ExpmapFull<Pose3>(const Vector& xi) { return Pose3::ExpmapFull(xi); }
+	template<>
+	inline Vector LogmapFull<Pose3>(const Pose3& p) { return Pose3::LogmapFull(p); }
+
+  /** binary versions */
+	template<>
+  inline Pose3 expmapFull<Pose3>(const Pose3& t, const Vector& v) { return t.expmapFull(v); }
+	template<>
+	inline Vector logmapFull<Pose3>(const Pose3& t, const Pose3& p2) { return t.logmapFull(p2); }
+
 } // namespace gtsam
