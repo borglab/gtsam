@@ -21,6 +21,7 @@
 #include <string>
 #include <list>
 #include <gtsam/base/types.h>
+#include <gtsam/base/FastSet.h>
 #include <gtsam/inference/FactorGraph.h>
 #include <gtsam/inference/IndexFactor.h>
 #include <gtsam/inference/BayesNet.h>
@@ -65,7 +66,7 @@ public:
    * Return the set of variables involved in the factors (computes a set
    * union).
    */
-  std::set<Index, std::less<Index>, boost::fast_pool_allocator<Index> > keys() const;
+  FastSet<Index> keys() const;
 
   /**
    * Same as eliminate in the SymbolicFactorGraph case

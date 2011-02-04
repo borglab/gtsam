@@ -25,7 +25,6 @@
 #include <deque>
 //#include <boost/serialization/map.hpp>
 //#include <boost/serialization/list.hpp>
-#include <boost/pool/pool_alloc.hpp>
 #include <stdexcept>
 
 #include <gtsam/base/Testable.h>

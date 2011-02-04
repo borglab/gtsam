@@ -32,7 +32,6 @@
 #include <boost/format.hpp>
 #include <boost/lambda/lambda.hpp>
 #include <boost/iterator/transform_iterator.hpp>
-#include <boost/pool/pool_alloc.hpp>
 #include <fstream>
 using namespace boost::assign;
 namespace lam = boost::lambda;

@@ -63,9 +63,9 @@ namespace gtsam {
   }
 
   /* ************************************************************************* */
-  std::set<Index, std::less<Index>, boost::fast_pool_allocator<Index> >
+  FastSet<Index>
   SymbolicFactorGraph::keys() const {
-    std::set<Index, std::less<Index>, boost::fast_pool_allocator<Index> > keys;
+    FastSet<Index> keys;
     BOOST_FOREACH(const sharedFactor& factor, *this) {
       if(factor) keys.insert(factor->begin(), factor->end()); }
     return keys;

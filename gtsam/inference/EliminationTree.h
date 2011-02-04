@@ -9,8 +9,8 @@
 #include <list>
 #include <string>
 #include <utility>
-#include <boost/pool/pool_alloc.hpp>
 
+#include <gtsam/base/FastList.h>
 #include <gtsam/inference/VariableIndex.h>
 #include <gtsam/inference/BayesNet.h>
 #include <gtsam/inference/FactorGraph.h>
@@ -34,8 +34,8 @@ public:
 
 private:
 
-  typedef std::list<sharedFactor, boost::fast_pool_allocator<sharedFactor> > Factors;
-  typedef std::list<shared_ptr, boost::fast_pool_allocator<shared_ptr> > SubTrees;
+  typedef FastList<sharedFactor> Factors;
+  typedef FastList<shared_ptr> SubTrees;
   typedef std::vector<typename FACTOR::Conditional::shared_ptr> Conditionals;
 
   Index key_; /** index associated with root */

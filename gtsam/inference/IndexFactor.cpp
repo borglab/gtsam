@@ -28,7 +28,7 @@ namespace gtsam {
 
 template class FactorBase<Index>;
 
-IndexFactor::IndexFactor(const IndexConditional& c) : Base(static_cast<const Base>(c)) {}
+IndexFactor::IndexFactor(const IndexConditional& c) : Base(c) {}
 
 pair<BayesNet<IndexConditional>::shared_ptr, IndexFactor::shared_ptr> IndexFactor::CombineAndEliminate(
     const FactorGraph<This>& factors, size_t nrFrontals) {

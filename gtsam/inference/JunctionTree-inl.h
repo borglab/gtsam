@@ -28,7 +28,6 @@
 #include <gtsam/inference/ClusterTree-inl.h>
 
 #include <boost/foreach.hpp>
-#include <boost/pool/pool_alloc.hpp>
 #include <boost/lambda/bind.hpp>
 #include <boost/lambda/lambda.hpp>
 

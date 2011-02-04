@@ -24,7 +24,6 @@
 #include <boost/shared_ptr.hpp>
 #include <boost/foreach.hpp>
 #include <boost/serialization/nvp.hpp>
-#include <boost/pool/pool_alloc.hpp>
 
 #include <gtsam/base/types.h>
 #include <gtsam/base/Testable.h>

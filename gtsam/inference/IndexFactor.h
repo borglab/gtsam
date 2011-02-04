@@ -34,7 +34,7 @@ public:
   typedef boost::shared_ptr<IndexFactor> shared_ptr;
 
   /** Copy constructor */
-  IndexFactor(const This& f) : Base(static_cast<const Base&>(f)) {}
+  IndexFactor(const This& f) : Base(f) {}
 
   /** Construct from derived type */
   IndexFactor(const IndexConditional& c);
