@@ -172,6 +172,9 @@ namespace gtsam {
 	  // Calculate delta rotation = between(R1,R2)
 	  double c = c1 * c2 + s1 * s2, s = -s1 * c2 + c1 * s2;
 	  Rot2 R(Rot2::atan2(s,c)); // normalizes
+	  
+	  // Assert that R1 and R2 are normalized
+	  assert(fabs(c1*c1 + s1*s1 - 1.0) < 1e-5 && fabs(c2*c2 + s2*s2 - 1.0) < 1e-5);
 
 	  // Calculate delta translation = unrotate(R1, dt);
 	  Point2 dt = p2.t() - t_;
@@ -212,7 +215,12 @@ namespace gtsam {
 	  if (!H1 && !H2) return transform_to(point).norm();
 	  Point2 d = transform_to(point, H1, H2);
 	  double x = d.x(), y = d.y(), d2 = x * x + y * y, n = sqrt(d2);
-	  Matrix D_result_d = Matrix_(1, 2, x / n, y / n);
+	  Matrix D_result_d;
+	  if(fabs(n) > 1e-5)
+	    D_result_d = Matrix_(1, 2, x / n, y / n);
+	  else {
+	    D_result_d = Matrix_(1,2, 1.0, 1.0);
+	  }
 	  if (H1) *H1 = D_result_d * (*H1);
 	  if (H2) *H2 = D_result_d * (*H2);
 	  return n;
