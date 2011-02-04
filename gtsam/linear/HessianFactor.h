@@ -46,6 +46,7 @@ namespace gtsam {
     InfoMatrix matrix_; // The full information matrix [A b]^T * [A b]
     BlockInfo info_;    // The block view of the full information matrix.
 
+    void assertInvariants() const;
     GaussianBayesNet::shared_ptr splitEliminatedFactor(size_t nrFrontals, const std::vector<Index>& keys);
     void updateATA(const HessianFactor& update, const Scatter& scatter);
 
@@ -103,6 +104,9 @@ namespace gtsam {
      * todo: Remove this in favor of keeping track of dimensions with variables?
      */
     virtual size_t getDim(const_iterator variable) const { return info_(variable-this->begin(), 0).size1(); }
+
+    /** Return the number of columns and rows of the Hessian matrix */
+    size_t size1() const { return info_.size1(); }
 
     /** Return a view of a block of the information matrix */
     constBlock info(const_iterator j1, const_iterator j2) const { return info_(j1-begin(), j2-begin()); }

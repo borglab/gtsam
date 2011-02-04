@@ -16,6 +16,7 @@
  * @created Dec 8, 2010
  */
 
+#include <gtsam/base/debug.h>
 #include <gtsam/base/timing.h>
 #include <gtsam/base/Matrix.h>
 #include <gtsam/base/FastMap.h>
@@ -50,19 +51,32 @@ using namespace boost::lambda;
 namespace gtsam {
 
   /* ************************************************************************* */
-  HessianFactor::HessianFactor(const HessianFactor& gf) :
-    GaussianFactor(gf), info_(matrix_) {
-    info_.assignNoalias(gf.info_);
+  void HessianFactor::assertInvariants() const {
+    // Check for non-finite values
+    for(size_t i=0; i<matrix_.size1(); ++i)
+      for(size_t j=0; j<matrix_.size2(); ++j)
+        if(!isfinite(matrix_(i,j)))
+          throw invalid_argument("HessianFactor contains non-finite matrix entries.");
   }
 
   /* ************************************************************************* */
-  HessianFactor::HessianFactor() : info_(matrix_) {}
+  HessianFactor::HessianFactor(const HessianFactor& gf) :
+    GaussianFactor(gf), info_(matrix_) {
+    info_.assignNoalias(gf.info_);
+    assertInvariants();
+  }
+
+  /* ************************************************************************* */
+  HessianFactor::HessianFactor() : info_(matrix_) {
+    assertInvariants();
+  }
 
   /* ************************************************************************* */
   HessianFactor::HessianFactor(const Vector& b_in) : info_(matrix_) {
     JacobianFactor jf(b_in);
     info_.copyStructureFrom(jf.Ab_);
     ublas::noalias(matrix_) = ublas::prod(ublas::trans(jf.matrix_), jf.matrix_);
+    assertInvariants();
   }
 
   /* ************************************************************************* */
@@ -72,6 +86,7 @@ namespace gtsam {
     JacobianFactor jf(i1, A1, b, model);
     info_.copyStructureFrom(jf.Ab_);
     ublas::noalias(matrix_) = ublas::prod(ublas::trans(jf.matrix_), jf.matrix_);
+    assertInvariants();
   }
 
   /* ************************************************************************* */
@@ -81,6 +96,7 @@ namespace gtsam {
     JacobianFactor jf(i1, A1, i2, A2, b, model);
     info_.copyStructureFrom(jf.Ab_);
     ublas::noalias(matrix_) = ublas::prod(ublas::trans(jf.matrix_), jf.matrix_);
+    assertInvariants();
   }
 
   /* ************************************************************************* */
@@ -90,6 +106,7 @@ namespace gtsam {
     JacobianFactor jf(i1, A1, i2, A2, i3, A3, b, model);
     info_.copyStructureFrom(jf.Ab_);
     ublas::noalias(matrix_) = ublas::prod(ublas::trans(jf.matrix_), jf.matrix_);
+    assertInvariants();
   }
 
   /* ************************************************************************* */
@@ -99,6 +116,7 @@ namespace gtsam {
     keys_ = jf.keys_;
     info_.copyStructureFrom(jf.Ab_);
     ublas::noalias(matrix_) = ublas::prod(ublas::trans(jf.matrix_), jf.matrix_);
+    assertInvariants();
   }
 
   /* ************************************************************************* */
@@ -108,6 +126,7 @@ namespace gtsam {
     keys_ = jf.keys_;
     info_.copyStructureFrom(jf.Ab_);
     ublas::noalias(matrix_) = ublas::prod(ublas::trans(jf.matrix_), jf.matrix_);
+    assertInvariants();
   }
 
   /* ************************************************************************* */
@@ -116,6 +135,7 @@ namespace gtsam {
     info_.copyStructureFrom(jf.Ab_);
     ublas::noalias(ublas::symmetric_adaptor<MatrixColMajor,ublas::upper>(matrix_)) =
         ublas::prod(ublas::trans(jf.matrix_), jf.matrix_);
+    assertInvariants();
   }
 
   /* ************************************************************************* */
@@ -133,6 +153,7 @@ namespace gtsam {
       info_.assignNoalias(hf.info_);
     } else
       throw std::invalid_argument("In HessianFactor(const GaussianFactor& gf), gf is neither a JacobianFactor nor a HessianFactor");
+    assertInvariants();
   }
 
   /* ************************************************************************* */
@@ -195,82 +216,13 @@ namespace gtsam {
     return scatter;
   }
 
-///* ************************************************************************* */
-//static MatrixColMajor formAbTAb(const FactorGraph<HessianFactor>& factors, const Scatter& scatter) {
-//
-//  static const bool debug = false;
-//
-//  tic("CombineAndEliminate: 3.1 varStarts");
-//  // Determine scalar indices of each variable
-//  vector<size_t> varStarts;
-//  varStarts.reserve(scatter.size() + 2);
-//  varStarts.push_back(0);
-//  BOOST_FOREACH(const Scatter::value_type& var_slot, scatter) {
-//    varStarts.push_back(varStarts.back() + var_slot.second.dimension);
-//  }
-//  // This is for the r.h.s. vector
-//  varStarts.push_back(varStarts.back() + 1);
-//  toc("CombineAndEliminate: 3.1 varStarts");
-//
-//  // Allocate and zero matrix for Ab' * Ab
-//  MatrixColMajor ATA(ublas::zero_matrix<double>(varStarts.back(), varStarts.back()));
-//
-//  tic("CombineAndEliminate: 3.2 updates");
-//  // Do blockwise low-rank updates to Ab' * Ab for each factor.  Here, we
-//  // only update the upper triangle because this is all that Cholesky uses.
-//  BOOST_FOREACH(const HessianFactor::shared_ptr& factor, factors) {
-//
-//    // Whiten the factor first so it has a unit diagonal noise model
-//    HessianFactor whitenedFactor(factor->whiten());
-//
-//    if(debug) whitenedFactor.print("whitened factor: ");
-//
-//    for(HessianFactor::const_iterator var2 = whitenedFactor.begin(); var2 != whitenedFactor.end(); ++var2) {
-//      assert(scatter.find(*var2) != scatter.end());
-//      size_t vj = scatter.find(*var2)->second.slot;
-//      for(HessianFactor::const_iterator var1 = whitenedFactor.begin(); var1 <= var2; ++var1) {
-//        assert(scatter.find(*var1) != scatter.end());
-//        size_t vi = scatter.find(*var1)->second.slot;
-//        if(debug) cout << "Updating block " << vi << ", " << vj << endl;
-//        if(debug) cout << "Updating (" << varStarts[vi] << ":" << varStarts[vi+1] << ", " <<
-//            varStarts[vj] << ":" << varStarts[vj+1] << ") from A" << *var1 << "' * A" << *var2 << endl;
-//        ublas::noalias(ublas::project(ATA,
-//            ublas::range(varStarts[vi], varStarts[vi+1]), ublas::range(varStarts[vj], varStarts[vj+1]))) +=
-//                ublas::prod(ublas::trans(whitenedFactor.getA(var1)), whitenedFactor.getA(var2));
-//      }
-//    }
-//
-//    // Update r.h.s. vector
-//    size_t vj = scatter.size();
-//    for(HessianFactor::const_iterator var1 = whitenedFactor.begin(); var1 < whitenedFactor.end(); ++var1) {
-//      assert(scatter.find(*var1) != scatter.end());
-//      size_t vi = scatter.find(*var1)->second.slot;
-//      if(debug) cout << "Updating block " << vi << ", " << vj << endl;
-//      if(debug) cout << "Updating (" << varStarts[vi] << ":" << varStarts[vi+1] << ", " <<
-//          varStarts[vj] << ":" << varStarts[vj+1] << ") from A" << *var1 << "' * b" << endl;
-//      ublas::matrix_column<MatrixColMajor> col(ATA, varStarts[vj]);
-//      ublas::noalias(ublas::subrange(col, varStarts[vi], varStarts[vi+1])) +=
-//          ublas::prod(ublas::trans(whitenedFactor.getA(var1)), whitenedFactor.getb());
-//    }
-//
-//    size_t vi = scatter.size();
-//    if(debug) cout << "Updating block " << vi << ", " << vj << endl;
-//    if(debug) cout << "Updating (" << varStarts[vi] << ":" << varStarts[vi+1] << ", " <<
-//        varStarts[vj] << ":" << varStarts[vj+1] << ") from b" << "' * b" << endl;
-//    ublas::noalias(ATA(varStarts[vi], varStarts[vj])) += ublas::inner_prod(whitenedFactor.getb(), whitenedFactor.getb());
-//  }
-//  toc("CombineAndEliminate: 3.2 updates");
-//
-//  return ATA;
-//}
-
 void HessianFactor::updateATA(const HessianFactor& update, const Scatter& scatter) {
 
   // This function updates 'combined' with the information in 'update'.
   // 'scatter' maps variables in the update factor to slots in the combined
   // factor.
 
-  static const bool debug = false;
+  const bool debug = ISDEBUG("updateATA");
 
   // First build an array of slots
   tic(1, "slots");
@@ -300,7 +252,7 @@ void HessianFactor::updateATA(const HessianFactor& update, const Scatter& scatte
       } else {
         if(debug)
           cout << "Updating (" << slot1 << "," << slot2 << ") from (" << j1 << "," << j2 << ")" << endl;
-        Block thisBlock(this->info_(slot2, slot1));
+        Block thisBlock(this->info_(slot1, slot2));
         constBlock updateBlock(update.info_(j1,j2));
         ublas::noalias(ublas::symmetric_adaptor<Block,ublas::upper>(thisBlock)) +=
             ublas::symmetric_adaptor<constBlock,ublas::upper>(updateBlock);
@@ -331,8 +283,10 @@ GaussianBayesNet::shared_ptr HessianFactor::splitEliminatedFactor(size_t nrFront
       tic(1, "zero");
       BlockAb::Block remainingMatrix(Ab.range(0, Ab.nBlocks()));
       if(remainingMatrix.size1() > 1)
-        for(size_t j = 0; j < remainingMatrix.size1() - 1; ++j)
-          memset(&remainingMatrix(j+1, j), 0, sizeof(remainingMatrix(0,0)) * (remainingMatrix.size1() - j - 1));
+        for(size_t j = 0; j < remainingMatrix.size1() - 1; ++j) {
+          ublas::matrix_column<BlockAb::Block> col(ublas::column(remainingMatrix, j));
+          std::fill(col.begin() + j+1, col.end(), 0.0);
+        }
       toc(1, "zero");
     }
 
@@ -361,7 +315,7 @@ GaussianBayesNet::shared_ptr HessianFactor::splitEliminatedFactor(size_t nrFront
 pair<GaussianBayesNet::shared_ptr, HessianFactor::shared_ptr> HessianFactor::CombineAndEliminate(
         const FactorGraph<HessianFactor>& factors, size_t nrFrontals) {
 
-  static const bool debug = false;
+  const bool debug = ISDEBUG("HessianFactor::CombineAndEliminate");
 
   // Find the scatter and variable dimensions
   tic(1, "find scatter");
@@ -413,6 +367,8 @@ pair<GaussianBayesNet::shared_ptr, HessianFactor::shared_ptr> HessianFactor::Com
     combinedFactor->print("Eliminated factor (L piece): ");
   }
   toc(5, "split");
+
+  combinedFactor->assertInvariants();
 
   return make_pair(conditionals, combinedFactor);
 }
