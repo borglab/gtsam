@@ -21,6 +21,7 @@
 #include <gtsam/base/timing.h>
 
 #include <boost/numeric/ublas/matrix_proxy.hpp>
+#include <boost/numeric/ublas/symmetric.hpp>
 #include <boost/numeric/ublas/blas.hpp>
 #include <boost/format.hpp>
 
@@ -254,7 +255,8 @@ void choleskyPartial(MatrixColMajor& ABC, size_t nFrontal) {
   // Views of R, S, and L submatrices.
   ublas::matrix_range<MatrixColMajor> R(ublas::project(ABC, ublas::range(0,nFrontal), ublas::range(0,nFrontal)));
   ublas::matrix_range<MatrixColMajor> S(ublas::project(ABC, ublas::range(0,nFrontal), ublas::range(nFrontal,n)));
-  ublas::matrix_range<MatrixColMajor> L(ublas::project(ABC, ublas::range(nFrontal,n), ublas::range(nFrontal,n)));
+  ublas::matrix_range<MatrixColMajor> Lf(ublas::project(ABC, ublas::range(nFrontal,n), ublas::range(nFrontal,n)));
+  ublas::symmetric_adaptor<typeof(Lf), ublas::upper> L(Lf);
 
   // Compute S = inv(R') * B
   tic(2, "compute S");
@@ -267,7 +269,7 @@ void choleskyPartial(MatrixColMajor& ABC, size_t nFrontal) {
   tic(3, "compute L");
   if(debug) gtsam::print(L, "C: ");
   if(L.size2() > 0)
-    cblas_dsyrk(CblasColMajor, CblasUpper, CblasTrans, L.size1(), S.size1(), -1.0, &S(0,0), n, 1.0, &L(0,0), n);
+    L -= ublas::prod(ublas::trans(S), S);
   if(debug) gtsam::print(L, "L: ");
   toc(3, "compute L");
 }
