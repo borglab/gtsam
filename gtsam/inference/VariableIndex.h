@@ -43,7 +43,7 @@ class VariableIndex {
 public:
 
   typedef boost::shared_ptr<VariableIndex> shared_ptr;
-  typedef std::list<size_t> Factors;
+  typedef FastList<size_t> Factors;
   typedef Factors::iterator Factor_iterator;
   typedef Factors::const_iterator Factor_const_iterator;
 
