@@ -33,8 +33,8 @@ using namespace std;
 namespace gtsam {
 
   static const double negativePivotThreshold = -1e-1;
-  static const double zeroPivotThreshold = 1e-3;
-  static const double underconstrainedPrior = 0.001;
+  static const double zeroPivotThreshold = 1e-6;
+  static const double underconstrainedPrior = 1e-5;
 
 /* ************************************************************************* */
 void cholesky_inplace(MatrixColMajor& I) {
