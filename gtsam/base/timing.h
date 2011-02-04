@@ -188,7 +188,13 @@ inline void toc_(size_t id) {
 }
 
 inline void toc_(size_t id, const std::string& label) {
-  assert(label == timingCurrent.lock()->label_);
+#ifndef NDEBUG
+  if(label != timingCurrent.lock()->label_) {
+    std::cerr << "gtsam timing:  toc called with id=" << id << ", label=\"" << label << "\", but expecting \"" << timingCurrent.lock()->label_ << "\"" << std::endl;
+    timingRoot->print();
+    exit(1);
+  }
+#endif
   toc_(id);
 }
 

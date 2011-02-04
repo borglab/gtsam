@@ -225,11 +225,12 @@ void choleskyPartial(MatrixColMajor& ABC, size_t nFrontal) {
     }
     toc(1, "dpotrf");
   } else {
+    tic(1, "choleskyCareful");
     bool fullRank = choleskyCareful(ABC, nFrontal).second;
     if(!fullRank)
       throw invalid_argument("Rank-deficient");
+    toc(1, "choleskyCareful");
   }
-  toc(1, "dpotrf");
 
 #ifndef NDEBUG
   // Check for non-finite values

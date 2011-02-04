@@ -38,6 +38,7 @@ namespace gtsam {
   /* ************************************************************************* */
   template <class FG>
   void JunctionTree<FG>::construct(const FG& fg, const VariableIndex& variableIndex) {
+    tic(1, "JT Constructor");
     tic(1, "JT symbolic ET");
     const typename EliminationTree<IndexFactor>::shared_ptr symETree(EliminationTree<IndexFactor>::Create(fg, variableIndex));
     toc(1, "JT symbolic ET");
@@ -52,6 +53,7 @@ namespace gtsam {
     tic(4, "distributeFactors");
     this->root_ = distributeFactors(fg, sbt.root());
     toc(4, "distributeFactors");
+    toc(1, "JT Constructor");
   }
 
   /* ************************************************************************* */
@@ -191,9 +193,11 @@ namespace gtsam {
   template <class FG>
   typename JunctionTree<FG>::BayesTree::sharedClique JunctionTree<FG>::eliminate(bool cache) const {
     if(this->root()) {
+      tic(2,"JT eliminate");
       pair<typename BayesTree::sharedClique, typename FG::sharedFactor> ret = this->eliminateOneClique(this->root(), cache);
       if (ret.second->size() != 0)
         throw runtime_error("JuntionTree::eliminate: elimination failed because of factors left over!");
+      toc(2,"JT eliminate");
       return ret.first;
     } else
       return typename BayesTree::sharedClique();
