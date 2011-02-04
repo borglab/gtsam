@@ -52,11 +52,13 @@ namespace gtsam {
 
   /* ************************************************************************* */
   void HessianFactor::assertInvariants() const {
+#ifndef NDEBUG
     // Check for non-finite values
     for(size_t i=0; i<matrix_.size1(); ++i)
       for(size_t j=0; j<matrix_.size2(); ++j)
         if(!isfinite(matrix_(i,j)))
           throw invalid_argument("HessianFactor contains non-finite matrix entries.");
+#endif
   }
 
   /* ************************************************************************* */
