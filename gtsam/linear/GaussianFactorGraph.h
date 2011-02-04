@@ -21,6 +21,7 @@
 
 #include <boost/shared_ptr.hpp>
 
+#include <gtsam/base/FastSet.h>
 #include <gtsam/inference/FactorGraph.h>
 #include <gtsam/linear/Errors.h>
 #include <gtsam/linear/GaussianFactor.h>
@@ -93,7 +94,7 @@ namespace gtsam {
      * Return the set of variables involved in the factors (computes a set
      * union).
      */
-    typedef std::set<Index, std::less<Index>, boost::fast_pool_allocator<Index> > Keys;
+    typedef FastSet<Index> Keys;
     Keys keys() const;
 
     /** Permute the variables in the factors */

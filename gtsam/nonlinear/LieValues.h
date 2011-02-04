@@ -27,8 +27,7 @@
 #include <map>
 #include <set>
 
-#include <boost/pool/pool_alloc.hpp>
-
+#include <gtsam/base/FastMap.h>
 #include <gtsam/base/Vector.h>
 #include <gtsam/base/Testable.h>
 #include <gtsam/nonlinear/Ordering.h>
@@ -58,7 +57,7 @@ namespace gtsam {
      */
   	typedef J Key;
   	typedef typename J::Value Value;
-    typedef std::map<J,Value, std::less<J>, boost::fast_pool_allocator<std::pair<const J,Value> > > KeyValueMap;
+    typedef FastMap<J,Value> KeyValueMap;
     typedef typename KeyValueMap::value_type KeyValuePair;
     typedef typename KeyValueMap::iterator iterator;
     typedef typename KeyValueMap::const_iterator const_iterator;
