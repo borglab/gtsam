@@ -20,6 +20,7 @@
 
 #include <map>
 #include <boost/pool/pool_alloc.hpp>
+#include <boost/serialization/base_object.hpp>
 
 namespace gtsam {
 
@@ -30,6 +31,7 @@ namespace gtsam {
  * we've seen that the fast_pool_allocator can lead to speedups of several
  * percent.
  */
+
 template<typename KEY, typename VALUE>
 class FastMap : public std::map<KEY, VALUE, std::less<KEY>, boost::fast_pool_allocator<std::pair<const KEY, VALUE> > > {
 
@@ -50,6 +52,16 @@ public:
   /** Copy constructor from the base map class */
   FastMap(const Base& x) : Base(x) {}
 
+  private:
+  /** Serialization function */
+  friend class boost::serialization::access;
+  template<class ARCHIVE>
+    void serialize(ARCHIVE & ar, const unsigned int version) {
+    //You are not supposed to do this:
+    boost::serialization::serialize(ar, *this, version);
+    //Instead you are supposed to do this:  but it doesnt work
+    //    ar & boost::serialization::base_object<Base>(*this);
+  }
 };
 
 }
