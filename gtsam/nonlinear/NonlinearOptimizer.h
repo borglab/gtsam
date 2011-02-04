@@ -193,7 +193,12 @@ namespace gtsam {
 		/**
 		 * Return the values
 		 */
-		shared_values values() const{ return values_; }
+		shared_values values() const { return values_; }
+
+		/**
+		 * Return the graph
+		 */
+		shared_graph graph() const { return graph_; }
 
 		/**
 		 * Return the itertions
