@@ -16,6 +16,7 @@
  * @created Nov 5, 2010
  */
 
+#include <gtsam/base/debug.h>
 #include <gtsam/base/cholesky.h>
 #include <gtsam/base/lapack.h>
 #include <gtsam/base/timing.h>
