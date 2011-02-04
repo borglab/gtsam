@@ -181,14 +181,14 @@ TEST (Serialization, xml_linear) {
 TEST (Serialization, text_planar) {
 	EXPECT(equalsObj<gtsam::planarSLAM::PoseKey>(gtsam::planarSLAM::PoseKey(2)));
 	EXPECT(equalsObj<gtsam::planarSLAM::PointKey>(gtsam::planarSLAM::PointKey(2)));
-	EXPECT(equalsObj<gtsam::planarSLAM::Values>());
+//	EXPECT(equalsObj<gtsam::planarSLAM::Values>());
 }
 
 /* ************************************************************************* */
 TEST (Serialization, xml_planar) {
 	EXPECT(equalsXML<gtsam::planarSLAM::PoseKey>(gtsam::planarSLAM::PoseKey(2)));
 	EXPECT(equalsXML<gtsam::planarSLAM::PointKey>(gtsam::planarSLAM::PointKey(2)));
-	EXPECT(equalsXML<gtsam::planarSLAM::Values>());
+//	EXPECT(equalsXML<gtsam::planarSLAM::Values>());
 }
 
 /* ************************************************************************* */
