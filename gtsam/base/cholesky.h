@@ -58,7 +58,7 @@ size_t choleskyFactorUnderdetermined(MatrixColMajor& Ab, size_t nFrontal);
  * (always?) the case during elimination of a fully-constrained least-squares
  * problem.
  */
-size_t choleskyCareful(MatrixColMajor& ATA);
+std::pair<size_t,bool> choleskyCareful(MatrixColMajor& ATA, int order = -1);
 
 /**
  * Partial Cholesky computes a factor [R S  such that [R' 0  [R S  = [A  B

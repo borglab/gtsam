@@ -273,7 +273,7 @@ SharedDiagonal Gaussian::Cholesky(MatrixColMajor& Ab, size_t nFrontals) const {
 
   // Use Cholesky to factor Ab
   tic("Cholesky: 3 careful");
-  size_t maxrank = choleskyCareful(Ab);
+  size_t maxrank = choleskyCareful(Ab).first;
   toc("Cholesky: 3 careful");
 
   // Due to numerical error the rank could appear to be more than the number

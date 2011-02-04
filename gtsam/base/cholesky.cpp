@@ -31,6 +31,10 @@ using namespace std;
 
 namespace gtsam {
 
+  static const double negativePivotThreshold = -1e-1;
+  static const double zeroPivotThreshold = 1e-3;
+  static const double underconstrainedPrior = 0.001;
+
 /* ************************************************************************* */
 void cholesky_inplace(MatrixColMajor& I) {
 
@@ -116,40 +120,51 @@ size_t choleskyFactorUnderdetermined(MatrixColMajor& Ab, size_t nFrontal) {
 }
 
 /* ************************************************************************* */
-static inline bool choleskyStep(MatrixColMajor& ATA, size_t k) {
-
-  // Tolerance for being equal to zero
-//  static const double zeroTol = numeric_limits<double>::epsilon();
-  static const double zeroTol = 1.e-15;
+static inline bool choleskyStep(MatrixColMajor& ATA, size_t k, size_t order) {
 
   const size_t n = ATA.size1();
 
-  const double alpha = ATA(k,k);
+  double alpha = ATA(k,k);
+  if(alpha < negativePivotThreshold) {
+    cout << "pivot = " << alpha << endl;
+    print(ATA, "Partially-factorized matrix: ");
+    throw(invalid_argument("The matrix was found to be non-positive-semidefinite when factoring with careful Cholesky."));
+  } else if(alpha < 0.0)
+    alpha = 0.0;
+    
   const double beta = sqrt(alpha);
 
-  if(beta > zeroTol) {
+  if(beta > zeroPivotThreshold) {
     const double betainv = 1.0 / beta;
 
     // Update k,k
     ATA(k,k) = beta;
 
-    if(k < (n-1)) {
+    if(k < (order-1)) {
+      ublas::matrix_row<MatrixColMajor> Vf(ublas::row(ATA, k));
+      ublas::vector_range<typeof(Vf)> V(ublas::subrange(Vf, k+1,order));
+
       // Update A(k,k+1:end) <- A(k,k+1:end) / beta
-      cblas_dscal(n-k-1, betainv, &(ATA(k,k+1)), n);
+      V *= betainv;
 
       // Update A(k+1:end, k+1:end) <- A(k+1:end, k+1:end) - v*v' / alpha
-      cblas_dsyr(CblasColMajor, CblasUpper, n-k-1, -1.0, &(ATA(k,k+1)), n, &(ATA(k+1,k+1)), n);
+      ublas::matrix_range<MatrixColMajor> L(ublas::subrange(ATA, k+1,order, k+1,order));
+      L -= ublas::outer_prod(V, V);
     }
 
     return true;
-  } else
+  } else {
+    ATA(k,k) = underconstrainedPrior;
+    for(size_t j=k+1; j<order; ++j)
+      ATA(k,j) = 0.0;
     return false;
+  }
 }
 
 /* ************************************************************************* */
-size_t choleskyCareful(MatrixColMajor& ATA) {
+pair<size_t,bool> choleskyCareful(MatrixColMajor& ATA, int order) {
 
-  static const bool debug = false;
+  const bool debug = ISDEBUG("choleskyCareful");
 
 //  // Tolerance for being equal to zero
 ////  static const double zeroTol = numeric_limits<double>::epsilon();
@@ -161,78 +176,34 @@ size_t choleskyCareful(MatrixColMajor& ATA) {
   // Number of rows/columns
   const size_t n = ATA.size1();
 
+  if(order < 0)
+    order = n;
+
+  assert(order <= n);
+
   // The index of the row after the last non-zero row of the square-root factor
   size_t maxrank = 0;
+  bool fullRank = true;
 
-  for(size_t k = 0; k < n; ++k) {
+  for(size_t k = 0; k < order; ++k) {
 
-    if(choleskyStep(ATA, k)) {
+    if(choleskyStep(ATA, k, order)) {
       if(debug) cout << "choleskyCareful:  Factored through " << k << endl;
       if(debug) print(ATA, "ATA: ");
       maxrank = k+1;
     } else {
+      fullRank = false;
       if(debug) cout << "choleskyCareful:  Skipping " << k << endl;
     }
-
-//    // If the diagonal element is not zero, run Cholesky as far as possible -
-//    // Cholesky will stop on the first zero diagonal element.  Because ATA is
-//    // symmetric positive semi-definite, a zero diagonal element implies
-//    // a corresponding row and column of zeros, thus we need only check the
-//    // diagonal.
-//    if(ATA(k,k) > zeroTol || ATA(k,k) < -zeroTol) {
-//
-//      // Try to do Cholesky on the remaining lower-right square submatrix.
-//      int info = lapack_dpotf2('U', n-k, &(ATA(k,k)), n);
-//
-//      if(info > 0) {
-//        // The submatrix is rank-deficient, but Cholesky factored the first
-//        // subRank rows/columns, leaving a positive semi-definite matrix
-//        // starting at subRank.  (we're speaking in zero-based indexices).
-//        size_t subRank = info - 1;
-//
-//        // The row/column after the last nonzero one.
-//        maxrank = k + subRank;
-//
-//        // We know that the row/column just after the factored part is zero, so
-//        // skip it.  Note that after this statement k will be the next
-//        // row/column to process.
-//        k += subRank + 1;
-//
-//        if(debug) cout << "choleskyCareful:  Factored until " << maxrank << ", skipping next." << endl;
-//
-//      } else if(info == 0) {
-//        // Cholesky successfully factored the rest of the matrix.  Note that
-//        // after this statement k will be the last processed row/column, and
-//        // will be incremented by 1 by the 'for' loop.
-//        k += n - k;
-//
-//        // The last row/column is nonzero.
-//        maxrank = n;
-//
-//        if(debug) cout << "choleskyCareful:  Factored the remainder" << endl;
-//
-//      } else {
-//        throw std::domain_error(boost::str(boost::format(
-//            "Bad input to choleskyFactorUnderdetermined, dpotrf returned %d.\n")%info));
-//      }
-//    } else {
-//
-//      if(debug) cout << "choleskyCareful:  Skipping " << k << endl;
-//
-//      // The diagonal element is numerically zero, so skip this row/column.
-//      ++ k;
-//    }
-//
-//    if(debug) print(ATA, "ATA: ");
   }
 
-  return maxrank;
+  return make_pair(maxrank, fullRank);
 }
 
 /* ************************************************************************* */
 void choleskyPartial(MatrixColMajor& ABC, size_t nFrontal) {
 
-  static const bool debug = false;
+  const bool debug = ISDEBUG("choleskyPartial");
 
   assert(ABC.size1() == ABC.size2());
   assert(nFrontal <= ABC.size1());
