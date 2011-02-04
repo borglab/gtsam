@@ -27,6 +27,7 @@
 #include <gtsam/linear/GaussianFactorGraph.h>
 #include <gtsam/inference/FactorGraph-inl.h>
 #include <gtsam/linear/iterative.h>
+#include <gtsam/linear/HessianFactor.h>
 
 
 using namespace std;
@@ -80,6 +81,34 @@ namespace gtsam {
       fg.push_back(*factor);
     }
     return fg;
+  }
+
+  /* ************************************************************************* */
+  std::vector<boost::tuple<size_t,size_t,double> >
+  GaussianFactorGraph::sparseJacobian(const std::vector<size_t>& columnIndices) const {
+    std::vector<boost::tuple<size_t,size_t,double> > entries;
+    size_t i = 0;
+    BOOST_FOREACH(const sharedFactor& factor, *this) {
+      // Convert to JacobianFactor if necessary
+      JacobianFactor::shared_ptr jacobianFactor(boost::dynamic_pointer_cast<JacobianFactor>(factor));
+      if(!jacobianFactor) {
+        HessianFactor::shared_ptr hessianFactor(boost::dynamic_pointer_cast<HessianFactor>(factor));
+        if(hessianFactor)
+          jacobianFactor.reset(new JacobianFactor(*hessianFactor));
+        else
+          throw invalid_argument("GaussianFactorGraph contains a factor that is neither a JacobianFactor nor a HessianFactor.");
+      }
+
+      // Add entries, adjusting the row index i
+      std::vector<boost::tuple<size_t,size_t,double> > factorEntries(jacobianFactor->sparse(columnIndices));
+      entries.reserve(entries.size() + factorEntries.size());
+      for(size_t entry=0; entry<factorEntries.size(); ++entry)
+        entries.push_back(boost::make_tuple(factorEntries[entry].get<0>()+i, factorEntries[entry].get<1>(), factorEntries[entry].get<2>()));
+
+      // Increment row index
+      i += jacobianFactor->size1();
+    }
+    return entries;
   }
 
 //  VectorValues GaussianFactorGraph::allocateVectorValuesb() const {

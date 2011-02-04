@@ -20,6 +20,7 @@
 #pragma once
 
 #include <boost/shared_ptr.hpp>
+#include <boost/tuple/tuple.hpp>
 
 #include <gtsam/base/FastSet.h>
 #include <gtsam/inference/FactorGraph.h>
@@ -119,6 +120,14 @@ namespace gtsam {
      * @param *lfg Linear factor graph
      */
     void combine(const GaussianFactorGraph &lfg);
+
+    /**
+     * Return vector of i, j, and s to generate an m-by-n sparse Jacobain matrix
+     * such that S(i(k),j(k)) = s(k), which can be given to MATLAB's sparse.
+     * The standard deviations are baked into A and b
+     * @param first column index for each variable
+     */
+    std::vector<boost::tuple<size_t,size_t,double> > sparseJacobian(const std::vector<size_t>& columnIndices) const;
 
     // get b
 //    void getb(VectorValues &b) const ;

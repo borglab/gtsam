@@ -337,31 +337,28 @@ namespace gtsam {
   }
 
   /* ************************************************************************* */
-  boost::tuple<list<int>, list<int>, list<double> >
-  JacobianFactor::sparse(const map<Index,size_t>& columnIndices) const {
+  std::vector<boost::tuple<size_t, size_t, double> >
+  JacobianFactor::sparse(const std::vector<size_t>& columnIndices) const {
 
-    // declare return values
-    list<int> I,J;
-    list<double> S;
+    std::vector<boost::tuple<size_t, size_t, double> > entries;
 
-    // iterate over all matrices in the factor
-    for(size_t pos=0; pos<keys_.size(); ++pos) {
-      constABlock A(Ab_(pos));
+    // iterate over all variables in the factor
+    for(const_iterator var=begin(); var<end(); ++var) {
+      Matrix whitenedA(model_->Whiten(getA(var)));
       // find first column index for this key
-      int column_start = columnIndices.at(keys_[pos]);
-      for (size_t i = 0; i < A.size1(); i++) {
-        double sigma_i = model_->sigma(i);
-        for (size_t j = 0; j < A.size2(); j++)
-          if (A(i, j) != 0.0) {
-            I.push_back(i + 1);
-            J.push_back(j + column_start);
-            S.push_back(A(i, j) / sigma_i);
-          }
-      }
+      size_t column_start = columnIndices[*var];
+      for (size_t i = 0; i < whitenedA.size1(); i++)
+        for (size_t j = 0; j < whitenedA.size2(); j++)
+          entries.push_back(boost::make_tuple(i, column_start+j, whitenedA(i,j)));
     }
 
+    Vector whitenedb(model_->whiten(getb()));
+    size_t bcolumn = columnIndices.back();
+    for (size_t i = 0; i < whitenedb.size(); i++)
+      entries.push_back(boost::make_tuple(i, bcolumn, whitenedb(i)));
+
     // return the result
-    return boost::tuple<list<int>, list<int>, list<double> >(I,J,S);
+    return entries;
   }
 
   /* ************************************************************************* */
