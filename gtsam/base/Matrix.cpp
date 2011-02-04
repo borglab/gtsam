@@ -379,7 +379,10 @@ void print(const Matrix& A, const string &s, ostream& stream) {
   for( size_t i = 0 ; i < m ; i++) {
     for( size_t j = 0 ; j < n ; j++) {
       double aij = A(i,j);
-      stream << setw(9) << (fabs(aij)<1e-12 ? 0 : aij) << "\t";
+      if(aij != 0.0)
+        stream << setw(12) << setprecision(9) << aij << ",\t";
+      else
+        stream << "         0.0,\t";
     }
     stream << endl;
   }
