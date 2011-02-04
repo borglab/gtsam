@@ -996,7 +996,7 @@ Matrix inverse_square_root(const Matrix& A) {
 
 /* ************************************************************************* */
 Matrix expm(const Matrix& A, size_t K) {
-	Matrix E = eye(A.size1()), A_k = eye(4);
+	Matrix E = eye(A.size1()), A_k = eye(A.size1());
 	for(size_t k=1;k<=K;k++) {
 		A_k = A_k*A/k;
 		E = E + A_k;
