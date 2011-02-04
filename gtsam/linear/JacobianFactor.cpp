@@ -57,6 +57,12 @@ namespace gtsam {
     for(size_t i=0; i<firstNonzeroBlocks_.size(); ++i)
       assert(firstNonzeroBlocks_[i] < Ab_.nBlocks());
   #endif
+
+    // Check for non-finite values
+    for(size_t i=0; i<Ab_.size1(); ++i)
+      for(size_t j=0; j<Ab_.size2(); ++j)
+        if(isnan(matrix_(i,j)))
+          throw invalid_argument("JacobianFactor contains NaN matrix entries.");
   }
 
   /* ************************************************************************* */
@@ -167,17 +173,29 @@ namespace gtsam {
   JacobianFactor::JacobianFactor(const HessianFactor& factor) : Ab_(matrix_) {
     keys_ = factor.keys_;
     Ab_.assignNoalias(factor.info_);
-    size_t maxrank = choleskyCareful(matrix_);
+    size_t maxrank = choleskyCareful(matrix_).first;
+    matrix_ = ublas::triangular_adaptor<AbMatrix, ublas::upper>(matrix_);
     Ab_.rowEnd() = maxrank;
     model_ = noiseModel::Unit::Create(maxrank);
 
     size_t varpos = 0;
-    firstNonzeroBlocks_.resize(this->size1());
-    for(size_t row=0; row<this->size1(); ++row) {
-      while(varpos < this->keys_.size() && Ab_.offset(varpos+1) <= row)
-        ++ varpos;
-      firstNonzeroBlocks_[row] = varpos;
+    firstNonzeroBlocks_.resize(this->size1(), 0);
+
+    // Sort keys
+    set<Index> vars;
+    for(size_t j=0; j<keys_.size(); ++j)
+      vars.insert(keys_[j]);
+    Permutation permutation(Permutation::Identity(*vars.rbegin() + 1));
+    size_t jNew = 0;
+    BOOST_FOREACH(const Index& var, vars) {
+      permutation[var] = jNew++;
     }
+    permuteWithInverse(permutation);
+    jNew = 0;
+    BOOST_FOREACH(const Index& var, vars) {
+      keys_[jNew++] = var;
+    }
+
     assertInvariants();
   }
 
