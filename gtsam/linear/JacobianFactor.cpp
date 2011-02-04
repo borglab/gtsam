@@ -16,6 +16,7 @@
  * @created Dec 8, 2010
  */
 
+#include <gtsam/base/debug.h>
 #include <gtsam/base/timing.h>
 #include <gtsam/base/Matrix.h>
 #include <gtsam/base/FastMap.h>
@@ -242,7 +243,7 @@ namespace gtsam {
   void JacobianFactor::permuteWithInverse(const Permutation& inversePermutation) {
 
     // Build a map from the new variable indices to the old slot positions.
-    typedef map<size_t, size_t, std::less<size_t>, boost::fast_pool_allocator<std::pair<const size_t, size_t> > > SourceSlots;
+    typedef FastMap<size_t, size_t> SourceSlots;
     SourceSlots sourceSlots;
     for(size_t j=0; j<keys_.size(); ++j)
       sourceSlots.insert(make_pair(inversePermutation[keys_[j]], j));
@@ -383,7 +384,7 @@ namespace gtsam {
     assert(keys_.size() >= nrFrontals);
     assertInvariants();
 
-    static const bool debug = false;
+    const bool debug = ISDEBUG("JacobianFactor::eliminate");
 
     if(debug) cout << "Eliminating " << nrFrontals << " frontal variables" << endl;
     if(debug) this->print("Eliminating JacobianFactor: ");
@@ -553,7 +554,7 @@ namespace gtsam {
   /* ************************************************************************* */
   JacobianFactor::shared_ptr JacobianFactor::Combine(const FactorGraph<JacobianFactor>& factors, const VariableSlots& variableSlots) {
 
-    static const bool debug = false;
+    const bool debug = ISDEBUG("JacobianFactor::Combine");
 
     if(debug) factors.print("Combining factors: ");
 
