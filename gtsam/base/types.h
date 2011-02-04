@@ -54,15 +54,18 @@ namespace gtsam {
 	template<typename T, T defaultValue>
 	struct ValueWithDefault {
 		T value;
-		ValueWithDefault() :
-			value(defaultValue) {
-		}
-		ValueWithDefault(const T& _value) :
-			value(_value) {
-		}
-		T& operator*() {
-			return value;
-		}
+
+		/** Default constructor, initialize to default value supplied in template argument */
+		ValueWithDefault() : value(defaultValue) {}
+
+		/** Initialize to the given value */
+		ValueWithDefault(const T& _value) : value(_value) {}
+
+		/** Operator to access the value */
+		T& operator*() { return value; }
+
+		/** Implicit conversion allows use in if statements for bool type, etc. */
+		operator T() const { return value; }
 	};
 
 }
