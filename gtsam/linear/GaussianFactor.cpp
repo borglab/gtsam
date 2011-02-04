@@ -141,9 +141,7 @@ namespace gtsam {
         SETDEBUG("JacobianFactor::eliminate", true);
         SETDEBUG("JacobianFactor::Combine", true);
         SETDEBUG("choleskyPartial", true);
-        jacobianFactors.print("Jacobian Factors: ");
         factors.print("Combining factors: ");
-        JacobianFactor::CombineAndEliminate(jacobianFactors, nrFrontals);
         HessianFactor::CombineAndEliminate(hessianFactors, nrFrontals);
         throw;
       }
