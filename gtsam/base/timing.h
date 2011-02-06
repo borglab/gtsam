@@ -82,6 +82,7 @@ extern boost::weak_ptr<TimingOutline> timingCurrent;
 class TimingOutline {
 protected:
   size_t t_;
+  size_t tIt_;
   size_t tMax_;
   size_t tMin_;
   size_t n_;
@@ -92,17 +93,14 @@ protected:
   bool timerActive_;
 
   void add(size_t usecs) {
-    if(usecs > tMax_)
-      tMax_ = usecs;
-    if(n_ == 0 || usecs < tMin_)
-      tMin_ = usecs;
     t_ += usecs;
+    tIt_ += usecs;
     ++ n_;
   }
 
 public:
   TimingOutline(const std::string& label) :
-    t_(0), tMax_(0), tMin_(0), n_(0), label_(label), timerActive_(false) {}
+    t_(0), tIt_(0), tMax_(0), tMin_(0), n_(0), label_(label), timerActive_(false) {}
 
   size_t time() const {
     size_t time = 0;
@@ -120,8 +118,8 @@ public:
   }
 
   void print(const std::string& outline = "") const {
-    std::cout << outline << " " << label_ << ": " << double(time())/1000000.0 << " (" <<
-        n_ << " times, " << double(t_)/1000000.0 << " summed, min: " << double(tMin_)/1000000.0 <<
+    std::cout << outline << " " << label_ << ": " << double(t_)/1000000.0 << " (" <<
+        n_ << " times, " << double(time())/1000000.0 << " children, min: " << double(tMin_)/1000000.0 <<
         " max: " << double(tMax_)/1000000.0 << ")\n";
     for(size_t i=0; i<children_.size(); ++i) {
       if(children_[i]) {
@@ -169,6 +167,17 @@ public:
     timerActive_ = false;
   }
 
+  void finishedIteration() {
+    if(tIt_ > tMax_)
+      tMax_ = tIt_;
+    if(tMin_ == 0 || tIt_ < tMin_)
+      tMin_ = tIt_;
+    tIt_ = 0;
+    for(size_t i=0; i<children_.size(); ++i)
+      if(children_[i])
+        children_[i]->finishedIteration();
+  }
+
   friend class AutoTimer;
   friend void toc_(size_t id);
   friend void toc_(size_t id, const std::string& label);
@@ -198,14 +207,20 @@ inline void toc_(size_t id, const std::string& label) {
   toc_(id);
 }
 
+inline void tictoc_finishedIteration_() {
+  timingRoot->finishedIteration();
+}
+
 #ifdef ENABLE_TIMING
 inline void tic(size_t id, const std::string& label) { tic_(id, label); }
 inline void toc(size_t id) { toc_(id); }
 inline void toc(size_t id, const std::string& label) { toc_(id, label); }
+inline void tictoc_finishedIteration() { tictoc_finishedIteration_(); }
 #else
 inline void tic(size_t id, const std::string& label) {}
 inline void toc(size_t id) {}
 inline void toc(size_t id, const std::string& label) {}
+inline void tictoc_finishedIteration() {}
 #endif
 
 // simple class for accumulating execution timing information by name
@@ -220,6 +235,7 @@ double toc(const std::string& id);
 void ticPush(const std::string& id);
 void ticPop(const std::string& id);
 void tictoc_print();
+void tictoc_finishedIteration();
 
 /** These underscore versions work evening when ENABLE_TIMING is not defined */
 double _tic_();
@@ -229,6 +245,7 @@ double toc_(const std::string& id);
 void ticPush_(const std::string& id);
 void ticPop_(const std::string& id);
 void tictoc_print_();
+void tictoc_finishedIteration_();
 
 
 
