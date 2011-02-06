@@ -1,0 +1,41 @@
+#ifndef EIGEN_QR_MODULE_H
+#define EIGEN_QR_MODULE_H
+
+#include "Core"
+
+#include "src/Core/util/DisableMSVCWarnings.h"
+
+#include "Cholesky"
+#include "Jacobi"
+#include "Householder"
+
+namespace Eigen {
+
+/** \defgroup QR_Module QR module
+  *
+  *
+  *
+  * This module provides various QR decompositions
+  * This module also provides some MatrixBase methods, including:
+  *  - MatrixBase::qr(),
+  *
+  * \code
+  * #include <Eigen/QR>
+  * \endcode
+  */
+
+#include "src/misc/Solve.h"
+#include "src/QR/HouseholderQR.h"
+#include "src/QR/FullPivHouseholderQR.h"
+#include "src/QR/ColPivHouseholderQR.h"
+
+
+} // namespace Eigen
+
+#include "src/Core/util/EnableMSVCWarnings.h"
+
+// FIXME for compatibility we include Eigenvalues here:
+#include "Eigenvalues"
+
+#endif // EIGEN_QR_MODULE_H
+/* vim: set filetype=cpp et sw=2 ts=2 ai: */

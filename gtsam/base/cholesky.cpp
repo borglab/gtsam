@@ -21,6 +21,9 @@
 #include <gtsam/base/lapack.h>
 #include <gtsam/base/timing.h>
 
+#include <gtsam/3rdparty/Eigen/Core>
+#include <gtsam/3rdparty/Eigen/Dense>
+
 #include <boost/numeric/ublas/matrix_proxy.hpp>
 #include <boost/numeric/ublas/symmetric.hpp>
 #include <boost/numeric/ublas/blas.hpp>
@@ -202,16 +205,23 @@ pair<size_t,bool> choleskyCareful(MatrixColMajor& ATA, int order) {
 }
 
 /* ************************************************************************* */
-void choleskyPartial(MatrixColMajor& ABC, size_t nFrontal) {
+void choleskyPartial(MatrixColMajor& ABCublas, size_t nFrontal) {
 
   const bool debug = ISDEBUG("choleskyPartial");
 
-  assert(ABC.size1() == ABC.size2());
-  assert(nFrontal <= ABC.size1());
+  Eigen::Map<Eigen::MatrixXd> ABC(&ABCublas(0,0), ABCublas.size1(), ABCublas.size2());
 
-  const size_t n = ABC.size1();
+  assert(ABC.rows() == ABC.cols());
+  assert(nFrontal <= ABC.rows());
+
+  const size_t n = ABC.rows();
 
   // Compute Cholesky factorization of A, overwrites A.
+    tic(1, "lld");
+    ABC.block(0,0,nFrontal,nFrontal).triangularView<Eigen::Upper>() =
+        ABC.block(0,0,nFrontal,nFrontal).selfadjointView<Eigen::Upper>().llt().matrixU();
+    toc(1, "lld");
+#if 0
   if(true) {
     tic(1, "dpotrf");
     int info = lapack_dpotrf('U', nFrontal, &ABC(0,0), n);
@@ -231,71 +241,78 @@ void choleskyPartial(MatrixColMajor& ABC, size_t nFrontal) {
       throw invalid_argument("Rank-deficient");
     toc(1, "choleskyCareful");
   }
+#endif
 
 #ifndef NDEBUG
   // Check for non-finite values
-  for(size_t i=0; i<ABC.size1(); ++i)
-    for(size_t j=0; j<ABC.size2(); ++j)
+  for(size_t i=0; i<ABC.rows(); ++i)
+    for(size_t j=0; j<ABC.cols(); ++j)
       if(!isfinite(ABC(i,j))) {
         cout << nFrontal << " frontal variables" << endl;
-        print(ABC, "Partially-factored matrix: ");
+        cout << "Partially-factored matrix: " << ABC << endl;
         throw invalid_argument("After dpotrf, matrix contains non-finite matrix entries.");
       }
 #endif
 
   // Views of R, S, and L submatrices.
-  ublas::matrix_range<MatrixColMajor> Rf(ublas::project(ABC, ublas::range(0,nFrontal), ublas::range(0,nFrontal)));
-  ublas::triangular_adaptor<ublas::matrix_range<MatrixColMajor>, ublas::upper> R(Rf);
-  ublas::matrix_range<MatrixColMajor> S(ublas::project(ABC, ublas::range(0,nFrontal), ublas::range(nFrontal,n)));
-  ublas::matrix_range<MatrixColMajor> Lf(ublas::project(ABC, ublas::range(nFrontal,n), ublas::range(nFrontal,n)));
-  ublas::symmetric_adaptor<typeof(Lf), ublas::upper> L(Lf);
+//  ublas::matrix_range<MatrixColMajor> Rf(ublas::project(ABC, ublas::range(0,nFrontal), ublas::range(0,nFrontal)));
+//  ublas::triangular_adaptor<ublas::matrix_range<MatrixColMajor>, ublas::upper> R(Rf);
+//  ublas::matrix_range<MatrixColMajor> S(ublas::project(ABC, ublas::range(0,nFrontal), ublas::range(nFrontal,n)));
+//  ublas::matrix_range<MatrixColMajor> Lf(ublas::project(ABC, ublas::range(nFrontal,n), ublas::range(nFrontal,n)));
+//  ublas::symmetric_adaptor<typeof(Lf), ublas::upper> L(Lf);
+
+  if(debug) cout << "R:\n" << Eigen::MatrixXd(ABC.topLeftCorner(nFrontal,nFrontal).triangularView<Eigen::Upper>()) << endl;
 
   // Compute S = inv(R') * B
   tic(2, "compute S");
-  if(S.size2() > 0) {
-    typeof(ublas::trans(R)) RT(ublas::trans(R));
-    ublas::inplace_solve(RT, S, ublas::lower_tag());
-    //cblas_dtrsm(CblasColMajor, CblasLeft, CblasUpper, CblasTrans, CblasNonUnit, S.size1(), S.size2(), 1.0, &R(0,0), n, &S(0,0), n);
+  if(n - nFrontal > 0) {
+    ABC.topLeftCorner(nFrontal,nFrontal).triangularView<Eigen::Upper>().transpose().solveInPlace(
+        ABC.topRightCorner(nFrontal, n-nFrontal));
+//    typeof(ublas::trans(R)) RT(ublas::trans(R));
+//    ublas::inplace_solve(RT, S, ublas::lower_tag());
   }
-  if(debug) gtsam::print(S, "S: ");
+  if(debug) cout << "S:\n" << ABC.topRightCorner(nFrontal, n-nFrontal) << endl;
   toc(2, "compute S");
 
 #ifndef NDEBUG
   // Check for non-finite values
-  for(size_t i=0; i<ABC.size1(); ++i)
-    for(size_t j=0; j<ABC.size2(); ++j)
+  for(size_t i=0; i<ABC.rows(); ++i)
+    for(size_t j=0; j<ABC.cols(); ++j)
       if(!isfinite(ABC(i,j))) {
         cout << nFrontal << " frontal variables" << endl;
-        print(ABC, "Partially-factored matrix: ");
+        cout << "Partially-factored matrix: " << ABC << endl;
         throw invalid_argument("After computing S, matrix contains non-finite matrix entries.");
       }
 #endif
 
   // Compute L = C - S' * S
   tic(3, "compute L");
-  if(debug) gtsam::print(L, "C: ");
-  if(L.size2() > 0)
-    L -= ublas::prod(ublas::trans(S), S);
-  if(debug) gtsam::print(L, "L: ");
+  if(debug) cout << "C:\n" << Eigen::MatrixXd(ABC.bottomRightCorner(n-nFrontal,n-nFrontal).selfadjointView<Eigen::Upper>()) << endl;
+  if(n - nFrontal > 0)
+    ABC.bottomRightCorner(n-nFrontal,n-nFrontal).selfadjointView<Eigen::Upper>().rankUpdate(
+        ABC.topRightCorner(nFrontal, n-nFrontal).transpose(), -1.0);
+//    L -= ublas::prod(ublas::trans(S), S);
+  if(debug) cout << "L:\n" << Eigen::MatrixXd(ABC.bottomRightCorner(n-nFrontal,n-nFrontal).selfadjointView<Eigen::Upper>()) << endl;
   toc(3, "compute L");
 
-#ifndef NDEBUG
-  // Check for positive semi-definiteness of L
-  try {
-    MatrixColMajor Lf(L);
-    choleskyCareful(Lf);
-  } catch(const invalid_argument& e) {
-    cout << "Remaining Hessian L is not positive semi-definite: " << e.what() << endl;
-    throw runtime_error("Remaining Hessian L is not positive semi-definite");
-  }
+  #ifndef NDEBUG
+//  // Check for positive semi-definiteness of L
+//  try {
+//    MatrixColMajor Lf(L);
+//    choleskyCareful(Lf);
+//  } catch(const invalid_argument& e) {
+//    cout << "Remaining Hessian L is not positive semi-definite: " << e.what() << endl;
+//    throw runtime_error("Remaining Hessian L is not positive semi-definite");
+//  }
 
   // Check for non-finite values
-  for(size_t i=0; i<ABC.size1(); ++i)
-    for(size_t j=0; j<ABC.size2(); ++j)
+  // Check for non-finite values
+  for(size_t i=0; i<ABC.rows(); ++i)
+    for(size_t j=0; j<ABC.cols(); ++j)
       if(!isfinite(ABC(i,j))) {
         cout << nFrontal << " frontal variables" << endl;
-        print(ABC, "Partially-factored matrix: ");
-        throw invalid_argument("After Cholesky, matrix contains non-finite matrix entries.");
+        cout << "Partially-factored matrix: " << ABC << endl;
+        throw invalid_argument("After computing S, matrix contains non-finite matrix entries.");
       }
 #endif
 }

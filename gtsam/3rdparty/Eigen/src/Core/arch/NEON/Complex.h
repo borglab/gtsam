@@ -1,0 +1,262 @@
+// This file is part of Eigen, a lightweight C++ template library
+// for linear algebra.
+//
+// Copyright (C) 2010 Gael Guennebaud <gael.guennebaud@inria.fr>
+//
+// Eigen is free software; you can redistribute it and/or
+// modify it under the terms of the GNU Lesser General Public
+// License as published by the Free Software Foundation; either
+// version 3 of the License, or (at your option) any later version.
+//
+// Alternatively, you can redistribute it and/or
+// modify it under the terms of the GNU General Public License as
+// published by the Free Software Foundation; either version 2 of
+// the License, or (at your option) any later version.
+//
+// Eigen is distributed in the hope that it will be useful, but WITHOUT ANY
+// WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
+// FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License or the
+// GNU General Public License for more details.
+//
+// You should have received a copy of the GNU Lesser General Public
+// License and a copy of the GNU General Public License along with
+// Eigen. If not, see <http://www.gnu.org/licenses/>.
+
+#ifndef EIGEN_COMPLEX_ALTIVEC_H
+#define EIGEN_COMPLEX_ALTIVEC_H
+
+static uint32x4_t ei_p4ui_CONJ_XOR = { 0x00000000, 0x80000000, 0x00000000, 0x80000000 };
+static uint32x2_t ei_p2ui_CONJ_XOR = { 0x00000000, 0x80000000 };
+
+//---------- float ----------
+struct Packet2cf
+{
+  EIGEN_STRONG_INLINE Packet2cf() {}
+  EIGEN_STRONG_INLINE explicit Packet2cf(const Packet4f& a) : v(a) {}
+  Packet4f  v;
+};
+
+template<> struct ei_packet_traits<std::complex<float> >  : ei_default_packet_traits
+{
+  typedef Packet2cf type;
+  enum {
+    Vectorizable = 1,
+    size = 2,
+
+    HasAdd    = 1,
+    HasSub    = 1,
+    HasMul    = 1,
+    HasDiv    = 1,
+    HasNegate = 1,
+    HasAbs    = 0,
+    HasAbs2   = 0,
+    HasMin    = 0,
+    HasMax    = 0,
+    HasSetLinear = 0
+  };
+};
+
+template<> struct ei_unpacket_traits<Packet2cf> { typedef std::complex<float> type; enum {size=2}; };
+
+template<> EIGEN_STRONG_INLINE Packet2cf ei_pset1<Packet2cf>(const std::complex<float>&  from)
+{
+  float32x2_t r64;
+  r64 = vld1_f32((float *)&from);
+
+  return Packet2cf(vcombine_f32(r64, r64));
+}
+
+template<> EIGEN_STRONG_INLINE Packet2cf ei_padd<Packet2cf>(const Packet2cf& a, const Packet2cf& b) { return Packet2cf(ei_padd<Packet4f>(a.v,b.v)); }
+template<> EIGEN_STRONG_INLINE Packet2cf ei_psub<Packet2cf>(const Packet2cf& a, const Packet2cf& b) { return Packet2cf(ei_psub<Packet4f>(a.v,b.v)); }
+template<> EIGEN_STRONG_INLINE Packet2cf ei_pnegate(const Packet2cf& a) { return Packet2cf(ei_pnegate<Packet4f>(a.v)); }
+template<> EIGEN_STRONG_INLINE Packet2cf ei_pconj(const Packet2cf& a)
+{
+  return Packet2cf(vreinterpretq_f32_u32(veorq_u32(vreinterpretq_u32_f32(a.v), ei_p4ui_CONJ_XOR)));
+}
+
+template<> EIGEN_STRONG_INLINE Packet2cf ei_pmul<Packet2cf>(const Packet2cf& a, const Packet2cf& b)
+{
+  Packet4f v1, v2;
+  float32x2_t a_lo, a_hi;
+
+  // Get the real values of a | a1_re | a1_re | a2_re | a2_re |
+  v1 = vcombine_f32(vdup_lane_f32(vget_low_f32(a.v), 0), vdup_lane_f32(vget_high_f32(a.v), 0));
+  // Get the real values of a | a1_im | a1_im | a2_im | a2_im |
+  v2 = vcombine_f32(vdup_lane_f32(vget_low_f32(a.v), 1), vdup_lane_f32(vget_high_f32(a.v), 1));
+  // Multiply the real a with b
+  v1 = vmulq_f32(v1, b.v);
+  // Multiply the imag a with b
+  v2 = vmulq_f32(v2, b.v);
+  // Conjugate v2 
+  v2 = vreinterpretq_f32_u32(veorq_u32(vreinterpretq_u32_f32(v2), ei_p4ui_CONJ_XOR));
+  // Swap real/imag elements in v2.
+  a_lo = vrev64_f32(vget_low_f32(v2));
+  a_hi = vrev64_f32(vget_high_f32(v2));
+  v2 = vcombine_f32(a_lo, a_hi);
+  // Add and return the result
+  return Packet2cf(vaddq_f32(v1, v2));
+}
+
+template<> EIGEN_STRONG_INLINE Packet2cf ei_pand   <Packet2cf>(const Packet2cf& a, const Packet2cf& b)
+{
+  return Packet2cf(vreinterpretq_f32_u32(vorrq_u32(vreinterpretq_u32_f32(a.v),vreinterpretq_u32_f32(b.v))));
+}
+template<> EIGEN_STRONG_INLINE Packet2cf ei_por    <Packet2cf>(const Packet2cf& a, const Packet2cf& b)
+{
+  return Packet2cf(vreinterpretq_f32_u32(vorrq_u32(vreinterpretq_u32_f32(a.v),vreinterpretq_u32_f32(b.v))));
+}
+template<> EIGEN_STRONG_INLINE Packet2cf ei_pxor   <Packet2cf>(const Packet2cf& a, const Packet2cf& b)
+{
+  return Packet2cf(vreinterpretq_f32_u32(veorq_u32(vreinterpretq_u32_f32(a.v),vreinterpretq_u32_f32(b.v))));
+}
+template<> EIGEN_STRONG_INLINE Packet2cf ei_pandnot<Packet2cf>(const Packet2cf& a, const Packet2cf& b)
+{
+  return Packet2cf(vreinterpretq_f32_u32(vbicq_u32(vreinterpretq_u32_f32(a.v),vreinterpretq_u32_f32(b.v))));
+}
+
+template<> EIGEN_STRONG_INLINE Packet2cf ei_pload <std::complex<float> >(const std::complex<float>* from) { EIGEN_DEBUG_ALIGNED_LOAD return Packet2cf(ei_pload((const float*)from)); }
+template<> EIGEN_STRONG_INLINE Packet2cf ei_ploadu<std::complex<float> >(const std::complex<float>* from) { EIGEN_DEBUG_UNALIGNED_LOAD return Packet2cf(ei_ploadu((const float*)from)); }
+
+template<> EIGEN_STRONG_INLINE void ei_pstore <std::complex<float> >(std::complex<float> *   to, const Packet2cf& from) { EIGEN_DEBUG_ALIGNED_STORE ei_pstore((float*)to, from.v); }
+template<> EIGEN_STRONG_INLINE void ei_pstoreu<std::complex<float> >(std::complex<float> *   to, const Packet2cf& from) { EIGEN_DEBUG_UNALIGNED_STORE ei_pstoreu((float*)to, from.v); }
+
+template<> EIGEN_STRONG_INLINE void ei_prefetch<std::complex<float> >(const std::complex<float> *   addr) { __pld((float *)addr); }
+
+template<> EIGEN_STRONG_INLINE std::complex<float>  ei_pfirst<Packet2cf>(const Packet2cf& a)
+{
+  std::complex<float> EIGEN_ALIGN16 x[2];
+  vst1q_f32((float *)x, a.v);
+  return x[0];
+}
+
+template<> EIGEN_STRONG_INLINE Packet2cf ei_preverse(const Packet2cf& a)
+{
+  float32x2_t a_lo, a_hi;
+  Packet4f a_r128;
+
+  a_lo = vget_low_f32(a.v);
+  a_hi = vget_high_f32(a.v);
+  a_r128 = vcombine_f32(a_hi, a_lo);
+
+  return Packet2cf(a_r128);
+}
+
+EIGEN_STRONG_INLINE Packet2cf ei_pcplxflip/*<Packet2cf>*/(const Packet2cf& x)
+{
+  return Packet2cf(vrev64q_f32(a.v));
+}
+
+template<> EIGEN_STRONG_INLINE std::complex<float> ei_predux<Packet2cf>(const Packet2cf& a)
+{
+  float32x2_t a1, a2;
+  std::complex<float> s;
+
+  a1 = vget_low_f32(a.v);
+  a2 = vget_high_f32(a.v);
+  a2 = vadd_f32(a1, a2);
+  vst1_f32((float *)&s, a2);
+
+  return s;
+}
+
+template<> EIGEN_STRONG_INLINE Packet2cf ei_preduxp<Packet2cf>(const Packet2cf* vecs)
+{
+  Packet4f sum1, sum2, sum;
+
+  // Add the first two 64-bit float32x2_t of vecs[0]
+  sum1 = vcombine_f32(vget_low_f32(vecs[0].v), vget_low_f32(vecs[1].v));
+  sum2 = vcombine_f32(vget_high_f32(vecs[0].v), vget_high_f32(vecs[1].v));
+  sum = vaddq_f32(sum1, sum2);
+
+  return Packet2cf(sum);
+}
+
+template<> EIGEN_STRONG_INLINE std::complex<float> ei_predux_mul<Packet2cf>(const Packet2cf& a)
+{
+  float32x2_t a1, a2, v1, v2, prod;
+  std::complex<float> s;
+
+  a1 = vget_low_f32(a.v);
+  a2 = vget_high_f32(a.v);
+   // Get the real values of a | a1_re | a1_re | a2_re | a2_re |
+  v1 = vdup_lane_f32(a1, 0);
+  // Get the real values of a | a1_im | a1_im | a2_im | a2_im |
+  v2 = vdup_lane_f32(a1, 1);
+  // Multiply the real a with b
+  v1 = vmul_f32(v1, a2);
+  // Multiply the imag a with b
+  v2 = vmul_f32(v2, a2);
+  // Conjugate v2 
+  v2 = vreinterpret_f32_u32(veor_u32(vreinterpret_u32_f32(v2), ei_p2ui_CONJ_XOR));
+  // Swap real/imag elements in v2.
+  v2 = vrev64_f32(v2);
+  // Add v1, v2
+  prod = vadd_f32(v1, v2);
+
+  vst1_f32((float *)&s, prod);
+
+  return s;
+}
+
+template<int Offset>
+struct ei_palign_impl<Offset,Packet2cf>
+{
+  EIGEN_STRONG_INLINE static void run(Packet2cf& first, const Packet2cf& second)
+  {
+    if (Offset==1)
+    {
+      first.v = vextq_f32(first.v, second.v, 2);
+    }
+  }
+};
+
+template<> struct ei_conj_helper<Packet2cf, Packet2cf, false,true>
+{
+  EIGEN_STRONG_INLINE Packet2cf pmadd(const Packet2cf& x, const Packet2cf& y, const Packet2cf& c) const
+  { return ei_padd(pmul(x,y),c); }
+
+  EIGEN_STRONG_INLINE Packet2cf pmul(const Packet2cf& a, const Packet2cf& b) const
+  {
+    return ei_pmul(a, ei_pconj(b));
+  }
+};
+
+template<> struct ei_conj_helper<Packet2cf, Packet2cf, true,false>
+{
+  EIGEN_STRONG_INLINE Packet2cf pmadd(const Packet2cf& x, const Packet2cf& y, const Packet2cf& c) const
+  { return ei_padd(pmul(x,y),c); }
+
+  EIGEN_STRONG_INLINE Packet2cf pmul(const Packet2cf& a, const Packet2cf& b) const
+  {
+    return ei_pmul(ei_pconj(a), b);
+  }
+};
+
+template<> struct ei_conj_helper<Packet2cf, Packet2cf, true,true>
+{
+  EIGEN_STRONG_INLINE Packet2cf pmadd(const Packet2cf& x, const Packet2cf& y, const Packet2cf& c) const
+  { return ei_padd(pmul(x,y),c); }
+
+  EIGEN_STRONG_INLINE Packet2cf pmul(const Packet2cf& a, const Packet2cf& b) const
+  {
+    return ei_pconj(ei_pmul(a, b));
+  }
+};
+
+template<> EIGEN_STRONG_INLINE Packet2cf ei_pdiv<Packet2cf>(const Packet2cf& a, const Packet2cf& b)
+{
+  // TODO optimize it for AltiVec
+  Packet2cf res = ei_conj_helper<Packet2cf,Packet2cf,false,true>().pmul(a,b);
+  Packet4f s, rev_s;
+  float32x2_t a_lo, a_hi;
+
+  // this computes the norm
+  s = vmulq_f32(b.v, b.v);
+  a_lo = vrev64_f32(vget_low_f32(s));
+  a_hi = vrev64_f32(vget_high_f32(s));
+  rev_s = vcombine_f32(a_lo, a_hi);
+
+  return Packet2cf(ei_pdiv(res.v, vaddq_f32(s,rev_s)));
+}
+
+#endif // EIGEN_COMPLEX_ALTIVEC_H
