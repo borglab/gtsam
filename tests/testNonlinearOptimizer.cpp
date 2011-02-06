@@ -178,6 +178,39 @@ TEST( NonlinearOptimizer, optimize )
 }
 
 /* ************************************************************************* */
+TEST( NonlinearOptimizer, optimize_LM_recursive )
+{
+  shared_ptr<example::Graph> fg(new example::Graph(
+  		example::createReallyNonlinearFactorGraph()));
+
+	// test error at minimum
+	Point2 xstar(0,0);
+	example::Values cstar;
+	cstar.insert(simulated2D::PoseKey(1), xstar);
+	DOUBLES_EQUAL(0.0,fg->error(cstar),0.0);
+
+	// test error at initial = [(1-cos(3))^2 + (sin(3))^2]*50 =
+	Point2 x0(3,3);
+	boost::shared_ptr<example::Values> c0(new example::Values);
+	c0->insert(simulated2D::PoseKey(1), x0);
+	DOUBLES_EQUAL(199.0,fg->error(*c0),1e-3);
+
+	// optimize parameters
+	shared_ptr<Ordering> ord(new Ordering());
+	ord->push_back("x1");
+
+	// initial optimization state is the same in both cases tested
+	boost::shared_ptr<NonlinearOptimizationParameters> params = boost::make_shared<NonlinearOptimizationParameters>();
+	params->relDecrease_ = 1e-5;
+	params->absDecrease_ = 1e-5;
+	Optimizer optimizer(fg, c0, ord, params);
+
+	// Levenberg-Marquardt
+	Optimizer actual2 = optimizer.levenbergMarquardtRecursive();
+	DOUBLES_EQUAL(0,fg->error(*(actual2.values())),tol);
+}
+
+/* ************************************************************************* */
 TEST( NonlinearOptimizer, SimpleLMOptimizer )
 {
 	shared_ptr<example::Graph> fg(new example::Graph(

@@ -115,16 +115,18 @@ namespace gtsam {
 //        error_(error), ordering_(ordering), solver_(solver), lambda_(lambda), dimensions_(dimensions) {}
 
 	NonlinearOptimizer(shared_graph graph, shared_values values, const double error, shared_ordering ordering,
-		shared_solver solver, shared_parameters parameters, shared_dimensions dimensions): graph_(graph), values_(values),
-		error_(error), ordering_(ordering), solver_(solver), parameters_(parameters), dimensions_(dimensions) {}
+		shared_solver solver, shared_parameters parameters, shared_dimensions dimensions, size_t iterations): graph_(graph), values_(values),
+		error_(error), ordering_(ordering), solver_(solver), parameters_(parameters), iterations_(iterations), dimensions_(dimensions) {}
 
     /** Create a new NonlinearOptimizer with a different lambda */
     This newValuesSolver_(shared_values newValues, shared_solver newSolver) const {
-      return NonlinearOptimizer(graph_, newValues, graph_->error(*newValues), ordering_, newSolver, parameters_, dimensions_); }
+      return NonlinearOptimizer(graph_, newValues, graph_->error(*newValues), ordering_, newSolver, parameters_, dimensions_, iterations_); }
 
     This newValuesErrorLambda_(shared_values newValues, double newError, double newLambda) const {
-      return NonlinearOptimizer(graph_, newValues, newError, ordering_, solver_, parameters_->newLambda_(newLambda), dimensions_); }
+      return NonlinearOptimizer(graph_, newValues, newError, ordering_, solver_, parameters_->newLambda_(newLambda), dimensions_, iterations_); }
 
+    This newIterations_(int iterations) const {
+        return NonlinearOptimizer(graph_, values_, error_, ordering_, solver_, parameters_, dimensions_, iterations); }
 
 	/*
     This newLambda_(double newLambda) const {
@@ -148,7 +150,7 @@ namespace gtsam {
 
     This newMaxIterations_(int maxIterations) const {
       return NonlinearOptimizer(graph_, values_, error_, ordering_, solver_, parameters_->newMaxIterations_(maxIterations), dimensions_); }
-    */
+  */
 
 	public:
 		/**
@@ -277,6 +279,14 @@ namespace gtsam {
 
 		// suggested interface
 		NonlinearOptimizer levenbergMarquardt();
+
+		/**
+		 * The following are const versions of the LM algorithm for comparison and
+		 * testing - functions are largely identical, but maintain constness
+		 */
+		NonlinearOptimizer try_lambdaRecursive(const L& linear) const;
+		NonlinearOptimizer iterateLMRecursive() const;
+		NonlinearOptimizer levenbergMarquardtRecursive() const;
 
 		/**
 		 * Static interface to LM optimization using default ordering and thresholds

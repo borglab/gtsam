@@ -214,7 +214,7 @@ namespace gtsam {
 	/* ************************************************************************* */
 
 	template<class G, class C, class L, class S, class W>
-	NonlinearOptimizer<G, C, L, S, W> NonlinearOptimizer<G, C, L, S, W>::iterateLM(){
+	NonlinearOptimizer<G, C, L, S, W> NonlinearOptimizer<G, C, L, S, W>::iterateLM() {
 
 		const Parameters::verbosityLevel verbosity = parameters_->verbosity_ ;
 		const double lambda = parameters_->lambda_ ;
@@ -236,7 +236,6 @@ namespace gtsam {
 	}
 
 	/* ************************************************************************* */
-
 	template<class G, class C, class L, class S, class W>
 	NonlinearOptimizer<G, C, L, S, W> NonlinearOptimizer<G, C, L, S, W>::levenbergMarquardt() {
 
@@ -274,6 +273,132 @@ namespace gtsam {
 			iterations_++;
 		}
 	}
+
 	/* ************************************************************************* */
+	// New version of functional approach
+	/* ************************************************************************* */
+
+	/* ************************************************************************* */
+	template<class G, class C, class L, class S, class W>
+	NonlinearOptimizer<G, C, L, S, W> NonlinearOptimizer<G, C, L, S, W>::try_lambdaRecursive(const L& linear) const {
+
+		const Parameters::verbosityLevel verbosity = parameters_->verbosity_ ;
+		double lambda = parameters_->lambda_ ;
+		const Parameters::LambdaMode lambdaMode = parameters_->lambdaMode_ ;
+		const double factor = parameters_->lambdaFactor_ ;
+
+		if( lambdaMode >= Parameters::CAUTIOUS) throw runtime_error("CAUTIOUS mode not working yet, please use BOUNDED.");
+
+		double next_error = error_;
+
+		shared_values next_values = values_;
+
+		while(true) {
+		  if (verbosity >= Parameters::TRYLAMBDA) cout << "trying lambda = " << lambda << endl;
+
+		  // add prior-factors
+		  typename L::shared_ptr damped(new L(linear));
+		  {
+		    double sigma = 1.0 / sqrt(lambda);
+		    damped->reserve(damped->size() + dimensions_->size());
+		    // for each of the variables, add a prior
+		    for(Index j=0; j<dimensions_->size(); ++j) {
+		      size_t dim = (*dimensions_)[j];
+		      Matrix A = eye(dim);
+		      Vector b = zero(dim);
+		      SharedDiagonal model = noiseModel::Isotropic::Sigma(dim,sigma);
+		      GaussianFactor::shared_ptr prior(new JacobianFactor(j, A, b, model));
+		      damped->push_back(prior);
+		    }
+		  }
+		  if (verbosity >= Parameters::DAMPED) damped->print("damped");
+
+		  // solve
+		  S solver(*damped); // not solver_ !!
+
+		  VectorValues delta = *solver.optimize();
+		  if (verbosity >= Parameters::TRYDELTA) delta.print("delta");
+
+		  // update values
+		  shared_values newValues(new C(values_->expmap(delta, *ordering_))); // TODO: updateValues
+
+		  // create new optimization state with more adventurous lambda
+		  double error = graph_->error(*newValues);
+
+		  if (verbosity >= Parameters::TRYLAMBDA) cout << "next error = " << error << endl;
+
+		  if( error <= error_ ) {
+		  	next_values = newValues;
+		  	next_error = error;
+			  lambda /= factor;
+		  	break;
+		  }
+		  else {
+		  	// Either we're not cautious, or the same lambda was worse than the current error.
+		  	// The more adventurous lambda was worse too, so make lambda more conservative
+		  	// and keep the same values.
+		  	if(lambdaMode >= Parameters::BOUNDED && lambda >= 1.0e5) {
+		  		break;
+		  	} else {
+		  		lambda *= factor;
+		  	}
+		  }
+		} // end while
+
+		return newValuesErrorLambda_(next_values, next_error, lambda);
+	}
+
+	/* ************************************************************************* */
+	template<class G, class C, class L, class S, class W>
+	NonlinearOptimizer<G, C, L, S, W> NonlinearOptimizer<G, C, L, S, W>::iterateLMRecursive() const {
+
+		const Parameters::verbosityLevel verbosity = parameters_->verbosity_ ;
+		const double lambda = parameters_->lambda_ ;
+
+		// show output
+		if (verbosity >= Parameters::VALUES) values_->print("values");
+		if (verbosity >= Parameters::ERROR) cout << "error: " << error_ << endl;
+		if (verbosity >= Parameters::LAMBDA) cout << "lambda = " << lambda << endl;
+
+		// linearize all factors once
+		boost::shared_ptr<L> linear = graph_->linearize(*values_, *ordering_)->template dynamicCastFactors<L>();
+
+		if (verbosity >= Parameters::LINEAR) linear->print("linear");
+
+		// try lambda steps with successively larger lambda until we achieve descent
+		if (verbosity >= Parameters::LAMBDA) cout << "Trying Lambda for the first time" << endl;
+
+		return try_lambdaRecursive(*linear);
+	}
+
+	/* ************************************************************************* */
+	template<class G, class C, class L, class S, class W>
+	NonlinearOptimizer<G, C, L, S, W> NonlinearOptimizer<G, C, L, S, W>::levenbergMarquardtRecursive() const {
+
+		const Parameters::verbosityLevel verbosity = parameters_->verbosity_ ;
+
+		// check if we're already close enough
+		if (error_ < parameters_->sumError_) {
+			if ( verbosity >= Parameters::ERROR )
+				cout << "Exiting, as sumError = " << error_ << " < " << parameters_->sumError_ << endl;
+			return *this;
+		}
+
+		// do one iteration of LM
+		NonlinearOptimizer next = iterateLMRecursive();
+
+		// check convergence
+		// TODO: move convergence checks here and incorporate in verbosity levels
+		bool converged = gtsam::check_convergence(*parameters_, error_, next.error_);
+
+		if(iterations_ >= parameters_->maxIterations_ || converged) {
+			if (verbosity >= Parameters::VALUES) values_->print("final values");
+			if (verbosity >= Parameters::ERROR) cout << "final error: " << error_ << endl;
+			if (verbosity >= Parameters::LAMBDA) cout << "final lambda = " << lambda() << endl;
+			return *this;
+		} else {
+			return next.newIterations_(iterations_ + 1).levenbergMarquardtRecursive();
+		}
+	}
 
 }
