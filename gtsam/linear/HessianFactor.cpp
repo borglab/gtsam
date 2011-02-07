@@ -150,9 +150,19 @@ namespace gtsam {
     // Copy the matrix data depending on what type of factor we're copying from
     if(dynamic_cast<const JacobianFactor*>(&gf)) {
       const JacobianFactor& jf(static_cast<const JacobianFactor&>(gf));
-      JacobianFactor whitened(jf.whiten());
-      info_.copyStructureFrom(whitened.Ab_);
-      matrix_ = ublas::prod(ublas::trans(whitened.matrix_), whitened.matrix_);
+      if(jf.model_->isConstrained())
+        throw invalid_argument("Cannot construct HessianFactor from JacobianFactor with constrained noise model");
+      else {
+        typedef Eigen::Map<Eigen::MatrixXd> EigenMap;
+        typedef typeof(EigenMap(&jf.matrix_(0,0),0,0).block(0,0,0,0)) EigenBlock;
+        EigenBlock A(EigenMap(&jf.matrix_(0,0),jf.matrix_.size1(),jf.matrix_.size2()).block(
+            jf.Ab_.rowStart(),jf.Ab_.offset(0), jf.Ab_.full().size1(), jf.Ab_.full().size2()));
+        typedef typeof(Eigen::Map<Eigen::VectorXd>(&jf.model_->invsigmas()(0),0).asDiagonal()) EigenDiagonal;
+        EigenDiagonal R(Eigen::Map<Eigen::VectorXd>(&jf.model_->invsigmas()(0),jf.model_->dim()).asDiagonal());
+        info_.copyStructureFrom(jf.Ab_);
+        EigenMap L(EigenMap(&matrix_(0,0), matrix_.size1(), matrix_.size2()));
+        L.noalias() = A.transpose() * R * R * A;
+      }
     } else if(dynamic_cast<const HessianFactor*>(&gf)) {
       const HessianFactor& hf(static_cast<const HessianFactor&>(gf));
       info_.assignNoalias(hf.info_);

@@ -240,6 +240,12 @@ namespace gtsam {
 			inline double sigma(size_t i) const { return sigmas_(i); }
 
 			/**
+			 * Return sqrt precisions
+			 */
+			const Vector& invsigmas() const { return invsigmas_; }
+			double invsigma(size_t i) const { return invsigmas_(i); }
+
+			/**
 			 * generate random variate
 			 */
 			virtual Vector sample() const;
