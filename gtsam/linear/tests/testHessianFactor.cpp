@@ -16,6 +16,7 @@
  * @created Dec 15, 2010
  */
 
+#include <gtsam/base/debug.h>
 #include <gtsam/linear/HessianFactor.h>
 #include <gtsam/linear/JacobianFactor.h>
 #include <gtsam/linear/GaussianFactorGraph.h>
@@ -207,6 +208,7 @@ TEST(GaussianFactor, eliminate2 )
 
 /* ************************************************************************* */
 TEST_UNSAFE(GaussianFactor, eliminateUnsorted) {
+
   JacobianFactor::shared_ptr factor1(
       new JacobianFactor(0,
                          Matrix_(3,3,

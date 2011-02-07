@@ -41,6 +41,9 @@
 #include <boost/numeric/ublas/vector_proxy.hpp>
 #include <boost/numeric/ublas/blas.hpp>
 
+#include <gtsam/3rdparty/Eigen/Core>
+#include <gtsam/3rdparty/Eigen/Dense>
+
 #include <sstream>
 
 using namespace std;
@@ -236,6 +239,11 @@ void HessianFactor::updateATA(const HessianFactor& update, const Scatter& scatte
   }
   toc(1, "slots");
 
+  if(debug) {
+    this->print("Updating this: ");
+    update.print("with: ");
+  }
+
   // Apply updates to the upper triangle
   tic(2, "update");
   assert(this->info_.nBlocks() - 1 == scatter.size());
@@ -246,19 +254,33 @@ void HessianFactor::updateATA(const HessianFactor& update, const Scatter& scatte
       if(slot2 > slot1) {
         if(debug)
           cout << "Updating (" << slot1 << "," << slot2 << ") from (" << j1 << "," << j2 << ")" << endl;
-        ublas::noalias(this->info_(slot1, slot2)) += update.info_(j1,j2);
+//        ublas::noalias(this->info_(slot1, slot2)) += update.info_(j1,j2);
+        Eigen::Map<Eigen::MatrixXd>(&matrix_(0,0), matrix_.size1(), matrix_.size2()).block(
+            info_.offset(slot1), info_.offset(slot2), info_(slot1,slot2).size1(), info_(slot1,slot2).size2()) +=
+                Eigen::Map<Eigen::MatrixXd>(&update.matrix_(0,0), update.matrix_.size1(), update.matrix_.size2()).block(
+                    update.info_.offset(j1), update.info_.offset(j2), update.info_(j1,j2).size1(), update.info_(j1,j2).size2());
       } else if(slot1 > slot2) {
         if(debug)
           cout << "Updating (" << slot2 << "," << slot1 << ") from (" << j1 << "," << j2 << ")" << endl;
-        ublas::noalias(this->info_(slot2, slot1)) += ublas::trans(update.info_(j1,j2));
+//        ublas::noalias(this->info_(slot2, slot1)) += ublas::trans(update.info_(j1,j2));
+        Eigen::Map<Eigen::MatrixXd>(&matrix_(0,0), matrix_.size1(), matrix_.size2()).block(
+            info_.offset(slot2), info_.offset(slot1), info_(slot2,slot1).size1(), info_(slot2,slot1).size2()) +=
+                Eigen::Map<Eigen::MatrixXd>(&update.matrix_(0,0), update.matrix_.size1(), update.matrix_.size2()).block(
+                    update.info_.offset(j1), update.info_.offset(j2), update.info_(j1,j2).size1(), update.info_(j1,j2).size2()).transpose();
       } else {
         if(debug)
           cout << "Updating (" << slot1 << "," << slot2 << ") from (" << j1 << "," << j2 << ")" << endl;
-        Block thisBlock(this->info_(slot1, slot2));
-        constBlock updateBlock(update.info_(j1,j2));
-        ublas::noalias(ublas::symmetric_adaptor<Block,ublas::upper>(thisBlock)) +=
-            ublas::symmetric_adaptor<constBlock,ublas::upper>(updateBlock);
+//        Block thisBlock(this->info_(slot1, slot2));
+//        constBlock updateBlock(update.info_(j1,j2));
+//        ublas::noalias(ublas::symmetric_adaptor<Block,ublas::upper>(thisBlock)) +=
+//            ublas::symmetric_adaptor<constBlock,ublas::upper>(updateBlock);
+        Eigen::Map<Eigen::MatrixXd>(&matrix_(0,0), matrix_.size1(), matrix_.size2()).block(
+            info_.offset(slot1), info_.offset(slot2), info_(slot1,slot2).size1(), info_(slot1,slot2).size2()).triangularView<Eigen::Upper>() +=
+                Eigen::Map<Eigen::MatrixXd>(&update.matrix_(0,0), update.matrix_.size1(), update.matrix_.size2()).block(
+                    update.info_.offset(j1), update.info_.offset(j2), update.info_(j1,j2).size1(), update.info_(j1,j2).size2());
       }
+      if(debug) cout << "Updating block " << slot1 << "," << slot2 << " from block " << j1 << "," << j2 << "\n";
+      if(debug) this->print();
     }
   }
   toc(2, "update");

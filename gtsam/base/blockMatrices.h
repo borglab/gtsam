@@ -227,7 +227,7 @@ public:
     assertInvariants();
     size_t actualBlock = block + blockStart_;
     checkBlock(actualBlock);
-    return variableColOffsets_[actualBlock] - variableColOffsets_[blockStart_];
+    return variableColOffsets_[actualBlock];
   }
 
   size_t& rowStart() { return rowStart_; }
@@ -484,7 +484,7 @@ public:
     assertInvariants();
     size_t actualBlock = block + blockStart_;
     checkBlock(actualBlock);
-    return variableColOffsets_[actualBlock] - variableColOffsets_[blockStart_];
+    return variableColOffsets_[actualBlock];
   }
 
   size_t& blockStart() { return blockStart_; }

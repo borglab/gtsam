@@ -24,6 +24,7 @@
 #include <boost/assign/std/set.hpp> // for operator +=
 using namespace boost::assign;
 
+#include <gtsam/base/debug.h>
 #include <gtsam/linear/GaussianJunctionTree.h>
 #include <gtsam/inference/BayesTree-inl.h>
 
@@ -66,6 +67,9 @@ GaussianFactorGraph createChain() {
  */
 TEST( GaussianJunctionTree, eliminate )
 {
+
+  SETDEBUG("updateATA",true);
+
 	GaussianFactorGraph fg = createChain();
 	GaussianJunctionTree junctionTree(fg);
 	BayesTree<GaussianConditional>::sharedClique rootClique = junctionTree.eliminate();

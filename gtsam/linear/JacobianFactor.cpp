@@ -478,7 +478,7 @@ namespace gtsam {
     firstNonzeroBlocks_.resize(this->size1());
     for(size_t row=0; row<size1(); ++row) {
       if(debug) cout << "row " << row << " varpos " << varpos << " Ab_.offset(varpos)=" << Ab_.offset(varpos) << " Ab_.offset(varpos+1)=" << Ab_.offset(varpos+1) << endl;
-      while(varpos < this->keys_.size() && Ab_.offset(varpos+1) <= row)
+      while(varpos < this->keys_.size() && Ab_.offset(varpos+1)-Ab_.offset(0) <= row)
         ++ varpos;
       firstNonzeroBlocks_[row] = varpos;
       if(debug) cout << "firstNonzeroVars_[" << row << "] = " << firstNonzeroBlocks_[row] << endl;
