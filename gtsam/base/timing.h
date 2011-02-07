@@ -124,9 +124,13 @@ public:
     for(size_t i=0; i<children_.size(); ++i) {
       if(children_[i]) {
         std::string childOutline(outline);
+        #if 0
         if(childOutline.size() > 0)
           childOutline += ".";
         childOutline += (boost::format("%d") % i).str();
+        #else
+        childOutline += "  ";
+        #endif
         children_[i]->print(childOutline);
       }
     }
