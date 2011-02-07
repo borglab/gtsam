@@ -20,6 +20,7 @@
 
 #include <map>
 #include <boost/pool/pool_alloc.hpp>
+#include <boost/serialization/map.hpp>
 #include <boost/serialization/base_object.hpp>
 
 namespace gtsam {
@@ -57,10 +58,8 @@ public:
   friend class boost::serialization::access;
   template<class ARCHIVE>
     void serialize(ARCHIVE & ar, const unsigned int version) {
-    //You are not supposed to do this:
-    boost::serialization::serialize(ar, *this, version);
-    //Instead you are supposed to do this:  but it doesnt work
-    //    ar & boost::serialization::base_object<Base>(*this);
+
+    ar & boost::serialization::base_object<Base>(*this);
   }
 };
 
