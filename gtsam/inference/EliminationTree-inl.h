@@ -241,7 +241,7 @@ EliminationTree<FACTOR>::eliminate() const {
 /* ************************************************************************* */
 // Specialization for symbolic elimination that calls the optimized eliminateSymbolic_
 template<>
-inline typename EliminationTree<IndexFactor>::BayesNet::shared_ptr
+inline  EliminationTree<IndexFactor>::BayesNet::shared_ptr
 EliminationTree<IndexFactor>::eliminate() const {
 
   // call recursive routine
@@ -252,8 +252,8 @@ EliminationTree<IndexFactor>::eliminate() const {
 
   // Add conditionals to BayesNet
   tic(2, "assemble BayesNet");
-  typename BayesNet::shared_ptr bayesNet(new BayesNet);
-  BOOST_FOREACH(const typename BayesNet::sharedConditional& conditional, conditionals) {
+  BayesNet::shared_ptr bayesNet(new BayesNet);
+  BOOST_FOREACH(const  BayesNet::sharedConditional& conditional, conditionals) {
     if(conditional)
       bayesNet->push_back(conditional);
   }
