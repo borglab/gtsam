@@ -11,6 +11,7 @@
 #include <utility>
 
 #include <gtsam/base/FastList.h>
+#include <gtsam/base/FastSet.h>
 #include <gtsam/inference/VariableIndex.h>
 #include <gtsam/inference/BayesNet.h>
 #include <gtsam/inference/FactorGraph.h>
@@ -61,6 +62,12 @@ private:
    * Recursive routine that eliminates the factors arranged in an elimination tree
    */
   sharedFactor eliminate_(Conditionals& conditionals) const;
+
+  /**
+   * Special optimized eliminate for symbolic factors.  Will not compile if
+   * called in a non-IndexFactor EliminationTree.
+   */
+  FastSet<Index> eliminateSymbolic_(Conditionals& conditionals) const;
 
   // Allow access to constructor and add methods for testing purposes
   friend class ::EliminationTreeTester;

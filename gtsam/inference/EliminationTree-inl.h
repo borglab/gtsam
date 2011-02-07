@@ -11,9 +11,12 @@
 #include <gtsam/inference/EliminationTree.h>
 #include <gtsam/inference/VariableSlots.h>
 #include <gtsam/inference/FactorGraph-inl.h>
+#include <gtsam/inference/IndexFactor.h>
+#include <gtsam/inference/IndexConditional.h>
 
 #include <boost/foreach.hpp>
 #include <boost/lambda/lambda.hpp>
+#include <boost/static_assert.hpp>
 #include <iostream>
 #include <set>
 #include <vector>
@@ -30,8 +33,6 @@ EliminationTree<FACTOR>::eliminate_(Conditionals& conditionals) const {
   static const bool debug = false;
 
   if(debug) cout << "ETree: eliminating " << this->key_ << endl;
-
-  FastSet<Index> separator;
 
   // Create the list of factors to be eliminated, initially empty, and reserve space
   FactorGraph<FACTOR> factors;
@@ -54,6 +55,39 @@ EliminationTree<FACTOR>::eliminate_(Conditionals& conditionals) const {
   if(debug) eliminated.second->print("Factor: ");
 
   return eliminated.second;
+}
+
+/* ************************************************************************* */
+// This is the explicit specialization for symbolic factors, i.e. IndexFactor
+template<> inline FastSet<Index> EliminationTree<IndexFactor>::eliminateSymbolic_(Conditionals& conditionals) const {
+
+  static const bool debug = false;
+
+  if(debug) cout << "ETree: eliminating " << this->key_ << endl;
+
+  FastSet<Index> variables;
+  BOOST_FOREACH(const sharedFactor& factor, factors_) {
+    variables.insert(factor->begin(), factor->end());
+  }
+  BOOST_FOREACH(const shared_ptr& child, subTrees_) {
+    sharedFactor factor(child->eliminate_(conditionals));
+    variables.insert(factor->begin(), factor->end());
+  }
+  conditionals[this->key_] = IndexConditional::FromRange(variables.begin(), variables.end(), 1);
+  variables.erase(variables.begin());
+
+  if(debug) cout << "Eliminated " << this->key_ << " to get:\n";
+  if(debug) conditionals[this->key_]->print("Conditional: ");
+
+  return variables;
+}
+
+/* ************************************************************************* */
+// This non-specialized version cannot be called.
+template<class FACTOR> FastSet<Index>
+EliminationTree<FACTOR>::eliminateSymbolic_(Conditionals& conditionals) const {
+  throw invalid_argument("symbolic eliminate should never be called from a non-IndexFactor EliminationTree");
+  return FastSet<Index>();
 }
 
 /* ************************************************************************* */
@@ -190,6 +224,30 @@ EliminationTree<FACTOR>::eliminate() const {
   tic(1, "ET recursive eliminate");
   Conditionals conditionals(this->key_ + 1);
   (void)eliminate_(conditionals);
+  toc(1, "ET recursive eliminate");
+
+  // Add conditionals to BayesNet
+  tic(2, "assemble BayesNet");
+  typename BayesNet::shared_ptr bayesNet(new BayesNet);
+  BOOST_FOREACH(const typename BayesNet::sharedConditional& conditional, conditionals) {
+    if(conditional)
+      bayesNet->push_back(conditional);
+  }
+  toc(2, "assemble BayesNet");
+
+  return bayesNet;
+}
+
+/* ************************************************************************* */
+// Specialization for symbolic elimination that calls the optimized eliminateSymbolic_
+template<>
+inline typename EliminationTree<IndexFactor>::BayesNet::shared_ptr
+EliminationTree<IndexFactor>::eliminate() const {
+
+  // call recursive routine
+  tic(1, "ET recursive eliminate");
+  Conditionals conditionals(this->key_ + 1);
+  (void)eliminateSymbolic_(conditionals);
   toc(1, "ET recursive eliminate");
 
   // Add conditionals to BayesNet
