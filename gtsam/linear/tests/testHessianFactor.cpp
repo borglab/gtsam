@@ -88,7 +88,7 @@ TEST(HessianFactor, ConversionConstructor) {
 }
 
 /* ************************************************************************* */
-TEST_UNSAFE(GaussianFactor, CombineAndEliminate)
+TEST(GaussianFactor, CombineAndEliminate)
 {
   Matrix A01 = Matrix_(3,3,
       1.0, 0.0, 0.0,
@@ -207,7 +207,7 @@ TEST(GaussianFactor, eliminate2 )
 }
 
 /* ************************************************************************* */
-TEST_UNSAFE(GaussianFactor, eliminateUnsorted) {
+TEST(GaussianFactor, eliminateUnsorted) {
 
   JacobianFactor::shared_ptr factor1(
       new JacobianFactor(0,

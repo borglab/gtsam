@@ -202,7 +202,7 @@ namespace gtsam {
   }
 
   /* ************************************************************************* */
-  static FastMap<Index, SlotEntry> findScatterAndDims(const FactorGraph<HessianFactor>& factors) {
+  static FastMap<Index, SlotEntry> findScatterAndDims(const FactorGraph<GaussianFactor>& factors) {
 
     static const bool debug = false;
 
@@ -213,8 +213,8 @@ namespace gtsam {
     Scatter scatter;
 
     // First do the set union.
-    BOOST_FOREACH(const HessianFactor::shared_ptr& factor, factors) {
-      for(HessianFactor::const_iterator variable = factor->begin(); variable != factor->end(); ++variable) {
+    BOOST_FOREACH(const GaussianFactor::shared_ptr& factor, factors) {
+      for(GaussianFactor::const_iterator variable = factor->begin(); variable != factor->end(); ++variable) {
         scatter.insert(make_pair(*variable, SlotEntry(0, factor->getDim(variable))));
       }
     }
@@ -254,8 +254,11 @@ void HessianFactor::updateATA(const HessianFactor& update, const Scatter& scatte
     update.print("with: ");
   }
 
+  Eigen::Map<Eigen::MatrixXd> information(&matrix_(0,0), matrix_.size1(), matrix_.size2());
+  Eigen::Map<Eigen::MatrixXd> updateInform(&update.matrix_(0,0), update.matrix_.size1(), update.matrix_.size2());
+
   // Apply updates to the upper triangle
-  tic(2, "update");
+  tic(3, "update");
   assert(this->info_.nBlocks() - 1 == scatter.size());
   for(size_t j2=0; j2<update.info_.nBlocks(); ++j2) {
     size_t slot2 = (j2 == update.size()) ? this->info_.nBlocks()-1 : slots[j2];
@@ -264,36 +267,169 @@ void HessianFactor::updateATA(const HessianFactor& update, const Scatter& scatte
       if(slot2 > slot1) {
         if(debug)
           cout << "Updating (" << slot1 << "," << slot2 << ") from (" << j1 << "," << j2 << ")" << endl;
-//        ublas::noalias(this->info_(slot1, slot2)) += update.info_(j1,j2);
-        Eigen::Map<Eigen::MatrixXd>(&matrix_(0,0), matrix_.size1(), matrix_.size2()).block(
-            info_.offset(slot1), info_.offset(slot2), info_(slot1,slot2).size1(), info_(slot1,slot2).size2()) +=
-                Eigen::Map<Eigen::MatrixXd>(&update.matrix_(0,0), update.matrix_.size1(), update.matrix_.size2()).block(
-                    update.info_.offset(j1), update.info_.offset(j2), update.info_(j1,j2).size1(), update.info_(j1,j2).size2());
+        information.block(info_.offset(slot1), info_.offset(slot2), info_(slot1,slot2).size1(), info_(slot1,slot2).size2()).noalias() +=
+                updateInform.block(update.info_.offset(j1), update.info_.offset(j2), update.info_(j1,j2).size1(), update.info_(j1,j2).size2());
       } else if(slot1 > slot2) {
         if(debug)
           cout << "Updating (" << slot2 << "," << slot1 << ") from (" << j1 << "," << j2 << ")" << endl;
-//        ublas::noalias(this->info_(slot2, slot1)) += ublas::trans(update.info_(j1,j2));
-        Eigen::Map<Eigen::MatrixXd>(&matrix_(0,0), matrix_.size1(), matrix_.size2()).block(
-            info_.offset(slot2), info_.offset(slot1), info_(slot2,slot1).size1(), info_(slot2,slot1).size2()) +=
-                Eigen::Map<Eigen::MatrixXd>(&update.matrix_(0,0), update.matrix_.size1(), update.matrix_.size2()).block(
-                    update.info_.offset(j1), update.info_.offset(j2), update.info_(j1,j2).size1(), update.info_(j1,j2).size2()).transpose();
+        information.block(info_.offset(slot2), info_.offset(slot1), info_(slot2,slot1).size1(), info_(slot2,slot1).size2()).noalias() +=
+                updateInform.block(update.info_.offset(j1), update.info_.offset(j2), update.info_(j1,j2).size1(), update.info_(j1,j2).size2()).transpose();
       } else {
         if(debug)
           cout << "Updating (" << slot1 << "," << slot2 << ") from (" << j1 << "," << j2 << ")" << endl;
-//        Block thisBlock(this->info_(slot1, slot2));
-//        constBlock updateBlock(update.info_(j1,j2));
-//        ublas::noalias(ublas::symmetric_adaptor<Block,ublas::upper>(thisBlock)) +=
-//            ublas::symmetric_adaptor<constBlock,ublas::upper>(updateBlock);
-        Eigen::Map<Eigen::MatrixXd>(&matrix_(0,0), matrix_.size1(), matrix_.size2()).block(
-            info_.offset(slot1), info_.offset(slot2), info_(slot1,slot2).size1(), info_(slot1,slot2).size2()).triangularView<Eigen::Upper>() +=
-                Eigen::Map<Eigen::MatrixXd>(&update.matrix_(0,0), update.matrix_.size1(), update.matrix_.size2()).block(
-                    update.info_.offset(j1), update.info_.offset(j2), update.info_(j1,j2).size1(), update.info_(j1,j2).size2());
+        information.block(info_.offset(slot1), info_.offset(slot2), info_(slot1,slot2).size1(), info_(slot1,slot2).size2()).triangularView<Eigen::Upper>() +=
+            updateInform.block(update.info_.offset(j1), update.info_.offset(j2), update.info_(j1,j2).size1(), update.info_(j1,j2).size2());
       }
       if(debug) cout << "Updating block " << slot1 << "," << slot2 << " from block " << j1 << "," << j2 << "\n";
       if(debug) this->print();
     }
   }
-  toc(2, "update");
+  toc(3, "update");
+}
+
+void HessianFactor::updateATA(const JacobianFactor& update, const Scatter& scatter) {
+
+  // This function updates 'combined' with the information in 'update'.
+  // 'scatter' maps variables in the update factor to slots in the combined
+  // factor.
+
+  const bool debug = ISDEBUG("updateATA");
+
+  // First build an array of slots
+  tic(1, "slots");
+  size_t slots[update.size()];
+  size_t slot = 0;
+  BOOST_FOREACH(Index j, update) {
+    slots[slot] = scatter.find(j)->second.slot;
+    ++ slot;
+  }
+  toc(1, "slots");
+
+  tic(2, "form A^T*A");
+  if(update.model_->isConstrained())
+    throw invalid_argument("Cannot update HessianFactor from JacobianFactor with constrained noise model");
+
+  if(debug) {
+    this->print("Updating this: ");
+    update.print("with: ");
+  }
+
+  Eigen::Map<Eigen::MatrixXd> information(&matrix_(0,0), matrix_.size1(), matrix_.size2());
+  Eigen::Map<Eigen::MatrixXd> updateAf(&update.matrix_(0,0), update.matrix_.size1(), update.matrix_.size2());
+  Eigen::Block<typeof(updateAf)> updateA(updateAf.block(
+              update.Ab_.rowStart(),update.Ab_.offset(0), update.Ab_.full().size1(), update.Ab_.full().size2()));
+
+  Eigen::MatrixXd updateInform;
+  if(boost::dynamic_pointer_cast<noiseModel::Unit>(update.model_)) {
+    updateInform.noalias() = updateA.transpose() * updateA;
+  } else {
+    noiseModel::Diagonal::shared_ptr diagonal(boost::dynamic_pointer_cast<noiseModel::Diagonal>(update.model_));
+    if(diagonal) {
+      typeof(Eigen::Map<Eigen::VectorXd>(&update.model_->invsigmas()(0),0).asDiagonal()) R(
+          Eigen::Map<Eigen::VectorXd>(&update.model_->invsigmas()(0),update.model_->dim()).asDiagonal());
+      updateInform.noalias() = updateA.transpose() * R * R * updateA;
+    } else
+      throw invalid_argument("In HessianFactor::updateATA, JacobianFactor noise model is neither Unit nor Diagonal");
+  }
+  toc(2, "form A^T*A");
+
+  // Apply updates to the upper triangle
+  tic(3, "update");
+  assert(this->info_.nBlocks() - 1 == scatter.size());
+  for(size_t j2=0; j2<update.Ab_.nBlocks(); ++j2) {
+    size_t slot2 = (j2 == update.size()) ? this->info_.nBlocks()-1 : slots[j2];
+    for(size_t j1=0; j1<=j2; ++j1) {
+      size_t slot1 = (j1 == update.size()) ? this->info_.nBlocks()-1 : slots[j1];
+      size_t off0 = update.Ab_.offset(0);
+      if(slot2 > slot1) {
+        if(debug)
+          cout << "Updating (" << slot1 << "," << slot2 << ") from (" << j1 << "," << j2 << ")" << endl;
+        information.block(info_.offset(slot1), info_.offset(slot2), info_(slot1,slot2).size1(), info_(slot1,slot2).size2()).noalias() +=
+                updateInform.block(update.Ab_.offset(j1)-off0, update.Ab_.offset(j2)-off0, update.Ab_(j1).size2(), update.Ab_(j2).size2());
+      } else if(slot1 > slot2) {
+        if(debug)
+          cout << "Updating (" << slot2 << "," << slot1 << ") from (" << j1 << "," << j2 << ")" << endl;
+        information.block(info_.offset(slot2), info_.offset(slot1), info_(slot2,slot1).size1(), info_(slot2,slot1).size2()).noalias() +=
+                updateInform.block(update.Ab_.offset(j1)-off0, update.Ab_.offset(j2)-off0, update.Ab_(j1).size2(), update.Ab_(j2).size2()).transpose();
+      } else {
+        if(debug)
+          cout << "Updating (" << slot1 << "," << slot2 << ") from (" << j1 << "," << j2 << ")" << endl;
+        information.block(info_.offset(slot1), info_.offset(slot2), info_(slot1,slot2).size1(), info_(slot1,slot2).size2()).triangularView<Eigen::Upper>() +=
+            updateInform.block(update.Ab_.offset(j1)-off0, update.Ab_.offset(j2)-off0, update.Ab_(j1).size2(), update.Ab_(j2).size2());
+      }
+      if(debug) cout << "Updating block " << slot1 << "," << slot2 << " from block " << j1 << "," << j2 << "\n";
+      if(debug) this->print();
+    }
+  }
+  toc(3, "update");
+
+//  Eigen::Map<Eigen::MatrixXd> information(&matrix_(0,0), matrix_.size1(), matrix_.size2());
+//  Eigen::Map<Eigen::MatrixXd> updateA(&update.matrix_(0,0), update.matrix_.size1(), update.matrix_.size2());
+//
+//  // Apply updates to the upper triangle
+//  tic(2, "update");
+//  assert(this->info_.nBlocks() - 1 == scatter.size());
+//  for(size_t j2=0; j2<update.Ab_.nBlocks(); ++j2) {
+//    size_t slot2 = (j2 == update.size()) ? this->info_.nBlocks()-1 : slots[j2];
+//    for(size_t j1=0; j1<=j2; ++j1) {
+//      size_t slot1 = (j1 == update.size()) ? this->info_.nBlocks()-1 : slots[j1];
+//      typedef typeof(updateA.block(0,0,0,0)) ABlock;
+//      ABlock A1(updateA.block(update.Ab_.rowStart(),update.Ab_.offset(j1), update.Ab_(j1).size1(),update.Ab_(j1).size2()));
+//      ABlock A2(updateA.block(update.Ab_.rowStart(),update.Ab_.offset(j2), update.Ab_(j2).size1(),update.Ab_(j2).size2()));
+//      if(slot2 > slot1) {
+//        if(debug)
+//          cout << "Updating (" << slot1 << "," << slot2 << ") from (" << j1 << "," << j2 << ")" << endl;
+//        if(boost::dynamic_pointer_cast<noiseModel::Unit>(update.model_)) {
+//          information.block(info_.offset(slot1), info_.offset(slot2), info_(slot1,slot2).size1(), info_(slot1,slot2).size2()) +=
+//              A1.transpose() * A2;
+//        } else {
+//          noiseModel::Diagonal::shared_ptr diagonal(boost::dynamic_pointer_cast<noiseModel::Diagonal>(update.model_));
+//          if(diagonal) {
+//            typeof(Eigen::Map<Eigen::VectorXd>(&update.model_->invsigmas()(0),0).asDiagonal()) R(
+//                Eigen::Map<Eigen::VectorXd>(&update.model_->invsigmas()(0),update.model_->dim()).asDiagonal());
+//            information.block(info_.offset(slot1), info_.offset(slot2), info_(slot1,slot2).size1(), info_(slot1,slot2).size2()).noalias() +=
+//                A1.transpose() * R * R * A2;
+//          } else
+//            throw invalid_argument("In HessianFactor::updateATA, JacobianFactor noise model is neither Unit nor Diagonal");
+//        }
+//      } else if(slot1 > slot2) {
+//        if(debug)
+//          cout << "Updating (" << slot2 << "," << slot1 << ") from (" << j1 << "," << j2 << ")" << endl;
+//        if(boost::dynamic_pointer_cast<noiseModel::Unit>(update.model_)) {
+//          information.block(info_.offset(slot2), info_.offset(slot1), info_(slot2,slot1).size1(), info_(slot2,slot1).size2()).noalias() +=
+//              A2.transpose() * A1;
+//        } else {
+//          noiseModel::Diagonal::shared_ptr diagonal(boost::dynamic_pointer_cast<noiseModel::Diagonal>(update.model_));
+//          if(diagonal) {
+//            typeof(Eigen::Map<Eigen::VectorXd>(&update.model_->invsigmas()(0),0).asDiagonal()) R(
+//                Eigen::Map<Eigen::VectorXd>(&update.model_->invsigmas()(0),update.model_->dim()).asDiagonal());
+//            information.block(info_.offset(slot1), info_.offset(slot2), info_(slot1,slot2).size1(), info_(slot1,slot2).size2()).noalias() +=
+//                A2.transpose() * R * R * A1;
+//          } else
+//            throw invalid_argument("In HessianFactor::updateATA, JacobianFactor noise model is neither Unit nor Diagonal");
+//        }
+//     } else {
+//        if(debug)
+//          cout << "Updating (" << slot1 << "," << slot2 << ") from (" << j1 << "," << j2 << ")" << endl;
+//        if(boost::dynamic_pointer_cast<noiseModel::Unit>(update.model_)) {
+//          information.block(info_.offset(slot2), info_.offset(slot1), info_(slot2,slot1).size1(), info_(slot2,slot1).size2()).triangularView<Eigen::Upper>() +=
+//              A1.transpose() * A1;
+//        } else {
+//          noiseModel::Diagonal::shared_ptr diagonal(boost::dynamic_pointer_cast<noiseModel::Diagonal>(update.model_));
+//          if(diagonal) {
+//            typeof(Eigen::Map<Eigen::VectorXd>(&update.model_->invsigmas()(0),0).asDiagonal()) R(
+//                Eigen::Map<Eigen::VectorXd>(&update.model_->invsigmas()(0),update.model_->dim()).asDiagonal());
+//            information.block(info_.offset(slot2), info_.offset(slot1), info_(slot2,slot1).size1(), info_(slot2,slot1).size2()).triangularView<Eigen::Upper>() +=
+//                A1.transpose() * R * R * A1;
+//          } else
+//            throw invalid_argument("In HessianFactor::updateATA, JacobianFactor noise model is neither Unit nor Diagonal");
+//        }
+//      }
+//      if(debug) cout << "Updating block " << slot1 << "," << slot2 << " from block " << j1 << "," << j2 << "\n";
+//      if(debug) this->print();
+//    }
+//  }
+//  toc(2, "update");
 }
 
 GaussianBayesNet::shared_ptr HessianFactor::splitEliminatedFactor(size_t nrFrontals, const vector<Index>& keys) {
@@ -347,7 +483,7 @@ GaussianBayesNet::shared_ptr HessianFactor::splitEliminatedFactor(size_t nrFront
 
 /* ************************************************************************* */
 pair<GaussianBayesNet::shared_ptr, HessianFactor::shared_ptr> HessianFactor::CombineAndEliminate(
-        const FactorGraph<HessianFactor>& factors, size_t nrFrontals) {
+        const FactorGraph<GaussianFactor>& factors, size_t nrFrontals) {
 
   const bool debug = ISDEBUG("HessianFactor::CombineAndEliminate");
 
@@ -378,8 +514,17 @@ pair<GaussianBayesNet::shared_ptr, HessianFactor::shared_ptr> HessianFactor::Com
   ublas::noalias(combinedFactor->matrix_) = ublas::zero_matrix<double>(combinedFactor->matrix_.size1(), combinedFactor->matrix_.size2());
   toc(2, "zero");
   tic(3, "update");
-  BOOST_FOREACH(const HessianFactor::shared_ptr& factor, factors) {
-    combinedFactor->updateATA(*factor, scatter);
+  BOOST_FOREACH(const GaussianFactor::shared_ptr& factor, factors) {
+    HessianFactor::shared_ptr hessianFactor(boost::dynamic_pointer_cast<HessianFactor>(factor));
+    if(hessianFactor)
+      combinedFactor->updateATA(*hessianFactor, scatter);
+    else {
+      JacobianFactor::shared_ptr jacobianFactor(boost::dynamic_pointer_cast<JacobianFactor>(factor));
+      if(jacobianFactor)
+        combinedFactor->updateATA(*jacobianFactor, scatter);
+      else
+        throw invalid_argument("GaussianFactor is neither Hessian nor Jacobian");
+    }
   }
   toc(3, "update");
   if(debug) gtsam::print(combinedFactor->matrix_, "Ab' * Ab: ");

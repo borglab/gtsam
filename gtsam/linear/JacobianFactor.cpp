@@ -179,7 +179,6 @@ namespace gtsam {
     Ab_.rowEnd() = maxrank;
     model_ = noiseModel::Unit::Create(maxrank);
 
-    size_t varpos = 0;
     firstNonzeroBlocks_.resize(this->size1(), 0);
 
     // Sort keys

@@ -96,43 +96,43 @@ namespace gtsam {
 
       const bool checkCholesky = ISDEBUG("GaussianFactor::CombineAndEliminate Check Cholesky");
 
-      FactorGraph<HessianFactor> hessianFactors;
-      tic(1, "convert to Hessian");
-      hessianFactors.reserve(factors.size());
-      BOOST_FOREACH(const GaussianFactor::shared_ptr& factor, factors) {
-        if(factor) {
-          HessianFactor::shared_ptr hessianFactor(boost::dynamic_pointer_cast<HessianFactor>(factor));
-          if(hessianFactor)
-            hessianFactors.push_back(hessianFactor);
-          else {
-            JacobianFactor::shared_ptr jacobianFactor(boost::dynamic_pointer_cast<JacobianFactor>(factor));
-            if(!jacobianFactor) throw std::invalid_argument(
-                "In GaussianFactor::CombineAndEliminate, factor is neither a JacobianFactor nor a HessianFactor.");
-            HessianFactor::shared_ptr convertedHessianFactor;
-            try {
-              convertedHessianFactor.reset(new HessianFactor(*jacobianFactor));
-              if(checkCholesky)
-                if(!assert_equal(HessianFactor(*jacobianFactor), HessianFactor(JacobianFactor(*convertedHessianFactor)), 1e-3))
-                  throw runtime_error("Conversion between Jacobian and Hessian incorrect");
-            } catch(const exception& e) {
-              cout << "Exception converting to Hessian: " << e.what() << endl;
-              jacobianFactor->print("jacobianFactor: ");
-              convertedHessianFactor->print("convertedHessianFactor: ");
-              SETDEBUG("choleskyPartial", true);
-              SETDEBUG("choleskyCareful", true);
-              HessianFactor(JacobianFactor(*convertedHessianFactor)).print("Jacobian->Hessian->Jacobian->Hessian: ");
-              throw;
-            }
-            hessianFactors.push_back(convertedHessianFactor);
-          }
-        }
-      }
-      toc(1, "convert to Hessian");
+//      FactorGraph<HessianFactor> hessianFactors;
+//      tic(1, "convert to Hessian");
+//      hessianFactors.reserve(factors.size());
+//      BOOST_FOREACH(const GaussianFactor::shared_ptr& factor, factors) {
+//        if(factor) {
+//          HessianFactor::shared_ptr hessianFactor(boost::dynamic_pointer_cast<HessianFactor>(factor));
+//          if(hessianFactor)
+//            hessianFactors.push_back(hessianFactor);
+//          else {
+//            JacobianFactor::shared_ptr jacobianFactor(boost::dynamic_pointer_cast<JacobianFactor>(factor));
+//            if(!jacobianFactor) throw std::invalid_argument(
+//                "In GaussianFactor::CombineAndEliminate, factor is neither a JacobianFactor nor a HessianFactor.");
+//            HessianFactor::shared_ptr convertedHessianFactor;
+//            try {
+//              convertedHessianFactor.reset(new HessianFactor(*jacobianFactor));
+//              if(checkCholesky)
+//                if(!assert_equal(HessianFactor(*jacobianFactor), HessianFactor(JacobianFactor(*convertedHessianFactor)), 1e-3))
+//                  throw runtime_error("Conversion between Jacobian and Hessian incorrect");
+//            } catch(const exception& e) {
+//              cout << "Exception converting to Hessian: " << e.what() << endl;
+//              jacobianFactor->print("jacobianFactor: ");
+//              convertedHessianFactor->print("convertedHessianFactor: ");
+//              SETDEBUG("choleskyPartial", true);
+//              SETDEBUG("choleskyCareful", true);
+//              HessianFactor(JacobianFactor(*convertedHessianFactor)).print("Jacobian->Hessian->Jacobian->Hessian: ");
+//              throw;
+//            }
+//            hessianFactors.push_back(convertedHessianFactor);
+//          }
+//        }
+//      }
+//      toc(1, "convert to Hessian");
 
       pair<GaussianBayesNet::shared_ptr, GaussianFactor::shared_ptr> ret;
       try {
         tic(2, "Hessian CombineAndEliminate");
-        ret = HessianFactor::CombineAndEliminate(hessianFactors, nrFrontals);
+        ret = HessianFactor::CombineAndEliminate(factors, nrFrontals);
         toc(2, "Hessian CombineAndEliminate");
       } catch(const exception& e) {
         cout << "Exception in HessianFactor::CombineAndEliminate: " << e.what() << endl;
@@ -142,7 +142,7 @@ namespace gtsam {
         SETDEBUG("JacobianFactor::Combine", true);
         SETDEBUG("choleskyPartial", true);
         factors.print("Combining factors: ");
-        HessianFactor::CombineAndEliminate(hessianFactors, nrFrontals);
+        HessianFactor::CombineAndEliminate(factors, nrFrontals);
         throw;
       }
 
@@ -185,7 +185,7 @@ namespace gtsam {
             SETDEBUG("JacobianFactor::Combine", true);
             jacobianFactors.print("Jacobian Factors: ");
             JacobianFactor::CombineAndEliminate(jacobianFactors, nrFrontals);
-            HessianFactor::CombineAndEliminate(hessianFactors, nrFrontals);
+            HessianFactor::CombineAndEliminate(factors, nrFrontals);
             factors.print("Combining factors: ");
 
             throw runtime_error("Cholesky and QR do not agree");

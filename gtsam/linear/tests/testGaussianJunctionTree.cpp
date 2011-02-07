@@ -67,9 +67,6 @@ GaussianFactorGraph createChain() {
  */
 TEST( GaussianJunctionTree, eliminate )
 {
-
-  SETDEBUG("updateATA",true);
-
 	GaussianFactorGraph fg = createChain();
 	GaussianJunctionTree junctionTree(fg);
 	BayesTree<GaussianConditional>::sharedClique rootClique = junctionTree.eliminate();

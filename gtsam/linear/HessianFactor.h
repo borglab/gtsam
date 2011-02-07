@@ -48,6 +48,7 @@ namespace gtsam {
 
     void assertInvariants() const;
     GaussianBayesNet::shared_ptr splitEliminatedFactor(size_t nrFrontals, const std::vector<Index>& keys);
+    void updateATA(const JacobianFactor& update, const Scatter& scatter);
     void updateATA(const HessianFactor& update, const Scatter& scatter);
 
   public:
@@ -123,7 +124,7 @@ namespace gtsam {
      * Combine and eliminate several factors.
      */
     static std::pair<GaussianBayesNet::shared_ptr, shared_ptr> CombineAndEliminate(
-        const FactorGraph<HessianFactor>& factors, size_t nrFrontals=1);
+        const FactorGraph<GaussianFactor>& factors, size_t nrFrontals=1);
 
     // Friend unit test classes
     friend class ::ConversionConstructorHessianFactorTest;
