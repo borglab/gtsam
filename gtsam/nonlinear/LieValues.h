@@ -57,7 +57,8 @@ namespace gtsam {
      */
   	typedef J Key;
   	typedef typename J::Value Value;
-    typedef FastMap<J,Value> KeyValueMap;
+	typedef std::map<Key, Value, std::less<Key>, boost::fast_pool_allocator<std::pair<const Key, Value> > > KeyValueMap;
+	//    typedef FastMap<J,Value> KeyValueMap;
     typedef typename KeyValueMap::value_type KeyValuePair;
     typedef typename KeyValueMap::iterator iterator;
     typedef typename KeyValueMap::const_iterator const_iterator;
