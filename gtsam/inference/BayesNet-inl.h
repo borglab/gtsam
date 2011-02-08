@@ -84,8 +84,8 @@ namespace gtsam {
 
 	/* ************************************************************************* */
 	template<class CONDITIONAL>
-	list<Index> BayesNet<CONDITIONAL>::ordering() const {
-		list<Index> ord;
+	FastList<Index> BayesNet<CONDITIONAL>::ordering() const {
+		FastList<Index> ord;
 		BOOST_FOREACH(sharedConditional conditional,conditionals_)
 		   ord.push_back(conditional->key());
 		return ord;

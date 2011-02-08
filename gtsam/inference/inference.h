@@ -36,9 +36,6 @@ namespace gtsam {
 	  /* Static members only, private constructor */
 	  Inference() {}
 
-	  // Internal version that actually calls colamd after the constraint set is created in the right format
-    static Permutation::shared_ptr PermutationCOLAMD_(const VariableIndex& variableIndex, std::vector<int>& cmember);
-
 	public:
 
     /**
@@ -51,6 +48,11 @@ namespace gtsam {
      */
     template<typename CONSTRAINED>
     static Permutation::shared_ptr PermutationCOLAMD(const VariableIndex& variableIndex, const CONSTRAINED& constrainLast);
+
+	  /**
+	   * Compute a CCOLAMD permutation using the constraint groups in cmember.
+	   */
+    static Permutation::shared_ptr PermutationCOLAMD_(const VariableIndex& variableIndex, std::vector<int>& cmember);
 
 	};
 

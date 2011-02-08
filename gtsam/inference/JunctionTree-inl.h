@@ -114,7 +114,7 @@ namespace gtsam {
 
     if(bayesClique) {
       // create a new clique in the junction tree
-      list<Index> frontals = bayesClique->ordering();
+      FastList<Index> frontals = bayesClique->ordering();
       sharedClique clique(new Clique(frontals.begin(), frontals.end(), bayesClique->separator_.begin(), bayesClique->separator_.end()));
 
       // count the factors for this cluster to pre-allocate space

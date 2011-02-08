@@ -20,6 +20,7 @@
 #pragma once
 
 #include <gtsam/base/types.h>
+#include <gtsam/base/FastList.h>
 #include <gtsam/base/Testable.h>
 #include <gtsam/inference/Permutation.h>
 
@@ -107,7 +108,7 @@ namespace gtsam {
 		}
 
 		/** return keys in reverse topological sort order, i.e., elimination order */
-		std::list<Index> ordering() const;
+		FastList<Index> ordering() const;
 
 		/** SLOW O(n) random access to Conditional by key */
 		sharedConditional operator[](Index key) const;
