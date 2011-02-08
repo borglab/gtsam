@@ -195,7 +195,7 @@ inline void tic_(size_t id, const std::string& label) {
 
 inline void toc_(size_t id) {
   boost::shared_ptr<TimingOutline> current(timingCurrent.lock());
-  assert(current->parent_.lock()->children_[id] == current);
+  assert(id < current->parent_.lock()->children_.size() && current->parent_.lock()->children_[id] == current);
   current->toc();
   timingCurrent = current->parent_;
 }
