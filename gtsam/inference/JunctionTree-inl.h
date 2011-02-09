@@ -59,7 +59,10 @@ namespace gtsam {
   /* ************************************************************************* */
   template <class FG>
   JunctionTree<FG>::JunctionTree(const FG& fg) {
-    construct(fg, VariableIndex(fg));
+    tic(0, "VariableIndex");
+    VariableIndex varIndex(fg);
+    toc(0, "VariableIndex");
+    construct(fg, varIndex);
   }
 
   /* ************************************************************************* */
