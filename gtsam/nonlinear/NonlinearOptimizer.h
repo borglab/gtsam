@@ -75,6 +75,7 @@ public:
 	typedef boost::shared_ptr<GS> shared_solver;
 	typedef NonlinearOptimizationParameters Parameters;
 	typedef boost::shared_ptr<const Parameters> shared_parameters ;
+	typedef boost::shared_ptr<VariableIndex> shared_structure; // TODO: make this const
 
 private:
 
@@ -104,6 +105,11 @@ private:
 	// The dimensions of each linearized variable
 	const shared_dimensions dimensions_;
 
+	// storage of structural components that don't change between iterations
+	// used at creation of solvers in each iteration
+	// TODO: make this structure component specific to solver type
+	const shared_structure structure_;
+
 	// solver used only for SPCG
 	// FIXME: remove this!
 	shared_solver spcg_solver_;
@@ -111,29 +117,38 @@ private:
 	/**
 	 * Constructor that does not do any computation
 	 */
-	NonlinearOptimizer(shared_graph graph, shared_values values, const double error, shared_ordering ordering,
-			shared_parameters parameters, shared_dimensions dimensions, size_t iterations): graph_(graph), values_(values),
-			error_(error), ordering_(ordering), parameters_(parameters), iterations_(iterations), dimensions_(dimensions) {}
+	NonlinearOptimizer(shared_graph graph, shared_values values, const double error,
+			shared_ordering ordering, shared_parameters parameters, shared_dimensions dimensions,
+			size_t iterations, shared_structure structure)
+	: graph_(graph), values_(values),	error_(error), ordering_(ordering),
+	  parameters_(parameters), iterations_(iterations), dimensions_(dimensions),
+	  structure_(structure) {}
 
 	/** constructors to replace specific components */
 
 	This newValues_(shared_values newValues) const {
-		return NonlinearOptimizer(graph_, newValues, graph_->error(*newValues), ordering_, parameters_, dimensions_, iterations_); }
+		return NonlinearOptimizer(graph_, newValues, graph_->error(*newValues),
+				ordering_, parameters_, dimensions_, iterations_, structure_); }
 
 	This newValuesErrorLambda_(shared_values newValues, double newError, double newLambda) const {
-		return NonlinearOptimizer(graph_, newValues, newError, ordering_, parameters_->newLambda_(newLambda), dimensions_, iterations_); }
+		return NonlinearOptimizer(graph_, newValues, newError, ordering_,
+				parameters_->newLambda_(newLambda), dimensions_, iterations_, structure_); }
 
 	This newIterations_(int iterations) const {
-		return NonlinearOptimizer(graph_, values_, error_, ordering_, parameters_, dimensions_, iterations); }
+		return NonlinearOptimizer(graph_, values_, error_, ordering_, parameters_, dimensions_,
+				iterations, structure_); }
 
 	This newLambda_(double newLambda) const {
-		return NonlinearOptimizer(graph_, values_, error_, ordering_, parameters_->newLambda_(newLambda), dimensions_, iterations_); }
+		return NonlinearOptimizer(graph_, values_, error_, ordering_,
+				parameters_->newLambda_(newLambda), dimensions_, iterations_, structure_); }
 
 	This newValuesLambda_(shared_values newValues, double newLambda) const {
-		return NonlinearOptimizer(graph_, newValues, graph_->error(*newValues), ordering_, parameters_->newLambda_(newLambda), dimensions_, iterations_); }
+		return NonlinearOptimizer(graph_, newValues, graph_->error(*newValues),
+				ordering_, parameters_->newLambda_(newLambda), dimensions_, iterations_, structure_); }
 
 	This newParameters_(shared_parameters parameters) const {
-		return NonlinearOptimizer(graph_, values_, error_, ordering_, parameters, dimensions_, iterations_); }
+		return NonlinearOptimizer(graph_, values_, error_, ordering_, parameters, dimensions_,
+				iterations_, structure_); }
 
 public:
 
@@ -161,7 +176,7 @@ public:
 	NonlinearOptimizer(const NonlinearOptimizer<G, T, L, GS> &optimizer) :
 		graph_(optimizer.graph_), values_(optimizer.values_), error_(optimizer.error_),
 		ordering_(optimizer.ordering_), parameters_(optimizer.parameters_),
-		iterations_(0), dimensions_(optimizer.dimensions_) {}
+		iterations_(0), dimensions_(optimizer.dimensions_), structure_(optimizer.structure_) {}
 
 	// access to member variables
 
@@ -186,6 +201,9 @@ public:
 	/** Return the parameters	 */
 	shared_parameters parameters() const { return parameters_; }
 
+	/** Return the structure variable (variable index) */
+	shared_structure structure() const { return structure_; }
+
 	/**
 	 * Return a linearized graph at the current graph/values/ordering
 	 */
@@ -198,9 +216,7 @@ public:
 	 * NOTE: this will actually solve a linear system
 	 */
 	shared_solver createSolver() const {
-		shared_linear linearGraph = linearize();
-		shared_solver solver(new GS(*linearGraph));
-		return solver;
+			return shared_solver(new GS(linearize(), structure_));
 	}
 
 	/**

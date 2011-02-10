@@ -36,7 +36,9 @@ namespace gtsam {
 	NonlinearOptimizer<G, C, L, S, W>::NonlinearOptimizer(shared_graph graph,
 			shared_values values, shared_ordering ordering, shared_parameters parameters) :
 			graph_(graph), values_(values), error_(graph->error(*values)), ordering_(ordering),
-			parameters_(parameters), iterations_(0), dimensions_(new vector<size_t>(values->dims(*ordering))) {
+			parameters_(parameters), iterations_(0),
+			dimensions_(new vector<size_t>(values->dims(*ordering))),
+			structure_(new VariableIndex(*graph->symbolic(*values, *ordering))) {
 		if (!graph) throw std::invalid_argument(
 				"NonlinearOptimizer constructor: graph = NULL");
 		if (!values) throw std::invalid_argument(
@@ -46,6 +48,7 @@ namespace gtsam {
 	}
 
 	/* ************************************************************************* */
+	// FIXME: remove this constructor
 	template<class G, class C, class L, class S, class W>
 	NonlinearOptimizer<G, C, L, S, W>::NonlinearOptimizer(shared_graph graph,
 			shared_values values, shared_ordering ordering,
@@ -70,10 +73,14 @@ namespace gtsam {
 
 		Parameters::verbosityLevel verbosity = parameters_->verbosity_ ;
 
-		// FIXME: allow for passing variable index through createSolver()
 		// FIXME: get rid of spcg solver
-		if (spcg_solver_) spcg_solver_->replaceFactors(linearize());
-		shared_solver solver = (spcg_solver_) ? spcg_solver_ : createSolver();
+		shared_solver solver;
+		if (spcg_solver_) { // special case for SPCG
+			spcg_solver_->replaceFactors(linearize());
+			solver = spcg_solver_;
+		} else { // normal case
+			solver = createSolver();
+		}
 
 		VectorValues delta = *solver->optimize();
 
@@ -159,10 +166,9 @@ namespace gtsam {
 		  if (verbosity >= Parameters::DAMPED) damped->print("damped");
 
 		  // solve
-		  // FIXME: incorporate variable index
-		  // FIXME: remove spcg specific code
+ 		  // FIXME: remove spcg specific code
 		  if (spcg_solver_) spcg_solver_->replaceFactors(damped);
-		  shared_solver solver = (spcg_solver_) ? spcg_solver_ : shared_solver(new S(*damped));
+		  shared_solver solver = (spcg_solver_) ? spcg_solver_ : shared_solver(new S(damped, structure_));
 		  VectorValues delta = *solver->optimize();
 		  if (verbosity >= Parameters::TRYDELTA) delta.print("delta");
 

@@ -62,6 +62,11 @@ namespace gtsam {
 			throw std::runtime_error("SubgraphSolver: gaussian factor graph initialization not supported");
 		}
 
+		SubgraphSolver(const shared_linear& GFG, const boost::shared_ptr<VariableIndex>& structure) {
+			std::cout << "[SubgraphSolver] Unexpected usage.." << std::endl;
+			throw std::runtime_error("SubgraphSolver: gaussian factor graph and variable index initialization not supported");
+		}
+
 		SubgraphSolver(const SubgraphSolver& solver) :
 			IterativeSolver(solver), ordering_(solver.ordering_), pairs_(solver.pairs_), pc_(solver.pc_){}
 
