@@ -292,60 +292,61 @@ namespace gtsam {
 		double next_error = error_;
 
 		shared_values next_values = values_;
+		shared_solver solver = solver_;
 
 		while(true) {
-		  if (verbosity >= Parameters::TRYLAMBDA) cout << "trying lambda = " << lambda << endl;
+			if (verbosity >= Parameters::TRYLAMBDA) cout << "trying lambda = " << lambda << endl;
 
-		  // add prior-factors
-		  typename L::shared_ptr damped(new L(linear));
-		  {
-		    double sigma = 1.0 / sqrt(lambda);
-		    damped->reserve(damped->size() + dimensions_->size());
-		    // for each of the variables, add a prior
-		    for(Index j=0; j<dimensions_->size(); ++j) {
-		      size_t dim = (*dimensions_)[j];
-		      Matrix A = eye(dim);
-		      Vector b = zero(dim);
-		      SharedDiagonal model = noiseModel::Isotropic::Sigma(dim,sigma);
-		      GaussianFactor::shared_ptr prior(new JacobianFactor(j, A, b, model));
-		      damped->push_back(prior);
-		    }
-		  }
-		  if (verbosity >= Parameters::DAMPED) damped->print("damped");
+			// add prior-factors
+			typename L::shared_ptr damped(new L(linear));
+			{
+				double sigma = 1.0 / sqrt(lambda);
+				damped->reserve(damped->size() + dimensions_->size());
+				// for each of the variables, add a prior
+				for(Index j=0; j<dimensions_->size(); ++j) {
+					size_t dim = (*dimensions_)[j];
+					Matrix A = eye(dim);
+					Vector b = zero(dim);
+					SharedDiagonal model = noiseModel::Isotropic::Sigma(dim,sigma);
+					GaussianFactor::shared_ptr prior(new JacobianFactor(j, A, b, model));
+					damped->push_back(prior);
+				}
+			}
+			if (verbosity >= Parameters::DAMPED) damped->print("damped");
 
-		  // solve
-		  S solver(*damped); // not solver_ !!
+			// solve
+			solver.reset(new S(*damped));
 
-		  VectorValues delta = *solver.optimize();
-		  if (verbosity >= Parameters::TRYDELTA) delta.print("delta");
+			VectorValues delta = *solver->optimize();
+			if (verbosity >= Parameters::TRYDELTA) delta.print("delta");
 
-		  // update values
-		  shared_values newValues(new C(values_->expmap(delta, *ordering_))); // TODO: updateValues
+			// update values
+			shared_values newValues(new C(values_->expmap(delta, *ordering_))); // TODO: updateValues
 
-		  // create new optimization state with more adventurous lambda
-		  double error = graph_->error(*newValues);
+			// create new optimization state with more adventurous lambda
+			double error = graph_->error(*newValues);
 
-		  if (verbosity >= Parameters::TRYLAMBDA) cout << "next error = " << error << endl;
+			if (verbosity >= Parameters::TRYLAMBDA) cout << "next error = " << error << endl;
 
-		  if( error <= error_ ) {
-		  	next_values = newValues;
-		  	next_error = error;
-			  lambda /= factor;
-		  	break;
-		  }
-		  else {
-		  	// Either we're not cautious, or the same lambda was worse than the current error.
-		  	// The more adventurous lambda was worse too, so make lambda more conservative
-		  	// and keep the same values.
-		  	if(lambdaMode >= Parameters::BOUNDED && lambda >= 1.0e5) {
-		  		break;
-		  	} else {
-		  		lambda *= factor;
-		  	}
-		  }
+			if( error <= error_ ) {
+				next_values = newValues;
+				next_error = error;
+				lambda /= factor;
+				break;
+			}	else {
+				// Either we're not cautious, or the same lambda was worse than the current error.
+				// The more adventurous lambda was worse too, so make lambda more conservative
+				// and keep the same values.
+				if(lambdaMode >= Parameters::BOUNDED && lambda >= 1.0e5) {
+					break;
+				} else {
+					lambda *= factor;
+				}
+			}
 		} // end while
 
-		return newValuesErrorLambda_(next_values, next_error, lambda);
+		return NonlinearOptimizer(graph_, next_values, next_error, ordering_, solver,
+				parameters_->newLambda_(lambda), dimensions_, iterations_);
 	}
 
 	/* ************************************************************************* */

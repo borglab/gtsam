@@ -187,13 +187,13 @@ TEST( NonlinearOptimizer, optimize_LM_recursive )
 	Point2 xstar(0,0);
 	example::Values cstar;
 	cstar.insert(simulated2D::PoseKey(1), xstar);
-	DOUBLES_EQUAL(0.0,fg->error(cstar),0.0);
+	EXPECT_DOUBLES_EQUAL(0.0,fg->error(cstar),0.0);
 
 	// test error at initial = [(1-cos(3))^2 + (sin(3))^2]*50 =
 	Point2 x0(3,3);
 	boost::shared_ptr<example::Values> c0(new example::Values);
 	c0->insert(simulated2D::PoseKey(1), x0);
-	DOUBLES_EQUAL(199.0,fg->error(*c0),1e-3);
+	EXPECT_DOUBLES_EQUAL(199.0,fg->error(*c0),1e-3);
 
 	// optimize parameters
 	shared_ptr<Ordering> ord(new Ordering());
@@ -207,7 +207,13 @@ TEST( NonlinearOptimizer, optimize_LM_recursive )
 
 	// Levenberg-Marquardt
 	Optimizer actual2 = optimizer.levenbergMarquardtRecursive();
-	DOUBLES_EQUAL(0,fg->error(*(actual2.values())),tol);
+	EXPECT_DOUBLES_EQUAL(0,fg->error(*(actual2.values())),tol);
+
+	// calculate the marginal
+	Matrix actualCovariance; Vector mean;
+	boost::tie(mean, actualCovariance) = actual2.marginalCovariance("x1");
+	Matrix expectedCovariance = Matrix_(2,2, 8.60817108, 0.0, 0.0, 0.01);
+	EXPECT(assert_equal(expectedCovariance, actualCovariance, tol));
 }
 
 /* ************************************************************************* */
