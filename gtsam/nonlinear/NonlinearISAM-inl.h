@@ -91,3 +91,11 @@ Values NonlinearISAM<Values>::estimate() {
   else
     return linPoint_;
 }
+
+/* ************************************************************************* */
+template<class Values>
+Matrix NonlinearISAM<Values>::marginalCovariance(const Symbol& key) {
+	Matrix covariance; Vector mean;
+	boost::tie(mean, covariance) = isam_.marginal(ordering_[key]);
+	return covariance;
+}

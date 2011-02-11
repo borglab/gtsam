@@ -77,6 +77,9 @@ public:
 	/** replace the current ordering */
 	void setOrdering(const Ordering& new_ordering) { ordering_ = new_ordering; }
 
+	/** find the marginal covariance for a single variable */
+	Matrix marginalCovariance(const Symbol& key);
+
 	// access
 
 	/** access the underlying bayes tree */
