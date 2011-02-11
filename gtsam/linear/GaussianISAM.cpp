@@ -24,7 +24,19 @@ using namespace gtsam;
 #include <gtsam/inference/ISAM-inl.h>
 template class ISAM<GaussianConditional>;
 
+namespace ublas = boost::numeric::ublas;
+
 namespace gtsam {
+
+/* ************************************************************************* */
+std::pair<Vector, Matrix> GaussianISAM::marginal(Index j) const {
+	GaussianFactor::shared_ptr factor = this->marginalFactor(j);
+	FactorGraph<GaussianFactor> graph;
+	graph.push_back(factor);
+	GaussianConditional::shared_ptr conditional = GaussianFactor::CombineAndEliminate(graph,1).first->front();
+  Matrix R = conditional->get_R();
+  return make_pair(conditional->get_d(), inverse(ublas::prod(ublas::trans(R), R)));
+}
 
 /* ************************************************************************* */
 void optimize(const GaussianISAM::sharedClique& clique, VectorValues& result) {

@@ -69,6 +69,9 @@ public:
 
   friend VectorValues optimize(const GaussianISAM&);
 
+  /** return marginal on any variable */
+  std::pair<Vector,Matrix> marginal(Index key) const;
+
 };
 
 	// recursively optimize this conditional and all subtrees

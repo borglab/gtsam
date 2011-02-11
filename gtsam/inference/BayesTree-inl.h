@@ -382,15 +382,13 @@ namespace gtsam {
 	template<class CONDITIONAL>
 	FactorGraph<typename CONDITIONAL::Factor> BayesTree<CONDITIONAL>::Clique::marginal(shared_ptr R) {
 		// If we are the root, just return this root
+		// NOTE: immediately cast to a factor graph
 		if (R.get()==this) return *R;
 
 		// Combine P(F|S), P(S|R), and P(R)
 		BayesNet<CONDITIONAL> p_FSR = this->shortcut(R);
 		p_FSR.push_front(*this);
 		p_FSR.push_back(*R);
-
-		// Find marginal on the keys we are interested in
-		FactorGraph<typename CONDITIONAL::Factor> p_FSRfg(p_FSR);
 
     assertInvariants();
 		return *GenericSequentialSolver<typename CONDITIONAL::Factor>(p_FSR).jointFactorGraph(keys());
@@ -731,7 +729,7 @@ namespace gtsam {
 	// First finds clique marginal then marginalizes that
 	/* ************************************************************************* */
 	template<class CONDITIONAL>
-	typename CONDITIONAL::Factor::shared_ptr BayesTree<CONDITIONAL>::marginal(Index key) const {
+	typename CONDITIONAL::Factor::shared_ptr BayesTree<CONDITIONAL>::marginalFactor(Index key) const {
 
 		// get clique containing key
 		sharedClique clique = (*this)[key];
@@ -748,7 +746,7 @@ namespace gtsam {
 
 	  // calculate marginal as a factor graph
 	  FactorGraph<typename CONDITIONAL::Factor> fg;
-	  fg.push_back(this->marginal(key));
+	  fg.push_back(this->marginalFactor(key));
 
 		// eliminate factor graph marginal to a Bayes net
 		return GenericSequentialSolver<typename CONDITIONAL::Factor>(fg).eliminate();

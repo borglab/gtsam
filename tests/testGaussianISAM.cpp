@@ -195,28 +195,58 @@ TEST( BayesTree, balanced_smoother_marginals )
 	// Check marginal on x1
 	GaussianBayesNet expected1 = simpleGaussian(ordering["x1"], zero(2), sigmax1);
 	GaussianBayesNet actual1 = *bayesTree.marginalBayesNet(ordering["x1"]);
-	CHECK(assert_equal(expected1,actual1,tol));
+	Matrix expectedCovarianceX1 = eye(2,2) * (sigmax1 * sigmax1);
+	Vector expectedMeanX1 = zero(2);
+	Matrix actualCovarianceX1; Vector actualMeanX1;
+	boost::tie(actualMeanX1, actualCovarianceX1) = bayesTree.marginal(ordering["x1"]);
+	EXPECT(assert_equal(expectedCovarianceX1, actualCovarianceX1, tol));
+	EXPECT(assert_equal(expectedMeanX1, actualMeanX1, tol));
+	EXPECT(assert_equal(expected1,actual1,tol));
 
 	// Check marginal on x2
 	double sigx2 = 0.68712938; // FIXME: this should be corrected analytically
 	GaussianBayesNet expected2 = simpleGaussian(ordering["x2"], zero(2), sigx2);
 	GaussianBayesNet actual2 = *bayesTree.marginalBayesNet(ordering["x2"]);
-	CHECK(assert_equal(expected2,actual2,tol)); // FAILS
+	Matrix expectedCovarianceX2 = eye(2,2) * (sigx2 * sigx2);
+	Vector expectedMeanX2 = zero(2);
+	Matrix actualCovarianceX2; Vector actualMeanX2;
+	boost::tie(actualMeanX2, actualCovarianceX2) = bayesTree.marginal(ordering["x2"]);
+	EXPECT(assert_equal(expectedCovarianceX2, actualCovarianceX2, tol));
+	EXPECT(assert_equal(expectedMeanX2, actualMeanX2, tol));
+	EXPECT(assert_equal(expected2,actual2,tol));
 
 	// Check marginal on x3
 	GaussianBayesNet expected3 = simpleGaussian(ordering["x3"], zero(2), sigmax3);
 	GaussianBayesNet actual3 = *bayesTree.marginalBayesNet(ordering["x3"]);
-	CHECK(assert_equal(expected3,actual3,tol));
+	Matrix expectedCovarianceX3 = eye(2,2) * (sigmax3 * sigmax3);
+	Vector expectedMeanX3 = zero(2);
+	Matrix actualCovarianceX3; Vector actualMeanX3;
+	boost::tie(actualMeanX3, actualCovarianceX3) = bayesTree.marginal(ordering["x3"]);
+	EXPECT(assert_equal(expectedCovarianceX3, actualCovarianceX3, tol));
+	EXPECT(assert_equal(expectedMeanX3, actualMeanX3, tol));
+	EXPECT(assert_equal(expected3,actual3,tol));
 
 	// Check marginal on x4
 	GaussianBayesNet expected4 = simpleGaussian(ordering["x4"], zero(2), sigmax4);
 	GaussianBayesNet actual4 = *bayesTree.marginalBayesNet(ordering["x4"]);
-	CHECK(assert_equal(expected4,actual4,tol));
+	Matrix expectedCovarianceX4 = eye(2,2) * (sigmax4 * sigmax4);
+	Vector expectedMeanX4 = zero(2);
+	Matrix actualCovarianceX4; Vector actualMeanX4;
+	boost::tie(actualMeanX4, actualCovarianceX4) = bayesTree.marginal(ordering["x4"]);
+	EXPECT(assert_equal(expectedCovarianceX4, actualCovarianceX4, tol));
+	EXPECT(assert_equal(expectedMeanX4, actualMeanX4, tol));
+	EXPECT(assert_equal(expected4,actual4,tol));
 
 	// Check marginal on x7 (should be equal to x1)
 	GaussianBayesNet expected7 = simpleGaussian(ordering["x7"], zero(2), sigmax7);
 	GaussianBayesNet actual7 = *bayesTree.marginalBayesNet(ordering["x7"]);
-	CHECK(assert_equal(expected7,actual7,tol));
+	Matrix expectedCovarianceX7 = eye(2,2) * (sigmax7 * sigmax7);
+	Vector expectedMeanX7 = zero(2);
+	Matrix actualCovarianceX7; Vector actualMeanX7;
+	boost::tie(actualMeanX7, actualCovarianceX7) = bayesTree.marginal(ordering["x7"]);
+	EXPECT(assert_equal(expectedCovarianceX7, actualCovarianceX7, tol));
+	EXPECT(assert_equal(expectedMeanX7, actualMeanX7, tol));
+	EXPECT(assert_equal(expected7,actual7,tol));
 }
 
 /* ************************************************************************* */

@@ -262,9 +262,13 @@ namespace gtsam {
 		CliqueData getCliqueData() const;
 
 		/** return marginal on any variable */
-		typename CONDITIONAL::Factor::shared_ptr marginal(Index key) const;
+		typename CONDITIONAL::Factor::shared_ptr marginalFactor(Index key) const;
 
-		/** return marginal on any variable, as a Bayes Net */
+		/**
+		 * return marginal on any variable, as a Bayes Net
+		 * NOTE: this function calls marginal, and then eliminates it into a Bayes Net
+		 * This is more expensive than the above function
+		 */
 		typename BayesNet<CONDITIONAL>::shared_ptr marginalBayesNet(Index key) const;
 
 		/** return joint on two variables */

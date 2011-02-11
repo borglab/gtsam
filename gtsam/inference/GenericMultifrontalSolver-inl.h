@@ -75,7 +75,7 @@ GenericMultifrontalSolver<FACTOR, JUNCTIONTREE>::jointFactorGraph(const std::vec
 /* ************************************************************************* */
 template<class FACTOR, class JUNCTIONTREE>
 typename FACTOR::shared_ptr GenericMultifrontalSolver<FACTOR, JUNCTIONTREE>::marginalFactor(Index j) const {
-  return eliminate()->marginal(j);
+  return eliminate()->marginalFactor(j);
 }
 
 }
