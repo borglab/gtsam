@@ -66,7 +66,7 @@ public:
 	void update(const Factors& newFactors, const Values& initialValues);
 
 	/** Return the current solution estimate */
-	Values estimate();
+	Values estimate() const;
 
 	/** Relinearization and reordering of variables */
 	void reorder_relinearize();
@@ -78,7 +78,7 @@ public:
 	void setOrdering(const Ordering& new_ordering) { ordering_ = new_ordering; }
 
 	/** find the marginal covariance for a single variable */
-	Matrix marginalCovariance(const Symbol& key);
+	Matrix marginalCovariance(const Symbol& key) const;
 
 	// access
 

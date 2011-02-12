@@ -85,7 +85,7 @@ void NonlinearISAM<Values>::reorder_relinearize() {
 
 /* ************************************************************************* */
 template<class Values>
-Values NonlinearISAM<Values>::estimate() {
+Values NonlinearISAM<Values>::estimate() const {
   if(isam_.size() > 0)
     return linPoint_.expmap(optimize(isam_), ordering_);
   else
@@ -94,7 +94,7 @@ Values NonlinearISAM<Values>::estimate() {
 
 /* ************************************************************************* */
 template<class Values>
-Matrix NonlinearISAM<Values>::marginalCovariance(const Symbol& key) {
+Matrix NonlinearISAM<Values>::marginalCovariance(const Symbol& key) const {
 	Matrix covariance; Vector mean;
 	boost::tie(mean, covariance) = isam_.marginal(ordering_[key]);
 	return covariance;
