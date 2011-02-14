@@ -17,6 +17,7 @@
  */
 #pragma once
 
+#include <gtsam/base/debug.h>
 #include <stdio.h>
 #include <string>
 #include <iostream>
@@ -28,52 +29,6 @@
 #include <boost/foreach.hpp>
 #include <boost/format.hpp>
 
-
-
-//class AutoTimer {
-//protected:
-//  boost::weak_ptr<TimingOutline> node_;
-//  struct timeval t0_;
-//
-//  AutoTimer(const boost::weak_ptr<TimingOutline>& node) :
-//    node_(node) {
-//    boost::shared_ptr<TimingOutline> nodeS(node_.lock());
-//    if(nodeS->activeTimer) {
-//      cerr << "Double createTimer in timing \"" << label_ << "\", exiting" << endl;
-//      exit(1);
-//    }
-//    nodeS->activeTimer = this;
-//    gettimeofday(&t, NULL);
-//  }
-//
-//  AutoTimer(const AutoTimer& timer) :
-//    node_(timer.node_), t0_(timer.t0_) {
-//    node_.lock()->activeTimer_ = this;
-//  }
-//
-//  ~AutoTimer() {
-//    if(node_ && node_.lock()->actimeTimer_ == this)
-//      release();
-//  }
-//
-//  AutoTimer& operator=(const AutoTimer& rhs) {
-//    throw std::runtime_error("AutoTimer is not assignable, use copy constructor instead.");
-//  }
-//
-//  void release() {
-//    struct timeval t;
-//    gettimeofday(&t, NULL);
-//    boost::shared_ptr<TimingOutline> node(node_.lock());
-//    if(node && node->activeTimer_ == *this) {
-//      size_t dt = t.tv_sec*1000000 + t.tv_usec - (t0_.tv_sec*1000000 + t0_.tv_usec);
-//      node->add(dt);
-//      node->activeTimer = 0;
-//    } else {
-//      cerr << "Double release in timing \"" << node_.lock()->label_ << "\", exiting" << endl;
-//      exit(1);
-//    }
-//  }
-//};
 
 class TimingOutline;
 extern boost::shared_ptr<TimingOutline> timingRoot;
@@ -92,17 +47,17 @@ protected:
   struct timeval t0_;
   bool timerActive_;
 
-  void add(size_t usecs) {
+  inline void add(size_t usecs) {
     t_ += usecs;
     tIt_ += usecs;
     ++ n_;
   }
 
 public:
-  TimingOutline(const std::string& label) :
+  inline TimingOutline(const std::string& label) :
     t_(0), tIt_(0), tMax_(0), tMin_(0), n_(0), label_(label), timerActive_(false) {}
 
-  size_t time() const {
+  inline size_t time() const {
     size_t time = 0;
     bool hasChildren = false;
     BOOST_FOREACH(const boost::shared_ptr<TimingOutline>& child, children_) {
@@ -117,7 +72,7 @@ public:
       return t_;
   }
 
-  void print(const std::string& outline = "") const {
+  inline void print(const std::string& outline = "") const {
     std::cout << outline << " " << label_ << ": " << double(t_)/1000000.0 << " (" <<
         n_ << " times, " << double(time())/1000000.0 << " children, min: " << double(tMin_)/1000000.0 <<
         " max: " << double(tMax_)/1000000.0 << ")\n";
@@ -136,7 +91,7 @@ public:
     }
   }
 
-  const boost::shared_ptr<TimingOutline>& child(size_t child, const std::string& label, const boost::weak_ptr<TimingOutline>& thisPtr) {
+  inline const boost::shared_ptr<TimingOutline>& child(size_t child, const std::string& label, const boost::weak_ptr<TimingOutline>& thisPtr) {
     assert(thisPtr.lock().get() == this);
     // Resize if necessary
     if(child >= children_.size())
@@ -157,13 +112,13 @@ public:
     return children_[child];
   }
 
-  void tic() {
+  inline void tic() {
     assert(!timerActive_);
     timerActive_ = true;
     gettimeofday(&t0_, NULL);
   }
 
-  void toc() {
+  inline void toc() {
     struct timeval t;
     gettimeofday(&t, NULL);
     assert(timerActive_);
@@ -171,7 +126,7 @@ public:
     timerActive_ = false;
   }
 
-  void finishedIteration() {
+  inline void finishedIteration() {
     if(tIt_ > tMax_)
       tMax_ = tIt_;
     if(tMin_ == 0 || tIt_ < tMin_)
@@ -188,26 +143,46 @@ public:
 };
 
 inline void tic_(size_t id, const std::string& label) {
+  if(ISDEBUG("timing-verbose"))
+    std::cout << "tic(" << id << ", " << label << ")" << std::endl;
   boost::shared_ptr<TimingOutline> node = timingCurrent.lock()->child(id, label, timingCurrent);
   timingCurrent = node;
   node->tic();
 }
 
 inline void toc_(size_t id) {
+  if(ISDEBUG("timing-verbose"))
+    std::cout << "toc(" << id << ")" << std::endl;
   boost::shared_ptr<TimingOutline> current(timingCurrent.lock());
-  assert(id < current->parent_.lock()->children_.size() && current->parent_.lock()->children_[id] == current);
+  if(!(id < current->parent_.lock()->children_.size() && current->parent_.lock()->children_[id] == current)) {
+    std::cout << "gtsam timing:  Incorrect ID passed to toc" << std::endl;
+    timingRoot->print();
+    throw std::invalid_argument("gtsam timing:  Incorrect ID passed to toc");
+  }
   current->toc();
+  if(!current->parent_.lock()) {
+    std::cout << "gtsam timing:  extra toc, already at the root" << std::endl;
+    timingRoot->print();
+    throw std::invalid_argument("gtsam timing:  extra toc, already at the root");
+  }
   timingCurrent = current->parent_;
 }
 
 inline void toc_(size_t id, const std::string& label) {
-#ifndef NDEBUG
-  if(label != timingCurrent.lock()->label_) {
-    std::cerr << "gtsam timing:  toc called with id=" << id << ", label=\"" << label << "\", but expecting \"" << timingCurrent.lock()->label_ << "\"" << std::endl;
-    timingRoot->print();
-    exit(1);
-  }
+  if(ISDEBUG("timing-verbose"))
+    std::cout << "toc(" << id << ", " << label << ")" << std::endl;
+#ifdef NDEBUG
+  // If NDEBUG is defined, still do this debug check if the granular debugging
+  // flag is enabled.  If NDEBUG is not defined, always do this check.
+  if(ISDEBUG("timing-debug"))
 #endif
+  {
+    if(label != timingCurrent.lock()->label_) {
+      std::cerr << "gtsam timing:  toc called with id=" << id << ", label=\"" << label << "\", but expecting \"" << timingCurrent.lock()->label_ << "\"" << std::endl;
+      timingRoot->print();
+      exit(1);
+    }
+  }
   toc_(id);
 }
 

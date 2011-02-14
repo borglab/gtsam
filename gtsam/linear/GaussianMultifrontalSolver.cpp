@@ -53,7 +53,10 @@ BayesTree<GaussianConditional>::shared_ptr GaussianMultifrontalSolver::eliminate
 
 /* ************************************************************************* */
 VectorValues::shared_ptr GaussianMultifrontalSolver::optimize() const {
-  return VectorValues::shared_ptr(new VectorValues(junctionTree_->optimize()));
+  tic(2,"optimize");
+  VectorValues::shared_ptr values(new VectorValues(junctionTree_->optimize()));
+  toc(2,"optimize");
+  return values;
 }
 
 /* ************************************************************************* */

@@ -12,7 +12,7 @@
 /**
  * @file    timing.cpp
  * @brief   
- * @author  Richard Roberts (extracted from Michael Kaess' timing functions)
+ * @author  Richard Roberts, Michael Kaess
  * @created Oct 5, 2010
  */
 

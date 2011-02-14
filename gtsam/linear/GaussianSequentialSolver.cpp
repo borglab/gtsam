@@ -16,6 +16,7 @@
  * @created Oct 19, 2010
  */
 
+#include <gtsam/base/timing.h>
 #include <gtsam/linear/GaussianSequentialSolver.h>
 
 #include <gtsam/inference/GenericSequentialSolver-inl.h>
@@ -59,16 +60,20 @@ VectorValues::shared_ptr GaussianSequentialSolver::optimize() const {
   if(debug) this->factors_->print("GaussianSequentialSolver, eliminating ");
   if(debug) this->eliminationTree_->print("GaussianSequentialSolver, elimination tree ");
 
+  tic(1,"eliminate");
   // Eliminate using the elimination tree
   GaussianBayesNet::shared_ptr bayesNet(this->eliminate());
+  toc(1,"eliminate");
 
   if(debug) bayesNet->print("GaussianSequentialSolver, Bayes net ");
 
   // Allocate the solution vector if it is not already allocated
 //  VectorValues::shared_ptr solution = allocateVectorValues(*bayesNet);
 
+  tic(2,"optimize");
   // Back-substitute
   VectorValues::shared_ptr solution(gtsam::optimize_(*bayesNet));
+  toc(2,"optimize");
 
   if(debug) solution->print("GaussianSequentialSolver, solution ");
 
