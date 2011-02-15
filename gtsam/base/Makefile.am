@@ -25,6 +25,7 @@ endif
 # Testing
 headers += Testable.h TestableAssertions.h numericalDerivative.h
 sources += timing.cpp debug.cpp
+check_PROGRAMS += tests/testDebug
 
 # Lie Groups
 headers += Lie.h Lie-inl.h lieProxies.h LieScalar.h

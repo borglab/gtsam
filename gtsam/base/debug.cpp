@@ -9,8 +9,6 @@
 
 namespace gtsam {
 
-#ifdef GTSAM_ENABLE_DEBUG
   FastMap<std::string, ValueWithDefault<bool,false> > debugFlags;
-#endif
 
 }

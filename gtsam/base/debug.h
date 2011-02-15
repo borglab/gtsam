@@ -5,8 +5,6 @@
  * @created Feb 1, 2011
  */
 
-#pragma once
-
 #include <gtsam/base/FastMap.h>
 #include <gtsam/base/types.h>
 #include <string>
@@ -32,19 +30,22 @@
 #endif
 #endif
 
-#ifdef GTSAM_ENABLE_DEBUG
-
 namespace gtsam {
   extern FastMap<std::string, ValueWithDefault<bool,false> > debugFlags;
 }
 
+#undef ISDEBUG
+#undef SETDEBUG
+
+#ifdef GTSAM_ENABLE_DEBUG
+
 #define ISDEBUG(S) (gtsam::debugFlags[S])
-#define SETDEBUG(S,V) (gtsam::debugFlags[S] = (V))
+#define SETDEBUG(S,V) ((void)(gtsam::debugFlags[S] = (V)))
 
 #else
 
 #define ISDEBUG(S) (false)
-#define SETDEBUG(S,V) (false)
+#define SETDEBUG(S,V) ((void)false)
 
 #endif
 
