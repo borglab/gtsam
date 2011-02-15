@@ -126,9 +126,10 @@ size_t choleskyFactorUnderdetermined(MatrixColMajor& Ab, size_t nFrontal) {
 /* ************************************************************************* */
 static inline bool choleskyStep(MatrixColMajor& ATA, size_t k, size_t order) {
 
-  const size_t n = ATA.size1();
-
+  // Get pivot value
   double alpha = ATA(k,k);
+
+  // Correct negative pivots from round-off error
   if(alpha < negativePivotThreshold) {
     cout << "pivot = " << alpha << endl;
     print(ATA, "Partially-factorized matrix: ");
@@ -158,6 +159,7 @@ static inline bool choleskyStep(MatrixColMajor& ATA, size_t k, size_t order) {
 
     return true;
   } else {
+    // For zero pivots, add the underconstrained variable prior
     ATA(k,k) = underconstrainedPrior;
     for(size_t j=k+1; j<order; ++j)
       ATA(k,j) = 0.0;
@@ -170,28 +172,25 @@ pair<size_t,bool> choleskyCareful(MatrixColMajor& ATA, int order) {
 
   const bool debug = ISDEBUG("choleskyCareful");
 
-//  // Tolerance for being equal to zero
-////  static const double zeroTol = numeric_limits<double>::epsilon();
-//  static const double zeroTol = 1.e-15;
-
   // Check that the matrix is square (we do not check for symmetry)
   assert(ATA.size1() == ATA.size2());
 
   // Number of rows/columns
   const size_t n = ATA.size1();
 
+  // Negative order means factor the entire matrix
   if(order < 0)
     order = n;
 
-  assert(order <= n);
+  assert(size_t(order) <= n);
 
   // The index of the row after the last non-zero row of the square-root factor
   size_t maxrank = 0;
   bool fullRank = true;
 
-  for(size_t k = 0; k < order; ++k) {
-
-    if(choleskyStep(ATA, k, order)) {
+  // Factor row-by-row
+  for(size_t k = 0; k < size_t(order); ++k) {
+    if(choleskyStep(ATA, k, size_t(order))) {
       if(debug) cout << "choleskyCareful:  Factored through " << k << endl;
       if(debug) print(ATA, "ATA: ");
       maxrank = k+1;
@@ -212,54 +211,15 @@ void choleskyPartial(MatrixColMajor& ABCublas, size_t nFrontal) {
   Eigen::Map<Eigen::MatrixXd> ABC(&ABCublas(0,0), ABCublas.size1(), ABCublas.size2());
 
   assert(ABC.rows() == ABC.cols());
-  assert(nFrontal <= ABC.rows());
+  assert(ABC.rows() >= 0 && nFrontal <= size_t(ABC.rows()));
 
   const size_t n = ABC.rows();
 
   // Compute Cholesky factorization of A, overwrites A.
-    tic(1, "lld");
-    ABC.block(0,0,nFrontal,nFrontal).triangularView<Eigen::Upper>() =
-        ABC.block(0,0,nFrontal,nFrontal).selfadjointView<Eigen::Upper>().llt().matrixU();
-    toc(1, "lld");
-#if 0
-  if(true) {
-    tic(1, "dpotrf");
-    int info = lapack_dpotrf('U', nFrontal, &ABC(0,0), n);
-    if(info != 0) {
-      if(info < 0)
-        throw std::domain_error(boost::str(boost::format(
-            "Bad input to choleskyPartial, dpotrf returned %d.\n")%info));
-      else
-        throw std::domain_error(boost::str(boost::format(
-            "The matrix passed into choleskyPartial is numerically rank-deficient, dpotrf returned rank=%d, expected rank was %d.\n")%(info-1)%nFrontal));
-    }
-    toc(1, "dpotrf");
-  } else {
-    tic(1, "choleskyCareful");
-    bool fullRank = choleskyCareful(ABC, nFrontal).second;
-    if(!fullRank)
-      throw invalid_argument("Rank-deficient");
-    toc(1, "choleskyCareful");
-  }
-#endif
-
-#ifndef NDEBUG
-  // Check for non-finite values
-  for(size_t i=0; i<ABC.rows(); ++i)
-    for(size_t j=0; j<ABC.cols(); ++j)
-      if(!isfinite(ABC(i,j))) {
-        cout << nFrontal << " frontal variables" << endl;
-        cout << "Partially-factored matrix: " << ABC << endl;
-        throw invalid_argument("After dpotrf, matrix contains non-finite matrix entries.");
-      }
-#endif
-
-  // Views of R, S, and L submatrices.
-//  ublas::matrix_range<MatrixColMajor> Rf(ublas::project(ABC, ublas::range(0,nFrontal), ublas::range(0,nFrontal)));
-//  ublas::triangular_adaptor<ublas::matrix_range<MatrixColMajor>, ublas::upper> R(Rf);
-//  ublas::matrix_range<MatrixColMajor> S(ublas::project(ABC, ublas::range(0,nFrontal), ublas::range(nFrontal,n)));
-//  ublas::matrix_range<MatrixColMajor> Lf(ublas::project(ABC, ublas::range(nFrontal,n), ublas::range(nFrontal,n)));
-//  ublas::symmetric_adaptor<typeof(Lf), ublas::upper> L(Lf);
+  tic(1, "lld");
+  ABC.block(0,0,nFrontal,nFrontal).triangularView<Eigen::Upper>() =
+      ABC.block(0,0,nFrontal,nFrontal).selfadjointView<Eigen::Upper>().llt().matrixU();
+  toc(1, "lld");
 
   if(debug) cout << "R:\n" << Eigen::MatrixXd(ABC.topLeftCorner(nFrontal,nFrontal).triangularView<Eigen::Upper>()) << endl;
 
@@ -268,22 +228,9 @@ void choleskyPartial(MatrixColMajor& ABCublas, size_t nFrontal) {
   if(n - nFrontal > 0) {
     ABC.topLeftCorner(nFrontal,nFrontal).triangularView<Eigen::Upper>().transpose().solveInPlace(
         ABC.topRightCorner(nFrontal, n-nFrontal));
-//    typeof(ublas::trans(R)) RT(ublas::trans(R));
-//    ublas::inplace_solve(RT, S, ublas::lower_tag());
   }
   if(debug) cout << "S:\n" << ABC.topRightCorner(nFrontal, n-nFrontal) << endl;
   toc(2, "compute S");
-
-#ifndef NDEBUG
-  // Check for non-finite values
-  for(size_t i=0; i<ABC.rows(); ++i)
-    for(size_t j=0; j<ABC.cols(); ++j)
-      if(!isfinite(ABC(i,j))) {
-        cout << nFrontal << " frontal variables" << endl;
-        cout << "Partially-factored matrix: " << ABC << endl;
-        throw invalid_argument("After computing S, matrix contains non-finite matrix entries.");
-      }
-#endif
 
   // Compute L = C - S' * S
   tic(3, "compute L");
@@ -291,30 +238,8 @@ void choleskyPartial(MatrixColMajor& ABCublas, size_t nFrontal) {
   if(n - nFrontal > 0)
     ABC.bottomRightCorner(n-nFrontal,n-nFrontal).selfadjointView<Eigen::Upper>().rankUpdate(
         ABC.topRightCorner(nFrontal, n-nFrontal).transpose(), -1.0);
-//    L -= ublas::prod(ublas::trans(S), S);
   if(debug) cout << "L:\n" << Eigen::MatrixXd(ABC.bottomRightCorner(n-nFrontal,n-nFrontal).selfadjointView<Eigen::Upper>()) << endl;
   toc(3, "compute L");
-
-  #ifndef NDEBUG
-//  // Check for positive semi-definiteness of L
-//  try {
-//    MatrixColMajor Lf(L);
-//    choleskyCareful(Lf);
-//  } catch(const invalid_argument& e) {
-//    cout << "Remaining Hessian L is not positive semi-definite: " << e.what() << endl;
-//    throw runtime_error("Remaining Hessian L is not positive semi-definite");
-//  }
-
-  // Check for non-finite values
-  // Check for non-finite values
-  for(size_t i=0; i<ABC.rows(); ++i)
-    for(size_t j=0; j<ABC.cols(); ++j)
-      if(!isfinite(ABC(i,j))) {
-        cout << nFrontal << " frontal variables" << endl;
-        cout << "Partially-factored matrix: " << ABC << endl;
-        throw invalid_argument("After computing S, matrix contains non-finite matrix entries.");
-      }
-#endif
 }
 
 }
