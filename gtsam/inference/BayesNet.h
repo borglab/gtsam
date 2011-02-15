@@ -31,10 +31,13 @@
 namespace gtsam {
 
 	/**
-	 * Bayes network
-	 * This is the base class for SymbolicBayesNet, DiscreteBayesNet, and GaussianBayesNet
-	 * corresponding to what is used for the "Conditional" template argument:
-	 * a SymbolicConditional, ConditionalProbabilityTable, or a GaussianConditional
+	 * A BayesNet is a list of conditionals, stored in elimination order, i.e.
+	 * leaves first, parents last.  GaussianBayesNet and SymbolicBayesNet are
+	 * defined as typedefs of this class, using GaussianConditional and
+	 * IndexConditional as the CONDITIONAL template argument.
+	 *
+	 * todo:  Symbolic using Index is a misnomer.
+	 * todo:  how to handle Bayes nets with an optimize function?  Currently using global functions.
 	 */
 	template<class CONDITIONAL>
 	class BayesNet: public Testable<BayesNet<CONDITIONAL> > {
