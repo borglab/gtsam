@@ -97,7 +97,7 @@ namespace gtsam {
      * Combine and eliminate several factors.
      */
     static std::pair<GaussianBayesNet::shared_ptr, shared_ptr> CombineAndEliminate(
-        const FactorGraph<GaussianFactor>& factors, size_t nrFrontals=1, SolveMethod solveMethod=SOLVE_PREFER_CHOLESKY);
+        const FactorGraph<GaussianFactor>& factors, size_t nrFrontals=1, SolveMethod solveMethod=SOLVE_QR);
 
   }; // GaussianFactor
 
