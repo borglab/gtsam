@@ -10,11 +10,11 @@
  * -------------------------------------------------------------------------- */
 
 /**
- * @file    Factor.h
- * @brief   A simple factor class to use in a factor graph
- * @brief   factor
+ * @file    FactorBase.h
+ * @brief   The base class for all factors
  * @author  Kai Ni
  * @author  Frank Dellaert
+ * @author  Richard Roberts
  */
 
 // \callgraph
@@ -36,18 +36,17 @@ namespace gtsam {
 template<class KEY> class ConditionalBase;
 
 /**
- * A simple factor class to use in a factor graph.
+ * This is the base class for all factor types.  It is templated on a KEY type,
+ * though currently only IndexFactor and IndexConditional derive from this
+ * class, using Index keys.  This class does not store any data other than its
+ * keys.  Derived classes store data such as matrices and probability tables.
  *
- * We make it noncopyable so we enforce the fact that factors are
- * kept in pointer containers. To be safe, you should make them
- * immutable, i.e., practicing functional programming. However, this
- * conflicts with efficiency as well, esp. in the case of incomplete
- * QR factorization. A solution is still being sought.
+ * todo:  Make NonlinearFactor derive from this too, which requires moving
+ * Combine, eliminate*, permute* and the sorted key invariant to IndexFactor.
  *
- * A Factor is templated on a Values, for example VectorValues is a values structure of
- * labeled vectors. This way, we can have factors that might be defined on discrete
- * variables, continuous ones, or a combination of both. It is up to the config to
- * provide the appropriate values at the appropriate time.
+ * Note that derived classes *must* redefine the Conditional and shared_ptr
+ * typedefs to refer to the associated conditional and shared_ptr types of the
+ * derived class.  See IndexFactor, JacobianFactor, etc. for examples.
  */
 template<typename KEY>
 class FactorBase : public Testable<FactorBase<KEY> > {
@@ -56,17 +55,29 @@ public:
 
   typedef KEY Key;
   typedef FactorBase<Key> This;
+
+  /**
+   * Typedef to the conditional type obtained by eliminating this factor.
+   * Derived classes must redefine this.
+   */
   typedef gtsam::ConditionalBase<Key> Conditional;
+
+  /** A shared_ptr to this class.  Derived classes must redefine this. */
   typedef boost::shared_ptr<FactorBase> shared_ptr;
+
+  /** Iterator over keys */
   typedef std::vector<Index>::iterator iterator;
+
+  /** Const iterator over keys */
   typedef std::vector<Index>::const_iterator const_iterator;
 
 protected:
 
+  // The keys involved in this factor
   std::vector<Key> keys_;
 
-  /** Internal check to make sure keys are sorted.
-   * If NDEBUG is defined, this is empty and optimized out. */
+  // Internal check to make sure keys are sorted.  If NDEBUG is defined, this
+  // is empty and optimized out.
   void assertInvariants() const;
 
 public:
@@ -150,16 +161,15 @@ public:
   void print(const std::string& s = "Factor") const;
 
   /** check equality */
-//  template<class DERIVED>
   bool equals(const This& other, double tol = 1e-9) const;
 
   /**
-   * return keys in order as created
+   * @return keys involved in this factor
    */
   const std::vector<Key>& keys() const { return keys_; }
 
   /**
-   * @return the number of nodes the factor connects
+   * @return the number of variables involved in this factor
    */
   size_t size() const { return keys_.size(); }
 

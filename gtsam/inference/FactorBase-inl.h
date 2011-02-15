@@ -10,7 +10,7 @@
  * -------------------------------------------------------------------------- */
 
 /**
- * @file    Factor-inl.h
+ * @file    FactorBase-inl.h
  * @brief   
  * @author  Richard Roberts
  * @created Sep 1, 2010
@@ -57,7 +57,6 @@ void FactorBase<KEY>::print(const std::string& s) const {
 
 /* ************************************************************************* */
 template<typename KEY>
-//template<class DERIVED>
 bool FactorBase<KEY>::equals(const This& other, double tol) const {
   return keys_ == other.keys_;
 }

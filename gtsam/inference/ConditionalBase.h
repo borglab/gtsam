@@ -32,7 +32,15 @@
 namespace gtsam {
 
 /**
- * Base class for conditional densities
+ * Base class for conditional densities, templated on KEY type.  This class
+ * provides storage for the keys involved in a conditional, and iterators and
+ * access to the frontal and separator keys.
+ *
+ * todo:  Move permutation functions to IndexConditional.
+ *
+ * Derived classes *must* redefine the Factor and shared_ptr typedefs to refer
+ * to the associated factor type and shared_ptr type of the derived class.  See
+ * IndexConditional and GaussianConditional for examples.
  *
  * We make it noncopyable so we enforce the fact that factors are
  * kept in pointer containers. To be safe, you should make them
@@ -46,15 +54,36 @@ protected:
   /** The first nFrontal variables are frontal and the rest are parents. */
   size_t nrFrontals_;
 
+  /** Debugging invariant that the keys should be in order, including that the
+   * conditioned variable is numbered lower than the parents.
+   */
+  void assertInvariants() const;
+
 public:
 
   typedef KEY Key;
   typedef ConditionalBase<Key> This;
+
+  /**
+   * Typedef to the factor type that produces this conditional and that this
+   * conditional can be converted to using a factor constructor. Derived
+   * classes must redefine this.
+   */
   typedef gtsam::FactorBase<Key> Factor;
+
+  /** A shared_ptr to this class.  Derived classes must redefine this. */
   typedef boost::shared_ptr<This> shared_ptr;
+
+  /** Iterator over keys */
   typedef typename Factor::iterator iterator;
+
+  /** Const iterator over keys */
   typedef typename Factor::const_iterator const_iterator;
+
+  /** View of the frontal keys (call frontals()) */
   typedef boost::iterator_range<const_iterator> Frontals;
+
+  /** View of the separator keys (call parents()) */
   typedef boost::iterator_range<const_iterator> Parents;
 
   /** Empty Constructor to make serialization possible */
@@ -135,62 +164,69 @@ public:
 	  return boost::make_iterator_range(beginParents(), endParents()); }
 
   /** print */
-  void print(const std::string& s = "Conditional") const {
-    std::cout << s << " P(";
-    BOOST_FOREACH(Key key, frontals()) std::cout << " " << key;
-    if (nrParents()>0) std::cout << " |";
-    BOOST_FOREACH(Key parent, parents()) std::cout << " " << parent;
-    std::cout << ")" << std::endl;
-  }
+  void print(const std::string& s = "Conditional") const;
 
   /** Permute the variables when only separator variables need to be permuted.
    * Returns true if any reordered variables appeared in the separator and
    * false if not.
    */
-  bool permuteSeparatorWithInverse(const Permutation& inversePermutation) {
-#ifndef NDEBUG
-    BOOST_FOREACH(Key key, frontals()) { assert(key == inversePermutation[key]); }
-#endif
-    bool parentChanged = false;
-    BOOST_FOREACH(Key& parent, parents()) {
-      Key newParent = inversePermutation[parent];
-      if(parent != newParent) {
-        parentChanged = true;
-        parent = newParent;
-      }
-    }
-    return parentChanged;
-  }
+  bool permuteSeparatorWithInverse(const Permutation& inversePermutation);
 
   /**
    * Permutes the Conditional, but for efficiency requires the permutation
    * to already be inverted.
    */
-  void permuteWithInverse(const Permutation& inversePermutation) {
-    // The permutation may not move the separators into the frontals
-#ifndef NDEBUG
-    BOOST_FOREACH(const Key frontal, this->frontals()) {
-      BOOST_FOREACH(const Key separator, this->parents()) {
-        assert(inversePermutation[frontal] < inversePermutation[separator]);
-      }
-    }
-#endif
-    Factor::permuteWithInverse(inversePermutation);
-  }
-
-protected:
-  /** Debugging invariant that the keys should be in order, including that the
-   * conditioned variable is numbered lower than the parents.
-   */
-  void assertInvariants() const;
+  void permuteWithInverse(const Permutation& inversePermutation);
 
 private:
-	/** Serialization function */
-	friend class boost::serialization::access;
-	template<class ARCHIVE>
-	void serialize(ARCHIVE & ar, const unsigned int version) {
+  /** Serialization function */
+  friend class boost::serialization::access;
+  template<class ARCHIVE>
+  void serialize(ARCHIVE & ar, const unsigned int version) {
     ar & BOOST_SERIALIZATION_NVP(nrFrontals_);
-	}
+  }
 };
+
+
+/* ************************************************************************* */
+template<typename KEY>
+void ConditionalBase<KEY>::print(const std::string& s) const {
+  std::cout << s << " P(";
+  BOOST_FOREACH(Key key, frontals()) std::cout << " " << key;
+  if (nrParents()>0) std::cout << " |";
+  BOOST_FOREACH(Key parent, parents()) std::cout << " " << parent;
+  std::cout << ")" << std::endl;
+}
+
+/* ************************************************************************* */
+template<typename KEY>
+bool ConditionalBase<KEY>::permuteSeparatorWithInverse(const Permutation& inversePermutation) {
+#ifndef NDEBUG
+  BOOST_FOREACH(Key key, frontals()) { assert(key == inversePermutation[key]); }
+#endif
+  bool parentChanged = false;
+  BOOST_FOREACH(Key& parent, parents()) {
+    Key newParent = inversePermutation[parent];
+    if(parent != newParent) {
+      parentChanged = true;
+      parent = newParent;
+    }
+  }
+  return parentChanged;
+}
+
+/* ************************************************************************* */
+template<typename KEY>
+void ConditionalBase<KEY>::permuteWithInverse(const Permutation& inversePermutation) {
+  // The permutation may not move the separators into the frontals
+#ifndef NDEBUG
+  BOOST_FOREACH(const Key frontal, this->frontals()) {
+    BOOST_FOREACH(const Key separator, this->parents()) {
+      assert(inversePermutation[frontal] < inversePermutation[separator]);
+    }
+  }
+#endif
+  Factor::permuteWithInverse(inversePermutation);
+}
 
 }
