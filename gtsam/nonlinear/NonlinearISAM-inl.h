@@ -64,23 +64,25 @@ void NonlinearISAM<Values>::reorder_relinearize() {
 
 //  cout << "Reordering, relinearizing..." << endl;
 
-  // Obtain the new linearization point
-  const Values newLinPoint = estimate();
+  if(factors_.size() > 0) {
+    // Obtain the new linearization point
+    const Values newLinPoint = estimate();
 
-  isam_.clear();
+    isam_.clear();
 
-  // Compute an ordering
-  ordering_ = *factors_.orderingCOLAMD(newLinPoint);
+    // Compute an ordering
+    ordering_ = *factors_.orderingCOLAMD(newLinPoint);
 
-  // Create a linear factor graph at the new linearization point
-  boost::shared_ptr<GaussianFactorGraph> gfg(
-      factors_.linearize(newLinPoint, ordering_)->template dynamicCastFactors<GaussianFactorGraph>());
+    // Create a linear factor graph at the new linearization point
+    boost::shared_ptr<GaussianFactorGraph> gfg(
+        factors_.linearize(newLinPoint, ordering_)->template dynamicCastFactors<GaussianFactorGraph>());
 
-  // Just recreate the whole BayesTree
-  isam_.update(*gfg);
+    // Just recreate the whole BayesTree
+    isam_.update(*gfg);
 
-  // Update linearization point
-  linPoint_ = newLinPoint;
+    // Update linearization point
+    linPoint_ = newLinPoint;
+  }
 }
 
 /* ************************************************************************* */
