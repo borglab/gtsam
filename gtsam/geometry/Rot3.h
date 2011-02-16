@@ -78,6 +78,10 @@ namespace gtsam {
     static Rot3 Ry(double t);
     static Rot3 Rz(double t);
     static Rot3 RzRyRx(double x, double y, double z);
+    inline static Rot3 RzRyRx(const Vector& xyz) {
+    	assert(xyz.size() == 3);
+    	return RzRyRx(xyz(0), xyz(1), xyz(2));
+    }
 
     /**
      * Tait-Bryan system from Spatial Reference Model (SRM) (x,y,z) = (roll,pitch,yaw)
