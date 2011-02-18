@@ -69,7 +69,7 @@ namespace gtsam {
 
 		/** Add a factor */
 		template<class DERIVEDFACTOR>
-		void push_back(const boost::shared_ptr<DERIVEDFACTOR>& factor);
+		void push_back(const boost::shared_ptr<DERIVEDFACTOR>& factor) { factors_.push_back(sharedFactor(factor)); }
 
 		/** push back many factors */
 		void push_back(const FactorGraph<FACTOR>& factors);
@@ -198,10 +198,7 @@ namespace gtsam {
   FactorGraph<FACTOR>::FactorGraph(const FactorGraph<DERIVEDFACTOR>& factorGraph) {
     factors_.reserve(factorGraph.size());
     BOOST_FOREACH(const typename DERIVEDFACTOR::shared_ptr& factor, factorGraph) {
-      if(factor)
-        this->push_back(factor);
-      else
-        this->push_back(sharedFactor());
+      this->push_back(factor);
     }
   }
 
@@ -213,17 +210,6 @@ namespace gtsam {
     BOOST_FOREACH(const typename CONDITIONAL::shared_ptr& cond, bayesNet) {
       this->push_back(cond->toFactor());
     }
-  }
-
-  /* ************************************************************************* */
-  template<class FACTOR>
-  template<class DERIVEDFACTOR>
-  inline void FactorGraph<FACTOR>::push_back(const boost::shared_ptr<DERIVEDFACTOR>& factor) {
-#ifndef NDEBUG
-    factors_.push_back(boost::dynamic_pointer_cast<FACTOR>(factor)); // add the actual factor
-#else
-    factors_.push_back(boost::static_pointer_cast<FACTOR>(factor));
-#endif
   }
 
   /* ************************************************************************* */

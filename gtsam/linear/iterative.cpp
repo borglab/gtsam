@@ -56,12 +56,12 @@ namespace gtsam {
 	}
 
 	/* ************************************************************************* */
-	VectorValues steepestDescent(const GaussianFactorGraph& fg, const VectorValues& x, const IterativeOptimizationParameters & parameters) {
-		return conjugateGradients<GaussianFactorGraph, VectorValues, Errors> (fg, x, parameters, true);
+	VectorValues steepestDescent(const FactorGraph<JacobianFactor>& fg, const VectorValues& x, const IterativeOptimizationParameters & parameters) {
+		return conjugateGradients<FactorGraph<JacobianFactor>, VectorValues, Errors> (fg, x, parameters, true);
 	}
 
-	VectorValues conjugateGradientDescent(const GaussianFactorGraph& fg, const VectorValues& x, const IterativeOptimizationParameters & parameters) {
-		return conjugateGradients<GaussianFactorGraph, VectorValues, Errors> (fg, x, parameters);
+	VectorValues conjugateGradientDescent(const FactorGraph<JacobianFactor>& fg, const VectorValues& x, const IterativeOptimizationParameters & parameters) {
+		return conjugateGradients<FactorGraph<JacobianFactor>, VectorValues, Errors> (fg, x, parameters);
 	}
 
 	/* ************************************************************************* */

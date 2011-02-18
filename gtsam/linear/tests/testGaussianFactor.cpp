@@ -174,7 +174,7 @@ TEST(GaussianFactor, Combine2)
   gfg.add(0, A10, 1, A11, b1, noiseModel::Diagonal::Sigmas(s1, true));
   gfg.add(1, A21, b2, noiseModel::Diagonal::Sigmas(s2, true));
 
-  JacobianFactor actual = *JacobianFactor::Combine(gfg, VariableSlots(gfg));
+  JacobianFactor actual = *JacobianFactor::Combine(*gfg.dynamicCastFactors<FactorGraph<JacobianFactor> >(), VariableSlots(gfg));
 
   Matrix zero3x3 = zeros(3,3);
   Matrix A0 = gtsam::stack(3, &A10, &zero3x3, &zero3x3);
@@ -516,7 +516,7 @@ TEST(GaussianFactor, eliminateFrontals)
   factors.push_back(factor4);
 
   // Create combined factor
-  JacobianFactor combined(*JacobianFactor::Combine(factors, VariableSlots(factors)));
+  JacobianFactor combined(*JacobianFactor::Combine(*factors.dynamicCastFactors<FactorGraph<JacobianFactor> >(), VariableSlots(factors)));
 
   // Copies factors as they will be eliminated in place
   JacobianFactor actualFactor_QR = combined;

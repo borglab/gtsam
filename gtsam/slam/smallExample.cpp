@@ -163,7 +163,7 @@ namespace example {
 		else
 		  fg.add(ordering["l1"], 5*eye(2), ordering["x2"], -5*eye(2), Vector_(2, -1.0, 1.5), unit2);
 
-		return fg;
+		return *fg.dynamicCastFactors<FactorGraph<JacobianFactor> >();
 	}
 
 	/* ************************************************************************* */
@@ -290,7 +290,7 @@ namespace example {
 		Vector b1(2);
 		b1(0) = 1.0;
 		b1(1) = -1.0;
-		GaussianFactor::shared_ptr f1(new JacobianFactor(_x_, Ax, b1, sigma0_1));
+		JacobianFactor::shared_ptr f1(new JacobianFactor(_x_, Ax, b1, sigma0_1));
 
 		// create binary constraint factor
 		// between _x_ and _y_, that is going to be the only factor on _y_
@@ -299,7 +299,7 @@ namespace example {
 		Matrix Ax1 = eye(2);
 		Matrix Ay1 = eye(2) * -1;
 		Vector b2 = Vector_(2, 0.0, 0.0);
-		GaussianFactor::shared_ptr f2(new JacobianFactor(_x_, Ax1, _y_, Ay1, b2,
+		JacobianFactor::shared_ptr f2(new JacobianFactor(_x_, Ax1, _y_, Ay1, b2,
 				constraintModel));
 
 		// construct the graph
@@ -328,7 +328,7 @@ namespace example {
 		b1(0) = 1.0;
 		b1(1) = -1.0;
 		//GaussianFactor::shared_ptr f1(new JacobianFactor(_x_, sigma0_1->Whiten(Ax), sigma0_1->whiten(b1), sigma0_1));
-		GaussianFactor::shared_ptr f1(new JacobianFactor(_x_, Ax, b1, sigma0_1));
+		JacobianFactor::shared_ptr f1(new JacobianFactor(_x_, Ax, b1, sigma0_1));
 
 		// create binary constraint factor
 		// between _x_ and _y_, that is going to be the only factor on _y_
@@ -341,7 +341,7 @@ namespace example {
 		Ax1(1, 1) = 1.0;
 		Matrix Ay1 = eye(2) * 10;
 		Vector b2 = Vector_(2, 1.0, 2.0);
-		GaussianFactor::shared_ptr f2(new JacobianFactor(_x_, Ax1, _y_, Ay1, b2,
+		JacobianFactor::shared_ptr f2(new JacobianFactor(_x_, Ax1, _y_, Ay1, b2,
 				constraintModel));
 
 		// construct the graph
@@ -365,7 +365,7 @@ namespace example {
 		// unary factor 1
 		Matrix A = eye(2);
 		Vector b = Vector_(2, -2.0, 2.0);
-		GaussianFactor::shared_ptr lf1(new JacobianFactor(_x_, A, b, sigma0_1));
+		JacobianFactor::shared_ptr lf1(new JacobianFactor(_x_, A, b, sigma0_1));
 
 		// constraint 1
 		Matrix A11(2, 2);
@@ -383,7 +383,7 @@ namespace example {
 		Vector b1(2);
 		b1(0) = 1.0;
 		b1(1) = 2.0;
-		GaussianFactor::shared_ptr lc1(new JacobianFactor(_x_, A11, _y_, A12, b1,
+		JacobianFactor::shared_ptr lc1(new JacobianFactor(_x_, A11, _y_, A12, b1,
 				constraintModel));
 
 		// constraint 2
@@ -402,7 +402,7 @@ namespace example {
 		Vector b2(2);
 		b2(0) = 3.0;
 		b2(1) = 4.0;
-		GaussianFactor::shared_ptr lc2(new JacobianFactor(_x_, A21, _z_, A22, b2,
+		JacobianFactor::shared_ptr lc2(new JacobianFactor(_x_, A21, _z_, A22, b2,
 				constraintModel));
 
 		// construct the graph

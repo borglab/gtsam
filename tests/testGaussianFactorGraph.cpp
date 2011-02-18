@@ -691,7 +691,7 @@ TEST( GaussianFactorGraph, multiplication )
   // create an ordering
   Ordering ord; ord += "x2","l1","x1";
 
-	GaussianFactorGraph A = createGaussianFactorGraph(ord);
+	FactorGraph<JacobianFactor> A = createGaussianFactorGraph(ord);
   VectorValues x = createCorrectDelta(ord);
   Errors actual = A * x;
   Errors expected;
