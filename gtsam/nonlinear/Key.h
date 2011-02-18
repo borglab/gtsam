@@ -22,6 +22,7 @@
 #include <vector>
 #include <list>
 #include <iostream>
+#include <boost/mpl/char.hpp>
 #include <boost/format.hpp>
 #include <boost/serialization/nvp.hpp>
 #ifdef GTSAM_MAGIC_KEY
@@ -49,6 +50,7 @@ public:
 
   // typedefs
   typedef T Value;
+  typedef boost::mpl::char_<C> Chr;  // to reconstruct the type: use Chr::value
 
   // Constructors:
 

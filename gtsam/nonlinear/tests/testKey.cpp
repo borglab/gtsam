@@ -100,6 +100,13 @@ TEST ( TypedLabledSymbol, encoding ) {
 }
 
 /* ************************************************************************* */
+TEST ( TypedLabledSymbol, template_reconstruction ) {
+	typedef TypedSymbol<Pose3, 'x'> Key;
+	typedef TypedLabeledSymbol<Key::Value, Key::Chr::value, char> NewKey;
+	NewKey k(1, 'A');
+}
+
+/* ************************************************************************* */
 TEST ( Key, keys2symbols )
 {
 	typedef TypedSymbol<int, 'x'> Key;
