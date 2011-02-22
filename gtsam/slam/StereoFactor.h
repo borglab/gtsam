@@ -20,6 +20,7 @@
 
 #include <gtsam/slam/visualSLAM.h>
 #include <gtsam/geometry/Cal3_S2.h>
+#include <gtsam/geometry/StereoCamera.h>
 
 namespace gtsam {
 
