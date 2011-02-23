@@ -38,6 +38,7 @@ namespace gtsam {
 
 	private:
 
+		typedef BetweenFactor<VALUES, KEY1, KEY2> This;
 		typedef NonlinearFactor2<VALUES, KEY1, KEY2> Base;
 
 		T measured_; /** The measurement */
@@ -46,6 +47,9 @@ namespace gtsam {
 
 		// shorthand for a smart pointer to a factor
 		typedef typename boost::shared_ptr<BetweenFactor> shared_ptr;
+
+		/** default constructor - only use for serialization */
+		BetweenFactor() {}
 
 		/** Constructor */
 		BetweenFactor(const KEY1& key1, const KEY2& key2, const T& measured,
@@ -62,9 +66,8 @@ namespace gtsam {
 		}
 
 		/** equals */
-		virtual bool equals(const NonlinearFactor<VALUES>& expected, double tol) const {
-			const BetweenFactor<VALUES, KEY1, KEY2> *e =
-					dynamic_cast<const BetweenFactor<VALUES, KEY1, KEY2>*> (&expected);
+		virtual bool equals(const NonlinearFactor<VALUES>& expected, double tol=1e-9) const {
+			const This *e =	dynamic_cast<const This*> (&expected);
 			return e != NULL && Base::equals(*e, tol) && this->measured_.equals(e->measured_, tol);
 		}
 
@@ -86,6 +89,17 @@ namespace gtsam {
 		/** number of variables attached to this factor */
 		inline std::size_t size() const {
 			return 2;
+		}
+
+	private:
+
+		/** Serialization function */
+		friend class boost::serialization::access;
+		template<class ARCHIVE>
+		void serialize(ARCHIVE & ar, const unsigned int version) {
+			ar & boost::serialization::make_nvp("NonlinearFactor2",
+					boost::serialization::base_object<Base>(*this));
+			ar & BOOST_SERIALIZATION_NVP(measured_);
 		}
 	};
 

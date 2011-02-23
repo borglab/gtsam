@@ -147,6 +147,7 @@ bool equalsDereferencedXML(const T& input = T()) {
 //#include <gtsam/inference/SymbolicConditional.h>
 
 #include <gtsam/slam/planarSLAM.h>
+#include <gtsam/slam/BearingFactor.h>
 
 #include <CppUnitLite/TestHarness.h>
 
@@ -177,7 +178,6 @@ TEST (Serialization, xml_geometry) {
 	EXPECT(equalsXML<gtsam::Point3>(pt3));
 	EXPECT(equalsXML<gtsam::Rot3>(rt3));
 	EXPECT(equalsXML<gtsam::Pose3>(Pose3(rt3, pt3)));
-
 }
 
 /* ************************************************************************* */
@@ -195,16 +195,44 @@ TEST (Serialization, xml_linear) {
 }
 
 /* ************************************************************************* */
-TEST (Serialization, noiseModels) {
+TEST (Serialization, Shared_noiseModels) {
 	SharedDiagonal diag3 = noiseModel::Diagonal::Sigmas(Vector_(3, 0.1, 0.2, 0.3));
-	SharedGaussian model3 = noiseModel::Isotropic::Sigma(3, 0.3);
+	SharedGaussian iso3 = noiseModel::Isotropic::Sigma(3, 0.3);
+	SharedGaussian gaussian3 = noiseModel::Gaussian::SqrtInformation(eye(3,3));
 
 	EXPECT(equalsDereferenced<SharedDiagonal>(diag3));
 	EXPECT(equalsDereferencedXML<SharedDiagonal>(diag3));
 
-	// FAIL: Segfaults
-//	EXPECT(equalsDereferenced<SharedGaussian>(model3));
-//	EXPECT(equalsDereferencedXML<SharedGaussian>(model3));
+	EXPECT(equalsDereferenced<SharedGaussian>(iso3));
+	EXPECT(equalsDereferencedXML<SharedGaussian>(iso3));
+
+	EXPECT(equalsDereferenced<SharedGaussian>(gaussian3));
+	EXPECT(equalsDereferencedXML<SharedGaussian>(gaussian3));
+}
+
+/* ************************************************************************* */
+TEST (Serialization, noiseModels) {
+	noiseModel::Diagonal::shared_ptr diag3 = noiseModel::Diagonal::Sigmas(Vector_(3, 0.1, 0.2, 0.3));
+	noiseModel::Gaussian::shared_ptr gaussian3 = noiseModel::Gaussian::SqrtInformation(2.0 * eye(3,3));
+	noiseModel::Isotropic::shared_ptr iso3 = noiseModel::Isotropic::Sigma(3, 0.2);
+	noiseModel::Constrained::shared_ptr constrained3 = noiseModel::Constrained::All(3);
+	noiseModel::Unit::shared_ptr unit3 = noiseModel::Unit::Create(3);
+
+	EXPECT(   equalsDereferenced<noiseModel::Diagonal::shared_ptr>(diag3));
+	EXPECT(equalsDereferencedXML<noiseModel::Diagonal::shared_ptr>(diag3));
+
+	EXPECT(   equalsDereferenced<noiseModel::Gaussian::shared_ptr>(gaussian3));
+	EXPECT(equalsDereferencedXML<noiseModel::Gaussian::shared_ptr>(gaussian3));
+
+	EXPECT(   equalsDereferenced<noiseModel::Isotropic::shared_ptr>(iso3));
+	EXPECT(equalsDereferencedXML<noiseModel::Isotropic::shared_ptr>(iso3));
+
+	// FAIL: stream error
+//	EXPECT(   equalsDereferenced<noiseModel::Constrained::shared_ptr>(constrained3));
+//	EXPECT(equalsDereferencedXML<noiseModel::Constrained::shared_ptr>(constrained3));
+
+	EXPECT(   equalsDereferenced<noiseModel::Unit::shared_ptr>(unit3));
+	EXPECT(equalsDereferencedXML<noiseModel::Unit::shared_ptr>(unit3));
 }
 
 /* ************************************************************************* */
@@ -218,22 +246,43 @@ TEST (Serialization, planar_system) {
 	SharedGaussian model1 = noiseModel::Isotropic::Sigma(1, 0.3);
 	SharedGaussian model2 = noiseModel::Isotropic::Sigma(2, 0.3);
 	SharedGaussian model3 = noiseModel::Isotropic::Sigma(3, 0.3);
+
 	Graph graph;
-	graph.addBearing(PoseKey(3), PointKey(5), Rot2::fromDegrees(0.5), model1);
-	graph.addRange(PoseKey(2), PointKey(9), 7.0, model1);
-	graph.addBearingRange(PoseKey(2), PointKey(3), Rot2::fromDegrees(0.6), 2.0, model2);
-	graph.addOdometry(PoseKey(2), PoseKey(3), Pose2(1.0, 2.0, 0.3), model3);
+	Prior prior(PoseKey(3), Pose2(0.1,-0.3, 0.2), model1);
+	graph.add(prior);
+	Bearing bearing(PoseKey(3), PointKey(5), Rot2::fromDegrees(0.5), model1);
+	graph.add(bearing);
+	Range range(PoseKey(2), PointKey(9), 7.0, model1);
+	graph.add(range);
+	BearingRange bearingRange(PoseKey(2), PointKey(3), Rot2::fromDegrees(0.6), 2.0, model2);
+	graph.add(bearingRange);
+	Odometry odometry(PoseKey(2), PoseKey(3), Pose2(1.0, 2.0, 0.3), model3);
+	graph.add(odometry);
+	Constraint constraint(PoseKey(9), Pose2(2.0,-1.0, 0.2));
+	graph.add(constraint);
 
 	// text
 	EXPECT(equalsObj<PoseKey>(PoseKey(2)));
 	EXPECT(equalsObj<PointKey>(PointKey(3)));
 	EXPECT(equalsObj<Values>(values));
-//	EXPECT(equalsObj<Graph>(graph));
+	EXPECT(equalsObj<Prior>(prior));
+	EXPECT(equalsObj<Bearing>(bearing));
+	EXPECT(equalsObj<BearingRange>(bearingRange));
+	EXPECT(equalsObj<Range>(range));
+	EXPECT(equalsObj<Odometry>(odometry));
+//	EXPECT(equalsObj<Constraint>(constraint)); // FAIL: stream error
+//	EXPECT(equalsObj<Graph>(graph)); // FAIL: segfaults if there are factors
 
 	// xml
 	EXPECT(equalsXML<PoseKey>(PoseKey(2)));
 	EXPECT(equalsXML<PointKey>(PointKey(3)));
 	EXPECT(equalsXML<Values>(values));
+	EXPECT(equalsXML<Prior>(prior));
+	EXPECT(equalsXML<Bearing>(bearing));
+	EXPECT(equalsXML<BearingRange>(bearingRange));
+	EXPECT(equalsXML<Range>(range));
+	EXPECT(equalsXML<Odometry>(odometry));
+//	EXPECT(equalsXML<Constraint>(constraint)); // FAIL: stream error
 //	EXPECT(equalsXML<Graph>(graph));
 }
 

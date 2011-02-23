@@ -70,6 +70,12 @@ namespace gtsam { // note, deliberately not in noiseModel namespace
 		friend class boost::serialization::access;
 		template<class ARCHIVE>
 		void serialize(ARCHIVE & ar, const unsigned int version) {
+			// apparently requires that subclasses be registered?
+			ar.template register_type<noiseModel::Gaussian>();
+			ar.template register_type<noiseModel::Diagonal>();
+			ar.template register_type<noiseModel::Constrained>();
+			ar.template register_type<noiseModel::Isotropic>();
+			ar.template register_type<noiseModel::Unit>();
 			ar & boost::serialization::make_nvp("SharedGaussian",
 			        boost::serialization::base_object<noiseModel::Gaussian::shared_ptr >(*this));
 		}

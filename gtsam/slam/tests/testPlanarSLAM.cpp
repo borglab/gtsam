@@ -17,6 +17,7 @@
 #include <iostream>
 #include <CppUnitLite/TestHarness.h>
 
+#include <gtsam/base/TestableAssertions.h>
 #include <gtsam/slam/planarSLAM.h>
 #include <gtsam/slam/BearingRangeFactor.h>
 
@@ -33,6 +34,15 @@ SharedGaussian
 	I3(noiseModel::Unit::Create(3));
 
 /* ************************************************************************* */
+TEST( planarSLAM, PriorFactor_equals )
+{
+	planarSLAM::Prior factor1(2, x1, I3), factor2(2, x2, I3);
+	EXPECT(assert_equal(factor1, factor1, 1e-5));
+	EXPECT(assert_equal(factor2, factor2, 1e-5));
+	EXPECT(assert_inequal(factor1, factor2, 1e-5));
+}
+
+/* ************************************************************************* */
 TEST( planarSLAM, BearingFactor )
 {
 	// Create factor
@@ -46,7 +56,18 @@ TEST( planarSLAM, BearingFactor )
 
 	// Check error
 	Vector actual = factor.unwhitenedError(c);
-	CHECK(assert_equal(Vector_(1,-0.1),actual));
+	EXPECT(assert_equal(Vector_(1,-0.1),actual));
+}
+
+/* ************************************************************************* */
+TEST( planarSLAM, BearingFactor_equals )
+{
+	planarSLAM::Bearing
+		factor1(2, 3, Rot2::fromAngle(0.1), sigma),
+		factor2(2, 3, Rot2::fromAngle(2.3), sigma);
+	EXPECT(assert_equal(factor1, factor1, 1e-5));
+	EXPECT(assert_equal(factor2, factor2, 1e-5));
+	EXPECT(assert_inequal(factor1, factor2, 1e-5));
 }
 
 /* ************************************************************************* */
@@ -63,7 +84,16 @@ TEST( planarSLAM, RangeFactor )
 
 	// Check error
 	Vector actual = factor.unwhitenedError(c);
-	CHECK(assert_equal(Vector_(1,0.22),actual));
+	EXPECT(assert_equal(Vector_(1,0.22),actual));
+}
+
+/* ************************************************************************* */
+TEST( planarSLAM, RangeFactor_equals )
+{
+	planarSLAM::Range factor1(2, 3, 1.2, sigma), factor2(2, 3, 7.2, sigma);
+	EXPECT(assert_equal(factor1, factor1, 1e-5));
+	EXPECT(assert_equal(factor2, factor2, 1e-5));
+	EXPECT(assert_inequal(factor1, factor2, 1e-5));
 }
 
 /* ************************************************************************* */
@@ -81,7 +111,27 @@ TEST( planarSLAM, BearingRangeFactor )
 
 	// Check error
 	Vector actual = factor.unwhitenedError(c);
-	CHECK(assert_equal(Vector_(2,-0.1, 0.22),actual));
+	EXPECT(assert_equal(Vector_(2,-0.1, 0.22),actual));
+}
+
+/* ************************************************************************* */
+TEST( planarSLAM, BearingRangeFactor_equals )
+{
+	planarSLAM::BearingRange
+		factor1(2, 3, Rot2::fromAngle(0.1), 7.3,  sigma2),
+		factor2(2, 3, Rot2::fromAngle(3), 2.0, sigma2);
+	EXPECT(assert_equal(factor1, factor1, 1e-5));
+	EXPECT(assert_equal(factor2, factor2, 1e-5));
+	EXPECT(assert_inequal(factor1, factor2, 1e-5));
+}
+
+/* ************************************************************************* */
+TEST( planarSLAM, PoseConstraint_equals )
+{
+	planarSLAM::Constraint factor1(2, x2), factor2(2, x3);
+	EXPECT(assert_equal(factor1, factor1, 1e-5));
+	EXPECT(assert_equal(factor2, factor2, 1e-5));
+	EXPECT(assert_inequal(factor1, factor2, 1e-5));
 }
 
 /* ************************************************************************* */
@@ -111,7 +161,7 @@ TEST( planarSLAM, constructor )
 	G.addRange(2, 3, z2, sigma);
 
 	Vector expected = Vector_(8, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, -0.1, 0.22);
-	CHECK(assert_equal(expected,G.unwhitenedError(c)));
+	EXPECT(assert_equal(expected,G.unwhitenedError(c)));
 }
 
 /* ************************************************************************* */

@@ -25,19 +25,20 @@ namespace gtsam {
 	/**
 	 * Binary factor for a range measurement
 	 */
-	template<class Values, class PoseKey, class PointKey>
-	class RangeFactor: public NonlinearFactor2<Values, PoseKey, PointKey> {
+	template<class VALUES, class POSEKEY, class POINTKEY>
+	class RangeFactor: public NonlinearFactor2<VALUES, POSEKEY, POINTKEY> {
 	private:
 
 		double z_; /** measurement */
 
-		typedef NonlinearFactor2<Values, PoseKey, PointKey> Base;
+		typedef RangeFactor<VALUES, POSEKEY, POINTKEY> This;
+		typedef NonlinearFactor2<VALUES, POSEKEY, POINTKEY> Base;
 
 	public:
 
-		RangeFactor(); /* Default constructor */
+		RangeFactor() {} /* Default constructor */
 
-		RangeFactor(const PoseKey& i, const PointKey& j, double z,
+		RangeFactor(const POSEKEY& i, const POINTKEY& j, double z,
 				const SharedGaussian& model) :
 					Base(model, i, j), z_(z) {
 		}
@@ -52,6 +53,23 @@ namespace gtsam {
 		/** return the measured */
 		inline double measured() const {
 			return z_;
+		}
+
+		/** equals specialized to this factor */
+		virtual bool equals(const NonlinearFactor<VALUES>& expected, double tol=1e-9) const {
+			const This *e = dynamic_cast<const This*> (&expected);
+			return e != NULL && Base::equals(*e, tol) && fabs(this->z_ - e->z_) < tol;
+		}
+
+	private:
+
+		/** Serialization function */
+		friend class boost::serialization::access;
+		template<class ARCHIVE>
+		void serialize(ARCHIVE & ar, const unsigned int version) {
+			ar & boost::serialization::make_nvp("NonlinearFactor2",
+					boost::serialization::base_object<Base>(*this));
+			ar & BOOST_SERIALIZATION_NVP(z_);
 		}
 	}; // RangeFactor
 

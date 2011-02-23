@@ -48,6 +48,9 @@ namespace gtsam {
 		// shorthand for a smart pointer to a factor
 		typedef typename boost::shared_ptr<PriorFactor> shared_ptr;
 
+		/** default constructor - only use for serialization */
+		PriorFactor() {}
+
 		/** Constructor */
 		PriorFactor(const KEY& key, const T& prior,
 				const SharedGaussian& model) :
@@ -63,7 +66,7 @@ namespace gtsam {
 		}
 
 		/** equals */
-		virtual bool equals(const NonlinearFactor<VALUES>& expected, double tol) const {
+		virtual bool equals(const NonlinearFactor<VALUES>& expected, double tol=1e-9) const {
 			const PriorFactor<VALUES, KEY> *e = dynamic_cast<const PriorFactor<
 					VALUES, KEY>*> (&expected);
 			return e != NULL && Base::equals(*e, tol) && this->prior_.equals(e->prior_, tol);
@@ -76,6 +79,17 @@ namespace gtsam {
 			if (H) (*H) = eye(p.dim());
 			// manifold equivalent of h(x)-z -> log(z,h(x))
 			return prior_.logmap(p);
+		}
+
+	private:
+
+		/** Serialization function */
+		friend class boost::serialization::access;
+		template<class ARCHIVE>
+		void serialize(ARCHIVE & ar, const unsigned int version) {
+			ar & boost::serialization::make_nvp("NonlinearFactor1",
+					boost::serialization::base_object<Base>(*this));
+			ar & BOOST_SERIALIZATION_NVP(prior_);
 		}
 	};
 

@@ -30,6 +30,12 @@ namespace gtsam {
 
 	namespace noiseModel {
 
+		class Gaussian;
+		class Diagonal;
+		class Constrained;
+		class Isotropic;
+		class Unit;
+
 		/**
 		 * noiseModel::Base is the abstract base class for all noise models.
 		 *
@@ -389,6 +395,9 @@ namespace gtsam {
 
 		public:
 
+			/* dummy constructor to allow for serialization */
+			Isotropic() : Diagonal(repeat(1, 1.0)),sigma_(1.0),invsigma_(1.0) {}
+
 			typedef boost::shared_ptr<Isotropic> shared_ptr;
 
 			/**
@@ -447,7 +456,7 @@ namespace gtsam {
 		class Unit : public Isotropic {
 		protected:
 
-			Unit(size_t dim): Isotropic(dim,1.0) {}
+			Unit(size_t dim=1): Isotropic(dim,1.0) {}
 
 		public:
 

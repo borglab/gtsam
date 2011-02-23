@@ -32,11 +32,15 @@ namespace gtsam {
 
 		Rot2 z_; /** measurement */
 
+		typedef BearingFactor<VALUES, POSEKEY, POINTKEY> This;
 		typedef NonlinearFactor2<VALUES, POSEKEY, POINTKEY> Base;
 
 	public:
 
-		BearingFactor(); /* Default constructor */
+		/** default constructor for serialization/testing only */
+		BearingFactor() {}
+
+		/** primary constructor */
 		BearingFactor(const POSEKEY& i, const POINTKEY& j, const Rot2& z,
 				const SharedGaussian& model) :
 					Base(model, i, j), z_(z) {
@@ -52,6 +56,23 @@ namespace gtsam {
 		/** return the measured */
 		inline const Rot2 measured() const {
 			return z_;
+		}
+
+		/** equals */
+		virtual bool equals(const NonlinearFactor<VALUES>& expected, double tol=1e-9) const {
+			const This *e =	dynamic_cast<const This*> (&expected);
+			return e != NULL && Base::equals(*e, tol) && this->z_.equals(e->z_, tol);
+		}
+
+	private:
+
+		/** Serialization function */
+		friend class boost::serialization::access;
+		template<class ARCHIVE>
+		void serialize(ARCHIVE & ar, const unsigned int version) {
+			ar & boost::serialization::make_nvp("NonlinearFactor2",
+					boost::serialization::base_object<Base>(*this));
+			ar & BOOST_SERIALIZATION_NVP(z_);
 		}
 
 	}; // BearingFactor

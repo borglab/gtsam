@@ -67,6 +67,9 @@ namespace gtsam {
 
 		typedef NonlinearFactor1<VALUES, KEY> Base;
 
+		/** default constructor - only for serialization */
+		NonlinearEquality() {}
+
 		/**
 		 * Constructor - forces exact evaluation
 		 */
@@ -132,6 +135,19 @@ namespace gtsam {
 			// TODO pass unwhitened + noise model to Gaussian factor
 			SharedDiagonal model = noiseModel::Constrained::All(b.size());
 			return JacobianFactor::shared_ptr(new JacobianFactor(ordering[this->key_], A, b, model));
+		}
+
+	private:
+
+		/** Serialization function */
+		friend class boost::serialization::access;
+		template<class ARCHIVE>
+		void serialize(ARCHIVE & ar, const unsigned int version) {
+			ar & boost::serialization::make_nvp("NonlinearFactor1",
+					boost::serialization::base_object<Base>(*this));
+			ar & BOOST_SERIALIZATION_NVP(feasible_);
+			ar & BOOST_SERIALIZATION_NVP(allow_error_);
+			ar & BOOST_SERIALIZATION_NVP(error_gain_);
 		}
 
 	}; // NonlinearEquality
