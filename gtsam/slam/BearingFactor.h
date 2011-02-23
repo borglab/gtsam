@@ -53,6 +53,7 @@ namespace gtsam {
 		inline const Rot2 measured() const {
 			return z_;
 		}
+
 	}; // BearingFactor
 
 } // namespace gtsam

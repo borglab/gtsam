@@ -9,7 +9,7 @@
 
  * -------------------------------------------------------------------------- */
 
-/*
+/**
  * SharedDiagonal.h
  * @brief Class that wraps a shared noise model with diagonal covariance
  * @Author: Frank Dellaert
@@ -42,6 +42,14 @@ namespace gtsam { // note, deliberately not in noiseModel namespace
 		}
 		SharedDiagonal(const Vector& sigmas) :
 			noiseModel::Diagonal::shared_ptr(noiseModel::Diagonal::Sigmas(sigmas)) {
+		}
+
+		/** Serialization function */
+		friend class boost::serialization::access;
+		template<class ARCHIVE>
+		void serialize(ARCHIVE & ar, const unsigned int version) {
+			ar & boost::serialization::make_nvp("SharedDiagonal",
+			        boost::serialization::base_object<noiseModel::Diagonal::shared_ptr >(*this));
 		}
 	};
 

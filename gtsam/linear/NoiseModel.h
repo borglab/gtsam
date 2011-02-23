@@ -44,7 +44,8 @@ namespace gtsam {
 
 		public:
 
-			Base(size_t dim):dim_(dim) {}
+			/** primary constructor @param dim is the dimension of the model */
+			Base(size_t dim = 1):dim_(dim) {}
 			virtual ~Base() {}
 
 			/**
@@ -70,6 +71,14 @@ namespace gtsam {
 			/** in-place unwhiten, override if can be done more efficiently */
 			virtual void unwhitenInPlace(Vector& v) const {
 				v = unwhiten(v);
+			}
+
+		private:
+			/** Serialization function */
+			friend class boost::serialization::access;
+			template<class ARCHIVE>
+			void serialize(ARCHIVE & ar, const unsigned int version) {
+				ar & BOOST_SERIALIZATION_NVP(dim_);
 			}
 		};
 
@@ -103,7 +112,7 @@ namespace gtsam {
 		protected:
 
 			/** protected constructor takes square root information matrix */
-			Gaussian(size_t dim, const boost::optional<Matrix>& sqrt_information = boost::none) :
+			Gaussian(size_t dim = 1, const boost::optional<Matrix>& sqrt_information = boost::none) :
 				Base(dim), sqrt_information_(sqrt_information) {
 			}
 
@@ -126,7 +135,7 @@ namespace gtsam {
 			static shared_ptr Covariance(const Matrix& covariance, bool smart=false);
 
 			virtual void print(const std::string& name) const;
-			virtual bool equals(const Base& expected, double tol) const;
+			virtual bool equals(const Base& expected, double tol=1e-9) const;
 			virtual Vector whiten(const Vector& v) const;
 			virtual Vector unwhiten(const Vector& v) const;
 
@@ -184,6 +193,15 @@ namespace gtsam {
 			 */
 			virtual bool isConstrained() const {return false;}
 
+		private:
+			/** Serialization function */
+			friend class boost::serialization::access;
+			template<class ARCHIVE>
+			void serialize(ARCHIVE & ar, const unsigned int version) {
+				ar & BOOST_SERIALIZATION_BASE_OBJECT_NVP(Base);
+				ar & BOOST_SERIALIZATION_NVP(sqrt_information_);
+			}
+
 		}; // Gaussian
 
 
@@ -199,7 +217,7 @@ namespace gtsam {
 			Vector sigmas_, invsigmas_;
 
 			/** protected constructor takes sigmas */
-			Diagonal(const Vector& sigmas);
+			Diagonal(const Vector& sigmas = ones(1));
 
 		public:
 
@@ -256,6 +274,16 @@ namespace gtsam {
 			virtual Matrix R() const {
 				return diag(invsigmas_);
 			}
+
+		private:
+			/** Serialization function */
+			friend class boost::serialization::access;
+			template<class ARCHIVE>
+			void serialize(ARCHIVE & ar, const unsigned int version) {
+				ar & BOOST_SERIALIZATION_BASE_OBJECT_NVP(Gaussian);
+				ar & BOOST_SERIALIZATION_NVP(sigmas_);
+				ar & BOOST_SERIALIZATION_NVP(invsigmas_);
+			}
 		}; // Diagonal
 
 		/**
@@ -273,7 +301,7 @@ namespace gtsam {
 			// Instead (possibly zero) sigmas are stored in Diagonal Base class
 
 			/** protected constructor takes sigmas */
-			Constrained(const Vector& sigmas) :Diagonal(sigmas) {}
+			Constrained(const Vector& sigmas = zero(1)) :Diagonal(sigmas) {}
 
 		public:
 
@@ -337,6 +365,14 @@ namespace gtsam {
 			 */
 			virtual bool isConstrained() const {return true;}
 
+		private:
+			/** Serialization function */
+			friend class boost::serialization::access;
+			template<class ARCHIVE>
+			void serialize(ARCHIVE & ar, const unsigned int version) {
+				ar & BOOST_SERIALIZATION_BASE_OBJECT_NVP(Diagonal);
+			}
+
 		}; // Constrained
 
 		/**
@@ -393,6 +429,16 @@ namespace gtsam {
 			 */
 			virtual Vector sample() const;
 
+		private:
+			/** Serialization function */
+			friend class boost::serialization::access;
+			template<class ARCHIVE>
+			void serialize(ARCHIVE & ar, const unsigned int version) {
+				ar & BOOST_SERIALIZATION_BASE_OBJECT_NVP(Diagonal);
+				ar & BOOST_SERIALIZATION_NVP(sigma_);
+				ar & BOOST_SERIALIZATION_NVP(invsigma_);
+			}
+
 		};
 
 		/**
@@ -420,6 +466,14 @@ namespace gtsam {
 			virtual Vector unwhiten(const Vector& v) const { return v; }
 			virtual Matrix Whiten(const Matrix& H) const { return H; }
 			virtual void WhitenInPlace(Matrix& H) const {}
+
+		private:
+			/** Serialization function */
+			friend class boost::serialization::access;
+			template<class ARCHIVE>
+			void serialize(ARCHIVE & ar, const unsigned int version) {
+				ar & BOOST_SERIALIZATION_BASE_OBJECT_NVP(Isotropic);
+			}
 		};
 
 	} // namespace noiseModel

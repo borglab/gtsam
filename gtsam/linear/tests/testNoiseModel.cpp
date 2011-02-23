@@ -26,6 +26,7 @@
 using namespace boost::assign;
 
 #include <CppUnitLite/TestHarness.h>
+#include <gtsam/base/TestableAssertions.h>
 #include <gtsam/linear/NoiseModel.h>
 #include <gtsam/linear/SharedGaussian.h>
 #include <gtsam/linear/SharedDiagonal.h>
@@ -71,11 +72,11 @@ TEST(NoiseModel, constructors)
 
 	// test whiten
 	BOOST_FOREACH(Gaussian::shared_ptr mi, m)
-		CHECK(assert_equal(whitened,mi->whiten(unwhitened)));
+		EXPECT(assert_equal(whitened,mi->whiten(unwhitened)));
 
 	// test unwhiten
 	BOOST_FOREACH(Gaussian::shared_ptr mi, m)
-		CHECK(assert_equal(unwhitened,mi->unwhiten(whitened)));
+		EXPECT(assert_equal(unwhitened,mi->unwhiten(whitened)));
 
 	// test Mahalanobis distance
 	double distance = 5*5+10*10+15*15;
@@ -89,7 +90,7 @@ TEST(NoiseModel, constructors)
 			0.0, 0.0, s_1));
 
 	BOOST_FOREACH(Gaussian::shared_ptr mi, m)
-		CHECK(assert_equal(expectedR,mi->R()));
+		EXPECT(assert_equal(expectedR,mi->R()));
 
 	// test Whiten operator
 	Matrix H(Matrix_(3, 4,
@@ -103,27 +104,38 @@ TEST(NoiseModel, constructors)
 			s_1, 0.0, 0.0, s_1));
 
 	BOOST_FOREACH(Gaussian::shared_ptr mi, m)
-		CHECK(assert_equal(expected,mi->Whiten(H)));
+		EXPECT(assert_equal(expected,mi->Whiten(H)));
 
 	// can only test inplace version once :-)
 	m[0]->WhitenInPlace(H);
-	CHECK(assert_equal(expected,H));
+	EXPECT(assert_equal(expected,H));
 }
 
 /* ************************************************************************* */
 TEST(NoiseModel, Unit) {
 	Vector v = Vector_(3,5.0,10.0,15.0);
 	Gaussian::shared_ptr u(Unit::Create(3));
-	CHECK(assert_equal(v,u->whiten(v)));
+	EXPECT(assert_equal(v,u->whiten(v)));
 }
 
 /* ************************************************************************* */
 TEST(NoiseModel, equals)
 {
-	Gaussian::shared_ptr g = Gaussian::SqrtInformation(R);
-	Diagonal::shared_ptr d = Diagonal::Sigmas(Vector_(3, sigma, sigma, sigma));
-	Isotropic::shared_ptr i = Isotropic::Sigma(3, sigma);
-	CHECK(assert_equal(*g,*g));
+	Gaussian::shared_ptr g1 = Gaussian::SqrtInformation(R),
+											 g2 = Gaussian::SqrtInformation(eye(3,3));
+	Diagonal::shared_ptr d1 = Diagonal::Sigmas(Vector_(3, sigma, sigma, sigma)),
+											 d2 = Diagonal::Sigmas(Vector_(3, 0.1, 0.2, 0.3));
+	Isotropic::shared_ptr i1 = Isotropic::Sigma(3, sigma),
+												i2 = Isotropic::Sigma(3, 0.7);
+
+	EXPECT(assert_equal(*g1,*g1));
+	EXPECT(assert_inequal(*g1, *g2));
+
+	EXPECT(assert_equal(*d1,*d1));
+	EXPECT(assert_inequal(*d1,*d2));
+
+	EXPECT(assert_equal(*i1,*i1));
+	EXPECT(assert_inequal(*i1,*i2));
 }
 
 /* ************************************************************************* */
@@ -132,8 +144,8 @@ TEST(NoiseModel, ConstrainedMixed )
 	Vector feasible = Vector_(3, 1.0, 0.0, 1.0),
 			infeasible = Vector_(3, 1.0, 1.0, 1.0);
 	Constrained::shared_ptr d = Constrained::MixedSigmas(Vector_(3, sigma, 0.0, sigma));
-	CHECK(assert_equal(Vector_(3, 0.5, inf, 0.5),d->whiten(infeasible)));
-	CHECK(assert_equal(Vector_(3, 0.5, 0.0, 0.5),d->whiten(feasible)));
+	EXPECT(assert_equal(Vector_(3, 0.5, inf, 0.5),d->whiten(infeasible)));
+	EXPECT(assert_equal(Vector_(3, 0.5, 0.0, 0.5),d->whiten(feasible)));
 	DOUBLES_EQUAL(inf,d->Mahalanobis(infeasible),1e-9);
 	DOUBLES_EQUAL(0.5,d->Mahalanobis(feasible),1e-9);
 }
@@ -145,8 +157,8 @@ TEST(NoiseModel, ConstrainedAll )
 			infeasible = Vector_(3, 1.0, 1.0, 1.0);
 
 	Constrained::shared_ptr i = Constrained::All(3);
-	CHECK(assert_equal(Vector_(3, inf, inf, inf),i->whiten(infeasible)));
-	CHECK(assert_equal(Vector_(3, 0.0, 0.0, 0.0),i->whiten(feasible)));
+	EXPECT(assert_equal(Vector_(3, inf, inf, inf),i->whiten(infeasible)));
+	EXPECT(assert_equal(Vector_(3, 0.0, 0.0, 0.0),i->whiten(feasible)));
 	DOUBLES_EQUAL(inf,i->Mahalanobis(infeasible),1e-9);
 	DOUBLES_EQUAL(0.0,i->Mahalanobis(feasible),1e-9);
 }
@@ -183,20 +195,20 @@ TEST( NoiseModel, QR )
 	// Call Gaussian version
 	SharedDiagonal actual1 = exampleQR::diagonal->QR(Ab1);
 	SharedDiagonal expected = noiseModel::Unit::Create(4);
-	CHECK(assert_equal(*expected,*actual1));
-	CHECK(linear_dependent(exampleQR::Rd,Ab1,1e-4)); // Ab was modified in place !!!
+	EXPECT(assert_equal(*expected,*actual1));
+	EXPECT(linear_dependent(exampleQR::Rd,Ab1,1e-4)); // Ab was modified in place !!!
 
 	// Call Constrained version
 	SharedDiagonal constrained = noiseModel::Constrained::MixedSigmas(exampleQR::sigmas);
 	SharedDiagonal actual2 = constrained->QR(Ab2);
 	SharedDiagonal expectedModel2 = noiseModel::Diagonal::Sigmas(expectedSigmas);
-	CHECK(assert_equal(*expectedModel2,*actual2));
+	EXPECT(assert_equal(*expectedModel2,*actual2,1e-6));
 	Matrix expectedRd2 = Matrix_(4, 6+1,
 			1.,  0., -0.2,  0., -0.8, 0.,  0.2,
 			0.,  1.,  0.,-0.2,   0., -0.8,-0.14,
 			0.,  0.,  1.,   0., -1.,  0.,  0.0,
 			0.,  0.,  0.,   1.,  0., -1.,  0.2);
-	CHECK(linear_dependent(expectedRd2,Ab2,1e-6)); // Ab was modified in place !!!
+	EXPECT(linear_dependent(expectedRd2,Ab2,1e-6)); // Ab was modified in place !!!
 }
 
 /* ************************************************************************* */
@@ -208,12 +220,12 @@ TEST( NoiseModel, QR )
 //     firstZeroRows += 0,1,2,3,4,5; // FD: no idea as not documented :-(
 //     SharedDiagonal actual = exampleQR::diagonal->QRColumnWise(Ab,firstZeroRows);
 //     SharedDiagonal expected = noiseModel::Unit::Create(4);
-//     CHECK(assert_equal(*expected,*actual));
+//     EXPECT(assert_equal(*expected,*actual));
 //     Matrix AbResized = ublas::triangular_adaptor<MatrixColMajor, ublas::upper>(Ab);
 //     print(exampleQR::Rd, "Rd: ");
 //     print(Ab, "Ab: ");
 //     print(AbResized, "AbResized: ");
-//     CHECK(linear_dependent(exampleQR::Rd,AbResized,1e-4)); // Ab was modified in place !!!
+//     EXPECT(linear_dependent(exampleQR::Rd,AbResized,1e-4)); // Ab was modified in place !!!
 //}
 
 /* ************************************************************************* */
@@ -240,8 +252,8 @@ TEST(NoiseModel, QRNan )
 	Matrix expectedAb = Matrix_(2, 5, 1., 2., 1., 2., 3., 0., 1., 0., 0., 2.0/3);
 
 	SharedDiagonal actual = constrained->QR(Ab);
-	CHECK(assert_equal(*expected,*actual));
-	CHECK(assert_equal(expectedAb,Ab));
+	EXPECT(assert_equal(*expected,*actual));
+	EXPECT(assert_equal(expectedAb,Ab));
 }
 
 /* ************************************************************************* */
@@ -250,7 +262,7 @@ TEST(NoiseModel, SmartCovariance )
 	bool smart = true;
 	SharedGaussian expected = Unit::Create(3);
 	SharedGaussian actual = Gaussian::Covariance(eye(3), smart);
-	CHECK(assert_equal(*expected,*actual));
+	EXPECT(assert_equal(*expected,*actual));
 }
 
 /* ************************************************************************* */
@@ -259,7 +271,7 @@ TEST(NoiseModel, ScalarOrVector )
 	bool smart = true;
 	SharedGaussian expected = Unit::Create(3);
 	SharedGaussian actual = Gaussian::Covariance(eye(3), smart);
-	CHECK(assert_equal(*expected,*actual));
+	EXPECT(assert_equal(*expected,*actual));
 }
 
 /* ************************************************************************* */
@@ -270,7 +282,7 @@ TEST(NoiseModel, WhitenInPlace)
 	Matrix A = eye(3);
 	model->WhitenInPlace(A);
 	Matrix expected = eye(3) * 10;
-	CHECK(assert_equal(expected, A));
+	EXPECT(assert_equal(expected, A));
 }
 
 /* ************************************************************************* */

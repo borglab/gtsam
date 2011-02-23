@@ -24,6 +24,8 @@
 #include <string>
 
 // includes for standard serialization types
+#include <boost/serialization/optional.hpp>
+#include <boost/serialization/shared_ptr.hpp>
 #include <boost/serialization/vector.hpp>
 #include <boost/serialization/map.hpp>
 #include <boost/serialization/list.hpp>
@@ -120,6 +122,14 @@ bool equalsXML(const T& input = T()) {
 	return input.equals(output);
 }
 
+// This version is for pointers
+template<class T>
+bool equalsDereferencedXML(const T& input = T()) {
+	T output;
+	roundtripXML<T>(input,output);
+	return input->equals(*output);
+}
+
 /* ************************************************************************* */
 // Actual Tests
 /* ************************************************************************* */
@@ -148,9 +158,12 @@ TEST (Serialization, text_geometry) {
 	EXPECT(equalsObj<gtsam::Point2>(Point2(1.0, 2.0)));
 	EXPECT(equalsObj<gtsam::Pose2>(Pose2(1.0, 2.0, 0.3)));
 	EXPECT(equalsObj<gtsam::Rot2>(Rot2::fromDegrees(30.0)));
-	EXPECT(equalsObj<gtsam::Point3>(Point3(1.0, 2.0, 3.0)));
-	EXPECT(equalsObj<gtsam::Pose3>());
-	EXPECT(equalsObj<gtsam::Rot3>(Rot3::RzRyRx(1.0, 3.0, 2.0)));
+
+	Point3 pt3(1.0, 2.0, 3.0);
+	Rot3 rt3 = Rot3::RzRyRx(1.0, 3.0, 2.0);
+	EXPECT(equalsObj<gtsam::Point3>(pt3));
+	EXPECT(equalsObj<gtsam::Rot3>(rt3));
+	EXPECT(equalsObj<gtsam::Pose3>(Pose3(rt3, pt3)));
 }
 
 /* ************************************************************************* */
@@ -158,9 +171,13 @@ TEST (Serialization, xml_geometry) {
 	EXPECT(equalsXML<gtsam::Point2>(Point2(1.0, 2.0)));
 	EXPECT(equalsXML<gtsam::Pose2>(Pose2(1.0, 2.0, 0.3)));
 	EXPECT(equalsXML<gtsam::Rot2>(Rot2::fromDegrees(30.0)));
-	EXPECT(equalsXML<gtsam::Point3>(Point3(1.0, 2.0, 3.0)));
-	EXPECT(equalsXML<gtsam::Pose3>());
-	EXPECT(equalsXML<gtsam::Rot3>(Rot3::RzRyRx(1.0, 3.0, 2.0)));
+
+	Point3 pt3(1.0, 2.0, 3.0);
+	Rot3 rt3 = Rot3::RzRyRx(1.0, 3.0, 2.0);
+	EXPECT(equalsXML<gtsam::Point3>(pt3));
+	EXPECT(equalsXML<gtsam::Rot3>(rt3));
+	EXPECT(equalsXML<gtsam::Pose3>(Pose3(rt3, pt3)));
+
 }
 
 /* ************************************************************************* */
@@ -178,17 +195,46 @@ TEST (Serialization, xml_linear) {
 }
 
 /* ************************************************************************* */
-TEST (Serialization, text_planar) {
-	EXPECT(equalsObj<gtsam::planarSLAM::PoseKey>(gtsam::planarSLAM::PoseKey(2)));
-	EXPECT(equalsObj<gtsam::planarSLAM::PointKey>(gtsam::planarSLAM::PointKey(2)));
-//	EXPECT(equalsObj<gtsam::planarSLAM::Values>());
+TEST (Serialization, noiseModels) {
+	SharedDiagonal diag3 = noiseModel::Diagonal::Sigmas(Vector_(3, 0.1, 0.2, 0.3));
+	SharedGaussian model3 = noiseModel::Isotropic::Sigma(3, 0.3);
+
+	EXPECT(equalsDereferenced<SharedDiagonal>(diag3));
+	EXPECT(equalsDereferencedXML<SharedDiagonal>(diag3));
+
+	// FAIL: Segfaults
+//	EXPECT(equalsDereferenced<SharedGaussian>(model3));
+//	EXPECT(equalsDereferencedXML<SharedGaussian>(model3));
 }
 
 /* ************************************************************************* */
-TEST (Serialization, xml_planar) {
-	EXPECT(equalsXML<gtsam::planarSLAM::PoseKey>(gtsam::planarSLAM::PoseKey(2)));
-	EXPECT(equalsXML<gtsam::planarSLAM::PointKey>(gtsam::planarSLAM::PointKey(2)));
-//	EXPECT(equalsXML<gtsam::planarSLAM::Values>());
+TEST (Serialization, planar_system) {
+	using namespace planarSLAM;
+
+	Values values;
+	values.insert(PointKey(3), Point2(1.0, 2.0));
+	values.insert(PoseKey(4), Pose2(1.0, 2.0, 0.3));
+
+	SharedGaussian model1 = noiseModel::Isotropic::Sigma(1, 0.3);
+	SharedGaussian model2 = noiseModel::Isotropic::Sigma(2, 0.3);
+	SharedGaussian model3 = noiseModel::Isotropic::Sigma(3, 0.3);
+	Graph graph;
+	graph.addBearing(PoseKey(3), PointKey(5), Rot2::fromDegrees(0.5), model1);
+	graph.addRange(PoseKey(2), PointKey(9), 7.0, model1);
+	graph.addBearingRange(PoseKey(2), PointKey(3), Rot2::fromDegrees(0.6), 2.0, model2);
+	graph.addOdometry(PoseKey(2), PoseKey(3), Pose2(1.0, 2.0, 0.3), model3);
+
+	// text
+	EXPECT(equalsObj<PoseKey>(PoseKey(2)));
+	EXPECT(equalsObj<PointKey>(PointKey(3)));
+	EXPECT(equalsObj<Values>(values));
+//	EXPECT(equalsObj<Graph>(graph));
+
+	// xml
+	EXPECT(equalsXML<PoseKey>(PoseKey(2)));
+	EXPECT(equalsXML<PointKey>(PointKey(3)));
+	EXPECT(equalsXML<Values>(values));
+//	EXPECT(equalsXML<Graph>(graph));
 }
 
 /* ************************************************************************* */

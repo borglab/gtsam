@@ -82,10 +82,12 @@ Gaussian::shared_ptr Gaussian::Covariance(const Matrix& covariance, bool smart) 
 	full: return shared_ptr(new Gaussian(n, inverse_square_root(covariance)));
 }
 
+/* ************************************************************************* */
 void Gaussian::print(const string& name) const {
 	gtsam::print(thisR(), "Gaussian");
 }
 
+/* ************************************************************************* */
 bool Gaussian::equals(const Base& expected, double tol) const {
 	const Gaussian* p = dynamic_cast<const Gaussian*> (&expected);
 	if (p == NULL) return false;
@@ -94,33 +96,39 @@ bool Gaussian::equals(const Base& expected, double tol) const {
 	return equal_with_abs_tol(R(), p->R(), sqrt(tol));
 }
 
+/* ************************************************************************* */
 Vector Gaussian::whiten(const Vector& v) const {
 	return thisR() * v;
 }
 
-
+/* ************************************************************************* */
 Vector Gaussian::unwhiten(const Vector& v) const {
 	return backSubstituteUpper(thisR(), v);
 }
 
+/* ************************************************************************* */
 double Gaussian::Mahalanobis(const Vector& v) const {
 	// Note: for Diagonal, which does ediv_, will be correct for constraints
 	Vector w = whiten(v);
 	return inner_prod(w, w);
 }
 
+/* ************************************************************************* */
 Matrix Gaussian::Whiten(const Matrix& H) const {
 	return thisR() * H;
 }
 
+/* ************************************************************************* */
 void Gaussian::WhitenInPlace(Matrix& H) const {
 	H = thisR() * H;
 }
 
+/* ************************************************************************* */
 void Gaussian::WhitenInPlace(MatrixColMajor& H) const {
   H = ublas::prod(thisR(), H);
 }
 
+/* ************************************************************************* */
 // General QR, see also special version in Constrained
 SharedDiagonal Gaussian::QR(Matrix& Ab, boost::optional<vector<int>&> firstZeroRows) const {
 
@@ -286,10 +294,13 @@ SharedDiagonal Gaussian::Cholesky(MatrixColMajor& Ab, size_t nFrontals) const {
 }
 
 /* ************************************************************************* */
+// Diagonal
+/* ************************************************************************* */
 Diagonal::Diagonal(const Vector& sigmas) :
 		Gaussian(sigmas.size()), sigmas_(sigmas), invsigmas_(reciprocal(sigmas)) {
 }
 
+/* ************************************************************************* */
 Diagonal::shared_ptr Diagonal::Variances(const Vector& variances, bool smart) {
 	if (smart) {
 		// check whether all the same entry
@@ -301,6 +312,7 @@ Diagonal::shared_ptr Diagonal::Variances(const Vector& variances, bool smart) {
 	full: return shared_ptr(new Diagonal(esqrt(variances)));
 }
 
+/* ************************************************************************* */
 Diagonal::shared_ptr Diagonal::Sigmas(const Vector& sigmas, bool smart) {
 	if (smart) {
 		// look for zeros to make a constraint
@@ -311,31 +323,38 @@ Diagonal::shared_ptr Diagonal::Sigmas(const Vector& sigmas, bool smart) {
 	return Diagonal::shared_ptr(new Diagonal(sigmas));
 }
 
+/* ************************************************************************* */
 void Diagonal::print(const string& name) const {
 	gtsam::print(sigmas_, name + ": diagonal sigmas");
 }
 
+/* ************************************************************************* */
 Vector Diagonal::whiten(const Vector& v) const {
 	return emul(v, invsigmas_);
 }
 
+/* ************************************************************************* */
 Vector Diagonal::unwhiten(const Vector& v) const {
 	return emul(v, sigmas_);
 }
 
+/* ************************************************************************* */
 Matrix Diagonal::Whiten(const Matrix& H) const {
 	return vector_scale(invsigmas_, H);
 }
 
+/* ************************************************************************* */
 void Diagonal::WhitenInPlace(Matrix& H) const {
 	vector_scale_inplace(invsigmas_, H);
 }
 
+/* ************************************************************************* */
 void Diagonal::WhitenInPlace(MatrixColMajor& H) const {
 
   vector_scale_inplace(invsigmas_, H);
 }
 
+/* ************************************************************************* */
 Vector Diagonal::sample() const {
 	Vector result(dim_);
 	for (size_t i = 0; i < dim_; i++) {
@@ -348,28 +367,34 @@ Vector Diagonal::sample() const {
 }
 
 /* ************************************************************************* */
-
+// Constrained
+/* ************************************************************************* */
 void Constrained::print(const std::string& name) const {
 	gtsam::print(sigmas_, name + ": constrained sigmas");
 }
 
+/* ************************************************************************* */
 Vector Constrained::whiten(const Vector& v) const {
 	// ediv_ does the right thing with the errors
 	return ediv_(v, sigmas_);
 }
 
+/* ************************************************************************* */
 Matrix Constrained::Whiten(const Matrix& H) const {
 	throw logic_error("noiseModel::Constrained cannot Whiten");
 }
 
+/* ************************************************************************* */
 void Constrained::WhitenInPlace(Matrix& H) const {
 	throw logic_error("noiseModel::Constrained cannot Whiten");
 }
 
+/* ************************************************************************* */
 void Constrained::WhitenInPlace(MatrixColMajor& H) const {
   throw logic_error("noiseModel::Constrained cannot Whiten");
 }
 
+/* ************************************************************************* */
 // Special version of QR for Constrained calls slower but smarter code
 // that deals with possibly zero sigmas
 // It is Gram-Schmidt orthogonalization rather than Householder
@@ -445,6 +470,7 @@ SharedDiagonal Constrained::QR(Matrix& Ab, boost::optional<std::vector<int>&> fi
 	return mixed ? Constrained::MixedPrecisions(precisions) : Diagonal::Precisions(precisions);
 }
 
+/* ************************************************************************* */
 SharedDiagonal Constrained::QRColumnWise(ublas::matrix<double, ublas::column_major>& Ab, vector<int>& firstZeroRows) const {
   Matrix AbRowWise(Ab);
   SharedDiagonal result = this->QR(AbRowWise, firstZeroRows);
@@ -453,41 +479,50 @@ SharedDiagonal Constrained::QRColumnWise(ublas::matrix<double, ublas::column_maj
 }
 
 /* ************************************************************************* */
-
+// Isotropic
+/* ************************************************************************* */
 Isotropic::shared_ptr Isotropic::Variance(size_t dim, double variance, bool smart)  {
 	if (smart && fabs(variance-1.0)<1e-9) return Unit::Create(dim);
 	return shared_ptr(new Isotropic(dim, sqrt(variance)));
 }
 
+/* ************************************************************************* */
 void Isotropic::print(const string& name) const {
 	cout << name << ": isotropic sigma " << " " << sigma_ << endl;
 }
 
+/* ************************************************************************* */
 double Isotropic::Mahalanobis(const Vector& v) const {
 	double dot = inner_prod(v, v);
 	return dot * invsigma_ * invsigma_;
 }
 
+/* ************************************************************************* */
 Vector Isotropic::whiten(const Vector& v) const {
 	return v * invsigma_;
 }
 
+/* ************************************************************************* */
 Vector Isotropic::unwhiten(const Vector& v) const {
 	return v * sigma_;
 }
 
+/* ************************************************************************* */
 Matrix Isotropic::Whiten(const Matrix& H) const {
 	return invsigma_ * H;
 }
 
+/* ************************************************************************* */
 void Isotropic::WhitenInPlace(Matrix& H) const {
 	H *= invsigma_;
 }
 
+/* ************************************************************************* */
 void Isotropic::WhitenInPlace(MatrixColMajor& H) const {
   H *= invsigma_;
 }
 
+/* ************************************************************************* */
 // faster version
 Vector Isotropic::sample() const {
 	typedef boost::normal_distribution<double> Normal;
@@ -499,6 +534,8 @@ Vector Isotropic::sample() const {
 	return result;
 }
 
+/* ************************************************************************* */
+// Unit
 /* ************************************************************************* */
 void Unit::print(const std::string& name) const {
 	cout << name << ": unit (" << dim_ << ") " << endl;

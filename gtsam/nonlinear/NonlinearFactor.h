@@ -148,7 +148,8 @@ namespace gtsam {
 		friend class boost::serialization::access;
 		template<class ARCHIVE>
 		void serialize(ARCHIVE & ar, const unsigned int version) {
-			// TODO NoiseModel
+			ar & BOOST_SERIALIZATION_NVP(noiseModel_);
+			ar & BOOST_SERIALIZATION_NVP(keys_);
 		}
 
 	}; // NonlinearFactor
@@ -262,7 +263,7 @@ namespace gtsam {
 		template<class ARCHIVE>
 		void serialize(ARCHIVE & ar, const unsigned int version) {
 			ar & boost::serialization::make_nvp("NonlinearFactor",
-					boost::serialization::base_object<NonlinearFactor>(*this));
+					boost::serialization::base_object<Base>(*this));
 			ar & BOOST_SERIALIZATION_NVP(key_);
 		}
 
@@ -395,7 +396,7 @@ namespace gtsam {
 		template<class ARCHIVE>
 		void serialize(ARCHIVE & ar, const unsigned int version) {
 			ar & boost::serialization::make_nvp("NonlinearFactor",
-					boost::serialization::base_object<NonlinearFactor>(*this));
+					boost::serialization::base_object<Base>(*this));
 			ar & BOOST_SERIALIZATION_NVP(key1_);
 			ar & BOOST_SERIALIZATION_NVP(key2_);
 		}
@@ -571,7 +572,7 @@ namespace gtsam {
     template<class ARCHIVE>
     void serialize(ARCHIVE & ar, const unsigned int version) {
       ar & boost::serialization::make_nvp("NonlinearFactor",
-          boost::serialization::base_object<NonlinearFactor>(*this));
+          boost::serialization::base_object<Base>(*this));
       ar & BOOST_SERIALIZATION_NVP(key1_);
       ar & BOOST_SERIALIZATION_NVP(key2_);
       ar & BOOST_SERIALIZATION_NVP(key3_);
