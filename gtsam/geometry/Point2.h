@@ -110,6 +110,9 @@ namespace gtsam {
     /** norm of point */
     double norm() const;
 
+    /** creates a unit vector */
+    Point2 unit() const { return *this/norm(); }
+
     /** distance between two points */
     inline double dist(const Point2& p2) const {
 			return (p2 - *this).norm();

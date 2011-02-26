@@ -28,18 +28,18 @@ TEST( Point2, expmap)
 	d(0) = 1;
 	d(1) = -1;
 	Point2 a(4, 5), b = a.expmap(d), c(5, 4);
-	CHECK(assert_equal(b,c));
+	EXPECT(assert_equal(b,c));
 }
 
 /* ************************************************************************* */
 TEST( Point2, arithmetic)
 {
-	CHECK(assert_equal( Point2(-5,-6), -Point2(5,6) ));
-	CHECK(assert_equal( Point2(5,6), Point2(4,5)+Point2(1,1)));
-	CHECK(assert_equal( Point2(3,4), Point2(4,5)-Point2(1,1) ));
-	CHECK(assert_equal( Point2(8,6), Point2(4,3)*2));
-	CHECK(assert_equal( Point2(4,6), 2*Point2(2,3)));
-	CHECK(assert_equal( Point2(2,3), Point2(4,6)/2));
+	EXPECT(assert_equal( Point2(-5,-6), -Point2(5,6) ));
+	EXPECT(assert_equal( Point2(5,6), Point2(4,5)+Point2(1,1)));
+	EXPECT(assert_equal( Point2(3,4), Point2(4,5)-Point2(1,1) ));
+	EXPECT(assert_equal( Point2(8,6), Point2(4,3)*2));
+	EXPECT(assert_equal( Point2(4,6), 2*Point2(2,3)));
+	EXPECT(assert_equal( Point2(2,3), Point2(4,6)/2));
 }
 
 /* ************************************************************************* */
@@ -50,6 +50,15 @@ TEST( Point2, norm)
 	Point2 p1(4, 5), p2(1, 1);
 	DOUBLES_EQUAL( 5,p1.dist(p2),1e-6);
 	DOUBLES_EQUAL( 5,(p2-p1).norm(),1e-6);
+}
+
+/* ************************************************************************* */
+TEST( Point2, unit)
+{
+	Point2 p0(10.0, 0.0), p1(0.0,-10.0), p2(10.0, 10.0);
+	EXPECT(assert_equal(Point2(1.0, 0.0), p0.unit(), 1e-6));
+	EXPECT(assert_equal(Point2(0.0,-1.0), p1.unit(), 1e-6));
+	EXPECT(assert_equal(Point2(sqrt(2)/2.0, sqrt(2)/2.0), p2.unit(), 1e-6));
 }
 
 /* ************************************************************************* */
