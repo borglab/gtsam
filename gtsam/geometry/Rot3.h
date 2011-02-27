@@ -27,7 +27,7 @@
 
 namespace gtsam {
 
-  /* 3D Rotation */
+  /* 3D Rotations in GTSAM are represented as rotation matrices */
   class Rot3: Testable<Rot3>, public Lie<Rot3> {
   public:
 	  static const size_t dimension = 3;
