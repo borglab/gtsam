@@ -26,6 +26,14 @@
 
 namespace gtsam {
 
+/**
+ * A Generic Multifrontal Solver class
+ * Takes two template arguments:
+ *   FACTOR the factor type, e.g., GaussianFactor, DiscreteFactor
+ *   JUNCTIONTREE annoyingly, you also have to supply a compatible JT type
+ *                i.e., one templated on a factor graph with the same factors
+ *                TODO: figure why this is so and possibly fix it
+ */
 template<class FACTOR, class JUNCTIONTREE>
 class GenericMultifrontalSolver {
 
@@ -41,7 +49,8 @@ public:
 
   /**
    * Construct the solver for a factor graph.  This builds the junction
-   * tree, which already does some of the work of elimination.
+   * tree, which does the symbolic elimination, identifies the cliques,
+   * and distributes all the factors to the right cliques.
    */
   GenericMultifrontalSolver(const FactorGraph<FACTOR>& factorGraph);
 

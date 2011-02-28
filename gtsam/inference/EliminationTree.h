@@ -23,6 +23,15 @@ namespace gtsam {
 /**
  * An elimination tree is a data structure used intermediately during
  * elimination, and it can be used to save work between multiple eliminations.
+ *
+ * When a variable is eliminated, a new factor is created, which will involve
+ * other variables. Of those, the first one that will be eliminated next, will
+ * need that factor. In the elimination tree, that first variable is exactly
+ * the parent of each variable. This yields a tree in general, and not a chain
+ * because of the implicit sparse structure of the resulting Bayes net.
+ *
+ * This structures is examined even more closely in a JunctionTree, which
+ * additionally identifies cliques in the chordal Bayes net.
  */
 template<class FACTOR>
 class EliminationTree: public Testable<EliminationTree<FACTOR> > {
