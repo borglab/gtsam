@@ -155,7 +155,13 @@ inline void toc_(size_t id) {
     std::cout << "toc(" << id << ")" << std::endl;
   boost::shared_ptr<TimingOutline> current(timingCurrent.lock());
   if(!(id < current->parent_.lock()->children_.size() && current->parent_.lock()->children_[id] == current)) {
-    std::cout << "gtsam timing:  Incorrect ID passed to toc" << std::endl;
+    if(std::find(current->parent_.lock()->children_.begin(), current->parent_.lock()->children_.end(), current)
+        != current->parent_.lock()->children_.end())
+      std::cout << "gtsam timing:  Incorrect ID passed to toc, expected "
+          << std::find(current->parent_.lock()->children_.begin(), current->parent_.lock()->children_.end(), current) - current->parent_.lock()->children_.begin()
+          << ", got " << id << std::endl;
+    else
+      std::cout << "gtsam timing:  Incorrect ID passed to toc, id " << id << " does not exist" << std::endl;
     timingRoot->print();
     throw std::invalid_argument("gtsam timing:  Incorrect ID passed to toc");
   }
@@ -171,12 +177,13 @@ inline void toc_(size_t id) {
 inline void toc_(size_t id, const std::string& label) {
   if(ISDEBUG("timing-verbose"))
     std::cout << "toc(" << id << ", " << label << ")" << std::endl;
-#ifdef NDEBUG
+  bool check = false;
+#ifndef NDEBUG
   // If NDEBUG is defined, still do this debug check if the granular debugging
   // flag is enabled.  If NDEBUG is not defined, always do this check.
-  if(ISDEBUG("timing-debug"))
+  check = true;
 #endif
-  {
+  if(check || ISDEBUG("timing-debug")) {
     if(label != timingCurrent.lock()->label_) {
       std::cerr << "gtsam timing:  toc called with id=" << id << ", label=\"" << label << "\", but expecting \"" << timingCurrent.lock()->label_ << "\"" << std::endl;
       timingRoot->print();
