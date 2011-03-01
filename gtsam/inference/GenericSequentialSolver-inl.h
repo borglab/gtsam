@@ -52,7 +52,7 @@ void GenericSequentialSolver<FACTOR>::replaceFactors(const typename FactorGraph<
 
 /* ************************************************************************* */
 template<class FACTOR>
-typename BayesNet<typename FACTOR::Conditional>::shared_ptr GenericSequentialSolver<FACTOR>::eliminate() const {
+typename BayesNet<typename FACTOR::ConditionalType>::shared_ptr GenericSequentialSolver<FACTOR>::eliminate() const {
   return eliminationTree_->eliminate();
 }
 
@@ -73,7 +73,7 @@ typename FactorGraph<FACTOR>::shared_ptr GenericSequentialSolver<FACTOR>::jointF
   }
 
   // Eliminate all variables
-  typename BayesNet<typename FACTOR::Conditional>::shared_ptr bayesNet(
+  typename BayesNet<typename FACTOR::ConditionalType>::shared_ptr bayesNet(
       EliminationTree<FACTOR>::Create(*factors_)->eliminate());
 
   // Undo the permuation on the original factors and on the structure.
@@ -85,7 +85,7 @@ typename FactorGraph<FACTOR>::shared_ptr GenericSequentialSolver<FACTOR>::jointF
   // Take the joint marginal from the Bayes net.
   typename FactorGraph<FACTOR>::shared_ptr joint(new FactorGraph<FACTOR>);
   joint->reserve(js.size());
-  typename BayesNet<typename FACTOR::Conditional>::const_reverse_iterator conditional = bayesNet->rbegin();
+  typename BayesNet<typename FACTOR::ConditionalType>::const_reverse_iterator conditional = bayesNet->rbegin();
   for(size_t i = 0; i < js.size(); ++i) {
     joint->push_back((*(conditional++))->toFactor()); }
 

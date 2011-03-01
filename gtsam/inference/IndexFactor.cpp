@@ -41,7 +41,7 @@ pair<BayesNet<IndexConditional>::shared_ptr, IndexFactor::shared_ptr> IndexFacto
   if(variables.size() < 1)
     throw invalid_argument("IndexFactor::CombineAndEliminate called on factors with zero total variables.");
 
-  pair<BayesNet<Conditional>::shared_ptr, shared_ptr> result;
+  pair<BayesNet<ConditionalType>::shared_ptr, shared_ptr> result;
   result.first.reset(new BayesNet<IndexConditional>());
   FastSet<Index>::const_iterator var;
   for(var = variables.begin(); result.first->size() < nrFrontals; ++var)

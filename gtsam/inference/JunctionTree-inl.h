@@ -171,7 +171,7 @@ namespace gtsam {
     // Now that we know which factors and variables, and where variables
     // come from and go to, create and eliminate the new joint factor.
     tic(2, "CombineAndEliminate");
-    pair<typename BayesNet<typename FG::FactorType::Conditional>::shared_ptr, typename FG::sharedFactor> eliminated(
+    pair<typename BayesNet<typename FG::FactorType::ConditionalType>::shared_ptr, typename FG::sharedFactor> eliminated(
         FG::FactorType::CombineAndEliminate(fg, current->frontal.size()));
     toc(2, "CombineAndEliminate");
 

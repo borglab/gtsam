@@ -44,7 +44,7 @@ template<class KEY> class ConditionalBase;
  * todo:  Make NonlinearFactor derive from this too, which requires moving
  * Combine, eliminate*, permute* and the sorted key invariant to IndexFactor.
  *
- * Note that derived classes *must* redefine the Conditional and shared_ptr
+ * Note that derived classes *must* redefine the ConditionalType and shared_ptr
  * typedefs to refer to the associated conditional and shared_ptr types of the
  * derived class.  See IndexFactor, JacobianFactor, etc. for examples.
  */
@@ -60,7 +60,7 @@ public:
    * Typedef to the conditional type obtained by eliminating this factor.
    * Derived classes must redefine this.
    */
-  typedef gtsam::ConditionalBase<Key> Conditional;
+  typedef gtsam::ConditionalBase<Key> ConditionalType;
 
   /** A shared_ptr to this class.  Derived classes must redefine this. */
   typedef boost::shared_ptr<FactorBase> shared_ptr;
@@ -86,7 +86,7 @@ public:
   FactorBase(const This& f);
 
   /** Construct from derived type */
-  FactorBase(const Conditional& c);
+  FactorBase(const ConditionalType& c);
 
   /** Constructor from a collection of keys */
   template<class KEYITERATOR> FactorBase(KEYITERATOR beginKey, KEYITERATOR endKey) :

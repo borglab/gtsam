@@ -462,7 +462,7 @@ GaussianBayesNet::shared_ptr HessianFactor::splitEliminatedFactor(size_t nrFront
 
     tic(2, "construct cond");
     const ublas::scalar_vector<double> sigmas(varDim, 1.0);
-    conditionals->push_back(boost::make_shared<Conditional>(keys.begin()+j, keys.end(), 1, Ab, sigmas));
+    conditionals->push_back(boost::make_shared<ConditionalType>(keys.begin()+j, keys.end(), 1, Ab, sigmas));
     toc(2, "construct cond");
     if(debug) conditionals->back()->print("Extracted conditional: ");
     Ab.rowStart() += varDim;

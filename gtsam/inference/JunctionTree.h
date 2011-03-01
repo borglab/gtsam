@@ -46,7 +46,7 @@ namespace gtsam {
 		typedef typename ClusterTree<FG>::Cluster Clique;
 		typedef typename Clique::shared_ptr sharedClique;
 
-		typedef class BayesTree<typename FG::FactorType::Conditional> BayesTree;
+		typedef class BayesTree<typename FG::FactorType::ConditionalType> BayesTree;
 
 		typedef boost::shared_ptr<JunctionTree<FG> > shared_ptr;
 

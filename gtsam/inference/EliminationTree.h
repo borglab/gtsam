@@ -40,13 +40,13 @@ public:
 
   typedef typename FACTOR::shared_ptr sharedFactor;
   typedef boost::shared_ptr<EliminationTree<FACTOR> > shared_ptr;
-  typedef gtsam::BayesNet<typename FACTOR::Conditional> BayesNet;
+  typedef gtsam::BayesNet<typename FACTOR::ConditionalType> BayesNet;
 
 private:
 
   typedef FastList<sharedFactor> Factors;
   typedef FastList<shared_ptr> SubTrees;
-  typedef std::vector<typename FACTOR::Conditional::shared_ptr> Conditionals;
+  typedef std::vector<typename FACTOR::ConditionalType::shared_ptr> Conditionals;
 
   Index key_; /** index associated with root */
   Factors factors_; /** factors associated with root */

@@ -47,7 +47,7 @@ namespace gtsam {
     typedef FactorBase<Index> Base;
 
     /** Elimination produces an IndexConditional */
-    typedef IndexConditional Conditional;
+    typedef IndexConditional ConditionalType;
 
     /** Overriding the shared_ptr typedef */
     typedef boost::shared_ptr<IndexFactor> shared_ptr;
@@ -83,7 +83,7 @@ namespace gtsam {
     /**
      * Combine and eliminate several factors.
      */
-    static std::pair<BayesNet<Conditional>::shared_ptr, shared_ptr> CombineAndEliminate(
+    static std::pair<BayesNet<ConditionalType>::shared_ptr, shared_ptr> CombineAndEliminate(
         const FactorGraph<This>& factors, size_t nrFrontals=1);
 
     /** Create a combined joint factor (new style for EliminationTree). */
@@ -94,12 +94,12 @@ namespace gtsam {
      * eliminate the first variable involved in this factor
      * @return a conditional on the eliminated variable
      */
-    boost::shared_ptr<Conditional> eliminateFirst();
+    boost::shared_ptr<ConditionalType> eliminateFirst();
 
     /**
      * eliminate the first nrFrontals frontal variables.
      */
-    boost::shared_ptr<BayesNet<Conditional> > eliminate(size_t nrFrontals = 1);
+    boost::shared_ptr<BayesNet<ConditionalType> > eliminate(size_t nrFrontals = 1);
 
   };
 

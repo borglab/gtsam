@@ -35,7 +35,7 @@ FactorBase<KEY>::FactorBase(const FactorBase<KEY>& f) : keys_(f.keys_) {}
 
 /* ************************************************************************* */
 template<typename KEY>
-FactorBase<KEY>::FactorBase(const Conditional& c) : keys_(c.keys()) {}
+FactorBase<KEY>::FactorBase(const ConditionalType& c) : keys_(c.keys()) {}
 
 /* ************************************************************************* */
 template<typename KEY>

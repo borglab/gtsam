@@ -74,7 +74,7 @@ namespace gtsam {
 
     enum SolveMethod { SOLVE_QR, SOLVE_PREFER_CHOLESKY };
 
-    typedef GaussianConditional Conditional;
+    typedef GaussianConditional ConditionalType;
     typedef boost::shared_ptr<GaussianFactor> shared_ptr;
 
     // Implementing Testable interface

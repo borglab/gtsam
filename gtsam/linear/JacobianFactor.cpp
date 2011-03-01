@@ -449,7 +449,7 @@ namespace gtsam {
       size_t varDim = Ab_(0).size2();
       Ab_.rowEnd() = Ab_.rowStart() + varDim;
       const ublas::vector_range<const Vector> sigmas(noiseModel->sigmas(), ublas::range(Ab_.rowStart(), Ab_.rowEnd()));
-      conditionals->push_back(boost::make_shared<Conditional>(keys_.begin()+j, keys_.end(), 1, Ab_, sigmas));
+      conditionals->push_back(boost::make_shared<ConditionalType>(keys_.begin()+j, keys_.end(), 1, Ab_, sigmas));
       if(debug) conditionals->back()->print("Extracted conditional: ");
       Ab_.rowStart() += varDim;
       Ab_.firstBlock() += 1;

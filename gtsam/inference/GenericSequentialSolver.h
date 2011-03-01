@@ -66,7 +66,7 @@ public:
    * Eliminate the factor graph sequentially.  Uses a column elimination tree
    * to recursively eliminate.
    */
-  typename BayesNet<typename FACTOR::Conditional>::shared_ptr eliminate() const;
+  typename BayesNet<typename FACTOR::ConditionalType>::shared_ptr eliminate() const;
 
   /**
    * Compute the marginal joint over a set of variables, by integrating out
