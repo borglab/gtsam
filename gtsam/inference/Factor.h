@@ -10,7 +10,7 @@
  * -------------------------------------------------------------------------- */
 
 /**
- * @file    FactorBase.h
+ * @file    Factor.h
  * @brief   The base class for all factors
  * @author  Kai Ni
  * @author  Frank Dellaert
@@ -33,7 +33,7 @@
 
 namespace gtsam {
 
-template<class KEY> class ConditionalBase;
+template<class KEY> class Conditional;
 
 /**
  * This is the base class for all factor types.  It is templated on a KEY type,
@@ -49,21 +49,21 @@ template<class KEY> class ConditionalBase;
  * derived class.  See IndexFactor, JacobianFactor, etc. for examples.
  */
 template<typename KEY>
-class FactorBase : public Testable<FactorBase<KEY> > {
+class Factor : public Testable<Factor<KEY> > {
 
 public:
 
   typedef KEY Key;
-  typedef FactorBase<Key> This;
+  typedef Factor<Key> This;
 
   /**
    * Typedef to the conditional type obtained by eliminating this factor.
    * Derived classes must redefine this.
    */
-  typedef gtsam::ConditionalBase<Key> ConditionalType;
+  typedef gtsam::Conditional<Key> ConditionalType;
 
   /** A shared_ptr to this class.  Derived classes must redefine this. */
-  typedef boost::shared_ptr<FactorBase> shared_ptr;
+  typedef boost::shared_ptr<Factor> shared_ptr;
 
   /** Iterator over keys */
   typedef std::vector<Index>::iterator iterator;
@@ -83,36 +83,36 @@ protected:
 public:
 
   /** Copy constructor */
-  FactorBase(const This& f);
+  Factor(const This& f);
 
   /** Construct from derived type */
-  FactorBase(const ConditionalType& c);
+  Factor(const ConditionalType& c);
 
   /** Constructor from a collection of keys */
-  template<class KEYITERATOR> FactorBase(KEYITERATOR beginKey, KEYITERATOR endKey) :
+  template<class KEYITERATOR> Factor(KEYITERATOR beginKey, KEYITERATOR endKey) :
         keys_(beginKey, endKey) { assertInvariants(); }
 
   /** Default constructor for I/O */
-  FactorBase() {}
+  Factor() {}
 
   /** Construct unary factor */
-  FactorBase(Key key) : keys_(1) {
+  Factor(Key key) : keys_(1) {
     keys_[0] = key; assertInvariants(); }
 
   /** Construct binary factor */
-  FactorBase(Key key1, Key key2) : keys_(2) {
+  Factor(Key key1, Key key2) : keys_(2) {
     keys_[0] = key1; keys_[1] = key2; assertInvariants(); }
 
   /** Construct ternary factor */
-  FactorBase(Key key1, Key key2, Key key3) : keys_(3) {
+  Factor(Key key1, Key key2, Key key3) : keys_(3) {
     keys_[0] = key1; keys_[1] = key2; keys_[2] = key3; assertInvariants(); }
 
   /** Construct 4-way factor */
-  FactorBase(Key key1, Key key2, Key key3, Key key4) : keys_(4) {
+  Factor(Key key1, Key key2, Key key3, Key key4) : keys_(4) {
     keys_[0] = key1; keys_[1] = key2; keys_[2] = key3; keys_[3] = key4; assertInvariants(); }
 
   /** Construct n-way factor */
-  FactorBase(const std::set<Key>& keys) {
+  Factor(const std::set<Key>& keys) {
   	BOOST_FOREACH(const Key& key, keys)
   			keys_.push_back(key);
   	assertInvariants(); }

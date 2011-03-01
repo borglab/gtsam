@@ -26,7 +26,7 @@
 #include <boost/serialization/nvp.hpp>
 #include <gtsam/base/types.h>
 #include <gtsam/base/Testable.h>
-#include <gtsam/inference/FactorBase.h>
+#include <gtsam/inference/Factor.h>
 #include <gtsam/inference/Permutation.h>
 
 namespace gtsam {
@@ -47,7 +47,7 @@ namespace gtsam {
  * immutable, i.e., practicing functional programming.
  */
 template<typename KEY>
-class ConditionalBase: public gtsam::FactorBase<KEY>, boost::noncopyable, public Testable<ConditionalBase<KEY> > {
+class Conditional: public gtsam::Factor<KEY>, boost::noncopyable, public Testable<Conditional<KEY> > {
 
 protected:
 
@@ -62,14 +62,14 @@ protected:
 public:
 
   typedef KEY Key;
-  typedef ConditionalBase<Key> This;
+  typedef Conditional<Key> This;
 
   /**
    * Typedef to the factor type that produces this conditional and that this
    * conditional can be converted to using a factor constructor. Derived
    * classes must redefine this.
    */
-  typedef gtsam::FactorBase<Key> FactorType;
+  typedef gtsam::Factor<Key> FactorType;
 
   /** A shared_ptr to this class.  Derived classes must redefine this. */
   typedef boost::shared_ptr<This> shared_ptr;
@@ -87,22 +87,22 @@ public:
   typedef boost::iterator_range<const_iterator> Parents;
 
   /** Empty Constructor to make serialization possible */
-  ConditionalBase() : nrFrontals_(0) {}
+  Conditional() : nrFrontals_(0) {}
 
   /** No parents */
-  ConditionalBase(Key key) : FactorType(key), nrFrontals_(1) {}
+  Conditional(Key key) : FactorType(key), nrFrontals_(1) {}
 
   /** Single parent */
-  ConditionalBase(Key key, Key parent) : FactorType(key, parent), nrFrontals_(1) {}
+  Conditional(Key key, Key parent) : FactorType(key, parent), nrFrontals_(1) {}
 
   /** Two parents */
-  ConditionalBase(Key key, Key parent1, Key parent2) : FactorType(key, parent1, parent2), nrFrontals_(1) {}
+  Conditional(Key key, Key parent1, Key parent2) : FactorType(key, parent1, parent2), nrFrontals_(1) {}
 
   /** Three parents */
-  ConditionalBase(Key key, Key parent1, Key parent2, Key parent3) : FactorType(key, parent1, parent2, parent3), nrFrontals_(1) {}
+  Conditional(Key key, Key parent1, Key parent2, Key parent3) : FactorType(key, parent1, parent2, parent3), nrFrontals_(1) {}
 
   /** Constructor from a frontal variable and a vector of parents */
-  ConditionalBase(Key key, const std::vector<Key>& parents) : nrFrontals_(1) {
+  Conditional(Key key, const std::vector<Key>& parents) : nrFrontals_(1) {
     FactorType::keys_.resize(1 + parents.size());
     *(beginFrontals()) = key;
     std::copy(parents.begin(), parents.end(), beginParents());
@@ -190,7 +190,7 @@ private:
 
 /* ************************************************************************* */
 template<typename KEY>
-void ConditionalBase<KEY>::print(const std::string& s) const {
+void Conditional<KEY>::print(const std::string& s) const {
   std::cout << s << " P(";
   BOOST_FOREACH(Key key, frontals()) std::cout << " " << key;
   if (nrParents()>0) std::cout << " |";
@@ -200,7 +200,7 @@ void ConditionalBase<KEY>::print(const std::string& s) const {
 
 /* ************************************************************************* */
 template<typename KEY>
-bool ConditionalBase<KEY>::permuteSeparatorWithInverse(const Permutation& inversePermutation) {
+bool Conditional<KEY>::permuteSeparatorWithInverse(const Permutation& inversePermutation) {
 #ifndef NDEBUG
   BOOST_FOREACH(Key key, frontals()) { assert(key == inversePermutation[key]); }
 #endif
@@ -217,7 +217,7 @@ bool ConditionalBase<KEY>::permuteSeparatorWithInverse(const Permutation& invers
 
 /* ************************************************************************* */
 template<typename KEY>
-void ConditionalBase<KEY>::permuteWithInverse(const Permutation& inversePermutation) {
+void Conditional<KEY>::permuteWithInverse(const Permutation& inversePermutation) {
   // The permutation may not move the separators into the frontals
 #ifndef NDEBUG
   BOOST_FOREACH(const Key frontal, this->frontals()) {

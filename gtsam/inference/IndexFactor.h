@@ -18,7 +18,7 @@
 
 #pragma once
 
-#include <gtsam/inference/FactorBase.h>
+#include <gtsam/inference/Factor.h>
 
 namespace gtsam {
 
@@ -36,15 +36,15 @@ namespace gtsam {
    * this and derived classes calling them separately generally does extra
    * work.
    *
-   * It derives from FactorBase with a key type of Index, which is an unsigned
+   * It derives from Factor with a key type of Index, which is an unsigned
    * integer.
    */
-  class IndexFactor : public FactorBase<Index> {
+  class IndexFactor : public Factor<Index> {
 
   public:
 
     typedef IndexFactor This;
-    typedef FactorBase<Index> Base;
+    typedef Factor<Index> Base;
 
     /** Elimination produces an IndexConditional */
     typedef IndexConditional ConditionalType;

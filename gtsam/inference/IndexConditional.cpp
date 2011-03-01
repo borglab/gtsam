@@ -20,6 +20,6 @@
 
 namespace gtsam {
 
-template class ConditionalBase<Index>;
+template class Conditional<Index>;
 
 }

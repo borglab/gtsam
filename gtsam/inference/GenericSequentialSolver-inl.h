@@ -19,7 +19,7 @@
 #pragma once
 
 #include <gtsam/inference/GenericSequentialSolver.h>
-#include <gtsam/inference/FactorBase-inl.h>
+#include <gtsam/inference/Factor-inl.h>
 #include <gtsam/inference/EliminationTree-inl.h>
 #include <gtsam/inference/BayesNet-inl.h>
 

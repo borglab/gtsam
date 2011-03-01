@@ -10,7 +10,7 @@
  * -------------------------------------------------------------------------- */
 
 /**
- * @file    FactorBase-inl.h
+ * @file    Factor-inl.h
  * @brief   
  * @author  Richard Roberts
  * @created Sep 1, 2010
@@ -18,7 +18,7 @@
 
 #pragma once
 
-#include <gtsam/inference/FactorBase.h>
+#include <gtsam/inference/Factor.h>
 
 #include <boost/foreach.hpp>
 #include <boost/make_shared.hpp>
@@ -31,15 +31,15 @@ namespace gtsam {
 
 /* ************************************************************************* */
 template<typename KEY>
-FactorBase<KEY>::FactorBase(const FactorBase<KEY>& f) : keys_(f.keys_) {}
+Factor<KEY>::Factor(const Factor<KEY>& f) : keys_(f.keys_) {}
 
 /* ************************************************************************* */
 template<typename KEY>
-FactorBase<KEY>::FactorBase(const ConditionalType& c) : keys_(c.keys()) {}
+Factor<KEY>::Factor(const ConditionalType& c) : keys_(c.keys()) {}
 
 /* ************************************************************************* */
 template<typename KEY>
-void FactorBase<KEY>::assertInvariants() const {
+void Factor<KEY>::assertInvariants() const {
 #ifndef NDEBUG
   std::set<Index> uniqueSorted(keys_.begin(), keys_.end());
   assert(uniqueSorted.size() == keys_.size());
@@ -49,7 +49,7 @@ void FactorBase<KEY>::assertInvariants() const {
 
 /* ************************************************************************* */
 template<typename KEY>
-void FactorBase<KEY>::print(const std::string& s) const {
+void Factor<KEY>::print(const std::string& s) const {
   std::cout << s << " ";
   BOOST_FOREACH(KEY key, keys_) std::cout << " " << key;
   std::cout << std::endl;
@@ -57,14 +57,14 @@ void FactorBase<KEY>::print(const std::string& s) const {
 
 /* ************************************************************************* */
 template<typename KEY>
-bool FactorBase<KEY>::equals(const This& other, double tol) const {
+bool Factor<KEY>::equals(const This& other, double tol) const {
   return keys_ == other.keys_;
 }
 
 /* ************************************************************************* */
 template<typename KEY>
 template<class DERIVED>
-typename DERIVED::shared_ptr FactorBase<KEY>::Combine(const FactorGraph<DERIVED>& factors, const FastMap<Key, std::vector<Key> >& variableSlots) {
+typename DERIVED::shared_ptr Factor<KEY>::Combine(const FactorGraph<DERIVED>& factors, const FastMap<Key, std::vector<Key> >& variableSlots) {
   typedef const FastMap<Key, std::vector<Key> > VariableSlots;
   typedef typeof(boost::lambda::bind(&VariableSlots::value_type::first, boost::lambda::_1)) FirstGetter;
   typedef boost::transform_iterator<
@@ -79,7 +79,7 @@ typename DERIVED::shared_ptr FactorBase<KEY>::Combine(const FactorGraph<DERIVED>
 /* ************************************************************************* */
 template<typename KEY>
 template<class CONDITIONAL>
-typename CONDITIONAL::shared_ptr FactorBase<KEY>::eliminateFirst() {
+typename CONDITIONAL::shared_ptr Factor<KEY>::eliminateFirst() {
   assert(!keys_.empty());
   assertInvariants();
   KEY eliminated = keys_.front();
@@ -90,7 +90,7 @@ typename CONDITIONAL::shared_ptr FactorBase<KEY>::eliminateFirst() {
 /* ************************************************************************* */
 template<typename KEY>
 template<class CONDITIONAL>
-typename BayesNet<CONDITIONAL>::shared_ptr FactorBase<KEY>::eliminate(size_t nrFrontals) {
+typename BayesNet<CONDITIONAL>::shared_ptr Factor<KEY>::eliminate(size_t nrFrontals) {
   assert(keys_.size() >= nrFrontals);
   assertInvariants();
   typename BayesNet<CONDITIONAL>::shared_ptr fragment(new BayesNet<CONDITIONAL>());
@@ -105,7 +105,7 @@ typename BayesNet<CONDITIONAL>::shared_ptr FactorBase<KEY>::eliminate(size_t nrF
 
 /* ************************************************************************* */
 template<typename KEY>
-void FactorBase<KEY>::permuteWithInverse(const Permutation& inversePermutation) {
+void Factor<KEY>::permuteWithInverse(const Permutation& inversePermutation) {
   BOOST_FOREACH(KEY& key, keys_) { key = inversePermutation[key]; }
 }
 

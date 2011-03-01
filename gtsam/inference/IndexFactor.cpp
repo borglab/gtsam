@@ -17,7 +17,7 @@
  */
 
 #include <gtsam/base/FastSet.h>
-#include <gtsam/inference/FactorBase-inl.h>
+#include <gtsam/inference/Factor-inl.h>
 #include <gtsam/inference/IndexFactor.h>
 #include <gtsam/inference/IndexConditional.h>
 #include <gtsam/inference/VariableSlots.h>
@@ -26,7 +26,7 @@ using namespace std;
 
 namespace gtsam {
 
-template class FactorBase<Index>;
+template class Factor<Index>;
 
 IndexFactor::IndexFactor(const IndexConditional& c) : Base(c) {}
 

@@ -15,7 +15,7 @@ check_PROGRAMS =
 #----------------------------------------------------------------------------------------------------
 
 # GTSAM core
-headers += FactorBase.h FactorBase-inl.h ConditionalBase.h 
+headers += Factor.h Factor-inl.h Conditional.h 
 
 # Symbolic Inference
 sources += SymbolicFactorGraph.cpp SymbolicMultifrontalSolver.cpp SymbolicSequentialSolver.cpp

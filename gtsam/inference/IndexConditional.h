@@ -18,7 +18,7 @@
 
 #pragma once
 
-#include <gtsam/inference/ConditionalBase.h>
+#include <gtsam/inference/Conditional.h>
 #include <gtsam/inference/IndexFactor.h>
 
 namespace gtsam {
@@ -28,15 +28,15 @@ namespace gtsam {
    * GaussianConditional, and also functions as a symbolic conditional with
    * Index keys, produced by symbolic elimination of IndexFactor.
    *
-   * It derives from ConditionalBase with a key type of Index, which is an
+   * It derives from Conditional with a key type of Index, which is an
    * unsigned integer.
    */
-  class IndexConditional : public ConditionalBase<Index> {
+  class IndexConditional : public Conditional<Index> {
 
   public:
 
     typedef IndexConditional This;
-    typedef ConditionalBase<Index> Base;
+    typedef Conditional<Index> Base;
     typedef IndexFactor FactorType;
     typedef boost::shared_ptr<IndexConditional> shared_ptr;
 

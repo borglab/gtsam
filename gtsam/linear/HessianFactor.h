@@ -118,7 +118,7 @@ namespace gtsam {
      * variable.  The order of the variables within the factor is not changed.
      */
     virtual void permuteWithInverse(const Permutation& inversePermutation) {
-      FactorBase<Index>::permuteWithInverse(inversePermutation); }
+      Factor<Index>::permuteWithInverse(inversePermutation); }
 
     /**
      * Combine and eliminate several factors.
