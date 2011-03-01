@@ -38,6 +38,7 @@ bool assert_equal(const Index& expected, const Index& actual, double tol = 0.0) 
 
 /**
  * Version of assert_equals to work with vectors
+ * TODO: replace this with a more general approach to handle multiple types of containers
  */
 template<class V>
 bool assert_equal(const std::vector<V>& expected, const std::vector<V>& actual, double tol = 1e-9) {
@@ -58,6 +59,66 @@ bool assert_equal(const std::vector<V>& expected, const std::vector<V>& actual, 
 	  BOOST_FOREACH(const V& a, expected) { std::cout << a << " "; }
 	  std::cout << "\nactual: ";
 	  BOOST_FOREACH(const V& a, actual) { std::cout << a << " "; }
+	  std::cout << std::endl;
+	  return false;
+	}
+	return true;
+}
+
+/**
+ * General function for comparing containers of testable objects
+ */
+template<class V>
+bool assert_container_equal(const V& expected, const V& actual, double tol = 1e-9) {
+  bool match = true;
+  if (expected.size() != actual.size())
+    match = false;
+  typename V::const_iterator
+  	itExp = expected.begin(),
+  	itAct = actual.begin();
+  if(match) {
+  	for (; itExp!=expected.end() && itAct!=actual.end(); ++itExp, ++itAct) {
+  		if (!assert_equal(*itExp, *itAct, tol)) {
+  			match = false;
+  			break;
+  		}
+  	}
+  }
+	if(!match) {
+	  std::cout << "expected: ";
+	  BOOST_FOREACH(const typename V::value_type& a, expected) { a.print("  "); }
+	  std::cout << "\nactual: ";
+	  BOOST_FOREACH(const typename V::value_type& a, actual) { a.print("  "); }
+	  std::cout << std::endl;
+	  return false;
+	}
+	return true;
+}
+
+/**
+ * General function for comparing containers of objects with operator==
+ */
+template<class V>
+bool assert_container_equality(const V& expected, const V& actual, double tol = 1e-9) {
+  bool match = true;
+  if (expected.size() != actual.size())
+    match = false;
+  typename V::const_iterator
+  	itExp = expected.begin(),
+  	itAct = actual.begin();
+  if(match) {
+  	for (; itExp!=expected.end() && itAct!=actual.end(); ++itExp, ++itAct) {
+  		if (*itExp != *itAct) {
+  			match = false;
+  			break;
+  		}
+  	}
+  }
+	if(!match) {
+	  std::cout << "expected: ";
+	  BOOST_FOREACH(const typename V::value_type& a, expected) { std::cout << a << " "; }
+	  std::cout << "\nactual: ";
+	  BOOST_FOREACH(const typename V::value_type& a, actual) { std::cout << a << " "; }
 	  std::cout << std::endl;
 	  return false;
 	}
