@@ -31,19 +31,20 @@ namespace gtsam {
 
 /* ************************************************************************* */
 template<typename KEY>
-Factor<KEY>::Factor(const Factor<KEY>& f) : keys_(f.keys_) {}
+Factor<KEY>::Factor(const Factor<KEY>& f) : keys_(f.keys_) { assertInvariants(); }
 
 /* ************************************************************************* */
 template<typename KEY>
-Factor<KEY>::Factor(const ConditionalType& c) : keys_(c.keys()) {}
+Factor<KEY>::Factor(const ConditionalType& c) : keys_(c.keys()) { assertInvariants(); }
 
 /* ************************************************************************* */
 template<typename KEY>
 void Factor<KEY>::assertInvariants() const {
 #ifndef NDEBUG
-  std::set<Index> uniqueSorted(keys_.begin(), keys_.end());
-  assert(uniqueSorted.size() == keys_.size());
-  assert(std::equal(uniqueSorted.begin(), uniqueSorted.end(), keys_.begin()));
+  // Check that keys are all unique
+  std::multiset<Key> nonunique(keys_.begin(), keys_.end());
+  std::set<Key> unique(keys_.begin(), keys_.end());
+  assert(nonunique.size() == unique.size() && std::equal(nonunique.begin(), nonunique.end(), unique.begin()));
 #endif
 }
 
@@ -84,6 +85,7 @@ typename CONDITIONAL::shared_ptr Factor<KEY>::eliminateFirst() {
   assertInvariants();
   KEY eliminated = keys_.front();
   keys_.erase(keys_.begin());
+  assertInvariants();
   return typename CONDITIONAL::shared_ptr(new CONDITIONAL(eliminated, keys_));
 }
 
@@ -100,6 +102,7 @@ typename BayesNet<CONDITIONAL>::shared_ptr Factor<KEY>::eliminate(size_t nrFront
         nextFrontal, const_iterator(this->end()), 1));
   if(nrFrontals > 0)
     keys_.assign(fragment->back()->beginParents(), fragment->back()->endParents());
+  assertInvariants();
   return fragment;
 }
 
@@ -107,6 +110,7 @@ typename BayesNet<CONDITIONAL>::shared_ptr Factor<KEY>::eliminate(size_t nrFront
 template<typename KEY>
 void Factor<KEY>::permuteWithInverse(const Permutation& inversePermutation) {
   BOOST_FOREACH(KEY& key, keys_) { key = inversePermutation[key]; }
+  assertInvariants();
 }
 
 }

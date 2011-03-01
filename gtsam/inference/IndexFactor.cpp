@@ -28,8 +28,21 @@ namespace gtsam {
 
 template class Factor<Index>;
 
-IndexFactor::IndexFactor(const IndexConditional& c) : Base(c) {}
+/* ************************************************************************* */
+void IndexFactor::assertInvariants() const {
+  Base::assertInvariants();
+#ifndef NDEBUG
+  std::set<Index> uniqueSorted(keys_.begin(), keys_.end());
+  assert(uniqueSorted.size() == keys_.size() && std::equal(uniqueSorted.begin(), uniqueSorted.end(), keys_.begin()));
+#endif
+}
 
+/* ************************************************************************* */
+IndexFactor::IndexFactor(const IndexConditional& c): Base(c) {
+  assertInvariants();
+}
+
+/* ************************************************************************* */
 pair<BayesNet<IndexConditional>::shared_ptr, IndexFactor::shared_ptr> IndexFactor::CombineAndEliminate(
     const FactorGraph<This>& factors, size_t nrFrontals) {
 
@@ -51,14 +64,26 @@ pair<BayesNet<IndexConditional>::shared_ptr, IndexFactor::shared_ptr> IndexFacto
   return result;
 }
 
+/* ************************************************************************* */
 IndexFactor::shared_ptr IndexFactor::Combine(
     const FactorGraph<This>& factors, const FastMap<Index, std::vector<Index> >& variableSlots) {
-  return Base::Combine<This>(factors, variableSlots); }
+  IndexFactor::shared_ptr combined(Base::Combine<This>(factors, variableSlots));
+  combined->assertInvariants();
+  return combined;
+}
 
+/* ************************************************************************* */
 boost::shared_ptr<IndexConditional> IndexFactor::eliminateFirst() {
-  return Base::eliminateFirst<IndexConditional>(); }
+  boost::shared_ptr<IndexConditional> result(Base::eliminateFirst<IndexConditional>());
+  assertInvariants();
+  return result;
+}
 
+/* ************************************************************************* */
 boost::shared_ptr<BayesNet<IndexConditional> > IndexFactor::eliminate(size_t nrFrontals) {
-  return Base::eliminate<IndexConditional>(nrFrontals); }
+  boost::shared_ptr<BayesNet<IndexConditional> > result(Base::eliminate<IndexConditional>(nrFrontals));
+  assertInvariants();
+  return result;
+}
 
 }

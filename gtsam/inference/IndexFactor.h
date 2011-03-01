@@ -41,6 +41,11 @@ namespace gtsam {
    */
   class IndexFactor : public Factor<Index> {
 
+  protected:
+
+    // Internal function for checking class invariants (sorted keys for this factor)
+    void assertInvariants() const;
+
   public:
 
     typedef IndexFactor This;
@@ -53,32 +58,32 @@ namespace gtsam {
     typedef boost::shared_ptr<IndexFactor> shared_ptr;
 
     /** Copy constructor */
-    IndexFactor(const This& f) : Base(f) {}
+    IndexFactor(const This& f) : Base(f) { assertInvariants(); }
 
     /** Construct from derived type */
     IndexFactor(const IndexConditional& c);
 
     /** Constructor from a collection of keys */
     template<class KeyIterator> IndexFactor(KeyIterator beginKey, KeyIterator endKey) :
-          Base(beginKey, endKey) {}
+          Base(beginKey, endKey) { assertInvariants(); }
 
     /** Default constructor for I/O */
-    IndexFactor() {}
+    IndexFactor() { assertInvariants(); }
 
     /** Construct unary factor */
-    IndexFactor(Index j) : Base(j) {}
+    IndexFactor(Index j) : Base(j) { assertInvariants(); }
 
     /** Construct binary factor */
-    IndexFactor(Index j1, Index j2) : Base(j1, j2) {}
+    IndexFactor(Index j1, Index j2) : Base(j1, j2) { assertInvariants(); }
 
     /** Construct ternary factor */
-    IndexFactor(Index j1, Index j2, Index j3) : Base(j1, j2, j3) {}
+    IndexFactor(Index j1, Index j2, Index j3) : Base(j1, j2, j3) { assertInvariants(); }
 
     /** Construct 4-way factor */
-    IndexFactor(Index j1, Index j2, Index j3, Index j4) : Base(j1, j2, j3, j4) {}
+    IndexFactor(Index j1, Index j2, Index j3, Index j4) : Base(j1, j2, j3, j4) { assertInvariants(); }
 
     /** Construct n-way factor */
-    IndexFactor(const std::set<Index>& js) : Base(js) {}
+    IndexFactor(const std::set<Index>& js) : Base(js) { assertInvariants(); }
 
     /**
      * Combine and eliminate several factors.

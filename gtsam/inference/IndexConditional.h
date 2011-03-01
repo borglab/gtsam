@@ -33,6 +33,11 @@ namespace gtsam {
    */
   class IndexConditional : public Conditional<Index> {
 
+  protected:
+
+    // Checks that frontal indices are sorted and lower than parent indices
+    void assertInvariants() const;
+
   public:
 
     typedef IndexConditional This;
@@ -41,32 +46,36 @@ namespace gtsam {
     typedef boost::shared_ptr<IndexConditional> shared_ptr;
 
     /** Empty Constructor to make serialization possible */
-    IndexConditional() {}
+    IndexConditional() { assertInvariants(); }
 
     /** No parents */
-    IndexConditional(Index j) : Base(j) {}
+    IndexConditional(Index j) : Base(j) { assertInvariants(); }
 
     /** Single parent */
-    IndexConditional(Index j, Index parent) : Base(j, parent) {}
+    IndexConditional(Index j, Index parent) : Base(j, parent) { assertInvariants(); }
 
     /** Two parents */
-    IndexConditional(Index j, Index parent1, Index parent2) : Base(j, parent1, parent2) {}
+    IndexConditional(Index j, Index parent1, Index parent2) : Base(j, parent1, parent2) { assertInvariants(); }
 
     /** Three parents */
-    IndexConditional(Index j, Index parent1, Index parent2, Index parent3) : Base(j, parent1, parent2, parent3) {}
+    IndexConditional(Index j, Index parent1, Index parent2, Index parent3) : Base(j, parent1, parent2, parent3) { assertInvariants(); }
 
     /** Constructor from a frontal variable and a vector of parents */
-    IndexConditional(Index j, const std::vector<Index>& parents) : Base(j, parents) {}
+    IndexConditional(Index j, const std::vector<Index>& parents) : Base(j, parents) { assertInvariants(); }
 
     /** Constructor from a frontal variable and an iterator range of parents */
     template<typename ITERATOR>
     static shared_ptr FromRange(Index j, ITERATOR firstParent, ITERATOR lastParent) {
-      return Base::FromRange<This>(j, firstParent, lastParent); }
+      shared_ptr result(Base::FromRange<This>(j, firstParent, lastParent));
+      result->assertInvariants();
+      return result; }
 
     /** Named constructor from any number of frontal variables and parents */
     template<typename ITERATOR>
     static shared_ptr FromRange(ITERATOR firstKey, ITERATOR lastKey, size_t nrFrontals) {
-      return Base::FromRange<This>(firstKey, lastKey, nrFrontals); }
+      shared_ptr result(Base::FromRange<This>(firstKey, lastKey, nrFrontals));
+      result->assertInvariants();
+      return result; }
 
     /** Convert to a factor */
     IndexFactor::shared_ptr toFactor() const { return IndexFactor::shared_ptr(new IndexFactor(*this)); }

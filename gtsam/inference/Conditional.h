@@ -54,15 +54,14 @@ protected:
   /** The first nFrontal variables are frontal and the rest are parents. */
   size_t nrFrontals_;
 
-  /** Debugging invariant that the keys should be in order, including that the
-   * conditioned variable is numbered lower than the parents.
-   */
-  void assertInvariants() const;
+  // Calls the base class assertInvariants, which checks for unique keys
+  void assertInvariants() const { Factor<KEY>::assertInvariants(); }
 
 public:
 
   typedef KEY Key;
   typedef Conditional<Key> This;
+  typedef Factor<Key> Base;
 
   /**
    * Typedef to the factor type that produces this conditional and that this
@@ -87,25 +86,26 @@ public:
   typedef boost::iterator_range<const_iterator> Parents;
 
   /** Empty Constructor to make serialization possible */
-  Conditional() : nrFrontals_(0) {}
+  Conditional() : nrFrontals_(0) { assertInvariants(); }
 
   /** No parents */
-  Conditional(Key key) : FactorType(key), nrFrontals_(1) {}
+  Conditional(Key key) : FactorType(key), nrFrontals_(1) { assertInvariants(); }
 
   /** Single parent */
-  Conditional(Key key, Key parent) : FactorType(key, parent), nrFrontals_(1) {}
+  Conditional(Key key, Key parent) : FactorType(key, parent), nrFrontals_(1) { assertInvariants(); }
 
   /** Two parents */
-  Conditional(Key key, Key parent1, Key parent2) : FactorType(key, parent1, parent2), nrFrontals_(1) {}
+  Conditional(Key key, Key parent1, Key parent2) : FactorType(key, parent1, parent2), nrFrontals_(1) { assertInvariants(); }
 
   /** Three parents */
-  Conditional(Key key, Key parent1, Key parent2, Key parent3) : FactorType(key, parent1, parent2, parent3), nrFrontals_(1) {}
+  Conditional(Key key, Key parent1, Key parent2, Key parent3) : FactorType(key, parent1, parent2, parent3), nrFrontals_(1) { assertInvariants(); }
 
   /** Constructor from a frontal variable and a vector of parents */
   Conditional(Key key, const std::vector<Key>& parents) : nrFrontals_(1) {
     FactorType::keys_.resize(1 + parents.size());
     *(beginFrontals()) = key;
     std::copy(parents.begin(), parents.end(), beginParents());
+    assertInvariants();
   }
 
   /** Constructor from a frontal variable and an iterator range of parents */
@@ -115,6 +115,7 @@ public:
     conditional->nrFrontals_ = 1;
     conditional->keys_.push_back(key);
     std::copy(firstParent, lastParent, back_inserter(conditional->keys_));
+    conditional->This::assertInvariants();
     return conditional;
   }
 
@@ -124,6 +125,7 @@ public:
     typename DERIVED::shared_ptr conditional(new DERIVED);
     conditional->nrFrontals_ = nrFrontals;
     std::copy(firstKey, lastKey, back_inserter(conditional->keys_));
+    conditional->This::assertInvariants();
     return conditional;
   }
 
@@ -212,6 +214,7 @@ bool Conditional<KEY>::permuteSeparatorWithInverse(const Permutation& inversePer
       parent = newParent;
     }
   }
+  assertInvariants();
   return parentChanged;
 }
 
@@ -227,6 +230,7 @@ void Conditional<KEY>::permuteWithInverse(const Permutation& inversePermutation)
   }
 #endif
   FactorType::permuteWithInverse(inversePermutation);
+  assertInvariants();
 }
 
 }

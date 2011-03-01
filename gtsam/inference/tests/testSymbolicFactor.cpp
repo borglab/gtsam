@@ -29,6 +29,22 @@ using namespace gtsam;
 using namespace boost::assign;
 
 /* ************************************************************************* */
+TEST(SymbolicFactor, constructor) {
+
+  // Frontals sorted, parents not sorted
+  vector<Index> keys1; keys1 += 3, 4, 5, 9, 7, 8;
+  (void)IndexConditional::FromRange(keys1.begin(), keys1.end(), 3);
+
+//  // Frontals not sorted
+//  vector<Index> keys2; keys2 += 3, 5, 4, 9, 7, 8;
+//  (void)IndexConditional::FromRange(keys2.begin(), keys2.end(), 3);
+
+//  // Frontals not before parents
+//  vector<Index> keys3; keys3 += 3, 4, 5, 1, 7, 8;
+//  (void)IndexConditional::FromRange(keys3.begin(), keys3.end(), 3);
+}
+
+/* ************************************************************************* */
 TEST(SymbolicFactor, eliminate) {
   vector<Index> keys; keys += 2, 3, 4, 6, 7, 9, 10, 11;
   IndexFactor actual(keys.begin(), keys.end());

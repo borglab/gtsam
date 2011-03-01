@@ -76,7 +76,7 @@ protected:
   // The keys involved in this factor
   std::vector<Key> keys_;
 
-  // Internal check to make sure keys are sorted.  If NDEBUG is defined, this
+  // Internal check to make sure keys are unique.  If NDEBUG is defined, this
   // is empty and optimized out.
   void assertInvariants() const;
 
