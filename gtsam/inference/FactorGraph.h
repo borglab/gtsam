@@ -41,7 +41,7 @@ namespace gtsam {
 	template<class FACTOR>
 	class FactorGraph: public Testable<FactorGraph<FACTOR> > {
 	public:
-	  typedef FACTOR Factor;
+	  typedef FACTOR FactorType;
 	  typedef boost::shared_ptr<FactorGraph<FACTOR> > shared_ptr;
 		typedef typename boost::shared_ptr<FACTOR> sharedFactor;
 		typedef typename std::vector<sharedFactor>::iterator iterator;
@@ -115,7 +115,7 @@ namespace gtsam {
 		  typename RELATED::shared_ptr ret(new RELATED);
 		  ret->reserve(this->size());
 		  BOOST_FOREACH(const sharedFactor& factor, *this) {
-		    typename RELATED::Factor::shared_ptr castedFactor(boost::dynamic_pointer_cast<typename RELATED::Factor>(factor));
+		    typename RELATED::FactorType::shared_ptr castedFactor(boost::dynamic_pointer_cast<typename RELATED::FactorType>(factor));
 		    if(castedFactor)
 		      ret->push_back(castedFactor);
 		    else
@@ -133,11 +133,11 @@ namespace gtsam {
       typename TARGET::shared_ptr ret(new TARGET);
       ret->reserve(this->size());
       BOOST_FOREACH(const sharedFactor& factor, *this) {
-        typename TARGET::Factor::shared_ptr castedFactor(boost::dynamic_pointer_cast<typename TARGET::Factor>(factor));
+        typename TARGET::FactorType::shared_ptr castedFactor(boost::dynamic_pointer_cast<typename TARGET::FactorType>(factor));
         if(castedFactor)
           ret->push_back(castedFactor);
         else
-          ret->push_back(typename TARGET::Factor::shared_ptr(new typename TARGET::Factor(*factor)));
+          ret->push_back(typename TARGET::FactorType::shared_ptr(new typename TARGET::FactorType(*factor)));
       }
       return ret;
     }

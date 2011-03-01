@@ -89,7 +89,7 @@ namespace gtsam {
     Index maxVar = 0;
     for(size_t i=0; i<fg.size(); ++i)
       if(fg[i]) {
-        typename FG::Factor::const_iterator min = std::min_element(fg[i]->begin(), fg[i]->end());
+        typename FG::FactorType::const_iterator min = std::min_element(fg[i]->begin(), fg[i]->end());
         if(min == fg[i]->end())
           lowestOrdered[i] = numeric_limits<Index>::max();
         else {
@@ -171,8 +171,8 @@ namespace gtsam {
     // Now that we know which factors and variables, and where variables
     // come from and go to, create and eliminate the new joint factor.
     tic(2, "CombineAndEliminate");
-    pair<typename BayesNet<typename FG::Factor::Conditional>::shared_ptr, typename FG::sharedFactor> eliminated(
-        FG::Factor::CombineAndEliminate(fg, current->frontal.size()));
+    pair<typename BayesNet<typename FG::FactorType::Conditional>::shared_ptr, typename FG::sharedFactor> eliminated(
+        FG::FactorType::CombineAndEliminate(fg, current->frontal.size()));
     toc(2, "CombineAndEliminate");
 
     assert(std::equal(eliminated.second->begin(), eliminated.second->end(), current->separator.begin()));

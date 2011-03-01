@@ -63,7 +63,7 @@ namespace gtsam {
 			weak_ptr parent_;
 			std::list<shared_ptr> children_;
 			std::list<Index> separator_; /** separator keys */
-			typename CONDITIONAL::Factor::shared_ptr cachedFactor_;
+			typename CONDITIONAL::FactorType::shared_ptr cachedFactor_;
 
 			friend class BayesTree<CONDITIONAL>;
 
@@ -96,7 +96,7 @@ namespace gtsam {
 			size_t treeSize() const;
 
 			/** Access the cached factor (this is a hack) */
-			typename CONDITIONAL::Factor::shared_ptr& cachedFactor() { return cachedFactor_; }
+			typename CONDITIONAL::FactorType::shared_ptr& cachedFactor() { return cachedFactor_; }
 
 			/** print this node and entire subtree below it */
 			void printTree(const std::string& indent="") const;
@@ -116,10 +116,10 @@ namespace gtsam {
 			BayesNet<CONDITIONAL> shortcut(shared_ptr root);
 
 			/** return the marginal P(C) of the clique */
-			FactorGraph<typename CONDITIONAL::Factor> marginal(shared_ptr root);
+			FactorGraph<typename CONDITIONAL::FactorType> marginal(shared_ptr root);
 
 			/** return the joint P(C1,C2), where C1==this. TODO: not a method? */
-			FactorGraph<typename CONDITIONAL::Factor> joint(shared_ptr C2, shared_ptr root);
+			FactorGraph<typename CONDITIONAL::FactorType> joint(shared_ptr C2, shared_ptr root);
 
 		}; // \struct Clique
 
@@ -262,7 +262,7 @@ namespace gtsam {
 		CliqueData getCliqueData() const;
 
 		/** return marginal on any variable */
-		typename CONDITIONAL::Factor::shared_ptr marginalFactor(Index key) const;
+		typename CONDITIONAL::FactorType::shared_ptr marginalFactor(Index key) const;
 
 		/**
 		 * return marginal on any variable, as a Bayes Net
@@ -272,7 +272,7 @@ namespace gtsam {
 		typename BayesNet<CONDITIONAL>::shared_ptr marginalBayesNet(Index key) const;
 
 		/** return joint on two variables */
-		typename FactorGraph<typename CONDITIONAL::Factor>::shared_ptr joint(Index key1, Index key2) const;
+		typename FactorGraph<typename CONDITIONAL::FactorType>::shared_ptr joint(Index key1, Index key2) const;
 
 		/** return joint on two variables as a BayesNet */
 		typename BayesNet<CONDITIONAL>::shared_ptr jointBayesNet(Index key1, Index key2) const;

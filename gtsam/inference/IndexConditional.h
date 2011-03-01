@@ -37,7 +37,7 @@ namespace gtsam {
 
     typedef IndexConditional This;
     typedef ConditionalBase<Index> Base;
-    typedef IndexFactor Factor;
+    typedef IndexFactor FactorType;
     typedef boost::shared_ptr<IndexConditional> shared_ptr;
 
     /** Empty Constructor to make serialization possible */

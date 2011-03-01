@@ -69,16 +69,16 @@ public:
    * conditional can be converted to using a factor constructor. Derived
    * classes must redefine this.
    */
-  typedef gtsam::FactorBase<Key> Factor;
+  typedef gtsam::FactorBase<Key> FactorType;
 
   /** A shared_ptr to this class.  Derived classes must redefine this. */
   typedef boost::shared_ptr<This> shared_ptr;
 
   /** Iterator over keys */
-  typedef typename Factor::iterator iterator;
+  typedef typename FactorType::iterator iterator;
 
   /** Const iterator over keys */
-  typedef typename Factor::const_iterator const_iterator;
+  typedef typename FactorType::const_iterator const_iterator;
 
   /** View of the frontal keys (call frontals()) */
   typedef boost::iterator_range<const_iterator> Frontals;
@@ -90,20 +90,20 @@ public:
   ConditionalBase() : nrFrontals_(0) {}
 
   /** No parents */
-  ConditionalBase(Key key) : Factor(key), nrFrontals_(1) {}
+  ConditionalBase(Key key) : FactorType(key), nrFrontals_(1) {}
 
   /** Single parent */
-  ConditionalBase(Key key, Key parent) : Factor(key, parent), nrFrontals_(1) {}
+  ConditionalBase(Key key, Key parent) : FactorType(key, parent), nrFrontals_(1) {}
 
   /** Two parents */
-  ConditionalBase(Key key, Key parent1, Key parent2) : Factor(key, parent1, parent2), nrFrontals_(1) {}
+  ConditionalBase(Key key, Key parent1, Key parent2) : FactorType(key, parent1, parent2), nrFrontals_(1) {}
 
   /** Three parents */
-  ConditionalBase(Key key, Key parent1, Key parent2, Key parent3) : Factor(key, parent1, parent2, parent3), nrFrontals_(1) {}
+  ConditionalBase(Key key, Key parent1, Key parent2, Key parent3) : FactorType(key, parent1, parent2, parent3), nrFrontals_(1) {}
 
   /** Constructor from a frontal variable and a vector of parents */
   ConditionalBase(Key key, const std::vector<Key>& parents) : nrFrontals_(1) {
-    Factor::keys_.resize(1 + parents.size());
+    FactorType::keys_.resize(1 + parents.size());
     *(beginFrontals()) = key;
     std::copy(parents.begin(), parents.end(), beginParents());
   }
@@ -130,28 +130,28 @@ public:
   /** check equality */
   template<class DERIVED>
   bool equals(const DERIVED& c, double tol = 1e-9) const {
-    return nrFrontals_ == c.nrFrontals_ && Factor::equals(c, tol); }
+    return nrFrontals_ == c.nrFrontals_ && FactorType::equals(c, tol); }
 
 	/** return the number of frontals */
 	size_t nrFrontals() const { return nrFrontals_; }
 
 	/** return the number of parents */
-	size_t nrParents() const { return Factor::keys_.size() - nrFrontals_; }
+	size_t nrParents() const { return FactorType::keys_.size() - nrFrontals_; }
 
 	/** Special accessor when there is only one frontal variable. */
-	Key key() const { assert(nrFrontals_==1); return Factor::keys_[0]; }
+	Key key() const { assert(nrFrontals_==1); return FactorType::keys_[0]; }
 
   /** Iterators over frontal and parent variables. */
-  const_iterator beginFrontals() const { return Factor::keys_.begin(); }
-  const_iterator endFrontals() const { return Factor::keys_.begin()+nrFrontals_; }
-  const_iterator beginParents() const { return Factor::keys_.begin()+nrFrontals_; }
-  const_iterator endParents() const { return Factor::keys_.end(); }
+  const_iterator beginFrontals() const { return FactorType::keys_.begin(); }
+  const_iterator endFrontals() const { return FactorType::keys_.begin()+nrFrontals_; }
+  const_iterator beginParents() const { return FactorType::keys_.begin()+nrFrontals_; }
+  const_iterator endParents() const { return FactorType::keys_.end(); }
 
   /** Mutable iterators and accessors */
-  iterator beginFrontals() { return Factor::keys_.begin(); }
-  iterator endFrontals() { return Factor::keys_.begin()+nrFrontals_; }
-  iterator beginParents() { return Factor::keys_.begin()+nrFrontals_; }
-  iterator endParents() { return Factor::keys_.end(); }
+  iterator beginFrontals() { return FactorType::keys_.begin(); }
+  iterator endFrontals() { return FactorType::keys_.begin()+nrFrontals_; }
+  iterator beginParents() { return FactorType::keys_.begin()+nrFrontals_; }
+  iterator endParents() { return FactorType::keys_.end(); }
   boost::iterator_range<iterator> frontals() { return boost::make_iterator_range(beginFrontals(), endFrontals()); }
   boost::iterator_range<iterator> parents() { return boost::make_iterator_range(beginParents(), endParents()); }
 
@@ -226,7 +226,7 @@ void ConditionalBase<KEY>::permuteWithInverse(const Permutation& inversePermutat
     }
   }
 #endif
-  Factor::permuteWithInverse(inversePermutation);
+  FactorType::permuteWithInverse(inversePermutation);
 }
 
 }

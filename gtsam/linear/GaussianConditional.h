@@ -42,7 +42,7 @@ class GaussianFactor;
 class GaussianConditional : public IndexConditional {
 
 public:
-  typedef GaussianFactor Factor;
+  typedef GaussianFactor FactorType;
 	typedef boost::shared_ptr<GaussianConditional> shared_ptr;
 
 	/** Store the conditional matrix as upper-triangular column-major */

@@ -53,7 +53,7 @@ namespace gtsam {
     factors.push_back(newFactors);
 
     // eliminate into a Bayes net
-    typename BayesNet<CONDITIONAL>::shared_ptr bayesNet = GenericSequentialSolver<typename CONDITIONAL::Factor>(factors).eliminate();
+    typename BayesNet<CONDITIONAL>::shared_ptr bayesNet = GenericSequentialSolver<typename CONDITIONAL::FactorType>(factors).eliminate();
 
     // insert conditionals back in, straight into the topless bayesTree
     typename BayesNet<CONDITIONAL>::const_reverse_iterator rit;
