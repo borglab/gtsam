@@ -70,12 +70,14 @@ namespace gtsam {
 		/** default constructor - only for serialization */
 		NonlinearEquality() {}
 
+		virtual ~NonlinearEquality() {}
+
 		/**
 		 * Constructor - forces exact evaluation
 		 */
 		NonlinearEquality(const KEY& j, const T& feasible, bool (*compare)(const T&, const T&) = compare<T>) :
 			Base(noiseModel::Constrained::All(feasible.dim()), j), feasible_(feasible),
-			allow_error_(false), error_gain_(std::numeric_limits<double>::infinity()),
+			allow_error_(false), error_gain_(0.0),
 			compare_(compare) {
 		}
 

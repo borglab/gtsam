@@ -62,6 +62,8 @@ public:
 		Base(model, j_pose, j_landmark), z_(z), K_(K), baseline_(baseline) {
 	}
 
+	virtual ~GenericStereoFactor() {}
+
 	/**
 	 * print
 	 * @param s optional string naming the factor

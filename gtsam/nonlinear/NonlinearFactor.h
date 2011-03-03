@@ -71,6 +71,8 @@ namespace gtsam {
 		NonlinearFactor() {
 		}
 
+//		virtual ~NonlinearFactor() {}
+
 		/**
 		 *  Constructor
 		 *  @param noiseModel shared pointer to a noise model
@@ -184,6 +186,8 @@ namespace gtsam {
 		/** Default constructor for I/O only */
 		NonlinearFactor1() {
 		}
+
+		virtual ~NonlinearFactor1() {}
 
 		inline const KEY& key() const {
 			return key_;
@@ -309,6 +313,8 @@ namespace gtsam {
 			this->keys_.push_back(key1_);
 			this->keys_.push_back(key2_);
 		}
+
+		virtual ~NonlinearFactor2() {}
 
 		/** Print */
 		virtual void print(const std::string& s = "") const {
@@ -448,6 +454,8 @@ namespace gtsam {
       this->keys_.push_back(key2_);
       this->keys_.push_back(key3_);
     }
+
+    virtual ~NonlinearFactor3() {}
 
     /** Print */
     virtual void print(const std::string& s = "") const {

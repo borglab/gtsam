@@ -300,6 +300,10 @@ Diagonal::Diagonal(const Vector& sigmas) :
 		Gaussian(sigmas.size()), sigmas_(sigmas), invsigmas_(reciprocal(sigmas)) {
 }
 
+Diagonal::Diagonal(const Vector& sigmas, const Vector& invsigmas):
+	Gaussian(sigmas.size()), sigmas_(sigmas), invsigmas_(invsigmas) {
+}
+
 /* ************************************************************************* */
 Diagonal::shared_ptr Diagonal::Variances(const Vector& variances, bool smart) {
 	if (smart) {
@@ -412,7 +416,8 @@ SharedDiagonal Constrained::QR(Matrix& Ab, boost::optional<std::vector<int>&> fi
 	list<Triple> Rd;
 
 	Vector pseudo(m); // allocate storage for pseudo-inverse
-	Vector weights = emul(invsigmas_,invsigmas_); // calculate weights once
+	Vector invsigmas = reciprocal(sigmas_);
+	Vector weights = emul(invsigmas,invsigmas); // calculate weights once
 
 	// We loop over all columns, because the columns that can be eliminated
 	// are not necessarily contiguous. For each one, estimate the corresponding

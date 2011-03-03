@@ -29,6 +29,7 @@
 #include <boost/serialization/vector.hpp>
 #include <boost/serialization/map.hpp>
 #include <boost/serialization/list.hpp>
+#include <boost/serialization/export.hpp>
 
 #include <boost/archive/text_oarchive.hpp>
 #include <boost/archive/text_iarchive.hpp>
@@ -153,6 +154,7 @@ bool equalsDereferencedXML(const T& input = T()) {
 
 using namespace std;
 using namespace gtsam;
+using namespace planarSLAM;
 
 /* ************************************************************************* */
 TEST (Serialization, text_geometry) {
@@ -195,29 +197,23 @@ TEST (Serialization, xml_linear) {
 }
 
 /* ************************************************************************* */
-TEST (Serialization, Shared_noiseModels) {
-	SharedDiagonal diag3 = noiseModel::Diagonal::Sigmas(Vector_(3, 0.1, 0.2, 0.3));
-	SharedGaussian iso3 = noiseModel::Isotropic::Sigma(3, 0.3);
-	SharedGaussian gaussian3 = noiseModel::Gaussian::SqrtInformation(eye(3,3));
+// example noise models
+noiseModel::Diagonal::shared_ptr diag3 = noiseModel::Diagonal::Sigmas(Vector_(3, 0.1, 0.2, 0.3));
+noiseModel::Gaussian::shared_ptr gaussian3 = noiseModel::Gaussian::SqrtInformation(2.0 * eye(3,3));
+noiseModel::Isotropic::shared_ptr iso3 = noiseModel::Isotropic::Sigma(3, 0.2);
+noiseModel::Constrained::shared_ptr constrained3 = noiseModel::Constrained::MixedSigmas(Vector_(3, 0.0, 0.0, 0.1));
+noiseModel::Unit::shared_ptr unit3 = noiseModel::Unit::Create(3);
 
-	EXPECT(equalsDereferenced<SharedDiagonal>(diag3));
-	EXPECT(equalsDereferencedXML<SharedDiagonal>(diag3));
-
-	EXPECT(equalsDereferenced<SharedGaussian>(iso3));
-	EXPECT(equalsDereferencedXML<SharedGaussian>(iso3));
-
-	EXPECT(equalsDereferenced<SharedGaussian>(gaussian3));
-	EXPECT(equalsDereferencedXML<SharedGaussian>(gaussian3));
-}
+// export GUIDs for noisemodels
+BOOST_CLASS_EXPORT_GUID(noiseModel::Diagonal, "gtsam_noiseModel_Diagonal");
+BOOST_CLASS_EXPORT_GUID(noiseModel::Gaussian, "gtsam_noiseModel_Gaussian");
+BOOST_CLASS_EXPORT_GUID(noiseModel::Constrained, "gtsam_noiseModel_Constrained");
+BOOST_CLASS_EXPORT_GUID(noiseModel::Unit, "gtsam_noiseModel_Unit");
+BOOST_CLASS_EXPORT_GUID(noiseModel::Isotropic, "gtsam_noiseModel_Isotropic");
 
 /* ************************************************************************* */
 TEST (Serialization, noiseModels) {
-	noiseModel::Diagonal::shared_ptr diag3 = noiseModel::Diagonal::Sigmas(Vector_(3, 0.1, 0.2, 0.3));
-	noiseModel::Gaussian::shared_ptr gaussian3 = noiseModel::Gaussian::SqrtInformation(2.0 * eye(3,3));
-	noiseModel::Isotropic::shared_ptr iso3 = noiseModel::Isotropic::Sigma(3, 0.2);
-	noiseModel::Constrained::shared_ptr constrained3 = noiseModel::Constrained::All(3);
-	noiseModel::Unit::shared_ptr unit3 = noiseModel::Unit::Create(3);
-
+	// tests using pointers to the derived class
 	EXPECT(   equalsDereferenced<noiseModel::Diagonal::shared_ptr>(diag3));
 	EXPECT(equalsDereferencedXML<noiseModel::Diagonal::shared_ptr>(diag3));
 
@@ -227,17 +223,57 @@ TEST (Serialization, noiseModels) {
 	EXPECT(   equalsDereferenced<noiseModel::Isotropic::shared_ptr>(iso3));
 	EXPECT(equalsDereferencedXML<noiseModel::Isotropic::shared_ptr>(iso3));
 
-	// FAIL: stream error
-//	EXPECT(   equalsDereferenced<noiseModel::Constrained::shared_ptr>(constrained3));
-//	EXPECT(equalsDereferencedXML<noiseModel::Constrained::shared_ptr>(constrained3));
+	EXPECT(   equalsDereferenced<noiseModel::Constrained::shared_ptr>(constrained3));
+	EXPECT(equalsDereferencedXML<noiseModel::Constrained::shared_ptr>(constrained3));
 
 	EXPECT(   equalsDereferenced<noiseModel::Unit::shared_ptr>(unit3));
 	EXPECT(equalsDereferencedXML<noiseModel::Unit::shared_ptr>(unit3));
 }
 
 /* ************************************************************************* */
+TEST (Serialization, SharedGaussian_noiseModels) {
+	EXPECT(equalsDereferenced<SharedGaussian>(diag3));
+	EXPECT(equalsDereferencedXML<SharedGaussian>(diag3));
+
+	EXPECT(equalsDereferenced<SharedGaussian>(iso3));
+	EXPECT(equalsDereferencedXML<SharedGaussian>(iso3));
+
+	EXPECT(equalsDereferenced<SharedGaussian>(gaussian3));
+	EXPECT(equalsDereferencedXML<SharedGaussian>(gaussian3));
+
+	EXPECT(equalsDereferenced<SharedGaussian>(unit3));
+	EXPECT(equalsDereferencedXML<SharedGaussian>(unit3));
+
+	EXPECT(equalsDereferenced<SharedGaussian>(constrained3));
+	EXPECT(equalsDereferencedXML<SharedGaussian>(constrained3));
+}
+
+/* ************************************************************************* */
+TEST (Serialization, SharedDiagonal_noiseModels) {
+	EXPECT(equalsDereferenced<SharedDiagonal>(diag3));
+	EXPECT(equalsDereferencedXML<SharedDiagonal>(diag3));
+
+	EXPECT(equalsDereferenced<SharedDiagonal>(iso3));
+	EXPECT(equalsDereferencedXML<SharedDiagonal>(iso3));
+
+	EXPECT(equalsDereferenced<SharedDiagonal>(unit3));
+	EXPECT(equalsDereferencedXML<SharedDiagonal>(unit3));
+
+	EXPECT(equalsDereferenced<SharedDiagonal>(constrained3));
+	EXPECT(equalsDereferencedXML<SharedDiagonal>(constrained3));
+}
+
+/* ************************************************************************* */
+// exporting factor classes
+BOOST_CLASS_EXPORT_GUID(Prior, "gtsam_planarSLAM_Prior");
+BOOST_CLASS_EXPORT_GUID(Bearing, "gtsam_planarSLAM_Bearing");
+BOOST_CLASS_EXPORT_GUID(Range, "gtsam_planarSLAM_Range");
+BOOST_CLASS_EXPORT_GUID(BearingRange, "gtsam_planarSLAM_BearingRange");
+BOOST_CLASS_EXPORT_GUID(Odometry, "gtsam_planarSLAM_Odometry");
+BOOST_CLASS_EXPORT_GUID(Constraint, "gtsam_planarSLAM_Constraint");
+
+/* ************************************************************************* */
 TEST (Serialization, planar_system) {
-	using namespace planarSLAM;
 
 	Values values;
 	values.insert(PointKey(3), Point2(1.0, 2.0));
@@ -247,18 +283,19 @@ TEST (Serialization, planar_system) {
 	SharedGaussian model2 = noiseModel::Isotropic::Sigma(2, 0.3);
 	SharedGaussian model3 = noiseModel::Isotropic::Sigma(3, 0.3);
 
-	Graph graph;
 	Prior prior(PoseKey(3), Pose2(0.1,-0.3, 0.2), model1);
-	graph.add(prior);
 	Bearing bearing(PoseKey(3), PointKey(5), Rot2::fromDegrees(0.5), model1);
-	graph.add(bearing);
 	Range range(PoseKey(2), PointKey(9), 7.0, model1);
-	graph.add(range);
 	BearingRange bearingRange(PoseKey(2), PointKey(3), Rot2::fromDegrees(0.6), 2.0, model2);
-	graph.add(bearingRange);
 	Odometry odometry(PoseKey(2), PoseKey(3), Pose2(1.0, 2.0, 0.3), model3);
-	graph.add(odometry);
 	Constraint constraint(PoseKey(9), Pose2(2.0,-1.0, 0.2));
+
+	Graph graph;
+	graph.add(prior);
+	graph.add(bearing);
+	graph.add(range);
+	graph.add(bearingRange);
+	graph.add(odometry);
 	graph.add(constraint);
 
 	// text
@@ -270,8 +307,8 @@ TEST (Serialization, planar_system) {
 	EXPECT(equalsObj<BearingRange>(bearingRange));
 	EXPECT(equalsObj<Range>(range));
 	EXPECT(equalsObj<Odometry>(odometry));
-//	EXPECT(equalsObj<Constraint>(constraint)); // FAIL: stream error
-//	EXPECT(equalsObj<Graph>(graph)); // FAIL: segfaults if there are factors
+	EXPECT(equalsObj<Constraint>(constraint));
+	EXPECT(equalsObj<Graph>(graph));
 
 	// xml
 	EXPECT(equalsXML<PoseKey>(PoseKey(2)));
@@ -282,8 +319,8 @@ TEST (Serialization, planar_system) {
 	EXPECT(equalsXML<BearingRange>(bearingRange));
 	EXPECT(equalsXML<Range>(range));
 	EXPECT(equalsXML<Odometry>(odometry));
-//	EXPECT(equalsXML<Constraint>(constraint)); // FAIL: stream error
-//	EXPECT(equalsXML<Graph>(graph));
+	EXPECT(equalsXML<Constraint>(constraint));
+	EXPECT(equalsXML<Graph>(graph));
 }
 
 /* ************************************************************************* */

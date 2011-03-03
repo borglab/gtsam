@@ -43,6 +43,8 @@ namespace gtsam {
 					Base(model, i, j), z_(z) {
 		}
 
+		virtual ~RangeFactor() {}
+
 		/** h(x)-z */
 		Vector evaluateError(const Pose2& pose, const Point2& point,
 				boost::optional<Matrix&> H1, boost::optional<Matrix&> H2) const {

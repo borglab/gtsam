@@ -51,6 +51,8 @@ namespace gtsam {
 		/** default constructor - only use for serialization */
 		PriorFactor() {}
 
+		virtual ~PriorFactor() {}
+
 		/** Constructor */
 		PriorFactor(const KEY& key, const T& prior,
 				const SharedGaussian& model) :

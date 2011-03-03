@@ -57,6 +57,8 @@ namespace gtsam {
 			Base(model, key1, key2), measured_(measured) {
 		}
 
+		virtual ~BetweenFactor() {}
+
 		/** implement functions needed for Testable */
 
 		/** print */

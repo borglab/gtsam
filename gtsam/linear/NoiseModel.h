@@ -126,6 +126,8 @@ namespace gtsam {
 
 			typedef boost::shared_ptr<Gaussian> shared_ptr;
 
+			virtual ~Gaussian() {}
+
 			/**
 			 * A Gaussian noise model created by specifying a square root information matrix.
 			 * @param smart, check if can be simplified to derived class
@@ -222,12 +224,17 @@ namespace gtsam {
 			/** sigmas and reciprocal */
 			Vector sigmas_, invsigmas_;
 
+			/** protected constructor for constructing constraints */
+			Diagonal(const Vector& sigmas, const Vector& invsigmas);
+
 			/** protected constructor takes sigmas */
 			Diagonal(const Vector& sigmas = ones(1));
 
 		public:
 
 			typedef boost::shared_ptr<Diagonal> shared_ptr;
+
+			virtual ~Diagonal() {}
 
 			/**
 			 * A diagonal noise model created by specifying a Vector of sigmas, i.e.
@@ -307,11 +314,15 @@ namespace gtsam {
 			// Instead (possibly zero) sigmas are stored in Diagonal Base class
 
 			/** protected constructor takes sigmas */
-			Constrained(const Vector& sigmas = zero(1)) :Diagonal(sigmas) {}
+			// Keeps only sigmas and calculates invsigmas when necessary
+			Constrained(const Vector& sigmas = zero(1)) :
+				Diagonal(sigmas, sigmas) {}
 
 		public:
 
 			typedef boost::shared_ptr<Constrained> shared_ptr;
+
+			virtual ~Constrained() {}
 
 			/**
 			 * A diagonal noise model created by specifying a Vector of
@@ -393,10 +404,12 @@ namespace gtsam {
 			Isotropic(size_t dim, double sigma) :
 				Diagonal(repeat(dim, sigma)),sigma_(sigma),invsigma_(1.0/sigma) {}
 
-		public:
-
 			/* dummy constructor to allow for serialization */
 			Isotropic() : Diagonal(repeat(1, 1.0)),sigma_(1.0),invsigma_(1.0) {}
+
+		public:
+
+			virtual ~Isotropic() {}
 
 			typedef boost::shared_ptr<Isotropic> shared_ptr;
 
@@ -461,6 +474,8 @@ namespace gtsam {
 		public:
 
 			typedef boost::shared_ptr<Unit> shared_ptr;
+
+			virtual ~Unit() {}
 
 			/**
 			 * Create a unit covariance noise model

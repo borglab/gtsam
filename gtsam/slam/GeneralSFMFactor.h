@@ -46,6 +46,8 @@ namespace gtsam {
 		GeneralSFMFactor(double x, double y):z_(x,y) {}
 		GeneralSFMFactor(const Point2& z, const SharedGaussian& model, const CamK& i, const LmK& j) : Base(model, i, j), z_(z) {}
 
+		virtual ~GeneralSFMFactor() {}
+
 		/**
 		 * print
 		 * @param s optional string naming the factor
