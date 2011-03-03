@@ -100,11 +100,13 @@ namespace gtsam {
 		 */
 		struct Gaussian: public Base {
 
-		private:
+		protected:
 
 			// TODO: store as boost upper-triangular or whatever is passed from above
 			/* Matrix square root of information matrix (R) */
 			boost::optional<Matrix> sqrt_information_;
+
+		private:
 
 			/**
 			 * Return R itself, but note that Whiten(H) is cheaper than R*H
@@ -222,13 +224,16 @@ namespace gtsam {
 		protected:
 
 			/** sigmas and reciprocal */
-			Vector sigmas_, invsigmas_;
+			Vector sigmas_;
+		private:
+			boost::optional<Vector> invsigmas_; /// optional to allow for constraints
 
-			/** protected constructor for constructing constraints */
-			Diagonal(const Vector& sigmas, const Vector& invsigmas);
-
+		protected:
 			/** protected constructor takes sigmas */
-			Diagonal(const Vector& sigmas = ones(1));
+			Diagonal();
+
+			/** constructor to allow for disabling initializaion of invsigmas */
+			Diagonal(const Vector& sigmas, bool initialize_invsigmas=true);
 
 		public:
 
@@ -273,8 +278,8 @@ namespace gtsam {
 			/**
 			 * Return sqrt precisions
 			 */
-			const Vector& invsigmas() const { return invsigmas_; }
-			double invsigma(size_t i) const { return invsigmas_(i); }
+			Vector invsigmas() const;
+			double invsigma(size_t i) const;
 
 			/**
 			 * generate random variate
@@ -285,7 +290,7 @@ namespace gtsam {
 			 * Return R itself, but note that Whiten(H) is cheaper than R*H
 			 */
 			virtual Matrix R() const {
-				return diag(invsigmas_);
+				return diag(invsigmas());
 			}
 
 		private:
@@ -316,7 +321,7 @@ namespace gtsam {
 			/** protected constructor takes sigmas */
 			// Keeps only sigmas and calculates invsigmas when necessary
 			Constrained(const Vector& sigmas = zero(1)) :
-				Diagonal(sigmas, sigmas) {}
+				Diagonal(sigmas, false) {}
 
 		public:
 

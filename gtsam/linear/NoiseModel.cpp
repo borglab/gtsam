@@ -296,12 +296,16 @@ SharedDiagonal Gaussian::Cholesky(MatrixColMajor& Ab, size_t nFrontals) const {
 /* ************************************************************************* */
 // Diagonal
 /* ************************************************************************* */
-Diagonal::Diagonal(const Vector& sigmas) :
-		Gaussian(sigmas.size()), sigmas_(sigmas), invsigmas_(reciprocal(sigmas)) {
+Diagonal::Diagonal() :
+		Gaussian(1), sigmas_(ones(1)), invsigmas_(ones(1)) {
 }
 
-Diagonal::Diagonal(const Vector& sigmas, const Vector& invsigmas):
-	Gaussian(sigmas.size()), sigmas_(sigmas), invsigmas_(invsigmas) {
+Diagonal::Diagonal(const Vector& sigmas, bool initialize_invsigmas):
+	Gaussian(sigmas.size()), sigmas_(sigmas) {
+	if (initialize_invsigmas)
+		invsigmas_ = reciprocal(sigmas);
+	else
+		invsigmas_ = boost::none;
 }
 
 /* ************************************************************************* */
@@ -333,8 +337,20 @@ void Diagonal::print(const string& name) const {
 }
 
 /* ************************************************************************* */
+Vector Diagonal::invsigmas() const {
+	if (invsigmas_) return *invsigmas_;
+	else return reciprocal(sigmas_);
+}
+
+/* ************************************************************************* */
+double Diagonal::invsigma(size_t i) const {
+	if (invsigmas_) return (*invsigmas_)(i);
+	else return 1.0/sigmas_(i);
+}
+
+/* ************************************************************************* */
 Vector Diagonal::whiten(const Vector& v) const {
-	return emul(v, invsigmas_);
+	return emul(v, invsigmas());
 }
 
 /* ************************************************************************* */
@@ -344,18 +360,17 @@ Vector Diagonal::unwhiten(const Vector& v) const {
 
 /* ************************************************************************* */
 Matrix Diagonal::Whiten(const Matrix& H) const {
-	return vector_scale(invsigmas_, H);
+	return vector_scale(invsigmas(), H);
 }
 
 /* ************************************************************************* */
 void Diagonal::WhitenInPlace(Matrix& H) const {
-	vector_scale_inplace(invsigmas_, H);
+	vector_scale_inplace(invsigmas(), H);
 }
 
 /* ************************************************************************* */
 void Diagonal::WhitenInPlace(MatrixColMajor& H) const {
-
-  vector_scale_inplace(invsigmas_, H);
+  vector_scale_inplace(invsigmas(), H);
 }
 
 /* ************************************************************************* */
