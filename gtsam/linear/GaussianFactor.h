@@ -21,7 +21,7 @@
 #pragma once
 
 #include <gtsam/inference/FactorGraph.h>
-#include <gtsam/linear/GaussianBayesNet.h>
+#include <gtsam/inference/IndexFactor.h>
 #include <gtsam/linear/Errors.h>
 
 #include <string>
@@ -29,8 +29,11 @@
 
 namespace gtsam {
 
+  // Forward declarations
   class VectorValues;
   class Permutation;
+  class GaussianConditional;
+  template<class C> class BayesNet;
 
   /**
    * Base Class for a linear factor.
@@ -45,7 +48,7 @@ namespace gtsam {
     GaussianFactor(const This& f) : IndexFactor(f) {}
 
     /** Construct from derived type */
-    GaussianFactor(const GaussianConditional& c) : IndexFactor(c) {}
+    GaussianFactor(const GaussianConditional& c);
 
     /** Constructor from a collection of keys */
     template<class KeyIterator> GaussianFactor(KeyIterator beginKey, KeyIterator endKey) :
@@ -96,7 +99,7 @@ namespace gtsam {
     /**
      * Combine and eliminate several factors.
      */
-    static std::pair<GaussianBayesNet::shared_ptr, shared_ptr> CombineAndEliminate(
+    static std::pair<boost::shared_ptr<BayesNet<GaussianConditional> >, shared_ptr> CombineAndEliminate(
         const FactorGraph<GaussianFactor>& factors, size_t nrFrontals=1, SolveMethod solveMethod=SOLVE_QR);
 
   }; // GaussianFactor

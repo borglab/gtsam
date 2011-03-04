@@ -33,6 +33,9 @@ using namespace std;
 namespace gtsam {
 
   /* ************************************************************************* */
+  GaussianFactor::GaussianFactor(const GaussianConditional& c) : IndexFactor(c) {}
+
+  /* ************************************************************************* */
   pair<GaussianBayesNet::shared_ptr, GaussianFactor::shared_ptr> GaussianFactor::CombineAndEliminate(
       const FactorGraph<GaussianFactor>& factors, size_t nrFrontals, SolveMethod solveMethod) {
 

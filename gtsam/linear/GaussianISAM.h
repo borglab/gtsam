@@ -19,7 +19,7 @@
 
 #pragma once
 
-#include <gtsam/linear/GaussianConditional.h>
+#include <gtsam/linear/GaussianBayesNet.h>
 #include <gtsam/linear/GaussianFactor.h>
 #include <gtsam/inference/ISAM.h>
 

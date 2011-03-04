@@ -60,16 +60,16 @@ public:
    * Typedef to the conditional type obtained by eliminating this factor.
    * Derived classes must redefine this.
    */
-  typedef gtsam::Conditional<Key> ConditionalType;
+  typedef Conditional<Key> ConditionalType;
 
   /** A shared_ptr to this class.  Derived classes must redefine this. */
   typedef boost::shared_ptr<Factor> shared_ptr;
 
   /** Iterator over keys */
-  typedef std::vector<Index>::iterator iterator;
+  typedef typename std::vector<Key>::iterator iterator;
 
   /** Const iterator over keys */
-  typedef std::vector<Index>::const_iterator const_iterator;
+  typedef typename std::vector<Key>::const_iterator const_iterator;
 
 protected:
 

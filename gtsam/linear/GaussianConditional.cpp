@@ -142,8 +142,8 @@ bool GaussianConditional::equals(const GaussianConditional &c, double tol) const
 }
 
 /* ************************************************************************* */
-GaussianFactor::shared_ptr GaussianConditional::toFactor() const {
-  return GaussianFactor::shared_ptr(new JacobianFactor(*this));
+JacobianFactor::shared_ptr GaussianConditional::toFactor() const {
+  return JacobianFactor::shared_ptr(new JacobianFactor(*this));
 }
 
 /* ************************************************************************* */

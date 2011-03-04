@@ -26,6 +26,7 @@
 #include <boost/shared_ptr.hpp>
 #include <boost/serialization/base_object.hpp>
 
+#include <gtsam/inference/Factor-inl.h>
 #include <gtsam/inference/IndexFactor.h>
 #include <gtsam/base/Vector.h>
 #include <gtsam/base/Matrix.h>
@@ -54,14 +55,13 @@ namespace gtsam {
 	 * which are objects in non-linear manifolds (Lie groups).
 	 */
 	template<class VALUES>
-	class NonlinearFactor: public Testable<NonlinearFactor<VALUES> > {
+	class NonlinearFactor: public Factor<Symbol>, public Testable<NonlinearFactor<VALUES> > {
 
 	protected:
 
 		typedef NonlinearFactor<VALUES> This;
 
 		SharedGaussian noiseModel_; /** Noise model */
-		std::list<Symbol> keys_; /** cached keys */
 
 	public:
 
@@ -100,30 +100,14 @@ namespace gtsam {
 			return 0.5 * noiseModel_->Mahalanobis(unwhitenedError(c));
 		}
 
-		/** return keys */
-		const std::list<Symbol>& keys() const {
-			return keys_;
-		}
-
 		/** get the dimension of the factor (number of rows on linearization) */
 		size_t dim() const {
 			return noiseModel_->dim();
 		}
 
-		/* return the begin iterator of keys */
-		std::list<Symbol>::const_iterator begin() const { return keys_.begin(); }
-
-		/* return the end iterator of keys */
-		std::list<Symbol>::const_iterator end() const { return keys_.end(); }
-
 		/** access to the noise model */
 		SharedGaussian get_noiseModel() const {
 			return noiseModel_;
-		}
-
-		/** get the size of the factor */
-		std::size_t size() const {
-			return keys_.size();
 		}
 
 		/** Vector of errors, unwhitened ! */
@@ -310,6 +294,7 @@ namespace gtsam {
 		NonlinearFactor2(const SharedGaussian& noiseModel, KEY1 j1,
 				KEY2 j2) :
 			Base(noiseModel), key1_(j1), key2_(j2) {
+		  this->keys_.reserve(2);
 			this->keys_.push_back(key1_);
 			this->keys_.push_back(key2_);
 		}
@@ -450,6 +435,7 @@ namespace gtsam {
      */
     NonlinearFactor3(const SharedGaussian& noiseModel, KEY1 j1, KEY2 j2, KEY3 j3) :
       Base(noiseModel), key1_(j1), key2_(j2), key3_(j3) {
+      this->keys_.reserve(3);
       this->keys_.push_back(key1_);
       this->keys_.push_back(key2_);
       this->keys_.push_back(key3_);

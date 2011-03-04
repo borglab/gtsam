@@ -20,6 +20,7 @@
 #include <gtsam/base/types.h>
 #include <gtsam/base/Matrix.h>
 #include <gtsam/base/Vector.h>
+#include <gtsam/base/blockMatrices.h>
 #include <gtsam/linear/GaussianFactor.h>
 #include <gtsam/linear/SharedDiagonal.h>
 #include <gtsam/linear/Errors.h>
@@ -36,6 +37,8 @@ namespace gtsam {
   // Forward declarations
   class HessianFactor;
   class VariableSlots;
+  class GaussianConditional;
+  template<class C> class BayesNet;
 
   class JacobianFactor : public GaussianFactor {
 
@@ -194,12 +197,12 @@ namespace gtsam {
     /**
      * Combine and eliminate several factors.
      */
-    static std::pair<GaussianBayesNet::shared_ptr, shared_ptr> CombineAndEliminate(
+    static std::pair<boost::shared_ptr<BayesNet<GaussianConditional> >, shared_ptr> CombineAndEliminate(
         const FactorGraph<JacobianFactor>& factors, size_t nrFrontals=1);
 
-    GaussianConditional::shared_ptr eliminateFirst();
+    boost::shared_ptr<GaussianConditional> eliminateFirst();
 
-    GaussianBayesNet::shared_ptr eliminate(size_t nrFrontals = 1);
+    boost::shared_ptr<BayesNet<GaussianConditional> > eliminate(size_t nrFrontals = 1);
 
     // Friend HessianFactor to facilitate convertion constructors
     friend class HessianFactor;

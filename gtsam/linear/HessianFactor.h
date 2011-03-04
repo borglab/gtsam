@@ -18,6 +18,7 @@
 
 #pragma once
 
+#include <gtsam/base/Matrix.h>
 #include <gtsam/base/blockMatrices.h>
 #include <gtsam/linear/GaussianFactor.h>
 
@@ -29,6 +30,8 @@ namespace gtsam {
   // Forward declarations
   class JacobianFactor;
   class SharedDiagonal;
+  class GaussianConditional;
+  template<class C> class BayesNet;
 
   // Definition of Scatter
   struct SlotEntry {
@@ -47,7 +50,7 @@ namespace gtsam {
     BlockInfo info_;    // The block view of the full information matrix.
 
     void assertInvariants() const;
-    GaussianBayesNet::shared_ptr splitEliminatedFactor(size_t nrFrontals, const std::vector<Index>& keys);
+    boost::shared_ptr<BayesNet<GaussianConditional> > splitEliminatedFactor(size_t nrFrontals, const std::vector<Index>& keys);
     void updateATA(const JacobianFactor& update, const Scatter& scatter);
     void updateATA(const HessianFactor& update, const Scatter& scatter);
 
@@ -123,7 +126,7 @@ namespace gtsam {
     /**
      * Combine and eliminate several factors.
      */
-    static std::pair<GaussianBayesNet::shared_ptr, shared_ptr> CombineAndEliminate(
+    static std::pair<boost::shared_ptr<BayesNet<GaussianConditional> >, shared_ptr> CombineAndEliminate(
         const FactorGraph<GaussianFactor>& factors, size_t nrFrontals=1);
 
     // Friend unit test classes

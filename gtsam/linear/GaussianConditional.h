@@ -26,6 +26,7 @@
 
 #include <gtsam/base/types.h>
 #include <gtsam/inference/IndexConditional.h>
+#include <gtsam/linear/JacobianFactor.h>
 #include <gtsam/linear/VectorValues.h>
 #include <gtsam/base/Matrix.h>
 #include <gtsam/base/blockMatrices.h>
@@ -122,7 +123,7 @@ public:
 	 * Copy to a Factor (this creates a JacobianFactor and returns it as its
 	 * base class GaussianFactor.
 	 */
-	boost::shared_ptr<GaussianFactor> toFactor() const;
+	boost::shared_ptr<JacobianFactor> toFactor() const;
 
 	/**
 	 * solve a conditional Gaussian
