@@ -508,3 +508,14 @@ namespace gtsam {
 	} // namespace noiseModel
 
 } // namespace gtsam
+
+/** Export keys for serialization */
+#include <boost/serialization/export.hpp>
+#include <boost/serialization/extended_type_info.hpp>
+BOOST_CLASS_EXPORT_KEY2(gtsam::noiseModel::Constrained, "gtsam_noiseModel_Constrained");
+BOOST_CLASS_EXPORT_KEY2(gtsam::noiseModel::Diagonal, "gtsam_noiseModel_Diagonal");
+BOOST_CLASS_EXPORT_KEY2(gtsam::noiseModel::Gaussian, "gtsam_noiseModel_Gaussian");
+BOOST_CLASS_EXPORT_KEY2(gtsam::noiseModel::Unit, "gtsam_noiseModel_Unit");
+BOOST_CLASS_EXPORT_KEY2(gtsam::noiseModel::Isotropic, "gtsam_noiseModel_Isotropic");
+
+

@@ -24,12 +24,12 @@
 #include <string>
 
 // includes for standard serialization types
+#include <boost/serialization/export.hpp>
 #include <boost/serialization/optional.hpp>
 #include <boost/serialization/shared_ptr.hpp>
 #include <boost/serialization/vector.hpp>
 #include <boost/serialization/map.hpp>
 #include <boost/serialization/list.hpp>
-#include <boost/serialization/export.hpp>
 
 #include <boost/archive/text_oarchive.hpp>
 #include <boost/archive/text_iarchive.hpp>
@@ -204,13 +204,6 @@ noiseModel::Isotropic::shared_ptr iso3 = noiseModel::Isotropic::Sigma(3, 0.2);
 noiseModel::Constrained::shared_ptr constrained3 = noiseModel::Constrained::MixedSigmas(Vector_(3, 0.0, 0.0, 0.1));
 noiseModel::Unit::shared_ptr unit3 = noiseModel::Unit::Create(3);
 
-// export GUIDs for noisemodels
-BOOST_CLASS_EXPORT_GUID(noiseModel::Diagonal, "gtsam_noiseModel_Diagonal");
-BOOST_CLASS_EXPORT_GUID(noiseModel::Gaussian, "gtsam_noiseModel_Gaussian");
-BOOST_CLASS_EXPORT_GUID(noiseModel::Constrained, "gtsam_noiseModel_Constrained");
-BOOST_CLASS_EXPORT_GUID(noiseModel::Unit, "gtsam_noiseModel_Unit");
-BOOST_CLASS_EXPORT_GUID(noiseModel::Isotropic, "gtsam_noiseModel_Isotropic");
-
 /* ************************************************************************* */
 TEST (Serialization, noiseModels) {
 	// tests using pointers to the derived class
@@ -264,13 +257,13 @@ TEST (Serialization, SharedDiagonal_noiseModels) {
 }
 
 /* ************************************************************************* */
-// exporting factor classes
-BOOST_CLASS_EXPORT_GUID(Prior, "gtsam_planarSLAM_Prior");
-BOOST_CLASS_EXPORT_GUID(Bearing, "gtsam_planarSLAM_Bearing");
-BOOST_CLASS_EXPORT_GUID(Range, "gtsam_planarSLAM_Range");
-BOOST_CLASS_EXPORT_GUID(BearingRange, "gtsam_planarSLAM_BearingRange");
-BOOST_CLASS_EXPORT_GUID(Odometry, "gtsam_planarSLAM_Odometry");
-BOOST_CLASS_EXPORT_GUID(Constraint, "gtsam_planarSLAM_Constraint");
+/* Create GUIDs for factors */
+BOOST_CLASS_EXPORT_GUID(gtsam::planarSLAM::Prior,       "gtsam::planarSLAM::Prior");
+BOOST_CLASS_EXPORT_GUID(gtsam::planarSLAM::Bearing,     "gtsam::planarSLAM::Bearing");
+BOOST_CLASS_EXPORT_GUID(gtsam::planarSLAM::Range,       "gtsam::planarSLAM::Range");
+BOOST_CLASS_EXPORT_GUID(gtsam::planarSLAM::BearingRange,"gtsam::planarSLAM::BearingRange");
+BOOST_CLASS_EXPORT_GUID(gtsam::planarSLAM::Odometry,    "gtsam::planarSLAM::Odometry");
+BOOST_CLASS_EXPORT_GUID(gtsam::planarSLAM::Constraint,  "gtsam::planarSLAM::Constraint");
 
 /* ************************************************************************* */
 TEST (Serialization, planar_system) {

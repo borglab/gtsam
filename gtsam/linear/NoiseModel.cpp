@@ -41,6 +41,13 @@ typedef ublas::matrix_column<Matrix> column;
 static double inf = std::numeric_limits<double>::infinity();
 using namespace std;
 
+/** implement the export code for serialization */
+BOOST_CLASS_EXPORT_IMPLEMENT(gtsam::noiseModel::Constrained);
+BOOST_CLASS_EXPORT_IMPLEMENT(gtsam::noiseModel::Diagonal);
+BOOST_CLASS_EXPORT_IMPLEMENT(gtsam::noiseModel::Gaussian);
+BOOST_CLASS_EXPORT_IMPLEMENT(gtsam::noiseModel::Unit);
+BOOST_CLASS_EXPORT_IMPLEMENT(gtsam::noiseModel::Isotropic);
+
 namespace gtsam {
 
 namespace noiseModel {

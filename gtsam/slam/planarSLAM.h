@@ -17,9 +17,6 @@
 
 #pragma once
 
-#include <boost/serialization/serialization.hpp>
-#include <boost/serialization/export.hpp>
-
 #include <gtsam/slam/BearingRangeFactor.h>
 #include <gtsam/nonlinear/TupleValues.h>
 #include <gtsam/nonlinear/NonlinearEquality.h>
