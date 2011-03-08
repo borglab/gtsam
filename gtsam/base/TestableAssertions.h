@@ -18,6 +18,7 @@
 #pragma once
 
 #include <vector>
+#include <map>
 #include <iostream>
 #include <boost/foreach.hpp>
 #include <gtsam/base/types.h>
@@ -38,7 +39,7 @@ bool assert_equal(const Index& expected, const Index& actual, double tol = 0.0) 
 
 /**
  * Version of assert_equals to work with vectors
- * TODO: replace this with a more general approach to handle multiple types of containers
+ * @DEPRECIATED: use container equals instead
  */
 template<class V>
 bool assert_equal(const std::vector<V>& expected, const std::vector<V>& actual, double tol = 1e-9) {
@@ -59,6 +60,45 @@ bool assert_equal(const std::vector<V>& expected, const std::vector<V>& actual, 
 	  BOOST_FOREACH(const V& a, expected) { std::cout << a << " "; }
 	  std::cout << "\nactual: ";
 	  BOOST_FOREACH(const V& a, actual) { std::cout << a << " "; }
+	  std::cout << std::endl;
+	  return false;
+	}
+	return true;
+}
+
+/**
+ * Function for comparing maps of testable->testable
+ * TODO: replace with more generalized version
+ */
+template<class V1, class V2>
+bool assert_container_equal(const std::map<V1,V2>& expected, const std::map<V1,V2>& actual, double tol = 1e-9) {
+	typedef typename std::map<V1,V2> Map;
+  bool match = true;
+  if (expected.size() != actual.size())
+    match = false;
+  typename Map::const_iterator
+  	itExp = expected.begin(),
+  	itAct = actual.begin();
+  if(match) {
+  	for (; itExp!=expected.end() && itAct!=actual.end(); ++itExp, ++itAct) {
+  		if (!assert_equal(itExp->first, itAct->first, tol) ||
+  				!assert_equal(itExp->second, itAct->second, tol)) {
+  			match = false;
+  			break;
+  		}
+  	}
+  }
+	if(!match) {
+	  std::cout << "expected: ";
+	  BOOST_FOREACH(const typename Map::value_type& a, expected) {
+	  	a.first.print("key");
+	  	a.second.print("    value");
+	  }
+	  std::cout << "\nactual: ";
+	  BOOST_FOREACH(const typename Map::value_type& a, actual)  {
+	  	a.first.print("key");
+	  	a.second.print("    value");
+	  }
 	  std::cout << std::endl;
 	  return false;
 	}
