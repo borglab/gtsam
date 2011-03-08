@@ -159,7 +159,7 @@ namespace gtsam {
 		      Matrix A = eye(dim);
 		      Vector b = zero(dim);
 		      SharedDiagonal model = noiseModel::Isotropic::Sigma(dim,sigma);
-		      GaussianFactor::shared_ptr prior(new JacobianFactor(j, A, b, model));
+		      typename L::sharedFactor prior(new JacobianFactor(j, A, b, model));
 		      damped->push_back(prior);
 		    }
 		  }
