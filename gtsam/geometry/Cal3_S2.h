@@ -70,6 +70,12 @@ namespace gtsam {
 		 */
 		Cal3_S2(const std::string &path);
 
+		inline double fx() const { return fx_; }
+    inline double fy() const { return fy_; }
+    inline double skew() const { return s_; }
+    inline double px() const { return u0_; }
+    inline double py() const { return v0_; }
+
 		/**
 		 * return the principal point
 		 */
