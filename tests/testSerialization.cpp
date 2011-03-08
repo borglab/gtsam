@@ -195,6 +195,13 @@ TEST (Serialization, xml_linear) {
 //	EXPECT(equalsXML<VectorValues>());
 //	EXPECT(equalsXML<GaussianConditional>());
 }
+/* ************************************************************************* */
+// Export Noisemodels
+BOOST_CLASS_EXPORT_GUID(gtsam::noiseModel::Constrained, "gtsam_noiseModel_Constrained");
+BOOST_CLASS_EXPORT_GUID(gtsam::noiseModel::Diagonal, "gtsam_noiseModel_Diagonal");
+BOOST_CLASS_EXPORT_GUID(gtsam::noiseModel::Gaussian, "gtsam_noiseModel_Gaussian");
+BOOST_CLASS_EXPORT_GUID(gtsam::noiseModel::Unit, "gtsam_noiseModel_Unit");
+BOOST_CLASS_EXPORT_GUID(gtsam::noiseModel::Isotropic, "gtsam_noiseModel_Isotropic");
 
 /* ************************************************************************* */
 // example noise models
@@ -225,6 +232,10 @@ TEST (Serialization, noiseModels) {
 
 /* ************************************************************************* */
 TEST (Serialization, SharedGaussian_noiseModels) {
+	SharedGaussian diag3_sg = diag3;
+	EXPECT(equalsDereferenced<SharedGaussian>(diag3_sg));
+	EXPECT(equalsDereferencedXML<SharedGaussian>(diag3_sg));
+
 	EXPECT(equalsDereferenced<SharedGaussian>(diag3));
 	EXPECT(equalsDereferencedXML<SharedGaussian>(diag3));
 

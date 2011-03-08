@@ -18,6 +18,8 @@
 
 #pragma once
 
+#include <boost/serialization/extended_type_info.hpp>
+#include <boost/serialization/export.hpp>
 #include <gtsam/linear/NoiseModel.h>
 
 namespace gtsam { // note, deliberately not in noiseModel namespace
@@ -74,5 +76,6 @@ namespace gtsam { // note, deliberately not in noiseModel namespace
 			        boost::serialization::base_object<noiseModel::Gaussian::shared_ptr >(*this));
 		}
 	};
-
 }
+
+BOOST_CLASS_EXPORT_GUID(gtsam::SharedGaussian, "gtsam_SharedGaussian")
