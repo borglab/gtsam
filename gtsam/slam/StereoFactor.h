@@ -38,11 +38,9 @@ public:
 
 	// shorthand for base class type
 	typedef NonlinearFactor2<VALUES, KEY1, KEY2> Base;
-
-	// shorthand for a smart pointer to a factor
 	typedef boost::shared_ptr<GenericStereoFactor> shared_ptr;
-
 	typedef typename KEY1::Value CamPose;
+	typedef StereoPoint2 Measurement;
 
 	/**
 	 * Default constructor
@@ -99,6 +97,11 @@ public:
 
 	StereoPoint2 z() {
 		return z_;
+	}
+
+	/** return the measured */
+	inline const StereoPoint2 measured() const {
+	  return z_;
 	}
 
 private:

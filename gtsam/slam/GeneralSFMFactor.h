@@ -28,6 +28,7 @@ namespace gtsam {
 		typedef typename CamK::Value Cam;
 		typedef GeneralSFMFactor<Cfg, CamK, LmK> Self ;
 		typedef NonlinearFactor2<Cfg, CamK, LmK> Base;
+		typedef Point2 Measurement;
 
 		// shorthand for a smart pointer to a factor
 		typedef boost::shared_ptr<GeneralSFMFactor<Cfg, LmK, CamK> > shared_ptr;
