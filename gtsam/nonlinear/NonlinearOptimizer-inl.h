@@ -241,7 +241,11 @@ namespace gtsam {
 			return *this;
 		}
 
+		// for the case that maxIterations_ = 0
 		iterations_ = 1;
+		if (iterations_ >= parameters_->maxIterations_)
+			return *this;
+
 		while (true) {
 			double previous_error = error_;
 			// do one iteration of LM
