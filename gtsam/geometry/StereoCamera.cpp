@@ -29,12 +29,12 @@ StereoCamera::StereoCamera(const Pose3& leftCamPose, const Cal3_S2Stereo& K) :
 
 /* ************************************************************************* */
 StereoPoint2 StereoCamera::project(const Point3& point,
-		boost::optional<Matrix&> Dproject_stereo_pose,
-		boost::optional<Matrix&> Dproject_stereo_point) const {
+		boost::optional<Matrix&> H1,
+		boost::optional<Matrix&> H2) const {
 
 	Point3 cameraPoint = leftCamPose_.transform_to(point);
 
-	if (Dproject_stereo_pose) {
+	if (H1) {
 		Matrix D_cameraPoint_pose;
 		Point3 cameraPoint = pose().transform_to(point, D_cameraPoint_pose,
 				boost::none);
@@ -43,10 +43,10 @@ StereoPoint2 StereoCamera::project(const Point3& point,
 		Matrix D_intrinsic_pose = D_intrinsic_cameraPoint * D_cameraPoint_pose;
 
 		Matrix D_projection_intrinsic = Duncalibrate2(calibration()); // 3x3
-		*Dproject_stereo_pose = D_projection_intrinsic * D_intrinsic_pose;
+		*H1 = D_projection_intrinsic * D_intrinsic_pose;
 	}
 
-	if (Dproject_stereo_point) {
+	if (H2) {
 		Matrix D_cameraPoint_point;
 		Point3 cameraPoint = pose().transform_to(point, boost::none,
 				D_cameraPoint_point);
@@ -55,7 +55,7 @@ StereoPoint2 StereoCamera::project(const Point3& point,
 		Matrix D_intrinsic_point = D_intrinsic_cameraPoint * D_cameraPoint_point;
 
 		Matrix D_projection_intrinsic = Duncalibrate2(calibration()); // 3x3
-		*Dproject_stereo_point = D_projection_intrinsic * D_intrinsic_point;
+		*H2 = D_projection_intrinsic * D_intrinsic_point;
 	}
 
 	double d = 1.0 / cameraPoint.z();

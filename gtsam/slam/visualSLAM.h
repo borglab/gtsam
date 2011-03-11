@@ -27,6 +27,7 @@
 #include <gtsam/nonlinear/NonlinearEquality.h>
 #include <gtsam/nonlinear/NonlinearOptimizer.h>
 #include <gtsam/slam/PriorFactor.h>
+#include <gtsam/slam/StereoFactor.h>
 
 namespace gtsam {
 
@@ -126,6 +127,7 @@ namespace gtsam {
   
   // Typedef for general use
   typedef GenericProjectionFactor<Values, PointKey, PoseKey> ProjectionFactor;
+  typedef GenericStereoFactor<Values, PoseKey, PointKey> StereoFactor;
 
   /**
    * Non-linear factor graph for vanilla visual SLAM

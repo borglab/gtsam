@@ -18,15 +18,12 @@
 
 #pragma once
 
-#include <gtsam/slam/visualSLAM.h>
 #include <gtsam/geometry/Cal3_S2Stereo.h>
 #include <gtsam/geometry/StereoCamera.h>
 
 namespace gtsam {
 
-using namespace gtsam;
-
-template<class VALUES=visualSLAM::Values, class KEY1=visualSLAM::PoseKey, class KEY2=visualSLAM::PointKey>
+template<class VALUES, class KEY1, class KEY2>
 class GenericStereoFactor: public NonlinearFactor2<VALUES, KEY1, KEY2> {
 private:
 
@@ -114,7 +111,5 @@ private:
 	}
 };
 
-// Typedef for general use
-typedef GenericStereoFactor<visualSLAM::Values, visualSLAM::PoseKey, visualSLAM::PointKey> StereoFactor;
 
 }
