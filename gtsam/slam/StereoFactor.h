@@ -43,6 +43,8 @@ public:
 	// shorthand for a smart pointer to a factor
 	typedef boost::shared_ptr<GenericStereoFactor> shared_ptr;
 
+	typedef typename KEY1::Value CamPose;
+
 	/**
 	 * Default constructor
 	 */
@@ -61,7 +63,7 @@ public:
 		Base(model, j_pose, j_landmark), z_(z), K_(K), baseline_(baseline) {
 	}
 
-	virtual ~GenericStereoFactor() {}
+	~GenericStereoFactor() {}
 
 	/**
 	 * print
@@ -90,7 +92,7 @@ public:
 	}
 
 	/** h(x)-z */
-	Vector evaluateError(const Pose3& pose, const Point3& point,
+	Vector evaluateError(const CamPose& pose, const Point3& point,
 			boost::optional<Matrix&> H1, boost::optional<Matrix&> H2) const {
 		StereoCamera stereoCam(pose, *K_, baseline_);
 		return (stereoCam.project(point, H1, H2) - z_).vector();

@@ -68,6 +68,21 @@ namespace gtsam {
 			return StereoCamera(pose().expmap(d),K(),baseline());
 		}
 
+		Vector logmap(const StereoCamera &camera) const {
+				const Vector v1(leftCamPose_.logmap(camera.leftCamPose_));
+				return v1;
+		}
+
+		bool equals (const StereoCamera &camera, double tol = 1e-9) const {
+			return leftCamPose_.equals(camera.leftCamPose_, tol) &&
+				   K_.equals(camera.K_, tol);
+		}
+
+		void print(const std::string& s = "") const {
+			leftCamPose_.print(s + ".camera.") ;
+			K_.print(s + ".calibration.") ;
+		}
+
 	private:
 		/** utility functions */
 		Matrix Dproject_to_stereo_camera1(const Point3& P) const;
