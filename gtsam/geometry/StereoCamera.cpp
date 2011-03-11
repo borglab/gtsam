@@ -42,7 +42,7 @@ StereoPoint2 StereoCamera::project(const Point3& point,
 		Matrix D_intrinsic_cameraPoint = Dproject_to_stereo_camera1(cameraPoint); // 3x3 Jacobian
 		Matrix D_intrinsic_pose = D_intrinsic_cameraPoint * D_cameraPoint_pose;
 
-		Matrix D_projection_intrinsic = Duncalibrate2(K()); // 3x3
+		Matrix D_projection_intrinsic = Duncalibrate2(calibration()); // 3x3
 		*Dproject_stereo_pose = D_projection_intrinsic * D_intrinsic_pose;
 	}
 
@@ -54,7 +54,7 @@ StereoPoint2 StereoCamera::project(const Point3& point,
 		Matrix D_intrinsic_cameraPoint = Dproject_to_stereo_camera1(cameraPoint); // 3x3 Jacobian
 		Matrix D_intrinsic_point = D_intrinsic_cameraPoint * D_cameraPoint_point;
 
-		Matrix D_projection_intrinsic = Duncalibrate2(K()); // 3x3
+		Matrix D_projection_intrinsic = Duncalibrate2(calibration()); // 3x3
 		*Dproject_stereo_point = D_projection_intrinsic * D_intrinsic_point;
 	}
 

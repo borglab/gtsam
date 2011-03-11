@@ -40,7 +40,7 @@ namespace gtsam {
 
 		StereoCamera(const Pose3& leftCamPose, const Cal3_S2Stereo& K);
 
-		const Cal3_S2Stereo& K() const {
+		const Cal3_S2Stereo& calibration() const {
 			return K_;
 		}
 
@@ -63,7 +63,7 @@ namespace gtsam {
 
 		/** Exponential map around p0 */
 		inline StereoCamera expmap(const Vector& d) const {
-			return StereoCamera(pose().expmap(d),K());
+			return StereoCamera(pose().expmap(d),calibration());
 		}
 
 		Vector logmap(const StereoCamera &camera) const {
