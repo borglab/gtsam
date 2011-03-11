@@ -18,7 +18,7 @@
 #pragma once
 
 #include "boost/tuple/tuple.hpp"
-#include <gtsam/geometry/Cal3_S2.h>
+#include <gtsam/geometry/Cal3_S2Stereo.h>
 #include <gtsam/geometry/Pose3.h>
 #include <gtsam/base/Lie.h>
 #include <gtsam/geometry/StereoPoint2.h>
@@ -32,17 +32,15 @@ namespace gtsam {
 
 	private:
 		Pose3 leftCamPose_;
-		Cal3_S2 K_;
-		double baseline_;
-		double fx_, fy_;
-		double cx_, cy_;
+		Cal3_S2Stereo K_;
+
 	public:
 		StereoCamera() {
 		}
 
-		StereoCamera(const Pose3& leftCamPose, const Cal3_S2& K, double baseline);
+		StereoCamera(const Pose3& leftCamPose, const Cal3_S2Stereo& K);
 
-		const Cal3_S2& K() const {
+		const Cal3_S2Stereo& K() const {
 			return K_;
 		}
 
@@ -51,7 +49,7 @@ namespace gtsam {
 		}
 
 		const double baseline() const {
-			return baseline_;
+			return K_.baseline();
 		}
 
 		StereoPoint2 project(const Point3& point,
@@ -65,7 +63,7 @@ namespace gtsam {
 
 		/** Exponential map around p0 */
 		inline StereoCamera expmap(const Vector& d) const {
-			return StereoCamera(pose().expmap(d),K(),baseline());
+			return StereoCamera(pose().expmap(d),K());
 		}
 
 		Vector logmap(const StereoCamera &camera) const {

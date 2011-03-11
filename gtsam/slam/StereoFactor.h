@@ -19,7 +19,7 @@
 #pragma once
 
 #include <gtsam/slam/visualSLAM.h>
-#include <gtsam/geometry/Cal3_S2.h>
+#include <gtsam/geometry/Cal3_S2Stereo.h>
 #include <gtsam/geometry/StereoCamera.h>
 
 namespace gtsam {
@@ -32,8 +32,7 @@ private:
 
 	// Keep a copy of measurement and calibration for I/O
 	StereoPoint2 z_;
-	boost::shared_ptr<Cal3_S2> K_;
-	double baseline_;
+	boost::shared_ptr<Cal3_S2Stereo> K_;
 
 public:
 
@@ -48,7 +47,7 @@ public:
 	/**
 	 * Default constructor
 	 */
-	GenericStereoFactor() : K_(new Cal3_S2(444, 555, 666, 777, 888)) {}
+	GenericStereoFactor() : K_(new Cal3_S2Stereo(444, 555, 666, 777, 888, 1.0)) {}
 
 	/**
 	 * Constructor
@@ -59,8 +58,8 @@ public:
 	 * @param K the constant calibration
 	 */
 	GenericStereoFactor(const StereoPoint2& z, const SharedGaussian& model, KEY1 j_pose,
-			KEY2 j_landmark, const shared_ptrK& K, double baseline) :
-		Base(model, j_pose, j_landmark), z_(z), K_(K), baseline_(baseline) {
+			KEY2 j_landmark, const shared_ptrKStereo& K) :
+		Base(model, j_pose, j_landmark), z_(z), K_(K) {
 	}
 
 	~GenericStereoFactor() {}
@@ -94,7 +93,7 @@ public:
 	/** h(x)-z */
 	Vector evaluateError(const CamPose& pose, const Point3& point,
 			boost::optional<Matrix&> H1, boost::optional<Matrix&> H2) const {
-		StereoCamera stereoCam(pose, *K_, baseline_);
+		StereoCamera stereoCam(pose, *K_);
 		return (stereoCam.project(point, H1, H2) - z_).vector();
 	}
 
@@ -109,7 +108,6 @@ private:
 	void serialize(Archive & ar, const unsigned int version) {
 		ar & BOOST_SERIALIZATION_NVP(z_);
 		ar & BOOST_SERIALIZATION_NVP(K_);
-		ar & BOOST_SERIALIZATION_NVP(baseline_);
 	}
 };
 

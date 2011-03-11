@@ -40,8 +40,8 @@ Pose3 camera1(Matrix_(3,3,
 		       ),
 	      Point3(0,0,6.25));
 
-Cal3_S2 K(1500, 1500, 0, 320, 240);
-StereoCamera stereoCam(Pose3(), K, 0.5);
+Cal3_S2Stereo K(1500, 1500, 0, 320, 240, 0.5);
+StereoCamera stereoCam(Pose3(), K);
 
 // point X Y Z in meters
 Point3 p(0, 0, 5);
@@ -50,15 +50,15 @@ static SharedGaussian sigma(noiseModel::Unit::Create(1));
 /* ************************************************************************* */
 TEST( StereoFactor, singlePoint)
 {
-	//Cal3_S2 K(625, 625, 0, 320, 240);
-	boost::shared_ptr<Cal3_S2> K(new Cal3_S2(625, 625, 0, 320, 240));
+	//Cal3_S2 K(625, 625, 0, 320, 240, 0.5);
+	boost::shared_ptr<Cal3_S2Stereo> K(new Cal3_S2Stereo(625, 625, 0, 320, 240, 0.5));
 	boost::shared_ptr<Graph> graph(new Graph());
 
 	graph->add(PoseConstraint(1,camera1));
 
 	StereoPoint2 z14(320,320.0-50, 240);
   // arguments: measurement, sigma, cam#, measurement #, K, baseline (m)
-	graph->add(StereoFactor(z14,sigma, 1, 1, K, 0.5));
+	graph->add(StereoFactor(z14,sigma, 1, 1, K));
 
 	// Create a configuration corresponding to the ground truth
 	boost::shared_ptr<Values> values(new Values());

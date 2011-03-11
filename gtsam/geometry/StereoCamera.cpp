@@ -23,14 +23,8 @@ using namespace gtsam;
 namespace gtsam {
 
 /* ************************************************************************* */
-StereoCamera::StereoCamera(const Pose3& leftCamPose, const Cal3_S2& K,
-		double baseline) :
-	leftCamPose_(leftCamPose), K_(K), baseline_(baseline) {
-	Vector calibration = K_.vector();
-	fx_ = calibration(0);
-	fy_ = calibration(1);
-	cx_ = calibration(3);
-	cy_ = calibration(4);
+StereoCamera::StereoCamera(const Pose3& leftCamPose, const Cal3_S2Stereo& K) :
+	leftCamPose_(leftCamPose), K_(K) {
 }
 
 /* ************************************************************************* */
@@ -65,16 +59,16 @@ StereoPoint2 StereoCamera::project(const Point3& point,
 	}
 
 	double d = 1.0 / cameraPoint.z();
-	double uL = cx_ + d * fx_ * cameraPoint.x();
-	double uR = cx_ + d * fx_ * (cameraPoint.x() - baseline_);
-	double v = cy_ + d * fy_ * cameraPoint.y();
+	double uL = K_.px() + d * K_.fx() * cameraPoint.x();
+	double uR = K_.px() + d * K_.fx() * (cameraPoint.x() - K_.baseline());
+	double v = K_.py() + d * K_.fy() * cameraPoint.y();
 	return StereoPoint2(uL, uR, v);
 }
 
 /* ************************************************************************* */
 Matrix StereoCamera::Dproject_to_stereo_camera1(const Point3& P) const {
 	double d = 1.0 / P.z(), d2 = d * d;
-	return Matrix_(3, 3, d, 0.0, -P.x() * d2, d, 0.0, -(P.x() - baseline()) * d2,
+	return Matrix_(3, 3, d, 0.0, -P.x() * d2, d, 0.0, -(P.x() - K_.baseline()) * d2,
 			0.0, d, -P.y() * d2);
 }
 

@@ -36,8 +36,8 @@ TEST( StereoCamera, project)
 {
 	// create a Stereo camera at the origin with focal length 1500, baseline 0.5m
 	// and principal point 320, 240 (for a hypothetical 640x480 sensor)
-	Cal3_S2 K(1500, 1500, 0, 320, 240);
-	StereoCamera stereoCam(Pose3(), K, 0.5);
+	Cal3_S2Stereo K(1500, 1500, 0, 320, 240, 0.5);
+	StereoCamera stereoCam(Pose3(), K);
 
 	// point X Y Z in meters
 	Point3 p(0, 0, 5);
@@ -55,7 +55,7 @@ TEST( StereoCamera, project)
 	Rot3 unit = Rot3();
 	Point3 one_meter_z(0, 0, 1);
 	Pose3 camPose3(unit, one_meter_z);
-	StereoCamera stereoCam3(camPose3, K, 0.5);
+	StereoCamera stereoCam3(camPose3, K);
 	StereoPoint2 result3 = stereoCam3.project(p3);
 	CHECK(assert_equal(StereoPoint2(320.0+300.0, 320.0+150.0, 240.0+300),result3));
 
@@ -63,7 +63,7 @@ TEST( StereoCamera, project)
 	Point3 p4(5, 1, 0);
 	Rot3 right = Rot3(0, 0, 1, 0, 1, 0, -1, 0, 0);
 	Pose3 camPose4(right, one_meter_z);
-	StereoCamera stereoCam4(camPose4, K, 0.5);
+	StereoCamera stereoCam4(camPose4, K);
 	StereoPoint2 result4 = stereoCam4.project(p4);
 	CHECK(assert_equal(StereoPoint2(320.0+300.0,320.0+150.0,240.0+300),result4));
 }
@@ -77,8 +77,8 @@ Pose3 camera1(Matrix_(3,3,
 		       ),
 	      Point3(0,0,6.25));
 
-Cal3_S2 K(1500, 1500, 0, 320, 240);
-StereoCamera stereoCam(Pose3(), K, 0.5);
+Cal3_S2Stereo K(1500, 1500, 0, 320, 240, 0.5);
+StereoCamera stereoCam(Pose3(), K);
 
 // point X Y Z in meters
 Point3 p(0, 0, 5);
