@@ -25,9 +25,8 @@
 namespace gtsam {
 
 using namespace gtsam;
-using namespace gtsam::visualSLAM;
 
-template<class VALUES=Values, class KEY1=PoseKey, class KEY2=PointKey>
+template<class VALUES=visualSLAM::Values, class KEY1=visualSLAM::PoseKey, class KEY2=visualSLAM::PointKey>
 class GenericStereoFactor: public NonlinearFactor2<VALUES, KEY1, KEY2> {
 private:
 
@@ -113,6 +112,6 @@ private:
 };
 
 // Typedef for general use
-typedef GenericStereoFactor<Values, PoseKey, PointKey> StereoFactor;
+typedef GenericStereoFactor<visualSLAM::Values, visualSLAM::PoseKey, visualSLAM::PointKey> StereoFactor;
 
 }
