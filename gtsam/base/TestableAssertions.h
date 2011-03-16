@@ -56,9 +56,9 @@ bool assert_equal(const std::vector<V>& expected, const std::vector<V>& actual, 
     }
   }
 	if(!match) {
-	  std::cout << "expected: ";
+	  std::cout << "expected: " << std::endl;
 	  BOOST_FOREACH(const V& a, expected) { std::cout << a << " "; }
-	  std::cout << "\nactual: ";
+	  std::cout << "\nactual: " << std::endl;
 	  BOOST_FOREACH(const V& a, actual) { std::cout << a << " "; }
 	  std::cout << std::endl;
 	  return false;
@@ -89,12 +89,12 @@ bool assert_container_equal(const std::map<V1,V2>& expected, const std::map<V1,V
   	}
   }
 	if(!match) {
-	  std::cout << "expected: ";
+	  std::cout << "expected: " << std::endl;
 	  BOOST_FOREACH(const typename Map::value_type& a, expected) {
 	  	a.first.print("key");
 	  	a.second.print("    value");
 	  }
-	  std::cout << "\nactual: ";
+	  std::cout << "\nactual: " << std::endl;
 	  BOOST_FOREACH(const typename Map::value_type& a, actual)  {
 	  	a.first.print("key");
 	  	a.second.print("    value");
@@ -132,10 +132,48 @@ bool assert_container_equal(const std::map<size_t,V2>& expected, const std::map<
 	  	std::cout << "Key: " << a.first << std::endl;
 	  	a.second.print("    value");
 	  }
-	  std::cout << "\nactual: ";
+	  std::cout << "\nactual: " << std::endl;
 	  BOOST_FOREACH(const typename Map::value_type& a, actual)  {
 	  	std::cout << "Key: " << a.first << std::endl;
 	  	a.second.print("    value");
+	  }
+	  std::cout << std::endl;
+	  return false;
+	}
+	return true;
+}
+
+/**
+ * Function for comparing vector of pairs (testable, testable)
+ */
+template<class V1, class V2>
+bool assert_container_equal(const std::vector<V1,V2>& expected, const std::vector<V1,V2>& actual, double tol = 1e-9) {
+	typedef typename std::vector<V1,V2> VectorPair;
+  bool match = true;
+  if (expected.size() != actual.size())
+    match = false;
+  typename VectorPair::const_iterator
+  	itExp = expected.begin(),
+  	itAct = actual.begin();
+  if(match) {
+  	for (; itExp!=expected.end() && itAct!=actual.end(); ++itExp, ++itAct) {
+  		if (!assert_equal(itExp->first, itAct->first, tol) ||
+  				!assert_equal(itExp->second, itAct->second, tol)) {
+  			match = false;
+  			break;
+  		}
+  	}
+  }
+	if(!match) {
+	  std::cout << "expected: " << std::endl;
+	  BOOST_FOREACH(const typename VectorPair::value_type& a, expected) {
+	  	a.first.print( "    first ");
+	  	a.second.print("    second");
+	  }
+	  std::cout << "\nactual: " << std::endl;
+	  BOOST_FOREACH(const typename VectorPair::value_type& a, actual)  {
+	  	a.first.print( "    first ");
+	  	a.second.print("    second");
 	  }
 	  std::cout << std::endl;
 	  return false;
@@ -164,9 +202,9 @@ bool assert_container_equal(const V& expected, const V& actual, double tol = 1e-
   	}
   }
 	if(!match) {
-	  std::cout << "expected: ";
+	  std::cout << "expected: " << std::endl;
 	  BOOST_FOREACH(const typename V::value_type& a, expected) { a.print("  "); }
-	  std::cout << "\nactual: ";
+	  std::cout << "\nactual: " << std::endl;
 	  BOOST_FOREACH(const typename V::value_type& a, actual) { a.print("  "); }
 	  std::cout << std::endl;
 	  return false;
@@ -194,9 +232,9 @@ bool assert_container_equality(const V& expected, const V& actual, double tol = 
   	}
   }
 	if(!match) {
-	  std::cout << "expected: ";
+	  std::cout << "expected: " << std::endl;
 	  BOOST_FOREACH(const typename V::value_type& a, expected) { std::cout << a << " "; }
-	  std::cout << "\nactual: ";
+	  std::cout << "\nactual: " << std::endl;
 	  BOOST_FOREACH(const typename V::value_type& a, actual) { std::cout << a << " "; }
 	  std::cout << std::endl;
 	  return false;
