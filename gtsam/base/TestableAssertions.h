@@ -147,8 +147,9 @@ bool assert_container_equal(const std::map<size_t,V2>& expected, const std::map<
  * Function for comparing vector of pairs (testable, testable)
  */
 template<class V1, class V2>
-bool assert_container_equal(const std::vector<V1,V2>& expected, const std::vector<V1,V2>& actual, double tol = 1e-9) {
-	typedef typename std::vector<V1,V2> VectorPair;
+bool assert_container_equal(const std::vector<std::pair<V1,V2> >& expected,
+		const std::vector<std::pair<V1,V2> >& actual, double tol = 1e-9) {
+	typedef typename std::vector<std::pair<V1,V2> > VectorPair;
   bool match = true;
   if (expected.size() != actual.size())
     match = false;
