@@ -100,6 +100,12 @@ namespace gtsam {
 					camera.K_, tol);
 		}
 
+		Pose3 between(const StereoCamera &camera,
+		    		boost::optional<Matrix&> H1=boost::none,
+		    		boost::optional<Matrix&> H2=boost::none) const {
+			return leftCamPose_.between(camera.pose(), H1, H2);
+		}
+
 		void print(const std::string& s = "") const {
 			leftCamPose_.print(s + ".camera.");
 			K_.print(s + ".calibration.");
