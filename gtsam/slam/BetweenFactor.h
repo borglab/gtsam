@@ -26,20 +26,16 @@ namespace gtsam {
 
 	/**
 	 * A class for a measurement predicted by "between(config[key1],config[key2])"
-	 * T is the Lie group type, Values where the T's are gotten from
-	 *
-	 * FIXME: This should only need one key type, as we can't have different types
+	 * KEY1::Value is the Lie Group type
+	 * T is the measurement type, by default the same
 	 */
-	template<class VALUES, class KEY1, class KEY2 = KEY1>
-	class BetweenFactor: public NonlinearFactor2<VALUES, KEY1, KEY2> {
-
-	public:
-		typedef typename KEY1::Value T;
+	template<class VALUES, class KEY1, class T = typename KEY1::Value>
+	class BetweenFactor: public NonlinearFactor2<VALUES, KEY1, KEY1> {
 
 	private:
 
-		typedef BetweenFactor<VALUES, KEY1, KEY2> This;
-		typedef NonlinearFactor2<VALUES, KEY1, KEY2> Base;
+		typedef BetweenFactor<VALUES, KEY1, T> This;
+		typedef NonlinearFactor2<VALUES, KEY1, KEY1> Base;
 
 		T measured_; /** The measurement */
 
@@ -52,7 +48,7 @@ namespace gtsam {
 		BetweenFactor() {}
 
 		/** Constructor */
-		BetweenFactor(const KEY1& key1, const KEY2& key2, const T& measured,
+		BetweenFactor(const KEY1& key1, const KEY1& key2, const T& measured,
 				const SharedGaussian& model) :
 			Base(model, key1, key2), measured_(measured) {
 		}
@@ -76,8 +72,9 @@ namespace gtsam {
 		/** implement functions needed to derive from Factor */
 
 		/** vector of errors */
-		Vector evaluateError(const T& p1, const T& p2, boost::optional<Matrix&> H1 =
-				boost::none, boost::optional<Matrix&> H2 = boost::none) const {
+		Vector evaluateError(const typename KEY1::Value& p1, const typename KEY1::Value& p2,
+				boost::optional<Matrix&> H1 = boost::none, boost::optional<Matrix&> H2 =
+						boost::none) const {
 			T hx = p1.between(p2, H1, H2); // h(x)
 			// manifold equivalent of h(x)-z -> log(z,h(x))
 			return measured_.logmap(hx);
