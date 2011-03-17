@@ -21,6 +21,7 @@
 #include <map>
 #include <iostream>
 #include <boost/foreach.hpp>
+#include <boost/optional.hpp>
 #include <gtsam/base/types.h>
 #include <gtsam/base/Testable.h>
 
@@ -36,6 +37,39 @@ bool assert_equal(const Index& expected, const Index& actual, double tol = 0.0) 
   }
   return true;
 }
+
+/**
+ * Comparisons for boost.optional objects that checks whether objects exist
+ * before comparing their values. First version allows for both to be
+ * boost::none, but the second, with expected given rather than optional
+ *
+ * Concept requirement: V is testable
+ */
+template<class V>
+bool assert_equal(const boost::optional<V>& expected,
+									const boost::optional<V>& actual, double tol = 1e-9) {
+	if (!expected && actual) {
+		std::cout << "expected is boost::none, while actual is not" << std::endl;
+		return false;
+	}
+	if (expected && !actual) {
+		std::cout << "actual is boost::none, while expected is not" << std::endl;
+		return false;
+	}
+	if (!expected && !actual)
+		return true;
+	return assert_equal(*expected, *actual, tol);
+}
+
+template<class V>
+bool assert_equal(const V& expected, const boost::optional<V>& actual, double tol = 1e-9) {
+	if (!actual) {
+		std::cout << "actual is boost::none" << std::endl;
+		return false;
+	}
+	return assert_equal(expected, *actual, tol);
+}
+
 
 /**
  * Version of assert_equals to work with vectors
