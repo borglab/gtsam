@@ -16,6 +16,7 @@
 
 #include <gtsam/geometry/Point3.h>
 #include <gtsam/base/Lie-inl.h>
+#include <math.h>
 
 
 namespace gtsam {
