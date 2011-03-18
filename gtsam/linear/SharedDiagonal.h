@@ -66,6 +66,9 @@ namespace gtsam { // note, deliberately not in noiseModel namespace
 	inline SharedDiagonal sharedPrecision(size_t dim, double precision) {
 	  return noiseModel::Isotropic::Precision(dim, precision);
 	}
+	inline SharedDiagonal sharedUnit(size_t dim) {
+	  return noiseModel::Unit::Create(dim);
+	}
 
 }
 
