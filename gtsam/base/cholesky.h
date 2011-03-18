@@ -37,7 +37,7 @@ void cholesky_inplace(MatrixColMajor& I);
  * the upper-triangular R = chol(F), i.e. R'R == F'F.  It then computes the
  * upper-trapazoidal factor [ R S d ], with [ S d ] = inv(R') * F' * [ G b ].
  *
- * Note that this operates on the "canonical" A matrix, not the symmetric
+ * Note that this operates on the Jacobian A matrix, not the symmetric
  * information matrix like plain Cholesky.
  *
  * This function returns the rank of the factor.
@@ -57,6 +57,9 @@ size_t choleskyFactorUnderdetermined(MatrixColMajor& Ab, size_t nFrontal);
  * of the zero-rows of the factor occur after any non-zero rows.  This is
  * (always?) the case during elimination of a fully-constrained least-squares
  * problem.
+ *
+ * The optional order argument specifies the size of the square upper-left
+ * submatrix to operate on, ignoring the rest of the matrix.
  */
 std::pair<size_t,bool> choleskyCareful(MatrixColMajor& ATA, int order = -1);
 
