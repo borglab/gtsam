@@ -26,62 +26,67 @@
 
 namespace gtsam {
 
-template<class FACTOR>
-class GenericSequentialSolver {
+	template<class FACTOR>
+	class GenericSequentialSolver {
 
-protected:
+	protected:
 
-  // Store the original factors for computing marginals
-  typename FactorGraph<FACTOR>::shared_ptr factors_;
+		// Store the original factors for computing marginals
+		typename FactorGraph<FACTOR>::shared_ptr factors_;
 
-  // Column structure of the factor graph
-  VariableIndex::shared_ptr structure_;
+		// Column structure of the factor graph
+		VariableIndex::shared_ptr structure_;
 
-  // Elimination tree that performs elimination.
-  typename EliminationTree<FACTOR>::shared_ptr eliminationTree_;
+		// Elimination tree that performs elimination.
+		typename EliminationTree<FACTOR>::shared_ptr eliminationTree_;
 
-public:
+	public:
 
-  /**
-   * Construct the solver for a factor graph.  This builds the elimination
-   * tree, which already does some of the work of elimination.
-   */
-  GenericSequentialSolver(const FactorGraph<FACTOR>& factorGraph);
+		/**
+		 * Construct the solver for a factor graph.  This builds the elimination
+		 * tree, which already does some of the work of elimination.
+		 */
+		GenericSequentialSolver(const FactorGraph<FACTOR>& factorGraph);
 
-  /**
-   * Construct the solver with a shared pointer to a factor graph and to a
-   * VariableIndex.  The solver will store these pointers, so this constructor
-   * is the fastest.
-   */
-  GenericSequentialSolver(const typename FactorGraph<FACTOR>::shared_ptr& factorGraph, const VariableIndex::shared_ptr& variableIndex);
+		/**
+		 * Construct the solver with a shared pointer to a factor graph and to a
+		 * VariableIndex.  The solver will store these pointers, so this constructor
+		 * is the fastest.
+		 */
+		GenericSequentialSolver(
+				const typename FactorGraph<FACTOR>::shared_ptr& factorGraph,
+				const VariableIndex::shared_ptr& variableIndex);
 
-  /**
-   * Replace the factor graph with a new one having the same structure.  The
-   * This function can be used if the numerical part of the factors changes,
-   * such as during relinearization or adjusting of noise models.
-   */
-  void replaceFactors(const typename FactorGraph<FACTOR>::shared_ptr& factorGraph);
+		/**
+		 * Replace the factor graph with a new one having the same structure.  The
+		 * This function can be used if the numerical part of the factors changes,
+		 * such as during relinearization or adjusting of noise models.
+		 */
+		void replaceFactors(
+				const typename FactorGraph<FACTOR>::shared_ptr& factorGraph);
 
-  /**
-   * Eliminate the factor graph sequentially.  Uses a column elimination tree
-   * to recursively eliminate.
-   */
-  typename BayesNet<typename FACTOR::ConditionalType>::shared_ptr eliminate() const;
+		/**
+		 * Eliminate the factor graph sequentially.  Uses a column elimination tree
+		 * to recursively eliminate.
+		 */
+		typename BayesNet<typename FACTOR::ConditionalType>::shared_ptr
+				eliminate() const;
 
-  /**
-   * Compute the marginal joint over a set of variables, by integrating out
-   * all of the other variables.  This function returns the result as a factor
-   * graph.
-   */
-  typename FactorGraph<FACTOR>::shared_ptr jointFactorGraph(const std::vector<Index>& js) const;
+		/**
+		 * Compute the marginal joint over a set of variables, by integrating out
+		 * all of the other variables.  This function returns the result as a factor
+		 * graph.
+		 */
+		typename FactorGraph<FACTOR>::shared_ptr jointFactorGraph(
+				const std::vector<Index>& js) const;
 
-  /**
-   * Compute the marginal Gaussian density over a variable, by integrating out
-   * all of the other variables.  This function returns the result as a factor.
-   */
-  typename FACTOR::shared_ptr marginalFactor(Index j) const;
+		/**
+		 * Compute the marginal Gaussian density over a variable, by integrating out
+		 * all of the other variables.  This function returns the result as a factor.
+		 */
+		typename FACTOR::shared_ptr marginalFactor(Index j) const;
 
-};
+	}; // GenericSequentialSolver
 
-}
+} // namespace gtsam
 
