@@ -10,8 +10,8 @@
  * -------------------------------------------------------------------------- */
 
 /**
- * @file    GenericSequentialSolver.cpp
- * @brief   
+ * @file    GenericSequentialSolver-inl.h
+ * @brief   Implementation for generic sequential solver
  * @author  Richard Roberts
  * @created Oct 21, 2010
  */
@@ -43,6 +43,24 @@ namespace gtsam {
 			const VariableIndex::shared_ptr& variableIndex) :
 		factors_(factorGraph), structure_(variableIndex), eliminationTree_(
 				EliminationTree<FACTOR>::Create(*factors_, *structure_)) {
+	}
+
+	/* ************************************************************************* */
+	template<class FACTOR>
+	void GenericSequentialSolver<FACTOR>::print(const std::string& s) const {
+		this->factors_->print(s+" factors:");
+		this->structure_->print(s+" structure:\n");
+		this->eliminationTree_->print(s+" etree:");
+	}
+
+	/* ************************************************************************* */
+	template<class FACTOR>
+	bool GenericSequentialSolver<FACTOR>::equals(
+			const GenericSequentialSolver& expected, double tol) const {
+		if (!this->factors_->equals(*expected.factors_, tol)) return false;
+		if (!this->structure_->equals(*expected.structure_, tol)) return false;
+		if (!this->eliminationTree_->equals(*expected.eliminationTree_, tol)) return false;
+		return true;
 	}
 
 	/* ************************************************************************* */

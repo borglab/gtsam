@@ -11,23 +11,23 @@
 
 /**
  * @file    GenericSequentialSolver.h
- * @brief   
+ * @brief   generic sequential elimination
  * @author  Richard Roberts
  * @created Oct 21, 2010
  */
 
 #pragma once
 
+#include <gtsam/inference/FactorGraph.h>
 #include <gtsam/inference/EliminationTree.h>
 #include <gtsam/inference/BayesNet.h>
-#include <gtsam/inference/FactorGraph.h>
 
 #include <utility>
 
 namespace gtsam {
 
 	template<class FACTOR>
-	class GenericSequentialSolver {
+	class GenericSequentialSolver : public Testable<GenericSequentialSolver<FACTOR> > {
 
 	protected:
 
@@ -56,6 +56,12 @@ namespace gtsam {
 		GenericSequentialSolver(
 				const typename FactorGraph<FACTOR>::shared_ptr& factorGraph,
 				const VariableIndex::shared_ptr& variableIndex);
+
+	  /** Print to cout */
+	  void print(const std::string& name = "GenericSequentialSolver: ") const;
+
+	  /** Test whether is equal to another */
+	  bool equals(const GenericSequentialSolver& other, double tol = 1e-9) const;
 
 		/**
 		 * Replace the factor graph with a new one having the same structure.  The

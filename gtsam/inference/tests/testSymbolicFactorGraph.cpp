@@ -49,6 +49,20 @@ static const Index vl1 = 2;
 //}
 
 /* ************************************************************************* */
+TEST( SymbolicFactorGraph, SymbolicSequentialSolver )
+{
+	// create factor graph
+	SymbolicFactorGraph g;
+	g.push_factor(vx2, vx1, vl1);
+	g.push_factor(vx1, vl1);
+	g.push_factor(vx1);
+	// test solver is Testable
+	SymbolicSequentialSolver solver(g);
+//	GTSAM_PRINT(solver);
+	EXPECT(assert_equal(solver,solver));
+}
+
+/* ************************************************************************* */
 TEST( SymbolicFactorGraph, constructFromBayesNet )
 {
 	// create expected factor graph
