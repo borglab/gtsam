@@ -18,7 +18,7 @@
 
 #pragma once
 
-#include <math.h>
+#include <cmath>
 #include <iostream>
 #include <stdexcept>
 #include <gtsam/geometry/tensors.h>

@@ -14,7 +14,7 @@
  * @brief  Unit tests for Pose3 class
  */
 
-#include <math.h>
+#include <cmath>
 #include <CppUnitLite/TestHarness.h>
 #include <gtsam/base/numericalDerivative.h>
 #include <gtsam/base/lieProxies.h>

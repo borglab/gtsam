@@ -15,7 +15,7 @@
  * based on testVSLAMFactor.cpp
  */
 
-#include <math.h>
+#include <cmath>
 #include <iostream>
 
 #include <CppUnitLite/TestHarness.h>

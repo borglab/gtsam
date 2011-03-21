@@ -21,8 +21,8 @@
  *  @Author: Alex Cunningham
  */
 
+#include <cmath>
 #include <iostream>
-#include <math.h>
 #include <gtsam/slam/PriorFactor.h>
 #include <gtsam/geometry/Rot2.h>
 #include <gtsam/linear/NoiseModel.h>

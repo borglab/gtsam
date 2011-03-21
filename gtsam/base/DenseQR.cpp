@@ -17,7 +17,7 @@
  *  Description: Dense QR, inspired by Tim Davis's dense solver
  */
 
-#include <math.h>
+#include <cmath>
 #include <algorithm>
 #include <stdexcept>
 #include <iostream>
