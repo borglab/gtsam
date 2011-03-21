@@ -21,11 +21,9 @@
 
 #pragma once
 
-#include <math.h>
-
-#include <gtsam/nonlinear/NonlinearFactor.h>
-#include <gtsam/linear/GaussianFactorGraph.h>
 #include <gtsam/inference/SymbolicFactorGraph.h>
+#include <gtsam/linear/GaussianFactorGraph.h>
+#include <gtsam/nonlinear/NonlinearFactor.h>
 #include <gtsam/nonlinear/Ordering.h>
 
 namespace gtsam {
@@ -60,9 +58,7 @@ namespace gtsam {
 		Vector unwhitenedError(const VALUES& c) const;
 
 		/** Unnormalized probability. O(n) */
-		double probPrime(const VALUES& c) const {
-			return exp(-0.5 * error(c));
-		}
+		double probPrime(const VALUES& c) const;
 
 		template<class F>
 		void add(const F& factor) {

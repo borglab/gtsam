@@ -19,6 +19,7 @@
 
 #pragma once
 
+#include <cmath>
 #include <boost/foreach.hpp>
 #include <gtsam/linear/GaussianFactorGraph.h>
 #include <gtsam/nonlinear/NonlinearFactorGraph.h>
@@ -33,18 +34,24 @@ using namespace std;
 
 namespace gtsam {
 
-/* ************************************************************************* */
-template<class VALUES>
-void NonlinearFactorGraph<VALUES>::print(const std::string& str) const {
-  Base::print(str);
-}
+	/* ************************************************************************* */
+	template<class VALUES>
+	double NonlinearFactorGraph<VALUES>::probPrime(const VALUES& c) const {
+		return exp(-0.5 * error(c));
+	}
+
+	/* ************************************************************************* */
+	template<class VALUES>
+	void NonlinearFactorGraph<VALUES>::print(const std::string& str) const {
+		Base::print(str);
+	}
 
 	/* ************************************************************************* */
 	template<class VALUES>
 	Vector NonlinearFactorGraph<VALUES>::unwhitenedError(const VALUES& c) const {
 		list<Vector> errors;
 		BOOST_FOREACH(const sharedFactor& factor, this->factors_)
-			errors.push_back(factor->unwhitenedError(c));
+						errors.push_back(factor->unwhitenedError(c));
 		return concatVectors(errors);
 	}
 
@@ -54,7 +61,7 @@ void NonlinearFactorGraph<VALUES>::print(const std::string& str) const {
 		double total_error = 0.;
 		// iterate over all the factors_ to accumulate the log probabilities
 		BOOST_FOREACH(const sharedFactor& factor, this->factors_)
-			total_error += factor->error(c);
+						total_error += factor->error(c);
 		return total_error;
 	}
 
@@ -64,58 +71,60 @@ void NonlinearFactorGraph<VALUES>::print(const std::string& str) const {
 	std::set<Symbol> NonlinearFactorGraph<VALUES>::keys() const {
 		std::set<Symbol> keys;
 		BOOST_FOREACH(const sharedFactor& factor, this->factors_)
-			keys.insert(factor->begin(), factor->end());
+						keys.insert(factor->begin(), factor->end());
 		return keys;
 	}
 
+	/* ************************************************************************* */
+	template<class VALUES>
+	Ordering::shared_ptr NonlinearFactorGraph<VALUES>::orderingCOLAMD(
+			const VALUES& config) const {
 
-  /* ************************************************************************* */
-  template<class VALUES>
-	Ordering::shared_ptr NonlinearFactorGraph<VALUES>::orderingCOLAMD(const VALUES& config) const {
+		// Create symbolic graph and initial (iterator) ordering
+		SymbolicFactorGraph::shared_ptr symbolic;
+		Ordering::shared_ptr ordering;
+		boost::tie(symbolic, ordering) = this->symbolic(config);
 
-    // Create symbolic graph and initial (iterator) ordering
-	  SymbolicFactorGraph::shared_ptr symbolic;
-	  Ordering::shared_ptr ordering;
-	  boost::tie(symbolic,ordering) = this->symbolic(config);
+		// Compute the VariableIndex (column-wise index)
+		VariableIndex variableIndex(*symbolic, ordering->size());
+		if (config.size() != variableIndex.size()) throw std::runtime_error(
+				"orderingCOLAMD: some variables in the graph are not constrained!");
 
-	  // Compute the VariableIndex (column-wise index)
-	  VariableIndex variableIndex(*symbolic, ordering->size());
-	  if(config.size() != variableIndex.size())
-	  	throw std::runtime_error("orderingCOLAMD: some variables in the graph are not constrained!");
+		// Compute a fill-reducing ordering with COLAMD
+		Permutation::shared_ptr colamdPerm(Inference::PermutationCOLAMD(
+				variableIndex));
 
-	  // Compute a fill-reducing ordering with COLAMD
-	  Permutation::shared_ptr colamdPerm(Inference::PermutationCOLAMD(variableIndex));
+		// Permute the Ordering and VariableIndex with the COLAMD ordering
+		ordering->permuteWithInverse(*colamdPerm->inverse());
+		// variableIndex.permute(*colamdPerm);
+		// SL-FIX: fix permutation
 
-	  // Permute the Ordering and VariableIndex with the COLAMD ordering
-	  ordering->permuteWithInverse(*colamdPerm->inverse());
-      // variableIndex.permute(*colamdPerm);
-	  // SL-FIX: fix permutation
-
-	  // Return the Ordering and VariableIndex to be re-used during linearization
-	  // and elimination
-	  return ordering;
+		// Return the Ordering and VariableIndex to be re-used during linearization
+		// and elimination
+		return ordering;
 	}
 
-  /* ************************************************************************* */
-  template<class VALUES>
-  SymbolicFactorGraph::shared_ptr NonlinearFactorGraph<VALUES>::symbolic(
-      const VALUES& config, const Ordering& ordering) const {
-    // Generate the symbolic factor graph
-    SymbolicFactorGraph::shared_ptr symbolicfg(new SymbolicFactorGraph);
-    symbolicfg->reserve(this->size());
-    BOOST_FOREACH(const sharedFactor& factor, this->factors_) {
-      symbolicfg->push_back(factor->symbolic(ordering));
-    }
-    return symbolicfg;
-  }
-
-  /* ************************************************************************* */
+	/* ************************************************************************* */
 	template<class VALUES>
-	pair<SymbolicFactorGraph::shared_ptr, Ordering::shared_ptr>
-	NonlinearFactorGraph<VALUES>::symbolic(const VALUES& config) const {
-	  // Generate an initial key ordering in iterator order
-    Ordering::shared_ptr ordering(config.orderingArbitrary());
-    return make_pair(symbolic(config, *ordering), ordering);
+	SymbolicFactorGraph::shared_ptr NonlinearFactorGraph<VALUES>::symbolic(
+			const VALUES& config, const Ordering& ordering) const {
+		// Generate the symbolic factor graph
+		SymbolicFactorGraph::shared_ptr symbolicfg(new SymbolicFactorGraph);
+		symbolicfg->reserve(this->size());
+
+		BOOST_FOREACH(const sharedFactor& factor, this->factors_)
+						symbolicfg->push_back(factor->symbolic(ordering));
+
+		return symbolicfg;
+	}
+
+	/* ************************************************************************* */
+	template<class VALUES>
+	pair<SymbolicFactorGraph::shared_ptr, Ordering::shared_ptr> NonlinearFactorGraph<
+			VALUES>::symbolic(const VALUES& config) const {
+		// Generate an initial key ordering in iterator order
+		Ordering::shared_ptr ordering(config.orderingArbitrary());
+		return make_pair(symbolic(config, *ordering), ordering);
 	}
 
 	/* ************************************************************************* */
@@ -124,18 +133,20 @@ void NonlinearFactorGraph<VALUES>::print(const std::string& str) const {
 			const VALUES& config, const Ordering& ordering) const {
 
 		// create an empty linear FG
-		typename FactorGraph<JacobianFactor>::shared_ptr linearFG(new FactorGraph<JacobianFactor>);
+		typename FactorGraph<JacobianFactor>::shared_ptr linearFG(new FactorGraph<
+				JacobianFactor> );
 		linearFG->reserve(this->size());
 
 		// linearize all factors
-		BOOST_FOREACH(const sharedFactor& factor, this->factors_) {
-		  JacobianFactor::shared_ptr lf = factor->linearize(config, ordering);
-			if (lf)	linearFG->push_back(lf);
-		}
+		BOOST_FOREACH(const sharedFactor& factor, this->factors_)
+					{
+						JacobianFactor::shared_ptr lf = factor->linearize(config, ordering);
+						if (lf) linearFG->push_back(lf);
+					}
 
 		return linearFG;
 	}
 
-	/* ************************************************************************* */
+/* ************************************************************************* */
 
 } // namespace gtsam

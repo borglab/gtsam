@@ -19,7 +19,6 @@
 
 #include <gtsam/base/Matrix.h>
 #include <gtsam/geometry/Point2.h>
-#include <math.h>
 
 namespace gtsam {
 
@@ -49,12 +48,7 @@ namespace gtsam {
 		 * @param w image width
 		 * @param h image height
 		 */
-		Cal3_S2(double fov, int w, int h) :
-			s_(0), u0_((double)w/2.0), v0_((double)h/2.0) {
-			double a = fov*M_PI/360.0; // fov/2 in radians
-			fx_=(double)w*tan(a);
-			fy_=fx_;
-		}
+		Cal3_S2(double fov, int w, int h);
 
 		void print(const std::string& s = "") const {
 			gtsam::print(matrix(), s);
@@ -70,17 +64,27 @@ namespace gtsam {
 		 */
 		Cal3_S2(const std::string &path);
 
-		inline double fx() const { return fx_; }
-    inline double fy() const { return fy_; }
-    inline double skew() const { return s_; }
-    inline double px() const { return u0_; }
-    inline double py() const { return v0_; }
+		inline double fx() const {
+			return fx_;
+		}
+		inline double fy() const {
+			return fy_;
+		}
+		inline double skew() const {
+			return s_;
+		}
+		inline double px() const {
+			return u0_;
+		}
+		inline double py() const {
+			return v0_;
+		}
 
 		/**
 		 * return the principal point
 		 */
 		Point2 principalPoint() const {
-			return Point2(u0_,v0_);
+			return Point2(u0_, v0_);
 		}
 
 		/**
@@ -104,45 +108,47 @@ namespace gtsam {
 		 * convert intrinsic coordinates xy to image coordinates uv
 		 * with optional derivatives
 		 */
-		Point2 uncalibrate(const Point2& p,
-				boost::optional<Matrix&> H1 = boost::none,
-				boost::optional<Matrix&> H2 = boost::none) const;
+		Point2 uncalibrate(const Point2& p, boost::optional<Matrix&> H1 =
+				boost::none, boost::optional<Matrix&> H2 = boost::none) const;
 
 		/**
 		 * convert image coordinates uv to intrinsic coordinates xy
 		 */
 		Point2 calibrate(const Point2& p) const {
 			const double u = p.x(), v = p.y();
-			return Point2((1/fx_)*(u-u0_ - (s_/fy_)*(v-v0_)), (1/fy_)*(v-v0_));
+			return Point2((1 / fx_) * (u - u0_ - (s_ / fy_) * (v - v0_)), (1 / fy_)
+					* (v - v0_));
 		}
 
-	    /**
-	     * return DOF, dimensionality of tangent space
-	     */
-	    inline size_t dim() const { return 5; }
-	  	static size_t Dim() { return 5; }
+		/**
+		 * return DOF, dimensionality of tangent space
+		 */
+		inline size_t dim() const {
+			return 5;
+		}
+		static size_t Dim() {
+			return 5;
+		}
 
-	    /**
-	     * Given 5-dim tangent vector, create new calibration
-	     */
-	    inline Cal3_S2 expmap(const Vector& d) const {
-	        return Cal3_S2(fx_ + d(0), fy_ + d(1),
-	            s_ + d(2), u0_ + d(3), v0_ + d(4));
-	    }
+		/**
+		 * Given 5-dim tangent vector, create new calibration
+		 */
+		inline Cal3_S2 expmap(const Vector& d) const {
+			return Cal3_S2(fx_ + d(0), fy_ + d(1), s_ + d(2), u0_ + d(3), v0_ + d(4));
+		}
 
-	    /**
-	     * logmap for the calibration
-	     */
-	    Vector logmap(const Cal3_S2& T2) const {
-	    	return vector() - T2.vector();
-	    }
+		/**
+		 * logmap for the calibration
+		 */
+		Vector logmap(const Cal3_S2& T2) const {
+			return vector() - T2.vector();
+		}
 
 	private:
 		/** Serialization function */
 		friend class boost::serialization::access;
 		template<class Archive>
-		void serialize(Archive & ar, const unsigned int version)
-		{
+		void serialize(Archive & ar, const unsigned int version) {
 			ar & BOOST_SERIALIZATION_NVP(fx_);
 			ar & BOOST_SERIALIZATION_NVP(fy_);
 			ar & BOOST_SERIALIZATION_NVP(s_);
@@ -153,4 +159,4 @@ namespace gtsam {
 
 	typedef boost::shared_ptr<Cal3_S2> shared_ptrK;
 
-}
+} // gtsam
