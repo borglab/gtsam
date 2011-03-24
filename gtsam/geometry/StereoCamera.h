@@ -85,6 +85,11 @@ namespace gtsam {
 			return 6;
 		}
 
+		/** Dimensionality of the tangent space */
+		static inline size_t Dim() {
+			return 6;
+		}
+
 		/** Exponential map around p0 */
 		inline StereoCamera expmap(const Vector& d) const {
 			return StereoCamera(pose().expmap(d), calibration());
