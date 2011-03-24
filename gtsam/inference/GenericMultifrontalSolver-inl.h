@@ -48,34 +48,37 @@ void GenericMultifrontalSolver<FACTOR, JUNCTIONTREE>::replaceFactors(const typen
 
 /* ************************************************************************* */
 template<class FACTOR, class JUNCTIONTREE>
-typename JUNCTIONTREE::BayesTree::shared_ptr
-GenericMultifrontalSolver<FACTOR, JUNCTIONTREE>::eliminate() const {
-  typename JUNCTIONTREE::BayesTree::shared_ptr bayesTree(new typename JUNCTIONTREE::BayesTree);
-  bayesTree->insert(junctionTree_->eliminate());
-  return bayesTree;
+typename JUNCTIONTREE::BayesTree::shared_ptr GenericMultifrontalSolver<
+		FACTOR, JUNCTIONTREE>::eliminate(
+		typename FactorGraph<FACTOR>::Eliminate function) const {
+	typename JUNCTIONTREE::BayesTree::shared_ptr bayesTree(
+			new typename JUNCTIONTREE::BayesTree);
+	bayesTree->insert(junctionTree_->eliminate(function));
+	return bayesTree;
 }
 
 /* ************************************************************************* */
 template<class FACTOR, class JUNCTIONTREE>
-typename FactorGraph<FACTOR>::shared_ptr
-GenericMultifrontalSolver<FACTOR, JUNCTIONTREE>::jointFactorGraph(const std::vector<Index>& js) const {
+typename FactorGraph<FACTOR>::shared_ptr GenericMultifrontalSolver<FACTOR,
+		JUNCTIONTREE>::jointFactorGraph(const std::vector<Index>& js,
+		Eliminate function) const {
 
-  // We currently have code written only for computing the
+	// We currently have code written only for computing the
 
-  if(js.size() != 2)
-    throw domain_error(
-        "*MultifrontalSolver::joint(js) currently can only compute joint marginals\n"
-        "for exactly two variables.  You can call marginal to compute the\n"
-        "marginal for one variable.  *SequentialSolver::joint(js) can compute the\n"
-        "joint marginal over any number of variables, so use that if necessary.\n");
+	if (js.size() != 2) throw domain_error(
+			"*MultifrontalSolver::joint(js) currently can only compute joint marginals\n"
+				"for exactly two variables.  You can call marginal to compute the\n"
+				"marginal for one variable.  *SequentialSolver::joint(js) can compute the\n"
+				"joint marginal over any number of variables, so use that if necessary.\n");
 
-  return eliminate()->joint(js[0], js[1]);
+	return eliminate(function)->joint(js[0], js[1], function);
 }
 
 /* ************************************************************************* */
 template<class FACTOR, class JUNCTIONTREE>
-typename FACTOR::shared_ptr GenericMultifrontalSolver<FACTOR, JUNCTIONTREE>::marginalFactor(Index j) const {
-  return eliminate()->marginalFactor(j);
+typename FACTOR::shared_ptr GenericMultifrontalSolver<FACTOR, JUNCTIONTREE>::marginalFactor(
+		Index j, Eliminate function) const {
+	return eliminate(function)->marginalFactor(j, function);
 }
 
 }

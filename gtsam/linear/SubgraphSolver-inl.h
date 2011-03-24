@@ -80,7 +80,8 @@ void SubgraphSolver<GRAPH,LINEAR,VALUES>::replaceFactors(const typename LINEAR::
 	//	theta_bar_ = composePoses<GRAPH, Constraint, Pose, Values> (T_, tree, theta0[root]);
 
 	LINEAR sacrificialAb1 = *Ab1; // duplicate !!!!!
-	SubgraphPreconditioner::sharedBayesNet Rc1 = EliminationTree<GaussianFactor>::Create(sacrificialAb1)->eliminate();
+	SubgraphPreconditioner::sharedBayesNet Rc1 =
+			EliminationTree<GaussianFactor>::Create(sacrificialAb1)->eliminate(&EliminateQR);
 	SubgraphPreconditioner::sharedValues xbar = gtsam::optimize_(*Rc1);
 
 	pc_ = boost::make_shared<SubgraphPreconditioner>(

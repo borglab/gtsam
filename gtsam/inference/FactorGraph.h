@@ -24,8 +24,10 @@
 #include <boost/shared_ptr.hpp>
 #include <boost/foreach.hpp>
 #include <boost/serialization/nvp.hpp>
+#include <boost/function.hpp>
 
 #include <gtsam/base/types.h>
+#include <gtsam/base/FastMap.h>
 #include <gtsam/base/Testable.h>
 #include <gtsam/inference/BayesNet.h>
 #include <gtsam/inference/graph.h>
@@ -46,6 +48,14 @@ namespace gtsam {
 		typedef typename boost::shared_ptr<FACTOR> sharedFactor;
 		typedef typename std::vector<sharedFactor>::iterator iterator;
 		typedef typename std::vector<sharedFactor>::const_iterator const_iterator;
+
+	  /** typedef for elimination result */
+	  typedef std::pair<
+				typename BayesNet<typename FACTOR::ConditionalType>::shared_ptr,
+				typename FACTOR::shared_ptr> EliminationResult;
+
+	  /** typedef for an eliminate subroutine */
+	  typedef boost::function<EliminationResult(const FactorGraph<FACTOR>&, size_t)> Eliminate;
 
 	protected:
 
@@ -175,6 +185,11 @@ namespace gtsam {
 			ar & BOOST_SERIALIZATION_NVP(factors_);
 		}
 	}; // FactorGraph
+
+  /** Create a combined joint factor (new style for EliminationTree). */
+	template<class DERIVED, class KEY>
+	typename DERIVED::shared_ptr Combine(const FactorGraph<DERIVED>& factors,
+			const FastMap<KEY, std::vector<KEY> >& variableSlots);
 
 	/**
    * static function that combines two factor graphs

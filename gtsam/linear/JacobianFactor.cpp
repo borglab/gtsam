@@ -493,175 +493,68 @@ namespace gtsam {
   }
 
   /* ************************************************************************* */
-  /* Used internally by JacobianFactor::Combine for sorting */
-  struct _RowSource {
-    size_t firstNonzeroVar;
-    size_t factorI;
-    size_t factorRowI;
-    _RowSource(size_t _firstNonzeroVar, size_t _factorI, size_t _factorRowI) :
-      firstNonzeroVar(_firstNonzeroVar), factorI(_factorI), factorRowI(_factorRowI) {}
-    bool operator<(const _RowSource& o) const { return firstNonzeroVar < o.firstNonzeroVar; }
-  };
+  void JacobianFactor::collectInfo(size_t index, vector<_RowSource>& rowSources) const {
+		assertInvariants();
+		for (size_t row = 0; row < size1(); ++row) {
+			Index firstNonzeroVar;
+			if (firstNonzeroBlocks_[row] < size()) {
+				firstNonzeroVar = keys_[firstNonzeroBlocks_[row]];
+			} else if (firstNonzeroBlocks_[row] == size()) {
+				firstNonzeroVar = back() + 1;
+			} else {
+				assert(false);
+			}
+			rowSources.push_back(_RowSource(firstNonzeroVar, index, row));
+		}
+	}
 
   /* ************************************************************************* */
-  // Helper functions for Combine
-  static boost::tuple<vector<size_t>, size_t, size_t> countDims(const std::vector<JacobianFactor::shared_ptr>& factors, const VariableSlots& variableSlots) {
-  #ifndef NDEBUG
-    vector<size_t> varDims(variableSlots.size(), numeric_limits<size_t>::max());
-  #else
-    vector<size_t> varDims(variableSlots.size());
-  #endif
-    size_t m = 0;
-    size_t n = 0;
-    {
-      Index jointVarpos = 0;
-      BOOST_FOREACH(const VariableSlots::value_type& slots, variableSlots) {
-
-        assert(slots.second.size() == factors.size());
-
-        Index sourceFactorI = 0;
-        BOOST_FOREACH(const Index sourceVarpos, slots.second) {
-          if(sourceVarpos < numeric_limits<Index>::max()) {
-            const JacobianFactor& sourceFactor = *factors[sourceFactorI];
-            size_t vardim = sourceFactor.getDim(sourceFactor.begin() + sourceVarpos);
-  #ifndef NDEBUG
-            if(varDims[jointVarpos] == numeric_limits<size_t>::max()) {
-              varDims[jointVarpos] = vardim;
-              n += vardim;
-            } else
-              assert(varDims[jointVarpos] == vardim);
-  #else
-            varDims[jointVarpos] = vardim;
-            n += vardim;
-            break;
-  #endif
-          }
-          ++ sourceFactorI;
-        }
-        ++ jointVarpos;
-      }
-      BOOST_FOREACH(const JacobianFactor::shared_ptr& factor, factors) {
-        m += factor->size1();
-      }
-    }
-    return boost::make_tuple(varDims, m, n);
-  }
+  void JacobianFactor::allocate(const VariableSlots& variableSlots, vector<
+			size_t>& varDims, size_t m) {
+		keys_.resize(variableSlots.size());
+		std::transform(variableSlots.begin(), variableSlots.end(), keys_.begin(),
+				bind(&VariableSlots::const_iterator::value_type::first,
+						boost::lambda::_1));
+		varDims.push_back(1);
+		Ab_.copyStructureFrom(BlockAb(matrix_, varDims.begin(), varDims.end(), m));
+		firstNonzeroBlocks_.resize(m);
+	}
 
   /* ************************************************************************* */
-  JacobianFactor::shared_ptr JacobianFactor::Combine(const FactorGraph<JacobianFactor>& factors, const VariableSlots& variableSlots) {
-
-    const bool debug = ISDEBUG("JacobianFactor::Combine");
-
-    if(debug) factors.print("Combining factors: ");
-
-    if(debug) variableSlots.print();
-
-    // Determine dimensions
-    tic(1, "countDims");
-    vector<size_t> varDims;
-    size_t m;
-    size_t n;
-    boost::tie(varDims, m, n) = countDims(factors, variableSlots);
-    if(debug) {
-      cout << "Dims: " << m << " x " << n << "\n";
-      BOOST_FOREACH(const size_t dim, varDims) { cout << dim << " "; }
-      cout << endl;
-    }
-    toc(1, "countDims");
-
-    // Sort rows
-    tic(2, "sort rows");
-    vector<_RowSource> rowSources; rowSources.reserve(m);
-    bool anyConstrained = false;
-    for(size_t sourceFactorI = 0; sourceFactorI < factors.size(); ++sourceFactorI) {
-      const JacobianFactor& sourceFactor(*factors[sourceFactorI]);
-      sourceFactor.assertInvariants();
-      for(size_t sourceFactorRow = 0; sourceFactorRow < sourceFactor.size1(); ++sourceFactorRow) {
-        Index firstNonzeroVar;
-        if(sourceFactor.firstNonzeroBlocks_[sourceFactorRow] < sourceFactor.size())
-          firstNonzeroVar = sourceFactor.keys_[sourceFactor.firstNonzeroBlocks_[sourceFactorRow]];
-        else if(sourceFactor.firstNonzeroBlocks_[sourceFactorRow] == sourceFactor.size())
-          firstNonzeroVar = sourceFactor.back() + 1;
-        else
-          assert(false);
-        rowSources.push_back(_RowSource(firstNonzeroVar, sourceFactorI, sourceFactorRow));
-      }
-      if(sourceFactor.model_->isConstrained()) anyConstrained = true;
-    }
-    assert(rowSources.size() == m);
-    std::sort(rowSources.begin(), rowSources.end());
-    toc(2, "sort rows");
-
-    // Allocate new factor
-    tic(3, "allocate");
-    shared_ptr combined(new JacobianFactor());
-    combined->keys_.resize(variableSlots.size());
-    std::transform(variableSlots.begin(), variableSlots.end(), combined->keys_.begin(), bind(&VariableSlots::const_iterator::value_type::first, boost::lambda::_1));
-    varDims.push_back(1);
-    combined->Ab_.copyStructureFrom(BlockAb(combined->matrix_, varDims.begin(), varDims.end(), m));
-    combined->firstNonzeroBlocks_.resize(m);
-    Vector sigmas(m);
-    toc(3, "allocate");
-
-    // Copy rows
-    tic(4, "copy rows");
-    Index combinedSlot = 0;
-    BOOST_FOREACH(const VariableSlots::value_type& varslot, variableSlots) {
-      for(size_t row = 0; row < m; ++row) {
-        const Index sourceSlot = varslot.second[rowSources[row].factorI];
-        ABlock combinedBlock(combined->Ab_(combinedSlot));
-        if(sourceSlot != numeric_limits<Index>::max()) {
-          const JacobianFactor& source(*factors[rowSources[row].factorI]);
-          const size_t sourceRow = rowSources[row].factorRowI;
-          if(source.firstNonzeroBlocks_[sourceRow] <= sourceSlot) {
-            const constABlock sourceBlock(source.Ab_(sourceSlot));
-            ublas::noalias(ublas::row(combinedBlock, row)) = ublas::row(sourceBlock, sourceRow);
-          } else
-            ublas::noalias(ublas::row(combinedBlock, row)) = ublas::zero_vector<double>(combinedBlock.size2());
-        } else
-          ublas::noalias(ublas::row(combinedBlock, row)) = ublas::zero_vector<double>(combinedBlock.size2());
-      }
-      ++ combinedSlot;
-    }
-    toc(4, "copy rows");
-
-    // Copy rhs (b), sigma, and firstNonzeroBlocks
-    tic(5, "copy vectors");
-    Index firstNonzeroSlot = 0;
-    for(size_t row = 0; row < m; ++row) {
-      const JacobianFactor& source(*factors[rowSources[row].factorI]);
-      const size_t sourceRow = rowSources[row].factorRowI;
-      combined->getb()(row) = source.getb()(sourceRow);
-      sigmas(row) = source.get_model()->sigmas()(sourceRow);
-      while(firstNonzeroSlot < variableSlots.size() && rowSources[row].firstNonzeroVar > combined->keys_[firstNonzeroSlot])
-        ++ firstNonzeroSlot;
-      combined->firstNonzeroBlocks_[row] = firstNonzeroSlot;
-    }
-    toc(5, "copy vectors");
-
-    // Create noise model from sigmas
-    tic(6, "noise model");
-    if(anyConstrained) combined->model_ = noiseModel::Constrained::MixedSigmas(sigmas);
-    else combined->model_ = noiseModel::Diagonal::Sigmas(sigmas);
-    toc(6, "noise model");
-
-    combined->assertInvariants();
-
-    return combined;
-  }
+  void JacobianFactor::copyRow(const JacobianFactor& source, Index sourceRow,
+			size_t sourceSlot, size_t row, Index slot) {
+		ABlock combinedBlock(Ab_(slot));
+		if (sourceSlot != numeric_limits<Index>::max()) {
+			if (source.firstNonzeroBlocks_[sourceRow] <= sourceSlot) {
+				const constABlock sourceBlock(source.Ab_(sourceSlot));
+				ublas::noalias(ublas::row(combinedBlock, row)) = ublas::row(
+						sourceBlock, sourceRow);
+			} else
+				ublas::noalias(ublas::row(combinedBlock, row)) = ublas::zero_vector<
+						double>(combinedBlock.size2());
+		} else
+			ublas::noalias(ublas::row(combinedBlock, row)) = ublas::zero_vector<
+					double>(combinedBlock.size2());
+	}
 
   /* ************************************************************************* */
-  pair<GaussianBayesNet::shared_ptr, JacobianFactor::shared_ptr> JacobianFactor::CombineAndEliminate(
-      const FactorGraph<JacobianFactor>& factors, size_t nrFrontals) {
-    tic(1, "Combine");
-    shared_ptr jointFactor(Combine(factors, VariableSlots(factors)));
-    toc(1, "Combine");
-    tic(2, "eliminate");
-    GaussianBayesNet::shared_ptr gbn(jointFactor->eliminate(nrFrontals));
-    toc(2, "eliminate");
-    return make_pair(gbn, jointFactor);
-  }
+  void JacobianFactor::copyFNZ(size_t m, size_t n,
+			vector<_RowSource>& rowSources) {
+		Index i = 0;
+		for (size_t row = 0; row < m; ++row) {
+			while (i < n && rowSources[row].firstNonzeroVar > keys_[i])
+				++i;
+			firstNonzeroBlocks_[row] = i;
+		}
+	}
 
+  /* ************************************************************************* */
+	void JacobianFactor::setModel(bool anyConstrained, const Vector& sigmas) {
+		if (anyConstrained)
+			model_ = noiseModel::Constrained::MixedSigmas(sigmas);
+		else
+			model_ = noiseModel::Diagonal::Sigmas(sigmas);
+	}
 
   /* ************************************************************************* */
   Errors operator*(const FactorGraph<JacobianFactor>& fg, const VectorValues& x) {

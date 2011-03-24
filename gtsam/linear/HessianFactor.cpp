@@ -173,6 +173,40 @@ namespace gtsam {
   }
 
   /* ************************************************************************* */
+	HessianFactor::HessianFactor(const FactorGraph<GaussianFactor>& factors,
+			const vector<size_t>& dimensions, const Scatter& scatter) :
+		info_(matrix_) {
+
+		const bool debug = ISDEBUG("EliminateCholesky");
+		// Form Ab' * Ab
+		tic(1, "allocate");
+		info_.resize(dimensions.begin(), dimensions.end(), false);
+		toc(1, "allocate");
+		tic(2, "zero");
+		ublas::noalias(matrix_) = ublas::zero_matrix<double>(matrix_.size1(),matrix_.size2());
+		toc(2, "zero");
+		tic(3, "update");
+		BOOST_FOREACH(const GaussianFactor::shared_ptr& factor, factors)
+		{
+			shared_ptr hessian(boost::dynamic_pointer_cast<HessianFactor>(factor));
+			if (hessian)
+				updateATA(*hessian, scatter);
+			else {
+				JacobianFactor::shared_ptr jacobianFactor(boost::dynamic_pointer_cast<JacobianFactor>(factor));
+				if (jacobianFactor)
+					updateATA(*jacobianFactor, scatter);
+				else
+					throw invalid_argument("GaussianFactor is neither Hessian nor Jacobian");
+			}
+		}
+		toc(3, "update");
+
+		if (debug) gtsam::print(matrix_, "Ab' * Ab: ");
+
+		assertInvariants();
+	}
+
+	/* ************************************************************************* */
   void HessianFactor::print(const std::string& s) const {
     cout << s << "\n";
     cout << " keys: ";
@@ -200,36 +234,6 @@ namespace gtsam {
   double HessianFactor::error(const VectorValues& c) const {
     return ublas::inner_prod(c.vector(), ublas::prod(info_.range(0, this->size(), 0, this->size()), c.vector())) -
         2.0*ublas::inner_prod(c.vector(), info_.rangeColumn(0, this->size(), this->size(), 0));
-  }
-
-  /* ************************************************************************* */
-  static FastMap<Index, SlotEntry> findScatterAndDims(const FactorGraph<GaussianFactor>& factors) {
-
-    static const bool debug = false;
-
-    // The "scatter" is a map from global variable indices to slot indices in the
-    // union of involved variables.  We also include the dimensionality of the
-    // variable.
-
-    Scatter scatter;
-
-    // First do the set union.
-    BOOST_FOREACH(const GaussianFactor::shared_ptr& factor, factors) {
-      for(GaussianFactor::const_iterator variable = factor->begin(); variable != factor->end(); ++variable) {
-        scatter.insert(make_pair(*variable, SlotEntry(0, factor->getDim(variable))));
-      }
-    }
-
-    // Next fill in the slot indices (we can only get these after doing the set
-    // union.
-    size_t slot = 0;
-    BOOST_FOREACH(Scatter::value_type& var_slot, scatter) {
-      var_slot.second.slot = (slot ++);
-      if(debug)
-        cout << "scatter[" << var_slot.first << "] = (slot " << var_slot.second.slot << ", dim " << var_slot.second.dimension << ")" << endl;
-    }
-
-    return scatter;
   }
 
 void HessianFactor::updateATA(const HessianFactor& update, const Scatter& scatter) {
@@ -433,7 +437,14 @@ void HessianFactor::updateATA(const JacobianFactor& update, const Scatter& scatt
 //  toc(2, "update");
 }
 
-GaussianBayesNet::shared_ptr HessianFactor::splitEliminatedFactor(size_t nrFrontals, const vector<Index>& keys) {
+/* ************************************************************************* */
+void HessianFactor::partialCholesky(size_t nrFrontals) {
+	choleskyPartial(matrix_, info_.offset(nrFrontals));
+}
+
+/* ************************************************************************* */
+GaussianBayesNet::shared_ptr
+HessianFactor::splitEliminatedFactor(size_t nrFrontals, const vector<Index>& keys) {
 
   static const bool debug = false;
 
@@ -482,75 +493,4 @@ GaussianBayesNet::shared_ptr HessianFactor::splitEliminatedFactor(size_t nrFront
   return conditionals;
 }
 
-/* ************************************************************************* */
-pair<GaussianBayesNet::shared_ptr, HessianFactor::shared_ptr> HessianFactor::CombineAndEliminate(
-        const FactorGraph<GaussianFactor>& factors, size_t nrFrontals) {
-
-  const bool debug = ISDEBUG("HessianFactor::CombineAndEliminate");
-
-  // Find the scatter and variable dimensions
-  tic(1, "find scatter");
-  Scatter scatter(findScatterAndDims(factors));
-  toc(1, "find scatter");
-
-  // Pull out keys and dimensions
-  tic(2, "keys");
-  vector<Index> keys(scatter.size());
-  vector<size_t> dimensions(scatter.size() + 1);
-  BOOST_FOREACH(const Scatter::value_type& var_slot, scatter) {
-    keys[var_slot.second.slot] = var_slot.first;
-    dimensions[var_slot.second.slot] = var_slot.second.dimension;
-  }
-  // This is for the r.h.s. vector
-  dimensions.back() = 1;
-  toc(2, "keys");
-
-  // Form Ab' * Ab
-  tic(3, "combine");
-  tic(1, "allocate");
-  HessianFactor::shared_ptr combinedFactor(new HessianFactor());
-  combinedFactor->info_.resize(dimensions.begin(), dimensions.end(), false);
-  toc(1, "allocate");
-  tic(2, "zero");
-  ublas::noalias(combinedFactor->matrix_) = ublas::zero_matrix<double>(combinedFactor->matrix_.size1(), combinedFactor->matrix_.size2());
-  toc(2, "zero");
-  tic(3, "update");
-  BOOST_FOREACH(const GaussianFactor::shared_ptr& factor, factors) {
-    HessianFactor::shared_ptr hessianFactor(boost::dynamic_pointer_cast<HessianFactor>(factor));
-    if(hessianFactor)
-      combinedFactor->updateATA(*hessianFactor, scatter);
-    else {
-      JacobianFactor::shared_ptr jacobianFactor(boost::dynamic_pointer_cast<JacobianFactor>(factor));
-      if(jacobianFactor)
-        combinedFactor->updateATA(*jacobianFactor, scatter);
-      else
-        throw invalid_argument("GaussianFactor is neither Hessian nor Jacobian");
-    }
-  }
-  toc(3, "update");
-  if(debug) gtsam::print(combinedFactor->matrix_, "Ab' * Ab: ");
-  toc(3, "combine");
-
-  // Do Cholesky, note that after this, the lower triangle still contains
-  // some untouched non-zeros that should be zero.  We zero them while
-  // extracting submatrices next.
-  tic(4, "partial Cholesky");
-  choleskyPartial(combinedFactor->matrix_, combinedFactor->info_.offset(nrFrontals));
-  if(debug) gtsam::print(combinedFactor->matrix_, "chol(Ab' * Ab): ");
-  toc(4, "partial Cholesky");
-
-  // Extract conditionals and fill in details of the remaining factor
-  tic(5, "split");
-  GaussianBayesNet::shared_ptr conditionals(combinedFactor->splitEliminatedFactor(nrFrontals, keys));
-  if(debug) {
-    conditionals->print("Extracted conditionals: ");
-    combinedFactor->print("Eliminated factor (L piece): ");
-  }
-  toc(5, "split");
-
-  combinedFactor->assertInvariants();
-
-  return make_pair(conditionals, combinedFactor);
-}
-
-}
+} // gtsam

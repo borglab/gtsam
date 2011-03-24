@@ -34,9 +34,6 @@ namespace gtsam {
 	using namespace std;
 
 	/* ************************************************************************* */
-	/**
-	 * GaussianJunctionTree
-	 */
 	void GaussianJunctionTree::btreeBackSubstitute(const boost::shared_ptr<const BayesTree::Clique>& current, VectorValues& config) const {
 		// solve the bayes net in the current node
 		GaussianBayesNet::const_reverse_iterator it = current->rbegin();
@@ -64,10 +61,10 @@ namespace gtsam {
 	}
 
 	/* ************************************************************************* */
-	VectorValues GaussianJunctionTree::optimize() const {
+	VectorValues GaussianJunctionTree::optimize(Eliminate function) const {
 	  tic(1, "GJT eliminate");
 		// eliminate from leaves to the root
-		boost::shared_ptr<const BayesTree::Clique> rootClique(this->eliminate());
+		boost::shared_ptr<const BayesTree::Clique> rootClique(this->eliminate(function));
     toc(1, "GJT eliminate");
 
 		// Allocate solution vector
@@ -84,4 +81,5 @@ namespace gtsam {
 		return result;
 	}
 
+	/* ************************************************************************* */
 } //namespace gtsam

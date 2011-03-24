@@ -48,32 +48,32 @@ void GaussianMultifrontalSolver::replaceFactors(const FactorGraph<GaussianFactor
 
 /* ************************************************************************* */
 BayesTree<GaussianConditional>::shared_ptr GaussianMultifrontalSolver::eliminate() const {
-  return Base::eliminate();
+  return Base::eliminate(&EliminateQR);
 }
 
 /* ************************************************************************* */
 VectorValues::shared_ptr GaussianMultifrontalSolver::optimize() const {
   tic(2,"optimize");
-  VectorValues::shared_ptr values(new VectorValues(junctionTree_->optimize()));
+  VectorValues::shared_ptr values(new VectorValues(junctionTree_->optimize(&EliminateQR)));
   toc(2,"optimize");
   return values;
 }
 
 /* ************************************************************************* */
 GaussianFactorGraph::shared_ptr GaussianMultifrontalSolver::jointFactorGraph(const std::vector<Index>& js) const {
-  return GaussianFactorGraph::shared_ptr(new GaussianFactorGraph(*Base::jointFactorGraph(js)));
+  return GaussianFactorGraph::shared_ptr(new GaussianFactorGraph(*Base::jointFactorGraph(js,&EliminateQR)));
 }
 
 /* ************************************************************************* */
 GaussianFactor::shared_ptr GaussianMultifrontalSolver::marginalFactor(Index j) const {
-  return Base::marginalFactor(j);
+  return Base::marginalFactor(j,&EliminateQR);
 }
 
 /* ************************************************************************* */
 std::pair<Vector, Matrix> GaussianMultifrontalSolver::marginalCovariance(Index j) const {
   FactorGraph<GaussianFactor> fg;
-  fg.push_back(Base::marginalFactor(j));
-  GaussianConditional::shared_ptr conditional = GaussianFactor::CombineAndEliminate(fg,1).first->front();
+  fg.push_back(Base::marginalFactor(j,&EliminateQR));
+  GaussianConditional::shared_ptr conditional = EliminateQR(fg,1).first->front();
   Matrix R = conditional->get_R();
   return make_pair(conditional->get_d(), inverse(ublas::prod(ublas::trans(R), R)));
 }

@@ -32,10 +32,12 @@ namespace gtsam {
 	 * GaussianJunctionTree that does the optimization
 	 */
 	class GaussianJunctionTree: public JunctionTree<GaussianFactorGraph> {
+
 	public:
 	  typedef boost::shared_ptr<GaussianJunctionTree> shared_ptr;
 		typedef JunctionTree<GaussianFactorGraph> Base;
 		typedef Base::sharedClique sharedClique;
+		typedef GaussianFactorGraph::Eliminate Eliminate;
 
 	protected:
 		// back-substitute in topological sort order (parents first)
@@ -53,7 +55,8 @@ namespace gtsam {
     GaussianJunctionTree(const GaussianFactorGraph& fg, const VariableIndex& variableIndex) : Base(fg, variableIndex) {}
 
 		// optimize the linear graph
-		VectorValues optimize() const;
+		VectorValues optimize(Eliminate function) const;
+
 	}; // GaussianJunctionTree
 
 } // namespace gtsam

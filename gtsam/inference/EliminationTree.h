@@ -42,6 +42,9 @@ public:
   typedef boost::shared_ptr<EliminationTree<FACTOR> > shared_ptr;
   typedef gtsam::BayesNet<typename FACTOR::ConditionalType> BayesNet;
 
+  /** typedef for an eliminate subroutine */
+  typedef typename FactorGraph<FACTOR>::Eliminate Eliminate;
+
 private:
 
   typedef FastList<sharedFactor> Factors;
@@ -70,13 +73,7 @@ private:
   /**
    * Recursive routine that eliminates the factors arranged in an elimination tree
    */
-  sharedFactor eliminate_(Conditionals& conditionals) const;
-
-  /**
-   * Special optimized eliminate for symbolic factors.  Will not compile if
-   * called in a non-IndexFactor EliminationTree.
-   */
-  FastSet<Index> eliminateSymbolic_(Conditionals& conditionals) const;
+  sharedFactor eliminate_(Eliminate function, Conditionals& conditionals) const;
 
   // Allow access to constructor and add methods for testing purposes
   friend class ::EliminationTreeTester;
@@ -101,7 +98,7 @@ public:
   bool equals(const EliminationTree& other, double tol = 1e-9) const;
 
   /** Eliminate the factors to a Bayes Net */
-  typename BayesNet::shared_ptr eliminate() const;
+  typename BayesNet::shared_ptr eliminate(Eliminate function) const;
 };
 
 }

@@ -27,7 +27,8 @@
 namespace gtsam {
 
 	template<class FACTOR>
-	class GenericSequentialSolver : public Testable<GenericSequentialSolver<FACTOR> > {
+	class GenericSequentialSolver: public Testable<
+			GenericSequentialSolver<FACTOR> > {
 
 	protected:
 
@@ -57,11 +58,11 @@ namespace gtsam {
 				const typename FactorGraph<FACTOR>::shared_ptr& factorGraph,
 				const VariableIndex::shared_ptr& variableIndex);
 
-	  /** Print to cout */
-	  void print(const std::string& name = "GenericSequentialSolver: ") const;
+		/** Print to cout */
+		void print(const std::string& name = "GenericSequentialSolver: ") const;
 
-	  /** Test whether is equal to another */
-	  bool equals(const GenericSequentialSolver& other, double tol = 1e-9) const;
+		/** Test whether is equal to another */
+		bool equals(const GenericSequentialSolver& other, double tol = 1e-9) const;
 
 		/**
 		 * Replace the factor graph with a new one having the same structure.  The
@@ -76,7 +77,7 @@ namespace gtsam {
 		 * to recursively eliminate.
 		 */
 		typename BayesNet<typename FACTOR::ConditionalType>::shared_ptr
-				eliminate() const;
+		eliminate(typename EliminationTree<FACTOR>::Eliminate function) const;
 
 		/**
 		 * Compute the marginal joint over a set of variables, by integrating out
@@ -84,13 +85,15 @@ namespace gtsam {
 		 * graph.
 		 */
 		typename FactorGraph<FACTOR>::shared_ptr jointFactorGraph(
-				const std::vector<Index>& js) const;
+				const std::vector<Index>& js,
+				typename EliminationTree<FACTOR>::Eliminate function) const;
 
 		/**
 		 * Compute the marginal Gaussian density over a variable, by integrating out
 		 * all of the other variables.  This function returns the result as a factor.
 		 */
-		typename FACTOR::shared_ptr marginalFactor(Index j) const;
+		typename FACTOR::shared_ptr marginalFactor(Index j,
+				typename EliminationTree<FACTOR>::Eliminate function) const;
 
 	}; // GenericSequentialSolver
 

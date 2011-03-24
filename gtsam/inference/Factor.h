@@ -21,15 +21,14 @@
 
 #pragma once
 
-#include <vector>
 #include <map>
+#include <set>
+#include <vector>
 #include <boost/utility.hpp> // for noncopyable
 #include <boost/serialization/nvp.hpp>
 #include <boost/foreach.hpp>
-#include <gtsam/base/types.h>
 #include <gtsam/base/Testable.h>
 #include <gtsam/base/FastMap.h>
-#include <gtsam/inference/inference.h>
 
 namespace gtsam {
 
@@ -117,10 +116,7 @@ public:
   			keys_.push_back(key);
   	assertInvariants(); }
 
-  /** Create a combined joint factor (new style for EliminationTree). */
-  template<class DERIVED>
-  static typename DERIVED::shared_ptr Combine(const FactorGraph<DERIVED>& factors, const FastMap<Key, std::vector<Key> >& variableSlots);
-
+#ifdef TRACK_ELIMINATE
   /**
    * eliminate the first variable involved in this factor
    * @return a conditional on the eliminated variable
@@ -133,12 +129,7 @@ public:
    */
   template<class CONDITIONAL>
   typename BayesNet<CONDITIONAL>::shared_ptr eliminate(size_t nrFrontals = 1);
-
-  /**
-   * Permutes the factor, but for efficiency requires the permutation
-   * to already be inverted.
-   */
-  void permuteWithInverse(const Permutation& inversePermutation);
+#endif
 
   /** iterators */
   const_iterator begin() const { return keys_.begin(); }

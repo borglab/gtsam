@@ -41,4 +41,37 @@ namespace gtsam {
 #endif
   }
 
+  /* ************************************************************************* */
+  bool IndexConditional::permuteSeparatorWithInverse(const Permutation& inversePermutation) {
+  #ifndef NDEBUG
+    BOOST_FOREACH(Key key, frontals()) { assert(key == inversePermutation[key]); }
+  #endif
+    bool parentChanged = false;
+    BOOST_FOREACH(Key& parent, parents()) {
+      Key newParent = inversePermutation[parent];
+      if(parent != newParent) {
+        parentChanged = true;
+        parent = newParent;
+      }
+    }
+    assertInvariants();
+    return parentChanged;
+  }
+
+  /* ************************************************************************* */
+  void IndexConditional::permuteWithInverse(const Permutation& inversePermutation) {
+    // The permutation may not move the separators into the frontals
+  #ifndef NDEBUG
+    BOOST_FOREACH(const Key frontal, this->frontals()) {
+      BOOST_FOREACH(const Key separator, this->parents()) {
+        assert(inversePermutation[frontal] < inversePermutation[separator]);
+      }
+    }
+  #endif
+		BOOST_FOREACH(Index& key, keys_)
+						key = inversePermutation[key];
+    assertInvariants();
+  }
+  /* ************************************************************************* */
+
 }

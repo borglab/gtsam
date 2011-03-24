@@ -24,10 +24,8 @@
 #include <boost/foreach.hpp>
 #include <boost/range/iterator_range.hpp>
 #include <boost/serialization/nvp.hpp>
-#include <gtsam/base/types.h>
 #include <gtsam/base/Testable.h>
 #include <gtsam/inference/Factor.h>
-#include <gtsam/inference/Permutation.h>
 
 namespace gtsam {
 
@@ -168,18 +166,6 @@ public:
   /** print */
   void print(const std::string& s = "Conditional") const;
 
-  /** Permute the variables when only separator variables need to be permuted.
-   * Returns true if any reordered variables appeared in the separator and
-   * false if not.
-   */
-  bool permuteSeparatorWithInverse(const Permutation& inversePermutation);
-
-  /**
-   * Permutes the Conditional, but for efficiency requires the permutation
-   * to already be inverted.
-   */
-  void permuteWithInverse(const Permutation& inversePermutation);
-
 private:
   /** Serialization function */
   friend class boost::serialization::access;
@@ -200,37 +186,4 @@ void Conditional<KEY>::print(const std::string& s) const {
   std::cout << ")" << std::endl;
 }
 
-/* ************************************************************************* */
-template<typename KEY>
-bool Conditional<KEY>::permuteSeparatorWithInverse(const Permutation& inversePermutation) {
-#ifndef NDEBUG
-  BOOST_FOREACH(Key key, frontals()) { assert(key == inversePermutation[key]); }
-#endif
-  bool parentChanged = false;
-  BOOST_FOREACH(Key& parent, parents()) {
-    Key newParent = inversePermutation[parent];
-    if(parent != newParent) {
-      parentChanged = true;
-      parent = newParent;
-    }
-  }
-  assertInvariants();
-  return parentChanged;
-}
-
-/* ************************************************************************* */
-template<typename KEY>
-void Conditional<KEY>::permuteWithInverse(const Permutation& inversePermutation) {
-  // The permutation may not move the separators into the frontals
-#ifndef NDEBUG
-  BOOST_FOREACH(const Key frontal, this->frontals()) {
-    BOOST_FOREACH(const Key separator, this->parents()) {
-      assert(inversePermutation[frontal] < inversePermutation[separator]);
-    }
-  }
-#endif
-  FactorType::permuteWithInverse(inversePermutation);
-  assertInvariants();
-}
-
-}
+} // gtsam

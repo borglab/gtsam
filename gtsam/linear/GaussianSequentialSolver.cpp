@@ -49,7 +49,7 @@ void GaussianSequentialSolver::replaceFactors(const FactorGraph<GaussianFactor>:
 
 /* ************************************************************************* */
 GaussianBayesNet::shared_ptr GaussianSequentialSolver::eliminate() const {
-  return Base::eliminate();
+  return Base::eliminate(&EliminateQR);
 }
 
 /* ************************************************************************* */
@@ -82,20 +82,23 @@ VectorValues::shared_ptr GaussianSequentialSolver::optimize() const {
 
 /* ************************************************************************* */
 GaussianFactor::shared_ptr GaussianSequentialSolver::marginalFactor(Index j) const {
-  return Base::marginalFactor(j);
-}
-
-std::pair<Vector, Matrix> GaussianSequentialSolver::marginalCovariance(Index j) const {
-  FactorGraph<GaussianFactor> fg;
-  fg.push_back(Base::marginalFactor(j));
-  GaussianConditional::shared_ptr conditional = GaussianFactor::CombineAndEliminate(fg,1).first->front();
-  Matrix R = conditional->get_R();
-  return make_pair(conditional->get_d(), inverse(ublas::prod(ublas::trans(R), R)));
+  return Base::marginalFactor(j,&EliminateQR);
 }
 
 /* ************************************************************************* */
-GaussianFactorGraph::shared_ptr GaussianSequentialSolver::jointFactorGraph(const std::vector<Index>& js) const {
-  return GaussianFactorGraph::shared_ptr(new GaussianFactorGraph(*Base::jointFactorGraph(js)));
+std::pair<Vector, Matrix> GaussianSequentialSolver::marginalCovariance(Index j) const {
+	FactorGraph<GaussianFactor> fg;
+	fg.push_back(Base::marginalFactor(j, &EliminateQR));
+	GaussianConditional::shared_ptr conditional = EliminateQR(fg, 1).first->front();
+	Matrix R = conditional->get_R();
+	return make_pair(conditional->get_d(), inverse(ublas::prod(ublas::trans(R),R)));
+}
+
+/* ************************************************************************* */
+GaussianFactorGraph::shared_ptr 
+GaussianSequentialSolver::jointFactorGraph(const std::vector<Index>& js) const {
+	return GaussianFactorGraph::shared_ptr(new GaussianFactorGraph(
+			*Base::jointFactorGraph(js, &EliminateQR)));
 }
 
 }

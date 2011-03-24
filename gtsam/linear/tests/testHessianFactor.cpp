@@ -129,11 +129,13 @@ TEST(GaussianFactor, CombineAndEliminate)
   JacobianFactor expectedFactor(0, A0, 1, A1, b, noiseModel::Diagonal::Sigmas(sigmas, true));
   GaussianBayesNet expectedBN(*expectedFactor.eliminate(1));
 
-  pair<GaussianBayesNet::shared_ptr, HessianFactor::shared_ptr> actualCholesky(HessianFactor::CombineAndEliminate(
-      *gfg.convertCastFactors<FactorGraph<HessianFactor> >(), 1));
+  GaussianFactorGraph::EliminationResult actualCholesky = EliminateCholesky(
+			*gfg.convertCastFactors<FactorGraph<HessianFactor> > (), 1);
+	HessianFactor::shared_ptr actualFactor = boost::dynamic_pointer_cast<
+			HessianFactor>(actualCholesky.second);
 
   EXPECT(assert_equal(expectedBN, *actualCholesky.first, 1e-6));
-  EXPECT(assert_equal(HessianFactor(expectedFactor), *actualCholesky.second, 1e-6));
+  EXPECT(assert_equal(HessianFactor(expectedFactor), *actualFactor, 1e-6));
 }
 
 /* ************************************************************************* */
@@ -177,8 +179,11 @@ TEST(GaussianFactor, eliminate2 )
   HessianFactor::shared_ptr combinedLF_Chol(new HessianFactor(combined));
   FactorGraph<HessianFactor> combinedLFG_Chol;
   combinedLFG_Chol.push_back(combinedLF_Chol);
-  pair<GaussianBayesNet::shared_ptr, HessianFactor::shared_ptr> actual_Chol =
-      HessianFactor::CombineAndEliminate(combinedLFG_Chol, 1);
+
+  GaussianFactorGraph::EliminationResult actual_Chol = EliminateCholesky(
+			combinedLFG_Chol, 1);
+	HessianFactor::shared_ptr actualFactor = boost::dynamic_pointer_cast<
+			HessianFactor>(actual_Chol.second);
 
   // create expected Conditional Gaussian
   double oldSigma = 0.0894427; // from when R was made unit
@@ -203,7 +208,7 @@ TEST(GaussianFactor, eliminate2 )
   )/sigma;
   Vector b1 = Vector_(2,0.0,0.894427);
   JacobianFactor expectedLF(1, Bl1x1, b1, repeat(2,1.0));
-  EXPECT(assert_equal(HessianFactor(expectedLF), *actual_Chol.second, 1.5e-3));
+  EXPECT(assert_equal(HessianFactor(expectedLF), *actualFactor, 1.5e-3));
 }
 
 /* ************************************************************************* */
@@ -276,11 +281,13 @@ TEST(GaussianFactor, eliminateUnsorted) {
 
   GaussianBayesNet::shared_ptr expected_bn;
   GaussianFactor::shared_ptr expected_factor;
-  boost::tie(expected_bn, expected_factor) = GaussianFactor::CombineAndEliminate(sortedGraph, 1, GaussianFactor::SOLVE_PREFER_CHOLESKY);
+  boost::tie(expected_bn, expected_factor) =
+  		EliminatePreferCholesky(sortedGraph, 1);
 
   GaussianBayesNet::shared_ptr actual_bn;
   GaussianFactor::shared_ptr actual_factor;
-  boost::tie(actual_bn, actual_factor) = GaussianFactor::CombineAndEliminate(unsortedGraph, 1, GaussianFactor::SOLVE_PREFER_CHOLESKY);
+  boost::tie(actual_bn, actual_factor) =
+  		EliminatePreferCholesky(unsortedGraph, 1);
 
   CHECK(assert_equal(*expected_bn, *actual_bn, 1e-10));
   CHECK(assert_equal(*expected_factor, *actual_factor, 1e-10));

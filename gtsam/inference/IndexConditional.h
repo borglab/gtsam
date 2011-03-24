@@ -18,8 +18,10 @@
 
 #pragma once
 
+#include <gtsam/base/types.h>
 #include <gtsam/inference/Conditional.h>
 #include <gtsam/inference/IndexFactor.h>
+#include <gtsam/inference/Permutation.h>
 
 namespace gtsam {
 
@@ -79,6 +81,18 @@ namespace gtsam {
 
     /** Convert to a factor */
     IndexFactor::shared_ptr toFactor() const { return IndexFactor::shared_ptr(new IndexFactor(*this)); }
+
+    /** Permute the variables when only separator variables need to be permuted.
+     * Returns true if any reordered variables appeared in the separator and
+     * false if not.
+     */
+    bool permuteSeparatorWithInverse(const Permutation& inversePermutation);
+
+    /**
+     * Permutes the Conditional, but for efficiency requires the permutation
+     * to already be inverted.
+     */
+    void permuteWithInverse(const Permutation& inversePermutation);
 
   };
 

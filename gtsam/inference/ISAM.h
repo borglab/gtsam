@@ -52,10 +52,12 @@ namespace gtsam {
 		/**
 		 * iSAM. (update_internal provides access to list of orphans for drawing purposes)
 		 */
-		template<class FACTORGRAPH>
-		void update_internal(const FACTORGRAPH& newFactors, Cliques& orphans);
-		template<class FACTORGRAPH>
-		void update(const FACTORGRAPH& newFactors);
+		template<class FG>
+		void update_internal(const FG& newFactors, Cliques& orphans,
+				typename FG::Eliminate function);
+
+		template<class FG>
+		void update(const FG& newFactors, typename FG::Eliminate function);
 
 	}; // ISAM
 

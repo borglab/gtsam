@@ -16,18 +16,14 @@
  *      Author: Frank Dellaert
  */
 
-#include <iostream>
-#include <fstream>
-#include <boost/format.hpp>
-#include <boost/foreach.hpp>
 #include <gtsam/inference/SymbolicFactorGraph.h>
+#include <gtsam/inference/FactorGraph-inl.h>
 #include <gtsam/inference/BayesNet-inl.h>
-#include <gtsam/inference/IndexFactor.h>
 #include <gtsam/inference/EliminationTree-inl.h>
 
-using namespace std;
-
 namespace gtsam {
+
+	using namespace std;
 
 	// Explicitly instantiate so we don't have to include everywhere
 	template class FactorGraph<IndexFactor>;
@@ -71,13 +67,37 @@ namespace gtsam {
     return keys;
   }
 
+	/* ************************************************************************* */
+	IndexFactor::shared_ptr CombineSymbolic(
+			const FactorGraph<IndexFactor>& factors, const FastMap<Index,
+					std::vector<Index> >& variableSlots) {
+		IndexFactor::shared_ptr combined(Combine<IndexFactor, Index> (factors,
+				variableSlots));
+//		combined->assertInvariants();
+		return combined;
+	}
 
-//	/* ************************************************************************* */
-//	SymbolicBayesNet
-//	SymbolicFactorGraph::eliminateFrontals(const Ordering& ordering)
-//	{
-//		return Inference::Eliminate(ordering);
-//	}
+	/* ************************************************************************* */
+	pair<BayesNet<IndexConditional>::shared_ptr, IndexFactor::shared_ptr> //
+	EliminateSymbolic(const FactorGraph<IndexFactor>& factors, size_t nrFrontals) {
+
+		FastSet<Index> keys;
+		BOOST_FOREACH(const IndexFactor::shared_ptr& factor, factors)
+						BOOST_FOREACH(Index var, *factor)
+										keys.insert(var);
+
+		if (keys.size() < 1) throw invalid_argument(
+				"IndexFactor::CombineAndEliminate called on factors with no variables.");
+
+		pair<BayesNet<IndexConditional>::shared_ptr, IndexFactor::shared_ptr> result;
+		result.first.reset(new BayesNet<IndexConditional> ());
+		FastSet<Index>::const_iterator it;
+		for (it = keys.begin(); result.first->size() < nrFrontals; ++it)
+			result.first->push_back(IndexConditional::FromRange(it, keys.end(), 1));
+		result.second.reset(new IndexFactor(it, keys.end()));
+
+		return result;
+	}
 
 	/* ************************************************************************* */
 }
