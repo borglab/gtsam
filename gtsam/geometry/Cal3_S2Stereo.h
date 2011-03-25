@@ -63,6 +63,7 @@ namespace gtsam {
 		void serialize(Archive & ar, const unsigned int version)
 		{
 			ar & BOOST_SERIALIZATION_NVP(b_);
+			ar & BOOST_SERIALIZATION_BASE_OBJECT_NVP(Cal3_S2);
 		}
 	};
 
