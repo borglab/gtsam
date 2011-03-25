@@ -119,7 +119,7 @@ namespace gtsam {
     /** Return the dimension of the variable pointed to by the given key iterator
      * todo: Remove this in favor of keeping track of dimensions with variables?
      */
-    virtual size_t getDim(const_iterator variable) const { return Ab_(variable - keys_.begin()).size2(); }
+    virtual size_t getDim(const_iterator variable) const { return Ab_(variable - begin()).size2(); }
 
     /**
      * Permutes the GaussianFactor, but for efficiency requires the permutation
@@ -153,11 +153,11 @@ namespace gtsam {
     constBVector getb() const { return Ab_.column(size(), 0); }
 
     /** Get a view of the A matrix for the variable pointed to be the given key iterator */
-    constABlock getA(const_iterator variable) const { return Ab_(variable - keys_.begin()); }
+    constABlock getA(const_iterator variable) const { return Ab_(variable - begin()); }
 
     BVector getb() { return Ab_.column(size(), 0); }
 
-    ABlock getA(iterator variable) { return Ab_(variable - keys_.begin()); }
+    ABlock getA(iterator variable) { return Ab_(variable - begin()); }
 
     /** Return A*x */
     Vector operator*(const VectorValues& x) const;

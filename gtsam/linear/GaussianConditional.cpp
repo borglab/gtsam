@@ -73,20 +73,16 @@ GaussianConditional::GaussianConditional(Index key, const Vector& d, const Matri
 }
 
 /* ************************************************************************* */
-GaussianConditional::GaussianConditional(Index key, const Vector& d, const Matrix& R, const list<pair<Index, Matrix> >& parents, const Vector& sigmas) :
-    rsd_(matrix_), sigmas_(sigmas) {
+	GaussianConditional::GaussianConditional(Index key, const Vector& d,
+			const Matrix& R, const list<pair<Index, Matrix> >& parents, const Vector& sigmas) :
+		IndexConditional(key, GetKeys(parents.size(), parents.begin(), parents.end())), rsd_(matrix_), sigmas_(sigmas) {
   assert(R.size1() <= R.size2());
-  IndexConditional::nrFrontals_ = 1;
-  keys_.resize(1+parents.size());
   size_t dims[1+parents.size()+1];
   dims[0] = R.size2();
-  keys_[0] = key;
   size_t j=1;
-  for(std::list<std::pair<Index, Matrix> >::const_iterator parent=parents.begin(); parent!=parents.end(); ++parent) {
-    keys_[j] = parent->first;
+  std::list<std::pair<Index, Matrix> >::const_iterator parent=parents.begin();
+  for(; parent!=parents.end(); ++parent,++j)
     dims[j] = parent->second.size2();
-    ++ j;
-  }
   dims[j] = 1;
   rsd_.copyStructureFrom(rsd_type(matrix_, dims, dims+1+parents.size()+1, d.size()));
   ublas::noalias(rsd_(0)) = ublas::triangular_adaptor<const Matrix, ublas::upper>(R);

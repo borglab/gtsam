@@ -63,21 +63,15 @@ namespace gtsam {
     IndexConditional(Index j, Index parent1, Index parent2, Index parent3) : Base(j, parent1, parent2, parent3) { assertInvariants(); }
 
     /** Constructor from a frontal variable and a vector of parents */
-    IndexConditional(Index j, const std::vector<Index>& parents) : Base(j, parents) { assertInvariants(); }
+		IndexConditional(Index j, const std::vector<Index>& parents) : Base(j, parents) {
+			assertInvariants();
+		}
 
-    /** Constructor from a frontal variable and an iterator range of parents */
-    template<typename ITERATOR>
-    static shared_ptr FromRange(Index j, ITERATOR firstParent, ITERATOR lastParent) {
-      shared_ptr result(Base::FromRange<This>(j, firstParent, lastParent));
-      result->assertInvariants();
-      return result; }
-
-    /** Named constructor from any number of frontal variables and parents */
-    template<typename ITERATOR>
-    static shared_ptr FromRange(ITERATOR firstKey, ITERATOR lastKey, size_t nrFrontals) {
-      shared_ptr result(Base::FromRange<This>(firstKey, lastKey, nrFrontals));
-      result->assertInvariants();
-      return result; }
+    /** Constructor from keys and nr of frontal variables */
+		IndexConditional(const std::vector<Index>& keys, size_t nrFrontals) :
+			Base(keys, nrFrontals) {
+			assertInvariants();
+		}
 
     /** Convert to a factor */
     IndexFactor::shared_ptr toFactor() const { return IndexFactor::shared_ptr(new IndexFactor(*this)); }

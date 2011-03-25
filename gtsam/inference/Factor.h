@@ -70,10 +70,15 @@ public:
   /** Const iterator over keys */
   typedef typename std::vector<Key>::const_iterator const_iterator;
 
-protected:
+private:
 
   // The keys involved in this factor
   std::vector<Key> keys_;
+
+  friend class JacobianFactor;
+  friend class HessianFactor;
+
+protected:
 
   // Internal check to make sure keys are unique.  If NDEBUG is defined, this
   // is empty and optimized out.
@@ -111,10 +116,15 @@ public:
     keys_[0] = key1; keys_[1] = key2; keys_[2] = key3; keys_[3] = key4; assertInvariants(); }
 
   /** Construct n-way factor */
-  Factor(const std::set<Key>& keys) {
-  	BOOST_FOREACH(const Key& key, keys)
-  			keys_.push_back(key);
-  	assertInvariants(); }
+	Factor(const std::set<Key>& keys) {
+		BOOST_FOREACH(const Key& key, keys) keys_.push_back(key);
+		assertInvariants();
+	}
+
+	/** Construct n-way factor */
+	Factor(const std::vector<Key>& keys) : keys_(keys) {
+		assertInvariants();
+	}
 
 #ifdef TRACK_ELIMINATE
   /**
@@ -157,6 +167,7 @@ public:
   /**
    * @return keys involved in this factor
    */
+  std::vector<Key>& keys() { return keys_; }
   const std::vector<Key>& keys() const { return keys_; }
 
   /**

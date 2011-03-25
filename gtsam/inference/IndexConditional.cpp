@@ -68,7 +68,7 @@ namespace gtsam {
       }
     }
   #endif
-		BOOST_FOREACH(Index& key, keys_)
+		BOOST_FOREACH(Index& key, keys())
 						key = inversePermutation[key];
     assertInvariants();
   }

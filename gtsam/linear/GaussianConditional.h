@@ -20,6 +20,7 @@
 #pragma once
 
 #include <list>
+#include <vector>
 #include <boost/utility.hpp>
 #include <boost/shared_ptr.hpp>
 #include <boost/numeric/ublas/triangular.hpp>
@@ -157,19 +158,19 @@ private:
 //		ar & BOOST_SERIALIZATION_NVP(d_);
 //		ar & BOOST_SERIALIZATION_NVP(sigmas_);
 //	}
-};
+}; // GaussianConditional
 
 /* ************************************************************************* */
-	template<typename ITERATOR, class MATRIX>
-	GaussianConditional::GaussianConditional(ITERATOR firstKey, ITERATOR lastKey,
-			size_t nrFrontals, const VerticalBlockView<MATRIX>& matrices,
-			const Vector& sigmas) :
-		rsd_(matrix_), sigmas_(sigmas) {
-  	nrFrontals_ = nrFrontals;
-		std::copy(firstKey, lastKey, back_inserter(keys_));
-		rsd_.assignNoalias(matrices);
-	}
-
-	/* ************************************************************************* */
-
+// TODO: constructor outside class???
+template<typename ITERATOR, class MATRIX>
+GaussianConditional::GaussianConditional(ITERATOR firstKey, ITERATOR lastKey,
+		size_t nrFrontals, const VerticalBlockView<MATRIX>& matrices,
+		const Vector& sigmas) :
+	IndexConditional(std::vector<Index>(firstKey, lastKey), nrFrontals), rsd_(
+			matrix_), sigmas_(sigmas) {
+	rsd_.assignNoalias(matrices);
 }
+
+/* ************************************************************************* */
+
+} // gtsam

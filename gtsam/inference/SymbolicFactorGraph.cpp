@@ -16,6 +16,8 @@
  *      Author: Frank Dellaert
  */
 
+#include <boost/make_shared.hpp>
+
 #include <gtsam/inference/SymbolicFactorGraph.h>
 #include <gtsam/inference/FactorGraph-inl.h>
 #include <gtsam/inference/BayesNet-inl.h>
@@ -92,8 +94,10 @@ namespace gtsam {
 		pair<BayesNet<IndexConditional>::shared_ptr, IndexFactor::shared_ptr> result;
 		result.first.reset(new BayesNet<IndexConditional> ());
 		FastSet<Index>::const_iterator it;
-		for (it = keys.begin(); result.first->size() < nrFrontals; ++it)
-			result.first->push_back(IndexConditional::FromRange(it, keys.end(), 1));
+		for (it = keys.begin(); result.first->size() < nrFrontals; ++it) {
+			std::vector<Index> newKeys(it,keys.end());
+			result.first->push_back(boost::make_shared<IndexConditional>(newKeys, 1));
+		}
 		result.second.reset(new IndexFactor(it, keys.end()));
 
 		return result;

@@ -103,6 +103,12 @@ namespace gtsam {
 			assertInvariants();
 		}
 
+		/** Construct n-way factor */
+		IndexFactor(const std::vector<Index>& js) :
+			Base(js) {
+			assertInvariants();
+		}
+
 #ifdef TRACK_ELIMINATE
 		/**
 		 * eliminate the first variable involved in this factor

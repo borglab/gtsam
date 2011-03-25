@@ -53,7 +53,7 @@ namespace gtsam {
   inline void JacobianFactor::assertInvariants() const {
   #ifndef NDEBUG
     IndexFactor::assertInvariants(); // The base class checks for sorted keys
-    assert((keys_.size() == 0 && Ab_.size1() == 0 && Ab_.nBlocks() == 0) || keys_.size()+1 == Ab_.nBlocks());
+    assert((size() == 0 && Ab_.size1() == 0 && Ab_.nBlocks() == 0) || size()+1 == Ab_.nBlocks());
     assert(firstNonzeroBlocks_.size() == Ab_.size1());
     for(size_t i=0; i<firstNonzeroBlocks_.size(); ++i)
       assert(firstNonzeroBlocks_[i] < Ab_.nBlocks());
@@ -122,14 +122,13 @@ namespace gtsam {
 
   /* ************************************************************************* */
   JacobianFactor::JacobianFactor(const std::vector<std::pair<Index, Matrix> > &terms,
-      const Vector &b, const SharedDiagonal& model) :
-      model_(model), firstNonzeroBlocks_(b.size(), 0), Ab_(matrix_) {
-    keys_.resize(terms.size());
+  		const Vector &b, const SharedDiagonal& model) :
+  	GaussianFactor(GetKeys(terms.size(), terms.begin(), terms.end())),
+		model_(model), firstNonzeroBlocks_(b.size(), 0), Ab_(matrix_)
+  {
     size_t dims[terms.size()+1];
-    for(size_t j=0; j<terms.size(); ++j) {
-      keys_[j] = terms[j].first;
+    for(size_t j=0; j<terms.size(); ++j)
       dims[j] = terms[j].second.size2();
-    }
     dims[terms.size()] = 1;
     Ab_.copyStructureFrom(BlockAb(matrix_, dims, dims+terms.size()+1, b.size()));
     for(size_t j=0; j<terms.size(); ++j)
@@ -141,23 +140,19 @@ namespace gtsam {
   /* ************************************************************************* */
   JacobianFactor::JacobianFactor(const std::list<std::pair<Index, Matrix> > &terms,
       const Vector &b, const SharedDiagonal& model) :
-      model_(model), firstNonzeroBlocks_(b.size(), 0), Ab_(matrix_) {
-    keys_.resize(terms.size());
+      GaussianFactor(GetKeys(terms.size(), terms.begin(), terms.end())),
+    model_(model), firstNonzeroBlocks_(b.size(), 0), Ab_(matrix_)
+  {
     size_t dims[terms.size()+1];
     size_t j=0;
-    for(std::list<std::pair<Index, Matrix> >::const_iterator term=terms.begin(); term!=terms.end(); ++term) {
-      keys_[j] = term->first;
+    std::list<std::pair<Index, Matrix> >::const_iterator term=terms.begin();
+    for(; term!=terms.end(); ++term,++j)
       dims[j] = term->second.size2();
-      ++ j;
-    }
     dims[j] = 1;
-    firstNonzeroBlocks_.resize(b.size(), 0);
     Ab_.copyStructureFrom(BlockAb(matrix_, dims, dims+terms.size()+1, b.size()));
     j = 0;
-    for(std::list<std::pair<Index, Matrix> >::const_iterator term=terms.begin(); term!=terms.end(); ++term) {
+    for(term=terms.begin(); term!=terms.end(); ++term,++j)
       Ab_(j) = term->second;
-      ++ j;
-    }
     getb() = b;
     assertInvariants();
   }
@@ -183,7 +178,7 @@ namespace gtsam {
 
     // Sort keys
     set<Index> vars;
-    for(size_t j=0; j<keys_.size(); ++j)
+    for(size_t j=0; j<size(); ++j)
       vars.insert(keys_[j]);
     Permutation permutation(Permutation::Identity(*vars.rbegin() + 1));
     size_t jNew = 0;
@@ -204,7 +199,7 @@ namespace gtsam {
     cout << s << "\n";
     if (empty()) {
       cout << " empty, keys: ";
-      BOOST_FOREACH(const Index key, keys_) { cout << key << " "; }
+      BOOST_FOREACH(const Index& key, keys()) { cout << key << " "; }
       cout << endl;
     } else {
       for(const_iterator key=begin(); key!=end(); ++key)
@@ -222,7 +217,7 @@ namespace gtsam {
     else {
       const JacobianFactor& f(static_cast<const JacobianFactor&>(f_));
       if (empty()) return (f.empty());
-      if(keys_!=f.keys_ /*|| !model_->equals(lf->model_, tol)*/)
+      if(keys()!=f.keys() /*|| !model_->equals(lf->model_, tol)*/)
         return false;
 
       assert(Ab_.size1() == f.Ab_.size1() && Ab_.size2() == f.Ab_.size2());
@@ -244,20 +239,20 @@ namespace gtsam {
     // Build a map from the new variable indices to the old slot positions.
     typedef FastMap<size_t, size_t> SourceSlots;
     SourceSlots sourceSlots;
-    for(size_t j=0; j<keys_.size(); ++j)
+    for(size_t j=0; j<size(); ++j)
       sourceSlots.insert(make_pair(inversePermutation[keys_[j]], j));
 
     // Build a vector of variable dimensions in the new order
-    vector<size_t> dimensions(keys_.size() + 1);
+    vector<size_t> dimensions(size() + 1);
     size_t j = 0;
     BOOST_FOREACH(const SourceSlots::value_type& sourceSlot, sourceSlots) {
       dimensions[j++] = Ab_(sourceSlot.second).size2();
     }
-    assert(j == keys_.size());
+    assert(j == size());
     dimensions.back() = 1;
 
     // Copy the variables and matrix into the new order
-    vector<Index> oldKeys(keys_.size());
+    vector<Index> oldKeys(size());
     keys_.swap(oldKeys);
     AbMatrix oldMatrix;
     BlockAb oldAb(oldMatrix, dimensions.begin(), dimensions.end(), Ab_.size1());
@@ -279,7 +274,7 @@ namespace gtsam {
   Vector JacobianFactor::unweighted_error(const VectorValues& c) const {
     Vector e = -getb();
     if (empty()) return e;
-    for(size_t pos=0; pos<keys_.size(); ++pos)
+    for(size_t pos=0; pos<size(); ++pos)
       e += ublas::prod(Ab_(pos), c[keys_[pos]]);
     return e;
   }
@@ -304,7 +299,7 @@ namespace gtsam {
     if (empty()) return Ax;
 
     // Just iterate over all A matrices and multiply in correct config part
-    for(size_t pos=0; pos<keys_.size(); ++pos)
+    for(size_t pos=0; pos<size(); ++pos)
       Ax += ublas::prod(Ab_(pos), x[keys_[pos]]);
 
     return model_->whiten(Ax);
@@ -316,13 +311,13 @@ namespace gtsam {
       VectorValues& x) const {
     Vector E = alpha * model_->whiten(e);
     // Just iterate over all A matrices and insert Ai^e into VectorValues
-    for(size_t pos=0; pos<keys_.size(); ++pos)
+    for(size_t pos=0; pos<size(); ++pos)
       gtsam::transposeMultiplyAdd(1.0, Ab_(pos), E, x[keys_[pos]]);
   }
 
   /* ************************************************************************* */
   pair<Matrix,Vector> JacobianFactor::matrix(bool weight) const {
-    Matrix A(Ab_.range(0, keys_.size()));
+    Matrix A(Ab_.range(0, size()));
     Vector b(getb());
     // divide in sigma so error is indeed 0.5*|Ax-b|
     if (weight) model_->WhitenSystem(A,b);
@@ -377,7 +372,7 @@ namespace gtsam {
   GaussianBayesNet::shared_ptr JacobianFactor::eliminate(size_t nrFrontals) {
 
     assert(Ab_.rowStart() == 0 && Ab_.rowEnd() == matrix_.size1() && Ab_.firstBlock() == 0);
-    assert(keys_.size() >= nrFrontals);
+    assert(size() >= nrFrontals);
     assertInvariants();
 
     const bool debug = ISDEBUG("JacobianFactor::eliminate");
@@ -437,7 +432,7 @@ namespace gtsam {
     if(noiseModel->dim() < frontalDim) {
       throw domain_error((boost::format(
           "JacobianFactor is singular in variable %1%, discovered while attempting\n"
-          "to eliminate this variable.") % keys_.front()).str());
+          "to eliminate this variable.") % front()).str());
     }
 
     // Extract conditionals
@@ -449,7 +444,7 @@ namespace gtsam {
       size_t varDim = Ab_(0).size2();
       Ab_.rowEnd() = Ab_.rowStart() + varDim;
       const ublas::vector_range<const Vector> sigmas(noiseModel->sigmas(), ublas::range(Ab_.rowStart(), Ab_.rowEnd()));
-      conditionals->push_back(boost::make_shared<ConditionalType>(keys_.begin()+j, keys_.end(), 1, Ab_, sigmas));
+      conditionals->push_back(boost::make_shared<ConditionalType>(begin()+j, end(), 1, Ab_, sigmas));
       if(debug) conditionals->back()->print("Extracted conditional: ");
       Ab_.rowStart() += varDim;
       Ab_.firstBlock() += 1;
@@ -461,7 +456,7 @@ namespace gtsam {
     tic(4, "remaining factor");
     // Take lower-right block of Ab to get the new factor
     Ab_.rowEnd() = noiseModel->dim();
-    keys_.assign(keys_.begin() + nrFrontals, keys_.end());
+    keys_.assign(begin() + nrFrontals, end());
     // Set sigmas with the right model
     if (noiseModel->isConstrained())
       model_ = noiseModel::Constrained::MixedSigmas(sub(noiseModel->sigmas(), frontalDim, noiseModel->dim()));
@@ -477,7 +472,7 @@ namespace gtsam {
     firstNonzeroBlocks_.resize(this->size1());
     for(size_t row=0; row<size1(); ++row) {
       if(debug) cout << "row " << row << " varpos " << varpos << " Ab_.offset(varpos)=" << Ab_.offset(varpos) << " Ab_.offset(varpos+1)=" << Ab_.offset(varpos+1) << endl;
-      while(varpos < this->keys_.size() && Ab_.offset(varpos+1)-Ab_.offset(0) <= row)
+      while(varpos < this->size() && Ab_.offset(varpos+1)-Ab_.offset(0) <= row)
         ++ varpos;
       firstNonzeroBlocks_[row] = varpos;
       if(debug) cout << "firstNonzeroVars_[" << row << "] = " << firstNonzeroBlocks_[row] << endl;
@@ -512,7 +507,7 @@ namespace gtsam {
   void JacobianFactor::allocate(const VariableSlots& variableSlots, vector<
 			size_t>& varDims, size_t m) {
 		keys_.resize(variableSlots.size());
-		std::transform(variableSlots.begin(), variableSlots.end(), keys_.begin(),
+		std::transform(variableSlots.begin(), variableSlots.end(), begin(),
 				bind(&VariableSlots::const_iterator::value_type::first,
 						boost::lambda::_1));
 		varDims.push_back(1);

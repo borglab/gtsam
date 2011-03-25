@@ -33,7 +33,7 @@ TEST(SymbolicFactor, constructor) {
 
   // Frontals sorted, parents not sorted
   vector<Index> keys1; keys1 += 3, 4, 5, 9, 7, 8;
-  (void)IndexConditional::FromRange(keys1.begin(), keys1.end(), 3);
+  (void)IndexConditional(keys1, 3);
 
 //  // Frontals not sorted
 //  vector<Index> keys2; keys2 += 3, 5, 4, 9, 7, 8;
