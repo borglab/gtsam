@@ -80,6 +80,20 @@ namespace gtsam {
 			return pose().transform_from(cameraPoint);
 		}
 
+		Point3 backproject(const StereoPoint2& z) {
+			Vector measured = z.vector();
+//			std::cout << K_.baseline() << std::endl;
+//			std::cout << K_.fx() << std::endl;
+//			std:: cout << measured[0] << std::endl;
+//			std:: cout << measured[1] << std::endl;
+
+			double Z = K_.baseline()*K_.fx()/(measured[0]-measured[1]);
+			std::cout << "Z " << Z;
+			double X = Z *(measured[0]- K_.px()) / K_.fx();
+			double Y = Z *(measured[2]- K_.py()) / K_.fy();
+			return Point3(X, Y, Z);
+		}
+
 		/** Dimensionality of the tangent space */
 		inline size_t dim() const {
 			return 6;

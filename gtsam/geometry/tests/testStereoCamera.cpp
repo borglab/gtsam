@@ -100,6 +100,14 @@ TEST( StereoCamera, Dproject_stereo_point)
 	CHECK(assert_equal(expected,actual,1e-8));
 }
 
+TEST( StereoCamera, backproject)
+{
+	Point3 expected(1.2, 2.3, 4.5);
+	StereoPoint2 stereo_point = stereoCam.project(expected);
+	Point3 actual = stereoCam.backproject(stereo_point);
+	CHECK(assert_equal(expected,actual,1e-8));
+}
+
 /* ************************************************************************* */
 	int main() { TestResult tr; return TestRegistry::runAllTests(tr);}
 /* ************************************************************************* */
