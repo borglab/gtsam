@@ -85,14 +85,12 @@ namespace gtsam {
 
     // Two stages - first build an array of the lowest-ordered variable in each
     // factor and find the last variable to be eliminated.
-    vector<Index> lowestOrdered(fg.size());
+    vector<Index> lowestOrdered(fg.size(), numeric_limits<Index>::max());
     Index maxVar = 0;
     for(size_t i=0; i<fg.size(); ++i)
       if(fg[i]) {
         typename FG::FactorType::const_iterator min = std::min_element(fg[i]->begin(), fg[i]->end());
-        if(min == fg[i]->end())
-          lowestOrdered[i] = numeric_limits<Index>::max();
-        else {
+        if(min != fg[i]->end()) {
           lowestOrdered[i] = *min;
           maxVar = std::max(maxVar, *min);
         }

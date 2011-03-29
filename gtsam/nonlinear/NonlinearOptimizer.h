@@ -208,7 +208,7 @@ public:
 	 * Return a linearized graph at the current graph/values/ordering
 	 */
 	shared_linear linearize() const {
-		return graph_->linearize(*values_, *ordering_)->template dynamicCastFactors<L>();
+		return shared_linear(new L(*graph_->linearize(*values_, *ordering_)));
 	}
 
 	/**

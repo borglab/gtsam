@@ -216,7 +216,7 @@ namespace gtsam {
 		if (verbosity >= Parameters::LAMBDA) cout << "lambda = " << lambda << endl;
 
 		// linearize all factors once
-		boost::shared_ptr<L> linear = graph_->linearize(*values_, *ordering_)->template dynamicCastFactors<L>();
+		boost::shared_ptr<L> linear(new L(*graph_->linearize(*values_, *ordering_)));
 
 		if (verbosity >= Parameters::LINEAR) linear->print("linear");
 

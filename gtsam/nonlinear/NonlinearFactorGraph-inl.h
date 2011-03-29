@@ -50,8 +50,10 @@ namespace gtsam {
 	template<class VALUES>
 	Vector NonlinearFactorGraph<VALUES>::unwhitenedError(const VALUES& c) const {
 		list<Vector> errors;
-		BOOST_FOREACH(const sharedFactor& factor, this->factors_)
-						errors.push_back(factor->unwhitenedError(c));
+		BOOST_FOREACH(const sharedFactor& factor, this->factors_) {
+		  if(factor)
+		    errors.push_back(factor->unwhitenedError(c));
+		}
 		return concatVectors(errors);
 	}
 
@@ -60,8 +62,10 @@ namespace gtsam {
 	double NonlinearFactorGraph<VALUES>::error(const VALUES& c) const {
 		double total_error = 0.;
 		// iterate over all the factors_ to accumulate the log probabilities
-		BOOST_FOREACH(const sharedFactor& factor, this->factors_)
-						total_error += factor->error(c);
+		BOOST_FOREACH(const sharedFactor& factor, this->factors_) {
+		  if(factor)
+		    total_error += factor->error(c);
+		}
 		return total_error;
 	}
 
@@ -70,8 +74,10 @@ namespace gtsam {
 	template<class VALUES>
 	std::set<Symbol> NonlinearFactorGraph<VALUES>::keys() const {
 		std::set<Symbol> keys;
-		BOOST_FOREACH(const sharedFactor& factor, this->factors_)
-						keys.insert(factor->begin(), factor->end());
+		BOOST_FOREACH(const sharedFactor& factor, this->factors_) {
+		  if(factor)
+		    keys.insert(factor->begin(), factor->end());
+		}
 		return keys;
 	}
 
@@ -112,8 +118,12 @@ namespace gtsam {
 		SymbolicFactorGraph::shared_ptr symbolicfg(new SymbolicFactorGraph);
 		symbolicfg->reserve(this->size());
 
-		BOOST_FOREACH(const sharedFactor& factor, this->factors_)
-						symbolicfg->push_back(factor->symbolic(ordering));
+		BOOST_FOREACH(const sharedFactor& factor, this->factors_) {
+		  if(factor)
+		    symbolicfg->push_back(factor->symbolic(ordering));
+		  else
+		    symbolicfg->push_back(SymbolicFactorGraph::sharedFactor());
+		}
 
 		return symbolicfg;
 	}
@@ -138,11 +148,13 @@ namespace gtsam {
 		linearFG->reserve(this->size());
 
 		// linearize all factors
-		BOOST_FOREACH(const sharedFactor& factor, this->factors_)
-					{
-						JacobianFactor::shared_ptr lf = factor->linearize(config, ordering);
-						if (lf) linearFG->push_back(lf);
-					}
+		BOOST_FOREACH(const sharedFactor& factor, this->factors_) {
+		  if(factor) {
+		    JacobianFactor::shared_ptr lf = factor->linearize(config, ordering);
+		    if (lf) linearFG->push_back(lf);
+		  } else
+		    linearFG->push_back(FactorGraph<JacobianFactor>::sharedFactor());
+		}
 
 		return linearFG;
 	}
