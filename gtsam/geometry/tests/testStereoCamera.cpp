@@ -109,20 +109,22 @@ TEST( StereoCamera, backproject)
 }
 
 /* ************************************************************************* */
-//TEST( StereoCamera, backproject2)
-//{
-//	Rot3 R(0.589511291,	-0.804859792,	0.0683931805,
-//	       -0.804435942,	-0.592650676,	-0.0405925523,
-//	       0.0732045588,	-0.0310882277,	-0.996832359);
-//  Point3 t(53.5239823, 23.7866016, -4.42379876);
-//  Cal3_S2Stereo K(1733.75, 1733.75, 0, 689.645, 508.835, 0.0699612);
-//  StereoCamera camera(Pose3(R,t), K);
-//  StereoPoint2 z(184.812, 129.068, 714.768);
-//
-//  Point3 l = camera.backproject(z);
-//  StereoPoint2 actual = camera.project(l);
-//  CHECK(assert_equal(z, actual, 1e-8));
-//}
+TEST( StereoCamera, backproject2)
+{
+	Rot3 R(0.589511291,	-0.804859792,	0.0683931805,
+	       -0.804435942,	-0.592650676,	-0.0405925523,
+	       0.0732045588,	-0.0310882277,	-0.996832359);
+  Point3 t(53.5239823, 23.7866016, -4.42379876);
+  Cal3_S2Stereo K(1733.75, 1733.75, 0, 689.645, 508.835, 0.0699612);
+  StereoCamera camera(Pose3(R,t), K);
+  StereoPoint2 z(184.812, 129.068, 714.768);
+
+  Point3 l = camera.backproject(z);
+  StereoPoint2 actual = camera.project(l);
+  z.print("z");
+  actual.print("actual");
+  CHECK(assert_equal(z, actual, 1e-3));
+}
 
 /* ************************************************************************* */
 	int main() { TestResult tr; return TestRegistry::runAllTests(tr);}

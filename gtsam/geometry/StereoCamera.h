@@ -85,7 +85,8 @@ namespace gtsam {
 			double Z = K_.baseline()*K_.fx()/(measured[0]-measured[1]);
 			double X = Z *(measured[0]- K_.px()) / K_.fx();
 			double Y = Z *(measured[2]- K_.py()) / K_.fy();
-			return Point3(X, Y, Z);
+			Point3 world_point = leftCamPose_.transform_from(Point3(X, Y, Z));
+			return world_point;
 		}
 
 		/** Dimensionality of the tangent space */
