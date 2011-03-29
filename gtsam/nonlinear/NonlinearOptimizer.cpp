@@ -17,6 +17,7 @@
  */
 
 #include <iostream>
+#include <iomanip>
 #include <gtsam/nonlinear/NonlinearOptimizer.h>
 
 using namespace std;
@@ -53,18 +54,18 @@ bool check_convergence(
 	double absoluteDecrease = currentError - newError;
 	if (verbosity >= 2) {
 		if (absoluteDecrease < absoluteErrorTreshold)
-			cout << "absoluteDecrease: " << absoluteDecrease << " < " << absoluteErrorTreshold << endl;
+			cout << "absoluteDecrease: " << setprecision(12) << absoluteDecrease << " < " << absoluteErrorTreshold << endl;
 		else
-			cout << "absoluteDecrease: " << absoluteDecrease << " >= " << absoluteErrorTreshold << endl;
+			cout << "absoluteDecrease: " << setprecision(12) << absoluteDecrease << " >= " << absoluteErrorTreshold << endl;
 	}
 
 	// calculate relative error decrease and update currentError
 	double relativeDecrease = absoluteDecrease / currentError;
 	if (verbosity >= 2) {
 		if (relativeDecrease < relativeErrorTreshold)
-			cout << "relativeDecrease: " << relativeDecrease << " < " << relativeErrorTreshold << endl;
+			cout << "relativeDecrease: " << setprecision(12) << relativeDecrease << " < " << relativeErrorTreshold << endl;
 		else
-			cout << "relativeDecrease: " << relativeDecrease << " >= " << relativeErrorTreshold << endl;
+			cout << "relativeDecrease: " << setprecision(12) << relativeDecrease << " >= " << relativeErrorTreshold << endl;
 	}
 	bool converged = (relativeDecrease < relativeErrorTreshold)
 			|| (absoluteDecrease < absoluteErrorTreshold);
