@@ -72,6 +72,7 @@ private:
 
   /**
    * Recursive routine that eliminates the factors arranged in an elimination tree
+   * @param Conditionals is a vector of shared pointers that will be modified in place
    */
   sharedFactor eliminate_(Eliminate function, Conditionals& conditionals) const;
 

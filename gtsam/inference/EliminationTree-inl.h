@@ -42,8 +42,9 @@ typename EliminationTree<FACTOR>::sharedFactor EliminationTree<FACTOR>::eliminat
   factors.push_back(this->factors_.begin(), this->factors_.end());
 
   // for all subtrees, eliminate into Bayes net and a separator factor, added to [factors]
-  BOOST_FOREACH(const shared_ptr& child, subTrees_) {
-    factors.push_back(child->eliminate_(function, conditionals)); }
+  BOOST_FOREACH(const shared_ptr& child, subTrees_)
+    factors.push_back(child->eliminate_(function, conditionals)); // TODO: spawn thread
+  // TODO: wait for completion of all threads
 
   // Combine all factors (from this node and from subtrees) into a joint factor
   pair<typename BayesNet::shared_ptr, typename FACTOR::shared_ptr>
@@ -190,8 +191,9 @@ EliminationTree<FACTOR>::eliminate(Eliminate function) const {
 
   // call recursive routine
   tic(1, "ET recursive eliminate");
-  Conditionals conditionals(this->key_ + 1);
-  (void)eliminate_(function, conditionals);
+  size_t nrConditionals = this->key_ + 1;    // root key has highest index
+  Conditionals conditionals(nrConditionals); // reserve a vector of conditional shared pointers
+  (void)eliminate_(function, conditionals);  // modify in place
   toc(1, "ET recursive eliminate");
 
   // Add conditionals to BayesNet
