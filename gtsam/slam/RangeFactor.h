@@ -16,8 +16,8 @@
 
 #pragma once
 
-#include <gtsam/geometry/Pose2.h>
-#include <gtsam/geometry/Point2.h>
+//#include <gtsam/geometry/Pose2.h>
+//#include <gtsam/geometry/Point2.h>
 #include <gtsam/nonlinear/NonlinearFactor.h>
 
 namespace gtsam {
@@ -46,7 +46,7 @@ namespace gtsam {
 		virtual ~RangeFactor() {}
 
 		/** h(x)-z */
-		Vector evaluateError(const Pose2& pose, const Point2& point,
+		Vector evaluateError(const typename POSEKEY::Value& pose, const typename POINTKEY::Value& point,
 				boost::optional<Matrix&> H1, boost::optional<Matrix&> H2) const {
 			double hx = pose.range(point, H1, H2);
 			return Vector_(1, hx - z_);
