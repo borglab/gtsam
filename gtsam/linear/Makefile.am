@@ -31,7 +31,7 @@ sources += GaussianJunctionTree.cpp
 sources += GaussianConditional.cpp GaussianBayesNet.cpp
 sources += GaussianISAM.cpp
 check_PROGRAMS += tests/testHessianFactor tests/testGaussianFactor tests/testGaussianConditional
-check_PROGRAMS += tests/testGaussianJunctionTree
+check_PROGRAMS += tests/testGaussianFactorGraph tests/testGaussianJunctionTree
 
 # Iterative Methods
 headers += iterative-inl.h

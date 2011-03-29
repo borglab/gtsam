@@ -33,7 +33,7 @@ TEST(SymbolicFactor, constructor) {
 
   // Frontals sorted, parents not sorted
   vector<Index> keys1; keys1 += 3, 4, 5, 9, 7, 8;
-  (void)IndexConditional::FromRange(keys1.begin(), keys1.end(), 3);
+  (void)IndexConditional(keys1, 3);
 
 //  // Frontals not sorted
 //  vector<Index> keys2; keys2 += 3, 5, 4, 9, 7, 8;
@@ -45,6 +45,7 @@ TEST(SymbolicFactor, constructor) {
 }
 
 /* ************************************************************************* */
+#ifdef TRACK_ELIMINATE
 TEST(SymbolicFactor, eliminate) {
   vector<Index> keys; keys += 2, 3, 4, 6, 7, 9, 10, 11;
   IndexFactor actual(keys.begin(), keys.end());
@@ -62,9 +63,9 @@ TEST(SymbolicFactor, eliminate) {
   CHECK(assert_equal(**fragmentCond++, *expected1));
   CHECK(assert_equal(**fragmentCond++, *expected2));
 }
-
+#endif
 /* ************************************************************************* */
-TEST(SymbolicFactor, CombineAndEliminate) {
+TEST(SymbolicFactor, EliminateSymbolic) {
   SymbolicFactorGraph factors;
   factors.push_factor(2,4,6);
   factors.push_factor(1,2,5);
@@ -88,7 +89,7 @@ TEST(SymbolicFactor, CombineAndEliminate) {
 
   BayesNet<IndexConditional>::shared_ptr actual_bn;
   IndexFactor::shared_ptr actual_factor;
-  boost::tie(actual_bn, actual_factor) = IndexFactor::CombineAndEliminate(factors, 4);
+  boost::tie(actual_bn, actual_factor) = EliminateSymbolic(factors, 4);
 
   CHECK(assert_equal(expected_bn, *actual_bn));
   CHECK(assert_equal(expected_factor, *actual_factor));

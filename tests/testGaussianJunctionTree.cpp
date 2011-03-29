@@ -91,7 +91,7 @@ TEST( GaussianJunctionTree, optimizeMultiFrontal )
 
 	// optimize the graph
 	GaussianJunctionTree tree(fg);
-	VectorValues actual = tree.optimize();
+	VectorValues actual = tree.optimize(&EliminateQR);
 
 	// verify
 	VectorValues expected(vector<size_t>(7,2)); // expected solution
@@ -112,7 +112,7 @@ TEST( GaussianJunctionTree, optimizeMultiFrontal2)
 
 	// optimize the graph
 	GaussianJunctionTree tree(fg);
-	VectorValues actual = tree.optimize();
+	VectorValues actual = tree.optimize(&EliminateQR);
 
 	// verify
 	VectorValues expected = createCorrectDelta(ordering); // expected solution
@@ -174,7 +174,7 @@ TEST(GaussianJunctionTree, slamlike) {
   GaussianFactorGraph linearized = *fullgraph.linearize(init, ordering);
 
   GaussianJunctionTree gjt(linearized);
-  VectorValues deltaactual = gjt.optimize();
+  VectorValues deltaactual = gjt.optimize(&EliminateQR);
   planarSLAM::Values actual = init.expmap(deltaactual, ordering);
 
   GaussianBayesNet gbn = *GaussianSequentialSolver(linearized).eliminate();

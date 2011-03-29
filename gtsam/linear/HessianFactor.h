@@ -20,6 +20,7 @@
 
 #include <gtsam/base/Matrix.h>
 #include <gtsam/base/blockMatrices.h>
+#include <gtsam/inference/FactorGraph.h>
 #include <gtsam/linear/GaussianFactor.h>
 
 // Forward declarations for friend unit tests
@@ -49,8 +50,6 @@ namespace gtsam {
     InfoMatrix matrix_; // The full information matrix [A b]^T * [A b]
     BlockInfo info_;    // The block view of the full information matrix.
 
-    void assertInvariants() const;
-    boost::shared_ptr<BayesNet<GaussianConditional> > splitEliminatedFactor(size_t nrFrontals, const std::vector<Index>& keys);
     void updateATA(const JacobianFactor& update, const Scatter& scatter);
     void updateATA(const HessianFactor& update, const Scatter& scatter);
 
@@ -96,7 +95,12 @@ namespace gtsam {
     /** Convert from a JacobianFactor or HessianFactor (computes A^T * A) */
     HessianFactor(const GaussianFactor& factor);
 
-    virtual ~HessianFactor() {}
+    /** Special constructor used in EliminateCholesky */
+    HessianFactor(const FactorGraph<GaussianFactor>& factors,
+				const std::vector<size_t>& dimensions, const Scatter& scatter);
+
+		virtual ~HessianFactor() {
+		}
 
     // Implementing Testable interface
     virtual void print(const std::string& s = "") const;
@@ -121,13 +125,7 @@ namespace gtsam {
      * variable.  The order of the variables within the factor is not changed.
      */
     virtual void permuteWithInverse(const Permutation& inversePermutation) {
-      Factor<Index>::permuteWithInverse(inversePermutation); }
-
-    /**
-     * Combine and eliminate several factors.
-     */
-    static std::pair<boost::shared_ptr<BayesNet<GaussianConditional> >, shared_ptr> CombineAndEliminate(
-        const FactorGraph<GaussianFactor>& factors, size_t nrFrontals=1);
+      IndexFactor::permuteWithInverse(inversePermutation); }
 
     // Friend unit test classes
     friend class ::ConversionConstructorHessianFactorTest;
@@ -135,6 +133,21 @@ namespace gtsam {
     // Friend JacobianFactor for conversion
     friend class JacobianFactor;
 
+    // used in eliminateCholesky:
+
+    /**
+		 * Do Cholesky. Note that after this, the lower triangle still contains
+		 * some untouched non-zeros that should be zero.  We zero them while
+		 * extracting submatrices in splitEliminatedFactor. Frank says :-(
+		 */
+    void partialCholesky(size_t nrFrontals);
+
+    /** split partially eliminated factor */
+    boost::shared_ptr<BayesNet<GaussianConditional> > splitEliminatedFactor(
+				size_t nrFrontals, const std::vector<Index>& keys);
+
+    /** assert invariants */
+    void assertInvariants() const;
   };
 
 }

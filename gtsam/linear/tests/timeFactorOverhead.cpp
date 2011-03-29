@@ -82,7 +82,7 @@ int main(int argc, char *argv[]) {
     timer.restart();
     for(size_t trial=0; trial<nTrials; ++trial) {
 //      cout << "Trial " << trial << endl;
-      GaussianBayesNet::shared_ptr gbn(GaussianEliminationTree::Create(blockGfgs[trial])->eliminate());
+      GaussianBayesNet::shared_ptr gbn(GaussianEliminationTree::Create(blockGfgs[trial])->eliminate(&EliminateQR));
       VectorValues soln(optimize(*gbn));
     }
     blocksolve = timer.elapsed();
@@ -126,7 +126,7 @@ int main(int argc, char *argv[]) {
     cout.flush();
     timer.restart();
     for(size_t trial=0; trial<nTrials; ++trial) {
-      GaussianBayesNet::shared_ptr gbn(GaussianEliminationTree::Create(combGfgs[trial])->eliminate());
+      GaussianBayesNet::shared_ptr gbn(GaussianEliminationTree::Create(combGfgs[trial])->eliminate(&EliminateQR));
       VectorValues soln(optimize(*gbn));
     }
     combsolve = timer.elapsed();

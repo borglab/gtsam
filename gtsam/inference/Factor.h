@@ -21,15 +21,14 @@
 
 #pragma once
 
-#include <vector>
 #include <map>
+#include <set>
+#include <vector>
 #include <boost/utility.hpp> // for noncopyable
 #include <boost/serialization/nvp.hpp>
 #include <boost/foreach.hpp>
-#include <gtsam/base/types.h>
 #include <gtsam/base/Testable.h>
 #include <gtsam/base/FastMap.h>
-#include <gtsam/inference/inference.h>
 
 namespace gtsam {
 
@@ -71,10 +70,15 @@ public:
   /** Const iterator over keys */
   typedef typename std::vector<Key>::const_iterator const_iterator;
 
-protected:
+private:
 
   // The keys involved in this factor
   std::vector<Key> keys_;
+
+  friend class JacobianFactor;
+  friend class HessianFactor;
+
+protected:
 
   // Internal check to make sure keys are unique.  If NDEBUG is defined, this
   // is empty and optimized out.
@@ -112,15 +116,17 @@ public:
     keys_[0] = key1; keys_[1] = key2; keys_[2] = key3; keys_[3] = key4; assertInvariants(); }
 
   /** Construct n-way factor */
-  Factor(const std::set<Key>& keys) {
-  	BOOST_FOREACH(const Key& key, keys)
-  			keys_.push_back(key);
-  	assertInvariants(); }
+	Factor(const std::set<Key>& keys) {
+		BOOST_FOREACH(const Key& key, keys) keys_.push_back(key);
+		assertInvariants();
+	}
 
-  /** Create a combined joint factor (new style for EliminationTree). */
-  template<class DERIVED>
-  static typename DERIVED::shared_ptr Combine(const FactorGraph<DERIVED>& factors, const FastMap<Key, std::vector<Key> >& variableSlots);
+	/** Construct n-way factor */
+	Factor(const std::vector<Key>& keys) : keys_(keys) {
+		assertInvariants();
+	}
 
+#ifdef TRACK_ELIMINATE
   /**
    * eliminate the first variable involved in this factor
    * @return a conditional on the eliminated variable
@@ -133,12 +139,7 @@ public:
    */
   template<class CONDITIONAL>
   typename BayesNet<CONDITIONAL>::shared_ptr eliminate(size_t nrFrontals = 1);
-
-  /**
-   * Permutes the factor, but for efficiency requires the permutation
-   * to already be inverted.
-   */
-  void permuteWithInverse(const Permutation& inversePermutation);
+#endif
 
   /** iterators */
   const_iterator begin() const { return keys_.begin(); }
@@ -166,6 +167,7 @@ public:
   /**
    * @return keys involved in this factor
    */
+  std::vector<Key>& keys() { return keys_; }
   const std::vector<Key>& keys() const { return keys_; }
 
   /**

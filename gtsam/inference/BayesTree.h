@@ -46,6 +46,8 @@ namespace gtsam {
 	  typedef boost::shared_ptr<BayesTree<CONDITIONAL> > shared_ptr;
 		typedef boost::shared_ptr<CONDITIONAL> sharedConditional;
 		typedef boost::shared_ptr<BayesNet<CONDITIONAL> > sharedBayesNet;
+		typedef typename CONDITIONAL::FactorType FactorType;
+	  typedef typename FactorGraph<FactorType>::Eliminate Eliminate;
 
 		/**
 		 * A Clique in the tree is an incomplete Bayes net: the variables
@@ -63,7 +65,7 @@ namespace gtsam {
 			weak_ptr parent_;
 			std::list<shared_ptr> children_;
 			std::list<Index> separator_; /** separator keys */
-			typename CONDITIONAL::FactorType::shared_ptr cachedFactor_;
+			typename FactorType::shared_ptr cachedFactor_;
 
 			friend class BayesTree<CONDITIONAL>;
 
@@ -96,7 +98,7 @@ namespace gtsam {
 			size_t treeSize() const;
 
 			/** Access the cached factor (this is a hack) */
-			typename CONDITIONAL::FactorType::shared_ptr& cachedFactor() { return cachedFactor_; }
+			typename FactorType::shared_ptr& cachedFactor() { return cachedFactor_; }
 
 			/** print this node and entire subtree below it */
 			void printTree(const std::string& indent="") const;
@@ -113,13 +115,13 @@ namespace gtsam {
 
 			/** return the conditional P(S|Root) on the separator given the root */
 			// TODO: create a cached version
-			BayesNet<CONDITIONAL> shortcut(shared_ptr root);
+			BayesNet<CONDITIONAL> shortcut(shared_ptr root, Eliminate function);
 
 			/** return the marginal P(C) of the clique */
-			FactorGraph<typename CONDITIONAL::FactorType> marginal(shared_ptr root);
+			FactorGraph<FactorType> marginal(shared_ptr root, Eliminate function);
 
 			/** return the joint P(C1,C2), where C1==this. TODO: not a method? */
-			FactorGraph<typename CONDITIONAL::FactorType> joint(shared_ptr C2, shared_ptr root);
+			FactorGraph<FactorType> joint(shared_ptr C2, shared_ptr root, Eliminate function);
 
 		}; // \struct Clique
 
@@ -262,20 +264,24 @@ namespace gtsam {
 		CliqueData getCliqueData() const;
 
 		/** return marginal on any variable */
-		typename CONDITIONAL::FactorType::shared_ptr marginalFactor(Index key) const;
+		typename CONDITIONAL::FactorType::shared_ptr marginalFactor(Index key,
+				Eliminate function) const;
 
 		/**
 		 * return marginal on any variable, as a Bayes Net
 		 * NOTE: this function calls marginal, and then eliminates it into a Bayes Net
 		 * This is more expensive than the above function
 		 */
-		typename BayesNet<CONDITIONAL>::shared_ptr marginalBayesNet(Index key) const;
+		typename BayesNet<CONDITIONAL>::shared_ptr marginalBayesNet(Index key,
+				Eliminate function) const;
 
 		/** return joint on two variables */
-		typename FactorGraph<typename CONDITIONAL::FactorType>::shared_ptr joint(Index key1, Index key2) const;
+		typename FactorGraph<FactorType>::shared_ptr joint(Index key1, Index key2,
+				Eliminate function) const;
 
 		/** return joint on two variables as a BayesNet */
-		typename BayesNet<CONDITIONAL>::shared_ptr jointBayesNet(Index key1, Index key2) const;
+		typename BayesNet<CONDITIONAL>::shared_ptr jointBayesNet(Index key1,
+				Index key2, Eliminate function) const;
 
 		/**
 		 * Read only with side effects

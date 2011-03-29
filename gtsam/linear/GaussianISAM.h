@@ -19,29 +19,30 @@
 
 #pragma once
 
-#include <gtsam/linear/GaussianBayesNet.h>
-#include <gtsam/linear/GaussianFactor.h>
 #include <gtsam/inference/ISAM.h>
+#include <gtsam/linear/GaussianBayesNet.h>
+#include <gtsam/linear/GaussianFactorGraph.h>
 
 namespace gtsam {
 
 class GaussianISAM : public ISAM<GaussianConditional> {
 
+	typedef ISAM<GaussianConditional> Super;
   std::deque<size_t, boost::fast_pool_allocator<size_t> > dims_;
 
 public:
 
   /** Create an empty Bayes Tree */
-  GaussianISAM() : ISAM<GaussianConditional>() {}
+  GaussianISAM() : Super() {}
 
   /** Create a Bayes Tree from a Bayes Net */
-  GaussianISAM(const GaussianBayesNet& bayesNet) : ISAM<GaussianConditional>(bayesNet) {}
+  GaussianISAM(const GaussianBayesNet& bayesNet) : Super(bayesNet) {}
 
   /** Override update_internal to also keep track of variable dimensions. */
   template<class FACTORGRAPH>
   void update_internal(const FACTORGRAPH& newFactors, Cliques& orphans) {
 
-    ISAM<GaussianConditional>::update_internal(newFactors, orphans);
+    Super::update_internal(newFactors, orphans, &EliminateQR);
 
     // update dimensions
     BOOST_FOREACH(const typename FACTORGRAPH::sharedFactor& factor, newFactors) {
@@ -63,15 +64,22 @@ public:
   }
 
   void clear() {
-    ISAM<GaussianConditional>::clear();
+    Super::clear();
     dims_.clear();
   }
 
   friend VectorValues optimize(const GaussianISAM&);
 
-  /** return marginal on any variable */
+	/** return marginal on any variable as a factor, Bayes net, or mean/cov */
+  GaussianFactor::shared_ptr marginalFactor(Index j) const;
+	BayesNet<GaussianConditional>::shared_ptr marginalBayesNet(Index key) const;
   std::pair<Vector,Matrix> marginal(Index key) const;
 
+  /** return joint between two variables, as a Bayes net */
+  BayesNet<GaussianConditional>::shared_ptr jointBayesNet(Index key1, Index key2) const;
+
+	/** return the conditional P(S|Root) on the separator given the root */
+	static BayesNet<GaussianConditional> shortcut(sharedClique clique, sharedClique root);
 };
 
 	// recursively optimize this conditional and all subtrees

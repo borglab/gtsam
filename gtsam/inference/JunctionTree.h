@@ -27,6 +27,7 @@
 #include <gtsam/inference/BayesTree.h>
 #include <gtsam/inference/ClusterTree.h>
 #include <gtsam/inference/IndexConditional.h>
+#include <gtsam/inference/VariableIndex.h>
 
 namespace gtsam {
 
@@ -64,7 +65,8 @@ namespace gtsam {
 
 		// recursive elimination function
 		std::pair<typename BayesTree::sharedClique, typename FG::sharedFactor>
-		eliminateOneClique(const boost::shared_ptr<const Clique>& clique, bool cache=false) const;
+		eliminateOneClique(typename FG::Eliminate function,
+				const boost::shared_ptr<const Clique>& clique, bool cache = false) const;
 
 		// internal constructor
 		void construct(const FG& fg, const VariableIndex& variableIndex);
@@ -80,7 +82,8 @@ namespace gtsam {
 		JunctionTree(const FG& fg, const VariableIndex& variableIndex);
 
 		// eliminate the factors in the subgraphs
-		typename BayesTree::sharedClique eliminate(bool cache=false) const;
+		typename BayesTree::sharedClique eliminate(typename FG::Eliminate function,
+				bool cache = false) const;
 
 	}; // JunctionTree
 

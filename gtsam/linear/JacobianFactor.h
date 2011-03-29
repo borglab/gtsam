@@ -21,6 +21,7 @@
 #include <gtsam/base/Matrix.h>
 #include <gtsam/base/Vector.h>
 #include <gtsam/base/blockMatrices.h>
+#include <gtsam/inference/FactorGraph.h>
 #include <gtsam/linear/GaussianFactor.h>
 #include <gtsam/linear/SharedDiagonal.h>
 #include <gtsam/linear/Errors.h>
@@ -57,10 +58,6 @@ namespace gtsam {
     typedef BlockAb::constBlock constABlock;
     typedef BlockAb::Column BVector;
     typedef BlockAb::constColumn constBVector;
-
-  protected:
-    void assertInvariants() const;
-    static JacobianFactor::shared_ptr Combine(const FactorGraph<JacobianFactor>& factors, const VariableSlots& variableSlots);
 
   public:
 
@@ -116,10 +113,13 @@ namespace gtsam {
      */
     bool empty() const { return Ab_.size1() == 0;}
 
+    /** is noise model constrained ? */
+    bool isConstrained() const { return model_->isConstrained();}
+
     /** Return the dimension of the variable pointed to by the given key iterator
      * todo: Remove this in favor of keeping track of dimensions with variables?
      */
-    virtual size_t getDim(const_iterator variable) const { return Ab_(variable - keys_.begin()).size2(); }
+    virtual size_t getDim(const_iterator variable) const { return Ab_(variable - begin()).size2(); }
 
     /**
      * Permutes the GaussianFactor, but for efficiency requires the permutation
@@ -153,11 +153,11 @@ namespace gtsam {
     constBVector getb() const { return Ab_.column(size(), 0); }
 
     /** Get a view of the A matrix for the variable pointed to be the given key iterator */
-    constABlock getA(const_iterator variable) const { return Ab_(variable - keys_.begin()); }
+    constABlock getA(const_iterator variable) const { return Ab_(variable - begin()); }
 
     BVector getb() { return Ab_.column(size(), 0); }
 
-    ABlock getA(iterator variable) { return Ab_(variable - keys_.begin()); }
+    ABlock getA(iterator variable) { return Ab_(variable - begin()); }
 
     /** Return A*x */
     Vector operator*(const VectorValues& x) const;
@@ -194,12 +194,6 @@ namespace gtsam {
      * model. */
     JacobianFactor whiten() const;
 
-    /**
-     * Combine and eliminate several factors.
-     */
-    static std::pair<boost::shared_ptr<BayesNet<GaussianConditional> >, shared_ptr> CombineAndEliminate(
-        const FactorGraph<JacobianFactor>& factors, size_t nrFrontals=1);
-
     boost::shared_ptr<GaussianConditional> eliminateFirst();
 
     boost::shared_ptr<BayesNet<GaussianConditional> > eliminate(size_t nrFrontals = 1);
@@ -210,8 +204,43 @@ namespace gtsam {
     // Friend unit tests (see also forward declarations above)
     friend class ::Combine2GaussianFactorTest;
     friend class ::eliminateFrontalsGaussianFactorTest;
-  };
 
+    /* Used by ::CombineJacobians for sorting */
+    struct _RowSource {
+      size_t firstNonzeroVar;
+      size_t factorI;
+      size_t factorRowI;
+      _RowSource(size_t _firstNonzeroVar, size_t _factorI, size_t _factorRowI) :
+        firstNonzeroVar(_firstNonzeroVar), factorI(_factorI), factorRowI(_factorRowI) {}
+      bool operator<(const _RowSource& o) const {
+      	return firstNonzeroVar < o.firstNonzeroVar;
+      }
+    };
+
+    // following methods all used in CombineJacobians:
+    // Many imperative, perhaps all need to be combined in constructor
+
+    /** Collect information on Jacobian rows */
+    void collectInfo(size_t index, std::vector<_RowSource>& rowSources) const;
+
+    /** allocate space */
+    void allocate(const VariableSlots& variableSlots,
+				std::vector<size_t>& varDims, size_t m);
+
+    /** copy a slot from source */
+    void copyRow(const JacobianFactor& source,
+    		Index sourceRow, size_t sourceSlot, size_t row, Index slot);
+
+    /** copy firstNonzeroBlocks structure */
+    void copyFNZ(size_t m, size_t n, std::vector<_RowSource>& rowSources);
+
+    /** set noiseModel correctly */
+  	void setModel(bool anyConstrained, const Vector& sigmas);
+
+    /** Assert invariants after elimination */
+    void assertInvariants() const;
+
+  }; // JacobianFactor
 
   /** return A*x */
   Errors operator*(const FactorGraph<JacobianFactor>& fg, const VectorValues& x);
@@ -237,5 +266,5 @@ namespace gtsam {
   void multiply(const FactorGraph<JacobianFactor>& fg, const VectorValues &x, VectorValues &r);
   void transposeMultiply(const FactorGraph<JacobianFactor>& fg, const VectorValues &r, VectorValues &x);
 
-}
+} // gtsam
 

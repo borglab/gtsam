@@ -15,6 +15,8 @@
  * @author  Kai Ni
  * @author  Christian Potthast
  * @author  Alireza Fathi
+ * @author  Richard Roberts
+ * @author  Frank Dellaert
  */ 
 
 #pragma once
@@ -25,12 +27,39 @@
 #include <gtsam/base/FastSet.h>
 #include <gtsam/inference/FactorGraph.h>
 #include <gtsam/linear/Errors.h>
-#include <gtsam/linear/GaussianFactor.h>
 #include <gtsam/linear/JacobianFactor.h>
+#include <gtsam/linear/HessianFactor.h>
 #include <gtsam/linear/GaussianBayesNet.h>
-#include <gtsam/linear/SharedDiagonal.h>
 
 namespace gtsam {
+
+	class SharedDiagonal;
+
+  /** unnormalized error */
+  template<class FACTOR>
+  double gaussianError(const FactorGraph<FACTOR>& fg, const VectorValues& x) {
+    double total_error = 0.;
+    BOOST_FOREACH(const typename FACTOR::shared_ptr& factor, fg) {
+      total_error += factor->error(x);
+    }
+    return total_error;
+  }
+
+  /** return A*x-b */
+  template<class FACTOR>
+  Errors gaussianErrors(const FactorGraph<FACTOR>& fg, const VectorValues& x) {
+    return *gaussianErrors_(fg, x);
+  }
+
+  /** shared pointer version */
+  template<class FACTOR>
+  boost::shared_ptr<Errors> gaussianErrors_(const FactorGraph<FACTOR>& fg, const VectorValues& x) {
+    boost::shared_ptr<Errors> e(new Errors);
+    BOOST_FOREACH(const typename FACTOR::shared_ptr& factor, fg) {
+      e->push_back(factor->error_vector(x));
+    }
+    return e;
+  }
 
   /**
    * A Linear Factor Graph is a factor graph where all factors are Gaussian, i.e.
@@ -137,5 +166,27 @@ namespace gtsam {
 //    VectorValues allocateVectorValuesb() const ;
 
   };
+
+  /**
+   * Combine and eliminate several factors.
+   */
+	JacobianFactor::shared_ptr CombineJacobians(
+			const FactorGraph<JacobianFactor>& factors,
+			const VariableSlots& variableSlots);
+
+	GaussianFactorGraph::EliminationResult EliminateJacobians(const FactorGraph<
+			JacobianFactor>& factors, size_t nrFrontals = 1);
+
+  GaussianFactorGraph::EliminationResult EliminateHessians(const FactorGraph<
+			HessianFactor>& factors, size_t nrFrontals = 1);
+
+  GaussianFactorGraph::EliminationResult EliminateQR(const FactorGraph<
+			GaussianFactor>& factors, size_t nrFrontals = 1);
+
+  GaussianFactorGraph::EliminationResult EliminatePreferCholesky(const FactorGraph<
+			GaussianFactor>& factors, size_t nrFrontals = 1);
+
+  GaussianFactorGraph::EliminationResult EliminateCholesky(const FactorGraph<
+			GaussianFactor>& factors, size_t nrFrontals = 1);
 
 } // namespace gtsam

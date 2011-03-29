@@ -81,6 +81,24 @@ namespace gtsam {
 			noiseModel_(noiseModel) {
 		}
 
+		/**
+		 *  Constructor
+		 *  @param z measurement
+		 *  @param key by which to look up X value in Values
+		 */
+		NonlinearFactor(const SharedGaussian& noiseModel, const Symbol& key1) :
+			Factor<Symbol>(key1), noiseModel_(noiseModel) {
+		}
+
+		/**
+		 * Constructor
+		 * @param j1 key of the first variable
+		 * @param j2 key of the second variable
+		 */
+		NonlinearFactor(const SharedGaussian& noiseModel, const Symbol& j1, const Symbol& j2) :
+			Factor<Symbol>(j1,j2), noiseModel_(noiseModel) {
+		}
+
 		/** print */
 		virtual void print(const std::string& s = "") const {
 			std::cout << s << ": NonlinearFactor\n";
@@ -182,10 +200,8 @@ namespace gtsam {
 		 *  @param z measurement
 		 *  @param key by which to look up X value in Values
 		 */
-		NonlinearFactor1(const SharedGaussian& noiseModel,
-				const KEY& key1) :
-			Base(noiseModel), key_(key1) {
-			this->keys_.push_back(key_);
+		NonlinearFactor1(const SharedGaussian& noiseModel, const KEY& key1) :
+			Base(noiseModel,key1), key_(key1) {
 		}
 
 		/* print */
@@ -291,12 +307,8 @@ namespace gtsam {
 		 * @param j1 key of the first variable
 		 * @param j2 key of the second variable
 		 */
-		NonlinearFactor2(const SharedGaussian& noiseModel, KEY1 j1,
-				KEY2 j2) :
-			Base(noiseModel), key1_(j1), key2_(j2) {
-		  this->keys_.reserve(2);
-			this->keys_.push_back(key1_);
-			this->keys_.push_back(key2_);
+		NonlinearFactor2(const SharedGaussian& noiseModel, KEY1 j1, KEY2 j2) :
+			Base(noiseModel,j1,j2), key1_(j1), key2_(j2) {
 		}
 
 		virtual ~NonlinearFactor2() {}

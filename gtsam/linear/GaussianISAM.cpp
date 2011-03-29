@@ -29,13 +29,26 @@ namespace ublas = boost::numeric::ublas;
 namespace gtsam {
 
 /* ************************************************************************* */
+GaussianFactor::shared_ptr GaussianISAM::marginalFactor(Index j) const {
+	return Super::marginalFactor(j, &EliminateQR);
+}
+
+/* ************************************************************************* */
+BayesNet<GaussianConditional>::shared_ptr GaussianISAM::marginalBayesNet(Index j) const {
+	return Super::marginalBayesNet(j, &EliminateQR);
+}
+
+/* ************************************************************************* */
 std::pair<Vector, Matrix> GaussianISAM::marginal(Index j) const {
-	GaussianFactor::shared_ptr factor = this->marginalFactor(j);
-	FactorGraph<GaussianFactor> graph;
-	graph.push_back(factor);
-	GaussianConditional::shared_ptr conditional = GaussianFactor::CombineAndEliminate(graph,1).first->front();
-  Matrix R = conditional->get_R();
-  return make_pair(conditional->get_d(), inverse(ublas::prod(ublas::trans(R), R)));
+	GaussianConditional::shared_ptr conditional = marginalBayesNet(j)->front();
+	Matrix R = conditional->get_R();
+	return make_pair(conditional->get_d(), inverse(ublas::prod(ublas::trans(R), R)));
+}
+
+/* ************************************************************************* */
+	BayesNet<GaussianConditional>::shared_ptr GaussianISAM::jointBayesNet(
+			Index key1, Index key2) const {
+	return Super::jointBayesNet(key1, key2, &EliminateQR);
 }
 
 /* ************************************************************************* */
@@ -59,5 +72,11 @@ VectorValues optimize(const GaussianISAM& bayesTree) {
 	optimize(bayesTree.root(), result);
 	return result;
 }
+
+/* ************************************************************************* */
+BayesNet<GaussianConditional> GaussianISAM::shortcut(sharedClique clique, sharedClique root) {
+	return clique->shortcut(root,&EliminateQR);
+}
+/* ************************************************************************* */
 
 } /// namespace gtsam

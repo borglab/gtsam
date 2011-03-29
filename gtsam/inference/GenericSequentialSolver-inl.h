@@ -22,6 +22,7 @@
 #include <gtsam/inference/Factor-inl.h>
 #include <gtsam/inference/EliminationTree-inl.h>
 #include <gtsam/inference/BayesNet-inl.h>
+#include <gtsam/inference/inference.h>
 
 #include <boost/foreach.hpp>
 
@@ -48,9 +49,9 @@ namespace gtsam {
 	/* ************************************************************************* */
 	template<class FACTOR>
 	void GenericSequentialSolver<FACTOR>::print(const std::string& s) const {
-		this->factors_->print(s+" factors:");
-		this->structure_->print(s+" structure:\n");
-		this->eliminationTree_->print(s+" etree:");
+		this->factors_->print(s + " factors:");
+		this->structure_->print(s + " structure:\n");
+		this->eliminationTree_->print(s + " etree:");
 	}
 
 	/* ************************************************************************* */
@@ -77,15 +78,17 @@ namespace gtsam {
 	/* ************************************************************************* */
 	template<class FACTOR>
 	typename BayesNet<typename FACTOR::ConditionalType>::shared_ptr //
-	GenericSequentialSolver<FACTOR>::eliminate() const {
-		return eliminationTree_->eliminate();
+	GenericSequentialSolver<FACTOR>::eliminate(
+			typename EliminationTree<FACTOR>::Eliminate function) const {
+		return eliminationTree_->eliminate(function);
 	}
 
 	/* ************************************************************************* */
 	template<class FACTOR>
 	typename FactorGraph<FACTOR>::shared_ptr //
 	GenericSequentialSolver<FACTOR>::jointFactorGraph(
-			const std::vector<Index>& js) const {
+			const std::vector<Index>& js,
+			typename EliminationTree<FACTOR>::Eliminate function) const {
 
 		// Compute a COLAMD permutation with the marginal variable constrained to the end.
 		Permutation::shared_ptr permutation(Inference::PermutationCOLAMD(
@@ -100,7 +103,7 @@ namespace gtsam {
 
 		// Eliminate all variables
 		typename BayesNet<typename FACTOR::ConditionalType>::shared_ptr bayesNet(
-				EliminationTree<FACTOR>::Create(*factors_)->eliminate());
+				EliminationTree<FACTOR>::Create(*factors_)->eliminate(function));
 
 		// Undo the permuation on the original factors and on the structure.
 		BOOST_FOREACH(const typename FACTOR::shared_ptr& factor, *factors_)
@@ -125,13 +128,14 @@ namespace gtsam {
 	/* ************************************************************************* */
 	template<class FACTOR>
 	typename FACTOR::shared_ptr //
-	GenericSequentialSolver<FACTOR>::marginalFactor(Index j) const {
+	GenericSequentialSolver<FACTOR>::marginalFactor(Index j,
+			typename EliminationTree<FACTOR>::Eliminate function) const {
 		// Create a container for the one variable index
 		vector<Index> js(1);
 		js[0] = j;
 
 		// Call joint and return the only factor in the factor graph it returns
-		return (*this->jointFactorGraph(js))[0];
+		return (*this->jointFactorGraph(js, function))[0];
 	}
 
 } // namespace gtsam

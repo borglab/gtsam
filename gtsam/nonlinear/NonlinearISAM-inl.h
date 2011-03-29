@@ -28,7 +28,8 @@ using namespace gtsam;
 
 /* ************************************************************************* */
 template<class Values>
-void NonlinearISAM<Values>::update(const Factors& newFactors, const Values& initialValues) {
+void NonlinearISAM<Values>::update(const Factors& newFactors,
+		const Values& initialValues) {
 
   if(newFactors.size() > 0) {
 

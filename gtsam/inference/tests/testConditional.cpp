@@ -79,9 +79,9 @@ TEST( IndexConditional, fourParents )
 /* ************************************************************************* */
 TEST( IndexConditional, FromRange )
 {
-	list<Index> keys;
+	vector<Index> keys;
 	keys += 1,2,3,4,5;
-  IndexConditional::shared_ptr c0 = IndexConditional::FromRange(keys.begin(),keys.end(),2);
+  IndexConditional::shared_ptr c0(new IndexConditional(keys,2));
   LONGS_EQUAL(2,c0->nrFrontals())
   LONGS_EQUAL(3,c0->nrParents())
 }

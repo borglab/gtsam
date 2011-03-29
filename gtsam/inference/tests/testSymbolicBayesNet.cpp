@@ -21,8 +21,8 @@ using namespace boost::assign;
 
 #include <CppUnitLite/TestHarness.h>
 
-//#define GTSAM_MAGIC_KEY
-
+#include <gtsam/inference/IndexConditional.h>
+#ifdef ALL
 #include <gtsam/inference/SymbolicFactorGraph.h>
 
 using namespace std;
@@ -100,6 +100,7 @@ TEST( SymbolicBayesNet, combine )
 
   CHECK(assert_equal(expected,p_ABC));
 }
+#endif
 
 /* ************************************************************************* */
 int main() {

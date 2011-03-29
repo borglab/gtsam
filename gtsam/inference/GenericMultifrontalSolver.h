@@ -44,8 +44,10 @@ protected:
 
   // Junction tree that performs elimination.
   typename JUNCTIONTREE::shared_ptr junctionTree_;
-
 public:
+
+  typedef typename FactorGraph<FACTOR>::shared_ptr sharedGraph;
+  typedef typename FactorGraph<FACTOR>::Eliminate Eliminate;
 
   /**
    * Construct the solver for a factor graph.  This builds the junction
@@ -59,33 +61,36 @@ public:
    * VariableIndex.  The solver will store these pointers, so this constructor
    * is the fastest.
    */
-  GenericMultifrontalSolver(const typename FactorGraph<FACTOR>::shared_ptr& factorGraph, const VariableIndex::shared_ptr& variableIndex);
+  GenericMultifrontalSolver(const sharedGraph& factorGraph,
+				const VariableIndex::shared_ptr& variableIndex);
 
   /**
    * Replace the factor graph with a new one having the same structure.  The
    * This function can be used if the numerical part of the factors changes,
    * such as during relinearization or adjusting of noise models.
    */
-  void replaceFactors(const typename FactorGraph<FACTOR>::shared_ptr& factorGraph);
+  void replaceFactors(const sharedGraph& factorGraph);
 
   /**
    * Eliminate the factor graph sequentially.  Uses a column elimination tree
    * to recursively eliminate.
    */
-  typename JUNCTIONTREE::BayesTree::shared_ptr eliminate() const;
+  typename JUNCTIONTREE::BayesTree::shared_ptr
+		eliminate(Eliminate function) const;
 
   /**
    * Compute the marginal joint over a set of variables, by integrating out
    * all of the other variables.  This function returns the result as a factor
    * graph.
    */
-  typename FactorGraph<FACTOR>::shared_ptr jointFactorGraph(const std::vector<Index>& js) const;
+  typename FactorGraph<FACTOR>::shared_ptr jointFactorGraph(
+      const std::vector<Index>& js, Eliminate function) const;
 
   /**
    * Compute the marginal density over a variable, by integrating out
    * all of the other variables.  This function returns the result as a factor.
    */
-  typename FACTOR::shared_ptr marginalFactor(Index j) const;
+  typename FACTOR::shared_ptr marginalFactor(Index j, Eliminate function) const;
 
 };
 

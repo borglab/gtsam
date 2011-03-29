@@ -20,9 +20,7 @@
 
 #pragma once
 
-#include <gtsam/inference/FactorGraph.h>
 #include <gtsam/inference/IndexFactor.h>
-#include <gtsam/linear/Errors.h>
 
 #include <string>
 #include <utility>
@@ -72,10 +70,10 @@ namespace gtsam {
     /** Construct n-way factor */
     GaussianFactor(const std::set<Index>& js) : IndexFactor(js) {}
 
+    /** Construct n-way factor */
+    GaussianFactor(const std::vector<Index>& js) : IndexFactor(js) {}
 
   public:
-
-    enum SolveMethod { SOLVE_QR, SOLVE_PREFER_CHOLESKY };
 
     typedef GaussianConditional ConditionalType;
     typedef boost::shared_ptr<GaussianFactor> shared_ptr;
@@ -96,40 +94,15 @@ namespace gtsam {
      */
     virtual void permuteWithInverse(const Permutation& inversePermutation) = 0;
 
-    /**
-     * Combine and eliminate several factors.
-     */
-    static std::pair<boost::shared_ptr<BayesNet<GaussianConditional> >, shared_ptr> CombineAndEliminate(
-        const FactorGraph<GaussianFactor>& factors, size_t nrFrontals=1, SolveMethod solveMethod=SOLVE_QR);
-
   }; // GaussianFactor
 
-
-  /** unnormalized error */
-  template<class FACTOR>
-  double gaussianError(const FactorGraph<FACTOR>& fg, const VectorValues& x) {
-    double total_error = 0.;
-    BOOST_FOREACH(const typename FACTOR::shared_ptr& factor, fg) {
-      total_error += factor->error(x);
-    }
-    return total_error;
-  }
-
-  /** return A*x-b */
-  template<class FACTOR>
-  Errors gaussianErrors(const FactorGraph<FACTOR>& fg, const VectorValues& x) {
-    return *gaussianErrors_(fg, x);
-  }
-
-  /** shared pointer version */
-  template<class FACTOR>
-  boost::shared_ptr<Errors> gaussianErrors_(const FactorGraph<FACTOR>& fg, const VectorValues& x) {
-    boost::shared_ptr<Errors> e(new Errors);
-    BOOST_FOREACH(const typename FACTOR::shared_ptr& factor, fg) {
-      e->push_back(factor->error_vector(x));
-    }
-    return e;
-  }
-
+  /** make keys from list, vector, or map of matrices */
+	template<typename ITERATOR>
+	static std::vector<Index> GetKeys(size_t n, ITERATOR begin, ITERATOR end) {
+		std::vector<Index> keys;
+		keys.reserve(n);
+		for (ITERATOR it=begin;it!=end;++it) keys.push_back(it->first);
+		return keys;
+	}
 
 } // namespace gtsam

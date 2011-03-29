@@ -69,7 +69,7 @@ TEST( GaussianJunctionTree, eliminate )
 {
 	GaussianFactorGraph fg = createChain();
 	GaussianJunctionTree junctionTree(fg);
-	BayesTree<GaussianConditional>::sharedClique rootClique = junctionTree.eliminate();
+	BayesTree<GaussianConditional>::sharedClique rootClique = junctionTree.eliminate(&EliminateQR);
 
 	typedef BayesTree<GaussianConditional>::sharedConditional sharedConditional;
 	Matrix two = Matrix_(1,1,2.);
@@ -90,7 +90,7 @@ TEST( GaussianJunctionTree, optimizeMultiFrontal )
 	GaussianFactorGraph fg = createChain();
 	GaussianJunctionTree tree(fg);
 
-	VectorValues actual = tree.optimize();
+	VectorValues actual = tree.optimize(&EliminateQR);
 	VectorValues expected(vector<size_t>(4,1));
 	expected[x1] = Vector_(1, 0.);
 	expected[x2] = Vector_(1, 1.);

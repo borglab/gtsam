@@ -143,7 +143,7 @@ TEST( SymbolicFactorGraph, eliminate )
 	SymbolicFactorGraph fg(factorGraph);
 
 	// eliminate it
-  SymbolicBayesNet actual = *SymbolicSequentialSolver(fg).eliminate();
+  SymbolicBayesNet actual = *SymbolicSequentialSolver(fg).eliminate(&EliminateSymbolic);
 
   CHECK(assert_equal(expected,actual));
 }

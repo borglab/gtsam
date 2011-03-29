@@ -125,12 +125,12 @@ TEST( BayesTree, linear_smoother_shortcuts )
 	// Check the conditional P(Root|Root)
 	GaussianBayesNet empty;
 	GaussianISAM::sharedClique R = bayesTree.root();
-	GaussianBayesNet actual1 = R->shortcut(R);
+	GaussianBayesNet actual1 = GaussianISAM::shortcut(R,R);
 	CHECK(assert_equal(empty,actual1,tol));
 
 	// Check the conditional P(C2|Root)
 	GaussianISAM::sharedClique C2 = bayesTree[ordering["x5"]];
-	GaussianBayesNet actual2 = C2->shortcut(R);
+	GaussianBayesNet actual2 = GaussianISAM::shortcut(C2,R);
 	CHECK(assert_equal(empty,actual2,tol));
 
 	// Check the conditional P(C3|Root)
@@ -139,7 +139,7 @@ TEST( BayesTree, linear_smoother_shortcuts )
 	GaussianBayesNet expected3;
 	push_front(expected3,ordering["x5"], zero(2), eye(2)/sigma3, ordering["x6"], A56/sigma3, ones(2));
 	GaussianISAM::sharedClique C3 = bayesTree[ordering["x4"]];
-	GaussianBayesNet actual3 = C3->shortcut(R);
+	GaussianBayesNet actual3 = GaussianISAM::shortcut(C3,R);
 	CHECK(assert_equal(expected3,actual3,tol));
 
 	// Check the conditional P(C4|Root)
@@ -148,7 +148,7 @@ TEST( BayesTree, linear_smoother_shortcuts )
 	GaussianBayesNet expected4;
 	push_front(expected4, ordering["x4"], zero(2), eye(2)/sigma4, ordering["x6"], A46/sigma4, ones(2));
 	GaussianISAM::sharedClique C4 = bayesTree[ordering["x3"]];
-	GaussianBayesNet actual4 = C4->shortcut(R);
+	GaussianBayesNet actual4 = GaussianISAM::shortcut(C4,R);
 	CHECK(assert_equal(expected4,actual4,tol));
 }
 
@@ -264,19 +264,19 @@ TEST( BayesTree, balanced_smoother_shortcuts )
 	// Check the conditional P(Root|Root)
 	GaussianBayesNet empty;
 	GaussianISAM::sharedClique R = bayesTree.root();
-	GaussianBayesNet actual1 = R->shortcut(R);
+	GaussianBayesNet actual1 = GaussianISAM::shortcut(R,R);
 	CHECK(assert_equal(empty,actual1,tol));
 
 	// Check the conditional P(C2|Root)
 	GaussianISAM::sharedClique C2 = bayesTree[ordering["x3"]];
-	GaussianBayesNet actual2 = C2->shortcut(R);
+	GaussianBayesNet actual2 = GaussianISAM::shortcut(C2,R);
 	CHECK(assert_equal(empty,actual2,tol));
 
 	// Check the conditional P(C3|Root), which should be equal to P(x2|x4)
 	GaussianConditional::shared_ptr p_x2_x4 = chordalBayesNet[ordering["x2"]];
 	GaussianBayesNet expected3; expected3.push_back(p_x2_x4);
 	GaussianISAM::sharedClique C3 = bayesTree[ordering["x1"]];
-	GaussianBayesNet actual3 = C3->shortcut(R);
+	GaussianBayesNet actual3 = GaussianISAM::shortcut(C3,R);
 	CHECK(assert_equal(expected3,actual3,tol));
 }
 
