@@ -80,7 +80,7 @@ namespace gtsam {
 			return pose().transform_from(cameraPoint);
 		}
 
-		Point3 backproject(const StereoPoint2& z) {
+		Point3 backproject(const StereoPoint2& z) const {
 			Vector measured = z.vector();
 			double Z = K_.baseline()*K_.fx()/(measured[0]-measured[1]);
 			double X = Z *(measured[0]- K_.px()) / K_.fx();
