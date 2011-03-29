@@ -121,8 +121,6 @@ TEST( StereoCamera, backproject2)
 
   Point3 l = camera.backproject(z);
   StereoPoint2 actual = camera.project(l);
-  z.print("z");
-  actual.print("actual");
   CHECK(assert_equal(z, actual, 1e-3));
 }
 
