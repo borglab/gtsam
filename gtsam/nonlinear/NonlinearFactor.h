@@ -99,6 +99,14 @@ namespace gtsam {
 			Factor<Symbol>(j1,j2), noiseModel_(noiseModel) {
 		}
 
+		/**
+		 * Constructor - arbitrary number of keys
+		 * @param keys is the set of Symbols in the factor
+		 */
+		NonlinearFactor(const SharedGaussian& noiseModel, const std::set<Symbol>& keys) :
+			Factor<Symbol>(keys), noiseModel_(noiseModel) {
+		}
+
 		/** print */
 		virtual void print(const std::string& s = "") const {
 			std::cout << s << ": NonlinearFactor\n";

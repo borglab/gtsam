@@ -70,7 +70,8 @@ public:
   /** Const iterator over keys */
   typedef typename std::vector<Key>::const_iterator const_iterator;
 
-private:
+//private: // FIXME: factors that manually initialize keys_ break in this case
+protected:
 
   // The keys involved in this factor
   std::vector<Key> keys_;
