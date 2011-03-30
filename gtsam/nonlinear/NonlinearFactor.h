@@ -152,8 +152,9 @@ namespace gtsam {
 		friend class boost::serialization::access;
 		template<class ARCHIVE>
 		void serialize(ARCHIVE & ar, const unsigned int version) {
+			ar & boost::serialization::make_nvp("Factor",
+					boost::serialization::base_object<Factor<Symbol> >(*this));
 			ar & BOOST_SERIALIZATION_NVP(noiseModel_);
-			ar & BOOST_SERIALIZATION_NVP(keys_);
 		}
 
 	}; // NonlinearFactor

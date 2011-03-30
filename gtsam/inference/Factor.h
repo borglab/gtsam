@@ -175,7 +175,7 @@ public:
    */
   size_t size() const { return keys_.size(); }
 
-protected:
+private:
 
   /** Serialization function */
   friend class boost::serialization::access;
