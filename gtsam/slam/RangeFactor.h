@@ -16,8 +16,7 @@
 
 #pragma once
 
-//#include <gtsam/geometry/Pose2.h>
-//#include <gtsam/geometry/Point2.h>
+#include <boost/lexical_cast.hpp>
 #include <gtsam/nonlinear/NonlinearFactor.h>
 
 namespace gtsam {
@@ -61,6 +60,11 @@ namespace gtsam {
 		virtual bool equals(const NonlinearFactor<VALUES>& expected, double tol=1e-9) const {
 			const This *e = dynamic_cast<const This*> (&expected);
 			return e != NULL && Base::equals(*e, tol) && fabs(this->z_ - e->z_) < tol;
+		}
+
+		/** print contents */
+		void print(const std::string& s="") const {
+			Base::print(s + std::string(" range: ") + boost::lexical_cast<std::string>(z_));
 		}
 
 	private:
