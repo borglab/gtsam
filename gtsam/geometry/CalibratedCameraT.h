@@ -34,7 +34,9 @@ namespace gtsam {
     CalibratedCameraT(const Vector &v, const Vector &k):pose_(Pose3::Expmap(v)),k_(k){}
     virtual ~CalibratedCameraT() {}
 
+    inline Pose3& pose() {  return pose_; }
     inline const Pose3& pose() const {  return pose_; }
+    inline Calibration& calibration() {  return k_; }
     inline const Calibration& calibration() const {  return k_; }
     bool equals (const CalibratedCameraT &camera, double tol = 1e-9) const {
       return pose_.equals(camera.pose(), tol) && k_.equals(camera.calibration(), tol) ;
@@ -55,12 +57,10 @@ namespace gtsam {
       return pose().logmap(T2.pose()) ;
     }
 
-//    static CalibratedCameraT Expmap(const Vector& v) {
-//      return CalibratedCameraT(Pose3::Expmap(v), k_) ;
-//    }
-//    static Vector Logmap(const CalibratedCameraT& p) {
-//      return Pose3::Logmap(p.pose()) ;
-//    }
+    void print(const std::string& s = "") const {
+      pose_.print("pose3");
+      k_.print("calibration");
+    }
 
     inline size_t dim() const { return 6 ; }
     inline static size_t Dim() { return 6 ; }
@@ -83,58 +83,44 @@ namespace gtsam {
      * @param point a 3D point to be projected
      * @return the intrinsic coordinates of the projected point
      */
-    Point2 project(const Point3& point,
+
+    inline Point2 project(const Point3& point,
       boost::optional<Matrix&> D_intrinsic_pose = boost::none,
       boost::optional<Matrix&> D_intrinsic_point = boost::none) const {
+      std::pair<Point2,bool> result = projectSafe(point, D_intrinsic_pose, D_intrinsic_point) ;
+      return result.first ;
+    }
 
-      // no derivative is necessary
+    std::pair<Point2,bool> projectSafe(
+        const Point3& pw,
+        boost::optional<Matrix&> D_intrinsic_pose = boost::none,
+        boost::optional<Matrix&> D_intrinsic_point = boost::none) const {
+
       if ( !D_intrinsic_pose && !D_intrinsic_point ) {
-        Point3 pc = pose_.transform_to(point) ;
+        Point3 pc = pose_.transform_to(pw) ;
         Point2 pn = project_to_camera(pc) ;
-        return k_.uncalibrate(pn) ;
+        return std::make_pair(k_.uncalibrate(pn), pc.z() > 0) ;
       }
-
       // world to camera coordinate
       Matrix Hc1 /* 3*6 */, Hc2 /* 3*3 */ ;
-      Point3 pc = pose_.transform_to(point, Hc1, Hc2) ;
-
+      Point3 pc = pose_.transform_to(pw, Hc1, Hc2) ;
       // camera to normalized image coordinate
       Matrix Hn; // 2*3
       Point2 pn = project_to_camera(pc, Hn) ;
-
       // uncalibration
       Matrix Hi; // 2*2
       Point2 pi = k_.uncalibrate(pn,boost::none,Hi);
-
       Matrix tmp = Hi*Hn ;
-      *D_intrinsic_pose = tmp * Hc1 ;
-      *D_intrinsic_point = tmp * Hc2 ;
-      return pi ;
+      if (D_intrinsic_pose) *D_intrinsic_pose = tmp * Hc1 ;
+      if (D_intrinsic_point) *D_intrinsic_point = tmp * Hc2 ;
+      return std::make_pair(pi, pc.z()>0) ;
     }
 
-    std::pair<Point2,bool> projectSafe(
-        const Point3& pw,
-        boost::optional<Matrix&> H1 = boost::none,
-        boost::optional<Matrix&> H2 = boost::none) const {
-        Point3 pc = pose_.transform_to(pw);
-      return std::pair<Point2, bool>( project(pw,H1,H2), pc.z() > 0);
-    }
-
-    std::pair<Point2,bool> projectSafe(
-        const Point3& pw,
-        const Point3& pw_normal,
-        boost::optional<Matrix&> H1 = boost::none,
-        boost::optional<Matrix&> H2 = boost::none) const {
-      Point3 pc = pose_.transform_to(pw);
-      Point3 pc_normal = pose_.rotation().unrotate(pw_normal);
-      return std::pair<Point2, bool>( project(pw,H1,H2), (pc.z() > 0) && (pc_normal.z() < -0.5) );
-    }
-
-    //    /**
-//     * projects a 3-dimensional point in camera coordinates into the
-//     * camera and returns a 2-dimensional point, no calibration applied
-//     * With optional 2by3 derivative
-//     */
+    /**
+    * projects a 3-dimensional point in camera coordinates into the
+    * camera and returns a 2-dimensional point, no calibration applied
+    * With optional 2by3 derivative
+    */
     static Point2 project_to_camera(const Point3& P,
                              boost::optional<Matrix&> H1 = boost::none){
       if (H1) {
@@ -147,7 +133,7 @@ namespace gtsam {
     /**
      * backproject a 2-dimensional point to a 3-dimension point
      */
-    Point3 backproject_from_camera(const Point2& pi, const double scale) {
+    Point3 backproject_from_camera(const Point2& pi, const double scale) const {
       Point2 pn = k_.calibrate(pi);
       Point3 pc(pn.x()*scale, pn.y()*scale, scale);
       return pose_.transform_from(pc);
@@ -161,8 +147,60 @@ private:
         ar & BOOST_SERIALIZATION_NVP(pose_);
         ar & BOOST_SERIALIZATION_NVP(k_);
       }
-
   };
 }
 
+//    static CalibratedCameraT Expmap(const Vector& v) {
+//      return CalibratedCameraT(Pose3::Expmap(v), k_) ;
+//    }
+//    static Vector Logmap(const CalibratedCameraT& p) {
+//      return Pose3::Logmap(p.pose()) ;
+//    }
+
+//    Point2 project(const Point3& point,
+//      boost::optional<Matrix&> D_intrinsic_pose = boost::none,
+//      boost::optional<Matrix&> D_intrinsic_point = boost::none) const {
+//
+//      // no derivative is necessary
+//      if ( !D_intrinsic_pose && !D_intrinsic_point ) {
+//        Point3 pc = pose_.transform_to(point) ;
+//        Point2 pn = project_to_camera(pc) ;
+//        return k_.uncalibrate(pn) ;
+//      }
+//
+//      // world to camera coordinate
+//      Matrix Hc1 /* 3*6 */, Hc2 /* 3*3 */ ;
+//      Point3 pc = pose_.transform_to(point, Hc1, Hc2) ;
+//
+//      // camera to normalized image coordinate
+//      Matrix Hn; // 2*3
+//      Point2 pn = project_to_camera(pc, Hn) ;
+//
+//      // uncalibration
+//      Matrix Hi; // 2*2
+//      Point2 pi = k_.uncalibrate(pn,boost::none,Hi);
+//
+//      Matrix tmp = Hi*Hn ;
+//      *D_intrinsic_pose = tmp * Hc1 ;
+//      *D_intrinsic_point = tmp * Hc2 ;
+//      return pi ;
+//    }
+//
+//    std::pair<Point2,bool> projectSafe(
+//        const Point3& pw,
+//        boost::optional<Matrix&> H1 = boost::none,
+//        boost::optional<Matrix&> H2 = boost::none) const {
+//        Point3 pc = pose_.transform_to(pw);
+//      return std::pair<Point2, bool>( project(pw,H1,H2), pc.z() > 0);
+//    }
+//
+//    std::pair<Point2,bool> projectSafe(
+//        const Point3& pw,
+//        const Point3& pw_normal,
+//        boost::optional<Matrix&> H1 = boost::none,
+//        boost::optional<Matrix&> H2 = boost::none) const {
+//      Point3 pc = pose_.transform_to(pw);
+//      Point3 pc_normal = pose_.rotation().unrotate(pw_normal);
+//      return std::pair<Point2, bool>( project(pw,H1,H2), (pc.z() > 0) && (pc_normal.z() < -0.5) );
+//    }
 

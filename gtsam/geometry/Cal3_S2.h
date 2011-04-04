@@ -104,6 +104,19 @@ namespace gtsam {
 			return Matrix_(3, 3, fx_, s_, u0_, 0.0, fy_, v0_, 0.0, 0.0, 1.0);
 		}
 
+
+    /**
+     * return calibration matrix inv(K)
+     */
+    Matrix matrix_inverse() const {
+      const double fxy = fx_*fy_, sv0 = s_*v0_, fyu0 = fy_*u0_;
+      return Matrix_(3, 3,
+          1.0/fx_, -s_/fxy, (sv0-fyu0)/fxy,
+          0.0,     1.0/fy_, -v0_/fy_,
+          0.0, 0.0, 1.0);
+    }
+
+
 		/**
 		 * convert intrinsic coordinates xy to image coordinates uv
 		 * with optional derivatives
