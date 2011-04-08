@@ -111,7 +111,7 @@ TEST( Rot2, relativeBearing )
 	CHECK(assert_equal(Rot2(),actual1));
 
 	// Check numerical derivative
-	expectedH = numericalDerivative11(relativeBearing_, l1, 1e-5);
+	expectedH = numericalDerivative11(relativeBearing_, l1);
 	CHECK(assert_equal(expectedH,actualH));
 
 	// establish relativeBearing is indeed 45 degrees
@@ -119,7 +119,7 @@ TEST( Rot2, relativeBearing )
 	CHECK(assert_equal(Rot2::fromAngle(M_PI_4),actual2));
 
 	// Check numerical derivative
-	expectedH = numericalDerivative11(relativeBearing_, l2, 1e-5);
+	expectedH = numericalDerivative11(relativeBearing_, l2);
 	CHECK(assert_equal(expectedH,actualH));
 }
 

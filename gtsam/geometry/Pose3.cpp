@@ -60,7 +60,7 @@ namespace gtsam {
   	Point3 w(xi(0),xi(1),xi(2)), v(xi(3),xi(4),xi(5));
 
     double theta = w.norm();
-		if (theta < 1e-5) {
+		if (theta < 1e-10) {
 		  static const Rot3 I;
 			return Pose3(I, v);
 		}
@@ -78,7 +78,7 @@ namespace gtsam {
   Vector Pose3::LogmapFull(const Pose3& p) {
     Vector w = Rot3::Logmap(p.rotation()), T = p.translation().vector();
   	double t = norm_2(w);
-		if (t < 1e-5)
+		if (t < 1e-10)
 	    return concatVectors(2, &w, &T);
 		else {
 			Matrix W = skewSymmetric(w/t);

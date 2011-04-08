@@ -138,9 +138,9 @@ TEST( Pose2Factor, linearize )
 	CHECK(assert_equal(expected,*actual));
 
 	// Numerical do not work out because BetweenFactor is approximate ?
-	Matrix numericalH1 = numericalDerivative21(h, p1, p2, 1e-5);
+	Matrix numericalH1 = numericalDerivative21(h, p1, p2);
 	CHECK(assert_equal(expectedH1,numericalH1));
-	Matrix numericalH2 = numericalDerivative22(h, p1, p2, 1e-5);
+	Matrix numericalH2 = numericalDerivative22(h, p1, p2);
 	CHECK(assert_equal(expectedH2,numericalH2));
 }
 

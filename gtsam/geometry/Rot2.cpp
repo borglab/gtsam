@@ -55,7 +55,7 @@ bool Rot2::equals(const Rot2& R, double tol) const {
 /* ************************************************************************* */
 Rot2& Rot2::normalize() {
 	double scale = c_*c_ + s_*s_;
-	if(fabs(scale-1.0)>1e-9) {
+	if(fabs(scale-1.0)>1e-10) {
 		scale = pow(scale, -0.5);
 		c_ *= scale;
 		s_ *= scale;

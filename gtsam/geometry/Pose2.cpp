@@ -51,7 +51,7 @@ namespace gtsam {
 	  assert(xi.size() == 3);
 		Point2 v(xi(0),xi(1));
 		double w = xi(2);
-		if (fabs(w) < 1e-5)
+		if (fabs(w) < 1e-10)
 			return Pose2(xi[0], xi[1], xi[2]);
 		else {
 			Rot2 R(Rot2::fromAngle(w));
@@ -66,7 +66,7 @@ namespace gtsam {
   	const Rot2& R = p.r();
   	const Point2& t = p.t();
 		double w = R.theta();
-		if (fabs(w) < 1e-5)
+		if (fabs(w) < 1e-10)
 			return Vector_(3, t.x(), t.y(), w);
 		else {
 			double c_1 = R.c()-1.0, s = R.s();
@@ -216,7 +216,7 @@ namespace gtsam {
 	  Point2 d = transform_to(point, H1, H2);
 	  double x = d.x(), y = d.y(), d2 = x * x + y * y, n = sqrt(d2);
 	  Matrix D_result_d;
-	  if(fabs(n) > 1e-5)
+	  if(fabs(n) > 1e-10)
 	    D_result_d = Matrix_(1, 2, x / n, y / n);
 	  else {
 	    D_result_d = Matrix_(1,2, 1.0, 1.0);

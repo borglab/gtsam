@@ -89,7 +89,7 @@ TEST( Pose2Prior, linearize )
 	boost::shared_ptr<JacobianFactor> actual = factor.linearize(x0, ordering);
 
 	// Test with numerical derivative
-	Matrix numericalH = numericalDerivative11(h, prior, 1e-5);
+	Matrix numericalH = numericalDerivative11(h, prior);
 	CHECK(assert_equal(numericalH,actual->getA(actual->find(ordering["x1"]))));
 }
 
