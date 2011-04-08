@@ -49,12 +49,12 @@ namespace gtsam {
 	 * 	    boost::bind(&SomeClass::bar, ref(instanceOfSomeClass), _1)
 	 *
 	 * For additional details, see the documentation:
-	 * 		http://www.boost.org/doc/libs/1_43_0/libs/bind/bind.html
+	 * 		http://www.boost.org/doc/libs/release/libs/bind/bind.html
 	 */
 
 
 	/** global functions for converting to a LieVector for use with numericalDerivative */
-        inline LieVector makeLieVector(const Vector& v) { return LieVector(v); }
+  inline LieVector makeLieVector(const Vector& v) { return LieVector(v); }
 	inline LieVector makeLieVectorD(double d) { return LieVector(Vector_(1, d)); }
 
 	/**
@@ -68,8 +68,8 @@ namespace gtsam {
 		const size_t n = x.dim();
 		Vector d(n,0.0), g(n,0.0);
 		for (size_t j=0;j<n;j++) {
-			d(j) +=   delta; double hxplus = h(expmap(x,d));
-			d(j) -= 2*delta; double hxmin  = h(expmap(x,d));
+			d(j) +=   delta; double hxplus = h(x.expmap(d));
+			d(j) -= 2*delta; double hxmin  = h(x.expmap(d));
 			d(j) +=   delta; g(j) = (hxplus-hxmin)*factor;
 		}
 		return g;
@@ -454,6 +454,25 @@ namespace gtsam {
 			const X1& x1, const X2& x2, const X3& x3, double delta=1e-5) {
 		return numericalDerivative33<LieVector,X1,X2,X3>(
 				boost::bind(makeLieVector, boost::bind(h, _1, _2, _3)), x1, x2, x3, delta);
+	}
+
+  /**
+   * Compute numerical Hessian matrix.  Requires a single-argument Lie->scalar
+   * function.  This is implemented simply as the derivative of the gradient.
+   * @param f A function taking a Lie object as input and returning a scalar
+   * @param x The center point for computing the Hessian
+   * @param delta The numerical derivative step size
+   * @return n*n Hessian matrix computed via central differencing
+   */
+	template<class X>
+	inline Matrix numericalHessian(const boost::function<double(const X&)>& f, const X& x, double delta=1e-5) {
+	  return numericalDerivative11<X>(
+	      boost::function<LieVector(const X&)>(boost::bind(numericalGradient<X>, f, _1, delta)), x, delta);
+	}
+
+	template<class X>
+	inline Matrix numericalHessian(double (*f)(const X&), const X& x, double delta=1e-5) {
+	  return numericalHessian(boost::function<double(const X&)>(f), x, delta);
 	}
 
 }

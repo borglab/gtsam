@@ -16,6 +16,7 @@ check_PROGRAMS =
 headers += FixedVector.h types.h blockMatrices.h Matrix-inl.h lapack.h
 sources += Vector.cpp Matrix.cpp cholesky.cpp
 check_PROGRAMS += tests/testFixedVector tests/testVector tests/testMatrix tests/testCholesky
+check_PROGRAMS += tests/testNumericalDerivative
 
 if USE_LAPACK
 sources += DenseQR.cpp DenseQRUtil.cpp
