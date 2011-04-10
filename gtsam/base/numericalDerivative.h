@@ -465,9 +465,10 @@ namespace gtsam {
    * @return n*n Hessian matrix computed via central differencing
    */
 	template<class X>
-	inline Matrix numericalHessian(const boost::function<double(const X&)>& f, const X& x, double delta=1e-5) {
-	  return numericalDerivative11<X>(
-	      boost::function<LieVector(const X&)>(boost::bind(numericalGradient<X>, f, _1, delta)), x, delta);
+	inline Matrix numericalHessian(boost::function<double(const X&)> f, const X& x, double delta=1e-5) {
+	  Vector (*numGrad)(boost::function<double(const X&)>,const X&, double) = &numericalGradient<X>;
+	  return numericalDerivative11<X>(boost::function<Vector(const X&)>(boost::bind(
+	          numGrad, f, _1, delta)), x, delta);
 	}
 
 	template<class X>
