@@ -47,7 +47,7 @@ namespace gtsam {
     typedef MatrixColMajor InfoMatrix;
     typedef SymmetricBlockView<InfoMatrix> BlockInfo;
 
-    InfoMatrix matrix_; // The full information matrix [A b]^T * [A b]
+    InfoMatrix matrix_; // The full information matrix, s.t. the quadratic error is [x -1]'*H*[x -1]
     BlockInfo info_;    // The block view of the full information matrix.
 
     void updateATA(const JacobianFactor& update, const Scatter& scatter);
@@ -65,29 +65,21 @@ namespace gtsam {
     /** default constructor for I/O */
     HessianFactor();
 
-    /** Construct Null factor */
-    HessianFactor(const Vector& b_in);
+    /** Construct a unary factor.  G is the quadratic term (Hessian matrix), g
+     * the linear term (a vector), and f the constant term.  The quadratic
+     * error is:
+     * f - 2*x'*g + x'*G*x
+     */
+    HessianFactor(Index j, const Matrix& G, const Vector& g, double f);
 
-    /** Construct unary factor */
-    HessianFactor(Index i1, const Matrix& A1,
-        const Vector& b, const SharedDiagonal& model);
-
-    /** Construct binary factor */
-    HessianFactor(Index i1, const Matrix& A1,
-        Index i2, const Matrix& A2,
-        const Vector& b, const SharedDiagonal& model);
-
-    /** Construct ternary factor */
-    HessianFactor(Index i1, const Matrix& A1, Index i2,
-        const Matrix& A2, Index i3, const Matrix& A3,
-        const Vector& b, const SharedDiagonal& model);
-
-    /** Construct an n-ary factor */
-    HessianFactor(const std::vector<std::pair<Index, Matrix> > &terms,
-        const Vector &b, const SharedDiagonal& model);
-
-    HessianFactor(const std::list<std::pair<Index, Matrix> > &terms,
-        const Vector &b, const SharedDiagonal& model);
+    /** Construct a binary factor.  Gxx are the upper-triangle blocks of the
+     * quadratic term (the Hessian matrix), gx the pieces of the linear vector
+     * term, and f the constant term.  The quadratic error is:
+     * f - 2*x1'*g1 - 2*x2'*g2 + x1'*G11*x1 + x1'*G12*x2
+     */
+    HessianFactor(Index j1, Index j2,
+        const Matrix& G11, const Matrix& G12, const Vector& g1,
+        const Matrix& G22, const Vector& g2, double f);
 
     /** Construct from Conditional Gaussian */
     HessianFactor(const GaussianConditional& cg);
@@ -106,7 +98,7 @@ namespace gtsam {
     virtual void print(const std::string& s = "") const;
     virtual bool equals(const GaussianFactor& lf, double tol = 1e-9) const;
 
-    virtual double error(const VectorValues& c) const; /**  0.5*(A*x-b)'*D*(A*x-b) */
+    virtual double error(const VectorValues& c) const; /** [x -1]'*H*[x -1] (also see constructor documentation) */
 
     /** Return the dimension of the variable pointed to by the given key iterator
      * todo: Remove this in favor of keeping track of dimensions with variables?

@@ -89,7 +89,59 @@ TEST(HessianFactor, ConversionConstructor) {
 #endif
 
 /* ************************************************************************* */
-TEST(GaussianFactor, CombineAndEliminate)
+TEST(HessianFactor, Constructor1)
+{
+  Matrix G = Matrix_(2,2, 3.0, 5.0, 0.0, 6.0);
+  Vector g = Vector_(2, -8.0, -9.0);
+  double f = 10.0;
+
+  Vector dxv = Vector_(2, 1.5, 2.5);
+
+  vector<size_t> dims;
+  dims.push_back(2);
+  VectorValues dx(dims);
+
+  dx[0] = dxv;
+
+  HessianFactor factor(0, G, g, f);
+
+  double expected = 160.75;
+  double actual = factor.error(dx);
+
+  DOUBLES_EQUAL(expected, actual, 1e-10);
+}
+
+/* ************************************************************************* */
+TEST(HessianFactor, Constructor2)
+{
+  Matrix G11 = Matrix_(1,1, 1.0);
+  Matrix G12 = Matrix_(1,2, 2.0, 4.0);
+  Matrix G22 = Matrix_(2,2, 3.0, 5.0, 0.0, 6.0);
+  Vector g1 = Vector_(1, -7.0);
+  Vector g2 = Vector_(2, -8.0, -9.0);
+  double f = 10.0;
+
+  Vector dx0 = Vector_(1, 0.5);
+  Vector dx1 = Vector_(2, 1.5, 2.5);
+
+  vector<size_t> dims;
+  dims.push_back(1);
+  dims.push_back(2);
+  VectorValues dx(dims);
+
+  dx[0] = dx0;
+  dx[1] = dx1;
+
+  HessianFactor factor(0, 1, G11, G12, g1, G22, g2, f);
+
+  double expected = 181.0;
+  double actual = factor.error(dx);
+
+  DOUBLES_EQUAL(expected, actual, 1e-10);
+}
+
+/* ************************************************************************* */
+TEST(HessianFactor, CombineAndEliminate)
 {
   Matrix A01 = Matrix_(3,3,
       1.0, 0.0, 0.0,
@@ -140,7 +192,7 @@ TEST(GaussianFactor, CombineAndEliminate)
 }
 
 /* ************************************************************************* */
-TEST(GaussianFactor, eliminate2 )
+TEST(HessianFactor, eliminate2 )
 {
   // sigmas
   double sigma1 = 0.2;
@@ -213,7 +265,7 @@ TEST(GaussianFactor, eliminate2 )
 }
 
 /* ************************************************************************* */
-TEST(GaussianFactor, eliminateUnsorted) {
+TEST(HessianFactor, eliminateUnsorted) {
 
   JacobianFactor::shared_ptr factor1(
       new JacobianFactor(0,
@@ -229,7 +281,7 @@ TEST(GaussianFactor, eliminateUnsorted) {
                          Vector_(3, 1.98916e-17, -4.96503e-15, -7.75792e-17),
                          noiseModel::Unit::Create(3)));
   HessianFactor::shared_ptr unsorted_factor2(
-      new HessianFactor(0,
+      new HessianFactor(JacobianFactor(0,
                         Matrix_(6,3,
                                 25.8367,    0.1211,    0.0593,
                                     0.0,   23.4099,   30.8733,
@@ -246,14 +298,14 @@ TEST(GaussianFactor, eliminateUnsorted) {
                                     0.0,    0.9973,    0.9517,
                                     0.0,       0.0,    0.9973),
                         Vector_(6, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0),
-                        noiseModel::Unit::Create(6)));
+                        noiseModel::Unit::Create(6))));
   Permutation permutation(2);
   permutation[0] = 1;
   permutation[1] = 0;
   unsorted_factor2->permuteWithInverse(permutation);
 
   HessianFactor::shared_ptr sorted_factor2(
-      new HessianFactor(0,
+      new HessianFactor(JacobianFactor(0,
                         Matrix_(6,3,
                                 25.7429,   -1.6897,    0.4587,
                                  1.6400,   23.3095,   -8.4816,
@@ -270,7 +322,7 @@ TEST(GaussianFactor, eliminateUnsorted) {
                                     0.0,       0.0,       0.0,
                                     0.0,       0.0,       0.0),
                         Vector_(6, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0),
-                        noiseModel::Unit::Create(6)));
+                        noiseModel::Unit::Create(6))));
 
   GaussianFactorGraph sortedGraph;
 //  sortedGraph.push_back(factor1);

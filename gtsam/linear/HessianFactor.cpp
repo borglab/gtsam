@@ -77,60 +77,38 @@ namespace gtsam {
   }
 
   /* ************************************************************************* */
-  HessianFactor::HessianFactor(const Vector& b_in) : info_(matrix_) {
-    JacobianFactor jf(b_in);
-    info_.copyStructureFrom(jf.Ab_);
-    ublas::noalias(matrix_) = ublas::prod(ublas::trans(jf.matrix_), jf.matrix_);
+  HessianFactor::HessianFactor(Index j1, const Matrix& G, const Vector& g, double f) :
+      GaussianFactor(j1), info_(matrix_) {
+    if(G.size1() != G.size2() || G.size1() != g.size())
+      throw invalid_argument("Inconsistent matrix and/or vector dimensions in HessianFactor constructor");
+    size_t dims[] = { G.size1(), 1 };
+    InfoMatrix fullMatrix(G.size1() + 1, G.size1() + 1);
+    BlockInfo infoMatrix(fullMatrix, dims, dims+2);
+    infoMatrix(0,0) = G;
+    infoMatrix.column(0,1,0) = g;
+    infoMatrix(1,1)(0,0) = f;
+    infoMatrix.swap(info_);
     assertInvariants();
   }
 
   /* ************************************************************************* */
-  HessianFactor::HessianFactor(Index i1, const Matrix& A1,
-      const Vector& b, const SharedDiagonal& model) :
-      GaussianFactor(i1), info_(matrix_) {
-    JacobianFactor jf(i1, A1, b, model);
-    info_.copyStructureFrom(jf.Ab_);
-    ublas::noalias(matrix_) = ublas::prod(ublas::trans(jf.matrix_), jf.matrix_);
-    assertInvariants();
-  }
-
-  /* ************************************************************************* */
-  HessianFactor::HessianFactor(Index i1, const Matrix& A1, Index i2, const Matrix& A2,
-      const Vector& b, const SharedDiagonal& model) :
-      GaussianFactor(i1,i2), info_(matrix_) {
-    JacobianFactor jf(i1, A1, i2, A2, b, model);
-    info_.copyStructureFrom(jf.Ab_);
-    ublas::noalias(matrix_) = ublas::prod(ublas::trans(jf.matrix_), jf.matrix_);
-    assertInvariants();
-  }
-
-  /* ************************************************************************* */
-  HessianFactor::HessianFactor(Index i1, const Matrix& A1, Index i2, const Matrix& A2,
-      Index i3, const Matrix& A3, const Vector& b, const SharedDiagonal& model) :
-      GaussianFactor(i1,i2,i3), info_(matrix_) {
-    JacobianFactor jf(i1, A1, i2, A2, i3, A3, b, model);
-    info_.copyStructureFrom(jf.Ab_);
-    ublas::noalias(matrix_) = ublas::prod(ublas::trans(jf.matrix_), jf.matrix_);
-    assertInvariants();
-  }
-
-  /* ************************************************************************* */
-  HessianFactor::HessianFactor(const std::vector<std::pair<Index, Matrix> > &terms,
-      const Vector &b, const SharedDiagonal& model) : info_(matrix_) {
-    JacobianFactor jf(terms, b, model);
-    keys_ = jf.keys_;
-    info_.copyStructureFrom(jf.Ab_);
-    ublas::noalias(matrix_) = ublas::prod(ublas::trans(jf.matrix_), jf.matrix_);
-    assertInvariants();
-  }
-
-  /* ************************************************************************* */
-  HessianFactor::HessianFactor(const std::list<std::pair<Index, Matrix> > &terms,
-      const Vector &b, const SharedDiagonal& model) : info_(matrix_) {
-    JacobianFactor jf(terms, b, model);
-    keys_ = jf.keys_;
-    info_.copyStructureFrom(jf.Ab_);
-    ublas::noalias(matrix_) = ublas::prod(ublas::trans(jf.matrix_), jf.matrix_);
+  HessianFactor::HessianFactor(Index j1, Index j2,
+      const Matrix& G11, const Matrix& G12, const Vector& g1,
+      const Matrix& G22, const Vector& g2, double f) :
+      GaussianFactor(j1, j2), info_(matrix_) {
+    if(G11.size1() != G11.size2() || G11.size1() != G12.size1() || G11.size1() != g1.size() ||
+        G22.size2() != G12.size2() || G22.size2() != g2.size())
+      throw invalid_argument("Inconsistent matrix and/or vector dimensions in HessianFactor constructor");
+    size_t dims[] = { G11.size1(), G22.size1(), 1 };
+    InfoMatrix fullMatrix(G11.size1() + G22.size1() + 1, G11.size1() + G22.size1() + 1);
+    BlockInfo infoMatrix(fullMatrix, dims, dims+3);
+    infoMatrix(0,0) = G11;
+    infoMatrix(0,1) = G12;
+    infoMatrix.column(0,2,0) = g1;
+    infoMatrix(1,1) = G22;
+    infoMatrix.column(1,2,0) = g2;
+    infoMatrix(2,2)(0,0) = f;
+    infoMatrix.swap(info_);
     assertInvariants();
   }
 
@@ -232,8 +210,12 @@ namespace gtsam {
 
   /* ************************************************************************* */
   double HessianFactor::error(const VectorValues& c) const {
-    return ublas::inner_prod(c.vector(), ublas::prod(info_.range(0, this->size(), 0, this->size()), c.vector())) -
-        2.0*ublas::inner_prod(c.vector(), info_.rangeColumn(0, this->size(), this->size(), 0));
+    return ublas::inner_prod(c.vector(),
+        ublas::prod(
+            ublas::symmetric_adaptor<const constBlock,ublas::upper>(info_.range(0, this->size(), 0, this->size())),
+            c.vector())) -
+        2.0*ublas::inner_prod(c.vector(), info_.rangeColumn(0, this->size(), this->size(), 0)) +
+        info_(this->size(), this->size())(0,0);
   }
 
 void HessianFactor::updateATA(const HessianFactor& update, const Scatter& scatter) {
