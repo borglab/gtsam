@@ -210,12 +210,12 @@ namespace gtsam {
 
   /* ************************************************************************* */
   double HessianFactor::error(const VectorValues& c) const {
-    return ublas::inner_prod(c.vector(),
+    return 0.5 * (ublas::inner_prod(c.vector(),
         ublas::prod(
             ublas::symmetric_adaptor<const constBlock,ublas::upper>(info_.range(0, this->size(), 0, this->size())),
             c.vector())) -
         2.0*ublas::inner_prod(c.vector(), info_.rangeColumn(0, this->size(), this->size(), 0)) +
-        info_(this->size(), this->size())(0,0);
+        info_(this->size(), this->size())(0,0));
   }
 
 void HessianFactor::updateATA(const HessianFactor& update, const Scatter& scatter) {

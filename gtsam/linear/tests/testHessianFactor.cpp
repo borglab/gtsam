@@ -31,7 +31,6 @@ using namespace gtsam;
 using namespace std;
 
 /* ************************************************************************* */
-#ifdef BROKEN // because accesses keys_, now private
 TEST(HessianFactor, ConversionConstructor) {
 
   HessianFactor expected;
@@ -84,9 +83,13 @@ TEST(HessianFactor, ConversionConstructor) {
 
   HessianFactor actual(combined);
 
+  VectorValues values(std::vector<size_t>(dims, dims+2));
+  values[0] = Vector_(2, 1.0, 2.0);
+  values[1] = Vector_(4, 3.0, 4.0, 5.0, 6.0);
+
+  DOUBLES_EQUAL(combined.error(values), actual.error(values), 1e-9);
   EXPECT(assert_equal(expected, actual, 1e-9));
 }
-#endif
 
 /* ************************************************************************* */
 TEST(HessianFactor, Constructor1)
@@ -105,7 +108,7 @@ TEST(HessianFactor, Constructor1)
 
   HessianFactor factor(0, G, g, f);
 
-  double expected = 160.75;
+  double expected = 80.375;
   double actual = factor.error(dx);
 
   DOUBLES_EQUAL(expected, actual, 1e-10);
@@ -134,7 +137,7 @@ TEST(HessianFactor, Constructor2)
 
   HessianFactor factor(0, 1, G11, G12, g1, G22, g2, f);
 
-  double expected = 181.0;
+  double expected = 90.5;
   double actual = factor.error(dx);
 
   DOUBLES_EQUAL(expected, actual, 1e-10);

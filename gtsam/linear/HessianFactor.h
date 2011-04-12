@@ -47,7 +47,7 @@ namespace gtsam {
     typedef MatrixColMajor InfoMatrix;
     typedef SymmetricBlockView<InfoMatrix> BlockInfo;
 
-    InfoMatrix matrix_; // The full information matrix, s.t. the quadratic error is [x -1]'*H*[x -1]
+    InfoMatrix matrix_; // The full information matrix, s.t. the quadratic error is 0.5*[x -1]'*H*[x -1]
     BlockInfo info_;    // The block view of the full information matrix.
 
     void updateATA(const JacobianFactor& update, const Scatter& scatter);
@@ -68,14 +68,14 @@ namespace gtsam {
     /** Construct a unary factor.  G is the quadratic term (Hessian matrix), g
      * the linear term (a vector), and f the constant term.  The quadratic
      * error is:
-     * f - 2*x'*g + x'*G*x
+     * 0.5*(f - 2*x'*g + x'*G*x)
      */
     HessianFactor(Index j, const Matrix& G, const Vector& g, double f);
 
     /** Construct a binary factor.  Gxx are the upper-triangle blocks of the
      * quadratic term (the Hessian matrix), gx the pieces of the linear vector
      * term, and f the constant term.  The quadratic error is:
-     * f - 2*x1'*g1 - 2*x2'*g2 + x1'*G11*x1 + x1'*G12*x2
+     * 0.5*(f - 2*x1'*g1 - 2*x2'*g2 + x1'*G11*x1 + x1'*G12*x2)
      */
     HessianFactor(Index j1, Index j2,
         const Matrix& G11, const Matrix& G12, const Vector& g1,
@@ -98,7 +98,7 @@ namespace gtsam {
     virtual void print(const std::string& s = "") const;
     virtual bool equals(const GaussianFactor& lf, double tol = 1e-9) const;
 
-    virtual double error(const VectorValues& c) const; /** [x -1]'*H*[x -1] (also see constructor documentation) */
+    virtual double error(const VectorValues& c) const; /** 0.5*[x -1]'*H*[x -1] (also see constructor documentation) */
 
     /** Return the dimension of the variable pointed to by the given key iterator
      * todo: Remove this in favor of keeping track of dimensions with variables?
