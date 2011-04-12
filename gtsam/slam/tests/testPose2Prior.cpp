@@ -44,7 +44,8 @@ TEST( Pose2Prior, error )
 
 	// Actual linearization
 	Ordering ordering(*x0.orderingArbitrary());
-	boost::shared_ptr<JacobianFactor> linear = factor.linearize(x0, ordering);
+	boost::shared_ptr<JacobianFactor> linear =
+	    boost::dynamic_pointer_cast<JacobianFactor>(factor.linearize(x0, ordering));
 
 	// Check error at x0, i.e. delta = zero !
 	VectorValues delta(x0.dims(ordering));
@@ -86,7 +87,8 @@ TEST( Pose2Prior, linearize )
 
 	// Actual linearization
 	Ordering ordering(*x0.orderingArbitrary());
-	boost::shared_ptr<JacobianFactor> actual = factor.linearize(x0, ordering);
+	boost::shared_ptr<JacobianFactor> actual =
+	    boost::dynamic_pointer_cast<JacobianFactor>(factor.linearize(x0, ordering));
 
 	// Test with numerical derivative
 	Matrix numericalH = numericalDerivative11(h, prior);

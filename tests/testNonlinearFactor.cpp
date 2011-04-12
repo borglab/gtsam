@@ -200,13 +200,13 @@ TEST( NonlinearFactor, linearize_constraint1 )
 
 	Values config;
 	config.insert(simulated2D::PoseKey(1), Point2(1.0, 2.0));
-	JacobianFactor::shared_ptr actual = f0->linearize(config, *config.orderingArbitrary());
+	GaussianFactor::shared_ptr actual = f0->linearize(config, *config.orderingArbitrary());
 
 	// create expected
 	Ordering ord(*config.orderingArbitrary());
 	Vector b = Vector_(2, 0., -3.);
 	JacobianFactor expected(ord["x1"], eye(2), b, constraint);
-	CHECK(assert_equal(expected, *actual));
+	CHECK(assert_equal((const GaussianFactor&)expected, *actual));
 }
 
 /* ************************************************************************* */
@@ -221,13 +221,13 @@ TEST( NonlinearFactor, linearize_constraint2 )
 	Values config;
 	config.insert(simulated2D::PoseKey(1), Point2(1.0, 2.0));
 	config.insert(simulated2D::PointKey(1), Point2(5.0, 4.0));
-	JacobianFactor::shared_ptr actual = f0.linearize(config, *config.orderingArbitrary());
+	GaussianFactor::shared_ptr actual = f0.linearize(config, *config.orderingArbitrary());
 
 	// create expected
 	Ordering ord(*config.orderingArbitrary());
 	Vector b = Vector_(2, -3., -3.);
 	JacobianFactor expected(ord["x1"], -1*eye(2), ord["l1"], eye(2), b, constraint);
-	CHECK(assert_equal(expected, *actual));
+	CHECK(assert_equal((const GaussianFactor&)expected, *actual));
 }
 
 /* ************************************************************************* */

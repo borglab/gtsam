@@ -93,7 +93,7 @@ namespace gtsam {
 		 * Create a Kalman smoother by linearizing a non-linear factor graph
 		 * @param T number of time-steps
 		 */
-		std::pair<FactorGraph<JacobianFactor>, Ordering> createSmoother(int T, boost::optional<Ordering> ordering = boost::none);
+		std::pair<FactorGraph<GaussianFactor>, Ordering> createSmoother(int T, boost::optional<Ordering> ordering = boost::none);
 
 		/* ******************************************************* */
 		// Linear Constrained Examples
@@ -133,7 +133,7 @@ namespace gtsam {
 		 * -x11-x21-x31
 		 * with x11 clamped at (1,1), and others related by 2D odometry.
 		 */
-		boost::tuple<FactorGraph<JacobianFactor>, Ordering, VectorValues> planarGraph(size_t N);
+		boost::tuple<FactorGraph<GaussianFactor>, Ordering, VectorValues> planarGraph(size_t N);
 
 		/*
 		 * Create canonical ordering for planar graph that also works for tree

@@ -273,7 +273,7 @@ namespace example {
 	}
 
 	/* ************************************************************************* */
-	pair<FactorGraph<JacobianFactor>, Ordering> createSmoother(int T, boost::optional<Ordering> ordering) {
+	pair<FactorGraph<GaussianFactor>, Ordering> createSmoother(int T, boost::optional<Ordering> ordering) {
 		Graph nlfg;
 		Values poses;
 		boost::tie(nlfg, poses) = createNonlinearSmoother(T);
@@ -431,7 +431,7 @@ namespace example {
 	}
 
 	/* ************************************************************************* */
-	boost::tuple<FactorGraph<JacobianFactor>, Ordering, VectorValues> planarGraph(size_t N) {
+	boost::tuple<FactorGraph<GaussianFactor>, Ordering, VectorValues> planarGraph(size_t N) {
 
 		// create empty graph
 		NonlinearFactorGraph<Values> nlfg;

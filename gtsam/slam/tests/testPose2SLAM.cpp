@@ -74,11 +74,11 @@ TEST( Pose2Graph, linearization )
 	config.insert(2,p2);
 	// Linearize
 	Ordering ordering(*config.orderingArbitrary());
-	boost::shared_ptr<FactorGraph<JacobianFactor> > lfg_linearized = graph.linearize(config, ordering);
+	boost::shared_ptr<FactorGraph<GaussianFactor> > lfg_linearized = graph.linearize(config, ordering);
 	//lfg_linearized->print("lfg_actual");
 
 	// the expected linear factor
-	FactorGraph<JacobianFactor> lfg_expected;
+	FactorGraph<GaussianFactor> lfg_expected;
 	Matrix A1 = Matrix_(3,3,
 	    0.0,-2.0, -4.2,
 	    2.0, 0.0, -4.2,

@@ -139,21 +139,20 @@ namespace gtsam {
 
 	/* ************************************************************************* */
 	template<class VALUES>
-	typename FactorGraph<JacobianFactor>::shared_ptr NonlinearFactorGraph<VALUES>::linearize(
+	typename FactorGraph<GaussianFactor>::shared_ptr NonlinearFactorGraph<VALUES>::linearize(
 			const VALUES& config, const Ordering& ordering) const {
 
 		// create an empty linear FG
-		typename FactorGraph<JacobianFactor>::shared_ptr linearFG(new FactorGraph<
-				JacobianFactor> );
+		typename FactorGraph<GaussianFactor>::shared_ptr linearFG(new FactorGraph<GaussianFactor>);
 		linearFG->reserve(this->size());
 
 		// linearize all factors
 		BOOST_FOREACH(const sharedFactor& factor, this->factors_) {
 		  if(factor) {
-		    JacobianFactor::shared_ptr lf = factor->linearize(config, ordering);
+		    GaussianFactor::shared_ptr lf = factor->linearize(config, ordering);
 		    if (lf) linearFG->push_back(lf);
 		  } else
-		    linearFG->push_back(FactorGraph<JacobianFactor>::sharedFactor());
+		    linearFG->push_back(GaussianFactor::shared_ptr());
 		}
 
 		return linearFG;

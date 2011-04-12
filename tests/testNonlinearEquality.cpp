@@ -50,8 +50,8 @@ TEST ( NonlinearEquality, linearization ) {
 	// check linearize
 	SharedDiagonal constraintModel = noiseModel::Constrained::All(3);
 	JacobianFactor expLF(0, eye(3), zero(3), constraintModel);
-	JacobianFactor::shared_ptr actualLF = nle->linearize(linearize, *linearize.orderingArbitrary());
-	EXPECT(assert_equal(*actualLF, expLF));
+	GaussianFactor::shared_ptr actualLF = nle->linearize(linearize, *linearize.orderingArbitrary());
+	EXPECT(assert_equal(*actualLF, (const GaussianFactor&)expLF));
 }
 
 /* ********************************************************************** */

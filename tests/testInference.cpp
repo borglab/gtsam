@@ -85,7 +85,7 @@ TEST( Inference, marginals2)
   init.insert(PointKey(0), Point2(1.0,1.0));
 
   Ordering ordering(*fg.orderingCOLAMD(init));
-  FactorGraph<JacobianFactor>::shared_ptr gfg(fg.linearize(init, ordering));
+  FactorGraph<GaussianFactor>::shared_ptr gfg(fg.linearize(init, ordering));
   GaussianMultifrontalSolver solver(*gfg);
   solver.marginalFactor(ordering[PointKey(0)]);
 }

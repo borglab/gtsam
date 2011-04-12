@@ -52,7 +52,8 @@ TEST( Pose2Factor, error )
 
 	// Actual linearization
 	Ordering ordering(*x0.orderingArbitrary());
-	boost::shared_ptr<JacobianFactor> linear = factor.linearize(x0, ordering);
+	boost::shared_ptr<JacobianFactor> linear =
+	    boost::dynamic_pointer_cast<JacobianFactor>(factor.linearize(x0, ordering));
 
 	// Check error at x0, i.e. delta = zero !
 	VectorValues delta(x0.dims(ordering));
@@ -88,7 +89,8 @@ TEST( Pose2Factor, rhs )
 
 	// Actual linearization
 	Ordering ordering(*x0.orderingArbitrary());
-	boost::shared_ptr<JacobianFactor> linear = factor.linearize(x0, ordering);
+	boost::shared_ptr<JacobianFactor> linear =
+	    boost::dynamic_pointer_cast<JacobianFactor>(factor.linearize(x0, ordering));
 
 	// Check RHS
 	Pose2 hx0 = p1.between(p2);
@@ -134,7 +136,8 @@ TEST( Pose2Factor, linearize )
 	JacobianFactor expected(ordering["x1"], expectedH1, ordering["x2"], expectedH2, expected_b, probModel1);
 
 	// Actual linearization
-	boost::shared_ptr<JacobianFactor> actual = factor.linearize(x0, ordering);
+	boost::shared_ptr<JacobianFactor> actual =
+	    boost::dynamic_pointer_cast<JacobianFactor>(factor.linearize(x0, ordering));
 	CHECK(assert_equal(expected,*actual));
 
 	// Numerical do not work out because BetweenFactor is approximate ?
