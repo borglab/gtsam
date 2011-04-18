@@ -152,6 +152,11 @@ namespace gtsam {
     return Vector_(3,q(2),q(1),q(0));
   }
 
+  Vector Rot3::rpy() const {
+  	Vector q = xyz();
+    return Vector_(3,q(0),q(1),q(2));
+  }
+
   /* ************************************************************************* */
   // Log map at identity - return the canonical coordinates of this rotation
   Vector Rot3::Logmap(const Rot3& R) {

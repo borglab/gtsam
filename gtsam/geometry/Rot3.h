@@ -148,6 +148,12 @@ namespace gtsam {
      */
     Vector ypr() const;
 
+    /**
+     * Use RQ to calculate roll-pitch-yaw angle representation
+     * @return a vector containing ypr s.t. R = Rot3::ypr(y,p,r)
+     */
+    Vector rpy() const;
+
     /** dimension of the variable - used to autodetect sizes */
     inline static size_t Dim() { return dimension; }
 

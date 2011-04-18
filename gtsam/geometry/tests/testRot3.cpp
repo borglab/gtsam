@@ -388,6 +388,7 @@ TEST( Rot3, RQ)
 
 	// Try using ypr call, asserting that Rot3::ypr(y,p,r).ypr()==[y;p;r]
 	CHECK(assert_equal(Vector_(3,0.1,0.2,0.3),Rot3::ypr(0.1,0.2,0.3).ypr()));
+	CHECK(assert_equal(Vector_(3,0.3,0.2,0.1),Rot3::ypr(0.1,0.2,0.3).rpy()));
 
 	// Try ypr for pure yaw-pitch-roll matrices
 	CHECK(assert_equal(Vector_(3,0.1,0.0,0.0),Rot3::yaw (0.1).ypr()));
