@@ -25,7 +25,9 @@
 #ifndef EIGEN_LLT_H
 #define EIGEN_LLT_H
 
+namespace internal{
 template<typename MatrixType, int UpLo> struct LLT_Traits;
+}
 
 /** \ingroup cholesky_Module
   *
@@ -68,12 +70,12 @@ template<typename _MatrixType, int _UpLo> class LLT
     typedef typename MatrixType::Index Index;
 
     enum {
-      PacketSize = ei_packet_traits<Scalar>::size,
+      PacketSize = internal::packet_traits<Scalar>::size,
       AlignmentMask = int(PacketSize)-1,
       UpLo = _UpLo
     };
 
-    typedef LLT_Traits<MatrixType,UpLo> Traits;
+    typedef internal::LLT_Traits<MatrixType,UpLo> Traits;
 
     /**
       * \brief Default Constructor.
@@ -102,14 +104,14 @@ template<typename _MatrixType, int _UpLo> class LLT
     /** \returns a view of the upper triangular matrix U */
     inline typename Traits::MatrixU matrixU() const
     {
-      ei_assert(m_isInitialized && "LLT is not initialized.");
+      eigen_assert(m_isInitialized && "LLT is not initialized.");
       return Traits::getU(m_matrix);
     }
 
     /** \returns a view of the lower triangular matrix L */
     inline typename Traits::MatrixL matrixL() const
     {
-      ei_assert(m_isInitialized && "LLT is not initialized.");
+      eigen_assert(m_isInitialized && "LLT is not initialized.");
       return Traits::getL(m_matrix);
     }
 
@@ -124,14 +126,25 @@ template<typename _MatrixType, int _UpLo> class LLT
       * \sa solveInPlace(), MatrixBase::llt()
       */
     template<typename Rhs>
-    inline const ei_solve_retval<LLT, Rhs>
+    inline const internal::solve_retval<LLT, Rhs>
     solve(const MatrixBase<Rhs>& b) const
     {
-      ei_assert(m_isInitialized && "LLT is not initialized.");
-      ei_assert(m_matrix.rows()==b.rows()
+      eigen_assert(m_isInitialized && "LLT is not initialized.");
+      eigen_assert(m_matrix.rows()==b.rows()
                 && "LLT::solve(): invalid number of rows of the right hand side matrix b");
-      return ei_solve_retval<LLT, Rhs>(*this, b.derived());
+      return internal::solve_retval<LLT, Rhs>(*this, b.derived());
     }
+
+    #ifdef EIGEN2_SUPPORT
+    template<typename OtherDerived, typename ResultType>
+    bool solve(const MatrixBase<OtherDerived>& b, ResultType *result) const
+    {
+      *result = this->solve(b);
+      return true;
+    }
+    
+    bool isPositiveDefinite() const { return true; }
+    #endif
 
     template<typename Derived>
     void solveInPlace(MatrixBase<Derived> &bAndX) const;
@@ -144,7 +157,7 @@ template<typename _MatrixType, int _UpLo> class LLT
       */
     inline const MatrixType& matrixLLT() const
     {
-      ei_assert(m_isInitialized && "LLT is not initialized.");
+      eigen_assert(m_isInitialized && "LLT is not initialized.");
       return m_matrix;
     }
 
@@ -158,7 +171,7 @@ template<typename _MatrixType, int _UpLo> class LLT
       */
     ComputationInfo info() const
     {
-      ei_assert(m_isInitialized && "LLT is not initialized.");
+      eigen_assert(m_isInitialized && "LLT is not initialized.");
       return m_info;
     }
 
@@ -175,17 +188,20 @@ template<typename _MatrixType, int _UpLo> class LLT
     ComputationInfo m_info;
 };
 
-template<int UpLo> struct ei_llt_inplace;
+namespace internal {
 
-template<> struct ei_llt_inplace<Lower>
+template<int UpLo> struct llt_inplace;
+
+template<> struct llt_inplace<Lower>
 {
   template<typename MatrixType>
-  static bool unblocked(MatrixType& mat)
+  static typename MatrixType::Index unblocked(MatrixType& mat)
   {
+    typedef typename MatrixType::Index Index;
     typedef typename MatrixType::Scalar Scalar;
     typedef typename MatrixType::RealScalar RealScalar;
-    typedef typename MatrixType::Index Index;
-    ei_assert(mat.rows()==mat.cols());
+    
+    eigen_assert(mat.rows()==mat.cols());
     const Index size = mat.rows();
     for(Index k = 0; k < size; ++k)
     {
@@ -195,22 +211,22 @@ template<> struct ei_llt_inplace<Lower>
       Block<MatrixType,1,Dynamic> A10(mat,k,0,1,k);
       Block<MatrixType,Dynamic,Dynamic> A20(mat,k+1,0,rs,k);
 
-      RealScalar x = ei_real(mat.coeff(k,k));
-      if (k>0) x -= mat.row(k).head(k).squaredNorm();
+      RealScalar x = real(mat.coeff(k,k));
+      if (k>0) x -= A10.squaredNorm();
       if (x<=RealScalar(0))
-        return false;
-      mat.coeffRef(k,k) = x = ei_sqrt(x);
+        return k;
+      mat.coeffRef(k,k) = x = sqrt(x);
       if (k>0 && rs>0) A21.noalias() -= A20 * A10.adjoint();
       if (rs>0) A21 *= RealScalar(1)/x;
     }
-    return true;
+    return -1;
   }
 
   template<typename MatrixType>
-  static bool blocked(MatrixType& m)
+  static typename MatrixType::Index blocked(MatrixType& m)
   {
     typedef typename MatrixType::Index Index;
-    ei_assert(m.rows()==m.cols());
+    eigen_assert(m.rows()==m.cols());
     Index size = m.rows();
     if(size<32)
       return unblocked(m);
@@ -231,27 +247,28 @@ template<> struct ei_llt_inplace<Lower>
       Block<MatrixType,Dynamic,Dynamic> A21(m,k+bs,k,   rs,bs);
       Block<MatrixType,Dynamic,Dynamic> A22(m,k+bs,k+bs,rs,rs);
 
-      if(!unblocked(A11)) return false;
+      Index ret;
+      if((ret=unblocked(A11))>=0) return k+ret;
       if(rs>0) A11.adjoint().template triangularView<Upper>().template solveInPlace<OnTheRight>(A21);
       if(rs>0) A22.template selfadjointView<Lower>().rankUpdate(A21,-1); // bottleneck
     }
-    return true;
+    return -1;
   }
 };
 
-template<> struct ei_llt_inplace<Upper>
+template<> struct llt_inplace<Upper>
 {
   template<typename MatrixType>
-  static EIGEN_STRONG_INLINE bool unblocked(MatrixType& mat)
+  static EIGEN_STRONG_INLINE typename MatrixType::Index unblocked(MatrixType& mat)
   {
     Transpose<MatrixType> matt(mat);
-    return ei_llt_inplace<Lower>::unblocked(matt);
+    return llt_inplace<Lower>::unblocked(matt);
   }
   template<typename MatrixType>
-  static EIGEN_STRONG_INLINE bool blocked(MatrixType& mat)
+  static EIGEN_STRONG_INLINE typename MatrixType::Index blocked(MatrixType& mat)
   {
     Transpose<MatrixType> matt(mat);
-    return ei_llt_inplace<Lower>::blocked(matt);
+    return llt_inplace<Lower>::blocked(matt);
   }
 };
 
@@ -262,7 +279,7 @@ template<typename MatrixType> struct LLT_Traits<MatrixType,Lower>
   inline static MatrixL getL(const MatrixType& m) { return m; }
   inline static MatrixU getU(const MatrixType& m) { return m.adjoint(); }
   static bool inplace_decomposition(MatrixType& m)
-  { return ei_llt_inplace<Lower>::blocked(m); }
+  { return llt_inplace<Lower>::blocked(m)==-1; }
 };
 
 template<typename MatrixType> struct LLT_Traits<MatrixType,Upper>
@@ -272,8 +289,10 @@ template<typename MatrixType> struct LLT_Traits<MatrixType,Upper>
   inline static MatrixL getL(const MatrixType& m) { return m.adjoint(); }
   inline static MatrixU getU(const MatrixType& m) { return m; }
   static bool inplace_decomposition(MatrixType& m)
-  { return ei_llt_inplace<Upper>::blocked(m); }
+  { return llt_inplace<Upper>::blocked(m)==-1; }
 };
+
+} // end namespace internal
 
 /** Computes / recomputes the Cholesky decomposition A = LL^* = U^*U of \a matrix
   *
@@ -295,9 +314,10 @@ LLT<MatrixType,_UpLo>& LLT<MatrixType,_UpLo>::compute(const MatrixType& a)
   return *this;
 }
 
+namespace internal {
 template<typename _MatrixType, int UpLo, typename Rhs>
-struct ei_solve_retval<LLT<_MatrixType, UpLo>, Rhs>
-  : ei_solve_retval_base<LLT<_MatrixType, UpLo>, Rhs>
+struct solve_retval<LLT<_MatrixType, UpLo>, Rhs>
+  : solve_retval_base<LLT<_MatrixType, UpLo>, Rhs>
 {
   typedef LLT<_MatrixType,UpLo> LLTType;
   EIGEN_MAKE_SOLVE_HELPERS(LLTType,Rhs)
@@ -308,6 +328,7 @@ struct ei_solve_retval<LLT<_MatrixType, UpLo>, Rhs>
     dec().solveInPlace(dst);
   }
 };
+}
 
 /** \internal use x = llt_object.solve(x);
   * 
@@ -326,8 +347,8 @@ template<typename MatrixType, int _UpLo>
 template<typename Derived>
 void LLT<MatrixType,_UpLo>::solveInPlace(MatrixBase<Derived> &bAndX) const
 {
-  ei_assert(m_isInitialized && "LLT is not initialized.");
-  ei_assert(m_matrix.rows()==bAndX.rows());
+  eigen_assert(m_isInitialized && "LLT is not initialized.");
+  eigen_assert(m_matrix.rows()==bAndX.rows());
   matrixL().solveInPlace(bAndX);
   matrixU().solveInPlace(bAndX);
 }
@@ -338,7 +359,7 @@ void LLT<MatrixType,_UpLo>::solveInPlace(MatrixBase<Derived> &bAndX) const
 template<typename MatrixType, int _UpLo>
 MatrixType LLT<MatrixType,_UpLo>::reconstructedMatrix() const
 {
-  ei_assert(m_isInitialized && "LLT is not initialized.");
+  eigen_assert(m_isInitialized && "LLT is not initialized.");
   return matrixL() * matrixL().adjoint().toDenseMatrix();
 }
 

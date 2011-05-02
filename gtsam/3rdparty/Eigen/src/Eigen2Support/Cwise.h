@@ -29,17 +29,17 @@
 /** \internal
   * convenient macro to defined the return type of a cwise binary operation */
 #define EIGEN_CWISE_BINOP_RETURN_TYPE(OP) \
-    CwiseBinaryOp<OP<typename ei_traits<ExpressionType>::Scalar>, ExpressionType, OtherDerived>
+    CwiseBinaryOp<OP<typename internal::traits<ExpressionType>::Scalar>, ExpressionType, OtherDerived>
 
 /** \internal
   * convenient macro to defined the return type of a cwise unary operation */
 #define EIGEN_CWISE_UNOP_RETURN_TYPE(OP) \
-    CwiseUnaryOp<OP<typename ei_traits<ExpressionType>::Scalar>, ExpressionType>
+    CwiseUnaryOp<OP<typename internal::traits<ExpressionType>::Scalar>, ExpressionType>
 
 /** \internal
   * convenient macro to defined the return type of a cwise comparison to a scalar */
 #define EIGEN_CWISE_COMP_TO_SCALAR_RETURN_TYPE(OP) \
-    CwiseBinaryOp<OP<typename ei_traits<ExpressionType>::Scalar>, ExpressionType, \
+    CwiseBinaryOp<OP<typename internal::traits<ExpressionType>::Scalar>, ExpressionType, \
         typename ExpressionType::ConstantReturnType >
 
 /** \class Cwise
@@ -55,16 +55,19 @@
   * Example: \include MatrixBase_cwise_const.cpp
   * Output: \verbinclude MatrixBase_cwise_const.out
   *
+  * This class can be extended with the help of the plugin mechanism described on the page
+  * \ref TopicCustomizingEigen by defining the preprocessor symbol \c EIGEN_CWISE_PLUGIN.
+  *
   * \sa MatrixBase::cwise() const, MatrixBase::cwise()
   */
 template<typename ExpressionType> class Cwise
 {
   public:
 
-    typedef typename ei_traits<ExpressionType>::Scalar Scalar;
-    typedef typename ei_meta_if<ei_must_nest_by_value<ExpressionType>::ret,
-        ExpressionType, const ExpressionType&>::ret ExpressionTypeNested;
-    typedef CwiseUnaryOp<ei_scalar_add_op<Scalar>, ExpressionType> ScalarAddReturnType;
+    typedef typename internal::traits<ExpressionType>::Scalar Scalar;
+    typedef typename internal::conditional<internal::must_nest_by_value<ExpressionType>::ret,
+        ExpressionType, const ExpressionType&>::type ExpressionTypeNested;
+    typedef CwiseUnaryOp<internal::scalar_add_op<Scalar>, ExpressionType> ScalarAddReturnType;
 
     inline Cwise(const ExpressionType& matrix) : m_matrix(matrix) {}
 
@@ -76,28 +79,28 @@ template<typename ExpressionType> class Cwise
     operator*(const MatrixBase<OtherDerived> &other) const;
 
     template<typename OtherDerived>
-    const EIGEN_CWISE_BINOP_RETURN_TYPE(ei_scalar_quotient_op)
+    const EIGEN_CWISE_BINOP_RETURN_TYPE(internal::scalar_quotient_op)
     operator/(const MatrixBase<OtherDerived> &other) const;
 
     template<typename OtherDerived>
-    const EIGEN_CWISE_BINOP_RETURN_TYPE(ei_scalar_min_op)
+    const EIGEN_CWISE_BINOP_RETURN_TYPE(internal::scalar_min_op)
     min(const MatrixBase<OtherDerived> &other) const;
 
     template<typename OtherDerived>
-    const EIGEN_CWISE_BINOP_RETURN_TYPE(ei_scalar_max_op)
+    const EIGEN_CWISE_BINOP_RETURN_TYPE(internal::scalar_max_op)
     max(const MatrixBase<OtherDerived> &other) const;
 
-    const EIGEN_CWISE_UNOP_RETURN_TYPE(ei_scalar_abs_op)      abs() const;
-    const EIGEN_CWISE_UNOP_RETURN_TYPE(ei_scalar_abs2_op)     abs2() const;
-    const EIGEN_CWISE_UNOP_RETURN_TYPE(ei_scalar_square_op)   square() const;
-    const EIGEN_CWISE_UNOP_RETURN_TYPE(ei_scalar_cube_op)     cube() const;
-    const EIGEN_CWISE_UNOP_RETURN_TYPE(ei_scalar_inverse_op)  inverse() const;
-    const EIGEN_CWISE_UNOP_RETURN_TYPE(ei_scalar_sqrt_op)     sqrt() const;
-    const EIGEN_CWISE_UNOP_RETURN_TYPE(ei_scalar_exp_op)      exp() const;
-    const EIGEN_CWISE_UNOP_RETURN_TYPE(ei_scalar_log_op)      log() const;
-    const EIGEN_CWISE_UNOP_RETURN_TYPE(ei_scalar_cos_op)      cos() const;
-    const EIGEN_CWISE_UNOP_RETURN_TYPE(ei_scalar_sin_op)      sin() const;
-    const EIGEN_CWISE_UNOP_RETURN_TYPE(ei_scalar_pow_op)      pow(const Scalar& exponent) const;
+    const EIGEN_CWISE_UNOP_RETURN_TYPE(internal::scalar_abs_op)      abs() const;
+    const EIGEN_CWISE_UNOP_RETURN_TYPE(internal::scalar_abs2_op)     abs2() const;
+    const EIGEN_CWISE_UNOP_RETURN_TYPE(internal::scalar_square_op)   square() const;
+    const EIGEN_CWISE_UNOP_RETURN_TYPE(internal::scalar_cube_op)     cube() const;
+    const EIGEN_CWISE_UNOP_RETURN_TYPE(internal::scalar_inverse_op)  inverse() const;
+    const EIGEN_CWISE_UNOP_RETURN_TYPE(internal::scalar_sqrt_op)     sqrt() const;
+    const EIGEN_CWISE_UNOP_RETURN_TYPE(internal::scalar_exp_op)      exp() const;
+    const EIGEN_CWISE_UNOP_RETURN_TYPE(internal::scalar_log_op)      log() const;
+    const EIGEN_CWISE_UNOP_RETURN_TYPE(internal::scalar_cos_op)      cos() const;
+    const EIGEN_CWISE_UNOP_RETURN_TYPE(internal::scalar_sin_op)      sin() const;
+    const EIGEN_CWISE_UNOP_RETURN_TYPE(internal::scalar_pow_op)      pow(const Scalar& exponent) const;
 
     const ScalarAddReturnType
     operator+(const Scalar& scalar) const;

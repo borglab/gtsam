@@ -42,8 +42,10 @@
 #ifndef EIGEN_INVERSE_SSE_H
 #define EIGEN_INVERSE_SSE_H
 
+namespace internal {
+
 template<typename MatrixType, typename ResultType>
-struct ei_compute_inverse_size4<Architecture::SSE, float, MatrixType, ResultType>
+struct compute_inverse_size4<Architecture::SSE, float, MatrixType, ResultType>
 {
   enum {
     MatrixAlignment     = bool(MatrixType::Flags&AlignedBit),
@@ -171,7 +173,7 @@ struct ei_compute_inverse_size4<Architecture::SSE, float, MatrixType, ResultType
 };
 
 template<typename MatrixType, typename ResultType>
-struct ei_compute_inverse_size4<Architecture::SSE, double, MatrixType, ResultType>
+struct compute_inverse_size4<Architecture::SSE, double, MatrixType, ResultType>
 {
   enum {
     MatrixAlignment = bool(MatrixType::Flags&AlignedBit),
@@ -332,5 +334,7 @@ struct ei_compute_inverse_size4<Architecture::SSE, double, MatrixType, ResultTyp
     result.template writePacket<ResultAlignment>(14, _mm_mul_pd(_mm_shuffle_pd(iD2, iD1, 0), d2));
   }
 };
+
+}
 
 #endif // EIGEN_INVERSE_SSE_H

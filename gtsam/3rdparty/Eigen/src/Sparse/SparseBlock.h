@@ -25,12 +25,13 @@
 #ifndef EIGEN_SPARSE_BLOCK_H
 #define EIGEN_SPARSE_BLOCK_H
 
+namespace internal {
 template<typename MatrixType, int Size>
-struct ei_traits<SparseInnerVectorSet<MatrixType, Size> >
+struct traits<SparseInnerVectorSet<MatrixType, Size> >
 {
-  typedef typename ei_traits<MatrixType>::Scalar Scalar;
-  typedef typename ei_traits<MatrixType>::Index Index;
-  typedef typename ei_traits<MatrixType>::StorageKind StorageKind;
+  typedef typename traits<MatrixType>::Scalar Scalar;
+  typedef typename traits<MatrixType>::Index Index;
+  typedef typename traits<MatrixType>::StorageKind StorageKind;
   typedef MatrixXpr XprKind;
   enum {
     IsRowMajor = (int(MatrixType::Flags)&RowMajorBit)==RowMajorBit,
@@ -42,14 +43,15 @@ struct ei_traits<SparseInnerVectorSet<MatrixType, Size> >
     CoeffReadCost = MatrixType::CoeffReadCost
   };
 };
+} // end namespace internal
 
 template<typename MatrixType, int Size>
-class SparseInnerVectorSet : ei_no_assignment_operator,
+class SparseInnerVectorSet : internal::no_assignment_operator,
   public SparseMatrixBase<SparseInnerVectorSet<MatrixType, Size> >
 {
   public:
 
-    enum { IsRowMajor = ei_traits<SparseInnerVectorSet>::IsRowMajor };
+    enum { IsRowMajor = internal::traits<SparseInnerVectorSet>::IsRowMajor };
 
     EIGEN_SPARSE_PUBLIC_INTERFACE(SparseInnerVectorSet)
     class InnerIterator: public MatrixType::InnerIterator
@@ -67,14 +69,14 @@ class SparseInnerVectorSet : ei_no_assignment_operator,
     inline SparseInnerVectorSet(const MatrixType& matrix, Index outerStart, Index outerSize)
       : m_matrix(matrix), m_outerStart(outerStart), m_outerSize(outerSize)
     {
-      ei_assert( (outerStart>=0) && ((outerStart+outerSize)<=matrix.outerSize()) );
+      eigen_assert( (outerStart>=0) && ((outerStart+outerSize)<=matrix.outerSize()) );
     }
 
     inline SparseInnerVectorSet(const MatrixType& matrix, Index outer)
       : m_matrix(matrix), m_outerStart(outer), m_outerSize(Size)
     {
-      ei_assert(Size!=Dynamic);
-      ei_assert( (outer>=0) && (outer<matrix.outerSize()) );
+      eigen_assert(Size!=Dynamic);
+      eigen_assert( (outer>=0) && (outer<matrix.outerSize()) );
     }
 
 //     template<typename OtherDerived>
@@ -96,7 +98,7 @@ class SparseInnerVectorSet : ei_no_assignment_operator,
 
     const typename MatrixType::Nested m_matrix;
     Index m_outerStart;
-    const ei_variable_if_dynamic<Index, Size> m_outerSize;
+    const internal::variable_if_dynamic<Index, Size> m_outerSize;
 };
 
 /***************************************************************************
@@ -110,7 +112,7 @@ class SparseInnerVectorSet<DynamicSparseMatrix<_Scalar, _Options>, Size>
     typedef DynamicSparseMatrix<_Scalar, _Options> MatrixType;
   public:
 
-    enum { IsRowMajor = ei_traits<SparseInnerVectorSet>::IsRowMajor };
+    enum { IsRowMajor = internal::traits<SparseInnerVectorSet>::IsRowMajor };
 
     EIGEN_SPARSE_PUBLIC_INTERFACE(SparseInnerVectorSet)
     class InnerIterator: public MatrixType::InnerIterator
@@ -128,14 +130,14 @@ class SparseInnerVectorSet<DynamicSparseMatrix<_Scalar, _Options>, Size>
     inline SparseInnerVectorSet(const MatrixType& matrix, Index outerStart, Index outerSize)
       : m_matrix(matrix), m_outerStart(outerStart), m_outerSize(outerSize)
     {
-      ei_assert( (outerStart>=0) && ((outerStart+outerSize)<=matrix.outerSize()) );
+      eigen_assert( (outerStart>=0) && ((outerStart+outerSize)<=matrix.outerSize()) );
     }
 
     inline SparseInnerVectorSet(const MatrixType& matrix, Index outer)
       : m_matrix(matrix), m_outerStart(outer), m_outerSize(Size)
     {
-      ei_assert(Size!=Dynamic);
-      ei_assert( (outer>=0) && (outer<matrix.outerSize()) );
+      eigen_assert(Size!=Dynamic);
+      eigen_assert( (outer>=0) && (outer<matrix.outerSize()) );
     }
 
     template<typename OtherDerived>
@@ -175,7 +177,7 @@ class SparseInnerVectorSet<DynamicSparseMatrix<_Scalar, _Options>, Size>
     const Scalar& lastCoeff() const
     {
       EIGEN_STATIC_ASSERT_VECTOR_ONLY(SparseInnerVectorSet);
-      ei_assert(m_matrix.data()[m_outerStart].size()>0);
+      eigen_assert(m_matrix.data()[m_outerStart].size()>0);
       return m_matrix.data()[m_outerStart].vale(m_matrix.data()[m_outerStart].size()-1);
     }
 
@@ -192,7 +194,7 @@ class SparseInnerVectorSet<DynamicSparseMatrix<_Scalar, _Options>, Size>
 
     const typename MatrixType::Nested m_matrix;
     Index m_outerStart;
-    const ei_variable_if_dynamic<Index, Size> m_outerSize;
+    const internal::variable_if_dynamic<Index, Size> m_outerSize;
 
 };
 
@@ -208,7 +210,7 @@ class SparseInnerVectorSet<SparseMatrix<_Scalar, _Options, _Index>, Size>
     typedef SparseMatrix<_Scalar, _Options> MatrixType;
   public:
 
-    enum { IsRowMajor = ei_traits<SparseInnerVectorSet>::IsRowMajor };
+    enum { IsRowMajor = internal::traits<SparseInnerVectorSet>::IsRowMajor };
 
     EIGEN_SPARSE_PUBLIC_INTERFACE(SparseInnerVectorSet)
     class InnerIterator: public MatrixType::InnerIterator
@@ -226,20 +228,20 @@ class SparseInnerVectorSet<SparseMatrix<_Scalar, _Options, _Index>, Size>
     inline SparseInnerVectorSet(const MatrixType& matrix, Index outerStart, Index outerSize)
       : m_matrix(matrix), m_outerStart(outerStart), m_outerSize(outerSize)
     {
-      ei_assert( (outerStart>=0) && ((outerStart+outerSize)<=matrix.outerSize()) );
+      eigen_assert( (outerStart>=0) && ((outerStart+outerSize)<=matrix.outerSize()) );
     }
 
     inline SparseInnerVectorSet(const MatrixType& matrix, Index outer)
       : m_matrix(matrix), m_outerStart(outer), m_outerSize(Size)
     {
-      ei_assert(Size==1);
-      ei_assert( (outer>=0) && (outer<matrix.outerSize()) );
+      eigen_assert(Size==1);
+      eigen_assert( (outer>=0) && (outer<matrix.outerSize()) );
     }
 
     template<typename OtherDerived>
     inline SparseInnerVectorSet& operator=(const SparseMatrixBase<OtherDerived>& other)
     {
-      typedef typename ei_cleantype<typename MatrixType::Nested>::type _NestedMatrixType;
+      typedef typename internal::remove_all<typename MatrixType::Nested>::type _NestedMatrixType;
       _NestedMatrixType& matrix = const_cast<_NestedMatrixType&>(m_matrix);;
       // This assignement is slow if this vector set not empty
       // and/or it is not at the end of the nonzeros of the underlying matrix.
@@ -295,11 +297,11 @@ class SparseInnerVectorSet<SparseMatrix<_Scalar, _Options, _Index>, Size>
       }
 
       // update outer index pointers
-      Index id = nnz_head;
+      Index p = nnz_head;
       for(Index k=1; k<m_outerSize.value(); ++k)
       {
-        matrix._outerIndexPtr()[m_outerStart+k] = id;
-        id += tmp.innerVector(k).nonZeros();
+        matrix._outerIndexPtr()[m_outerStart+k] = p;
+        p += tmp.innerVector(k).nonZeros();
       }
       std::ptrdiff_t offset = nnz - nnz_previous;
       for(Index k = m_outerStart + m_outerSize.value(); k<=matrix.outerSize(); ++k)
@@ -339,7 +341,7 @@ class SparseInnerVectorSet<SparseMatrix<_Scalar, _Options, _Index>, Size>
     const Scalar& lastCoeff() const
     {
       EIGEN_STATIC_ASSERT_VECTOR_ONLY(SparseInnerVectorSet);
-      ei_assert(nonZeros()>0);
+      eigen_assert(nonZeros()>0);
       return m_matrix._valuePtr()[m_matrix._outerIndexPtr()[m_outerStart+1]-1];
     }
 
@@ -356,7 +358,7 @@ class SparseInnerVectorSet<SparseMatrix<_Scalar, _Options, _Index>, Size>
 
     const typename MatrixType::Nested m_matrix;
     Index m_outerStart;
-    const ei_variable_if_dynamic<Index, Size> m_outerSize;
+    const internal::variable_if_dynamic<Index, Size> m_outerSize;
 
 };
 

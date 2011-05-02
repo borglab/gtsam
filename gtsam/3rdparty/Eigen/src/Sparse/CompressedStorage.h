@@ -200,7 +200,7 @@ class CompressedStorage
       size_t n = size();
       for (size_t i=0; i<n; ++i)
       {
-        if (!ei_isMuchSmallerThan(value(i), reference, epsilon))
+        if (!internal::isMuchSmallerThan(value(i), reference, epsilon))
         {
           value(k) = value(i);
           index(k) = index(i);

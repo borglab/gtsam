@@ -45,32 +45,36 @@ template<typename Lhs, typename Rhs> struct DenseSparseProductReturnType<Lhs,Rhs
   typedef SparseDenseOuterProduct<Rhs,Lhs,true> Type;
 };
 
+namespace internal {
+
 template<typename Lhs, typename Rhs, bool Tr>
-struct ei_traits<SparseDenseOuterProduct<Lhs,Rhs,Tr> >
+struct traits<SparseDenseOuterProduct<Lhs,Rhs,Tr> >
 {
   typedef Sparse StorageKind;
-  typedef typename ei_scalar_product_traits<typename ei_traits<Lhs>::Scalar,
-                                            typename ei_traits<Rhs>::Scalar>::ReturnType Scalar;
+  typedef typename scalar_product_traits<typename traits<Lhs>::Scalar,
+                                            typename traits<Rhs>::Scalar>::ReturnType Scalar;
   typedef typename Lhs::Index Index;
   typedef typename Lhs::Nested LhsNested;
   typedef typename Rhs::Nested RhsNested;
-  typedef typename ei_cleantype<LhsNested>::type _LhsNested;
-  typedef typename ei_cleantype<RhsNested>::type _RhsNested;
+  typedef typename remove_all<LhsNested>::type _LhsNested;
+  typedef typename remove_all<RhsNested>::type _RhsNested;
 
   enum {
-    LhsCoeffReadCost = ei_traits<_LhsNested>::CoeffReadCost,
-    RhsCoeffReadCost = ei_traits<_RhsNested>::CoeffReadCost,
+    LhsCoeffReadCost = traits<_LhsNested>::CoeffReadCost,
+    RhsCoeffReadCost = traits<_RhsNested>::CoeffReadCost,
 
-    RowsAtCompileTime    = Tr ? int(ei_traits<Rhs>::RowsAtCompileTime)     : int(ei_traits<Lhs>::RowsAtCompileTime),
-    ColsAtCompileTime    = Tr ? int(ei_traits<Lhs>::ColsAtCompileTime)     : int(ei_traits<Rhs>::ColsAtCompileTime),
-    MaxRowsAtCompileTime = Tr ? int(ei_traits<Rhs>::MaxRowsAtCompileTime)  : int(ei_traits<Lhs>::MaxRowsAtCompileTime),
-    MaxColsAtCompileTime = Tr ? int(ei_traits<Lhs>::MaxColsAtCompileTime)  : int(ei_traits<Rhs>::MaxColsAtCompileTime),
+    RowsAtCompileTime    = Tr ? int(traits<Rhs>::RowsAtCompileTime)     : int(traits<Lhs>::RowsAtCompileTime),
+    ColsAtCompileTime    = Tr ? int(traits<Lhs>::ColsAtCompileTime)     : int(traits<Rhs>::ColsAtCompileTime),
+    MaxRowsAtCompileTime = Tr ? int(traits<Rhs>::MaxRowsAtCompileTime)  : int(traits<Lhs>::MaxRowsAtCompileTime),
+    MaxColsAtCompileTime = Tr ? int(traits<Lhs>::MaxColsAtCompileTime)  : int(traits<Rhs>::MaxColsAtCompileTime),
 
     Flags = Tr ? RowMajorBit : 0,
 
     CoeffReadCost = LhsCoeffReadCost + RhsCoeffReadCost + NumTraits<Scalar>::MulCost
   };
 };
+
+} // end namespace internal
 
 template<typename Lhs, typename Rhs, bool Tr>
 class SparseDenseOuterProduct
@@ -80,7 +84,7 @@ class SparseDenseOuterProduct
 
     typedef SparseMatrixBase<SparseDenseOuterProduct> Base;
     EIGEN_DENSE_PUBLIC_INTERFACE(SparseDenseOuterProduct)
-    typedef ei_traits<SparseDenseOuterProduct> Traits;
+    typedef internal::traits<SparseDenseOuterProduct> Traits;
 
   private:
 
@@ -137,13 +141,15 @@ class SparseDenseOuterProduct<Lhs,Rhs,Transpose>::InnerIterator : public _LhsNes
     Scalar m_factor;
 };
 
+namespace internal {
 template<typename Lhs, typename Rhs>
-struct ei_traits<SparseTimeDenseProduct<Lhs,Rhs> >
- : ei_traits<ProductBase<SparseTimeDenseProduct<Lhs,Rhs>, Lhs, Rhs> >
+struct traits<SparseTimeDenseProduct<Lhs,Rhs> >
+ : traits<ProductBase<SparseTimeDenseProduct<Lhs,Rhs>, Lhs, Rhs> >
 {
   typedef Dense StorageKind;
   typedef MatrixXpr XprKind;
 };
+} // end namespace internal
 
 template<typename Lhs, typename Rhs>
 class SparseTimeDenseProduct
@@ -157,14 +163,14 @@ class SparseTimeDenseProduct
 
     template<typename Dest> void scaleAndAddTo(Dest& dest, Scalar alpha) const
     {
-      typedef typename ei_cleantype<Lhs>::type _Lhs;
-      typedef typename ei_cleantype<Rhs>::type _Rhs;
+      typedef typename internal::remove_all<Lhs>::type _Lhs;
+      typedef typename internal::remove_all<Rhs>::type _Rhs;
       typedef typename _Lhs::InnerIterator LhsInnerIterator;
       enum { LhsIsRowMajor = (_Lhs::Flags&RowMajorBit)==RowMajorBit };
       for(Index j=0; j<m_lhs.outerSize(); ++j)
       {
-        typename Rhs::Scalar rhs_j = alpha * m_rhs.coeff(j,0);
-        Block<Dest,1,Dest::ColsAtCompileTime> dest_j(dest.row(LhsIsRowMajor ? j : 0));
+        typename Rhs::Scalar rhs_j = alpha * m_rhs.coeff(LhsIsRowMajor ? 0 : j,0);
+        typename Dest::RowXpr dest_j(dest.row(LhsIsRowMajor ? j : 0));
         for(LhsInnerIterator it(m_lhs,j); it ;++it)
         {
           if(LhsIsRowMajor)                   dest_j += (alpha*it.value()) * m_rhs.row(it.index());
@@ -180,12 +186,14 @@ class SparseTimeDenseProduct
 
 
 // dense = dense * sparse
+namespace internal {
 template<typename Lhs, typename Rhs>
-struct ei_traits<DenseTimeSparseProduct<Lhs,Rhs> >
- : ei_traits<ProductBase<DenseTimeSparseProduct<Lhs,Rhs>, Lhs, Rhs> >
+struct traits<DenseTimeSparseProduct<Lhs,Rhs> >
+ : traits<ProductBase<DenseTimeSparseProduct<Lhs,Rhs>, Lhs, Rhs> >
 {
   typedef Dense StorageKind;
 };
+} // end namespace internal
 
 template<typename Lhs, typename Rhs>
 class DenseTimeSparseProduct
@@ -199,7 +207,7 @@ class DenseTimeSparseProduct
 
     template<typename Dest> void scaleAndAddTo(Dest& dest, Scalar alpha) const
     {
-      typedef typename ei_cleantype<Rhs>::type _Rhs;
+      typedef typename internal::remove_all<Rhs>::type _Rhs;
       typedef typename _Rhs::InnerIterator RhsInnerIterator;
       enum { RhsIsRowMajor = (_Rhs::Flags&RowMajorBit)==RowMajorBit };
       for(Index j=0; j<m_rhs.outerSize(); ++j)

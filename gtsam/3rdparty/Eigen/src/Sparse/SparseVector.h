@@ -29,13 +29,17 @@
   *
   * \brief a sparse vector class
   *
-  * \param _Scalar the scalar type, i.e. the type of the coefficients
+  * \tparam _Scalar the scalar type, i.e. the type of the coefficients
   *
   * See http://www.netlib.org/linalg/html_templates/node91.html for details on the storage scheme.
   *
+  * This class can be extended with the help of the plugin mechanism described on the page
+  * \ref TopicCustomizingEigen by defining the preprocessor symbol \c EIGEN_SPARSEVECTOR_PLUGIN.
   */
+
+namespace internal {
 template<typename _Scalar, int _Options, typename _Index>
-struct ei_traits<SparseVector<_Scalar, _Options, _Index> >
+struct traits<SparseVector<_Scalar, _Options, _Index> >
 {
   typedef _Scalar Scalar;
   typedef _Index Index;
@@ -53,6 +57,7 @@ struct ei_traits<SparseVector<_Scalar, _Options, _Index> >
     SupportedAccessPatterns = InnerRandomAccessPattern
   };
 };
+}
 
 template<typename _Scalar, int _Options, typename _Index>
 class SparseVector
@@ -68,7 +73,11 @@ class SparseVector
   public:
 
     typedef SparseMatrixBase<SparseVector> SparseBase;
-    enum { IsColVector = ei_traits<SparseVector>::IsColVector };
+    enum { IsColVector = internal::traits<SparseVector>::IsColVector };
+    
+    enum {
+      Options = _Options
+    };
 
     CompressedStorage<Scalar,Index> m_data;
     Index m_size;
@@ -82,7 +91,7 @@ class SparseVector
     EIGEN_STRONG_INLINE Index cols() const { return IsColVector ? 1 : m_size; }
     EIGEN_STRONG_INLINE Index innerSize() const { return m_size; }
     EIGEN_STRONG_INLINE Index outerSize() const { return 1; }
-    EIGEN_STRONG_INLINE Index innerNonZeros(Index j) const { ei_assert(j==0); return m_size; }
+    EIGEN_STRONG_INLINE Index innerNonZeros(Index j) const { eigen_assert(j==0); return m_size; }
 
     EIGEN_STRONG_INLINE const Scalar* _valuePtr() const { return &m_data.value(0); }
     EIGEN_STRONG_INLINE Scalar* _valuePtr() { return &m_data.value(0); }
@@ -92,14 +101,14 @@ class SparseVector
 
     inline Scalar coeff(Index row, Index col) const
     {
-      ei_assert((IsColVector ? col : row)==0);
+      eigen_assert((IsColVector ? col : row)==0);
       return coeff(IsColVector ? row : col);
     }
     inline Scalar coeff(Index i) const { return m_data.at(i); }
 
     inline Scalar& coeffRef(Index row, Index col)
     {
-      ei_assert((IsColVector ? col : row)==0);
+      eigen_assert((IsColVector ? col : row)==0);
       return coeff(IsColVector ? row : col);
     }
 
@@ -125,12 +134,12 @@ class SparseVector
 
     inline void startVec(Index outer)
     {
-      ei_assert(outer==0);
+      eigen_assert(outer==0);
     }
 
     inline Scalar& insertBackByOuterInner(Index outer, Index inner)
     {
-      ei_assert(outer==0);
+      eigen_assert(outer==0);
       return insertBack(inner);
     }
     inline Scalar& insertBack(Index i)
@@ -143,25 +152,25 @@ class SparseVector
     {
       Index inner = IsColVector ? row : col;
       Index outer = IsColVector ? col : row;
-      ei_assert(outer==0);
+      eigen_assert(outer==0);
       return insert(inner);
     }
     Scalar& insert(Index i)
     {
       Index startId = 0;
-      Index id = m_data.size() - 1;
+      Index p = m_data.size() - 1;
       // TODO smart realloc
-      m_data.resize(id+2,1);
+      m_data.resize(p+2,1);
 
-      while ( (id >= startId) && (m_data.index(id) > i) )
+      while ( (p >= startId) && (m_data.index(p) > i) )
       {
-        m_data.index(id+1) = m_data.index(id);
-        m_data.value(id+1) = m_data.value(id);
-        --id;
+        m_data.index(p+1) = m_data.index(p);
+        m_data.value(p+1) = m_data.value(p);
+        --p;
       }
-      m_data.index(id+1) = i;
-      m_data.value(id+1) = 0;
-      return m_data.value(id+1);
+      m_data.index(p+1) = i;
+      m_data.value(p+1) = 0;
+      return m_data.value(p+1);
     }
 
     /**
@@ -178,7 +187,7 @@ class SparseVector
 
     void resize(Index rows, Index cols)
     {
-      ei_assert(rows==1 || cols==1);
+      eigen_assert(rows==1 || cols==1);
       resize(IsColVector ? rows : cols);
     }
 
@@ -260,9 +269,9 @@ class SparseVector
 //         //  1 - compute the number of coeffs per dest inner vector
 //         //  2 - do the actual copy/eval
 //         // Since each coeff of the rhs has to be evaluated twice, let's evauluate it if needed
-//         typedef typename ei_nested<OtherDerived,2>::type OtherCopy;
+//         typedef typename internal::nested<OtherDerived,2>::type OtherCopy;
 //         OtherCopy otherCopy(other.derived());
-//         typedef typename ei_cleantype<OtherCopy>::type _OtherCopy;
+//         typedef typename internal::remove_all<OtherCopy>::type _OtherCopy;
 //
 //         resize(other.rows(), other.cols());
 //         Eigen::Map<VectorXi>(m_outerIndex,outerSize()).setZero();
@@ -321,7 +330,7 @@ class SparseVector
 //       {
 //         if (m_data.index(i)==other.m_data.index(j))
 //         {
-//           res += m_data.value(i) * ei_conj(other.m_data.value(j));
+//           res += m_data.value(i) * internal::conj(other.m_data.value(j));
 //           ++i; ++j;
 //         }
 //         else if (m_data.index(i)<other.m_data.index(j))
@@ -351,7 +360,7 @@ class SparseVector
     /** \deprecated use insertBack(Index,Index) */
     EIGEN_DEPRECATED Scalar& fill(Index r, Index c)
     {
-      ei_assert(r==0 || c==0);
+      eigen_assert(r==0 || c==0);
       return fill(IsColVector ? r : c);
     }
 
@@ -365,7 +374,7 @@ class SparseVector
     /** \deprecated use insert(Index,Index) */
     EIGEN_DEPRECATED Scalar& fillrand(Index r, Index c)
     {
-      ei_assert(r==0 || c==0);
+      eigen_assert(r==0 || c==0);
       return fillrand(IsColVector ? r : c);
     }
 
@@ -377,6 +386,10 @@ class SparseVector
 
     /** \deprecated use finalize() */
     EIGEN_DEPRECATED void endFill() {}
+    
+#   ifdef EIGEN_SPARSEVECTOR_PLUGIN
+#     include EIGEN_SPARSEVECTOR_PLUGIN
+#   endif
 };
 
 template<typename Scalar, int _Options, typename _Index>
@@ -386,7 +399,7 @@ class SparseVector<Scalar,_Options,_Index>::InnerIterator
     InnerIterator(const SparseVector& vec, Index outer=0)
       : m_data(vec.m_data), m_id(0), m_end(static_cast<Index>(m_data.size()))
     {
-      ei_assert(outer==0);
+      eigen_assert(outer==0);
     }
 
     InnerIterator(const CompressedStorage<Scalar,Index>& data)

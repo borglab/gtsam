@@ -25,8 +25,10 @@
 #ifndef EIGEN_DETERMINANT_H
 #define EIGEN_DETERMINANT_H
 
+namespace internal {
+
 template<typename Derived>
-inline const typename Derived::Scalar ei_bruteforce_det3_helper
+inline const typename Derived::Scalar bruteforce_det3_helper
 (const MatrixBase<Derived>& matrix, int a, int b, int c)
 {
   return matrix.coeff(0,a)
@@ -34,7 +36,7 @@ inline const typename Derived::Scalar ei_bruteforce_det3_helper
 }
 
 template<typename Derived>
-const typename Derived::Scalar ei_bruteforce_det4_helper
+const typename Derived::Scalar bruteforce_det4_helper
 (const MatrixBase<Derived>& matrix, int j, int k, int m, int n)
 {
   return (matrix.coeff(j,0) * matrix.coeff(k,1) - matrix.coeff(k,0) * matrix.coeff(j,1))
@@ -43,66 +45,68 @@ const typename Derived::Scalar ei_bruteforce_det4_helper
 
 template<typename Derived,
          int DeterminantType = Derived::RowsAtCompileTime
-> struct ei_determinant_impl
+> struct determinant_impl
 {
-  static inline typename ei_traits<Derived>::Scalar run(const Derived& m)
+  static inline typename traits<Derived>::Scalar run(const Derived& m)
   {
     if(Derived::ColsAtCompileTime==Dynamic && m.rows()==0)
-      return typename ei_traits<Derived>::Scalar(1);
+      return typename traits<Derived>::Scalar(1);
     return m.partialPivLu().determinant();
   }
 };
 
-template<typename Derived> struct ei_determinant_impl<Derived, 1>
+template<typename Derived> struct determinant_impl<Derived, 1>
 {
-  static inline typename ei_traits<Derived>::Scalar run(const Derived& m)
+  static inline typename traits<Derived>::Scalar run(const Derived& m)
   {
     return m.coeff(0,0);
   }
 };
 
-template<typename Derived> struct ei_determinant_impl<Derived, 2>
+template<typename Derived> struct determinant_impl<Derived, 2>
 {
-  static inline typename ei_traits<Derived>::Scalar run(const Derived& m)
+  static inline typename traits<Derived>::Scalar run(const Derived& m)
   {
     return m.coeff(0,0) * m.coeff(1,1) - m.coeff(1,0) * m.coeff(0,1);
   }
 };
 
-template<typename Derived> struct ei_determinant_impl<Derived, 3>
+template<typename Derived> struct determinant_impl<Derived, 3>
 {
-  static inline typename ei_traits<Derived>::Scalar run(const Derived& m)
+  static inline typename traits<Derived>::Scalar run(const Derived& m)
   {
-    return ei_bruteforce_det3_helper(m,0,1,2)
-          - ei_bruteforce_det3_helper(m,1,0,2)
-          + ei_bruteforce_det3_helper(m,2,0,1);
+    return bruteforce_det3_helper(m,0,1,2)
+          - bruteforce_det3_helper(m,1,0,2)
+          + bruteforce_det3_helper(m,2,0,1);
   }
 };
 
-template<typename Derived> struct ei_determinant_impl<Derived, 4>
+template<typename Derived> struct determinant_impl<Derived, 4>
 {
-  static typename ei_traits<Derived>::Scalar run(const Derived& m)
+  static typename traits<Derived>::Scalar run(const Derived& m)
   {
     // trick by Martin Costabel to compute 4x4 det with only 30 muls
-    return ei_bruteforce_det4_helper(m,0,1,2,3)
-          - ei_bruteforce_det4_helper(m,0,2,1,3)
-          + ei_bruteforce_det4_helper(m,0,3,1,2)
-          + ei_bruteforce_det4_helper(m,1,2,0,3)
-          - ei_bruteforce_det4_helper(m,1,3,0,2)
-          + ei_bruteforce_det4_helper(m,2,3,0,1);
+    return bruteforce_det4_helper(m,0,1,2,3)
+          - bruteforce_det4_helper(m,0,2,1,3)
+          + bruteforce_det4_helper(m,0,3,1,2)
+          + bruteforce_det4_helper(m,1,2,0,3)
+          - bruteforce_det4_helper(m,1,3,0,2)
+          + bruteforce_det4_helper(m,2,3,0,1);
   }
 };
+
+} // end namespace internal
 
 /** \lu_module
   *
   * \returns the determinant of this matrix
   */
 template<typename Derived>
-inline typename ei_traits<Derived>::Scalar MatrixBase<Derived>::determinant() const
+inline typename internal::traits<Derived>::Scalar MatrixBase<Derived>::determinant() const
 {
   assert(rows() == cols());
-  typedef typename ei_nested<Derived,Base::RowsAtCompileTime>::type Nested;
-  return ei_determinant_impl<typename ei_cleantype<Nested>::type>::run(derived());
+  typedef typename internal::nested<Derived,Base::RowsAtCompileTime>::type Nested;
+  return internal::determinant_impl<typename internal::remove_all<Nested>::type>::run(derived());
 }
 
 #endif // EIGEN_DETERMINANT_H

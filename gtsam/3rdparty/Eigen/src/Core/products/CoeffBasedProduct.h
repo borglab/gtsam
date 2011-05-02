@@ -26,6 +26,8 @@
 #ifndef EIGEN_COEFFBASED_PRODUCT_H
 #define EIGEN_COEFFBASED_PRODUCT_H
 
+namespace internal {
+
 /*********************************************************************************
 *  Coefficient based product implementation.
 *  It is designed for the following use cases:
@@ -40,22 +42,22 @@
  */
 
 template<int Traversal, int UnrollingIndex, typename Lhs, typename Rhs, typename RetScalar>
-struct ei_product_coeff_impl;
+struct product_coeff_impl;
 
 template<int StorageOrder, int UnrollingIndex, typename Lhs, typename Rhs, typename Packet, int LoadMode>
-struct ei_product_packet_impl;
+struct product_packet_impl;
 
 template<typename LhsNested, typename RhsNested, int NestingFlags>
-struct ei_traits<CoeffBasedProduct<LhsNested,RhsNested,NestingFlags> >
+struct traits<CoeffBasedProduct<LhsNested,RhsNested,NestingFlags> >
 {
   typedef MatrixXpr XprKind;
-  typedef typename ei_cleantype<LhsNested>::type _LhsNested;
-  typedef typename ei_cleantype<RhsNested>::type _RhsNested;
-  typedef typename ei_scalar_product_traits<typename _LhsNested::Scalar, typename _RhsNested::Scalar>::ReturnType Scalar;
-  typedef typename ei_promote_storage_type<typename ei_traits<_LhsNested>::StorageKind,
-                                           typename ei_traits<_RhsNested>::StorageKind>::ret StorageKind;
-  typedef typename ei_promote_index_type<typename ei_traits<_LhsNested>::Index,
-                                         typename ei_traits<_RhsNested>::Index>::type Index;
+  typedef typename remove_all<LhsNested>::type _LhsNested;
+  typedef typename remove_all<RhsNested>::type _RhsNested;
+  typedef typename scalar_product_traits<typename _LhsNested::Scalar, typename _RhsNested::Scalar>::ReturnType Scalar;
+  typedef typename promote_storage_type<typename traits<_LhsNested>::StorageKind,
+                                           typename traits<_RhsNested>::StorageKind>::ret StorageKind;
+  typedef typename promote_index_type<typename traits<_LhsNested>::Index,
+                                         typename traits<_RhsNested>::Index>::type Index;
 
   enum {
       LhsCoeffReadCost = _LhsNested::CoeffReadCost,
@@ -73,18 +75,18 @@ struct ei_traits<CoeffBasedProduct<LhsNested,RhsNested,NestingFlags> >
       LhsRowMajor = LhsFlags & RowMajorBit,
       RhsRowMajor = RhsFlags & RowMajorBit,
 
-      SameType = ei_is_same_type<typename _LhsNested::Scalar,typename _RhsNested::Scalar>::ret,
+      SameType = is_same<typename _LhsNested::Scalar,typename _RhsNested::Scalar>::value,
 
       CanVectorizeRhs = RhsRowMajor && (RhsFlags & PacketAccessBit)
                       && (ColsAtCompileTime == Dynamic
-                          || ( (ColsAtCompileTime % ei_packet_traits<Scalar>::size) == 0
+                          || ( (ColsAtCompileTime % packet_traits<Scalar>::size) == 0
                               && (RhsFlags&AlignedBit)
                              )
                          ),
 
       CanVectorizeLhs = (!LhsRowMajor) && (LhsFlags & PacketAccessBit)
                       && (RowsAtCompileTime == Dynamic
-                          || ( (RowsAtCompileTime % ei_packet_traits<Scalar>::size) == 0
+                          || ( (RowsAtCompileTime % packet_traits<Scalar>::size) == 0
                               && (LhsFlags&AlignedBit)
                              )
                          ),
@@ -96,6 +98,7 @@ struct ei_traits<CoeffBasedProduct<LhsNested,RhsNested,NestingFlags> >
       Flags = ((unsigned int)(LhsFlags | RhsFlags) & HereditaryBits & ~RowMajorBit)
             | (EvalToRowMajor ? RowMajorBit : 0)
             | NestingFlags
+            | (LhsFlags & RhsFlags & AlignedBit)
             // TODO enable vectorization for mixed types
             | (SameType && (CanVectorizeLhs || CanVectorizeRhs) ? PacketAccessBit : 0),
 
@@ -113,13 +116,15 @@ struct ei_traits<CoeffBasedProduct<LhsNested,RhsNested,NestingFlags> >
                           && (!RhsRowMajor)
                           && (LhsFlags & RhsFlags & ActualPacketAccessBit)
                           && (LhsFlags & RhsFlags & AlignedBit)
-                          && (InnerSize % ei_packet_traits<Scalar>::size == 0)
+                          && (InnerSize % packet_traits<Scalar>::size == 0)
     };
 };
 
+} // end namespace internal
+
 template<typename LhsNested, typename RhsNested, int NestingFlags>
 class CoeffBasedProduct
-  : ei_no_assignment_operator,
+  : internal::no_assignment_operator,
     public MatrixBase<CoeffBasedProduct<LhsNested, RhsNested, NestingFlags> >
 {
   public:
@@ -130,19 +135,19 @@ class CoeffBasedProduct
 
   private:
 
-    typedef typename ei_traits<CoeffBasedProduct>::_LhsNested _LhsNested;
-    typedef typename ei_traits<CoeffBasedProduct>::_RhsNested _RhsNested;
+    typedef typename internal::traits<CoeffBasedProduct>::_LhsNested _LhsNested;
+    typedef typename internal::traits<CoeffBasedProduct>::_RhsNested _RhsNested;
 
     enum {
-      PacketSize = ei_packet_traits<Scalar>::size,
-      InnerSize  = ei_traits<CoeffBasedProduct>::InnerSize,
+      PacketSize = internal::packet_traits<Scalar>::size,
+      InnerSize  = internal::traits<CoeffBasedProduct>::InnerSize,
       Unroll = CoeffReadCost != Dynamic && CoeffReadCost <= EIGEN_UNROLLING_LIMIT,
-      CanVectorizeInner = ei_traits<CoeffBasedProduct>::CanVectorizeInner
+      CanVectorizeInner = internal::traits<CoeffBasedProduct>::CanVectorizeInner
     };
 
-    typedef ei_product_coeff_impl<CanVectorizeInner ? InnerVectorizedTraversal : DefaultTraversal,
-                                  Unroll ? InnerSize-1 : Dynamic,
-                                  _LhsNested, _RhsNested, Scalar> ScalarCoeffImpl;
+    typedef internal::product_coeff_impl<CanVectorizeInner ? InnerVectorizedTraversal : DefaultTraversal,
+                                   Unroll ? InnerSize-1 : Dynamic,
+                                   _LhsNested, _RhsNested, Scalar> ScalarCoeffImpl;
 
     typedef CoeffBasedProduct<LhsNested,RhsNested,NestByRefBit> LazyCoeffBasedProductType;
 
@@ -158,9 +163,9 @@ class CoeffBasedProduct
     {
       // we don't allow taking products of matrices of different real types, as that wouldn't be vectorizable.
       // We still allow to mix T and complex<T>.
-      EIGEN_STATIC_ASSERT((ei_is_same_type<typename Lhs::RealScalar, typename Rhs::RealScalar>::ret),
+      EIGEN_STATIC_ASSERT((internal::is_same<typename Lhs::RealScalar, typename Rhs::RealScalar>::value),
         YOU_MIXED_DIFFERENT_NUMERIC_TYPES__YOU_NEED_TO_USE_THE_CAST_METHOD_OF_MATRIXBASE_TO_CAST_NUMERIC_TYPES_EXPLICITLY)
-      ei_assert(lhs.cols() == rhs.rows()
+      eigen_assert(lhs.cols() == rhs.rows()
         && "invalid matrix product"
         && "if you wanted a coeff-wise or a dot product use the respective explicit functions");
     }
@@ -191,9 +196,9 @@ class CoeffBasedProduct
     EIGEN_STRONG_INLINE const PacketScalar packet(Index row, Index col) const
     {
       PacketScalar res;
-      ei_product_packet_impl<Flags&RowMajorBit ? RowMajor : ColMajor,
-                                   Unroll ? InnerSize-1 : Dynamic,
-                                   _LhsNested, _RhsNested, PacketScalar, LoadMode>
+      internal::product_packet_impl<Flags&RowMajorBit ? RowMajor : ColMajor,
+                              Unroll ? InnerSize-1 : Dynamic,
+                              _LhsNested, _RhsNested, PacketScalar, LoadMode>
         ::run(row, col, m_lhs, m_rhs, res);
       return res;
     }
@@ -208,14 +213,14 @@ class CoeffBasedProduct
     const _LhsNested& lhs() const { return m_lhs; }
     const _RhsNested& rhs() const { return m_rhs; }
 
-    const Diagonal<LazyCoeffBasedProductType,0> diagonal() const
+    const Diagonal<const LazyCoeffBasedProductType,0> diagonal() const
     { return reinterpret_cast<const LazyCoeffBasedProductType&>(*this); }
 
     template<int DiagonalIndex>
-    const Diagonal<LazyCoeffBasedProductType,DiagonalIndex> diagonal() const
+    const Diagonal<const LazyCoeffBasedProductType,DiagonalIndex> diagonal() const
     { return reinterpret_cast<const LazyCoeffBasedProductType&>(*this); }
 
-    const Diagonal<LazyCoeffBasedProductType,Dynamic> diagonal(Index index) const
+    const Diagonal<const LazyCoeffBasedProductType,Dynamic> diagonal(Index index) const
     { return reinterpret_cast<const LazyCoeffBasedProductType&>(*this).diagonal(index); }
 
   protected:
@@ -225,10 +230,12 @@ class CoeffBasedProduct
     mutable PlainObject m_result;
 };
 
+namespace internal {
+
 // here we need to overload the nested rule for products
 // such that the nested type is a const reference to a plain matrix
 template<typename Lhs, typename Rhs, int N, typename PlainObject>
-struct ei_nested<CoeffBasedProduct<Lhs,Rhs,EvalBeforeNestingBit|EvalBeforeAssigningBit>, N, PlainObject>
+struct nested<CoeffBasedProduct<Lhs,Rhs,EvalBeforeNestingBit|EvalBeforeAssigningBit>, N, PlainObject>
 {
   typedef PlainObject const& type;
 };
@@ -242,18 +249,18 @@ struct ei_nested<CoeffBasedProduct<Lhs,Rhs,EvalBeforeNestingBit|EvalBeforeAssign
 **************************************/
 
 template<int UnrollingIndex, typename Lhs, typename Rhs, typename RetScalar>
-struct ei_product_coeff_impl<DefaultTraversal, UnrollingIndex, Lhs, Rhs, RetScalar>
+struct product_coeff_impl<DefaultTraversal, UnrollingIndex, Lhs, Rhs, RetScalar>
 {
   typedef typename Lhs::Index Index;
   EIGEN_STRONG_INLINE static void run(Index row, Index col, const Lhs& lhs, const Rhs& rhs, RetScalar &res)
   {
-    ei_product_coeff_impl<DefaultTraversal, UnrollingIndex-1, Lhs, Rhs, RetScalar>::run(row, col, lhs, rhs, res);
+    product_coeff_impl<DefaultTraversal, UnrollingIndex-1, Lhs, Rhs, RetScalar>::run(row, col, lhs, rhs, res);
     res += lhs.coeff(row, UnrollingIndex) * rhs.coeff(UnrollingIndex, col);
   }
 };
 
 template<typename Lhs, typename Rhs, typename RetScalar>
-struct ei_product_coeff_impl<DefaultTraversal, 0, Lhs, Rhs, RetScalar>
+struct product_coeff_impl<DefaultTraversal, 0, Lhs, Rhs, RetScalar>
 {
   typedef typename Lhs::Index Index;
   EIGEN_STRONG_INLINE static void run(Index row, Index col, const Lhs& lhs, const Rhs& rhs, RetScalar &res)
@@ -263,12 +270,12 @@ struct ei_product_coeff_impl<DefaultTraversal, 0, Lhs, Rhs, RetScalar>
 };
 
 template<typename Lhs, typename Rhs, typename RetScalar>
-struct ei_product_coeff_impl<DefaultTraversal, Dynamic, Lhs, Rhs, RetScalar>
+struct product_coeff_impl<DefaultTraversal, Dynamic, Lhs, Rhs, RetScalar>
 {
   typedef typename Lhs::Index Index;
   EIGEN_STRONG_INLINE static void run(Index row, Index col, const Lhs& lhs, const Rhs& rhs, RetScalar& res)
   {
-    ei_assert(lhs.cols()>0 && "you are using a non initialized matrix");
+    eigen_assert(lhs.cols()>0 && "you are using a non initialized matrix");
     res = lhs.coeff(row, 0) * rhs.coeff(0, col);
       for(Index i = 1; i < lhs.cols(); ++i)
         res += lhs.coeff(row, i) * rhs.coeff(i, col);
@@ -280,44 +287,44 @@ struct ei_product_coeff_impl<DefaultTraversal, Dynamic, Lhs, Rhs, RetScalar>
 *******************************************/
 
 template<int UnrollingIndex, typename Lhs, typename Rhs, typename Packet>
-struct ei_product_coeff_vectorized_unroller
+struct product_coeff_vectorized_unroller
 {
   typedef typename Lhs::Index Index;
-  enum { PacketSize = ei_packet_traits<typename Lhs::Scalar>::size };
+  enum { PacketSize = packet_traits<typename Lhs::Scalar>::size };
   EIGEN_STRONG_INLINE static void run(Index row, Index col, const Lhs& lhs, const Rhs& rhs, typename Lhs::PacketScalar &pres)
   {
-    ei_product_coeff_vectorized_unroller<UnrollingIndex-PacketSize, Lhs, Rhs, Packet>::run(row, col, lhs, rhs, pres);
-    pres = ei_padd(pres, ei_pmul( lhs.template packet<Aligned>(row, UnrollingIndex) , rhs.template packet<Aligned>(UnrollingIndex, col) ));
+    product_coeff_vectorized_unroller<UnrollingIndex-PacketSize, Lhs, Rhs, Packet>::run(row, col, lhs, rhs, pres);
+    pres = padd(pres, pmul( lhs.template packet<Aligned>(row, UnrollingIndex) , rhs.template packet<Aligned>(UnrollingIndex, col) ));
   }
 };
 
 template<typename Lhs, typename Rhs, typename Packet>
-struct ei_product_coeff_vectorized_unroller<0, Lhs, Rhs, Packet>
+struct product_coeff_vectorized_unroller<0, Lhs, Rhs, Packet>
 {
   typedef typename Lhs::Index Index;
   EIGEN_STRONG_INLINE static void run(Index row, Index col, const Lhs& lhs, const Rhs& rhs, typename Lhs::PacketScalar &pres)
   {
-    pres = ei_pmul(lhs.template packet<Aligned>(row, 0) , rhs.template packet<Aligned>(0, col));
+    pres = pmul(lhs.template packet<Aligned>(row, 0) , rhs.template packet<Aligned>(0, col));
   }
 };
 
 template<int UnrollingIndex, typename Lhs, typename Rhs, typename RetScalar>
-struct ei_product_coeff_impl<InnerVectorizedTraversal, UnrollingIndex, Lhs, Rhs, RetScalar>
+struct product_coeff_impl<InnerVectorizedTraversal, UnrollingIndex, Lhs, Rhs, RetScalar>
 {
   typedef typename Lhs::PacketScalar Packet;
   typedef typename Lhs::Index Index;
-  enum { PacketSize = ei_packet_traits<typename Lhs::Scalar>::size };
+  enum { PacketSize = packet_traits<typename Lhs::Scalar>::size };
   EIGEN_STRONG_INLINE static void run(Index row, Index col, const Lhs& lhs, const Rhs& rhs, RetScalar &res)
   {
     Packet pres;
-    ei_product_coeff_vectorized_unroller<UnrollingIndex+1-PacketSize, Lhs, Rhs, Packet>::run(row, col, lhs, rhs, pres);
-    ei_product_coeff_impl<DefaultTraversal,UnrollingIndex,Lhs,Rhs,RetScalar>::run(row, col, lhs, rhs, res);
-    res = ei_predux(pres);
+    product_coeff_vectorized_unroller<UnrollingIndex+1-PacketSize, Lhs, Rhs, Packet>::run(row, col, lhs, rhs, pres);
+    product_coeff_impl<DefaultTraversal,UnrollingIndex,Lhs,Rhs,RetScalar>::run(row, col, lhs, rhs, res);
+    res = predux(pres);
   }
 };
 
 template<typename Lhs, typename Rhs, int LhsRows = Lhs::RowsAtCompileTime, int RhsCols = Rhs::ColsAtCompileTime>
-struct ei_product_coeff_vectorized_dyn_selector
+struct product_coeff_vectorized_dyn_selector
 {
   typedef typename Lhs::Index Index;
   EIGEN_STRONG_INLINE static void run(Index row, Index col, const Lhs& lhs, const Rhs& rhs, typename Lhs::Scalar &res)
@@ -329,7 +336,7 @@ struct ei_product_coeff_vectorized_dyn_selector
 // NOTE the 3 following specializations are because taking .col(0) on a vector is a bit slower
 // NOTE maybe they are now useless since we have a specialization for Block<Matrix>
 template<typename Lhs, typename Rhs, int RhsCols>
-struct ei_product_coeff_vectorized_dyn_selector<Lhs,Rhs,1,RhsCols>
+struct product_coeff_vectorized_dyn_selector<Lhs,Rhs,1,RhsCols>
 {
   typedef typename Lhs::Index Index;
   EIGEN_STRONG_INLINE static void run(Index /*row*/, Index col, const Lhs& lhs, const Rhs& rhs, typename Lhs::Scalar &res)
@@ -339,7 +346,7 @@ struct ei_product_coeff_vectorized_dyn_selector<Lhs,Rhs,1,RhsCols>
 };
 
 template<typename Lhs, typename Rhs, int LhsRows>
-struct ei_product_coeff_vectorized_dyn_selector<Lhs,Rhs,LhsRows,1>
+struct product_coeff_vectorized_dyn_selector<Lhs,Rhs,LhsRows,1>
 {
   typedef typename Lhs::Index Index;
   EIGEN_STRONG_INLINE static void run(Index row, Index /*col*/, const Lhs& lhs, const Rhs& rhs, typename Lhs::Scalar &res)
@@ -349,7 +356,7 @@ struct ei_product_coeff_vectorized_dyn_selector<Lhs,Rhs,LhsRows,1>
 };
 
 template<typename Lhs, typename Rhs>
-struct ei_product_coeff_vectorized_dyn_selector<Lhs,Rhs,1,1>
+struct product_coeff_vectorized_dyn_selector<Lhs,Rhs,1,1>
 {
   typedef typename Lhs::Index Index;
   EIGEN_STRONG_INLINE static void run(Index /*row*/, Index /*col*/, const Lhs& lhs, const Rhs& rhs, typename Lhs::Scalar &res)
@@ -359,12 +366,12 @@ struct ei_product_coeff_vectorized_dyn_selector<Lhs,Rhs,1,1>
 };
 
 template<typename Lhs, typename Rhs, typename RetScalar>
-struct ei_product_coeff_impl<InnerVectorizedTraversal, Dynamic, Lhs, Rhs, RetScalar>
+struct product_coeff_impl<InnerVectorizedTraversal, Dynamic, Lhs, Rhs, RetScalar>
 {
   typedef typename Lhs::Index Index;
   EIGEN_STRONG_INLINE static void run(Index row, Index col, const Lhs& lhs, const Rhs& rhs, typename Lhs::Scalar &res)
   {
-    ei_product_coeff_vectorized_dyn_selector<Lhs,Rhs>::run(row, col, lhs, rhs, res);
+    product_coeff_vectorized_dyn_selector<Lhs,Rhs>::run(row, col, lhs, rhs, res);
   }
 };
 
@@ -373,71 +380,73 @@ struct ei_product_coeff_impl<InnerVectorizedTraversal, Dynamic, Lhs, Rhs, RetSca
 *******************/
 
 template<int UnrollingIndex, typename Lhs, typename Rhs, typename Packet, int LoadMode>
-struct ei_product_packet_impl<RowMajor, UnrollingIndex, Lhs, Rhs, Packet, LoadMode>
+struct product_packet_impl<RowMajor, UnrollingIndex, Lhs, Rhs, Packet, LoadMode>
 {
   typedef typename Lhs::Index Index;
   EIGEN_STRONG_INLINE static void run(Index row, Index col, const Lhs& lhs, const Rhs& rhs, Packet &res)
   {
-    ei_product_packet_impl<RowMajor, UnrollingIndex-1, Lhs, Rhs, Packet, LoadMode>::run(row, col, lhs, rhs, res);
-    res =  ei_pmadd(ei_pset1<Packet>(lhs.coeff(row, UnrollingIndex)), rhs.template packet<LoadMode>(UnrollingIndex, col), res);
+    product_packet_impl<RowMajor, UnrollingIndex-1, Lhs, Rhs, Packet, LoadMode>::run(row, col, lhs, rhs, res);
+    res =  pmadd(pset1<Packet>(lhs.coeff(row, UnrollingIndex)), rhs.template packet<LoadMode>(UnrollingIndex, col), res);
   }
 };
 
 template<int UnrollingIndex, typename Lhs, typename Rhs, typename Packet, int LoadMode>
-struct ei_product_packet_impl<ColMajor, UnrollingIndex, Lhs, Rhs, Packet, LoadMode>
+struct product_packet_impl<ColMajor, UnrollingIndex, Lhs, Rhs, Packet, LoadMode>
 {
   typedef typename Lhs::Index Index;
   EIGEN_STRONG_INLINE static void run(Index row, Index col, const Lhs& lhs, const Rhs& rhs, Packet &res)
   {
-    ei_product_packet_impl<ColMajor, UnrollingIndex-1, Lhs, Rhs, Packet, LoadMode>::run(row, col, lhs, rhs, res);
-    res =  ei_pmadd(lhs.template packet<LoadMode>(row, UnrollingIndex), ei_pset1<Packet>(rhs.coeff(UnrollingIndex, col)), res);
+    product_packet_impl<ColMajor, UnrollingIndex-1, Lhs, Rhs, Packet, LoadMode>::run(row, col, lhs, rhs, res);
+    res =  pmadd(lhs.template packet<LoadMode>(row, UnrollingIndex), pset1<Packet>(rhs.coeff(UnrollingIndex, col)), res);
   }
 };
 
 template<typename Lhs, typename Rhs, typename Packet, int LoadMode>
-struct ei_product_packet_impl<RowMajor, 0, Lhs, Rhs, Packet, LoadMode>
+struct product_packet_impl<RowMajor, 0, Lhs, Rhs, Packet, LoadMode>
 {
   typedef typename Lhs::Index Index;
   EIGEN_STRONG_INLINE static void run(Index row, Index col, const Lhs& lhs, const Rhs& rhs, Packet &res)
   {
-    res = ei_pmul(ei_pset1<Packet>(lhs.coeff(row, 0)),rhs.template packet<LoadMode>(0, col));
+    res = pmul(pset1<Packet>(lhs.coeff(row, 0)),rhs.template packet<LoadMode>(0, col));
   }
 };
 
 template<typename Lhs, typename Rhs, typename Packet, int LoadMode>
-struct ei_product_packet_impl<ColMajor, 0, Lhs, Rhs, Packet, LoadMode>
+struct product_packet_impl<ColMajor, 0, Lhs, Rhs, Packet, LoadMode>
 {
   typedef typename Lhs::Index Index;
   EIGEN_STRONG_INLINE static void run(Index row, Index col, const Lhs& lhs, const Rhs& rhs, Packet &res)
   {
-    res = ei_pmul(lhs.template packet<LoadMode>(row, 0), ei_pset1<Packet>(rhs.coeff(0, col)));
+    res = pmul(lhs.template packet<LoadMode>(row, 0), pset1<Packet>(rhs.coeff(0, col)));
   }
 };
 
 template<typename Lhs, typename Rhs, typename Packet, int LoadMode>
-struct ei_product_packet_impl<RowMajor, Dynamic, Lhs, Rhs, Packet, LoadMode>
+struct product_packet_impl<RowMajor, Dynamic, Lhs, Rhs, Packet, LoadMode>
 {
   typedef typename Lhs::Index Index;
   EIGEN_STRONG_INLINE static void run(Index row, Index col, const Lhs& lhs, const Rhs& rhs, Packet& res)
   {
-    ei_assert(lhs.cols()>0 && "you are using a non initialized matrix");
-    res = ei_pmul(ei_pset1<Packet>(lhs.coeff(row, 0)),rhs.template packet<LoadMode>(0, col));
+    eigen_assert(lhs.cols()>0 && "you are using a non initialized matrix");
+    res = pmul(pset1<Packet>(lhs.coeff(row, 0)),rhs.template packet<LoadMode>(0, col));
       for(Index i = 1; i < lhs.cols(); ++i)
-        res =  ei_pmadd(ei_pset1<Packet>(lhs.coeff(row, i)), rhs.template packet<LoadMode>(i, col), res);
+        res =  pmadd(pset1<Packet>(lhs.coeff(row, i)), rhs.template packet<LoadMode>(i, col), res);
   }
 };
 
 template<typename Lhs, typename Rhs, typename Packet, int LoadMode>
-struct ei_product_packet_impl<ColMajor, Dynamic, Lhs, Rhs, Packet, LoadMode>
+struct product_packet_impl<ColMajor, Dynamic, Lhs, Rhs, Packet, LoadMode>
 {
   typedef typename Lhs::Index Index;
   EIGEN_STRONG_INLINE static void run(Index row, Index col, const Lhs& lhs, const Rhs& rhs, Packet& res)
   {
-    ei_assert(lhs.cols()>0 && "you are using a non initialized matrix");
-    res = ei_pmul(lhs.template packet<LoadMode>(row, 0), ei_pset1<Packet>(rhs.coeff(0, col)));
+    eigen_assert(lhs.cols()>0 && "you are using a non initialized matrix");
+    res = pmul(lhs.template packet<LoadMode>(row, 0), pset1<Packet>(rhs.coeff(0, col)));
       for(Index i = 1; i < lhs.cols(); ++i)
-        res =  ei_pmadd(lhs.template packet<LoadMode>(row, i), ei_pset1<Packet>(rhs.coeff(i, col)), res);
+        res =  pmadd(lhs.template packet<LoadMode>(row, i), pset1<Packet>(rhs.coeff(i, col)), res);
   }
 };
+
+} // end namespace internal
 
 #endif // EIGEN_COEFFBASED_PRODUCT_H

@@ -28,14 +28,16 @@
 
 // This file contains some helper function to deal with block householder reflectors
 
+namespace internal {
+
 /** \internal */
 template<typename TriangularFactorType,typename VectorsType,typename CoeffsType>
-void ei_make_block_householder_triangular_factor(TriangularFactorType& triFactor, const VectorsType& vectors, const CoeffsType& hCoeffs)
+void make_block_householder_triangular_factor(TriangularFactorType& triFactor, const VectorsType& vectors, const CoeffsType& hCoeffs)
 {
   typedef typename TriangularFactorType::Index Index;
   typedef typename VectorsType::Scalar Scalar;
   const Index nbVecs = vectors.cols();
-  ei_assert(triFactor.rows() == nbVecs && triFactor.cols() == nbVecs && vectors.rows()>=nbVecs);
+  eigen_assert(triFactor.rows() == nbVecs && triFactor.cols() == nbVecs && vectors.rows()>=nbVecs);
 
   for(Index i = 0; i < nbVecs; i++)
   {
@@ -54,13 +56,13 @@ void ei_make_block_householder_triangular_factor(TriangularFactorType& triFactor
 
 /** \internal */
 template<typename MatrixType,typename VectorsType,typename CoeffsType>
-void ei_apply_block_householder_on_the_left(MatrixType& mat, const VectorsType& vectors, const CoeffsType& hCoeffs)
+void apply_block_householder_on_the_left(MatrixType& mat, const VectorsType& vectors, const CoeffsType& hCoeffs)
 {
   typedef typename MatrixType::Index Index;
   enum { TFactorSize = MatrixType::ColsAtCompileTime };
   Index nbVecs = vectors.cols();
   Matrix<typename MatrixType::Scalar, TFactorSize, TFactorSize> T(nbVecs,nbVecs);
-  ei_make_block_householder_triangular_factor(T, vectors, hCoeffs);
+  make_block_householder_triangular_factor(T, vectors, hCoeffs);
 
   const TriangularView<VectorsType, UnitLower>& V(vectors);
 
@@ -72,5 +74,6 @@ void ei_apply_block_householder_on_the_left(MatrixType& mat, const VectorsType& 
   mat.noalias() -= V * tmp;
 }
 
+} // end namespace internal
 
 #endif // EIGEN_BLOCK_HOUSEHOLDER_H

@@ -32,8 +32,8 @@
 //   typename NumTraits<Scalar>::Real prec
 // ) const
 // {
-//   const typename ei_nested<Derived,2>::type nested(derived());
-//   const typename ei_nested<OtherDerived,2>::type otherNested(other.derived());
+//   const typename internal::nested<Derived,2>::type nested(derived());
+//   const typename internal::nested<OtherDerived,2>::type otherNested(other.derived());
 //   return    (nested - otherNested).cwise().abs2().sum()
 //          <= prec * prec * std::min(nested.cwise().abs2().sum(), otherNested.cwise().abs2().sum());
 // }

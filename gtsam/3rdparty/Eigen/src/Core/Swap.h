@@ -32,17 +32,19 @@
   *
   * \brief Internal helper class for swapping two expressions
   */
+namespace internal {
 template<typename ExpressionType>
-struct ei_traits<SwapWrapper<ExpressionType> > : ei_traits<ExpressionType> {};
+struct traits<SwapWrapper<ExpressionType> > : traits<ExpressionType> {};
+}
 
 template<typename ExpressionType> class SwapWrapper
-  : public ei_dense_xpr_base<SwapWrapper<ExpressionType> >::type
+  : public internal::dense_xpr_base<SwapWrapper<ExpressionType> >::type
 {
   public:
 
-    typedef typename ei_dense_xpr_base<SwapWrapper>::type Base;
+    typedef typename internal::dense_xpr_base<SwapWrapper>::type Base;
     EIGEN_DENSE_PUBLIC_INTERFACE(SwapWrapper)
-    typedef typename ei_packet_traits<Scalar>::type Packet;
+    typedef typename internal::packet_traits<Scalar>::type Packet;
 
     inline SwapWrapper(ExpressionType& xpr) : m_expression(xpr) {}
 
@@ -61,11 +63,21 @@ template<typename ExpressionType> class SwapWrapper
       return m_expression.const_cast_derived().coeffRef(index);
     }
 
+    inline Scalar& coeffRef(Index row, Index col) const
+    {
+      return m_expression.coeffRef(row, col);
+    }
+
+    inline Scalar& coeffRef(Index index) const
+    {
+      return m_expression.coeffRef(index);
+    }
+
     template<typename OtherDerived>
     void copyCoeff(Index row, Index col, const DenseBase<OtherDerived>& other)
     {
       OtherDerived& _other = other.const_cast_derived();
-      ei_internal_assert(row >= 0 && row < rows()
+      eigen_internal_assert(row >= 0 && row < rows()
                          && col >= 0 && col < cols());
       Scalar tmp = m_expression.coeff(row, col);
       m_expression.coeffRef(row, col) = _other.coeff(row, col);
@@ -76,7 +88,7 @@ template<typename ExpressionType> class SwapWrapper
     void copyCoeff(Index index, const DenseBase<OtherDerived>& other)
     {
       OtherDerived& _other = other.const_cast_derived();
-      ei_internal_assert(index >= 0 && index < m_expression.size());
+      eigen_internal_assert(index >= 0 && index < m_expression.size());
       Scalar tmp = m_expression.coeff(index);
       m_expression.coeffRef(index) = _other.coeff(index);
       _other.coeffRef(index) = tmp;
@@ -86,7 +98,7 @@ template<typename ExpressionType> class SwapWrapper
     void copyPacket(Index row, Index col, const DenseBase<OtherDerived>& other)
     {
       OtherDerived& _other = other.const_cast_derived();
-      ei_internal_assert(row >= 0 && row < rows()
+      eigen_internal_assert(row >= 0 && row < rows()
                         && col >= 0 && col < cols());
       Packet tmp = m_expression.template packet<StoreMode>(row, col);
       m_expression.template writePacket<StoreMode>(row, col,
@@ -99,7 +111,7 @@ template<typename ExpressionType> class SwapWrapper
     void copyPacket(Index index, const DenseBase<OtherDerived>& other)
     {
       OtherDerived& _other = other.const_cast_derived();
-      ei_internal_assert(index >= 0 && index < m_expression.size());
+      eigen_internal_assert(index >= 0 && index < m_expression.size());
       Packet tmp = m_expression.template packet<StoreMode>(index);
       m_expression.template writePacket<StoreMode>(index,
         _other.template packet<LoadMode>(index)
@@ -110,19 +122,5 @@ template<typename ExpressionType> class SwapWrapper
   protected:
     ExpressionType& m_expression;
 };
-
-/** swaps *this with the expression \a other.
-  *
-  * \note \a other is only marked for internal reasons, but of course
-  * it gets const-casted. One reason is that one will often call swap
-  * on temporary objects (hence non-const references are forbidden).
-  * Another reason is that lazyAssign takes a const argument anyway.
-  */
-template<typename Derived>
-template<typename OtherDerived>
-void DenseBase<Derived>::swap(DenseBase<OtherDerived> EIGEN_REF_TO_TEMPORARY other)
-{
-  (SwapWrapper<Derived>(derived())).lazyAssign(other);
-}
 
 #endif // EIGEN_SWAP_H

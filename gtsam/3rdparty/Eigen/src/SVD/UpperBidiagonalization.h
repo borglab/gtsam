@@ -25,6 +25,10 @@
 #ifndef EIGEN_BIDIAGONALIZATION_H
 #define EIGEN_BIDIAGONALIZATION_H
 
+namespace internal {
+// UpperBidiagonalization will probably be replaced by a Bidiagonalization class, don't want to make it stable API.
+// At the same time, it's useful to keep for now as it's about the only thing that is testing the BandMatrix class.
+
 template<typename _MatrixType> class UpperBidiagonalization
 {
   public:
@@ -33,7 +37,7 @@ template<typename _MatrixType> class UpperBidiagonalization
     enum {
       RowsAtCompileTime = MatrixType::RowsAtCompileTime,
       ColsAtCompileTime = MatrixType::ColsAtCompileTime,
-      ColsAtCompileTimeMinusOne = ei_decrement_size<ColsAtCompileTime>::ret
+      ColsAtCompileTimeMinusOne = internal::decrement_size<ColsAtCompileTime>::ret
     };
     typedef typename MatrixType::Scalar Scalar;
     typedef typename MatrixType::RealScalar RealScalar;
@@ -44,12 +48,12 @@ template<typename _MatrixType> class UpperBidiagonalization
     typedef Matrix<Scalar, ColsAtCompileTime, 1> DiagVectorType;
     typedef Matrix<Scalar, ColsAtCompileTimeMinusOne, 1> SuperDiagVectorType;
     typedef HouseholderSequence<
-              MatrixType,
-              CwiseUnaryOp<ei_scalar_conjugate_op<Scalar>, Diagonal<MatrixType,0> >
+              const MatrixType,
+              CwiseUnaryOp<internal::scalar_conjugate_op<Scalar>, const Diagonal<const MatrixType,0> >
             > HouseholderUSequenceType;
     typedef HouseholderSequence<
-              MatrixType,
-              Diagonal<MatrixType,1>,
+              const MatrixType,
+              Diagonal<const MatrixType,1>,
               OnTheRight
             > HouseholderVSequenceType;
     
@@ -74,17 +78,18 @@ template<typename _MatrixType> class UpperBidiagonalization
     const MatrixType& householder() const { return m_householder; }
     const BidiagonalType& bidiagonal() const { return m_bidiagonal; }
     
-    HouseholderUSequenceType householderU() const
+    const HouseholderUSequenceType householderU() const
     {
-      ei_assert(m_isInitialized && "UpperBidiagonalization is not initialized.");
+      eigen_assert(m_isInitialized && "UpperBidiagonalization is not initialized.");
       return HouseholderUSequenceType(m_householder, m_householder.diagonal().conjugate());
     }
 
-    HouseholderVSequenceType householderV() // const here gives nasty errors and i'm lazy
+    const HouseholderVSequenceType householderV() // const here gives nasty errors and i'm lazy
     {
-      ei_assert(m_isInitialized && "UpperBidiagonalization is not initialized.");
-      return HouseholderVSequenceType(m_householder, m_householder.template diagonal<1>(),
-                                      false, m_householder.cols()-1, 1);
+      eigen_assert(m_isInitialized && "UpperBidiagonalization is not initialized.");
+      return HouseholderVSequenceType(m_householder, m_householder.const_derived().template diagonal<1>())
+             .setLength(m_householder.cols()-1)
+             .setShift(1);
     }
     
   protected:
@@ -99,7 +104,7 @@ UpperBidiagonalization<_MatrixType>& UpperBidiagonalization<_MatrixType>::comput
   Index rows = matrix.rows();
   Index cols = matrix.cols();
   
-  ei_assert(rows >= cols && "UpperBidiagonalization is only for matrices satisfying rows>=cols.");
+  eigen_assert(rows >= cols && "UpperBidiagonalization is only for matrices satisfying rows>=cols.");
   
   m_householder = matrix;
 
@@ -149,5 +154,6 @@ MatrixBase<Derived>::bidiagonalization() const
 }
 #endif
 
+} // end namespace internal
 
 #endif // EIGEN_BIDIAGONALIZATION_H

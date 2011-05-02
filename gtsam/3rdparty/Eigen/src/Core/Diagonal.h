@@ -43,12 +43,14 @@
   *
   * \sa MatrixBase::diagonal(), MatrixBase::diagonal(Index)
   */
+
+namespace internal {
 template<typename MatrixType, int DiagIndex>
-struct ei_traits<Diagonal<MatrixType,DiagIndex> >
- : ei_traits<MatrixType>
+struct traits<Diagonal<MatrixType,DiagIndex> >
+ : traits<MatrixType>
 {
-  typedef typename ei_nested<MatrixType>::type MatrixTypeNested;
-  typedef typename ei_unref<MatrixTypeNested>::type _MatrixTypeNested;
+  typedef typename nested<MatrixType>::type MatrixTypeNested;
+  typedef typename remove_reference<MatrixTypeNested>::type _MatrixTypeNested;
   typedef typename MatrixType::StorageKind StorageKind;
   enum {
     AbsDiagIndex = DiagIndex<0 ? -DiagIndex : DiagIndex, // only used if DiagIndex != Dynamic
@@ -62,23 +64,25 @@ struct ei_traits<Diagonal<MatrixType,DiagIndex> >
                                                                     MatrixType::MaxColsAtCompileTime)
                          : (EIGEN_SIZE_MIN_PREFER_FIXED(MatrixType::MaxRowsAtCompileTime, MatrixType::MaxColsAtCompileTime) - AbsDiagIndex),
     MaxColsAtCompileTime = 1,
-    Flags = (unsigned int)_MatrixTypeNested::Flags & (HereditaryBits | LinearAccessBit | LvalueBit | DirectAccessBit) & ~RowMajorBit,
+    MaskLvalueBit = is_lvalue<MatrixType>::value ? LvalueBit : 0,
+    Flags = (unsigned int)_MatrixTypeNested::Flags & (HereditaryBits | LinearAccessBit | MaskLvalueBit | DirectAccessBit) & ~RowMajorBit,
     CoeffReadCost = _MatrixTypeNested::CoeffReadCost,
-    MatrixTypeOuterStride = ei_outer_stride_at_compile_time<MatrixType>::ret,
+    MatrixTypeOuterStride = outer_stride_at_compile_time<MatrixType>::ret,
     InnerStrideAtCompileTime = MatrixTypeOuterStride == Dynamic ? Dynamic : MatrixTypeOuterStride+1,
     OuterStrideAtCompileTime = 0
   };
 };
+}
 
 template<typename MatrixType, int DiagIndex> class Diagonal
-   : public ei_dense_xpr_base< Diagonal<MatrixType,DiagIndex> >::type
+   : public internal::dense_xpr_base< Diagonal<MatrixType,DiagIndex> >::type
 {
   public:
 
-    typedef typename ei_dense_xpr_base<Diagonal>::type Base;
+    typedef typename internal::dense_xpr_base<Diagonal>::type Base;
     EIGEN_DENSE_PUBLIC_INTERFACE(Diagonal)
 
-    inline Diagonal(const MatrixType& matrix, Index index = DiagIndex) : m_matrix(matrix), m_index(index) {}
+    inline Diagonal(MatrixType& matrix, Index index = DiagIndex) : m_matrix(matrix), m_index(index) {}
 
     EIGEN_INHERIT_ASSIGNMENT_OPERATORS(Diagonal)
 
@@ -99,6 +103,12 @@ template<typename MatrixType, int DiagIndex> class Diagonal
 
     inline Scalar& coeffRef(Index row, Index)
     {
+      EIGEN_STATIC_ASSERT_LVALUE(MatrixType)
+      return m_matrix.const_cast_derived().coeffRef(row+rowOffset(), row+colOffset());
+    }
+
+    inline const Scalar& coeffRef(Index row, Index) const
+    {
       return m_matrix.const_cast_derived().coeffRef(row+rowOffset(), row+colOffset());
     }
 
@@ -108,6 +118,12 @@ template<typename MatrixType, int DiagIndex> class Diagonal
     }
 
     inline Scalar& coeffRef(Index index)
+    {
+      EIGEN_STATIC_ASSERT_LVALUE(MatrixType)
+      return m_matrix.const_cast_derived().coeffRef(index+rowOffset(), index+colOffset());
+    }
+
+    inline const Scalar& coeffRef(Index index) const
     {
       return m_matrix.const_cast_derived().coeffRef(index+rowOffset(), index+colOffset());
     }
@@ -119,7 +135,7 @@ template<typename MatrixType, int DiagIndex> class Diagonal
 
   protected:
     const typename MatrixType::Nested m_matrix;
-    const ei_variable_if_dynamic<Index, DiagIndex> m_index;
+    const internal::variable_if_dynamic<Index, DiagIndex> m_index;
 
   private:
     // some compilers may fail to optimize std::max etc in case of compile-time constants...
@@ -140,18 +156,18 @@ template<typename MatrixType, int DiagIndex> class Diagonal
   *
   * \sa class Diagonal */
 template<typename Derived>
-inline Diagonal<Derived, 0>
+inline typename MatrixBase<Derived>::DiagonalReturnType
 MatrixBase<Derived>::diagonal()
 {
-  return Diagonal<Derived, 0>(derived());
+  return derived();
 }
 
 /** This is the const version of diagonal(). */
 template<typename Derived>
-inline const Diagonal<Derived, 0>
+inline const typename MatrixBase<Derived>::ConstDiagonalReturnType
 MatrixBase<Derived>::diagonal() const
 {
-  return Diagonal<Derived, 0>(derived());
+  return ConstDiagonalReturnType(derived());
 }
 
 /** \returns an expression of the \a DiagIndex-th sub or super diagonal of the matrix \c *this
@@ -166,18 +182,18 @@ MatrixBase<Derived>::diagonal() const
   *
   * \sa MatrixBase::diagonal(), class Diagonal */
 template<typename Derived>
-inline Diagonal<Derived, Dynamic>
+inline typename MatrixBase<Derived>::template DiagonalIndexReturnType<Dynamic>::Type
 MatrixBase<Derived>::diagonal(Index index)
 {
-  return Diagonal<Derived, Dynamic>(derived(), index);
+  return typename DiagonalIndexReturnType<Dynamic>::Type(derived(), index);
 }
 
 /** This is the const version of diagonal(Index). */
 template<typename Derived>
-inline const Diagonal<Derived, Dynamic>
+inline typename MatrixBase<Derived>::template ConstDiagonalIndexReturnType<Dynamic>::Type
 MatrixBase<Derived>::diagonal(Index index) const
 {
-  return Diagonal<Derived, Dynamic>(derived(), index);
+  return typename ConstDiagonalIndexReturnType<Dynamic>::Type(derived(), index);
 }
 
 /** \returns an expression of the \a DiagIndex-th sub or super diagonal of the matrix \c *this
@@ -192,20 +208,20 @@ MatrixBase<Derived>::diagonal(Index index) const
   *
   * \sa MatrixBase::diagonal(), class Diagonal */
 template<typename Derived>
-template<int DiagIndex>
-inline Diagonal<Derived,DiagIndex>
+template<int Index>
+inline typename MatrixBase<Derived>::template DiagonalIndexReturnType<Index>::Type
 MatrixBase<Derived>::diagonal()
 {
-  return Diagonal<Derived,DiagIndex>(derived());
+  return derived();
 }
 
 /** This is the const version of diagonal<int>(). */
 template<typename Derived>
-template<int DiagIndex>
-inline const Diagonal<Derived,DiagIndex>
+template<int Index>
+inline typename MatrixBase<Derived>::template ConstDiagonalIndexReturnType<Index>::Type
 MatrixBase<Derived>::diagonal() const
 {
-  return Diagonal<Derived,DiagIndex>(derived());
+  return derived();
 }
 
 #endif // EIGEN_DIAGONAL_H

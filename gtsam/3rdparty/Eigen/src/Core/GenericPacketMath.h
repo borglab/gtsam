@@ -26,6 +26,8 @@
 #ifndef EIGEN_GENERIC_PACKET_MATH_H
 #define EIGEN_GENERIC_PACKET_MATH_H
 
+namespace internal {
+
 /** \internal
   * \file GenericPacketMath.h
   *
@@ -50,7 +52,7 @@
 #define EIGEN_DEBUG_UNALIGNED_STORE
 #endif
 
-struct ei_default_packet_traits
+struct default_packet_traits
 {
   enum {
     HasAdd    = 1,
@@ -79,7 +81,7 @@ struct ei_default_packet_traits
   };
 };
 
-template<typename T> struct ei_packet_traits : ei_default_packet_traits
+template<typename T> struct packet_traits : default_packet_traits
 {
   typedef T type;
   enum {
@@ -103,92 +105,92 @@ template<typename T> struct ei_packet_traits : ei_default_packet_traits
 
 /** \internal \returns a + b (coeff-wise) */
 template<typename Packet> inline Packet
-ei_padd(const Packet& a,
+padd(const Packet& a,
         const Packet& b) { return a+b; }
 
 /** \internal \returns a - b (coeff-wise) */
 template<typename Packet> inline Packet
-ei_psub(const Packet& a,
+psub(const Packet& a,
         const Packet& b) { return a-b; }
 
 /** \internal \returns -a (coeff-wise) */
 template<typename Packet> inline Packet
-ei_pnegate(const Packet& a) { return -a; }
+pnegate(const Packet& a) { return -a; }
 
 /** \internal \returns conj(a) (coeff-wise) */
 template<typename Packet> inline Packet
-ei_pconj(const Packet& a) { return ei_conj(a); }
+pconj(const Packet& a) { return conj(a); }
 
 /** \internal \returns a * b (coeff-wise) */
 template<typename Packet> inline Packet
-ei_pmul(const Packet& a,
+pmul(const Packet& a,
         const Packet& b) { return a*b; }
 
 /** \internal \returns a / b (coeff-wise) */
 template<typename Packet> inline Packet
-ei_pdiv(const Packet& a,
+pdiv(const Packet& a,
         const Packet& b) { return a/b; }
 
 /** \internal \returns the min of \a a and \a b  (coeff-wise) */
 template<typename Packet> inline Packet
-ei_pmin(const Packet& a,
+pmin(const Packet& a,
         const Packet& b) { return std::min(a, b); }
 
 /** \internal \returns the max of \a a and \a b  (coeff-wise) */
 template<typename Packet> inline Packet
-ei_pmax(const Packet& a,
+pmax(const Packet& a,
         const Packet& b) { return std::max(a, b); }
 
 /** \internal \returns the absolute value of \a a */
 template<typename Packet> inline Packet
-ei_pabs(const Packet& a) { return ei_abs(a); }
+pabs(const Packet& a) { return abs(a); }
 
 /** \internal \returns the bitwise and of \a a and \a b */
 template<typename Packet> inline Packet
-ei_pand(const Packet& a, const Packet& b) { return a & b; }
+pand(const Packet& a, const Packet& b) { return a & b; }
 
 /** \internal \returns the bitwise or of \a a and \a b */
 template<typename Packet> inline Packet
-ei_por(const Packet& a, const Packet& b) { return a | b; }
+por(const Packet& a, const Packet& b) { return a | b; }
 
 /** \internal \returns the bitwise xor of \a a and \a b */
 template<typename Packet> inline Packet
-ei_pxor(const Packet& a, const Packet& b) { return a ^ b; }
+pxor(const Packet& a, const Packet& b) { return a ^ b; }
 
 /** \internal \returns the bitwise andnot of \a a and \a b */
 template<typename Packet> inline Packet
-ei_pandnot(const Packet& a, const Packet& b) { return a & (!b); }
+pandnot(const Packet& a, const Packet& b) { return a & (!b); }
 
 /** \internal \returns a packet version of \a *from, from must be 16 bytes aligned */
 template<typename Packet> inline Packet
-ei_pload(const typename ei_unpacket_traits<Packet>::type* from) { return *from; }
+pload(const typename unpacket_traits<Packet>::type* from) { return *from; }
 
 /** \internal \returns a packet version of \a *from, (un-aligned load) */
 template<typename Packet> inline Packet
-ei_ploadu(const typename ei_unpacket_traits<Packet>::type* from) { return *from; }
+ploadu(const typename unpacket_traits<Packet>::type* from) { return *from; }
 
 /** \internal \returns a packet with elements of \a *from duplicated, e.g.: (from[0],from[0],from[1],from[1]) */
 template<typename Packet> inline Packet
-ei_ploaddup(const typename ei_unpacket_traits<Packet>::type* from) { return *from; }
+ploaddup(const typename unpacket_traits<Packet>::type* from) { return *from; }
 
 /** \internal \returns a packet with constant coefficients \a a, e.g.: (a,a,a,a) */
 template<typename Packet> inline Packet
-ei_pset1(const typename ei_unpacket_traits<Packet>::type& a) { return a; }
+pset1(const typename unpacket_traits<Packet>::type& a) { return a; }
 
 /** \internal \brief Returns a packet with coefficients (a,a+1,...,a+packet_size-1). */
-template<typename Scalar> inline typename ei_packet_traits<Scalar>::type
-ei_plset(const Scalar& a) { return a; }
+template<typename Scalar> inline typename packet_traits<Scalar>::type
+plset(const Scalar& a) { return a; }
 
 /** \internal copy the packet \a from to \a *to, \a to must be 16 bytes aligned */
-template<typename Scalar, typename Packet> inline void ei_pstore(Scalar* to, const Packet& from)
+template<typename Scalar, typename Packet> inline void pstore(Scalar* to, const Packet& from)
 { (*to) = from; }
 
 /** \internal copy the packet \a from to \a *to, (un-aligned store) */
-template<typename Scalar, typename Packet> inline void ei_pstoreu(Scalar* to, const Packet& from)
+template<typename Scalar, typename Packet> inline void pstoreu(Scalar* to, const Packet& from)
 { (*to) = from; }
 
 /** \internal tries to do cache prefetching of \a addr */
-template<typename Scalar> inline void ei_prefetch(const Scalar* addr)
+template<typename Scalar> inline void prefetch(const Scalar* addr)
 {
 #if !defined(_MSC_VER)
 __builtin_prefetch(addr);
@@ -196,93 +198,118 @@ __builtin_prefetch(addr);
 }
 
 /** \internal \returns the first element of a packet */
-template<typename Packet> inline typename ei_unpacket_traits<Packet>::type ei_pfirst(const Packet& a)
+template<typename Packet> inline typename unpacket_traits<Packet>::type pfirst(const Packet& a)
 { return a; }
 
 /** \internal \returns a packet where the element i contains the sum of the packet of \a vec[i] */
 template<typename Packet> inline Packet
-ei_preduxp(const Packet* vecs) { return vecs[0]; }
+preduxp(const Packet* vecs) { return vecs[0]; }
 
 /** \internal \returns the sum of the elements of \a a*/
-template<typename Packet> inline typename ei_unpacket_traits<Packet>::type ei_predux(const Packet& a)
+template<typename Packet> inline typename unpacket_traits<Packet>::type predux(const Packet& a)
 { return a; }
 
 /** \internal \returns the product of the elements of \a a*/
-template<typename Packet> inline typename ei_unpacket_traits<Packet>::type ei_predux_mul(const Packet& a)
+template<typename Packet> inline typename unpacket_traits<Packet>::type predux_mul(const Packet& a)
 { return a; }
 
 /** \internal \returns the min of the elements of \a a*/
-template<typename Packet> inline typename ei_unpacket_traits<Packet>::type ei_predux_min(const Packet& a)
+template<typename Packet> inline typename unpacket_traits<Packet>::type predux_min(const Packet& a)
 { return a; }
 
 /** \internal \returns the max of the elements of \a a*/
-template<typename Packet> inline typename ei_unpacket_traits<Packet>::type ei_predux_max(const Packet& a)
+template<typename Packet> inline typename unpacket_traits<Packet>::type predux_max(const Packet& a)
 { return a; }
 
 /** \internal \returns the reversed elements of \a a*/
-template<typename Packet> inline Packet ei_preverse(const Packet& a)
+template<typename Packet> inline Packet preverse(const Packet& a)
 { return a; }
+
+
+/** \internal \returns \a a with real and imaginary part flipped (for complex type only) */
+template<typename Packet> inline Packet pcplxflip(const Packet& a)
+{ return Packet(imag(a),real(a)); }
 
 /**************************
 * Special math functions
 ***************************/
 
-/** \internal \returns the sin of \a a (coeff-wise) */
+/** \internal \returns the sine of \a a (coeff-wise) */
 template<typename Packet> EIGEN_DECLARE_FUNCTION_ALLOWING_MULTIPLE_DEFINITIONS
-Packet ei_psin(const Packet& a) { return ei_sin(a); }
+Packet psin(const Packet& a) { return sin(a); }
 
-/** \internal \returns the cos of \a a (coeff-wise) */
+/** \internal \returns the cosine of \a a (coeff-wise) */
 template<typename Packet> EIGEN_DECLARE_FUNCTION_ALLOWING_MULTIPLE_DEFINITIONS
-Packet ei_pcos(const Packet& a) { return ei_cos(a); }
+Packet pcos(const Packet& a) { return cos(a); }
+
+/** \internal \returns the tan of \a a (coeff-wise) */
+template<typename Packet> EIGEN_DECLARE_FUNCTION_ALLOWING_MULTIPLE_DEFINITIONS
+Packet ptan(const Packet& a) { return tan(a); }
+
+/** \internal \returns the arc sine of \a a (coeff-wise) */
+template<typename Packet> EIGEN_DECLARE_FUNCTION_ALLOWING_MULTIPLE_DEFINITIONS
+Packet pasin(const Packet& a) { return asin(a); }
+
+/** \internal \returns the arc cosine of \a a (coeff-wise) */
+template<typename Packet> EIGEN_DECLARE_FUNCTION_ALLOWING_MULTIPLE_DEFINITIONS
+Packet pacos(const Packet& a) { return acos(a); }
 
 /** \internal \returns the exp of \a a (coeff-wise) */
 template<typename Packet> EIGEN_DECLARE_FUNCTION_ALLOWING_MULTIPLE_DEFINITIONS
-Packet ei_pexp(const Packet& a) { return ei_exp(a); }
+Packet pexp(const Packet& a) { return exp(a); }
 
 /** \internal \returns the log of \a a (coeff-wise) */
 template<typename Packet> EIGEN_DECLARE_FUNCTION_ALLOWING_MULTIPLE_DEFINITIONS
-Packet ei_plog(const Packet& a) { return ei_log(a); }
+Packet plog(const Packet& a) { return log(a); }
 
 /** \internal \returns the square-root of \a a (coeff-wise) */
 template<typename Packet> EIGEN_DECLARE_FUNCTION_ALLOWING_MULTIPLE_DEFINITIONS
-Packet ei_psqrt(const Packet& a) { return ei_sqrt(a); }
+Packet psqrt(const Packet& a) { return sqrt(a); }
 
 /***************************************************************************
 * The following functions might not have to be overwritten for vectorized types
 ***************************************************************************/
 
+/** \internal copy a packet with constant coeficient \a a (e.g., [a,a,a,a]) to \a *to. \a to must be 16 bytes aligned */
+// NOTE: this function must really be templated on the packet type (think about different packet types for the same scalar type)
+template<typename Packet>
+inline void pstore1(typename unpacket_traits<Packet>::type* to, const typename unpacket_traits<Packet>::type& a)
+{
+  pstore(to, pset1<Packet>(a));
+}
+
 /** \internal \returns a * b + c (coeff-wise) */
 template<typename Packet> inline Packet
-ei_pmadd(const Packet&  a,
+pmadd(const Packet&  a,
          const Packet&  b,
          const Packet&  c)
-{ return ei_padd(ei_pmul(a, b),c); }
+{ return padd(pmul(a, b),c); }
 
 /** \internal \returns a packet version of \a *from.
   * \If LoadMode equals Aligned, \a from must be 16 bytes aligned */
 template<typename Packet, int LoadMode>
-inline Packet ei_ploadt(const typename ei_unpacket_traits<Packet>::type* from)
+inline Packet ploadt(const typename unpacket_traits<Packet>::type* from)
 {
   if(LoadMode == Aligned)
-    return ei_pload<Packet>(from);
+    return pload<Packet>(from);
   else
-    return ei_ploadu<Packet>(from);
+    return ploadu<Packet>(from);
 }
 
 /** \internal copy the packet \a from to \a *to.
   * If StoreMode equals Aligned, \a to must be 16 bytes aligned */
 template<typename Scalar, typename Packet, int LoadMode>
-inline void ei_pstoret(Scalar* to, const Packet& from)
+inline void pstoret(Scalar* to, const Packet& from)
 {
   if(LoadMode == Aligned)
-    ei_pstore(to, from);
+    pstore(to, from);
   else
-    ei_pstoreu(to, from);
+    pstoreu(to, from);
 }
 
-/** \internal default implementation of ei_palign() allowing partial specialization */
+/** \internal default implementation of palign() allowing partial specialization */
 template<int Offset,typename PacketType>
-struct ei_palign_impl
+struct palign_impl
 {
   // by default data are aligned, so there is nothing to be done :)
   inline static void run(PacketType&, const PacketType&) {}
@@ -291,20 +318,22 @@ struct ei_palign_impl
 /** \internal update \a first using the concatenation of the \a Offset last elements
   * of \a first and packet_size minus \a Offset first elements of \a second */
 template<int Offset,typename PacketType>
-inline void ei_palign(PacketType& first, const PacketType& second)
+inline void palign(PacketType& first, const PacketType& second)
 {
-  ei_palign_impl<Offset,PacketType>::run(first,second);
+  palign_impl<Offset,PacketType>::run(first,second);
 }
 
 /***************************************************************************
 * Fast complex products (GCC generates a function call which is very slow)
 ***************************************************************************/
 
-template<> inline std::complex<float> ei_pmul(const std::complex<float>& a, const std::complex<float>& b)
-{ return std::complex<float>(ei_real(a)*ei_real(b) - ei_imag(a)*ei_imag(b), ei_imag(a)*ei_real(b) + ei_real(a)*ei_imag(b)); }
+template<> inline std::complex<float> pmul(const std::complex<float>& a, const std::complex<float>& b)
+{ return std::complex<float>(real(a)*real(b) - imag(a)*imag(b), imag(a)*real(b) + real(a)*imag(b)); }
 
-template<> inline std::complex<double> ei_pmul(const std::complex<double>& a, const std::complex<double>& b)
-{ return std::complex<double>(ei_real(a)*ei_real(b) - ei_imag(a)*ei_imag(b), ei_imag(a)*ei_real(b) + ei_real(a)*ei_imag(b)); }
+template<> inline std::complex<double> pmul(const std::complex<double>& a, const std::complex<double>& b)
+{ return std::complex<double>(real(a)*real(b) - imag(a)*imag(b), imag(a)*real(b) + real(a)*imag(b)); }
+
+} // end namespace internal
 
 #endif // EIGEN_GENERIC_PACKET_MATH_H
 

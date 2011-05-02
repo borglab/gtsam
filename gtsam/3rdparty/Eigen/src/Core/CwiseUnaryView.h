@@ -38,39 +38,42 @@
   *
   * \sa MatrixBase::unaryViewExpr(const CustomUnaryOp &) const, class CwiseUnaryOp
   */
+
+namespace internal {
 template<typename ViewOp, typename MatrixType>
-struct ei_traits<CwiseUnaryView<ViewOp, MatrixType> >
- : ei_traits<MatrixType>
+struct traits<CwiseUnaryView<ViewOp, MatrixType> >
+ : traits<MatrixType>
 {
-  typedef typename ei_result_of<
-                     ViewOp(typename ei_traits<MatrixType>::Scalar)
+  typedef typename result_of<
+                     ViewOp(typename traits<MatrixType>::Scalar)
                    >::type Scalar;
   typedef typename MatrixType::Nested MatrixTypeNested;
-  typedef typename ei_cleantype<MatrixTypeNested>::type _MatrixTypeNested;
+  typedef typename remove_all<MatrixTypeNested>::type _MatrixTypeNested;
   enum {
-    Flags = (ei_traits<_MatrixTypeNested>::Flags & (HereditaryBits | LvalueBit | LinearAccessBit | DirectAccessBit)),
-    CoeffReadCost = ei_traits<_MatrixTypeNested>::CoeffReadCost + ei_functor_traits<ViewOp>::Cost,
-    MatrixTypeInnerStride =  ei_inner_stride_at_compile_time<MatrixType>::ret,
+    Flags = (traits<_MatrixTypeNested>::Flags & (HereditaryBits | LvalueBit | LinearAccessBit | DirectAccessBit)),
+    CoeffReadCost = traits<_MatrixTypeNested>::CoeffReadCost + functor_traits<ViewOp>::Cost,
+    MatrixTypeInnerStride =  inner_stride_at_compile_time<MatrixType>::ret,
     // need to cast the sizeof's from size_t to int explicitly, otherwise:
     // "error: no integral type can represent all of the enumerator values
     InnerStrideAtCompileTime = MatrixTypeInnerStride == Dynamic
                              ? int(Dynamic)
                              : int(MatrixTypeInnerStride)
-                               * int(sizeof(typename ei_traits<MatrixType>::Scalar) / sizeof(Scalar)),
-    OuterStrideAtCompileTime = ei_outer_stride_at_compile_time<MatrixType>::ret
+                               * int(sizeof(typename traits<MatrixType>::Scalar) / sizeof(Scalar)),
+    OuterStrideAtCompileTime = outer_stride_at_compile_time<MatrixType>::ret
   };
 };
+}
 
 template<typename ViewOp, typename MatrixType, typename StorageKind>
 class CwiseUnaryViewImpl;
 
 template<typename ViewOp, typename MatrixType>
-class CwiseUnaryView : ei_no_assignment_operator,
-  public CwiseUnaryViewImpl<ViewOp, MatrixType, typename ei_traits<MatrixType>::StorageKind>
+class CwiseUnaryView : internal::no_assignment_operator,
+  public CwiseUnaryViewImpl<ViewOp, MatrixType, typename internal::traits<MatrixType>::StorageKind>
 {
   public:
 
-    typedef typename CwiseUnaryViewImpl<ViewOp, MatrixType,typename ei_traits<MatrixType>::StorageKind>::Base Base;
+    typedef typename CwiseUnaryViewImpl<ViewOp, MatrixType,typename internal::traits<MatrixType>::StorageKind>::Base Base;
     EIGEN_GENERIC_PUBLIC_INTERFACE(CwiseUnaryView)
 
     inline CwiseUnaryView(const MatrixType& mat, const ViewOp& func = ViewOp())
@@ -85,33 +88,33 @@ class CwiseUnaryView : ei_no_assignment_operator,
     const ViewOp& functor() const { return m_functor; }
 
     /** \returns the nested expression */
-    const typename ei_cleantype<typename MatrixType::Nested>::type&
+    const typename internal::remove_all<typename MatrixType::Nested>::type&
     nestedExpression() const { return m_matrix; }
 
     /** \returns the nested expression */
-    typename ei_cleantype<typename MatrixType::Nested>::type&
+    typename internal::remove_all<typename MatrixType::Nested>::type&
     nestedExpression() { return m_matrix.const_cast_derived(); }
 
   protected:
     // FIXME changed from MatrixType::Nested because of a weird compilation error with sun CC
-    const typename ei_nested<MatrixType>::type m_matrix;
+    const typename internal::nested<MatrixType>::type m_matrix;
     ViewOp m_functor;
 };
 
 template<typename ViewOp, typename MatrixType>
 class CwiseUnaryViewImpl<ViewOp,MatrixType,Dense>
-  : public ei_dense_xpr_base< CwiseUnaryView<ViewOp, MatrixType> >::type
+  : public internal::dense_xpr_base< CwiseUnaryView<ViewOp, MatrixType> >::type
 {
   public:
 
     typedef CwiseUnaryView<ViewOp, MatrixType> Derived;
-    typedef typename ei_dense_xpr_base< CwiseUnaryView<ViewOp, MatrixType> >::type Base;
+    typedef typename internal::dense_xpr_base< CwiseUnaryView<ViewOp, MatrixType> >::type Base;
 
     EIGEN_DENSE_PUBLIC_INTERFACE(Derived)
 
     inline Index innerStride() const
     {
-      return derived().nestedExpression().innerStride() * sizeof(typename ei_traits<MatrixType>::Scalar) / sizeof(Scalar);
+      return derived().nestedExpression().innerStride() * sizeof(typename internal::traits<MatrixType>::Scalar) / sizeof(Scalar);
     }
 
     inline Index outerStride() const

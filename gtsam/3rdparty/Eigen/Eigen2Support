@@ -29,7 +29,7 @@
 #error Eigen2 support must be enabled by defining EIGEN2_SUPPORT before including any Eigen header
 #endif
 
-#include "src/Core/util/DisableMSVCWarnings.h"
+#include "src/Core/util/DisableStupidWarnings.h"
 
 namespace Eigen {
 
@@ -43,6 +43,9 @@ namespace Eigen {
   *
   */
 
+#include "src/Eigen2Support/Macros.h"
+#include "src/Eigen2Support/Memory.h"
+#include "src/Eigen2Support/Meta.h"
 #include "src/Eigen2Support/Lazy.h"
 #include "src/Eigen2Support/Cwise.h"
 #include "src/Eigen2Support/CwiseOperators.h"
@@ -50,11 +53,12 @@ namespace Eigen {
 #include "src/Eigen2Support/Block.h"
 #include "src/Eigen2Support/VectorBlock.h"
 #include "src/Eigen2Support/Minor.h"
+#include "src/Eigen2Support/MathFunctions.h"
 
 
 } // namespace Eigen
 
-#include "src/Core/util/EnableMSVCWarnings.h"
+#include "src/Core/util/ReenableStupidWarnings.h"
 
 // Eigen2 used to include iostream
 #include<iostream>

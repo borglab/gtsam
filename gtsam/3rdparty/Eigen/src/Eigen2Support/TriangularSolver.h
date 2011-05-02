@@ -40,14 +40,14 @@ template<typename OtherDerived>
 typename ExpressionType::PlainObject
 Flagged<ExpressionType,Added,Removed>::solveTriangular(const MatrixBase<OtherDerived>& other) const
 {
-  return m_matrix.template triangularView<Added>.solve(other.derived());
+  return m_matrix.template triangularView<Added>().solve(other.derived());
 }
 
 template<typename ExpressionType, unsigned int Added, unsigned int Removed>
 template<typename OtherDerived>
 void Flagged<ExpressionType,Added,Removed>::solveTriangularInPlace(const MatrixBase<OtherDerived>& other) const
 {
-  m_matrix.template triangularView<Added>.solveInPlace(other.derived());
+  m_matrix.template triangularView<Added>().solveInPlace(other.derived());
 }
     
 #endif // EIGEN_TRIANGULAR_SOLVER2_H

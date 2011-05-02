@@ -70,13 +70,9 @@ class GeneralizedSelfAdjointEigenSolver : public SelfAdjointEigenSolver<_MatrixT
     /** \brief Default constructor for fixed-size matrices.
       *
       * The default constructor is useful in cases in which the user intends to
-      * perform decompositions via compute(const MatrixType&, bool) or
-      * compute(const MatrixType&, const MatrixType&, bool). This constructor
+      * perform decompositions via compute(). This constructor
       * can only be used if \p _MatrixType is a fixed-size matrix; use
-      * SelfAdjointEigenSolver(Index) for dynamic-size matrices.
-      *
-      * Example: \include SelfAdjointEigenSolver_SelfAdjointEigenSolver.cpp
-      * Output: \verbinclude SelfAdjointEigenSolver_SelfAdjointEigenSolver.out
+      * GeneralizedSelfAdjointEigenSolver(Index) for dynamic-size matrices.
       */
     GeneralizedSelfAdjointEigenSolver() : Base() {}
 
@@ -86,12 +82,11 @@ class GeneralizedSelfAdjointEigenSolver : public SelfAdjointEigenSolver<_MatrixT
       * eigenvalues and eigenvectors will be computed.
       *
       * This constructor is useful for dynamic-size matrices, when the user
-      * intends to perform decompositions via compute(const MatrixType&, bool)
-      * or compute(const MatrixType&, const MatrixType&, bool). The \p size
+      * intends to perform decompositions via compute(). The \p size
       * parameter is only used as a hint. It is not an error to give a wrong
       * \p size, but it may impair performance.
       *
-      * \sa compute(const MatrixType&, bool) for an example
+      * \sa compute() for an example
       */
     GeneralizedSelfAdjointEigenSolver(Index size)
         : Base(size)
@@ -182,8 +177,8 @@ template<typename MatrixType>
 GeneralizedSelfAdjointEigenSolver<MatrixType>& GeneralizedSelfAdjointEigenSolver<MatrixType>::
 compute(const MatrixType& matA, const MatrixType& matB, int options)
 {
-  ei_assert(matA.cols()==matA.rows() && matB.rows()==matA.rows() && matB.cols()==matB.rows());
-  ei_assert((options&~(EigVecMask|GenEigMask))==0
+  eigen_assert(matA.cols()==matA.rows() && matB.rows()==matA.rows() && matB.cols()==matB.rows());
+  eigen_assert((options&~(EigVecMask|GenEigMask))==0
           && (options&EigVecMask)!=EigVecMask
           && ((options&GenEigMask)==0 || (options&GenEigMask)==Ax_lBx
            || (options&GenEigMask)==ABx_lx || (options&GenEigMask)==BAx_lx)

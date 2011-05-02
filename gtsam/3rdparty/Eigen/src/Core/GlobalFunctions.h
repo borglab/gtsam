@@ -28,7 +28,7 @@
 
 #define EIGEN_ARRAY_DECLARE_GLOBAL_STD_UNARY(NAME,FUNCTOR) \
   template<typename Derived> \
-  inline const Eigen::CwiseUnaryOp<Eigen::FUNCTOR<typename Derived::Scalar>, Derived> \
+  inline const Eigen::CwiseUnaryOp<Eigen::internal::FUNCTOR<typename Derived::Scalar>, const Derived> \
   NAME(const Eigen::ArrayBase<Derived>& x) { \
     return x.derived(); \
   }
@@ -38,7 +38,7 @@
   template<typename Derived> \
   struct NAME##_retval<ArrayBase<Derived> > \
   { \
-    typedef const Eigen::CwiseUnaryOp<Eigen::FUNCTOR<typename Derived::Scalar>, Derived> type; \
+    typedef const Eigen::CwiseUnaryOp<Eigen::internal::FUNCTOR<typename Derived::Scalar>, const Derived> type; \
   }; \
   template<typename Derived> \
   struct NAME##_impl<ArrayBase<Derived> > \
@@ -52,17 +52,20 @@
 
 namespace std
 {
-  EIGEN_ARRAY_DECLARE_GLOBAL_STD_UNARY(real,ei_scalar_real_op)
-  EIGEN_ARRAY_DECLARE_GLOBAL_STD_UNARY(imag,ei_scalar_imag_op)
-  EIGEN_ARRAY_DECLARE_GLOBAL_STD_UNARY(sin,ei_scalar_sin_op)
-  EIGEN_ARRAY_DECLARE_GLOBAL_STD_UNARY(cos,ei_scalar_cos_op)
-  EIGEN_ARRAY_DECLARE_GLOBAL_STD_UNARY(exp,ei_scalar_exp_op)
-  EIGEN_ARRAY_DECLARE_GLOBAL_STD_UNARY(log,ei_scalar_log_op)
-  EIGEN_ARRAY_DECLARE_GLOBAL_STD_UNARY(abs,ei_scalar_abs_op)
-  EIGEN_ARRAY_DECLARE_GLOBAL_STD_UNARY(sqrt,ei_scalar_sqrt_op)
+  EIGEN_ARRAY_DECLARE_GLOBAL_STD_UNARY(real,scalar_real_op)
+  EIGEN_ARRAY_DECLARE_GLOBAL_STD_UNARY(imag,scalar_imag_op)
+  EIGEN_ARRAY_DECLARE_GLOBAL_STD_UNARY(sin,scalar_sin_op)
+  EIGEN_ARRAY_DECLARE_GLOBAL_STD_UNARY(cos,scalar_cos_op)
+  EIGEN_ARRAY_DECLARE_GLOBAL_STD_UNARY(asin,scalar_asin_op)
+  EIGEN_ARRAY_DECLARE_GLOBAL_STD_UNARY(acos,scalar_acos_op)
+  EIGEN_ARRAY_DECLARE_GLOBAL_STD_UNARY(tan,scalar_tan_op)
+  EIGEN_ARRAY_DECLARE_GLOBAL_STD_UNARY(exp,scalar_exp_op)
+  EIGEN_ARRAY_DECLARE_GLOBAL_STD_UNARY(log,scalar_log_op)
+  EIGEN_ARRAY_DECLARE_GLOBAL_STD_UNARY(abs,scalar_abs_op)
+  EIGEN_ARRAY_DECLARE_GLOBAL_STD_UNARY(sqrt,scalar_sqrt_op)
 
   template<typename Derived>
-  inline const Eigen::CwiseUnaryOp<Eigen::ei_scalar_pow_op<typename Derived::Scalar>, Derived>
+  inline const Eigen::CwiseUnaryOp<Eigen::internal::scalar_pow_op<typename Derived::Scalar>, const Derived>
   pow(const Eigen::ArrayBase<Derived>& x, const typename Derived::Scalar& exponent) { \
     return x.derived().pow(exponent); \
   }
@@ -70,17 +73,23 @@ namespace std
 
 namespace Eigen
 {
-  EIGEN_ARRAY_DECLARE_GLOBAL_EIGEN_UNARY(ei_real,ei_scalar_real_op)
-  EIGEN_ARRAY_DECLARE_GLOBAL_EIGEN_UNARY(ei_imag,ei_scalar_imag_op)
-  EIGEN_ARRAY_DECLARE_GLOBAL_EIGEN_UNARY(ei_sin,ei_scalar_sin_op)
-  EIGEN_ARRAY_DECLARE_GLOBAL_EIGEN_UNARY(ei_cos,ei_scalar_cos_op)
-  EIGEN_ARRAY_DECLARE_GLOBAL_EIGEN_UNARY(ei_exp,ei_scalar_exp_op)
-  EIGEN_ARRAY_DECLARE_GLOBAL_EIGEN_UNARY(ei_log,ei_scalar_log_op)
-  EIGEN_ARRAY_DECLARE_GLOBAL_EIGEN_UNARY(ei_abs,ei_scalar_abs_op)
-  EIGEN_ARRAY_DECLARE_GLOBAL_EIGEN_UNARY(ei_abs2,ei_scalar_abs2_op)
-  EIGEN_ARRAY_DECLARE_GLOBAL_EIGEN_UNARY(ei_sqrt,ei_scalar_sqrt_op)
+  namespace internal
+  {
+    EIGEN_ARRAY_DECLARE_GLOBAL_EIGEN_UNARY(real,scalar_real_op)
+    EIGEN_ARRAY_DECLARE_GLOBAL_EIGEN_UNARY(imag,scalar_imag_op)
+    EIGEN_ARRAY_DECLARE_GLOBAL_EIGEN_UNARY(sin,scalar_sin_op)
+    EIGEN_ARRAY_DECLARE_GLOBAL_EIGEN_UNARY(cos,scalar_cos_op)
+    EIGEN_ARRAY_DECLARE_GLOBAL_EIGEN_UNARY(asin,scalar_asin_op)
+    EIGEN_ARRAY_DECLARE_GLOBAL_EIGEN_UNARY(acos,scalar_acos_op)
+    EIGEN_ARRAY_DECLARE_GLOBAL_EIGEN_UNARY(tan,scalar_tan_op)
+    EIGEN_ARRAY_DECLARE_GLOBAL_EIGEN_UNARY(exp,scalar_exp_op)
+    EIGEN_ARRAY_DECLARE_GLOBAL_EIGEN_UNARY(log,scalar_log_op)
+    EIGEN_ARRAY_DECLARE_GLOBAL_EIGEN_UNARY(abs,scalar_abs_op)
+    EIGEN_ARRAY_DECLARE_GLOBAL_EIGEN_UNARY(abs2,scalar_abs2_op)
+    EIGEN_ARRAY_DECLARE_GLOBAL_EIGEN_UNARY(sqrt,scalar_sqrt_op)
+  }
 }
 
-// TODO: cleanly disable those functions that are not supported on Array (ei_real_ref, ei_random, ei_isApprox...)
+// TODO: cleanly disable those functions that are not supported on Array (internal::real_ref, internal::random, internal::isApprox...)
 
 #endif // EIGEN_GLOBAL_FUNCTIONS_H

@@ -5,7 +5,7 @@
 #include "Householder"
 #include "Jacobi"
 
-#include "src/Core/util/DisableMSVCWarnings.h"
+#include "src/Core/util/DisableStupidWarnings.h"
 
 namespace Eigen {
 
@@ -26,9 +26,13 @@ namespace Eigen {
 #include "src/SVD/JacobiSVD.h"
 #include "src/SVD/UpperBidiagonalization.h"
 
+#ifdef EIGEN2_SUPPORT
+#include "src/Eigen2Support/SVD.h"
+#endif
+
 } // namespace Eigen
 
-#include "src/Core/util/EnableMSVCWarnings.h"
+#include "src/Core/util/ReenableStupidWarnings.h"
 
 #endif // EIGEN_SVD_MODULE_H
 /* vim: set filetype=cpp et sw=2 ts=2 ai: */

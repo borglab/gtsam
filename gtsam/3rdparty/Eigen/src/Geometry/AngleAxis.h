@@ -51,10 +51,12 @@
   * \sa class Quaternion, class Transform, MatrixBase::UnitX()
   */
 
-template<typename _Scalar> struct ei_traits<AngleAxis<_Scalar> >
+namespace internal {
+template<typename _Scalar> struct traits<AngleAxis<_Scalar> >
 {
   typedef _Scalar Scalar;
 };
+}
 
 template<typename _Scalar>
 class AngleAxis : public RotationBase<AngleAxis<_Scalar>,3>
@@ -131,8 +133,8 @@ public:
     * then this function smartly returns a const reference to \c *this.
     */
   template<typename NewScalarType>
-  inline typename ei_cast_return_type<AngleAxis,AngleAxis<NewScalarType> >::type cast() const
-  { return typename ei_cast_return_type<AngleAxis,AngleAxis<NewScalarType> >::type(*this); }
+  inline typename internal::cast_return_type<AngleAxis,AngleAxis<NewScalarType> >::type cast() const
+  { return typename internal::cast_return_type<AngleAxis,AngleAxis<NewScalarType> >::type(*this); }
 
   /** Copy constructor with scalar type conversion */
   template<typename OtherScalarType>
@@ -149,7 +151,7 @@ public:
     *
     * \sa MatrixBase::isApprox() */
   bool isApprox(const AngleAxis& other, typename NumTraits<Scalar>::Real prec = NumTraits<Scalar>::dummy_precision()) const
-  { return m_axis.isApprox(other.m_axis, prec) && ei_isApprox(m_angle,other.m_angle, prec); }
+  { return m_axis.isApprox(other.m_axis, prec) && internal::isApprox(m_angle,other.m_angle, prec); }
 };
 
 /** \ingroup Geometry_Module
@@ -159,8 +161,11 @@ typedef AngleAxis<float> AngleAxisf;
   * double precision angle-axis type */
 typedef AngleAxis<double> AngleAxisd;
 
-/** Set \c *this from a quaternion.
+/** Set \c *this from a \b unit quaternion.
   * The axis is normalized.
+  * 
+  * \warning As any other method dealing with quaternion, if the input quaternion
+  *          is not normalized then the result is undefined.
   */
 template<typename Scalar>
 template<typename QuatDerived>
@@ -174,8 +179,8 @@ AngleAxis<Scalar>& AngleAxis<Scalar>::operator=(const QuaternionBase<QuatDerived
   }
   else
   {
-    m_angle = 2*std::acos(q.w());
-    m_axis = q.vec() / ei_sqrt(n2);
+    m_angle = Scalar(2)*std::acos(std::min(std::max(Scalar(-1),q.w()),Scalar(1)));
+    m_axis = q.vec() / internal::sqrt(n2);
   }
   return *this;
 }
@@ -208,8 +213,8 @@ typename AngleAxis<Scalar>::Matrix3
 AngleAxis<Scalar>::toRotationMatrix(void) const
 {
   Matrix3 res;
-  Vector3 sin_axis  = ei_sin(m_angle) * m_axis;
-  Scalar c = ei_cos(m_angle);
+  Vector3 sin_axis  = internal::sin(m_angle) * m_axis;
+  Scalar c = internal::cos(m_angle);
   Vector3 cos1_axis = (Scalar(1)-c) * m_axis;
 
   Scalar tmp;

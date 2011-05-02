@@ -96,7 +96,7 @@ template<typename _MatrixType> class ComplexEigenSolver
       * This is a square matrix with entries of type #ComplexScalar.
       * The size is the same as the size of #MatrixType.
       */
-    typedef Matrix<ComplexScalar, RowsAtCompileTime, ColsAtCompileTime, Options, MaxRowsAtCompileTime, ColsAtCompileTime> EigenvectorType;
+    typedef Matrix<ComplexScalar, RowsAtCompileTime, ColsAtCompileTime, Options, MaxRowsAtCompileTime, MaxColsAtCompileTime> EigenvectorType;
 
     /** \brief Default constructor.
       *
@@ -169,8 +169,8 @@ template<typename _MatrixType> class ComplexEigenSolver
       */
     const EigenvectorType& eigenvectors() const
     {
-      ei_assert(m_isInitialized && "ComplexEigenSolver is not initialized.");
-      ei_assert(m_eigenvectorsOk && "The eigenvectors have not been computed together with the eigenvalues.");
+      eigen_assert(m_isInitialized && "ComplexEigenSolver is not initialized.");
+      eigen_assert(m_eigenvectorsOk && "The eigenvectors have not been computed together with the eigenvalues.");
       return m_eivec;
     }
 
@@ -186,14 +186,15 @@ template<typename _MatrixType> class ComplexEigenSolver
       * This function returns a column vector containing the
       * eigenvalues. Eigenvalues are repeated according to their
       * algebraic multiplicity, so there are as many eigenvalues as
-      * rows in the matrix.
+      * rows in the matrix. The eigenvalues are not sorted in any particular
+      * order.
       *
       * Example: \include ComplexEigenSolver_eigenvalues.cpp
       * Output: \verbinclude ComplexEigenSolver_eigenvalues.out
       */
     const EigenvalueType& eigenvalues() const
     {
-      ei_assert(m_isInitialized && "ComplexEigenSolver is not initialized.");
+      eigen_assert(m_isInitialized && "ComplexEigenSolver is not initialized.");
       return m_eivalues;
     }
 
@@ -229,7 +230,7 @@ template<typename _MatrixType> class ComplexEigenSolver
       */
     ComputationInfo info() const
     {
-      ei_assert(m_isInitialized && "ComplexEigenSolver is not initialized.");
+      eigen_assert(m_isInitialized && "ComplexEigenSolver is not initialized.");
       return m_schur.info();
     }
 
@@ -293,7 +294,7 @@ void ComplexEigenSolver<MatrixType>::doComputeEigenvectors(RealScalar matrixnorm
       {
         // If the i-th and k-th eigenvalue are equal, then z equals 0.
         // Use a small value instead, to prevent division by zero.
-        ei_real_ref(z) = NumTraits<RealScalar>::epsilon() * matrixnorm;
+        internal::real_ref(z) = NumTraits<RealScalar>::epsilon() * matrixnorm;
       }
       m_matX.coeffRef(i,k) = m_matX.coeff(i,k) / z;
     }

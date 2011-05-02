@@ -28,35 +28,36 @@
 template<typename Lhs, typename Rhs>
 struct SparseSparseProductReturnType
 {
-  typedef typename ei_traits<Lhs>::Scalar Scalar;
+  typedef typename internal::traits<Lhs>::Scalar Scalar;
   enum {
-    LhsRowMajor = ei_traits<Lhs>::Flags & RowMajorBit,
-    RhsRowMajor = ei_traits<Rhs>::Flags & RowMajorBit,
+    LhsRowMajor = internal::traits<Lhs>::Flags & RowMajorBit,
+    RhsRowMajor = internal::traits<Rhs>::Flags & RowMajorBit,
     TransposeRhs = (!LhsRowMajor) && RhsRowMajor,
     TransposeLhs = LhsRowMajor && (!RhsRowMajor)
   };
 
-  typedef typename ei_meta_if<TransposeLhs,
+  typedef typename internal::conditional<TransposeLhs,
     SparseMatrix<Scalar,0>,
-    const typename ei_nested<Lhs,Rhs::RowsAtCompileTime>::type>::ret LhsNested;
+    const typename internal::nested<Lhs,Rhs::RowsAtCompileTime>::type>::type LhsNested;
 
-  typedef typename ei_meta_if<TransposeRhs,
+  typedef typename internal::conditional<TransposeRhs,
     SparseMatrix<Scalar,0>,
-    const typename ei_nested<Rhs,Lhs::RowsAtCompileTime>::type>::ret RhsNested;
+    const typename internal::nested<Rhs,Lhs::RowsAtCompileTime>::type>::type RhsNested;
 
   typedef SparseSparseProduct<LhsNested, RhsNested> Type;
 };
 
+namespace internal {
 template<typename LhsNested, typename RhsNested>
-struct ei_traits<SparseSparseProduct<LhsNested, RhsNested> >
+struct traits<SparseSparseProduct<LhsNested, RhsNested> >
 {
   typedef MatrixXpr XprKind;
   // clean the nested types:
-  typedef typename ei_cleantype<LhsNested>::type _LhsNested;
-  typedef typename ei_cleantype<RhsNested>::type _RhsNested;
+  typedef typename remove_all<LhsNested>::type _LhsNested;
+  typedef typename remove_all<RhsNested>::type _RhsNested;
   typedef typename _LhsNested::Scalar Scalar;
-  typedef typename ei_promote_index_type<typename ei_traits<_LhsNested>::Index,
-                                         typename ei_traits<_RhsNested>::Index>::type Index;
+  typedef typename promote_index_type<typename traits<_LhsNested>::Index,
+                                         typename traits<_RhsNested>::Index>::type Index;
 
   enum {
     LhsCoeffReadCost = _LhsNested::CoeffReadCost,
@@ -85,8 +86,10 @@ struct ei_traits<SparseSparseProduct<LhsNested, RhsNested> >
   typedef Sparse StorageKind;
 };
 
+} // end namespace internal
+
 template<typename LhsNested, typename RhsNested>
-class SparseSparseProduct : ei_no_assignment_operator,
+class SparseSparseProduct : internal::no_assignment_operator,
   public SparseMatrixBase<SparseSparseProduct<LhsNested, RhsNested> >
 {
   public:
@@ -96,8 +99,8 @@ class SparseSparseProduct : ei_no_assignment_operator,
 
   private:
 
-    typedef typename ei_traits<SparseSparseProduct>::_LhsNested _LhsNested;
-    typedef typename ei_traits<SparseSparseProduct>::_RhsNested _RhsNested;
+    typedef typename internal::traits<SparseSparseProduct>::_LhsNested _LhsNested;
+    typedef typename internal::traits<SparseSparseProduct>::_RhsNested _RhsNested;
 
   public:
 
@@ -105,7 +108,7 @@ class SparseSparseProduct : ei_no_assignment_operator,
     EIGEN_STRONG_INLINE SparseSparseProduct(const Lhs& lhs, const Rhs& rhs)
       : m_lhs(lhs), m_rhs(rhs)
     {
-      ei_assert(lhs.cols() == rhs.rows());
+      eigen_assert(lhs.cols() == rhs.rows());
 
       enum {
         ProductIsValid = _LhsNested::ColsAtCompileTime==Dynamic

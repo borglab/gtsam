@@ -14,10 +14,10 @@ operator*(const EIGEN_CURRENT_STORAGE_BASE_CLASS<OtherDerived> &other) const
   * \sa MatrixBase::cwiseQuotient
   */
 template<typename OtherDerived>
-EIGEN_STRONG_INLINE const CwiseBinaryOp<ei_scalar_quotient_op<Scalar>, Derived, OtherDerived>
+EIGEN_STRONG_INLINE const CwiseBinaryOp<internal::scalar_quotient_op<Scalar>, const Derived, const OtherDerived>
 operator/(const EIGEN_CURRENT_STORAGE_BASE_CLASS<OtherDerived> &other) const
 {
-  return CwiseBinaryOp<ei_scalar_quotient_op<Scalar>, Derived, OtherDerived>(derived(), other.derived());
+  return CwiseBinaryOp<internal::scalar_quotient_op<Scalar>, const Derived, const OtherDerived>(derived(), other.derived());
 }
 
 /** \returns an expression of the coefficient-wise min of \c *this and \a other
@@ -27,7 +27,7 @@ operator/(const EIGEN_CURRENT_STORAGE_BASE_CLASS<OtherDerived> &other) const
   *
   * \sa max()
   */
-EIGEN_MAKE_CWISE_BINARY_OP(min,ei_scalar_min_op)
+EIGEN_MAKE_CWISE_BINARY_OP(min,internal::scalar_min_op)
 
 /** \returns an expression of the coefficient-wise max of \c *this and \a other
   *
@@ -36,7 +36,7 @@ EIGEN_MAKE_CWISE_BINARY_OP(min,ei_scalar_min_op)
   *
   * \sa min()
   */
-EIGEN_MAKE_CWISE_BINARY_OP(max,ei_scalar_max_op)
+EIGEN_MAKE_CWISE_BINARY_OP(max,internal::scalar_max_op)
 
 /** \returns an expression of the coefficient-wise \< operator of *this and \a other
   *
@@ -111,13 +111,13 @@ EIGEN_MAKE_CWISE_BINARY_OP(operator!=,std::not_equal_to)
   *
   * \sa operator+=(), operator-()
   */
-inline const CwiseUnaryOp<ei_scalar_add_op<Scalar>, Derived>
+inline const CwiseUnaryOp<internal::scalar_add_op<Scalar>, const Derived>
 operator+(const Scalar& scalar) const
 {
-  return CwiseUnaryOp<ei_scalar_add_op<Scalar>, Derived>(derived(), ei_scalar_add_op<Scalar>(scalar));
+  return CwiseUnaryOp<internal::scalar_add_op<Scalar>, const Derived>(derived(), internal::scalar_add_op<Scalar>(scalar));
 }
 
-friend inline const CwiseUnaryOp<ei_scalar_add_op<Scalar>, Derived>
+friend inline const CwiseUnaryOp<internal::scalar_add_op<Scalar>, const Derived>
 operator+(const Scalar& scalar,const EIGEN_CURRENT_STORAGE_BASE_CLASS<Derived>& other)
 {
   return other + scalar;
@@ -130,13 +130,13 @@ operator+(const Scalar& scalar,const EIGEN_CURRENT_STORAGE_BASE_CLASS<Derived>& 
   *
   * \sa operator+(), operator-=()
   */
-inline const CwiseUnaryOp<ei_scalar_add_op<Scalar>, Derived>
+inline const CwiseUnaryOp<internal::scalar_add_op<Scalar>, const Derived>
 operator-(const Scalar& scalar) const
 {
   return *this + (-scalar);
 }
 
-friend inline const CwiseUnaryOp<ei_scalar_add_op<Scalar>, CwiseUnaryOp<ei_scalar_opposite_op<Scalar>,Derived> >
+friend inline const CwiseUnaryOp<internal::scalar_add_op<Scalar>, const CwiseUnaryOp<internal::scalar_opposite_op<Scalar>, const Derived> >
 operator-(const Scalar& scalar,const EIGEN_CURRENT_STORAGE_BASE_CLASS<Derived>& other)
 {
   return (-other) + scalar;

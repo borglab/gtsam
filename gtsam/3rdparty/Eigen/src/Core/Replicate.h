@@ -39,15 +39,17 @@
   *
   * \sa DenseBase::replicate()
   */
+
+namespace internal {
 template<typename MatrixType,int RowFactor,int ColFactor>
-struct ei_traits<Replicate<MatrixType,RowFactor,ColFactor> >
- : ei_traits<MatrixType>
+struct traits<Replicate<MatrixType,RowFactor,ColFactor> >
+ : traits<MatrixType>
 {
   typedef typename MatrixType::Scalar Scalar;
-  typedef typename ei_traits<MatrixType>::StorageKind StorageKind;
-  typedef typename ei_traits<MatrixType>::XprKind XprKind;
-  typedef typename ei_nested<MatrixType>::type MatrixTypeNested;
-  typedef typename ei_unref<MatrixTypeNested>::type _MatrixTypeNested;
+  typedef typename traits<MatrixType>::StorageKind StorageKind;
+  typedef typename traits<MatrixType>::XprKind XprKind;
+  typedef typename nested<MatrixType>::type MatrixTypeNested;
+  typedef typename remove_reference<MatrixTypeNested>::type _MatrixTypeNested;
   enum {
     RowsAtCompileTime = RowFactor==Dynamic || int(MatrixType::RowsAtCompileTime)==Dynamic
                       ? Dynamic
@@ -65,29 +67,30 @@ struct ei_traits<Replicate<MatrixType,RowFactor,ColFactor> >
     CoeffReadCost = _MatrixTypeNested::CoeffReadCost
   };
 };
+}
 
 template<typename MatrixType,int RowFactor,int ColFactor> class Replicate
-  : public ei_dense_xpr_base< Replicate<MatrixType,RowFactor,ColFactor> >::type
+  : public internal::dense_xpr_base< Replicate<MatrixType,RowFactor,ColFactor> >::type
 {
   public:
 
-    typedef typename ei_dense_xpr_base<Replicate>::type Base;
+    typedef typename internal::dense_xpr_base<Replicate>::type Base;
     EIGEN_DENSE_PUBLIC_INTERFACE(Replicate)
 
     template<typename OriginalMatrixType>
     inline explicit Replicate(const OriginalMatrixType& matrix)
       : m_matrix(matrix), m_rowFactor(RowFactor), m_colFactor(ColFactor)
     {
-      EIGEN_STATIC_ASSERT((ei_is_same_type<MatrixType,OriginalMatrixType>::ret),
+      EIGEN_STATIC_ASSERT((internal::is_same<typename internal::remove_const<MatrixType>::type,OriginalMatrixType>::value),
                           THE_MATRIX_OR_EXPRESSION_THAT_YOU_PASSED_DOES_NOT_HAVE_THE_EXPECTED_TYPE)
-      ei_assert(RowFactor!=Dynamic && ColFactor!=Dynamic);
+      eigen_assert(RowFactor!=Dynamic && ColFactor!=Dynamic);
     }
 
     template<typename OriginalMatrixType>
     inline Replicate(const OriginalMatrixType& matrix, int rowFactor, int colFactor)
       : m_matrix(matrix), m_rowFactor(rowFactor), m_colFactor(colFactor)
     {
-      EIGEN_STATIC_ASSERT((ei_is_same_type<MatrixType,OriginalMatrixType>::ret),
+      EIGEN_STATIC_ASSERT((internal::is_same<typename internal::remove_const<MatrixType>::type,OriginalMatrixType>::value),
                           THE_MATRIX_OR_EXPRESSION_THAT_YOU_PASSED_DOES_NOT_HAVE_THE_EXPECTED_TYPE)
     }
 
@@ -97,10 +100,10 @@ template<typename MatrixType,int RowFactor,int ColFactor> class Replicate
     inline Scalar coeff(Index row, Index col) const
     {
       // try to avoid using modulo; this is a pure optimization strategy
-      const Index actual_row  = ei_traits<MatrixType>::RowsAtCompileTime==1 ? 0
+      const Index actual_row  = internal::traits<MatrixType>::RowsAtCompileTime==1 ? 0
                             : RowFactor==1 ? row
                             : row%m_matrix.rows();
-      const Index actual_col  = ei_traits<MatrixType>::ColsAtCompileTime==1 ? 0
+      const Index actual_col  = internal::traits<MatrixType>::ColsAtCompileTime==1 ? 0
                             : ColFactor==1 ? col
                             : col%m_matrix.cols();
 
@@ -109,10 +112,10 @@ template<typename MatrixType,int RowFactor,int ColFactor> class Replicate
     template<int LoadMode>
     inline PacketScalar packet(Index row, Index col) const
     {
-      const Index actual_row  = ei_traits<MatrixType>::RowsAtCompileTime==1 ? 0
+      const Index actual_row  = internal::traits<MatrixType>::RowsAtCompileTime==1 ? 0
                             : RowFactor==1 ? row
                             : row%m_matrix.rows();
-      const Index actual_col  = ei_traits<MatrixType>::ColsAtCompileTime==1 ? 0
+      const Index actual_col  = internal::traits<MatrixType>::ColsAtCompileTime==1 ? 0
                             : ColFactor==1 ? col
                             : col%m_matrix.cols();
 
@@ -122,8 +125,8 @@ template<typename MatrixType,int RowFactor,int ColFactor> class Replicate
 
   protected:
     const typename MatrixType::Nested m_matrix;
-    const ei_variable_if_dynamic<Index, RowFactor> m_rowFactor;
-    const ei_variable_if_dynamic<Index, ColFactor> m_colFactor;
+    const internal::variable_if_dynamic<Index, RowFactor> m_rowFactor;
+    const internal::variable_if_dynamic<Index, ColFactor> m_colFactor;
 };
 
 /**

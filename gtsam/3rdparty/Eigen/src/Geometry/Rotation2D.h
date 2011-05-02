@@ -41,10 +41,14 @@
   *
   * \sa class Quaternion, class Transform
   */
-template<typename _Scalar> struct ei_traits<Rotation2D<_Scalar> >
+
+namespace internal {
+
+template<typename _Scalar> struct traits<Rotation2D<_Scalar> >
 {
   typedef _Scalar Scalar;
 };
+} // end namespace internal
 
 template<typename _Scalar>
 class Rotation2D : public RotationBase<Rotation2D<_Scalar>,2>
@@ -107,8 +111,8 @@ public:
     * then this function smartly returns a const reference to \c *this.
     */
   template<typename NewScalarType>
-  inline typename ei_cast_return_type<Rotation2D,Rotation2D<NewScalarType> >::type cast() const
-  { return typename ei_cast_return_type<Rotation2D,Rotation2D<NewScalarType> >::type(*this); }
+  inline typename internal::cast_return_type<Rotation2D,Rotation2D<NewScalarType> >::type cast() const
+  { return typename internal::cast_return_type<Rotation2D,Rotation2D<NewScalarType> >::type(*this); }
 
   /** Copy constructor with scalar type conversion */
   template<typename OtherScalarType>
@@ -124,7 +128,7 @@ public:
     *
     * \sa MatrixBase::isApprox() */
   bool isApprox(const Rotation2D& other, typename NumTraits<Scalar>::Real prec = NumTraits<Scalar>::dummy_precision()) const
-  { return ei_isApprox(m_angle,other.m_angle, prec); }
+  { return internal::isApprox(m_angle,other.m_angle, prec); }
 };
 
 /** \ingroup Geometry_Module
@@ -143,7 +147,7 @@ template<typename Derived>
 Rotation2D<Scalar>& Rotation2D<Scalar>::fromRotationMatrix(const MatrixBase<Derived>& mat)
 {
   EIGEN_STATIC_ASSERT(Derived::RowsAtCompileTime==2 && Derived::ColsAtCompileTime==2,YOU_MADE_A_PROGRAMMING_MISTAKE)
-  m_angle = ei_atan2(mat.coeff(1,0), mat.coeff(0,0));
+  m_angle = internal::atan2(mat.coeff(1,0), mat.coeff(0,0));
   return *this;
 }
 
@@ -153,8 +157,8 @@ template<typename Scalar>
 typename Rotation2D<Scalar>::Matrix2
 Rotation2D<Scalar>::toRotationMatrix(void) const
 {
-  Scalar sinA = ei_sin(m_angle);
-  Scalar cosA = ei_cos(m_angle);
+  Scalar sinA = internal::sin(m_angle);
+  Scalar cosA = internal::cos(m_angle);
   return (Matrix2() << cosA, -sinA, sinA, cosA).finished();
 }
 

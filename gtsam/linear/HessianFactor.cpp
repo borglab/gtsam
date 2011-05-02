@@ -132,12 +132,13 @@ namespace gtsam {
         throw invalid_argument("Cannot construct HessianFactor from JacobianFactor with constrained noise model");
       else {
       	Vector invsigmas = jf.model_->invsigmas();
+        typedef Eigen::Map<const Eigen::MatrixXd> ConstEigenMap;
         typedef Eigen::Map<Eigen::MatrixXd> EigenMap;
-        typedef typeof(EigenMap(&jf.matrix_(0,0),0,0).block(0,0,0,0)) EigenBlock;
-        EigenBlock A(EigenMap(&jf.matrix_(0,0),jf.matrix_.size1(),jf.matrix_.size2()).block(
+        typedef typeof(ConstEigenMap(&jf.matrix_(0,0),0,0).block(0,0,0,0)) EigenBlock;
+        EigenBlock A(ConstEigenMap(&jf.matrix_(0,0),jf.matrix_.size1(),jf.matrix_.size2()).block(
             jf.Ab_.rowStart(),jf.Ab_.offset(0), jf.Ab_.full().size1(), jf.Ab_.full().size2()));
-        typedef typeof(Eigen::Map<Eigen::VectorXd>(&invsigmas(0),0).asDiagonal()) EigenDiagonal;
-        EigenDiagonal R(Eigen::Map<Eigen::VectorXd>(&invsigmas(0),jf.model_->dim()).asDiagonal());
+        typedef typeof(Eigen::Map<const Eigen::VectorXd>(&invsigmas(0),0).asDiagonal()) EigenDiagonal;
+        EigenDiagonal R(Eigen::Map<const Eigen::VectorXd>(&invsigmas(0),jf.model_->dim()).asDiagonal());
         info_.copyStructureFrom(jf.Ab_);
         EigenMap L(EigenMap(&matrix_(0,0), matrix_.size1(), matrix_.size2()));
         L.noalias() = A.transpose() * R * R * A;
@@ -242,7 +243,7 @@ void HessianFactor::updateATA(const HessianFactor& update, const Scatter& scatte
   }
 
   Eigen::Map<Eigen::MatrixXd> information(&matrix_(0,0), matrix_.size1(), matrix_.size2());
-  Eigen::Map<Eigen::MatrixXd> updateInform(&update.matrix_(0,0), update.matrix_.size1(), update.matrix_.size2());
+  Eigen::Map<const Eigen::MatrixXd> updateInform(&update.matrix_(0,0), update.matrix_.size1(), update.matrix_.size2());
 
   // Apply updates to the upper triangle
   tic(3, "update");
@@ -302,7 +303,7 @@ void HessianFactor::updateATA(const JacobianFactor& update, const Scatter& scatt
   }
 
   Eigen::Map<Eigen::MatrixXd> information(&matrix_(0,0), matrix_.size1(), matrix_.size2());
-  Eigen::Map<Eigen::MatrixXd> updateAf(&update.matrix_(0,0), update.matrix_.size1(), update.matrix_.size2());
+  Eigen::Map<const Eigen::MatrixXd> updateAf(&update.matrix_(0,0), update.matrix_.size1(), update.matrix_.size2());
   Eigen::Block<typeof(updateAf)> updateA(updateAf.block(
               update.Ab_.rowStart(),update.Ab_.offset(0), update.Ab_.full().size1(), update.Ab_.full().size2()));
 

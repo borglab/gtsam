@@ -25,19 +25,21 @@
 #ifndef EIGEN_STABLENORM_H
 #define EIGEN_STABLENORM_H
 
+namespace internal {
 template<typename ExpressionType, typename Scalar>
-inline void ei_stable_norm_kernel(const ExpressionType& bl, Scalar& ssq, Scalar& scale, Scalar& invScale)
+inline void stable_norm_kernel(const ExpressionType& bl, Scalar& ssq, Scalar& scale, Scalar& invScale)
 {
   Scalar max = bl.cwiseAbs().maxCoeff();
   if (max>scale)
   {
-    ssq = ssq * ei_abs2(scale/max);
+    ssq = ssq * abs2(scale/max);
     scale = max;
     invScale = Scalar(1)/scale;
   }
   // TODO if the max is much much smaller than the current scale,
   // then we can neglect this sub vector
   ssq += (bl*invScale).squaredNorm();
+}
 }
 
 /** \returns the \em l2 norm of \c *this avoiding underflow and overflow.
@@ -51,7 +53,7 @@ inline void ei_stable_norm_kernel(const ExpressionType& bl, Scalar& ssq, Scalar&
   * \sa norm(), blueNorm(), hypotNorm()
   */
 template<typename Derived>
-inline typename NumTraits<typename ei_traits<Derived>::Scalar>::Real
+inline typename NumTraits<typename internal::traits<Derived>::Scalar>::Real
 MatrixBase<Derived>::stableNorm() const
 {
   const Index blockSize = 4096;
@@ -62,12 +64,12 @@ MatrixBase<Derived>::stableNorm() const
     Alignment = (int(Flags)&DirectAccessBit) || (int(Flags)&AlignedBit) ? 1 : 0
   };
   Index n = size();
-  Index bi = ei_first_aligned(derived());
+  Index bi = internal::first_aligned(derived());
   if (bi>0)
-    ei_stable_norm_kernel(this->head(bi), ssq, scale, invScale);
+    internal::stable_norm_kernel(this->head(bi), ssq, scale, invScale);
   for (; bi<n; bi+=blockSize)
-    ei_stable_norm_kernel(this->segment(bi,std::min(blockSize, n - bi)).template forceAlignedAccessIf<Alignment>(), ssq, scale, invScale);
-  return scale * ei_sqrt(ssq);
+    internal::stable_norm_kernel(this->segment(bi,std::min(blockSize, n - bi)).template forceAlignedAccessIf<Alignment>(), ssq, scale, invScale);
+  return scale * internal::sqrt(ssq);
 }
 
 /** \returns the \em l2 norm of \c *this using the Blue's algorithm.
@@ -80,7 +82,7 @@ MatrixBase<Derived>::stableNorm() const
   * \sa norm(), stableNorm(), hypotNorm()
   */
 template<typename Derived>
-inline typename NumTraits<typename ei_traits<Derived>::Scalar>::Real
+inline typename NumTraits<typename internal::traits<Derived>::Scalar>::Real
 MatrixBase<Derived>::blueNorm() const
 {
   static Index nmax = -1;
@@ -116,7 +118,7 @@ MatrixBase<Derived>::blueNorm() const
 
     overfl  = rbig*s2m;             // overflow boundary for abig
     eps     = RealScalar(std::pow(double(ibeta), 1-it));
-    relerr  = ei_sqrt(eps);         // tolerance for neglecting asml
+    relerr  = internal::sqrt(eps);         // tolerance for neglecting asml
     abig    = RealScalar(1.0/eps - 1.0);
     if (RealScalar(nbig)>abig)  nmax = int(abig);  // largest safe n
     else                        nmax = nbig;
@@ -128,23 +130,23 @@ MatrixBase<Derived>::blueNorm() const
   RealScalar abig = RealScalar(0);
   for(Index j=0; j<n; ++j)
   {
-    RealScalar ax = ei_abs(coeff(j));
-    if(ax > ab2)     abig += ei_abs2(ax*s2m);
-    else if(ax < b1) asml += ei_abs2(ax*s1m);
-    else             amed += ei_abs2(ax);
+    RealScalar ax = internal::abs(coeff(j));
+    if(ax > ab2)     abig += internal::abs2(ax*s2m);
+    else if(ax < b1) asml += internal::abs2(ax*s1m);
+    else             amed += internal::abs2(ax);
   }
   if(abig > RealScalar(0))
   {
-    abig = ei_sqrt(abig);
+    abig = internal::sqrt(abig);
     if(abig > overfl)
     {
-      ei_assert(false && "overflow");
+      eigen_assert(false && "overflow");
       return rbig;
     }
     if(amed > RealScalar(0))
     {
       abig = abig/s2m;
-      amed = ei_sqrt(amed);
+      amed = internal::sqrt(amed);
     }
     else
       return abig/s2m;
@@ -153,20 +155,20 @@ MatrixBase<Derived>::blueNorm() const
   {
     if (amed > RealScalar(0))
     {
-      abig = ei_sqrt(amed);
-      amed = ei_sqrt(asml) / s1m;
+      abig = internal::sqrt(amed);
+      amed = internal::sqrt(asml) / s1m;
     }
     else
-      return ei_sqrt(asml)/s1m;
+      return internal::sqrt(asml)/s1m;
   }
   else
-    return ei_sqrt(amed);
+    return internal::sqrt(amed);
   asml = std::min(abig, amed);
   abig = std::max(abig, amed);
   if(asml <= abig*relerr)
     return abig;
   else
-    return abig * ei_sqrt(RealScalar(1) + ei_abs2(asml/abig));
+    return abig * internal::sqrt(RealScalar(1) + internal::abs2(asml/abig));
 }
 
 /** \returns the \em l2 norm of \c *this avoiding undeflow and overflow.
@@ -175,10 +177,10 @@ MatrixBase<Derived>::blueNorm() const
   * \sa norm(), stableNorm()
   */
 template<typename Derived>
-inline typename NumTraits<typename ei_traits<Derived>::Scalar>::Real
+inline typename NumTraits<typename internal::traits<Derived>::Scalar>::Real
 MatrixBase<Derived>::hypotNorm() const
 {
-  return this->cwiseAbs().redux(ei_scalar_hypot_op<RealScalar>());
+  return this->cwiseAbs().redux(internal::scalar_hypot_op<RealScalar>());
 }
 
 #endif // EIGEN_STABLENORM_H

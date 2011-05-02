@@ -25,16 +25,18 @@
 #ifndef EIGEN_TRIANGULAR_SOLVER_MATRIX_H
 #define EIGEN_TRIANGULAR_SOLVER_MATRIX_H
 
+namespace internal {
+
 // if the rhs is row major, let's transpose the product
 template <typename Scalar, typename Index, int Side, int Mode, bool Conjugate, int TriStorageOrder>
-struct ei_triangular_solve_matrix<Scalar,Index,Side,Mode,Conjugate,TriStorageOrder,RowMajor>
+struct triangular_solve_matrix<Scalar,Index,Side,Mode,Conjugate,TriStorageOrder,RowMajor>
 {
   static EIGEN_DONT_INLINE void run(
     Index size, Index cols,
     const Scalar*  tri, Index triStride,
     Scalar* _other, Index otherStride)
   {
-    ei_triangular_solve_matrix<
+    triangular_solve_matrix<
       Scalar, Index, Side==OnTheLeft?OnTheRight:OnTheLeft,
       (Mode&UnitDiag) | ((Mode&Upper) ? Lower : Upper),
       NumTraits<Scalar>::IsComplex && Conjugate,
@@ -46,7 +48,7 @@ struct ei_triangular_solve_matrix<Scalar,Index,Side,Mode,Conjugate,TriStorageOrd
 /* Optimized triangular solver with multiple right hand side and the triangular matrix on the left
  */
 template <typename Scalar, typename Index, int Mode, bool Conjugate, int TriStorageOrder>
-struct ei_triangular_solve_matrix<Scalar,Index,OnTheLeft,Mode,Conjugate,TriStorageOrder,ColMajor>
+struct triangular_solve_matrix<Scalar,Index,OnTheLeft,Mode,Conjugate,TriStorageOrder,ColMajor>
 {
   static EIGEN_DONT_INLINE void run(
     Index size, Index otherSize,
@@ -54,10 +56,10 @@ struct ei_triangular_solve_matrix<Scalar,Index,OnTheLeft,Mode,Conjugate,TriStora
     Scalar* _other, Index otherStride)
   {
     Index cols = otherSize;
-    ei_const_blas_data_mapper<Scalar, Index, TriStorageOrder> tri(_tri,triStride);
-    ei_blas_data_mapper<Scalar, Index, ColMajor> other(_other,otherStride);
+    const_blas_data_mapper<Scalar, Index, TriStorageOrder> tri(_tri,triStride);
+    blas_data_mapper<Scalar, Index, ColMajor> other(_other,otherStride);
 
-    typedef ei_gebp_traits<Scalar,Scalar> Traits;
+    typedef gebp_traits<Scalar,Scalar> Traits;
     enum {
       SmallPanelWidth   = EIGEN_PLAIN_ENUM_MAX(Traits::mr,Traits::nr),
       IsLower = (Mode&Lower) == Lower
@@ -74,10 +76,10 @@ struct ei_triangular_solve_matrix<Scalar,Index,OnTheLeft,Mode,Conjugate,TriStora
     Scalar* allocatedBlockB = ei_aligned_stack_new(Scalar, sizeB);
     Scalar* blockB = allocatedBlockB + sizeW;
 
-    ei_conj_if<Conjugate> conj;
-    ei_gebp_kernel<Scalar, Scalar, Index, Traits::mr, Traits::nr, Conjugate, false> gebp_kernel;
-    ei_gemm_pack_lhs<Scalar, Index, Traits::mr, Traits::LhsProgress, TriStorageOrder> pack_lhs;
-    ei_gemm_pack_rhs<Scalar, Index, Traits::nr, ColMajor, false, true> pack_rhs;
+    conj_if<Conjugate> conj;
+    gebp_kernel<Scalar, Scalar, Index, Traits::mr, Traits::nr, Conjugate, false> gebp_kernel;
+    gemm_pack_lhs<Scalar, Index, Traits::mr, Traits::LhsProgress, TriStorageOrder> pack_lhs;
+    gemm_pack_rhs<Scalar, Index, Traits::nr, ColMajor, false, true> pack_rhs;
 
     for(Index k2=IsLower ? 0 : size;
         IsLower ? k2<size : k2>0;
@@ -181,7 +183,7 @@ struct ei_triangular_solve_matrix<Scalar,Index,OnTheLeft,Mode,Conjugate,TriStora
 /* Optimized triangular solver with multiple left hand sides and the trinagular matrix on the right
  */
 template <typename Scalar, typename Index, int Mode, bool Conjugate, int TriStorageOrder>
-struct ei_triangular_solve_matrix<Scalar,Index,OnTheRight,Mode,Conjugate,TriStorageOrder,ColMajor>
+struct triangular_solve_matrix<Scalar,Index,OnTheRight,Mode,Conjugate,TriStorageOrder,ColMajor>
 {
   static EIGEN_DONT_INLINE void run(
     Index size, Index otherSize,
@@ -189,10 +191,10 @@ struct ei_triangular_solve_matrix<Scalar,Index,OnTheRight,Mode,Conjugate,TriStor
     Scalar* _other, Index otherStride)
   {
     Index rows = otherSize;
-    ei_const_blas_data_mapper<Scalar, Index, TriStorageOrder> rhs(_tri,triStride);
-    ei_blas_data_mapper<Scalar, Index, ColMajor> lhs(_other,otherStride);
+    const_blas_data_mapper<Scalar, Index, TriStorageOrder> rhs(_tri,triStride);
+    blas_data_mapper<Scalar, Index, ColMajor> lhs(_other,otherStride);
 
-    typedef ei_gebp_traits<Scalar,Scalar> Traits;
+    typedef gebp_traits<Scalar,Scalar> Traits;
     enum {
       RhsStorageOrder   = TriStorageOrder,
       SmallPanelWidth   = EIGEN_PLAIN_ENUM_MAX(Traits::mr,Traits::nr),
@@ -213,11 +215,11 @@ struct ei_triangular_solve_matrix<Scalar,Index,OnTheRight,Mode,Conjugate,TriStor
     Scalar* allocatedBlockB = ei_aligned_stack_new(Scalar, sizeB);
     Scalar* blockB = allocatedBlockB + sizeW;
 
-    ei_conj_if<Conjugate> conj;
-    ei_gebp_kernel<Scalar,Scalar, Index, Traits::mr, Traits::nr, false, Conjugate> gebp_kernel;
-    ei_gemm_pack_rhs<Scalar, Index, Traits::nr,RhsStorageOrder> pack_rhs;
-    ei_gemm_pack_rhs<Scalar, Index, Traits::nr,RhsStorageOrder,false,true> pack_rhs_panel;
-    ei_gemm_pack_lhs<Scalar, Index, Traits::mr, Traits::LhsProgress, ColMajor, false, true> pack_lhs_panel;
+    conj_if<Conjugate> conj;
+    gebp_kernel<Scalar,Scalar, Index, Traits::mr, Traits::nr, false, Conjugate> gebp_kernel;
+    gemm_pack_rhs<Scalar, Index, Traits::nr,RhsStorageOrder> pack_rhs;
+    gemm_pack_rhs<Scalar, Index, Traits::nr,RhsStorageOrder,false,true> pack_rhs_panel;
+    gemm_pack_lhs<Scalar, Index, Traits::mr, Traits::LhsProgress, ColMajor, false, true> pack_lhs_panel;
 
     for(Index k2=IsLower ? size : 0;
         IsLower ? k2>0 : k2<size;
@@ -317,5 +319,7 @@ struct ei_triangular_solve_matrix<Scalar,Index,OnTheRight,Mode,Conjugate,TriStor
     ei_aligned_stack_delete(Scalar, allocatedBlockB, sizeB);
   }
 };
+
+} // end namespace internal
 
 #endif // EIGEN_TRIANGULAR_SOLVER_MATRIX_H

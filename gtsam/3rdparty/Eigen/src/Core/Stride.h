@@ -51,7 +51,7 @@
   * \include Map_general_stride.cpp
   * Output: \verbinclude Map_general_stride.out
   *
-  * \sa class InnerStride, class OuterStride
+  * \sa class InnerStride, class OuterStride, \ref TopicStorageOrders
   */
 template<int _OuterStrideAtCompileTime, int _InnerStrideAtCompileTime>
 class Stride
@@ -67,14 +67,14 @@ class Stride
     Stride()
       : m_outer(OuterStrideAtCompileTime), m_inner(InnerStrideAtCompileTime)
     {
-      ei_assert(InnerStrideAtCompileTime != Dynamic && OuterStrideAtCompileTime != Dynamic);
+      eigen_assert(InnerStrideAtCompileTime != Dynamic && OuterStrideAtCompileTime != Dynamic);
     }
 
     /** Constructor allowing to pass the strides at runtime */
     Stride(Index outerStride, Index innerStride)
       : m_outer(outerStride), m_inner(innerStride)
     {
-      ei_assert(innerStride>=0 && outerStride>=0);
+      eigen_assert(innerStride>=0 && outerStride>=0);
     }
 
     /** Copy constructor */
@@ -88,8 +88,8 @@ class Stride
     inline Index inner() const { return m_inner.value(); }
 
   protected:
-    ei_variable_if_dynamic<Index, OuterStrideAtCompileTime> m_outer;
-    ei_variable_if_dynamic<Index, InnerStrideAtCompileTime> m_inner;
+    internal::variable_if_dynamic<Index, OuterStrideAtCompileTime> m_outer;
+    internal::variable_if_dynamic<Index, InnerStrideAtCompileTime> m_inner;
 };
 
 /** \brief Convenience specialization of Stride to specify only an inner stride

@@ -40,15 +40,18 @@
   *
   * \sa MatrixBase::reverse(), VectorwiseOp::reverse()
   */
+
+namespace internal {
+
 template<typename MatrixType, int Direction>
-struct ei_traits<Reverse<MatrixType, Direction> >
- : ei_traits<MatrixType>
+struct traits<Reverse<MatrixType, Direction> >
+ : traits<MatrixType>
 {
   typedef typename MatrixType::Scalar Scalar;
-  typedef typename ei_traits<MatrixType>::StorageKind StorageKind;
-  typedef typename ei_traits<MatrixType>::XprKind XprKind;
-  typedef typename ei_nested<MatrixType>::type MatrixTypeNested;
-  typedef typename ei_unref<MatrixTypeNested>::type _MatrixTypeNested;
+  typedef typename traits<MatrixType>::StorageKind StorageKind;
+  typedef typename traits<MatrixType>::XprKind XprKind;
+  typedef typename nested<MatrixType>::type MatrixTypeNested;
+  typedef typename remove_reference<MatrixTypeNested>::type _MatrixTypeNested;
   enum {
     RowsAtCompileTime = MatrixType::RowsAtCompileTime,
     ColsAtCompileTime = MatrixType::ColsAtCompileTime,
@@ -65,21 +68,24 @@ struct ei_traits<Reverse<MatrixType, Direction> >
   };
 };
 
-template<typename PacketScalar, bool ReversePacket> struct ei_reverse_packet_cond
+template<typename PacketScalar, bool ReversePacket> struct reverse_packet_cond
 {
-  static inline PacketScalar run(const PacketScalar& x) { return ei_preverse(x); }
+  static inline PacketScalar run(const PacketScalar& x) { return preverse(x); }
 };
-template<typename PacketScalar> struct ei_reverse_packet_cond<PacketScalar,false>
+
+template<typename PacketScalar> struct reverse_packet_cond<PacketScalar,false>
 {
   static inline PacketScalar run(const PacketScalar& x) { return x; }
 };
 
+} // end namespace internal 
+
 template<typename MatrixType, int Direction> class Reverse
-  : public ei_dense_xpr_base< Reverse<MatrixType, Direction> >::type
+  : public internal::dense_xpr_base< Reverse<MatrixType, Direction> >::type
 {
   public:
 
-    typedef typename ei_dense_xpr_base<Reverse>::type Base;
+    typedef typename internal::dense_xpr_base<Reverse>::type Base;
     EIGEN_DENSE_PUBLIC_INTERFACE(Reverse)
     using Base::IsRowMajor;
 
@@ -89,7 +95,7 @@ template<typename MatrixType, int Direction> class Reverse
 
   protected:
     enum {
-      PacketSize = ei_packet_traits<Scalar>::size,
+      PacketSize = internal::packet_traits<Scalar>::size,
       IsColMajor = !IsRowMajor,
       ReverseRow = (Direction == Vertical)   || (Direction == BothDirections),
       ReverseCol = (Direction == Horizontal) || (Direction == BothDirections),
@@ -99,7 +105,7 @@ template<typename MatrixType, int Direction> class Reverse
                     || ((Direction == Vertical)   && IsColMajor)
                     || ((Direction == Horizontal) && IsRowMajor)
     };
-    typedef ei_reverse_packet_cond<PacketScalar,ReversePacket> reverse_packet;
+    typedef internal::reverse_packet_cond<PacketScalar,ReversePacket> reverse_packet;
   public:
 
     inline Reverse(const MatrixType& matrix) : m_matrix(matrix) { }
@@ -116,7 +122,7 @@ template<typename MatrixType, int Direction> class Reverse
 
     inline Scalar& operator()(Index row, Index col)
     {
-      ei_assert(row >= 0 && row < rows() && col >= 0 && col < cols());
+      eigen_assert(row >= 0 && row < rows() && col >= 0 && col < cols());
       return coeffRef(row, col);
     }
 
@@ -144,7 +150,7 @@ template<typename MatrixType, int Direction> class Reverse
 
     inline Scalar& operator()(Index index)
     {
-      ei_assert(index >= 0 && index < m_matrix.size());
+      eigen_assert(index >= 0 && index < m_matrix.size());
       return coeffRef(index);
     }
 
@@ -168,13 +174,13 @@ template<typename MatrixType, int Direction> class Reverse
     template<int LoadMode>
     inline const PacketScalar packet(Index index) const
     {
-      return ei_preverse(m_matrix.template packet<LoadMode>( m_matrix.size() - index - PacketSize ));
+      return internal::preverse(m_matrix.template packet<LoadMode>( m_matrix.size() - index - PacketSize ));
     }
 
     template<int LoadMode>
     inline void writePacket(Index index, const PacketScalar& x)
     {
-      m_matrix.const_cast_derived().template writePacket<LoadMode>(m_matrix.size() - index - PacketSize, ei_preverse(x));
+      m_matrix.const_cast_derived().template writePacket<LoadMode>(m_matrix.size() - index - PacketSize, internal::preverse(x));
     }
 
   protected:
@@ -188,7 +194,7 @@ template<typename MatrixType, int Direction> class Reverse
   *
   */
 template<typename Derived>
-inline Reverse<Derived, BothDirections>
+inline typename DenseBase<Derived>::ReverseReturnType
 DenseBase<Derived>::reverse()
 {
   return derived();
@@ -196,7 +202,7 @@ DenseBase<Derived>::reverse()
 
 /** This is the const version of reverse(). */
 template<typename Derived>
-inline const Reverse<Derived, BothDirections>
+inline const typename DenseBase<Derived>::ConstReverseReturnType
 DenseBase<Derived>::reverse() const
 {
   return derived();
@@ -210,7 +216,7 @@ DenseBase<Derived>::reverse() const
   * the following additional features:
   *  - less error prone: doing the same operation with .reverse() requires special care:
   *    \code m = m.reverse().eval(); \endcode
-  *  - no temporary object is created (currently there is one created but could be avoided using swap)
+  *  - this API allows to avoid creating a temporary (the current implementation creates a temporary, but that could be avoided using swap)
   *  - it allows future optimizations (cache friendliness, etc.)
   *
   * \sa reverse() */

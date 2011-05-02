@@ -25,8 +25,10 @@
 #ifndef EIGEN_ALLANDANY_H
 #define EIGEN_ALLANDANY_H
 
+namespace internal {
+
 template<typename Derived, int UnrollCount>
-struct ei_all_unroller
+struct all_unroller
 {
   enum {
     col = (UnrollCount-1) / Derived::RowsAtCompileTime,
@@ -35,24 +37,24 @@ struct ei_all_unroller
 
   inline static bool run(const Derived &mat)
   {
-    return ei_all_unroller<Derived, UnrollCount-1>::run(mat) && mat.coeff(row, col);
+    return all_unroller<Derived, UnrollCount-1>::run(mat) && mat.coeff(row, col);
   }
 };
 
 template<typename Derived>
-struct ei_all_unroller<Derived, 1>
+struct all_unroller<Derived, 1>
 {
   inline static bool run(const Derived &mat) { return mat.coeff(0, 0); }
 };
 
 template<typename Derived>
-struct ei_all_unroller<Derived, Dynamic>
+struct all_unroller<Derived, Dynamic>
 {
   inline static bool run(const Derived &) { return false; }
 };
 
 template<typename Derived, int UnrollCount>
-struct ei_any_unroller
+struct any_unroller
 {
   enum {
     col = (UnrollCount-1) / Derived::RowsAtCompileTime,
@@ -61,21 +63,23 @@ struct ei_any_unroller
 
   inline static bool run(const Derived &mat)
   {
-    return ei_any_unroller<Derived, UnrollCount-1>::run(mat) || mat.coeff(row, col);
+    return any_unroller<Derived, UnrollCount-1>::run(mat) || mat.coeff(row, col);
   }
 };
 
 template<typename Derived>
-struct ei_any_unroller<Derived, 1>
+struct any_unroller<Derived, 1>
 {
   inline static bool run(const Derived &mat) { return mat.coeff(0, 0); }
 };
 
 template<typename Derived>
-struct ei_any_unroller<Derived, Dynamic>
+struct any_unroller<Derived, Dynamic>
 {
   inline static bool run(const Derived &) { return false; }
 };
+
+} // end namespace internal
 
 /** \returns true if all coefficients are true
   *
@@ -94,7 +98,7 @@ inline bool DenseBase<Derived>::all() const
           && SizeAtCompileTime * (CoeffReadCost + NumTraits<Scalar>::AddCost) <= EIGEN_UNROLLING_LIMIT
   };
   if(unroll)
-    return ei_all_unroller<Derived,
+    return internal::all_unroller<Derived,
                            unroll ? int(SizeAtCompileTime) : Dynamic
      >::run(derived());
   else
@@ -120,7 +124,7 @@ inline bool DenseBase<Derived>::any() const
           && SizeAtCompileTime * (CoeffReadCost + NumTraits<Scalar>::AddCost) <= EIGEN_UNROLLING_LIMIT
   };
   if(unroll)
-    return ei_any_unroller<Derived,
+    return internal::any_unroller<Derived,
                            unroll ? int(SizeAtCompileTime) : Dynamic
            >::run(derived());
   else

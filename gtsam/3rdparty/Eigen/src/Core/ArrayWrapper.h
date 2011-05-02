@@ -35,12 +35,15 @@
   *
   * \sa MatrixBase::array(), class MatrixWrapper
   */
+
+namespace internal {
 template<typename ExpressionType>
-struct ei_traits<ArrayWrapper<ExpressionType> >
-  : public ei_traits<typename ei_cleantype<typename ExpressionType::Nested>::type >
+struct traits<ArrayWrapper<ExpressionType> >
+  : public traits<typename remove_all<typename ExpressionType::Nested>::type >
 {
   typedef ArrayXpr XprKind;
 };
+}
 
 template<typename ExpressionType>
 class ArrayWrapper : public ArrayBase<ArrayWrapper<ExpressionType> >
@@ -50,7 +53,7 @@ class ArrayWrapper : public ArrayBase<ArrayWrapper<ExpressionType> >
     EIGEN_DENSE_PUBLIC_INTERFACE(ArrayWrapper)
     EIGEN_INHERIT_ASSIGNMENT_OPERATORS(ArrayWrapper)
 
-    typedef typename ei_nested<ExpressionType>::type NestedExpressionType;
+    typedef typename internal::nested<ExpressionType>::type NestedExpressionType;
 
     inline ArrayWrapper(const ExpressionType& matrix) : m_expression(matrix) {}
 
@@ -69,12 +72,22 @@ class ArrayWrapper : public ArrayBase<ArrayWrapper<ExpressionType> >
       return m_expression.const_cast_derived().coeffRef(row, col);
     }
 
+    inline const Scalar& coeffRef(Index row, Index col) const
+    {
+      return m_expression.const_cast_derived().coeffRef(row, col);
+    }
+
     inline const CoeffReturnType coeff(Index index) const
     {
       return m_expression.coeff(index);
     }
 
     inline Scalar& coeffRef(Index index)
+    {
+      return m_expression.const_cast_derived().coeffRef(index);
+    }
+
+    inline const Scalar& coeffRef(Index index) const
     {
       return m_expression.const_cast_derived().coeffRef(index);
     }
@@ -121,12 +134,14 @@ class ArrayWrapper : public ArrayBase<ArrayWrapper<ExpressionType> >
   * \sa MatrixBase::matrix(), class ArrayWrapper
   */
 
+namespace internal {
 template<typename ExpressionType>
-struct ei_traits<MatrixWrapper<ExpressionType> >
- : public ei_traits<typename ei_cleantype<typename ExpressionType::Nested>::type >
+struct traits<MatrixWrapper<ExpressionType> >
+ : public traits<typename remove_all<typename ExpressionType::Nested>::type >
 {
   typedef MatrixXpr XprKind;
 };
+}
 
 template<typename ExpressionType>
 class MatrixWrapper : public MatrixBase<MatrixWrapper<ExpressionType> >
@@ -136,7 +151,7 @@ class MatrixWrapper : public MatrixBase<MatrixWrapper<ExpressionType> >
     EIGEN_DENSE_PUBLIC_INTERFACE(MatrixWrapper)
     EIGEN_INHERIT_ASSIGNMENT_OPERATORS(MatrixWrapper)
 
-    typedef typename ei_nested<ExpressionType>::type NestedExpressionType;
+    typedef typename internal::nested<ExpressionType>::type NestedExpressionType;
 
     inline MatrixWrapper(const ExpressionType& matrix) : m_expression(matrix) {}
 
@@ -155,12 +170,22 @@ class MatrixWrapper : public MatrixBase<MatrixWrapper<ExpressionType> >
       return m_expression.const_cast_derived().coeffRef(row, col);
     }
 
+    inline const Scalar& coeffRef(Index row, Index col) const
+    {
+      return m_expression.derived().coeffRef(row, col);
+    }
+
     inline const CoeffReturnType coeff(Index index) const
     {
       return m_expression.coeff(index);
     }
 
     inline Scalar& coeffRef(Index index)
+    {
+      return m_expression.const_cast_derived().coeffRef(index);
+    }
+
+    inline const Scalar& coeffRef(Index index) const
     {
       return m_expression.const_cast_derived().coeffRef(index);
     }

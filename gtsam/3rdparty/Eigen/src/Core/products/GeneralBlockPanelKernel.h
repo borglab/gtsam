@@ -25,18 +25,20 @@
 #ifndef EIGEN_GENERAL_BLOCK_PANEL_H
 #define EIGEN_GENERAL_BLOCK_PANEL_H
 
+namespace internal {
+
 template<typename _LhsScalar, typename _RhsScalar, bool _ConjLhs=false, bool _ConjRhs=false>
-class ei_gebp_traits;
+class gebp_traits;
 
 /** \internal */
-inline void ei_manage_caching_sizes(Action action, std::ptrdiff_t* l1=0, std::ptrdiff_t* l2=0)
+inline void manage_caching_sizes(Action action, std::ptrdiff_t* l1=0, std::ptrdiff_t* l2=0)
 {
   static std::ptrdiff_t m_l1CacheSize = 0;
   static std::ptrdiff_t m_l2CacheSize = 0;
   if(m_l1CacheSize==0)
   {
-    m_l1CacheSize = ei_queryL1CacheSize();
-    m_l2CacheSize = ei_queryTopLevelCacheSize();
+    m_l1CacheSize = queryL1CacheSize();
+    m_l2CacheSize = queryTopLevelCacheSize();
 
     if(m_l1CacheSize<=0) m_l1CacheSize = 8 * 1024;
     if(m_l2CacheSize<=0) m_l2CacheSize = 1 * 1024 * 1024;
@@ -45,48 +47,20 @@ inline void ei_manage_caching_sizes(Action action, std::ptrdiff_t* l1=0, std::pt
   if(action==SetAction)
   {
     // set the cpu cache size and cache all block sizes from a global cache size in byte
-    ei_internal_assert(l1!=0 && l2!=0);
+    eigen_internal_assert(l1!=0 && l2!=0);
     m_l1CacheSize = *l1;
     m_l2CacheSize = *l2;
   }
   else if(action==GetAction)
   {
-    ei_internal_assert(l1!=0 && l2!=0);
+    eigen_internal_assert(l1!=0 && l2!=0);
     *l1 = m_l1CacheSize;
     *l2 = m_l2CacheSize;
   }
   else
   {
-    ei_internal_assert(false);
+    eigen_internal_assert(false);
   }
-}
-
-/** \returns the currently set level 1 cpu cache size (in bytes) used to estimate the ideal blocking size parameters.
-  * \sa setCpuCacheSize */
-inline std::ptrdiff_t l1CacheSize()
-{
-  std::ptrdiff_t l1, l2;
-  ei_manage_caching_sizes(GetAction, &l1, &l2);
-  return l1;
-}
-
-/** \returns the currently set level 2 cpu cache size (in bytes) used to estimate the ideal blocking size parameters.
-  * \sa setCpuCacheSize */
-inline std::ptrdiff_t l2CacheSize()
-{
-  std::ptrdiff_t l1, l2;
-  ei_manage_caching_sizes(GetAction, &l1, &l2);
-  return l2;
-}
-
-/** Set the cpu L1 and L2 cache sizes (in bytes).
-  * These values are use to adjust the size of the blocks
-  * for the algorithms working per blocks.
-  *
-  * \sa computeProductBlockingSizes */
-inline void setCpuCacheSizes(std::ptrdiff_t l1, std::ptrdiff_t l2)
-{
-  ei_manage_caching_sizes(SetAction, &l1, &l2);
 }
 
 /** \brief Computes the blocking parameters for a m x k times k x n matrix product
@@ -100,7 +74,7 @@ inline void setCpuCacheSizes(std::ptrdiff_t l1, std::ptrdiff_t l2)
   * for matrix products and related algorithms. The blocking sizes depends on various
   * parameters:
   * - the L1 and L2 cache sizes,
-  * - the register level blocking sizes defined by ei_gebp_traits,
+  * - the register level blocking sizes defined by gebp_traits,
   * - the number of scalars that fit into a packet (when vectorization is enabled).
   *
   * \sa setCpuCacheSizes */
@@ -116,15 +90,15 @@ void computeProductBlockingSizes(std::ptrdiff_t& k, std::ptrdiff_t& m, std::ptrd
   // stay in L1 cache.
   std::ptrdiff_t l1, l2;
 
-  typedef ei_gebp_traits<LhsScalar,RhsScalar> Traits;
+  typedef gebp_traits<LhsScalar,RhsScalar> Traits;
   enum {
     kdiv = KcFactor * 2 * Traits::nr
          * Traits::RhsProgress * sizeof(RhsScalar),
-    mr = ei_gebp_traits<LhsScalar,RhsScalar>::mr,
+    mr = gebp_traits<LhsScalar,RhsScalar>::mr,
     mr_mask = (0xffffffff/mr)*mr
   };
 
-  ei_manage_caching_sizes(GetAction, &l1, &l2);
+  manage_caching_sizes(GetAction, &l1, &l2);
   k = std::min<std::ptrdiff_t>(k, l1/kdiv);
   std::ptrdiff_t _m = k>0 ? l2/(4 * sizeof(LhsScalar) * k) : 0;
   if(_m<m) m = _m & mr_mask;
@@ -143,28 +117,28 @@ inline void computeProductBlockingSizes(std::ptrdiff_t& k, std::ptrdiff_t& m, st
 
   // FIXME (a bit overkill maybe ?)
 
-  template<typename CJ, typename A, typename B, typename C, typename T> struct ei_gebp_madd_selector {
+  template<typename CJ, typename A, typename B, typename C, typename T> struct gebp_madd_selector {
     EIGEN_STRONG_INLINE EIGEN_ALWAYS_INLINE_ATTRIB static void run(const CJ& cj, A& a, B& b, C& c, T& /*t*/)
     {
       c = cj.pmadd(a,b,c);
     }
   };
 
-  template<typename CJ, typename T> struct ei_gebp_madd_selector<CJ,T,T,T,T> {
+  template<typename CJ, typename T> struct gebp_madd_selector<CJ,T,T,T,T> {
     EIGEN_STRONG_INLINE EIGEN_ALWAYS_INLINE_ATTRIB static void run(const CJ& cj, T& a, T& b, T& c, T& t)
     {
-      t = b; t = cj.pmul(a,t); c = ei_padd(c,t);
+      t = b; t = cj.pmul(a,t); c = padd(c,t);
     }
   };
 
   template<typename CJ, typename A, typename B, typename C, typename T>
-  EIGEN_STRONG_INLINE void ei_gebp_madd(const CJ& cj, A& a, B& b, C& c, T& t)
+  EIGEN_STRONG_INLINE void gebp_madd(const CJ& cj, A& a, B& b, C& c, T& t)
   {
-    ei_gebp_madd_selector<CJ,A,B,C,T>::run(cj,a,b,c,t);
+    gebp_madd_selector<CJ,A,B,C,T>::run(cj,a,b,c,t);
   }
 
-  #define MADD(CJ,A,B,C,T)  ei_gebp_madd(CJ,A,B,C,T);
-//   #define MADD(CJ,A,B,C,T)  T = B; T = CJ.pmul(A,T); C = ei_padd(C,T);
+  #define MADD(CJ,A,B,C,T)  gebp_madd(CJ,A,B,C,T);
+//   #define MADD(CJ,A,B,C,T)  T = B; T = CJ.pmul(A,T); C = padd(C,T);
 #endif
 
 /* Vectorization logic
@@ -178,20 +152,20 @@ inline void computeProductBlockingSizes(std::ptrdiff_t& k, std::ptrdiff_t& m, st
  *  real*cplx : load lhs as (a0,a0,a1,a1), and mul as usual
  */
 template<typename _LhsScalar, typename _RhsScalar, bool _ConjLhs, bool _ConjRhs>
-class ei_gebp_traits
+class gebp_traits
 {
 public:
   typedef _LhsScalar LhsScalar;
   typedef _RhsScalar RhsScalar;
-  typedef typename ei_scalar_product_traits<LhsScalar, RhsScalar>::ReturnType ResScalar;
+  typedef typename scalar_product_traits<LhsScalar, RhsScalar>::ReturnType ResScalar;
 
   enum {
     ConjLhs = _ConjLhs,
     ConjRhs = _ConjRhs,
-    Vectorizable = ei_packet_traits<LhsScalar>::Vectorizable && ei_packet_traits<RhsScalar>::Vectorizable,
-    LhsPacketSize = Vectorizable ? ei_packet_traits<LhsScalar>::size : 1,
-    RhsPacketSize = Vectorizable ? ei_packet_traits<RhsScalar>::size : 1,
-    ResPacketSize = Vectorizable ? ei_packet_traits<ResScalar>::size : 1,
+    Vectorizable = packet_traits<LhsScalar>::Vectorizable && packet_traits<RhsScalar>::Vectorizable,
+    LhsPacketSize = Vectorizable ? packet_traits<LhsScalar>::size : 1,
+    RhsPacketSize = Vectorizable ? packet_traits<RhsScalar>::size : 1,
+    ResPacketSize = Vectorizable ? packet_traits<ResScalar>::size : 1,
     
     NumberOfRegisters = EIGEN_ARCH_DEFAULT_NUMBER_OF_REGISTERS,
 
@@ -207,67 +181,67 @@ public:
     RhsProgress = RhsPacketSize
   };
 
-  typedef typename ei_packet_traits<LhsScalar>::type  _LhsPacket;
-  typedef typename ei_packet_traits<RhsScalar>::type  _RhsPacket;
-  typedef typename ei_packet_traits<ResScalar>::type  _ResPacket;
+  typedef typename packet_traits<LhsScalar>::type  _LhsPacket;
+  typedef typename packet_traits<RhsScalar>::type  _RhsPacket;
+  typedef typename packet_traits<ResScalar>::type  _ResPacket;
 
-  typedef typename ei_meta_if<Vectorizable,_LhsPacket,LhsScalar>::ret LhsPacket;
-  typedef typename ei_meta_if<Vectorizable,_RhsPacket,RhsScalar>::ret RhsPacket;
-  typedef typename ei_meta_if<Vectorizable,_ResPacket,ResScalar>::ret ResPacket;
+  typedef typename conditional<Vectorizable,_LhsPacket,LhsScalar>::type LhsPacket;
+  typedef typename conditional<Vectorizable,_RhsPacket,RhsScalar>::type RhsPacket;
+  typedef typename conditional<Vectorizable,_ResPacket,ResScalar>::type ResPacket;
 
   typedef ResPacket AccPacket;
   
   EIGEN_STRONG_INLINE void initAcc(AccPacket& p)
   {
-    p = ei_pset1<ResPacket>(ResScalar(0));
+    p = pset1<ResPacket>(ResScalar(0));
   }
 
   EIGEN_STRONG_INLINE void unpackRhs(DenseIndex n, const RhsScalar* rhs, RhsScalar* b)
   {
     for(DenseIndex k=0; k<n; k++)
-      ei_pstore(&b[k*RhsPacketSize], ei_pset1<RhsPacket>(rhs[k]));
+      pstore1<RhsPacket>(&b[k*RhsPacketSize], rhs[k]);
   }
 
   EIGEN_STRONG_INLINE void loadRhs(const RhsScalar* b, RhsPacket& dest) const
   {
-    dest = ei_pload<RhsPacket>(b);
+    dest = pload<RhsPacket>(b);
   }
 
   EIGEN_STRONG_INLINE void loadLhs(const LhsScalar* a, LhsPacket& dest) const
   {
-    dest = ei_pload<LhsPacket>(a);
+    dest = pload<LhsPacket>(a);
   }
 
   EIGEN_STRONG_INLINE void madd(const LhsPacket& a, const RhsPacket& b, AccPacket& c, AccPacket& tmp) const
   {
-    tmp = b; tmp = ei_pmul(a,tmp); c = ei_padd(c,tmp);
+    tmp = b; tmp = pmul(a,tmp); c = padd(c,tmp);
   }
 
   EIGEN_STRONG_INLINE void acc(const AccPacket& c, const ResPacket& alpha, ResPacket& r) const
   {
-    r = ei_pmadd(c,alpha,r);
+    r = pmadd(c,alpha,r);
   }
 
 protected:
-//   ei_conj_helper<LhsScalar,RhsScalar,ConjLhs,ConjRhs> cj;
-//   ei_conj_helper<LhsPacket,RhsPacket,ConjLhs,ConjRhs> pcj;
+//   conj_helper<LhsScalar,RhsScalar,ConjLhs,ConjRhs> cj;
+//   conj_helper<LhsPacket,RhsPacket,ConjLhs,ConjRhs> pcj;
 };
 
 template<typename RealScalar, bool _ConjLhs>
-class ei_gebp_traits<std::complex<RealScalar>, RealScalar, _ConjLhs, false>
+class gebp_traits<std::complex<RealScalar>, RealScalar, _ConjLhs, false>
 {
 public:
   typedef std::complex<RealScalar> LhsScalar;
   typedef RealScalar RhsScalar;
-  typedef typename ei_scalar_product_traits<LhsScalar, RhsScalar>::ReturnType ResScalar;
+  typedef typename scalar_product_traits<LhsScalar, RhsScalar>::ReturnType ResScalar;
 
   enum {
     ConjLhs = _ConjLhs,
     ConjRhs = false,
-    Vectorizable = ei_packet_traits<LhsScalar>::Vectorizable && ei_packet_traits<RhsScalar>::Vectorizable,
-    LhsPacketSize = Vectorizable ? ei_packet_traits<LhsScalar>::size : 1,
-    RhsPacketSize = Vectorizable ? ei_packet_traits<RhsScalar>::size : 1,
-    ResPacketSize = Vectorizable ? ei_packet_traits<ResScalar>::size : 1,
+    Vectorizable = packet_traits<LhsScalar>::Vectorizable && packet_traits<RhsScalar>::Vectorizable,
+    LhsPacketSize = Vectorizable ? packet_traits<LhsScalar>::size : 1,
+    RhsPacketSize = Vectorizable ? packet_traits<RhsScalar>::size : 1,
+    ResPacketSize = Vectorizable ? packet_traits<ResScalar>::size : 1,
     
     NumberOfRegisters = EIGEN_ARCH_DEFAULT_NUMBER_OF_REGISTERS,
     nr = NumberOfRegisters/4,
@@ -278,48 +252,48 @@ public:
     RhsProgress = RhsPacketSize
   };
 
-  typedef typename ei_packet_traits<LhsScalar>::type  _LhsPacket;
-  typedef typename ei_packet_traits<RhsScalar>::type  _RhsPacket;
-  typedef typename ei_packet_traits<ResScalar>::type  _ResPacket;
+  typedef typename packet_traits<LhsScalar>::type  _LhsPacket;
+  typedef typename packet_traits<RhsScalar>::type  _RhsPacket;
+  typedef typename packet_traits<ResScalar>::type  _ResPacket;
 
-  typedef typename ei_meta_if<Vectorizable,_LhsPacket,LhsScalar>::ret LhsPacket;
-  typedef typename ei_meta_if<Vectorizable,_RhsPacket,RhsScalar>::ret RhsPacket;
-  typedef typename ei_meta_if<Vectorizable,_ResPacket,ResScalar>::ret ResPacket;
+  typedef typename conditional<Vectorizable,_LhsPacket,LhsScalar>::type LhsPacket;
+  typedef typename conditional<Vectorizable,_RhsPacket,RhsScalar>::type RhsPacket;
+  typedef typename conditional<Vectorizable,_ResPacket,ResScalar>::type ResPacket;
 
   typedef ResPacket AccPacket;
 
   EIGEN_STRONG_INLINE void initAcc(AccPacket& p)
   {
-    p = ei_pset1<ResPacket>(ResScalar(0));
+    p = pset1<ResPacket>(ResScalar(0));
   }
 
   EIGEN_STRONG_INLINE void unpackRhs(DenseIndex n, const RhsScalar* rhs, RhsScalar* b)
   {
     for(DenseIndex k=0; k<n; k++)
-      ei_pstore(&b[k*RhsPacketSize], ei_pset1<RhsPacket>(rhs[k]));
+      pstore1<RhsPacket>(&b[k*RhsPacketSize], rhs[k]);
   }
 
   EIGEN_STRONG_INLINE void loadRhs(const RhsScalar* b, RhsPacket& dest) const
   {
-    dest = ei_pload<RhsPacket>(b);
+    dest = pload<RhsPacket>(b);
   }
 
   EIGEN_STRONG_INLINE void loadLhs(const LhsScalar* a, LhsPacket& dest) const
   {
-    dest = ei_pload<LhsPacket>(a);
+    dest = pload<LhsPacket>(a);
   }
 
   EIGEN_STRONG_INLINE void madd(const LhsPacket& a, const RhsPacket& b, AccPacket& c, RhsPacket& tmp) const
   {
-    madd_impl(a, b, c, tmp, typename ei_meta_if<Vectorizable,ei_meta_true,ei_meta_false>::ret());
+    madd_impl(a, b, c, tmp, typename conditional<Vectorizable,true_type,false_type>::type());
   }
 
-  EIGEN_STRONG_INLINE void madd_impl(const LhsPacket& a, const RhsPacket& b, AccPacket& c, RhsPacket& tmp, const ei_meta_true&) const
+  EIGEN_STRONG_INLINE void madd_impl(const LhsPacket& a, const RhsPacket& b, AccPacket& c, RhsPacket& tmp, const true_type&) const
   {
-    tmp = b; tmp = ei_pmul(a.v,tmp); c.v = ei_padd(c.v,tmp);
+    tmp = b; tmp = pmul(a.v,tmp); c.v = padd(c.v,tmp);
   }
 
-  EIGEN_STRONG_INLINE void madd_impl(const LhsScalar& a, const RhsScalar& b, ResScalar& c, RhsScalar& /*tmp*/, const ei_meta_false&) const
+  EIGEN_STRONG_INLINE void madd_impl(const LhsScalar& a, const RhsScalar& b, ResScalar& c, RhsScalar& /*tmp*/, const false_type&) const
   {
     c += a * b;
   }
@@ -330,11 +304,11 @@ public:
   }
 
 protected:
-  ei_conj_helper<ResPacket,ResPacket,ConjLhs,false> cj;
+  conj_helper<ResPacket,ResPacket,ConjLhs,false> cj;
 };
 
 template<typename RealScalar, bool _ConjLhs, bool _ConjRhs>
-class ei_gebp_traits<std::complex<RealScalar>, std::complex<RealScalar>, _ConjLhs, _ConjRhs >
+class gebp_traits<std::complex<RealScalar>, std::complex<RealScalar>, _ConjLhs, _ConjRhs >
 {
 public:
   typedef std::complex<RealScalar>  Scalar;
@@ -345,10 +319,10 @@ public:
   enum {
     ConjLhs = _ConjLhs,
     ConjRhs = _ConjRhs,
-    Vectorizable = ei_packet_traits<RealScalar>::Vectorizable
-                && ei_packet_traits<Scalar>::Vectorizable,
-    RealPacketSize  = Vectorizable ? ei_packet_traits<RealScalar>::size : 1,
-    ResPacketSize   = Vectorizable ? ei_packet_traits<ResScalar>::size : 1,
+    Vectorizable = packet_traits<RealScalar>::Vectorizable
+                && packet_traits<Scalar>::Vectorizable,
+    RealPacketSize  = Vectorizable ? packet_traits<RealScalar>::size : 1,
+    ResPacketSize   = Vectorizable ? packet_traits<ResScalar>::size : 1,
     
     nr = 2,
     mr = 2 * ResPacketSize,
@@ -358,25 +332,25 @@ public:
     RhsProgress = Vectorizable ? 2*ResPacketSize : 1
   };
   
-  typedef typename ei_packet_traits<RealScalar>::type RealPacket;
-  typedef typename ei_packet_traits<Scalar>::type     ScalarPacket;
+  typedef typename packet_traits<RealScalar>::type RealPacket;
+  typedef typename packet_traits<Scalar>::type     ScalarPacket;
   struct DoublePacket
   {
     RealPacket first;
     RealPacket second;
   };
 
-  typedef typename ei_meta_if<Vectorizable,RealPacket,  Scalar>::ret LhsPacket;
-  typedef typename ei_meta_if<Vectorizable,DoublePacket,Scalar>::ret RhsPacket;
-  typedef typename ei_meta_if<Vectorizable,ScalarPacket,Scalar>::ret ResPacket;
-  typedef typename ei_meta_if<Vectorizable,DoublePacket,Scalar>::ret AccPacket;
+  typedef typename conditional<Vectorizable,RealPacket,  Scalar>::type LhsPacket;
+  typedef typename conditional<Vectorizable,DoublePacket,Scalar>::type RhsPacket;
+  typedef typename conditional<Vectorizable,ScalarPacket,Scalar>::type ResPacket;
+  typedef typename conditional<Vectorizable,DoublePacket,Scalar>::type AccPacket;
   
   EIGEN_STRONG_INLINE void initAcc(Scalar& p) { p = Scalar(0); }
 
   EIGEN_STRONG_INLINE void initAcc(DoublePacket& p)
   {
-    p.first   = ei_pset1<RealPacket>(RealScalar(0));
-    p.second  = ei_pset1<RealPacket>(RealScalar(0));
+    p.first   = pset1<RealPacket>(RealScalar(0));
+    p.second  = pset1<RealPacket>(RealScalar(0));
   }
 
   /* Unpack the rhs coeff such that each complex coefficient is spread into
@@ -389,8 +363,8 @@ public:
     {
       if(Vectorizable)
       {
-        ei_pstore((RealScalar*)&b[k*ResPacketSize*2+0], ei_pset1<RealPacket>(ei_real(rhs[k])));
-        ei_pstore((RealScalar*)&b[k*ResPacketSize*2+ResPacketSize], ei_pset1<RealPacket>(ei_imag(rhs[k])));
+        pstore1<RealPacket>((RealScalar*)&b[k*ResPacketSize*2+0],             real(rhs[k]));
+        pstore1<RealPacket>((RealScalar*)&b[k*ResPacketSize*2+ResPacketSize], imag(rhs[k]));
       }
       else
         b[k] = rhs[k];
@@ -401,20 +375,20 @@ public:
 
   EIGEN_STRONG_INLINE void loadRhs(const RhsScalar* b, DoublePacket& dest) const
   {
-    dest.first  = ei_pload<RealPacket>((const RealScalar*)b);
-    dest.second = ei_pload<RealPacket>((const RealScalar*)(b+ResPacketSize));
+    dest.first  = pload<RealPacket>((const RealScalar*)b);
+    dest.second = pload<RealPacket>((const RealScalar*)(b+ResPacketSize));
   }
 
   // nothing special here
   EIGEN_STRONG_INLINE void loadLhs(const LhsScalar* a, LhsPacket& dest) const
   {
-    dest = ei_pload<LhsPacket>((const typename ei_unpacket_traits<LhsPacket>::type*)(a));
+    dest = pload<LhsPacket>((const typename unpacket_traits<LhsPacket>::type*)(a));
   }
 
   EIGEN_STRONG_INLINE void madd(const LhsPacket& a, const RhsPacket& b, DoublePacket& c, RhsPacket& /*tmp*/) const
   {
-    c.first   = ei_padd(ei_pmul(a,b.first), c.first);
-    c.second  = ei_padd(ei_pmul(a,b.second),c.second);
+    c.first   = padd(pmul(a,b.first), c.first);
+    c.second  = padd(pmul(a,b.second),c.second);
   }
 
   EIGEN_STRONG_INLINE void madd(const LhsPacket& a, const RhsPacket& b, ResPacket& c, RhsPacket& /*tmp*/) const
@@ -430,34 +404,34 @@ public:
     ResPacket tmp;
     if((!ConjLhs)&&(!ConjRhs))
     {
-      tmp = ei_pcplxflip(ei_pconj(ResPacket(c.second)));
-      tmp = ei_padd(ResPacket(c.first),tmp);
+      tmp = pcplxflip(pconj(ResPacket(c.second)));
+      tmp = padd(ResPacket(c.first),tmp);
     }
     else if((!ConjLhs)&&(ConjRhs))
     {
-      tmp = ei_pconj(ei_pcplxflip(ResPacket(c.second)));
-      tmp = ei_padd(ResPacket(c.first),tmp);
+      tmp = pconj(pcplxflip(ResPacket(c.second)));
+      tmp = padd(ResPacket(c.first),tmp);
     }
     else if((ConjLhs)&&(!ConjRhs))
     {
-      tmp = ei_pcplxflip(ResPacket(c.second));
-      tmp = ei_padd(ei_pconj(ResPacket(c.first)),tmp);
+      tmp = pcplxflip(ResPacket(c.second));
+      tmp = padd(pconj(ResPacket(c.first)),tmp);
     }
     else if((ConjLhs)&&(ConjRhs))
     {
-      tmp = ei_pcplxflip(ResPacket(c.second));
-      tmp = ei_psub(ei_pconj(ResPacket(c.first)),tmp);
+      tmp = pcplxflip(ResPacket(c.second));
+      tmp = psub(pconj(ResPacket(c.first)),tmp);
     }
     
-    r = ei_pmadd(tmp,alpha,r);
+    r = pmadd(tmp,alpha,r);
   }
 
 protected:
-  ei_conj_helper<LhsScalar,RhsScalar,ConjLhs,ConjRhs> cj;
+  conj_helper<LhsScalar,RhsScalar,ConjLhs,ConjRhs> cj;
 };
 
 template<typename RealScalar, bool _ConjRhs>
-class ei_gebp_traits<RealScalar, std::complex<RealScalar>, false, _ConjRhs >
+class gebp_traits<RealScalar, std::complex<RealScalar>, false, _ConjRhs >
 {
 public:
   typedef std::complex<RealScalar>  Scalar;
@@ -468,11 +442,11 @@ public:
   enum {
     ConjLhs = false,
     ConjRhs = _ConjRhs,
-    Vectorizable = ei_packet_traits<RealScalar>::Vectorizable
-                && ei_packet_traits<Scalar>::Vectorizable,
-    LhsPacketSize = Vectorizable ? ei_packet_traits<LhsScalar>::size : 1,
-    RhsPacketSize = Vectorizable ? ei_packet_traits<RhsScalar>::size : 1,
-    ResPacketSize = Vectorizable ? ei_packet_traits<ResScalar>::size : 1,
+    Vectorizable = packet_traits<RealScalar>::Vectorizable
+                && packet_traits<Scalar>::Vectorizable,
+    LhsPacketSize = Vectorizable ? packet_traits<LhsScalar>::size : 1,
+    RhsPacketSize = Vectorizable ? packet_traits<RhsScalar>::size : 1,
+    ResPacketSize = Vectorizable ? packet_traits<ResScalar>::size : 1,
     
     NumberOfRegisters = EIGEN_ARCH_DEFAULT_NUMBER_OF_REGISTERS,
     nr = 4,
@@ -483,48 +457,48 @@ public:
     RhsProgress = ResPacketSize
   };
 
-  typedef typename ei_packet_traits<LhsScalar>::type  _LhsPacket;
-  typedef typename ei_packet_traits<RhsScalar>::type  _RhsPacket;
-  typedef typename ei_packet_traits<ResScalar>::type  _ResPacket;
+  typedef typename packet_traits<LhsScalar>::type  _LhsPacket;
+  typedef typename packet_traits<RhsScalar>::type  _RhsPacket;
+  typedef typename packet_traits<ResScalar>::type  _ResPacket;
 
-  typedef typename ei_meta_if<Vectorizable,_LhsPacket,LhsScalar>::ret LhsPacket;
-  typedef typename ei_meta_if<Vectorizable,_RhsPacket,RhsScalar>::ret RhsPacket;
-  typedef typename ei_meta_if<Vectorizable,_ResPacket,ResScalar>::ret ResPacket;
+  typedef typename conditional<Vectorizable,_LhsPacket,LhsScalar>::type LhsPacket;
+  typedef typename conditional<Vectorizable,_RhsPacket,RhsScalar>::type RhsPacket;
+  typedef typename conditional<Vectorizable,_ResPacket,ResScalar>::type ResPacket;
 
   typedef ResPacket AccPacket;
 
   EIGEN_STRONG_INLINE void initAcc(AccPacket& p)
   {
-    p = ei_pset1<ResPacket>(ResScalar(0));
+    p = pset1<ResPacket>(ResScalar(0));
   }
 
   EIGEN_STRONG_INLINE void unpackRhs(DenseIndex n, const RhsScalar* rhs, RhsScalar* b)
   {
     for(DenseIndex k=0; k<n; k++)
-      ei_pstore(&b[k*RhsPacketSize], ei_pset1<RhsPacket>(rhs[k]));
+      pstore1<RhsPacket>(&b[k*RhsPacketSize], rhs[k]);
   }
 
   EIGEN_STRONG_INLINE void loadRhs(const RhsScalar* b, RhsPacket& dest) const
   {
-    dest = ei_pload<RhsPacket>(b);
+    dest = pload<RhsPacket>(b);
   }
 
   EIGEN_STRONG_INLINE void loadLhs(const LhsScalar* a, LhsPacket& dest) const
   {
-    dest = ei_ploaddup<LhsPacket>(a);
+    dest = ploaddup<LhsPacket>(a);
   }
 
   EIGEN_STRONG_INLINE void madd(const LhsPacket& a, const RhsPacket& b, AccPacket& c, RhsPacket& tmp) const
   {
-    madd_impl(a, b, c, tmp, typename ei_meta_if<Vectorizable,ei_meta_true,ei_meta_false>::ret());
+    madd_impl(a, b, c, tmp, typename conditional<Vectorizable,true_type,false_type>::type());
   }
 
-  EIGEN_STRONG_INLINE void madd_impl(const LhsPacket& a, const RhsPacket& b, AccPacket& c, RhsPacket& tmp, const ei_meta_true&) const
+  EIGEN_STRONG_INLINE void madd_impl(const LhsPacket& a, const RhsPacket& b, AccPacket& c, RhsPacket& tmp, const true_type&) const
   {
-    tmp = b; tmp.v = ei_pmul(a,tmp.v); c = ei_padd(c,tmp);
+    tmp = b; tmp.v = pmul(a,tmp.v); c = padd(c,tmp);
   }
 
-  EIGEN_STRONG_INLINE void madd_impl(const LhsScalar& a, const RhsScalar& b, ResScalar& c, RhsScalar& /*tmp*/, const ei_meta_false&) const
+  EIGEN_STRONG_INLINE void madd_impl(const LhsScalar& a, const RhsScalar& b, ResScalar& c, RhsScalar& /*tmp*/, const false_type&) const
   {
     c += a * b;
   }
@@ -535,7 +509,7 @@ public:
   }
 
 protected:
-  ei_conj_helper<ResPacket,ResPacket,false,ConjRhs> cj;
+  conj_helper<ResPacket,ResPacket,false,ConjRhs> cj;
 };
 
 /* optimized GEneral packed Block * packed Panel product kernel
@@ -546,9 +520,9 @@ protected:
  *  |cplx |real | easy vectorization
  */
 template<typename LhsScalar, typename RhsScalar, typename Index, int mr, int nr, bool ConjugateLhs, bool ConjugateRhs>
-struct ei_gebp_kernel
+struct gebp_kernel
 {
-  typedef ei_gebp_traits<LhsScalar,RhsScalar,ConjugateLhs,ConjugateRhs> Traits;
+  typedef gebp_traits<LhsScalar,RhsScalar,ConjugateLhs,ConjugateRhs> Traits;
   typedef typename Traits::ResScalar ResScalar;
   typedef typename Traits::LhsPacket LhsPacket;
   typedef typename Traits::RhsPacket RhsPacket;
@@ -570,8 +544,8 @@ struct ei_gebp_kernel
     
     if(strideA==-1) strideA = depth;
     if(strideB==-1) strideB = depth;
-    ei_conj_helper<LhsScalar,RhsScalar,ConjugateLhs,ConjugateRhs> cj;
-//     ei_conj_helper<LhsPacket,RhsPacket,ConjugateLhs,ConjugateRhs> pcj;
+    conj_helper<LhsScalar,RhsScalar,ConjugateLhs,ConjugateRhs> cj;
+//     conj_helper<LhsPacket,RhsPacket,ConjugateLhs,ConjugateRhs> pcj;
     Index packet_cols = (cols/nr) * nr;
     const Index peeled_mc = (rows/mr)*mr;
     // FIXME:
@@ -592,7 +566,7 @@ struct ei_gebp_kernel
       for(Index i=0; i<peeled_mc; i+=mr)
       {
         const LhsScalar* blA = &blockA[i*strideA+offsetA*mr];
-        ei_prefetch(&blA[0]);
+        prefetch(&blA[0]);
 
         // gets res block as register
         AccPacket C0, C1, C2, C3, C4, C5, C6, C7;
@@ -610,10 +584,10 @@ struct ei_gebp_kernel
         ResScalar* r2 = r1 + resStride;
         ResScalar* r3 = r2 + resStride;
 
-        ei_prefetch(r0+16);
-        ei_prefetch(r1+16);
-        ei_prefetch(r2+16);
-        ei_prefetch(r3+16);
+        prefetch(r0+16);
+        prefetch(r1+16);
+        prefetch(r2+16);
+        prefetch(r3+16);
 
         // performs "inner" product
         // TODO let's check wether the folowing peeled loop could not be
@@ -780,42 +754,64 @@ EIGEN_ASM_COMMENT("mybegin4");
           blA += mr;
         }
 
-        ResPacket R0, R1, R2, R3, R4, R5, R6, R7;
-        ResPacket alphav = ei_pset1<ResPacket>(alpha);
+        if(nr==4)
+        {
+          ResPacket R0, R1, R2, R3, R4, R5, R6;
+          ResPacket alphav = pset1<ResPacket>(alpha);
 
-                  R0 = ei_ploadu<ResPacket>(r0);
-                  R1 = ei_ploadu<ResPacket>(r1);
-        if(nr==4) R2 = ei_ploadu<ResPacket>(r2);
-        if(nr==4) R3 = ei_ploadu<ResPacket>(r3);
-                  R4 = ei_ploadu<ResPacket>(r0 + ResPacketSize);
-                  R5 = ei_ploadu<ResPacket>(r1 + ResPacketSize);
-        if(nr==4) R6 = ei_ploadu<ResPacket>(r2 + ResPacketSize);
-        if(nr==4) R7 = ei_ploadu<ResPacket>(r3 + ResPacketSize);
+          R0 = ploadu<ResPacket>(r0);
+          R1 = ploadu<ResPacket>(r1);
+          R2 = ploadu<ResPacket>(r2);
+          R3 = ploadu<ResPacket>(r3);
+          R4 = ploadu<ResPacket>(r0 + ResPacketSize);
+          R5 = ploadu<ResPacket>(r1 + ResPacketSize);
+          R6 = ploadu<ResPacket>(r2 + ResPacketSize);
+          traits.acc(C0, alphav, R0);
+          pstoreu(r0, R0);
+          R0 = ploadu<ResPacket>(r3 + ResPacketSize);
 
-                  traits.acc(C0, alphav, R0);
-                  traits.acc(C1, alphav, R1);
-        if(nr==4) traits.acc(C2, alphav, R2);
-        if(nr==4) traits.acc(C3, alphav, R3);
-                  traits.acc(C4, alphav, R4);
-                  traits.acc(C5, alphav, R5);
-        if(nr==4) traits.acc(C6, alphav, R6);
-        if(nr==4) traits.acc(C7, alphav, R7);
+          traits.acc(C1, alphav, R1);
+          traits.acc(C2, alphav, R2);
+          traits.acc(C3, alphav, R3);
+          traits.acc(C4, alphav, R4);
+          traits.acc(C5, alphav, R5);
+          traits.acc(C6, alphav, R6);
+          traits.acc(C7, alphav, R0);
+          
+          pstoreu(r1, R1);
+          pstoreu(r2, R2);
+          pstoreu(r3, R3);
+          pstoreu(r0 + ResPacketSize, R4);
+          pstoreu(r1 + ResPacketSize, R5);
+          pstoreu(r2 + ResPacketSize, R6);
+          pstoreu(r3 + ResPacketSize, R0);
+        }
+        else
+        {
+          ResPacket R0, R1, R4;
+          ResPacket alphav = pset1<ResPacket>(alpha);
 
-                  ei_pstoreu(r0, R0);
-                  ei_pstoreu(r1, R1);
-        if(nr==4) ei_pstoreu(r2, R2);
-        if(nr==4) ei_pstoreu(r3, R3);
-                  ei_pstoreu(r0 + ResPacketSize, R4);
-                  ei_pstoreu(r1 + ResPacketSize, R5);
-        if(nr==4) ei_pstoreu(r2 + ResPacketSize, R6);
-        if(nr==4) ei_pstoreu(r3 + ResPacketSize, R7);
+          R0 = ploadu<ResPacket>(r0);
+          R1 = ploadu<ResPacket>(r1);
+          R4 = ploadu<ResPacket>(r0 + ResPacketSize);
+          traits.acc(C0, alphav, R0);
+          pstoreu(r0, R0);
+          R0 = ploadu<ResPacket>(r1 + ResPacketSize);
+          traits.acc(C1, alphav, R1);
+          traits.acc(C4, alphav, R4);
+          traits.acc(C5, alphav, R0);
+          pstoreu(r1, R1);
+          pstoreu(r0 + ResPacketSize, R4);
+          pstoreu(r1 + ResPacketSize, R0);
+        }
+        
       }
       
       if(rows-peeled_mc>=LhsProgress)
       {
         Index i = peeled_mc;
         const LhsScalar* blA = &blockA[i*strideA+offsetA*LhsProgress];
-        ei_prefetch(&blA[0]);
+        prefetch(&blA[0]);
 
         // gets res block as register
         AccPacket C0, C1, C2, C3;
@@ -939,32 +935,32 @@ EIGEN_ASM_COMMENT("mybegin4");
         }
 
         ResPacket R0, R1, R2, R3;
-        ResPacket alphav = ei_pset1<ResPacket>(alpha);
+        ResPacket alphav = pset1<ResPacket>(alpha);
 
         ResScalar* r0 = &res[(j2+0)*resStride + i];
         ResScalar* r1 = r0 + resStride;
         ResScalar* r2 = r1 + resStride;
         ResScalar* r3 = r2 + resStride;
 
-                  R0 = ei_ploadu<ResPacket>(r0);
-                  R1 = ei_ploadu<ResPacket>(r1);
-        if(nr==4) R2 = ei_ploadu<ResPacket>(r2);
-        if(nr==4) R3 = ei_ploadu<ResPacket>(r3);
+                  R0 = ploadu<ResPacket>(r0);
+                  R1 = ploadu<ResPacket>(r1);
+        if(nr==4) R2 = ploadu<ResPacket>(r2);
+        if(nr==4) R3 = ploadu<ResPacket>(r3);
 
                   traits.acc(C0, alphav, R0);
                   traits.acc(C1, alphav, R1);
         if(nr==4) traits.acc(C2, alphav, R2);
         if(nr==4) traits.acc(C3, alphav, R3);
 
-                  ei_pstoreu(r0, R0);
-                  ei_pstoreu(r1, R1);
-        if(nr==4) ei_pstoreu(r2, R2);
-        if(nr==4) ei_pstoreu(r3, R3);
+                  pstoreu(r0, R0);
+                  pstoreu(r1, R1);
+        if(nr==4) pstoreu(r2, R2);
+        if(nr==4) pstoreu(r3, R3);
       }
       for(Index i=peeled_mc2; i<rows; i++)
       {
         const LhsScalar* blA = &blockA[i*strideA+offsetA];
-        ei_prefetch(&blA[0]);
+        prefetch(&blA[0]);
 
         // gets a 1 x nr res block as registers
         ResScalar C0(0), C1(0), C2(0), C3(0);
@@ -1013,17 +1009,12 @@ EIGEN_ASM_COMMENT("mybegin4");
     for(Index j2=packet_cols; j2<cols; j2++)
     {
       // unpack B
-      {
-        traits.unpackRhs(depth, &blockB[j2*strideB+offsetB], unpackedB);
-//         const RhsScalar* blB = &blockB[j2*strideB+offsetB];
-//         for(Index k=0; k<depth; k++)
-//           ei_pstore(&unpackedB[k*RhsPacketSize], ei_pset1<RhsPacket>(blB[k]));
-      }
+      traits.unpackRhs(depth, &blockB[j2*strideB+offsetB], unpackedB);
 
       for(Index i=0; i<peeled_mc; i+=mr)
       {
         const LhsScalar* blA = &blockA[i*strideA+offsetA*mr];
-        ei_prefetch(&blA[0]);
+        prefetch(&blA[0]);
 
         // TODO move the res loads to the stores
 
@@ -1049,24 +1040,24 @@ EIGEN_ASM_COMMENT("mybegin4");
           blA += 2*LhsProgress;
         }
         ResPacket R0, R4;
-        ResPacket alphav = ei_pset1<ResPacket>(alpha);
+        ResPacket alphav = pset1<ResPacket>(alpha);
 
         ResScalar* r0 = &res[(j2+0)*resStride + i];
 
-        R0 = ei_ploadu<ResPacket>(r0);
-        R4 = ei_ploadu<ResPacket>(r0+ResPacketSize);
+        R0 = ploadu<ResPacket>(r0);
+        R4 = ploadu<ResPacket>(r0+ResPacketSize);
 
         traits.acc(C0, alphav, R0);
         traits.acc(C4, alphav, R4);
 
-        ei_pstoreu(r0,               R0);
-        ei_pstoreu(r0+ResPacketSize, R4);
+        pstoreu(r0,               R0);
+        pstoreu(r0+ResPacketSize, R4);
       }
       if(rows-peeled_mc>=LhsProgress)
       {
         Index i = peeled_mc;
         const LhsScalar* blA = &blockA[i*strideA+offsetA*LhsProgress];
-        ei_prefetch(&blA[0]);
+        prefetch(&blA[0]);
 
         AccPacket C0;
         traits.initAcc(C0);
@@ -1083,15 +1074,15 @@ EIGEN_ASM_COMMENT("mybegin4");
           blA += LhsProgress;
         }
 
-        ResPacket alphav = ei_pset1<ResPacket>(alpha);
-        ResPacket R0 = ei_ploadu<ResPacket>(&res[(j2+0)*resStride + i]);
+        ResPacket alphav = pset1<ResPacket>(alpha);
+        ResPacket R0 = ploadu<ResPacket>(&res[(j2+0)*resStride + i]);
         traits.acc(C0, alphav, R0);
-        ei_pstoreu(&res[(j2+0)*resStride + i], R0);
+        pstoreu(&res[(j2+0)*resStride + i], R0);
       }
       for(Index i=peeled_mc2; i<rows; i++)
       {
         const LhsScalar* blA = &blockA[i*strideA+offsetA];
-        ei_prefetch(&blA[0]);
+        prefetch(&blA[0]);
 
         // gets a 1 x 1 res block as registers
         ResScalar C0(0);
@@ -1126,15 +1117,15 @@ EIGEN_ASM_COMMENT("mybegin4");
 //  32 33 34 35 ...
 //  36 36 38 39 ...
 template<typename Scalar, typename Index, int Pack1, int Pack2, int StorageOrder, bool Conjugate, bool PanelMode>
-struct ei_gemm_pack_lhs
+struct gemm_pack_lhs
 {
   void operator()(Scalar* blockA, const Scalar* EIGEN_RESTRICT _lhs, Index lhsStride, Index depth, Index rows,
                   Index stride=0, Index offset=0)
   {
-//     enum { PacketSize = ei_packet_traits<Scalar>::size };
-    ei_assert(((!PanelMode) && stride==0 && offset==0) || (PanelMode && stride>=depth && offset<=stride));
-    ei_conj_if<NumTraits<Scalar>::IsComplex && Conjugate> cj;
-    ei_const_blas_data_mapper<Scalar, Index, StorageOrder> lhs(_lhs,lhsStride);
+//     enum { PacketSize = packet_traits<Scalar>::size };
+    eigen_assert(((!PanelMode) && stride==0 && offset==0) || (PanelMode && stride>=depth && offset<=stride));
+    conj_if<NumTraits<Scalar>::IsComplex && Conjugate> cj;
+    const_blas_data_mapper<Scalar, Index, StorageOrder> lhs(_lhs,lhsStride);
     Index count = 0;
     Index peeled_mc = (rows/Pack1)*Pack1;
     for(Index i=0; i<peeled_mc; i+=Pack1)
@@ -1172,15 +1163,15 @@ struct ei_gemm_pack_lhs
 //  8  9 10 11   20 21 22 23   26 29
 //  .  .  .  .    .  .  .  .    .  .
 template<typename Scalar, typename Index, int nr, bool Conjugate, bool PanelMode>
-struct ei_gemm_pack_rhs<Scalar, Index, nr, ColMajor, Conjugate, PanelMode>
+struct gemm_pack_rhs<Scalar, Index, nr, ColMajor, Conjugate, PanelMode>
 {
-  typedef typename ei_packet_traits<Scalar>::type Packet;
-  enum { PacketSize = ei_packet_traits<Scalar>::size };
+  typedef typename packet_traits<Scalar>::type Packet;
+  enum { PacketSize = packet_traits<Scalar>::size };
   void operator()(Scalar* blockB, const Scalar* rhs, Index rhsStride, Index depth, Index cols,
                   Index stride=0, Index offset=0)
   {
-    ei_assert(((!PanelMode) && stride==0 && offset==0) || (PanelMode && stride>=depth && offset<=stride));
-    ei_conj_if<NumTraits<Scalar>::IsComplex && Conjugate> cj;
+    eigen_assert(((!PanelMode) && stride==0 && offset==0) || (PanelMode && stride>=depth && offset<=stride));
+    conj_if<NumTraits<Scalar>::IsComplex && Conjugate> cj;
     Index packet_cols = (cols/nr) * nr;
     Index count = 0;
     for(Index j2=0; j2<packet_cols; j2+=nr)
@@ -1220,14 +1211,14 @@ struct ei_gemm_pack_rhs<Scalar, Index, nr, ColMajor, Conjugate, PanelMode>
 
 // this version is optimized for row major matrices
 template<typename Scalar, typename Index, int nr, bool Conjugate, bool PanelMode>
-struct ei_gemm_pack_rhs<Scalar, Index, nr, RowMajor, Conjugate, PanelMode>
+struct gemm_pack_rhs<Scalar, Index, nr, RowMajor, Conjugate, PanelMode>
 {
-  enum { PacketSize = ei_packet_traits<Scalar>::size };
+  enum { PacketSize = packet_traits<Scalar>::size };
   void operator()(Scalar* blockB, const Scalar* rhs, Index rhsStride, Index depth, Index cols,
                   Index stride=0, Index offset=0)
   {
-    ei_assert(((!PanelMode) && stride==0 && offset==0) || (PanelMode && stride>=depth && offset<=stride));
-    ei_conj_if<NumTraits<Scalar>::IsComplex && Conjugate> cj;
+    eigen_assert(((!PanelMode) && stride==0 && offset==0) || (PanelMode && stride>=depth && offset<=stride));
+    conj_if<NumTraits<Scalar>::IsComplex && Conjugate> cj;
     Index packet_cols = (cols/nr) * nr;
     Index count = 0;
     for(Index j2=0; j2<packet_cols; j2+=nr)
@@ -1260,5 +1251,35 @@ struct ei_gemm_pack_rhs<Scalar, Index, nr, RowMajor, Conjugate, PanelMode>
     }
   }
 };
+
+} // end namespace internal
+
+/** \returns the currently set level 1 cpu cache size (in bytes) used to estimate the ideal blocking size parameters.
+  * \sa setCpuCacheSize */
+inline std::ptrdiff_t l1CacheSize()
+{
+  std::ptrdiff_t l1, l2;
+  internal::manage_caching_sizes(GetAction, &l1, &l2);
+  return l1;
+}
+
+/** \returns the currently set level 2 cpu cache size (in bytes) used to estimate the ideal blocking size parameters.
+  * \sa setCpuCacheSize */
+inline std::ptrdiff_t l2CacheSize()
+{
+  std::ptrdiff_t l1, l2;
+  internal::manage_caching_sizes(GetAction, &l1, &l2);
+  return l2;
+}
+
+/** Set the cpu L1 and L2 cache sizes (in bytes).
+  * These values are use to adjust the size of the blocks
+  * for the algorithms working per blocks.
+  *
+  * \sa computeProductBlockingSizes */
+inline void setCpuCacheSizes(std::ptrdiff_t l1, std::ptrdiff_t l2)
+{
+  internal::manage_caching_sizes(SetAction, &l1, &l2);
+}
 
 #endif // EIGEN_GENERAL_BLOCK_PANEL_H

@@ -23,8 +23,8 @@
 // License and a copy of the GNU General Public License along with
 // Eigen. If not, see <http://www.gnu.org/licenses/>.
 
-#ifndef EIGEN_VECTORBLOCK2_H
-#define EIGEN_VECTORBLOCK2_H
+#ifndef EIGEN2_VECTORBLOCK_H
+#define EIGEN2_VECTORBLOCK_H
 
 /** \deprecated use DenseMase::head(Index) */
 template<typename Derived>
@@ -37,11 +37,11 @@ MatrixBase<Derived>::start(Index size)
 
 /** \deprecated use DenseMase::head(Index) */
 template<typename Derived>
-inline const VectorBlock<Derived>
+inline const VectorBlock<const Derived>
 MatrixBase<Derived>::start(Index size) const
 {
   EIGEN_STATIC_ASSERT_VECTOR_ONLY(Derived)
-  return VectorBlock<Derived>(derived(), 0, size);
+  return VectorBlock<const Derived>(derived(), 0, size);
 }
 
 /** \deprecated use DenseMase::tail(Index) */
@@ -55,11 +55,11 @@ MatrixBase<Derived>::end(Index size)
 
 /** \deprecated use DenseMase::tail(Index) */
 template<typename Derived>
-inline const VectorBlock<Derived>
+inline const VectorBlock<const Derived>
 MatrixBase<Derived>::end(Index size) const
 {
   EIGEN_STATIC_ASSERT_VECTOR_ONLY(Derived)
-  return VectorBlock<Derived>(derived(), this->size() - size, size);
+  return VectorBlock<const Derived>(derived(), this->size() - size, size);
 }
 
 /** \deprecated use DenseMase::head() */
@@ -75,11 +75,11 @@ MatrixBase<Derived>::start()
 /** \deprecated use DenseMase::head() */
 template<typename Derived>
 template<int Size>
-inline const VectorBlock<Derived,Size>
+inline const VectorBlock<const Derived,Size>
 MatrixBase<Derived>::start() const
 {
   EIGEN_STATIC_ASSERT_VECTOR_ONLY(Derived)
-  return VectorBlock<Derived,Size>(derived(), 0);
+  return VectorBlock<const Derived,Size>(derived(), 0);
 }
 
 /** \deprecated use DenseMase::tail() */
@@ -95,11 +95,11 @@ MatrixBase<Derived>::end()
 /** \deprecated use DenseMase::tail() */
 template<typename Derived>
 template<int Size>
-inline const VectorBlock<Derived,Size>
+inline const VectorBlock<const Derived,Size>
 MatrixBase<Derived>::end() const
 {
   EIGEN_STATIC_ASSERT_VECTOR_ONLY(Derived)
-  return VectorBlock<Derived, Size>(derived(), size() - Size);
+  return VectorBlock<const Derived, Size>(derived(), size() - Size);
 }
 
-#endif // EIGEN_VECTORBLOCK2_H
+#endif // EIGEN2_VECTORBLOCK_H

@@ -40,13 +40,14 @@
   * \sa DenseBase::select(const DenseBase<ThenDerived>&, const DenseBase<ElseDerived>&) const
   */
 
+namespace internal {
 template<typename ConditionMatrixType, typename ThenMatrixType, typename ElseMatrixType>
-struct ei_traits<Select<ConditionMatrixType, ThenMatrixType, ElseMatrixType> >
- : ei_traits<ThenMatrixType>
+struct traits<Select<ConditionMatrixType, ThenMatrixType, ElseMatrixType> >
+ : traits<ThenMatrixType>
 {
-  typedef typename ei_traits<ThenMatrixType>::Scalar Scalar;
+  typedef typename traits<ThenMatrixType>::Scalar Scalar;
   typedef Dense StorageKind;
-  typedef typename ei_traits<ThenMatrixType>::XprKind XprKind;
+  typedef typename traits<ThenMatrixType>::XprKind XprKind;
   typedef typename ConditionMatrixType::Nested ConditionMatrixNested;
   typedef typename ThenMatrixType::Nested ThenMatrixNested;
   typedef typename ElseMatrixType::Nested ElseMatrixNested;
@@ -56,19 +57,20 @@ struct ei_traits<Select<ConditionMatrixType, ThenMatrixType, ElseMatrixType> >
     MaxRowsAtCompileTime = ConditionMatrixType::MaxRowsAtCompileTime,
     MaxColsAtCompileTime = ConditionMatrixType::MaxColsAtCompileTime,
     Flags = (unsigned int)ThenMatrixType::Flags & ElseMatrixType::Flags & HereditaryBits,
-    CoeffReadCost = ei_traits<typename ei_cleantype<ConditionMatrixNested>::type>::CoeffReadCost
-                  + EIGEN_SIZE_MAX(ei_traits<typename ei_cleantype<ThenMatrixNested>::type>::CoeffReadCost,
-                                   ei_traits<typename ei_cleantype<ElseMatrixNested>::type>::CoeffReadCost)
+    CoeffReadCost = traits<typename remove_all<ConditionMatrixNested>::type>::CoeffReadCost
+                  + EIGEN_SIZE_MAX(traits<typename remove_all<ThenMatrixNested>::type>::CoeffReadCost,
+                                   traits<typename remove_all<ElseMatrixNested>::type>::CoeffReadCost)
   };
 };
+}
 
 template<typename ConditionMatrixType, typename ThenMatrixType, typename ElseMatrixType>
-class Select : ei_no_assignment_operator,
-  public ei_dense_xpr_base< Select<ConditionMatrixType, ThenMatrixType, ElseMatrixType> >::type
+class Select : internal::no_assignment_operator,
+  public internal::dense_xpr_base< Select<ConditionMatrixType, ThenMatrixType, ElseMatrixType> >::type
 {
   public:
 
-    typedef typename ei_dense_xpr_base<Select>::type Base;
+    typedef typename internal::dense_xpr_base<Select>::type Base;
     EIGEN_DENSE_PUBLIC_INTERFACE(Select)
 
     Select(const ConditionMatrixType& conditionMatrix,
@@ -76,8 +78,8 @@ class Select : ei_no_assignment_operator,
            const ElseMatrixType& elseMatrix)
       : m_condition(conditionMatrix), m_then(thenMatrix), m_else(elseMatrix)
     {
-      ei_assert(m_condition.rows() == m_then.rows() && m_condition.rows() == m_else.rows());
-      ei_assert(m_condition.cols() == m_then.cols() && m_condition.cols() == m_else.cols());
+      eigen_assert(m_condition.rows() == m_then.rows() && m_condition.rows() == m_else.rows());
+      eigen_assert(m_condition.cols() == m_then.cols() && m_condition.cols() == m_else.cols());
     }
 
     Index rows() const { return m_condition.rows(); }

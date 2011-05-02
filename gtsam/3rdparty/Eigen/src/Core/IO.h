@@ -30,6 +30,11 @@ enum { DontAlignCols = 1 };
 enum { StreamPrecision = -1,
        FullPrecision = -2 };
 
+namespace internal {
+template<typename Derived>
+std::ostream & print_matrix(std::ostream & s, const Derived& _m, const IOFormat& fmt);
+}
+
 /** \class IOFormat
   * \ingroup Core_Module
   *
@@ -106,7 +111,7 @@ class WithFormat
 
     friend std::ostream & operator << (std::ostream & s, const WithFormat& wf)
     {
-      return ei_print_matrix(s, wf.m_matrix.eval(), wf.m_format);
+      return internal::print_matrix(s, wf.m_matrix.eval(), wf.m_format);
     }
 
   protected:
@@ -128,18 +133,20 @@ DenseBase<Derived>::format(const IOFormat& fmt) const
   return WithFormat<Derived>(derived(), fmt);
 }
 
+namespace internal {
+
 template<typename Scalar, bool IsInteger>
-struct ei_significant_decimals_default_impl
+struct significant_decimals_default_impl
 {
   typedef typename NumTraits<Scalar>::Real RealScalar;
   static inline int run()
   {
-    return ei_cast<RealScalar,int>(std::ceil(-ei_log(NumTraits<RealScalar>::epsilon())/ei_log(RealScalar(10))));
+    return cast<RealScalar,int>(std::ceil(-log(NumTraits<RealScalar>::epsilon())/log(RealScalar(10))));
   }
 };
 
 template<typename Scalar>
-struct ei_significant_decimals_default_impl<Scalar, true>
+struct significant_decimals_default_impl<Scalar, true>
 {
   static inline int run()
   {
@@ -148,14 +155,14 @@ struct ei_significant_decimals_default_impl<Scalar, true>
 };
 
 template<typename Scalar>
-struct ei_significant_decimals_impl
-  : ei_significant_decimals_default_impl<Scalar, NumTraits<Scalar>::IsInteger>
+struct significant_decimals_impl
+  : significant_decimals_default_impl<Scalar, NumTraits<Scalar>::IsInteger>
 {};
 
 /** \internal
   * print the matrix \a _m to the output stream \a s using the output format \a fmt */
 template<typename Derived>
-std::ostream & ei_print_matrix(std::ostream & s, const Derived& _m, const IOFormat& fmt)
+std::ostream & print_matrix(std::ostream & s, const Derived& _m, const IOFormat& fmt)
 {
   if(_m.size() == 0)
   {
@@ -182,7 +189,7 @@ std::ostream & ei_print_matrix(std::ostream & s, const Derived& _m, const IOForm
     }
     else
     {
-      explicit_precision = ei_significant_decimals_impl<Scalar>::run();
+      explicit_precision = significant_decimals_impl<Scalar>::run();
     }
   }
   else
@@ -228,6 +235,8 @@ std::ostream & ei_print_matrix(std::ostream & s, const Derived& _m, const IOForm
   return s;
 }
 
+} // end namespace internal
+
 /** \relates DenseBase
   *
   * Outputs the matrix, to the given stream.
@@ -244,7 +253,7 @@ std::ostream & operator <<
 (std::ostream & s,
  const DenseBase<Derived> & m)
 {
-  return ei_print_matrix(s, m.eval(), EIGEN_DEFAULT_IO_FORMAT);
+  return internal::print_matrix(s, m.eval(), EIGEN_DEFAULT_IO_FORMAT);
 }
 
 #endif // EIGEN_IO_H

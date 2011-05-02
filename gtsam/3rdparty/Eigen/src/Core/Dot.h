@@ -25,6 +25,8 @@
 #ifndef EIGEN_DOT_H
 #define EIGEN_DOT_H
 
+namespace internal {
+
 // helper function for dot(). The problem is that if we put that in the body of dot(), then upon calling dot
 // with mismatched types, the compiler emits errors about failing to instantiate cwiseProduct BEFORE
 // looking at the static assertions. Thus this is a trick to get better compile errors.
@@ -37,22 +39,26 @@ template<typename T, typename U,
                          // revert to || as soon as not needed anymore.
                     (int(T::ColsAtCompileTime) == 1 && int(U::RowsAtCompileTime) == 1))
 >
-struct ei_dot_nocheck
+struct dot_nocheck
 {
-  static inline typename ei_traits<T>::Scalar run(const MatrixBase<T>& a, const MatrixBase<U>& b)
+  typedef typename scalar_product_traits<typename traits<T>::Scalar,typename traits<U>::Scalar>::ReturnType ResScalar;
+  static inline ResScalar run(const MatrixBase<T>& a, const MatrixBase<U>& b)
   {
-    return a.template binaryExpr<ei_scalar_conj_product_op<typename ei_traits<T>::Scalar> >(b).sum();
+    return a.template binaryExpr<scalar_conj_product_op<typename traits<T>::Scalar,typename traits<U>::Scalar> >(b).sum();
   }
 };
 
 template<typename T, typename U>
-struct ei_dot_nocheck<T, U, true>
+struct dot_nocheck<T, U, true>
 {
-  static inline typename ei_traits<T>::Scalar run(const MatrixBase<T>& a, const MatrixBase<U>& b)
+  typedef typename scalar_product_traits<typename traits<T>::Scalar,typename traits<U>::Scalar>::ReturnType ResScalar;
+  static inline ResScalar run(const MatrixBase<T>& a, const MatrixBase<U>& b)
   {
-    return a.transpose().template binaryExpr<ei_scalar_conj_product_op<typename ei_traits<T>::Scalar> >(b).sum();
+    return a.transpose().template binaryExpr<scalar_conj_product_op<typename traits<T>::Scalar,typename traits<U>::Scalar> >(b).sum();
   }
 };
+
+} // end namespace internal
 
 /** \returns the dot product of *this with other.
   *
@@ -66,19 +72,47 @@ struct ei_dot_nocheck<T, U, true>
   */
 template<typename Derived>
 template<typename OtherDerived>
-typename ei_traits<Derived>::Scalar
+typename internal::scalar_product_traits<typename internal::traits<Derived>::Scalar,typename internal::traits<OtherDerived>::Scalar>::ReturnType
 MatrixBase<Derived>::dot(const MatrixBase<OtherDerived>& other) const
 {
   EIGEN_STATIC_ASSERT_VECTOR_ONLY(Derived)
   EIGEN_STATIC_ASSERT_VECTOR_ONLY(OtherDerived)
   EIGEN_STATIC_ASSERT_SAME_VECTOR_SIZE(Derived,OtherDerived)
-  EIGEN_STATIC_ASSERT((ei_is_same_type<Scalar, typename OtherDerived::Scalar>::ret),
+  typedef internal::scalar_conj_product_op<Scalar,typename OtherDerived::Scalar> func;
+  EIGEN_CHECK_BINARY_COMPATIBILIY(func,Scalar,typename OtherDerived::Scalar);
+
+  eigen_assert(size() == other.size());
+
+  return internal::dot_nocheck<Derived,OtherDerived>::run(*this, other);
+}
+
+#ifdef EIGEN2_SUPPORT
+/** \returns the dot product of *this with other, with the Eigen2 convention that the dot product is linear in the first variable
+  * (conjugating the second variable). Of course this only makes a difference in the complex case.
+  *
+  * This method is only available in EIGEN2_SUPPORT mode.
+  *
+  * \only_for_vectors
+  *
+  * \sa dot()
+  */
+template<typename Derived>
+template<typename OtherDerived>
+typename internal::traits<Derived>::Scalar
+MatrixBase<Derived>::eigen2_dot(const MatrixBase<OtherDerived>& other) const
+{
+  EIGEN_STATIC_ASSERT_VECTOR_ONLY(Derived)
+  EIGEN_STATIC_ASSERT_VECTOR_ONLY(OtherDerived)
+  EIGEN_STATIC_ASSERT_SAME_VECTOR_SIZE(Derived,OtherDerived)
+  EIGEN_STATIC_ASSERT((internal::is_same<Scalar, typename OtherDerived::Scalar>::value),
     YOU_MIXED_DIFFERENT_NUMERIC_TYPES__YOU_NEED_TO_USE_THE_CAST_METHOD_OF_MATRIXBASE_TO_CAST_NUMERIC_TYPES_EXPLICITLY)
 
-  ei_assert(size() == other.size());
+  eigen_assert(size() == other.size());
 
-  return ei_dot_nocheck<Derived,OtherDerived>::run(*this, other);
+  return internal::dot_nocheck<OtherDerived,Derived>::run(other,*this);
 }
+#endif
+
 
 //---------- implementation of L2 norm and related functions ----------
 
@@ -87,9 +121,9 @@ MatrixBase<Derived>::dot(const MatrixBase<OtherDerived>& other) const
   * \sa dot(), norm()
   */
 template<typename Derived>
-EIGEN_STRONG_INLINE typename NumTraits<typename ei_traits<Derived>::Scalar>::Real MatrixBase<Derived>::squaredNorm() const
+EIGEN_STRONG_INLINE typename NumTraits<typename internal::traits<Derived>::Scalar>::Real MatrixBase<Derived>::squaredNorm() const
 {
-  return ei_real((*this).cwiseAbs2().sum());
+  return internal::real((*this).cwiseAbs2().sum());
 }
 
 /** \returns the \em l2 norm of *this, i.e., for vectors, the square root of the dot product of *this with itself.
@@ -97,9 +131,9 @@ EIGEN_STRONG_INLINE typename NumTraits<typename ei_traits<Derived>::Scalar>::Rea
   * \sa dot(), squaredNorm()
   */
 template<typename Derived>
-inline typename NumTraits<typename ei_traits<Derived>::Scalar>::Real MatrixBase<Derived>::norm() const
+inline typename NumTraits<typename internal::traits<Derived>::Scalar>::Real MatrixBase<Derived>::norm() const
 {
-  return ei_sqrt(squaredNorm());
+  return internal::sqrt(squaredNorm());
 }
 
 /** \returns an expression of the quotient of *this by its own norm.
@@ -112,8 +146,8 @@ template<typename Derived>
 inline const typename MatrixBase<Derived>::PlainObject
 MatrixBase<Derived>::normalized() const
 {
-  typedef typename ei_nested<Derived>::type Nested;
-  typedef typename ei_unref<Nested>::type _Nested;
+  typedef typename internal::nested<Derived>::type Nested;
+  typedef typename internal::remove_reference<Nested>::type _Nested;
   _Nested n(derived());
   return n / n.norm();
 }
@@ -132,55 +166,59 @@ inline void MatrixBase<Derived>::normalize()
 
 //---------- implementation of other norms ----------
 
+namespace internal {
+
 template<typename Derived, int p>
-struct ei_lpNorm_selector
+struct lpNorm_selector
 {
-  typedef typename NumTraits<typename ei_traits<Derived>::Scalar>::Real RealScalar;
+  typedef typename NumTraits<typename traits<Derived>::Scalar>::Real RealScalar;
   inline static RealScalar run(const MatrixBase<Derived>& m)
   {
-    return ei_pow(m.cwiseAbs().array().pow(p).sum(), RealScalar(1)/p);
+    return pow(m.cwiseAbs().array().pow(p).sum(), RealScalar(1)/p);
   }
 };
 
 template<typename Derived>
-struct ei_lpNorm_selector<Derived, 1>
+struct lpNorm_selector<Derived, 1>
 {
-  inline static typename NumTraits<typename ei_traits<Derived>::Scalar>::Real run(const MatrixBase<Derived>& m)
+  inline static typename NumTraits<typename traits<Derived>::Scalar>::Real run(const MatrixBase<Derived>& m)
   {
     return m.cwiseAbs().sum();
   }
 };
 
 template<typename Derived>
-struct ei_lpNorm_selector<Derived, 2>
+struct lpNorm_selector<Derived, 2>
 {
-  inline static typename NumTraits<typename ei_traits<Derived>::Scalar>::Real run(const MatrixBase<Derived>& m)
+  inline static typename NumTraits<typename traits<Derived>::Scalar>::Real run(const MatrixBase<Derived>& m)
   {
     return m.norm();
   }
 };
 
 template<typename Derived>
-struct ei_lpNorm_selector<Derived, Infinity>
+struct lpNorm_selector<Derived, Infinity>
 {
-  inline static typename NumTraits<typename ei_traits<Derived>::Scalar>::Real run(const MatrixBase<Derived>& m)
+  inline static typename NumTraits<typename traits<Derived>::Scalar>::Real run(const MatrixBase<Derived>& m)
   {
     return m.cwiseAbs().maxCoeff();
   }
 };
 
+} // end namespace internal
+
 /** \returns the \f$ \ell^p \f$ norm of *this, that is, returns the p-th root of the sum of the p-th powers of the absolute values
-  *          of the coefficients of *this. If \a p is the special value \a Eigen::Infinity, this function returns the \f$ \ell^p\infty \f$
+  *          of the coefficients of *this. If \a p is the special value \a Eigen::Infinity, this function returns the \f$ \ell^\infty \f$
   *          norm, that is the maximum of the absolute values of the coefficients of *this.
   *
   * \sa norm()
   */
 template<typename Derived>
 template<int p>
-inline typename NumTraits<typename ei_traits<Derived>::Scalar>::Real
+inline typename NumTraits<typename internal::traits<Derived>::Scalar>::Real
 MatrixBase<Derived>::lpNorm() const
 {
-  return ei_lpNorm_selector<Derived, p>::run(*this);
+  return internal::lpNorm_selector<Derived, p>::run(*this);
 }
 
 //---------- implementation of isOrthogonal / isUnitary ----------
@@ -196,9 +234,9 @@ template<typename OtherDerived>
 bool MatrixBase<Derived>::isOrthogonal
 (const MatrixBase<OtherDerived>& other, RealScalar prec) const
 {
-  typename ei_nested<Derived,2>::type nested(derived());
-  typename ei_nested<OtherDerived,2>::type otherNested(other.derived());
-  return ei_abs2(nested.dot(otherNested)) <= prec * prec * nested.squaredNorm() * otherNested.squaredNorm();
+  typename internal::nested<Derived,2>::type nested(derived());
+  typename internal::nested<OtherDerived,2>::type otherNested(other.derived());
+  return internal::abs2(nested.dot(otherNested)) <= prec * prec * nested.squaredNorm() * otherNested.squaredNorm();
 }
 
 /** \returns true if *this is approximately an unitary matrix,
@@ -218,10 +256,10 @@ bool MatrixBase<Derived>::isUnitary(RealScalar prec) const
   typename Derived::Nested nested(derived());
   for(Index i = 0; i < cols(); ++i)
   {
-    if(!ei_isApprox(nested.col(i).squaredNorm(), static_cast<RealScalar>(1), prec))
+    if(!internal::isApprox(nested.col(i).squaredNorm(), static_cast<RealScalar>(1), prec))
       return false;
     for(Index j = 0; j < i; ++j)
-      if(!ei_isMuchSmallerThan(nested.col(i).dot(nested.col(j)), static_cast<Scalar>(1), prec))
+      if(!internal::isMuchSmallerThan(nested.col(i).dot(nested.col(j)), static_cast<Scalar>(1), prec))
         return false;
   }
   return true;

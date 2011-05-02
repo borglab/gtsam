@@ -26,9 +26,67 @@
 #ifndef EIGEN_FUZZY_H
 #define EIGEN_FUZZY_H
 
-// TODO support small integer types properly i.e. do exact compare on coeffs --- taking a HS norm is guaranteed to cause integer overflow.
+namespace internal
+{
 
-#ifndef EIGEN_LEGACY_COMPARES
+template<typename Derived, typename OtherDerived, bool is_integer = NumTraits<typename Derived::Scalar>::IsInteger>
+struct isApprox_selector
+{
+  static bool run(const Derived& x, const OtherDerived& y, typename Derived::RealScalar prec)
+  {
+    const typename internal::nested<Derived,2>::type nested(x);
+    const typename internal::nested<OtherDerived,2>::type otherNested(y);
+    return (nested - otherNested).cwiseAbs2().sum() <= prec * prec * std::min(nested.cwiseAbs2().sum(), otherNested.cwiseAbs2().sum());
+  }
+};
+
+template<typename Derived, typename OtherDerived>
+struct isApprox_selector<Derived, OtherDerived, true>
+{
+  static bool run(const Derived& x, const OtherDerived& y, typename Derived::RealScalar)
+  {
+    return x.matrix() == y.matrix();
+  }
+};
+
+template<typename Derived, typename OtherDerived, bool is_integer = NumTraits<typename Derived::Scalar>::IsInteger>
+struct isMuchSmallerThan_object_selector
+{
+  static bool run(const Derived& x, const OtherDerived& y, typename Derived::RealScalar prec)
+  {
+    return x.cwiseAbs2().sum() <= abs2(prec) * y.cwiseAbs2().sum();
+  }
+};
+
+template<typename Derived, typename OtherDerived>
+struct isMuchSmallerThan_object_selector<Derived, OtherDerived, true>
+{
+  static bool run(const Derived& x, const OtherDerived&, typename Derived::RealScalar)
+  {
+    return x.matrix() == Derived::Zero(x.rows(), x.cols()).matrix();
+  }
+};
+
+template<typename Derived, bool is_integer = NumTraits<typename Derived::Scalar>::IsInteger>
+struct isMuchSmallerThan_scalar_selector
+{
+  static bool run(const Derived& x, const typename Derived::RealScalar& y, typename Derived::RealScalar prec)
+  {
+    return x.cwiseAbs2().sum() <= abs2(prec * y);
+  }
+};
+
+template<typename Derived>
+struct isMuchSmallerThan_scalar_selector<Derived, true>
+{
+  static bool run(const Derived& x, const typename Derived::RealScalar&, typename Derived::RealScalar)
+  {
+    return x.matrix() == Derived::Zero(x.rows(), x.cols()).matrix();
+  }
+};
+
+} // end namespace internal
+
 
 /** \returns \c true if \c *this is approximately equal to \a other, within the precision
   * determined by \a prec.
@@ -42,10 +100,10 @@
   * \note Because of the multiplicativeness of this comparison, one can't use this function
   * to check whether \c *this is approximately equal to the zero matrix or vector.
   * Indeed, \c isApprox(zero) returns false unless \c *this itself is exactly the zero matrix
-  * or vector. If you want to test whether \c *this is zero, use ei_isMuchSmallerThan(const
+  * or vector. If you want to test whether \c *this is zero, use internal::isMuchSmallerThan(const
   * RealScalar&, RealScalar) instead.
   *
-  * \sa ei_isMuchSmallerThan(const RealScalar&, RealScalar) const
+  * \sa internal::isMuchSmallerThan(const RealScalar&, RealScalar) const
   */
 template<typename Derived>
 template<typename OtherDerived>
@@ -54,12 +112,7 @@ bool DenseBase<Derived>::isApprox(
   RealScalar prec
 ) const
 {
-  const typename ei_nested<Derived,2>::type nested(derived());
-  const typename ei_nested<OtherDerived,2>::type otherNested(other.derived());
-//   std::cerr << typeid(Derived).name() << " => " << typeid(typename ei_nested<Derived,2>::type).name() << "\n";
-//   std::cerr << typeid(OtherDerived).name() << " => " << typeid(typename ei_nested<OtherDerived,2>::type).name() << "\n";
-//   return false;
-  return (nested - otherNested).cwiseAbs2().sum() <= prec * prec * std::min(nested.cwiseAbs2().sum(), otherNested.cwiseAbs2().sum());
+  return internal::isApprox_selector<Derived, OtherDerived>::run(derived(), other.derived(), prec);
 }
 
 /** \returns \c true if the norm of \c *this is much smaller than \a other,
@@ -81,7 +134,7 @@ bool DenseBase<Derived>::isMuchSmallerThan(
   RealScalar prec
 ) const
 {
-  return derived().cwiseAbs2().sum() <= prec * prec * other * other;
+  return internal::isMuchSmallerThan_scalar_selector<Derived>::run(derived(), other, prec);
 }
 
 /** \returns \c true if the norm of \c *this is much smaller than the norm of \a other,
@@ -101,140 +154,7 @@ bool DenseBase<Derived>::isMuchSmallerThan(
   RealScalar prec
 ) const
 {
-  return derived().cwiseAbs2().sum() <= prec * prec * other.derived().cwiseAbs2().sum();
+  return internal::isMuchSmallerThan_object_selector<Derived, OtherDerived>::run(derived(), other.derived(), prec);
 }
-
-#else
-
-template<typename Derived, typename OtherDerived=Derived, bool IsVector=Derived::IsVectorAtCompileTime>
-struct ei_fuzzy_selector;
-
-/** \returns \c true if \c *this is approximately equal to \a other, within the precision
-  * determined by \a prec.
-  *
-  * \note The fuzzy compares are done multiplicatively. Two vectors \f$ v \f$ and \f$ w \f$
-  * are considered to be approximately equal within precision \f$ p \f$ if
-  * \f[ \Vert v - w \Vert \leqslant p\,\min(\Vert v\Vert, \Vert w\Vert). \f]
-  * For matrices, the comparison is done on all columns.
-  *
-  * \note Because of the multiplicativeness of this comparison, one can't use this function
-  * to check whether \c *this is approximately equal to the zero matrix or vector.
-  * Indeed, \c isApprox(zero) returns false unless \c *this itself is exactly the zero matrix
-  * or vector. If you want to test whether \c *this is zero, use ei_isMuchSmallerThan(const
-  * RealScalar&, RealScalar) instead.
-  *
-  * \sa ei_isMuchSmallerThan(const RealScalar&, RealScalar) const
-  */
-template<typename Derived>
-template<typename OtherDerived>
-bool DenseBase<Derived>::isApprox(
-  const DenseBase<OtherDerived>& other,
-  RealScalar prec
-) const
-{
-  return ei_fuzzy_selector<Derived,OtherDerived>::isApprox(derived(), other.derived(), prec);
-}
-
-/** \returns \c true if the norm of \c *this is much smaller than \a other,
-  * within the precision determined by \a prec.
-  *
-  * \note The fuzzy compares are done multiplicatively. A vector \f$ v \f$ is
-  * considered to be much smaller than \f$ x \f$ within precision \f$ p \f$ if
-  * \f[ \Vert v \Vert \leqslant p\,\vert x\vert. \f]
-  * For matrices, the comparison is done on all columns.
-  *
-  * \sa isApprox(), isMuchSmallerThan(const DenseBase<OtherDerived>&, RealScalar) const
-  */
-template<typename Derived>
-bool DenseBase<Derived>::isMuchSmallerThan(
-  const typename NumTraits<Scalar>::Real& other,
-  RealScalar prec
-) const
-{
-  return ei_fuzzy_selector<Derived>::isMuchSmallerThan(derived(), other, prec);
-}
-
-/** \returns \c true if the norm of \c *this is much smaller than the norm of \a other,
-  * within the precision determined by \a prec.
-  *
-  * \note The fuzzy compares are done multiplicatively. A vector \f$ v \f$ is
-  * considered to be much smaller than a vector \f$ w \f$ within precision \f$ p \f$ if
-  * \f[ \Vert v \Vert \leqslant p\,\Vert w\Vert. \f]
-  * For matrices, the comparison is done on all columns.
-  *
-  * \sa isApprox(), isMuchSmallerThan(const RealScalar&, RealScalar) const
-  */
-template<typename Derived>
-template<typename OtherDerived>
-bool DenseBase<Derived>::isMuchSmallerThan(
-  const DenseBase<OtherDerived>& other,
-  RealScalar prec
-) const
-{
-  return ei_fuzzy_selector<Derived,OtherDerived>::isMuchSmallerThan(derived(), other.derived(), prec);
-}
-
-
-template<typename Derived, typename OtherDerived>
-struct ei_fuzzy_selector<Derived,OtherDerived,true>
-{
-  typedef typename Derived::RealScalar RealScalar;
-  static bool isApprox(const Derived& self, const OtherDerived& other, RealScalar prec)
-  {
-    EIGEN_STATIC_ASSERT_SAME_VECTOR_SIZE(Derived,OtherDerived)
-    ei_assert(self.size() == other.size());
-    return((self - other).squaredNorm() <= std::min(self.squaredNorm(), other.squaredNorm()) * prec * prec);
-  }
-  static bool isMuchSmallerThan(const Derived& self, const RealScalar& other, RealScalar prec)
-  {
-    return(self.squaredNorm() <= ei_abs2(other * prec));
-  }
-  static bool isMuchSmallerThan(const Derived& self, const OtherDerived& other, RealScalar prec)
-  {
-    EIGEN_STATIC_ASSERT_SAME_VECTOR_SIZE(Derived,OtherDerived)
-    ei_assert(self.size() == other.size());
-    return(self.squaredNorm() <= other.squaredNorm() * prec * prec);
-  }
-};
-
-template<typename Derived, typename OtherDerived>
-struct ei_fuzzy_selector<Derived,OtherDerived,false>
-{
-  typedef typename Derived::RealScalar RealScalar;
-  typedef typename Derived::Index Index;
-  static bool isApprox(const Derived& self, const OtherDerived& other, RealScalar prec)
-  {
-    EIGEN_STATIC_ASSERT_SAME_MATRIX_SIZE(Derived,OtherDerived)
-    ei_assert(self.rows() == other.rows() && self.cols() == other.cols());
-    typename Derived::Nested nested(self);
-    typename OtherDerived::Nested otherNested(other);
-    for(Index i = 0; i < self.cols(); ++i)
-      if((nested.col(i) - otherNested.col(i)).squaredNorm()
-          > std::min(nested.col(i).squaredNorm(), otherNested.col(i).squaredNorm()) * prec * prec)
-        return false;
-    return true;
-  }
-  static bool isMuchSmallerThan(const Derived& self, const RealScalar& other, RealScalar prec)
-  {
-    typename Derived::Nested nested(self);
-    for(Index i = 0; i < self.cols(); ++i)
-      if(nested.col(i).squaredNorm() > ei_abs2(other * prec))
-        return false;
-    return true;
-  }
-  static bool isMuchSmallerThan(const Derived& self, const OtherDerived& other, RealScalar prec)
-  {
-    EIGEN_STATIC_ASSERT_SAME_MATRIX_SIZE(Derived,OtherDerived)
-    ei_assert(self.rows() == other.rows() && self.cols() == other.cols());
-    typename Derived::Nested nested(self);
-    typename OtherDerived::Nested otherNested(other);
-    for(Index i = 0; i < self.cols(); ++i)
-      if(nested.col(i).squaredNorm() > otherNested.col(i).squaredNorm() * prec * prec)
-        return false;
-    return true;
-  }
-};
-
-#endif
 
 #endif // EIGEN_FUZZY_H

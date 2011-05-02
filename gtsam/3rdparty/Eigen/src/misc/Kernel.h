@@ -25,11 +25,13 @@
 #ifndef EIGEN_MISC_KERNEL_H
 #define EIGEN_MISC_KERNEL_H
 
-/** \class ei_kernel_retval_base
+namespace internal {
+
+/** \class kernel_retval_base
   *
   */
 template<typename DecompositionType>
-struct ei_traits<ei_kernel_retval_base<DecompositionType> >
+struct traits<kernel_retval_base<DecompositionType> >
 {
   typedef typename DecompositionType::MatrixType MatrixType;
   typedef Matrix<
@@ -45,14 +47,14 @@ struct ei_traits<ei_kernel_retval_base<DecompositionType> >
   > ReturnType;
 };
 
-template<typename _DecompositionType> struct ei_kernel_retval_base
- : public ReturnByValue<ei_kernel_retval_base<_DecompositionType> >
+template<typename _DecompositionType> struct kernel_retval_base
+ : public ReturnByValue<kernel_retval_base<_DecompositionType> >
 {
   typedef _DecompositionType DecompositionType;
-  typedef ReturnByValue<ei_kernel_retval_base> Base;
+  typedef ReturnByValue<kernel_retval_base> Base;
   typedef typename Base::Index Index;
 
-  ei_kernel_retval_base(const DecompositionType& dec)
+  kernel_retval_base(const DecompositionType& dec)
     : m_dec(dec),
       m_rank(dec.rank()),
       m_cols(m_rank==dec.cols() ? 1 : dec.cols() - m_rank)
@@ -65,7 +67,7 @@ template<typename _DecompositionType> struct ei_kernel_retval_base
 
   template<typename Dest> inline void evalTo(Dest& dst) const
   {
-    static_cast<const ei_kernel_retval<DecompositionType>*>(this)->evalTo(dst);
+    static_cast<const kernel_retval<DecompositionType>*>(this)->evalTo(dst);
   }
 
   protected:
@@ -73,16 +75,18 @@ template<typename _DecompositionType> struct ei_kernel_retval_base
     Index m_rank, m_cols;
 };
 
+} // end namespace internal
+
 #define EIGEN_MAKE_KERNEL_HELPERS(DecompositionType) \
   typedef typename DecompositionType::MatrixType MatrixType; \
   typedef typename MatrixType::Scalar Scalar; \
   typedef typename MatrixType::RealScalar RealScalar; \
   typedef typename MatrixType::Index Index; \
-  typedef ei_kernel_retval_base<DecompositionType> Base; \
+  typedef Eigen::internal::kernel_retval_base<DecompositionType> Base; \
   using Base::dec; \
   using Base::rank; \
   using Base::rows; \
   using Base::cols; \
-  ei_kernel_retval(const DecompositionType& dec) : Base(dec) {}
+  kernel_retval(const DecompositionType& dec) : Base(dec) {}
 
 #endif // EIGEN_MISC_KERNEL_H

@@ -25,11 +25,13 @@
 #ifndef EIGEN_MISC_IMAGE_H
 #define EIGEN_MISC_IMAGE_H
 
-/** \class ei_image_retval_base
+namespace internal {
+
+/** \class image_retval_base
   *
   */
 template<typename DecompositionType>
-struct ei_traits<ei_image_retval_base<DecompositionType> >
+struct traits<image_retval_base<DecompositionType> >
 {
   typedef typename DecompositionType::MatrixType MatrixType;
   typedef Matrix<
@@ -43,15 +45,15 @@ struct ei_traits<ei_image_retval_base<DecompositionType> >
   > ReturnType;
 };
 
-template<typename _DecompositionType> struct ei_image_retval_base
- : public ReturnByValue<ei_image_retval_base<_DecompositionType> >
+template<typename _DecompositionType> struct image_retval_base
+ : public ReturnByValue<image_retval_base<_DecompositionType> >
 {
   typedef _DecompositionType DecompositionType;
   typedef typename DecompositionType::MatrixType MatrixType;
-  typedef ReturnByValue<ei_image_retval_base> Base;
+  typedef ReturnByValue<image_retval_base> Base;
   typedef typename Base::Index Index;
 
-  ei_image_retval_base(const DecompositionType& dec, const MatrixType& originalMatrix)
+  image_retval_base(const DecompositionType& dec, const MatrixType& originalMatrix)
     : m_dec(dec), m_rank(dec.rank()),
       m_cols(m_rank == 0 ? 1 : m_rank),
       m_originalMatrix(originalMatrix)
@@ -65,7 +67,7 @@ template<typename _DecompositionType> struct ei_image_retval_base
 
   template<typename Dest> inline void evalTo(Dest& dst) const
   {
-    static_cast<const ei_image_retval<DecompositionType>*>(this)->evalTo(dst);
+    static_cast<const image_retval<DecompositionType>*>(this)->evalTo(dst);
   }
 
   protected:
@@ -74,18 +76,20 @@ template<typename _DecompositionType> struct ei_image_retval_base
     const MatrixType& m_originalMatrix;
 };
 
+} // end namespace internal
+
 #define EIGEN_MAKE_IMAGE_HELPERS(DecompositionType) \
   typedef typename DecompositionType::MatrixType MatrixType; \
   typedef typename MatrixType::Scalar Scalar; \
   typedef typename MatrixType::RealScalar RealScalar; \
   typedef typename MatrixType::Index Index; \
-  typedef ei_image_retval_base<DecompositionType> Base; \
+  typedef Eigen::internal::image_retval_base<DecompositionType> Base; \
   using Base::dec; \
   using Base::originalMatrix; \
   using Base::rank; \
   using Base::rows; \
   using Base::cols; \
-  ei_image_retval(const DecompositionType& dec, const MatrixType& originalMatrix) \
+  image_retval(const DecompositionType& dec, const MatrixType& originalMatrix) \
     : Base(dec, originalMatrix) {}
 
 #endif // EIGEN_MISC_IMAGE_H

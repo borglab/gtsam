@@ -29,11 +29,11 @@
 /* Some notes on Eigen's static assertion mechanism:
  *
  *  - in EIGEN_STATIC_ASSERT(CONDITION,MSG) the parameter CONDITION must be a compile time boolean
- *    expression, and MSG an enum listed in struct ei_static_assert<true>
+ *    expression, and MSG an enum listed in struct internal::static_assertion<true>
  *
  *  - define EIGEN_NO_STATIC_ASSERT to disable them (and save compilation time)
  *    in that case, the static assertion is converted to the following runtime assert:
- *      ei_assert(CONDITION && "MSG")
+ *      eigen_assert(CONDITION && "MSG")
  *
  *  - currently EIGEN_STATIC_ASSERT can only be used in function scope
  *
@@ -48,11 +48,13 @@
 
   #else // not CXX0X
 
+    namespace internal {
+
     template<bool condition>
-    struct ei_static_assert {};
+    struct static_assertion {};
 
     template<>
-    struct ei_static_assert<true>
+    struct static_assertion<true>
     {
       enum {
         YOU_TRIED_CALLING_A_VECTOR_METHOD_ON_A_MATRIX,
@@ -90,9 +92,14 @@
         PACKET_ACCESS_REQUIRES_TO_HAVE_INNER_STRIDE_FIXED_TO_1,
         THIS_METHOD_IS_ONLY_FOR_SPECIFIC_TRANSFORMATIONS,
         YOU_CANNOT_MIX_ARRAYS_AND_MATRICES,
-        YOU_PERFORMED_AN_INVALID_TRANSFORMATION_CONVERSION
+        YOU_PERFORMED_AN_INVALID_TRANSFORMATION_CONVERSION,
+        THIS_EXPRESSION_IS_NOT_A_LVALUE__IT_IS_READ_ONLY,
+        YOU_ARE_TRYING_TO_USE_AN_INDEX_BASED_ACCESSOR_ON_AN_EXPRESSION_THAT_DOES_NOT_SUPPORT_THAT,
+        THIS_METHOD_IS_ONLY_FOR_1x1_EXPRESSIONS
       };
     };
+
+    } // end namespace internal
 
     // Specialized implementation for MSVC to avoid "conditional
     // expression is constant" warnings.  This implementation doesn't
@@ -100,12 +107,12 @@
     #ifdef _MSC_VER
 
       #define EIGEN_STATIC_ASSERT(CONDITION,MSG) \
-        {Eigen::ei_static_assert<(CONDITION)>::MSG;}
+        {Eigen::internal::static_assertion<bool(CONDITION)>::MSG;}
 
     #else
 
       #define EIGEN_STATIC_ASSERT(CONDITION,MSG) \
-        if (Eigen::ei_static_assert<(CONDITION)>::MSG) {}
+        if (Eigen::internal::static_assertion<bool(CONDITION)>::MSG) {}
 
     #endif
 
@@ -113,7 +120,7 @@
 
 #else // EIGEN_NO_STATIC_ASSERT
 
-  #define EIGEN_STATIC_ASSERT(CONDITION,MSG) ei_assert((CONDITION) && #MSG);
+  #define EIGEN_STATIC_ASSERT(CONDITION,MSG) eigen_assert((CONDITION) && #MSG);
 
 #endif // EIGEN_NO_STATIC_ASSERT
 
@@ -164,13 +171,28 @@
        ) \
      )
 
-#define EIGEN_STATIC_ASSERT_NON_INTEGER(TYPE) \
-  EIGEN_STATIC_ASSERT(!NumTraits<TYPE>::IsInteger, THIS_FUNCTION_IS_NOT_FOR_INTEGER_NUMERIC_TYPES)
+#ifdef EIGEN2_SUPPORT
+  #define EIGEN_STATIC_ASSERT_NON_INTEGER(TYPE) \
+    eigen_assert(!NumTraits<Scalar>::IsInteger);
+#else
+  #define EIGEN_STATIC_ASSERT_NON_INTEGER(TYPE) \
+    EIGEN_STATIC_ASSERT(!NumTraits<TYPE>::IsInteger, THIS_FUNCTION_IS_NOT_FOR_INTEGER_NUMERIC_TYPES)
+#endif
+
 
 // static assertion failing if it is guaranteed at compile-time that the two matrix expression types have different sizes
 #define EIGEN_STATIC_ASSERT_SAME_MATRIX_SIZE(TYPE0,TYPE1) \
   EIGEN_STATIC_ASSERT( \
      EIGEN_PREDICATE_SAME_MATRIX_SIZE(TYPE0,TYPE1),\
     YOU_MIXED_MATRICES_OF_DIFFERENT_SIZES)
+
+#define EIGEN_STATIC_ASSERT_SIZE_1x1(TYPE) \
+      EIGEN_STATIC_ASSERT((TYPE::RowsAtCompileTime == 1 || TYPE::RowsAtCompileTime == Dynamic) && \
+                          (TYPE::ColsAtCompileTime == 1 || TYPE::ColsAtCompileTime == Dynamic), \
+                          THIS_METHOD_IS_ONLY_FOR_1x1_EXPRESSIONS)
+
+#define EIGEN_STATIC_ASSERT_LVALUE(Derived) \
+      EIGEN_STATIC_ASSERT(internal::is_lvalue<Derived>::value, \
+                          THIS_EXPRESSION_IS_NOT_A_LVALUE__IT_IS_READ_ONLY)
 
 #endif // EIGEN_STATIC_ASSERT_H

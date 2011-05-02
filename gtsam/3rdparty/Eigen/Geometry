@@ -3,7 +3,7 @@
 
 #include "Core"
 
-#include "src/Core/util/DisableMSVCWarnings.h"
+#include "src/Core/util/DisableStupidWarnings.h"
 
 #include "SVD"
 #include "LU"
@@ -33,27 +33,34 @@ namespace Eigen {
   */
 
 #include "src/Geometry/OrthoMethods.h"
-#include "src/Geometry/Homogeneous.h"
-#include "src/Geometry/RotationBase.h"
-#include "src/Geometry/Rotation2D.h"
-#include "src/Geometry/Quaternion.h"
-#include "src/Geometry/AngleAxis.h"
 #include "src/Geometry/EulerAngles.h"
-#include "src/Geometry/Transform.h"
-#include "src/Geometry/Translation.h"
-#include "src/Geometry/Scaling.h"
-#include "src/Geometry/Hyperplane.h"
-#include "src/Geometry/ParametrizedLine.h"
-#include "src/Geometry/AlignedBox.h"
-#include "src/Geometry/Umeyama.h"
 
-#if defined EIGEN_VECTORIZE_SSE
-  #include "src/Geometry/arch/Geometry_SSE.h"
+#if EIGEN2_SUPPORT_STAGE > STAGE20_RESOLVE_API_CONFLICTS
+  #include "src/Geometry/Homogeneous.h"
+  #include "src/Geometry/RotationBase.h"
+  #include "src/Geometry/Rotation2D.h"
+  #include "src/Geometry/Quaternion.h"
+  #include "src/Geometry/AngleAxis.h"
+  #include "src/Geometry/Transform.h"
+  #include "src/Geometry/Translation.h"
+  #include "src/Geometry/Scaling.h"
+  #include "src/Geometry/Hyperplane.h"
+  #include "src/Geometry/ParametrizedLine.h"
+  #include "src/Geometry/AlignedBox.h"
+  #include "src/Geometry/Umeyama.h"
+
+  #if defined EIGEN_VECTORIZE_SSE
+    #include "src/Geometry/arch/Geometry_SSE.h"
+  #endif
+#endif
+
+#ifdef EIGEN2_SUPPORT
+#include "src/Eigen2Support/Geometry/All.h"
 #endif
 
 } // namespace Eigen
 
-#include "src/Core/util/EnableMSVCWarnings.h"
+#include "src/Core/util/ReenableStupidWarnings.h"
 
 #endif // EIGEN_GEOMETRY_MODULE_H
 /* vim: set filetype=cpp et sw=2 ts=2 ai: */

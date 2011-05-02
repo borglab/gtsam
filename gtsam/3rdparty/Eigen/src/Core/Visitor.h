@@ -25,8 +25,10 @@
 #ifndef EIGEN_VISITOR_H
 #define EIGEN_VISITOR_H
 
+namespace internal {
+
 template<typename Visitor, typename Derived, int UnrollCount>
-struct ei_visitor_impl
+struct visitor_impl
 {
   enum {
     col = (UnrollCount-1) / Derived::RowsAtCompileTime,
@@ -35,13 +37,13 @@ struct ei_visitor_impl
 
   inline static void run(const Derived &mat, Visitor& visitor)
   {
-    ei_visitor_impl<Visitor, Derived, UnrollCount-1>::run(mat, visitor);
+    visitor_impl<Visitor, Derived, UnrollCount-1>::run(mat, visitor);
     visitor(mat.coeff(row, col), row, col);
   }
 };
 
 template<typename Visitor, typename Derived>
-struct ei_visitor_impl<Visitor, Derived, 1>
+struct visitor_impl<Visitor, Derived, 1>
 {
   inline static void run(const Derived &mat, Visitor& visitor)
   {
@@ -50,7 +52,7 @@ struct ei_visitor_impl<Visitor, Derived, 1>
 };
 
 template<typename Visitor, typename Derived>
-struct ei_visitor_impl<Visitor, Derived, Dynamic>
+struct visitor_impl<Visitor, Derived, Dynamic>
 {
   typedef typename Derived::Index Index;
   inline static void run(const Derived& mat, Visitor& visitor)
@@ -64,6 +66,7 @@ struct ei_visitor_impl<Visitor, Derived, Dynamic>
   }
 };
 
+} // end namespace internal
 
 /** Applies the visitor \a visitor to the whole coefficients of the matrix or vector.
   *
@@ -88,19 +91,21 @@ void DenseBase<Derived>::visit(Visitor& visitor) const
 {
   enum { unroll = SizeAtCompileTime != Dynamic
                    && CoeffReadCost != Dynamic
-                   && (SizeAtCompileTime == 1 || ei_functor_traits<Visitor>::Cost != Dynamic)
-                   && SizeAtCompileTime * CoeffReadCost + (SizeAtCompileTime-1) * ei_functor_traits<Visitor>::Cost
+                   && (SizeAtCompileTime == 1 || internal::functor_traits<Visitor>::Cost != Dynamic)
+                   && SizeAtCompileTime * CoeffReadCost + (SizeAtCompileTime-1) * internal::functor_traits<Visitor>::Cost
                       <= EIGEN_UNROLLING_LIMIT };
-  return ei_visitor_impl<Visitor, Derived,
+  return internal::visitor_impl<Visitor, Derived,
       unroll ? int(SizeAtCompileTime) : Dynamic
     >::run(derived(), visitor);
 }
+
+namespace internal {
 
 /** \internal
   * \brief Base class to implement min and max visitors
   */
 template <typename Derived>
-struct ei_coeff_visitor
+struct coeff_visitor
 {
   typedef typename Derived::Index Index;
   typedef typename Derived::Scalar Scalar;
@@ -120,7 +125,7 @@ struct ei_coeff_visitor
   * \sa DenseBase::minCoeff(Index*, Index*)
   */
 template <typename Derived>
-struct ei_min_coeff_visitor : ei_coeff_visitor<Derived>
+struct min_coeff_visitor : coeff_visitor<Derived>
 {
   typedef typename Derived::Index Index;
   typedef typename Derived::Scalar Scalar;
@@ -136,7 +141,7 @@ struct ei_min_coeff_visitor : ei_coeff_visitor<Derived>
 };
 
 template<typename Scalar>
-struct ei_functor_traits<ei_min_coeff_visitor<Scalar> > {
+struct functor_traits<min_coeff_visitor<Scalar> > {
   enum {
     Cost = NumTraits<Scalar>::AddCost
   };
@@ -148,7 +153,7 @@ struct ei_functor_traits<ei_min_coeff_visitor<Scalar> > {
   * \sa DenseBase::maxCoeff(Index*, Index*)
   */
 template <typename Derived>
-struct ei_max_coeff_visitor : ei_coeff_visitor<Derived>
+struct max_coeff_visitor : coeff_visitor<Derived>
 {
   typedef typename Derived::Index Index;
   typedef typename Derived::Scalar Scalar;
@@ -164,11 +169,13 @@ struct ei_max_coeff_visitor : ei_coeff_visitor<Derived>
 };
 
 template<typename Scalar>
-struct ei_functor_traits<ei_max_coeff_visitor<Scalar> > {
+struct functor_traits<max_coeff_visitor<Scalar> > {
   enum {
     Cost = NumTraits<Scalar>::AddCost
   };
 };
+
+} // end namespace internal
 
 /** \returns the minimum of all coefficients of *this
   * and puts in *row and *col its location.
@@ -176,10 +183,11 @@ struct ei_functor_traits<ei_max_coeff_visitor<Scalar> > {
   * \sa DenseBase::minCoeff(Index*), DenseBase::maxCoeff(Index*,Index*), DenseBase::visitor(), DenseBase::minCoeff()
   */
 template<typename Derived>
-typename ei_traits<Derived>::Scalar
-DenseBase<Derived>::minCoeff(Index* row, Index* col) const
+template<typename IndexType>
+typename internal::traits<Derived>::Scalar
+DenseBase<Derived>::minCoeff(IndexType* row, IndexType* col) const
 {
-  ei_min_coeff_visitor<Derived> minVisitor;
+  internal::min_coeff_visitor<Derived> minVisitor;
   this->visit(minVisitor);
   *row = minVisitor.row;
   if (col) *col = minVisitor.col;
@@ -189,14 +197,15 @@ DenseBase<Derived>::minCoeff(Index* row, Index* col) const
 /** \returns the minimum of all coefficients of *this
   * and puts in *index its location.
   *
-  * \sa DenseBase::minCoeff(Index*,Index*), DenseBase::maxCoeff(Index*,Index*), DenseBase::visitor(), DenseBase::minCoeff()
+  * \sa DenseBase::minCoeff(IndexType*,IndexType*), DenseBase::maxCoeff(IndexType*,IndexType*), DenseBase::visitor(), DenseBase::minCoeff()
   */
 template<typename Derived>
-typename ei_traits<Derived>::Scalar
-DenseBase<Derived>::minCoeff(Index* index) const
+template<typename IndexType>
+typename internal::traits<Derived>::Scalar
+DenseBase<Derived>::minCoeff(IndexType* index) const
 {
   EIGEN_STATIC_ASSERT_VECTOR_ONLY(Derived)
-  ei_min_coeff_visitor<Derived> minVisitor;
+  internal::min_coeff_visitor<Derived> minVisitor;
   this->visit(minVisitor);
   *index = (RowsAtCompileTime==1) ? minVisitor.col : minVisitor.row;
   return minVisitor.res;
@@ -205,13 +214,14 @@ DenseBase<Derived>::minCoeff(Index* index) const
 /** \returns the maximum of all coefficients of *this
   * and puts in *row and *col its location.
   *
-  * \sa DenseBase::minCoeff(Index*,Index*), DenseBase::visitor(), DenseBase::maxCoeff()
+  * \sa DenseBase::minCoeff(IndexType*,IndexType*), DenseBase::visitor(), DenseBase::maxCoeff()
   */
 template<typename Derived>
-typename ei_traits<Derived>::Scalar
-DenseBase<Derived>::maxCoeff(Index* row, Index* col) const
+template<typename IndexType>
+typename internal::traits<Derived>::Scalar
+DenseBase<Derived>::maxCoeff(IndexType* row, IndexType* col) const
 {
-  ei_max_coeff_visitor<Derived> maxVisitor;
+  internal::max_coeff_visitor<Derived> maxVisitor;
   this->visit(maxVisitor);
   *row = maxVisitor.row;
   if (col) *col = maxVisitor.col;
@@ -221,14 +231,15 @@ DenseBase<Derived>::maxCoeff(Index* row, Index* col) const
 /** \returns the maximum of all coefficients of *this
   * and puts in *index its location.
   *
-  * \sa DenseBase::maxCoeff(Index*,Index*), DenseBase::minCoeff(Index*,Index*), DenseBase::visitor(), DenseBase::maxCoeff()
+  * \sa DenseBase::maxCoeff(IndexType*,IndexType*), DenseBase::minCoeff(IndexType*,IndexType*), DenseBase::visitor(), DenseBase::maxCoeff()
   */
 template<typename Derived>
-typename ei_traits<Derived>::Scalar
-DenseBase<Derived>::maxCoeff(Index* index) const
+template<typename IndexType>
+typename internal::traits<Derived>::Scalar
+DenseBase<Derived>::maxCoeff(IndexType* index) const
 {
   EIGEN_STATIC_ASSERT_VECTOR_ONLY(Derived)
-  ei_max_coeff_visitor<Derived> maxVisitor;
+  internal::max_coeff_visitor<Derived> maxVisitor;
   this->visit(maxVisitor);
   *index = (RowsAtCompileTime==1) ? maxVisitor.col : maxVisitor.row;
   return maxVisitor.res;

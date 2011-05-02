@@ -30,7 +30,9 @@
 #include "./EigenvaluesCommon.h"
 #include "./HessenbergDecomposition.h"
 
-template<typename MatrixType, bool IsComplex> struct ei_complex_schur_reduce_to_hessenberg;
+namespace internal {
+template<typename MatrixType, bool IsComplex> struct complex_schur_reduce_to_hessenberg;
+}
 
 /** \eigenvalues_module \ingroup Eigenvalues_Module
   *
@@ -146,8 +148,8 @@ template<typename _MatrixType> class ComplexSchur
       */
     const ComplexMatrixType& matrixU() const
     {
-      ei_assert(m_isInitialized && "ComplexSchur is not initialized.");
-      ei_assert(m_matUisUptodate && "The matrix U has not been computed during the ComplexSchur decomposition.");
+      eigen_assert(m_isInitialized && "ComplexSchur is not initialized.");
+      eigen_assert(m_matUisUptodate && "The matrix U has not been computed during the ComplexSchur decomposition.");
       return m_matU;
     }
 
@@ -170,7 +172,7 @@ template<typename _MatrixType> class ComplexSchur
       */
     const ComplexMatrixType& matrixT() const
     {
-      ei_assert(m_isInitialized && "ComplexSchur is not initialized.");
+      eigen_assert(m_isInitialized && "ComplexSchur is not initialized.");
       return m_matT;
     }
 
@@ -201,7 +203,7 @@ template<typename _MatrixType> class ComplexSchur
       */
     ComputationInfo info() const
     {
-      ei_assert(m_isInitialized && "RealSchur is not initialized.");
+      eigen_assert(m_isInitialized && "RealSchur is not initialized.");
       return m_info;
     }
 
@@ -222,22 +224,24 @@ template<typename _MatrixType> class ComplexSchur
     bool subdiagonalEntryIsNeglegible(Index i);
     ComplexScalar computeShift(Index iu, Index iter);
     void reduceToTriangularForm(bool computeU);
-    friend struct ei_complex_schur_reduce_to_hessenberg<MatrixType, NumTraits<Scalar>::IsComplex>;
+    friend struct internal::complex_schur_reduce_to_hessenberg<MatrixType, NumTraits<Scalar>::IsComplex>;
 };
+
+namespace internal {
 
 /** Computes the principal value of the square root of the complex \a z. */
 template<typename RealScalar>
-std::complex<RealScalar> ei_sqrt(const std::complex<RealScalar> &z)
+std::complex<RealScalar> sqrt(const std::complex<RealScalar> &z)
 {
   RealScalar t, tre, tim;
 
-  t = ei_abs(z);
+  t = abs(z);
 
-  if (ei_abs(ei_real(z)) <= ei_abs(ei_imag(z)))
+  if (abs(real(z)) <= abs(imag(z)))
   {
     // No cancellation in these formulas
-    tre = ei_sqrt(RealScalar(0.5)*(t + ei_real(z)));
-    tim = ei_sqrt(RealScalar(0.5)*(t - ei_real(z)));
+    tre = sqrt(RealScalar(0.5)*(t + real(z)));
+    tim = sqrt(RealScalar(0.5)*(t - real(z)));
   }
   else
   {
@@ -245,14 +249,14 @@ std::complex<RealScalar> ei_sqrt(const std::complex<RealScalar> &z)
     if (z.real() > RealScalar(0))
     {
       tre = t + z.real();
-      tim = ei_abs(ei_imag(z))*ei_sqrt(RealScalar(0.5)/tre);
-      tre = ei_sqrt(RealScalar(0.5)*tre);
+      tim = abs(imag(z))*sqrt(RealScalar(0.5)/tre);
+      tre = sqrt(RealScalar(0.5)*tre);
     }
     else
     {
       tim = t - z.real();
-      tre = ei_abs(ei_imag(z))*ei_sqrt(RealScalar(0.5)/tim);
-      tim = ei_sqrt(RealScalar(0.5)*tim);
+      tre = abs(imag(z))*sqrt(RealScalar(0.5)/tim);
+      tim = sqrt(RealScalar(0.5)*tim);
     }
   }
   if(z.imag() < RealScalar(0))
@@ -260,6 +264,7 @@ std::complex<RealScalar> ei_sqrt(const std::complex<RealScalar> &z)
 
   return (std::complex<RealScalar>(tre,tim));
 }
+} // end namespace internal
 
 
 /** If m_matT(i+1,i) is neglegible in floating point arithmetic
@@ -268,9 +273,9 @@ std::complex<RealScalar> ei_sqrt(const std::complex<RealScalar> &z)
 template<typename MatrixType>
 inline bool ComplexSchur<MatrixType>::subdiagonalEntryIsNeglegible(Index i)
 {
-  RealScalar d = ei_norm1(m_matT.coeff(i,i)) + ei_norm1(m_matT.coeff(i+1,i+1));
-  RealScalar sd = ei_norm1(m_matT.coeff(i+1,i));
-  if (ei_isMuchSmallerThan(sd, d, NumTraits<RealScalar>::epsilon()))
+  RealScalar d = internal::norm1(m_matT.coeff(i,i)) + internal::norm1(m_matT.coeff(i+1,i+1));
+  RealScalar sd = internal::norm1(m_matT.coeff(i+1,i));
+  if (internal::isMuchSmallerThan(sd, d, NumTraits<RealScalar>::epsilon()))
   {
     m_matT.coeffRef(i+1,i) = ComplexScalar(0);
     return true;
@@ -286,7 +291,7 @@ typename ComplexSchur<MatrixType>::ComplexScalar ComplexSchur<MatrixType>::compu
   if (iter == 10 || iter == 20) 
   {
     // exceptional shift, taken from http://www.netlib.org/eispack/comqr.f
-    return ei_abs(ei_real(m_matT.coeff(iu,iu-1))) + ei_abs(ei_real(m_matT.coeff(iu-1,iu-2)));
+    return internal::abs(internal::real(m_matT.coeff(iu,iu-1))) + internal::abs(internal::real(m_matT.coeff(iu-1,iu-2)));
   }
 
   // compute the shift as one of the eigenvalues of t, the 2x2
@@ -297,19 +302,19 @@ typename ComplexSchur<MatrixType>::ComplexScalar ComplexSchur<MatrixType>::compu
 
   ComplexScalar b = t.coeff(0,1) * t.coeff(1,0);
   ComplexScalar c = t.coeff(0,0) - t.coeff(1,1);
-  ComplexScalar disc = ei_sqrt(c*c + RealScalar(4)*b);
+  ComplexScalar disc = internal::sqrt(c*c + RealScalar(4)*b);
   ComplexScalar det = t.coeff(0,0) * t.coeff(1,1) - b;
   ComplexScalar trace = t.coeff(0,0) + t.coeff(1,1);
   ComplexScalar eival1 = (trace + disc) / RealScalar(2);
   ComplexScalar eival2 = (trace - disc) / RealScalar(2);
 
-  if(ei_norm1(eival1) > ei_norm1(eival2))
+  if(internal::norm1(eival1) > internal::norm1(eival2))
     eival2 = det / eival1;
   else
     eival1 = det / eival2;
 
   // choose the eigenvalue closest to the bottom entry of the diagonal
-  if(ei_norm1(eival1-t.coeff(1,1)) < ei_norm1(eival2-t.coeff(1,1)))
+  if(internal::norm1(eival1-t.coeff(1,1)) < internal::norm1(eival2-t.coeff(1,1)))
     return normt * eival1;
   else
     return normt * eival2;
@@ -320,7 +325,7 @@ template<typename MatrixType>
 ComplexSchur<MatrixType>& ComplexSchur<MatrixType>::compute(const MatrixType& matrix, bool computeU)
 {
   m_matUisUptodate = false;
-  ei_assert(matrix.cols() == matrix.rows());
+  eigen_assert(matrix.cols() == matrix.rows());
 
   if(matrix.cols() == 1)
   {
@@ -332,14 +337,16 @@ ComplexSchur<MatrixType>& ComplexSchur<MatrixType>::compute(const MatrixType& ma
     return *this;
   }
 
-  ei_complex_schur_reduce_to_hessenberg<MatrixType, NumTraits<Scalar>::IsComplex>::run(*this, matrix, computeU);
+  internal::complex_schur_reduce_to_hessenberg<MatrixType, NumTraits<Scalar>::IsComplex>::run(*this, matrix, computeU);
   reduceToTriangularForm(computeU);
   return *this;
 }
 
+namespace internal {
+
 /* Reduce given matrix to Hessenberg form */
 template<typename MatrixType, bool IsComplex>
-struct ei_complex_schur_reduce_to_hessenberg 
+struct complex_schur_reduce_to_hessenberg
 {
   // this is the implementation for the case IsComplex = true
   static void run(ComplexSchur<MatrixType>& _this, const MatrixType& matrix, bool computeU)
@@ -351,7 +358,7 @@ struct ei_complex_schur_reduce_to_hessenberg
 };
 
 template<typename MatrixType>
-struct ei_complex_schur_reduce_to_hessenberg<MatrixType, false>
+struct complex_schur_reduce_to_hessenberg<MatrixType, false>
 {
   static void run(ComplexSchur<MatrixType>& _this, const MatrixType& matrix, bool computeU)
   {
@@ -369,6 +376,8 @@ struct ei_complex_schur_reduce_to_hessenberg<MatrixType, false>
     }
   }
 };
+
+} // end namespace internal
 
 // Reduce the Hessenberg matrix m_matT to triangular form by QR iteration.
 template<typename MatrixType>
@@ -411,7 +420,7 @@ void ComplexSchur<MatrixType>::reduceToTriangularForm(bool computeU)
        bulge is chased down to the bottom of the active submatrix. */
 
     ComplexScalar shift = computeShift(iu, iter);
-    PlanarRotation<ComplexScalar> rot;
+    JacobiRotation<ComplexScalar> rot;
     rot.makeGivens(m_matT.coeff(il,il) - shift, m_matT.coeff(il+1,il));
     m_matT.rightCols(m_matT.cols()-il).applyOnTheLeft(il, il+1, rot.adjoint());
     m_matT.topRows(std::min(il+2,iu)+1).applyOnTheRight(il, il+1, rot);

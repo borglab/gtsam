@@ -26,17 +26,30 @@
 #ifndef EIGEN_MACROS_H
 #define EIGEN_MACROS_H
 
-#define EIGEN_WORLD_VERSION 2
-#define EIGEN_MAJOR_VERSION 92
+#define EIGEN_WORLD_VERSION 3
+#define EIGEN_MAJOR_VERSION 0
 #define EIGEN_MINOR_VERSION 0
 
 #define EIGEN_VERSION_AT_LEAST(x,y,z) (EIGEN_WORLD_VERSION>x || (EIGEN_WORLD_VERSION>=x && \
                                       (EIGEN_MAJOR_VERSION>y || (EIGEN_MAJOR_VERSION>=y && \
                                                                  EIGEN_MINOR_VERSION>=z))))
 #ifdef __GNUC__
-  #define EIGEN_GNUC_AT_LEAST(x,y) ((__GNUC__>=x && __GNUC_MINOR__>=y) || __GNUC__>x)
+  #define EIGEN_GNUC_AT_LEAST(x,y) ((__GNUC__==x && __GNUC_MINOR__>=y) || __GNUC__>x)
 #else
   #define EIGEN_GNUC_AT_LEAST(x,y) 0
+#endif
+ 
+#ifdef __GNUC__
+  #define EIGEN_GNUC_AT_MOST(x,y) ((__GNUC__==x && __GNUC_MINOR__<=y) || __GNUC__<x)
+#else
+  #define EIGEN_GNUC_AT_MOST(x,y) 0
+#endif
+
+#if EIGEN_GNUC_AT_MOST(4,3)
+  // see bug 89
+  #define EIGEN_SAFE_TO_USE_STANDARD_ASSERT_MACRO 0
+#else
+  #define EIGEN_SAFE_TO_USE_STANDARD_ASSERT_MACRO 1
 #endif
 
 #if defined(__GNUC__) && (__GNUC__ <= 3)
@@ -109,44 +122,13 @@
 
 #define EIGEN_DEBUG_VAR(x) std::cerr << #x << " = " << x << std::endl;
 
-#ifdef EIGEN_PARSED_BY_DOXYGEN
-  /** \def EIGEN_NO_DEBUG
-    * \ingroup Core_Module 
-    * \brief If defined, Eigen's assertions are disabled.
-    * \details Disabling run-time assertions improves the performance, but it is dangerous because the
-    * assertions guard against programming errors. By default, the EIGEN_NO_DEBUG macro is not defined and
-    * Eigen's run-time assertions are thus enabled. However, if the NDEBUG macro is defined (this is a
-    * standard C++ macro which disables all asserts), then the EIGEN_NO_DEBUG macro will also be defined, and
-    * so Eigen's assertions will also be disabled.
-    */
-  #define EIGEN_NO_DEBUG
-#endif
+// concatenate two tokens
+#define EIGEN_CAT2(a,b) a ## b
+#define EIGEN_CAT(a,b) EIGEN_CAT2(a,b)
 
-#ifdef NDEBUG
-# ifndef EIGEN_NO_DEBUG
-#  define EIGEN_NO_DEBUG
-# endif
-#endif
-
-#ifndef ei_assert
-#ifdef EIGEN_NO_DEBUG
-#define ei_assert(x)
-#else
-#define ei_assert(x) assert(x)
-#endif
-#endif
-
-#ifdef EIGEN_INTERNAL_DEBUGGING
-#define ei_internal_assert(x) ei_assert(x)
-#else
-#define ei_internal_assert(x)
-#endif
-
-#ifdef EIGEN_NO_DEBUG
-#define EIGEN_ONLY_USED_FOR_DEBUG(x) (void)x
-#else
-#define EIGEN_ONLY_USED_FOR_DEBUG(x)
-#endif
+// convert a token to a string
+#define EIGEN_MAKESTRING2(a) #a
+#define EIGEN_MAKESTRING(a) EIGEN_MAKESTRING2(a)
 
 // EIGEN_ALWAYS_INLINE_ATTRIB should be use in the declaration of function
 // which should be inlined even in debug mode.
@@ -160,14 +142,14 @@
 #define EIGEN_ALWAYS_INLINE_ATTRIB
 #endif
 
-#if EIGEN_GNUC_AT_LEAST(4,1)
+#if EIGEN_GNUC_AT_LEAST(4,1) && !defined(__clang__) && !defined(__INTEL_COMPILER)
 #define EIGEN_FLATTEN_ATTRIB __attribute__((flatten))
 #else
 #define EIGEN_FLATTEN_ATTRIB
 #endif
 
 // EIGEN_FORCE_INLINE means "inline as much as possible"
-#if (defined _MSC_VER) || (defined __intel_compiler)
+#if (defined _MSC_VER) || (defined __INTEL_COMPILER)
 #define EIGEN_STRONG_INLINE __forceinline
 #else
 #define EIGEN_STRONG_INLINE inline
@@ -187,6 +169,67 @@
 //  - inline is not perfect either as it unwantedly hints the compiler toward inlining the function.
 #define EIGEN_DECLARE_FUNCTION_ALLOWING_MULTIPLE_DEFINITIONS
 #define EIGEN_DEFINE_FUNCTION_ALLOWING_MULTIPLE_DEFINITIONS inline
+
+#ifdef NDEBUG
+# ifndef EIGEN_NO_DEBUG
+#  define EIGEN_NO_DEBUG
+# endif
+#endif
+
+// eigen_plain_assert is where we implement the workaround for the assert() bug in GCC <= 4.3, see bug 89
+#ifdef EIGEN_NO_DEBUG
+  #define eigen_plain_assert(x)
+#else
+  #if EIGEN_SAFE_TO_USE_STANDARD_ASSERT_MACRO
+    namespace Eigen {
+    namespace internal {
+    inline bool copy_bool(bool b) { return b; }
+    }
+    }
+    #define eigen_plain_assert(x) assert(x)
+  #else
+    // work around bug 89
+    #include <cstdlib>   // for abort
+    #include <iostream>  // for std::cerr
+
+    namespace Eigen {
+    namespace internal {
+    // trivial function copying a bool. Must be EIGEN_DONT_INLINE, so we implement it after including Eigen headers.
+    // see bug 89.
+    namespace {
+    EIGEN_DONT_INLINE bool copy_bool(bool b) { return b; }
+    }
+    inline void assert_fail(const char *condition, const char *function, const char *file, int line)
+    {
+      std::cerr << "assertion failed: " << condition << " in function " << function << " at " << file << ":" << line << std::endl;
+      abort();
+    }
+    }
+    }
+    #define eigen_plain_assert(x) \
+      do { \
+        if(!Eigen::internal::copy_bool(x)) \
+          Eigen::internal::assert_fail(EIGEN_MAKESTRING(x), __PRETTY_FUNCTION__, __FILE__, __LINE__); \
+      } while(false)
+  #endif
+#endif
+
+// eigen_assert can be overridden
+#ifndef eigen_assert
+#define eigen_assert(x) eigen_plain_assert(x)
+#endif
+
+#ifdef EIGEN_INTERNAL_DEBUGGING
+#define eigen_internal_assert(x) eigen_assert(x)
+#else
+#define eigen_internal_assert(x)
+#endif
+
+#ifdef EIGEN_NO_DEBUG
+#define EIGEN_ONLY_USED_FOR_DEBUG(x) (void)x
+#else
+#define EIGEN_ONLY_USED_FOR_DEBUG(x)
+#endif
 
 #if (defined __GNUC__)
 #define EIGEN_DEPRECATED __attribute__((deprecated))
@@ -218,9 +261,7 @@
  * If we made alignment depend on whether or not EIGEN_VECTORIZE is defined, it would be impossible to link
  * vectorized and non-vectorized code.
  */
-#if !EIGEN_ALIGN_STATICALLY
-  #define EIGEN_ALIGN_TO_BOUNDARY(n)
-#elif (defined __GNUC__) || (defined __PGI)
+#if (defined __GNUC__) || (defined __PGI) || (defined __IBMCPP__)
   #define EIGEN_ALIGN_TO_BOUNDARY(n) __attribute__((aligned(n)))
 #elif (defined _MSC_VER)
   #define EIGEN_ALIGN_TO_BOUNDARY(n) __declspec(align(n))
@@ -232,6 +273,14 @@
 #endif
 
 #define EIGEN_ALIGN16 EIGEN_ALIGN_TO_BOUNDARY(16)
+
+#if EIGEN_ALIGN_STATICALLY
+#define EIGEN_USER_ALIGN_TO_BOUNDARY(n) EIGEN_ALIGN_TO_BOUNDARY(n)
+#define EIGEN_USER_ALIGN16 EIGEN_ALIGN16
+#else
+#define EIGEN_USER_ALIGN_TO_BOUNDARY(n)
+#define EIGEN_USER_ALIGN16
+#endif
 
 #ifdef EIGEN_DONT_USE_RESTRICT_KEYWORD
   #define EIGEN_RESTRICT
@@ -245,30 +294,17 @@
 #endif
 
 #ifndef EIGEN_DEFAULT_IO_FORMAT
+#ifdef EIGEN_MAKING_DOCS
+// format used in Eigen's documentation
+// needed to define it here as escaping characters in CMake add_definition's argument seems very problematic.
+#define EIGEN_DEFAULT_IO_FORMAT Eigen::IOFormat(3, 0, " ", "\n", "", "")
+#else
 #define EIGEN_DEFAULT_IO_FORMAT Eigen::IOFormat()
+#endif
 #endif
 
 // just an empty macro !
 #define EIGEN_EMPTY
-
-// concatenate two tokens
-#define EIGEN_CAT2(a,b) a ## b
-#define EIGEN_CAT(a,b) EIGEN_CAT2(a,b)
-
-// convert a token to a string
-#define EIGEN_MAKESTRING2(a) #a
-#define EIGEN_MAKESTRING(a) EIGEN_MAKESTRING2(a)
-
-// format used in Eigen's documentation
-// needed to define it here as escaping characters in CMake add_definition's argument seems very problematic.
-#define EIGEN_DOCS_IO_FORMAT IOFormat(3, 0, " ", "\n", "", "")
-
-// C++0x features
-#if defined(__GXX_EXPERIMENTAL_CXX0X__) || (defined(_MSC_VER) && (_MSC_VER >= 1600))
-  #define EIGEN_REF_TO_TEMPORARY const &
-#else
-  #define EIGEN_REF_TO_TEMPORARY const &
-#endif
 
 #if defined(_MSC_VER) && (!defined(__INTEL_COMPILER))
 #define EIGEN_INHERIT_ASSIGNMENT_EQUAL_OPERATOR(Derived) \
@@ -295,35 +331,35 @@
 **/
 
 #define EIGEN_GENERIC_PUBLIC_INTERFACE(Derived) \
-  typedef typename Eigen::ei_traits<Derived>::Scalar Scalar; /*!< \brief Numeric type, e.g. float, double, int or std::complex<float>. */ \
+  typedef typename Eigen::internal::traits<Derived>::Scalar Scalar; /*!< \brief Numeric type, e.g. float, double, int or std::complex<float>. */ \
   typedef typename Eigen::NumTraits<Scalar>::Real RealScalar; /*!< \brief The underlying numeric type for composed scalar types. \details In cases where Scalar is e.g. std::complex<T>, T were corresponding to RealScalar. */ \
   typedef typename Base::CoeffReturnType CoeffReturnType; /*!< \brief The return type for coefficient access. \details Depending on whether the object allows direct coefficient access (e.g. for a MatrixXd), this type is either 'const Scalar&' or simply 'Scalar' for objects that do not allow direct coefficient access. */ \
-  typedef typename Eigen::ei_nested<Derived>::type Nested; \
-  typedef typename Eigen::ei_traits<Derived>::StorageKind StorageKind; \
-  typedef typename Eigen::ei_traits<Derived>::Index Index; \
-  enum { RowsAtCompileTime = Eigen::ei_traits<Derived>::RowsAtCompileTime, \
-        ColsAtCompileTime = Eigen::ei_traits<Derived>::ColsAtCompileTime, \
-        Flags = Eigen::ei_traits<Derived>::Flags, \
-        CoeffReadCost = Eigen::ei_traits<Derived>::CoeffReadCost, \
+  typedef typename Eigen::internal::nested<Derived>::type Nested; \
+  typedef typename Eigen::internal::traits<Derived>::StorageKind StorageKind; \
+  typedef typename Eigen::internal::traits<Derived>::Index Index; \
+  enum { RowsAtCompileTime = Eigen::internal::traits<Derived>::RowsAtCompileTime, \
+        ColsAtCompileTime = Eigen::internal::traits<Derived>::ColsAtCompileTime, \
+        Flags = Eigen::internal::traits<Derived>::Flags, \
+        CoeffReadCost = Eigen::internal::traits<Derived>::CoeffReadCost, \
         SizeAtCompileTime = Base::SizeAtCompileTime, \
         MaxSizeAtCompileTime = Base::MaxSizeAtCompileTime, \
         IsVectorAtCompileTime = Base::IsVectorAtCompileTime };
 
 
 #define EIGEN_DENSE_PUBLIC_INTERFACE(Derived) \
-  typedef typename Eigen::ei_traits<Derived>::Scalar Scalar; /*!< \brief Numeric type, e.g. float, double, int or std::complex<float>. */ \
+  typedef typename Eigen::internal::traits<Derived>::Scalar Scalar; /*!< \brief Numeric type, e.g. float, double, int or std::complex<float>. */ \
   typedef typename Eigen::NumTraits<Scalar>::Real RealScalar; /*!< \brief The underlying numeric type for composed scalar types. \details In cases where Scalar is e.g. std::complex<T>, T were corresponding to RealScalar. */ \
   typedef typename Base::PacketScalar PacketScalar; \
   typedef typename Base::CoeffReturnType CoeffReturnType; /*!< \brief The return type for coefficient access. \details Depending on whether the object allows direct coefficient access (e.g. for a MatrixXd), this type is either 'const Scalar&' or simply 'Scalar' for objects that do not allow direct coefficient access. */ \
-  typedef typename Eigen::ei_nested<Derived>::type Nested; \
-  typedef typename Eigen::ei_traits<Derived>::StorageKind StorageKind; \
-  typedef typename Eigen::ei_traits<Derived>::Index Index; \
-  enum { RowsAtCompileTime = Eigen::ei_traits<Derived>::RowsAtCompileTime, \
-        ColsAtCompileTime = Eigen::ei_traits<Derived>::ColsAtCompileTime, \
-        MaxRowsAtCompileTime = Eigen::ei_traits<Derived>::MaxRowsAtCompileTime, \
-        MaxColsAtCompileTime = Eigen::ei_traits<Derived>::MaxColsAtCompileTime, \
-        Flags = Eigen::ei_traits<Derived>::Flags, \
-        CoeffReadCost = Eigen::ei_traits<Derived>::CoeffReadCost, \
+  typedef typename Eigen::internal::nested<Derived>::type Nested; \
+  typedef typename Eigen::internal::traits<Derived>::StorageKind StorageKind; \
+  typedef typename Eigen::internal::traits<Derived>::Index Index; \
+  enum { RowsAtCompileTime = Eigen::internal::traits<Derived>::RowsAtCompileTime, \
+        ColsAtCompileTime = Eigen::internal::traits<Derived>::ColsAtCompileTime, \
+        MaxRowsAtCompileTime = Eigen::internal::traits<Derived>::MaxRowsAtCompileTime, \
+        MaxColsAtCompileTime = Eigen::internal::traits<Derived>::MaxColsAtCompileTime, \
+        Flags = Eigen::internal::traits<Derived>::Flags, \
+        CoeffReadCost = Eigen::internal::traits<Derived>::CoeffReadCost, \
         SizeAtCompileTime = Base::SizeAtCompileTime, \
         MaxSizeAtCompileTime = Base::MaxSizeAtCompileTime, \
         IsVectorAtCompileTime = Base::IsVectorAtCompileTime }; \
@@ -362,21 +398,21 @@
 
 #define EIGEN_MAKE_CWISE_BINARY_OP(METHOD,FUNCTOR) \
   template<typename OtherDerived> \
-  EIGEN_STRONG_INLINE const CwiseBinaryOp<FUNCTOR<Scalar>, Derived, OtherDerived> \
+  EIGEN_STRONG_INLINE const CwiseBinaryOp<FUNCTOR<Scalar>, const Derived, const OtherDerived> \
   METHOD(const EIGEN_CURRENT_STORAGE_BASE_CLASS<OtherDerived> &other) const \
   { \
-    return CwiseBinaryOp<FUNCTOR<Scalar>, Derived, OtherDerived>(derived(), other.derived()); \
+    return CwiseBinaryOp<FUNCTOR<Scalar>, const Derived, const OtherDerived>(derived(), other.derived()); \
   }
 
 // the expression type of a cwise product
 #define EIGEN_CWISE_PRODUCT_RETURN_TYPE(LHS,RHS) \
     CwiseBinaryOp< \
-      ei_scalar_product_op< \
-          typename ei_traits<LHS>::Scalar, \
-          typename ei_traits<RHS>::Scalar \
+      internal::scalar_product_op< \
+          typename internal::traits<LHS>::Scalar, \
+          typename internal::traits<RHS>::Scalar \
       >, \
-      LHS, \
-      RHS \
+      const LHS, \
+      const RHS \
     >
 
 #endif // EIGEN_MACROS_H

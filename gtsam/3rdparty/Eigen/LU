@@ -3,7 +3,7 @@
 
 #include "Core"
 
-#include "src/Core/util/DisableMSVCWarnings.h"
+#include "src/Core/util/DisableStupidWarnings.h"
 
 namespace Eigen {
 
@@ -30,9 +30,13 @@ namespace Eigen {
   #include "src/LU/arch/Inverse_SSE.h"
 #endif
 
+#ifdef EIGEN2_SUPPORT
+  #include "src/Eigen2Support/LU.h"
+#endif
+
 } // namespace Eigen
 
-#include "src/Core/util/EnableMSVCWarnings.h"
+#include "src/Core/util/ReenableStupidWarnings.h"
 
 #endif // EIGEN_LU_MODULE_H
 /* vim: set filetype=cpp et sw=2 ts=2 ai: */

@@ -25,16 +25,18 @@
 #ifndef EIGEN_SPARSESPARSEPRODUCT_H
 #define EIGEN_SPARSESPARSEPRODUCT_H
 
+namespace internal {
+
 template<typename Lhs, typename Rhs, typename ResultType>
-static void ei_sparse_product_impl2(const Lhs& lhs, const Rhs& rhs, ResultType& res)
+static void sparse_product_impl2(const Lhs& lhs, const Rhs& rhs, ResultType& res)
 {
-  typedef typename ei_cleantype<Lhs>::type::Scalar Scalar;
-  typedef typename ei_cleantype<Lhs>::type::Index Index;
+  typedef typename remove_all<Lhs>::type::Scalar Scalar;
+  typedef typename remove_all<Lhs>::type::Index Index;
 
   // make sure to call innerSize/outerSize since we fake the storage order.
   Index rows = lhs.innerSize();
   Index cols = rhs.outerSize();
-  ei_assert(lhs.outerSize() == rhs.innerSize());
+  eigen_assert(lhs.outerSize() == rhs.innerSize());
 
   std::vector<bool> mask(rows,false);
   Matrix<Scalar,Dynamic,1> values(rows);
@@ -110,18 +112,18 @@ static void ei_sparse_product_impl2(const Lhs& lhs, const Rhs& rhs, ResultType& 
 
 // perform a pseudo in-place sparse * sparse product assuming all matrices are col major
 template<typename Lhs, typename Rhs, typename ResultType>
-static void ei_sparse_product_impl(const Lhs& lhs, const Rhs& rhs, ResultType& res)
+static void sparse_product_impl(const Lhs& lhs, const Rhs& rhs, ResultType& res)
 {
-//   return ei_sparse_product_impl2(lhs,rhs,res);
+//   return sparse_product_impl2(lhs,rhs,res);
 
-  typedef typename ei_cleantype<Lhs>::type::Scalar Scalar;
-  typedef typename ei_cleantype<Lhs>::type::Index Index;
+  typedef typename remove_all<Lhs>::type::Scalar Scalar;
+  typedef typename remove_all<Lhs>::type::Index Index;
 
   // make sure to call innerSize/outerSize since we fake the storage order.
   Index rows = lhs.innerSize();
   Index cols = rhs.outerSize();
   //int size = lhs.outerSize();
-  ei_assert(lhs.outerSize() == rhs.innerSize());
+  eigen_assert(lhs.outerSize() == rhs.innerSize());
 
   // allocate a temporary buffer
   AmbiVector<Scalar,Index> tempVector(rows);
@@ -131,7 +133,12 @@ static void ei_sparse_product_impl(const Lhs& lhs, const Rhs& rhs, ResultType& r
   float avgNnzPerRhsColumn = float(rhs.nonZeros())/float(cols);
   float ratioRes = std::min(ratioLhs * avgNnzPerRhsColumn, 1.f);
 
-  res.resize(rows, cols);
+  // mimics a resizeByInnerOuter:
+  if(ResultType::IsRowMajor)
+    res.resize(cols, rows);
+  else
+    res.resize(rows, cols);
+
   res.reserve(Index(ratioRes*rows*cols));
   for (Index j=0; j<cols; ++j)
   {
@@ -159,27 +166,27 @@ static void ei_sparse_product_impl(const Lhs& lhs, const Rhs& rhs, ResultType& r
 }
 
 template<typename Lhs, typename Rhs, typename ResultType,
-  int LhsStorageOrder = ei_traits<Lhs>::Flags&RowMajorBit,
-  int RhsStorageOrder = ei_traits<Rhs>::Flags&RowMajorBit,
-  int ResStorageOrder = ei_traits<ResultType>::Flags&RowMajorBit>
-struct ei_sparse_product_selector;
+  int LhsStorageOrder = traits<Lhs>::Flags&RowMajorBit,
+  int RhsStorageOrder = traits<Rhs>::Flags&RowMajorBit,
+  int ResStorageOrder = traits<ResultType>::Flags&RowMajorBit>
+struct sparse_product_selector;
 
 template<typename Lhs, typename Rhs, typename ResultType>
-struct ei_sparse_product_selector<Lhs,Rhs,ResultType,ColMajor,ColMajor,ColMajor>
+struct sparse_product_selector<Lhs,Rhs,ResultType,ColMajor,ColMajor,ColMajor>
 {
-  typedef typename ei_traits<typename ei_cleantype<Lhs>::type>::Scalar Scalar;
+  typedef typename traits<typename remove_all<Lhs>::type>::Scalar Scalar;
 
   static void run(const Lhs& lhs, const Rhs& rhs, ResultType& res)
   {
 //     std::cerr << __LINE__ << "\n";
-    typename ei_cleantype<ResultType>::type _res(res.rows(), res.cols());
-    ei_sparse_product_impl<Lhs,Rhs,ResultType>(lhs, rhs, _res);
+    typename remove_all<ResultType>::type _res(res.rows(), res.cols());
+    sparse_product_impl<Lhs,Rhs,ResultType>(lhs, rhs, _res);
     res.swap(_res);
   }
 };
 
 template<typename Lhs, typename Rhs, typename ResultType>
-struct ei_sparse_product_selector<Lhs,Rhs,ResultType,ColMajor,ColMajor,RowMajor>
+struct sparse_product_selector<Lhs,Rhs,ResultType,ColMajor,ColMajor,RowMajor>
 {
   static void run(const Lhs& lhs, const Rhs& rhs, ResultType& res)
   {
@@ -187,26 +194,26 @@ struct ei_sparse_product_selector<Lhs,Rhs,ResultType,ColMajor,ColMajor,RowMajor>
     // we need a col-major matrix to hold the result
     typedef SparseMatrix<typename ResultType::Scalar> SparseTemporaryType;
     SparseTemporaryType _res(res.rows(), res.cols());
-    ei_sparse_product_impl<Lhs,Rhs,SparseTemporaryType>(lhs, rhs, _res);
+    sparse_product_impl<Lhs,Rhs,SparseTemporaryType>(lhs, rhs, _res);
     res = _res;
   }
 };
 
 template<typename Lhs, typename Rhs, typename ResultType>
-struct ei_sparse_product_selector<Lhs,Rhs,ResultType,RowMajor,RowMajor,RowMajor>
+struct sparse_product_selector<Lhs,Rhs,ResultType,RowMajor,RowMajor,RowMajor>
 {
   static void run(const Lhs& lhs, const Rhs& rhs, ResultType& res)
   {
 //     std::cerr << __LINE__ << "\n";
     // let's transpose the product to get a column x column product
-    typename ei_cleantype<ResultType>::type _res(res.rows(), res.cols());
-    ei_sparse_product_impl<Rhs,Lhs,ResultType>(rhs, lhs, _res);
+    typename remove_all<ResultType>::type _res(res.rows(), res.cols());
+    sparse_product_impl<Rhs,Lhs,ResultType>(rhs, lhs, _res);
     res.swap(_res);
   }
 };
 
 template<typename Lhs, typename Rhs, typename ResultType>
-struct ei_sparse_product_selector<Lhs,Rhs,ResultType,RowMajor,RowMajor,ColMajor>
+struct sparse_product_selector<Lhs,Rhs,ResultType,RowMajor,RowMajor,ColMajor>
 {
   static void run(const Lhs& lhs, const Rhs& rhs, ResultType& res)
   {
@@ -215,21 +222,22 @@ struct ei_sparse_product_selector<Lhs,Rhs,ResultType,RowMajor,RowMajor,ColMajor>
     ColMajorMatrix colLhs(lhs);
     ColMajorMatrix colRhs(rhs);
 //     std::cerr << "more...\n";
-    ei_sparse_product_impl<ColMajorMatrix,ColMajorMatrix,ResultType>(colLhs, colRhs, res);
+    sparse_product_impl<ColMajorMatrix,ColMajorMatrix,ResultType>(colLhs, colRhs, res);
 //     std::cerr << "OK.\n";
 
     // let's transpose the product to get a column x column product
 
 //     typedef SparseMatrix<typename ResultType::Scalar> SparseTemporaryType;
 //     SparseTemporaryType _res(res.cols(), res.rows());
-//     ei_sparse_product_impl<Rhs,Lhs,SparseTemporaryType>(rhs, lhs, _res);
+//     sparse_product_impl<Rhs,Lhs,SparseTemporaryType>(rhs, lhs, _res);
 //     res = _res.transpose();
   }
 };
 
-// NOTE the 2 others cases (col row *) must never occurs since they are caught
-// by ProductReturnType which transform it to (col col *) by evaluating rhs.
+// NOTE the 2 others cases (col row *) must never occur since they are caught
+// by ProductReturnType which transforms it to (col col *) by evaluating rhs.
 
+} // end namespace internal
 
 // sparse = sparse * sparse
 template<typename Derived>
@@ -237,33 +245,34 @@ template<typename Lhs, typename Rhs>
 inline Derived& SparseMatrixBase<Derived>::operator=(const SparseSparseProduct<Lhs,Rhs>& product)
 {
 //   std::cerr << "there..." << typeid(Lhs).name() << "  " << typeid(Lhs).name() << " " << (Derived::Flags&&RowMajorBit) << "\n";
-  ei_sparse_product_selector<
-    typename ei_cleantype<Lhs>::type,
-    typename ei_cleantype<Rhs>::type,
+  internal::sparse_product_selector<
+    typename internal::remove_all<Lhs>::type,
+    typename internal::remove_all<Rhs>::type,
     Derived>::run(product.lhs(),product.rhs(),derived());
   return derived();
 }
 
+namespace internal {
 
 template<typename Lhs, typename Rhs, typename ResultType,
-  int LhsStorageOrder = ei_traits<Lhs>::Flags&RowMajorBit,
-  int RhsStorageOrder = ei_traits<Rhs>::Flags&RowMajorBit,
-  int ResStorageOrder = ei_traits<ResultType>::Flags&RowMajorBit>
-struct ei_sparse_product_selector2;
+  int LhsStorageOrder = traits<Lhs>::Flags&RowMajorBit,
+  int RhsStorageOrder = traits<Rhs>::Flags&RowMajorBit,
+  int ResStorageOrder = traits<ResultType>::Flags&RowMajorBit>
+struct sparse_product_selector2;
 
 template<typename Lhs, typename Rhs, typename ResultType>
-struct ei_sparse_product_selector2<Lhs,Rhs,ResultType,ColMajor,ColMajor,ColMajor>
+struct sparse_product_selector2<Lhs,Rhs,ResultType,ColMajor,ColMajor,ColMajor>
 {
-  typedef typename ei_traits<typename ei_cleantype<Lhs>::type>::Scalar Scalar;
+  typedef typename traits<typename remove_all<Lhs>::type>::Scalar Scalar;
 
   static void run(const Lhs& lhs, const Rhs& rhs, ResultType& res)
   {
-    ei_sparse_product_impl2<Lhs,Rhs,ResultType>(lhs, rhs, res);
+    sparse_product_impl2<Lhs,Rhs,ResultType>(lhs, rhs, res);
   }
 };
 
 template<typename Lhs, typename Rhs, typename ResultType>
-struct ei_sparse_product_selector2<Lhs,Rhs,ResultType,RowMajor,ColMajor,ColMajor>
+struct sparse_product_selector2<Lhs,Rhs,ResultType,RowMajor,ColMajor,ColMajor>
 {
   static void run(const Lhs& lhs, const Rhs& rhs, ResultType& res)
   {
@@ -275,79 +284,79 @@ struct ei_sparse_product_selector2<Lhs,Rhs,ResultType,RowMajor,ColMajor,ColMajor
 //     typedef SparseMatrix<typename ResultType::Scalar,RowMajor> RowMajorMatrix;
 //     RowMajorMatrix rhsRow = rhs;
 //     RowMajorMatrix resRow(res.rows(), res.cols());
-//     ei_sparse_product_impl2<RowMajorMatrix,Lhs,RowMajorMatrix>(rhsRow, lhs, resRow);
+//     sparse_product_impl2<RowMajorMatrix,Lhs,RowMajorMatrix>(rhsRow, lhs, resRow);
 //     res = resRow;
   }
 };
 
 template<typename Lhs, typename Rhs, typename ResultType>
-struct ei_sparse_product_selector2<Lhs,Rhs,ResultType,ColMajor,RowMajor,ColMajor>
+struct sparse_product_selector2<Lhs,Rhs,ResultType,ColMajor,RowMajor,ColMajor>
 {
   static void run(const Lhs& lhs, const Rhs& rhs, ResultType& res)
   {
     typedef SparseMatrix<typename ResultType::Scalar,RowMajor> RowMajorMatrix;
     RowMajorMatrix lhsRow = lhs;
     RowMajorMatrix resRow(res.rows(), res.cols());
-    ei_sparse_product_impl2<Rhs,RowMajorMatrix,RowMajorMatrix>(rhs, lhsRow, resRow);
+    sparse_product_impl2<Rhs,RowMajorMatrix,RowMajorMatrix>(rhs, lhsRow, resRow);
     res = resRow;
   }
 };
 
 template<typename Lhs, typename Rhs, typename ResultType>
-struct ei_sparse_product_selector2<Lhs,Rhs,ResultType,RowMajor,RowMajor,ColMajor>
+struct sparse_product_selector2<Lhs,Rhs,ResultType,RowMajor,RowMajor,ColMajor>
 {
   static void run(const Lhs& lhs, const Rhs& rhs, ResultType& res)
   {
     typedef SparseMatrix<typename ResultType::Scalar,RowMajor> RowMajorMatrix;
     RowMajorMatrix resRow(res.rows(), res.cols());
-    ei_sparse_product_impl2<Rhs,Lhs,RowMajorMatrix>(rhs, lhs, resRow);
+    sparse_product_impl2<Rhs,Lhs,RowMajorMatrix>(rhs, lhs, resRow);
     res = resRow;
   }
 };
 
 
 template<typename Lhs, typename Rhs, typename ResultType>
-struct ei_sparse_product_selector2<Lhs,Rhs,ResultType,ColMajor,ColMajor,RowMajor>
+struct sparse_product_selector2<Lhs,Rhs,ResultType,ColMajor,ColMajor,RowMajor>
 {
-  typedef typename ei_traits<typename ei_cleantype<Lhs>::type>::Scalar Scalar;
+  typedef typename traits<typename remove_all<Lhs>::type>::Scalar Scalar;
 
   static void run(const Lhs& lhs, const Rhs& rhs, ResultType& res)
   {
     typedef SparseMatrix<typename ResultType::Scalar,ColMajor> ColMajorMatrix;
     ColMajorMatrix resCol(res.rows(), res.cols());
-    ei_sparse_product_impl2<Lhs,Rhs,ColMajorMatrix>(lhs, rhs, resCol);
+    sparse_product_impl2<Lhs,Rhs,ColMajorMatrix>(lhs, rhs, resCol);
     res = resCol;
   }
 };
 
 template<typename Lhs, typename Rhs, typename ResultType>
-struct ei_sparse_product_selector2<Lhs,Rhs,ResultType,RowMajor,ColMajor,RowMajor>
+struct sparse_product_selector2<Lhs,Rhs,ResultType,RowMajor,ColMajor,RowMajor>
 {
   static void run(const Lhs& lhs, const Rhs& rhs, ResultType& res)
   {
     typedef SparseMatrix<typename ResultType::Scalar,ColMajor> ColMajorMatrix;
     ColMajorMatrix lhsCol = lhs;
     ColMajorMatrix resCol(res.rows(), res.cols());
-    ei_sparse_product_impl2<ColMajorMatrix,Rhs,ColMajorMatrix>(lhsCol, rhs, resCol);
+    sparse_product_impl2<ColMajorMatrix,Rhs,ColMajorMatrix>(lhsCol, rhs, resCol);
     res = resCol;
   }
 };
 
 template<typename Lhs, typename Rhs, typename ResultType>
-struct ei_sparse_product_selector2<Lhs,Rhs,ResultType,ColMajor,RowMajor,RowMajor>
+struct sparse_product_selector2<Lhs,Rhs,ResultType,ColMajor,RowMajor,RowMajor>
 {
   static void run(const Lhs& lhs, const Rhs& rhs, ResultType& res)
   {
     typedef SparseMatrix<typename ResultType::Scalar,ColMajor> ColMajorMatrix;
     ColMajorMatrix rhsCol = rhs;
     ColMajorMatrix resCol(res.rows(), res.cols());
-    ei_sparse_product_impl2<Lhs,ColMajorMatrix,ColMajorMatrix>(lhs, rhsCol, resCol);
+    sparse_product_impl2<Lhs,ColMajorMatrix,ColMajorMatrix>(lhs, rhsCol, resCol);
     res = resCol;
   }
 };
 
 template<typename Lhs, typename Rhs, typename ResultType>
-struct ei_sparse_product_selector2<Lhs,Rhs,ResultType,RowMajor,RowMajor,RowMajor>
+struct sparse_product_selector2<Lhs,Rhs,ResultType,RowMajor,RowMajor,RowMajor>
 {
   static void run(const Lhs& lhs, const Rhs& rhs, ResultType& res)
   {
@@ -355,26 +364,28 @@ struct ei_sparse_product_selector2<Lhs,Rhs,ResultType,RowMajor,RowMajor,RowMajor
 //     ColMajorMatrix lhsTr(lhs);
 //     ColMajorMatrix rhsTr(rhs);
 //     ColMajorMatrix aux(res.rows(), res.cols());
-//     ei_sparse_product_impl2<Rhs,Lhs,ColMajorMatrix>(rhs, lhs, aux);
+//     sparse_product_impl2<Rhs,Lhs,ColMajorMatrix>(rhs, lhs, aux);
 // //     ColMajorMatrix aux2 = aux.transpose();
 //     res = aux;
     typedef SparseMatrix<typename ResultType::Scalar,ColMajor> ColMajorMatrix;
     ColMajorMatrix lhsCol(lhs);
     ColMajorMatrix rhsCol(rhs);
     ColMajorMatrix resCol(res.rows(), res.cols());
-    ei_sparse_product_impl2<ColMajorMatrix,ColMajorMatrix,ColMajorMatrix>(lhsCol, rhsCol, resCol);
+    sparse_product_impl2<ColMajorMatrix,ColMajorMatrix,ColMajorMatrix>(lhsCol, rhsCol, resCol);
     res = resCol;
   }
 };
+
+} // end namespace internal
 
 template<typename Derived>
 template<typename Lhs, typename Rhs>
 inline void SparseMatrixBase<Derived>::_experimentalNewProduct(const Lhs& lhs, const Rhs& rhs)
 {
   //derived().resize(lhs.rows(), rhs.cols());
-  ei_sparse_product_selector2<
-    typename ei_cleantype<Lhs>::type,
-    typename ei_cleantype<Rhs>::type,
+  internal::sparse_product_selector2<
+    typename internal::remove_all<Lhs>::type,
+    typename internal::remove_all<Rhs>::type,
     Derived>::run(lhs,rhs,derived());
 }
 

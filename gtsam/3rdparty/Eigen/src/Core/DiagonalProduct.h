@@ -26,11 +26,12 @@
 #ifndef EIGEN_DIAGONALPRODUCT_H
 #define EIGEN_DIAGONALPRODUCT_H
 
+namespace internal {
 template<typename MatrixType, typename DiagonalType, int ProductOrder>
-struct ei_traits<DiagonalProduct<MatrixType, DiagonalType, ProductOrder> >
- : ei_traits<MatrixType>
+struct traits<DiagonalProduct<MatrixType, DiagonalType, ProductOrder> >
+ : traits<MatrixType>
 {
-  typedef typename ei_scalar_product_traits<typename MatrixType::Scalar, typename DiagonalType::Scalar>::ReturnType Scalar;
+  typedef typename scalar_product_traits<typename MatrixType::Scalar, typename DiagonalType::Scalar>::ReturnType Scalar;
   enum {
     RowsAtCompileTime = MatrixType::RowsAtCompileTime,
     ColsAtCompileTime = MatrixType::ColsAtCompileTime,
@@ -40,7 +41,7 @@ struct ei_traits<DiagonalProduct<MatrixType, DiagonalType, ProductOrder> >
     _StorageOrder = MatrixType::Flags & RowMajorBit ? RowMajor : ColMajor,
     _PacketOnDiag = !((int(_StorageOrder) == RowMajor && int(ProductOrder) == OnTheLeft)
                     ||(int(_StorageOrder) == ColMajor && int(ProductOrder) == OnTheRight)),
-    _SameTypes = ei_is_same_type<typename MatrixType::Scalar, typename DiagonalType::Scalar>::ret,
+    _SameTypes = is_same<typename MatrixType::Scalar, typename DiagonalType::Scalar>::value,
     // FIXME currently we need same types, but in the future the next rule should be the one
     //_Vectorizable = bool(int(MatrixType::Flags)&PacketAccessBit) && ((!_PacketOnDiag) || (_SameTypes && bool(int(DiagonalType::Flags)&PacketAccessBit))),
     _Vectorizable = bool(int(MatrixType::Flags)&PacketAccessBit) && _SameTypes && ((!_PacketOnDiag) || (bool(int(DiagonalType::Flags)&PacketAccessBit))),
@@ -49,9 +50,10 @@ struct ei_traits<DiagonalProduct<MatrixType, DiagonalType, ProductOrder> >
     CoeffReadCost = NumTraits<Scalar>::MulCost + MatrixType::CoeffReadCost + DiagonalType::DiagonalVectorType::CoeffReadCost
   };
 };
+}
 
 template<typename MatrixType, typename DiagonalType, int ProductOrder>
-class DiagonalProduct : ei_no_assignment_operator,
+class DiagonalProduct : internal::no_assignment_operator,
                         public MatrixBase<DiagonalProduct<MatrixType, DiagonalType, ProductOrder> >
 {
   public:
@@ -62,7 +64,7 @@ class DiagonalProduct : ei_no_assignment_operator,
     inline DiagonalProduct(const MatrixType& matrix, const DiagonalType& diagonal)
       : m_matrix(matrix), m_diagonal(diagonal)
     {
-      ei_assert(diagonal.diagonal().size() == (ProductOrder == OnTheLeft ? matrix.rows() : matrix.cols()));
+      eigen_assert(diagonal.diagonal().size() == (ProductOrder == OnTheLeft ? matrix.rows() : matrix.cols()));
     }
 
     inline Index rows() const { return m_matrix.rows(); }
@@ -81,27 +83,27 @@ class DiagonalProduct : ei_no_assignment_operator,
       };
       const Index indexInDiagonalVector = ProductOrder == OnTheLeft ? row : col;
 
-      return packet_impl<LoadMode>(row,col,indexInDiagonalVector,typename ei_meta_if<
+      return packet_impl<LoadMode>(row,col,indexInDiagonalVector,typename internal::conditional<
         ((int(StorageOrder) == RowMajor && int(ProductOrder) == OnTheLeft)
-       ||(int(StorageOrder) == ColMajor && int(ProductOrder) == OnTheRight)), ei_meta_true, ei_meta_false>::ret());
+       ||(int(StorageOrder) == ColMajor && int(ProductOrder) == OnTheRight)), internal::true_type, internal::false_type>::type());
     }
 
   protected:
     template<int LoadMode>
-    EIGEN_STRONG_INLINE PacketScalar packet_impl(Index row, Index col, Index id, ei_meta_true) const
+    EIGEN_STRONG_INLINE PacketScalar packet_impl(Index row, Index col, Index id, internal::true_type) const
     {
-      return ei_pmul(m_matrix.template packet<LoadMode>(row, col),
-                     ei_pset1<PacketScalar>(m_diagonal.diagonal().coeff(id)));
+      return internal::pmul(m_matrix.template packet<LoadMode>(row, col),
+                     internal::pset1<PacketScalar>(m_diagonal.diagonal().coeff(id)));
     }
 
     template<int LoadMode>
-    EIGEN_STRONG_INLINE PacketScalar packet_impl(Index row, Index col, Index id, ei_meta_false) const
+    EIGEN_STRONG_INLINE PacketScalar packet_impl(Index row, Index col, Index id, internal::false_type) const
     {
       enum {
         InnerSize = (MatrixType::Flags & RowMajorBit) ? MatrixType::ColsAtCompileTime : MatrixType::RowsAtCompileTime,
         DiagonalVectorPacketLoadMode = (LoadMode == Aligned && ((InnerSize%16) == 0)) ? Aligned : Unaligned
       };
-      return ei_pmul(m_matrix.template packet<LoadMode>(row, col),
+      return internal::pmul(m_matrix.template packet<LoadMode>(row, col),
                      m_diagonal.diagonal().template packet<DiagonalVectorPacketLoadMode>(id));
     }
 

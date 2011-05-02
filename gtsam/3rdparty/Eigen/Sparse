@@ -3,13 +3,21 @@
 
 #include "Core"
 
-#include "src/Core/util/DisableMSVCWarnings.h"
+#include "src/Core/util/DisableStupidWarnings.h"
 
 #include <vector>
 #include <map>
 #include <cstdlib>
 #include <cstring>
 #include <algorithm>
+
+#ifdef EIGEN2_SUPPORT
+#define EIGEN_YES_I_KNOW_SPARSE_MODULE_IS_NOT_STABLE_YET
+#endif
+
+#ifndef EIGEN_YES_I_KNOW_SPARSE_MODULE_IS_NOT_STABLE_YET
+#error The sparse module API is not stable yet. To use it anyway, please define the EIGEN_YES_I_KNOW_SPARSE_MODULE_IS_NOT_STABLE_YET preprocessor token.
+#endif
 
 namespace Eigen {
 
@@ -55,7 +63,7 @@ struct Sparse {};
 
 } // namespace Eigen
 
-#include "src/Core/util/EnableMSVCWarnings.h"
+#include "src/Core/util/ReenableStupidWarnings.h"
 
 #endif // EIGEN_SPARSE_MODULE_H
 

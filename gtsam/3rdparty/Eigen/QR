@@ -3,7 +3,7 @@
 
 #include "Core"
 
-#include "src/Core/util/DisableMSVCWarnings.h"
+#include "src/Core/util/DisableStupidWarnings.h"
 
 #include "Cholesky"
 #include "Jacobi"
@@ -29,13 +29,17 @@ namespace Eigen {
 #include "src/QR/FullPivHouseholderQR.h"
 #include "src/QR/ColPivHouseholderQR.h"
 
+#ifdef EIGEN2_SUPPORT
+#include "src/Eigen2Support/QR.h"
+#endif
 
 } // namespace Eigen
 
-#include "src/Core/util/EnableMSVCWarnings.h"
+#include "src/Core/util/ReenableStupidWarnings.h"
 
-// FIXME for compatibility we include Eigenvalues here:
+#ifdef EIGEN2_SUPPORT
 #include "Eigenvalues"
+#endif
 
 #endif // EIGEN_QR_MODULE_H
 /* vim: set filetype=cpp et sw=2 ts=2 ai: */

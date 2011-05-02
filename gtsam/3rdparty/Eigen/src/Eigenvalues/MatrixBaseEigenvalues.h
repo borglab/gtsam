@@ -26,10 +26,10 @@
 #ifndef EIGEN_MATRIXBASEEIGENVALUES_H
 #define EIGEN_MATRIXBASEEIGENVALUES_H
 
-
+namespace internal {
 
 template<typename Derived, bool IsComplex>
-struct ei_eigenvalues_selector
+struct eigenvalues_selector
 {
   // this is the implementation for the case IsComplex = true
   static inline typename MatrixBase<Derived>::EigenvaluesReturnType const
@@ -42,7 +42,7 @@ struct ei_eigenvalues_selector
 };
 
 template<typename Derived>
-struct ei_eigenvalues_selector<Derived, false>
+struct eigenvalues_selector<Derived, false>
 {
   static inline typename MatrixBase<Derived>::EigenvaluesReturnType const
   run(const MatrixBase<Derived>& m)
@@ -52,6 +52,8 @@ struct ei_eigenvalues_selector<Derived, false>
     return EigenSolver<PlainObject>(m_eval, false).eigenvalues();
   }
 };
+
+} // end namespace internal
 
 /** \brief Computes the eigenvalues of a matrix 
   * \returns Column vector containing the eigenvalues.
@@ -77,8 +79,8 @@ template<typename Derived>
 inline typename MatrixBase<Derived>::EigenvaluesReturnType
 MatrixBase<Derived>::eigenvalues() const
 {
-  typedef typename ei_traits<Derived>::Scalar Scalar;
-  return ei_eigenvalues_selector<Derived, NumTraits<Scalar>::IsComplex>::run(derived());
+  typedef typename internal::traits<Derived>::Scalar Scalar;
+  return internal::eigenvalues_selector<Derived, NumTraits<Scalar>::IsComplex>::run(derived());
 }
 
 /** \brief Computes the eigenvalues of a matrix
@@ -135,7 +137,7 @@ MatrixBase<Derived>::operatorNorm() const
   typename Derived::PlainObject m_eval(derived());
   // FIXME if it is really guaranteed that the eigenvalues are already sorted,
   // then we don't need to compute a maxCoeff() here, comparing the 1st and last ones is enough.
-  return ei_sqrt((m_eval*m_eval.adjoint())
+  return internal::sqrt((m_eval*m_eval.adjoint())
                  .eval()
 		 .template selfadjointView<Lower>()
 		 .eigenvalues()

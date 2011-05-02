@@ -36,30 +36,31 @@
 // These helpers are required since it allows to use mixed types as parameters
 // for the Umeyama. The problem with mixed parameters is that the return type
 // cannot trivially be deduced when float and double types are mixed.
-namespace
+namespace internal {
+
+// Compile time return type deduction for different MatrixBase types.
+// Different means here different alignment and parameters but the same underlying
+// real scalar type.
+template<typename MatrixType, typename OtherMatrixType>
+struct umeyama_transform_matrix_type
 {
-  // Compile time return type deduction for different MatrixBase types.
-  // Different means here different alignment and parameters but the same underlying
-  // real scalar type.
-  template<typename MatrixType, typename OtherMatrixType>
-  struct ei_umeyama_transform_matrix_type
-  {    
-    enum {
-      MinRowsAtCompileTime = EIGEN_SIZE_MIN_PREFER_DYNAMIC(MatrixType::RowsAtCompileTime, OtherMatrixType::RowsAtCompileTime),
+  enum {
+    MinRowsAtCompileTime = EIGEN_SIZE_MIN_PREFER_DYNAMIC(MatrixType::RowsAtCompileTime, OtherMatrixType::RowsAtCompileTime),
 
-      // When possible we want to choose some small fixed size value since the result
-      // is likely to fit on the stack. So here, EIGEN_SIZE_MIN_PREFER_DYNAMIC is not what we want.
-      HomogeneousDimension = int(MinRowsAtCompileTime) == Dynamic ? Dynamic : int(MinRowsAtCompileTime)+1
-    };
-
-    typedef Matrix<typename ei_traits<MatrixType>::Scalar,
-      HomogeneousDimension,
-      HomogeneousDimension,
-      AutoAlign | (ei_traits<MatrixType>::Flags & RowMajorBit ? RowMajor : ColMajor),
-      HomogeneousDimension, 
-      HomogeneousDimension
-    > type;
+    // When possible we want to choose some small fixed size value since the result
+    // is likely to fit on the stack. So here, EIGEN_SIZE_MIN_PREFER_DYNAMIC is not what we want.
+    HomogeneousDimension = int(MinRowsAtCompileTime) == Dynamic ? Dynamic : int(MinRowsAtCompileTime)+1
   };
+
+  typedef Matrix<typename traits<MatrixType>::Scalar,
+    HomogeneousDimension,
+    HomogeneousDimension,
+    AutoAlign | (traits<MatrixType>::Flags & RowMajorBit ? RowMajor : ColMajor),
+    HomogeneousDimension,
+    HomogeneousDimension
+  > type;
+};
+
 }
 
 #endif
@@ -103,23 +104,23 @@ namespace
 * Eigen::Matrix.
 */
 template <typename Derived, typename OtherDerived>
-typename ei_umeyama_transform_matrix_type<Derived, OtherDerived>::type
+typename internal::umeyama_transform_matrix_type<Derived, OtherDerived>::type
 umeyama(const MatrixBase<Derived>& src, const MatrixBase<OtherDerived>& dst, bool with_scaling = true)
 {
-  typedef typename ei_umeyama_transform_matrix_type<Derived, OtherDerived>::type TransformationMatrixType;
-  typedef typename ei_traits<TransformationMatrixType>::Scalar Scalar;
+  typedef typename internal::umeyama_transform_matrix_type<Derived, OtherDerived>::type TransformationMatrixType;
+  typedef typename internal::traits<TransformationMatrixType>::Scalar Scalar;
   typedef typename NumTraits<Scalar>::Real RealScalar;
   typedef typename Derived::Index Index;
 
   EIGEN_STATIC_ASSERT(!NumTraits<Scalar>::IsComplex, NUMERIC_TYPE_MUST_BE_REAL)
-  EIGEN_STATIC_ASSERT((ei_is_same_type<Scalar, typename ei_traits<OtherDerived>::Scalar>::ret),
+  EIGEN_STATIC_ASSERT((internal::is_same<Scalar, typename internal::traits<OtherDerived>::Scalar>::value),
     YOU_MIXED_DIFFERENT_NUMERIC_TYPES__YOU_NEED_TO_USE_THE_CAST_METHOD_OF_MATRIXBASE_TO_CAST_NUMERIC_TYPES_EXPLICITLY)
 
   enum { Dimension = EIGEN_SIZE_MIN_PREFER_DYNAMIC(Derived::RowsAtCompileTime, OtherDerived::RowsAtCompileTime) };
 
   typedef Matrix<Scalar, Dimension, 1> VectorType;
   typedef Matrix<Scalar, Dimension, Dimension> MatrixType;
-  typedef typename ei_plain_matrix_type_row_major<Derived>::type RowMajorMatrixType;
+  typedef typename internal::plain_matrix_type_row_major<Derived>::type RowMajorMatrixType;
 
   const Index m = src.rows(); // dimension
   const Index n = src.cols(); // number of measurements
@@ -152,7 +153,7 @@ umeyama(const MatrixBase<Derived>& src, const MatrixBase<OtherDerived>& dst, boo
 
   // Eq. (40) and (43)
   const VectorType& d = svd.singularValues();
-  Index rank = 0; for (Index i=0; i<m; ++i) if (!ei_isMuchSmallerThan(d.coeff(i),d.coeff(0))) ++rank;
+  Index rank = 0; for (Index i=0; i<m; ++i) if (!internal::isMuchSmallerThan(d.coeff(i),d.coeff(0))) ++rank;
   if (rank == m-1) {
     if ( svd.matrixU().determinant() * svd.matrixV().determinant() > 0 ) {
       Rt.block(0,0,m,m).noalias() = svd.matrixU()*svd.matrixV().transpose();

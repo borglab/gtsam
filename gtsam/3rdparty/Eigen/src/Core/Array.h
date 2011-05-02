@@ -37,22 +37,27 @@
   * API for the %Matrix class provides easy access to linear-algebra
   * operations.
   *
+  * This class can be extended with the help of the plugin mechanism described on the page
+  * \ref TopicCustomizingEigen by defining the preprocessor symbol \c EIGEN_ARRAY_PLUGIN.
+  *
   * \sa \ref TutorialArrayClass, \ref TopicClassHierarchy
   */
+namespace internal {
 template<typename _Scalar, int _Rows, int _Cols, int _Options, int _MaxRows, int _MaxCols>
-struct ei_traits<Array<_Scalar, _Rows, _Cols, _Options, _MaxRows, _MaxCols> > : ei_traits<Matrix<_Scalar, _Rows, _Cols, _Options, _MaxRows, _MaxCols> >
+struct traits<Array<_Scalar, _Rows, _Cols, _Options, _MaxRows, _MaxCols> > : traits<Matrix<_Scalar, _Rows, _Cols, _Options, _MaxRows, _MaxCols> >
 {
   typedef ArrayXpr XprKind;
   typedef ArrayBase<Array<_Scalar, _Rows, _Cols, _Options, _MaxRows, _MaxCols> > XprBase;
 };
+}
 
 template<typename _Scalar, int _Rows, int _Cols, int _Options, int _MaxRows, int _MaxCols>
 class Array
-  : public DenseStorageBase<Array<_Scalar, _Rows, _Cols, _Options, _MaxRows, _MaxCols> >
+  : public PlainObjectBase<Array<_Scalar, _Rows, _Cols, _Options, _MaxRows, _MaxCols> >
 {
   public:
 
-    typedef DenseStorageBase<Array> Base;
+    typedef PlainObjectBase<Array> Base;
     EIGEN_DENSE_PUBLIC_INTERFACE(Array)
 
     enum { Options = _Options };
@@ -60,7 +65,7 @@ class Array
 
   protected:
     template <typename Derived, typename OtherDerived, bool IsVector>
-    friend struct ei_conservative_resize_like_impl;
+    friend struct internal::conservative_resize_like_impl;
 
     using Base::m_storage;
   public:
@@ -126,8 +131,8 @@ class Array
 #ifndef EIGEN_PARSED_BY_DOXYGEN
     // FIXME is it still needed ??
     /** \internal */
-    Array(ei_constructor_without_unaligned_array_assert)
-      : Base(ei_constructor_without_unaligned_array_assert())
+    Array(internal::constructor_without_unaligned_array_assert)
+      : Base(internal::constructor_without_unaligned_array_assert())
     {
       Base::_check_template_params();
       EIGEN_INITIALIZE_BY_ZERO_IF_THAT_OPTION_IS_ENABLED
@@ -145,8 +150,8 @@ class Array
     {
       Base::_check_template_params();
       EIGEN_STATIC_ASSERT_VECTOR_ONLY(Array)
-      ei_assert(dim > 0);
-      ei_assert(SizeAtCompileTime == Dynamic || SizeAtCompileTime == dim);
+      eigen_assert(dim >= 0);
+      eigen_assert(SizeAtCompileTime == Dynamic || SizeAtCompileTime == dim);
       EIGEN_INITIALIZE_BY_ZERO_IF_THAT_OPTION_IS_ENABLED
     }
 
@@ -228,7 +233,7 @@ class Array
       * data pointers.
       */
     template<typename OtherDerived>
-    void swap(ArrayBase<OtherDerived> EIGEN_REF_TO_TEMPORARY other)
+    void swap(ArrayBase<OtherDerived> const & other)
     { this->_swap(other.derived()); }
 
     inline Index innerStride() const { return 1; }
@@ -241,7 +246,7 @@ class Array
   private:
 
     template<typename MatrixType, typename OtherDerived, bool SwapPointers>
-    friend struct ei_matrix_swap_impl;
+    friend struct internal::matrix_swap_impl;
 };
 
 /** \defgroup arraytypedefs Global array typedefs

@@ -31,10 +31,10 @@ template<typename Derived>
 class DiagonalBase : public EigenBase<Derived>
 {
   public:
-    typedef typename ei_traits<Derived>::DiagonalVectorType DiagonalVectorType;
+    typedef typename internal::traits<Derived>::DiagonalVectorType DiagonalVectorType;
     typedef typename DiagonalVectorType::Scalar Scalar;
-    typedef typename ei_traits<Derived>::StorageKind StorageKind;
-    typedef typename ei_traits<Derived>::Index Index;
+    typedef typename internal::traits<Derived>::StorageKind StorageKind;
+    typedef typename internal::traits<Derived>::Index Index;
 
     enum {
       RowsAtCompileTime = DiagonalVectorType::SizeAtCompileTime,
@@ -46,6 +46,8 @@ class DiagonalBase : public EigenBase<Derived>
     };
 
     typedef Matrix<Scalar, RowsAtCompileTime, ColsAtCompileTime, 0, MaxRowsAtCompileTime, MaxColsAtCompileTime> DenseMatrixType;
+    typedef DenseMatrixType DenseType;
+    typedef DiagonalMatrix<Scalar,DiagonalVectorType::SizeAtCompileTime,DiagonalVectorType::MaxSizeAtCompileTime> PlainObject;
 
     inline const Derived& derived() const { return *static_cast<const Derived*>(this); }
     inline Derived& derived() { return *static_cast<Derived*>(this); }
@@ -70,11 +72,24 @@ class DiagonalBase : public EigenBase<Derived>
     const DiagonalProduct<MatrixDerived, Derived, OnTheLeft>
     operator*(const MatrixBase<MatrixDerived> &matrix) const;
 
-    inline const DiagonalWrapper<CwiseUnaryOp<ei_scalar_inverse_op<Scalar>, DiagonalVectorType> >
+    inline const DiagonalWrapper<CwiseUnaryOp<internal::scalar_inverse_op<Scalar>, const DiagonalVectorType> >
     inverse() const
     {
       return diagonal().cwiseInverse();
     }
+    
+    #ifdef EIGEN2_SUPPORT
+    template<typename OtherDerived>
+    bool isApprox(const DiagonalBase<OtherDerived>& other, typename NumTraits<Scalar>::Real precision = NumTraits<Scalar>::dummy_precision()) const
+    {
+      return diagonal().isApprox(other.diagonal(), precision);
+    }
+    template<typename OtherDerived>
+    bool isApprox(const MatrixBase<OtherDerived>& other, typename NumTraits<Scalar>::Real precision = NumTraits<Scalar>::dummy_precision()) const
+    {
+      return toDenseMatrix().isApprox(other, precision);
+    }
+    #endif
 };
 
 template<typename Derived>
@@ -98,9 +113,11 @@ void DiagonalBase<Derived>::evalTo(MatrixBase<DenseDerived> &other) const
   *
   * \sa class DiagonalWrapper
   */
+
+namespace internal {
 template<typename _Scalar, int SizeAtCompileTime, int MaxSizeAtCompileTime>
-struct ei_traits<DiagonalMatrix<_Scalar,SizeAtCompileTime,MaxSizeAtCompileTime> >
- : ei_traits<Matrix<_Scalar,SizeAtCompileTime,SizeAtCompileTime,0,MaxSizeAtCompileTime,MaxSizeAtCompileTime> >
+struct traits<DiagonalMatrix<_Scalar,SizeAtCompileTime,MaxSizeAtCompileTime> >
+ : traits<Matrix<_Scalar,SizeAtCompileTime,SizeAtCompileTime,0,MaxSizeAtCompileTime,MaxSizeAtCompileTime> >
 {
   typedef Matrix<_Scalar,SizeAtCompileTime,1,0,MaxSizeAtCompileTime,1> DiagonalVectorType;
   typedef Dense StorageKind;
@@ -109,18 +126,18 @@ struct ei_traits<DiagonalMatrix<_Scalar,SizeAtCompileTime,MaxSizeAtCompileTime> 
     Flags = LvalueBit
   };
 };
-
+}
 template<typename _Scalar, int SizeAtCompileTime, int MaxSizeAtCompileTime>
 class DiagonalMatrix
   : public DiagonalBase<DiagonalMatrix<_Scalar,SizeAtCompileTime,MaxSizeAtCompileTime> >
 {
   public:
     #ifndef EIGEN_PARSED_BY_DOXYGEN
-    typedef typename ei_traits<DiagonalMatrix>::DiagonalVectorType DiagonalVectorType;
+    typedef typename internal::traits<DiagonalMatrix>::DiagonalVectorType DiagonalVectorType;
     typedef const DiagonalMatrix& Nested;
     typedef _Scalar Scalar;
-    typedef typename ei_traits<DiagonalMatrix>::StorageKind StorageKind;
-    typedef typename ei_traits<DiagonalMatrix>::Index Index;
+    typedef typename internal::traits<DiagonalMatrix>::StorageKind StorageKind;
+    typedef typename internal::traits<DiagonalMatrix>::Index Index;
     #endif
 
   protected:
@@ -204,8 +221,10 @@ class DiagonalMatrix
   *
   * \sa class DiagonalMatrix, class DiagonalBase, MatrixBase::asDiagonal()
   */
+
+namespace internal {
 template<typename _DiagonalVectorType>
-struct ei_traits<DiagonalWrapper<_DiagonalVectorType> >
+struct traits<DiagonalWrapper<_DiagonalVectorType> >
 {
   typedef _DiagonalVectorType DiagonalVectorType;
   typedef typename DiagonalVectorType::Scalar Scalar;
@@ -216,13 +235,14 @@ struct ei_traits<DiagonalWrapper<_DiagonalVectorType> >
     ColsAtCompileTime = DiagonalVectorType::SizeAtCompileTime,
     MaxRowsAtCompileTime = DiagonalVectorType::SizeAtCompileTime,
     MaxColsAtCompileTime = DiagonalVectorType::SizeAtCompileTime,
-    Flags =  ei_traits<DiagonalVectorType>::Flags & LvalueBit
+    Flags =  traits<DiagonalVectorType>::Flags & LvalueBit
   };
 };
+}
 
 template<typename _DiagonalVectorType>
 class DiagonalWrapper
-  : public DiagonalBase<DiagonalWrapper<_DiagonalVectorType> >, ei_no_assignment_operator
+  : public DiagonalBase<DiagonalWrapper<_DiagonalVectorType> >, internal::no_assignment_operator
 {
   public:
     #ifndef EIGEN_PARSED_BY_DOXYGEN
@@ -250,7 +270,7 @@ class DiagonalWrapper
   * \sa class DiagonalWrapper, class DiagonalMatrix, diagonal(), isDiagonal()
   **/
 template<typename Derived>
-inline const DiagonalWrapper<Derived>
+inline const DiagonalWrapper<const Derived>
 MatrixBase<Derived>::asDiagonal() const
 {
   return derived();
@@ -265,21 +285,20 @@ MatrixBase<Derived>::asDiagonal() const
   * \sa asDiagonal()
   */
 template<typename Derived>
-bool MatrixBase<Derived>::isDiagonal
-(RealScalar prec) const
+bool MatrixBase<Derived>::isDiagonal(RealScalar prec) const
 {
   if(cols() != rows()) return false;
   RealScalar maxAbsOnDiagonal = static_cast<RealScalar>(-1);
   for(Index j = 0; j < cols(); ++j)
   {
-    RealScalar absOnDiagonal = ei_abs(coeff(j,j));
+    RealScalar absOnDiagonal = internal::abs(coeff(j,j));
     if(absOnDiagonal > maxAbsOnDiagonal) maxAbsOnDiagonal = absOnDiagonal;
   }
   for(Index j = 0; j < cols(); ++j)
     for(Index i = 0; i < j; ++i)
     {
-      if(!ei_isMuchSmallerThan(coeff(i, j), maxAbsOnDiagonal, prec)) return false;
-      if(!ei_isMuchSmallerThan(coeff(j, i), maxAbsOnDiagonal, prec)) return false;
+      if(!internal::isMuchSmallerThan(coeff(i, j), maxAbsOnDiagonal, prec)) return false;
+      if(!internal::isMuchSmallerThan(coeff(j, i), maxAbsOnDiagonal, prec)) return false;
     }
   return true;
 }

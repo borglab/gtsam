@@ -58,15 +58,15 @@ EIGEN_SPARSE_INHERIT_SCALAR_ASSIGNMENT_OPERATOR(Derived, /=)
 
 #define _EIGEN_SPARSE_PUBLIC_INTERFACE(Derived, BaseClass) \
   typedef BaseClass Base; \
-  typedef typename Eigen::ei_traits<Derived>::Scalar Scalar; \
+  typedef typename Eigen::internal::traits<Derived>::Scalar Scalar; \
   typedef typename Eigen::NumTraits<Scalar>::Real RealScalar; \
-  typedef typename Eigen::ei_nested<Derived>::type Nested; \
-  typedef typename Eigen::ei_traits<Derived>::StorageKind StorageKind; \
-  typedef typename Eigen::ei_traits<Derived>::Index Index; \
-  enum { RowsAtCompileTime = Eigen::ei_traits<Derived>::RowsAtCompileTime, \
-        ColsAtCompileTime = Eigen::ei_traits<Derived>::ColsAtCompileTime, \
-        Flags = Eigen::ei_traits<Derived>::Flags, \
-        CoeffReadCost = Eigen::ei_traits<Derived>::CoeffReadCost, \
+  typedef typename Eigen::internal::nested<Derived>::type Nested; \
+  typedef typename Eigen::internal::traits<Derived>::StorageKind StorageKind; \
+  typedef typename Eigen::internal::traits<Derived>::Index Index; \
+  enum { RowsAtCompileTime = Eigen::internal::traits<Derived>::RowsAtCompileTime, \
+        ColsAtCompileTime = Eigen::internal::traits<Derived>::ColsAtCompileTime, \
+        Flags = Eigen::internal::traits<Derived>::Flags, \
+        CoeffReadCost = Eigen::internal::traits<Derived>::CoeffReadCost, \
         SizeAtCompileTime = Base::SizeAtCompileTime, \
         IsVectorAtCompileTime = Base::IsVectorAtCompileTime }; \
   using Base::derived; \
@@ -98,29 +98,33 @@ template<typename Lhs, typename Rhs>        class DenseTimeSparseProduct;
 template<typename Lhs, typename Rhs, bool Transpose> class SparseDenseOuterProduct;
 
 template<typename Lhs, typename Rhs> struct SparseSparseProductReturnType;
-template<typename Lhs, typename Rhs, int InnerSize = ei_traits<Lhs>::ColsAtCompileTime> struct DenseSparseProductReturnType;
-template<typename Lhs, typename Rhs, int InnerSize = ei_traits<Lhs>::ColsAtCompileTime> struct SparseDenseProductReturnType;
+template<typename Lhs, typename Rhs, int InnerSize = internal::traits<Lhs>::ColsAtCompileTime> struct DenseSparseProductReturnType;
+template<typename Lhs, typename Rhs, int InnerSize = internal::traits<Lhs>::ColsAtCompileTime> struct SparseDenseProductReturnType;
 
-template<typename T> struct ei_eval<T,Sparse>
+namespace internal {
+
+template<typename T> struct eval<T,Sparse>
 {
-    typedef typename ei_traits<T>::Scalar _Scalar;
+    typedef typename traits<T>::Scalar _Scalar;
     enum {
-          _Flags = ei_traits<T>::Flags
+          _Flags = traits<T>::Flags
     };
 
   public:
     typedef SparseMatrix<_Scalar, _Flags> type;
 };
 
-template<typename T> struct ei_plain_matrix_type<T,Sparse>
+template<typename T> struct plain_matrix_type<T,Sparse>
 {
-  typedef typename ei_traits<T>::Scalar _Scalar;
+  typedef typename traits<T>::Scalar _Scalar;
     enum {
-          _Flags = ei_traits<T>::Flags
+          _Flags = traits<T>::Flags
     };
 
   public:
     typedef SparseMatrix<_Scalar, _Flags> type;
 };
+
+} // end namespace internal
 
 #endif // EIGEN_SPARSEUTIL_H

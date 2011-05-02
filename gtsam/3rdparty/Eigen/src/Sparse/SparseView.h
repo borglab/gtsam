@@ -26,21 +26,25 @@
 #ifndef EIGEN_SPARSEVIEW_H
 #define EIGEN_SPARSEVIEW_H
 
+namespace internal {
+
 template<typename MatrixType>
-struct ei_traits<SparseView<MatrixType> > : ei_traits<MatrixType>
+struct traits<SparseView<MatrixType> > : traits<MatrixType>
 {
   typedef int Index;
   typedef Sparse StorageKind;
   enum {
-    Flags = int(ei_traits<MatrixType>::Flags) & (RowMajorBit)
+    Flags = int(traits<MatrixType>::Flags) & (RowMajorBit)
   };
 };
+
+} // end namespace internal
 
 template<typename MatrixType>
 class SparseView : public SparseMatrixBase<SparseView<MatrixType> >
 {
   typedef typename MatrixType::Nested MatrixTypeNested;
-  typedef typename ei_cleantype<MatrixTypeNested>::type _MatrixTypeNested;
+  typedef typename internal::remove_all<MatrixTypeNested>::type _MatrixTypeNested;
 public:
   EIGEN_SPARSE_PUBLIC_INTERFACE(SparseView)
 
@@ -88,7 +92,7 @@ protected:
 private:
   void incrementToNonZero()
   {
-    while(ei_isMuchSmallerThan(value(), m_view.m_reference, m_view.m_epsilon) && (bool(*this)))
+    while(internal::isMuchSmallerThan(value(), m_view.m_reference, m_view.m_epsilon) && (bool(*this)))
       {
         IterBase::operator++();
       }

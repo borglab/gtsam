@@ -40,11 +40,14 @@
   *
   * \sa MatrixBase::flagged()
   */
+
+namespace internal {
 template<typename ExpressionType, unsigned int Added, unsigned int Removed>
-struct ei_traits<Flagged<ExpressionType, Added, Removed> > : ei_traits<ExpressionType>
+struct traits<Flagged<ExpressionType, Added, Removed> > : traits<ExpressionType>
 {
   enum { Flags = (ExpressionType::Flags | Added) & ~Removed };
 };
+}
 
 template<typename ExpressionType, unsigned int Added, unsigned int Removed> class Flagged
   : public MatrixBase<Flagged<ExpressionType, Added, Removed> >
@@ -52,9 +55,10 @@ template<typename ExpressionType, unsigned int Added, unsigned int Removed> clas
   public:
 
     typedef MatrixBase<Flagged> Base;
+    
     EIGEN_DENSE_PUBLIC_INTERFACE(Flagged)
-    typedef typename ei_meta_if<ei_must_nest_by_value<ExpressionType>::ret,
-        ExpressionType, const ExpressionType&>::ret ExpressionTypeNested;
+    typedef typename internal::conditional<internal::must_nest_by_value<ExpressionType>::ret,
+        ExpressionType, const ExpressionType&>::type ExpressionTypeNested;
     typedef typename ExpressionType::InnerIterator InnerIterator;
 
     inline Flagged(const ExpressionType& matrix) : m_matrix(matrix) {}
@@ -64,19 +68,29 @@ template<typename ExpressionType, unsigned int Added, unsigned int Removed> clas
     inline Index outerStride() const { return m_matrix.outerStride(); }
     inline Index innerStride() const { return m_matrix.innerStride(); }
 
-    inline const Scalar coeff(Index row, Index col) const
+    inline CoeffReturnType coeff(Index row, Index col) const
     {
       return m_matrix.coeff(row, col);
+    }
+
+    inline CoeffReturnType coeff(Index index) const
+    {
+      return m_matrix.coeff(index);
+    }
+    
+    inline const Scalar& coeffRef(Index row, Index col) const
+    {
+      return m_matrix.const_cast_derived().coeffRef(row, col);
+    }
+
+    inline const Scalar& coeffRef(Index index) const
+    {
+      return m_matrix.const_cast_derived().coeffRef(index);
     }
 
     inline Scalar& coeffRef(Index row, Index col)
     {
       return m_matrix.const_cast_derived().coeffRef(row, col);
-    }
-
-    inline const Scalar coeff(Index index) const
-    {
-      return m_matrix.coeff(index);
     }
 
     inline Scalar& coeffRef(Index index)

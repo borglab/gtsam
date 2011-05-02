@@ -60,31 +60,31 @@ MatrixBase<Derived>::eulerAngles(Index a0, Index a1, Index a2) const
   if (a0==a2)
   {
     Scalar s = Vector2(coeff(j,i) , coeff(k,i)).norm();
-    res[1] = ei_atan2(s, coeff(i,i));
+    res[1] = internal::atan2(s, coeff(i,i));
     if (s > epsilon)
     {
-      res[0] = ei_atan2(coeff(j,i), coeff(k,i));
-      res[2] = ei_atan2(coeff(i,j),-coeff(i,k));
+      res[0] = internal::atan2(coeff(j,i), coeff(k,i));
+      res[2] = internal::atan2(coeff(i,j),-coeff(i,k));
     }
     else
     {
       res[0] = Scalar(0);
-      res[2] = (coeff(i,i)>0?1:-1)*ei_atan2(-coeff(k,j), coeff(j,j));
+      res[2] = (coeff(i,i)>0?1:-1)*internal::atan2(-coeff(k,j), coeff(j,j));
     }
   }
   else
   {
     Scalar c = Vector2(coeff(i,i) , coeff(i,j)).norm();
-    res[1] = ei_atan2(-coeff(i,k), c);
+    res[1] = internal::atan2(-coeff(i,k), c);
     if (c > epsilon)
     {
-      res[0] = ei_atan2(coeff(j,k), coeff(k,k));
-      res[2] = ei_atan2(coeff(i,j), coeff(i,i));
+      res[0] = internal::atan2(coeff(j,k), coeff(k,k));
+      res[2] = internal::atan2(coeff(i,j), coeff(i,i));
     }
     else
     {
       res[0] = Scalar(0);
-      res[2] = (coeff(i,k)>0?1:-1)*ei_atan2(-coeff(k,j), coeff(j,j));
+      res[2] = (coeff(i,k)>0?1:-1)*internal::atan2(-coeff(k,j), coeff(j,j));
     }
   }
   if (!odd)

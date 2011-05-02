@@ -26,15 +26,15 @@
 #define EIGEN_SPARSE_CWISE_UNARY_OP_H
 
 // template<typename UnaryOp, typename MatrixType>
-// struct ei_traits<SparseCwiseUnaryOp<UnaryOp, MatrixType> > : ei_traits<MatrixType>
+// struct internal::traits<SparseCwiseUnaryOp<UnaryOp, MatrixType> > : internal::traits<MatrixType>
 // {
-//   typedef typename ei_result_of<
+//   typedef typename internal::result_of<
 //                      UnaryOp(typename MatrixType::Scalar)
 //                    >::type Scalar;
 //   typedef typename MatrixType::Nested MatrixTypeNested;
-//   typedef typename ei_unref<MatrixTypeNested>::type _MatrixTypeNested;
+//   typedef typename internal::remove_reference<MatrixTypeNested>::type _MatrixTypeNested;
 //   enum {
-//     CoeffReadCost = _MatrixTypeNested::CoeffReadCost + ei_functor_traits<UnaryOp>::Cost
+//     CoeffReadCost = _MatrixTypeNested::CoeffReadCost + internal::functor_traits<UnaryOp>::Cost
 //   };
 // };
 
@@ -45,7 +45,7 @@ class CwiseUnaryOpImpl<UnaryOp,MatrixType,Sparse>
   public:
 
     class InnerIterator;
-//     typedef typename ei_unref<LhsNested>::type _LhsNested;
+//     typedef typename internal::remove_reference<LhsNested>::type _LhsNested;
 
     typedef CwiseUnaryOp<UnaryOp, MatrixType> Derived;
     EIGEN_SPARSE_PUBLIC_INTERFACE(Derived)
@@ -55,7 +55,7 @@ template<typename UnaryOp, typename MatrixType>
 class CwiseUnaryOpImpl<UnaryOp,MatrixType,Sparse>::InnerIterator
 {
     typedef typename CwiseUnaryOpImpl::Scalar Scalar;
-    typedef typename ei_traits<Derived>::_XprTypeNested _MatrixTypeNested;
+    typedef typename internal::traits<Derived>::_XprTypeNested _MatrixTypeNested;
     typedef typename _MatrixTypeNested::InnerIterator MatrixTypeIterator;
     typedef typename MatrixType::Index Index;
   public:
@@ -87,7 +87,7 @@ class CwiseUnaryViewImpl<ViewOp,MatrixType,Sparse>
   public:
 
     class InnerIterator;
-//     typedef typename ei_unref<LhsNested>::type _LhsNested;
+//     typedef typename internal::remove_reference<LhsNested>::type _LhsNested;
 
     typedef CwiseUnaryView<ViewOp, MatrixType> Derived;
     EIGEN_SPARSE_PUBLIC_INTERFACE(Derived)
@@ -97,7 +97,7 @@ template<typename ViewOp, typename MatrixType>
 class CwiseUnaryViewImpl<ViewOp,MatrixType,Sparse>::InnerIterator
 {
     typedef typename CwiseUnaryViewImpl::Scalar Scalar;
-    typedef typename ei_traits<Derived>::_MatrixTypeNested _MatrixTypeNested;
+    typedef typename internal::traits<Derived>::_MatrixTypeNested _MatrixTypeNested;
     typedef typename _MatrixTypeNested::InnerIterator MatrixTypeIterator;
     typedef typename MatrixType::Index Index;
   public:

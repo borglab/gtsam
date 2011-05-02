@@ -183,7 +183,7 @@ void AmbiVector<_Scalar,_Index>::setZero()
   }
   else
   {
-    ei_assert(m_mode==IsSparse);
+    eigen_assert(m_mode==IsSparse);
     m_llSize = 0;
     m_llStart = -1;
   }
@@ -198,7 +198,7 @@ _Scalar& AmbiVector<_Scalar,_Index>::coeffRef(_Index i)
   {
     ListEl* EIGEN_RESTRICT llElements = reinterpret_cast<ListEl*>(m_buffer);
     // TODO factorize the following code to reduce code generation
-    ei_assert(m_mode==IsSparse);
+    eigen_assert(m_mode==IsSparse);
     if (m_llSize==0)
     {
       // this is the first element
@@ -225,7 +225,7 @@ _Scalar& AmbiVector<_Scalar,_Index>::coeffRef(_Index i)
     else
     {
       Index nextel = llElements[m_llCurrent].next;
-      ei_assert(i>=llElements[m_llCurrent].index && "you must call restart() before inserting an element with lower or equal index");
+      eigen_assert(i>=llElements[m_llCurrent].index && "you must call restart() before inserting an element with lower or equal index");
       while (nextel >= 0 && llElements[nextel].index<=i)
       {
         m_llCurrent = nextel;
@@ -244,7 +244,7 @@ _Scalar& AmbiVector<_Scalar,_Index>::coeffRef(_Index i)
           reallocateSparse();
           llElements = reinterpret_cast<ListEl*>(m_buffer);
         }
-        ei_internal_assert(m_llSize<m_allocatedElements && "internal error: overflow in sparse mode");
+        eigen_internal_assert(m_llSize<m_allocatedElements && "internal error: overflow in sparse mode");
         // let's insert a new coefficient
         ListEl& el = llElements[m_llSize];
         el.value = Scalar(0);
@@ -266,7 +266,7 @@ _Scalar& AmbiVector<_Scalar,_Index>::coeff(_Index i)
   else
   {
     ListEl* EIGEN_RESTRICT llElements = reinterpret_cast<ListEl*>(m_buffer);
-    ei_assert(m_mode==IsSparse);
+    eigen_assert(m_mode==IsSparse);
     if ((m_llSize==0) || (i<llElements[m_llStart].index))
     {
       return m_zero;
@@ -315,7 +315,7 @@ class AmbiVector<_Scalar,_Index>::Iterator
       {
         ListEl* EIGEN_RESTRICT llElements = reinterpret_cast<ListEl*>(m_vector.m_buffer);
         m_currentEl = m_vector.m_llStart;
-        while (m_currentEl>=0 && ei_abs(llElements[m_currentEl].value)<m_epsilon)
+        while (m_currentEl>=0 && internal::abs(llElements[m_currentEl].value)<m_epsilon)
           m_currentEl = llElements[m_currentEl].next;
         if (m_currentEl<0)
         {
@@ -341,7 +341,7 @@ class AmbiVector<_Scalar,_Index>::Iterator
       {
         do {
           ++m_cachedIndex;
-        } while (m_cachedIndex<m_vector.m_end && ei_abs(m_vector.m_buffer[m_cachedIndex])<m_epsilon);
+        } while (m_cachedIndex<m_vector.m_end && internal::abs(m_vector.m_buffer[m_cachedIndex])<m_epsilon);
         if (m_cachedIndex<m_vector.m_end)
           m_cachedValue = m_vector.m_buffer[m_cachedIndex];
         else
@@ -352,7 +352,7 @@ class AmbiVector<_Scalar,_Index>::Iterator
         ListEl* EIGEN_RESTRICT llElements = reinterpret_cast<ListEl*>(m_vector.m_buffer);
         do {
           m_currentEl = llElements[m_currentEl].next;
-        } while (m_currentEl>=0 && ei_abs(llElements[m_currentEl].value)<m_epsilon);
+        } while (m_currentEl>=0 && internal::abs(llElements[m_currentEl].value)<m_epsilon);
         if (m_currentEl<0)
         {
           m_cachedIndex = -1;

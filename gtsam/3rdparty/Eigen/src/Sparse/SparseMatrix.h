@@ -34,16 +34,20 @@
   * This class implements a sparse matrix using the very common compressed row/column storage
   * scheme.
   *
-  * \param _Scalar the scalar type, i.e. the type of the coefficients
-  * \param _Options Union of bit flags controlling the storage scheme. Currently the only possibility
+  * \tparam _Scalar the scalar type, i.e. the type of the coefficients
+  * \tparam _Options Union of bit flags controlling the storage scheme. Currently the only possibility
   *                 is RowMajor. The default is 0 which means column-major.
-  * \param _Index the type of the indices. Default is \c int.
+  * \tparam _Index the type of the indices. Default is \c int.
   *
   * See http://www.netlib.org/linalg/html_templates/node91.html for details on the storage scheme.
   *
+  * This class can be extended with the help of the plugin mechanism described on the page
+  * \ref TopicCustomizingEigen by defining the preprocessor symbol \c EIGEN_SPARSEMATRIX_PLUGIN.
   */
+
+namespace internal {
 template<typename _Scalar, int _Options, typename _Index>
-struct ei_traits<SparseMatrix<_Scalar, _Options, _Index> >
+struct traits<SparseMatrix<_Scalar, _Options, _Index> >
 {
   typedef _Scalar Scalar;
   typedef _Index Index;
@@ -60,12 +64,15 @@ struct ei_traits<SparseMatrix<_Scalar, _Options, _Index> >
   };
 };
 
+} // end namespace internal
+
 template<typename _Scalar, int _Options, typename _Index>
 class SparseMatrix
   : public SparseMatrixBase<SparseMatrix<_Scalar, _Options, _Index> >
 {
   public:
     EIGEN_SPARSE_PUBLIC_INTERFACE(SparseMatrix)
+//     using Base::operator=;
     EIGEN_SPARSE_INHERIT_ASSIGNMENT_OPERATOR(SparseMatrix, +=)
     EIGEN_SPARSE_INHERIT_ASSIGNMENT_OPERATOR(SparseMatrix, -=)
     // FIXME: why are these operator already alvailable ???
@@ -75,6 +82,9 @@ class SparseMatrix
     typedef MappedSparseMatrix<Scalar,Flags> Map;
     using Base::IsRowMajor;
     typedef CompressedStorage<Scalar,Index> Storage;
+    enum {
+      Options = _Options
+    };
 
   protected:
 
@@ -120,11 +130,11 @@ class SparseMatrix
 
       Index start = m_outerIndex[outer];
       Index end = m_outerIndex[outer+1];
-      ei_assert(end>=start && "you probably called coeffRef on a non finalized matrix");
-      ei_assert(end>start && "coeffRef cannot be called on a zero coefficient");
-      const Index id = m_data.searchLowerIndex(start,end-1,inner);
-      ei_assert((id<end) && (m_data.index(id)==inner) && "coeffRef cannot be called on a zero coefficient");
-      return m_data.value(id);
+      eigen_assert(end>=start && "you probably called coeffRef on a non finalized matrix");
+      eigen_assert(end>start && "coeffRef cannot be called on a zero coefficient");
+      const Index p = m_data.searchLowerIndex(start,end-1,inner);
+      eigen_assert((p<end) && (m_data.index(p)==inner) && "coeffRef cannot be called on a zero coefficient");
+      return m_data.value(p);
     }
 
   public:
@@ -166,28 +176,28 @@ class SparseMatrix
     /** \sa insertBack, startVec */
     inline Scalar& insertBackByOuterInner(Index outer, Index inner)
     {
-      ei_assert(size_t(m_outerIndex[outer+1]) == m_data.size() && "Invalid ordered insertion (invalid outer index)");
-      ei_assert( (m_outerIndex[outer+1]-m_outerIndex[outer]==0 || m_data.index(m_data.size()-1)<inner) && "Invalid ordered insertion (invalid inner index)");
-      Index id = m_outerIndex[outer+1];
+      eigen_assert(size_t(m_outerIndex[outer+1]) == m_data.size() && "Invalid ordered insertion (invalid outer index)");
+      eigen_assert( (m_outerIndex[outer+1]-m_outerIndex[outer]==0 || m_data.index(m_data.size()-1)<inner) && "Invalid ordered insertion (invalid inner index)");
+      Index p = m_outerIndex[outer+1];
       ++m_outerIndex[outer+1];
       m_data.append(0, inner);
-      return m_data.value(id);
+      return m_data.value(p);
     }
 
     /** \warning use it only if you know what you are doing */
     inline Scalar& insertBackByOuterInnerUnordered(Index outer, Index inner)
     {
-      Index id = m_outerIndex[outer+1];
+      Index p = m_outerIndex[outer+1];
       ++m_outerIndex[outer+1];
       m_data.append(0, inner);
-      return m_data.value(id);
+      return m_data.value(p);
     }
 
     /** \sa insertBack, insertBackByOuterInner */
     inline void startVec(Index outer)
     {
-      ei_assert(m_outerIndex[outer]==int(m_data.size()) && "You must call startVec for each inner vector sequentially");
-      ei_assert(m_outerIndex[outer+1]==0 && "You must call startVec for each inner vector sequentially");
+      eigen_assert(m_outerIndex[outer]==int(m_data.size()) && "You must call startVec for each inner vector sequentially");
+      eigen_assert(m_outerIndex[outer+1]==0 && "You must call startVec for each inner vector sequentially");
       m_outerIndex[outer+1] = m_outerIndex[outer];
     }
 
@@ -226,7 +236,7 @@ class SparseMatrix
 
       size_t startId = m_outerIndex[outer];
       // FIXME let's make sure sizeof(long int) == sizeof(size_t)
-      size_t id = m_outerIndex[outer+1];
+      size_t p = m_outerIndex[outer+1];
       ++m_outerIndex[outer+1];
 
       float reallocRatio = 1;
@@ -265,7 +275,7 @@ class SparseMatrix
             m_outerIndex[k++] = 1;
           while (k<=m_outerSize && m_outerIndex[k]!=0)
             m_outerIndex[k++]++;
-          id = 0;
+          p = 0;
           --k;
           k = m_outerIndex[k]-1;
           while (k>0)
@@ -285,7 +295,7 @@ class SparseMatrix
           --j;
           // shift data of last vecs:
           Index k = m_outerIndex[j]-1;
-          while (k>=Index(id))
+          while (k>=Index(p))
           {
             m_data.index(k) = m_data.index(k-1);
             m_data.value(k) = m_data.value(k-1);
@@ -294,15 +304,15 @@ class SparseMatrix
         }
       }
 
-      while ( (id > startId) && (m_data.index(id-1) > inner) )
+      while ( (p > startId) && (m_data.index(p-1) > inner) )
       {
-        m_data.index(id) = m_data.index(id-1);
-        m_data.value(id) = m_data.value(id-1);
-        --id;
+        m_data.index(p) = m_data.index(p-1);
+        m_data.value(p) = m_data.value(p-1);
+        --p;
       }
 
-      m_data.index(id) = inner;
-      return (m_data.value(id) = 0);
+      m_data.index(p) = inner;
+      return (m_data.value(p) = 0);
     }
 
 
@@ -328,15 +338,28 @@ class SparseMatrix
     /** Suppress all nonzeros which are smaller than \a reference under the tolerence \a epsilon */
     void prune(Scalar reference, RealScalar epsilon = NumTraits<RealScalar>::dummy_precision())
     {
+      prune(default_prunning_func(reference,epsilon));
+    }
+    
+    /** Suppress all nonzeros which do not satisfy the predicate \a keep.
+      * The functor type \a KeepFunc must implement the following function:
+      * \code
+      * bool operator() (const Index& row, const Index& col, const Scalar& value) const;
+      * \endcode
+      * \sa prune(Scalar,RealScalar)
+      */
+    template<typename KeepFunc>
+    void prune(const KeepFunc& keep = KeepFunc())
+    {
       Index k = 0;
-      for (Index j=0; j<m_outerSize; ++j)
+      for(Index j=0; j<m_outerSize; ++j)
       {
         Index previousStart = m_outerIndex[j];
         m_outerIndex[j] = k;
         Index end = m_outerIndex[j+1];
-        for (Index i=previousStart; i<end; ++i)
+        for(Index i=previousStart; i<end; ++i)
         {
-          if (!ei_isMuchSmallerThan(m_data.value(i), reference, epsilon))
+          if(keep(IsRowMajor?j:m_data.index(i), IsRowMajor?m_data.index(i):j, m_data.value(i)))
           {
             m_data.value(k) = m_data.value(i);
             m_data.index(k) = m_data.index(i);
@@ -430,9 +453,15 @@ class SparseMatrix
     #ifndef EIGEN_PARSED_BY_DOXYGEN
     template<typename Lhs, typename Rhs>
     inline SparseMatrix& operator=(const SparseSparseProduct<Lhs,Rhs>& product)
-    {
-      return Base::operator=(product);
-    }
+    { return Base::operator=(product); }
+    
+    template<typename OtherDerived>
+    inline SparseMatrix& operator=(const ReturnByValue<OtherDerived>& other)
+    { return Base::operator=(other); }
+    
+    template<typename OtherDerived>
+    inline SparseMatrix& operator=(const EigenBase<OtherDerived>& other)
+    { return Base::operator=(other); }
     #endif
 
     template<typename OtherDerived>
@@ -445,8 +474,8 @@ class SparseMatrix
         //  1 - compute the number of coeffs per dest inner vector
         //  2 - do the actual copy/eval
         // Since each coeff of the rhs has to be evaluated twice, let's evaluate it if needed
-        typedef typename ei_nested<OtherDerived,2>::type OtherCopy;
-        typedef typename ei_cleantype<OtherCopy>::type _OtherCopy;
+        typedef typename internal::nested<OtherDerived,2>::type OtherCopy;
+        typedef typename internal::remove_all<OtherCopy>::type _OtherCopy;
         OtherCopy otherCopy(other.derived());
 
         resize(other.rows(), other.cols());
@@ -561,19 +590,34 @@ class SparseMatrix
       }
       else
       {
-        ei_assert(m_data.index(m_data.size()-1)<inner && "wrong sorted insertion");
+        eigen_assert(m_data.index(m_data.size()-1)<inner && "wrong sorted insertion");
       }
 //       std::cerr << size_t(m_outerIndex[outer+1]) << " == " << m_data.size() << "\n";
       assert(size_t(m_outerIndex[outer+1]) == m_data.size());
-      Index id = m_outerIndex[outer+1];
+      Index p = m_outerIndex[outer+1];
       ++m_outerIndex[outer+1];
 
       m_data.append(0, inner);
-      return m_data.value(id);
+      return m_data.value(p);
     }
 
     /** \deprecated use finalize */
     EIGEN_DEPRECATED void endFill() { finalize(); }
+    
+#   ifdef EIGEN_SPARSEMATRIX_PLUGIN
+#     include EIGEN_SPARSEMATRIX_PLUGIN
+#   endif
+
+private:
+  struct default_prunning_func {
+    default_prunning_func(Scalar ref, RealScalar eps) : reference(ref), epsilon(eps) {}
+    inline bool operator() (const Index&, const Index&, const Scalar& value) const
+    {
+      return !internal::isMuchSmallerThan(value, reference, epsilon);
+    }
+    Scalar reference;
+    RealScalar epsilon;
+  };
 };
 
 template<typename Scalar, int _Options, typename _Index>

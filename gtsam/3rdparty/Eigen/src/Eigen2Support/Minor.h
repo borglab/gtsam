@@ -38,12 +38,14 @@
   *
   * \sa MatrixBase::minor()
   */
+
+namespace internal {
 template<typename MatrixType>
-struct ei_traits<Minor<MatrixType> >
- : ei_traits<MatrixType>
+struct traits<Minor<MatrixType> >
+ : traits<MatrixType>
 {
-  typedef typename ei_nested<MatrixType>::type MatrixTypeNested;
-  typedef typename ei_unref<MatrixTypeNested>::type _MatrixTypeNested;
+  typedef typename nested<MatrixType>::type MatrixTypeNested;
+  typedef typename remove_reference<MatrixTypeNested>::type _MatrixTypeNested;
   typedef typename MatrixType::StorageKind StorageKind;
   enum {
     RowsAtCompileTime = (MatrixType::RowsAtCompileTime != Dynamic) ?
@@ -54,11 +56,12 @@ struct ei_traits<Minor<MatrixType> >
                              int(MatrixType::MaxRowsAtCompileTime) - 1 : Dynamic,
     MaxColsAtCompileTime = (MatrixType::MaxColsAtCompileTime != Dynamic) ?
                              int(MatrixType::MaxColsAtCompileTime) - 1 : Dynamic,
-    Flags = _MatrixTypeNested::Flags & HereditaryBits,
+    Flags = _MatrixTypeNested::Flags & (HereditaryBits | LvalueBit),
     CoeffReadCost = _MatrixTypeNested::CoeffReadCost // minor is used typically on tiny matrices,
       // where loops are unrolled and the 'if' evaluates at compile time
   };
 };
+}
 
 template<typename MatrixType> class Minor
   : public MatrixBase<Minor<MatrixType> >
@@ -72,7 +75,7 @@ template<typename MatrixType> class Minor
                        Index row, Index col)
       : m_matrix(matrix), m_row(row), m_col(col)
     {
-      ei_assert(row >= 0 && row < matrix.rows()
+      eigen_assert(row >= 0 && row < matrix.rows()
           && col >= 0 && col < matrix.cols());
     }
 

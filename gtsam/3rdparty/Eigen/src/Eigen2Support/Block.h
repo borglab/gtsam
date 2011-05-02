@@ -49,7 +49,7 @@ inline Block<Derived> DenseBase<Derived>
   switch(type)
   {
     default:
-      ei_assert(false && "Bad corner type.");
+      eigen_assert(false && "Bad corner type.");
     case TopLeft:
       return Block<Derived>(derived(), 0, 0, cRows, cCols);
     case TopRight:
@@ -69,7 +69,7 @@ DenseBase<Derived>::corner(CornerType type, Index cRows, Index cCols) const
   switch(type)
   {
     default:
-      ei_assert(false && "Bad corner type.");
+      eigen_assert(false && "Bad corner type.");
     case TopLeft:
       return Block<Derived>(derived(), 0, 0, cRows, cCols);
     case TopRight:
@@ -101,7 +101,7 @@ DenseBase<Derived>::corner(CornerType type)
   switch(type)
   {
     default:
-      ei_assert(false && "Bad corner type.");
+      eigen_assert(false && "Bad corner type.");
     case TopLeft:
       return Block<Derived, CRows, CCols>(derived(), 0, 0);
     case TopRight:
@@ -122,7 +122,7 @@ DenseBase<Derived>::corner(CornerType type) const
   switch(type)
   {
     default:
-      ei_assert(false && "Bad corner type.");
+      eigen_assert(false && "Bad corner type.");
     case TopLeft:
       return Block<Derived, CRows, CCols>(derived(), 0, 0);
     case TopRight:

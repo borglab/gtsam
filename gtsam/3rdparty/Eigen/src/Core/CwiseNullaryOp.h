@@ -42,32 +42,35 @@
   *
   * \sa class CwiseUnaryOp, class CwiseBinaryOp, DenseBase::NullaryExpr()
   */
+
+namespace internal {
 template<typename NullaryOp, typename PlainObjectType>
-struct ei_traits<CwiseNullaryOp<NullaryOp, PlainObjectType> > : ei_traits<PlainObjectType>
+struct traits<CwiseNullaryOp<NullaryOp, PlainObjectType> > : traits<PlainObjectType>
 {
   enum {
-    Flags = (ei_traits<PlainObjectType>::Flags
+    Flags = (traits<PlainObjectType>::Flags
       & (  HereditaryBits
-         | (ei_functor_has_linear_access<NullaryOp>::ret ? LinearAccessBit : 0)
-         | (ei_functor_traits<NullaryOp>::PacketAccess ? PacketAccessBit : 0)))
-      | (ei_functor_traits<NullaryOp>::IsRepeatable ? 0 : EvalBeforeNestingBit),
-    CoeffReadCost = ei_functor_traits<NullaryOp>::Cost
+         | (functor_has_linear_access<NullaryOp>::ret ? LinearAccessBit : 0)
+         | (functor_traits<NullaryOp>::PacketAccess ? PacketAccessBit : 0)))
+      | (functor_traits<NullaryOp>::IsRepeatable ? 0 : EvalBeforeNestingBit),
+    CoeffReadCost = functor_traits<NullaryOp>::Cost
   };
 };
+}
 
 template<typename NullaryOp, typename PlainObjectType>
-class CwiseNullaryOp : ei_no_assignment_operator,
-  public ei_dense_xpr_base< CwiseNullaryOp<NullaryOp, PlainObjectType> >::type
+class CwiseNullaryOp : internal::no_assignment_operator,
+  public internal::dense_xpr_base< CwiseNullaryOp<NullaryOp, PlainObjectType> >::type
 {
   public:
 
-    typedef typename ei_dense_xpr_base<CwiseNullaryOp>::type Base;
+    typedef typename internal::dense_xpr_base<CwiseNullaryOp>::type Base;
     EIGEN_DENSE_PUBLIC_INTERFACE(CwiseNullaryOp)
 
     CwiseNullaryOp(Index rows, Index cols, const NullaryOp& func = NullaryOp())
       : m_rows(rows), m_cols(cols), m_functor(func)
     {
-      ei_assert(rows >= 0
+      eigen_assert(rows >= 0
             && (RowsAtCompileTime == Dynamic || RowsAtCompileTime == rows)
             &&  cols >= 0
             && (ColsAtCompileTime == Dynamic || ColsAtCompileTime == cols));
@@ -99,8 +102,8 @@ class CwiseNullaryOp : ei_no_assignment_operator,
     }
 
   protected:
-    const ei_variable_if_dynamic<Index, RowsAtCompileTime> m_rows;
-    const ei_variable_if_dynamic<Index, ColsAtCompileTime> m_cols;
+    const internal::variable_if_dynamic<Index, RowsAtCompileTime> m_rows;
+    const internal::variable_if_dynamic<Index, ColsAtCompileTime> m_cols;
     const NullaryOp m_functor;
 };
 
@@ -185,7 +188,7 @@ template<typename Derived>
 EIGEN_STRONG_INLINE const typename DenseBase<Derived>::ConstantReturnType
 DenseBase<Derived>::Constant(Index rows, Index cols, const Scalar& value)
 {
-  return DenseBase<Derived>::NullaryExpr(rows, cols, ei_scalar_constant_op<Scalar>(value));
+  return DenseBase<Derived>::NullaryExpr(rows, cols, internal::scalar_constant_op<Scalar>(value));
 }
 
 /** \returns an expression of a constant matrix of value \a value
@@ -207,7 +210,7 @@ template<typename Derived>
 EIGEN_STRONG_INLINE const typename DenseBase<Derived>::ConstantReturnType
 DenseBase<Derived>::Constant(Index size, const Scalar& value)
 {
-  return DenseBase<Derived>::NullaryExpr(size, ei_scalar_constant_op<Scalar>(value));
+  return DenseBase<Derived>::NullaryExpr(size, internal::scalar_constant_op<Scalar>(value));
 }
 
 /** \returns an expression of a constant matrix of value \a value
@@ -224,7 +227,7 @@ EIGEN_STRONG_INLINE const typename DenseBase<Derived>::ConstantReturnType
 DenseBase<Derived>::Constant(const Scalar& value)
 {
   EIGEN_STATIC_ASSERT_FIXED_SIZE(Derived)
-  return DenseBase<Derived>::NullaryExpr(RowsAtCompileTime, ColsAtCompileTime, ei_scalar_constant_op<Scalar>(value));
+  return DenseBase<Derived>::NullaryExpr(RowsAtCompileTime, ColsAtCompileTime, internal::scalar_constant_op<Scalar>(value));
 }
 
 /**
@@ -247,7 +250,7 @@ EIGEN_STRONG_INLINE const typename DenseBase<Derived>::SequentialLinSpacedReturn
 DenseBase<Derived>::LinSpaced(Sequential_t, Index size, const Scalar& low, const Scalar& high)
 {
   EIGEN_STATIC_ASSERT_VECTOR_ONLY(Derived)
-  return DenseBase<Derived>::NullaryExpr(size, ei_linspaced_op<Scalar,false>(low,high,size));
+  return DenseBase<Derived>::NullaryExpr(size, internal::linspaced_op<Scalar,false>(low,high,size));
 }
 
 /**
@@ -260,7 +263,7 @@ DenseBase<Derived>::LinSpaced(Sequential_t, const Scalar& low, const Scalar& hig
 {
   EIGEN_STATIC_ASSERT_VECTOR_ONLY(Derived)
   EIGEN_STATIC_ASSERT_FIXED_SIZE(Derived)
-  return DenseBase<Derived>::NullaryExpr(Derived::SizeAtCompileTime, ei_linspaced_op<Scalar,false>(low,high,Derived::SizeAtCompileTime));
+  return DenseBase<Derived>::NullaryExpr(Derived::SizeAtCompileTime, internal::linspaced_op<Scalar,false>(low,high,Derived::SizeAtCompileTime));
 }
 
 /**
@@ -280,7 +283,7 @@ EIGEN_STRONG_INLINE const typename DenseBase<Derived>::RandomAccessLinSpacedRetu
 DenseBase<Derived>::LinSpaced(Index size, const Scalar& low, const Scalar& high)
 {
   EIGEN_STATIC_ASSERT_VECTOR_ONLY(Derived)
-  return DenseBase<Derived>::NullaryExpr(size, ei_linspaced_op<Scalar,true>(low,high,size));
+  return DenseBase<Derived>::NullaryExpr(size, internal::linspaced_op<Scalar,true>(low,high,size));
 }
 
 /**
@@ -293,7 +296,7 @@ DenseBase<Derived>::LinSpaced(const Scalar& low, const Scalar& high)
 {
   EIGEN_STATIC_ASSERT_VECTOR_ONLY(Derived)
   EIGEN_STATIC_ASSERT_FIXED_SIZE(Derived)
-  return DenseBase<Derived>::NullaryExpr(Derived::SizeAtCompileTime, ei_linspaced_op<Scalar,true>(low,high,Derived::SizeAtCompileTime));
+  return DenseBase<Derived>::NullaryExpr(Derived::SizeAtCompileTime, internal::linspaced_op<Scalar,true>(low,high,Derived::SizeAtCompileTime));
 }
 
 /** \returns true if all coefficients in this matrix are approximately equal to \a value, to within precision \a prec */
@@ -303,7 +306,7 @@ bool DenseBase<Derived>::isApproxToConstant
 {
   for(Index j = 0; j < cols(); ++j)
     for(Index i = 0; i < rows(); ++i)
-      if(!ei_isApprox(this->coeff(i, j), value, prec))
+      if(!internal::isApprox(this->coeff(i, j), value, prec))
         return false;
   return true;
 }
@@ -349,7 +352,7 @@ EIGEN_STRONG_INLINE Derived& DenseBase<Derived>::setConstant(const Scalar& value
   */
 template<typename Derived>
 EIGEN_STRONG_INLINE Derived&
-DenseStorageBase<Derived>::setConstant(Index size, const Scalar& value)
+PlainObjectBase<Derived>::setConstant(Index size, const Scalar& value)
 {
   resize(size);
   return setConstant(value);
@@ -368,7 +371,7 @@ DenseStorageBase<Derived>::setConstant(Index size, const Scalar& value)
   */
 template<typename Derived>
 EIGEN_STRONG_INLINE Derived&
-DenseStorageBase<Derived>::setConstant(Index rows, Index cols, const Scalar& value)
+PlainObjectBase<Derived>::setConstant(Index rows, Index cols, const Scalar& value)
 {
   resize(rows, cols);
   return setConstant(value);
@@ -390,7 +393,7 @@ template<typename Derived>
 EIGEN_STRONG_INLINE Derived& DenseBase<Derived>::setLinSpaced(Index size, const Scalar& low, const Scalar& high)
 {
   EIGEN_STATIC_ASSERT_VECTOR_ONLY(Derived)
-  return derived() = Derived::NullaryExpr(size, ei_linspaced_op<Scalar,false>(low,high,size));
+  return derived() = Derived::NullaryExpr(size, internal::linspaced_op<Scalar,false>(low,high,size));
 }
 
 // zero:
@@ -469,7 +472,7 @@ bool DenseBase<Derived>::isZero(RealScalar prec) const
 {
   for(Index j = 0; j < cols(); ++j)
     for(Index i = 0; i < rows(); ++i)
-      if(!ei_isMuchSmallerThan(this->coeff(i, j), static_cast<Scalar>(1), prec))
+      if(!internal::isMuchSmallerThan(this->coeff(i, j), static_cast<Scalar>(1), prec))
         return false;
   return true;
 }
@@ -498,7 +501,7 @@ EIGEN_STRONG_INLINE Derived& DenseBase<Derived>::setZero()
   */
 template<typename Derived>
 EIGEN_STRONG_INLINE Derived&
-DenseStorageBase<Derived>::setZero(Index size)
+PlainObjectBase<Derived>::setZero(Index size)
 {
   resize(size);
   return setConstant(Scalar(0));
@@ -516,7 +519,7 @@ DenseStorageBase<Derived>::setZero(Index size)
   */
 template<typename Derived>
 EIGEN_STRONG_INLINE Derived&
-DenseStorageBase<Derived>::setZero(Index rows, Index cols)
+PlainObjectBase<Derived>::setZero(Index rows, Index cols)
 {
   resize(rows, cols);
   return setConstant(Scalar(0));
@@ -624,7 +627,7 @@ EIGEN_STRONG_INLINE Derived& DenseBase<Derived>::setOnes()
   */
 template<typename Derived>
 EIGEN_STRONG_INLINE Derived&
-DenseStorageBase<Derived>::setOnes(Index size)
+PlainObjectBase<Derived>::setOnes(Index size)
 {
   resize(size);
   return setConstant(Scalar(1));
@@ -642,7 +645,7 @@ DenseStorageBase<Derived>::setOnes(Index size)
   */
 template<typename Derived>
 EIGEN_STRONG_INLINE Derived&
-DenseStorageBase<Derived>::setOnes(Index rows, Index cols)
+PlainObjectBase<Derived>::setOnes(Index rows, Index cols)
 {
   resize(rows, cols);
   return setConstant(Scalar(1));
@@ -668,7 +671,7 @@ template<typename Derived>
 EIGEN_STRONG_INLINE const typename MatrixBase<Derived>::IdentityReturnType
 MatrixBase<Derived>::Identity(Index rows, Index cols)
 {
-  return DenseBase<Derived>::NullaryExpr(rows, cols, ei_scalar_identity_op<Scalar>());
+  return DenseBase<Derived>::NullaryExpr(rows, cols, internal::scalar_identity_op<Scalar>());
 }
 
 /** \returns an expression of the identity matrix (not necessarily square).
@@ -686,7 +689,7 @@ EIGEN_STRONG_INLINE const typename MatrixBase<Derived>::IdentityReturnType
 MatrixBase<Derived>::Identity()
 {
   EIGEN_STATIC_ASSERT_FIXED_SIZE(Derived)
-  return MatrixBase<Derived>::NullaryExpr(RowsAtCompileTime, ColsAtCompileTime, ei_scalar_identity_op<Scalar>());
+  return MatrixBase<Derived>::NullaryExpr(RowsAtCompileTime, ColsAtCompileTime, internal::scalar_identity_op<Scalar>());
 }
 
 /** \returns true if *this is approximately equal to the identity matrix
@@ -708,12 +711,12 @@ bool MatrixBase<Derived>::isIdentity
     {
       if(i == j)
       {
-        if(!ei_isApprox(this->coeff(i, j), static_cast<Scalar>(1), prec))
+        if(!internal::isApprox(this->coeff(i, j), static_cast<Scalar>(1), prec))
           return false;
       }
       else
       {
-        if(!ei_isMuchSmallerThan(this->coeff(i, j), static_cast<RealScalar>(1), prec))
+        if(!internal::isMuchSmallerThan(this->coeff(i, j), static_cast<RealScalar>(1), prec))
           return false;
       }
     }
@@ -721,8 +724,10 @@ bool MatrixBase<Derived>::isIdentity
   return true;
 }
 
+namespace internal {
+
 template<typename Derived, bool Big = (Derived::SizeAtCompileTime>=16)>
-struct ei_setIdentity_impl
+struct setIdentity_impl
 {
   static EIGEN_STRONG_INLINE Derived& run(Derived& m)
   {
@@ -731,7 +736,7 @@ struct ei_setIdentity_impl
 };
 
 template<typename Derived>
-struct ei_setIdentity_impl<Derived, true>
+struct setIdentity_impl<Derived, true>
 {
   typedef typename Derived::Index Index;
   static EIGEN_STRONG_INLINE Derived& run(Derived& m)
@@ -743,6 +748,8 @@ struct ei_setIdentity_impl<Derived, true>
   }
 };
 
+} // end namespace internal
+
 /** Writes the identity expression (not necessarily square) into *this.
   *
   * Example: \include MatrixBase_setIdentity.cpp
@@ -753,7 +760,7 @@ struct ei_setIdentity_impl<Derived, true>
 template<typename Derived>
 EIGEN_STRONG_INLINE Derived& MatrixBase<Derived>::setIdentity()
 {
-  return ei_setIdentity_impl<Derived>::run(derived());
+  return internal::setIdentity_impl<Derived>::run(derived());
 }
 
 /** \brief Resizes to the given size, and writes the identity expression (not necessarily square) into *this.

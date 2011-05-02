@@ -27,7 +27,9 @@
 #ifndef EIGEN_LDLT_H
 #define EIGEN_LDLT_H
 
+namespace internal {
 template<typename MatrixType, int UpLo> struct LDLT_Traits;
+}
 
 /** \ingroup cholesky_Module
   *
@@ -74,7 +76,7 @@ template<typename _MatrixType, int _UpLo> class LDLT
     typedef Transpositions<RowsAtCompileTime, MaxRowsAtCompileTime> TranspositionType;
     typedef PermutationMatrix<RowsAtCompileTime, MaxRowsAtCompileTime> PermutationType;
 
-    typedef LDLT_Traits<MatrixType,UpLo> Traits;
+    typedef internal::LDLT_Traits<MatrixType,UpLo> Traits;
 
     /** \brief Default Constructor.
       *
@@ -108,14 +110,14 @@ template<typename _MatrixType, int _UpLo> class LDLT
     /** \returns a view of the upper triangular matrix U */
     inline typename Traits::MatrixU matrixU() const
     {
-      ei_assert(m_isInitialized && "LDLT is not initialized.");
+      eigen_assert(m_isInitialized && "LDLT is not initialized.");
       return Traits::getU(m_matrix);
     }
 
     /** \returns a view of the lower triangular matrix L */
     inline typename Traits::MatrixL matrixL() const
     {
-      ei_assert(m_isInitialized && "LDLT is not initialized.");
+      eigen_assert(m_isInitialized && "LDLT is not initialized.");
       return Traits::getL(m_matrix);
     }
 
@@ -123,28 +125,35 @@ template<typename _MatrixType, int _UpLo> class LDLT
       */
     inline const TranspositionType& transpositionsP() const
     {
-      ei_assert(m_isInitialized && "LDLT is not initialized.");
+      eigen_assert(m_isInitialized && "LDLT is not initialized.");
       return m_transpositions;
     }
 
     /** \returns the coefficients of the diagonal matrix D */
-    inline Diagonal<MatrixType,0> vectorD(void) const
+    inline Diagonal<const MatrixType> vectorD(void) const
     {
-      ei_assert(m_isInitialized && "LDLT is not initialized.");
+      eigen_assert(m_isInitialized && "LDLT is not initialized.");
       return m_matrix.diagonal();
     }
 
     /** \returns true if the matrix is positive (semidefinite) */
     inline bool isPositive(void) const
     {
-      ei_assert(m_isInitialized && "LDLT is not initialized.");
+      eigen_assert(m_isInitialized && "LDLT is not initialized.");
       return m_sign == 1;
     }
+    
+    #ifdef EIGEN2_SUPPORT
+    inline bool isPositiveDefinite() const
+    {
+      return isPositive();
+    }
+    #endif
 
     /** \returns true if the matrix is negative (semidefinite) */
     inline bool isNegative(void) const
     {
-      ei_assert(m_isInitialized && "LDLT is not initialized.");
+      eigen_assert(m_isInitialized && "LDLT is not initialized.");
       return m_sign == -1;
     }
 
@@ -155,14 +164,23 @@ template<typename _MatrixType, int _UpLo> class LDLT
       * \sa solveInPlace(), MatrixBase::ldlt()
       */
     template<typename Rhs>
-    inline const ei_solve_retval<LDLT, Rhs>
+    inline const internal::solve_retval<LDLT, Rhs>
     solve(const MatrixBase<Rhs>& b) const
     {
-      ei_assert(m_isInitialized && "LDLT is not initialized.");
-      ei_assert(m_matrix.rows()==b.rows()
+      eigen_assert(m_isInitialized && "LDLT is not initialized.");
+      eigen_assert(m_matrix.rows()==b.rows()
                 && "LDLT::solve(): invalid number of rows of the right hand side matrix b");
-      return ei_solve_retval<LDLT, Rhs>(*this, b.derived());
+      return internal::solve_retval<LDLT, Rhs>(*this, b.derived());
     }
+
+    #ifdef EIGEN2_SUPPORT
+    template<typename OtherDerived, typename ResultType>
+    bool solve(const MatrixBase<OtherDerived>& b, ResultType *result) const
+    {
+      *result = this->solve(b);
+      return true;
+    }
+    #endif
 
     template<typename Derived>
     bool solveInPlace(MatrixBase<Derived> &bAndX) const;
@@ -175,7 +193,7 @@ template<typename _MatrixType, int _UpLo> class LDLT
       */
     inline const MatrixType& matrixLDLT() const
     {
-      ei_assert(m_isInitialized && "LDLT is not initialized.");
+      eigen_assert(m_isInitialized && "LDLT is not initialized.");
       return m_matrix;
     }
 
@@ -199,9 +217,11 @@ template<typename _MatrixType, int _UpLo> class LDLT
     bool m_isInitialized;
 };
 
-template<int UpLo> struct ei_ldlt_inplace;
+namespace internal {
 
-template<> struct ei_ldlt_inplace<Lower>
+template<int UpLo> struct ldlt_inplace;
+
+template<> struct ldlt_inplace<Lower>
 {
   template<typename MatrixType, typename TranspositionType, typename Workspace>
   static bool unblocked(MatrixType& mat, TranspositionType& transpositions, Workspace& temp, int* sign=0)
@@ -209,14 +229,14 @@ template<> struct ei_ldlt_inplace<Lower>
     typedef typename MatrixType::Scalar Scalar;
     typedef typename MatrixType::RealScalar RealScalar;
     typedef typename MatrixType::Index Index;
-    ei_assert(mat.rows()==mat.cols());
+    eigen_assert(mat.rows()==mat.cols());
     const Index size = mat.rows();
 
     if (size <= 1)
     {
       transpositions.setIdentity();
       if(sign)
-        *sign = ei_real(mat.coeff(0,0))>0 ? 1:-1;
+        *sign = real(mat.coeff(0,0))>0 ? 1:-1;
       return true;
     }
 
@@ -234,10 +254,10 @@ template<> struct ei_ldlt_inplace<Lower>
         // The biggest overall is the point of reference to which further diagonals
         // are compared; if any diagonal is negligible compared
         // to the largest overall, the algorithm bails.
-        cutoff = ei_abs(NumTraits<Scalar>::epsilon() * biggest_in_corner);
+        cutoff = abs(NumTraits<Scalar>::epsilon() * biggest_in_corner);
 
         if(sign)
-          *sign = ei_real(mat.diagonal().coeff(index_of_biggest_in_corner)) > 0 ? 1 : -1;
+          *sign = real(mat.diagonal().coeff(index_of_biggest_in_corner)) > 0 ? 1 : -1;
       }
 
       // Finish early if the matrix is not full rank.
@@ -259,11 +279,11 @@ template<> struct ei_ldlt_inplace<Lower>
         for(int i=k+1;i<index_of_biggest_in_corner;++i)
         {
           Scalar tmp = mat.coeffRef(i,k);
-          mat.coeffRef(i,k) = ei_conj(mat.coeffRef(index_of_biggest_in_corner,i));
-          mat.coeffRef(index_of_biggest_in_corner,i) = ei_conj(tmp);
+          mat.coeffRef(i,k) = conj(mat.coeffRef(index_of_biggest_in_corner,i));
+          mat.coeffRef(index_of_biggest_in_corner,i) = conj(tmp);
         }
         if(NumTraits<Scalar>::IsComplex)
-          mat.coeffRef(index_of_biggest_in_corner,k) = ei_conj(mat.coeff(index_of_biggest_in_corner,k));
+          mat.coeffRef(index_of_biggest_in_corner,k) = conj(mat.coeff(index_of_biggest_in_corner,k));
       }
 
       // partition the matrix:
@@ -282,7 +302,7 @@ template<> struct ei_ldlt_inplace<Lower>
         if(rs>0)
           A21.noalias() -= A20 * temp.head(k);
       }
-      if((rs>0) && (ei_abs(mat.coeffRef(k,k)) > cutoff))
+      if((rs>0) && (abs(mat.coeffRef(k,k)) > cutoff))
         A21 /= mat.coeffRef(k,k);
     }
 
@@ -290,13 +310,13 @@ template<> struct ei_ldlt_inplace<Lower>
   }
 };
 
-template<> struct ei_ldlt_inplace<Upper>
+template<> struct ldlt_inplace<Upper>
 {
   template<typename MatrixType, typename TranspositionType, typename Workspace>
   static EIGEN_STRONG_INLINE bool unblocked(MatrixType& mat, TranspositionType& transpositions, Workspace& temp, int* sign=0)
   {
     Transpose<MatrixType> matt(mat);
-    return ei_ldlt_inplace<Lower>::unblocked(matt, transpositions, temp, sign);
+    return ldlt_inplace<Lower>::unblocked(matt, transpositions, temp, sign);
   }
 };
 
@@ -316,12 +336,14 @@ template<typename MatrixType> struct LDLT_Traits<MatrixType,Upper>
   inline static MatrixU getU(const MatrixType& m) { return m; }
 };
 
+} // end namespace internal
+
 /** Compute / recompute the LDLT decomposition A = L D L^* = U^* D U of \a matrix
   */
 template<typename MatrixType, int _UpLo>
 LDLT<MatrixType,_UpLo>& LDLT<MatrixType,_UpLo>::compute(const MatrixType& a)
 {
-  ei_assert(a.rows()==a.cols());
+  eigen_assert(a.rows()==a.cols());
   const Index size = a.rows();
 
   m_matrix = a;
@@ -330,22 +352,23 @@ LDLT<MatrixType,_UpLo>& LDLT<MatrixType,_UpLo>::compute(const MatrixType& a)
   m_isInitialized = false;
   m_temporary.resize(size);
 
-  ei_ldlt_inplace<UpLo>::unblocked(m_matrix, m_transpositions, m_temporary, &m_sign);
+  internal::ldlt_inplace<UpLo>::unblocked(m_matrix, m_transpositions, m_temporary, &m_sign);
 
   m_isInitialized = true;
   return *this;
 }
 
+namespace internal {
 template<typename _MatrixType, int _UpLo, typename Rhs>
-struct ei_solve_retval<LDLT<_MatrixType,_UpLo>, Rhs>
-  : ei_solve_retval_base<LDLT<_MatrixType,_UpLo>, Rhs>
+struct solve_retval<LDLT<_MatrixType,_UpLo>, Rhs>
+  : solve_retval_base<LDLT<_MatrixType,_UpLo>, Rhs>
 {
   typedef LDLT<_MatrixType,_UpLo> LDLTType;
   EIGEN_MAKE_SOLVE_HELPERS(LDLTType,Rhs)
 
   template<typename Dest> void evalTo(Dest& dst) const
   {
-    ei_assert(rhs().rows() == dec().matrixLDLT().rows());
+    eigen_assert(rhs().rows() == dec().matrixLDLT().rows());
     // dst = P b
     dst = dec().transpositionsP() * rhs();
 
@@ -362,6 +385,7 @@ struct ei_solve_retval<LDLT<_MatrixType,_UpLo>, Rhs>
     dst = dec().transpositionsP().transpose() * dst;
   }
 };
+}
 
 /** \internal use x = ldlt_object.solve(x);
   *
@@ -380,9 +404,9 @@ template<typename MatrixType,int _UpLo>
 template<typename Derived>
 bool LDLT<MatrixType,_UpLo>::solveInPlace(MatrixBase<Derived> &bAndX) const
 {
-  ei_assert(m_isInitialized && "LDLT is not initialized.");
+  eigen_assert(m_isInitialized && "LDLT is not initialized.");
   const Index size = m_matrix.rows();
-  ei_assert(size == bAndX.rows());
+  eigen_assert(size == bAndX.rows());
 
   bAndX = this->solve(bAndX);
 
@@ -395,7 +419,7 @@ bool LDLT<MatrixType,_UpLo>::solveInPlace(MatrixBase<Derived> &bAndX) const
 template<typename MatrixType, int _UpLo>
 MatrixType LDLT<MatrixType,_UpLo>::reconstructedMatrix() const
 {
-  ei_assert(m_isInitialized && "LDLT is not initialized.");
+  eigen_assert(m_isInitialized && "LDLT is not initialized.");
   const Index size = m_matrix.rows();
   MatrixType res(size,size);
 

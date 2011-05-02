@@ -51,17 +51,17 @@ class NoAlias
       * \sa MatrixBase::lazyAssign() */
     template<typename OtherDerived>
     EIGEN_STRONG_INLINE ExpressionType& operator=(const StorageBase<OtherDerived>& other)
-    { return ei_assign_selector<ExpressionType,OtherDerived,false>::run(m_expression,other.derived()); }
+    { return internal::assign_selector<ExpressionType,OtherDerived,false>::run(m_expression,other.derived()); }
 
     /** \sa MatrixBase::operator+= */
     template<typename OtherDerived>
     EIGEN_STRONG_INLINE ExpressionType& operator+=(const StorageBase<OtherDerived>& other)
     {
-      typedef SelfCwiseBinaryOp<ei_scalar_sum_op<Scalar>, ExpressionType, OtherDerived> SelfAdder;
+      typedef SelfCwiseBinaryOp<internal::scalar_sum_op<Scalar>, ExpressionType, OtherDerived> SelfAdder;
       SelfAdder tmp(m_expression);
-      typedef typename ei_nested<OtherDerived>::type OtherDerivedNested;
-      typedef typename ei_cleantype<OtherDerivedNested>::type _OtherDerivedNested;
-      ei_assign_selector<SelfAdder,_OtherDerivedNested,false>::run(tmp,OtherDerivedNested(other.derived()));
+      typedef typename internal::nested<OtherDerived>::type OtherDerivedNested;
+      typedef typename internal::remove_all<OtherDerivedNested>::type _OtherDerivedNested;
+      internal::assign_selector<SelfAdder,_OtherDerivedNested,false>::run(tmp,OtherDerivedNested(other.derived()));
       return m_expression;
     }
 
@@ -69,11 +69,11 @@ class NoAlias
     template<typename OtherDerived>
     EIGEN_STRONG_INLINE ExpressionType& operator-=(const StorageBase<OtherDerived>& other)
     {
-      typedef SelfCwiseBinaryOp<ei_scalar_difference_op<Scalar>, ExpressionType, OtherDerived> SelfAdder;
+      typedef SelfCwiseBinaryOp<internal::scalar_difference_op<Scalar>, ExpressionType, OtherDerived> SelfAdder;
       SelfAdder tmp(m_expression);
-      typedef typename ei_nested<OtherDerived>::type OtherDerivedNested;
-      typedef typename ei_cleantype<OtherDerivedNested>::type _OtherDerivedNested;
-      ei_assign_selector<SelfAdder,_OtherDerivedNested,false>::run(tmp,OtherDerivedNested(other.derived()));
+      typedef typename internal::nested<OtherDerived>::type OtherDerivedNested;
+      typedef typename internal::remove_all<OtherDerivedNested>::type _OtherDerivedNested;
+      internal::assign_selector<SelfAdder,_OtherDerivedNested,false>::run(tmp,OtherDerivedNested(other.derived()));
       return m_expression;
     }
 

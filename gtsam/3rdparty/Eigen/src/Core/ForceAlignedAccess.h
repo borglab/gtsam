@@ -37,16 +37,19 @@
   *
   * \sa MatrixBase::forceAlignedAccess()
   */
+
+namespace internal {
 template<typename ExpressionType>
-struct ei_traits<ForceAlignedAccess<ExpressionType> > : public ei_traits<ExpressionType>
+struct traits<ForceAlignedAccess<ExpressionType> > : public traits<ExpressionType>
 {};
+}
 
 template<typename ExpressionType> class ForceAlignedAccess
-  : public ei_dense_xpr_base< ForceAlignedAccess<ExpressionType> >::type
+  : public internal::dense_xpr_base< ForceAlignedAccess<ExpressionType> >::type
 {
   public:
 
-    typedef typename ei_dense_xpr_base<ForceAlignedAccess>::type Base;
+    typedef typename internal::dense_xpr_base<ForceAlignedAccess>::type Base;
     EIGEN_DENSE_PUBLIC_INTERFACE(ForceAlignedAccess)
 
     inline ForceAlignedAccess(const ExpressionType& matrix) : m_expression(matrix) {}
@@ -134,7 +137,7 @@ MatrixBase<Derived>::forceAlignedAccess()
   */
 template<typename Derived>
 template<bool Enable>
-inline typename ei_makeconst<typename ei_meta_if<Enable,ForceAlignedAccess<Derived>,Derived&>::ret>::type
+inline typename internal::add_const_on_value_type<typename internal::conditional<Enable,ForceAlignedAccess<Derived>,Derived&>::type>::type
 MatrixBase<Derived>::forceAlignedAccessIf() const
 {
   return derived();
@@ -145,7 +148,7 @@ MatrixBase<Derived>::forceAlignedAccessIf() const
   */
 template<typename Derived>
 template<bool Enable>
-inline typename ei_meta_if<Enable,ForceAlignedAccess<Derived>,Derived&>::ret
+inline typename internal::conditional<Enable,ForceAlignedAccess<Derived>,Derived&>::type
 MatrixBase<Derived>::forceAlignedAccessIf()
 {
   return derived();

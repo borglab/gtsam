@@ -1,4 +1,4 @@
-// // This file is part of Eigen, a lightweight C++ template library
+// This file is part of Eigen, a lightweight C++ template library
 // for linear algebra.
 //
 // Copyright (C) 2008 Gael Guennebaud <gael.guennebaud@inria.fr>
@@ -37,46 +37,48 @@
   #define EIGEN_EMPTY_STRUCT_CTOR(X)
 #endif
 
-//classes inheriting ei_no_assignment_operator don't generate a default operator=.
-class ei_no_assignment_operator
+typedef EIGEN_DEFAULT_DENSE_INDEX_TYPE DenseIndex;
+
+namespace internal {
+
+//classes inheriting no_assignment_operator don't generate a default operator=.
+class no_assignment_operator
 {
   private:
-    ei_no_assignment_operator& operator=(const ei_no_assignment_operator&);
+    no_assignment_operator& operator=(const no_assignment_operator&);
 };
-
-typedef EIGEN_DEFAULT_DENSE_INDEX_TYPE DenseIndex;
 
 /** \internal return the index type with the largest number of bits */
 template<typename I1, typename I2>
-struct ei_promote_index_type
+struct promote_index_type
 {
-  typedef typename ei_meta_if<(sizeof(I1)<sizeof(I2)), I2, I1>::ret type;
+  typedef typename conditional<(sizeof(I1)<sizeof(I2)), I2, I1>::type type;
 };
 
 /** \internal If the template parameter Value is Dynamic, this class is just a wrapper around a T variable that
   * can be accessed using value() and setValue().
   * Otherwise, this class is an empty structure and value() just returns the template parameter Value.
   */
-template<typename T, int Value> class ei_variable_if_dynamic
+template<typename T, int Value> class variable_if_dynamic
 {
   public:
-    EIGEN_EMPTY_STRUCT_CTOR(ei_variable_if_dynamic)
-    explicit ei_variable_if_dynamic(T v) { EIGEN_ONLY_USED_FOR_DEBUG(v); ei_assert(v == T(Value)); }
+    EIGEN_EMPTY_STRUCT_CTOR(variable_if_dynamic)
+    explicit variable_if_dynamic(T v) { EIGEN_ONLY_USED_FOR_DEBUG(v); assert(v == T(Value)); }
     static T value() { return T(Value); }
     void setValue(T) {}
 };
 
-template<typename T> class ei_variable_if_dynamic<T, Dynamic>
+template<typename T> class variable_if_dynamic<T, Dynamic>
 {
     T m_value;
-    ei_variable_if_dynamic() { ei_assert(false); }
+    variable_if_dynamic() { assert(false); }
   public:
-    explicit ei_variable_if_dynamic(T value) : m_value(value) {}
+    explicit variable_if_dynamic(T value) : m_value(value) {}
     T value() const { return m_value; }
     void setValue(T value) { m_value = value; }
 };
 
-template<typename T> struct ei_functor_traits
+template<typename T> struct functor_traits
 {
   enum
   {
@@ -85,9 +87,9 @@ template<typename T> struct ei_functor_traits
   };
 };
 
-template<typename T> struct ei_packet_traits;
+template<typename T> struct packet_traits;
 
-template<typename T> struct ei_unpacket_traits
+template<typename T> struct unpacket_traits
 {
   typedef T type;
   enum {size=1};
@@ -100,7 +102,7 @@ template<typename _Scalar, int _Rows, int _Cols,
                           : EIGEN_DEFAULT_MATRIX_STORAGE_ORDER_OPTION ),
          int _MaxRows = _Rows,
          int _MaxCols = _Cols
-> class ei_make_proper_matrix_type
+> class make_proper_matrix_type
 {
     enum {
       IsColVector = _Cols==1 && _Rows!=1,
@@ -114,7 +116,7 @@ template<typename _Scalar, int _Rows, int _Cols,
 };
 
 template<typename Scalar, int Rows, int Cols, int Options, int MaxRows, int MaxCols>
-class ei_compute_matrix_flags
+class compute_matrix_flags
 {
     enum {
       row_major_bit = Options&RowMajor ? RowMajorBit : 0,
@@ -123,10 +125,10 @@ class ei_compute_matrix_flags
       aligned_bit =
       (
             ((Options&DontAlign)==0)
-        &&  ei_packet_traits<Scalar>::Vectorizable
+        &&  packet_traits<Scalar>::Vectorizable
         && (
 #if EIGEN_ALIGN_STATICALLY
-             ((!is_dynamic_size_storage) && (((MaxCols*MaxRows) % ei_packet_traits<Scalar>::size) == 0))
+             ((!is_dynamic_size_storage) && (((MaxCols*MaxRows) % packet_traits<Scalar>::size) == 0))
 #else
              0
 #endif
@@ -141,95 +143,95 @@ class ei_compute_matrix_flags
 
           )
       ) ? AlignedBit : 0,
-      packet_access_bit = ei_packet_traits<Scalar>::Vectorizable && aligned_bit ? PacketAccessBit : 0
+      packet_access_bit = packet_traits<Scalar>::Vectorizable && aligned_bit ? PacketAccessBit : 0
     };
 
   public:
     enum { ret = LinearAccessBit | LvalueBit | DirectAccessBit | NestByRefBit | packet_access_bit | row_major_bit | aligned_bit };
 };
 
-template<int _Rows, int _Cols> struct ei_size_at_compile_time
+template<int _Rows, int _Cols> struct size_at_compile_time
 {
   enum { ret = (_Rows==Dynamic || _Cols==Dynamic) ? Dynamic : _Rows * _Cols };
 };
 
-/* ei_plain_matrix_type : the difference from ei_eval is that ei_plain_matrix_type is always a plain matrix type,
- * whereas ei_eval is a const reference in the case of a matrix
+/* plain_matrix_type : the difference from eval is that plain_matrix_type is always a plain matrix type,
+ * whereas eval is a const reference in the case of a matrix
  */
 
-template<typename T, typename StorageKind = typename ei_traits<T>::StorageKind> struct ei_plain_matrix_type;
-template<typename T, typename BaseClassType> struct ei_plain_matrix_type_dense;
-template<typename T> struct ei_plain_matrix_type<T,Dense>
+template<typename T, typename StorageKind = typename traits<T>::StorageKind> struct plain_matrix_type;
+template<typename T, typename BaseClassType> struct plain_matrix_type_dense;
+template<typename T> struct plain_matrix_type<T,Dense>
 {
-  typedef typename ei_plain_matrix_type_dense<T,typename ei_traits<T>::XprKind>::type type;
+  typedef typename plain_matrix_type_dense<T,typename traits<T>::XprKind>::type type;
 };
 
-template<typename T> struct ei_plain_matrix_type_dense<T,MatrixXpr>
+template<typename T> struct plain_matrix_type_dense<T,MatrixXpr>
 {
-  typedef Matrix<typename ei_traits<T>::Scalar,
-                ei_traits<T>::RowsAtCompileTime,
-                ei_traits<T>::ColsAtCompileTime,
-                AutoAlign | (ei_traits<T>::Flags&RowMajorBit ? RowMajor : ColMajor),
-                ei_traits<T>::MaxRowsAtCompileTime,
-                ei_traits<T>::MaxColsAtCompileTime
+  typedef Matrix<typename traits<T>::Scalar,
+                traits<T>::RowsAtCompileTime,
+                traits<T>::ColsAtCompileTime,
+                AutoAlign | (traits<T>::Flags&RowMajorBit ? RowMajor : ColMajor),
+                traits<T>::MaxRowsAtCompileTime,
+                traits<T>::MaxColsAtCompileTime
           > type;
 };
 
-template<typename T> struct ei_plain_matrix_type_dense<T,ArrayXpr>
+template<typename T> struct plain_matrix_type_dense<T,ArrayXpr>
 {
-  typedef Array<typename ei_traits<T>::Scalar,
-                ei_traits<T>::RowsAtCompileTime,
-                ei_traits<T>::ColsAtCompileTime,
-                AutoAlign | (ei_traits<T>::Flags&RowMajorBit ? RowMajor : ColMajor),
-                ei_traits<T>::MaxRowsAtCompileTime,
-                ei_traits<T>::MaxColsAtCompileTime
+  typedef Array<typename traits<T>::Scalar,
+                traits<T>::RowsAtCompileTime,
+                traits<T>::ColsAtCompileTime,
+                AutoAlign | (traits<T>::Flags&RowMajorBit ? RowMajor : ColMajor),
+                traits<T>::MaxRowsAtCompileTime,
+                traits<T>::MaxColsAtCompileTime
           > type;
 };
 
-/* ei_eval : the return type of eval(). For matrices, this is just a const reference
+/* eval : the return type of eval(). For matrices, this is just a const reference
  * in order to avoid a useless copy
  */
 
-template<typename T, typename StorageKind = typename ei_traits<T>::StorageKind> struct ei_eval;
+template<typename T, typename StorageKind = typename traits<T>::StorageKind> struct eval;
 
-template<typename T> struct ei_eval<T,Dense>
+template<typename T> struct eval<T,Dense>
 {
-  typedef typename ei_plain_matrix_type<T>::type type;
+  typedef typename plain_matrix_type<T>::type type;
 //   typedef typename T::PlainObject type;
-//   typedef T::Matrix<typename ei_traits<T>::Scalar,
-//                 ei_traits<T>::RowsAtCompileTime,
-//                 ei_traits<T>::ColsAtCompileTime,
-//                 AutoAlign | (ei_traits<T>::Flags&RowMajorBit ? RowMajor : ColMajor),
-//                 ei_traits<T>::MaxRowsAtCompileTime,
-//                 ei_traits<T>::MaxColsAtCompileTime
+//   typedef T::Matrix<typename traits<T>::Scalar,
+//                 traits<T>::RowsAtCompileTime,
+//                 traits<T>::ColsAtCompileTime,
+//                 AutoAlign | (traits<T>::Flags&RowMajorBit ? RowMajor : ColMajor),
+//                 traits<T>::MaxRowsAtCompileTime,
+//                 traits<T>::MaxColsAtCompileTime
 //           > type;
 };
 
 // for matrices, no need to evaluate, just use a const reference to avoid a useless copy
 template<typename _Scalar, int _Rows, int _Cols, int _Options, int _MaxRows, int _MaxCols>
-struct ei_eval<Matrix<_Scalar, _Rows, _Cols, _Options, _MaxRows, _MaxCols>, Dense>
+struct eval<Matrix<_Scalar, _Rows, _Cols, _Options, _MaxRows, _MaxCols>, Dense>
 {
   typedef const Matrix<_Scalar, _Rows, _Cols, _Options, _MaxRows, _MaxCols>& type;
 };
 
 template<typename _Scalar, int _Rows, int _Cols, int _Options, int _MaxRows, int _MaxCols>
-struct ei_eval<Array<_Scalar, _Rows, _Cols, _Options, _MaxRows, _MaxCols>, Dense>
+struct eval<Array<_Scalar, _Rows, _Cols, _Options, _MaxRows, _MaxCols>, Dense>
 {
   typedef const Array<_Scalar, _Rows, _Cols, _Options, _MaxRows, _MaxCols>& type;
 };
 
 
 
-/* ei_plain_matrix_type_column_major : same as ei_plain_matrix_type but guaranteed to be column-major
+/* plain_matrix_type_column_major : same as plain_matrix_type but guaranteed to be column-major
  */
-template<typename T> struct ei_plain_matrix_type_column_major
+template<typename T> struct plain_matrix_type_column_major
 {
-  enum { Rows = ei_traits<T>::RowsAtCompileTime,
-         Cols = ei_traits<T>::ColsAtCompileTime,
-         MaxRows = ei_traits<T>::MaxRowsAtCompileTime,
-         MaxCols = ei_traits<T>::MaxColsAtCompileTime
+  enum { Rows = traits<T>::RowsAtCompileTime,
+         Cols = traits<T>::ColsAtCompileTime,
+         MaxRows = traits<T>::MaxRowsAtCompileTime,
+         MaxCols = traits<T>::MaxColsAtCompileTime
   };
-  typedef Matrix<typename ei_traits<T>::Scalar,
+  typedef Matrix<typename traits<T>::Scalar,
                 Rows,
                 Cols,
                 (MaxRows==1&&MaxCols!=1) ? RowMajor : ColMajor,
@@ -238,16 +240,16 @@ template<typename T> struct ei_plain_matrix_type_column_major
           > type;
 };
 
-/* ei_plain_matrix_type_row_major : same as ei_plain_matrix_type but guaranteed to be row-major
+/* plain_matrix_type_row_major : same as plain_matrix_type but guaranteed to be row-major
  */
-template<typename T> struct ei_plain_matrix_type_row_major
+template<typename T> struct plain_matrix_type_row_major
 {
-  enum { Rows = ei_traits<T>::RowsAtCompileTime,
-         Cols = ei_traits<T>::ColsAtCompileTime,
-         MaxRows = ei_traits<T>::MaxRowsAtCompileTime,
-         MaxCols = ei_traits<T>::MaxColsAtCompileTime
+  enum { Rows = traits<T>::RowsAtCompileTime,
+         Cols = traits<T>::ColsAtCompileTime,
+         MaxRows = traits<T>::MaxRowsAtCompileTime,
+         MaxCols = traits<T>::MaxColsAtCompileTime
   };
-  typedef Matrix<typename ei_traits<T>::Scalar,
+  typedef Matrix<typename traits<T>::Scalar,
                 Rows,
                 Cols,
                 (MaxCols==1&&MaxRows!=1) ? RowMajor : ColMajor,
@@ -257,16 +259,16 @@ template<typename T> struct ei_plain_matrix_type_row_major
 };
 
 // we should be able to get rid of this one too
-template<typename T> struct ei_must_nest_by_value { enum { ret = false }; };
+template<typename T> struct must_nest_by_value { enum { ret = false }; };
 
 template<class T>
-struct ei_is_reference
+struct is_reference
 {
   enum { ret = false };
 };
 
 template<class T>
-struct ei_is_reference<T&>
+struct is_reference<T&>
 {
   enum { ret = true };
 };
@@ -277,13 +279,13 @@ struct ei_is_reference<T&>
 * objects which should generate no copying overhead.
 **/
 template <typename T>
-struct ei_ref_selector
+struct ref_selector
 {
-  typedef typename ei_meta_if<
-    bool(ei_traits<T>::Flags & NestByRefBit),
+  typedef typename conditional<
+    bool(traits<T>::Flags & NestByRefBit),
     T const&,
     T
-  >::ret type;
+  >::type type;
 };
 
 /** \internal Determines how a given expression should be nested into another one.
@@ -298,70 +300,59 @@ struct ei_ref_selector
   *
   * Example. Suppose that a, b, and c are of type Matrix3d. The user forms the expression a*(b+c).
   * b+c is an expression "sum of matrices", which we will denote by S. In order to determine how to nest it,
-  * the Product expression uses: ei_nested<S, 3>::ret, which turns out to be Matrix3d because the internal logic of
-  * ei_nested determined that in this case it was better to evaluate the expression b+c into a temporary. On the other hand,
-  * since a is of type Matrix3d, the Product expression nests it as ei_nested<Matrix3d, 3>::ret, which turns out to be
-  * const Matrix3d&, because the internal logic of ei_nested determined that since a was already a matrix, there was no point
+  * the Product expression uses: nested<S, 3>::ret, which turns out to be Matrix3d because the internal logic of
+  * nested determined that in this case it was better to evaluate the expression b+c into a temporary. On the other hand,
+  * since a is of type Matrix3d, the Product expression nests it as nested<Matrix3d, 3>::ret, which turns out to be
+  * const Matrix3d&, because the internal logic of nested determined that since a was already a matrix, there was no point
   * in copying it into another matrix.
   */
-template<typename T, int n=1, typename PlainObject = typename ei_eval<T>::type> struct ei_nested
+template<typename T, int n=1, typename PlainObject = typename eval<T>::type> struct nested
 {
- // this is a direct port of the logic used when Dynamic was 33331, to make an atomic commit.
   enum {
-    _ScalarReadCost = NumTraits<typename ei_traits<T>::Scalar>::ReadCost,
-    ScalarReadCost = _ScalarReadCost == Dynamic ? 33331 : int(_ScalarReadCost),
-    _CoeffReadCost = int(ei_traits<T>::CoeffReadCost),
-    CoeffReadCost = _CoeffReadCost == Dynamic ? 33331 : int(_CoeffReadCost),
-    N = n == Dynamic ? 33331 : n,
-    CostEval   = (N+1) * int(ScalarReadCost),
-    CostNoEval = (N-1) * int(CoeffReadCost)
+    // for the purpose of this test, to keep it reasonably simple, we arbitrarily choose a value of Dynamic values.
+    // the choice of 10000 makes it larger than any practical fixed value and even most dynamic values.
+    // in extreme cases where these assumptions would be wrong, we would still at worst suffer performance issues
+    // (poor choice of temporaries).
+    // it's important that this value can still be squared without integer overflowing.
+    DynamicAsInteger = 10000,
+    ScalarReadCost = NumTraits<typename traits<T>::Scalar>::ReadCost,
+    ScalarReadCostAsInteger = ScalarReadCost == Dynamic ? DynamicAsInteger : ScalarReadCost,
+    CoeffReadCost = traits<T>::CoeffReadCost,
+    CoeffReadCostAsInteger = CoeffReadCost == Dynamic ? DynamicAsInteger : CoeffReadCost,
+    NAsInteger = n == Dynamic ? int(DynamicAsInteger) : n,
+    CostEvalAsInteger   = (NAsInteger+1) * ScalarReadCostAsInteger + CoeffReadCostAsInteger,
+    CostNoEvalAsInteger = NAsInteger * CoeffReadCostAsInteger
   };
 
-  typedef typename ei_meta_if<
-    ( int(ei_traits<T>::Flags) & EvalBeforeNestingBit ) ||
-    ( int(CostEval) <= int(CostNoEval) ),
+  typedef typename conditional<
+      ( (int(traits<T>::Flags) & EvalBeforeNestingBit) ||
+        int(CostEvalAsInteger) < int(CostNoEvalAsInteger)
+      ),
       PlainObject,
-      typename ei_ref_selector<T>::type
-  >::ret type;
-
-/* this is what the above logic should be updated to look like:
-  enum {
-    ScalarReadCost = NumTraits<typename ei_traits<T>::Scalar>::ReadCost,
-    CoeffReadCost = ei_traits<T>::CoeffReadCost,
-    CostEval   = n == Dynamic || ScalarReadCost == Dynamic ? int(Dynamic) : (n+1) * int(ScalarReadCost),
-    CostNoEval = n == Dynamic || (CoeffReadCost == Dynamic && n>1) ? int(Dynamic) : (n-1) * int(CoeffReadCost)
-  };
-
-  typedef typename ei_meta_if<
-    ( int(ei_traits<T>::Flags) & EvalBeforeNestingBit ) ||
-      (  int(CostNoEval) == Dynamic ? true
-       : int(CostEval) == Dynamic   ? false
-       : int(CostEval) <= int(CostNoEval) ),
-      PlainObject,
-      typename ei_ref_selector<T>::type
-  >::ret type;
-*/
+      typename ref_selector<T>::type
+  >::type type;
 };
 
-template<unsigned int Flags> struct ei_are_flags_consistent
+template<typename T>
+T* const_cast_ptr(const T* ptr)
 {
-  enum { ret = EIGEN_IMPLIES(bool(Flags&DirectAccessBit), bool(Flags&LvalueBit)) };
-};
+  return const_cast<T*>(ptr);
+}
 
-template<typename Derived, typename XprKind = typename ei_traits<Derived>::XprKind>
-struct ei_dense_xpr_base
+template<typename Derived, typename XprKind = typename traits<Derived>::XprKind>
+struct dense_xpr_base
 {
-  /* ei_dense_xpr_base should only ever be used on dense expressions, thus falling either into the MatrixXpr or into the ArrayXpr cases */
+  /* dense_xpr_base should only ever be used on dense expressions, thus falling either into the MatrixXpr or into the ArrayXpr cases */
 };
 
 template<typename Derived>
-struct ei_dense_xpr_base<Derived, MatrixXpr>
+struct dense_xpr_base<Derived, MatrixXpr>
 {
   typedef MatrixBase<Derived> type;
 };
 
 template<typename Derived>
-struct ei_dense_xpr_base<Derived, ArrayXpr>
+struct dense_xpr_base<Derived, ArrayXpr>
 {
   typedef ArrayBase<Derived> type;
 };
@@ -369,82 +360,101 @@ struct ei_dense_xpr_base<Derived, ArrayXpr>
 /** \internal Helper base class to add a scalar multiple operator
   * overloads for complex types */
 template<typename Derived,typename Scalar,typename OtherScalar,
-         bool EnableIt = !ei_is_same_type<Scalar,OtherScalar>::ret >
-struct ei_special_scalar_op_base : public DenseCoeffsBase<Derived>
+         bool EnableIt = !is_same<Scalar,OtherScalar>::value >
+struct special_scalar_op_base : public DenseCoeffsBase<Derived>
 {
   // dummy operator* so that the
-  // "using ei_special_scalar_op_base::operator*" compiles
+  // "using special_scalar_op_base::operator*" compiles
   void operator*() const;
 };
 
 template<typename Derived,typename Scalar,typename OtherScalar>
-struct ei_special_scalar_op_base<Derived,Scalar,OtherScalar,true>  : public DenseCoeffsBase<Derived>
+struct special_scalar_op_base<Derived,Scalar,OtherScalar,true>  : public DenseCoeffsBase<Derived>
 {
-  const CwiseUnaryOp<ei_scalar_multiple2_op<Scalar,OtherScalar>, Derived>
+  const CwiseUnaryOp<scalar_multiple2_op<Scalar,OtherScalar>, Derived>
   operator*(const OtherScalar& scalar) const
   {
-    return CwiseUnaryOp<ei_scalar_multiple2_op<Scalar,OtherScalar>, Derived>
-      (*static_cast<const Derived*>(this), ei_scalar_multiple2_op<Scalar,OtherScalar>(scalar));
+    return CwiseUnaryOp<scalar_multiple2_op<Scalar,OtherScalar>, Derived>
+      (*static_cast<const Derived*>(this), scalar_multiple2_op<Scalar,OtherScalar>(scalar));
   }
 
-  inline friend const CwiseUnaryOp<ei_scalar_multiple2_op<Scalar,OtherScalar>, Derived>
+  inline friend const CwiseUnaryOp<scalar_multiple2_op<Scalar,OtherScalar>, Derived>
   operator*(const OtherScalar& scalar, const Derived& matrix)
-  { return static_cast<const ei_special_scalar_op_base&>(matrix).operator*(scalar); }
+  { return static_cast<const special_scalar_op_base&>(matrix).operator*(scalar); }
 };
 
-template<typename ExpressionType> struct HNormalizedReturnType {
-
-  enum {
-    SizeAtCompileTime = ExpressionType::SizeAtCompileTime,
-    SizeMinusOne = SizeAtCompileTime==Dynamic ? Dynamic : SizeAtCompileTime-1
-  };
-  typedef Block<ExpressionType,
-                ei_traits<ExpressionType>::ColsAtCompileTime==1 ? SizeMinusOne : 1,
-                ei_traits<ExpressionType>::ColsAtCompileTime==1 ? 1 : SizeMinusOne> StartMinusOne;
-  typedef CwiseUnaryOp<ei_scalar_quotient1_op<typename ei_traits<ExpressionType>::Scalar>,
-              StartMinusOne > Type;
-};
-
-template<typename XprType, typename CastType> struct ei_cast_return_type
+template<typename XprType, typename CastType> struct cast_return_type
 {
   typedef typename XprType::Scalar CurrentScalarType;
-  typedef typename ei_cleantype<CastType>::type _CastType;
+  typedef typename remove_all<CastType>::type _CastType;
   typedef typename _CastType::Scalar NewScalarType;
-  typedef typename ei_meta_if<ei_is_same_type<CurrentScalarType,NewScalarType>::ret,
-                              const XprType&,CastType>::ret type;
+  typedef typename conditional<is_same<CurrentScalarType,NewScalarType>::value,
+                              const XprType&,CastType>::type type;
 };
 
-template <typename A, typename B> struct ei_promote_storage_type;
+template <typename A, typename B> struct promote_storage_type;
 
-template <typename A> struct ei_promote_storage_type<A,A>
+template <typename A> struct promote_storage_type<A,A>
 {
   typedef A ret;
 };
 
-/** \internal gives the plain matrix type to store a row/column/diagonal of a matrix type.
+/** \internal gives the plain matrix or array type to store a row/column/diagonal of a matrix type.
   * \param Scalar optional parameter allowing to pass a different scalar type than the one of the MatrixType.
   */
-template<typename MatrixType, typename Scalar = typename MatrixType::Scalar>
-struct ei_plain_row_type
+template<typename ExpressionType, typename Scalar = typename ExpressionType::Scalar>
+struct plain_row_type
 {
-  typedef Matrix<Scalar, 1, MatrixType::ColsAtCompileTime,
-                 MatrixType::PlainObject::Options | RowMajor, 1, MatrixType::MaxColsAtCompileTime> type;
+  typedef Matrix<Scalar, 1, ExpressionType::ColsAtCompileTime,
+                 ExpressionType::PlainObject::Options | RowMajor, 1, ExpressionType::MaxColsAtCompileTime> MatrixRowType;
+  typedef Array<Scalar, 1, ExpressionType::ColsAtCompileTime,
+                 ExpressionType::PlainObject::Options | RowMajor, 1, ExpressionType::MaxColsAtCompileTime> ArrayRowType;
+
+  typedef typename conditional<
+    is_same< typename traits<ExpressionType>::XprKind, MatrixXpr >::value,
+    MatrixRowType,
+    ArrayRowType 
+  >::type type;
 };
 
-template<typename MatrixType, typename Scalar = typename MatrixType::Scalar>
-struct ei_plain_col_type
+template<typename ExpressionType, typename Scalar = typename ExpressionType::Scalar>
+struct plain_col_type
 {
-  typedef Matrix<Scalar, MatrixType::RowsAtCompileTime, 1,
-                 MatrixType::PlainObject::Options & ~RowMajor, MatrixType::MaxRowsAtCompileTime, 1> type;
+  typedef Matrix<Scalar, ExpressionType::RowsAtCompileTime, 1,
+                 ExpressionType::PlainObject::Options & ~RowMajor, ExpressionType::MaxRowsAtCompileTime, 1> MatrixColType;
+  typedef Array<Scalar, ExpressionType::RowsAtCompileTime, 1,
+                 ExpressionType::PlainObject::Options & ~RowMajor, ExpressionType::MaxRowsAtCompileTime, 1> ArrayColType;
+
+  typedef typename conditional<
+    is_same< typename traits<ExpressionType>::XprKind, MatrixXpr >::value,
+    MatrixColType,
+    ArrayColType 
+  >::type type;
 };
 
-template<typename MatrixType, typename Scalar = typename MatrixType::Scalar>
-struct ei_plain_diag_type
+template<typename ExpressionType, typename Scalar = typename ExpressionType::Scalar>
+struct plain_diag_type
 {
-  enum { diag_size = EIGEN_SIZE_MIN_PREFER_DYNAMIC(MatrixType::RowsAtCompileTime, MatrixType::ColsAtCompileTime),
-         max_diag_size = EIGEN_SIZE_MIN_PREFER_FIXED(MatrixType::MaxRowsAtCompileTime, MatrixType::MaxColsAtCompileTime)
+  enum { diag_size = EIGEN_SIZE_MIN_PREFER_DYNAMIC(ExpressionType::RowsAtCompileTime, ExpressionType::ColsAtCompileTime),
+         max_diag_size = EIGEN_SIZE_MIN_PREFER_FIXED(ExpressionType::MaxRowsAtCompileTime, ExpressionType::MaxColsAtCompileTime)
   };
-  typedef Matrix<Scalar, diag_size, 1, MatrixType::PlainObject::Options & ~RowMajor, max_diag_size, 1> type;
+  typedef Matrix<Scalar, diag_size, 1, ExpressionType::PlainObject::Options & ~RowMajor, max_diag_size, 1> MatrixDiagType;
+  typedef Array<Scalar, diag_size, 1, ExpressionType::PlainObject::Options & ~RowMajor, max_diag_size, 1> ArrayDiagType;
+
+  typedef typename conditional<
+    is_same< typename traits<ExpressionType>::XprKind, MatrixXpr >::value,
+    MatrixDiagType,
+    ArrayDiagType 
+  >::type type;
 };
+
+template<typename ExpressionType>
+struct is_lvalue
+{
+  enum { value = !bool(is_const<ExpressionType>::value) &&
+                 bool(traits<ExpressionType>::Flags & LvalueBit) };
+};
+
+} // end namespace internal
 
 #endif // EIGEN_XPRHELPER_H

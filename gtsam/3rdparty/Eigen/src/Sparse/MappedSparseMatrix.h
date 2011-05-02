@@ -34,9 +34,11 @@
   * See http://www.netlib.org/linalg/html_templates/node91.html for details on the storage scheme.
   *
   */
+namespace internal {
 template<typename _Scalar, int _Flags, typename _Index>
-struct ei_traits<MappedSparseMatrix<_Scalar, _Flags, _Index> > : ei_traits<SparseMatrix<_Scalar, _Flags, _Index> >
+struct traits<MappedSparseMatrix<_Scalar, _Flags, _Index> > : traits<SparseMatrix<_Scalar, _Flags, _Index> >
 {};
+}
 
 template<typename _Scalar, int _Flags, typename _Index>
 class MappedSparseMatrix
@@ -101,11 +103,11 @@ class MappedSparseMatrix
 
       Index start = m_outerIndex[outer];
       Index end = m_outerIndex[outer+1];
-      ei_assert(end>=start && "you probably called coeffRef on a non finalized matrix");
-      ei_assert(end>start && "coeffRef cannot be called on a zero coefficient");
+      eigen_assert(end>=start && "you probably called coeffRef on a non finalized matrix");
+      eigen_assert(end>start && "coeffRef cannot be called on a zero coefficient");
       Index* r = std::lower_bound(&m_innerIndices[start],&m_innerIndices[end],inner);
       const Index id = r-&m_innerIndices[0];
-      ei_assert((*r==inner) && (id<end) && "coeffRef cannot be called on a zero coefficient");
+      eigen_assert((*r==inner) && (id<end) && "coeffRef cannot be called on a zero coefficient");
       return m_values[id];
     }
 

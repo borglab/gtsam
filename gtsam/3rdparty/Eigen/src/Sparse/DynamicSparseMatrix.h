@@ -42,8 +42,10 @@
   *
   * \see SparseMatrix
   */
-template<typename _Scalar, int _Flags, typename _Index>
-struct ei_traits<DynamicSparseMatrix<_Scalar, _Flags, _Index> >
+
+namespace internal {
+template<typename _Scalar, int _Options, typename _Index>
+struct traits<DynamicSparseMatrix<_Scalar, _Options, _Index> >
 {
   typedef _Scalar Scalar;
   typedef _Index Index;
@@ -54,15 +56,16 @@ struct ei_traits<DynamicSparseMatrix<_Scalar, _Flags, _Index> >
     ColsAtCompileTime = Dynamic,
     MaxRowsAtCompileTime = Dynamic,
     MaxColsAtCompileTime = Dynamic,
-    Flags = _Flags | NestByRefBit | LvalueBit,
+    Flags = _Options | NestByRefBit | LvalueBit,
     CoeffReadCost = NumTraits<Scalar>::ReadCost,
     SupportedAccessPatterns = OuterRandomAccessPattern
   };
 };
+}
 
-template<typename _Scalar, int _Flags, typename _Index>
+template<typename _Scalar, int _Options, typename _Index>
 class DynamicSparseMatrix
-  : public SparseMatrixBase<DynamicSparseMatrix<_Scalar, _Flags, _Index> >
+  : public SparseMatrixBase<DynamicSparseMatrix<_Scalar, _Options, _Index> >
 {
   public:
     EIGEN_SPARSE_PUBLIC_INTERFACE(DynamicSparseMatrix)
@@ -71,6 +74,10 @@ class DynamicSparseMatrix
     // EIGEN_SPARSE_INHERIT_ASSIGNMENT_OPERATOR(DynamicSparseMatrix, -=)
     typedef MappedSparseMatrix<Scalar,Flags> Map;
     using Base::IsRowMajor;
+    using Base::operator=;
+    enum {
+      Options = _Options
+    };
 
   protected:
 
@@ -102,7 +109,7 @@ class DynamicSparseMatrix
 
     /** \returns a reference to the coefficient value at given position \a row, \a col
       * This operation involes a log(rho*outer_size) binary search. If the coefficient does not
-      * exist yet, then a sorted insertion Indexo a sequential buffer is performed.
+      * exist yet, then a sorted insertion into a sequential buffer is performed.
       */
     inline Scalar& coeffRef(Index row, Index col)
     {
@@ -158,8 +165,8 @@ class DynamicSparseMatrix
     /** \sa insertBack */
     inline Scalar& insertBackByOuterInner(Index outer, Index inner)
     {
-      ei_assert(outer<Index(m_data.size()) && inner<m_innerSize && "out of range");
-      ei_assert(((m_data[outer].size()==0) || (m_data[outer].index(m_data[outer].size()-1)<inner))
+      eigen_assert(outer<Index(m_data.size()) && inner<m_innerSize && "out of range");
+      eigen_assert(((m_data[outer].size()==0) || (m_data[outer].index(m_data[outer].size()-1)<inner))
                 && "wrong sorted insertion");
       m_data[outer].append(0, inner);
       return m_data[outer].value(m_data[outer].size()-1);
@@ -228,7 +235,7 @@ class DynamicSparseMatrix
     inline DynamicSparseMatrix()
       : m_innerSize(0), m_data(0)
     {
-      ei_assert(innerSize()==0 && outerSize()==0);
+      eigen_assert(innerSize()==0 && outerSize()==0);
     }
 
     inline DynamicSparseMatrix(Index rows, Index cols)
@@ -238,10 +245,10 @@ class DynamicSparseMatrix
     }
 
     template<typename OtherDerived>
-    inline DynamicSparseMatrix(const SparseMatrixBase<OtherDerived>& other)
+    explicit inline DynamicSparseMatrix(const SparseMatrixBase<OtherDerived>& other)
       : m_innerSize(0)
     {
-      *this = other.derived();
+    Base::operator=(other.derived());
     }
 
     inline DynamicSparseMatrix(const DynamicSparseMatrix& other)
@@ -270,12 +277,6 @@ class DynamicSparseMatrix
         m_data = other.m_data;
       }
       return *this;
-    }
-
-    template<typename OtherDerived>
-    inline DynamicSparseMatrix& operator=(const SparseMatrixBase<OtherDerived>& other)
-    {
-      return SparseMatrixBase<DynamicSparseMatrix>::operator=(other.derived());
     }
 
     /** Destructor */
@@ -320,12 +321,16 @@ class DynamicSparseMatrix
     /** \deprecated use finalize()
       * Does nothing. Provided for compatibility with SparseMatrix. */
     EIGEN_DEPRECATED void endFill() {}
+    
+#   ifdef EIGEN_DYNAMICSPARSEMATRIX_PLUGIN
+#     include EIGEN_DYNAMICSPARSEMATRIX_PLUGIN
+#   endif
 };
 
-template<typename Scalar, int _Flags, typename _Index>
-class DynamicSparseMatrix<Scalar,_Flags,_Index>::InnerIterator : public SparseVector<Scalar,_Flags>::InnerIterator
+template<typename Scalar, int _Options, typename _Index>
+class DynamicSparseMatrix<Scalar,_Options,_Index>::InnerIterator : public SparseVector<Scalar,_Options>::InnerIterator
 {
-    typedef typename SparseVector<Scalar,_Flags>::InnerIterator Base;
+    typedef typename SparseVector<Scalar,_Options>::InnerIterator Base;
   public:
     InnerIterator(const DynamicSparseMatrix& mat, Index outer)
       : Base(mat.m_data[outer]), m_outer(outer)
