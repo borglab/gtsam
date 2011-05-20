@@ -145,10 +145,6 @@ bool equalsDereferencedXML(const T& input = T()) {
 #include <gtsam/geometry/Rot3.h>
 #include <gtsam/geometry/Cal3_S2.h>
 
-//#include <gtsam/linear/VectorValues.h>
-//#include <gtsam/linear/GaussianConditional.h>
-//#include <gtsam/inference/SymbolicConditional.h>
-
 #include <gtsam/slam/planarSLAM.h>
 #include <gtsam/slam/BearingFactor.h>
 
@@ -191,20 +187,6 @@ TEST (Serialization, xml_geometry) {
 	EXPECT(equalsXML<gtsam::Point3>(pt3));
 	EXPECT(equalsXML<gtsam::Rot3>(rt3));
 	EXPECT(equalsXML<gtsam::Pose3>(Pose3(rt3, pt3)));
-}
-
-/* ************************************************************************* */
-TEST (Serialization, text_linear) {
-	// NOT WORKING:
-//	EXPECT(equalsObj<VectorValues>());
-//	EXPECT(equalsObj<GaussianConditional>());
-}
-
-/* ************************************************************************* */
-TEST (Serialization, xml_linear) {
-	// NOT WORKING:
-//	EXPECT(equalsXML<VectorValues>());
-//	EXPECT(equalsXML<GaussianConditional>());
 }
 
 /* ************************************************************************* */
@@ -280,6 +262,56 @@ TEST (Serialization, SharedDiagonal_noiseModels) {
 
 	EXPECT(equalsDereferenced<SharedDiagonal>(constrained3));
 	EXPECT(equalsDereferencedXML<SharedDiagonal>(constrained3));
+}
+
+/* ************************************************************************* */
+// Linear components
+/* ************************************************************************* */
+
+#include <gtsam/linear/VectorValues.h>
+#include <gtsam/linear/JacobianFactor.h>
+#include <gtsam/linear/HessianFactor.h>
+
+/* ************************************************************************* */
+TEST (Serialization, text_linear) {
+	vector<size_t> dims;
+	dims.push_back(1);
+	dims.push_back(2);
+	dims.push_back(2);
+	double v[] = {1., 2., 3., 4., 5.};
+	VectorValues values(dims, v);
+	EXPECT(equalsObj<VectorValues>(values));
+
+	Index i1 = 4, i2 = 7;
+	Matrix A1 = eye(3), A2 = -1.0 * eye(3);
+  Vector b = ones(3);
+  SharedDiagonal model = noiseModel::Diagonal::Sigmas(Vector_(3, 1.0, 2.0, 3.0));
+	JacobianFactor jacobianfactor(i1, A1, i2, A2, b, model);
+	EXPECT(equalsObj<VectorValues>(jacobianfactor));
+
+	HessianFactor hessianfactor(jacobianfactor);
+	EXPECT(equalsObj<VectorValues>(hessianfactor));
+}
+
+/* ************************************************************************* */
+TEST (Serialization, xml_linear) {
+	vector<size_t> dims;
+	dims.push_back(1);
+	dims.push_back(2);
+	dims.push_back(2);
+	double v[] = {1., 2., 3., 4., 5.};
+	VectorValues values(dims, v);
+	EXPECT(equalsXML<VectorValues>(values));
+
+	Index i1 = 4, i2 = 7;
+	Matrix A1 = eye(3), A2 = -1.0 * eye(3);
+  Vector b = ones(3);
+  SharedDiagonal model = noiseModel::Diagonal::Sigmas(Vector_(3, 1.0, 2.0, 3.0));
+	JacobianFactor jacobianfactor(i1, A1, i2, A2, b, model);
+	EXPECT(equalsObj<VectorValues>(jacobianfactor));
+
+	HessianFactor hessianfactor(jacobianfactor);
+	EXPECT(equalsObj<VectorValues>(hessianfactor));
 }
 
 /* ************************************************************************* */

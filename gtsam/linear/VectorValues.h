@@ -140,16 +140,12 @@ public:
     VectorValues result;
     result.varStarts_ = varStarts_;
     result.values_ = values_.head(varStarts_.back()) + c.values_.head(varStarts_.back());
-//    result.values_ = boost::numeric::ublas::project(values_, boost::numeric::ublas::range(0, varStarts_.back())) +
-//    				 boost::numeric::ublas::project(c.values_, boost::numeric::ublas::range(0, c.varStarts_.back()));
     return result;
   }
 
   void operator+=(const VectorValues& c) {
     assert(varStarts_ == c.varStarts_);
     this->values_ += c.values_.head(varStarts_.back());
-//    this->values_ = boost::numeric::ublas::project(this->values_, boost::numeric::ublas::range(0, varStarts_.back())) +
-//    				boost::numeric::ublas::project(c.values_, boost::numeric::ublas::range(0, c.varStarts_.back()));
   }
 
 
@@ -215,8 +211,6 @@ public:
 	  bool flag = false ;
 	  size_t i=0;
 	  for (const double *v = x.values_.data(); i< (size_t) x.values_.size(); ++v) {
-//	  BOOST_FOREACH(const double &v, x.values_) {
-//	  	double v = x(i);
 		  if ( *v < tol && *v > -tol) {
 			  flag = true ;
 			  break;
@@ -225,7 +219,16 @@ public:
 	  }
 	  return flag;
   }
-};
+
+private:
+	/** Serialization function */
+	friend class boost::serialization::access;
+	template<class ARCHIVE>
+	void serialize(ARCHIVE & ar, const unsigned int version) {
+		ar & BOOST_SERIALIZATION_NVP(values_);
+		ar & BOOST_SERIALIZATION_NVP(varStarts_);
+	}
+};  // \class VectorValues definition
 
 /// Implementations of functions
 
@@ -281,16 +284,12 @@ inline VectorValues::mapped_type VectorValues::operator[](Index variable) {
   checkVariable(variable);
   const size_t start = varStarts_[variable], n = varStarts_[variable+1] - start;
   return values_.segment(start, n);
-//  return boost::numeric::ublas::project(values_,
-//      boost::numeric::ublas::range(varStarts_[variable], varStarts_[variable+1]));
 }
 
 inline VectorValues::const_mapped_type VectorValues::operator[](Index variable) const {
   checkVariable(variable);
   const size_t start = varStarts_[variable], n = varStarts_[variable+1] - start;
   return values_.segment(start, n);
-//  return boost::numeric::ublas::project(values_,
-//      boost::numeric::ublas::range(varStarts_[variable], varStarts_[variable+1]));
 }
 
 struct DimSpec: public std::vector<size_t> {

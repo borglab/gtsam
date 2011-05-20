@@ -255,6 +255,17 @@ namespace gtsam {
     /** Assert invariants after elimination */
     void assertInvariants() const;
 
+  private:
+    /** Serialization function */
+    friend class boost::serialization::access;
+    template<class ARCHIVE>
+    void serialize(ARCHIVE & ar, const unsigned int version) {
+    	ar & BOOST_SERIALIZATION_NVP(firstNonzeroBlocks_);
+    	ar & BOOST_SERIALIZATION_NVP(Ab_);
+    	ar & BOOST_SERIALIZATION_NVP(model_);
+    	ar & BOOST_SERIALIZATION_NVP(matrix_);
+    }
+
   }; // JacobianFactor
 
   /** return A*x */

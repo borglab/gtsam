@@ -152,6 +152,15 @@ namespace gtsam {
 
     /** assert invariants */
     void assertInvariants() const;
+
+  private:
+    /** Serialization function */
+    friend class boost::serialization::access;
+    template<class ARCHIVE>
+    void serialize(ARCHIVE & ar, const unsigned int version) {
+    	ar & BOOST_SERIALIZATION_NVP(info_);
+    	ar & BOOST_SERIALIZATION_NVP(matrix_);
+    }
   };
 
 }
