@@ -187,55 +187,12 @@ bool linear_dependent(const Matrix& A, const Matrix& B, double tol) {
 
 /* ************************************************************************* */
 void multiplyAdd(double alpha, const Matrix& A, const Vector& x, Vector& e) {
-	// eigen call to exploit template optimizations
 	e += alpha * A * x;
-//
-//#if defined GT_USE_CBLAS
-//
-//	// get sizes
-//	const size_t m = A.rows(), n = A.cols();
-//
-//	// get pointers
-//	const double * Aptr = A.data();
-//	const double * Xptr = x.data();
-//	double * Eptr = e.data();
-//
-//	// fill in parameters
-//	const double beta = 1.0;
-//	const size_t incx = 1, incy = 1, ida = n;
-//
-//	// execute blas call
-//	cblas_dgemv(CblasRowMajor, CblasNoTrans, m, n, alpha, Aptr, ida, Xptr, incx, beta, Eptr, incy);
-//
-//#else
-//
-//	size_t m = A.rows(), n = A.cols();
-//	double * ei = e.data();
-//	const double * aij = A.data();
-//	for(size_t i = 0; i < m; i++, ei++) {
-//		const double * xj = x.data();
-//		for(size_t j = 0; j < n; j++, aij++, xj++)
-//			(*ei) += alpha * (*aij) * (*xj);
-//	}
-//#endif
 }
 
 /* ************************************************************************* */
 void multiplyAdd(const Matrix& A, const Vector& x, Vector& e) {
 	e += A * x;
-
-//#ifdef GT_USE_CBLAS
-//	multiplyAdd(1.0, A, x, e);
-//#else
-//	size_t m = A.rows(), n = A.cols();
-//	double * ei = e.data();
-//	const double * aij = A.data();
-//	for(size_t i = 0; i < m; i++, ei++) {
-//		const double * xj = x.data();
-//		for(size_t j = 0; j < n; j++, aij++, xj++)
-//			(*ei) += (*aij) * (*xj);
-//	}
-//#endif
 }
 
 /* ************************************************************************* */
@@ -251,67 +208,16 @@ Vector operator^(const Matrix& A, const Vector & v) {
 /* ************************************************************************* */
 void transposeMultiplyAdd(double alpha, const Matrix& A, const Vector& e, Vector& x) {
 	x += alpha * A.transpose() * e;
-//
-//#if defined GT_USE_CBLAS
-//
-//	// get sizes
-//	const size_t m = A.rows(), n = A.cols();
-//
-//	// get pointers
-//	const double * Aptr = A.data();
-//	const double * Eptr = e.data();
-//	double * Xptr = x.data();
-//
-//	// fill in parameters
-//	const double beta = 1.0;
-//	const size_t incx = 1, incy = 1, ida = n;
-//
-//	// execute blas call
-//	cblas_dgemv(CblasRowMajor, CblasTrans, m, n, alpha, Aptr, ida, Eptr, incx, beta, Xptr, incy);
-//
-//#else
-//
-//	// TODO: use BLAS
-//	size_t m = A.rows(), n = A.cols();
-//	double * xj = x.data();
-//	for(size_t j = 0; j < n; j++,xj++) {
-//		const double * ei = e.data();
-//		const double * aij = A.data() + j;
-//		for(size_t i = 0; i < m; i++, aij+=n, ei++)
-//			(*xj) += alpha * (*aij) * (*ei);
-//	}
-//#endif
 }
 
 /* ************************************************************************* */
 void transposeMultiplyAdd(const Matrix& A, const Vector& e, Vector& x) {
 	x += A.transpose() * e;
-//#ifdef GT_USE_CBLAS
-//	transposeMultiplyAdd(1.0, A, e, x);
-//#else
-//	size_t m = A.rows(), n = A.cols();
-//	double * xj = x.data();
-//	for(size_t j = 0; j < n; j++,xj++) {
-//		const double * ei = e.data();
-//		const double * aij = A.data() + j;
-//		for(size_t i = 0; i < m; i++, aij+=n, ei++)
-//			(*xj) += (*aij) * (*ei);
-//	}
-//#endif
 }
 
 /* ************************************************************************* */
 void transposeMultiplyAdd(double alpha, const Matrix& A, const Vector& e, SubVector x) {
 	x += alpha * A.transpose() * e;
-
-//	// TODO: use BLAS
-//	size_t m = A.rows(), n = A.cols();
-//	for (size_t j = 0; j < n; j++) {
-//		const double * ei = e.data();
-//		const double * aij = A.data() + j;
-//		for (size_t i = 0; i < m; i++, aij+=n, ei++)
-//			x(j) += alpha * (*aij) * (*ei);
-//	}
 }
 
 /* ************************************************************************* */
@@ -472,28 +378,6 @@ pair<Matrix,Matrix> qr(const Matrix& A) {
  * on a number of different matrices for which all columns change.
  */
 /* ************************************************************************* */
-//void householder_update(Matrix &A, size_t j, double beta, const Vector& vjm) {
-//	const size_t m = A.rows(), n = A.cols();
-//
-//	Vector w(n);
-//	for( size_t c = 0; c < n; c++) {
-//		w(c) = 0.0;
-//		// dangerous as relies on row-major scheme
-//		const double *a = &A(j,c), * const v = &vjm(0);
-//		for( size_t r=j, s=0 ; r < m ; r++, s++, a+=n )
-//
-//			w(c) += (*a) * v[s];
-//		w(c) *= beta;
-//	}
-//
-//	// rank 1 update A(j:m,:) -= v(j:m)*w'
-//	for( size_t c = 0 ; c < n; c++) {
-//		double wc = w(c);
-//		double *a = &A(j,c); const double * const v =&vjm(0);
-//		for( size_t r=j, s=0 ; r < m ; r++, s++, a+=n )
-//			(*a) -= v[s] * wc;
-//	}
-//}
 
 /**
  * Perform updates of system matrices
@@ -585,29 +469,6 @@ void householder_(Matrix &A, size_t k)
 		// the Householder vector is copied in the zeroed out part
 		A.col(j).segment(j+1, m-(j+1)) = vjm.segment(1, m-(j+1));
 	} // column j
-
-//	const size_t m = A.rows(), n = A.cols(), kprime = min(k,min(m,n));
-//	// loop over the kprime first columns
-//	for(size_t j=0; j < kprime; j++){
-//		// below, the indices r,c always refer to original A
-//
-//		// copy column from matrix to xjm, i.e. x(j:m) = A(j:m,j)
-//		Vector xjm(m-j);
-//		for(size_t r = j ; r < m; r++)
-//			xjm(r-j) = A(r,j);
-//
-//		// calculate the Householder vector, in place
-//		double beta = houseInPlace(xjm);
-//		Vector& vjm = xjm;
-//
-//		// do outer product update A = (I-beta vv')*A = A - v*(beta*A'*v)' = A - v*w'
-//		householder_update(A, j, beta, vjm);
-//
-//		// the Householder vector is copied in the zeroed out part
-//		for( size_t r = j+1 ; r < m ; r++ )
-//			A(r,j) = vjm(r-j);
-//
-//	} // column j
 }
 
 /* ************************************************************************* */
@@ -617,8 +478,6 @@ void householder(Matrix &A, size_t k) {
 	const size_t m = A.rows(), n = A.cols(), kprime = min(k,min(m,n));
 	for(size_t j=0; j < kprime; j++)
 		A.col(j).segment(j+1, m-(j+1)).setZero();
-//		for( size_t i = j+1 ; i < m ; i++ )
-//			A(i,j) = 0.0;
 }
 
 /* ************************************************************************* */

@@ -758,31 +758,6 @@ TEST( matrix, eigen_QR )
 	EXPECT(assert_equal(expected, A, 1e-3));
 }
 
-///* ************************************************************************* */
-//// unit tests for householder transformation
-///* ************************************************************************* */
-//#ifdef GT_USE_LAPACK
-//#ifdef YA_BLAS
-//TEST( matrix, houseHolder2 )
-//{
-//	double data[] = { -5, 0, 5, 0, 0, 0, -1,
-//			00,-5, 0, 5, 0, 0, 1.5,
-//			10, 0, 0,	0,-10,0,   2,
-//			00, 10,0, 0, 0, -10, -1 };
-//
-//	// check in-place householder, with v vectors below diagonal
-//	double data1[] = { 11.1803, 0, -2.2361, 0, -8.9443, 0, 2.236,
-//			0, 11.1803,	0, -2.2361, 0, -8.9443, -1.565,
-//			0, 0, 4.4721, 0, -4.4721,	0, 0,
-//			0, 0, 0, 4.4721, 0, -4.4721, 0.894 };
-//	Matrix expected1 = Matrix_(4, 7, data1);
-//	Matrix A1 = Matrix_(4, 7, data);
-//	householder(A1);
-//	EXPECT(assert_equal(expected1, A1, 1e-3));
-//}
-//#endif
-//#endif
-
 /* ************************************************************************* */
 // unit test for qr factorization (and hence householder)
 // This behaves the same as QR in matlab: [Q,R] = qr(A), except for signs
@@ -839,24 +814,6 @@ TEST( matrix, row_major_access )
 	const double* a = &A(0, 0);
 	DOUBLES_EQUAL(3,a[2],1e-9);
 }
-
-/* ************************************************************************* */
-// update A, b
-// A' \define A_{S}-ar and b'\define b-ad
-// __attribute__ ((noinline))	// uncomment to prevent inlining when profiling
-//static void updateAb(Matrix& A, Vector& b, int j, const Vector& a,
-//		const Vector& r, double d) {
-//	const size_t m = A.rows(), n = A.cols();
-//	for (int i = 0; i < m; i++) { // update all rows
-//		double ai = a(i);
-//		b(i) -= ai * d;
-//		double *Aij = A.data().begin() + i * n + j + 1;
-//		const double *rptr = r.data().begin() + j + 1;
-//		// A(i,j+1:end) -= ai*r(j+1:end)
-//		for (int j2 = j + 1; j2 < n; j2++, Aij++, rptr++)
-//			*Aij -= ai * (*rptr);
-//	}
-//}
 
 /* ************************************************************************* */
 TEST( matrix, weighted_elimination )

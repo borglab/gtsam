@@ -308,11 +308,6 @@ void inplace_QR(MATRIX& A, bool clear_below_diagonal=true) {
 }
 
 /**
- * Imperative version of Householder rank 1 update
- */
-//void householder_update(Matrix &A, size_t j, double beta, const Vector& vjm);
-
-/**
  * Imperative algorithm for in-place full elimination with
  * weights and constraint handling
  * @param A is a matrix to eliminate
@@ -357,25 +352,6 @@ void householder_(MatrixColMajor& A, size_t k, bool copy_vectors=true);
  * @return nothing: in place !!!
  */
 void householder(MatrixColMajor& A, size_t k);
-
-//#ifdef GT_USE_LAPACK
-//#ifdef USE_LAPACK_QR
-///**
-// * Householder tranformation, zeros below diagonal
-// * @return nothing: in place !!!
-// */
-//void householder(Matrix& A);
-//
-///**
-// * Householder tranformation directly on a column-major matrix.  Does not zero
-// * below the diagonal, so it will contain Householder vectors.
-// * @return nothing: in place !!!
-// * FIXME: this uses the LAPACK QR function, so it cannot be used on Ubuntu (without
-// * lots of hacks, at least)
-// */
-//void householderColMajor(MatrixColMajor& A);
-//#endif
-//#endif
 
 /**
  * backSubstitute U*x=b

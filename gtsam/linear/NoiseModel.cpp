@@ -35,16 +35,7 @@
 static double inf = std::numeric_limits<double>::infinity();
 using namespace std;
 
-/** implement the export code for serialization */
-// FIXME: doesn't work outside of the library
-//BOOST_CLASS_EXPORT_IMPLEMENT(gtsam::noiseModel::Constrained);
-//BOOST_CLASS_EXPORT_IMPLEMENT(gtsam::noiseModel::Diagonal);
-//BOOST_CLASS_EXPORT_IMPLEMENT(gtsam::noiseModel::Gaussian);
-//BOOST_CLASS_EXPORT_IMPLEMENT(gtsam::noiseModel::Unit);
-//BOOST_CLASS_EXPORT_IMPLEMENT(gtsam::noiseModel::Isotropic);
-
 namespace gtsam {
-
 namespace noiseModel {
 
 /* ************************************************************************* */
@@ -57,15 +48,6 @@ template<class MATRIX>
 void updateAb(MATRIX& Ab, int j, const Vector& a, const Vector& rd) {
 	size_t n = Ab.cols()-1;
 	Ab.middleCols(j+1,n-j) -= a * rd.segment(j+1, n-j).transpose();
-//	size_t m = Ab.rows(), n = Ab.cols()-1;
-//	for (size_t i = 0; i < m; i++) { // update all rows
-//		double ai = a(i);
-//		double *Aij = Ab.data() + i * (n+1) + j + 1;
-//		const double *rptr = rd.data() + j + 1;
-//		// Ab(i,j+1:end) -= ai*rd(j+1:end)
-//		for (size_t j2 = j + 1; j2 < n+1; j2++, Aij++, rptr++)
-//			*Aij -= ai * (*rptr);
-//	}
 }
 
 

@@ -40,7 +40,7 @@ check_PROGRAMS += tests/testBTree tests/testDSF tests/testDSFVector
 
 # Timing tests
 noinst_PROGRAMS = tests/timeMatrix tests/timeVirtual tests/timeTest
-#noinst_PROGRAMS += tests/timeublas 
+noinst_PROGRAMS += tests/timeMatrixOps 
 
 #----------------------------------------------------------------------------------------------------
 # Create a libtool library that is not installed

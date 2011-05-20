@@ -25,8 +25,6 @@
 
 #include <boost/format.hpp>
 
-//namespace ublas = boost::numeric::ublas;
-
 using namespace std;
 
 namespace gtsam {
@@ -58,17 +56,12 @@ static inline bool choleskyStep(MatrixColMajor& ATA, size_t k, size_t order) {
     ATA(k,k) = beta;
 
     if(k < (order-1)) {
-//      ublas::matrix_row<MatrixColMajor> Vf(ublas::row(ATA, k));
-//      ublas::vector_range<typeof(Vf)> V(ublas::subrange(Vf, k+1,order));
-
       // Update A(k,k+1:end) <- A(k,k+1:end) / beta
     	typedef typeof(ATA.row(k).segment(k+1, order-(k+1))) BlockRow;
     	BlockRow V = ATA.row(k).segment(k+1, order-(k+1));
     	V *= betainv;
 
       // Update A(k+1:end, k+1:end) <- A(k+1:end, k+1:end) - v*v' / alpha
-//      ublas::matrix_range<MatrixColMajor> L(ublas::subrange(ATA, k+1,order, k+1,order));
-//      L -= ublas::outer_prod(V, V);
       ATA.block(k+1, k+1, order-(k+1), order-(k+1)) -= V.transpose() * V;
     }
 
@@ -122,8 +115,6 @@ pair<size_t,bool> choleskyCareful(MatrixColMajor& ATA, int order) {
 void choleskyPartial(MatrixColMajor& ABC, size_t nFrontal) {
 
   const bool debug = ISDEBUG("choleskyPartial");
-
-//  Eigen::Map<Eigen::MatrixXd> ABC(&ABCublas(0,0), ABCublas.rows(), ABCublas.cols());
 
   assert(ABC.rows() == ABC.cols());
   assert(ABC.rows() >= 0 && nFrontal <= size_t(ABC.rows()));

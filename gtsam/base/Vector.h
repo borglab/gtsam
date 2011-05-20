@@ -167,8 +167,8 @@ bool assert_equal(const Vector& vec1, const Vector& vec2, double tol=1e-9);
  * @param tol 1e-9
  * @return bool
  */
-bool assert_equal(SubVector vec1, SubVector vec2, double tol=1e-9);
-//bool assert_equal(ConstSubVector vec1, ConstSubVector vec2, double tol=1e-9);
+bool assert_equal(const SubVector& vec1, const SubVector& vec2, double tol=1e-9);
+bool assert_equal(const ConstSubVector& vec1, const ConstSubVector& vec2, double tol=1e-9);
 
 /**
  * check whether two vectors are linearly dependent

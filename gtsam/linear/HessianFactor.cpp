@@ -125,15 +125,6 @@ HessianFactor::HessianFactor(const GaussianFactor& gf) : info_(matrix_) {
 			info_.copyStructureFrom(jf.Ab_);
 			BlockInfo::constBlock A = jf.Ab_.full();
 			matrix_.noalias() = A.transpose() * invsigmas.asDiagonal() * A;
-
-			//        typedef Eigen::Map<Eigen::MatrixXd> EigenMap;
-			//        typedef typeof(EigenMap(&jf.matrix_(0,0),0,0).block(0,0,0,0)) EigenBlock;
-			//        EigenBlock A(EigenMap(&jf.matrix_(0,0),jf.matrix_.rows(),jf.matrix_.cols()).block(jf.Ab_.rowStart(),jf.Ab_.offset(0), jf.Ab_.full().rows(), jf.Ab_.full().cols()));
-			//        typedef typeof(Eigen::Map<Eigen::VectorXd>(&invsigmas(0),0).asDiagonal()) EigenDiagonal;
-			//        EigenDiagonal R(Eigen::Map<Eigen::VectorXd>(&invsigmas(0),jf.model_->dim()).asDiagonal());
-			//        info_.copyStructureFrom(jf.Ab_);
-			//        EigenMap L(EigenMap(&matrix_(0,0), matrix_.rows(), matrix_.cols()));
-			//        L.noalias() = A.transpose() * R * R * A;
 		}
 	} else if(dynamic_cast<const HessianFactor*>(&gf)) {
 		const HessianFactor& hf(static_cast<const HessianFactor&>(gf));
@@ -217,15 +208,6 @@ HessianFactor::constColumn HessianFactor::linear_term() const {
 /* ************************************************************************* */
 double HessianFactor::error(const VectorValues& c) const {
 	// error 0.5*(f - 2*x'*g + x'*G*x)
-
-	//  	  return 0.5 * (ublas::inner_prod(c.vector(),
-	//  	      ublas::prod(
-	//  	          ublas::symmetric_adaptor<const constBlock,ublas::upper>(info_.range(0, this->size(), 0, this->size())),
-	//  	          c.vector())) -
-	//  	      2.0*ublas::inner_prod(c.vector(), info_.rangeColumn(0, this->size(), this->size(), 0)) +
-	//  	      info_(this->size(), this->size())(0,0));
-
-//	double expected_manual = 0.5 * (f - 2.0 * dxv.dot(g) + dxv.transpose() * G.selfadjointView<Eigen::Upper>() * dxv);
 	const double f = constant_term();
 	const double xtg = c.vector().dot(linear_term());
 	const double xGx = c.vector().transpose() * info_.range(0, this->size(), 0, this->size()).selfadjointView<Eigen::Upper>() *	c.vector();
@@ -256,9 +238,6 @@ void HessianFactor::updateATA(const HessianFactor& update, const Scatter& scatte
 		this->print("Updating this: ");
 		update.print("with: ");
 	}
-
-	//  Eigen::Map<Eigen::MatrixXd> information(&matrix_(0,0), matrix_.rows(), matrix_.cols());
-	//  Eigen::Map<Eigen::MatrixXd> updateInform(&update.matrix_(0,0), update.matrix_.rows(), update.matrix_.cols());
 
 	// Apply updates to the upper triangle
 	tic(3, "update");
@@ -318,8 +297,6 @@ void HessianFactor::updateATA(const JacobianFactor& update, const Scatter& scatt
 		update.print("with: ");
 	}
 
-	//  Eigen::Map<Eigen::MatrixXd> information(&matrix_(0,0), matrix_.rows(), matrix_.cols());
-	//  Eigen::Map<Eigen::MatrixXd> updateAf(&update.matrix_(0,0), update.matrix_.rows(), update.matrix_.cols());
 	Eigen::Block<typeof(update.matrix_)> updateA(update.matrix_.block(
 			update.Ab_.rowStart(),update.Ab_.offset(0), update.Ab_.full().rows(), update.Ab_.full().cols()));
 
@@ -463,11 +440,6 @@ HessianFactor::splitEliminatedFactor(size_t nrFrontals, const vector<Index>& key
 			tic(1, "zero");
 			BlockAb::Block remainingMatrix(Ab.range(0, Ab.nBlocks()));
 			zeroBelowDiagonal(remainingMatrix);
-//				for(size_t j = 0; j < (size_t) remainingMatrix.rows() - 1; ++j) {
-//					remainingMatrix.col(j).tail(remainingMatrix.rows() - (j+1)).setZero();
-					//          ublas::matrix_column<BlockAb::Block> col(ublas::column(remainingMatrix, j));
-					//          std::fill(col.begin() + j+1, col.end(), 0.0);
-//				}
 			toc(1, "zero");
 		}
 

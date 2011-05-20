@@ -163,10 +163,8 @@ Vector GaussianConditional::solve(const VectorValues& x) const {
 /* ************************************************************************* */
 Vector GaussianConditional::solve(const Permuted<VectorValues>& x) const {
   Vector rhs(get_d());
-  for (const_iterator parent = beginParents(); parent != endParents(); ++parent) {
+  for (const_iterator parent = beginParents(); parent != endParents(); ++parent)
   	rhs += -get_S(parent) * x[*parent];
-//    ublas::axpy_prod(-get_S(parent), x[*parent], rhs, false);
-  }
   return backSubstituteUpper(get_R(), rhs, false);
 }
 

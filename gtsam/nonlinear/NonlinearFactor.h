@@ -36,7 +36,7 @@
 
 #include <gtsam/nonlinear/Ordering.h>
 
-// FIXME: is this necessary? These don't even fit the right format
+// FIXME: is this necessary?
 #define INSTANTIATE_NONLINEAR_FACTOR1(C,J) \
   template class gtsam::NonlinearFactor1<C,J>;
 #define INSTANTIATE_NONLINEAR_FACTOR2(C,J1,J2) \

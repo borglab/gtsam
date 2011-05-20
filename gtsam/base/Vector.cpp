@@ -209,7 +209,7 @@ bool assert_equal(const Vector& expected, const Vector& actual, double tol) {
 }
 
 /* ************************************************************************* */
-bool assert_equal(SubVector expected, SubVector actual, double tol) {
+bool assert_equal(const SubVector& expected, const SubVector& actual, double tol) {
 	if (equal_with_abs_tol(expected,actual,tol)) return true;
 	cout << "not equal:" << endl;
 	print(expected, "expected");
@@ -217,14 +217,14 @@ bool assert_equal(SubVector expected, SubVector actual, double tol) {
 	return false;
 }
 
-///* ************************************************************************* */
-//bool assert_equal(ConstSubVector expected, ConstSubVector actual, double tol) {
-//	if (equal_with_abs_tol(Vector(expected),Vector(actual),tol)) return true;
-//	cout << "not equal:" << endl;
-//	print(Vector(expected), "expected");
-//	print(Vector(actual), "actual");
-//	return false;
-//}
+/* ************************************************************************* */
+bool assert_equal(const ConstSubVector& expected, const ConstSubVector& actual, double tol) {
+	if (equal_with_abs_tol(Vector(expected),Vector(actual),tol)) return true;
+	cout << "not equal:" << endl;
+	print(Vector(expected), "expected");
+	print(Vector(actual), "actual");
+	return false;
+}
 
 /* ************************************************************************* */
 bool linear_dependent(const Vector& vec1, const Vector& vec2, double tol) {
@@ -281,11 +281,6 @@ Vector ediv_(const Vector &a, const Vector &b) {
 /* ************************************************************************* */
 double sum(const Vector &a) {
 	return a.sum();
-//	double result = 0.0;
-//	size_t n = a.size();
-//	for( size_t i = 0; i < n; i++ )
-//		result += a(i);
-//	return result;
 }
 
 /* ************************************************************************* */
@@ -305,9 +300,6 @@ Vector reciprocal(const Vector &a) {
 /* ************************************************************************* */
 Vector esqrt(const Vector& v) {
 	return v.cwiseSqrt();
-//	Vector s(v.size());
-//	transform(v.begin(), v.end(), s.begin(), ::sqrt);
-//	return s;
 }
 
 /* ************************************************************************* */
@@ -335,18 +327,12 @@ void scal(double alpha, Vector& x) {
 void axpy(double alpha, const Vector& x, Vector& y) {
 	assert (y.size()==x.size());
 	y += alpha * x;
-//	size_t n = x.size();
-//	for (size_t i = 0; i < n; i++)
-//		y[i] += alpha * x[i];
 }
 
 /* ************************************************************************* */
 void axpy(double alpha, const Vector& x, SubVector y) {
 	assert (y.size()==x.size());
 	y += alpha * x;
-//	size_t n = x.size();
-//	for (size_t i = 0; i < n; i++)
-//		y[i] += alpha * x[i];
 }
 
 /* ************************************************************************* */

@@ -313,11 +313,10 @@ public:
   typedef Eigen::Block<MATRIX> Block;
   typedef Eigen::Block<const MATRIX> constBlock;
 
-//  typedef typename MATRIX::ColXpr Column;
-//  typedef typename MATRIX::ConstColXpr constColumn;
+private:
+  static FullMatrix matrixTemp_; // just for finding types
 
 protected:
-  static FullMatrix matrixTemp_; // the reference to the full matrix
   FullMatrix& matrix_; // the reference to the full matrix
   std::vector<size_t> variableColOffsets_; // the starting columns of each block (0-based)
 
@@ -426,11 +425,6 @@ public:
 
   Column column(size_t i_block, size_t j_block, size_t columnOffset) {
   	assertInvariants();
-//    size_t j_actualBlock = j_block + blockStart_;
-//    assert(variableColOffsets_[j_actualBlock] + columnOffset < variableColOffsets_[j_actualBlock+1]);
-//    Block blockMat(operator()(i_block, j_block));
-//    return blockMat.col(columnOffset);
-
   	size_t i_actualBlock = i_block + blockStart_;
   	size_t j_actualBlock = j_block + blockStart_;
   	checkBlock(i_actualBlock);
@@ -468,12 +462,6 @@ public:
     		variableColOffsets_[j_actualStartBlock] + columnOffset).segment(
     				variableColOffsets_[i_actualStartBlock],
     				variableColOffsets_[i_actualEndBlock]-variableColOffsets_[i_actualStartBlock]);
-
-    // column of a block approach
-//    size_t j_actualBlock = j_block + blockStart_;
-//    assert(variableColOffsets_[j_actualBlock] + columnOffset < variableColOffsets_[j_actualBlock+1]);
-//    Block blockMat = this->range(i_startBlock, i_endBlock, j_block, j_block+1);
-//    return Column(blockMat, columnOffset);
   }
 
   constColumn rangeColumn(size_t i_startBlock, size_t i_endBlock, size_t j_block, size_t columnOffset) const {
@@ -491,12 +479,6 @@ public:
     		variableColOffsets_[j_actualStartBlock] + columnOffset).segment(
     				variableColOffsets_[i_actualStartBlock],
     				variableColOffsets_[i_actualEndBlock]-variableColOffsets_[i_actualStartBlock]);
-
-    // column of a block approach
-//    size_t j_actualBlock = j_block + blockStart_;
-//    assert(variableColOffsets_[j_actualBlock] + columnOffset < variableColOffsets_[j_actualBlock+1]);
-//    constBlock blockMat = this->range(i_startBlock, i_endBlock, j_block, j_block+1);
-//    return constColumn(blockMat, columnOffset);
   }
 
   size_t offset(size_t block) const {

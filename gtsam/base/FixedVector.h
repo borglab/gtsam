@@ -70,10 +70,6 @@ public:
 	 */
 	inline static FixedVector repeat(double value) {
 		return FixedVector(Base::Constant(value));
-//		FixedVector v;
-//		for (size_t i=0; i<N; ++i)
-//			v(i) = value;
-//		return v;
 	}
 
 	/**
@@ -85,9 +81,6 @@ public:
 	 */
 	inline static FixedVector delta(size_t i, double value) {
 		return FixedVector(Base::Unit(i) * value);
-//		FixedVector v = zero();
-//		v(i) = value;
-//		return v;
 	}
 
 	/**

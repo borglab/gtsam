@@ -256,11 +256,9 @@ namespace gtsam {
     j = 0;
     BOOST_FOREACH(const SourceSlots::value_type& sourceSlot, sourceSlots) {
       keys_[j] = sourceSlot.first;
-      Ab_(j++) = oldAb(sourceSlot.second);
-//      ublas::noalias(Ab_(j++)) = oldAb(sourceSlot.second);
+      Ab_(j++).noalias() = oldAb(sourceSlot.second);
     }
-    Ab_(j) = oldAb(j);
-//    ublas::noalias(Ab_(j)) = oldAb(j);
+    Ab_(j).noalias() = oldAb(j);
 
     // Since we're permuting the variables, ensure that entire rows from this
     // factor are copied when Combine is called
@@ -378,6 +376,8 @@ namespace gtsam {
     if(debug) cout << "Eliminating " << nrFrontals << " frontal variables" << endl;
     if(debug) this->print("Eliminating JacobianFactor: ");
 
+    // NOTE: stairs are not currently used in the Eigen QR implementation
+    // add this back if DenseQR is ever reimplemented
 //    tic(1, "stairs");
 //    // Translate the left-most nonzero column indices into top-most zero row indices
 //    vector<int> firstZeroRows(Ab_.cols());
@@ -441,7 +441,6 @@ namespace gtsam {
       size_t varDim = Ab_(0).cols();
       Ab_.rowEnd() = Ab_.rowStart() + varDim;
       const Eigen::VectorBlock<const Vector> sigmas = noiseModel->sigmas().segment(Ab_.rowStart(), Ab_.rowEnd()-Ab_.rowStart());
-//      const ublas::vector_range<const Vector> sigmas(noiseModel->sigmas(), ublas::range(Ab_.rowStart(), Ab_.rowEnd()));
       conditionals->push_back(boost::make_shared<ConditionalType>(begin()+j, end(), 1, Ab_, sigmas));
       if(debug) conditionals->back()->print("Extracted conditional: ");
       Ab_.rowStart() += varDim;
@@ -521,14 +520,11 @@ namespace gtsam {
 			if (source.firstNonzeroBlocks_[sourceRow] <= sourceSlot) {
 				const constABlock sourceBlock(source.Ab_(sourceSlot));
 				combinedBlock.row(row).noalias() = sourceBlock.row(sourceRow);
-//				ublas::noalias(ublas::row(combinedBlock, row)) = ublas::row(sourceBlock, sourceRow);
 			} else {
 				combinedBlock.row(row).setZero();
-//				ublas::noalias(ublas::row(combinedBlock, row)) = ublas::zero_vector<double>(combinedBlock.cols());
 			}
 		} else {
 			combinedBlock.row(row).setZero();
-//			ublas::noalias(ublas::row(combinedBlock, row)) = ublas::zero_vector<double>(combinedBlock.cols());
 		}
 	}
 
