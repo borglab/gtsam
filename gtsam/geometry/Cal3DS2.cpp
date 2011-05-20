@@ -92,7 +92,7 @@ Matrix Cal3DS2::D2d_intrinsic(const Point2& p) const {
 	Matrix DR = Matrix_(2, 2, g + x*dg_dx + dDx_dx,     x*dg_dy + dDx_dy,
 						 y*dg_dx + dDy_dx, g + y*dg_dy + dDy_dy) ;
 
-	return prod(DK,DR) ;
+	return DK * DR;
 }
 
 

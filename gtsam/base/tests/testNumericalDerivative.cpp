@@ -30,7 +30,7 @@ double f(const LieVector& x) {
 
 /* ************************************************************************* */
 TEST_UNSAFE(testNumericalDerivative, numericalHessian) {
-  LieVector center(2, 1.0, 1.0);
+  LieVector center = ones(2);
 
   Matrix expected = Matrix_(2,2,
       -sin(center(0)), 0.0,

@@ -11,7 +11,7 @@
 
 /**
  * @file    VectorValues.h
- * @brief   Factor Graph Valuesuration
+ * @brief   Factor Graph Values
  * @author  Richard Roberts
  */
 
@@ -22,8 +22,6 @@
 #include <gtsam/base/types.h>
 
 #include <boost/foreach.hpp>
-#include <boost/numeric/ublas/vector_proxy.hpp>
-#include <boost/numeric/ublas/io.hpp>
 #include <boost/shared_ptr.hpp>
 
 #include <vector>
@@ -40,11 +38,10 @@ public:
   typedef boost::shared_ptr<VectorValues> shared_ptr;
   typedef _impl_iterator<VectorValues> iterator;
   typedef _impl_iterator<const VectorValues> const_iterator;
-  typedef boost::numeric::ublas::vector_range<Vector> value_reference_type;
-  typedef boost::numeric::ublas::vector_range<const Vector> const_value_reference_type;
-  typedef boost::numeric::ublas::vector_range<Vector> mapped_type;
-  typedef boost::numeric::ublas::vector_range<const Vector> const_mapped_type;
-
+  typedef SubVector value_reference_type;
+  typedef ConstSubVector const_value_reference_type;
+  typedef SubVector mapped_type;
+  typedef ConstSubVector const_mapped_type;
 
   /**
    * Default constructor creates an empty VectorValues.  reserve(...) must be
@@ -105,7 +102,7 @@ public:
   Vector& vector() { return values_; }
 
   /** Reserve space for a total number of variables and dimensionality */
-  void reserve(Index nVars, size_t totalDims) { values_.resize(std::max(totalDims, values_.size())); varStarts_.reserve(nVars+1); }
+  void reserve(Index nVars, size_t totalDims) { values_.resize(totalDims); varStarts_.reserve(nVars+1); }
 
   /**
    * Append a variable using the next variable ID, and return that ID.  Space
@@ -119,7 +116,7 @@ public:
   }
 
   /** Set all elements to zero */
-  void makeZero() { boost::numeric::ublas::noalias(values_) = boost::numeric::ublas::zero_vector<double>(values_.size()); }
+  void makeZero() { values_.setZero(); }
 
   /** print required by Testable for unit testing */
   void print(const std::string& str = "VectorValues: ") const {
@@ -131,13 +128,8 @@ public:
   }
 
   /** equals required by Testable for unit testing */
-  bool equals(const VectorValues& expected, double tol=1e-9) const {
-    if(size() != expected.size()) return false;
-    // iterate over all elements
-    for(Index var=0; var<size(); ++var)
-      if(!equal_with_abs_tol(expected[var],operator[](var),tol))
-        return false;
-    return true;
+  bool equals(const VectorValues& x, double tol=1e-9) const {
+  	return varStarts_ == x.varStarts_ && equal_with_abs_tol(values_, x.values_, tol);
   }
 
   /** + operator simply adds Vectors.  This checks for structural equivalence
@@ -147,15 +139,17 @@ public:
     assert(varStarts_ == c.varStarts_);
     VectorValues result;
     result.varStarts_ = varStarts_;
-    result.values_ = boost::numeric::ublas::project(values_, boost::numeric::ublas::range(0, varStarts_.back())) +
-    				 boost::numeric::ublas::project(c.values_, boost::numeric::ublas::range(0, c.varStarts_.back()));
+    result.values_ = values_.head(varStarts_.back()) + c.values_.head(varStarts_.back());
+//    result.values_ = boost::numeric::ublas::project(values_, boost::numeric::ublas::range(0, varStarts_.back())) +
+//    				 boost::numeric::ublas::project(c.values_, boost::numeric::ublas::range(0, c.varStarts_.back()));
     return result;
   }
 
   void operator+=(const VectorValues& c) {
     assert(varStarts_ == c.varStarts_);
-    this->values_ = boost::numeric::ublas::project(this->values_, boost::numeric::ublas::range(0, varStarts_.back())) +
-    				boost::numeric::ublas::project(c.values_, boost::numeric::ublas::range(0, c.varStarts_.back()));
+    this->values_ += c.values_.head(varStarts_.back());
+//    this->values_ = boost::numeric::ublas::project(this->values_, boost::numeric::ublas::range(0, varStarts_.back())) +
+//    				boost::numeric::ublas::project(c.values_, boost::numeric::ublas::range(0, c.varStarts_.back()));
   }
 
 
@@ -219,17 +213,21 @@ public:
   // check whether there's a zero in the vector
   friend bool anyZero(const VectorValues& x, double tol=1e-5) {
 	  bool flag = false ;
-	  BOOST_FOREACH(const double &v, x.values_) {
-		  if ( v < tol && v > -tol) {
+	  size_t i=0;
+	  for (const double *v = x.values_.data(); i< (size_t) x.values_.size(); ++v) {
+//	  BOOST_FOREACH(const double &v, x.values_) {
+//	  	double v = x(i);
+		  if ( *v < tol && *v > -tol) {
 			  flag = true ;
 			  break;
 		  }
+		  ++i;
 	  }
 	  return flag;
   }
 };
 
-
+/// Implementations of functions
 
 template<class CONTAINER>
 inline VectorValues::VectorValues(const CONTAINER& dimensions) : varStarts_(dimensions.size()+1) {
@@ -239,7 +237,7 @@ inline VectorValues::VectorValues(const CONTAINER& dimensions) : varStarts_(dime
   BOOST_FOREACH(size_t dim, dimensions) {
     varStarts_[++var] = (varStart += dim);
   }
-  values_.resize(varStarts_.back(), false);
+  values_.resize(varStarts_.back());
 }
 
 inline VectorValues::VectorValues(Index nVars, size_t varDim) : varStarts_(nVars+1) {
@@ -247,7 +245,7 @@ inline VectorValues::VectorValues(Index nVars, size_t varDim) : varStarts_(nVars
   size_t varStart = 0;
   for(Index j=1; j<=nVars; ++j)
     varStarts_[j] = (varStart += varDim);
-  values_.resize(varStarts_.back(), false);
+  values_.resize(varStarts_.back());
 }
 
 inline VectorValues::VectorValues(const std::vector<size_t>& dimensions, const Vector& values) :
@@ -258,7 +256,7 @@ inline VectorValues::VectorValues(const std::vector<size_t>& dimensions, const V
   BOOST_FOREACH(size_t dim, dimensions) {
     varStarts_[++var] = (varStart += dim);
   }
-  assert(varStarts_.back() == values.size());
+  assert(varStarts_.back() == (size_t) values.size());
 }
 
 inline VectorValues::VectorValues(const std::vector<size_t>& dimensions, const double* values) :
@@ -281,14 +279,18 @@ inline VectorValues VectorValues::SameStructure(const VectorValues& otherValues)
 
 inline VectorValues::mapped_type VectorValues::operator[](Index variable) {
   checkVariable(variable);
-  return boost::numeric::ublas::project(values_,
-      boost::numeric::ublas::range(varStarts_[variable], varStarts_[variable+1]));
+  const size_t start = varStarts_[variable], n = varStarts_[variable+1] - start;
+  return values_.segment(start, n);
+//  return boost::numeric::ublas::project(values_,
+//      boost::numeric::ublas::range(varStarts_[variable], varStarts_[variable+1]));
 }
 
 inline VectorValues::const_mapped_type VectorValues::operator[](Index variable) const {
   checkVariable(variable);
-  return boost::numeric::ublas::project(values_,
-      boost::numeric::ublas::range(varStarts_[variable], varStarts_[variable+1]));
+  const size_t start = varStarts_[variable], n = varStarts_[variable+1] - start;
+  return values_.segment(start, n);
+//  return boost::numeric::ublas::project(values_,
+//      boost::numeric::ublas::range(varStarts_[variable], varStarts_[variable+1]));
 }
 
 struct DimSpec: public std::vector<size_t> {

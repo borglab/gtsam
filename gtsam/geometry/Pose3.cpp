@@ -19,7 +19,6 @@
 #include <gtsam/base/Lie-inl.h>
 
 using namespace std;
-using namespace boost::numeric::ublas;
 
 namespace gtsam {
 
@@ -77,7 +76,7 @@ namespace gtsam {
   /* ************************************************************************* */
   Vector Pose3::LogmapFull(const Pose3& p) {
     Vector w = Rot3::Logmap(p.rotation()), T = p.translation().vector();
-  	double t = norm_2(w);
+  	double t = w.norm();
 		if (t < 1e-10)
 	    return concatVectors(2, &w, &T);
 		else {

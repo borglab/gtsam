@@ -28,10 +28,10 @@ namespace gtsam {
  * size checking.
  */
 template<size_t N>
-class FixedVector : public boost::numeric::ublas::bounded_vector<double, N> ,
+class FixedVector : public Eigen::Matrix<double, N, 1>,
 					public Testable<FixedVector<N> > {
 public:
-	typedef boost::numeric::ublas::bounded_vector<double, N> Base;
+	typedef Eigen::Matrix<double, N, 1> Base;
 
 	/** default constructor */
 	FixedVector() {}
@@ -44,7 +44,7 @@ public:
 
 	/** Initialize with a C-style array */
 	FixedVector(const double* values) {
-		std::copy(values, values+N, this->data().begin());
+		std::copy(values, values+N, this->data());
 	}
 
 	/**
@@ -69,10 +69,11 @@ public:
 	 * @param constant value
 	 */
 	inline static FixedVector repeat(double value) {
-		FixedVector v;
-		for (size_t i=0; i<N; ++i)
-			v(i) = value;
-		return v;
+		return FixedVector(Base::Constant(value));
+//		FixedVector v;
+//		for (size_t i=0; i<N; ++i)
+//			v(i) = value;
+//		return v;
 	}
 
 	/**
@@ -83,9 +84,10 @@ public:
 	 * @return delta vector
 	 */
 	inline static FixedVector delta(size_t i, double value) {
-		FixedVector v = zero();
-		v(i) = value;
-		return v;
+		return FixedVector(Base::Unit(i) * value);
+//		FixedVector v = zero();
+//		v(i) = value;
+//		return v;
 	}
 
 	/**
@@ -94,17 +96,17 @@ public:
 	 * @param index of the one
 	 * @return basis vector
 	 */
-	inline static FixedVector basis(size_t i) { return delta(i, 1.0); }
+	inline static FixedVector basis(size_t i) { return FixedVector(Base::Unit(i)); }
 
 	/**
 	 * Create zero vector
 	 */
-	inline static FixedVector zero() { return repeat(0.0);}
+	inline static FixedVector zero() { return FixedVector(Base::Zero());}
 
 	/**
 	 * Create vector initialized to ones
 	 */
-	inline static FixedVector ones() { return repeat(1.0);}
+	inline static FixedVector ones() { return FixedVector(FixedVector::Ones());}
 
 	static size_t dim() { return Base::max_size; }
 

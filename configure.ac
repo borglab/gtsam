@@ -13,8 +13,37 @@ AC_CONFIG_SRCDIR([gtsam/inference/SymbolicFactorGraph.cpp])
 AC_CONFIG_SRCDIR([gtsam/linear/GaussianFactor.cpp])
 AC_CONFIG_SRCDIR([gtsam/nonlinear/NonlinearOptimizer.cpp])
 AC_CONFIG_SRCDIR([gtsam/slam/pose2SLAM.cpp])
-AC_CONFIG_SRCDIR([tests/testSQP.cpp])
+AC_CONFIG_SRCDIR([tests/testTupleValues.cpp])
 AC_CONFIG_SRCDIR([examples/SimpleRotation.cpp])
+
+# pull in all subdirectories of Eigen - FIXME: find a better way of handling this
+AC_CONFIG_SRCDIR([gtsam/3rdparty/Makefile.am])
+AC_CONFIG_SRCDIR([gtsam/3rdparty/Eigen/Makefile.am])
+AC_CONFIG_SRCDIR([gtsam/3rdparty/Eigen/src/Makefile.am])
+AC_CONFIG_SRCDIR([gtsam/3rdparty/Eigen/src/Cholesky/Makefile.am])
+AC_CONFIG_SRCDIR([gtsam/3rdparty/Eigen/src/Core/Makefile.am])
+AC_CONFIG_SRCDIR([gtsam/3rdparty/Eigen/src/Core/arch/Makefile.am])
+AC_CONFIG_SRCDIR([gtsam/3rdparty/Eigen/src/Core/arch/AltiVec/Makefile.am])
+AC_CONFIG_SRCDIR([gtsam/3rdparty/Eigen/src/Core/arch/Default/Makefile.am])
+AC_CONFIG_SRCDIR([gtsam/3rdparty/Eigen/src/Core/arch/NEON/Makefile.am])
+AC_CONFIG_SRCDIR([gtsam/3rdparty/Eigen/src/Core/arch/SSE/Makefile.am])
+AC_CONFIG_SRCDIR([gtsam/3rdparty/Eigen/src/Core/products/Makefile.am])
+AC_CONFIG_SRCDIR([gtsam/3rdparty/Eigen/src/Core/util/Makefile.am])
+AC_CONFIG_SRCDIR([gtsam/3rdparty/Eigen/src/Eigen2Support/Makefile.am])
+AC_CONFIG_SRCDIR([gtsam/3rdparty/Eigen/src/Eigen2Support/Geometry/Makefile.am])
+AC_CONFIG_SRCDIR([gtsam/3rdparty/Eigen/src/Eigenvalues/Makefile.am])
+AC_CONFIG_SRCDIR([gtsam/3rdparty/Eigen/src/Geometry/Makefile.am])
+AC_CONFIG_SRCDIR([gtsam/3rdparty/Eigen/src/Geometry/arch/Makefile.am])
+AC_CONFIG_SRCDIR([gtsam/3rdparty/Eigen/src/Householder/Makefile.am])
+AC_CONFIG_SRCDIR([gtsam/3rdparty/Eigen/src/QR/Makefile.am])
+AC_CONFIG_SRCDIR([gtsam/3rdparty/Eigen/src/SVD/Makefile.am])
+AC_CONFIG_SRCDIR([gtsam/3rdparty/Eigen/src/Jacobi/Makefile.am])
+AC_CONFIG_SRCDIR([gtsam/3rdparty/Eigen/src/misc/Makefile.am])
+AC_CONFIG_SRCDIR([gtsam/3rdparty/Eigen/src/Sparse/Makefile.am])
+AC_CONFIG_SRCDIR([gtsam/3rdparty/Eigen/src/LU/Makefile.am])
+AC_CONFIG_SRCDIR([gtsam/3rdparty/Eigen/src/LU/arch/Makefile.am])
+AC_CONFIG_SRCDIR([gtsam/3rdparty/Eigen/src/plugins/Makefile.am])
+AC_CONFIG_SRCDIR([gtsam/3rdparty/Eigen/src/StlSupport/Makefile.am])
 
 # Check for OS
 AC_CANONICAL_HOST    # needs to be called at some point earlier
@@ -44,46 +73,6 @@ case $host_os in
         ISMAC=false
         ;;
 esac
-
-# enable BLAS with general purpose script
-AC_ARG_ENABLE([blas],
-     [  --enable-blas    Enable external BLAS library],
-     [case "${enableval}" in
-       yes) blas=true ;;
-       no)  blas=false ;;
-       *) AC_MSG_ERROR([bad value ${enableval} for --enable-blas]) ;;
-     esac],[blas=true])
-ak
-AM_CONDITIONAL([USE_BLAS], test x$blas = xtrue)
-AM_CONDITIONAL([USE_BLAS_MACOS], [test x$blas = xtrue && test x$ISMAC = xtrue])
-AM_CONDITIONAL([USE_BLAS_LINUX], [test x$blas = xtrue && test x$ISMAC = xfalse])
-
-# enable LAPACK
-AC_ARG_ENABLE([lapack],
-     [  --enable-lapack    Enable external LAPACK library],
-     [case "${enableval}" in
-       yes) lapack=true ;;
-       no)  lapack=false ;;
-       *) AC_MSG_ERROR([bad value ${enableval} for --enable-lapack]) ;;
-     esac],[lapack=true])
-
-AM_CONDITIONAL([USE_LAPACK], test x$lapack = xtrue)
-AM_CONDITIONAL([USE_LAPACK_MACOS], [test x$lapack = xtrue && test x$ISMAC = xtrue])
-AM_CONDITIONAL([USE_LAPACK_LINUX], [test x$lapack = xtrue && test x$ISMAC = xfalse])
-
-# On Mac, we use the Accelerate framework for BLAS/LAPACK
-AM_CONDITIONAL([USE_ACCELERATE_MACOS], [(test x$lapack = xtrue || test x$blas = xtrue) && test x$ISMAC = xtrue])
-
-#enable SparseQR for linear solving
-AC_ARG_ENABLE([spqr],
-     [  --enable-spqr    Enable SparseQR library support],
-     [case "${enableval}" in
-       yes) spqr=true ;;
-       no)  spqr=false ;;
-       *) AC_MSG_ERROR([bad value ${enableval} for --enable-spqr]) ;;
-     esac],[spqr=false])
-
-AM_CONDITIONAL([USE_SPQR], [test x$spqr = xtrue])
 
 # enable profiling
 AC_ARG_ENABLE([profiling],
@@ -167,13 +156,42 @@ AC_ARG_WITH([ccolamd-lib],
             [CCOLAMDLib=${HOME}/lib])
 AC_SUBST([CCOLAMDLib])
 
-# For now we require blas, atlas, and lapack
-#AM_COND_IF([test x$ISMAC = xtrue],
-#    [LINALG_CPPFLAGS="-I/System/Library/Frameworks/vecLib.framework/Headers ${CCOLAMDInc} -DGT_USE_LAPACK"],
-#    [LINALG_CPPFLAGS="${CCOLAMDInc} -DGT_USE_LAPACK"])
-#AM_COND_IF([test x$ISMAC = xtrue],
-#    [LINALG_LDFLAGS="-Wl,/System/Library/Frameworks/Accelerate.framework/Accelerate ${CCOLAMDLib}"],
-#    [LINALG_LDFLAGS="-lcblas -latlas -llapack ${CCOLAMDLib}"])
-
-AC_CONFIG_FILES([CppUnitLite/Makefile gtsam/base/Makefile gtsam/geometry/Makefile gtsam/inference/Makefile gtsam/linear/Makefile gtsam/nonlinear/Makefile gtsam/slam/Makefile gtsam/Makefile tests/Makefile examples/Makefile examples/vSLAMexample/Makefile Makefile])
+AC_CONFIG_FILES([CppUnitLite/Makefile \
+gtsam/3rdparty/Eigen/src/Cholesky/Makefile \
+gtsam/3rdparty/Eigen/src/Core/Makefile \
+gtsam/3rdparty/Eigen/src/Core/arch/Makefile \
+gtsam/3rdparty/Eigen/src/Core/arch/AltiVec/Makefile \
+gtsam/3rdparty/Eigen/src/Core/arch/Default/Makefile \
+gtsam/3rdparty/Eigen/src/Core/arch/NEON/Makefile \
+gtsam/3rdparty/Eigen/src/Core/arch/SSE/Makefile \
+gtsam/3rdparty/Eigen/src/Core/products/Makefile \
+gtsam/3rdparty/Eigen/src/Core/util/Makefile \
+gtsam/3rdparty/Eigen/src/Eigenvalues/Makefile \
+gtsam/3rdparty/Eigen/src/Geometry/Makefile \
+gtsam/3rdparty/Eigen/src/Geometry/arch/Makefile \
+gtsam/3rdparty/Eigen/src/Householder/Makefile \
+gtsam/3rdparty/Eigen/src/QR/Makefile \
+gtsam/3rdparty/Eigen/src/SVD/Makefile \
+gtsam/3rdparty/Eigen/src/Jacobi/Makefile \
+gtsam/3rdparty/Eigen/src/misc/Makefile \
+gtsam/3rdparty/Eigen/src/Sparse/Makefile \
+gtsam/3rdparty/Eigen/src/LU/Makefile \
+gtsam/3rdparty/Eigen/src/LU/arch/Makefile \
+gtsam/3rdparty/Eigen/src/plugins/Makefile \
+gtsam/3rdparty/Eigen/src/StlSupport/Makefile \
+gtsam/3rdparty/Eigen/src/Eigen2Support/Makefile \
+gtsam/3rdparty/Eigen/src/Eigen2Support/Geometry/Makefile \
+gtsam/3rdparty/Eigen/src/Makefile \
+gtsam/3rdparty/Eigen/Makefile \
+gtsam/3rdparty/Makefile \
+gtsam/base/Makefile \
+gtsam/geometry/Makefile \
+gtsam/inference/Makefile \
+gtsam/linear/Makefile \
+gtsam/nonlinear/Makefile \
+gtsam/slam/Makefile gtsam/Makefile \
+tests/Makefile \
+examples/Makefile \
+examples/vSLAMexample/Makefile \
+Makefile])
 AC_OUTPUT

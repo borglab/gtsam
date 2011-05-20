@@ -65,13 +65,13 @@ TEST( ISAM, iSAM_smoother )
 	GaussianISAM expected(*GaussianSequentialSolver(smoother).eliminate());
 
 	// Check whether BayesTree is correct
-	CHECK(assert_equal(expected, actual));
+	EXPECT(assert_equal(expected, actual));
 
 	// obtain solution
 	VectorValues e(vector<size_t>(7,2)); // expected solution
 	e.makeZero();
 	VectorValues optimized = optimize(actual); // actual solution
-	CHECK(assert_equal(e, optimized));
+	EXPECT(assert_equal(e, optimized));
 }
 
 /* ************************************************************************* */
@@ -96,7 +96,7 @@ TEST( ISAM, iSAM_smoother )
 //	for (int t = 1; t <= 7; t++) ordering += symbol('x', t);
 //	GaussianISAM expected(smoother.eliminate(ordering));
 //
-//	CHECK(assert_equal(expected, actual));
+//	EXPECT(assert_equal(expected, actual));
 //}
 
 /* ************************************************************************* *
@@ -126,12 +126,12 @@ TEST( BayesTree, linear_smoother_shortcuts )
 	GaussianBayesNet empty;
 	GaussianISAM::sharedClique R = bayesTree.root();
 	GaussianBayesNet actual1 = GaussianISAM::shortcut(R,R);
-	CHECK(assert_equal(empty,actual1,tol));
+	EXPECT(assert_equal(empty,actual1,tol));
 
 	// Check the conditional P(C2|Root)
 	GaussianISAM::sharedClique C2 = bayesTree[ordering["x5"]];
 	GaussianBayesNet actual2 = GaussianISAM::shortcut(C2,R);
-	CHECK(assert_equal(empty,actual2,tol));
+	EXPECT(assert_equal(empty,actual2,tol));
 
 	// Check the conditional P(C3|Root)
 	double sigma3 = 0.61808;
@@ -140,7 +140,7 @@ TEST( BayesTree, linear_smoother_shortcuts )
 	push_front(expected3,ordering["x5"], zero(2), eye(2)/sigma3, ordering["x6"], A56/sigma3, ones(2));
 	GaussianISAM::sharedClique C3 = bayesTree[ordering["x4"]];
 	GaussianBayesNet actual3 = GaussianISAM::shortcut(C3,R);
-	CHECK(assert_equal(expected3,actual3,tol));
+	EXPECT(assert_equal(expected3,actual3,tol));
 
 	// Check the conditional P(C4|Root)
 	double sigma4 = 0.661968;
@@ -149,7 +149,7 @@ TEST( BayesTree, linear_smoother_shortcuts )
 	push_front(expected4, ordering["x4"], zero(2), eye(2)/sigma4, ordering["x6"], A46/sigma4, ones(2));
 	GaussianISAM::sharedClique C4 = bayesTree[ordering["x3"]];
 	GaussianBayesNet actual4 = GaussianISAM::shortcut(C4,R);
-	CHECK(assert_equal(expected4,actual4,tol));
+	EXPECT(assert_equal(expected4,actual4,tol));
 }
 
 /* ************************************************************************* *
@@ -184,7 +184,7 @@ TEST( BayesTree, balanced_smoother_marginals )
 	VectorValues expectedSolution(7, 2);
 	expectedSolution.makeZero();
 	VectorValues actualSolution = optimize(chordalBayesNet);
-	CHECK(assert_equal(expectedSolution,actualSolution,tol));
+	EXPECT(assert_equal(expectedSolution,actualSolution,tol));
 
 	// Create the Bayes tree
 	GaussianISAM bayesTree(chordalBayesNet);
@@ -265,19 +265,19 @@ TEST( BayesTree, balanced_smoother_shortcuts )
 	GaussianBayesNet empty;
 	GaussianISAM::sharedClique R = bayesTree.root();
 	GaussianBayesNet actual1 = GaussianISAM::shortcut(R,R);
-	CHECK(assert_equal(empty,actual1,tol));
+	EXPECT(assert_equal(empty,actual1,tol));
 
 	// Check the conditional P(C2|Root)
 	GaussianISAM::sharedClique C2 = bayesTree[ordering["x3"]];
 	GaussianBayesNet actual2 = GaussianISAM::shortcut(C2,R);
-	CHECK(assert_equal(empty,actual2,tol));
+	EXPECT(assert_equal(empty,actual2,tol));
 
 	// Check the conditional P(C3|Root), which should be equal to P(x2|x4)
 	GaussianConditional::shared_ptr p_x2_x4 = chordalBayesNet[ordering["x2"]];
 	GaussianBayesNet expected3; expected3.push_back(p_x2_x4);
 	GaussianISAM::sharedClique C3 = bayesTree[ordering["x1"]];
 	GaussianBayesNet actual3 = GaussianISAM::shortcut(C3,R);
-	CHECK(assert_equal(expected3,actual3,tol));
+	EXPECT(assert_equal(expected3,actual3,tol));
 }
 
 ///* ************************************************************************* */
@@ -306,7 +306,7 @@ TEST( BayesTree, balanced_smoother_shortcuts )
 //	  factor->permuteWithInverse(toFrontInverse); }
 //	GaussianBayesNet actual = *Inference::EliminateUntil(marginal, C3->keys().size(), varIndex);
 //	actual.permuteWithInverse(toFront);
-//	CHECK(assert_equal(expected,actual,tol));
+//	EXPECT(assert_equal(expected,actual,tol));
 //}
 
 /* ************************************************************************* */
@@ -337,7 +337,7 @@ TEST( BayesTree, balanced_smoother_joint )
 	expected1.push_front(parent1);
 	push_front(expected1,ordering["x1"], zero(2), I/sigmax7, ordering["x7"], A/sigmax7, sigma);
 	GaussianBayesNet actual1 = *bayesTree.jointBayesNet(ordering["x1"],ordering["x7"]);
-	CHECK(assert_equal(expected1,actual1,tol));
+	EXPECT(assert_equal(expected1,actual1,tol));
 
 //	// Check the joint density P(x7,x1) factored as P(x7|x1)P(x1)
 //	GaussianBayesNet expected2;
@@ -346,7 +346,7 @@ TEST( BayesTree, balanced_smoother_joint )
 //		expected2.push_front(parent2);
 //	push_front(expected2,ordering["x7"], zero(2), I/sigmax1, ordering["x1"], A/sigmax1, sigma);
 //	GaussianBayesNet actual2 = *bayesTree.jointBayesNet(ordering["x7"],ordering["x1"]);
-//	CHECK(assert_equal(expected2,actual2,tol));
+//	EXPECT(assert_equal(expected2,actual2,tol));
 
 	// Check the joint density P(x1,x4), i.e. with a root variable
 	GaussianBayesNet expected3;
@@ -357,7 +357,7 @@ TEST( BayesTree, balanced_smoother_joint )
 	Matrix A14 = -0.0769231*I;
 	push_front(expected3,ordering["x1"], zero(2), I/sig14, ordering["x4"], A14/sig14, sigma);
 	GaussianBayesNet actual3 = *bayesTree.jointBayesNet(ordering["x1"],ordering["x4"]);
-	CHECK(assert_equal(expected3,actual3,tol));
+	EXPECT(assert_equal(expected3,actual3,tol));
 
 //	// Check the joint density P(x4,x1), i.e. with a root variable, factored the other way
 //	GaussianBayesNet expected4;
@@ -368,7 +368,7 @@ TEST( BayesTree, balanced_smoother_joint )
 //	Matrix A41 = -0.055794*I;
 //	push_front(expected4,ordering["x4"], zero(2), I/sig41, ordering["x1"], A41/sig41, sigma);
 //	GaussianBayesNet actual4 = *bayesTree.jointBayesNet(ordering["x4"],ordering["x1"]);
-//	CHECK(assert_equal(expected4,actual4,tol));
+//	EXPECT(assert_equal(expected4,actual4,tol));
 }
 
 /* ************************************************************************* */
@@ -385,7 +385,7 @@ TEST(BayesTree, simpleMarginal)
   Matrix expected(GaussianSequentialSolver(gfg).marginalCovariance(2).second);
   Matrix actual(GaussianMultifrontalSolver(gfg).marginalCovariance(2).second);
 
-  CHECK(assert_equal(expected, actual));
+  EXPECT(assert_equal(expected, actual));
 }
 
 /* ************************************************************************* */

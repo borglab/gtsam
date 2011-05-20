@@ -135,8 +135,6 @@ namespace example {
 
 	/* ************************************************************************* */
 	FactorGraph<JacobianFactor> createGaussianFactorGraph(const Ordering& ordering) {
-		Matrix I = eye(2);
-
 		// Create empty graph
 		GaussianFactorGraph fg;
 

@@ -58,7 +58,7 @@ TEST( GaussianFactor, linearFactor )
 	JacobianFactor::shared_ptr lf = fg[1];
 
 	// check if the two factors are the same
-	CHECK(assert_equal(expected,*lf));
+	EXPECT(assert_equal(expected,*lf));
 }
 
 ///* ************************************************************************* */
@@ -71,7 +71,7 @@ TEST( GaussianFactor, linearFactor )
 //	list<Symbol> expected;
 //	expected.push_back("x1");
 //	expected.push_back("x2");
-//	CHECK(lf->keys() == expected);
+//	EXPECT(lf->keys() == expected);
 //}
 
 ///* ************************************************************************* */
@@ -85,7 +85,7 @@ TEST( GaussianFactor, linearFactor )
 //  Dimensions expected;
 //  insert(expected)("x1", 2)("x2", 2);
 //  Dimensions actual = fg[1]->dimensions();
-//  CHECK(expected==actual);
+//  EXPECT(expected==actual);
 //}
 
 /* ************************************************************************* */
@@ -101,7 +101,7 @@ TEST( GaussianFactor, getDim )
 
 	// verify
 	size_t expected = 2;
-	CHECK(actual == expected);
+	EXPECT_LONGS_EQUAL(expected, actual);
 }
 
 ///* ************************************************************************* */
@@ -157,7 +157,7 @@ TEST( GaussianFactor, getDim )
 //	meas.push_back(make_pair("l1", Al1));
 //	meas.push_back(make_pair("x1", Ax1));
 //	GaussianFactor expected(meas, b2, noiseModel::Diagonal::Sigmas(ones(4)));
-//	CHECK(assert_equal(expected,combined));
+//	EXPECT(assert_equal(expected,combined));
 //}
 
 /* ************************************************************************* */
@@ -216,8 +216,8 @@ TEST( GaussianFactor, error )
 //	GaussianFactor expectedLF("l1", Bl1, "x1", Bx1, b1, repeat(2,1.0));
 //
 //	// check if the result matches
-//	CHECK(assert_equal(expectedCG,*actualCG,1e-3));
-//	CHECK(assert_equal(expectedLF,*actualLF,1e-3));
+//	EXPECT(assert_equal(expectedCG,*actualCG,1e-3));
+//	EXPECT(assert_equal(expectedLF,*actualLF,1e-3));
 //}
 
 /* ************************************************************************* */
@@ -344,9 +344,9 @@ void print(const list<T>& i) {
 //	list<double> s1;
 //	s1 += -10,-10,10,10;
 //
-//	CHECK(i==i1);
-//	CHECK(j==j1);
-//	CHECK(s==s1);
+//	EXPECT(i==i1);
+//	EXPECT(j==j1);
+//	EXPECT(s==s1);
 //}
 
 ///* ************************************************************************* */
@@ -374,9 +374,9 @@ void print(const list<T>& i) {
 //	list<double> s1;
 //	s1 += -10,-10,10,10;
 //
-//	CHECK(i==i1);
-//	CHECK(j==j1);
-//	CHECK(s==s1);
+//	EXPECT(i==i1);
+//	EXPECT(j==j1);
+//	EXPECT(s==s1);
 //}
 
 /* ************************************************************************* */
@@ -391,9 +391,9 @@ TEST( GaussianFactor, size )
 	boost::shared_ptr<GaussianFactor> factor2 = fg[1];
 	boost::shared_ptr<GaussianFactor> factor3 = fg[2];
 
-	CHECK(factor1->size() == 1);
-	CHECK(factor2->size() == 2);
-	CHECK(factor3->size() == 2);
+	EXPECT_LONGS_EQUAL(1, factor1->size());
+	EXPECT_LONGS_EQUAL(2, factor2->size());
+	EXPECT_LONGS_EQUAL(2, factor3->size());
 }
 
 /* ************************************************************************* */

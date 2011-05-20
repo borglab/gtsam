@@ -49,6 +49,9 @@ TEST(VectorValues, standard) {
 
   vector<size_t> dims(3); dims[0]=3; dims[1]=2; dims[2]=4;
   VectorValues combined(dims);
+  EXPECT_LONGS_EQUAL(3, combined.size());
+  EXPECT_LONGS_EQUAL(9, combined.dim());
+  EXPECT_LONGS_EQUAL(9, combined.dimCapacity());
   combined[0] = v1;
   combined[1] = v2;
   combined[2] = v3;
@@ -164,6 +167,16 @@ TEST(VectorValues, permuted_incremental) {
   CHECK(assert_equal(v2, permuted2[2]))
   CHECK(assert_equal(v3, permuted2[0]))
 
+}
+
+/* ************************************************************************* */
+TEST(VectorValues, makeZero ) {
+	VectorValues values(7, 2);
+	EXPECT_LONGS_EQUAL(14, values.dim());
+	EXPECT_LONGS_EQUAL(7, values.size());
+	EXPECT_LONGS_EQUAL(14, values.vector().size());
+	values.makeZero();
+	EXPECT(assert_equal(zero(14), values.vector()));
 }
 
 /* ************************************************************************* */

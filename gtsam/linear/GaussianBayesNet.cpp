@@ -74,7 +74,7 @@ boost::shared_ptr<VectorValues> allocateVectorValues(const GaussianBayesNet& bn)
   vector<size_t> dimensions(bn.size());
   Index var = 0;
   BOOST_FOREACH(const boost::shared_ptr<const GaussianConditional> conditional, bn) {
-    dimensions[var++] = conditional->get_R().size1();
+    dimensions[var++] = conditional->get_R().rows();
   }
   return boost::shared_ptr<VectorValues>(new VectorValues(dimensions));
 }
@@ -138,7 +138,7 @@ VectorValues backSubstituteTranspose(const GaussianBayesNet& bn,
 	// i^th part of L*gy=gx is done block-column by block-column of L
 	BOOST_FOREACH(const boost::shared_ptr<const GaussianConditional> cg, bn) {
 		Index j = cg->key();
-		gy[j] = gtsam::backSubstituteUpper(gy[j],cg->get_R());
+		gy[j] = gtsam::backSubstituteUpper(gy[j],Matrix(cg->get_R()));
 		GaussianConditional::const_iterator it;
 		for (it = cg->beginParents(); it!= cg->endParents(); it++) {
 			const Index i = *it;
@@ -193,7 +193,7 @@ pair<Matrix,Vector> matrix(const GaussianBayesNet& bn)  {
     GaussianConditional::const_iterator keyS = cg->beginParents();
     for (; keyS!=cg->endParents(); keyS++) {
       Matrix S = cg->get_S(keyS);                   // get S matrix
-      const size_t m = S.size1(), n = S.size2(); // find S size
+      const size_t m = S.rows(), n = S.cols(); // find S size
       const size_t J = mapping[*keyS];     // find column index
       for (size_t i=0;i<m;i++)
       	for(size_t j=0;j<n;j++)

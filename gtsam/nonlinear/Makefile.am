@@ -56,10 +56,6 @@ LDADD = libnonlinear.la ../linear/liblinear.la ../inference/libinference.la ../b
 LDADD += ../../CppUnitLite/libCppUnitLite.a
 AM_DEFAULT_SOURCE_EXT = .cpp
 
-if USE_ACCELERATE_MACOS
-AM_LDFLAGS += -Wl,/System/Library/Frameworks/Accelerate.framework/Accelerate
-endif
-
 # rule to run an executable
 %.run: % $(LDADD)
 	./$^
@@ -67,8 +63,4 @@ endif
 # rule to run executable with valgrind
 %.valgrind: % $(LDADD)
 	valgrind ./$^
-
-if USE_LAPACK
-AM_CXXFLAGS += -DGT_USE_LAPACK
-endif
 

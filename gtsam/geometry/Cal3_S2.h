@@ -93,7 +93,7 @@ namespace gtsam {
 		Vector vector() const {
 			double r[] = { fx_, fy_, s_, u0_, v0_ };
 			Vector v(5);
-			copy(r, r + 5, v.begin());
+			std::copy(r, r + 5, v.data());
 			return v;
 		}
 

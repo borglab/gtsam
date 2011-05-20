@@ -107,7 +107,7 @@ namespace gtsam {
 								1> (), factorEntries[entry].get<2> ()));
 
 			// Increment row index
-			i += jacobianFactor->size1();
+			i += jacobianFactor->rows();
 		}
 		return entries;
 	}
@@ -175,7 +175,7 @@ namespace gtsam {
         ++ jointVarpos;
       }
       BOOST_FOREACH(const JacobianFactor::shared_ptr& factor, factors) {
-        m += factor->size1();
+        m += factor->rows();
       }
     }
     return boost::make_tuple(varDims, m, n);
@@ -275,7 +275,8 @@ namespace gtsam {
 	}
 
   /* ************************************************************************* */
-  static FastMap<Index, SlotEntry> findScatterAndDims//
+  //static
+  FastMap<Index, SlotEntry> findScatterAndDims
   (const FactorGraph<GaussianFactor>& factors) {
 
     static const bool debug = false;

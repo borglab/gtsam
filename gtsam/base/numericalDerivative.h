@@ -66,7 +66,7 @@ namespace gtsam {
 	Vector numericalGradient(boost::function<double(const X&)> h, const X& x, double delta=1e-5) {
 		double factor = 1.0/(2.0*delta);
 		const size_t n = x.dim();
-		Vector d(n,0.0), g(n,0.0);
+		Vector d = zero(n), g = zero(n);
 		for (size_t j=0;j<n;j++) {
 			d(j) +=   delta; double hxplus = h(x.expmap(d));
 			d(j) -= 2*delta; double hxmin  = h(x.expmap(d));
@@ -95,7 +95,7 @@ namespace gtsam {
 		Y hx = h(x);
 		double factor = 1.0/(2.0*delta);
 		const size_t m = hx.dim(), n = x.dim();
-		Vector d(n,0.0);
+		Vector d = zero(n);
 		Matrix H = zeros(m,n);
 		for (size_t j=0;j<n;j++) {
 			d(j) +=   delta; Vector hxplus = hx.logmap(h(x.expmap(d)));
@@ -149,7 +149,7 @@ namespace gtsam {
 		Y hx = h(x1,x2);
 		double factor = 1.0/(2.0*delta);
 		const size_t m = hx.dim(), n = x1.dim();
-		Vector d(n,0.0);
+		Vector d = zero(n);
 		Matrix H = zeros(m,n);
 		for (size_t j=0;j<n;j++) {
 			d(j) +=   delta; Vector hxplus = hx.logmap(h(x1.expmap(d),x2));
@@ -213,7 +213,7 @@ namespace gtsam {
 		Y hx = h(x1,x2);
 		double factor = 1.0/(2.0*delta);
 		const size_t m = hx.dim(), n = x2.dim();
-		Vector d(n,0.0);
+		Vector d = zero(n);
 		Matrix H = zeros(m,n);
 		for (size_t j=0;j<n;j++) {
 			d(j) +=   delta; Vector hxplus = hx.logmap(h(x1,x2.expmap(d)));
@@ -279,7 +279,7 @@ namespace gtsam {
 		Y hx = h(x1,x2,x3);
 		double factor = 1.0/(2.0*delta);
 		const size_t m = hx.dim(), n = x1.dim();
-		Vector d(n,0.0);
+		Vector d = zero(n);
 		Matrix H = zeros(m,n);
 		for (size_t j=0;j<n;j++) {
 			d(j) +=   delta; Vector hxplus = hx.logmap(h(x1.expmap(d),x2,x3));
@@ -344,7 +344,7 @@ namespace gtsam {
 		Y hx = h(x1,x2,x3);
 		double factor = 1.0/(2.0*delta);
 		const size_t m = hx.dim(), n = x2.dim();
-		Vector d(n,0.0);
+		Vector d = zero(n);
 		Matrix H = zeros(m,n);
 		for (size_t j=0;j<n;j++) {
 			d(j) +=   delta; Vector hxplus = hx.logmap(h(x1, x2.expmap(d),x3));
@@ -409,7 +409,7 @@ namespace gtsam {
 		Y hx = h(x1,x2,x3);
 		double factor = 1.0/(2.0*delta);
 		const size_t m = hx.dim(), n = x3.dim();
-		Vector d(n,0.0);
+		Vector d = zero(n);
 		Matrix H = zeros(m,n);
 		for (size_t j=0;j<n;j++) {
 			d(j) +=   delta; Vector hxplus = hx.logmap(h(x1, x2, x3.expmap(d)));

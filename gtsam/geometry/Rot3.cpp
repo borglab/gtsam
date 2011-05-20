@@ -104,7 +104,7 @@ namespace gtsam {
 
   /* ************************************************************************* */
   Rot3 Rot3::rodriguez(const Vector& w) {
-    double t = norm_2(w);
+    double t = w.norm();
     if (t < 1e-10) return Rot3();
     return rodriguez(w/t, t);
   }

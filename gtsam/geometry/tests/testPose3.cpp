@@ -43,8 +43,7 @@ TEST( Pose3, equals)
 TEST( Pose3, expmap_a)
 {
   Pose3 id;
-  Vector v(6);
-  fill(v.begin(), v.end(), 0);
+  Vector v = zero(6);
   v(0) = 0.3;
   CHECK(assert_equal(id.expmap(v), Pose3(R, Point3())));
 #ifdef CORRECT_POSE3_EXMAP
@@ -60,8 +59,7 @@ TEST( Pose3, expmap_a)
 TEST( Pose3, expmap_a_full)
 {
   Pose3 id;
-  Vector v(6);
-  fill(v.begin(), v.end(), 0);
+  Vector v = zero(6);
   v(0) = 0.3;
   CHECK(assert_equal(id.expmapFull(v), Pose3(R, Point3())));
   v(3)=0.2;v(4)=0.394742;v(5)=-2.08998;
@@ -72,8 +70,7 @@ TEST( Pose3, expmap_a_full)
 TEST( Pose3, expmap_a_full2)
 {
   Pose3 id;
-  Vector v(6);
-  fill(v.begin(), v.end(), 0);
+  Vector v = zero(6);
   v(0) = 0.3;
   CHECK(assert_equal(expmapFull<Pose3>(id,v), Pose3(R, Point3())));
   v(3)=0.2;v(4)=0.394742;v(5)=-2.08998;
@@ -126,7 +123,6 @@ TEST(Pose3, Adjoint)
 
 /* ************************************************************************* */
 /** Agrawal06iros version */
-using namespace boost::numeric::ublas;
 Pose3 Agrawal06iros(const Vector& xi) {
 	Vector w = vector_range<const Vector>(xi, range(0,3));
 	Vector v = vector_range<const Vector>(xi, range(3,6));
@@ -209,10 +205,9 @@ TEST(Pose3, Adjoint_full)
 
 /* ************************************************************************* */
 /** Agrawal06iros version */
-using namespace boost::numeric::ublas;
 Pose3 Agrawal06iros(const Vector& xi) {
-	Vector w = vector_range<const Vector>(xi, range(0,3));
-	Vector v = vector_range<const Vector>(xi, range(3,6));
+	Vector w = xi.head(3);
+	Vector v = xi.tail(3);
 	double t = norm_2(w);
 	if (t < 1e-5)
 		return Pose3(Rot3(), Point3::Expmap(v));

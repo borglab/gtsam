@@ -20,10 +20,6 @@
 
 #include <gtsam/inference/GenericMultifrontalSolver-inl.h>
 
-#include <boost/numeric/ublas/matrix.hpp>
-
-namespace ublas = boost::numeric::ublas;
-
 namespace gtsam {
 
 /* ************************************************************************* */
@@ -75,7 +71,8 @@ std::pair<Vector, Matrix> GaussianMultifrontalSolver::marginalCovariance(Index j
   fg.push_back(Base::marginalFactor(j,&EliminateQR));
   GaussianConditional::shared_ptr conditional = EliminateQR(fg,1).first->front();
   Matrix R = conditional->get_R();
-  return make_pair(conditional->get_d(), inverse(ublas::prod(ublas::trans(R), R)));
+  return make_pair(conditional->get_d(), (R.transpose() * R).inverse());
+//  return make_pair(conditional->get_d(), inverse(ublas::prod(ublas::trans(R), R)));
 }
 
 }

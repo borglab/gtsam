@@ -34,17 +34,10 @@
 #include <boost/lambda/bind.hpp>
 #include <boost/lambda/lambda.hpp>
 
-#include <boost/numeric/ublas/triangular.hpp>
-#include <boost/numeric/ublas/io.hpp>
-#include <boost/numeric/ublas/matrix_proxy.hpp>
-#include <boost/numeric/ublas/vector_proxy.hpp>
-#include <boost/numeric/ublas/blas.hpp>
-
 #include <sstream>
 #include <stdexcept>
 
 using namespace std;
-namespace ublas = boost::numeric::ublas;
 using namespace boost::lambda;
 
 namespace gtsam {
@@ -53,15 +46,15 @@ namespace gtsam {
   inline void JacobianFactor::assertInvariants() const {
   #ifndef NDEBUG
     IndexFactor::assertInvariants(); // The base class checks for sorted keys
-    assert((size() == 0 && Ab_.size1() == 0 && Ab_.nBlocks() == 0) || size()+1 == Ab_.nBlocks());
-    assert(firstNonzeroBlocks_.size() == Ab_.size1());
+    assert((size() == 0 && Ab_.rows() == 0 && Ab_.nBlocks() == 0) || size()+1 == Ab_.nBlocks());
+    assert(firstNonzeroBlocks_.size() == Ab_.rows());
     for(size_t i=0; i<firstNonzeroBlocks_.size(); ++i)
       assert(firstNonzeroBlocks_[i] < Ab_.nBlocks());
   #endif
 
     // Check for non-finite values
-    for(size_t i=0; i<Ab_.size1(); ++i)
-      for(size_t j=0; j<Ab_.size2(); ++j)
+    for(size_t i=0; i<Ab_.rows(); ++i)
+      for(size_t j=0; j<Ab_.cols(); ++j)
         if(isnan(matrix_(i,j)))
           throw invalid_argument("JacobianFactor contains NaN matrix entries.");
   }
@@ -88,7 +81,7 @@ namespace gtsam {
   JacobianFactor::JacobianFactor(Index i1, const Matrix& A1,
       const Vector& b, const SharedDiagonal& model) :
       GaussianFactor(i1), model_(model), firstNonzeroBlocks_(b.size(), 0), Ab_(matrix_) {
-    size_t dims[] = { A1.size2(), 1};
+    size_t dims[] = { A1.cols(), 1};
     Ab_.copyStructureFrom(BlockAb(matrix_, dims, dims+2, b.size()));
     Ab_(0) = A1;
     getb() = b;
@@ -99,7 +92,7 @@ namespace gtsam {
   JacobianFactor::JacobianFactor(Index i1, const Matrix& A1, Index i2, const Matrix& A2,
       const Vector& b, const SharedDiagonal& model) :
       GaussianFactor(i1,i2), model_(model), firstNonzeroBlocks_(b.size(), 0), Ab_(matrix_) {
-    size_t dims[] = { A1.size2(), A2.size2(), 1};
+    size_t dims[] = { A1.cols(), A2.cols(), 1};
     Ab_.copyStructureFrom(BlockAb(matrix_, dims, dims+3, b.size()));
     Ab_(0) = A1;
     Ab_(1) = A2;
@@ -111,7 +104,7 @@ namespace gtsam {
   JacobianFactor::JacobianFactor(Index i1, const Matrix& A1, Index i2, const Matrix& A2,
       Index i3, const Matrix& A3, const Vector& b, const SharedDiagonal& model) :
       GaussianFactor(i1,i2,i3), model_(model), firstNonzeroBlocks_(b.size(), 0), Ab_(matrix_) {
-    size_t dims[] = { A1.size2(), A2.size2(), A3.size2(), 1};
+    size_t dims[] = { A1.cols(), A2.cols(), A3.cols(), 1};
     Ab_.copyStructureFrom(BlockAb(matrix_, dims, dims+4, b.size()));
     Ab_(0) = A1;
     Ab_(1) = A2;
@@ -128,7 +121,7 @@ namespace gtsam {
   {
     size_t dims[terms.size()+1];
     for(size_t j=0; j<terms.size(); ++j)
-      dims[j] = terms[j].second.size2();
+      dims[j] = terms[j].second.cols();
     dims[terms.size()] = 1;
     Ab_.copyStructureFrom(BlockAb(matrix_, dims, dims+terms.size()+1, b.size()));
     for(size_t j=0; j<terms.size(); ++j)
@@ -147,7 +140,7 @@ namespace gtsam {
     size_t j=0;
     std::list<std::pair<Index, Matrix> >::const_iterator term=terms.begin();
     for(; term!=terms.end(); ++term,++j)
-      dims[j] = term->second.size2();
+      dims[j] = term->second.cols();
     dims[j] = 1;
     Ab_.copyStructureFrom(BlockAb(matrix_, dims, dims+terms.size()+1, b.size()));
     j = 0;
@@ -170,11 +163,12 @@ namespace gtsam {
     keys_ = factor.keys_;
     Ab_.assignNoalias(factor.info_);
     size_t maxrank = choleskyCareful(matrix_).first;
-    matrix_ = ublas::triangular_adaptor<AbMatrix, ublas::upper>(matrix_);
+    // FIXME: replace with triangular system
+//    matrix_ = ublas::triangular_adaptor<AbMatrix, ublas::upper>(matrix_);
     Ab_.rowEnd() = maxrank;
     model_ = noiseModel::Unit::Create(maxrank);
 
-    firstNonzeroBlocks_.resize(this->size1(), 0);
+    firstNonzeroBlocks_.resize(this->rows(), 0);
 
     // Sort keys
     set<Index> vars;
@@ -203,8 +197,9 @@ namespace gtsam {
       cout << endl;
     } else {
       for(const_iterator key=begin(); key!=end(); ++key)
-        gtsam::print(getA(key), (boost::format("A[%1%]=\n")%*key).str());
-      gtsam::print(getb(),"b=");
+      	cout << boost::format("A[%1%]=\n")%*key << getA(key) << endl;
+//        gtsam::print(getA(key), (boost::format("A[%1%]=\n")%*key).str());
+      cout << "b=" << getb() << endl;
       model_->print("model");
     }
   }
@@ -220,13 +215,14 @@ namespace gtsam {
       if(keys()!=f.keys() /*|| !model_->equals(lf->model_, tol)*/)
         return false;
 
-      assert(Ab_.size1() == f.Ab_.size1() && Ab_.size2() == f.Ab_.size2());
+      if (!(Ab_.rows() == f.Ab_.rows() && Ab_.cols() == f.Ab_.cols()))
+      	return false;
 
       constABlock Ab1(Ab_.range(0, Ab_.nBlocks()));
       constABlock Ab2(f.Ab_.range(0, f.Ab_.nBlocks()));
-      for(size_t row=0; row<Ab1.size1(); ++row)
-        if(!equal_with_abs_tol(ublas::row(Ab1, row), ublas::row(Ab2, row), tol) &&
-            !equal_with_abs_tol(-ublas::row(Ab1, row), ublas::row(Ab2, row), tol))
+      for(size_t row=0; row< (size_t) Ab1.rows(); ++row)
+        if(!equal_with_abs_tol(Ab1.row(row), Ab2.row(row), tol) &&
+            !equal_with_abs_tol(-Ab1.row(row), Ab2.row(row), tol))
           return false;
 
       return true;
@@ -246,7 +242,7 @@ namespace gtsam {
     vector<size_t> dimensions(size() + 1);
     size_t j = 0;
     BOOST_FOREACH(const SourceSlots::value_type& sourceSlot, sourceSlots) {
-      dimensions[j++] = Ab_(sourceSlot.second).size2();
+      dimensions[j++] = Ab_(sourceSlot.second).cols();
     }
     assert(j == size());
     dimensions.back() = 1;
@@ -255,14 +251,16 @@ namespace gtsam {
     vector<Index> oldKeys(size());
     keys_.swap(oldKeys);
     AbMatrix oldMatrix;
-    BlockAb oldAb(oldMatrix, dimensions.begin(), dimensions.end(), Ab_.size1());
+    BlockAb oldAb(oldMatrix, dimensions.begin(), dimensions.end(), Ab_.rows());
     Ab_.swap(oldAb);
     j = 0;
     BOOST_FOREACH(const SourceSlots::value_type& sourceSlot, sourceSlots) {
       keys_[j] = sourceSlot.first;
-      ublas::noalias(Ab_(j++)) = oldAb(sourceSlot.second);
+      Ab_(j++) = oldAb(sourceSlot.second);
+//      ublas::noalias(Ab_(j++)) = oldAb(sourceSlot.second);
     }
-    ublas::noalias(Ab_(j)) = oldAb(j);
+    Ab_(j) = oldAb(j);
+//    ublas::noalias(Ab_(j)) = oldAb(j);
 
     // Since we're permuting the variables, ensure that entire rows from this
     // factor are copied when Combine is called
@@ -275,7 +273,7 @@ namespace gtsam {
     Vector e = -getb();
     if (empty()) return e;
     for(size_t pos=0; pos<size(); ++pos)
-      e += ublas::prod(Ab_(pos), c[keys_[pos]]);
+      e += Ab_(pos) * c[keys_[pos]];
     return e;
   }
 
@@ -289,18 +287,18 @@ namespace gtsam {
   double JacobianFactor::error(const VectorValues& c) const {
     if (empty()) return 0;
     Vector weighted = error_vector(c);
-    return 0.5 * inner_prod(weighted,weighted);
+    return 0.5 * weighted.dot(weighted);
   }
 
 
   /* ************************************************************************* */
   Vector JacobianFactor::operator*(const VectorValues& x) const {
-    Vector Ax = zero(Ab_.size1());
+    Vector Ax = zero(Ab_.rows());
     if (empty()) return Ax;
 
     // Just iterate over all A matrices and multiply in correct config part
     for(size_t pos=0; pos<size(); ++pos)
-      Ax += ublas::prod(Ab_(pos), x[keys_[pos]]);
+      Ax += Ab_(pos) * x[keys_[pos]];
 
     return model_->whiten(Ax);
   }
@@ -341,14 +339,14 @@ namespace gtsam {
       Matrix whitenedA(model_->Whiten(getA(var)));
       // find first column index for this key
       size_t column_start = columnIndices[*var];
-      for (size_t i = 0; i < whitenedA.size1(); i++)
-        for (size_t j = 0; j < whitenedA.size2(); j++)
+      for (size_t i = 0; i < (size_t) whitenedA.rows(); i++)
+        for (size_t j = 0; j < (size_t) whitenedA.cols(); j++)
           entries.push_back(boost::make_tuple(i, column_start+j, whitenedA(i,j)));
     }
 
     Vector whitenedb(model_->whiten(getb()));
     size_t bcolumn = columnIndices.back();
-    for (size_t i = 0; i < whitenedb.size(); i++)
+    for (size_t i = 0; i < (size_t) whitenedb.size(); i++)
       entries.push_back(boost::make_tuple(i, bcolumn, whitenedb(i)));
 
     // return the result
@@ -371,7 +369,7 @@ namespace gtsam {
   /* ************************************************************************* */
   GaussianBayesNet::shared_ptr JacobianFactor::eliminate(size_t nrFrontals) {
 
-    assert(Ab_.rowStart() == 0 && Ab_.rowEnd() == matrix_.size1() && Ab_.firstBlock() == 0);
+    assert(Ab_.rowStart() == 0 && Ab_.rowEnd() == (size_t) matrix_.rows() && Ab_.firstBlock() == 0);
     assert(size() >= nrFrontals);
     assertInvariants();
 
@@ -380,50 +378,49 @@ namespace gtsam {
     if(debug) cout << "Eliminating " << nrFrontals << " frontal variables" << endl;
     if(debug) this->print("Eliminating JacobianFactor: ");
 
-    tic(1, "stairs");
-    // Translate the left-most nonzero column indices into top-most zero row indices
-    vector<int> firstZeroRows(Ab_.size2());
-    {
-      size_t lastNonzeroRow = 0;
-      vector<int>::iterator firstZeroRowsIt = firstZeroRows.begin();
-      for(size_t var=0; var<keys().size(); ++var) {
-        while(lastNonzeroRow < this->size1() && firstNonzeroBlocks_[lastNonzeroRow] <= var)
-          ++ lastNonzeroRow;
-        fill(firstZeroRowsIt, firstZeroRowsIt+Ab_(var).size2(), lastNonzeroRow);
-        firstZeroRowsIt += Ab_(var).size2();
-      }
-      assert(firstZeroRowsIt+1 == firstZeroRows.end());
-      *firstZeroRowsIt = this->size1();
-    }
-    toc(1, "stairs");
+//    tic(1, "stairs");
+//    // Translate the left-most nonzero column indices into top-most zero row indices
+//    vector<int> firstZeroRows(Ab_.cols());
+//    {
+//      size_t lastNonzeroRow = 0;
+//      vector<int>::iterator firstZeroRowsIt = firstZeroRows.begin();
+//      for(size_t var=0; var<keys().size(); ++var) {
+//        while(lastNonzeroRow < this->rows() && firstNonzeroBlocks_[lastNonzeroRow] <= var)
+//          ++ lastNonzeroRow;
+//        fill(firstZeroRowsIt, firstZeroRowsIt+Ab_(var).cols(), lastNonzeroRow);
+//        firstZeroRowsIt += Ab_(var).cols();
+//      }
+//      assert(firstZeroRowsIt+1 == firstZeroRows.end());
+//      *firstZeroRowsIt = this->rows();
+//    }
+//    toc(1, "stairs");
 
-  #ifndef NDEBUG
-    for(size_t col=0; col<Ab_.size2(); ++col) {
-      if(debug) cout << "Staircase[" << col << "] = " << firstZeroRows[col] << endl;
-      if(col != 0) assert(firstZeroRows[col] >= firstZeroRows[col-1]);
-      assert(firstZeroRows[col] <= (long)this->size1());
-    }
-  #endif
+//  #ifndef NDEBUG
+//    for(size_t col=0; col<Ab_.cols(); ++col) {
+//      if(debug) cout << "Staircase[" << col << "] = " << firstZeroRows[col] << endl;
+//      if(col != 0) assert(firstZeroRows[col] >= firstZeroRows[col-1]);
+//      assert(firstZeroRows[col] <= (long)this->rows());
+//    }
+//  #endif
 
     if(debug) gtsam::print(matrix_, "Augmented Ab: ");
 
-    size_t frontalDim = Ab_.range(0,nrFrontals).size2();
+    size_t frontalDim = Ab_.range(0,nrFrontals).cols();
 
     if(debug) cout << "frontalDim = " << frontalDim << endl;
 
     // Use in-place QR or Cholesky on dense Ab appropriate to NoiseModel
     tic(2, "QR");
-    SharedDiagonal noiseModel = model_->QRColumnWise(matrix_, firstZeroRows);
+    SharedDiagonal noiseModel = model_->QR(matrix_);
     toc(2, "QR");
 
     // Zero the lower-left triangle.  todo: not all of these entries actually
     // need to be zeroed if we are careful to start copying rows after the last
     // structural zero.
-    if(matrix_.size1() > 0) {
-      for(size_t j=0; j<matrix_.size2(); ++j)
+    if(matrix_.rows() > 0)
+      for(size_t j=0; j<(size_t) matrix_.cols(); ++j)
         for(size_t i=j+1; i<noiseModel->dim(); ++i)
           matrix_(i,j) = 0.0;
-    }
 
     if(debug) gtsam::print(matrix_, "QR result: ");
     if(debug) noiseModel->print("QR result noise model: ");
@@ -441,9 +438,10 @@ namespace gtsam {
     for(size_t j=0; j<nrFrontals; ++j) {
       // Temporarily restrict the matrix view to the conditional blocks of the
       // eliminated Ab matrix to create the GaussianConditional from it.
-      size_t varDim = Ab_(0).size2();
+      size_t varDim = Ab_(0).cols();
       Ab_.rowEnd() = Ab_.rowStart() + varDim;
-      const ublas::vector_range<const Vector> sigmas(noiseModel->sigmas(), ublas::range(Ab_.rowStart(), Ab_.rowEnd()));
+      const Eigen::VectorBlock<const Vector> sigmas = noiseModel->sigmas().segment(Ab_.rowStart(), Ab_.rowEnd()-Ab_.rowStart());
+//      const ublas::vector_range<const Vector> sigmas(noiseModel->sigmas(), ublas::range(Ab_.rowStart(), Ab_.rowEnd()));
       conditionals->push_back(boost::make_shared<ConditionalType>(begin()+j, end(), 1, Ab_, sigmas));
       if(debug) conditionals->back()->print("Extracted conditional: ");
       Ab_.rowStart() += varDim;
@@ -463,14 +461,14 @@ namespace gtsam {
     else
       model_ = noiseModel::Diagonal::Sigmas(sub(noiseModel->sigmas(), frontalDim, noiseModel->dim()));
     if(debug) this->print("Eliminated factor: ");
-    assert(Ab_.size1() <= Ab_.size2()-1);
+    assert(Ab_.rows() <= Ab_.cols()-1);
     toc(4, "remaining factor");
 
     // todo SL: deal with "dead" pivot columns!!!
     tic(5, "rowstarts");
     size_t varpos = 0;
-    firstNonzeroBlocks_.resize(this->size1());
-    for(size_t row=0; row<size1(); ++row) {
+    firstNonzeroBlocks_.resize(this->rows());
+    for(size_t row=0; row<rows(); ++row) {
       if(debug) cout << "row " << row << " varpos " << varpos << " Ab_.offset(varpos)=" << Ab_.offset(varpos) << " Ab_.offset(varpos+1)=" << Ab_.offset(varpos+1) << endl;
       while(varpos < this->size() && Ab_.offset(varpos+1)-Ab_.offset(0) <= row)
         ++ varpos;
@@ -490,7 +488,7 @@ namespace gtsam {
   /* ************************************************************************* */
   void JacobianFactor::collectInfo(size_t index, vector<_RowSource>& rowSources) const {
 		assertInvariants();
-		for (size_t row = 0; row < size1(); ++row) {
+		for (size_t row = 0; row < rows(); ++row) {
 			Index firstNonzeroVar;
 			if (firstNonzeroBlocks_[row] < size()) {
 				firstNonzeroVar = keys_[firstNonzeroBlocks_[row]];
@@ -518,18 +516,20 @@ namespace gtsam {
   /* ************************************************************************* */
   void JacobianFactor::copyRow(const JacobianFactor& source, Index sourceRow,
 			size_t sourceSlot, size_t row, Index slot) {
-		ABlock combinedBlock(Ab_(slot));
+		ABlock combinedBlock = Ab_(slot);
 		if (sourceSlot != numeric_limits<Index>::max()) {
 			if (source.firstNonzeroBlocks_[sourceRow] <= sourceSlot) {
 				const constABlock sourceBlock(source.Ab_(sourceSlot));
-				ublas::noalias(ublas::row(combinedBlock, row)) = ublas::row(
-						sourceBlock, sourceRow);
-			} else
-				ublas::noalias(ublas::row(combinedBlock, row)) = ublas::zero_vector<
-						double>(combinedBlock.size2());
-		} else
-			ublas::noalias(ublas::row(combinedBlock, row)) = ublas::zero_vector<
-					double>(combinedBlock.size2());
+				combinedBlock.row(row).noalias() = sourceBlock.row(sourceRow);
+//				ublas::noalias(ublas::row(combinedBlock, row)) = ublas::row(sourceBlock, sourceRow);
+			} else {
+				combinedBlock.row(row).setZero();
+//				ublas::noalias(ublas::row(combinedBlock, row)) = ublas::zero_vector<double>(combinedBlock.cols());
+			}
+		} else {
+			combinedBlock.row(row).setZero();
+//			ublas::noalias(ublas::row(combinedBlock, row)) = ublas::zero_vector<double>(combinedBlock.cols());
+		}
 	}
 
   /* ************************************************************************* */
@@ -615,7 +615,7 @@ namespace gtsam {
     Index i = 0;
     BOOST_FOREACH(const JacobianFactor::shared_ptr& factor, fg) {
       for(JacobianFactor::const_iterator j = factor->begin(); j != factor->end(); ++j) {
-        r[i] += prod(factor->getA(j), x[*j]);
+        r[i] += factor->getA(j) * x[*j];
       }
       ++i;
     }
@@ -627,7 +627,7 @@ namespace gtsam {
     Index i = 0;
     BOOST_FOREACH(const JacobianFactor::shared_ptr& factor, fg) {
       for(JacobianFactor::const_iterator j = factor->begin(); j != factor->end(); ++j) {
-        x[*j] += prod(trans(factor->getA(j)), r[i]);
+        x[*j] += factor->getA(j).transpose() * r[i];
       }
       ++i;
     }

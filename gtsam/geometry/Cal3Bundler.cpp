@@ -93,7 +93,7 @@ Matrix Cal3Bundler::D2d_intrinsic(const Point2& p) const {
 	Matrix DR = Matrix_(2, 2,
 			g + x*dg_dx, x*dg_dy,
 			y*dg_dx , g + y*dg_dy) ;
-	return prod(DK,DR) ;
+	return DK * DR;
 }
 
 Matrix Cal3Bundler::D2d_calibration(const Point2& p) const {

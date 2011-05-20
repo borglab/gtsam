@@ -18,59 +18,11 @@
 #pragma once
 
 #include <vector>
-#include <boost/numeric/ublas/matrix_proxy.hpp>
+#include <gtsam/3rdparty/Eigen/Dense>
+#include <gtsam/3rdparty/Eigen/Core>
+#include <gtsam/base/Matrix.h>
 
 namespace gtsam {
-
-/** This is a wrapper around ublas::matrix_column that stores a copy of a
- * ublas::matrix_range.  This does not copy the matrix data itself.  The
- * purpose of this class is to be allow a column-of-a-range to be returned
- * from a function, given that a standard column-of-a-range just stores a
- * reference to the range.  The stored range stores a reference to the original
- * matrix.
- */
-template<class MATRIX>
-class BlockColumn : public boost::numeric::ublas::vector_expression<BlockColumn<MATRIX> > {
-protected:
-  typedef boost::numeric::ublas::matrix_range<MATRIX> Range;
-  typedef boost::numeric::ublas::matrix_column<Range> Base;
-  Range range_;
-  Base base_;
-public:
-  typedef BlockColumn<MATRIX> Self;
-  typedef typename Base::matrix_type matrix_type;
-  typedef typename Base::size_type size_type;
-  typedef typename Base::difference_type difference_type;
-  typedef typename Base::value_type value_type;
-  typedef typename Base::const_reference const_reference;
-  typedef typename Base::reference reference;
-  typedef typename Base::storage_category storage_category;
-  typedef Self closure_type;
-  typedef const Self const_closure_type;
-  typedef typename Base::iterator iterator;
-  typedef typename Base::const_iterator const_iterator;
-
-  BlockColumn(const boost::numeric::ublas::matrix_range<MATRIX>& block, size_t column) :
-    range_(block), base_(range_, column) {}
-  BlockColumn(const BlockColumn& rhs) :
-    range_(rhs.range_), base_(rhs.base_) {}
-  BlockColumn& operator=(const BlockColumn& rhs) { base_.operator=(rhs.base_); return *this; }
-  template<class AE> BlockColumn& operator=(const boost::numeric::ublas::vector_expression<AE>& rhs) { base_.operator=(rhs); return *this; }
-  typename Base::size_type size() const { return base_.size(); }
-  const typename Base::matrix_closure_type& data() const { return base_.data(); }
-  typename Base::matrix_closure_type& data() { return base_.data(); }
-  typename Base::const_reference operator()(typename Base::size_type i) const { return base_(i); }
-  typename Base::reference operator()(typename Base::size_type i) { return base_(i); }
-  BlockColumn& assign_temporary(BlockColumn& rhs) { base_.assign_temporary(rhs.base_); return *this; }
-  BlockColumn& assign_temporary(Base& rhs) { base_.assign_temporary(rhs); return *this; }
-  bool same_closure(const BlockColumn& rhs) { return base_.same_closure(rhs.base_); }
-  bool same_closure(const Base& rhs) { return base_.same_closure(rhs); }
-  template<class AE> BlockColumn& assign(const boost::numeric::ublas::vector_expression<AE>& rhs) { base_.assign(rhs); return *this; }
-  iterator begin() { return base_.begin(); }
-  const_iterator begin() const { return base_.begin(); }
-  iterator end() { return base_.end(); }
-  const_iterator end() const { return base_.end(); }
-};
 
 template<class MATRIX> class SymmetricBlockView;
 
@@ -95,10 +47,12 @@ template<class MATRIX>
 class VerticalBlockView {
 public:
   typedef MATRIX FullMatrix;
-  typedef typename boost::numeric::ublas::matrix_range<MATRIX> Block;
-  typedef typename boost::numeric::ublas::matrix_range<const MATRIX> constBlock;
-  typedef BlockColumn<MATRIX> Column;
-  typedef BlockColumn<const MATRIX> constColumn;
+  typedef Eigen::Block<MATRIX> Block;
+  typedef Eigen::Block<const MATRIX> constBlock;
+
+  // columns of blocks
+  typedef Eigen::VectorBlock<typename MATRIX::ColXpr> Column;
+  typedef Eigen::VectorBlock<const typename MATRIX::ConstColXpr> constColumn;
 
 protected:
   FullMatrix& matrix_; // the reference to the full matrix
@@ -112,18 +66,19 @@ protected:
 public:
   /** Construct from an empty matrix (asserts that the matrix is empty) */
   VerticalBlockView(FullMatrix& matrix) :
-    matrix_(matrix), rowStart_(0), rowEnd_(matrix_.size1()), blockStart_(0) {
+    matrix_(matrix), rowStart_(0), rowEnd_(matrix_.rows()), blockStart_(0) {
     fillOffsets((size_t*)0, (size_t*)0);
     assertInvariants();
   }
 
   /**
    * Construct from a non-empty matrix and copy the block structure from
-   * another block view. */
+   * another block view.
+   */
   template<class RHS>
   VerticalBlockView(FullMatrix& matrix, const RHS& rhs) :
     matrix_(matrix) {
-    if(matrix_.size1() != rhs.size1() || matrix_.size2() != rhs.size2())
+    if((size_t) matrix_.rows() != rhs.rows() || (size_t) matrix_.cols() != rhs.cols())
       throw std::invalid_argument(
           "In VerticalBlockView<>(FullMatrix& matrix, const RHS& rhs), matrix and rhs must\n"
           "already be of the same size.  If not, construct the VerticalBlockView from an\n"
@@ -136,12 +91,13 @@ public:
   /** Construct from iterators over the sizes of each vertical block */
   template<typename ITERATOR>
   VerticalBlockView(FullMatrix& matrix, ITERATOR firstBlockDim, ITERATOR lastBlockDim) :
-  matrix_(matrix), rowStart_(0), rowEnd_(matrix_.size1()), blockStart_(0) {
+  matrix_(matrix), rowStart_(0), rowEnd_(matrix_.rows()), blockStart_(0) {
     fillOffsets(firstBlockDim, lastBlockDim);
     assertInvariants();
   }
 
-  /** Construct from a vector of the sizes of each vertical block, resize the
+  /**
+   * Construct from a vector of the sizes of each vertical block, resize the
    * matrix so that its height is matrixNewHeight and its width fits the given
    * block dimensions.
    */
@@ -149,17 +105,17 @@ public:
   VerticalBlockView(FullMatrix& matrix, ITERATOR firstBlockDim, ITERATOR lastBlockDim, size_t matrixNewHeight) :
   matrix_(matrix), rowStart_(0), rowEnd_(matrixNewHeight), blockStart_(0) {
     fillOffsets(firstBlockDim, lastBlockDim);
-    matrix_.resize(matrixNewHeight, variableColOffsets_.back(), false);
+    matrix_.resize(matrixNewHeight, variableColOffsets_.back());
     assertInvariants();
   }
 
   /** Row size 
    */
-  size_t size1() const { assertInvariants(); return rowEnd_ - rowStart_; }
+  size_t rows() const { assertInvariants(); return rowEnd_ - rowStart_; }
   
   /** Column size
    */ 
-  size_t size2() const { assertInvariants(); return variableColOffsets_.back() - variableColOffsets_[blockStart_]; }
+  size_t cols() const { assertInvariants(); return variableColOffsets_.back() - variableColOffsets_[blockStart_]; }
   
   
   /** Block count
@@ -167,60 +123,62 @@ public:
   size_t nBlocks() const { assertInvariants(); return variableColOffsets_.size() - 1 - blockStart_; }
 
   
-  Block operator()(size_t block) {
+  /** Access a single block in the underlying matrix with read/write access */
+  inline Block operator()(size_t block) {
     return range(block, block+1);
   }
 
-  constBlock operator()(size_t block) const {
+  /** Access a const block view */
+  inline const constBlock operator()(size_t block) const {
     return range(block, block+1);
   }
 
-  Block range(size_t startBlock, size_t endBlock) {
+  /** access ranges of blocks at a time */
+  inline Block range(size_t startBlock, size_t endBlock) {
     assertInvariants();
     size_t actualStartBlock = startBlock + blockStart_;
     size_t actualEndBlock = endBlock + blockStart_;
     checkBlock(actualStartBlock);
     assert(actualEndBlock < variableColOffsets_.size());
-    return Block(matrix_,
-        boost::numeric::ublas::range(rowStart_, rowEnd_),
-        boost::numeric::ublas::range(variableColOffsets_[actualStartBlock], variableColOffsets_[actualEndBlock]));
+    const size_t& startCol = variableColOffsets_[actualStartBlock];
+    const size_t& endCol = variableColOffsets_[actualEndBlock];
+    return matrix_.block(rowStart_, startCol, rowEnd_-rowStart_, endCol-startCol);
   }
 
-  constBlock range(size_t startBlock, size_t endBlock) const {
+  inline const constBlock range(size_t startBlock, size_t endBlock) const {
     assertInvariants();
     size_t actualStartBlock = startBlock + blockStart_;
     size_t actualEndBlock = endBlock + blockStart_;
     checkBlock(actualStartBlock);
     assert(actualEndBlock < variableColOffsets_.size());
-    return constBlock(matrix_,
-        boost::numeric::ublas::range(rowStart_, rowEnd_),
-        boost::numeric::ublas::range(variableColOffsets_[actualStartBlock], variableColOffsets_[actualEndBlock]));
+    const size_t& startCol = variableColOffsets_[actualStartBlock];
+    const size_t& endCol = variableColOffsets_[actualEndBlock];
+    return ((const FullMatrix&)matrix_).block(rowStart_, startCol, rowEnd_-rowStart_, endCol-startCol);
   }
 
-  Block full() {
+  inline Block full() {
     return range(0,nBlocks());
   }
 
-  constBlock full() const {
+  inline const constBlock full() const {
     return range(0,nBlocks());
   }
 
+  /** get a single column out of a block */
   Column column(size_t block, size_t columnOffset) {
     assertInvariants();
     size_t actualBlock = block + blockStart_;
     checkBlock(actualBlock);
     assert(variableColOffsets_[actualBlock] + columnOffset < variableColOffsets_[actualBlock+1]);
-    Block blockMat(operator()(block));
-    return Column(blockMat, columnOffset);
+    return matrix_.col(variableColOffsets_[actualBlock] + columnOffset).segment(rowStart_, rowEnd_-rowStart_);
   }
 
-  constColumn column(size_t block, size_t columnOffset) const {
+  const constColumn column(size_t block, size_t columnOffset) const {
     assertInvariants();
     size_t actualBlock = block + blockStart_;
     checkBlock(actualBlock);
-    assert(variableColOffsets_[actualBlock] + columnOffset < matrix_.size2());
-    constBlock blockMat(operator()(block));
-    return constColumn(blockMat, columnOffset);
+    assert(variableColOffsets_[actualBlock] + columnOffset < (size_t) matrix_.cols());
+    return ((const FullMatrix&)matrix_).col(variableColOffsets_[actualBlock] + columnOffset).segment(rowStart_, rowEnd_-rowStart_);
   }
 
   size_t offset(size_t block) const {
@@ -237,17 +195,21 @@ public:
   size_t rowEnd() const { return rowEnd_; }
   size_t firstBlock() const { return blockStart_; }
 
-  /** Copy the block structure and resize the underlying matrix, but do not
+  /** access to full matrix */
+  const FullMatrix& fullMatrix() const { return matrix_; }
+
+  /**
+   * Copy the block structure and resize the underlying matrix, but do not
    * copy the matrix data.  If blockStart(), rowStart(), and/or rowEnd() have
    * been modified, this copies the structure of the corresponding matrix view.
    * In the destination VerticalBlockView, blockStart() and rowStart() will
-   * thus be 0, rowEnd() will be size2() of the source VerticalBlockView, and
+   * thus be 0, rowEnd() will be cols() of the source VerticalBlockView, and
    * the underlying matrix will be the size of the view of the source matrix.
    */
   template<class RHS>
   void copyStructureFrom(const RHS& rhs) {
-    if(matrix_.size1() != rhs.size1() || matrix_.size2() != rhs.size2())
-      matrix_.resize(rhs.size1(), rhs.size2(), false);
+    if((size_t) matrix_.rows() != (size_t) rhs.rows() || (size_t) matrix_.cols() != (size_t) rhs.cols())
+      matrix_.resize(rhs.rows(), rhs.cols());
     if(rhs.blockStart_ == 0)
       variableColOffsets_ = rhs.variableColOffsets_;
     else {
@@ -261,7 +223,7 @@ public:
       }
     }
     rowStart_ = 0;
-    rowEnd_ = matrix_.size1();
+    rowEnd_ = matrix_.rows();
     blockStart_ = 0;
     assertInvariants();
   }
@@ -275,13 +237,14 @@ public:
    * If blockStart(), rowStart(), and/or rowEnd() have been modified, this
    * copies the structure of the corresponding matrix view.  In the destination
    * VerticalBlockView, blockStart() and rowStart() will thus be 0, rowEnd()
-   * will be size2() of the source VerticalBlockView, and the underlying matrix
+   * will be cols() of the source VerticalBlockView, and the underlying matrix
    * will be the size of the view of the source matrix.
    */
   template<class RHS>
   VerticalBlockView<MATRIX>& assignNoalias(const RHS& rhs) {
     copyStructureFrom(rhs);
-    boost::numeric::ublas::noalias(matrix_) = rhs.full();
+//    boost::numeric::ublas::noalias(matrix_) = rhs.full();
+    matrix_ = rhs.full(); // FIXME: check if noalias is necessary here
     return *this;
   }
 
@@ -300,17 +263,17 @@ public:
 
 protected:
   void assertInvariants() const {
-    assert(matrix_.size2() == variableColOffsets_.back());
+    assert((size_t) matrix_.cols() == variableColOffsets_.back());
     assert(blockStart_ < variableColOffsets_.size());
-    assert(rowStart_ <= matrix_.size1());
-    assert(rowEnd_ <= matrix_.size1());
+    assert(rowStart_ <= (size_t) matrix_.rows());
+    assert(rowEnd_ <= (size_t) matrix_.rows());
     assert(rowStart_ <= rowEnd_);
   }
 
   void checkBlock(size_t block) const {
-    assert(matrix_.size2() == variableColOffsets_.back());
+    assert((size_t) matrix_.cols() == variableColOffsets_.back());
     assert(block < variableColOffsets_.size()-1);
-    assert(variableColOffsets_[block] < matrix_.size2() && variableColOffsets_[block+1] <= matrix_.size2());
+    assert(variableColOffsets_[block] < (size_t) matrix_.cols() && variableColOffsets_[block+1] <= (size_t) matrix_.cols());
   }
 
   template<typename ITERATOR>
@@ -327,7 +290,6 @@ protected:
   template<class OTHER> friend class SymmetricBlockView;
   template<class RELATED> friend class VerticalBlockView;
 };
-
 
 /**
  * This class stores a *reference* to a matrix and allows it to be accessed as
@@ -348,12 +310,14 @@ template<class MATRIX>
 class SymmetricBlockView {
 public:
   typedef MATRIX FullMatrix;
-  typedef typename boost::numeric::ublas::matrix_range<MATRIX> Block;
-  typedef typename boost::numeric::ublas::matrix_range<const MATRIX> constBlock;
-  typedef BlockColumn<MATRIX> Column;
-  typedef BlockColumn<const MATRIX> constColumn;
+  typedef Eigen::Block<MATRIX> Block;
+  typedef Eigen::Block<const MATRIX> constBlock;
+
+//  typedef typename MATRIX::ColXpr Column;
+//  typedef typename MATRIX::ConstColXpr constColumn;
 
 protected:
+  static FullMatrix matrixTemp_; // the reference to the full matrix
   FullMatrix& matrix_; // the reference to the full matrix
   std::vector<size_t> variableColOffsets_; // the starting columns of each block (0-based)
 
@@ -385,16 +349,19 @@ public:
   void resize(ITERATOR firstBlockDim, ITERATOR lastBlockDim, bool preserve) {
     blockStart_ = 0;
     fillOffsets(firstBlockDim, lastBlockDim);
-    matrix_.resize(variableColOffsets_.back(), variableColOffsets_.back(), preserve);
+    if (preserve)
+    	matrix_.conservativeResize(variableColOffsets_.back(), variableColOffsets_.back());
+    else
+    	matrix_.resize(variableColOffsets_.back(), variableColOffsets_.back());
   }
 
   /** Row size
    */
-  size_t size1() const { assertInvariants(); return variableColOffsets_.back() - variableColOffsets_[blockStart_]; }
+  size_t rows() const { assertInvariants(); return variableColOffsets_.back() - variableColOffsets_[blockStart_]; }
 
   /** Column size
    */
-  size_t size2() const { return size1(); }
+  size_t cols() const { return rows(); }
 
 
   /** Block count
@@ -420,9 +387,10 @@ public:
     checkBlock(j_actualStartBlock);
     assert(i_actualEndBlock < variableColOffsets_.size());
     assert(j_actualEndBlock < variableColOffsets_.size());
-    return Block(matrix_,
-        boost::numeric::ublas::range(variableColOffsets_[i_actualStartBlock], variableColOffsets_[i_actualEndBlock]),
-        boost::numeric::ublas::range(variableColOffsets_[j_actualStartBlock], variableColOffsets_[j_actualEndBlock]));
+    return matrix_.block(
+    		variableColOffsets_[i_actualStartBlock], variableColOffsets_[j_actualStartBlock],
+    		variableColOffsets_[i_actualEndBlock]-variableColOffsets_[i_actualStartBlock],
+    		variableColOffsets_[j_actualEndBlock]-variableColOffsets_[j_actualStartBlock]);
   }
 
   constBlock range(size_t i_startBlock, size_t i_endBlock, size_t j_startBlock, size_t j_endBlock) const {
@@ -435,9 +403,10 @@ public:
     checkBlock(j_actualStartBlock);
     assert(i_actualEndBlock < variableColOffsets_.size());
     assert(j_actualEndBlock < variableColOffsets_.size());
-    return constBlock(matrix_,
-        boost::numeric::ublas::range(variableColOffsets_[i_actualStartBlock], variableColOffsets_[i_actualEndBlock]),
-        boost::numeric::ublas::range(variableColOffsets_[j_actualStartBlock], variableColOffsets_[j_actualEndBlock]));
+    return ((const FullMatrix&)matrix_).block(
+    		variableColOffsets_[i_actualStartBlock], variableColOffsets_[j_actualStartBlock],
+    		variableColOffsets_[i_actualEndBlock]-variableColOffsets_[i_actualStartBlock],
+    		variableColOffsets_[j_actualEndBlock]-variableColOffsets_[j_actualStartBlock]);
   }
 
   Block full() {
@@ -448,12 +417,32 @@ public:
     return range(0,nBlocks(), 0,nBlocks());
   }
 
+  /** access to full matrix */
+  const FullMatrix& fullMatrix() const { return matrix_; }
+
+//  typedef typename MATRIX::ColXpr Column;
+  typedef typeof(matrixTemp_.col(0).segment(0, 1)) Column;
+  typedef typeof(((const FullMatrix&)matrixTemp_).col(0).segment(0, 1)) constColumn;
+
   Column column(size_t i_block, size_t j_block, size_t columnOffset) {
-    assertInvariants();
-    size_t j_actualBlock = j_block + blockStart_;
-    assert(variableColOffsets_[j_actualBlock] + columnOffset < variableColOffsets_[j_actualBlock+1]);
-    Block blockMat(operator()(i_block, j_block));
-    return Column(blockMat, columnOffset);
+  	assertInvariants();
+//    size_t j_actualBlock = j_block + blockStart_;
+//    assert(variableColOffsets_[j_actualBlock] + columnOffset < variableColOffsets_[j_actualBlock+1]);
+//    Block blockMat(operator()(i_block, j_block));
+//    return blockMat.col(columnOffset);
+
+  	size_t i_actualBlock = i_block + blockStart_;
+  	size_t j_actualBlock = j_block + blockStart_;
+  	checkBlock(i_actualBlock);
+  	checkBlock(j_actualBlock);
+  	assert(i_actualBlock < variableColOffsets_.size());
+  	assert(j_actualBlock < variableColOffsets_.size());
+  	assert(variableColOffsets_[j_actualBlock] + columnOffset < variableColOffsets_[j_actualBlock+1]);
+
+  	return matrix_.col(
+  			variableColOffsets_[j_actualBlock] + columnOffset).segment(
+  					variableColOffsets_[i_actualBlock],
+  					variableColOffsets_[i_actualBlock+1]-variableColOffsets_[i_actualBlock]);
   }
 
   constColumn column(size_t i_block, size_t j_block, size_t columnOffset) const {
@@ -466,18 +455,48 @@ public:
 
   Column rangeColumn(size_t i_startBlock, size_t i_endBlock, size_t j_block, size_t columnOffset) {
     assertInvariants();
-    size_t j_actualBlock = j_block + blockStart_;
-    assert(variableColOffsets_[j_actualBlock] + columnOffset < variableColOffsets_[j_actualBlock+1]);
-    Block blockMat(this->range(i_startBlock, i_endBlock, j_block));
-    return Column(blockMat, columnOffset);
+
+    size_t i_actualStartBlock = i_startBlock + blockStart_;
+    size_t i_actualEndBlock = i_endBlock + blockStart_;
+    size_t j_actualStartBlock = j_block + blockStart_;
+    checkBlock(i_actualStartBlock);
+    checkBlock(j_actualStartBlock);
+    assert(i_actualEndBlock < variableColOffsets_.size());
+    assert(variableColOffsets_[j_actualStartBlock] + columnOffset < variableColOffsets_[j_actualStartBlock+1]);
+
+    return matrix_.col(
+    		variableColOffsets_[j_actualStartBlock] + columnOffset).segment(
+    				variableColOffsets_[i_actualStartBlock],
+    				variableColOffsets_[i_actualEndBlock]-variableColOffsets_[i_actualStartBlock]);
+
+    // column of a block approach
+//    size_t j_actualBlock = j_block + blockStart_;
+//    assert(variableColOffsets_[j_actualBlock] + columnOffset < variableColOffsets_[j_actualBlock+1]);
+//    Block blockMat = this->range(i_startBlock, i_endBlock, j_block, j_block+1);
+//    return Column(blockMat, columnOffset);
   }
 
   constColumn rangeColumn(size_t i_startBlock, size_t i_endBlock, size_t j_block, size_t columnOffset) const {
     assertInvariants();
-    size_t j_actualBlock = j_block + blockStart_;
-    assert(variableColOffsets_[j_actualBlock] + columnOffset < variableColOffsets_[j_actualBlock+1]);
-    constBlock blockMat(this->range(i_startBlock, i_endBlock, j_block, j_block+1));
-    return constColumn(blockMat, columnOffset);
+
+    size_t i_actualStartBlock = i_startBlock + blockStart_;
+    size_t i_actualEndBlock = i_endBlock + blockStart_;
+    size_t j_actualStartBlock = j_block + blockStart_;
+    checkBlock(i_actualStartBlock);
+    checkBlock(j_actualStartBlock);
+    assert(i_actualEndBlock < variableColOffsets_.size());
+    assert(variableColOffsets_[j_actualStartBlock] + columnOffset < variableColOffsets_[j_actualStartBlock+1]);
+
+    return ((const FullMatrix&)matrix_).col(
+    		variableColOffsets_[j_actualStartBlock] + columnOffset).segment(
+    				variableColOffsets_[i_actualStartBlock],
+    				variableColOffsets_[i_actualEndBlock]-variableColOffsets_[i_actualStartBlock]);
+
+    // column of a block approach
+//    size_t j_actualBlock = j_block + blockStart_;
+//    assert(variableColOffsets_[j_actualBlock] + columnOffset < variableColOffsets_[j_actualBlock+1]);
+//    constBlock blockMat = this->range(i_startBlock, i_endBlock, j_block, j_block+1);
+//    return constColumn(blockMat, columnOffset);
   }
 
   size_t offset(size_t block) const {
@@ -498,7 +517,7 @@ public:
    */
   template<class RHS>
   void copyStructureFrom(const RHS& rhs) {
-    matrix_.resize(rhs.size2(), rhs.size2(), false);
+    matrix_.resize(rhs.cols(), rhs.cols());
     if(rhs.blockStart_ == 0)
       variableColOffsets_ = rhs.variableColOffsets_;
     else {
@@ -529,7 +548,8 @@ public:
   template<class RHSMATRIX>
   SymmetricBlockView<MATRIX>& assignNoalias(const SymmetricBlockView<RHSMATRIX>& rhs) {
     copyStructureFrom(rhs);
-    boost::numeric::ublas::noalias(matrix_) = rhs.range(0, rhs.nBlocks(), 0, rhs.nBlocks());
+//    boost::numeric::ublas::noalias(matrix_) = rhs.range(0, rhs.nBlocks(), 0, rhs.nBlocks());
+    matrix_ = rhs.matrix_.block(0, 0, rhs.nBlocks(), rhs.nBlocks());
     return *this;
   }
 
@@ -546,16 +566,16 @@ public:
 
 protected:
   void assertInvariants() const {
-    assert(matrix_.size1() == matrix_.size2());
-    assert(matrix_.size2() == variableColOffsets_.back());
+    assert(matrix_.rows() == matrix_.cols());
+    assert((size_t) matrix_.cols() == variableColOffsets_.back());
     assert(blockStart_ < variableColOffsets_.size());
   }
 
   void checkBlock(size_t block) const {
-    assert(matrix_.size1() == matrix_.size2());
-    assert(matrix_.size2() == variableColOffsets_.back());
+    assert(matrix_.rows() == matrix_.cols());
+    assert((size_t) matrix_.cols() == variableColOffsets_.back());
     assert(block < variableColOffsets_.size()-1);
-    assert(variableColOffsets_[block] < matrix_.size2() && variableColOffsets_[block+1] <= matrix_.size2());
+    assert(variableColOffsets_[block] < (size_t) matrix_.cols() && variableColOffsets_[block+1] <= (size_t) matrix_.cols());
   }
 
   template<typename ITERATOR>

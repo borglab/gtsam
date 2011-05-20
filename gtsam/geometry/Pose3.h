@@ -18,8 +18,6 @@
 
 #pragma once
 
-#include <boost/numeric/ublas/vector_proxy.hpp>
-
 #include <gtsam/geometry/Point3.h>
 #include <gtsam/geometry/Rot3.h>
 #include <gtsam/base/Testable.h>

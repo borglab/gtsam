@@ -22,143 +22,108 @@
 #include <fstream>
 #include <limits>
 
-#ifdef GT_USE_CBLAS
-extern "C" {
-#include <cblas.h>
-}
-#endif
-
-#ifdef GT_USE_LAPACK
-extern "C" {
-#include <cblas.h>
-}
-#endif
-
-#include <boost/numeric/ublas/matrix_proxy.hpp>
 #include <boost/foreach.hpp>
-#include <boost/numeric/ublas/lu.hpp>
-#include <boost/numeric/ublas/io.hpp>
-#include <boost/numeric/ublas/triangular.hpp>
-#include <boost/numeric/ublas/symmetric.hpp>
-#include <boost/numeric/ublas/matrix_proxy.hpp>
-#include <boost/numeric/ublas/vector_proxy.hpp>
 #include <boost/tuple/tuple.hpp>
 
+#include <gtsam/3rdparty/Eigen/Dense>
+#include <gtsam/3rdparty/Eigen/SVD>
+
+#include <gtsam/base/timing.h>
 #include <gtsam/base/Matrix-inl.h>
 #include <gtsam/base/Vector.h>
 
 using namespace std;
-namespace ublas = boost::numeric::ublas;
 
 namespace gtsam {
 
 /** Explicit instantiations of template functions for standard types */
-template Vector backSubstituteUpper<Matrix,Vector>(const boost::numeric::ublas::matrix_expression<Matrix>& U,
-    const boost::numeric::ublas::vector_expression<Vector>& b, bool unit);
-template Vector backSubstituteUpper<Vector,Matrix>(const boost::numeric::ublas::vector_expression<Vector>& b,
-    const boost::numeric::ublas::matrix_expression<Matrix>& U, bool unit);
+//template Vector backSubstituteUpper<Matrix,Vector>(const Matrix& U, const Vector& b, bool unit);
+//template Vector backSubstituteUpper<Vector,Matrix>(const Vector& b, const Matrix& U, bool unit);
 
 /* ************************************************************************* */
 Matrix Matrix_( size_t m, size_t n, const double* const data) {
-  Matrix A(m,n);
-  copy(data, data+m*n, A.data().begin());
-  return A;
+	Matrix A(m,n);
+	copy(data, data+m*n, A.data());
+	return A;
 }
 
 /* ************************************************************************* */
 Matrix Matrix_( size_t m, size_t n, const Vector& v)
 {
-  Matrix A(m,n);
-  // column-wise copy
-  for( size_t j = 0, k=0  ; j < n ; j++)
-    for( size_t i = 0; i < m ; i++,k++)
-      A(i,j) = v(k);
-  return A;
+	Matrix A(m,n);
+	// column-wise copy
+	for( size_t j = 0, k=0  ; j < n ; j++)
+		for( size_t i = 0; i < m ; i++,k++)
+			A(i,j) = v(k);
+	return A;
 }
 
 /* ************************************************************************* */
 Matrix Matrix_(size_t m, size_t n, ...) {
-  Matrix A(m,n);
-  va_list ap;
-  va_start(ap, n);
-  for( size_t i = 0 ; i < m ; i++)
-    for( size_t j = 0 ; j < n ; j++) {
-      double value = va_arg(ap, double);
-      A(i,j) = value;
-    }
-  va_end(ap);
-  return A;
+	Matrix A(m,n);
+	va_list ap;
+	va_start(ap, n);
+	for( size_t i = 0 ; i < m ; i++)
+		for( size_t j = 0 ; j < n ; j++) {
+			double value = va_arg(ap, double);
+			A(i,j) = value;
+		}
+	va_end(ap);
+	return A;
 }
 
 /* ************************************************************************* */
-/** create a matrix with value zero                                          */
-/* ************************************************************************* */
-Matrix zeros( size_t m, size_t n )
-{
-  Matrix A(m,n, 0.0);
-  return A;
+Matrix zeros( size_t m, size_t n ) {
+	return Matrix::Zero(m,n);
 }
 
-/** 
- * Identity matrix
- */
-Matrix eye( size_t m, size_t n){
-  Matrix A = zeros(m,n);
-  for(size_t i = 0; i<min(m,n); i++) A(i,i)=1.0;
-  return A;
+/* ************************************************************************* */
+Matrix eye( size_t m, size_t n) {
+	return Matrix::Identity(m, n);
 }
 
 /* ************************************************************************* */ 
-/** Diagonal matrix values                                                   */
-/* ************************************************************************* */
 Matrix diag(const Vector& v) {
-  size_t m = v.size();
-  Matrix A = zeros(m,m);
-  for(size_t i = 0; i<m; i++) A(i,i)=v(i);
-  return A;
-}
-
-/* ************************************************************************* */
-/** Check if two matrices are the same                                       */
-/* ************************************************************************* */
-bool equal_with_abs_tol(const Matrix& A, const Matrix& B, double tol) {
-
-  size_t n1 = A.size2(), m1 = A.size1();
-  size_t n2 = B.size2(), m2 = B.size1();
-
-  bool equal = true;
-
-  if(m1!=m2 || n1!=n2) equal = false;
-
-  for(size_t i=0; i<m1 && equal; i++)
-	  for(size_t j=0; j<n1 && equal; j++) {
-		  if(isnan(A(i,j)) xor isnan(B(i,j)))
-			  equal = false;
-		  else if(fabs(A(i,j) - B(i,j)) > tol)
-			  equal = false;
-	  }
-
-
-
-  return equal;
+	return v.asDiagonal();
 }
 
 /* ************************************************************************* */
 bool assert_equal(const Matrix& expected, const Matrix& actual, double tol) {
 
-  if (equal_with_abs_tol(expected,actual,tol)) return true;
+	if (equal_with_abs_tol(expected,actual,tol)) return true;
 
-  size_t n1 = expected.size2(), m1 = expected.size1();
-  size_t n2 = actual.size2(), m2 = actual.size1();
+	size_t n1 = expected.cols(), m1 = expected.rows();
+	size_t n2 = actual.cols(), m2 = actual.rows();
 
-  cout << "not equal:" << endl;
-  print(expected,"expected = ");
-  print(actual,"actual = ");
-  if(m1!=m2 || n1!=n2)
-    cout << m1 << "," << n1 << " != " << m2 << "," << n2 << endl;
-  else
-    print(actual-expected, "actual - expected = ");
-  return false;
+	cout << "not equal:" << endl;
+	print(expected,"expected = ");
+	print(actual,"actual = ");
+	if(m1!=m2 || n1!=n2)
+		cout << m1 << "," << n1 << " != " << m2 << "," << n2 << endl;
+	else {
+		Matrix diff = actual-expected;
+		print(diff, "actual - expected = ");
+	}
+	return false;
+}
+
+/* ************************************************************************* */
+bool assert_equal(const MatrixColMajor& expected, const MatrixColMajor& actual, double tol) {
+	if (equal_with_abs_tol(expected,actual,tol)) return true;
+
+	size_t n1 = expected.cols(), m1 = expected.rows();
+	size_t n2 = actual.cols(), m2 = actual.rows();
+
+	cout << "not equal:" << endl;
+	print(expected,"expected = ");
+	print(actual,"actual = ");
+	if(m1!=m2 || n1!=n2)
+		cout << m1 << "," << n1 << " != " << m2 << "," << n2 << endl;
+	else {
+		Matrix diff = actual-expected;
+		print(diff, "actual - expected = ");
+	}
+	return false;
 }
 
 /* ************************************************************************* */
@@ -176,217 +141,226 @@ bool assert_equal(const std::list<Matrix>& As, const std::list<Matrix>& Bs, doub
 
 /* ************************************************************************* */
 static bool is_linear_dependent(const Matrix& A, const Matrix& B, double tol) {
-  // This local static function is used by linear_independent and
-  // linear_dependent just below.
-  size_t n1 = A.size2(), m1 = A.size1();
-  size_t n2 = B.size2(), m2 = B.size1();
+	// This local static function is used by linear_independent and
+	// linear_dependent just below.
+	size_t n1 = A.cols(), m1 = A.rows();
+	size_t n2 = B.cols(), m2 = B.rows();
 
-  bool dependent = true;
-  if(m1!=m2 || n1!=n2) dependent = false;
+	bool dependent = true;
+	if(m1!=m2 || n1!=n2) dependent = false;
 
-  for(size_t i=0; dependent && i<m1; i++) {
-    if (!gtsam::linear_dependent(row_(A,i), row_(B,i), tol))
-      dependent = false;
-  }
+	for(size_t i=0; dependent && i<m1; i++) {
+		if (!gtsam::linear_dependent(Vector(row(A,i)), Vector(row(B,i)), tol))
+			dependent = false;
+	}
 
-  return dependent;
+	return dependent;
 }
 
 /* ************************************************************************* */
 bool linear_independent(const Matrix& A, const Matrix& B, double tol) {
-  if(!is_linear_dependent(A, B, tol))
-    return true;
-  else {
-    cout << "not linearly dependent:" << endl;
-    print(A,"A = ");
-    print(B,"B = ");
-    if(A.size1()!=B.size1() || A.size2()!=B.size2())
-      cout << A.size1() << "x" << A.size2() << " != " << B.size1() << "x" << B.size2() << endl;
-    return false;
-  }
+	if(!is_linear_dependent(A, B, tol))
+		return true;
+	else {
+		cout << "not linearly dependent:" << endl;
+		print(A,"A = ");
+		print(B,"B = ");
+		if(A.rows()!=B.rows() || A.cols()!=B.cols())
+			cout << A.rows() << "x" << A.cols() << " != " << B.rows() << "x" << B.cols() << endl;
+		return false;
+	}
 }
 
 /* ************************************************************************* */
 bool linear_dependent(const Matrix& A, const Matrix& B, double tol) {
-  if(is_linear_dependent(A, B, tol))
-    return true;
-  else {
-    cout << "not linearly dependent:" << endl;
-    print(A,"A = ");
-    print(B,"B = ");
-    if(A.size1()!=B.size1() || A.size2()!=B.size2())
-      cout << A.size1() << "x" << A.size2() << " != " << B.size1() << "x" << B.size2() << endl;
-    return false;
-  }
+	if(is_linear_dependent(A, B, tol))
+		return true;
+	else {
+		cout << "not linearly dependent:" << endl;
+		print(A,"A = ");
+		print(B,"B = ");
+		if(A.rows()!=B.rows() || A.cols()!=B.cols())
+			cout << A.rows() << "x" << A.cols() << " != " << B.rows() << "x" << B.cols() << endl;
+		return false;
+	}
 }
 
 /* ************************************************************************* */
 void multiplyAdd(double alpha, const Matrix& A, const Vector& x, Vector& e) {
-#if defined GT_USE_CBLAS
-
-	
-
-	// get sizes
-	const size_t m = A.size1(), n = A.size2();
-
-	// get pointers
-	const double * Aptr = A.data().begin();
-	const double * Xptr = x.data().begin();
-	double * Eptr = e.data().begin();
-
-	// fill in parameters
-	const double beta = 1.0;
-	const size_t incx = 1, incy = 1, ida = n;
-
-	// execute blas call
-	cblas_dgemv(CblasRowMajor, CblasNoTrans, m, n, alpha, Aptr, ida, Xptr, incx, beta, Eptr, incy);
-
-#else
-
-  size_t m = A.size1(), n = A.size2();
-	double * ei = e.data().begin();
-	const double * aij = A.data().begin();
-	for(size_t i = 0; i < m; i++, ei++) {
-		const double * xj = x.data().begin();
-		for(size_t j = 0; j < n; j++, aij++, xj++)
-			(*ei) += alpha * (*aij) * (*xj);
-	}
-#endif
+	// eigen call to exploit template optimizations
+	e += alpha * A * x;
+//
+//#if defined GT_USE_CBLAS
+//
+//	// get sizes
+//	const size_t m = A.rows(), n = A.cols();
+//
+//	// get pointers
+//	const double * Aptr = A.data();
+//	const double * Xptr = x.data();
+//	double * Eptr = e.data();
+//
+//	// fill in parameters
+//	const double beta = 1.0;
+//	const size_t incx = 1, incy = 1, ida = n;
+//
+//	// execute blas call
+//	cblas_dgemv(CblasRowMajor, CblasNoTrans, m, n, alpha, Aptr, ida, Xptr, incx, beta, Eptr, incy);
+//
+//#else
+//
+//	size_t m = A.rows(), n = A.cols();
+//	double * ei = e.data();
+//	const double * aij = A.data();
+//	for(size_t i = 0; i < m; i++, ei++) {
+//		const double * xj = x.data();
+//		for(size_t j = 0; j < n; j++, aij++, xj++)
+//			(*ei) += alpha * (*aij) * (*xj);
+//	}
+//#endif
 }
 
 /* ************************************************************************* */
 void multiplyAdd(const Matrix& A, const Vector& x, Vector& e) {
-	
-#ifdef GT_USE_CBLAS
-	multiplyAdd(1.0, A, x, e);
-#else
-  size_t m = A.size1(), n = A.size2();
-	double * ei = e.data().begin();
-	const double * aij = A.data().begin();
-	for(size_t i = 0; i < m; i++, ei++) {
-		const double * xj = x.data().begin();
-		for(size_t j = 0; j < n; j++, aij++, xj++)
-			(*ei) += (*aij) * (*xj);
-	}
-#endif
-	}
+	e += A * x;
+
+//#ifdef GT_USE_CBLAS
+//	multiplyAdd(1.0, A, x, e);
+//#else
+//	size_t m = A.rows(), n = A.cols();
+//	double * ei = e.data();
+//	const double * aij = A.data();
+//	for(size_t i = 0; i < m; i++, ei++) {
+//		const double * xj = x.data();
+//		for(size_t j = 0; j < n; j++, aij++, xj++)
+//			(*ei) += (*aij) * (*xj);
+//	}
+//#endif
+}
 
 /* ************************************************************************* */
 Vector operator^(const Matrix& A, const Vector & v) {
-  if (A.size1()!=v.size()) throw std::invalid_argument(
-  		boost::str(boost::format("Matrix operator^ : A.m(%d)!=v.size(%d)") % A.size1() % v.size()));
-  Vector vt = trans(v);
-  Vector vtA = prod(vt,A);
-  return trans(vtA);
+	if (A.rows()!=v.size()) throw std::invalid_argument(
+			boost::str(boost::format("Matrix operator^ : A.m(%d)!=v.size(%d)") % A.rows() % v.size()));
+//	Vector vt = v.transpose();
+//	Vector vtA = vt * A;
+//	return vtA.transpose();
+	return A.transpose() * v;
 }
 
 /* ************************************************************************* */
 void transposeMultiplyAdd(double alpha, const Matrix& A, const Vector& e, Vector& x) {
-#if defined GT_USE_CBLAS
-
-	// get sizes
-	const size_t m = A.size1(), n = A.size2();
-
-	// get pointers
-	const double * Aptr = A.data().begin();
-	const double * Eptr = e.data().begin();
-	double * Xptr = x.data().begin();
-
-	// fill in parameters
-	const double beta = 1.0;
-	const size_t incx = 1, incy = 1, ida = n;
-
-	// execute blas call
-	cblas_dgemv(CblasRowMajor, CblasTrans, m, n, alpha, Aptr, ida, Eptr, incx, beta, Xptr, incy);
-
-#else
-	
-	// TODO: use BLAS
-  size_t m = A.size1(), n = A.size2();
-	double * xj = x.data().begin();
-	for(size_t j = 0; j < n; j++,xj++) {
-		const double * ei = e.data().begin();
-		const double * aij = A.data().begin() + j;
-		for(size_t i = 0; i < m; i++, aij+=n, ei++)
-			(*xj) += alpha * (*aij) * (*ei);
-	}
-#endif
+	x += alpha * A.transpose() * e;
+//
+//#if defined GT_USE_CBLAS
+//
+//	// get sizes
+//	const size_t m = A.rows(), n = A.cols();
+//
+//	// get pointers
+//	const double * Aptr = A.data();
+//	const double * Eptr = e.data();
+//	double * Xptr = x.data();
+//
+//	// fill in parameters
+//	const double beta = 1.0;
+//	const size_t incx = 1, incy = 1, ida = n;
+//
+//	// execute blas call
+//	cblas_dgemv(CblasRowMajor, CblasTrans, m, n, alpha, Aptr, ida, Eptr, incx, beta, Xptr, incy);
+//
+//#else
+//
+//	// TODO: use BLAS
+//	size_t m = A.rows(), n = A.cols();
+//	double * xj = x.data();
+//	for(size_t j = 0; j < n; j++,xj++) {
+//		const double * ei = e.data();
+//		const double * aij = A.data() + j;
+//		for(size_t i = 0; i < m; i++, aij+=n, ei++)
+//			(*xj) += alpha * (*aij) * (*ei);
+//	}
+//#endif
 }
 
 /* ************************************************************************* */
 void transposeMultiplyAdd(const Matrix& A, const Vector& e, Vector& x) {
-	
-#ifdef GT_USE_CBLAS
-	transposeMultiplyAdd(1.0, A, e, x);
-#else
-  size_t m = A.size1(), n = A.size2();
-	double * xj = x.data().begin();
-	for(size_t j = 0; j < n; j++,xj++) {
-		const double * ei = e.data().begin();
-		const double * aij = A.data().begin() + j;
-		for(size_t i = 0; i < m; i++, aij+=n, ei++)
-			(*xj) += (*aij) * (*ei);
-	}
-#endif
+	x += A.transpose() * e;
+//#ifdef GT_USE_CBLAS
+//	transposeMultiplyAdd(1.0, A, e, x);
+//#else
+//	size_t m = A.rows(), n = A.cols();
+//	double * xj = x.data();
+//	for(size_t j = 0; j < n; j++,xj++) {
+//		const double * ei = e.data();
+//		const double * aij = A.data() + j;
+//		for(size_t i = 0; i < m; i++, aij+=n, ei++)
+//			(*xj) += (*aij) * (*ei);
+//	}
+//#endif
 }
 
 /* ************************************************************************* */
 void transposeMultiplyAdd(double alpha, const Matrix& A, const Vector& e, SubVector x) {
-	
-	// TODO: use BLAS
-	size_t m = A.size1(), n = A.size2();
-	for (size_t j = 0; j < n; j++) {
-		const double * ei = e.data().begin();
-		const double * aij = A.data().begin() + j;
-		for (size_t i = 0; i < m; i++, aij+=n, ei++)
-			x(j) += alpha * (*aij) * (*ei);
-	}
+	x += alpha * A.transpose() * e;
+
+//	// TODO: use BLAS
+//	size_t m = A.rows(), n = A.cols();
+//	for (size_t j = 0; j < n; j++) {
+//		const double * ei = e.data();
+//		const double * aij = A.data() + j;
+//		for (size_t i = 0; i < m; i++, aij+=n, ei++)
+//			x(j) += alpha * (*aij) * (*ei);
+//	}
 }
 
 /* ************************************************************************* */
 Vector Vector_(const Matrix& A)
 {
-  size_t m = A.size1(), n = A.size2();
-  Vector v(m*n);
-  for( size_t j = 0, k=0  ; j < n ; j++)
-    for( size_t i = 0; i < m ; i++,k++)
-      v(k) = A(i,j);
-  return v;
-}
-
-/* ************************************************************************* */
-Vector column_(const Matrix& A, size_t j) {
-
-
-	return column(A,j); // real boost version
-}
-
-/* ************************************************************************* */
-Vector row_(const Matrix& A, size_t i) {
-	if (i>=A.size1())
-		throw invalid_argument("Row index out of bounds!");
-
-	const double * Aptr = A.data().begin() + A.size2() * i;
-	return Vector_(A.size2(), Aptr);
+	size_t m = A.rows(), n = A.cols();
+	Vector v(m*n);
+	for( size_t j = 0, k=0  ; j < n ; j++)
+		for( size_t i = 0; i < m ; i++,k++)
+			v(k) = A(i,j);
+	return v;
 }
 
 /* ************************************************************************* */
 void print(const Matrix& A, const string &s, ostream& stream) {
-  size_t m = A.size1(), n = A.size2();
+	size_t m = A.rows(), n = A.cols();
 
-  // print out all elements
-  stream << s << "[\n";
-  for( size_t i = 0 ; i < m ; i++) {
-    for( size_t j = 0 ; j < n ; j++) {
-      double aij = A(i,j);
-      if(aij != 0.0)
-        stream << setw(12) << setprecision(9) << aij << ",\t";
-      else
-        stream << "         0.0,\t";
-    }
-    stream << endl;
-  }
-  stream << "];" << endl;
+	// print out all elements
+	stream << s << "[\n";
+	for( size_t i = 0 ; i < m ; i++) {
+		for( size_t j = 0 ; j < n ; j++) {
+			double aij = A(i,j);
+			if(aij != 0.0)
+				stream << setw(12) << setprecision(9) << aij << ",\t";
+			else
+				stream << "         0.0,\t";
+		}
+		stream << endl;
+	}
+	stream << "];" << endl;
+}
+
+/* ************************************************************************* */
+void print(const MatrixColMajor& A, const string &s, ostream& stream) {
+	size_t m = A.rows(), n = A.cols();
+
+	// print out all elements
+	stream << s << "[\n";
+	for( size_t i = 0 ; i < m ; i++) {
+		for( size_t j = 0 ; j < n ; j++) {
+			double aij = A(i,j);
+			if(aij != 0.0)
+				stream << setw(12) << setprecision(9) << aij << ",\t";
+			else
+				stream << "         0.0,\t";
+		}
+		stream << endl;
+	}
+	stream << "];" << endl;
 }
 
 /* ************************************************************************* */
@@ -397,49 +371,25 @@ void save(const Matrix& A, const string &s, const string& filename) {
 }
 
 /* ************************************************************************* */
-Matrix sub(const Matrix& A, size_t i1, size_t i2, size_t j1, size_t j2) {
-  
-  size_t m=i2-i1, n=j2-j1;
-  Matrix B(m,n);
-  for (size_t i=i1,k=0;i<i2;i++,k++)
-    memcpy(&B(k,0),&A(i,j1),n*sizeof(double));
-  return B;
-}
-
-/* ************************************************************************* */
 void insertSub(Matrix& big, const Matrix& small, size_t i, size_t j) {
-	// direct pointer method
-	size_t jb = big.size2(),
-		   is = small.size1(), js = small.size2();
-
-	// pointer to start of window in big
-	double * bigptr = big.data().begin() + i*jb + j;
-	const double * smallptr = small.data().begin();
-	for (size_t row=0; row<is; ++row)
-		memcpy(bigptr+row*jb, smallptr+row*js, js*sizeof(double));
+	big.block(i, j, small.rows(), small.cols()) = small;
 }
 
 /* ************************************************************************* */
 void insertColumn(Matrix& A, const Vector& col, size_t j) {
-	ublas::matrix_column<Matrix> colproxy(A, j);
-	colproxy = col;
+	A.col(j) = col;
 }
 
 /* ************************************************************************* */
 void insertColumn(Matrix& A, const Vector& col, size_t i, size_t j) {
-	ublas::matrix_column<Matrix> colproxy(A, j);
-	ublas::vector_range<ublas::matrix_column<Matrix> > colsubproxy(colproxy,
-			ublas::range (i, i+col.size()));
-	colsubproxy = col;
+	A.col(j).segment(i, col.size()) = col;
 }
 
 /* ************************************************************************* */
-
 Vector columnNormSquare(const MatrixColMajor &A) {
-	Vector v (A.size2()) ;
-	for ( size_t i = 0 ; i < A.size2() ; ++i ) {
-		ublas::matrix_column<const MatrixColMajor> mc (A, i);
-		v[i] = dot(mc, mc) ;
+	Vector v (A.cols()) ;
+	for ( size_t i = 0 ; i < (size_t) A.cols() ; ++i ) {
+		v[i] = A.col(i).dot(A.col(i));
 	}
 	return v ;
 }
@@ -447,67 +397,70 @@ Vector columnNormSquare(const MatrixColMajor &A) {
 /* ************************************************************************* */
 void solve(Matrix& A, Matrix& B)
 {
-	typedef ublas::permutation_matrix<std::size_t> pmatrix;
+	// Eigen version - untested
+	Eigen::FullPivLU<Matrix> lu;
+	lu.compute(A);
+	B = lu.solve(B);
+	A = lu.matrixLU();
+
+//	typedef ublas::permutation_matrix<std::size_t> pmatrix;
 	// create a working copy of the input
-	Matrix A_(A);
+//	Matrix A_(A);
 	// create a permutation matrix for the LU-factorization
-	pmatrix pm(A_.size1());
+//	pmatrix pm(A_.rows());
 
 	// perform LU-factorization
-	size_t res = lu_factorize(A_,pm);
-	if( res != 0 ) throw runtime_error ("Matrix::solve: lu_factorize failed!");
+	// FIXME: add back with Eigen functionality
+	//	size_t res = lu_factorize(A_,pm);
+	//	if( res != 0 ) throw runtime_error ("Matrix::solve: lu_factorize failed!");
 
 	// backsubstitute to get the inverse
-	lu_substitute(A_, pm, B);
+//	lu_substitute(A_, pm, B);
 }
 
 /* ************************************************************************* */
-Matrix inverse(const Matrix& originalA)
+Matrix inverse(const Matrix& A)
 {
-  Matrix A(originalA);
-  Matrix B = eye(A.size2());
-  solve(A,B);
-  return B;
+	return A.inverse();
 }
 
 /* ************************************************************************* */
 /** Householder QR factorization, Golub & Van Loan p 224, explicit version    */
 /* ************************************************************************* */
 pair<Matrix,Matrix> qr(const Matrix& A) {
+	const size_t m = A.rows(), n = A.cols(), kprime = min(m,n);
 
-  const size_t m = A.size1(), n = A.size2(), kprime = min(m,n);
-  
-  Matrix Q=eye(m,m),R(A);
-  Vector v(m);
+	Matrix Q=eye(m,m),R(A);
+	Vector v(m);
 
-  // loop over the kprime first columns 
-  for(size_t j=0; j < kprime; j++){
+	// loop over the kprime first columns
+	for(size_t j=0; j < kprime; j++){
 
-    // we now work on the matrix (m-j)*(n-j) matrix A(j:end,j:end)
-    const size_t mm=m-j;
+		// we now work on the matrix (m-j)*(n-j) matrix A(j:end,j:end)
+		const size_t mm=m-j;
 
-    // copy column from matrix to xjm, i.e. x(j:m) = A(j:m,j)
-    Vector xjm(mm);
-    for(size_t k = 0 ; k < mm; k++)
-      xjm(k) = R(j+k, j);  
-        
-    // calculate the Householder vector v
-    double beta; Vector vjm;
-    boost::tie(beta,vjm) = house(xjm);
+		// copy column from matrix to xjm, i.e. x(j:m) = A(j:m,j)
+		Vector xjm(mm);
+		for(size_t k = 0 ; k < mm; k++)
+			xjm(k) = R(j+k, j);
 
-    // pad with zeros to get m-dimensional vector v
-    for(size_t k = 0 ; k < m; k++) 
-      v(k) = k<j ? 0.0 : vjm(k-j);
+		// calculate the Householder vector v
+		double beta; Vector vjm;
+		boost::tie(beta,vjm) = house(xjm);
 
-    // create Householder reflection matrix Qj = I-beta*v*v'
-    Matrix Qj = eye(m) - beta * Matrix(outer_prod(v,v)); //BAD: Fix this
+		// pad with zeros to get m-dimensional vector v
+		for(size_t k = 0 ; k < m; k++)
+			v(k) = k<j ? 0.0 : vjm(k-j);
 
-    R = Qj * R; // update R
-    Q = Q * Qj; // update Q
+		// create Householder reflection matrix Qj = I-beta*v*v'
+		Matrix Qj = eye(m) - beta * v * v.transpose();
 
-  } // column j
+		R = Qj * R; // update R
+		Q = Q * Qj; // update Q
 
-  return make_pair(Q,R);
+	} // column j
+
+	return make_pair(Q,R);
 }
 
 /* ************************************************************************* */
@@ -519,74 +472,50 @@ pair<Matrix,Matrix> qr(const Matrix& A) {
  * on a number of different matrices for which all columns change.
  */
 /* ************************************************************************* */
-inline void householder_update_manual(Matrix &A, size_t j, double beta, const Vector& vjm) {
-	const size_t m = A.size1(), n = A.size2();
-	
-	Vector w(n);
-	for( size_t c = 0; c < n; c++) {
-		w(c) = 0.0;
-		// dangerous as relies on row-major scheme
-		const double *a = &A(j,c), * const v = &vjm(0);
-		for( size_t r=j, s=0 ; r < m ; r++, s++, a+=n )
-			
-			w(c) += (*a) * v[s];
-		w(c) *= beta;
-	}
-
-	// rank 1 update A(j:m,:) -= v(j:m)*w'
-	for( size_t c = 0 ; c < n; c++) {
-		double wc = w(c);
-		double *a = &A(j,c); const double * const v =&vjm(0);
-		for( size_t r=j, s=0 ; r < m ; r++, s++, a+=n )
-			
-			(*a) -= v[s] * wc;
-	}
-}
-
-void householder_update(Matrix &A, size_t j, double beta, const Vector& vjm) {
-#if defined GT_USE_CBLAS
-
-	// CBLAS version not working, using manual approach
-	householder_update_manual(A,j,beta,vjm);
-
-
-
-#else
-	householder_update_manual(A,j,beta,vjm);
-#endif
-}
-
-/* ************************************************************************* */
-// update A, b
-// A' \define A_{S}-ar and b'\define b-ad
-// __attribute__ ((noinline))	// uncomment to prevent inlining when profiling
-inline void updateAb_manual(Matrix& A, Vector& b, size_t j, const Vector& a,
-		const Vector& r, double d) {
-	const size_t m = A.size1(), n = A.size2();
-	for (size_t i = 0; i < m; i++) { // update all rows
-		double ai = a(i);
-		b(i) -= ai * d;
-		double *Aij = A.data().begin() + i * n + j + 1;
-		const double *rptr = r.data().begin() + j + 1;
-		
-		for (size_t j2 = j + 1; j2 < n; j2++, Aij++, rptr++)
-			*Aij -= ai * (*rptr);
-	}
-}
+//void householder_update(Matrix &A, size_t j, double beta, const Vector& vjm) {
+//	const size_t m = A.rows(), n = A.cols();
+//
+//	Vector w(n);
+//	for( size_t c = 0; c < n; c++) {
+//		w(c) = 0.0;
+//		// dangerous as relies on row-major scheme
+//		const double *a = &A(j,c), * const v = &vjm(0);
+//		for( size_t r=j, s=0 ; r < m ; r++, s++, a+=n )
+//
+//			w(c) += (*a) * v[s];
+//		w(c) *= beta;
+//	}
+//
+//	// rank 1 update A(j:m,:) -= v(j:m)*w'
+//	for( size_t c = 0 ; c < n; c++) {
+//		double wc = w(c);
+//		double *a = &A(j,c); const double * const v =&vjm(0);
+//		for( size_t r=j, s=0 ; r < m ; r++, s++, a+=n )
+//			(*a) -= v[s] * wc;
+//	}
+//}
 
 /**
  * Perform updates of system matrices
  */
 static void updateAb(Matrix& A, Vector& b, size_t j, const Vector& a,
 		const Vector& r, double d) {
-	// TODO: reimplement using BLAS
-	updateAb_manual(A,b,j,a,r,d);
+	const size_t m = A.rows(), n = A.cols();
+	for (size_t i = 0; i < m; i++) { // update all rows
+		double ai = a(i);
+		b(i) -= ai * d;
+		double *Aij = A.data() + i * n + j + 1;
+		const double *rptr = r.data() + j + 1;
+
+		for (size_t j2 = j + 1; j2 < n; j2++, Aij++, rptr++)
+			*Aij -= ai * (*rptr);
+	}
 }
 
 /* ************************************************************************* */
 list<boost::tuple<Vector, double, double> >
 weighted_eliminate(Matrix& A, Vector& b, const Vector& sigmas) {
-	size_t m = A.size1(), n = A.size2(); // get size(A)
+	size_t m = A.rows(), n = A.cols(); // get size(A)
 	size_t maxRank = min(m,n);
 
 	// create list
@@ -601,8 +530,8 @@ weighted_eliminate(Matrix& A, Vector& b, const Vector& sigmas) {
 	// Then update A and b by substituting x with d-rS, zero-ing out x's column.
 	for (size_t j=0; j<n; ++j) {
 		// extract the first column of A
-		Vector a(column_(A, j)); // ublas::matrix_column is slower !
-		
+		Vector a(column(A, j)); // ublas::matrix_column is slower !
+
 		// Calculate weighted pseudo-inverse and corresponding precision
 		double precision = weightedPseudoinverse(a, weights, pseudo);
 
@@ -613,10 +542,10 @@ weighted_eliminate(Matrix& A, Vector& b, const Vector& sigmas) {
 		// create solution and copy into r
 		Vector r(basis(n, j));
 		for (size_t j2=j+1; j2<n; ++j2)
-			r(j2) = inner_prod(pseudo, ublas::matrix_column<Matrix>(A, j2)); // TODO: don't use ublas
+			r(j2) = pseudo.dot(A.col(j2));
 
 		// create the rhs
-		double d = inner_prod(pseudo, b);
+		double d = pseudo.dot(b);
 
 		// construct solution (r, d, sigma)
 		// TODO: avoid sqrt, store precision or at least variance
@@ -638,105 +567,105 @@ weighted_eliminate(Matrix& A, Vector& b, const Vector& sigmas) {
  * version with Householder vectors below diagonal, as in GVL
  */
 /* ************************************************************************* */
-inline void householder_manual(Matrix &A, size_t k) {
-	const size_t m = A.size1(), n = A.size2(), kprime = min(k,min(m,n));
+void householder_(Matrix &A, size_t k)
+{
+	const size_t m = A.rows(), n = A.cols(), kprime = min(k,min(m,n));
 	// loop over the kprime first columns
 	for(size_t j=0; j < kprime; j++){
-		// below, the indices r,c always refer to original A
-
-		// copy column from matrix to xjm, i.e. x(j:m) = A(j:m,j)
-		Vector xjm(m-j);
-		for(size_t r = j ; r < m; r++)
-			xjm(r-j) = A(r,j);
+		// copy column from matrix to vjm, i.e. v(j:m) = A(j:m,j)
+		Vector vjm = A.col(j).segment(j, m-j);
 
 		// calculate the Householder vector, in place
-		double beta = houseInPlace(xjm);
-		Vector& vjm = xjm;
+		double beta = houseInPlace(vjm);
 
-		// do outer product update A = (I-beta vv')*A = A - v*(beta*A'*v)' = A - v*w'
-		householder_update(A, j, beta, vjm);
+		// do outer product update A(j:m,:) = (I-beta vv')*A = A - v*(beta*A'*v)' = A - v*w'
+		Vector w = beta * A.middleRows(j,m-j).transpose() * vjm;
+		A.middleRows(j,m-j) -= vjm * w.transpose();
 
 		// the Householder vector is copied in the zeroed out part
-		for( size_t r = j+1 ; r < m ; r++ )
-			A(r,j) = vjm(r-j);
+		A.col(j).segment(j+1, m-(j+1)) = vjm.segment(1, m-(j+1));
+	} // column j
 
+//	const size_t m = A.rows(), n = A.cols(), kprime = min(k,min(m,n));
+//	// loop over the kprime first columns
+//	for(size_t j=0; j < kprime; j++){
+//		// below, the indices r,c always refer to original A
+//
+//		// copy column from matrix to xjm, i.e. x(j:m) = A(j:m,j)
+//		Vector xjm(m-j);
+//		for(size_t r = j ; r < m; r++)
+//			xjm(r-j) = A(r,j);
+//
+//		// calculate the Householder vector, in place
+//		double beta = houseInPlace(xjm);
+//		Vector& vjm = xjm;
+//
+//		// do outer product update A = (I-beta vv')*A = A - v*(beta*A'*v)' = A - v*w'
+//		householder_update(A, j, beta, vjm);
+//
+//		// the Householder vector is copied in the zeroed out part
+//		for( size_t r = j+1 ; r < m ; r++ )
+//			A(r,j) = vjm(r-j);
+//
+//	} // column j
+}
+
+/* ************************************************************************* */
+void householder(Matrix &A, size_t k) {
+	// version with zeros below diagonal
+	householder_(A,k);
+	const size_t m = A.rows(), n = A.cols(), kprime = min(k,min(m,n));
+	for(size_t j=0; j < kprime; j++)
+		A.col(j).segment(j+1, m-(j+1)).setZero();
+//		for( size_t i = j+1 ; i < m ; i++ )
+//			A(i,j) = 0.0;
+}
+
+/* ************************************************************************* */
+void householder_(MatrixColMajor& A, size_t k, bool copy_vectors) {
+	const size_t m = A.rows(), n = A.cols(), kprime = min(k,min(m,n));
+	// loop over the kprime first columns
+	for(size_t j=0; j < kprime; j++) {
+		// copy column from matrix to vjm, i.e. v(j:m) = A(j:m,j)
+		Vector vjm = A.col(j).segment(j, m-j);
+
+		// calculate the Householder vector, in place
+		double beta = houseInPlace(vjm);
+
+		// do outer product update A(j:m,:) = (I-beta vv')*A = A - v*(beta*A'*v)' = A - v*w'
+		tic(1, "householder_update"); // bottleneck for system
+		// don't touch old columns
+		Vector w = beta * A.block(j,j,m-j,n-j).transpose() * vjm;
+		A.block(j,j,m-j,n-j) -= vjm * w.transpose();
+		toc(1, "householder_update");
+
+		// the Householder vector is copied in the zeroed out part
+		if (copy_vectors) {
+			tic(2, "householder_vector_copy");
+			A.col(j).segment(j+1, m-(j+1)) = vjm.segment(1, m-(j+1));
+			toc(2, "householder_vector_copy");
+		}
 	} // column j
 }
 
-void householder_(Matrix &A, size_t k) 
-{
-	householder_manual(A, k);
+/* ************************************************************************* */
+void householder(MatrixColMajor& A, size_t k) {
+	// version with zeros below diagonal
+	tic(1, "householder_");
+	householder_(A,k,false);
+	toc(1, "householder_");
+//	tic(2, "householder_zero_fill");
+//	const size_t m = A.rows(), n = A.cols(), kprime = min(k,min(m,n));
+//	for(size_t j=0; j < kprime; j++)
+//		A.col(j).segment(j+1, m-(j+1)).setZero();
+//	toc(2, "householder_zero_fill");
 }
 
 /* ************************************************************************* */
-/** version with zeros below diagonal                                        */
-/* ************************************************************************* */
-void householder(Matrix &A, size_t k) {
-  householder_(A,k);
-  const size_t m = A.size1(), n = A.size2(), kprime = min(k,min(m,n));
-  for(size_t j=0; j < kprime; j++)
-    for( size_t i = j+1 ; i < m ; i++ )
-      A(i,j) = 0.0;
-}
-
-/* ************************************************************************* */
-/** in-place householder                                                     */
-/* ************************************************************************* */
-#ifdef GT_USE_LAPACK
-#ifdef USE_LAPACK_QR
-void householder(Matrix &A) {
-	__CLPK_integer m = A.size1();
-	__CLPK_integer n = A.size2();
-
-	// convert from row major to column major
-	double a[m*n]; size_t k = 0;
-	for(size_t j=0; j<n; j++)
-		for(size_t i=0; i<m; i++, k++)
-			a[k] = A(i,j);
-
-	double tau[n];
-	double work_optimal_size;
-	__CLPK_integer lwork = -1;
-	__CLPK_integer info;
-
-	dgeqrf_(&m, &n, a, &m, tau, &work_optimal_size, &lwork, &info);
-	lwork = (__CLPK_integer)work_optimal_size;
-	double work[lwork];
-	dgeqrf_(&m, &n, a, &m, tau, work, &lwork, &info);
-	size_t k0 = 0;
-	size_t j0;
-	memset(A.data().begin(), 0, m*n*sizeof(double));
-	for(size_t j=0; j<n; j++, k0+=m) {
-		k = k0;
-		j0 = j+1<m?j+1:m;
-		for(size_t i=0; i<j0; i++, k++)
-			A(i,j) = a[k];
-	}
-}
-
-void householderColMajor(MatrixColMajor &A) {
-  __CLPK_integer m = A.size1();
-  __CLPK_integer n = A.size2();
-
-  double tau[n];
-  double work_optimal_size;
-  __CLPK_integer lwork = -1;
-  __CLPK_integer info;
-
-  dgeqrf_(&m, &n, A.data().begin(), &m, tau, &work_optimal_size, &lwork, &info);
-  lwork = (__CLPK_integer)work_optimal_size;
-  double work[lwork];
-  dgeqrf_(&m, &n, A.data().begin(), &m, tau, work, &lwork, &info);
-}
-#endif
-#endif
-
-///* ************************************************************************* */
-
 Vector backSubstituteLower(const Matrix& L, const Vector& b, bool unit) {
-	size_t n = L.size2();
+	size_t n = L.cols();
 #ifndef NDEBUG
-	size_t m = L.size1();
+	size_t m = L.rows();
 	if (m!=n)
 		throw invalid_argument("backSubstituteLower: L must be square");
 #endif
@@ -748,10 +677,10 @@ Vector backSubstituteLower(const Matrix& L, const Vector& b, bool unit) {
 			zi -= L(i-1,j-1) * result(j-1);
 #ifndef NDEBUG
 		if(!unit && fabs(L(i-1,i-1)) <= numeric_limits<double>::epsilon()) {
-		  stringstream ss;
-		  ss << "backSubstituteUpper: L is singular,\n";
-		  print(L, "L: ", ss);
-		  throw invalid_argument(ss.str());
+			stringstream ss;
+			ss << "backSubstituteUpper: L is singular,\n";
+			print(L, "L: ", ss);
+			throw invalid_argument(ss.str());
 		}
 #endif
 		if (!unit) zi /= L(i-1,i-1);
@@ -762,30 +691,91 @@ Vector backSubstituteLower(const Matrix& L, const Vector& b, bool unit) {
 }
 
 /* ************************************************************************* */
+Vector backSubstituteUpper(const Matrix& U, const Vector& b, bool unit) {
+	// @return the solution x of U*x=b
+  size_t n = U.cols();
+#ifndef NDEBUG
+  size_t m = U.rows();
+  if (m!=n)
+    throw invalid_argument("backSubstituteUpper: U must be square");
+#endif
+
+  Vector result(n);
+  for (size_t i = n; i > 0; i--) {
+    double zi = b(i-1);
+    for (size_t j = i+1; j <= n; j++)
+      zi -= U(i-1,j-1) * result(j-1);
+#ifndef NDEBUG
+    if(!unit && fabs(U(i-1,i-1)) <= numeric_limits<double>::epsilon()) {
+      stringstream ss;
+      ss << "backSubstituteUpper: U is singular,\n";
+      print(U, "U: ", ss);
+      throw invalid_argument(ss.str());
+    }
+#endif
+    if (!unit) zi /= U(i-1,i-1);
+    result(i-1) = zi;
+  }
+
+  return result;
+}
+
+/* ************************************************************************* */
+Vector backSubstituteUpper(const Vector& b, const Matrix& U, bool unit) {
+	// @return the solution x of x'*U=b'
+
+  size_t n = U.cols();
+#ifndef NDEBUG
+  size_t m = U.rows();
+  if (m!=n)
+    throw invalid_argument("backSubstituteUpper: U must be square");
+#endif
+
+  Vector result(n);
+  for (size_t i = 1; i <= n; i++) {
+    double zi = b(i-1);
+    for (size_t j = 1; j < i; j++)
+      zi -= U(j-1,i-1) * result(j-1);
+#ifndef NDEBUG
+    if(!unit && fabs(U(i-1,i-1)) <= numeric_limits<double>::epsilon()) {
+      stringstream ss;
+      ss << "backSubstituteUpper: U is singular,\n";
+      print(U, "U: ", ss);
+      throw invalid_argument(ss.str());
+    }
+#endif
+    if (!unit) zi /= U(i-1,i-1);
+    result(i-1) = zi;
+  }
+
+  return result;
+}
+
+/* ************************************************************************* */
 Matrix stack(size_t nrMatrices, ...)
 {
-  size_t dimA1 = 0;
-  size_t dimA2 = 0;
-  va_list ap;
-  va_start(ap, nrMatrices);
-  for(size_t i = 0 ; i < nrMatrices ; i++) {
-    Matrix *M = va_arg(ap, Matrix *);
-    dimA1 += M->size1();
-    dimA2 =  M->size2();  // TODO: should check if all the same !
-  }
-  va_end(ap);
-  va_start(ap, nrMatrices);
-  Matrix A(dimA1, dimA2);
-  size_t vindex = 0;
-  for( size_t i = 0 ; i < nrMatrices ; i++) {
-    Matrix *M = va_arg(ap, Matrix *);
-    for(size_t d1 = 0; d1 < M->size1(); d1++)
-      for(size_t d2 = 0; d2 < M->size2(); d2++)
-	A(vindex+d1, d2) = (*M)(d1, d2);
-    vindex += M->size1();
-  }  
+	size_t dimA1 = 0;
+	size_t dimA2 = 0;
+	va_list ap;
+	va_start(ap, nrMatrices);
+	for(size_t i = 0 ; i < nrMatrices ; i++) {
+		Matrix *M = va_arg(ap, Matrix *);
+		dimA1 += M->rows();
+		dimA2 =  M->cols();  // TODO: should check if all the same !
+	}
+	va_end(ap);
+	va_start(ap, nrMatrices);
+	Matrix A(dimA1, dimA2);
+	size_t vindex = 0;
+	for( size_t i = 0 ; i < nrMatrices ; i++) {
+		Matrix *M = va_arg(ap, Matrix *);
+		for(size_t d1 = 0; d1 < (size_t) M->rows(); d1++)
+			for(size_t d2 = 0; d2 < (size_t) M->cols(); d2++)
+				A(vindex+d1, d2) = (*M)(d1, d2);
+		vindex += M->rows();
+	}
 
-  return A;
+	return A;
 }
 
 /* ************************************************************************* */
@@ -796,30 +786,17 @@ Matrix collect(const std::vector<const Matrix *>& matrices, size_t m, size_t n)
 	size_t dimA2 = n*matrices.size();
 	if (!m && !n) {
 		BOOST_FOREACH(const Matrix* M, matrices) {
-			dimA1 =  M->size1();  // TODO: should check if all the same !
-			dimA2 += M->size2();
+			dimA1 =  M->rows();  // TODO: should check if all the same !
+			dimA2 += M->cols();
 		}
 	}
 
-	// memcpy version
+	// stl::copy version
 	Matrix A(dimA1, dimA2);
-	double * Aptr = A.data().begin();
 	size_t hindex = 0;
 	BOOST_FOREACH(const Matrix* M, matrices) {
-		size_t row_len = M->size2();
-
-		// find the size of the row to copy
-		size_t row_size = sizeof(double) * row_len;
-
-		// loop over rows
-		for(size_t d1 = 0; d1 < M->size1(); ++d1) { // rows
-			// get a pointer to the start of the row in each matrix
-			double * Arow = Aptr + d1*dimA2 + hindex;
-			double * Mrow = const_cast<double*> (M->data().begin() + d1*row_len);
-
-			// do direct memory copy to move the row over
-			memcpy(Arow, Mrow, row_size);
-		}
+		size_t row_len = M->cols();
+		A.block(0, hindex, dimA1, row_len) = *M;
 		hindex += row_len;
 	}
 
@@ -829,23 +806,23 @@ Matrix collect(const std::vector<const Matrix *>& matrices, size_t m, size_t n)
 /* ************************************************************************* */
 Matrix collect(size_t nrMatrices, ...)
 {
-  vector<const Matrix *> matrices;
-  va_list ap;
-  va_start(ap, nrMatrices);
-  for( size_t i = 0 ; i < nrMatrices ; i++) {
-    Matrix *M = va_arg(ap, Matrix *);
-    matrices.push_back(M);
-  }
-return collect(matrices);
+	vector<const Matrix *> matrices;
+	va_list ap;
+	va_start(ap, nrMatrices);
+	for( size_t i = 0 ; i < nrMatrices ; i++) {
+		Matrix *M = va_arg(ap, Matrix *);
+		matrices.push_back(M);
+	}
+	return collect(matrices);
 }
 
 /* ************************************************************************* */
 // row scaling, in-place
 void vector_scale_inplace(const Vector& v, Matrix& A) {
-	size_t m = A.size1(); size_t n = A.size2();
+	size_t m = A.rows(); size_t n = A.cols();
 	for (size_t i=0; i<m; ++i) { // loop over rows
 		double vi = v(i);
-		double *Aij = A.data().begin() + i*n;
+		double *Aij = A.data() + i*n;
 		for (size_t j=0; j<n; ++j, ++Aij) (*Aij) *= vi;
 	}
 }
@@ -853,10 +830,10 @@ void vector_scale_inplace(const Vector& v, Matrix& A) {
 /* ************************************************************************* */
 // row scaling, in-place
 void vector_scale_inplace(const Vector& v, MatrixColMajor& A) {
-  size_t m = A.size1(); size_t n = A.size2();
-  double *Aij = A.data().begin();
-  for (size_t j=0; j<n; ++j) // loop over rows
-    for (size_t i=0; i<m; ++i, ++Aij) (*Aij) *= v(i);
+	size_t m = A.rows(); size_t n = A.cols();
+	double *Aij = A.data();
+	for (size_t j=0; j<n; ++j) // loop over rows
+		for (size_t i=0; i<m; ++i, ++Aij) (*Aij) *= v(i);
 }
 
 /* ************************************************************************* */
@@ -871,11 +848,11 @@ Matrix vector_scale(const Vector& v, const Matrix& A) {
 // column scaling
 Matrix vector_scale(const Matrix& A, const Vector& v) {
 	Matrix M(A);
-	size_t m = A.size1(); size_t n = A.size2();
-	const double * vptr = v.data().begin();
+	size_t m = A.rows(); size_t n = A.cols();
+	const double * vptr = v.data();
 	for (size_t i=0; i<m; ++i) { // loop over rows
 		for (size_t j=0; j<n; ++j) { // loop over columns
-			double * Mptr = M.data().begin() + i*n + j;
+			double * Mptr = M.data() + i*n + j;
 			(*Mptr) = (*Mptr) * *(vptr+j);
 		}
 	}
@@ -885,10 +862,10 @@ Matrix vector_scale(const Matrix& A, const Vector& v) {
 /* ************************************************************************* */
 Matrix skewSymmetric(double wx, double wy, double wz)
 {
-  return Matrix_(3,3,
-		  0.0, -wz, +wy,
-		  +wz, 0.0, -wx,
-		  -wy, +wx, 0.0);
+	return Matrix_(3,3,
+			0.0, -wz, +wy,
+			+wz, 0.0, -wx,
+			-wy, +wx, 0.0);
 }
 
 /* ************************************************************************* */
@@ -898,14 +875,12 @@ Matrix skewSymmetric(double wx, double wy, double wz)
  */
 /* ************************************************************************* */
 double** createNRC(Matrix& A) {
-  const size_t m=A.size1();
-  double** a = new double* [m];
-  for(size_t i = 0; i < m; i++) 
-    a[i] = &A(i,0)-1;
-  return a;
+	const size_t m=A.rows();
+	double** a = new double* [m];
+	for(size_t i = 0; i < m; i++)
+		a[i] = &A(i,0)-1;
+	return a;
 }
-
-
 
 /* ******************************************
  * 
@@ -917,34 +892,17 @@ double** createNRC(Matrix& A) {
  *  which calculates Q'Q where Q is upper triangular.
  *
  * ******************************************/
-
-namespace BNU = boost::numeric::ublas;
-
-
 Matrix LLt(const Matrix& A)
 {
-	assert(A.size1() == A.size2());
-        Matrix L = zeros(A.size1(), A.size1());
-
-        for (size_t i = 0 ; i < A.size1(); i++) {
-                double p = A(i,i) - BNU::inner_prod( BNU::project( BNU::row(L, i), BNU::range(0, i) ),
-						     BNU::project( BNU::row(L, i), BNU::range(0, i) ) );
-                assert(p > 0); // Rank failure
-                double l_i_i = sqrt(p);
-                L(i,i) = l_i_i;
-                
-		BNU::matrix_column<Matrix> l_i(L, i);
-                project( l_i, BNU::range(i+1, A.size1()) )
-                        = ( BNU::project( BNU::column(A, i), BNU::range(i+1, A.size1()) )
-                            - BNU::prod( BNU::project(L, BNU::range(i+1, A.size1()), BNU::range(0, i)), 
-					 BNU::project(BNU::row(L, i), BNU::range(0, i) ) ) ) / l_i_i;
-        }
-        return L;
+	Matrix L = zeros(A.rows(), A.rows());
+	Eigen::LLT<Matrix> llt;
+	llt.compute(A);
+	return llt.matrixL();
 }
 
 Matrix RtR(const Matrix &A)
 {
-	return trans(LLt(A));
+	return LLt(A).transpose();
 }
 
 /*
@@ -952,18 +910,20 @@ Matrix RtR(const Matrix &A)
  */
 Matrix cholesky_inverse(const Matrix &A)
 {
-        Matrix L = LLt(A);
-        Matrix inv(boost::numeric::ublas::identity_matrix<double>(A.size1()));
-        inplace_solve (L, inv, BNU::lower_tag ());
-        return BNU::prod(trans(inv), inv);
-}
+	// FIXME: replace with real algorithm
+	return A.inverse();
 
+//	Matrix L = LLt(A);
+//	Matrix inv(eye(A.rows()));
+//	inplace_solve (L, inv, BNU::lower_tag ());
+//	return BNU::prod(trans(inv), inv);
+}
 
 #if 0
 /* ************************************************************************* */
 // TODO, would be faster with Cholesky
 Matrix inverse_square_root(const Matrix& A) {
-  size_t m = A.size2(), n = A.size1();
+	size_t m = A.cols(), n = A.rows();
 	if (m!=n)
 		throw invalid_argument("inverse_square_root: A must be square");
 
@@ -974,8 +934,8 @@ Matrix inverse_square_root(const Matrix& A) {
 
 	// invert and sqrt diagonal of S
 	// We also arbitrarily choose sign to make result have positive signs
-  for(size_t i = 0; i<m; i++) S(i) = - pow(S(i),-0.5);
-  return vector_scale(S, V); // V*S;
+	for(size_t i = 0; i<m; i++) S(i) = - pow(S(i),-0.5);
+	return vector_scale(S, V); // V*S;
 }
 #endif
 
@@ -988,15 +948,66 @@ Matrix inverse_square_root(const Matrix& A) {
 // inv(B' * B) == A
 Matrix inverse_square_root(const Matrix& A) {
 	Matrix R = RtR(A);
-        Matrix inv(boost::numeric::ublas::identity_matrix<double>(A.size1()));
-        inplace_solve (R, inv, BNU::upper_tag ());
+	Matrix inv = eye(A.rows());
+//	inplace_solve(R, inv, BNU::upper_tag ());
+	R.triangularView<Eigen::Upper>().solveInPlace<Eigen::OnTheRight>(inv);
 	return inv;
 }
 
+/* ************************************************************************* */
+void svd(const Matrix& A, Matrix& U, Vector& S, Matrix& V) {
+	const size_t m = A.rows(), n = A.cols();
+	if (m < n) {
+		V = trans(A);
+		svd(V, S, U); // A'=V*diag(s)*U'
+	} else {
+		U = A; // copy
+		svd(U, S, V); // call in-place version
+	}
+}
+
+/* ************************************************************************* */
+void svd(Matrix& A, Vector& S, Matrix& V) {
+	Eigen::JacobiSVD<Matrix> svd(A, Eigen::ComputeThinU | Eigen::ComputeThinV);
+	S = svd.singularValues();
+	A = svd.matrixU() * -1.0; // sign issues in tests - still valid, though
+	V = svd.matrixV() * -1.0;
+}
+
+/* ************************************************************************* */
+boost::tuple<int, double, Vector> DLT(const Matrix& A, double rank_tol) {
+
+	// Check size of A
+	int m = A.rows(), n = A.cols();
+	if (m < n) throw invalid_argument(
+			"DLT: m<n, pad A with zero rows if needed.");
+
+	// Do SVD on A
+	Matrix U, V;
+	Vector S;
+//	static const bool sort = false;
+	svd(A, U, S, V); // TODO: is it a problem for this to be sorted?
+
+	// Find rank
+	int rank = 0;
+	for (int j = 0; j < n; j++)
+		if (S(j) > rank_tol) rank++;
+	// Find minimum singular value and corresponding column index
+	int min_j = n - 1;
+	double min_S = S(min_j);
+	for (int j = 0; j < n - 1; j++)
+		if (S(j) < min_S) {
+			min_j = j;
+			min_S = S(j);
+		}
+
+	// Return rank, minimum singular value, and corresponding column of V
+	return boost::tuple<int, double, Vector>(rank, min_S, Vector(column(V, min_j)));
+}
 
 /* ************************************************************************* */
 Matrix expm(const Matrix& A, size_t K) {
-	Matrix E = eye(A.size1()), A_k = eye(A.size1());
+	Matrix E = eye(A.rows()), A_k = eye(A.rows());
 	for(size_t k=1;k<=K;k++) {
 		A_k = A_k*A/k;
 		E = E + A_k;

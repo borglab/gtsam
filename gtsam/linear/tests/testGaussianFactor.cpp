@@ -24,7 +24,6 @@
 
 using namespace std;
 using namespace gtsam;
-namespace ublas = boost::numeric::ublas;
 
 static const Index _x0_=0, _x1_=1, _x2_=2, _x3_=3, _x4_=4, _x_=5, _y_=6, _l1_=7, _l11_=8;
 
@@ -59,6 +58,8 @@ TEST(GaussianFactor, constructor2)
   JacobianFactor::const_iterator key1 = key0 + 1;
   EXPECT(assert_equal(*key0, _x0_));
   EXPECT(assert_equal(*key1, _x1_));
+  EXPECT(!actual.empty());
+  EXPECT_LONGS_EQUAL(3, actual.Ab().nBlocks());
 
   Matrix actualA0 = actual.getA(key0);
   Matrix actualA1 = actual.getA(key1);
@@ -154,6 +155,11 @@ TEST(GaussianFactor, eliminate2 )
 	)/oldSigma;
 	Vector d = Vector_(2,0.2,-0.14)/oldSigma;
 	GaussianConditional expectedCG(_x2_,d,R11,_l11_,S12,ones(2));
+
+	EXPECT_LONGS_EQUAL(0, actualCG_QR->rsd().firstBlock());
+	EXPECT_LONGS_EQUAL(0, actualCG_QR->rsd().rowStart());
+	EXPECT_LONGS_EQUAL(2, actualCG_QR->rsd().rowEnd());
+	EXPECT_LONGS_EQUAL(3, actualCG_QR->rsd().nBlocks());
 	EXPECT(assert_equal(expectedCG,*actualCG_QR,1e-4));
 
 	// the expected linear factor

@@ -23,7 +23,6 @@
 #include <vector>
 #include <boost/utility.hpp>
 #include <boost/shared_ptr.hpp>
-#include <boost/numeric/ublas/triangular.hpp>
 
 #include <gtsam/base/types.h>
 #include <gtsam/inference/IndexConditional.h>
@@ -48,7 +47,8 @@ public:
 	typedef boost::shared_ptr<GaussianConditional> shared_ptr;
 
 	/** Store the conditional matrix as upper-triangular column-major */
-	typedef boost::numeric::ublas::triangular_matrix<double, boost::numeric::ublas::upper, boost::numeric::ublas::column_major> AbMatrix;
+//	typedef boost::numeric::ublas::triangular_matrix<double, boost::numeric::ublas::upper, boost::numeric::ublas::column_major> AbMatrix;
+	typedef MatrixColMajor AbMatrix;
 	typedef VerticalBlockView<AbMatrix> rsd_type;
 
 	typedef rsd_type::Block r_type;
@@ -112,13 +112,15 @@ public:
 	bool equals(const GaussianConditional &cg, double tol = 1e-9) const;
 
 	/** dimension of multivariate variable */
-	size_t dim() const { return rsd_.size1(); }
+	size_t dim() const { return rsd_.rows(); }
 
 	/** return stuff contained in GaussianConditional */
-	rsd_type::constColumn get_d() const { return rsd_.column(1+nrParents(), 0); }
+	const_d_type get_d() const { return rsd_.column(1+nrParents(), 0); }
 	rsd_type::constBlock get_R() const { return rsd_(0); }
 	rsd_type::constBlock get_S(const_iterator variable) const { return rsd_(variable - this->begin()); }
 	const Vector& get_sigmas() const {return sigmas_;}
+	const AbMatrix& matrix() const { return matrix_; }
+	const rsd_type& rsd() const { return rsd_; } /// DEBUGGING ONLY
 
 	/**
 	 * Copy to a Factor (this creates a JacobianFactor and returns it as its

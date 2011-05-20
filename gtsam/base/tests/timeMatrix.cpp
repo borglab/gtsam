@@ -162,7 +162,7 @@ double timeColumn(size_t reps) {
 		for (size_t i=0; i<reps; ++i)
 			for (size_t j = 0; j<n; ++j)
 				//result = ublas::matrix_column<Matrix>(M, j);
-				result = column_(M, j);
+				result = column(M, j);
 		elapsed = t.elapsed();
 	}
 	return elapsed;
@@ -257,8 +257,8 @@ int main(int argc, char ** argv) {
 	double vsRow_time = timeVScaleRow(m1, n1, reps1);
 	cout << "Elapsed time for vector_scale(row)    [(" << m1 << ", " << n1 << ") matrix] : " << vsRow_time << endl;
 
-	// Time column_() NOTE: using the ublas version
-	cout << "Starting column_() Timing" << endl;
+	// Time column() NOTE: using the ublas version
+	cout << "Starting column() Timing" << endl;
 	size_t reps2 = 2000000;
 	double column_time = timeColumn(reps2);
 	cout << "Time: " << column_time << " sec" << endl;

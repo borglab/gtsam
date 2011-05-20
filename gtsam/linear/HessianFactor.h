@@ -58,6 +58,8 @@ namespace gtsam {
     typedef boost::shared_ptr<HessianFactor> shared_ptr;
     typedef BlockInfo::Block Block;
     typedef BlockInfo::constBlock constBlock;
+    typedef BlockInfo::Column Column;
+    typedef BlockInfo::constColumn constColumn;
 
     /** Copy constructor */
     HessianFactor(const HessianFactor& gf);
@@ -91,8 +93,7 @@ namespace gtsam {
     HessianFactor(const FactorGraph<GaussianFactor>& factors,
 				const std::vector<size_t>& dimensions, const Scatter& scatter);
 
-		virtual ~HessianFactor() {
-		}
+		virtual ~HessianFactor() {}
 
     // Implementing Testable interface
     virtual void print(const std::string& s = "") const;
@@ -103,13 +104,24 @@ namespace gtsam {
     /** Return the dimension of the variable pointed to by the given key iterator
      * todo: Remove this in favor of keeping track of dimensions with variables?
      */
-    virtual size_t getDim(const_iterator variable) const { return info_(variable-this->begin(), 0).size1(); }
+    virtual size_t getDim(const_iterator variable) const { return info_(variable-this->begin(), 0).rows(); }
 
     /** Return the number of columns and rows of the Hessian matrix */
-    size_t size1() const { return info_.size1(); }
+    size_t rows() const { return info_.rows(); }
 
     /** Return a view of a block of the information matrix */
     constBlock info(const_iterator j1, const_iterator j2) const { return info_(j1-begin(), j2-begin()); }
+
+    /** returns the constant term - f from the constructors */
+    double constant_term() const;
+
+    /** returns the full linear term - g from the constructors */
+    constColumn linear_term() const;
+
+    /** const access to the full matrix DEBUG ONLY*/
+    const InfoMatrix& raw_matrix() const { return matrix_; }
+
+    const BlockInfo& raw_info() const { return info_; } /// DEBUG ONLY
 
     /**
      * Permutes the GaussianFactor, but for efficiency requires the permutation

@@ -30,7 +30,6 @@ using namespace boost::assign;
 using namespace std;
 using namespace gtsam;
 using namespace boost;
-namespace ublas = boost::numeric::ublas;
 
 static const Index _x0_=0, _x1_=1, _x2_=2, _x3_=3, _x4_=4, _x_=5, _y_=6, _l1_=7, _l11_=8;
 
@@ -335,39 +334,47 @@ TEST(GaussianFactor, eliminateFrontals)
 
   // Create first factor (from pieces of Ab)
   list<pair<Index, Matrix> > terms1;
+//  terms1 +=
+//      make_pair( 3, Matrix(ublas::project(Ab, ublas::range(0,4), ublas::range(0,2)))),
+//      make_pair( 5, ublas::project(Ab, ublas::range(0,4), ublas::range(2,4))),
+//      make_pair( 7, ublas::project(Ab, ublas::range(0,4), ublas::range(4,6))),
+//      make_pair( 9, ublas::project(Ab, ublas::range(0,4), ublas::range(6,8))),
+//      make_pair(11, ublas::project(Ab, ublas::range(0,4), ublas::range(8,10)));
+//  Vector b1 = ublas::project(ublas::column(Ab, 10), ublas::range(0,4));
+
   terms1 +=
-      make_pair(3, Matrix(ublas::project(Ab, ublas::range(0,4), ublas::range(0,2)))),
-      make_pair(5, ublas::project(Ab, ublas::range(0,4), ublas::range(2,4))),
-      make_pair(7, ublas::project(Ab, ublas::range(0,4), ublas::range(4,6))),
-      make_pair(9, ublas::project(Ab, ublas::range(0,4), ublas::range(6,8))),
-      make_pair(11, ublas::project(Ab, ublas::range(0,4), ublas::range(8,10)));
-  Vector b1 = ublas::project(ublas::column(Ab, 10), ublas::range(0,4));
+      make_pair( 3, Matrix(Ab.block(0, 0, 4, 2))),
+      make_pair( 5, Matrix(Ab.block(0, 2, 4, 2))),
+      make_pair( 7, Matrix(Ab.block(0, 4, 4, 2))),
+      make_pair( 9, Matrix(Ab.block(0, 6, 4, 2))),
+      make_pair(11, Matrix(Ab.block(0, 8, 4, 2)));
+  Vector b1 = Ab.col(10).segment(0, 4); //ublas::project(ublas::column(Ab, 10), ublas::range(0,4));
   JacobianFactor::shared_ptr factor1(new JacobianFactor(terms1, b1, sharedSigma(4, 0.5)));
 
   // Create second factor
   list<pair<Index, Matrix> > terms2;
   terms2 +=
-      make_pair(5, ublas::project(Ab, ublas::range(4,8), ublas::range(2,4))),
-      make_pair(7, ublas::project(Ab, ublas::range(4,8), ublas::range(4,6))),
-      make_pair(9, ublas::project(Ab, ublas::range(4,8), ublas::range(6,8))),
-      make_pair(11, ublas::project(Ab, ublas::range(4,8), ublas::range(8,10)));
-  Vector b2 = ublas::project(ublas::column(Ab, 10), ublas::range(4,8));
+      make_pair(5, Matrix(Ab.block(4, 2, 4, 2))), //make_pair(5, ublas::project(Ab, ublas::range(4,8), ublas::range(2,4))),
+      make_pair(7, Matrix(Ab.block(4, 4, 4, 2))), //make_pair(7, ublas::project(Ab, ublas::range(4,8), ublas::range(4,6))),
+      make_pair(9, Matrix(Ab.block(4, 6, 4, 2))), //make_pair(9, ublas::project(Ab, ublas::range(4,8), ublas::range(6,8))),
+      make_pair(11,Matrix(Ab.block(4, 8, 4, 2))); //make_pair(11,ublas::project(Ab, ublas::range(4,8), ublas::range(8,10)));
+  Vector b2 = Ab.col(10).segment(4, 4); //ublas::project(ublas::column(Ab, 10), ublas::range(4,8));
   JacobianFactor::shared_ptr factor2(new JacobianFactor(terms2, b2, sharedSigma(4, 0.5)));
 
   // Create third factor
   list<pair<Index, Matrix> > terms3;
   terms3 +=
-      make_pair(7, ublas::project(Ab, ublas::range(8,12), ublas::range(4,6))),
-      make_pair(9, ublas::project(Ab, ublas::range(8,12), ublas::range(6,8))),
-      make_pair(11, ublas::project(Ab, ublas::range(8,12), ublas::range(8,10)));
-  Vector b3 = ublas::project(ublas::column(Ab, 10), ublas::range(8,12));
+      make_pair(7, Matrix(Ab.block(8, 4, 4, 2))),  //make_pair(7, ublas::project(Ab, ublas::range(8,12), ublas::range(4,6))),
+      make_pair(9, Matrix(Ab.block(8, 6, 4, 2))),  //make_pair(9, ublas::project(Ab, ublas::range(8,12), ublas::range(6,8))),
+      make_pair(11,Matrix(Ab.block(8, 8, 4, 2)));  //make_pair(11,ublas::project(Ab, ublas::range(8,12), ublas::range(8,10)));
+  Vector b3 = Ab.col(10).segment(8, 4); //ublas::project(ublas::column(Ab, 10), ublas::range(8,12));
   JacobianFactor::shared_ptr factor3(new JacobianFactor(terms3, b3, sharedSigma(4, 0.5)));
 
   // Create fourth factor
   list<pair<Index, Matrix> > terms4;
   terms4 +=
-      make_pair(11, ublas::project(Ab, ublas::range(12,14), ublas::range(8,10)));
-  Vector b4 = ublas::project(ublas::column(Ab, 10), ublas::range(12,14));
+  		make_pair(11, Matrix(Ab.block(12, 8, 2, 2))); //make_pair(11, ublas::project(Ab, ublas::range(12,14), ublas::range(8,10)));
+  Vector b4 = Ab.col(10).segment(12, 2); //ublas::project(ublas::column(Ab, 10), ublas::range(12,14));
   JacobianFactor::shared_ptr factor4(new JacobianFactor(terms4, b4, sharedSigma(2, 0.5)));
 
   // Create factor graph
@@ -400,33 +407,33 @@ TEST(GaussianFactor, eliminateFrontals)
             0.,       0.,       0.,       0.,       0.,       0.,       0.,       0.,       0.,       0.,  -7.1635);
 
   // Expected conditional on first variable from first 2 rows of R
-  Matrix R1 = ublas::project(R, ublas::range(0,2), ublas::range(0,2));
+  Matrix R1 = sub(R, 0,2, 0,2);
   list<pair<Index, Matrix> > cterms1;
   cterms1 +=
-      make_pair(5, ublas::project(R, ublas::range(0,2), ublas::range(2,4))),
-      make_pair(7, ublas::project(R, ublas::range(0,2), ublas::range(4,6))),
-      make_pair(9, ublas::project(R, ublas::range(0,2), ublas::range(6,8))),
-      make_pair(11, ublas::project(R, ublas::range(0,2), ublas::range(8,10)));
-  Vector d1 = ublas::project(ublas::column(R, 10), ublas::range(0,2));
+      make_pair(5, sub(R, 0,2, 2,4 )),
+      make_pair(7, sub(R, 0,2, 4,6 )),
+      make_pair(9, sub(R, 0,2, 6,8 )),
+      make_pair(11,sub(R, 0,2, 8,10));
+  Vector d1 = R.col(10).segment(0,2);
   GaussianConditional::shared_ptr cond1(new GaussianConditional(3, d1, R1, cterms1, ones(2)));
 
   // Expected conditional on second variable from next 2 rows of R
-  Matrix R2 = ublas::project(R, ublas::range(2,4), ublas::range(2,4));
+  Matrix R2 = sub(R, 2,4, 2,4);
   list<pair<Index, Matrix> > cterms2;
   cterms2 +=
-      make_pair(7, ublas::project(R, ublas::range(2,4), ublas::range(4,6))),
-      make_pair(9, ublas::project(R, ublas::range(2,4), ublas::range(6,8))),
-      make_pair(11, ublas::project(R, ublas::range(2,4), ublas::range(8,10)));
-  Vector d2 = ublas::project(ublas::column(R, 10), ublas::range(2,4));
+      make_pair(7, sub(R, 2,4, 4,6)),
+      make_pair(9, sub(R, 2,4, 6,8)),
+      make_pair(11,sub(R, 2,4, 8,10));
+  Vector d2 = R.col(10).segment(2,2); //ublas::project(ublas::column(R, 10), ublas::range(2,4));
   GaussianConditional::shared_ptr cond2(new GaussianConditional(5, d2, R2, cterms2, ones(2)));
 
   // Expected conditional on third variable from next 2 rows of R
-  Matrix R3 = ublas::project(R, ublas::range(4,6), ublas::range(4,6));
+  Matrix R3 = sub(R, 4,6, 4,6);
   list<pair<Index, Matrix> > cterms3;
   cterms3 +=
-      make_pair(9, ublas::project(R, ublas::range(4,6), ublas::range(6,8))),
-      make_pair(11, ublas::project(R, ublas::range(4,6), ublas::range(8,10)));
-  Vector d3 = ublas::project(ublas::column(R, 10), ublas::range(4,6));
+      make_pair(9,  sub(R, 4,6, 6,8)),
+      make_pair(11, sub(R, 4,6, 8,10));
+  Vector d3 = R.col(10).segment(4,2); //ublas::project(ublas::column(R, 10), ublas::range(4,6));
   GaussianConditional::shared_ptr cond3(new GaussianConditional(7, d3, R3, cterms3, ones(2)));
 
   // Create expected Bayes net fragment from three conditionals above
@@ -436,12 +443,13 @@ TEST(GaussianFactor, eliminateFrontals)
   expectedFragment.push_back(cond3);
 
   // Get expected matrices for remaining factor
-  Matrix Ae1 = ublas::project(R, ublas::range(6,10), ublas::range(6,8));
-  Matrix Ae2 = ublas::project(R, ublas::range(6,10), ublas::range(8,10));
-  Vector be = ublas::project(ublas::column(R, 10), ublas::range(6,10));
+  Matrix Ae1 = sub(R, 6,10, 6,8);
+  Matrix Ae2 = sub(R, 6,10, 8,10);
+  Vector be = R.col(10).segment(6, 4); //blas::project(ublas::column(R, 10), ublas::range(6,10));
 
   // Eliminate (3 frontal variables, 6 scalar columns) using QR !!!!
   GaussianBayesNet actualFragment_QR = *actualFactor_QR.eliminate(3);
+
   EXPECT(assert_equal(expectedFragment, actualFragment_QR, 0.001));
   EXPECT(assert_equal(size_t(2), actualFactor_QR.keys().size()));
   EXPECT(assert_equal(Index(9), actualFactor_QR.keys()[0]));
@@ -529,6 +537,24 @@ TEST(GaussianFactor, permuteWithInverse)
   }
   EXPECT(assert_equal(expectedIndex, actualIndex));
 #endif
+}
+
+/* ************************************************************************* */
+TEST(GaussianFactorGraph, initialization) {
+	// Create empty graph
+	GaussianFactorGraph fg;
+	SharedDiagonal unit2 = noiseModel::Unit::Create(2);
+
+	// ordering x1, x2, l1 - build system in smallExample.cpp: createGaussianFactorGraph()
+	fg.add(0, 10*eye(2), -1.0*ones(2), unit2);
+	fg.add(0, -10*eye(2),1, 10*eye(2), Vector_(2, 2.0, -1.0), unit2);
+	fg.add(0, -5*eye(2), 2, 5*eye(2), Vector_(2, 0.0, 1.0), unit2);
+	fg.add(1, -5*eye(2), 2, 5*eye(2), Vector_(2, -1.0, 1.5), unit2);
+
+	FactorGraph<JacobianFactor> graph = *fg.dynamicCastFactors<FactorGraph<JacobianFactor> >();
+
+	EXPECT_LONGS_EQUAL(4, graph.size());
+	JacobianFactor factor = *graph[0];
 }
 
 /* ************************************************************************* */

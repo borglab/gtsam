@@ -136,8 +136,7 @@ TEST( Rot3, rodriguez4)
 /* ************************************************************************* */
 TEST( Rot3, expmap)
 {
-	Vector v(3);
-	fill(v.begin(), v.end(), 0);
+	Vector v = zero(3);
 	CHECK(assert_equal(R.expmap(v), R));
 }
 

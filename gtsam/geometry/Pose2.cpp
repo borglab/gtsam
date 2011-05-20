@@ -190,7 +190,7 @@ namespace gtsam {
 				  -c,  -s,  dt1,
 				  s,  -c,  dt2,
 				  0.0, 0.0, -1.0};
-		  copy(data, data+9, H1->data().begin());
+		  copy(data, data+9, H1->data());
 	  }
 	  if (H2) *H2 = I3;
 

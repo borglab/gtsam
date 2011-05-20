@@ -210,12 +210,12 @@ TEST(Pose2Graph, optimizeCircle) {
 //  Pose2SLAMOptimizer myOptimizer("3");
 
 //  Matrix A1 = myOptimizer.a1();
-//  LONGS_EQUAL(3,  A1.size1());
-//  LONGS_EQUAL(17, A1.size2()); // 7 + 7 + 3
+//  LONGS_EQUAL(3,  A1.rows());
+//  LONGS_EQUAL(17, A1.cols()); // 7 + 7 + 3
 //
 //  Matrix A2 = myOptimizer.a2();
-//  LONGS_EQUAL(3, A1.size1());
-//  LONGS_EQUAL(7, A2.size2()); // 7
+//  LONGS_EQUAL(3, A1.rows());
+//  LONGS_EQUAL(7, A2.cols()); // 7
 //
 //  Vector b1 = myOptimizer.b1();
 //  LONGS_EQUAL(9, b1.size()); // 3 + 3 + 3
@@ -247,8 +247,8 @@ TEST(Pose2Graph, optimize2) {
 //  Pose2SLAMOptimizer myOptimizer("100");
 //  Matrix A1 = myOptimizer.a1();
 //  Matrix A2 = myOptimizer.a2();
-//  cout << "A1: " << A1.size1() << " " << A1.size2() << endl;
-//  cout << "A2: " << A2.size1() << " " << A2.size2() << endl;
+//  cout << "A1: " << A1.rows() << " " << A1.cols() << endl;
+//  cout << "A2: " << A2.rows() << " " << A2.cols() << endl;
 //
 //  //cout << "error: " << myOptimizer.error() << endl;
 //  for(int i = 0; i<10; i++) {

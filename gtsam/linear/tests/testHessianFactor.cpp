@@ -39,13 +39,13 @@ TEST(HessianFactor, ConversionConstructor) {
   size_t dims[] = { 2, 4, 1 };
   expected.info_.resize(dims, dims+3, false);
   expected.matrix_ = Matrix_(7,7,
-                             125.0000,       0.0,  -25.0000,       0.0, -100.0000,       0.0,   25.0000,
-                                  0.0,  125.0000,       0.0,  -25.0000,       0.0, -100.0000,  -17.5000,
-                             -25.0000,       0.0,   25.0000,       0.0,       0.0,       0.0,   -5.0000,
-                                  0.0,  -25.0000,       0.0,   25.0000,       0.0,       0.0,    7.5000,
-                            -100.0000,       0.0,       0.0,       0.0,  100.0000,       0.0,  -20.0000,
-                                  0.0, -100.0000,       0.0,       0.0,       0.0,  100.0000,   10.0000,
-                              25.0000,  -17.5000,   -5.0000,    7.5000,  -20.0000,   10.0000,    8.2500);
+				 125.0000,       0.0,  -25.0000,       0.0, -100.0000,       0.0,   25.0000,
+							0.0,  125.0000,       0.0,  -25.0000,       0.0, -100.0000,  -17.5000,
+				 -25.0000,       0.0,   25.0000,       0.0,       0.0,       0.0,   -5.0000,
+							0.0,  -25.0000,       0.0,   25.0000,       0.0,       0.0,    7.5000,
+				-100.0000,       0.0,       0.0,       0.0,  100.0000,       0.0,  -20.0000,
+							0.0, -100.0000,       0.0,       0.0,       0.0,  100.0000,   10.0000,
+					25.0000,  -17.5000,   -5.0000,    7.5000,  -20.0000,   10.0000,    8.2500);
 
   // sigmas
   double sigma1 = 0.2;
@@ -87,8 +87,12 @@ TEST(HessianFactor, ConversionConstructor) {
   values[0] = Vector_(2, 1.0, 2.0);
   values[1] = Vector_(4, 3.0, 4.0, 5.0, 6.0);
 
-  DOUBLES_EQUAL(combined.error(values), actual.error(values), 1e-9);
+  EXPECT_LONGS_EQUAL(2, actual.size());
+
   EXPECT(assert_equal(expected, actual, 1e-9));
+
+  // error terms
+  EXPECT_DOUBLES_EQUAL(combined.error(values), actual.error(values), 1e-9);
 }
 
 /* ************************************************************************* */
@@ -108,8 +112,18 @@ TEST(HessianFactor, Constructor1)
 
   HessianFactor factor(0, G, g, f);
 
+  // extract underlying parts
+  MatrixColMajor info_matrix = factor.raw_info().range(0, 1, 0, 1);
+  EXPECT(assert_equal(MatrixColMajor(G), info_matrix));
+  EXPECT_DOUBLES_EQUAL(f, factor.constant_term(), 1e-10);
+  EXPECT(assert_equal(g, Vector(factor.linear_term()), 1e-10));
+  EXPECT_LONGS_EQUAL(1, factor.size());
+
+  // error 0.5*(f - 2*x'*g + x'*G*x)
   double expected = 80.375;
   double actual = factor.error(dx);
+  double expected_manual = 0.5 * (f - 2.0 * dxv.dot(g) + dxv.transpose() * G.selfadjointView<Eigen::Upper>() * dxv);
+  EXPECT_DOUBLES_EQUAL(expected, expected_manual, 1e-10);
 
   DOUBLES_EQUAL(expected, actual, 1e-10);
 }
@@ -182,16 +196,22 @@ TEST(HessianFactor, CombineAndEliminate)
   Vector b = gtsam::concatVectors(3, &b1, &b0, &b2);
   Vector sigmas = gtsam::concatVectors(3, &s1, &s0, &s2);
 
+  // create a full, uneliminated version of the factor
   JacobianFactor expectedFactor(0, A0, 1, A1, b, noiseModel::Diagonal::Sigmas(sigmas, true));
+
+  // perform elimination
   GaussianBayesNet expectedBN(*expectedFactor.eliminate(1));
+
+  // create expected Hessian after elimination
+  HessianFactor expectedCholeskyFactor(expectedFactor);
 
   GaussianFactorGraph::EliminationResult actualCholesky = EliminateCholesky(
 			*gfg.convertCastFactors<FactorGraph<HessianFactor> > (), 1);
 	HessianFactor::shared_ptr actualFactor = boost::dynamic_pointer_cast<
 			HessianFactor>(actualCholesky.second);
 
-  EXPECT(assert_equal(expectedBN, *actualCholesky.first, 1e-6));
-  EXPECT(assert_equal(HessianFactor(expectedFactor), *actualFactor, 1e-6));
+	EXPECT(assert_equal(expectedBN, *actualCholesky.first, 1e-6));
+  EXPECT(assert_equal(expectedCholeskyFactor, *actualFactor, 1e-6));
 }
 
 /* ************************************************************************* */
@@ -345,8 +365,8 @@ TEST(HessianFactor, eliminateUnsorted) {
   boost::tie(actual_bn, actual_factor) =
   		EliminatePreferCholesky(unsortedGraph, 1);
 
-  CHECK(assert_equal(*expected_bn, *actual_bn, 1e-10));
-  CHECK(assert_equal(*expected_factor, *actual_factor, 1e-10));
+  EXPECT(assert_equal(*expected_bn, *actual_bn, 1e-10));
+  EXPECT(assert_equal(*expected_factor, *actual_factor, 1e-10));
 }
 
 /* ************************************************************************* */

@@ -42,10 +42,11 @@ namespace gtsam {
   template<class C> class BayesNet;
 
   class JacobianFactor : public GaussianFactor {
+  public:
+  	typedef MatrixColMajor AbMatrix;
+  	typedef VerticalBlockView<AbMatrix> BlockAb;
 
   protected:
-    typedef MatrixColMajor AbMatrix;
-    typedef VerticalBlockView<AbMatrix> BlockAb;
 
     SharedDiagonal model_; // Gaussian noise model with diagonal covariance matrix
     std::vector<size_t> firstNonzeroBlocks_;
@@ -69,6 +70,8 @@ namespace gtsam {
 
     /** Construct Null factor */
     JacobianFactor(const Vector& b_in);
+
+    // FIXME: make these constructors use other matrix types - column major and blocks
 
     /** Construct unary factor */
     JacobianFactor(Index i1, const Matrix& A1,
@@ -111,7 +114,7 @@ namespace gtsam {
      * not necessarily mean that the factor involves no variables (to check for
      * involving no variables use keys().empty()).
      */
-    bool empty() const { return Ab_.size1() == 0;}
+    bool empty() const { return Ab_.rows() == 0;}
 
     /** is noise model constrained ? */
     bool isConstrained() const { return model_->isConstrained();}
@@ -119,7 +122,7 @@ namespace gtsam {
     /** Return the dimension of the variable pointed to by the given key iterator
      * todo: Remove this in favor of keeping track of dimensions with variables?
      */
-    virtual size_t getDim(const_iterator variable) const { return Ab_(variable - begin()).size2(); }
+    virtual size_t getDim(const_iterator variable) const { return Ab_(variable - begin()).cols(); }
 
     /**
      * Permutes the GaussianFactor, but for efficiency requires the permutation
@@ -131,17 +134,17 @@ namespace gtsam {
     /**
      * return the number of columns in the corresponding linear system
      */
-    size_t size1() const { return Ab_.size1(); }
+    size_t rows() const { return Ab_.rows(); }
 
     /**
      * return the number of rows in the corresponding linear system
      */
-    size_t numberOfRows() const { return size1(); }
+    size_t numberOfRows() const { return rows(); }
 
     /**
      * return the number of columns in the corresponding linear system
      */
-    size_t size2() const { return Ab_.size2(); }
+    size_t cols() const { return Ab_.cols(); }
 
     /** get a copy of model */
     const SharedDiagonal& get_model() const { return model_;  }
@@ -150,12 +153,12 @@ namespace gtsam {
     SharedDiagonal& get_model() { return model_;  }
 
     /** Get a view of the r.h.s. vector b */
-    constBVector getb() const { return Ab_.column(size(), 0); }
+    inline const constBVector getb() const { return Ab_.column(size(), 0); }
 
     /** Get a view of the A matrix for the variable pointed to be the given key iterator */
     constABlock getA(const_iterator variable) const { return Ab_(variable - begin()); }
 
-    BVector getb() { return Ab_.column(size(), 0); }
+    inline BVector getb() { return Ab_.column(size(), 0); }
 
     ABlock getA(iterator variable) { return Ab_(variable - begin()); }
 
@@ -179,6 +182,18 @@ namespace gtsam {
      * @param set weight to use whitening to bake in weights
      */
     Matrix matrix_augmented(bool weight = true) const;
+
+    /**
+     * Returns full dense matrix underying factor
+     * TESTING ONLY
+     */
+    const AbMatrix& raw_matrix() const { return matrix_; }
+
+    /**
+     * Returns the block indexing view
+     * TESTING ONLY
+     */
+    const BlockAb& Ab() const { return Ab_; }
 
     /**
      * Return vector of i, j, and s to generate an m-by-n sparse matrix

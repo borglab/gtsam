@@ -21,17 +21,22 @@
 #pragma once
 
 #include <list>
-#include <boost/numeric/ublas/vector.hpp>
-#include <boost/numeric/ublas/vector_proxy.hpp>
+#include <vector>
+#include <gtsam/3rdparty/Eigen/Core>
 #include <boost/random/linear_congruential.hpp>
 
 // Vector is a *global* typedef
 // wrap-matlab does this typedef as well
-#if ! defined (MEX_H)
-typedef boost::numeric::ublas::vector<double> Vector;
-#endif
-typedef boost::numeric::ublas::vector_range<Vector> SubVector;
-typedef boost::numeric::ublas::vector_range<const Vector> ConstSubVector;
+// TODO: fix matlab wrapper
+//#if ! defined (MEX_H)
+//typedef boost::numeric::ublas::vector<double> Vector;
+//#endif
+
+// Typedef arbitary length vector
+typedef Eigen::VectorXd Vector;
+
+typedef Eigen::VectorBlock<Vector> SubVector;
+typedef Eigen::VectorBlock<const Vector> ConstSubVector;
 
 namespace gtsam {
 
@@ -50,6 +55,11 @@ Vector Vector_( size_t m, const double* const data);
  *  and you have to pass doubles !!! always use 0.0 never 0
  */
 Vector Vector_(size_t m, ...);
+
+/**
+ * Create a numeric vector from an STL vector of doubles
+ */
+Vector Vector_(const std::vector<double>& data);
 
 /**
  * Create vector initialized to a constant value
@@ -81,13 +91,13 @@ inline Vector basis(size_t n, size_t i) { return delta(n, i, 1.0); }
  * Create zero vector
  * @param size
  */
-inline Vector zero(size_t n) { return repeat(n,0.0);}
+inline Vector zero(size_t n) { return Vector::Zero(n);}
 
 /**
  * Create vector initialized to ones
  * @param size
  */
-inline Vector ones(size_t n) { return repeat(n,1.0);}
+inline Vector ones(size_t n) { return Vector::Ones(n); }
 	
 /**
  * check if all zero
@@ -125,6 +135,7 @@ bool greaterThanOrEqual(const Vector& v1, const Vector& v2);
  * VecA == VecB up to tolerance
  */
 bool equal_with_abs_tol(const Vector& vec1, const Vector& vec2, double tol=1e-9);
+bool equal_with_abs_tol(const SubVector& vec1, const SubVector& vec2, double tol=1e-9);
 
 /**
  * Override of equal in Lie.h
@@ -157,7 +168,7 @@ bool assert_equal(const Vector& vec1, const Vector& vec2, double tol=1e-9);
  * @return bool
  */
 bool assert_equal(SubVector vec1, SubVector vec2, double tol=1e-9);
-bool assert_equal(ConstSubVector vec1, ConstSubVector vec2, double tol=1e-9);
+//bool assert_equal(ConstSubVector vec1, ConstSubVector vec2, double tol=1e-9);
 
 /**
  * check whether two vectors are linearly dependent
@@ -175,7 +186,7 @@ bool linear_dependent(const Vector& vec1, const Vector& vec2, double tol=1e-9);
  * @param i2 last  row index + 1
  * @return subvector v(i1:i2)
  */
-Vector sub(const Vector &v, size_t i1, size_t i2);
+ConstSubVector sub(const Vector &v, size_t i1, size_t i2);
 
 /**
  * Inserts a subvector into a vector IN PLACE
@@ -217,6 +228,14 @@ Vector ediv_(const Vector &a, const Vector &b);
 double sum(const Vector &a);
 
 /**
+ * Calculates L2 norm for a vector
+ * modeled after boost.ublas for compatibility
+ * @param vector
+ * @return the L2 norm
+ */
+double norm_2(const Vector& v);
+
+/**
  * elementwise reciprocal of vector elements
  * @param a vector
  * @return [1/a(i)]
@@ -247,6 +266,7 @@ double max(const Vector &a);
 /** Dot product */
 double dot(const Vector &a, const Vector& b);
 
+// TODO: remove simple blas functions - these are one-liners with Eigen
 /**
  * BLAS Level 1 scal: x <- alpha*x
  */
@@ -257,11 +277,6 @@ void scal(double alpha, Vector& x);
  */
 void axpy(double alpha, const Vector& x, Vector& y);
 void axpy(double alpha, const Vector& x, SubVector y);
-
-/**
- * Divide every element of a Vector into a scalar
- */
-Vector operator/(double s, const Vector& v);
 
 /**
  * house(x,j) computes HouseHolder vector v and scaling factor beta
@@ -310,5 +325,34 @@ Vector rand_vector_norm(size_t dim, double mean = 0, double sigma = 1);
 
 } // namespace gtsam
 
+// FIXME: make this go away - use the Sampler class instead
 static boost::minstd_rand generator(42u);
 
+
+#include <boost/serialization/nvp.hpp>
+#include <boost/serialization/split_free.hpp>
+
+namespace boost {
+namespace serialization {
+
+// split version - copies into an STL vector for serialization
+template<class Archive>
+void save(Archive & ar, const Vector & v, unsigned int version)
+{
+	const size_t n = v.size();
+	std::vector<double> raw_data(n);
+	copy(v.data(), v.data()+n, raw_data.begin());
+	ar << make_nvp("data", raw_data);
+}
+template<class Archive>
+void load(Archive & ar, Vector & v, unsigned int version)
+{
+	std::vector<double> raw_data;
+	ar >> make_nvp("data", raw_data);
+	v = gtsam::Vector_(raw_data);
+}
+
+} // namespace serialization
+} // namespace boost
+
+BOOST_SERIALIZATION_SPLIT_FREE(Vector)

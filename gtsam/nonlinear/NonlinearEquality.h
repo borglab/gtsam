@@ -107,7 +107,7 @@ namespace gtsam {
 			const T& xj = c[this->key_];
 			Vector e = this->unwhitenedError(c);
 			if (allow_error_ || !compare_(xj, feasible_)) {
-				return error_gain_ * inner_prod(e,e);
+				return error_gain_ * dot(e,e);
 			} else {
 				return 0.0;
 			}

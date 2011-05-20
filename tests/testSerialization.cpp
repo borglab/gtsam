@@ -135,6 +135,8 @@ bool equalsDereferencedXML(const T& input = T()) {
 // Actual Tests
 /* ************************************************************************* */
 
+#include <gtsam/base/Matrix.h>
+#include <gtsam/base/Vector.h>
 #include <gtsam/geometry/Point2.h>
 #include <gtsam/geometry/Pose2.h>
 #include <gtsam/geometry/Rot2.h>
@@ -155,6 +157,15 @@ bool equalsDereferencedXML(const T& input = T()) {
 using namespace std;
 using namespace gtsam;
 using namespace planarSLAM;
+
+/* ************************************************************************* */
+TEST (Serialization, matrix_vector) {
+	EXPECT(equality<Vector>(Vector_(4, 1.0, 2.0, 3.0, 4.0)));
+	EXPECT(equality<Matrix>(Matrix_(2, 2, 1.0, 2.0, 3.0, 4.0)));
+
+	EXPECT(equalityXML<Vector>(Vector_(4, 1.0, 2.0, 3.0, 4.0)));
+	EXPECT(equalityXML<Matrix>(Matrix_(2, 2, 1.0, 2.0, 3.0, 4.0)));
+}
 
 /* ************************************************************************* */
 TEST (Serialization, text_geometry) {
@@ -195,6 +206,7 @@ TEST (Serialization, xml_linear) {
 //	EXPECT(equalsXML<VectorValues>());
 //	EXPECT(equalsXML<GaussianConditional>());
 }
+
 /* ************************************************************************* */
 // Export Noisemodels
 BOOST_CLASS_EXPORT_GUID(gtsam::noiseModel::Constrained, "gtsam_noiseModel_Constrained");

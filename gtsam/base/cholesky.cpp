@@ -18,18 +18,14 @@
 
 #include <gtsam/base/debug.h>
 #include <gtsam/base/cholesky.h>
-#include <gtsam/base/lapack.h>
 #include <gtsam/base/timing.h>
 
 #include <gtsam/3rdparty/Eigen/Core>
 #include <gtsam/3rdparty/Eigen/Dense>
 
-#include <boost/numeric/ublas/matrix_proxy.hpp>
-#include <boost/numeric/ublas/symmetric.hpp>
-#include <boost/numeric/ublas/blas.hpp>
 #include <boost/format.hpp>
 
-namespace ublas = boost::numeric::ublas;
+//namespace ublas = boost::numeric::ublas;
 
 using namespace std;
 
@@ -38,90 +34,6 @@ namespace gtsam {
   static const double negativePivotThreshold = -1e-1;
   static const double zeroPivotThreshold = 1e-6;
   static const double underconstrainedPrior = 1e-5;
-
-/* ************************************************************************* */
-void cholesky_inplace(MatrixColMajor& I) {
-
-  // We do not check for symmetry but we do check for squareness
-  assert(I.size1() == I.size2());
-
-  // Do Cholesky, return value info as follows (from dpotrf.f):
-  // 00054 *  INFO    (output) INTEGER
-  // 00055 *          = 0:  successful exit
-  // 00056 *          < 0:  if INFO = -i, the i-th argument had an illegal value
-  // 00057 *          > 0:  if INFO = i, the leading minor of order i is not
-  // 00058 *                positive definite, and the factorization could not be
-  // 00059 *                completed.
-  int info = lapack_dpotrf('U', I.size1(), &I(0,0), I.size1());
-  if(info != 0) {
-    if(info < 0)
-      throw std::domain_error(boost::str(boost::format(
-          "Bad input to cholesky_inplace, dpotrf returned %d.\n")%info));
-    else
-      throw std::domain_error("The matrix passed into cholesky_inplace is rank-deficient");
-  }
-}
-
-/* ************************************************************************* */
-size_t choleskyFactorUnderdetermined(MatrixColMajor& Ab, size_t nFrontal) {
-
-  static const bool debug = false;
-
-  size_t m = Ab.size1();
-  size_t n = Ab.size2();
-
-  // If m >= n, this function will just compute the plain Cholesky
-  // factorization of A'A.  If m < n, A'A is rank-deficient this function
-  // instead computes the upper-trapazoidal factor [ R S ], as described in the
-  // header file comment.
-//  size_t rank = std::min(m,n-1);
-  size_t rank = nFrontal;
-
-  if(rank > 0) {
-
-    // F is the first 'rank' columns of Ab, G is the remaining columns
-    ublas::matrix_range<MatrixColMajor> F(ublas::project(Ab, ublas::range(0,m), ublas::range(0,rank)));
-    ublas::matrix_range<MatrixColMajor> G(ublas::project(Ab, ublas::range(0,m), ublas::range(rank,n)));
-
-    if(debug) {
-      print(F, "F: ");
-      print(G, "G: ");
-    }
-
-    ublas::matrix_range<MatrixColMajor> R(ublas::project(Ab, ublas::range(0,rank), ublas::range(0,rank)));
-    ublas::matrix_range<MatrixColMajor> S(ublas::project(Ab, ublas::range(0,rank), ublas::range(rank,n)));
-
-    // First compute F' * G (ublas makes a copy here to avoid aliasing)
-    if(S.size2() > 0)
-      S = ublas::prod(ublas::trans(F), G);
-
-    // ublas makes a copy to avoid aliasing on this assignment
-    R = ublas::prod(ublas::trans(F), F);
-
-    // Compute the values of R from F'F
-    int info = lapack_dpotrf('U', rank, &R(0,0), Ab.size1());
-    if(info != 0) {
-      if(info < 0)
-        throw std::domain_error(boost::str(boost::format(
-            "Bad input to choleskyFactorUnderdetermined, dpotrf returned %d.\n")%info));
-      else
-        throw std::domain_error(boost::str(boost::format(
-            "The matrix passed into choleskyFactorUnderdetermined is numerically rank-deficient, dpotrf returned rank=%d, expected rank was %d.\n")%(info-1)%rank));
-    }
-
-    // Compute S = inv(R') * F' * G, i.e. solve S when R'S = F'G
-    if(S.size2() > 0)
-      cblas_dtrsm(CblasColMajor, CblasLeft, CblasUpper, CblasTrans, CblasNonUnit, S.size1(), S.size2(), 1.0, &R(0,0), m, &S(0,0), m);
-
-    if(debug) {
-      print(R, "R: ");
-      print(S, "S: ");
-    }
-
-    return m;
-  } else
-    return 0;
-}
 
 /* ************************************************************************* */
 static inline bool choleskyStep(MatrixColMajor& ATA, size_t k, size_t order) {
@@ -146,15 +58,18 @@ static inline bool choleskyStep(MatrixColMajor& ATA, size_t k, size_t order) {
     ATA(k,k) = beta;
 
     if(k < (order-1)) {
-      ublas::matrix_row<MatrixColMajor> Vf(ublas::row(ATA, k));
-      ublas::vector_range<typeof(Vf)> V(ublas::subrange(Vf, k+1,order));
+//      ublas::matrix_row<MatrixColMajor> Vf(ublas::row(ATA, k));
+//      ublas::vector_range<typeof(Vf)> V(ublas::subrange(Vf, k+1,order));
 
       // Update A(k,k+1:end) <- A(k,k+1:end) / beta
-      V *= betainv;
+    	typedef typeof(ATA.row(k).segment(k+1, order-(k+1))) BlockRow;
+    	BlockRow V = ATA.row(k).segment(k+1, order-(k+1));
+    	V *= betainv;
 
       // Update A(k+1:end, k+1:end) <- A(k+1:end, k+1:end) - v*v' / alpha
-      ublas::matrix_range<MatrixColMajor> L(ublas::subrange(ATA, k+1,order, k+1,order));
-      L -= ublas::outer_prod(V, V);
+//      ublas::matrix_range<MatrixColMajor> L(ublas::subrange(ATA, k+1,order, k+1,order));
+//      L -= ublas::outer_prod(V, V);
+      ATA.block(k+1, k+1, order-(k+1), order-(k+1)) -= V.transpose() * V;
     }
 
     return true;
@@ -173,10 +88,10 @@ pair<size_t,bool> choleskyCareful(MatrixColMajor& ATA, int order) {
   const bool debug = ISDEBUG("choleskyCareful");
 
   // Check that the matrix is square (we do not check for symmetry)
-  assert(ATA.size1() == ATA.size2());
+  assert(ATA.rows() == ATA.cols());
 
   // Number of rows/columns
-  const size_t n = ATA.size1();
+  const size_t n = ATA.rows();
 
   // Negative order means factor the entire matrix
   if(order < 0)
@@ -204,11 +119,11 @@ pair<size_t,bool> choleskyCareful(MatrixColMajor& ATA, int order) {
 }
 
 /* ************************************************************************* */
-void choleskyPartial(MatrixColMajor& ABCublas, size_t nFrontal) {
+void choleskyPartial(MatrixColMajor& ABC, size_t nFrontal) {
 
   const bool debug = ISDEBUG("choleskyPartial");
 
-  Eigen::Map<Eigen::MatrixXd> ABC(&ABCublas(0,0), ABCublas.size1(), ABCublas.size2());
+//  Eigen::Map<Eigen::MatrixXd> ABC(&ABCublas(0,0), ABCublas.rows(), ABCublas.cols());
 
   assert(ABC.rows() == ABC.cols());
   assert(ABC.rows() >= 0 && nFrontal <= size_t(ABC.rows()));

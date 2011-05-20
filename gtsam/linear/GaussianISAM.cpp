@@ -24,7 +24,7 @@ using namespace gtsam;
 #include <gtsam/inference/ISAM-inl.h>
 template class ISAM<GaussianConditional>;
 
-namespace ublas = boost::numeric::ublas;
+//namespace ublas = boost::numeric::ublas;
 
 namespace gtsam {
 
@@ -42,7 +42,7 @@ BayesNet<GaussianConditional>::shared_ptr GaussianISAM::marginalBayesNet(Index j
 std::pair<Vector, Matrix> GaussianISAM::marginal(Index j) const {
 	GaussianConditional::shared_ptr conditional = marginalBayesNet(j)->front();
 	Matrix R = conditional->get_R();
-	return make_pair(conditional->get_d(), inverse(ublas::prod(ublas::trans(R), R)));
+	return make_pair(conditional->get_d(), (R.transpose() * R).inverse());
 }
 
 /* ************************************************************************* */

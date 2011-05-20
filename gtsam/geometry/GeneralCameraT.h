@@ -18,8 +18,6 @@
 
 #pragma once
 
-#include <boost/numeric/ublas/vector_proxy.hpp>
-#include <boost/numeric/ublas/matrix_proxy.hpp>
 #include <boost/serialization/nvp.hpp>
 #include <gtsam/base/Vector.h>
 #include <gtsam/base/Matrix.h>
@@ -52,8 +50,8 @@ class GeneralCameraT {
 
 		// Vector Initialization
 		GeneralCameraT(const Vector &v) :
-			calibrated_(subrange(v, 0, Camera::Dim())),
-			calibration_(subrange(v, Camera::Dim(), Camera::Dim() + Calibration::Dim() )) {}
+			calibrated_(sub(v, 0, Camera::Dim())),
+			calibration_(sub(v, Camera::Dim(), Camera::Dim() + Calibration::Dim() )) {}
 
 		inline const Pose3& pose() const { return calibrated_.pose(); }
 		inline const Camera& calibrated() const { return calibrated_;	}
@@ -123,8 +121,8 @@ class GeneralCameraT {
 		}
 
 		GeneralCameraT expmap(const Vector &v) const {
-			Vector v1 = subrange(v,0,Camera::Dim());
-			Vector v2 = subrange(v,Camera::Dim(),Camera::Dim()+Calibration::Dim());
+			Vector v1 = sub(v,0,Camera::Dim());
+			Vector v2 = sub(v,Camera::Dim(),Camera::Dim()+Calibration::Dim());
 			return GeneralCameraT(calibrated_.expmap(v1),	calibration_.expmap(v2));
 		}
 
@@ -138,8 +136,8 @@ class GeneralCameraT {
 		static GeneralCameraT Expmap(const Vector& v) {
 			//std::cout << "Expmap" << std::endl;
 			return GeneralCameraT(
-				   Camera::Expmap(subrange(v,0,Camera::Dim())),
-				   Calibration::Expmap(subrange(v,Camera::Dim(), Camera::Dim()+Calibration::Dim()))
+				   Camera::Expmap(sub(v,0,Camera::Dim())),
+				   Calibration::Expmap(sub(v,Camera::Dim(), Camera::Dim()+Calibration::Dim()))
 				   );
 		}
 
@@ -159,15 +157,15 @@ class GeneralCameraT {
 			Point2 intrinsic = calibrated_.project(point);
 			Matrix D_intrinsic_pose = Dproject_pose(calibrated_, point);
 			Matrix D_2d_intrinsic = calibration_.D2d_intrinsic(intrinsic);
-			Matrix D_2d_pose = prod(D_2d_intrinsic,D_intrinsic_pose);
+			Matrix D_2d_pose = D_2d_intrinsic * D_intrinsic_pose;
 			Matrix D_2d_calibration = calibration_.D2d_calibration(intrinsic);
 
 			const int n1 = calibrated_.dim() ;
 			const int n2 = calibration_.dim() ;
 			Matrix D(2,n1+n2) ;
 
-			subrange(D,0,2,0,n1) = D_2d_pose ;
-			subrange(D,0,2,n1,n1+n2) = D_2d_calibration ;
+			sub(D,0,2,0,n1) = D_2d_pose ;
+			sub(D,0,2,n1,n1+n2) = D_2d_calibration ;
 			return D;
 		}
 
@@ -175,27 +173,27 @@ class GeneralCameraT {
 			Point2 intrinsic = calibrated_.project(point);
 			Matrix D_intrinsic_3d = Dproject_point(calibrated_, point);
 			Matrix D_2d_intrinsic = calibration_.D2d_intrinsic(intrinsic);
-			return prod(D_2d_intrinsic,D_intrinsic_3d);
+			return D_2d_intrinsic * D_intrinsic_3d;
 		}
 
 		Matrix D2d_camera_3d(const Point3& point) const {
 			Point2 intrinsic = calibrated_.project(point);
 			Matrix D_intrinsic_pose = Dproject_pose(calibrated_, point);
 			Matrix D_2d_intrinsic = calibration_.D2d_intrinsic(intrinsic);
-			Matrix D_2d_pose = prod(D_2d_intrinsic,D_intrinsic_pose);
+			Matrix D_2d_pose = D_2d_intrinsic * D_intrinsic_pose;
 			Matrix D_2d_calibration = calibration_.D2d_calibration(intrinsic);
 
 			Matrix D_intrinsic_3d = Dproject_point(calibrated_, point);
-			Matrix D_2d_3d = prod(D_2d_intrinsic,D_intrinsic_3d);
+			Matrix D_2d_3d = D_2d_intrinsic * D_intrinsic_3d;
 
 			const int n1 = calibrated_.dim() ;
 			const int n2 = calibration_.dim() ;
 
 			Matrix D(2,n1+n2+3) ;
 
-			subrange(D,0,2,0,n1) = D_2d_pose ;
-			subrange(D,0,2,n1,n1+n2) = D_2d_calibration ;
-			subrange(D,0,2,n1+n2,n1+n2+3) = D_2d_3d ;
+			sub(D,0,2,0,n1) = D_2d_pose ;
+			sub(D,0,2,n1,n1+n2) = D_2d_calibration ;
+			sub(D,0,2,n1+n2,n1+n2+3) = D_2d_3d ;
 			return D;
 		}
 

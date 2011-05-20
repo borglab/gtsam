@@ -166,7 +166,7 @@ void save2D(const Pose2Graph& graph, const Pose2Values& config, const SharedDiag
 
 	// save edges
 	Matrix R = model->R();
-	Matrix RR = prod(trans(R),R);
+	Matrix RR = trans(R)*R;//prod(trans(R),R);
 	BOOST_FOREACH(boost::shared_ptr<NonlinearFactor<Pose2Values> > factor_, graph) {
 		boost::shared_ptr<Pose2Factor> factor = boost::dynamic_pointer_cast<Pose2Factor>(factor_);
 		if (!factor) continue;

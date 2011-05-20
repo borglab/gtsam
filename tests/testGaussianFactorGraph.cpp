@@ -44,9 +44,7 @@ using namespace example;
 double tol=1e-5;
 
 /* ************************************************************************* */
-/* unit test for equals (GaussianFactorGraph1 == GaussianFactorGraph2)       */
-/* ************************************************************************* */
-TEST( GaussianFactorGraph, equals ){
+TEST( GaussianFactorGraph, equals ) {
 
   Ordering ordering; ordering += "x1","x2","l1";
   GaussianFactorGraph fg = createGaussianFactorGraph(ordering);
@@ -55,8 +53,7 @@ TEST( GaussianFactorGraph, equals ){
 }
 
 /* ************************************************************************* */
-TEST( GaussianFactorGraph, error )
-{
+TEST( GaussianFactorGraph, error ) {
   Ordering ordering; ordering += "x1","x2","l1";
   FactorGraph<JacobianFactor> fg = createGaussianFactorGraph(ordering);
   VectorValues cfg = createZeroDelta(ordering);

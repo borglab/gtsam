@@ -20,6 +20,7 @@
 #pragma once
 
 #include <boost/shared_ptr.hpp>
+#include <boost/serialization/nvp.hpp>
 #include <gtsam/base/Testable.h>
 #include <gtsam/base/Vector.h>
 #include <gtsam/base/Matrix.h>
@@ -135,7 +136,7 @@ namespace gtsam {
 			 * @param smart, check if can be simplified to derived class
 			 */
 			static shared_ptr SqrtInformation(const Matrix& R) {
-				return shared_ptr(new Gaussian(R.size1(),R));
+				return shared_ptr(new Gaussian(R.rows(),R));
 			}
 
 			/**
@@ -181,12 +182,11 @@ namespace gtsam {
 			 * @param Ab is the m*(n+1) augmented system matrix [A b]
 			 * @return in-place QR factorization [R d]. Below-diagonal is undefined !!!!!
 			 */
-			virtual SharedDiagonal QR(Matrix& Ab, boost::optional<std::vector<int>&> firstZeroRows = boost::none) const;
-
-			/**
-			 * Version for column-wise matrices
-			 */
-			virtual SharedDiagonal QRColumnWise(MatrixColMajor& Ab, std::vector<int>& firstZeroRows) const;
+			virtual SharedDiagonal QR(Matrix& Ab) const;
+			virtual SharedDiagonal QR(MatrixColMajor& Ab) const;
+			// FIXME: these previously had firstZeroRows - what did this do?
+//			virtual SharedDiagonal QRColumnWise(MatrixColMajor& Ab, std::vector<int>& firstZeroRows) const;
+//			virtual SharedDiagonal QR(Matrix& Ab, boost::optional<std::vector<int>&> firstZeroRows = boost::none) const;
 
 			/**
 			 * Cholesky factorization
@@ -374,13 +374,8 @@ namespace gtsam {
 			/**
 			 * Apply QR factorization to the system [A b], taking into account constraints
 			 */
-			virtual SharedDiagonal QR(Matrix& Ab, boost::optional<std::vector<int>&> firstZeroRows = boost::none) const;
-
-      /**
-       * Version for column-wise matrices
-       */
-      virtual SharedDiagonal QRColumnWise(boost::numeric::ublas::matrix<double, boost::numeric::ublas::column_major>& Ab,
-          std::vector<int>& firstZeroRows) const;
+			virtual SharedDiagonal QR(Matrix& Ab) const;
+      virtual SharedDiagonal QR(MatrixColMajor& Ab) const;
 
 			/**
 			 * Check constrained is always true
@@ -490,7 +485,7 @@ namespace gtsam {
 			}
 
 			virtual void print(const std::string& name) const;
-			virtual double Mahalanobis(const Vector& v) const {return inner_prod(v,v); }
+			virtual double Mahalanobis(const Vector& v) const {return v.dot(v); }
 			virtual Vector whiten(const Vector& v) const { return v; }
 			virtual Vector unwhiten(const Vector& v) const { return v; }
 			virtual Matrix Whiten(const Matrix& H) const { return H; }

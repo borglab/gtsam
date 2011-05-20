@@ -76,10 +76,6 @@ AM_LDFLAGS += $(boost_serialization) -L$(CCOLAMDLib) -lccolamd
 LDADD = libslam.la ../geometry/libgeometry.la  ../nonlinear/libnonlinear.la ../linear/liblinear.la ../inference/libinference.la ../base/libbase.la
 LDADD += ../../CppUnitLite/libCppUnitLite.a
 
-if USE_ACCELERATE_MACOS
-AM_LDFLAGS += -Wl,/System/Library/Frameworks/Accelerate.framework/Accelerate
-endif
-
 # rule to run an executable
 %.run: % $(LDADD)
 	./$^

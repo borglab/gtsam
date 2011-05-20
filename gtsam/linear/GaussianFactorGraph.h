@@ -61,6 +61,9 @@ namespace gtsam {
     return e;
   }
 
+  /** DEBUG ONLY: TODO: hide again later */
+  FastMap<Index, SlotEntry> findScatterAndDims(const FactorGraph<GaussianFactor>& factors);
+
   /**
    * A Linear Factor Graph is a factor graph where all factors are Gaussian, i.e.
    *   Factor == GaussianFactor

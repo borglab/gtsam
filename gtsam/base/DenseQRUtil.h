@@ -21,17 +21,17 @@
 
 #include <gtsam/base/Matrix.h>
 
-#ifdef GT_USE_LAPACK
-#include <gtsam/base/DenseQR.h>
-
-namespace gtsam {
-
-	/** make stairs and speed up householder_denseqr. Stair is defined as the row index of where zero entries start in each column */
-	int* MakeStairs(Matrix &A);
-
-	/** Householder tranformation, zeros below diagonal */
-	void householder_denseqr(Matrix &A, int* Stair = NULL);
-
-	void householder_denseqr_colmajor(boost::numeric::ublas::matrix<double, boost::numeric::ublas::column_major>& A, int *Stair);
-}
-#endif
+//#ifdef GT_USE_LAPACK
+//#include <gtsam/base/DenseQR.h>
+//
+//namespace gtsam {
+//
+//	/** make stairs and speed up householder_denseqr. Stair is defined as the row index of where zero entries start in each column */
+//	int* MakeStairs(Matrix &A);
+//
+//	/** Householder tranformation, zeros below diagonal */
+//	void householder_denseqr(Matrix &A, int* Stair = NULL);
+//
+//	void householder_denseqr_colmajor(MatrixColMajor& A, int *Stair);
+//}
+//#endif
