@@ -12,7 +12,8 @@ GTSAM is not (yet) open source: See COPYING & LICENSE
 Please see USAGE for an example on how to use GTSAM.
 
 The code is organized according to the following directory structure:
-
+ 
+  3rdparty    local copies of third party libraries - currently the headers for Eigen3
   base        provides some base Math and data structures, as well as test-related utilities
   geometry    points, poses, tensors, etc
   inference   core graphical model inference such as factor graphs, junction trees, Bayes nets, Bayes trees 
@@ -26,16 +27,8 @@ the more involved tests, which test the entire library:
   
   tests       more involved tests that depend on slam
 
-Furthermore the MATLAB wrapper generator code is run as well
-
-  wrap        MATLAB wrapper generation code
-  gtsam.h     interface file for which wrappers will be generated
-  toolbox     MATLAB proxy classes and wrappers generated
-  matlab      examples and tests of the above  		
-
 Finally, there are some local libraries built needed in the rest of the code:
 
-  colamd      COLAMD and CCOLAMD by Tim Davis needed for re-ordering
   CppUnitLite unit test library
   doc         documentation
   m4          local M4 macros
@@ -46,9 +39,6 @@ Important Installation Notes Specific to GTSAM
 1)
 GTSAM requires the following libraries to be installed on your system:
  - BOOST version 1.40 or greater (install through Linux repositories or MacPorts)
- - BLAS, ATLAS, and LAPACK (libblas, libatlas, and liblapack in Debian/Ubuntu
-                            repositories, on Mac these should already installed
-                            with the OS)
 
 2)
 GTSAM uses CCOLAMD to find good variable elimination orders.  You can download
@@ -78,11 +68,11 @@ compiling gtsam:
 
 For Debugging (native Snow Leopard g++ compiler):
 ./configure CXXFLAGS="-fno-inline -g -Wall" \
-    LDFLAGS="-fno-inline -g -Wall" --with-toolbox=$HOME/toolbox/
+    LDFLAGS="-fno-inline -g -Wall" 
 
 For Debugging (Linux or MacPorts g++ compilers):
 ./configure CXXFLAGS="-fno-inline -g -Wall -D_GLIBCXX_DEBUG" \
-    LDFLAGS="-fno-inline -g -Wall" --with-toolbox=$HOME/toolbox/
+    LDFLAGS="-fno-inline -g -Wall" 
 
 For Performance:
 ./configure CXXFLAGS="-DNDEBUG -O3" LDFLAGS="-O3" --with-toolbox=$HOME/toolbox/
@@ -113,18 +103,4 @@ $] make check
 By verifying all the test results are positive, you can make sure that the functionalities of the GTSAM
 libraries are correct.
 
-
-Compile Matlab Toolbox:
------------------------
-1) Start Matlab
-2) Go to File->Set Path and add the toolbox directory where you installed the
-   GTSAM Matlab Toolbox
-3) Change your current directory to the GTSAM Matlab Toolbox
-4) Type 'make_gtsam' at the Command Window
-
-
-Run Matlab Unit Tests:
------------------------
-In the matlab command window, change directory to $gtsam/matlab and then type 'run_tests', which will 
-invoke the matlab unit tests.
 

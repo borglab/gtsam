@@ -1,1 +1,1 @@
-../configure --prefix=$HOME CFLAGS="-fno-inline -g -Wall" CXXFLAGS="-fno-inline -g -Wall" LDFLAGS="-fno-inline -g -Wall" --disable-static --enable-blas --enable-lapack --disable-fast-install
+../configure --prefix=$HOME CFLAGS="-fno-inline -g -Wall" CXXFLAGS="-fno-inline -g -Wall" LDFLAGS="-fno-inline -g -Wall" --disable-static  --disable-fast-install
