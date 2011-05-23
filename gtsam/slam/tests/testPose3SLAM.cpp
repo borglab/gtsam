@@ -19,6 +19,7 @@
 #include <iostream>
 #include <boost/shared_ptr.hpp>
 #include <boost/assign/std/list.hpp>
+#include <boost/assign/std/vector.hpp>
 using namespace boost;
 using namespace boost::assign;
 
@@ -29,12 +30,17 @@ using namespace boost::assign;
 #define GTSAM_MAGIC_KEY
 
 #include <gtsam/slam/pose3SLAM.h>
+#include <gtsam/slam/PartialPriorFactor.h>
 
 using namespace std;
 using namespace gtsam;
 
 // common measurement covariance
 static Matrix covariance = eye(6);
+
+const double tol=1e-5;
+
+using namespace pose3SLAM;
 
 /* ************************************************************************* */
 // test optimization with 6 poses arranged in a hexagon and a loop closure
@@ -70,7 +76,6 @@ TEST(Pose3Graph, optimizeCircle) {
   // Choose an ordering and optimize
   shared_ptr<Ordering> ordering(new Ordering);
   *ordering += "x0","x1","x2","x3","x4","x5";
-  typedef NonlinearOptimizer<Pose3Graph, Pose3Values> Optimizer;
   NonlinearOptimizationParameters::sharedThis params = NonlinearOptimizationParameters::newDrecreaseThresholds(1e-15, 1e-15);
   Optimizer optimizer0(fg, initial, ordering, params);
   Optimizer optimizer = optimizer0.levenbergMarquardt();
@@ -82,6 +87,68 @@ TEST(Pose3Graph, optimizeCircle) {
 
   // Check loop closure
   CHECK(assert_equal(_0T1,actual[5].between(actual[0]),1e-5));
+}
+
+/* ************************************************************************* */
+TEST(Pose3Graph, partial_prior_height) {
+	typedef PartialPriorFactor<Values, Key> Partial;
+
+	// reference: Pose3 Expmap - (0-2: Rot3) (3-5: Point3)
+
+	// height prior - single element interface
+	Key key(1);
+	double exp_height = 5.0;
+	SharedDiagonal model = noiseModel::Unit::Create(1);
+	Pose3 init(Rot3(), Point3(1.0, 2.0, 3.0)), expected(Rot3(), Point3(1.0, 2.0, exp_height));
+	Partial height(key, 5, exp_height, model);
+	Matrix actA;
+	EXPECT(assert_equal(Vector_(1,-2.0), height.evaluateError(init, actA), tol));
+	Matrix expA = Matrix_(1, 6, 0.0, 0.0, 0.0, 0.0, 0.0, 1.0);
+	EXPECT(assert_equal(expA, actA));
+
+	Graph graph;
+//	graph.add(height); // FAIL - on compile, can't initialize a reference?
+	graph.push_back(boost::shared_ptr<Partial>(new Partial(height)));
+
+	Values values;
+	values.insert(key, init);
+
+	// linearization
+	EXPECT_DOUBLES_EQUAL(2.0, height.error(values), tol);
+
+	Values actual = *Optimizer::optimizeLM(graph, values);
+	EXPECT(assert_equal(expected, actual[key], tol));
+	EXPECT_DOUBLES_EQUAL(0.0, graph.error(actual), tol);
+}
+
+/* ************************************************************************* */
+TEST(Pose3Graph, partial_prior_xy) {
+	typedef PartialPriorFactor<Values, Key> Partial;
+
+	// XY prior - full mask interface
+	Key key(1);
+	Vector exp_xy = Vector_(2, 3.0, 4.0);
+	SharedDiagonal model = noiseModel::Unit::Create(2);
+	Pose3 init(Rot3(), Point3(1.0,-2.0, 3.0)), expected(Rot3(), Point3(3.0, 4.0, 3.0));
+	vector<size_t> mask; mask += 3, 4;
+	Partial priorXY(key, mask, exp_xy, model);
+	Matrix actA;
+	EXPECT(assert_equal(Vector_(2,-2.0,-6.0), priorXY.evaluateError(init, actA), tol));
+	Matrix expA = Matrix_(2, 6,
+			0.0, 0.0, 0.0, 1.0, 0.0, 0.0,
+			0.0, 0.0, 0.0, 0.0, 1.0, 0.0);
+	EXPECT(assert_equal(expA, actA));
+
+	Graph graph;
+//	graph.add(priorXY); // FAIL - on compile, can't initialize a reference?
+	graph.push_back(Partial::shared_ptr(new Partial(priorXY)));
+
+	Values values;
+	values.insert(key, init);
+
+	Values actual = *Optimizer::optimizeLM(graph, values);
+	EXPECT(assert_equal(expected, actual[key], tol));
+	EXPECT_DOUBLES_EQUAL(0.0, graph.error(actual), tol);
 }
 
 /* ************************************************************************* */
