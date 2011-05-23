@@ -36,14 +36,13 @@ void TestResult::addFailure (const Failure& failure)
 				"\" in ",
 				failure.fileName.asCharString ());
 	else
-		fprintf (stdout, "%s%s%s%s%ld%s%s\n",
-				"Failure: \"",
-				failure.message.asCharString (),
-				"\" " ,
-				"line ",
+		fprintf (stdout, "%s%s%ld%s%s%s\n",
+				failure.fileName.asCharString(),  // Format matches Eclipse error flagging
+				":",
 				failure.lineNumber,
-				" in ",
-				failure.fileName.asCharString ());
+				": Failure: \"",
+				failure.message.asCharString(),
+				"\" ");
 
 	failureCount++;
 }
