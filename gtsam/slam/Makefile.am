@@ -28,8 +28,8 @@ check_PROGRAMS += tests/testSimulated2DOriented
 sources += Simulated3D.cpp 
 check_PROGRAMS += tests/testSimulated3D 
 
-# Pose SLAM headers
-headers += BetweenFactor.h PriorFactor.h
+# Generic SLAM headers
+headers += BetweenFactor.h PriorFactor.h PartialPriorFactor.h
 
 # 2D Pose SLAM
 sources += pose2SLAM.cpp dataset.cpp
