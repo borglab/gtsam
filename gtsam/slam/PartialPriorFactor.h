@@ -41,10 +41,18 @@ namespace gtsam {
 		Vector prior_;            /// measurement on logmap parameters, in compressed form
 		std::vector<bool> mask_;  /// flags to mask all parameters not measured
 
-	public:
-
 		/** default constructor - only use for serialization */
 		PartialPriorFactor() {}
+
+		/**
+		 * constructor with just minimum requirements for a factor - allows more
+		 * computation in the constructor.  This should only be used by subclasses
+		 * Sets the size of the mask with all values off
+		 */
+		PartialPriorFactor(const KEY& key, const SharedGaussian& model)
+		  : Base(model, key), mask_(model->dim(), false) {}
+
+	public:
 
 		// shorthand for a smart pointer to a factor
 		typedef typename boost::shared_ptr<PartialPriorFactor> shared_ptr;
@@ -74,10 +82,7 @@ namespace gtsam {
 			Base(model, key), prior_(prior), mask_(T::Dim(), false) {
 			assert((size_t)prior_.size() == mask.size());
 			assert(model->dim() == (size_t) prior.size());
-			for (size_t i=0; i<mask.size(); ++i) {
-				assert(mask[i] < mask_.size());
-				mask_[mask[i]] = true;
-			}
+			setMask(mask);
 			assert(nrTrue() == this->dim());
 		}
 
@@ -114,6 +119,10 @@ namespace gtsam {
 			return masked_logmap - prior_;
 		}
 
+		// access
+		const Vector& prior() const { return prior_; }
+		const std::vector<bool>& mask() const { return  mask_; }
+
 	protected:
 
 		/** counts true elements in the mask */
@@ -122,6 +131,14 @@ namespace gtsam {
 			for (size_t i=0; i<mask_.size(); ++i)
 				if (mask_[i])	++result;
 			return result;
+		}
+
+		/** sets the mask using a set of indices */
+		void setMask(const std::vector<size_t>& mask) {
+			for (size_t i=0; i<mask.size(); ++i) {
+				assert(mask[i] < mask_.size());
+				mask_[mask[i]] = true;
+			}
 		}
 
 	private:
