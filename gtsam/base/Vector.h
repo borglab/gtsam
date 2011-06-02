@@ -11,7 +11,7 @@
 
 /**
  * @file    Vector.h
- * @brief   typedef and functions to augment Boost's ublas::vector<double>
+ * @brief   typedef and functions to augment Eigen's VectorXd
  * @author  Kai Ni
  * @author  Frank Dellaert
  */
@@ -26,11 +26,6 @@
 #include <boost/random/linear_congruential.hpp>
 
 // Vector is a *global* typedef
-// wrap-matlab does this typedef as well
-// TODO: fix matlab wrapper
-//#if ! defined (MEX_H)
-//typedef boost::numeric::ublas::vector<double> Vector;
-//#endif
 
 // Typedef arbitary length vector
 typedef Eigen::VectorXd Vector;
@@ -263,20 +258,41 @@ Vector abs(const Vector& v);
  */
 double max(const Vector &a);
 
-/** Dot product */
-double dot(const Vector &a, const Vector& b);
+/**
+ * Dot product
+ */
+template<class V1, class V2>
+inline double dot(const V1 &a, const V2& b) {
+	assert (b.size()==a.size());
+	return a.dot(b);
+}
 
-// TODO: remove simple blas functions - these are one-liners with Eigen
+/** compatibility version for ublas' inner_prod() */
+template<class V1, class V2>
+inline double inner_prod(const V1 &a, const V2& b) {
+	assert (b.size()==a.size());
+	return a.dot(b);
+}
+
 /**
  * BLAS Level 1 scal: x <- alpha*x
+ * @DEPRECIATED: use operators instead
  */
-void scal(double alpha, Vector& x);
+inline void scal(double alpha, Vector& x) { x *= alpha; }
 
 /**
  * BLAS Level 1 axpy: y <- alpha*x + y
+ * @DEPRECIATED: use operators instead
  */
-void axpy(double alpha, const Vector& x, Vector& y);
-void axpy(double alpha, const Vector& x, SubVector y);
+template<class V1, class V2>
+inline void axpy(double alpha, const V1& x, V2& y) {
+	assert (y.size()==x.size());
+	y += alpha * x;
+}
+inline void axpy(double alpha, const Vector& x, SubVector y) {
+	assert (y.size()==x.size());
+	y += alpha * x;
+}
 
 /**
  * house(x,j) computes HouseHolder vector v and scaling factor beta

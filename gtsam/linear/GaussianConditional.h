@@ -47,7 +47,6 @@ public:
 	typedef boost::shared_ptr<GaussianConditional> shared_ptr;
 
 	/** Store the conditional matrix as upper-triangular column-major */
-//	typedef boost::numeric::ublas::triangular_matrix<double, boost::numeric::ublas::upper, boost::numeric::ublas::column_major> AbMatrix;
 	typedef MatrixColMajor AbMatrix;
 	typedef VerticalBlockView<AbMatrix> rsd_type;
 

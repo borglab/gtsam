@@ -113,7 +113,7 @@ TEST(HessianFactor, Constructor1)
   HessianFactor factor(0, G, g, f);
 
   // extract underlying parts
-  MatrixColMajor info_matrix = factor.raw_info().range(0, 1, 0, 1);
+  MatrixColMajor info_matrix = factor.info_.range(0, 1, 0, 1);
   EXPECT(assert_equal(MatrixColMajor(G), info_matrix));
   EXPECT_DOUBLES_EQUAL(f, factor.constant_term(), 1e-10);
   EXPECT(assert_equal(g, Vector(factor.linear_term()), 1e-10));

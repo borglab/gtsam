@@ -275,7 +275,7 @@ namespace gtsam {
 	}
 
   /* ************************************************************************* */
-  //static
+  static
   FastMap<Index, SlotEntry> findScatterAndDims
   (const FactorGraph<GaussianFactor>& factors) {
 

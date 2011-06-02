@@ -24,8 +24,6 @@ using namespace gtsam;
 #include <gtsam/inference/ISAM-inl.h>
 template class ISAM<GaussianConditional>;
 
-//namespace ublas = boost::numeric::ublas;
-
 namespace gtsam {
 
 /* ************************************************************************* */

@@ -60,7 +60,8 @@ namespace gtsam {
   /**
    * BLAS level 2 style
    */
-  void axpy(double alpha, const Errors& x, Errors& y);
+  template <>
+  void axpy<Errors,Errors>(double alpha, const Errors& x, Errors& y);
 
   /** print with optional string */
   void print(const Errors& a, const std::string& s = "Error");

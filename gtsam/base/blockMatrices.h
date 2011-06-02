@@ -243,8 +243,7 @@ public:
   template<class RHS>
   VerticalBlockView<MATRIX>& assignNoalias(const RHS& rhs) {
     copyStructureFrom(rhs);
-//    boost::numeric::ublas::noalias(matrix_) = rhs.full();
-    matrix_ = rhs.full(); // FIXME: check if noalias is necessary here
+    matrix_.noalias() = rhs.full();
     return *this;
   }
 
@@ -530,8 +529,7 @@ public:
   template<class RHSMATRIX>
   SymmetricBlockView<MATRIX>& assignNoalias(const SymmetricBlockView<RHSMATRIX>& rhs) {
     copyStructureFrom(rhs);
-//    boost::numeric::ublas::noalias(matrix_) = rhs.range(0, rhs.nBlocks(), 0, rhs.nBlocks());
-    matrix_ = rhs.matrix_.block(0, 0, rhs.nBlocks(), rhs.nBlocks());
+    matrix_.noalias() = rhs.matrix_.block(0, 0, rhs.nBlocks(), rhs.nBlocks());
     return *this;
   }
 

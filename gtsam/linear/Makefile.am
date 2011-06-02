@@ -38,7 +38,7 @@ headers += iterative-inl.h
 sources += iterative.cpp SubgraphPreconditioner.cpp
 headers += IterativeSolver.h IterativeOptimizationParameters.h 
 headers += SubgraphSolver.h SubgraphSolver-inl.h
-#sources += iterative.cpp BayesNetPreconditioner.cpp SubgraphPreconditioner.cpp
+#sources += BayesNetPreconditioner.cpp 
 #check_PROGRAMS += tests/testBayesNetPreconditioner
 
 # Timing tests

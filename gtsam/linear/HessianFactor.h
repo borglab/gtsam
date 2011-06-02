@@ -25,6 +25,8 @@
 
 // Forward declarations for friend unit tests
 class ConversionConstructorHessianFactorTest;
+class Constructor1HessianFactorTest;
+
 
 namespace gtsam {
 
@@ -118,11 +120,6 @@ namespace gtsam {
     /** returns the full linear term - g from the constructors */
     constColumn linear_term() const;
 
-    /** const access to the full matrix DEBUG ONLY*/
-    const InfoMatrix& raw_matrix() const { return matrix_; }
-
-    const BlockInfo& raw_info() const { return info_; } /// DEBUG ONLY
-
     /**
      * Permutes the GaussianFactor, but for efficiency requires the permutation
      * to already be inverted.  This acts just as a change-of-name for each
@@ -133,6 +130,7 @@ namespace gtsam {
 
     // Friend unit test classes
     friend class ::ConversionConstructorHessianFactorTest;
+    friend class ::Constructor1HessianFactorTest;
 
     // Friend JacobianFactor for conversion
     friend class JacobianFactor;

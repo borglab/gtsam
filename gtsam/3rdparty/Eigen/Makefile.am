@@ -4,7 +4,6 @@
 SUBDIRS = src
 
 # And the corresponding libraries produced
-# TODO add sublibs when something in 3rdparty actually needs compilation
 SUBLIBS = 
 
 # use nostdinc to turn off -I. and -I.., we do not need them because 

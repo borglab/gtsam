@@ -36,14 +36,6 @@
 
 #include <gtsam/nonlinear/Ordering.h>
 
-// FIXME: is this necessary?
-#define INSTANTIATE_NONLINEAR_FACTOR1(C,J) \
-  template class gtsam::NonlinearFactor1<C,J>;
-#define INSTANTIATE_NONLINEAR_FACTOR2(C,J1,J2) \
-    template class gtsam::NonlinearFactor2<C,J1,J2>;
-#define INSTANTIATE_NONLINEAR_FACTOR3(C,J1,J2,J3) \
-    template class gtsam::NonlinearFactor3<C,J1,J2,J3>;
-
 namespace gtsam {
 
 	/**

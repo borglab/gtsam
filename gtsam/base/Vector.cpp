@@ -11,7 +11,7 @@
 
 /**
  * @file    Vector.cpp
- * @brief   typedef and functions to augment Boost's ublas::vector<double>
+ * @brief   typedef and functions to augment Eigen's Vectors
  * @author  Kai Ni
  * @author  Frank Dellaert
  */
@@ -310,29 +310,6 @@ Vector abs(const Vector& v) {
 /* ************************************************************************* */
 double max(const Vector &a) {
 	return a.maxCoeff();
-}
-
-/* ************************************************************************* */
-double dot(const Vector& a, const Vector& b) {
-	assert (b.size()==a.size());
-	return a.dot(b);
-}
-
-/* ************************************************************************* */
-void scal(double alpha, Vector& x) {
-	x *= alpha;
-}
-
-/* ************************************************************************* */
-void axpy(double alpha, const Vector& x, Vector& y) {
-	assert (y.size()==x.size());
-	y += alpha * x;
-}
-
-/* ************************************************************************* */
-void axpy(double alpha, const Vector& x, SubVector y) {
-	assert (y.size()==x.size());
-	y += alpha * x;
 }
 
 /* ************************************************************************* */

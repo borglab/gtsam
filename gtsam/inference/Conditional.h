@@ -34,8 +34,6 @@ namespace gtsam {
  * provides storage for the keys involved in a conditional, and iterators and
  * access to the frontal and separator keys.
  *
- * todo:  Move permutation functions to IndexConditional.
- *
  * Derived classes *must* redefine the Factor and shared_ptr typedefs to refer
  * to the associated factor type and shared_ptr type of the derived class.  See
  * IndexConditional and GaussianConditional for examples.

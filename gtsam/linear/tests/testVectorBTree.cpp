@@ -19,7 +19,6 @@
 #include <sstream>
 #include <limits>
 
-#include <boost/numeric/ublas/vector_proxy.hpp>
 #include <boost/assign/std/vector.hpp>
 using namespace boost::assign; // bring 'operator+=()' into scope
 

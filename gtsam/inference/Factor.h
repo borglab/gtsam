@@ -40,9 +40,6 @@ template<class KEY> class Conditional;
  * class, using Index keys.  This class does not store any data other than its
  * keys.  Derived classes store data such as matrices and probability tables.
  *
- * todo:  Make NonlinearFactor derive from this too, which requires moving
- * Combine, eliminate*, permute* and the sorted key invariant to IndexFactor.
- *
  * Note that derived classes *must* redefine the ConditionalType and shared_ptr
  * typedefs to refer to the associated conditional and shared_ptr types of the
  * derived class.  See IndexFactor, JacobianFactor, etc. for examples.

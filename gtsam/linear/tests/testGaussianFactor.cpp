@@ -59,7 +59,7 @@ TEST(GaussianFactor, constructor2)
   EXPECT(assert_equal(*key0, _x0_));
   EXPECT(assert_equal(*key1, _x1_));
   EXPECT(!actual.empty());
-  EXPECT_LONGS_EQUAL(3, actual.Ab().nBlocks());
+  EXPECT_LONGS_EQUAL(3, actual.Ab_.nBlocks());
 
   Matrix actualA0 = actual.getA(key0);
   Matrix actualA1 = actual.getA(key1);

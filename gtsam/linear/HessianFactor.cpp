@@ -105,8 +105,6 @@ HessianFactor::HessianFactor(Index j1, Index j2,
 HessianFactor::HessianFactor(const GaussianConditional& cg) : GaussianFactor(cg), info_(matrix_) {
 	JacobianFactor jf(cg);
 	info_.copyStructureFrom(jf.Ab_);
-	//    ublas::noalias(ublas::symmetric_adaptor<MatrixColMajor,ublas::upper>(matrix_)) =
-	//        ublas::prod(ublas::trans(jf.matrix_), jf.matrix_);
 	matrix_.noalias() = jf.matrix_.transpose() * jf.matrix_;
 	assertInvariants();
 }
@@ -175,8 +173,6 @@ void HessianFactor::print(const std::string& s) const {
 	for(const_iterator key=this->begin(); key!=this->end(); ++key)
 		cout << *key << "(" << this->getDim(key) << ") ";
 	cout << "\n";
-	//    gtsam::print(ublas::symmetric_adaptor<const constBlock,ublas::upper>(
-	//        info_.range(0,info_.nBlocks(), 0,info_.nBlocks())), "Ab^T * Ab: ");
 	gtsam::print(MatrixColMajor(info_.range(0,info_.nBlocks(), 0,info_.nBlocks()).selfadjointView<Eigen::Upper>()), "Ab^T * Ab: ");
 }
 
@@ -186,10 +182,8 @@ bool HessianFactor::equals(const GaussianFactor& lf, double tol) const {
 		return false;
 	else {
 		MatrixColMajor thisMatrix = this->info_.full().selfadjointView<Eigen::Upper>();
-		//      MatrixColMajor thisMatrix = ublas::symmetric_adaptor<const MatrixColMajor,ublas::upper>(this->info_.full());
 		thisMatrix(thisMatrix.rows()-1, thisMatrix.cols()-1) = 0.0;
 		MatrixColMajor rhsMatrix = static_cast<const HessianFactor&>(lf).info_.full().selfadjointView<Eigen::Upper>();
-		//      MatrixColMajor rhsMatrix = ublas::symmetric_adaptor<const MatrixColMajor,ublas::upper>(static_cast<const HessianFactor&>(lf).info_.full());
 		rhsMatrix(rhsMatrix.rows()-1, rhsMatrix.cols()-1) = 0.0;
 		return equal_with_abs_tol(thisMatrix, rhsMatrix, tol);
 	}
@@ -444,7 +438,6 @@ HessianFactor::splitEliminatedFactor(size_t nrFrontals, const vector<Index>& key
 		}
 
 		tic(2, "construct cond");
-		//    const ublas::scalar_vector<double> sigmas(varDim, 1.0);
 		Vector sigmas = Vector::Ones(varDim);
 		conditionals->push_back(boost::make_shared<ConditionalType>(keys.begin()+j, keys.end(), 1, Ab, sigmas));
 		toc(2, "construct cond");

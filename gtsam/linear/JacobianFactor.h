@@ -32,6 +32,7 @@
 // Forward declarations of friend unit tests
 class Combine2GaussianFactorTest;
 class eliminateFrontalsGaussianFactorTest;
+class constructor2GaussianFactorTest;
 
 namespace gtsam {
 
@@ -184,18 +185,6 @@ namespace gtsam {
     Matrix matrix_augmented(bool weight = true) const;
 
     /**
-     * Returns full dense matrix underying factor
-     * TESTING ONLY
-     */
-    const AbMatrix& raw_matrix() const { return matrix_; }
-
-    /**
-     * Returns the block indexing view
-     * TESTING ONLY
-     */
-    const BlockAb& Ab() const { return Ab_; }
-
-    /**
      * Return vector of i, j, and s to generate an m-by-n sparse matrix
      * such that S(i(k),j(k)) = s(k), which can be given to MATLAB's sparse.
      * As above, the standard deviations are baked into A and b
@@ -219,6 +208,7 @@ namespace gtsam {
     // Friend unit tests (see also forward declarations above)
     friend class ::Combine2GaussianFactorTest;
     friend class ::eliminateFrontalsGaussianFactorTest;
+    friend class ::constructor2GaussianFactorTest;
 
     /* Used by ::CombineJacobians for sorting */
     struct _RowSource {

@@ -122,7 +122,7 @@ namespace gtsam {
 		Errors::const_iterator it = e.begin();
 		for ( Index i = 0 ; i < y.size() ; ++i, ++it ) {
 			const Vector& ei = *it;
-			axpy(alpha,ei,y[i]) ;
+			axpy(alpha,ei,y[i]);
 		}
 		sp.transposeMultiplyAdd2(alpha,it,e.end(),y);
 	}

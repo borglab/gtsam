@@ -148,7 +148,6 @@ Vector GaussianConditional::solve(const VectorValues& x) const {
 	Vector rhs(get_d());
 	for (const_iterator parent = beginParents(); parent != endParents(); ++parent) {
 		rhs += -get_S(parent) * x[*parent];
-//  ublas::axpy_prod(-get_S(parent), x[*parent], rhs, false);
 	}
 	if(debug) gtsam::print(Matrix(get_R()), "Calling backSubstituteUpper on ");
 	if(debug) gtsam::print(rhs, "rhs: ");

@@ -30,15 +30,8 @@
 
 /**
  * Matrix is a *global* typedef
- * wrap-matlab does this typedef as well
  * we use the default < double,row_major,unbounded_array<double> >
  */
-
-// FIXME: replace to handle matlab wrapper
-//#if ! defined (MEX_H)
-//typedef boost::numeric::ublas::matrix<double> Matrix;
-//typedef boost::numeric::ublas::matrix<double, boost::numeric::ublas::column_major> MatrixColMajor;
-//#endif
 
 typedef Eigen::Matrix<double, Eigen::Dynamic, Eigen::Dynamic, Eigen::RowMajor> Matrix;
 typedef Eigen::Matrix<double, Eigen::Dynamic, Eigen::Dynamic, Eigen::ColMajor> MatrixColMajor;
@@ -373,6 +366,7 @@ Vector backSubstituteUpper(const Matrix& U, const Vector& b, bool unit=false);
  * @return the solution x of x'*U=b'
  */
 //FIXME: add back expression form
+//TODO: is this function necessary? it isn't used
 //template<class VECTOR, class MATRIX>
 //Vector backSubstituteUpper(const VECTOR& b, const MATRIX& U, bool unit=false);
 Vector backSubstituteUpper(const Vector& b, const Matrix& U, bool unit=false);

@@ -164,7 +164,6 @@ namespace gtsam {
     Ab_.assignNoalias(factor.info_);
     size_t maxrank = choleskyCareful(matrix_).first;
     // FIXME: replace with triangular system
-//    matrix_ = ublas::triangular_adaptor<AbMatrix, ublas::upper>(matrix_);
     Ab_.rowEnd() = maxrank;
     model_ = noiseModel::Unit::Create(maxrank);
 

@@ -88,7 +88,6 @@ std::pair<Vector, Matrix> GaussianSequentialSolver::marginalCovariance(Index j) 
 	GaussianConditional::shared_ptr conditional = EliminateQR(fg, 1).first->front();
 	Matrix R = conditional->get_R();
 	return make_pair(conditional->get_d(), (R.transpose() * R).inverse());
-//	return make_pair(conditional->get_d(), inverse(ublas::prod(ublas::trans(R),R)));
 }
 
 /* ************************************************************************* */

@@ -522,67 +522,27 @@ void householder(MatrixColMajor& A, size_t k) {
 
 /* ************************************************************************* */
 Vector backSubstituteLower(const Matrix& L, const Vector& b, bool unit) {
-	size_t n = L.cols();
-#ifndef NDEBUG
-	size_t m = L.rows();
-	if (m!=n)
-		throw invalid_argument("backSubstituteLower: L must be square");
-#endif
-
-	Vector result(n);
-	for (size_t i = 1; i <= n; i++) {
-		double zi = b(i-1);
-		for (size_t j = 1; j < i; j++)
-			zi -= L(i-1,j-1) * result(j-1);
-#ifndef NDEBUG
-		if(!unit && fabs(L(i-1,i-1)) <= numeric_limits<double>::epsilon()) {
-			stringstream ss;
-			ss << "backSubstituteUpper: L is singular,\n";
-			print(L, "L: ", ss);
-			throw invalid_argument(ss.str());
-		}
-#endif
-		if (!unit) zi /= L(i-1,i-1);
-		result(i-1) = zi;
-	}
-
-	return result;
+	// @return the solution x of L*x=b
+	assert(L.rows() == L.cols());
+	if (unit)
+		return L.triangularView<Eigen::UnitLower>().solve(b);
+	else
+		return L.triangularView<Eigen::Lower>().solve(b);
 }
 
 /* ************************************************************************* */
 Vector backSubstituteUpper(const Matrix& U, const Vector& b, bool unit) {
 	// @return the solution x of U*x=b
-  size_t n = U.cols();
-#ifndef NDEBUG
-  size_t m = U.rows();
-  if (m!=n)
-    throw invalid_argument("backSubstituteUpper: U must be square");
-#endif
-
-  Vector result(n);
-  for (size_t i = n; i > 0; i--) {
-    double zi = b(i-1);
-    for (size_t j = i+1; j <= n; j++)
-      zi -= U(i-1,j-1) * result(j-1);
-#ifndef NDEBUG
-    if(!unit && fabs(U(i-1,i-1)) <= numeric_limits<double>::epsilon()) {
-      stringstream ss;
-      ss << "backSubstituteUpper: U is singular,\n";
-      print(U, "U: ", ss);
-      throw invalid_argument(ss.str());
-    }
-#endif
-    if (!unit) zi /= U(i-1,i-1);
-    result(i-1) = zi;
-  }
-
-  return result;
+	assert(U.rows() == U.cols());
+	if (unit)
+		return U.triangularView<Eigen::UnitUpper>().solve(b);
+	else
+		return U.triangularView<Eigen::Upper>().solve(b);
 }
 
 /* ************************************************************************* */
 Vector backSubstituteUpper(const Vector& b, const Matrix& U, bool unit) {
 	// @return the solution x of x'*U=b'
-
   size_t n = U.cols();
 #ifndef NDEBUG
   size_t m = U.rows();

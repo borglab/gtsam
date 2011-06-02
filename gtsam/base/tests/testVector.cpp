@@ -239,10 +239,13 @@ TEST( TestVector, dot )
 TEST( TestVector, axpy )
 {
   Vector x = Vector_(3,10.,20.,30.);
-  Vector y = Vector_(3,2.0,5.0,6.0);
-  axpy(0.1,x,y);
+  Vector y0 = Vector_(3,2.0,5.0,6.0);
+  Vector y1 = y0, y2 = y0;
+  axpy(0.1,x,y1);
+  axpy(0.1,x,y2.head(3));
   Vector expected = Vector_(3,3.0,7.0,9.0);
-  EXPECT(assert_equal(expected,y));
+  EXPECT(assert_equal(expected,y1));
+  EXPECT(assert_equal(expected,Vector(y2)));
 }
 
 /* ************************************************************************* */

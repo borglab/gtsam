@@ -103,7 +103,8 @@ double dot(const Errors& a, const Errors& b) {
 }
 
 /* ************************************************************************* */
-void axpy(double alpha, const Errors& x, Errors& y) {
+template<>
+void axpy<Errors,Errors>(double alpha, const Errors& x, Errors& y) {
 	Errors::const_iterator it = x.begin();
   BOOST_FOREACH(Vector& yi, y)
 		axpy(alpha,*(it++),yi);

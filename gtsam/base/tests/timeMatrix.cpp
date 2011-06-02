@@ -16,13 +16,11 @@
  */
 
 #include <iostream>
-#include <boost/numeric/ublas/matrix_proxy.hpp>
 #include <boost/timer.hpp>
 #include <gtsam/base/Matrix.h>
 
 using namespace std;
 using namespace gtsam;
-namespace ublas = boost::numeric::ublas;
 
 /*
  * Results:
