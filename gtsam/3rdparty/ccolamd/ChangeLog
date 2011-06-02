@@ -6,6 +6,7 @@ June 2, 2011:
 		* Added UFconfig.[c|h] from the UFconfig suitesparse package
 		* Renamed licence file to LGPL.txt - contents remain the same
 		* All code is unchanged from original
+		* Note: DLONG define removed from build script for compatibility - only necessary to build for long version
 
 
 Original ChangeLog by authors

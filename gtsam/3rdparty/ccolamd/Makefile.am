@@ -7,12 +7,9 @@
 # header files are qualified so they can be included in external projects.
 AUTOMAKE_OPTIONS = nostdinc
 
-headers =
-sources = 
-
 # CCOLAMD (with UFconfig files included)
-headers += ccolamd.h UFconfig.h
-sources += ccolamd.c ccolamd_global.c UFconfig.c 
+headers = ccolamd.h UFconfig.h
+sources = ccolamd.c ccolamd_global.c UFconfig.c 
 
 #----------------------------------------------------------------------------------------------------
 # Create a libtool library that is not installed
@@ -26,5 +23,5 @@ libccolamd_la_SOURCES = $(sources)
 
 AM_CPPFLAGS =
 
-AM_CPPFLAGS += $(BOOST_CPPFLAGS) -I$(top_srcdir) -DDLONG 
+AM_CPPFLAGS += $(BOOST_CPPFLAGS) -I$(top_srcdir) 
 AM_LDFLAGS = $(BOOST_LDFLAGS)
