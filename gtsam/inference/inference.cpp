@@ -23,7 +23,7 @@
 #include <iostream>
 #include <vector>
 
-#include <ccolamd.h>
+#include <gtsam/3rdparty/ccolamd/ccolamd.h>
 
 using namespace std;
 

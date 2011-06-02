@@ -1,3 +1,14 @@
+Changes for GTSAM Distribution
+June 2, 2011:
+	
+		* Moved all source/header files into a single folder within gtsam/3rdparty
+		* Removed demos, matlab examples, original makefiles
+		* Added UFconfig.[c|h] from the UFconfig suitesparse package
+		* Renamed licence file to LGPL.txt - contents remain the same
+		* All code is unchanged from original
+
+
+Original ChangeLog by authors
 Jan 25, 2011: version 2.7.3
 
     * minor fix to "make install"

@@ -64,7 +64,7 @@ slamdir = $(pkgincludedir)/slam
 slam_HEADERS = $(headers)
 noinst_LTLIBRARIES = libslam.la
 libslam_la_SOURCES = $(sources)
-AM_CPPFLAGS = $(BOOST_CPPFLAGS) -I$(CCOLAMDInc) -I$(top_srcdir)
+AM_CPPFLAGS = $(BOOST_CPPFLAGS)  -I$(top_srcdir)
 AM_LDFLAGS = $(BOOST_LDFLAGS)
 
 #----------------------------------------------------------------------------------------------------
@@ -72,8 +72,8 @@ AM_LDFLAGS = $(BOOST_LDFLAGS)
 #----------------------------------------------------------------------------------------------------
 TESTS = $(check_PROGRAMS)
 AM_DEFAULT_SOURCE_EXT = .cpp
-AM_LDFLAGS += $(boost_serialization) -L$(CCOLAMDLib) -lccolamd
-LDADD = libslam.la ../geometry/libgeometry.la  ../nonlinear/libnonlinear.la ../linear/liblinear.la ../inference/libinference.la ../base/libbase.la
+AM_LDFLAGS += $(boost_serialization) 
+LDADD = libslam.la ../geometry/libgeometry.la  ../nonlinear/libnonlinear.la ../linear/liblinear.la ../inference/libinference.la ../base/libbase.la ../3rdparty/ccolamd/libccolamd.la 
 LDADD += ../../CppUnitLite/libCppUnitLite.a
 
 # rule to run an executable

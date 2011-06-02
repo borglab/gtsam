@@ -44,17 +44,6 @@ check_PROGRAMS += tests/testClusterTree
 check_PROGRAMS += tests/testJunctionTree
 
 #----------------------------------------------------------------------------------------------------
-# discrete
-#----------------------------------------------------------------------------------------------------
-
-# Binary Inference
-#headers += BinaryConditional.h
-#check_PROGRAMS += tests/testBinaryBayesNet
-
-# Timing tests
-#noinst_PROGRAMS = tests/timeSymbolMaps
-
-#----------------------------------------------------------------------------------------------------
 # Create a libtool library that is not installed
 # It will be packaged in the toplevel libgtsam.la as specfied in ../Makefile.am 
 # The headers are installed in $(includedir)/gtsam: 
@@ -64,7 +53,7 @@ inferencedir = $(pkgincludedir)/inference
 inference_HEADERS = $(headers)
 noinst_LTLIBRARIES = libinference.la
 libinference_la_SOURCES = $(sources)
-AM_CPPFLAGS = $(BOOST_CPPFLAGS) -I$(CCOLAMDInc) -I$(top_srcdir)
+AM_CPPFLAGS = $(BOOST_CPPFLAGS) -I$(top_srcdir)
 AM_LDFLAGS = $(BOOST_LDFLAGS)
 AM_CXXFLAGS =
 
@@ -73,8 +62,8 @@ AM_CXXFLAGS =
 #----------------------------------------------------------------------------------------------------
 TESTS = $(check_PROGRAMS)
 AM_LDFLAGS += $(boost_serialization)
-LDADD = libinference.la ../base/libbase.la
-LDADD += ../../CppUnitLite/libCppUnitLite.a
+LDADD = libinference.la ../base/libbase.la ../3rdparty/ccolamd/libccolamd.la
+LDADD += ../../CppUnitLite/libCppUnitLite.a 
 AM_DEFAULT_SOURCE_EXT = .cpp
 
 # rule to run an executable

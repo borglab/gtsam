@@ -55,7 +55,7 @@ lineardir = $(pkgincludedir)/linear
 linear_HEADERS = $(headers)
 noinst_LTLIBRARIES = liblinear.la
 liblinear_la_SOURCES = $(sources)
-AM_CPPFLAGS = $(BOOST_CPPFLAGS) -I$(CCOLAMDInc) -I$(top_srcdir)
+AM_CPPFLAGS = $(BOOST_CPPFLAGS)  -I$(top_srcdir)
 AM_LDFLAGS = $(BOOST_LDFLAGS)
 AM_CXXFLAGS =
 
@@ -64,7 +64,7 @@ AM_CXXFLAGS =
 #----------------------------------------------------------------------------------------------------
 TESTS = $(check_PROGRAMS)
 AM_LDFLAGS += $(boost_serialization)
-LDADD = liblinear.la ../inference/libinference.la ../base/libbase.la
+LDADD = liblinear.la ../inference/libinference.la ../base/libbase.la ../3rdparty/ccolamd/libccolamd.la
 LDADD += ../../CppUnitLite/libCppUnitLite.a
 AM_DEFAULT_SOURCE_EXT = .cpp
 

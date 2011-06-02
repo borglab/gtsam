@@ -55,7 +55,7 @@ libbase_la_SOURCES = $(sources)
 
 AM_CPPFLAGS =
 
-AM_CPPFLAGS += $(BOOST_CPPFLAGS) -I$(CCOLAMDInc) -I$(top_srcdir)
+AM_CPPFLAGS += $(BOOST_CPPFLAGS) -I$(top_srcdir)
 AM_LDFLAGS = $(BOOST_LDFLAGS)
 
 #----------------------------------------------------------------------------------------------------
@@ -63,8 +63,8 @@ AM_LDFLAGS = $(BOOST_LDFLAGS)
 #----------------------------------------------------------------------------------------------------
 TESTS = $(check_PROGRAMS)
 AM_DEFAULT_SOURCE_EXT = .cpp
-AM_LDFLAGS += $(boost_serialization) -L$(CCOLAMDLib) -lccolamd
-LDADD = libbase.la ../../CppUnitLite/libCppUnitLite.a
+AM_LDFLAGS += $(boost_serialization) 
+LDADD = libbase.la ../../CppUnitLite/libCppUnitLite.a ../3rdparty/ccolamd/libccolamd.la
 
 # rule to run an executable
 %.run: % $(LDADD)

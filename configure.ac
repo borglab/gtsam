@@ -16,8 +16,10 @@ AC_CONFIG_SRCDIR([gtsam/slam/pose2SLAM.cpp])
 AC_CONFIG_SRCDIR([tests/testTupleValues.cpp])
 AC_CONFIG_SRCDIR([examples/SimpleRotation.cpp])
 
-# pull in all subdirectories of Eigen - FIXME: find a better way of handling this
 AC_CONFIG_SRCDIR([gtsam/3rdparty/Makefile.am])
+AC_CONFIG_SRCDIR([gtsam/3rdparty/ccolamd/Makefile.am])
+
+# pull in all subdirectories of Eigen - FIXME: find a better way of handling this
 AC_CONFIG_SRCDIR([gtsam/3rdparty/Eigen/Makefile.am])
 AC_CONFIG_SRCDIR([gtsam/3rdparty/Eigen/src/Makefile.am])
 AC_CONFIG_SRCDIR([gtsam/3rdparty/Eigen/src/Cholesky/Makefile.am])
@@ -140,21 +142,21 @@ AX_BOOST_BASE([1.40])
 #            ])
 #AC_SUBST([boost])
 
-# ask for ccolamd library include directory
-AC_ARG_WITH([ccolamd-inc],
-            [AS_HELP_STRING([--with-ccolamd-inc],
-              [specify the CCOLAMD library include directory (defaults to /HOME/include/ccolamd)])],
-            [CCOLAMDInc=$withval],
-            [CCOLAMDInc=${HOME}/include/ccolamd])
-AC_SUBST([CCOLAMDInc])
-
-# ask for sparse library lib directory
-AC_ARG_WITH([ccolamd-lib],
-            [AS_HELP_STRING([--with-ccolamd-lib],
-              [specify the CCOLAMD library lib directory (defaults to /HOME/lib)])],
-            [CCOLAMDLib=$withval],
-            [CCOLAMDLib=${HOME}/lib])
-AC_SUBST([CCOLAMDLib])
+## ask for ccolamd library include directory
+#AC_ARG_WITH([ccolamd-inc],
+#            [AS_HELP_STRING([--with-ccolamd-inc],
+#              [specify the CCOLAMD library include directory (defaults to /HOME/include/ccolamd)])],
+#            [CCOLAMDInc=$withval],
+#            [CCOLAMDInc=${HOME}/include/ccolamd])
+#AC_SUBST([CCOLAMDInc])
+#
+## ask for sparse library lib directory
+#AC_ARG_WITH([ccolamd-lib],
+#            [AS_HELP_STRING([--with-ccolamd-lib],
+#              [specify the CCOLAMD library lib directory (defaults to /HOME/lib)])],
+#            [CCOLAMDLib=$withval],
+#            [CCOLAMDLib=${HOME}/lib])
+#AC_SUBST([CCOLAMDLib])
 
 AC_CONFIG_FILES([CppUnitLite/Makefile \
 gtsam/3rdparty/Eigen/src/Cholesky/Makefile \
@@ -183,6 +185,7 @@ gtsam/3rdparty/Eigen/src/Eigen2Support/Makefile \
 gtsam/3rdparty/Eigen/src/Eigen2Support/Geometry/Makefile \
 gtsam/3rdparty/Eigen/src/Makefile \
 gtsam/3rdparty/Eigen/Makefile \
+gtsam/3rdparty/ccolamd/Makefile \
 gtsam/3rdparty/Makefile \
 gtsam/base/Makefile \
 gtsam/geometry/Makefile \

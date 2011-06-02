@@ -34,7 +34,7 @@ noinst_PROGRAMS = timeGaussianFactorGraph timeSequentialOnDataset timeMultifront
 #----------------------------------------------------------------------------------------------------
 TESTS = $(check_PROGRAMS)
 AM_LDFLAGS = $(BOOST_LDFLAGS)
-AM_CPPFLAGS = $(BOOST_CPPFLAGS) -I$(CCOLAMDInc) -I$(top_srcdir)
+AM_CPPFLAGS = $(BOOST_CPPFLAGS)  -I$(top_srcdir)
 
 # link to serialization library for test 
 if ENABLE_SERIALIZATION

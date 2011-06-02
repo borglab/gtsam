@@ -22,7 +22,7 @@ SUBDIRS = vSLAMexample # visual SLAM examples with 3D point landmarks and 6D cam
 #----------------------------------------------------------------------------------------------------
 # rules to build local programs
 #----------------------------------------------------------------------------------------------------
-AM_CPPFLAGS = $(BOOST_CPPFLAGS) -I$(CCOLAMDInc) -I$(top_srcdir)
+AM_CPPFLAGS = $(BOOST_CPPFLAGS)  -I$(top_srcdir)
 AM_LDFLAGS = $(BOOST_LDFLAGS)
 LDADD = ../gtsam/libgtsam.la
 AM_DEFAULT_SOURCE_EXT = .cpp
