@@ -142,22 +142,6 @@ AX_BOOST_BASE([1.40])
 #            ])
 #AC_SUBST([boost])
 
-## ask for ccolamd library include directory
-#AC_ARG_WITH([ccolamd-inc],
-#            [AS_HELP_STRING([--with-ccolamd-inc],
-#              [specify the CCOLAMD library include directory (defaults to /HOME/include/ccolamd)])],
-#            [CCOLAMDInc=$withval],
-#            [CCOLAMDInc=${HOME}/include/ccolamd])
-#AC_SUBST([CCOLAMDInc])
-#
-## ask for sparse library lib directory
-#AC_ARG_WITH([ccolamd-lib],
-#            [AS_HELP_STRING([--with-ccolamd-lib],
-#              [specify the CCOLAMD library lib directory (defaults to /HOME/lib)])],
-#            [CCOLAMDLib=$withval],
-#            [CCOLAMDLib=${HOME}/lib])
-#AC_SUBST([CCOLAMDLib])
-
 AC_CONFIG_FILES([CppUnitLite/Makefile \
 gtsam/3rdparty/Eigen/src/Cholesky/Makefile \
 gtsam/3rdparty/Eigen/src/Core/Makefile \

@@ -64,7 +64,7 @@ AM_LDFLAGS = $(BOOST_LDFLAGS)
 TESTS = $(check_PROGRAMS)
 AM_DEFAULT_SOURCE_EXT = .cpp
 AM_LDFLAGS += $(boost_serialization) 
-LDADD = libbase.la ../../CppUnitLite/libCppUnitLite.a ../3rdparty/ccolamd/libccolamd.la
+LDADD = libbase.la ../../CppUnitLite/libCppUnitLite.a 
 
 # rule to run an executable
 %.run: % $(LDADD)
