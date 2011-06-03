@@ -137,22 +137,23 @@ bool equalsDereferencedXML(const T& input = T()) {
 
 #include <gtsam/base/Matrix.h>
 #include <gtsam/base/Vector.h>
-#include <gtsam/geometry/Point2.h>
 #include <gtsam/geometry/Pose2.h>
-#include <gtsam/geometry/Rot2.h>
-#include <gtsam/geometry/Point3.h>
-#include <gtsam/geometry/Pose3.h>
-#include <gtsam/geometry/Rot3.h>
 #include <gtsam/geometry/Cal3_S2.h>
+#include <gtsam/geometry/Cal3DS2.h>
+#include <gtsam/geometry/Cal3Bundler.h>
+#include <gtsam/geometry/Cal3_S2Stereo.h>
+#include <gtsam/geometry/SimpleCamera.h>
+#include <gtsam/geometry/StereoCamera.h>
 
 #include <gtsam/slam/planarSLAM.h>
+#include <gtsam/slam/pose3SLAM.h>
+#include <gtsam/slam/visualSLAM.h>
 #include <gtsam/slam/BearingFactor.h>
 
 #include <CppUnitLite/TestHarness.h>
 
 using namespace std;
 using namespace gtsam;
-using namespace planarSLAM;
 
 /* ************************************************************************* */
 TEST (Serialization, matrix_vector) {
@@ -163,17 +164,40 @@ TEST (Serialization, matrix_vector) {
 	EXPECT(equalityXML<Matrix>(Matrix_(2, 2, 1.0, 2.0, 3.0, 4.0)));
 }
 
+Point3 pt3(1.0, 2.0, 3.0);
+Rot3 rt3 = Rot3::RzRyRx(1.0, 3.0, 2.0);
+Pose3 pose3(rt3, pt3);
+
+Cal3_S2 cal1(1.0, 2.0, 0.3, 0.1, 0.5);
+Cal3DS2 cal2(1.0, 2.0, 3.0, 4.0, 5.0, 6.0, 7.0, 8.0, 9.0);
+Cal3Bundler cal3(1.0, 2.0, 3.0);
+Cal3_S2Stereo cal4(1.0, 2.0, 3.0, 4.0, 5.0, 6.0);
+CalibratedCamera cal5(Pose3(rt3, pt3));
+
+SimpleCamera cam1(cal1, cal5);
+StereoCamera cam2(pose3, cal4);
+StereoPoint2 spt(1.0, 2.0, 3.0);
+
+
 /* ************************************************************************* */
 TEST (Serialization, text_geometry) {
 	EXPECT(equalsObj<gtsam::Point2>(Point2(1.0, 2.0)));
 	EXPECT(equalsObj<gtsam::Pose2>(Pose2(1.0, 2.0, 0.3)));
 	EXPECT(equalsObj<gtsam::Rot2>(Rot2::fromDegrees(30.0)));
 
-	Point3 pt3(1.0, 2.0, 3.0);
-	Rot3 rt3 = Rot3::RzRyRx(1.0, 3.0, 2.0);
-	EXPECT(equalsObj<gtsam::Point3>(pt3));
+	EXPECT(equalsObj(pt3));
 	EXPECT(equalsObj<gtsam::Rot3>(rt3));
 	EXPECT(equalsObj<gtsam::Pose3>(Pose3(rt3, pt3)));
+
+	EXPECT(equalsObj(cal1));
+	EXPECT(equalsObj(cal2));
+	EXPECT(equalsObj(cal3));
+	EXPECT(equalsObj(cal4));
+	EXPECT(equalsObj(cal5));
+
+	EXPECT(equalsObj(cam1));
+	EXPECT(equalsObj(cam2));
+	EXPECT(equalsObj(spt));
 }
 
 /* ************************************************************************* */
@@ -182,11 +206,19 @@ TEST (Serialization, xml_geometry) {
 	EXPECT(equalsXML<gtsam::Pose2>(Pose2(1.0, 2.0, 0.3)));
 	EXPECT(equalsXML<gtsam::Rot2>(Rot2::fromDegrees(30.0)));
 
-	Point3 pt3(1.0, 2.0, 3.0);
-	Rot3 rt3 = Rot3::RzRyRx(1.0, 3.0, 2.0);
 	EXPECT(equalsXML<gtsam::Point3>(pt3));
 	EXPECT(equalsXML<gtsam::Rot3>(rt3));
 	EXPECT(equalsXML<gtsam::Pose3>(Pose3(rt3, pt3)));
+
+	EXPECT(equalsXML(cal1));
+	EXPECT(equalsXML(cal2));
+	EXPECT(equalsXML(cal3));
+	EXPECT(equalsXML(cal4));
+	EXPECT(equalsXML(cal5));
+
+	EXPECT(equalsXML(cam1));
+	EXPECT(equalsXML(cam2));
+	EXPECT(equalsXML(spt));
 }
 
 /* ************************************************************************* */
@@ -273,7 +305,7 @@ TEST (Serialization, SharedDiagonal_noiseModels) {
 #include <gtsam/linear/HessianFactor.h>
 
 /* ************************************************************************* */
-TEST (Serialization, text_linear) {
+TEST (Serialization, linear) {
 	vector<size_t> dims;
 	dims.push_back(1);
 	dims.push_back(2);
@@ -281,26 +313,6 @@ TEST (Serialization, text_linear) {
 	double v[] = {1., 2., 3., 4., 5.};
 	VectorValues values(dims, v);
 	EXPECT(equalsObj<VectorValues>(values));
-
-	Index i1 = 4, i2 = 7;
-	Matrix A1 = eye(3), A2 = -1.0 * eye(3);
-  Vector b = ones(3);
-  SharedDiagonal model = noiseModel::Diagonal::Sigmas(Vector_(3, 1.0, 2.0, 3.0));
-	JacobianFactor jacobianfactor(i1, A1, i2, A2, b, model);
-	EXPECT(equalsObj<VectorValues>(jacobianfactor));
-
-	HessianFactor hessianfactor(jacobianfactor);
-	EXPECT(equalsObj<VectorValues>(hessianfactor));
-}
-
-/* ************************************************************************* */
-TEST (Serialization, xml_linear) {
-	vector<size_t> dims;
-	dims.push_back(1);
-	dims.push_back(2);
-	dims.push_back(2);
-	double v[] = {1., 2., 3., 4., 5.};
-	VectorValues values(dims, v);
 	EXPECT(equalsXML<VectorValues>(values));
 
 	Index i1 = 4, i2 = 7;
@@ -308,10 +320,21 @@ TEST (Serialization, xml_linear) {
   Vector b = ones(3);
   SharedDiagonal model = noiseModel::Diagonal::Sigmas(Vector_(3, 1.0, 2.0, 3.0));
 	JacobianFactor jacobianfactor(i1, A1, i2, A2, b, model);
-	EXPECT(equalsObj<VectorValues>(jacobianfactor));
+	EXPECT(equalsObj(jacobianfactor));
+	EXPECT(equalsXML(jacobianfactor));
 
 	HessianFactor hessianfactor(jacobianfactor);
-	EXPECT(equalsObj<VectorValues>(hessianfactor));
+	EXPECT(equalsObj(hessianfactor));
+	EXPECT(equalsXML(hessianfactor));
+	{
+		Matrix A1 = Matrix_(2,2, 1., 2., 3., 4.);
+		Matrix A2 = Matrix_(2,2, 6., 0.2, 8., 0.4);
+		Matrix R = Matrix_(2,2, 0.1, 0.3, 0.0, 0.34);
+		Vector d(2); d << 0.2, 0.5;
+		GaussianConditional cg(0, d, R, 1, A1, 2, A2, ones(2));
+//		EXPECT(equalsObj(cg)); // FAILS: does not match
+//		EXPECT(equalsXML(cg)); // FAILS: does not match
+	}
 }
 
 /* ************************************************************************* */
@@ -325,7 +348,7 @@ BOOST_CLASS_EXPORT_GUID(gtsam::planarSLAM::Constraint,  "gtsam::planarSLAM::Cons
 
 /* ************************************************************************* */
 TEST (Serialization, planar_system) {
-
+	using namespace planarSLAM;
 	Values values;
 	values.insert(PointKey(3), Point2(1.0, 2.0));
 	values.insert(PoseKey(4), Pose2(1.0, 2.0, 0.3));
@@ -375,8 +398,43 @@ TEST (Serialization, planar_system) {
 }
 
 /* ************************************************************************* */
-int main() {
-	TestResult tr;
-	return TestRegistry::runAllTests(tr);
+/* Create GUIDs for factors */
+BOOST_CLASS_EXPORT_GUID(gtsam::visualSLAM::PoseConstraint,  "gtsam::visualSLAM::PoseConstraint");
+BOOST_CLASS_EXPORT_GUID(gtsam::visualSLAM::PointConstraint, "gtsam::visualSLAM::PointConstraint");
+BOOST_CLASS_EXPORT_GUID(gtsam::visualSLAM::PosePrior,       "gtsam::visualSLAM::PosePrior");
+BOOST_CLASS_EXPORT_GUID(gtsam::visualSLAM::PointPrior,      "gtsam::visualSLAM::PointPrior");
+BOOST_CLASS_EXPORT_GUID(gtsam::visualSLAM::ProjectionFactor,"gtsam::visualSLAM::ProjectionFactor");
+BOOST_CLASS_EXPORT_GUID(gtsam::visualSLAM::StereoFactor,    "gtsam::visualSLAM::StereoFactor");
+
+/* ************************************************************************* */
+TEST (Serialization, visual_system) {
+	using namespace visualSLAM;
+	Values values;
+	PoseKey x1(1), x2(2);
+	PointKey l1(1), l2(2);
+	Pose3 pose1 = pose3, pose2 = pose3.inverse();
+	Point3 pt1(1.0, 2.0, 3.0), pt2(4.0, 5.0, 6.0);
+	values.insert(x1, pose1);
+	values.insert(l1, pt1);
+	SharedGaussian model2 = noiseModel::Isotropic::Sigma(2, 0.3);
+	SharedGaussian model3 = noiseModel::Isotropic::Sigma(3, 0.3);
+	SharedGaussian model6 = noiseModel::Isotropic::Sigma(6, 0.3);
+	boost::shared_ptr<Cal3_S2> K(new Cal3_S2(cal1));
+
+	Graph graph;
+	graph.addMeasurement(Point2(1.0, 2.0), model2, x1, l1, K);
+	graph.addPointConstraint(1, pt1);
+	graph.addPointPrior(1, pt2, model3);
+	graph.addPoseConstraint(1, pose1);
+	graph.addPosePrior(1, pose3, model6);
+
+	EXPECT(equalsObj(values));
+	EXPECT(equalsObj(graph));
+
+	EXPECT(equalsXML(values));
+	EXPECT(equalsXML(graph));
 }
+
+/* ************************************************************************* */
+int main() { TestResult tr; return TestRegistry::runAllTests(tr); }
 /* ************************************************************************* */

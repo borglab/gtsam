@@ -55,7 +55,7 @@ namespace gtsam {
 		}
 
 		/** equals */
-		bool equals(const StereoPoint2& q, double tol) const {
+		bool equals(const StereoPoint2& q, double tol=1e-9) const {
 			return (fabs(uL_ - q.uL_) < tol && fabs(uR_ - q.uR_) < tol && fabs(v_
 					- q.v_) < tol);
 		}
@@ -108,18 +108,28 @@ namespace gtsam {
 			return p.vector();
 		}
 
-	    /** default implementations of binary functions */
-	    inline StereoPoint2 expmap(const Vector& v) const {
-	    	return gtsam::expmap_default(*this, v);
-	    }
+		/** default implementations of binary functions */
+		inline StereoPoint2 expmap(const Vector& v) const {
+			return gtsam::expmap_default(*this, v);
+		}
 
-	    inline Vector logmap(const StereoPoint2& p2) const {
-	    	return gtsam::logmap_default(*this, p2);
-	    }
+		inline Vector logmap(const StereoPoint2& p2) const {
+			return gtsam::logmap_default(*this, p2);
+		}
 
-	    inline StereoPoint2 between(const StereoPoint2& p2) const {
-	    	return gtsam::between_default(*this, p2);
-	    }
+		inline StereoPoint2 between(const StereoPoint2& p2) const {
+			return gtsam::between_default(*this, p2);
+		}
+
+	private:
+		/** Serialization function */
+		friend class boost::serialization::access;
+		template<class ARCHIVE>
+		void serialize(ARCHIVE & ar, const unsigned int version) {
+			ar & BOOST_SERIALIZATION_NVP(uL_);
+			ar & BOOST_SERIALIZATION_NVP(uR_);
+			ar & BOOST_SERIALIZATION_NVP(v_);
+		}
 	};
 
 }

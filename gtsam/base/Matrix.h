@@ -489,7 +489,7 @@ Matrix expm(const Matrix& A, size_t K=7);
 namespace boost {
 namespace serialization {
 
-// split version - sends sizes ahead
+// split version for Row-major matrix - sends sizes ahead
 template<class Archive>
 void save(Archive & ar, const Matrix & m, unsigned int version)
 {
@@ -512,8 +512,32 @@ void load(Archive & ar, Matrix & m, unsigned int version)
 	std::copy(raw_data.begin(), raw_data.end(), m.data());
 }
 
+// split version for Column-major matrix - sends sizes ahead
+template<class Archive>
+void save(Archive & ar, const MatrixColMajor & m, unsigned int version)
+{
+	const int rows = m.rows(), cols = m.cols(), elements = rows*cols;
+	std::vector<double> raw_data(elements);
+	std::copy(m.data(), m.data()+elements, raw_data.begin());
+	ar << make_nvp("rows", rows);
+	ar << make_nvp("cols", cols);
+	ar << make_nvp("data", raw_data);
+}
+template<class Archive>
+void load(Archive & ar, MatrixColMajor & m, unsigned int version)
+{
+	size_t rows, cols;
+	std::vector<double> raw_data;
+	ar >> make_nvp("rows", rows);
+	ar >> make_nvp("cols", cols);
+	ar >> make_nvp("data", raw_data);
+	m = MatrixColMajor(rows, cols);
+	std::copy(raw_data.begin(), raw_data.end(), m.data());
+}
+
 } // namespace serialization
 } // namespace boost
 
 BOOST_SERIALIZATION_SPLIT_FREE(Matrix)
+BOOST_SERIALIZATION_SPLIT_FREE(MatrixColMajor)
 

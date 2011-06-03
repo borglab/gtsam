@@ -288,6 +288,18 @@ protected:
 
   template<class OTHER> friend class SymmetricBlockView;
   template<class RELATED> friend class VerticalBlockView;
+
+private:
+  /** Serialization function */
+  friend class boost::serialization::access;
+  template<class ARCHIVE>
+  void serialize(ARCHIVE & ar, const unsigned int version) {
+  	ar & BOOST_SERIALIZATION_NVP(matrix_);
+  	ar & BOOST_SERIALIZATION_NVP(variableColOffsets_);
+  	ar & BOOST_SERIALIZATION_NVP(rowStart_);
+  	ar & BOOST_SERIALIZATION_NVP(rowEnd_);
+  	ar & BOOST_SERIALIZATION_NVP(blockStart_);
+  }
 };
 
 /**
@@ -571,6 +583,16 @@ protected:
 
   template<class RELATED> friend class SymmetricBlockView;
   template<class OTHER> friend class VerticalBlockView;
+
+private:
+  /** Serialization function */
+  friend class boost::serialization::access;
+  template<class ARCHIVE>
+  void serialize(ARCHIVE & ar, const unsigned int version) {
+  	ar & BOOST_SERIALIZATION_NVP(matrix_);
+  	ar & BOOST_SERIALIZATION_NVP(variableColOffsets_);
+  	ar & BOOST_SERIALIZATION_NVP(blockStart_);
+  }
 };
 
 

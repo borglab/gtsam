@@ -88,6 +88,13 @@ namespace gtsam {
      */
     void permuteWithInverse(const Permutation& inversePermutation);
 
+  private:
+  	/** Serialization function */
+  	friend class boost::serialization::access;
+  	template<class Archive>
+  	void serialize(Archive & ar, const unsigned int version) {
+  		ar & BOOST_SERIALIZATION_BASE_OBJECT_NVP(Base);
+  	}
   };
 
 }

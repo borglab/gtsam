@@ -149,20 +149,18 @@ protected:
   friend class JacobianFactor;
 
 private:
-//	/** Serialization function */
-//	friend class boost::serialization::access;
-//	template<class Archive>
-//	void serialize(Archive & ar, const unsigned int version) {
-//		ar & boost::serialization::make_nvp("Conditional", boost::serialization::base_object<Conditional>(*this));
-//		ar & BOOST_SERIALIZATION_NVP(R_);
-//		ar & BOOST_SERIALIZATION_NVP(parents_);
-//		ar & BOOST_SERIALIZATION_NVP(d_);
-//		ar & BOOST_SERIALIZATION_NVP(sigmas_);
-//	}
+	/** Serialization function */
+	friend class boost::serialization::access;
+	template<class Archive>
+	void serialize(Archive & ar, const unsigned int version) {
+		ar & BOOST_SERIALIZATION_BASE_OBJECT_NVP(IndexConditional);
+		ar & BOOST_SERIALIZATION_NVP(matrix_);
+		ar & BOOST_SERIALIZATION_NVP(rsd_);
+		ar & BOOST_SERIALIZATION_NVP(sigmas_);
+	}
 }; // GaussianConditional
 
 /* ************************************************************************* */
-// TODO: constructor outside class???
 template<typename ITERATOR, class MATRIX>
 GaussianConditional::GaussianConditional(ITERATOR firstKey, ITERATOR lastKey,
 		size_t nrFrontals, const VerticalBlockView<MATRIX>& matrices,

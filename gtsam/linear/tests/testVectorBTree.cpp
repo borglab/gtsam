@@ -22,13 +22,6 @@
 #include <boost/assign/std/vector.hpp>
 using namespace boost::assign; // bring 'operator+=()' into scope
 
-//#include TEST_AC_DEFINE
-
-#ifdef HAVE_BOOST_SERIALIZATION
-#include <boost/archive/text_oarchive.hpp>
-#include <boost/archive/text_iarchive.hpp>
-#endif //HAVE_BOOST_SERIALIZATION
-
 #include <CppUnitLite/TestHarness.h>
 #include <gtsam/base/Matrix.h>
 #include <gtsam/linear/VectorBTree.h>
@@ -284,33 +277,6 @@ TEST( VectorBTree, subVector) {
 	VectorBTree expected; expected.insert(x1, Vector_(2, 2.2, 4.4));
 	CHECK(assert_equal(expected,c));
 }
-
-/* ************************************************************************* */
-#ifdef HAVE_BOOST_SERIALIZATION
-TEST( VectorBTree, serialize)
-{
-    //DEBUG:
-    cout << "VectorBTree: Running Serialization Test" << endl;
-    
-    //create an VectorBTree
-    VectorBTree fg = createValues();
-    
-    //serialize the config
-    std::ostringstream in_archive_stream;
-    boost::archive::text_oarchive in_archive(in_archive_stream);
-    in_archive << fg;
-    std::string serialized_fgc = in_archive_stream.str();
-    
-    //deserialize the config
-    std::istringstream out_archive_stream(serialized_fgc);
-    boost::archive::text_iarchive out_archive(out_archive_stream);
-    VectorBTree output;
-    out_archive >> output;
-    
-    //check for equality
-    CHECK(fg.equals(output));
-}
-#endif //HAVE_BOOST_SERIALIZATION
 
 /* ************************************************************************* */
 int main() {

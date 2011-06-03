@@ -19,13 +19,6 @@
 #include <iostream>
 #include <sstream>
 
-//#include TEST_AC_DEFINE
-
-#ifdef HAVE_BOOST_SERIALIZATION
-#include <boost/archive/text_oarchive.hpp>
-#include <boost/archive/text_iarchive.hpp>
-#endif //HAVE_BOOST_SERIALIZATION
-
 #define GTSAM_MAGIC_KEY
 
 #include <CppUnitLite/TestHarness.h>
@@ -224,32 +217,6 @@ TEST( VectorMap, getReference) {
 	CHECK(assert_equal(expected,c));
 }
 
-/* ************************************************************************* */
-#ifdef HAVE_BOOST_SERIALIZATION
-TEST( VectorMap, serialize)
-{
-    //DEBUG:
-    cout << "VectorMap: Running Serialization Test" << endl;
-    
-    //create an VectorMap
-    VectorMap fg = createValues();
-    
-    //serialize the config
-    std::ostringstream in_archive_stream;
-    boost::archive::text_oarchive in_archive(in_archive_stream);
-    in_archive << fg;
-    std::string serialized_fgc = in_archive_stream.str();
-    
-    //deserialize the config
-    std::istringstream out_archive_stream(serialized_fgc);
-    boost::archive::text_iarchive out_archive(out_archive_stream);
-    VectorMap output;
-    out_archive >> output;
-    
-    //check for equality
-    CHECK(fg.equals(output));
-}
-#endif //HAVE_BOOST_SERIALIZATION
 /* ************************************************************************* */
 int main() { TestResult tr; return TestRegistry::runAllTests(tr); }
 /* ************************************************************************* */

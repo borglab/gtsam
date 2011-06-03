@@ -26,11 +26,6 @@
 #include <boost/assign/std/vector.hpp> // for operator +=
 using namespace boost::assign;
 
-#ifdef HAVE_BOOST_SERIALIZATION
-#include <boost/archive/text_oarchive.hpp>
-#include <boost/archive/text_iarchive.hpp>
-#endif //HAVE_BOOST_SERIALIZATION
-
 #define GTSAM_MAGIC_KEY
 
 #include <gtsam/inference/BinaryConditional.h>

@@ -38,6 +38,10 @@ namespace gtsam {
 	public:
 		SimpleCamera(const Cal3_S2& K, const CalibratedCamera& calibrated);
 		SimpleCamera(const Cal3_S2& K, const Pose3& pose);
+
+		/** constructor for serialization */
+		SimpleCamera(){}
+
 		virtual ~SimpleCamera();
 
 		const Pose3& pose() const {
@@ -72,6 +76,19 @@ namespace gtsam {
 		Point2 project(const Point3& point,
 			    boost::optional<Matrix&> H1 = boost::none,
 			    boost::optional<Matrix&> H2 = boost::none) const;
+
+		bool equals(const SimpleCamera& X, double tol=1e-9) const {
+			return calibrated_.equals(X.calibrated_, tol) && K_.equals(X.K_, tol);
+		}
+
+  private:
+    /** Serialization function */
+    friend class boost::serialization::access;
+    template<class ARCHIVE>
+    void serialize(ARCHIVE & ar, const unsigned int version) {
+      ar & BOOST_SERIALIZATION_NVP(calibrated_);
+      ar & BOOST_SERIALIZATION_NVP(K_);
+    }
 
 	};
 

@@ -25,11 +25,6 @@
 #include <boost/assign/std/list.hpp> // for operator +=
 using namespace boost::assign;
 
-#ifdef HAVE_BOOST_SERIALIZATION
-#include <boost/archive/text_oarchive.hpp>
-#include <boost/archive/text_iarchive.hpp>
-#endif //HAVE_BOOST_SERIALIZATION
-
 #define GTSAM_MAGIC_KEY
 
 #include <gtsam/linear/GaussianBayesNet.h>
@@ -202,47 +197,6 @@ TEST( GaussianBayesNet, backSubstituteTranspose )
   VectorValues actual = backSubstituteTranspose(cbn,x);
   CHECK(assert_equal(y,actual));
 }
-
-/* ************************************************************************* */
-#ifdef HAVE_BOOST_SERIALIZATION
-TEST( GaussianBayesNet, serialize )
-{
-	//create a starting CBN
-	GaussianBayesNet cbn = createSmallGaussianBayesNet();
-
-	//serialize the CBN
-	ostringstream in_archive_stream;
-	boost::archive::text_oarchive in_archive(in_archive_stream);
-	in_archive << cbn;
-	string serialized = in_archive_stream.str();
-
-	//DEBUG
-	cout << "CBN Raw string: [" << serialized << "]" << endl;
-
-	//remove newlines/carriage returns
-	string clean;
-	BOOST_FOREACH(char s, serialized) {
-		if (s != '\n') {
-			//copy in character
-			clean.append(string(1,s));
-			}
-		else {
-			cout << "   Newline character found!" << endl;
-			//replace with an identifiable string
-			clean.append(string(1,' '));
-			}
-		}
-
-	cout << "Cleaned CBN String: [" << clean << "]" << endl;
-
-	//deserialize the CBN
-	istringstream out_archive_stream(clean);
-	boost::archive::text_iarchive out_archive(out_archive_stream);
-	GaussianBayesNet output;
-	out_archive >> output;
-	CHECK(cbn.equals(output));
-}
-#endif //HAVE_BOOST_SERIALIZATION
 
 /* ************************************************************************* */
 int main() { TestResult tr; return TestRegistry::runAllTests(tr);}

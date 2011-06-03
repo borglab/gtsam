@@ -250,6 +250,7 @@ namespace gtsam {
     friend class boost::serialization::access;
     template<class ARCHIVE>
     void serialize(ARCHIVE & ar, const unsigned int version) {
+    	ar & BOOST_SERIALIZATION_BASE_OBJECT_NVP(GaussianFactor);
     	ar & BOOST_SERIALIZATION_NVP(firstNonzeroBlocks_);
     	ar & BOOST_SERIALIZATION_NVP(Ab_);
     	ar & BOOST_SERIALIZATION_NVP(model_);
