@@ -14,6 +14,7 @@ check_PROGRAMS =
 headers += Simulated2DValues.h 
 headers += Simulated2DPosePrior.h Simulated2DPointPrior.h 
 headers += Simulated2DOdometry.h Simulated2DMeasurement.h 
+headers += simulated2DConstraints.h
 sources += simulated2D.cpp smallExample.cpp
 check_PROGRAMS += tests/testSimulated2D 
 
@@ -30,6 +31,9 @@ check_PROGRAMS += tests/testSimulated3D
 
 # Generic SLAM headers
 headers += BetweenFactor.h PriorFactor.h PartialPriorFactor.h
+
+# Generic constraint headers
+headers += BetweenConstraint.h BoundingConstraint.h
 
 # 2D Pose SLAM
 sources += pose2SLAM.cpp dataset.cpp

@@ -31,7 +31,7 @@ check_PROGRAMS += tests/testKey tests/testOrdering
 headers += NonlinearISAM.h NonlinearISAM-inl.h
 
 # Nonlinear constraints 
-headers += NonlinearEquality.h
+headers += NonlinearEquality.h NonlinearConstraint.h
 
 #----------------------------------------------------------------------------------------------------
 # Create a libtool library that is not installed

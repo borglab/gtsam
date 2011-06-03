@@ -20,6 +20,8 @@ check_PROGRAMS += testNonlinearOptimizer
 check_PROGRAMS += testSymbolicBayesNet testSymbolicFactorGraph
 check_PROGRAMS += testTupleValues
 check_PROGRAMS += testNonlinearISAM
+check_PROGRAMS += testBoundingConstraint
+check_PROGRAMS += testNonlinearEqualityConstraint
 
 # only if serialization is available
 if ENABLE_SERIALIZATION
