@@ -43,26 +43,24 @@ pair<string, boost::optional<SharedDiagonal> > dataset(const string& dataset,  c
 	boost::optional<SharedDiagonal> small(noiseModel::Diagonal::Variances(
 				gtsam::Vector_(3, 0.0001, 0.0001, 0.0003)));
 
-	if (path.empty()) path = string(getenv("HOME")) + "/";
+	if (path.empty()) path = string(getenv("HOME")) + "/data";
 	if (set.empty()) set = string(getenv("DATASET"));
 
-	
-
-	if (set == "intel") return make_pair(path + "borg/CitySLAM/data/Intel/intel.graph", null_model);
-	if (set == "intel-gfs") return make_pair(path + "borg/CitySLAM/data/Intel/intel.gfs.graph", null_model);
-	if (set == "Killian-gfs") return make_pair(path + "borg/CitySLAM/data/Killian/Killian.gfs.graph", null_model);
-	if (set == "Killian") return make_pair(path + "borg/CitySLAM/data/Killian/Killian.graph", small);
-	if (set == "Killian-noised") return make_pair(path + "borg/CitySLAM/data/Killian/Killian-noised.graph", null_model);
-	if (set == "3") return make_pair(path + "borg/CitySLAM/data/TORO/w3-odom.graph", identity);
-	if (set == "100") return make_pair(path + "borg/CitySLAM/data/TORO/w100-odom.graph", identity);
-	if (set == "10K") return make_pair(path + "borg/CitySLAM/data/TORO/w10000-odom.graph", identity);
-	if (set == "10K2") return make_pair(path + "borg/hogman/data/2D/w10000.graph",
+	if (set == "intel") return make_pair(path + "/Intel/intel.graph", null_model);
+	if (set == "intel-gfs") return make_pair(path + "/Intel/intel.gfs.graph", null_model);
+	if (set == "Killian-gfs") return make_pair(path + "/Killian/Killian.gfs.graph", null_model);
+	if (set == "Killian") return make_pair(path + "/Killian/Killian.graph", small);
+	if (set == "Killian-noised") return make_pair(path + "/Killian/Killian-noised.graph", null_model);
+	if (set == "3") return make_pair(path + "/TORO/w3-odom.graph", identity);
+	if (set == "100") return make_pair(path + "/TORO/w100-odom.graph", identity);
+	if (set == "10K") return make_pair(path + "/TORO/w10000-odom.graph", identity);
+	if (set == "10K2") return make_pair(path + "/hogman/data/2D/w10000.graph",
 			noiseModel::Diagonal::Variances(gtsam::Vector_(3, 0.1, 0.1, 0.05)));
-	if (set == "Eiffel100") return make_pair(path + "borg/CitySLAM/data/TORO/w100-Eiffel.graph", identity);
-	if (set == "Eiffel10K") return make_pair(path + "borg/CitySLAM/data/TORO/w10000-Eiffel.graph", identity);
-	if (set == "olson") return make_pair(path + "borg/CitySLAM/data/Olson/olson06icra.graph", null_model);
-	if (set == "victoria") return make_pair(path + "borg/CitySLAM/data/VictoriaPark/victoria_park.graph", null_model);
-	if (set == "beijing") return make_pair(path + "borg/CitySLAM/data/Beijing/beijingData_trips.graph", null_model);
+	if (set == "Eiffel100") return make_pair(path + "/TORO/w100-Eiffel.graph", identity);
+	if (set == "Eiffel10K") return make_pair(path + "/TORO/w10000-Eiffel.graph", identity);
+	if (set == "olson") return make_pair(path + "/Olson/olson06icra.graph", null_model);
+	if (set == "victoria") return make_pair(path + "/VictoriaPark/victoria_park.graph", null_model);
+	if (set == "beijing") return make_pair(path + "/Beijing/beijingData_trips.graph", null_model);
 
 	return make_pair("unknown", null_model);
 }
