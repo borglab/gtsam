@@ -20,7 +20,6 @@
 
 #include <map>
 #include <boost/pool/pool_alloc.hpp>
-#include <boost/serialization/map.hpp>
 #include <boost/serialization/base_object.hpp>
 
 namespace gtsam {
