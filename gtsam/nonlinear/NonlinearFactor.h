@@ -356,12 +356,8 @@ namespace gtsam {
 			this->noiseModel_->WhitenInPlace(A1);
 			this->noiseModel_->WhitenInPlace(A2);
 			this->noiseModel_->whitenInPlace(b);
-			if(var1 < var2)
-			  return GaussianFactor::shared_ptr(new JacobianFactor(var1, A1, var2,
-			      A2, b, noiseModel::Unit::Create(b.size())));
-			else
-			  return GaussianFactor::shared_ptr(new JacobianFactor(var2, A2, var1,
-			      A1, b, noiseModel::Unit::Create(b.size())));
+			return GaussianFactor::shared_ptr(new JacobianFactor(var1, A1, var2,
+			    A2, b, noiseModel::Unit::Create(b.size())));
 		}
 
 		/**
@@ -370,10 +366,7 @@ namespace gtsam {
      */
     virtual IndexFactor::shared_ptr symbolic(const Ordering& ordering) const {
       const Index var1 = ordering[key1_], var2 = ordering[key2_];
-      if(var1 < var2)
-        return IndexFactor::shared_ptr(new IndexFactor(var1, var2));
-      else
-        return IndexFactor::shared_ptr(new IndexFactor(var2, var1));
+      return IndexFactor::shared_ptr(new IndexFactor(var1, var2));
     }
 
 		/** methods to retrieve both keys */
@@ -502,28 +495,8 @@ namespace gtsam {
       this->noiseModel_->WhitenInPlace(A2);
       this->noiseModel_->WhitenInPlace(A3);
       this->noiseModel_->whitenInPlace(b);
-      if(var1 < var2 && var2 < var3)
-        return GaussianFactor::shared_ptr(
-            new JacobianFactor(var1, A1, var2, A2, var3, A3, b, noiseModel::Unit::Create(b.size())));
-      else if(var2 < var1 && var1 < var3)
-        return GaussianFactor::shared_ptr(
-            new JacobianFactor(var2, A2, var1, A1, var3, A3, b, noiseModel::Unit::Create(b.size())));
-      else if(var1 < var3 && var3 < var2)
-        return GaussianFactor::shared_ptr(
-            new JacobianFactor(var1, A1, var3, A3, var2, A2, b, noiseModel::Unit::Create(b.size())));
-      else if(var2 < var3 && var3 < var1)
-        return GaussianFactor::shared_ptr(
-            new JacobianFactor(var2, A2, var3, A3, var1, A1, b, noiseModel::Unit::Create(b.size())));
-      else if(var3 < var1 && var1 < var2)
-        return GaussianFactor::shared_ptr(
-            new JacobianFactor(var3, A3, var1, A1, var2, A2, b, noiseModel::Unit::Create(b.size())));
-      else if(var3 < var2 && var2 < var1)
-        return GaussianFactor::shared_ptr(
-            new JacobianFactor(var3, A3, var2, A2, var1, A1, b, noiseModel::Unit::Create(b.size())));
-      else {
-        assert(false);
-        return GaussianFactor::shared_ptr();
-      }
+      return GaussianFactor::shared_ptr(
+          new JacobianFactor(var1, A1, var2, A2, var3, A3, b, noiseModel::Unit::Create(b.size())));
     }
 
     /**
@@ -532,22 +505,7 @@ namespace gtsam {
      */
     virtual IndexFactor::shared_ptr symbolic(const Ordering& ordering) const {
       const Index var1 = ordering[key1_], var2 = ordering[key2_], var3 = ordering[key3_];
-      if(var1 < var2 && var2 < var3)
-        return IndexFactor::shared_ptr(new IndexFactor(ordering[key1_], ordering[key2_], ordering[key3_]));
-      else if(var2 < var1 && var1 < var3)
-        return IndexFactor::shared_ptr(new IndexFactor(ordering[key2_], ordering[key1_], ordering[key3_]));
-      else if(var1 < var3 && var3 < var2)
-        return IndexFactor::shared_ptr(new IndexFactor(ordering[key1_], ordering[key3_], ordering[key2_]));
-      else if(var2 < var3 && var3 < var1)
-        return IndexFactor::shared_ptr(new IndexFactor(ordering[key2_], ordering[key3_], ordering[key1_]));
-      else if(var3 < var1 && var1 < var2)
-        return IndexFactor::shared_ptr(new IndexFactor(ordering[key3_], ordering[key1_], ordering[key2_]));
-      else if(var3 < var2 && var2 < var1)
-        return IndexFactor::shared_ptr(new IndexFactor(ordering[key3_], ordering[key2_], ordering[key1_]));
-      else {
-        assert(false);
-        return GaussianFactor::shared_ptr();
-      }
+      return IndexFactor::shared_ptr(new IndexFactor(ordering[key1_], ordering[key2_], ordering[key3_]));
     }
 
     /** methods to retrieve keys */

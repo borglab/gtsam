@@ -144,22 +144,13 @@ namespace example {
 		fg.add(ordering["x1"], 10*eye(2), -1.0*ones(2), unit2);
 
 		// odometry between x1 and x2: x2-x1=[0.2;-0.1]
-		if(ordering["x1"] < ordering["x2"])
-		  fg.add(ordering["x1"], -10*eye(2),ordering["x2"], 10*eye(2), Vector_(2, 2.0, -1.0), unit2);
-		else
-		  fg.add(ordering["x2"], 10*eye(2),ordering["x1"], -10*eye(2), Vector_(2, 2.0, -1.0), unit2);
+		fg.add(ordering["x1"], -10*eye(2),ordering["x2"], 10*eye(2), Vector_(2, 2.0, -1.0), unit2);
 
     // measurement between x1 and l1: l1-x1=[0.0;0.2]
-		if(ordering["x1"] < ordering["l1"])
-		  fg.add(ordering["x1"], -5*eye(2), ordering["l1"], 5*eye(2), Vector_(2, 0.0, 1.0), unit2);
-		else
-		  fg.add(ordering["l1"], 5*eye(2), ordering["x1"], -5*eye(2), Vector_(2, 0.0, 1.0), unit2);
+		fg.add(ordering["x1"], -5*eye(2), ordering["l1"], 5*eye(2), Vector_(2, 0.0, 1.0), unit2);
 
 		// measurement between x2 and l1: l1-x2=[-0.2;0.3]
-		if(ordering["x2"] < ordering["l1"])
-		  fg.add(ordering["x2"], -5*eye(2), ordering["l1"], 5*eye(2), Vector_(2, -1.0, 1.5), unit2);
-		else
-		  fg.add(ordering["l1"], 5*eye(2), ordering["x2"], -5*eye(2), Vector_(2, -1.0, 1.5), unit2);
+		fg.add(ordering["x2"], -5*eye(2), ordering["l1"], 5*eye(2), Vector_(2, -1.0, 1.5), unit2);
 
 		return *fg.dynamicCastFactors<FactorGraph<JacobianFactor> >();
 	}

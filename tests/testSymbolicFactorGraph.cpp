@@ -42,7 +42,7 @@ TEST( SymbolicFactorGraph, symbolicFactorGraph )
 	expected.push_factor(o["x1"]);
 	expected.push_factor(o["x1"],o["x2"]);
 	expected.push_factor(o["x1"],o["l1"]);
-	expected.push_factor(o["l1"],o["x2"]);
+	expected.push_factor(o["x2"],o["l1"]);
 
 	// construct it from the factor graph
 	GaussianFactorGraph factorGraph = createGaussianFactorGraph(o);
