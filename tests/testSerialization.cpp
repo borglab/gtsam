@@ -9,7 +9,7 @@
 
  * -------------------------------------------------------------------------- */
 
-/*
+/**
  * @brief Unit tests for serialization of library classes
  * @author Frank Dellaert
  * @author Alex Cunningham
@@ -30,6 +30,8 @@
 #include <boost/serialization/vector.hpp>
 #include <boost/serialization/map.hpp>
 #include <boost/serialization/list.hpp>
+#include <boost/serialization/deque.hpp>
+#include <boost/serialization/weak_ptr.hpp>
 
 #include <boost/archive/text_oarchive.hpp>
 #include <boost/archive/text_iarchive.hpp>
@@ -86,25 +88,30 @@ bool equalsDereferenced(const T& input) {
 }
 
 /* ************************************************************************* */
+template<class T>
+std::string serializeXML(const T& input) {
+	std::ostringstream out_archive_stream;
+	boost::archive::xml_oarchive out_archive(out_archive_stream);
+	out_archive << boost::serialization::make_nvp("data", input);
+	return out_archive_stream.str();
+}
+
+template<class T>
+void deserializeXML(const std::string& serialized, T& output) {
+	std::istringstream in_archive_stream(serialized);
+	boost::archive::xml_iarchive in_archive(in_archive_stream);
+	in_archive >> boost::serialization::make_nvp("data", output);
+}
+
 // Templated round-trip serialization using XML
 template<class T>
 void roundtripXML(const T& input, T& output) {
 	// Serialize
-	std::string serialized;
-	{
-		std::ostringstream out_archive_stream;
-		boost::archive::xml_oarchive out_archive(out_archive_stream);
-		out_archive << boost::serialization::make_nvp("data", input);
-
-		// Convert to string
-		serialized = out_archive_stream.str();
-	}
+	std::string serialized = serializeXML<T>(input);
 	if (verbose) std::cout << serialized << std::endl << std::endl;
 
 	// De-serialize
-	std::istringstream in_archive_stream(serialized);
-	boost::archive::xml_iarchive in_archive(in_archive_stream);
-	in_archive >> boost::serialization::make_nvp("data", output);
+	deserializeXML(serialized, output);
 }
 
 // This version requires equality operator
@@ -134,6 +141,8 @@ bool equalsDereferencedXML(const T& input = T()) {
 /* ************************************************************************* */
 // Actual Tests
 /* ************************************************************************* */
+
+#define GTSAM_MAGIC_KEY
 
 #include <gtsam/base/Matrix.h>
 #include <gtsam/base/Vector.h>
@@ -303,9 +312,11 @@ TEST (Serialization, SharedDiagonal_noiseModels) {
 #include <gtsam/linear/VectorValues.h>
 #include <gtsam/linear/JacobianFactor.h>
 #include <gtsam/linear/HessianFactor.h>
+#include <gtsam/slam/smallExample.h>
+#include <gtsam/nonlinear/Ordering.h>
 
 /* ************************************************************************* */
-TEST (Serialization, linear) {
+TEST (Serialization, linear_factors) {
 	vector<size_t> dims;
 	dims.push_back(1);
 	dims.push_back(2);
@@ -326,15 +337,132 @@ TEST (Serialization, linear) {
 	HessianFactor hessianfactor(jacobianfactor);
 	EXPECT(equalsObj(hessianfactor));
 	EXPECT(equalsXML(hessianfactor));
-	{
-		Matrix A1 = Matrix_(2,2, 1., 2., 3., 4.);
-		Matrix A2 = Matrix_(2,2, 6., 0.2, 8., 0.4);
-		Matrix R = Matrix_(2,2, 0.1, 0.3, 0.0, 0.34);
-		Vector d(2); d << 0.2, 0.5;
-		GaussianConditional cg(0, d, R, 1, A1, 2, A2, ones(2));
-//		EXPECT(equalsObj(cg)); // FAILS: does not match
-//		EXPECT(equalsXML(cg)); // FAILS: does not match
-	}
+}
+
+/* ************************************************************************* */
+TEST (Serialization, gaussian_conditional) {
+	Matrix A1 = Matrix_(2,2, 1., 2., 3., 4.);
+	Matrix A2 = Matrix_(2,2, 6., 0.2, 8., 0.4);
+	Matrix R = Matrix_(2,2, 0.1, 0.3, 0.0, 0.34);
+	Vector d(2); d << 0.2, 0.5;
+	GaussianConditional cg(0, d, R, 1, A1, 2, A2, ones(2));
+
+	EXPECT(equalsObj(cg));
+	EXPECT(equalsXML(cg));
+}
+
+/* Create GUIDs for factors */
+/* ************************************************************************* */
+BOOST_CLASS_EXPORT_GUID(gtsam::JacobianFactor, "gtsam::JacobianFactor");
+BOOST_CLASS_EXPORT_GUID(gtsam::HessianFactor , "gtsam::HessianFactor");
+/* ************************************************************************* */
+TEST (Serialization, smallExample_linear) {
+	using namespace example;
+
+  Ordering ordering; ordering += "x1","x2","l1";
+  GaussianFactorGraph fg = createGaussianFactorGraph(ordering);
+  EXPECT(equalsObj(ordering));
+  EXPECT(equalsXML(ordering));
+
+  EXPECT(equalsObj(fg));
+  EXPECT(equalsXML(fg));
+
+  GaussianBayesNet cbn = createSmallGaussianBayesNet();
+  EXPECT(equalsObj(cbn));
+  EXPECT(equalsXML(cbn));
+}
+
+/* ************************************************************************* */
+TEST (Serialization, symbolic_graph) {
+  Ordering o; o += "x1","l1","x2";
+	// construct expected symbolic graph
+	SymbolicFactorGraph sfg;
+	sfg.push_factor(o["x1"]);
+	sfg.push_factor(o["x1"],o["x2"]);
+	sfg.push_factor(o["x1"],o["l1"]);
+	sfg.push_factor(o["l1"],o["x2"]);
+
+	EXPECT(equalsObj(sfg));
+	EXPECT(equalsXML(sfg));
+}
+
+/* ************************************************************************* */
+TEST (Serialization, symbolic_bn) {
+  Ordering o; o += "x2","l1","x1";
+
+  // create expected Chordal bayes Net
+  IndexConditional::shared_ptr x2(new IndexConditional(o["x2"], o["l1"], o["x1"]));
+  IndexConditional::shared_ptr l1(new IndexConditional(o["l1"], o["x1"]));
+  IndexConditional::shared_ptr x1(new IndexConditional(o["x1"]));
+
+  SymbolicBayesNet sbn;
+  sbn.push_back(x2);
+  sbn.push_back(l1);
+  sbn.push_back(x1);
+
+	EXPECT(equalsObj(sbn));
+	EXPECT(equalsXML(sbn));
+}
+
+#include <gtsam/inference/BayesTree-inl.h>
+#include <gtsam/inference/IndexFactor.h>
+
+/* ************************************************************************* */
+TEST (Serialization, symbolic_bayes_tree ) {
+	typedef BayesTree<IndexConditional> SymbolicBayesTree;
+	static const Index _X_=0, _T_=1, _S_=2, _E_=3, _L_=4, _B_=5;
+	IndexConditional::shared_ptr
+	B(new IndexConditional(_B_)),
+	L(new IndexConditional(_L_, _B_)),
+	E(new IndexConditional(_E_, _L_, _B_)),
+	S(new IndexConditional(_S_, _L_, _B_)),
+	T(new IndexConditional(_T_, _E_, _L_)),
+	X(new IndexConditional(_X_, _E_));
+
+	// Bayes Tree for Asia example
+	SymbolicBayesTree bayesTree;
+	bayesTree.insert(B);
+	bayesTree.insert(L);
+	bayesTree.insert(E);
+	bayesTree.insert(S);
+	bayesTree.insert(T);
+	bayesTree.insert(X);
+
+	EXPECT(equalsObj(bayesTree));
+	EXPECT(equalsXML(bayesTree));
+}
+
+#include <gtsam/linear/GaussianSequentialSolver.h>
+#include <gtsam/linear/GaussianISAM.h>
+
+/* ************************************************************************* */
+TEST (Serialization, gaussianISAM) {
+	using namespace example;
+	Ordering ordering;
+	GaussianFactorGraph smoother;
+	boost::tie(smoother, ordering) = createSmoother(7);
+	GaussianBayesNet chordalBayesNet = *GaussianSequentialSolver(smoother).eliminate();
+	GaussianISAM bayesTree(chordalBayesNet);
+
+	EXPECT(equalsObj(bayesTree));
+	EXPECT(equalsXML(bayesTree));
+}
+
+/* ************************************************************************* */
+/* Create GUIDs for factors in simulated2D */
+BOOST_CLASS_EXPORT_GUID(gtsam::simulated2D::Prior,       "gtsam::simulated2D::Prior"      );
+BOOST_CLASS_EXPORT_GUID(gtsam::simulated2D::Odometry,    "gtsam::simulated2D::Odometry"   );
+BOOST_CLASS_EXPORT_GUID(gtsam::simulated2D::Measurement, "gtsam::simulated2D::Measurement");
+/* ************************************************************************* */
+TEST (Serialization, smallExample) {
+	using namespace example;
+	Graph nfg = createNonlinearFactorGraph();
+	Values c1 = createValues();
+	EXPECT(equalsObj(nfg));
+	EXPECT(equalsXML(nfg));
+
+	EXPECT(equalsObj(c1));
+	EXPECT(equalsXML(c1));
 }
 
 /* ************************************************************************* */
@@ -345,7 +473,6 @@ BOOST_CLASS_EXPORT_GUID(gtsam::planarSLAM::Range,       "gtsam::planarSLAM::Rang
 BOOST_CLASS_EXPORT_GUID(gtsam::planarSLAM::BearingRange,"gtsam::planarSLAM::BearingRange");
 BOOST_CLASS_EXPORT_GUID(gtsam::planarSLAM::Odometry,    "gtsam::planarSLAM::Odometry");
 BOOST_CLASS_EXPORT_GUID(gtsam::planarSLAM::Constraint,  "gtsam::planarSLAM::Constraint");
-
 /* ************************************************************************* */
 TEST (Serialization, planar_system) {
 	using namespace planarSLAM;

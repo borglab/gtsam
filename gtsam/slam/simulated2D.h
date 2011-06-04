@@ -66,7 +66,9 @@ namespace gtsam {
 		 * Unary factor encoding a soft prior on a vector
 		 */
 		template<class CFG = Values, class KEY = PoseKey>
-		struct GenericPrior: public NonlinearFactor1<CFG, KEY> {
+		class GenericPrior: public NonlinearFactor1<CFG, KEY> {
+		public:
+			typedef NonlinearFactor1<CFG, KEY> Base;
 			typedef boost::shared_ptr<GenericPrior<CFG, KEY> > shared_ptr;
 			typedef typename KEY::Value Pose;
 			Pose z_;
@@ -80,13 +82,24 @@ namespace gtsam {
 				return (prior(x, H) - z_).vector();
 			}
 
+		private:
+			GenericPrior() {}
+			/** Serialization function */
+			friend class boost::serialization::access;
+			template<class ARCHIVE>
+			void serialize(ARCHIVE & ar, const unsigned int version) {
+				ar & BOOST_SERIALIZATION_BASE_OBJECT_NVP(Base);
+				ar & BOOST_SERIALIZATION_NVP(z_);
+			}
 		};
 
 		/**
 		 * Binary factor simulating "odometry" between two Vectors
 		 */
 		template<class CFG = Values, class KEY = PoseKey>
-		struct GenericOdometry: public NonlinearFactor2<CFG, KEY, KEY> {
+		class GenericOdometry: public NonlinearFactor2<CFG, KEY, KEY> {
+		public:
+			typedef NonlinearFactor2<CFG, KEY, KEY> Base;
 			typedef boost::shared_ptr<GenericOdometry<CFG, KEY> > shared_ptr;
 			typedef typename KEY::Value Pose;
 			Pose z_;
@@ -101,6 +114,15 @@ namespace gtsam {
 				return (odo(x1, x2, H1, H2) - z_).vector();
 			}
 
+		private:
+			GenericOdometry() {}
+			/** Serialization function */
+			friend class boost::serialization::access;
+			template<class ARCHIVE>
+			void serialize(ARCHIVE & ar, const unsigned int version) {
+				ar & BOOST_SERIALIZATION_BASE_OBJECT_NVP(Base);
+				ar & BOOST_SERIALIZATION_NVP(z_);
+			}
 		};
 
 		/**
@@ -109,6 +131,7 @@ namespace gtsam {
 		template<class CFG = Values, class XKEY = PoseKey, class LKEY = PointKey>
 		class GenericMeasurement: public NonlinearFactor2<CFG, XKEY, LKEY> {
 		public:
+			typedef NonlinearFactor2<CFG, XKEY, LKEY> Base;
 			typedef boost::shared_ptr<GenericMeasurement<CFG, XKEY, LKEY> > shared_ptr;
 			typedef typename XKEY::Value Pose;
 			typedef typename LKEY::Value Point;
@@ -117,7 +140,7 @@ namespace gtsam {
 
 			GenericMeasurement(const Point& z, const SharedGaussian& model,
 					const XKEY& i, const LKEY& j) :
-				NonlinearFactor2<CFG, XKEY, LKEY> (model, i, j), z_(z) {
+					NonlinearFactor2<CFG, XKEY, LKEY> (model, i, j), z_(z) {
 			}
 
 			Vector evaluateError(const Pose& x1, const Point& x2, boost::optional<
@@ -125,6 +148,15 @@ namespace gtsam {
 				return (mea(x1, x2, H1, H2) - z_).vector();
 			}
 
+		private:
+			GenericMeasurement() {}
+			/** Serialization function */
+			friend class boost::serialization::access;
+			template<class ARCHIVE>
+			void serialize(ARCHIVE & ar, const unsigned int version) {
+				ar & BOOST_SERIALIZATION_BASE_OBJECT_NVP(Base);
+				ar & BOOST_SERIALIZATION_NVP(z_);
+			}
 		};
 
 		/** Typedefs for regular use */

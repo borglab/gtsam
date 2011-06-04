@@ -21,8 +21,6 @@
 
 #include <list>
 #include <vector>
-//#include <boost/serialization/map.hpp>
-//#include <boost/serialization/list.hpp>
 #include <stdexcept>
 #include <deque>
 
@@ -60,6 +58,7 @@ namespace gtsam {
 		  void assertInvariants() const;
 
 		public:
+		  typedef BayesNet<CONDITIONAL> Base;
 			typedef typename boost::shared_ptr<Clique> shared_ptr;
 			typedef typename boost::weak_ptr<Clique> weak_ptr;
 			weak_ptr parent_;
@@ -122,6 +121,18 @@ namespace gtsam {
 
 			/** return the joint P(C1,C2), where C1==this. TODO: not a method? */
 			FactorGraph<FactorType> joint(shared_ptr C2, shared_ptr root, Eliminate function);
+
+	  private:
+	    /** Serialization function */
+	    friend class boost::serialization::access;
+	    template<class ARCHIVE>
+	    void serialize(ARCHIVE & ar, const unsigned int version) {
+	    	ar & BOOST_SERIALIZATION_BASE_OBJECT_NVP(Base);
+	    	ar & BOOST_SERIALIZATION_NVP(parent_);
+	    	ar & BOOST_SERIALIZATION_NVP(children_);
+	    	ar & BOOST_SERIALIZATION_NVP(separator_);
+	    	ar & BOOST_SERIALIZATION_NVP(cachedFactor_);
+	    }
 
 		}; // \struct Clique
 
@@ -312,6 +323,15 @@ namespace gtsam {
 		 */
 		template<class CONTAINER>
 		void removeTop(const CONTAINER& keys, BayesNet<CONDITIONAL>& bn, Cliques& orphans);
+
+  private:
+    /** Serialization function */
+    friend class boost::serialization::access;
+    template<class ARCHIVE>
+    void serialize(ARCHIVE & ar, const unsigned int version) {
+    	ar & BOOST_SERIALIZATION_NVP(nodes_);
+    	ar & BOOST_SERIALIZATION_NVP(root_);
+    }
 
 	}; // BayesTree
 

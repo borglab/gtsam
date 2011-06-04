@@ -71,6 +71,7 @@ namespace gtsam {
   public:
 
     typedef boost::shared_ptr<GaussianFactorGraph> shared_ptr;
+    typedef FactorGraph<GaussianFactor> Base;
 
     /**
      * Default constructor 
@@ -164,6 +165,14 @@ namespace gtsam {
 //
 //    // allocate a vectorvalues of b's structure
 //    VectorValues allocateVectorValuesb() const ;
+
+  private:
+    /** Serialization function */
+    friend class boost::serialization::access;
+    template<class ARCHIVE>
+    void serialize(ARCHIVE & ar, const unsigned int version) {
+    	ar & BOOST_SERIALIZATION_BASE_OBJECT_NVP(Base);
+    }
 
   };
 

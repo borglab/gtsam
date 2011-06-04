@@ -94,6 +94,14 @@ namespace gtsam {
      */
     virtual void permuteWithInverse(const Permutation& inversePermutation) = 0;
 
+  private:
+    /** Serialization function */
+    friend class boost::serialization::access;
+    template<class ARCHIVE>
+    void serialize(ARCHIVE & ar, const unsigned int version) {
+    	ar & BOOST_SERIALIZATION_BASE_OBJECT_NVP(IndexFactor);
+    }
+
   }; // GaussianFactor
 
   /** make keys from list, vector, or map of matrices */

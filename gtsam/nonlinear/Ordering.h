@@ -131,11 +131,20 @@ public:
   /** equals (from Testable) for testing and debugging */
   bool equals(const Ordering& rhs, double tol = 0.0) const;
 
+private:
+
+	/** Serialization function */
+	friend class boost::serialization::access;
+	template<class ARCHIVE>
+	void serialize(ARCHIVE & ar, const unsigned int version) {
+		ar & BOOST_SERIALIZATION_NVP(order_);
+		ar & BOOST_SERIALIZATION_NVP(nVars_);
+	}
 };
 
 /**
  * @class Unordered
- * @brief a set of unordered indice
+ * @brief a set of unordered indices
  */
 class Unordered: public std::set<Index>, public Testable<Unordered> {
 public:
