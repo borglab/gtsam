@@ -122,6 +122,29 @@ TEST(Pose3Graph, partial_prior_height) {
 }
 
 /* ************************************************************************* */
+TEST( Pose3Factor, error )
+{
+	// Create example
+	Pose3 t1; // origin
+	Pose3 t2(Rot3::rodriguez(0.1,0.2,0.3),Point3(0,1,0));
+	Pose3 z(Rot3::rodriguez(0.2,0.2,0.3),Point3(0,1.1,0));;
+
+	// Create factor
+	SharedGaussian I6(noiseModel::Unit::Create(6));
+	Pose3Factor factor(1,2, z, I6);
+
+	// Create config
+	Pose3Values x;
+	x.insert(1,t1);
+	x.insert(2,t2);
+
+	// Get error h(x)-z -> logmap(z,h(x)) = logmap(z,between(t1,t2))
+	Vector actual = factor.unwhitenedError(x);
+	Vector expected = z.logmap(t1.between(t2));
+	CHECK(assert_equal(expected,actual));
+}
+
+/* ************************************************************************* */
 TEST(Pose3Graph, partial_prior_xy) {
 	typedef PartialPriorFactor<Values, Key> Partial;
 
@@ -140,7 +163,6 @@ TEST(Pose3Graph, partial_prior_xy) {
 	EXPECT(assert_equal(expA, actA));
 
 	Graph graph;
-//	graph.add(priorXY); // FAIL - on compile, can't initialize a reference?
 	graph.push_back(Partial::shared_ptr(new Partial(priorXY)));
 
 	Values values;
@@ -149,6 +171,57 @@ TEST(Pose3Graph, partial_prior_xy) {
 	Values actual = *Optimizer::optimizeLM(graph, values);
 	EXPECT(assert_equal(expected, actual[key], tol));
 	EXPECT_DOUBLES_EQUAL(0.0, graph.error(actual), tol);
+}
+
+// The world coordinate system has z pointing up, y north, x east
+// The vehicle has X forward, Y right, Z down
+Rot3 R1(Point3( 0, 1, 0), Point3( 1, 0, 0), Point3(0, 0, -1));
+Rot3 R2(Point3(-1, 0, 0), Point3( 0, 1, 0), Point3(0, 0, -1));
+Rot3 R3(Point3( 0,-1, 0), Point3(-1, 0, 0), Point3(0, 0, -1));
+Rot3 R4(Point3( 1, 0, 0), Point3( 0,-1, 0), Point3(0, 0, -1));
+
+/* ************************************************************************* */
+TEST( Pose3Values, pose3Circle )
+{
+	// expected is 4 poses tangent to circle with radius 1m
+	Pose3Values expected;
+	expected.insert(0, Pose3(R1, Point3( 1, 0, 0)));
+	expected.insert(1, Pose3(R2, Point3( 0, 1, 0)));
+	expected.insert(2, Pose3(R3, Point3(-1, 0, 0)));
+	expected.insert(3, Pose3(R4, Point3( 0,-1, 0)));
+
+	Pose3Values actual = pose3SLAM::circle(4,1.0);
+	CHECK(assert_equal(expected,actual));
+}
+
+/* ************************************************************************* */
+TEST( Pose3Values, expmap )
+{
+	Pose3Values expected;
+#ifdef CORRECT_POSE3_EXMAP
+	expected.insert(0, Pose3(R1, Point3( 1.0, 0.1, 0)));
+	expected.insert(1, Pose3(R2, Point3(-0.1, 1.0, 0)));
+	expected.insert(2, Pose3(R3, Point3(-1.0,-0.1, 0)));
+	expected.insert(3, Pose3(R4, Point3( 0.1,-1.0, 0)));
+#else
+	// expected is circle shifted to East
+	expected.insert(0, Pose3(R1, Point3( 1.1, 0, 0)));
+	expected.insert(1, Pose3(R2, Point3( 0.1, 1, 0)));
+	expected.insert(2, Pose3(R3, Point3(-0.9, 0, 0)));
+	expected.insert(3, Pose3(R4, Point3( 0.1,-1, 0)));
+#endif
+
+	// Note expmap coordinates are in global coordinates with non-compose expmap
+	// so shifting to East requires little thought, different from with Pose2 !!!
+
+	Ordering ordering(*expected.orderingArbitrary());
+	VectorValues delta(expected.dims(ordering), Vector_(24,
+			0.0,0.0,0.0,  0.1, 0.0, 0.0,
+			0.0,0.0,0.0,  0.1, 0.0, 0.0,
+			0.0,0.0,0.0,  0.1, 0.0, 0.0,
+			0.0,0.0,0.0,  0.1, 0.0, 0.0));
+	Pose3Values actual = pose3SLAM::circle(4,1.0).expmap(delta, ordering);
+	CHECK(assert_equal(expected,actual));
 }
 
 /* ************************************************************************* */

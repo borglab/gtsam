@@ -8,12 +8,10 @@
 AUTOMAKE_OPTIONS = nostdinc
 
 check_PROGRAMS =
-#check_PROGRAMS = testBayesNetPreconditioner testSubgraphPreconditioner 
 check_PROGRAMS += testGaussianBayesNet testGaussianFactor testGaussianFactorGraph
 check_PROGRAMS += testGaussianISAM 
 check_PROGRAMS += testGraph
 check_PROGRAMS += testInference
-#check_PROGRAMS += testIterative
 check_PROGRAMS += testGaussianJunctionTree 
 check_PROGRAMS += testNonlinearEquality testNonlinearFactor testNonlinearFactorGraph
 check_PROGRAMS += testNonlinearOptimizer

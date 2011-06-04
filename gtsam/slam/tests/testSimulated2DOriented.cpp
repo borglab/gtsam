@@ -21,9 +21,9 @@
 #include <CppUnitLite/TestHarness.h>
 
 #include <gtsam/base/numericalDerivative.h>
-#include <gtsam/slam/Simulated2DValues.h>
+//#include <gtsam/slam/Simulated2DValues.h>
+#include <gtsam/slam/simulated2D.h>
 #include <gtsam/slam/simulated2DOriented.h>
-#include <gtsam/slam/Simulated2DOrientedOdometry.h>
 
 using namespace gtsam;
 using namespace std;
@@ -32,7 +32,7 @@ using namespace simulated2DOriented;
 /* ************************************************************************* */
 TEST( simulated2DOriented, Simulated2DValues )
 {
-	Simulated2DValues actual;
+	simulated2D::Values actual;
 	actual.insertPose(1,Point2(1,1));
 	actual.insertPoint(2,Point2(2,2));
   CHECK(assert_equal(actual,actual,1e-9));
@@ -65,7 +65,7 @@ TEST( simulated2DOriented, constructor )
 {
 	Pose2 measurement(0.2, 0.3, 0.1);
 	SharedDiagonal model(Vector_(3, 1., 1., 1.));
-	Simulated2DOrientedOdometry factor(measurement, model, PoseKey(1), PoseKey(2));
+	Odometry factor(measurement, model, PoseKey(1), PoseKey(2));
 
 	Values config;
 	config.insert(PoseKey(1), Pose2(1., 0., 0.2));

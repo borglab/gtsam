@@ -20,9 +20,6 @@ check_PROGRAMS += tests/testFixedVector tests/testVector tests/testMatrix tests/
 check_PROGRAMS += tests/testCholesky
 check_PROGRAMS += tests/testNumericalDerivative
 
-#sources += DenseQR.cpp DenseQRUtil.cpp
-#check_PROGRAMS += tests/testDenseQRUtil
-
 # Testing
 headers += Testable.h TestableAssertions.h numericalDerivative.h
 sources += timing.cpp debug.cpp

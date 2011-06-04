@@ -18,8 +18,6 @@ check_PROGRAMS += tests/testNoiseModel tests/testErrors tests/testSampler
 # Vector Configurations
 headers += VectorValues.h 
 check_PROGRAMS += tests/testVectorValues
-#sources += VectorMap.cpp VectorBTree.cpp  
-#check_PROGRAMS += tests/testVectorMap tests/testVectorBTree  
 
 # Solvers
 sources += GaussianSequentialSolver.cpp GaussianMultifrontalSolver.cpp
@@ -38,12 +36,9 @@ headers += iterative-inl.h
 sources += iterative.cpp SubgraphPreconditioner.cpp
 headers += IterativeSolver.h IterativeOptimizationParameters.h 
 headers += SubgraphSolver.h SubgraphSolver-inl.h
-#sources += BayesNetPreconditioner.cpp 
-#check_PROGRAMS += tests/testBayesNetPreconditioner
 
 # Timing tests
 noinst_PROGRAMS = tests/timeGaussianFactor tests/timeFactorOverhead tests/timeSLAMlike
-#noinst_PROGRAMS += tests/timeVectorValues
 
 #----------------------------------------------------------------------------------------------------
 # Create a libtool library that is not installed

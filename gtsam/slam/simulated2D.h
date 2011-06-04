@@ -34,7 +34,40 @@ namespace gtsam {
 		typedef TypedSymbol<Point2, 'l'> PointKey;
 		typedef LieValues<PoseKey> PoseValues;
 		typedef LieValues<PointKey> PointValues;
-		typedef TupleValues2<PoseValues, PointValues> Values;
+
+//		typedef TupleValues2<PoseValues, PointValues> Values;
+		class Values: public TupleValues2<PoseValues, PointValues> {
+		public:
+			typedef TupleValues2<PoseValues, PointValues> Base;
+			typedef boost::shared_ptr<Point2> sharedPoint;
+
+			Values() {}
+			Values(const Base& base) : Base(base) {}
+
+			void insertPose(const simulated2D::PoseKey& i, const Point2& p) {
+				insert(i, p);
+			}
+
+			void insertPoint(const simulated2D::PointKey& j, const Point2& p) {
+				insert(j, p);
+			}
+
+			int nrPoses() const {
+				return this->first_.size();
+			}
+
+			int nrPoints() const {
+				return this->second_.size();
+			}
+
+			sharedPoint pose(const simulated2D::PoseKey& i) {
+				return sharedPoint(new Point2((*this)[i]));
+			}
+
+			sharedPoint point(const simulated2D::PointKey& j) {
+				return sharedPoint(new Point2((*this)[j]));
+			}
+		};
 
 		/**
 		 * Prior on a single pose, and optional derivative version

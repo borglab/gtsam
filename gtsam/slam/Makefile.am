@@ -11,17 +11,12 @@ sources =
 check_PROGRAMS = 
 
 # simulated2D example
-headers += Simulated2DValues.h 
-headers += Simulated2DPosePrior.h Simulated2DPointPrior.h 
-headers += Simulated2DOdometry.h Simulated2DMeasurement.h 
+# headers += Simulated2DValues.h 
 headers += simulated2DConstraints.h
 sources += simulated2D.cpp smallExample.cpp
 check_PROGRAMS += tests/testSimulated2D 
 
 # simulated2DOriented example
-headers +=  Simulated2DOrientedValues.h
-headers +=  Simulated2DOrientedPosePrior.h
-headers +=  Simulated2DOrientedOdometry.h
 sources +=  simulated2DOriented.cpp 
 check_PROGRAMS += tests/testSimulated2DOriented
 
@@ -37,8 +32,7 @@ headers += BetweenConstraint.h BoundingConstraint.h
 
 # 2D Pose SLAM
 sources += pose2SLAM.cpp dataset.cpp
-#sources += Pose2SLAMOptimizer.cpp
-check_PROGRAMS += tests/testPose2Factor tests/testPose2Values tests/testPose2SLAM tests/testPose2Prior
+check_PROGRAMS += tests/testPose2SLAM tests/testPose2SLAMwSPCG
 
 # 2D SLAM using Bearing and Range
 headers += BearingFactor.h RangeFactor.h BearingRangeFactor.h
@@ -47,12 +41,12 @@ check_PROGRAMS += tests/testPlanarSLAM
 
 # 3D Pose constraints
 sources += pose3SLAM.cpp 
-check_PROGRAMS += tests/testPose3Factor tests/testPose3Values tests/testPose3SLAM 
+check_PROGRAMS += tests/testPose3SLAM 
 
 # Visual SLAM
 headers += GeneralSFMFactor.h ProjectionFactor.h
 sources += visualSLAM.cpp
-check_PROGRAMS += tests/testVSLAMFactor tests/testVSLAMGraph tests/testVSLAMValues tests/testGeneralSFMFactor tests/testGeneralSFMFactor_Cal3Bundler
+check_PROGRAMS += tests/testProjectionFactor tests/testVSLAM tests/testGeneralSFMFactor tests/testGeneralSFMFactor_Cal3Bundler
 
 # StereoFactor
 headers += StereoFactor.h

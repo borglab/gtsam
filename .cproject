@@ -676,6 +676,30 @@
 						<useDefaultCommand>true</useDefaultCommand>
 						<runAllBuilders>true</runAllBuilders>
 					</target>
+					<target name="tests/testPose2SLAM.run" path="build/gtsam/slam" targetID="org.eclipse.cdt.build.MakeTargetBuilder">
+						<buildCommand>make</buildCommand>
+						<buildArguments>-j2</buildArguments>
+						<buildTarget>tests/testPose2SLAM.run</buildTarget>
+						<stopOnError>true</stopOnError>
+						<useDefaultCommand>true</useDefaultCommand>
+						<runAllBuilders>true</runAllBuilders>
+					</target>
+					<target name="tests/testPose3SLAM.run" path="build/gtsam/slam" targetID="org.eclipse.cdt.build.MakeTargetBuilder">
+						<buildCommand>make</buildCommand>
+						<buildArguments>-j2</buildArguments>
+						<buildTarget>tests/testPose3SLAM.run</buildTarget>
+						<stopOnError>true</stopOnError>
+						<useDefaultCommand>true</useDefaultCommand>
+						<runAllBuilders>true</runAllBuilders>
+					</target>
+					<target name="tests/testPose2SLAMwSPCG.run" path="build/gtsam/slam" targetID="org.eclipse.cdt.build.MakeTargetBuilder">
+						<buildCommand>make</buildCommand>
+						<buildArguments>-j2</buildArguments>
+						<buildTarget>tests/testPose2SLAMwSPCG.run</buildTarget>
+						<stopOnError>true</stopOnError>
+						<useDefaultCommand>true</useDefaultCommand>
+						<runAllBuilders>true</runAllBuilders>
+					</target>
 					<target name="check" path="build/geometry" targetID="org.eclipse.cdt.build.MakeTargetBuilder">
 						<buildCommand>make</buildCommand>
 						<buildArguments>-j2</buildArguments>
@@ -2443,6 +2467,30 @@
 						<buildCommand>make</buildCommand>
 						<buildArguments>-j2</buildArguments>
 						<buildTarget>check</buildTarget>
+						<stopOnError>true</stopOnError>
+						<useDefaultCommand>true</useDefaultCommand>
+						<runAllBuilders>true</runAllBuilders>
+					</target>
+					<target name="tests/testPose2SLAM.run" path="build/gtsam/slam" targetID="org.eclipse.cdt.build.MakeTargetBuilder">
+						<buildCommand>make</buildCommand>
+						<buildArguments>-j2</buildArguments>
+						<buildTarget>tests/testPose2SLAM.run</buildTarget>
+						<stopOnError>true</stopOnError>
+						<useDefaultCommand>true</useDefaultCommand>
+						<runAllBuilders>true</runAllBuilders>
+					</target>
+					<target name="tests/testPose3SLAM.run" path="build/gtsam/slam" targetID="org.eclipse.cdt.build.MakeTargetBuilder">
+						<buildCommand>make</buildCommand>
+						<buildArguments>-j2</buildArguments>
+						<buildTarget>tests/testPose3SLAM.run</buildTarget>
+						<stopOnError>true</stopOnError>
+						<useDefaultCommand>true</useDefaultCommand>
+						<runAllBuilders>true</runAllBuilders>
+					</target>
+					<target name="tests/testPose2SLAMwSPCG.run" path="build/gtsam/slam" targetID="org.eclipse.cdt.build.MakeTargetBuilder">
+						<buildCommand>make</buildCommand>
+						<buildArguments>-j2</buildArguments>
+						<buildTarget>tests/testPose2SLAMwSPCG.run</buildTarget>
 						<stopOnError>true</stopOnError>
 						<useDefaultCommand>true</useDefaultCommand>
 						<runAllBuilders>true</runAllBuilders>
