@@ -112,6 +112,14 @@ namespace gtsam {
 		return entries;
 	}
 
+	/* ************************************************************************* */
+	Matrix GaussianFactorGraph::denseJacobian() const {
+		// combine all factors
+	  JacobianFactor combined(*CombineJacobians(*convertCastFactors<FactorGraph<
+				JacobianFactor> > (), VariableSlots(*this)));
+	  return combined.matrix_augmented();
+	}
+
 	//  VectorValues GaussianFactorGraph::allocateVectorValuesb() const {
 	//    std::vector<size_t> dimensions(size()) ;
 	//    Index i = 0 ;

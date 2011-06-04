@@ -377,6 +377,10 @@ TEST(GaussianFactor, eliminateFrontals)
   factors.push_back(factor3);
   factors.push_back(factor4);
 
+  // extract the dense matrix for the graph
+  Matrix actualDense = factors.denseJacobian();
+  EXPECT(assert_equal(2.0 * Ab, actualDense));
+
   // Create combined factor
   JacobianFactor combined(*CombineJacobians(*factors.dynamicCastFactors<FactorGraph<
 			JacobianFactor> > (), VariableSlots(factors)));

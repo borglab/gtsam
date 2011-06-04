@@ -152,12 +152,18 @@ namespace gtsam {
     void combine(const GaussianFactorGraph &lfg);
 
     /**
-     * Return vector of i, j, and s to generate an m-by-n sparse Jacobain matrix
+     * Return vector of i, j, and s to generate an m-by-n sparse Jacobian matrix
      * such that S(i(k),j(k)) = s(k), which can be given to MATLAB's sparse.
      * The standard deviations are baked into A and b
      * @param first column index for each variable
      */
     std::vector<boost::tuple<size_t,size_t,double> > sparseJacobian(const std::vector<size_t>& columnIndices) const;
+
+    /**
+     * Return a dense m-by-n Jacobian matrix, augmented with b
+     * with standard deviations are baked into A and b
+     */
+    Matrix denseJacobian() const;
 
     // get b
 //    void getb(VectorValues &b) const ;
