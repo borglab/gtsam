@@ -29,12 +29,6 @@ namespace gtsam {
 	/* ************************************************************************* */
 	void IndexFactor::assertInvariants() const {
 		Base::assertInvariants();
-//#ifndef NDEBUG
-//#ifndef GTSAM_NO_ENFORCE_ORDERING
-//		std::set<Index> uniqueSorted(keys_.begin(), keys_.end());
-//		assert(uniqueSorted.size() == keys_.size() && std::equal(uniqueSorted.begin(), uniqueSorted.end(), keys_.begin()));
-//#endif
-//#endif
 	}
 
 	/* ************************************************************************* */

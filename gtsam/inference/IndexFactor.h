@@ -38,7 +38,7 @@ namespace gtsam {
 
 	protected:
 
-		// Internal function for checking class invariants (sorted keys for this factor)
+		// Internal function for checking class invariants (unique keys for this factor)
 		void assertInvariants() const;
 
 	public:

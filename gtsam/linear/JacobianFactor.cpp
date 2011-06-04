@@ -45,7 +45,7 @@ namespace gtsam {
   /* ************************************************************************* */
   inline void JacobianFactor::assertInvariants() const {
   #ifndef NDEBUG
-    IndexFactor::assertInvariants(); // The base class checks for sorted keys
+    GaussianFactor::assertInvariants(); // The base class checks for unique keys
     assert((size() == 0 && Ab_.rows() == 0 && Ab_.nBlocks() == 0) || size()+1 == Ab_.nBlocks());
     assert(firstNonzeroBlocks_.size() == Ab_.rows());
     for(size_t i=0; i<firstNonzeroBlocks_.size(); ++i)
