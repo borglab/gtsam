@@ -30,7 +30,7 @@ namespace gtsam {
 
 	/* ************************************************************************* */
 	template<class FACTOR>
-	GenericSequentialSolver<FACTOR>::GenericSequentialSolver(//
+	GenericSequentialSolver<FACTOR>::GenericSequentialSolver(
 			const FactorGraph<FACTOR>& factorGraph) :
 		factors_(new FactorGraph<FACTOR> (factorGraph)), structure_(
 				new VariableIndex(factorGraph)), eliminationTree_(EliminationTree<
