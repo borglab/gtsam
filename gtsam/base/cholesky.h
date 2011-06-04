@@ -38,7 +38,7 @@ namespace gtsam {
  * The optional order argument specifies the size of the square upper-left
  * submatrix to operate on, ignoring the rest of the matrix.
  */
-std::pair<size_t,bool> choleskyCareful(MatrixColMajor& ATA, int order = -1);
+std::pair<size_t,bool> choleskyCareful(Matrix& ATA, int order = -1);
 
 /**
  * Partial Cholesky computes a factor [R S  such that [R' 0  [R S  = [A  B
@@ -48,7 +48,7 @@ std::pair<size_t,bool> choleskyCareful(MatrixColMajor& ATA, int order = -1);
  * nFrontal determines the split between A, B, and C, with A being of size
  * nFrontal x nFrontal.
  */
-void choleskyPartial(MatrixColMajor& ABC, size_t nFrontal);
+void choleskyPartial(Matrix& ABC, size_t nFrontal);
 
 }
 

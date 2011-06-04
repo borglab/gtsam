@@ -173,7 +173,7 @@ void HessianFactor::print(const std::string& s) const {
 	for(const_iterator key=this->begin(); key!=this->end(); ++key)
 		cout << *key << "(" << this->getDim(key) << ") ";
 	cout << "\n";
-	gtsam::print(MatrixColMajor(info_.range(0,info_.nBlocks(), 0,info_.nBlocks()).selfadjointView<Eigen::Upper>()), "Ab^T * Ab: ");
+	gtsam::print(Matrix(info_.range(0,info_.nBlocks(), 0,info_.nBlocks()).selfadjointView<Eigen::Upper>()), "Ab^T * Ab: ");
 }
 
 /* ************************************************************************* */
@@ -181,9 +181,9 @@ bool HessianFactor::equals(const GaussianFactor& lf, double tol) const {
 	if(!dynamic_cast<const HessianFactor*>(&lf))
 		return false;
 	else {
-		MatrixColMajor thisMatrix = this->info_.full().selfadjointView<Eigen::Upper>();
+		Matrix thisMatrix = this->info_.full().selfadjointView<Eigen::Upper>();
 		thisMatrix(thisMatrix.rows()-1, thisMatrix.cols()-1) = 0.0;
-		MatrixColMajor rhsMatrix = static_cast<const HessianFactor&>(lf).info_.full().selfadjointView<Eigen::Upper>();
+		Matrix rhsMatrix = static_cast<const HessianFactor&>(lf).info_.full().selfadjointView<Eigen::Upper>();
 		rhsMatrix(rhsMatrix.rows()-1, rhsMatrix.cols()-1) = 0.0;
 		return equal_with_abs_tol(thisMatrix, rhsMatrix, tol);
 	}
@@ -421,7 +421,7 @@ HessianFactor::splitEliminatedFactor(size_t nrFrontals, const vector<Index>& key
 	// Extract conditionals
 	tic(1, "extract conditionals");
 	GaussianBayesNet::shared_ptr conditionals(new GaussianBayesNet());
-	typedef VerticalBlockView<MatrixColMajor> BlockAb;
+	typedef VerticalBlockView<Matrix> BlockAb;
 	BlockAb Ab(matrix_, info_);
 	for(size_t j=0; j<nrFrontals; ++j) {
 		// Temporarily restrict the matrix view to the conditional blocks of the

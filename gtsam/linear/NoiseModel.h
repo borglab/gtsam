@@ -165,7 +165,6 @@ namespace gtsam {
 			 * In-place version
 			 */
 			virtual void WhitenInPlace(Matrix& H) const;
-      virtual void WhitenInPlace(MatrixColMajor& H) const;
 
 			/**
 			 * Whiten a system, in place as well
@@ -183,15 +182,14 @@ namespace gtsam {
 			 * @return in-place QR factorization [R d]. Below-diagonal is undefined !!!!!
 			 */
 			virtual SharedDiagonal QR(Matrix& Ab) const;
-			virtual SharedDiagonal QR(MatrixColMajor& Ab) const;
 			// FIXME: these previously had firstZeroRows - what did this do?
-//			virtual SharedDiagonal QRColumnWise(MatrixColMajor& Ab, std::vector<int>& firstZeroRows) const;
+//			virtual SharedDiagonal QRColumnWise(Matrix& Ab, std::vector<int>& firstZeroRows) const;
 //			virtual SharedDiagonal QR(Matrix& Ab, boost::optional<std::vector<int>&> firstZeroRows = boost::none) const;
 
 			/**
 			 * Cholesky factorization
 			 */
-			virtual SharedDiagonal Cholesky(MatrixColMajor& Ab, size_t nFrontals) const;
+			virtual SharedDiagonal Cholesky(Matrix& Ab, size_t nFrontals) const;
 
 			/**
 			 * Return R itself, but note that Whiten(H) is cheaper than R*H
@@ -267,7 +265,6 @@ namespace gtsam {
 			virtual Vector unwhiten(const Vector& v) const;
 			virtual Matrix Whiten(const Matrix& H) const;
 			virtual void WhitenInPlace(Matrix& H) const;
-      virtual void WhitenInPlace(MatrixColMajor& H) const;
 
 			/**
 			 * Return standard deviations (sqrt of diagonal)
@@ -369,13 +366,11 @@ namespace gtsam {
 
 			virtual Matrix Whiten(const Matrix& H) const;
 			virtual void WhitenInPlace(Matrix& H) const;
-      virtual void WhitenInPlace(MatrixColMajor& H) const;
 
 			/**
 			 * Apply QR factorization to the system [A b], taking into account constraints
 			 */
 			virtual SharedDiagonal QR(Matrix& Ab) const;
-      virtual SharedDiagonal QR(MatrixColMajor& Ab) const;
 
 			/**
 			 * Check constrained is always true
@@ -439,7 +434,6 @@ namespace gtsam {
 			virtual Vector unwhiten(const Vector& v) const;
 			virtual Matrix Whiten(const Matrix& H) const;
 			virtual void WhitenInPlace(Matrix& H) const;
-      virtual void WhitenInPlace(MatrixColMajor& H) const;
 
 			/**
 			 * Return standard deviation

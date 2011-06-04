@@ -22,7 +22,6 @@
 #include <gtsam/linear/GaussianConditional.h>
 #include <gtsam/linear/GaussianFactor.h>
 #include <gtsam/linear/JacobianFactor.h>
-#include <gtsam/base/Matrix-inl.h>
 
 using namespace std;
 

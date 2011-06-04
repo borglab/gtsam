@@ -34,7 +34,7 @@ namespace gtsam {
   static const double underconstrainedPrior = 1e-5;
 
 /* ************************************************************************* */
-static inline bool choleskyStep(MatrixColMajor& ATA, size_t k, size_t order) {
+static inline bool choleskyStep(Matrix& ATA, size_t k, size_t order) {
 
   // Get pivot value
   double alpha = ATA(k,k);
@@ -76,7 +76,7 @@ static inline bool choleskyStep(MatrixColMajor& ATA, size_t k, size_t order) {
 }
 
 /* ************************************************************************* */
-pair<size_t,bool> choleskyCareful(MatrixColMajor& ATA, int order) {
+pair<size_t,bool> choleskyCareful(Matrix& ATA, int order) {
 
   const bool debug = ISDEBUG("choleskyCareful");
 
@@ -112,7 +112,7 @@ pair<size_t,bool> choleskyCareful(MatrixColMajor& ATA, int order) {
 }
 
 /* ************************************************************************* */
-void choleskyPartial(MatrixColMajor& ABC, size_t nFrontal) {
+void choleskyPartial(Matrix& ABC, size_t nFrontal) {
 
   const bool debug = ISDEBUG("choleskyPartial");
 

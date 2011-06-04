@@ -28,23 +28,19 @@
 #include <gtsam/3rdparty/Eigen/Dense>
 #include <gtsam/3rdparty/Eigen/SVD>
 
+#include <gtsam/base/Matrix.h>
 #include <gtsam/base/timing.h>
-#include <gtsam/base/Matrix-inl.h>
 #include <gtsam/base/Vector.h>
 
 using namespace std;
 
 namespace gtsam {
 
-/** Explicit instantiations of template functions for standard types */
-//template Vector backSubstituteUpper<Matrix,Vector>(const Matrix& U, const Vector& b, bool unit);
-//template Vector backSubstituteUpper<Vector,Matrix>(const Vector& b, const Matrix& U, bool unit);
-
 /* ************************************************************************* */
 Matrix Matrix_( size_t m, size_t n, const double* const data) {
-	Matrix A(m,n);
+	MatrixRowMajor A(m,n);
 	copy(data, data+m*n, A.data());
-	return A;
+	return Matrix(A);
 }
 
 /* ************************************************************************* */
@@ -90,25 +86,6 @@ Matrix diag(const Vector& v) {
 /* ************************************************************************* */
 bool assert_equal(const Matrix& expected, const Matrix& actual, double tol) {
 
-	if (equal_with_abs_tol(expected,actual,tol)) return true;
-
-	size_t n1 = expected.cols(), m1 = expected.rows();
-	size_t n2 = actual.cols(), m2 = actual.rows();
-
-	cout << "not equal:" << endl;
-	print(expected,"expected = ");
-	print(actual,"actual = ");
-	if(m1!=m2 || n1!=n2)
-		cout << m1 << "," << n1 << " != " << m2 << "," << n2 << endl;
-	else {
-		Matrix diff = actual-expected;
-		print(diff, "actual - expected = ");
-	}
-	return false;
-}
-
-/* ************************************************************************* */
-bool assert_equal(const MatrixColMajor& expected, const MatrixColMajor& actual, double tol) {
 	if (equal_with_abs_tol(expected,actual,tol)) return true;
 
 	size_t n1 = expected.cols(), m1 = expected.rows();
@@ -251,25 +228,6 @@ void print(const Matrix& A, const string &s, ostream& stream) {
 }
 
 /* ************************************************************************* */
-void print(const MatrixColMajor& A, const string &s, ostream& stream) {
-	size_t m = A.rows(), n = A.cols();
-
-	// print out all elements
-	stream << s << "[\n";
-	for( size_t i = 0 ; i < m ; i++) {
-		for( size_t j = 0 ; j < n ; j++) {
-			double aij = A(i,j);
-			if(aij != 0.0)
-				stream << setw(12) << setprecision(9) << aij << ",\t";
-			else
-				stream << "         0.0,\t";
-		}
-		stream << endl;
-	}
-	stream << "];" << endl;
-}
-
-/* ************************************************************************* */
 void save(const Matrix& A, const string &s, const string& filename) {
 	fstream stream(filename.c_str(), fstream::out | fstream::app);
 	print(A, s + "=", stream);
@@ -292,7 +250,7 @@ void insertColumn(Matrix& A, const Vector& col, size_t i, size_t j) {
 }
 
 /* ************************************************************************* */
-Vector columnNormSquare(const MatrixColMajor &A) {
+Vector columnNormSquare(const Matrix &A) {
 	Vector v (A.cols()) ;
 	for ( size_t i = 0 ; i < (size_t) A.cols() ; ++i ) {
 		v[i] = A.col(i).dot(A.col(i));
@@ -370,33 +328,6 @@ pair<Matrix,Matrix> qr(const Matrix& A) {
 }
 
 /* ************************************************************************* */
-/** Imperative version of Householder rank 1 update
- * i.e. do outer product update A = (I-beta vv')*A = A - v*(beta*A'*v)' = A - v*w'
- * but only in relevant part, from row j onwards
- * If called from householder_ does actually more work as first j columns 
- * will not be touched. However, is called from GaussianFactor.eliminate
- * on a number of different matrices for which all columns change.
- */
-/* ************************************************************************* */
-
-/**
- * Perform updates of system matrices
- */
-static void updateAb(Matrix& A, Vector& b, size_t j, const Vector& a,
-		const Vector& r, double d) {
-	const size_t m = A.rows(), n = A.cols();
-	for (size_t i = 0; i < m; i++) { // update all rows
-		double ai = a(i);
-		b(i) -= ai * d;
-		double *Aij = A.data() + i * n + j + 1;
-		const double *rptr = r.data() + j + 1;
-
-		for (size_t j2 = j + 1; j2 < n; j2++, Aij++, rptr++)
-			*Aij -= ai * (*rptr);
-	}
-}
-
-/* ************************************************************************* */
 list<boost::tuple<Vector, double, double> >
 weighted_eliminate(Matrix& A, Vector& b, const Vector& sigmas) {
 	size_t m = A.rows(), n = A.cols(); // get size(A)
@@ -414,11 +345,10 @@ weighted_eliminate(Matrix& A, Vector& b, const Vector& sigmas) {
 	// Then update A and b by substituting x with d-rS, zero-ing out x's column.
 	for (size_t j=0; j<n; ++j) {
 		// extract the first column of A
-		Vector a(column(A, j)); // ublas::matrix_column is slower !
+		Vector a(column(A, j));
 
 		// Calculate weighted pseudo-inverse and corresponding precision
 		double precision = weightedPseudoinverse(a, weights, pseudo);
-
 
 		// if precision is zero, no information on this column
 		if (precision < 1e-8) continue;
@@ -440,7 +370,8 @@ weighted_eliminate(Matrix& A, Vector& b, const Vector& sigmas) {
 
 		// update A, b, expensive, using outer product
 		// A' \define A_{S}-a*r and b'\define b-d*a
-		updateAb(A, b, j, a, r, d);
+		A -= a * r.transpose();
+		b -= d * a;
 	}
 
 	return results;
@@ -450,38 +381,9 @@ weighted_eliminate(Matrix& A, Vector& b, const Vector& sigmas) {
 /** Imperative version of Householder QR factorization, Golub & Van Loan p 224
  * version with Householder vectors below diagonal, as in GVL
  */
-/* ************************************************************************* */
-void householder_(Matrix &A, size_t k)
-{
-	const size_t m = A.rows(), n = A.cols(), kprime = min(k,min(m,n));
-	// loop over the kprime first columns
-	for(size_t j=0; j < kprime; j++){
-		// copy column from matrix to vjm, i.e. v(j:m) = A(j:m,j)
-		Vector vjm = A.col(j).segment(j, m-j);
-
-		// calculate the Householder vector, in place
-		double beta = houseInPlace(vjm);
-
-		// do outer product update A(j:m,:) = (I-beta vv')*A = A - v*(beta*A'*v)' = A - v*w'
-		Vector w = beta * A.middleRows(j,m-j).transpose() * vjm;
-		A.middleRows(j,m-j) -= vjm * w.transpose();
-
-		// the Householder vector is copied in the zeroed out part
-		A.col(j).segment(j+1, m-(j+1)) = vjm.segment(1, m-(j+1));
-	} // column j
-}
 
 /* ************************************************************************* */
-void householder(Matrix &A, size_t k) {
-	// version with zeros below diagonal
-	householder_(A,k);
-	const size_t m = A.rows(), n = A.cols(), kprime = min(k,min(m,n));
-	for(size_t j=0; j < kprime; j++)
-		A.col(j).segment(j+1, m-(j+1)).setZero();
-}
-
-/* ************************************************************************* */
-void householder_(MatrixColMajor& A, size_t k, bool copy_vectors) {
+void householder_(Matrix& A, size_t k, bool copy_vectors) {
 	const size_t m = A.rows(), n = A.cols(), kprime = min(k,min(m,n));
 	// loop over the kprime first columns
 	for(size_t j=0; j < kprime; j++) {
@@ -508,7 +410,7 @@ void householder_(MatrixColMajor& A, size_t k, bool copy_vectors) {
 }
 
 /* ************************************************************************* */
-void householder(MatrixColMajor& A, size_t k) {
+void householder(Matrix& A, size_t k) {
 	// version with zeros below diagonal
 	tic(1, "householder_");
 	householder_(A,k,false);
@@ -638,21 +540,9 @@ Matrix collect(size_t nrMatrices, ...)
 /* ************************************************************************* */
 // row scaling, in-place
 void vector_scale_inplace(const Vector& v, Matrix& A) {
-	size_t m = A.rows(); size_t n = A.cols();
-	for (size_t i=0; i<m; ++i) { // loop over rows
-		double vi = v(i);
-		double *Aij = A.data() + i*n;
-		for (size_t j=0; j<n; ++j, ++Aij) (*Aij) *= vi;
-	}
-}
-
-/* ************************************************************************* */
-// row scaling, in-place
-void vector_scale_inplace(const Vector& v, MatrixColMajor& A) {
-	size_t m = A.rows(); size_t n = A.cols();
-	double *Aij = A.data();
-	for (size_t j=0; j<n; ++j) // loop over rows
-		for (size_t i=0; i<m; ++i, ++Aij) (*Aij) *= v(i);
+	const size_t m = A.rows();
+	for (size_t i=0; i<m; ++i)
+		A.row(i) *= v(i);
 }
 
 /* ************************************************************************* */
@@ -667,14 +557,9 @@ Matrix vector_scale(const Vector& v, const Matrix& A) {
 // column scaling
 Matrix vector_scale(const Matrix& A, const Vector& v) {
 	Matrix M(A);
-	size_t m = A.rows(); size_t n = A.cols();
-	const double * vptr = v.data();
-	for (size_t i=0; i<m; ++i) { // loop over rows
-		for (size_t j=0; j<n; ++j) { // loop over columns
-			double * Mptr = M.data() + i*n + j;
-			(*Mptr) = (*Mptr) * *(vptr+j);
-		}
-	}
+	const size_t n = A.cols();
+	for (size_t j=0; j<n; ++j)
+		M.col(j) *= v(j);
 	return M;
 }
 

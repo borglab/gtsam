@@ -37,19 +37,19 @@ TEST(cholesky, choleskyPartial) {
                           0.,       0.,       0.,       0.,       0.,       0.,   2.5776);
 
   // Do partial Cholesky on 3 frontal scalar variables
-  MatrixColMajor RSL(ABC);
+  Matrix RSL(ABC);
   choleskyPartial(RSL, 3);
 
   // See the function comment for choleskyPartial, this decomposition should hold.
-  MatrixColMajor R1 = RSL.transpose();
-  MatrixColMajor R2 = RSL;
+  Matrix R1 = RSL.transpose();
+  Matrix R2 = RSL;
   R1.block(3, 3, 4, 4).setIdentity();
 
   R2.block(3, 3, 4, 4) = R2.block(3, 3, 4, 4).selfadjointView<Eigen::Upper>();
 
-  MatrixColMajor actual = R1 * R2;
+  Matrix actual = R1 * R2;
 
-  MatrixColMajor expected = ABC.selfadjointView<Eigen::Upper>();
+  Matrix expected = ABC.selfadjointView<Eigen::Upper>();
   EXPECT(assert_equal(expected, actual, 1e-9));
 }
 

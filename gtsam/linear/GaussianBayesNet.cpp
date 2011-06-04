@@ -19,7 +19,6 @@
 #include <boost/foreach.hpp>
 #include <boost/tuple/tuple.hpp>
 
-#include <gtsam/base/Matrix-inl.h>
 #include <gtsam/linear/GaussianBayesNet.h>
 #include <gtsam/linear/VectorValues.h>
 

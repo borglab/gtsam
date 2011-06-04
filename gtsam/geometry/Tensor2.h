@@ -33,7 +33,7 @@ public:
 	Tensor2() {
 	}
 
-	/* construct from data */
+	/* construct from data - expressed in row major form */
 	Tensor2(const double data[N2][N1]) {
 		for (int j = 0; j < N2; j++)
 			T[j] = Tensor1<N1> (data[j]);

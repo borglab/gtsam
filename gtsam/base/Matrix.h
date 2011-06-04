@@ -30,11 +30,11 @@
 
 /**
  * Matrix is a *global* typedef
- * we use the default < double,row_major,unbounded_array<double> >
+ * we use the default < double,col_major,unbounded_array<double> >
  */
 
-typedef Eigen::Matrix<double, Eigen::Dynamic, Eigen::Dynamic, Eigen::RowMajor> Matrix;
-typedef Eigen::Matrix<double, Eigen::Dynamic, Eigen::Dynamic, Eigen::ColMajor> MatrixColMajor;
+typedef Eigen::MatrixXd Matrix;
+typedef Eigen::Matrix<double, Eigen::Dynamic, Eigen::Dynamic, Eigen::RowMajor> MatrixRowMajor;
 
 // Matrix expressions for accessing parts of matrices
 typedef Eigen::Block<Matrix> SubMatrix;
@@ -109,9 +109,7 @@ inline bool operator!=(const Matrix& A, const Matrix& B) {
 /**
  * equals with an tolerance, prints out message if unequal
  */
-// FIXME: make better use of templates to test these properly
 bool assert_equal(const Matrix& A, const Matrix& B, double tol = 1e-9);
-bool assert_equal(const MatrixColMajor& A, const MatrixColMajor& B, double tol = 1e-9);
 
 /**
  * equals with an tolerance, prints out message if unequal
@@ -175,7 +173,6 @@ Vector Vector_(const Matrix& A);
  * print a matrix
  */
 void print(const Matrix& A, const std::string& s = "", std::ostream& stream = std::cout);
-void print(const MatrixColMajor& A, const std::string& s = "", std::ostream& stream = std::cout);
 
 /**
  * save a matrix to file, which can be loaded by matlab
@@ -240,7 +237,7 @@ const typename MATRIX::ConstRowXpr row(const MATRIX& A, size_t j) {
 void insertColumn(Matrix& A, const Vector& col, size_t j);
 void insertColumn(Matrix& A, const Vector& col, size_t i, size_t j);
 
-Vector columnNormSquare(const MatrixColMajor &A);
+Vector columnNormSquare(const Matrix &A);
 
 /**
  * Zeros all of the elements below the diagonal of a matrix, in place
@@ -290,8 +287,8 @@ void inplace_QR(MATRIX& A, bool clear_below_diagonal=true) {
 	size_t cols = A.cols();
 	size_t size = std::min(rows,cols);
 
-	typedef Eigen::internal::plain_diag_type<MatrixColMajor>::type HCoeffsType;
-	typedef Eigen::internal::plain_row_type<MatrixColMajor>::type RowVectorType;
+	typedef Eigen::internal::plain_diag_type<Matrix>::type HCoeffsType;
+	typedef Eigen::internal::plain_row_type<Matrix>::type RowVectorType;
 	HCoeffsType hCoeffs(size);
 	RowVectorType temp(cols);
 
@@ -315,9 +312,10 @@ weighted_eliminate(Matrix& A, Vector& b, const Vector& sigmas);
  * Householder tranformation, Householder vectors below diagonal
  * @param k number of columns to zero out below diagonal
  * @param A matrix
+ * @param copy_vectors - true to copy Householder vectors below diagonal
  * @return nothing: in place !!!
  */
-void householder_(Matrix& A, size_t k);
+void householder_(Matrix& A, size_t k, bool copy_vectors=true);
 
 /**
  * Householder tranformation, zeros below diagonal
@@ -326,25 +324,6 @@ void householder_(Matrix& A, size_t k);
  * @return nothing: in place !!!
  */
 void householder(Matrix& A, size_t k);
-
-/**
- * Householder tranformation, Householder vectors below diagonal
- * Column Major Version
- * @param k number of columns to zero out below diagonal
- * @param A matrix
- * @param copy_vectors - true to copy Householder vectors below diagonal
- * @return nothing: in place !!!
- */
-void householder_(MatrixColMajor& A, size_t k, bool copy_vectors=true);
-
-/**
- * Householder tranformation, zeros below diagonal
- * Column Major version
- * @param k number of columns to zero out below diagonal
- * @param A matrix
- * @return nothing: in place !!!
- */
-void householder(MatrixColMajor& A, size_t k);
 
 /**
  * backSubstitute U*x=b
@@ -405,7 +384,6 @@ Matrix collect(size_t nrMatrices, ...);
  * Arguments (Matrix, Vector) scales the columns,
  * (Vector, Matrix) scales the rows
  */
-void vector_scale_inplace(const Vector& v, MatrixColMajor& A); // row
 void vector_scale_inplace(const Vector& v, Matrix& A); // row
 Matrix vector_scale(const Vector& v, const Matrix& A); // row
 Matrix vector_scale(const Matrix& A, const Vector& v); // column
@@ -489,7 +467,7 @@ Matrix expm(const Matrix& A, size_t K=7);
 namespace boost {
 namespace serialization {
 
-// split version for Row-major matrix - sends sizes ahead
+// split version - sends sizes ahead
 template<class Archive>
 void save(Archive & ar, const Matrix & m, unsigned int version)
 {
@@ -512,32 +490,7 @@ void load(Archive & ar, Matrix & m, unsigned int version)
 	std::copy(raw_data.begin(), raw_data.end(), m.data());
 }
 
-// split version for Column-major matrix - sends sizes ahead
-template<class Archive>
-void save(Archive & ar, const MatrixColMajor & m, unsigned int version)
-{
-	const int rows = m.rows(), cols = m.cols(), elements = rows*cols;
-	std::vector<double> raw_data(elements);
-	std::copy(m.data(), m.data()+elements, raw_data.begin());
-	ar << make_nvp("rows", rows);
-	ar << make_nvp("cols", cols);
-	ar << make_nvp("data", raw_data);
-}
-template<class Archive>
-void load(Archive & ar, MatrixColMajor & m, unsigned int version)
-{
-	size_t rows, cols;
-	std::vector<double> raw_data;
-	ar >> make_nvp("rows", rows);
-	ar >> make_nvp("cols", cols);
-	ar >> make_nvp("data", raw_data);
-	m = MatrixColMajor(rows, cols);
-	std::copy(raw_data.begin(), raw_data.end(), m.data());
-}
-
 } // namespace serialization
 } // namespace boost
 
 BOOST_SERIALIZATION_SPLIT_FREE(Matrix)
-BOOST_SERIALIZATION_SPLIT_FREE(MatrixColMajor)
-

@@ -46,7 +46,7 @@ namespace gtsam {
 
   class HessianFactor : public GaussianFactor {
   protected:
-    typedef MatrixColMajor InfoMatrix;
+    typedef Matrix InfoMatrix;
     typedef SymmetricBlockView<InfoMatrix> BlockInfo;
 
     InfoMatrix matrix_; // The full information matrix, s.t. the quadratic error is 0.5*[x -1]'*H*[x -1]

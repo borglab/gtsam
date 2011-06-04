@@ -12,7 +12,7 @@ using namespace gtsam;
 
 /* ************************************************************************* */
 TEST(testBlockMatrices, jacobian_factor1) {
-	typedef MatrixColMajor AbMatrix;
+	typedef Matrix AbMatrix;
 	typedef VerticalBlockView<AbMatrix> BlockAb;
 
   AbMatrix matrix; 				// actual matrix - empty to start with
@@ -47,7 +47,7 @@ TEST(testBlockMatrices, jacobian_factor1) {
 
 /* ************************************************************************* */
 TEST(testBlockMatrices, jacobian_factor2) {
-	typedef MatrixColMajor AbMatrix;
+	typedef Matrix AbMatrix;
 	typedef VerticalBlockView<AbMatrix> BlockAb;
 
   AbMatrix matrix; 				// actual matrix - empty to start with
@@ -88,7 +88,7 @@ TEST(testBlockMatrices, jacobian_factor2) {
 
 /* ************************************************************************* */
 TEST(testBlockMatrices, hessian_factor1) {
-  typedef MatrixColMajor InfoMatrix;
+  typedef Matrix InfoMatrix;
   typedef SymmetricBlockView<InfoMatrix> BlockInfo;
 
 	Matrix expected_full = Matrix_(3, 3,

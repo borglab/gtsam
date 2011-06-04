@@ -26,6 +26,7 @@ using namespace std;
 using namespace gtsam;
 
 static double inf = std::numeric_limits<double>::infinity();
+static const double tol = 1e-9;
 
 /* ************************************************************************* */
 TEST( matrix, constructor_data )
@@ -68,14 +69,14 @@ TEST( matrix, Matrix_ )
 }
 
 /* ************************************************************************* */
-TEST( matrix, row_major )
+TEST( matrix, col_major )
 {
 	Matrix A = Matrix_(2, 2, 1.0, 2.0, 3.0, 4.0);
 	const double * const a = &A(0, 0);
-	EXPECT(a[0] == 1);
-	EXPECT(a[1] == 2);
-	EXPECT(a[2] == 3);
-	EXPECT(a[3] == 4);
+	EXPECT_DOUBLES_EQUAL(1, a[0], tol);
+	EXPECT_DOUBLES_EQUAL(3, a[1], tol);
+	EXPECT_DOUBLES_EQUAL(2, a[2], tol);
+	EXPECT_DOUBLES_EQUAL(4, a[3], tol);
 }
 
 /* ************************************************************************* */
@@ -528,13 +529,13 @@ TEST( matrix, zero_below_diagonal ) {
 	zeroBelowDiagonal(actual1r);
 	EXPECT(assert_equal(expected1, actual1r, 1e-10));
 
-	MatrixColMajor actual1c = A1;
+	Matrix actual1c = A1;
 	zeroBelowDiagonal(actual1c);
-	EXPECT(assert_equal(MatrixColMajor(expected1), actual1c, 1e-10));
+	EXPECT(assert_equal(Matrix(expected1), actual1c, 1e-10));
 
 	actual1c = A1;
 	zeroBelowDiagonal(actual1c, 4);
-	EXPECT(assert_equal(MatrixColMajor(expected1), actual1c, 1e-10));
+	EXPECT(assert_equal(Matrix(expected1), actual1c, 1e-10));
 
 	Matrix A2 = Matrix_(5, 3,
 				1.0, 2.0, 3.0,
@@ -553,9 +554,9 @@ TEST( matrix, zero_below_diagonal ) {
 	zeroBelowDiagonal(actual2r);
 	EXPECT(assert_equal(expected2, actual2r, 1e-10));
 
-	MatrixColMajor actual2c = A2;
+	Matrix actual2c = A2;
 	zeroBelowDiagonal(actual2c);
-	EXPECT(assert_equal(MatrixColMajor(expected2), actual2c, 1e-10));
+	EXPECT(assert_equal(Matrix(expected2), actual2c, 1e-10));
 
 	Matrix expected2_partial = Matrix_(5, 3,
 				1.0, 2.0, 3.0,
@@ -565,7 +566,7 @@ TEST( matrix, zero_below_diagonal ) {
 				0.0, 2.0, 3.0);
 	actual2c = A2;
 	zeroBelowDiagonal(actual2c, 1);
-	EXPECT(assert_equal(MatrixColMajor(expected2_partial), actual2c, 1e-10));
+	EXPECT(assert_equal(Matrix(expected2_partial), actual2c, 1e-10));
 }
 
 /* ************************************************************************* */
@@ -714,8 +715,8 @@ TEST( matrix, householder_colMajor )
 			0, 11.1803,	0, -2.2361, 0, -8.9443, -1.565,
 			-0.618034, 0, 4.4721, 0, -4.4721,	0, 0,
 			0, -0.618034, 0, 4.4721, 0, -4.4721, 0.894 };
-	MatrixColMajor expected1(Matrix_(4, 7, data1));
-	MatrixColMajor A1(Matrix_(4, 7, data));
+	Matrix expected1(Matrix_(4, 7, data1));
+	Matrix A1(Matrix_(4, 7, data));
 	householder_(A1, 3);
 	EXPECT(assert_equal(expected1, A1, 1e-3));
 
@@ -724,8 +725,8 @@ TEST( matrix, householder_colMajor )
 			11.1803, 0, -2.2361, 0, -8.9443, 0, 2.236, 0, 11.1803,
 			0, -2.2361, 0, -8.9443, -1.565, 0, 0, 4.4721, 0, -4.4721, 0, 0, 0,
 			0, 0, 4.4721, 0, -4.4721, 0.894 };
-	MatrixColMajor expected(Matrix_(4, 7, data2));
-	MatrixColMajor A2(Matrix_(4, 7, data));
+	Matrix expected(Matrix_(4, 7, data2));
+	Matrix A2(Matrix_(4, 7, data));
 	householder(A2, 3);
 	EXPECT(assert_equal(expected, A2, 1e-3));
 }
@@ -745,15 +746,15 @@ TEST( matrix, eigen_QR )
 			11.1803, 0, -2.2361, 0, -8.9443, 0, 2.236, 0, 11.1803,
 			0, -2.2361, 0, -8.9443, -1.565, 0, 0, 4.4721, 0, -4.4721, 0, 0, 0,
 			0, 0, 4.4721, 0, -4.4721, 0.894 };
-	MatrixColMajor expected(Matrix_(4, 7, data2));
-	MatrixColMajor A(Matrix_(4, 7, data));
-	MatrixColMajor actual = A.householderQr().matrixQR();
+	Matrix expected(Matrix_(4, 7, data2));
+	Matrix A(Matrix_(4, 7, data));
+	Matrix actual = A.householderQr().matrixQR();
 	zeroBelowDiagonal(actual);
 
 	EXPECT(assert_equal(expected, actual, 1e-3));
 
 	// use shiny new in place QR inside gtsam
-	A = MatrixColMajor(Matrix_(4, 7, data));
+	A = Matrix(Matrix_(4, 7, data));
 	inplace_QR(A);
 	EXPECT(assert_equal(expected, A, 1e-3));
 }
@@ -808,11 +809,11 @@ TEST( matrix, trans )
 }
 
 /* ************************************************************************* */
-TEST( matrix, row_major_access )
+TEST( matrix, col_major_access )
 {
 	Matrix A = Matrix_(2, 2, 1.0, 2.0, 3.0, 4.0);
 	const double* a = &A(0, 0);
-	DOUBLES_EQUAL(3,a[2],1e-9);
+	DOUBLES_EQUAL(2.0,a[2],1e-9);
 }
 
 /* ************************************************************************* */

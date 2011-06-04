@@ -28,12 +28,12 @@ namespace gtsam {
 	Matrix reshape(const tensors::Tensor2Expression<A, I, J>& T, int m, int n) {
 		if (m * n != I::dim * J::dim) throw std::invalid_argument(
 				"reshape: incompatible dimensions");
-		Matrix M(m, n);
+		MatrixRowMajor M(m, n);
 		size_t t = 0;
 		for (int j = 0; j < J::dim; j++)
 			for (int i = 0; i < I::dim; i++)
 				M.data()[t++] = T(i, j);
-		return M;
+		return Matrix(M);
 	}
 
 	/** Reshape rank 2 tensor into Vector */
@@ -68,8 +68,8 @@ namespace gtsam {
 		Matrix M(m, n);
 		int t = 0;
 		for (int k = 0; k < K::dim; k++)
-			for (int j = 0; j < J::dim; j++)
-				for (int i = 0; i < I::dim; i++)
+			for (int i = 0; i < I::dim; i++)
+				for (int j = 0; j < J::dim; j++)
 					M.data()[t++] = T(i, j, k);
 		return M;
 	}
@@ -99,8 +99,8 @@ namespace gtsam {
 		for (int m = 0; m < M::dim; m++)
 			for (int l = 0; l < L::dim; l++)
 				for (int k = 0; k < K::dim; k++)
-					for (int j = 0; j < J::dim; j++)
-						for (int i = 0; i < I::dim; i++)
+					for (int i = 0; i < I::dim; i++)
+						for (int j = 0; j < J::dim; j++)
 							R.data()[t++] = T(i, j, k, l, m);
 		return R;
 	}

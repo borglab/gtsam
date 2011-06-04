@@ -13,7 +13,7 @@ check_PROGRAMS =
 
 # base Math
 
-headers += FixedVector.h types.h blockMatrices.h Matrix-inl.h 
+headers += FixedVector.h types.h blockMatrices.h 
 sources += Vector.cpp Matrix.cpp 
 sources += cholesky.cpp
 check_PROGRAMS += tests/testFixedVector tests/testVector tests/testMatrix tests/testBlockMatrices 

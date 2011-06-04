@@ -44,7 +44,7 @@ namespace gtsam {
 
   class JacobianFactor : public GaussianFactor {
   public:
-  	typedef MatrixColMajor AbMatrix;
+  	typedef Matrix AbMatrix;
   	typedef VerticalBlockView<AbMatrix> BlockAb;
 
   protected:

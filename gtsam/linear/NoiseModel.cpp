@@ -110,11 +110,6 @@ void Gaussian::WhitenInPlace(Matrix& H) const {
 }
 
 /* ************************************************************************* */
-void Gaussian::WhitenInPlace(MatrixColMajor& H) const {
-  H = thisR() * H;
-}
-
-/* ************************************************************************* */
 // General QR, see also special version in Constrained
 SharedDiagonal Gaussian::QR(Matrix& Ab) const {
 
@@ -141,34 +136,7 @@ SharedDiagonal Gaussian::QR(Matrix& Ab) const {
 }
 
 /* ************************************************************************* */
-// General QR, see also special version in Constrained
-SharedDiagonal Gaussian::QR(MatrixColMajor& Ab) const {
-
-  static const bool debug = false;
-
-  // get size(A) and maxRank
-  // TODO: really no rank problems ?
-  size_t m = Ab.rows(), n = Ab.cols()-1;
-  size_t maxRank = min(m,n);
-
-  // pre-whiten everything (cheaply if possible)
-  WhitenInPlace(Ab);
-
-  if(debug) gtsam::print(Matrix(Ab), "Whitened Ab: ");
-
-  // Eigen QR - much faster than older householder approach
-	inplace_QR(Ab, false);
-
-	// hand-coded householder implementation
-	// TODO: necessary to isolate last column?
-//	householder(Ab, maxRank);
-
-  return Unit::Create(maxRank);
-}
-
-
-/* ************************************************************************* */
-SharedDiagonal Gaussian::Cholesky(MatrixColMajor& Ab, size_t nFrontals) const {
+SharedDiagonal Gaussian::Cholesky(Matrix& Ab, size_t nFrontals) const {
   // get size(A) and maxRank
   // TODO: really no rank problems ?
 
@@ -272,11 +240,6 @@ void Diagonal::WhitenInPlace(Matrix& H) const {
 }
 
 /* ************************************************************************* */
-void Diagonal::WhitenInPlace(MatrixColMajor& H) const {
-  vector_scale_inplace(invsigmas(), H);
-}
-
-/* ************************************************************************* */
 Vector Diagonal::sample() const {
 	Vector result(dim_);
 	for (size_t i = 0; i < dim_; i++) {
@@ -312,15 +275,11 @@ void Constrained::WhitenInPlace(Matrix& H) const {
 }
 
 /* ************************************************************************* */
-void Constrained::WhitenInPlace(MatrixColMajor& H) const {
-  throw logic_error("noiseModel::Constrained cannot Whiten");
-}
-
-/* ************************************************************************* */
-// templated generic constrained QR
-template<class MATRIX>
-SharedDiagonal constrained_QR(MATRIX& Ab, const Vector& sigmas) {
-
+// Special version of QR for Constrained calls slower but smarter code
+// that deals with possibly zero sigmas
+// It is Gram-Schmidt orthogonalization rather than Householder
+// Previously Diagonal::QR
+SharedDiagonal Constrained::QR(Matrix& Ab) const {
 	bool verbose = false;
 	if (verbose) cout << "\nStarting Constrained::QR" << endl;
 
@@ -333,7 +292,7 @@ SharedDiagonal constrained_QR(MATRIX& Ab, const Vector& sigmas) {
 	list<Triple> Rd;
 
 	Vector pseudo(m); // allocate storage for pseudo-inverse
-	Vector invsigmas = reciprocal(sigmas);
+	Vector invsigmas = reciprocal(sigmas_);
 	Vector weights = emul(invsigmas,invsigmas); // calculate weights once
 
 	// We loop over all columns, because the columns that can be eliminated
@@ -372,7 +331,6 @@ SharedDiagonal constrained_QR(MATRIX& Ab, const Vector& sigmas) {
 		tic(3, "constrained_QR update Ab");
 		Ab.middleCols(j+1,n-j) -= a * rd.segment(j+1, n-j).transpose();
 		toc(3, "constrained_QR update Ab");
-//		updateAb(Ab, j, a, rd);
 	}
 
 	// Create storage for precisions
@@ -388,28 +346,15 @@ SharedDiagonal constrained_QR(MATRIX& Ab, const Vector& sigmas) {
 		const Vector& rd = t.get<1>();
 		precisions(i)    = t.get<2>();
 		if (precisions(i)==inf) mixed = true;
-		for (size_t j2=0; j2<j; ++j2) Ab(i,j2) = 0.0; // fill in zeros below diagonal anway
-		for (size_t j2=j; j2<n+1; ++j2) // copy the j-the row TODO memcpy
+		for (size_t j2=0; j2<j; ++j2)
+			Ab(i,j2) = 0.0; // fill in zeros below diagonal anway
+		for (size_t j2=j; j2<n+1; ++j2)
 			Ab(i,j2) = rd(j2);
 		i+=1;
 	}
 	toc(4, "constrained_QR write back into Ab");
 
 	return mixed ? Constrained::MixedPrecisions(precisions) : Diagonal::Precisions(precisions);
-}
-
-/* ************************************************************************* */
-// Special version of QR for Constrained calls slower but smarter code
-// that deals with possibly zero sigmas
-// It is Gram-Schmidt orthogonalization rather than Householder
-// Previously Diagonal::QR
-SharedDiagonal Constrained::QR(Matrix& Ab) const {
-	return constrained_QR(Ab, sigmas_);
-}
-
-/* ************************************************************************* */
-SharedDiagonal Constrained::QR(MatrixColMajor& Ab) const {
-	return constrained_QR(Ab, sigmas_);
 }
 
 /* ************************************************************************* */
@@ -448,11 +393,6 @@ Matrix Isotropic::Whiten(const Matrix& H) const {
 /* ************************************************************************* */
 void Isotropic::WhitenInPlace(Matrix& H) const {
 	H *= invsigma_;
-}
-
-/* ************************************************************************* */
-void Isotropic::WhitenInPlace(MatrixColMajor& H) const {
-  H *= invsigma_;
 }
 
 /* ************************************************************************* */
