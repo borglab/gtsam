@@ -29,9 +29,11 @@
 #include <gtsam/base/Vector.h>
 
 /**
- * Matrix is a *global* typedef
+ * Matrix is a typedef in the gtsam namespace
+ * TODO: make a version to work with matlab wrapping
  * we use the default < double,col_major,unbounded_array<double> >
  */
+namespace gtsam {
 
 typedef Eigen::MatrixXd Matrix;
 typedef Eigen::Matrix<double, Eigen::Dynamic, Eigen::Dynamic, Eigen::RowMajor> MatrixRowMajor;
@@ -39,8 +41,6 @@ typedef Eigen::Matrix<double, Eigen::Dynamic, Eigen::Dynamic, Eigen::RowMajor> M
 // Matrix expressions for accessing parts of matrices
 typedef Eigen::Block<Matrix> SubMatrix;
 typedef Eigen::Block<const Matrix> ConstSubMatrix;
-
-namespace gtsam {
 
 /**
  *  constructor with size and initial data, row order !
@@ -469,7 +469,7 @@ namespace serialization {
 
 // split version - sends sizes ahead
 template<class Archive>
-void save(Archive & ar, const Matrix & m, unsigned int version)
+void save(Archive & ar, const gtsam::Matrix & m, unsigned int version)
 {
 	const int rows = m.rows(), cols = m.cols(), elements = rows*cols;
 	std::vector<double> raw_data(elements);
@@ -479,18 +479,18 @@ void save(Archive & ar, const Matrix & m, unsigned int version)
 	ar << make_nvp("data", raw_data);
 }
 template<class Archive>
-void load(Archive & ar, Matrix & m, unsigned int version)
+void load(Archive & ar, gtsam::Matrix & m, unsigned int version)
 {
 	size_t rows, cols;
 	std::vector<double> raw_data;
 	ar >> make_nvp("rows", rows);
 	ar >> make_nvp("cols", cols);
 	ar >> make_nvp("data", raw_data);
-	m = Matrix(rows, cols);
+	m = gtsam::Matrix(rows, cols);
 	std::copy(raw_data.begin(), raw_data.end(), m.data());
 }
 
 } // namespace serialization
 } // namespace boost
 
-BOOST_SERIALIZATION_SPLIT_FREE(Matrix)
+BOOST_SERIALIZATION_SPLIT_FREE(gtsam::Matrix)

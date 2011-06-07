@@ -25,15 +25,16 @@
 #include <gtsam/3rdparty/Eigen/Core>
 #include <boost/random/linear_congruential.hpp>
 
-// Vector is a *global* typedef
+// Vector is just a typedef of the Eigen dynamic vector type
+// TODO: make a version that works for matlab wrapping
+
+namespace gtsam {
 
 // Typedef arbitary length vector
 typedef Eigen::VectorXd Vector;
 
 typedef Eigen::VectorBlock<Vector> SubVector;
 typedef Eigen::VectorBlock<const Vector> ConstSubVector;
-
-namespace gtsam {
 
 /**
  * An auxiliary function to printf for Win32 compatibility, added by Kai
@@ -353,7 +354,7 @@ namespace serialization {
 
 // split version - copies into an STL vector for serialization
 template<class Archive>
-void save(Archive & ar, const Vector & v, unsigned int version)
+void save(Archive & ar, const gtsam::Vector & v, unsigned int version)
 {
 	const size_t n = v.size();
 	std::vector<double> raw_data(n);
@@ -361,7 +362,7 @@ void save(Archive & ar, const Vector & v, unsigned int version)
 	ar << make_nvp("data", raw_data);
 }
 template<class Archive>
-void load(Archive & ar, Vector & v, unsigned int version)
+void load(Archive & ar, gtsam::Vector & v, unsigned int version)
 {
 	std::vector<double> raw_data;
 	ar >> make_nvp("data", raw_data);
@@ -371,4 +372,4 @@ void load(Archive & ar, Vector & v, unsigned int version)
 } // namespace serialization
 } // namespace boost
 
-BOOST_SERIALIZATION_SPLIT_FREE(Vector)
+BOOST_SERIALIZATION_SPLIT_FREE(gtsam::Vector)
