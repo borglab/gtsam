@@ -36,12 +36,7 @@ TEST(Inference, UnobservedVariables) {
   VariableIndex variableIndex(sfg);
 
   Permutation::shared_ptr colamd(Inference::PermutationCOLAMD(variableIndex));
-
-  //colamd->print("colamd: ");
 }
 
 /* ************************************************************************* */
-int main() {
-  TestResult tr;
-  return TestRegistry::runAllTests(tr);
-}
+int main() {  TestResult tr;  return TestRegistry::runAllTests(tr); }

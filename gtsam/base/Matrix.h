@@ -331,9 +331,6 @@ void householder(Matrix& A, size_t k);
  * @param unit, set true if unit triangular
  * @return the solution x of U*x=b
  */
-//FIXME: add back expression form
-//template<class MATRIX, class VECTOR>
-//Vector backSubstituteUpper(const MATRIX& U, const VECTOR& b, bool unit=false);
 Vector backSubstituteUpper(const Matrix& U, const Vector& b, bool unit=false);
 
 /**
@@ -343,10 +340,7 @@ Vector backSubstituteUpper(const Matrix& U, const Vector& b, bool unit=false);
  * @param unit, set true if unit triangular
  * @return the solution x of x'*U=b'
  */
-//FIXME: add back expression form
 //TODO: is this function necessary? it isn't used
-//template<class VECTOR, class MATRIX>
-//Vector backSubstituteUpper(const VECTOR& b, const MATRIX& U, bool unit=false);
 Vector backSubstituteUpper(const Vector& b, const Matrix& U, bool unit=false);
 
 /**
@@ -452,11 +446,6 @@ DLT(const Matrix& A, double rank_tol = 1e-9);
  * @param K number of iterations
  */
 Matrix expm(const Matrix& A, size_t K=7);
-
-// macro for unit tests
-#define EQUALITY(expected,actual)\
-  { if (!assert_equal(expected,actual)) \
-    result_.addFailure(Failure(name_, __FILE__, __LINE__, #expected, #actual)); }
 
 } // namespace gtsam
 

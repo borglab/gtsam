@@ -209,23 +209,6 @@ TEST( NoiseModel, QR )
 }
 
 /* ************************************************************************* */
-//TEST( NoiseModel, QRColumnWise )
-//{
-//     // Call Gaussian version
-//     Matrix Ab = exampleQR::Ab; // otherwise overwritten !
-//     vector<int> firstZeroRows;
-//     firstZeroRows += 0,1,2,3,4,5; // FD: no idea as not documented :-(
-//     SharedDiagonal actual = exampleQR::diagonal->QRColumnWise(Ab,firstZeroRows);
-//     SharedDiagonal expected = noiseModel::Unit::Create(4);
-//     EXPECT(assert_equal(*expected,*actual));
-//     Matrix AbResized = ublas::triangular_adaptor<Matrix, ublas::upper>(Ab);
-//     print(exampleQR::Rd, "Rd: ");
-//     print(Ab, "Ab: ");
-//     print(AbResized, "AbResized: ");
-//     EXPECT(linear_dependent(exampleQR::Rd,AbResized,1e-4)); // Ab was modified in place !!!
-//}
-
-/* ************************************************************************* */
 TEST(NoiseModel, Cholesky)
 {
   SharedDiagonal expected = noiseModel::Unit::Create(4);
@@ -234,8 +217,6 @@ TEST(NoiseModel, Cholesky)
   EXPECT(assert_equal(*expected,*actual));
   // Ab was modified in place !!!
   Matrix actualRd = Ab.block(0, 0, actual->dim(), Ab.cols()).triangularView<Eigen::Upper>();
-//      ublas::project(ublas::triangular_adaptor<Matrix, ublas::upper>(Ab),
-//          ublas::range(0,actual->dim()), ublas::range(0, Ab.cols()));
   EXPECT(linear_dependent(exampleQR::Rd,actualRd,1e-4));
 }
 

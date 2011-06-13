@@ -153,7 +153,7 @@ namespace gtsam {
 			ar & BOOST_SERIALIZATION_NVP(noiseModel_);
 		}
 
-	}; // NonlinearFactor
+	}; // \class NonlinearFactor
 
 
 	/**
@@ -268,7 +268,7 @@ namespace gtsam {
 			ar & BOOST_SERIALIZATION_NVP(key_);
 		}
 
-	};
+	};// \class NonlinearFactor1
 
 	/**
 	 * A Gaussian nonlinear factor that takes 2 parameters
@@ -394,7 +394,7 @@ namespace gtsam {
 			ar & BOOST_SERIALIZATION_NVP(key2_);
 		}
 
-	};
+	}; // \class NonlinearFactor2
 
 /* ************************************************************************* */
 
@@ -501,7 +501,7 @@ namespace gtsam {
      */
     virtual IndexFactor::shared_ptr symbolic(const Ordering& ordering) const {
       const Index var1 = ordering[key1_], var2 = ordering[key2_], var3 = ordering[key3_];
-      return IndexFactor::shared_ptr(new IndexFactor(ordering[key1_], ordering[key2_], ordering[key3_]));
+      return IndexFactor::shared_ptr(new IndexFactor(var1, var2, var3));
     }
 
     /** methods to retrieve keys */
@@ -539,8 +539,8 @@ namespace gtsam {
       ar & BOOST_SERIALIZATION_NVP(key3_);
     }
 
-  };
+  }; // \class NonlinearFactor3
 
 /* ************************************************************************* */
 
-}
+} // \namespace gtsam

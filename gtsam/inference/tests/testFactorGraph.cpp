@@ -93,15 +93,12 @@ typedef boost::shared_ptr<SymbolicFactorGraph> shared;
 //	CHECK(singletonGraph_excepted.equals(singletonGraph));
 //}
 
+/* ************************************************************************* */
 TEST(FactorGraph, dynamic_factor_cast) {
   FactorGraph<IndexFactor> fg;
   fg.dynamicCastFactors<FactorGraph<IndexFactor> >();
 }
 
-
 /* ************************************************************************* */
-int main() {
-	TestResult tr;
-	return TestRegistry::runAllTests(tr);
-}
+int main() {	TestResult tr; return TestRegistry::runAllTests(tr); }
 /* ************************************************************************* */

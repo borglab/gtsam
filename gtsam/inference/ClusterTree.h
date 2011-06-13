@@ -21,7 +21,6 @@
 
 #include <list>
 #include <vector>
-#include <iostream>
 
 #include <boost/shared_ptr.hpp>
 #include <boost/weak_ptr.hpp>
@@ -104,10 +103,7 @@ namespace gtsam {
 		sharedCluster root() const { return root_; }
 
 		// print the object
-		void print(const std::string& str) const {
-			std::cout << str << std::endl;
-			if (root_) root_->printTree("");
-		}
+		void print(const std::string& str="") const;
 
 		/** check equality */
 		bool equals(const ClusterTree<FG>& other, double tol = 1e-9) const;

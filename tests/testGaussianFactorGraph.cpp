@@ -306,8 +306,8 @@ TEST( GaussianFactorGraph, eliminateAll )
 	GaussianBayesNet actual = *GaussianSequentialSolver(fg1).eliminate();
 	EXPECT(assert_equal(expected,actual,tol));
 
-  GaussianBayesNet actualET = *GaussianSequentialSolver(fg1).eliminate();
-  EXPECT(assert_equal(expected,actualET,tol));
+  GaussianBayesNet actualQR = *GaussianSequentialSolver(fg1, true).eliminate();
+  EXPECT(assert_equal(expected,actualQR,tol));
 }
 
 ///* ************************************************************************* */
@@ -473,7 +473,7 @@ TEST( GaussianFactorGraph, getOrdering)
 //}
 
 /* ************************************************************************* */
-TEST( GaussianFactorGraph, optimize )
+TEST( GaussianFactorGraph, optimize_LDL )
 {
   // create an ordering
   Ordering ord; ord += "x2","l1","x1";
@@ -482,7 +482,25 @@ TEST( GaussianFactorGraph, optimize )
 	GaussianFactorGraph fg = createGaussianFactorGraph(ord);
 
 	// optimize the graph
-	VectorValues actual = *GaussianSequentialSolver(fg).optimize();
+	VectorValues actual = *GaussianSequentialSolver(fg, false).optimize();
+
+	// verify
+	VectorValues expected = createCorrectDelta(ord);
+
+  EXPECT(assert_equal(expected,actual));
+}
+
+/* ************************************************************************* */
+TEST( GaussianFactorGraph, optimize_QR )
+{
+  // create an ordering
+  Ordering ord; ord += "x2","l1","x1";
+
+  // create a graph
+	GaussianFactorGraph fg = createGaussianFactorGraph(ord);
+
+	// optimize the graph
+	VectorValues actual = *GaussianSequentialSolver(fg, true).optimize();
 
 	// verify
 	VectorValues expected = createCorrectDelta(ord);

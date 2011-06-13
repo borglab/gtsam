@@ -30,8 +30,7 @@ using namespace gtsam;
 
 namespace gtsam {
 	// Explicitly instantiate so we don't have to include everywhere
-	INSTANTIATE_FACTOR_GRAPH(GaussianFactor)
-	;
+	INSTANTIATE_FACTOR_GRAPH(GaussianFactor);
 
 	/* ************************************************************************* */
 	GaussianFactorGraph::GaussianFactorGraph(const GaussianBayesNet& CBN) :
@@ -119,31 +118,6 @@ namespace gtsam {
 				JacobianFactor> > (), VariableSlots(*this)));
 	  return combined.matrix_augmented();
 	}
-
-	//  VectorValues GaussianFactorGraph::allocateVectorValuesb() const {
-	//    std::vector<size_t> dimensions(size()) ;
-	//    Index i = 0 ;
-	//    BOOST_FOREACH( const sharedFactor& factor, factors_) {
-	//      dimensions[i] = factor->numberOfRows() ;
-	//      i++;
-	//    }
-	//
-	//    return VectorValues(dimensions) ;
-	//  }
-	//
-	//  void GaussianFactorGraph::getb(VectorValues &b) const {
-	//    Index i = 0 ;
-	//    BOOST_FOREACH( const sharedFactor& factor, factors_) {
-	//      b[i] = factor->getb();
-	//      i++;
-	//    }
-	//  }
-	//
-	//  VectorValues GaussianFactorGraph::getb() const {
-	//    VectorValues b = allocateVectorValuesb() ;
-	//    getb(b) ;
-	//    return b ;
-	//  }
 
   /* ************************************************************************* */
   // Helper functions for Combine
@@ -419,7 +393,7 @@ namespace gtsam {
 		toc(2, "Jacobian EliminateGaussian");
 
 		return make_pair(conditionals, factor);
-	} // EliminateQR
+	} // \EliminateQR
 
 	/* ************************************************************************* */
 	GaussianFactorGraph::EliminationResult EliminatePreferCholesky(
@@ -499,8 +473,7 @@ namespace gtsam {
 
 		return ret;
 
-	} // EliminatePreferCholesky
-
+	} // \EliminatePreferCholesky
 
   /* ************************************************************************* */
 	GaussianFactorGraph::EliminationResult EliminateLDL(
@@ -537,7 +510,6 @@ namespace gtsam {
 	  		cout << "   Index: " << p.first << ", " << p.second.toString() << endl;
 	  }
 
-
 	  HessianFactor::shared_ptr //
 	  combinedFactor(new HessianFactor(factors, dimensions, scatter));
 	  toc(3, "combine");
@@ -561,86 +533,86 @@ namespace gtsam {
 
 	  combinedFactor->assertInvariants();
 	  return make_pair(conditionals, combinedFactor);
-	}
+	} // \EliminateLDL
 
 	/* ************************************************************************* */
-	  GaussianFactorGraph::EliminationResult EliminatePreferLDL(
-	      const FactorGraph<GaussianFactor>& factors, size_t nrFrontals) {
+	GaussianFactorGraph::EliminationResult EliminatePreferLDL(
+			const FactorGraph<GaussianFactor>& factors, size_t nrFrontals) {
 
-	    typedef JacobianFactor J;
-	    typedef HessianFactor H;
+		typedef JacobianFactor J;
+		typedef HessianFactor H;
 
-	    // If any JacobianFactors have constrained noise models, we have to convert
-	    // all factors to JacobianFactors.  Otherwise, we can convert all factors
-	    // to HessianFactors.  This is because QR can handle constrained noise
-	    // models but LDL cannot.
+		// If any JacobianFactors have constrained noise models, we have to convert
+		// all factors to JacobianFactors.  Otherwise, we can convert all factors
+		// to HessianFactors.  This is because QR can handle constrained noise
+		// models but LDL cannot.
 
-	    // Decide whether to use QR or LDL
-	    // Check if any JacobianFactors have constrained noise models.
-	    bool useQR = false;
-	    BOOST_FOREACH(const GaussianFactor::shared_ptr& factor, factors) {
-	      J::shared_ptr jacobian(boost::dynamic_pointer_cast<J>(factor));
-	      if (jacobian && jacobian->get_model()->isConstrained()) {
-	        useQR = true;
-	        break;
-	      }
-	    }
+		// Decide whether to use QR or LDL
+		// Check if any JacobianFactors have constrained noise models.
+		bool useQR = false;
+		BOOST_FOREACH(const GaussianFactor::shared_ptr& factor, factors) {
+			J::shared_ptr jacobian(boost::dynamic_pointer_cast<J>(factor));
+			if (jacobian && jacobian->get_model()->isConstrained()) {
+				useQR = true;
+				break;
+			}
+		}
 
-	    // Convert all factors to the appropriate type
-	    // and call the type-specific EliminateGaussian.
-	    if (useQR) return EliminateQR(factors, nrFrontals);
+		// Convert all factors to the appropriate type
+		// and call the type-specific EliminateGaussian.
+		if (useQR) return EliminateQR(factors, nrFrontals);
 
-	    GaussianFactorGraph::EliminationResult ret;
-	    try {
-	      tic(2, "EliminateLDL");
-	      ret = EliminateLDL(factors, nrFrontals);
-	      toc(2, "EliminateLDL");
-	    } catch (const exception& e) {
-	      cout << "Exception in EliminateLDL: " << e.what() << endl;
-	      SETDEBUG("EliminateLDL", true);
-	      SETDEBUG("updateATA", true);
-	      SETDEBUG("JacobianFactor::eliminate", true);
-	      SETDEBUG("JacobianFactor::Combine", true);
-	      SETDEBUG("ldlPartial", true);
-	      SETDEBUG("findScatterAndDims", true);
-	      factors.print("Combining factors: ");
-	      EliminateLDL(factors, nrFrontals);
-	      throw;
-	    }
+		GaussianFactorGraph::EliminationResult ret;
+		try {
+			tic(2, "EliminateLDL");
+			ret = EliminateLDL(factors, nrFrontals);
+			toc(2, "EliminateLDL");
+		} catch (const exception& e) {
+			cout << "Exception in EliminateLDL: " << e.what() << endl;
+			SETDEBUG("EliminateLDL", true);
+			SETDEBUG("updateATA", true);
+			SETDEBUG("JacobianFactor::eliminate", true);
+			SETDEBUG("JacobianFactor::Combine", true);
+			SETDEBUG("ldlPartial", true);
+			SETDEBUG("findScatterAndDims", true);
+			factors.print("Combining factors: ");
+			EliminateLDL(factors, nrFrontals);
+			throw;
+		}
 
-	    const bool checkLDL = ISDEBUG("EliminateGaussian Check LDL");
-	    if (checkLDL) {
-	      GaussianFactorGraph::EliminationResult expected;
-	      FactorGraph<J> jacobians = convertToJacobians(factors);
-	      try {
-	        // Compare with QR
-	        expected = EliminateJacobians(jacobians, nrFrontals);
-	      } catch (...) {
-	        cout << "Exception in QR" << endl;
-	        throw;
-	      }
+		const bool checkLDL = ISDEBUG("EliminateGaussian Check LDL");
+		if (checkLDL) {
+			GaussianFactorGraph::EliminationResult expected;
+			FactorGraph<J> jacobians = convertToJacobians(factors);
+			try {
+				// Compare with QR
+				expected = EliminateJacobians(jacobians, nrFrontals);
+			} catch (...) {
+				cout << "Exception in QR" << endl;
+				throw;
+			}
 
-	      H actual_factor(*ret.second);
-	      H expected_factor(*expected.second);
-	      if (!assert_equal(*expected.first, *ret.first, 100.0) || !assert_equal(
-	          expected_factor, actual_factor, 1.0)) {
-	        cout << "LDL and QR do not agree" << endl;
+			H actual_factor(*ret.second);
+			H expected_factor(*expected.second);
+			if (!assert_equal(*expected.first, *ret.first, 100.0) || !assert_equal(
+					expected_factor, actual_factor, 1.0)) {
+				cout << "LDL and QR do not agree" << endl;
 
-	        SETDEBUG("EliminateLDL", true);
-	        SETDEBUG("updateATA", true);
-	        SETDEBUG("JacobianFactor::eliminate", true);
-	        SETDEBUG("JacobianFactor::Combine", true);
-	        jacobians.print("Jacobian Factors: ");
-	        EliminateJacobians(jacobians, nrFrontals);
-	        EliminateLDL(factors, nrFrontals);
-	        factors.print("Combining factors: ");
+				SETDEBUG("EliminateLDL", true);
+				SETDEBUG("updateATA", true);
+				SETDEBUG("JacobianFactor::eliminate", true);
+				SETDEBUG("JacobianFactor::Combine", true);
+				jacobians.print("Jacobian Factors: ");
+				EliminateJacobians(jacobians, nrFrontals);
+				EliminateLDL(factors, nrFrontals);
+				factors.print("Combining factors: ");
 
-	        throw runtime_error("LDL and QR do not agree");
-	      }
-	    }
+				throw runtime_error("LDL and QR do not agree");
+			}
+		}
 
-	    return ret;
+		return ret;
 
-	  } // EliminatePreferLDL
+	} // \EliminatePreferLDL
 
 } // namespace gtsam

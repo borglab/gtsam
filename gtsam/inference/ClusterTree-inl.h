@@ -19,6 +19,7 @@
 
 #pragma once
 
+#include <iostream>
 #include <boost/foreach.hpp>
 
 #include <gtsam/inference/ClusterTree.h>
@@ -93,6 +94,13 @@ namespace gtsam {
 	/* ************************************************************************* *
 	 * ClusterTree
 	 * ************************************************************************* */
+	template<class FG>
+	void ClusterTree<FG>::print(const string& str) const {
+		cout << str << endl;
+		if (root_) root_->printTree("");
+	}
+
+	/* ************************************************************************* */
 	template<class FG>
 	bool ClusterTree<FG>::equals(const ClusterTree<FG>& other, double tol) const {
 		if (!root_ && !other.root_) return true;

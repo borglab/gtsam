@@ -159,12 +159,11 @@ void GaussianConditional::rhs(VectorValues& x) const {
 void GaussianConditional::solveInPlace(VectorValues& x) const {
   static const bool debug = false;
   if(debug) print("Solving conditional in place");
-//	Vector rhs(get_d());
   Vector rhs = x.range(beginFrontals(), endFrontals());
 	for (const_iterator parent = beginParents(); parent != endParents(); ++parent) {
 		rhs += -get_S(parent) * x[*parent];
 	}
-	Vector soln = permutation_.transpose()*backSubstituteUpper(get_R(), rhs, false);
+	Vector soln = permutation_.transpose() * get_R().triangularView<Eigen::Upper>().solve(rhs);
 	if(debug) {
 		gtsam::print(Matrix(get_R()), "Calling backSubstituteUpper on ");
 		gtsam::print(rhs, "rhs: ");
@@ -177,7 +176,6 @@ void GaussianConditional::solveInPlace(VectorValues& x) const {
 void GaussianConditional::solveInPlace(Permuted<VectorValues>& x) const {
   static const bool debug = false;
   if(debug) print("Solving conditional in place (permuted)");
-//  Vector rhs(get_d());
 	// Extract RHS from values - inlined from VectorValues
 	size_t s = 0;
 	for (const_iterator it=beginFrontals(); it!=endFrontals(); ++it)
@@ -195,8 +193,8 @@ void GaussianConditional::solveInPlace(Permuted<VectorValues>& x) const {
 		rhs += -get_S(parent) * x[*parent];
 	}
 
-	// solve system
-	Vector soln = permutation_.transpose()*backSubstituteUpper(get_R(), rhs, false);
+	// solve system - backsubstitution
+	Vector soln = permutation_.transpose() * get_R().triangularView<Eigen::Upper>().solve(rhs);
 
 	// apply solution: inlined manually due to permutation
   size_t solnStart = 0;

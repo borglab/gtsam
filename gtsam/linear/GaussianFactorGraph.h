@@ -163,13 +163,6 @@ namespace gtsam {
      */
     Matrix denseJacobian() const;
 
-    // get b
-//    void getb(VectorValues &b) const ;
-//    VectorValues getb() const ;
-//
-//    // allocate a vectorvalues of b's structure
-//    VectorValues allocateVectorValuesb() const ;
-
   private:
     /** Serialization function */
     friend class boost::serialization::access;
@@ -189,9 +182,6 @@ namespace gtsam {
 
 	GaussianFactorGraph::EliminationResult EliminateJacobians(const FactorGraph<
 			JacobianFactor>& factors, size_t nrFrontals = 1);
-
-//  GaussianFactorGraph::EliminationResult EliminateHessians(const FactorGraph<
-//			HessianFactor>& factors, size_t nrFrontals = 1);
 
   GaussianFactorGraph::EliminationResult EliminateQR(const FactorGraph<
 			GaussianFactor>& factors, size_t nrFrontals = 1);

@@ -25,7 +25,7 @@
 
 namespace gtsam {
 
-	class SharedDiagonal; // forward declare, defined at end
+	class SharedDiagonal; // forward declare
 
 	namespace noiseModel {
 

@@ -18,7 +18,6 @@
 
 #pragma once
 
-#include <iostream>
 #include <gtsam/geometry/Point2.h>
 
 namespace gtsam {
@@ -45,10 +44,7 @@ namespace gtsam {
 		}
 
 		/** print */
-		void print(const std::string& s) const {
-			std::cout << s << "(" << uL_ << ", " << uR_ << ", " << v_ << ")"
-					<< std::endl;
-		}
+		void print(const std::string& s="") const;
 
 		/** equals */
 		bool equals(const StereoPoint2& q, double tol=1e-9) const {

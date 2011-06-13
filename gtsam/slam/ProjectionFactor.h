@@ -1,6 +1,20 @@
+/* ----------------------------------------------------------------------------
+
+ * GTSAM Copyright 2010, Georgia Tech Research Corporation,
+ * Atlanta, Georgia 30332-0415
+ * All Rights Reserved
+ * Authors: Frank Dellaert, et al. (see THANKS for the full author list)
+
+ * See LICENSE for the license information
+
+ * -------------------------------------------------------------------------- */
+
 /**
  * @file ProjectionFactor.h
  * @brief Basic bearing factor from 2D measurement
+ * @author Chris Beall
+ * @author Richard Roberts
+ * @author Frank Dellaert
  * @author Alex Cunningham
  */
 

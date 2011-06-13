@@ -16,5 +16,14 @@
  *      Author: dellaert
  */
 
+#include <iostream>
 #include <gtsam/geometry/StereoPoint2.h>
 
+using namespace std;
+using namespace gtsam;
+
+/* ************************************************************************* */
+void StereoPoint2::print(const string& s) const {
+	cout << s << "(" << uL_ << ", " << uR_ << ", " << v_ << ")"	<< endl;
+}
+/* ************************************************************************* */

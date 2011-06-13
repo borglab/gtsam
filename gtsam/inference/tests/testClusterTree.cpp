@@ -31,6 +31,11 @@ template class ClusterTree<SymbolicFactorGraph>;
 typedef ClusterTree<SymbolicFactorGraph> SymbolicClusterTree;
 
 /* ************************************************************************* */
+TEST(ClusterTree, constructor) {
+	SymbolicClusterTree tree;
+}
+
+/* ************************************************************************* */
 int main() {
 	TestResult tr;
 	return TestRegistry::runAllTests(tr);

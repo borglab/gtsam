@@ -113,6 +113,10 @@ protected:
 	result_.addFailure (Failure (name_, __FILE__,__LINE__, SimpleString("Wrong exception: ") + StringFrom(#condition) + StringFrom(", expected: ") + StringFrom(#exception_name))); \
 	return; } }
 
+#define EQUALITY(expected,actual)\
+  { if (!assert_equal(expected,actual)) \
+    result_.addFailure(Failure(name_, __FILE__, __LINE__, #expected, #actual)); }
+
 #define CHECK_EQUAL(expected,actual)\
 { if ((expected) == (actual)) return; result_.addFailure(Failure(name_, __FILE__, __LINE__, StringFrom(expected), StringFrom(actual))); }
 
