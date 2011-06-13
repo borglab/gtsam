@@ -20,7 +20,6 @@
 
 #include <gtsam/inference/GenericMultifrontalSolver.h>
 #include <gtsam/inference/SymbolicFactorGraph.h>
-#include <gtsam/inference/JunctionTree.h>
 
 namespace gtsam {
 

@@ -168,7 +168,8 @@ namespace gtsam {
 		  // solve
  		  // FIXME: remove spcg specific code
 		  if (spcg_solver_) spcg_solver_->replaceFactors(damped);
-		  shared_solver solver = (spcg_solver_) ? spcg_solver_ : shared_solver(new S(damped, structure_));
+		  shared_solver solver = (spcg_solver_) ? spcg_solver_ : shared_solver(
+		  		new S(damped, structure_, parameters_->useQR_));
 		  VectorValues delta = *solver->optimize();
 		  if (verbosity >= Parameters::TRYDELTA) delta.print("delta");
 

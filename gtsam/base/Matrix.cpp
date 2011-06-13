@@ -259,32 +259,13 @@ Vector columnNormSquare(const Matrix &A) {
 }
 
 /* ************************************************************************* */
-void solve(Matrix& A, Matrix& B)
-{
+void solve(Matrix& A, Matrix& B) {
 	// Eigen version - untested
-	Eigen::FullPivLU<Matrix> lu;
-	lu.compute(A);
-	B = lu.solve(B);
-	A = lu.matrixLU();
-
-//	typedef ublas::permutation_matrix<std::size_t> pmatrix;
-	// create a working copy of the input
-//	Matrix A_(A);
-	// create a permutation matrix for the LU-factorization
-//	pmatrix pm(A_.rows());
-
-	// perform LU-factorization
-	// FIXME: add back with Eigen functionality
-	//	size_t res = lu_factorize(A_,pm);
-	//	if( res != 0 ) throw runtime_error ("Matrix::solve: lu_factorize failed!");
-
-	// backsubstitute to get the inverse
-//	lu_substitute(A_, pm, B);
+	B = A.fullPivLu().solve(B);
 }
 
 /* ************************************************************************* */
-Matrix inverse(const Matrix& A)
-{
+Matrix inverse(const Matrix& A) {
 	return A.inverse();
 }
 
@@ -445,31 +426,11 @@ Vector backSubstituteUpper(const Matrix& U, const Vector& b, bool unit) {
 /* ************************************************************************* */
 Vector backSubstituteUpper(const Vector& b, const Matrix& U, bool unit) {
 	// @return the solution x of x'*U=b'
-  size_t n = U.cols();
-#ifndef NDEBUG
-  size_t m = U.rows();
-  if (m!=n)
-    throw invalid_argument("backSubstituteUpper: U must be square");
-#endif
-
-  Vector result(n);
-  for (size_t i = 1; i <= n; i++) {
-    double zi = b(i-1);
-    for (size_t j = 1; j < i; j++)
-      zi -= U(j-1,i-1) * result(j-1);
-#ifndef NDEBUG
-    if(!unit && fabs(U(i-1,i-1)) <= numeric_limits<double>::epsilon()) {
-      stringstream ss;
-      ss << "backSubstituteUpper: U is singular,\n";
-      print(U, "U: ", ss);
-      throw invalid_argument(ss.str());
-    }
-#endif
-    if (!unit) zi /= U(i-1,i-1);
-    result(i-1) = zi;
-  }
-
-  return result;
+	assert(U.rows() == U.cols());
+	if (unit)
+		return U.triangularView<Eigen::UnitUpper>().transpose().solve<Eigen::OnTheLeft>(b);
+	else
+		return U.triangularView<Eigen::Upper>().transpose().solve<Eigen::OnTheLeft>(b);
 }
 
 /* ************************************************************************* */
@@ -578,13 +539,14 @@ Matrix skewSymmetric(double wx, double wy, double wz)
  * pointers are subtracted by one to provide base 1 access 
  */
 /* ************************************************************************* */
-double** createNRC(Matrix& A) {
-	const size_t m=A.rows();
-	double** a = new double* [m];
-	for(size_t i = 0; i < m; i++)
-		a[i] = &A(i,0)-1;
-	return a;
-}
+// FIXME: assumes row major, rather than column major
+//double** createNRC(Matrix& A) {
+//	const size_t m=A.rows();
+//	double** a = new double* [m];
+//	for(size_t i = 0; i < m; i++)
+//		a[i] = &A(i,0)-1;
+//	return a;
+//}
 
 /* ******************************************
  * 
@@ -653,7 +615,6 @@ Matrix inverse_square_root(const Matrix& A) {
 Matrix inverse_square_root(const Matrix& A) {
 	Matrix R = RtR(A);
 	Matrix inv = eye(A.rows());
-//	inplace_solve(R, inv, BNU::upper_tag ());
 	R.triangularView<Eigen::Upper>().solveInPlace<Eigen::OnTheRight>(inv);
 	return inv;
 }

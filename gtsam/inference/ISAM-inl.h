@@ -24,7 +24,7 @@ using namespace boost::assign;
 #include <gtsam/inference/Conditional.h>
 #include <gtsam/inference/ISAM.h>
 #include <gtsam/inference/BayesTree-inl.h>
-#include <gtsam/inference/GenericSequentialSolver-inl.h>
+#include <gtsam/inference/GenericMultifrontalSolver-inl.h>
 
 namespace gtsam {
 
@@ -35,9 +35,9 @@ namespace gtsam {
   ISAM<CONDITIONAL>::ISAM() : BayesTree<CONDITIONAL>() {}
 
   /** Create a Bayes Tree from a Bayes Net */
-  template<class CONDITIONAL>
-  ISAM<CONDITIONAL>::ISAM(const BayesNet<CONDITIONAL>& bayesNet) :
-    BayesTree<CONDITIONAL>(bayesNet) {}
+//  template<class CONDITIONAL>
+//  ISAM<CONDITIONAL>::ISAM(const BayesNet<CONDITIONAL>& bayesNet) :
+//    BayesTree<CONDITIONAL>(bayesNet) {}
 
   /* ************************************************************************* */
   template<class CONDITIONAL>
@@ -53,13 +53,18 @@ namespace gtsam {
     factors.push_back(newFactors);
 
     // eliminate into a Bayes net
-    GenericSequentialSolver<typename CONDITIONAL::FactorType> solver(factors);
-    typename BayesNet<CONDITIONAL>::shared_ptr bayesNet = solver.eliminate(function);
-
-    // insert conditionals back in, straight into the topless bayesTree
-    typename BayesNet<CONDITIONAL>::const_reverse_iterator rit;
-    for ( rit=bayesNet->rbegin(); rit != bayesNet->rend(); ++rit )
-      this->insert(*rit);
+//    GenericSequentialSolver<typename CONDITIONAL::FactorType> solver(factors);
+//    typename BayesNet<CONDITIONAL>::shared_ptr bayesNet = solver.eliminate(function);
+//
+//    // insert conditionals back in, straight into the topless bayesTree
+//    typename BayesNet<CONDITIONAL>::const_reverse_iterator rit;
+//    for ( rit=bayesNet->rbegin(); rit != bayesNet->rend(); ++rit )
+//      BayesTree<CONDITIONAL>::insert(*this,*rit);
+    GenericMultifrontalSolver<typename CONDITIONAL::FactorType, JunctionTree<FG> > solver(factors);
+    boost::shared_ptr<BayesTree<CONDITIONAL> > bayesTree;
+    bayesTree = solver.eliminate(function);
+    this->root_ = bayesTree->root();
+    this->nodes_ = bayesTree->nodes();
 
     // add orphans to the bottom of the new tree
     BOOST_FOREACH(sharedClique orphan, orphans)

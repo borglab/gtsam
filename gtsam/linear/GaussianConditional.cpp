@@ -39,7 +39,7 @@ GaussianConditional::GaussianConditional(Index key,const Vector& d, const Matrix
   assert(R.rows() <= R.cols());
   size_t dims[] = { R.cols(), 1 };
   rsd_.copyStructureFrom(rsd_type(matrix_, dims, dims+2, d.size()));
-  rsd_(0) = R; //.triangularView<Eigen::Upper>();
+  rsd_(0) = R.triangularView<Eigen::Upper>();
   get_d_() = d;
 }
 
@@ -93,9 +93,13 @@ GaussianConditional::GaussianConditional(Index key, const Vector& d, const Matri
 /* ************************************************************************* */
 void GaussianConditional::print(const string &s) const
 {
-  cout << s << ": density on " << key() << endl;
+  cout << s << ": density on ";
+  for(const_iterator it = beginFrontals(); it != endFrontals(); ++it) {
+  	cout << (boost::format("[%1%]")%(*it)).str() << " ";
+  }
+  cout << endl;
   gtsam::print(Matrix(get_R()),"R");
-  for(const_iterator it = beginParents() ; it != endParents() ; it++ ) {
+  for(const_iterator it = beginParents() ; it != endParents() ; ++it ) {
     gtsam::print(Matrix(get_S(it)), (boost::format("A[%1%]")%(*it)).str());
   }
   gtsam::print(Vector(get_d()),"d");
@@ -136,34 +140,98 @@ bool GaussianConditional::equals(const GaussianConditional &c, double tol) const
 }
 
 /* ************************************************************************* */
+GaussianConditional::rsd_type::constBlock GaussianConditional::get_R() const {
+	return rsd_.range(0, nrFrontals());
+}
+
+/* ************************************************************************* */
 JacobianFactor::shared_ptr GaussianConditional::toFactor() const {
   return JacobianFactor::shared_ptr(new JacobianFactor(*this));
 }
 
 /* ************************************************************************* */
-Vector GaussianConditional::solve(const VectorValues& x) const {
-  static const bool debug = false;
-  if(debug) print("Solving conditional ");
-	Vector rhs(get_d());
-	for (const_iterator parent = beginParents(); parent != endParents(); ++parent) {
-		rhs += -get_S(parent) * x[*parent];
-	}
-	if(debug) gtsam::print(Matrix(get_R()), "Calling backSubstituteUpper on ");
-	if(debug) gtsam::print(rhs, "rhs: ");
-	if(debug) {
-	  Vector soln = backSubstituteUpper(get_R(), rhs, false);
-	  gtsam::print(soln, "back-substitution solution: ");
-	  return soln;
-	} else
-	  return backSubstituteUpper(get_R(), rhs, false);
+void GaussianConditional::rhs(VectorValues& x) const {
+	Vector d = rhs();
+	x.range(beginFrontals(), endFrontals(), d);
 }
 
 /* ************************************************************************* */
-Vector GaussianConditional::solve(const Permuted<VectorValues>& x) const {
-  Vector rhs(get_d());
-  for (const_iterator parent = beginParents(); parent != endParents(); ++parent)
-  	rhs += -get_S(parent) * x[*parent];
-  return backSubstituteUpper(get_R(), rhs, false);
+void GaussianConditional::solveInPlace(VectorValues& x) const {
+  static const bool debug = false;
+  if(debug) print("Solving conditional in place");
+//	Vector rhs(get_d());
+  Vector rhs = x.range(beginFrontals(), endFrontals());
+	for (const_iterator parent = beginParents(); parent != endParents(); ++parent) {
+		rhs += -get_S(parent) * x[*parent];
+	}
+	Vector soln = permutation_.transpose()*backSubstituteUpper(get_R(), rhs, false);
+	if(debug) {
+		gtsam::print(Matrix(get_R()), "Calling backSubstituteUpper on ");
+		gtsam::print(rhs, "rhs: ");
+	  gtsam::print(soln, "full back-substitution solution: ");
+	}
+	x.range(beginFrontals(), endFrontals(), soln);
+}
+
+/* ************************************************************************* */
+void GaussianConditional::solveInPlace(Permuted<VectorValues>& x) const {
+  static const bool debug = false;
+  if(debug) print("Solving conditional in place (permuted)");
+//  Vector rhs(get_d());
+	// Extract RHS from values - inlined from VectorValues
+	size_t s = 0;
+	for (const_iterator it=beginFrontals(); it!=endFrontals(); ++it)
+		s += x[*it].size();
+	Vector rhs(s); size_t start = 0;
+	for (const_iterator it=beginFrontals(); it!=endFrontals(); ++it) {
+		SubVector v = x[*it];
+		const size_t d = v.size();
+		rhs.segment(start, d) = v;
+		start += d;
+	}
+
+	// apply parents to rhs
+	for (const_iterator parent = beginParents(); parent != endParents(); ++parent) {
+		rhs += -get_S(parent) * x[*parent];
+	}
+
+	// solve system
+	Vector soln = permutation_.transpose()*backSubstituteUpper(get_R(), rhs, false);
+
+	// apply solution: inlined manually due to permutation
+  size_t solnStart = 0;
+  for (const_iterator frontal = beginFrontals(); frontal != endFrontals(); ++frontal) {
+  	const size_t d = dim(frontal);
+  	x[*frontal] = soln.segment(solnStart, d);
+  	solnStart += d;
+  }
+}
+
+/* ************************************************************************* */
+VectorValues GaussianConditional::solve(const VectorValues& x) const {
+	VectorValues result = x;
+	solveInPlace(result);
+	return result;
+}
+
+/* ************************************************************************* */
+void GaussianConditional::solveTransposeInPlace(VectorValues& gy) const {
+	Vector frontalVec = gy.range(beginFrontals(), endFrontals());
+	// TODO: verify permutation
+	frontalVec = permutation_ * gtsam::backSubstituteUpper(frontalVec,Matrix(get_R()));
+	GaussianConditional::const_iterator it;
+	for (it = beginParents(); it!= endParents(); it++) {
+		const Index i = *it;
+		transposeMultiplyAdd(-1.0,get_S(it),frontalVec,gy[i]);
+	}
+	gy.range(beginFrontals(), endFrontals(), frontalVec);
+}
+
+/* ************************************************************************* */
+void GaussianConditional::scaleFrontalsBySigma(VectorValues& gy) const {
+	Vector frontalVec = gy.range(beginFrontals(), endFrontals());
+	frontalVec = emul(frontalVec, get_sigmas());
+	gy.range(beginFrontals(), endFrontals(), frontalVec);
 }
 
 }

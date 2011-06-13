@@ -21,7 +21,6 @@
 
 #include <gtsam/base/numericalDerivative.h>
 #include <gtsam/slam/simulated2D.h>
-//#include <gtsam/slam/Simulated2DValues.h>
 
 using namespace gtsam;
 using namespace std;

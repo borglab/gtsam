@@ -62,8 +62,8 @@ TEST( ProjectionFactor, error )
 
 	// Check linearize
 	Ordering ordering; ordering += "x1","l1";
-  Matrix Ax1 = Matrix_(2, 6, 0., -369.504, 0., -61.584, 0., 0., 369.504, 0., 0., 0., -61.584, 0.);
-	Matrix Al1 = Matrix_(2, 3, 61.584, 0., 0., 0., 61.584, 0.);
+  Matrix Ax1 = Matrix_(2, 6, 0., -554.256, 0., -92.376, 0., 0., 554.256, 0., 0., 0., -92.376, 0.);
+	Matrix Al1 = Matrix_(2, 3, 92.376, 0., 0., 0., 92.376, 0.);
 	Vector b = Vector_(2,3.,0.);
 	SharedDiagonal probModel1 = noiseModel::Unit::Create(2);
 	JacobianFactor expected(ordering["x1"], Ax1, ordering["l1"], Al1, b, probModel1);

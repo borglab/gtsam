@@ -20,8 +20,8 @@
 #pragma once
 
 #include <gtsam/inference/ISAM.h>
-#include <gtsam/linear/GaussianBayesNet.h>
 #include <gtsam/linear/GaussianFactorGraph.h>
+#include <gtsam/linear/GaussianJunctionTree.h>
 
 namespace gtsam {
 
@@ -36,7 +36,10 @@ public:
   GaussianISAM() : Super() {}
 
   /** Create a Bayes Tree from a Bayes Net */
-  GaussianISAM(const GaussianBayesNet& bayesNet) : Super(bayesNet) {}
+//  GaussianISAM(const GaussianBayesNet& bayesNet) : Super(bayesNet) {}
+  GaussianISAM(const BayesTree<GaussianConditional>& bayesTree) : Super(bayesTree) {
+    GaussianJunctionTree::countDims(bayesTree, dims_);
+  }
 
   /** Override update_internal to also keep track of variable dimensions. */
   template<class FACTORGRAPH>
@@ -73,19 +76,28 @@ public:
 	/** return marginal on any variable as a factor, Bayes net, or mean/cov */
   GaussianFactor::shared_ptr marginalFactor(Index j) const;
 	BayesNet<GaussianConditional>::shared_ptr marginalBayesNet(Index key) const;
-  std::pair<Vector,Matrix> marginal(Index key) const;
+  Matrix marginalCovariance(Index key) const;
 
   /** return joint between two variables, as a Bayes net */
   BayesNet<GaussianConditional>::shared_ptr jointBayesNet(Index key1, Index key2) const;
 
 	/** return the conditional P(S|Root) on the separator given the root */
 	static BayesNet<GaussianConditional> shortcut(sharedClique clique, sharedClique root);
-};
 
-	// recursively optimize this conditional and all subtrees
-	void optimize(const GaussianISAM::sharedClique& clique, VectorValues& result);
+	/** load a VectorValues with the RHS of the system for backsubstitution */
+	static VectorValues rhs(const GaussianISAM& bayesTree);
 
-	// optimize the BayesTree, starting from the root
-	VectorValues optimize(const GaussianISAM& bayesTree);
+protected:
 
-}/// namespace gtsam
+	/** recursively load RHS for system */
+	static void treeRHS(const GaussianISAM::sharedClique& clique, VectorValues& result);
+
+}; // \class GaussianISAM
+
+// recursively optimize this conditional and all subtrees
+void optimize(const GaussianISAM::sharedClique& clique, VectorValues& result);
+
+// optimize the BayesTree, starting from the root
+VectorValues optimize(const GaussianISAM& bayesTree);
+
+} // \namespace gtsam

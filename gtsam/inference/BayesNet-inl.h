@@ -39,7 +39,7 @@ namespace gtsam {
 	void BayesNet<CONDITIONAL>::print(const string& s) const {
 		cout << s << ":\n";
 		BOOST_REVERSE_FOREACH(sharedConditional conditional,conditionals_)
-			conditional->print((boost::format("Node[%1%]") % conditional->key()).str());
+			conditional->print();
 	}
 
 	/* ************************************************************************* */
@@ -82,39 +82,43 @@ namespace gtsam {
 			push_front(conditional);
 	}
 
-	/* ************************************************************************* */
-	template<class CONDITIONAL>
-	FastList<Index> BayesNet<CONDITIONAL>::ordering() const {
-		FastList<Index> ord;
-		BOOST_FOREACH(sharedConditional conditional,conditionals_)
-		   ord.push_back(conditional->key());
-		return ord;
-	}
-
-	/* ************************************************************************* */
-	template<class CONDITIONAL>
-	void BayesNet<CONDITIONAL>::saveGraph(const std::string &s) const {
-		ofstream of(s.c_str());
-		of<< "digraph G{\n";
-		BOOST_FOREACH(const_sharedConditional conditional,conditionals_) {
-			Index child = conditional->key();
-			BOOST_FOREACH(Index parent, conditional->parents()) {
-				of << parent << "->" << child << endl;
-			}
-		}
-		of<<"}";
-		of.close();
-	}
-
+//	/* ************************************************************************* */
+//	template<class CONDITIONAL>
+//	FastList<Index> BayesNet<CONDITIONAL>::ordering() const {
+//		FastList<Index> ord;
+//		BOOST_FOREACH(sharedConditional conditional,conditionals_)
+//		   ord.push_back(conditional->key());
+//		return ord;
+//	}
+//
+//	/* ************************************************************************* */
+//	template<class CONDITIONAL>
+//	void BayesNet<CONDITIONAL>::saveGraph(const std::string &s) const {
+//		ofstream of(s.c_str());
+//		of<< "digraph G{\n";
+//		BOOST_FOREACH(const_sharedConditional conditional,conditionals_) {
+//			Index child = conditional->key();
+//			BOOST_FOREACH(Index parent, conditional->parents()) {
+//				of << parent << "->" << child << endl;
+//			}
+//		}
+//		of<<"}";
+//		of.close();
+//	}
+//
 	/* ************************************************************************* */
 
 	template<class CONDITIONAL>
 	typename BayesNet<CONDITIONAL>::sharedConditional
 	BayesNet<CONDITIONAL>::operator[](Index key) const {
-		const_iterator it = find_if(conditionals_.begin(), conditionals_.end(), boost::lambda::bind(&CONDITIONAL::key, *boost::lambda::_1) == key);
-		if (it == conditionals_.end()) throw(invalid_argument((boost::format(
+	  BOOST_FOREACH(typename CONDITIONAL::shared_ptr conditional, conditionals_) {
+	    typename CONDITIONAL::const_iterator it = std::find(conditional->beginFrontals(), conditional->endFrontals(), key);
+      if (it!=conditional->endFrontals()) {
+        return conditional;
+      }
+	  }
+		throw(invalid_argument((boost::format(
 						"BayesNet::operator['%1%']: not found") % key).str()));
-		return *it;
 	}
 
 	/* ************************************************************************* */

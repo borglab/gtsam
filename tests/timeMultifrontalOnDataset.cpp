@@ -55,7 +55,8 @@ int main(int argc, char *argv[]) {
   toc_(2, "linearize");
   tictoc_print_();
 
-  for(size_t trial = 0; trial < 10; ++trial) {
+  const size_t nrTrials = 10;
+  for(size_t trial = 0; trial < nrTrials; ++trial) {
 
     tic_(3, "solve");
     tic(1, "construct solver");

@@ -24,8 +24,6 @@
 #include <boost/foreach.hpp>
 #include <boost/shared_ptr.hpp>
 
-#include <vector>
-
 namespace gtsam {
 
 class VectorValues : public Testable<VectorValues> {
@@ -75,6 +73,9 @@ public:
   mapped_type operator[](Index variable);
   const_mapped_type operator[](Index variable) const;
 
+  /** dimension of a particular element */
+  size_t dim(Index variable) const;
+
   /** Number of elements */
   Index size() const { return varStarts_.size()-1; }
 
@@ -104,50 +105,36 @@ public:
   /** Reserve space for a total number of variables and dimensionality */
   void reserve(Index nVars, size_t totalDims) { values_.resize(totalDims); varStarts_.reserve(nVars+1); }
 
+  /** access a range of indices (of no particular order) as a single vector */
+  template<class ITERATOR>
+  Vector range(const ITERATOR& idx_begin, const ITERATOR& idx_end) const;
+
+  /** set a range of indices as a single vector split across the range */
+  template<class ITERATOR>
+  void range(const ITERATOR& idx_begin, const ITERATOR& idx_end, const Vector& v);
+
   /**
    * Append a variable using the next variable ID, and return that ID.  Space
    * must have been allocated ahead of time using reserve(...).
    */
-  Index push_back_preallocated(const Vector& vector) {
-    Index var = varStarts_.size()-1;
-    varStarts_.push_back(varStarts_.back()+vector.size());
-    this->operator[](var) = vector;  // This will assert that values_ has enough allocated space.
-    return var;
-  }
+  Index push_back_preallocated(const Vector& vector);
 
   /** Set all elements to zero */
   void makeZero() { values_.setZero(); }
 
   /** print required by Testable for unit testing */
-  void print(const std::string& str = "VectorValues: ") const {
-    std::cout << str << ": " << varStarts_.size()-1 << " elements\n";
-    for(Index var=0; var<size(); ++var) {
-      std::cout << "  " << var << " " << operator[](var) << "\n";
-    }
-    std::cout.flush();
-  }
+  void print(const std::string& str = "VectorValues: ") const;
 
   /** equals required by Testable for unit testing */
-  bool equals(const VectorValues& x, double tol=1e-9) const {
-  	return varStarts_ == x.varStarts_ && equal_with_abs_tol(values_, x.values_, tol);
-  }
+  bool equals(const VectorValues& x, double tol=1e-9) const;
 
-  /** + operator simply adds Vectors.  This checks for structural equivalence
+  /**
+   * + operator simply adds Vectors.  This checks for structural equivalence
    * when NDEBUG is not defined.
    */
-  VectorValues operator+(const VectorValues& c) const {
-    assert(varStarts_ == c.varStarts_);
-    VectorValues result;
-    result.varStarts_ = varStarts_;
-    result.values_ = values_.head(varStarts_.back()) + c.values_.head(varStarts_.back());
-    return result;
-  }
+  VectorValues operator+(const VectorValues& c) const;
 
-  void operator+=(const VectorValues& c) {
-    assert(varStarts_ == c.varStarts_);
-    this->values_ += c.values_.head(varStarts_.back());
-  }
-
+  void operator+=(const VectorValues& c);
 
   /**
    * Iterator (handles both iterator and const_iterator depending on whether
@@ -177,11 +164,8 @@ public:
     value_type operator*() { return config_[curVariable_]; }
   };
 
-  static VectorValues zero(const VectorValues& x) {
-  	VectorValues cloned(x);
-  	cloned.makeZero();
-  	return cloned;
-  }
+  /** Copy structure of x, but set all values to zero */
+  static VectorValues zero(const VectorValues& x);
 
 protected:
   void checkVariable(Index variable) const { assert(variable < varStarts_.size()-1); }
@@ -243,53 +227,34 @@ inline VectorValues::VectorValues(const CONTAINER& dimensions) : varStarts_(dime
   values_.resize(varStarts_.back());
 }
 
-inline VectorValues::VectorValues(Index nVars, size_t varDim) : varStarts_(nVars+1) {
-  varStarts_[0] = 0;
-  size_t varStart = 0;
-  for(Index j=1; j<=nVars; ++j)
-    varStarts_[j] = (varStart += varDim);
-  values_.resize(varStarts_.back());
-}
+template<class ITERATOR>
+inline Vector VectorValues::range(const ITERATOR& idx_begin, const ITERATOR& idx_end) const {
+	// find the size of the vector to build
+	size_t s = 0;
+	for (ITERATOR it=idx_begin; it!=idx_end; ++it)
+		s += dim(*it);
 
-inline VectorValues::VectorValues(const std::vector<size_t>& dimensions, const Vector& values) :
-    values_(values), varStarts_(dimensions.size()+1) {
-  varStarts_[0] = 0;
-  size_t varStart = 0;
-  Index var = 0;
-  BOOST_FOREACH(size_t dim, dimensions) {
-    varStarts_[++var] = (varStart += dim);
-  }
-  assert(varStarts_.back() == (size_t) values.size());
-}
-
-inline VectorValues::VectorValues(const std::vector<size_t>& dimensions, const double* values) :
-		varStarts_(dimensions.size()+1) {
-	varStarts_[0] = 0;
-	size_t varStart = 0;
-	Index var = 0;
-	BOOST_FOREACH(size_t dim, dimensions) {
-		varStarts_[++var] = (varStart += dim);
+	// assign vector
+	Vector result(s);
+	size_t start = 0;
+	for (ITERATOR it=idx_begin; it!=idx_end; ++it) {
+		ConstSubVector v = (*this)[*it];
+		const size_t d = v.size();
+		result.segment(start, d) = v;
+		start += d;
 	}
-	values_ = Vector_(varStart, values);
+	return result;
 }
 
-inline VectorValues VectorValues::SameStructure(const VectorValues& otherValues) {
-  VectorValues ret;
-  ret.varStarts_ = otherValues.varStarts_;
-  ret.values_.resize(ret.varStarts_.back(), false);
-  return ret;
-}
-
-inline VectorValues::mapped_type VectorValues::operator[](Index variable) {
-  checkVariable(variable);
-  const size_t start = varStarts_[variable], n = varStarts_[variable+1] - start;
-  return values_.segment(start, n);
-}
-
-inline VectorValues::const_mapped_type VectorValues::operator[](Index variable) const {
-  checkVariable(variable);
-  const size_t start = varStarts_[variable], n = varStarts_[variable+1] - start;
-  return values_.segment(start, n);
+template<class ITERATOR>
+inline void VectorValues::range(const ITERATOR& idx_begin, const ITERATOR& idx_end, const Vector& v) {
+	size_t start = 0;
+	for (ITERATOR it=idx_begin; it!=idx_end; ++it) {
+		checkVariable(*it);
+		const size_t d = dim(*it);
+		(*this)[*it] = v.segment(start, d);
+		start += d;
+	}
 }
 
 struct DimSpec: public std::vector<size_t> {
@@ -306,8 +271,6 @@ struct DimSpec: public std::vector<size_t> {
       (*this)[i] = V[i].size() ;
     }
   }
-} ;
+};
 
-
-
-}
+} // \namespace gtsam

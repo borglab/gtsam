@@ -19,15 +19,15 @@
 
 #pragma once
 
-#include <gtsam/base/types.h>
-#include <gtsam/base/Testable.h>
+#include <list>
+#include <vector>
+#include <iostream>
 
 #include <boost/shared_ptr.hpp>
 #include <boost/weak_ptr.hpp>
 
-#include <list>
-#include <vector>
-#include <iostream>
+#include <gtsam/base/types.h>
+#include <gtsam/base/Testable.h>
 
 namespace gtsam {
 

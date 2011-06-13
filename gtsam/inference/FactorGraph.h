@@ -21,14 +21,11 @@
 
 #pragma once
 
-#include <boost/shared_ptr.hpp>
 #include <boost/foreach.hpp>
 #include <boost/serialization/nvp.hpp>
 #include <boost/function.hpp>
 
-#include <gtsam/base/types.h>
 #include <gtsam/base/FastMap.h>
-#include <gtsam/base/Testable.h>
 #include <gtsam/inference/BayesNet.h>
 #include <gtsam/inference/graph.h>
 
@@ -51,7 +48,7 @@ namespace gtsam {
 
 	  /** typedef for elimination result */
 	  typedef std::pair<
-				typename BayesNet<typename FACTOR::ConditionalType>::shared_ptr,
+				boost::shared_ptr<typename FACTOR::ConditionalType>,
 				typename FACTOR::shared_ptr> EliminationResult;
 
 	  /** typedef for an eliminate subroutine */
@@ -87,6 +84,10 @@ namespace gtsam {
 		/** push back many factors with an iterator */
 		template<typename ITERATOR>
 		void push_back(ITERATOR firstFactor, ITERATOR lastFactor);
+
+    /** push back many factors stored in a vector*/
+    template<typename DERIVEDFACTOR>
+    void push_back(const std::vector<boost::shared_ptr<DERIVEDFACTOR> >& factors);
 
 		/** ------------------ Querying Factor Graphs ---------------------------- */
 
@@ -234,6 +235,14 @@ namespace gtsam {
     ITERATOR factor = firstFactor;
     while(factor != lastFactor)
       this->push_back(*(factor++));
+  }
+
+  /* ************************************************************************* */
+  template<class FACTOR>
+  template<class DERIVEDFACTOR>
+  void FactorGraph<FACTOR>::push_back(const std::vector<boost::shared_ptr<DERIVEDFACTOR> >& factors) {
+    BOOST_FOREACH(const boost::shared_ptr<DERIVEDFACTOR>& factor, factors)
+      this->push_back(factor);
   }
 
 } // namespace gtsam

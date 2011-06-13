@@ -1,16 +1,22 @@
-/*
- * IterativeSolver.h
- *
- *  Created on: Oct 24, 2010
- *      Author: Yong-Dian Jian
- *
- *  Base Class for all iterative solvers of linear systems
+/* ----------------------------------------------------------------------------
+
+ * GTSAM Copyright 2010, Georgia Tech Research Corporation,
+ * Atlanta, Georgia 30332-0415
+ * All Rights Reserved
+ * Authors: Frank Dellaert, et al. (see THANKS for the full author list)
+
+ * See LICENSE for the license information
+
+ * -------------------------------------------------------------------------- */
+
+/**
+ * @file IterativeSolver.h
+ * @date Oct 24, 2010
+ * @author Yong-Dian Jian
+ * @brief Base Class for all iterative solvers of linear systems
  */
 
 #pragma once
-
-#include <boost/shared_ptr.hpp>
-#include <boost/make_shared.hpp>
 
 #include <gtsam/linear/IterativeOptimizationParameters.h>
 

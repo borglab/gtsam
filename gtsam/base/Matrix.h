@@ -22,7 +22,6 @@
 
 #pragma once
 
-#include <list>
 #include <boost/format.hpp>
 #include <boost/tuple/tuple.hpp>
 #include <gtsam/3rdparty/Eigen/QR>

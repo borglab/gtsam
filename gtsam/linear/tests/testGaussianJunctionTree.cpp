@@ -1,6 +1,6 @@
 /* ----------------------------------------------------------------------------
 
- * GTSAM Copyright 2010, Georgia Tech Research Corporation, 
+ * GTSAM Copyright 2010, Georgia Tech Research Corporation,
  * Atlanta, Georgia 30332-0415
  * All Rights Reserved
  * Authors: Frank Dellaert, et al. (see THANKS for the full author list)
@@ -35,20 +35,20 @@ static const Index x2=0, x1=1, x3=2, x4=3;
 
 GaussianFactorGraph createChain() {
 
-	typedef GaussianFactorGraph::sharedFactor Factor;
-	SharedDiagonal model(Vector_(1, 0.5));
-	Factor factor1(new JacobianFactor(x2, Matrix_(1,1,1.), x1, Matrix_(1,1,1.), Vector_(1,1.),  model));
-	Factor factor2(new JacobianFactor(x2, Matrix_(1,1,1.), x3, Matrix_(1,1,1.), Vector_(1,1.),  model));
-	Factor factor3(new JacobianFactor(x3, Matrix_(1,1,1.), x4, Matrix_(1,1,1.), Vector_(1,1.),  model));
-	Factor factor4(new JacobianFactor(x4, Matrix_(1,1,1.), Vector_(1,1.),  model));
+  typedef GaussianFactorGraph::sharedFactor Factor;
+  SharedDiagonal model(Vector_(1, 0.5));
+  Factor factor1(new JacobianFactor(x2, Matrix_(1,1,1.), x1, Matrix_(1,1,1.), Vector_(1,1.),  model));
+  Factor factor2(new JacobianFactor(x2, Matrix_(1,1,1.), x3, Matrix_(1,1,1.), Vector_(1,1.),  model));
+  Factor factor3(new JacobianFactor(x3, Matrix_(1,1,1.), x4, Matrix_(1,1,1.), Vector_(1,1.),  model));
+  Factor factor4(new JacobianFactor(x4, Matrix_(1,1,1.), Vector_(1,1.),  model));
 
-	GaussianFactorGraph fg;
-	fg.push_back(factor1);
-	fg.push_back(factor2);
-	fg.push_back(factor3);
-	fg.push_back(factor4);
+  GaussianFactorGraph fg;
+  fg.push_back(factor1);
+  fg.push_back(factor2);
+  fg.push_back(factor3);
+  fg.push_back(factor4);
 
-	return fg;
+  return fg;
 }
 
 /* ************************************************************************* */
@@ -65,43 +65,55 @@ GaussianFactorGraph createChain() {
  *
  *  1  0  0  1
  */
-TEST( GaussianJunctionTree, eliminate )
+TEST_UNSAFE( GaussianJunctionTree, eliminate )
 {
-	GaussianFactorGraph fg = createChain();
-	GaussianJunctionTree junctionTree(fg);
-	BayesTree<GaussianConditional>::sharedClique rootClique = junctionTree.eliminate(&EliminateQR);
+  GaussianFactorGraph fg = createChain();
+  GaussianJunctionTree junctionTree(fg);
+  BayesTree<GaussianConditional>::sharedClique rootClique = junctionTree.eliminate(&EliminateQR);
 
-	typedef BayesTree<GaussianConditional>::sharedConditional sharedConditional;
-	Matrix two = Matrix_(1,1,2.);
-	Matrix one = Matrix_(1,1,1.);
-	BayesTree<GaussianConditional> bayesTree_expected;
-	bayesTree_expected.insert(sharedConditional(new GaussianConditional(x4, Vector_(1,2.), two, Vector_(1,1.))));
-	bayesTree_expected.insert(sharedConditional(new GaussianConditional(x3, Vector_(1,2.), two, x4, two, Vector_(1,1.))));
-	bayesTree_expected.insert(sharedConditional(new GaussianConditional(x1, Vector_(1,0.), one*(-1), x3, one, Vector_(1,1.))));
-	bayesTree_expected.insert(sharedConditional(new GaussianConditional(x2, Vector_(1,2.), two, x1, one, x3, one, Vector_(1,1.))));
-	CHECK(assert_equal(*bayesTree_expected.root(), *rootClique));
-	CHECK(assert_equal(*(bayesTree_expected.root()->children().front()), *(rootClique->children().front())));
+  typedef BayesTree<GaussianConditional>::sharedConditional sharedConditional;
+  Matrix two = Matrix_(1,1,2.);
+  Matrix one = Matrix_(1,1,1.);
 
+  BayesTree<GaussianConditional> bayesTree_expected;
+  Index keys_root[] = {x3,x4};
+  Matrix rsd_root = Matrix_(2,3, 2., 2., 2., 0., 2., 2.);
+  size_t dim_root[] = {1, 1, 1};
+  sharedConditional root_expected(new GaussianConditional(keys_root, keys_root+2, 2,
+      VerticalBlockView<Matrix>(rsd_root, dim_root, dim_root+3, 2), ones(2)));
+  BayesTree<GaussianConditional>::sharedClique rootClique_expected(new BayesTree<GaussianConditional>::Clique(root_expected));
+
+  Index keys_child[] = {x2,x1,x3};
+  Matrix rsd_child = Matrix_(2,4, 2., 1., 1., 2., 0., -1., 1., 0.);
+  size_t dim_child[] = {1, 1, 1, 1};
+  sharedConditional child_expected(new GaussianConditional(keys_child, keys_child+3, 2,
+      VerticalBlockView<Matrix>(rsd_child, dim_child, dim_child+4, 2), ones(2)));
+  BayesTree<GaussianConditional>::sharedClique childClique_expected(new BayesTree<GaussianConditional>::Clique(child_expected));
+
+  bayesTree_expected.insert(rootClique_expected);
+  bayesTree_expected.insert(childClique_expected);
+
+//  bayesTree_expected.insert(sharedConditional(new GaussianConditional(x4, Vector_(1,2.), two, Vector_(1,1.))));
+//  bayesTree_expected.insert(sharedConditional(new GaussianConditional(x3, Vector_(1,2.), two, x4, two, Vector_(1,1.))));
+//  bayesTree_expected.insert(sharedConditional(new GaussianConditional(x1, Vector_(1,0.), one*(-1), x3, one, Vector_(1,1.))));
+//  bayesTree_expected.insert(sharedConditional(new GaussianConditional(x2, Vector_(1,2.), two, x1, one, x3, one, Vector_(1,1.))));
+  CHECK(assert_equal(*bayesTree_expected.root(), *rootClique));
+  EXPECT(assert_equal(*(bayesTree_expected.root()->children().front()), *(rootClique->children().front())));
 }
 
 /* ************************************************************************* */
-TEST( GaussianJunctionTree, optimizeMultiFrontal )
+TEST_UNSAFE( GaussianJunctionTree, optimizeMultiFrontal )
 {
-	GaussianFactorGraph fg = createChain();
-	GaussianJunctionTree tree(fg);
+  GaussianFactorGraph fg = createChain();
+  GaussianJunctionTree tree(fg);
 
-	VectorValues actual = tree.optimize(&EliminateQR);
-	VectorValues expected(vector<size_t>(4,1));
-	expected[x1] = Vector_(1, 0.);
-	expected[x2] = Vector_(1, 1.);
-	expected[x3] = Vector_(1, 0.);
-	expected[x4] = Vector_(1, 1.);
-	CHECK(assert_equal(expected,actual));
-}
-
-/* ************************************************************************* */
-TEST(GaussianJunctionTree, complexExample) {
-
+  VectorValues actual = tree.optimize(&EliminateQR);
+  VectorValues expected(vector<size_t>(4,1));
+  expected[x1] = Vector_(1, 0.);
+  expected[x2] = Vector_(1, 1.);
+  expected[x3] = Vector_(1, 0.);
+  expected[x4] = Vector_(1, 1.);
+  EXPECT(assert_equal(expected,actual));
 }
 
 /* ************************************************************************* */

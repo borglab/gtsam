@@ -11,7 +11,7 @@
 
 /**
  * NonlinearOptimizer.cpp
- * @brief: Dummy c++ file to have *something* in lin-nonlinear .
+ * @brief: Convergence functions not dependent on graph types
  * @Author: Frank Dellaert
  * Created on: Jul 17, 2010
  */

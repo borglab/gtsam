@@ -80,7 +80,7 @@ namespace gtsam {
 	}
 
 	/* ************************************************************************* */
-	pair<BayesNet<IndexConditional>::shared_ptr, IndexFactor::shared_ptr> //
+	pair<IndexConditional::shared_ptr, IndexFactor::shared_ptr> //
 	EliminateSymbolic(const FactorGraph<IndexFactor>& factors, size_t nrFrontals) {
 
 		FastSet<Index> keys;
@@ -91,14 +91,10 @@ namespace gtsam {
 		if (keys.size() < 1) throw invalid_argument(
 				"IndexFactor::CombineAndEliminate called on factors with no variables.");
 
-		pair<BayesNet<IndexConditional>::shared_ptr, IndexFactor::shared_ptr> result;
-		result.first.reset(new BayesNet<IndexConditional> ());
-		FastSet<Index>::const_iterator it;
-		for (it = keys.begin(); result.first->size() < nrFrontals; ++it) {
-			std::vector<Index> newKeys(it,keys.end());
-			result.first->push_back(boost::make_shared<IndexConditional>(newKeys, 1));
-		}
-		result.second.reset(new IndexFactor(it, keys.end()));
+		pair<IndexConditional::shared_ptr, IndexFactor::shared_ptr> result;
+		std::vector<Index> newKeys(keys.begin(),keys.end());
+    result.first.reset(new IndexConditional(newKeys, nrFrontals));
+		result.second.reset(new IndexFactor(newKeys.begin()+nrFrontals, newKeys.end()));
 
 		return result;
 	}

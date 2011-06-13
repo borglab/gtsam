@@ -29,6 +29,7 @@ TEST(testNonlinearISAM, markov_chain ) {
 	Pose2 cur_pose; // start at origin
 	Graph start_factors;
 	start_factors.addPoseConstraint(key, cur_pose);
+
 	Values init;
 	Values expected;
 	init.insert(key, cur_pose);
@@ -59,7 +60,6 @@ TEST(testNonlinearISAM, markov_chain ) {
 			EXPECT(assert_equal(expected, isam.getOrdering()));
 		}
 
-
 		cur_pose = cur_pose.compose(z);
 		new_init.insert(key2, cur_pose.expmap(sampler.sample()));
 		expected.insert(key2, cur_pose);
@@ -68,7 +68,7 @@ TEST(testNonlinearISAM, markov_chain ) {
 
 	// verify values - all but the last one should be very close
 	Values actual = isam.estimate();
-	for (size_t i=0; i<21; ++i) {
+	for (size_t i=0; i<nrPoses; ++i) {
 		PoseKey cur_key(i);
 		EXPECT(assert_equal(expected[cur_key], actual[cur_key], tol));
 	}

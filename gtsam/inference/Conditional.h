@@ -24,7 +24,6 @@
 #include <boost/foreach.hpp>
 #include <boost/range/iterator_range.hpp>
 #include <boost/serialization/nvp.hpp>
-#include <gtsam/base/Testable.h>
 #include <gtsam/inference/Factor.h>
 
 namespace gtsam {
@@ -47,9 +46,6 @@ class Conditional: public gtsam::Factor<KEY>, boost::noncopyable, public Testabl
 
 private:
 
-  /** The first nFrontal variables are frontal and the rest are parents. */
-  size_t nrFrontals_;
-
 	/** Create keys by adding key in front */
 	template<typename ITERATOR>
 	static std::vector<KEY> MakeKeys(KEY key, ITERATOR firstParent, ITERATOR lastParent) {
@@ -60,6 +56,9 @@ private:
 	}
 
 protected:
+
+  /** The first nFrontal variables are frontal and the rest are parents. */
+  size_t nrFrontals_;
 
   // Calls the base class assertInvariants, which checks for unique keys
   void assertInvariants() const { Factor<KEY>::assertInvariants(); }
@@ -131,7 +130,8 @@ public:
 	size_t nrParents() const { return FactorType::size() - nrFrontals_; }
 
 	/** Special accessor when there is only one frontal variable. */
-	Key key() const { assert(nrFrontals_==1); return FactorType::front(); }
+	Key firstFrontalKey() const { return FactorType::front(); }
+	Key lastFrontalKey() const { return *(endFrontals()-1); }
 
   /** Iterators over frontal and parent variables. */
   const_iterator beginFrontals() const { return FactorType::begin(); }

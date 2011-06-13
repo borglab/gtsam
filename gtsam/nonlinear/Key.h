@@ -19,7 +19,6 @@
 
 #pragma once
 
-#include <vector>
 #include <list>
 #include <iostream>
 #include <boost/mpl/char.hpp>

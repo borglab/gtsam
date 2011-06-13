@@ -9,20 +9,16 @@
 
  * -------------------------------------------------------------------------- */
 
-/*
+/**
  * StereoPoint2.h
  *
  *  Created on: Jan 26, 2010
  *      Author: dellaert
  */
 
-#ifndef STEREOPOINT2_H_
-#define STEREOPOINT2_H_
+#pragma once
 
 #include <iostream>
-#include <gtsam/base/Vector.h>
-#include <gtsam/base/Testable.h>
-#include <gtsam/base/Lie.h>
 #include <gtsam/geometry/Point2.h>
 
 namespace gtsam {
@@ -133,5 +129,3 @@ namespace gtsam {
 	};
 
 }
-
-#endif /* STEREOPOINT2_H_ */

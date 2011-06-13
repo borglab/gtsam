@@ -180,16 +180,16 @@ TEST_UNSAFE(GaussianFactor, CombineAndEliminate)
   Vector sigmas = gtsam::concatVectors(3, &s1, &s0, &s2);
 
   JacobianFactor expectedFactor(0, A0, 1, A1, b, noiseModel::Diagonal::Sigmas(sigmas, true));
-  GaussianBayesNet expectedBN(*expectedFactor.eliminate(1));
+  GaussianConditional::shared_ptr expectedBN = expectedFactor.eliminate(1);
 
-  GaussianBayesNet::shared_ptr actualBN;
+  GaussianConditional::shared_ptr actualBN;
 	GaussianFactor::shared_ptr actualFactor;
 	boost::tie(actualBN, actualFactor) = //
 			EliminateQR(*gfg.dynamicCastFactors<FactorGraph<JacobianFactor> > (), 1);
 	JacobianFactor::shared_ptr actualJacobian = boost::dynamic_pointer_cast<
 			JacobianFactor>(actualFactor);
 
-  EXPECT(assert_equal(expectedBN, *actualBN));
+  EXPECT(assert_equal(*expectedBN, *actualBN));
   EXPECT(assert_equal(expectedFactor, *actualJacobian));
 }
 
@@ -434,10 +434,17 @@ TEST(GaussianFactor, eliminateFrontals)
   GaussianConditional::shared_ptr cond3(new GaussianConditional(7, d3, R3, cterms3, ones(2)));
 
   // Create expected Bayes net fragment from three conditionals above
-  GaussianBayesNet expectedFragment;
-  expectedFragment.push_back(cond1);
-  expectedFragment.push_back(cond2);
-  expectedFragment.push_back(cond3);
+//  GaussianBayesNet expectedFragment;
+//  expectedFragment.push_back(cond1);
+//  expectedFragment.push_back(cond2);
+//  expectedFragment.push_back(cond3);
+  Index ikeys[] = {3,5,7,9,11};
+  std::vector<Index> keys(ikeys, ikeys + sizeof(ikeys)/sizeof(Index));
+  size_t dims[] = { 2,2,2,2,2,1 };
+  size_t height = 11;
+  VerticalBlockView<Matrix> Rblock(R, dims, dims+6, height);
+  GaussianConditional::shared_ptr expectedFragment( new GaussianConditional(keys.begin(), keys.end(), 3,
+      Rblock, ones(6)) );
 
   // Get expected matrices for remaining factor
   Matrix Ae1 = sub(R, 6,10, 6,8);
@@ -445,9 +452,9 @@ TEST(GaussianFactor, eliminateFrontals)
   Vector be = R.col(10).segment(6, 4);
 
   // Eliminate (3 frontal variables, 6 scalar columns) using QR !!!!
-  GaussianBayesNet actualFragment_QR = *actualFactor_QR.eliminate(3);
+  GaussianConditional::shared_ptr actualFragment_QR = actualFactor_QR.eliminate(3);
 
-  EXPECT(assert_equal(expectedFragment, actualFragment_QR, 0.001));
+  EXPECT(assert_equal(*expectedFragment, *actualFragment_QR, 0.001));
   EXPECT(assert_equal(size_t(2), actualFactor_QR.keys().size()));
   EXPECT(assert_equal(Index(9), actualFactor_QR.keys()[0]));
   EXPECT(assert_equal(Index(11), actualFactor_QR.keys()[1]));

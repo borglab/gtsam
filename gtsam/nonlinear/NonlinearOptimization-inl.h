@@ -19,8 +19,6 @@
 
 #pragma once
 
-#include <boost/make_shared.hpp>
-
 #include <gtsam/linear/GaussianSequentialSolver.h>
 #include <gtsam/linear/GaussianMultifrontalSolver.h>
 #include <gtsam/linear/SubgraphSolver-inl.h>
@@ -35,7 +33,8 @@ namespace gtsam {
 	 * The Elimination solver
 	 */
 	template<class G, class T>
-	T	optimizeSequential(const G& graph, const T& initialEstimate, const NonlinearOptimizationParameters& parameters) {
+	T	optimizeSequential(const G& graph, const T& initialEstimate,
+			const NonlinearOptimizationParameters& parameters, bool useLM) {
 
 		// Use a variable ordering from COLAMD
 	  Ordering::shared_ptr ordering = graph.orderingCOLAMD(initialEstimate);
@@ -43,18 +42,22 @@ namespace gtsam {
 		// initial optimization state is the same in both cases tested
 	  typedef NonlinearOptimizer<G, T, GaussianFactorGraph, GaussianSequentialSolver> Optimizer;
 	  Optimizer optimizer(boost::make_shared<const G>(graph),
-	  		boost::make_shared<const T>(initialEstimate), ordering, boost::make_shared<NonlinearOptimizationParameters>(parameters));
+	  		boost::make_shared<const T>(initialEstimate), ordering,
+	  		boost::make_shared<NonlinearOptimizationParameters>(parameters));
 
-		// Levenberg-Marquardt
-	  Optimizer result = optimizer.levenbergMarquardt();
-		return *result.values();
+	  // choose nonlinear optimization method
+		if (useLM)
+			return *optimizer.levenbergMarquardt().values();
+		else
+			return *optimizer.gaussNewton().values();
 	}
 
 	/**
 	 * The multifrontal solver
 	 */
 	template<class G, class T>
-	T	optimizeMultiFrontal(const G& graph, const T& initialEstimate, const NonlinearOptimizationParameters& parameters) {
+	T	optimizeMultiFrontal(const G& graph, const T& initialEstimate,
+			const NonlinearOptimizationParameters& parameters, bool useLM) {
 
 		// Use a variable ordering from COLAMD
 	  Ordering::shared_ptr ordering = graph.orderingCOLAMD(initialEstimate);
@@ -62,24 +65,30 @@ namespace gtsam {
 		// initial optimization state is the same in both cases tested
 	  typedef NonlinearOptimizer<G, T, GaussianFactorGraph, GaussianMultifrontalSolver> Optimizer;
 	  Optimizer optimizer(boost::make_shared<const G>(graph),
-	  		boost::make_shared<const T>(initialEstimate), ordering, boost::make_shared<NonlinearOptimizationParameters>(parameters));
+	  		boost::make_shared<const T>(initialEstimate), ordering,
+	  		boost::make_shared<NonlinearOptimizationParameters>(parameters));
 
-		// Levenberg-Marquardt
-	  Optimizer result = optimizer.levenbergMarquardt();
-		return *result.values();
+	  // choose nonlinear optimization method
+		if (useLM)
+			return *optimizer.levenbergMarquardt().values();
+		else
+			return *optimizer.gaussNewton().values();
 	}
 
 	/**
-	 * The sparse preconditioned conjucate gradient solver
+	 * The sparse preconditioned conjugate gradient solver
 	 */
 	template<class G, class T>
-	T	optimizeSPCG(const G& graph, const T& initialEstimate, const NonlinearOptimizationParameters& parameters = NonlinearOptimizationParameters()) {
+	T	optimizeSPCG(const G& graph, const T& initialEstimate,
+			const NonlinearOptimizationParameters& parameters = NonlinearOptimizationParameters(),
+			bool useLM = true) {
 
 		// initial optimization state is the same in both cases tested
 		typedef SubgraphSolver<G,GaussianFactorGraph,T> Solver;
 		typedef boost::shared_ptr<Solver> shared_Solver;
 		typedef NonlinearOptimizer<G, T, GaussianFactorGraph, Solver> SPCGOptimizer;
-		shared_Solver solver = boost::make_shared<Solver>(graph, initialEstimate, IterativeOptimizationParameters());
+		shared_Solver solver = boost::make_shared<Solver>(
+				graph, initialEstimate, IterativeOptimizationParameters());
 		SPCGOptimizer optimizer(
 				boost::make_shared<const G>(graph),
 				boost::make_shared<const T>(initialEstimate),
@@ -87,9 +96,11 @@ namespace gtsam {
 				solver,
 				boost::make_shared<NonlinearOptimizationParameters>(parameters));
 
-		// Levenberg-Marquardt
-		SPCGOptimizer result = optimizer.levenbergMarquardt();
-		return *result.values();
+	  // choose nonlinear optimization method
+		if (useLM)
+			return *optimizer.levenbergMarquardt().values();
+		else
+			return *optimizer.gaussNewton().values();
 	}
 
 	/**
@@ -97,13 +108,18 @@ namespace gtsam {
 	 */
 	template<class G, class T>
 	T optimize(const G& graph, const T& initialEstimate, const NonlinearOptimizationParameters& parameters,
-			const enum LinearSolver& solver) {
+			const LinearSolver& solver,
+			const NonlinearOptimizationMethod& nonlinear_method) {
 		switch (solver) {
 		case SEQUENTIAL:
-			return optimizeSequential<G,T>(graph, initialEstimate, parameters);
+			return optimizeSequential<G,T>(graph, initialEstimate, parameters,
+					nonlinear_method == LM);
 		case MULTIFRONTAL:
-			return optimizeMultiFrontal<G,T>(graph, initialEstimate, parameters);
+			return optimizeMultiFrontal<G,T>(graph, initialEstimate, parameters,
+					nonlinear_method == LM);
 		case SPCG:
+//			return optimizeSPCG<G,T>(graph, initialEstimate, parameters,
+//								nonlinear_method == LM);
 			throw runtime_error("optimize: SPCG not supported yet due to the specific pose constraint");
 		}
 		throw runtime_error("optimize: undefined solver");

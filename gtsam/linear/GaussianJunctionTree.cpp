@@ -36,11 +36,15 @@ namespace gtsam {
 	/* ************************************************************************* */
 	void GaussianJunctionTree::btreeBackSubstitute(const boost::shared_ptr<const BayesTree::Clique>& current, VectorValues& config) const {
 		// solve the bayes net in the current node
-		GaussianBayesNet::const_reverse_iterator it = current->rbegin();
-		for (; it!=current->rend(); ++it) {
-			Vector x = (*it)->solve(config); // Solve for that variable
-			config[(*it)->key()] = x;   // store result in partial solution
-		}
+	  current->conditional()->solveInPlace(config);
+
+	  //		GaussianBayesNet::const_reverse_iterator it = current->rbegin();
+//		for (; it!=current->rend(); ++it) {
+//			(*it)->solveInPlace(config); // solve and store result
+//
+////			Vector x = (*it)->solve(config); // Solve for that variable
+////			config[(*it)->key()] = x;   // store result in partial solution
+//		}
 
 		// solve the bayes nets in the child nodes
 		BOOST_FOREACH(const BayesTree::sharedClique& child, current->children()) {
@@ -48,16 +52,11 @@ namespace gtsam {
 		}
 	}
 
-  /* ************************************************************************* */
-	void countDims(const boost::shared_ptr<const BayesTree<GaussianConditional>::Clique>& clique, vector<size_t>& dims) {
-	  BOOST_FOREACH(const boost::shared_ptr<const GaussianConditional>& cond, *clique) {
-	    // There should be no two conditionals on the same variable
-	    assert(dims[cond->key()] == 0);
-	    dims[cond->key()] = cond->dim();
-	  }
-	  BOOST_FOREACH(const boost::shared_ptr<const BayesTree<GaussianConditional>::Clique>& child, clique->children()) {
-	    countDims(child, dims);
-	  }
+	/* ************************************************************************* */
+	void GaussianJunctionTree::btreeRHS(const boost::shared_ptr<const BayesTree::Clique>& current, VectorValues& config) const {
+		current->conditional()->rhs(config);
+		BOOST_FOREACH(const BayesTree::sharedClique& child, current->children())
+			btreeRHS(child, config);
 	}
 
 	/* ************************************************************************* */
@@ -67,11 +66,12 @@ namespace gtsam {
 		boost::shared_ptr<const BayesTree::Clique> rootClique(this->eliminate(function));
     toc(1, "GJT eliminate");
 
-		// Allocate solution vector
+		// Allocate solution vector and copy RHS
     tic(2, "allocate VectorValues");
-		vector<size_t> dims(rootClique->back()->key() + 1, 0);
+    vector<size_t> dims(rootClique->conditional()->back()+1, 0);
 		countDims(rootClique, dims);
 		VectorValues result(dims);
+		btreeRHS(rootClique, result);
     toc(2, "allocate VectorValues");
 
 		// back-substitution

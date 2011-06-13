@@ -19,8 +19,6 @@
 
 #pragma once
 
-#include <gtsam/base/Vector.h>
-#include <gtsam/base/Matrix.h>
 #include <gtsam/geometry/Point2.h>
 
 namespace gtsam {

@@ -94,7 +94,7 @@ namespace gtsam {
 
 			// check for convergence
 			double new_gamma = dot(g, g);
-			if (parameters_.verbosity())
+			if (parameters_.verbosity() != IterativeOptimizationParameters::SILENT)
 				cout << "iteration " << k << ": alpha = " << alpha
 				     << ", dotg = " << new_gamma << endl;
 			if (new_gamma < threshold) return true;
@@ -128,14 +128,14 @@ namespace gtsam {
 			bool steepest = false) {
 
 		CGState<S, V, E> state(Ab, x, parameters, steepest);
-		if (parameters.verbosity())
+		if (parameters.verbosity() != IterativeOptimizationParameters::SILENT)
 			cout << "CG: epsilon = " << parameters.epsilon()
 				 << ", maxIterations = " << parameters.maxIterations()
 				 << ", ||g0||^2 = " << state.gamma
 				 << ", threshold = " << state.threshold << endl;
 
 		if ( state.gamma < state.threshold ) {
-			if (parameters.verbosity())
+			if (parameters.verbosity() != IterativeOptimizationParameters::SILENT)
 				cout << "||g0||^2 < threshold, exiting immediately !" << endl;
 
 			return x;

@@ -19,7 +19,6 @@
 // Serialization testing code.
 /* ************************************************************************* */
 
-#include <fstream>
 #include <sstream>
 #include <string>
 
@@ -41,26 +40,44 @@
 // whether to print the serialized text to stdout
 const bool verbose = false;
 
+template<class T>
+std::string serialize(const T& input) {
+	std::ostringstream out_archive_stream;
+	boost::archive::text_oarchive out_archive(out_archive_stream);
+	out_archive << input;
+	return out_archive_stream.str();
+}
+
+template<class T>
+void deserialize(const std::string& serialized, T& output) {
+	std::istringstream in_archive_stream(serialized);
+	boost::archive::text_iarchive in_archive(in_archive_stream);
+	in_archive >> output;
+}
+
 // Templated round-trip serialization
 template<class T>
 void roundtrip(const T& input, T& output) {
 	// Serialize
-	std::ostringstream out_archive_stream;
-	{
-		boost::archive::text_oarchive out_archive(out_archive_stream);
-		out_archive << input;
-	}
-
-	// Convert to string
-	std::string serialized = out_archive_stream.str();
+//	std::ostringstream out_archive_stream;
+//	{
+//		boost::archive::text_oarchive out_archive(out_archive_stream);
+//		out_archive << input;
+//	}
+//
+//	// Convert to string
+//	std::string serialized = out_archive_stream.str();
+	std::string serialized = serialize(input);
 	if (verbose) std::cout << serialized << std::endl << std::endl;
 
-	// De-serialize
-	{
-		std::istringstream in_archive_stream(serialized);
-		boost::archive::text_iarchive in_archive(in_archive_stream);
-		in_archive >> output;
-	}
+	deserialize(serialized, output);
+
+//	// De-serialize
+//	{
+//		std::istringstream in_archive_stream(serialized);
+//		boost::archive::text_iarchive in_archive(in_archive_stream);
+//		in_archive >> output;
+//	}
 }
 
 // This version requires equality operator
@@ -144,20 +161,19 @@ bool equalsDereferencedXML(const T& input = T()) {
 
 #define GTSAM_MAGIC_KEY
 
-#include <gtsam/base/Matrix.h>
-#include <gtsam/base/Vector.h>
-#include <gtsam/geometry/Pose2.h>
-#include <gtsam/geometry/Cal3_S2.h>
 #include <gtsam/geometry/Cal3DS2.h>
 #include <gtsam/geometry/Cal3Bundler.h>
-#include <gtsam/geometry/Cal3_S2Stereo.h>
-#include <gtsam/geometry/SimpleCamera.h>
-#include <gtsam/geometry/StereoCamera.h>
-
+#include <gtsam/linear/VectorValues.h>
+#include <gtsam/linear/JacobianFactor.h>
+#include <gtsam/linear/HessianFactor.h>
+#include <gtsam/linear/GaussianSequentialSolver.h>
+#include <gtsam/linear/GaussianISAM.h>
+#include <gtsam/slam/smallExample.h>
 #include <gtsam/slam/planarSLAM.h>
 #include <gtsam/slam/pose3SLAM.h>
 #include <gtsam/slam/visualSLAM.h>
-#include <gtsam/slam/BearingFactor.h>
+
+#include <gtsam/inference/BayesTree-inl.h>
 
 #include <CppUnitLite/TestHarness.h>
 
@@ -309,12 +325,6 @@ TEST (Serialization, SharedDiagonal_noiseModels) {
 // Linear components
 /* ************************************************************************* */
 
-#include <gtsam/linear/VectorValues.h>
-#include <gtsam/linear/JacobianFactor.h>
-#include <gtsam/linear/HessianFactor.h>
-#include <gtsam/slam/smallExample.h>
-#include <gtsam/nonlinear/Ordering.h>
-
 /* ************************************************************************* */
 TEST (Serialization, linear_factors) {
 	vector<size_t> dims;
@@ -390,7 +400,6 @@ TEST (Serialization, symbolic_graph) {
 TEST (Serialization, symbolic_bn) {
   Ordering o; o += "x2","l1","x1";
 
-  // create expected Chordal bayes Net
   IndexConditional::shared_ptr x2(new IndexConditional(o["x2"], o["l1"], o["x1"]));
   IndexConditional::shared_ptr l1(new IndexConditional(o["l1"], o["x1"]));
   IndexConditional::shared_ptr x1(new IndexConditional(o["x1"]));
@@ -403,9 +412,6 @@ TEST (Serialization, symbolic_bn) {
 	EXPECT(equalsObj(sbn));
 	EXPECT(equalsXML(sbn));
 }
-
-#include <gtsam/inference/BayesTree-inl.h>
-#include <gtsam/inference/IndexFactor.h>
 
 /* ************************************************************************* */
 TEST (Serialization, symbolic_bayes_tree ) {
@@ -421,31 +427,28 @@ TEST (Serialization, symbolic_bayes_tree ) {
 
 	// Bayes Tree for Asia example
 	SymbolicBayesTree bayesTree;
-	bayesTree.insert(B);
-	bayesTree.insert(L);
-	bayesTree.insert(E);
-	bayesTree.insert(S);
-	bayesTree.insert(T);
-	bayesTree.insert(X);
+	SymbolicBayesTree::insert(bayesTree, B);
+	SymbolicBayesTree::insert(bayesTree, L);
+	SymbolicBayesTree::insert(bayesTree, E);
+	SymbolicBayesTree::insert(bayesTree, S);
+	SymbolicBayesTree::insert(bayesTree, T);
+	SymbolicBayesTree::insert(bayesTree, X);
 
 	EXPECT(equalsObj(bayesTree));
 	EXPECT(equalsXML(bayesTree));
 }
 
-#include <gtsam/linear/GaussianSequentialSolver.h>
-#include <gtsam/linear/GaussianISAM.h>
-
 /* ************************************************************************* */
 TEST (Serialization, gaussianISAM) {
 	using namespace example;
-	Ordering ordering;
+  Ordering ordering;
 	GaussianFactorGraph smoother;
 	boost::tie(smoother, ordering) = createSmoother(7);
-	GaussianBayesNet chordalBayesNet = *GaussianSequentialSolver(smoother).eliminate();
-	GaussianISAM bayesTree(chordalBayesNet);
+	BayesTree<GaussianConditional> bayesTree = *GaussianMultifrontalSolver(smoother).eliminate();
+	GaussianISAM isam(bayesTree);
 
-	EXPECT(equalsObj(bayesTree));
-	EXPECT(equalsXML(bayesTree));
+	EXPECT(equalsObj(isam));
+	EXPECT(equalsXML(isam));
 }
 
 /* ************************************************************************* */

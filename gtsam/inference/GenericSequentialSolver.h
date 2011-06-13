@@ -18,11 +18,9 @@
 
 #pragma once
 
-#include <gtsam/inference/FactorGraph.h>
-#include <gtsam/inference/EliminationTree.h>
-#include <gtsam/inference/BayesNet.h>
-
 #include <utility>
+
+#include <gtsam/inference/EliminationTree.h>
 
 namespace gtsam {
 

@@ -277,7 +277,7 @@ namespace gtsam {
 				CombineJacobians(factors, VariableSlots(factors));
 		toc(1, "Combine");
 		tic(2, "eliminate");
-		GaussianBayesNet::shared_ptr gbn(jointFactor->eliminate(nrFrontals));
+		GaussianConditional::shared_ptr gbn = jointFactor->eliminate(nrFrontals);
 		toc(2, "eliminate");
 		return make_pair(gbn, jointFactor);
 	}
@@ -287,7 +287,7 @@ namespace gtsam {
   FastMap<Index, SlotEntry> findScatterAndDims
   (const FactorGraph<GaussianFactor>& factors) {
 
-    static const bool debug = false;
+    const bool debug = ISDEBUG("findScatterAndDims");
 
     // The "scatter" is a map from global variable indices to slot indices in the
     // union of involved variables.  We also include the dimensionality of the
@@ -352,7 +352,7 @@ namespace gtsam {
 
 		// Extract conditionals and fill in details of the remaining factor
 		tic(5, "split");
-		GaussianBayesNet::shared_ptr conditionals =
+		GaussianConditional::shared_ptr conditionals =
 									combinedFactor->splitEliminatedFactor(nrFrontals, keys);
 		if (debug) {
 			conditionals->print("Extracted conditionals: ");
@@ -413,12 +413,12 @@ namespace gtsam {
 		toc(1, "convert to Jacobian");
 
 		tic(2, "Jacobian EliminateGaussian");
-		GaussianBayesNet::shared_ptr bn;
+		GaussianConditional::shared_ptr conditionals;
 		GaussianFactor::shared_ptr factor;
-		boost::tie(bn, factor) = EliminateJacobians(jacobians, nrFrontals);
+		boost::tie(conditionals, factor) = EliminateJacobians(jacobians, nrFrontals);
 		toc(2, "Jacobian EliminateGaussian");
 
-		return make_pair(bn, factor);
+		return make_pair(conditionals, factor);
 	} // EliminateQR
 
 	/* ************************************************************************* */
@@ -500,5 +500,147 @@ namespace gtsam {
 		return ret;
 
 	} // EliminatePreferCholesky
+
+
+  /* ************************************************************************* */
+	GaussianFactorGraph::EliminationResult EliminateLDL(
+	    const FactorGraph<GaussianFactor>& factors, size_t nrFrontals) {
+	  const bool debug = ISDEBUG("EliminateLDL");
+
+	  // Find the scatter and variable dimensions
+	  tic(1, "find scatter");
+	  Scatter scatter(findScatterAndDims(factors));
+	  toc(1, "find scatter");
+
+	  // Pull out keys and dimensions
+	  tic(2, "keys");
+	  vector<Index> keys(scatter.size());
+	  vector<size_t> dimensions(scatter.size() + 1);
+	  BOOST_FOREACH(const Scatter::value_type& var_slot, scatter) {
+	    keys[var_slot.second.slot] = var_slot.first;
+	    dimensions[var_slot.second.slot] = var_slot.second.dimension;
+	  }
+	  // This is for the r.h.s. vector
+	  dimensions.back() = 1;
+	  toc(2, "keys");
+
+	  // Form Ab' * Ab
+	  tic(3, "combine");
+
+	  if (debug) {
+	  	// print out everything before combine
+	  	factors.print("Factors to be combined into hessian");
+	  	cout << "Dimensions (" << dimensions.size() << "): ";
+	  	BOOST_FOREACH(size_t d, dimensions) cout << d << " ";
+	  	cout << "\nScatter:" << endl;
+	  	BOOST_FOREACH(const Scatter::value_type& p, scatter)
+	  		cout << "   Index: " << p.first << ", " << p.second.toString() << endl;
+	  }
+
+
+	  HessianFactor::shared_ptr //
+	  combinedFactor(new HessianFactor(factors, dimensions, scatter));
+	  toc(3, "combine");
+
+	  // Do LDL, note that after this, the lower triangle still contains
+	  // some untouched non-zeros that should be zero.  We zero them while
+	  // extracting submatrices next.
+	  tic(4, "partial LDL");
+	  Eigen::LDLT<Matrix>::TranspositionType permutation = combinedFactor->partialLDL(nrFrontals);
+	  toc(4, "partial LDL");
+
+	  // Extract conditionals and fill in details of the remaining factor
+	  tic(5, "split");
+	  GaussianConditional::shared_ptr conditionals =
+	      combinedFactor->splitEliminatedFactor(nrFrontals, keys, permutation);
+	  if (debug) {
+	    conditionals->print("Extracted conditionals: ");
+	    combinedFactor->print("Eliminated factor (L piece): ");
+	  }
+	  toc(5, "split");
+
+	  combinedFactor->assertInvariants();
+	  return make_pair(conditionals, combinedFactor);
+	}
+
+	/* ************************************************************************* */
+	  GaussianFactorGraph::EliminationResult EliminatePreferLDL(
+	      const FactorGraph<GaussianFactor>& factors, size_t nrFrontals) {
+
+	    typedef JacobianFactor J;
+	    typedef HessianFactor H;
+
+	    // If any JacobianFactors have constrained noise models, we have to convert
+	    // all factors to JacobianFactors.  Otherwise, we can convert all factors
+	    // to HessianFactors.  This is because QR can handle constrained noise
+	    // models but LDL cannot.
+
+	    // Decide whether to use QR or LDL
+	    // Check if any JacobianFactors have constrained noise models.
+	    bool useQR = false;
+	    BOOST_FOREACH(const GaussianFactor::shared_ptr& factor, factors) {
+	      J::shared_ptr jacobian(boost::dynamic_pointer_cast<J>(factor));
+	      if (jacobian && jacobian->get_model()->isConstrained()) {
+	        useQR = true;
+	        break;
+	      }
+	    }
+
+	    // Convert all factors to the appropriate type
+	    // and call the type-specific EliminateGaussian.
+	    if (useQR) return EliminateQR(factors, nrFrontals);
+
+	    GaussianFactorGraph::EliminationResult ret;
+	    try {
+	      tic(2, "EliminateLDL");
+	      ret = EliminateLDL(factors, nrFrontals);
+	      toc(2, "EliminateLDL");
+	    } catch (const exception& e) {
+	      cout << "Exception in EliminateLDL: " << e.what() << endl;
+	      SETDEBUG("EliminateLDL", true);
+	      SETDEBUG("updateATA", true);
+	      SETDEBUG("JacobianFactor::eliminate", true);
+	      SETDEBUG("JacobianFactor::Combine", true);
+	      SETDEBUG("ldlPartial", true);
+	      SETDEBUG("findScatterAndDims", true);
+	      factors.print("Combining factors: ");
+	      EliminateLDL(factors, nrFrontals);
+	      throw;
+	    }
+
+	    const bool checkLDL = ISDEBUG("EliminateGaussian Check LDL");
+	    if (checkLDL) {
+	      GaussianFactorGraph::EliminationResult expected;
+	      FactorGraph<J> jacobians = convertToJacobians(factors);
+	      try {
+	        // Compare with QR
+	        expected = EliminateJacobians(jacobians, nrFrontals);
+	      } catch (...) {
+	        cout << "Exception in QR" << endl;
+	        throw;
+	      }
+
+	      H actual_factor(*ret.second);
+	      H expected_factor(*expected.second);
+	      if (!assert_equal(*expected.first, *ret.first, 100.0) || !assert_equal(
+	          expected_factor, actual_factor, 1.0)) {
+	        cout << "LDL and QR do not agree" << endl;
+
+	        SETDEBUG("EliminateLDL", true);
+	        SETDEBUG("updateATA", true);
+	        SETDEBUG("JacobianFactor::eliminate", true);
+	        SETDEBUG("JacobianFactor::Combine", true);
+	        jacobians.print("Jacobian Factors: ");
+	        EliminateJacobians(jacobians, nrFrontals);
+	        EliminateLDL(factors, nrFrontals);
+	        factors.print("Combining factors: ");
+
+	        throw runtime_error("LDL and QR do not agree");
+	      }
+	    }
+
+	    return ret;
+
+	  } // EliminatePreferLDL
 
 } // namespace gtsam

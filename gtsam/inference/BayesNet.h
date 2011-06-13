@@ -19,14 +19,14 @@
 
 #pragma once
 
+#include <list>
+#include <boost/shared_ptr.hpp>
+#include <boost/serialization/nvp.hpp>
+
 #include <gtsam/base/types.h>
 #include <gtsam/base/FastList.h>
 #include <gtsam/base/Testable.h>
 #include <gtsam/inference/Permutation.h>
-
-#include <list>
-#include <boost/shared_ptr.hpp>
-#include <boost/serialization/nvp.hpp>
 
 namespace gtsam {
 
@@ -66,6 +66,12 @@ namespace gtsam {
 		Conditionals conditionals_;
 
 	public:
+
+		/** Default constructor as an empty BayesNet */
+		BayesNet() {};
+
+		/** BayesNet with 1 conditional */
+		BayesNet(const sharedConditional& conditional) { push_back(conditional); }
 
 		/** print */
 		void print(const std::string& s = "") const;
@@ -110,10 +116,10 @@ namespace gtsam {
 			return conditionals_.size();
 		}
 
-		/** return keys in reverse topological sort order, i.e., elimination order */
-		FastList<Index> ordering() const;
-
-		/** SLOW O(n) random access to Conditional by key */
+//		/** return keys in reverse topological sort order, i.e., elimination order */
+//		FastList<Index> ordering() const;
+//
+//		/** SLOW O(n) random access to Conditional by key */
 		sharedConditional operator[](Index key) const;
 
     /** return last node in ordering */
@@ -135,7 +141,7 @@ namespace gtsam {
 		inline const_reverse_iterator const rend()   const {return conditionals_.rend();}
 
 		/** saves the bayes to a text file in GraphViz format */
-		void saveGraph(const std::string& s) const;
+//		void saveGraph(const std::string& s) const;
 
 	private:
 		/** Serialization function */

@@ -73,28 +73,27 @@ boost::shared_ptr<VectorValues> allocateVectorValues(const GaussianBayesNet& bn)
   vector<size_t> dimensions(bn.size());
   Index var = 0;
   BOOST_FOREACH(const boost::shared_ptr<const GaussianConditional> conditional, bn) {
-    dimensions[var++] = conditional->get_R().rows();
+    dimensions[var++] = conditional->dim();
   }
   return boost::shared_ptr<VectorValues>(new VectorValues(dimensions));
 }
 
 /* ************************************************************************* */
-VectorValues optimize(const GaussianBayesNet& bn)
-{
+VectorValues optimize(const GaussianBayesNet& bn) {
   return *optimize_(bn);
 }
 
 /* ************************************************************************* */
 boost::shared_ptr<VectorValues> optimize_(const GaussianBayesNet& bn)
 {
-	boost::shared_ptr<VectorValues> result(allocateVectorValues(bn));
+	// get the RHS as a VectorValues to initialize system
+	boost::shared_ptr<VectorValues> result(new VectorValues(rhs(bn)));
 
   /** solve each node in turn in topological sort order (parents first)*/
-	BOOST_REVERSE_FOREACH(GaussianConditional::shared_ptr cg, bn) {
-    Vector x = cg->solve(*result); // Solve for that variable
-    (*result)[cg->key()] = x;   // store result in partial solution
-  }
-  return result;
+	BOOST_REVERSE_FOREACH(GaussianConditional::shared_ptr cg, bn)
+		cg->solveInPlace(*result); // solve and store solution in same step
+
+	return result;
 }
 
 /* ************************************************************************* */
@@ -112,13 +111,7 @@ void backSubstituteInPlace(const GaussianBayesNet& bn, VectorValues& y) {
 	BOOST_REVERSE_FOREACH(const boost::shared_ptr<const GaussianConditional> cg, bn) {
 		// i^th part of R*x=y, x=inv(R)*y
 		// (Rii*xi + R_i*x(i+1:))./si = yi <-> xi = inv(Rii)*(yi.*si - R_i*x(i+1:))
-		Index i = cg->key();
-		Vector zi = emul(y[i],cg->get_sigmas());
-		GaussianConditional::const_iterator it;
-		for (it = cg->beginParents(); it!= cg->endParents(); it++) {
-			multiplyAdd(-1.0,cg->get_S(it),x[*it],zi);
-		}
-		x[i] = gtsam::backSubstituteUpper(cg->get_R(), zi);
+		cg->solveInPlace(x);
 	}
 }
 
@@ -135,21 +128,12 @@ VectorValues backSubstituteTranspose(const GaussianBayesNet& bn,
 
 	// we loop from first-eliminated to last-eliminated
 	// i^th part of L*gy=gx is done block-column by block-column of L
-	BOOST_FOREACH(const boost::shared_ptr<const GaussianConditional> cg, bn) {
-		Index j = cg->key();
-		gy[j] = gtsam::backSubstituteUpper(gy[j],Matrix(cg->get_R()));
-		GaussianConditional::const_iterator it;
-		for (it = cg->beginParents(); it!= cg->endParents(); it++) {
-			const Index i = *it;
-			transposeMultiplyAdd(-1.0,cg->get_S(it),gy[j],gy[i]);
-		}
-	}
+	BOOST_FOREACH(const boost::shared_ptr<const GaussianConditional> cg, bn)
+		cg->solveTransposeInPlace(gy);
 
 	// Scale gy
-	BOOST_FOREACH(GaussianConditional::shared_ptr cg, bn) {
-		Index j = cg->key();
-		gy[j] = emul(gy[j],cg->get_sigmas());
-	}
+	BOOST_FOREACH(GaussianConditional::shared_ptr cg, bn)
+		cg->scaleFrontalsBySigma(gy);
 
 	return gy;
 }
@@ -161,8 +145,11 @@ pair<Matrix,Vector> matrix(const GaussianBayesNet& bn)  {
   // and at the same time create a mapping from keys to indices
   size_t N=0; map<Index,size_t> mapping;
   BOOST_FOREACH(GaussianConditional::shared_ptr cg,bn) {
-    mapping.insert(make_pair(cg->key(),N));
-    N += cg->dim();
+  	GaussianConditional::const_iterator it = cg->beginFrontals();
+  	for (; it != cg->endFrontals(); ++it) {
+  		mapping.insert(make_pair(*it,N));
+  		N += cg->dim(it);
+  	}
   }
 
   // create matrix and copy in values
@@ -172,7 +159,7 @@ pair<Matrix,Vector> matrix(const GaussianBayesNet& bn)  {
   FOREACH_PAIR(key,I,mapping) {
     // find corresponding conditional
     boost::shared_ptr<const GaussianConditional> cg = bn[key];
-    
+
     // get sigmas
     Vector sigmas = cg->get_sigmas();
 
@@ -207,15 +194,8 @@ pair<Matrix,Vector> matrix(const GaussianBayesNet& bn)  {
 /* ************************************************************************* */
 VectorValues rhs(const GaussianBayesNet& bn) {
 	boost::shared_ptr<VectorValues> result(allocateVectorValues(bn));
-  BOOST_FOREACH(boost::shared_ptr<const GaussianConditional> cg,bn) {
-  	Index key = cg->key();
-  	// get sigmas
-    const Vector& sigmas = cg->get_sigmas();
-
-    // get RHS and copy to d
-    GaussianConditional::const_d_type d = cg->get_d();
-    (*result)[key] = ediv_(d,sigmas); // TODO ediv_? I think not
-  }
+  BOOST_FOREACH(boost::shared_ptr<const GaussianConditional> cg,bn)
+  	cg->rhs(*result);
 
   return *result;
 }

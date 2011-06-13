@@ -116,8 +116,8 @@ namespace gtsam {
 
     if(bayesClique) {
       // create a new clique in the junction tree
-      FastList<Index> frontals = bayesClique->ordering();
-      sharedClique clique(new Clique(frontals.begin(), frontals.end(), bayesClique->separator_.begin(), bayesClique->separator_.end()));
+      sharedClique clique(new Clique((*bayesClique)->beginFrontals(), (*bayesClique)->endFrontals(),
+          (*bayesClique)->beginParents(), (*bayesClique)->endParents()));
 
       // count the factors for this cluster to pre-allocate space
       {
@@ -173,7 +173,7 @@ namespace gtsam {
     // come from and go to, create and eliminate the new joint factor.
     tic(2, "CombineAndEliminate");
     pair<
-				typename BayesNet<typename FG::FactorType::ConditionalType>::shared_ptr,
+				typename FG::FactorType::ConditionalType::shared_ptr,
 				typename FG::sharedFactor> eliminated(function(fg,
 				current->frontal.size()));
     toc(2, "CombineAndEliminate");
@@ -182,7 +182,7 @@ namespace gtsam {
 
     tic(3, "Update tree");
     // create a new clique corresponding the combined factors
-    typename BayesTree::sharedClique new_clique(new typename BayesTree::Clique(*eliminated.first));
+    typename BayesTree::sharedClique new_clique(new typename BayesTree::Clique(eliminated.first));
     new_clique->children_ = children;
 
     BOOST_FOREACH(typename BayesTree::sharedClique& childRoot, children) {

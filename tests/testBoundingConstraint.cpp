@@ -246,7 +246,7 @@ TEST( testBoundingConstraint, MaxDistance_simple_optimization) {
 	expected.insert(x1, pt1);
 	expected.insert(x2, pt2_goal);
 
-	// FAILS: segfaults on optimization
+	// FAILS: VectorValues assertion failure
 //	Optimizer::shared_values actual = Optimizer::optimizeLM(graph, initial_state);
 //	EXPECT(assert_equal(expected, *actual, tol));
 }

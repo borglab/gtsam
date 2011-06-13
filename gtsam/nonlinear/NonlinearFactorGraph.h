@@ -24,7 +24,6 @@
 #include <gtsam/inference/SymbolicFactorGraph.h>
 #include <gtsam/linear/GaussianFactorGraph.h>
 #include <gtsam/nonlinear/NonlinearFactor.h>
-#include <gtsam/nonlinear/Ordering.h>
 
 namespace gtsam {
 

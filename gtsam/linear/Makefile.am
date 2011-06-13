@@ -16,7 +16,7 @@ sources += NoiseModel.cpp Errors.cpp Sampler.cpp
 check_PROGRAMS += tests/testNoiseModel tests/testErrors tests/testSampler
 
 # Vector Configurations
-headers += VectorValues.h 
+sources += VectorValues.cpp 
 check_PROGRAMS += tests/testVectorValues
 
 # Solvers

@@ -16,14 +16,10 @@
  *      Author: Frank Dellaert
  */
 
-#ifndef ROT2_H_
-#define ROT2_H_
+#pragma once
 
 #include <boost/optional.hpp>
-#include <gtsam/base/Testable.h>
 #include <gtsam/geometry/Point2.h>
-#include <gtsam/base/Matrix.h>
-#include <gtsam/base/Lie.h>
 
 namespace gtsam {
 
@@ -175,5 +171,3 @@ namespace gtsam {
   }; // Rot2
 
 } // gtsam
-
-#endif /* ROT2_H_ */

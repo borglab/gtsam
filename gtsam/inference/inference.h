@@ -18,15 +18,12 @@
 
 #pragma once
 
-#include <gtsam/base/types.h>
 #include <gtsam/inference/FactorGraph.h>
-#include <gtsam/inference/BayesNet.h>
 #include <gtsam/inference/VariableIndex.h>
 #include <gtsam/inference/Permutation.h>
 
 #include <boost/foreach.hpp>
 
-#include <vector>
 #include <deque>
 
 namespace gtsam {

@@ -153,6 +153,8 @@ namespace gtsam {
   /* ************************************************************************* */
   JacobianFactor::JacobianFactor(const GaussianConditional& cg) : GaussianFactor(cg), model_(noiseModel::Diagonal::Sigmas(cg.get_sigmas(), true)), Ab_(matrix_) {
     Ab_.assignNoalias(cg.rsd_);
+    // TODO: permutation for all frontal blocks
+    Ab_.range(0,cg.nrFrontals()) = Ab_.range(0,cg.nrFrontals()) * cg.permutation_;
     // todo SL: make firstNonzeroCols triangular?
     firstNonzeroBlocks_.resize(cg.get_d().size(), 0); // set sigmas from precisions
     assertInvariants();
@@ -197,7 +199,6 @@ namespace gtsam {
     } else {
       for(const_iterator key=begin(); key!=end(); ++key)
       	cout << boost::format("A[%1%]=\n")%*key << getA(key) << endl;
-//        gtsam::print(getA(key), (boost::format("A[%1%]=\n")%*key).str());
       cout << "b=" << getb() << endl;
       model_->print("model");
     }
@@ -360,11 +361,11 @@ namespace gtsam {
 
   /* ************************************************************************* */
   GaussianConditional::shared_ptr JacobianFactor::eliminateFirst() {
-    return this->eliminate(1)->front();
+    return this->eliminate(1);
   }
 
   /* ************************************************************************* */
-  GaussianBayesNet::shared_ptr JacobianFactor::eliminate(size_t nrFrontals) {
+  GaussianConditional::shared_ptr JacobianFactor::eliminate(size_t nrFrontals) {
 
     assert(Ab_.rowStart() == 0 && Ab_.rowEnd() == (size_t) matrix_.rows() && Ab_.firstBlock() == 0);
     assert(size() >= nrFrontals);
@@ -433,18 +434,15 @@ namespace gtsam {
 
     // Extract conditionals
     tic(3, "cond Rd");
-    GaussianBayesNet::shared_ptr conditionals(new GaussianBayesNet());
-    for(size_t j=0; j<nrFrontals; ++j) {
-      // Temporarily restrict the matrix view to the conditional blocks of the
-      // eliminated Ab matrix to create the GaussianConditional from it.
-      size_t varDim = Ab_(0).cols();
-      Ab_.rowEnd() = Ab_.rowStart() + varDim;
-      const Eigen::VectorBlock<const Vector> sigmas = noiseModel->sigmas().segment(Ab_.rowStart(), Ab_.rowEnd()-Ab_.rowStart());
-      conditionals->push_back(boost::make_shared<ConditionalType>(begin()+j, end(), 1, Ab_, sigmas));
-      if(debug) conditionals->back()->print("Extracted conditional: ");
-      Ab_.rowStart() += varDim;
-      Ab_.firstBlock() += 1;
-    }
+    GaussianConditional::shared_ptr conditionals(new GaussianConditional());
+
+    // Restrict the matrix to be in the first nrFrontals variables
+    Ab_.rowEnd() = Ab_.rowStart() + frontalDim;
+    const Eigen::VectorBlock<const Vector> sigmas = noiseModel->sigmas().segment(Ab_.rowStart(), Ab_.rowEnd()-Ab_.rowStart());
+    conditionals = boost::make_shared<ConditionalType>(begin(), end(), nrFrontals, Ab_, sigmas);
+    if(debug) conditionals->print("Extracted conditional: ");
+    Ab_.rowStart() += frontalDim;
+    Ab_.firstBlock() += nrFrontals;
     toc(3, "cond Rd");
 
     if(debug) conditionals->print("Extracted conditionals: ");

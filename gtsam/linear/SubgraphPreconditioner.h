@@ -19,7 +19,7 @@
 
 #include <gtsam/linear/JacobianFactor.h>
 #include <gtsam/linear/GaussianBayesNet.h>
-#include <gtsam/nonlinear/Ordering.h>
+#include <gtsam/nonlinear/Ordering.h> // FIXME shouldn't have nonlinear things in linear
 
 namespace gtsam {
 

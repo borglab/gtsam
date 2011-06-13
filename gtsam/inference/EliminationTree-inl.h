@@ -47,12 +47,12 @@ typename EliminationTree<FACTOR>::sharedFactor EliminationTree<FACTOR>::eliminat
   // TODO: wait for completion of all threads
 
   // Combine all factors (from this node and from subtrees) into a joint factor
-  pair<typename BayesNet::shared_ptr, typename FACTOR::shared_ptr>
+  typename FactorGraph<FACTOR>::EliminationResult
 				eliminated(function(factors, 1));
-  conditionals[this->key_] = eliminated.first->front();
+  conditionals[this->key_] = eliminated.first;
 
   if(debug) cout << "Eliminated " << this->key_ << " to get:\n";
-  if(debug) eliminated.first->front()->print("Conditional: ");
+  if(debug) eliminated.first->print("Conditional: ");
   if(debug) eliminated.second->print("Factor: ");
 
   return eliminated.second;

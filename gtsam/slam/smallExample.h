@@ -21,10 +21,7 @@
 
 #pragma once
 
-#include <boost/shared_ptr.hpp>
 #include <boost/tuple/tuple.hpp>
-#include <boost/optional.hpp>
-#include <gtsam/nonlinear/Ordering.h>
 #include <gtsam/nonlinear/NonlinearFactorGraph.h>
 #include <gtsam/slam/simulated2D.h>
 

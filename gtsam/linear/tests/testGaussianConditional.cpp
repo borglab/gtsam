@@ -20,16 +20,19 @@
 
 #include <gtsam/base/Matrix.h>
 #include <gtsam/linear/GaussianConditional.h>
+#include <gtsam/linear/GaussianBayesNet.h>
 
 #include <iostream>
 #include <sstream>
 #include <vector>
 #include <boost/assign/std/list.hpp>
+#include <boost/assign/std/vector.hpp>
 
 using namespace gtsam;
 using namespace std;
 using namespace boost::assign;
 
+static const double tol = 1e-5;
 static const Index _x_=0, _x1_=1, _l1_=2;
 
 /* ************************************************************************* */
@@ -112,17 +115,16 @@ TEST( GaussianConditional, equals )
     actual(_x_,d, R, _x1_, A1, _l1_, A2, tau);
 
   EXPECT( expected.equals(actual) );
-
 }
 
 /* ************************************************************************* */
 TEST( GaussianConditional, solve )
 {
   //expected solution
-  Vector expected(2);
-  expected(0) = 20-3-11 ; expected(1) = 40-7-15;
+  Vector expectedX(2);
+  expectedX(0) = 20-3-11 ; expectedX(1) = 40-7-15;
 
-  // create a conditional gaussion node
+  // create a conditional Gaussian node
   Matrix R = Matrix_(2,2,   1., 0.,
                             0., 1.);
 
@@ -137,7 +139,8 @@ TEST( GaussianConditional, solve )
 
   Vector tau = ones(2);
 
-  GaussianConditional cg(_x_,d, R, _x1_, A1, _l1_, A2, tau);
+  // RHS is different than the one in the solution vector
+  GaussianConditional cg(_x_,ones(2), R, _x1_, A1, _l1_, A2, tau);
 
   Vector sx1(2);
   sx1(0) = 1.0; sx1(1) = 1.0;
@@ -146,13 +149,145 @@ TEST( GaussianConditional, solve )
   sl1(0) = 1.0; sl1(1) = 1.0;
 
   VectorValues solution(vector<size_t>(3, 2));
-  solution[_x1_] = sx1;
+  solution[_x_]  = d;   // RHS
+  solution[_x1_] = sx1; // parents
   solution[_l1_] = sl1;
 
-  Vector result = cg.solve(solution);
+  // NOTE: the solve functions assume the RHS is passed as the initialization of
+  // the solution.
+  VectorValues expected(vector<size_t>(3, 2));
+  expected[_x_] = expectedX;
+  expected[_x1_] = sx1;
+  expected[_l1_] = sl1;
 
-  EXPECT(assert_equal(expected , result, 0.0001));
+  VectorValues copy_result = cg.solve(solution);
+  cg.solveInPlace(solution);
 
+  EXPECT(assert_equal(expected, copy_result, 0.0001));
+  EXPECT(assert_equal(expected, solution, 0.0001));
+}
+
+/* ************************************************************************* */
+TEST( GaussianConditional, solve_simple )
+{
+	// no pivoting from LDL, so R matrix is not permuted
+	// RHS is deliberately not the same as below
+	Matrix full_matrix = Matrix_(4, 7,
+			1.0, 0.0, 2.0, 0.0, 3.0, 0.0, 0.0,
+			0.0, 1.0, 0.0, 2.0, 0.0, 3.0, 0.0,
+			0.0, 0.0, 3.0, 0.0, 4.0, 0.0, 0.0,
+			0.0, 0.0, 0.0, 3.0, 0.0, 4.0, 0.0);
+
+	// solve system as a non-multifrontal version first
+	// 2 variables, frontal has dim=4
+	vector<size_t> dims; dims += 4, 2, 1;
+	GaussianConditional::rsd_type matrices(full_matrix, dims.begin(), dims.end());
+	Vector sigmas = ones(4);
+	vector<size_t> cgdims; cgdims += _x_, _x1_;
+	GaussianConditional cg(cgdims.begin(), cgdims.end(), 1, matrices, sigmas);
+
+	// partial solution
+	Vector sx1 = Vector_(2, 9.0, 10.0);
+
+	// elimination order; _x_, _x1_
+	vector<size_t> vdim; vdim += 4, 2;
+	VectorValues actual(vdim);
+	actual[_x_]  = Vector_(4, 0.1, 0.2, 0.3, 0.4); // d
+	actual[_x1_] = sx1; // parent
+
+	VectorValues expected(vdim);
+	expected[_x1_] = sx1;
+	expected[_x_] = Vector_(4, -3.1,-3.4,-11.9,-13.2);
+
+	// verify indices/size
+	EXPECT_LONGS_EQUAL(2, cg.size());
+	EXPECT_LONGS_EQUAL(4, cg.dim());
+
+	// solve and verify
+	cg.solveInPlace(actual);
+	EXPECT(assert_equal(expected, actual, tol));
+}
+
+/* ************************************************************************* */
+TEST( GaussianConditional, solve_multifrontal )
+{
+	// create full system, 3 variables, 2 frontals, all 2 dim
+	// no pivoting from LDL, so R matrix is not permuted
+	Matrix full_matrix = Matrix_(4, 7,
+			1.0, 0.0, 2.0, 0.0, 3.0, 0.0, 0.5,
+			0.0, 1.0, 0.0, 2.0, 0.0, 3.0, 0.6,
+			0.0, 0.0, 3.0, 0.0, 4.0, 0.0, 0.7,
+			0.0, 0.0, 0.0, 3.0, 0.0, 4.0, 0.8);
+
+	// 3 variables, all dim=2
+	vector<size_t> dims; dims += 2, 2, 2, 1;
+	GaussianConditional::rsd_type matrices(full_matrix, dims.begin(), dims.end());
+	Vector sigmas = ones(4);
+	vector<size_t> cgdims; cgdims += _x_, _x1_, _l1_;
+	GaussianConditional cg(cgdims.begin(), cgdims.end(), 2, matrices, sigmas);
+
+	EXPECT(assert_equal(Vector_(4, 0.5, 0.6, 0.7, 0.8), cg.get_d()));
+
+	// partial solution
+	Vector sl1 = Vector_(2, 9.0, 10.0);
+
+	// elimination order; _x_, _x1_, _l1_
+	VectorValues actual(vector<size_t>(3, 2));
+	actual[_x_]  = Vector_(2, 0.1, 0.2); // rhs
+	actual[_x1_] = Vector_(2, 0.3, 0.4); // rhs
+	actual[_l1_] = sl1; // parent
+
+	VectorValues expected(vector<size_t>(3, 2));
+	expected[_x_] = Vector_(2, -3.1,-3.4);
+	expected[_x1_] = Vector_(2, -11.9,-13.2);
+	expected[_l1_] = sl1;
+
+	// verify indices/size
+	EXPECT_LONGS_EQUAL(3, cg.size());
+	EXPECT_LONGS_EQUAL(4, cg.dim());
+
+	// solve and verify
+	cg.solveInPlace(actual);
+	EXPECT(assert_equal(expected, actual, tol));
+
+}
+
+/* ************************************************************************* */
+TEST( GaussianConditional, solveTranspose ) {
+	static const Index _y_=1;
+	/** create small Chordal Bayes Net x <- y
+	 * x y d
+	 * 1 1 9
+	 *   1 5
+	 */
+	Matrix R11 = Matrix_(1, 1, 1.0), S12 = Matrix_(1, 1, 1.0);
+	Matrix R22 = Matrix_(1, 1, 1.0);
+	Vector d1(1), d2(1);
+	d1(0) = 9;
+	d2(0) = 5;
+	Vector tau(1);
+	tau(0) = 1.0;
+
+	// define nodes and specify in reverse topological sort (i.e. parents last)
+	GaussianConditional::shared_ptr Px_y(new GaussianConditional(_x_, d1, R11, _y_, S12, tau));
+	GaussianConditional::shared_ptr Py(new GaussianConditional(_y_, d2, R22, tau));
+	GaussianBayesNet cbn;
+	cbn.push_back(Px_y);
+	cbn.push_back(Py);
+
+	// x=R'*y, y=inv(R')*x
+	// 2 = 1    2
+	// 5   1 1  3
+
+	VectorValues y(vector<size_t>(2,1)), x(vector<size_t>(2,1));
+	x[_x_] = Vector_(1,2.);
+	x[_y_] = Vector_(1,5.);
+	y[_x_] = Vector_(1,2.);
+	y[_y_] = Vector_(1,3.);
+
+	// test functional version
+	VectorValues actual = backSubstituteTranspose(cbn,x);
+	CHECK(assert_equal(y,actual));
 }
 
 /* ************************************************************************* */

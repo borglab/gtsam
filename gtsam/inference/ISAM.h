@@ -19,23 +19,14 @@
 
 #pragma once
 
-#include <map>
-#include <list>
-#include <vector>
-#include <deque>
-//#include <boost/serialization/map.hpp>
-//#include <boost/serialization/list.hpp>
-#include <stdexcept>
-
-#include <gtsam/base/Testable.h>
-#include <gtsam/inference/FactorGraph.h>
-#include <gtsam/inference/BayesNet.h>
 #include <gtsam/inference/BayesTree.h>
 
 namespace gtsam {
 
 	template<class CONDITIONAL>
 	class ISAM: public BayesTree<CONDITIONAL> {
+	private:
+	  typedef BayesTree<CONDITIONAL> Base;
 
 	public:
 
@@ -44,6 +35,9 @@ namespace gtsam {
 
 		/** Create a Bayes Tree from a Bayes Net */
 		ISAM(const BayesNet<CONDITIONAL>& bayesNet);
+
+		/** Create a Bayes Tree from a Bayes Tree */
+		ISAM(const Base& bayesTree) : Base(bayesTree) {}
 
 		typedef typename BayesTree<CONDITIONAL>::sharedClique sharedClique;
 

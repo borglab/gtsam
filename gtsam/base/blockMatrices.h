@@ -17,9 +17,7 @@
  */
 #pragma once
 
-#include <vector>
 #include <gtsam/3rdparty/Eigen/Dense>
-#include <gtsam/3rdparty/Eigen/Core>
 #include <gtsam/base/Matrix.h>
 
 namespace gtsam {

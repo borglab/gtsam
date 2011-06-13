@@ -36,6 +36,7 @@ namespace gtsam {
 	template<typename KEY>
 	Factor<KEY>::Factor(const ConditionalType& c) :
 		keys_(c.keys()) {
+//	  assert(c.nrFrontals() == 1);
 		assertInvariants();
 	}
 

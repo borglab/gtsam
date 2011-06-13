@@ -21,7 +21,8 @@ public:
   typedef boost::shared_ptr<IterativeOptimizationParameters> shared_ptr;
 
   typedef enum {
-    SILENT, ERROR,
+    SILENT = 0,
+    ERROR,
   } verbosityLevel;
 
 public:
@@ -37,7 +38,7 @@ public:
 public:
   IterativeOptimizationParameters() :
     maxIterations_(100), reset_(101), epsilon_(1e-5), epsilon_abs_(1e-5),
-        verbosity_(ERROR), nReduce_(0), skeleton_spec_(), est_cond_(false) {
+        verbosity_(SILENT), nReduce_(0), skeleton_spec_(), est_cond_(false) {
   }
 
   IterativeOptimizationParameters(

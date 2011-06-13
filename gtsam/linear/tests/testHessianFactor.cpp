@@ -16,19 +16,25 @@
  * @created Dec 15, 2010
  */
 
+#include <vector>
+#include <utility>
+
+#include <boost/assign/std/vector.hpp>
+#include <boost/assign/std/map.hpp>
+
 #include <gtsam/base/debug.h>
 #include <gtsam/linear/HessianFactor.h>
 #include <gtsam/linear/JacobianFactor.h>
 #include <gtsam/linear/GaussianFactorGraph.h>
 
-#include <vector>
-#include <utility>
-
 #include <gtsam/base/TestableAssertions.h>
 #include <CppUnitLite/TestHarness.h>
 
-using namespace gtsam;
 using namespace std;
+using namespace boost::assign;
+using namespace gtsam;
+
+const double tol = 1e-5;
 
 /* ************************************************************************* */
 TEST(HessianFactor, ConversionConstructor) {
@@ -158,7 +164,7 @@ TEST(HessianFactor, Constructor2)
 }
 
 /* ************************************************************************* */
-TEST(HessianFactor, CombineAndEliminate)
+TEST_UNSAFE(HessianFactor, CombineAndEliminate)
 {
   Matrix A01 = Matrix_(3,3,
       1.0, 0.0, 0.0,
@@ -200,17 +206,17 @@ TEST(HessianFactor, CombineAndEliminate)
   JacobianFactor expectedFactor(0, A0, 1, A1, b, noiseModel::Diagonal::Sigmas(sigmas, true));
 
   // perform elimination
-  GaussianBayesNet expectedBN(*expectedFactor.eliminate(1));
+  GaussianConditional::shared_ptr expectedBN = expectedFactor.eliminate(1);
 
   // create expected Hessian after elimination
   HessianFactor expectedCholeskyFactor(expectedFactor);
 
-  GaussianFactorGraph::EliminationResult actualCholesky = EliminateCholesky(
+  GaussianFactorGraph::EliminationResult actualCholesky = EliminateLDL(
 			*gfg.convertCastFactors<FactorGraph<HessianFactor> > (), 1);
 	HessianFactor::shared_ptr actualFactor = boost::dynamic_pointer_cast<
 			HessianFactor>(actualCholesky.second);
 
-	EXPECT(assert_equal(expectedBN, *actualCholesky.first, 1e-6));
+	EXPECT(assert_equal(*expectedBN, *actualCholesky.first, 1e-6));
   EXPECT(assert_equal(expectedCholeskyFactor, *actualFactor, 1e-6));
 }
 
@@ -256,7 +262,7 @@ TEST(HessianFactor, eliminate2 )
   FactorGraph<HessianFactor> combinedLFG_Chol;
   combinedLFG_Chol.push_back(combinedLF_Chol);
 
-  GaussianFactorGraph::EliminationResult actual_Chol = EliminateCholesky(
+  GaussianFactorGraph::EliminationResult actual_Chol = EliminateLDL(
 			combinedLFG_Chol, 1);
 	HessianFactor::shared_ptr actualFactor = boost::dynamic_pointer_cast<
 			HessianFactor>(actual_Chol.second);
@@ -273,7 +279,7 @@ TEST(HessianFactor, eliminate2 )
   )/oldSigma;
   Vector d = Vector_(2,0.2,-0.14)/oldSigma;
   GaussianConditional expectedCG(0,d,R11,1,S12,ones(2));
-  EXPECT(assert_equal(expectedCG,*actual_Chol.first->front(),1e-4));
+  EXPECT(assert_equal(expectedCG,*actual_Chol.first,1e-4));
 
   // the expected linear factor
   double sigma = 0.2236;
@@ -355,20 +361,72 @@ TEST(HessianFactor, eliminateUnsorted) {
 //  unsortedGraph.push_back(factor1);
   unsortedGraph.push_back(unsorted_factor2);
 
-  GaussianBayesNet::shared_ptr expected_bn;
+  GaussianConditional::shared_ptr expected_bn;
   GaussianFactor::shared_ptr expected_factor;
   boost::tie(expected_bn, expected_factor) =
   		EliminatePreferCholesky(sortedGraph, 1);
 
-  GaussianBayesNet::shared_ptr actual_bn;
+  GaussianConditional::shared_ptr actual_bn;
   GaussianFactor::shared_ptr actual_factor;
   boost::tie(actual_bn, actual_factor) =
   		EliminatePreferCholesky(unsortedGraph, 1);
 
   EXPECT(assert_equal(*expected_bn, *actual_bn, 1e-10));
   EXPECT(assert_equal(*expected_factor, *actual_factor, 1e-10));
+
+  // Test LDL
+  boost::tie(expected_bn, expected_factor) =
+      EliminatePreferLDL(sortedGraph, 1);
+
+  boost::tie(actual_bn, actual_factor) =
+      EliminatePreferLDL(unsortedGraph, 1);
+
+  EXPECT(assert_equal(*expected_bn, *actual_bn, 1e-10));
+  EXPECT(assert_equal(*expected_factor, *actual_factor, 1e-10));
 }
 
+/* ************************************************************************* */
+TEST(HessianFactor, combine) {
+
+	// update the information matrix with a single jacobian factor
+	Matrix A0 = Matrix_(2, 2,
+	11.1803399,     0.0,
+	    0.0, 11.1803399);
+	Matrix A1 = Matrix_(2, 2,
+	-2.23606798,        0.0,
+	       0.0, -2.23606798);
+	Matrix A2 = Matrix_(2, 2,
+	-8.94427191,      0.0,
+				 0.0, -8.94427191);
+	Vector b = Vector_(2, 2.23606798,-1.56524758);
+	SharedDiagonal model = noiseModel::Diagonal::Sigmas(ones(2));
+	GaussianFactor::shared_ptr f(new JacobianFactor(0, A0, 1, A1, 2, A2, b, model));
+	FactorGraph<GaussianFactor> factors;
+	factors.push_back(f);
+
+	vector<size_t> dimensions;
+	dimensions += 2, 2, 2, 1;
+
+	Scatter scatter;
+	scatter += make_pair(0, SlotEntry(0, 2));
+	scatter += make_pair(1, SlotEntry(1, 2));
+	scatter += make_pair(2, SlotEntry(2, 2));
+
+	// Form Ab' * Ab
+	HessianFactor actual(factors, dimensions, scatter);
+
+	Matrix expected = Matrix_(7, 7,
+  125.0000,       0.0,  -25.0000,       0.0, -100.0000,       0.0,   25.0000,
+       0.0,  125.0000,       0.0,  -25.0000,       0.0, -100.0000,  -17.5000,
+  -25.0000,       0.0,    5.0000,       0.0,   20.0000,       0.0,   -5.0000,
+       0.0,  -25.0000,       0.0,    5.0000,       0.0,   20.0000,    3.5000,
+ -100.0000,       0.0,   20.0000,       0.0,   80.0000,       0.0,  -20.0000,
+       0.0, -100.0000,       0.0,   20.0000,       0.0,   80.0000,   14.0000,
+   25.0000,  -17.5000,   -5.0000,    3.5000,  -20.0000,   14.0000,    7.4500);
+	EXPECT(assert_equal(Matrix(expected.triangularView<Eigen::Upper>()),
+			Matrix(actual.matrix_.triangularView<Eigen::Upper>()), tol));
+
+}
 /* ************************************************************************* */
 int main() { TestResult tr; return TestRegistry::runAllTests(tr);}
 /* ************************************************************************* */

@@ -16,11 +16,12 @@
 
 #pragma once
 
-#include <boost/foreach.hpp>
-#include <boost/tuple/tuple.hpp>
 #include <utility>
 #include <iostream>
 #include <stdexcept>
+
+#include <boost/foreach.hpp>
+#include <boost/tuple/tuple.hpp>
 
 #include <gtsam/linear/VectorValues.h>
 #include <gtsam/base/LieVector.h>
@@ -29,12 +30,7 @@
 
 #include <gtsam/nonlinear/LieValues.h>
 
-#define INSTANTIATE_LIE_VALUES(J) \
-  /*INSTANTIATE_LIE(T);*/ \
-  /*template LieValues<J> expmap(const LieValues<J>&, const VectorValues&);*/ \
-  /*template LieValues<J> expmap(const LieValues<J>&, const Vector&);*/ \
-  /*template VectorValues logmap(const LieValues<J>&, const LieValues<J>&);*/ \
-  template class LieValues<J>;
+#define INSTANTIATE_LIE_VALUES(J) template class LieValues<J>;
 
 using namespace std;
 

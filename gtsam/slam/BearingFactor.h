@@ -16,9 +16,7 @@
 
 #pragma once
 
-#include <gtsam/geometry/Rot2.h>
 #include <gtsam/geometry/Pose2.h>
-#include <gtsam/geometry/Point2.h>
 #include <gtsam/nonlinear/NonlinearFactor.h>
 
 namespace gtsam {

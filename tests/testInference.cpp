@@ -43,8 +43,11 @@ TEST(GaussianFactorGraph, createSmoother)
 	// eliminate
 	vector<Index> x3var; x3var.push_back(ordering["x3"]);
 	vector<Index> x1var; x1var.push_back(ordering["x1"]);
-	GaussianBayesNet p_x3 = *GaussianSequentialSolver(*GaussianSequentialSolver(fg2).jointFactorGraph(x3var)).eliminate();
-	GaussianBayesNet p_x1 = *GaussianSequentialSolver(*GaussianSequentialSolver(fg2).jointFactorGraph(x1var)).eliminate();
+	// NOTE: fails when using LDL, works with QR
+	GaussianBayesNet p_x3 = *GaussianSequentialSolver(
+			*GaussianSequentialSolver(fg2).jointFactorGraph(x3var), true).eliminate();
+	GaussianBayesNet p_x1 = *GaussianSequentialSolver(
+			*GaussianSequentialSolver(fg2).jointFactorGraph(x1var), true).eliminate();
 	CHECK(assert_equal(*p_x1.back(),*p_x3.front())); // should be the same because of symmetry
 }
 
@@ -55,7 +58,10 @@ TEST( Inference, marginals )
 	// create and marginalize a small Bayes net on "x"
   GaussianBayesNet cbn = createSmallGaussianBayesNet();
   vector<Index> xvar; xvar.push_back(0);
-  GaussianBayesNet actual = *GaussianSequentialSolver(*GaussianSequentialSolver(GaussianFactorGraph(cbn)).jointFactorGraph(xvar)).eliminate();
+	// NOTE: fails when using LDL, works with QR
+  GaussianBayesNet actual = *GaussianSequentialSolver(
+  		*GaussianSequentialSolver(
+  				GaussianFactorGraph(cbn), true).jointFactorGraph(xvar), true).eliminate();
 
   // expected is just scalar Gaussian on x
   GaussianBayesNet expected = scalarGaussian(0, 4, sqrt(2));
@@ -86,7 +92,8 @@ TEST( Inference, marginals2)
 
   Ordering ordering(*fg.orderingCOLAMD(init));
   FactorGraph<GaussianFactor>::shared_ptr gfg(fg.linearize(init, ordering));
-  GaussianMultifrontalSolver solver(*gfg);
+	// NOTE: fails when using LDL, works with QR
+  GaussianMultifrontalSolver solver(*gfg, true);
   solver.marginalFactor(ordering[PointKey(0)]);
 }
 

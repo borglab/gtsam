@@ -161,8 +161,15 @@ namespace gtsam {
   // Log map at identity - return the canonical coordinates of this rotation
   Vector Rot3::Logmap(const Rot3& R) {
 		double tr = R.r1().x()+R.r2().y()+R.r3().z();
-		if (tr > 3.0 - 1e-10) {   // when theta = 0, +-2pi, +-4pi, etc. (or tr > 3 + 1E-10)
-      return zero(3);
+		if (tr > 3.0 - 1e-17) {   // when theta = 0, +-2pi, +-4pi, etc. (or tr > 3 + 1E-10)
+		    return zero(3);
+		} else if (tr > 3.0 - 1e-10)  {   // when theta near 0, +-2pi, +-4pi, etc. (or tr > 3 + 1E-3)
+        double theta = acos((tr-1.0)/2.0);
+        // Using Taylor expansion: theta/(2*sin(theta)) \approx 1/2+theta^2/12 + O(theta^4)
+        return (0.5 + theta*theta/12)*Vector_(3,
+            R.r2().z()-R.r3().y(),
+            R.r3().x()-R.r1().z(),
+            R.r1().y()-R.r2().x());
 		} else if (fabs(tr - -1.0) < 1e-10) { // when theta = +-pi, +-3pi, +-5pi, etc.
       if(fabs(R.r3().z() - -1.0) > 1e-10)
         return (boost::math::constants::pi<double>() / sqrt(2.0+2.0*R.r3().z())) *

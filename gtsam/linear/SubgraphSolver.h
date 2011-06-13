@@ -12,12 +12,8 @@
 #pragma once
 
 
-#include <boost/shared_ptr.hpp>
-#include <boost/make_shared.hpp>
-
 #include <gtsam/linear/IterativeSolver.h>
 #include <gtsam/linear/SubgraphPreconditioner.h>
-#include <gtsam/nonlinear/Ordering.h>
 
 namespace gtsam {
 
@@ -52,29 +48,33 @@ namespace gtsam {
 		/* preconditioner */
 		shared_preconditioner pc_;
 
+		/* flag for direct solver - either QR or LDL */
+		bool useQR_;
+
 	public:
 
-		SubgraphSolver(const GRAPH& G, const VALUES& theta0, const Parameters &parameters = Parameters()):
-			IterativeSolver(parameters){ initialize(G,theta0); }
+		SubgraphSolver(const GRAPH& G, const VALUES& theta0, const Parameters &parameters = Parameters(), bool useQR = false):
+			IterativeSolver(parameters), useQR_(useQR) { initialize(G,theta0); }
 
 		SubgraphSolver(const LINEAR& GFG) {
 			std::cout << "[SubgraphSolver] Unexpected usage.." << std::endl;
 			throw std::runtime_error("SubgraphSolver: gaussian factor graph initialization not supported");
 		}
 
-		SubgraphSolver(const shared_linear& GFG, const boost::shared_ptr<VariableIndex>& structure) {
+		SubgraphSolver(const shared_linear& GFG, const boost::shared_ptr<VariableIndex>& structure, bool useQR = false) {
 			std::cout << "[SubgraphSolver] Unexpected usage.." << std::endl;
 			throw std::runtime_error("SubgraphSolver: gaussian factor graph and variable index initialization not supported");
 		}
 
 		SubgraphSolver(const SubgraphSolver& solver) :
-			IterativeSolver(solver), ordering_(solver.ordering_), pairs_(solver.pairs_), pc_(solver.pc_){}
+			IterativeSolver(solver), ordering_(solver.ordering_), pairs_(solver.pairs_), pc_(solver.pc_), useQR_(solver.useQR_) {}
 
 		SubgraphSolver(shared_ordering ordering,
 				mapPairIndex pairs,
 				shared_preconditioner pc,
-				sharedParameters parameters = boost::make_shared<Parameters>()) :
-					IterativeSolver(parameters), ordering_(ordering), pairs_(pairs), pc_(pc) {}
+				sharedParameters parameters = boost::make_shared<Parameters>(),
+				bool useQR = true) :
+					IterativeSolver(parameters), ordering_(ordering), pairs_(pairs), pc_(pc), useQR_(useQR) {}
 
 		void replaceFactors(const typename LINEAR::shared_ptr &graph);
 		VectorValues::shared_ptr optimize() const ;

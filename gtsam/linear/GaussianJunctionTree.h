@@ -19,11 +19,11 @@
 
 #pragma once
 
+#include <boost/foreach.hpp>
 #include <gtsam/inference/JunctionTree.h>
+#include <gtsam/inference/BayesTree.h>
 #include <gtsam/linear/GaussianConditional.h>
 #include <gtsam/linear/GaussianFactorGraph.h>
-
-#include <boost/shared_ptr.hpp>
 
 namespace gtsam {
 
@@ -43,6 +43,9 @@ namespace gtsam {
 		// back-substitute in topological sort order (parents first)
 		void btreeBackSubstitute(const boost::shared_ptr<const BayesTree::Clique>& current, VectorValues& config) const;
 
+		// find the RHS for the system in order to perform backsubstitution
+		void btreeRHS(const boost::shared_ptr<const BayesTree::Clique>& current, VectorValues& config) const;
+
 	public :
 
 		/** Default constructor */
@@ -52,10 +55,32 @@ namespace gtsam {
 		GaussianJunctionTree(const GaussianFactorGraph& fg) : Base(fg) {}
 
     /** Construct from a factor graph and a pre-computed variable index. */
-    GaussianJunctionTree(const GaussianFactorGraph& fg, const VariableIndex& variableIndex) : Base(fg, variableIndex) {}
+    GaussianJunctionTree(const GaussianFactorGraph& fg, const VariableIndex& variableIndex)
+    : Base(fg, variableIndex) {}
 
 		// optimize the linear graph
 		VectorValues optimize(Eliminate function) const;
+
+		// convenient function to return dimensions of all variables in the BayesTree<GaussianConditional>
+		template<class DIM_CONTAINER>
+		static void countDims(const BayesTree& bayesTree, DIM_CONTAINER& dims) {
+		  dims = DIM_CONTAINER(bayesTree.root()->conditional()->back()+1, 0);
+		  countDims(bayesTree.root(), dims);
+	  }
+
+	private:
+    template<class DIM_CONTAINER>
+		static void countDims(const boost::shared_ptr<const BayesTree::Clique>& clique, DIM_CONTAINER& dims) {
+      GaussianConditional::const_iterator it = clique->conditional()->beginFrontals();
+      for (; it != clique->conditional()->endFrontals(); ++it) {
+        assert(dims.at(*it) == 0);
+        dims.at(*it) = clique->conditional()->dim(it);
+      }
+
+      BOOST_FOREACH(const boost::shared_ptr<const BayesTree::Clique>& child, clique->children()) {
+        countDims(child, dims);
+      }
+    }
 
 	}; // GaussianJunctionTree
 

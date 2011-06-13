@@ -11,10 +11,18 @@
 
 /**
  * @file    HessianFactor.cpp
- * @brief   
  * @author  Richard Roberts
  * @created Dec 8, 2010
  */
+
+#include <sstream>
+
+#include <boost/foreach.hpp>
+#include <boost/format.hpp>
+#include <boost/make_shared.hpp>
+#include <boost/lambda/bind.hpp>
+#include <boost/lambda/lambda.hpp>
+#include <boost/tuple/tuple.hpp>
 
 #include <gtsam/base/debug.h>
 #include <gtsam/base/timing.h>
@@ -27,20 +35,18 @@
 #include <gtsam/linear/GaussianFactorGraph.h>
 #include <gtsam/linear/GaussianBayesNet.h>
 
-#include <boost/foreach.hpp>
-#include <boost/format.hpp>
-#include <boost/make_shared.hpp>
-#include <boost/lambda/bind.hpp>
-#include <boost/lambda/lambda.hpp>
-#include <boost/tuple/tuple.hpp>
-
-#include <sstream>
-
 using namespace std;
 
 using namespace boost::lambda;
 
 namespace gtsam {
+
+/* ************************************************************************* */
+string SlotEntry::toString() const {
+	ostringstream oss;
+	oss << "SlotEntry: slot=" << slot << ", dim=" << dimension;
+	return oss.str();
+}
 
 /* ************************************************************************* */
 void HessianFactor::assertInvariants() const {
@@ -137,7 +143,7 @@ HessianFactor::HessianFactor(const FactorGraph<GaussianFactor>& factors,
 		const vector<size_t>& dimensions, const Scatter& scatter) :
 		info_(matrix_) {
 
-	const bool debug = ISDEBUG("EliminateCholesky");
+	const bool debug = ISDEBUG("EliminateCholesky") || ISDEBUG("EliminateLDL");
 	// Form Ab' * Ab
 	tic(1, "allocate");
 	info_.resize(dimensions.begin(), dimensions.end(), false);
@@ -146,6 +152,7 @@ HessianFactor::HessianFactor(const FactorGraph<GaussianFactor>& factors,
 	matrix_.noalias() = Matrix::Zero(matrix_.rows(),matrix_.cols());
 	toc(2, "zero");
 	tic(3, "update");
+	if (debug) cout << "Combining " << factors.size() << " factors" << endl;
 	BOOST_FOREACH(const GaussianFactor::shared_ptr& factor, factors)
 	{
 		shared_ptr hessian(boost::dynamic_pointer_cast<HessianFactor>(factor));
@@ -230,7 +237,7 @@ void HessianFactor::updateATA(const HessianFactor& update, const Scatter& scatte
 
 	if(debug) {
 		this->print("Updating this: ");
-		update.print("with: ");
+		update.print("with (Hessian): ");
 	}
 
 	// Apply updates to the upper triangle
@@ -288,25 +295,26 @@ void HessianFactor::updateATA(const JacobianFactor& update, const Scatter& scatt
 
 	if(debug) {
 		this->print("Updating this: ");
-		update.print("with: ");
+		update.print("with (Jacobian): ");
 	}
 
 	Eigen::Block<typeof(update.matrix_)> updateA(update.matrix_.block(
 			update.Ab_.rowStart(),update.Ab_.offset(0), update.Ab_.full().rows(), update.Ab_.full().cols()));
+	if (debug) cout << "updateA: \n" << updateA << endl;
 
-	Eigen::MatrixXd updateInform;
+	Matrix updateInform;
 	if(boost::dynamic_pointer_cast<noiseModel::Unit>(update.model_)) {
 		updateInform.noalias() = updateA.transpose() * updateA;
 	} else {
 		noiseModel::Diagonal::shared_ptr diagonal(boost::dynamic_pointer_cast<noiseModel::Diagonal>(update.model_));
 		if(diagonal) {
-			typeof(Eigen::Map<Eigen::VectorXd>(&update.model_->invsigmas()(0),0).asDiagonal()) R(
-					Eigen::Map<Eigen::VectorXd>(&update.model_->invsigmas()(0),update.model_->dim()).asDiagonal());
-			updateInform.noalias() = updateA.transpose() * R * R * updateA;
+			Vector invsigmas2 = update.model_->invsigmas().cwiseProduct(update.model_->invsigmas());
+			updateInform.noalias() = updateA.transpose() * invsigmas2.asDiagonal() * updateA;
 		} else
 			throw invalid_argument("In HessianFactor::updateATA, JacobianFactor noise model is neither Unit nor Diagonal");
 	}
-	toc(2, "form A^T*A");
+	if (debug) cout << "updateInform: \n" << updateInform << endl;
+ 	toc(2, "form A^T*A");
 
 	// Apply updates to the upper triangle
 	tic(3, "update");
@@ -337,74 +345,6 @@ void HessianFactor::updateATA(const JacobianFactor& update, const Scatter& scatt
 		}
 	}
 	toc(3, "update");
-
-	//  Eigen::Map<Eigen::MatrixXd> information(&matrix_(0,0), matrix_.rows(), matrix_.cols());
-	//  Eigen::Map<Eigen::MatrixXd> updateA(&update.matrix_(0,0), update.matrix_.rows(), update.matrix_.cols());
-	//
-	//  // Apply updates to the upper triangle
-	//  tic(2, "update");
-	//  assert(this->info_.nBlocks() - 1 == scatter.size());
-	//  for(size_t j2=0; j2<update.Ab_.nBlocks(); ++j2) {
-	//    size_t slot2 = (j2 == update.size()) ? this->info_.nBlocks()-1 : slots[j2];
-	//    for(size_t j1=0; j1<=j2; ++j1) {
-	//      size_t slot1 = (j1 == update.size()) ? this->info_.nBlocks()-1 : slots[j1];
-	//      typedef typeof(updateA.block(0,0,0,0)) ABlock;
-	//      ABlock A1(updateA.block(update.Ab_.rowStart(),update.Ab_.offset(j1), update.Ab_(j1).rows(),update.Ab_(j1).cols()));
-	//      ABlock A2(updateA.block(update.Ab_.rowStart(),update.Ab_.offset(j2), update.Ab_(j2).rows(),update.Ab_(j2).cols()));
-	//      if(slot2 > slot1) {
-	//        if(debug)
-	//          cout << "Updating (" << slot1 << "," << slot2 << ") from (" << j1 << "," << j2 << ")" << endl;
-	//        if(boost::dynamic_pointer_cast<noiseModel::Unit>(update.model_)) {
-	//          information.block(info_.offset(slot1), info_.offset(slot2), info_(slot1,slot2).rows(), info_(slot1,slot2).cols()) +=
-	//              A1.transpose() * A2;
-	//        } else {
-	//          noiseModel::Diagonal::shared_ptr diagonal(boost::dynamic_pointer_cast<noiseModel::Diagonal>(update.model_));
-	//          if(diagonal) {
-	//            typeof(Eigen::Map<Eigen::VectorXd>(&update.model_->invsigmas()(0),0).asDiagonal()) R(
-	//                Eigen::Map<Eigen::VectorXd>(&update.model_->invsigmas()(0),update.model_->dim()).asDiagonal());
-	//            information.block(info_.offset(slot1), info_.offset(slot2), info_(slot1,slot2).rows(), info_(slot1,slot2).cols()).noalias() +=
-	//                A1.transpose() * R * R * A2;
-	//          } else
-	//            throw invalid_argument("In HessianFactor::updateATA, JacobianFactor noise model is neither Unit nor Diagonal");
-	//        }
-	//      } else if(slot1 > slot2) {
-	//        if(debug)
-	//          cout << "Updating (" << slot2 << "," << slot1 << ") from (" << j1 << "," << j2 << ")" << endl;
-	//        if(boost::dynamic_pointer_cast<noiseModel::Unit>(update.model_)) {
-	//          information.block(info_.offset(slot2), info_.offset(slot1), info_(slot2,slot1).rows(), info_(slot2,slot1).cols()).noalias() +=
-	//              A2.transpose() * A1;
-	//        } else {
-	//          noiseModel::Diagonal::shared_ptr diagonal(boost::dynamic_pointer_cast<noiseModel::Diagonal>(update.model_));
-	//          if(diagonal) {
-	//            typeof(Eigen::Map<Eigen::VectorXd>(&update.model_->invsigmas()(0),0).asDiagonal()) R(
-	//                Eigen::Map<Eigen::VectorXd>(&update.model_->invsigmas()(0),update.model_->dim()).asDiagonal());
-	//            information.block(info_.offset(slot1), info_.offset(slot2), info_(slot1,slot2).rows(), info_(slot1,slot2).cols()).noalias() +=
-	//                A2.transpose() * R * R * A1;
-	//          } else
-	//            throw invalid_argument("In HessianFactor::updateATA, JacobianFactor noise model is neither Unit nor Diagonal");
-	//        }
-	//     } else {
-	//        if(debug)
-	//          cout << "Updating (" << slot1 << "," << slot2 << ") from (" << j1 << "," << j2 << ")" << endl;
-	//        if(boost::dynamic_pointer_cast<noiseModel::Unit>(update.model_)) {
-	//          information.block(info_.offset(slot2), info_.offset(slot1), info_(slot2,slot1).rows(), info_(slot2,slot1).cols()).triangularView<Eigen::Upper>() +=
-	//              A1.transpose() * A1;
-	//        } else {
-	//          noiseModel::Diagonal::shared_ptr diagonal(boost::dynamic_pointer_cast<noiseModel::Diagonal>(update.model_));
-	//          if(diagonal) {
-	//            typeof(Eigen::Map<Eigen::VectorXd>(&update.model_->invsigmas()(0),0).asDiagonal()) R(
-	//                Eigen::Map<Eigen::VectorXd>(&update.model_->invsigmas()(0),update.model_->dim()).asDiagonal());
-	//            information.block(info_.offset(slot2), info_.offset(slot1), info_(slot2,slot1).rows(), info_(slot2,slot1).cols()).triangularView<Eigen::Upper>() +=
-	//                A1.transpose() * R * R * A1;
-	//          } else
-	//            throw invalid_argument("In HessianFactor::updateATA, JacobianFactor noise model is neither Unit nor Diagonal");
-	//        }
-	//      }
-	//      if(debug) cout << "Updating block " << slot1 << "," << slot2 << " from block " << j1 << "," << j2 << "\n";
-	//      if(debug) this->print();
-	//    }
-	//  }
-	//  toc(2, "update");
 }
 
 /* ************************************************************************* */
@@ -413,49 +353,43 @@ void HessianFactor::partialCholesky(size_t nrFrontals) {
 }
 
 /* ************************************************************************* */
-GaussianBayesNet::shared_ptr
-HessianFactor::splitEliminatedFactor(size_t nrFrontals, const vector<Index>& keys) {
+Eigen::LDLT<Matrix>::TranspositionType HessianFactor::partialLDL(size_t nrFrontals) {
+  return ldlPartial(matrix_, info_.offset(nrFrontals));
+}
 
-	static const bool debug = false;
+/* ************************************************************************* */
+GaussianConditional::shared_ptr
+HessianFactor::splitEliminatedFactor(size_t nrFrontals, const vector<Index>& keys, const Eigen::LDLT<Matrix>::TranspositionType& permutation) {
 
-	// Extract conditionals
-	tic(1, "extract conditionals");
-	GaussianBayesNet::shared_ptr conditionals(new GaussianBayesNet());
-	typedef VerticalBlockView<Matrix> BlockAb;
-	BlockAb Ab(matrix_, info_);
-	for(size_t j=0; j<nrFrontals; ++j) {
-		// Temporarily restrict the matrix view to the conditional blocks of the
-		// eliminated Ab_ matrix to create the GaussianConditional from it.
-		size_t varDim = Ab(0).cols();
-		Ab.rowEnd() = Ab.rowStart() + varDim;
+  static const bool debug = false;
 
-		// Zero the entries below the diagonal
-		{
-			tic(1, "zero");
-			BlockAb::Block remainingMatrix(Ab.range(0, Ab.nBlocks()));
-			zeroBelowDiagonal(remainingMatrix);
-			toc(1, "zero");
-		}
+  // Extract conditionals
+  tic(1, "extract conditionals");
+  GaussianConditional::shared_ptr conditionals(new GaussianConditional());
+  typedef VerticalBlockView<Matrix> BlockAb;
+  BlockAb Ab(matrix_, info_);
 
-		tic(2, "construct cond");
-		Vector sigmas = Vector::Ones(varDim);
-		conditionals->push_back(boost::make_shared<ConditionalType>(keys.begin()+j, keys.end(), 1, Ab, sigmas));
-		toc(2, "construct cond");
-		if(debug) conditionals->back()->print("Extracted conditional: ");
-		Ab.rowStart() += varDim;
-		Ab.firstBlock() += 1;
-		if(debug) cout << "rowStart = " << Ab.rowStart() << ", rowEnd = " << Ab.rowEnd() << endl;
-	}
-	toc(1, "extract conditionals");
+  size_t varDim = info_.offset(nrFrontals);
+  Ab.rowEnd() = Ab.rowStart() + varDim;
 
-	// Take lower-right block of Ab_ to get the new factor
-	tic(2, "remaining factor");
-	info_.blockStart() = nrFrontals;
-	// Assign the keys
-	keys_.assign(keys.begin() + nrFrontals, keys.end());
-	toc(2, "remaining factor");
+  // Create one big conditionals with many frontal variables.
+  // Because of the pivoting permutation when using LDL, treating each variable separately doesn't make sense.
+  tic(2, "construct cond");
+  Vector sigmas = Vector::Ones(varDim);
+  conditionals = boost::make_shared<ConditionalType>(keys.begin(), keys.end(), nrFrontals, Ab, sigmas, permutation);
+  toc(2, "construct cond");
+  if(debug) conditionals->print("Extracted conditional: ");
 
-	return conditionals;
+  toc(1, "extract conditionals");
+
+  // Take lower-right block of Ab_ to get the new factor
+  tic(2, "remaining factor");
+  info_.blockStart() = nrFrontals;
+  // Assign the keys
+  keys_.assign(keys.begin() + nrFrontals, keys.end());
+  toc(2, "remaining factor");
+
+  return conditionals;
 }
 
 } // gtsam

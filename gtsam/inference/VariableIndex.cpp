@@ -16,6 +16,7 @@
  * @created Oct 22, 2010
  */
 
+#include <iostream>
 #include <gtsam/inference/VariableIndex.h>
 
 namespace gtsam {

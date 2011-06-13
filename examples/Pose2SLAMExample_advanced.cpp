@@ -76,8 +76,8 @@ int main(int argc, char** argv) {
 	result.print("final result");
 
 	/* Get covariances */
-	Matrix covariance1  = optimizer_result.marginalCovariance(x1).second;
-	Matrix covariance2  = optimizer_result.marginalCovariance(x2).second;
+	Matrix covariance1  = optimizer_result.marginalCovariance(x1);
+	Matrix covariance2  = optimizer_result.marginalCovariance(x2);
 
 	print(covariance1, "Covariance1");
 	print(covariance2, "Covariance2");

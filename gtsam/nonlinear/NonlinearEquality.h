@@ -20,7 +20,6 @@
 #include <limits>
 #include <iostream>
 
-#include <gtsam/nonlinear/Key.h>
 #include <gtsam/nonlinear/NonlinearFactor.h>
 
 namespace gtsam {
@@ -134,7 +133,6 @@ namespace gtsam {
 			const T& xj = x[this->key_];
 			Matrix A;
 			Vector b = evaluateError(xj, A);
-			// TODO pass unwhitened + noise model to Gaussian factor
 			SharedDiagonal model = noiseModel::Constrained::All(b.size());
 			return GaussianFactor::shared_ptr(new JacobianFactor(ordering[this->key_], A, b, model));
 		}

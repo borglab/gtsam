@@ -21,7 +21,6 @@
 #include <CppUnitLite/TestHarness.h>
 
 #include <gtsam/base/numericalDerivative.h>
-//#include <gtsam/slam/Simulated2DValues.h>
 #include <gtsam/slam/simulated2D.h>
 #include <gtsam/slam/simulated2DOriented.h>
 

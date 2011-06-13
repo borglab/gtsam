@@ -26,19 +26,19 @@ namespace gtsam {
 	/**
 	 * all the nonlinear optimization methods
 	 */
-	enum NonlinearOptimizationMethod {
+	typedef enum {
 		LM,            // Levenberg Marquardt
 		GN             // Gaussian-Newton
-	};
+	} NonlinearOptimizationMethod;
 
 	/**
 	 * all the linear solver types
 	 */
-	enum LinearSolver{
+	typedef enum {
 		SEQUENTIAL,      // Sequential elimination
 		MULTIFRONTAL,      // Multi-frontal elimination
 		SPCG,			  // Subgraph Preconditioned Conjugate Gradient
-	};
+	} LinearSolver;
 
 	/**
 	 * optimization that returns the values
@@ -46,7 +46,8 @@ namespace gtsam {
 	template<class G, class T>
 	T optimize(const G& graph, const T& initialEstimate,
 			const NonlinearOptimizationParameters& parameters = NonlinearOptimizationParameters(),
-			const enum LinearSolver& solver = MULTIFRONTAL);
+			const LinearSolver& solver = MULTIFRONTAL,
+			const NonlinearOptimizationMethod& nonlinear_method = LM);
 
 }
 

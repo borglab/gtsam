@@ -19,10 +19,6 @@
 
 #pragma once
 
-#include <vector>
-
-#include <gtsam/base/Testable.h>
-#include <gtsam/base/Vector.h>
 #include <gtsam/linear/VectorValues.h>
 
 namespace gtsam {

@@ -21,11 +21,9 @@
 
 #pragma once
 
-#include <boost/shared_ptr.hpp>
 #include <boost/tuple/tuple.hpp>
 
 #include <gtsam/base/FastSet.h>
-#include <gtsam/inference/FactorGraph.h>
 #include <gtsam/linear/Errors.h>
 #include <gtsam/linear/JacobianFactor.h>
 #include <gtsam/linear/HessianFactor.h>
@@ -192,8 +190,8 @@ namespace gtsam {
 	GaussianFactorGraph::EliminationResult EliminateJacobians(const FactorGraph<
 			JacobianFactor>& factors, size_t nrFrontals = 1);
 
-  GaussianFactorGraph::EliminationResult EliminateHessians(const FactorGraph<
-			HessianFactor>& factors, size_t nrFrontals = 1);
+//  GaussianFactorGraph::EliminationResult EliminateHessians(const FactorGraph<
+//			HessianFactor>& factors, size_t nrFrontals = 1);
 
   GaussianFactorGraph::EliminationResult EliminateQR(const FactorGraph<
 			GaussianFactor>& factors, size_t nrFrontals = 1);
@@ -203,5 +201,11 @@ namespace gtsam {
 
   GaussianFactorGraph::EliminationResult EliminateCholesky(const FactorGraph<
 			GaussianFactor>& factors, size_t nrFrontals = 1);
+
+  GaussianFactorGraph::EliminationResult EliminatePreferLDL(const FactorGraph<
+          GaussianFactor>& factors, size_t nrFrontals = 1);
+
+  GaussianFactorGraph::EliminationResult EliminateLDL(const FactorGraph<
+      GaussianFactor>& factors, size_t nrFrontals = 1);
 
 } // namespace gtsam

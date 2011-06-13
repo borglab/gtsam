@@ -22,8 +22,6 @@
 #pragma once
 
 #include <gtsam/geometry/Point3.h>
-#include <gtsam/base/Testable.h>
-#include <gtsam/base/Lie.h>
 
 namespace gtsam {
 

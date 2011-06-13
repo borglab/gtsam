@@ -18,9 +18,7 @@
 
 #pragma once
 
-#include <map>
 #include <boost/function.hpp>
-#include <gtsam/inference/IndexFactor.h>
 #include <gtsam/nonlinear/NonlinearFactor.h>
 
 namespace gtsam {
@@ -31,8 +29,6 @@ namespace gtsam {
  * where equality constraints are active all the time (even slightly
  * nonzero constraint functions will still be active - inequality
  * constraints should be sure to force to actual zero)
- *
- * NOTE: inequality constraints removed for now
  *
  * Nonlinear constraints evaluate their error as a part of a quadratic
  * error function: ||h(x)-z||^2 + mu * ||c(x)|| where mu is a gain

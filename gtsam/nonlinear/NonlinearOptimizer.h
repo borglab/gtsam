@@ -16,13 +16,8 @@
  * Created on: Sep 7, 2009
  */
 
-#ifndef NONLINEAROPTIMIZER_H_
-#define NONLINEAROPTIMIZER_H_
+#pragma once
 
-#include <boost/shared_ptr.hpp>
-#include <boost/make_shared.hpp>
-#include <gtsam/nonlinear/Ordering.h>
-#include <gtsam/linear/VectorValues.h>
 #include <gtsam/linear/GaussianMultifrontalSolver.h>
 #include <gtsam/nonlinear/NonlinearFactorGraph.h>
 #include <gtsam/nonlinear/NonlinearOptimizationParameters.h>
@@ -60,8 +55,6 @@ public:
  * one optimizes the linearized system using various methods.
  *
  * To use the optimizer in code, include <gtsam/NonlinearOptimizer-inl.h> in your cpp file
- *
- *
  */
 template<class G, class T, class L = GaussianFactorGraph, class GS = GaussianMultifrontalSolver, class W = NullOptimizerWriter>
 class NonlinearOptimizer {
@@ -216,13 +209,13 @@ public:
 	 * NOTE: this will actually solve a linear system
 	 */
 	shared_solver createSolver() const {
-			return shared_solver(new GS(linearize(), structure_));
+			return shared_solver(new GS(linearize(), structure_, parameters_->useQR_));
 	}
 
 	/**
 	 * Return mean and covariance on a single variable
 	 */
-	std::pair<Vector,Matrix> marginalCovariance(Symbol j) const {
+	Matrix marginalCovariance(Symbol j) const {
 		return createSolver()->marginalCovariance((*ordering_)[j]);
 	}
 
@@ -367,5 +360,3 @@ bool check_convergence (
 		double currentError, double newError);
 
 } // gtsam
-
-#endif /* NONLINEAROPTIMIZER_H_ */

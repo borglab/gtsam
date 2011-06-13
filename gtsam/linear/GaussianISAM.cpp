@@ -37,10 +37,9 @@ BayesNet<GaussianConditional>::shared_ptr GaussianISAM::marginalBayesNet(Index j
 }
 
 /* ************************************************************************* */
-std::pair<Vector, Matrix> GaussianISAM::marginal(Index j) const {
+Matrix GaussianISAM::marginalCovariance(Index j) const {
 	GaussianConditional::shared_ptr conditional = marginalBayesNet(j)->front();
-	Matrix R = conditional->get_R();
-	return make_pair(conditional->get_d(), (R.transpose() * R).inverse());
+	return conditional->computeInformation().inverse();
 }
 
 /* ************************************************************************* */
@@ -52,20 +51,30 @@ std::pair<Vector, Matrix> GaussianISAM::marginal(Index j) const {
 /* ************************************************************************* */
 void optimize(const GaussianISAM::sharedClique& clique, VectorValues& result) {
 	// parents are assumed to already be solved and available in result
-	GaussianISAM::Clique::const_reverse_iterator it;
-	for (it = clique->rbegin(); it!=clique->rend(); it++) {
-		GaussianConditional::shared_ptr cg = *it;
-    Vector x = cg->solve(result); // Solve for that variable
-    result[cg->key()] = x;   // store result in partial solution
-  }
-	BOOST_FOREACH(const GaussianISAM::sharedClique& child, clique->children_) {
+	// RHS for current conditional should already be in place in result
+  clique->conditional()->solveInPlace(result);
+
+	BOOST_FOREACH(const GaussianISAM::sharedClique& child, clique->children_)
 		optimize(child, result);
-	}
+}
+
+/* ************************************************************************* */
+void GaussianISAM::treeRHS(const GaussianISAM::sharedClique& clique, VectorValues& result) {
+  clique->conditional()->rhs(result);
+	BOOST_FOREACH(const GaussianISAM::sharedClique& child, clique->children_)
+		treeRHS(child, result);
+}
+
+/* ************************************************************************* */
+VectorValues GaussianISAM::rhs(const GaussianISAM& bayesTree) {
+	VectorValues result(bayesTree.dims_); // allocate
+	treeRHS(bayesTree.root(), result);    // recursively fill
+	return result;
 }
 
 /* ************************************************************************* */
 VectorValues optimize(const GaussianISAM& bayesTree) {
-	VectorValues result(bayesTree.dims_);
+	VectorValues result = GaussianISAM::rhs(bayesTree);
 	// starting from the root, call optimize on each conditional
 	optimize(bayesTree.root(), result);
 	return result;
@@ -77,4 +86,4 @@ BayesNet<GaussianConditional> GaussianISAM::shortcut(sharedClique clique, shared
 }
 /* ************************************************************************* */
 
-} /// namespace gtsam
+} // \namespace gtsam

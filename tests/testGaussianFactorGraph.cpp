@@ -35,7 +35,6 @@ using namespace boost::assign;
 #include <gtsam/linear/GaussianBayesNet.h>
 #include <gtsam/base/numericalDerivative.h>
 #include <gtsam/inference/SymbolicFactorGraph.h>
-//#include <gtsam/inference/BayesTree-inl.h>
 #include <gtsam/linear/GaussianSequentialSolver.h>
 
 using namespace gtsam;
@@ -49,7 +48,7 @@ TEST( GaussianFactorGraph, equals ) {
   Ordering ordering; ordering += "x1","x2","l1";
   GaussianFactorGraph fg = createGaussianFactorGraph(ordering);
   GaussianFactorGraph fg2 = createGaussianFactorGraph(ordering);
-  CHECK(fg.equals(fg2));
+  EXPECT(fg.equals(fg2));
 }
 
 /* ************************************************************************* */
@@ -77,10 +76,10 @@ TEST( GaussianFactorGraph, error ) {
 //  expected.insert("x1");
 //  expected.insert("l1");
 //
-//  CHECK(separator.size()==expected.size());
+//  EXPECT(separator.size()==expected.size());
 //  set<Symbol>::iterator it1 = separator.begin(), it2 = expected.begin();
 //  for(; it1!=separator.end(); it1++, it2++)
-//    CHECK(*it1 == *it2);
+//    EXPECT(*it1 == *it2);
 //}
 
 ///* ************************************************************************* */
@@ -137,7 +136,7 @@ TEST( GaussianFactorGraph, error ) {
 //  //GaussianFactor expected("l1", Al1, "x1", Ax1, "x2", Ax2, b);
 //
 //  // check if the two factors are the same
-//  CHECK(assert_equal(expected,*actual));
+//  EXPECT(assert_equal(expected,*actual));
 //}
 //
 ///* ************************************************************************* */
@@ -188,7 +187,7 @@ TEST( GaussianFactorGraph, error ) {
 //  GaussianFactor expected(meas, b, ones(4));
 //
 //  // check if the two factors are the same
-//  CHECK(assert_equal(expected,*actual));
+//  EXPECT(assert_equal(expected,*actual));
 //}
 
 ///* ************************************************************************* */
@@ -203,7 +202,7 @@ TEST( GaussianFactorGraph, error ) {
 //  Vector d = Vector_(2, -0.133333, -0.0222222), sigma = ones(2);
 //  GaussianConditional expected(ordering["x1"],15*d,R11,ordering["l1"],S12,ordering["x2"],S13,sigma);
 //
-//  CHECK(assert_equal(expected,*actual,tol));
+//  EXPECT(assert_equal(expected,*actual,tol));
 //}
 //
 ///* ************************************************************************* */
@@ -219,7 +218,7 @@ TEST( GaussianFactorGraph, error ) {
 //  Vector d = Vector_(2, 0.2, -0.14)/sig, sigma = ones(2);
 //  GaussianConditional expected(ordering["x2"],d,R11,ordering["l1"],S12,ordering["x1"],S13,sigma);
 //
-//  CHECK(assert_equal(expected,*actual,tol));
+//  EXPECT(assert_equal(expected,*actual,tol));
 //}
 //
 ///* ************************************************************************* */
@@ -235,7 +234,7 @@ TEST( GaussianFactorGraph, error ) {
 //  Vector d = Vector_(2, -0.1, 0.25)/sig, sigma = ones(2);
 //  GaussianConditional expected(ordering["l1"],d,R11,ordering["x1"],S12,ordering["x2"],S13,sigma);
 //
-//  CHECK(assert_equal(expected,*actual,tol));
+//  EXPECT(assert_equal(expected,*actual,tol));
 //}
 
 ///* ************************************************************************* */
@@ -249,7 +248,7 @@ TEST( GaussianFactorGraph, error ) {
 //  Vector d = Vector_(2, -0.133333, -0.0222222), sigma = ones(2);
 //  GaussianConditional expected("x1",15*d,R11,"l1",S12,"x2",S13,sigma);
 //
-//  CHECK(assert_equal(expected,*actual,tol));
+//  EXPECT(assert_equal(expected,*actual,tol));
 //}
 //
 ///* ************************************************************************* */
@@ -264,7 +263,7 @@ TEST( GaussianFactorGraph, error ) {
 //  Vector d = Vector_(2, 0.2, -0.14)/sig, sigma = ones(2);
 //  GaussianConditional expected("x2",d,R11,"l1",S12,"x1",S13,sigma);
 //
-//  CHECK(assert_equal(expected,*actual,tol));
+//  EXPECT(assert_equal(expected,*actual,tol));
 //}
 //
 ///* ************************************************************************* */
@@ -279,7 +278,7 @@ TEST( GaussianFactorGraph, error ) {
 //  Vector d = Vector_(2, -0.1, 0.25)/sig, sigma = ones(2);
 //  GaussianConditional expected("l1",d,R11,"x1",S12,"x2",S13,sigma);
 //
-//  CHECK(assert_equal(expected,*actual,tol));
+//  EXPECT(assert_equal(expected,*actual,tol));
 //}
 
 /* ************************************************************************* */
@@ -305,10 +304,10 @@ TEST( GaussianFactorGraph, eliminateAll )
 	// Check one ordering
 	GaussianFactorGraph fg1 = createGaussianFactorGraph(ordering);
 	GaussianBayesNet actual = *GaussianSequentialSolver(fg1).eliminate();
-	CHECK(assert_equal(expected,actual,tol));
+	EXPECT(assert_equal(expected,actual,tol));
 
   GaussianBayesNet actualET = *GaussianSequentialSolver(fg1).eliminate();
-  CHECK(assert_equal(expected,actualET,tol));
+  EXPECT(assert_equal(expected,actualET,tol));
 }
 
 ///* ************************************************************************* */
@@ -333,7 +332,7 @@ TEST( GaussianFactorGraph, eliminateAll )
 //	Ordering ordering;
 //	ordering += "x2","l1","x1";
 //	GaussianBayesNet actual = fg1.eliminate(ordering, false);
-//	CHECK(assert_equal(expected,actual,tol));
+//	EXPECT(assert_equal(expected,actual,tol));
 //}
 
 ///* ************************************************************************* */
@@ -349,7 +348,7 @@ TEST( GaussianFactorGraph, eliminateAll )
 //  expected.push_back(GaussianFactor::shared_ptr(new JacobianFactor(ordering["l1"],A,b,sigma)));
 //  expected.push_back(GaussianFactor::shared_ptr(new JacobianFactor(ordering["x1"],A,b,sigma)));
 //  expected.push_back(GaussianFactor::shared_ptr(new JacobianFactor(ordering["x2"],A,b,sigma)));
-//  CHECK(assert_equal(expected,actual));
+//  EXPECT(assert_equal(expected,actual));
 //}
 
 /* ************************************************************************* */
@@ -369,7 +368,7 @@ TEST( GaussianFactorGraph, copying )
   GaussianFactorGraph expected = createGaussianFactorGraph(ordering);
 
   // and check that original is still the same graph
-  CHECK(assert_equal(expected,actual));
+  EXPECT(assert_equal(expected,actual));
 }
 
 ///* ************************************************************************* */
@@ -398,7 +397,7 @@ TEST( GaussianFactorGraph, copying )
 //  Vector b1 = Vector_(8,-1., -1., 2., -1., 0., 1., -1., 1.5);
 //
 //  EQUALITY(A,A1);
-//  CHECK(b==b1);
+//  EXPECT(b==b1);
 //}
 
 ///* ************************************************************************* */
@@ -408,8 +407,8 @@ TEST( GaussianFactorGraph, copying )
 //	GaussianFactorGraph fg = createGaussianFactorGraph();
 //
 //  pair<size_t, size_t> mn = fg.sizeOfA();
-//  CHECK(8 == mn.first);
-//  CHECK(6 == mn.second);
+//  EXPECT(8 == mn.first);
+//  EXPECT(6 == mn.second);
 //}
 
 ///* ************************************************************************* */
@@ -444,12 +443,12 @@ TEST( GaussianFactorGraph, CONSTRUCTOR_GaussianBayesNet )
   // True GaussianFactorGraph
   GaussianFactorGraph fg2(CBN);
   GaussianBayesNet CBN2 = *GaussianSequentialSolver(fg2).eliminate();
-  CHECK(assert_equal(CBN,CBN2));
+  EXPECT(assert_equal(CBN,CBN2));
 
-//  // Base FactorGraph only
+  // Base FactorGraph only
 //  FactorGraph<GaussianFactor> fg3(CBN);
 //  GaussianBayesNet CBN3 = gtsam::eliminate<GaussianFactor,GaussianConditional>(fg3,ord);
-//  CHECK(assert_equal(CBN,CBN3));
+//  EXPECT(assert_equal(CBN,CBN3));
 }
 
 /* ************************************************************************* */
@@ -460,7 +459,7 @@ TEST( GaussianFactorGraph, getOrdering)
   Permutation perm(*Inference::PermutationCOLAMD(VariableIndex(symbolic)));
   Ordering actual = original; actual.permuteWithInverse((*perm.inverse()));
   Ordering expected; expected += "l1","x2","x1";
-  CHECK(assert_equal(expected,actual));
+  EXPECT(assert_equal(expected,actual));
 }
 
 // SL-FIX TEST( GaussianFactorGraph, getOrdering2)
@@ -470,7 +469,7 @@ TEST( GaussianFactorGraph, getOrdering)
 //  GaussianFactorGraph fg = createGaussianFactorGraph();
 //  set<Symbol> interested; interested += "l1","x1";
 //  Ordering actual = fg.getOrdering(interested);
-//  CHECK(assert_equal(expected,actual));
+//  EXPECT(assert_equal(expected,actual));
 //}
 
 /* ************************************************************************* */
@@ -488,7 +487,7 @@ TEST( GaussianFactorGraph, optimize )
 	// verify
 	VectorValues expected = createCorrectDelta(ord);
 
-  CHECK(assert_equal(expected,actual));
+  EXPECT(assert_equal(expected,actual));
 }
 
 ///* ************************************************************************* */
@@ -506,7 +505,7 @@ TEST( GaussianFactorGraph, optimize )
 //	// verify
 //	VectorValues expected = createCorrectDelta();
 //
-//  CHECK(assert_equal(expected,actual));
+//  EXPECT(assert_equal(expected,actual));
 //}
 
 /* ************************************************************************* */
@@ -528,7 +527,7 @@ TEST( GaussianFactorGraph, combine)
 	// combine them
 	fg1.combine(fg2);
 
-	CHECK(size1+size2 == fg1.size());
+	EXPECT(size1+size2 == fg1.size());
 }
 
 /* ************************************************************************* */
@@ -550,7 +549,7 @@ TEST( GaussianFactorGraph, combine2)
 	// combine them
 	GaussianFactorGraph fg3 = GaussianFactorGraph::combine2(fg1, fg2);
 
-	CHECK(size1+size2 == fg3.size());
+	EXPECT(size1+size2 == fg3.size());
 }
 
 /* ************************************************************************* */
@@ -571,13 +570,13 @@ void print(vector<int> v) {
 //	list<size_t> x1_factors = fg.factors("x1");
 //	size_t x1_indices[] = { 0, 1, 2 };
 //	list<size_t> x1_expected(x1_indices, x1_indices + 3);
-//	CHECK(x1_factors==x1_expected);
+//	EXPECT(x1_factors==x1_expected);
 //
 //	// ask for all factor indices connected to x2
 //	list<size_t> x2_factors = fg.factors("x2");
 //	size_t x2_indices[] = { 1, 3 };
 //	list<size_t> x2_expected(x2_indices, x2_indices + 2);
-//	CHECK(x2_factors==x2_expected);
+//	EXPECT(x2_factors==x2_expected);
 //}
 
 ///* ************************************************************************* */
@@ -595,11 +594,11 @@ void print(vector<int> v) {
 //  vector<GaussianFactor::shared_ptr> factors = fg.findAndRemoveFactors("x1");
 //
 //  // Check the factors
-//  CHECK(f0==factors[0]);
-//  CHECK(f1==factors[1]);
-//  CHECK(f2==factors[2]);
+//  EXPECT(f0==factors[0]);
+//  EXPECT(f1==factors[1]);
+//  EXPECT(f2==factors[2]);
 //
-//  // CHECK if the factors are deleted from the factor graph
+//  // EXPECT if the factors are deleted from the factor graph
 //  LONGS_EQUAL(1,fg.nrFactors());
 //}
 
@@ -619,7 +618,7 @@ TEST(GaussianFactorGraph, createSmoother)
 //  Dimensions expected;
 //  insert(expected)("l1", 2)("x1", 2)("x2", 2);
 //  Dimensions actual = fg.dimensions();
-//  CHECK(expected==actual);
+//  EXPECT(expected==actual);
 //}
 
 ///* ************************************************************************* */
@@ -628,17 +627,17 @@ TEST(GaussianFactorGraph, createSmoother)
 //  GaussianFactorGraph fg = createGaussianFactorGraph();
 //  Ordering expected;
 //  expected += "l1","x1","x2";
-//  CHECK(assert_equal(expected,fg.keys()));
+//  EXPECT(assert_equal(expected,fg.keys()));
 //}
 
 ///* ************************************************************************* */
 // SL-NEEDED? TEST( GaussianFactorGraph, involves )
 //{
 //  GaussianFactorGraph fg = createGaussianFactorGraph();
-//  CHECK(fg.involves("l1"));
-//  CHECK(fg.involves("x1"));
-//  CHECK(fg.involves("x2"));
-//  CHECK(!fg.involves("x3"));
+//  EXPECT(fg.involves("l1"));
+//  EXPECT(fg.involves("x1"));
+//  EXPECT(fg.involves("x2"));
+//  EXPECT(!fg.involves("x3"));
 //}
 
 /* ************************************************************************* */
@@ -667,11 +666,11 @@ double error(const VectorValues& x) {
 //	// Check the gradient at delta=0
 //  VectorValues zero = createZeroDelta();
 //	VectorValues actual = fg.gradient(zero);
-//	CHECK(assert_equal(expected,actual));
+//	EXPECT(assert_equal(expected,actual));
 //
 //	// Check it numerically for good measure
 //	Vector numerical_g = numericalGradient<VectorValues>(error,zero,0.001);
-//	CHECK(assert_equal(Vector_(6,5.0,-12.5,30.0,5.0,-25.0,17.5),numerical_g));
+//	EXPECT(assert_equal(Vector_(6,5.0,-12.5,30.0,5.0,-25.0,17.5),numerical_g));
 //
 //	// Check the gradient at the solution (should be zero)
 //	Ordering ord;
@@ -679,7 +678,7 @@ double error(const VectorValues& x) {
 //	GaussianFactorGraph fg2 = createGaussianFactorGraph();
 //  VectorValues solution = fg2.optimize(ord); // destructive
 //	VectorValues actual2 = fg.gradient(solution);
-//	CHECK(assert_equal(zero,actual2));
+//	EXPECT(assert_equal(zero,actual2));
 //}
 
 /* ************************************************************************* */
@@ -696,7 +695,7 @@ TEST( GaussianFactorGraph, multiplication )
   expected += Vector_(2, 2.0,-1.0);
   expected += Vector_(2, 0.0, 1.0);
   expected += Vector_(2,-1.0, 1.5);
-	CHECK(assert_equal(expected,actual));
+	EXPECT(assert_equal(expected,actual));
 }
 
 ///* ************************************************************************* */
@@ -716,7 +715,7 @@ TEST( GaussianFactorGraph, multiplication )
 //  expected[ord["l1"]] = Vector_(2, -37.5,-50.0);
 //  expected[ord["x1"]] = Vector_(2,-150.0, 25.0);
 //  expected[ord["x2"]] = Vector_(2, 187.5, 25.0);
-//	CHECK(assert_equal(expected,actual));
+//	EXPECT(assert_equal(expected,actual));
 //}
 
 ///* ************************************************************************* */
@@ -731,7 +730,7 @@ TEST( GaussianFactorGraph, multiplication )
 //  expected.push_back(Vector_(2, 2.0,-1.0));
 //  expected.push_back(Vector_(2, 0.0, 1.0));
 //  expected.push_back(Vector_(2,-1.0, 1.5));
-//	CHECK(assert_equal(expected,actual));
+//	EXPECT(assert_equal(expected,actual));
 //}
 
 /* ************************************************************************* */
@@ -753,7 +752,7 @@ TEST( GaussianFactorGraph, elimination )
 	GaussianBayesNet bayesNet = *GaussianSequentialSolver(fg).eliminate();
 
 	// Check sigma
-	DOUBLES_EQUAL(1.0,bayesNet[ord["x2"]]->get_sigmas()(0),1e-5);
+	EXPECT_DOUBLES_EQUAL(1.0,bayesNet[ord["x2"]]->get_sigmas()(0),1e-5);
 
 	// Check matrix
 	Matrix R;Vector d;
@@ -764,7 +763,7 @@ TEST( GaussianFactorGraph, elimination )
 	Matrix expected2 = Matrix_(2,2,
 			0.707107,	-0.353553,
 			0.0,	 -0.612372);
-	CHECK(equal_with_abs_tol(expected, R, 1e-6) || equal_with_abs_tol(expected2, R, 1e-6));
+	EXPECT(equal_with_abs_tol(expected, R, 1e-6) || equal_with_abs_tol(expected2, R, 1e-6));
 }
 
  /* ************************************************************************* */
@@ -780,7 +779,7 @@ TEST( GaussianFactorGraph, constrained_simple )
 
 	// verify
 	VectorValues expected = createSimpleConstraintValues();
-	CHECK(assert_equal(expected, actual));
+	EXPECT(assert_equal(expected, actual));
 }
 
 /* ************************************************************************* */
@@ -794,7 +793,7 @@ TEST( GaussianFactorGraph, constrained_single )
 
 	// verify
 	VectorValues expected = createSingleConstraintValues();
-	CHECK(assert_equal(expected, actual));
+	EXPECT(assert_equal(expected, actual));
 }
 
 ///* ************************************************************************* */
@@ -810,7 +809,7 @@ TEST( GaussianFactorGraph, constrained_single )
 //
 //	// verify
 //	VectorValues expected = createSingleConstraintValues();
-//	CHECK(assert_equal(expected, actual));
+//	EXPECT(assert_equal(expected, actual));
 //}
 
 /* ************************************************************************* */
@@ -824,7 +823,7 @@ TEST( GaussianFactorGraph, constrained_multi1 )
 
 	// verify
 	VectorValues expected = createMultiConstraintValues();
-	CHECK(assert_equal(expected, actual));
+	EXPECT(assert_equal(expected, actual));
 }
 
 ///* ************************************************************************* */
@@ -840,7 +839,7 @@ TEST( GaussianFactorGraph, constrained_multi1 )
 //
 //	// verify
 //	VectorValues expected = createMultiConstraintValues();
-//	CHECK(assert_equal(expected, actual));
+//	EXPECT(assert_equal(expected, actual));
 //}
 
 /* ************************************************************************* */
@@ -860,10 +859,10 @@ SharedDiagonal model = sharedSigma(2,1);
 //	g.add("x3", I, "x4", I, b, model);
 //
 //	map<string, string> tree = g.findMinimumSpanningTree<string, GaussianFactor>();
-//	CHECK(tree["x1"].compare("x1")==0);
-//	CHECK(tree["x2"].compare("x1")==0);
-//	CHECK(tree["x3"].compare("x1")==0);
-//	CHECK(tree["x4"].compare("x1")==0);
+//	EXPECT(tree["x1"].compare("x1")==0);
+//	EXPECT(tree["x2"].compare("x1")==0);
+//	EXPECT(tree["x3"].compare("x1")==0);
+//	EXPECT(tree["x4"].compare("x1")==0);
 //}
 
 ///* ************************************************************************* */
@@ -923,7 +922,7 @@ TEST(GaussianFactorGraph, replace)
 	expected.push_back(f3);
 //	actual.checkGraphConsistency();
 
-	CHECK(assert_equal(expected, actual));
+	EXPECT(assert_equal(expected, actual));
 }
 
 ///* ************************************************************************* */
@@ -952,8 +951,8 @@ TEST(GaussianFactorGraph, replace)
 //	// expected noise model
 //	SharedDiagonal expModel = noiseModel::Unit::Create(4);
 //
-//	CHECK(assert_equal(expAb, Ab));
-//	CHECK(assert_equal(*expModel, *noise));
+//	EXPECT(assert_equal(expAb, Ab));
+//	EXPECT(assert_equal(*expModel, *noise));
 //}
 
 /* ************************************************************************* */
@@ -984,12 +983,12 @@ TEST(GaussianFactorGraph, replace)
 //			"x3", Matrix_(1, 1, 1.), Vector_(1, 1.)));
 //	bn_expected.push_back(conditional1);
 //	bn_expected.push_back(conditional2);
-//	CHECK(assert_equal(bn_expected, bn));
+//	EXPECT(assert_equal(bn_expected, bn));
 //
 //	GaussianFactorGraph::sharedFactor factor_expected(new JacobianFactor("x3", Matrix_(1, 1, 2.), Vector_(1, 2.), SharedDiagonal(Vector_(1, 1.))));
 //	GaussianFactorGraph fg_expected;
 //	fg_expected.push_back(factor_expected);
-//	CHECK(assert_equal(fg_expected, fg));
+//	EXPECT(assert_equal(fg_expected, fg));
 //}
 
 /* ************************************************************************* */

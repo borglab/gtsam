@@ -9,7 +9,7 @@
 
  * -------------------------------------------------------------------------- */
 
-/*
+/**
  * SharedGaussian.h
  * @brief Class that wraps a shared noise model with diagonal covariance
  * @Author: Frank Dellaert

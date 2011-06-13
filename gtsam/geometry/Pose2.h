@@ -22,8 +22,6 @@
 
 #include <boost/optional.hpp>
 #include <gtsam/base/Matrix.h>
-#include <gtsam/base/Testable.h>
-#include <gtsam/base/Lie.h>
 #include <gtsam/geometry/Point2.h>
 #include <gtsam/geometry/Rot2.h>
 

@@ -17,8 +17,7 @@
 
 #pragma once
 
-#include <gtsam/base/Lie.h>
-#include "boost/tuple/tuple.hpp"
+#include <boost/tuple/tuple.hpp>
 #include <gtsam/geometry/Cal3_S2Stereo.h>
 #include <gtsam/geometry/Pose3.h>
 #include <gtsam/geometry/StereoPoint2.h>

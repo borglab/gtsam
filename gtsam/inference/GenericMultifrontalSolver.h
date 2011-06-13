@@ -18,11 +18,10 @@
 
 #pragma once
 
-#include <gtsam/inference/JunctionTree.h>
-#include <gtsam/inference/BayesNet.h>
-#include <gtsam/inference/FactorGraph.h>
-
 #include <utility>
+
+#include <gtsam/inference/JunctionTree.h>
+#include <gtsam/inference/FactorGraph.h>
 
 namespace gtsam {
 

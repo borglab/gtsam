@@ -16,15 +16,16 @@
  * @created Sep 16, 2010
  */
 
-#include <vector>
+#include <boost/assign/std/vector.hpp>
 
 #include <gtsam/linear/VectorValues.h>
 #include <gtsam/inference/Permutation.h>
 
 #include <CppUnitLite/TestHarness.h>
 
-using namespace gtsam;
 using namespace std;
+using namespace boost::assign;
+using namespace gtsam;
 
 /* ************************************************************************* */
 TEST(VectorValues, constructor) {
@@ -52,6 +53,9 @@ TEST(VectorValues, standard) {
   EXPECT_LONGS_EQUAL(3, combined.size());
   EXPECT_LONGS_EQUAL(9, combined.dim());
   EXPECT_LONGS_EQUAL(9, combined.dimCapacity());
+  EXPECT_LONGS_EQUAL(3, combined.dim(0));
+  EXPECT_LONGS_EQUAL(2, combined.dim(1));
+  EXPECT_LONGS_EQUAL(4, combined.dim(2));
   combined[0] = v1;
   combined[1] = v2;
   combined[2] = v3;
@@ -177,6 +181,53 @@ TEST(VectorValues, makeZero ) {
 	EXPECT_LONGS_EQUAL(14, values.vector().size());
 	values.makeZero();
 	EXPECT(assert_equal(zero(14), values.vector()));
+}
+
+/* ************************************************************************* */
+TEST(VectorValues, range ) {
+	VectorValues v(7,2);
+	v.makeZero();
+	v[1] = Vector_(2, 1.0, 2.0);
+	v[2] = Vector_(2, 3.0, 4.0);
+	v[3] = Vector_(2, 5.0, 6.0);
+
+	vector<size_t> idx1, idx2;
+	idx1 += 0, 1, 2, 3, 4, 5, 6; // ordered
+	idx2 += 1, 0, 2;  // unordered
+
+	// test access
+
+	Vector actRange1 = v.range(idx1.begin(), idx1.begin() + 2);
+	EXPECT(assert_equal(Vector_(4, 0.0, 0.0, 1.0, 2.0), actRange1));
+
+	Vector actRange2 = v.range(idx1.begin()+1, idx1.begin()+2);
+	EXPECT(assert_equal(Vector_(2, 1.0, 2.0), actRange2));
+
+	Vector actRange3 = v.range(idx2.begin(), idx2.end());
+	EXPECT(assert_equal(Vector_(6, 1.0, 2.0, 0.0, 0.0, 3.0, 4.0), actRange3));
+
+	// test setting values
+	VectorValues act1 = v, act2 = v, act3 = v;
+
+	Vector a = Vector_(2, 0.1, 0.2);
+	VectorValues exp1 = act1;	exp1[0] = a;
+	act1.range(idx1.begin(), idx1.begin()+1, a);
+	EXPECT(assert_equal(exp1, act1));
+
+	Vector bc = Vector_(4, 0.1, 0.2, 0.3, 0.4);
+	VectorValues exp2 = act2;
+	exp2[2] = Vector_(2, 0.1, 0.2);
+	exp2[3] = Vector_(2, 0.3, 0.4);
+	act2.range(idx1.begin()+2, idx1.begin()+4, bc);
+	EXPECT(assert_equal(exp2, act2));
+
+	Vector def = Vector_(6, 0.1, 0.2, 0.3, 0.4, 0.5, 0.6);
+	VectorValues exp3 = act3;
+	exp3[1] = Vector_(2, 0.1, 0.2);
+	exp3[0] = Vector_(2, 0.3, 0.4);
+	exp3[2] = Vector_(2, 0.5, 0.6);
+	act3.range(idx2.begin(), idx2.end(), def);
+	EXPECT(assert_equal(exp3, act3));
 }
 
 /* ************************************************************************* */

@@ -18,7 +18,6 @@
 
 #pragma once
 
-#include <gtsam/base/Matrix.h>
 #include <gtsam/base/blockMatrices.h>
 #include <gtsam/inference/FactorGraph.h>
 #include <gtsam/linear/GaussianFactor.h>
@@ -26,6 +25,7 @@
 // Forward declarations for friend unit tests
 class ConversionConstructorHessianFactorTest;
 class Constructor1HessianFactorTest;
+class combineHessianFactorTest;
 
 
 namespace gtsam {
@@ -40,7 +40,9 @@ namespace gtsam {
   struct SlotEntry {
     size_t slot;
     size_t dimension;
-    SlotEntry(size_t _slot, size_t _dimension) : slot(_slot), dimension(_dimension) {}
+    SlotEntry(size_t _slot, size_t _dimension)
+    : slot(_slot), dimension(_dimension) {}
+    std::string toString() const;
   };
   typedef FastMap<Index, SlotEntry> Scatter;
 
@@ -131,6 +133,7 @@ namespace gtsam {
     // Friend unit test classes
     friend class ::ConversionConstructorHessianFactorTest;
     friend class ::Constructor1HessianFactorTest;
+    friend class ::combineHessianFactorTest;
 
     // Friend JacobianFactor for conversion
     friend class JacobianFactor;
@@ -144,9 +147,14 @@ namespace gtsam {
 		 */
     void partialCholesky(size_t nrFrontals);
 
+    /**
+     * Do LDL.
+     */
+    Eigen::LDLT<Matrix>::TranspositionType partialLDL(size_t nrFrontals);
+
     /** split partially eliminated factor */
-    boost::shared_ptr<BayesNet<GaussianConditional> > splitEliminatedFactor(
-				size_t nrFrontals, const std::vector<Index>& keys);
+    boost::shared_ptr<GaussianConditional> splitEliminatedFactor(
+				size_t nrFrontals, const std::vector<Index>& keys, const Eigen::LDLT<Matrix>::TranspositionType& permutation = Eigen::LDLT<Matrix>::TranspositionType());
 
     /** assert invariants */
     void assertInvariants() const;

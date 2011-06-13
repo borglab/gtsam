@@ -32,7 +32,7 @@ headers += BetweenConstraint.h BoundingConstraint.h
 
 # 2D Pose SLAM
 sources += pose2SLAM.cpp dataset.cpp
-check_PROGRAMS += tests/testPose2SLAM tests/testPose2SLAMwSPCG
+check_PROGRAMS += tests/testPose2SLAM 
 
 # 2D SLAM using Bearing and Range
 headers += BearingFactor.h RangeFactor.h BearingRangeFactor.h

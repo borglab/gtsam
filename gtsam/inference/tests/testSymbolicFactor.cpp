@@ -71,28 +71,38 @@ TEST(SymbolicFactor, EliminateSymbolic) {
   factors.push_factor(1,2,5);
   factors.push_factor(0,3);
 
-  IndexFactor expected_factor(4,5,6);
-  BayesNet<IndexConditional> expected_bn;
-  vector<Index> parents;
+  IndexFactor expectedFactor(4,5,6);
+  std::vector<Index> keys; keys += 0,1,2,3,4,5,6;
+  IndexConditional::shared_ptr expectedConditional(new IndexConditional(keys, 4));
 
-  parents.clear(); parents += 1,2,3,4,5,6;
-  expected_bn.push_back(IndexConditional::shared_ptr(new IndexConditional(0, parents)));
+  IndexFactor::shared_ptr actualFactor;
+  IndexConditional::shared_ptr actualConditional;
+  boost::tie(actualConditional, actualFactor) = EliminateSymbolic(factors, 4);
 
-  parents.clear(); parents += 2,3,4,5,6;
-  expected_bn.push_back(IndexConditional::shared_ptr(new IndexConditional(1, parents)));
+  CHECK(assert_equal(*expectedConditional, *actualConditional));
+  CHECK(assert_equal(expectedFactor, *actualFactor));
 
-  parents.clear(); parents += 3,4,5,6;
-  expected_bn.push_back(IndexConditional::shared_ptr(new IndexConditional(2, parents)));
-
-  parents.clear(); parents += 4,5,6;
-  expected_bn.push_back(IndexConditional::shared_ptr(new IndexConditional(3, parents)));
-
-  BayesNet<IndexConditional>::shared_ptr actual_bn;
-  IndexFactor::shared_ptr actual_factor;
-  boost::tie(actual_bn, actual_factor) = EliminateSymbolic(factors, 4);
-
-  CHECK(assert_equal(expected_bn, *actual_bn));
-  CHECK(assert_equal(expected_factor, *actual_factor));
+//  BayesNet<IndexConditional> expected_bn;
+//  vector<Index> parents;
+//
+//  parents.clear(); parents += 1,2,3,4,5,6;
+//  expected_bn.push_back(IndexConditional::shared_ptr(new IndexConditional(0, parents)));
+//
+//  parents.clear(); parents += 2,3,4,5,6;
+//  expected_bn.push_back(IndexConditional::shared_ptr(new IndexConditional(1, parents)));
+//
+//  parents.clear(); parents += 3,4,5,6;
+//  expected_bn.push_back(IndexConditional::shared_ptr(new IndexConditional(2, parents)));
+//
+//  parents.clear(); parents += 4,5,6;
+//  expected_bn.push_back(IndexConditional::shared_ptr(new IndexConditional(3, parents)));
+//
+//  BayesNet<IndexConditional>::shared_ptr actual_bn;
+//  IndexFactor::shared_ptr actual_factor;
+//  boost::tie(actual_bn, actual_factor) = EliminateSymbolic(factors, 4);
+//
+//  CHECK(assert_equal(expected_bn, *actual_bn));
+//  CHECK(assert_equal(expected_factor, *actual_factor));
 }
 
 /* ************************************************************************* */

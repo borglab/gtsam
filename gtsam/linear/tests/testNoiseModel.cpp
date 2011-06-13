@@ -230,13 +230,13 @@ TEST(NoiseModel, Cholesky)
 {
   SharedDiagonal expected = noiseModel::Unit::Create(4);
   Matrix Ab = exampleQR::Ab; // otherwise overwritten !
-  SharedDiagonal actual = exampleQR::diagonal->Cholesky(Ab, 4); // ASSERTION FAILURE: access out of bounds
+  SharedDiagonal actual = exampleQR::diagonal->Cholesky(Ab, 4);
   EXPECT(assert_equal(*expected,*actual));
   // Ab was modified in place !!!
   Matrix actualRd = Ab.block(0, 0, actual->dim(), Ab.cols()).triangularView<Eigen::Upper>();
 //      ublas::project(ublas::triangular_adaptor<Matrix, ublas::upper>(Ab),
 //          ublas::range(0,actual->dim()), ublas::range(0, Ab.cols()));
-  EXPECT(linear_dependent(exampleQR::Rd,actualRd,1e-4)); // FIXME: enable test
+  EXPECT(linear_dependent(exampleQR::Rd,actualRd,1e-4));
 }
 
 /* ************************************************************************* */

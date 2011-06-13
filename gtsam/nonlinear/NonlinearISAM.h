@@ -19,7 +19,6 @@
 #pragma once
 
 #include <gtsam/linear/GaussianConditional.h>
-#include <gtsam/nonlinear/Ordering.h>
 #include <gtsam/nonlinear/NonlinearFactorGraph.h>
 #include <gtsam/linear/GaussianISAM.h>
 
@@ -97,6 +96,9 @@ public:
 	/** get counters */
 	int reorderInterval() const { return reorderInterval_; }
 	int reorderCounter() const { return reorderCounter_; }
+
+	/** prints out all contents of the system */
+	void print(const std::string& s="") const;
 };
 
 } // \namespace gtsam

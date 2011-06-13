@@ -20,6 +20,7 @@ check_PROGRAMS += testTupleValues
 check_PROGRAMS += testNonlinearISAM
 check_PROGRAMS += testBoundingConstraint
 check_PROGRAMS += testNonlinearEqualityConstraint
+check_PROGRAMS += testPose2SLAMwSPCG
 
 # only if serialization is available
 if ENABLE_SERIALIZATION

@@ -18,16 +18,8 @@
 
 #pragma once
 
-#include <boost/serialization/nvp.hpp>
-#include <gtsam/base/Vector.h>
-#include <gtsam/base/Matrix.h>
-#include <gtsam/geometry/Point2.h>
-#include <gtsam/geometry/Point3.h>
-#include <gtsam/geometry/Pose3.h>
 #include <gtsam/geometry/CalibratedCamera.h>
 #include <gtsam/geometry/Cal3_S2.h>
-
-
 #include <gtsam/geometry/Cal3Bundler.h>
 #include <gtsam/geometry/Cal3DS2.h>
 

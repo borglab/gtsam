@@ -19,13 +19,11 @@
 
 #pragma once
 
-#include <list>
 #include <vector>
 #include <stdexcept>
 #include <deque>
 
 #include <gtsam/base/types.h>
-#include <gtsam/base/Testable.h>
 #include <gtsam/inference/FactorGraph.h>
 #include <gtsam/inference/BayesNet.h>
 
@@ -51,43 +49,45 @@ namespace gtsam {
 		 * A Clique in the tree is an incomplete Bayes net: the variables
 		 * in the Bayes net are the frontal nodes, and the variables conditioned
 		 * on are the separator. We also have pointers up and down the tree.
+		 *
+		 * Since our Conditional class already handles multiple frontal variables,
+		 * this Clique contains exactly 1 conditional.
 		 */
-		struct Clique: public BayesNet<CONDITIONAL> {
+		struct Clique {
 
 		protected:
 		  void assertInvariants() const;
 
 		public:
-		  typedef BayesNet<CONDITIONAL> Base;
+		  typedef CONDITIONAL Base;
 			typedef typename boost::shared_ptr<Clique> shared_ptr;
 			typedef typename boost::weak_ptr<Clique> weak_ptr;
+			sharedConditional conditional_;
 			weak_ptr parent_;
 			std::list<shared_ptr> children_;
-			std::list<Index> separator_; /** separator keys */
 			typename FactorType::shared_ptr cachedFactor_;
 
 			friend class BayesTree<CONDITIONAL>;
 
 			//* Constructor */
-			Clique();
+			Clique() {}
 
 			Clique(const sharedConditional& conditional);
-
-			Clique(const BayesNet<CONDITIONAL>& bayesNet);
-
-			/** return keys in frontal:separator order */
-			std::vector<Index> keys() const;
 
 			/** print this node */
 			void print(const std::string& s = "") const;
 
-			/** The size *includes* the separator */
-			size_t size() const {
-				return this->conditionals_.size() + separator_.size();
-			}
+			/** The arrow operator accesses the conditional */
+			const CONDITIONAL* operator->() const { return conditional_.get(); }
+
+			/** The arrow operator accesses the conditional */
+			CONDITIONAL* operator->() { return conditional_.get(); }
+
+			/** Access the conditional */
+			const sharedConditional& conditional() const { return conditional_; }
 
 			/** is this the root of a Bayes tree ? */
-			inline bool isRoot() const { return parent_.expired();}
+			inline bool isRoot() const { return parent_.expired(); }
 
 			/** return the const reference of children */
 			std::list<shared_ptr>& children() { return children_; }
@@ -122,15 +122,19 @@ namespace gtsam {
 			/** return the joint P(C1,C2), where C1==this. TODO: not a method? */
 			FactorGraph<FactorType> joint(shared_ptr C2, shared_ptr root, Eliminate function);
 
+			bool equals(const Clique& other, double tol=1e-9) const {
+			  return (!conditional_ && !other.conditional()) ||
+			  		conditional_->equals(*(other.conditional()), tol);
+			}
+
 	  private:
 	    /** Serialization function */
 	    friend class boost::serialization::access;
 	    template<class ARCHIVE>
 	    void serialize(ARCHIVE & ar, const unsigned int version) {
-	    	ar & BOOST_SERIALIZATION_BASE_OBJECT_NVP(Base);
+	    	ar & BOOST_SERIALIZATION_NVP(conditional_);
 	    	ar & BOOST_SERIALIZATION_NVP(parent_);
 	    	ar & BOOST_SERIALIZATION_NVP(children_);
-	    	ar & BOOST_SERIALIZATION_NVP(separator_);
 	    	ar & BOOST_SERIALIZATION_NVP(cachedFactor_);
 	    }
 
@@ -194,7 +198,8 @@ namespace gtsam {
 		 * parents are already in the clique or its separators.  This function does
 		 * not check for this condition, it just updates the data structures.
 		 */
-		void addToCliqueFront(const sharedConditional& conditional, const sharedClique& clique);
+		static void addToCliqueFront(BayesTree<CONDITIONAL>& bayesTree,
+		    const sharedConditional& conditional, const sharedClique& clique);
 
 		/** Fill the nodes index for a subtree */
 		void fillNodesIndex(const sharedClique& subtree);
@@ -220,15 +225,18 @@ namespace gtsam {
 		 * Constructing Bayes trees
 		 */
 
-		/** Insert a new conditional */
-		void insert(const sharedConditional& conditional);
+		/** Insert a new conditional
+		 * This function only applies for Symbolic case with IndexCondtional,
+		 * We make it static so that it won't be compiled in GaussianConditional case.
+		 * */
+		static void insert(BayesTree<CONDITIONAL>& bayesTree, const sharedConditional& conditional);
 
 		/**
 		 * Insert a new clique corresponding to the given Bayes net.
 		 * It is the caller's responsibility to decide whether the given Bayes net is a valid clique,
 		 * i.e. all the variables (frontal and separator) are connected
 		 */
-		sharedClique insert(const BayesNet<CONDITIONAL>& bayesNet,
+		sharedClique insert(const sharedConditional& clique,
 				std::list<sharedClique>& children, bool isRootClique = false);
 
 		/**
@@ -262,6 +270,9 @@ namespace gtsam {
 				return 0;
 		}
 
+    /** return nodes */
+    Nodes nodes() const { return nodes_; }
+
 		/** return root clique */
 		const sharedClique& root() const { return root_;	}
 		sharedClique& root() { return root_; }
@@ -275,7 +286,7 @@ namespace gtsam {
 		CliqueData getCliqueData() const;
 
 		/** return marginal on any variable */
-		typename CONDITIONAL::FactorType::shared_ptr marginalFactor(Index key,
+		typename FactorType::shared_ptr marginalFactor(Index key,
 				Eliminate function) const;
 
 		/**

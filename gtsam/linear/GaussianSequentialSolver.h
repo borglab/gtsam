@@ -19,13 +19,10 @@
 #pragma once
 
 #include <gtsam/inference/GenericSequentialSolver.h>
-#include <gtsam/linear/GaussianBayesNet.h>
 #include <gtsam/linear/GaussianFactorGraph.h>
 #include <gtsam/linear/VectorValues.h>
-#include <gtsam/linear/GaussianConditional.h>
 
 #include <utility>
-#include <vector>
 
 namespace gtsam {
 
@@ -57,26 +54,31 @@ protected:
   typedef GenericSequentialSolver<GaussianFactor> Base;
   typedef boost::shared_ptr<const GaussianSequentialSolver> shared_ptr;
 
+  /** flag to determine whether to use LDL or QR */
+  bool useQR_;
+
 public:
 
   /**
    * Construct the solver for a factor graph.  This builds the elimination
    * tree, which already does some of the work of elimination.
    */
-  GaussianSequentialSolver(const FactorGraph<GaussianFactor>& factorGraph);
+  GaussianSequentialSolver(const FactorGraph<GaussianFactor>& factorGraph, bool useQR = false);
 
   /**
    * Construct the solver with a shared pointer to a factor graph and to a
    * VariableIndex.  The solver will store these pointers, so this constructor
    * is the fastest.
    */
-  GaussianSequentialSolver(const FactorGraph<GaussianFactor>::shared_ptr& factorGraph, const VariableIndex::shared_ptr& variableIndex);
+  GaussianSequentialSolver(const FactorGraph<GaussianFactor>::shared_ptr& factorGraph,
+  		const VariableIndex::shared_ptr& variableIndex, bool useQR = false);
 
   /**
    * Named constructor to return a shared_ptr.  This builds the elimination
    * tree, which already does some of the symbolic work of elimination.
    */
-  static shared_ptr Create(const FactorGraph<GaussianFactor>::shared_ptr& factorGraph, const VariableIndex::shared_ptr& variableIndex);
+  static shared_ptr Create(const FactorGraph<GaussianFactor>::shared_ptr& factorGraph,
+  		const VariableIndex::shared_ptr& variableIndex, bool useQR = false);
 
   /**
    * Return a new solver that solves the given factor graph, which must have
@@ -115,7 +117,7 @@ public:
    * returns a GaussianConditional, this function back-substitutes the R factor
    * to obtain the mean, then computes \Sigma = (R^T * R)^-1.
    */
-  std::pair<Vector, Matrix> marginalCovariance(Index j) const;
+  Matrix marginalCovariance(Index j) const;
 
   /**
    * Compute the marginal joint over a set of variables, by integrating out

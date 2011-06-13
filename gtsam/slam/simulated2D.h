@@ -35,7 +35,6 @@ namespace gtsam {
 		typedef LieValues<PoseKey> PoseValues;
 		typedef LieValues<PointKey> PointValues;
 
-//		typedef TupleValues2<PoseValues, PointValues> Values;
 		class Values: public TupleValues2<PoseValues, PointValues> {
 		public:
 			typedef TupleValues2<PoseValues, PointValues> Base;

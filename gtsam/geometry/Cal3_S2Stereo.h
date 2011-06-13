@@ -17,8 +17,6 @@
 
 #pragma once
 
-#include <gtsam/base/Matrix.h>
-#include <gtsam/geometry/Point2.h>
 #include <gtsam/geometry/Cal3_S2.h>
 
 namespace gtsam {

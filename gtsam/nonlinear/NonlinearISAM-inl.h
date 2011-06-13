@@ -9,7 +9,7 @@
 
  * -------------------------------------------------------------------------- */
 
-/*
+/**
  * NonlinearISAM-inl.h
  *
  *  Created on: Jan 19, 2010
@@ -18,12 +18,16 @@
 
 #pragma once
 
+#include <iostream>
+
+#include <boost/foreach.hpp>
+
 #include <gtsam/linear/GaussianFactorGraph.h>
 #include <gtsam/inference/ISAM-inl.h>
 #include <gtsam/nonlinear/Ordering.h>
 #include <gtsam/nonlinear/NonlinearISAM.h>
-#include <boost/foreach.hpp>
 
+using namespace std;
 using namespace gtsam;
 
 /* ************************************************************************* */
@@ -98,7 +102,16 @@ Values NonlinearISAM<Values>::estimate() const {
 /* ************************************************************************* */
 template<class Values>
 Matrix NonlinearISAM<Values>::marginalCovariance(const Symbol& key) const {
-	Matrix covariance; Vector mean;
-	boost::tie(mean, covariance) = isam_.marginal(ordering_[key]);
-	return covariance;
+	return isam_.marginalCovariance(ordering_[key]);
+}
+
+/* ************************************************************************* */
+template<class Values>
+void NonlinearISAM<Values>::print(const std::string& s) const {
+	cout << "ISAM - " << s << ":" << endl;
+	cout << "  ReorderInterval: " << reorderInterval_ << " Current Count: " << reorderCounter_ << endl;
+	isam_.print("GaussianISAM");
+	linPoint_.print("Linearization Point");
+	ordering_.print("System Ordering");
+	factors_.print("Nonlinear Graph");
 }

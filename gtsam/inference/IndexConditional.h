@@ -73,8 +73,19 @@ namespace gtsam {
 			assertInvariants();
 		}
 
+		/** Named constructor directly returning a shared pointer */
+		template<class KEYS>
+		static shared_ptr FromKeys(const KEYS& keys, size_t nrFrontals) {
+		  shared_ptr conditional(new IndexConditional());
+		  conditional->keys_.assign(keys.begin(), keys.end());
+		  conditional->nrFrontals_ = nrFrontals;
+		  return conditional;
+		}
+
     /** Convert to a factor */
-    IndexFactor::shared_ptr toFactor() const { return IndexFactor::shared_ptr(new IndexFactor(*this)); }
+    IndexFactor::shared_ptr toFactor() const {
+      return IndexFactor::shared_ptr(new IndexFactor(*this));
+    }
 
     /** Permute the variables when only separator variables need to be permuted.
      * Returns true if any reordered variables appeared in the separator and

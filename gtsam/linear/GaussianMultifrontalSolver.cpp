@@ -23,18 +23,19 @@
 namespace gtsam {
 
 /* ************************************************************************* */
-GaussianMultifrontalSolver::GaussianMultifrontalSolver(const FactorGraph<GaussianFactor>& factorGraph) :
-    Base(factorGraph) {}
+GaussianMultifrontalSolver::GaussianMultifrontalSolver(const FactorGraph<GaussianFactor>& factorGraph, bool useQR) :
+    Base(factorGraph), useQR_(useQR) {}
 
 /* ************************************************************************* */
-GaussianMultifrontalSolver::GaussianMultifrontalSolver(const FactorGraph<GaussianFactor>::shared_ptr& factorGraph, const VariableIndex::shared_ptr& variableIndex) :
-    Base(factorGraph, variableIndex) {}
+GaussianMultifrontalSolver::GaussianMultifrontalSolver(const FactorGraph<GaussianFactor>::shared_ptr& factorGraph,
+		const VariableIndex::shared_ptr& variableIndex, bool useQR) :
+    Base(factorGraph, variableIndex), useQR_(useQR) {}
 
 /* ************************************************************************* */
 GaussianMultifrontalSolver::shared_ptr
 GaussianMultifrontalSolver::Create(const FactorGraph<GaussianFactor>::shared_ptr& factorGraph,
-    const VariableIndex::shared_ptr& variableIndex) {
-  return shared_ptr(new GaussianMultifrontalSolver(factorGraph, variableIndex));
+    const VariableIndex::shared_ptr& variableIndex, bool useQR) {
+  return shared_ptr(new GaussianMultifrontalSolver(factorGraph, variableIndex, useQR));
 }
 
 /* ************************************************************************* */
@@ -44,34 +45,52 @@ void GaussianMultifrontalSolver::replaceFactors(const FactorGraph<GaussianFactor
 
 /* ************************************************************************* */
 BayesTree<GaussianConditional>::shared_ptr GaussianMultifrontalSolver::eliminate() const {
-  return Base::eliminate(&EliminateQR);
+	if (useQR_)
+		return Base::eliminate(&EliminateQR);
+	else
+		return Base::eliminate(&EliminatePreferLDL);
 }
 
 /* ************************************************************************* */
 VectorValues::shared_ptr GaussianMultifrontalSolver::optimize() const {
   tic(2,"optimize");
-  VectorValues::shared_ptr values(new VectorValues(junctionTree_->optimize(&EliminateQR)));
+  VectorValues::shared_ptr values;
+  if (useQR_)
+  	values = VectorValues::shared_ptr(new VectorValues(junctionTree_->optimize(&EliminateQR)));
+  else
+  	values= VectorValues::shared_ptr(new VectorValues(junctionTree_->optimize(&EliminatePreferLDL)));
   toc(2,"optimize");
   return values;
 }
 
 /* ************************************************************************* */
 GaussianFactorGraph::shared_ptr GaussianMultifrontalSolver::jointFactorGraph(const std::vector<Index>& js) const {
-  return GaussianFactorGraph::shared_ptr(new GaussianFactorGraph(*Base::jointFactorGraph(js,&EliminateQR)));
+	if (useQR_)
+		return GaussianFactorGraph::shared_ptr(new GaussianFactorGraph(*Base::jointFactorGraph(js,&EliminateQR)));
+	else
+		return GaussianFactorGraph::shared_ptr(new GaussianFactorGraph(*Base::jointFactorGraph(js,&EliminatePreferLDL)));
 }
 
 /* ************************************************************************* */
 GaussianFactor::shared_ptr GaussianMultifrontalSolver::marginalFactor(Index j) const {
-  return Base::marginalFactor(j,&EliminateQR);
+	if (useQR_)
+		return Base::marginalFactor(j,&EliminateQR);
+	else
+		return Base::marginalFactor(j,&EliminatePreferLDL);
 }
 
 /* ************************************************************************* */
-std::pair<Vector, Matrix> GaussianMultifrontalSolver::marginalCovariance(Index j) const {
+Matrix GaussianMultifrontalSolver::marginalCovariance(Index j) const {
   FactorGraph<GaussianFactor> fg;
-  fg.push_back(Base::marginalFactor(j,&EliminateQR));
-  GaussianConditional::shared_ptr conditional = EliminateQR(fg,1).first->front();
-  Matrix R = conditional->get_R();
-  return make_pair(conditional->get_d(), (R.transpose() * R).inverse());
+  GaussianConditional::shared_ptr conditional;
+  if (useQR_) {
+  	fg.push_back(Base::marginalFactor(j,&EliminateQR));
+  	conditional = EliminateQR(fg,1).first;
+  } else {
+  	fg.push_back(Base::marginalFactor(j,&EliminatePreferLDL));
+  	conditional = EliminatePreferLDL(fg,1).first;
+  }
+  return conditional->computeInformation().inverse();
 }
 
 }

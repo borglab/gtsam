@@ -8,7 +8,6 @@
 
 #pragma once
 
-#include <gtsam/base/Testable.h>
 #include <gtsam/nonlinear/NonlinearFactor.h>
 
 

@@ -50,5 +50,25 @@ std::pair<size_t,bool> choleskyCareful(Matrix& ATA, int order = -1);
  */
 void choleskyPartial(Matrix& ABC, size_t nFrontal);
 
+
+/**
+ * Partial LDL computes a factor [R S  such that [P'R' 0  [RP S  = [A  B
+ *                                0 F]            S'   I]  0  F]    B' C].
+ * The input to this function is the matrix ABC = [A  B], and the parameter
+ *                                                [B' C]
+ * nFrontal determines the split between A, B, and C, with A being of size
+ * nFrontal x nFrontal.
+ * P is a permutation matrix obtained from the pivoting process while doing LDL'.
+ *
+ * Specifically, if A = P'U'DUP is the LDL' factorization of A,
+ * then R = sqrt(D)*U is the permuted upper-triangular matrix.
+ * The permutation is returned so that it can be used in the backsubstitution
+ * process to return the correct order of variables, and in creating the
+ * Jacobian factor by permuting R correctly.
+ *
+ * Note that S and F are not permuted (in correct original ordering).
+ */
+Eigen::LDLT<Matrix>::TranspositionType ldlPartial(Matrix& ABC, size_t nFrontal);
+
 }
 

@@ -27,9 +27,8 @@
 #include <boost/foreach.hpp>
 #include <boost/tuple/tuple.hpp>
 
-#include <map>
-#include <vector>
 #include <string>
+#include <vector>
 
 namespace gtsam {
 

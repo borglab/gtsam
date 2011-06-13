@@ -6,11 +6,8 @@
  */
 #pragma once
 
-#include <list>
-#include <string>
 #include <utility>
 
-#include <gtsam/base/FastList.h>
 #include <gtsam/base/FastSet.h>
 #include <gtsam/inference/VariableIndex.h>
 #include <gtsam/inference/BayesNet.h>

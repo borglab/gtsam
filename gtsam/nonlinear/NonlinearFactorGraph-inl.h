@@ -21,7 +21,6 @@
 
 #include <cmath>
 #include <boost/foreach.hpp>
-#include <gtsam/linear/GaussianFactorGraph.h>
 #include <gtsam/nonlinear/NonlinearFactorGraph.h>
 #include <gtsam/inference/FactorGraph-inl.h>
 #include <gtsam/inference/inference.h>

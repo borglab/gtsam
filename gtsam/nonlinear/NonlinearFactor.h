@@ -23,15 +23,11 @@
 #include <list>
 #include <limits>
 
-#include <boost/shared_ptr.hpp>
 #include <boost/serialization/base_object.hpp>
 
 #include <gtsam/inference/Factor-inl.h>
 #include <gtsam/inference/IndexFactor.h>
-#include <gtsam/base/Vector.h>
-#include <gtsam/base/Matrix.h>
 #include <gtsam/linear/SharedGaussian.h>
-#include <gtsam/linear/GaussianFactor.h>
 #include <gtsam/linear/JacobianFactor.h>
 
 #include <gtsam/nonlinear/Ordering.h>

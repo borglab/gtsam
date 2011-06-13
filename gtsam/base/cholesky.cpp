@@ -148,4 +148,51 @@ void choleskyPartial(Matrix& ABC, size_t nFrontal) {
   toc(3, "compute L");
 }
 
+/* ************************************************************************* */
+Eigen::LDLT<Matrix>::TranspositionType ldlPartial(Matrix& ABC, size_t nFrontal) {
+
+  const bool debug = ISDEBUG("ldlPartial");
+
+  assert(ABC.rows() == ABC.cols());
+  assert(ABC.rows() >= 0 && nFrontal <= size_t(ABC.rows()));
+
+  const size_t n = ABC.rows();
+
+  // Compute Cholesky factorization of A, overwrites A = sqrt(D)*R
+  //  tic(1, "ldl");
+  Eigen::LDLT<Matrix> ldlt;
+  ldlt.compute(ABC.block(0,0,nFrontal,nFrontal).selfadjointView<Eigen::Upper>());
+
+  Vector sqrtD = ldlt.vectorD().cwiseSqrt();
+  if (debug) cout << "Dsqrt: " << sqrtD << endl;
+
+  // U = sqrtD * L^
+  Matrix U = ldlt.matrixU();
+
+  // we store the permuted upper triangular matrix
+  ABC.block(0,0,nFrontal,nFrontal)  = sqrtD.asDiagonal() * U;
+  if(debug) cout << "R:\n" << ABC.topLeftCorner(nFrontal,nFrontal) << endl;
+  //  toc(1, "ldl");
+
+  // Compute S = inv(R') * B = inv(P'U')*B = inv(U')*P*B
+  //  tic(2, "compute S");
+  if(n - nFrontal > 0) {
+    ABC.topRightCorner(nFrontal, n-nFrontal) = ldlt.transpositionsP() * ABC.topRightCorner(nFrontal, n-nFrontal);
+    ABC.block(0,0,nFrontal,nFrontal).triangularView<Eigen::Upper>().transpose().solveInPlace(ABC.topRightCorner(nFrontal, n-nFrontal));
+  }
+  if(debug) cout << "S:\n" << ABC.topRightCorner(nFrontal, n-nFrontal) << endl;
+  //  toc(2, "compute S");
+
+  // Compute L = C - S' * S
+  //  tic(3, "compute L");
+  if(debug) cout << "C:\n" << Eigen::MatrixXd(ABC.bottomRightCorner(n-nFrontal,n-nFrontal).selfadjointView<Eigen::Upper>()) << endl;
+  if(n - nFrontal > 0)
+    ABC.bottomRightCorner(n-nFrontal,n-nFrontal).selfadjointView<Eigen::Upper>().rankUpdate(
+        ABC.topRightCorner(nFrontal, n-nFrontal).transpose(), -1.0);
+  if(debug) cout << "L:\n" << Eigen::MatrixXd(ABC.bottomRightCorner(n-nFrontal,n-nFrontal).selfadjointView<Eigen::Upper>()) << endl;
+  //  toc(3, "compute L");
+
+  return ldlt.transpositionsP();
+}
+
 }

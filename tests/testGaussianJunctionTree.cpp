@@ -1,6 +1,6 @@
 /* ----------------------------------------------------------------------------
 
- * GTSAM Copyright 2010, Georgia Tech Research Corporation, 
+ * GTSAM Copyright 2010, Georgia Tech Research Corporation,
  * Atlanta, Georgia 30332-0415
  * All Rights Reserved
  * Authors: Frank Dellaert, et al. (see THANKS for the full author list)
@@ -63,21 +63,21 @@ TEST( GaussianJunctionTree, constructor2 )
 	vector<Index> sep2; sep2 += ordering["x4"];
 	vector<Index> sep3; sep3 += ordering["x2"];
 	vector<Index> sep4; sep4 += ordering["x6"];
-	CHECK(assert_equal(frontal1, actual.root()->frontal));
-	CHECK(assert_equal(sep1,     actual.root()->separator));
+	EXPECT(assert_equal(frontal1, actual.root()->frontal));
+	EXPECT(assert_equal(sep1,     actual.root()->separator));
 	LONGS_EQUAL(5,               actual.root()->size());
 	list<GaussianJunctionTree::sharedClique>::const_iterator child0it = actual.root()->children().begin();
   list<GaussianJunctionTree::sharedClique>::const_iterator child1it = child0it; ++child1it;
   GaussianJunctionTree::sharedClique child0 = *child0it;
   GaussianJunctionTree::sharedClique child1 = *child1it;
-	CHECK(assert_equal(frontal2, child0->frontal));
-	CHECK(assert_equal(sep2,     child0->separator));
+	EXPECT(assert_equal(frontal2, child0->frontal));
+	EXPECT(assert_equal(sep2,     child0->separator));
 	LONGS_EQUAL(4,               child0->size());
-	CHECK(assert_equal(frontal3, child0->children().front()->frontal));
-	CHECK(assert_equal(sep3,     child0->children().front()->separator));
+	EXPECT(assert_equal(frontal3, child0->children().front()->frontal));
+	EXPECT(assert_equal(sep3,     child0->children().front()->separator));
 	LONGS_EQUAL(2,               child0->children().front()->size());
-	CHECK(assert_equal(frontal4, child1->frontal));
-	CHECK(assert_equal(sep4,     child1->separator));
+	EXPECT(assert_equal(frontal4, child1->frontal));
+	EXPECT(assert_equal(sep4,     child1->separator));
 	LONGS_EQUAL(2,               child1->size());
 }
 
@@ -98,7 +98,7 @@ TEST( GaussianJunctionTree, optimizeMultiFrontal )
 	Vector v = Vector_(2, 0., 0.);
 	for (int i=1; i<=7; i++)
 		expected[ordering[Symbol('x',i)]] = v;
-  CHECK(assert_equal(expected,actual));
+  EXPECT(assert_equal(expected,actual));
 }
 
 /* ************************************************************************* */
@@ -116,7 +116,7 @@ TEST( GaussianJunctionTree, optimizeMultiFrontal2)
 
 	// verify
 	VectorValues expected = createCorrectDelta(ordering); // expected solution
-  CHECK(assert_equal(expected,actual));
+  EXPECT(assert_equal(expected,actual));
 }
 
 /* ************************************************************************* */
@@ -181,7 +181,7 @@ TEST(GaussianJunctionTree, slamlike) {
   VectorValues delta = optimize(gbn);
   planarSLAM::Values expected = init.expmap(delta, ordering);
 
-  CHECK(assert_equal(expected, actual));
+  EXPECT(assert_equal(expected, actual));
 
 }
 

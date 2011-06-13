@@ -136,11 +136,11 @@ int main(int argc, char** argv) {
   resultMF.values()->print("final result (solved with a multifrontal solver)");
 
   // Print marginals covariances for all variables
-  print(resultMF.marginalCovariance(x1).second, "x1 covariance");
-  print(resultMF.marginalCovariance(x2).second, "x2 covariance");
-  print(resultMF.marginalCovariance(x3).second, "x3 covariance");
-  print(resultMF.marginalCovariance(l1).second, "l1 covariance");
-  print(resultMF.marginalCovariance(l2).second, "l2 covariance");
+  print(resultMF.marginalCovariance(x1), "x1 covariance");
+  print(resultMF.marginalCovariance(x2), "x2 covariance");
+  print(resultMF.marginalCovariance(x3), "x3 covariance");
+  print(resultMF.marginalCovariance(l1), "l1 covariance");
+  print(resultMF.marginalCovariance(l2), "l2 covariance");
 
 	return 0;
 }

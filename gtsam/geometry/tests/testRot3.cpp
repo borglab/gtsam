@@ -403,6 +403,35 @@ TEST( Rot3, RQ)
 }
 
 /* ************************************************************************* */
+TEST( Rot3, expmapStability ) {
+  Vector w = Vector_(3, 78e-9, 5e-8, 97e-7);
+  double theta = w.norm();
+  double theta2 = theta*theta;
+  Rot3 actualR = Rot3::Expmap(w);
+  Matrix W = Matrix_(3,3, 0.0, -w(2), w(1),
+                          w(2), 0.0, -w(0),
+                          -w(1), w(0), 0.0 );
+  Matrix W2 = W*W;
+  Matrix Rmat = eye(3) + (1.0-theta2/6.0 + theta2*theta2/120.0
+      - theta2*theta2*theta2/5040.0)*W + (0.5 - theta2/24.0 + theta2*theta2/720.0)*W2 ;
+  Rot3 expectedR( Rmat );
+  CHECK(assert_equal(expectedR, actualR, 1e-10));
+}
+
+/* ************************************************************************* */
+TEST( Rot3, logmapStability ) {
+  Vector w = Vector_(3, 1e-8, 0.0, 0.0);
+  Rot3 R = Rot3::Expmap(w);
+//  double tr = R.r1().x()+R.r2().y()+R.r3().z();
+//  std::cout.precision(5000);
+//  std::cout << "theta: " << w.norm() << std::endl;
+//  std::cout << "trace: " << tr << std::endl;
+//  R.print("R = ");
+  Vector actualw = Rot3::Logmap(R);
+  CHECK(assert_equal(w, actualw, 1e-15));
+}
+
+/* ************************************************************************* */
 int main() {
 	TestResult tr;
 	return TestRegistry::runAllTests(tr);

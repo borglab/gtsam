@@ -18,7 +18,6 @@
 
 #pragma once
 
-#include <gtsam/geometry/Cal3_S2Stereo.h>
 #include <gtsam/geometry/StereoCamera.h>
 
 namespace gtsam {

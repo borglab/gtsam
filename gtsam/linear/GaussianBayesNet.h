@@ -20,10 +20,6 @@
 
 #pragma once
 
-#include <list>
-
-#include <boost/shared_ptr.hpp>
-
 #include <gtsam/base/types.h>
 #include <gtsam/linear/GaussianConditional.h>
 #include <gtsam/inference/BayesNet.h>
@@ -71,11 +67,12 @@ namespace gtsam {
 	/*
 	 * Backsubstitute
 	 * (R*x)./sigmas = y by solving x=inv(R)*(y.*sigmas)
+	 * @param y is the RHS of the system
 	 */
 	VectorValues backSubstitute(const GaussianBayesNet& bn, const VectorValues& y);
 
 	/*
-	 * Backsubstitute in place, y is replaced with solution
+	 * Backsubstitute in place, y starts as RHS and is replaced with solution
 	 */
 	void backSubstituteInPlace(const GaussianBayesNet& bn, VectorValues& y);
 
@@ -89,6 +86,8 @@ namespace gtsam {
 
 	/**
 	 * Return (dense) upper-triangular matrix representation
+	 * NOTE: if this is the result of elimination with LDL, the matrix will
+	 * not necessarily be upper triangular due to column permutations
 	 */
 	std::pair<Matrix, Vector> matrix(const GaussianBayesNet&);
 

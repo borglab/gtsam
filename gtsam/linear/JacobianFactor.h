@@ -18,15 +18,12 @@
 #pragma once
 
 #include <gtsam/base/types.h>
-#include <gtsam/base/Matrix.h>
-#include <gtsam/base/Vector.h>
 #include <gtsam/base/blockMatrices.h>
 #include <gtsam/inference/FactorGraph.h>
 #include <gtsam/linear/GaussianFactor.h>
 #include <gtsam/linear/SharedDiagonal.h>
 #include <gtsam/linear/Errors.h>
 
-#include <map>
 #include <boost/tuple/tuple.hpp>
 
 // Forward declarations of friend unit tests
@@ -71,8 +68,6 @@ namespace gtsam {
 
     /** Construct Null factor */
     JacobianFactor(const Vector& b_in);
-
-    // FIXME: make these constructors use other matrix types - column major and blocks
 
     /** Construct unary factor */
     JacobianFactor(Index i1, const Matrix& A1,
@@ -200,7 +195,8 @@ namespace gtsam {
 
     boost::shared_ptr<GaussianConditional> eliminateFirst();
 
-    boost::shared_ptr<BayesNet<GaussianConditional> > eliminate(size_t nrFrontals = 1);
+    /** return a multi-frontal conditional. It's actually a chordal Bayesnet */
+    boost::shared_ptr<GaussianConditional> eliminate(size_t nrFrontals = 1);
 
     // Friend HessianFactor to facilitate convertion constructors
     friend class HessianFactor;

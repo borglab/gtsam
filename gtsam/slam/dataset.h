@@ -21,7 +21,6 @@
 
 
 #include <string>
-#include <boost/shared_ptr.hpp>
 #include <gtsam/slam/pose2SLAM.h>
 #include <gtsam/inference/graph.h>
 

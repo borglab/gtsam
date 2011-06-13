@@ -28,7 +28,7 @@ namespace gtsam {
 	Cal3_S2::Cal3_S2(double fov, int w, int h) :
 		s_(0), u0_((double) w / 2.0), v0_((double) h / 2.0) {
 		double a = fov * M_PI / 360.0; // fov/2 in radians
-		fx_ = (double) w * tan(a);
+		fx_ = (double)w / (2.0*tan(a)); //    old formula: fx_ = (double) w * tan(a);
 		fy_ = fx_;
 	}
 

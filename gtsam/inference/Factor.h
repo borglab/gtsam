@@ -21,10 +21,8 @@
 
 #pragma once
 
-#include <map>
 #include <set>
 #include <vector>
-#include <boost/utility.hpp> // for noncopyable
 #include <boost/serialization/nvp.hpp>
 #include <boost/foreach.hpp>
 #include <gtsam/base/Testable.h>

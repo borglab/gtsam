@@ -19,10 +19,8 @@
 
 #pragma once
 
-#include <boost/shared_ptr.hpp>
 #include <boost/serialization/nvp.hpp>
 #include <gtsam/base/Testable.h>
-#include <gtsam/base/Vector.h>
 #include <gtsam/base/Matrix.h>
 
 namespace gtsam {
@@ -103,7 +101,6 @@ namespace gtsam {
 
 		protected:
 
-			// TODO: store as boost upper-triangular or whatever is passed from above
 			/* Matrix square root of information matrix (R) */
 			boost::optional<Matrix> sqrt_information_;
 
@@ -182,9 +179,6 @@ namespace gtsam {
 			 * @return in-place QR factorization [R d]. Below-diagonal is undefined !!!!!
 			 */
 			virtual SharedDiagonal QR(Matrix& Ab) const;
-			// FIXME: these previously had firstZeroRows - what did this do?
-//			virtual SharedDiagonal QRColumnWise(Matrix& Ab, std::vector<int>& firstZeroRows) const;
-//			virtual SharedDiagonal QR(Matrix& Ab, boost::optional<std::vector<int>&> firstZeroRows = boost::none) const;
 
 			/**
 			 * Cholesky factorization
@@ -211,7 +205,6 @@ namespace gtsam {
 			}
 
 		}; // Gaussian
-
 
 		/**
 		 * A diagonal noise model implements a diagonal covariance matrix, with the

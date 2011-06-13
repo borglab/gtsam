@@ -18,8 +18,6 @@
 
 #pragma once
 
-#include <gtsam/geometry/Pose3.h>
-#include <gtsam/geometry/Point2.h>
 #include <gtsam/geometry/SimpleCamera.h>
 #include <gtsam/nonlinear/Key.h>
 #include <gtsam/nonlinear/NonlinearFactorGraph.h>

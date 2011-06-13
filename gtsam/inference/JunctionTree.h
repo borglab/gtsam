@@ -21,8 +21,6 @@
 
 #include <set>
 #include <vector>
-#include <list>
-#include <boost/shared_ptr.hpp>
 #include <gtsam/base/FastList.h>
 #include <gtsam/inference/BayesTree.h>
 #include <gtsam/inference/ClusterTree.h>

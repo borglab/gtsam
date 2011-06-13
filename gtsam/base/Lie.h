@@ -56,7 +56,6 @@
 #pragma once
 
 #include <string>
-
 #include <gtsam/base/Matrix.h>
 
 namespace gtsam {

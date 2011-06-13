@@ -164,7 +164,7 @@ TEST(Pose2Graph, optimizeThreePoses) {
 
 /* ************************************************************************* */
 // test optimization with 6 poses arranged in a hexagon and a loop closure
-TEST(Pose2Graph, optimizeCircle) {
+TEST_UNSAFE(Pose2Graph, optimizeCircle) {
 
 	// Create a hexagon of poses
 	Pose2Values hexagon = pose2SLAM::circle(6,1.0);

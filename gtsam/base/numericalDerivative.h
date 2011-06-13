@@ -22,7 +22,6 @@
 #include <boost/function.hpp>
 #include <boost/bind.hpp>
 
-#include <gtsam/base/Lie.h>
 #include <gtsam/base/LieVector.h>
 #include <gtsam/base/Matrix.h>
 

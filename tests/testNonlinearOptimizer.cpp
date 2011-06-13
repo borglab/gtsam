@@ -37,7 +37,7 @@ using namespace boost;
 // template definitions
 #include <gtsam/nonlinear/NonlinearFactorGraph-inl.h>
 #include <gtsam/nonlinear/NonlinearOptimizer-inl.h>
-//#include <gtsam/linear/SubgraphSolver-inl.h>
+#include <gtsam/nonlinear/NonlinearOptimization-inl.h>
 
 using namespace gtsam;
 
@@ -229,6 +229,24 @@ TEST( NonlinearOptimizer, SimpleGNOptimizer_noshared )
 
 	Optimizer::shared_values actual = Optimizer::optimizeGN(fg, c0);
 	DOUBLES_EQUAL(0,fg.error(*actual),tol);
+}
+
+/* ************************************************************************* */
+TEST( NonlinearOptimizer, optimization_method )
+{
+	example::Graph fg = example::createReallyNonlinearFactorGraph();
+
+	Point2 x0(3,3);
+	example::Values c0;
+	c0.insert(simulated2D::PoseKey(1), x0);
+
+	example::Values actualMFQR = optimize<example::Graph,example::Values>(
+			fg, c0, *NonlinearOptimizationParameters().newFactorization(true), MULTIFRONTAL, LM);
+	DOUBLES_EQUAL(0,fg.error(actualMFQR),tol);
+
+	example::Values actualMFLDL = optimize<example::Graph,example::Values>(
+			fg, c0, *NonlinearOptimizationParameters().newFactorization(false), MULTIFRONTAL, LM);
+	DOUBLES_EQUAL(0,fg.error(actualMFLDL),tol);
 }
 
 /* ************************************************************************* */

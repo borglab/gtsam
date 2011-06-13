@@ -18,13 +18,12 @@
 
 #pragma once
 
-#include <gtsam/base/FastMap.h>
+#include <map>
 #include <gtsam/base/Testable.h>
 #include <gtsam/nonlinear/Key.h>
 #include <gtsam/inference/inference.h>
 
 #include <boost/foreach.hpp>
-#include <boost/shared_ptr.hpp>
 #include <boost/assign/list_inserter.hpp>
 #include <boost/pool/pool_alloc.hpp>
 

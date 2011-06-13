@@ -8,7 +8,6 @@
 #pragma once
 
 #include <boost/optional.hpp>
-#include <gtsam/base/Matrix.h>
 #include <gtsam/geometry/Pose2.h>
 #include <gtsam/geometry/Pose3.h>
 

@@ -24,7 +24,6 @@
 
 #pragma once
 
-#include <map>
 #include <set>
 
 #include <gtsam/base/FastMap.h>

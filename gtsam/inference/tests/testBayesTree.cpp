@@ -18,6 +18,8 @@
  */
 
 #include <boost/assign/std/list.hpp> // for operator +=
+#include <boost/assign/std/vector.hpp>
+#include <boost/assign/list_of.hpp>
 using namespace boost::assign;
 
 #include <CppUnitLite/TestHarness.h>
@@ -66,16 +68,20 @@ IndexConditional::shared_ptr
 	T(new IndexConditional(_T_, _E_, _L_)),
 	X(new IndexConditional(_X_, _E_));
 
+// Cliques
+IndexConditional::shared_ptr
+  ELB(IndexConditional::FromKeys(cref_list_of<3>(_E_)(_L_)(_B_), 3));
+
 // Bayes Tree for Asia example
 SymbolicBayesTree createAsiaSymbolicBayesTree() {
 	SymbolicBayesTree bayesTree;
 //	Ordering asiaOrdering; asiaOrdering += _X_, _T_, _S_, _E_, _L_, _B_;
-	bayesTree.insert(B);
-	bayesTree.insert(L);
-	bayesTree.insert(E);
-	bayesTree.insert(S);
-	bayesTree.insert(T);
-	bayesTree.insert(X);
+	SymbolicBayesTree::insert(bayesTree, B);
+	SymbolicBayesTree::insert(bayesTree, L);
+	SymbolicBayesTree::insert(bayesTree, E);
+	SymbolicBayesTree::insert(bayesTree, S);
+	SymbolicBayesTree::insert(bayesTree, T);
+	SymbolicBayesTree::insert(bayesTree, X);
 	return bayesTree;
 }
 
@@ -89,12 +95,8 @@ TEST( BayesTree, constructor )
 	LONGS_EQUAL(4,bayesTree.size());
 
 	// Check root
-	BayesNet<IndexConditional> expected_root;
-	expected_root.push_back(E);
-	expected_root.push_back(L);
-	expected_root.push_back(B);
-	boost::shared_ptr<BayesNet<IndexConditional> > actual_root = bayesTree.root();
-	CHECK(assert_equal(expected_root,*actual_root));
+	boost::shared_ptr<IndexConditional> actual_root = bayesTree.root()->conditional();
+	CHECK(assert_equal(*ELB,*actual_root));
 
 	// Create from symbolic Bayes chain in which we want to discover cliques
 	BayesNet<IndexConditional> ASIA;
@@ -154,18 +156,18 @@ TEST( BayesTree, removePath )
 			F(new IndexConditional(_F_, _E_));
 	SymbolicBayesTree bayesTree;
 //	Ordering ord; ord += _A_,_B_,_C_,_D_,_E_,_F_;
-	bayesTree.insert(A);
-	bayesTree.insert(B);
-	bayesTree.insert(C);
-	bayesTree.insert(D);
-	bayesTree.insert(E);
-	bayesTree.insert(F);
+	SymbolicBayesTree::insert(bayesTree, A);
+	SymbolicBayesTree::insert(bayesTree, B);
+	SymbolicBayesTree::insert(bayesTree, C);
+	SymbolicBayesTree::insert(bayesTree, D);
+	SymbolicBayesTree::insert(bayesTree, E);
+	SymbolicBayesTree::insert(bayesTree, F);
 
 	// remove C, expected outcome: factor graph with ABC,
 	// Bayes Tree now contains two orphan trees: D|C and E|B,F|E
 	SymbolicFactorGraph expected;
 	expected.push_factor(_B_,_A_);
-	expected.push_factor(_A_);
+//	expected.push_factor(_A_);
 	expected.push_factor(_C_,_A_);
 	SymbolicBayesTree::Cliques expectedOrphans;
   expectedOrphans += bayesTree[_D_], bayesTree[_E_];
@@ -205,8 +207,8 @@ TEST( BayesTree, removePath2 )
 	// Check expected outcome
 	SymbolicFactorGraph expected;
 	expected.push_factor(_E_,_L_,_B_);
-	expected.push_factor(_L_,_B_);
-	expected.push_factor(_B_);
+//	expected.push_factor(_L_,_B_);
+//	expected.push_factor(_B_);
   CHECK(assert_equal(expected, factors));
 	SymbolicBayesTree::Cliques expectedOrphans;
   expectedOrphans += bayesTree[_S_], bayesTree[_T_], bayesTree[_X_];
@@ -227,8 +229,8 @@ TEST( BayesTree, removePath3 )
 	// Check expected outcome
 	SymbolicFactorGraph expected;
 	expected.push_factor(_E_,_L_,_B_);
-	expected.push_factor(_L_,_B_);
-	expected.push_factor(_B_);
+//	expected.push_factor(_L_,_B_);
+//	expected.push_factor(_B_);
 	expected.push_factor(_S_,_L_,_B_);
   CHECK(assert_equal(expected, factors));
 	SymbolicBayesTree::Cliques expectedOrphans;
@@ -254,8 +256,8 @@ TEST( BayesTree, removeTop )
 	// Check expected outcome
 	SymbolicFactorGraph expected;
 	expected.push_factor(_E_,_L_,_B_);
-	expected.push_factor(_L_,_B_);
-	expected.push_factor(_B_);
+//	expected.push_factor(_L_,_B_);
+//	expected.push_factor(_B_);
 	expected.push_factor(_S_,_L_,_B_);
   CHECK(assert_equal(expected, factors));
 	SymbolicBayesTree::Cliques expectedOrphans;
@@ -295,8 +297,8 @@ TEST( BayesTree, removeTop2 )
 	// Check expected outcome
 	SymbolicFactorGraph expected;
 	expected.push_factor(_E_,_L_,_B_);
-	expected.push_factor(_L_,_B_);
-	expected.push_factor(_B_);
+//	expected.push_factor(_L_,_B_);
+//	expected.push_factor(_B_);
 	expected.push_factor(_S_,_L_,_B_);
   CHECK(assert_equal(expected, factors));
 	SymbolicBayesTree::Cliques expectedOrphans;
@@ -318,10 +320,10 @@ TEST( BayesTree, removeTop3 )
 //	Ordering newOrdering;
 //	newOrdering += _x3_, _x2_, _x1_, _l2_, _l1_, _x4_, _l5_;
 	SymbolicBayesTree bayesTree;
-	bayesTree.insert(X);
-	bayesTree.insert(A);
-	bayesTree.insert(B);
-	bayesTree.insert(C);
+	SymbolicBayesTree::insert(bayesTree, X);
+	SymbolicBayesTree::insert(bayesTree, A);
+	SymbolicBayesTree::insert(bayesTree, B);
+	SymbolicBayesTree::insert(bayesTree, C);
 
 	// remove all
 	list<Index> keys;

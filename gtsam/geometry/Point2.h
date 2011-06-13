@@ -18,7 +18,6 @@
 #pragma once
 
 #include <boost/serialization/nvp.hpp>
-#include <gtsam/base/Vector.h>
 #include <gtsam/base/Matrix.h>
 #include <gtsam/base/Testable.h>
 #include <gtsam/base/Lie.h>

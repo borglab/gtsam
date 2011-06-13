@@ -19,20 +19,22 @@
 
 #pragma once
 
-#include <list>
-#include <vector>
 #include <boost/utility.hpp>
-#include <boost/shared_ptr.hpp>
 
 #include <gtsam/base/types.h>
 #include <gtsam/inference/IndexConditional.h>
 #include <gtsam/linear/JacobianFactor.h>
 #include <gtsam/linear/VectorValues.h>
-#include <gtsam/base/Matrix.h>
 #include <gtsam/base/blockMatrices.h>
+
+// Forward declaration to friend unit tests
+class eliminate2GaussianFactorTest;
+class constructorGaussianConditionalTest;
+class eliminationGaussianFactorGraphTest;
 
 namespace gtsam {
 
+// Forward declarations
 class GaussianFactor;
 
 /**
@@ -55,15 +57,27 @@ public:
   typedef rsd_type::Column d_type;
   typedef rsd_type::constColumn const_d_type;
 
+  typedef Eigen::LDLT<Matrix>::TranspositionType TranspositionType;
+
 protected:
 
 	/** Store the conditional as one big upper-triangular wide matrix, arranged
-	 * as [ R S1 S2 ... d ].  Access these blocks using a VerticalBlockView. */
+	 * as [ R S1 S2 ... d ].  Access these blocks using a VerticalBlockView.
+	 *
+	 * WARNING!!! When using with LDL, R is the permuted upper triangular matrix.
+	 * Its columns/rows do not correspond to the correct components of the variables.
+	 * Use R*permutation_ to get back the correct non-permuted order,
+	 * for example when converting to the Jacobian
+	 * */
 	AbMatrix matrix_;
 	rsd_type rsd_;
 
 	/** vector of standard deviations */
 	Vector sigmas_;
+
+  /** Store the permutation matrix, used by LDL' in the pivoting process
+   * This is used to get back the correct ordering of x after solving by backSubstitition */
+  TranspositionType permutation_;
 
 public:
 
@@ -102,7 +116,9 @@ public:
 	 * for multiple frontal variables.
 	 */
 	template<typename ITERATOR, class MATRIX>
-	GaussianConditional(ITERATOR firstKey, ITERATOR lastKey, size_t nrFrontals, const VerticalBlockView<MATRIX>& matrices, const Vector& sigmas);
+	GaussianConditional(ITERATOR firstKey, ITERATOR lastKey, size_t nrFrontals,
+      const VerticalBlockView<MATRIX>& matrices, const Vector& sigmas,
+      const TranspositionType& permutation = TranspositionType());
 
 	/** print */
 	void print(const std::string& = "GaussianConditional") const;
@@ -113,14 +129,37 @@ public:
 	/** dimension of multivariate variable */
 	size_t dim() const { return rsd_.rows(); }
 
+	/** Compute the information matrix */
+	Matrix computeInformation() const {
+	  Matrix R = get_R();
+	  R = R*permutation_;
+	  return R.transpose()*R;
+	}
+
 	/** return stuff contained in GaussianConditional */
-	const_d_type get_d() const { return rsd_.column(1+nrParents(), 0); }
-	rsd_type::constBlock get_R() const { return rsd_(0); }
+	rsd_type::constBlock get_R() const;
+
+	/** access the d vector */
+	const_d_type get_d() const { return rsd_.column(nrFrontals()+nrParents(), 0); }
+
+	/**
+	 * get a RHS as a single vector
+	 * FIXME: shouldn't this be weighted by sigmas?
+	 */
+	Vector rhs() const { return get_d(); }
+
+	/** get the dimension of a variable */
+	size_t dim(const_iterator variable) const { return rsd_(variable - this->begin()).cols(); }
+
 	rsd_type::constBlock get_S(const_iterator variable) const { return rsd_(variable - this->begin()); }
 	const Vector& get_sigmas() const {return sigmas_;}
-	const AbMatrix& matrix() const { return matrix_; }
-	const rsd_type& rsd() const { return rsd_; } /// DEBUGGING ONLY
 
+protected:
+
+	const AbMatrix& matrix() const { return matrix_; }
+	const rsd_type& rsd() const { return rsd_; }
+
+public:
 	/**
 	 * Copy to a Factor (this creates a JacobianFactor and returns it as its
 	 * base class GaussianFactor.
@@ -128,25 +167,57 @@ public:
 	boost::shared_ptr<JacobianFactor> toFactor() const;
 
 	/**
-	 * solve a conditional Gaussian
-	 * @param x values structure in which the parents values (y,z,...) are known
-	 * @return solution x = R \ (d - Sy - Tz - ...)
+	 * Adds the RHS to a given VectorValues for use in solve() functions.
+	 * @param x is the values to be updated, assumed allocated
 	 */
-	Vector solve(const VectorValues& x) const;
+	void rhs(VectorValues& x) const;
 
   /**
-   * solve a conditional Gaussian
-   * @param x values structure in which the parents values (y,z,...) are known
-   * @return solution x = R \ (d - Sy - Tz - ...)
+   * solves a conditional Gaussian and stores the result in x
+   * This function works for multiple frontal variables.
+   * NOTE: assumes that the RHS for the frontals is stored in x, and
+   * then replaces the RHS with the partial result for this conditional,
+   * assuming that parents have been solved already.
+   *
+   * @param x values structure with solved parents, and the RHS for this conditional
+   * @return solution x = R \ (d - Sy - Tz - ...) for each frontal variable
    */
-  Vector solve(const Permuted<VectorValues>& x) const;
+  void solveInPlace(VectorValues& x) const;
+
+  /**
+   * solves a conditional Gaussian and stores the result in x
+   * Identical to solveInPlace() above, with a permuted x
+   */
+  void solveInPlace(Permuted<VectorValues>& x) const;
+
+  /**
+   * Solves a conditional Gaussian and returns a new VectorValues
+   * This function works for multiple frontal variables, but should
+   * only be used for testing as it copies the input vector values
+   *
+   * Assumes, as in solveInPlace, that the RHS has been stored in x
+   * for all frontal variables
+   */
+  VectorValues solve(const VectorValues& x) const;
+
+  // functions for transpose backsubstitution
+
+  /**
+   * Performs backsubstition in place on values
+   */
+	void solveTransposeInPlace(VectorValues& gy) const;
+	void scaleFrontalsBySigma(VectorValues& gy) const;
 
 protected:
   rsd_type::Column get_d_() { return rsd_.column(1+nrParents(), 0); }
   rsd_type::Block get_R_() { return rsd_(0); }
   rsd_type::Block get_S_(iterator variable) { return rsd_(variable - this->begin()); }
 
+  // Friends
   friend class JacobianFactor;
+  friend class ::eliminate2GaussianFactorTest;
+  friend class ::constructorGaussianConditionalTest;
+  friend class ::eliminationGaussianFactorGraphTest;
 
 private:
 	/** Serialization function */
@@ -164,9 +235,9 @@ private:
 template<typename ITERATOR, class MATRIX>
 GaussianConditional::GaussianConditional(ITERATOR firstKey, ITERATOR lastKey,
 		size_t nrFrontals, const VerticalBlockView<MATRIX>& matrices,
-		const Vector& sigmas) :
+		const Vector& sigmas, const GaussianConditional::TranspositionType& permutation) :
 	IndexConditional(std::vector<Index>(firstKey, lastKey), nrFrontals), rsd_(
-			matrix_), sigmas_(sigmas) {
+			matrix_), sigmas_(sigmas), permutation_(permutation) {
 	rsd_.assignNoalias(matrices);
 }
 
