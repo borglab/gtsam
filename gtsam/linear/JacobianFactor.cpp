@@ -409,7 +409,7 @@ namespace gtsam {
 
     if(debug) cout << "frontalDim = " << frontalDim << endl;
 
-    // Use in-place QR or Cholesky on dense Ab appropriate to NoiseModel
+    // Use in-place QR dense Ab appropriate to NoiseModel
     tic(2, "QR");
     SharedDiagonal noiseModel = model_->QR(matrix_);
     toc(2, "QR");

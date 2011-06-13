@@ -182,6 +182,7 @@ namespace gtsam {
 
 			/**
 			 * Cholesky factorization
+			 * FIXME: this is never used anywhere
 			 */
 			virtual SharedDiagonal Cholesky(Matrix& Ab, size_t nFrontals) const;
 
