@@ -34,8 +34,16 @@ int main(int argc, char *argv[]) {
   else
     datasetname = "intel";
 
+  // check if there should be a constraint
   if (argc == 3 && string(argv[2]).compare("-c") == 0)
   	soft_prior = false;
+
+  // find the number of trials - default is 10
+  size_t nrTrials = 10;
+  if (argc == 3 && string(argv[2]).compare("-c") != 0)
+  	nrTrials = strtoul(argv[2], NULL, 10);
+  else if (argc == 4)
+  	nrTrials = strtoul(argv[3], NULL, 10);
 
   pair<shared_ptr<Pose2Graph>, shared_ptr<Pose2Values> > data = load2D(dataset(datasetname));
 
@@ -55,7 +63,6 @@ int main(int argc, char *argv[]) {
   toc_(2, "linearize");
   tictoc_print_();
 
-  const size_t nrTrials = 10;
   for(size_t trial = 0; trial < nrTrials; ++trial) {
 
     tic_(3, "solve");
