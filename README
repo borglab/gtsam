@@ -68,7 +68,7 @@ For Debugging (Linux or MacPorts g++ compilers):
     LDFLAGS="-fno-inline -g -Wall" 
 
 For Performance:
-./configure CXXFLAGS="-DNDEBUG -O3" LDFLAGS="-O3" --with-toolbox=$HOME/toolbox/
+./configure CXXFLAGS="-DNDEBUG -O3" LDFLAGS="-O3" 
 
 After that (this would be for an in-source build, see next for out-of-source):
 $ make
