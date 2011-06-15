@@ -21,6 +21,17 @@ The code is organized according to the following directory structure:
   nonlinear   non-linear factor graphs and non-linear optimization
   slam        SLAM and visual SLAM application code
   
+This library contains and incorporates two third party libraries, with documentation 
+of licensing in LICENSE and as follows: 
+  - CCOLAMD: Tim Davis' constrained column approximate minimum degree ordering library
+  	- http://www.cise.ufl.edu/research/sparse
+  	- Modified only by removing matlab and testing interfaces, and add build scripts
+  	- Details of changes in gtsam/3rdparty/ccolamd/ChangeLog
+  	- Licenced under LGPL v2.1, provided in gtsam/3rdparty/ccolamd/LGPL.txt
+ 	- Eigen:  General C++ matrix and linear algebra library
+ 		- GTSAM includes Eigen's headers without changes except for the addition of build scripts
+ 		- Licenced under LGPL v3, provided in gtsam/3rdparty/ccolamd/Eigen/LGPL
+  
 All of the above contain code and tests, and build local shared libraries that are then
 bundled in a top-level shared library libgtsam.la. After this is built, you can also run
 the more involved tests, which test the entire library:  
