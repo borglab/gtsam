@@ -19,34 +19,6 @@ AC_CONFIG_SRCDIR([examples/SimpleRotation.cpp])
 AC_CONFIG_SRCDIR([gtsam/3rdparty/Makefile.am])
 AC_CONFIG_SRCDIR([gtsam/3rdparty/ccolamd/Makefile.am])
 
-# pull in all subdirectories of Eigen - FIXME: find a better way of handling this
-AC_CONFIG_SRCDIR([gtsam/3rdparty/Eigen/Makefile.am])
-AC_CONFIG_SRCDIR([gtsam/3rdparty/Eigen/src/Makefile.am])
-AC_CONFIG_SRCDIR([gtsam/3rdparty/Eigen/src/Cholesky/Makefile.am])
-AC_CONFIG_SRCDIR([gtsam/3rdparty/Eigen/src/Core/Makefile.am])
-AC_CONFIG_SRCDIR([gtsam/3rdparty/Eigen/src/Core/arch/Makefile.am])
-AC_CONFIG_SRCDIR([gtsam/3rdparty/Eigen/src/Core/arch/AltiVec/Makefile.am])
-AC_CONFIG_SRCDIR([gtsam/3rdparty/Eigen/src/Core/arch/Default/Makefile.am])
-AC_CONFIG_SRCDIR([gtsam/3rdparty/Eigen/src/Core/arch/NEON/Makefile.am])
-AC_CONFIG_SRCDIR([gtsam/3rdparty/Eigen/src/Core/arch/SSE/Makefile.am])
-AC_CONFIG_SRCDIR([gtsam/3rdparty/Eigen/src/Core/products/Makefile.am])
-AC_CONFIG_SRCDIR([gtsam/3rdparty/Eigen/src/Core/util/Makefile.am])
-AC_CONFIG_SRCDIR([gtsam/3rdparty/Eigen/src/Eigen2Support/Makefile.am])
-AC_CONFIG_SRCDIR([gtsam/3rdparty/Eigen/src/Eigen2Support/Geometry/Makefile.am])
-AC_CONFIG_SRCDIR([gtsam/3rdparty/Eigen/src/Eigenvalues/Makefile.am])
-AC_CONFIG_SRCDIR([gtsam/3rdparty/Eigen/src/Geometry/Makefile.am])
-AC_CONFIG_SRCDIR([gtsam/3rdparty/Eigen/src/Geometry/arch/Makefile.am])
-AC_CONFIG_SRCDIR([gtsam/3rdparty/Eigen/src/Householder/Makefile.am])
-AC_CONFIG_SRCDIR([gtsam/3rdparty/Eigen/src/QR/Makefile.am])
-AC_CONFIG_SRCDIR([gtsam/3rdparty/Eigen/src/SVD/Makefile.am])
-AC_CONFIG_SRCDIR([gtsam/3rdparty/Eigen/src/Jacobi/Makefile.am])
-AC_CONFIG_SRCDIR([gtsam/3rdparty/Eigen/src/misc/Makefile.am])
-AC_CONFIG_SRCDIR([gtsam/3rdparty/Eigen/src/Sparse/Makefile.am])
-AC_CONFIG_SRCDIR([gtsam/3rdparty/Eigen/src/LU/Makefile.am])
-AC_CONFIG_SRCDIR([gtsam/3rdparty/Eigen/src/LU/arch/Makefile.am])
-AC_CONFIG_SRCDIR([gtsam/3rdparty/Eigen/src/plugins/Makefile.am])
-AC_CONFIG_SRCDIR([gtsam/3rdparty/Eigen/src/StlSupport/Makefile.am])
-
 # Check for OS
 AC_CANONICAL_HOST    # needs to be called at some point earlier
 AM_CONDITIONAL([DARWIN], [case $host_os in darwin*) true;; *) false;; esac]) 
@@ -143,32 +115,6 @@ AX_BOOST_BASE([1.40])
 #AC_SUBST([boost])
 
 AC_CONFIG_FILES([CppUnitLite/Makefile \
-gtsam/3rdparty/Eigen/src/Cholesky/Makefile \
-gtsam/3rdparty/Eigen/src/Core/Makefile \
-gtsam/3rdparty/Eigen/src/Core/arch/Makefile \
-gtsam/3rdparty/Eigen/src/Core/arch/AltiVec/Makefile \
-gtsam/3rdparty/Eigen/src/Core/arch/Default/Makefile \
-gtsam/3rdparty/Eigen/src/Core/arch/NEON/Makefile \
-gtsam/3rdparty/Eigen/src/Core/arch/SSE/Makefile \
-gtsam/3rdparty/Eigen/src/Core/products/Makefile \
-gtsam/3rdparty/Eigen/src/Core/util/Makefile \
-gtsam/3rdparty/Eigen/src/Eigenvalues/Makefile \
-gtsam/3rdparty/Eigen/src/Geometry/Makefile \
-gtsam/3rdparty/Eigen/src/Geometry/arch/Makefile \
-gtsam/3rdparty/Eigen/src/Householder/Makefile \
-gtsam/3rdparty/Eigen/src/QR/Makefile \
-gtsam/3rdparty/Eigen/src/SVD/Makefile \
-gtsam/3rdparty/Eigen/src/Jacobi/Makefile \
-gtsam/3rdparty/Eigen/src/misc/Makefile \
-gtsam/3rdparty/Eigen/src/Sparse/Makefile \
-gtsam/3rdparty/Eigen/src/LU/Makefile \
-gtsam/3rdparty/Eigen/src/LU/arch/Makefile \
-gtsam/3rdparty/Eigen/src/plugins/Makefile \
-gtsam/3rdparty/Eigen/src/StlSupport/Makefile \
-gtsam/3rdparty/Eigen/src/Eigen2Support/Makefile \
-gtsam/3rdparty/Eigen/src/Eigen2Support/Geometry/Makefile \
-gtsam/3rdparty/Eigen/src/Makefile \
-gtsam/3rdparty/Eigen/Makefile \
 gtsam/3rdparty/ccolamd/Makefile \
 gtsam/3rdparty/Makefile \
 gtsam/base/Makefile \
