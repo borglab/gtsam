@@ -3,7 +3,7 @@
 SUBDIRS = 3rdparty base geometry inference linear nonlinear slam 
 
 # And the corresponding libraries produced
-SUBLIBS = 3rdparty/ccolamd/libccolamd.la base/libbase.la geometry/libgeometry.la \
+SUBLIBS = 3rdparty/libccolamd.la base/libbase.la geometry/libgeometry.la \
 					inference/libinference.la linear/liblinear.la nonlinear/libnonlinear.la \
 					 slam/libslam.la 
 

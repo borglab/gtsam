@@ -15,9 +15,7 @@ AC_CONFIG_SRCDIR([gtsam/nonlinear/NonlinearOptimizer.cpp])
 AC_CONFIG_SRCDIR([gtsam/slam/pose2SLAM.cpp])
 AC_CONFIG_SRCDIR([tests/testTupleValues.cpp])
 AC_CONFIG_SRCDIR([examples/SimpleRotation.cpp])
-
 AC_CONFIG_SRCDIR([gtsam/3rdparty/Makefile.am])
-AC_CONFIG_SRCDIR([gtsam/3rdparty/ccolamd/Makefile.am])
 
 # Check for OS
 AC_CANONICAL_HOST    # needs to be called at some point earlier
@@ -115,7 +113,6 @@ AX_BOOST_BASE([1.40])
 #AC_SUBST([boost])
 
 AC_CONFIG_FILES([CppUnitLite/Makefile \
-gtsam/3rdparty/ccolamd/Makefile \
 gtsam/3rdparty/Makefile \
 gtsam/base/Makefile \
 gtsam/geometry/Makefile \

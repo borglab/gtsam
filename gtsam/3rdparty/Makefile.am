@@ -1,15 +1,33 @@
 # 3rd Party libraries to be built and installed along with gtsam
 
-# All the sub-directories that need to be built
-SUBDIRS = ccolamd
-
-# And the corresponding libraries produced
-SUBLIBS = ccolamd/libccolamd.la
+# use nostdinc to turn off -I. and -I.., we do not need them because 
+# header files are qualified so they can be included in external projects.
+AUTOMAKE_OPTIONS = nostdinc
 
 # set up the folders for includes
 3rdpartydir = $(pkgincludedir)/3rdparty
 3rdparty_includedir = $(includedir)/gtsam/3rdparty
 nobase_3rdparty_HEADERS  =
+
+# CCOLAMD (with UFconfig files included)
+ccolamd_path =
+ccolamd_path += ccolamd 
+headers = $(ccolamd_path)/ccolamd.h $(ccolamd_path)/UFconfig.h
+sources = $(ccolamd_path)/ccolamd.c $(ccolamd_path)/ccolamd_global.c $(ccolamd_path)/UFconfig.c 
+
+#----------------------------------------------------------------------------------------------------
+# Create a libtool library that is not installed
+# It will be packaged in the toplevel libgtsam.la as specfied in ../Makefile.am 
+# The headers are installed in $(includedir)/gtsam/3rdparty: 
+#----------------------------------------------------------------------------------------------------
+nobase_3rdparty_HEADERS += $(headers)
+noinst_LTLIBRARIES = libccolamd.la
+libccolamd_la_SOURCES = $(sources)
+
+AM_CPPFLAGS =
+
+AM_CPPFLAGS += $(BOOST_CPPFLAGS) -I$(top_srcdir) 
+AM_LDFLAGS = $(BOOST_LDFLAGS)
 
 # Eigen Installation - just copies the headers
 eigen_path = 

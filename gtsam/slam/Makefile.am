@@ -71,7 +71,7 @@ AM_LDFLAGS = $(BOOST_LDFLAGS)
 TESTS = $(check_PROGRAMS)
 AM_DEFAULT_SOURCE_EXT = .cpp
 AM_LDFLAGS += $(boost_serialization) 
-LDADD = libslam.la ../geometry/libgeometry.la  ../nonlinear/libnonlinear.la ../linear/liblinear.la ../inference/libinference.la ../base/libbase.la ../3rdparty/ccolamd/libccolamd.la 
+LDADD = libslam.la ../geometry/libgeometry.la  ../nonlinear/libnonlinear.la ../linear/liblinear.la ../inference/libinference.la ../base/libbase.la ../3rdparty/libccolamd.la 
 LDADD += ../../CppUnitLite/libCppUnitLite.a
 
 # rule to run an executable
