@@ -49,7 +49,8 @@ check_PROGRAMS += tests/testJunctionTree
 # The headers are installed in $(includedir)/gtsam: 
 #----------------------------------------------------------------------------------------------------
 
-#FIXME: inclusion of ccolamd is annoying
+# CCOLAMD include flags are needed due to the bad include paths within the library
+# but will not be exposed to users.  
 ccolamd_inc = -I$(top_srcdir)/gtsam/3rdparty/CCOLAMD/Include -I$(top_srcdir)/gtsam/3rdparty/UFconfig
 
 headers += $(sources:.cpp=.h)

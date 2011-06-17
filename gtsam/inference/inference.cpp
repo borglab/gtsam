@@ -23,8 +23,6 @@
 #include <iostream>
 #include <vector>
 
-// FIXME: handle include path better
-//#include <gtsam/3rdparty/CCOLAMD/Include/ccolamd.h>
 #include <ccolamd.h>
 
 using namespace std;
