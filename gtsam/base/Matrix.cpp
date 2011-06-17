@@ -25,8 +25,8 @@
 #include <boost/foreach.hpp>
 #include <boost/tuple/tuple.hpp>
 
-#include <gtsam/3rdparty/Eigen/Dense>
-#include <gtsam/3rdparty/Eigen/SVD>
+#include <gtsam/3rdparty/Eigen/Eigen/Dense>
+#include <gtsam/3rdparty/Eigen/Eigen/SVD>
 
 #include <gtsam/base/Matrix.h>
 #include <gtsam/base/timing.h>

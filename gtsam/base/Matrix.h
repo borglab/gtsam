@@ -24,7 +24,7 @@
 
 #include <boost/format.hpp>
 #include <boost/tuple/tuple.hpp>
-#include <gtsam/3rdparty/Eigen/QR>
+#include <gtsam/3rdparty/Eigen/Eigen/QR>
 #include <gtsam/base/Vector.h>
 
 /**

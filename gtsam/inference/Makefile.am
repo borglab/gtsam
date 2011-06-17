@@ -48,12 +48,16 @@ check_PROGRAMS += tests/testJunctionTree
 # It will be packaged in the toplevel libgtsam.la as specfied in ../Makefile.am 
 # The headers are installed in $(includedir)/gtsam: 
 #----------------------------------------------------------------------------------------------------
+
+#FIXME: inclusion of ccolamd is annoying
+ccolamd_inc = -I$(top_srcdir)/gtsam/3rdparty/CCOLAMD/Include -I$(top_srcdir)/gtsam/3rdparty/UFconfig
+
 headers += $(sources:.cpp=.h)
 inferencedir = $(pkgincludedir)/inference
 inference_HEADERS = $(headers)
 noinst_LTLIBRARIES = libinference.la
 libinference_la_SOURCES = $(sources)
-AM_CPPFLAGS = $(BOOST_CPPFLAGS) -I$(top_srcdir)
+AM_CPPFLAGS = $(ccolamd_inc) $(BOOST_CPPFLAGS) -I$(top_srcdir)
 AM_LDFLAGS = $(BOOST_LDFLAGS)
 AM_CXXFLAGS =
 

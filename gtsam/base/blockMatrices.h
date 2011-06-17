@@ -17,7 +17,6 @@
  */
 #pragma once
 
-#include <gtsam/3rdparty/Eigen/Dense>
 #include <gtsam/base/Matrix.h>
 
 namespace gtsam {

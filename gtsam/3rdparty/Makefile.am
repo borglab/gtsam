@@ -10,10 +10,11 @@ AUTOMAKE_OPTIONS = nostdinc
 nobase_3rdparty_HEADERS  =
 
 # CCOLAMD (with UFconfig files included)
-ccolamd_path =
-ccolamd_path += ccolamd 
-headers = $(ccolamd_path)/ccolamd.h $(ccolamd_path)/UFconfig.h
-sources = $(ccolamd_path)/ccolamd.c $(ccolamd_path)/ccolamd_global.c $(ccolamd_path)/UFconfig.c 
+# FIXME: ccolamd requires a -I setting for every header file
+ccolamd_inc = $(top_srcdir)/gtsam/3rdparty/CCOLAMD/Include
+ufconfig_inc = $(top_srcdir)/gtsam/3rdparty/UFconfig
+headers = CCOLAMD/Include/ccolamd.h UFconfig/UFconfig.h
+sources = CCOLAMD/Source/ccolamd.c CCOLAMD/Source/ccolamd_global.c UFconfig/UFconfig.c 
 
 #----------------------------------------------------------------------------------------------------
 # Create a libtool library that is not installed
@@ -24,14 +25,13 @@ nobase_3rdparty_HEADERS += $(headers)
 noinst_LTLIBRARIES = libccolamd.la
 libccolamd_la_SOURCES = $(sources)
 
-AM_CPPFLAGS =
-
-AM_CPPFLAGS += $(BOOST_CPPFLAGS) -I$(top_srcdir) 
+AM_CPPFLAGS = 
+AM_CPPFLAGS += -I$(ccolamd_inc) -I$(ufconfig_inc) $(BOOST_CPPFLAGS) -I$(top_srcdir) 
 AM_LDFLAGS = $(BOOST_LDFLAGS)
 
 # Eigen Installation - just copies the headers
 eigen_path = 
-eigen_path += Eigen  
+eigen_path += Eigen/Eigen  
 nobase_3rdparty_HEADERS += $(eigen_path)/Array         $(eigen_path)/LeastSquares
 nobase_3rdparty_HEADERS += $(eigen_path)/Cholesky      $(eigen_path)/LU
 nobase_3rdparty_HEADERS += $(eigen_path)/Core          $(eigen_path)/QR

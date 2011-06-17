@@ -23,7 +23,9 @@
 #include <iostream>
 #include <vector>
 
-#include <gtsam/3rdparty/ccolamd/ccolamd.h>
+// FIXME: handle include path better
+//#include <gtsam/3rdparty/CCOLAMD/Include/ccolamd.h>
+#include <ccolamd.h>
 
 using namespace std;
 

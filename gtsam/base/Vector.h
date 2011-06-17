@@ -22,7 +22,7 @@
 
 #include <list>
 #include <vector>
-#include <gtsam/3rdparty/Eigen/Core>
+#include <gtsam/3rdparty/Eigen/Eigen/Core>
 #include <boost/random/linear_congruential.hpp>
 
 // Vector is just a typedef of the Eigen dynamic vector type
