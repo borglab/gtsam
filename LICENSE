@@ -63,8 +63,14 @@ All Rights Reserved
 
 7.  Linked Libraries.
 
-The Program contains no portions nor any derivatives of the external library CCOLAMD.  However, the Program is designed to work with these libraries by being compiled or linked with them as provided in the GNU Lesser General Public License v. 2.1, sections 5 and 6.  These libraries, and their use, are subject to the GNU Lesser General Public License v. 2.1.  A copy of the GNU Lesser General Public License v. 2.1 is distributed with the Program.  The library CCOLAMD is copyrighted as provided in its copyright notice, reproduced below:
+7.1 CCOLAMD
+
+The Program contains a distribution of the external library CCOLAMD, with no changes from the version distributed by the authors of CCOLAMD, as provided by the GNU Lesser General Public License v. 2.1, section 1. The Program is designed to work with these libraries by being compiled or linked with them as provided in the GNU Lesser General Public License v. 2.1, sections 5 and 6.  These libraries, and their use, are subject to the GNU Lesser General Public License v. 2.1.  A copy of the GNU Lesser General Public License v. 2.1 is distributed with the Program.  The library CCOLAMD is copyrighted as provided in its copyright notice, reproduced below:
 
 COLAMD is Copyright (C), Univ. of Florida, Author(s) Timothy A. Davis, Sivasankaran Rajamanickam, and Sefan Larimore
 See LPGL for the version 2.1 of the GNU Lesser General Public License
 http://www.cise.ufl.edu/reesarch/sparce
+
+7.2 Eigen
+
+The Program contains a distribution of the external library Eigen, with no changes from the version distributed by the authors of Eigen, as provided by the GNU Lesser General Public License v. 3, section 1. The Program is designed to work with these libraries by incorporating material from headers, as provided by GNU Lesser General Public License v. 3, section 3.  These libraries, and their use, are subject to the GNU Lesser General Public License v. 3.  A copy of the GNU Lesser General Public License v. 3 is distributed with the Program.  
