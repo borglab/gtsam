@@ -6,7 +6,7 @@ What is GTSAM ?
   GTSAM is a library of C++ classes that implement smoothing and
   mapping (SAM) in robotics and vision, using factor graphs and Bayes
   networks as the underlying computing paradigm rather than sparse
-  matrices. A set of MATLAB mex wrappers is also included.
+  matrices. 
 
 GTSAM is not (yet) open source: See COPYING & LICENSE
 Please see USAGE for an example on how to use GTSAM.
