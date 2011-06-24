@@ -24,10 +24,10 @@ The code is organized according to the following directory structure:
 This library contains unchanged copies of two third party libraries, with documentation 
 of licensing in LICENSE and as follows: 
   - CCOLAMD 2.73: Tim Davis' constrained column approximate minimum degree ordering library
-  	- http://www.cise.ufl.edu/research/sparse
-  	- Licenced under LGPL v2.1, provided in gtsam/3rdparty/CCOLAMD/Doc/lesser.txt
- 	- Eigen 3.0.1:  General C++ matrix and linear algebra library
- 		- Licenced under LGPL v3, provided in gtsam/3rdparty/Eigen/COPYING.LGPL
+    - http://www.cise.ufl.edu/research/sparse
+    - Licenced under LGPL v2.1, provided in gtsam/3rdparty/CCOLAMD/Doc/lesser.txt
+  - Eigen 3.0.1:  General C++ matrix and linear algebra library
+    - Licenced under LGPL v3, provided in gtsam/3rdparty/Eigen/COPYING.LGPL
   
 All of the above contain code and tests, and build local shared libraries that are then
 bundled in a top-level shared library libgtsam.la. After this is built, you can also run
