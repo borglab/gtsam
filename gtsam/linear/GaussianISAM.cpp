@@ -18,14 +18,15 @@
 #include <gtsam/3rdparty/Eigen/Eigen/Dense>
 #include <gtsam/linear/GaussianISAM.h>
 
+#include <gtsam/inference/ISAM-inl.h>
+
 using namespace std;
 using namespace gtsam;
 
-// Explicitly instantiate so we don't have to include everywhere
-#include <gtsam/inference/ISAM-inl.h>
-template class ISAM<GaussianConditional>;
-
 namespace gtsam {
+
+// Explicitly instantiate so we don't have to include everywhere
+template class ISAM<GaussianConditional>;
 
 /* ************************************************************************* */
 GaussianFactor::shared_ptr GaussianISAM::marginalFactor(Index j) const {

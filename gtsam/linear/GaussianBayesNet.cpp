@@ -22,18 +22,20 @@
 #include <gtsam/linear/GaussianBayesNet.h>
 #include <gtsam/linear/VectorValues.h>
 
+#include <gtsam/inference/BayesNet-inl.h>
+
 using namespace std;
 using namespace gtsam;
 
-// Explicitly instantiate so we don't have to include everywhere
-#include <gtsam/inference/BayesNet-inl.h>
-template class BayesNet<GaussianConditional>;
 
 // trick from some reading group
 #define FOREACH_PAIR( KEY, VAL, COL) BOOST_FOREACH (boost::tie(KEY,VAL),COL) 
 #define REVERSE_FOREACH_PAIR( KEY, VAL, COL) BOOST_REVERSE_FOREACH (boost::tie(KEY,VAL),COL)
 
 namespace gtsam {
+
+// Explicitly instantiate so we don't have to include everywhere
+template class BayesNet<GaussianConditional>;
 
 /* ************************************************************************* */
 GaussianBayesNet scalarGaussian(Index key, double mu, double sigma) {
