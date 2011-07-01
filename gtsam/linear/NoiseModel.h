@@ -25,7 +25,7 @@
 
 namespace gtsam {
 
-	class SharedDiagonal; // forward declare
+	struct SharedDiagonal; // forward declare
 
 	namespace noiseModel {
 
@@ -97,7 +97,7 @@ namespace gtsam {
 		 *   |y|^2 = y'*y = x'*R'*R*x
 		 * Various derived classes are available that are more efficient.
 		 */
-		struct Gaussian: public Base {
+		class Gaussian: public Base {
 
 		protected:
 

@@ -240,7 +240,7 @@ inline Vector VectorValues::range(const ITERATOR& idx_begin, const ITERATOR& idx
 	for (ITERATOR it=idx_begin; it!=idx_end; ++it) {
 		ConstSubVector v = (*this)[*it];
 		const size_t d = v.size();
-		result.segment(start, d) = v;
+		result.segment(start, d).operator=(v); // This syntax works around what seems to be a bug in clang++
 		start += d;
 	}
 	return result;

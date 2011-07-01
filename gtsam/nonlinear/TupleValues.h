@@ -56,8 +56,8 @@ namespace gtsam {
 
   public:
 	  // typedefs for values subtypes
-	  typedef class VALUES1::Key Key1;
-	  typedef class VALUES1::Value Value1;
+	  typedef typename VALUES1::Key Key1;
+	  typedef typename VALUES1::Value Value1;
 
 	  /** default constructor */
 	  TupleValues() {}
@@ -262,8 +262,8 @@ namespace gtsam {
 
   public:
 	  // typedefs
-	  typedef class VALUES::Key Key1;
-	  typedef class VALUES::Value Value1;
+	  typedef typename VALUES::Key Key1;
+	  typedef typename VALUES::Value Value1;
 
 	  TupleValuesEnd() {}
 

@@ -31,7 +31,7 @@
 
 namespace gtsam {
 
-	class SharedDiagonal;
+	struct SharedDiagonal;
 
   /** unnormalized error */
   template<class FACTOR>

@@ -69,7 +69,7 @@ public:
     return C;
   }
   const char* c_str() const {
-    return (std::string) (*this).c_str();
+    return ((std::string) (*this)).c_str();
   }
   operator std::string() const {
     return (boost::format("%c%d") % C % j_).str();
@@ -290,7 +290,7 @@ public:
     return label_;
   }
   const char* c_str() const {
-    return (std::string) (*this).c_str();
+    return ((std::string)(*this)).c_str();
   }
   operator std::string() const {
     std::string label_s = (boost::format("%1%") % label_).str();

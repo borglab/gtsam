@@ -74,19 +74,19 @@ namespace gtsam {
 		/**
 		 * Constructor - forces exact evaluation
 		 */
-		NonlinearEquality(const KEY& j, const T& feasible, bool (*compare)(const T&, const T&) = compare<T>) :
+		NonlinearEquality(const KEY& j, const T& feasible, bool (*_compare)(const T&, const T&) = compare<T>) :
 			Base(noiseModel::Constrained::All(feasible.dim()), j), feasible_(feasible),
 			allow_error_(false), error_gain_(0.0),
-			compare_(compare) {
+			compare_(_compare) {
 		}
 
 		/**
 		 * Constructor - allows inexact evaluation
 		 */
-		NonlinearEquality(const KEY& j, const T& feasible, double error_gain, bool (*compare)(const T&, const T&) = compare<T>) :
+		NonlinearEquality(const KEY& j, const T& feasible, double error_gain, bool (*_compare)(const T&, const T&) = compare<T>) :
 			Base(noiseModel::Constrained::All(feasible.dim()), j), feasible_(feasible),
 			allow_error_(true), error_gain_(error_gain),
-			compare_(compare) {
+			compare_(_compare) {
 		}
 
 		void print(const std::string& s = "") const {
