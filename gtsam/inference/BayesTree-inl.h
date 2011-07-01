@@ -601,7 +601,6 @@ namespace gtsam {
 	template<class CONDITIONAL>
 	typename BayesTree<CONDITIONAL>::sharedClique BayesTree<CONDITIONAL>::insert(
 	    const sharedConditional& clique, list<sharedClique>& children, bool isRootClique) {
-	  static const bool debug = false;
 
 		if (clique->nrFrontals() == 0)
 			throw invalid_argument("BayesTree::insert: empty clique!");
