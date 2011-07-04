@@ -82,15 +82,15 @@ namespace gtsam {
 			push_front(conditional);
 	}
 
-//	/* ************************************************************************* */
-//	template<class CONDITIONAL>
-//	FastList<Index> BayesNet<CONDITIONAL>::ordering() const {
-//		FastList<Index> ord;
-//		BOOST_FOREACH(sharedConditional conditional,conditionals_)
-//		   ord.push_back(conditional->key());
-//		return ord;
-//	}
-//
+	/* ************************************************************************* */
+	template<class CONDITIONAL>
+	FastList<Index> BayesNet<CONDITIONAL>::ordering() const {
+		FastList<Index> ord;
+		BOOST_FOREACH(sharedConditional conditional,conditionals_)
+		   ord.insert(ord.begin(), conditional->beginFrontals(), conditional->endFrontals());
+		return ord;
+	}
+
 //	/* ************************************************************************* */
 //	template<class CONDITIONAL>
 //	void BayesNet<CONDITIONAL>::saveGraph(const std::string &s) const {

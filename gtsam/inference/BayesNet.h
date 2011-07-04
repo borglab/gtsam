@@ -116,10 +116,10 @@ namespace gtsam {
 			return conditionals_.size();
 		}
 
-//		/** return keys in reverse topological sort order, i.e., elimination order */
-//		FastList<Index> ordering() const;
-//
-//		/** SLOW O(n) random access to Conditional by key */
+		/** return keys in reverse topological sort order, i.e., elimination order */
+    FastList<Index> ordering() const;
+
+    /** SLOW O(n) random access to Conditional by key */
 		sharedConditional operator[](Index key) const;
 
     /** return last node in ordering */

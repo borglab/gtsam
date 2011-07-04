@@ -152,6 +152,7 @@ public:
 	size_t dim(const_iterator variable) const { return rsd_(variable - this->begin()).cols(); }
 
 	rsd_type::constBlock get_S(const_iterator variable) const { return rsd_(variable - this->begin()); }
+	rsd_type::constBlock get_S() const { return rsd_.range(nrFrontals(), size()); }
 	const Vector& get_sigmas() const {return sigmas_;}
 
 protected:

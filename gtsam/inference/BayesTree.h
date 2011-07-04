@@ -42,6 +42,7 @@ namespace gtsam {
 	  typedef boost::shared_ptr<BayesTree<CONDITIONAL> > shared_ptr;
 		typedef boost::shared_ptr<CONDITIONAL> sharedConditional;
 		typedef boost::shared_ptr<BayesNet<CONDITIONAL> > sharedBayesNet;
+		typedef CONDITIONAL ConditionalType;
 		typedef typename CONDITIONAL::FactorType FactorType;
 	  typedef typename FactorGraph<FactorType>::Eliminate Eliminate;
 
@@ -59,7 +60,7 @@ namespace gtsam {
 		  void assertInvariants() const;
 
 		public:
-		  typedef CONDITIONAL Base;
+		  typedef CONDITIONAL ConditionalType;
 			typedef typename boost::shared_ptr<Clique> shared_ptr;
 			typedef typename boost::weak_ptr<Clique> weak_ptr;
 			sharedConditional conditional_;
