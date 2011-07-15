@@ -60,8 +60,13 @@ so that debug checks are disabled.
 Another useful debugging symbol is _GLIBCXX_DEBUG, which enables debug checks
 and safe containers in the standard C++ library and makes problems much easier
 to find.
+
 NOTE:  The native Snow Leopard g++ compiler/library contains a bug that makes
 it impossible to use _GLIBCXX_DEBUG.  MacPorts g++ compilers do work with it though.
+
+NOTE:  If _GLIBCXX_DEBUG is used to compile gtsam, anything that links against
+gtsam will need to be compiled with _GLIBCXX_DEBUG as well, due to the use of
+header-only Eigen.  
 
 3)
 Putting the above together, here are some sample ./configure commands for
