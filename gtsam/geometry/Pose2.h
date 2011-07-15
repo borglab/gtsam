@@ -99,7 +99,7 @@ namespace gtsam {
       boost::optional<Matrix&> H2 = boost::none) const;
 
     /** syntactic sugar for transform_from */
-    inline Point2 operator*(const Point2& point) { return transform_from(point);}
+    inline Point2 operator*(const Point2& point) const { return transform_from(point);}
 
     /**
      * Exponential map from se(2) to SE(2)
