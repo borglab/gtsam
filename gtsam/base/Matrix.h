@@ -355,6 +355,7 @@ Vector backSubstituteLower(const Matrix& L, const Vector& d, bool unit=false);
 /**
  * create a matrix by stacking other matrices
  * Given a set of matrices: A1, A2, A3...
+ * @param ... pointers to matrices to be stacked
  * @return combined matrix [A1; A2; A3]
  */
 Matrix stack(size_t nrMatrices, ...);

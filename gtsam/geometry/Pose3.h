@@ -102,7 +102,7 @@ namespace gtsam {
   		  	boost::optional<Matrix&> H1=boost::none, boost::optional<Matrix&> H2=boost::none) const;
 
     /** syntactic sugar for transform */
-    inline Point3 operator*(const Point3& p) { return transform_from(p); }
+    inline Point3 operator*(const Point3& p) const { return transform_from(p); }
 
     /** receives the point in world coordinates and transforms it to Pose coordinates */
     Point3 transform_to(const Point3& p,
