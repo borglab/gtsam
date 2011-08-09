@@ -156,6 +156,19 @@ void GaussianConditional::rhs(VectorValues& x) const {
 }
 
 /* ************************************************************************* */
+void GaussianConditional::rhs(Permuted<VectorValues>& x) const {
+  // Copy the rhs into x, accounting for the permutation
+  Vector d = rhs();
+  size_t rhsPosition = 0;  // We walk through the rhs by variable
+  for(const_iterator j = beginFrontals(); j != endFrontals(); ++j) {
+    // Get the segment of the rhs for this variable
+    x[*j] = d.segment(rhsPosition, this->dim(j));
+    // Increment the position
+    rhsPosition += this->dim(j);
+  }
+}
+
+/* ************************************************************************* */
 void GaussianConditional::solveInPlace(VectorValues& x) const {
   static const bool debug = false;
   if(debug) print("Solving conditional in place");

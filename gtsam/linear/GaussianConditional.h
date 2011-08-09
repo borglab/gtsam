@@ -174,6 +174,12 @@ public:
 	void rhs(VectorValues& x) const;
 
   /**
+   * Adds the RHS to a given VectorValues for use in solve() functions.
+   * @param x is the values to be updated, assumed allocated
+   */
+  void rhs(Permuted<VectorValues>& x) const;
+
+  /**
    * solves a conditional Gaussian and stores the result in x
    * This function works for multiple frontal variables.
    * NOTE: assumes that the RHS for the frontals is stored in x, and
