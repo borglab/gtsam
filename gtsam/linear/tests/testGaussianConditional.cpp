@@ -118,6 +118,48 @@ TEST( GaussianConditional, equals )
 }
 
 /* ************************************************************************* */
+TEST( GaussianConditional, rhs_permuted )
+{
+  // Test filling the rhs when the VectorValues is permuted
+
+  // Create a VectorValues
+  VectorValues unpermuted(5, 2);
+  unpermuted[0] << 1, 2;
+  unpermuted[1] << 3, 4;
+  unpermuted[2] << 5, 6;
+  unpermuted[3] << 7, 8;
+  unpermuted[4] << 9, 10;
+
+  // Create a permutation
+  Permutation permutation(5);
+  permutation[0] = 4;
+  permutation[1] = 3;
+  permutation[2] = 2;
+  permutation[3] = 1;
+  permutation[4] = 0;
+
+  // Permuted VectorValues
+  Permuted<VectorValues> permuted(permutation, unpermuted);
+
+  // Expected VectorValues
+  VectorValues expected(5, 2);
+  expected[0] << 1, 2;
+  expected[1] << 3, 4;
+  expected[2] << 5, 6;
+  expected[3] << 7, 8;
+  expected[4] << 11, 12;
+
+  // GaussianConditional
+  Vector d(2);  d << 11, 12;
+  GaussianConditional conditional(0, d, Matrix::Identity(2,2), Vector::Ones(2));
+
+  // Fill rhs, conditional is on index 0, which should fill slot 4 of the values
+  conditional.rhs(permuted);
+
+  EXPECT(assert_equal(expected, unpermuted));
+}
+
+/* ************************************************************************* */
 TEST( GaussianConditional, solve )
 {
   //expected solution
