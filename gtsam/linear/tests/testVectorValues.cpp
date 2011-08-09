@@ -184,6 +184,38 @@ TEST(VectorValues, makeZero ) {
 }
 
 /* ************************************************************************* */
+TEST(VectorValues, reserve ) {
+  Vector v1 = Vector_(3, 1.0,2.0,3.0);
+  Vector v2 = Vector_(2, 4.0,5.0);
+  Vector v3 = Vector_(4, 6.0,7.0,8.0,9.0);
+  Vector v4(2); v4 << 10, 11;
+  Vector v5(3); v5 << 12, 13, 14;
+
+  // Expected has all 5 variables
+  vector<size_t> dimsExp(5); dimsExp[0]=3; dimsExp[1]=2; dimsExp[2]=4; dimsExp[3]=2; dimsExp[4]=3;
+  VectorValues expected(dimsExp);
+  expected[0] = v1;
+  expected[1] = v2;
+  expected[2] = v3;
+  expected[3] = v4;
+  expected[4] = v5;
+
+  // Start with 3 variables
+  vector<size_t> dims(3); dims[0]=3; dims[1]=2; dims[2]=4;
+  VectorValues actual(dims);
+  actual[0] = v1;
+  actual[1] = v2;
+  actual[2] = v3;
+
+  // Now expand to all 5
+  actual.reserve(5, 14);
+  actual.push_back_preallocated(v4);
+  actual.push_back_preallocated(v5);
+
+  EXPECT(assert_equal(expected, actual));
+}
+
+/* ************************************************************************* */
 TEST(VectorValues, range ) {
 	VectorValues v(7,2);
 	v.makeZero();

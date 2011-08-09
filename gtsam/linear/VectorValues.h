@@ -103,7 +103,7 @@ public:
   Vector& vector() { return values_; }
 
   /** Reserve space for a total number of variables and dimensionality */
-  void reserve(Index nVars, size_t totalDims) { values_.resize(totalDims); varStarts_.reserve(nVars+1); }
+  void reserve(Index nVars, size_t totalDims) { values_.conservativeResize(totalDims); varStarts_.reserve(nVars+1); }
 
   /** access a range of indices (of no particular order) as a single vector */
   template<class ITERATOR>
