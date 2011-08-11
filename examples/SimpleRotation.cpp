@@ -30,44 +30,100 @@
 #include <gtsam/nonlinear/LieValues-inl.h>
 #include <gtsam/nonlinear/NonlinearFactorGraph-inl.h>
 #include <gtsam/nonlinear/NonlinearOptimization-inl.h>
+
 /*
  * TODO: make factors independent of Values
- * TODO: get rid of excessive shared pointer stuff: mostly gone
  * TODO: make toplevel documentation
- * TODO: investigate whether we can just use ints as keys: will occur for linear, not nonlinear
+ * TODO: Clean up nonlinear optimization API
  */
 
 using namespace std;
 using namespace gtsam;
 
-typedef TypedSymbol<Rot2, 'x'> Key;
-typedef LieValues<Key> Values;
-typedef NonlinearFactorGraph<Values> Graph;
-typedef NonlinearOptimizer<Graph,Values> Optimizer;
+/**
+ *   Step 1: Setup basic types for optimization of a single variable type
+ * This can be considered to be specifying the domain of the problem we wish
+ * to solve.  In this case, we will create a very simple domain that operates
+ * on variables of a specific type, in this case, Rot2.
+ *
+ * To create a domain:
+ *  - variable types need to have a key defined to act as a label in graphs
+ *  - a "Values" structure needs to be defined to store the system state
+ *  - a graph container acting on a given Values
+ *
+ * In a typical scenario, these typedefs could be placed in a header
+ * file and reused between projects.
+ */
+typedef TypedSymbol<Rot2, 'x'> Key; 								/// Variable labels for a specific type
+typedef LieValues<Key> Values;											/// Class to store values - acts as a state for the system
+typedef NonlinearFactorGraph<Values> Graph;					/// Graph container for constraints - needs to know type of variables
 
 const double degree = M_PI / 180;
 
 int main() {
 
-	// optimize a unary factor on rotation 1
+	/**
+	 * This example will perform a relatively trivial optimization on
+	 * a single variable with a single factor.
+	 */
 
-	// Create a factor
-	Rot2 prior1 = Rot2::fromAngle(30 * degree);
-	prior1.print("goal angle");
-	SharedDiagonal model1 = noiseModel::Isotropic::Sigma(1, 1 * degree);
-	Key key1(1);
-	PriorFactor<Values, Key> factor1(key1, prior1, model1);
+	/**
+	 *    Step 2: create a factor on to express a unary constraint
+	 * The "prior" in this case is the measurement from a sensor,
+	 * with a model of the noise on the measurement.
+	 *
+	 * The "Key" created here is a label used to associate parts of the
+	 * state (stored in "Values") with particular factors.  They require
+	 * an index to allow for lookup, and should be unique.
+	 *
+	 * In general, creating a factor requires:
+	 *  - A key or set of keys labeling the variables that are acted upon
+	 *  - A measurement value
+	 *  - A measurement model with the correct dimensionality for the factor
+	 */
+	Rot2 prior = Rot2::fromAngle(30 * degree);
+	prior.print("goal angle");
+	SharedDiagonal model = noiseModel::Isotropic::Sigma(1, 1 * degree);
+	Key key(1);
+	PriorFactor<Values, Key> factor(key, prior, model);
 
-	// Create a factor graph
+	/**
+	 *    Step 3: create a graph container and add the factor to it
+	 * Before optimizing, all factors need to be added to a Graph container,
+	 * which provides the necessary top-level functionality for defining a
+	 * system of constraints.
+	 *
+	 * In this case, there is only one factor, but in a practical scenario,
+	 * many more factors would be added.
+	 */
 	Graph graph;
-	graph.add(factor1);
-	graph.print("full graph") ;
+	graph.add(factor);
+	graph.print("full graph");
 
-	// and an initial estimate
+	/**
+	 *    Step 4: create an initial estimate
+	 * An initial estimate of the solution for the system is necessary to
+	 * start optimization.  This system state is the "Values" structure,
+	 * which is similar in structure to a STL map, in that it maps
+	 * keys (the label created in step 1) to specific values.
+	 *
+	 * The initial estimate provided to optimization will be used as
+	 * a linearization point for optimization, so it is important that
+	 * all of the variables in the graph have a corresponding value in
+	 * this structure.
+	 */
 	Values initial;
-	initial.insert(key1, Rot2::fromAngle(20 * degree));
+	initial.insert(key, Rot2::fromAngle(20 * degree));
 	initial.print("initial estimate");
 
+	/**
+	 *    Step 5: optimize
+	 * After formulating the problem with a graph of constraints
+	 * and an initial estimate, executing optimization is as simple
+	 * as calling a general optimization function with the graph and
+	 * initial estimate.  This will yield a new Values structure
+	 * with the final state of the optimization.
+	 */
 	Values result = optimize<Graph, Values>(graph, initial);
 	result.print("final result");
 
