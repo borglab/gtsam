@@ -52,7 +52,9 @@ using namespace gtsam;
  *  - a graph container acting on a given Values
  *
  * In a typical scenario, these typedefs could be placed in a header
- * file and reused between projects.
+ * file and reused between projects.  Also, LieValues can be combined to
+ * form a "TupleValues" to enable multiple variable types, such as 2D points
+ * and 2D poses.
  */
 typedef TypedSymbol<Rot2, 'x'> Key; 								/// Variable labels for a specific type
 typedef LieValues<Key> Values;											/// Class to store values - acts as a state for the system
@@ -111,6 +113,10 @@ int main() {
 	 * a linearization point for optimization, so it is important that
 	 * all of the variables in the graph have a corresponding value in
 	 * this structure.
+	 *
+	 * The interface to all Values types is the same, it only depends
+	 * on the type of key used to find the appropriate value map if there
+	 * are multiple types of variables.
 	 */
 	Values initial;
 	initial.insert(key, Rot2::fromAngle(20 * degree));
