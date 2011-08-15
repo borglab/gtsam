@@ -212,7 +212,7 @@ void GaussianConditional::solveInPlace(Permuted<VectorValues>& x) const {
 	// apply solution: inlined manually due to permutation
   size_t solnStart = 0;
   for (const_iterator frontal = beginFrontals(); frontal != endFrontals(); ++frontal) {
-  	const size_t d = dim(frontal);
+  	const size_t d = this->dim(frontal);
   	x[*frontal] = soln.segment(solnStart, d);
   	solnStart += d;
   }

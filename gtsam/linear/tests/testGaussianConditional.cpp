@@ -295,6 +295,56 @@ TEST( GaussianConditional, solve_multifrontal )
 }
 
 /* ************************************************************************* */
+TEST( GaussianConditional, solve_multifrontal_permuted )
+{
+  // create full system, 3 variables, 2 frontals, all 2 dim
+  // no pivoting from LDL, so R matrix is not permuted
+  Matrix full_matrix = Matrix_(4, 7,
+      1.0, 0.0, 2.0, 0.0, 3.0, 0.0, 0.5,
+      0.0, 1.0, 0.0, 2.0, 0.0, 3.0, 0.6,
+      0.0, 0.0, 3.0, 0.0, 4.0, 0.0, 0.7,
+      0.0, 0.0, 0.0, 3.0, 0.0, 4.0, 0.8);
+
+  // 3 variables, all dim=2
+  vector<size_t> dims; dims += 2, 2, 2, 1;
+  GaussianConditional::rsd_type matrices(full_matrix, dims.begin(), dims.end());
+  Vector sigmas = ones(4);
+  vector<size_t> cgdims; cgdims += _x_, _x1_, _l1_;
+  GaussianConditional cg(cgdims.begin(), cgdims.end(), 2, matrices, sigmas);
+
+  EXPECT(assert_equal(Vector_(4, 0.5, 0.6, 0.7, 0.8), cg.get_d()));
+
+  // partial solution
+  Vector sl1 = Vector_(2, 9.0, 10.0);
+
+  // elimination order; _x_, _x1_, _l1_
+  VectorValues actualUnpermuted(vector<size_t>(3, 2));
+  Permutation permutation(3);
+  permutation[0] = 2;
+  permutation[1] = 0;
+  permutation[2] = 1;
+  Permuted<VectorValues> actual(permutation, actualUnpermuted);
+  actual[_x_]  = Vector_(2, 0.1, 0.2); // rhs
+  actual[_x1_] = Vector_(2, 0.3, 0.4); // rhs
+  actual[_l1_] = sl1; // parent
+
+  VectorValues expectedUnpermuted(vector<size_t>(3, 2));
+  Permuted<VectorValues> expected(permutation, expectedUnpermuted);
+  expected[_x_] = Vector_(2, -3.1,-3.4);
+  expected[_x1_] = Vector_(2, -11.9,-13.2);
+  expected[_l1_] = sl1;
+
+  // verify indices/size
+  EXPECT_LONGS_EQUAL(3, cg.size());
+  EXPECT_LONGS_EQUAL(4, cg.dim());
+
+  // solve and verify
+  cg.solveInPlace(actual);
+  EXPECT(assert_equal(expected.container(), actual.container(), tol));
+
+}
+
+/* ************************************************************************* */
 TEST( GaussianConditional, solveTranspose ) {
 	static const Index _y_=1;
 	/** create small Chordal Bayes Net x <- y
