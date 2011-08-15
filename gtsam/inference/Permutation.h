@@ -113,7 +113,7 @@ public:
   void print(const std::string& str = "Permutation: ") const;
 
   /** Equals */
-  bool equals(const Permutation& rhs) const { return rangeIndices_ == rhs.rangeIndices_; }
+  bool equals(const Permutation& rhs, double tol=0.0) const { return rangeIndices_ == rhs.rangeIndices_; }
 
   /**
    * Syntactic sugar for accessing another container through a permutation.
