@@ -538,7 +538,7 @@ public:
   template<class RHSMATRIX>
   SymmetricBlockView<MATRIX>& assignNoalias(const SymmetricBlockView<RHSMATRIX>& rhs) {
     copyStructureFrom(rhs);
-    matrix_.noalias() = rhs.matrix_.block(0, 0, rhs.nBlocks(), rhs.nBlocks());
+    matrix_.noalias() = rhs.full();
     return *this;
   }
 

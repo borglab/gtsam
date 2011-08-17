@@ -161,6 +161,55 @@ TEST(HessianFactor, Constructor2)
   double actual = factor.error(dx);
 
   DOUBLES_EQUAL(expected, actual, 1e-10);
+  LONGS_EQUAL(4, factor.rows());
+  DOUBLES_EQUAL(10.0, factor.constant_term(), 1e-10);
+
+  Vector linearExpected(3);  linearExpected << g1, g2;
+  EXPECT(assert_equal(linearExpected, factor.linear_term()));
+
+  EXPECT(assert_equal(G11, factor.info(factor.begin(), factor.begin())));
+  EXPECT(assert_equal(G12, factor.info(factor.begin(), factor.begin()+1)));
+  EXPECT(assert_equal(G22, factor.info(factor.begin()+1, factor.begin()+1)));
+}
+/* ************************************************************************* */
+TEST_UNSAFE(HessianFactor, CopyConstructor)
+{
+  Matrix G11 = Matrix_(1,1, 1.0);
+  Matrix G12 = Matrix_(1,2, 2.0, 4.0);
+  Matrix G22 = Matrix_(2,2, 3.0, 5.0, 0.0, 6.0);
+  Vector g1 = Vector_(1, -7.0);
+  Vector g2 = Vector_(2, -8.0, -9.0);
+  double f = 10.0;
+
+  Vector dx0 = Vector_(1, 0.5);
+  Vector dx1 = Vector_(2, 1.5, 2.5);
+
+  vector<size_t> dims;
+  dims.push_back(1);
+  dims.push_back(2);
+  VectorValues dx(dims);
+
+  dx[0] = dx0;
+  dx[1] = dx1;
+
+  HessianFactor originalFactor(0, 1, G11, G12, g1, G22, g2, f);
+
+  // Make a copy
+  HessianFactor factor(originalFactor);
+
+  double expected = 90.5;
+  double actual = factor.error(dx);
+
+  DOUBLES_EQUAL(expected, actual, 1e-10);
+  LONGS_EQUAL(4, factor.rows());
+  DOUBLES_EQUAL(10.0, factor.constant_term(), 1e-10);
+
+  Vector linearExpected(3);  linearExpected << g1, g2;
+  EXPECT(assert_equal(linearExpected, factor.linear_term()));
+
+  EXPECT(assert_equal(G11, factor.info(factor.begin(), factor.begin())));
+  EXPECT(assert_equal(G12, factor.info(factor.begin(), factor.begin()+1)));
+  EXPECT(assert_equal(G22, factor.info(factor.begin()+1, factor.begin()+1)));
 }
 
 /* ************************************************************************* */
