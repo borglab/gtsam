@@ -21,6 +21,7 @@ check_PROGRAMS += testNonlinearISAM
 check_PROGRAMS += testBoundingConstraint
 check_PROGRAMS += testNonlinearEqualityConstraint
 check_PROGRAMS += testPose2SLAMwSPCG
+check_PROGRAMS += testGaussianISAM2
 
 # only if serialization is available
 if ENABLE_SERIALIZATION

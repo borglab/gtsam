@@ -27,8 +27,9 @@ headers += NonlinearFactor.h
 sources += NonlinearOptimizer.cpp Ordering.cpp
 check_PROGRAMS += tests/testKey tests/testOrdering
 
-# Nonlinear iSAM
+# Nonlinear iSAM(2)
 headers += NonlinearISAM.h NonlinearISAM-inl.h
+sources += GaussianISAM2.cpp
 
 # Nonlinear constraints 
 headers += NonlinearEquality.h NonlinearConstraint.h
