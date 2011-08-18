@@ -36,8 +36,8 @@ namespace gtsam {
     FastSet<Index> uniquesorted(beginFrontals(), endFrontals());
     assert(uniquesorted.size() == nrFrontals() && std::equal(uniquesorted.begin(), uniquesorted.end(), beginFrontals()));
     // Check that separator keys are less than parent keys
-    BOOST_FOREACH(Index j, frontals()) {
-      assert(find_if(beginParents(), endParents(), _1 < j) == endParents()); }
+    //BOOST_FOREACH(Index j, frontals()) {
+    //  assert(find_if(beginParents(), endParents(), _1 < j) == endParents()); }
 #endif
   }
 
