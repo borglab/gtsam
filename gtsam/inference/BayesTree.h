@@ -165,10 +165,12 @@ namespace gtsam {
 			CliqueStats getStats() const;
 		};
 
+    /** Map from keys to Clique */
+    typedef std::deque<sharedClique> Nodes;
+
 	protected:
 
-		/** Map from keys to Clique */
-		typedef std::deque<sharedClique> Nodes;
+    /** Map from keys to Clique */
 		Nodes nodes_;
 
 		/** private helper method for saving the Tree to a text file in GraphViz format */
