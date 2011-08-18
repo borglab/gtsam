@@ -26,6 +26,7 @@ using namespace boost::assign;
 
 #include <CppUnitLite/TestHarness.h>
 
+// Magically casts strings like "x3" to a Symbol('x',3) key, see Key.h
 #define GTSAM_MAGIC_KEY
 
 #include <gtsam/base/Matrix.h>

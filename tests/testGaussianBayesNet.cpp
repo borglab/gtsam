@@ -25,6 +25,7 @@
 #include <boost/assign/std/list.hpp> // for operator +=
 using namespace boost::assign;
 
+// Magically casts strings like "x3" to a Symbol('x',3) key, see Key.h
 #define GTSAM_MAGIC_KEY
 
 #include <gtsam/linear/GaussianBayesNet.h>
