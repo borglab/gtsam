@@ -47,11 +47,11 @@ namespace gtsam {
   void BayesTree<CONDITIONAL>::Clique::assertInvariants() const {
 #ifndef NDEBUG
     // We rely on the keys being sorted
-    FastVector<Index> sortedUniqueKeys(conditional_->begin(), conditional_->end());
-    std::sort(sortedUniqueKeys.begin(), sortedUniqueKeys.end());
-    std::unique(sortedUniqueKeys.begin(), sortedUniqueKeys.end());
-    assert(sortedUniqueKeys.size() == conditional_->size() &&
-        std::equal(sortedUniqueKeys.begin(), sortedUniqueKeys.end(), conditional_->begin()));
+//    FastVector<Index> sortedUniqueKeys(conditional_->begin(), conditional_->end());
+//    std::sort(sortedUniqueKeys.begin(), sortedUniqueKeys.end());
+//    std::unique(sortedUniqueKeys.begin(), sortedUniqueKeys.end());
+//    assert(sortedUniqueKeys.size() == conditional_->size() &&
+//        std::equal(sortedUniqueKeys.begin(), sortedUniqueKeys.end(), conditional_->begin()));
 #endif
   }
 
