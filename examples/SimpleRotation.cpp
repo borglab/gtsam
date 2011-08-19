@@ -13,8 +13,6 @@
  * SimpleRotation.cpp
  *
  * This is a super-simple example of optimizing a single rotation according to a single prior
- * yet it is quite painful (took 1.5 hours to code from scratch) and is overly complex
- * An example like this should be very easy to do, so let's work at it.
  *
  *  Created on: Jul 1, 2010
  *  @Author: Frank Dellaert

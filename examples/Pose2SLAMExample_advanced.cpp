@@ -10,7 +10,7 @@
  * -------------------------------------------------------------------------- */
 
 /**
- * @file Pose2SLAMExample.cpp
+ * @file Pose2SLAMExample_advanced.cpp
  * @brief Simple Pose2SLAM Example using
  * pre-built pose2SLAM domain
  * @author Chris Beall

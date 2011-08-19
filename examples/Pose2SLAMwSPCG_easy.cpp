@@ -10,9 +10,11 @@
  * -------------------------------------------------------------------------- */
 
 /*
- * Solve a simple 3 by 3 grid of Pose2 SLAM problem by using easy SPCG interface
+ * @file Pose2SLAMwSPCG_easy.cpp
+ * @brief Solve a simple 3 by 3 grid of Pose2 SLAM problem by using easy SPCG interface
+ * @author Yong Dian
+ * Created October 21, 2010
  */
-
 
 #include <boost/shared_ptr.hpp>
 

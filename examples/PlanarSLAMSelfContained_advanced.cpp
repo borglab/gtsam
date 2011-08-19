@@ -10,9 +10,8 @@
  * -------------------------------------------------------------------------- */
 
 /**
- * @file PlanarSLAMSelfContained.cpp
- * @brief Simple robotics example from tutorial Figure 1.1 (left), with all typedefs
- * internal to this script.
+ * @file PlanarSLAMSelfContained_advanced.cpp
+ * @brief Simple robotics example with all typedefs internal to this script.
  * @author Alex Cunningham
  */
 

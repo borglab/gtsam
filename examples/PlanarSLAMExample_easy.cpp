@@ -11,8 +11,7 @@
 
 /**
  * @file PlanarSLAMExample.cpp
- * @brief Simple robotics example from tutorial Figure 1.1 (left) by using the
- * pre-built planar SLAM domain
+ * @brief Simple robotics example using the pre-built planar SLAM domain
  * @author Alex Cunningham
  */
 

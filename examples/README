@@ -1,0 +1,22 @@
+This directory contains a number of exapmples that illustrate the use of GTSAM:
+
+SimpleRotation:  a super-simple example of optimizing a single rotation according to a single prior
+
+2D Pose SLAM 
+============
+Pose2SLAMExample_easy: A 2D Pose SLAM example using the predefined typedefs in gtsam/slam/pose2SLAM.h
+Pose2SLAMExample_advanced: same, but uses an Optimizer object
+Pose2SLAMwSPCG_easy: solve a simple 3 by 3 grid of Pose2 SLAM problem by using easy SPCG interface
+Pose2SLAMwSPCG_advanced: solve a simple 3 by 3 grid of Pose2 SLAM problem by using advanced SPCG interface
+
+Planar SLAM with landmarks
+==========================
+PlanarSLAMExample: simple robotics example using the pre-built planar SLAM domain
+PlanarSLAMSelfContained_advanced: simple robotics example with all typedefs internal to this script.
+
+Visual SLAM
+===========
+The directory vSLAMexample includes 2 simple examples using GTSAM:
+- vSFMexample using visualSLAM in for structure-from-motion (SFM), and
+- vISAMexample using visualSLAM and ISAM for incremental SLAM updates
+See the separate README file there.
