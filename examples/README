@@ -2,6 +2,13 @@ This directory contains a number of exapmples that illustrate the use of GTSAM:
 
 SimpleRotation:  a super-simple example of optimizing a single rotation according to a single prior
 
+Kalman Filter Examples
+======================
+elaboratePoint2KalmanFilter: simple linear Kalman filter on a moving 2D point, but done using factor graphs
+easyPoint2KalmanFilter: uses the cool generic templated Kalman filter class to do the same
+errorStateKalmanFilter: simple 1D example of a moving target measured by a accelerometer, incl. drift-rate bias
+fullStateKalmanFilter: simple 1D example with a full-state filter
+
 2D Pose SLAM 
 ============
 Pose2SLAMExample_easy: A 2D Pose SLAM example using the predefined typedefs in gtsam/slam/pose2SLAM.h
