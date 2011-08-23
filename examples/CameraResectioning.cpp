@@ -64,19 +64,19 @@ int main(int argc, char* argv[]) {
 
   /* 2. add factors to the graph */
   // add measurement factors
-  SharedDiagonal measurementNoise = sharedSigmas(Vector_(2, 1.0, 1.0));
+  SharedDiagonal measurementNoise = sharedSigmas(Vector_(2, 0.5, 0.5));
   boost::shared_ptr<ResectioningFactor> factor;
   factor = boost::shared_ptr<ResectioningFactor>(new ResectioningFactor(
-      measurementNoise, X, calib, Point2(55.1, 45.4), Point3(10.0, 10.0, 0.0)));
+      measurementNoise, X, calib, Point2(55.0, 45.0), Point3(10.0, 10.0, 0.0)));
   graph.push_back(factor);
   factor = boost::shared_ptr<ResectioningFactor>(new ResectioningFactor(
-      measurementNoise, X, calib, Point2(45.2, 45.1), Point3(-10.0, 10.0, 0.0)));
+      measurementNoise, X, calib, Point2(45.0, 45.0), Point3(-10.0, 10.0, 0.0)));
   graph.push_back(factor);
   factor = boost::shared_ptr<ResectioningFactor>(new ResectioningFactor(
-      measurementNoise, X, calib, Point2(45.3, 55.3), Point3(-10.0, -10.0, 0.0)));
+      measurementNoise, X, calib, Point2(45.0, 55.0), Point3(-10.0, -10.0, 0.0)));
   graph.push_back(factor);
   factor = boost::shared_ptr<ResectioningFactor>(new ResectioningFactor(
-      measurementNoise, X, calib, Point2(55.1, 55.2), Point3(10.0, -10.0, 0.0)));
+      measurementNoise, X, calib, Point2(55.0, 55.0), Point3(10.0, -10.0, 0.0)));
   graph.push_back(factor);
 
   /* 3. Create an initial estimate for the camera pose */
