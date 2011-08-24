@@ -22,6 +22,11 @@
 namespace gtsam {
 
 /**
+ * An exception indicating an attempt to factor a negative or indefinite matrix.
+ */
+class NegativeMatrixException : public std::exception { };
+
+/**
  * "Careful" Cholesky computes the positive square-root of a positive symmetric
  * semi-definite matrix (i.e. that may be rank-deficient).  Unlike standard
  * Cholesky, the square-root factor may have all-zero rows for free variables.
@@ -49,7 +54,6 @@ std::pair<size_t,bool> choleskyCareful(Matrix& ATA, int order = -1);
  * nFrontal x nFrontal.
  */
 void choleskyPartial(Matrix& ABC, size_t nFrontal);
-
 
 /**
  * Partial LDL computes a factor [R S  such that [P'R' 0  [RP S  = [A  B

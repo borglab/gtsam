@@ -22,6 +22,7 @@
 
 #include <iostream>
 #include <boost/tuple/tuple.hpp>
+#include <gtsam/base/cholesky.h>
 #include <gtsam/nonlinear/NonlinearOptimizer.h>
 
 #define INSTANTIATE_NONLINEAR_OPTIMIZER(G,C) \
@@ -170,32 +171,46 @@ namespace gtsam {
 		  if (spcg_solver_) spcg_solver_->replaceFactors(damped);
 		  shared_solver solver = (spcg_solver_) ? spcg_solver_ : shared_solver(
 		  		new S(damped, structure_, parameters_->useQR_));
-		  VectorValues delta = *solver->optimize();
-		  if (verbosity >= Parameters::TRYDELTA) delta.print("delta");
+		  try {
+		    VectorValues delta = *solver->optimize();
+		    if (verbosity >= Parameters::TRYDELTA) delta.print("delta");
 
-		  // update values
-		  shared_values newValues(new C(values_->expmap(delta, *ordering_)));
+		    // update values
+		    shared_values newValues(new C(values_->expmap(delta, *ordering_)));
 
-		  // create new optimization state with more adventurous lambda
-		  double error = graph_->error(*newValues);
+		    // create new optimization state with more adventurous lambda
+		    double error = graph_->error(*newValues);
 
-		  if (verbosity >= Parameters::TRYLAMBDA) cout << "next error = " << error << endl;
+		    if (verbosity >= Parameters::TRYLAMBDA) cout << "next error = " << error << endl;
 
-		  if( error <= error_ ) {
-		  	next_values = newValues;
-		  	next_error = error;
-			  lambda /= factor;
-		  	break;
-		  }
-		  else {
-		  	// Either we're not cautious, or the same lambda was worse than the current error.
-		  	// The more adventurous lambda was worse too, so make lambda more conservative
-		  	// and keep the same values.
-		  	if(lambdaMode >= Parameters::BOUNDED && lambda >= 1.0e5) {
-		  		break;
-		  	} else {
-		  		lambda *= factor;
-		  	}
+		    if( error <= error_ ) {
+		      next_values = newValues;
+		      next_error = error;
+		      lambda /= factor;
+		      break;
+		    }
+		    else {
+		      // Either we're not cautious, or the same lambda was worse than the current error.
+		      // The more adventurous lambda was worse too, so make lambda more conservative
+		      // and keep the same values.
+		      if(lambdaMode >= Parameters::BOUNDED && lambda >= 1.0e5) {
+		        break;
+		      } else {
+		        lambda *= factor;
+		      }
+		    }
+		  } catch(const NegativeMatrixException& e) {
+		    cout << "Negative matrix, increasing lambda" << endl;
+		    // Either we're not cautious, or the same lambda was worse than the current error.
+		    // The more adventurous lambda was worse too, so make lambda more conservative
+		    // and keep the same values.
+		    if(lambdaMode >= Parameters::BOUNDED && lambda >= 1.0e5) {
+		      break;
+		    } else {
+		      lambda *= factor;
+		    }
+		  } catch(...) {
+		    throw;
 		  }
 		} // end while
 

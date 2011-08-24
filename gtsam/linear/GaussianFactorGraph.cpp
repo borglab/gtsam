@@ -20,6 +20,7 @@
 
 #include <gtsam/base/debug.h>
 #include <gtsam/base/timing.h>
+#include <gtsam/base/cholesky.h>
 #include <gtsam/inference/VariableSlots.h>
 
 #include <gtsam/linear/GaussianFactorGraph.h>
@@ -424,20 +425,31 @@ namespace gtsam {
 		if (useQR) return EliminateQR(factors, nrFrontals);
 
 		GaussianFactorGraph::EliminationResult ret;
-		try {
-			tic(2, "EliminateCholesky");
-			ret = EliminateCholesky(factors, nrFrontals);
-			toc(2, "EliminateCholesky");
-		} catch (const exception& e) {
-			cout << "Exception in EliminateCholesky: " << e.what() << endl;
-			SETDEBUG("EliminateCholesky", true);
-			SETDEBUG("updateATA", true);
-			SETDEBUG("JacobianFactor::eliminate", true);
-			SETDEBUG("JacobianFactor::Combine", true);
-			SETDEBUG("choleskyPartial", true);
-			factors.print("Combining factors: ");
-			EliminateCholesky(factors, nrFrontals);
-			throw;
+#ifdef NDEBUG
+		static const bool diag = false;
+#else
+		static const bool diag = !ISDEBUG("NoCholeskyDiagnostics");
+#endif
+		if(!diag) {
+      tic(2, "EliminateCholesky");
+      ret = EliminateCholesky(factors, nrFrontals);
+      toc(2, "EliminateCholesky");
+		} else {
+		  try {
+		    tic(2, "EliminateCholesky");
+		    ret = EliminateCholesky(factors, nrFrontals);
+		    toc(2, "EliminateCholesky");
+		  } catch (const exception& e) {
+		    cout << "Exception in EliminateCholesky: " << e.what() << endl;
+		    SETDEBUG("EliminateCholesky", true);
+		    SETDEBUG("updateATA", true);
+		    SETDEBUG("JacobianFactor::eliminate", true);
+		    SETDEBUG("JacobianFactor::Combine", true);
+		    SETDEBUG("choleskyPartial", true);
+		    factors.print("Combining factors: ");
+		    EliminateCholesky(factors, nrFrontals);
+		    throw;
+		  }
 		}
 
 		const bool checkCholesky = ISDEBUG("EliminateGaussian Check Cholesky");
@@ -563,22 +575,35 @@ namespace gtsam {
 		if (useQR) return EliminateQR(factors, nrFrontals);
 
 		GaussianFactorGraph::EliminationResult ret;
-		try {
-			tic(2, "EliminateLDL");
-			ret = EliminateLDL(factors, nrFrontals);
-			toc(2, "EliminateLDL");
-		} catch (const exception& e) {
-			cout << "Exception in EliminateLDL: " << e.what() << endl;
-			SETDEBUG("EliminateLDL", true);
-			SETDEBUG("updateATA", true);
-			SETDEBUG("JacobianFactor::eliminate", true);
-			SETDEBUG("JacobianFactor::Combine", true);
-			SETDEBUG("ldlPartial", true);
-			SETDEBUG("findScatterAndDims", true);
-			factors.print("Combining factors: ");
-			EliminateLDL(factors, nrFrontals);
-			throw;
-		}
+#ifdef NDEBUG
+    static const bool diag = false;
+#else
+    static const bool diag = !ISDEBUG("NoLDLDiagnostics");
+#endif
+    if(!diag) {
+      tic(2, "EliminateLDL");
+      ret = EliminateLDL(factors, nrFrontals);
+      toc(2, "EliminateLDL");
+    } else {
+      try {
+        tic(2, "EliminateLDL");
+        ret = EliminateLDL(factors, nrFrontals);
+        toc(2, "EliminateLDL");
+      } catch (const NegativeMatrixException& e) {
+        throw;
+      } catch (const exception& e) {
+        cout << "Exception in EliminateLDL: " << e.what() << endl;
+        SETDEBUG("EliminateLDL", true);
+        SETDEBUG("updateATA", true);
+        SETDEBUG("JacobianFactor::eliminate", true);
+        SETDEBUG("JacobianFactor::Combine", true);
+        SETDEBUG("ldlPartial", true);
+        SETDEBUG("findScatterAndDims", true);
+        factors.print("Combining factors: ");
+        EliminateLDL(factors, nrFrontals);
+        throw;
+      }
+    }
 
 		const bool checkLDL = ISDEBUG("EliminateGaussian Check LDL");
 		if (checkLDL) {
