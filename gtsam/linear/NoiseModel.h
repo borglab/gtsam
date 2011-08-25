@@ -166,7 +166,7 @@ namespace gtsam {
 			/**
 			 * Whiten a system, in place as well
 			 */
-			inline void WhitenSystem(Matrix& A, Vector& b) const {
+			inline virtual void WhitenSystem(Matrix& A, Vector& b) const {
 				WhitenInPlace(A);
 				whitenInPlace(b);
 			}
