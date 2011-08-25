@@ -21,9 +21,6 @@
 
 #include <gtsam/slam/PriorFactor.h>
 #include <gtsam/slam/BetweenFactor.h>
-#include <gtsam/nonlinear/LinearizedFactor.h>
-//#include <gtsam/nonlinear/NonlinearOptimization-inl.h>
-#include <gtsam/nonlinear/NonlinearFactorGraph-inl.h>
 #include <gtsam/nonlinear/LieValues-inl.h>
 #include <gtsam/nonlinear/Ordering.h>
 #include <gtsam/nonlinear/Key.h>
@@ -44,7 +41,13 @@ int main() {
 	// [code below basically does SRIF with LDL]
 
   // Create a factor graph to perform the inference
-  NonlinearFactorGraph<Values>::shared_ptr nonlinearFactorGraph(new NonlinearFactorGraph<Values>);
+  GaussianFactorGraph::shared_ptr linearFactorGraph(new GaussianFactorGraph);
+
+  // Create the desired ordering
+  Ordering::shared_ptr ordering(new Ordering);
+
+  // Create a structure to hold the linearization points
+  Values linearizationPoints;
 
 	// Ground truth example
 	// Start at origin, move to the right (x-axis): 0,0  0,1  0,2
@@ -52,15 +55,19 @@ int main() {
 	// Measurements are GPS like, (x-z)^2, where z is a 2D measurement
 	// i.e., we should get 0,0  0,1  0,2 if there is no noise
 
-  // Create new state variable, x0
+  // Create new state variable
   Key x0(0);
+  ordering->insert(x0, 0);
 
   // Initialize state x0 (2D point) at origin by adding a prior factor, i.e., Bayes net P(x0)
   // This is equivalent to x_0 and P_0
   Point2 x_initial(0,0);
   SharedDiagonal P_initial = noiseModel::Diagonal::Sigmas(Vector_(2, 0.1, 0.1));
   PriorFactor<Values, Key> factor1(x0, x_initial, P_initial);
-  nonlinearFactorGraph->add(factor1);
+  // Linearize the factor and add it to the linear factor graph
+  linearizationPoints.insert(x0, x_initial);
+  linearFactorGraph->push_back(factor1.linearize(linearizationPoints, *ordering));
+
 
   // Now predict the state at t=1, i.e. argmax_{x1} P(x1) = P(x1|x0) P(x0)
   // In Kalman Filter notation, this is x_{t+1|t} and P_{t+1|t}
@@ -83,10 +90,14 @@ int main() {
   //                                  = (F - I)*x_{t} + B*u_{t}
   //                                  = B*u_{t} (for our example)
   Key x1(1);
+  ordering->insert(x1, 1);
+
   Point2 difference(1,0);
   SharedDiagonal Q = noiseModel::Diagonal::Sigmas(Vector_(2, 0.1, 0.1));
   BetweenFactor<Values, Key> factor2(x0, x1, difference, Q);
-  nonlinearFactorGraph->add(factor2);
+  // Linearize the factor and add it to the linear factor graph
+  linearizationPoints.insert(x1, x_initial);
+  linearFactorGraph->push_back(factor2.linearize(linearizationPoints, *ordering));
 
   // We have now made the small factor graph f1-(x0)-f2-(x1)
   // where factor f1 is just the prior from time t0, P(x0)
@@ -100,40 +111,52 @@ int main() {
   // variables. Also, the nonlinear factors are linearized around an initial estimate. For a true linear
   // system, the initial estimate is not important.
 
-  // Create the desired ordering
-  Ordering::shared_ptr ordering(new Ordering);
-  ordering->insert(x0, 0);
-  ordering->insert(x1, 1);
-  // Create a set of linearization points at (0,0). Since this is a linear system, the actual linearization point doesn't matter
-  Values linearizationPoints;
-  linearizationPoints.insert(x0, Point2(0,0));
-  linearizationPoints.insert(x1, Point2(0,0));
-  // Convert the nonlinear factor graph into an "ordered" linear factor graph
-  GaussianFactorGraph::shared_ptr linearFactorGraph = nonlinearFactorGraph->linearize(linearizationPoints, *ordering)->dynamicCastFactors<GaussianFactorGraph>();
-  //->template dynamicCastFactors<GaussianFactorGraph>()
-
   // Solve the linear factor graph, converting it into a linear Bayes Network ( P(x0,x1) = P(x0|x1)*P(x1) )
   GaussianSequentialSolver solver0(*linearFactorGraph);
   GaussianBayesNet::shared_ptr linearBayesNet = solver0.eliminate();
 
-  // If needed, the current estimate of x1 may be extracted from the Bayes Network
+  // Extract the current estimate of x1,P1 from the Bayes Network
   VectorValues result = optimize(*linearBayesNet);
   Point2 x1_predict = linearizationPoints[x1].expmap(result[ordering->at(x1)]);
   x1_predict.print("X1 Predict");
 
-  // Convert the root conditional, P(x1) in this case, into a Prior for the next step
-  LinearizedFactor<Values,Key>::KeyLookup lookup;
-  lookup[0] = x0; lookup[1] = x1;
-  LinearizedFactor<Values,Key> factor3(linearBayesNet->back()->toFactor(), lookup, linearizationPoints);
+  // Update the new linearization point to the new estimate
+  linearizationPoints.update(x1, x1_predict);
+
+
 
   // Create a new, empty graph and add the prior from the previous step
-  nonlinearFactorGraph = NonlinearFactorGraph<Values>::shared_ptr(new NonlinearFactorGraph<Values>);
-  nonlinearFactorGraph->add(factor3);
+  linearFactorGraph = GaussianFactorGraph::shared_ptr(new GaussianFactorGraph);
+
+  // Convert the root conditional, P(x1) in this case, into a Prior for the next step
+  // Some care must be done here, as the linearization point in future steps will be different
+  // than what was used when the factor was created.
+  // f = || F*dx1' - (F*x0 - x1) ||^2, originally linearized at x1 = x0
+  // After this step, the factor needs to be linearized around x1 = x1_predict
+  // This changes the factor to f = || F*dx1'' - b'' ||^2
+  //                              = || F*(dx1' - (dx1' - dx1'')) - b'' ||^2
+  //                              = || F*dx1' - F*(dx1' - dx1'') - b'' ||^2
+  //                              = || F*dx1' - (b'' + F(dx1' - dx1'')) ||^2
+  //                              -> b' = b'' + F(dx1' - dx1'')
+  //                              -> b'' = b' - F(dx1' - dx1'')
+  //                              = || F*dx1'' - (b'  - F(dx1' - dx1'')) ||^2
+  //                              = || F*dx1'' - (b'  - F(x_predict - x_inital)) ||^2
+  const GaussianConditional::shared_ptr& cg0 = linearBayesNet->back();
+  assert(cg0->nrFrontals() == 1);
+  assert(cg0->nrParents() == 0);
+  linearFactorGraph->add(0, cg0->get_R(), cg0->get_d() - cg0->get_R()*result[ordering->at(x1)], noiseModel::Diagonal::Sigmas(cg0->get_sigmas(), true));
+
+  // Create the desired ordering
+  ordering = Ordering::shared_ptr(new Ordering);
+  ordering->insert(x1, 0);
 
   // Now, a measurement, z1, has been received, and the Kalman Filter should be "Updated"/"Corrected"
   // This is equivalent to saying P(x1|z1) ~ P(z1|x1)*P(x1) ~ f3(x1)*f4(x1;z1)
-  // So, we need to create the measurement factor, f4
-  // For the Kalman Filter, this the the measurement function, h(x_{t}) = z_{t}
+  // where f3 is the prior from the previous step, and
+  // where f4 is a measurement factor
+  //
+  // So, now we need to create the measurement factor, f4
+  // For the Kalman Filter, this is the measurement function, h(x_{t}) = z_{t}
   // Assuming the system is linear, this will be of the form h(x_{t}) = H*x_{t} + v
   // where H is the observation model/matrix, and v is zero-mean, Gaussian white noise with covariance R
   //
@@ -146,85 +169,99 @@ int main() {
   // In the case of factor graphs, the factor related to the measurements would be defined as
   // f4 = (h(x_{t}) - z_{t}) * R^-1 * (h(x_{t}) - z_{t})^T
   //    = (x_{t} - z_{t}) * R^-1 * (x_{t} - z_{t})^T
-  // This can again be modeled using the PriorFactor, where the mean is z_{t} and the covariance is R.
+  // This can be modeled using the PriorFactor, where the mean is z_{t} and the covariance is R.
   Point2 z1(1.0, 0.0);
   SharedDiagonal R1 = noiseModel::Diagonal::Sigmas(Vector_(2, 0.25, 0.25));
   PriorFactor<Values, Key> factor4(x1, z1, R1);
-  nonlinearFactorGraph->add(factor4);
+  // Linearize the factor and add it to the linear factor graph
+  linearFactorGraph->push_back(factor4.linearize(linearizationPoints, *ordering));
 
-  // We have now made the small factor graph f3-(x1)-f2
+  // We have now made the small factor graph f3-(x1)-f4
   // where factor f3 is the prior from previous time ( P(x1) )
   // and   factor f4 is from the measurement, z1 ( P(x1|z1) )
   // Eliminate this in order x1, to get Bayes net P(x1)
   // As this is a filter, all we need is the posterior P(x1), so we just keep the root of the Bayes net
   // We solve as before...
 
-  // Create the desired ordering
-  ordering = Ordering::shared_ptr(new Ordering);
-  ordering->insert(x1, 0);
-  // Create a set of linearization points at (0,0). Since this is a linear system, the actual linearization point doesn't matter
-  linearizationPoints.insert(x1, Point2(0,0));
-  // Convert the nonlinear factor graph into an "ordered" linear factor graph
-  linearFactorGraph = nonlinearFactorGraph->linearize(linearizationPoints, *ordering)->dynamicCastFactors<gtsam::GaussianFactorGraph>();
   // Solve the linear factor graph, converting it into a linear Bayes Network ( P(x0,x1) = P(x0|x1)*P(x1) )
   GaussianSequentialSolver solver1(*linearFactorGraph);
   linearBayesNet = solver1.eliminate();
 
-  // If needed, the current estimate of x1 may be extracted from the Bayes Network
+  // Extract the current estimate of x1 from the Bayes Network
   result = optimize(*linearBayesNet);
   Point2 x1_update = linearizationPoints[x1].expmap(result[ordering->at(x1)]);
   x1_update.print("X1 Update");
 
-  // Convert the root conditional, P(x1) in this case, into a Prior for the next step
-  lookup[0] = x1;
-  LinearizedFactor<Values,Key> factor5(linearBayesNet->back()->toFactor(), lookup, linearizationPoints);
+  // Update the linearization point to the new estimate
+  linearizationPoints.update(x1, x1_update);
 
-  // Create a new, empty graph and add the prior from the previous step
-  nonlinearFactorGraph = NonlinearFactorGraph<Values>::shared_ptr(new NonlinearFactorGraph<Values>);
-  nonlinearFactorGraph->add(factor5);
+
+
 
 
 
   // Wash, rinse, repeat for another time step
-  Key x2(2);
-  difference = Point2(1,0);
-  Q = noiseModel::Diagonal::Sigmas(Vector_(2, 0.1, 0.1));
-  BetweenFactor<Values, Key> factor6(x1, x2, difference, Q);
-  nonlinearFactorGraph->add(factor6);
+  // Create a new, empty graph and add the prior from the previous step
+  linearFactorGraph = GaussianFactorGraph::shared_ptr(new GaussianFactorGraph);
 
-  // We have now made the small factor graph f5-(x1)-f6-(x2)
-  // Eliminate this in order x1, x2, to get Bayes net P(x1|x2)P(x2)
+  // Convert the root conditional, P(x1) in this case, into a Prior for the next step
+  const GaussianConditional::shared_ptr& cg1 = linearBayesNet->back();
+  assert(cg1->nrFrontals() == 1);
+  assert(cg1->nrParents() == 0);
+  linearFactorGraph->add(0, cg1->get_R(), cg1->get_d() - cg1->get_R()*result[ordering->at(x1)], noiseModel::Diagonal::Sigmas(cg1->get_sigmas(), true));
+
+  // Create a key for the new state
+  Key x2(2);
+
   // Create the desired ordering
   ordering = Ordering::shared_ptr(new Ordering);
   ordering->insert(x1, 0);
   ordering->insert(x2, 1);
-  // Create a set of linearization points at (0,0). Since this is a linear system, the actual linearization point doesn't matter
-  linearizationPoints.insert(x1, Point2(0,0));
-  linearizationPoints.insert(x2, Point2(0,0));
-  // Convert the nonlinear factor graph into an "ordered" linear factor graph
-  linearFactorGraph = nonlinearFactorGraph->linearize(linearizationPoints, *ordering)->dynamicCastFactors<gtsam::GaussianFactorGraph>();
+
+  // Create a nonlinear factor describing the motion model
+  difference = Point2(1,0);
+  Q = noiseModel::Diagonal::Sigmas(Vector_(2, 0.1, 0.1));
+  BetweenFactor<Values, Key> factor6(x1, x2, difference, Q);
+
+  // Linearize the factor and add it to the linear factor graph
+  linearizationPoints.insert(x2, x1_update);
+  linearFactorGraph->push_back(factor6.linearize(linearizationPoints, *ordering));
+
   // Solve the linear factor graph, converting it into a linear Bayes Network ( P(x1,x2) = P(x1|x2)*P(x2) )
   GaussianSequentialSolver solver2(*linearFactorGraph);
   linearBayesNet = solver2.eliminate();
 
-  // If needed, the current estimate of x2 may be extracted from the Bayes Network
+  // Extract the current estimate of x2 from the Bayes Network
   result = optimize(*linearBayesNet);
   Point2 x2_predict = linearizationPoints[x2].expmap(result[ordering->at(x2)]);
   x2_predict.print("X2 Predict");
 
-  // Convert the root conditional, P(x2) in this case, into a Prior for the next step
-  lookup[0] = x1; lookup[1] = x2;
-  LinearizedFactor<Values,Key> factor7(linearBayesNet->back()->toFactor(), lookup, linearizationPoints);
+  // Update the linearization point to the new estimate
+  linearizationPoints.update(x2, x2_predict);
 
+
+
+  // Now add the next measurement
   // Create a new, empty graph and add the prior from the previous step
-  nonlinearFactorGraph = NonlinearFactorGraph<Values>::shared_ptr(new NonlinearFactorGraph<Values>);
-  nonlinearFactorGraph->add(factor7);
+  linearFactorGraph = GaussianFactorGraph::shared_ptr(new GaussianFactorGraph);
+
+  // Convert the root conditional, P(x1) in this case, into a Prior for the next step
+  const GaussianConditional::shared_ptr& cg2 = linearBayesNet->back();
+  assert(cg2->nrFrontals() == 1);
+  assert(cg2->nrParents() == 0);
+  linearFactorGraph->add(0, cg2->get_R(), cg2->get_d() - cg2->get_R()*result[ordering->at(x2)], noiseModel::Diagonal::Sigmas(cg2->get_sigmas(), true));
+
+  // Create the desired ordering
+  ordering = Ordering::shared_ptr(new Ordering);
+  ordering->insert(x2, 0);
 
   // And update using z2 ...
   Point2 z2(2.0, 0.0);
   SharedDiagonal R2 = noiseModel::Diagonal::Sigmas(Vector_(2, 0.25, 0.25));
   PriorFactor<Values, Key> factor8(x2, z2, R2);
-  nonlinearFactorGraph->add(factor8);
+
+  // Linearize the factor and add it to the linear factor graph
+  linearFactorGraph->push_back(factor8.linearize(linearizationPoints, *ordering));
 
   // We have now made the small factor graph f7-(x2)-f8
   // where factor f7 is the prior from previous time ( P(x2) )
@@ -233,72 +270,85 @@ int main() {
   // As this is a filter, all we need is the posterior P(x2), so we just keep the root of the Bayes net
   // We solve as before...
 
-  // Create the desired ordering
-  ordering = Ordering::shared_ptr(new Ordering);
-  ordering->insert(x2, 0);
-  // Create a set of linearization points at (0,0). Since this is a linear system, the actual linearization point doesn't matter
-  linearizationPoints.insert(x2, Point2(0,0));
-  // Convert the nonlinear factor graph into an "ordered" linear factor graph
-  linearFactorGraph = nonlinearFactorGraph->linearize(linearizationPoints, *ordering)->dynamicCastFactors<gtsam::GaussianFactorGraph>();
   // Solve the linear factor graph, converting it into a linear Bayes Network ( P(x0,x1) = P(x0|x1)*P(x1) )
   GaussianSequentialSolver solver3(*linearFactorGraph);
   linearBayesNet = solver3.eliminate();
 
-  // If needed, the current estimate of x2 may be extracted from the Bayes Network
+  // Extract the current estimate of x2 from the Bayes Network
   result = optimize(*linearBayesNet);
   Point2 x2_update = linearizationPoints[x2].expmap(result[ordering->at(x2)]);
   x2_update.print("X2 Update");
 
-  // Convert the root conditional, P(x1) in this case, into a Prior for the next step
-  lookup[0] = x2;
-  LinearizedFactor<Values,Key> factor9(linearBayesNet->back()->toFactor(), lookup, linearizationPoints);
+  // Update the linearization point to the new estimate
+  linearizationPoints.update(x2, x2_update);
 
+
+
+
+
+
+  // Wash, rinse, repeat for a third time step
   // Create a new, empty graph and add the prior from the previous step
-  nonlinearFactorGraph = NonlinearFactorGraph<Values>::shared_ptr(new NonlinearFactorGraph<Values>);
-  nonlinearFactorGraph->add(factor9);
+  linearFactorGraph = GaussianFactorGraph::shared_ptr(new GaussianFactorGraph);
 
+  // Convert the root conditional, P(x1) in this case, into a Prior for the next step
+  const GaussianConditional::shared_ptr& cg3 = linearBayesNet->back();
+  assert(cg3->nrFrontals() == 1);
+  assert(cg3->nrParents() == 0);
+  linearFactorGraph->add(0, cg3->get_R(), cg3->get_d() - cg3->get_R()*result[ordering->at(x2)], noiseModel::Diagonal::Sigmas(cg3->get_sigmas(), true));
 
-
-  // Wash, rinse, repeat for another time step
+  // Create a key for the new state
   Key x3(3);
-  difference = Point2(1,0);
-  Q = noiseModel::Diagonal::Sigmas(Vector_(2, 0.1, 0.1));
-  BetweenFactor<Values, Key> factor10(x2, x3, difference, Q);
-  nonlinearFactorGraph->add(factor10);
 
-  // We have now made the small factor graph f9-(x2)-f10-(x3)
-  // Eliminate this in order x2, x3, to get Bayes net P(x2|x3)P(x3)
   // Create the desired ordering
   ordering = Ordering::shared_ptr(new Ordering);
   ordering->insert(x2, 0);
   ordering->insert(x3, 1);
-  // Create a set of linearization points at (0,0). Since this is a linear system, the actual linearization point doesn't matter
-  linearizationPoints.insert(x2, Point2(0,0));
-  linearizationPoints.insert(x3, Point2(0,0));
-  // Convert the nonlinear factor graph into an "ordered" linear factor graph
-  linearFactorGraph = nonlinearFactorGraph->linearize(linearizationPoints, *ordering)->dynamicCastFactors<gtsam::GaussianFactorGraph>();
-  // Solve the linear factor graph, converting it into a linear Bayes Network ( P(x2,x3) = P(x2|x3)*P(x3) )
+
+  // Create a nonlinear factor describing the motion model
+  difference = Point2(1,0);
+  Q = noiseModel::Diagonal::Sigmas(Vector_(2, 0.1, 0.1));
+  BetweenFactor<Values, Key> factor10(x2, x3, difference, Q);
+
+  // Linearize the factor and add it to the linear factor graph
+  linearizationPoints.insert(x3, x2_update);
+  linearFactorGraph->push_back(factor10.linearize(linearizationPoints, *ordering));
+
+  // Solve the linear factor graph, converting it into a linear Bayes Network ( P(x1,x2) = P(x1|x2)*P(x2) )
   GaussianSequentialSolver solver4(*linearFactorGraph);
   linearBayesNet = solver4.eliminate();
 
-  // If needed, the current estimate of x3 may be extracted from the Bayes Network
+  // Extract the current estimate of x3 from the Bayes Network
   result = optimize(*linearBayesNet);
   Point2 x3_predict = linearizationPoints[x3].expmap(result[ordering->at(x3)]);
   x3_predict.print("X3 Predict");
 
-  // Convert the root conditional, P(x3) in this case, into a Prior for the next step
-  lookup[0] = x2; lookup[1] = x3;
-  LinearizedFactor<Values,Key> factor11(linearBayesNet->back()->toFactor(), lookup, linearizationPoints);
+  // Update the linearization point to the new estimate
+  linearizationPoints.update(x3, x3_predict);
 
+
+
+  // Now add the next measurement
   // Create a new, empty graph and add the prior from the previous step
-  nonlinearFactorGraph = NonlinearFactorGraph<Values>::shared_ptr(new NonlinearFactorGraph<Values>);
-  nonlinearFactorGraph->add(factor11);
+  linearFactorGraph = GaussianFactorGraph::shared_ptr(new GaussianFactorGraph);
+
+  // Convert the root conditional, P(x1) in this case, into a Prior for the next step
+  const GaussianConditional::shared_ptr& cg4 = linearBayesNet->back();
+  assert(cg4->nrFrontals() == 1);
+  assert(cg4->nrParents() == 0);
+  linearFactorGraph->add(0, cg4->get_R(), cg4->get_d() - cg4->get_R()*result[ordering->at(x3)], noiseModel::Diagonal::Sigmas(cg4->get_sigmas(), true));
+
+  // Create the desired ordering
+  ordering = Ordering::shared_ptr(new Ordering);
+  ordering->insert(x3, 0);
 
   // And update using z3 ...
   Point2 z3(3.0, 0.0);
   SharedDiagonal R3 = noiseModel::Diagonal::Sigmas(Vector_(2, 0.25, 0.25));
   PriorFactor<Values, Key> factor12(x3, z3, R3);
-  nonlinearFactorGraph->add(factor12);
+
+  // Linearize the factor and add it to the linear factor graph
+  linearFactorGraph->push_back(factor12.linearize(linearizationPoints, *ordering));
 
   // We have now made the small factor graph f11-(x3)-f12
   // where factor f11 is the prior from previous time ( P(x3) )
@@ -307,21 +357,19 @@ int main() {
   // As this is a filter, all we need is the posterior P(x3), so we just keep the root of the Bayes net
   // We solve as before...
 
-  // Create the desired ordering
-  ordering = Ordering::shared_ptr(new Ordering);
-  ordering->insert(x3, 0);
-  // Create a set of linearization points at (0,0). Since this is a linear system, the actual linearization point doesn't matter
-  linearizationPoints.insert(x3, Point2(0,0));
-  // Convert the nonlinear factor graph into an "ordered" linear factor graph
-  linearFactorGraph = nonlinearFactorGraph->linearize(linearizationPoints, *ordering)->dynamicCastFactors<gtsam::GaussianFactorGraph>();
   // Solve the linear factor graph, converting it into a linear Bayes Network ( P(x0,x1) = P(x0|x1)*P(x1) )
   GaussianSequentialSolver solver5(*linearFactorGraph);
   linearBayesNet = solver5.eliminate();
 
-  // If needed, the current estimate of x1 may be extracted from the Bayes Network
+  // Extract the current estimate of x2 from the Bayes Network
   result = optimize(*linearBayesNet);
   Point2 x3_update = linearizationPoints[x3].expmap(result[ordering->at(x3)]);
   x3_update.print("X3 Update");
+
+  // Update the linearization point to the new estimate
+  linearizationPoints.update(x3, x3_update);
+
+
 
   return 0;
 }
