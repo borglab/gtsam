@@ -55,8 +55,8 @@ std::vector<Pose3> g_poses;          // prior camera poses at each frame
 std::vector<std::vector<Feature2D> > g_measurements;    // feature sets detected at each frame
 
 // Noise models
-SharedGaussian measurementSigma(noiseModel::Isotropic::Sigma(2, 5.0f));
-SharedGaussian poseSigma(noiseModel::Unit::Create(1));
+SharedNoiseModel measurementSigma(noiseModel::Isotropic::Sigma(2, 5.0f));
+SharedNoiseModel poseSigma(noiseModel::Unit::Create(1));
 
 
 /* ************************************************************************* */
@@ -82,7 +82,7 @@ void readAllDataISAM() {
  * Setup newFactors and initialValues for each new pose and set of measurements at each frame.
  */
 void createNewFactors(shared_ptr<Graph>& newFactors, boost::shared_ptr<Values>& initialValues,
-    int pose_id, Pose3& pose, std::vector<Feature2D>& measurements, SharedGaussian measurementSigma, shared_ptrK calib) {
+    int pose_id, Pose3& pose, std::vector<Feature2D>& measurements, SharedNoiseModel measurementSigma, shared_ptrK calib) {
 
   // Create a graph of newFactors with new measurements
   newFactors = shared_ptr<Graph> (new Graph());

@@ -43,7 +43,7 @@ typedef boost::shared_ptr<NonlinearFactor<VectorValues> > shared_nlf;
 /* ************************************************************************* */
 TEST( NonlinearFactor, equals )
 {
-	SharedGaussian sigma(noiseModel::Isotropic::Sigma(2,1.0));
+	SharedNoiseModel sigma(noiseModel::Isotropic::Sigma(2,1.0));
 
 	// create two nonlinear2 factors
 	Point2 z3(0.,-1.);

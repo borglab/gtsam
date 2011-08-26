@@ -331,7 +331,7 @@ TEST( Pose2Values, expmap )
 }
 
 // Common measurement covariance
-static SharedGaussian sigmas = sharedSigmas(Vector_(3,sx,sy,st));
+static SharedNoiseModel sigmas = sharedSigmas(Vector_(3,sx,sy,st));
 
 /* ************************************************************************* */
 // Very simple test establishing Ax-b \approx z-h(x)

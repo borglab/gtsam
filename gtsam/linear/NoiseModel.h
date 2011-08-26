@@ -43,6 +43,9 @@ namespace gtsam {
 		 */
 		class Base : public Testable<Base> {
 
+		public:
+      typedef boost::shared_ptr<Base> shared_ptr;
+
 		protected:
 
 			size_t dim_;
@@ -58,6 +61,10 @@ namespace gtsam {
 			 */
 			inline size_t dim() const { return dim_;}
 
+      virtual void print(const std::string& name) const = 0;
+
+      virtual bool equals(const Base& expected, double tol=1e-9) const = 0;
+
 			/**
 			 * Whiten an error vector.
 			 */
@@ -67,6 +74,15 @@ namespace gtsam {
 			 * Unwhiten an error vector.
 			 */
 			virtual Vector unwhiten(const Vector& v) const = 0;
+
+      /**
+       * Mahalanobis distance v'*R'*R*v = <R*v,R*v>
+       */
+      virtual double Mahalanobis(const Vector& v) const = 0;
+
+      virtual void WhitenSystem(Matrix& A, Vector& b) const = 0;
+      virtual void WhitenSystem(Matrix& A1, Matrix& A2, Vector& b) const = 0;
+      virtual void WhitenSystem(Matrix& A1, Matrix& A2, Matrix& A3, Vector& b) const = 0;
 
 			/** in-place whiten, override if can be done more efficiently */
 			virtual void whitenInPlace(Vector& v) const {
@@ -166,10 +182,9 @@ namespace gtsam {
 			/**
 			 * Whiten a system, in place as well
 			 */
-			inline virtual void WhitenSystem(Matrix& A, Vector& b) const {
-				WhitenInPlace(A);
-				whitenInPlace(b);
-			}
+			virtual void WhitenSystem(Matrix& A, Vector& b) const ;
+      virtual void WhitenSystem(Matrix& A1, Matrix& A2, Vector& b) const ;
+      virtual void WhitenSystem(Matrix& A1, Matrix& A2, Matrix& A3, Vector& b) const;
 
 			/**
 			 * Apply appropriately weighted QR factorization to the system [A b]
@@ -486,6 +501,85 @@ namespace gtsam {
 			void serialize(ARCHIVE & ar, const unsigned int version) {
 				ar & BOOST_SERIALIZATION_BASE_OBJECT_NVP(Isotropic);
 			}
+		};
+
+		namespace MEstimator {
+
+		class Base {
+    public:
+		  typedef boost::shared_ptr<Base> shared_ptr;
+		  Base() {}
+		  virtual ~Base() {}
+		  virtual double weight(const double &error) const = 0;
+		  virtual void print(const std::string &s) const = 0;
+		  virtual bool equals(const Base& expected, const double tol=1e-8) const = 0;
+      Vector weight(const Vector &error) const;
+		  void reweight(Matrix &A, Vector &error) const;
+		  void reweight(Matrix &A1, Matrix &A2, Vector &error) const;
+		  void reweight(Matrix &A1, Matrix &A2, Matrix &A3, Vector &error) const;
+		};
+
+		class Fair : public Base {
+		public:
+		  typedef boost::shared_ptr<Fair> shared_ptr;
+		protected:
+		  double c_;
+		public:
+		  Fair(const double c);
+		  virtual ~Fair() {}
+		  virtual double weight(const double &error) const ;
+      virtual void print(const std::string &s) const ;
+      virtual bool equals(const Base& expected, const double tol=1e-8) const ;
+      static shared_ptr Create(const double c) ;
+		};
+
+	  class Huber : public Base {
+	    public:
+	      typedef boost::shared_ptr<Huber> shared_ptr;
+	    protected:
+	      double k_;
+	    public:
+	      Huber(const double k);
+	      virtual ~Huber() {}
+	      virtual double weight(const double &error) const ;
+	      virtual void print(const std::string &s) const ;
+	      virtual bool equals(const Base& expected, const double tol=1e-8) const ;
+	      static shared_ptr Create(const double k) ;
+	    };
+		}
+
+		class Robust : public Base {
+		public:
+		  typedef boost::shared_ptr<Robust> shared_ptr;
+
+		protected:
+      typedef MEstimator::Base RobustModel;
+		  typedef noiseModel::Base NoiseModel;
+
+      const RobustModel::shared_ptr robust_;
+      const NoiseModel::shared_ptr noise_;
+
+		public:
+      Robust(const RobustModel::shared_ptr robust, const NoiseModel::shared_ptr noise)
+      : Base(noise->dim()), robust_(robust), noise_(noise) {}
+      virtual ~Robust() {}
+      virtual void print(const std::string& name) const;
+      virtual bool equals(const Base& expected, double tol=1e-9) const;
+      inline virtual Vector whiten(const Vector& v) const
+      { return noise_->whiten(v); }
+      inline virtual Vector unwhiten(const Vector& v) const
+      { return noise_->unwhiten(v); }
+      inline virtual double Mahalanobis(const Vector& v) const
+      { return noise_->Mahalanobis(v); }
+      virtual void WhitenSystem(Matrix& A, Vector& b) const ;
+      virtual void WhitenSystem(Matrix& A1, Matrix& A2, Vector& b) const ;
+      virtual void WhitenSystem(Matrix& A1, Matrix& A2, Matrix& A3, Vector& b) const;
+
+      static shared_ptr Create(
+        const RobustModel::shared_ptr &robust, const NoiseModel::shared_ptr noise);
+
+		private:
+      Robust();
 		};
 
 	} // namespace noiseModel

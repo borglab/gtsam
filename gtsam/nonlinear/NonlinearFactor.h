@@ -27,7 +27,7 @@
 
 #include <gtsam/inference/Factor-inl.h>
 #include <gtsam/inference/IndexFactor.h>
-#include <gtsam/linear/SharedGaussian.h>
+#include <gtsam/linear/SharedNoiseModel.h>
 #include <gtsam/linear/JacobianFactor.h>
 
 #include <gtsam/nonlinear/Ordering.h>
@@ -49,7 +49,7 @@ namespace gtsam {
 
 		typedef NonlinearFactor<VALUES> This;
 
-		SharedGaussian noiseModel_; /** Noise model */
+		SharedNoiseModel noiseModel_; /** Noise model */
 
 	public:
 
@@ -65,7 +65,7 @@ namespace gtsam {
 		 *  Constructor
 		 *  @param noiseModel shared pointer to a noise model
 		 */
-		NonlinearFactor(const SharedGaussian& noiseModel) :
+		NonlinearFactor(const SharedNoiseModel& noiseModel) :
 			noiseModel_(noiseModel) {
 		}
 
@@ -74,7 +74,7 @@ namespace gtsam {
 		 *  @param z measurement
 		 *  @param key by which to look up X value in Values
 		 */
-		NonlinearFactor(const SharedGaussian& noiseModel, const Symbol& key1) :
+		NonlinearFactor(const SharedNoiseModel& noiseModel, const Symbol& key1) :
 			Factor<Symbol>(key1), noiseModel_(noiseModel) {
 		}
 
@@ -83,7 +83,7 @@ namespace gtsam {
 		 * @param j1 key of the first variable
 		 * @param j2 key of the second variable
 		 */
-		NonlinearFactor(const SharedGaussian& noiseModel, const Symbol& j1, const Symbol& j2) :
+		NonlinearFactor(const SharedNoiseModel& noiseModel, const Symbol& j1, const Symbol& j2) :
 			Factor<Symbol>(j1,j2), noiseModel_(noiseModel) {
 		}
 
@@ -91,7 +91,7 @@ namespace gtsam {
 		 * Constructor - arbitrary number of keys
 		 * @param keys is the set of Symbols in the factor
 		 */
-		NonlinearFactor(const SharedGaussian& noiseModel, const std::set<Symbol>& keys) :
+		NonlinearFactor(const SharedNoiseModel& noiseModel, const std::set<Symbol>& keys) :
 			Factor<Symbol>(keys), noiseModel_(noiseModel) {
 		}
 
@@ -120,7 +120,7 @@ namespace gtsam {
 		}
 
 		/** access to the noise model */
-		SharedGaussian get_noiseModel() const {
+		SharedNoiseModel get_noiseModel() const {
 			return noiseModel_;
 		}
 
@@ -197,7 +197,7 @@ namespace gtsam {
 		 *  @param z measurement
 		 *  @param key by which to look up X value in Values
 		 */
-		NonlinearFactor1(const SharedGaussian& noiseModel, const KEY& key1) :
+		NonlinearFactor1(const SharedNoiseModel& noiseModel, const KEY& key1) :
 			Base(noiseModel,key1), key_(key1) {
 		}
 
@@ -235,8 +235,7 @@ namespace gtsam {
 					boost::shared_dynamic_cast<noiseModel::Constrained>(this->noiseModel_);
 			if (constrained.get() != NULL)
 				return GaussianFactor::shared_ptr(new JacobianFactor(var, A, b, constrained));
-			this->noiseModel_->WhitenInPlace(A);
-			this->noiseModel_->whitenInPlace(b);
+			this->noiseModel_->WhitenSystem(A,b);
 			return GaussianFactor::shared_ptr(new JacobianFactor(var, A, b,
 					noiseModel::Unit::Create(b.size())));
 		}
@@ -304,7 +303,7 @@ namespace gtsam {
 		 * @param j1 key of the first variable
 		 * @param j2 key of the second variable
 		 */
-		NonlinearFactor2(const SharedGaussian& noiseModel, KEY1 j1, KEY2 j2) :
+		NonlinearFactor2(const SharedNoiseModel& noiseModel, KEY1 j1, KEY2 j2) :
 			Base(noiseModel,j1,j2), key1_(j1), key2_(j2) {
 		}
 
@@ -349,9 +348,7 @@ namespace gtsam {
 				return JacobianFactor::shared_ptr(new JacobianFactor(var1, A1, var2,
 						A2, b, constrained));
 			}
-			this->noiseModel_->WhitenInPlace(A1);
-			this->noiseModel_->WhitenInPlace(A2);
-			this->noiseModel_->whitenInPlace(b);
+			this->noiseModel_->WhitenSystem(A1,A2,b);
 			return GaussianFactor::shared_ptr(new JacobianFactor(var1, A1, var2,
 			    A2, b, noiseModel::Unit::Create(b.size())));
 		}
@@ -435,7 +432,7 @@ namespace gtsam {
      * @param j2 key of the second variable
      * @param j3 key of the third variable
      */
-    NonlinearFactor3(const SharedGaussian& noiseModel, KEY1 j1, KEY2 j2, KEY3 j3) :
+    NonlinearFactor3(const SharedNoiseModel& noiseModel, KEY1 j1, KEY2 j2, KEY3 j3) :
       Base(noiseModel), key1_(j1), key2_(j2), key3_(j3) {
       this->keys_.reserve(3);
       this->keys_.push_back(key1_);
@@ -487,10 +484,7 @@ namespace gtsam {
         return GaussianFactor::shared_ptr(
             new JacobianFactor(var1, A1, var2, A2, var3, A3, b, constrained));
       }
-      this->noiseModel_->WhitenInPlace(A1);
-      this->noiseModel_->WhitenInPlace(A2);
-      this->noiseModel_->WhitenInPlace(A3);
-      this->noiseModel_->whitenInPlace(b);
+      this->noiseModel_->WhitenSystem(A1,A2,A3,b);
       return GaussianFactor::shared_ptr(
           new JacobianFactor(var1, A1, var2, A2, var3, A3, b, noiseModel::Unit::Create(b.size())));
     }

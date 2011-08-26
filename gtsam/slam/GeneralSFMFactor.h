@@ -55,7 +55,7 @@ namespace gtsam {
 		GeneralSFMFactor():z_(0.0,0.0) {}
 		GeneralSFMFactor(const Point2 & p):z_(p) {}
 		GeneralSFMFactor(double x, double y):z_(x,y) {}
-		GeneralSFMFactor(const Point2& z, const SharedGaussian& model, const CamK& i, const LmK& j) : Base(model, i, j), z_(z) {}
+		GeneralSFMFactor(const Point2& z, const SharedNoiseModel& model, const CamK& i, const LmK& j) : Base(model, i, j), z_(z) {}
 
 		virtual ~GeneralSFMFactor() {}
 

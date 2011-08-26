@@ -37,7 +37,7 @@ static double fov = 60; // degrees
 static size_t w=640,h=480;
 static Cal3_S2 K(fov,w,h);
 
-static SharedGaussian sigma(noiseModel::Unit::Create(1));
+static SharedNoiseModel sigma(noiseModel::Unit::Create(1));
 static shared_ptrK sK(new Cal3_S2(K));
 
 // make cameras

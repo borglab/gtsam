@@ -51,7 +51,7 @@ public:
 	 * @param landmarkNumber is the index of the landmark
 	 * @param K the constant calibration
 	 */
-	GenericStereoFactor(const StereoPoint2& z, const SharedGaussian& model, KEY1 j_pose,
+	GenericStereoFactor(const StereoPoint2& z, const SharedNoiseModel& model, KEY1 j_pose,
 			KEY2 j_landmark, const shared_ptrKStereo& K) :
 		Base(model, j_pose, j_landmark), z_(z), K_(K) {
 	}

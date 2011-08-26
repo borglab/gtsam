@@ -40,7 +40,7 @@ namespace gtsam {
 
 		/** primary constructor */
 		BearingFactor(const POSEKEY& i, const POINTKEY& j, const Rot2& z,
-				const SharedGaussian& model) :
+				const SharedNoiseModel& model) :
 					Base(model, i, j), z_(z) {
 		}
 

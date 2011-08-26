@@ -52,9 +52,9 @@ namespace gtsam {
 		// Graph
 		struct Graph: public NonlinearFactorGraph<Values> {
 			void addPrior(const Key& i, const Pose3& p,
-					const SharedGaussian& model);
+					const SharedNoiseModel& model);
 			void addConstraint(const Key& i, const Key& j, const Pose3& z,
-					const SharedGaussian& model);
+					const SharedNoiseModel& model);
 			void addHardConstraint(const Key& i, const Pose3& p);
 		};
 

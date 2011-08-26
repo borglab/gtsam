@@ -42,7 +42,7 @@ namespace gtsam {
 
 		BearingRangeFactor() {} /* Default constructor */
 		BearingRangeFactor(const POSEKEY& i, const POINTKEY& j, const Rot2& bearing, const double range,
-				const SharedGaussian& model) :
+				const SharedNoiseModel& model) :
 					Base(model, i, j), bearing_(bearing), range_(range) {
 		}
 

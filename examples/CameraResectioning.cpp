@@ -29,7 +29,7 @@ class ResectioningFactor: public NonlinearFactor1<PoseValues, PoseKey> {
   Point2 p_; // 2D measurement of the 3D point
 
 public:
-  ResectioningFactor(const SharedGaussian& model, const PoseKey& key,
+  ResectioningFactor(const SharedNoiseModel& model, const PoseKey& key,
       const shared_ptrK& calib, const Point2& p, const Point3& P) :
     Base(model, key), K_(calib), P_(P), p_(p) {
   }

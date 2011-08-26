@@ -105,7 +105,7 @@ namespace gtsam {
 			typedef typename KEY::Value Pose;
 			Pose z_;
 
-			GenericPrior(const Pose& z, const SharedGaussian& model, const KEY& key) :
+			GenericPrior(const Pose& z, const SharedNoiseModel& model, const KEY& key) :
 				NonlinearFactor1<CFG, KEY> (model, key), z_(z) {
 			}
 
@@ -136,7 +136,7 @@ namespace gtsam {
 			typedef typename KEY::Value Pose;
 			Pose z_;
 
-			GenericOdometry(const Pose& z, const SharedGaussian& model,
+			GenericOdometry(const Pose& z, const SharedNoiseModel& model,
 					const KEY& i1, const KEY& i2) :
 				NonlinearFactor2<CFG, KEY, KEY> (model, i1, i2), z_(z) {
 			}
@@ -170,7 +170,7 @@ namespace gtsam {
 
 			Point z_;
 
-			GenericMeasurement(const Point& z, const SharedGaussian& model,
+			GenericMeasurement(const Point& z, const SharedNoiseModel& model,
 					const XKEY& i, const LKEY& j) :
 					NonlinearFactor2<CFG, XKEY, LKEY> (model, i, j), z_(z) {
 			}

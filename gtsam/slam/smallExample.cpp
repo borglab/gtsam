@@ -201,7 +201,7 @@ namespace example {
 
 			Point2 z_;
 
-			UnaryFactor(const Point2& z, const SharedGaussian& model,
+			UnaryFactor(const Point2& z, const SharedNoiseModel& model,
 					const simulated2D::PoseKey& key) :
 				gtsam::NonlinearFactor1<Values, simulated2D::PoseKey>(model, key), z_(z) {
 			}

@@ -63,7 +63,7 @@ namespace gtsam {
 
 			Pose2 z_;
 
-			GenericPosePrior(const Pose2& z, const SharedGaussian& model, const Key& key) :
+			GenericPosePrior(const Pose2& z, const SharedNoiseModel& model, const Key& key) :
 				NonlinearFactor1<CFG, Key> (model, key), z_(z) {
 			}
 
@@ -81,7 +81,7 @@ namespace gtsam {
 		struct GenericOdometry: public NonlinearFactor2<CFG, KEY, KEY> {
 			Pose2 z_;
 
-			GenericOdometry(const Pose2& z, const SharedGaussian& model,
+			GenericOdometry(const Pose2& z, const SharedNoiseModel& model,
 					const KEY& i1, const KEY& i2) :
 				NonlinearFactor2<CFG, KEY, KEY> (model, i1, i2), z_(z) {
 			}

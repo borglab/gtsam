@@ -19,6 +19,7 @@
 #pragma once
 
 #include <gtsam/linear/NoiseModel.h>
+#include <gtsam/linear/SharedNoiseModel.h>
 
 namespace gtsam { // note, deliberately not in noiseModel namespace
 

@@ -164,6 +164,24 @@ SharedDiagonal Gaussian::Cholesky(Matrix& Ab, size_t nFrontals) const {
   return Unit::Create(maxrank);
 }
 
+void Gaussian::WhitenSystem(Matrix& A, Vector& b) const {
+  WhitenInPlace(A);
+  whitenInPlace(b);
+}
+
+void Gaussian::WhitenSystem(Matrix& A1, Matrix& A2, Vector& b) const {
+  WhitenInPlace(A1);
+  WhitenInPlace(A2);
+  whitenInPlace(b);
+}
+
+void Gaussian::WhitenSystem(Matrix& A1, Matrix& A2, Matrix& A3, Vector& b) const{
+  WhitenInPlace(A1);
+  WhitenInPlace(A2);
+  WhitenInPlace(A3);
+  whitenInPlace(b);
+}
+
 /* ************************************************************************* */
 // Diagonal
 /* ************************************************************************* */
@@ -413,6 +431,122 @@ Vector Isotropic::sample() const {
 void Unit::print(const std::string& name) const {
 	cout << name << ": unit (" << dim_ << ") " << endl;
 }
+
+/* ************************************************************************* */
+// M-Estimator
+/* ************************************************************************* */
+
+namespace MEstimator {
+Vector Base::weight(const Vector &error) const {
+  const size_t n = error.rows();
+  Vector w(n);
+  for ( size_t i = 0 ; i < n ; ++i )
+    w(i) = weight(error(i));
+  return w;
+}
+
+void Base::reweight(Matrix &A, Vector &error) const {
+  const Vector W = weight(error);
+  vector_scale_inplace(W,A);
+  error = emul(W, error);
+}
+
+void Base::reweight(Matrix &A1, Matrix &A2, Vector &error) const {
+  const Vector W = weight(error);
+  vector_scale_inplace(W,A1);
+  vector_scale_inplace(W,A2);
+  error = emul(W, error);
+}
+
+void Base::reweight(Matrix &A1, Matrix &A2, Matrix &A3, Vector &error) const {
+  const Vector W = weight(error);
+  vector_scale_inplace(W,A1);
+  vector_scale_inplace(W,A2);
+  vector_scale_inplace(W,A3);
+  error = emul(W, error);
+}
+
+Fair::Fair(const double c): c_(c) {
+  if ( c_ <= 0 ) {
+    cout << "MEstimator Fair takes only positive double in constructor. forced to 1.0" << endl;
+    c_ = 1.0;
+  }
+}
+
+double Fair::weight(const double &error) const
+{ return 1.0 / (1.0 + fabs(error)/c_); }
+
+void Fair::print(const std::string &s) const
+{ cout << s << ": fair (" << c_ << ")" << endl; }
+
+bool Fair::equals(const Base &expected, const double tol) const {
+  const Fair* p = dynamic_cast<const Fair*> (&expected);
+  if (p == NULL) return false;
+  return fabs(c_ - p->c_ ) < tol;
+}
+
+Fair::shared_ptr Fair::Create(const double c)
+{ return shared_ptr(new Fair(c)); }
+
+Huber::Huber(const double k): k_(k) {
+  if ( k_ <= 0 ) {
+    cout << "MEstimator Huber takes only positive double in constructor. forced to 1.0" << endl;
+    k_ = 1.0;
+  }
+}
+
+double Huber::weight(const double &error) const
+{ return (error < k_) ? (1.0) : (k_ / fabs(error)); }
+
+void Huber::print(const std::string &s) const
+{ cout << s << ": huber (" << k_ << ")" << endl; }
+
+bool Huber::equals(const Base &expected, const double tol) const {
+  const Huber* p = dynamic_cast<const Huber*> (&expected);
+  if (p == NULL) return false;
+  return fabs(k_ - p->k_ ) < tol;
+}
+
+Huber::shared_ptr Huber::Create(const double c)
+{ return shared_ptr(new Huber(c)); }
+
+}
+
+/* ************************************************************************* */
+// Robust
+/* ************************************************************************* */
+
+void Robust::print(const std::string& name) const {
+  robust_->print(name);
+  noise_->print(name);
+}
+
+bool Robust::equals(const Base& expected, double tol) const {
+  const Robust* p = dynamic_cast<const Robust*> (&expected);
+  if (p == NULL) return false;
+  return noise_->equals(*p->noise_,tol) && robust_->equals(*p->robust_,tol);
+}
+
+void Robust::WhitenSystem(Matrix& A, Vector& b) const {
+  noise_->WhitenSystem(A,b);
+  robust_->reweight(A,b);
+}
+
+void Robust::WhitenSystem(Matrix& A1, Matrix& A2, Vector& b) const {
+  noise_->WhitenSystem(A1,A2,b);
+  robust_->reweight(A1,A2,b);
+}
+
+void Robust::WhitenSystem(Matrix& A1, Matrix& A2, Matrix& A3, Vector& b) const{
+  noise_->WhitenSystem(A1,A2,A3,b);
+  robust_->reweight(A1,A2,A3,b);
+}
+
+Robust::shared_ptr Robust::Create(
+  const RobustModel::shared_ptr &robust, const NoiseModel::shared_ptr noise){
+  return shared_ptr(new Robust(robust,noise));
+}
+
 
 /* ************************************************************************* */
 

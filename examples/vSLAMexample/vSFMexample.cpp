@@ -52,7 +52,7 @@ map<int, Pose3> g_poses;            // map: <camera_id, pose>
 std::vector<Feature2D> g_measurements;    // Feature2D: {camera_id, landmark_id, 2d feature_position}
 
 // Noise models
-SharedGaussian measurementSigma(noiseModel::Isotropic::Sigma(2, 5.0f));
+SharedNoiseModel measurementSigma(noiseModel::Isotropic::Sigma(2, 5.0f));
 
 /* ************************************************************************* */
 /**
@@ -79,7 +79,7 @@ void readAllData() {
  * by adding and linking 2D features (measurements) detected in each captured image
  * with their corresponding landmarks.
  */
-Graph setupGraph(std::vector<Feature2D>& measurements, SharedGaussian measurementSigma, shared_ptrK calib) {
+Graph setupGraph(std::vector<Feature2D>& measurements, SharedNoiseModel measurementSigma, shared_ptrK calib) {
 
   Graph g;
 

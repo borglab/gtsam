@@ -50,16 +50,16 @@ namespace gtsam {
 		struct Graph: public NonlinearFactorGraph<Values> {
 			Graph(){}
 			Graph(const NonlinearFactorGraph<Values>& graph);
-			void addPrior(const PoseKey& i, const Pose2& p, const SharedGaussian& model);
+			void addPrior(const PoseKey& i, const Pose2& p, const SharedNoiseModel& model);
 			void addPoseConstraint(const PoseKey& i, const Pose2& p);
 			void addOdometry(const PoseKey& i, const PoseKey& j, const Pose2& z,
-					const SharedGaussian& model);
+					const SharedNoiseModel& model);
 			void addBearing(const PoseKey& i, const PointKey& j, const Rot2& z,
-					const SharedGaussian& model);
+					const SharedNoiseModel& model);
 			void addRange(const PoseKey& i, const PointKey& j, double z,
-					const SharedGaussian& model);
+					const SharedNoiseModel& model);
 			void addBearingRange(const PoseKey& i, const PointKey& j,
-					const Rot2& z1, double z2, const SharedGaussian& model);
+					const Rot2& z1, double z2, const SharedNoiseModel& model);
 		};
 
 		// Optimizer

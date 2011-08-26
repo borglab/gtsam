@@ -124,7 +124,7 @@ pair<sharedPose2Graph, sharedPose2Values> load2D(const string& filename,
 
 			Pose2 l1Xl2(x, y, yaw);
 
-			// SharedGaussian noise = noiseModel::Gaussian::Covariance(m, smart);
+			// SharedNoiseModel noise = noiseModel::Gaussian::Covariance(m, smart);
 			if (!model) {
 				Vector variances = Vector_(3,m(0,0),m(1,1),m(2,2));
 				model = noiseModel::Diagonal::Variances(variances, smart);

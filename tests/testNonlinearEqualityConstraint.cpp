@@ -221,7 +221,7 @@ TEST (testNonlinearEqualityConstraint, two_pose ) {
 	graph->add(eq2D::UnaryEqualityConstraint(pt_x2, x2));
 
 	Point2 z1(0.0, 5.0);
-	SharedGaussian sigma(noiseModel::Isotropic::Sigma(2, 0.1));
+	SharedNoiseModel sigma(noiseModel::Isotropic::Sigma(2, 0.1));
 	graph->add(simulated2D::Measurement(z1, sigma, x1,l1));
 
 	Point2 z2(-4.0, 0.0);

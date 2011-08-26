@@ -18,7 +18,7 @@ const double tol = 1e-5;
 TEST(testPose2SLAMwSPCG, example1) {
 
 	/* generate synthetic data */
-	const SharedGaussian sigma(noiseModel::Unit::Create(0.1));
+	const SharedNoiseModel sigma(noiseModel::Unit::Create(0.1));
 	Key x1(1), x2(2), x3(3), x4(4), x5(5), x6(6), x7(7), x8(8), x9(9);
 
 	// create a 3 by 3 grid

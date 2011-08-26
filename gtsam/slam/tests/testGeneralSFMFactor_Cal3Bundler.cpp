@@ -41,7 +41,7 @@ typedef NonlinearEquality<Values, PointKey> Point3Constraint;
 
 class Graph: public NonlinearFactorGraph<Values> {
 public:
-  void addMeasurement(const CameraKey& i, const PointKey& j, const Point2& z, const SharedGaussian& model) {
+  void addMeasurement(const CameraKey& i, const PointKey& j, const Point2& z, const SharedNoiseModel& model) {
     push_back(boost::make_shared<Projection>(z, model, i, j));
   }
 
@@ -74,7 +74,7 @@ double getGaussian()
 
 typedef NonlinearOptimizer<Graph,Values> Optimizer;
 
-const SharedGaussian sigma1(noiseModel::Unit::Create(1));
+const SharedNoiseModel sigma1(noiseModel::Unit::Create(1));
 
 /* ************************************************************************* */
 TEST( GeneralSFMFactor, equals )
@@ -82,7 +82,7 @@ TEST( GeneralSFMFactor, equals )
   // Create two identical factors and make sure they're equal
   Vector z = Vector_(2,323.,240.);
   const int cameraFrameNumber=1, landmarkNumber=1;
-  const SharedGaussian sigma(noiseModel::Unit::Create(1));
+  const SharedNoiseModel sigma(noiseModel::Unit::Create(1));
   boost::shared_ptr<Projection>
     factor1(new Projection(z, sigma, cameraFrameNumber, landmarkNumber));
 
@@ -96,7 +96,7 @@ TEST( GeneralSFMFactor, equals )
 TEST( GeneralSFMFactor, error ) {
   Point2 z(3.,0.);
   const int cameraFrameNumber=1, landmarkNumber=1;
-  const SharedGaussian sigma(noiseModel::Unit::Create(1));
+  const SharedNoiseModel sigma(noiseModel::Unit::Create(1));
   boost::shared_ptr<Projection>
   factor(new Projection(z, sigma, cameraFrameNumber, landmarkNumber));
   // For the following configuration, the factor predicts 320,240

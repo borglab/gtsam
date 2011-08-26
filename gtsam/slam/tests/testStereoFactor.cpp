@@ -45,7 +45,7 @@ StereoCamera stereoCam(Pose3(), K);
 
 // point X Y Z in meters
 Point3 p(0, 0, 5);
-static SharedGaussian sigma(noiseModel::Unit::Create(1));
+static SharedNoiseModel sigma(noiseModel::Unit::Create(1));
 
 /* ************************************************************************* */
 TEST( StereoFactor, singlePoint)

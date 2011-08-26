@@ -42,13 +42,13 @@ namespace gtsam {
 
 		/* ************************************************************************* */
 		void Graph::addPrior(const Key& i, const Pose2& p,
-				const SharedGaussian& model) {
+				const SharedNoiseModel& model) {
 			sharedFactor factor(new Prior(i, p, model));
 			push_back(factor);
 		}
 
 		void Graph::addConstraint(const Key& i, const Key& j, const Pose2& z,
-				const SharedGaussian& model) {
+				const SharedNoiseModel& model) {
 			sharedFactor factor(new Constraint(i, j, z, model));
 			push_back(factor);
 		}

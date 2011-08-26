@@ -79,7 +79,7 @@ namespace gtsam {
      *  @param j index of camera
      *  @param p to which pose to constrain it to
      */
-    void addMeasurement(const Point2& z, const SharedGaussian& model,
+    void addMeasurement(const Point2& z, const SharedNoiseModel& model,
         PoseKey i, PointKey j, const shared_ptrK& K) {
       boost::shared_ptr<ProjectionFactor> factor(new ProjectionFactor(z, model, i, j, K));
       push_back(factor);
@@ -111,7 +111,7 @@ namespace gtsam {
      *  @param p to which pose to constrain it to
      *  @param model uncertainty model of this prior
      */
-    void addPosePrior(int j, const Pose3& p = Pose3(), const SharedGaussian& model = noiseModel::Unit::Create(1)) {
+    void addPosePrior(int j, const Pose3& p = Pose3(), const SharedNoiseModel& model = noiseModel::Unit::Create(1)) {
       boost::shared_ptr<PosePrior> factor(new PosePrior(j, p, model));
       push_back(factor);
     }
@@ -121,7 +121,7 @@ namespace gtsam {
      *  @param j index of landmark
      *  @param model uncertainty model of this prior
      */
-    void addPointPrior(int j, const Point3& p = Point3(), const SharedGaussian& model = noiseModel::Unit::Create(1)) {
+    void addPointPrior(int j, const Point3& p = Point3(), const SharedNoiseModel& model = noiseModel::Unit::Create(1)) {
       boost::shared_ptr<PointPrior> factor(new PointPrior(j, p, model));
       push_back(factor);
     }

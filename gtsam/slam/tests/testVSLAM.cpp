@@ -35,7 +35,7 @@ using namespace gtsam;
 using namespace gtsam::visualSLAM;
 using namespace boost;
 
-static SharedGaussian sigma(noiseModel::Unit::Create(1));
+static SharedNoiseModel sigma(noiseModel::Unit::Create(1));
 
 /* ************************************************************************* */
 Point3 landmark1(-1.0,-1.0, 0.0);

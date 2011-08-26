@@ -59,7 +59,7 @@ namespace gtsam {
 		 * @param K the constant calibration
 		 */
 		GenericProjectionFactor(const Point2& z,
-				const SharedGaussian& model, POSK j_pose,
+				const SharedNoiseModel& model, POSK j_pose,
 				LMK j_landmark, const shared_ptrK& K) :
 					Base(model, j_pose, j_landmark), z_(z), K_(K) {
 		}

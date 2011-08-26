@@ -255,7 +255,7 @@ BOOST_CLASS_EXPORT_GUID(gtsam::noiseModel::Gaussian, "gtsam_noiseModel_Gaussian"
 BOOST_CLASS_EXPORT_GUID(gtsam::noiseModel::Unit, "gtsam_noiseModel_Unit");
 BOOST_CLASS_EXPORT_GUID(gtsam::noiseModel::Isotropic, "gtsam_noiseModel_Isotropic");
 
-BOOST_CLASS_EXPORT_GUID(gtsam::SharedGaussian, "gtsam_SharedGaussian");
+BOOST_CLASS_EXPORT_GUID(gtsam::SharedNoiseModel, "gtsam_SharedNoiseModel");
 BOOST_CLASS_EXPORT_GUID(gtsam::SharedDiagonal, "gtsam_SharedDiagonal");
 
 /* ************************************************************************* */
@@ -286,25 +286,25 @@ TEST (Serialization, noiseModels) {
 }
 
 /* ************************************************************************* */
-TEST (Serialization, SharedGaussian_noiseModels) {
-	SharedGaussian diag3_sg = diag3;
-	EXPECT(equalsDereferenced<SharedGaussian>(diag3_sg));
-	EXPECT(equalsDereferencedXML<SharedGaussian>(diag3_sg));
+TEST (Serialization, SharedNoiseModel_noiseModels) {
+	SharedNoiseModel diag3_sg = diag3;
+	EXPECT(equalsDereferenced<SharedNoiseModel>(diag3_sg));
+	EXPECT(equalsDereferencedXML<SharedNoiseModel>(diag3_sg));
 
-	EXPECT(equalsDereferenced<SharedGaussian>(diag3));
-	EXPECT(equalsDereferencedXML<SharedGaussian>(diag3));
+	EXPECT(equalsDereferenced<SharedNoiseModel>(diag3));
+	EXPECT(equalsDereferencedXML<SharedNoiseModel>(diag3));
 
-	EXPECT(equalsDereferenced<SharedGaussian>(iso3));
-	EXPECT(equalsDereferencedXML<SharedGaussian>(iso3));
+	EXPECT(equalsDereferenced<SharedNoiseModel>(iso3));
+	EXPECT(equalsDereferencedXML<SharedNoiseModel>(iso3));
 
-	EXPECT(equalsDereferenced<SharedGaussian>(gaussian3));
-	EXPECT(equalsDereferencedXML<SharedGaussian>(gaussian3));
+	EXPECT(equalsDereferenced<SharedNoiseModel>(gaussian3));
+	EXPECT(equalsDereferencedXML<SharedNoiseModel>(gaussian3));
 
-	EXPECT(equalsDereferenced<SharedGaussian>(unit3));
-	EXPECT(equalsDereferencedXML<SharedGaussian>(unit3));
+	EXPECT(equalsDereferenced<SharedNoiseModel>(unit3));
+	EXPECT(equalsDereferencedXML<SharedNoiseModel>(unit3));
 
-	EXPECT(equalsDereferenced<SharedGaussian>(constrained3));
-	EXPECT(equalsDereferencedXML<SharedGaussian>(constrained3));
+	EXPECT(equalsDereferenced<SharedNoiseModel>(constrained3));
+	EXPECT(equalsDereferencedXML<SharedNoiseModel>(constrained3));
 }
 
 /* ************************************************************************* */
@@ -484,9 +484,9 @@ TEST (Serialization, planar_system) {
 	values.insert(PointKey(3), Point2(1.0, 2.0));
 	values.insert(PoseKey(4), Pose2(1.0, 2.0, 0.3));
 
-	SharedGaussian model1 = noiseModel::Isotropic::Sigma(1, 0.3);
-	SharedGaussian model2 = noiseModel::Isotropic::Sigma(2, 0.3);
-	SharedGaussian model3 = noiseModel::Isotropic::Sigma(3, 0.3);
+	SharedNoiseModel model1 = noiseModel::Isotropic::Sigma(1, 0.3);
+	SharedNoiseModel model2 = noiseModel::Isotropic::Sigma(2, 0.3);
+	SharedNoiseModel model3 = noiseModel::Isotropic::Sigma(3, 0.3);
 
 	Prior prior(PoseKey(3), Pose2(0.1,-0.3, 0.2), model1);
 	Bearing bearing(PoseKey(3), PointKey(5), Rot2::fromDegrees(0.5), model1);
@@ -547,9 +547,9 @@ TEST (Serialization, visual_system) {
 	Point3 pt1(1.0, 2.0, 3.0), pt2(4.0, 5.0, 6.0);
 	values.insert(x1, pose1);
 	values.insert(l1, pt1);
-	SharedGaussian model2 = noiseModel::Isotropic::Sigma(2, 0.3);
-	SharedGaussian model3 = noiseModel::Isotropic::Sigma(3, 0.3);
-	SharedGaussian model6 = noiseModel::Isotropic::Sigma(6, 0.3);
+	SharedNoiseModel model2 = noiseModel::Isotropic::Sigma(2, 0.3);
+	SharedNoiseModel model3 = noiseModel::Isotropic::Sigma(3, 0.3);
+	SharedNoiseModel model6 = noiseModel::Isotropic::Sigma(6, 0.3);
 	boost::shared_ptr<Cal3_S2> K(new Cal3_S2(cal1));
 
 	Graph graph;

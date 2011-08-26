@@ -38,7 +38,7 @@ namespace gtsam {
 		RangeFactor() {} /* Default constructor */
 
 		RangeFactor(const POSEKEY& i, const POINTKEY& j, double z,
-				const SharedGaussian& model) :
+				const SharedNoiseModel& model) :
 					Base(model, i, j), z_(z) {
 		}
 

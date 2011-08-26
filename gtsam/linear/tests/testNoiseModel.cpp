@@ -26,7 +26,7 @@ using namespace boost::assign;
 #include <CppUnitLite/TestHarness.h>
 #include <gtsam/base/TestableAssertions.h>
 #include <gtsam/linear/NoiseModel.h>
-#include <gtsam/linear/SharedGaussian.h>
+#include <gtsam/linear/SharedNoiseModel.h>
 #include <gtsam/linear/SharedDiagonal.h>
 
 using namespace std;
@@ -238,8 +238,8 @@ TEST(NoiseModel, QRNan )
 TEST(NoiseModel, SmartCovariance )
 {
 	bool smart = true;
-	SharedGaussian expected = Unit::Create(3);
-	SharedGaussian actual = Gaussian::Covariance(eye(3), smart);
+	SharedNoiseModel expected = Unit::Create(3);
+	SharedNoiseModel actual = Gaussian::Covariance(eye(3), smart);
 	EXPECT(assert_equal(*expected,*actual));
 }
 
@@ -247,8 +247,8 @@ TEST(NoiseModel, SmartCovariance )
 TEST(NoiseModel, ScalarOrVector )
 {
 	bool smart = true;
-	SharedGaussian expected = Unit::Create(3);
-	SharedGaussian actual = Gaussian::Covariance(eye(3), smart);
+	SharedNoiseModel expected = Unit::Create(3);
+	SharedNoiseModel actual = Gaussian::Covariance(eye(3), smart);
 	EXPECT(assert_equal(*expected,*actual));
 }
 

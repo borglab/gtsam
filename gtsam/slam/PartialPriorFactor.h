@@ -60,7 +60,7 @@ namespace gtsam {
 		 * computation in the constructor.  This should only be used by subclasses
 		 * Sets the size of the mask with all values off
 		 */
-		PartialPriorFactor(const KEY& key, const SharedGaussian& model)
+		PartialPriorFactor(const KEY& key, const SharedNoiseModel& model)
 		  : Base(model, key), mask_(model->dim(), false) {}
 
 	public:
@@ -72,7 +72,7 @@ namespace gtsam {
 
 		/** Full Constructor: requires mask and vector - not for typical use */
 		PartialPriorFactor(const KEY& key, const std::vector<bool>& mask,
-				const Vector& prior, const SharedGaussian& model) :
+				const Vector& prior, const SharedNoiseModel& model) :
 			Base(model, key), prior_(prior), mask_(mask) {
 			assert(mask_.size() == T::Dim()); // NOTE: assumes constant size variable
 			assert(nrTrue() == model->dim());
@@ -80,7 +80,7 @@ namespace gtsam {
 		}
 
 		/** Single Element Constructor: acts on a single parameter specified by idx */
-		PartialPriorFactor(const KEY& key, size_t idx, double prior, const SharedGaussian& model) :
+		PartialPriorFactor(const KEY& key, size_t idx, double prior, const SharedNoiseModel& model) :
 			Base(model, key), prior_(Vector_(1, prior)), mask_(T::Dim(), false) {
 			assert(model->dim() == 1);
 			mask_[idx] = true;
@@ -89,7 +89,7 @@ namespace gtsam {
 
 		/** Indices Constructor: specify the mask with a set of indices */
 		PartialPriorFactor(const KEY& key, const std::vector<size_t>& mask, const Vector& prior,
-				const SharedGaussian& model) :
+				const SharedNoiseModel& model) :
 			Base(model, key), prior_(prior), mask_(T::Dim(), false) {
 			assert((size_t)prior_.size() == mask.size());
 			assert(model->dim() == (size_t) prior.size());
