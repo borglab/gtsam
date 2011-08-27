@@ -62,7 +62,7 @@ namespace gtsam {
         boost::optional<Matrix&> H2=boost::none) const {
       if(H1) *H1 = eye(2);
       if(H2) *H2 = eye(2);
-      return *this+p2;
+      return *this + p2;
     }
 
     /** "Inverse" - negates each coordinate such that compose(p,inverse(p))=Point2() */
@@ -86,7 +86,7 @@ namespace gtsam {
         boost::optional<Matrix&> H2=boost::none) const {
       if(H1) *H1 = -eye(2);
       if(H2) *H2 = eye(2);
-      return p2- (*this);
+      return p2 - (*this);
     }
 
     /** get functions for x, y */
