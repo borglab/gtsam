@@ -64,7 +64,7 @@ typename ExtendedKalmanFilter<VALUES, KEY>::T ExtendedKalmanFilter<VALUES, KEY>:
 
 /* ************************************************************************* */
 template<class VALUES, class KEY>
-ExtendedKalmanFilter<VALUES, KEY>::ExtendedKalmanFilter(T x_initial, SharedGaussian P_initial) {
+ExtendedKalmanFilter<VALUES, KEY>::ExtendedKalmanFilter(T x_initial, noiseModel::Gaussian::shared_ptr P_initial) {
 
   // Set the initial linearization point to the provided mean
   x_ = x_initial;

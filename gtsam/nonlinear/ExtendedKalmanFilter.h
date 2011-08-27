@@ -60,7 +60,7 @@ protected:
       JacobianFactor::shared_ptr& newPrior) const;
 
 public:
-  ExtendedKalmanFilter(T x_initial, SharedGaussian P_initial);
+  ExtendedKalmanFilter(T x_initial, noiseModel::Gaussian::shared_ptr P_initial);
 
   T predict(const MotionFactor& motionFactor);
   T update(const MeasurementFactor& measurementFactor);

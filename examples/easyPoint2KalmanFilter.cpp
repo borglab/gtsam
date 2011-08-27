@@ -75,7 +75,7 @@ int main() {
   // the controls are driving the point to the right at 1 m/s. Then, F = [1 0 ; 0 1], B = [1 0 ; 0 1]
   // and u = [1 ; 0]. Let us also assume that the process noise Q = [0.1 0 ; 0 0.1].
   Vector u = Vector_(2, 1.0, 0.0);
-  SharedGaussian Q = noiseModel::Diagonal::Sigmas(Vector_(2, 0.1, 0.1), true);
+  SharedDiagonal Q = noiseModel::Diagonal::Sigmas(Vector_(2, 0.1, 0.1), true);
 
   // This simple motion can be modeled with a BetweenFactor
   // Create Keys
@@ -100,7 +100,7 @@ int main() {
   // For the purposes of this example, let us assume we have something like a GPS that returns
   // the current position of the robot. Then H = [1 0 ; 0 1]. Let us also assume that the measurement noise
   // R = [0.25 0 ; 0 0.25].
-  SharedGaussian R = noiseModel::Diagonal::Sigmas(Vector_(2, 0.25, 0.25), true);
+  SharedDiagonal R = noiseModel::Diagonal::Sigmas(Vector_(2, 0.25, 0.25), true);
 
   // This simple measurement can be modeled with a PriorFactor
   Point2 z1(1.0, 0.0);

@@ -50,11 +50,11 @@ TEST( ExtendedKalmanFilter, linear ) {
   double dt = 1.0;
   Vector u = Vector_(2, 1.0, 0.0);
   Point2 difference(u*dt);
-  SharedGaussian Q = noiseModel::Diagonal::Sigmas(Vector_(2, 0.1, 0.1), true);
+  SharedDiagonal Q = noiseModel::Diagonal::Sigmas(Vector_(2, 0.1, 0.1), true);
   Point2 z1(1.0, 0.0);
   Point2 z2(2.0, 0.0);
   Point2 z3(3.0, 0.0);
-  SharedGaussian R = noiseModel::Diagonal::Sigmas(Vector_(2, 0.25, 0.25), true);
+  SharedDiagonal R = noiseModel::Diagonal::Sigmas(Vector_(2, 0.25, 0.25), true);
 
   // Create the set of expected output values
   Point2 expected1(1.0, 0.0);
