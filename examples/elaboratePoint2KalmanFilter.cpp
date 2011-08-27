@@ -10,9 +10,10 @@
  * -------------------------------------------------------------------------- */
 
 /*
- * Point2KalmanFilter.cpp
+ * elaboratePoint2KalmanFilter.cpp
  *
  * simple linear Kalman filter on a moving 2D point, but done using factor graphs
+ * This example manually creates all of the needed data structures
  *
  *  Created on: Aug 19, 2011
  *  @Author: Frank Dellaert
@@ -205,10 +206,13 @@ int main() {
   linearFactorGraph = GaussianFactorGraph::shared_ptr(new GaussianFactorGraph);
 
   // Convert the root conditional, P(x1) in this case, into a Prior for the next step
+  // The linearization point of this prior must be moved to the new estimate of x, and the key/index needs to be reset to 0,
+  // the first key in the next iteration
   const GaussianConditional::shared_ptr& cg1 = linearBayesNet->back();
   assert(cg1->nrFrontals() == 1);
   assert(cg1->nrParents() == 0);
-  linearFactorGraph->add(0, cg1->get_R(), cg1->get_d() - cg1->get_R()*result[ordering->at(x1)], noiseModel::Diagonal::Sigmas(cg1->get_sigmas(), true));
+  JacobianFactor tmpPrior1 = JacobianFactor(*cg1);
+  linearFactorGraph->add(0, tmpPrior1.getA(tmpPrior1.begin()), tmpPrior1.getb() - tmpPrior1.getA(tmpPrior1.begin()) * result[ordering->at(x1)], tmpPrior1.get_model());
 
   // Create a key for the new state
   Key x2(2);
@@ -249,7 +253,8 @@ int main() {
   const GaussianConditional::shared_ptr& cg2 = linearBayesNet->back();
   assert(cg2->nrFrontals() == 1);
   assert(cg2->nrParents() == 0);
-  linearFactorGraph->add(0, cg2->get_R(), cg2->get_d() - cg2->get_R()*result[ordering->at(x2)], noiseModel::Diagonal::Sigmas(cg2->get_sigmas(), true));
+  JacobianFactor tmpPrior2 = JacobianFactor(*cg2);
+  linearFactorGraph->add(0, tmpPrior2.getA(tmpPrior2.begin()), tmpPrior2.getb() - tmpPrior2.getA(tmpPrior2.begin()) * result[ordering->at(x2)], tmpPrior2.get_model());
 
   // Create the desired ordering
   ordering = Ordering::shared_ptr(new Ordering);
@@ -295,7 +300,8 @@ int main() {
   const GaussianConditional::shared_ptr& cg3 = linearBayesNet->back();
   assert(cg3->nrFrontals() == 1);
   assert(cg3->nrParents() == 0);
-  linearFactorGraph->add(0, cg3->get_R(), cg3->get_d() - cg3->get_R()*result[ordering->at(x2)], noiseModel::Diagonal::Sigmas(cg3->get_sigmas(), true));
+  JacobianFactor tmpPrior3 = JacobianFactor(*cg3);
+  linearFactorGraph->add(0, tmpPrior3.getA(tmpPrior3.begin()), tmpPrior3.getb() - tmpPrior3.getA(tmpPrior3.begin()) * result[ordering->at(x2)], tmpPrior3.get_model());
 
   // Create a key for the new state
   Key x3(3);
@@ -336,7 +342,8 @@ int main() {
   const GaussianConditional::shared_ptr& cg4 = linearBayesNet->back();
   assert(cg4->nrFrontals() == 1);
   assert(cg4->nrParents() == 0);
-  linearFactorGraph->add(0, cg4->get_R(), cg4->get_d() - cg4->get_R()*result[ordering->at(x3)], noiseModel::Diagonal::Sigmas(cg4->get_sigmas(), true));
+  JacobianFactor tmpPrior4 = JacobianFactor(*cg4);
+  linearFactorGraph->add(0, tmpPrior4.getA(tmpPrior4.begin()), tmpPrior4.getb() - tmpPrior4.getA(tmpPrior4.begin()) * result[ordering->at(x3)], tmpPrior4.get_model());
 
   // Create the desired ordering
   ordering = Ordering::shared_ptr(new Ordering);
