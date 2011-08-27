@@ -67,7 +67,7 @@ namespace gtsam {
     		boost::optional<Matrix&> H2=boost::none) const {
   	  if (H1) *H1 = eye(3);
   	  if (H2) *H2 = eye(3);
-  	  return *this+p2;
+  	  return *this + p2;
     }
 
     /** Exponential map at identity - just create a Point3 from x,y,z */
@@ -81,7 +81,13 @@ namespace gtsam {
     inline Vector logmap(const Point3& p2) const { return gtsam::logmap_default(*this, p2);}
 
     /** Between using the default implementation */
-    inline Point3 between(const Point3& p2) const { return between_default(*this, p2); }
+    inline Point3 between(const Point3& p2,
+        boost::optional<Matrix&> H1=boost::none,
+        boost::optional<Matrix&> H2=boost::none) const {
+      if(H1) *H1 = -eye(3);
+      if(H2) *H2 = eye(3);
+      return p2 - *this;
+    }
 
     /** return vectorized form (column-wise)*/
     Vector vector() const {
