@@ -22,6 +22,24 @@ using namespace std;
 using namespace gtsam;
 
 /* ************************************************************************* */
+TEST(Point2, Lie) {
+  Point2 p1(1,2);
+  Point2 p2(4,5);
+  Matrix H1, H2;
+
+  EXPECT(assert_equal(Point2(5,7), p1.compose(p2, H1, H2)));
+  EXPECT(assert_equal(eye(2), H1));
+  EXPECT(assert_equal(eye(2), H2));
+
+  EXPECT(assert_equal(Point2(3,3), p1.between(p2, H1, H2)));
+  EXPECT(assert_equal(-eye(2), H1));
+  EXPECT(assert_equal(eye(2), H2));
+
+  EXPECT(assert_equal(Point2(5,7), p1.expmap(Vector_(2, 4.,5.))));
+  EXPECT(assert_equal(Vector_(2, 3.,3.), p1.logmap(p2)));
+}
+
+/* ************************************************************************* */
 TEST( Point2, expmap)
 {
 	Vector d(2);
