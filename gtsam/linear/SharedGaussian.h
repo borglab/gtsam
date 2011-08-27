@@ -19,6 +19,7 @@
 #pragma once
 
 #include <gtsam/linear/NoiseModel.h>
+#include <gtsam/linear/SharedNoiseModel.h>
 
 namespace gtsam { // note, deliberately not in noiseModel namespace
 
@@ -26,44 +27,32 @@ namespace gtsam { // note, deliberately not in noiseModel namespace
 	 * A useful convenience class to refer to a shared Gaussian model
 	 * Also needed to make noise models in matlab
 	 */
-	struct SharedGaussian: public noiseModel::Gaussian::shared_ptr {
-		SharedGaussian() {
-		}
-		// TODO: better way ?
-		SharedGaussian(const noiseModel::Gaussian::shared_ptr& p) :
-			noiseModel::Gaussian::shared_ptr(p) {
-		}
-		SharedGaussian(const noiseModel::Diagonal::shared_ptr& p) :
-			noiseModel::Gaussian::shared_ptr(p) {
-		}
-		SharedGaussian(const noiseModel::Constrained::shared_ptr& p) :
-			noiseModel::Gaussian::shared_ptr(p) {
-		}
-		SharedGaussian(const noiseModel::Isotropic::shared_ptr& p) :
-			noiseModel::Gaussian::shared_ptr(p) {
-		}
-		SharedGaussian(const noiseModel::Unit::shared_ptr& p) :
-			noiseModel::Gaussian::shared_ptr(p) {
-		}
+	struct SharedGaussian: public SharedNoiseModel {
+
+	  typedef SharedNoiseModel Base;
+
+		SharedGaussian() {}
+		SharedGaussian(const noiseModel::Gaussian::shared_ptr& p) : Base(p) {}
+		SharedGaussian(const noiseModel::Diagonal::shared_ptr& p) : Base(p) {}
+		SharedGaussian(const noiseModel::Constrained::shared_ptr& p) : Base(p) {}
+		SharedGaussian(const noiseModel::Isotropic::shared_ptr& p) : Base(p) {}
+		SharedGaussian(const noiseModel::Unit::shared_ptr& p) : Base(p) {}
 
 		// Define GTSAM_MAGIC_GAUSSIAN to have access to slightly
 		// dangerous and non-shared (inefficient, wasteful) noise models.
 		// Intended to be used only in tests (if you must) and the MATLAB wrapper
 #ifdef GTSAM_MAGIC_GAUSSIAN
-		SharedGaussian(const Matrix& covariance) :
-			noiseModel::Gaussian::shared_ptr(noiseModel::Gaussian::Covariance(covariance)) {
-		}
-		SharedGaussian(const Vector& sigmas) :
-			noiseModel::Gaussian::shared_ptr(noiseModel::Diagonal::Sigmas(sigmas)) {
-		}
+		SharedGaussian(const Matrix& covariance)
+		  :	Base(noiseModel::Gaussian::Covariance(covariance)) {}
+		SharedGaussian(const Vector& sigmas)
+		  : Base(noiseModel::Diagonal::Sigmas(sigmas)) {}
 #endif
+
 // Define GTSAM_DANGEROUS_GAUSSIAN to have access to bug-prone fixed dimension Gaussians
 // Not intended for human use, only for backwards compatibility of old unit tests
 #ifdef GTSAM_DANGEROUS_GAUSSIAN
 		SharedGaussian(const double& s) :
-			noiseModel::Gaussian::shared_ptr(noiseModel::Isotropic::Sigma(
-					GTSAM_DANGEROUS_GAUSSIAN, s)) {
-		}
+			Base(noiseModel::Isotropic::Sigma(GTSAM_DANGEROUS_GAUSSIAN, s)) {}
 #endif
 
 		/** Serialization function */
@@ -71,7 +60,7 @@ namespace gtsam { // note, deliberately not in noiseModel namespace
 		template<class ARCHIVE>
 		void serialize(ARCHIVE & ar, const unsigned int version) {
 			ar & boost::serialization::make_nvp("SharedGaussian",
-			        boost::serialization::base_object<noiseModel::Gaussian::shared_ptr >(*this));
+			     boost::serialization::base_object<noiseModel::Gaussian::shared_ptr >(*this));
 		}
 	};
 }

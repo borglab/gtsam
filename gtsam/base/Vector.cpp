@@ -229,19 +229,19 @@ bool assert_equal(const ConstSubVector& expected, const ConstSubVector& actual, 
 /* ************************************************************************* */
 bool linear_dependent(const Vector& vec1, const Vector& vec2, double tol) {
 	if (vec1.size()!=vec2.size()) return false;
-	boost::optional<double> scale;
+	bool flag = false; 	double scale = 1.0;
 	size_t m = vec1.size();
 	for(size_t i=0; i<m; i++) {
 		if((fabs(vec1[i])>tol&&fabs(vec2[i])<tol) || (fabs(vec1[i])<tol&&fabs(vec2[i])>tol))
 			return false;
-		if(vec1[i] == 0 && vec2[i] == 0)
-			continue;
-		if (!scale)
+		if(vec1[i] == 0 && vec2[i] == 0) continue;
+		if (!flag) {
 			scale = vec1[i] / vec2[i];
-		else if (fabs(vec1[i] - vec2[i] * (*scale)) > tol)
-			return false;
+			flag = true ;
+		}
+		else if (fabs(vec1[i] - vec2[i]*scale) > tol) return false;
 	}
-	return scale.is_initialized();
+	return flag;
 }
 
 /* ************************************************************************* */

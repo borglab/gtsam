@@ -12,7 +12,6 @@
 #pragma once
 
 #include <gtsam/linear/NoiseModel.h>
-#include <gtsam/linear/SharedGaussian.h>
 
 namespace gtsam { // note, deliberately not in noiseModel namespace
 
@@ -21,7 +20,6 @@ namespace gtsam { // note, deliberately not in noiseModel namespace
     typedef noiseModel::Base::shared_ptr Base;
 
     SharedNoiseModel() {}
-    SharedNoiseModel(const SharedGaussian &p): Base(p) {}
     SharedNoiseModel(const noiseModel::Robust::shared_ptr& p): Base(p) {}
     SharedNoiseModel(const noiseModel::Gaussian::shared_ptr& p): Base(p) {}
     SharedNoiseModel(const noiseModel::Diagonal::shared_ptr& p): Base(p) {}
