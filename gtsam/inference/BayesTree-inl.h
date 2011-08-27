@@ -292,7 +292,7 @@ namespace gtsam {
 		// want to include those variables in the conditional.
 		BayesNet<CONDITIONAL> p_S_R;
 		BOOST_REVERSE_FOREACH(typename CONDITIONAL::shared_ptr conditional, *eliminated) {
-		  // TODO: CHECK!!! is it firstFrontalKey() or lastFrontalKey() or something else???
+		  assert(conditional->nrFrontals() == 1);
 		  if(separator.find(toBack[conditional->firstFrontalKey()]) != separator.end()) {
 		    if(debug)
 		      conditional->print("Taking C|R conditional: ");
