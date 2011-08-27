@@ -34,6 +34,9 @@ sources += GaussianISAM2.cpp
 # Nonlinear constraints 
 headers += NonlinearEquality.h NonlinearConstraint.h
 
+# Kalman Filter
+headers += ExtendedKalmanFilter.h ExtendedKalmanFilter-inl.h
+
 #----------------------------------------------------------------------------------------------------
 # Create a libtool library that is not installed
 # It will be packaged in the toplevel libgtsam.la as specfied in ../Makefile.am 

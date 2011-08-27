@@ -6,8 +6,8 @@ Kalman Filter Examples
 ======================
 elaboratePoint2KalmanFilter: simple linear Kalman filter on a moving 2D point, but done using factor graphs
 easyPoint2KalmanFilter: uses the cool generic templated Kalman filter class to do the same
-errorStateKalmanFilter: simple 1D example of a moving target measured by a accelerometer, incl. drift-rate bias
 fullStateKalmanFilter: simple 1D example with a full-state filter
+errorStateKalmanFilter: simple 1D example of a moving target measured by a accelerometer, incl. drift-rate bias
 
 2D Pose SLAM 
 ============
