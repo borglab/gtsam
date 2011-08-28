@@ -56,12 +56,12 @@ class EigenMatrixPrinter:
 		template_params = m.split(',')
 		template_params = map(lambda x:x.replace(" ", ""), template_params)
 
-		if template_params[1] == '-0x00000000000000001':
+		if template_params[1] == '-0x00000000000000001' or template_params[1] == '-0x000000001':
 			self.rows = val['m_storage']['m_rows']
 		else:
 			self.rows = int(template_params[1])
 		
-		if template_params[2] == '-0x00000000000000001':
+		if template_params[2] == '-0x00000000000000001' or template_params[2] == '-0x000000001':
 			self.cols = val['m_storage']['m_cols']
 		else:
 			self.cols = int(template_params[2])

@@ -70,7 +70,7 @@ complex<long double>  promote(long double x) { return complex<long double>( x); 
     {
         long double totalpower=0;
         long double difpower=0;
-        size_t n = min( buf1.size(),buf2.size() );
+        size_t n = (min)( buf1.size(),buf2.size() );
         for (size_t k=0;k<n;++k) {
             totalpower += (norm( buf1[k] ) + norm(buf2[k]) )/2.;
             difpower += norm(buf1[k] - buf2[k]);

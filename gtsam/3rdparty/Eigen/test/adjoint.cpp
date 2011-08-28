@@ -65,7 +65,7 @@ template<typename MatrixType> void adjoint(const MatrixType& m)
   // check basic properties of dot, norm, norm2
   typedef typename NumTraits<Scalar>::Real RealScalar;
   
-  RealScalar ref = NumTraits<Scalar>::IsInteger ? 0 : std::max((s1 * v1 + s2 * v2).norm(),v3.norm());
+  RealScalar ref = NumTraits<Scalar>::IsInteger ? 0 : (std::max)((s1 * v1 + s2 * v2).norm(),v3.norm());
   VERIFY(test_isApproxWithRef((s1 * v1 + s2 * v2).dot(v3),     internal::conj(s1) * v1.dot(v3) + internal::conj(s2) * v2.dot(v3), ref));
   VERIFY(test_isApproxWithRef(v3.dot(s1 * v1 + s2 * v2),       s1*v3.dot(v1)+s2*v3.dot(v2), ref));
   VERIFY_IS_APPROX(internal::conj(v1.dot(v2)),               v2.dot(v1));
@@ -76,7 +76,7 @@ template<typename MatrixType> void adjoint(const MatrixType& m)
 
   // check compatibility of dot and adjoint
   
-  ref = NumTraits<Scalar>::IsInteger ? 0 : std::max(std::max(v1.norm(),v2.norm()),std::max((square * v2).norm(),(square.adjoint() * v1).norm()));
+  ref = NumTraits<Scalar>::IsInteger ? 0 : (std::max)((std::max)(v1.norm(),v2.norm()),(std::max)((square * v2).norm(),(square.adjoint() * v1).norm()));
   VERIFY(test_isApproxWithRef(v1.dot(square * v2), (square.adjoint() * v1).dot(v2), ref));
 
   // like in testBasicStuff, test operator() to check const-qualification

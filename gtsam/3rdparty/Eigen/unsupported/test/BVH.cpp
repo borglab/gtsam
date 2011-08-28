@@ -143,10 +143,10 @@ struct TreeTest
     VectorType pt = VectorType::Random();
     BallPointStuff<Dim> i1(pt), i2(pt);
 
-    double m1 = std::numeric_limits<double>::max(), m2 = m1;
+    double m1 = (std::numeric_limits<double>::max)(), m2 = m1;
 
     for(int i = 0; i < (int)b.size(); ++i)
-      m1 = std::min(m1, i1.minimumOnObject(b[i]));
+      m1 = (std::min)(m1, i1.minimumOnObject(b[i]));
 
     m2 = BVMinimize(tree, i2);
 
@@ -194,11 +194,11 @@ struct TreeTest
 
     BallPointStuff<Dim> i1, i2;
 
-    double m1 = std::numeric_limits<double>::max(), m2 = m1;
+    double m1 = (std::numeric_limits<double>::max)(), m2 = m1;
 
     for(int i = 0; i < (int)b.size(); ++i)
         for(int j = 0; j < (int)v.size(); ++j)
-            m1 = std::min(m1, i1.minimumOnObjectObject(b[i], v[j]));
+            m1 = (std::min)(m1, i1.minimumOnObjectObject(b[i], v[j]));
 
     m2 = BVMinimize(tree, vTree, i2);
 

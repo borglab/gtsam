@@ -172,7 +172,7 @@ void constrained_cg(const TMatrix& A, const CMatrix& C, VectorX& x,
 
     if (iter.noiseLevel() > 0 && transition) std::cerr << "CCG: transition\n";
     if (transition || iter.first()) gamma = 0.0;
-    else gamma = std::max(0.0, (rho - old_z.dot(z)) / rho_1);
+    else gamma = (std::max)(0.0, (rho - old_z.dot(z)) / rho_1);
     p = z + gamma*p;
 
     ++iter;
@@ -185,7 +185,7 @@ void constrained_cg(const TMatrix& A, const CMatrix& C, VectorX& x,
       {
         Scalar bb = C.row(i).dot(p) - f[i];
         if (bb > 0.0)
-          lambda = std::min(lambda, (f.coeff(i)-C.row(i).dot(x)) / bb);
+          lambda = (std::min)(lambda, (f.coeff(i)-C.row(i).dot(x)) / bb);
       }
     }
     x += lambda * p;

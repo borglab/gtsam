@@ -91,12 +91,12 @@ void lmpar(
     gnorm = wa1.stableNorm();
     paru = gnorm / delta;
     if (paru == 0.)
-        paru = dwarf / std::min(delta,Scalar(0.1));
+        paru = dwarf / (std::min)(delta,Scalar(0.1));
 
     /* if the input par lies outside of the interval (parl,paru), */
     /* set par to the closer endpoint. */
-    par = std::max(par,parl);
-    par = std::min(par,paru);
+    par = (std::max)(par,parl);
+    par = (std::min)(par,paru);
     if (par == 0.)
         par = gnorm / dxnorm;
 
@@ -106,7 +106,7 @@ void lmpar(
 
         /* evaluate the function at the current value of par. */
         if (par == 0.)
-            par = std::max(dwarf,Scalar(.001) * paru); /* Computing MAX */
+            par = (std::max)(dwarf,Scalar(.001) * paru); /* Computing MAX */
         wa1 = sqrt(par)* diag;
 
         Matrix< Scalar, Dynamic, 1 > sdiag(n);
@@ -139,13 +139,13 @@ void lmpar(
 
         /* depending on the sign of the function, update parl or paru. */
         if (fp > 0.)
-            parl = std::max(parl,par);
+            parl = (std::max)(parl,par);
         if (fp < 0.)
-            paru = std::min(paru,par);
+            paru = (std::min)(paru,par);
 
         /* compute an improved estimate for par. */
         /* Computing MAX */
-        par = std::max(parl,par+parc);
+        par = (std::max)(parl,par+parc);
 
         /* end of an iteration. */
     }
@@ -227,12 +227,12 @@ void lmpar2(
     gnorm = wa1.stableNorm();
     paru = gnorm / delta;
     if (paru == 0.)
-        paru = dwarf / std::min(delta,Scalar(0.1));
+        paru = dwarf / (std::min)(delta,Scalar(0.1));
 
     /* if the input par lies outside of the interval (parl,paru), */
     /* set par to the closer endpoint. */
-    par = std::max(par,parl);
-    par = std::min(par,paru);
+    par = (std::max)(par,parl);
+    par = (std::min)(par,paru);
     if (par == 0.)
         par = gnorm / dxnorm;
 
@@ -243,7 +243,7 @@ void lmpar2(
 
         /* evaluate the function at the current value of par. */
         if (par == 0.)
-            par = std::max(dwarf,Scalar(.001) * paru); /* Computing MAX */
+            par = (std::max)(dwarf,Scalar(.001) * paru); /* Computing MAX */
         wa1 = sqrt(par)* diag;
 
         Matrix< Scalar, Dynamic, 1 > sdiag(n);
@@ -275,12 +275,12 @@ void lmpar2(
 
         /* depending on the sign of the function, update parl or paru. */
         if (fp > 0.)
-            parl = std::max(parl,par);
+            parl = (std::max)(parl,par);
         if (fp < 0.)
-            paru = std::min(paru,par);
+            paru = (std::min)(paru,par);
 
         /* compute an improved estimate for par. */
-        par = std::max(parl,par+parc);
+        par = (std::max)(parl,par+parc);
     }
     if (iter == 0)
         par = 0.;

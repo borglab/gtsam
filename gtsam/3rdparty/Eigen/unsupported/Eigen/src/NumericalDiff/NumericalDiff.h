@@ -80,7 +80,7 @@ public:
         Scalar h;
         int nfev=0;
         const typename InputType::Index n = _x.size();
-        const Scalar eps = internal::sqrt((std::max(epsfcn,NumTraits<Scalar>::epsilon() )));
+        const Scalar eps = internal::sqrt(((std::max)(epsfcn,NumTraits<Scalar>::epsilon() )));
         ValueType val1, val2;
         InputType x = _x;
         // TODO : we should do this only if the size is not already known

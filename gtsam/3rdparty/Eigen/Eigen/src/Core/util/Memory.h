@@ -156,7 +156,7 @@ inline void* generic_aligned_realloc(void* ptr, size_t size, size_t old_size)
 
   if (ptr != 0)
   {
-    std::memcpy(newptr, ptr, std::min(size,old_size));
+    std::memcpy(newptr, ptr, (std::min)(size,old_size));
     aligned_free(ptr);
   }
 
@@ -494,12 +494,12 @@ template<typename T> class aligned_stack_memory_handler
     aligned_stack_memory_handler(T* ptr, size_t size, bool dealloc)
       : m_ptr(ptr), m_size(size), m_deallocate(dealloc)
     {
-      if(NumTraits<T>::RequireInitialization)
+      if(NumTraits<T>::RequireInitialization && m_ptr)
         Eigen::internal::construct_elements_of_array(m_ptr, size);
     }
     ~aligned_stack_memory_handler()
     {
-      if(NumTraits<T>::RequireInitialization)
+      if(NumTraits<T>::RequireInitialization && m_ptr)
         Eigen::internal::destruct_elements_of_array<T>(m_ptr, m_size);
       if(m_deallocate)
         Eigen::internal::aligned_free(m_ptr);
@@ -663,12 +663,12 @@ public:
 
     size_type max_size() const throw()
     {
-        return std::numeric_limits<size_type>::max();
+        return (std::numeric_limits<size_type>::max)();
     }
 
-    pointer allocate( size_type num, const_pointer* hint = 0 )
+    pointer allocate( size_type num, const void* hint = 0 )
     {
-        static_cast<void>( hint ); // suppress unused variable warning
+        EIGEN_UNUSED_VARIABLE(hint);
         return static_cast<pointer>( internal::aligned_malloc( num * sizeof(T) ) );
     }
 
@@ -903,7 +903,7 @@ inline int queryTopLevelCacheSize()
 {
   int l1, l2(-1), l3(-1);
   queryCacheSizes(l1,l2,l3);
-  return std::max(l2,l3);
+  return (std::max)(l2,l3);
 }
 
 } // end namespace internal

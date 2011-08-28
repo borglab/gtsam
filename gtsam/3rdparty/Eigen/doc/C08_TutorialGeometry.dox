@@ -6,7 +6,7 @@ namespace Eigen {
 \li \b Previous: \ref TutorialReductionsVisitorsBroadcasting
 \li \b Next: \ref TutorialSparse
 
-In this tutorial, we will shortly introduce the many possibilities offered by the \ref Geometry_Module "geometry module", namely 2D and 3D rotations and projective or affine transformations.
+In this tutorial, we will briefly introduce the many possibilities offered by the \ref Geometry_Module "geometry module", namely 2D and 3D rotations and projective or affine transformations.
 
 \b Table \b of \b contents
   - \ref TutorialGeoElementaryTransformations
@@ -78,7 +78,7 @@ representations are rotation matrices, while for other usages Quaternion is the
 representation of choice as they are compact, fast and stable. Finally Rotation2D and
 AngleAxis are mainly convenient types to create other rotation objects.
 
-<strong>Notes on Translation and Scaling</strong>\n Likewise AngleAxis, these classes were
+<strong>Notes on Translation and Scaling</strong>\n Like AngleAxis, these classes were
 designed to simplify the creation/initialization of linear (Matrix) and affine (Transform)
 transformations. Nevertheless, unlike AngleAxis which is inefficient to use, these classes
 might still be interesting to write generic and efficient algorithms taking as input any
@@ -186,7 +186,7 @@ matNxN = t.extractRotation();
 While transformation objects can be created and updated concatenating elementary transformations,
 the Transform class also features a procedural API:
 <table class="manual">
-<tr><th></th><th>procedurale API</th><th>equivalent natural API </th></tr>
+<tr><th></th><th>procedural API</th><th>equivalent natural API </th></tr>
 <tr><td>Translation</td><td>\code
 t.translate(Vector_(tx,ty,..));
 t.pretranslate(Vector_(tx,ty,..));
@@ -234,7 +234,7 @@ t = Translation_(..) * t * RotationType(..) * Translation_(..) * Scaling_(..);
 <table class="manual">
 <tr><td style="max-width:30em;">
 Euler angles might be convenient to create rotation objects.
-On the other hand, since there exist 24 differents convension,they are pretty confusing to use. This example shows how
+On the other hand, since there exist 24 different conventions, they are pretty confusing to use. This example shows how
 to create a rotation matrix according to the 2-1-2 convention.</td><td>\code
 Matrix3f m;
 m = AngleAxisf(angle1, Vector3f::UnitZ())

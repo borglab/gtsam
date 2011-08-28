@@ -221,11 +221,11 @@ protected:
         Index* upperProfile = new Index[upperProfileSize];
         Index* lowerProfile = new Index[lowerProfileSize];
 
-        Index copyDiagSize = std::min(diagSize, m_diagSize);
-        Index copyUpperSize = std::min(upperSize, m_upperSize);
-        Index copyLowerSize = std::min(lowerSize, m_lowerSize);
-        Index copyUpperProfileSize = std::min(upperProfileSize, m_upperProfileSize);
-        Index copyLowerProfileSize = std::min(lowerProfileSize, m_lowerProfileSize);
+        Index copyDiagSize = (std::min)(diagSize, m_diagSize);
+        Index copyUpperSize = (std::min)(upperSize, m_upperSize);
+        Index copyLowerSize = (std::min)(lowerSize, m_lowerSize);
+        Index copyUpperProfileSize = (std::min)(upperProfileSize, m_upperProfileSize);
+        Index copyLowerProfileSize = (std::min)(lowerProfileSize, m_lowerProfileSize);
 
         // copy
         memcpy(diag, m_diag, copyDiagSize * sizeof (Scalar));

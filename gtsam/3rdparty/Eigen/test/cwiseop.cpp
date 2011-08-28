@@ -28,6 +28,14 @@
 #include "main.h"
 #include <functional>
 
+#ifdef min
+#undef min
+#endif
+
+#ifdef max
+#undef max
+#endif
+
 using namespace std;
 
 template<typename Scalar> struct AddIfNull {

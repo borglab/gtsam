@@ -127,10 +127,10 @@ bool MatrixFunctionAtomic<MatrixType>::taylorConverged(Index s, const MatrixType
     for (Index r = 0; r < n; r++) {
       RealScalar mx = 0;
       for (Index i = 0; i < n; i++)
-        mx = std::max(mx, std::abs(m_f(m_Ashifted(i, i) + m_avgEival, static_cast<int>(s+r))));
+        mx = (std::max)(mx, std::abs(m_f(m_Ashifted(i, i) + m_avgEival, static_cast<int>(s+r))));
       if (r != 0)
         rfactorial *= RealScalar(r);
-      delta = std::max(delta, mx / rfactorial);
+      delta = (std::max)(delta, mx / rfactorial);
     }
     const RealScalar P_norm = P.cwiseAbs().rowwise().sum().maxCoeff();
     if (m_mu * delta * P_norm < NumTraits<Scalar>::epsilon() * F_norm)

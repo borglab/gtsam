@@ -141,7 +141,7 @@ class IterationController
     bool converged(double nr)
     {
       m_res = internal::abs(nr); 
-      m_resminreach = std::min(m_resminreach, m_res);
+      m_resminreach = (std::min)(m_resminreach, m_res);
       return converged();
     }
     template<typename VectorType> bool converged(const VectorType &v)

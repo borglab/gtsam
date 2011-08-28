@@ -23,6 +23,9 @@
 // License and a copy of the GNU General Public License along with
 // Eigen. If not, see <http://www.gnu.org/licenses/>.
 
+#define min(A,B) please_protect_your_min_with_parentheses
+#define max(A,B) please_protect_your_max_with_parentheses
+
 #include <cstdlib>
 #include <cerrno>
 #include <ctime>
@@ -429,7 +432,7 @@ void createRandomPIMatrixOfRank(typename MatrixType::Index desired_rank, typenam
   MatrixBType  b = MatrixBType::Random(cols,cols);
 
   // set the diagonal such that only desired_rank non-zero entries reamain
-  const Index diag_size = std::min(d.rows(),d.cols());
+  const Index diag_size = (std::min)(d.rows(),d.cols());
   if(diag_size != desired_rank)
     d.diagonal().segment(desired_rank, diag_size-desired_rank) = VectorType::Zero(diag_size-desired_rank);
 

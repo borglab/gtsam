@@ -55,17 +55,17 @@ and its internal representation using the Compressed Column Storage format:
 </table>
 Outer indices:<table class="manual"><tr><td>0</td><td>2</td><td>4</td><td>5</td><td>6</td><td>\em 7 </td></tr></table>
 
-As you can guess, here the storage order is even more important than with dense matrix. We will therefore often make a clear difference between the \em inner and \em outer dimensions. For instance, it is easy to loop over the coefficients of an \em inner \em vector (e.g., a column of a column-major matrix), but completely inefficient to do the same for an \em outer \em vector (e.g., a row of a col-major matrix).
+As you might guess, here the storage order is even more important than with dense matrices. We will therefore often make a clear difference between the \em inner and \em outer dimensions. For instance, it is efficient to loop over the coefficients of an \em inner \em vector (e.g., a column of a column-major matrix), but completely inefficient to do the same for an \em outer \em vector (e.g., a row of a column-major matrix).
 
 The SparseVector class implements the same compressed storage scheme but, of course, without any outer index buffer.
 
-Since all nonzero coefficients of such a matrix are sequentially stored in memory, random insertion of new nonzeros can be extremely costly. To overcome this limitation, Eigen's sparse module provides a DynamicSparseMatrix class which is basically implemented as an array of SparseVector. In other words, a DynamicSparseMatrix is a SparseMatrix where the values and inner-indices arrays have been splitted into multiple small and resizable arrays. Assuming the number of nonzeros per inner vector is relatively low, this slight modification allow for very fast random insertion at the cost of a slight memory overhead and a lost of compatibility with other sparse libraries used by some of our highlevel solvers. Note that the major memory overhead comes from the extra memory preallocated by each inner vector to avoid an expensive memory reallocation at every insertion.
+Since all nonzero coefficients of such a matrix are sequentially stored in memory, inserting a new nonzero near the "beginning" of the matrix can be extremely costly. As described below (\ref TutorialSparseFilling), one strategy is to fill nonzero coefficients in order. In cases where this is not possible, Eigen's sparse module also provides a DynamicSparseMatrix class which allows efficient random insertion. DynamicSparseMatrix is essentially implemented as an array of SparseVector, where the values and inner-indices arrays have been split into multiple small and resizable arrays. Assuming the number of nonzeros per inner vector is relatively small, this modification allows for very fast random insertion at the cost of a slight memory overhead (due to extra memory preallocated by each inner vector to avoid an expensive memory reallocation at every insertion) and a loss of compatibility with other sparse libraries used by some of our high-level solvers. Once complete, a DynamicSparseMatrix can be converted to a SparseMatrix to permit usage of these sparse libraries.
 
-To summarize, it is recommanded to use a SparseMatrix whenever this is possible, and reserve the use of DynamicSparseMatrix for matrix assembly purpose when a SparseMatrix is not flexible enough. The respective pro/cons of both representations are summarized in the following table:
+To summarize, it is recommended to use SparseMatrix whenever possible, and reserve the use of DynamicSparseMatrix to assemble a sparse matrix in cases when a SparseMatrix is not flexible enough. The respective pros/cons of both representations are summarized in the following table:
 
 <table class="manual">
 <tr><td></td> <td>SparseMatrix</td><td>DynamicSparseMatrix</td></tr>
-<tr><td>memory usage</td><td>***</td><td>**</td></tr>
+<tr><td>memory efficiency</td><td>***</td><td>**</td></tr>
 <tr><td>sorted insertion</td><td>***</td><td>***</td></tr>
 <tr><td>random insertion \n in sorted inner vector</td><td>**</td><td>**</td></tr>
 <tr><td>sorted insertion \n in random inner vector</td><td>-</td><td>***</td></tr>
@@ -82,7 +82,7 @@ To summarize, it is recommanded to use a SparseMatrix whenever this is possible,
 
 \b Matrix \b and \b vector \b properties \n
 
-Here mat and vec represents any sparse-matrix and sparse-vector types respectively.
+Here mat and vec represent any sparse-matrix and sparse-vector type, respectively.
 
 <table class="manual">
 <tr><td>Standard \n dimensions</td><td>\code
@@ -96,7 +96,7 @@ mat.innerSize()
 mat.outerSize()\endcode</td>
 <td></td>
 </tr>
-<tr><td>Number of non \n zero coefficiens</td><td>\code
+<tr><td>Number of non \n zero coefficients</td><td>\code
 mat.nonZeros() \endcode</td>
 <td>\code
 vec.nonZeros() \endcode</td></tr>
@@ -105,12 +105,12 @@ vec.nonZeros() \endcode</td></tr>
 
 \b Iterating \b over \b the \b nonzero \b coefficients \n
 
-Iterating over the coefficients of a sparse matrix can be done only in the same order than the storage order. Here is an example:
+Iterating over the coefficients of a sparse matrix can be done only in the same order as the storage order. Here is an example:
 <table class="manual">
 <tr><td>
 \code
 SparseMatrixType mat(rows,cols);
-for (int k=0; k\<m1.outerSize(); ++k)
+for (int k=0; k<m1.outerSize(); ++k)
   for (SparseMatrixType::InnerIterator it(mat,k); it; ++it)
   {
     it.value();

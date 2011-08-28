@@ -178,7 +178,7 @@ typename Minimizer::Scalar minimize_helper(const BVH &tree, Minimizer &minimizer
     todo.pop();
 
     for(; oBegin != oEnd; ++oBegin) //go through child objects
-      minimum = std::min(minimum, minimizer.minimumOnObject(*oBegin));
+      minimum = (std::min)(minimum, minimizer.minimumOnObject(*oBegin));
 
     for(; vBegin != vEnd; ++vBegin) { //go through child volumes
       Scalar val = minimizer.minimumOnVolume(tree.getVolume(*vBegin));
@@ -274,12 +274,12 @@ typename Minimizer::Scalar BVMinimize(const BVH1 &tree1, const BVH2 &tree2, Mini
 
     for(; oBegin1 != oEnd1; ++oBegin1) { //go through child objects of first tree
       for(oCur2 = oBegin2; oCur2 != oEnd2; ++oCur2) {//go through child objects of second tree
-        minimum = std::min(minimum, minimizer.minimumOnObjectObject(*oBegin1, *oCur2));
+        minimum = (std::min)(minimum, minimizer.minimumOnObjectObject(*oBegin1, *oCur2));
       }
 
       for(vCur2 = vBegin2; vCur2 != vEnd2; ++vCur2) { //go through child volumes of second tree
         Helper2 helper(*oBegin1, minimizer);
-        minimum = std::min(minimum, internal::minimize_helper(tree2, helper, *vCur2, minimum));
+        minimum = (std::min)(minimum, internal::minimize_helper(tree2, helper, *vCur2, minimum));
       }
     }
 
@@ -288,7 +288,7 @@ typename Minimizer::Scalar BVMinimize(const BVH1 &tree1, const BVH2 &tree2, Mini
 
       for(oCur2 = oBegin2; oCur2 != oEnd2; ++oCur2) {//go through child objects of second tree
         Helper1 helper(*oCur2, minimizer);
-        minimum = std::min(minimum, internal::minimize_helper(tree1, helper, *vBegin1, minimum));
+        minimum = (std::min)(minimum, internal::minimize_helper(tree1, helper, *vBegin1, minimum));
       }
 
       for(vCur2 = vBegin2; vCur2 != vEnd2; ++vCur2) { //go through child volumes of second tree

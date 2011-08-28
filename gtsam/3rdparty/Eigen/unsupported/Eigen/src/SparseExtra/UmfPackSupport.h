@@ -295,10 +295,10 @@ void SparseLU<MatrixType,UmfPack>::extractData() const
     umfpack_get_lunz(&lnz, &unz, &rows, &cols, &nz_udiag, m_numeric, Scalar());
 
     // allocate data
-    m_l.resize(rows,std::min(rows,cols));
+    m_l.resize(rows,(std::min)(rows,cols));
     m_l.resizeNonZeros(lnz);
     
-    m_u.resize(std::min(rows,cols),cols);
+    m_u.resize((std::min)(rows,cols),cols);
     m_u.resizeNonZeros(unz);
 
     m_p.resize(rows);

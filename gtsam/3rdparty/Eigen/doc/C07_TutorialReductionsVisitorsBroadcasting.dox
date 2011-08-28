@@ -93,7 +93,7 @@ Array.
 
 The arguments passed to a visitor are pointers to the variables where the
 row and column position are to be stored. These variables should be of type
-\link DenseBase::Index Index \endlink (FIXME: link ok?), as shown below:
+\link DenseBase::Index Index \endlink, as shown below:
 
 <table class="example">
 <tr><th>Example:</th><th>Output:</th></tr>
@@ -141,7 +141,7 @@ return a 'column-vector'</b>
 
 \subsection TutorialReductionsVisitorsBroadcastingPartialReductionsCombined Combining partial reductions with other operations
 It is also possible to use the result of a partial reduction to do further processing.
-Here is another example that aims to find the column whose sum of elements is the maximum
+Here is another example that finds the column whose sum of elements is the maximum
  within a matrix. With column-wise partial reductions this can be coded as:
 
 <table class="example">

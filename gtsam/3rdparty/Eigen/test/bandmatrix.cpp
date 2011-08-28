@@ -61,7 +61,7 @@ template<typename MatrixType> void bandmatrix(const MatrixType& _m)
     m.col(i).setConstant(static_cast<RealScalar>(i+1));
     dm1.col(i).setConstant(static_cast<RealScalar>(i+1));
   }
-  Index d = std::min(rows,cols);
+  Index d = (std::min)(rows,cols);
   Index a = std::max<Index>(0,cols-d-supers);
   Index b = std::max<Index>(0,rows-d-subs);
   if(a>0) dm1.block(0,d+supers,rows,a).setZero();

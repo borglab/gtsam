@@ -34,7 +34,7 @@
 #include <Eigen/Core>
 
 namespace Eigen {
-  
+
   /** \defgroup MPRealSupport_Module MPFRC++ Support module
     *
     * \code
@@ -44,6 +44,8 @@ namespace Eigen {
     * This module provides support for multi precision floating point numbers
     * via the <a href="http://www.holoborodko.com/pavel/?page_id=12">MPFR C++</a>
     * library which itself is built upon <a href="http://www.mpfr.org/">MPFR</a>/<a href="http://gmplib.org/">GMP</a>.
+    *
+    * You can find a copy of MPFR C++ that is known to be compatible in the unsupported/test/mpreal folder.
     *
     * Here is an example:
     *
@@ -129,18 +131,6 @@ int main()
     return a + (b-a) * random<mpfr::mpreal>();
   }
 
-  template<> struct conj_impl<mpfr::mpreal> { inline static const mpfr::mpreal& run(const mpfr::mpreal& x) { return x; } };
-  template<> struct real_impl<mpfr::mpreal> { inline static const mpfr::mpreal& run(const mpfr::mpreal& x) { return x; } };
-  template<> struct imag_impl<mpfr::mpreal> { inline static const mpfr::mpreal run(const mpfr::mpreal&)   { return mpfr::mpreal(0); } };
-  template<> struct abs_impl<mpfr::mpreal> { inline static const mpfr::mpreal run(const mpfr::mpreal& x)  { return mpfr::fabs(x); } };
-  template<> struct abs2_impl<mpfr::mpreal> { inline static const mpfr::mpreal run(const mpfr::mpreal& x) { return x*x; } };
-  template<> struct sqrt_impl<mpfr::mpreal> { inline static const mpfr::mpreal run(const mpfr::mpreal& x) { return mpfr::sqrt(x); } };
-  template<> struct exp_impl<mpfr::mpreal> { inline static const mpfr::mpreal run(const mpfr::mpreal& x)  { return mpfr::exp(x); } };
-  template<> struct log_impl<mpfr::mpreal> { inline static const mpfr::mpreal run(const mpfr::mpreal& x)  { return mpfr::log(x); } };
-  template<> struct sin_impl<mpfr::mpreal> { inline static const mpfr::mpreal run(const mpfr::mpreal& x)  { return mpfr::sin(x); } };
-  template<> struct cos_impl<mpfr::mpreal> { inline static const mpfr::mpreal run(const mpfr::mpreal& x)  { return mpfr::cos(x); } };
-  template<> struct pow_impl<mpfr::mpreal> { inline static const mpfr::mpreal run(const mpfr::mpreal& x, const mpfr::mpreal& y)  { return mpfr::pow(x, y); } };
-
   bool isMuchSmallerThan(const mpfr::mpreal& a, const mpfr::mpreal& b, const mpfr::mpreal& prec)
   {
     return mpfr::abs(a) <= mpfr::abs(b) * prec;
@@ -148,7 +138,7 @@ int main()
 
   inline bool isApprox(const mpfr::mpreal& a, const mpfr::mpreal& b, const mpfr::mpreal& prec)
   {
-  return mpfr::abs(a - b) <= mpfr::min(mpfr::abs(a), mpfr::abs(b)) * prec;
+    return mpfr::abs(a - b) <= (mpfr::min)(mpfr::abs(a), mpfr::abs(b)) * prec;
   }
 
   inline bool isApproxOrLessThan(const mpfr::mpreal& a, const mpfr::mpreal& b, const mpfr::mpreal& prec)

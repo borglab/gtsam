@@ -294,11 +294,19 @@ struct kissfft_impl
   inline
     void fwd2( Complex * dst,const Complex *src,int n0,int n1)
     {
+        EIGEN_UNUSED_VARIABLE(dst);
+        EIGEN_UNUSED_VARIABLE(src);
+        EIGEN_UNUSED_VARIABLE(n0);
+        EIGEN_UNUSED_VARIABLE(n1);
     }
 
   inline
     void inv2( Complex * dst,const Complex *src,int n0,int n1)
     {
+        EIGEN_UNUSED_VARIABLE(dst);
+        EIGEN_UNUSED_VARIABLE(src);
+        EIGEN_UNUSED_VARIABLE(n0);
+        EIGEN_UNUSED_VARIABLE(n1);
     }
 
   // real-to-complex forward FFT

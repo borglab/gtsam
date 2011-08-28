@@ -155,7 +155,7 @@ this doesn't have any runtime cost (provided that you let your compiler optimize
 Both \link MatrixBase::array() .array() \endlink and \link ArrayBase::matrix() .matrix() \endlink 
 can be used as rvalues and as lvalues.
 
-Mixing matrices and arrays in an expression is forbidden with Eigen. For instance, you cannot add a amtrix and
+Mixing matrices and arrays in an expression is forbidden with Eigen. For instance, you cannot add a matrix and
 array directly; the operands of a \c + operator should either both be matrices or both be arrays. However,
 it is easy to convert from one to the other with \link MatrixBase::array() .array() \endlink and 
 \link ArrayBase::matrix() .matrix()\endlink. The exception to this rule is the assignment operator: it is

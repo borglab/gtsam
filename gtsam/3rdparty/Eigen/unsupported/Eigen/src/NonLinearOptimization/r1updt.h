@@ -11,6 +11,7 @@ void r1updt(
         bool *sing)
 {
     typedef DenseIndex Index;
+    const JacobiRotation<Scalar> IdentityRotation = JacobiRotation<Scalar>(1,0);
 
     /* Local variables */
     const Index m = s.rows();
@@ -49,7 +50,8 @@ void r1updt(
                 w[i] = givens.s() * s(j,i) + givens.c() * w[i];
                 s(j,i) = temp;
             }
-        }
+        } else
+            v_givens[j] = IdentityRotation;
     }
 
     /* add the spike from the rank 1 update to w. */
@@ -73,7 +75,8 @@ void r1updt(
             /* store the information necessary to recover the */
             /* givens rotation. */
             w_givens[j] = givens;
-        }
+        } else
+            v_givens[j] = IdentityRotation;
 
         /* test for zero diagonal elements in the output s. */
         if (s(j,j) == 0.) {

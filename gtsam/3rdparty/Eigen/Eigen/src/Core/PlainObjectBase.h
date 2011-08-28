@@ -647,8 +647,8 @@ struct internal::conservative_resize_like_impl
     {
       // The storage order does not allow us to use reallocation.
       typename Derived::PlainObject tmp(rows,cols);
-      const Index common_rows = std::min(rows, _this.rows());
-      const Index common_cols = std::min(cols, _this.cols());
+      const Index common_rows = (std::min)(rows, _this.rows());
+      const Index common_cols = (std::min)(cols, _this.cols());
       tmp.block(0,0,common_rows,common_cols) = _this.block(0,0,common_rows,common_cols);
       _this.derived().swap(tmp);
     }
@@ -681,8 +681,8 @@ struct internal::conservative_resize_like_impl
     {
       // The storage order does not allow us to use reallocation.
       typename Derived::PlainObject tmp(other);
-      const Index common_rows = std::min(tmp.rows(), _this.rows());
-      const Index common_cols = std::min(tmp.cols(), _this.cols());
+      const Index common_rows = (std::min)(tmp.rows(), _this.rows());
+      const Index common_cols = (std::min)(tmp.cols(), _this.cols());
       tmp.block(0,0,common_rows,common_cols) = _this.block(0,0,common_rows,common_cols);
       _this.derived().swap(tmp);
     }
