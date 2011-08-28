@@ -446,27 +446,52 @@ Vector Base::weight(const Vector &error) const {
 }
 
 void Base::reweight(Matrix &A, Vector &error) const {
-  const Vector W = weight(error);
-  vector_scale_inplace(W,A);
-  error = emul(W, error);
+  if ( reweight_ == Block ) {
+    const double w = weight(error.norm());
+    A *= w;
+    error *= w;
+  }
+  else {
+    const Vector W = weight(error);
+    vector_scale_inplace(W,A);
+    error = emul(W, error);
+  }
 }
 
 void Base::reweight(Matrix &A1, Matrix &A2, Vector &error) const {
-  const Vector W = weight(error);
-  vector_scale_inplace(W,A1);
-  vector_scale_inplace(W,A2);
-  error = emul(W, error);
+  if ( reweight_ == Block ) {
+    const double w = weight(error.norm());
+    A1 *= w;
+    A2 *= w;
+    error *= w;
+  }
+  else {
+    const Vector W = weight(error);
+    vector_scale_inplace(W,A1);
+    vector_scale_inplace(W,A2);
+    error = emul(W, error);
+  }
 }
 
 void Base::reweight(Matrix &A1, Matrix &A2, Matrix &A3, Vector &error) const {
-  const Vector W = weight(error);
-  vector_scale_inplace(W,A1);
-  vector_scale_inplace(W,A2);
-  vector_scale_inplace(W,A3);
-  error = emul(W, error);
+  if ( reweight_ == Block ) {
+    const double w = weight(error.norm());
+    A1 *= w;
+    A2 *= w;
+    A3 *= w;
+    error *= w;
+  }
+  else {
+    const Vector W = weight(error);
+    vector_scale_inplace(W,A1);
+    vector_scale_inplace(W,A2);
+    vector_scale_inplace(W,A3);
+    error = emul(W, error);
+  }
 }
 
-Fair::Fair(const double c): c_(c) {
+Fair::Fair(const double c, const ReweightScheme reweight)
+  : Base(reweight), c_(c) {
   if ( c_ <= 0 ) {
     cout << "MEstimator Fair takes only positive double in constructor. forced to 1.0" << endl;
     c_ = 1.0;
@@ -488,7 +513,8 @@ bool Fair::equals(const Base &expected, const double tol) const {
 Fair::shared_ptr Fair::Create(const double c)
 { return shared_ptr(new Fair(c)); }
 
-Huber::Huber(const double k): k_(k) {
+Huber::Huber(const double k, const ReweightScheme reweight)
+  : Base(reweight), k_(k) {
   if ( k_ <= 0 ) {
     cout << "MEstimator Huber takes only positive double in constructor. forced to 1.0" << endl;
     k_ = 1.0;

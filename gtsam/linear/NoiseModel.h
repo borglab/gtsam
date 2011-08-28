@@ -507,8 +507,15 @@ namespace gtsam {
 
 		class Base {
     public:
-		  typedef boost::shared_ptr<Base> shared_ptr;
-		  Base() {}
+      enum ReweightScheme { Scalar, Block };
+      typedef boost::shared_ptr<Base> shared_ptr;
+
+		protected:
+      ReweightScheme reweight_;
+
+    public:
+		  Base():reweight_(Block) {}
+		  Base(const ReweightScheme reweight):reweight_(reweight) {}
 		  virtual ~Base() {}
 		  virtual double weight(const double &error) const = 0;
 		  virtual void print(const std::string &s) const = 0;
@@ -525,12 +532,14 @@ namespace gtsam {
 		protected:
 		  double c_;
 		public:
-		  Fair(const double c);
+		  Fair(const double c, const ReweightScheme reweight = Block);
 		  virtual ~Fair() {}
 		  virtual double weight(const double &error) const ;
       virtual void print(const std::string &s) const ;
       virtual bool equals(const Base& expected, const double tol=1e-8) const ;
       static shared_ptr Create(const double c) ;
+		private:
+      Fair(){}
 		};
 
 	  class Huber : public Base {
@@ -539,12 +548,14 @@ namespace gtsam {
 	    protected:
 	      double k_;
 	    public:
-	      Huber(const double k);
+	      Huber(const double k, const ReweightScheme reweight = Block);
 	      virtual ~Huber() {}
 	      virtual double weight(const double &error) const ;
 	      virtual void print(const std::string &s) const ;
 	      virtual bool equals(const Base& expected, const double tol=1e-8) const ;
 	      static shared_ptr Create(const double k) ;
+	    private:
+	      Huber(){}
 	    };
 		}
 
