@@ -11,7 +11,7 @@ sources =
 check_PROGRAMS = 
 
 # Noise Model
-headers += SharedGaussian.h SharedDiagonal.h 
+headers += SharedGaussian.h SharedDiagonal.h  SharedNoiseModel.h
 sources += NoiseModel.cpp Errors.cpp Sampler.cpp
 check_PROGRAMS += tests/testNoiseModel tests/testErrors tests/testSampler
 
