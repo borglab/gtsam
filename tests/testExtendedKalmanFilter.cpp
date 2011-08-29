@@ -97,7 +97,7 @@ TEST( ExtendedKalmanFilter, linear ) {
 // Create Motion Model Factor
 class NonlinearMotionModel : public NonlinearFactor2<LinearValues,LinearKey,LinearKey> {
 public:
-  typedef typename LinearKey::Value T;
+  typedef LinearKey::Value T;
 
 private:
   typedef NonlinearFactor2<LinearValues,LinearKey,LinearKey> Base;
@@ -245,7 +245,7 @@ public:
 // Create Measurement Model Factor
 class NonlinearMeasurementModel : public NonlinearFactor1<LinearValues,LinearKey> {
 public:
-  typedef typename LinearKey::Value T;
+  typedef LinearKey::Value T;
 
 private:
 
