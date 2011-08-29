@@ -490,6 +490,12 @@ void Base::reweight(Matrix &A1, Matrix &A2, Matrix &A3, Vector &error) const {
   }
 }
 
+void Null::print(const std::string &s) const
+{ cout << s << ": null ()" << endl; }
+
+Null::shared_ptr Null::Create()
+{ return shared_ptr(new Null()); }
+
 Fair::Fair(const double c, const ReweightScheme reweight)
   : Base(reweight), c_(c) {
   if ( c_ <= 0 ) {

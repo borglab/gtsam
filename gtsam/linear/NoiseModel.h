@@ -514,7 +514,7 @@ namespace gtsam {
       ReweightScheme reweight_;
 
     public:
-		  Base():reweight_(Block) {}
+      Base(): reweight_(Block) {}
 		  Base(const ReweightScheme reweight):reweight_(reweight) {}
 		  virtual ~Base() {}
 		  virtual double weight(const double &error) const = 0;
@@ -525,6 +525,17 @@ namespace gtsam {
 		  void reweight(Matrix &A1, Matrix &A2, Vector &error) const;
 		  void reweight(Matrix &A1, Matrix &A2, Matrix &A3, Vector &error) const;
 		};
+
+    class Null : public Base {
+    public:
+      typedef boost::shared_ptr<Null> shared_ptr;
+      Null(const ReweightScheme reweight = Block) : Base(reweight) {}
+      virtual ~Null() {}
+      virtual double weight(const double &error) const { return 1.0; }
+      virtual void print(const std::string &s) const ;
+      virtual bool equals(const Base& expected, const double tol=1e-8) const { return true; }
+      static shared_ptr Create() ;
+    };
 
 		class Fair : public Base {
 		public:
