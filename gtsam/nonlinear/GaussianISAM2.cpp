@@ -36,8 +36,8 @@ void optimize2(const GaussianISAM2::sharedClique& clique, double threshold,
 	// If not redone, then has one of the separator variables changed significantly?
 	bool recalculate = cliqueReplaced;
 	if(!recalculate) {
-	  BOOST_FOREACH(Index frontal, (*clique)->frontals()) {
-	    if(changed[frontal]) {
+	  BOOST_FOREACH(Index parent, (*clique)->parents()) {
+	    if(changed[parent]) {
 	      recalculate = true;
 	      break;
 	    }
