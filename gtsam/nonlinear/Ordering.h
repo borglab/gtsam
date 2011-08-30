@@ -78,6 +78,22 @@ public:
   Index operator[](const Symbol& key) const {
     const_iterator i=order_.find(key); assert(i != order_.end()); return i->second; }
 
+  /** Returns an iterator pointing to the symbol/index pair with the requested,
+   * or the end iterator if it does not exist.
+   *
+   * @return An iterator pointing to the symbol/index pair with the requested,
+   * or the end iterator if it does not exist.
+   */
+  iterator find(const Symbol& key) { return order_.find(key); }
+
+  /** Returns an iterator pointing to the symbol/index pair with the requested,
+   * or the end iterator if it does not exist.
+   *
+   * @return An iterator pointing to the symbol/index pair with the requested,
+   * or the end iterator if it does not exist.
+   */
+  const_iterator find(const Symbol& key) const { return order_.find(key); }
+
   // adding symbols
 
   /**
@@ -105,8 +121,20 @@ public:
 
   Index push_back(const Symbol& key) { return insert(std::make_pair(key, nVars_))->second; }
 
-  /** remove the last symbol/index pair from the ordering */
+  /** Remove the last symbol/index pair from the ordering - this is inefficient.
+   * If you already know the last-ordered symbol, call the version of pop_back
+   * that accepts this symbol as an argument.
+   *
+   * @return The symbol and index that were removed.
+   */
   value_type pop_back();
+
+  /** Remove the last-ordered symbol from the ordering.  This is efficient, as
+   * opposed to the no-argument version of pop_back.
+   *
+   * @return The index of the symbol that was removed.
+   */
+  Index pop_back(const Symbol& key);
 
   /**
    * += operator allows statements like 'ordering += x0,x1,x2,x3;', which are

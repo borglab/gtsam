@@ -32,13 +32,17 @@ TEST( testOrdering, simple_modifications ) {
 	EXPECT_LONGS_EQUAL(3, ordering.size());
 	EXPECT(assert_equal(x4, x4p.first));
 
-	Ordering::value_type x3p = ordering.pop_back();
+	Index x3p = ordering.pop_back(x3);
 	EXPECT_LONGS_EQUAL(2, ordering.size());
-	EXPECT(assert_equal(x3, x3p.first));
+	EXPECT_LONGS_EQUAL(2, (int)x3p);
+
+	// try to pop an element that doesn't exist and isn't last
+	CHECK_EXCEPTION(ordering.pop_back(x4), std::invalid_argument);
+	CHECK_EXCEPTION(ordering.pop_back(x1), std::invalid_argument);
 
 	// reassemble back make the ordering 1, 2, 4, 3
-	ordering.push_back(x4p.first);
-	ordering.push_back(x3p.first);
+	ordering.push_back(x4);
+	ordering.push_back(x3);
 
 	// verify
 	Ordering expectedFinal;

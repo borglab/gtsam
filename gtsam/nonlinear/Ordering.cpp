@@ -71,6 +71,22 @@ Ordering::value_type Ordering::pop_back() {
 }
 
 /* ************************************************************************* */
+Index Ordering::pop_back(const Symbol& key) {
+  Map::iterator item = order_.find(key);
+  if(item == order_.end()) {
+    throw invalid_argument("Attempting to remove a key from an ordering that does not contain that key");
+  } else {
+    if(item->second != nVars_ - 1) {
+      throw invalid_argument("Attempting to remove a key from an ordering in which that key is not last");
+    } else {
+      order_.erase(item);
+      -- nVars_;
+      return nVars_;
+    }
+  }
+}
+
+/* ************************************************************************* */
 void Unordered::print(const string& s) const {
   cout << s << " (" << size() << "):";
   BOOST_FOREACH(Index key, *this)
