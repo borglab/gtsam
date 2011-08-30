@@ -807,6 +807,7 @@ void ISAM2<Conditional, Values>::update(
 
   tic(8,"recalculate");
   // 8. Redo top of Bayes tree
+  boost::shared_ptr<FastSet<Index> > replacedKeys;
   if(markedKeys.size() > 0 || newKeys.size() > 0)
     replacedKeys = recalculate(markedKeys, structuralKeys, newKeys, linearFactors);
   toc(8,"recalculate");

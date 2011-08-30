@@ -17,13 +17,13 @@
 namespace gtsam {
 
 /**
- * @brief The main ISAM2 class that is exposed to gtsam users.
+ * @brief The main ISAM2 class that is exposed to gtsam users, see ISAM2 for usage.
  *
  * This is a thin wrapper around an ISAM2 class templated on
  * GaussianConditional, and the values on which that GaussianISAM2 is
  * templated.
  *
- * @tparam VALUES The LieValues or TupleValues\Emph{N} to contain the
+ * @tparam VALUES The LieValues or TupleValues\Emph{N} that contains the
  * variables.
  */
 template <class VALUES>

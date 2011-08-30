@@ -29,80 +29,114 @@
 
 namespace gtsam {
 
-//typedef std::vector<GaussianFactor::shared_ptr> CachedFactors;
-
+/**
+ * Implementation of the full ISAM2 algorithm for incremental nonlinear optimization.
+ *
+ * The typical cycle of using this class to create an instance using the default
+ * constructor, then add measurements and variables as they arrive using the update()
+ * method.  At any time, calculateEstimate() may be called to obtain the current
+ * estimate of all variables.
+ */
 template<class CONDITIONAL, class VALUES>
 class ISAM2: public BayesTree<CONDITIONAL> {
 
 protected:
 
-  // current linearization point
+  /** The current linearization point */
   VALUES theta_;
 
-  // VariableIndex lets us look up factors by involved variable and keeps track of dimensions
+  /** VariableIndex lets us look up factors by involved variable and keeps track of dimensions */
   VariableIndex variableIndex_;
 
-  // the linear solution, an update to the estimate in theta
+  /** The linear delta from the last linear solution, an update to the estimate in theta */
   VectorValues deltaUnpermuted_;
 
-  // The residual permutation through which the deltaUnpermuted_ is
-  // referenced.  Permuting the VectorVALUES is slow, so for performance the
-  // permutation is applied at access time instead of to the VectorVALUES
-  // itself.
+  /** @brief The permutation through which the deltaUnpermuted_ is
+   * referenced.
+   *
+   * Permuting Vector entries would be slow, so for performance we
+   * instead maintain this permutation through which we access the linear delta
+   * indirectly
+   */
   Permuted<VectorValues> delta_;
 
-  // for keeping all original nonlinear factors
+  /** All original nonlinear factors are stored here to use during relinearization */
   NonlinearFactorGraph<VALUES> nonlinearFactors_;
 
-  // The "ordering" allows converting Symbols to Index (integer) keys.  We
-  // keep it up to date as we add and reorder variables.
+  /** @brief The current elimination ordering Symbols to Index (integer) keys.
+   *
+   * We keep it up to date as we add and reorder variables.
+   */
   Ordering ordering_;
 
-  // cached intermediate results for restarting computation in the middle
-  //	CachedFactors cached_;
-
+private:
 #ifndef NDEBUG
   std::vector<bool> lastRelinVariables_;
 #endif
 
-public:
-
-  typedef BayesTree<CONDITIONAL> Base;
-  typedef ISAM2<CONDITIONAL, VALUES> This;
-
-  /** Create an empty Bayes Tree */
-  ISAM2();
-
-  //	/** Create a Bayes Tree from a Bayes Net */
-  //	ISAM2(const NonlinearFactorGraph<VALUES>& fg, const Ordering& ordering, const VALUES& config);
-
-  /** Destructor */
-  virtual ~ISAM2() {}
-
-  typedef typename BayesTree<CONDITIONAL>::sharedClique sharedClique;
-  typedef typename BayesTree<CONDITIONAL>::Cliques Cliques;
   typedef JacobianFactor CacheFactor;
 
+public:
+
+  typedef BayesTree<CONDITIONAL> Base; ///< The BayesTree base class
+  typedef ISAM2<CONDITIONAL, VALUES> This; ///< This class
+
+  /** Create an empty ISAM2 instance */
+  ISAM2();
+
+  typedef typename BayesTree<CONDITIONAL>::sharedClique sharedClique; ///< Shared pointer to a clique
+  typedef typename BayesTree<CONDITIONAL>::Cliques Cliques; ///< List of Clique typedef from base class
+
   /**
-   * ISAM2.
+   * Add new factors, updating the solution and relinearizing as needed.
+   *
+   * Add new measurements, and optionally new variables, to the current system.
+   * This runs a full step of the ISAM2 algorithm, relinearizing and updating
+   * the solution as needed, according to the wildfire and relinearize
+   * thresholds.
+   *
+   * @param newFactors The new factors to be added to the system
+   * @param newTheta Initialization points for new variables to be added to the system.
+   * You must include here all new variables occuring in newFactors (which were not already
+   * in the system).  There must not be any variables here that do not occur in newFactors,
+   * and additionally, variables that were already in the system must not be included here.
+   * @param wildfire_threshold The threshold below which the linear solution delta is not
+   * updated.
+   * @param relinearize_threshold The threshold on the linear delta below which a variable
+   * will not be relinearized.
+   * @param relinearize
    */
   void update(const NonlinearFactorGraph<VALUES>& newFactors, const VALUES& newTheta,
       double wildfire_threshold = 0., double relinearize_threshold = 0., bool relinearize = true,
       bool force_relinearize = false);
 
-  // needed to create initial estimates
+  /** Access the current linearization point
   const VALUES& getLinearizationPoint() const {return theta_;}
 
-  // estimate based on incomplete delta (threshold!)
+  /** Compute an estimate from the incomplete linear delta computed during the last update.
+   * This delta is incomplete because it was not updated below wildfire_threshold.
+   */
   VALUES calculateEstimate() const;
 
-  // estimate based on full delta (note that this is based on the current linearization point)
+  /// @name Public members for non-typical usage
+  //@{
+
+  /** Internal implementation functions */
+  struct Impl {
+    static void AddVariables(const VALUES& newTheta, VALUES& theta, Permuted<VectorValues>& delta, Ordering& ordering, typename Base::Nodes& nodes);
+  };
+
+  /** Compute an estimate using a complete delta computed by a full back-substitution.
+   */
   VALUES calculateBestEstimate() const;
 
+  /** Access the current delta, computed during the last call to update */
   const Permuted<VectorValues>& getDelta() const { return delta_; }
 
+  /** Access the set of nonlinear factors */
   const NonlinearFactorGraph<VALUES>& getFactorsUnsafe() const { return nonlinearFactors_; }
 
+  /** Access the current ordering */
   const Ordering& getOrdering() const { return ordering_; }
 
   size_t lastAffectedVariableCount;
@@ -112,7 +146,7 @@ public:
   size_t lastBacksubVariableCount;
   size_t lastNnzTop;
 
-  boost::shared_ptr<FastSet<Index> > replacedKeys;
+  //@}
 
 private:
 
@@ -123,12 +157,6 @@ private:
   boost::shared_ptr<FastSet<Index> > recalculate(const FastSet<Index>& markedKeys, const FastSet<Index>& structuralKeys, const std::vector<Index>& newKeys, const FactorGraph<GaussianFactor>::shared_ptr newFactors = FactorGraph<GaussianFactor>::shared_ptr());
   //	void linear_update(const GaussianFactorGraph& newFactors);
   void find_all(sharedClique clique, FastSet<Index>& keys, const std::vector<bool>& marked); // helper function
-
-public:
-
-  struct Impl {
-    static void AddVariables(const VALUES& newTheta, VALUES& theta, Permuted<VectorValues>& delta, Ordering& ordering, typename Base::Nodes& nodes);
-  };
 
 }; // ISAM2
 
