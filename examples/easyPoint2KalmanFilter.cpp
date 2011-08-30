@@ -21,22 +21,6 @@
  *  @Author: Stephen Williams
  */
 
-/* ----------------------------------------------------------------------------
-
- * GTSAM Copyright 2010, Georgia Tech Research Corporation,
- * Atlanta, Georgia 30332-0415
- * All Rights Reserved
- * Authors: Frank Dellaert, et al. (see THANKS for the full author list)
-
- * See LICENSE for the license information
-
- * -------------------------------------------------------------------------- */
-
-/**
- * @file testExtendedKalmanFilter
- * @author Stephen Williams
- */
-
 #include <gtsam/nonlinear/ExtendedKalmanFilter-inl.h>
 #include <gtsam/slam/PriorFactor.h>
 #include <gtsam/slam/BetweenFactor.h>
