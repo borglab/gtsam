@@ -44,6 +44,23 @@ TEST( Rot2, compose)
 {
 	CHECK(assert_equal(Rot2::fromAngle(0.45), Rot2::fromAngle(0.2)*Rot2::fromAngle(0.25)));
 	CHECK(assert_equal(Rot2::fromAngle(0.45), Rot2::fromAngle(0.25)*Rot2::fromAngle(0.2)));
+
+	Matrix H1, H2;
+	(void) Rot2::fromAngle(1.0).compose(Rot2::fromAngle(2.0), H1, H2);
+	EXPECT(assert_equal(eye(1), H1));
+  EXPECT(assert_equal(eye(1), H2));
+}
+
+/* ************************************************************************* */
+TEST( Rot2, between)
+{
+  CHECK(assert_equal(Rot2::fromAngle(0.05), Rot2::fromAngle(0.2).between(Rot2::fromAngle(0.25))));
+  CHECK(assert_equal(Rot2::fromAngle(-0.05), Rot2::fromAngle(0.25).between(Rot2::fromAngle(0.2))));
+
+  Matrix H1, H2;
+  (void) Rot2::fromAngle(1.0).between(Rot2::fromAngle(2.0), H1, H2);
+  EXPECT(assert_equal(-eye(1), H1));
+  EXPECT(assert_equal(eye(1), H2));
 }
 
 /* ************************************************************************* */

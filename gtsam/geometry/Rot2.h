@@ -106,7 +106,13 @@ namespace gtsam {
     inline size_t dim() const { return dimension; }
 
     /** Compose - make a new rotation by adding angles */
-    inline Rot2 compose(const Rot2& R1) const { return *this * R1;}
+    inline Rot2 compose(const Rot2& R1,
+        boost::optional<Matrix&> H1=boost::none,
+        boost::optional<Matrix&> H2=boost::none) const {
+      if(H1) *H1 = eye(1);
+      if(H2) *H2 = eye(1);
+      return *this * R1;
+    }
 
     /** Expmap around identity - create a rotation from an angle */
     static Rot2 Expmap(const Vector& v) {
@@ -126,7 +132,13 @@ namespace gtsam {
     inline Vector logmap(const Rot2& p2) const { return Logmap(between(p2));}
 
     /** Between using the default implementation */
-    inline Rot2 between(const Rot2& p2) const { return between_default(*this, p2); }
+    inline Rot2 between(const Rot2& p2,
+        boost::optional<Matrix&> H1=boost::none,
+        boost::optional<Matrix&> H2=boost::none) const {
+      if(H1) *H1 = -eye(1);
+      if(H2) *H2 = eye(1);
+      return between_default(*this, p2);
+    }
 
     /** return 2*2 rotation matrix */
     Matrix matrix() const;
