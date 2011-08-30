@@ -20,11 +20,11 @@ using namespace boost::assign;
 #include <gtsam/linear/GaussianJunctionTree.h>
 
 #include <gtsam/inference/BayesTree-inl.h>
-#include <gtsam/inference/ISAM2.h>
 
 #include <gtsam/inference/GenericSequentialSolver-inl.h>
 
-#include <gtsam/inference/ISAM2-impl-inl.h>
+#include <gtsam/nonlinear/ISAM2.h>
+#include <gtsam/nonlinear/ISAM2-impl-inl.h>
 
 // for WAFR paper, separate update and relinearization steps if defined
 //#define SEPARATE_STEPS
@@ -740,7 +740,7 @@ void ISAM2<Conditional, Values>::update(
   vector<bool> markedRelinMask(ordering_.nVars(), false);
   bool relinAny = false;
   // Check relinearization if we're at a 10th step, or we are using a looser loop relin threshold
-  if (force_relinearize || (relinearize && count%10 == 0)) { // todo: every n steps
+  if (force_relinearize || (relinearize && count%1 == 0)) { // todo: every n steps
     tic(4,"gather relinearize keys");
     // 4. Mark keys in \Delta above threshold \beta: J=\{\Delta_{j}\in\Delta|\Delta_{j}\geq\beta\}.
     for(Index var=0; var<delta_.size(); ++var) {

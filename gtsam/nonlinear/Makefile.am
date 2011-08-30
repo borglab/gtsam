@@ -29,6 +29,7 @@ check_PROGRAMS += tests/testKey tests/testOrdering
 
 # Nonlinear iSAM(2)
 headers += NonlinearISAM.h NonlinearISAM-inl.h
+headers += ISAM2.h ISAM2-inl.h ISAM2-impl-inl.h
 sources += GaussianISAM2.cpp
 
 # Nonlinear constraints 

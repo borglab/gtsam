@@ -5,7 +5,6 @@
  */
 
 #include <gtsam/nonlinear/GaussianISAM2.h>
-#include <gtsam/inference/ISAM2-inl.h>
 #include <gtsam/nonlinear/TupleValues-inl.h>
 
 using namespace std;
@@ -15,11 +14,8 @@ using namespace gtsam;
 
 namespace gtsam {
 
-// Explicitly instantiate so we don't have to include everywhere
-template class ISAM2<GaussianConditional, planarSLAM::Values>;
-
 /* ************************************************************************* */
-void optimize2(const GaussianISAM2::sharedClique& clique, double threshold,
+void optimize2(const typename BayesTree<GaussianConditional>::sharedClique& clique, double threshold,
 		vector<bool>& changed, const vector<bool>& replaced, Permuted<VectorValues>& delta, int& count) {
 	// if none of the variables in this clique (frontal and separator!) changed
 	// significantly, then by the running intersection property, none of the
@@ -50,7 +46,7 @@ void optimize2(const GaussianISAM2::sharedClique& clique, double threshold,
 
 	  // Temporary copy of the original values, to check how much they change
 	  vector<Vector> originalValues((*clique)->nrFrontals());
-	  GaussianISAM2::ConditionalType::const_iterator it;
+	  GaussianConditional::const_iterator it;
 	  for(it = (*clique)->beginFrontals(); it!=(*clique)->endFrontals(); it++) {
 	    originalValues[it - (*clique)->beginFrontals()] = delta[*it];
 	  }
@@ -89,7 +85,7 @@ void optimize2(const GaussianISAM2::sharedClique& clique, double threshold,
     }
 
     // Recurse to children
-    BOOST_FOREACH(const GaussianISAM2::sharedClique& child, clique->children_) {
+    BOOST_FOREACH(const typename BayesTree<GaussianConditional>::sharedClique& child, clique->children_) {
       optimize2(child, threshold, changed, replaced, delta, count);
     }
 	}
@@ -97,14 +93,14 @@ void optimize2(const GaussianISAM2::sharedClique& clique, double threshold,
 
 /* ************************************************************************* */
 // fast full version without threshold
-void optimize2(const GaussianISAM2::sharedClique& clique, VectorValues& delta) {
+void optimize2(const typename BayesTree<GaussianConditional>::sharedClique& clique, VectorValues& delta) {
 
 	// parents are assumed to already be solved and available in result
   (*clique)->rhs(delta);
   (*clique)->solveInPlace(delta);
 
   // Solve chilren recursively
-  BOOST_FOREACH(const GaussianISAM2::sharedClique& child, clique->children_) {
+  BOOST_FOREACH(const typename BayesTree<GaussianConditional>::sharedClique& child, clique->children_) {
 		optimize2(child, delta);
 	}
 }
@@ -119,7 +115,7 @@ void optimize2(const GaussianISAM2::sharedClique& clique, VectorValues& delta) {
 //}
 
 /* ************************************************************************* */
-int optimize2(const GaussianISAM2::sharedClique& root, double threshold, const vector<bool>& keys, Permuted<VectorValues>& delta) {
+int optimize2(const typename BayesTree<GaussianConditional>::sharedClique& root, double threshold, const vector<bool>& keys, Permuted<VectorValues>& delta) {
 	vector<bool> changed(keys.size(), false);
 	int count = 0;
 	// starting from the root, call optimize on each conditional
@@ -128,18 +124,18 @@ int optimize2(const GaussianISAM2::sharedClique& root, double threshold, const v
 }
 
 /* ************************************************************************* */
-void nnz_internal(const GaussianISAM2::sharedClique& clique, int& result) {
+void nnz_internal(const typename BayesTree<GaussianConditional>::sharedClique& clique, int& result) {
   int dimR = (*clique)->dim();
   int dimSep = (*clique)->get_S().cols() - dimR;
   result += ((dimR+1)*dimR)/2 + dimSep*dimR;
 	// traverse the children
-	BOOST_FOREACH(const GaussianISAM2::sharedClique& child, clique->children_) {
+	BOOST_FOREACH(const typename BayesTree<GaussianConditional>::sharedClique& child, clique->children_) {
 		nnz_internal(child, result);
 	}
 }
 
 /* ************************************************************************* */
-int calculate_nnz(const GaussianISAM2::sharedClique& clique) {
+int calculate_nnz(const typename BayesTree<GaussianConditional>::sharedClique& clique) {
 	int result = 0;
 	// starting from the root, add up entries of frontal and conditional matrices of each conditional
 	nnz_internal(clique, result);

@@ -7,6 +7,7 @@
 namespace gtsam {
 
 /* ************************************************************************* */
+template <class UNIQUE>
 struct _VariableAdder {
   Ordering& ordering;
   Permuted<VectorValues>& vconfig;
@@ -35,7 +36,7 @@ void ISAM2<CONDITIONAL,VALUES>::Impl::AddVariables(
   delta.container().reserve(delta->size() + newTheta.size(), delta->dim() + accumulate(dims.begin(), dims.end(), 0));
   delta.permutation().resize(delta->size() + newTheta.size());
   {
-    _VariableAdder vadder(ordering, delta);
+    _VariableAdder<ISAM2<CONDITIONAL,VALUES> > vadder(ordering, delta);
     newTheta.apply(vadder);
     assert(delta.permutation().size() == delta.container().size());
     assert(delta.container().dim() == delta.container().dimCapacity());

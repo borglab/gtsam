@@ -17,7 +17,6 @@ using namespace boost::assign;
 #include <gtsam/nonlinear/Ordering.h>
 #include <gtsam/linear/GaussianBayesNet.h>
 #include <gtsam/linear/GaussianSequentialSolver.h>
-#include <gtsam/inference/ISAM2-inl.h>
 #include <gtsam/nonlinear/GaussianISAM2.h>
 #include <gtsam/slam/smallExample.h>
 #include <gtsam/slam/planarSLAM.h>
@@ -52,7 +51,7 @@ TEST(ISAM2, AddVariables) {
 
   Ordering ordering; ordering += planarSLAM::PointKey(0), planarSLAM::PoseKey(0);
 
-  ISAM2<GaussianConditional, planarSLAM::Values>::Nodes nodes(2);
+  GaussianISAM2<planarSLAM::Values>::Nodes nodes(2);
 
   // Verify initial state
   LONGS_EQUAL(0, ordering[planarSLAM::PointKey(0)]);
@@ -81,11 +80,11 @@ TEST(ISAM2, AddVariables) {
 
   Ordering orderingExpected; orderingExpected += planarSLAM::PointKey(0), planarSLAM::PoseKey(0), planarSLAM::PoseKey(1);
 
-  ISAM2<GaussianConditional, planarSLAM::Values>::Nodes nodesExpected(
-          3, ISAM2<GaussianConditional, planarSLAM::Values>::sharedClique());
+  GaussianISAM2<planarSLAM::Values>::Nodes nodesExpected(
+          3, GaussianISAM2<planarSLAM::Values>::sharedClique());
 
   // Expand initial state
-  ISAM2<GaussianConditional, planarSLAM::Values>::Impl::AddVariables(newTheta, theta, delta, ordering, nodes);
+  GaussianISAM2<planarSLAM::Values>::Impl::AddVariables(newTheta, theta, delta, ordering, nodes);
 
   EXPECT(assert_equal(thetaExpected, theta));
   EXPECT(assert_equal(deltaUnpermutedExpected, deltaUnpermuted));
@@ -117,7 +116,7 @@ TEST(ISAM2, optimize2) {
   conditional->solveInPlace(expected);
 
   // Clique
-  GaussianISAM2::sharedClique clique(new GaussianISAM2::Clique(conditional));
+  typename GaussianISAM2<planarSLAM::Values>::sharedClique clique(new GaussianISAM2<planarSLAM::Values>::Clique(conditional));
   VectorValues actual(theta.dims(ordering));
   conditional->rhs(actual);
   optimize2(clique, actual);
@@ -128,7 +127,7 @@ TEST(ISAM2, optimize2) {
 }
 
 /* ************************************************************************* */
-bool isam_check(const planarSLAM::Graph& fullgraph, const planarSLAM::Values& fullinit, const GaussianISAM2_P& isam) {
+bool isam_check(const planarSLAM::Graph& fullgraph, const planarSLAM::Values& fullinit, const GaussianISAM2<planarSLAM::Values>& isam) {
   planarSLAM::Values actual = isam.calculateEstimate();
   Ordering ordering = isam.getOrdering(); // *fullgraph.orderingCOLAMD(fullinit).first;
   GaussianFactorGraph linearized = *fullgraph.linearize(fullinit, ordering);
@@ -155,7 +154,7 @@ TEST(ISAM2, slamlike_solution)
   SharedDiagonal brNoise = sharedSigmas(Vector_(2, M_PI/100.0, 0.1));
 
   // These variables will be reused and accumulate factors and values
-  GaussianISAM2_P isam;
+  GaussianISAM2<planarSLAM::Values> isam;
   planarSLAM::Values fullinit;
   planarSLAM::Graph fullgraph;
 
