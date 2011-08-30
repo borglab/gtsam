@@ -48,9 +48,7 @@ public:
   typedef boost::shared_ptr<ExtendedKalmanFilter<VALUES, KEY> > shared_ptr;
   typedef typename KEY::Value T;
   typedef NonlinearFactor2<VALUES, KEY, KEY> MotionFactor;
-  typedef typename MotionFactor::shared_ptr SharedMotionFactor;
   typedef NonlinearFactor1<VALUES, KEY> MeasurementFactor;
-  typedef typename MeasurementFactor::shared_ptr SharedMeasurementFactor;
 
 protected:
   JacobianFactor::shared_ptr priorFactor_;
