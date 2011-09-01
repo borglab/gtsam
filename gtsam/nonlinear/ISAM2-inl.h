@@ -26,9 +26,6 @@ using namespace boost::assign;
 #include <gtsam/nonlinear/ISAM2.h>
 #include <gtsam/nonlinear/ISAM2-impl-inl.h>
 
-// for WAFR paper, separate update and relinearization steps if defined
-//#define SEPARATE_STEPS
-
 
 namespace gtsam {
 
@@ -311,14 +308,12 @@ boost::shared_ptr<FastSet<Index> > ISAM2<Conditional, Values>::recalculate(const
     toc(1,"relinearizeAffected");
 
 #ifndef NDEBUG
-#ifndef SEPARATE_STEPS
     // The relinearized variables should not appear anywhere in the orphans
     BOOST_FOREACH(boost::shared_ptr<const typename BayesTree<Conditional>::Clique> clique, orphans) {
       BOOST_FOREACH(const Index key, (*clique)->frontals()) {
         assert(lastRelinVariables_[key] == false);
       }
     }
-#endif
 #endif
 
     //  if(debug) factors.print("Affected factors: ");
@@ -352,11 +347,9 @@ boost::shared_ptr<FastSet<Index> > ISAM2<Conditional, Values>::recalculate(const
     // Copy so that we can later permute factors
     BOOST_FOREACH(const CacheFactor::shared_ptr& cached, cachedBoundary) {
 #ifndef NDEBUG
-#ifndef SEPARATE_STEPS
       BOOST_FOREACH(const Index key, *cached) {
         assert(lastRelinVariables_[key] == false);
       }
-#endif
 #endif
       factors.push_back(GaussianFactor::shared_ptr(new CacheFactor(*cached)));
     }
@@ -725,17 +718,6 @@ void ISAM2<Conditional, Values>::update(
   }
   toc(3,"gather involved keys");
 
-#ifdef SEPARATE_STEPS // original algorithm from paper: separate relin and optimize
-
-  // todo: kaess - don't need linear factors here, just to update variableIndex
-  boost::shared_ptr<GaussianFactorGraph> linearFactors = newFactors.linearize(theta_, ordering_);
-  variableIndex_.augment(*linearFactors);
-
-  boost::shared_ptr<set<Index> > replacedKeys_todo = recalculate(markedKeys, newKeys, linearFactors);
-  markedKeys.clear();
-  vector<bool> none(variableIndex_.size(), false);
-  optimize2(this->root(), wildfire_threshold, none, delta_);
-#endif
 
   vector<bool> markedRelinMask(ordering_.nVars(), false);
   bool relinAny = false;
@@ -792,7 +774,6 @@ void ISAM2<Conditional, Values>::update(
   lastRelinVariables_ = markedRelinMask;
 #endif
 
-#ifndef SEPARATE_STEPS
   tic(7,"linearize new");
   tic(1,"linearize");
   // 7. Linearize new factors
@@ -811,10 +792,6 @@ void ISAM2<Conditional, Values>::update(
   if(markedKeys.size() > 0 || newKeys.size() > 0)
     replacedKeys = recalculate(markedKeys, structuralKeys, newKeys, linearFactors);
   toc(8,"recalculate");
-#else
-  vector<Index> empty;
-  boost::shared_ptr<set<Index> > replacedKeys = recalculate(markedKeys, empty);
-#endif
 
   tic(9,"solve");
   // 9. Solve
