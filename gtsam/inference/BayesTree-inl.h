@@ -641,7 +641,8 @@ namespace gtsam {
 	    }
 
 	    // Now fill in the nodes index
-	    if(nodes_.size() == 0 || (subtree->conditional()->lastFrontalKey()) > (nodes_.size() - 1)) {
+	    if(nodes_.size() == 0 ||
+	        *std::max_element(subtree->conditional()->beginFrontals(), subtree->conditional()->endFrontals()) > (nodes_.size() - 1)) {
 	      nodes_.resize(subtree->conditional()->lastFrontalKey() + 1);
 	    }
 	    fillNodesIndex(subtree);
