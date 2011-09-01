@@ -36,9 +36,15 @@ static const double batchThreshold = 0.65;
 static const bool latestLast = true;
 static const bool structuralLast = false;
 
-/** Create an empty Bayes Tree */
+/* ************************************************************************* */
 template<class Conditional, class Values>
-ISAM2<Conditional, Values>::ISAM2() : BayesTree<Conditional>(), delta_(Permutation(), deltaUnpermuted_) {}
+ISAM2<Conditional, Values>::ISAM2(const ISAM2Params& params):
+    delta_(Permutation(), deltaUnpermuted_), params_(params) {}
+
+/* ************************************************************************* */
+template<class Conditional, class Values>
+ISAM2<Conditional, Values>::ISAM2():
+    delta_(Permutation(), deltaUnpermuted_) {}
 
 /** Create a Bayes Tree from a nonlinear factor graph */
 //template<class Conditional, class Values>
@@ -670,12 +676,10 @@ struct _SelectiveExpmapAndClear {
 /* ************************************************************************* */
 template<class Conditional, class Values>
 void ISAM2<Conditional, Values>::update(
-    const NonlinearFactorGraph<Values>& newFactors, const Values& newTheta,
-    double wildfire_threshold, double relinearize_threshold, bool relinearize, bool force_relinearize) {
+    const NonlinearFactorGraph<Values>& newFactors, const Values& newTheta, bool force_relinearize) {
 
   static const bool debug = ISDEBUG("ISAM2 update");
   static const bool verbose = ISDEBUG("ISAM2 update verbose");
-  if(disableReordering) { wildfire_threshold = -1.0; relinearize_threshold = 0.0; }
 
   static int count = 0;
   count++;
@@ -705,30 +709,23 @@ void ISAM2<Conditional, Values>::update(
 
   tic(3,"gather involved keys");
   // 3. Mark linear update
-  FastSet<Index> markedKeys;
+  FastSet<Index> markedKeys = Impl::IndicesFromFactors(ordering_, newFactors); // Get keys from new factors
+  vector<Index> newKeys; newKeys.reserve(markedKeys.size());
+  newKeys.assign(markedKeys.begin(), markedKeys.end());                        // Make a copy of these, as we'll soon add to them
   FastSet<Index> structuralKeys;
-  vector<Index> newKeys; newKeys.reserve(newFactors.size() * 6);
-  BOOST_FOREACH(const typename NonlinearFactor<Values>::shared_ptr& factor, newFactors) {
-    BOOST_FOREACH(const Symbol& key, factor->keys()) {
-      Index var = ordering_[key];
-      markedKeys.insert(var);
-      if(structuralLast) structuralKeys.insert(var);
-      newKeys.push_back(var);
-    }
-  }
+  if(structuralLast) structuralKeys = markedKeys;                              // If we're using structural-last ordering, make another copy
   toc(3,"gather involved keys");
-
 
   vector<bool> markedRelinMask(ordering_.nVars(), false);
   bool relinAny = false;
   // Check relinearization if we're at a 10th step, or we are using a looser loop relin threshold
-  if (force_relinearize || (relinearize && count%1 == 0)) { // todo: every n steps
+  if (force_relinearize || (params_.enableRelinearization && count % params_.relinearizeSkip == 0)) { // todo: every n steps
     tic(4,"gather relinearize keys");
     // 4. Mark keys in \Delta above threshold \beta: J=\{\Delta_{j}\in\Delta|\Delta_{j}\geq\beta\}.
     for(Index var=0; var<delta_.size(); ++var) {
       //cout << var << ": " << delta_[var].transpose() << endl;
       double maxDelta = delta_[var].lpNorm<Eigen::Infinity>();
-      if(maxDelta >= relinearize_threshold) {
+      if(maxDelta >= params_.relinearizeThreshold || disableReordering) {
         markedRelinMask[var] = true;
         markedKeys.insert(var);
         if(!relinAny) relinAny = true;
@@ -795,7 +792,7 @@ void ISAM2<Conditional, Values>::update(
 
   tic(9,"solve");
   // 9. Solve
-  if (wildfire_threshold<=0.) {
+  if (params_.wildfireThreshold <= 0.0 || disableReordering) {
     VectorValues newDelta(theta_.dims(ordering_));
     optimize2(this->root(), newDelta);
     if(debug) newDelta.print("newDelta: ");
@@ -821,7 +818,7 @@ void ISAM2<Conditional, Values>::update(
     if(replacedKeys) {
       BOOST_FOREACH(const Index var, *replacedKeys) {
         replacedKeysMask[var] = true; } }
-    lastBacksubVariableCount = optimize2(this->root(), wildfire_threshold, replacedKeysMask, delta_); // modifies delta_
+    lastBacksubVariableCount = optimize2(this->root(), params_.wildfireThreshold, replacedKeysMask, delta_); // modifies delta_
 
 #ifndef NDEBUG
     for(size_t j=0; j<delta_.container().size(); ++j)

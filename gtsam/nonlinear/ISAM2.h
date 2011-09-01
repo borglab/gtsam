@@ -30,10 +30,35 @@
 namespace gtsam {
 
 /**
+ * @defgroup ISAM2
+ */
+
+/**
+ * @ingroup ISAM2
+ * Parameters for the ISAM2 algorithm.  Default parameter values are listed below.
+ */
+struct ISAM2Params {
+  double wildfireThreshold; ///< Continue updating the linear delta only when changes are above this threshold (default: 0.001)
+  double relinearizeThreshold; ///< Only relinearize variables whose linear delta magnitude is greater than this threshold (default: 0.1)
+  int relinearizeSkip; ///< Only relinearize any variables every relinearizeSkip calls to ISAM2::update (default: 10)
+  bool enableRelinearization; ///< Controls whether ISAM2 will ever relinearize any variables (default: true)
+
+  /** Specify parameters as constructor arguments */
+  ISAM2Params(
+      double _wildfireThreshold = 0.001, ///< ISAM2Params::wildfireThreshold
+      double _relinearizeThreshold = 0.1, ///< ISAM2Params::relinearizeThreshold
+      int _relinearizeSkip = 10, ///< ISAM2Params::relinearizeSkip
+      bool _enableRelinearization = true ///< ISAM2Params::enableRelinearization
+  ) : wildfireThreshold(_wildfireThreshold), relinearizeThreshold(_relinearizeThreshold),
+      relinearizeSkip(_relinearizeSkip), enableRelinearization(_enableRelinearization) {}
+};
+
+/**
+ * @ingroup ISAM2
  * Implementation of the full ISAM2 algorithm for incremental nonlinear optimization.
  *
- * The typical cycle of using this class to create an instance using the default
- * constructor, then add measurements and variables as they arrive using the update()
+ * The typical cycle of using this class to create an instance by providing ISAM2Params
+ * to the constructor, then add measurements and variables as they arrive using the update()
  * method.  At any time, calculateEstimate() may be called to obtain the current
  * estimate of all variables.
  */
@@ -69,6 +94,9 @@ protected:
    */
   Ordering ordering_;
 
+  /** The current parameters */
+  ISAM2Params params_;
+
 private:
 #ifndef NDEBUG
   std::vector<bool> lastRelinVariables_;
@@ -82,6 +110,9 @@ public:
   typedef ISAM2<CONDITIONAL, VALUES> This; ///< This class
 
   /** Create an empty ISAM2 instance */
+  ISAM2(const ISAM2Params& params);
+
+  /** Create an empty ISAM2 instance using the default set of parameters (see ISAM2Params) */
   ISAM2();
 
   typedef typename BayesTree<CONDITIONAL>::sharedClique sharedClique; ///< Shared pointer to a clique
@@ -100,17 +131,14 @@ public:
    * You must include here all new variables occuring in newFactors (which were not already
    * in the system).  There must not be any variables here that do not occur in newFactors,
    * and additionally, variables that were already in the system must not be included here.
-   * @param wildfire_threshold The threshold below which the linear solution delta is not
-   * updated.
-   * @param relinearize_threshold The threshold on the linear delta below which a variable
-   * will not be relinearized.
-   * @param relinearize
+   * @param force_relinearize Relinearize any variables whose delta magnitude is sufficiently
+   * large (Params::relinearizeThreshold), regardless of the relinearization interval
+   * (Params::relinearizeSkip).
    */
   void update(const NonlinearFactorGraph<VALUES>& newFactors, const VALUES& newTheta,
-      double wildfire_threshold = 0., double relinearize_threshold = 0., bool relinearize = true,
       bool force_relinearize = false);
 
-  /** Access the current linearization point
+  /** Access the current linearization point */
   const VALUES& getLinearizationPoint() const {return theta_;}
 
   /** Compute an estimate from the incomplete linear delta computed during the last update.
@@ -122,9 +150,7 @@ public:
   //@{
 
   /** Internal implementation functions */
-  struct Impl {
-    static void AddVariables(const VALUES& newTheta, VALUES& theta, Permuted<VectorValues>& delta, Ordering& ordering, typename Base::Nodes& nodes);
-  };
+  struct Impl;
 
   /** Compute an estimate using a complete delta computed by a full back-substitution.
    */

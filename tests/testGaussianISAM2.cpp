@@ -149,12 +149,11 @@ TEST(ISAM2, slamlike_solution)
   typedef planarSLAM::PointKey PointKey;
 
   // Set up parameters
-  double wildfire = 0.001;
   SharedDiagonal odoNoise = sharedSigmas(Vector_(3, 0.1, 0.1, M_PI/100.0));
   SharedDiagonal brNoise = sharedSigmas(Vector_(2, M_PI/100.0, 0.1));
 
   // These variables will be reused and accumulate factors and values
-  GaussianISAM2<planarSLAM::Values> isam;
+  GaussianISAM2<planarSLAM::Values> isam(ISAM2Params(0.001, 0.0, 0, false));
   planarSLAM::Values fullinit;
   planarSLAM::Graph fullgraph;
 
@@ -171,7 +170,7 @@ TEST(ISAM2, slamlike_solution)
     init.insert(PoseKey(0), Pose2(0.01, 0.01, 0.01));
     fullinit.insert(PoseKey(0), Pose2(0.01, 0.01, 0.01));
 
-    isam.update(newfactors, init, wildfire, 0.0, false);
+    isam.update(newfactors, init);
   }
 
   EXPECT(isam_check(fullgraph, fullinit, isam));
@@ -186,7 +185,7 @@ TEST(ISAM2, slamlike_solution)
     init.insert(PoseKey(i+1), Pose2(double(i+1)+0.1, -0.1, 0.01));
     fullinit.insert(PoseKey(i+1), Pose2(double(i+1)+0.1, -0.1, 0.01));
 
-    isam.update(newfactors, init, wildfire, 0.0, false);
+    isam.update(newfactors, init);
   }
 
   // Add odometry from time 5 to 6 and landmark measurement at time 5
@@ -205,7 +204,7 @@ TEST(ISAM2, slamlike_solution)
     fullinit.insert(PointKey(0), Point2(5.0/sqrt(2.0), 5.0/sqrt(2.0)));
     fullinit.insert(PointKey(1), Point2(5.0/sqrt(2.0), -5.0/sqrt(2.0)));
 
-    isam.update(newfactors, init, wildfire, 0.0, false);
+    isam.update(newfactors, init);
     ++ i;
   }
 
@@ -219,7 +218,7 @@ TEST(ISAM2, slamlike_solution)
     init.insert(PoseKey(i+1), Pose2(double(i+1)+0.1, -0.1, 0.01));
     fullinit.insert(PoseKey(i+1), Pose2(double(i+1)+0.1, -0.1, 0.01));
 
-    isam.update(newfactors, init, wildfire, 0.0, false);
+    isam.update(newfactors, init);
   }
 
   // Add odometry from time 10 to 11 and landmark measurement at time 10
@@ -234,7 +233,7 @@ TEST(ISAM2, slamlike_solution)
     init.insert(PoseKey(i+1), Pose2(6.9, 0.1, 0.01));
     fullinit.insert(PoseKey(i+1), Pose2(6.9, 0.1, 0.01));
 
-    isam.update(newfactors, init, wildfire, 0.0, false);
+    isam.update(newfactors, init);
     ++ i;
   }
 

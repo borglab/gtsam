@@ -17,6 +17,7 @@
 namespace gtsam {
 
 /**
+ * @ingroup ISAM2
  * @brief The main ISAM2 class that is exposed to gtsam users, see ISAM2 for usage.
  *
  * This is a thin wrapper around an ISAM2 class templated on
@@ -27,7 +28,14 @@ namespace gtsam {
  * variables.
  */
 template <class VALUES>
-class GaussianISAM2 : public ISAM2<GaussianConditional, VALUES> {};
+class GaussianISAM2 : public ISAM2<GaussianConditional, VALUES> {
+public:
+  /** Create an empty ISAM2 instance */
+  GaussianISAM2(const ISAM2Params& params) : ISAM2<GaussianConditional, VALUES>(params) {}
+
+  /** Create an empty ISAM2 instance using the default set of parameters (see ISAM2Params) */
+  GaussianISAM2() : ISAM2<GaussianConditional, VALUES>() {}
+};
 
 // optimize the BayesTree, starting from the root
 void optimize2(const BayesTree<GaussianConditional>::sharedClique& root, VectorValues& delta);

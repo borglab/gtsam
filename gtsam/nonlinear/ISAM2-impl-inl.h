@@ -4,10 +4,21 @@
  * @author  Michael Kaess, Richard Roberts
  */
 
+#include <gtsam/base/FastSet.h>
+
+#include <boost/foreach.hpp>
+
+#include <vector>
+
 namespace gtsam {
 
+template<class CONDITIONAL, class VALUES>
+struct ISAM2<CONDITIONAL, VALUES>::Impl {
+   static void AddVariables(const VALUES& newTheta, VALUES& theta, Permuted<VectorValues>& delta, Ordering& ordering, typename Base::Nodes& nodes);
+   static FastSet<Index> IndicesFromFactors(const Ordering& ordering, const NonlinearFactorGraph<VALUES>& factors);
+};
+
 /* ************************************************************************* */
-template <class UNIQUE>
 struct _VariableAdder {
   Ordering& ordering;
   Permuted<VectorValues>& vconfig;
@@ -36,7 +47,7 @@ void ISAM2<CONDITIONAL,VALUES>::Impl::AddVariables(
   delta.container().reserve(delta->size() + newTheta.size(), delta->dim() + accumulate(dims.begin(), dims.end(), 0));
   delta.permutation().resize(delta->size() + newTheta.size());
   {
-    _VariableAdder<ISAM2<CONDITIONAL,VALUES> > vadder(ordering, delta);
+    _VariableAdder vadder(ordering, delta);
     newTheta.apply(vadder);
     assert(delta.permutation().size() == delta.container().size());
     assert(delta.container().dim() == delta.container().dimCapacity());
@@ -45,6 +56,18 @@ void ISAM2<CONDITIONAL,VALUES>::Impl::AddVariables(
   }
   assert(ordering.nVars() >= nodes.size());
   nodes.resize(ordering.nVars());
+}
+
+/* ************************************************************************* */
+template<class CONDITIONAL, class VALUES>
+FastSet<Index> ISAM2<CONDITIONAL,VALUES>::Impl::IndicesFromFactors(const Ordering& ordering, const NonlinearFactorGraph<VALUES>& factors) {
+  FastSet<Index> indices;
+  BOOST_FOREACH(const typename NonlinearFactor<VALUES>::shared_ptr& factor, factors) {
+    BOOST_FOREACH(const Symbol& key, factor->keys()) {
+      indices.insert(ordering[key]);
+    }
+  }
+  return indices;
 }
 
 }
