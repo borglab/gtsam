@@ -34,6 +34,13 @@ TEST( Rot2, constructors_and_angle)
 }
 
 /* ************************************************************************* */
+TEST( Rot2, unit)
+{
+	EXPECT(assert_equal(Point2(1.0, 0.0), Rot2::fromAngle(0).unit()));
+	EXPECT(assert_equal(Point2(0.0, 1.0), Rot2::fromAngle(M_PI_2).unit()));
+}
+
+/* ************************************************************************* */
 TEST( Rot2, transpose)
 {
 	CHECK(assert_equal(R.inverse().matrix(),R.transpose()));

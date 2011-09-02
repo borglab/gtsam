@@ -171,6 +171,11 @@ namespace gtsam {
     Point2 unrotate(const Point2& p, boost::optional<Matrix&> H1 =
   			boost::none, boost::optional<Matrix&> H2 = boost::none) const;
 
+    /**
+     * Creates a unit vector as a Point2
+     */
+    inline Point2 unit() const { return Point2(c_, s_); }
+
   private:
     /** Serialization function */
     friend class boost::serialization::access;
