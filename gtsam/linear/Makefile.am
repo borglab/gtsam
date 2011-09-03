@@ -31,6 +31,9 @@ sources += GaussianISAM.cpp
 check_PROGRAMS += tests/testHessianFactor tests/testGaussianFactor tests/testGaussianConditional
 check_PROGRAMS += tests/testGaussianFactorGraph tests/testGaussianJunctionTree
 
+# Kalman Filter
+check_PROGRAMS += tests/testKalmanFilter
+
 # Iterative Methods
 headers += iterative-inl.h
 sources += iterative.cpp SubgraphPreconditioner.cpp
