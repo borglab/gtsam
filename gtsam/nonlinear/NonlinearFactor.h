@@ -10,7 +10,7 @@
  * -------------------------------------------------------------------------- */
 
 /**
- * @file    NonlinearFactor.h
+ * @file    NoiseModelFactor.h
  * @brief   Non-linear factor class
  * @author  Frank Dellaert
  * @author  Richard Roberts
@@ -35,8 +35,7 @@
 namespace gtsam {
 
 	/**
-	 * Nonlinear factor which assumes zero-mean Gaussian noise on the
-	 * on a measurement predicted by a non-linear function h.
+	 * Nonlinear factor base class
 	 *
 	 * Templated on a values structure type. The values structures are typically
 	 * more general than just vectors, e.g., Rot3 or Pose3,
@@ -47,9 +46,9 @@ namespace gtsam {
 
 	protected:
 
+		// Some handy typedefs
+		typedef Factor<Symbol> Base;
 		typedef NonlinearFactor<VALUES> This;
-
-		SharedNoiseModel noiseModel_; /** Noise model */
 
 	public:
 
@@ -59,23 +58,15 @@ namespace gtsam {
 		NonlinearFactor() {
 		}
 
-//		virtual ~NonlinearFactor() {}
+		/** Destructor */
+		virtual ~NonlinearFactor() {}
 
 		/**
 		 *  Constructor
-		 *  @param noiseModel shared pointer to a noise model
+		 *  @param key1 by which to look up X value in Values
 		 */
-		NonlinearFactor(const SharedNoiseModel& noiseModel) :
-			noiseModel_(noiseModel) {
-		}
-
-		/**
-		 *  Constructor
-		 *  @param z measurement
-		 *  @param key by which to look up X value in Values
-		 */
-		NonlinearFactor(const SharedNoiseModel& noiseModel, const Symbol& key1) :
-			Factor<Symbol>(key1), noiseModel_(noiseModel) {
+		NonlinearFactor(const Symbol& key1) :
+			Factor<Symbol>(key1) {
 		}
 
 		/**
@@ -83,54 +74,38 @@ namespace gtsam {
 		 * @param j1 key of the first variable
 		 * @param j2 key of the second variable
 		 */
-		NonlinearFactor(const SharedNoiseModel& noiseModel, const Symbol& j1, const Symbol& j2) :
-			Factor<Symbol>(j1,j2), noiseModel_(noiseModel) {
+		NonlinearFactor(const Symbol& j1, const Symbol& j2) :
+			Factor<Symbol>(j1,j2) {
 		}
 
 		/**
 		 * Constructor - arbitrary number of keys
 		 * @param keys is the set of Symbols in the factor
 		 */
-		NonlinearFactor(const SharedNoiseModel& noiseModel, const std::set<Symbol>& keys) :
-			Factor<Symbol>(keys), noiseModel_(noiseModel) {
+		NonlinearFactor(const std::set<Symbol>& keys) :
+			Factor<Symbol>(keys) {
 		}
 
 		/** print */
 		virtual void print(const std::string& s = "") const {
 			std::cout << s << ": NonlinearFactor\n";
-			noiseModel_->print("  noise model");
-		}
-
-		/** Check if two NonlinearFactor objects are equal */
-		virtual bool equals(const NonlinearFactor<VALUES>& f, double tol = 1e-9) const {
-			return noiseModel_->equals(*f.noiseModel_, tol);
 		}
 
 		/**
-		 * calculate the error of the factor
-		 * Override for systems with unusual noise models
+		 * Vector of errors, unwhitened
+		 * This is the raw error i.e. (h(x)-z) in case of NoiseModelFactor derived class
 		 */
-		virtual double error(const VALUES& c) const {
-			return 0.5 * noiseModel_->Mahalanobis(unwhitenedError(c));
-		}
-
-		/** get the dimension of the factor (number of rows on linearization) */
-		size_t dim() const {
-			return noiseModel_->dim();
-		}
-
-		/** access to the noise model */
-		SharedNoiseModel get_noiseModel() const {
-			return noiseModel_;
-		}
-
-		/** Vector of errors, unwhitened ! */
 		virtual Vector unwhitenedError(const VALUES& c) const = 0;
 
-		/** Vector of errors, whitened ! */
-		Vector whitenedError(const VALUES& c) const {
-			return noiseModel_->whiten(unwhitenedError(c));
-		}
+		/**
+		 * Calculate the error of the factor
+		 * This is typically equal to log-likelihood, e.g. 0.5(h(x)-z)^2/sigma^2 in case of Gaussian.
+		 * You can override this for systems with unusual noise models.
+		 */
+		virtual double error(const VALUES& c) const = 0;
+
+		/** get the dimension of the factor (number of rows on linearization) */
+		virtual size_t dim() const = 0;
 
 		/** linearize to a GaussianFactor */
 		virtual boost::shared_ptr<GaussianFactor>
@@ -142,6 +117,109 @@ namespace gtsam {
 		 */
 		virtual IndexFactor::shared_ptr symbolic(const Ordering& ordering) const = 0;
 
+	}; // \class NonlinearFactor
+
+
+	/**
+	 * Nonlinear factor which assumes a zero-mean noise model
+	 * on a measurement predicted by a non-linear function h.
+	 * The noise model is typically Gaussian, but robust error models are also supported.
+	 */
+	template<class VALUES>
+	class NoiseModelFactor: public NonlinearFactor<VALUES>, public Testable<NoiseModelFactor<VALUES> > {
+
+	protected:
+
+		// handy typedefs
+		typedef NonlinearFactor<VALUES> Base;
+		typedef NoiseModelFactor<VALUES> This;
+
+		SharedNoiseModel noiseModel_; /** Noise model */
+
+	public:
+
+		typedef boost::shared_ptr<NoiseModelFactor<VALUES> > shared_ptr;
+
+		/** Default constructor for I/O only */
+		NoiseModelFactor() {
+		}
+
+		/** Destructor */
+		virtual ~NoiseModelFactor() {}
+
+		/**
+		 *  Constructor
+		 *  @param noiseModel shared pointer to a noise model
+		 */
+		NoiseModelFactor(const SharedNoiseModel& noiseModel) :
+			noiseModel_(noiseModel) {
+		}
+
+		/**
+		 *  Constructor
+		 *  @param z measurement
+		 *  @param key by which to look up X value in Values
+		 */
+		NoiseModelFactor(const SharedNoiseModel& noiseModel, const Symbol& key1) :
+			Base(key1), noiseModel_(noiseModel) {
+		}
+
+		/**
+		 * Constructor
+		 * @param j1 key of the first variable
+		 * @param j2 key of the second variable
+		 */
+		NoiseModelFactor(const SharedNoiseModel& noiseModel, const Symbol& j1, const Symbol& j2) :
+			Base(j1,j2), noiseModel_(noiseModel) {
+		}
+
+		/**
+		 * Constructor - arbitrary number of keys
+		 * @param keys is the set of Symbols in the factor
+		 */
+		NoiseModelFactor(const SharedNoiseModel& noiseModel, const std::set<Symbol>& keys) :
+			Base(keys), noiseModel_(noiseModel) {
+		}
+
+		/** print */
+		virtual void print(const std::string& s = "") const {
+			std::cout << s << ": NoiseModelFactor\n";
+			noiseModel_->print("  noise model");
+		}
+
+		/** Check if two NoiseModelFactor objects are equal */
+		virtual bool equals(const NoiseModelFactor<VALUES>& f, double tol = 1e-9) const {
+			return noiseModel_->equals(*f.noiseModel_, tol);
+		}
+
+		/** get the dimension of the factor (number of rows on linearization) */
+		virtual size_t dim() const {
+			return noiseModel_->dim();
+		}
+
+		/** access to the noise model */
+		SharedNoiseModel get_noiseModel() const {
+			return noiseModel_;
+		}
+
+		/**
+		 * Vector of errors, whitened
+		 * This is the raw error, i.e., i.e. (h(x)-z)/sigma in case of a Gaussian
+		 */
+		Vector whitenedError(const VALUES& c) const {
+			return noiseModel_->whiten(unwhitenedError(c));
+		}
+
+		/**
+		 * Calculate the error of the factor.
+		 * This is the log-likelihood, e.g. 0.5(h(x)-z)^2/sigma^2 in case of Gaussian.
+		 * In this class, we take the raw prediction error h(x)-z, ask the noise model
+		 * to transform it to (h(x)-z)^2/sigma^2, and then multiply by 0.5.
+		 */
+		virtual double error(const VALUES& c) const {
+			return 0.5 * noiseModel_->Mahalanobis(unwhitenedError(c));
+		}
+
 	private:
 
 		/** Serialization function */
@@ -149,11 +227,11 @@ namespace gtsam {
 		template<class ARCHIVE>
 		void serialize(ARCHIVE & ar, const unsigned int version) {
 			ar & boost::serialization::make_nvp("Factor",
-					boost::serialization::base_object<Factor<Symbol> >(*this));
+					boost::serialization::base_object<Base >(*this));
 			ar & BOOST_SERIALIZATION_NVP(noiseModel_);
 		}
 
-	}; // \class NonlinearFactor
+	}; // \class NoiseModelFactor
 
 
 	/**
@@ -165,7 +243,7 @@ namespace gtsam {
 	 * This allows a graph to have factors with measurements of mixed type.
 	 */
 	template<class VALUES, class KEY>
-	class NonlinearFactor1: public NonlinearFactor<VALUES> {
+	class NonlinearFactor1: public NoiseModelFactor<VALUES> {
 
 	public:
 
@@ -177,7 +255,7 @@ namespace gtsam {
 		// The value of the key. Not const to allow serialization
 		KEY key_;
 
-		typedef NonlinearFactor<VALUES> Base;
+		typedef NoiseModelFactor<VALUES> Base;
 		typedef NonlinearFactor1<VALUES, KEY> This;
 
 	public:
@@ -215,8 +293,7 @@ namespace gtsam {
 
 		/** error function h(x)-z, unwhitened !!! */
 		inline Vector unwhitenedError(const VALUES& x) const {
-			const KEY& j = key_;
-			const X& xj = x[j];
+			const X& xj = x[key_];
 			return evaluateError(xj);
 		}
 
@@ -262,7 +339,7 @@ namespace gtsam {
 		friend class boost::serialization::access;
 		template<class ARCHIVE>
 		void serialize(ARCHIVE & ar, const unsigned int version) {
-			ar & boost::serialization::make_nvp("NonlinearFactor",
+			ar & boost::serialization::make_nvp("NoiseModelFactor",
 					boost::serialization::base_object<Base>(*this));
 			ar & BOOST_SERIALIZATION_NVP(key_);
 		}
@@ -273,7 +350,7 @@ namespace gtsam {
 	 * A Gaussian nonlinear factor that takes 2 parameters
 	 */
 	template<class VALUES, class KEY1, class KEY2>
-	class NonlinearFactor2: public NonlinearFactor<VALUES> {
+	class NonlinearFactor2: public NoiseModelFactor<VALUES> {
 
 	  public:
 
@@ -287,7 +364,7 @@ namespace gtsam {
 		KEY1 key1_;
 		KEY2 key2_;
 
-		typedef NonlinearFactor<VALUES> Base;
+		typedef NoiseModelFactor<VALUES> Base;
 		typedef NonlinearFactor2<VALUES, KEY1, KEY2> This;
 
 	public:
@@ -385,7 +462,7 @@ namespace gtsam {
 		friend class boost::serialization::access;
 		template<class ARCHIVE>
 		void serialize(ARCHIVE & ar, const unsigned int version) {
-			ar & boost::serialization::make_nvp("NonlinearFactor",
+			ar & boost::serialization::make_nvp("NoiseModelFactor",
 					boost::serialization::base_object<Base>(*this));
 			ar & BOOST_SERIALIZATION_NVP(key1_);
 			ar & BOOST_SERIALIZATION_NVP(key2_);
@@ -399,7 +476,7 @@ namespace gtsam {
    * A Gaussian nonlinear factor that takes 3 parameters
    */
   template<class VALUES, class KEY1, class KEY2, class KEY3>
-  class NonlinearFactor3: public NonlinearFactor<VALUES> {
+  class NonlinearFactor3: public NoiseModelFactor<VALUES> {
 
   public:
 
@@ -415,7 +492,7 @@ namespace gtsam {
     KEY2 key2_;
     KEY3 key3_;
 
-    typedef NonlinearFactor<VALUES> Base;
+    typedef NoiseModelFactor<VALUES> Base;
     typedef NonlinearFactor3<VALUES, KEY1, KEY2, KEY3> This;
 
   public:
@@ -526,7 +603,7 @@ namespace gtsam {
     friend class boost::serialization::access;
     template<class ARCHIVE>
     void serialize(ARCHIVE & ar, const unsigned int version) {
-      ar & boost::serialization::make_nvp("NonlinearFactor",
+      ar & boost::serialization::make_nvp("NoiseModelFactor",
           boost::serialization::base_object<Base>(*this));
       ar & BOOST_SERIALIZATION_NVP(key1_);
       ar & BOOST_SERIALIZATION_NVP(key2_);

@@ -86,10 +86,9 @@ TEST( NonlinearFactor, NonlinearFactor )
   Graph::sharedFactor factor = fg[0];
 
   // calculate the error_vector from the factor "f1"
-  // the expected value for the whitened error from the factor
-  // error_vector / sigma = [0.1 0.1]/0.1 = [1;1]
-  Vector actual_e = factor->whitenedError(cfg);
-  CHECK(assert_equal(ones(2),actual_e));
+  // error_vector = [0.1 0.1]
+  Vector actual_e = factor->unwhitenedError(cfg);
+  CHECK(assert_equal(0.1*ones(2),actual_e));
 
   // error = 0.5 * [1 1] * [1;1] = 1
   double expected = 1.0; 

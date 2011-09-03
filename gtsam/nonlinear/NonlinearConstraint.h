@@ -36,11 +36,11 @@ namespace gtsam {
  * significant
  */
 template <class VALUES>
-class NonlinearConstraint : public NonlinearFactor<VALUES> {
+class NonlinearConstraint : public NoiseModelFactor<VALUES> {
 
 protected:
 	typedef NonlinearConstraint<VALUES> This;
-	typedef NonlinearFactor<VALUES> Base;
+	typedef NoiseModelFactor<VALUES> Base;
 
 	/** default constructor to allow for serialization */
 	NonlinearConstraint() {}
