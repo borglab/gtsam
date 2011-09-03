@@ -26,7 +26,6 @@
 #include <gtsam/base/FastSet.h>
 #include <gtsam/linear/Errors.h>
 #include <gtsam/linear/JacobianFactor.h>
-#include <gtsam/linear/HessianFactor.h>
 #include <gtsam/linear/GaussianBayesNet.h>
 
 namespace gtsam {
