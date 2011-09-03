@@ -72,8 +72,8 @@ HessianFactor::HessianFactor() : info_(matrix_) {
 }
 
 /* ************************************************************************* */
-HessianFactor::HessianFactor(Index j1, const Matrix& G, const Vector& g, double f) :
-      		GaussianFactor(j1), info_(matrix_) {
+HessianFactor::HessianFactor(Index j, const Matrix& G, const Vector& g, double f) :
+      		GaussianFactor(j), info_(matrix_) {
 	if(G.rows() != G.cols() || G.rows() != g.size())
 		throw invalid_argument("Inconsistent matrix and/or vector dimensions in HessianFactor constructor");
 	size_t dims[] = { G.rows(), 1 };
@@ -82,6 +82,26 @@ HessianFactor::HessianFactor(Index j1, const Matrix& G, const Vector& g, double 
 	infoMatrix(0,0) = G;
 	infoMatrix.column(0,1,0) = g;
 	infoMatrix(1,1)(0,0) = f;
+	infoMatrix.swap(info_);
+	assertInvariants();
+}
+
+/* ************************************************************************* */
+// error is 0.5*(x-mu)'*inv(Sigma)*(x-mu) = 0.5*(x'*G*x - 2*x'*G*mu + mu'*G*mu)
+// where G = inv(Sigma), g = G*mu, f = mu'*G*mu = mu'*g
+HessianFactor::HessianFactor(Index j, const Vector& mu, const Matrix& Sigma) :
+		GaussianFactor(j), info_(matrix_) {
+	if (Sigma.rows() != Sigma.cols() || Sigma.rows() != mu.size()) throw invalid_argument(
+			"Inconsistent matrix and/or vector dimensions in HessianFactor constructor");
+	Matrix G = inverse(Sigma);
+	Vector g = G * mu;
+	double f = dot(mu, g);
+	size_t dims[] = { G.rows(), 1 };
+	InfoMatrix fullMatrix(G.rows() + 1, G.rows() + 1);
+	BlockInfo infoMatrix(fullMatrix, dims, dims + 2);
+	infoMatrix(0, 0) = G;
+	infoMatrix.column(0, 1, 0) = g;
+	infoMatrix(1, 1)(0, 0) = f;
 	infoMatrix.swap(info_);
 	assertInvariants();
 }

@@ -135,6 +135,26 @@ TEST(HessianFactor, Constructor1)
 }
 
 /* ************************************************************************* */
+TEST(HessianFactor, Constructor1b)
+{
+	Vector mu = Vector_(2,1.0,2.0);
+	Matrix Sigma = eye(2,2);
+
+  HessianFactor factor(0, mu, Sigma);
+
+  Matrix G = eye(2,2);
+  Vector g = G*mu;
+  double f = dot(g,mu);
+
+  // Check
+  Matrix info_matrix = factor.info_.range(0, 1, 0, 1);
+  EXPECT(assert_equal(Matrix(G), info_matrix));
+  EXPECT_DOUBLES_EQUAL(f, factor.constant_term(), 1e-10);
+  EXPECT(assert_equal(g, Vector(factor.linear_term()), 1e-10));
+  EXPECT_LONGS_EQUAL(1, factor.size());
+}
+
+/* ************************************************************************* */
 TEST(HessianFactor, Constructor2)
 {
   Matrix G11 = Matrix_(1,1, 1.0);

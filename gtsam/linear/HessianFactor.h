@@ -25,6 +25,7 @@
 // Forward declarations for friend unit tests
 class ConversionConstructorHessianFactorTest;
 class Constructor1HessianFactorTest;
+class Constructor1bHessianFactorTest;
 class combineHessianFactorTest;
 
 
@@ -77,6 +78,11 @@ namespace gtsam {
      * 0.5*(f - 2*x'*g + x'*G*x)
      */
     HessianFactor(Index j, const Matrix& G, const Vector& g, double f);
+
+    /** Construct a unary factor, given a mean and covariance matrix.
+     * error is 0.5*(x-mu)'*inv(Sigma)*(x-mu)
+    */
+    HessianFactor(Index j, const Vector& mu, const Matrix& Sigma);
 
     /** Construct a binary factor.  Gxx are the upper-triangle blocks of the
      * quadratic term (the Hessian matrix), gx the pieces of the linear vector
@@ -133,6 +139,7 @@ namespace gtsam {
     // Friend unit test classes
     friend class ::ConversionConstructorHessianFactorTest;
     friend class ::Constructor1HessianFactorTest;
+    friend class ::Constructor1bHessianFactorTest;
     friend class ::combineHessianFactorTest;
 
     // Friend JacobianFactor for conversion
