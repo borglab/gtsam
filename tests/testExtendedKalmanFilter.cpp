@@ -16,9 +16,9 @@
 
 #include <CppUnitLite/TestHarness.h>
 
-#include <gtsam/nonlinear/ExtendedKalmanFilter-inl.h>
 #include <gtsam/slam/PriorFactor.h>
 #include <gtsam/slam/BetweenFactor.h>
+#include <gtsam/nonlinear/ExtendedKalmanFilter-inl.h>
 #include <gtsam/nonlinear/NonlinearFactor.h>
 #include <gtsam/nonlinear/LieValues-inl.h>
 #include <gtsam/geometry/Point2.h>
