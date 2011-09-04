@@ -27,6 +27,7 @@ namespace gtsam {
 class NullOptimizerWriter {
 public:
 	NullOptimizerWriter(double error) {}
+	virtual ~NullOptimizerWriter() {}
 	virtual void write(double error) {}
 };
 
