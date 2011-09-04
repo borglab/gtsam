@@ -11,7 +11,7 @@
 
 /**
  * @file    HessianFactor.h
- * @brief   
+ * @brief   Contains the HessianFactor class, a general quadratic factor
  * @author  Richard Roberts
  * @created Dec 8, 2010
  */
@@ -37,7 +37,9 @@ namespace gtsam {
   class GaussianConditional;
   template<class C> class BayesNet;
 
-  // Definition of Scatter
+  // Definition of Scatter, which is an intermediate data structure used when
+  // building a HessianFactor incrementally, to get the keys in the right
+  // order.
   struct SlotEntry {
     size_t slot;
     size_t dimension;
@@ -47,24 +49,57 @@ namespace gtsam {
   };
   typedef FastMap<Index, SlotEntry> Scatter;
 
+  /**
+   * A general quadratic factor of the form
+   * f(x) = x'Hx + hx + c
+   * and stores the matrix H, the vector h, and the constant term c.  This factor
+   * is one of the factors that can be in a GaussianFactorGraph.  It may
+   * be returned from NonlinearFactor::linearize(), but is also
+   * used internally to store the Hessian during Cholesky elimination.
+   *
+   * This can represent a quadratic factor with characteristics that cannot be
+   * represented using a JacobianFactor (which has the form
+   * f(x) = || Ax - b ||^2 and stores the Jacobian A and error vector b, i.e.
+   * is a sum-of-squares factor).  For example, a HessianFactor need not be
+   * positive semidefinite, it can be indefinite or even negative semidefinite.
+   *
+   * If a HessianFactor is indefinite or negative semi-definite, then in order
+   * for solving the linear system to be possible,
+   * the Hessian of the full system must be positive definite (i.e. when all
+   * small Hessians are combined, the result must be positive definite).  If
+   * this is not the case, an error will occur during elimination.
+   *
+   * This class stores H, h, and c as an augmented matrix HessianFactor::matrix_.
+   */
   class HessianFactor : public GaussianFactor {
   protected:
-    typedef Matrix InfoMatrix;
-    typedef SymmetricBlockView<InfoMatrix> BlockInfo;
+    typedef Matrix InfoMatrix; ///< The full augmented Hessian
+    typedef SymmetricBlockView<InfoMatrix> BlockInfo; ///< A blockwise view of the Hessian
 
-    InfoMatrix matrix_; // The full information matrix, s.t. the quadratic error is 0.5*[x -1]'*H*[x -1]
-    BlockInfo info_;    // The block view of the full information matrix.
+    InfoMatrix matrix_; ///< The full augmented information matrix, s.t. the quadratic error is 0.5*[x -1]'*H*[x -1]
+    BlockInfo info_;    ///< The block view of the full information matrix.
 
+    /** Update the factor by adding the information from the JacobianFactor
+     * (used internally during elimination).
+     * @param update The JacobianFactor containing the new information to add
+     * @param scatter A mapping from variable index to slot index in this HessianFactor
+     */
     void updateATA(const JacobianFactor& update, const Scatter& scatter);
+
+    /** Update the factor by adding the information from the HessianFactor
+     * (used internally during elimination).
+     * @param update The HessianFactor containing the new information to add
+     * @param scatter A mapping from variable index to slot index in this HessianFactor
+     */
     void updateATA(const HessianFactor& update, const Scatter& scatter);
 
   public:
 
-    typedef boost::shared_ptr<HessianFactor> shared_ptr;
-    typedef BlockInfo::Block Block;
-    typedef BlockInfo::constBlock constBlock;
-    typedef BlockInfo::Column Column;
-    typedef BlockInfo::constColumn constColumn;
+    typedef boost::shared_ptr<HessianFactor> shared_ptr; ///< A shared_ptr to this
+    typedef BlockInfo::Block Block; ///< A block from the Hessian matrix
+    typedef BlockInfo::constBlock constBlock; ///< A block from the Hessian matrix (const version)
+    typedef BlockInfo::Column Column; ///< A column containing the linear term h
+    typedef BlockInfo::constColumn constColumn; ///< A column containing the linear term h (const version)
 
     /** Copy constructor */
     HessianFactor(const HessianFactor& gf);
@@ -96,36 +131,48 @@ namespace gtsam {
     /** Construct from Conditional Gaussian */
     HessianFactor(const GaussianConditional& cg);
 
-    /** Convert from a JacobianFactor or HessianFactor (computes A^T * A) */
+    /** Convert from a JacobianFactor (computes A^T * A) or HessianFactor */
     HessianFactor(const GaussianFactor& factor);
 
-    /** Special constructor used in EliminateCholesky */
+    /** Special constructor used in EliminateCholesky which combines the given factors */
     HessianFactor(const FactorGraph<GaussianFactor>& factors,
 				const std::vector<size_t>& dimensions, const Scatter& scatter);
 
+    /** Destructor */
 		virtual ~HessianFactor() {}
 
-    // Implementing Testable interface
+    /** Print the factor for debugging and testing (implementing Testable) */
     virtual void print(const std::string& s = "") const;
+
+    /** Compare to another factor for testing (implementing Testable) */
     virtual bool equals(const GaussianFactor& lf, double tol = 1e-9) const;
 
+    /** Evaluate the factor error f(x), see above. */
     virtual double error(const VectorValues& c) const; /** 0.5*[x -1]'*H*[x -1] (also see constructor documentation) */
 
     /** Return the dimension of the variable pointed to by the given key iterator
      * todo: Remove this in favor of keeping track of dimensions with variables?
+     * @param variable An iterator pointing to the slot in this factor.  You can
+     * use, for example, begin() + 2 to get the 3rd variable in this factor.
      */
     virtual size_t getDim(const_iterator variable) const { return info_(variable-this->begin(), 0).rows(); }
 
     /** Return the number of columns and rows of the Hessian matrix */
     size_t rows() const { return info_.rows(); }
 
-    /** Return a view of a block of the information matrix */
+    /** Return a view of the block at (j1,j2) of the information matrix
+     * @param j1 Which block row to get, as an iterator pointing to the slot in this factor.  You can
+     * use, for example, begin() + 2 to get the 3rd variable in this factor.
+     * @param j2 Which block column to get, as an iterator pointing to the slot in this factor.  You can
+     * use, for example, begin() + 2 to get the 3rd variable in this factor.
+     * @return
+     */
     constBlock info(const_iterator j1, const_iterator j2) const { return info_(j1-begin(), j2-begin()); }
 
-    /** returns the constant term - f from the constructors */
+    /** returns the constant term f as described above */
     double constant_term() const;
 
-    /** returns the full linear term - g from the constructors */
+    /** returns the linear term g as described above */
     constColumn linear_term() const;
 
     /**
