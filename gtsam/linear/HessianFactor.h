@@ -52,9 +52,16 @@ namespace gtsam {
   /**
    * A general quadratic factor of the form
    * f(x) = x'Hx + hx + c
-   * and stores the matrix H, the vector h, and the constant term c.  This factor
-   * is one of the factors that can be in a GaussianFactorGraph.  It may
-   * be returned from NonlinearFactor::linearize(), but is also
+   * and stores the matrix H, the vector h, and the constant term c.
+   *
+   * When H is positive semidefinite, this factor represents a Gaussian,
+   * in which case H is the information
+   * matrix \Lambda, which is the inverse of the covariance matrix \Sigma,
+   * h is the information vector \eta = \Lambda \mu, and c is the error
+   * at the mean, when x = \mu.
+   *
+   * This factor is one of the factors that can be in a GaussianFactorGraph.
+   * It may be returned from NonlinearFactor::linearize(), but is also
    * used internally to store the Hessian during Cholesky elimination.
    *
    * This can represent a quadratic factor with characteristics that cannot be
