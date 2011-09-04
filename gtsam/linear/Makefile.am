@@ -32,6 +32,7 @@ check_PROGRAMS += tests/testHessianFactor tests/testGaussianFactor tests/testGau
 check_PROGRAMS += tests/testGaussianFactorGraph tests/testGaussianJunctionTree
 
 # Kalman Filter
+sources += KalmanFilter.cpp
 check_PROGRAMS += tests/testKalmanFilter
 
 # Iterative Methods
