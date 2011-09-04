@@ -25,23 +25,30 @@
 namespace gtsam {
 
 /* ************************************************************************* */
-GaussianSequentialSolver::GaussianSequentialSolver(const FactorGraph<GaussianFactor>& factorGraph, bool useQR) :
-    Base(factorGraph), useQR_(useQR) {}
-
-/* ************************************************************************* */
-GaussianSequentialSolver::GaussianSequentialSolver(const FactorGraph<GaussianFactor>::shared_ptr& factorGraph,
-    const VariableIndex::shared_ptr& variableIndex, bool useQR) :
-    Base(factorGraph, variableIndex), useQR_(useQR) {}
-
-/* ************************************************************************* */
-GaussianSequentialSolver::shared_ptr GaussianSequentialSolver::Create(
-    const FactorGraph<GaussianFactor>::shared_ptr& factorGraph, const VariableIndex::shared_ptr& variableIndex, bool useQR) {
-  return shared_ptr(new GaussianSequentialSolver(factorGraph, variableIndex, useQR));
+GaussianSequentialSolver::GaussianSequentialSolver(
+		const FactorGraph<GaussianFactor>& factorGraph, bool useQR) :
+		Base(factorGraph), useQR_(useQR) {
 }
 
 /* ************************************************************************* */
-void GaussianSequentialSolver::replaceFactors(const FactorGraph<GaussianFactor>::shared_ptr& factorGraph) {
-  Base::replaceFactors(factorGraph);
+GaussianSequentialSolver::GaussianSequentialSolver(
+		const FactorGraph<GaussianFactor>::shared_ptr& factorGraph,
+		const VariableIndex::shared_ptr& variableIndex, bool useQR) :
+		Base(factorGraph, variableIndex), useQR_(useQR) {
+}
+
+/* ************************************************************************* */
+GaussianSequentialSolver::shared_ptr GaussianSequentialSolver::Create(
+		const FactorGraph<GaussianFactor>::shared_ptr& factorGraph,
+		const VariableIndex::shared_ptr& variableIndex, bool useQR) {
+	return shared_ptr(
+			new GaussianSequentialSolver(factorGraph, variableIndex, useQR));
+}
+
+/* ************************************************************************* */
+void GaussianSequentialSolver::replaceFactors(
+		const FactorGraph<GaussianFactor>::shared_ptr& factorGraph) {
+	Base::replaceFactors(factorGraph);
 }
 
 /* ************************************************************************* */
@@ -113,4 +120,4 @@ GaussianSequentialSolver::jointFactorGraph(const std::vector<Index>& js) const {
 				*Base::jointFactorGraph(js, &EliminatePreferLDL)));
 }
 
-}
+} /// namespace gtsam
