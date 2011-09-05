@@ -434,7 +434,6 @@ namespace gtsam {
 	  newKeys[0] = key;
 	  std::copy((*clique)->begin(), (*clique)->end(), newKeys.begin()+1);
 	  clique->conditional_ = CONDITIONAL::FromKeys(newKeys, (*clique)->nrFrontals() + 1);
-//	  clique->conditional_->addFrontal(conditional);
 	  if(debug) clique->print("Expanded clique is ");
 	  clique->assertInvariants();
 	}

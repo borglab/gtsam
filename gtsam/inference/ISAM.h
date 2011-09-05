@@ -38,9 +38,6 @@ namespace gtsam {
 		/** Create an empty Bayes Tree */
 		ISAM();
 
-		/** Create a Bayes Tree from a Bayes Net */
-		ISAM(const BayesNet<CONDITIONAL>& bayesNet);
-
 		/** Copy constructor */
 		ISAM(const Base& bayesTree) :
 				Base(bayesTree) {
