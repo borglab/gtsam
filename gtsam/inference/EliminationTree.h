@@ -19,15 +19,18 @@ namespace gtsam {
 
 /**
  * An elimination tree is a data structure used intermediately during
- * elimination, and it can be used to save work between multiple eliminations.
+ * elimination.  In future versions it will be used to save work between
+ * multiple eliminations.
  *
- * When a variable is eliminated, a new factor is created, which will involve
- * other variables. Of those, the first one that will be eliminated next, will
- * need that factor. In the elimination tree, that first variable is exactly
- * the parent of each variable. This yields a tree in general, and not a chain
+ * When a variable is eliminated, a new factor is created by combining that
+ * variable's neighboring factors.  The new combined factor involves the combined
+ * factors' involved variables.  When the lowest-ordered one of those variables
+ * is eliminated, it consumes that combined factor.  In the elimination tree,
+ * that lowest-ordered variable is the parent of the variable that was eliminated to
+ * produce the combined factor.  This yields a tree in general, and not a chain
  * because of the implicit sparse structure of the resulting Bayes net.
  *
- * This structures is examined even more closely in a JunctionTree, which
+ * This structure is examined even more closely in a JunctionTree, which
  * additionally identifies cliques in the chordal Bayes net.
  */
 template<class FACTOR>
@@ -35,11 +38,12 @@ class EliminationTree: public Testable<EliminationTree<FACTOR> > {
 
 public:
 
-  typedef typename FACTOR::shared_ptr sharedFactor;
-  typedef boost::shared_ptr<EliminationTree<FACTOR> > shared_ptr;
-  typedef gtsam::BayesNet<typename FACTOR::ConditionalType> BayesNet;
+	typedef EliminationTree<FACTOR> This; ///< This class
+  typedef boost::shared_ptr<This> shared_ptr; ///< Shared pointer to this class
+  typedef typename FACTOR::shared_ptr sharedFactor; ///< Shared pointer to a factor
+  typedef gtsam::BayesNet<typename FACTOR::ConditionalType> BayesNet; ///< The BayesNet corresponding to FACTOR
 
-  /** typedef for an eliminate subroutine */
+  /** Typedef for an eliminate subroutine */
   typedef typename FactorGraph<FACTOR>::Eliminate Eliminate;
 
 private:
@@ -48,9 +52,9 @@ private:
   typedef FastList<shared_ptr> SubTrees;
   typedef std::vector<typename FACTOR::ConditionalType::shared_ptr> Conditionals;
 
-  Index key_; /** index associated with root */
-  Factors factors_; /** factors associated with root */
-  SubTrees subTrees_; /** sub-trees */
+  Index key_; ///< index associated with root
+  Factors factors_; ///< factors associated with root
+  SubTrees subTrees_; ///< sub-trees
 
   /** default constructor, private, as you should use Create below */
   EliminationTree(Index key = 0) : key_(key) {}
@@ -73,7 +77,7 @@ private:
    */
   sharedFactor eliminate_(Eliminate function, Conditionals& conditionals) const;
 
-  // Allow access to constructor and add methods for testing purposes
+  /// Allow access to constructor and add methods for testing purposes
   friend class ::EliminationTreeTester;
 
 public:
@@ -81,11 +85,21 @@ public:
   /**
    * Named constructor to build the elimination tree of a factor graph using
    * pre-computed column structure.
+   * @param factorGraph The factor graph for which to build the elimination tree
+   * @param structure The set of factors involving each variable.  If this is not
+   * precomputed, you can call the Create(const FactorGraph<DERIVEDFACTOR>&)
+   * named constructor instead.
+   * @return The elimination tree
    */
   template<class DERIVEDFACTOR>
   static shared_ptr Create(const FactorGraph<DERIVEDFACTOR>& factorGraph, const VariableIndex& structure);
 
-  /** Named constructor to build the elimination tree of a factor graph */
+  /** Named constructor to build the elimination tree of a factor graph.  Note
+   * that this has to compute the column structure as a VariableIndex, so if you
+   * already have this precomputed, use the Create(const FactorGraph<DERIVEDFACTOR>&, const VariableIndex&)
+   * named constructor instead.
+   * @param factorGraph The factor graph for which to build the elimination tree
+   */
   template<class DERIVEDFACTOR>
   static shared_ptr Create(const FactorGraph<DERIVEDFACTOR>& factorGraph);
 
@@ -95,7 +109,11 @@ public:
   /** Test whether the tree is equal to another */
   bool equals(const EliminationTree& other, double tol = 1e-9) const;
 
-  /** Eliminate the factors to a Bayes Net */
+  /** Eliminate the factors to a Bayes Net
+   * @param function The function to use to eliminate, see the static member
+   * functions of GaussianFactorGraph
+   * @return The BayesNet resulting from elimination
+   */
   typename BayesNet::shared_ptr eliminate(Eliminate function) const;
 };
 
