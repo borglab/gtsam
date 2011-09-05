@@ -110,8 +110,8 @@ public:
   bool equals(const EliminationTree& other, double tol = 1e-9) const;
 
   /** Eliminate the factors to a Bayes Net
-   * @param function The function to use to eliminate, see the static member
-   * functions of GaussianFactorGraph
+   * @param function The function to use to eliminate, see the namespace functions
+   * in GaussianFactorGraph.h
    * @return The BayesNet resulting from elimination
    */
   typename BayesNet::shared_ptr eliminate(Eliminate function) const;

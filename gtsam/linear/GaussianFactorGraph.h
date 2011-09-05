@@ -32,7 +32,8 @@ namespace gtsam {
 
 	struct SharedDiagonal;
 
-  /** unnormalized error */
+  /** unnormalized error
+   * \todo Make this a member function - affects SubgraphPreconditioner */
   template<class FACTOR>
   double gaussianError(const FactorGraph<FACTOR>& fg, const VectorValues& x) {
     double total_error = 0.;
@@ -42,13 +43,15 @@ namespace gtsam {
     return total_error;
   }
 
-  /** return A*x-b */
+  /** return A*x-b
+   * \todo Make this a member function - affects SubgraphPreconditioner */
   template<class FACTOR>
   Errors gaussianErrors(const FactorGraph<FACTOR>& fg, const VectorValues& x) {
     return *gaussianErrors_(fg, x);
   }
 
-  /** shared pointer version */
+  /** shared pointer version
+   * \todo Make this a member function - affects SubgraphPreconditioner */
   template<class FACTOR>
   boost::shared_ptr<Errors> gaussianErrors_(const FactorGraph<FACTOR>& fg, const VectorValues& x) {
     boost::shared_ptr<Errors> e(new Errors);

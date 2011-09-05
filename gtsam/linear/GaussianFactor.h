@@ -11,8 +11,8 @@
 
 /**
  * @file    GaussianFactor.h
- * @brief   Linear Factor....A Gaussian
- * @brief   linearFactor
+ * @brief   A factor with a quadratic error function - a Gaussian
+ * @brief   GaussianFactor
  * @author  Richard Roberts, Christian Potthast
  */
 
@@ -34,7 +34,8 @@ namespace gtsam {
   template<class C> class BayesNet;
 
   /**
-   * Base Class for a linear factor.
+   * An abstract virtual base class for JacobianFactor and HessianFactor.
+   * A GaussianFactor has a quadratic error function.
    * GaussianFactor is non-mutable (all methods const!).
    * The factor value is exp(-0.5*||Ax-b||^2)
    */

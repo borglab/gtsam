@@ -30,6 +30,13 @@
 namespace gtsam {
 
 	/**
+	 * In gtsam a junction tree is an intermediate data structure in multifrontal
+	 * variable elimination.  Each node is a cluster of factors, along with a
+	 * clique of variables that are eliminated all at once.  The tree structure and
+	 * elimination method are exactly analagous to the EliminationTree, except that
+	 * in the JunctionTree, at each node multiple variables are eliminated at the same
+	 * time.
+	 *
 	 * A junction tree (or clique-tree) is a cluster-tree where each node k represents a
 	 * clique (maximal fully connected subset) of an associated chordal graph, such as a
 	 * chordal Bayes net resulting from elimination. In GTSAM the BayesTree is used to
@@ -41,15 +48,17 @@ namespace gtsam {
 
 	public:
 
-		// In a junction tree each cluster is associated with a clique
+		/// In a junction tree each cluster is associated with a clique
 		typedef typename ClusterTree<FG>::Cluster Clique;
-		typedef typename Clique::shared_ptr sharedClique;
+		typedef typename Clique::shared_ptr sharedClique; ///< Shared pointer to a clique
 
+		/// The BayesTree type produced by elimination
 		typedef class BayesTree<typename FG::FactorType::ConditionalType> BayesTree;
 
+		/// Shared pointer to this class
 		typedef boost::shared_ptr<JunctionTree<FG> > shared_ptr;
 
-		// And we will frequently refer to a symbolic Bayes tree
+		/// We will frequently refer to a symbolic Bayes tree, used to find the clique structure
 		typedef gtsam::BayesTree<IndexConditional> SymbolicBayesTree;
 
 	private:
@@ -73,13 +82,29 @@ namespace gtsam {
 		/** Default constructor */
 		JunctionTree() {}
 
-		/** Construct from a factor graph.  Computes a variable index. */
-		JunctionTree(const FG& fg);
+		/** Named constructor to build the junction tree of a factor graph.  Note
+	   * that this has to compute the column structure as a VariableIndex, so if you
+	   * already have this precomputed, use the JunctionTree(const FG&, const VariableIndex&)
+	   * constructor instead.
+	   * @param factorGraph The factor graph for which to build the elimination tree
+	   */
+		JunctionTree(const FG& factorGraph);
 
-		/** Construct from a factor graph and a pre-computed variable index. */
+		/** Construct from a factor graph and pre-computed variable index.
+		 * @param factorGraph The factor graph for which to build the junction tree
+		 * @param structure The set of factors involving each variable.  If this is not
+		 * precomputed, you can call the JunctionTree(const FG&)
+		 * constructor instead.
+		 */
 		JunctionTree(const FG& fg, const VariableIndex& variableIndex);
 
-		// eliminate the factors in the subgraphs
+		/** Eliminate the factors in the subgraphs to produce a BayesTree.
+		 * @param function The function used to eliminate, see the namespace functions
+		 * in GaussianFactorGraph.h
+		 * @param cache Whether to cache the intermediate elimination factors for use in ISAM2 - this
+		 * should always be false when called outside of ISAM2 (this will be fixed in the future).
+		 * @return The BayesTree resulting from elimination
+		 */
 		typename BayesTree::sharedClique eliminate(typename FG::Eliminate function,
 				bool cache = false) const;
 
