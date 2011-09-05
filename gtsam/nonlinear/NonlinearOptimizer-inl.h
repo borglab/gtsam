@@ -130,30 +130,31 @@ namespace gtsam {
 	// Form damped system with given lambda, and return a new, more optimistic
 	// optimizer if error decreased or iterate with a larger lambda if not.
 	// TODO: in theory we can't infinitely recurse, but maybe we should put a max.
-	/* ************************************************************************* */
-	template<class G, class C, class L, class S, class W>
-	NonlinearOptimizer<G, C, L, S, W> NonlinearOptimizer<G, C, L, S, W>::try_lambda(const L& linear) {
+	// Reminder: the parameters are Graph type $G$, Values class type $T$,
+	// linear system class $L$, the non linear solver type $S$, and the writer type $W$
+	template<class G, class T, class L, class S, class W>
+	NonlinearOptimizer<G, T, L, S, W> NonlinearOptimizer<G, T, L, S, W>::try_lambda(const L& linearSystem) {
 
 		const Parameters::verbosityLevel verbosity = parameters_->verbosity_ ;
-		double lambda = parameters_->lambda_ ;
 		const Parameters::LambdaMode lambdaMode = parameters_->lambdaMode_ ;
 		const double factor = parameters_->lambdaFactor_ ;
+		double lambda = parameters_->lambda_ ;
 
 		if( lambdaMode >= Parameters::CAUTIOUS) throw runtime_error("CAUTIOUS mode not working yet, please use BOUNDED.");
 
 		double next_error = error_;
-
 		shared_values next_values = values_;
 
+		// Keep increasing lambda until we make make progress
 		while(true) {
 		  if (verbosity >= Parameters::TRYLAMBDA) cout << "trying lambda = " << lambda << endl;
 
 		  // add prior-factors
 		  // TODO: replace this dampening with a backsubstitution approach
-		  typename L::shared_ptr damped(new L(linear));
+		  typename L::shared_ptr dampedSystem(new L(linearSystem));
 		  {
 		    double sigma = 1.0 / sqrt(lambda);
-		    damped->reserve(damped->size() + dimensions_->size());
+		    dampedSystem->reserve(dampedSystem->size() + dimensions_->size());
 		    // for each of the variables, add a prior
 		    for(Index j=0; j<dimensions_->size(); ++j) {
 		      size_t dim = (*dimensions_)[j];
@@ -161,22 +162,24 @@ namespace gtsam {
 		      Vector b = zero(dim);
 		      SharedDiagonal model = noiseModel::Isotropic::Sigma(dim,sigma);
 		      typename L::sharedFactor prior(new JacobianFactor(j, A, b, model));
-		      damped->push_back(prior);
+		      dampedSystem->push_back(prior);
 		    }
 		  }
-		  if (verbosity >= Parameters::DAMPED) damped->print("damped");
+		  if (verbosity >= Parameters::DAMPED) dampedSystem->print("damped");
 
-		  // solve
+		  // Create a new solver using the damped linear system
  		  // FIXME: remove spcg specific code
-		  if (spcg_solver_) spcg_solver_->replaceFactors(damped);
+		  if (spcg_solver_) spcg_solver_->replaceFactors(dampedSystem);
 		  shared_solver solver = (spcg_solver_) ? spcg_solver_ : shared_solver(
-		  		new S(damped, structure_, parameters_->useQR_));
+		  		new S(dampedSystem, structure_, parameters_->useQR_));
+
+		  // Try solving
 		  try {
 		    VectorValues delta = *solver->optimize();
 		    if (verbosity >= Parameters::TRYDELTA) delta.print("delta");
 
 		    // update values
-		    shared_values newValues(new C(values_->expmap(delta, *ordering_)));
+		    shared_values newValues(new T(values_->expmap(delta, *ordering_)));
 
 		    // create new optimization state with more adventurous lambda
 		    double error = graph_->error(*newValues);
@@ -219,9 +222,10 @@ namespace gtsam {
 
 	/* ************************************************************************* */
 	// One iteration of Levenberg Marquardt
-	/* ************************************************************************* */
-	template<class G, class C, class L, class S, class W>
-	NonlinearOptimizer<G, C, L, S, W> NonlinearOptimizer<G, C, L, S, W>::iterateLM() {
+	// Reminder: the parameters are Graph type $G$, Values class type $T$,
+	// linear system class $L$, the non linear solver type $S$, and the writer type $W$
+	template<class G, class T, class L, class S, class W>
+	NonlinearOptimizer<G, T, L, S, W> NonlinearOptimizer<G, T, L, S, W>::iterateLM() {
 
 		const Parameters::verbosityLevel verbosity = parameters_->verbosity_ ;
 		const double lambda = parameters_->lambda_ ;
@@ -243,10 +247,12 @@ namespace gtsam {
 	}
 
 	/* ************************************************************************* */
-	template<class G, class C, class L, class S, class W>
-	NonlinearOptimizer<G, C, L, S, W> NonlinearOptimizer<G, C, L, S, W>::levenbergMarquardt() {
+	// Reminder: the parameters are Graph type $G$, Values class type $T$,
+	// linear system class $L$, the non linear solver type $S$, and the writer type $W$
+	template<class G, class T, class L, class S, class W>
+	NonlinearOptimizer<G, T, L, S, W> NonlinearOptimizer<G, T, L, S, W>::levenbergMarquardt() {
 
-		iterations_ = 0;
+		// Initialize
 		bool converged = false;
 		const Parameters::verbosityLevel verbosity = parameters_->verbosity_ ;
 
@@ -262,6 +268,7 @@ namespace gtsam {
 		if (iterations_ >= parameters_->maxIterations_)
 			return *this;
 
+		// Iterative loop that implements Levenberg-Marquardt
 		while (true) {
 			double previous_error = error_;
 			// do one iteration of LM

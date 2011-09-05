@@ -39,13 +39,13 @@ namespace gtsam {
 		// Use a variable ordering from COLAMD
 	  Ordering::shared_ptr ordering = graph.orderingCOLAMD(initialEstimate);
 
-		// initial optimization state is the same in both cases tested
+		// Create an nonlinear Optimizer that uses a Sequential Solver
 	  typedef NonlinearOptimizer<G, T, GaussianFactorGraph, GaussianSequentialSolver> Optimizer;
 	  Optimizer optimizer(boost::make_shared<const G>(graph),
 	  		boost::make_shared<const T>(initialEstimate), ordering,
 	  		boost::make_shared<NonlinearOptimizationParameters>(parameters));
 
-	  // choose nonlinear optimization method
+	  // Now optimize using either LM or GN methods.
 		if (useLM)
 			return *optimizer.levenbergMarquardt().values();
 		else
@@ -62,13 +62,13 @@ namespace gtsam {
 		// Use a variable ordering from COLAMD
 	  Ordering::shared_ptr ordering = graph.orderingCOLAMD(initialEstimate);
 
-		// initial optimization state is the same in both cases tested
+		// Create an nonlinear Optimizer that uses a Multifrontal Solver
 	  typedef NonlinearOptimizer<G, T, GaussianFactorGraph, GaussianMultifrontalSolver> Optimizer;
 	  Optimizer optimizer(boost::make_shared<const G>(graph),
 	  		boost::make_shared<const T>(initialEstimate), ordering,
 	  		boost::make_shared<NonlinearOptimizationParameters>(parameters));
 
-	  // choose nonlinear optimization method
+	  // now optimize using either LM or GN methods
 		if (useLM)
 			return *optimizer.levenbergMarquardt().values();
 		else
