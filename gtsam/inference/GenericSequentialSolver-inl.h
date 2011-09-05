@@ -32,18 +32,18 @@ namespace gtsam {
 	template<class FACTOR>
 	GenericSequentialSolver<FACTOR>::GenericSequentialSolver(
 			const FactorGraph<FACTOR>& factorGraph) :
-		factors_(new FactorGraph<FACTOR> (factorGraph)), structure_(
-				new VariableIndex(factorGraph)), eliminationTree_(EliminationTree<
-				FACTOR>::Create(*factors_, *structure_)) {
+			factors_(new FactorGraph<FACTOR>(factorGraph)),
+			structure_(new VariableIndex(factorGraph)),
+			eliminationTree_(EliminationTree<FACTOR>::Create(*factors_, *structure_)) {
 	}
 
 	/* ************************************************************************* */
 	template<class FACTOR>
 	GenericSequentialSolver<FACTOR>::GenericSequentialSolver(
-			const typename FactorGraph<FACTOR>::shared_ptr& factorGraph,
+			const sharedFactorGraph& factorGraph,
 			const VariableIndex::shared_ptr& variableIndex) :
-		factors_(factorGraph), structure_(variableIndex), eliminationTree_(
-				EliminationTree<FACTOR>::Create(*factors_, *structure_)) {
+			factors_(factorGraph), structure_(variableIndex),
+			eliminationTree_(EliminationTree<FACTOR>::Create(*factors_, *structure_)) {
 	}
 
 	/* ************************************************************************* */
@@ -67,7 +67,7 @@ namespace gtsam {
 	/* ************************************************************************* */
 	template<class FACTOR>
 	void GenericSequentialSolver<FACTOR>::replaceFactors(
-			const typename FactorGraph<FACTOR>::shared_ptr& factorGraph) {
+			const sharedFactorGraph& factorGraph) {
 		// Reset this shared pointer first to deallocate if possible - for big
 		// problems there may not be enough memory to store two copies.
 		eliminationTree_.reset();
@@ -91,8 +91,7 @@ namespace gtsam {
 			typename EliminationTree<FACTOR>::Eliminate function) const {
 
 		// Compute a COLAMD permutation with the marginal variable constrained to the end.
-		Permutation::shared_ptr permutation(Inference::PermutationCOLAMD(
-				*structure_, js));
+		Permutation::shared_ptr permutation(Inference::PermutationCOLAMD(*structure_, js));
 		Permutation::shared_ptr permutationInverse(permutation->inverse());
 
 		// Permute the factors - NOTE that this permutes the original factors, not
@@ -102,15 +101,15 @@ namespace gtsam {
 						if (factor) factor->permuteWithInverse(*permutationInverse);
 
 		// Eliminate all variables
-		typename BayesNet<typename FACTOR::ConditionalType>::shared_ptr bayesNet(
-				EliminationTree<FACTOR>::Create(*factors_)->eliminate(function));
+		typename BayesNet<typename FACTOR::ConditionalType>::shared_ptr
+			bayesNet(EliminationTree<FACTOR>::Create(*factors_)->eliminate(function));
 
 		// Undo the permuation on the original factors and on the structure.
 		BOOST_FOREACH(const typename FACTOR::shared_ptr& factor, *factors_)
-						if (factor) factor->permuteWithInverse(*permutation);
+					if (factor) factor->permuteWithInverse(*permutation);
 
 		// Take the joint marginal from the Bayes net.
-		typename FactorGraph<FACTOR>::shared_ptr joint(new FactorGraph<FACTOR> );
+		sharedFactorGraph joint(new FactorGraph<FACTOR> );
 		joint->reserve(js.size());
 		typename BayesNet<typename FACTOR::ConditionalType>::const_reverse_iterator
 				conditional = bayesNet->rbegin();

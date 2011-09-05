@@ -24,19 +24,36 @@
 
 namespace gtsam {
 
+	/**
+	 * This solver implements sequential variable elimination for factor graphs.
+	 * Underlying this is a column elimination tree, see Gilbert 2001 BIT.
+	 *
+	 * The elimination ordering is "baked in" to the variable indices at this
+	 * stage, i.e. elimination proceeds in order from '0'.
+	 *
+	 * This is not the most efficient algorithm we provide, most efficient is the
+	 * MultifrontalSolver, which examines and uses the clique structure.
+	 * However, sequential variable elimination is easier to understand so this is a good
+	 * starting point to learn about these algorithms and our implementation.
+	 * Additionally, the first step of MFQR is symbolic sequential elimination.
+	 */
 	template<class FACTOR>
 	class GenericSequentialSolver: public Testable<
 			GenericSequentialSolver<FACTOR> > {
 
 	protected:
 
-		// Store the original factors for computing marginals
-		typename FactorGraph<FACTOR>::shared_ptr factors_;
+		typedef typename FactorGraph<FACTOR>::shared_ptr sharedFactorGraph;
 
-		// Column structure of the factor graph
+		/** Store the original factors for computing marginals
+		 * TODO Frank says: really? Marginals should be computed from result.
+		 */
+		sharedFactorGraph factors_;
+
+		/** Store column structure of the factor graph. Why? */
 		VariableIndex::shared_ptr structure_;
 
-		// Elimination tree that performs elimination.
+		/** Elimination tree that performs elimination */
 		typename EliminationTree<FACTOR>::shared_ptr eliminationTree_;
 
 	public:
@@ -53,7 +70,7 @@ namespace gtsam {
 		 * is the fastest.
 		 */
 		GenericSequentialSolver(
-				const typename FactorGraph<FACTOR>::shared_ptr& factorGraph,
+				const sharedFactorGraph& factorGraph,
 				const VariableIndex::shared_ptr& variableIndex);
 
 		/** Print to cout */
@@ -67,8 +84,7 @@ namespace gtsam {
 		 * This function can be used if the numerical part of the factors changes,
 		 * such as during relinearization or adjusting of noise models.
 		 */
-		void replaceFactors(
-				const typename FactorGraph<FACTOR>::shared_ptr& factorGraph);
+		void replaceFactors(const sharedFactorGraph& factorGraph);
 
 		/**
 		 * Eliminate the factor graph sequentially.  Uses a column elimination tree
@@ -79,8 +95,7 @@ namespace gtsam {
 
 		/**
 		 * Compute the marginal joint over a set of variables, by integrating out
-		 * all of the other variables.  This function returns the result as a factor
-		 * graph.
+		 * all of the other variables.  Returns the result as a factor graph.
 		 */
 		typename FactorGraph<FACTOR>::shared_ptr jointFactorGraph(
 				const std::vector<Index>& js,
