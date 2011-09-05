@@ -323,7 +323,15 @@ namespace gtsam {
 		// some untouched non-zeros that should be zero.  We zero them while
 		// extracting submatrices next.
 		tic(4, "partial Cholesky");
-		combinedFactor->partialCholesky(nrFrontals);
+		try {
+			combinedFactor->partialCholesky(nrFrontals);
+		} catch
+		(std::exception &ex) { // catch exception from Cholesky
+			combinedFactor->print("combinedFactor");
+			string reason = "EliminateCholesky failed while trying to eliminate the combined factor";
+			throw invalid_argument(reason);
+		}
+
 		toc(4, "partial Cholesky");
 
 		// Extract conditionals and fill in details of the remaining factor
