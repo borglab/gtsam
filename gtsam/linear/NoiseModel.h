@@ -75,10 +75,7 @@ namespace gtsam {
 			 */
 			virtual Vector unwhiten(const Vector& v) const = 0;
 
-      /**
-       * Mahalanobis distance v'*R'*R*v = <R*v,R*v>
-       */
-      virtual double Mahalanobis(const Vector& v) const = 0;
+      virtual double distance(const Vector& v) const = 0;
 
       virtual void WhitenSystem(Matrix& A, Vector& b) const = 0;
       virtual void WhitenSystem(Matrix& A1, Matrix& A2, Vector& b) const = 0;
@@ -167,6 +164,10 @@ namespace gtsam {
 			 * Mahalanobis distance v'*R'*R*v = <R*v,R*v>
 			 */
 			virtual double Mahalanobis(const Vector& v) const;
+
+      inline virtual double distance(const Vector& v) const {
+        return Mahalanobis(v);
+      }
 
 			/**
 			 * Multiply a derivative with R (derivative of whiten)
@@ -591,8 +592,8 @@ namespace gtsam {
       { return noise_->whiten(v); }
       inline virtual Vector unwhiten(const Vector& v) const
       { return noise_->unwhiten(v); }
-      inline virtual double Mahalanobis(const Vector& v) const
-      { return noise_->Mahalanobis(v); }
+      inline virtual double distance(const Vector& v) const
+      { return noise_->distance(v); }
       virtual void WhitenSystem(Matrix& A, Vector& b) const ;
       virtual void WhitenSystem(Matrix& A1, Matrix& A2, Vector& b) const ;
       virtual void WhitenSystem(Matrix& A1, Matrix& A2, Matrix& A3, Vector& b) const;

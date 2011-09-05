@@ -217,7 +217,7 @@ namespace gtsam {
 		 * to transform it to (h(x)-z)^2/sigma^2, and then multiply by 0.5.
 		 */
 		virtual double error(const VALUES& c) const {
-			return 0.5 * noiseModel_->Mahalanobis(unwhitenedError(c));
+			return 0.5 * noiseModel_->distance(unwhitenedError(c));
 		}
 
 	private:
