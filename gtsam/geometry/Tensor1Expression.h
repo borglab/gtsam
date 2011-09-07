@@ -43,9 +43,11 @@ namespace tensors {
 			A iter;
 			const double s;
 		public:
+			/// Constructor
 			TimesDouble_(const A &a, double s_) :
 				iter(a), s(s_) {
 			}
+			/// Element access
 			inline double operator()(int i) const {
 				return iter(i) * s;
 			}
@@ -67,6 +69,7 @@ namespace tensors {
 			std::cout << "}" << std::endl;
 		}
 
+		/// equality
 		template<class B>
 		bool equals(const Tensor1Expression<B, I> & q, double tol) const {
 			for (int i = 0; i < I::dim; i++)
@@ -82,6 +85,7 @@ namespace tensors {
 			return sqrt(sumsqr);
 		}
 
+		/// test equivalence
 		template<class B>
 		bool equivalent(const Tensor1Expression<B, I> & q, double tol = 1e-9) const {
 			return ((*this) * (1.0 / norm())).equals(q * (1.0 / q.norm()), tol)

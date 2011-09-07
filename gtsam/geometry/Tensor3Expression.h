@@ -77,6 +77,7 @@ namespace tensors {
 			std::cout << "}" << std::endl;
 		}
 
+		/// test equality
 		template<class B>
 		bool equals(const Tensor3Expression<B, I, J, K> & q, double tol) const {
 			for (int k = 0; k < K::dim; k++)
@@ -118,9 +119,11 @@ namespace tensors {
 		const Rank2 iterA;
 		const Rank1 iterB;
 	public:
+		/// Constructor
 		Rank2Rank1_(const Rank2 &a, const Rank1 &b) :
 			iterA(a), iterB(b) {
 		}
+		/// Element access
 		double operator()(int i, int j, int k) const {
 			return iterA(i, j) * iterB(k);
 		}
@@ -141,9 +144,11 @@ namespace tensors {
 		const Rank1 iterA;
 		const Rank2 iterB;
 	public:
+		/// Constructor
 		Rank1Rank2_(const Rank1 &a, const Rank2 &b) :
 			iterA(a), iterB(b) {
 		}
+		/// Element access
 		double operator()(int i, int j, int k) const {
 			return iterA(i) * iterB(j, k);
 		}

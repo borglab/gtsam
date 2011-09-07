@@ -24,7 +24,7 @@ namespace tensors {
 	/** A rank 1 tensor. Actually stores data. */
 	template<int N>
 	class Tensor1 {
-		double T[N];
+		double T[N]; ///< Storage
 
 	public:
 
@@ -60,12 +60,13 @@ namespace tensors {
 			return T[i];
 		}
 
-		/* return an expression associated with an index */
-		template<char I> Tensor1Expression<Tensor1, Index<N, I> > operator()(Index<
-				N, I> index) const {
-			return Tensor1Expression<Tensor1, Index<N, I> > (*this);
+		/// return an expression associated with an index
+		template<char I> Tensor1Expression<Tensor1, Index<N, I> > operator()(
+				Index<N, I> index) const {
+			return Tensor1Expression<Tensor1, Index<N, I> >(*this);
 		}
 
-	}; // Tensor1
+	};
+// Tensor1
 
-} // namespace tensors
+}// namespace tensors

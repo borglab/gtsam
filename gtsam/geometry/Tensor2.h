@@ -25,7 +25,7 @@ namespace tensors {
 template<int N1, int N2>
 class Tensor2 {
 protected:
-	Tensor1<N1> T[N2];
+	Tensor1<N1> T[N2]; ///< Storage
 
 public:
 
@@ -33,7 +33,7 @@ public:
 	Tensor2() {
 	}
 
-	/* construct from data - expressed in row major form */
+	/// construct from data - expressed in row major form
 	Tensor2(const double data[N2][N1]) {
 		for (int j = 0; j < N2; j++)
 			T[j] = Tensor1<N1> (data[j]);
@@ -49,10 +49,12 @@ public:
 	/** dimension - TODO: is this right for anything other than 3x3? */
 	size_t dim() const {return N1 * N2;}
 
+	/// const element access
 	const double & operator()(int i, int j) const {
 		return T[j](i);
 	}
 
+	/// element access
 	double & operator()(int i, int j) {
 		return T[j](i);
 	}

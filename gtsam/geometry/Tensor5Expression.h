@@ -33,9 +33,11 @@ namespace tensors {
 		class Swap34_ {
 			const A iter;
 		public:
+			/// Constructor
 			Swap34_(const A &a) :
-				iter(a) {
+					iter(a) {
 			}
+			/// swapping element access
 			double operator()(int i, int j, int k, int l, int m) const {
 				return iter(i, j, l, k, m);
 			}
@@ -45,7 +47,7 @@ namespace tensors {
 
 		/** constructor */
 		Tensor5Expression(const A &a) :
-			iter(a) {
+				iter(a) {
 		}
 
 		/** Print */
@@ -67,6 +69,7 @@ namespace tensors {
 
 		/** swap indices */
 		typedef Tensor5Expression<Swap34_, I, J, L, K, M> Swapped;
+		/// create Swap34_ helper class
 		Swapped swap34() {
 			return Swap34_(iter);
 		}
@@ -76,12 +79,13 @@ namespace tensors {
 			return iter(i, j, k, l, m);
 		}
 
-	}; // Tensor5Expression
+	};
+	// Tensor5Expression
 
 	/** Print */
 	template<class A, class I, class J, class K, class L, class M>
 	void print(const Tensor5Expression<A, I, J, K, L, M>& T,
-			const std::string& s = "Tensor5:") {
+	const std::string& s = "Tensor5:") {
 		T.print(s);
 	}
 
@@ -93,9 +97,11 @@ namespace tensors {
 		const Rank3 iterA;
 		const Rank2 iterB;
 	public:
+		/// Constructor
 		Rank3Rank2_(const Rank3 &a, const Rank2 &b) :
-			iterA(a), iterB(b) {
+				iterA(a), iterB(b) {
 		}
+		/// Element access
 		double operator()(int i, int j, int k, int l, int m) const {
 			return iterA(i, j, k) * iterB(l, m);
 		}
@@ -106,7 +112,7 @@ namespace tensors {
 	inline Tensor5Expression<Rank3Rank2_<A, I, J, K, B, L, M> , I, J, K, L, M> operator*(
 			const Tensor3Expression<A, I, J, K>& a,
 			const Tensor2Expression<B, L, M> &b) {
-		return Rank3Rank2_<A, I, J, K, B, L, M> (a, b);
+		return Rank3Rank2_<A, I, J, K, B, L, M>(a, b);
 	}
 
 } // namespace tensors

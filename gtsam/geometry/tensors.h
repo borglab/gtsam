@@ -22,7 +22,7 @@ namespace tensors {
 
 	/** index */
 	template<int Dim, char C> struct Index {
-		static const int dim = Dim;
+		static const int dim = Dim; ///< dimension
 	};
 
 } // namespace tensors

@@ -27,7 +27,7 @@ namespace tensors {
 
 	private:
 
-		Tensor4<N1, N2, N3, N4> T[N5];
+		Tensor4<N1, N2, N3, N4> T[N5]; ///< Storage
 
 	public:
 
@@ -43,6 +43,7 @@ namespace tensors {
 				T[m] = a(m);
 		}
 
+		/// element access
 		double operator()(int i, int j, int k, int l, int m) const {
 			return T[m](i, j, k, l);
 		}

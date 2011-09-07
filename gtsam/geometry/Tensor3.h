@@ -24,7 +24,7 @@ namespace tensors {
 	/** Rank 3 Tensor */
 	template<int N1, int N2, int N3>
 	class Tensor3 {
-		Tensor2<N1, N2> T[N3];
+		Tensor2<N1, N2> T[N3]; ///< Storage
 
 	public:
 
@@ -46,6 +46,7 @@ namespace tensors {
 				T[k] = a(k);
 		}
 
+		/// element access
 		double operator()(int i, int j, int k) const {
 			return T[k](i, j);
 		}
