@@ -14,8 +14,34 @@ namespace gtsam {
 
 template<class CONDITIONAL, class VALUES>
 struct ISAM2<CONDITIONAL, VALUES>::Impl {
-   static void AddVariables(const VALUES& newTheta, VALUES& theta, Permuted<VectorValues>& delta, Ordering& ordering, typename Base::Nodes& nodes);
-   static FastSet<Index> IndicesFromFactors(const Ordering& ordering, const NonlinearFactorGraph<VALUES>& factors);
+  /**
+   * Add new variables to the ISAM2 system.
+   * @param newTheta Initial values for new variables
+   * @param theta Current solution to be augmented with new initialization
+   * @param delta Current linear delta to be augmented with zeros
+   * @param ordering Current ordering to be augmented with new variables
+   * @param nodes Current BayesTree::Nodes index to be augmented with slots for new variables
+   */
+  static void AddVariables(const VALUES& newTheta, VALUES& theta, Permuted<VectorValues>& delta, Ordering& ordering, typename Base::Nodes& nodes);
+
+  /**
+   * Extract the set of variable indices from a NonlinearFactorGraph.  For each Symbol
+   * in each NonlinearFactor, obtains the index by calling ordering[symbol].
+   * @param ordering The current ordering from which to obtain the variable indices
+   * @param factors The factors from which to extract the variables
+   * @return The set of variables indices from the factors
+   */
+  static FastSet<Index> IndicesFromFactors(const Ordering& ordering, const NonlinearFactorGraph<VALUES>& factors);
+
+  /**
+   * Find the set of variables to be relinearized according to relinearizeThreshold.
+   * Any variables in the VectorValues delta whose vector magnitude is greater than
+   * or equal to relinearizeThreshold are returned.
+   * @param delta The linear delta to check against the threshold
+   * @return The set of variable indices in delta whose magnitude is greater than or
+   * equal to relinearizeThreshold
+   */
+  static FastSet<Index> CheckRelinearization(Permuted<VectorValues>& delta, double relinearizeThreshold);
 };
 
 /* ************************************************************************* */
@@ -68,6 +94,18 @@ FastSet<Index> ISAM2<CONDITIONAL,VALUES>::Impl::IndicesFromFactors(const Orderin
     }
   }
   return indices;
+}
+
+/* ************************************************************************* */
+template<class CONDITIONAL, class VALUES>
+FastSet<Index> ISAM2<CONDITIONAL,VALUES>::Impl::CheckRelinearization(Permuted<VectorValues>& delta, double relinearizeThreshold) {
+  FastSet<Index> relinKeys;
+  for(Index var=0; var<delta.size(); ++var) {
+    double maxDelta = delta[var].lpNorm<Eigen::Infinity>();
+    if(maxDelta >= relinearizeThreshold) {
+      relinKeys.insert(var);
+    }
+  }
 }
 
 }

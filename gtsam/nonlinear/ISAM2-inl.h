@@ -716,21 +716,19 @@ void ISAM2<Conditional, Values>::update(
   if(structuralLast) structuralKeys = markedKeys;                              // If we're using structural-last ordering, make another copy
   toc(3,"gather involved keys");
 
-  vector<bool> markedRelinMask(ordering_.nVars(), false);
-  bool relinAny = false;
   // Check relinearization if we're at a 10th step, or we are using a looser loop relin threshold
   if (force_relinearize || (params_.enableRelinearization && count % params_.relinearizeSkip == 0)) { // todo: every n steps
     tic(4,"gather relinearize keys");
+    vector<bool> markedRelinMask(ordering_.nVars(), false);
+    bool relinAny = false;
     // 4. Mark keys in \Delta above threshold \beta: J=\{\Delta_{j}\in\Delta|\Delta_{j}\geq\beta\}.
-    for(Index var=0; var<delta_.size(); ++var) {
-      //cout << var << ": " << delta_[var].transpose() << endl;
-      double maxDelta = delta_[var].lpNorm<Eigen::Infinity>();
-      if(maxDelta >= params_.relinearizeThreshold || disableReordering) {
-        markedRelinMask[var] = true;
-        markedKeys.insert(var);
-        if(!relinAny) relinAny = true;
-      }
-    }
+    FastSet<Index> relinKeys = Impl::CheckRelinearization(delta_, params_.relinearizeThreshold);
+    if(disableReordering) relinKeys = Impl::CheckRelinearization(delta_, 0.0); // This is used for debugging
+
+    BOOST_FOREACH(const Index j, relinKeys) { markedRelinMask[j] = true; }
+    markedKeys.insert(relinKeys.begin(), relinKeys.end());
+    if(!relinKeys.empty())
+      relinAny = true;
     toc(4,"gather relinearize keys");
 
     tic(5,"fluid find_all");
@@ -739,37 +737,29 @@ void ISAM2<Conditional, Values>::update(
       // mark all cliques that involve marked variables
       if(this->root())
         find_all(this->root(), markedKeys, markedRelinMask); // add other cliques that have the marked ones in the separator
-      // richard commented these out since now using an array to mark keys
-      //affectedKeys.sort(); // remove duplicates
-      //affectedKeys.unique();
-      // merge with markedKeys
     }
-    // richard commented these out since now using an array to mark keys
-    //markedKeys.splice(markedKeys.begin(), affectedKeys, affectedKeys.begin(), affectedKeys.end());
-    //markedKeys.sort(); // remove duplicates
-    //markedKeys.unique();
-//    BOOST_FOREACH(const Index var, affectedKeys) {
-//      markedKeys.push_back(var);
-//    }
     toc(5,"fluid find_all");
-  }
 
-  tic(6,"expmap");
-  // 6. Update linearization point for marked variables: \Theta_{J}:=\Theta_{J}+\Delta_{J}.
-  if (relinAny) {
+    tic(6,"expmap");
+    // 6. Update linearization point for marked variables: \Theta_{J}:=\Theta_{J}+\Delta_{J}.
+    if (relinAny) {
 #ifndef NDEBUG
-    _SelectiveExpmapAndClear selectiveExpmap(delta_, ordering_, markedRelinMask);
+      _SelectiveExpmapAndClear selectiveExpmap(delta_, ordering_, markedRelinMask);
 #else
-    _SelectiveExpmap selectiveExpmap(delta_, ordering_, markedRelinMask);
+      _SelectiveExpmap selectiveExpmap(delta_, ordering_, markedRelinMask);
 #endif
-    theta_.apply(selectiveExpmap);
-//    theta_ = theta_.expmap(deltaMarked);
-  }
-  toc(6,"expmap");
+      theta_.apply(selectiveExpmap);
+    }
+    toc(6,"expmap");
 
 #ifndef NDEBUG
-  lastRelinVariables_ = markedRelinMask;
+    lastRelinVariables_ = markedRelinMask;
 #endif
+  } else {
+#ifndef NDEBUG
+    lastRelinVariables_ = vector<bool>(ordering_.nVars(), false);
+#endif
+  }
 
   tic(7,"linearize new");
   tic(1,"linearize");
@@ -800,19 +790,6 @@ void ISAM2<Conditional, Values>::update(
     delta_.permutation() = Permutation::Identity(delta_.size());
     delta_.container() = newDelta;
     lastBacksubVariableCount = theta_.size();
-
-//#ifndef NDEBUG
-//    FactorGraph<JacobianFactor> linearfullJ = *nonlinearFactors_.linearize(theta_, ordering_);
-//    VectorValues deltafullJ = optimize(*GenericSequentialSolver<JacobianFactor>(linearfullJ).eliminate());
-//    FactorGraph<HessianFactor> linearfullH =
-//        *nonlinearFactors_.linearize(theta_, ordering_)->template convertCastFactors<FactorGraph<HessianFactor> >();
-//    VectorValues deltafullH = optimize(*GenericSequentialSolver<HessianFactor>(linearfullH).eliminate());
-//    if(!assert_equal(deltafullJ, newDelta, 1e-2))
-//      throw runtime_error("iSAM2 does not agree with full Jacobian solver");
-//    if(!assert_equal(deltafullH, newDelta, 1e-2))
-//      throw runtime_error("iSAM2 does not agree with full Hessian solver");
-    //#endif
-
   } else {
     vector<bool> replacedKeysMask(variableIndex_.size(), false);
     if(replacedKeys) {

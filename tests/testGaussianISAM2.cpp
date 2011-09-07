@@ -93,6 +93,59 @@ TEST(ISAM2, AddVariables) {
 }
 
 /* ************************************************************************* */
+//TEST(ISAM2, IndicesFromFactors) {
+//
+//  using namespace gtsam::planarSLAM;
+//  typedef GaussianISAM2<planarSLAM::Values>::Impl Impl;
+//
+//  Ordering ordering; ordering += PointKey(0), PoseKey(0), PoseKey(1);
+//  planarSLAM::Graph graph;
+//  graph.addPrior(PoseKey(0), Pose2(), sharedUnit(Pose2::dimension));
+//  graph.addRange(PoseKey(0), PointKey(0), 1.0, sharedUnit(1));
+//
+//  FastSet<Index> expected;
+//  expected.insert(0);
+//  expected.insert(1);
+//
+//  FastSet<Index> actual = Impl::IndicesFromFactors(ordering, graph);
+//
+//  EXPECT(assert_equal(expected, actual));
+//}
+
+/* ************************************************************************* */
+//TEST(ISAM2, CheckRelinearization) {
+//
+//  typedef GaussianISAM2<planarSLAM::Values>::Impl Impl;
+//
+//  // Create values where indices 1 and 3 are above the threshold of 0.1
+//  VectorValues values;
+//  values.reserve(4, 10);
+//  values.push_back_preallocated(Vector_(2, 0.09, 0.09));
+//  values.push_back_preallocated(Vector_(3, 0.11, 0.11, 0.09));
+//  values.push_back_preallocated(Vector_(3, 0.09, 0.09, 0.09));
+//  values.push_back_preallocated(Vector_(2, 0.11, 0.11));
+//
+//  // Create a permutation
+//  Permutation permutation(4);
+//  permutation[0] = 2;
+//  permutation[1] = 0;
+//  permutation[2] = 1;
+//  permutation[3] = 3;
+//
+//  Permuted<VectorValues> permuted(permutation, values);
+//
+//  // After permutation, the indices above the threshold are 2 and 2
+//  FastSet<Index> expected;
+//  expected.insert(2);
+//  expected.insert(3);
+//
+//  // Indices checked by CheckRelinearization
+//  FastSet<Index> actual = Impl::CheckRelinearization(permuted, 0.1);
+//
+//  EXPECT(assert_equal(expected, actual));
+//}
+
+/* ************************************************************************* */
 TEST(ISAM2, optimize2) {
 
   // Create initialization
