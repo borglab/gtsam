@@ -35,19 +35,19 @@ namespace gtsam {
   /**
    * Typedefs that make up the visualSLAM namespace.
    */
-  typedef TypedSymbol<Pose3,'x'> PoseKey;
-  typedef TypedSymbol<Point3,'l'> PointKey;
-  typedef LieValues<PoseKey> PoseValues;
-  typedef LieValues<PointKey> PointValues;
-  typedef TupleValues2<PoseValues, PointValues> Values;
-  typedef boost::shared_ptr<Values> shared_values;
+  typedef TypedSymbol<Pose3,'x'> PoseKey;									///< The key type used for poses
+  typedef TypedSymbol<Point3,'l'> PointKey;								///< The key type used for points
+  typedef LieValues<PoseKey> PoseValues;									///< Values used for poses
+  typedef LieValues<PointKey> PointValues;								///< Values used for points
+  typedef TupleValues2<PoseValues, PointValues> Values;		///< Values data structure
+  typedef boost::shared_ptr<Values> shared_values;				///< shared pointer to values data structure
 
-  typedef NonlinearEquality<Values, PoseKey> PoseConstraint;
-  typedef NonlinearEquality<Values, PointKey> PointConstraint;
-  typedef PriorFactor<Values, PoseKey> PosePrior;
-  typedef PriorFactor<Values, PointKey> PointPrior;
+  typedef NonlinearEquality<Values, PoseKey> PoseConstraint;	 ///< put a hard constraint on a pose
+  typedef NonlinearEquality<Values, PointKey> PointConstraint; ///< put a hard constraint on a point
+  typedef PriorFactor<Values, PoseKey> PosePrior;							 ///< put a soft prior on a Pose
+  typedef PriorFactor<Values, PointKey> PointPrior;						 ///< put a soft prior on a point
   
-  // Typedef for general use
+  /// monocular and stereo camera typedefs for general use
   typedef GenericProjectionFactor<Values, PointKey, PoseKey> ProjectionFactor;
   typedef GenericStereoFactor<Values, PoseKey, PointKey> StereoFactor;
 
@@ -57,27 +57,30 @@ namespace gtsam {
   class Graph: public NonlinearFactorGraph<Values> {
 
   public:
-
+  	/// shared pointer to this type of graph
     typedef boost::shared_ptr<Graph> shared_graph;
 
-    /** default constructor is empty graph */
+    /// default constructor is empty graph
     Graph() {
     }
 
-    /** print out graph */
+    /// print out graph
     void print(const std::string& s = "") const {
       NonlinearFactorGraph<Values>::print(s);
     }
 
-    /** equals */
+    /// check if two graphs are equal
     bool equals(const Graph& p, double tol = 1e-9) const {
       return NonlinearFactorGraph<Values>::equals(p, tol);
     }
 
     /**
-     *  Add a measurement
-     *  @param j index of camera
-     *  @param p to which pose to constrain it to
+     *  Add a projection factor measurement (monocular)
+     *  @param z the measurement
+     *  @param model the noise model for the measurement
+     *  @param i index of camera
+     *  @param j index of point
+     *  @param K shared pointer to calibration object
      */
     void addMeasurement(const Point2& z, const SharedNoiseModel& model,
         PoseKey i, PointKey j, const shared_ptrK& K) {
@@ -119,6 +122,7 @@ namespace gtsam {
     /**
      *  Add a prior on a landmark
      *  @param j index of landmark
+     *  @param p index of point
      *  @param model uncertainty model of this prior
      */
     void addPointPrior(int j, const Point3& p = Point3(), const SharedNoiseModel& model = noiseModel::Unit::Create(1)) {
@@ -128,7 +132,7 @@ namespace gtsam {
 
   }; // Graph
 
-  // Optimizer
+  /// typedef for Optimizer. The current default will use the multi-frontal solver
   typedef NonlinearOptimizer<Graph, Values> Optimizer;
 
 } } // namespaces
