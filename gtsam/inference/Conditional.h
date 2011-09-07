@@ -42,7 +42,7 @@ namespace gtsam {
  * immutable, i.e., practicing functional programming.
  */
 template<typename KEY>
-class Conditional: public gtsam::Factor<KEY>, boost::noncopyable, public Testable<Conditional<KEY> > {
+class Conditional: public gtsam::Factor<KEY>, boost::noncopyable {
 
 private:
 

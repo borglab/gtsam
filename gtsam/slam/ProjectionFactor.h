@@ -29,8 +29,8 @@ namespace gtsam {
 	 * Non-linear factor for a constraint derived from a 2D measurement. The calibration is known here.
 	 * i.e. the main building block for visual SLAM.
 	 */
-	template <class VALUES, class LMK, class POSK>
-	class GenericProjectionFactor : public NonlinearFactor2<VALUES, POSK, LMK>, Testable<GenericProjectionFactor<VALUES, LMK, POSK> > {
+	template<class VALUES, class LMK, class POSK>
+	class GenericProjectionFactor: public NonlinearFactor2<VALUES, POSK, LMK> {
 	protected:
 
 		// Keep a copy of measurement and calibration for I/O
@@ -39,16 +39,16 @@ namespace gtsam {
 
 	public:
 
-		// shorthand for base class type
+		/// shorthand for base class type
 		typedef NonlinearFactor2<VALUES, POSK, LMK> Base;
 
-		// shorthand for a smart pointer to a factor
+		/// shorthand for a smart pointer to a factor
 		typedef boost::shared_ptr<GenericProjectionFactor<VALUES, LMK, POSK> > shared_ptr;
 
-		/**
-		 * Default constructor
-		 */
-		GenericProjectionFactor() : K_(new Cal3_S2(444, 555, 666, 777, 888)) {}
+		/// Default constructor
+		GenericProjectionFactor() :
+				K_(new Cal3_S2(444, 555, 666, 777, 888)) {
+		}
 
 		/**
 		 * Constructor
@@ -58,10 +58,9 @@ namespace gtsam {
 		 * @param landmarkNumber is the index of the landmark
 		 * @param K the constant calibration
 		 */
-		GenericProjectionFactor(const Point2& z,
-				const SharedNoiseModel& model, POSK j_pose,
-				LMK j_landmark, const shared_ptrK& K) :
-					Base(model, j_pose, j_landmark), z_(z), K_(K) {
+		GenericProjectionFactor(const Point2& z, const SharedNoiseModel& model,
+				POSK j_pose, LMK j_landmark, const shared_ptrK& K) :
+				Base(model, j_pose, j_landmark), z_(z), K_(K) {
 		}
 
 		/**
@@ -73,17 +72,14 @@ namespace gtsam {
 			z_.print(s + ".z");
 		}
 
-		/**
-		 * equals
-		 */
-		bool equals(const GenericProjectionFactor<VALUES, LMK, POSK>& p, double tol = 1e-9) const {
+		/// equals
+		bool equals(const GenericProjectionFactor<VALUES, LMK, POSK>& p
+				, double tol = 1e-9) const {
 			return Base::equals(p, tol) && this->z_.equals(p.z_, tol)
 					&& this->K_->equals(*p.K_, tol);
 		}
 
-
-
-		/** h(x)-z */
+		/// Evaluate error h(x)-z and optionally derivatives
 		Vector evaluateError(const Pose3& pose, const Point3& point,
 				boost::optional<Matrix&> H1, boost::optional<Matrix&> H2) const {
 			SimpleCamera camera(*K_, pose);
@@ -92,7 +88,8 @@ namespace gtsam {
 		}
 
 	private:
-		/** Serialization function */
+
+		/// Serialization function
 		friend class boost::serialization::access;
 		template<class ARCHIVE>
 		void serialize(ARCHIVE & ar, const unsigned int version) {
