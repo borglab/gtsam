@@ -111,18 +111,18 @@ namespace gtsam {
 		/**
 		 *  Unary factor encoding a soft prior on a vector
 		 */
-		template<class CFG = Values, class KEY = PoseKey>
-		class GenericPrior: public NonlinearFactor1<CFG, KEY> {
+		template<class VALUES = Values, class KEY = PoseKey>
+		class GenericPrior: public NonlinearFactor1<VALUES, KEY> {
 		public:
-			typedef NonlinearFactor1<CFG, KEY> Base;  ///< base class
-			typedef boost::shared_ptr<GenericPrior<CFG, KEY> > shared_ptr;
+			typedef NonlinearFactor1<VALUES, KEY> Base;  ///< base class
+			typedef boost::shared_ptr<GenericPrior<VALUES, KEY> > shared_ptr;
 			typedef typename KEY::Value Pose; ///< shortcut to Pose type
 
 			Pose z_; ///< prior mean
 
 			/// Create generic prior
 			GenericPrior(const Pose& z, const SharedNoiseModel& model, const KEY& key) :
-					NonlinearFactor1<CFG, KEY>(model, key), z_(z) {
+					NonlinearFactor1<VALUES, KEY>(model, key), z_(z) {
 			}
 
 			/// Return error and optional derivative
@@ -149,11 +149,11 @@ namespace gtsam {
 		/**
 		 * Binary factor simulating "odometry" between two Vectors
 		 */
-		template<class CFG = Values, class KEY = PoseKey>
-		class GenericOdometry: public NonlinearFactor2<CFG, KEY, KEY> {
+		template<class VALUES = Values, class KEY = PoseKey>
+		class GenericOdometry: public NonlinearFactor2<VALUES, KEY, KEY> {
 		public:
-			typedef NonlinearFactor2<CFG, KEY, KEY> Base; ///< base class
-			typedef boost::shared_ptr<GenericOdometry<CFG, KEY> > shared_ptr;
+			typedef NonlinearFactor2<VALUES, KEY, KEY> Base; ///< base class
+			typedef boost::shared_ptr<GenericOdometry<VALUES, KEY> > shared_ptr;
 			typedef typename KEY::Value Pose; ///< shortcut to Pose type
 
 			Pose z_; ///< odometry measurement
@@ -161,7 +161,7 @@ namespace gtsam {
 			/// Create odometry
 			GenericOdometry(const Pose& z, const SharedNoiseModel& model,
 					const KEY& i1, const KEY& i2) :
-					NonlinearFactor2<CFG, KEY, KEY>(model, i1, i2), z_(z) {
+					NonlinearFactor2<VALUES, KEY, KEY>(model, i1, i2), z_(z) {
 			}
 
 			/// Evaluate error and optionally return derivatives
@@ -189,11 +189,11 @@ namespace gtsam {
 		/**
 		 * Binary factor simulating "measurement" between two Vectors
 		 */
-		template<class CFG = Values, class XKEY = PoseKey, class LKEY = PointKey>
-		class GenericMeasurement: public NonlinearFactor2<CFG, XKEY, LKEY> {
+		template<class VALUES = Values, class XKEY = PoseKey, class LKEY = PointKey>
+		class GenericMeasurement: public NonlinearFactor2<VALUES, XKEY, LKEY> {
 		public:
-			typedef NonlinearFactor2<CFG, XKEY, LKEY> Base;  ///< base class
-			typedef boost::shared_ptr<GenericMeasurement<CFG, XKEY, LKEY> > shared_ptr;
+			typedef NonlinearFactor2<VALUES, XKEY, LKEY> Base;  ///< base class
+			typedef boost::shared_ptr<GenericMeasurement<VALUES, XKEY, LKEY> > shared_ptr;
 			typedef typename XKEY::Value Pose; ///< shortcut to Pose type
 			typedef typename LKEY::Value Point; ///< shortcut to Point type
 
@@ -202,7 +202,7 @@ namespace gtsam {
 			/// Create measurement factor
 			GenericMeasurement(const Point& z, const SharedNoiseModel& model,
 					const XKEY& i, const LKEY& j) :
-					NonlinearFactor2<CFG, XKEY, LKEY>(model, i, j), z_(z) {
+					NonlinearFactor2<VALUES, XKEY, LKEY>(model, i, j), z_(z) {
 			}
 
 			/// Evaluate error and optionally return derivatives

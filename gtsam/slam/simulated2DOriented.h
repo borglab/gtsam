@@ -55,15 +55,15 @@ namespace gtsam {
 				boost::none, boost::optional<Matrix&> H2 = boost::none);
 
 		/// Unary factor encoding a soft prior on a vector
-		template<class CFG = Values, class Key = PoseKey>
-		struct GenericPosePrior: public NonlinearFactor1<CFG, Key> {
+		template<class VALUES = Values, class Key = PoseKey>
+		struct GenericPosePrior: public NonlinearFactor1<VALUES, Key> {
 
 			Pose2 z_; ///< measurement
 
 			/// Create generic pose prior
 			GenericPosePrior(const Pose2& z, const SharedNoiseModel& model,
 					const Key& key) :
-					NonlinearFactor1<CFG, Key>(model, key), z_(z) {
+					NonlinearFactor1<VALUES, Key>(model, key), z_(z) {
 			}
 
 			/// Evaluate error and optionally derivative
@@ -77,14 +77,14 @@ namespace gtsam {
 		/**
 		 * Binary factor simulating "odometry" between two Vectors
 		 */
-		template<class CFG = Values, class KEY = PoseKey>
-		struct GenericOdometry: public NonlinearFactor2<CFG, KEY, KEY> {
+		template<class VALUES = Values, class KEY = PoseKey>
+		struct GenericOdometry: public NonlinearFactor2<VALUES, KEY, KEY> {
 			Pose2 z_;
 
 			/// Create generic odometry factor
 			GenericOdometry(const Pose2& z, const SharedNoiseModel& model,
 					const KEY& i1, const KEY& i2) :
-					NonlinearFactor2<CFG, KEY, KEY>(model, i1, i2), z_(z) {
+					NonlinearFactor2<VALUES, KEY, KEY>(model, i1, i2), z_(z) {
 			}
 
 			/// Evaluate error and optionally derivative

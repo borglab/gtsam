@@ -27,21 +27,21 @@ namespace gtsam {
 	/**
 	 * Non-linear factor for a constraint derived from a 2D measurement. The calibration is unknown here compared to GenericProjectionFactor
 	 */
-	template <class Cfg, class CamK, class LmK>
+	template <class VALUES, class CamK, class LmK>
 	class GeneralSFMFactor:
-	public NonlinearFactor2<Cfg, CamK, LmK> {
+	public NonlinearFactor2<VALUES, CamK, LmK> {
 	protected:
 		Point2 z_;
 
 	public:
 
 		typedef typename CamK::Value Cam;
-		typedef GeneralSFMFactor<Cfg, CamK, LmK> Self ;
-		typedef NonlinearFactor2<Cfg, CamK, LmK> Base;
+		typedef GeneralSFMFactor<VALUES, CamK, LmK> Self ;
+		typedef NonlinearFactor2<VALUES, CamK, LmK> Base;
 		typedef Point2 Measurement;
 
 		// shorthand for a smart pointer to a factor
-		typedef boost::shared_ptr<GeneralSFMFactor<Cfg, LmK, CamK> > shared_ptr;
+		typedef boost::shared_ptr<GeneralSFMFactor<VALUES, LmK, CamK> > shared_ptr;
 
 		/**
 		 * Constructor
@@ -71,7 +71,7 @@ namespace gtsam {
 		/**
 		 * equals
 		 */
-		bool equals(const GeneralSFMFactor<Cfg, CamK, LmK> &p, double tol = 1e-9) const	{
+		bool equals(const GeneralSFMFactor<VALUES, CamK, LmK> &p, double tol = 1e-9) const	{
 			return Base::equals(p, tol) && this->z_.equals(p.z_, tol) ;
 		}
 

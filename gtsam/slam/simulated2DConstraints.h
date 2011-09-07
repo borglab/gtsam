@@ -51,10 +51,10 @@ namespace gtsam {
 			 * Unary inequality constraint forcing a coordinate to be greater/less than a fixed value (c)
 			 * Demo implementation: should be made more general using BoundingConstraint
 			 */
-			template<class Cfg, class Key, unsigned int Idx>
-			struct ScalarCoordConstraint1: public BoundingConstraint1<Cfg, Key> {
-				typedef BoundingConstraint1<Cfg, Key> Base;
-				typedef boost::shared_ptr<ScalarCoordConstraint1<Cfg, Key, Idx> > shared_ptr;
+			template<class VALUES, class Key, unsigned int Idx>
+			struct ScalarCoordConstraint1: public BoundingConstraint1<VALUES, Key> {
+				typedef BoundingConstraint1<VALUES, Key> Base;
+				typedef boost::shared_ptr<ScalarCoordConstraint1<VALUES, Key, Idx> > shared_ptr;
 
 				ScalarCoordConstraint1(const Key& key, double c,
 						bool isGreaterThan, double mu = 1000.0) :
@@ -85,9 +85,9 @@ namespace gtsam {
 			 * Binary inequality constraint forcing the range between points
 			 * to be less than or equal to a bound
 			 */
-			template<class Cfg, class Key>
-			struct MaxDistanceConstraint : public BoundingConstraint2<Cfg, Key, Key> {
-				typedef BoundingConstraint2<Cfg, Key, Key> Base;
+			template<class VALUES, class Key>
+			struct MaxDistanceConstraint : public BoundingConstraint2<VALUES, Key, Key> {
+				typedef BoundingConstraint2<VALUES, Key, Key> Base;
 
 				MaxDistanceConstraint(const Key& key1, const Key& key2, double range_bound, double mu = 1000.0)
 					: Base(key1, key2, range_bound, false, mu) {}
@@ -108,9 +108,9 @@ namespace gtsam {
 			 * Binary inequality constraint forcing a minimum range
 			 * NOTE: this is not a convex function!  Be careful with initialization.
 			 */
-			template<class Cfg, class XKey, class PKey>
-			struct MinDistanceConstraint : public BoundingConstraint2<Cfg, XKey, PKey> {
-				typedef BoundingConstraint2<Cfg, XKey, PKey> Base;
+			template<class VALUES, class XKey, class PKey>
+			struct MinDistanceConstraint : public BoundingConstraint2<VALUES, XKey, PKey> {
+				typedef BoundingConstraint2<VALUES, XKey, PKey> Base;
 
 				MinDistanceConstraint(const XKey& key1, const PKey& key2, double range_bound, double mu = 1000.0)
 					: Base(key1, key2, range_bound, true, mu) {}
