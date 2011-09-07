@@ -25,7 +25,8 @@
 namespace gtsam {
 
 	/**
-	 * A stereo camera class
+	 * A stereo camera class, parameterize by left camera pose and stereo calibration
+   * @ingroup geometry
 	 */
 	class StereoCamera {
 

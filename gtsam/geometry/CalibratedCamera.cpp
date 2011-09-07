@@ -9,14 +9,14 @@
 
  * -------------------------------------------------------------------------- */
 
-/*
- * CalibratedCamera.cpp
- *
- *  Created on: Aug 17, 2009
- *      Author: dellaert
+/**
+ * @file CalibratedCamera.cpp
+ * @brief Calibrated camera for which only pose is unknown
+ * @date Aug 17, 2009
+ * @author Frank Dellaert
  */
 
-#include <gtsam/geometry/Point2.h>
+#include <gtsam/geometry/Pose2.h>
 #include <gtsam/geometry/CalibratedCamera.h>
 
 namespace gtsam {

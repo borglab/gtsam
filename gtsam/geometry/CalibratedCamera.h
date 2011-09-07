@@ -9,58 +9,70 @@
 
  * -------------------------------------------------------------------------- */
 
-/*
- * CalibratedCamera.h
- *
- *  Created on: Aug 17, 2009
- *      Author: dellaert
+/**
+ * @file CalibratedCamera.h
+ * @brief Calibrated camera for which only pose is unknown
+ * @date Aug 17, 2009
+ * @author Frank Dellaert
  */
 
-#ifndef CalibratedCAMERA_H_
-#define CalibratedCAMERA_H_
+#pragma once
 
 #include <gtsam/geometry/Pose2.h>
 #include <gtsam/geometry/Pose3.h>
 
 namespace gtsam {
 
-	class Point2;
-
 	/**
 	 * A Calibrated camera class [R|-R't], calibration K=I.
 	 * If calibration is known, it is more computationally efficient
 	 * to calibrate the measurements rather than try to predict in pixels.
+	 * @ingroup geometry
 	 */
 	class CalibratedCamera {
 	private:
 		Pose3 pose_; // 6DOF pose
 
 	public:
-		CalibratedCamera();
-		CalibratedCamera(const Pose3& pose);
-		CalibratedCamera(const Vector &v) ;
-		virtual ~CalibratedCamera();
+		CalibratedCamera();                  ///< default constructor
+		CalibratedCamera(const Pose3& pose); ///< construct with pose
+		CalibratedCamera(const Vector &v) ;  ///< construct from vector
+		virtual ~CalibratedCamera();         ///< destructor
 
+		/// return pose
 		inline const Pose3& pose() const {	return pose_; }
+
+		/// check equality to another camera
 		bool equals (const CalibratedCamera &camera, double tol = 1e-9) const {
 			return pose_.equals(camera.pose(), tol) ;
 		}
 
+		/// compose the poses
 		inline const CalibratedCamera compose(const CalibratedCamera &c) const {
 			return CalibratedCamera( pose_ * c.pose() ) ;
 		}
 
+		/// invert the camera's pose
 		inline const CalibratedCamera inverse() const {
 			return CalibratedCamera( pose_.inverse() ) ;
 		}
 
+		/// move a cameras pose according to d
 		CalibratedCamera expmap(const Vector& d) const;
-	    Vector logmap(const CalibratedCamera& T2) const;
 
+		/// Return canonical coordinate
+	  Vector logmap(const CalibratedCamera& T2) const;
+
+		/// move a cameras pose according to d
 		static CalibratedCamera Expmap(const Vector& v);
-	    static Vector Logmap(const CalibratedCamera& p);
 
+		/// Return canonical coordinate
+	  static Vector Logmap(const CalibratedCamera& p);
+
+	  /// Lie group dimensionality
 		inline size_t dim() const { return 6 ; }
+
+	  /// Lie group dimensionality
 		inline static size_t Dim() { return 6 ; }
 
 		/**
@@ -99,14 +111,13 @@ namespace gtsam {
 		static Point3 backproject_from_camera(const Point2& p, const double scale);
 
 private:
+
 	    /** Serialization function */
 	    friend class boost::serialization::access;
 	    template<class Archive>
 	    void serialize(Archive & ar, const unsigned int version) {
 	      ar & BOOST_SERIALIZATION_NVP(pose_);
 	    }
-
 	};
 }
 
-#endif /* CalibratedCAMERA_H_ */

@@ -9,11 +9,11 @@
 
  * -------------------------------------------------------------------------- */
 
-/*
- * Rot2.h
- *
- *  Created on: Dec 9, 2009
- *      Author: Frank Dellaert
+/**
+ * @file Rot2.h
+ * @brief 2D rotation
+ * @date Dec 9, 2009
+ * @author Frank Dellaert
  */
 
 #pragma once
@@ -23,8 +23,10 @@
 
 namespace gtsam {
 
-  /** Rotation matrix
+  /**
+   * Rotation matrix
    * NOTE: the angle theta is in radians unless explicitly stated
+   * @ingroup geometry
    */
   class Rot2: Testable<Rot2>, public Lie<Rot2> {
 

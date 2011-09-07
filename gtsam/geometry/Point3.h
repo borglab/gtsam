@@ -29,7 +29,10 @@
 
 namespace gtsam {
 
-  /** A 3D point */
+  /**
+   * A 3D point
+   * @ingroup geometry
+   */
   class Point3: Testable<Point3>, public Lie<Point3> {
   public:
 	  /// dimension of the variable - used to autodetect sizes

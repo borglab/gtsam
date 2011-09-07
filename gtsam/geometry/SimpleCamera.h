@@ -9,11 +9,11 @@
 
  * -------------------------------------------------------------------------- */
 
-/*
- * SimpleCamera.h
- *
- *  Created on: Aug 16, 2009
- *      Author: dellaert
+/**
+ * @file SimpleCamera.h
+ * @brief A simple camera class with a Cal3_S2 calibration
+ * @date Aug 16, 2009
+ * @author Frank Dellaert
  */
 
 #ifndef SIMPLECAMERA_H_

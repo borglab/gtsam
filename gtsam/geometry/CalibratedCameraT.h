@@ -1,8 +1,8 @@
-/*
- * CalibratedCameraT.h
- *
- *  Created on: Mar 5, 2011
- *      Author: Yong-Dian Jian
+/**
+ * @file CalibratedCameraT.h
+ * @date Mar 5, 2011
+ * @author Yong-Dian Jian
+ * @brief calibrated camera template
  */
 
 #pragma once
@@ -12,13 +12,13 @@
 #include <gtsam/geometry/Pose3.h>
 
 namespace gtsam {
-  class Point2;
+
   /**
    * A Calibrated camera class [R|-R't], calibration K.
    * If calibration is known, it is more computationally efficient
    * to calibrate the measurements rather than try to predict in pixels.
+   * @ingroup geometry
    */
-
   template <typename Calibration>
   class CalibratedCameraT {
   private:

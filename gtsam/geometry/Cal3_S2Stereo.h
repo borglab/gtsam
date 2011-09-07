@@ -21,7 +21,10 @@
 
 namespace gtsam {
 
-	/** The most common 5DOF 3D->2D calibration */
+	/**
+	 * @brief The most common 5DOF 3D->2D calibration, stereo version
+	 * @ingroup geometry
+	 */
 	class Cal3_S2Stereo: public Cal3_S2 {
 	private:
 		double b_;

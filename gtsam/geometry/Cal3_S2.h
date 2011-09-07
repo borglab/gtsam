@@ -15,28 +15,31 @@
  * @author Frank Dellaert
  */
 
+/**
+ * @defgroup geometry
+ */
+
 #pragma once
 
 #include <gtsam/geometry/Point2.h>
 
 namespace gtsam {
 
-	/** The most common 5DOF 3D->2D calibration */
+	/**
+	 * @brief The most common 5DOF 3D->2D calibration
+	 * @ingroup geometry
+	 */
 	class Cal3_S2: Testable<Cal3_S2> {
 	private:
 		double fx_, fy_, s_, u0_, v0_;
 
 	public:
-		/**
-		 * default calibration leaves coordinates unchanged
-		 */
+		/// Create a default calibration that leaves coordinates unchanged
 		Cal3_S2() :
 			fx_(1), fy_(1), s_(0), u0_(0), v0_(0) {
 		}
 
-		/**
-		 * constructor from doubles
-		 */
+		/// constructor from doubles
 		Cal3_S2(double fx, double fy, double s, double u0, double v0) :
 			fx_(fx), fy_(fy), s_(s), u0_(u0), v0_(v0) {
 		}
@@ -53,42 +56,33 @@ namespace gtsam {
 			gtsam::print(matrix(), s);
 		}
 
-		/**
-		 * Check if equal up to specified tolerance
-		 */
+		/// Check if equal up to specified tolerance
 		bool equals(const Cal3_S2& K, double tol = 10e-9) const;
 
-		/**
-		 * load calibration from location (default name is calibration_info.txt)
-		 */
+		/// load calibration from location (default name is calibration_info.txt)
 		Cal3_S2(const std::string &path);
 
-		inline double fx() const {
-			return fx_;
-		}
-		inline double fy() const {
-			return fy_;
-		}
-		inline double skew() const {
-			return s_;
-		}
-		inline double px() const {
-			return u0_;
-		}
-		inline double py() const {
-			return v0_;
-		}
+		/// focal length x
+		inline double fx() const { return fx_;}
 
-		/**
-		 * return the principal point
-		 */
+		/// focal length x
+		inline double fy() const { return fy_;}
+
+		/// skew
+		inline double skew() const { return s_;}
+
+		/// image center in x
+		inline double px() const { return u0_;}
+
+		/// image center in y
+		inline double py() const { return v0_;}
+
+		/// return the principal point
 		Point2 principalPoint() const {
 			return Point2(u0_, v0_);
 		}
 
-		/**
-		 * return vectorized form (column-wise)
-		 */
+		/// vectorized form (column-wise)
 		Vector vector() const {
 			double r[] = { fx_, fy_, s_, u0_, v0_ };
 			Vector v(5);
@@ -96,17 +90,12 @@ namespace gtsam {
 			return v;
 		}
 
-		/**
-		 * return calibration matrix K
-		 */
+		/// return calibration matrix K
 		Matrix matrix() const {
 			return Matrix_(3, 3, fx_, s_, u0_, 0.0, fy_, v0_, 0.0, 0.0, 1.0);
 		}
 
-
-    /**
-     * return calibration matrix inv(K)
-     */
+    /// return inverted calibration matrix inv(K)
     Matrix matrix_inverse() const {
       const double fxy = fx_*fy_, sv0 = s_*v0_, fyu0 = fy_*u0_;
       return Matrix_(3, 3,
@@ -115,7 +104,6 @@ namespace gtsam {
           0.0, 0.0, 1.0);
     }
 
-
 		/**
 		 * convert intrinsic coordinates xy to image coordinates uv
 		 * with optional derivatives
@@ -123,41 +111,36 @@ namespace gtsam {
 		Point2 uncalibrate(const Point2& p, boost::optional<Matrix&> H1 =
 				boost::none, boost::optional<Matrix&> H2 = boost::none) const;
 
-		/**
-		 * convert image coordinates uv to intrinsic coordinates xy
-		 */
+		/// convert image coordinates uv to intrinsic coordinates xy
 		Point2 calibrate(const Point2& p) const {
 			const double u = p.x(), v = p.y();
 			return Point2((1 / fx_) * (u - u0_ - (s_ / fy_) * (v - v0_)), (1 / fy_)
 					* (v - v0_));
 		}
 
-		/**
-		 * return DOF, dimensionality of tangent space
-		 */
+		/// return DOF, dimensionality of tangent space
 		inline size_t dim() const {
 			return 5;
 		}
+
+		/// return DOF, dimensionality of tangent space
 		static size_t Dim() {
 			return 5;
 		}
 
-		/**
-		 * Given 5-dim tangent vector, create new calibration
-		 */
+		/// Given 5-dim tangent vector, create new calibration
 		inline Cal3_S2 expmap(const Vector& d) const {
 			return Cal3_S2(fx_ + d(0), fy_ + d(1), s_ + d(2), u0_ + d(3), v0_ + d(4));
 		}
 
-		/**
-		 * logmap for the calibration
-		 */
+		/// logmap for the calibration
 		Vector logmap(const Cal3_S2& T2) const {
 			return vector() - T2.vector();
 		}
 
 	private:
-		/** Serialization function */
+
+		/// Serialization function
 		friend class boost::serialization::access;
 		template<class Archive>
 		void serialize(Archive & ar, const unsigned int version) {

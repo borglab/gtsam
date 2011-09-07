@@ -10,10 +10,10 @@
  * -------------------------------------------------------------------------- */
 
 /**
- * StereoPoint2.h
- *
- *  Created on: Jan 26, 2010
- *      Author: dellaert
+ * @file StereoPoint2.h
+ * @brief A 2D stereo point (uL,uR,v)
+ * @date Jan 26, 2010
+ * @author Frank Dellaert
  */
 
 #pragma once
@@ -24,6 +24,7 @@ namespace gtsam {
 
 	/**
 	 * A 2D stereo point, v will be same for rectified images
+	 * @ingroup geometry
 	 */
 	class StereoPoint2: Testable<StereoPoint2>, Lie<StereoPoint2> {
 	public:

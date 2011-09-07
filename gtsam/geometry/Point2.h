@@ -28,6 +28,7 @@ namespace gtsam {
    * A 2D point
    * Derived from testable so has standard print and equals, and assert_equals works
    * Functional, so no set functions: once created, a point is constant.
+   * @ingroup geometry
    */
   class Point2: Testable<Point2>, public Lie<Point2> {
   public:

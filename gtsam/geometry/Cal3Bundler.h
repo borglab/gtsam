@@ -9,11 +9,11 @@
 
  * -------------------------------------------------------------------------- */
 
-/*
- * Cal3Bundler.h
- *
- *  Created on: Sep 25, 2010
- *      Author: ydjian
+/**
+ * @file Cal3Bundler.h
+ * @brief Calibration used by Bundler
+ * @date Sep 25, 2010
+ * @author ydjian
  */
 
 #pragma once
@@ -22,6 +22,10 @@
 
 namespace gtsam {
 
+/**
+ * @brief Calibration used by Bundler
+ * @ingroup geometry
+ */
 class Cal3Bundler: public Testable<Cal3Bundler> {
 
 private:

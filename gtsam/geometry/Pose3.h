@@ -23,7 +23,10 @@
 
 namespace gtsam {
 
-  /** A 3D pose (R,t) : (Rot3,Point3) */
+  /**
+   * A 3D pose (R,t) : (Rot3,Point3)
+   * @ingroup geometry
+   */
   class Pose3 : Testable<Pose3>, public Lie<Pose3> {
   public:
 	  static const size_t dimension = 6;

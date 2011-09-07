@@ -9,11 +9,11 @@
 
  * -------------------------------------------------------------------------- */
 
-/*
- * DistortedCameraT.h
- *
- *  Created on: Mar 1, 2010
- *      Author: ydjian
+/**
+ * @file GeneralCameraT.h
+ * @brief General camera template
+ * @date Mar 1, 2010
+ * @author Yong-Dian Jian
  */
 
 #pragma once
@@ -25,6 +25,10 @@
 
 namespace gtsam {
 
+/**
+ * General camera template
+ * @ingroup geometry
+ */
 template <typename Camera, typename Calibration>
 class GeneralCameraT {
 

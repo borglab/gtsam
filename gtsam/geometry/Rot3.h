@@ -11,7 +11,7 @@
 
 /**
  * @file    Rot3.h
- * @brief   Rotation
+ * @brief   3D Rotation represented as 3*3 matrix
  * @author  Alireza Fathi
  * @author  Christian Potthast
  * @author  Frank Dellaert
@@ -25,7 +25,10 @@
 
 namespace gtsam {
 
-  /* 3D Rotations in GTSAM are represented as rotation matrices */
+  /**
+   * @brief 3D Rotations represented as rotation matrices
+   * @ingroup geometry
+   */
   class Rot3: Testable<Rot3>, public Lie<Rot3> {
   public:
 	  static const size_t dimension = 3;

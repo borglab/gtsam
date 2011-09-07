@@ -9,13 +9,12 @@
 
  * -------------------------------------------------------------------------- */
 
-/*
- * Cal3DS2.h
- *
- *  Created on: Feb 28, 2010
- *      Author: ydjian
+/**
+ * @file Cal3DS2.h
+ * @brief Calibration of a camera with radial distortion
+ * @date Feb 28, 2010
+ * @author ydjian
  */
-
 
 #pragma once
 
@@ -23,7 +22,10 @@
 
 namespace gtsam {
 
-	/** This class  a camera with radial distortion */
+	/**
+	 * @brief Calibration of a camera with radial distortion
+	 * @ingroup geometry
+	 */
 	class Cal3DS2 : Testable<Cal3DS2> {
 	private:
 		double fx_, fy_, s_, u0_, v0_ ; // focal length, skew and principal point
