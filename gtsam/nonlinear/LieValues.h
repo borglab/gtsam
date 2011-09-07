@@ -11,7 +11,7 @@
 
 /**
  * @file LieValues.h
- * @Author: Richard Roberts
+ * @author Richard Roberts
  *
  * @brief A templated config for Lie-group elements
  *

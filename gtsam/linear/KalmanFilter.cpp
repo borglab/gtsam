@@ -16,8 +16,8 @@
  * Implemented using factor graphs, i.e., does LDL-based SRIF, really.
  *
  *  Created on: Sep 3, 2011
- *  @Author: Stephen Williams
- *  @Author: Frank Dellaert
+ *  @author Stephen Williams
+ *  @author Frank Dellaert
  */
 
 #include <gtsam/linear/GaussianSequentialSolver.h>

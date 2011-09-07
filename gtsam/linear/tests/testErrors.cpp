@@ -13,7 +13,7 @@
  * testErrors.cpp
  *
  *  Created on: Feb 20, 2010
- *  @Author: Frank Dellaert
+ *  @author Frank Dellaert
  */
 
 #include <boost/assign/std/list.hpp> // for +=

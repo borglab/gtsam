@@ -16,8 +16,8 @@
  * This example manually creates all of the needed data structures
  *
  *  Created on: Aug 19, 2011
- *  @Author: Frank Dellaert
- *  @Author: Stephen Williams
+ *  @author Frank Dellaert
+ *  @author Stephen Williams
  */
 
 #include <gtsam/slam/PriorFactor.h>

@@ -12,8 +12,8 @@
 /*
  * JunctionTree-inl.h
  * Created on: Feb 4, 2010
- * @Author: Kai Ni
- * @Author: Frank Dellaert
+ * @author Kai Ni
+ * @author Frank Dellaert
  * @brief: The junction tree, template bodies
  */
 

@@ -12,7 +12,7 @@
 /**
  * NonlinearOptimizer.cpp
  * @brief: Convergence functions not dependent on graph types
- * @Author: Frank Dellaert
+ * @author Frank Dellaert
  * Created on: Jul 17, 2010
  */
 

@@ -15,8 +15,8 @@
  * This is a super-simple example of optimizing a single rotation according to a single prior
  *
  *  Created on: Jul 1, 2010
- *  @Author: Frank Dellaert
- *  @Author: Alex Cunningham
+ *  @author Frank Dellaert
+ *  @author Alex Cunningham
  */
 
 #include <cmath>

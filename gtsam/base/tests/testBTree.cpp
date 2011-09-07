@@ -13,8 +13,8 @@
  * testBTree.cpp
  *
  *  Created on: Feb 3, 2010
- *  @Author: Chris Beall
- *  @Author: Frank Dellaert
+ *  @author Chris Beall
+ *  @author Frank Dellaert
  */
 
 #include <boost/shared_ptr.hpp>

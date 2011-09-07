@@ -12,7 +12,7 @@
 /**
  * SharedDiagonal.h
  * @brief Class that wraps a shared noise model with diagonal covariance
- * @Author: Frank Dellaert
+ * @author Frank Dellaert
  * Created on: Jan 22, 2010
  */
 

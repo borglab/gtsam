@@ -12,8 +12,8 @@
 /**
  *  Created on: Feb 3, 2010
  *  @brief: purely functional binary tree
- *  @Author: Chris Beall
- *  @Author: Frank Dellaert
+ *  @author Chris Beall
+ *  @author Frank Dellaert
  */
 
 #include <stack>

@@ -12,7 +12,7 @@
 /**
  * NonlinearOptimizer.h
  * @brief: Encapsulates nonlinear optimization state
- * @Author: Frank Dellaert
+ * @author Frank Dellaert
  * Created on: Sep 7, 2009
  */
 

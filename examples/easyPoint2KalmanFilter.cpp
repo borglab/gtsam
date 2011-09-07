@@ -17,8 +17,8 @@
  * operations as in elaboratePoint2KalmanFilter
  *
  *  Created on: Aug 19, 2011
- *  @Author: Frank Dellaert
- *  @Author: Stephen Williams
+ *  @author Frank Dellaert
+ *  @author Stephen Williams
  */
 
 #include <gtsam/nonlinear/ExtendedKalmanFilter-inl.h>
