@@ -30,7 +30,7 @@ namespace gtsam {
 	GaussianConditional* solve(GaussianFactorGraph& factorGraph) {
 
 		// Solve the factor graph
-		const bool useQr = true; // make sure we use QR (numerically stable)
+		const bool useQR = true; // make sure we use QR (numerically stable)
 		GaussianSequentialSolver solver(factorGraph, useQR);
 		GaussianBayesNet::shared_ptr bayesNet = solver.eliminate();
 

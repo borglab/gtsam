@@ -25,7 +25,6 @@ headers += NonlinearFactorGraph.h NonlinearFactorGraph-inl.h
 headers += NonlinearOptimizer-inl.h NonlinearOptimization.h NonlinearOptimization-inl.h NonlinearOptimizationParameters.h
 headers += NonlinearFactor.h
 sources += NonlinearOptimizer.cpp Ordering.cpp
-check_PROGRAMS += tests/testWhiteFactor
 
 # Nonlinear iSAM(2)
 headers += NonlinearISAM.h NonlinearISAM-inl.h
