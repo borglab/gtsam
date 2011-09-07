@@ -9,15 +9,15 @@
 
  * -------------------------------------------------------------------------- */
 
-/*
- * testKalmanFilter.cpp
+/**
+ * @file KalmanFilter.cpp
  *
- * Simple linear Kalman filter.
+ * @brief Simple linear Kalman filter.
  * Implemented using factor graphs, i.e., does LDL-based SRIF, really.
  *
- *  Created on: Sep 3, 2011
- *  @author Stephen Williams
- *  @author Frank Dellaert
+ * @date Sep 3, 2011
+ * @author Stephen Williams
+ * @author Frank Dellaert
  */
 
 #include <gtsam/linear/GaussianSequentialSolver.h>
@@ -26,11 +26,12 @@
 
 namespace gtsam {
 
-	// Auxiliary function to solve factor graph and return pointer to root conditional
+	/// Auxiliary function to solve factor graph and return pointer to root conditional
 	GaussianConditional* solve(GaussianFactorGraph& factorGraph) {
 
 		// Solve the factor graph
-		GaussianSequentialSolver solver(factorGraph);
+		const bool useQr = true; // make sure we use QR (numerically stable)
+		GaussianSequentialSolver solver(factorGraph, useQR);
 		GaussianBayesNet::shared_ptr bayesNet = solver.eliminate();
 
 		// As this is a filter, all we need is the posterior P(x_t),
