@@ -9,13 +9,11 @@
 
  * -------------------------------------------------------------------------- */
 
-/*
- * DSFVector.cpp
- *
- *   Created on: Jun 25, 2010
- *       Author: nikai
- *  Description: a faster implementation for DSF, which uses vector rather than btree.
- *               As a result, the size of the forest is prefixed.
+/**
+ * @file DSFVector.cpp
+ * @date Jun 25, 2010
+ * @author Kai Ni
+ * @brief a faster implementation for DSF, which uses vector rather than btree.
  */
 
 #include <boost/make_shared.hpp>

@@ -9,11 +9,11 @@
 
  * -------------------------------------------------------------------------- */
 
-/*
- * LieBaseImplementations.h
- *
- *  Created on: Jan 9, 2010
- *      Author: richard
+/**
+ * @file Lie-inl.h
+ * @date Jan 9, 2010
+ * @author Richard Roberts
+ * @brief Instantiate macro for Lie type
  */
 
 #pragma once

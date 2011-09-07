@@ -10,10 +10,10 @@
  * -------------------------------------------------------------------------- */
 
 /**
- * @file    FastSet.h
+ * @file    FastVector.h
  * @brief   A thin wrapper around std::vector that uses boost's pool_allocator.
  * @author  Richard Roberts
- * @created Feb 9, 2011
+ * @date    Feb 9, 2011
  */
 
 #pragma once
@@ -27,8 +27,8 @@ namespace gtsam {
  * FastVector is a thin wrapper around std::vector that uses the boost
  * pool_allocator instead of the default STL allocator.  This is just a
  * convenience to avoid having lengthy types in the code.  Through timing,
- * we've seen that the pool_allocator can lead to speedups of several
- * percent.
+ * we've seen that the pool_allocator can lead to speedups of several %
+ * @ingroup base
  */
 template<typename VALUE>
 class FastVector: public std::vector<VALUE, boost::pool_allocator<VALUE> > {

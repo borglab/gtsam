@@ -10,10 +10,11 @@
  * -------------------------------------------------------------------------- */
 
 /**
- *  Created on: Feb 3, 2010
- *  @brief: purely functional binary tree
- *  @author Chris Beall
- *  @author Frank Dellaert
+ * @file BTree.h
+ * @brief purely functional binary tree
+ * @author Chris Beall
+ * @author Frank Dellaert
+ * @date Feb 3, 2010
  */
 
 #include <stack>
@@ -24,7 +25,8 @@
 namespace gtsam {
 
 	/**
-	 *  @brief Binary tree
+	 * @brief Binary tree
+	 * @ingroup base
 	 */
 	template<class KEY, class VALUE>
 	class BTree {
@@ -36,7 +38,7 @@ namespace gtsam {
 	private:
 
 		/**
-		 *  @brief Node in a tree
+		 * Node in a tree
 		 */
 		struct Node {
 
@@ -49,7 +51,8 @@ namespace gtsam {
 			}
 
 			/**
-			 * leaf node with height 1
+			 * Create leaf node with height 1
+			 * @param keyValue (key,value) pair
 			 */
 			Node(const value_type& keyValue) :
 				height_(1), keyValue_(keyValue) {

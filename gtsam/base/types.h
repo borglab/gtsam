@@ -10,10 +10,11 @@
  * -------------------------------------------------------------------------- */
 
 /**
- * @file    types.h
- * @brief   Typedefs for easier changing of types
- * @author  Richard Roberts
- * @created Aug 21, 2010
+ * @file     types.h
+ * @brief    Typedefs for easier changing of types
+ * @author   Richard Roberts
+ * @date     Aug 21, 2010
+ * @defgroup base
  */
 
 #pragma once
@@ -22,12 +23,11 @@
 
 namespace gtsam {
 
-	/**
-	 * Integer variable index type
-	 */
+	/// Integer variable index type
 	typedef size_t Index;
 
-	/** Helper class that uses templates to select between two types based on
+	/**
+	 * Helper class that uses templates to select between two types based on
 	 * whether TEST_TYPE is const or not.
 	 */
 	template<typename TEST_TYPE, typename BASIC_TYPE, typename AS_NON_CONST,
@@ -40,6 +40,7 @@ namespace gtsam {
 	struct const_selector<BASIC_TYPE, BASIC_TYPE, AS_NON_CONST, AS_CONST> {
 		typedef AS_NON_CONST type;
 	};
+
 	/** Specialization for the const version */
 	template<typename BASIC_TYPE, typename AS_NON_CONST, typename AS_CONST>
 	struct const_selector<const BASIC_TYPE, BASIC_TYPE, AS_NON_CONST, AS_CONST> {

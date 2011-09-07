@@ -13,7 +13,7 @@
  * @file    cholesky.h
  * @brief   Efficient incomplete Cholesky on rank-deficient matrices, todo: constrained Cholesky
  * @author  Richard Roberts
- * @created Nov 5, 2010
+ * @date    Nov 5, 2010
  */
 #pragma once
 

@@ -11,9 +11,9 @@
 
 /**
  * @file    timing.h
- * @brief   
+ * @brief   Timing utilities
  * @author  Richard Roberts, Michael Kaess
- * @created Oct 5, 2010
+ * @date    Oct 5, 2010
  */
 #pragma once
 

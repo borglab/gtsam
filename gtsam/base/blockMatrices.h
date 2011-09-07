@@ -13,7 +13,7 @@
  * @file    blockMatrices.h
  * @brief   Access to matrices via blocks of pre-defined sizes.  Used in GaussianFactor and GaussianConditional.
  * @author  Richard Roberts
- * @created Sep 18, 2010
+ * @date    Sep 18, 2010
  */
 #pragma once
 
@@ -39,6 +39,8 @@ template<class MATRIX> class SymmetricBlockView;
  * determines the apparent *exclusive* last row for all operations.  To include
  * all rows, rowEnd() should be set to the number of rows in the matrix (i.e.
  * one after the last true row index).
+ *
+ * @ingroup base
  */
 template<class MATRIX>
 class VerticalBlockView {
@@ -313,6 +315,8 @@ private:
  * This class also has a parameter that can be changed after construction to
  * change the apparent matrix view.  firstBlock() determines the block that
  * appears to have index 0 for all operations (except re-setting firstBlock()).
+ *
+ * @ingroup base
  */
 template<class MATRIX>
 class SymmetricBlockView {

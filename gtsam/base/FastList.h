@@ -13,7 +13,7 @@
  * @file    FastList.h
  * @brief   A thin wrapper around std::list that uses boost's fast_pool_allocator.
  * @author  Richard Roberts
- * @created Oct 22, 2010
+ * @date    Oct 22, 2010
  */
 
 #pragma once
@@ -29,6 +29,7 @@ namespace gtsam {
  * convenience to avoid having lengthy types in the code.  Through timing,
  * we've seen that the fast_pool_allocator can lead to speedups of several
  * percent.
+	 * @ingroup base
  */
 template<typename VALUE>
 class FastList: public std::list<VALUE, boost::fast_pool_allocator<VALUE> > {

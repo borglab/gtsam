@@ -13,7 +13,7 @@
  * @file    cholesky.cpp
  * @brief   Efficient incomplete Cholesky on rank-deficient matrices, todo: constrained Cholesky
  * @author  Richard Roberts
- * @created Nov 5, 2010
+ * @date    Nov 5, 2010
  */
 
 #include <gtsam/base/debug.h>

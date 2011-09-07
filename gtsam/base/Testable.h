@@ -10,7 +10,7 @@
  * -------------------------------------------------------------------------- */
 
 /**
- * @file    Testable
+ * @file    Testable.h
  * @brief   Abstract base class for values that can be used in unit tests
  * @author  Frank Dellaert
  * 
@@ -44,6 +44,7 @@ namespace gtsam {
    * The Testable class should be templated with the derived class, e.g.
    * class Rot3 : public Testable<Rot3>. This allows us to define the
    * input type of equals as a Rot3 as well.
+	 * @ingroup base
    */
 	template <class Derived>
 	class Testable {

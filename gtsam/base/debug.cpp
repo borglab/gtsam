@@ -1,8 +1,8 @@
 /**
  * @file    debug.cpp
- * @brief   
+ * @brief   Global debugging flags
  * @author  Richard Roberts
- * @created Feb 1, 2011
+ * @date    Feb 1, 2011
  */
 
 #include <gtsam/base/debug.h>

@@ -10,14 +10,10 @@
  * -------------------------------------------------------------------------- */
 
 /**
- * DSF.h
- *
- *  Created on: Mar 26, 2010
- *  @Author Kai Ni
- *  @brief An implementation of Disjoint set forests (see CLR page 446 and up)
- *  						 Quoting from CLR: A disjoint-set data structure maintains a collection
- * 							 S = {S_1,S_2,...} of disjoint dynamic sets. Each set is identified by
- * 							 a representative, which is some member of the set.
+ * @file DSF.h
+ * @date Mar 26, 2010
+ * @author Kai Ni
+ * @brief An implementation of Disjoint set forests (see CLR page 446 and up)
  */
 
 #pragma once
@@ -31,6 +27,15 @@
 
 namespace gtsam {
 
+	/**
+	 * Disjoint Set Forest class
+	 *
+	 * Quoting from CLR: A disjoint-set data structure maintains a collection
+	 * S = {S_1,S_2,...} of disjoint dynamic sets. Each set is identified by
+	 * a representative, which is some member of the set.
+	 *
+	 * @ingroup base
+	 */
 	template <class KEY>
 	class DSF : protected BTree<KEY, KEY> {
 
