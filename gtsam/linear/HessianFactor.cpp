@@ -217,20 +217,20 @@ bool HessianFactor::equals(const GaussianFactor& lf, double tol) const {
 }
 
 /* ************************************************************************* */
-double HessianFactor::constant_term() const {
+double HessianFactor::constantTerm() const {
 	return info_(this->size(), this->size())(0,0);
 }
 
 /* ************************************************************************* */
-HessianFactor::constColumn HessianFactor::linear_term() const {
+HessianFactor::constColumn HessianFactor::linearTerm() const {
 	return info_.rangeColumn(0, this->size(), this->size(), 0);
 }
 
 /* ************************************************************************* */
 double HessianFactor::error(const VectorValues& c) const {
 	// error 0.5*(f - 2*x'*g + x'*G*x)
-	const double f = constant_term();
-	const double xtg = c.vector().dot(linear_term());
+	const double f = constantTerm();
+	const double xtg = c.vector().dot(linearTerm());
 	const double xGx = c.vector().transpose() * info_.range(0, this->size(), 0, this->size()).selfadjointView<Eigen::Upper>() *	c.vector();
 
 	return 0.5 * (f - 2.0 * xtg +  xGx);

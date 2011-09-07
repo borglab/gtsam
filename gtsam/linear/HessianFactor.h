@@ -51,14 +51,14 @@ namespace gtsam {
 
   /**
    * A general quadratic factor of the form
-   * f(x) = x'Hx + hx + c
-   * and stores the matrix H, the vector h, and the constant term c.
+   * \f[ e(x) = x^T G x + gx + f \f]
+   * that stores the matrix \f$ G \f$, the vector \f$ g \f$, and the constant term \f$ f \f$.
    *
-   * When H is positive semidefinite, this factor represents a Gaussian,
-   * in which case H is the information
-   * matrix \Lambda, which is the inverse of the covariance matrix \Sigma,
-   * h is the information vector \eta = \Lambda \mu, and c is the error
-   * at the mean, when x = \mu.
+   * When \f$ G \f$ is positive semidefinite, this factor represents a Gaussian,
+   * in which case \f$ G \f$ is the information
+   * matrix \f$ \Lambda \f$, which is the inverse of the covariance matrix \f$ \Sigma \f$,
+   * \f$ g \f$ is the information vector \f$ \eta = \Lambda \mu \f$, and \f$ f \f$ is the error
+   * at the mean, when \f$ x = \mu \f$ .
    *
    * This factor is one of the factors that can be in a GaussianFactorGraph.
    * It may be returned from NonlinearFactor::linearize(), but is also
@@ -66,9 +66,10 @@ namespace gtsam {
    *
    * This can represent a quadratic factor with characteristics that cannot be
    * represented using a JacobianFactor (which has the form
-   * f(x) = || Ax - b ||^2 and stores the Jacobian A and error vector b, i.e.
-   * is a sum-of-squares factor).  For example, a HessianFactor need not be
-   * positive semidefinite, it can be indefinite or even negative semidefinite.
+   * \f$ e(x) = \Vert Ax - b \Vert^2 \f$ and stores the Jacobian \f$ A \f$
+   * and error vector \f$ b \f$, i.e. is a sum-of-squares factor).  For example,
+   * a HessianFactor need not be positive semidefinite, it can be indefinite or
+   * even negative semidefinite.
    *
    * If a HessianFactor is indefinite or negative semi-definite, then in order
    * for solving the linear system to be possible,
@@ -76,7 +77,26 @@ namespace gtsam {
    * small Hessians are combined, the result must be positive definite).  If
    * this is not the case, an error will occur during elimination.
    *
-   * This class stores H, h, and c as an augmented matrix HessianFactor::matrix_.
+   * This class stores G, g, and f as an augmented matrix HessianFactor::matrix_.
+   * The upper-left n x n blocks of HessianFactor::matrix_ store the upper-right
+   * triangle of G, the upper-right-most column of length n of HessianFactor::matrix_
+   * stores g, and the lower-right entry of HessianFactor::matrix_ stores f, i.e.
+   * \code
+     HessianFactor::matrix_ = [ G11 G12 G13 ... g1
+                                  0 G22 G23 ... g2
+                                  0   0 G33 ... g3
+                                  :   :   :      :
+                                  0   0   0 ...  f ]
+     \endcode
+     Blocks can be accessed as follows:
+     \code
+     G11 = info(begin(), begin());
+     G12 = info(begin(), begin()+1);
+     G23 = info(begin()+1, begin()+2);
+     g2 = linearTerm(begin()+1);
+     f = constantTerm();
+     .......
+     \endcode
    */
   class HessianFactor : public GaussianFactor {
   protected:
@@ -167,20 +187,29 @@ namespace gtsam {
     /** Return the number of columns and rows of the Hessian matrix */
     size_t rows() const { return info_.rows(); }
 
-    /** Return a view of the block at (j1,j2) of the information matrix
+    /** Return a view of the block at (j1,j2) of the information matrix \f$ H \f$, no data is copied.
      * @param j1 Which block row to get, as an iterator pointing to the slot in this factor.  You can
      * use, for example, begin() + 2 to get the 3rd variable in this factor.
      * @param j2 Which block column to get, as an iterator pointing to the slot in this factor.  You can
      * use, for example, begin() + 2 to get the 3rd variable in this factor.
-     * @return
+     * @return A view of the requested block, not a copy.
      */
     constBlock info(const_iterator j1, const_iterator j2) const { return info_(j1-begin(), j2-begin()); }
 
-    /** returns the constant term f as described above */
-    double constant_term() const;
+    /** Return the constant term \f$ f \f$ as described above
+     * @return The constant term \f$ f \f$
+     */
+    double constantTerm() const;
 
-    /** returns the linear term g as described above */
-    constColumn linear_term() const;
+    /** Return the part of linear term \f$ g \f$ as described above corresponding to the requested variable.
+     * @param j Which block row to get, as an iterator pointing to the slot in this factor.  You can
+     * use, for example, begin() + 2 to get the 3rd variable in this factor.
+     * @return The linear term \f$ g \f$ */
+    constColumn linearTerm(const_iterator j) const { return info_.column(j-begin(), size(), 0); }
+
+    /** Return the complete linear term \f$ g \f$ as described above.
+     * @return The linear term \f$ g \f$ */
+    constColumn linearTerm() const;
 
     /**
      * Permutes the GaussianFactor, but for efficiency requires the permutation

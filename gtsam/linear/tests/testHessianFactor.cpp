@@ -121,8 +121,8 @@ TEST(HessianFactor, Constructor1)
   // extract underlying parts
   Matrix info_matrix = factor.info_.range(0, 1, 0, 1);
   EXPECT(assert_equal(Matrix(G), info_matrix));
-  EXPECT_DOUBLES_EQUAL(f, factor.constant_term(), 1e-10);
-  EXPECT(assert_equal(g, Vector(factor.linear_term()), 1e-10));
+  EXPECT_DOUBLES_EQUAL(f, factor.constantTerm(), 1e-10);
+  EXPECT(assert_equal(g, Vector(factor.linearTerm()), 1e-10));
   EXPECT_LONGS_EQUAL(1, factor.size());
 
   // error 0.5*(f - 2*x'*g + x'*G*x)
@@ -149,8 +149,8 @@ TEST(HessianFactor, Constructor1b)
   // Check
   Matrix info_matrix = factor.info_.range(0, 1, 0, 1);
   EXPECT(assert_equal(Matrix(G), info_matrix));
-  EXPECT_DOUBLES_EQUAL(f, factor.constant_term(), 1e-10);
-  EXPECT(assert_equal(g, Vector(factor.linear_term()), 1e-10));
+  EXPECT_DOUBLES_EQUAL(f, factor.constantTerm(), 1e-10);
+  EXPECT(assert_equal(g, Vector(factor.linearTerm()), 1e-10));
   EXPECT_LONGS_EQUAL(1, factor.size());
 }
 
@@ -182,10 +182,10 @@ TEST(HessianFactor, Constructor2)
 
   DOUBLES_EQUAL(expected, actual, 1e-10);
   LONGS_EQUAL(4, factor.rows());
-  DOUBLES_EQUAL(10.0, factor.constant_term(), 1e-10);
+  DOUBLES_EQUAL(10.0, factor.constantTerm(), 1e-10);
 
   Vector linearExpected(3);  linearExpected << g1, g2;
-  EXPECT(assert_equal(linearExpected, factor.linear_term()));
+  EXPECT(assert_equal(linearExpected, factor.linearTerm()));
 
   EXPECT(assert_equal(G11, factor.info(factor.begin(), factor.begin())));
   EXPECT(assert_equal(G12, factor.info(factor.begin(), factor.begin()+1)));
@@ -222,10 +222,10 @@ TEST_UNSAFE(HessianFactor, CopyConstructor)
 
   DOUBLES_EQUAL(expected, actual, 1e-10);
   LONGS_EQUAL(4, factor.rows());
-  DOUBLES_EQUAL(10.0, factor.constant_term(), 1e-10);
+  DOUBLES_EQUAL(10.0, factor.constantTerm(), 1e-10);
 
   Vector linearExpected(3);  linearExpected << g1, g2;
-  EXPECT(assert_equal(linearExpected, factor.linear_term()));
+  EXPECT(assert_equal(linearExpected, factor.linearTerm()));
 
   EXPECT(assert_equal(G11, factor.info(factor.begin(), factor.begin())));
   EXPECT(assert_equal(G12, factor.info(factor.begin(), factor.begin()+1)));
