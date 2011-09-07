@@ -152,6 +152,6 @@ namespace gtsam {
 		}
 	};
 
-	typedef boost::shared_ptr<Cal3_S2> shared_ptrK;
+	typedef boost::shared_ptr<Cal3_S2> shared_ptrK;		///< shared pointer to calibration object
 
 } // gtsam

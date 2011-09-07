@@ -34,8 +34,8 @@ namespace gtsam {
 	protected:
 
 		// Keep a copy of measurement and calibration for I/O
-		Point2 z_;
-		boost::shared_ptr<Cal3_S2> K_;
+		Point2 z_;											///< 2D measurement
+		boost::shared_ptr<Cal3_S2> K_;  ///< shared pointer to calibration object
 
 	public:
 
@@ -53,10 +53,10 @@ namespace gtsam {
 		/**
 		 * Constructor
 		 * @param z is the 2 dimensional location of point in image (the measurement)
-		 * @param sigma is the standard deviation
-		 * @param cameraFrameNumber is basically the frame number
-		 * @param landmarkNumber is the index of the landmark
-		 * @param K the constant calibration
+		 * @param model is the standard deviation
+		 * @param j_pose is basically the frame number
+		 * @param j_landmark is the index of the landmark
+		 * @param K shared pointer to the constant calibration
 		 */
 		GenericProjectionFactor(const Point2& z, const SharedNoiseModel& model,
 				POSK j_pose, LMK j_landmark, const shared_ptrK& K) :

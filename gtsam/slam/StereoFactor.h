@@ -27,16 +27,15 @@ class GenericStereoFactor: public NonlinearFactor2<VALUES, KEY1, KEY2> {
 private:
 
 	// Keep a copy of measurement and calibration for I/O
-	StereoPoint2 z_;
-	boost::shared_ptr<Cal3_S2Stereo> K_;
+	StereoPoint2 z_;											///< the measurement
+	boost::shared_ptr<Cal3_S2Stereo> K_;	///< shared pointer to calibration
 
 public:
 
 	// shorthand for base class type
-	typedef NonlinearFactor2<VALUES, KEY1, KEY2> Base;
-	typedef boost::shared_ptr<GenericStereoFactor> shared_ptr;
-	typedef typename KEY1::Value CamPose;
-	typedef StereoPoint2 Measurement;
+	typedef NonlinearFactor2<VALUES, KEY1, KEY2> Base;					///< typedef for base class
+	typedef boost::shared_ptr<GenericStereoFactor> shared_ptr;  ///< typedef for shared pointer to this object
+	typedef typename KEY1::Value CamPose;												///< typedef for Pose Lie Value type
 
 	/**
 	 * Default constructor
@@ -45,10 +44,10 @@ public:
 
 	/**
 	 * Constructor
-	 * @param z is the 2 dimensional location of point in image (the measurement)
-	 * @param sigma is the standard deviation
-	 * @param cameraFrameNumber is basically the frame number
-	 * @param landmarkNumber is the index of the landmark
+	 * @param z is the Stereo Point measurement (u_l, u_r, v). v will be identical for left & right for rectified stereo pair
+	 * @param model is the noise model in on the measurement
+	 * @param j_pose the pose index
+	 * @param j_landmark the landmark index
 	 * @param K the constant calibration
 	 */
 	GenericStereoFactor(const StereoPoint2& z, const SharedNoiseModel& model, KEY1 j_pose,
@@ -56,7 +55,7 @@ public:
 		Base(model, j_pose, j_landmark), z_(z), K_(K) {
 	}
 
-	~GenericStereoFactor() {}
+	~GenericStereoFactor() {}  ///< desctructor
 
 	/**
 	 * print
@@ -91,6 +90,7 @@ public:
 		return (stereoCam.project(point, H1, H2) - z_).vector();
 	}
 
+	/// get the measurement z
 	StereoPoint2 z() {
 		return z_;
 	}

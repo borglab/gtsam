@@ -9,11 +9,12 @@
 
  * -------------------------------------------------------------------------- */
 
-/*
- * visualSLAM.h
- *
- *  Created on: Jan 14, 2010
- *      Author: Richard Roberts and Chris Beall
+/**
+ *  @file visualSLAM.h
+ *  @brief Basic typedefs for general VisualSLAM problems. Useful for monocular and stereo systems.
+ *  @date Jan 14, 2010
+ *  @author Richard Roberts
+ *  @author Chris Beall
  */
 
 #pragma once

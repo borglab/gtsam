@@ -9,12 +9,13 @@
 
  * -------------------------------------------------------------------------- */
 
-/*
- * GeneralSFMFactor.h
+/**
+ * @file GeneralSFMFactor.h
  *
- *   Created on: Dec 15, 2010
- *       Author: nikai
- *  Description: a general SFM factor with an unknown calibration
+ * @brief a general SFM factor with an unknown calibration
+ *
+ * @date Dec 15, 2010
+ * @author Kai Ni
  */
 
 #pragma once
@@ -31,14 +32,14 @@ namespace gtsam {
 	class GeneralSFMFactor:
 	public NonlinearFactor2<VALUES, CamK, LmK> {
 	protected:
-		Point2 z_;
+		Point2 z_;			///< the 2D measurement
 
 	public:
 
-		typedef typename CamK::Value Cam;
-		typedef GeneralSFMFactor<VALUES, CamK, LmK> Self ;
-		typedef NonlinearFactor2<VALUES, CamK, LmK> Base;
-		typedef Point2 Measurement;
+		typedef typename CamK::Value Cam;										///< typedef for camera type
+		typedef GeneralSFMFactor<VALUES, CamK, LmK> Self ;	///< typedef for this object
+		typedef NonlinearFactor2<VALUES, CamK, LmK> Base;		///< typedef for the base class
+		typedef Point2 Measurement;													///< typedef for the measurement
 
 		// shorthand for a smart pointer to a factor
 		typedef boost::shared_ptr<GeneralSFMFactor<VALUES, LmK, CamK> > shared_ptr;
@@ -46,18 +47,17 @@ namespace gtsam {
 		/**
 		 * Constructor
 		 * @param z is the 2 dimensional location of point in image (the measurement)
-		 * @param sigma is the standard deviation
-		 * @param cameraFrameNumber is basically the frame number
-		 * @param landmarkNumber is the index of the landmark
-		 * @param K the constant calibration
+		 * @param model is the standard deviation of the measurements
+		 * @param i is basically the frame number
+		 * @param j is the index of the landmark
 		 */
-
-		GeneralSFMFactor():z_(0.0,0.0) {}
-		GeneralSFMFactor(const Point2 & p):z_(p) {}
-		GeneralSFMFactor(double x, double y):z_(x,y) {}
 		GeneralSFMFactor(const Point2& z, const SharedNoiseModel& model, const CamK& i, const LmK& j) : Base(model, i, j), z_(z) {}
 
-		virtual ~GeneralSFMFactor() {}
+		GeneralSFMFactor():z_(0.0,0.0) {} 							///< default constructor
+		GeneralSFMFactor(const Point2 & p):z_(p) {}			///< constructor that takes a Point2
+		GeneralSFMFactor(double x, double y):z_(x,y) {} ///< constructor that takes doubles x,y to make a Point2
+
+		virtual ~GeneralSFMFactor() {} ///< destructor
 
 		/**
 		 * print

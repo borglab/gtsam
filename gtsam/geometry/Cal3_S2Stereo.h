@@ -68,6 +68,6 @@ namespace gtsam {
 		}
 	};
 
-	typedef boost::shared_ptr<Cal3_S2Stereo> shared_ptrKStereo;
+	typedef boost::shared_ptr<Cal3_S2Stereo> shared_ptrKStereo;  ///< shared pointer to stereo calibration object
 
 }
