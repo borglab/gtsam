@@ -12,10 +12,10 @@
 /*
  * DSFVector.h
  *
- *   Created on: Jun 25, 2010
- *       Author: nikai
- *  Description: a faster implementation for DSF, which uses vector rather than btree.
- *               As a result, the size of the forest is prefixed.
+ * Created on: Jun 25, 2010
+ * @Author nikai
+ * @brief a faster implementation for DSF, which uses vector rather than btree.
+ * As a result, the size of the forest is prefixed.
  */
 
 #pragma once

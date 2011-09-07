@@ -9,12 +9,12 @@
 
  * -------------------------------------------------------------------------- */
 
-/*
+/**
  * DSF.h
  *
  *  Created on: Mar 26, 2010
- *  Author: nikai
- *  Description: An implementation of Disjoint set forests (see CLR page 446 and up)
+ *  @Author Kai Ni
+ *  @brief An implementation of Disjoint set forests (see CLR page 446 and up)
  *  						 Quoting from CLR: A disjoint-set data structure maintains a collection
  * 							 S = {S_1,S_2,...} of disjoint dynamic sets. Each set is identified by
  * 							 a representative, which is some member of the set.
