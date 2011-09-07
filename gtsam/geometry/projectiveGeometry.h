@@ -24,31 +24,36 @@
 namespace gtsam {
 
 	/**
-	 * 2D Point
-	 * @ingroup tensors
+	 * 2D Point in homogeneous coordinates
+	 * @ingroup geometry
 	 */
 	typedef tensors::Tensor1<3> Point2h;
-	Point2h point2h(double x, double y, double w);
+	Point2h point2h(double x, double y, double w); ///< create Point2h
 
 	/**
-	 * 2D Line
-	 * @ingroup tensors
+	 * 2D Line in homogeneous coordinates
+	 * @ingroup geometry
 	 */
 	typedef tensors::Tensor1<3> Line2h;
-	Line2h line2h(double a, double b, double c);
+	Line2h line2h(double a, double b, double c); ///< create Line2h
 
 	/**
-	 * 2D Point corrrespondence
-	 * @ingroup tensors
+	 * 2D (homegeneous) Point correspondence
+	 * @ingroup geometry
 	 */
 	struct Correspondence {
-		Point2h first, second;
+		Point2h first;  ///< First point
+		Point2h second; ///< Second point
+
+		/// Create a correspondence pair
 		Correspondence(const Point2h &p1, const Point2h &p2) :
 			first(p1), second(p2) {
 		}
+		/// Swap points
 		Correspondence swap() const {
 			return Correspondence(second, first);
 		}
+		/// print
 		void print() {
 			tensors::Index<3, 'i'> i;
 			tensors::print(first(i), "first :");
@@ -58,25 +63,30 @@ namespace gtsam {
 
 	/**
 	 * 2D-2D Homography
-	 * @ingroup tensors
+	 * @ingroup geometry
 	 */
 	typedef tensors::Tensor2<3, 3> Homography2;
 
 	/**
 	 * Fundamental Matrix
-	 * @ingroup tensors
+	 * @ingroup geometry
 	 */
 	typedef tensors::Tensor2<3, 3> FundamentalMatrix;
 
 	/**
-	 * Triplet of points
-	 * @ingroup tensors
+	 * Triplet of (homogeneous) 2D points
+	 * @ingroup geometry
 	 */
 	struct Triplet {
-		Point2h first, second, third;
+		Point2h first;  ///< First point
+		Point2h second; ///< Second point
+		Point2h third;  ///< Third point
+
+		/// Create a Triplet correspondence
 		Triplet(const Point2h &p1, const Point2h &p2, const Point2h &p3) :
 			first(p1), second(p2), third(p3) {
 		}
+		/// print
 		void print() {
 			tensors::Index<3, 'i'> i;
 			tensors::print(first(i), "first :");
@@ -87,27 +97,27 @@ namespace gtsam {
 
 	/**
 	 * Trifocal Tensor
-	 * @ingroup tensors
+	 * @ingroup geometry
 	 */
 	typedef tensors::Tensor3<3, 3, 3> TrifocalTensor;
 
 	/**
-	 * 3D Point
-	 * @ingroup tensors
+	 * 3D Point in homogeneous coordinates
+	 * @ingroup geometry
 	 */
 	typedef tensors::Tensor1<4> Point3h;
-	Point3h point3h(double X, double Y, double Z, double W);
+	Point3h point3h(double X, double Y, double Z, double W); ///< create Point3h
 
 	/**
-	 * 3D Plane
-	 * @ingroup tensors
+	 * 3D Plane in homogeneous coordinates
+	 * @ingroup geometry
 	 */
 	typedef tensors::Tensor1<4> Plane3h;
-	Plane3h plane3h(double a, double b, double c, double d);
+	Plane3h plane3h(double a, double b, double c, double d); ///< create Plane3h
 
 	/**
 	 * 3D to 2D projective camera
-	 * @ingroup tensors
+	 * @ingroup geometry
 	 */
 	typedef tensors::Tensor2<3, 4> ProjectiveCamera;
 
