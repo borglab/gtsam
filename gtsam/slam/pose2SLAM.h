@@ -34,8 +34,10 @@ namespace gtsam {
 	// Use pose2SLAM namespace for specific SLAM instance
 	namespace pose2SLAM {
 
-		// Keys and Values
+		/// Keys with Pose2 and symbol 'x'
 		typedef TypedSymbol<Pose2, 'x'> Key;
+
+		/// LieValues with type 'Key'
 		typedef LieValues<Key> Values;
 
 		/**
@@ -47,33 +49,49 @@ namespace gtsam {
 		 */
 		Values circle(size_t n, double R);
 
-		// Factors
+		/// A prior factor on Key with Pose2 data type.
 		typedef PriorFactor<Values, Key> Prior;
+
+		/// A factor to put constraints between two factors.
 		typedef BetweenFactor<Values, Key> Constraint;
+
+		/// A hard constraint would enforce that the given key would have the input value in the results.
 		typedef NonlinearEquality<Values, Key> HardConstraint;
 
-		// Graph
+		/// Graph
 		struct Graph: public NonlinearFactorGraph<Values> {
+
+			/// Adds a factor between keys of the same type
 			typedef BetweenFactor<Values, Key> Constraint;
+
+			/// A simple typedef from Pose2 to Pose
 			typedef Pose2 Pose;
+
+			/// Adds a Pose2 prior with a noise model to one of the keys in the nonlinear factor graph
 			void addPrior(const Key& i, const Pose2& p, const SharedNoiseModel& model);
+
+			/// Creates a between factor between keys i and j with a noise model with Pose2 z in the graph
 			void addConstraint(const Key& i, const Key& j, const Pose2& z, const SharedNoiseModel& model);
+
+			/// Creates a hard constraint for key i with the given Pose2 p.
 			void addHardConstraint(const Key& i, const Pose2& p);
 		};
 
-		// Optimizer
+		/// The sequential optimizer
 		typedef NonlinearOptimizer<Graph, Values, GaussianFactorGraph, GaussianSequentialSolver> OptimizerSequential;
-    typedef NonlinearOptimizer<Graph, Values, GaussianFactorGraph, GaussianMultifrontalSolver> Optimizer;
+
+		/// The multifrontal optimizer
+		typedef NonlinearOptimizer<Graph, Values, GaussianFactorGraph, GaussianMultifrontalSolver> Optimizer;
 
 	} // pose2SLAM
 
 	/**
 	 * Backwards compatibility
 	 */
-	typedef pose2SLAM::Values Pose2Values;
-	typedef pose2SLAM::Prior Pose2Prior;
-	typedef pose2SLAM::Constraint Pose2Factor;
-	typedef pose2SLAM::Graph Pose2Graph;
+	typedef pose2SLAM::Values Pose2Values;			///< Typedef for Values class for backwards compatibility
+	typedef pose2SLAM::Prior Pose2Prior;			///< Typedef for Prior class for backwards compatibility
+	typedef pose2SLAM::Constraint Pose2Factor;		///< Typedef for Constraint class for backwards compatibility
+	typedef pose2SLAM::Graph Pose2Graph;			///< Typedef for Graph class for backwards compatibility
 
 } // namespace gtsam
 
