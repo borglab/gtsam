@@ -155,10 +155,12 @@ public:
     return ((const FullMatrix&)matrix_).block(rowStart_, startCol, rowEnd_-rowStart_, endCol-startCol);
   }
 
+  /** Return the full matrix, *not* including any portions excluded by rowStart(), rowEnd(), and firstBlock() */
   inline Block full() {
     return range(0,nBlocks());
   }
 
+  /** Return the full matrix, *not* including any portions excluded by rowStart(), rowEnd(), and firstBlock() */
   inline const constBlock full() const {
     return range(0,nBlocks());
   }
@@ -172,6 +174,7 @@ public:
     return matrix_.col(variableColOffsets_[actualBlock] + columnOffset).segment(rowStart_, rowEnd_-rowStart_);
   }
 
+  /** get a single column out of a block */
   const constColumn column(size_t block, size_t columnOffset) const {
     assertInvariants();
     size_t actualBlock = block + blockStart_;
@@ -187,14 +190,25 @@ public:
     return variableColOffsets_[actualBlock];
   }
 
+  /** Get or set the apparent first row of the underlying matrix for all operations */
   size_t& rowStart() { return rowStart_; }
+
+  /** Get or set the apparent last row (exclusive, i.e. rows() == rowEnd() - rowStart()) of the underlying matrix for all operations */
   size_t& rowEnd() { return rowEnd_; }
+
+  /** Get or set the apparent first block for all operations */
   size_t& firstBlock() { return blockStart_; }
+
+  /** Get the apparent first row of the underlying matrix for all operations */
   size_t rowStart() const { return rowStart_; }
+
+  /** Get the apparent last row (exclusive, i.e. rows() == rowEnd() - rowStart()) of the underlying matrix for all operations */
   size_t rowEnd() const { return rowEnd_; }
+
+  /** Get the apparent first block for all operations */
   size_t firstBlock() const { return blockStart_; }
 
-  /** access to full matrix */
+  /** access to full matrix (*including* any portions excluded by rowStart(), rowEnd(), and firstBlock()) */
   const FullMatrix& fullMatrix() const { return matrix_; }
 
   /**
@@ -431,7 +445,6 @@ public:
   /** access to full matrix */
   const FullMatrix& fullMatrix() const { return matrix_; }
 
-//  typedef typename MATRIX::ColXpr Column;
   typedef typeof(matrixTemp_.col(0).segment(0, 1)) Column;
   typedef typeof(((const FullMatrix&)matrixTemp_).col(0).segment(0, 1)) constColumn;
 
@@ -453,10 +466,23 @@ public:
 
   constColumn column(size_t i_block, size_t j_block, size_t columnOffset) const {
     assertInvariants();
+    size_t i_actualBlock = i_block + blockStart_;
     size_t j_actualBlock = j_block + blockStart_;
+    checkBlock(i_actualBlock);
+    checkBlock(j_actualBlock);
+    assert(i_actualBlock < variableColOffsets_.size());
+    assert(j_actualBlock < variableColOffsets_.size());
     assert(variableColOffsets_[j_actualBlock] + columnOffset < variableColOffsets_[j_actualBlock+1]);
-    constBlock blockMat(operator()(i_block, j_block));
-    return constColumn(blockMat, columnOffset);
+
+    return ((const FullMatrix&)matrix_).col(
+        variableColOffsets_[j_actualBlock] + columnOffset).segment(
+            variableColOffsets_[i_actualBlock],
+            variableColOffsets_[i_actualBlock+1]-variableColOffsets_[i_actualBlock]);
+//    assertInvariants();
+//    size_t j_actualBlock = j_block + blockStart_;
+//    assert(variableColOffsets_[j_actualBlock] + columnOffset < variableColOffsets_[j_actualBlock+1]);
+//    constBlock blockMat(operator()(i_block, j_block));
+//    return constColumn(blockMat, columnOffset);
   }
 
   Column rangeColumn(size_t i_startBlock, size_t i_endBlock, size_t j_block, size_t columnOffset) {
