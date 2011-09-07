@@ -57,7 +57,7 @@ namespace gtsam {
 			struct ScalarCoordConstraint1: public BoundingConstraint1<VALUES, KEY> {
 				typedef BoundingConstraint1<VALUES, KEY> Base;  ///< Base class convenience typedef
 				typedef boost::shared_ptr<ScalarCoordConstraint1<VALUES, KEY, IDX> > shared_ptr; ///< boost::shared_ptr convenience typedef
-				typedef typename::KEY::Value Point; ///< Constrained variable type
+				typedef typename KEY::Value Point; ///< Constrained variable type
 
 				/**
 				 * Constructor for constraint
@@ -105,7 +105,7 @@ namespace gtsam {
 			 * @param b is the second Lie element
 			 * @return a scalar distance between values
 			 */
-			template<class T1, class T2 = T1>
+			template<class T1, class T2>
 			double range_trait(const T1& a, const T2& b) { return a.dist(b); }
 
 			/**
