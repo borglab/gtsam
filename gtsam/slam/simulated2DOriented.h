@@ -79,9 +79,11 @@ namespace gtsam {
 		 */
 		template<class VALUES = Values, class KEY = PoseKey>
 		struct GenericOdometry: public NonlinearFactor2<VALUES, KEY, KEY> {
-			Pose2 z_;
+			Pose2 z_;   ///< Between measurement for odometry factor
 
-			/// Create generic odometry factor
+			/**
+			 * Creates an odometry factor between two poses
+			 */
 			GenericOdometry(const Pose2& z, const SharedNoiseModel& model,
 					const KEY& i1, const KEY& i2) :
 					NonlinearFactor2<VALUES, KEY, KEY>(model, i1, i2), z_(z) {
