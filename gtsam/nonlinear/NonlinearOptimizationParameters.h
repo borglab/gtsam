@@ -68,7 +68,7 @@ struct NonlinearOptimizationParameters {
 
 	NonlinearOptimizationParameters(double absDecrease, double relDecrease, double sumError,
 			int iIters = 100, double lambda = 1e-5, double lambdaFactor = 10,
-			verbosityLevel v = SILENT, LambdaMode lambdaMode = BOUNDED, bool useQR = true)
+			verbosityLevel v = SILENT, LambdaMode lambdaMode = BOUNDED, bool useQR = false)
 	:absDecrease_(absDecrease), relDecrease_(relDecrease), sumError_(sumError),
 	 maxIterations_(iIters), lambda_(lambda), lambdaFactor_(lambdaFactor), verbosity_(v),
 	 lambdaMode_(lambdaMode), useQR_(useQR) {}
