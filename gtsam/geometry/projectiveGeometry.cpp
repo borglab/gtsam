@@ -9,10 +9,10 @@
 
  * -------------------------------------------------------------------------- */
 
-/*
- * projectiveGeometry.cpp
+/**
+ * @file projectiveGeometry.cpp
  * @brief Projective geometry, implemented using tensor library
- * Created on: Feb 12, 2010
+ * @date Feb 12, 2010
  * @author: Frank Dellaert
  */
 

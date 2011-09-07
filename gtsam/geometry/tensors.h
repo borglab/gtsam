@@ -9,11 +9,12 @@
 
  * -------------------------------------------------------------------------- */
 
-/*
- * tensors.h
+/**
+ * @file tensors.h
  * @brief Tensor expression templates based on http://www.gps.caltech.edu/~walter/FTensor/FTensor.pdf
- * Created on: Feb 10, 2010
- * @author: Frank Dellaert
+ * @date Feb 10, 2010
+ * @author Frank Dellaert
+ * @defgroup tensors
  */
 
 #pragma once

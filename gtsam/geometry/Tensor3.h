@@ -9,10 +9,10 @@
 
  * -------------------------------------------------------------------------- */
 
-/*
- * Tensor3.h
+/**
+ * @file Tensor3.h
  * @brief Rank 3 tensors based on http://www.gps.caltech.edu/~walter/FTensor/FTensor.pdf
- * Created on: Feb 10, 2010
+ * @date Feb 10, 2010
  * @author: Frank Dellaert
  */
 
@@ -21,7 +21,10 @@
 
 namespace tensors {
 
-	/** Rank 3 Tensor */
+	/**
+	 * Rank 3 Tensor
+	 * @ingroup tensors
+	 */
 	template<int N1, int N2, int N3>
 	class Tensor3 {
 		Tensor2<N1, N2> T[N3]; ///< Storage

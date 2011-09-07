@@ -9,11 +9,11 @@
 
  * -------------------------------------------------------------------------- */
 
-/*
- * Tensor2.h
+/**
+ * @file Tensor2.h
  * @brief Rank 2 Tensor based on http://www.gps.caltech.edu/~walter/FTensor/FTensor.pdf
- * Created on: Feb 10, 2010
- * @author: Frank Dellaert
+ * @date Feb 10, 2010
+ * @author Frank Dellaert
  */
 
 #pragma once
@@ -21,7 +21,10 @@
 
 namespace tensors {
 
-/** Rank 2 Tensor */
+/**
+ * Rank 2 Tensor
+ * @ingroup tensors
+ */
 template<int N1, int N2>
 class Tensor2 {
 protected:

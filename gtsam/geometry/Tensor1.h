@@ -9,11 +9,11 @@
 
  * -------------------------------------------------------------------------- */
 
-/*
- * Tensor1.h
+/**
+ * @file Tensor1.h
  * @brief Rank 1 tensors based on http://www.gps.caltech.edu/~walter/FTensor/FTensor.pdf
- * Created on: Feb 10, 2010
- * @author: Frank Dellaert
+ * @date Feb 10, 2010
+ * @author Frank Dellaert
  */
 
 #pragma once
@@ -21,7 +21,10 @@
 
 namespace tensors {
 
-	/** A rank 1 tensor. Actually stores data. */
+	/**
+	 * A rank 1 tensor. Actually stores data.
+	 * @ingroup tensors
+	 */
 	template<int N>
 	class Tensor1 {
 		double T[N]; ///< Storage

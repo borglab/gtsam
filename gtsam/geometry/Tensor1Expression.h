@@ -9,11 +9,11 @@
 
  * -------------------------------------------------------------------------- */
 
-/*
- * Tensor1Expression.h
+/**
+ * @file Tensor1Expression.h
  * @brief Tensor expression templates based on http://www.gps.caltech.edu/~walter/FTensor/FTensor.pdf
- * Created on: Feb 10, 2010
- * @author: Frank Dellaert
+ * @date Feb 10, 2010
+ * @author Frank Dellaert
  */
 
 #pragma once
@@ -29,6 +29,7 @@ namespace tensors {
 	 * Templated class to provide a rank 1 tensor interface to a class.
 	 * This class does not store any data but the result of an expression.
 	 * It is associated with an index.
+	 * @ingroup tensors
 	 */
 	template<class A, class I> class Tensor1Expression {
 

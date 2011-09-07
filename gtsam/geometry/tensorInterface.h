@@ -9,11 +9,11 @@
 
  * -------------------------------------------------------------------------- */
 
-/*
- * tensorInterface.h
+/**
+ * @file tensorInterface.h
  * @brief Interfacing tensors template library and gtsam
- * Created on: Feb 12, 2010
- * @author: Frank Dellaert
+ * @date Feb 12, 2010
+ * @author Frank Dellaert
  */
 
 #pragma once

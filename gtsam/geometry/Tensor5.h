@@ -9,11 +9,11 @@
 
  * -------------------------------------------------------------------------- */
 
-/*
- * Tensor5.h
+/**
+ * @file Tensor5.h
  * @brief Rank 5 tensors based on http://www.gps.caltech.edu/~walter/FTensor/FTensor.pdf
- * Created on: Feb 12, 2010
- * @author: Frank Dellaert
+ * @date Feb 12, 2010
+ * @author Frank Dellaert
  */
 
 #pragma once
@@ -21,7 +21,10 @@
 
 namespace tensors {
 
-	/** Rank 3 Tensor */
+	/**
+	 * Rank 5 Tensor
+	 * @ingroup tensors
+	 */
 	template<int N1, int N2, int N3, int N4, int N5>
 	class Tensor5 {
 

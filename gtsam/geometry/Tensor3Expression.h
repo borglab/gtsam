@@ -9,11 +9,11 @@
 
  * -------------------------------------------------------------------------- */
 
-/*
- * Tensor3Expression.h
+/**
+ * @file Tensor3Expression.h
  * @brief Tensor expression templates based on http://www.gps.caltech.edu/~walter/FTensor/FTensor.pdf
- * Created on: Feb 10, 2010
- * @author: Frank Dellaert
+ * @date Feb 10, 2010
+ * @author Frank Dellaert
  */
 
 #pragma once
@@ -23,7 +23,10 @@
 
 namespace tensors {
 
-	/** templated class to interface to an object A as a rank 3 tensor */
+	/**
+	 * templated class to interface to an object A as a rank 3 tensor
+	 * @ingroup tensors
+	 */
 	template<class A, class I, class J, class K> class Tensor3Expression {
 		A iter;
 
