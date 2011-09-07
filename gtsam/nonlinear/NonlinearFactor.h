@@ -42,7 +42,7 @@ namespace gtsam {
 	 * which are objects in non-linear manifolds (Lie groups).
 	 */
 	template<class VALUES>
-	class NonlinearFactor: public Factor<Symbol>, public Testable<NonlinearFactor<VALUES> > {
+	class NonlinearFactor: public Factor<Symbol> {
 
 	protected:
 
@@ -126,7 +126,7 @@ namespace gtsam {
 	 * The noise model is typically Gaussian, but robust error models are also supported.
 	 */
 	template<class VALUES>
-	class NoiseModelFactor: public NonlinearFactor<VALUES>, public Testable<NoiseModelFactor<VALUES> > {
+	class NoiseModelFactor: public NonlinearFactor<VALUES> {
 
 	protected:
 
