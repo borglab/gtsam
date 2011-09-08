@@ -34,6 +34,10 @@ template<class KEY> class Conditional;
 
 /**
  * This is the base class for all factor types.  It is templated on a KEY type,
+ * which will be the type used to label variables.  Key types currently in use
+ * in gtsam are Index with symbolic (IndexFactor, SymbolicFactorGraph) and
+ * Gaussian factors (GaussianFactor, JacobianFactor, HessianFactor, GaussianFactorGraph),
+ * and Symbol with nonlinear factors (NonlinearFactor, NonlinearFactorGraph).
  * though currently only IndexFactor and IndexConditional derive from this
  * class, using Index keys.  This class does not store any data other than its
  * keys.  Derived classes store data such as matrices and probability tables.
@@ -41,33 +45,37 @@ template<class KEY> class Conditional;
  * Note that derived classes *must* redefine the ConditionalType and shared_ptr
  * typedefs to refer to the associated conditional and shared_ptr types of the
  * derived class.  See IndexFactor, JacobianFactor, etc. for examples.
+ *
+ * This class is \bold{not} virtual for performance reasons - derived symbolic classes,
+ * IndexFactor and IndexConditional, need to be created and destroyed quickly
+ * during symbolic elimination.  GaussianFactor and NonlinearFactor are virtual.
  */
 template<typename KEY>
 class Factor : public Testable<Factor<KEY> > {
 
 public:
 
-  typedef KEY Key;
-  typedef Factor<Key> This;
+  typedef KEY Key; ///< The KEY template parameter
+  typedef Factor<Key> This; ///< This class
 
   /**
-   * Typedef to the conditional type obtained by eliminating this factor.
-   * Derived classes must redefine this.
+   * Typedef to the conditional type obtained by eliminating this factor,
+   * derived classes must redefine this.
    */
   typedef Conditional<Key> ConditionalType;
 
-  /** A shared_ptr to this class.  Derived classes must redefine this. */
+  /// A shared_ptr to this class, derived classes must redefine this.
   typedef boost::shared_ptr<Factor> shared_ptr;
 
-  /** Iterator over keys */
+  /// Iterator over keys
   typedef typename std::vector<Key>::iterator iterator;
 
-  /** Const iterator over keys */
+  /// Const iterator over keys
   typedef typename std::vector<Key>::const_iterator const_iterator;
 
 protected:
 
-  // The keys involved in this factor
+  /// The keys involved in this factor
   std::vector<Key> keys_;
 
   friend class JacobianFactor;
@@ -75,8 +83,8 @@ protected:
 
 protected:
 
-  // Internal check to make sure keys are unique.  If NDEBUG is defined, this
-  // is empty and optimized out.
+  /// Internal consistency check that is run frequently when in debug mode.
+  /// If NDEBUG is defined, this is empty and optimized out.
   void assertInvariants() const;
 
 public:
@@ -84,7 +92,7 @@ public:
   /** Copy constructor */
   Factor(const This& f);
 
-  /** Construct from derived type */
+  /** Construct from conditional, calls ConditionalType::toFactor() */
   Factor(const ConditionalType& c);
 
   /** Constructor from a collection of keys */
