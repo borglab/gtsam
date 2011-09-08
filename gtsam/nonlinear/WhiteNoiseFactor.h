@@ -10,10 +10,11 @@
  * -------------------------------------------------------------------------- */
 
 /**
- * @file WhiteNoiseFactor.h
- * @brief Test the binary white noise factor
+ * @file   WhiteNoiseFactor.h
+ * @brief  Binary white noise factor
  * @author Chris Beall
  * @author Frank Dellaert
+ * @date   September 2011
  */
 
 #include <gtsam/nonlinear/NonlinearFactor.h>
@@ -21,13 +22,15 @@
 #include <gtsam/base/LieScalar.h>
 #include <cmath>
 
-const double logSqrt2PI = log(sqrt(2.0 * M_PI));
-
 namespace gtsam {
+
+	const double logSqrt2PI = log(sqrt(2.0 * M_PI)); ///< constant needed below
 
 	/**
 	 * @brief Binary factor to estimate parameters of zero-mean Gaussian white noise
-	 * This factor uses the mean-precision parameterization
+	 *
+	 * This factor uses the mean-precision parameterization.
+	 *
 	 * Takes three template arguments:
 	 * MKEY: key type to use for mean
 	 * PKEY: key type to use for precision
@@ -47,9 +50,38 @@ namespace gtsam {
 
 	public:
 
-		/// log likelihood  f(z, p, u) = log(sqrt2PI) - 0.5*log(p) + 0.5*(z-u)*(z-u)*p
+		/** @brief negative log likelihood as a function of mean \mu and precision \tau
+		 * @f[
+		 * f(z, \tau, \mu)
+		 * = -\log \left( \frac{\sqrt{\tau}}{\sqrt{2\pi}} \exp(-0.5\tau(z-\mu)^2) \right)
+		 * = \log(\sqrt{2\pi}) - 0.5* \log(\tau) + 0.5\tau(z-\mu)^2
+		 * @f]
+		 */
 		static double f(double z, double u, double p) {
 			return logSqrt2PI - 0.5 * log(p) + 0.5 * (z - u) * (z - u) * p;
+		}
+
+		/**
+		 * @brief linearize returns a Hessianfactor that approximates error
+		 * Hessian is @f[
+		 * 0.5f - x^T g + 0.5*x^T G x
+		 * @f]
+		 * Taylor expansion is @f[
+		 * f(x+dx) = f(x) + df(x) dx + 0.5 ddf(x) dx^2
+		 * @f]
+		 * So f = 2 f(x),  g = -df(x), G = ddf(x)
+		 */
+		static HessianFactor::shared_ptr linearize(double z, double u, double p,
+				Index j1, Index j2) {
+			double e = u - z, e2 = e * e;
+			double c = 2 * logSqrt2PI - log(p) + e2 * p;
+			Vector g1 = Vector_(1, -e * p);
+			Vector g2 = Vector_(1, 0.5 / p - 0.5 * e2);
+			Matrix G11 = Matrix_(1, 1, p);
+			Matrix G12 = Matrix_(1, 1, e);
+			Matrix G22 = Matrix_(1, 1, 0.5 / (p * p));
+			return HessianFactor::shared_ptr(
+					new HessianFactor(j1, j2, G11, G12, g1, G22, g2, c));
 		}
 
 		/** Construct from measurement
@@ -62,7 +94,7 @@ namespace gtsam {
 		}
 
 		/// Destructor
-		~WhiteNoiseFactor() {
+		virtual ~WhiteNoiseFactor() {
 		}
 
 		/// Print
@@ -92,24 +124,14 @@ namespace gtsam {
 			return Vector_(1, sqrt(2 * error(x)));
 		}
 
-		/// Linearize. Returns a Hessianfactor that is an approximation of error(p)
+		/// linearize returns a Hessianfactor that is an approximation of error(p)
 		virtual boost::shared_ptr<GaussianFactor> linearize(const VALUES& x,
 				const Ordering& ordering) const {
 			double u = x[meanKey_].value();
 			double p = x[precisionKey_].value();
-			double e = u - z_, e2 = e * e;
-			double c = 2 * logSqrt2PI - log(p) + e2 * p;
-			Vector g1 = Vector_(1, -e * p);
-			Vector g2 = Vector_(1, 0.5 / p - 0.5 * e2);
-			Matrix G11 = Matrix_(1, 1, 2.0 * p);
-			Matrix G12 = Matrix_(1, 1, 2.0 * e);
-			Matrix G22 = Matrix_(1, 1, 1.0 / (p * p));
 			Index j1 = ordering[meanKey_];
 			Index j2 = ordering[precisionKey_];
-			GaussianFactor::shared_ptr factor(
-					new HessianFactor(j1, j2, G11, G12, g1, G22, g2, c));
-//			factor->print("factor");
-			return factor;
+			return linearize(z_, u, p, j1, j2);
 		}
 
 		/**
