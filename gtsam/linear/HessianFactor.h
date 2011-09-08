@@ -50,15 +50,29 @@ namespace gtsam {
   typedef FastMap<Index, SlotEntry> Scatter;
 
   /**
-   * A general quadratic factor of the form
-   * \f[ e(x) = x^T G x + gx + f \f]
+   * @brief A Gaussian factor using the canonical parameters (information form)
+   *
+   * HessianFactor implements a general quadratic factor of the form
+   * \f[ e(x) = 0.5 x^T G x - x^T g + 0.5 f \f]
    * that stores the matrix \f$ G \f$, the vector \f$ g \f$, and the constant term \f$ f \f$.
    *
    * When \f$ G \f$ is positive semidefinite, this factor represents a Gaussian,
-   * in which case \f$ G \f$ is the information
-   * matrix \f$ \Lambda \f$, which is the inverse of the covariance matrix \f$ \Sigma \f$,
-   * \f$ g \f$ is the information vector \f$ \eta = \Lambda \mu \f$, and \f$ f \f$ is the error
-   * at the mean, when \f$ x = \mu \f$ .
+   * in which case \f$ G \f$ is the information matrix \f$ \Lambda \f$,
+   * \f$ g \f$ is the information vector \f$ \eta \f$, and \f$ f \f$ is the residual
+   * sum-square-error at the mean, when \f$ x = \mu \f$.
+   *
+   * Indeed, the negative log-likelihood of a Gaussian is (up to a constant)
+   * @f$ E(x) = 0.5(x-\mu)^T P^{-1} (x-\mu) @f$
+   * with @f$ \mu @f$ the mean and  @f$ P @f$ the covariance matrix. Expanding the product we get
+   * @f[
+   * E(x) = 0.5 x^T P^{-1} x - x^T P^{-1} \mu + 0.5 \mu^T P^{-1} \mu
+   * @f]
+   * We define the Information matrix (or Hessian) @f$ \Lambda = P^{-1} @f$
+   * and the information vector @f$ \eta = P^{-1} \mu = \Lambda \mu @f$
+   * to arrive at the canonical form of the Gaussian:
+   * @f[
+   * E(x) = 0.5 x^T \Lambda x - x^T \eta + 0.5 \mu^T \Lambda \mu + C
+   * @f]
    *
    * This factor is one of the factors that can be in a GaussianFactorGraph.
    * It may be returned from NonlinearFactor::linearize(), but is also
