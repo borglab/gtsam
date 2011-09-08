@@ -28,7 +28,7 @@
 #include <gtsam/base/blockMatrices.h>
 
 // Forward declaration to friend unit tests
-class eliminate2GaussianFactorTest;
+class eliminate2JacobianFactorTest;
 class constructorGaussianConditionalTest;
 class eliminationGaussianFactorGraphTest;
 
@@ -220,14 +220,15 @@ protected:
   rsd_type::Block get_R_() { return rsd_(0); }
   rsd_type::Block get_S_(iterator variable) { return rsd_(variable - this->begin()); }
 
+private:
+
   // Friends
   friend class JacobianFactor;
-  friend class ::eliminate2GaussianFactorTest;
+  friend class ::eliminate2JacobianFactorTest;
   friend class ::constructorGaussianConditionalTest;
   friend class ::eliminationGaussianFactorGraphTest;
 
-private:
-	/** Serialization function */
+  /** Serialization function */
 	friend class boost::serialization::access;
 	template<class Archive>
 	void serialize(Archive & ar, const unsigned int version) {

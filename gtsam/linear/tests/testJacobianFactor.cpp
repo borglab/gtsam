@@ -10,7 +10,7 @@
  * -------------------------------------------------------------------------- */
 
 /**
- *  @file   testGaussianFactor.cpp
+ *  @file   testJacobianFactor.cpp
  *  @brief  Unit tests for Linear Factor
  *  @author Christian Potthast
  *  @author Frank Dellaert
@@ -32,7 +32,7 @@ static SharedDiagonal
 	constraintModel = noiseModel::Constrained::All(2);
 
 /* ************************************************************************* */
-TEST(GaussianFactor, constructor)
+TEST(JacobianFactor, constructor)
 {
 	Vector b = Vector_(3, 1., 2., 3.);
 	SharedDiagonal noise = noiseModel::Diagonal::Sigmas(Vector_(3,1.,1.,1.));
@@ -45,7 +45,7 @@ TEST(GaussianFactor, constructor)
 }
 
 /* ************************************************************************* */
-TEST(GaussianFactor, constructor2)
+TEST(JacobianFactor, constructor2)
 {
   Vector b = Vector_(3, 1., 2., 3.);
   SharedDiagonal noise = noiseModel::Diagonal::Sigmas(Vector_(3,1.,1.,1.));
@@ -72,7 +72,7 @@ TEST(GaussianFactor, constructor2)
 
 /* ************************************************************************* */
 #ifdef BROKEN
-TEST(GaussianFactor, operators )
+TEST(JacobianFactor, operators )
 {
 	Matrix I = eye(2);
 	Vector b = Vector_(2,0.2,-0.1);
@@ -102,7 +102,7 @@ TEST(GaussianFactor, operators )
 }
 #endif
 /* ************************************************************************* */
-TEST(GaussianFactor, eliminate2 )
+TEST(JacobianFactor, eliminate2 )
 {
 	// sigmas
 	double sigma1 = 0.2;
@@ -175,7 +175,7 @@ TEST(GaussianFactor, eliminate2 )
 }
 
 /* ************************************************************************* */
-TEST(GaussianFactor, default_error )
+TEST(JacobianFactor, default_error )
 {
 	JacobianFactor f;
 	vector<size_t> dims;
@@ -186,7 +186,7 @@ TEST(GaussianFactor, default_error )
 
 //* ************************************************************************* */
 #ifdef BROKEN
-TEST(GaussianFactor, eliminate_empty )
+TEST(JacobianFactor, eliminate_empty )
 {
 	// create an empty factor
 	JacobianFactor f;
@@ -208,7 +208,7 @@ TEST(GaussianFactor, eliminate_empty )
 }
 #endif
 //* ************************************************************************* */
-TEST(GaussianFactor, empty )
+TEST(JacobianFactor, empty )
 {
 	// create an empty factor
 	JacobianFactor f;
@@ -224,7 +224,7 @@ void print(const list<T>& i) {
 }
 
 /* ************************************************************************* */
-TEST(GaussianFactor, CONSTRUCTOR_GaussianConditional )
+TEST(JacobianFactor, CONSTRUCTOR_GaussianConditional )
 {
 	Matrix R11 = eye(2);
 	Matrix S12 = Matrix_(2,2,

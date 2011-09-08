@@ -27,9 +27,9 @@
 #include <boost/tuple/tuple.hpp>
 
 // Forward declarations of friend unit tests
-class Combine2GaussianFactorTest;
-class eliminateFrontalsGaussianFactorTest;
-class constructor2GaussianFactorTest;
+class Combine2JacobianFactorTest;
+class eliminateFrontalsJacobianFactorTest;
+class constructor2JacobianFactorTest;
 
 namespace gtsam {
 
@@ -198,14 +198,6 @@ namespace gtsam {
     /** return a multi-frontal conditional. It's actually a chordal Bayesnet */
     boost::shared_ptr<GaussianConditional> eliminate(size_t nrFrontals = 1);
 
-    // Friend HessianFactor to facilitate convertion constructors
-    friend class HessianFactor;
-
-    // Friend unit tests (see also forward declarations above)
-    friend class ::Combine2GaussianFactorTest;
-    friend class ::eliminateFrontalsGaussianFactorTest;
-    friend class ::constructor2GaussianFactorTest;
-
     /* Used by ::CombineJacobians for sorting */
     struct _RowSource {
       size_t firstNonzeroVar;
@@ -242,6 +234,15 @@ namespace gtsam {
     void assertInvariants() const;
 
   private:
+
+    // Friend HessianFactor to facilitate convertion constructors
+    friend class HessianFactor;
+
+    // Friend unit tests (see also forward declarations above)
+    friend class ::Combine2JacobianFactorTest;
+    friend class ::eliminateFrontalsJacobianFactorTest;
+    friend class ::constructor2JacobianFactorTest;
+
     /** Serialization function */
     friend class boost::serialization::access;
     template<class ARCHIVE>

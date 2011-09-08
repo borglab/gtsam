@@ -28,7 +28,7 @@ sources += GaussianFactor.cpp GaussianFactorGraph.cpp
 sources += GaussianJunctionTree.cpp 
 sources += GaussianConditional.cpp GaussianBayesNet.cpp
 sources += GaussianISAM.cpp
-check_PROGRAMS += tests/testHessianFactor tests/testGaussianFactor tests/testGaussianConditional
+check_PROGRAMS += tests/testHessianFactor tests/testJacobianFactor tests/testGaussianConditional
 check_PROGRAMS += tests/testGaussianFactorGraph tests/testGaussianJunctionTree
 
 # Kalman Filter
