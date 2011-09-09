@@ -203,7 +203,8 @@ namespace gtsam {
 		      }
 		    }
 		  } catch(const NegativeMatrixException& e) {
-		    cout << "Negative matrix, increasing lambda" << endl;
+		    if(verbosity >= Parameters::LAMBDA)
+		      cout << "Negative matrix, increasing lambda" << endl;
 		    // Either we're not cautious, or the same lambda was worse than the current error.
 		    // The more adventurous lambda was worse too, so make lambda more conservative
 		    // and keep the same values.

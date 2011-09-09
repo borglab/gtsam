@@ -168,8 +168,10 @@ Eigen::LDLT<Matrix>::TranspositionType ldlPartial(Matrix& ABC, size_t nFrontal) 
   ldlt.compute(ABC.block(0,0,nFrontal,nFrontal).selfadjointView<Eigen::Upper>());
 
   if(ldlt.vectorD().unaryExpr(boost::bind(less<double>(), _1, 0.0)).any()) {
-    gtsam::print(Matrix(ldlt.matrixU()), "U: ");
-    gtsam::print(Vector(ldlt.vectorD()), "D: ");
+    if(debug) {
+      gtsam::print(Matrix(ldlt.matrixU()), "U: ");
+      gtsam::print(Vector(ldlt.vectorD()), "D: ");
+    }
     throw NegativeMatrixException();
   }
 
