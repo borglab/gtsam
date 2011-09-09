@@ -67,7 +67,7 @@ bool check_convergence(
 		else
 			cout << "relativeDecrease: " << setprecision(12) << relativeDecrease << " >= " << relativeErrorTreshold << endl;
 	}
-	bool converged = (relativeDecrease < relativeErrorTreshold)
+	bool converged = (relativeErrorTreshold && (relativeDecrease < relativeErrorTreshold))
 			|| (absoluteDecrease < absoluteErrorTreshold);
 	if (verbosity >= 1 && converged)
 		cout << "converged" << endl;
