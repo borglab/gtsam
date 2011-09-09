@@ -26,10 +26,10 @@ namespace gtsam {
 
 class NullOptimizerWriter {
 public:
-	NullOptimizerWriter(double error) {}
+	NullOptimizerWriter(double error) {} ///Contructor
 	virtual ~NullOptimizerWriter() {}
-	virtual void write(double error) {}
-};
+	virtual void write(double error) {} ///Capturing the values of the parameters after the optimization
+}; ///
 
 /**
  * The class NonlinearOptimizer encapsulates an optimization state.
@@ -62,13 +62,13 @@ class NonlinearOptimizer {
 public:
 
 	// For performance reasons in recursion, we store values in a shared_ptr
-	typedef boost::shared_ptr<const T> shared_values;
-	typedef boost::shared_ptr<const G> shared_graph;
-	typedef boost::shared_ptr<L> shared_linear;
-	typedef boost::shared_ptr<const Ordering> shared_ordering;
-	typedef boost::shared_ptr<GS> shared_solver;
-	typedef NonlinearOptimizationParameters Parameters;
-	typedef boost::shared_ptr<const Parameters> shared_parameters ;
+	typedef boost::shared_ptr<const T> shared_values; ///Prevent memory leaks in Values
+	typedef boost::shared_ptr<const G> shared_graph;  /// Prevent memory leaks in Graph
+	typedef boost::shared_ptr<L> shared_linear;    /// Not sure
+	typedef boost::shared_ptr<const Ordering> shared_ordering; ///ordering parameters
+	typedef boost::shared_ptr<GS> shared_solver; /// Solver
+	typedef NonlinearOptimizationParameters Parameters; ///These take the parameters defined in NonLinearOptimizationParameters.h
+	typedef boost::shared_ptr<const Parameters> shared_parameters ; ///
 	typedef boost::shared_ptr<VariableIndex> shared_structure; // TODO: make this const
 
 private:
@@ -76,8 +76,8 @@ private:
 	typedef NonlinearOptimizer<G, T, L, GS> This;
 	typedef boost::shared_ptr<const std::vector<size_t> > shared_dimensions;
 
-	// keep a reference to const version of the graph
-	// These normally do not change
+	/// keep a reference to const version of the graph
+	/// These normally do not change
 	const shared_graph graph_;
 
 	// keep a values structure and its error
@@ -234,12 +234,12 @@ public:
 	 */
 	NonlinearOptimizer iterate() const;
 
-	/**
-	 * Optimize a solution for a non linear factor graph
-	 * @param relativeTreshold
-	 * @param absoluteTreshold
-	 * @param verbosity Integer specifying how much output to provide
-	 */
+	///
+	///Optimize a solution for a non linear factor graph
+	///param relativeTreshold
+	///@param absoluteTreshold
+	///@param verbosity Integer specifying how much output to provide
+	///
 
 	// suggested interface
 	NonlinearOptimizer gaussNewton() const;
@@ -252,31 +252,31 @@ public:
 	 */
 	NonlinearOptimizer iterateLM();
 
-	/**
-	 * Optimize using Levenberg-Marquardt. Really Levenberg's
-	 * algorithm at this moment, as we just add I*\lambda to Hessian
-	 * H'H. The probabilistic explanation is very simple: every
-	 * variable gets an extra Gaussian prior that biases staying at
-	 * current value, with variance 1/lambda. This is done very easily
-	 * (but perhaps wastefully) by adding a prior factor for each of
-	 * the variables, after linearization.
-	 *
-	 * @param relativeThreshold
-	 * @param absoluteThreshold
-	 * @param verbosity    Integer specifying how much output to provide
-	 * @param lambdaFactor Factor by which to decrease/increase lambda
-	 */
+	///
+	///Optimize using Levenberg-Marquardt. Really Levenberg's
+	///algorithm at this moment, as we just add I*\lambda to Hessian
+	///H'H. The probabilistic explanation is very simple: every
+	///variable gets an extra Gaussian prior that biases staying at
+	///current value, with variance 1/lambda. This is done very easily
+	///(but perhaps wastefully) by adding a prior factor for each of
+	///the variables, after linearization.
+	///
+	///@param relativeThreshold
+	///@param absoluteThreshold
+	///@param verbosity    Integer specifying how much output to provide
+	///@param lambdaFactor Factor by which to decrease/increase lambda
+	///
 	NonlinearOptimizer levenbergMarquardt();
 
 	// static interfaces to LM and GN optimization techniques
 
-	/**
-	 * Static interface to LM optimization using default ordering and thresholds
-	 * @param graph 	   Nonlinear factor graph to optimize
-	 * @param values       Initial values
-	 * @param verbosity    Integer specifying how much output to provide
-	 * @return 			   an optimized values structure
-	 */
+	///
+	///Static interface to LM optimization using default ordering and thresholds
+	///@param graph 	   Nonlinear factor graph to optimize
+	///@param values       Initial values
+	///@param verbosity    Integer specifying how much output to provide
+	///@return 			   an optimized values structure
+	///
 	static shared_values optimizeLM(shared_graph graph,
 			shared_values values,
 			shared_parameters parameters = boost::make_shared<Parameters>()) {
@@ -317,13 +317,13 @@ public:
 				verbosity);
 	}
 
-	/**
-	 * Static interface to GN optimization using default ordering and thresholds
-	 * @param graph 	   Nonlinear factor graph to optimize
-	 * @param values       Initial values
-	 * @param verbosity    Integer specifying how much output to provide
-	 * @return 			   an optimized values structure
-	 */
+	///
+	///Static interface to GN optimization using default ordering and thresholds
+	///@param graph 	   Nonlinear factor graph to optimize
+	///@param values       Initial values
+	///@param verbosity    Integer specifying how much output to provide
+	///@return 			   an optimized values structure
+	///
 	static shared_values optimizeGN(shared_graph graph,
 			shared_values values,
 			shared_parameters parameters = boost::make_shared<Parameters>()) {
