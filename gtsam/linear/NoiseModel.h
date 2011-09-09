@@ -9,12 +9,11 @@
 
  * -------------------------------------------------------------------------- */
 
-/*
- * NoiseModel.h
- *
- *  Created on: Jan 13, 2010
- *      Author: Richard Roberts
- *      Author: Frank Dellaert
+/**
+ * @file NoiseModel.h
+ * @date  Jan 13, 2010
+ * @author Richard Roberts
+ * @author Frank Dellaert
  */
 
 #pragma once
@@ -27,6 +26,7 @@ namespace gtsam {
 
 	struct SharedDiagonal; // forward declare
 
+	/// All noise models live in the noiseModel namespace
 	namespace noiseModel {
 
 		class Gaussian;
@@ -34,6 +34,8 @@ namespace gtsam {
 		class Constrained;
 		class Isotropic;
 		class Unit;
+
+		//---------------------------------------------------------------------------------------
 
 		/**
 		 * noiseModel::Base is the abstract base class for all noise models.
@@ -56,9 +58,7 @@ namespace gtsam {
 			Base(size_t dim = 1):dim_(dim) {}
 			virtual ~Base() {}
 
-			/**
-			 * Dimensionality
-			 */
+			/// Dimensionality
 			inline size_t dim() const { return dim_;}
 
       virtual void print(const std::string& name) const = 0;
@@ -100,6 +100,8 @@ namespace gtsam {
 			}
 		};
 
+		//---------------------------------------------------------------------------------------
+
 		/**
 		 * Gaussian implements the mathematical model
 		 *  |R*x|^2 = |y|^2 with R'*R=inv(Sigma)
@@ -114,7 +116,7 @@ namespace gtsam {
 
 		protected:
 
-			/* Matrix square root of information matrix (R) */
+			/** Matrix square root of information matrix (R) */
 			boost::optional<Matrix> sqrt_information_;
 
 		private:
@@ -223,6 +225,8 @@ namespace gtsam {
 
 		}; // Gaussian
 
+		//---------------------------------------------------------------------------------------
+
 		/**
 		 * A diagonal noise model implements a diagonal covariance matrix, with the
 		 * elements of the diagonal specified in a Vector.  This class has no public
@@ -233,8 +237,10 @@ namespace gtsam {
 
 			/** sigmas and reciprocal */
 			Vector sigmas_;
+
 		private:
-			boost::optional<Vector> invsigmas_; /// optional to allow for constraints
+
+			boost::optional<Vector> invsigmas_; ///< optional to allow for constraints
 
 		protected:
 			/** protected constructor takes sigmas */
@@ -310,6 +316,8 @@ namespace gtsam {
 				ar & BOOST_SERIALIZATION_NVP(invsigmas_);
 			}
 		}; // Diagonal
+
+		//---------------------------------------------------------------------------------------
 
 		/**
 		 * A Constrained constrained model is a specialization of Diagonal which allows
@@ -397,6 +405,8 @@ namespace gtsam {
 
 		}; // Constrained
 
+		//---------------------------------------------------------------------------------------
+
 		/**
 		 * An isotropic noise model corresponds to a scaled diagonal covariance
 		 * To construct, use one of the static methods
@@ -467,6 +477,8 @@ namespace gtsam {
 
 		};
 
+		//---------------------------------------------------------------------------------------
+
 		/**
 		 * Unit: i.i.d. unit-variance noise on all m dimensions.
 		 */
@@ -504,7 +516,11 @@ namespace gtsam {
 			}
 		};
 
+		// TODO: should not really exist
+		/// The MEstimator namespace contains all robust error functions (not models)
 		namespace MEstimator {
+
+		//---------------------------------------------------------------------------------------
 
 		class Base {
     public:
@@ -518,26 +534,32 @@ namespace gtsam {
       Base(): reweight_(Block) {}
 		  Base(const ReweightScheme reweight):reweight_(reweight) {}
 		  virtual ~Base() {}
+
+		  /// robust error function to implement
 		  virtual double weight(const double &error) const = 0;
+
 		  virtual void print(const std::string &s) const = 0;
 		  virtual bool equals(const Base& expected, const double tol=1e-8) const = 0;
+
       Vector weight(const Vector &error) const;
 		  void reweight(Matrix &A, Vector &error) const;
 		  void reweight(Matrix &A1, Matrix &A2, Vector &error) const;
 		  void reweight(Matrix &A1, Matrix &A2, Matrix &A3, Vector &error) const;
 		};
 
+		/// Null class is not robust so is a Gaussian ?
     class Null : public Base {
     public:
       typedef boost::shared_ptr<Null> shared_ptr;
       Null(const ReweightScheme reweight = Block) : Base(reweight) {}
       virtual ~Null() {}
       virtual double weight(const double &error) const { return 1.0; }
-      virtual void print(const std::string &s) const ;
+      virtual void print(const std::string &s) const;
       virtual bool equals(const Base& expected, const double tol=1e-8) const { return true; }
       static shared_ptr Create() ;
     };
 
+    /// Fair implements the "Fair" robust error model (ZhangXXvvvv)
 		class Fair : public Base {
 		public:
 		  typedef boost::shared_ptr<Fair> shared_ptr;
@@ -554,6 +576,7 @@ namespace gtsam {
       Fair(){}
 		};
 
+    /// Huber implements the "Huber" robust error model (HuberXXvvvv)
 	  class Huber : public Base {
 	    public:
 	      typedef boost::shared_ptr<Huber> shared_ptr;
@@ -569,8 +592,10 @@ namespace gtsam {
 	    private:
 	      Huber(){}
 	    };
-		}
 
+		} ///\namespace MEstimator
+
+		/// Base class for robust error models
 		class Robust : public Base {
 		public:
 		  typedef boost::shared_ptr<Robust> shared_ptr;
@@ -579,21 +604,32 @@ namespace gtsam {
       typedef MEstimator::Base RobustModel;
 		  typedef noiseModel::Base NoiseModel;
 
-      const RobustModel::shared_ptr robust_;
-      const NoiseModel::shared_ptr noise_;
+      const RobustModel::shared_ptr robust_; ///< robust error function used
+      const NoiseModel::shared_ptr noise_;   ///< noise model used
 
 		public:
+
+      /// Constructor
       Robust(const RobustModel::shared_ptr robust, const NoiseModel::shared_ptr noise)
       : Base(noise->dim()), robust_(robust), noise_(noise) {}
+
+      /// Destructor
       virtual ~Robust() {}
+
       virtual void print(const std::string& name) const;
       virtual bool equals(const Base& expected, double tol=1e-9) const;
+
+      // TODO: all function below are called whitening but really are dummy
+
       inline virtual Vector whiten(const Vector& v) const
       { return noise_->whiten(v); }
       inline virtual Vector unwhiten(const Vector& v) const
       { return noise_->unwhiten(v); }
       inline virtual double distance(const Vector& v) const
       { return noise_->distance(v); }
+
+      // TODO: these are really robust iterated re-weighting support functions
+
       virtual void WhitenSystem(Matrix& A, Vector& b) const ;
       virtual void WhitenSystem(Matrix& A1, Matrix& A2, Vector& b) const ;
       virtual void WhitenSystem(Matrix& A1, Matrix& A2, Matrix& A3, Vector& b) const;

@@ -9,12 +9,11 @@
 
  * -------------------------------------------------------------------------- */
 
-/*
- * NoiseModel
- *
- *  Created on: Jan 13, 2010
- *      Author: Richard Roberts
- *      Author: Frank Dellaert
+/**
+ * @file NoiseModel.cpp
+ * @date Jan 13, 2010
+ * @author Richard Roberts
+ * @author Frank Dellaert
  */
 
 #include <limits>
@@ -437,6 +436,7 @@ void Unit::print(const std::string& name) const {
 /* ************************************************************************* */
 
 namespace MEstimator {
+
 Vector Base::weight(const Vector &error) const {
   const size_t n = error.rows();
   Vector w(n);
@@ -490,6 +490,10 @@ void Base::reweight(Matrix &A1, Matrix &A2, Matrix &A3, Vector &error) const {
   }
 }
 
+/* ************************************************************************* */
+// Null model
+/* ************************************************************************* */
+
 void Null::print(const std::string &s) const
 { cout << s << ": null ()" << endl; }
 
@@ -503,6 +507,10 @@ Fair::Fair(const double c, const ReweightScheme reweight)
     c_ = 1.0;
   }
 }
+
+/* ************************************************************************* */
+// Fair
+/* ************************************************************************* */
 
 double Fair::weight(const double &error) const
 { return 1.0 / (1.0 + fabs(error)/c_); }
@@ -527,22 +535,29 @@ Huber::Huber(const double k, const ReweightScheme reweight)
   }
 }
 
-double Huber::weight(const double &error) const
-{ return (error < k_) ? (1.0) : (k_ / fabs(error)); }
+/* ************************************************************************* */
+// Huber
+/* ************************************************************************* */
 
-void Huber::print(const std::string &s) const
-{ cout << s << ": huber (" << k_ << ")" << endl; }
+double Huber::weight(const double &error) const {
+	return (error < k_) ? (1.0) : (k_ / fabs(error));
+}
+
+void Huber::print(const std::string &s) const {
+	cout << s << ": huber (" << k_ << ")" << endl;
+}
 
 bool Huber::equals(const Base &expected, const double tol) const {
-  const Huber* p = dynamic_cast<const Huber*> (&expected);
-  if (p == NULL) return false;
-  return fabs(k_ - p->k_ ) < tol;
+	const Huber* p = dynamic_cast<const Huber*>(&expected);
+	if (p == NULL) return false;
+	return fabs(k_ - p->k_) < tol;
 }
 
-Huber::shared_ptr Huber::Create(const double c)
-{ return shared_ptr(new Huber(c)); }
-
+Huber::shared_ptr Huber::Create(const double c) {
+	return shared_ptr(new Huber(c));
 }
+
+} // namespace MEstimator
 
 /* ************************************************************************* */
 // Robust
