@@ -140,5 +140,22 @@ namespace gtsam {
 			ptr->useQR_ = useQR;
 			return ptr;
 		}
+
+	private:
+	  /** Serialization function */
+	  friend class boost::serialization::access;
+	  template<class ARCHIVE>
+	  void serialize(ARCHIVE & ar, const unsigned int version)
+	  {
+	    ar & BOOST_SERIALIZATION_NVP(absDecrease_);
+	    ar & BOOST_SERIALIZATION_NVP(relDecrease_);
+	    ar & BOOST_SERIALIZATION_NVP(sumError_);
+	    ar & BOOST_SERIALIZATION_NVP(maxIterations_);
+	    ar & BOOST_SERIALIZATION_NVP(lambda_);
+	    ar & BOOST_SERIALIZATION_NVP(lambdaFactor_);
+	    ar & BOOST_SERIALIZATION_NVP(verbosity_);
+	    ar & BOOST_SERIALIZATION_NVP(lambdaMode_);
+	    ar & BOOST_SERIALIZATION_NVP(useQR_);
+	  }
 	};
 }
