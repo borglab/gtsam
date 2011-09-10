@@ -106,6 +106,7 @@ FastSet<Index> ISAM2<CONDITIONAL,VALUES>::Impl::CheckRelinearization(Permuted<Ve
       relinKeys.insert(var);
     }
   }
+  return relinKeys;
 }
 
 }
