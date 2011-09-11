@@ -437,6 +437,8 @@ void Unit::print(const std::string& name) const {
 
 namespace MEstimator {
 
+/** produce a weight vector according to an error vector and the implemented
+ * robust function */
 Vector Base::weight(const Vector &error) const {
   const size_t n = error.rows();
   Vector w(n);
@@ -445,44 +447,60 @@ Vector Base::weight(const Vector &error) const {
   return w;
 }
 
+/** square root version of the weight function */
+Vector Base::sqrtWeight(const Vector &error) const {
+  const size_t n = error.rows();
+  Vector w(n);
+  for ( size_t i = 0 ; i < n ; ++i )
+    w(i) = sqrtWeight(error(i));
+  return w;
+}
+
+
+/** The following three functions reweight block matrices and a vector
+ * according to their weight implementation */
+
+/** Reweight one block matrix with one error vector */
 void Base::reweight(Matrix &A, Vector &error) const {
   if ( reweight_ == Block ) {
-    const double w = weight(error.norm());
+    const double w = sqrtWeight(error.norm());
     A *= w;
     error *= w;
   }
   else {
-    const Vector W = weight(error);
+    const Vector W = sqrtWeight(error);
     vector_scale_inplace(W,A);
     error = emul(W, error);
   }
 }
 
+/** Reweight two block matrix with one error vector */
 void Base::reweight(Matrix &A1, Matrix &A2, Vector &error) const {
   if ( reweight_ == Block ) {
-    const double w = weight(error.norm());
+    const double w = sqrtWeight(error.norm());
     A1 *= w;
     A2 *= w;
     error *= w;
   }
   else {
-    const Vector W = weight(error);
+    const Vector W = sqrtWeight(error);
     vector_scale_inplace(W,A1);
     vector_scale_inplace(W,A2);
     error = emul(W, error);
   }
 }
 
+/** Reweight three block matrix with one error vector */
 void Base::reweight(Matrix &A1, Matrix &A2, Matrix &A3, Vector &error) const {
   if ( reweight_ == Block ) {
-    const double w = weight(error.norm());
+    const double w = sqrtWeight(error.norm());
     A1 *= w;
     A2 *= w;
     A3 *= w;
     error *= w;
   }
   else {
-    const Vector W = weight(error);
+    const Vector W = sqrtWeight(error);
     vector_scale_inplace(W,A1);
     vector_scale_inplace(W,A2);
     vector_scale_inplace(W,A3);
@@ -524,8 +542,12 @@ bool Fair::equals(const Base &expected, const double tol) const {
   return fabs(c_ - p->c_ ) < tol;
 }
 
-Fair::shared_ptr Fair::Create(const double c)
-{ return shared_ptr(new Fair(c)); }
+Fair::shared_ptr Fair::Create(const double c, const ReweightScheme reweight)
+{ return shared_ptr(new Fair(c, reweight)); }
+
+/* ************************************************************************* */
+// Huber
+/* ************************************************************************* */
 
 Huber::Huber(const double k, const ReweightScheme reweight)
   : Base(reweight), k_(k) {
@@ -534,10 +556,6 @@ Huber::Huber(const double k, const ReweightScheme reweight)
     k_ = 1.0;
   }
 }
-
-/* ************************************************************************* */
-// Huber
-/* ************************************************************************* */
 
 double Huber::weight(const double &error) const {
 	return (error < k_) ? (1.0) : (k_ / fabs(error));
@@ -553,8 +571,8 @@ bool Huber::equals(const Base &expected, const double tol) const {
 	return fabs(k_ - p->k_) < tol;
 }
 
-Huber::shared_ptr Huber::Create(const double c) {
-	return shared_ptr(new Huber(c));
+Huber::shared_ptr Huber::Create(const double c, const ReweightScheme reweight) {
+	return shared_ptr(new Huber(c, reweight));
 }
 
 } // namespace MEstimator

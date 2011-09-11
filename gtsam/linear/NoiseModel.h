@@ -528,6 +528,8 @@ namespace gtsam {
       typedef boost::shared_ptr<Base> shared_ptr;
 
 		protected:
+      /** the rows can be weighted independently accordint to the error
+       * or uniformly with the norm of the right hand side */
       ReweightScheme reweight_;
 
     public:
@@ -541,7 +543,17 @@ namespace gtsam {
 		  virtual void print(const std::string &s) const = 0;
 		  virtual bool equals(const Base& expected, const double tol=1e-8) const = 0;
 
+		  inline double sqrtWeight(const double &error) const
+		  { return sqrt(weight(error)); }
+
+      /** produce a weight vector according to an error vector and the implemented
+       * robust function */
       Vector weight(const Vector &error) const;
+
+      /** square root version of the weight function */
+      Vector sqrtWeight(const Vector &error) const;
+
+      /** reweight block matrices and a vector according to their weight implementation */
 		  void reweight(Matrix &A, Vector &error) const;
 		  void reweight(Matrix &A1, Matrix &A2, Vector &error) const;
 		  void reweight(Matrix &A1, Matrix &A2, Matrix &A3, Vector &error) const;
@@ -559,7 +571,7 @@ namespace gtsam {
       static shared_ptr Create() ;
     };
 
-    /// Fair implements the "Fair" robust error model (ZhangXXvvvv)
+    /// Fair implements the "Fair" robust error model (Zhang97ivc)
 		class Fair : public Base {
 		public:
 		  typedef boost::shared_ptr<Fair> shared_ptr;
@@ -571,12 +583,12 @@ namespace gtsam {
 		  virtual double weight(const double &error) const ;
       virtual void print(const std::string &s) const ;
       virtual bool equals(const Base& expected, const double tol=1e-8) const ;
-      static shared_ptr Create(const double c) ;
+      static shared_ptr Create(const double c, const ReweightScheme reweight = Block) ;
 		private:
       Fair(){}
 		};
 
-    /// Huber implements the "Huber" robust error model (HuberXXvvvv)
+    /// Huber implements the "Huber" robust error model (Zhang97ivc)
 	  class Huber : public Base {
 	    public:
 	      typedef boost::shared_ptr<Huber> shared_ptr;
@@ -588,7 +600,7 @@ namespace gtsam {
 	      virtual double weight(const double &error) const ;
 	      virtual void print(const std::string &s) const ;
 	      virtual bool equals(const Base& expected, const double tol=1e-8) const ;
-	      static shared_ptr Create(const double k) ;
+	      static shared_ptr Create(const double k, const ReweightScheme reweight = Block) ;
 	    private:
 	      Huber(){}
 	    };
@@ -619,7 +631,7 @@ namespace gtsam {
       virtual void print(const std::string& name) const;
       virtual bool equals(const Base& expected, double tol=1e-9) const;
 
-      // TODO: all function below are called whitening but really are dummy
+      // TODO: all function below are dummy but necessary for the noiseModel::Base
 
       inline virtual Vector whiten(const Vector& v) const
       { return noise_->whiten(v); }

@@ -264,6 +264,38 @@ TEST(NoiseModel, WhitenInPlace)
 }
 
 /* ************************************************************************* */
+TEST(NoiseModel, robustFunction)
+{
+  const double k = 5.0, error1 = 1.0, error2 = 10.0;
+  const MEstimator::Huber::shared_ptr huber = MEstimator::Huber::Create(k);
+  const double weight1 = huber->weight(error1),
+               weight2 = huber->weight(error2);
+  DOUBLES_EQUAL(1.0, weight1, 1e-8);
+  DOUBLES_EQUAL(0.5, weight2, 1e-8);
+}
+
+/* ************************************************************************* */
+TEST(NoiseModel, robustNoise)
+{
+  const double k = 10.0, error1 = 1.0, error2 = 100.0;
+  Matrix A = Matrix_(2, 2, 1.0, 10.0, 100.0, 1000.0);
+  Vector b = Vector_(2, error1, error2);
+  const Robust::shared_ptr robust = Robust::Create(
+    MEstimator::Huber::Create(k, MEstimator::Huber::Scalar),
+    Unit::Create(2));
+
+  robust->WhitenSystem(A,b);
+
+  DOUBLES_EQUAL(error1, b(0), 1e-8);
+  DOUBLES_EQUAL(sqrt(k*error2), b(1), 1e-8);
+
+  DOUBLES_EQUAL(1.0, A(0,0), 1e-8);
+  DOUBLES_EQUAL(10.0, A(0,1), 1e-8);
+  DOUBLES_EQUAL(sqrt(k*100.0), A(1,0), 1e-8);
+  DOUBLES_EQUAL(sqrt(k/100.0)*1000.0, A(1,1), 1e-8);
+}
+
+/* ************************************************************************* */
 int main() {
 	TestResult tr;
 	return TestRegistry::runAllTests(tr);
