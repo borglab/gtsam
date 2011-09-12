@@ -36,7 +36,7 @@ TEST( StereoCamera, project)
 {
 	// create a Stereo camera at the origin with focal length 1500, baseline 0.5m
 	// and principal point 320, 240 (for a hypothetical 640x480 sensor)
-	Cal3_S2Stereo K(1500, 1500, 0, 320, 240, 0.5);
+	Cal3_S2Stereo::shared_ptr K(new Cal3_S2Stereo(1500, 1500, 0, 320, 240, 0.5));
 	StereoCamera stereoCam(Pose3(), K);
 
 	// point X Y Z in meters
@@ -77,7 +77,7 @@ Pose3 camera1(Matrix_(3,3,
 		       ),
 	      Point3(0,0,6.25));
 
-Cal3_S2Stereo K(1500, 1500, 0, 320, 240, 0.5);
+Cal3_S2Stereo::shared_ptr K(new Cal3_S2Stereo(1500, 1500, 0, 320, 240, 0.5));
 StereoCamera stereoCam(Pose3(), K);
 
 // point X Y Z in meters
@@ -115,7 +115,7 @@ TEST( StereoCamera, backproject2)
 	       -0.804435942,	-0.592650676,	-0.0405925523,
 	       0.0732045588,	-0.0310882277,	-0.996832359);
   Point3 t(53.5239823, 23.7866016, -4.42379876);
-  Cal3_S2Stereo K(1733.75, 1733.75, 0, 689.645, 508.835, 0.0699612);
+  Cal3_S2Stereo::shared_ptr K(new Cal3_S2Stereo(1733.75, 1733.75, 0, 689.645, 508.835, 0.0699612));
   StereoCamera camera(Pose3(R,t), K);
   StereoPoint2 z(184.812, 129.068, 714.768);
 

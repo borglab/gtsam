@@ -40,7 +40,7 @@ Pose3 camera1(Matrix_(3,3,
 		       ),
 	      Point3(0,0,6.25));
 
-Cal3_S2Stereo K(1500, 1500, 0, 320, 240, 0.5);
+Cal3_S2Stereo::shared_ptr K(new Cal3_S2Stereo(1500, 1500, 0, 320, 240, 0.5));
 StereoCamera stereoCam(Pose3(), K);
 
 // point X Y Z in meters

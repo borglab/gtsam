@@ -30,6 +30,9 @@ namespace gtsam {
 		double b_;
 
 	public:
+
+		typedef boost::shared_ptr<Cal3_S2Stereo> shared_ptr;  ///< shared pointer to stereo calibration object
+
 		/**
 		 * default calibration leaves coordinates unchanged
 		 */

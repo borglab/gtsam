@@ -32,15 +32,15 @@ namespace gtsam {
 
 	private:
 		Pose3 leftCamPose_;
-		Cal3_S2Stereo K_;
+		Cal3_S2Stereo::shared_ptr K_;
 
 	public:
 		StereoCamera() {
 		}
 
-		StereoCamera(const Pose3& leftCamPose, const Cal3_S2Stereo& K);
+		StereoCamera(const Pose3& leftCamPose, const Cal3_S2Stereo::shared_ptr K);
 
-		const Cal3_S2Stereo& calibration() const {
+		const Cal3_S2Stereo::shared_ptr calibration() const {
 			return K_;
 		}
 
@@ -49,7 +49,7 @@ namespace gtsam {
 		}
 
 		const double baseline() const {
-			return K_.baseline();
+			return K_->baseline();
 		}
 
 
@@ -75,16 +75,16 @@ namespace gtsam {
 		 * i.e. does not rely on baseline
 		 */
 		Point3 backproject(const Point2& projection, const double scale) const {
-			Point2 intrinsic = K_.calibrate(projection);
+			Point2 intrinsic = K_->calibrate(projection);
 			Point3 cameraPoint = Point3(intrinsic.x() * scale, intrinsic.y() * scale, scale);;
 			return pose().transform_from(cameraPoint);
 		}
 
 		Point3 backproject(const StereoPoint2& z) const {
 			Vector measured = z.vector();
-			double Z = K_.baseline()*K_.fx()/(measured[0]-measured[1]);
-			double X = Z *(measured[0]- K_.px()) / K_.fx();
-			double Y = Z *(measured[2]- K_.py()) / K_.fy();
+			double Z = K_->baseline()*K_->fx()/(measured[0]-measured[1]);
+			double X = Z *(measured[0]- K_->px()) / K_->fx();
+			double Y = Z *(measured[2]- K_->py()) / K_->fy();
 			Point3 world_point = leftCamPose_.transform_from(Point3(X, Y, Z));
 			return world_point;
 		}
@@ -101,7 +101,7 @@ namespace gtsam {
 
 		/** Exponential map around p0 */
 		inline StereoCamera expmap(const Vector& d) const {
-			return StereoCamera(pose().expmap(d), calibration());
+			return StereoCamera(pose().expmap(d), K_);
 		}
 
 		Vector logmap(const StereoCamera &camera) const {
@@ -110,8 +110,8 @@ namespace gtsam {
 		}
 
 		bool equals(const StereoCamera &camera, double tol = 1e-9) const {
-			return leftCamPose_.equals(camera.leftCamPose_, tol) && K_.equals(
-					camera.K_, tol);
+			return leftCamPose_.equals(camera.leftCamPose_, tol) && K_->equals(
+					*camera.K_, tol);
 		}
 
 		Pose3 between(const StereoCamera &camera,
@@ -122,13 +122,13 @@ namespace gtsam {
 
 		void print(const std::string& s = "") const {
 			leftCamPose_.print(s + ".camera.");
-			K_.print(s + ".calibration.");
+			K_->print(s + ".calibration.");
 		}
 
 	private:
 		/** utility functions */
 		Matrix Dproject_to_stereo_camera1(const Point3& P) const;
-		static Matrix Duncalibrate2(const Cal3_S2& K);
+		static Matrix Duncalibrate2(const Cal3_S2Stereo::shared_ptr K);
 
 		friend class boost::serialization::access;
 		template<class Archive>
