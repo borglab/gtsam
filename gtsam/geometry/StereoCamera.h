@@ -128,7 +128,6 @@ namespace gtsam {
 	private:
 		/** utility functions */
 		Matrix Dproject_to_stereo_camera1(const Point3& P) const;
-		static Matrix Duncalibrate2(const Cal3_S2Stereo::shared_ptr K);
 
 		friend class boost::serialization::access;
 		template<class Archive>

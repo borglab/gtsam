@@ -35,43 +35,32 @@ StereoPoint2 StereoCamera::project(const Point3& point,
 	Point3 cameraPoint = leftCamPose_.transform_to(point, H1, H2);
 
 	if(H1 || H2) {
-		Matrix D_intrinsic_cameraPoint = Dproject_to_stereo_camera1(cameraPoint); // 3x3 Jacobian
-		Matrix D_projection_intrinsic = Duncalibrate2(K_); // 3x3
+		Matrix D_project_point = Dproject_to_stereo_camera1(cameraPoint); // 3x3 Jacobian
 
-	  if (H1) {
-	  	//Matrix D_intrinsic_pose = D_intrinsic_cameraPoint * *H1;
-	  	*H1 = D_projection_intrinsic * D_intrinsic_cameraPoint * *H1;
-	  }
-
-	  if (H2) {
-	  	//Matrix D_intrinsic_point = D_intrinsic_cameraPoint * *H2;
-	  	*H2 = D_projection_intrinsic * D_intrinsic_cameraPoint * *H2;
-	  }
+	  if (H1)
+	  	*H1 =  D_project_point * *H1;
+	  if (H2)
+	  	*H2 =  D_project_point * *H2;
 	}
 
+	const Cal3_S2Stereo& K = *K_;
+	double f_x = K.fx(), f_y = K.fy(), b=K.baseline();
 	double d = 1.0 / cameraPoint.z();
-	double uL = K_->px() + d * K_->fx() * cameraPoint.x();
-	double uR = K_->px() + d * K_->fx() * (cameraPoint.x() - K_->baseline());
-	double v = K_->py() + d * K_->fy() * cameraPoint.y();
+	double uL = K.px() + d * f_x * cameraPoint.x();
+	double uR = K.px() + d * f_x * (cameraPoint.x() - b);
+	double v = K.py() + d * f_y * cameraPoint.y();
 	return StereoPoint2(uL, uR, v);
 }
 
 /* ************************************************************************* */
 Matrix StereoCamera::Dproject_to_stereo_camera1(const Point3& P) const {
 	double d = 1.0 / P.z(), d2 = d * d;
-	return Matrix_(3, 3, d, 0.0, -P.x() * d2, d, 0.0, -(P.x() - K_->baseline()) * d2,
-			0.0, d, -P.y() * d2);
-}
-
-/* ************************************************************************* */
-Matrix StereoCamera::Duncalibrate2(const Cal3_S2Stereo::shared_ptr K) {
-	Vector calibration = K->vector();
-	Vector calibration2(3);
-	calibration2(0) = calibration(0);
-	calibration2(1) = calibration(0);
-	calibration2(2) = calibration(1);
-	return diag(calibration2);
-
+	const Cal3_S2Stereo& K = *K_;
+	double f_x = K.fx(), f_y = K.fy(), b=K.baseline();
+	return Matrix_(3, 3,
+			f_x*d, 0.0, -f_x *P.x() * d2,
+			f_x*d, 0.0, -f_x *(P.x() - b) * d2,
+			0.0, f_y*d, -f_y*P.y() * d2);
 }
 
 }
