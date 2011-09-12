@@ -59,25 +59,10 @@ void deserialize(const std::string& serialized, T& output) {
 template<class T>
 void roundtrip(const T& input, T& output) {
 	// Serialize
-//	std::ostringstream out_archive_stream;
-//	{
-//		boost::archive::text_oarchive out_archive(out_archive_stream);
-//		out_archive << input;
-//	}
-//
-//	// Convert to string
-//	std::string serialized = out_archive_stream.str();
 	std::string serialized = serialize(input);
 	if (verbose) std::cout << serialized << std::endl << std::endl;
 
 	deserialize(serialized, output);
-
-//	// De-serialize
-//	{
-//		std::istringstream in_archive_stream(serialized);
-//		boost::archive::text_iarchive in_archive(in_archive_stream);
-//		in_archive >> output;
-//	}
 }
 
 // This version requires equality operator
@@ -198,10 +183,11 @@ Cal3_S2 cal1(1.0, 2.0, 0.3, 0.1, 0.5);
 Cal3DS2 cal2(1.0, 2.0, 3.0, 4.0, 5.0, 6.0, 7.0, 8.0, 9.0);
 Cal3Bundler cal3(1.0, 2.0, 3.0);
 Cal3_S2Stereo cal4(1.0, 2.0, 3.0, 4.0, 5.0, 6.0);
+Cal3_S2Stereo::shared_ptr cal4ptr(new Cal3_S2Stereo(cal4));
 CalibratedCamera cal5(Pose3(rt3, pt3));
 
 SimpleCamera cam1(cal1, cal5);
-StereoCamera cam2(pose3, cal4);
+StereoCamera cam2(pose3, cal4ptr);
 StereoPoint2 spt(1.0, 2.0, 3.0);
 
 
