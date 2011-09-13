@@ -128,7 +128,7 @@ namespace gtsam {
     virtual void permuteWithInverse(const Permutation& inversePermutation);
 
     /**
-     * return the number of columns in the corresponding linear system
+     * return the number of rows in the corresponding linear system
      */
     size_t rows() const { return Ab_.rows(); }
 
