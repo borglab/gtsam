@@ -18,13 +18,29 @@
 #pragma once
 
 #include <gtsam/base/Matrix.h>
+#include <boost/shared_ptr.hpp>
 
 namespace gtsam {
 
 /**
  * An exception indicating an attempt to factor a negative or indefinite matrix.
+ * If detailed exceptions are enabled
+ * \todo fill this in
  */
-class NegativeMatrixException : public std::exception { };
+struct NegativeMatrixException : public std::exception {
+  /// Detail for NegativeMatrixException
+  struct Detail {
+    Matrix A; ///< The original matrix attempted to factor
+    Matrix U; ///< The produced upper-triangular factor
+    Matrix D; ///< The produced diagonal factor
+    Detail(const Matrix& _A, const Matrix& _U, const Matrix& _D) /**< Detail constructor */ : A(_A), U(_A), D(_D) {}
+  };
+  const boost::shared_ptr<const Detail> detail; ///< Detail
+  NegativeMatrixException() /**< Constructor with no detail */ {}
+  NegativeMatrixException(const Detail& _detail) /**< Constructor with detail */ : detail(new Detail(_detail)) {}
+  NegativeMatrixException(const boost::shared_ptr<Detail>& _detail) /**< Constructor with detail */ : detail(_detail) {}
+  virtual ~NegativeMatrixException() throw() {}
+};
 
 /**
  * "Careful" Cholesky computes the positive square-root of a positive symmetric
