@@ -290,6 +290,22 @@ namespace gtsam {
     return scatter;
   }
 
+  /* ************************************************************************* */
+  Matrix GaussianFactorGraph::denseHessian() const {
+
+    Scatter scatter = findScatterAndDims(*this);
+
+    vector<size_t> dims; dims.reserve(scatter.size() + 1);
+    BOOST_FOREACH(const Scatter::value_type& index_entry, scatter) {
+      dims.push_back(index_entry.second.dimension);
+    }
+    dims.push_back(1);
+
+    // combine all factors
+    HessianFactor combined(*this, dims, scatter);
+    return combined.info();
+  }
+
 	/* ************************************************************************* */
 	GaussianFactorGraph::EliminationResult EliminateCholesky(const FactorGraph<
 			GaussianFactor>& factors, size_t nrFrontals) {

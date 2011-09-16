@@ -160,10 +160,15 @@ namespace gtsam {
     std::vector<boost::tuple<size_t,size_t,double> > sparseJacobian(const std::vector<size_t>& columnIndices) const;
 
     /**
-     * Return a dense m-by-n Jacobian matrix, augmented with b
+     * Return a dense \f$ m \times n \f$ Jacobian matrix, augmented with b
      * with standard deviations are baked into A and b
      */
     Matrix denseJacobian() const;
+
+    /**
+     * Return a dense \f$ n \times n \f$ Hessian matrix, augmented with \f$ A^T b \f$
+     */
+    Matrix denseHessian() const;
 
   private:
     /** Serialization function */
