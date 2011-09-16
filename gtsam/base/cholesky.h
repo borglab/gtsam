@@ -34,6 +34,12 @@ struct NegativeMatrixException : public std::exception {
     Matrix U; ///< The produced upper-triangular factor
     Matrix D; ///< The produced diagonal factor
     Detail(const Matrix& _A, const Matrix& _U, const Matrix& _D) /**< Detail constructor */ : A(_A), U(_A), D(_D) {}
+    void print(const std::string& str = "") const {
+      std::cout << str << "\n";
+      gtsam::print(A, "  A: ");
+      gtsam::print(U, "  U: ");
+      gtsam::print(D, "  D: ");
+    }
   };
   const boost::shared_ptr<const Detail> detail; ///< Detail
   NegativeMatrixException() /**< Constructor with no detail */ {}
