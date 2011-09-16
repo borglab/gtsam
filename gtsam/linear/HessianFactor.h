@@ -210,6 +210,9 @@ namespace gtsam {
      */
     constBlock info(const_iterator j1, const_iterator j2) const { return info_(j1-begin(), j2-begin()); }
 
+    /** Return the full *augmented* information matrix, as described above */
+    constBlock info() const { return info_.full(); }
+
     /** Return the constant term \f$ f \f$ as described above
      * @return The constant term \f$ f \f$
      */
