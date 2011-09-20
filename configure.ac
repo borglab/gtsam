@@ -68,6 +68,17 @@ AC_ARG_ENABLE([serialization],
 
 AM_CONDITIONAL([ENABLE_SERIALIZATION], [test x$serialization = xtrue])
 
+# enable installation of CppUnitLite with gtsam
+AC_ARG_ENABLE([install_cppunitlite],
+     [  --enable-install-cppunitlite    Enable installation of CppUnitLite],
+     [case "${enableval}" in
+       yes) install_cppunitlite=true ;;
+       no)  install_cppunitlite=false ;;
+       *) AC_MSG_ERROR([bad value ${enableval} for --enable-install-cppunitlite]) ;;
+     esac],[install_cppunitlite=false])
+
+AM_CONDITIONAL([ENABLE_INSTALL_CPPUNITLITE], [test x$install_cppunitlite = xtrue])
+
 # Checks for programs.
 AC_PROG_CXX
 AC_PROG_CC
@@ -101,16 +112,6 @@ AX_BOOST_BASE([1.40])
 #                   [--with-toolbox has to be specified])
 #            ])
 #AC_SUBST([toolbox])
-
-# ask for boost directory
-#AC_ARG_WITH([boost],
-#            [AS_HELP_STRING([--with-boost],
-#              [specify the boost directory for installation (mandatory)])],
-#            [boost=$withval],
-#            [AC_MSG_FAILURE(
-#                   [--with-boost has to be specified])
-#            ])
-#AC_SUBST([boost])
 
 AC_CONFIG_FILES([CppUnitLite/Makefile \
 gtsam/3rdparty/Makefile \
