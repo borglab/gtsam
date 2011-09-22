@@ -61,7 +61,7 @@ namespace gtsam {
   template<class J>
   const typename J::Value& LieValues<J>::at(const J& j) const {
     const_iterator it = values_.find(j);
-    if (it == values_.end()) throw std::invalid_argument("invalid j: " + (string)j);
+    if (it == values_.end()) throw std::invalid_argument("LieValues::at() invalid j: " + (string)j);
     else return it->second;
   }
 
@@ -130,7 +130,7 @@ namespace gtsam {
   template<class J>
   void LieValues<J>::erase(const J& j, size_t& dim) {
     iterator it = values_.find(j);
-    if (it == values_.end()) throw std::invalid_argument("invalid j: " + (string)j);
+    if (it == values_.end()) throw std::invalid_argument("LieValues::erase() invalid j: " + (string)j);
     dim = it->second.dim();
     values_.erase(it);
   }
