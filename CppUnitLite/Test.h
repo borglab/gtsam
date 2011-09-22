@@ -77,6 +77,7 @@ protected:
 #define TEST_UNSAFE(testName, testGroup)\
   class testGroup##testName##Test : public Test \
 	{ public: testGroup##testName##Test () : Test (#testName "Test", __FILE__, __LINE__, false) {} \
+  					virtual ~testGroup##testName##Test () {};\
             void run (TestResult& result_);} \
     testGroup##testName##Instance; \
 	void testGroup##testName##Test::run (TestResult& result_)
