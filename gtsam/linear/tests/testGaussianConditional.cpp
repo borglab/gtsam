@@ -383,5 +383,83 @@ TEST( GaussianConditional, solveTranspose ) {
 }
 
 /* ************************************************************************* */
+TEST( GaussianConditional, computeInformation ) {
+
+  // Create R matrix
+  Matrix R = (Matrix(4,4) <<
+      1, 2, 3, 4,
+      0, 5, 6, 7,
+      0, 0, 8, 9,
+      0, 0, 0, 10).finished();
+
+  // Shuffle columns
+  Eigen::Transpositions<Eigen::Dynamic> p(4);
+  p.indices()[0] = 1;
+  p.indices()[1] = 1;
+  p.indices()[2] = 2;
+  p.indices()[3] = 0;
+
+  // The expected result of permuting R
+  Matrix RpExpected = (Matrix(4,4) <<
+      2, 4, 3, 1,
+      5, 7, 6, 0,
+      0, 9, 8, 0,
+      0, 10,0, 0).finished();
+
+  // Check that the permutation does what we expect
+  Matrix RpActual = R * p.transpose();
+  EXPECT(assert_equal(RpExpected, RpActual));
+
+  // Create conditional with the permutation
+  GaussianConditional conditional(0, Vector::Zero(4), R, Vector::Constant(4, 1.0));
+  conditional.permutation_ = p;
+
+  // Expected information matrix (using permuted R)
+  Matrix IExpected = RpExpected.transpose() * RpExpected;
+
+  // Actual information matrix (conditional should permute R)
+  Matrix IActual = conditional.computeInformation();
+  EXPECT(assert_equal(IExpected, IActual));
+}
+
+/* ************************************************************************* */
+TEST( GaussianConditional, isGaussianFactor ) {
+
+  // Create R matrix
+  Matrix R = (Matrix(4,4) <<
+      1, 2, 3, 4,
+      0, 5, 6, 7,
+      0, 0, 8, 9,
+      0, 0, 0, 10).finished();
+
+  // Shuffle columns
+  Eigen::Transpositions<Eigen::Dynamic> p(4);
+  p.indices()[0] = 1;
+  p.indices()[1] = 1;
+  p.indices()[2] = 2;
+  p.indices()[3] = 0;
+
+  // The expected result of the permutation
+  Matrix RpExpected = (Matrix(4,4) <<
+      4, 1, 3, 2,
+      7, 0, 6, 5,
+      9, 0, 8, 0,
+      10,0, 0, 0).finished();
+
+  // Create a conditional with this permutation
+  GaussianConditional conditional(0, Vector::Zero(4), R, Vector::Constant(4, 1.0));
+  conditional.permutation_ = p;
+
+  // Expected information matrix computed by conditional
+  Matrix IExpected = conditional.computeInformation();
+
+  // Expected information matrix computed by a factor
+  JacobianFactor jf = *conditional.toFactor();
+  Matrix IActual = jf.getA(jf.begin()).transpose() * jf.getA(jf.begin());
+
+  EXPECT(assert_equal(IExpected, IActual));
+}
+
+/* ************************************************************************* */
 int main() { TestResult tr; return TestRegistry::runAllTests(tr);}
 /* ************************************************************************* */

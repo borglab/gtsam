@@ -87,7 +87,29 @@ GaussianConditional::GaussianConditional(Index key, const Vector& d, const Matri
     rsd_(j).noalias() = parent->second;
     ++ j;
   }
-  get_d_().noalias() = d;
+  get_d_() = d;
+}
+
+/* ************************************************************************* */
+GaussianConditional::GaussianConditional(const std::list<std::pair<Index, Matrix> >& terms,
+    const size_t nrFrontals, const Vector& d, const Vector& sigmas) :
+    IndexConditional(GetKeys(terms.size(), terms.begin(), terms.end()), nrFrontals),
+    rsd_(matrix_), sigmas_(sigmas) {
+  size_t dims[terms.size()+1];
+  size_t j=0;
+  typedef pair<Index, Matrix> Index_Matrix;
+  BOOST_FOREACH(const Index_Matrix& term, terms) {
+    dims[j] = term.second.cols();
+    ++ j;
+  }
+  dims[j] = 1;
+  rsd_.copyStructureFrom(rsd_type(matrix_, dims, dims+terms.size()+1, d.size()));
+  j=0;
+  BOOST_FOREACH(const Index_Matrix& term, terms) {
+    rsd_(j) = term.second;
+    ++ j;
+  }
+  get_d_() = d;
 }
 
 /* ************************************************************************* */
@@ -104,6 +126,7 @@ void GaussianConditional::print(const string &s) const
   }
   gtsam::print(Vector(get_d()),"d");
   gtsam::print(sigmas_,"sigmas");
+  cout << "Permutation: " << permutation_.indices() << endl;
 }    
 
 /* ************************************************************************* */
@@ -137,11 +160,6 @@ bool GaussianConditional::equals(const GaussianConditional &c, double tol) const
 	if (!(equal_with_abs_tol(sigmas_, c.sigmas_, tol))) return false;
 
 	return true;
-}
-
-/* ************************************************************************* */
-GaussianConditional::rsd_type::constBlock GaussianConditional::get_R() const {
-	return rsd_.range(0, nrFrontals());
 }
 
 /* ************************************************************************* */

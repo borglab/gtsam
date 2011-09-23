@@ -31,6 +31,9 @@
 class eliminate2JacobianFactorTest;
 class constructorGaussianConditionalTest;
 class eliminationGaussianFactorGraphTest;
+class complicatedMarginalGaussianJunctionTreeTest;
+class computeInformationGaussianConditionalTest;
+class isGaussianFactorGaussianConditionalTest;
 
 namespace gtsam {
 
@@ -105,11 +108,19 @@ public:
 			Index name1, const Matrix& S, Index name2, const Matrix& T, const Vector& sigmas);
 
 	/**
-	 * constructor with number of arbitrary parents
+	 * constructor with number of arbitrary parents (only used in unit tests,
+	 * std::list is not efficient)
 	 * |Rx+sum(Ai*xi)-d|
 	 */
 	GaussianConditional(Index key, const Vector& d,
 			const Matrix& R, const std::list<std::pair<Index, Matrix> >& parents, const Vector& sigmas);
+
+	/**
+	 * Constructor with arbitrary number of frontals and parents (only used in unit tests,
+   * std::list is not efficient)
+	 */
+	GaussianConditional(const std::list<std::pair<Index, Matrix> >& terms,
+	    size_t nrFrontals, const Vector& d, const Vector& sigmas);
 
 	/**
 	 * Constructor when matrices are already stored in a combined matrix, allows
@@ -131,13 +142,12 @@ public:
 
 	/** Compute the information matrix */
 	Matrix computeInformation() const {
-	  Matrix R = get_R();
-	  R = R*permutation_;
-	  return R.transpose()*R;
+	  Matrix R = get_R() * permutation_.transpose();
+	  return R.transpose() * R;
 	}
 
 	/** return stuff contained in GaussianConditional */
-	rsd_type::constBlock get_R() const;
+	rsd_type::constBlock get_R() const { return rsd_.range(0, nrFrontals()); }
 
 	/** access the d vector */
 	const_d_type get_d() const { return rsd_.column(nrFrontals()+nrParents(), 0); }
@@ -216,8 +226,8 @@ public:
 	void scaleFrontalsBySigma(VectorValues& gy) const;
 
 protected:
-  rsd_type::Column get_d_() { return rsd_.column(1+nrParents(), 0); }
-  rsd_type::Block get_R_() { return rsd_(0); }
+  rsd_type::Column get_d_() { return rsd_.column(nrFrontals()+nrParents(), 0); }
+  rsd_type::Block get_R_() { return rsd_.range(0, nrFrontals()); }
   rsd_type::Block get_S_(iterator variable) { return rsd_(variable - this->begin()); }
 
 private:
@@ -227,6 +237,9 @@ private:
   friend class ::eliminate2JacobianFactorTest;
   friend class ::constructorGaussianConditionalTest;
   friend class ::eliminationGaussianFactorGraphTest;
+  friend class ::complicatedMarginalGaussianJunctionTreeTest;
+  friend class ::computeInformationGaussianConditionalTest;
+  friend class ::isGaussianFactorGaussianConditionalTest;
 
   /** Serialization function */
 	friend class boost::serialization::access;

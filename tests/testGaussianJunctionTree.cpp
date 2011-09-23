@@ -30,11 +30,16 @@ using namespace boost::assign;
 // Magically casts strings like "x3" to a Symbol('x',3) key, see Key.h
 #define GTSAM_MAGIC_KEY
 
+#include <gtsam/base/debug.h>
+#include <gtsam/base/cholesky.h>
+#include <gtsam/inference/BayesTree-inl.h>
 #include <gtsam/nonlinear/Ordering.h>
 #include <gtsam/linear/GaussianJunctionTree.h>
 #include <gtsam/linear/GaussianSequentialSolver.h>
+#include <gtsam/linear/GaussianMultifrontalSolver.h>
 #include <gtsam/slam/smallExample.h>
 #include <gtsam/slam/planarSLAM.h>
+#include <gtsam/slam/pose2SLAM.h>
 
 using namespace std;
 using namespace gtsam;
@@ -183,7 +188,47 @@ TEST(GaussianJunctionTree, slamlike) {
   planarSLAM::Values expected = init.expmap(delta, ordering);
 
   EXPECT(assert_equal(expected, actual));
+}
 
+/* ************************************************************************* */
+TEST(GaussianJunctionTree, simpleMarginal) {
+
+  typedef BayesTree<GaussianConditional> GaussianBayesTree;
+
+  // Create a simple graph
+  pose2SLAM::Graph fg;
+  fg.addPrior(pose2SLAM::Key(0), Pose2(), sharedSigma(3, 10.0));
+  fg.addConstraint(0, 1, Pose2(1.0, 0.0, 0.0), sharedSigmas(Vector_(3, 10.0, 1.0, 1.0)));
+
+  pose2SLAM::Values init;
+  init.insert(0, Pose2());
+  init.insert(1, Pose2(1.0, 0.0, 0.0));
+
+  Ordering ordering;
+  ordering += "x1", "x0";
+
+  GaussianFactorGraph gfg = *fg.linearize(init, ordering);
+
+  // Compute marginals with both sequential and multifrontal
+  Matrix expected = GaussianSequentialSolver(gfg).marginalCovariance(1);
+
+  Matrix actual1 = GaussianMultifrontalSolver(gfg).marginalCovariance(1);
+  
+  // Compute marginal directly from marginal factor
+  GaussianFactor::shared_ptr marginalFactor = GaussianMultifrontalSolver(gfg).marginalFactor(1);
+  JacobianFactor::shared_ptr marginalJacobian = boost::dynamic_pointer_cast<JacobianFactor>(marginalFactor);
+  Matrix actual2 = inverse(marginalJacobian->getA(marginalJacobian->begin()).transpose() * marginalJacobian->getA(marginalJacobian->begin()));
+
+  // Compute marginal directly from BayesTree
+  GaussianBayesTree gbt;
+  gbt.insert(GaussianJunctionTree(gfg).eliminate(EliminateLDL));
+  marginalFactor = gbt.marginalFactor(1, EliminateLDL);
+  marginalJacobian = boost::dynamic_pointer_cast<JacobianFactor>(marginalFactor);
+  Matrix actual3 = inverse(marginalJacobian->getA(marginalJacobian->begin()).transpose() * marginalJacobian->getA(marginalJacobian->begin()));
+
+  EXPECT(assert_equal(expected, actual1));
+  EXPECT(assert_equal(expected, actual2));
+  EXPECT(assert_equal(expected, actual3));
 }
 
 /* ************************************************************************* */
