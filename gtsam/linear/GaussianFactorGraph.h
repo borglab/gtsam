@@ -182,26 +182,124 @@ namespace gtsam {
 
   /**
    * Combine and eliminate several factors.
+   * \ingroup LinearSolving
    */
 	JacobianFactor::shared_ptr CombineJacobians(
 			const FactorGraph<JacobianFactor>& factors,
 			const VariableSlots& variableSlots);
 
+	/**
+	 * Densely combine and partially eliminate JacobianFactors to produce a
+	 * single conditional with nrFrontals frontal variables and a remaining
+	 * factor.
+	 * Variables are eliminated in the natural order of the variable indices of in the factors.
+	 * @param factors Factors to combine and eliminate
+	 * @param nrFrontals Number of frontal variables to eliminate.
+	 * @return The conditional and remaining factor
+
+   * \ingroup LinearSolving
+	 */
 	GaussianFactorGraph::EliminationResult EliminateJacobians(const FactorGraph<
 			JacobianFactor>& factors, size_t nrFrontals = 1);
 
+	/**
+	 * Densely partially eliminate with QR factorization.  HessianFactors are
+	 * first factored with Cholesky decomposition to produce JacobianFactors,
+	 * by calling the conversion constructor JacobianFactor(const HessianFactor&).
+	 * Variables are eliminated in the natural order of the variable indices of in
+	 * the factors.
+	 * @param factors Factors to combine and eliminate
+	 * @param nrFrontals Number of frontal variables to eliminate.
+	 * @return The conditional and remaining factor
+
+   * \ingroup LinearSolving
+	 */
   GaussianFactorGraph::EliminationResult EliminateQR(const FactorGraph<
 			GaussianFactor>& factors, size_t nrFrontals = 1);
 
+  /**
+   * Densely partially eliminate with Cholesky factorization.  JacobianFactors
+   * are left-multiplied with their transpose to form the Hessian using the
+   * conversion constructor HessianFactor(const JacobianFactor&).
+   *
+   * If any factors contain constrained noise models (any sigmas equal to
+   * zero), QR factorization will be performed instead, because our current
+   * implementation cannot handle constrained noise models in Cholesky
+   * factorization.  EliminateCholesky(), on the other hand, will fail if any
+   * factors contain constrained noise models.
+   *
+   * Variables are eliminated in the natural order of the variable indices of in
+   * the factors.
+   * @param factors Factors to combine and eliminate
+   * @param nrFrontals Number of frontal variables to eliminate.
+   * @return The conditional and remaining factor
+
+   * \ingroup LinearSolving
+   */
   GaussianFactorGraph::EliminationResult EliminatePreferCholesky(const FactorGraph<
 			GaussianFactor>& factors, size_t nrFrontals = 1);
 
+  /**
+   * Densely partially eliminate with Cholesky factorization.  JacobianFactors
+   * are left-multiplied with their transpose to form the Hessian using the
+   * conversion constructor HessianFactor(const JacobianFactor&).
+   *
+   * If any factors contain constrained noise models, this function will fail
+   * because our current implementation cannot handle constrained noise models
+   * in Cholesky factorization.  The function EliminatePreferCholesky()
+   * automatically does QR instead when this is the case.
+   *
+   * Variables are eliminated in the natural order of the variable indices of in
+   * the factors.
+   * @param factors Factors to combine and eliminate
+   * @param nrFrontals Number of frontal variables to eliminate.
+   * @return The conditional and remaining factor
+
+   * \ingroup LinearSolving
+   */
   GaussianFactorGraph::EliminationResult EliminateCholesky(const FactorGraph<
 			GaussianFactor>& factors, size_t nrFrontals = 1);
 
+  /**
+   * Densely partially eliminate with LDL factorization.  JacobianFactors
+   * are left-multiplied with their transpose to form the Hessian using the
+   * conversion constructor HessianFactor(const JacobianFactor&).
+   *
+   * If any factors contain constrained noise models (any sigmas equal to
+   * zero), QR factorization will be performed instead, because our current
+   * implementation cannot handle constrained noise models in LDL
+   * factorization.  EliminateLDL(), on the other hand, will fail if any
+   * factors contain constrained noise models.
+   *
+   * Variables are eliminated in the natural order of the variable indices of in
+   * the factors.
+   * @param factors Factors to combine and eliminate
+   * @param nrFrontals Number of frontal variables to eliminate.
+   * @return The conditional and remaining factor
+
+   * \ingroup LinearSolving
+   */
   GaussianFactorGraph::EliminationResult EliminatePreferLDL(const FactorGraph<
           GaussianFactor>& factors, size_t nrFrontals = 1);
 
+  /**
+   * Densely partially eliminate with LDL factorization.  JacobianFactors
+   * are left-multiplied with their transpose to form the Hessian using the
+   * conversion constructor HessianFactor(const JacobianFactor&).
+   *
+   * If any factors contain constrained noise models, this function will fail
+   * because our current implementation cannot handle constrained noise models
+   * in LDL factorization.  The function EliminatePreferLDL()
+   * automatically does QR instead when this is the case.
+   *
+   * Variables are eliminated in the natural order of the variable indices of in
+   * the factors.
+   * @param factors Factors to combine and eliminate
+   * @param nrFrontals Number of frontal variables to eliminate.
+   * @return The conditional and remaining factor
+
+   * \ingroup LinearSolving
+   */
   GaussianFactorGraph::EliminationResult EliminateLDL(const FactorGraph<
       GaussianFactor>& factors, size_t nrFrontals = 1);
 
