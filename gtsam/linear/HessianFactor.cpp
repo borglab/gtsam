@@ -128,6 +128,32 @@ HessianFactor::HessianFactor(Index j1, Index j2,
 }
 
 /* ************************************************************************* */
+HessianFactor::HessianFactor(Index j1, Index j2, Index j3,
+    const Matrix& G11, const Matrix& G12, const Matrix& G13, const Vector& g1,
+    const Matrix& G22, const Matrix& G23, const Vector& g2,
+    const Matrix& G33, const Vector& g3, double f) :
+    GaussianFactor(j1, j2, j3), info_(matrix_) {
+	if(G11.rows() != G11.cols() || G11.rows() != G12.rows() || G11.rows() != G13.rows()  || G11.rows() != g1.size() ||
+			G22.cols() != G12.cols() || G33.cols() != G13.cols() ||  G22.cols() != g2.size() || G33.cols() != g3.size())
+		throw invalid_argument("Inconsistent matrix and/or vector dimensions in HessianFactor constructor");
+	size_t dims[] = { G11.rows(), G22.rows(), G33.rows(), 1 };
+	InfoMatrix fullMatrix(G11.rows() + G22.rows() + G33.rows() + 1, G11.rows() + G22.rows() + G33.rows() + 1);
+	BlockInfo infoMatrix(fullMatrix, dims, dims+4);
+	infoMatrix(0,0) = G11;
+	infoMatrix(0,1) = G12;
+	infoMatrix(0,2) = G13;
+	infoMatrix.column(0,3,0) = g1;
+	infoMatrix(1,1) = G22;
+	infoMatrix(1,2) = G23;
+	infoMatrix.column(1,3,0) = g2;
+	infoMatrix(2,2) = G33;
+	infoMatrix.column(2,3,0) = g3;
+	infoMatrix(3,3)(0,0) = f;
+	infoMatrix.swap(info_);
+	assertInvariants();
+}
+
+/* ************************************************************************* */
 HessianFactor::HessianFactor(const GaussianConditional& cg) : GaussianFactor(cg), info_(matrix_) {
 	JacobianFactor jf(cg);
 	info_.copyStructureFrom(jf.Ab_);

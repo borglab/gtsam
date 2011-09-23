@@ -169,6 +169,15 @@ namespace gtsam {
         const Matrix& G11, const Matrix& G12, const Vector& g1,
         const Matrix& G22, const Vector& g2, double f);
 
+    /** Construct a ternary factor.  Gxx are the upper-triangle blocks of the
+     * quadratic term (the Hessian matrix), gx the pieces of the linear vector
+     * term, and f the constant term.
+     */
+    HessianFactor(Index j1, Index j2, Index j3,
+        const Matrix& G11, const Matrix& G12, const Matrix& G13, const Vector& g1,
+        const Matrix& G22, const Matrix& G23, const Vector& g2,
+        const Matrix& G33, const Vector& g3, double f);
+
     /** Construct from Conditional Gaussian */
     HessianFactor(const GaussianConditional& cg);
 
