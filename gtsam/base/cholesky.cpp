@@ -162,6 +162,11 @@ Eigen::LDLT<Matrix>::TranspositionType ldlPartial(Matrix& ABC, size_t nFrontal) 
 
   const size_t n = ABC.rows();
 
+  if(debug) {
+    cout << "Partial LDL with " << nFrontal << " frontal scalars, ";
+    print(ABC, "ABC: ");
+  }
+
   // Compute Cholesky factorization of A, overwrites A = sqrt(D)*R
   //  tic(1, "ldl");
   Eigen::LDLT<Matrix> ldlt;
@@ -202,6 +207,8 @@ Eigen::LDLT<Matrix>::TranspositionType ldlPartial(Matrix& ABC, size_t nFrontal) 
         ABC.topRightCorner(nFrontal, n-nFrontal).transpose(), -1.0);
   if(debug) cout << "L:\n" << Eigen::MatrixXd(ABC.bottomRightCorner(n-nFrontal,n-nFrontal).selfadjointView<Eigen::Upper>()) << endl;
   //  toc(3, "compute L");
+
+  if(debug) cout << "P: " << ldlt.transpositionsP().indices() << endl;
 
   return ldlt.transpositionsP();
 }
