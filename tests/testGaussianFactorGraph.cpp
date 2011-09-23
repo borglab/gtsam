@@ -1011,5 +1011,25 @@ TEST(GaussianFactorGraph, replace)
 //}
 
 /* ************************************************************************* */
+TEST(GaussianFactorGraph, createSmoother2)
+{
+  using namespace example;
+  GaussianFactorGraph fg2;
+  Ordering ordering;
+  boost::tie(fg2,ordering) = createSmoother(3);
+  LONGS_EQUAL(5,fg2.size());
+
+  // eliminate
+  vector<Index> x3var; x3var.push_back(ordering["x3"]);
+  vector<Index> x1var; x1var.push_back(ordering["x1"]);
+  GaussianBayesNet p_x3 = *GaussianSequentialSolver(
+      *GaussianSequentialSolver(fg2).jointFactorGraph(x3var)).eliminate();
+  GaussianBayesNet p_x1 = *GaussianSequentialSolver(
+      *GaussianSequentialSolver(fg2).jointFactorGraph(x1var)).eliminate();
+  CHECK(assert_equal(*p_x1.back(),*p_x3.front())); // should be the same because of symmetry
+}
+
+
+/* ************************************************************************* */
 int main() { TestResult tr; return TestRegistry::runAllTests(tr);}
 /* ************************************************************************* */
