@@ -99,10 +99,8 @@ namespace gtsam {
 		Permutation::shared_ptr colamdPerm(Inference::PermutationCOLAMD(
 				variableIndex));
 
-		// Permute the Ordering and VariableIndex with the COLAMD ordering
+		// Permute the Ordering with the COLAMD ordering
 		ordering->permuteWithInverse(*colamdPerm->inverse());
-		// variableIndex.permute(*colamdPerm);
-		// SL-FIX: fix permutation
 
 		// Return the Ordering and VariableIndex to be re-used during linearization
 		// and elimination
