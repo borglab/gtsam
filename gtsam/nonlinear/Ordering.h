@@ -47,24 +47,36 @@ public:
   typedef Map::iterator iterator;
   typedef Map::const_iterator const_iterator;
 
+  /// Default constructor for empty ordering
   Ordering() : nVars_(0) {}
+
+  /// Construct from list, assigns order indices sequentially to list items.
   Ordering(const std::list<Symbol> & L) ;
 
-  /** One greater than the maximum ordering index. */
+  /** One greater than the maximum ordering index, i.e. including missing indices in the count.  See also size(). */
   Index nVars() const { return nVars_; }
 
-  /** The number of variables in this ordering. */
+  /** The actual number of variables in this ordering, i.e. not including missing indices in the count.  See also nVars(). */
   Index size() const { return order_.size(); }
 
-  iterator begin() { return order_.begin(); }
-  const_iterator begin() const { return order_.begin(); }
-  iterator end() { return order_.end(); }
-  const_iterator end() const { return order_.end(); }
+  iterator begin() { return order_.begin(); } /**< Iterator in order of sorted symbols, not in elimination/index order! */
+  const_iterator begin() const { return order_.begin(); } /**< Iterator in order of sorted symbols, not in elimination/index order! */
+  iterator end() { return order_.end(); } /**< Iterator in order of sorted symbols, not in elimination/index order! */
+  const_iterator end() const { return order_.end(); } /**< Iterator in order of sorted symbols, not in elimination/index order! */
 
   // access to integer indices
 
-  Index& at(const Symbol& key) { return operator[](key); }
-  Index at(const Symbol& key) const { return operator[](key); }
+  Index& at(const Symbol& key) { return operator[](key); } ///< Synonym for operator[](const Symbol&)
+  Index at(const Symbol& key) const { return operator[](key); } ///< Synonym for operator[](const Symbol&) const
+
+  /** Assigns the ordering index of the requested \c key into \c index if the symbol
+   * is present in the ordering, otherwise does not modify \c index.  The
+   * return value indicates whether the symbol is in fact present in the
+   * ordering.
+   * @param key The key whose index you request
+   * @param [out] index Reference into which to write the index of the requested key, if the key is present.
+   * @return true if the key is present and \c index was modified, false otherwise.
+   */
   bool tryAt(const Symbol& key, Index& index) const {
     const_iterator i = order_.find(key);
     if(i != order_.end()) {
@@ -73,10 +85,22 @@ public:
     } else
       return false;
   }
+
+  /// Access the index for the requested key, throws std::out_of_range if the
+  /// key is not present in the ordering (note that this differs from the
+  /// behavior of std::map)
   Index& operator[](const Symbol& key) {
-    iterator i=order_.find(key); assert(i != order_.end()); return i->second; }
+    iterator i=order_.find(key);
+    if(i == order_.end())  throw std::out_of_range(std::string());
+    else                   return i->second; }
+
+  /// Access the index for the requested key, throws std::out_of_range if the
+  /// key is not present in the ordering (note that this differs from the
+  /// behavior of std::map)
   Index operator[](const Symbol& key) const {
-    const_iterator i=order_.find(key); assert(i != order_.end()); return i->second; }
+    const_iterator i=order_.find(key);
+    if(i == order_.end())  throw std::out_of_range(std::string());
+    else                   return i->second; }
 
   /** Returns an iterator pointing to the symbol/index pair with the requested,
    * or the end iterator if it does not exist.
@@ -111,14 +135,15 @@ public:
   /** Try insert, but will fail if the key is already present */
   iterator insert(const value_type& key_order) {
   	std::pair<iterator,bool> it_ok(tryInsert(key_order));
-  	assert(it_ok.second);
-  	return it_ok.first;
+  	if(!it_ok.second)  throw std::invalid_argument(std::string());
+  	else               return it_ok.first;
   }
   iterator insert(const Symbol& key, Index order) { return insert(std::make_pair(key,order)); }
 
-
+  /// Test if the key exists in the ordering.
   bool exists(const Symbol& key) const { return order_.count(key); }
 
+  /// Adds a new key to the ordering with an index of one greater than the current highest index.
   Index push_back(const Symbol& key) { return insert(std::make_pair(key, nVars_))->second; }
 
   /** Remove the last symbol/index pair from the ordering - this is inefficient.
