@@ -45,7 +45,7 @@ Permutation Permutation::PullToFront(const vector<Index>& toFront, size_t size, 
 
   // Put the pulled variables at the front of the permutation and set up the
   // pulled flags.
-  size_t toFrontUniqueSize;
+  size_t toFrontUniqueSize = 0;
   for(Index j=0; j<toFront.size(); ++j) {
     if(!pulled[toFront[j]]) {
       ret[j] = toFront[j];
@@ -148,7 +148,7 @@ Permutation::shared_ptr Permutation::inverse() const {
 
 /* ************************************************************************* */
 void Permutation::print(const std::string& str) const {
-  std::cout << str;
+  std::cout << str << " ";
   BOOST_FOREACH(Index s, rangeIndices_) { std::cout << s << " "; }
   std::cout << std::endl;
 }

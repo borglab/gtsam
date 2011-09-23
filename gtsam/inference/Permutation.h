@@ -116,19 +116,7 @@ public:
   bool equals(const Permutation& rhs, double tol=0.0) const { return rangeIndices_ == rhs.rangeIndices_; }
 
   /**
-   * Syntactic sugar for accessing another container through a permutation.
-   * Allows the syntax:
-   *   Permuted<Container> permuted(permutation, container);
-   *   permuted[index1];
-   *   permuted[index2];
-   * which is equivalent to:
-   *   container[permutation[index1]];
-   *   container[permutation[index2]];
-   * but more concise.
-   */
-
-  /**
-   * Permute the permutation, p1.permute(p2)[i] is equivalent to p2[p1[i]].
+   * Permute the permutation, p1.permute(p2)[i] is equivalent to p1[p2[i]].
    */
   Permutation::shared_ptr permute(const Permutation& permutation) const;
 
@@ -154,7 +142,15 @@ protected:
 
 
 /**
- * Definition of Permuted class, see above comment for details.
+ * Syntactic sugar for accessing another container through a permutation.
+ * Allows the syntax:
+ *   Permuted<Container> permuted(permutation, container);
+ *   permuted[index1];
+ *   permuted[index2];
+ * which is equivalent to:
+ *   container[permutation[index1]];
+ *   container[permutation[index2]];
+ * but more concise.
  */
 template<typename CONTAINER, typename VALUETYPE = typename CONTAINER::value_reference_type>
 class Permuted {
