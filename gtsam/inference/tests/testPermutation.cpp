@@ -79,19 +79,19 @@ TEST(Permutation, compose) {
 
   Permutation expected(5);
   expected[0] = 2;
-  expected[1] = 4;
-  expected[2] = 3;
-  expected[3] = 0;
+  expected[1] = 3;
+  expected[2] = 0;
+  expected[3] = 4;
   expected[4] = 1;
 
-  Permutation actual = *p2.permute(p1);
+  Permutation actual = *p1.permute(p2);
 
   EXPECT(assert_equal(expected, actual));
-  LONGS_EQUAL(p2[p1[0]], actual[0]);
-  LONGS_EQUAL(p2[p1[1]], actual[1]);
-  LONGS_EQUAL(p2[p1[2]], actual[2]);
-  LONGS_EQUAL(p2[p1[3]], actual[3]);
-  LONGS_EQUAL(p2[p1[4]], actual[4]);
+  LONGS_EQUAL(p1[p2[0]], actual[0]);
+  LONGS_EQUAL(p1[p2[1]], actual[1]);
+  LONGS_EQUAL(p1[p2[2]], actual[2]);
+  LONGS_EQUAL(p1[p2[3]], actual[3]);
+  LONGS_EQUAL(p1[p2[4]], actual[4]);
 }
 
 /* ************************************************************************* */
