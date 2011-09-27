@@ -153,7 +153,10 @@ ISAM2<Conditional, Values>::getCachedBoundaryFactors(Cliques& orphans) {
 }
 
 template<class Conditional, class Values>
-boost::shared_ptr<FastSet<Index> > ISAM2<Conditional, Values>::recalculate(const FastSet<Index>& markedKeys, const FastSet<Index>& structuralKeys, const vector<Index>& newKeys, const FactorGraph<GaussianFactor>::shared_ptr newFactors) {
+boost::shared_ptr<FastSet<Index> > ISAM2<Conditional, Values>::recalculate(
+    const FastSet<Index>& markedKeys, const FastSet<Index>& structuralKeys, const FastVector<Index>& newKeys, const FactorGraph<GaussianFactor>::shared_ptr newFactors) {
+
+  // TODO:  new factors are linearized twice, the newFactors passed in are not used.
 
   static const bool debug = ISDEBUG("ISAM2 recalculate");
 
@@ -193,7 +196,6 @@ boost::shared_ptr<FastSet<Index> > ISAM2<Conditional, Values>::recalculate(const
     toc(0, "affectedStructuralKeys");
   }
 
-//  if(debug) newFactors->print("Recalculating factors: ");
   if(debug) {
     cout << "markedKeys: ";
     BOOST_FOREACH(const Index key, markedKeys) { cout << key << " "; }
@@ -283,7 +285,7 @@ boost::shared_ptr<FastSet<Index> > ISAM2<Conditional, Values>::recalculate(const
 
     tic(5,"eliminate");
     GaussianJunctionTree jt(factors, variableIndex_);
-    sharedClique newRoot = jt.eliminate(EliminateQR, true);
+    sharedClique newRoot = jt.eliminate(EliminatePreferLDL, true);
     if(debug) newRoot->print("Eliminated: ");
     toc(5,"eliminate");
 
@@ -336,15 +338,6 @@ boost::shared_ptr<FastSet<Index> > ISAM2<Conditional, Values>::recalculate(const
               << " avgCliqueSize: " << avgClique << " #Cliques: " << numCliques << " nnzR: " << nnzR << endl;
 #endif
 
-    //#ifndef NDEBUG
-    //  for(Index var=0; var<cached_.size(); ++var) {
-    //    if(find(affectedKeys.begin(), affectedKeys.end(), var) == affectedKeys.end() ||
-    //        lastRelinVariables_[var] == true) {
-    //      assert(!cached_[var] || find(cached_[var]->begin(), cached_[var]->end(), var) == cached_[var]->end());
-    //    }
-    //  }
-    //#endif
-
     tic(2,"cached");
     // add the cached intermediate results from the boundary of the orphans ...
     FactorGraph<CacheFactor> cachedBoundary = getCachedBoundaryFactors(orphans);
@@ -354,12 +347,11 @@ boost::shared_ptr<FastSet<Index> > ISAM2<Conditional, Values>::recalculate(const
     BOOST_FOREACH(const CacheFactor::shared_ptr& cached, cachedBoundary) {
 #ifndef NDEBUG
       BOOST_FOREACH(const Index key, *cached) {
-        assert(lastRelinVariables_[key] == false);
+        assert(lastRelinVariables_[key] == false); // No variables in the cached factors should be being relinearized
       }
 #endif
       factors.push_back(GaussianFactor::shared_ptr(new CacheFactor(*cached)));
     }
-    //  factors.push_back(cachedBoundary);
     toc(2,"cached");
 
     // END OF COPIED CODE
@@ -384,119 +376,24 @@ boost::shared_ptr<FastSet<Index> > ISAM2<Conditional, Values>::recalculate(const
 
     // 3. Re-order and eliminate the factor graph into a Bayes net (Algorithm [alg:eliminate]), and re-assemble into a new Bayes tree (Algorithm [alg:BayesTree])
 
-    tic(4,"reorder");
+    tic(4,"reorder and eliminate");
 
-    //#define PRESORT_ALPHA
-
-    tic(1,"select affected variables");
+    tic(1,"list to set");
     // create a partial reordering for the new and contaminated factors
     // markedKeys are passed in: those variables will be forced to the end in the ordering
     boost::shared_ptr<FastSet<Index> > affectedKeysSet(new FastSet<Index>(markedKeys));
     affectedKeysSet->insert(affectedKeys.begin(), affectedKeys.end());
-    //#ifndef NDEBUG
-    //  // All affected keys should be contiguous and at the end of the elimination order
-    //  for(set<Index>::const_iterator key=affectedKeysSet->begin(); key!=affectedKeysSet->end(); ++key) {
-    //    if(key != affectedKeysSet->begin()) {
-    //      set<Index>::const_iterator prev = key; --prev;
-    //      assert(*prev == *key - 1);
-    //    }
-    //  }
-    //  assert(*(affectedKeysSet->end()) == variableIndex_.size() - 1);
-    //#endif
+    toc(1,"list to set");
 
-#ifndef NDEBUG
-    // Debug check that all variables involved in the factors to be re-eliminated
-    // are in affectedKeys, since we will use it to select a subset of variables.
-    BOOST_FOREACH(const GaussianFactor::shared_ptr& factor, factors) {
-      BOOST_FOREACH(Index key, factor->keys()) {
-        assert(find(affectedKeysSet->begin(), affectedKeysSet->end(), key) != affectedKeysSet->end());
-      }
-    }
-#endif
-    Permutation affectedKeysSelector(affectedKeysSet->size()); // Create a permutation that pulls the affected keys to the front
-    Permutation affectedKeysSelectorInverse(affectedKeysSet->size() > 0 ? *(--affectedKeysSet->end())+1 : 0 /*ordering_.nVars()*/); // And its inverse
-#ifndef NDEBUG
-    // If debugging, fill with invalid values that will trip asserts if dereferenced
-    std::fill(affectedKeysSelectorInverse.begin(), affectedKeysSelectorInverse.end(), numeric_limits<Index>::max());
-#endif
-    { Index position=0; BOOST_FOREACH(Index var, *affectedKeysSet) {
-      affectedKeysSelector[position] = var;
-      affectedKeysSelectorInverse[var] = position;
-      ++ position; } }
-    //  if(disableReordering) { assert(affectedKeysSelector.equals(Permutation::Identity(ordering_.nVars()))); assert(affectedKeysSelectorInverse.equals(Permutation::Identity(ordering_.nVars()))); }
-    if(debug) affectedKeysSelector.print("affectedKeysSelector: ");
-    if(debug) affectedKeysSelectorInverse.print("affectedKeysSelectorInverse: ");
-#ifndef NDEBUG
-    VariableIndex beforePermutationIndex(factors);
-#endif
-    factors.permuteWithInverse(affectedKeysSelectorInverse);
-    if(debug) factors.print("Factors to reorder/re-eliminate: ");
-    toc(1,"select affected variables");
-    tic(2,"variable index");
-    VariableIndex affectedFactorsIndex(factors); // Create a variable index for the factors to be re-eliminated
-#ifndef NDEBUG
-    //  beforePermutationIndex.permute(affectedKeysSelector);
-    //  assert(assert_equal(affectedFactorsIndex, beforePermutationIndex));
-#endif
-    if(debug) affectedFactorsIndex.print("affectedFactorsIndex: ");
-    toc(2,"variable index");
-    tic(3,"ccolamd");
-#ifdef PRESORT_ALPHA
-    Permutation alphaOrder(affectedKeysSet->size());
-    vector<Symbol> orderedKeys; orderedKeys.reserve(ordering_.size());
-    Index alphaVar = 0;
-    BOOST_FOREACH(const Ordering::value_type& key_order, ordering_) {
-      Permutation::const_iterator selected = find(affectedKeysSelector.begin(), affectedKeysSelector.end(), key_order.second);
-      if(selected != affectedKeysSelector.end()) {
-        Index selectedVar = selected - affectedKeysSelector.begin();
-        alphaOrder[alphaVar] = selectedVar;
-        ++ alphaVar;
-      }
-    }
-    assert(alphaVar == affectedKeysSet->size());
-    vector<Index> markedKeysSelected; markedKeysSelected.reserve(markedKeys.size());
-    BOOST_FOREACH(Index var, markedKeys) { markedKeysSelected.push_back(alphaOrder[affectedKeysSelectorInverse[var]]); }
-    GaussianVariableIndex<> origAffectedFactorsIndex(affectedFactorsIndex);
-    affectedFactorsIndex.permute(alphaOrder);
-    Permutation::shared_ptr affectedColamd(Inference::PermutationCOLAMD(affectedFactorsIndex, markedKeysSelected));
-    affectedFactorsIndex.permute(*alphaOrder.inverse());
-    affectedColamd = alphaOrder.permute(*affectedColamd);
-#else
-    //  vector<Index> markedKeysSelected; markedKeysSelected.reserve(markedKeys.size());
-    //  BOOST_FOREACH(Index var, markedKeys) { markedKeysSelected.push_back(affectedKeysSelectorInverse[var]); }
-    //  vector<Index> newKeysSelected; newKeysSelected.reserve(newKeys.size());
-    //  BOOST_FOREACH(Index var, newKeys) { newKeysSelected.push_back(affectedKeysSelectorInverse[var]); }
-    vector<int> cmember(affectedKeysSelector.size(), 0);
-    if(structuralLast) {
-      if(affectedKeysSelector.size() > affectedStructuralKeys.size()) {
-        BOOST_FOREACH(Index var, affectedStructuralKeys) { cmember[affectedKeysSelectorInverse[var]] = 1; }
-        if(latestLast) { BOOST_FOREACH(Index var, newKeys) { cmember[affectedKeysSelectorInverse[var]] = 2; } }
-      }
-    } else if(latestLast) {
-      FastSet<Index> newKeysSet(newKeys.begin(), newKeys.end());
-      if(theta_.size() > newKeysSet.size()) {
-        BOOST_FOREACH(Index var, newKeys) { cmember[affectedKeysSelectorInverse[var]] = 1; }
-      }
-    }
-    Permutation::shared_ptr affectedColamd(Inference::PermutationCOLAMD_(affectedFactorsIndex, cmember));
-    if(disableReordering) {
-      affectedColamd.reset(new Permutation(Permutation::Identity(affectedKeysSelector.size())));
-      //    assert(affectedColamd->equals(Permutation::Identity(ordering_.nVars())));
-    }
-#endif
-    toc(3,"ccolamd");
-    tic(4,"ccolamd permutations");
-    Permutation::shared_ptr affectedColamdInverse(affectedColamd->inverse());
-    //  if(disableReordering) assert(affectedColamdInverse->equals(Permutation::Identity(ordering_.nVars())));
-    if(debug) affectedColamd->print("affectedColamd: ");
-    if(debug) affectedColamdInverse->print("affectedColamdInverse: ");
-    Permutation::shared_ptr partialReordering(
-        Permutation::Identity(ordering_.nVars()).partialPermutation(affectedKeysSelector, *affectedColamd));
-    Permutation::shared_ptr partialReorderingInverse(
-        Permutation::Identity(ordering_.nVars()).partialPermutation(affectedKeysSelector, *affectedColamdInverse));
-    //  if(disableReordering) { assert(partialReordering->equals(Permutation::Identity(ordering_.nVars()))); assert(partialReorderingInverse->equals(Permutation::Identity(ordering_.nVars()))); }
-    if(debug) partialReordering->print("partialReordering: ");
-    toc(4,"ccolamd permutations");
+    tic(2,"PartialSolve");
+    typename Impl::ReorderingMode reorderingMode;
+    reorderingMode.nFullSystemVars = ordering_.nVars();
+    reorderingMode.algorithm = Impl::ReorderingMode::COLAMD;
+    reorderingMode.constrain = Impl::ReorderingMode::LATEST_LAST;
+    reorderingMode.latestKeys = FastSet<Index>(newKeys.begin(), newKeys.end());
+    typename Impl::PartialSolveResult partialSolveResult =
+        Impl::PartialSolve(factors, *affectedKeysSet, reorderingMode);
+    toc(2,"PartialSolve");
 
     // We now need to permute everything according this partial reordering: the
     // delta vector, the global ordering, and the factors we're about to
@@ -504,62 +401,30 @@ boost::shared_ptr<FastSet<Index> > ISAM2<Conditional, Values>::recalculate(const
     // orphans and the leftover cached factors.
     // NOTE: We have shared_ptr's to cached factors that we permute here, thus we
     // undo this permutation after elimination.
-    tic(5,"permute global variable index");
-    variableIndex_.permute(*partialReordering);
-    toc(5,"permute global variable index");
-    tic(6,"permute affected variable index");
-    affectedFactorsIndex.permute(*affectedColamd);
-    toc(6,"permute affected variable index");
-    tic(7,"permute delta");
-    delta_.permute(*partialReordering);
-    toc(7,"permute delta");
-    tic(8,"permute ordering");
-    ordering_.permuteWithInverse(*partialReorderingInverse);
-    toc(8,"permute ordering");
-    tic(9,"permute affected factors");
-    factors.permuteWithInverse(*affectedColamdInverse);
-    toc(9,"permute affected factors");
+    tic(3,"permute global variable index");
+    variableIndex_.permute(partialSolveResult.fullReordering);
+    toc(3,"permute global variable index");
+    tic(4,"permute delta");
+    delta_.permute(partialSolveResult.fullReordering);
+    toc(4,"permute delta");
+    tic(5,"permute ordering");
+    ordering_.permuteWithInverse(partialSolveResult.fullReorderingInverse);
+    toc(5,"permute ordering");
 
-    if(debug) factors.print("Colamd-ordered affected factors: ");
-
-#ifndef NDEBUG
-    VariableIndex fromScratchIndex(factors);
-    assert(assert_equal(fromScratchIndex, affectedFactorsIndex));
-    //  beforePermutationIndex.permute(*affectedColamd);
-    //  assert(assert_equal(fromScratchIndex, beforePermutationIndex));
-#endif
-
-    //  Permutation::shared_ptr reorderedSelectorInverse(affectedKeysSelector.permute(*affectedColamd));
-    //  reorderedSelectorInverse->print("reorderedSelectorInverse: ");
-    toc(4,"reorder");
-
-    // eliminate into a Bayes net
-    tic(5,"eliminate");
-    GaussianJunctionTree jt(factors);
-    sharedClique newRoot = jt.eliminate(EliminateQR, true);
-    if(debug && newRoot) cout << "Re-eliminated BT:\n";
-    if(debug && newRoot) newRoot->printTree("");
-    toc(5,"eliminate");
+    toc(4,"reorder and eliminate");
 
     tic(6,"re-assemble");
-    tic(1,"permute eliminated");
-    if(newRoot) newRoot->permuteWithInverse(affectedKeysSelector);
-    if(debug && newRoot) cout << "Full var-ordered eliminated BT:\n";
-    if(debug && newRoot) newRoot->printTree("");
-    toc(1,"permute eliminated");
-    tic(2,"insert");
-    if(newRoot) {
+    if(partialSolveResult.bayesTree) {
       assert(!this->root_);
-      this->insert(newRoot);
+      this->insert(partialSolveResult.bayesTree);
     }
-    toc(2,"insert");
     toc(6,"re-assemble");
 
     // 4. Insert the orphans back into the new Bayes tree.
     tic(7,"orphans");
     tic(1,"permute");
     BOOST_FOREACH(sharedClique orphan, orphans) {
-      (void)orphan->permuteSeparatorWithInverse(*partialReorderingInverse);
+      (void)orphan->permuteSeparatorWithInverse(partialSolveResult.fullReorderingInverse);
     }
     toc(1,"permute");
     tic(2,"insert");
@@ -587,91 +452,6 @@ boost::shared_ptr<FastSet<Index> > ISAM2<Conditional, Values>::recalculate(const
 //  boost::shared_ptr<set<Index> > affectedKeysSet(new set<Index>());
 //  affectedKeysSet->insert(affectedKeys.begin(), affectedKeys.end());
 }
-
-///* ************************************************************************* */
-//template<class Conditional, class Values>
-//void ISAM2<Conditional, Values>::linear_update(const GaussianFactorGraph& newFactors) {
-//  const list<Index> markedKeys = newFactors.keys();
-//  recalculate(markedKeys, &newFactors);
-//}
-
-/* ************************************************************************* */
-// find all variables that are directly connected by a measurement to one of the marked variables
-template<class Conditional, class Values>
-void ISAM2<Conditional, Values>::find_all(sharedClique clique, FastSet<Index>& keys, const vector<bool>& markedMask) {
-  static const bool debug = false;
-  // does the separator contain any of the variables?
-  bool found = false;
-  BOOST_FOREACH(const Index& key, (*clique)->parents()) {
-    if (markedMask[key])
-      found = true;
-  }
-  if (found) {
-    // then add this clique
-    keys.insert((*clique)->beginFrontals(), (*clique)->endFrontals());
-    if(debug) clique->print("Key(s) marked in clique ");
-    if(debug) cout << "so marking key " << (*clique)->keys().front() << endl;
-  }
-  BOOST_FOREACH(const sharedClique& child, clique->children_) {
-    find_all(child, keys, markedMask);
-  }
-}
-
-/* ************************************************************************* */
-struct _SelectiveExpmap {
-  const Permuted<VectorValues>& delta;
-  const Ordering& ordering;
-  const vector<bool>& mask;
-  _SelectiveExpmap(const Permuted<VectorValues>& _delta, const Ordering& _ordering, const vector<bool>& _mask) :
-    delta(_delta), ordering(_ordering), mask(_mask) {}
-  template<typename I>
-  void operator()(I it_x) {
-    Index var = ordering[it_x->first];
-    if(ISDEBUG("ISAM2 update verbose")) {
-      if(mask[var])
-        cout << "expmap " << (string)it_x->first << " (j = " << var << "), delta = " << delta[var].transpose() << endl;
-      else
-        cout << "       " << (string)it_x->first << " (j = " << var << "), delta = " << delta[var].transpose() << endl;
-    }
-    if(mask[var]) it_x->second = it_x->second.expmap(delta[var]);
-  }
-};
-#ifndef NDEBUG
-// This debug version sets delta entries that are applied to "Inf".  The
-// idea is that if a delta is applied, the variable is being relinearized,
-// so the same delta should not be re-applied because it will be recalc-
-// ulated.  This is a debug check to prevent against a mix-up of indices
-// or not keeping track of recalculated variables.
-struct _SelectiveExpmapAndClear {
-  Permuted<VectorValues>& delta;
-  const Ordering& ordering;
-  const vector<bool>& mask;
-  _SelectiveExpmapAndClear(Permuted<VectorValues>& _delta, const Ordering& _ordering, const vector<bool>& _mask) :
-    delta(_delta), ordering(_ordering), mask(_mask) {}
-  template<typename I>
-  void operator()(I it_x) {
-    Index var = ordering[it_x->first];
-    if(ISDEBUG("ISAM2 update verbose")) {
-      if(mask[var])
-        cout << "expmap " << (string)it_x->first << " (j = " << var << "), delta = " << delta[var].transpose() << endl;
-      else
-        cout << "       " << (string)it_x->first << " (j = " << var << "), delta = " << delta[var].transpose() << endl;
-    }
-    assert(delta[var].size() == (int)it_x->second.dim());
-    assert(delta[var].unaryExpr(&isfinite<double>).all());
-    if(disableReordering) {
-      assert(mask[var]);
-      //assert(it_x->first.index() == var);
-      //assert(equal(delta[var], delta.container()[var]));
-      assert(delta.permutation()[var] == var);
-    }
-    if(mask[var]) {
-      it_x->second = it_x->second.expmap(delta[var]);
-      delta[var].operator=(Vector::Constant(delta[var].rows(), numeric_limits<double>::infinity())); // Strange syntax to work with clang++ (bug in clang?)
-    }
-  }
-};
-#endif
 
 /* ************************************************************************* */
 template<class Conditional, class Values>
@@ -710,46 +490,34 @@ void ISAM2<Conditional, Values>::update(
   tic(3,"gather involved keys");
   // 3. Mark linear update
   FastSet<Index> markedKeys = Impl::IndicesFromFactors(ordering_, newFactors); // Get keys from new factors
-  vector<Index> newKeys; newKeys.reserve(markedKeys.size());
-  newKeys.assign(markedKeys.begin(), markedKeys.end());                        // Make a copy of these, as we'll soon add to them
+  FastVector<Index> newKeys(markedKeys.begin(), markedKeys.end());             // Make a copy of these, as we'll soon add to them
   FastSet<Index> structuralKeys;
   if(structuralLast) structuralKeys = markedKeys;                              // If we're using structural-last ordering, make another copy
   toc(3,"gather involved keys");
 
-  // Check relinearization if we're at a 10th step, or we are using a looser loop relin threshold
+  // Check relinearization if we're at the nth step, or we are using a looser loop relin threshold
   if (force_relinearize || (params_.enableRelinearization && count % params_.relinearizeSkip == 0)) { // todo: every n steps
     tic(4,"gather relinearize keys");
     vector<bool> markedRelinMask(ordering_.nVars(), false);
-    bool relinAny = false;
     // 4. Mark keys in \Delta above threshold \beta: J=\{\Delta_{j}\in\Delta|\Delta_{j}\geq\beta\}.
     FastSet<Index> relinKeys = Impl::CheckRelinearization(delta_, params_.relinearizeThreshold);
     if(disableReordering) relinKeys = Impl::CheckRelinearization(delta_, 0.0); // This is used for debugging
 
+    // Add the variables being relinearized to the marked keys
     BOOST_FOREACH(const Index j, relinKeys) { markedRelinMask[j] = true; }
     markedKeys.insert(relinKeys.begin(), relinKeys.end());
-    if(!relinKeys.empty())
-      relinAny = true;
     toc(4,"gather relinearize keys");
 
     tic(5,"fluid find_all");
     // 5. Mark all cliques that involve marked variables \Theta_{J} and all their ancestors.
-    if (relinAny) {
-      // mark all cliques that involve marked variables
-      if(this->root())
-        find_all(this->root(), markedKeys, markedRelinMask); // add other cliques that have the marked ones in the separator
-    }
+    if (!relinKeys.empty() && this->root())
+      Impl::FindAll(this->root(), markedKeys, markedRelinMask); // add other cliques that have the marked ones in the separator
     toc(5,"fluid find_all");
 
     tic(6,"expmap");
     // 6. Update linearization point for marked variables: \Theta_{J}:=\Theta_{J}+\Delta_{J}.
-    if (relinAny) {
-#ifndef NDEBUG
-      _SelectiveExpmapAndClear selectiveExpmap(delta_, ordering_, markedRelinMask);
-#else
-      _SelectiveExpmap selectiveExpmap(delta_, ordering_, markedRelinMask);
-#endif
-      theta_.apply(selectiveExpmap);
-    }
+    if (!relinKeys.empty())
+      Impl::ExpmapMasked(theta_, delta_, ordering_, markedRelinMask, delta_);
     toc(6,"expmap");
 
 #ifndef NDEBUG
@@ -776,7 +544,7 @@ void ISAM2<Conditional, Values>::update(
   tic(8,"recalculate");
   // 8. Redo top of Bayes tree
   boost::shared_ptr<FastSet<Index> > replacedKeys;
-  if(markedKeys.size() > 0 || newKeys.size() > 0)
+  if(!markedKeys.empty() || !newKeys.empty())
     replacedKeys = recalculate(markedKeys, structuralKeys, newKeys, linearFactors);
   toc(8,"recalculate");
 
@@ -808,10 +576,11 @@ void ISAM2<Conditional, Values>::update(
 /* ************************************************************************* */
 template<class Conditional, class Values>
 Values ISAM2<Conditional, Values>::calculateEstimate() const {
+  // We use ExpmapMasked here instead of regular expmap because the former
+  // handles Permuted<VectorValues>
   Values ret(theta_);
   vector<bool> mask(ordering_.nVars(), true);
-  _SelectiveExpmap selectiveExpmap(delta_, ordering_, mask);
-  ret.apply(selectiveExpmap);
+  Impl::ExpmapMasked(ret, delta_, ordering_, mask);
   return ret;
 }
 

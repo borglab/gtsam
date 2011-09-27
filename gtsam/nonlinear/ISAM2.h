@@ -102,7 +102,7 @@ private:
   std::vector<bool> lastRelinVariables_;
 #endif
 
-  typedef JacobianFactor CacheFactor;
+  typedef HessianFactor CacheFactor;
 
 public:
 
@@ -180,9 +180,9 @@ private:
   FactorGraph<GaussianFactor>::shared_ptr relinearizeAffectedFactors(const FastList<Index>& affectedKeys) const;
   FactorGraph<CacheFactor> getCachedBoundaryFactors(Cliques& orphans);
 
-  boost::shared_ptr<FastSet<Index> > recalculate(const FastSet<Index>& markedKeys, const FastSet<Index>& structuralKeys, const std::vector<Index>& newKeys, const FactorGraph<GaussianFactor>::shared_ptr newFactors = FactorGraph<GaussianFactor>::shared_ptr());
+  boost::shared_ptr<FastSet<Index> > recalculate(const FastSet<Index>& markedKeys, const FastSet<Index>& structuralKeys,
+      const FastVector<Index>& newKeys, const FactorGraph<GaussianFactor>::shared_ptr newFactors = FactorGraph<GaussianFactor>::shared_ptr());
   //	void linear_update(const GaussianFactorGraph& newFactors);
-  void find_all(sharedClique clique, FastSet<Index>& keys, const std::vector<bool>& marked); // helper function
 
 }; // ISAM2
 
