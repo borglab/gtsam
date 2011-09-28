@@ -251,7 +251,7 @@ bool assert_container_equal(const V& expected, const V& actual, double tol = 1e-
  * General function for comparing containers of objects with operator==
  */
 template<class V>
-bool assert_container_equality(const V& expected, const V& actual, double tol = 1e-9) {
+bool assert_container_equality(const V& expected, const V& actual) {
   bool match = true;
   if (expected.size() != actual.size())
     match = false;
