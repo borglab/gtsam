@@ -61,7 +61,7 @@ namespace gtsam {
 		 * Sets the size of the mask with all values off
 		 */
 		PartialPriorFactor(const KEY& key, const SharedNoiseModel& model)
-		  : Base(model, key), mask_(model->dim(), false) {}
+		  : Base(model, key), mask_(T::Dim(), false) {}
 
 	public:
 
