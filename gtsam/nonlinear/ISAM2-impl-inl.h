@@ -18,7 +18,7 @@ struct ISAM2<CONDITIONAL, VALUES>::Impl {
   typedef ISAM2<CONDITIONAL, VALUES> ISAM2Type;
 
   struct PartialSolveResult {
-    ISAM2Type::sharedClique bayesTree;
+    typename ISAM2Type::sharedClique bayesTree;
     Permutation fullReordering;
     Permutation fullReorderingInverse;
   };
