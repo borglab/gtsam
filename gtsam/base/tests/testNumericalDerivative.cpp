@@ -68,17 +68,15 @@ double f3(const LieVector& x1, const LieVector& x2) {
 
 /* ************************************************************************* */
 TEST_UNSAFE(testNumericalDerivative, numericalHessian211) {
-  LieVector center1(1, 1.0), center2(1, 1.0);
+  LieVector center1(1, 1.0), center2(1, 5.0);
 
-  Matrix expected12 = Matrix_(1,1,-sin(center1(0))*cos(center2(0)));
-  Matrix actual12 = numericalHessian212(f3, center1, center2);
-  EXPECT(assert_equal(expected12, actual12, 1e-5));
-
-
-  Matrix expected11 = Matrix_(1,1,-cos(center1(0))*sin(center2(0)));
+  Matrix expected11 = Matrix_(1,1,-sin(center1(0))*cos(center2(0)));
   Matrix actual11 = numericalHessian211(f3, center1, center2);
   EXPECT(assert_equal(expected11, actual11, 1e-5));
 
+  Matrix expected12 = Matrix_(1,1,-cos(center1(0))*sin(center2(0)));
+  Matrix actual12 = numericalHessian212(f3, center1, center2);
+  EXPECT(assert_equal(expected12, actual12, 1e-5));
 
   Matrix expected22 = Matrix_(1,1,-sin(center1(0))*cos(center2(0)));
   Matrix actual22 = numericalHessian222(f3, center1, center2);
