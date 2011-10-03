@@ -160,6 +160,15 @@ public:
     this->keys_.insert(this->keys_.end(), beginKeys, endKeys);
   }
 
+protected:
+
+  /**
+   * Constructor - only for subclasses, as this does not set keys.
+   */
+  NoiseModelFactor(const SharedNoiseModel& noiseModel) : noiseModel_(noiseModel) {}
+
+public:
+
   /** Print */
   virtual void print(const std::string& s = "") const {
     std::cout << s << ": NoiseModelFactor\n";
