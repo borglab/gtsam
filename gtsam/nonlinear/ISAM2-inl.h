@@ -291,9 +291,7 @@ boost::shared_ptr<FastSet<Index> > ISAM2<Conditional, Values>::recalculate(
 
     tic(6,"insert");
     BayesTree<Conditional>::clear();
-    assert(!this->root_);
     this->insert(newRoot);
-    assert(this->root_);
     toc(6,"insert");
 
     toc(3,"batch");
@@ -308,6 +306,7 @@ boost::shared_ptr<FastSet<Index> > ISAM2<Conditional, Values>::recalculate(
 
     tic(4,"incremental");
 
+    // 2. Add the new factors \Factors' into the resulting factor graph
     FastList<Index> affectedAndNewKeys;
     affectedAndNewKeys.insert(affectedAndNewKeys.end(), affectedKeys.begin(), affectedKeys.end());
     affectedAndNewKeys.insert(affectedAndNewKeys.end(), newKeys.begin(), newKeys.end());
@@ -315,16 +314,6 @@ boost::shared_ptr<FastSet<Index> > ISAM2<Conditional, Values>::recalculate(
     GaussianFactorGraph factors(*relinearizeAffectedFactors(affectedAndNewKeys));
     toc(1,"relinearizeAffected");
 
-#ifndef NDEBUG
-    // The relinearized variables should not appear anywhere in the orphans
-    BOOST_FOREACH(boost::shared_ptr<const typename BayesTree<Conditional>::Clique> clique, orphans) {
-      BOOST_FOREACH(const Index key, (*clique)->frontals()) {
-        assert(lastRelinVariables_[key] == false);
-      }
-    }
-#endif
-
-    //  if(debug) factors.print("Affected factors: ");
     if(debug) { cout << "Affected keys: "; BOOST_FOREACH(const Index key, affectedKeys) { cout << key << " "; } cout << endl; }
 
     lastAffectedMarkedCount = markedKeys.size();
@@ -345,34 +334,11 @@ boost::shared_ptr<FastSet<Index> > ISAM2<Conditional, Values>::recalculate(
     factors.reserve(factors.size() + cachedBoundary.size());
     // Copy so that we can later permute factors
     BOOST_FOREACH(const CacheFactor::shared_ptr& cached, cachedBoundary) {
-#ifndef NDEBUG
-      BOOST_FOREACH(const Index key, *cached) {
-        assert(lastRelinVariables_[key] == false); // No variables in the cached factors should be being relinearized
-      }
-#endif
       factors.push_back(GaussianFactor::shared_ptr(new CacheFactor(*cached)));
     }
     toc(2,"cached");
 
     // END OF COPIED CODE
-
-
-    // 2. Add the new factors \Factors' into the resulting factor graph
-    tic(3,"newfactors");
-    if (newFactors) {
-#ifndef NDEBUG
-      BOOST_FOREACH(const GaussianFactor::shared_ptr& newFactor, *newFactors) {
-        bool found = false;
-        BOOST_FOREACH(const GaussianFactor::shared_ptr& affectedFactor, factors) {
-          if(newFactor->equals(*affectedFactor, 1e-6))
-            found = true;
-        }
-        assert(found);
-      }
-#endif
-      //factors.push_back(*newFactors);
-    }
-    toc(3,"newfactors");
 
     // 3. Re-order and eliminate the factor graph into a Bayes net (Algorithm [alg:eliminate]), and re-assemble into a new Bayes tree (Algorithm [alg:BayesTree])
 
@@ -399,8 +365,6 @@ boost::shared_ptr<FastSet<Index> > ISAM2<Conditional, Values>::recalculate(
     // delta vector, the global ordering, and the factors we're about to
     // re-eliminate.  The reordered variables are also mentioned in the
     // orphans and the leftover cached factors.
-    // NOTE: We have shared_ptr's to cached factors that we permute here, thus we
-    // undo this permutation after elimination.
     tic(3,"permute global variable index");
     variableIndex_.permute(partialSolveResult.fullReordering);
     toc(3,"permute global variable index");
@@ -446,11 +410,6 @@ boost::shared_ptr<FastSet<Index> > ISAM2<Conditional, Values>::recalculate(
 
     return affectedKeysSet;
   }
-
-  // Output: BayesTree(this)
-
-//  boost::shared_ptr<set<Index> > affectedKeysSet(new set<Index>());
-//  affectedKeysSet->insert(affectedKeys.begin(), affectedKeys.end());
 }
 
 /* ************************************************************************* */
