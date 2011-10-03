@@ -131,10 +131,9 @@ public:
    * particular key, use find(), which has \f$ O(n) \f$ complexity.  The
    * popLeaf function by itself has \f$ O(1) \f$ complexity.
    *
-   * If the program calling this function is
-   * compiled without NDEBUG defined, this function will check that the node
-   * is indeed a leaf, but otherwise will not check, because the check has
-   * \f$ O(n^2) \f$ complexity.
+   * If gtsam is compiled without NDEBUG defined, this function will check that
+   * the node is indeed a leaf, but otherwise will not check, because the check
+   * has \f$ O(n^2) \f$ complexity.
    *
    * Example 1:
      \code
