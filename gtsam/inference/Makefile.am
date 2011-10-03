@@ -42,6 +42,7 @@ check_PROGRAMS += tests/testISAM
 check_PROGRAMS += tests/testEliminationTree
 check_PROGRAMS += tests/testClusterTree
 check_PROGRAMS += tests/testJunctionTree
+check_PROGRAMS += tests/testPermutation
 
 #----------------------------------------------------------------------------------------------------
 # Create a libtool library that is not installed
