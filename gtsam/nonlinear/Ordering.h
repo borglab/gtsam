@@ -146,16 +146,22 @@ public:
   /// Adds a new key to the ordering with an index of one greater than the current highest index.
   Index push_back(const Symbol& key) { return insert(std::make_pair(key, nVars_))->second; }
 
-  /** Remove the last symbol/index pair from the ordering - this is inefficient.
-   * If you already know the last-ordered symbol, call the version of pop_back
+  /** Remove the last (last-ordered, not highest-sorting key) symbol/index pair
+   * from the ordering (this version is \f$ O(n) \f$, use it when you do not
+   * know the last-ordered key).
+   *
+   * If you already know the last-ordered symbol, call popback(const Symbol&)
    * that accepts this symbol as an argument.
    *
    * @return The symbol and index that were removed.
    */
   value_type pop_back();
 
-  /** Remove the last-ordered symbol from the ordering.  This is efficient, as
-   * opposed to the no-argument version of pop_back.
+  /** Remove the last-ordered symbol from the ordering (this version is
+   * \f$ O(1) \f$, use it if you already know the last-ordered key).
+   *
+   * Throws std::invalid_argument if the requested key is not actually the
+   * last-ordered.
    *
    * @return The index of the symbol that was removed.
    */
