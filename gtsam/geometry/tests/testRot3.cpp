@@ -432,6 +432,43 @@ TEST( Rot3, logmapStability ) {
 }
 
 /* ************************************************************************* */
+TEST(Rot3, quaternion) {
+  // NOTE: This is also verifying the ability to convert Vector to Quaternion
+  Quaternion q1(0.710997408193224, 0.360544029310185, 0.594459869568306, 0.105395217842782);
+  Rot3 R1 = Rot3(Matrix_(3,3,
+      0.271018623057411,   0.278786459830371,   0.921318086098018,
+      0.578529366719085,   0.717799701969298,  -0.387385285854279,
+     -0.769319620053772,   0.637998195662053,   0.033250932803219));
+
+  Quaternion q2(0.263360579192421, 0.571813128030932, 0.494678363680335, 0.599136268678053);
+  Rot3 R2 = Rot3(Matrix_(3,3,
+      -0.207341903877828,   0.250149415542075,   0.945745528564780,
+       0.881304914479026,  -0.371869043667957,   0.291573424846290,
+       0.424630407073532,   0.893945571198514,  -0.143353873763946));
+
+  // Check creating Rot3 from quaternion
+  EXPECT(assert_equal(R1, Rot3(q1)));
+  EXPECT(assert_equal(R2, Rot3(q2)));
+
+  // Check converting Rot3 to quaterion
+  EXPECT(assert_equal(Vector(R1.toQuaternion().coeffs()), Vector(q1.coeffs())));
+  EXPECT(assert_equal(Vector(R2.toQuaternion().coeffs()), Vector(q2.coeffs())));
+
+  // Check that quaternion and Rot3 represent the same rotation
+  Point3 p1(1.0, 2.0, 3.0);
+  Point3 p2(8.0, 7.0, 9.0);
+
+  Point3 expected1 = R1*p1;
+  Point3 expected2 = R2*p2;
+
+  Point3 actual1 = Point3(q1*p1.vector());
+  Point3 actual2 = Point3(q2*p2.vector());
+
+  EXPECT(assert_equal(expected1, actual1));
+  EXPECT(assert_equal(expected2, actual2));
+}
+
+/* ************************************************************************* */
 int main() {
 	TestResult tr;
 	return TestRegistry::runAllTests(tr);

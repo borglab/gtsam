@@ -22,8 +22,11 @@
 #pragma once
 
 #include <gtsam/geometry/Point3.h>
+#include <gtsam/3rdparty/Eigen/Eigen/Geometry>
 
 namespace gtsam {
+
+typedef Eigen::Quaterniond Quaternion;
 
   /**
    * @brief 3D Rotations represented as rotation matrices
@@ -62,6 +65,17 @@ namespace gtsam {
       r1_(Point3(R(0,0), R(1,0), R(2,0))),
       r2_(Point3(R(0,1), R(1,1), R(2,1))),
       r3_(Point3(R(0,2), R(1,2), R(2,2))) {}
+
+    /** Constructor from a quaternion.  This can also be called using a plain
+     * Vector, due to implicit conversion from Vector to Quaternion
+     * @param q The quaternion
+     */
+    Rot3(const Quaternion& q) {
+      Eigen::Matrix3d R = q.toRotationMatrix();
+      r1_ = Point3(R.col(0));
+      r2_ = Point3(R.col(1));
+      r3_ = Point3(R.col(2));
+    }
 
     /** Static member function to generate some well known rotations */
 
@@ -148,6 +162,16 @@ namespace gtsam {
      * @return a vector containing ypr s.t. R = Rot3::ypr(y,p,r)
      */
     Vector rpy() const;
+
+    /** Compute the quaternion representation of this rotation.
+     * @return The quaternion
+     */
+    Quaternion toQuaternion() const {
+      return Quaternion((Eigen::Matrix3d() <<
+          r1_.x(), r2_.x(), r3_.x(),
+          r1_.y(), r2_.y(), r3_.y(),
+          r1_.z(), r2_.z(), r3_.z()).finished());
+    }
 
     /** dimension of the variable - used to autodetect sizes */
     inline static size_t Dim() { return dimension; }
