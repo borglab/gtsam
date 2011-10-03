@@ -10,8 +10,15 @@ ACLOCAL_AMFLAGS = -I m4
 # header files are qualified so they can be included in external projects.
 AUTOMAKE_OPTIONS = foreign nostdinc
 
+# For Doxygen integration
+include aminclude.am
+
 # All the sub-directories that need to be built
 SUBDIRS = CppUnitLite gtsam tests examples
 
 # Add these files to make sure they're in the distribution
-EXTRA_DIST = autogen.sh configure.ac COPYING INSTALL LGPL LICENSE README THANKS USAGE
+EXTRA_DIST = autogen.sh configure.ac COPYING INSTALL LGPL LICENSE README THANKS USAGE doc
+
+# For Doxygen integration
+MOSTLYCLEANFILES = $(DX_CLEANFILES)
+EXTRA_DIST += $(DX_CONFIG)
