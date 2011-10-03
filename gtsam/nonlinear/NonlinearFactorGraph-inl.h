@@ -47,17 +47,6 @@ namespace gtsam {
 
 	/* ************************************************************************* */
 	template<class VALUES>
-	Vector NonlinearFactorGraph<VALUES>::unwhitenedError(const VALUES& c) const {
-		list<Vector> errors;
-		BOOST_FOREACH(const sharedFactor& factor, this->factors_) {
-		  if(factor)
-		    errors.push_back(factor->unwhitenedError(c));
-		}
-		return concatVectors(errors);
-	}
-
-	/* ************************************************************************* */
-	template<class VALUES>
 	double NonlinearFactorGraph<VALUES>::error(const VALUES& c) const {
 		double total_error = 0.;
 		// iterate over all the factors_ to accumulate the log probabilities

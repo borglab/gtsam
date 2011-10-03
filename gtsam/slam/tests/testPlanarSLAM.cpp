@@ -160,8 +160,17 @@ TEST( planarSLAM, constructor )
 	double z2(sqrt(2) - 0.22); // h(x) - z = 0.22
 	G.addRange(2, 3, z2, sigma);
 
-	Vector expected = Vector_(8, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, -0.1, 0.22);
-	EXPECT(assert_equal(expected,G.unwhitenedError(c)));
+	Vector expected0 = Vector_(3, 0.0, 0.0, 0.0);
+	Vector expected1 = Vector_(3, 0.0, 0.0, 0.0);
+	Vector expected2 = Vector_(1, -0.1);
+	Vector expected3 = Vector_(1, 0.22);
+	// Get NoiseModelFactors
+	FactorGraph<NoiseModelFactor<planarSLAM::Values> > GNM =
+	    *G.dynamicCastFactors<FactorGraph<NoiseModelFactor<planarSLAM::Values> > >();
+	EXPECT(assert_equal(expected0, GNM[0]->unwhitenedError(c)));
+  EXPECT(assert_equal(expected1, GNM[1]->unwhitenedError(c)));
+  EXPECT(assert_equal(expected2, GNM[2]->unwhitenedError(c)));
+  EXPECT(assert_equal(expected3, GNM[3]->unwhitenedError(c)));
 }
 
 /* ************************************************************************* */

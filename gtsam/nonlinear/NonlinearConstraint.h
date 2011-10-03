@@ -51,35 +51,40 @@ public:
 
 	/** Constructor - sets the cost function and the lagrange multipliers
 	 * @param dim is the dimension of the factor
+	 * @param keys is a boost::tuple containing the keys, e.g. \c make_tuple(key1,key2,key3)
 	 * @param mu is the gain used at error evaluation (forced to be positive)
 	 */
-	NonlinearConstraint(size_t dim, double mu = 1000.0):
-		Base(noiseModel::Constrained::All(dim)), mu_(fabs(mu)) {}
+	template<class TUPLE>
+	NonlinearConstraint(const TUPLE& keys, size_t dim, double mu = 1000.0):
+		Base(noiseModel::Constrained::All(dim), keys), mu_(fabs(mu)) {}
 	virtual ~NonlinearConstraint() {}
 
 	/** returns the gain mu */
 	double mu() const { return mu_; }
 
 	/** Print */
-	virtual void print(const std::string& s = "") const=0;
+	virtual void print(const std::string& s = "") const {
+    std::cout << "NonlinearConstraint " << s << std::endl;
+    std::cout << "  ";
+    BOOST_FOREACH(const Symbol& key, this->keys()) { std::cout << (std::string)key << " "; }
+    std::cout << "\n";
+    std::cout << "mu: " << this->mu_ << std::endl;
+	}
 
 	/** Check if two factors are equal */
 	virtual bool equals(const NonlinearFactor<VALUES>& f, double tol=1e-9) const {
 		const This* p = dynamic_cast<const This*> (&f);
 		if (p == NULL) return false;
-		return Base::equals(*p, tol) && (mu_ == p->mu_);
+		return Base::equals(*p, tol) && (fabs(mu_ - p->mu_) <= tol);
 	}
 
 	/** error function - returns the quadratic merit function */
 	virtual double error(const VALUES& c) const  {
-		const Vector error_vector = unwhitenedError(c);
 		if (active(c))
-			return mu_ * error_vector.dot(error_vector);
-		else return 0.0;
+			return mu_ * unwhitenedError(c).squaredNorm();
+		else
+		  return 0.0;
 	}
-
-	/** Raw error vector function g(x) */
-	virtual Vector unwhitenedError(const VALUES& c) const = 0;
 
 	/**
 	 * active set check, defines what type of constraint this is
@@ -95,7 +100,12 @@ public:
 	 * @param config is the values structure
 	 * @return a combined linear factor containing both the constraint and the constraint factor
 	 */
-	virtual boost::shared_ptr<GaussianFactor> linearize(const VALUES& c, const Ordering& ordering) const=0;
+	virtual boost::shared_ptr<GaussianFactor> linearize(const VALUES& c, const Ordering& ordering) const {
+    if (!active(c))
+      return boost::shared_ptr<JacobianFactor>();
+    else
+      return Base::linearize(c, ordering);
+	}
 
 private:
 
@@ -138,60 +148,31 @@ public:
 	 * @param mu is the gain for the factor
 	 */
 	NonlinearConstraint1(const KEY& key, size_t dim, double mu = 1000.0)
-		: Base(dim, mu), key_(key) {
-		this->keys_.push_back(key);
-	}
+		: Base(make_tuple(key), dim, mu), key_(key) { }
 	virtual ~NonlinearConstraint1() {}
 
-	/* print */
-	void print(const std::string& s = "") const {
-		std::cout << "NonlinearConstraint1 " << s << std::endl;
-		std::cout << "key: " << (std::string) key_ << std::endl;
-		std::cout << "mu: " << this->mu_ << std::endl;
-	}
+  /** Calls the 1-key specific version of evaluateError, which is pure virtual
+   * so must be implemented in the derived class. */
+  virtual Vector unwhitenedError(const VALUES& x, boost::optional<std::vector<Matrix>&> H = boost::none) const {
+    if(this->active(x)) {
+      const X& x1 = x[key_];
+      if(H) {
+        return evaluateError(x1, (*H)[0]);
+      } else {
+        return evaluateError(x1);
+      }
+    } else {
+      return zero(this->dim());
+    }
+  }
 
-	/** Check if two factors are equal. Note type is Factor and needs cast. */
-	virtual bool equals(const NonlinearFactor<VALUES>& f, double tol = 1e-9) const {
-		const This* p = dynamic_cast<const This*> (&f);
-		if (p == NULL) return false;
-		return Base::equals(*p, tol) && (key_ == p->key_);
-	}
-
-	/** error function g(x), switched depending on whether the constraint is active */
-	inline Vector unwhitenedError(const VALUES& x) const {
-		if (!active(x)) {
-			return zero(this->dim());
-		}
-		const KEY& j = key_;
-		const X& xj = x[j];
-		return evaluateError(xj);
-	}
-
-	/** Linearize from config */
-	boost::shared_ptr<GaussianFactor> linearize(const VALUES& x, const Ordering& ordering) const {
-		if (!active(x)) {
-			boost::shared_ptr<JacobianFactor> factor;
-			return factor;
-		}
-		const X& xj = x[key_];
-		Matrix A;
-		Vector b = - evaluateError(xj, A);
-		Index var = ordering[key_];
-		SharedDiagonal model = noiseModel::Constrained::All(this->dim());
-		return GaussianFactor::shared_ptr(new JacobianFactor(var, A, b, model));
-	}
-
-	/** g(x) with optional derivative - does not depend on active */
-	virtual Vector evaluateError(const X& x, boost::optional<Matrix&> H =
-			boost::none) const = 0;
-
-	/**
-	 * Create a symbolic factor using the given ordering to determine the
-	 * variable indices.
-	 */
-	virtual IndexFactor::shared_ptr symbolic(const Ordering& ordering) const {
-		return IndexFactor::shared_ptr(new IndexFactor(ordering[key_]));
-	}
+  /**
+   *  Override this method to finish implementing a unary factor.
+   *  If the optional Matrix reference argument is specified, it should compute
+   *  both the function evaluation and its derivative in X.
+   */
+  virtual Vector evaluateError(const X& x, boost::optional<Matrix&> H =
+      boost::none) const = 0;
 
 private:
 
@@ -272,73 +253,33 @@ public:
 	 * @param mu is the gain for the factor
 	 */
 	NonlinearConstraint2(const KEY1& key1, const KEY2& key2, size_t dim, double mu = 1000.0) :
-			Base(dim, mu), key1_(key1), key2_(key2) {
-		this->keys_.push_back(key1);
-		this->keys_.push_back(key2);
-	}
+			Base(make_tuple(key1, key2), dim, mu), key1_(key1), key2_(key2) { }
 	virtual ~NonlinearConstraint2() {}
 
-	/* print */
-	void print(const std::string& s = "") const {
-		std::cout << "NonlinearConstraint2 " << s << std::endl;
-		std::cout << "key1: " << (std::string) key1_ << std::endl;
-		std::cout << "key2: " << (std::string) key2_ << std::endl;
-		std::cout << "mu: " << this->mu_ << std::endl;
-	}
+  /** Calls the 2-key specific version of evaluateError, which is pure virtual
+   * so must be implemented in the derived class. */
+  virtual Vector unwhitenedError(const VALUES& x, boost::optional<std::vector<Matrix>&> H = boost::none) const {
+    if(this->active(x)) {
+      const X1& x1 = x[key1_];
+      const X2& x2 = x[key2_];
+      if(H) {
+        return evaluateError(x1, x2, (*H)[0], (*H)[1]);
+      } else {
+        return evaluateError(x1, x2);
+      }
+    } else {
+      return zero(this->dim());
+    }
+  }
 
-	/** Check if two factors are equal. Note type is Factor and needs cast. */
-	virtual bool equals(const NonlinearFactor<VALUES>& f, double tol = 1e-9) const {
-		const This* p = dynamic_cast<const This*> (&f);
-		if (p == NULL) return false;
-		return Base::equals(*p, tol) && (key1_ == p->key1_) && (key2_ == p->key2_);
-	}
-
-	/** error function g(x), switched depending on whether the constraint is active */
-	inline Vector unwhitenedError(const VALUES& x) const {
-		if (!active(x)) {
-			return zero(this->dim());
-		}
-		const KEY1& j1 = key1_;
-		const KEY2& j2 = key2_;
-		const X1& xj1 = x[j1];
-		const X2& xj2 = x[j2];
-		return evaluateError(xj1, xj2);
-	}
-
-	/** Linearize from config */
-	boost::shared_ptr<GaussianFactor> linearize(const VALUES& c, const Ordering& ordering) const {
-		if (!active(c)) {
-			boost::shared_ptr<JacobianFactor> factor;
-			return factor;
-		}
-		const KEY1& j1 = key1_; const KEY2& j2 = key2_;
-		const X1& x1 = c[j1]; const X2& x2 = c[j2];
-		Matrix grad1, grad2;
-		Vector g = -1.0 * evaluateError(x1, x2, grad1, grad2);
-		SharedDiagonal model = noiseModel::Constrained::All(this->dim());
-		Index var1 = ordering[j1], var2 = ordering[j2];
-		if (var1 < var2)
-			return GaussianFactor::shared_ptr(new JacobianFactor(var1, grad1, var2, grad2, g, model));
-		else
-			return GaussianFactor::shared_ptr(new JacobianFactor(var2, grad2, var1, grad1, g, model));
-	}
-
-	/** g(x) with optional derivative2  - does not depend on active */
-	virtual Vector evaluateError(const X1& x1, const X2& x2,
-			boost::optional<Matrix&> H1 = boost::none,
-			boost::optional<Matrix&> H2 = boost::none) const = 0;
-
-	/**
-	 * Create a symbolic factor using the given ordering to determine the
-	 * variable indices.
-	 */
-	virtual IndexFactor::shared_ptr symbolic(const Ordering& ordering) const {
-		const Index var1 = ordering[key1_], var2 = ordering[key2_];
-		if(var1 < var2)
-			return IndexFactor::shared_ptr(new IndexFactor(var1, var2));
-		else
-			return IndexFactor::shared_ptr(new IndexFactor(var2, var1));
-	}
+  /**
+   *  Override this method to finish implementing a binary factor.
+   *  If any of the optional Matrix reference arguments are specified, it should compute
+   *  both the function evaluation and its derivative(s) in X1 (and/or X2).
+   */
+  virtual Vector
+  evaluateError(const X1&, const X2&, boost::optional<Matrix&> H1 =
+      boost::none, boost::optional<Matrix&> H2 = boost::none) const = 0;
 
 private:
 
@@ -424,102 +365,36 @@ public:
 	 */
 	NonlinearConstraint3(const KEY1& key1, const KEY2& key2, const KEY3& key3,
 			size_t dim, double mu = 1000.0) :
-			Base(dim, mu), key1_(key1), key2_(key2), key3_(key3) {
-		this->keys_.push_back(key1);
-		this->keys_.push_back(key2);
-		this->keys_.push_back(key3);
-	}
+			Base(make_tuple(key1, key2, key3), dim, mu), key1_(key1), key2_(key2), key3_(key3) { }
 	virtual ~NonlinearConstraint3() {}
 
-	/* print */
-	void print(const std::string& s = "") const {
-		std::cout << "NonlinearConstraint3 " << s << std::endl;
-		std::cout << "key1: " << (std::string) key1_ << std::endl;
-		std::cout << "key2: " << (std::string) key2_ << std::endl;
-		std::cout << "key3: " << (std::string) key3_ << std::endl;
-		std::cout << "mu: " << this->mu_ << std::endl;
-	}
-
-	/** Check if two factors are equal. Note type is Factor and needs cast. */
-	virtual bool equals(const NonlinearFactor<VALUES>& f, double tol = 1e-9) const {
-		const This* p = dynamic_cast<const This*> (&f);
-		if (p == NULL) return false;
-		return Base::equals(*p, tol) && (key1_ == p->key1_) && (key2_ == p->key2_) && (key3_ == p->key3_);
-	}
-
-	/** error function g(x), switched depending on whether the constraint is active */
-	inline Vector unwhitenedError(const VALUES& x) const {
-		if (!active(x)) {
-			return zero(this->dim());
-		}
-		const KEY1& j1 = key1_;
-		const KEY2& j2 = key2_;
-		const KEY3& j3 = key3_;
-		const X1& xj1 = x[j1];
-		const X2& xj2 = x[j2];
-		const X3& xj3 = x[j3];
-		return evaluateError(xj1, xj2, xj3);
-	}
-
-	/** Linearize from config */
-	boost::shared_ptr<GaussianFactor> linearize(const VALUES& c, const Ordering& ordering) const {
-		if (!active(c)) {
-			boost::shared_ptr<JacobianFactor> factor;
-			return factor;
-		}
-		const KEY1& j1 = key1_; const KEY2& j2 = key2_; const KEY3& j3 = key3_;
-		const X1& x1 = c[j1]; const X2& x2 = c[j2]; const X3& x3 = c[j3];
-		Matrix A1, A2, A3;
-		Vector b = -1.0 * evaluateError(x1, x2, x3, A1, A2, A3);
-		SharedDiagonal model = noiseModel::Constrained::All(this->dim());
-		Index var1 = ordering[j1], var2 = ordering[j2], var3 = ordering[j3];
-
-		// perform sorting
-		if(var1 < var2 && var2 < var3)
-			return GaussianFactor::shared_ptr(
-					new JacobianFactor(var1, A1, var2, A2, var3, A3, b, model));
-		else if(var2 < var1 && var1 < var3)
-			return GaussianFactor::shared_ptr(
-					new JacobianFactor(var2, A2, var1, A1, var3, A3, b, model));
-		else if(var1 < var3 && var3 < var2)
-			return GaussianFactor::shared_ptr(
-					new JacobianFactor(var1, A1, var3, A3, var2, A2, b, model));
-		else if(var2 < var3 && var3 < var1)
-			return GaussianFactor::shared_ptr(
-					new JacobianFactor(var2, A2, var3, A3, var1, A1, b, model));
-		else if(var3 < var1 && var1 < var2)
-			return GaussianFactor::shared_ptr(
-					new JacobianFactor(var3, A3, var1, A1, var2, A2, b, model));
-		else
-			return GaussianFactor::shared_ptr(
-					new JacobianFactor(var3, A3, var2, A2, var1, A1, b, model));
-	}
-
-	/** g(x) with optional derivative3  - does not depend on active */
-	virtual Vector evaluateError(const X1& x1, const X2& x2, const X3& x3,
-			boost::optional<Matrix&> H1 = boost::none,
-			boost::optional<Matrix&> H2 = boost::none,
-			boost::optional<Matrix&> H3 = boost::none) const = 0;
-
-    /**
-     * Create a symbolic factor using the given ordering to determine the
-     * variable indices.
-     */
-    virtual IndexFactor::shared_ptr symbolic(const Ordering& ordering) const {
-      const Index var1 = ordering[key1_], var2 = ordering[key2_], var3 = ordering[key3_];
-      if(var1 < var2 && var2 < var3)
-        return IndexFactor::shared_ptr(new IndexFactor(ordering[key1_], ordering[key2_], ordering[key3_]));
-      else if(var2 < var1 && var1 < var3)
-        return IndexFactor::shared_ptr(new IndexFactor(ordering[key2_], ordering[key1_], ordering[key3_]));
-      else if(var1 < var3 && var3 < var2)
-        return IndexFactor::shared_ptr(new IndexFactor(ordering[key1_], ordering[key3_], ordering[key2_]));
-      else if(var2 < var3 && var3 < var1)
-        return IndexFactor::shared_ptr(new IndexFactor(ordering[key2_], ordering[key3_], ordering[key1_]));
-      else if(var3 < var1 && var1 < var2)
-        return IndexFactor::shared_ptr(new IndexFactor(ordering[key3_], ordering[key1_], ordering[key2_]));
-      else
-        return IndexFactor::shared_ptr(new IndexFactor(ordering[key3_], ordering[key2_], ordering[key1_]));
+  /** Calls the 2-key specific version of evaluateError, which is pure virtual
+   * so must be implemented in the derived class. */
+  virtual Vector unwhitenedError(const VALUES& x, boost::optional<std::vector<Matrix>&> H = boost::none) const {
+    if(this->active(x)) {
+      const X1& x1 = x[key1_];
+      const X2& x2 = x[key2_];
+      const X3& x3 = x[key3_];
+      if(H) {
+        return evaluateError(x1, x2, x3, (*H)[0], (*H)[1], (*H)[2]);
+      } else {
+        return evaluateError(x1, x2, x3);
+      }
+    } else {
+      return zero(this->dim());
     }
+  }
+
+  /**
+   *  Override this method to finish implementing a trinary factor.
+   *  If any of the optional Matrix reference arguments are specified, it should compute
+   *  both the function evaluation and its derivative(s) in X1 (and/or X2, X3).
+   */
+  virtual Vector
+  evaluateError(const X1&, const X2&, const X3&,
+      boost::optional<Matrix&> H1 = boost::none,
+      boost::optional<Matrix&> H2 = boost::none,
+      boost::optional<Matrix&> H3 = boost::none) const = 0;
 
 private:
 

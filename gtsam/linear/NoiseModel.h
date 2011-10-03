@@ -77,6 +77,7 @@ namespace gtsam {
 
       virtual double distance(const Vector& v) const = 0;
 
+      virtual void WhitenSystem(std::vector<Matrix>& A, Vector& b) const = 0;
       virtual void WhitenSystem(Matrix& A, Vector& b) const = 0;
       virtual void WhitenSystem(Matrix& A1, Matrix& A2, Vector& b) const = 0;
       virtual void WhitenSystem(Matrix& A1, Matrix& A2, Matrix& A3, Vector& b) const = 0;
@@ -185,6 +186,7 @@ namespace gtsam {
 			/**
 			 * Whiten a system, in place as well
 			 */
+      virtual void WhitenSystem(std::vector<Matrix>& A, Vector& b) const ;
 			virtual void WhitenSystem(Matrix& A, Vector& b) const ;
       virtual void WhitenSystem(Matrix& A1, Matrix& A2, Vector& b) const ;
       virtual void WhitenSystem(Matrix& A1, Matrix& A2, Matrix& A3, Vector& b) const;
@@ -554,6 +556,7 @@ namespace gtsam {
       Vector sqrtWeight(const Vector &error) const;
 
       /** reweight block matrices and a vector according to their weight implementation */
+      void reweight(std::vector<Matrix> &A, Vector &error) const;
 		  void reweight(Matrix &A, Vector &error) const;
 		  void reweight(Matrix &A1, Matrix &A2, Vector &error) const;
 		  void reweight(Matrix &A1, Matrix &A2, Matrix &A3, Vector &error) const;
@@ -642,8 +645,9 @@ namespace gtsam {
 
       // TODO: these are really robust iterated re-weighting support functions
 
-      virtual void WhitenSystem(Matrix& A, Vector& b) const ;
-      virtual void WhitenSystem(Matrix& A1, Matrix& A2, Vector& b) const ;
+      virtual void WhitenSystem(std::vector<Matrix>& A, Vector& b) const;
+      virtual void WhitenSystem(Matrix& A, Vector& b) const;
+      virtual void WhitenSystem(Matrix& A1, Matrix& A2, Vector& b) const;
       virtual void WhitenSystem(Matrix& A1, Matrix& A2, Matrix& A3, Vector& b) const;
 
       static shared_ptr Create(
