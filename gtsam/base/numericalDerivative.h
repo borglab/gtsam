@@ -535,4 +535,86 @@ namespace gtsam {
     return numericalHessian222(boost::function<double (const X1&, const X2&)>(f), x1, x2, delta);
   }
 
+  /**
+   * Numerical Hessian for tenary functions
+   */
+  /* **************************************************************** */
+  template<class X1, class X2, class X3>
+  inline Matrix numericalHessian311(boost::function<double(const X1&, const X2&, const X3&)> f,
+      const X1& x1, const X2& x2, const X3& x3, double delta=1e-5) {
+
+    Vector (*numGrad)(boost::function<double(const X1&)>, const X1&, double) = &numericalGradient<X1>;
+    boost::function<double (const X1&)> f2(boost::bind(f, _1, x2, x3));
+
+    return numericalDerivative11<X1>(boost::function<Vector (const X1&)>(boost::bind(numGrad, f2, _1, delta)), x1, delta);
+  }
+
+  template<class X1, class X2, class X3>
+  inline Matrix numericalHessian311(double (*f)(const X1&, const X2&, const X3&), const X1& x1, const X2& x2, const X3& x3, double delta=1e-5) {
+    return numericalHessian311(boost::function<double (const X1&, const X2&, const X3&)>(f), x1, x2, x3, delta);
+  }
+
+  /* **************************************************************** */
+  template<class X1, class X2, class X3>
+  inline Matrix numericalHessian322(boost::function<double(const X1&, const X2&, const X3&)> f,
+      const X1& x1, const X2& x2, const X3& x3, double delta=1e-5) {
+
+    Vector (*numGrad)(boost::function<double(const X2&)>, const X2&, double) = &numericalGradient<X2>;
+    boost::function<double (const X2&)> f2(boost::bind(f, x1, _1, x3));
+
+    return numericalDerivative11<X2>(boost::function<Vector (const X2&)>(boost::bind(numGrad, f2, _1, delta)), x2, delta);
+  }
+
+  template<class X1, class X2, class X3>
+  inline Matrix numericalHessian322(double (*f)(const X1&, const X2&, const X3&), const X1& x1, const X2& x2, const X3& x3, double delta=1e-5) {
+    return numericalHessian322(boost::function<double (const X1&, const X2&, const X3&)>(f), x1, x2, x3, delta);
+  }
+
+  /* **************************************************************** */
+  template<class X1, class X2, class X3>
+  inline Matrix numericalHessian333(boost::function<double(const X1&, const X2&, const X3&)> f,
+      const X1& x1, const X2& x2, const X3& x3, double delta=1e-5) {
+
+    Vector (*numGrad)(boost::function<double(const X3&)>, const X3&, double) = &numericalGradient<X3>;
+    boost::function<double (const X3&)> f2(boost::bind(f, x1, x2, _1));
+
+    return numericalDerivative11<X3>(boost::function<Vector (const X3&)>(boost::bind(numGrad, f2, _1, delta)), x3, delta);
+  }
+
+  template<class X1, class X2, class X3>
+  inline Matrix numericalHessian333(double (*f)(const X1&, const X2&, const X3&), const X1& x1, const X2& x2, const X3& x3, double delta=1e-5) {
+    return numericalHessian333(boost::function<double (const X1&, const X2&, const X3&)>(f), x1, x2, x3, delta);
+  }
+
+  /* **************************************************************** */
+  template<class X1, class X2, class X3>
+  inline Matrix numericalHessian312(boost::function<double(const X1&, const X2&, const X3&)> f, const X1& x1, const X2& x2, const X3& x3, double delta=1e-5) {
+    return numericalHessian212<X1,X2>(boost::function<double (const X1&, const X2&)>(boost::bind(f, _1, _2, x3)), x1, x2, delta );
+  }
+
+  template<class X1, class X2, class X3>
+  inline Matrix numericalHessian313(boost::function<double(const X1&, const X2&, const X3&)> f, const X1& x1, const X2& x2, const X3& x3, double delta=1e-5) {
+    return numericalHessian212<X1,X3>(boost::function<double (const X1&, const X3&)>(boost::bind(f, _1, x2, _2)), x1, x3, delta );
+  }
+
+  template<class X1, class X2, class X3>
+  inline Matrix numericalHessian323(boost::function<double(const X1&, const X2&, const X3&)> f, const X1& x1, const X2& x2, const X3& x3, double delta=1e-5) {
+    return numericalHessian212<X2,X3>(boost::function<double (const X2&, const X3&)>(boost::bind(f, x1, _1, _2)), x2, x3, delta );
+  }
+
+  /* **************************************************************** */
+  template<class X1, class X2, class X3>
+  inline Matrix numericalHessian312(double (*f)(const X1&, const X2&, const X3&), const X1& x1, const X2& x2, const X3& x3, double delta=1e-5) {
+    return numericalHessian312(boost::function<double (const X1&, const X2&, const X3&)>(f), x1, x2, x3, delta);
+  }
+
+  template<class X1, class X2, class X3>
+  inline Matrix numericalHessian313(double (*f)(const X1&, const X2&, const X3&), const X1& x1, const X2& x2, const X3& x3, double delta=1e-5) {
+    return numericalHessian313(boost::function<double (const X1&, const X2&, const X3&)>(f), x1, x2, x3, delta);
+  }
+
+  template<class X1, class X2, class X3>
+  inline Matrix numericalHessian323(double (*f)(const X1&, const X2&, const X3&), const X1& x1, const X2& x2, const X3& x3, double delta=1e-5) {
+    return numericalHessian323(boost::function<double (const X1&, const X2&, const X3&)>(f), x1, x2, x3, delta);
+  }
 }
