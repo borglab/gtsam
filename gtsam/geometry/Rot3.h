@@ -49,12 +49,6 @@ namespace gtsam {
     Rot3(const Point3& r1, const Point3& r2, const Point3& r3) :
       r1_(r1), r2_(r2), r3_(r3) {}
 
-    /**  constructor from vector */
-    Rot3(const Vector &v) :
-      r1_(Point3(v(0),v(1),v(2))),
-      r2_(Point3(v(3),v(4),v(5))),
-      r3_(Point3(v(6),v(7),v(8))) {}
-
     /** constructor from doubles in *row* order !!! */
     Rot3(double R11, double R12, double R13,
         double R21, double R22, double R23,
