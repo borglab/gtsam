@@ -49,14 +49,6 @@ namespace gtsam {
 
 	/* ************************************************************************* */
 	template<class FACTOR>
-	void FactorGraph<FACTOR>::push_back(const FactorGraph<FACTOR>& factors) {
-		const_iterator factor = factors.begin();
-		for (; factor != factors.end(); factor++)
-			push_back(*factor);
-	}
-
-	/* ************************************************************************* */
-	template<class FACTOR>
 	void FactorGraph<FACTOR>::print(const string& s) const {
 		cout << s << endl;
 		printf("size: %d\n", (int) size());
