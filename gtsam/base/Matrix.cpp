@@ -621,22 +621,10 @@ Matrix inverse_square_root(const Matrix& A) {
 
 /* ************************************************************************* */
 void svd(const Matrix& A, Matrix& U, Vector& S, Matrix& V) {
-	const size_t m = A.rows(), n = A.cols();
-	if (m < n) {
-		V = trans(A);
-		svd(V, S, U); // A'=V*diag(s)*U'
-	} else {
-		U = A; // copy
-		svd(U, S, V); // call in-place version
-	}
-}
-
-/* ************************************************************************* */
-void svd(Matrix& A, Vector& S, Matrix& V) {
 	Eigen::JacobiSVD<Matrix> svd(A, Eigen::ComputeThinU | Eigen::ComputeThinV);
+	U = svd.matrixU();
 	S = svd.singularValues();
-	A = svd.matrixU() * -1.0; // sign issues in tests - still valid, though
-	V = svd.matrixV() * -1.0;
+	V = svd.matrixV();
 }
 
 /* ************************************************************************* */

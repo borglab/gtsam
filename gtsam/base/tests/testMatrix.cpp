@@ -979,9 +979,9 @@ TEST( matrix, svd2 )
 	Matrix U, V;
 	Vector s;
 
-	Matrix expectedU = Matrix_(3, 2, 0.,1.,0.,0.,-1.,0.);
+	Matrix expectedU = Matrix_(3, 2, 0.,-1.,0.,0.,1.,0.);
 	Vector expected_s = Vector_(2, 3.,2.);
-	Matrix expectedV = Matrix_(2, 2, -1.,0.,0.,-1.);
+	Matrix expectedV = Matrix_(2, 2, 1.,0.,0.,1.);
 
 	svd(sampleA, U, s, V);
 
@@ -1023,17 +1023,15 @@ TEST( matrix, svd4 )
 	    0.1270,    0.0975);
 
 	Matrix expectedU = Matrix_(3,2,
-								 /// right column - originally had opposite sign
-	   -0.7397,   -0.6724,
-	   -0.6659,    0.7370,
-	   -0.0970,    0.0689);
+	   0.7397,   0.6724,
+	   0.6659,   -0.7370,
+	   0.0970,   -0.0689);
 
 	Vector expected_s = Vector_(2, 1.6455, 0.1910);
 
 	Matrix expectedV = Matrix_(2,2,
-								/// right column - originally had opposite sign
-	   -0.7403,    0.6723,
-	   -0.6723,   -0.7403);
+	   0.7403,   -0.6723,
+	   0.6723,   0.7403);
 
 	svd(A, U, s, V);
 	Matrix reconstructed = U * diag(s) * trans(V);
