@@ -22,7 +22,6 @@ using namespace boost::assign;
 #include <CppUnitLite/TestHarness.h>
 
 #include <gtsam/inference/IndexConditional.h>
-#ifdef ALL
 #include <gtsam/inference/SymbolicFactorGraph.h>
 
 using namespace std;
@@ -32,6 +31,8 @@ static const Index _L_ = 0;
 static const Index _A_ = 1;
 static const Index _B_ = 2;
 static const Index _C_ = 3;
+static const Index _D_ = 4;
+static const Index _E_ = 5;
 
 IndexConditional::shared_ptr
 	B(new IndexConditional(_B_)),
@@ -100,7 +101,91 @@ TEST( SymbolicBayesNet, combine )
 
   CHECK(assert_equal(expected,p_ABC));
 }
+
+/* ************************************************************************* */
+TEST(SymbolicBayesNet, find) {
+  SymbolicBayesNet bn;
+  bn += IndexConditional::shared_ptr(new IndexConditional(_A_, _B_));
+  std::vector<Index> keys;
+  keys.push_back(_B_);
+  keys.push_back(_C_);
+  keys.push_back(_D_);
+  bn += IndexConditional::shared_ptr(new IndexConditional(keys,2));
+  bn += IndexConditional::shared_ptr(new IndexConditional(_D_));
+
+  SymbolicBayesNet::iterator expected = bn.begin();  ++ expected;
+  SymbolicBayesNet::iterator actual = bn.find(_C_);
+  EXPECT(assert_equal(**expected, **actual));
+}
+
+/* ************************************************************************* */
+TEST_UNSAFE(SymbolicBayesNet, popLeaf) {
+  IndexConditional::shared_ptr
+    A(new IndexConditional(_A_,_E_)),
+    B(new IndexConditional(_B_,_E_)),
+    C(new IndexConditional(_C_,_D_)),
+    D(new IndexConditional(_D_,_E_)),
+    E(new IndexConditional(_E_));
+
+  // BayesNet after popping A
+  SymbolicBayesNet expected1;
+  expected1 += B, C, D, E;
+
+  // BayesNet after popping C
+  SymbolicBayesNet expected2;
+  expected2 += A, B, D, E;
+
+  // BayesNet after popping C and D
+  SymbolicBayesNet expected3;
+  expected3 += A, B, E;
+
+  // BayesNet after popping C and A
+  SymbolicBayesNet expected4;
+  expected4 += B, D, E;
+
+
+  // BayesNet after popping A
+  SymbolicBayesNet actual1;
+  actual1 += A, B, C, D, E;
+  actual1.popLeaf(actual1.find(_A_));
+
+  // BayesNet after popping C
+  SymbolicBayesNet actual2;
+  actual2 += A, B, C, D, E;
+  actual2.popLeaf(actual2.find(_C_));
+
+  // BayesNet after popping C and D
+  SymbolicBayesNet actual3;
+  actual3 += A, B, C, D, E;
+  actual3.popLeaf(actual3.find(_C_));
+  actual3.popLeaf(actual3.find(_D_));
+
+  // BayesNet after popping C and A
+  SymbolicBayesNet actual4;
+  actual4 += A, B, C, D, E;
+  actual4.popLeaf(actual4.find(_C_));
+  actual4.popLeaf(actual4.find(_A_));
+
+  EXPECT(assert_equal(expected1, actual1));
+  EXPECT(assert_equal(expected2, actual2));
+  EXPECT(assert_equal(expected3, actual3));
+  EXPECT(assert_equal(expected4, actual4));
+
+  // Try to remove a non-leaf node
+#undef NDEBUG_SAVED
+#ifdef NDEBUG
+#define NDEBUG_SAVED
 #endif
+
+#undef NDEBUG
+  SymbolicBayesNet actual5;
+  actual5 += A, B, C, D, E;
+  CHECK_EXCEPTION(actual5.popLeaf(actual5.find(_D_)), std::invalid_argument);
+
+#ifdef NDEBUG_SAVED
+#define NDEBUG
+#endif
+}
 
 /* ************************************************************************* */
 int main() {

@@ -50,6 +50,24 @@ namespace gtsam {
 	}
 
   /* ************************************************************************* */
+	template<class CONDITIONAL>
+	typename BayesNet<CONDITIONAL>::const_iterator BayesNet<CONDITIONAL>::find(Index key) const {
+	  for(const_iterator it = begin(); it != end(); ++it)
+	    if(std::find((*it)->beginFrontals(), (*it)->endFrontals(), key) != (*it)->endFrontals())
+	      return it;
+	  return end();
+	}
+
+  /* ************************************************************************* */
+  template<class CONDITIONAL>
+  typename BayesNet<CONDITIONAL>::iterator BayesNet<CONDITIONAL>::find(Index key) {
+    for(iterator it = begin(); it != end(); ++it)
+      if(std::find((*it)->beginFrontals(), (*it)->endFrontals(), key) != (*it)->endFrontals())
+        return it;
+    return end();
+  }
+
+  /* ************************************************************************* */
   template<class CONDITIONAL>
 	void BayesNet<CONDITIONAL>::permuteWithInverse(const Permutation& inversePermutation) {
     BOOST_FOREACH(sharedConditional conditional, conditionals_) {
@@ -80,6 +98,21 @@ namespace gtsam {
 	void BayesNet<CONDITIONAL>::push_front(const BayesNet<CONDITIONAL> bn) {
 		BOOST_FOREACH(sharedConditional conditional,bn.conditionals_)
 			push_front(conditional);
+	}
+
+  /* ************************************************************************* */
+  template<class CONDITIONAL>
+	void BayesNet<CONDITIONAL>::popLeaf(iterator conditional) {
+#ifndef NDEBUG
+    BOOST_FOREACH(typename CONDITIONAL::shared_ptr checkConditional, conditionals_) {
+      BOOST_FOREACH(Index key, (*conditional)->frontals()) {
+        if(std::find(checkConditional->beginParents(), checkConditional->endParents(), key) != checkConditional->endParents())
+          throw std::invalid_argument(
+              "Debug mode exception:  in BayesNet::popLeaf, the requested conditional is not a leaf.");
+      }
+    }
+#endif
+    conditionals_.erase(conditional);
 	}
 
 	/* ************************************************************************* */
@@ -118,7 +151,7 @@ namespace gtsam {
       }
 	  }
 		throw(invalid_argument((boost::format(
-						"BayesNet::operator['%1%']: not found") % key).str()));
+		    "BayesNet::operator['%1%']: not found") % key).str()));
 	}
 
 	/* ************************************************************************* */
