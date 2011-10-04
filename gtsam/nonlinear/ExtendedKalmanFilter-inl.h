@@ -26,12 +26,6 @@
 
 namespace gtsam {
 
-	// Function to compare Ordering entries by value instead of by key
-	bool compareOrderingValues(const Ordering::value_type& i,
-			const Ordering::value_type& j) {
-		return i.second < j.second;
-	}
-
 	/* ************************************************************************* */
 	template<class VALUES, class KEY>
 	typename ExtendedKalmanFilter<VALUES, KEY>::T ExtendedKalmanFilter<VALUES, KEY>::solve_(
