@@ -540,6 +540,43 @@ TEST( Pose2, range )
 }
 
 /* ************************************************************************* */
+LieVector range_pose_proxy(const Pose2& pose, const Pose2& point) {
+	return LieVector(pose.range(point));
+}
+TEST( Pose2, range_pose )
+{
+	Pose2 xl1(1, 0, M_PI_2), xl2(1, 1, M_PI), xl3(2.0, 2.0,-M_PI_2), xl4(1, 3, 0);
+
+	Matrix expectedH1, actualH1, expectedH2, actualH2;
+
+	// establish range is indeed zero
+	EXPECT_DOUBLES_EQUAL(1,x1.range(xl1),1e-9);
+
+	// establish range is indeed 45 degrees
+	EXPECT_DOUBLES_EQUAL(sqrt(2),x1.range(xl2),1e-9);
+
+	// Another pair
+	double actual23 = x2.range(xl3, actualH1, actualH2);
+	EXPECT_DOUBLES_EQUAL(sqrt(2),actual23,1e-9);
+
+	// Check numerical derivatives
+	expectedH1 = numericalDerivative21(range_pose_proxy, x2, xl3);
+	expectedH2 = numericalDerivative22(range_pose_proxy, x2, xl3);
+	EXPECT(assert_equal(expectedH1,actualH1));
+	EXPECT(assert_equal(expectedH2,actualH2));
+
+	// Another test
+	double actual34 = x3.range(xl4, actualH1, actualH2);
+	EXPECT_DOUBLES_EQUAL(2,actual34,1e-9);
+
+	// Check numerical derivatives
+	expectedH1 = numericalDerivative21(range_pose_proxy, x3, xl4);
+	expectedH2 = numericalDerivative22(range_pose_proxy, x3, xl4);
+	EXPECT(assert_equal(expectedH1,actualH1));
+	EXPECT(assert_equal(expectedH2,actualH2));
+}
+
+/* ************************************************************************* */
 
 TEST(Pose2, align_1) {
 	Pose2 expected(Rot2::fromAngle(0), Point2(10,10));

@@ -210,7 +210,7 @@ namespace gtsam {
   /* ************************************************************************* */
   double Pose2::range(const Point2& point,
 		  boost::optional<Matrix&> H1, boost::optional<Matrix&> H2) const {
-	  if (!H1 && !H2) return transform_to(point).norm();
+	  if (!H1 && !H2)	return transform_to(point).norm();
 	  Point2 d = transform_to(point, H1, H2);
 	  double x = d.x(), y = d.y(), d2 = x * x + y * y, n = sqrt(d2);
 	  Matrix D_result_d;
@@ -222,6 +222,21 @@ namespace gtsam {
 	  if (H1) *H1 = D_result_d * (*H1);
 	  if (H2) *H2 = D_result_d * (*H2);
 	  return n;
+  }
+
+  /* ************************************************************************* */
+  double Pose2::range(const Pose2& point,
+  			boost::optional<Matrix&> H1,
+  			boost::optional<Matrix&> H2) const {
+  	double r = range(point.t(), H1, H2);
+  	if (H2) {
+  		// NOTE: expmap changes the orientation of expmap direction,
+  		// so we must rotate the jacobian
+  		Matrix H2_ = *H2 * point.r().matrix();
+  		*H2 = zeros(1, 3);
+  		insertSub(*H2, H2_, 0, 0);
+  	}
+  	return r;
   }
 
   /* *************************************************************************

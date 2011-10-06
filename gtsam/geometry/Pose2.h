@@ -167,6 +167,15 @@ namespace gtsam {
 			boost::optional<Matrix&> H2=boost::none) const;
 
 	/**
+	 * Calculate range to another pose
+	 * @param point 2D location of other pose
+	 * @return range (double)
+	 */
+	double range(const Pose2& point,
+			boost::optional<Matrix&> H1=boost::none,
+			boost::optional<Matrix&> H2=boost::none) const;
+
+	/**
 	 * Calculate Adjoint map
 	 * Ad_pose is 3*3 matrix that when applied to twist xi, returns Ad_pose(xi)
 	 */
