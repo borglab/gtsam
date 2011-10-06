@@ -505,6 +505,44 @@ TEST( Pose2, bearing )
 }
 
 /* ************************************************************************* */
+Rot2 bearing_pose_proxy(const Pose2& pose, const Pose2& pt) {
+	return pose.bearing(pt);
+}
+
+TEST( Pose2, bearing_pose )
+{
+	Pose2 xl1(1, 0, M_PI_2), xl2(1, 1, M_PI), xl3(2.0, 2.0,-M_PI_2), xl4(1, 3, 0);
+
+	Matrix expectedH1, actualH1, expectedH2, actualH2;
+
+	// establish bearing is indeed zero
+	EXPECT(assert_equal(Rot2(),x1.bearing(xl1)));
+
+	// establish bearing is indeed 45 degrees
+	EXPECT(assert_equal(Rot2::fromAngle(M_PI_4),x1.bearing(xl2)));
+
+	// establish bearing is indeed 45 degrees even if shifted
+	Rot2 actual23 = x2.bearing(xl3, actualH1, actualH2);
+	EXPECT(assert_equal(Rot2::fromAngle(M_PI_4),actual23));
+
+	// Check numerical derivatives
+	expectedH1 = numericalDerivative21(bearing_pose_proxy, x2, xl3);
+	expectedH2 = numericalDerivative22(bearing_pose_proxy, x2, xl3);
+	EXPECT(assert_equal(expectedH1,actualH1));
+	EXPECT(assert_equal(expectedH2,actualH2));
+
+	// establish bearing is indeed 45 degrees even if rotated
+	Rot2 actual34 = x3.bearing(xl4, actualH1, actualH2);
+	EXPECT(assert_equal(Rot2::fromAngle(M_PI_4),actual34));
+
+	// Check numerical derivatives
+	expectedH1 = numericalDerivative21(bearing_pose_proxy, x3, xl4);
+	expectedH2 = numericalDerivative22(bearing_pose_proxy, x3, xl4);
+	EXPECT(assert_equal(expectedH1,actualH1));
+	EXPECT(assert_equal(expectedH2,actualH2));
+}
+
+/* ************************************************************************* */
 LieVector range_proxy(const Pose2& pose, const Point2& point) {
 	return LieVector(pose.range(point));
 }

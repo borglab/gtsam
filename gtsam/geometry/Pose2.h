@@ -158,6 +158,15 @@ namespace gtsam {
 			boost::optional<Matrix&> H2=boost::none) const;
 
 	/**
+	 * Calculate bearing to another pose
+	 * @param point SO(2) location of other pose
+	 * @return 2D rotation \in SO(2)
+	 */
+	Rot2 bearing(const Pose2& point,
+			boost::optional<Matrix&> H1=boost::none,
+			boost::optional<Matrix&> H2=boost::none) const;
+
+	/**
 	 * Calculate range to a landmark
 	 * @param point 2D location of landmark
 	 * @return range (double)

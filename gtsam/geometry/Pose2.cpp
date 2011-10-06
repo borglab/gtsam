@@ -208,6 +208,18 @@ namespace gtsam {
   }
 
   /* ************************************************************************* */
+	Rot2 Pose2::bearing(const Pose2& point,
+			boost::optional<Matrix&> H1, boost::optional<Matrix&> H2) const {
+		Rot2 result = bearing(point.t(), H1, H2);
+		if (H2) {
+			Matrix H2_ = *H2 * point.r().matrix();
+			*H2 = zeros(1, 3);
+			insertSub(*H2, H2_, 0, 0);
+		}
+		return result;
+	}
+
+  /* ************************************************************************* */
   double Pose2::range(const Point2& point,
 		  boost::optional<Matrix&> H1, boost::optional<Matrix&> H2) const {
 	  if (!H1 && !H2)	return transform_to(point).norm();
