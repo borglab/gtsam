@@ -31,6 +31,10 @@ namespace gtsam {
   public:
 	  static const size_t dimension = 6;
 
+	  /** Pose Concept requirements */
+	  typedef Rot3 Rotation;
+	  typedef Point3 Translation;
+
   private:
     Rot3 R_;
     Point3 t_;

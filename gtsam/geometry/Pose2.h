@@ -35,6 +35,11 @@ namespace gtsam {
 
   public:
 	  static const size_t dimension = 3;
+
+    /** Pose Concept requirements */
+    typedef Rot2 Rotation;
+    typedef Point2 Translation;
+
   private:
     Rot2 r_;
     Point2 t_;
@@ -213,8 +218,13 @@ namespace gtsam {
     inline double y()     const { return t_.y(); }
     inline double theta() const { return r_.theta(); }
 
+    /** shorthand access functions */
     inline const Point2& t() const { return t_; }
     inline const Rot2&   r() const { return r_; }
+
+    /** full access functions required by Pose concept */
+    inline const Point2& translation() const { return t_; }
+    inline const Rot2&   rotation() const { return r_; }
 
   private:
     // Serialization function

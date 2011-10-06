@@ -17,6 +17,7 @@
 #include <boost/foreach.hpp>
 #include <gtsam/geometry/Pose2.h>
 #include <gtsam/base/Lie-inl.h>
+#include <gtsam/geometry/concepts.h>
 
 using namespace std;
 
@@ -24,6 +25,9 @@ namespace gtsam {
 
   /** Explicit instantiation of base class to export members */
   INSTANTIATE_LIE(Pose2);
+
+  /** instantiate concept checks */
+  GTSAM_CONCEPT_POSE(Pose2);
 
 	static const Matrix I3 = eye(3), Z12 = zeros(1,2);
   static const Rot2 R_PI_2(Rot2::fromCosSin(0., 1.));

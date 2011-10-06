@@ -17,6 +17,7 @@
 #include <iostream>
 #include <gtsam/geometry/Pose3.h>
 #include <gtsam/base/Lie-inl.h>
+#include <gtsam/geometry/concepts.h>
 
 using namespace std;
 
@@ -25,7 +26,13 @@ namespace gtsam {
   /** Explicit instantiation of base class to export members */
   INSTANTIATE_LIE(Pose3);
 
-  static const Matrix I3 = eye(3), _I3=-I3, I6 = eye(6), Z3 = zeros(3, 3);
+  /** instantiate concept checks */
+  GTSAM_CONCEPT_POSE(Pose3);
+
+  static const Matrix I3 = eye(3), Z3 = zeros(3, 3);
+#ifdef CORRECT_POSE3_EXMAP
+  static const _I3=-I3, I6 = eye(6);
+#endif
 
   /* ************************************************************************* */
   // Calculate Adjoint map
@@ -216,7 +223,6 @@ namespace gtsam {
 	  }
 	  if (H2) {
 #ifdef CORRECT_POSE3_EXMAP
-
 		*H2 = I6;
 #else
 		Matrix R1 = rotation().matrix();

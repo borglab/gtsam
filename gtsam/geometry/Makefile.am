@@ -10,6 +10,9 @@ headers =
 sources = 
 check_PROGRAMS = 
 
+# Concept check
+headers += concepts.h
+
 # Points and poses
 sources += Point2.cpp Rot2.cpp Pose2.cpp Point3.cpp Rot3.cpp Pose3.cpp 
 check_PROGRAMS += tests/testPoint2 tests/testRot2 tests/testPose2 tests/testPoint3 tests/testRot3 tests/testPose3
