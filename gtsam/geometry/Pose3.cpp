@@ -272,4 +272,20 @@ namespace gtsam {
 	  if (H2) *H2 = D_result_d * (*H2);
 	  return n;
   }
+
+  /* ************************************************************************* */
+  double Pose3::range(const Pose3& point,
+  			boost::optional<Matrix&> H1, boost::optional<Matrix&> H2) const {
+  	 double r = range(point.translation(), H1, H2);
+  	 if (H2) {
+#ifdef CORRECT_POSE3_EXMAP
+  		 Matrix H2_ = *H2 * point.rotation().matrix();
+#else
+  		 Matrix H2_ = *H2;
+#endif
+  		 *H2 = zeros(1, 6);
+  		 insertSub(*H2, H2_, 0, 3);
+  	 }
+  	 return r;
+  }
 } // namespace gtsam

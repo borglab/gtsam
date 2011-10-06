@@ -570,6 +570,11 @@ TEST( Pose3, between )
 // some shared test values - pulled from equivalent test in Pose2
 Point3 l1(1, 0, 0), l2(1, 1, 0), l3(2, 2, 0), l4(1, 4,-4);
 Pose3 x1, x2(Rot3::ypr(0.0, 0.0, 0.0), l2), x3(Rot3::ypr(M_PI_4, 0.0, 0.0), l2);
+Pose3
+		xl1(Rot3::ypr(0.0, 0.0, 0.0), Point3(1, 0, 0)),
+		xl2(Rot3::ypr(0.0, 1.0, 0.0), Point3(1, 1, 0)),
+		xl3(Rot3::ypr(1.0, 0.0, 0.0), Point3(2, 2, 0)),
+		xl4(Rot3::ypr(0.0, 0.0, 1.0), Point3(1, 4,-4));
 
 /* ************************************************************************* */
 LieVector range_proxy(const Pose3& pose, const Point3& point) {
@@ -602,6 +607,41 @@ TEST( Pose3, range )
 	// Check numerical derivatives
 	expectedH1 = numericalDerivative21(range_proxy, x3, l4);
 	expectedH2 = numericalDerivative22(range_proxy, x3, l4);
+	EXPECT(assert_equal(expectedH1,actualH1));
+	EXPECT(assert_equal(expectedH2,actualH2));
+}
+
+/* ************************************************************************* */
+LieVector range_pose_proxy(const Pose3& pose, const Pose3& point) {
+	return LieVector(pose.range(point));
+}
+TEST( Pose3, range_pose )
+{
+	Matrix expectedH1, actualH1, expectedH2, actualH2;
+
+	// establish range is indeed zero
+	EXPECT_DOUBLES_EQUAL(1,x1.range(xl1),1e-9);
+
+	// establish range is indeed sqrt2
+	EXPECT_DOUBLES_EQUAL(sqrt(2),x1.range(xl2),1e-9);
+
+	// Another pair
+	double actual23 = x2.range(xl3, actualH1, actualH2);
+	EXPECT_DOUBLES_EQUAL(sqrt(2),actual23,1e-9);
+
+	// Check numerical derivatives
+	expectedH1 = numericalDerivative21(range_pose_proxy, x2, xl3);
+	expectedH2 = numericalDerivative22(range_pose_proxy, x2, xl3);
+	EXPECT(assert_equal(expectedH1,actualH1));
+	EXPECT(assert_equal(expectedH2,actualH2));
+
+	// Another test
+	double actual34 = x3.range(xl4, actualH1, actualH2);
+	EXPECT_DOUBLES_EQUAL(5,actual34,1e-9);
+
+	// Check numerical derivatives
+	expectedH1 = numericalDerivative21(range_pose_proxy, x3, xl4);
+	expectedH2 = numericalDerivative22(range_pose_proxy, x3, xl4);
 	EXPECT(assert_equal(expectedH1,actualH1));
 	EXPECT(assert_equal(expectedH2,actualH2));
 }

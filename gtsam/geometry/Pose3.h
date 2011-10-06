@@ -172,6 +172,15 @@ namespace gtsam {
 			boost::optional<Matrix&> H1=boost::none,
 			boost::optional<Matrix&> H2=boost::none) const;
 
+	/**
+	 * Calculate range to another pose
+	 * @param point SO(3) pose of landmark
+	 * @return range (double)
+	 */
+	double range(const Pose3& point,
+			boost::optional<Matrix&> H1=boost::none,
+			boost::optional<Matrix&> H2=boost::none) const;
+
   private:
     /** Serialization function */
     friend class boost::serialization::access;
