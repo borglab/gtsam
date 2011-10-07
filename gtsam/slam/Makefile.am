@@ -39,10 +39,6 @@ check_PROGRAMS += tests/testPose2SLAM
 sources += planarSLAM.cpp
 check_PROGRAMS += tests/testPlanarSLAM
 
-# Visualization
-sources += Ellipse.cpp
-check_PROGRAMS += tests/testEllipse
-
 # 3D Pose constraints
 sources += pose3SLAM.cpp 
 check_PROGRAMS += tests/testPose3SLAM 
