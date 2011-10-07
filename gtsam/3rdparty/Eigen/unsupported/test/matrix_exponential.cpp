@@ -36,7 +36,7 @@ double binom(int n, int k)
 template <typename Derived, typename OtherDerived>
 double relerr(const MatrixBase<Derived>& A, const MatrixBase<OtherDerived>& B)
 {
-  return std::sqrt((A - B).cwiseAbs2().sum() / std::min(A.cwiseAbs2().sum(), B.cwiseAbs2().sum()));
+  return std::sqrt((A - B).cwiseAbs2().sum() / (std::min)(A.cwiseAbs2().sum(), B.cwiseAbs2().sum()));
 }
 
 template <typename T>

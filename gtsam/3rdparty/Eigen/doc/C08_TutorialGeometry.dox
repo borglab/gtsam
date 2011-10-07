@@ -147,7 +147,7 @@ OpenGL compatibility \b 3D </td><td>\code
 glLoadMatrixf(t.data());\endcode</td></tr>
 <tr class="alt"><td>
 OpenGL compatibility \b 2D </td><td>\code
-Affine3f aux(Affine3f::Identity);
+Affine3f aux(Affine3f::Identity());
 aux.linear().topLeftCorner<2,2>() = t.linear();
 aux.translation().start<2>() = t.translation();
 glLoadMatrixf(aux.data());\endcode</td></tr>

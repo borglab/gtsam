@@ -94,7 +94,7 @@ struct isMuchSmallerThan_scalar_selector<Derived, true>
   *
   * \note The fuzzy compares are done multiplicatively. Two vectors \f$ v \f$ and \f$ w \f$
   * are considered to be approximately equal within precision \f$ p \f$ if
-  * \f[ \Vert v - w \Vert \leqslant p\,\(min)(\Vert v\Vert, \Vert w\Vert). \f]
+  * \f[ \Vert v - w \Vert \leqslant p\,\min(\Vert v\Vert, \Vert w\Vert). \f]
   * For matrices, the comparison is done using the Hilbert-Schmidt norm (aka Frobenius norm
   * L2 norm).
   *

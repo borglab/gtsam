@@ -31,7 +31,7 @@ template<typename MatrixType> void qr()
   typedef typename MatrixType::Index Index;
 
   Index rows = internal::random<Index>(2,200), cols = internal::random<Index>(2,200), cols2 = internal::random<Index>(2,200);
-  Index rank = internal::random<Index>(1, std::min(rows, cols)-1);
+  Index rank = internal::random<Index>(1, (std::min)(rows, cols)-1);
 
   typedef typename MatrixType::Scalar Scalar;
   typedef typename MatrixType::RealScalar RealScalar;
@@ -64,7 +64,7 @@ template<typename MatrixType, int Cols2> void qr_fixedsize()
 {
   enum { Rows = MatrixType::RowsAtCompileTime, Cols = MatrixType::ColsAtCompileTime };
   typedef typename MatrixType::Scalar Scalar;
-  int rank = internal::random<int>(1, std::min(int(Rows), int(Cols))-1);
+  int rank = internal::random<int>(1, (std::min)(int(Rows), int(Cols))-1);
   Matrix<Scalar,Rows,Cols> m1;
   createRandomPIMatrixOfRank(rank,Rows,Cols,m1);
   ColPivHouseholderQR<Matrix<Scalar,Rows,Cols> > qr(m1);

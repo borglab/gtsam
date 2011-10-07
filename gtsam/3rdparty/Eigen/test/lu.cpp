@@ -64,7 +64,7 @@ template<typename MatrixType> void lu_non_invertible()
   typedef Matrix<typename MatrixType::Scalar, RowsAtCompileTime, RowsAtCompileTime>
           RMatrixType;
 
-  Index rank = internal::random<Index>(1, std::min(rows, cols)-1);
+  Index rank = internal::random<Index>(1, (std::min)(rows, cols)-1);
 
   // The image of the zero matrix should consist of a single (zero) column vector
   VERIFY((MatrixType::Zero(rows,cols).fullPivLu().image(MatrixType::Zero(rows,cols)).cols() == 1));
@@ -84,8 +84,8 @@ template<typename MatrixType> void lu_non_invertible()
   MatrixType u(rows,cols);
   u = lu.matrixLU().template triangularView<Upper>();
   RMatrixType l = RMatrixType::Identity(rows,rows);
-  l.block(0,0,rows,std::min(rows,cols)).template triangularView<StrictlyLower>()
-    = lu.matrixLU().block(0,0,rows,std::min(rows,cols));
+  l.block(0,0,rows,(std::min)(rows,cols)).template triangularView<StrictlyLower>()
+    = lu.matrixLU().block(0,0,rows,(std::min)(rows,cols));
 
   VERIFY_IS_APPROX(lu.permutationP() * m1 * lu.permutationQ(), l*u);
 

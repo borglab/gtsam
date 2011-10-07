@@ -48,7 +48,7 @@ template<typename MatrixType> void householder(const MatrixType& m)
   typedef Matrix<Scalar, MatrixType::RowsAtCompileTime, Dynamic> VBlockMatrixType;
   typedef Matrix<Scalar, MatrixType::ColsAtCompileTime, MatrixType::RowsAtCompileTime> TMatrixType;
   
-  Matrix<Scalar, EIGEN_SIZE_MAX(MatrixType::RowsAtCompileTime,MatrixType::ColsAtCompileTime), 1> _tmp(std::max(rows,cols));
+  Matrix<Scalar, EIGEN_SIZE_MAX(MatrixType::RowsAtCompileTime,MatrixType::ColsAtCompileTime), 1> _tmp((std::max)(rows,cols));
   Scalar* tmp = &_tmp.coeffRef(0,0);
 
   Scalar beta;

@@ -26,8 +26,8 @@
 
 template<typename Scalar> void sparse_vector(int rows, int cols)
 {
-  double densityMat = std::max(8./(rows*cols), 0.01);
-  double densityVec = std::max(8./float(rows), 0.1);
+  double densityMat = (std::max)(8./(rows*cols), 0.01);
+  double densityVec = (std::max)(8./float(rows), 0.1);
   typedef Matrix<Scalar,Dynamic,Dynamic> DenseMatrix;
   typedef Matrix<Scalar,Dynamic,1> DenseVector;
   typedef SparseVector<Scalar> SparseVectorType;

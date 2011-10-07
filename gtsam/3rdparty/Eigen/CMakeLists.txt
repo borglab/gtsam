@@ -279,9 +279,15 @@ install(FILES
   )
 
 if(EIGEN_BUILD_PKGCONFIG)
+    SET(path_separator ":")
+    STRING(REPLACE ${path_separator} ";" pkg_config_libdir_search "$ENV{PKG_CONFIG_LIBDIR}")
+    message(STATUS "searching for 'pkgconfig' directory in PKG_CONFIG_LIBDIR ( $ENV{PKG_CONFIG_LIBDIR} ), ${CMAKE_INSTALL_PREFIX}/share, and ${CMAKE_INSTALL_PREFIX}/lib")
+    FIND_PATH(pkg_config_libdir pkgconfig ${pkg_config_libdir_search} ${CMAKE_INSTALL_PREFIX}/share ${CMAKE_INSTALL_PREFIX}/lib ${pkg_config_libdir_search})
+    message(STATUS "found ${pkg_config_libdir}/pkgconfig" )
+
     configure_file(eigen3.pc.in eigen3.pc)
     install(FILES ${CMAKE_CURRENT_BINARY_DIR}/eigen3.pc
-        DESTINATION share/pkgconfig
+        DESTINATION ${pkg_config_libdir}/pkgconfig
         )
 endif(EIGEN_BUILD_PKGCONFIG)
 
@@ -321,9 +327,9 @@ endif()
 configure_file(${CMAKE_BINARY_DIR}/DartConfiguration.tcl ${CMAKE_BINARY_DIR}/DartConfiguration.tcl)
 # restore default CMAKE_MAKE_PROGRAM
 set(CMAKE_MAKE_PROGRAM ${CMAKE_MAKE_PROGRAM_SAVE})
-# un-set temporary variables so that it is like they never existed. 
+# un-set temporary variables so that it is like they never existed.
 # CMake 2.6.3 introduces the more logical unset() syntax for this.
-set(CMAKE_MAKE_PROGRAM_SAVE) 
+set(CMAKE_MAKE_PROGRAM_SAVE)
 set(EIGEN_MAKECOMMAND_PLACEHOLDER)
 
 configure_file(${CMAKE_SOURCE_DIR}/CTestCustom.cmake.in ${CMAKE_BINARY_DIR}/CTestCustom.cmake)

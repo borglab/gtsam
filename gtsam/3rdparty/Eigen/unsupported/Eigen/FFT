@@ -331,7 +331,7 @@ class FFT
         // if the vector is strided, then we need to copy it to a packed temporary
         Matrix<src_type,1,Dynamic> tmp;
         if ( resize_input ) {
-          size_t ncopy = std::min(src.size(),src.size() + resize_input);
+          size_t ncopy = (std::min)(src.size(),src.size() + resize_input);
           tmp.setZero(src.size() + resize_input);
           if ( realfft && HasFlag(HalfSpectrum) ) {
             // pad at the Nyquist bin

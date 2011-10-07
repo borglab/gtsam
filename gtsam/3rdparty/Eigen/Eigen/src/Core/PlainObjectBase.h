@@ -425,9 +425,6 @@ class PlainObjectBase : public internal::dense_xpr_base<Derived>::type
       * while the AlignedMap() functions return aligned Map objects and thus should be called only with 16-byte-aligned
       * \a data pointers.
       *
-      * These methods do not allow to specify strides. If you need to specify strides, you have to
-      * use the Map class directly.
-      *
       * \see class Map
       */
     //@{

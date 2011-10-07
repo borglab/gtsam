@@ -33,7 +33,7 @@ template<typename SparseMatrixType> void sparse_basic(const SparseMatrixType& re
   typedef typename SparseMatrixType::Scalar Scalar;
   enum { Flags = SparseMatrixType::Flags };
 
-  double density = std::max(8./(rows*cols), 0.01);
+  double density = (std::max)(8./(rows*cols), 0.01);
   typedef Matrix<Scalar,Dynamic,Dynamic> DenseMatrix;
   typedef Matrix<Scalar,Dynamic,1> DenseVector;
   Scalar eps = 1e-6;
@@ -206,7 +206,7 @@ template<typename SparseMatrixType> void sparse_basic(const SparseMatrixType& re
     initSparse<Scalar>(density, refMat2, m2);
     int j0 = internal::random(0,rows-2);
     int j1 = internal::random(0,rows-2);
-    int n0 = internal::random<int>(1,rows-std::max(j0,j1));
+    int n0 = internal::random<int>(1,rows-(std::max)(j0,j1));
     VERIFY_IS_APPROX(m2.innerVectors(j0,n0), refMat2.block(0,j0,rows,n0));
     VERIFY_IS_APPROX(m2.innerVectors(j0,n0)+m2.innerVectors(j1,n0),
                      refMat2.block(0,j0,rows,n0)+refMat2.block(0,j1,rows,n0));

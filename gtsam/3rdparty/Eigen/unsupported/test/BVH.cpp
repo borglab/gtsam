@@ -90,13 +90,13 @@ struct BallPointStuff //this class provides functions to be both an intersector 
   }
 
   double minimumOnVolume(const BoxType &r) { ++calls; return r.squaredExteriorDistance(p); }
-  double minimumOnObject(const BallType &b) { ++calls; return std::max(0., (b.center - p).squaredNorm() - SQR(b.radius)); }
+  double minimumOnObject(const BallType &b) { ++calls; return (std::max)(0., (b.center - p).squaredNorm() - SQR(b.radius)); }
   double minimumOnVolumeVolume(const BoxType &r1, const BoxType &r2) { ++calls; return r1.squaredExteriorDistance(r2); }
-  double minimumOnVolumeObject(const BoxType &r, const BallType &b) { ++calls; return SQR(std::max(0., r.exteriorDistance(b.center) - b.radius)); }
-  double minimumOnObjectVolume(const BallType &b, const BoxType &r) { ++calls; return SQR(std::max(0., r.exteriorDistance(b.center) - b.radius)); }
-  double minimumOnObjectObject(const BallType &b1, const BallType &b2){ ++calls; return SQR(std::max(0., (b1.center - b2.center).norm() - b1.radius - b2.radius)); }
+  double minimumOnVolumeObject(const BoxType &r, const BallType &b) { ++calls; return SQR((std::max)(0., r.exteriorDistance(b.center) - b.radius)); }
+  double minimumOnObjectVolume(const BallType &b, const BoxType &r) { ++calls; return SQR((std::max)(0., r.exteriorDistance(b.center) - b.radius)); }
+  double minimumOnObjectObject(const BallType &b1, const BallType &b2){ ++calls; return SQR((std::max)(0., (b1.center - b2.center).norm() - b1.radius - b2.radius)); }
   double minimumOnVolumeObject(const BoxType &r, const VectorType &v) { ++calls; return r.squaredExteriorDistance(v); }
-  double minimumOnObjectObject(const BallType &b, const VectorType &v){ ++calls; return SQR(std::max(0., (b.center - v).norm() - b.radius)); }
+  double minimumOnObjectObject(const BallType &b, const VectorType &v){ ++calls; return SQR((std::max)(0., (b.center - v).norm() - b.radius)); }
 
   VectorType p;
   int calls;

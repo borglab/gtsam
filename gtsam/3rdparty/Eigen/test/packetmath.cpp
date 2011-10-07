@@ -128,7 +128,7 @@ template<typename Scalar> void packetmath()
   {
     data1[i] = internal::random<Scalar>()/RealScalar(PacketSize);
     data2[i] = internal::random<Scalar>()/RealScalar(PacketSize);
-    refvalue = std::max(refvalue,internal::abs(data1[i]));
+    refvalue = (std::max)(refvalue,internal::abs(data1[i]));
   }
 
   internal::pstore(data2, internal::pload<Packet>(data1));
@@ -264,16 +264,16 @@ template<typename Scalar> void packetmath_real()
 
   ref[0] = data1[0];
   for (int i=0; i<PacketSize; ++i)
-    ref[0] = std::min(ref[0],data1[i]);
+    ref[0] = (std::min)(ref[0],data1[i]);
   VERIFY(internal::isApprox(ref[0], internal::predux_min(internal::pload<Packet>(data1))) && "internal::predux_min");
 
-  CHECK_CWISE2(std::min, internal::pmin);
-  CHECK_CWISE2(std::max, internal::pmax);
+  CHECK_CWISE2((std::min), internal::pmin);
+  CHECK_CWISE2((std::max), internal::pmax);
   CHECK_CWISE1(internal::abs, internal::pabs);
 
   ref[0] = data1[0];
   for (int i=0; i<PacketSize; ++i)
-    ref[0] = std::max(ref[0],data1[i]);
+    ref[0] = (std::max)(ref[0],data1[i]);
   VERIFY(internal::isApprox(ref[0], internal::predux_max(internal::pload<Packet>(data1))) && "internal::predux_max");
   
   for (int i=0; i<PacketSize; ++i)

@@ -33,7 +33,7 @@ template<typename Scalar> void sparse_ldlt(int rows, int cols)
 {
   static bool odd = true;
   odd = !odd;
-  double density = std::max(8./(rows*cols), 0.01);
+  double density = (std::max)(8./(rows*cols), 0.01);
   typedef Matrix<Scalar,Dynamic,Dynamic> DenseMatrix;
   typedef Matrix<Scalar,Dynamic,1> DenseVector;
 

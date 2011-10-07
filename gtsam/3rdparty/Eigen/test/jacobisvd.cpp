@@ -66,7 +66,7 @@ void jacobisvd_compare_to_full(const MatrixType& m,
   typedef typename MatrixType::Index Index;
   Index rows = m.rows();
   Index cols = m.cols();
-  Index diagSize = std::min(rows, cols);
+  Index diagSize = (std::min)(rows, cols);
 
   JacobiSVD<MatrixType, QRPreconditioner> svd(m, computationOptions);
 
@@ -244,6 +244,17 @@ void jacobisvd_inf_nan()
   svd.compute(m, ComputeFullU | ComputeFullV);
 }
 
+// Regression test for bug 286: JacobiSVD loops indefinitely with some
+// matrices containing denormal numbers.
+void jacobisvd_bug286()
+{
+  Matrix2d M;
+  M << -7.90884e-313, -4.94e-324,
+                 0, 5.60844e-313;
+  JacobiSVD<Matrix2d> svd;
+  svd.compute(M); // just check we don't loop indefinitely
+}
+
 void jacobisvd_preallocate()
 {
   Vector3f v(3.f, 2.f, 1.f);
@@ -280,8 +291,6 @@ void jacobisvd_preallocate()
   internal::set_is_malloc_allowed(false);
   svd2.compute(m, ComputeFullU|ComputeFullV);
   internal::set_is_malloc_allowed(true);
-
-  
 }
 
 void test_jacobisvd()
@@ -336,4 +345,7 @@ void test_jacobisvd()
 
   // Check that preallocation avoids subsequent mallocs
   CALL_SUBTEST_9( jacobisvd_preallocate() );
+
+  // Regression check for bug 286
+  CALL_SUBTEST_2( jacobisvd_bug286() );
 }

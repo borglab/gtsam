@@ -58,7 +58,7 @@ template<typename MatrixType> void inverse_general_4x4(int repeat)
     MatrixType inv = m.inverse();
     double error = double( (m*inv-MatrixType::Identity()).norm() * absdet / NumTraits<Scalar>::epsilon() );
     error_sum += error;
-    error_max = std::max(error_max, error);
+    error_max = (std::max)(error_max, error);
   }
   std::cerr << "inverse_general_4x4, Scalar = " << type_name<Scalar>() << std::endl;
   double error_avg = error_sum / repeat;

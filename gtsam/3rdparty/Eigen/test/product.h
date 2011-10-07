@@ -29,7 +29,7 @@ template<typename Derived1, typename Derived2>
 bool areNotApprox(const MatrixBase<Derived1>& m1, const MatrixBase<Derived2>& m2, typename Derived1::RealScalar epsilon = NumTraits<typename Derived1::RealScalar>::dummy_precision())
 {
   return !((m1-m2).cwiseAbs2().maxCoeff() < epsilon * epsilon
-                          * std::max(m1.cwiseAbs2().maxCoeff(), m2.cwiseAbs2().maxCoeff()));
+                          * (std::max)(m1.cwiseAbs2().maxCoeff(), m2.cwiseAbs2().maxCoeff()));
 }
 
 template<typename MatrixType> void product(const MatrixType& m)
@@ -102,7 +102,7 @@ template<typename MatrixType> void product(const MatrixType& m)
 
   // test the previous tests were not screwed up because operator* returns 0
   // (we use the more accurate default epsilon)
-  if (!NumTraits<Scalar>::IsInteger && std::min(rows,cols)>1)
+  if (!NumTraits<Scalar>::IsInteger && (std::min)(rows,cols)>1)
   {
     VERIFY(areNotApprox(m1.transpose()*m2,m2.transpose()*m1));
   }
@@ -111,7 +111,7 @@ template<typename MatrixType> void product(const MatrixType& m)
   res = square;
   res.noalias() += m1 * m2.transpose();
   VERIFY_IS_APPROX(res, square + m1 * m2.transpose());
-  if (!NumTraits<Scalar>::IsInteger && std::min(rows,cols)>1)
+  if (!NumTraits<Scalar>::IsInteger && (std::min)(rows,cols)>1)
   {
     VERIFY(areNotApprox(res,square + m2 * m1.transpose()));
   }
@@ -123,7 +123,7 @@ template<typename MatrixType> void product(const MatrixType& m)
   res = square;
   res.noalias() -= m1 * m2.transpose();
   VERIFY_IS_APPROX(res, square - (m1 * m2.transpose()));
-  if (!NumTraits<Scalar>::IsInteger && std::min(rows,cols)>1)
+  if (!NumTraits<Scalar>::IsInteger && (std::min)(rows,cols)>1)
   {
     VERIFY(areNotApprox(res,square - m2 * m1.transpose()));
   }
@@ -147,7 +147,7 @@ template<typename MatrixType> void product(const MatrixType& m)
   res2 = square2;
   res2.noalias() += m1.transpose() * m2;
   VERIFY_IS_APPROX(res2, square2 + m1.transpose() * m2);
-  if (!NumTraits<Scalar>::IsInteger && std::min(rows,cols)>1)
+  if (!NumTraits<Scalar>::IsInteger && (std::min)(rows,cols)>1)
   {
     VERIFY(areNotApprox(res2,square2 + m2.transpose() * m1));
   }

@@ -43,8 +43,8 @@ template<typename MatrixType> void matrixRedux(const MatrixType& m)
   {
     s += m1(i,j);
     p *= m1(i,j);
-    minc = std::min(internal::real(minc), internal::real(m1(i,j)));
-    maxc = std::max(internal::real(maxc), internal::real(m1(i,j)));
+    minc = (std::min)(internal::real(minc), internal::real(m1(i,j)));
+    maxc = (std::max)(internal::real(maxc), internal::real(m1(i,j)));
   }
   const Scalar mean = s/Scalar(RealScalar(rows*cols));
 
@@ -86,8 +86,8 @@ template<typename VectorType> void vectorRedux(const VectorType& w)
     {
       s += v[j];
       p *= v[j];
-      minc = std::min(minc, internal::real(v[j]));
-      maxc = std::max(maxc, internal::real(v[j]));
+      minc = (std::min)(minc, internal::real(v[j]));
+      maxc = (std::max)(maxc, internal::real(v[j]));
     }
     VERIFY_IS_MUCH_SMALLER_THAN(internal::abs(s - v.head(i).sum()), Scalar(1));
     VERIFY_IS_APPROX(p, v.head(i).prod());
@@ -103,8 +103,8 @@ template<typename VectorType> void vectorRedux(const VectorType& w)
     {
       s += v[j];
       p *= v[j];
-      minc = std::min(minc, internal::real(v[j]));
-      maxc = std::max(maxc, internal::real(v[j]));
+      minc = (std::min)(minc, internal::real(v[j]));
+      maxc = (std::max)(maxc, internal::real(v[j]));
     }
     VERIFY_IS_MUCH_SMALLER_THAN(internal::abs(s - v.tail(size-i).sum()), Scalar(1));
     VERIFY_IS_APPROX(p, v.tail(size-i).prod());
@@ -120,8 +120,8 @@ template<typename VectorType> void vectorRedux(const VectorType& w)
     {
       s += v[j];
       p *= v[j];
-      minc = std::min(minc, internal::real(v[j]));
-      maxc = std::max(maxc, internal::real(v[j]));
+      minc = (std::min)(minc, internal::real(v[j]));
+      maxc = (std::max)(maxc, internal::real(v[j]));
     }
     VERIFY_IS_MUCH_SMALLER_THAN(internal::abs(s - v.segment(i, size-2*i).sum()), Scalar(1));
     VERIFY_IS_APPROX(p, v.segment(i, size-2*i).prod());

@@ -245,6 +245,22 @@ template<typename MatrixType> void cholesky_cplx(const MatrixType& m)
 
 }
 
+// regression test for bug 241
+template<typename MatrixType> void cholesky_bug241(const MatrixType& m)
+{
+  eigen_assert(m.rows() == 2 && m.cols() == 2);
+
+  typedef typename MatrixType::Scalar Scalar;
+  typedef Matrix<Scalar, MatrixType::RowsAtCompileTime, 1> VectorType;
+
+  MatrixType matA;
+  matA << 1, 1, 1, 1;
+  VectorType vecB;
+  vecB << 1, 1;
+  VectorType vecX = matA.ldlt().solve(vecB);
+  VERIFY_IS_APPROX(matA * vecX, vecB);
+}
+
 template<typename MatrixType> void cholesky_verify_assert()
 {
   MatrixType tmp;
@@ -271,6 +287,7 @@ void test_cholesky()
   for(int i = 0; i < g_repeat; i++) {
     CALL_SUBTEST_1( cholesky(Matrix<double,1,1>()) );
     CALL_SUBTEST_3( cholesky(Matrix2d()) );
+    CALL_SUBTEST_3( cholesky_bug241(Matrix2d()) );
     CALL_SUBTEST_4( cholesky(Matrix3f()) );
     CALL_SUBTEST_5( cholesky(Matrix4d()) );
     s = internal::random<int>(1,200);

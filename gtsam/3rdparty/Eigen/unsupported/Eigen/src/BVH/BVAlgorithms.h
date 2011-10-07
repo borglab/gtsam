@@ -231,7 +231,7 @@ private:
 template<typename BVH, typename Minimizer>
 typename Minimizer::Scalar BVMinimize(const BVH &tree, Minimizer &minimizer)
 {
-  return internal::minimize_helper(tree, minimizer, tree.getRootIndex(), std::numeric_limits<typename Minimizer::Scalar>::max());
+  return internal::minimize_helper(tree, minimizer, tree.getRootIndex(), (std::numeric_limits<typename Minimizer::Scalar>::max)());
 }
 
 /**  Given two BVH's, runs the query on their cartesian product encapsulated by \a minimizer.
@@ -264,7 +264,7 @@ typename Minimizer::Scalar BVMinimize(const BVH1 &tree1, const BVH2 &tree2, Mini
   ObjIter2 oBegin2 = ObjIter2(), oEnd2 = ObjIter2(), oCur2 = ObjIter2();
   std::priority_queue<QueueElement, std::vector<QueueElement>, std::greater<QueueElement> > todo; //smallest is at the top
 
-  Scalar minimum = std::numeric_limits<Scalar>::max();
+  Scalar minimum = (std::numeric_limits<Scalar>::max)();
   todo.push(std::make_pair(Scalar(), std::make_pair(tree1.getRootIndex(), tree2.getRootIndex())));
 
   while(!todo.empty()) {

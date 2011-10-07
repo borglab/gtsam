@@ -29,6 +29,10 @@
 #include <string>
 #include <vector>
 
+#ifdef NDEBUG
+#undef NDEBUG
+#endif
+
 #ifndef EIGEN_TEST_FUNC
 #error EIGEN_TEST_FUNC must be defined
 #endif

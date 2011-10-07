@@ -29,6 +29,15 @@
 #include "main.h"
 
 #if EIGEN_GNUC_AT_LEAST(4,0) && !defined __ICC && !defined(__clang__)
+
+#ifdef min
+#undef min
+#endif
+
+#ifdef max
+#undef max
+#endif
+
 #include <tr1/unordered_map>
 #define EIGEN_UNORDERED_MAP_SUPPORT
 namespace std {

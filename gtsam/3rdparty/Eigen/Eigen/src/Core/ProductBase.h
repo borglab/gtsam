@@ -256,16 +256,16 @@ class ScaledProduct
     : Base(prod.lhs(),prod.rhs()), m_prod(prod), m_alpha(x) {}
 
     template<typename Dest>
-    inline void evalTo(Dest& dst) const { dst.setZero(); scaleAndAddTo(dst,m_alpha); }
+    inline void evalTo(Dest& dst) const { dst.setZero(); scaleAndAddTo(dst, Scalar(1)); }
 
     template<typename Dest>
-    inline void addTo(Dest& dst) const { scaleAndAddTo(dst,m_alpha); }
+    inline void addTo(Dest& dst) const { scaleAndAddTo(dst, Scalar(1)); }
 
     template<typename Dest>
-    inline void subTo(Dest& dst) const { scaleAndAddTo(dst,-m_alpha); }
+    inline void subTo(Dest& dst) const { scaleAndAddTo(dst, Scalar(-1)); }
 
     template<typename Dest>
-    inline void scaleAndAddTo(Dest& dst,Scalar alpha) const { m_prod.derived().scaleAndAddTo(dst,alpha); }
+    inline void scaleAndAddTo(Dest& dst,Scalar alpha) const { m_prod.derived().scaleAndAddTo(dst,alpha * m_alpha); }
 
     const Scalar& alpha() const { return m_alpha; }
     
