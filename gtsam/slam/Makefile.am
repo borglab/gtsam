@@ -26,6 +26,7 @@ check_PROGRAMS += tests/testSimulated3D
 
 # Generic SLAM headers
 headers += BetweenFactor.h PriorFactor.h PartialPriorFactor.h
+headers += BearingFactor.h RangeFactor.h BearingRangeFactor.h
 
 # Generic constraint headers
 headers += BetweenConstraint.h BoundingConstraint.h
@@ -35,9 +36,12 @@ sources += pose2SLAM.cpp dataset.cpp
 check_PROGRAMS += tests/testPose2SLAM 
 
 # 2D SLAM using Bearing and Range
-headers += BearingFactor.h RangeFactor.h BearingRangeFactor.h
 sources += planarSLAM.cpp
 check_PROGRAMS += tests/testPlanarSLAM
+
+# Visualization
+sources += Ellipse.cpp
+check_PROGRAMS += tests/testEllipse
 
 # 3D Pose constraints
 sources += pose3SLAM.cpp 
