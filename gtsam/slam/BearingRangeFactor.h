@@ -19,8 +19,7 @@
 
 #pragma once
 
-#include <gtsam/slam/BearingFactor.h>
-#include <gtsam/slam/RangeFactor.h>
+#include <gtsam/nonlinear/NonlinearFactor.h>
 
 namespace gtsam {
 
@@ -31,25 +30,29 @@ namespace gtsam {
 	class BearingRangeFactor: public NonlinearFactor2<VALUES, POSEKEY, POINTKEY> {
 	private:
 
-		// the measurement
-		Rot2 bearing_;
-		double range_;
+		typedef typename POSEKEY::Value Pose;
+		typedef typename POSEKEY::Value::Rotation Rot;
+		typedef typename POINTKEY::Value Point;
 
 		typedef BearingRangeFactor<VALUES, POSEKEY, POINTKEY> This;
 		typedef NonlinearFactor2<VALUES, POSEKEY, POINTKEY> Base;
 
+		// the measurement
+		Rot bearing_;
+		double range_;
+
 	public:
 
 		BearingRangeFactor() {} /* Default constructor */
-		BearingRangeFactor(const POSEKEY& i, const POINTKEY& j, const Rot2& bearing, const double range,
+		BearingRangeFactor(const POSEKEY& i, const POINTKEY& j, const Rot& bearing, const double range,
 				const SharedNoiseModel& model) :
 					Base(model, i, j), bearing_(bearing), range_(range) {
 		}
 
 		virtual ~BearingRangeFactor() {}
 
-		/** h(x)-z -> between(z,h(x)) for Rot2 manifold */
-		Vector evaluateError(const Pose2& pose, const Point2& point,
+		/** h(x)-z -> between(z,h(x)) for Rot manifold */
+		Vector evaluateError(const Pose& pose, const Point& point,
 				boost::optional<Matrix&> H1, boost::optional<Matrix&> H2) const {
 			Matrix H11, H21, H12, H22;
 			boost::optional<Matrix&> H11_ = H1 ? boost::optional<Matrix&>(H11) : boost::optional<Matrix&>();
@@ -57,8 +60,8 @@ namespace gtsam {
 			boost::optional<Matrix&> H12_ = H2 ? boost::optional<Matrix&>(H12) : boost::optional<Matrix&>();
 			boost::optional<Matrix&> H22_ = H2 ? boost::optional<Matrix&>(H22) : boost::optional<Matrix&>();
 
-			Rot2 y1 = pose.bearing(point, H11_, H12_);
-			Vector e1 = Rot2::Logmap(bearing_.between(y1));
+			Rot y1 = pose.bearing(point, H11_, H12_);
+			Vector e1 = Rot::Logmap(bearing_.between(y1));
 
 			double y2 = pose.range(point, H21_, H22_);
 			Vector e2 = Vector_(1, y2 - range_);
@@ -69,7 +72,7 @@ namespace gtsam {
 		}
 
 		/** return the measured */
-		inline const std::pair<Rot2, double> measured() const {
+		inline const std::pair<Rot, double> measured() const {
 			return std::make_pair(bearing_, range_);
 		}
 

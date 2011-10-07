@@ -16,7 +16,6 @@
 
 #pragma once
 
-#include <gtsam/geometry/Pose2.h>
 #include <gtsam/nonlinear/NonlinearFactor.h>
 
 namespace gtsam {
@@ -28,18 +27,21 @@ namespace gtsam {
 	class BearingFactor: public NonlinearFactor2<VALUES, POSEKEY, POINTKEY> {
 	private:
 
-		Rot2 z_; /** measurement */
+		typedef typename POSEKEY::Value Pose;
+		typedef typename POSEKEY::Value::Rotation Rot;
+		typedef typename POINTKEY::Value Point;
 
 		typedef BearingFactor<VALUES, POSEKEY, POINTKEY> This;
 		typedef NonlinearFactor2<VALUES, POSEKEY, POINTKEY> Base;
 
+		Rot z_; /** measurement */
 	public:
 
 		/** default constructor for serialization/testing only */
 		BearingFactor() {}
 
 		/** primary constructor */
-		BearingFactor(const POSEKEY& i, const POINTKEY& j, const Rot2& z,
+		BearingFactor(const POSEKEY& i, const POINTKEY& j, const Rot& z,
 				const SharedNoiseModel& model) :
 					Base(model, i, j), z_(z) {
 		}
@@ -47,10 +49,10 @@ namespace gtsam {
 		virtual ~BearingFactor() {}
 
 		/** h(x)-z -> between(z,h(x)) for Rot2 manifold */
-		Vector evaluateError(const Pose2& pose, const Point2& point,
+		Vector evaluateError(const Pose& pose, const Point& point,
 				boost::optional<Matrix&> H1, boost::optional<Matrix&> H2) const {
 			Rot2 hx = pose.bearing(point, H1, H2);
-			return Rot2::Logmap(z_.between(hx));
+			return Rot::Logmap(z_.between(hx));
 		}
 
 		/** return the measured */

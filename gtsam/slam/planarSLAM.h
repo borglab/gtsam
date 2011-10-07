@@ -13,15 +13,18 @@
  *  @file  planarSLAM.h
  *  @brief: bearing/range measurements in 2D plane
  *  @authors Frank Dellaert
- **/
+ */
 
 #pragma once
 
-#include <gtsam/slam/BearingRangeFactor.h>
+#include <gtsam/geometry/Pose2.h>
 #include <gtsam/nonlinear/TupleValues.h>
 #include <gtsam/nonlinear/NonlinearEquality.h>
 #include <gtsam/slam/PriorFactor.h>
 #include <gtsam/slam/BetweenFactor.h>
+#include <gtsam/slam/RangeFactor.h>
+#include <gtsam/slam/BearingFactor.h>
+#include <gtsam/slam/BearingRangeFactor.h>
 #include <gtsam/nonlinear/NonlinearFactorGraph.h>
 #include <gtsam/nonlinear/NonlinearOptimizer.h>
 
