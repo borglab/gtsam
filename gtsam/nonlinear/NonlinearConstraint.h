@@ -18,7 +18,6 @@
 
 #pragma once
 
-#include <boost/function.hpp>
 #include <gtsam/nonlinear/NonlinearFactor.h>
 
 namespace gtsam {
@@ -36,16 +35,18 @@ namespace gtsam {
  * significant
  */
 template <class VALUES>
-class NonlinearConstraint : public NoiseModelFactor<VALUES> {
+class NonlinearConstraint : public NonlinearFactor<VALUES> {
 
 protected:
 	typedef NonlinearConstraint<VALUES> This;
-	typedef NoiseModelFactor<VALUES> Base;
+	typedef NonlinearFactor<VALUES> Base;
+	typedef Factor<Symbol> BaseFactor;
 
 	/** default constructor to allow for serialization */
 	NonlinearConstraint() {}
 
 	double mu_;  /// gain for quadratic merit function
+	size_t dim_; /// dimension of the constraint
 
 public:
 
@@ -54,13 +55,29 @@ public:
 	 * @param keys is a boost::tuple containing the keys, e.g. \c make_tuple(key1,key2,key3)
 	 * @param mu is the gain used at error evaluation (forced to be positive)
 	 */
-	template<class TUPLE>
-	NonlinearConstraint(const TUPLE& keys, size_t dim, double mu = 1000.0):
-		Base(noiseModel::Constrained::All(dim), keys), mu_(fabs(mu)) {}
+	template<class U1, class U2>
+	NonlinearConstraint(const boost::tuples::cons<U1,U2>& keys, size_t dim, double mu = 1000.0)
+	: Base(keys), mu_(fabs(mu)), dim_(dim) {
+	}
+
+  /**
+   * Constructor
+   * @param keys The variables involved in this factor
+   */
+  template<class ITERATOR>
+  NonlinearConstraint(ITERATOR beginKeys, ITERATOR endKeys, size_t dim, double mu = 1000.0)
+  : Base(beginKeys, endKeys), mu_(fabs(mu)), dim_(dim) {
+  }
+
 	virtual ~NonlinearConstraint() {}
 
 	/** returns the gain mu */
 	double mu() const { return mu_; }
+
+  /** get the dimension of the factor (number of rows on linearization) */
+  virtual size_t dim() const {
+    return dim_;
+  }
 
 	/** Print */
 	virtual void print(const std::string& s = "") const {
@@ -75,7 +92,7 @@ public:
 	virtual bool equals(const NonlinearFactor<VALUES>& f, double tol=1e-9) const {
 		const This* p = dynamic_cast<const This*> (&f);
 		if (p == NULL) return false;
-		return Base::equals(*p, tol) && (fabs(mu_ - p->mu_) <= tol);
+		return BaseFactor::equals(*p, tol) && (fabs(mu_ - p->mu_) <= tol) && dim_ == p->dim_;
 	}
 
 	/** error function - returns the quadratic merit function */
@@ -95,16 +112,38 @@ public:
 	 */
 	virtual bool active(const VALUES& c) const=0;
 
+  /**
+   * Error function \f$ z-c(x) \f$.
+   * Override this method to finish implementing an N-way factor.
+   * If any of the optional Matrix reference arguments are specified, it should compute
+   * both the function evaluation and its derivative(s) in X1 (and/or X2, X3...).
+   */
+	virtual Vector unwhitenedError(const VALUES& x, boost::optional<std::vector<Matrix>&> H = boost::none) const = 0;
+
 	/**
 	 * Linearizes around a given config
 	 * @param config is the values structure
 	 * @return a combined linear factor containing both the constraint and the constraint factor
 	 */
 	virtual boost::shared_ptr<GaussianFactor> linearize(const VALUES& c, const Ordering& ordering) const {
-    if (!active(c))
-      return boost::shared_ptr<JacobianFactor>();
-    else
-      return Base::linearize(c, ordering);
+		if (!active(c))
+			return boost::shared_ptr<JacobianFactor>();
+
+		// Create the set of terms - Jacobians for each index
+		Vector b;
+		// Call evaluate error to get Jacobians and b vector
+		std::vector<Matrix> A(this->size());
+		b = -unwhitenedError(c, A);
+
+		std::vector<std::pair<Index, Matrix> > terms(this->size());
+		// Fill in terms
+		for(size_t j=0; j<this->size(); ++j) {
+			terms[j].first = ordering[this->keys()[j]];
+			terms[j].second.swap(A[j]);
+		}
+
+		return GaussianFactor::shared_ptr(
+				new JacobianFactor(terms, b, noiseModel::Constrained::All(dim_)));
 	}
 
 private:
@@ -116,10 +155,11 @@ private:
 		ar & boost::serialization::make_nvp("NonlinearFactor",
 				boost::serialization::base_object<Base>(*this));
 		ar & BOOST_SERIALIZATION_NVP(mu_);
+		ar & BOOST_SERIALIZATION_NVP(dim_);
 	}
 };
 
-
+/* ************************************************************************* */
 /**
  * A unary constraint that defaults to an equality constraint
  */
@@ -186,6 +226,7 @@ private:
 	}
 };
 
+/* ************************************************************************* */
 /**
  * Unary Equality constraint - simply forces the value of active() to true
  */
@@ -222,6 +263,7 @@ private:
 
 };
 
+/* ************************************************************************* */
 /**
  * A binary constraint with arbitrary cost and jacobian functions
  */
@@ -294,6 +336,7 @@ private:
 	}
 };
 
+/* ************************************************************************* */
 /**
  * Binary Equality constraint - simply forces the value of active() to true
  */
@@ -330,6 +373,7 @@ private:
 	}
 };
 
+/* ************************************************************************* */
 /**
  * A ternary constraint
  */
@@ -410,6 +454,7 @@ private:
 	}
 };
 
+/* ************************************************************************* */
 /**
  * Ternary Equality constraint - simply forces the value of active() to true
  */
@@ -448,7 +493,7 @@ private:
 	}
 };
 
-
+/* ************************************************************************* */
 /**
  * Simple unary equality constraint - fixes a value for a variable
  */
@@ -493,7 +538,7 @@ private:
 	}
 };
 
-
+/* ************************************************************************* */
 /**
  * Simple binary equality constraint - this constraint forces two factors to
  * be the same.  This constraint requires the underlying type to a Lie type

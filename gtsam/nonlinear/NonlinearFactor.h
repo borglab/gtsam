@@ -37,6 +37,17 @@ namespace gtsam {
 
 using boost::make_tuple;
 
+// Helper function to fill a vector from a tuple function of any length
+template<typename CONS>
+inline void __fill_from_tuple(std::vector<Symbol>& vector, size_t position, const CONS& tuple) {
+  vector[position] = tuple.get_head();
+  __fill_from_tuple<typename CONS::tail_type>(vector, position+1, tuple.get_tail());
+}
+template<>
+inline void __fill_from_tuple<boost::tuples::null_type>(std::vector<Symbol>& vector, size_t position, const boost::tuples::null_type& tuple) {
+  // Do nothing
+}
+
 /* ************************************************************************* */
 /**
  * Nonlinear factor base class
@@ -60,6 +71,27 @@ public:
 
   /** Default constructor for I/O only */
   NonlinearFactor() {
+  }
+
+  /**
+   * Constructor
+   * @param keys A boost::tuple containing the variables involved in this factor,
+   * example: <tt>NonlinearFactor(make_tuple(symbol1, symbol2, symbol3))</tt>
+   */
+  template<class U1, class U2>
+  NonlinearFactor(const boost::tuples::cons<U1,U2>& keys) {
+    this->keys_.resize(boost::tuples::length<boost::tuples::cons<U1,U2> >::value);
+    // Use helper function to fill key vector, using 'cons' representation of tuple
+    __fill_from_tuple(this->keys(), 0, keys);
+  }
+
+  /**
+   * Constructor
+   * @param keys The variables involved in this factor
+   */
+  template<class ITERATOR>
+  NonlinearFactor(ITERATOR beginKeys, ITERATOR endKeys) {
+    this->keys_.insert(this->keys_.end(), beginKeys, endKeys);
   }
 
   /** Destructor */
@@ -88,21 +120,14 @@ public:
    * Create a symbolic factor using the given ordering to determine the
    * variable indices.
    */
-  virtual IndexFactor::shared_ptr symbolic(const Ordering& ordering) const = 0;
+  virtual IndexFactor::shared_ptr symbolic(const Ordering& ordering) const {
+    std::vector<Index> indices(this->size());
+    for(size_t j=0; j<this->size(); ++j)
+      indices[j] = ordering[this->keys()[j]];
+    return IndexFactor::shared_ptr(new IndexFactor(indices));
+  }
 
 }; // \class NonlinearFactor
-
-
-// Helper function to fill a vector from a tuple function of any length
-template<typename CONS>
-inline void __fill_from_tuple(std::vector<Symbol>& vector, size_t position, const CONS& tuple) {
-  vector[position] = tuple.get_head();
-  __fill_from_tuple<typename CONS::tail_type>(vector, position+1, tuple.get_tail());
-}
-template<>
-inline void __fill_from_tuple<boost::tuples::null_type>(std::vector<Symbol>& vector, size_t position, const boost::tuples::null_type& tuple) {
-  // Do nothing
-}
 
 /* ************************************************************************* */
 /**
@@ -143,11 +168,8 @@ public:
    * example: <tt>NoiseModelFactor(noiseModel, make_tuple(symbol1, symbol2, symbol3)</tt>
    */
   template<class U1, class U2>
-  NoiseModelFactor(const SharedNoiseModel& noiseModel, const boost::tuples::cons<U1,U2>& keys) :
-  noiseModel_(noiseModel) {
-    this->keys_.resize(boost::tuples::length<boost::tuples::cons<U1,U2> >::value);
-    // Use helper function to fill key vector, using 'cons' representation of tuple
-    __fill_from_tuple(this->keys(), 0, keys);
+  NoiseModelFactor(const SharedNoiseModel& noiseModel, const boost::tuples::cons<U1,U2>& keys)
+  : Base(keys), noiseModel_(noiseModel) {
   }
 
   /**
@@ -155,9 +177,8 @@ public:
    * @param keys The variables involved in this factor
    */
   template<class ITERATOR>
-  NoiseModelFactor(const SharedNoiseModel& noiseModel, ITERATOR beginKeys, ITERATOR endKeys) :
-  Base(noiseModel) {
-    this->keys_.insert(this->keys_.end(), beginKeys, endKeys);
+  NoiseModelFactor(const SharedNoiseModel& noiseModel, ITERATOR beginKeys, ITERATOR endKeys)
+  : Base(beginKeys, endKeys), noiseModel_(noiseModel) {
   }
 
 protected:
@@ -251,17 +272,6 @@ public:
     else
       return GaussianFactor::shared_ptr(
           new JacobianFactor(terms, b, noiseModel::Unit::Create(b.size())));
-  }
-
-  /**
-   * Create a symbolic factor using the given ordering to determine the
-   * variable indices.
-   */
-  virtual IndexFactor::shared_ptr symbolic(const Ordering& ordering) const {
-    std::vector<Index> indices(this->size());
-    for(size_t j=0; j<this->size(); ++j)
-      indices[j] = ordering[this->keys()[j]];
-    return IndexFactor::shared_ptr(new IndexFactor(indices));
   }
 
 private:
