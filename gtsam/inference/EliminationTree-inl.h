@@ -114,10 +114,12 @@ typename EliminationTree<FACTOR>::shared_ptr EliminationTree<FACTOR>::Create(
   tic(2, "assemble tree");
   vector<shared_ptr> trees(n);
   for (Index k = 1; k <= n; k++) {
-    Index j = n - k;
-    trees[j].reset(new EliminationTree(j));
-    if (parents[j] != none)
+    Index j = n - k;  // Start at the last variable and loop down to 0
+    trees[j].reset(new EliminationTree(j));  // Create a new node on this variable
+    if (parents[j] != none)  // If this node has a parent, add it to the parent's children
       trees[parents[j]]->add(trees[j]);
+    else if(!structure[j].empty() && j != n - 1) // If a node other than the last has no parents, this is a forest
+      throw DisconnectedGraphException();
   }
   toc(2, "assemble tree");
 
@@ -133,12 +135,6 @@ typename EliminationTree<FACTOR>::shared_ptr EliminationTree<FACTOR>::Create(
     }
   }
   toc(3, "hang factors");
-
-  // Assert that all other nodes have parents, i.e. that this is not a forest.
-#ifndef NDEBUG
-  for(typename vector<shared_ptr>::const_iterator tree=trees.begin(); tree!=trees.end()-1; ++tree)
-    assert((*tree) != shared_ptr());
-#endif
 
   if(debug)
     trees.back()->print("ETree: ");

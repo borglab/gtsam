@@ -107,6 +107,17 @@ TEST(EliminationTree, eliminate )
 }
 
 /* ************************************************************************* */
+TEST(EliminationTree, disconnected_graph) {
+  SymbolicFactorGraph fg;
+  fg.push_factor(0, 1);
+  fg.push_factor(0, 2);
+  fg.push_factor(1, 2);
+  fg.push_factor(3, 4);
+
+  CHECK_EXCEPTION(SymbolicEliminationTree::Create(fg), DisconnectedGraphException);
+}
+
+/* ************************************************************************* */
 int main() {
   TestResult tr;
   return TestRegistry::runAllTests(tr);

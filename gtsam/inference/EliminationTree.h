@@ -117,4 +117,23 @@ public:
   typename BayesNet::shared_ptr eliminate(Eliminate function) const;
 };
 
+
+/**
+ * An exception thrown when attempting to eliminate a disconnected factor
+ * graph, which is not currently possible in gtsam.  If you need to work with
+ * disconnected graphs, a workaround is to create zero-information factors to
+ * bridge the disconnects.  To do this, create any factor type (e.g.
+ * BetweenFactor or RangeFactor) with the noise model
+ * <tt>\ref sharedPrecision(dim, 0.0)</tt>, where \c dim is the appropriate
+ * dimensionality for that factor.
+ */
+struct DisconnectedGraphException : public std::exception {
+  DisconnectedGraphException() {}
+  virtual ~DisconnectedGraphException() throw() {}
+
+  /// Returns the string "Attempting to eliminate a disconnected graph - this is not currently possible in gtsam."
+  virtual const char* what() const throw() {
+    return "Attempting to eliminate a disconnected graph - this is not currently possible in gtsam."; }
+};
+
 }
