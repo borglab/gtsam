@@ -158,7 +158,7 @@ public:
   value_type pop_back();
 
   /** Remove the last-ordered symbol from the ordering (this version is
-   * \f$ O(1) \f$, use it if you already know the last-ordered key).
+   * \f$ O(\log n) \f$, use it if you already know the last-ordered key).
    *
    * Throws std::invalid_argument if the requested key is not actually the
    * last-ordered.
