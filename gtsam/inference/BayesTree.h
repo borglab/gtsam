@@ -33,6 +33,8 @@ namespace gtsam {
 	 * Bayes tree
 	 * Templated on the CONDITIONAL class, the type of node in the underlying Bayes chain.
 	 * This could be a ConditionalProbabilityTable, a GaussianConditional, or a SymbolicConditional
+	 *
+	 * \ingroup Multifrontal
 	 */
 	template<class CONDITIONAL>
 	class BayesTree: public Testable<BayesTree<CONDITIONAL> > {

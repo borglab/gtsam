@@ -30,6 +30,8 @@ namespace gtsam {
 	/* ************************************************************************* */
 	/**
 	 * GaussianJunctionTree that does the optimization
+	 *
+	 * \ingroup Multifrontal
 	 */
 	class GaussianJunctionTree: public JunctionTree<GaussianFactorGraph> {
 

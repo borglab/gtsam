@@ -42,6 +42,8 @@ namespace gtsam {
 	 * chordal Bayes net resulting from elimination. In GTSAM the BayesTree is used to
 	 * represent the clique tree associated with a Bayes net, and the JunctionTree is
 	 * used to collect the factors associated with each clique during the elimination process.
+	 *
+	 * \ingroup Multifrontal
 	 */
 	template<class FG>
 	class JunctionTree: public ClusterTree<FG> {
