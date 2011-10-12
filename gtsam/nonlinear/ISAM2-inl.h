@@ -1,3 +1,14 @@
+/* ----------------------------------------------------------------------------
+
+ * GTSAM Copyright 2010, Georgia Tech Research Corporation,
+ * Atlanta, Georgia 30332-0415
+ * All Rights Reserved
+ * Authors: Frank Dellaert, et al. (see THANKS for the full author list)
+
+ * See LICENSE for the license information
+
+ * -------------------------------------------------------------------------- */
+
 /**
  * @file    ISAM2-inl.h
  * @brief   Incremental update functionality (ISAM2) for BayesTree, with fluid relinearization.
@@ -45,17 +56,6 @@ ISAM2<Conditional, Values>::ISAM2(const ISAM2Params& params):
 template<class Conditional, class Values>
 ISAM2<Conditional, Values>::ISAM2():
     delta_(Permutation(), deltaUnpermuted_) {}
-
-/** Create a Bayes Tree from a nonlinear factor graph */
-//template<class Conditional, class Values>
-//ISAM2<Conditional, Values>::ISAM2(const NonlinearFactorGraph<Values>& nlfg, const Ordering& ordering, const Values& config) :
-//BayesTree<Conditional>(nlfg.linearize(config)->eliminate(ordering)), theta_(config),
-//variableIndex_(nlfg.symbolic(config, ordering), config.dims(ordering)), deltaUnpermuted_(variableIndex_.dims()),
-//delta_(Permutation::Identity(variableIndex_.size())), nonlinearFactors_(nlfg), ordering_(ordering) {
-//  // todo: repeats calculation above, just to set "cached"
-//  // De-referencing shared pointer can be quite expensive because creates temporary
-//  _eliminate_const(*nlfg.linearize(config, ordering), cached_, ordering);
-//}
 
 /* ************************************************************************* */
 template<class Conditional, class Values>
