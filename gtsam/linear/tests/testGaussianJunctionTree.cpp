@@ -68,7 +68,7 @@ GaussianFactorGraph createChain() {
  *
  *  1  0  0  1
  */
-TEST_UNSAFE( GaussianJunctionTree, eliminate )
+TEST( GaussianJunctionTree, eliminate )
 {
   GaussianFactorGraph fg = createChain();
   GaussianJunctionTree junctionTree(fg);
@@ -105,7 +105,7 @@ TEST_UNSAFE( GaussianJunctionTree, eliminate )
 }
 
 /* ************************************************************************* */
-TEST_UNSAFE( GaussianJunctionTree, optimizeMultiFrontal )
+TEST( GaussianJunctionTree, optimizeMultiFrontal )
 {
   GaussianFactorGraph fg = createChain();
   GaussianJunctionTree tree(fg);
@@ -120,7 +120,7 @@ TEST_UNSAFE( GaussianJunctionTree, optimizeMultiFrontal )
 }
 
 /* ************************************************************************* */
-TEST_UNSAFE(GaussianJunctionTree, complicatedMarginal) {
+TEST(GaussianJunctionTree, complicatedMarginal) {
 
   // Create the conditionals to go in the BayesTree
   GaussianConditional::shared_ptr R_1_2(new GaussianConditional(
