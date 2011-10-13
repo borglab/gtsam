@@ -134,15 +134,6 @@ AC_ARG_WITH([toolbox],
             [toolbox=$prefix])
 AC_SUBST([toolbox])
 
-#Original version
-#AC_ARG_WITH([toolbox],
-#            [AS_HELP_STRING([--with-toolbox],
-#              [specify the matlab toolbox directory for installation (mandatory)])],
-#            [toolbox=$withval],
-#            [AC_MSG_FAILURE(
-#                   [--with-toolbox has to be specified])
-#            ])
-
 AC_CONFIG_FILES([CppUnitLite/Makefile \
 wrap/Makefile \
 gtsam/3rdparty/Makefile \
