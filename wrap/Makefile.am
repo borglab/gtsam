@@ -24,7 +24,8 @@ noinst_PROGRAMS = wrap
 # It will be packaged in the toplevel libgtsam.la as specfied in ../Makefile.am 
 # The headers are installed in $(includedir)/gtsam: 
 #----------------------------------------------------------------------------------------------------
-headers += $(sources:.cpp=.h) matlab.h
+# Only install the header necessary for wrap interfaces to build with mex
+headers += matlab.h 
 wrapdir = $(pkgincludedir)/wrap
 wrap_HEADERS = $(headers)
 noinst_LTLIBRARIES = libwrap.la
