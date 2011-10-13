@@ -7,6 +7,7 @@ AM_INIT_AUTOMAKE(gtsam, 0.9.3)
 AC_CONFIG_MACRO_DIR([m4])
 AC_CONFIG_HEADER([config.h])
 AC_CONFIG_SRCDIR([CppUnitLite/Test.cpp])
+AC_CONFIG_SRCDIR([wrap/wrap.cpp])
 AC_CONFIG_SRCDIR([gtsam/base/DSFVector.cpp])
 AC_CONFIG_SRCDIR([gtsam/geometry/Cal3_S2.cpp])
 AC_CONFIG_SRCDIR([gtsam/inference/SymbolicFactorGraph.cpp])
@@ -114,7 +115,26 @@ AC_CHECK_FUNCS([pow sqrt])
 # Check for boost
 AX_BOOST_BASE([1.40])
 
-# ask for toolbox directory
+# enable matlab toolbox generation
+AC_ARG_ENABLE([build_toolbox],
+     [  --enable-build-toolbox    Enable building of the Matlab toolbox],
+     [case "${enableval}" in
+       yes) build_toolbox=true ;;
+       no)  build_toolbox=false ;;
+       *) AC_MSG_ERROR([bad value ${enableval} for --enable-build-toolbox]) ;;
+     esac],[build_toolbox=false])
+
+AM_CONDITIONAL([ENABLE_BUILD_TOOLBOX], [test x$build_toolbox = xtrue])
+
+# Matlab toolbox: optional flag to change location of toolbox, defaults to install prefix
+AC_ARG_WITH([toolbox],
+            [AS_HELP_STRING([--with-toolbox],
+              [specify the matlab toolbox directory for installation])],
+            [toolbox=$withval],
+            [toolbox=$prefix])
+AC_SUBST([toolbox])
+
+#Original version
 #AC_ARG_WITH([toolbox],
 #            [AS_HELP_STRING([--with-toolbox],
 #              [specify the matlab toolbox directory for installation (mandatory)])],
@@ -122,9 +142,9 @@ AX_BOOST_BASE([1.40])
 #            [AC_MSG_FAILURE(
 #                   [--with-toolbox has to be specified])
 #            ])
-#AC_SUBST([toolbox])
 
 AC_CONFIG_FILES([CppUnitLite/Makefile \
+wrap/Makefile \
 gtsam/3rdparty/Makefile \
 gtsam/base/Makefile \
 gtsam/geometry/Makefile \

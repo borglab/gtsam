@@ -11,14 +11,25 @@ sources =
 check_PROGRAMS = 
 
 # simulated2D example
-# headers += Simulated2DValues.h 
 headers += simulated2DConstraints.h
 sources += simulated2D.cpp smallExample.cpp
 check_PROGRAMS += tests/testSimulated2D 
 
+# MATLAB Wrap headers for simulated2D
+headers += Simulated2DMeasurement.h
+headers += Simulated2DOdometry.h
+headers += Simulated2DPointPrior.h
+headers += Simulated2DPosePrior.h
+headers += Simulated2DValues.h
+
 # simulated2DOriented example
 sources +=  simulated2DOriented.cpp 
 check_PROGRAMS += tests/testSimulated2DOriented
+
+# MATLAB Wrap headers for simulated2DOriented
+headers += Simulated2DOrientedOdometry.h
+headers += Simulated2DOrientedPosePrior.h
+headers += Simulated2DOrientedValues.h
 
 # simulated3D example
 sources += Simulated3D.cpp 
