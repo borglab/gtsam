@@ -23,23 +23,25 @@
 #include "Constructor.h"
 #include "Method.h"
 
-// Class has name, constructors, methods
+/// Class has name, constructors, methods
 struct Class {
-  std::string name;
-  std::list<Constructor> constructors;
-  std::list<Method> methods;
-  bool verbose_;
-
+  /// Constructor creates an empty class
   Class(bool verbose=true) : verbose_(verbose) {}
 
-  // MATLAB code generation:
-  void matlab_proxy(const std::string& classFile);          // proxy class
-  void matlab_constructors(const std::string& toolboxPath, 
-			   const std::string& nameSpace);   // constructor wrappers
-  void matlab_methods(const std::string& classPath, 
-			   const std::string& nameSpace);   // method wrappers
-  void matlab_make_fragment(std::ofstream& ofs, 
-			    const std::string& toolboxPath, 
-			    const std::string& mexFlags);   // make fragment
+	// Then the instance variables are set directly by the Module constructor
+  std::string name;                    ///< Class name
+  std::list<Constructor> constructors; ///< Class constructors
+  std::list<Method> methods;           ///< Class methods
+  bool verbose_;                       ///< verbose flag
+
+  // And finally MATLAB code is emitted, methods below called by Module::matlab_code
+  void matlab_proxy(const std::string& classFile);          ///< emit proxy class
+  void matlab_constructors(const std::string& toolboxPath,
+			   const std::string& nameSpace);   ///< emit constructor wrappers
+  void matlab_methods(const std::string& classPath,
+			   const std::string& nameSpace);   ///< emit method wrappers
+  void matlab_make_fragment(std::ofstream& ofs,
+			    const std::string& toolboxPath,
+			    const std::string& mexFlags);   ///< emit make fragment for global make script
 };
 

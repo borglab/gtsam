@@ -22,9 +22,13 @@
 
 using namespace std;
 
-/* ************************************************************************* */
 /**
- * main function to wrap a module
+ * Top-level function to wrap a module
+ * @param interfacePath path to where interface file lives, e.g., borg/gtsam
+ * @param moduleName name of the module to be generated e.g. gtsam
+ * @param toolboxPath path where the toolbox should be generated, e.g. borg/gtsam/build
+ * @param nameSpace e.g. gtsam
+ * @param mexFlags extra arguments for mex script, i.e., include flags etc...
  */
 void generate_matlab_toolbox(const string& interfacePath,
 			     const string& moduleName,
@@ -32,15 +36,18 @@ void generate_matlab_toolbox(const string& interfacePath,
 			     const string& nameSpace,
 			     const string& mexFlags) 
 {
-  // Parse into class object
-  Module module(interfacePath, moduleName, false);
+  // Parse interface file into class object
+	// This recursively creates Class objects, Method objects, etc...
+  Module module(interfacePath, moduleName, true);
 
-  // emit MATLAB code
+  // Then emit MATLAB code
   module.matlab_code(toolboxPath,nameSpace,mexFlags);
 }
 
-/* ************************************************************************* */
-
+/**
+ * main parses arguments and calls generate_matlab_toolbox above
+ * Typyically called from "make all" using appropriate arguments
+ */
 int main(int argc, const char* argv[]) {
   if (argc<5 || argc>6) {
     cerr << "wrap parses an interface file and produces a MATLAB toolbox" << endl;
@@ -53,6 +60,5 @@ int main(int argc, const char* argv[]) {
   }
   else
     generate_matlab_toolbox(argv[1],argv[2],argv[3],argv[4],argc==5 ? " " : argv[5]);
+  return 0;
 }
-
-/* ************************************************************************* */

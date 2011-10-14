@@ -22,22 +22,20 @@
 
 #include "Class.h"
 
-// A module has classes
+/**
+ * A module just has a name and a list of classes
+ */
 struct Module {
-  std::string name;
-  std::list<Class> classes;
-  bool verbose_;
+  std::string name;         ///< module name
+  std::list<Class> classes; ///< list of classes
+  bool verbose_;            ///< verbose flag
 
-  /**
-   * constructor that parses interface file
-   */
+  /// constructor that parses interface file
   Module(const std::string& interfacePath, 
 	 const std::string& moduleName,
 	 bool verbose=true);
 
-  /**
-   *  MATLAB code generation:
-   */
+  /// MATLAB code generation:
   void matlab_code(const std::string& path, 
 		   const std::string& nameSpace, 
 		   const std::string& mexFlags);

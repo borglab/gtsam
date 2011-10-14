@@ -14,15 +14,15 @@
  * @author Frank Dellaert
  **/
 
-#include <iostream>
-#include <fstream>
+#include "Module.h"
+#include "utilities.h"
 
 //#define BOOST_SPIRIT_DEBUG
 #include <boost/spirit/include/classic_core.hpp>
 #include <boost/foreach.hpp>
 
-#include "Module.h"
-#include "utilities.h"
+#include <iostream>
+#include <fstream>
 
 using namespace std;
 using namespace BOOST_SPIRIT_CLASSIC_NS;
