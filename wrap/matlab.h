@@ -9,27 +9,35 @@
 
  * -------------------------------------------------------------------------- */
 
-// header file to be included in MATLAB wrappers
-// Copyright (c) 2008 Frank Dellaert, All Rights reserved
-// wrapping and unwrapping is done using specialized templates, see
-// http://www.cplusplus.com/doc/tutorial/templates.html
+/**
+ * @file matlab.h
+ * @brief header file to be included in MATLAB wrappers
+ * @date 2008
+ * @author Frank Dellaert
+ *
+ * wrapping and unwrapping is done using specialized templates, see
+ * http://www.cplusplus.com/doc/tutorial/templates.html
+ */
+
+#include <gtsam/base/Vector.h>
+#include <gtsam/base/Matrix.h>
 
 extern "C" {
 #include <mex.h>
 }
 
+#include <boost/shared_ptr.hpp>
+
 #include <list>
 #include <string>
 #include <sstream>
-#include <gtsam/3rdparty/Eigen/Eigen/Core>
-#include <boost/shared_ptr.hpp>
 
 using namespace std;
 using namespace boost; // not usual, but for conciseness of generated code
 
 // start GTSAM Specifics /////////////////////////////////////////////////
-typedef Eigen::VectorXd Vector;  // NOTE: outside of gtsam namespace
-typedef Eigen::MatrixXd Matrix;
+typedef gtsam::Vector Vector;  // NOTE: outside of gtsam namespace
+typedef gtsam::Matrix Matrix;
 
 // to make keys be constructed from strings:
 #define GTSAM_MAGIC_KEY
@@ -144,7 +152,7 @@ mxArray* wrap<const Vector >(const Vector& v) {
 
 // wrap a const BOOST MATRIX into a double matrix
 mxArray* wrap_Matrix(const Matrix& A) {
-  int m = A.size1(), n = A.size2();
+  int m = A.rows(), n = A.cols();
   mxArray *result = mxCreateDoubleMatrix(m, n, mxREAL);
   double *data = mxGetPr(result);
   // converts from column-major to row-major
@@ -222,7 +230,7 @@ Vector unwrap< Vector >(const mxArray* array) {
   if (mxIsDouble(array)==false || n!=1) error("unwrap<vector>: not a vector");
   double* data = (double*)mxGetData(array);
   Vector v(m);
-  copy(data,data+m,v.begin());
+  for (int i=0;i<m;i++,data++) v(i) = *data;
   return v;
 }
 
