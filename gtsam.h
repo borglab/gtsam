@@ -17,6 +17,10 @@ class Point3 {
   double z();
 }; 
 
+class Rot2 {
+	Rot2();
+};
+
 class Pose2 {
   Pose2();
   Pose2(const Pose2& pose);
