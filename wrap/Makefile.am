@@ -21,7 +21,6 @@ noinst_PROGRAMS = wrap
 
 #----------------------------------------------------------------------------------------------------
 # Create a libtool library that is not installed
-# It will be packaged in the toplevel libgtsam.la as specfied in ../Makefile.am 
 # The headers are installed in $(includedir)/gtsam: 
 #----------------------------------------------------------------------------------------------------
 # Only install the header necessary for wrap interfaces to build with mex
