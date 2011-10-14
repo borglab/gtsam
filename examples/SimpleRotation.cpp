@@ -9,14 +9,12 @@
 
  * -------------------------------------------------------------------------- */
 
-/*
- * SimpleRotation.cpp
- *
- * This is a super-simple example of optimizing a single rotation according to a single prior
- *
- *  Created on: Jul 1, 2010
- *  @author Frank Dellaert
- *  @author Alex Cunningham
+/**
+ * @file SimpleRotation.cpp
+ * @brief This is a super-simple example of optimizing a single rotation according to a single prior
+ * @date Jul 1, 2010
+ * @author Frank Dellaert
+ * @author Alex Cunningham
  */
 
 #include <cmath>

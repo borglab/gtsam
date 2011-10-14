@@ -9,11 +9,10 @@
 
  * -------------------------------------------------------------------------- */
 
-/*
- * StereoPoint2.cpp
- *
- *  Created on: Jan 26, 2010
- *      Author: dellaert
+/**
+ * @file StereoPoint2.cpp
+ * @date Jan 26, 2010
+ * @author dellaert
  */
 
 #include <iostream>

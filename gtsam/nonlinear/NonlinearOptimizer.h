@@ -10,10 +10,10 @@
  * -------------------------------------------------------------------------- */
 
 /**
- * NonlinearOptimizer.h
- * @brief: Encapsulates nonlinear optimization state
+ * @file NonlinearOptimizer.h
+ * @brief Encapsulates nonlinear optimization state
  * @author Frank Dellaert
- * Created on: Sep 7, 2009
+ * @date Sep 7, 2009
  */
 
 #pragma once

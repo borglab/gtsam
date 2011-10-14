@@ -9,11 +9,11 @@
 
  * -------------------------------------------------------------------------- */
 
-/*
- * iterative-inl.h
+/**
+ * @file iterative-inl.h
  * @brief Iterative methods, template implementation
  * @author Frank Dellaert
- * Created on: Dec 28, 2009
+ * @date Dec 28, 2009
  */
 
 #pragma once

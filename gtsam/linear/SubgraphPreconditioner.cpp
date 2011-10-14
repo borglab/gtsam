@@ -9,9 +9,9 @@
 
  * -------------------------------------------------------------------------- */
 
-/*
- * SubgraphPreconditioner.cpp
- * Created on: Dec 31, 2009
+/**
+ * @file SubgraphPreconditioner.cpp
+ * @date Dec 31, 2009
  * @author: Frank Dellaert
  */
 

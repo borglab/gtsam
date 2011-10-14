@@ -9,12 +9,11 @@
 
  * -------------------------------------------------------------------------- */
 
-/*
- * testDSF.cpp
- *
- *   Created on: June 25, 2010
- *       Author: nikai
- *  Description: unit tests for DSF
+/**
+ * @file testDSF.cpp
+ * @date June 25, 2010
+ * @author nikai
+ * @brief unit tests for DSF
  */
 
 #include <iostream>

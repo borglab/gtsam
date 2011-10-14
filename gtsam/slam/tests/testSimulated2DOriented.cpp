@@ -9,12 +9,11 @@
 
  * -------------------------------------------------------------------------- */
 
-/*
- * testSimulated2DOriented.cpp
- *
- *   Created on: Jun 10, 2010
- *       Author: nikai
- *  Description: unit tests for simulated2DOriented
+/**
+ * @file testSimulated2DOriented.cpp
+ * @date Jun 10, 2010
+ * @author nikai
+ * @brief unit tests for simulated2DOriented
  */
 
 #include <iostream>

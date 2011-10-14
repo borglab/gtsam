@@ -10,9 +10,9 @@
  * -------------------------------------------------------------------------- */
 
 /**
- * file: Argument.h
- * brief: arguments to constructors and methods
- * Author: Frank Dellaert
+ * @file Argument.h
+ * @brief arguments to constructors and methods
+ * @author Frank Dellaert
  **/
 
 #pragma once

@@ -10,8 +10,8 @@
  * -------------------------------------------------------------------------- */
 
 /**
- * GaussianJunctionTree.cpp
- * Created on: Jul 12, 2010
+ * @file GaussianJunctionTree.cpp
+ * @date Jul 12, 2010
  * @author Kai Ni
  * @author Frank Dellaert
  * @brief: the Gaussian junction tree

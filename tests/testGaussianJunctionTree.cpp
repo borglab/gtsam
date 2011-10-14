@@ -9,12 +9,10 @@
 
  * -------------------------------------------------------------------------- */
 
-/*
- * testGaussianJunctionTree.cpp
- *
- *   Created on: Jul 8, 2010
- *       Author: nikai
- *  Description:
+/**
+ * @file testGaussianJunctionTree.cpp
+ * @date Jul 8, 2010
+ * @author nikai
  */
 
 #include <iostream>

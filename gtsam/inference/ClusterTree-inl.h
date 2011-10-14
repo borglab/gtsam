@@ -9,9 +9,9 @@
 
  * -------------------------------------------------------------------------- */
 
-/*
- * ClusterTree-inl.h
- * Created on: July 13, 2010
+/**
+ * @file ClusterTree-inl.h
+ * @date July 13, 2010
  * @author Kai Ni
  * @author Frank Dellaert
  * @brief: Collects factorgraph fragments defined on variable clusters, arranged in a tree

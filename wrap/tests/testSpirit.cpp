@@ -10,8 +10,9 @@
  * -------------------------------------------------------------------------- */
 
 /**
- * Unit test for Boost's awesome Spirit parser
- * Author: Frank Dellaert
+ * @file testSpirit.cpp
+ * @brief Unit test for Boost's awesome Spirit parser
+ * @author Frank Dellaert
  **/
 
 #include <boost/spirit/include/classic_core.hpp>

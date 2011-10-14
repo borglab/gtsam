@@ -9,11 +9,10 @@
 
  * -------------------------------------------------------------------------- */
 
-/*
- * SymbolicFactorGraph.h
- *
- *  Created on: Oct 29, 2009
- *      Author: Frank Dellaert
+/**
+ * @file SymbolicFactorGraph.h
+ * @date Oct 29, 2009
+ * @author Frank Dellaert
  */
 
 #pragma once

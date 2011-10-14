@@ -9,11 +9,11 @@
 
  * -------------------------------------------------------------------------- */
 
-/*
- * iterative.cpp
+/**
+ * @file iterative.cpp
  * @brief Iterative methods, implementation
  * @author Frank Dellaert
- * Created on: Dec 28, 2009
+ * @date Dec 28, 2009
  */
 #include <iostream>
 

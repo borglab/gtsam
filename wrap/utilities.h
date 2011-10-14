@@ -10,8 +10,8 @@
  * -------------------------------------------------------------------------- */
 
 /**
- * file: utilities.ccp
- * Author: Frank Dellaert
+ * @file utilities.ccp
+ * @author Frank Dellaert
  **/
 
 #pragma once

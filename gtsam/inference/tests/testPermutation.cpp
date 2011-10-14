@@ -1,8 +1,7 @@
-/*
- * testPermutation.cpp
- *
- *  Created on: Sep 22, 2011
- *      Author: richard
+/**
+ * @file testPermutation.cpp
+ * @date Sep 22, 2011
+ * @author richard
  */
 
 #include <CppUnitLite/TestHarness.h>

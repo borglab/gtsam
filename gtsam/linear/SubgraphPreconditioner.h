@@ -9,10 +9,10 @@
 
  * -------------------------------------------------------------------------- */
 
-/*
- * SubgraphPreconditioner.h
- * Created on: Dec 31, 2009
- * @author: Frank Dellaert
+/**
+ * @file SubgraphPreconditioner.h
+ * @date Dec 31, 2009
+ * @author Frank Dellaert
  */
 
 #pragma once

@@ -9,9 +9,9 @@
 
  * -------------------------------------------------------------------------- */
 
-/*
- * JunctionTree.h
- * Created on: Feb 4, 2010
+/**
+ * @file JunctionTree.h
+ * @date Feb 4, 2010
  * @author Kai Ni
  * @author Frank Dellaert
  * @brief: The junction tree

@@ -1,8 +1,7 @@
-/*
- * IterativeOptimizationParameters.h
- *
- *  Created on: Oct 22, 2010
- *      Author: Yong-Dian Jian
+/**
+ * @file IterativeOptimizationParameters.h
+ * @date Oct 22, 2010
+ * @author Yong-Dian Jian
  */
 
 #pragma once

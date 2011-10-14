@@ -10,8 +10,9 @@
  * -------------------------------------------------------------------------- */
 
 /**
- * Unit test for wrap.c
- * Author: Frank Dellaert
+ * @file testWrap.cpp
+ * @brief Unit test for wrap.c
+ * @author Frank Dellaert
  **/
 
 #include <iostream>

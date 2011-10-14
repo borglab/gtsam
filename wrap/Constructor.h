@@ -10,9 +10,9 @@
  * -------------------------------------------------------------------------- */
 
 /**
- * file: Constructor.h
- * brief: class describing a constructor + code generation
- * Author: Frank Dellaert
+ * @file Constructor.h
+ * @brief class describing a constructor + code generation
+ * @author Frank Dellaert
  **/
 
 #pragma once

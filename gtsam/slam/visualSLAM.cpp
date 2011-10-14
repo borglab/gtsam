@@ -9,11 +9,10 @@
 
  * -------------------------------------------------------------------------- */
 
-/*
- * visualSLAM.cpp
- *
- *  Created on: Jan 14, 2010
- *      Author: richard
+/**
+ * @file visualSLAM.cpp
+ * @date Jan 14, 2010
+ * @author richard
  */
 
 #include <gtsam/slam/visualSLAM.h>

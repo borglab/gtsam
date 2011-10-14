@@ -9,12 +9,11 @@
 
  * -------------------------------------------------------------------------- */
 
-/*
- * testNoiseModel.cpp
- *
- *  Created on: Jan 13, 2010
- *      Author: Richard Roberts
- *      Author: Frank Dellaert
+/**
+ * @file testNoiseModel.cpp
+ * @date Jan 13, 2010
+ * @author Richard Roberts
+ * @author Frank Dellaert
  */
 
 

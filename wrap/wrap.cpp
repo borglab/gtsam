@@ -10,9 +10,9 @@
  * -------------------------------------------------------------------------- */
 
 /**
- * file: wrap.ccp
- * brief: wraps functions
- * Author: Frank Dellaert
+ * @file wrap.ccp
+ * @brief wraps functions
+ * @author Frank Dellaert
  **/
 
 #include <stdio.h>

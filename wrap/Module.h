@@ -10,9 +10,9 @@
  * -------------------------------------------------------------------------- */
 
 /**
- * file: Module.h
- * brief: describes module to be wrapped
- * Author: Frank Dellaert
+ * @file Module.h
+ * @brief describes module to be wrapped
+ * @author Frank Dellaert
  **/
 
 #pragma once

@@ -9,11 +9,10 @@
 
  * -------------------------------------------------------------------------- */
 
-/*
- * NonlinearISAM.h
- *
- *  Created on: Jan 19, 2010
- *      Author: Viorela Ila and Richard Roberts
+/**
+ * @file NonlinearISAM.h
+ * @date Jan 19, 2010
+ * @author Viorela Ila and Richard Roberts
  */
 
 #pragma once

@@ -9,10 +9,9 @@
 
  * -------------------------------------------------------------------------- */
 
-/*
- * testGaussianJunctionTree.cpp
- *
- * Created on: Jul 8, 2010
+/**
+ * @file testGaussianJunctionTree.cpp
+ * @date Jul 8, 2010
  * @author Kai Ni
  */
 

@@ -9,11 +9,10 @@
 
  * -------------------------------------------------------------------------- */
 
-/*
- * timeSymbolMaps.cpp
- *
- *  Created on: Jan 20, 2010
- *      Author: richard
+/**
+ * @file timeSymbolMaps.cpp
+ * @date Jan 20, 2010
+ * @author richard
  */
 
 #include <boost/unordered_map.hpp>

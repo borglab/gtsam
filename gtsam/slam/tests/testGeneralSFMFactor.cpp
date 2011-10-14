@@ -1,9 +1,8 @@
-/*
- * testGeneralSFMFactor.cpp
- *
- *   Created on: Dec 27, 2010
- *       Author: nikai
- *  Description: unit tests for GeneralSFMFactor
+/**
+ * @file testGeneralSFMFactor.cpp
+ * @date Dec 27, 2010
+ * @author nikai
+ * @brief unit tests for GeneralSFMFactor
  */
 
 #include <iostream>

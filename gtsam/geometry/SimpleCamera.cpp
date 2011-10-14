@@ -9,11 +9,10 @@
 
  * -------------------------------------------------------------------------- */
 
-/*
- * SimpleCamera.cpp
- *
- *  Created on: Aug 16, 2009
- *      Author: dellaert
+/**
+ * @file SimpleCamera.cpp
+ * @date Aug 16, 2009
+ * @author dellaert
  */
 
 #include <gtsam/geometry/SimpleCamera.h>

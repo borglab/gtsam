@@ -9,16 +9,16 @@
 
  * -------------------------------------------------------------------------- */
 
-/*
- * easyPoint2KalmanFilter.cpp
+/**
+ * @file easyPoint2KalmanFilter.cpp
  *
  * simple linear Kalman filter on a moving 2D point, but done using factor graphs
  * This example uses the templated ExtendedKalmanFilter class to perform the same
  * operations as in elaboratePoint2KalmanFilter
  *
- *  Created on: Aug 19, 2011
- *  @author Frank Dellaert
- *  @author Stephen Williams
+ * @date Aug 19, 2011
+ * @author Frank Dellaert
+ * @author Stephen Williams
  */
 
 #include <gtsam/nonlinear/ExtendedKalmanFilter-inl.h>

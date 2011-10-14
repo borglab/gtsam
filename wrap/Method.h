@@ -10,9 +10,9 @@
  * -------------------------------------------------------------------------- */
 
 /**
- * file: Method.h
- * brief: describes and generates code for methods
- * Author: Frank Dellaert
+ * @file Method.h
+ * @brief describes and generates code for methods
+ * @author Frank Dellaert
  **/
 
 #pragma once
@@ -22,7 +22,7 @@
 
 #include "Argument.h"
 
-// Method class
+/// Method class
 struct Method {
   bool is_const;
   ArgumentList args;

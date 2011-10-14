@@ -9,11 +9,11 @@
 
  * -------------------------------------------------------------------------- */
 
-/*
- * testTensors.cpp
+/**
+ * @file testTensors.cpp
  * @brief try tensor expressions based on http://www.gps.caltech.edu/~walter/FTensor/FTensor.pdf
- * Created on: Feb 9, 2010
- * @author: Frank Dellaert
+ * @date Feb 9, 2010
+ * @author Frank Dellaert
  */
 
 #include <iostream>

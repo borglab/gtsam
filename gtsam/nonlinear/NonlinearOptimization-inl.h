@@ -9,12 +9,11 @@
 
  * -------------------------------------------------------------------------- */
 
-/*
- * NonlinearOptimization-inl.h
- *
- *   Created on: Oct 17, 2010
- *       Author: Kai Ni
- *  Description: Easy interfaces for NonlinearOptimizer
+/**
+ * @file NonlinearOptimization-inl.h
+ * @date Oct 17, 2010
+ * @author Kai Ni
+ * @brief Easy interfaces for NonlinearOptimizer
  */
 
 #pragma once

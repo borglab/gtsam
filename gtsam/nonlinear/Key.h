@@ -11,10 +11,9 @@
 
 /**
  * @file Key.h
- *
- *  Created on: Jan 12, 2010
- *  @author: Frank Dellaert
- *  @author: Richard Roberts
+ * @date Jan 12, 2010
+ * @author: Frank Dellaert
+ * @author: Richard Roberts
  */
 
 #pragma once

@@ -9,14 +9,12 @@
 
  * -------------------------------------------------------------------------- */
 
-/*
- * testKalmanFilter.cpp
- *
- * Test simple linear Kalman filter on a moving 2D point
- *
- *  Created on: Sep 3, 2011
- *  @author Stephen Williams
- *  @author Frank Dellaert
+/**
+ * @file testKalmanFilter.cpp
+ * @brief Test simple linear Kalman filter on a moving 2D point
+ * @date Sep 3, 2011
+ * @author Stephen Williams
+ * @author Frank Dellaert
  */
 
 #include <gtsam/linear/KalmanFilter.h>

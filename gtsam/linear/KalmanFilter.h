@@ -9,15 +9,15 @@
 
  * -------------------------------------------------------------------------- */
 
-/*
- * testKalmanFilter.cpp
+/**
+ * @file testKalmanFilter.cpp
  *
  * Simple linear Kalman filter.
  * Implemented using factor graphs, i.e., does LDL-based SRIF, really.
  *
- *  Created on: Sep 3, 2011
- *  @author Stephen Williams
- *  @author Frank Dellaert
+ * @date Sep 3, 2011
+ * @author Stephen Williams
+ * @author Frank Dellaert
  */
 
 #include <gtsam/linear/GaussianConditional.h>

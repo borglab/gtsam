@@ -10,8 +10,8 @@
  * -------------------------------------------------------------------------- */
 
 /**
- * file: Constructor.ccp
- * Author: Frank Dellaert
+ * @file Constructor.ccp
+ * @author Frank Dellaert
  **/
 
 #include <iostream>

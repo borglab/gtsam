@@ -9,11 +9,10 @@
 
  * -------------------------------------------------------------------------- */
 
-/*
- * testErrors.cpp
- *
- *  Created on: Feb 20, 2010
- *  @author Frank Dellaert
+/**
+ * @file testErrors.cpp
+ * @date Feb 20, 2010
+ * @author Frank Dellaert
  */
 
 #include <boost/assign/std/list.hpp> // for +=

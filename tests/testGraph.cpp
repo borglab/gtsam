@@ -9,12 +9,11 @@
 
  * -------------------------------------------------------------------------- */
 
-/*
- * testGraph.cpp
- *
- *   Created on: Jan 12, 2010
- *       Author: nikai
- *  Description: unit test for graph-inl.h
+/**
+ * @file testGraph.cpp
+ * @date Jan 12, 2010
+ * @author nikai
+ * @brief unit test for graph-inl.h
  */
 
 #include <iostream>

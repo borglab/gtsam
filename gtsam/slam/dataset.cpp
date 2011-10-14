@@ -9,12 +9,11 @@
 
  * -------------------------------------------------------------------------- */
 
-/*
- * dataset.cpp
- *
- *   Created on: Jan 22, 2010
- *       Author: nikai
- *  Description: utility functions for loading datasets
+/**
+ * @file dataset.cpp
+ * @date Jan 22, 2010
+ * @author nikai
+ * @brief utility functions for loading datasets
  */
 
 

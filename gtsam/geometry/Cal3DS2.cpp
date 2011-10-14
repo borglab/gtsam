@@ -9,11 +9,10 @@
 
  * -------------------------------------------------------------------------- */
 
-/*
- * Cal3DS2.cpp
- *
- *  Created on: Feb 28, 2010
- *      Author: ydjian
+/**
+ * @file Cal3DS2.cpp
+ * @date Feb 28, 2010
+ * @author ydjian
  */
 
 #include <gtsam/base/Vector.h>

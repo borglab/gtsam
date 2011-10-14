@@ -10,9 +10,9 @@
  * -------------------------------------------------------------------------- */
 
 /**
- * Frank Dellaert
- * brief: test CalibratedCamera class
- * based on testVSLAMFactor.cpp
+ * @file testCalibratedCamera.cpp
+ * @author Frank Dellaert
+ * @brief test CalibratedCamera class
  */
 
 #include <iostream>

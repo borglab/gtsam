@@ -9,12 +9,12 @@
 
  * -------------------------------------------------------------------------- */
 
-/*
- * JunctionTree-inl.h
- * Created on: Feb 4, 2010
+/**
+ * @file JunctionTree-inl.h
+ * @date Feb 4, 2010
  * @author Kai Ni
  * @author Frank Dellaert
- * @brief: The junction tree, template bodies
+ * @brief The junction tree, template bodies
  */
 
 #pragma once

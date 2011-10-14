@@ -10,10 +10,10 @@
  * -------------------------------------------------------------------------- */
 
 /**
- * NonlinearOptimizer.cpp
- * @brief: Convergence functions not dependent on graph types
+ * @file NonlinearOptimizer.cpp
+ * @brief Convergence functions not dependent on graph types
  * @author Frank Dellaert
- * Created on: Jul 17, 2010
+ * @date Jul 17, 2010
  */
 
 #include <iostream>

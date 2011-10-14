@@ -10,9 +10,9 @@
  * -------------------------------------------------------------------------- */
 
 /**
- * Frank Dellaert
- * brief: test SimpleCamera class
- * based on testVSLAMFactor.cpp
+ * @file testSimpleCamera.cpp
+ * @author Frank Dellaert
+ * @brief test SimpleCamera class
  */
 
 #include <cmath>

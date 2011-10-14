@@ -9,15 +9,15 @@
 
  * -------------------------------------------------------------------------- */
 
-/*
- * elaboratePoint2KalmanFilter.cpp
+/**
+ * @file elaboratePoint2KalmanFilter.cpp
  *
  * simple linear Kalman filter on a moving 2D point, but done using factor graphs
  * This example manually creates all of the needed data structures
  *
- *  Created on: Aug 19, 2011
- *  @author Frank Dellaert
- *  @author Stephen Williams
+ * @date Aug 19, 2011
+ * @author Frank Dellaert
+ * @author Stephen Williams
  */
 
 #include <gtsam/slam/PriorFactor.h>

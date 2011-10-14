@@ -9,12 +9,11 @@
 
  * -------------------------------------------------------------------------- */
 
-/*
- * BearingRangeFactor.h
- *
- *   Created on: Apr 1, 2010
- *       Author: Kai Ni
- *  Description: a single factor contains both the bearing and the range to prevent handle to pair bearing and range factors
+/**
+ * @file BearingRangeFactor.h
+ * @date Apr 1, 2010
+ * @author Kai Ni
+ * @brief a single factor contains both the bearing and the range to prevent handle to pair bearing and range factors
  */
 
 #pragma once

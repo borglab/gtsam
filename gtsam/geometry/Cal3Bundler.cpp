@@ -9,11 +9,10 @@
 
  * -------------------------------------------------------------------------- */
 
-/*
- * Cal3Bundler.cpp
- *
- *  Created on: Sep 25, 2010
- *      Author: ydjian
+/**
+ * @file Cal3Bundler.cpp
+ * @date Sep 25, 2010
+ * @author ydjian
  */
 
 #include <gtsam/base/Vector.h>

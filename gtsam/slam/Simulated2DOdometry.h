@@ -9,11 +9,10 @@
 
  * -------------------------------------------------------------------------- */
 
-/*
- * Simulated2DOdometry.h
- *
- * Re-created on Feb 22, 2010 for compatibility with MATLAB
- * Author: Frank Dellaert
+/**
+ * @file Simulated2DOdometry.h
+ * @brief Re-created on Feb 22, 2010 for compatibility with MATLAB
+ * @author Frank Dellaert
  */
 
 #pragma once

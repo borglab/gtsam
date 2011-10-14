@@ -9,11 +9,11 @@
 
  * -------------------------------------------------------------------------- */
 
-/*
- * Rot2.cpp
- *
- *  Created on: Dec 9, 2009
- *      Author: Frank Dellaert
+/**
+ * @file Rot2.cpp
+ * @date Dec 9, 2009
+ * @author Frank Dellaert
+ * @brief 2D Rotations
  */
 
 #include <gtsam/geometry/Rot2.h>

@@ -9,11 +9,11 @@
 
  * -------------------------------------------------------------------------- */
 
-/*
- * testHomography2.cpp
+/**
+ * @file testHomography2.cpp
  * @brief Test and estimate 2D homographies
- * Created on: Feb 13, 2010
- * @author: Frank Dellaert
+ * @date Feb 13, 2010
+ * @author Frank Dellaert
  */
 
 #include <iostream>

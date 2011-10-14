@@ -9,10 +9,10 @@
 
  * -------------------------------------------------------------------------- */
 
-/*
- * testFundamental.cpp
+/**
+ * @file testFundamental.cpp
  * @brief try tensor expressions based on http://www.gps.caltech.edu/~walter/FTensor/FTensor.pdf
- * Created on: Feb 13, 2010
+ * @date Feb 13, 2010
  * @author: Frank Dellaert
  */
 

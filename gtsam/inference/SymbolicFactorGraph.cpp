@@ -9,11 +9,10 @@
 
  * -------------------------------------------------------------------------- */
 
-/*
- * SymbolicFactorGraph.cpp
- *
- *  Created on: Oct 29, 2009
- *      Author: Frank Dellaert
+/**
+ * @file SymbolicFactorGraph.cpp
+ * @date Oct 29, 2009
+ * @author Frank Dellaert
  */
 
 #include <boost/make_shared.hpp>

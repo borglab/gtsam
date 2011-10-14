@@ -9,11 +9,11 @@
 
  * -------------------------------------------------------------------------- */
 
-/*
- *  graph.h
+/**
+ *  @file graph.h
  *  @brief Graph algorithm using boost library
  *  @author: Kai Ni
- *  Created on: Jan 11, 2010
+ *  @date Jan 11, 2010
  */
 
 #pragma once

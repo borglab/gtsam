@@ -10,9 +10,9 @@
  * -------------------------------------------------------------------------- */
 
 /**
- * file: Class.h
- * brief: describe the C++ class that is being wrapped
- * Author: Frank Dellaert
+ * @file Class.h
+ * @brief describe the C++ class that is being wrapped
+ * @author Frank Dellaert
  **/
 
 #pragma once
