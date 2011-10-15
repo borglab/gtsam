@@ -39,6 +39,45 @@ namespace gtsam {
   class GaussianConditional;
   template<class C> class BayesNet;
 
+  /**
+   * A Gaussian factor in the squared-error form.
+   *
+   * JacobianFactor implements a
+   * Gaussian, which has quadratic negative log-likelihood
+   * \f[ E(x) = \frac{1}{2} (Ax-b)^T \Sigma^{-1} (Ax-b) \f]
+   * where \f$ \Sigma \f$ is a \a diagonal covariance matrix.  The
+   * matrix \f$ A \f$, r.h.s. vector \f$ b \f$, and diagonal noise model
+   * \f$ \Sigma \f$ are stored in this class.
+   *
+   * This factor represents the sum-of-squares error of a \a linear
+   * measurement function, and is created upon linearization of a NoiseModelFactor,
+   * which in turn is a sum-of-squares factor with a nonlinear measurement function.
+   *
+   * Here is an example of how this factor represents a sum-of-squares error:
+   *
+   * Letting \f$ h(x) \f$ be a \a linear measurement prediction function, \f$ z \f$ be
+   * the actual observed measurement, the residual is
+   * \f[ f(x) = h(x) - z \text{.} \f]
+   * If we expect noise with diagonal covariance matrix \f$ \Sigma \f$ on this
+   * measurement, then the negative log-likelihood of the Gaussian induced by this
+   * measurement model is
+   * \f[ E(x) = \frac{1}{2} (h(x) - z)^T \Sigma^{-1} (h(x) - z) \text. \f]
+   * Because \f$ h(x) \f$ is linear, we can write it as
+   * \f[ h(x) = Ax + e \f]
+   * and thus we have
+   * \f[ E(x) = \frac{1}{2} (Ax-b)^T \Sigma^{-1} (Ax-b) \f]
+   * where \f$ b = z - e \f$.
+   *
+   * This factor can involve an arbitrary number of variables, and in the
+   * above example \f$ x \f$ would almost always be only be a subset of the variables
+   * in the entire factor graph.  There are special constructors for 1-, 2-, and 3-
+   * way JacobianFactors, and additional constructors for creating n-way JacobianFactors.
+   * The Jacobian matrix \f$ A \f$ is passed to these constructors in blocks,
+   * for example, for a 2-way factor, the constructor would accept \f$ A1 \f$ and \f$ A2 \f$,
+   * as well as the variable indices \f$ j1 \f$ and \f$ j2 \f$
+   * and the negative log-likelihood represented by this factor would be
+   * \f[ E(x) = \frac{1}{2} (A_1 x_{j1} + A_2 x_{j2} - b)^T \Sigma^{-1} (A_1 x_{j1} + A_2 x_{j2} - b) \text{.} \f]
+   */
   class JacobianFactor : public GaussianFactor {
   public:
   	typedef Matrix AbMatrix;
@@ -149,13 +188,15 @@ namespace gtsam {
     SharedDiagonal& get_model() { return model_;  }
 
     /** Get a view of the r.h.s. vector b */
-    inline const constBVector getb() const { return Ab_.column(size(), 0); }
+    const constBVector getb() const { return Ab_.column(size(), 0); }
 
-    /** Get a view of the A matrix for the variable pointed to be the given key iterator */
+    /** Get a view of the A matrix for the variable pointed to by the given key iterator */
     constABlock getA(const_iterator variable) const { return Ab_(variable - begin()); }
 
-    inline BVector getb() { return Ab_.column(size(), 0); }
+    /** Get a view of the r.h.s. vector b (non-const version) */
+    BVector getb() { return Ab_.column(size(), 0); }
 
+    /** Get a view of the A matrix for the variable pointed to by the given key iterator (non-const version) */
     ABlock getA(iterator variable) { return Ab_(variable - begin()); }
 
     /** Return A*x */

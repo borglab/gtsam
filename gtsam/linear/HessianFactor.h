@@ -53,7 +53,7 @@ namespace gtsam {
    * @brief A Gaussian factor using the canonical parameters (information form)
    *
    * HessianFactor implements a general quadratic factor of the form
-   * \f[ e(x) = 0.5 x^T G x - x^T g + 0.5 f \f]
+   * \f[ E(x) = 0.5 x^T G x - x^T g + 0.5 f \f]
    * that stores the matrix \f$ G \f$, the vector \f$ g \f$, and the constant term \f$ f \f$.
    *
    * When \f$ G \f$ is positive semidefinite, this factor represents a Gaussian,
@@ -80,7 +80,7 @@ namespace gtsam {
    *
    * This can represent a quadratic factor with characteristics that cannot be
    * represented using a JacobianFactor (which has the form
-   * \f$ e(x) = \Vert Ax - b \Vert^2 \f$ and stores the Jacobian \f$ A \f$
+   * \f$ E(x) = \Vert Ax - b \Vert^2 \f$ and stores the Jacobian \f$ A \f$
    * and error vector \f$ b \f$, i.e. is a sum-of-squares factor).  For example,
    * a HessianFactor need not be positive semidefinite, it can be indefinite or
    * even negative semidefinite.

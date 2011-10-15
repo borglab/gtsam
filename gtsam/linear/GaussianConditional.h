@@ -146,10 +146,10 @@ public:
 	  return R.transpose() * R;
 	}
 
-	/** return stuff contained in GaussianConditional */
+	/** Return a view of the upper-triangular R block of the conditional */
 	rsd_type::constBlock get_R() const { return rsd_.range(0, nrFrontals()); }
 
-	/** access the d vector */
+	/** Return a view of the r.h.s. d vector */
 	const_d_type get_d() const { return rsd_.column(nrFrontals()+nrParents(), 0); }
 
 	/**
@@ -161,9 +161,17 @@ public:
 	/** get the dimension of a variable */
 	size_t dim(const_iterator variable) const { return rsd_(variable - this->begin()).cols(); }
 
+	/** Get a view of the parent block corresponding to the variable pointed to by the given key iterator */
 	rsd_type::constBlock get_S(const_iterator variable) const { return rsd_(variable - this->begin()); }
+  /** Get a view of the parent block corresponding to the variable pointed to by the given key iterator (non-const version) */
 	rsd_type::constBlock get_S() const { return rsd_.range(nrFrontals(), size()); }
+	/** Get the Vector of sigmas */
 	const Vector& get_sigmas() const {return sigmas_;}
+
+	/** Return the permutation of R made by LDL, to recover R in the correct
+	 * order use R*permutation, see the GaussianConditional main class comment
+	 */
+	const TranspositionType& permutation() const { return permutation_; }
 
 protected:
 
