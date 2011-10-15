@@ -59,7 +59,7 @@ VectorValues::VectorValues(const std::vector<size_t>& dimensions,
 VectorValues VectorValues::SameStructure(const VectorValues& otherValues) {
 	VectorValues ret;
 	ret.varStarts_ = otherValues.varStarts_;
-	ret.values_.resize(ret.varStarts_.back(), false);
+	ret.values_.resize(ret.varStarts_.back());
 	return ret;
 }
 
