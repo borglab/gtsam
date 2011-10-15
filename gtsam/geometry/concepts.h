@@ -57,6 +57,6 @@ struct RangeMeasurementConcept {
 };
 
 /** Instantiation macro */
-#define GTSAM_CONCEPT_RANGE_MEASUREMENT(V1,V2) template class RangeMeasurementConcept<V1,V2>;
+#define GTSAM_CONCEPT_RANGE_MEASUREMENT(V1,V2) typedef RangeMeasurementConcept<V1,V2> RangeMeasurementConcept##V1##V2;
 
 } // \namespace gtsam
