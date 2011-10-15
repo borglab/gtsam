@@ -36,13 +36,9 @@ namespace gtsam {
  * Derived classes *must* redefine the Factor and shared_ptr typedefs to refer
  * to the associated factor type and shared_ptr type of the derived class.  See
  * IndexConditional and GaussianConditional for examples.
- *
- * We make it noncopyable so we enforce the fact that factors are
- * kept in pointer containers. To be safe, you should make them
- * immutable, i.e., practicing functional programming.
  */
 template<typename KEY>
-class Conditional: public gtsam::Factor<KEY>, boost::noncopyable {
+class Conditional: public gtsam::Factor<KEY> {
 
 private:
 
