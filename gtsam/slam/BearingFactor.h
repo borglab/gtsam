@@ -17,6 +17,7 @@
 #pragma once
 
 #include <gtsam/base/Testable.h>
+#include <gtsam/geometry/concepts.h>
 #include <gtsam/nonlinear/NonlinearFactor.h>
 
 namespace gtsam {
@@ -39,6 +40,7 @@ namespace gtsam {
 
 		/** concept check by type */
 		GTSAM_CONCEPT_TESTABLE_TYPE(Rot)
+		GTSAM_CONCEPT_POSE_TYPE(Pose)
 
 	public:
 

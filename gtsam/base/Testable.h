@@ -67,7 +67,8 @@ namespace gtsam {
 
 	/**
 	 * A testable concept check to be placed in unit tests, rather than subclassing
-	 *
+	 * See macros for details on using this structure
+	 * @ingroup base
 	 */
 	template <class T>
 	class TestableConcept {
@@ -122,12 +123,15 @@ namespace gtsam {
 		}
 	};
 
-} // gtsam
+} // \namespace gtsam
 
 /**
  * Macros for using the TestableConcept
  *  - An instantiation for use inside unit tests
  *  - A typedef for use inside generic algorithms
+ *
+ * NOTE: intentionally not in the gtsam namespace to allow for classes not in
+ * the gtsam namespace to be more easily enforced as testable
  */
 #define GTSAM_CONCEPT_TESTABLE_INST(T) template class gtsam::TestableConcept<T>;
 #define GTSAM_CONCEPT_TESTABLE_TYPE(T) typedef gtsam::TestableConcept<T> _gtsam_TestableConcept_##T;

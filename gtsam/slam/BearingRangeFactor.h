@@ -44,7 +44,8 @@ namespace gtsam {
 
 		/** concept check by type */
 		GTSAM_CONCEPT_TESTABLE_TYPE(Rot)
-		GTSAM_CONCEPT_RANGE_MEASUREMENT(Pose, Point)
+		GTSAM_CONCEPT_RANGE_MEASUREMENT_TYPE(Pose, Point)
+		GTSAM_CONCEPT_POSE_TYPE(Pose)
 
 	public:
 

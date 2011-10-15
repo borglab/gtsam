@@ -35,9 +35,6 @@ struct PoseConcept {
 	}
 };
 
-/** Instantiation macro */
-#define GTSAM_CONCEPT_POSE(T) template class PoseConcept<T>;
-
 /**
  * Range measurement concept
  * Given a pair of Lie variables, there must exist a function to calculate
@@ -51,12 +48,26 @@ struct RangeMeasurementConcept {
 
 	static double checkRangeMeasurementDerivatives(const V1& x, const V2& p) {
 		boost::optional<Matrix&> H1, H2;
-		// FIXME: verify the dimensions of the derivative functions
 		return x.range(p, H1, H2);
 	}
 };
 
-/** Instantiation macro */
-#define GTSAM_CONCEPT_RANGE_MEASUREMENT(V1,V2) typedef RangeMeasurementConcept<V1,V2> RangeMeasurementConcept##V1##V2;
-
 } // \namespace gtsam
+
+/**
+ * Macros to use geometry concepts:
+ *  - _INST macro: instantiates a struct: use in unit tests, but not in headers.
+ *  - _TYPE macro: use in generic structures to validate the template arguments.
+ *
+ * NOTE: intentionally not in the gtsam namespace to avoid namespace complications
+ * when using with objects not inside gtsam namespace.
+ */
+
+/** Pose Concept macros */
+#define GTSAM_CONCEPT_POSE_INST(T) template class gtsam::PoseConcept<T>;
+#define GTSAM_CONCEPT_POSE_TYPE(T) typedef gtsam::PoseConcept<T> _gtsam_PoseConcept##T;
+
+/** Range Measurement macros */
+#define GTSAM_CONCEPT_RANGE_MEASUREMENT_INST(V1,V2) template class gtsam::RangeMeasurementConcept<V1,V2>;
+#define GTSAM_CONCEPT_RANGE_MEASUREMENT_TYPE(V1,V2) typedef gtsam::RangeMeasurementConcept<V1,V2> _gtsam_RangeMeasurementConcept##V1##V2;
+

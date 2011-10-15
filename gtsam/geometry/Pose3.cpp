@@ -27,7 +27,7 @@ namespace gtsam {
   INSTANTIATE_LIE(Pose3);
 
   /** instantiate concept checks */
-  GTSAM_CONCEPT_POSE(Pose3);
+  GTSAM_CONCEPT_POSE_INST(Pose3);
 
   static const Matrix I3 = eye(3), Z3 = zeros(3, 3);
 #ifdef CORRECT_POSE3_EXMAP

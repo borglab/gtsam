@@ -38,7 +38,7 @@ namespace gtsam {
 		typedef typename POINTKEY::Value Point;
 
 		// Concept requirements for this factor
-		GTSAM_CONCEPT_RANGE_MEASUREMENT(Pose, Point)
+		GTSAM_CONCEPT_RANGE_MEASUREMENT_TYPE(Pose, Point)
 
 	public:
 

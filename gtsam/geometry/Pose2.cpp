@@ -27,7 +27,7 @@ namespace gtsam {
   INSTANTIATE_LIE(Pose2);
 
   /** instantiate concept checks */
-  GTSAM_CONCEPT_POSE(Pose2);
+  GTSAM_CONCEPT_POSE_INST(Pose2);
 
 	static const Matrix I3 = eye(3), Z12 = zeros(1,2);
   static const Rot2 R_PI_2(Rot2::fromCosSin(0., 1.));
