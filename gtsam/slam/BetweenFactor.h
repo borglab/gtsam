@@ -17,9 +17,10 @@
 
 #include <ostream>
 
+#include <gtsam/base/Testable.h>
+#include <gtsam/base/Lie.h>
 #include <gtsam/nonlinear/NonlinearFactor.h>
 #include <gtsam/linear/GaussianFactor.h>
-#include <gtsam/base/Lie.h>
 
 namespace gtsam {
 
@@ -37,6 +38,9 @@ namespace gtsam {
 		typedef NonlinearFactor2<VALUES, KEY1, KEY1> Base;
 
 		T measured_; /** The measurement */
+
+		/** concept check by type */
+		GTSAM_CONCEPT_TESTABLE_TYPE(T)
 
 	public:
 

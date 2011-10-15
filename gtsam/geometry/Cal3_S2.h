@@ -29,7 +29,7 @@ namespace gtsam {
 	 * @brief The most common 5DOF 3D->2D calibration
 	 * @ingroup geometry
 	 */
-	class Cal3_S2: Testable<Cal3_S2> {
+	class Cal3_S2 {
 	private:
 		double fx_, fy_, s_, u0_, v0_;
 

@@ -17,6 +17,7 @@
 
 #pragma once
 
+#include <gtsam/base/Testable.h>
 #include <gtsam/nonlinear/NonlinearConstraint.h>
 
 namespace gtsam {
@@ -34,6 +35,9 @@ namespace gtsam {
 		typedef NonlinearEqualityConstraint2<VALUES, KEY, KEY> Base;
 
 		X measured_; /// fixed between value
+
+		/** concept check by type */
+		GTSAM_CONCEPT_TESTABLE_TYPE(X)
 
 	public:
 

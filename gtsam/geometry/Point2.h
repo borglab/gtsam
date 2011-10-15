@@ -19,18 +19,17 @@
 
 #include <boost/serialization/nvp.hpp>
 #include <gtsam/base/Matrix.h>
-#include <gtsam/base/Testable.h>
 #include <gtsam/base/Lie.h>
 
 namespace gtsam {
 
   /**
    * A 2D point
-   * Derived from testable so has standard print and equals, and assert_equals works
+   * Complies with the Testable Concept
    * Functional, so no set functions: once created, a point is constant.
    * @ingroup geometry
    */
-  class Point2: Testable<Point2>, public Lie<Point2> {
+  class Point2: public Lie<Point2> {
   public:
 	  /// dimension of the variable - used to autodetect sizes
 	  static const size_t dimension = 2;

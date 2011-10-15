@@ -16,6 +16,7 @@
 
 #pragma once
 
+#include <gtsam/base/Testable.h>
 #include <gtsam/nonlinear/NonlinearFactor.h>
 
 namespace gtsam {
@@ -35,6 +36,10 @@ namespace gtsam {
 		typedef NonlinearFactor2<VALUES, POSEKEY, POINTKEY> Base;
 
 		Rot z_; /** measurement */
+
+		/** concept check by type */
+		GTSAM_CONCEPT_TESTABLE_TYPE(Rot)
+
 	public:
 
 		/** default constructor for serialization/testing only */

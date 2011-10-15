@@ -26,7 +26,7 @@ namespace gtsam {
 	 * A 2D stereo point, v will be same for rectified images
 	 * @ingroup geometry
 	 */
-	class StereoPoint2: Testable<StereoPoint2>, Lie<StereoPoint2> {
+	class StereoPoint2: Lie<StereoPoint2> {
 	public:
 		static const size_t dimension = 3;
 	private:

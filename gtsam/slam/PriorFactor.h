@@ -15,6 +15,7 @@
  **/
 #pragma once
 
+#include <gtsam/base/Testable.h>
 #include <gtsam/nonlinear/NonlinearFactor.h>
 
 namespace gtsam {
@@ -38,6 +39,9 @@ namespace gtsam {
 		typedef NonlinearFactor1<VALUES, KEY> Base;
 
 		T prior_; /** The measurement */
+
+		/** concept check by type */
+		GTSAM_CONCEPT_TESTABLE_TYPE(T)
 
 	public:
 

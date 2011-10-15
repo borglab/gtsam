@@ -31,7 +31,7 @@ namespace gtsam {
    * A 2D pose (Point2,Rot2)
    * @ingroup geometry
    */
-  class Pose2: Testable<Pose2>, public Lie<Pose2>  {
+  class Pose2: public Lie<Pose2>  {
 
   public:
 	  static const size_t dimension = 3;

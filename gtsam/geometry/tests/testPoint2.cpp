@@ -16,6 +16,7 @@
  **/
 
 #include <CppUnitLite/TestHarness.h>
+#include <gtsam/base/Testable.h>
 #include <gtsam/geometry/Point2.h>
 
 using namespace std;

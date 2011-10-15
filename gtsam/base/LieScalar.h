@@ -17,7 +17,6 @@
 
 #pragma once
 
-#include <gtsam/base/Testable.h>
 #include <gtsam/base/Lie.h>
 
 namespace gtsam {
@@ -25,7 +24,7 @@ namespace gtsam {
 	/**
 	 * LieScalar is a wrapper around double to allow it to be a Lie type
 	 */
-	struct LieScalar : public Lie<LieScalar>, Testable<LieScalar> {
+	struct LieScalar : public Lie<LieScalar> {
 
 		/** default constructor - should be unnecessary */
 		LieScalar() {}

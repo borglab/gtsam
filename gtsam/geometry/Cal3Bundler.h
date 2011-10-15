@@ -26,7 +26,7 @@ namespace gtsam {
  * @brief Calibration used by Bundler
  * @ingroup geometry
  */
-class Cal3Bundler: public Testable<Cal3Bundler> {
+class Cal3Bundler {
 
 private:
 	double f_, k1_, k2_ ;

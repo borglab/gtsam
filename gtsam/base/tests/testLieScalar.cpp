@@ -16,9 +16,12 @@
 
 #include <CppUnitLite/TestHarness.h>
 
+#include <gtsam/base/Testable.h>
 #include <gtsam/base/LieScalar.h>
 
 using namespace gtsam;
+
+GTSAM_CONCEPT_TESTABLE_INST(LieScalar)
 
 const double tol=1e-9;
 

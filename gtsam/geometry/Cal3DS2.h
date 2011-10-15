@@ -26,7 +26,7 @@ namespace gtsam {
 	 * @brief Calibration of a camera with radial distortion
 	 * @ingroup geometry
 	 */
-	class Cal3DS2 : Testable<Cal3DS2> {
+	class Cal3DS2 {
 	private:
 		double fx_, fy_, s_, u0_, v0_ ; // focal length, skew and principal point
 		double k1_, k2_ ; // radial 2nd-order and 4th-order

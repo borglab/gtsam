@@ -23,6 +23,7 @@
 using namespace boost::assign;
 
 #include <CppUnitLite/TestHarness.h>
+#include <gtsam/base/Testable.h>
 #include <gtsam/base/numericalDerivative.h>
 #include <gtsam/base/lieProxies.h>
 #include <gtsam/geometry/Pose2.h>
@@ -33,6 +34,12 @@ using namespace gtsam;
 using namespace std;
 
 // #define SLOW_BUT_CORRECT_EXPMAP
+
+// concept checks for testable
+GTSAM_CONCEPT_TESTABLE_INST(Pose2)
+GTSAM_CONCEPT_TESTABLE_INST(Point2)
+GTSAM_CONCEPT_TESTABLE_INST(Rot2)
+GTSAM_CONCEPT_TESTABLE_INST(LieVector)
 
 /* ************************************************************************* */
 TEST(Pose2, constructors) {

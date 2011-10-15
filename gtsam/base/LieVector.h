@@ -17,7 +17,6 @@
 
 #pragma once
 
-#include <gtsam/base/Testable.h>
 #include <gtsam/base/Lie.h>
 #include <gtsam/base/Vector.h>
 
@@ -26,7 +25,7 @@ namespace gtsam {
 /**
  * LieVector is a wrapper around vector to allow it to be a Lie type
  */
-struct LieVector : public Vector, public Lie<LieVector>, Testable<LieVector> {
+struct LieVector : public Vector, public Lie<LieVector> {
 
 	/** default constructor - should be unnecessary */
 	LieVector() {}

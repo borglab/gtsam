@@ -66,6 +66,25 @@ namespace gtsam {
 	}; // Testable class
 
 	/**
+	 * A testable concept check to be placed in unit tests, rather than subclassing
+	 *
+	 */
+	template <class T>
+	class TestableConcept {
+	  static bool checkTestableConcept(const T& d) {
+	  	// check print function, with optional string
+	    d.print(std::string());
+	    d.print();
+
+	    // check print, with optional threshold
+	    double tol = 1.0;
+	    bool r1 = d.equals(d, tol);
+	    bool r2 = d.equals(d);
+	    return r1 && r2;
+	  }
+	}; // Testable class
+
+	/**
 	 * This template works for any type with equals
 	 */
 	template<class V>
@@ -104,3 +123,11 @@ namespace gtsam {
 	};
 
 } // gtsam
+
+/**
+ * Macros for using the TestableConcept
+ *  - An instantiation for use inside unit tests
+ *  - A typedef for use inside generic algorithms
+ */
+#define GTSAM_CONCEPT_TESTABLE_INST(T) template class gtsam::TestableConcept<T>;
+#define GTSAM_CONCEPT_TESTABLE_TYPE(T) typedef gtsam::TestableConcept<T> _gtsam_TestableConcept_##T;

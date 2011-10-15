@@ -15,10 +15,13 @@
  */
 
 #include <CppUnitLite/TestHarness.h>
+#include <gtsam/base/Testable.h>
 #include <gtsam/base/numericalDerivative.h>
 #include <gtsam/geometry/Cal3_S2.h>
 
 using namespace gtsam;
+
+GTSAM_CONCEPT_TESTABLE_INST(Cal3_S2)
 
 Cal3_S2 K(500, 500, 0.1, 640 / 2, 480 / 2);
 Point2 p(1, -2);

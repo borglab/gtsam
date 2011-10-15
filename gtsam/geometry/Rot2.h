@@ -28,7 +28,7 @@ namespace gtsam {
    * NOTE: the angle theta is in radians unless explicitly stated
    * @ingroup geometry
    */
-  class Rot2: Testable<Rot2>, public Lie<Rot2> {
+  class Rot2: public Lie<Rot2> {
 
   public:
 	  /** get the dimension by the type */

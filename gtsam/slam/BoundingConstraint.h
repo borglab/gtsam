@@ -42,6 +42,8 @@ struct BoundingConstraint1: public NonlinearConstraint1<VALUES, KEY> {
 				Base(key, 1, mu), threshold_(threshold), isGreaterThan_(isGreaterThan) {
 	}
 
+	virtual ~BoundingConstraint1() {}
+
 	inline double threshold() const { return threshold_; }
 	inline bool isGreaterThan() const { return isGreaterThan_; }
 
@@ -106,6 +108,8 @@ struct BoundingConstraint2: public NonlinearConstraint2<VALUES, KEY1, KEY2> {
 	BoundingConstraint2(const KEY1& key1, const KEY2& key2, double threshold,
 			bool isGreaterThan, double mu = 1000.0)
 	: Base(key1, key2, 1, mu), threshold_(threshold), isGreaterThan_(isGreaterThan) {}
+
+	virtual ~BoundingConstraint2() {}
 
 	inline double threshold() const { return threshold_; }
 	inline bool isGreaterThan() const { return isGreaterThan_; }
