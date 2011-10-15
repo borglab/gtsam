@@ -38,4 +38,25 @@ struct PoseConcept {
 /** Instantiation macro */
 #define GTSAM_CONCEPT_POSE(T) template class PoseConcept<T>;
 
+/**
+ * Range measurement concept
+ * Given a pair of Lie variables, there must exist a function to calculate
+ * range with derivatives.
+ */
+template<class V1, class V2>
+struct RangeMeasurementConcept {
+	static double checkRangeMeasurement(const V1& x, const V2& p) {
+		return x.range(p);
+	}
+
+	static double checkRangeMeasurementDerivatives(const V1& x, const V2& p) {
+		boost::optional<Matrix&> H1, H2;
+		// FIXME: verify the dimensions of the derivative functions
+		return x.range(p, H1, H2);
+	}
+};
+
+/** Instantiation macro */
+#define GTSAM_CONCEPT_RANGE_MEASUREMENT(V1,V2) template class RangeMeasurementConcept<V1,V2>;
+
 } // \namespace gtsam

@@ -17,6 +17,7 @@
 #pragma once
 
 #include <boost/lexical_cast.hpp>
+#include <gtsam/geometry/concepts.h>
 #include <gtsam/nonlinear/NonlinearFactor.h>
 
 namespace gtsam {
@@ -32,6 +33,12 @@ namespace gtsam {
 
 		typedef RangeFactor<VALUES, POSEKEY, POINTKEY> This;
 		typedef NonlinearFactor2<VALUES, POSEKEY, POINTKEY> Base;
+
+		typedef typename POSEKEY::Value Pose;
+		typedef typename POINTKEY::Value Point;
+
+		// Concept requirements for this factor
+		GTSAM_CONCEPT_RANGE_MEASUREMENT(Pose, Point)
 
 	public:
 

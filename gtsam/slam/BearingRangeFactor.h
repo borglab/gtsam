@@ -18,6 +18,7 @@
 
 #pragma once
 
+#include <gtsam/geometry/concepts.h>
 #include <gtsam/nonlinear/NonlinearFactor.h>
 
 namespace gtsam {
@@ -39,6 +40,9 @@ namespace gtsam {
 		// the measurement
 		Rot bearing_;
 		double range_;
+
+		// Concept requirements for this factor
+		GTSAM_CONCEPT_RANGE_MEASUREMENT(Pose, Point)
 
 	public:
 
