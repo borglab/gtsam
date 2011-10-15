@@ -71,6 +71,28 @@ TEST(JacobianFactor, constructor2)
 }
 
 /* ************************************************************************* */
+TEST(JacobianFactor, error) {
+  Vector b = Vector_(3, 1., 2., 3.);
+  SharedDiagonal noise = noiseModel::Diagonal::Sigmas(Vector_(3,2.,2.,2.));
+  std::list<std::pair<Index, Matrix> > terms;
+  terms.push_back(make_pair(_x0_, eye(3)));
+  terms.push_back(make_pair(_x1_, 2.*eye(3)));
+  const JacobianFactor jf(terms, b, noise);
+
+  VectorValues values(2, 3);
+  values[0] = Vector_(3, 1.,2.,3.);
+  values[1] = Vector_(3, 4.,5.,6.);
+
+  Vector expected_unwhitened = Vector_(3, 8., 10., 12.);
+  Vector actual_unwhitened = jf.unweighted_error(values);
+  EXPECT(assert_equal(expected_unwhitened, actual_unwhitened));
+
+  Vector expected_whitened = Vector_(3, 4., 5., 6.);
+  Vector actual_whitened = jf.error_vector(values);
+  EXPECT(assert_equal(expected_whitened, actual_whitened));
+}
+
+/* ************************************************************************* */
 #ifdef BROKEN
 TEST(JacobianFactor, operators )
 {
