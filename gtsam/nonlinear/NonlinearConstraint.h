@@ -81,11 +81,7 @@ public:
 
 	/** Print */
 	virtual void print(const std::string& s = "") const {
-    std::cout << "NonlinearConstraint " << s << std::endl;
-    std::cout << "  ";
-    BOOST_FOREACH(const Symbol& key, this->keys()) { std::cout << (std::string)key << " "; }
-    std::cout << "\n";
-    std::cout << "mu: " << this->mu_ << std::endl;
+    std::cout << "NonlinearConstraint " << s << " mu: " << this->mu_ << std::endl;
 	}
 
 	/** Check if two factors are equal */
