@@ -202,6 +202,14 @@ public:
     }
   }
 
+	/** Print */
+  virtual void print(const std::string& s = "") const {
+    std::cout << s << ": NonlinearConstraint("
+    		<< (std::string) this->key_ << ")," <<
+    		" mu = " << this->mu_ <<
+    		" dim = " << this->dim_ << std::endl;
+  }
+
   /**
    *  Override this method to finish implementing a unary factor.
    *  If the optional Matrix reference argument is specified, it should compute
@@ -246,6 +254,14 @@ public:
 
 	/** Always active, so fixed value for active() */
 	virtual bool active(const VALUES& c) const { return true; }
+
+	/** Print */
+  virtual void print(const std::string& s = "") const {
+    std::cout << s << ": NonlinearEqualityConstraint("
+    		<< (std::string) this->key_ << ")," <<
+    		" mu = " << this->mu_ <<
+    		" dim = " << this->dim_ << std::endl;
+  }
 
 private:
 
@@ -310,6 +326,15 @@ public:
     }
   }
 
+	/** Print */
+  virtual void print(const std::string& s = "") const {
+    std::cout << s << ": NonlinearConstraint("
+    		<< (std::string) this->key1_ << "),"
+    		<< (std::string) this->key2_ << ")," <<
+    		" mu = " << this->mu_ <<
+    		" dim = " << this->dim_ << std::endl;
+  }
+
   /**
    *  Override this method to finish implementing a binary factor.
    *  If any of the optional Matrix reference arguments are specified, it should compute
@@ -357,6 +382,15 @@ public:
 
 	/** Always active, so fixed value for active() */
 	virtual bool active(const VALUES& c) const { return true; }
+
+	/** Print */
+  virtual void print(const std::string& s = "") const {
+    std::cout << s << ": NonlinearEqualityConstraint("
+    		<< (std::string) this->key1_ << "),"
+    		<< (std::string) this->key2_ << ")," <<
+    		" mu = " << this->mu_ <<
+    		" dim = " << this->dim_ << std::endl;
+  }
 
 private:
 
@@ -425,6 +459,16 @@ public:
     }
   }
 
+	/** Print */
+  virtual void print(const std::string& s = "") const {
+    std::cout << s << ": NonlinearConstraint("
+    		<< (std::string) this->key1_ << "),"
+    		<< (std::string) this->key2_ << "),"
+    		<< (std::string) this->key3_ << ")," <<
+    		" mu = " << this->mu_ <<
+    		" dim = " << this->dim_ << std::endl;
+  }
+
   /**
    *  Override this method to finish implementing a trinary factor.
    *  If any of the optional Matrix reference arguments are specified, it should compute
@@ -478,6 +522,16 @@ public:
 	/** Always active, so fixed value for active() */
 	virtual bool active(const VALUES& c) const { return true; }
 
+	/** Print */
+  virtual void print(const std::string& s = "") const {
+    std::cout << s << ": NonlinearEqualityConstraint("
+    		<< (std::string) this->key1_ << "),"
+    		<< (std::string) this->key2_ << "),"
+    		<< (std::string) this->key3_ << ")," <<
+    		" mu = " << this->mu_ <<
+    		" dim = " << this->dim_ << std::endl;
+  }
+
 private:
 
 	/** Serialization function */
@@ -521,6 +575,15 @@ public:
 		if (H1) *H1 = eye(p);
 		return value_.logmap(x1);
 	}
+
+	/** Print */
+  virtual void print(const std::string& s = "") const {
+    std::cout << s << ": NonlinearEquality("
+    		<< (std::string) this->key_ << "),"<<
+    		" mu = " << this->mu_ <<
+    		" dim = " << this->dim_ << "\n";
+    value_.print("Value");
+  }
 
 private:
 

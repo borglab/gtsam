@@ -334,6 +334,12 @@ public:
       return evaluateError(x[key_]);
   }
 
+  /** Print */
+  virtual void print(const std::string& s = "") const {
+    std::cout << s << ": NoiseModelFactor(" << (std::string) this->key_ << ")\n";
+    this->noiseModel_->print("  noise model: ");
+  }
+
   /**
    *  Override this method to finish implementing a unary factor.
    *  If the optional Matrix reference argument is specified, it should compute
@@ -404,6 +410,14 @@ public:
       return evaluateError(x[key1_], x[key2_], (*H)[0], (*H)[1]);
     else
       return evaluateError(x[key1_], x[key2_]);
+  }
+
+  /** Print */
+  virtual void print(const std::string& s = "") const {
+    std::cout << s << ": NoiseModelFactor("
+    		<< (std::string) this->key1_ << ","
+    		<< (std::string) this->key2_ << ")\n";
+    this->noiseModel_->print("  noise model: ");
   }
 
   /**
@@ -482,6 +496,16 @@ public:
     else
       return evaluateError(x[key1_], x[key2_], x[key3_]);
   }
+
+  /** Print */
+  virtual void print(const std::string& s = "") const {
+    std::cout << s << ": NoiseModelFactor("
+    		<< (std::string) this->key1_ << ","
+    		<< (std::string) this->key2_ << ","
+    		<< (std::string) this->key3_ << ")\n";
+    this->noiseModel_->print("  noise model: ");
+  }
+
 
   /**
    *  Override this method to finish implementing a trinary factor.
@@ -565,6 +589,16 @@ public:
       return evaluateError(x[key1_], x[key2_], x[key3_], x[key4_], (*H)[0], (*H)[1], (*H)[2], (*H)[3]);
     else
       return evaluateError(x[key1_], x[key2_], x[key3_], x[key4_]);
+  }
+
+  /** Print */
+  virtual void print(const std::string& s = "") const {
+    std::cout << s << ": NoiseModelFactor("
+    		<< (std::string) this->key1_ << ","
+    		<< (std::string) this->key2_ << ","
+     		<< (std::string) this->key3_ << ","
+    		<< (std::string) this->key4_ << ")\n";
+    this->noiseModel_->print("  noise model: ");
   }
 
   /**
@@ -655,6 +689,17 @@ public:
       return evaluateError(x[key1_], x[key2_], x[key3_], x[key4_], x[key5_], (*H)[0], (*H)[1], (*H)[2], (*H)[3], (*H)[4]);
     else
       return evaluateError(x[key1_], x[key2_], x[key3_], x[key4_], x[key5_]);
+  }
+
+  /** Print */
+  virtual void print(const std::string& s = "") const {
+    std::cout << s << ": NoiseModelFactor("
+    		<< (std::string) this->key1_ << ","
+    		<< (std::string) this->key2_ << ","
+     		<< (std::string) this->key3_ << ","
+    		<< (std::string) this->key4_ << ","
+    		<< (std::string) this->key5_ << ")\n";
+    this->noiseModel_->print("  noise model: ");
   }
 
   /**
@@ -751,6 +796,18 @@ public:
       return evaluateError(x[key1_], x[key2_], x[key3_], x[key4_], x[key5_], x[key6_], (*H)[0], (*H)[1], (*H)[2], (*H)[3], (*H)[4], (*H)[5]);
     else
       return evaluateError(x[key1_], x[key2_], x[key3_], x[key4_], x[key5_], x[key6_]);
+  }
+
+  /** Print */
+  virtual void print(const std::string& s = "") const {
+    std::cout << s << ": NoiseModelFactor("
+    		<< (std::string) this->key1_ << ","
+    		<< (std::string) this->key2_ << ","
+     		<< (std::string) this->key3_ << ","
+    		<< (std::string) this->key4_ << ","
+    		<< (std::string) this->key5_ << ","
+    		<< (std::string) this->key6_ << ")\n";
+    this->noiseModel_->print("  noise model: ");
   }
 
   /**
