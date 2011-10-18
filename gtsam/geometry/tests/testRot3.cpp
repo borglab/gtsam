@@ -448,7 +448,9 @@ TEST(Rot3, quaternion) {
 
   // Check creating Rot3 from quaternion
   EXPECT(assert_equal(R1, Rot3(q1)));
+  EXPECT(assert_equal(R1, Rot3::quaternion(q1.w(), q1.x(), q1.y(), q1.z())));
   EXPECT(assert_equal(R2, Rot3(q2)));
+  EXPECT(assert_equal(R2, Rot3::quaternion(q2.w(), q2.x(), q2.y(), q2.z())));
 
   // Check converting Rot3 to quaterion
   EXPECT(assert_equal(Vector(R1.toQuaternion().coeffs()), Vector(q1.coeffs())));

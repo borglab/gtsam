@@ -102,6 +102,9 @@ typedef Eigen::Quaterniond Quaternion;
     static Rot3 roll (double t) { return Rx(t);} // positive roll is to right (increasing yaw in aircraft)
     static Rot3 ypr  (double y, double p, double r) { return RzRyRx(r,p,y);}
 
+    /** Create from Quaternion parameters */
+    static Rot3 quaternion(double w, double x, double y, double z) { Quaternion q(w, x, y, z); return Rot3(q); }
+
     /**
      * Rodriguez' formula to compute an incremental rotation matrix
      * @param   w is the rotation axis, unit length
