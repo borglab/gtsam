@@ -37,9 +37,9 @@ check_PROGRAMS += tests/testKalmanFilter
 
 # Iterative Methods
 headers += iterative-inl.h
-sources += iterative.cpp SubgraphPreconditioner.cpp
+sources += iterative.cpp SubgraphPreconditioner.cpp SubgraphSolver.cpp
 headers += IterativeSolver.h IterativeOptimizationParameters.h 
-headers += SubgraphSolver.h SubgraphSolver-inl.h
+headers += SubgraphSolver-inl.h
 
 # Timing tests
 noinst_PROGRAMS = tests/timeGaussianFactor tests/timeFactorOverhead tests/timeSLAMlike
