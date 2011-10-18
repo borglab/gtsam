@@ -329,7 +329,7 @@ public:
 	/** Print */
   virtual void print(const std::string& s = "") const {
     std::cout << s << ": NonlinearConstraint("
-    		<< (std::string) this->key1_ << "),"
+    		<< (std::string) this->key1_ << ","
     		<< (std::string) this->key2_ << ")," <<
     		" mu = " << this->mu_ <<
     		" dim = " << this->dim_ << std::endl;
@@ -386,7 +386,7 @@ public:
 	/** Print */
   virtual void print(const std::string& s = "") const {
     std::cout << s << ": NonlinearEqualityConstraint("
-    		<< (std::string) this->key1_ << "),"
+    		<< (std::string) this->key1_ << ","
     		<< (std::string) this->key2_ << ")," <<
     		" mu = " << this->mu_ <<
     		" dim = " << this->dim_ << std::endl;
@@ -462,8 +462,8 @@ public:
 	/** Print */
   virtual void print(const std::string& s = "") const {
     std::cout << s << ": NonlinearConstraint("
-    		<< (std::string) this->key1_ << "),"
-    		<< (std::string) this->key2_ << "),"
+    		<< (std::string) this->key1_ << ","
+    		<< (std::string) this->key2_ << ","
     		<< (std::string) this->key3_ << ")," <<
     		" mu = " << this->mu_ <<
     		" dim = " << this->dim_ << std::endl;
@@ -525,8 +525,8 @@ public:
 	/** Print */
   virtual void print(const std::string& s = "") const {
     std::cout << s << ": NonlinearEqualityConstraint("
-    		<< (std::string) this->key1_ << "),"
-    		<< (std::string) this->key2_ << "),"
+    		<< (std::string) this->key1_ << ","
+    		<< (std::string) this->key2_ << ","
     		<< (std::string) this->key3_ << ")," <<
     		" mu = " << this->mu_ <<
     		" dim = " << this->dim_ << std::endl;
