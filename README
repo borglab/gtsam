@@ -26,7 +26,7 @@ of licensing in LICENSE and as follows:
   - CCOLAMD 2.73: Tim Davis' constrained column approximate minimum degree ordering library
     - http://www.cise.ufl.edu/research/sparse
     - Licenced under LGPL v2.1, provided in gtsam/3rdparty/CCOLAMD/Doc/lesser.txt
-  - Eigen 3.0.1:  General C++ matrix and linear algebra library
+  - Eigen 3.0.3:  General C++ matrix and linear algebra library
     - Licenced under LGPL v3, provided in gtsam/3rdparty/Eigen/COPYING.LGPL
   
 All of the above contain code and tests, and build local shared libraries that are then
