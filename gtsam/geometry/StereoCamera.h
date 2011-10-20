@@ -48,10 +48,9 @@ namespace gtsam {
 			return leftCamPose_;
 		}
 
-		const double baseline() const {
+		double baseline() const {
 			return K_->baseline();
 		}
-
 
 		/*
 		 * project 3D point and compute optional derivatives
