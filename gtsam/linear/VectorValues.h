@@ -17,7 +17,6 @@
 
 #pragma once
 
-#include <gtsam/base/Testable.h>
 #include <gtsam/base/Vector.h>
 #include <gtsam/base/types.h>
 
@@ -38,7 +37,7 @@ namespace gtsam {
 	 * Access is through the variable index j, and returns a SubVector,
 	 * which is a view on the underlying data structure.
 	 */
-	class VectorValues: public Testable<VectorValues> {
+	class VectorValues {
 	protected:
 		Vector values_;
 		std::vector<size_t> varStarts_; // start at 0 with size nVars + 1

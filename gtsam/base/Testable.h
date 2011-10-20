@@ -11,7 +11,7 @@
 
 /**
  * @file    Testable.h
- * @brief   Abstract base class for values that can be used in unit tests
+ * @brief   Concept check for values that can be used in unit tests
  * @author  Frank Dellaert
  * 
  * The necessary functions to implement for Testable are defined
@@ -40,35 +40,13 @@
 
 namespace gtsam {
 
-  /**
-   * The Testable class should be templated with the derived class, e.g.
-   * class Rot3 : public Testable<Rot3>. This allows us to define the
-   * input type of equals as a Rot3 as well.
-	 * @ingroup base
-   */
-	template <class Derived>
-	class Testable {
-
-	private:
-		/**
-		 * This concept check is to make sure these methods exist in derived classes
-		 * This is as an alternative to declaring those methods virtual, which is slower
-		 */
-	  static void concept(const Derived& d) {
-	    const Derived *const_derived = static_cast<Derived*>(&d);
-	    const_derived->print(std::string());
-	    const_derived->print();
-	    bool r;
-	    r = const_derived->equals(*const_derived, 1.0);
-	    r = const_derived->equals(*const_derived);
-	  }
-
-	}; // Testable class
-
 	/**
-	 * A testable concept check to be placed in unit tests, rather than subclassing
+	 * A testable concept check that should be placed in applicable unit
+	 * tests and in generic algorithms.
+	 *
 	 * See macros for details on using this structure
 	 * @ingroup base
+	 * @tparam T is the type this constrains to be testable - assumes print() and equals()
 	 */
 	template <class T>
 	class TestableConcept {
@@ -83,7 +61,7 @@ namespace gtsam {
 	    bool r2 = d.equals(d);
 	    return r1 && r2;
 	  }
-	}; // Testable class
+	};
 
 	/**
 	 * This template works for any type with equals
@@ -133,5 +111,6 @@ namespace gtsam {
  * NOTE: intentionally not in the gtsam namespace to allow for classes not in
  * the gtsam namespace to be more easily enforced as testable
  */
+/// TODO: find better name for "INST" macro, something like "UNIT" or similar
 #define GTSAM_CONCEPT_TESTABLE_INST(T) template class gtsam::TestableConcept<T>;
 #define GTSAM_CONCEPT_TESTABLE_TYPE(T) typedef gtsam::TestableConcept<T> _gtsam_TestableConcept_##T;

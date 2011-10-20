@@ -18,14 +18,14 @@
  * @author  Frank Dellaert
  */
 
+#include <gtsam/base/Testable.h>
+#include <gtsam/base/debug.h>
+#include <gtsam/base/timing.h>
+#include <gtsam/base/cholesky.h>
 #include <gtsam/linear/HessianFactor.h>
 #include <gtsam/linear/GaussianFactorGraph.h>
 #include <gtsam/inference/VariableSlots.h>
 #include <gtsam/inference/FactorGraph-inl.h>
-#include <gtsam/base/debug.h>
-#include <gtsam/base/timing.h>
-#include <gtsam/base/cholesky.h>
-
 
 using namespace std;
 using namespace gtsam;

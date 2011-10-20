@@ -28,7 +28,6 @@
 
 #include <gtsam/base/FastMap.h>
 #include <gtsam/base/Vector.h>
-#include <gtsam/base/Testable.h>
 #include <gtsam/nonlinear/Ordering.h>
 
 namespace boost { template<class T> class optional; }
@@ -47,7 +46,7 @@ namespace gtsam {
 	 *  labels (example: Pose2, Point2, etc)
 	 */
   template<class J>
-  class LieValues : public Testable<LieValues<J> > {
+  class LieValues {
 
   public:
 

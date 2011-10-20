@@ -22,12 +22,9 @@
 #include <map>
 #include <list>
 #include <vector>
-//#include <boost/serialization/map.hpp>
-//#include <boost/serialization/list.hpp>
 #include <stdexcept>
 
 #include <gtsam/base/types.h>
-#include <gtsam/base/Testable.h>
 #include <gtsam/base/FastSet.h>
 #include <gtsam/base/FastList.h>
 #include <gtsam/inference/FactorGraph.h>

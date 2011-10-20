@@ -19,7 +19,6 @@
 #pragma once
 
 #include <boost/serialization/nvp.hpp>
-#include <gtsam/base/Testable.h>
 #include <gtsam/base/Matrix.h>
 
 namespace gtsam {
@@ -43,7 +42,7 @@ namespace gtsam {
 		 * Noise models must implement a 'whiten' function to normalize an error vector,
 		 * and an 'unwhiten' function to unnormalize an error vector.
 		 */
-		class Base : public Testable<Base> {
+		class Base {
 
 		public:
       typedef boost::shared_ptr<Base> shared_ptr;

@@ -30,6 +30,7 @@ using namespace boost::assign;
 #define GTSAM_MAGIC_KEY
 
 #include <gtsam/base/Matrix.h>
+#include <gtsam/base/Testable.h>
 #include <gtsam/linear/GaussianConditional.h>
 #include <gtsam/slam/smallExample.h>
 #include <gtsam/nonlinear/Ordering.h>

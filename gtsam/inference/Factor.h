@@ -25,7 +25,6 @@
 #include <vector>
 #include <boost/serialization/nvp.hpp>
 #include <boost/foreach.hpp>
-#include <gtsam/base/Testable.h>
 #include <gtsam/base/FastMap.h>
 
 namespace gtsam {
@@ -51,7 +50,7 @@ template<class KEY> class Conditional;
  * during symbolic elimination.  GaussianFactor and NonlinearFactor are virtual.
  */
 template<typename KEY>
-class Factor : public Testable<Factor<KEY> > {
+class Factor {
 
 public:
 

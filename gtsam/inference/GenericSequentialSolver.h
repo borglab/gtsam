@@ -38,8 +38,7 @@ namespace gtsam {
 	 * Additionally, the first step of MFQR is symbolic sequential elimination.
 	 */
 	template<class FACTOR>
-	class GenericSequentialSolver: public Testable<
-			GenericSequentialSolver<FACTOR> > {
+	class GenericSequentialSolver {
 
 	protected:
 

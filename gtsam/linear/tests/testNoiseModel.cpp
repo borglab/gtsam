@@ -41,10 +41,10 @@ static Matrix Sigma = Matrix_(3, 3,
 		var, 0.0, 0.0,
 		0.0, var, 0.0,
 		0.0, 0.0, var);
-static Matrix Q = Matrix_(3, 3,
-		prc, 0.0, 0.0,
-		0.0, prc, 0.0,
-		0.0, 0.0, prc);
+//static Matrix Q = Matrix_(3, 3,
+//		prc, 0.0, 0.0,
+//		0.0, prc, 0.0,
+//		0.0, 0.0, prc);
 
 static double inf = std::numeric_limits<double>::infinity();
 

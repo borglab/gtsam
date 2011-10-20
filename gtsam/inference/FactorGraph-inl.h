@@ -22,6 +22,7 @@
 
 #pragma once
 
+#include <stdio.h>
 #include <list>
 #include <sstream>
 #include <stdexcept>

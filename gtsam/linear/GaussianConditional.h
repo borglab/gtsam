@@ -22,10 +22,10 @@
 #include <boost/utility.hpp>
 
 #include <gtsam/base/types.h>
+#include <gtsam/base/blockMatrices.h>
 #include <gtsam/inference/IndexConditional.h>
 #include <gtsam/linear/JacobianFactor.h>
 #include <gtsam/linear/VectorValues.h>
-#include <gtsam/base/blockMatrices.h>
 
 // Forward declaration to friend unit tests
 class eliminate2JacobianFactorTest;

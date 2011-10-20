@@ -36,7 +36,8 @@ typedef BayesTree<IndexConditional> SymbolicBayesTree;
 
 ///* ************************************************************************* */
 //// SLAM example from RSS sqrtSAM paper
-static const Index _x3_=0, _x2_=1, _x1_=2, _l2_=3, _l1_=4;
+static const Index _x3_=0, _x2_=1;
+//static const Index _x1_=2, _l2_=3, _l1_=4; // unused
 //IndexConditional::shared_ptr
 //		x3(new IndexConditional(_x3_)),
 //		x2(new IndexConditional(_x2_,_x3_)),

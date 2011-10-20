@@ -34,7 +34,7 @@ namespace gtsam {
  * additionally identifies cliques in the chordal Bayes net.
  */
 template<class FACTOR>
-class EliminationTree: public Testable<EliminationTree<FACTOR> > {
+class EliminationTree {
 
 public:
 

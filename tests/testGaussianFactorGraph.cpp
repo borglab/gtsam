@@ -32,11 +32,12 @@ using namespace boost::assign;
 #define GTSAM_MAGIC_KEY
 
 #include <gtsam/base/Matrix.h>
-#include <gtsam/slam/smallExample.h>
-#include <gtsam/linear/GaussianBayesNet.h>
+#include <gtsam/base/Testable.h>
 #include <gtsam/base/numericalDerivative.h>
 #include <gtsam/inference/SymbolicFactorGraph.h>
+#include <gtsam/linear/GaussianBayesNet.h>
 #include <gtsam/linear/GaussianSequentialSolver.h>
+#include <gtsam/slam/smallExample.h>
 
 using namespace gtsam;
 using namespace example;

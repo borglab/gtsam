@@ -40,7 +40,8 @@ static noiseModel::Gaussian::shared_ptr covariance(
 	sx*sx, 0.0, 0.0,
 	0.0, sy*sy, 0.0,
 	0.0, 0.0, st*st
-	))), I3(noiseModel::Unit::Create(3));
+	)));
+//static noiseModel::Gaussian::shared_ptr I3(noiseModel::Unit::Create(3));
 
 /* ************************************************************************* */
 TEST( Pose2Graph, constructor )

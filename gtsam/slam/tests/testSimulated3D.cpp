@@ -18,8 +18,9 @@
 #include <iostream>
 #include <CppUnitLite/TestHarness.h>
 
-#include <gtsam/geometry/Pose3.h>
+#include <gtsam/base/Testable.h>
 #include <gtsam/base/numericalDerivative.h>
+#include <gtsam/geometry/Pose3.h>
 #include <gtsam/slam/Simulated3D.h>
 
 using namespace gtsam;

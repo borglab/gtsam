@@ -37,7 +37,7 @@ namespace gtsam {
 	 * \ingroup Multifrontal
 	 */
 	template<class CONDITIONAL>
-	class BayesTree: public Testable<BayesTree<CONDITIONAL> > {
+	class BayesTree {
 
 	public:
 
@@ -147,7 +147,7 @@ namespace gtsam {
 		typedef boost::shared_ptr<Clique> sharedClique;
 
 		// A convenience class for a list of shared cliques
-		struct Cliques : public std::list<sharedClique>, public Testable<Cliques> {
+		struct Cliques : public std::list<sharedClique> {
 			void print(const std::string& s = "Cliques") const;
 			bool equals(const Cliques& other, double tol = 1e-9) const;
 		};

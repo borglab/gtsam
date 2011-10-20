@@ -20,8 +20,9 @@
 #include <boost/assign/std/list.hpp> // for operator +=
 using namespace boost::assign;
 
-#include <gtsam/nonlinear/LieValues-inl.h>
+#include <gtsam/base/Testable.h>
 #include <gtsam/base/LieVector.h>
+#include <gtsam/nonlinear/LieValues-inl.h>
 
 using namespace gtsam;
 using namespace std;

@@ -27,8 +27,6 @@
 #include <boost/lexical_cast.hpp>
 #endif
 
-#include <gtsam/base/Testable.h>
-
 #define ALPHA '\224'
 
 namespace gtsam {
@@ -39,7 +37,7 @@ namespace gtsam {
  * 2) the character constant used for its string representation
  */
 template<class T, char C>
-class TypedSymbol: Testable<TypedSymbol<T, C> > {
+class TypedSymbol {
 
 protected:
   size_t j_;
@@ -58,6 +56,8 @@ public:
   TypedSymbol(size_t j) :
     j_(j) {
   }
+
+  virtual ~TypedSymbol() {}
 
   // Get stuff:
 
@@ -120,7 +120,7 @@ class TypedLabeledSymbol;
  * keys when linearizing a nonlinear factor graph.  This key is not type
  * safe, so cannot be used with any Nonlinear* classes.
  */
-class Symbol: Testable<Symbol> {
+class Symbol {
 protected:
   unsigned char c_;
   size_t j_;
@@ -251,8 +251,7 @@ template<class KEY> std::list<Symbol> keys2symbols(std::list<KEY> keys) {
  * index
  */
 template<class T, char C, typename L>
-class TypedLabeledSymbol: public TypedSymbol<T, C> , Testable<
-    TypedLabeledSymbol<T, C, L> > {
+class TypedLabeledSymbol: public TypedSymbol<T, C> {
 
 protected:
   // Label

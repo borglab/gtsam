@@ -19,7 +19,6 @@
 #pragma once
 
 #include <map>
-#include <gtsam/base/Testable.h>
 #include <gtsam/nonlinear/Key.h>
 #include <gtsam/inference/inference.h>
 
@@ -32,7 +31,7 @@ namespace gtsam {
 /**
  * An ordering is a map from symbols (non-typed keys) to integer indices
  */
-class Ordering : Testable<Ordering> {
+class Ordering {
 protected:
   typedef boost::fast_pool_allocator<std::pair<const Symbol, Index> > Allocator;
   typedef std::map<Symbol, Index, std::less<Symbol>, Allocator> Map;
@@ -204,7 +203,7 @@ private:
  * @class Unordered
  * @brief a set of unordered indices
  */
-class Unordered: public std::set<Index>, public Testable<Unordered> {
+class Unordered: public std::set<Index> {
 public:
   /** Default constructor creates empty ordering */
   Unordered() { }

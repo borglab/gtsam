@@ -19,7 +19,6 @@
 #pragma once
 
 #include <gtsam/base/types.h>
-#include <gtsam/base/Testable.h>
 #include <gtsam/base/FastMap.h>
 
 #include <iostream>
@@ -55,7 +54,7 @@ namespace gtsam {
  * is not performed by this class.
  */
 
-class VariableSlots : public FastMap<Index, std::vector<Index> >, public Testable<VariableSlots> {
+class VariableSlots : public FastMap<Index, std::vector<Index> > {
 
 public:
 

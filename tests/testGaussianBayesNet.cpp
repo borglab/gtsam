@@ -28,8 +28,9 @@ using namespace boost::assign;
 // Magically casts strings like "x3" to a Symbol('x',3) key, see Key.h
 #define GTSAM_MAGIC_KEY
 
-#include <gtsam/linear/GaussianBayesNet.h>
+#include <gtsam/base/Testable.h>
 #include <gtsam/inference/BayesNet.h>
+#include <gtsam/linear/GaussianBayesNet.h>
 #include <gtsam/linear/GaussianSequentialSolver.h>
 #include <gtsam/slam/smallExample.h>
 

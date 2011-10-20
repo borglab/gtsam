@@ -26,7 +26,6 @@
 #include <boost/weak_ptr.hpp>
 
 #include <gtsam/base/types.h>
-#include <gtsam/base/Testable.h>
 
 namespace gtsam {
 
@@ -36,7 +35,7 @@ namespace gtsam {
 	 * each factor f_i is associated with a single cluster and scope(f_i) \sub C_k.
 	 */
 	template <class FG>
-	class ClusterTree : public Testable<ClusterTree<FG> > {
+	class ClusterTree {
 
 	protected:
 

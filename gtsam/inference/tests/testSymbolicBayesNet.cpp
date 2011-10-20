@@ -21,6 +21,7 @@ using namespace boost::assign;
 
 #include <CppUnitLite/TestHarness.h>
 
+#include <gtsam/base/Testable.h>
 #include <gtsam/inference/IndexConditional.h>
 #include <gtsam/inference/SymbolicFactorGraph.h>
 

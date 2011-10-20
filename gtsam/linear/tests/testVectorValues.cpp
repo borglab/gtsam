@@ -18,6 +18,7 @@
 
 #include <boost/assign/std/vector.hpp>
 
+#include <gtsam/base/Testable.h>
 #include <gtsam/linear/VectorValues.h>
 #include <gtsam/inference/Permutation.h>
 

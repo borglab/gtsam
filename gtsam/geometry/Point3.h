@@ -24,7 +24,6 @@
 #include <boost/serialization/nvp.hpp>
 
 #include <gtsam/base/Matrix.h>
-#include <gtsam/base/Testable.h>
 #include <gtsam/base/Lie.h>
 
 namespace gtsam {
@@ -33,7 +32,7 @@ namespace gtsam {
    * A 3D point
    * @ingroup geometry
    */
-  class Point3: Testable<Point3>, public Lie<Point3> {
+  class Point3 {
   public:
 	  /// dimension of the variable - used to autodetect sizes
 	  static const size_t dimension = 3;

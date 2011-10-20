@@ -18,8 +18,6 @@
 
 #pragma once
 
-#include <gtsam/base/Testable.h>
-
 #include <set>
 #include <iostream>
 #include <string>
@@ -45,8 +43,7 @@ struct FastSetTestableHelper;
  * @ingroup base
  */
 template<typename VALUE, class ENABLE = void>
-class FastSet: public std::set<VALUE, std::less<VALUE>, boost::fast_pool_allocator<VALUE> >,
-public Testable<FastSet<VALUE> > {
+class FastSet: public std::set<VALUE, std::less<VALUE>, boost::fast_pool_allocator<VALUE> > {
 
 public:
 

@@ -38,7 +38,7 @@ namespace gtsam {
 	 * Templated on the type of factors and values structure.
 	 */
 	template<class FACTOR>
-	class FactorGraph: public Testable<FactorGraph<FACTOR> > {
+	class FactorGraph {
 	public:
 	  typedef FACTOR FactorType;
 	  typedef boost::shared_ptr<FactorGraph<FACTOR> > shared_ptr;

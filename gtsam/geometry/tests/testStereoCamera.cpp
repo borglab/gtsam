@@ -17,6 +17,7 @@
  */
 
 #include <CppUnitLite/TestHarness.h>
+#include <gtsam/base/Testable.h>
 #include <gtsam/base/numericalDerivative.h>
 #include <gtsam/geometry/StereoCamera.h>
 

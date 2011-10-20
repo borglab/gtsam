@@ -28,6 +28,7 @@
 // Magically casts strings like "x3" to a Symbol('x',3) key, see Key.h
 #define GTSAM_MAGIC_KEY
 
+#include <gtsam/base/Testable.h>
 #include <gtsam/base/Matrix.h>
 #include <gtsam/slam/smallExample.h>
 #include <gtsam/slam/simulated2D.h>

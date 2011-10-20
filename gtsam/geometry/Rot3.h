@@ -32,7 +32,7 @@ typedef Eigen::Quaterniond Quaternion;
    * @brief 3D Rotations represented as rotation matrices
    * @ingroup geometry
    */
-  class Rot3: Testable<Rot3>, public Lie<Rot3> {
+  class Rot3: public Lie<Rot3> {
   public:
 	  static const size_t dimension = 3;
 

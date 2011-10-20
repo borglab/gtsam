@@ -26,7 +26,6 @@
 
 #include <gtsam/base/types.h>
 #include <gtsam/base/FastList.h>
-#include <gtsam/base/Testable.h>
 #include <gtsam/inference/Permutation.h>
 
 namespace gtsam {
@@ -41,7 +40,7 @@ namespace gtsam {
  * todo:  how to handle Bayes nets with an optimize function?  Currently using global functions.
  */
 template<class CONDITIONAL>
-class BayesNet: public Testable<BayesNet<CONDITIONAL> > {
+class BayesNet {
 
 public:
 

@@ -47,7 +47,7 @@ namespace gtsam {
    *  operates on the "first" values. TupleValuesEnd contains only the specialized version.
    */
   template<class VALUES1, class VALUES2>
-  class TupleValues : public Testable<TupleValues<VALUES1, VALUES2> > {
+  class TupleValues {
 
   protected:
 	  // Data for internal valuess
@@ -254,7 +254,7 @@ namespace gtsam {
    * of a recursive structure
    */
   template<class VALUES>
-  class TupleValuesEnd : public Testable<TupleValuesEnd<VALUES> > {
+  class TupleValuesEnd {
 
   protected:
 	  // Data for internal valuess

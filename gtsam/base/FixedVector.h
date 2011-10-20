@@ -17,7 +17,6 @@
 
 #pragma once
 
-#include <gtsam/base/Testable.h>
 #include <stdarg.h>
 #include <gtsam/base/Vector.h>
 
@@ -28,8 +27,7 @@ namespace gtsam {
  * size checking.
  */
 template<size_t N>
-class FixedVector : public Eigen::Matrix<double, N, 1>,
-					public Testable<FixedVector<N> > {
+class FixedVector : public Eigen::Matrix<double, N, 1> {
 public:
 	typedef Eigen::Matrix<double, N, 1> Base;
 

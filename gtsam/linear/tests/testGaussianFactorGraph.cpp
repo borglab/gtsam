@@ -31,7 +31,9 @@ using namespace std;
 using namespace gtsam;
 using namespace boost;
 
+#ifdef BROKEN
 static const Index _x0_=0, _x1_=1, _x2_=2, _x3_=3, _x4_=4, _x_=5, _y_=6, _l1_=7, _l11_=8;
+#endif
 
 static SharedDiagonal
 	sigma0_1 = sharedSigma(2,0.1), sigma_02 = sharedSigma(2,0.2),
