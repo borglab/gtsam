@@ -26,6 +26,7 @@
 
 #include <set>
 
+#include <gtsam/base/Testable.h>
 #include <gtsam/base/FastMap.h>
 #include <gtsam/base/Vector.h>
 #include <gtsam/nonlinear/Ordering.h>
@@ -62,6 +63,9 @@ namespace gtsam {
     typedef typename KeyValueMap::const_iterator const_iterator;
 
   private:
+
+    /** concept check */
+    GTSAM_CONCEPT_TESTABLE_TYPE(Value)
 
     KeyValueMap values_;
 

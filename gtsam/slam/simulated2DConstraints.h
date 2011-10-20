@@ -59,6 +59,8 @@ namespace gtsam {
 				typedef boost::shared_ptr<ScalarCoordConstraint1<VALUES, KEY, IDX> > shared_ptr; ///< boost::shared_ptr convenience typedef
 				typedef typename KEY::Value Point; ///< Constrained variable type
 
+				virtual ~ScalarCoordConstraint1() {}
+
 				/**
 				 * Constructor for constraint
 				 * @param key is the label for the constrained variable
@@ -119,6 +121,8 @@ namespace gtsam {
 				typedef BoundingConstraint2<VALUES, KEY, KEY> Base;  ///< Base class for factor
 				typedef typename KEY::Value Point; ///< Type of variable constrained
 
+				virtual ~MaxDistanceConstraint() {}
+
 				/**
 				 * Primary constructor for factor
 				 * @param key1 is the first variable key
@@ -160,6 +164,8 @@ namespace gtsam {
 				typedef BoundingConstraint2<VALUES, XKEY, PKEY> Base; ///< Base class for factor
 				typedef typename XKEY::Value Pose; ///< Type of pose variable constrained
 				typedef typename PKEY::Value Point; ///< Type of point variable constrained
+
+				virtual ~MinDistanceConstraint() {}
 
 				/**
 				 * Primary constructor for factor

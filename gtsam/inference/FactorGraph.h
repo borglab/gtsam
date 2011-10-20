@@ -25,6 +25,7 @@
 #include <boost/serialization/nvp.hpp>
 #include <boost/function.hpp>
 
+#include <gtsam/base/Testable.h>
 #include <gtsam/base/FastMap.h>
 #include <gtsam/inference/BayesNet.h>
 #include <gtsam/inference/graph.h>
@@ -55,6 +56,9 @@ namespace gtsam {
 	  typedef boost::function<EliminationResult(const FactorGraph<FACTOR>&, size_t)> Eliminate;
 
 	protected:
+
+	  /** concept check */
+	  GTSAM_CONCEPT_TESTABLE_TYPE(FACTOR)
 
     /** Collection of factors */
 		std::vector<sharedFactor> factors_;

@@ -28,7 +28,10 @@ namespace gtsam {
 	 * Template default compare function that assumes a testable T
 	 */
 	template<class T>
-	bool compare(const T& a, const T& b) { return a.equals(b); }
+	bool compare(const T& a, const T& b) {
+		GTSAM_CONCEPT_TESTABLE_TYPE(T);
+		return a.equals(b);
+	}
 
 	/**
 	 * An equality factor that forces either one variable to a constant,

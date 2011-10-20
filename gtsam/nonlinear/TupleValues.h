@@ -54,6 +54,10 @@ namespace gtsam {
 	  VALUES1 first_;	/// Arbitrary values
 	  VALUES2 second_;	/// A TupleValues or TupleValuesEnd, which wraps an arbitrary values
 
+	  /** concept checks */
+	  GTSAM_CONCEPT_TESTABLE_TYPE(VALUES1)
+	  GTSAM_CONCEPT_TESTABLE_TYPE(VALUES2)
+
   public:
 	  // typedefs for values subtypes
 	  typedef typename VALUES1::Key Key1;

@@ -9,6 +9,7 @@
 #include <utility>
 
 #include <gtsam/base/FastSet.h>
+#include <gtsam/base/Testable.h>
 #include <gtsam/inference/VariableIndex.h>
 #include <gtsam/inference/BayesNet.h>
 #include <gtsam/inference/FactorGraph.h>
@@ -47,6 +48,9 @@ public:
   typedef typename FactorGraph<FACTOR>::Eliminate Eliminate;
 
 private:
+
+  /** concept check */
+  GTSAM_CONCEPT_TESTABLE_TYPE(FACTOR)
 
   typedef FastList<sharedFactor> Factors;
   typedef FastList<shared_ptr> SubTrees;

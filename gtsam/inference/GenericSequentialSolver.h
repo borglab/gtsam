@@ -20,6 +20,7 @@
 
 #include <utility>
 
+#include <gtsam/base/Testable.h>
 #include <gtsam/inference/EliminationTree.h>
 
 namespace gtsam {
@@ -53,7 +54,12 @@ namespace gtsam {
 		VariableIndex::shared_ptr structure_;
 
 		/** Elimination tree that performs elimination */
+		typedef EliminationTree<FACTOR> EliminationTree_;
 		typename EliminationTree<FACTOR>::shared_ptr eliminationTree_;
+
+		/** concept checks */
+		GTSAM_CONCEPT_TESTABLE_TYPE(FACTOR)
+		GTSAM_CONCEPT_TESTABLE_TYPE(EliminationTree_)
 
 	public:
 
