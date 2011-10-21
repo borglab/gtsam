@@ -17,12 +17,13 @@
  */
 #pragma once
 
-#include <gtsam/base/types.h>
-#include <gtsam/base/blockMatrices.h>
-#include <gtsam/inference/FactorGraph.h>
 #include <gtsam/linear/GaussianFactor.h>
-#include <gtsam/linear/SharedDiagonal.h>
+#include <gtsam/linear/GaussianConditional.h>
 #include <gtsam/linear/Errors.h>
+#include <gtsam/linear/SharedDiagonal.h>
+#include <gtsam/inference/FactorGraph.h>
+#include <gtsam/base/blockMatrices.h>
+#include <gtsam/base/types.h>
 
 #include <boost/tuple/tuple.hpp>
 
@@ -36,7 +37,6 @@ namespace gtsam {
   // Forward declarations
   class HessianFactor;
   class VariableSlots;
-  class GaussianConditional;
   template<class C> class BayesNet;
 
   /**
@@ -234,6 +234,9 @@ namespace gtsam {
      * model. */
     JacobianFactor whiten() const;
 
+    /**
+     * eliminate the first variable
+     */
     boost::shared_ptr<GaussianConditional> eliminateFirst();
 
     /** return a multi-frontal conditional. It's actually a chordal Bayesnet */
