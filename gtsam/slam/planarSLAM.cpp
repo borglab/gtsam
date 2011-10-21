@@ -12,7 +12,7 @@
 /**
  *  @file  planarSLAM.cpp
  *  @brief: bearing/range measurements in 2D plane
- *  @authors Frank Dellaert
+ *  @author Frank Dellaert
  **/
 
 #include <gtsam/slam/planarSLAM.h>

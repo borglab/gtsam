@@ -11,7 +11,7 @@
 
 /**
  *  @file  testPose3Graph.cpp
- *  @authors Frank Dellaert, Viorela Ila
+ *  @author Frank Dellaert, Viorela Ila
  **/
 
 #include <iostream>

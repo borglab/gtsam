@@ -12,7 +12,7 @@
 /**
  *  @file  pose2SLAM.h
  *  @brief: 2D Pose SLAM
- *  @authors Frank Dellaert
+ *  @author Frank Dellaert
  **/
 
 #pragma once

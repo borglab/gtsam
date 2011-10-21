@@ -12,7 +12,7 @@
 /**
  *  @file  planarSLAM.h
  *  @brief: bearing/range measurements in 2D plane
- *  @authors Frank Dellaert
+ *  @author Frank Dellaert
  */
 
 #pragma once

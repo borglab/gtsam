@@ -11,7 +11,7 @@
 
 /**
  *  @file  testPlanarSLAM.cpp
- *  @authors Frank Dellaert
+ *  @author Frank Dellaert
  **/
 
 #include <iostream>

@@ -12,7 +12,7 @@
 /**
  *  @file  pose3SLAM.cpp
  *  @brief: bearing/range measurements in 2D plane
- *  @authors Frank Dellaert
+ *  @author Frank Dellaert
  **/
 
 #include <gtsam/slam/pose3SLAM.h>

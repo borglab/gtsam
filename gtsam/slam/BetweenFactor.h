@@ -11,7 +11,7 @@
 
 /**
  *  @file  BetweenFactor.h
- *  @authors Frank Dellaert, Viorela Ila
+ *  @author Frank Dellaert, Viorela Ila
  **/
 #pragma once
 

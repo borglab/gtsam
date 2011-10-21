@@ -11,7 +11,7 @@
 
 /**
  *  @file  BearingFactor.H
- *  @authors Frank Dellaert
+ *  @author Frank Dellaert
  **/
 
 #pragma once

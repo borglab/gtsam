@@ -11,7 +11,7 @@
 
 /**
  *  @file  PriorFactor.h
- *  @authors Frank Dellaert
+ *  @author Frank Dellaert
  **/
 #pragma once
 

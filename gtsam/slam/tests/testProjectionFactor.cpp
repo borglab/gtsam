@@ -12,7 +12,7 @@
 /**
  *  @file  testProjectionFactor.cpp
  *  @brief Unit tests for ProjectionFactor Class
- *  @authors Frank Dellaert
+ *  @author Frank Dellaert
  *  @date Nov 2009
  */
 
