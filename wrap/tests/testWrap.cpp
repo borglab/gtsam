@@ -75,10 +75,10 @@ TEST( wrap, parse ) {
 
 	// check method
 	Method m1 = cls.methods.front();
-	EXPECT(m1.returns=="double");
-	EXPECT(m1.name=="norm");
-	EXPECT(m1.args.size()==0);
-	EXPECT(m1.is_const);
+	EXPECT(m1.returns_=="double");
+	EXPECT(m1.name_=="norm");
+	EXPECT(m1.args_.size()==0);
+	EXPECT(m1.is_const_);
 }
 
 /* ************************************************************************* */
