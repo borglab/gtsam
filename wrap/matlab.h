@@ -438,11 +438,13 @@ mxArray* wrap_shared_ptr(shared_ptr< Class > shared_ptr, const char *classname) 
 */
 template <typename Class>
 shared_ptr<Class> unwrap_shared_ptr(const mxArray* obj, const string& className) {
+#ifndef UNSAFE_WRAP
   bool isClass = mxIsClass(obj, className.c_str());
   if (!isClass) {
     mexPrintf("Expected %s, got %s\n", className.c_str(), mxGetClassName(obj));
     error("Argument has wrong type.");
   }
+#endif
   mxArray* mxh = mxGetProperty(obj,0,"self");
   if (mxh==NULL) error("unwrap_reference: invalid wrap object");
   ObjectHandle<Class>* handle = ObjectHandle<Class>::from_mex_handle(mxh);
