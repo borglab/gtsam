@@ -24,7 +24,7 @@
 namespace gtsam {
 
  /**
-   *  TupleValuess are a structure to manage heterogenous LieValuess, so as to
+   *  TupleValues are a structure to manage heterogenous LieValues, so as to
    *  enable different types of variables/keys to be used simultaneously.  We
    *  do this with recursive templates (instead of blind pointer casting) to
    *  reduce run-time overhead and keep static type checking.  The interface
@@ -36,7 +36,7 @@ namespace gtsam {
    *  runtime performance hit to using this structure.
    *
    *  For an easy interface, there are TupleValuesN classes, which wrap
-   *  the recursive TupleValuess together as a single class, so you can have
+   *  the recursive TupleValues together as a single class, so you can have
    *  mixed-type classes from 2-6 types.  Note that a TupleValues2 is equivalent
    *  to the previously used PairValues.
    *
@@ -380,8 +380,8 @@ namespace gtsam {
 
   /**
    * Wrapper classes to act as containers for valuess.  Note that these can be cascaded
-   * recursively, as they are TupleValuess, and are primarily a short form of the values
-   * structure to make use of the TupleValuess easier.
+   * recursively, as they are TupleValues, and are primarily a short form of the values
+   * structure to make use of the TupleValues easier.
    *
    * The interface is designed to mimic PairValues, but for 2-6 values types.
    */
