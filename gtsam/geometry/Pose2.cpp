@@ -14,10 +14,12 @@
  * @brief 2D Pose
  */
 
-#include <boost/foreach.hpp>
+#include <gtsam/geometry/concepts.h>
 #include <gtsam/geometry/Pose2.h>
 #include <gtsam/base/Lie-inl.h>
-#include <gtsam/geometry/concepts.h>
+#include <gtsam/base/Testable.h>
+#include <boost/foreach.hpp>
+#include <cmath>
 
 using namespace std;
 
@@ -55,7 +57,7 @@ namespace gtsam {
 	  assert(xi.size() == 3);
 		Point2 v(xi(0),xi(1));
 		double w = xi(2);
-		if (fabs(w) < 1e-10)
+		if (std::abs(w) < 1e-10)
 			return Pose2(xi[0], xi[1], xi[2]);
 		else {
 			Rot2 R(Rot2::fromAngle(w));
@@ -70,7 +72,7 @@ namespace gtsam {
   	const Rot2& R = p.r();
   	const Point2& t = p.t();
 		double w = R.theta();
-		if (fabs(w) < 1e-10)
+		if (std::abs(w) < 1e-10)
 			return Vector_(3, t.x(), t.y(), w);
 		else {
 			double c_1 = R.c()-1.0, s = R.s();
@@ -173,13 +175,13 @@ namespace gtsam {
 	  const Rot2& R1 = r_, R2 = p2.r();
 	  double c1=R1.c(), s1=R1.s(), c2=R2.c(), s2=R2.s();
 
+	  // Assert that R1 and R2 are normalized
+	  assert(std::abs(c1*c1 + s1*s1 - 1.0) < 1e-5 && std::abs(c2*c2 + s2*s2 - 1.0) < 1e-5);
+
 	  // Calculate delta rotation = between(R1,R2)
 	  double c = c1 * c2 + s1 * s2, s = -s1 * c2 + c1 * s2;
 	  Rot2 R(Rot2::atan2(s,c)); // normalizes
 	  
-	  // Assert that R1 and R2 are normalized
-	  assert(fabs(c1*c1 + s1*s1 - 1.0) < 1e-5 && fabs(c2*c2 + s2*s2 - 1.0) < 1e-5);
-
 	  // Calculate delta translation = unrotate(R1, dt);
 	  Point2 dt = p2.t() - t_;
 	  double x = dt.x(), y = dt.y();
@@ -228,16 +230,16 @@ namespace gtsam {
 		  boost::optional<Matrix&> H1, boost::optional<Matrix&> H2) const {
 	  if (!H1 && !H2)	return transform_to(point).norm();
 	  Point2 d = transform_to(point, H1, H2);
-	  double x = d.x(), y = d.y(), d2 = x * x + y * y, n = sqrt(d2);
+	  double x = d.x(), y = d.y(), d2 = x * x + y * y, r = sqrt(d2);
 	  Matrix D_result_d;
-	  if(fabs(n) > 1e-10)
-	    D_result_d = Matrix_(1, 2, x / n, y / n);
+	  if(std::abs(r) > 1e-10)
+	    D_result_d = Matrix_(1, 2, x / r, y / r);
 	  else {
 	    D_result_d = Matrix_(1,2, 1.0, 1.0);
 	  }
 	  if (H1) *H1 = D_result_d * (*H1);
 	  if (H2) *H2 = D_result_d * (*H2);
-	  return n;
+	  return r;
   }
 
   /* ************************************************************************* */

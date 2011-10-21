@@ -16,9 +16,9 @@
 
 #pragma once
 
-#include <gtsam/base/Testable.h>
-#include <gtsam/geometry/concepts.h>
 #include <gtsam/nonlinear/NonlinearFactor.h>
+#include <gtsam/geometry/concepts.h>
+#include <gtsam/base/Testable.h>
 
 namespace gtsam {
 
@@ -58,12 +58,12 @@ namespace gtsam {
 		/** h(x)-z -> between(z,h(x)) for Rot2 manifold */
 		Vector evaluateError(const Pose& pose, const Point& point,
 				boost::optional<Matrix&> H1, boost::optional<Matrix&> H2) const {
-			Rot2 hx = pose.bearing(point, H1, H2);
+			Rot hx = pose.bearing(point, H1, H2);
 			return Rot::Logmap(z_.between(hx));
 		}
 
 		/** return the measured */
-		inline const Rot2 measured() const {
+		inline const Rot measured() const {
 			return z_;
 		}
 

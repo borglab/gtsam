@@ -19,6 +19,11 @@ class Point3 {
 
 class Rot2 {
 	Rot2();
+	Rot2(double theta);
+	void print(string s) const;
+	bool equals(const Rot2& pose, double tol) const;
+	double c() const;
+	double s() const;
 };
 
 class Pose2 {
@@ -104,5 +109,42 @@ class GaussianFactorGraph {
 	double error(const VectorValues& c) const;
 	double probPrime(const VectorValues& c) const;
 	void combine(const GaussianFactorGraph& lfg);
+};
+
+class Landmark2 {
+	Landmark2();
+	Landmark2(double x, double y);
+	void print(string s) const;
+	double x();
+	double y();
+};
+
+class Ordering{
+  void print(string s) const;
+  bool equals(const Ordering& ord, double tol) const;
+};
+
+class PlanarSLAMValues {
+	PlanarSLAMValues();
+	void print(string s) const;
+	void insertPose(int key, const Pose2& pose);
+	void insertPoint(int key, const Point2& point);
+};
+
+class PlanarSLAMGraph {
+	PlanarSLAMGraph();
+	double error(const PlanarSLAMValues& c) const;
+	Ordering* orderingCOLAMD(const PlanarSLAMValues& config) const;
+	void print(string s) const;
+	void addPrior(size_t i, const Pose2& p, const SharedNoiseModel& model);
+	void addPoseConstraint(size_t i, const Pose2& p);
+	void addOdometry(size_t i, size_t j, const Pose2& z,
+			const SharedNoiseModel& model);
+	void addBearing(size_t i, size_t j, const Rot2& z,
+			const SharedNoiseModel& model);
+	void addRange(size_t i, size_t j, double z, const SharedNoiseModel& model);
+	void addBearingRange(size_t i, size_t j, const Rot2& z1, double z2,
+			const SharedNoiseModel& model);
+	PlanarSLAMValues* optimize(const PlanarSLAMValues& initialEstimate);
 };
 

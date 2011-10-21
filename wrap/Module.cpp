@@ -210,6 +210,7 @@ void Module::matlab_code(const string& toolboxPath,
       cls.matlab_methods(classPath,nameSpace);
 
       // add lines to make m-file
+      ofs << "%% " << cls.name << endl;
       ofs << "cd(toolboxpath)" << endl;
       cls.matlab_make_fragment(ofs, toolboxPath, mexFlags);
     }  

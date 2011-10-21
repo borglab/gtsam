@@ -17,16 +17,17 @@
 
 #pragma once
 
-#include <gtsam/geometry/Pose2.h>
-#include <gtsam/nonlinear/TupleValues.h>
-#include <gtsam/nonlinear/NonlinearEquality.h>
 #include <gtsam/slam/PriorFactor.h>
 #include <gtsam/slam/BetweenFactor.h>
 #include <gtsam/slam/RangeFactor.h>
 #include <gtsam/slam/BearingFactor.h>
 #include <gtsam/slam/BearingRangeFactor.h>
+#include <gtsam/nonlinear/TupleValues.h>
+#include <gtsam/nonlinear/NonlinearEquality.h>
 #include <gtsam/nonlinear/NonlinearFactorGraph.h>
+#include <gtsam/nonlinear/NonlinearOptimization.h>
 #include <gtsam/nonlinear/NonlinearOptimizer.h>
+#include <gtsam/geometry/Pose2.h>
 
 // We use gtsam namespace for generally useful factors
 namespace gtsam {
@@ -46,10 +47,27 @@ namespace gtsam {
 		/// Typedef for LieValues structure with PointKey type
 		typedef LieValues<PointKey> PointValues;
 
-		/// Typedef for the TupleValues2 to use PoseKeys and PointKeys
-		typedef TupleValues2<PoseValues, PointValues> Values;
+		/// Values class, inherited from TupleValues2, using PoseKeys and PointKeys
+		struct Values: public TupleValues2<PoseValues, PointValues> {
 
-		/**
+			/// Default constructor
+			Values() {}
+
+			/// Copy constructor
+			Values(const TupleValues2<PoseValues, PointValues>& values) :
+				TupleValues2<PoseValues, PointValues>(values) {
+			}
+
+			// Convenience for MATLAB wrapper, which does not allow for identically named methods
+
+			/// insert a pose
+		  void insertPose(int key, const Pose2& pose) {insert(PoseKey(key), pose); }
+
+		  /// insert a point
+		  void insertPoint(int key, const Point2& point) {insert(PointKey(key), point); }
+		};
+
+			/**
 		 * List of typedefs for factors
 		 */
 
@@ -96,6 +114,15 @@ namespace gtsam {
 			/// Creates a factor with a Rot2 between a PoseKey i and PointKey j for difference in rotation and location
 			void addBearingRange(const PoseKey& i, const PointKey& j,
 					const Rot2& z1, double z2, const SharedNoiseModel& model);
+
+			/// Optimize, mostly here for MATLAB
+			boost::shared_ptr<Values> optimize(const Values& initialEstimate) {
+				typedef NonlinearOptimizer<Graph, Values> Optimizer;
+//				NonlinearOptimizationParameters::LAMBDA
+				boost::shared_ptr<Values> result(
+						new Values(*Optimizer::optimizeGN(*this, initialEstimate)));
+				return result;
+			}
 		};
 
 		/// Optimizer

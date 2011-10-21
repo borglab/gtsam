@@ -86,8 +86,10 @@ int main(int argc, char** argv) {
 	initialEstimate.print("initial estimate");
 
 	// optimize using Levenberg-Marquardt optimization with an ordering from colamd
-	Values result = optimize<Graph, Values>(graph, initialEstimate);
-	result.print("final result");
+//	Values result = optimize<Graph, Values>(graph, initialEstimate);
+//	result.print("final result");
+	boost::shared_ptr<Values> result = graph.optimize(initialEstimate);
+	result->print("final result");
 
 	return 0;
 }

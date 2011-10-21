@@ -30,6 +30,8 @@ TEST( Rot2, constructors_and_angle)
 {
 	double c=cos(0.1), s=sin(0.1);
 	DOUBLES_EQUAL(0.1,R.theta(),1e-9);
+	CHECK(assert_equal(R,Rot2(0.1)));
+	CHECK(assert_equal(R,Rot2::fromAngle(0.1)));
 	CHECK(assert_equal(R,Rot2::fromCosSin(c,s)));
 	CHECK(assert_equal(R,Rot2::atan2(s*5,c*5)));
 }

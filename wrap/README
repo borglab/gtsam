@@ -24,4 +24,7 @@ METHOD (AND CONSTRUCTOR) ARGUMENTS
   generation of the correct conversion routines unwrap<Vector> and unwrap<Matrix>
 - passing classes as arguments works, provided they are passed by reference.
 	This triggers a call to unwrap_shared_ptr
+- GTSAM specific: keys will be cast automatically from strings via GTSAM_magic. This
+  allows us to not have to declare all key types in MATLAB. Just replace key arguments with
+  the (non-const, non-reference) string type
    
