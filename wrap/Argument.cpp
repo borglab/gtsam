@@ -27,18 +27,23 @@ using namespace std;
 void Argument::matlab_unwrap(ofstream& ofs, 
 			     const string& matlabName) 
 { 
-  // the templated unwrap function returns a pointer
-  // example: double tol = unwrap< double >(in[2]);
   ofs << "  ";
 
-  if (is_ptr)      
-    ofs << "shared_ptr<" << type << "> " << name << " = unwrap_shared_ptr< ";
-  else if (is_ref) 
-    ofs <<                         type << "& " << name << " = *unwrap_shared_ptr< ";
-  else
-    ofs <<                         type << " "  << name << " = unwrap< ";
+  if (is_ptr)
+		// A pointer: emit an "unwrap_shared_ptr" call which returns a pointer
+		ofs << "shared_ptr<" << type << "> " << name << " = unwrap_shared_ptr< ";
+	else if (is_ref)
+		// A reference: emit an "unwrap_shared_ptr" call and de-reference the pointer
+		ofs << type << "& " << name << " = *unwrap_shared_ptr< ";
+	else
+		// Not a pointer or a reference: emit an "unwrap" call
+		// unwrap is specified in matlab.h as a series of template specializations
+		// that know how to unpack the expected MATLAB object
+		// example: double tol = unwrap< double >(in[2]);
+		// example: Vector v = unwrap< Vector >(in[1]);
+		ofs << type << " " << name << " = unwrap< ";
 
-  ofs << type << " >(" << matlabName;
+	ofs << type << " >(" << matlabName;
   if (is_ptr || is_ref) ofs << ", \"" << type << "\"";
   ofs << ");" << endl;
 }
