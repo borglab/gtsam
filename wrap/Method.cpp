@@ -36,32 +36,32 @@ string maybe_shared_ptr(bool add, const string& type) {
 
 /* ************************************************************************* */
 string Method::return_type(bool add_ptr, pairing p) {
-  if (p==pair && returns_pair) {
+  if (p==pair && returns_pair_) {
     string str = "pair< " + 
-      maybe_shared_ptr(add_ptr && returns_ptr, returns ) + ", " + 
-      maybe_shared_ptr(add_ptr && returns_ptr, returns2) + " >";
+      maybe_shared_ptr(add_ptr && returns_ptr_, returns_) + ", " +
+      maybe_shared_ptr(add_ptr && returns_ptr_, returns2_) + " >";
     return str;
   } else
-    return maybe_shared_ptr(add_ptr && returns_ptr, (p==arg2)? returns2 : returns);
+    return maybe_shared_ptr(add_ptr && returns_ptr_, (p==arg2)? returns2_ : returns_);
 }
 
 /* ************************************************************************* */
 void Method::matlab_mfile(const string& classPath) {
 
   // open destination m-file
-  string wrapperFile = classPath + "/" + name + ".m";
+  string wrapperFile = classPath + "/" + name_ + ".m";
   ofstream ofs(wrapperFile.c_str());
   if(!ofs) throw CantOpenFile(wrapperFile);
   if(verbose_) cerr << "generating " << wrapperFile << endl;
 
   // generate code
   emit_header_comment(ofs, "%");
-  ofs << "% usage: obj." << name << "(" << args.names() << ")" << endl;
-  string returnType = returns_pair? "[first,second]" : "result";
-  ofs << "function " << returnType << " = " << name << "(obj";
-  if (args.size()) ofs << "," << args.names();
+  ofs << "% usage: obj." << name_ << "(" << args_.names() << ")" << endl;
+  string returnType = returns_pair_? "[first,second]" : "result";
+  ofs << "function " << returnType << " = " << name_ << "(obj";
+  if (args_.size()) ofs << "," << args_.names();
   ofs << ")" << endl;
-  ofs << "  error('need to compile " << name << ".cpp');" << endl;
+  ofs << "  error('need to compile " << name_ << ".cpp');" << endl;
   ofs << "end" << endl;
 
   // close file
@@ -74,7 +74,7 @@ void Method::matlab_wrapper(const string& classPath,
 			    const string& nameSpace) 
 {
   // open destination wrapperFile
-  string wrapperFile = classPath + "/" + name + ".cpp";
+  string wrapperFile = classPath + "/" + name_ + ".cpp";
   ofstream ofs(wrapperFile.c_str());
   if(!ofs) throw CantOpenFile(wrapperFile);
   if(verbose_) cerr << "generating " << wrapperFile << endl;
@@ -95,7 +95,7 @@ void Method::matlab_wrapper(const string& classPath,
   // check arguments
   // extra argument obj -> nargin-1 is passed !
   // example: checkArguments("equals",nargout,nargin-1,2);
-  ofs << "  checkArguments(\"" << name << "\",nargout,nargin-1," << args.size() << ");\n";
+  ofs << "  checkArguments(\"" << name_ << "\",nargout,nargin-1," << args_.size() << ");\n";
 
   // get class pointer
   // example: shared_ptr<Test> = unwrap_shared_ptr< Test >(in[0], "Test");
@@ -103,30 +103,30 @@ void Method::matlab_wrapper(const string& classPath,
       << " >(in[0],\"" << className << "\");" << endl;
 
   // unwrap arguments, see Argument.cpp
-  args.matlab_unwrap(ofs,1);
+  args_.matlab_unwrap(ofs,1);
 
   // call method
   // example: bool result = self->return_field(t);
   ofs << "  ";
-  if (returns!="void") 
+  if (returns_!="void")
     ofs << return_type(true,pair) << " result = ";
-  ofs << "self->" << name << "(" << args.names() << ");\n";
+  ofs << "self->" << name_ << "(" << args_.names() << ");\n";
 
   // wrap result
   // example: out[0]=wrap<bool>(result);
-  if (returns_pair) {
-    if (returns_ptr)
-      ofs << "  out[0] = wrap_shared_ptr(result.first,\"" << returns << "\");\n";
+  if (returns_pair_) {
+    if (returns_ptr_)
+      ofs << "  out[0] = wrap_shared_ptr(result.first,\"" << returns_ << "\");\n";
     else
       ofs << "  out[0] = wrap< " << return_type(true,arg1) << " >(result.first);\n";
-    if (returns_ptr2)
-      ofs << "  out[1] = wrap_shared_ptr(result.second,\"" << returns2 << "\");\n";
+    if (returns_ptr2_)
+      ofs << "  out[1] = wrap_shared_ptr(result.second,\"" << returns2_ << "\");\n";
     else
       ofs << "  out[1] = wrap< " << return_type(true,arg2) << " >(result.second);\n";
   } 
-  else if (returns_ptr)
-    ofs << "  out[0] = wrap_shared_ptr(result,\"" << returns << "\");\n";
-  else if (returns!="void")
+  else if (returns_ptr_)
+    ofs << "  out[0] = wrap_shared_ptr(result,\"" << returns_ << "\");\n";
+  else if (returns_!="void")
     ofs << "  out[0] = wrap< " << return_type(true,arg1) << " >(result);\n";
 
   // finish

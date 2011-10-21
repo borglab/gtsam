@@ -27,15 +27,15 @@ struct Method {
 
 	/// Constructor creates empty object
 	Method(bool verbose = true) :
-			returns_ptr(false), returns_ptr2(false), returns_pair(false), verbose_(
+			returns_ptr_(false), returns_ptr2_(false), returns_pair_(false), verbose_(
 					verbose) {
 	}
 
 	// Then the instance variables are set directly by the Module constructor
-	bool is_const;
-	ArgumentList args;
-	std::string returns, returns2, name;
-	bool returns_ptr, returns_ptr2, returns_pair;
+	bool is_const_;
+	ArgumentList args_;
+	std::string returns_, returns2_, name_;
+	bool returns_ptr_, returns_ptr2_, returns_pair_;
 	bool verbose_;
 
 	enum pairing {

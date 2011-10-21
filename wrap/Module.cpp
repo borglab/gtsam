@@ -97,30 +97,30 @@ Module::Module(const string& interfacePath,
     [assign_a(constructor,constructor0)];
 
   Rule returnType1_p =
-    basisType_p[assign_a(method.returns)] | 
-    ((className_p | "Vector" | "Matrix")[assign_a(method.returns)] >>
-     !ch_p('*')  [assign_a(method.returns_ptr,true)]);
+    basisType_p[assign_a(method.returns_)] |
+    ((className_p | "Vector" | "Matrix")[assign_a(method.returns_)] >>
+     !ch_p('*')  [assign_a(method.returns_ptr_,true)]);
 
   Rule returnType2_p =
-    basisType_p[assign_a(method.returns2)] | 
-    ((className_p | "Vector" | "Matrix")[assign_a(method.returns2)] >>
-     !ch_p('*')  [assign_a(method.returns_ptr2,true)]);
+    basisType_p[assign_a(method.returns2_)] |
+    ((className_p | "Vector" | "Matrix")[assign_a(method.returns2_)] >>
+     !ch_p('*')  [assign_a(method.returns_ptr2_,true)]);
 
   Rule pair_p = 
     (str_p("pair") >> '<' >> returnType1_p >> ',' >> returnType2_p >> '>')
-    [assign_a(method.returns_pair,true)];
+    [assign_a(method.returns_pair_,true)];
 
-  Rule void_p = str_p("void")[assign_a(method.returns)];
+  Rule void_p = str_p("void")[assign_a(method.returns_)];
 
   Rule returnType_p = void_p | returnType1_p | pair_p;
 
   Rule methodName_p = lexeme_d[lower_p >> *(alnum_p | '_')];
 
   Rule method_p = 
-    (returnType_p >> methodName_p[assign_a(method.name)] >> 
+    (returnType_p >> methodName_p[assign_a(method.name_)] >>
      '(' >> argumentList_p >> ')' >> 
-     !str_p("const")[assign_a(method.is_const,true)] >> ';')
-    [assign_a(method.args,args)]
+     !str_p("const")[assign_a(method.is_const_,true)] >> ';')
+    [assign_a(method.args_,args)]
     [assign_a(args,args0)]
     [push_back_a(cls.methods, method)]
     [assign_a(method,method0)];

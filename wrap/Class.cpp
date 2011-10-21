@@ -78,7 +78,7 @@ void Class::matlab_make_fragment(ofstream& ofs,
     ofs << mex << c.matlab_wrapper_name(name) << ".cpp" << endl;
   ofs << endl << "cd @" << name << endl;
   BOOST_FOREACH(Method m, methods)
-    ofs << mex << m.name << ".cpp" << endl;
+    ofs << mex << m.name_ << ".cpp" << endl;
   ofs << endl;
 }
 
