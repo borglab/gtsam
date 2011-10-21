@@ -202,5 +202,30 @@ TEST( GaussianBayesNet, backSubstituteTranspose )
 }
 
 /* ************************************************************************* */
+// Tests computing Determinant
+TEST( GaussianBayesNet, DeterminantTest )
+{
+	GaussianBayesNet cbn;
+	cbn += boost::shared_ptr<GaussianConditional>(new GaussianConditional(
+					0, Vector_( 2, 3.0, 4.0 ), Matrix_(2, 2, 1.0, 3.0, 0.0, 4.0 ),
+					1, Matrix_(2, 2, 2.0, 1.0, 2.0, 3.0),
+					ones(2)));
+
+	cbn += boost::shared_ptr<GaussianConditional>(new GaussianConditional(
+					1, Vector_( 2, 5.0, 6.0 ), Matrix_(2, 2, 1.0, 1.0, 0.0, 3.0 ),
+					2, Matrix_(2, 2, 1.0, 0.0, 5.0, 2.0),
+					ones(2)));
+
+	cbn += boost::shared_ptr<GaussianConditional>(new GaussianConditional(
+			3, Vector_( 2, 7.0, 8.0 ), Matrix_(2, 2, 1.0, 1.0, 0.0, 5.0 ),
+			ones(2)));
+
+	double expectedDeterminant = 60;
+	double actualDeterminant = determinant(cbn);
+
+  EXPECT_DOUBLES_EQUAL( expectedDeterminant, actualDeterminant, 1e-9);
+}
+
+/* ************************************************************************* */
 int main() { TestResult tr; return TestRegistry::runAllTests(tr);}
 /* ************************************************************************* */

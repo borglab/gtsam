@@ -203,5 +203,16 @@ VectorValues rhs(const GaussianBayesNet& bn) {
 }
 
 /* ************************************************************************* */
+double determinant(const GaussianBayesNet& bayesNet) {
+	double logDet = 0.0;
+
+	BOOST_FOREACH(boost::shared_ptr<const GaussianConditional> cg, bayesNet){
+		logDet += cg->get_R().diagonal().unaryExpr(ptr_fun<double,double>(log)).sum();
+	}
+
+	return exp(logDet);
+}
+
+/* ************************************************************************* */
 
 } // namespace gtsam

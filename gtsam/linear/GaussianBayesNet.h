@@ -97,4 +97,15 @@ namespace gtsam {
    */
   VectorValues rhs(const GaussianBayesNet&);
 
+  /**
+   * Computes the determinant of a GassianBayesNet
+   * A GaussianBayesNet is an upper triangular matrix and for an upper triangular matrix
+   * determinant is the product of the diagonal elements. Instead of actually multiplying
+   * we add the logarithms of the diagonal elements and take the exponent at the end
+   * because this is more numerically stable.
+   * @param bayesNet The input GaussianBayesNet
+   * @return The determinant
+   */
+  double determinant(const GaussianBayesNet& bayesNet);
+
 } /// namespace gtsam
