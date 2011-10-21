@@ -344,7 +344,9 @@ void HessianFactor::updateATA(const JacobianFactor& update, const Scatter& scatt
 		update.print("with (Jacobian): ");
 	}
 
-	Eigen::Block<typeof(update.matrix_)> updateA(update.matrix_.block(
+//	typedef Eigen::Block<typeof(update.matrix_)> BlockUpdateMatrix;
+	typedef Eigen::Block<const JacobianFactor::AbMatrix> BlockUpdateMatrix;
+	BlockUpdateMatrix updateA(update.matrix_.block(
 			update.Ab_.rowStart(),update.Ab_.offset(0), update.Ab_.full().rows(), update.Ab_.full().cols()));
 	if (debug) cout << "updateA: \n" << updateA << endl;
 

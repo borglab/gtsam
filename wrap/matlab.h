@@ -36,8 +36,8 @@ using namespace std;
 using namespace boost; // not usual, but for conciseness of generated code
 
 // start GTSAM Specifics /////////////////////////////////////////////////
-typedef gtsam::Vector Vector;  // NOTE: outside of gtsam namespace
-typedef gtsam::Matrix Matrix;
+//typedef gtsam::Vector Vector;  // NOTE: outside of gtsam namespace
+//typedef gtsam::Matrix Matrix;
 
 // to make keys be constructed from strings:
 #define GTSAM_MAGIC_KEY
@@ -129,8 +129,8 @@ mxArray* wrap<double>(double& value) {
   return mxCreateDoubleScalar(value);
 }
 
-// wrap a const BOOST vector into a double vector
-mxArray* wrap_Vector(const Vector& v) {
+// wrap a const Eigen vector into a double vector
+mxArray* wrap_Vector(const gtsam::Vector& v) {
   int m = v.size();
   mxArray *result = mxCreateDoubleMatrix(m, 1, mxREAL);
   double *data = mxGetPr(result);
@@ -138,20 +138,20 @@ mxArray* wrap_Vector(const Vector& v) {
   return result;
 }
 
-// specialization to BOOST vector -> double vector
+// specialization to Eigen vector -> double vector
 template<>
-mxArray* wrap<Vector >(Vector& v) {
+mxArray* wrap<gtsam::Vector >(gtsam::Vector& v) {
   return wrap_Vector(v);
 }
 
 // const version
 template<>
-mxArray* wrap<const Vector >(const Vector& v) {
+mxArray* wrap<const gtsam::Vector >(const gtsam::Vector& v) {
   return wrap_Vector(v);
 }
 
-// wrap a const BOOST MATRIX into a double matrix
-mxArray* wrap_Matrix(const Matrix& A) {
+// wrap a const Eigen MATRIX into a double matrix
+mxArray* wrap_Matrix(const gtsam::Matrix& A) {
   int m = A.rows(), n = A.cols();
   mxArray *result = mxCreateDoubleMatrix(m, n, mxREAL);
   double *data = mxGetPr(result);
@@ -160,15 +160,15 @@ mxArray* wrap_Matrix(const Matrix& A) {
   return result;
 }
 
-// specialization to BOOST MATRIX -> double matrix
+// specialization to Eigen MATRIX -> double matrix
 template<>
-mxArray* wrap<Matrix >(Matrix& A) {
+mxArray* wrap<gtsam::Matrix >(gtsam::Matrix& A) {
   return wrap_Matrix(A);
 }
 
 // const version
 template<>
-mxArray* wrap<const Matrix >(const Matrix& A) {
+mxArray* wrap<const gtsam::Matrix >(const gtsam::Matrix& A) {
   return wrap_Matrix(A);
 }
 
@@ -223,16 +223,16 @@ double unwrap<double>(const mxArray* array) {
   return (double)mxGetScalar(array);
 }
 
-// specialization to BOOST vector
+// specialization to Eigen vector
 template<>
-Vector unwrap< Vector >(const mxArray* array) {
+gtsam::Vector unwrap< gtsam::Vector >(const mxArray* array) {
   int m = mxGetM(array), n = mxGetN(array);
   if (mxIsDouble(array)==false || n!=1) error("unwrap<vector>: not a vector");
 #ifdef DEBUG_WRAP
-  mexPrintf("unwrap< Vector > called with %dx%d argument\n", m,n);
+  mexPrintf("unwrap< gtsam::Vector > called with %dx%d argument\n", m,n);
 #endif
   double* data = (double*)mxGetData(array);
-  Vector v(m);
+  gtsam::Vector v(m);
   for (int i=0;i<m;i++,data++) v(i) = *data;
 #ifdef DEBUG_WRAP
 	gtsam::print(v);
@@ -240,13 +240,13 @@ Vector unwrap< Vector >(const mxArray* array) {
   return v;
 }
 
-// specialization to BOOST matrix
+// specialization to Eigen matrix
 template<>
-Matrix unwrap< Matrix >(const mxArray* array) {
+gtsam::Matrix unwrap< gtsam::Matrix >(const mxArray* array) {
   if (mxIsDouble(array)==false) error("unwrap<matrix>: not a matrix");
   int m = mxGetM(array), n = mxGetN(array);
   double* data = (double*)mxGetData(array);
-  Matrix A(m,n);
+  gtsam::Matrix A(m,n);
   // converts from row-major to column-major
   for (int j=0;j<n;j++) for (int i=0;i<m;i++,data++) A(i,j) = *data;
   return A;

@@ -58,7 +58,7 @@ static inline bool choleskyStep(Matrix& ATA, size_t k, size_t order) {
 
     if(k < (order-1)) {
       // Update A(k,k+1:end) <- A(k,k+1:end) / beta
-    	typedef typeof(ATA.row(k).segment(k+1, order-(k+1))) BlockRow;
+    	typedef Matrix::RowXpr::SegmentReturnType BlockRow;
     	BlockRow V = ATA.row(k).segment(k+1, order-(k+1));
     	V *= betainv;
 
