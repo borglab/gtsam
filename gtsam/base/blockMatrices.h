@@ -445,7 +445,7 @@ public:
   /** access to full matrix */
   const FullMatrix& fullMatrix() const { return matrix_; }
 
-  typedef typeof(matrixTemp_.col(0).segment(0, 1)) Column;
+  typedef typeof((FullMatrix)matrixTemp_.col(0).segment(0, 1)) Column;
   typedef typeof(((const FullMatrix&)matrixTemp_).col(0).segment(0, 1)) constColumn;
 
   Column column(size_t i_block, size_t j_block, size_t columnOffset) {

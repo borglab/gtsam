@@ -18,6 +18,7 @@
 #include <gtsam/slam/planarSLAM.h>
 #include <gtsam/nonlinear/NonlinearFactorGraph-inl.h>
 #include <gtsam/nonlinear/NonlinearOptimizer-inl.h>
+#include <gtsam/nonlinear/NonlinearOptimization-inl.h>
 #include <gtsam/nonlinear/TupleValues-inl.h>
 
 // Use planarSLAM namespace for specific SLAM instance
