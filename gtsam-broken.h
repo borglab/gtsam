@@ -1,15 +1,6 @@
 // These are considered to be broken and will be added back as they start working
 // It's assumed that there have been interface changes that might break this
 
-class SharedGaussian {
-	SharedGaussian(Matrix covariance);
-	SharedGaussian(Vector sigmas);
-};
-
-class SharedDiagonal {
-	SharedDiagonal(Vector sigmas);
-};
-
 class Ordering {
   Ordering();
   void print(string s) const;
@@ -17,53 +8,9 @@ class Ordering {
   void push_back(string s);
 };
 
-
-class VectorValues {
-  VectorValues();
-  VectorValues(size_t nVars, size_t varDim);
-  void print(string s) const;
-  bool equals(const VectorValues& expected, double tol) const;
-  size_t size() const;
-};
-
-class GaussianFactor {
-	void print(string s) const;
-	bool equals(const GaussianFactor& lf, double tol) const;
-	bool empty() const;
-	Vector getb() const;
-	double error(const VectorValues& c) const;
-};
-
 class GaussianFactorSet {
   GaussianFactorSet();
   void push_back(GaussianFactor* factor);
-};
-
-class GaussianConditional {
-  GaussianConditional();
-  void print(string s) const;
-  bool equals(const GaussianConditional &cg, double tol) const;
-  Vector solve(const VectorValues& x);
-};
-
-class GaussianBayesNet {
-  GaussianBayesNet();
-  void print(string s) const;
-  bool equals(const GaussianBayesNet& cbn, double tol) const;
-  void push_back(GaussianConditional* conditional);
-  void push_front(GaussianConditional* conditional);
-};
-
-class GaussianFactorGraph {
-  GaussianFactorGraph();
-  void print(string s) const;
-  bool equals(const GaussianFactorGraph& lfgraph, double tol) const;
-
-  size_t size() const;
-  void push_back(GaussianFactor* ptr_f);
-  double error(const VectorValues& c) const;
-  double probPrime(const VectorValues& c) const;
-  void combine(const GaussianFactorGraph& lfg);
 };
 
 class Simulated2DValues {

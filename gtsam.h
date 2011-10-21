@@ -1,41 +1,108 @@
 class Point2 {
-  Point2();
-  Point2(double x, double y);
-  void print(string s) const;
-  double x();
-  double y();
+	Point2();
+	Point2(double x, double y);
+	void print(string s) const;
+	double x();
+	double y();
 };
 
 class Point3 {
-  Point3();
-  Point3(double x, double y, double z);
-  Point3(Vector v);
-  void print(string s) const;
-  Vector vector() const;
-  double x();
-  double y();
-  double z();
-}; 
+	Point3();
+	Point3(double x, double y, double z);
+	Point3(Vector v);
+	void print(string s) const;
+	Vector vector() const;
+	double x();
+	double y();
+	double z();
+};
 
 class Rot2 {
 	Rot2();
 };
 
 class Pose2 {
-  Pose2();
-  Pose2(const Pose2& pose);
-  Pose2(double x, double y, double theta);
-  Pose2(double theta, const Point2& t);
-  Pose2(const Rot2& r, const Point2& t);
-  void print(string s) const;
-  bool equals(const Pose2& pose, double tol) const;
-  double x() const;
-  double y() const;
-  double theta() const;
-  size_t dim() const;
-  Pose2 expmap(Vector v) const;
-  Vector logmap(const Pose2& pose) const;
-  Point2 t() const;
-  Rot2 r() const;
+	Pose2();
+	Pose2(const Pose2& pose);
+	Pose2(double x, double y, double theta);
+	Pose2(double theta, const Point2& t);
+	Pose2(const Rot2& r, const Point2& t);
+	void print(string s) const;
+	bool equals(const Pose2& pose, double tol) const;
+	double x() const;
+	double y() const;
+	double theta() const;
+	size_t dim() const;
+};
+
+class SharedGaussian {
+	SharedGaussian(Matrix covariance);
+	SharedGaussian(Vector sigmas);
+};
+
+class SharedDiagonal {
+	SharedDiagonal(Vector sigmas);
+};
+
+class VectorValues {
+	VectorValues();
+	VectorValues(size_t nVars, size_t varDim);
+	void print(string s) const;
+	bool equals(const VectorValues& expected, double tol) const;
+	size_t size() const;
+	void reserve(size_t nVars, size_t totalDims);
+	size_t push_back_preallocated(Vector vector);
+};
+
+class GaussianConditional {
+	GaussianConditional(size_t key, Vector d, Matrix R, Vector sigmas);
+	GaussianConditional(size_t key, Vector d, Matrix R, size_t name1, Matrix S,
+			Vector sigmas);
+	GaussianConditional(size_t key, Vector d, Matrix R, size_t name1, Matrix S,
+			size_t name2, Matrix T, Vector sigmas);
+	void print(string s) const;
+	bool equals(const GaussianConditional &cg, double tol) const;
+};
+
+class GaussianBayesNet {
+	GaussianBayesNet();
+	void print(string s) const;
+	bool equals(const GaussianBayesNet& cbn, double tol) const;
+	void push_back(GaussianConditional* conditional);
+	void push_front(GaussianConditional* conditional);
+};
+
+class GaussianFactor {
+	void print(string s) const;
+	bool equals(const GaussianFactor& lf, double tol) const;
+	double error(const VectorValues& c) const;
+};
+
+class JacobianFactor {
+	JacobianFactor();
+	JacobianFactor(Vector b_in);
+	JacobianFactor(size_t i1, Matrix A1, Vector b, const SharedDiagonal& model);
+	JacobianFactor(size_t i1, Matrix A1, size_t i2, Matrix A2, Vector b,
+			const SharedDiagonal& model);
+	JacobianFactor(size_t i1, Matrix A1, size_t i2, Matrix A2, size_t i3,
+			Matrix A3, Vector b, const SharedDiagonal& model);
+	void print(string s) const;
+	bool equals(const GaussianFactor& lf, double tol) const;
+	bool empty() const;
+	Vector getb() const;
+	double error(const VectorValues& c) const;
+	GaussianConditional* eliminateFirst();
+};
+
+class GaussianFactorGraph {
+	GaussianFactorGraph();
+	void print(string s) const;
+	bool equals(const GaussianFactorGraph& lfgraph, double tol) const;
+
+	size_t size() const;
+	void push_back(GaussianFactor* ptr_f);
+	double error(const VectorValues& c) const;
+	double probPrime(const VectorValues& c) const;
+	void combine(const GaussianFactorGraph& lfg);
 };
 
