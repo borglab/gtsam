@@ -228,9 +228,15 @@ template<>
 Vector unwrap< Vector >(const mxArray* array) {
   int m = mxGetM(array), n = mxGetN(array);
   if (mxIsDouble(array)==false || n!=1) error("unwrap<vector>: not a vector");
+#ifdef DEBUG_WRAP
+  mexPrintf("unwrap< Vector > called with %dx%d argument\n", m,n);
+#endif
   double* data = (double*)mxGetData(array);
   Vector v(m);
   for (int i=0;i<m;i++,data++) v(i) = *data;
+#ifdef DEBUG_WRAP
+	gtsam::print(v);
+#endif
   return v;
 }
 
