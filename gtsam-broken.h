@@ -1,10 +1,13 @@
 // These are considered to be broken and will be added back as they start working
 // It's assumed that there have been interface changes that might break this
 
-class Ordering {
-  Ordering();
+class Ordering{
+	Ordering(string key);
   void print(string s) const;
   bool equals(const Ordering& ord, double tol) const;
+	Ordering subtract(const Ordering& keys) const;
+	void unique ();
+	void reverse ();
   void push_back(string s);
 };
 
@@ -100,28 +103,6 @@ class GaussianFactor {
 	pair<GaussianConditional*,GaussianFactor*> eliminate(string key) const;
 };
 
-class GaussianConditional {
-	GaussianConditional(string key,
-			Vector d,
-			Matrix R,
-			Vector sigmas);
-	GaussianConditional(string key,
-			Vector d,
-			Matrix R,
-			string name1,
-			Matrix S,
-			Vector sigmas);
-	GaussianConditional(string key,
-			Vector d,
-			Matrix R,
-			string name1,
-			Matrix S,
-			string name2,
-			Matrix T,
-			Vector sigmas);
-	void add(string key, Matrix S);
-};
-
 class GaussianFactorGraph {
 	GaussianConditional* eliminateOne(string key);
 	GaussianBayesNet* eliminate_(const Ordering& ordering);
@@ -158,24 +139,9 @@ class Pose2Graph{
 	void push_back(Pose2Factor* factor);
 };
 
-class Ordering{
-	Ordering(string key);
-	Ordering subtract(const Ordering& keys) const;
-	void unique ();
-	void reverse ();
-};
-
-
 class SymbolicFactor{
 	SymbolicFactor(const Ordering& keys);
 	void print(string s) const;
-};
-
-
-class VectorValues {
-	void insert(string name, Vector val);
-	Vector get(string name) const;
-	bool contains(string name) const;
 };
 
 class Simulated2DPosePrior {
