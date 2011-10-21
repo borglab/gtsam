@@ -338,6 +338,8 @@ public:
   typedef MATRIX FullMatrix;
   typedef Eigen::Block<MATRIX> Block;
   typedef Eigen::Block<const MATRIX> constBlock;
+  typedef typename FullMatrix::ColXpr::SegmentReturnType Column;
+  typedef typename FullMatrix::ConstColXpr::ConstSegmentReturnType constColumn;
 
 private:
   static FullMatrix matrixTemp_; // just for finding types
@@ -444,9 +446,6 @@ public:
 
   /** access to full matrix */
   const FullMatrix& fullMatrix() const { return matrix_; }
-
-  typedef typeof((FullMatrix)matrixTemp_.col(0).segment(0, 1)) Column;
-  typedef typeof(((const FullMatrix&)matrixTemp_).col(0).segment(0, 1)) constColumn;
 
   Column column(size_t i_block, size_t j_block, size_t columnOffset) {
   	assertInvariants();
