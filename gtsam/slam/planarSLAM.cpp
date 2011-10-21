@@ -18,7 +18,7 @@
 #include <gtsam/slam/planarSLAM.h>
 #include <gtsam/nonlinear/NonlinearFactorGraph-inl.h>
 #include <gtsam/nonlinear/NonlinearOptimizer-inl.h>
-#include <gtsam/nonlinear/NonlinearOptimization-inl.h>
+//#include <gtsam/nonlinear/NonlinearOptimization-inl.h>
 #include <gtsam/nonlinear/TupleValues-inl.h>
 
 // Use planarSLAM namespace for specific SLAM instance
@@ -26,6 +26,7 @@ namespace gtsam {
 
 	using namespace planarSLAM;
 	INSTANTIATE_LIE_VALUES(PointKey)
+	INSTANTIATE_LIE_VALUES(PoseKey)
 	INSTANTIATE_TUPLE_VALUES2(PoseValues, PointValues)
 	INSTANTIATE_NONLINEAR_FACTOR_GRAPH(Values)
 	INSTANTIATE_NONLINEAR_OPTIMIZER(Graph, Values)

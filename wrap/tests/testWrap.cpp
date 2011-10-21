@@ -28,7 +28,7 @@ static bool verbose = false;
 #ifdef TOPSRCDIR
 static string topdir = TOPSRCDIR;
 #else
-static string topdir = "penguin";
+static string topdir = "notarealdirectory"; // If TOPSRCDIR is not defined, we error
 #endif
 
 /* ************************************************************************* */

@@ -4,6 +4,7 @@ echo on
 toolboxpath = pwd
 addpath(toolboxpath);
 
+%% Point2
 cd(toolboxpath)
 mex -O5 new_Point2_.cpp
 mex -O5 new_Point2_dd.cpp
@@ -13,12 +14,14 @@ mex -O5 x.cpp
 mex -O5 y.cpp
 mex -O5 dim.cpp
 
+%% Point3
 cd(toolboxpath)
 mex -O5 new_Point3_ddd.cpp
 
 cd @Point3
 mex -O5 norm.cpp
 
+%% Test
 cd(toolboxpath)
 mex -O5 new_Test_.cpp
 

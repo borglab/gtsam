@@ -19,7 +19,7 @@
 
 #include <gtsam/slam/planarSLAM.h>
 #include <gtsam/slam/PlanarSLAMValues.h>
-// #include <gtsam/nonlinear/NonlinearOptimization-inl.h>
+#include <gtsam/nonlinear/NonlinearOptimization-inl.h>
 
 namespace gtsam {
 
