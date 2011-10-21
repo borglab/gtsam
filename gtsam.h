@@ -33,7 +33,7 @@ class Pose2 {
   double y() const;
   double theta() const;
   size_t dim() const;
-  Pose2 expmap(const Vector& v) const;
+  Pose2 expmap(Vector v) const;
   Vector logmap(const Pose2& pose) const;
   Point2 t() const;
   Rot2 r() const;
