@@ -59,8 +59,57 @@ class VectorValues {
 	size_t push_back_preallocated(Vector vector);
 };
 
+class GaussianConditional {
+	GaussianConditional(size_t key, Vector d, Matrix R, Vector sigmas);
+	GaussianConditional(size_t key, Vector d, Matrix R, size_t name1, Matrix S,
+			Vector sigmas);
+	GaussianConditional(size_t key, Vector d, Matrix R, size_t name1, Matrix S,
+			size_t name2, Matrix T, Vector sigmas);
+	void print(string s) const;
+	bool equals(const GaussianConditional &cg, double tol) const;
+};
 
+class GaussianBayesNet {
+	GaussianBayesNet();
+	void print(string s) const;
+	bool equals(const GaussianBayesNet& cbn, double tol) const;
+	void push_back(GaussianConditional* conditional);
+	void push_front(GaussianConditional* conditional);
+};
 
+class GaussianFactor {
+	void print(string s) const;
+	bool equals(const GaussianFactor& lf, double tol) const;
+	double error(const VectorValues& c) const;
+};
+
+class JacobianFactor {
+	JacobianFactor();
+	JacobianFactor(Vector b_in);
+	JacobianFactor(size_t i1, Matrix A1, Vector b, const SharedDiagonal& model);
+	JacobianFactor(size_t i1, Matrix A1, size_t i2, Matrix A2, Vector b,
+			const SharedDiagonal& model);
+	JacobianFactor(size_t i1, Matrix A1, size_t i2, Matrix A2, size_t i3,
+			Matrix A3, Vector b, const SharedDiagonal& model);
+	void print(string s) const;
+	bool equals(const GaussianFactor& lf, double tol) const;
+	bool empty() const;
+	Vector getb() const;
+	double error(const VectorValues& c) const;
+	GaussianConditional* eliminateFirst();
+};
+
+class GaussianFactorGraph {
+	GaussianFactorGraph();
+	void print(string s) const;
+	bool equals(const GaussianFactorGraph& lfgraph, double tol) const;
+
+	size_t size() const;
+	void push_back(GaussianFactor* ptr_f);
+	double error(const VectorValues& c) const;
+	double probPrime(const VectorValues& c) const;
+	void combine(const GaussianFactorGraph& lfg);
+};
 
 class Landmark2 {
 	Landmark2();
@@ -96,6 +145,6 @@ class PlanarSLAMGraph {
 	void addRange(size_t i, size_t j, double z, const SharedNoiseModel& model);
 	void addBearingRange(size_t i, size_t j, const Rot2& z1, double z2,
 			const SharedNoiseModel& model);
-	PlanarSLAMValues* optimize(const PlanarSLAMValues& initialEstimate);
+	PlanarSLAMValues* optimize_(const PlanarSLAMValues& initialEstimate);
 };
 
