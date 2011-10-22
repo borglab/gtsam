@@ -13,7 +13,7 @@
  * @file    testInference.cpp
  * @brief   
  * @author  Richard Roberts
- * @created Dec 6, 2010
+ * @date Dec 6, 2010
  */
 
 #include <CppUnitLite/TestHarness.h>

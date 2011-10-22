@@ -13,7 +13,7 @@
  * @file    VariableSlots.h
  * @brief   VariableSlots describes the structure of a combined factor in terms of where each block comes from in the source factors.
  * @author  Richard Roberts
- * @created Oct 4, 2010
+ * @date    Oct 4, 2010
  */
 
 #pragma once

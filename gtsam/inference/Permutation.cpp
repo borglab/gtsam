@@ -11,9 +11,8 @@
 
 /**
  * @file    Permutation.cpp
- * @brief   
  * @author  Richard Roberts
- * @created Oct 9, 2010
+ * @date    Oct 9, 2010
  */
 
 #include <gtsam/inference/Permutation.h>

@@ -11,9 +11,8 @@
 
 /**
  * @file    Factor-inl.h
- * @brief   
  * @author  Richard Roberts
- * @created Sep 1, 2010
+ * @date    Sep 1, 2010
  */
 
 #pragma once

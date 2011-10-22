@@ -11,9 +11,8 @@
 
 /**
  * @file    GenericMultifrontalSolver-inl.h
- * @brief   
  * @author  Richard Roberts
- * @created Oct 21, 2010
+ * @date    Oct 21, 2010
  */
 
 #pragma once

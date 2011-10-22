@@ -13,7 +13,7 @@
  * @file    testEliminationTree.cpp
  * @brief   
  * @author  Richard Roberts
- * @created Oct 14, 2010
+ * @date Oct 14, 2010
  */
 
 #include <CppUnitLite/TestHarness.h>

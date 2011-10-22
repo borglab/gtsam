@@ -13,7 +13,7 @@
  * @file    testVariableIndex.cpp
  * @brief   
  * @author  Richard Roberts
- * @created Sep 26, 2010
+ * @date Sep 26, 2010
  */
 
 #include <CppUnitLite/TestHarness.h>

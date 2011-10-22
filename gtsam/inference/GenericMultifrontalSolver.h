@@ -11,9 +11,8 @@
 
 /**
  * @file    GenericMultifrontalSolver.h
- * @brief   
  * @author  Richard Roberts
- * @created Oct 21, 2010
+ * @date    Oct 21, 2010
  */
 
 #pragma once
@@ -25,74 +24,80 @@
 
 namespace gtsam {
 
-/**
- * A Generic Multifrontal Solver class
- * Takes two template arguments:
- *   FACTOR the factor type, e.g., GaussianFactor, DiscreteFactor
- *   JUNCTIONTREE annoyingly, you also have to supply a compatible JT type
- *                i.e., one templated on a factor graph with the same factors
- *                TODO: figure why this is so and possibly fix it
- */
-template<class FACTOR, class JUNCTIONTREE>
-class GenericMultifrontalSolver {
+	/**
+	 * A Generic Multifrontal Solver class
+	 *
+	 * A solver is given a factor graph at construction, and implements
+	 * a strategy to solve it (in this case, eliminate into a Bayes tree).
+	 * This generic one will create a Bayes tree when eliminate() is called.
+	 *
+	 * Takes two template arguments:
+	 *   FACTOR the factor type, e.g., GaussianFactor, DiscreteFactor
+	 *   JUNCTIONTREE annoyingly, you also have to supply a compatible JT type
+	 *                i.e., one templated on a factor graph with the same factors
+	 *                TODO: figure why this is so and possibly fix it
+	 */
+	template<class FACTOR, class JUNCTIONTREE>
+	class GenericMultifrontalSolver {
 
-protected:
+	protected:
 
-  // Column structure of the factor graph
-  VariableIndex::shared_ptr structure_;
+		/// Column structure of the factor graph
+		VariableIndex::shared_ptr structure_;
 
-  // Junction tree that performs elimination.
-  typename JUNCTIONTREE::shared_ptr junctionTree_;
-public:
+		/// Junction tree that performs elimination.
+		typename JUNCTIONTREE::shared_ptr junctionTree_;
 
-  typedef typename FactorGraph<FACTOR>::shared_ptr sharedGraph;
-  typedef typename FactorGraph<FACTOR>::Eliminate Eliminate;
+	public:
 
-  /**
-   * Construct the solver for a factor graph.  This builds the junction
-   * tree, which does the symbolic elimination, identifies the cliques,
-   * and distributes all the factors to the right cliques.
-   */
-  GenericMultifrontalSolver(const FactorGraph<FACTOR>& factorGraph);
+		typedef typename FactorGraph<FACTOR>::shared_ptr sharedGraph;
+		typedef typename FactorGraph<FACTOR>::Eliminate Eliminate;
 
-  /**
-   * Construct the solver with a shared pointer to a factor graph and to a
-   * VariableIndex.  The solver will store these pointers, so this constructor
-   * is the fastest.
-   */
-  GenericMultifrontalSolver(const sharedGraph& factorGraph,
+		/**
+		 * Construct the solver for a factor graph.  This builds the junction
+		 * tree, which does the symbolic elimination, identifies the cliques,
+		 * and distributes all the factors to the right cliques.
+		 */
+		GenericMultifrontalSolver(const FactorGraph<FACTOR>& factorGraph);
+
+		/**
+		 * Construct the solver with a shared pointer to a factor graph and to a
+		 * VariableIndex.  The solver will store these pointers, so this constructor
+		 * is the fastest.
+		 */
+		GenericMultifrontalSolver(const sharedGraph& factorGraph,
 				const VariableIndex::shared_ptr& variableIndex);
 
-  /**
-   * Replace the factor graph with a new one having the same structure.  The
-   * This function can be used if the numerical part of the factors changes,
-   * such as during relinearization or adjusting of noise models.
-   */
-  void replaceFactors(const sharedGraph& factorGraph);
+		/**
+		 * Replace the factor graph with a new one having the same structure.  The
+		 * This function can be used if the numerical part of the factors changes,
+		 * such as during relinearization or adjusting of noise models.
+		 */
+		void replaceFactors(const sharedGraph& factorGraph);
 
-  /**
-   * Eliminate the factor graph sequentially.  Uses a column elimination tree
-   * to recursively eliminate.
-   */
-  typename JUNCTIONTREE::BayesTree::shared_ptr
+		/**
+		 * Eliminate the factor graph sequentially.  Uses a column elimination tree
+		 * to recursively eliminate.
+		 */
+		typename JUNCTIONTREE::BayesTree::shared_ptr
 		eliminate(Eliminate function) const;
 
-  /**
-   * Compute the marginal joint over a set of variables, by integrating out
-   * all of the other variables.  This function returns the result as a factor
-   * graph.
-   */
-  typename FactorGraph<FACTOR>::shared_ptr jointFactorGraph(
-      const std::vector<Index>& js, Eliminate function) const;
+		/**
+		 * Compute the marginal joint over a set of variables, by integrating out
+		 * all of the other variables.  This function returns the result as a factor
+		 * graph.
+		 */
+		typename FactorGraph<FACTOR>::shared_ptr jointFactorGraph(
+				const std::vector<Index>& js, Eliminate function) const;
 
-  /**
-   * Compute the marginal density over a variable, by integrating out
-   * all of the other variables.  This function returns the result as a factor.
-   */
-  typename FACTOR::shared_ptr marginalFactor(Index j, Eliminate function) const;
+		/**
+		 * Compute the marginal density over a variable, by integrating out
+		 * all of the other variables.  This function returns the result as a factor.
+		 */
+		typename FACTOR::shared_ptr marginalFactor(Index j,
+				Eliminate function) const;
 
-};
+	};
 
-}
-
+} // gtsam
 

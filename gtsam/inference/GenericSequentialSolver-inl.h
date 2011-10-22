@@ -13,7 +13,7 @@
  * @file    GenericSequentialSolver-inl.h
  * @brief   Implementation for generic sequential solver
  * @author  Richard Roberts
- * @created Oct 21, 2010
+ * @date    Oct 21, 2010
  */
 
 #pragma once

@@ -11,9 +11,8 @@
 
 /**
  * @file    VariableIndex.h
- * @brief   
  * @author  Richard Roberts
- * @created Sep 12, 2010
+ * @date    Sep 12, 2010
  */
 
 #pragma once

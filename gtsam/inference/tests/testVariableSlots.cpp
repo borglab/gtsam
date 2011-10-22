@@ -13,7 +13,7 @@
  * @file    testVariableSlots.cpp
  * @brief   
  * @author  Richard Roberts
- * @created Oct 5, 2010
+ * @date Oct 5, 2010
  */
 
 #include <CppUnitLite/TestHarness.h>

@@ -11,9 +11,8 @@
 
 /**
  * @file    IndexConditional.h
- * @brief   
  * @author  Richard Roberts
- * @created Oct 17, 2010
+ * @date    Oct 17, 2010
  */
 
 #pragma once

@@ -11,9 +11,8 @@
 
 /**
  * @file    IndexFactor.cpp
- * @brief   
  * @author  Richard Roberts
- * @created Oct 17, 2010
+ * @date    Oct 17, 2010
  */
 
 #include <gtsam/inference/IndexFactor.h>

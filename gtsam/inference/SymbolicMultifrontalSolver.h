@@ -11,9 +11,8 @@
 
 /**
  * @file    SymbolicMultifrontalSolver.h
- * @brief   
  * @author  Richard Roberts
- * @created Oct 22, 2010
+ * @date    Oct 22, 2010
  */
 
 #pragma once

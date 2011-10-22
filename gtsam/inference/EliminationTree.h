@@ -1,8 +1,7 @@
 /**
  * @file    EliminationTree.h
- * @brief   
  * @author  Frank Dellaert
- * @created Oct 13, 2010
+ * @date    Oct 13, 2010
  */
 #pragma once
 

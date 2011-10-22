@@ -11,9 +11,8 @@
 
 /**
  * @file    SymbolicSequentialSolver.cpp
- * @brief   
  * @author  Richard Roberts
- * @created Oct 21, 2010
+ * @date    Oct 21, 2010
  */
 
 #include <gtsam/inference/SymbolicSequentialSolver.h>

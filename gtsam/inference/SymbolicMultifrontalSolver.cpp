@@ -11,9 +11,8 @@
 
 /**
  * @file    SymbolicMultifrontalSolver.cpp
- * @brief   
  * @author  Richard Roberts
- * @created Oct 22, 2010
+ * @date    Oct 22, 2010
  */
 
 #include <gtsam/inference/SymbolicMultifrontalSolver.h>
