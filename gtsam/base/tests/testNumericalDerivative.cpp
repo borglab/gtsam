@@ -11,9 +11,8 @@
 
 /**
  * @file    testNumericalDerivative.cpp
- * @brief   
  * @author  Richard Roberts
- * @created Apr 8, 2011
+ * @date    Apr 8, 2011
  */
 
 #include <CppUnitLite/TestHarness.h>

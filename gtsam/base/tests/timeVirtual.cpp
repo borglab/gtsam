@@ -2,7 +2,7 @@
  * @file    timeVirtual.cpp
  * @brief   Time the overhead of using virtual destructors and methods
  * @author  Richard Roberts
- * @created Dec 3, 2010
+ * @date    Dec 3, 2010
  */
 
 #include <gtsam/base/timing.h>

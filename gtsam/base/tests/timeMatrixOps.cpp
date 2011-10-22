@@ -13,7 +13,7 @@
  * @file    timeublas.cpp
  * @brief   Tests to help determine which way of accomplishing something with Eigen is faster
  * @author  Richard Roberts
- * @created Sep 18, 2010
+ * @date    Sep 18, 2010
  */
 
 #include <boost/random.hpp>

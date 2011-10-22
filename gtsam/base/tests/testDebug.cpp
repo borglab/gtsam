@@ -11,9 +11,8 @@
 
 /**
  * @file    testCholesky.cpp
- * @brief   
  * @author  Richard Roberts
- * @created Feb 14, 2011
+ * @date    Feb 14, 2011
  */
 
 #include <CppUnitLite/TestHarness.h>
