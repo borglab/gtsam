@@ -11,7 +11,7 @@
 
 /**
  * @file PlanarSLAMValues.h
- * @brief Re-created on Feb 22, 2010 for compatibility with MATLAB
+ * @brief Convenience for MATLAB wrapper, which does not allow for identically named methods
  * @author Frank Dellaert
  */
 

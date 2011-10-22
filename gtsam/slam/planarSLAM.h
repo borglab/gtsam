@@ -68,11 +68,11 @@ namespace gtsam {
 			/// insert a pose
 		  void insertPose(int key, const Pose2& pose) {insert(PoseKey(key), pose); }
 
-		  /// insert a point
+			/// insert a point
 		  void insertPoint(int key, const Point2& point) {insert(PointKey(key), point); }
 		};
 
-			/**
+		/**
 		 * List of typedefs for factors
 		 */
 
@@ -120,12 +120,13 @@ namespace gtsam {
 			void addBearingRange(const PoseKey& i, const PointKey& j,
 					const Rot2& z1, double z2, const SharedNoiseModel& model);
 
-			/// Optimize, mostly here for MATLAB
-			boost::shared_ptr<Values> optimize(const Values& initialEstimate) {
+			/// Optimize_ for MATLAB
+			boost::shared_ptr<Values> optimize_(const Values& initialEstimate) {
 				typedef NonlinearOptimizer<Graph, Values> Optimizer;
-//				NonlinearOptimizationParameters::LAMBDA
 				boost::shared_ptr<Values> result(
-						new Values(*Optimizer::optimizeGN(*this, initialEstimate)));
+						new Values(
+								*Optimizer::optimizeLM(*this, initialEstimate,
+										NonlinearOptimizationParameters::LAMBDA)));
 				return result;
 			}
 		};

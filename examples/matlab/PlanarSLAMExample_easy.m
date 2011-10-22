@@ -71,5 +71,5 @@ initialEstimate.insertPoint(l2, Landmark2(4.1, 1.8));
 initialEstimate.print('initial estimate');
 
 %% Optimize using Levenberg-Marquardt optimization with an ordering from colamd
-result = graph.optimize(initialEstimate);
+result = graph.optimize_(initialEstimate);
 result.print('final result');
