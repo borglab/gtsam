@@ -336,7 +336,7 @@ public:
 
   /** Print */
   virtual void print(const std::string& s = "") const {
-    std::cout << s << ": NoiseModelFactor(" << (std::string) this->key_ << ")\n";
+    std::cout << s << ": NonlinearFactor1(" << (std::string) this->key_ << ")\n";
     this->noiseModel_->print("  noise model: ");
   }
 
@@ -414,7 +414,7 @@ public:
 
   /** Print */
   virtual void print(const std::string& s = "") const {
-    std::cout << s << ": NoiseModelFactor("
+    std::cout << s << ": NonlinearFactor2("
     		<< (std::string) this->key1_ << ","
     		<< (std::string) this->key2_ << ")\n";
     this->noiseModel_->print("  noise model: ");
@@ -499,7 +499,7 @@ public:
 
   /** Print */
   virtual void print(const std::string& s = "") const {
-    std::cout << s << ": NoiseModelFactor("
+    std::cout << s << ": NonlinearFactor3("
     		<< (std::string) this->key1_ << ","
     		<< (std::string) this->key2_ << ","
     		<< (std::string) this->key3_ << ")\n";
@@ -593,7 +593,7 @@ public:
 
   /** Print */
   virtual void print(const std::string& s = "") const {
-    std::cout << s << ": NoiseModelFactor("
+    std::cout << s << ": NonlinearFactor4("
     		<< (std::string) this->key1_ << ","
     		<< (std::string) this->key2_ << ","
      		<< (std::string) this->key3_ << ","
@@ -693,7 +693,7 @@ public:
 
   /** Print */
   virtual void print(const std::string& s = "") const {
-    std::cout << s << ": NoiseModelFactor("
+    std::cout << s << ": NonlinearFactor5("
     		<< (std::string) this->key1_ << ","
     		<< (std::string) this->key2_ << ","
      		<< (std::string) this->key3_ << ","
@@ -800,7 +800,7 @@ public:
 
   /** Print */
   virtual void print(const std::string& s = "") const {
-    std::cout << s << ": NoiseModelFactor("
+    std::cout << s << ": NonlinearFactor6("
     		<< (std::string) this->key1_ << ","
     		<< (std::string) this->key2_ << ","
      		<< (std::string) this->key3_ << ","
