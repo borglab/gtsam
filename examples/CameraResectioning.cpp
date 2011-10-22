@@ -1,9 +1,21 @@
-/*
+/* ----------------------------------------------------------------------------
+
+ * GTSAM Copyright 2010, Georgia Tech Research Corporation, 
+ * Atlanta, Georgia 30332-0415
+ * All Rights Reserved
+ * Authors: Frank Dellaert, et al. (see THANKS for the full author list)
+
+ * See LICENSE for the license information
+
+ * -------------------------------------------------------------------------- */
+
+/**
  * @file		CameraResectioning.cpp
  * @brief   An example of gtsam for solving the camera resectioning problem
  * @author	Duy-Nguyen Ta
- * @created	Aug 23, 2011
+ * @date	  Aug 23, 2011
  */
+
 #include <gtsam/nonlinear/Key.h>
 #include <gtsam/geometry/Pose3.h>
 #include <gtsam/geometry/Cal3_S2.h>

@@ -11,9 +11,8 @@
 
 /**
  * @file    timeSequentialOnDataset.cpp
- * @brief   
  * @author  Richard Roberts
- * @created Oct 7, 2010
+ * @date    Oct 7, 2010
  */
 
 #include <gtsam/base/timing.h>
