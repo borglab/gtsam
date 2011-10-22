@@ -57,6 +57,24 @@ namespace gtsam {
 
 		virtual ~BearingRangeFactor() {}
 
+	  /** Print */
+	  virtual void print(const std::string& s = "") const {
+	    std::cout << s << ": BearingRangeFactor("
+	    		<< (std::string) this->key1_ << ","
+	    		<< (std::string) this->key2_ << ")\n";
+	    bearing_.print("  measured bearing");
+	    std::cout << "  measured range: " << range_ << std::endl;
+	    this->noiseModel_->print("  noise model");
+	  }
+
+		/** equals */
+		virtual bool equals(const NonlinearFactor<VALUES>& expected, double tol=1e-9) const {
+			const This *e =	dynamic_cast<const This*> (&expected);
+			return e != NULL && Base::equals(*e, tol) &&
+					fabs(this->range_ - e->range_) < tol &&
+					this->bearing_.equals(e->bearing_, tol);
+		}
+
 		/** h(x)-z -> between(z,h(x)) for Rot manifold */
 		Vector evaluateError(const Pose& pose, const Point& point,
 				boost::optional<Matrix&> H1, boost::optional<Matrix&> H2) const {
@@ -80,14 +98,6 @@ namespace gtsam {
 		/** return the measured */
 		inline const std::pair<Rot, double> measured() const {
 			return std::make_pair(bearing_, range_);
-		}
-
-		/** equals */
-		virtual bool equals(const NonlinearFactor<VALUES>& expected, double tol=1e-9) const {
-			const This *e =	dynamic_cast<const This*> (&expected);
-			return e != NULL && Base::equals(*e, tol) &&
-					fabs(this->range_ - e->range_) < tol &&
-					this->bearing_.equals(e->bearing_, tol);
 		}
 
 	private:

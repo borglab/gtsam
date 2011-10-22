@@ -63,8 +63,9 @@ namespace gtsam {
 
 		/** print */
 		virtual void print(const std::string& s) const {
-			Base::print(s);
-			prior_.print("prior");
+			std::cout << s << ": PriorFactor(" << (std::string) this->key_ << ")\n";
+			prior_.print("  prior");
+			this->noiseModel_->print("  noise model");
 		}
 
 		/** equals */

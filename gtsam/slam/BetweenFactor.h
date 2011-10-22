@@ -62,8 +62,11 @@ namespace gtsam {
 
 		/** print */
 		virtual void print(const std::string& s) const {
-			Base::print(s);
-			measured_.print("measured");
+	    std::cout << s << ": BetweenFactor("
+	    		<< (std::string) this->key1_ << ","
+	    		<< (std::string) this->key2_ << ")\n";
+			measured_.print("  measured");
+	    this->noiseModel_->print("  noise model");
 		}
 
 		/** equals */
