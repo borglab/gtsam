@@ -11,9 +11,8 @@
 
 /**
  * @file    testCholeskyFactor.cpp
- * @brief   
  * @author  Richard Roberts
- * @created Dec 15, 2010
+ * @date    Dec 15, 2010
  */
 
 #include <vector>

@@ -13,7 +13,7 @@
  * @file    timeSLAMlike.cpp
  * @brief   Times solving of random SLAM-like graphs
  * @author  Richard Roberts
- * @created Aug 30, 2010
+ * @date    Aug 30, 2010
  */
 
 #include <gtsam/linear/GaussianFactorGraph.h>
@@ -141,6 +141,6 @@ int main(int argc, char *argv[]) {
  * @file    timeSLAMlike.cpp
  * @brief   
  * @author  Richard Roberts
- * @created Aug 30, 2010
+ * @date Aug 30, 2010
  */
 

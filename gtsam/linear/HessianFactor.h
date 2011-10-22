@@ -13,7 +13,7 @@
  * @file    HessianFactor.h
  * @brief   Contains the HessianFactor class, a general quadratic factor
  * @author  Richard Roberts
- * @created Dec 8, 2010
+ * @date    Dec 8, 2010
  */
 
 #pragma once

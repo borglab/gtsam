@@ -11,9 +11,8 @@
 
 /**
  * @file    SequentialSolver.cpp
- * @brief   
  * @author  Richard Roberts
- * @created Oct 19, 2010
+ * @date    Oct 19, 2010
  */
 
 #include <gtsam/3rdparty/Eigen/Eigen/Dense>

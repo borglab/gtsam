@@ -11,9 +11,8 @@
 
 /**
  * @file    JacobianFactor.h
- * @brief   
  * @author  Richard Roberts
- * @created Dec 8, 2010
+ * @date    Dec 8, 2010
  */
 #pragma once
 

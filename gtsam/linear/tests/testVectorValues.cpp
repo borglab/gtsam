@@ -11,9 +11,8 @@
 
 /**
  * @file    testVectorValues.cpp
- * @brief   
  * @author  Richard Roberts
- * @created Sep 16, 2010
+ * @date    Sep 16, 2010
  */
 
 #include <boost/assign/std/vector.hpp>

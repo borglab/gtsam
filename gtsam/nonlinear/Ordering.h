@@ -11,9 +11,8 @@
 
 /**
  * @file    Ordering.h
- * @brief   
  * @author  Richard Roberts
- * @created Sep 2, 2010
+ * @date    Sep 2, 2010
  */
 
 #pragma once

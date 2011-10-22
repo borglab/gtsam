@@ -11,9 +11,8 @@
 
 /**
  * @file    GaussianMultifrontalSolver.h
- * @brief   
  * @author  Richard Roberts
- * @created Oct 21, 2010
+ * @date    Oct 21, 2010
  */
 
 #pragma once
@@ -26,7 +25,8 @@
 
 namespace gtsam {
 
-/** This solver uses multifrontal elimination to solve a GaussianFactorGraph,
+/**
+ * This solver uses multifrontal elimination to solve a GaussianFactorGraph,
  * i.e. a sparse linear system.  Underlying this is a junction tree, which is
  * eliminated into a Bayes tree.
  *
@@ -53,7 +53,7 @@ protected:
 public:
 
   /**
-   * Construct the solver for a factor graph.  This builds the elimination
+   * Construct the solver for a factor graph.  This builds the junction
    * tree, which already does some of the work of elimination.
    */
   GaussianMultifrontalSolver(const FactorGraph<GaussianFactor>& factorGraph, bool useQR = false);

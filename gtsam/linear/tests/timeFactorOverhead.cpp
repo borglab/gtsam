@@ -13,7 +13,7 @@
  * @file    timeFactorOverhead.cpp
  * @brief   Compares times of solving large single-factor graphs with their multi-factor equivalents.
  * @author  Richard Roberts
- * @created Aug 20, 2010
+ * @date    Aug 20, 2010
  */
 
 #include <gtsam/linear/GaussianFactorGraph.h>
