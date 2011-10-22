@@ -52,7 +52,7 @@ namespace gtsam {
 	template<class FACTOR>
 	void FactorGraph<FACTOR>::print(const string& s) const {
 		cout << s << endl;
-		printf("size: %d\n", (int) size());
+		cout << "size: " << size() << endl;
 		for (size_t i = 0; i < factors_.size(); i++) {
 			stringstream ss;
 			ss << "factor " << i;
