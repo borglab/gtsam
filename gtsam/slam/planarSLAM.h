@@ -58,9 +58,14 @@ namespace gtsam {
 				TupleValues2<PoseValues, PointValues>(values) {
 			}
 
-			/// Copy constructor - FIXME: shouldn't need to exist
+			/// Copy constructor
 			Values(const TupleValues2<PoseValues, PointValues>::Base& values) :
 				TupleValues2<PoseValues, PointValues>(values) {
+			}
+
+			/// From sub-values
+			Values(const PoseValues& poses, const PointValues& points) :
+				TupleValues2<PoseValues, PointValues>(poses, points) {
 			}
 
 			// Convenience for MATLAB wrapper, which does not allow for identically named methods
