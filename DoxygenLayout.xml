@@ -31,13 +31,13 @@
     <collaborationgraph visible="$COLLABORATION_GRAPH"/>
     <allmemberslink visible="yes"/>
     <memberdecl>
+      <membergroups visible="yes"/>
       <publicmethods title=""/>
       <publicstaticmethods title=""/>
       <publicattributes title=""/>
       <publicstaticattributes title=""/>
       <publictypes title=""/>
       <publicslots title=""/>
-      <membergroups visible="yes"/>
       <nestedclasses visible="yes" title=""/>
       <signals title=""/>
       <protectedtypes title=""/>

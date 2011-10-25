@@ -47,6 +47,8 @@ Important Installation Notes Specific to GTSAM
 1)
 GTSAM requires the following libraries to be installed on your system:
  - BOOST version 1.40 or greater (install through Linux repositories or MacPorts)
+ - Automake
+ - libtool
 
 2)
 GTSAM makes extensive use of debug assertions, even for checking input of
@@ -71,6 +73,8 @@ header-only Eigen.
 3)
 Putting the above together, here are some sample ./configure commands for
 compiling gtsam:
+
+NOTE: If checked out from SVN, before attempting to compile run the command ./autogen.sh
 
 For Debugging (native Snow Leopard g++ compiler):
 ./configure CXXFLAGS="-fno-inline -g -Wall" \
@@ -98,9 +102,17 @@ run it in sub-directory of choice, e.g., starting out in the main GTSAM folder:
 
 $] mkdir build
 $] cd build
+
+if you want to install:
+
 $] ../configure ..... (command as above)
 $] make install
 
+or if you dont want to install then you can:
+
+$] ../configure ..... (command as above)
+$] ../configure --disable-shared
+$] make (or make check)
 
 Built-in Unit Tests:
 --------------------
