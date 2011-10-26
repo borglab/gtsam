@@ -152,12 +152,6 @@ public:
 	/** Return a view of the r.h.s. d vector */
 	const_d_type get_d() const { return rsd_.column(nrFrontals()+nrParents(), 0); }
 
-	/**
-	 * get a RHS as a single vector
-	 * FIXME: shouldn't this be weighted by sigmas?
-	 */
-	Vector rhs() const { return get_d(); }
-
 	/** get the dimension of a variable */
 	size_t dim(const_iterator variable) const { return rsd_(variable - this->begin()).cols(); }
 
