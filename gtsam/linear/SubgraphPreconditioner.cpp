@@ -64,7 +64,7 @@ namespace gtsam {
 	VectorValues gradient(const SubgraphPreconditioner& sp, const VectorValues& y) {
 		VectorValues x = sp.x(y); // x = inv(R1)*y
 		Errors e2 = gaussianErrors(*sp.Ab2(),x);
-		VectorValues gx2 = VectorValues::zero(y);
+		VectorValues gx2 = VectorValues::Zero(y);
 		gtsam::transposeMultiplyAdd(*sp.Ab2(),1.0,e2,gx2); // A2'*e2;
 		VectorValues gy2 = gtsam::backSubstituteTranspose(*sp.Rc1(), gx2); // inv(R1')*gx2
 		return y + gy2;
@@ -138,7 +138,7 @@ namespace gtsam {
 		while (it != end)
 		e2.push_back(*(it++));
 
-		VectorValues x = VectorValues::zero(y); // x = 0
+		VectorValues x = VectorValues::Zero(y); // x = 0
 		gtsam::transposeMultiplyAdd(*Ab2_,1.0,e2,x);   // x += A2'*e2
 		axpy(alpha, gtsam::backSubstituteTranspose(*Rc1_, x), y); // y += alpha*inv(R1')*x
 	}

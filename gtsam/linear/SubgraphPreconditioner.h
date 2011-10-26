@@ -76,8 +76,7 @@ namespace gtsam {
 
 		/* A zero VectorValues with the structure of xbar */
 		VectorValues zero() const {
-			VectorValues V(*xbar_) ;
-			V.makeZero();
+			VectorValues V(VectorValues::Zero(*xbar_)) ;
 			return V ;
 		}
 

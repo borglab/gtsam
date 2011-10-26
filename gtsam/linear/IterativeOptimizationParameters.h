@@ -12,6 +12,8 @@
 
 namespace gtsam {
 
+struct DimSpec;
+
 // a container for all related parameters
 struct IterativeOptimizationParameters {
 
@@ -31,7 +33,7 @@ public:
   double epsilon_abs_; // absolute error
   verbosityLevel verbosity_;
   size_t nReduce_ ;
-  DimSpec::shared_ptr skeleton_spec_;
+  boost::shared_ptr<DimSpec> skeleton_spec_;
   bool est_cond_ ;
 
 public:
@@ -80,4 +82,28 @@ public:
     return est_cond_ ;
   }
 };
+
+struct DimSpec: public std::vector<size_t> {
+
+  typedef std::vector<size_t> Base;
+  typedef boost::shared_ptr<DimSpec> shared_ptr;
+
+  DimSpec() :
+    Base() {
+  }
+  DimSpec(size_t n) :
+    Base(n) {
+  }
+  DimSpec(size_t n, size_t init) :
+    Base(n, init) {
+  }
+  DimSpec(const VectorValues &V) :
+    Base(V.size()) {
+    const size_t n = V.size();
+    for (size_t i = 0; i < n; ++i) {
+      (*this)[i] = V[i].rows();
+    }
+  }
+};
+
 }

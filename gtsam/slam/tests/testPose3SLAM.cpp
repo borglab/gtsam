@@ -217,11 +217,12 @@ TEST( Pose3Values, expmap )
 	// so shifting to East requires little thought, different from with Pose2 !!!
 
 	Ordering ordering(*expected.orderingArbitrary());
-	VectorValues delta(expected.dims(ordering), Vector_(24,
+	VectorValues delta(expected.dims(ordering));
+	delta.vector() = Vector_(24,
 			0.0,0.0,0.0,  0.1, 0.0, 0.0,
 			0.0,0.0,0.0,  0.1, 0.0, 0.0,
 			0.0,0.0,0.0,  0.1, 0.0, 0.0,
-			0.0,0.0,0.0,  0.1, 0.0, 0.0));
+			0.0,0.0,0.0,  0.1, 0.0, 0.0);
 	Pose3Values actual = pose3SLAM::circle(4,1.0).expmap(delta, ordering);
 	CHECK(assert_equal(expected,actual));
 }

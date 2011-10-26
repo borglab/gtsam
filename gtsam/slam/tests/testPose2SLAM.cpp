@@ -352,16 +352,14 @@ TEST( Pose2Prior, error )
 	    boost::dynamic_pointer_cast<JacobianFactor>(factor.linearize(x0, ordering));
 
 	// Check error at x0, i.e. delta = zero !
-	VectorValues delta(x0.dims(ordering));
-	delta.makeZero();
+	VectorValues delta(VectorValues::Zero(x0.dims(ordering)));
 	delta[ordering["x1"]] = zero(3);
 	Vector error_at_zero = Vector_(3,0.0,0.0,0.0);
 	CHECK(assert_equal(error_at_zero,factor.whitenedError(x0)));
 	CHECK(assert_equal(-error_at_zero,linear->error_vector(delta)));
 
 	// Check error after increasing p2
-	VectorValues addition(x0.dims(ordering));
-	addition.makeZero();
+	VectorValues addition(VectorValues::Zero(x0.dims(ordering)));
 	addition[ordering["x1"]] = Vector_(3, 0.1, 0.0, 0.0);
 	VectorValues plus = delta + addition;
 	Pose2Values x1 = x0.expmap(plus, ordering);

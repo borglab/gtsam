@@ -16,56 +16,69 @@
  * @author Alex Cunningham
  */
 
+#include <gtsam/base/FastVector.h>
 #include <gtsam/linear/VectorValues.h>
 
 using namespace std;
 using namespace gtsam;
 
 /* ************************************************************************* */
-VectorValues::VectorValues(Index nVars, size_t varDim) :
-		varStarts_(nVars + 1) {
-	varStarts_[0] = 0;
-	size_t varStart = 0;
-	for (Index j = 1; j <= nVars; ++j)
-		varStarts_[j] = (varStart += varDim);
-	values_.resize(varStarts_.back());
+VectorValues::VectorValues(const VectorValues& other) {
+  *this = other;
 }
 
 /* ************************************************************************* */
-VectorValues::VectorValues(const std::vector<size_t>& dimensions,
-		const Vector& values) :
-		values_(values), varStarts_(dimensions.size() + 1) {
-	varStarts_[0] = 0;
-	size_t varStart = 0;
-	Index var = 0;
-	BOOST_FOREACH(size_t dim, dimensions)
-				varStarts_[++var] = (varStart += dim);
-	assert(varStarts_.back() == (size_t) values.size());
+VectorValues& VectorValues::operator=(const VectorValues& rhs) {
+  if(this != &rhs) {
+    resizeLike(rhs);          // Copy structure
+    values_ = rhs.values_;  // Copy values
+  }
+  return *this;
 }
 
 /* ************************************************************************* */
-VectorValues::VectorValues(const std::vector<size_t>& dimensions,
-		const double* values) :
-		varStarts_(dimensions.size() + 1) {
-	varStarts_[0] = 0;
-	size_t varStart = 0;
-	Index var = 0;
-	BOOST_FOREACH(size_t dim, dimensions)
-				varStarts_[++var] = (varStart += dim);
-	values_ = Vector_(varStart, values);
+VectorValues VectorValues::Zero(const VectorValues& x) {
+	VectorValues cloned(SameStructure(x));
+	cloned.vector() = Vector::Zero(x.dim());
+	return cloned;
 }
 
 /* ************************************************************************* */
-VectorValues VectorValues::SameStructure(const VectorValues& otherValues) {
-	VectorValues ret;
-	ret.varStarts_ = otherValues.varStarts_;
-	ret.values_.resize(ret.varStarts_.back());
-	return ret;
+void VectorValues::insert(Index j, const Vector& value) {
+  // Make sure j does not already exist
+  if(exists(j))
+    throw invalid_argument("VectorValues: requested variable index to insert already exists.");
+
+  // Get vector of dimensions
+  FastVector<size_t> dimensions(size());
+  for(size_t k=0; k<maps_.size(); ++k)
+    dimensions[k] = maps_[k].rows();
+
+  // If this adds variables at the end, insert zero-length entries up to j
+  if(j >= size())
+    dimensions.insert(dimensions.end(), j+1-size(), 0);
+
+  // Set correct dimension for j
+  dimensions[j] = value.rows();
+
+  // Make a copy to make assignment easier
+  VectorValues original(*this);
+
+  // Resize to accomodate new variable
+  resize(dimensions);
+
+  // Copy original variables
+  for(Index k = 0; k < original.size(); ++k)
+    if(k != j && exists(k))
+      operator[](k) = original[k];
+
+  // Copy new variable
+  operator[](j) = value;
 }
 
 /* ************************************************************************* */
 void VectorValues::print(const std::string& str) const {
-	std::cout << str << ": " << varStarts_.size() - 1 << " elements\n";
+	std::cout << str << ": " << size() << " elements\n";
 	for (Index var = 0; var < size(); ++var)
 		std::cout << "  " << var << ": \n" << operator[](var) << "\n";
 	std::cout.flush();
@@ -73,61 +86,59 @@ void VectorValues::print(const std::string& str) const {
 
 /* ************************************************************************* */
 bool VectorValues::equals(const VectorValues& x, double tol) const {
-	return varStarts_ == x.varStarts_
-			&& equal_with_abs_tol(values_, x.values_, tol);
+	return hasSameStructure(x) && equal_with_abs_tol(values_, x.values_, tol);
 }
 
 /* ************************************************************************* */
-size_t VectorValues::dim(Index j) const {
-	checkVariable(j);
-	const size_t start = varStarts_[j], n = varStarts_[j + 1] - start;
-	return n;
+void VectorValues::resize(Index nVars, size_t varDim) {
+  maps_.clear();
+  maps_.reserve(nVars);
+  values_.resize(nVars * varDim);
+	int varStart = 0;
+	for (Index j = 0; j < nVars; ++j) {
+		maps_.push_back(values_.segment(varStart, varDim));
+		varStart += varDim;
+	}
 }
 
 /* ************************************************************************* */
-VectorValues::mapped_type VectorValues::operator[](Index j) {
-	checkVariable(j);
-	const size_t start = varStarts_[j], n = varStarts_[j + 1] - start;
-	return values_.segment(start, n);
+void VectorValues::resizeLike(const VectorValues& other) {
+  values_.resize(other.dim());
+  // Create SubVectors referencing our values_ vector
+  maps_.clear();
+  maps_.reserve(other.size());
+  int varStart = 0;
+  BOOST_FOREACH(const SubVector& value, other) {
+    maps_.push_back(values_.segment(varStart, value.rows()));
+    varStart += value.rows();
+  }
 }
 
 /* ************************************************************************* */
-VectorValues::const_mapped_type VectorValues::operator[](Index j) const {
-	checkVariable(j);
-	const size_t start = varStarts_[j], n = varStarts_[j + 1] - start;
-	return values_.segment(start, n);
+VectorValues VectorValues::SameStructure(const VectorValues& other) {
+  VectorValues ret;
+  ret.resizeLike(other);
+  return ret;
 }
 
 /* ************************************************************************* */
-VectorValues VectorValues::zero(const VectorValues& x) {
-	VectorValues cloned(x);
-	cloned.makeZero();
-	return cloned;
-}
-
-/* ************************************************************************* */
-Index VectorValues::push_back_preallocated(const Vector& vector) {
-	Index var = varStarts_.size() - 1;
-	varStarts_.push_back(varStarts_.back() + vector.size());
-	this->operator[](var) = vector; // This will assert that values_ has enough allocated space.
-	return var;
+bool VectorValues::hasSameStructure(const VectorValues& other) const {
+  for(size_t j=0; j<size(); ++j)
+    if(this->dim(j) != other.dim(j))
+      return false;
+  return true;
 }
 
 /* ************************************************************************* */
 VectorValues VectorValues::operator+(const VectorValues& c) const {
-	assert(varStarts_ == c.varStarts_);
-	VectorValues result;
-	result.varStarts_ = varStarts_;
-	result.values_ = values_.head(varStarts_.back())
-			+ c.values_.head(varStarts_.back());
+	assert(this->hasSameStructure(c));
+	VectorValues result(SameStructure(c));
+	result.values_ = this->values_ + c.values_;
 	return result;
 }
 
 /* ************************************************************************* */
 void VectorValues::operator+=(const VectorValues& c) {
-	assert(varStarts_ == c.varStarts_);
-	this->values_ += c.values_.head(varStarts_.back());
+	assert(this->hasSameStructure(c));
+	this->values_ += c.values_;
 }
-
-/* ************************************************************************* */
-

@@ -172,9 +172,7 @@ namespace gtsam {
 
 	  /** zero: create VectorValues of appropriate structure */
 	  VectorValues zero(const Ordering& ordering) const {
-		  VectorValues z(this->dims(ordering));
-		  z.makeZero();
-		  return z;
+		  return VectorValues::Zero(this->dims(ordering));
 	  }
 
 	  /** @return number of key/value pairs stored */
@@ -313,9 +311,7 @@ namespace gtsam {
 	  const Value1& at(const Key1& j) const { return first_.at(j); }
 
 	  VectorValues zero(const Ordering& ordering) const {
-		  VectorValues z(this->dims(ordering));
-		  z.makeZero();
-		  return z;
+		  return VectorValues::Zero(this->dims(ordering));
 	  }
 
 	  size_t size() const { return first_.size(); }

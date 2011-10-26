@@ -45,7 +45,7 @@ public:
 
 protected:
   std::vector<Factors> indexUnpermuted_;
-  Permuted<std::vector<Factors>, Factors&> index_; // Permuted view of indexUnpermuted.
+  Permuted<std::vector<Factors> > index_; // Permuted view of indexUnpermuted.
   size_t nFactors_; // Number of factors in the original factor graph.
   size_t nEntries_; // Sum of involved variable counts of each factor.
 

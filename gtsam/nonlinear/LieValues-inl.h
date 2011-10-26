@@ -77,9 +77,7 @@ namespace gtsam {
   /* ************************************************************************* */
   template<class J>
   VectorValues LieValues<J>::zero(const Ordering& ordering) const {
-  	VectorValues z(this->dims(ordering));
-  	z.makeZero();
-  	return z;
+  	return VectorValues::Zero(this->dims(ordering));
   }
 
   /* ************************************************************************* */

@@ -580,7 +580,7 @@ namespace gtsam {
   /* ************************************************************************* */
   VectorValues gradient(const FactorGraph<JacobianFactor>& fg, const VectorValues& x) {
     // It is crucial for performance to make a zero-valued clone of x
-    VectorValues g = VectorValues::zero(x);
+    VectorValues g = VectorValues::Zero(x);
     Errors e;
     BOOST_FOREACH(const JacobianFactor::shared_ptr& factor, fg) {
       e.push_back(factor->error_vector(x));
@@ -603,7 +603,7 @@ namespace gtsam {
 
   /* ************************************************************************* */
   void multiply(const FactorGraph<JacobianFactor>& fg, const VectorValues &x, VectorValues &r) {
-    r.makeZero();
+    r.vector() = Vector::Zero(r.dim());
     Index i = 0;
     BOOST_FOREACH(const JacobianFactor::shared_ptr& factor, fg) {
       for(JacobianFactor::const_iterator j = factor->begin(); j != factor->end(); ++j) {
@@ -615,7 +615,7 @@ namespace gtsam {
 
   /* ************************************************************************* */
   void transposeMultiply(const FactorGraph<JacobianFactor>& fg, const VectorValues &r, VectorValues &x) {
-    x.makeZero();
+    x.vector() = Vector::Zero(x.dim());
     Index i = 0;
     BOOST_FOREACH(const JacobianFactor::shared_ptr& factor, fg) {
       for(JacobianFactor::const_iterator j = factor->begin(); j != factor->end(); ++j) {

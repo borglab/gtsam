@@ -125,14 +125,15 @@ struct ISAM2<CONDITIONAL, VALUES>::Impl {
 struct _VariableAdder {
   Ordering& ordering;
   Permuted<VectorValues>& vconfig;
-  _VariableAdder(Ordering& _ordering, Permuted<VectorValues>& _vconfig) : ordering(_ordering), vconfig(_vconfig) {}
+  Index nextVar;
+  _VariableAdder(Ordering& _ordering, Permuted<VectorValues>& _vconfig, Index _nextVar) : ordering(_ordering), vconfig(_vconfig), nextVar(_nextVar){}
   template<typename I>
   void operator()(I xIt) {
     const bool debug = ISDEBUG("ISAM2 AddVariables");
-    Index var = vconfig->push_back_preallocated(zero(xIt->second.dim()));
-    vconfig.permutation()[var] = var;
-    ordering.insert(xIt->first, var);
-    if(debug) cout << "Adding variable " << (string)xIt->first << " with order " << var << endl;
+    vconfig.permutation()[nextVar] = nextVar;
+    ordering.insert(xIt->first, nextVar);
+    if(debug) cout << "Adding variable " << (string)xIt->first << " with order " << nextVar << endl;
+    ++ nextVar;
   }
 };
 
@@ -145,15 +146,18 @@ void ISAM2<CONDITIONAL,VALUES>::Impl::AddVariables(
   theta.insert(newTheta);
   if(debug) newTheta.print("The new variables are: ");
   // Add the new keys onto the ordering, add zeros to the delta for the new variables
-  vector<Index> dims(newTheta.dims(*newTheta.orderingArbitrary(ordering.nVars())));
+  vector<Index> dims(newTheta.dims(*newTheta.orderingArbitrary()));
   if(debug) cout << "New variables have total dimensionality " << accumulate(dims.begin(), dims.end(), 0) << endl;
-  delta.container().reserve(delta->size() + newTheta.size(), delta->dim() + accumulate(dims.begin(), dims.end(), 0));
-  delta.permutation().resize(delta->size() + newTheta.size());
+  const size_t newDim = accumulate(dims.begin(), dims.end(), 0);
+  const size_t originalDim = delta->dim();
+  const size_t originalnVars = delta->size();
+  delta.container().append(dims);
+  delta.container().vector().segment(originalDim, newDim) = Vector::Zero(newDim);
+  delta.permutation().resize(originalnVars + newTheta.size());
   {
-    _VariableAdder vadder(ordering, delta);
+    _VariableAdder vadder(ordering, delta, originalnVars);
     newTheta.apply(vadder);
     assert(delta.permutation().size() == delta.container().size());
-    assert(delta.container().dim() == delta.container().dimCapacity());
     assert(ordering.nVars() == delta.size());
     assert(ordering.size() == delta.size());
   }

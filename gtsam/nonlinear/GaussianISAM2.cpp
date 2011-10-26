@@ -62,7 +62,7 @@ void optimize2(const BayesTree<GaussianConditional>::sharedClique& clique, doubl
     for(it = (*clique)->beginFrontals(); it!=(*clique)->endFrontals(); it++) {
       if(!valuesChanged) {
         const Vector& oldValue(originalValues[it - (*clique)->beginFrontals()]);
-        const VectorValues::mapped_type& newValue(delta[*it]);
+        const SubVector& newValue(delta[*it]);
         if((oldValue - newValue).lpNorm<Eigen::Infinity>() >= threshold) {
           valuesChanged = true;
           break;

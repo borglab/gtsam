@@ -314,12 +314,10 @@ TEST (Serialization, SharedDiagonal_noiseModels) {
 
 /* ************************************************************************* */
 TEST (Serialization, linear_factors) {
-	vector<size_t> dims;
-	dims.push_back(1);
-	dims.push_back(2);
-	dims.push_back(2);
-	double v[] = {1., 2., 3., 4., 5.};
-	VectorValues values(dims, v);
+  VectorValues values;
+  values.insert(0, Vector_(1, 1.0));
+  values.insert(1, Vector_(2, 2.0,3.0));
+  values.insert(2, Vector_(2, 4.0,5.0));
 	EXPECT(equalsObj<VectorValues>(values));
 	EXPECT(equalsXML<VectorValues>(values));
 

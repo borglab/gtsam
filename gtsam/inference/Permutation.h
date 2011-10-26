@@ -151,12 +151,12 @@ protected:
  *   container[permutation[index2]];
  * but more concise.
  */
-template<typename CONTAINER, typename VALUETYPE = typename CONTAINER::value_reference_type>
+template<typename CONTAINER>
 class Permuted {
   Permutation permutation_;
   CONTAINER& container_;
 public:
-  typedef VALUETYPE value_type;
+  typedef typename CONTAINER::iterator::value_type value_type;
 
   /** Construct as a permuted view on the Container.  The permutation is copied
    * but only a reference to the container is stored.
@@ -169,10 +169,10 @@ public:
   Permuted(CONTAINER& container) : permutation_(Permutation::Identity(container.size())), container_(container) {}
 
   /** Access the container through the permutation */
-  value_type operator[](size_t index) const { return container_[permutation_[index]]; }
+  value_type& operator[](size_t index) { return container_[permutation_[index]]; }
 
-//  /** Access the container through the permutation (const version) */
-//  const_value_type operator[](size_t index) const;
+  /** Access the container through the permutation (const version) */
+  const value_type& operator[](size_t index) const { return container_[permutation_[index]]; }
 
   /** Permute this view by applying a permutation to the underlying permutation */
   void permute(const Permutation& permutation) { assert(permutation.size() == this->size()); permutation_ = *permutation_.permute(permutation); }

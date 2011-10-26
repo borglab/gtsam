@@ -28,6 +28,42 @@ using namespace std;
 namespace gtsam {
 
 /* ************************************************************************* */
+// Helper function used only in this file - extracts vectors with variable indices
+// in the first and last iterators, and concatenates them in that order into the
+// output.
+template<typename ITERATOR>
+static Vector extractVectorValuesSlices(const VectorValues& values, ITERATOR first, ITERATOR last) {
+  // Find total dimensionality
+  int dim = 0;
+  for(ITERATOR j = first; j != last; ++j)
+    dim += values.dim(*j);
+
+  // Copy vectors
+  Vector ret(dim);
+  int varStart = 0;
+  for(ITERATOR j = first; j != last; ++j) {
+    ret.segment(varStart, values.dim(*j)) = values[*j];
+    varStart += values.dim(*j);
+  }
+  return ret;
+}
+
+/* ************************************************************************* */
+// Helper function used only in this file - writes to the variables in values
+// with indices iterated over by first and last, interpreting vector as the
+// concatenated vectors to write.
+template<class VECTOR, typename ITERATOR>
+static void writeVectorValuesSlices(const VECTOR& vector, VectorValues& values, ITERATOR first, ITERATOR last) {
+  // Copy vectors
+  int varStart = 0;
+  for(ITERATOR j = first; j != last; ++j) {
+    values[*j] = vector.segment(varStart, values.dim(*j));
+    varStart += values.dim(*j);
+  }
+  assert(varStart = vector.rows());
+}
+
+/* ************************************************************************* */
 GaussianConditional::GaussianConditional() : rsd_(matrix_) {}
 
 /* ************************************************************************* */
@@ -169,14 +205,13 @@ JacobianFactor::shared_ptr GaussianConditional::toFactor() const {
 
 /* ************************************************************************* */
 void GaussianConditional::rhs(VectorValues& x) const {
-	Vector d = rhs();
-	x.range(beginFrontals(), endFrontals(), d);
+  writeVectorValuesSlices(get_d(), x, beginFrontals(), endFrontals());
 }
 
 /* ************************************************************************* */
 void GaussianConditional::rhs(Permuted<VectorValues>& x) const {
   // Copy the rhs into x, accounting for the permutation
-  Vector d = rhs();
+  Vector d = get_d();
   size_t rhsPosition = 0;  // We walk through the rhs by variable
   for(const_iterator j = beginFrontals(); j != endFrontals(); ++j) {
     // Get the segment of the rhs for this variable
@@ -190,7 +225,7 @@ void GaussianConditional::rhs(Permuted<VectorValues>& x) const {
 void GaussianConditional::solveInPlace(VectorValues& x) const {
   static const bool debug = false;
   if(debug) print("Solving conditional in place");
-  Vector rhs = x.range(beginFrontals(), endFrontals());
+  Vector rhs = extractVectorValuesSlices(x, beginFrontals(), endFrontals());
 	for (const_iterator parent = beginParents(); parent != endParents(); ++parent) {
 		rhs += -get_S(parent) * x[*parent];
 	}
@@ -200,7 +235,7 @@ void GaussianConditional::solveInPlace(VectorValues& x) const {
 		gtsam::print(rhs, "rhs: ");
 	  gtsam::print(soln, "full back-substitution solution: ");
 	}
-	x.range(beginFrontals(), endFrontals(), soln);
+	writeVectorValuesSlices(soln, x, beginFrontals(), endFrontals());
 }
 
 /* ************************************************************************* */
@@ -245,7 +280,7 @@ VectorValues GaussianConditional::solve(const VectorValues& x) const {
 
 /* ************************************************************************* */
 void GaussianConditional::solveTransposeInPlace(VectorValues& gy) const {
-	Vector frontalVec = gy.range(beginFrontals(), endFrontals());
+	Vector frontalVec = extractVectorValuesSlices(gy, beginFrontals(), endFrontals());
 	// TODO: verify permutation
 	frontalVec = permutation_ * gtsam::backSubstituteUpper(frontalVec,Matrix(get_R()));
 	GaussianConditional::const_iterator it;
@@ -253,14 +288,14 @@ void GaussianConditional::solveTransposeInPlace(VectorValues& gy) const {
 		const Index i = *it;
 		transposeMultiplyAdd(-1.0,get_S(it),frontalVec,gy[i]);
 	}
-	gy.range(beginFrontals(), endFrontals(), frontalVec);
+	writeVectorValuesSlices(frontalVec, gy, beginFrontals(), endFrontals());
 }
 
 /* ************************************************************************* */
 void GaussianConditional::scaleFrontalsBySigma(VectorValues& gy) const {
-	Vector frontalVec = gy.range(beginFrontals(), endFrontals());
+	Vector frontalVec = extractVectorValuesSlices(gy, beginFrontals(), endFrontals());
 	frontalVec = emul(frontalVec, get_sigmas());
-	gy.range(beginFrontals(), endFrontals(), frontalVec);
+	writeVectorValuesSlices(frontalVec, gy, beginFrontals(), endFrontals());
 }
 
 }

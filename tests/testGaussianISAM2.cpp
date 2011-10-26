@@ -39,9 +39,8 @@ TEST(ISAM2, AddVariables) {
   newTheta.insert(planarSLAM::PoseKey(1), Pose2(.6, .7, .8));
 
   VectorValues deltaUnpermuted;
-  deltaUnpermuted.reserve(2, 5);
-  { Vector a(3); a << .1, .2, .3; deltaUnpermuted.push_back_preallocated(a); }
-  { Vector a(2); a << .4, .5; deltaUnpermuted.push_back_preallocated(a); }
+  deltaUnpermuted.insert(0, Vector_(3, .1, .2, .3));
+  deltaUnpermuted.insert(1, Vector_(2, .4, .5));
 
   Permutation permutation(2);
   permutation[0] = 1;
@@ -66,10 +65,9 @@ TEST(ISAM2, AddVariables) {
   thetaExpected.insert(planarSLAM::PoseKey(1), Pose2(.6, .7, .8));
 
   VectorValues deltaUnpermutedExpected;
-  deltaUnpermutedExpected.reserve(3, 8);
-  { Vector a(3); a << .1, .2, .3; deltaUnpermutedExpected.push_back_preallocated(a); }
-  { Vector a(2); a << .4, .5; deltaUnpermutedExpected.push_back_preallocated(a); }
-  { Vector a(3); a << 0, 0, 0; deltaUnpermutedExpected.push_back_preallocated(a); }
+  deltaUnpermutedExpected.insert(0, Vector_(3, .1, .2, .3));
+  deltaUnpermutedExpected.insert(1, Vector_(2, .4, .5));
+  deltaUnpermutedExpected.insert(2, Vector_(3, 0.0, 0.0, 0.0));
 
   Permutation permutationExpected(3);
   permutationExpected[0] = 1;
