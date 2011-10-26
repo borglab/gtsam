@@ -125,11 +125,11 @@ namespace gtsam {
 
 	/* ************************************************************************* */
 	template<class VALUES>
-	typename FactorGraph<GaussianFactor>::shared_ptr NonlinearFactorGraph<VALUES>::linearize(
+	typename GaussianFactorGraph::shared_ptr NonlinearFactorGraph<VALUES>::linearize(
 			const VALUES& config, const Ordering& ordering) const {
 
 		// create an empty linear FG
-		typename FactorGraph<GaussianFactor>::shared_ptr linearFG(new FactorGraph<GaussianFactor>);
+		typename GaussianFactorGraph::shared_ptr linearFG(new GaussianFactorGraph);
 		linearFG->reserve(this->size());
 
 		// linearize all factors

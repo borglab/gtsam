@@ -85,7 +85,7 @@ namespace gtsam {
 		/**
 		 * linearize a nonlinear factor graph
 		 */
-		boost::shared_ptr<FactorGraph<GaussianFactor> >
+		boost::shared_ptr<GaussianFactorGraph >
 				linearize(const VALUES& config, const Ordering& ordering) const;
 
 	private:
