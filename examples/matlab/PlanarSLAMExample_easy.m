@@ -73,3 +73,9 @@ initialEstimate.print('initial estimate');
 %% Optimize using Levenberg-Marquardt optimization with an ordering from colamd
 result = graph.optimize_(initialEstimate);
 result.print('final result');
+
+%% Print out the corresponding dense matrix
+ord = graph.orderingCOLAMD(result);
+gfg = graph.linearize(result,ord);
+A_b = gfg.denseJacobian;
+AtA_Atb = gfg.denseHessian; 

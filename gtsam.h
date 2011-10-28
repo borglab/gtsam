@@ -55,8 +55,7 @@ class VectorValues {
 	void print(string s) const;
 	bool equals(const VectorValues& expected, double tol) const;
 	size_t size() const;
-	void reserve(size_t nVars, size_t totalDims);
-	size_t push_back_preallocated(Vector vector);
+  void insert(size_t j, const Vector& value);
 };
 
 class GaussianConditional {
@@ -109,6 +108,8 @@ class GaussianFactorGraph {
 	double error(const VectorValues& c) const;
 	double probPrime(const VectorValues& c) const;
 	void combine(const GaussianFactorGraph& lfg);
+  Matrix denseJacobian() const;
+  Matrix denseHessian() const;
 };
 
 class Landmark2 {
@@ -133,9 +134,13 @@ class PlanarSLAMValues {
 
 class PlanarSLAMGraph {
 	PlanarSLAMGraph();
+
+	void print(string s) const;
+
 	double error(const PlanarSLAMValues& c) const;
 	Ordering* orderingCOLAMD(const PlanarSLAMValues& config) const;
-	void print(string s) const;
+	GaussianFactorGraph* linearize(const PlanarSLAMValues& config, const Ordering& ordering) const;
+
 	void addPrior(size_t i, const Pose2& p, const SharedNoiseModel& model);
 	void addPoseConstraint(size_t i, const Pose2& p);
 	void addOdometry(size_t i, size_t j, const Pose2& z,
