@@ -124,7 +124,12 @@ namespace gtsam {
     /** Reference a variable by index. */
     const SubVector& operator[](Index j) const { checkExists(j); return maps_[j]; } //
 
-    /** Insert a new variable (causes reallocation). */
+    /** Insert a vector \c value with index \c j.
+     * Causes reallocation. Can be used to insert values in any order, but
+     * throws an invalid_argument exception if the index \j is already used.
+     * @param value The vector to be inserted.
+     * @param j The index with which the value will be associated.
+     */
     void insert(Index j, const Vector& value); //
 
     /** Assignment */
