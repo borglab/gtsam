@@ -124,8 +124,8 @@ int main(int argc, char* argv[]) {
     cout << "Usage: vSFMexample <DataFolder>" << endl << endl;
     cout << "\tPlease specify <DataFolder>, which contains calibration file, initial\n"
           "\tlandmarks, initial poses, and feature data." << endl;
-    cout << "\tSample folder is in $gtsam_source_folder$/examples/vSLAMexample/Data" << endl << endl;
-    cout << "Example usage: vSFMexample '$gtsam_source_folder$/examples/vSLAMexample/Data'" << endl;
+    cout << "\tSample folder is in $gtsam_source_folder$/examples/Data" << endl << endl;
+    cout << "Example usage: vSFMexample '$gtsam_source_folder$/examples/Data'" << endl;
     exit(0);
   }
 

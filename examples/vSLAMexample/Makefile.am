@@ -35,7 +35,7 @@ AM_DEFAULT_SOURCE_EXT = .cpp
 
 # rule to run an executable
 %.run: % $(LDADD)
-	./$^
+	./%
 
 # rule to run executable with valgrind
 %.valgrind: % $(LDADD)
