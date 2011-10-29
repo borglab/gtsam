@@ -413,25 +413,6 @@ TEST( GaussianFactorGraph, copying )
 //  EXPECT(6 == mn.second);
 //}
 
-///* ************************************************************************* */
-//SL-FIX TEST( GaussianFactorGraph, sparse )
-//{
-//	// create a small linear factor graph
-//	GaussianFactorGraph fg = createGaussianFactorGraph();
-//
-//	// render with a given ordering
-//	Ordering ord;
-//  ord += "x2","l1","x1";
-//
-//	Matrix ijs = fg.sparse(ord);
-//
-//	EQUALITY(Matrix_(3, 14,
-//		// f(x1)   f(x2,x1)            f(l1,x1)         f(x2,l1)
-//		+1., 2.,   3.,  4.,  3.,  4.,   5.,6., 5., 6.,   7., 8., 7., 8.,
-//		+5., 6.,   5.,  6.,  1.,  2.,   3.,4., 5., 6.,   3., 4., 1., 2.,
-//		10.,10., -10.,-10., 10., 10.,   5.,5.,-5.,-5.,   5., 5.,-5.,-5.), ijs);
-//}
-
 /* ************************************************************************* */
 TEST( GaussianFactorGraph, CONSTRUCTOR_GaussianBayesNet )
 {

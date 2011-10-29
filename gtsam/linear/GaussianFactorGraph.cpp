@@ -82,7 +82,8 @@ namespace gtsam {
 	/* ************************************************************************* */
 	std::vector<boost::tuple<size_t, size_t, double> > GaussianFactorGraph::sparseJacobian(
 			const std::vector<size_t>& columnIndices) const {
-		std::vector<boost::tuple<size_t, size_t, double> > entries;
+		typedef boost::tuple<size_t, size_t, double> triplet;
+		std::vector<triplet> entries;
 		size_t i = 0;
 		BOOST_FOREACH(const sharedFactor& factor, *this) {
 			// Convert to JacobianFactor if necessary
@@ -99,18 +100,43 @@ namespace gtsam {
 			}
 
 			// Add entries, adjusting the row index i
-			std::vector<boost::tuple<size_t, size_t, double> > factorEntries(
+			std::vector<triplet> factorEntries(
 					jacobianFactor->sparse(columnIndices));
 			entries.reserve(entries.size() + factorEntries.size());
-			for (size_t entry = 0; entry < factorEntries.size(); ++entry)
+			for (size_t k = 0; k < factorEntries.size(); ++k)
 				entries.push_back(boost::make_tuple(
-						factorEntries[entry].get<0> () + i, factorEntries[entry].get<
-								1> (), factorEntries[entry].get<2> ()));
+						factorEntries[k].get<0> () + i, factorEntries[k].get<
+								1> (), factorEntries[k].get<2> ()));
 
 			// Increment row index
 			i += jacobianFactor->rows();
 		}
 		return entries;
+	}
+
+	/* ************************************************************************* */
+	Matrix GaussianFactorGraph::sparse(const Vector& columnIndices) const {
+
+		// translate from base 1 Vector to vector of base 0 indices
+		std::vector<size_t> indices;
+		for (int i = 0; i < columnIndices.size(); i++)
+			indices.push_back(columnIndices[i] - 1);
+
+		// call sparseJacobian
+		typedef boost::tuple<size_t, size_t, double> triplet;
+		std::vector < boost::tuple<size_t, size_t, double> > result =
+				sparseJacobian(indices);
+
+		// translate to base 1 matrix
+		size_t nzmax = result.size();
+		Matrix IJS(3,nzmax);
+		for (size_t k = 0; k < result.size(); k++) {
+			const triplet& entry = result[k];
+			IJS(0,k) = entry.get<0>() + 1;
+			IJS(1,k) = entry.get<1>() + 1;
+			IJS(2,k) = entry.get<2>();
+		}
+		return IJS;
 	}
 
 	/* ************************************************************************* */
