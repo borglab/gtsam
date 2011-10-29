@@ -15,17 +15,17 @@
  * @date    Dec 8, 2010
  */
 
+#include <gtsam/linear/GaussianConditional.h>
+#include <gtsam/linear/JacobianFactor.h>
+#include <gtsam/linear/HessianFactor.h>
+#include <gtsam/linear/GaussianFactorGraph.h>
+#include <gtsam/inference/VariableSlots.h>
+#include <gtsam/inference/FactorGraph-inl.h>
 #include <gtsam/base/debug.h>
 #include <gtsam/base/timing.h>
 #include <gtsam/base/Matrix.h>
 #include <gtsam/base/FastMap.h>
 #include <gtsam/base/cholesky.h>
-#include <gtsam/inference/VariableSlots.h>
-#include <gtsam/inference/FactorGraph-inl.h>
-#include <gtsam/linear/GaussianConditional.h>
-#include <gtsam/linear/JacobianFactor.h>
-#include <gtsam/linear/HessianFactor.h>
-#include <gtsam/linear/GaussianFactorGraph.h>
 
 #include <boost/foreach.hpp>
 #include <boost/format.hpp>
@@ -33,6 +33,7 @@
 #include <boost/lambda/bind.hpp>
 #include <boost/lambda/lambda.hpp>
 
+#include <cmath>
 #include <sstream>
 #include <stdexcept>
 
@@ -337,8 +338,11 @@ namespace gtsam {
       // find first column index for this key
       size_t column_start = columnIndices[*var];
       for (size_t i = 0; i < (size_t) whitenedA.rows(); i++)
-        for (size_t j = 0; j < (size_t) whitenedA.cols(); j++)
-          entries.push_back(boost::make_tuple(i, column_start+j, whitenedA(i,j)));
+        for (size_t j = 0; j < (size_t) whitenedA.cols(); j++) {
+        	double s = whitenedA(i,j);
+          if (std::abs(s) > 1e-12) entries.push_back(
+							boost::make_tuple(i, column_start + j, s));
+        }
     }
 
     Vector whitenedb(model_->whiten(getb()));

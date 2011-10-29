@@ -223,7 +223,7 @@ namespace gtsam {
      * Return vector of i, j, and s to generate an m-by-n sparse matrix
      * such that S(i(k),j(k)) = s(k), which can be given to MATLAB's sparse.
      * As above, the standard deviations are baked into A and b
-     * @param first column index for each variable
+     * @param columnIndices First column index for each variable.
      */
     std::vector<boost::tuple<size_t, size_t, double> >
     sparse(const std::vector<size_t>& columnIndices) const;
