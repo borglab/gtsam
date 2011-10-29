@@ -122,7 +122,16 @@ VectorValues VectorValues::SameStructure(const VectorValues& other) {
 }
 
 /* ************************************************************************* */
+VectorValues VectorValues::Zero(Index nVars, size_t varDim) {
+  VectorValues ret(nVars, varDim);
+  ret.vector() = Vector::Zero(ret.dim());
+  return ret;
+}
+
+/* ************************************************************************* */
 bool VectorValues::hasSameStructure(const VectorValues& other) const {
+  if(this->size() != other.size())
+    return false;
   for(size_t j=0; j<size(); ++j)
     if(this->dim(j) != other.dim(j))
       return false;

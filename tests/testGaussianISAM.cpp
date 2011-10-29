@@ -70,7 +70,7 @@ TEST_UNSAFE( ISAM, iSAM_smoother )
 	EXPECT(assert_equal(expected, actual));
 
 	// obtain solution
-	VectorValues e(VectorValues::Zero(vector<size_t>(7,2))); // expected solution
+	VectorValues e(VectorValues::Zero(7,2)); // expected solution
 	VectorValues optimized = optimize(actual); // actual solution
 	EXPECT(assert_equal(e, optimized));
 }
@@ -181,7 +181,7 @@ TEST_UNSAFE( BayesTree, balanced_smoother_marginals )
   // Create the Bayes tree
   BayesTree<GaussianConditional> chordalBayesNet = *GaussianMultifrontalSolver(smoother).eliminate();
 
-	VectorValues expectedSolution(VectorValues::Zero(vector<size_t>(7,2)));
+	VectorValues expectedSolution(VectorValues::Zero(7,2));
 	VectorValues actualSolution = optimize(chordalBayesNet);
 	EXPECT(assert_equal(expectedSolution,actualSolution,tol));
 
