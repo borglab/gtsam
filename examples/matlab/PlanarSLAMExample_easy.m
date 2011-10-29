@@ -77,5 +77,9 @@ result.print('final result');
 %% Print out the corresponding dense matrix
 ord = graph.orderingCOLAMD(result);
 gfg = graph.linearize(result,ord);
-A_b = gfg.denseJacobian;
-AtA_Atb = gfg.denseHessian; 
+denseAb = gfg.denseJacobian
+
+%% Get sparse matrix
+IJS = gfg.sparse([12 7 4 10 1 14]');
+Ab=sparse(IJS(1,:),IJS(2,:),IJS(3,:));
+spy(Ab);

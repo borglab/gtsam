@@ -108,7 +108,6 @@ class GaussianFactorGraph {
 	GaussianBayesNet* eliminate_(const Ordering& ordering);
 	VectorValues* optimize_(const Ordering& ordering);
 	pair<Matrix,Vector> matrix(const Ordering& ordering) const;
-	Matrix sparse(const Ordering& ordering) const;
 	VectorValues* steepestDescent_(const VectorValues& x0) const;
 	VectorValues* conjugateGradientDescent_(const VectorValues& x0) const;
 };
