@@ -62,8 +62,7 @@ TEST(GaussianFactorGraph, initialization) {
           1.,   2.,  7.,  7.,     1.,   2.,   3.,   4.,  7.,  7.,    1.,  2., 5., 6., 7., 7.,    3.,  4., 5., 6.,  7., 7.,
           10., 10., -1., -1.,   -10., -10.,  10.,  10.,  2., -1.,   -5., -5., 5., 5., 0., 1.,   -5., -5., 5., 5., -1., 1.5
   );
-  Vector columnIndices = Vector_(4,1.0,3.0,5.0,7.0);
-  Matrix actualIJS = fg.sparse(columnIndices);
+  Matrix actualIJS = fg.sparse();
   EQUALITY(expectedIJS, actualIJS);
 }
 
@@ -171,7 +170,7 @@ TEST(GaussianFactorGraph, Combine2)
 }
 
 /* ************************************************************************* */
-TEST_UNSAFE(GaussianFactor, CombineAndEliminate)
+TEST(GaussianFactor, CombineAndEliminate)
 {
   Matrix A01 = Matrix_(3,3,
       1.0, 0.0, 0.0,
@@ -571,6 +570,44 @@ TEST(GaussianFactor, permuteWithInverse)
   }
   EXPECT(assert_equal(expectedIndex, actualIndex));
 #endif
+}
+
+/* ************************************************************************* */
+TEST(GaussianFactorGraph, sparseJacobian) {
+  // Create factor graph:
+  // x1 x2 x3 x4 x5  b
+  //  1  2  3  0  0  4
+  //  5  6  7  0  0  8
+  //  9 10  0 11 12 13
+  //  0  0  0 14 15 16
+
+  // Expected - NOTE that we transpose this!
+  Matrix expected = Matrix_(16,3,
+      1., 1., 2.,
+      1., 2., 4.,
+      1., 3., 6.,
+      2., 1.,10.,
+      2., 2.,12.,
+      2., 3.,14.,
+      1., 6., 8.,
+      2., 6.,16.,
+      3., 1.,18.,
+      3., 2.,20.,
+      3., 4.,22.,
+      3., 5.,24.,
+      4., 4.,28.,
+      4., 5.,30.,
+      3., 6.,26.,
+      4., 6.,32.).transpose();
+
+  GaussianFactorGraph gfg;
+  SharedDiagonal model = sharedSigma(2, 0.5);
+  gfg.add(0, Matrix_(2,3, 1., 2., 3., 5., 6., 7.), Vector_(2, 4., 8.), model);
+  gfg.add(0, Matrix_(2,3, 9.,10., 0., 0., 0., 0.), 1, Matrix_(2,2, 11., 12., 14., 15.), Vector_(2, 13.,16.), model);
+
+  Matrix actual = gfg.sparse();
+
+  EXPECT(assert_equal(expected, actual));
 }
 
 /* ************************************************************************* */

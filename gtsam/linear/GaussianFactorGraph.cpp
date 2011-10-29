@@ -22,6 +22,7 @@
 #include <gtsam/base/debug.h>
 #include <gtsam/base/timing.h>
 #include <gtsam/base/cholesky.h>
+#include <gtsam/base/FastVector.h>
 #include <gtsam/linear/HessianFactor.h>
 #include <gtsam/linear/GaussianFactorGraph.h>
 #include <gtsam/inference/VariableSlots.h>
@@ -80,18 +81,32 @@ namespace gtsam {
 	}
 
 	/* ************************************************************************* */
-	std::vector<boost::tuple<size_t, size_t, double> > GaussianFactorGraph::sparseJacobian(
-			const std::vector<size_t>& columnIndices) const {
+	std::vector<boost::tuple<size_t, size_t, double> > GaussianFactorGraph::sparseJacobian() const {
+	  // First find dimensions of each variable
+	  FastVector<size_t> dims;
+	  BOOST_FOREACH(const sharedFactor& factor, *this) {
+      for(GaussianFactor::const_iterator pos = factor->begin(); pos != factor->end(); ++pos) {
+        if(dims.size() <= *pos)
+          dims.resize(*pos + 1, 0);
+        dims[*pos] = factor->getDim(pos);
+      }
+	  }
+
+	  // Compute first scalar column of each variable
+	  vector<size_t> columnIndices(dims.size()+1, 0);
+	  for(size_t j=1; j<dims.size()+1; ++j)
+	    columnIndices[j] = columnIndices[j-1] + dims[j-1];
+
+	  // Iterate over all factors, adding sparse scalar entries
 		typedef boost::tuple<size_t, size_t, double> triplet;
-		std::vector<triplet> entries;
-		size_t i = 0;
+		FastVector<triplet> entries;
+		size_t row = 0;
 		BOOST_FOREACH(const sharedFactor& factor, *this) {
 			// Convert to JacobianFactor if necessary
 			JacobianFactor::shared_ptr jacobianFactor(
 					boost::dynamic_pointer_cast<JacobianFactor>(factor));
 			if (!jacobianFactor) {
-				HessianFactor::shared_ptr hessian(boost::dynamic_pointer_cast<
-						HessianFactor>(factor));
+			  HessianFactor::shared_ptr hessian(boost::dynamic_pointer_cast<HessianFactor>(factor));
 				if (hessian)
 					jacobianFactor.reset(new JacobianFactor(*hessian));
 				else
@@ -99,33 +114,38 @@ namespace gtsam {
 							"GaussianFactorGraph contains a factor that is neither a JacobianFactor nor a HessianFactor.");
 			}
 
-			// Add entries, adjusting the row index i
-			std::vector<triplet> factorEntries(
-					jacobianFactor->sparse(columnIndices));
-			entries.reserve(entries.size() + factorEntries.size());
-			for (size_t k = 0; k < factorEntries.size(); ++k)
-				entries.push_back(boost::make_tuple(
-						factorEntries[k].get<0> () + i, factorEntries[k].get<
-								1> (), factorEntries[k].get<2> ()));
+			// Whiten the factor and add entries for it
+			// iterate over all variables in the factor
+			const JacobianFactor whitened(jacobianFactor->whiten());
+			for(JacobianFactor::const_iterator pos=whitened.begin(); pos<whitened.end(); ++pos) {
+			  JacobianFactor::constABlock whitenedA = whitened.getA(pos);
+			  // find first column index for this key
+			  size_t column_start = columnIndices[*pos];
+			  for (size_t i = 0; i < (size_t) whitenedA.rows(); i++)
+			    for (size_t j = 0; j < (size_t) whitenedA.cols(); j++) {
+			      double s = whitenedA(i,j);
+			      if (std::abs(s) > 1e-12) entries.push_back(
+			          boost::make_tuple(row+i, column_start+j, s));
+			    }
+			}
+
+			JacobianFactor::constBVector whitenedb(whitened.getb());
+			size_t bcolumn = columnIndices.back();
+			for (size_t i = 0; i < (size_t) whitenedb.size(); i++)
+			  entries.push_back(boost::make_tuple(row+i, bcolumn, whitenedb(i)));
 
 			// Increment row index
-			i += jacobianFactor->rows();
+			row += jacobianFactor->rows();
 		}
-		return entries;
+		return vector<triplet>(entries.begin(), entries.end());
 	}
 
 	/* ************************************************************************* */
-	Matrix GaussianFactorGraph::sparse(const Vector& columnIndices) const {
-
-		// translate from base 1 Vector to vector of base 0 indices
-		std::vector<size_t> indices;
-		for (int i = 0; i < columnIndices.size(); i++)
-			indices.push_back(columnIndices[i] - 1);
+	Matrix GaussianFactorGraph::sparse() const {
 
 		// call sparseJacobian
 		typedef boost::tuple<size_t, size_t, double> triplet;
-		std::vector < boost::tuple<size_t, size_t, double> > result =
-				sparseJacobian(indices);
+		std::vector<triplet> result = sparseJacobian();
 
 		// translate to base 1 matrix
 		size_t nzmax = result.size();

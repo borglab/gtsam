@@ -152,18 +152,15 @@ namespace gtsam {
      * Return vector of i, j, and s to generate an m-by-n sparse Jacobian matrix,
 		 * where i(k) and j(k) are the base 0 row and column indices, s(k) a double.
 		 * The standard deviations are baked into A and b
-		 * @param columnIndices First column index for each variable.
 		 */
-		std::vector<boost::tuple<size_t, size_t, double> > sparseJacobian(
-				const std::vector<size_t>& columnIndices) const;
+		std::vector<boost::tuple<size_t, size_t, double> > sparseJacobian() const;
 
 		/**
 		 * Matrix version of sparseJacobian: generates a 3*m matrix with [i,j,s] entries
 		 * such that S(i(k),j(k)) = s(k), which can be given to MATLAB's sparse.
 		 * The standard deviations are baked into A and b
-		 * @param columnIndices First column index for each variable, base 1, in vector format.
 		 */
-		Matrix sparse(const Vector& columnIndices) const;
+		Matrix sparse() const;
 
     /**
      * Return a dense \f$ m \times n \f$ Jacobian matrix, augmented with b

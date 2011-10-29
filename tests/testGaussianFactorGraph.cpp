@@ -957,7 +957,7 @@ TEST(GaussianFactorGraph, replace)
 //}
 
 /* ************************************************************************* */
-/**
+/*
  *   x2 x1 x3 b
  *    1  1    1       1  1  0  1
  *    1    1  1  ->      1  1  1
@@ -1010,7 +1010,6 @@ TEST(GaussianFactorGraph, createSmoother2)
       *GaussianSequentialSolver(fg2).jointFactorGraph(x1var)).eliminate();
   CHECK(assert_equal(*p_x1.back(),*p_x3.front())); // should be the same because of symmetry
 }
-
 
 /* ************************************************************************* */
 int main() { TestResult tr; return TestRegistry::runAllTests(tr);}
