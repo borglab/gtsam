@@ -160,7 +160,7 @@ namespace gtsam {
 		 * such that S(i(k),j(k)) = s(k), which can be given to MATLAB's sparse.
 		 * The standard deviations are baked into A and b
 		 */
-		Matrix sparse() const;
+		Matrix sparseJacobian_() const;
 
     /**
      * Return a dense \f$ m \times n \f$ Jacobian matrix, augmented with b

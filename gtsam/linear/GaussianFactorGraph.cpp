@@ -141,7 +141,7 @@ namespace gtsam {
 	}
 
 	/* ************************************************************************* */
-	Matrix GaussianFactorGraph::sparse() const {
+	Matrix GaussianFactorGraph::sparseJacobian_() const {
 
 		// call sparseJacobian
 		typedef boost::tuple<size_t, size_t, double> triplet;

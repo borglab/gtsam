@@ -110,7 +110,7 @@ class GaussianFactorGraph {
 	void combine(const GaussianFactorGraph& lfg);
   Matrix denseJacobian() const;
   Matrix denseHessian() const;
-	Matrix sparse() const;
+	Matrix sparseJacobian_() const;
 };
 
 class Landmark2 {

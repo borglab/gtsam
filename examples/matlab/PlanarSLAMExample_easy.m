@@ -74,12 +74,14 @@ initialEstimate.print('initial estimate');
 result = graph.optimize_(initialEstimate);
 result.print('final result');
 
-%% Print out the corresponding dense matrix
+%% Get the corresponding dense matrix
 ord = graph.orderingCOLAMD(result);
 gfg = graph.linearize(result,ord);
-denseAb = gfg.denseJacobian
+denseAb = gfg.denseJacobian;
 
-%% Get sparse matrix
-IJS = gfg.sparse();
+%% Get sparse matrix A and RHS b
+IJS = gfg.sparseJacobian_();
 Ab=sparse(IJS(1,:),IJS(2,:),IJS(3,:));
-spy(Ab(:,1:end-1));
+A = Ab(:,1:end-1);
+b = full(Ab(:,end));
+spy(A);
