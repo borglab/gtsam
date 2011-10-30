@@ -55,10 +55,10 @@ void Constructor::matlab_mfile(const string& toolboxPath, const string& classNam
   if(verbose_) cerr << "generating " << wrapperFile << endl;
 
   // generate code
-  emit_header_comment(ofs, "%");
   ofs << "function result = " << name << "(obj";
   if (args.size()) ofs << "," << args.names();
   ofs << ")" << endl;
+  emit_header_comment(ofs, "%");
   ofs << "  error('need to compile " << name << ".cpp');" << endl;
   ofs << "end" << endl;
 

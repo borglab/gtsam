@@ -55,12 +55,12 @@ void Method::matlab_mfile(const string& classPath) {
   if(verbose_) cerr << "generating " << wrapperFile << endl;
 
   // generate code
-  emit_header_comment(ofs, "%");
-  ofs << "% usage: obj." << name_ << "(" << args_.names() << ")" << endl;
   string returnType = returns_pair_? "[first,second]" : "result";
   ofs << "function " << returnType << " = " << name_ << "(obj";
   if (args_.size()) ofs << "," << args_.names();
   ofs << ")" << endl;
+  ofs << "% usage: obj." << name_ << "(" << args_.names() << ")" << endl;
+  emit_header_comment(ofs, "%");
   ofs << "  error('need to compile " << name_ << ".cpp');" << endl;
   ofs << "end" << endl;
 

@@ -32,8 +32,8 @@ void Class::matlab_proxy(const string& classFile) {
   if(verbose_) cerr << "generating " << classFile << endl;
 
   // emit class proxy code
-  emit_header_comment(ofs,"%");
   ofs << "classdef " << name << endl;
+  emit_header_comment(ofs,"%");
   ofs << "  properties" << endl;
   ofs << "    self = 0" << endl;
   ofs << "  end" << endl;
