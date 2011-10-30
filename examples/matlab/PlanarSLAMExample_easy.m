@@ -80,6 +80,6 @@ gfg = graph.linearize(result,ord);
 denseAb = gfg.denseJacobian
 
 %% Get sparse matrix
-IJS = gfg.sparse([12 7 4 10 1 14]');
+IJS = gfg.sparse();
 Ab=sparse(IJS(1,:),IJS(2,:),IJS(3,:));
-spy(Ab);
+spy(Ab(:,1:end-1));
