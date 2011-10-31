@@ -62,7 +62,7 @@ TEST(GaussianFactorGraph, initialization) {
           1.,   2.,  7.,  7.,     1.,   2.,   3.,   4.,  7.,  7.,    1.,  2., 5., 6., 7., 7.,    3.,  4., 5., 6.,  7., 7.,
           10., 10., -1., -1.,   -10., -10.,  10.,  10.,  2., -1.,   -5., -5., 5., 5., 0., 1.,   -5., -5., 5., 5., -1., 1.5
   );
-  Matrix actualIJS = fg.sparse();
+  Matrix actualIJS = fg.sparseJacobian_();
   EQUALITY(expectedIJS, actualIJS);
 }
 
@@ -605,7 +605,7 @@ TEST(GaussianFactorGraph, sparseJacobian) {
   gfg.add(0, Matrix_(2,3, 1., 2., 3., 5., 6., 7.), Vector_(2, 4., 8.), model);
   gfg.add(0, Matrix_(2,3, 9.,10., 0., 0., 0., 0.), 1, Matrix_(2,2, 11., 12., 14., 15.), Vector_(2, 13.,16.), model);
 
-  Matrix actual = gfg.sparse();
+  Matrix actual = gfg.sparseJacobian_();
 
   EXPECT(assert_equal(expected, actual));
 }
