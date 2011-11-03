@@ -38,6 +38,7 @@ class Pose2 {
 	double y() const;
 	double theta() const;
 	size_t dim() const;
+	Pose2* between_(const Pose2& p2);
 };
 
 class SharedGaussian {
@@ -129,6 +130,7 @@ class Ordering{
 class PlanarSLAMValues {
 	PlanarSLAMValues();
 	void print(string s) const;
+	Pose2* pose(int key);
 	void insertPose(int key, const Pose2& pose);
 	void insertPoint(int key, const Point2& point);
 };

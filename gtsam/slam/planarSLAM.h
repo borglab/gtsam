@@ -70,6 +70,12 @@ namespace gtsam {
 
 			// Convenience for MATLAB wrapper, which does not allow for identically named methods
 
+			/// get a pose
+	    boost::shared_ptr<Pose2> pose(int key) {
+	    	Pose2 pose = (*this)[PoseKey(key)];
+	    	return boost::shared_ptr<Pose2>(new Pose2(pose));
+	    }
+
 			/// insert a pose
 		  void insertPose(int key, const Pose2& pose) {insert(PoseKey(key), pose); }
 

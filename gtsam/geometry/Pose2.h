@@ -136,6 +136,11 @@ namespace gtsam {
     	boost::optional<Matrix&> H1=boost::none,
     	boost::optional<Matrix&> H2=boost::none) const;
 
+    /// MATLAB version returns shared pointer
+    boost::shared_ptr<Pose2> between_(const Pose2& p2) {
+    	return boost::shared_ptr<Pose2>(new Pose2(between(p2)));
+    }
+
     /** return transformation matrix */
     Matrix matrix() const;
 
