@@ -60,7 +60,6 @@ void Method::matlab_mfile(const string& classPath) {
   if (args_.size()) ofs << "," << args_.names();
   ofs << ")" << endl;
   ofs << "% usage: obj." << name_ << "(" << args_.names() << ")" << endl;
-  emit_header_comment(ofs, "%");
   ofs << "  error('need to compile " << name_ << ".cpp');" << endl;
   ofs << "end" << endl;
 
