@@ -104,6 +104,11 @@ namespace gtsam {
       boost::optional<Matrix&> H1 = boost::none,
       boost::optional<Matrix&> H2 = boost::none) const;
 
+    /// MATLAB version returns shared pointer
+    boost::shared_ptr<Pose2> compose_(const Pose2& p2) {
+    	return boost::shared_ptr<Pose2>(new Pose2(compose(p2)));
+    }
+
     /** syntactic sugar for transform_from */
     inline Point2 operator*(const Point2& point) const { return transform_from(point);}
 
