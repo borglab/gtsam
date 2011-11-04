@@ -15,6 +15,10 @@
  * @author Richard Roberts
  * @author Alex Cunningham
  *
+ * This concept check provides a specialization on the Manifold type,
+ * in which the Manifolds represented require an algebra and group structure.
+ * All Lie types must also be a Manifold.
+ *
  * The necessary functions to implement for Lie are defined
  * below with additional details as to the interface.  The
  * concept checking function in class Lie will check whether or not
@@ -55,8 +59,7 @@
 
 #pragma once
 
-#include <string>
-#include <gtsam/base/Matrix.h>
+#include <gtsam/base/Manifold.h>
 
 namespace gtsam {
 
@@ -78,18 +81,15 @@ namespace gtsam {
 	inline T expmap_default(const T& t, const Vector& d) {return t.compose(T::Expmap(d));}
 
 	/**
-	 * Base class for Lie group type
-	 * This class uses the Curiously Recurring Template design pattern to allow for
-	 * concept checking using a private function.
+	 * Concept check class for Lie group type
 	 *
-	 * T is the derived Lie type, like Point2, Pose3, etc.
+	 * T is the Lie type, like Point2, Pose3, etc.
 	 *
 	 * By convention, we use capital letters to designate a static function
 	 */
 	template <class T>
-	class Lie {
+	class LieConcept {
 	private:
-
 		/** concept checking function - implement the functions this demands */
 		static void concept_check(const T& t) {
 
@@ -182,25 +182,16 @@ namespace gtsam {
 		return expm(xhat,K);
 	}
 
-	/**
-	 * function wrappers for full versions of expmap/logmap
-	 * these will default simple types to using the existing expmap/logmap,
-	 * but more complex ones can be specialized to use improved versions
-	 *
-	 * TODO: replace this approach with a naming scheme that doesn't call
-	 * non-expmap operations "expmap" - use same approach, but with "update"
-	 */
-
-  /** unary versions */
-	template<class T>
-	T ExpmapFull(const Vector& xi) { return T::Expmap(xi); }
-	template<class T>
-  Vector LogmapFull(const T& p) { return T::Logmap(p); }
-
-  /** binary versions */
-	template<class T>
-  T expmapFull(const T& t, const Vector& v) { return t.expmap(v); }
-	template<class T>
-  Vector logmapFull(const T& t, const T& p2) { return t.logmap(p2); }
-
 } // namespace gtsam
+
+/**
+ * Macros for using the ManifoldConcept
+ *  - An instantiation for use inside unit tests
+ *  - A typedef for use inside generic algorithms
+ *
+ * NOTE: intentionally not in the gtsam namespace to allow for classes not in
+ * the gtsam namespace to be more easily enforced as testable
+ */
+/// TODO: find better name for "INST" macro, something like "UNIT" or similar
+#define GTSAM_CONCEPT_LIE_INST(T) template class gtsam::LieConcept<T>;
+#define GTSAM_CONCEPT_LIE_TYPE(T) typedef gtsam::LieConcept<T> _gtsam_LieConcept_##T;

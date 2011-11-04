@@ -24,7 +24,7 @@ namespace gtsam {
 	/**
 	 * LieScalar is a wrapper around double to allow it to be a Lie type
 	 */
-	struct LieScalar : public Lie<LieScalar> {
+	struct LieScalar {
 
 		/** default constructor - should be unnecessary */
 		LieScalar() {}
@@ -72,6 +72,28 @@ namespace gtsam {
 		/** Logmap around identity - just returns with default cast back */
 		static inline Vector Logmap(const LieScalar& p) { return Vector_(1, p.d_); }
 
+		inline LieScalar between(const LieScalar& t2) const { return LieScalar(t2.value() - d_); }
+
+		/** compose with another object */
+		inline LieScalar compose(const LieScalar& t2) const { return LieScalar(t2.value() + d_); }
+
+		/** invert the object and yield a new one */
+		inline LieScalar inverse() const { return LieScalar(-d_); }
+
+		// Manifold requirements
+
+		inline LieScalar retract(const Vector& v) const { return expmap(v); }
+
+		/** expmap around identity */
+		inline static LieScalar Retract(const Vector& v) { return Expmap(v); }
+
+		/**
+		 * Returns inverse retraction
+		 */
+		inline Vector unretract(const LieScalar& t2) const { return logmap(t2); }
+
+		/** Unretract around identity */
+		inline static Vector Unretract(const LieScalar& t) { return Logmap(t); }
 
 	private:
 	    double d_;

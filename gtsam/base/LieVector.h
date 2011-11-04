@@ -25,7 +25,7 @@ namespace gtsam {
 /**
  * LieVector is a wrapper around vector to allow it to be a Lie type
  */
-struct LieVector : public Vector, public Lie<LieVector> {
+struct LieVector : public Vector {
 
 	/** default constructor - should be unnecessary */
 	LieVector() {}
@@ -100,5 +100,20 @@ struct LieVector : public Vector, public Lie<LieVector> {
 	inline LieVector inverse() const {
 		return LieVector(-1.0 * vector());
 	}
+
+	// Manifold requirements
+
+	inline LieVector retract(const Vector& v) const { return expmap(v); }
+
+	/** expmap around identity */
+	inline static LieVector Retract(const Vector& v) { return Expmap(v); }
+
+	/**
+	 * Returns inverse retraction
+	 */
+	inline Vector unretract(const LieVector& t2) const { return logmap(t2); }
+
+	/** Unretract around identity */
+	inline static Vector Unretract(const LieVector& t) { return Logmap(t); }
 };
 } // \namespace gtsam
