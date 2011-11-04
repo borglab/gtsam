@@ -54,6 +54,7 @@ check_PROGRAMS += tests/testPlanarSLAM
 headers += Landmark2.h
 headers += PlanarSLAMGraph.h
 headers += PlanarSLAMValues.h
+headers += PlanarSLAMOdometry.h
 
 # 3D Pose constraints
 sources += pose3SLAM.cpp 
@@ -62,7 +63,8 @@ check_PROGRAMS += tests/testPose3SLAM
 # Visual SLAM
 headers += GeneralSFMFactor.h ProjectionFactor.h
 sources += visualSLAM.cpp
-check_PROGRAMS += tests/testProjectionFactor tests/testVSLAM tests/testGeneralSFMFactor tests/testGeneralSFMFactor_Cal3Bundler
+check_PROGRAMS += tests/testProjectionFactor tests/testVSLAM 
+check_PROGRAMS += tests/testGeneralSFMFactor tests/testGeneralSFMFactor_Cal3Bundler
 
 # StereoFactor
 headers += StereoFactor.h
