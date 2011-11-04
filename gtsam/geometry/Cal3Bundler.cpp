@@ -23,21 +23,35 @@
 
 namespace gtsam {
 
+/* ************************************************************************* */
 Cal3Bundler::Cal3Bundler() : f_(1), k1_(0), k2_(0) {}
+
+/* ************************************************************************* */
 Cal3Bundler::Cal3Bundler(const Vector &v) : f_(v(0)), k1_(v(1)), k2_(v(2)) {}
+
+/* ************************************************************************* */
 Cal3Bundler::Cal3Bundler(const double f, const double k1, const double k2) : f_(f), k1_(k1), k2_(k2) {}
 
+/* ************************************************************************* */
 Matrix Cal3Bundler::K() const { return Matrix_(3,3, f_, 0.0, 0.0, 0.0, f_, 0.0, 0.0, 0.0, 1.0); }
+
+/* ************************************************************************* */
 Vector Cal3Bundler::k() const { return Vector_(4, k1_, k2_, 0, 0) ; }
+
+/* ************************************************************************* */
 Vector Cal3Bundler::vector() const { return Vector_(3, f_, k1_, k2_) ; }
+
+/* ************************************************************************* */
 void Cal3Bundler::print(const std::string& s) const { gtsam::print(vector(), s + ".K") ; }
 
+/* ************************************************************************* */
 bool Cal3Bundler::equals(const Cal3Bundler& K, double tol) const {
 	if (fabs(f_ - K.f_) > tol || fabs(k1_ - K.k1_) > tol || fabs(k2_ - K.k2_) > tol)
 		return false;
 	return true ;
 }
 
+/* ************************************************************************* */
 Point2 Cal3Bundler::uncalibrate(const Point2& p,
 		   boost::optional<Matrix&> H1,
 		   boost::optional<Matrix&> H2) const {
@@ -78,6 +92,7 @@ Point2 Cal3Bundler::uncalibrate(const Point2& p,
 	return Point2(fg * x, fg * y) ;
 }
 
+/* ************************************************************************* */
 Matrix Cal3Bundler::D2d_intrinsic(const Point2& p) const {
 	const double x = p.x(), y = p.y(), xx = x*x, yy = y*y;
 	const double r = xx + yy ;
@@ -95,6 +110,7 @@ Matrix Cal3Bundler::D2d_intrinsic(const Point2& p) const {
 	return DK * DR;
 }
 
+/* ************************************************************************* */
 Matrix Cal3Bundler::D2d_calibration(const Point2& p) const {
 
 	const double x = p.x(), y = p.y(), xx = x*x, yy = y*y ;
@@ -109,6 +125,7 @@ Matrix Cal3Bundler::D2d_calibration(const Point2& p) const {
 	g*y, f*y*r , f*y*r2);
 }
 
+/* ************************************************************************* */
 Matrix Cal3Bundler::D2d_intrinsic_calibration(const Point2& p) const {
 
 	const double x = p.x(), y = p.y(), xx = x*x, yy = y*y;
@@ -128,11 +145,17 @@ Matrix Cal3Bundler::D2d_intrinsic_calibration(const Point2& p) const {
 	return H ;
 }
 
+/* ************************************************************************* */
+Cal3Bundler Cal3Bundler::retract(const Vector& d) const { return Cal3Bundler(vector() + d) ; }
 
-Cal3Bundler Cal3Bundler::expmap(const Vector& d) const { return Cal3Bundler(vector() + d) ; }
-Vector Cal3Bundler::logmap(const Cal3Bundler& T2) const { return vector() - T2.vector(); }
-Cal3Bundler Cal3Bundler::Expmap(const Vector& v) { return Cal3Bundler(v) ; }
-Vector Cal3Bundler::Logmap(const Cal3Bundler& p) { return p.vector(); }
+/* ************************************************************************* */
+Vector Cal3Bundler::unretract(const Cal3Bundler& T2) const { return vector() - T2.vector(); }
+
+/* ************************************************************************* */
+Cal3Bundler Cal3Bundler::Retract(const Vector& v) { return Cal3Bundler(v) ; }
+
+/* ************************************************************************* */
+Vector Cal3Bundler::Unretract(const Cal3Bundler& p) { return p.vector(); }
 
 
 

@@ -82,6 +82,21 @@ namespace gtsam {
     inline Point3 expmap(const Vector& v) const { return gtsam::expmap_default(*this, v); }
     inline Vector logmap(const Point3& p2) const { return gtsam::logmap_default(*this, p2);}
 
+  	// Manifold requirements
+
+  	inline Point3 retract(const Vector& v) const { return expmap(v); }
+
+  	/** expmap around identity */
+  	inline static Point3 Retract(const Vector& v) { return Expmap(v); }
+
+  	/**
+  	 * Returns inverse retraction
+  	 */
+  	inline Vector unretract(const Point3& t2) const { return logmap(t2); }
+
+  	/** Unretract around identity */
+  	inline static Vector Unretract(const Point3& t) { return Logmap(t); }
+
     /** Between using the default implementation */
     inline Point3 between(const Point3& p2,
         boost::optional<Matrix&> H1=boost::none,

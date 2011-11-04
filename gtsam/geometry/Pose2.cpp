@@ -53,7 +53,7 @@ namespace gtsam {
   }
 
   /* ************************************************************************* */
-	Pose2 Pose2::ExpmapFull(const Vector& xi) {
+	Pose2 Pose2::Expmap(const Vector& xi) {
 	  assert(xi.size() == 3);
 		Point2 v(xi(0),xi(1));
 		double w = xi(2);
@@ -68,7 +68,7 @@ namespace gtsam {
 	}
 
 	/* ************************************************************************* */
-  Vector Pose2::LogmapFull(const Pose2& p) {
+  Vector Pose2::Logmap(const Pose2& p) {
   	const Rot2& R = p.r();
   	const Point2& t = p.t();
 		double w = R.theta();
@@ -88,25 +88,25 @@ namespace gtsam {
   /* ************************************************************************* */
   // Changes default to use the full verions of expmap/logmap
   /* ************************************************************************* */
-	Pose2 Pose2::Expmap(const Vector& xi) {
-	  return ExpmapFull(xi);
+	Pose2 Pose2::Retract(const Vector& xi) {
+	  return Expmap(xi);
 	}
 
 	/* ************************************************************************* */
-  Vector Pose2::Logmap(const Pose2& p) {
-  	return LogmapFull(p);
+  Vector Pose2::Unretract(const Pose2& p) {
+  	return Logmap(p);
   }
 
 #else
 
   /* ************************************************************************* */
-  Pose2 Pose2::Expmap(const Vector& v) {
+  Pose2 Pose2::Retract(const Vector& v) {
     assert(v.size() == 3);
 	  return Pose2(v[0], v[1], v[2]);
   }
 
   /* ************************************************************************* */
-  Vector Pose2::Logmap(const Pose2& p) {
+  Vector Pose2::Unretract(const Pose2& p) {
 	  return Vector_(3, p.x(), p.y(), p.theta());
   }
 

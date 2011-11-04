@@ -29,7 +29,7 @@ namespace gtsam {
    * Functional, so no set functions: once created, a point is constant.
    * @ingroup geometry
    */
-  class Point2: public Lie<Point2> {
+  class Point2 {
   public:
 	  /// dimension of the variable - used to autodetect sizes
 	  static const size_t dimension = 2;
@@ -79,6 +79,21 @@ namespace gtsam {
 
     /** Log map around identity - just return the Point2 as a vector */
     static inline Vector Logmap(const Point2& dp) { return Vector_(2, dp.x(), dp.y()); }
+
+  	// Manifold requirements
+
+  	inline Point2 retract(const Vector& v) const { return expmap(v); }
+
+  	/** expmap around identity */
+  	inline static Point2 Retract(const Vector& v) { return Expmap(v); }
+
+  	/**
+  	 * Returns inverse retraction
+  	 */
+  	inline Vector unretract(const Point2& t2) const { return logmap(t2); }
+
+  	/** Unretract around identity */
+  	inline static Vector Unretract(const Point2& t) { return Logmap(t); }
 
     /** "Between", subtracts point coordinates */
     inline Point2 between(const Point2& p2,

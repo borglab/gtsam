@@ -25,6 +25,10 @@
 
 using namespace gtsam;
 
+GTSAM_CONCEPT_TESTABLE_INST(Rot3)
+GTSAM_CONCEPT_MANIFOLD_INST(Rot3)
+GTSAM_CONCEPT_LIE_INST(Rot3)
+
 Rot3 R = Rot3::rodriguez(0.1, 0.4, 0.2);
 Point3 P(0.2, 0.7, -2.0);
 double error = 1e-9, epsilon = 0.001;

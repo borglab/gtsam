@@ -31,7 +31,7 @@ namespace gtsam {
    * A 2D pose (Point2,Rot2)
    * @ingroup geometry
    */
-  class Pose2: public Lie<Pose2>  {
+  class Pose2 {
 
   public:
 	  static const size_t dimension = 3;
@@ -120,26 +120,26 @@ namespace gtsam {
     inline Point2 operator*(const Point2& point) const { return transform_from(point);}
 
     /**
-     * Exponential map from se(2) to SE(2)
+     * Retraction from se(2) to SE(2)
      */
-    static Pose2 Expmap(const Vector& v);
+    static Pose2 Retract(const Vector& v);
 
     /**
-     * Inverse of exponential map, from SE(2) to se(2)
+     * Inverse of retraction, from SE(2) to se(2)
      */
+    static Vector Unretract(const Pose2& p);
+
+    /** Real versions of Expmap/Logmap */
+  	static Pose2 Expmap(const Vector& xi);
     static Vector Logmap(const Pose2& p);
 
-    /** non-approximated versions of Expmap/Logmap */
-  	static Pose2 ExpmapFull(const Vector& xi);
-    static Vector LogmapFull(const Pose2& p);
-
     /** default implementations of binary functions */
-    inline Pose2 expmap(const Vector& v) const { return gtsam::expmap_default(*this, v); }
-    inline Vector logmap(const Pose2& p2) const { return gtsam::logmap_default(*this, p2);}
+    inline Pose2 retract(const Vector& v) const { return compose(Retract(v)); }
+    inline Vector unretract(const Pose2& p2) const { return Unretract(between(p2));}
 
     /** non-approximated versions of expmap/logmap */
-    inline Pose2 expmapFull(const Vector& v) const { return compose(ExpmapFull(v)); }
-    inline Vector logmapFull(const Pose2& p2) const { return LogmapFull(between(p2));}
+    inline Pose2 expmap(const Vector& v) const { return compose(Expmap(v)); }
+    inline Vector logmap(const Pose2& p2) const { return Logmap(between(p2));}
 
     /**
      * Return relative pose between p1 and p2, in p1 coordinate frame
@@ -265,24 +265,6 @@ namespace gtsam {
    */
   typedef std::pair<Point2,Point2> Point2Pair;
   boost::optional<Pose2> align(const std::vector<Point2Pair>& pairs);
-
-  /**
-   * Specializations for access to full expmap/logmap in templated functions
-   *
-   * NOTE: apparently, these *must* be indicated as inline to prevent compile error
-   */
-
-  /** unary versions */
-	template<>
-	inline Pose2 ExpmapFull<Pose2>(const Vector& xi) { return Pose2::ExpmapFull(xi); }
-	template<>
-	inline Vector LogmapFull<Pose2>(const Pose2& p) { return Pose2::LogmapFull(p); }
-
-  /** binary versions */
-	template<>
-  inline Pose2 expmapFull<Pose2>(const Pose2& t, const Vector& v) { return t.expmapFull(v); }
-	template<>
-	inline Vector logmapFull<Pose2>(const Pose2& t, const Pose2& p2) { return t.logmapFull(p2); }
 
 } // namespace gtsam
 

@@ -35,8 +35,11 @@ using namespace std;
 
 // #define SLOW_BUT_CORRECT_EXPMAP
 
-// concept checks for testable
 GTSAM_CONCEPT_TESTABLE_INST(Pose2)
+GTSAM_CONCEPT_MANIFOLD_INST(Pose2)
+GTSAM_CONCEPT_LIE_INST(Pose2)
+
+// concept checks for testable
 GTSAM_CONCEPT_TESTABLE_INST(Point2)
 GTSAM_CONCEPT_TESTABLE_INST(Rot2)
 GTSAM_CONCEPT_TESTABLE_INST(LieVector)
@@ -56,44 +59,44 @@ TEST(Pose2, manifold) {
 	Pose2 t1(M_PI_2, Point2(1, 2));
 	Pose2 t2(M_PI_2+0.018, Point2(1.015, 2.01));
 	Pose2 origin;
-	Vector d12 = t1.logmap(t2);
-	EXPECT(assert_equal(t2, t1.expmap(d12)));
-	EXPECT(assert_equal(t2, t1*origin.expmap(d12)));
-	Vector d21 = t2.logmap(t1);
-	EXPECT(assert_equal(t1, t2.expmap(d21)));
-	EXPECT(assert_equal(t1, t2*origin.expmap(d21)));
+	Vector d12 = t1.unretract(t2);
+	EXPECT(assert_equal(t2, t1.retract(d12)));
+	EXPECT(assert_equal(t2, t1*origin.retract(d12)));
+	Vector d21 = t2.unretract(t1);
+	EXPECT(assert_equal(t1, t2.retract(d21)));
+	EXPECT(assert_equal(t1, t2*origin.retract(d21)));
 }
 
 /* ************************************************************************* */
-TEST(Pose2, expmap) {
+TEST(Pose2, retract) {
   Pose2 pose(M_PI_2, Point2(1, 2));
 #ifdef SLOW_BUT_CORRECT_EXPMAP
   Pose2 expected(1.00811, 2.01528, 2.5608);
 #else
   Pose2 expected(M_PI_2+0.99, Point2(1.015, 2.01));
 #endif
+  Pose2 actual = pose.retract(Vector_(3, 0.01, -0.015, 0.99));
+  EXPECT(assert_equal(expected, actual, 1e-5));
+}
+
+/* ************************************************************************* */
+TEST(Pose2, expmap) {
+  Pose2 pose(M_PI_2, Point2(1, 2));
+  Pose2 expected(1.00811, 2.01528, 2.5608);
   Pose2 actual = pose.expmap(Vector_(3, 0.01, -0.015, 0.99));
   EXPECT(assert_equal(expected, actual, 1e-5));
 }
 
 /* ************************************************************************* */
-TEST(Pose2, expmap_full) {
-  Pose2 pose(M_PI_2, Point2(1, 2));
-  Pose2 expected(1.00811, 2.01528, 2.5608);
-  Pose2 actual = pose.expmapFull(Vector_(3, 0.01, -0.015, 0.99));
-  EXPECT(assert_equal(expected, actual, 1e-5));
-}
-
-/* ************************************************************************* */
-TEST(Pose2, expmap_full2) {
-  Pose2 pose(M_PI_2, Point2(1, 2));
-  Pose2 expected(1.00811, 2.01528, 2.5608);
-  Pose2 actual = expmapFull<Pose2>(pose, Vector_(3, 0.01, -0.015, 0.99));
-  EXPECT(assert_equal(expected, actual, 1e-5));
-}
-
-/* ************************************************************************* */
 TEST(Pose2, expmap2) {
+  Pose2 pose(M_PI_2, Point2(1, 2));
+  Pose2 expected(1.00811, 2.01528, 2.5608);
+  Pose2 actual = pose.expmap(Vector_(3, 0.01, -0.015, 0.99));
+  EXPECT(assert_equal(expected, actual, 1e-5));
+}
+
+/* ************************************************************************* */
+TEST(Pose2, expmap3) {
   // do an actual series exponential map
 	// see e.g. http://www.cis.upenn.edu/~cis610/cis610lie1.ps
   Matrix A = Matrix_(3,3,
@@ -119,7 +122,7 @@ TEST(Pose2, expmap0) {
 #else
   Pose2 expected(M_PI_2+0.018, Point2(1.015, 2.01));
 #endif
-  Pose2 actual = pose * Pose2::Expmap(Vector_(3, 0.01, -0.015, 0.018));
+  Pose2 actual = pose * Pose2::Retract(Vector_(3, 0.01, -0.015, 0.018));
   EXPECT(assert_equal(expected, actual, 1e-5));
 }
 
@@ -127,7 +130,7 @@ TEST(Pose2, expmap0) {
 TEST(Pose2, expmap0_full) {
   Pose2 pose(M_PI_2, Point2(1, 2));
   Pose2 expected(1.01491, 2.01013, 1.5888);
-  Pose2 actual = pose * Pose2::ExpmapFull(Vector_(3, 0.01, -0.015, 0.018));
+  Pose2 actual = pose * Pose2::Expmap(Vector_(3, 0.01, -0.015, 0.018));
   EXPECT(assert_equal(expected, actual, 1e-5));
 }
 
@@ -135,7 +138,7 @@ TEST(Pose2, expmap0_full) {
 TEST(Pose2, expmap0_full2) {
   Pose2 pose(M_PI_2, Point2(1, 2));
   Pose2 expected(1.01491, 2.01013, 1.5888);
-  Pose2 actual = pose * ExpmapFull<Pose2>(Vector_(3, 0.01, -0.015, 0.018));
+  Pose2 actual = pose * Pose2::Expmap(Vector_(3, 0.01, -0.015, 0.018));
   EXPECT(assert_equal(expected, actual, 1e-5));
 }
 
@@ -153,8 +156,8 @@ namespace screw {
 TEST(Pose3, expmap_c)
 {
   EXPECT(assert_equal(screw::expected, expm<Pose2>(screw::xi),1e-6));
-  EXPECT(assert_equal(screw::expected, Pose2::Expmap(screw::xi),1e-6));
-  EXPECT(assert_equal(screw::xi, Pose2::Logmap(screw::expected),1e-6));
+  EXPECT(assert_equal(screw::expected, Pose2::Retract(screw::xi),1e-6));
+  EXPECT(assert_equal(screw::xi, Pose2::Unretract(screw::expected),1e-6));
 }
 #endif
 
@@ -167,8 +170,8 @@ TEST(Pose3, expmap_c_full)
 	Point2 expectedT(-0.0446635, 0.29552);
 	Pose2 expected(expectedR, expectedT);
   EXPECT(assert_equal(expected, expm<Pose2>(xi),1e-6));
-  EXPECT(assert_equal(expected, Pose2::ExpmapFull(xi),1e-6));
-  EXPECT(assert_equal(xi, Pose2::LogmapFull(expected),1e-6));
+  EXPECT(assert_equal(expected, Pose2::Expmap(xi),1e-6));
+  EXPECT(assert_equal(xi, Pose2::Logmap(expected),1e-6));
 }
 
 /* ************************************************************************* */
@@ -180,7 +183,7 @@ TEST(Pose2, logmap) {
 #else
   Vector expected = Vector_(3, 0.01, -0.015, 0.018);
 #endif
-  Vector actual = pose0.logmap(pose);
+  Vector actual = pose0.unretract(pose);
   EXPECT(assert_equal(expected, actual, 1e-5));
 }
 
@@ -189,7 +192,7 @@ TEST(Pose2, logmap_full) {
   Pose2 pose0(M_PI_2, Point2(1, 2));
   Pose2 pose(M_PI_2+0.018, Point2(1.015, 2.01));
   Vector expected = Vector_(3, 0.00986473, -0.0150896, 0.018);
-  Vector actual = pose0.logmapFull(pose);
+  Vector actual = pose0.logmap(pose);
   EXPECT(assert_equal(expected, actual, 1e-5));
 }
 

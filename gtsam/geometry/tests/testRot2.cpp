@@ -22,6 +22,10 @@
 
 using namespace gtsam;
 
+GTSAM_CONCEPT_TESTABLE_INST(Rot2)
+GTSAM_CONCEPT_MANIFOLD_INST(Rot2)
+GTSAM_CONCEPT_LIE_INST(Rot2)
+
 Rot2 R(Rot2::fromAngle(0.1));
 Point2 P(0.2, 0.7);
 

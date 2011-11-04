@@ -17,6 +17,7 @@ namespace gtsam {
    * A Calibrated camera class [R|-R't], calibration K.
    * If calibration is known, it is more computationally efficient
    * to calibrate the measurements rather than try to predict in pixels.
+   * AGC: Is this used or tested anywhere?
    * @ingroup geometry
    */
   template <typename Calibration>

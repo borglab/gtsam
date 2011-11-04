@@ -22,6 +22,10 @@
 using namespace std;
 using namespace gtsam;
 
+GTSAM_CONCEPT_TESTABLE_INST(Point2)
+GTSAM_CONCEPT_MANIFOLD_INST(Point2)
+GTSAM_CONCEPT_LIE_INST(Point2)
+
 /* ************************************************************************* */
 TEST(Point2, Lie) {
   Point2 p1(1,2);

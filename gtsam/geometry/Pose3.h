@@ -27,7 +27,7 @@ namespace gtsam {
    * A 3D pose (R,t) : (Rot3,Point3)
    * @ingroup geometry
    */
-  class Pose3 : public Lie<Pose3> {
+  class Pose3  {
   public:
 	  static const size_t dimension = 6;
 
@@ -117,25 +117,25 @@ namespace gtsam {
 
     /** Exponential map at identity - create a pose with a translation and
      * rotation (in canonical coordinates). */
-    static Pose3 Expmap(const Vector& v);
+    static Pose3 Retract(const Vector& v);
 
     /** Log map at identity - return the translation and canonical rotation
      * coordinates of a pose. */
-    static Vector Logmap(const Pose3& p);
+    static Vector Unretract(const Pose3& p);
 
     /** Exponential map around another pose */
-    Pose3 expmap(const Vector& d) const;
+    Pose3 retract(const Vector& d) const;
 
     /** Logarithm map around another pose T1 */
-    Vector logmap(const Pose3& T2) const;
+    Vector unretract(const Pose3& T2) const;
 
     /** non-approximated versions of Expmap/Logmap */
-  	static Pose3 ExpmapFull(const Vector& xi);
-    static Vector LogmapFull(const Pose3& p);
+  	static Pose3 Expmap(const Vector& xi);
+    static Vector Logmap(const Pose3& p);
 
     /** non-approximated versions of expmap/logmap */
-    inline Pose3 expmapFull(const Vector& v) const { return compose(Pose3::ExpmapFull(v)); }
-    inline Vector logmapFull(const Pose3& p2) const { return Pose3::LogmapFull(between(p2));}
+    inline Pose3 expmap(const Vector& v) const { return compose(Pose3::Expmap(v)); }
+    inline Vector logmap(const Pose3& p2) const { return Pose3::Logmap(between(p2));}
 
     /**
      * Return relative pose between p1 and p2, in p1 coordinate frame
@@ -206,23 +206,5 @@ namespace gtsam {
   inline Matrix wedge<Pose3>(const Vector& xi) {
   	return Pose3::wedge(xi(0),xi(1),xi(2),xi(3),xi(4),xi(5));
   }
-
-  /**
-   * Specializations for access to full expmap/logmap in templated functions
-   *
-   * NOTE: apparently, these *must* be indicated as inline to prevent compile error
-   */
-
-  /** unary versions */
-	template<>
-	inline Pose3 ExpmapFull<Pose3>(const Vector& xi) { return Pose3::ExpmapFull(xi); }
-	template<>
-	inline Vector LogmapFull<Pose3>(const Pose3& p) { return Pose3::LogmapFull(p); }
-
-  /** binary versions */
-	template<>
-  inline Pose3 expmapFull<Pose3>(const Pose3& t, const Vector& v) { return t.expmapFull(v); }
-	template<>
-	inline Vector logmapFull<Pose3>(const Pose3& t, const Pose3& p2) { return t.logmapFull(p2); }
 
 } // namespace gtsam

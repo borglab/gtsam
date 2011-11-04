@@ -20,6 +20,10 @@
 
 using namespace gtsam;
 
+GTSAM_CONCEPT_TESTABLE_INST(Point3)
+GTSAM_CONCEPT_MANIFOLD_INST(Point3)
+GTSAM_CONCEPT_LIE_INST(Point3)
+
 Point3 P(0.2,0.7,-2);
 
 /* ************************************************************************* */

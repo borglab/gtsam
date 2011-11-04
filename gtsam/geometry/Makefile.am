@@ -24,7 +24,7 @@ check_PROGRAMS += tests/testCal3DS2 tests/testCal3_S2 tests/testCal3Bundler test
 
 # Stereo
 sources += StereoPoint2.cpp StereoCamera.cpp
-check_PROGRAMS += tests/testStereoCamera
+check_PROGRAMS += tests/testStereoCamera tests/testStereoPoint2
 
 # Tensors
 headers += tensors.h Tensor1.h Tensor2.h Tensor3.h Tensor4.h Tensor5.h

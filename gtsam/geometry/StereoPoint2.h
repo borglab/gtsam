@@ -26,7 +26,7 @@ namespace gtsam {
 	 * A 2D stereo point, v will be same for rectified images
 	 * @ingroup geometry
 	 */
-	class StereoPoint2: Lie<StereoPoint2> {
+	class StereoPoint2 {
 	public:
 		static const size_t dimension = 3;
 	private:
@@ -109,6 +109,21 @@ namespace gtsam {
 		inline Vector logmap(const StereoPoint2& p2) const {
 			return gtsam::logmap_default(*this, p2);
 		}
+
+		// Manifold requirements
+
+		inline StereoPoint2 retract(const Vector& v) const { return expmap(v); }
+
+		/** expmap around identity */
+		inline static StereoPoint2 Retract(const Vector& v) { return Expmap(v); }
+
+		/**
+		 * Returns inverse retraction
+		 */
+		inline Vector unretract(const StereoPoint2& t2) const { return logmap(t2); }
+
+		/** Unretract around identity */
+		inline static Vector Unretract(const StereoPoint2& t) { return Logmap(t); }
 
 		inline StereoPoint2 between(const StereoPoint2& p2) const {
 			return gtsam::between_default(*this, p2);

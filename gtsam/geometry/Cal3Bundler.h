@@ -44,18 +44,18 @@ public:
 	bool equals(const Cal3Bundler& K, double tol = 10e-9) const;
 
 	Point2 uncalibrate(const Point2& p,
-					   boost::optional<Matrix&> H1 = boost::none,
-					   boost::optional<Matrix&> H2 = boost::none) const ;
+			boost::optional<Matrix&> H1 = boost::none,
+			boost::optional<Matrix&> H2 = boost::none) const ;
 
 	Matrix D2d_intrinsic(const Point2& p) const ;
 	Matrix D2d_calibration(const Point2& p) const ;
 	Matrix D2d_intrinsic_calibration(const Point2& p) const ;
 
-	Cal3Bundler expmap(const Vector& d) const ;
-	Vector logmap(const Cal3Bundler& T2) const ;
+	Cal3Bundler retract(const Vector& d) const ;
+	Vector unretract(const Cal3Bundler& T2) const ;
 
-    static Cal3Bundler Expmap(const Vector& v) ;
-	static Vector Logmap(const Cal3Bundler& p) ;
+	static Cal3Bundler Retract(const Vector& v) ;
+	static Vector Unretract(const Cal3Bundler& p) ;
 
 	int dim() const { return 3 ; }
 	static size_t Dim() { return 3; }

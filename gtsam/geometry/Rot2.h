@@ -28,7 +28,7 @@ namespace gtsam {
 	 * NOTE: the angle theta is in radians unless explicitly stated
 	 * @ingroup geometry
 	 */
-	class Rot2: public Lie<Rot2> {
+	class Rot2 {
 
 	public:
 		/** get the dimension by the type */
@@ -157,6 +157,21 @@ namespace gtsam {
 		inline Vector logmap(const Rot2& p2) const {
 			return Logmap(between(p2));
 		}
+
+  	// Manifold requirements
+
+  	inline Rot2 retract(const Vector& v) const { return expmap(v); }
+
+  	/** expmap around identity */
+  	inline static Rot2 Retract(const Vector& v) { return Expmap(v); }
+
+  	/**
+  	 * Returns inverse retraction
+  	 */
+  	inline Vector unretract(const Rot2& t2) const { return logmap(t2); }
+
+  	/** Unretract around identity */
+  	inline static Vector Unretract(const Rot2& t) { return Logmap(t); }
 
 		/** Between using the default implementation */
 		inline Rot2 between(const Rot2& p2, boost::optional<Matrix&> H1 =
