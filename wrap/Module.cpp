@@ -191,7 +191,10 @@ void Module::matlab_code(const string& toolboxPath,
     if (verbose_) cerr << "generating " << makeFile << endl;
     emit_header_comment(ofs,"%");
     ofs << "echo on" << endl << endl;
-    ofs << "toolboxpath = pwd" << endl;
+    ofs << "toolboxpath = mfilename('fullpath');" << endl;
+    ofs << "delims = find(toolboxpath == '/');" << endl;
+    ofs << "toolboxpath = toolboxpath(1:(delims(end)-1));" << endl;
+    ofs << "clear delims" << endl;
     ofs << "addpath(toolboxpath);" << endl << endl;
 
     // generate proxy classes and wrappers
