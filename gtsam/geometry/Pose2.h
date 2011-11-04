@@ -76,9 +76,7 @@ namespace gtsam {
 
     /** Construct from canonical coordinates (Lie algebra) */
     Pose2(const Vector& v) {
-    	Pose2 pose = Expmap(v);
-    	r_ = pose.r_;
-    	t_ = pose.t_;
+    	*this = Expmap(v);
     }
 
     /** print with optional string */
