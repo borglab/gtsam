@@ -62,7 +62,7 @@ namespace gtsam {
 
 		/** print */
 		virtual void print(const std::string& s) const {
-	    std::cout << s << ": BetweenFactor("
+	    std::cout << s << "BetweenFactor("
 	    		<< (std::string) this->key1_ << ","
 	    		<< (std::string) this->key2_ << ")\n";
 			measured_.print("  measured");
