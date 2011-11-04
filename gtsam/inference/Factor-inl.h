@@ -17,10 +17,11 @@
 
 #pragma once
 
-#include <iostream>
+#include <gtsam/inference/Factor.h>
 #include <boost/foreach.hpp>
 #include <boost/make_shared.hpp>
-#include <gtsam/inference/Factor.h>
+#include <iostream>
+#include <stdexcept>
 
 namespace gtsam {
 
@@ -57,8 +58,7 @@ namespace gtsam {
 	template<typename KEY>
 	void Factor<KEY>::print(const std::string& s) const {
 		std::cout << s << " ";
-		BOOST_FOREACH(KEY key, keys_)
-						std::cout << " " << key;
+		BOOST_FOREACH(KEY key, keys_) std::cout << " " << key;
 		std::cout << std::endl;
 	}
 
