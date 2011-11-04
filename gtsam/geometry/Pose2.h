@@ -70,7 +70,16 @@ namespace gtsam {
 
     /** Constructor from 3*3 matrix */
     Pose2(const Matrix &T) :
-      r_(Rot2::atan2(T(1, 0), T(0, 0))), t_(T(0, 2), T(1, 2)) { assert(T.rows()==3 && T.cols()==3); }
+				r_(Rot2::atan2(T(1, 0), T(0, 0))), t_(T(0, 2), T(1, 2)) {
+			assert(T.rows() == 3 && T.cols() == 3);
+		}
+
+    /** Construct from canonical coordinates (Lie algebra) */
+    Pose2(const Vector& v) {
+    	Pose2 pose = Expmap(v);
+    	r_ = pose.r_;
+    	t_ = pose.t_;
+    }
 
     /** print with optional string */
     void print(const std::string& s = "") const;

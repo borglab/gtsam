@@ -28,10 +28,10 @@ class Rot2 {
 
 class Pose2 {
 	Pose2();
-	Pose2(const Pose2& pose);
 	Pose2(double x, double y, double theta);
 	Pose2(double theta, const Point2& t);
 	Pose2(const Rot2& r, const Point2& t);
+	Pose2(Vector v);
 	void print(string s) const;
 	bool equals(const Pose2& pose, double tol) const;
 	double x() const;
@@ -40,11 +40,11 @@ class Pose2 {
 	int dim() const;
 	Pose2* compose_(const Pose2& p2);
 	Pose2* between_(const Pose2& p2);
+	Vector logmap(const Pose2& p);
 };
 
 class SharedGaussian {
 	SharedGaussian(Matrix covariance);
-	SharedGaussian(Vector sigmas);
 };
 
 class SharedDiagonal {
