@@ -44,9 +44,12 @@ namespace gtsam {
 	void Factor<KEY>::assertInvariants() const {
 #ifndef NDEBUG
 		// Check that keys are all unique
-		std::multiset<Key> nonunique(keys_.begin(), keys_.end());
-		std::set<Key> unique(keys_.begin(), keys_.end());
-		assert(nonunique.size() == unique.size() && std::equal(nonunique.begin(), nonunique.end(), unique.begin()));
+		std::multiset < Key > nonunique(keys_.begin(), keys_.end());
+		std::set < Key > unique(keys_.begin(), keys_.end());
+		bool correct = (nonunique.size() != unique.size())
+		&& std::equal(nonunique.begin(), nonunique.end(), unique.begin());
+		if (!correct)
+			throw std::logic_error("Factor::assertInvariants: detected inconsistency");
 #endif
 	}
 
