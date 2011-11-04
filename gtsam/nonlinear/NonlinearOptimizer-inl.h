@@ -89,7 +89,7 @@ namespace gtsam {
 		if (verbosity >= Parameters::DELTA) delta.print("delta");
 
 		// take old values and update it
-		shared_values newValues(new C(values_->expmap(delta, *ordering_)));
+		shared_values newValues(new C(values_->retract(delta, *ordering_)));
 
 		// maybe show output
 		if (verbosity >= Parameters::VALUES) newValues->print("newValues");
@@ -179,7 +179,7 @@ namespace gtsam {
 		    if (verbosity >= Parameters::TRYDELTA) delta.print("delta");
 
 		    // update values
-		    shared_values newValues(new T(values_->expmap(delta, *ordering_)));
+		    shared_values newValues(new T(values_->retract(delta, *ordering_)));
 
 		    // create new optimization state with more adventurous lambda
 		    double error = graph_->error(*newValues);

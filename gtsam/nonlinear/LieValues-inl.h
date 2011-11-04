@@ -136,7 +136,7 @@ namespace gtsam {
   /* ************************************************************************* */
   // todo: insert for every element is inefficient
   template<class J>
-  LieValues<J> LieValues<J>::expmap(const VectorValues& delta, const Ordering& ordering) const {
+  LieValues<J> LieValues<J>::retract(const VectorValues& delta, const Ordering& ordering) const {
 		LieValues<J> newValues;
 		typedef pair<J,typename J::Value> KeyValue;
 		BOOST_FOREACH(const KeyValue& value, this->values_) {
@@ -144,7 +144,7 @@ namespace gtsam {
 			const typename J::Value& pj = value.second;
 			Index index;
 			if(ordering.tryAt(j,index)) {
-			  newValues.insert(j, pj.expmap(delta[index]));
+			  newValues.insert(j, pj.retract(delta[index]));
 			} else
 			  newValues.insert(j, pj);
 		}
@@ -171,7 +171,7 @@ namespace gtsam {
 //  /* ************************************************************************* */
 //  // todo: insert for every element is inefficient
 //  template<class J>
-//  LieValues<J> LieValues<J>::expmap(const Vector& delta) const {
+//  LieValues<J> LieValues<J>::retract(const Vector& delta) const {
 //    if(delta.size() != dim()) {
 //    	cout << "LieValues::dim (" << dim() << ") <> delta.size (" << delta.size() << ")" << endl;
 //      throw invalid_argument("Delta vector length does not match config dimensionality.");
@@ -183,7 +183,7 @@ namespace gtsam {
 //			const J& j = value.first;
 //			const typename J::Value& pj = value.second;
 //      int cur_dim = pj.dim();
-//      newValues.insert(j,pj.expmap(sub(delta, delta_offset, delta_offset+cur_dim)));
+//      newValues.insert(j,pj.retract(sub(delta, delta_offset, delta_offset+cur_dim)));
 //      delta_offset += cur_dim;
 //    }
 //    return newValues;
@@ -193,19 +193,19 @@ namespace gtsam {
   // todo: insert for every element is inefficient
   // todo: currently only logmaps elements in both configs
   template<class J>
-  inline VectorValues LieValues<J>::logmap(const LieValues<J>& cp, const Ordering& ordering) const {
+  inline VectorValues LieValues<J>::unretract(const LieValues<J>& cp, const Ordering& ordering) const {
   	VectorValues delta(this->dims(ordering));
-  	logmap(cp, ordering, delta);
+  	unretract(cp, ordering, delta);
   	return delta;
   }
 
   /* ************************************************************************* */
   template<class J>
-  void LieValues<J>::logmap(const LieValues<J>& cp, const Ordering& ordering, VectorValues& delta) const {
+  void LieValues<J>::unretract(const LieValues<J>& cp, const Ordering& ordering, VectorValues& delta) const {
     typedef pair<J,typename J::Value> KeyValue;
     BOOST_FOREACH(const KeyValue& value, cp) {
       assert(this->exists(value.first));
-      delta[ordering[value.first]] = this->at(value.first).logmap(value.second);
+      delta[ordering[value.first]] = this->at(value.first).unretract(value.second);
     }
   }
 

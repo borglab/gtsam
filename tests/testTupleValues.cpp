@@ -193,17 +193,17 @@ TEST(TupleValues, zero_expmap_logmap)
   delta[o["l2"]] = Vector_(2, 1.3, 1.4);
 
   Values expected;
-  expected.insert(PoseKey(1), x1.expmap(Vector_(3, 1.0, 1.1, 1.2)));
-  expected.insert(PoseKey(2), x2.expmap(Vector_(3, 1.3, 1.4, 1.5)));
+  expected.insert(PoseKey(1), x1.retract(Vector_(3, 1.0, 1.1, 1.2)));
+  expected.insert(PoseKey(2), x2.retract(Vector_(3, 1.3, 1.4, 1.5)));
   expected.insert(PointKey(1), Point2(5.0, 6.1));
   expected.insert(PointKey(2), Point2(10.3, 11.4));
 
-  Values actual = values1.expmap(delta, o);
+  Values actual = values1.retract(delta, o);
   CHECK(assert_equal(expected, actual));
 
   // Check log
   VectorValues expected_log = delta;
-  VectorValues actual_log = values1.logmap(actual, o);
+  VectorValues actual_log = values1.unretract(actual, o);
   CHECK(assert_equal(expected_log, actual_log));
 }
 
@@ -454,13 +454,13 @@ TEST(TupleValues, expmap)
 	delta[o["l2"]] = Vector_(2, 1.3, 1.4);
 
 	ValuesA expected;
-	expected.insert(x1k, x1.expmap(Vector_(3, 1.0, 1.1, 1.2)));
-	expected.insert(x2k, x2.expmap(Vector_(3, 1.3, 1.4, 1.5)));
+	expected.insert(x1k, x1.retract(Vector_(3, 1.0, 1.1, 1.2)));
+	expected.insert(x2k, x2.retract(Vector_(3, 1.3, 1.4, 1.5)));
 	expected.insert(l1k, Point2(5.0, 6.1));
 	expected.insert(l2k, Point2(10.3, 11.4));
 
-	CHECK(assert_equal(expected, values1.expmap(delta, o)));
-	CHECK(assert_equal(delta, values1.logmap(expected, o)));
+	CHECK(assert_equal(expected, values1.retract(delta, o)));
+	CHECK(assert_equal(delta, values1.unretract(expected, o)));
 }
 
 /* ************************************************************************* */
@@ -485,13 +485,13 @@ TEST(TupleValues, expmap_typedefs)
   delta[o["l1"]] = Vector_(2, 1.0, 1.1);
   delta[o["l2"]] = Vector_(2, 1.3, 1.4);
 
-	expected.insert(x1k, x1.expmap(Vector_(3, 1.0, 1.1, 1.2)));
-	expected.insert(x2k, x2.expmap(Vector_(3, 1.3, 1.4, 1.5)));
+	expected.insert(x1k, x1.retract(Vector_(3, 1.0, 1.1, 1.2)));
+	expected.insert(x2k, x2.retract(Vector_(3, 1.3, 1.4, 1.5)));
 	expected.insert(l1k, Point2(5.0, 6.1));
 	expected.insert(l2k, Point2(10.3, 11.4));
 
-	CHECK(assert_equal(expected, TupleValues2<PoseValues, PointValues>(values1.expmap(delta, o))));
-	//CHECK(assert_equal(delta, values1.logmap(expected)));
+	CHECK(assert_equal(expected, TupleValues2<PoseValues, PointValues>(values1.retract(delta, o))));
+	//CHECK(assert_equal(delta, values1.unretract(expected)));
 }
 
 /* ************************************************************************* */

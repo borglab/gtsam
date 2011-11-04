@@ -116,31 +116,28 @@ class GeneralCameraT {
 			calibration_.print(s + ".calibration.") ;
 		}
 
-		GeneralCameraT expmap(const Vector &v) const {
+		GeneralCameraT retract(const Vector &v) const {
 			Vector v1 = sub(v,0,Camera::Dim());
 			Vector v2 = sub(v,Camera::Dim(),Camera::Dim()+Calibration::Dim());
-			return GeneralCameraT(calibrated_.expmap(v1),	calibration_.expmap(v2));
+			return GeneralCameraT(calibrated_.retract(v1),	calibration_.retract(v2));
 		}
 
-		Vector logmap(const GeneralCameraT &C) const {
-			//std::cout << "logmap" << std::endl;
-			const Vector v1(calibrated().logmap(C.calibrated())),
-						 v2(calibration().logmap(C.calibration()));
+		Vector unretract(const GeneralCameraT &C) const {
+			const Vector v1(calibrated().unretract(C.calibrated())),
+						 	 	 	 v2(calibration().unretract(C.calibration()));
 			return concatVectors(2,&v1,&v2) ;
 		}
 
-		static GeneralCameraT Expmap(const Vector& v) {
-			//std::cout << "Expmap" << std::endl;
+		static GeneralCameraT Retract(const Vector& v) {
 			return GeneralCameraT(
-				   Camera::Expmap(sub(v,0,Camera::Dim())),
-				   Calibration::Expmap(sub(v,Camera::Dim(), Camera::Dim()+Calibration::Dim()))
+				   Camera::Retract(sub(v,0,Camera::Dim())),
+				   Calibration::Retract(sub(v,Camera::Dim(), Camera::Dim()+Calibration::Dim()))
 				   );
 		}
 
-	    static Vector Logmap(const GeneralCameraT& p) {
-	    	//std::cout << "Logmap" << std::endl;
-	    	const Vector v1(Camera::Logmap(p.calibrated())),
-	    			     v2(Calibration::Logmap(p.calibration()));
+	    static Vector Unretract(const GeneralCameraT& p) {
+	    	const Vector v1(Camera::Unretract(p.calibrated())),
+	    			     	 	 v2(Calibration::Unretract(p.calibration()));
 	    	return concatVectors(2,&v1,&v2);
 
 	    }

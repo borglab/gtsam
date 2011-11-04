@@ -205,21 +205,21 @@ namespace gtsam {
     }
 
 	  /** Expmap */
-	  TupleValues<VALUES1, VALUES2> expmap(const VectorValues& delta, const Ordering& ordering) const {
-	    return TupleValues(first_.expmap(delta, ordering), second_.expmap(delta, ordering));
+	  TupleValues<VALUES1, VALUES2> retract(const VectorValues& delta, const Ordering& ordering) const {
+	    return TupleValues(first_.retract(delta, ordering), second_.retract(delta, ordering));
 	  }
 
 	  /** logmap each element */
-	  VectorValues logmap(const TupleValues<VALUES1, VALUES2>& cp, const Ordering& ordering) const {
+	  VectorValues unretract(const TupleValues<VALUES1, VALUES2>& cp, const Ordering& ordering) const {
 		  VectorValues delta(this->dims(ordering));
-		  logmap(cp, ordering, delta);
+		  unretract(cp, ordering, delta);
 		  return delta;
 	  }
 
     /** logmap each element */
-    void logmap(const TupleValues<VALUES1, VALUES2>& cp, const Ordering& ordering, VectorValues& delta) const {
-      first_.logmap(cp.first_, ordering, delta);
-      second_.logmap(cp.second_, ordering, delta);
+    void unretract(const TupleValues<VALUES1, VALUES2>& cp, const Ordering& ordering, VectorValues& delta) const {
+      first_.unretract(cp.first_, ordering, delta);
+      second_.unretract(cp.second_, ordering, delta);
     }
 
 	  /**
@@ -318,18 +318,18 @@ namespace gtsam {
 
 	  size_t dim() const { return first_.dim(); }
 
-	  TupleValuesEnd<VALUES> expmap(const VectorValues& delta, const Ordering& ordering) const {
-	        return TupleValuesEnd(first_.expmap(delta, ordering));
+	  TupleValuesEnd<VALUES> retract(const VectorValues& delta, const Ordering& ordering) const {
+	        return TupleValuesEnd(first_.retract(delta, ordering));
 	  }
 
-    VectorValues logmap(const TupleValuesEnd<VALUES>& cp, const Ordering& ordering) const {
+    VectorValues unretract(const TupleValuesEnd<VALUES>& cp, const Ordering& ordering) const {
       VectorValues delta(this->dims(ordering));
-      logmap(cp, ordering, delta);
+      unretract(cp, ordering, delta);
       return delta;
     }
 
-    void logmap(const TupleValuesEnd<VALUES>& cp, const Ordering& ordering, VectorValues& delta) const {
-      first_.logmap(cp.first_, ordering, delta);
+    void unretract(const TupleValuesEnd<VALUES>& cp, const Ordering& ordering, VectorValues& delta) const {
+      first_.unretract(cp.first_, ordering, delta);
     }
 
     /**

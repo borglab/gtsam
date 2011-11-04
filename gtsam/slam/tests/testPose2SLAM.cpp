@@ -146,8 +146,8 @@ TEST(Pose2Graph, optimizeThreePoses) {
   // Create initial config
   boost::shared_ptr<Pose2Values> initial(new Pose2Values());
   initial->insert(0, p0);
-  initial->insert(1, hexagon[1].expmap(Vector_(3,-0.1, 0.1,-0.1)));
-  initial->insert(2, hexagon[2].expmap(Vector_(3, 0.1,-0.1, 0.1)));
+  initial->insert(1, hexagon[1].retract(Vector_(3,-0.1, 0.1,-0.1)));
+  initial->insert(2, hexagon[2].retract(Vector_(3, 0.1,-0.1, 0.1)));
 
   // Choose an ordering
   shared_ptr<Ordering> ordering(new Ordering);
@@ -186,11 +186,11 @@ TEST_UNSAFE(Pose2Graph, optimizeCircle) {
   // Create initial config
   boost::shared_ptr<Pose2Values> initial(new Pose2Values());
   initial->insert(0, p0);
-  initial->insert(1, hexagon[1].expmap(Vector_(3,-0.1, 0.1,-0.1)));
-  initial->insert(2, hexagon[2].expmap(Vector_(3, 0.1,-0.1, 0.1)));
-  initial->insert(3, hexagon[3].expmap(Vector_(3,-0.1, 0.1,-0.1)));
-  initial->insert(4, hexagon[4].expmap(Vector_(3, 0.1,-0.1, 0.1)));
-  initial->insert(5, hexagon[5].expmap(Vector_(3,-0.1, 0.1,-0.1)));
+  initial->insert(1, hexagon[1].retract(Vector_(3,-0.1, 0.1,-0.1)));
+  initial->insert(2, hexagon[2].retract(Vector_(3, 0.1,-0.1, 0.1)));
+  initial->insert(3, hexagon[3].retract(Vector_(3,-0.1, 0.1,-0.1)));
+  initial->insert(4, hexagon[4].retract(Vector_(3, 0.1,-0.1, 0.1)));
+  initial->insert(5, hexagon[5].retract(Vector_(3,-0.1, 0.1,-0.1)));
 
   // Choose an ordering
   shared_ptr<Ordering> ordering(new Ordering);
@@ -327,7 +327,7 @@ TEST( Pose2Values, expmap )
 	delta[ordering[Key(1)]] = Vector_(3, -0.1,0.0,0.0);
 	delta[ordering[Key(2)]] = Vector_(3, 0.0,0.1,0.0);
 	delta[ordering[Key(3)]] = Vector_(3, 0.1,0.0,0.0);
-	Pose2Values actual = circle.expmap(delta, ordering);
+	Pose2Values actual = circle.retract(delta, ordering);
 	CHECK(assert_equal(expected,actual));
 }
 
@@ -362,7 +362,7 @@ TEST( Pose2Prior, error )
 	VectorValues addition(VectorValues::Zero(x0.dims(ordering)));
 	addition[ordering["x1"]] = Vector_(3, 0.1, 0.0, 0.0);
 	VectorValues plus = delta + addition;
-	Pose2Values x1 = x0.expmap(plus, ordering);
+	Pose2Values x1 = x0.retract(plus, ordering);
 	Vector error_at_plus = Vector_(3,0.1/sx,0.0,0.0); // h(x)-z = 0.1 !
 	CHECK(assert_equal(error_at_plus,factor.whitenedError(x1)));
 	CHECK(assert_equal(error_at_plus,linear->error_vector(plus)));
@@ -428,7 +428,7 @@ TEST( Pose2Factor, error )
 	// Check error after increasing p2
 	VectorValues plus = delta;
 	plus[ordering["x2"]] = Vector_(3, 0.1, 0.0, 0.0);
-	Pose2Values x1 = x0.expmap(plus, ordering);
+	Pose2Values x1 = x0.retract(plus, ordering);
 	Vector error_at_plus = Vector_(3,0.1/sx,0.0,0.0); // h(x)-z = 0.1 !
 	CHECK(assert_equal(error_at_plus,factor.whitenedError(x1)));
 	CHECK(assert_equal(error_at_plus,linear->error_vector(plus)));

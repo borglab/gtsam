@@ -87,7 +87,7 @@ TEST( ProjectionFactor, error )
 	VectorValues delta(expected_config.dims(ordering));
 	delta[ordering["x1"]] = Vector_(6, 0.,0.,0., 1.,1.,1.);
 	delta[ordering["l1"]] = Vector_(3, 1.,2.,3.);
-	Values actual_config = config.expmap(delta, ordering);
+	Values actual_config = config.retract(delta, ordering);
 	CHECK(assert_equal(expected_config,actual_config,1e-9));
 }
 

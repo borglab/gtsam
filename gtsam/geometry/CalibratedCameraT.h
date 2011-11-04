@@ -50,11 +50,11 @@ namespace gtsam {
       return CalibratedCameraT( pose_.inverse(), k_ ) ;
     }
 
-    CalibratedCameraT expmap(const Vector& d) const {
-      return CalibratedCameraT(pose().expmap(d), k_) ;
+    CalibratedCameraT retract(const Vector& d) const {
+      return CalibratedCameraT(pose().retract(d), k_) ;
     }
-    Vector logmap(const CalibratedCameraT& T2) const {
-      return pose().logmap(T2.pose()) ;
+    Vector unretract(const CalibratedCameraT& T2) const {
+      return pose().unretract(T2.pose()) ;
     }
 
     void print(const std::string& s = "") const {

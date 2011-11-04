@@ -93,7 +93,7 @@ void NonlinearISAM<Values>::reorder_relinearize() {
 template<class Values>
 Values NonlinearISAM<Values>::estimate() const {
   if(isam_.size() > 0)
-    return linPoint_.expmap(optimize(isam_), ordering_);
+    return linPoint_.retract(optimize(isam_), ordering_);
   else
     return linPoint_;
 }

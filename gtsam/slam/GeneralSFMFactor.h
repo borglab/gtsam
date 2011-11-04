@@ -82,7 +82,7 @@ namespace gtsam {
 				boost::optional<Matrix&> H1=boost::none,
 				boost::optional<Matrix&> H2=boost::none) const {
 
-			Vector error = z_.logmap(camera.project(point,H1,H2));
+			Vector error = z_.unretract(camera.project(point,H1,H2));
 //			gtsam::print(error, "error");
 			return error;
 		}

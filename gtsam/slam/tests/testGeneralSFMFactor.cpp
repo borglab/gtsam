@@ -333,7 +333,7 @@ TEST( GeneralSFMFactor, optimize_varK_FixLandmarks ) {
           skew_noise, // s
           trans_noise, trans_noise // ux, uy
           ) ;
-      values->insert((int)i, X[i].expmap(delta)) ;
+      values->insert((int)i, X[i].retract(delta)) ;
     }
   }
 

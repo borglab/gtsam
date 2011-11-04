@@ -548,7 +548,7 @@ template<class Conditional, class Values>
 Values ISAM2<Conditional, Values>::calculateBestEstimate() const {
   VectorValues delta(theta_.dims(ordering_));
   optimize2(this->root(), delta);
-  return theta_.expmap(delta, ordering_);
+  return theta_.retract(delta, ordering_);
 }
 
 }

@@ -210,7 +210,7 @@ TEST( Values, update_with_large_delta) {
 	delta[largeOrdering["x1"]] = Vector_(6, 0.0, 0.0, 0.0, 0.1, 0.1, 0.1);
 	delta[largeOrdering["l1"]] = Vector_(3, 0.1, 0.1, 0.1);
 	delta[largeOrdering["x2"]] = Vector_(6, 0.0, 0.0, 0.0, 100.1, 4.1, 9.1);
-	Values actual = init.expmap(delta, largeOrdering);
+	Values actual = init.retract(delta, largeOrdering);
 
 	CHECK(assert_equal(expected,actual));
 }

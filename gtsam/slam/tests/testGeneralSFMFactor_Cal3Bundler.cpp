@@ -327,7 +327,7 @@ TEST( GeneralSFMFactor, optimize_varK_FixLandmarks ) {
           trans_noise, trans_noise, trans_noise, // translation
           focal_noise, distort_noise, distort_noise // f, k1, k2
           ) ;
-      values->insert((int)i, X[i].expmap(delta)) ;
+      values->insert((int)i, X[i].retract(delta)) ;
     }
   }
 

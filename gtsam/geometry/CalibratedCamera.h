@@ -69,12 +69,6 @@ namespace gtsam {
 		/// Return canonical coordinate
 	  static Vector Unretract(const CalibratedCamera& p);
 
-//	  // Manifold requirements - use existing expmap/logmap
-//  	inline CalibratedCamera retract(const Vector& v) const { return expmap(v); }
-//  	inline static CalibratedCamera Retract(const Vector& v) { return Expmap(v); }
-//  	inline Vector unretract(const CalibratedCamera& t2) const { return logmap(t2); }
-//  	inline static Vector Unretract(const CalibratedCamera& t) { return Logmap(t); }
-
 	  /// Lie group dimensionality
 		inline size_t dim() const { return 6 ; }
 

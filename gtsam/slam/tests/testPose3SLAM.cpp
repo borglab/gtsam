@@ -69,11 +69,11 @@ TEST(Pose3Graph, optimizeCircle) {
   // Create initial config
   boost::shared_ptr<Pose3Values> initial(new Pose3Values());
   initial->insert(0, gT0);
-  initial->insert(1, hexagon[1].expmap(Vector_(6,-0.1, 0.1,-0.1,-0.1, 0.1,-0.1)));
-  initial->insert(2, hexagon[2].expmap(Vector_(6, 0.1,-0.1, 0.1, 0.1,-0.1, 0.1)));
-  initial->insert(3, hexagon[3].expmap(Vector_(6,-0.1, 0.1,-0.1,-0.1, 0.1,-0.1)));
-  initial->insert(4, hexagon[4].expmap(Vector_(6, 0.1,-0.1, 0.1, 0.1,-0.1, 0.1)));
-  initial->insert(5, hexagon[5].expmap(Vector_(6,-0.1, 0.1,-0.1,-0.1, 0.1,-0.1)));
+  initial->insert(1, hexagon[1].retract(Vector_(6,-0.1, 0.1,-0.1,-0.1, 0.1,-0.1)));
+  initial->insert(2, hexagon[2].retract(Vector_(6, 0.1,-0.1, 0.1, 0.1,-0.1, 0.1)));
+  initial->insert(3, hexagon[3].retract(Vector_(6,-0.1, 0.1,-0.1,-0.1, 0.1,-0.1)));
+  initial->insert(4, hexagon[4].retract(Vector_(6, 0.1,-0.1, 0.1, 0.1,-0.1, 0.1)));
+  initial->insert(5, hexagon[5].retract(Vector_(6,-0.1, 0.1,-0.1,-0.1, 0.1,-0.1)));
 
   // Choose an ordering and optimize
   shared_ptr<Ordering> ordering(new Ordering);
@@ -140,9 +140,9 @@ TEST( Pose3Factor, error )
 	x.insert(1,t1);
 	x.insert(2,t2);
 
-	// Get error h(x)-z -> logmap(z,h(x)) = logmap(z,between(t1,t2))
+	// Get error h(x)-z -> unretract(z,h(x)) = unretract(z,between(t1,t2))
 	Vector actual = factor.unwhitenedError(x);
-	Vector expected = z.logmap(t1.between(t2));
+	Vector expected = z.unretract(t1.between(t2));
 	CHECK(assert_equal(expected,actual));
 }
 
@@ -223,7 +223,7 @@ TEST( Pose3Values, expmap )
 			0.0,0.0,0.0,  0.1, 0.0, 0.0,
 			0.0,0.0,0.0,  0.1, 0.0, 0.0,
 			0.0,0.0,0.0,  0.1, 0.0, 0.0);
-	Pose3Values actual = pose3SLAM::circle(4,1.0).expmap(delta, ordering);
+	Pose3Values actual = pose3SLAM::circle(4,1.0).retract(delta, ordering);
 	CHECK(assert_equal(expected,actual));
 }
 

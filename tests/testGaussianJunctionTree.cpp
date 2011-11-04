@@ -179,11 +179,11 @@ TEST(GaussianJunctionTree, slamlike) {
 
   GaussianJunctionTree gjt(linearized);
   VectorValues deltaactual = gjt.optimize(&EliminateQR);
-  planarSLAM::Values actual = init.expmap(deltaactual, ordering);
+  planarSLAM::Values actual = init.retract(deltaactual, ordering);
 
   GaussianBayesNet gbn = *GaussianSequentialSolver(linearized).eliminate();
   VectorValues delta = optimize(gbn);
-  planarSLAM::Values expected = init.expmap(delta, ordering);
+  planarSLAM::Values expected = init.retract(delta, ordering);
 
   EXPECT(assert_equal(expected, actual));
 }

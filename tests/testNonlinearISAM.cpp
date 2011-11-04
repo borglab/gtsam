@@ -61,7 +61,7 @@ TEST(testNonlinearISAM, markov_chain ) {
 		}
 
 		cur_pose = cur_pose.compose(z);
-		new_init.insert(key2, cur_pose.expmap(sampler.sample()));
+		new_init.insert(key2, cur_pose.retract(sampler.sample()));
 		expected.insert(key2, cur_pose);
 		isam.update(new_factors, new_init);
 	}
