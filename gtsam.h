@@ -114,6 +114,16 @@ class GaussianFactorGraph {
 	Matrix sparseJacobian_() const;
 };
 
+class KalmanFilter {
+	KalmanFilter(Vector x, const SharedDiagonal& model);
+	void print(string s) const;
+	Vector mean() const;
+	Matrix information() const;
+	Matrix covariance() const;
+	void predict(Matrix F, Matrix B, Vector u, const SharedDiagonal& model);
+	void update(Matrix H, Vector z, const SharedDiagonal& model);
+};
+
 class Landmark2 {
 	Landmark2();
 	Landmark2(double x, double y);

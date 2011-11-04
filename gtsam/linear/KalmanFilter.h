@@ -43,6 +43,15 @@ namespace gtsam {
 		 */
 		KalmanFilter(const Vector& x, const SharedDiagonal& model);
 
+		/// print
+	  void print(const std::string& s="") const {
+	  	std::cout << s << "\n";
+	    Vector m = mean();
+	    Matrix P = covariance();
+	    gtsam::print(m,"mean: ");
+	    gtsam::print(P,"covariance: ");
+	  }
+
 		/** Return mean of posterior P(x|Z) at given all measurements Z */
 		Vector mean() const;
 
