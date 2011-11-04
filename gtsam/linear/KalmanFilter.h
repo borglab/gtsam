@@ -78,6 +78,17 @@ namespace gtsam {
 				const SharedDiagonal& model);
 
 		/**
+		 * Predict the state P(x_{t+1}|Z^t)
+		 *   In Kalman Filter notation, this is x_{t+1|t} and P_{t+1|t}
+		 *   After the call, that is the density that can be queried.
+		 * Details and parameters:
+		 *   This version of predict takes GaussianFactor motion model [A0 A1 b]
+		 *   with an optional noise model.
+		 */
+		void predict2(const Matrix& A0, const Matrix& A1, const Vector& b,
+				const SharedDiagonal& model);
+
+		/**
 		 * Update Kalman filter with a measurement
 		 * For the Kalman Filter, the measurement function, h(x_{t}) = z_{t}
 		 * will be of the form h(x_{t}) = H*x_{t} + v

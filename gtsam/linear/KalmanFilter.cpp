@@ -91,6 +91,20 @@ namespace gtsam {
 	}
 
 	/* ************************************************************************* */
+	void KalmanFilter::predict2(const Matrix& A0, const Matrix& A1, const Vector& b,
+			const SharedDiagonal& model) {
+
+		// Exactly the same schem as in predict:
+		GaussianFactorGraph factorGraph;
+		factorGraph.push_back(density_->toFactor());
+
+		// However, now the factor related to the motion model is defined as
+		// f2(x_{t},x_{t+1}) = |A0*x_{t} + A1*x_{t+1} - b|^2
+		factorGraph.add(0, A0, 1, A1, b, model);
+		density_.reset(solve(factorGraph));
+	}
+
+	/* ************************************************************************* */
 	void KalmanFilter::update(const Matrix& H, const Vector& z,
 			const SharedDiagonal& model) {
 		// We will create a small factor graph f1-(x0)-f2
