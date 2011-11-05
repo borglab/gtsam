@@ -56,11 +56,11 @@ namespace gtsam {
    *
    * Letting \f$ h(x) \f$ be a \a linear measurement prediction function, \f$ z \f$ be
    * the actual observed measurement, the residual is
-   * \f[ f(x) = h(x) - z \text{.} \f]
+   * \f[ f(x) = h(x) - z . \f]
    * If we expect noise with diagonal covariance matrix \f$ \Sigma \f$ on this
    * measurement, then the negative log-likelihood of the Gaussian induced by this
    * measurement model is
-   * \f[ E(x) = \frac{1}{2} (h(x) - z)^T \Sigma^{-1} (h(x) - z) \text. \f]
+   * \f[ E(x) = \frac{1}{2} (h(x) - z)^T \Sigma^{-1} (h(x) - z) . \f]
    * Because \f$ h(x) \f$ is linear, we can write it as
    * \f[ h(x) = Ax + e \f]
    * and thus we have
@@ -75,7 +75,7 @@ namespace gtsam {
    * for example, for a 2-way factor, the constructor would accept \f$ A1 \f$ and \f$ A2 \f$,
    * as well as the variable indices \f$ j1 \f$ and \f$ j2 \f$
    * and the negative log-likelihood represented by this factor would be
-   * \f[ E(x) = \frac{1}{2} (A_1 x_{j1} + A_2 x_{j2} - b)^T \Sigma^{-1} (A_1 x_{j1} + A_2 x_{j2} - b) \text{.} \f]
+   * \f[ E(x) = \frac{1}{2} (A_1 x_{j1} + A_2 x_{j2} - b)^T \Sigma^{-1} (A_1 x_{j1} + A_2 x_{j2} - b) . \f]
    */
   class JacobianFactor : public GaussianFactor {
   public:
