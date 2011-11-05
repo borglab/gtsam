@@ -535,7 +535,7 @@ void Base::reweight(Matrix &A1, Matrix &A2, Matrix &A3, Vector &error) const {
 // Null model
 /* ************************************************************************* */
 
-void Null::print(const std::string &s) const
+void Null::print(const std::string &s="") const
 { cout << s << ": null ()" << endl; }
 
 Null::shared_ptr Null::Create()
@@ -556,7 +556,7 @@ Fair::Fair(const double c, const ReweightScheme reweight)
 double Fair::weight(const double &error) const
 { return 1.0 / (1.0 + fabs(error)/c_); }
 
-void Fair::print(const std::string &s) const
+void Fair::print(const std::string &s="") const
 { cout << s << ": fair (" << c_ << ")" << endl; }
 
 bool Fair::equals(const Base &expected, const double tol) const {
@@ -584,7 +584,7 @@ double Huber::weight(const double &error) const {
 	return (error < k_) ? (1.0) : (k_ / fabs(error));
 }
 
-void Huber::print(const std::string &s) const {
+void Huber::print(const std::string &s="") const {
 	cout << s << ": huber (" << k_ << ")" << endl;
 }
 

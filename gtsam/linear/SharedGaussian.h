@@ -55,6 +55,9 @@ namespace gtsam { // note, deliberately not in noiseModel namespace
 			Base(noiseModel::Isotropic::Sigma(GTSAM_DANGEROUS_GAUSSIAN, s)) {}
 #endif
 
+		/// Print
+		inline void print(const std::string &s) const { (*this)->print(s); }
+
 		/** Serialization function */
 		friend class boost::serialization::access;
 		template<class ARCHIVE>
