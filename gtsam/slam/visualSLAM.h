@@ -28,6 +28,7 @@
 #include <gtsam/slam/PriorFactor.h>
 #include <gtsam/slam/ProjectionFactor.h>
 #include <gtsam/slam/StereoFactor.h>
+#include <gtsam/slam/RangeFactor.h>
 
 namespace gtsam {
 
@@ -47,6 +48,7 @@ namespace gtsam {
   typedef NonlinearEquality<Values, PointKey> PointConstraint; ///< put a hard constraint on a point
   typedef PriorFactor<Values, PoseKey> PosePrior;							 ///< put a soft prior on a Pose
   typedef PriorFactor<Values, PointKey> PointPrior;						 ///< put a soft prior on a point
+  typedef RangeFactor<Values, PoseKey, PointKey> RangeFactor;  ///< put a factor on the range from a pose to a point
   
   /// monocular and stereo camera typedefs for general use
   typedef GenericProjectionFactor<Values, PointKey, PoseKey> ProjectionFactor;
@@ -115,7 +117,7 @@ namespace gtsam {
      *  @param p to which pose to constrain it to
      *  @param model uncertainty model of this prior
      */
-    void addPosePrior(int j, const Pose3& p = Pose3(), const SharedNoiseModel& model = noiseModel::Unit::Create(1)) {
+    void addPosePrior(int j, const Pose3& p = Pose3(), const SharedNoiseModel& model = noiseModel::Unit::Create(6)) {
       boost::shared_ptr<PosePrior> factor(new PosePrior(j, p, model));
       push_back(factor);
     }
@@ -126,9 +128,13 @@ namespace gtsam {
      *  @param p index of point
      *  @param model uncertainty model of this prior
      */
-    void addPointPrior(int j, const Point3& p = Point3(), const SharedNoiseModel& model = noiseModel::Unit::Create(1)) {
+    void addPointPrior(int j, const Point3& p = Point3(), const SharedNoiseModel& model = noiseModel::Unit::Create(3)) {
       boost::shared_ptr<PointPrior> factor(new PointPrior(j, p, model));
       push_back(factor);
+    }
+
+    void addRangeFactor(PoseKey i, PointKey j, double range, const SharedNoiseModel& model = noiseModel::Unit::Create(1)) {
+      push_back(boost::shared_ptr<RangeFactor>(new RangeFactor(i, j, range, model)));
     }
 
   }; // Graph
