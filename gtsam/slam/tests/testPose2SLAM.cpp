@@ -10,28 +10,28 @@
  * -------------------------------------------------------------------------- */
 
 /**
- *  @file  testPose2Graph.cpp
+ *  @file  testPose2SLAM.cpp
  *  @author Frank Dellaert, Viorela Ila
  **/
 
-#include <iostream>
+// Magically casts strings like "x3" to a Symbol('x',3) key, see Key.h
+#define GTSAM_MAGIC_KEY
+
+#include <gtsam/slam/pose2SLAM.h>
+#include <gtsam/nonlinear/NonlinearOptimizer-inl.h>
+#include <gtsam/inference/FactorGraph-inl.h>
+#include <gtsam/base/numericalDerivative.h>
+using namespace gtsam;
+
+#include <CppUnitLite/TestHarness.h>
+
 #include <boost/shared_ptr.hpp>
 #include <boost/assign/std/list.hpp>
 using namespace boost;
 using namespace boost::assign;
 
-#include <CppUnitLite/TestHarness.h>
-
-// Magically casts strings like "x3" to a Symbol('x',3) key, see Key.h
-#define GTSAM_MAGIC_KEY
-
-#include <gtsam/base/numericalDerivative.h>
-#include <gtsam/nonlinear/NonlinearOptimizer-inl.h>
-#include <gtsam/inference/FactorGraph-inl.h>
-#include <gtsam/slam/pose2SLAM.h>
-
+#include <iostream>
 using namespace std;
-using namespace gtsam;
 
 // common measurement covariance
 static double sx=0.5, sy=0.5,st=0.1;
@@ -44,11 +44,32 @@ static noiseModel::Gaussian::shared_ptr covariance(
 //static noiseModel::Gaussian::shared_ptr I3(noiseModel::Unit::Create(3));
 
 /* ************************************************************************* */
-TEST( Pose2Graph, constructor )
+Vector f(const Pose2& pose1, const Pose2& pose2) {
+	Pose2 z(2,2,M_PI_2);
+	Pose2Factor constraint(1, 2, z, covariance);
+	return constraint.evaluateError(pose1, pose2);
+}
+
+TEST( Pose2SLAM, constraint )
+{
+	// create a factor between unknown poses p1 and p2
+	Pose2 pose1, pose2(2,2,M_PI_2);
+	Pose2Factor constraint(1, 2, pose2, covariance);
+	Matrix H1, H2;
+	Vector actual = constraint.evaluateError(pose1, pose2, H1, H2);
+
+	Matrix numericalH1 = numericalDerivative21(&f , pose1, pose2);
+	EXPECT(assert_equal(numericalH1,H1,5e-3));
+
+	Matrix numericalH2 = numericalDerivative22(&f , pose1, pose2);
+	EXPECT(assert_equal(numericalH2,H2));
+}
+
+/* ************************************************************************* */
+TEST( Pose2SLAM, constructor )
 {
 	// create a factor between unknown poses p1 and p2
 	Pose2 measured(2,2,M_PI_2);
-	Pose2Factor constraint(1,2,measured, covariance);
 	Pose2Graph graph;
 	graph.addConstraint(1,2,measured, covariance);
 	// get the size of the graph
@@ -56,11 +77,10 @@ TEST( Pose2Graph, constructor )
 	// verify
 	size_t expected = 1;
 	CHECK(actual == expected);
-
 }
 
 /* ************************************************************************* */
-TEST( Pose2Graph, linearization )
+TEST( Pose2SLAM, linearization )
 {
 	// create a factor between unknown poses p1 and p2
 	Pose2 measured(2,2,M_PI_2);
