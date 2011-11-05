@@ -44,13 +44,37 @@ static noiseModel::Gaussian::shared_ptr covariance(
 //static noiseModel::Gaussian::shared_ptr I3(noiseModel::Unit::Create(3));
 
 /* ************************************************************************* */
-Vector f(const Pose2& pose1, const Pose2& pose2) {
+// Test constraint, small displacement
+Vector f1(const Pose2& pose1, const Pose2& pose2) {
+	Pose2 z(2.1130913087, 0.468461064817, 0.436332312999);
+	Pose2Factor constraint(1, 2, z, covariance);
+	return constraint.evaluateError(pose1, pose2);
+}
+
+TEST( Pose2SLAM, constraint1 )
+{
+	// create a factor between unknown poses p1 and p2
+	Pose2 pose1, pose2(2.1130913087, 0.468461064817, 0.436332312999);
+	Pose2Factor constraint(1, 2, pose2, covariance);
+	Matrix H1, H2;
+	Vector actual = constraint.evaluateError(pose1, pose2, H1, H2);
+
+	Matrix numericalH1 = numericalDerivative21(&f1 , pose1, pose2);
+	EXPECT(assert_equal(numericalH1,H1,5e-3));
+
+	Matrix numericalH2 = numericalDerivative22(&f1 , pose1, pose2);
+	EXPECT(assert_equal(numericalH2,H2));
+}
+
+/* ************************************************************************* */
+// Test constraint, large displacement
+Vector f2(const Pose2& pose1, const Pose2& pose2) {
 	Pose2 z(2,2,M_PI_2);
 	Pose2Factor constraint(1, 2, z, covariance);
 	return constraint.evaluateError(pose1, pose2);
 }
 
-TEST( Pose2SLAM, constraint )
+TEST( Pose2SLAM, constraint2 )
 {
 	// create a factor between unknown poses p1 and p2
 	Pose2 pose1, pose2(2,2,M_PI_2);
@@ -58,10 +82,10 @@ TEST( Pose2SLAM, constraint )
 	Matrix H1, H2;
 	Vector actual = constraint.evaluateError(pose1, pose2, H1, H2);
 
-	Matrix numericalH1 = numericalDerivative21(&f , pose1, pose2);
+	Matrix numericalH1 = numericalDerivative21(&f2 , pose1, pose2);
 	EXPECT(assert_equal(numericalH1,H1,5e-3));
 
-	Matrix numericalH2 = numericalDerivative22(&f , pose1, pose2);
+	Matrix numericalH2 = numericalDerivative22(&f2 , pose1, pose2);
 	EXPECT(assert_equal(numericalH2,H2));
 }
 
