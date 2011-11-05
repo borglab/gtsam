@@ -405,7 +405,7 @@ TEST(DoglegOptimizer, Iterate) {
     DoglegOptimizerImpl::IterationResult result = DoglegOptimizerImpl::Iterate(Delta, DoglegOptimizerImpl::SEARCH_EACH_ITERATION, gbn, *fg, *config, *ord, fg->error(*config));
     Delta = result.Delta;
     EXPECT(result.f_error < fg->error(*config)); // Check that error decreases
-    simulated2D::Values newConfig(config->expmap(result.dx_d, *ord));
+    simulated2D::Values newConfig(config->retract(result.dx_d, *ord));
     (*config) = newConfig;
     DOUBLES_EQUAL(fg->error(*config), result.f_error, 1e-5); // Check that error is correctly filled in
   }

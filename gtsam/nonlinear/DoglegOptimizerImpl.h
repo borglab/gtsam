@@ -159,7 +159,7 @@ typename DoglegOptimizerImpl::IterationResult DoglegOptimizerImpl::Iterate(
     cout << "Delta = " << Delta << ", dx_d_norm = " << result.dx_d.vector().norm() << endl;
 
     // Compute expmapped solution
-    const VALUES x_d(x0.expmap(result.dx_d, ordering));
+    const VALUES x_d(x0.retract(result.dx_d, ordering));
 
     // Compute decrease in f
     result.f_error = f.error(x_d);

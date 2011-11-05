@@ -306,7 +306,7 @@ namespace gtsam {
     DoglegOptimizerImpl::IterationResult result = DoglegOptimizerImpl::Iterate(
         parameters_->lambda_, DoglegOptimizerImpl::ONE_STEP_PER_ITERATION, *solver.eliminate(),
         *graph_, *values_, *ordering_, error_);
-    shared_values newValues(new T(values_->expmap(result.dx_d, *ordering_)));
+    shared_values newValues(new T(values_->retract(result.dx_d, *ordering_)));
     cout << "newValues: " << newValues.get() << endl;
     return newValuesErrorLambda_(newValues, result.f_error, result.Delta);
   }
