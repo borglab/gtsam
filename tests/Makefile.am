@@ -15,6 +15,7 @@ check_PROGRAMS += testInference
 check_PROGRAMS += testGaussianJunctionTree 
 check_PROGRAMS += testNonlinearEquality testNonlinearFactor testNonlinearFactorGraph
 check_PROGRAMS += testNonlinearOptimizer
+# check_PROGRAMS += testDoglegOptimizer # Uses debugging prints so commented out in SVN
 check_PROGRAMS += testSymbolicBayesNet testSymbolicFactorGraph
 check_PROGRAMS += testTupleValues
 check_PROGRAMS += testNonlinearISAM

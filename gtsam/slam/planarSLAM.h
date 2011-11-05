@@ -109,27 +109,27 @@ namespace gtsam {
 			/// Creates a NonlinearFactorGraph based on another NonlinearFactorGraph
 			Graph(const NonlinearFactorGraph<Values>& graph);
 
-			/// Biases the value of PoseKey i with Pose2 p given a noise model
-			void addPrior(const PoseKey& i, const Pose2& p, const SharedNoiseModel& model);
+			/// Biases the value of PoseKey key with Pose2 p given a noise model
+			void addPrior(const PoseKey& key, const Pose2& pose, const SharedNoiseModel& noiseModel);
 
-			/// Creates a hard constraint to enforce Pose2 p for PoseKey i's value
-			void addPoseConstraint(const PoseKey& i, const Pose2& p);
+			/// Creates a hard constraint to enforce Pose2 p for PoseKey poseKey's value
+			void addPoseConstraint(const PoseKey& poseKey, const Pose2& pose);
 
-			/// Creates a factor with a Pose2 between PoseKeys i and j (i.e. an odometry measurement)
-			void addOdometry(const PoseKey& i, const PoseKey& j, const Pose2& z,
+			/// Creates a factor with a Pose2 between PoseKeys poseKey and pointKey (poseKey.e. an odometry measurement)
+			void addOdometry(const PoseKey& poseKey, const PoseKey& pointKey, const Pose2& odometry,
 					const SharedNoiseModel& model);
 
-			/// Creates a factor with a Rot2 between a PoseKey i and PointKey j for difference in rotation
-			void addBearing(const PoseKey& i, const PointKey& j, const Rot2& z,
+			/// Creates a factor with a Rot2 between a PoseKey poseKey and PointKey pointKey for difference in rotation
+			void addBearing(const PoseKey& poseKey, const PointKey& pointKey, const Rot2& bearing,
 					const SharedNoiseModel& model);
 
-			/// Creates a factor with a Rot2 between a PoseKey i and PointKey j for difference in location
-			void addRange(const PoseKey& i, const PointKey& j, double z,
+			/// Creates a factor with a Rot2 between a PoseKey poseKey and PointKey pointKey for difference in location
+			void addRange(const PoseKey& poseKey, const PointKey& pointKey, double range,
 					const SharedNoiseModel& model);
 
-			/// Creates a factor with a Rot2 between a PoseKey i and PointKey j for difference in rotation and location
-			void addBearingRange(const PoseKey& i, const PointKey& j,
-					const Rot2& z1, double z2, const SharedNoiseModel& model);
+			/// Creates a factor with a Rot2 between a PoseKey poseKey and PointKey pointKey for difference in rotation and location
+			void addBearingRange(const PoseKey& poseKey, const PointKey& pointKey,
+					const Rot2& bearing, double range, const SharedNoiseModel& model);
 
 			/// Optimize_ for MATLAB
 			boost::shared_ptr<Values> optimize_(const Values& initialEstimate) {

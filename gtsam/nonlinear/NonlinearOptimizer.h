@@ -170,7 +170,7 @@ public:
 	NonlinearOptimizer(const NonlinearOptimizer<G, T, L, GS> &optimizer) :
 		graph_(optimizer.graph_), values_(optimizer.values_), error_(optimizer.error_),
 		ordering_(optimizer.ordering_), parameters_(optimizer.parameters_),
-		iterations_(0), dimensions_(optimizer.dimensions_), structure_(optimizer.structure_) {}
+		iterations_(optimizer.iterations_), dimensions_(optimizer.dimensions_), structure_(optimizer.structure_) {}
 
 	// access to member variables
 
@@ -268,15 +268,23 @@ public:
 	///
 	NonlinearOptimizer levenbergMarquardt();
 
-	// static interfaces to LM and GN optimization techniques
+	/**
+	 * One iteration of the dog leg algorithm
+	 */
+	NonlinearOptimizer iterateDogLeg();
 
-	///
-	///Static interface to LM optimization using default ordering and thresholds
-	///@param graph 	   Nonlinear factor graph to optimize
-	///@param values       Initial values
-	///@param verbosity    Integer specifying how much output to provide
-	///@return 			   an optimized values structure
-	///
+	/**
+	 * Optimize using the Dog Leg algorithm
+	 */
+	NonlinearOptimizer dogLeg();
+
+	// static interfaces to LM, Dog leg, and GN optimization techniques
+
+  ///Static interface to Dog leg optimization using default ordering
+  ///@param graph      Nonlinear factor graph to optimize
+  ///@param values       Initial values
+  ///@param parameters Optimization parameters
+  ///@return         an optimized values structure
 	static shared_values optimizeLM(shared_graph graph,
 			shared_values values,
 			shared_parameters parameters = boost::make_shared<Parameters>()) {
@@ -293,8 +301,7 @@ public:
 
 	static shared_values optimizeLM(shared_graph graph,
 			shared_values values,
-			Parameters::verbosityLevel verbosity)
-	{
+			Parameters::verbosityLevel verbosity)	{
 		return optimizeLM(graph, values, Parameters::newVerbosity(verbosity));
 	}
 
@@ -316,6 +323,57 @@ public:
 				boost::make_shared<const T>(values),
 				verbosity);
 	}
+
+  ///Static interface to Dog leg optimization using default ordering
+  ///@param graph      Nonlinear factor graph to optimize
+  ///@param values       Initial values
+  ///@param parameters Optimization parameters
+  ///@return         an optimized values structure
+  static shared_values optimizeDogLeg(shared_graph graph,
+      shared_values values,
+      shared_parameters parameters = boost::make_shared<Parameters>()) {
+
+    // Use a variable ordering from COLAMD
+    Ordering::shared_ptr ordering = graph->orderingCOLAMD(*values);
+    // initial optimization state is the same in both cases tested
+    //GS solver(*graph->linearize(*values, *ordering));
+
+    NonlinearOptimizer optimizer(graph, values, ordering, parameters);
+    NonlinearOptimizer result = optimizer.dogLeg();
+    return result.values();
+  }
+
+  ///
+  ///Static interface to Dog leg optimization using default ordering and thresholds
+  ///@param graph      Nonlinear factor graph to optimize
+  ///@param values       Initial values
+  ///@param verbosity    Integer specifying how much output to provide
+  ///@return         an optimized values structure
+  ///
+  static shared_values optimizeDogLeg(shared_graph graph,
+      shared_values values,
+      Parameters::verbosityLevel verbosity) {
+    return optimizeDogLeg(graph, values, Parameters::newVerbosity(verbosity)->newLambda_(1.0));
+  }
+
+  /**
+   * Static interface to Dogleg optimization (no shared_ptr arguments) - see above
+   */
+  static shared_values optimizeDogLeg(const G& graph,
+      const T& values,
+      const Parameters parameters = Parameters()) {
+    return optimizeDogLeg(boost::make_shared<const G>(graph),
+        boost::make_shared<const T>(values),
+        boost::make_shared<Parameters>(parameters));
+  }
+
+  static shared_values optimizeDogLeg(const G& graph,
+      const T& values,
+      Parameters::verbosityLevel verbosity) {
+    return optimizeDogLeg(boost::make_shared<const G>(graph),
+        boost::make_shared<const T>(values),
+        verbosity);
+  }
 
 	///
 	///Static interface to GN optimization using default ordering and thresholds

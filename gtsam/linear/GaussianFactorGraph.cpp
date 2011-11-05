@@ -25,8 +25,12 @@
 #include <gtsam/base/FastVector.h>
 #include <gtsam/linear/HessianFactor.h>
 #include <gtsam/linear/GaussianFactorGraph.h>
-#include <gtsam/inference/VariableSlots.h>
+#include <gtsam/inference/BayesTree-inl.h>
 #include <gtsam/inference/FactorGraph-inl.h>
+#include <gtsam/inference/VariableSlots.h>
+#include <gtsam/base/debug.h>
+#include <gtsam/base/timing.h>
+#include <gtsam/base/cholesky.h>
 
 using namespace std;
 using namespace gtsam;
@@ -36,9 +40,10 @@ namespace gtsam {
 	INSTANTIATE_FACTOR_GRAPH(GaussianFactor);
 
 	/* ************************************************************************* */
-	GaussianFactorGraph::GaussianFactorGraph(const GaussianBayesNet& CBN) :
-		FactorGraph<GaussianFactor> (CBN) {
-	}
+	GaussianFactorGraph::GaussianFactorGraph(const GaussianBayesNet& CBN) : Base(CBN) {}
+
+	/* ************************************************************************* */
+	GaussianFactorGraph::GaussianFactorGraph(const BayesTree<GaussianConditional>& GBT) : Base(GBT) {}
 
 	/* ************************************************************************* */
 	GaussianFactorGraph::Keys GaussianFactorGraph::keys() const {

@@ -24,6 +24,7 @@
 #include <boost/tuple/tuple.hpp>
 #include <gtsam/base/cholesky.h>
 #include <gtsam/nonlinear/NonlinearOptimizer.h>
+#include <gtsam/nonlinear/DoglegOptimizerImpl.h>
 
 #define INSTANTIATE_NONLINEAR_OPTIMIZER(G,C) \
   template class NonlinearOptimizer<G,C>;
@@ -95,6 +96,7 @@ namespace gtsam {
 		if (verbosity >= Parameters::VALUES) newValues->print("newValues");
 
 		NonlinearOptimizer newOptimizer = newValues_(newValues);
+		++ newOptimizer.iterations_;
 
 		if (verbosity >= Parameters::ERROR)	cout << "error: " << newOptimizer.error_ << endl;
 		return newOptimizer;
@@ -176,6 +178,7 @@ namespace gtsam {
 		  // Try solving
 		  try {
 		    VectorValues delta = *solver->optimize();
+		    if (verbosity >= Parameters::TRYLAMBDA) cout << "linear delta norm = " << delta.vector().norm() << endl;
 		    if (verbosity >= Parameters::TRYDELTA) delta.print("delta");
 
 		    // update values
@@ -277,6 +280,7 @@ namespace gtsam {
 			error_ = next.error_;
 			values_ = next.values_;
 			parameters_ = next.parameters_;
+			iterations_ = next.iterations_;
 
 			// check convergence
 			// TODO: move convergence checks here and incorporate in verbosity levels
@@ -292,4 +296,62 @@ namespace gtsam {
 			iterations_++;
 		}
 	}
+
+  /* ************************************************************************* */
+  template<class G, class T, class L, class S, class W>
+  NonlinearOptimizer<G, T, L, S, W> NonlinearOptimizer<G, T, L, S, W>::iterateDogLeg() {
+
+    cout << "values: " << values_.get() << endl;
+    S solver(*graph_->linearize(*values_, *ordering_));
+    DoglegOptimizerImpl::IterationResult result = DoglegOptimizerImpl::Iterate(
+        parameters_->lambda_, DoglegOptimizerImpl::ONE_STEP_PER_ITERATION, *solver.eliminate(),
+        *graph_, *values_, *ordering_, error_);
+    shared_values newValues(new T(values_->expmap(result.dx_d, *ordering_)));
+    cout << "newValues: " << newValues.get() << endl;
+    return newValuesErrorLambda_(newValues, result.f_error, result.Delta);
+  }
+
+  /* ************************************************************************* */
+  template<class G, class T, class L, class S, class W>
+  NonlinearOptimizer<G, T, L, S, W> NonlinearOptimizer<G, T, L, S, W>::dogLeg() {
+    static W writer(error_);
+
+    // check if we're already close enough
+    if (error_ < parameters_->sumError_) {
+      if ( parameters_->verbosity_ >= Parameters::ERROR )
+        cout << "Exiting, as sumError = " << error_ << " < " << parameters_->sumError_ << endl;
+      return *this;
+    }
+
+    // for the case that maxIterations_ = 0
+    iterations_ = 1;
+    if (iterations_ >= parameters_->maxIterations_)
+      return *this;
+
+    // Iterative loop that runs Dog Leg
+    while (true) {
+      double previous_error = error_;
+      // do one iteration of LM
+      NonlinearOptimizer next = iterateDogLeg();
+      writer.write(next.error_);
+      error_ = next.error_;
+      values_ = next.values_;
+      parameters_ = next.parameters_;
+
+      // check convergence
+      // TODO: move convergence checks here and incorporate in verbosity levels
+      // TODO: build into iterations somehow as an instance variable
+      bool converged = gtsam::check_convergence(*parameters_, previous_error, error_);
+
+      if(iterations_ >= parameters_->maxIterations_ || converged == true) {
+        if (parameters_->verbosity_ >= Parameters::VALUES) values_->print("final values");
+        if (parameters_->verbosity_ >= Parameters::ERROR) cout << "final error: " << error_ << endl;
+        if (parameters_->verbosity_ >= Parameters::LAMBDA) cout << "final Delta (called lambda) = " << lambda() << endl;
+        return *this;
+      }
+      iterations_++;
+    }
+
+  }
+
 }

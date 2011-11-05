@@ -1,0 +1,73 @@
+/**
+ * @file    DoglegOptimizerImpl.h
+ * @brief   Nonlinear factor graph optimizer using Powell's Dogleg algorithm (detail implementation)
+ * @author  Richard Roberts
+ */
+
+#include <gtsam/nonlinear/DoglegOptimizerImpl.h>
+
+namespace gtsam {
+/* ************************************************************************* */
+VectorValues DoglegOptimizerImpl::ComputeDoglegPoint(
+    double Delta, const VectorValues& x_u, const VectorValues& x_n) {
+
+  // Get magnitude of each update and find out which segment Delta falls in
+  assert(Delta >= 0.0);
+  double DeltaSq = Delta*Delta;
+  double x_u_norm_sq = x_u.vector().squaredNorm();
+  double x_n_norm_sq = x_n.vector().squaredNorm();
+  cout << "Steepest descent magnitude " << sqrt(x_u_norm_sq) << ", Newton's method magnitude " << sqrt(x_n_norm_sq) << endl;
+  if(DeltaSq < x_u_norm_sq) {
+    // Trust region is smaller than steepest descent update
+    VectorValues x_d = VectorValues::SameStructure(x_u);
+    x_d.vector() = x_u.vector() * sqrt(DeltaSq / x_u_norm_sq);
+    cout << "In steepest descent region with fraction " << sqrt(DeltaSq / x_u_norm_sq) << " of steepest descent magnitude" << endl;
+    return x_d;
+  } else if(DeltaSq < x_n_norm_sq) {
+    // Trust region boundary is between steepest descent point and Newton's method point
+    return ComputeBlend(Delta, x_u, x_n);
+  } else {
+    assert(DeltaSq >= x_n_norm_sq);
+    cout << "In pure Newton's method region" << endl;
+    // Trust region is larger than Newton's method point
+    return x_n;
+  }
+}
+
+/* ************************************************************************* */
+VectorValues DoglegOptimizerImpl::ComputeBlend(double Delta, const VectorValues& x_u, const VectorValues& x_n) {
+
+  // See doc/trustregion.lyx or doc/trustregion.pdf
+
+  // Compute inner products
+  const double un = dot(x_u, x_n);
+  const double uu = dot(x_u, x_u);
+  const double nn = dot(x_n, x_n);
+
+  // Compute quadratic formula terms
+  const double a = uu - 2.*un + nn;
+  const double b = 2. * (un - uu);
+  const double c = uu - Delta*Delta;
+  double sqrt_b_m4ac = sqrt(b*b - 4*a*c);
+
+  // Compute blending parameter
+  double tau1 = (-b + sqrt_b_m4ac) / (2.*a);
+  double tau2 = (-b - sqrt_b_m4ac) / (2.*a);
+
+  double tau;
+  if(0.0 <= tau1 && tau1 <= 1.0) {
+    assert(!(0.0 <= tau2 && tau2 <= 1.0));
+    tau = tau1;
+  } else {
+    assert(0.0 <= tau2 && tau2 <= 1.0);
+    tau = tau2;
+  }
+
+  // Compute blended point
+  cout << "In blend region with fraction " << tau << " of Newton's method point" << endl;
+  VectorValues blend = VectorValues::SameStructure(x_u);
+  blend.vector() = (1. - tau) * x_u.vector() + tau * x_n.vector();
+  return blend;
+}
+
+}
