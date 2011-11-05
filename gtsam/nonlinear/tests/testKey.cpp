@@ -18,6 +18,7 @@
 using namespace boost::assign;
 
 #include <CppUnitLite/TestHarness.h>
+#include <gtsam/base/Testable.h>
 #include <gtsam/nonlinear/Key.h>
 	
 using namespace std;
