@@ -69,7 +69,7 @@ namespace gtsam {
 			/// Evaluate error and optionally derivative
 			Vector evaluateError(const Pose2& x, boost::optional<Matrix&> H =
 					boost::none) const {
-				return z_.unretract(prior(x, H));
+				return z_.localCoordinates(prior(x, H));
 			}
 
 		};
@@ -93,7 +93,7 @@ namespace gtsam {
 			Vector evaluateError(const Pose2& x1, const Pose2& x2,
 					boost::optional<Matrix&> H1 = boost::none,
 					boost::optional<Matrix&> H2 = boost::none) const {
-				return z_.unretract(odo(x1, x2, H1, H2));
+				return z_.localCoordinates(odo(x1, x2, H1, H2));
 			}
 
 		};

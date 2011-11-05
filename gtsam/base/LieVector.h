@@ -57,30 +57,24 @@ struct LieVector : public Vector {
 		return gtsam::equal(vector(), expected.vector(), tol);
 	}
 
-	/**
-	 * Returns dimensionality of the tangent space
-	 */
+	// Manifold requirements
+
+	/** Returns dimensionality of the tangent space */
 	inline size_t dim() const { return this->size(); }
 
-	/**
-	 * Returns Exponential map update of T
-	 * Default implementation calls global binary function
-	 */
-	inline LieVector expmap(const Vector& v) const { return LieVector(vector() + v); }
+	/** Update the LieVector with a tangent space update */
+	inline LieVector retract(const Vector& v) const { return LieVector(vector() + v); }
 
-	/** expmap around identity */
-	static inline LieVector Expmap(const Vector& v) { return LieVector(v); }
+	/** @return the local coordinates of another object */
+	inline Vector localCoordinates(const LieVector& t2) const { return LieVector(t2 - vector()); }
 
-	/**
-	 * Returns Log map
-	 * Default Implementation calls global binary function
-	 */
-	inline Vector logmap(const LieVector& lp) const {
-		return lp.vector() - vector();
+	// Group requirements
+
+	/** identity - NOTE: no known size at compile time - so zero length */
+	inline static LieVector identity() {
+		throw std::runtime_error("LieVector::identity(): Don't use this function");
+		return LieVector();
 	}
-
-	/** Logmap around identity - just returns with default cast back */
-	static inline Vector Logmap(const LieVector& p) { return p; }
 
 	/** compose with another object */
 	inline LieVector compose(const LieVector& p) const {
@@ -101,19 +95,13 @@ struct LieVector : public Vector {
 		return LieVector(-1.0 * vector());
 	}
 
-	// Manifold requirements
+	// Lie functions
 
-	inline LieVector retract(const Vector& v) const { return expmap(v); }
+	/** Expmap around identity */
+	static inline LieVector Expmap(const Vector& v) { return LieVector(v); }
 
-	/** expmap around identity */
-	inline static LieVector Retract(const Vector& v) { return Expmap(v); }
+	/** Logmap around identity - just returns with default cast back */
+	static inline Vector Logmap(const LieVector& p) { return p; }
 
-	/**
-	 * Returns inverse retraction
-	 */
-	inline Vector unretract(const LieVector& t2) const { return logmap(t2); }
-
-	/** Unretract around identity */
-	inline static Vector Unretract(const LieVector& t) { return Logmap(t); }
 };
 } // \namespace gtsam

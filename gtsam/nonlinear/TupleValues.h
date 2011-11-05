@@ -210,16 +210,16 @@ namespace gtsam {
 	  }
 
 	  /** logmap each element */
-	  VectorValues unretract(const TupleValues<VALUES1, VALUES2>& cp, const Ordering& ordering) const {
+	  VectorValues localCoordinates(const TupleValues<VALUES1, VALUES2>& cp, const Ordering& ordering) const {
 		  VectorValues delta(this->dims(ordering));
-		  unretract(cp, ordering, delta);
+		  localCoordinates(cp, ordering, delta);
 		  return delta;
 	  }
 
     /** logmap each element */
-    void unretract(const TupleValues<VALUES1, VALUES2>& cp, const Ordering& ordering, VectorValues& delta) const {
-      first_.unretract(cp.first_, ordering, delta);
-      second_.unretract(cp.second_, ordering, delta);
+    void localCoordinates(const TupleValues<VALUES1, VALUES2>& cp, const Ordering& ordering, VectorValues& delta) const {
+      first_.localCoordinates(cp.first_, ordering, delta);
+      second_.localCoordinates(cp.second_, ordering, delta);
     }
 
 	  /**
@@ -322,14 +322,14 @@ namespace gtsam {
 	        return TupleValuesEnd(first_.retract(delta, ordering));
 	  }
 
-    VectorValues unretract(const TupleValuesEnd<VALUES>& cp, const Ordering& ordering) const {
+    VectorValues localCoordinates(const TupleValuesEnd<VALUES>& cp, const Ordering& ordering) const {
       VectorValues delta(this->dims(ordering));
-      unretract(cp, ordering, delta);
+      localCoordinates(cp, ordering, delta);
       return delta;
     }
 
-    void unretract(const TupleValuesEnd<VALUES>& cp, const Ordering& ordering, VectorValues& delta) const {
-      first_.unretract(cp.first_, ordering, delta);
+    void localCoordinates(const TupleValuesEnd<VALUES>& cp, const Ordering& ordering, VectorValues& delta) const {
+      first_.localCoordinates(cp.first_, ordering, delta);
     }
 
     /**

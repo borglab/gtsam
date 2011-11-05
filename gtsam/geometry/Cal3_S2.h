@@ -133,20 +133,9 @@ namespace gtsam {
 			return Cal3_S2(fx_ + d(0), fy_ + d(1), s_ + d(2), u0_ + d(3), v0_ + d(4));
 		}
 
-		/// Retraction from origin
-		inline static Cal3_S2 Retract(const Vector& d) {
-			Cal3_S2 c;
-			return c.retract(d);
-		}
-
 		/// Unretraction for the calibration
-		Vector unretract(const Cal3_S2& T2) const {
+		Vector localCoordinates(const Cal3_S2& T2) const {
 			return vector() - T2.vector();
-		}
-
-		/// Unretraction from origin
-		inline static Vector Unretract(const Cal3_S2& T2) {
-			return T2.vector();
 		}
 
 	private:

@@ -23,7 +23,6 @@
 using namespace gtsam;
 
 GTSAM_CONCEPT_TESTABLE_INST(LieScalar)
-GTSAM_CONCEPT_MANIFOLD_INST(LieScalar)
 GTSAM_CONCEPT_LIE_INST(LieScalar)
 
 const double tol=1e-9;
@@ -40,10 +39,10 @@ TEST( testLieScalar, construction ) {
 }
 
 /* ************************************************************************* */
-TEST( testLieScalar, logmap ) {
+TEST( testLieScalar, localCoordinates ) {
 	LieScalar lie1(1.), lie2(3.);
 
-	EXPECT(assert_equal(Vector_(1, 2.), lie1.logmap(lie2)));
+	EXPECT(assert_equal(Vector_(1, 2.), lie1.localCoordinates(lie2)));
 }
 
 /* ************************************************************************* */

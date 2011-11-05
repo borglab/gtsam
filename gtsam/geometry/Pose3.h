@@ -91,6 +91,11 @@ namespace gtsam {
     /** Dimensionality of the tangent space */
     inline size_t dim() const { return dimension; }
 
+		/** identity */
+		inline static Pose3 identity() {
+			return Pose3();
+		}
+
     /**
      * Derivative of inverse
      */
@@ -115,27 +120,15 @@ namespace gtsam {
     Point3 transform_to(const Point3& p,
     		  	boost::optional<Matrix&> H1=boost::none, boost::optional<Matrix&> H2=boost::none) const;
 
-    /** Exponential map at identity - create a pose with a translation and
-     * rotation (in canonical coordinates). */
-    static Pose3 Retract(const Vector& v);
-
-    /** Log map at identity - return the translation and canonical rotation
-     * coordinates of a pose. */
-    static Vector Unretract(const Pose3& p);
-
     /** Exponential map around another pose */
     Pose3 retract(const Vector& d) const;
 
     /** Logarithm map around another pose T1 */
-    Vector unretract(const Pose3& T2) const;
+    Vector localCoordinates(const Pose3& T2) const;
 
     /** non-approximated versions of Expmap/Logmap */
   	static Pose3 Expmap(const Vector& xi);
     static Vector Logmap(const Pose3& p);
-
-    /** non-approximated versions of expmap/logmap */
-    inline Pose3 expmap(const Vector& v) const { return compose(Pose3::Expmap(v)); }
-    inline Vector logmap(const Pose3& p2) const { return Pose3::Logmap(between(p2));}
 
     /**
      * Return relative pose between p1 and p2, in p1 coordinate frame

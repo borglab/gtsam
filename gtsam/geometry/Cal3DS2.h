@@ -63,10 +63,7 @@ public:
 	Matrix D2d_calibration(const Point2& p) const ;
 
 	Cal3DS2 retract(const Vector& d) const ;
-	Vector unretract(const Cal3DS2& T2) const ;
-
-	static Cal3DS2 Retract(const Vector& v) ;
-	static Vector Unretract(const Cal3DS2& p) ;
+	Vector localCoordinates(const Cal3DS2& T2) const ;
 
 	int dim() const { return 9 ; }
 	static size_t Dim() { return 9; }

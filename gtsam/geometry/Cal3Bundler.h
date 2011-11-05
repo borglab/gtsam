@@ -52,10 +52,7 @@ public:
 	Matrix D2d_intrinsic_calibration(const Point2& p) const ;
 
 	Cal3Bundler retract(const Vector& d) const ;
-	Vector unretract(const Cal3Bundler& T2) const ;
-
-	static Cal3Bundler Retract(const Vector& v) ;
-	static Vector Unretract(const Cal3Bundler& p) ;
+	Vector localCoordinates(const Cal3Bundler& T2) const ;
 
 	int dim() const { return 3 ; }
 	static size_t Dim() { return 3; }

@@ -36,13 +36,6 @@ namespace testing {
 	template<class T>
 	T compose(const T& t1, const T& t2) { return t1.compose(t2); }
 
-	/** expmap and logmap */
-	template<class T>
-	Vector logmap(const T& t1, const T& t2) { return t1.logmap(t2); }
-
-	template<class T>
-	T expmap(const T& t1, const Vector& t2) { return t1.expmap(t2); }
-
 	/** unary functions */
 	template<class T>
 	T inverse(const T& t) { return t.inverse(); }

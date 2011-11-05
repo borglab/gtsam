@@ -86,6 +86,11 @@ namespace gtsam {
 			return *this + p1;
 		}
 
+		/** identity */
+		inline static StereoPoint2 identity() {
+			return StereoPoint2();
+		}
+
 		/** inverse */
 		inline StereoPoint2 inverse() const {
 			return StereoPoint2()- (*this);
@@ -101,29 +106,14 @@ namespace gtsam {
 			return p.vector();
 		}
 
-		/** default implementations of binary functions */
-		inline StereoPoint2 expmap(const Vector& v) const {
-			return gtsam::expmap_default(*this, v);
-		}
-
-		inline Vector logmap(const StereoPoint2& p2) const {
-			return gtsam::logmap_default(*this, p2);
-		}
-
 		// Manifold requirements
 
-		inline StereoPoint2 retract(const Vector& v) const { return expmap(v); }
-
-		/** expmap around identity */
-		inline static StereoPoint2 Retract(const Vector& v) { return Expmap(v); }
+		inline StereoPoint2 retract(const Vector& v) const { return compose(Expmap(v)); }
 
 		/**
 		 * Returns inverse retraction
 		 */
-		inline Vector unretract(const StereoPoint2& t2) const { return logmap(t2); }
-
-		/** Unretract around identity */
-		inline static Vector Unretract(const StereoPoint2& t) { return Logmap(t); }
+		inline Vector localCoordinates(const StereoPoint2& t2) const { return Logmap(between(t2)); }
 
 		inline StereoPoint2 between(const StereoPoint2& p2) const {
 			return gtsam::between_default(*this, p2);

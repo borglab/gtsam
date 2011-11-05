@@ -120,7 +120,7 @@ namespace gtsam {
 			size_t nj = feasible_.dim();
 			if (allow_error_) {
 				if (H) *H = eye(nj); // FIXME: this is not the right linearization for nonlinear compare
-				return xj.unretract(feasible_);
+				return xj.localCoordinates(feasible_);
 			} else if (compare_(feasible_,xj)) {
 				if (H) *H = eye(nj);
 				return zero(nj); // set error to zero if equal

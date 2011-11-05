@@ -21,7 +21,6 @@
 using namespace gtsam;
 
 GTSAM_CONCEPT_TESTABLE_INST(Point3)
-GTSAM_CONCEPT_MANIFOLD_INST(Point3)
 GTSAM_CONCEPT_LIE_INST(Point3)
 
 Point3 P(0.2,0.7,-2);
@@ -40,8 +39,8 @@ TEST(Point3, Lie) {
   EXPECT(assert_equal(-eye(3), H1));
   EXPECT(assert_equal(eye(3), H2));
 
-  EXPECT(assert_equal(Point3(5,7,9), p1.expmap(Vector_(3, 4.,5.,6.))));
-  EXPECT(assert_equal(Vector_(3, 3.,3.,3.), p1.logmap(p2)));
+  EXPECT(assert_equal(Point3(5,7,9), p1.retract(Vector_(3, 4.,5.,6.))));
+  EXPECT(assert_equal(Vector_(3, 3.,3.,3.), p1.localCoordinates(p2)));
 }
 
 /* ************************************************************************* */

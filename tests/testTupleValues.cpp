@@ -203,7 +203,7 @@ TEST(TupleValues, zero_expmap_logmap)
 
   // Check log
   VectorValues expected_log = delta;
-  VectorValues actual_log = values1.unretract(actual, o);
+  VectorValues actual_log = values1.localCoordinates(actual, o);
   CHECK(assert_equal(expected_log, actual_log));
 }
 
@@ -460,7 +460,7 @@ TEST(TupleValues, expmap)
 	expected.insert(l2k, Point2(10.3, 11.4));
 
 	CHECK(assert_equal(expected, values1.retract(delta, o)));
-	CHECK(assert_equal(delta, values1.unretract(expected, o)));
+	CHECK(assert_equal(delta, values1.localCoordinates(expected, o)));
 }
 
 /* ************************************************************************* */
@@ -491,7 +491,7 @@ TEST(TupleValues, expmap_typedefs)
 	expected.insert(l2k, Point2(10.3, 11.4));
 
 	CHECK(assert_equal(expected, TupleValues2<PoseValues, PointValues>(values1.retract(delta, o))));
-	//CHECK(assert_equal(delta, values1.unretract(expected)));
+	//CHECK(assert_equal(delta, values1.localCoordinates(expected)));
 }
 
 /* ************************************************************************* */

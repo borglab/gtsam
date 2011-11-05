@@ -36,13 +36,7 @@ using namespace std;
 // #define SLOW_BUT_CORRECT_EXPMAP
 
 GTSAM_CONCEPT_TESTABLE_INST(Pose2)
-GTSAM_CONCEPT_MANIFOLD_INST(Pose2)
 GTSAM_CONCEPT_LIE_INST(Pose2)
-
-// concept checks for testable
-GTSAM_CONCEPT_TESTABLE_INST(Point2)
-GTSAM_CONCEPT_TESTABLE_INST(Rot2)
-GTSAM_CONCEPT_TESTABLE_INST(LieVector)
 
 /* ************************************************************************* */
 TEST(Pose2, constructors) {
@@ -59,10 +53,10 @@ TEST(Pose2, manifold) {
 	Pose2 t1(M_PI_2, Point2(1, 2));
 	Pose2 t2(M_PI_2+0.018, Point2(1.015, 2.01));
 	Pose2 origin;
-	Vector d12 = t1.unretract(t2);
+	Vector d12 = t1.localCoordinates(t2);
 	EXPECT(assert_equal(t2, t1.retract(d12)));
 	EXPECT(assert_equal(t2, t1*origin.retract(d12)));
-	Vector d21 = t2.unretract(t1);
+	Vector d21 = t2.localCoordinates(t1);
 	EXPECT(assert_equal(t1, t2.retract(d21)));
 	EXPECT(assert_equal(t1, t2*origin.retract(d21)));
 }
@@ -83,7 +77,7 @@ TEST(Pose2, retract) {
 TEST(Pose2, expmap) {
   Pose2 pose(M_PI_2, Point2(1, 2));
   Pose2 expected(1.00811, 2.01528, 2.5608);
-  Pose2 actual = pose.expmap(Vector_(3, 0.01, -0.015, 0.99));
+  Pose2 actual = expmap_default<Pose2>(pose, Vector_(3, 0.01, -0.015, 0.99));
   EXPECT(assert_equal(expected, actual, 1e-5));
 }
 
@@ -91,7 +85,7 @@ TEST(Pose2, expmap) {
 TEST(Pose2, expmap2) {
   Pose2 pose(M_PI_2, Point2(1, 2));
   Pose2 expected(1.00811, 2.01528, 2.5608);
-  Pose2 actual = pose.expmap(Vector_(3, 0.01, -0.015, 0.99));
+  Pose2 actual = expmap_default<Pose2>(pose, Vector_(3, 0.01, -0.015, 0.99));
   EXPECT(assert_equal(expected, actual, 1e-5));
 }
 
@@ -117,12 +111,12 @@ TEST(Pose2, expmap3) {
 /* ************************************************************************* */
 TEST(Pose2, expmap0) {
   Pose2 pose(M_PI_2, Point2(1, 2));
-#ifdef SLOW_BUT_CORRECT_EXPMAP
+//#ifdef SLOW_BUT_CORRECT_EXPMAP
   Pose2 expected(1.01491, 2.01013, 1.5888);
-#else
-  Pose2 expected(M_PI_2+0.018, Point2(1.015, 2.01));
-#endif
-  Pose2 actual = pose * Pose2::Retract(Vector_(3, 0.01, -0.015, 0.018));
+//#else
+//  Pose2 expected(M_PI_2+0.018, Point2(1.015, 2.01));
+//#endif
+  Pose2 actual = pose * (Pose2::Expmap(Vector_(3, 0.01, -0.015, 0.018)));
   EXPECT(assert_equal(expected, actual, 1e-5));
 }
 
@@ -183,7 +177,7 @@ TEST(Pose2, logmap) {
 #else
   Vector expected = Vector_(3, 0.01, -0.015, 0.018);
 #endif
-  Vector actual = pose0.unretract(pose);
+  Vector actual = pose0.localCoordinates(pose);
   EXPECT(assert_equal(expected, actual, 1e-5));
 }
 
@@ -192,7 +186,7 @@ TEST(Pose2, logmap_full) {
   Pose2 pose0(M_PI_2, Point2(1, 2));
   Pose2 pose(M_PI_2+0.018, Point2(1.015, 2.01));
   Vector expected = Vector_(3, 0.00986473, -0.0150896, 0.018);
-  Vector actual = pose0.logmap(pose);
+  Vector actual = logmap_default<Pose2>(pose0, pose);
   EXPECT(assert_equal(expected, actual, 1e-5));
 }
 

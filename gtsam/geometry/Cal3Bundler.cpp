@@ -149,14 +149,6 @@ Matrix Cal3Bundler::D2d_intrinsic_calibration(const Point2& p) const {
 Cal3Bundler Cal3Bundler::retract(const Vector& d) const { return Cal3Bundler(vector() + d) ; }
 
 /* ************************************************************************* */
-Vector Cal3Bundler::unretract(const Cal3Bundler& T2) const { return vector() - T2.vector(); }
-
-/* ************************************************************************* */
-Cal3Bundler Cal3Bundler::Retract(const Vector& v) { return Cal3Bundler(v) ; }
-
-/* ************************************************************************* */
-Vector Cal3Bundler::Unretract(const Cal3Bundler& p) { return p.vector(); }
-
-
+Vector Cal3Bundler::localCoordinates(const Cal3Bundler& T2) const { return vector() - T2.vector(); }
 
 }

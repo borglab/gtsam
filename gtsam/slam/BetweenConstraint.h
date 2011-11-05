@@ -51,7 +51,7 @@ namespace gtsam {
 				boost::optional<Matrix&> H1 = boost::none,
 				boost::optional<Matrix&> H2 = boost::none) const {
 			X hx = x1.between(x2, H1, H2);
-			return measured_.unretract(hx);
+			return measured_.localCoordinates(hx);
 		}
 
 		inline const X measured() const {

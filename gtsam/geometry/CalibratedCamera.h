@@ -61,13 +61,7 @@ namespace gtsam {
 		CalibratedCamera retract(const Vector& d) const;
 
 		/// Return canonical coordinate
-	  Vector unretract(const CalibratedCamera& T2) const;
-
-		/// move a cameras pose according to d
-		static CalibratedCamera Retract(const Vector& v);
-
-		/// Return canonical coordinate
-	  static Vector Unretract(const CalibratedCamera& p);
+	  Vector localCoordinates(const CalibratedCamera& T2) const;
 
 	  /// Lie group dimensionality
 		inline size_t dim() const { return 6 ; }

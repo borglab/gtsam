@@ -53,8 +53,8 @@ namespace gtsam {
     CalibratedCameraT retract(const Vector& d) const {
       return CalibratedCameraT(pose().retract(d), k_) ;
     }
-    Vector unretract(const CalibratedCameraT& T2) const {
-      return pose().unretract(T2.pose()) ;
+    Vector localCoordinates(const CalibratedCameraT& T2) const {
+      return pose().localCoordinates(T2.pose()) ;
     }
 
     void print(const std::string& s = "") const {

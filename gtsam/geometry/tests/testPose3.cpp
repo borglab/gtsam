@@ -25,7 +25,6 @@ using namespace std;
 using namespace gtsam;
 
 GTSAM_CONCEPT_TESTABLE_INST(Pose3)
-GTSAM_CONCEPT_MANIFOLD_INST(Pose3)
 GTSAM_CONCEPT_LIE_INST(Pose3)
 
 static Point3 P(0.2,0.7,-2);
@@ -66,9 +65,9 @@ TEST( Pose3, expmap_a_full)
   Pose3 id;
   Vector v = zero(6);
   v(0) = 0.3;
-  EXPECT(assert_equal(id.expmap(v), Pose3(R, Point3())));
+  EXPECT(assert_equal(expmap_default<Pose3>(id, v), Pose3(R, Point3())));
   v(3)=0.2;v(4)=0.394742;v(5)=-2.08998;
-  EXPECT(assert_equal(Pose3(R, P),id.expmap(v),1e-5));
+  EXPECT(assert_equal(Pose3(R, P),expmap_default<Pose3>(id, v),1e-5));
 }
 
 /* ************************************************************************* */
@@ -77,9 +76,9 @@ TEST( Pose3, expmap_a_full2)
   Pose3 id;
   Vector v = zero(6);
   v(0) = 0.3;
-  EXPECT(assert_equal(id.expmap(v), Pose3(R, Point3())));
+  EXPECT(assert_equal(expmap_default<Pose3>(id, v), Pose3(R, Point3())));
   v(3)=0.2;v(4)=0.394742;v(5)=-2.08998;
-  EXPECT(assert_equal(Pose3(R, P),id.expmap(v),1e-5));
+  EXPECT(assert_equal(Pose3(R, P),expmap_default<Pose3>(id, v),1e-5));
 }
 
 /* ************************************************************************* */
@@ -215,11 +214,11 @@ Pose3 Agrawal06iros(const Vector& xi) {
 	Vector v = xi.tail(3);
 	double t = norm_2(w);
 	if (t < 1e-5)
-		return Pose3(Rot3(), Point3::Retract(v));
+		return Pose3(Rot3(), Point3::Expmap(v));
 	else {
 		Matrix W = skewSymmetric(w/t);
 		Matrix A = eye(3) + ((1 - cos(t)) / t) * W + ((t - sin(t)) / t) * (W * W);
-		return Pose3(Rot3::Expmap (w), Point3::Retract(A * v));
+		return Pose3(Rot3::Expmap (w), Point3::Expmap(A * v));
 	}
 }
 
@@ -526,12 +525,12 @@ TEST(Pose3, manifold)
 	Pose3 t1 = T;
 	Pose3 t2 = T3;
 	Pose3 origin;
-	Vector d12 = t1.logmap(t2);
-	EXPECT(assert_equal(t2, t1.expmap(d12)));
+	Vector d12 = t1.localCoordinates(t2);
+	EXPECT(assert_equal(t2, t1.retract(d12)));
 	// todo: richard - commented out because this tests for "compose-style" (new) expmap
 	// EXPECT(assert_equal(t2, retract(origin,d12)*t1));
-	Vector d21 = t2.logmap(t1);
-	EXPECT(assert_equal(t1, t2.expmap(d21)));
+	Vector d21 = t2.localCoordinates(t1);
+	EXPECT(assert_equal(t1, t2.retract(d21)));
 	// todo: richard - commented out because this tests for "compose-style" (new) expmap
 	// EXPECT(assert_equal(t1, retract(origin,d21)*t2));
 
@@ -656,9 +655,9 @@ TEST( Pose3, unicycle )
 {
 	// velocity in X should be X in inertial frame, rather than global frame
 	Vector x_step = delta(6,3,1.0);
-	EXPECT(assert_equal(Pose3(Rot3::ypr(0,0,0), l1), x1.expmap(x_step), tol));
-	EXPECT(assert_equal(Pose3(Rot3::ypr(0,0,0), Point3(2,1,0)), x2.expmap(x_step), tol));
-	EXPECT(assert_equal(Pose3(Rot3::ypr(M_PI_4,0,0), Point3(2,2,0)), x3.expmap(sqrt(2) * x_step), tol));
+	EXPECT(assert_equal(Pose3(Rot3::ypr(0,0,0), l1), expmap_default<Pose3>(x1, x_step), tol));
+	EXPECT(assert_equal(Pose3(Rot3::ypr(0,0,0), Point3(2,1,0)), expmap_default<Pose3>(x2, x_step), tol));
+	EXPECT(assert_equal(Pose3(Rot3::ypr(M_PI_4,0,0), Point3(2,2,0)), expmap_default<Pose3>(x3, sqrt(2) * x_step), tol));
 }
 
 /* ************************************************************************* */

@@ -85,18 +85,8 @@ CalibratedCamera CalibratedCamera::retract(const Vector& d) const {
 }
 
 /* ************************************************************************* */
-Vector CalibratedCamera::unretract(const CalibratedCamera& T2) const {
-	return pose().unretract(T2.pose()) ;
-}
-
-/* ************************************************************************* */
-CalibratedCamera CalibratedCamera::Retract(const Vector& v) {
-	return CalibratedCamera(Pose3::Retract(v)) ;
-}
-
-/* ************************************************************************* */
-Vector CalibratedCamera::Unretract(const CalibratedCamera& p) {
-	return Pose3::Unretract(p.pose()) ;
+Vector CalibratedCamera::localCoordinates(const CalibratedCamera& T2) const {
+	return pose().localCoordinates(T2.pose()) ;
 }
 
 /* ************************************************************************* */

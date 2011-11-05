@@ -232,7 +232,7 @@ public:
     }
 
     // Return the error between the prediction and the supplied value of p2
-    return prediction.unretract(p2);
+    return prediction.localCoordinates(p2);
   }
 
 };

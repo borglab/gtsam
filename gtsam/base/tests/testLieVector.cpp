@@ -23,7 +23,6 @@
 using namespace gtsam;
 
 GTSAM_CONCEPT_TESTABLE_INST(LieVector)
-GTSAM_CONCEPT_MANIFOLD_INST(LieVector)
 GTSAM_CONCEPT_LIE_INST(LieVector)
 
 /* ************************************************************************* */

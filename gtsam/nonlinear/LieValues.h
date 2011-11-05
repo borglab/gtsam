@@ -122,10 +122,10 @@ namespace gtsam {
     LieValues retract(const VectorValues& delta, const Ordering& ordering) const;
 
     /** Get a delta config about a linearization point c0 (*this) */
-    VectorValues unretract(const LieValues& cp, const Ordering& ordering) const;
+    VectorValues localCoordinates(const LieValues& cp, const Ordering& ordering) const;
 
     /** Get a delta config about a linearization point c0 (*this) */
-    void unretract(const LieValues& cp, const Ordering& ordering, VectorValues& delta) const;
+    void localCoordinates(const LieValues& cp, const Ordering& ordering, VectorValues& delta) const;
 
     // imperative methods:
 

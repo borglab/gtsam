@@ -81,7 +81,7 @@ namespace gtsam {
 		Vector evaluateError(const T& p, boost::optional<Matrix&> H = boost::none) const {
 			if (H) (*H) = eye(p.dim());
 			// manifold equivalent of h(x)-z -> log(z,h(x))
-			return prior_.unretract(p);
+			return prior_.localCoordinates(p);
 		}
 
 	private:

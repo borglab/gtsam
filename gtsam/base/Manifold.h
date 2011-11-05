@@ -26,18 +26,10 @@
  * Returns Retraction update of T
  * 		T retract(const Vector& v) const;
  *
- * Retract around identity
- * 		static T Retract(const Vector& v);
- *
  * Returns inverse retraction operation
- * A default implementation of unretract(*this, lp) is available:
- * 		Vector unretract(const T& lp) const;
- *
- * Unretract around identity
- * 		static Vector Unretract(const T& p);
+ * 		Vector localCoordinates(const T& lp) const;
  *
  */
-
 
 #pragma once
 
@@ -74,16 +66,10 @@ namespace gtsam {
 			 */
 			T retract_ret = t.retract(gtsam::zero(dim_ret));
 
-			/** expmap around identity */
-			T retract_identity_ret = T::Retract(gtsam::zero(dim_ret));
-
 			/**
-			 * Returns inverse retraction
+			 * Returns local coordinates of another object
 			 */
-			Vector unretract_ret = t.unretract(t2);
-
-			/** Unretract around identity */
-			Vector unretract_identity_ret = T::Unretract(t);
+			Vector localCoords_ret = t.localCoordinates(t2);
 		}
 	};
 
@@ -97,6 +83,5 @@ namespace gtsam {
  * NOTE: intentionally not in the gtsam namespace to allow for classes not in
  * the gtsam namespace to be more easily enforced as testable
  */
-/// TODO: find better name for "INST" macro, something like "UNIT" or similar
 #define GTSAM_CONCEPT_MANIFOLD_INST(T) template class gtsam::ManifoldConcept<T>;
 #define GTSAM_CONCEPT_MANIFOLD_TYPE(T) typedef gtsam::ManifoldConcept<T> _gtsam_ManifoldConcept_##T;

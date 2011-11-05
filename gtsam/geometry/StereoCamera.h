@@ -98,34 +98,19 @@ public:
 		return 6;
 	}
 
-	/** Exponential map around p0 */
-	inline StereoCamera expmap(const Vector& d) const {
-		return StereoCamera(pose().retract(d), K_);
-	}
-
-	Vector logmap(const StereoCamera &camera) const {
-		const Vector v1(leftCamPose_.unretract(camera.leftCamPose_));
-		return v1;
-	}
-
-	inline static StereoCamera Expmap(const Vector& d) {
-		return StereoCamera().expmap(d);
-	}
-
-	inline static Vector Logmap(const StereoCamera &camera) {
-		return StereoCamera().logmap(camera);
-	}
-
 	bool equals(const StereoCamera &camera, double tol = 1e-9) const {
 		return leftCamPose_.equals(camera.leftCamPose_, tol) && K_->equals(
 				*camera.K_, tol);
 	}
 
 	// Manifold requirements - use existing expmap/logmap
-	inline StereoCamera retract(const Vector& v) const { return expmap(v); }
-	inline static StereoCamera Retract(const Vector& v) { return Expmap(v); }
-	inline Vector unretract(const StereoCamera& t2) const { return logmap(t2); }
-	inline static Vector Unretract(const StereoCamera& t) { return Logmap(t); }
+	inline StereoCamera retract(const Vector& v) const {
+		return StereoCamera(pose().retract(v), K_);
+	}
+
+	inline Vector localCoordinates(const StereoCamera& t2) const {
+		return Vector(leftCamPose_.localCoordinates(t2.leftCamPose_));
+	}
 
 	Pose3 between(const StereoCamera &camera,
 			boost::optional<Matrix&> H1=boost::none,

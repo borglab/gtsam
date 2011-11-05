@@ -127,6 +127,11 @@ namespace gtsam {
 			return dimension;
 		}
 
+		/** identity */
+		inline static Rot2 identity() {
+			return Rot2();
+		}
+
 		/** Compose - make a new rotation by adding angles */
 		inline Rot2 compose(const Rot2& R1, boost::optional<Matrix&> H1 =
 				boost::none, boost::optional<Matrix&> H2 = boost::none) const {
@@ -148,30 +153,14 @@ namespace gtsam {
 			return Vector_(1, r.theta());
 		}
 
-		/** Binary expmap  */
-		inline Rot2 expmap(const Vector& v) const {
-			return *this * Expmap(v);
-		}
-
-		/** Binary Logmap  */
-		inline Vector logmap(const Rot2& p2) const {
-			return Logmap(between(p2));
-		}
-
   	// Manifold requirements
 
-  	inline Rot2 retract(const Vector& v) const { return expmap(v); }
-
-  	/** expmap around identity */
-  	inline static Rot2 Retract(const Vector& v) { return Expmap(v); }
+  	inline Rot2 retract(const Vector& v) const { return *this * Expmap(v); }
 
   	/**
   	 * Returns inverse retraction
   	 */
-  	inline Vector unretract(const Rot2& t2) const { return logmap(t2); }
-
-  	/** Unretract around identity */
-  	inline static Vector Unretract(const Rot2& t) { return Logmap(t); }
+  	inline Vector localCoordinates(const Rot2& t2) const { return Logmap(between(t2)); }
 
 		/** Between using the default implementation */
 		inline Rot2 between(const Rot2& p2, boost::optional<Matrix&> H1 =

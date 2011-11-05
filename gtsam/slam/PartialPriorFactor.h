@@ -118,16 +118,17 @@ namespace gtsam {
 		/** vector of errors */
 		Vector evaluateError(const T& p, boost::optional<Matrix&> H = boost::none) const {
 			if (H) (*H) = zeros(this->dim(), p.dim());
-			Vector full_unretraction = T::Unretract(p);
-			Vector masked_unretraction = zero(this->dim());
+			// FIXME: this was originally the generic retraction - may not produce same results
+			Vector full_logmap = T::Logmap(p);
+			Vector masked_logmap = zero(this->dim());
 			size_t masked_idx=0;
 			for (size_t i=0;i<mask_.size();++i)
 				if (mask_[i]) {
-					masked_unretraction(masked_idx) = full_unretraction(i);
+					masked_logmap(masked_idx) = full_logmap(i);
 					if (H) (*H)(masked_idx, i) = 1.0;
 					++masked_idx;
 				}
-			return masked_unretraction - prior_;
+			return masked_logmap - prior_;
 		}
 
 		// access

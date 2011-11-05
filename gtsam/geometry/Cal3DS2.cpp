@@ -127,13 +127,7 @@ Matrix Cal3DS2::D2d_calibration(const Point2& p) const {
 Cal3DS2 Cal3DS2::retract(const Vector& d) const { return Cal3DS2(vector() + d) ; }
 
 /* ************************************************************************* */
-Vector Cal3DS2::unretract(const Cal3DS2& T2) const { return vector() - T2.vector(); }
-
-/* ************************************************************************* */
-Cal3DS2 Cal3DS2::Retract(const Vector& v) { return Cal3DS2(v) ; }
-
-/* ************************************************************************* */
-Vector Cal3DS2::Unretract(const Cal3DS2& p) { return p.vector(); }
+Vector Cal3DS2::localCoordinates(const Cal3DS2& T2) const { return vector() - T2.vector(); }
 
 }
 /* ************************************************************************* */

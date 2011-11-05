@@ -24,21 +24,9 @@
  * concept checking function in class Lie will check whether or not
  * the function exists and throw compile-time errors.
  *
- * Returns dimensionality of the tangent space
- * 		inline size_t dim() const;
- *
- * Returns Exponential map update of T
- * A default implementation of expmap(*this, lp) is available:
- * expmap_default()
- * 		T expmap(const Vector& v) const;
- *
- * expmap around identity
+ * Expmap around identity
  * 		static T Expmap(const Vector& v);
  *
- * Returns Log map
- * A default implementation of logmap(*this, lp) is available:
- * logmap_default()
- * 		Vector logmap(const T& lp) const;
  *
  * Logmap around identity
  * 		static Vector Logmap(const T& p);
@@ -48,18 +36,13 @@
  * between_default()
  * 		T between(const T& l2) const;
  *
- * compose with another object
- * 		T compose(const T& p) const;
- *
- * invert the object and yield a new one
- * 		T inverse() const;
- *
  */
 
 
 #pragma once
 
 #include <gtsam/base/Manifold.h>
+#include <gtsam/base/Group.h>
 
 namespace gtsam {
 
@@ -101,32 +84,14 @@ namespace gtsam {
 			 */
 			size_t dim_ret = t.dim();
 
-			/**
-			 * Returns Exponential map update of T
-			 * Default implementation calls global binary function
-			 */
-			T expmap_ret = t.expmap(gtsam::zero(dim_ret));
-
 			/** expmap around identity */
 			T expmap_identity_ret = T::Expmap(gtsam::zero(dim_ret));
-
-			/**
-			 * Returns Log map
-			 * Default Implementation calls global binary function
-			 */
-			Vector logmap_ret = t.logmap(t2);
 
 			/** Logmap around identity */
 			Vector logmap_identity_ret = T::Logmap(t);
 
 			/** Compute l0 s.t. l2=l1*l0, where (*this) is l1 */
 			T between_ret = t.between(t2);
-
-			/** compose with another object */
-			T compose_ret = t.compose(t2);
-
-			/** invert the object and yield a new one */
-			T inverse_ret = t.inverse();
 		}
 
 	};
@@ -156,6 +121,7 @@ namespace gtsam {
 	 *  formula: Z = X + Y + [X,Y]/2 + [X-Y,[X,Y]]/12 - [Y,[X,[X,Y]]]/24
 	 *  http://en.wikipedia.org/wiki/Baker�Campbell�Hausdorff_formula
 	 */
+	/// AGC: bracket() only appears in Rot3 tests, should this be used elsewhere?
 	template<class T>
 	T BCH(const T& X, const T& Y) {
 		static const double _2 = 1. / 2., _12 = 1. / 12., _24 = 1. / 24.;
@@ -185,13 +151,19 @@ namespace gtsam {
 } // namespace gtsam
 
 /**
- * Macros for using the ManifoldConcept
+ * Macros for using the LieConcept
  *  - An instantiation for use inside unit tests
  *  - A typedef for use inside generic algorithms
  *
  * NOTE: intentionally not in the gtsam namespace to allow for classes not in
  * the gtsam namespace to be more easily enforced as testable
  */
-/// TODO: find better name for "INST" macro, something like "UNIT" or similar
-#define GTSAM_CONCEPT_LIE_INST(T) template class gtsam::LieConcept<T>;
-#define GTSAM_CONCEPT_LIE_TYPE(T) typedef gtsam::LieConcept<T> _gtsam_LieConcept_##T;
+#define GTSAM_CONCEPT_LIE_INST(T) \
+	template class gtsam::ManifoldConcept<T>; \
+	template class gtsam::GroupConcept<T>; \
+	template class gtsam::LieConcept<T>;
+
+#define GTSAM_CONCEPT_LIE_TYPE(T) \
+	typedef gtsam::ManifoldConcept<T> _gtsam_ManifoldConcept_##T; \
+	typedef gtsam::GroupConcept<T> _gtsam_GroupConcept_##T; \
+	typedef gtsam::LieConcept<T> _gtsam_LieConcept_##T;

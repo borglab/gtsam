@@ -197,27 +197,22 @@ public:
 		else return rodriguez(v);
 	}
 
+	/** identity */
+	inline static Rot3 identity() {
+		return Rot3();
+	}
+
 	// Log map at identity - return the canonical coordinates of this rotation
 	static Vector Logmap(const Rot3& R);
 
-	/** default implementations of binary functions */
-	inline Rot3 expmap(const Vector& v) const { return gtsam::expmap_default(*this, v); }
-	inline Vector logmap(const Rot3& p2) const { return gtsam::logmap_default(*this, p2);}
-
 	// Manifold requirements
 
-	inline Rot3 retract(const Vector& v) const { return expmap(v); }
-
-	/** expmap around identity */
-	inline static Rot3 Retract(const Vector& v) { return Expmap(v); }
+	inline Rot3 retract(const Vector& v) const { return compose(Expmap(v)); }
 
 	/**
 	 * Returns inverse retraction
 	 */
-	inline Vector unretract(const Rot3& t2) const { return logmap(t2); }
-
-	/** Unretract around identity */
-	inline static Vector Unretract(const Rot3& t) { return Logmap(t); }
+	inline Vector localCoordinates(const Rot3& t2) const { return Logmap(between(t2)); }
 
 
 	// derivative of inverse rotation R^T s.t. inverse(R)*R = Rot3()

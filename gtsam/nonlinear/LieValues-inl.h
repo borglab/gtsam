@@ -193,19 +193,19 @@ namespace gtsam {
   // todo: insert for every element is inefficient
   // todo: currently only logmaps elements in both configs
   template<class J>
-  inline VectorValues LieValues<J>::unretract(const LieValues<J>& cp, const Ordering& ordering) const {
+  inline VectorValues LieValues<J>::localCoordinates(const LieValues<J>& cp, const Ordering& ordering) const {
   	VectorValues delta(this->dims(ordering));
-  	unretract(cp, ordering, delta);
+  	localCoordinates(cp, ordering, delta);
   	return delta;
   }
 
   /* ************************************************************************* */
   template<class J>
-  void LieValues<J>::unretract(const LieValues<J>& cp, const Ordering& ordering, VectorValues& delta) const {
+  void LieValues<J>::localCoordinates(const LieValues<J>& cp, const Ordering& ordering, VectorValues& delta) const {
     typedef pair<J,typename J::Value> KeyValue;
     BOOST_FOREACH(const KeyValue& value, cp) {
       assert(this->exists(value.first));
-      delta[ordering[value.first]] = this->at(value.first).unretract(value.second);
+      delta[ordering[value.first]] = this->at(value.first).localCoordinates(value.second);
     }
   }
 

@@ -23,7 +23,6 @@
 using namespace gtsam;
 
 GTSAM_CONCEPT_TESTABLE_INST(Rot2)
-GTSAM_CONCEPT_MANIFOLD_INST(Rot2)
 GTSAM_CONCEPT_LIE_INST(Rot2)
 
 Rot2 R(Rot2::fromAngle(0.1));
@@ -89,7 +88,7 @@ TEST( Rot2, equals)
 TEST( Rot2, expmap)
 {
 	Vector v = zero(1);
-	CHECK(assert_equal(R.expmap(v), R));
+	CHECK(assert_equal(R.retract(v), R));
 }
 
 /* ************************************************************************* */
@@ -98,7 +97,7 @@ TEST(Rot2, logmap)
 	Rot2 rot0(Rot2::fromAngle(M_PI_2));
 	Rot2 rot(Rot2::fromAngle(M_PI));
 	Vector expected = Vector_(1, M_PI_2);
-	Vector actual = rot0.logmap(rot);
+	Vector actual = rot0.localCoordinates(rot);
 	CHECK(assert_equal(expected, actual));
 }
 

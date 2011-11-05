@@ -140,9 +140,9 @@ TEST( Pose3Factor, error )
 	x.insert(1,t1);
 	x.insert(2,t2);
 
-	// Get error h(x)-z -> unretract(z,h(x)) = unretract(z,between(t1,t2))
+	// Get error h(x)-z -> localCoordinates(z,h(x)) = localCoordinates(z,between(t1,t2))
 	Vector actual = factor.unwhitenedError(x);
-	Vector expected = z.unretract(t1.between(t2));
+	Vector expected = z.localCoordinates(t1.between(t2));
 	CHECK(assert_equal(expected,actual));
 }
 
