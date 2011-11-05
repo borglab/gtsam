@@ -44,6 +44,12 @@ namespace gtsam { // note, deliberately not in noiseModel namespace
 			noiseModel::Diagonal::shared_ptr(noiseModel::Diagonal::Sigmas(sigmas)) {
 		}
 
+		/// Print
+		inline void print(const std::string &s) const { (*this)->print(s); }
+
+		/// Generate a sample
+		inline Vector sample() const { return (*this)->sample(); }
+
 		/** Serialization function */
 		friend class boost::serialization::access;
 		template<class ARCHIVE>

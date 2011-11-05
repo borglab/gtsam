@@ -135,6 +135,14 @@ TEST(NoiseModel, equals)
 }
 
 /* ************************************************************************* */
+TEST(NoiseModel, sample) {
+	Vector s = Vector_(3,1.0,2.0,3.0);
+	SharedDiagonal model = sharedSigmas(s);
+	Vector v = model->sample();
+	// no check as no way yet to set random seed
+}
+
+/* ************************************************************************* */
 TEST(NoiseModel, ConstrainedMixed )
 {
 	Vector feasible = Vector_(3, 1.0, 0.0, 1.0),

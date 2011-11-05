@@ -45,10 +45,13 @@ class Pose2 {
 
 class SharedGaussian {
 	SharedGaussian(Matrix covariance);
+	void print(string s) const;
 };
 
 class SharedDiagonal {
 	SharedDiagonal(Vector sigmas);
+	void print(string s) const;
+	Vector sample() const;
 };
 
 class VectorValues {
